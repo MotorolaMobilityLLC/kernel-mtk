@@ -282,25 +282,6 @@ void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
 #endif
 #endif
 
-#ifndef CONFIG_ARM64
-static noinline int mt_mpu_secure_call(u32 function_id,
-	u32 arg0, u32 arg1, u32 arg2, u32 arg3)
-{
-	register u32 reg0 __asm__("r0") = function_id;
-	register u32 reg1 __asm__("r1") = arg0;
-	register u32 reg2 __asm__("r2") = arg1;
-	register u32 reg3 __asm__("r3") = arg2;
-	register u32 reg4 __asm__("r4") = arg3;
-	int ret = 0;
-
-	asm volatile (__SMC(0) : "+r"(reg0),
-		"+r"(reg1), "+r"(reg2), "+r"(reg3), "+r"(reg4));
-
-	ret = reg0;
-	return ret;
-}
-#endif
-
 /*
  * emi_mpu_set_region_protection: protect a region.
  * @start: start address of the region

@@ -183,52 +183,52 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 {
 	char *p = buf;
 
-	p += sprintf(p, "pcm_flags = 0x%x\n",
+	p += sprintf(p, "pcm_flags = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS, 0));
-	p += sprintf(p, "pcm_flags_cust = 0x%x\n",
+	p += sprintf(p, "pcm_flags_cust = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST, 0));
-	p += sprintf(p, "pcm_flags_cust_set = 0x%x\n",
+	p += sprintf(p, "pcm_flags_cust_set = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST_SET, 0));
-	p += sprintf(p, "pcm_flags_cust_clr = 0x%x\n",
+	p += sprintf(p, "pcm_flags_cust_clr = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST_CLR, 0));
-	p += sprintf(p, "pcm_flags1 = 0x%x\n",
+	p += sprintf(p, "pcm_flags1 = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1, 0));
-	p += sprintf(p, "pcm_flags1_cust = 0x%x\n",
+	p += sprintf(p, "pcm_flags1_cust = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1_CUST, 0));
-	p += sprintf(p, "pcm_flags1_cust_set = 0x%x\n",
+	p += sprintf(p, "pcm_flags1_cust_set = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1_CUST_SET, 0));
-	p += sprintf(p, "pcm_flags1_cust_clr = 0x%x\n",
+	p += sprintf(p, "pcm_flags1_cust_clr = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1_CUST_CLR, 0));
-	p += sprintf(p, "timer_val = 0x%x\n",
+	p += sprintf(p, "timer_val = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL, 0));
-	p += sprintf(p, "timer_val_cust = 0x%x\n",
+	p += sprintf(p, "timer_val_cust = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL_CUST, 0));
-	p += sprintf(p, "timer_val_ramp_en = 0x%x\n",
+	p += sprintf(p, "timer_val_ramp_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL_RAMP_EN, 0));
-	p += sprintf(p, "timer_val_ramp_en_sec = 0x%x\n",
+	p += sprintf(p, "timer_val_ramp_en_sec = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL_RAMP_EN_SEC, 0));
-	p += sprintf(p, "wake_src = 0x%x\n",
+	p += sprintf(p, "wake_src = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WAKE_SRC, 0));
-	p += sprintf(p, "wake_src_cust = 0x%x\n",
+	p += sprintf(p, "wake_src_cust = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WAKE_SRC_CUST, 0));
-	p += sprintf(p, "wakelock_timer_val = 0x%x\n",
+	p += sprintf(p, "wakelock_timer_val = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WAKELOCK_TIMER_VAL, 0));
-	p += sprintf(p, "wdt_disable = 0x%x\n",
+	p += sprintf(p, "wdt_disable = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WDT_DISABLE, 0));
 

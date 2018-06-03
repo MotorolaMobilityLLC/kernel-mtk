@@ -137,45 +137,22 @@
 #define MTK_SIP_KERNEL_AMMS_GET_FREE_ADDR (0x82000271 | MTK_SIP_SMC_AARCH_BIT)
 #define MTK_SIP_KERNEL_AMMS_GET_FREE_LENGTH (0x82000272 | MTK_SIP_SMC_AARCH_BIT)
 
-#ifdef CONFIG_ARM64
-/* SIP SMC Call 64 */
-static noinline int mt_secure_call(u64 function_id,
-	u64 arg0, u64 arg1, u64 arg2)
-{
-	register u64 reg0 __asm__("x0") = function_id;
-	register u64 reg1 __asm__("x1") = arg0;
-	register u64 reg2 __asm__("x2") = arg1;
-	register u64 reg3 __asm__("x3") = arg2;
-	int ret = 0;
+extern size_t mt_secure_call(size_t function_id,
+	size_t arg0, size_t arg1, size_t arg2);
+extern size_t mt_secure_call_all(size_t function_id,
+	size_t arg0, size_t arg1, size_t arg2,
+	size_t arg3, size_t *r1, size_t *r2, size_t *r3);
 
-	asm volatile ("smc    #0\n" : "+r" (reg0) :
-		"r"(reg1), "r"(reg2), "r"(reg3));
-
-	ret = (int)reg0;
-	return ret;
-}
-
-
-#else
-#include <asm/opcodes-sec.h>
-#include <asm/opcodes-virt.h>
-/* SIP SMC Call 32 */
-static noinline int mt_secure_call(u32 function_id,
-	u32 arg0, u32 arg1, u32 arg2)
-{
-	register u32 reg0 __asm__("r0") = function_id;
-	register u32 reg1 __asm__("r1") = arg0;
-	register u32 reg2 __asm__("r2") = arg1;
-	register u32 reg3 __asm__("r3") = arg2;
-	int ret = 0;
-
-	asm volatile (__SMC(0) : "+r"(reg0),
-		"+r"(reg1), "+r"(reg2), "+r"(reg3));
-
-	ret = reg0;
-	return ret;
-}
-#endif
+#define mt_secure_call_ret0(_fun_id, _arg0, _arg1, _arg2, _arg3) \
+	mt_secure_call_all(_fun_id, _arg0, _arg1, _arg2, _arg3, 0, 0, 0)
+#define mt_secure_call_ret1(_fun_id, _arg0, _arg1, _arg2, _arg3) \
+	mt_secure_call_all(_fun_id, _arg0, _arg1, _arg2, _arg3, 0, 0, 0)
+#define mt_secure_call_ret2(_fun_id, _arg0, _arg1, _arg2, _arg3, _r1) \
+	mt_secure_call_all(_fun_id, _arg0, _arg1, _arg2, _arg3, _r1, 0, 0)
+#define mt_secure_call_ret3(_fun_id, _arg0, _arg1, _arg2, _arg3, _r1, _r2) \
+	mt_secure_call_all(_fun_id, _arg0, _arg1, _arg2, _arg3, _r1, _r2, 0)
+#define mt_secure_call_ret4(_fun_id, _arg0, _arg1, _arg2, _arg3, _r1, _r2, _r3) \
+	mt_secure_call_all(_fun_id, _arg0, _arg1, _arg2, _arg3, _r1, _r2, _r3)
 #define tbase_trigger_aee_dump() \
 	mt_secure_call(TBASE_SMC_AEE_DUMP, 0, 0, 0)
 #endif
@@ -194,7 +171,7 @@ mt_secure_call(MTK_SIP_KERNEL_EMIMPU_READ, offset, 0, 0)
 mt_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, region_permission)
 #else
 #define emi_mpu_smc_set(start, end, apc8, apc0) \
-mt_mpu_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, apc8, apc0)
+mt_secure_call_all(MTK_SIP_KERNEL_EMIMPU_SET, start, end, apc8, apc0, 0, 0, 0)
 #endif
 
 #define emi_mpu_smc_clear(region) \

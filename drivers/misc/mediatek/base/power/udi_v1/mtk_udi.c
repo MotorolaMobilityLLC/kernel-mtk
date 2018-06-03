@@ -394,7 +394,7 @@ out0:
 /* udi_debug_reg */
 static int udi_reg_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "Reg[%x] = 0x%x.\n", udi_addr_phy, udi_reg_read(udi_addr_phy));
+	seq_printf(m, "Reg[%x] = 0x%zx.\n", udi_addr_phy, udi_reg_read(udi_addr_phy));
 	return 0;
 }
 
@@ -416,16 +416,16 @@ static ssize_t udi_reg_proc_write(struct file *file, const char __user *buffer, 
 	if (sscanf(buf, "%1s %x %d %d %x", udi_rw, &udi_addr_phy, &udi_reg_msb, &udi_reg_lsb, &udi_value) == 5) {
 		/* f format or 'f', addr, MSB, LSB, value */
 		udi_reg_field(udi_addr_phy, udi_reg_msb : udi_reg_lsb, udi_value);
-		udi_info("Read back, Reg[%x] = 0x%x.\n",
+		udi_info("Read back, Reg[%x] = 0x%zx.\n",
 				udi_addr_phy, udi_reg_read(udi_addr_phy));
 	} else if (sscanf(buf, "%1s %x %x", udi_rw, &udi_addr_phy, &udi_value) == 3) {
 		/* w format or 'w', addr, value */
 		udi_reg_write(udi_addr_phy, udi_value);
-		udi_info("Read back, Reg[%x] = 0x%x.\n",
+		udi_info("Read back, Reg[%x] = 0x%zx.\n",
 				udi_addr_phy, udi_reg_read(udi_addr_phy));
 	} else if (sscanf(buf, "%1s %x", udi_rw, &udi_addr_phy) == 2) {
 		/* r format or 'r', addr */
-		udi_info("Read back, aReg[%x] = 0x%x.\n",
+		udi_info("Read back, aReg[%x] = 0x%zx.\n",
 				udi_addr_phy, udi_reg_read(udi_addr_phy));
 	} else {
 		udi_info("echo dbg_lv (dec) > /proc/udi/udi_debug\n");
