@@ -145,8 +145,9 @@ static void task_sched(unsigned long data)
 static irqreturn_t gpt_handler(int irq, void *dev_id);
 static cycle_t mt_gpt_read(struct clocksource *cs);
 static int mt_gpt_set_next_event(unsigned long cycles, struct clock_event_device *evt);
-/* static void mt_gpt_set_mode(enum clock_event_mode mode, struct clock_event_device *evt); */
 static int mt_gpt_clkevt_shutdown(struct clock_event_device *clk);
+static int mt_gpt_clkevt_oneshot(struct clock_event_device *clk);
+static int mt_gpt_clkevt_resume(struct clock_event_device *clk);
 static int mt_gpt_set_periodic(struct clock_event_device *clk);
 
 static struct clocksource gpt_clocksource = {
@@ -160,20 +161,28 @@ static struct clocksource gpt_clocksource = {
 
 static struct clock_event_device gpt_clockevent = {
 	.name = "mtk_tick",
-	.features = CLOCK_EVT_FEAT_ONESHOT,
+	/*
+	 * CLOCK_EVT_FEAT_DYNIRQ: Core shall set the interrupt affinity
+	 *                        dynamically in broadcast mode.
+	 * CLOCK_EVT_FEAT_ONESHOT: Use one-shot mode for tick broadcast.
+	 */
+	.features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_DYNIRQ,
 	.shift          = 32,
 	.rating         = 300,
 	.set_next_event = mt_gpt_set_next_event,
-	/* .set_mode = mt_gpt_set_mode, */
 	.set_state_shutdown = mt_gpt_clkevt_shutdown,
 	.set_state_periodic = mt_gpt_set_periodic,
-	.set_state_oneshot = mt_gpt_clkevt_shutdown,
-	.tick_resume = mt_gpt_clkevt_shutdown,
+	.set_state_oneshot = mt_gpt_clkevt_oneshot,
+	.tick_resume = mt_gpt_clkevt_resume,
 };
 
 static struct irqaction gpt_irq = {
 	.name = "mt-gpt",
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_TRIGGER_LOW | IRQF_PERCPU,
+#else
 	.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_TRIGGER_LOW,
+#endif
 	.handler = gpt_handler,
 	.dev_id     = &gpt_clockevent,
 };
@@ -370,10 +379,12 @@ static int mt_gpt_set_next_event(unsigned long cycles,
 {
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
-    /* printk("[%s]entry, evt=%lu\n", __func__, cycles); */
-
 	__gpt_stop(dev);
 	__gpt_set_cmp(dev, cycles, 0);
+
+	/* ensure IRQ is enabled before next running */
+	__gpt_enable_irq(dev);
+
 	__gpt_start_from_zero(dev);
 	return 0;
 }
@@ -387,6 +398,16 @@ static int mt_gpt_clkevt_shutdown(struct clock_event_device *clk)
 	__gpt_ack_irq(dev);
 
 	return 0;
+}
+
+static int mt_gpt_clkevt_resume(struct clock_event_device *clk)
+{
+	return mt_gpt_clkevt_shutdown(clk);
+}
+
+static int mt_gpt_clkevt_oneshot(struct clock_event_device *clk)
+{
+	return mt_gpt_clkevt_shutdown(clk);
 }
 
 static int mt_gpt_set_periodic(struct clock_event_device *clk)
@@ -468,7 +489,6 @@ static inline void setup_clksrc(u32 freq)
 
 	pr_alert("setup_clksrc1: dev->base_addr=0x%lx GPT2_CON=0x%x\n",
 		(unsigned long)dev->base_addr, __raw_readl(dev->base_addr));
-	/* cs->mult = clocksource_hz2mult(freq, cs->shift); */
 
 	setup_gpt_dev_locked(dev, GPT_FREE_RUN, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
 		0, NULL, 0);
@@ -480,23 +500,34 @@ static inline void setup_clksrc(u32 freq)
 		(unsigned long)dev->base_addr, __raw_readl(dev->base_addr));
 }
 
-static inline void setup_clkevt(u32 freq)
+static inline void setup_clkevt(u32 freq, int irq)
 {
 	unsigned int cmp[2];
 	struct clock_event_device *evt = &gpt_clockevent;
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
+	/* ensure to provide irq number for tick_broadcast_set_affinity() */
+	evt->irq = irq;
+
 	evt->mult = div_sc(freq, NSEC_PER_SEC, evt->shift);
 	evt->max_delta_ns = clockevent_delta2ns(0xffffffff, evt);
 	evt->min_delta_ns = clockevent_delta2ns(3, evt);
-	/* evt->cpumask = cpumask_of(0); */
 	evt->cpumask = cpu_possible_mask;
 
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	/*
+	 * 1. Use always-on 32K clock since 13M/26M clock will be disabled during SODI
+	 * 2. Configure this device as ONESHOT mode as tick broadcast device.
+	 */
+	setup_gpt_dev_locked(dev, GPT_ONE_SHOT, GPT_CLK_SRC_RTC, GPT_CLK_DIV_1,
+		freq / HZ, clkevt_handler, GPT_ISR);
+#else
 	setup_gpt_dev_locked(dev, GPT_REPEAT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
 		freq / HZ, clkevt_handler, GPT_ISR);
+#endif
 
 	__gpt_get_cmp(dev, cmp);
-	pr_alert("GPT1_CMP = %d, HZ = %d\n", cmp[0], HZ);
+	pr_alert("[mtk_gpt] GPT1: CMP=%d, HZ=%d, freq=%d\n", cmp[0], HZ, freq);
 
 	clockevents_register_device(evt);
 }
@@ -504,9 +535,14 @@ static inline void setup_clkevt(u32 freq)
 static void __init mt_gpt_init(struct device_node *node)
 {
 	int i;
-	u32 freq = 0;
+	u32 freq[2] = {0};
 	unsigned long save_flags;
 	struct clk *clk;
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	int clk_src_cnt = 2;
+#else
+	int clk_src_cnt = 1;
+#endif
 
 	gpt_update_lock(save_flags);
 
@@ -516,31 +552,43 @@ static void __init mt_gpt_init(struct device_node *node)
 	/* Setup IO addresses */
 	xgpt_timers.tmr_regs = of_iomap(node, 0);
 
-	/* freq=SYS_CLK_RATE */
-	clk = of_clk_get(node, 0);
-	if (IS_ERR(clk))
-		pr_alert("Can't get timer clock");
+	/*
+	 * idx = 0: freq is SYS_CLK_RATE
+	 * idx = 1: freq is RTC_CLK_RATE (32KHz)
+	 */
+	for (i = 0; i < clk_src_cnt; i++) {
 
-	if (clk_prepare_enable(clk))
-		pr_alert("Can't prepare clock");
+		clk = of_clk_get(node, i);
+		if (IS_ERR(clk))
+			pr_alert("[mtk_gpt] Can't get timer clock, idx: %d", i);
 
-	freq = (u32)clk_get_rate(clk);
-	WARN(!freq, "Can't get frequency");
+		if (clk_prepare_enable(clk))
+			pr_alert("[mtk_gpt] Can't prepare clock, idx: %d", i);
+
+		freq[i] = (u32)clk_get_rate(clk);
+		WARN(!freq[i], "[mtk_gpt] Can't get frequency, idx: %d", i);
+	}
 
 	boot_time_value = xgpt_boot_up_time(); /*record the time when init GPT*/
 
-	pr_alert("mt_gpt_init: tmr_regs=0x%lx, tmr_irq=%d, freq=%d\n",
-		(unsigned long)xgpt_timers.tmr_regs, xgpt_timers.tmr_irq, freq);
+	pr_alert("[mtk_gpt] tmr_regs=0x%lx, tmr_irq=%d, freq[0]=%d, freq[1]=%d\n",
+		(unsigned long)xgpt_timers.tmr_regs, xgpt_timers.tmr_irq, freq[0], freq[1]);
 
 	gpt_devs_init();
 	for (i = 0; i < NR_GPTS; i++)
 		__gpt_reset(&gpt_devs[i]);
 
-	setup_clksrc(freq);
-	setup_irq(xgpt_timers.tmr_irq, &gpt_irq);
-	setup_clkevt(freq);
+	setup_clksrc(freq[0]);
 
-	pr_alert("mt_gpt_init: get_cnt_GPT2=%lld\n", mt_gpt_read(NULL)); /* /TODO: remove */
+	setup_irq(xgpt_timers.tmr_irq, &gpt_irq);
+
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	setup_clkevt(freq[1], xgpt_timers.tmr_irq);
+#else
+	setup_clkevt(freq[0], xgpt_timers.tmr_irq);
+#endif
+
+	pr_alert("[mtk_gpt] GPT2: CNT=%lld\n", mt_gpt_read(NULL)); /* /TODO: remove */
 	gpt_update_unlock(save_flags);
 
 	/* Init GPT3 as 32K free-run counter */
@@ -568,22 +616,22 @@ int request_gpt(unsigned int id, unsigned int mode, unsigned int clksrc,
 		unsigned int clkdiv, unsigned int cmp,
 		void (*func)(unsigned long), unsigned int flags)
 {
-unsigned long save_flags;
-struct gpt_device *dev = id_to_dev(id);
+	unsigned long save_flags;
+	struct gpt_device *dev = id_to_dev(id);
 
-if (!dev)
-	return -EINVAL;
+	if (!dev)
+		return -EINVAL;
 
-if (dev->flags & GPT_IN_USE) {
-	pr_err("%s: GPT%d is in use!\n", __func__, (id + 1));
-	return -EBUSY;
-}
+	if (dev->flags & GPT_IN_USE) {
+		pr_err("%s: GPT%d is in use!\n", __func__, (id + 1));
+		return -EBUSY;
+	}
 
-gpt_update_lock(save_flags);
-setup_gpt_dev_locked(dev, mode, clksrc, clkdiv, cmp, func, flags);
-gpt_update_unlock(save_flags);
+	gpt_update_lock(save_flags);
+	setup_gpt_dev_locked(dev, mode, clksrc, clkdiv, cmp, func, flags);
+	gpt_update_unlock(save_flags);
 
-return 0;
+	return 0;
 }
 EXPORT_SYMBOL(request_gpt);
 

@@ -501,8 +501,9 @@
 		compatible = "mediatek,mt6763-timer";
 		reg = <0 0x10008000 0 0x100>;
 		interrupts = <GIC_SPI 166 IRQ_TYPE_LEVEL_LOW>;
-		clocks = <&topckgen TOP_CLK13M>,
-			<&topckgen TOP_CLK32K>;
+		clocks =
+			<&topckgen TOP_CLK13M>,
+			<&clk32k>;
 	};
 
 	dramc0@10004000 {
