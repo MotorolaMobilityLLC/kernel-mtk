@@ -389,6 +389,11 @@ void layering_rule_init(void)
 {
 	l_rule_info.primary_fps = 60;
 	register_layering_rule_ops(&l_rule_ops, &l_rule_info);
+
+	set_layering_opt(LYE_OPT_RPO,
+		disp_helper_get_option(DISP_OPT_RPO));
+	set_layering_opt(LYE_OPT_EXT_LAYER,
+		disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER));
 }
 
 int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level)
@@ -448,6 +453,20 @@ static bool _adaptive_dc_enabled(void)
 		return false;
 
 	return true;
+}
+
+void update_layering_opt_by_disp_opt(enum DISP_HELPER_OPT opt, int value)
+{
+	switch (opt) {
+	case DISP_OPT_OVL_EXT_LAYER:
+		set_layering_opt(LYE_OPT_EXT_LAYER, value);
+		break;
+	case DISP_OPT_RPO:
+		set_layering_opt(LYE_OPT_RPO, value);
+		break;
+	default:
+		break;
+	}
 }
 
 static struct layering_rule_ops l_rule_ops = {

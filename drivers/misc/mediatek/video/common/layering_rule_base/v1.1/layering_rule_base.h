@@ -113,6 +113,14 @@ enum DISP_HW_MAPPING_TB_TYPE {
 	DISP_HW_LAYER_TB,
 };
 
+enum LYE_HELPER_OPT {
+	LYE_OPT_DUAL_PIPE,
+	LYE_OPT_EXT_LAYER,
+	LYE_OPT_RPO,
+
+	LYE_OPT_NUM
+};
+
 struct hrt_sort_entry {
 	struct hrt_sort_entry *head, *tail;
 	struct layer_config *layer_info;
@@ -178,5 +186,7 @@ bool is_yuv(enum DISP_FORMAT format);
 bool is_argb_fmt(enum DISP_FORMAT format);
 bool is_gles_layer(struct disp_layer_info *disp_info, int disp_idx, int layer_idx);
 bool has_layer_cap(struct layer_config *layer_info, enum LAYERING_CAPS l_caps);
+void set_layering_opt(enum LYE_HELPER_OPT opt, int value);
+int get_layering_opt(enum LYE_HELPER_OPT opt);
 
 #endif

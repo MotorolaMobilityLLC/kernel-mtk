@@ -634,6 +634,7 @@ static void process_dbg_opt(const char *opt)
 		char option[100] = "";
 		char *tmp;
 		int value, i;
+		enum DISP_HELPER_OPT helper_opt;
 
 		tmp = (char *)(opt + 7);
 		for (i = 0; i < 100; i++) {
@@ -651,6 +652,8 @@ static void process_dbg_opt(const char *opt)
 
 		DISPMSG("will set option %s to %d\n", option, value);
 		disp_helper_set_option_by_name(option, value);
+		helper_opt = disp_helper_name_to_opt(option);
+		update_layering_opt_by_disp_opt(helper_opt, value);
 	} else if (strncmp(opt, "repaint:", 8) == 0) {
 		int repaint_type;
 

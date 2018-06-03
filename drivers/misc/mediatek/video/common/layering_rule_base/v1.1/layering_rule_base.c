@@ -38,6 +38,36 @@ static struct layering_rule_ops *l_rule_ops;
 static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx);
 static unsigned int adaptive_dc_request;
 
+static struct {
+	enum LYE_HELPER_OPT opt;
+	unsigned int val;
+	const char *desc;
+} help_info[] = {
+	{LYE_OPT_DUAL_PIPE, 0, "LYE_OPT_DUAL_PIPE"}, /* must enable */
+	{LYE_OPT_EXT_LAYER, 1, "LYE_OPT_EXTENDED_LAYER"},   /* must enable */
+	{LYE_OPT_RPO, 0, "LYE_OPT_RPO"}, /* not use now */
+};
+
+void set_layering_opt(enum LYE_HELPER_OPT opt, int value)
+{
+	if (opt >= LYE_OPT_NUM) {
+		DISPMSG("%s invalid layering opt:%d\n", __func__, opt);
+		return;
+	}
+
+	help_info[opt].val = !!value;
+}
+
+int get_layering_opt(enum LYE_HELPER_OPT opt)
+{
+	if (opt >= LYE_OPT_NUM) {
+		DISPMSG("%s invalid layering opt:%d\n", __func__, opt);
+		return -1;
+	}
+
+	return help_info[opt].val;
+}
+
 bool is_ext_path(struct disp_layer_info *disp_info)
 {
 	if (disp_info->layer_num[HRT_SECONDARY] > 0)
@@ -123,7 +153,7 @@ bool is_layer_across_each_pipe(struct layer_config *layer_info)
 {
 	int dst_x, dst_w;
 
-	if (!disp_helper_get_option(DISP_OPT_DUAL_PIPE))
+	if (!get_layering_opt(LYE_OPT_DUAL_PIPE))
 		return true;
 
 	dst_x = layer_info->dst_offset_x;
@@ -205,7 +235,7 @@ int get_phy_ovl_layer_cnt(struct disp_layer_info *disp_info, int disp_idx)
 		if (disp_info->gles_head[disp_idx] >= 0)
 			total_cnt -= (disp_info->gles_tail[disp_idx] - disp_info->gles_head[disp_idx]);
 
-		if (disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER)) {
+		if (get_layering_opt(LYE_OPT_EXT_LAYER)) {
 			for (i = 0 ; i < disp_info->layer_num[disp_idx]; i++) {
 				layer_info = &disp_info->input_config[disp_idx][i];
 				if (is_extended_layer(layer_info) && !is_gles_layer(disp_info, disp_idx, i))
@@ -404,6 +434,7 @@ static void dump_disp_info(struct disp_layer_info *disp_info, enum DISP_DEBUG_LE
 			}
 		}
 	}
+
 }
 
 static void print_disp_info_to_log_buffer(struct disp_layer_info *disp_info)
@@ -742,7 +773,7 @@ static int filter_by_ovl_cnt(struct disp_layer_info *disp_info)
 
 	/* 0->primary display, 1->secondary display */
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
-		if (disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER))
+		if (get_layering_opt(LYE_OPT_EXT_LAYER))
 			ret = ext_id_tunning(disp_info, disp_idx);
 		else
 			ret = _filter_by_ovl_cnt(disp_info, disp_idx);
@@ -1253,7 +1284,7 @@ static int ext_layer_grouping(struct disp_layer_info *disp_info)
 		for (i = 0 ; i < disp_info->layer_num[disp_idx]; i++)
 			disp_info->input_config[disp_idx][i].ext_sel_layer = -1;
 
-		if (!disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER))
+		if (!get_layering_opt(LYE_OPT_EXT_LAYER))
 			continue;
 
 #ifndef LAYERING_SUPPORT_EXT_LAYER_ON_2ND_DISP
@@ -1625,8 +1656,7 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
 		ret = l_rule_ops->rollback_to_gpu_by_hw_limitation(&layering_info);
 
 	/* Check and choose the Resize Scenario */
-	if (disp_helper_get_option(DISP_OPT_RSZ) ||
-	    disp_helper_get_option(DISP_OPT_RPO)) {
+	if (get_layering_opt(LYE_OPT_RPO)) {
 		if (l_rule_ops->resizing_rule)
 			ret = l_rule_ops->resizing_rule(&layering_info);
 		else
