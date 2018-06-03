@@ -461,8 +461,9 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.swocv_oldocv_diff_chr = SWOCV_OLDOCV_DIFF_CHR;
 	fg_cust_data.vbat_oldocv_diff = VBAT_OLDOCV_DIFF;
 	fg_cust_data.swocv_oldocv_diff_emb = SWOCV_OLDOCV_DIFF_EMB;
-	fg_cust_data.swocv_oldocv_diff_emb_lt = SWOCV_OLDOCV_DIFF_EMB_LT;
-	fg_cust_data.swocv_oldocv_diff_emb_tmp = SWOCV_OLDOCV_DIFF_EMB_TMP;
+	fg_cust_data.vir_oldocv_diff_emb = VIR_OLDOCV_DIFF_EMB;
+	fg_cust_data.vir_oldocv_diff_emb_lt = VIR_OLDOCV_DIFF_EMB_LT;
+	fg_cust_data.vir_oldocv_diff_emb_tmp = VIR_OLDOCV_DIFF_EMB_TMP;
 
 	fg_cust_data.pmic_shutdown_time = UNIT_TRANS_60 * PMIC_SHUTDOWN_TIME;
 	fg_cust_data.tnew_told_pon_diff = TNEW_TOLD_PON_DIFF;

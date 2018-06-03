@@ -2361,17 +2361,48 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 778:
 		{
-			fg_cust_data.swocv_oldocv_diff_emb_lt = param;
+			fg_cust_data.vir_oldocv_diff_emb_lt = param;
 			bm_err(
-				"exe_BAT_EC cmd %d, swocv_oldocv_diff_emb_lt=%d\n",
+				"exe_BAT_EC cmd %d, vir_oldocv_diff_emb_lt=%d\n",
 				cmd, param);
 		}
 		break;
 	case 779:
 		{
-			fg_cust_data.swocv_oldocv_diff_emb_tmp = param;
+			fg_cust_data.vir_oldocv_diff_emb_tmp = param;
 			bm_err(
-				"exe_BAT_EC cmd %d, swocv_oldocv_diff_emb_tmp=%d\n",
+				"exe_BAT_EC cmd %d, vir_oldocv_diff_emb_tmp=%d\n",
+				cmd, param);
+		}
+		break;
+	case 780:
+		{
+			fg_cust_data.vir_oldocv_diff_emb = param;
+			bm_err("exe_BAT_EC cmd %d, vir_oldocv_diff_emb=%d\n",
+				cmd, param);
+		}
+		break;
+	case 781:
+		{
+			get_ec()->debug_kill_daemontest = 1;
+			fg_cust_data.dod_init_sel = 12;
+			bm_err("exe_BAT_EC cmd %d,force goto dod_init12=%d\n",
+				cmd, param);
+		}
+		break;
+	case 782:
+		{
+			fg_cust_data.charge_pseudo_full_level = param;
+			bm_err(
+				"exe_BAT_EC cmd %d,fg_cust_data.charge_pseudo_full_level=%d\n",
+				cmd, param);
+		}
+		break;
+	case 783:
+		{
+			fg_cust_data.full_tracking_bat_int2_multiply = param;
+			bm_err(
+				"exe_BAT_EC cmd %d,fg_cust_data.full_tracking_bat_int2_multiply=%d\n",
 				cmd, param);
 		}
 		break;

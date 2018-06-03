@@ -352,8 +352,9 @@ struct fuel_gauge_custom_data {
 	int pmic_shutdown_time;	/* secs */
 	int bat_plug_out_time;	/* min */
 	int swocv_oldocv_diff_emb;	/* 0.1 mv */
-	int swocv_oldocv_diff_emb_lt;
-	int swocv_oldocv_diff_emb_tmp;
+	int vir_oldocv_diff_emb;	/* 0.1 mv */
+	int vir_oldocv_diff_emb_lt;
+	int vir_oldocv_diff_emb_tmp;
 
 	/* fgc & fgv threshold */
 	int difference_fgc_fgv_th1;
