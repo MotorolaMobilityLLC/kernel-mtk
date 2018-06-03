@@ -126,6 +126,9 @@
 
 #include "smi_public.h"
 
+/* Support QoS */
+#include <linux/pm_qos.h>
+
 /* -------------------------------------------------------------------------- */
 /*  */
 /* -------------------------------------------------------------------------- */
@@ -185,6 +188,9 @@ static wait_queue_head_t enc_wait_queue;
 static spinlock_t jpeg_enc_lock;
 static int enc_status;
 static int enc_ready;
+
+/* Support QoS */
+struct pm_qos_request jpgenc_qos_request;
 
 /* ========================================== */
 /* CMDQ */
@@ -771,12 +777,18 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 
 	long timeout_jiff;
 	unsigned int file_size, enc_result_code;
+
 	/* unsigned int _jpeg_enc_int_status; */
 	unsigned int jpeg_enc_wait_timeout = 0;
 	unsigned int cycle_count;
 	unsigned int ret;
 
 	unsigned int *pStatus;
+
+	/* Support QoS */
+	unsigned int emi_bw = 0;
+	unsigned int picSize = 0;
+	unsigned int picPixel = 0;
 
 	/* JpegDrvEncParam cfgEnc; */
 	JPEG_ENC_DRV_IN cfgEnc;
@@ -853,9 +865,33 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		/* src_cfg.height = cfgEnc.encHeight; */
 		/* src_cfg.yuv_format = cfgEnc.encFormat; */
 
+		/* Support QoS */
+		picSize = (cfgEnc.encWidth * cfgEnc.encHeight) / 1000000;
+		/* BW = encode width x height x bpp x 1.6 */
+		/* Assume compress ratio is 0.6 */
+		if (cfgEnc.encFormat == 0x0 || cfgEnc.encFormat == 0x1)
+			picPixel = ((picSize * 2) * 8/5) + 1;
+		else
+			picPixel = ((picSize * 3/2) * 8/5) + 1;
+
+		/* considering FPS, 16MP = 14.5 FPS */
+		if ((picPixel * 20) < 2320) {
+			/* limiting FPS, Upper Bound FPS = 20 */
+			emi_bw = picPixel * 20;
+		} else {
+			emi_bw = 2320 / picPixel;
+			emi_bw = (emi_bw + 1) * picPixel;
+		}
+
+		/* update BW request before trigger HW */
+		pm_qos_update_request(&jpgenc_qos_request, emi_bw);
+
 		/* 1. set src config */
-		JPEG_MSG("[JPEGDRV]SRC_IMG: %x %x, DU:%x, fmt:%x!!\n", cfgEnc.encWidth,
-			 cfgEnc.encHeight, cfgEnc.totalEncDU, cfgEnc.encFormat);
+		JPEG_MSG("[JPEGDRV]SRC_IMG:%x %x, DU:%x, fmt:%x\n",
+			 cfgEnc.encWidth, cfgEnc.encHeight,
+			 cfgEnc.totalEncDU, cfgEnc.encFormat);
+
+		JPEG_MSG("[JPEGDRV]picSize:%d, BW:%d\n", picSize, emi_bw);
 
 		ret =
 		    jpeg_drv_enc_set_src_image(cfgEnc.encWidth, cfgEnc.encHeight, cfgEnc.encFormat,
@@ -974,6 +1010,9 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 			} while (ret < 0);
 		} else
 			JPEG_MSG("[JPEGDRV]JPEG Encoder already done !!\n");
+
+		/* Support QoS: remove BW request after HW done */
+		pm_qos_update_request(&jpgenc_qos_request, 0);
 
 		ret = jpeg_drv_enc_get_result(&file_size);
 
@@ -1402,6 +1441,11 @@ static int jpeg_probe(struct platform_device *pdev)
 		#endif
 	#endif
 	gJpegqDev = *jpegDev;
+
+	/* Support QoS */
+	pm_qos_add_request(&jpgenc_qos_request,
+		PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+
 #else
 	gJpegqDev.encRegBaseVA = (0L | 0xF7003000);
 	gJpegqDev.decRegBaseVA = (0L | 0xF7004000);
@@ -1487,6 +1531,9 @@ static int jpeg_remove(struct platform_device *pdev)
 	free_irq(gJpegqDev.decIrqId, NULL);
   #endif
 #endif
+	/* Support QoS */
+	pm_qos_remove_request(&jpgenc_qos_request);
+
 	JPEG_MSG("Done\n");
 	return 0;
 }
