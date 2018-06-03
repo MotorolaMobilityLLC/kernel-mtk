@@ -20,7 +20,7 @@
 	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799) || \
 	defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || \
 	defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775) || \
-	defined(CONFIG_MACH_MT6739)
+	defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6771)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -39,7 +39,7 @@
 
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) || \
-	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739)
+	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6771)
 #define DITHER0_BASE_NAMING (DISPSYS_DITHER0_BASE)
 #define DITHER0_MODULE_NAMING (DISP_MODULE_DITHER0)
 #else
@@ -48,7 +48,7 @@
 #endif
 
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) || \
-	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739)
+	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6771)
 #define DITHER0_CLK_NAMING (DISP0_DISP_DITHER0)
 #else
 #define DITHER0_CLK_NAMING (DISP0_DISP_DITHER)
@@ -56,7 +56,7 @@
 
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) || \
-	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739)
+	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6771)
 #define DITHER_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -191,7 +191,7 @@ static int disp_dither_power_on(enum DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_MACH_MT6755)
 	/* dither is DCM , do nothing */
 #elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775) || \
-	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
+	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6771)
 	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR
@@ -219,7 +219,7 @@ static int disp_dither_power_off(enum DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_MACH_MT6755)
 	/* dither is DCM , do nothing */
 #elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775) || \
-	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
+	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6771)
 	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR

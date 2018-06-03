@@ -29,8 +29,6 @@
 #include <string.h>
 #elif defined(BUILD_UBOOT)
 #include <asm/arch/mt_gpio.h>
-#else
-#include "mt-plat/upmu_common.h"
 
 #ifdef CONFIG_MTK_LEGACY
 #include <mach/mt_pm_ldo.h>
