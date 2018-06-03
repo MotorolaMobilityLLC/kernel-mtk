@@ -419,6 +419,7 @@ int imgsensor_set_driver(struct IMGSENSOR_SENSOR *psensor)
 
 	imgsensor_mutex_init(psensor_inst);
 	imgsensor_i2c_init(&psensor_inst->i2c_cfg, imgsensor_custom_config[psensor->inst.sensor_idx].i2c_dev);
+	imgsensor_i2c_filter_msg(&psensor_inst->i2c_cfg, true);
 
 	while(drv_idx < MAX_NUM_OF_SUPPORT_SENSOR) {
 		if (pSensorList[drv_idx].init) {
@@ -444,6 +445,8 @@ int imgsensor_set_driver(struct IMGSENSOR_SENSOR *psensor)
 
 		drv_idx++;
 	}
+
+	imgsensor_i2c_filter_msg(&psensor_inst->i2c_cfg, false);
 
 	return ret;
 }

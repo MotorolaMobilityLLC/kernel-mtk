@@ -39,7 +39,7 @@ int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_siz
 
 int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timing)
 {
-	return iBurstWriteReg_multi(a_pSendData, a_sizeSendData, a_sizeSendData, i2cId, timing);
+	return iBurstWriteReg_multi(a_pSendData, a_sizeSendData, i2cId, a_sizeSendData, timing);
 }
 
 int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)

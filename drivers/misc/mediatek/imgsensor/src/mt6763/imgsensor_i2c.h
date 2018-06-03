@@ -36,10 +36,11 @@
 
 struct IMGSENSOR_I2C_STATUS {
 	u8 reserved:7;
-	u8 is_buff_mode:1;
+	u8 filter_msg:1;
 };
 
 struct IMGSENSOR_I2C_INST {
+	struct IMGSENSOR_I2C_STATUS status;
 	struct i2c_client   *pi2c_client;
 	struct i2c_msg       msg[IMGSENSOR_I2C_CMD_LENGTH_MAX];
 };
@@ -58,8 +59,8 @@ enum IMGSENSOR_RETURN imgsensor_i2c_init(
 	struct IMGSENSOR_I2C_CFG *pi2c_cfg,
 	enum IMGSENSOR_I2C_DEV device);
 enum IMGSENSOR_RETURN imgsensor_i2c_delete(struct IMGSENSOR_I2C_CFG *pi2c_cfg);
-int imgsensor_i2c_buffer_mode(int enable);
-int imgsensor_i2c_read(
+enum IMGSENSOR_RETURN imgsensor_i2c_buffer_mode(int enable);
+enum IMGSENSOR_RETURN imgsensor_i2c_read(
 	struct IMGSENSOR_I2C_CFG *pi2c_cfg,
 	u8 *pwrite_data,
 	u16 write_length,
@@ -67,13 +68,15 @@ int imgsensor_i2c_read(
 	u16 read_length,
 	u16 id,
 	int speed);
-int imgsensor_i2c_write(
+enum IMGSENSOR_RETURN imgsensor_i2c_write(
 	struct IMGSENSOR_I2C_CFG *pi2c_cfg,
 	u8 *pwrite_data,
 	u16 write_length,
 	u16 write_per_cycle,
 	u16 id,
 	int speed);
+
+void imgsensor_i2c_filter_msg(struct IMGSENSOR_I2C_CFG *pi2c_cfg, bool en);
 
 #ifdef IMGSENSOR_LEGACY_COMPAT
 void imgsensor_i2c_set_device(struct IMGSENSOR_I2C_CFG *pi2c_cfg);

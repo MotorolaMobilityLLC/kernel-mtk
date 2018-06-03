@@ -108,10 +108,10 @@ static struct i2c_driver gi2c_driver[IMGSENSOR_I2C_DEV_MAX_NUM] = {
 	}
 };
 
-int imgsensor_i2c_buffer_mode(int enable)
+enum IMGSENSOR_RETURN imgsensor_i2c_buffer_mode(int enable)
 {
 	struct IMGSENSOR_I2C_INST *pinst = &gi2c.inst[IMGSENSOR_I2C_BUFF_MODE_DEV];
-	int ret = 0;
+	enum   IMGSENSOR_RETURN    ret   = IMGSENSOR_RETURN_SUCCESS;
 
 	PK_ERR("i2c_buf_mode_en %d\n", enable);
 
@@ -145,7 +145,7 @@ enum IMGSENSOR_RETURN imgsensor_i2c_delete(struct IMGSENSOR_I2C_CFG *pi2c_cfg)
 	return IMGSENSOR_RETURN_SUCCESS;
 }
 
-int imgsensor_i2c_read(
+enum IMGSENSOR_RETURN imgsensor_i2c_read(
 	struct IMGSENSOR_I2C_CFG *pi2c_cfg,
 	u8 *pwrite_data,
 	u16 write_length,
@@ -155,7 +155,7 @@ int imgsensor_i2c_read(
 	int speed)
 {
 	struct IMGSENSOR_I2C_INST *pinst = pi2c_cfg->pinst;
-	int ret = 0;
+	enum   IMGSENSOR_RETURN    ret   = IMGSENSOR_RETURN_SUCCESS;
 
 	mutex_lock(&pi2c_cfg->i2c_mutex);
 
@@ -173,10 +173,11 @@ int imgsensor_i2c_read(
 		pinst->pi2c_client->adapter,
 		pinst->msg,
 		IMGSENSOR_I2C_MSG_SIZE_READ,
-		0,
-		((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000) != IMGSENSOR_I2C_MSG_SIZE_READ) {
+		(pi2c_cfg->pinst->status.filter_msg) ? I2C_A_FILTER_MSG : 0,
+		((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000)
+		!= IMGSENSOR_I2C_MSG_SIZE_READ) {
 		PK_ERR("I2C read failed (0x%x)! speed(0=%d) \n", ret, speed);
-		ret = -1;
+		ret = IMGSENSOR_RETURN_ERROR;
 	}
 
 	mutex_unlock(&pi2c_cfg->i2c_mutex);
@@ -184,7 +185,7 @@ int imgsensor_i2c_read(
 	return ret;
 }
 
-int imgsensor_i2c_write(
+enum IMGSENSOR_RETURN imgsensor_i2c_write(
 	struct IMGSENSOR_I2C_CFG *pi2c_cfg,
 	u8 *pwrite_data,
 	u16 write_length,
@@ -193,11 +194,11 @@ int imgsensor_i2c_write(
 	int speed)
 {
 	struct IMGSENSOR_I2C_INST *pinst = pi2c_cfg->pinst;
+	enum   IMGSENSOR_RETURN    ret   = IMGSENSOR_RETURN_SUCCESS;
 	struct i2c_msg     *pmsg  = pinst->msg;
 	u8                 *pdata = pwrite_data;
 	u8                 *pend  = pwrite_data + write_length;
 	int i   = 0;
-	int ret = 0;
 
 	mutex_lock(&pi2c_cfg->i2c_mutex);
 
@@ -216,15 +217,20 @@ int imgsensor_i2c_write(
 		pinst->pi2c_client->adapter,
 		pinst->msg,
 		i,
-		0,
+		(pi2c_cfg->pinst->status.filter_msg) ? I2C_A_FILTER_MSG : 0,
 		((speed > 0) && (speed <= 1000)) ? speed * 1000 : IMGSENSOR_I2C_SPEED * 1000) != i) {
 		PK_ERR("I2C write failed (0x%x)! speed(0=%d) \n", ret, speed);
-		ret = -1;
+		ret = IMGSENSOR_RETURN_ERROR;
 	}
 
 	mutex_unlock(&pi2c_cfg->i2c_mutex);
 
 	return ret;
+}
+
+void imgsensor_i2c_filter_msg(struct IMGSENSOR_I2C_CFG *pi2c_cfg, bool en)
+{
+	pi2c_cfg->pinst->status.filter_msg = en;
 }
 
 #ifdef IMGSENSOR_LEGACY_COMPAT
