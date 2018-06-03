@@ -21,6 +21,7 @@
 
 #include "public/mc_user.h"
 #include "public/mc_admin.h"	/* MC_ADMIN_DEVNODE */
+#include "public/mc_linux_api.h"
 
 #include "platform.h"		/* MC_PM_RUNTIME */
 #include "main.h"
@@ -617,6 +618,16 @@ static int mobicore_probe(struct platform_device *pdev)
 	err = device_admin_init();
 	if (err)
 		goto fail_creat_dev_admin;
+
+#ifdef TBASE_CORE_SWITCHER
+	int core = COUNT_OF_CPUS - 1;
+
+	if (mc_active_core() != core) {
+		err = mc_switch_core(core);
+		if (err)
+			mc_dev_info("Switch to core %d failed(%d)!\n", core, err);
+	}
+#endif
 
 	return 0;
 
