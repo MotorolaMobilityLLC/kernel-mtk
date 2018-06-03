@@ -47,7 +47,8 @@
 #include <mtk_spm_resource_req_internal.h>
 
 #include <mtk_power_gs_api.h>
-#include <trace/events/mtk_events.h>
+
+#include <trace/events/mtk_idle_event.h>
 
 #include <mt-plat/mtk_io.h>
 
