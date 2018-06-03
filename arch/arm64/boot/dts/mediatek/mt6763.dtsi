@@ -685,6 +685,32 @@
 		reg = <0 0x10014000 0 0x1000>;
 	};
 
+	mdcldma:mdcldma@10014000 {
+		compatible = "mediatek,mdcldma";
+		reg =	<0 0x10014000 0 0x1000>, /*AP_CLDMA_AO*/
+			<0 0x1021b000 0 0x1000>, /*AP_CLDMA_PDN*/
+			<0 0x10209000 0 0x1000>, /*AP_CCIF_BASE*/
+			<0 0x1020a000 0 0x1000>; /*MD_CCIF_BASE*/
+		interrupts = <GIC_SPI 165 IRQ_TYPE_LEVEL_HIGH>, /*IRQ_CLDMA*/
+			     <GIC_SPI 148 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF0*/
+			     <GIC_SPI 149 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF1*/
+			     <GIC_SPI 263 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
+		mediatek,md_id = <0>;
+		mediatek,cldma_capability = <6>;
+		clocks = <&scpsys SCP_SYS_MD1>,
+			<&infracfg_ao INFRACFG_AO_CLDMA_BCLK_CK>,
+			<&infracfg_ao INFRACFG_AO_CCIF_AP_CG>,
+			<&infracfg_ao INFRACFG_AO_CCIF_MD_CG>,
+			<&infracfg_ao INFRACFG_AO_CCIF1_AP_CG>,
+			<&infracfg_ao INFRACFG_AO_CCIF1_MD_CG>;
+		clock-names = "scp-sys-md1-main",
+			"infra-cldma-bclk",
+			"infra-ccif-ap",
+			"infra-ccif-md",
+			"infra-ccif1-ap",
+			"infra-ccif1-md";
+	};
+
 	apcldmaout_ao@10014400 {
 		compatible = "mediatek,apcldmaout_ao";
 		reg = <0 0x10014400 0 0x1000>;
