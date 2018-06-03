@@ -18,8 +18,6 @@
 
 #if SUPPORT_PD
 
-#define PD_DVT 1
-
 /*W1C RCV_MSG_INTR clears RX buffer, choose method 1 or 2*/
 /*method 1: read RX buffer and W1C RCV_MSG_INTR in ISR*/
 /*mtthod 2: leave RCV_MSG_INTR untouched, read RX buffer and W1C it in main loop*/
@@ -29,7 +27,6 @@
 #define CONFIG_USB_PD_DUAL_ROLE
 #define CONFIG_USBC_VCONN
 #define CONFIG_USBC_VCONN_SWAP
-#define CONFIG_COMMON_RUNTIME
 #define CONFIG_USB_PD_ALT_MODE
 #define CONFIG_USB_PD_ALT_MODE_DFP
 
