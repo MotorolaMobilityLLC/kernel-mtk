@@ -10,6 +10,7 @@
 
 #include "sched.h"
 #include "tune.h"
+#include "cpufreq_sched.h"
 
 #define MET_STUNE_DEBUG 1
 
@@ -53,6 +54,18 @@ threshold_gains[] = {
 };
 
 bool global_negative_flag;
+
+static struct target_cap schedtune_target_cap[16];
+static int cpu_cluster_nr;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+static char met_dvfs_info2[5][32] = {
+	"sched_dvfs_boostmin_cid0",
+	"sched_dvfs_boostmin_cid1",
+	"sched_dvfs_boostmin_cid2",
+	"NULL",
+	"NULL"
+};
+#endif
 
 static int
 __schedtune_accept_deltas(int nrg_delta, int cap_delta,
@@ -590,8 +603,27 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	int boost_pct;
 	bool dvfs_on_demand = false;
 	int idx = 0;
+	int floor = 0;
+	int i;
 
-	if (boost_value >= 2000) { /* dvfs short cut */
+	if (boost_value >= 3000) { /* dvfs floor */
+
+		boost_value -= 3000;
+		for (i = 0; i < cpu_cluster_nr; i++) {
+			int max_freq = schedtune_target_cap[i].freq;
+			int max_cap = schedtune_target_cap[i].cap;
+			int floor_cap, floor_freq;
+
+			floor_cap = (max_cap * (int)boost_value / 100);
+			floor_freq = (floor_cap * max_freq / max_cap);
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+			min_boost_freq[i] = mt_cpufreq_find_close_freq(i, floor_freq);
+#endif
+		}
+		floor = 1;
+
+		stune_task_threshold = default_stune_threshold;
+	} else if (boost_value >= 2000) { /* dvfs short cut */
 		boost_value -= 2000;
 		stune_task_threshold = default_stune_threshold;
 
@@ -610,6 +642,16 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		boost_value = 100;
 	else if (boost_value <= -100)
 		boost_value = -100;
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+	if (!floor) {
+		for (i = 0; i < cpu_cluster_nr; i++)
+			min_boost_freq[i] = 0;
+	}
+
+	for (i = 0; i < cpu_cluster_nr; i++)
+		met_tag_oneshot(0, met_dvfs_info2[i], min_boost_freq[i]);
+#endif
 
 	if (boost_value < 0)
 		global_negative_flag = true; /* set all group negative */
@@ -787,8 +829,28 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	unsigned threshold_idx;
 	int boost_pct;
 	bool dvfs_on_demand = false;
+	int floor = 0;
+	int i;
 
-	if (boost >= 2000) { /* dvfs short cut */
+	if (boost >= 3000) { /* dvfs floor */
+
+		boost -= 3000;
+
+		for (i = 0; i < cpu_cluster_nr; i++) {
+			int max_freq = schedtune_target_cap[i].freq;
+			int max_cap = schedtune_target_cap[i].cap;
+			int floor_cap, floor_freq;
+
+			floor_cap = (max_cap * (int)boost / 100);
+			floor_freq = (floor_cap * max_freq / max_cap);
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+			min_boost_freq[i] = mt_cpufreq_find_close_freq(i, floor_freq);
+#endif
+		}
+		floor = 1;
+
+		stune_task_threshold = default_stune_threshold;
+	} else if (boost >= 2000) { /* dvfs short cut */
 		boost -= 2000;
 		stune_task_threshold = default_stune_threshold;
 
@@ -803,6 +865,16 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		stune_task_threshold = default_stune_threshold;
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+	if (!floor) {
+		for (i = 0; i < cpu_cluster_nr; i++)
+			min_boost_freq[i] = 0;
+	}
+
+	for (i = 0; i < cpu_cluster_nr; i++)
+		met_tag_oneshot(0, met_dvfs_info2[i], min_boost_freq[i]);
+#endif
 
 	global_negative_flag = false;
 
@@ -1247,6 +1319,8 @@ schedtune_init(void)
 	struct sched_domain *sd;
 	struct sched_group *sg;
 #endif
+	int i;
+
 	pr_info("schedtune: init normalization constants...\n");
 	ste->max_power = 0;
 	ste->min_power = 0;
@@ -1291,6 +1365,24 @@ schedtune_init(void)
 #endif
 	rcu_read_unlock();
 
+	/* Get capacity & freq information */
+	cpu_cluster_nr = arch_get_nr_clusters();
+
+	for (i = 0; i < cpu_cluster_nr ; i++) {
+		struct cpumask cluster_cpus;
+		int first_cpu;
+		const struct sched_group_energy *pwr_tlb;
+
+		arch_get_cluster_cpus(&cluster_cpus, i);
+		first_cpu = cpumask_first(&cluster_cpus);
+		pwr_tlb = cpu_core_energy(first_cpu);
+
+		schedtune_target_cap[i].cap = pwr_tlb->cap_states[pwr_tlb->nr_cap_states - 1].cap;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+		schedtune_target_cap[i].freq = mt_cpufreq_get_freq_by_idx(i, 0);
+#endif
+	}
+
 	pr_info("schedtune: %-17s min_pwr: %5lu max_pwr: %5lu\n",
 		"SYSTEM", ste->min_power, ste->max_power);
 
@@ -1313,6 +1405,13 @@ schedtune_init(void)
 #else
 	pr_info("schedtune: configured to support global boosting only\n");
 #endif
+
+	/* [FIXME] pass build error */
+	if (false) {
+		mt_cpufreq_set_by_schedule_load_cluster(0, 0);
+		mt_cpufreq_find_close_freq(0, 0);
+		mt_cpufreq_get_freq_by_idx(0, 0);
+	}
 
 	return 0;
 

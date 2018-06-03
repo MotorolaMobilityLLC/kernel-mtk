@@ -5958,6 +5958,7 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 
 	/* Find cpu with sufficient capacity */
 	min_util = boosted_task_util(p);
+
 	if (!is_tiny)
 		target_cpu = select_max_spare_capacity_cpu(p, best_cpu);
 	else
