@@ -135,7 +135,6 @@ static int mAudio_Analog_Mic4_mode = AUDIO_ANALOGUL_MODE_ACC;
 static int mAudio_Vow_Analog_Func_Enable;
 static int mAudio_Vow_Digital_Func_Enable;
 
-static int TrimOffset = 2048;
 static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
 /* static const int DC1unit_in_uv = 21500; */	/* in uv with 0DB */
 static const int DC1devider = 8;	/* in uv */
@@ -762,8 +761,7 @@ void setOffsetTrimBufferGain(unsigned int gain)
 	Ana_Set_Reg(AUDDEC_ANA_CON4, gain << 12, 0x3 << 12);	/* Audio offset trimming buffer gain selection */
 }
 
-static int mHplTrimOffset = 2048;
-static int mHprTrimOffset = 2048;
+static int hpl_dc_offset, hpr_dc_offset;
 static int dctrim_calibrated;
 static const char * const dctrim_control_state[] = { "Not_Yet", "Calibrating", "Calibrated"};
 
@@ -772,14 +770,6 @@ void CalculateDCCompenForEachdB_L(void)
 }
 
 void CalculateDCCompenForEachdB_R(void)
-{
-}
-
-void SetHplTrimOffset(int Offset)
-{
-}
-
-void SetHprTrimOffset(int Offset)
 {
 }
 
@@ -947,17 +937,17 @@ static int get_hp_trim_offset(int channel)
 
 static int pmic_dc_offset_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s(), %d, %d\n", __func__, mHplTrimOffset, mHprTrimOffset);
-	ucontrol->value.integer.value[0] = mHplTrimOffset;
-	ucontrol->value.integer.value[1] = mHprTrimOffset;
+	pr_debug("%s(), %d, %d\n", __func__, hpl_dc_offset, hpr_dc_offset);
+	ucontrol->value.integer.value[0] = hpl_dc_offset;
+	ucontrol->value.integer.value[1] = hpr_dc_offset;
 	return 0;
 }
 
 static int pmic_dc_offset_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_warn("%s(), %ld, %ld\n", __func__, ucontrol->value.integer.value[0], ucontrol->value.integer.value[1]);
-	mHplTrimOffset = ucontrol->value.integer.value[0];
-	mHprTrimOffset = ucontrol->value.integer.value[1];
+	hpl_dc_offset = ucontrol->value.integer.value[0];
+	hpr_dc_offset = ucontrol->value.integer.value[1];
 	return 0;
 }
 
@@ -977,8 +967,8 @@ static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl
 
 	if (ucontrol->value.integer.value[0] == 1) {
 		pr_debug("%s(), Start DCtrim Calibrating", __func__);
-		mHplTrimOffset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
-		mHprTrimOffset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
+		hpl_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
+		hpr_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
 		dctrim_calibrated = 2;
 		pr_debug("%s(), End DCtrim Calibrating", __func__);
 	} else {
@@ -1062,8 +1052,6 @@ void OpenAnalogHeadphone(bool bEnable)
 {
 	pr_warn("OpenAnalogHeadphone bEnable = %d", bEnable);
 	if (bEnable) {
-		SetHplTrimOffset(2048);
-		SetHprTrimOffset(2048);
 		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = 44100;
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true, false);
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] = true;
@@ -1371,10 +1359,10 @@ static void SetHprOffset(int OffsetTrimming)
 
 	/* 10589 for square wave 34uA i-DAC output current */
 	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
-	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
+	pr_debug("%s(), DCoffsetValue = %d, RegValue = 0x%x\n",
+			__func__, DCoffsetValue, RegValue);
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, RegValue, 0xffff);
 }
 
@@ -1386,10 +1374,10 @@ static void SetHplOffset(int OffsetTrimming)
 
 	/* 10589 for square wave 34uA i-DAC output current */
 	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
-	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
+	pr_debug("%s(), DCoffsetValue = %d, RegValue = 0x%x\n",
+			__func__, DCoffsetValue, RegValue);
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, RegValue, 0xffff);
 }
 
@@ -1402,19 +1390,17 @@ static void EnableDcCompensation(bool bEnable)
 
 static void SetHprOffsetTrim(void)
 {
-	int OffsetTrimming = mHprTrimOffset - TrimOffset;
+	int OffsetTrimming = hpr_dc_offset;
 
-	pr_aud("%s OffsetTrimming = %d (mHprTrimOffset(%d)- TrimOffset(%d))\n", __func__,
-	       OffsetTrimming, mHprTrimOffset, TrimOffset);
+	pr_aud("%s(), OffsetTrimming = %d\n", __func__, OffsetTrimming);
 	SetHprOffset(OffsetTrimming);
 }
 
 static void SetHpLOffsetTrim(void)
 {
-	int OffsetTrimming = mHplTrimOffset - TrimOffset;
+	int OffsetTrimming = hpl_dc_offset;
 
-	pr_aud("%s OffsetTrimming = %d (mHplTrimOffset(%d)- TrimOffset(%d))\n", __func__,
-	       OffsetTrimming, mHplTrimOffset, TrimOffset);
+	pr_aud("%s(), OffsetTrimming = %d\n", __func__, OffsetTrimming);
 	SetHplOffset(OffsetTrimming);
 }
 
