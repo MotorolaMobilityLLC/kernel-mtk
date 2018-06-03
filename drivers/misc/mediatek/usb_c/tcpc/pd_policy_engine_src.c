@@ -100,6 +100,12 @@ void pe_src_negotiate_capabilities_entry(
 	}
 #endif	/* CONFIG_USB_PD_REV30 */
 
+#ifdef CONFIG_PD_TA_WAKELOCK
+	/* wakelock, no suspend waiting PD event */
+	if (!pd_port->pd_prev_connected)
+		wake_lock(&pd_port->tcpc_dev->attach_wake_lock);
+#endif /* CONFIG_PD_TA_WAKELOCK */
+
 	pd_port->pd_connected = true;
 	pd_port->pd_prev_connected = true;
 
