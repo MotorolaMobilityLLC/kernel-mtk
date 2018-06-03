@@ -42,7 +42,7 @@ static inline bool is_ux_fbc_active(void)
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	return !(fbc_debug || fbc_game || !fbc_touch);
+	return !(fbc_debug || !fbc_touch);
 }
 
 inline void fbc_tracer(int pid, char *name, int count)
@@ -223,16 +223,11 @@ static enum hrtimer_restart mt_twanted_timeout(struct hrtimer *timer)
 /*--------------------FRAME HINT OP------------------------*/
 static void notify_act_switch(int begin)
 {
-	mutex_lock(&notify_lock);
-	if (!is_ux_fbc_active()) {
-		mutex_unlock(&notify_lock);
-		return;
-	}
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
 
 	if (!begin)
 		act_switched = 1;
-
-	mutex_unlock(&notify_lock);
 }
 
 static void notify_no_render_legacy(void)
@@ -439,16 +434,20 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		mutex_unlock(&notify_lock);
 	} else if (strncmp(cmd, "touch", 5) == 0) {
 		mutex_lock(&notify_lock);
-		if (fbc_debug || fbc_game) {
+		if (fbc_debug) {
 			mutex_unlock(&notify_lock);
 			return cnt;
 		}
 		fbc_op->touch(arg);
 		mutex_unlock(&notify_lock);
 	} else if (strncmp(cmd, "act_switch", 5) == 0) {
-		if (fbc_debug || fbc_game)
+		mutex_lock(&notify_lock);
+		if (fbc_debug) {
+			mutex_unlock(&notify_lock);
 			return cnt;
+		}
 		notify_act_switch(arg);
+		mutex_unlock(&notify_lock);
 	} else if (strncmp(cmd, "init", 4) == 0) {
 		touch_boost_value = arg;
 		touch_capacity = arg;
