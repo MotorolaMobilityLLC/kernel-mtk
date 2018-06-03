@@ -26,6 +26,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
 ifeq ($(CONFIG_TCPC_CLASS),y)
 	ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
 endif
+ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/u3_switch
+ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 
 ifeq ($(CONFIG_USB_DEBUG),y)
