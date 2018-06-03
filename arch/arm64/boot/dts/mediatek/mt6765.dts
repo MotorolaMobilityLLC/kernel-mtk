@@ -2660,6 +2660,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	lk_charger: lk_charger {
 		compatible = "mediatek,lk_charger";
+		enable_anime;
 		enable_pe_plus;
 		power_path_support;
 		max_charger_voltage = <6500000>;
