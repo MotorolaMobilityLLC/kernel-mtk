@@ -75,6 +75,7 @@ extern int wifi_reset_end(ENUM_RESET_STATUS_T);
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
+
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -88,6 +89,7 @@ extern int wifi_reset_end(ENUM_RESET_STATUS_T);
 #define GL_RESET_TRIGGER(_prAdapter, _u4Flags) \
 	glResetTrigger(_prAdapter, (_u4Flags), (const PUINT_8)__FILE__, __LINE__)
 #else
+#define GL_RESET_TRIGGER(_prAdapter, _u4Flags) \
 	DBGLOG(INIT, INFO, "DO NOT support chip reset\n")
 #endif
 /*******************************************************************************
@@ -101,6 +103,8 @@ VOID glResetUninit(VOID);
 VOID glSendResetRequest(VOID);
 
 BOOLEAN kalIsResetting(VOID);
+
+BOOLEAN kalIsResetTriggered(VOID);
 
 BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, UINT_32 u4RstFlag, const PUINT_8 pucFile, UINT_32 u4Line);
 

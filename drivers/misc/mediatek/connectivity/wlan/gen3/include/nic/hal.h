@@ -26,6 +26,7 @@
 #ifndef _HAL_H
 #define _HAL_H
 
+#include <gl_rst.h>
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
 ********************************************************************************
@@ -230,7 +231,11 @@ do { \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
-	kalDevRegRead(_prAdapter->prGlueInfo, _u4Offset, _pu4Value); \
+	if (kalIsResetting() || kalIsResetTriggered()) { \
+		DBGLOG(HAL, WARN, "Whole chip reset %s !! ignore HAL_MCR_HIF_RD access!!\n", \
+		       kalIsResetting() ? "on-going" : "triggered"); \
+	} else \
+		kalDevRegRead(_prAdapter->prGlueInfo, _u4Offset, _pu4Value); \
 } while (0)
 
 #define HAL_MCR_WR(_prAdapter, _u4Offset, _u4Value) \
@@ -253,7 +258,11 @@ do { \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
-	kalDevRegWrite(_prAdapter->prGlueInfo, _u4Offset, _u4Value); \
+	if (kalIsResetting() || kalIsResetTriggered()) {\
+		DBGLOG(HAL, WARN, "Whole chip reset %s !! ignore HAL_MCR_HIF_WR access!!\n", \
+		       kalIsResetting() ? "on-going" : "triggered"); \
+	} else \
+		kalDevRegWrite(_prAdapter->prGlueInfo, _u4Offset, _u4Value); \
 } while (0)
 
 #define HAL_PORT_RD(_prAdapter, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
@@ -264,7 +273,11 @@ do { \
 	if (_prAdapter->fgIsFwOwn == TRUE) { \
 		DBGLOG(HAL, ERROR, "Power control is FW own!! ignore HAL_PORT_RD access!!\n"); \
 	} else { \
-		kalDevPortRead(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize); \
+		if (kalIsResetting() || kalIsResetTriggered()) { \
+			DBGLOG(HAL, WARN, "Whole chip reset %s !! ignore HAL_PORT_RD access!!\n", \
+			       kalIsResetting() ? "on-going" : "triggered"); \
+		} else if (!kalDevPortRead(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize)) \
+			GL_RESET_TRIGGER(_prAdapter, RST_FLAG_DO_CORE_DUMP); \
 	} \
 } while (0)
 
@@ -276,7 +289,11 @@ do { \
 	if (_prAdapter->fgIsFwOwn == TRUE) { \
 		DBGLOG(HAL, ERROR, "Power control is FW own!! ignore HAL_PORT_WR access!!\n"); \
 	} else { \
-		kalDevPortWrite(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize); \
+		if (kalIsResetting() || kalIsResetTriggered()) { \
+			DBGLOG(HAL, WARN, "Whole chip reset %s !! ignore HAL_PORT_WR access!!\n", \
+			       kalIsResetting() ? "on-going" : "triggered"); \
+		} else if (!kalDevPortWrite(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize)) \
+			GL_RESET_TRIGGER(_prAdapter, RST_FLAG_DO_CORE_DUMP); \
 	} \
 } while (0)
 

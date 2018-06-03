@@ -599,14 +599,15 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 #endif /* CONF_MTK_AHB_DMA */
 	UINT_32 idx, u4DwNum;
 	UINT_32 *p;
+	BOOLEAN ret = TRUE;
 
 	sdio_gen3_cmd53_info info;
 	struct sdio_func *func = &g_sdio_func;
 	UINT_32 count;
 
 	/* sanity check */
-	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE)) {
-		DBGLOG(HAL, ERROR, "WlanDmaFatalErr: %d, fgIsResetting: %d\n", WlanDmaFatalErr, fgIsResetting);
+	if (WlanDmaFatalErr) {
+		DBGLOG(HAL, ERROR, "WlanDmaFatalErr: %d\n", WlanDmaFatalErr);
 		return FALSE;
 	}
 
@@ -723,23 +724,26 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			DBGLOG(HAL, ERROR, "fatal error! reset DMA!\n");
 			if (HifInfo->DmaOps->DmaReset != NULL)
 				HifInfo->DmaOps->DmaReset(HifInfo);
+			ret = FALSE;
 			goto DMA_DONE;
 		}
 		HifInfo->HifDmaFinishFlag = 0;
 #else
 		{
 		ULONG PollTimeout = jiffies + HZ * 5;
-
 		do {
 			if (time_before(jiffies, PollTimeout)) {
 				/* Do nothing */
 				/* not timeout, continue to poll */
 			} else {
+				if (HifInfo->DmaOps->DmaRegDump != NULL)
+					HifInfo->DmaOps->DmaRegDump(HifInfo);
 
 #if (CONF_HIF_CONNSYS_DBG == 0)
 				DBGLOG(HAL, ERROR, "fatal error! reset DMA!\n");
 				if (HifInfo->DmaOps->DmaReset != NULL)
 					HifInfo->DmaOps->DmaReset(HifInfo);
+				ret = FALSE;
 				goto DMA_DONE;
 #else
 				/*
@@ -750,10 +754,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 				 * from being full and CONNSYS reset, never break here, just stuck in loop.
 				 */
 				DBGLOG(HAL, WARN, "DMA timeout 5s... (%lu %lu)\n", jiffies, PollTimeout);
-
-				if (HifInfo->DmaOps->DmaRegDump != NULL)
-					HifInfo->DmaOps->DmaRegDump(HifInfo);
-
 				WlanDmaFatalErr = 1;
 
 #endif /* CONF_HIF_CONNSYS_DBG */
@@ -784,7 +784,7 @@ DMA_DONE:
 		/* move behind since clk_disable_unprepare can only be called in non-atomic context */
 		HifInfo->DmaOps->DmaClockCtrl(HifInfo, FALSE);
 
-		DBGLOG(HAL, TRACE, "DMA RX OK!\n");
+		DBGLOG(HAL, TRACE, "DMA RX %s!\n", ret ? "OK" : "FAIL");
 	} else
 #endif /* CONF_MTK_AHB_DMA */
 	{
@@ -804,7 +804,7 @@ DMA_DONE:
 		DBGLOG(HAL, TRACE, "PIO RX OK!\n");
 	}
 
-	return TRUE;
+	return ret;
 }				/* end of kalDevPortRead() */
 
 /*----------------------------------------------------------------------------*/
@@ -830,14 +830,15 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #endif /* CONF_MTK_AHB_DMA */
 	UINT_32 idx, u4DwNum;
 	UINT_32 *p;
+	BOOLEAN ret = TRUE;
 
 	sdio_gen3_cmd53_info info;
 	struct sdio_func *func = &g_sdio_func;
 	UINT_32 count;
 
 	/* sanity check */
-	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE)) {
-		DBGLOG(HAL, ERROR, "WlanDmaFatalErr: %d, fgIsResetting: %d\n", WlanDmaFatalErr, fgIsResetting);
+	if (WlanDmaFatalErr) {
+		DBGLOG(HAL, ERROR, "WlanDmaFatalErr: %d\n", WlanDmaFatalErr);
 		return FALSE;
 	}
 
@@ -937,6 +938,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			DBGLOG(HAL, ERROR, "fatal error! reset DMA!\n");
 			if (HifInfo->DmaOps->DmaReset != NULL)
 				HifInfo->DmaOps->DmaReset(HifInfo);
+			ret = FALSE;
 			goto DMA_DONE;
 		}
 		HifInfo->HifDmaFinishFlag = 0;
@@ -949,19 +951,17 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 				/* Do nothing */
 				/* not timeout, continue to poll */
 			} else {
+				if (HifInfo->DmaOps->DmaRegDump != NULL)
+					HifInfo->DmaOps->DmaRegDump(HifInfo);
 
 #if (CONF_HIF_CONNSYS_DBG == 0)
 				DBGLOG(HAL, ERROR, "fatal error! reset DMA!\n");
 				if (HifInfo->DmaOps->DmaReset != NULL)
 					HifInfo->DmaOps->DmaReset(HifInfo);
+				ret = FALSE;
 				goto DMA_DONE;
 #else
-
 				DBGLOG(HAL, WARN, "DMA timeout 5s... (%lu %lu)\n", jiffies, PollTimeout);
-
-				if (HifInfo->DmaOps->DmaRegDump != NULL)
-					HifInfo->DmaOps->DmaRegDump(HifInfo);
-
 				WlanDmaFatalErr = 1;
 
 #endif /* CONF_HIF_CONNSYS_DBG */
@@ -989,7 +989,7 @@ DMA_DONE:
 		/* move behind since clk_disable_unprepare can only be called in non-atomic context */
 		HifInfo->DmaOps->DmaClockCtrl(HifInfo, FALSE);
 
-		DBGLOG(HAL, TRACE, "DMA TX OK!\n");
+		DBGLOG(HAL, TRACE, "DMA TX %s!\n", ret ? "OK" : "FAIL");
 	} else
 #endif /* CONF_MTK_AHB_DMA */
 	{
@@ -1009,7 +1009,7 @@ DMA_DONE:
 		DBGLOG(HAL, TRACE, "PIO TX OK!\n");
 	}
 
-	return TRUE;
+	return ret;
 }				/* end of kalDevPortWrite() */
 
 /*******************************************************************************
