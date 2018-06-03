@@ -7519,6 +7519,9 @@ void __init trace_init(void)
 		if (WARN_ON(!tracepoint_print_iter))
 			tracepoint_printk = 0;
 	}
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
+	extmem_init();
+#endif
 	tracer_alloc_buffers();
 	trace_event_init();
 }
