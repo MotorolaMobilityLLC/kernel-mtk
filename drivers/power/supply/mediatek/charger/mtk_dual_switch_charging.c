@@ -115,6 +115,12 @@ dual_swchg_select_charging_current_limit(struct charger_manager *info)
 		goto done;
 	}
 
+	if (info->atm_enabled == true && (info->chr_type == STANDARD_HOST ||
+	    info->chr_type == CHARGING_HOST)) {
+		pdata->input_current_limit = 100000; /* 100mA */
+		goto done;
+	}
+
 	if (mtk_pe40_get_is_connect(info)) {
 		if (is_dual_charger_supported(info)) {
 			/* Slave charger may not have input current control */
@@ -376,10 +382,11 @@ done:
 		_uA_to_mA(pdata2->input_current_limit),
 		_uA_to_mA(pdata2->charging_current_limit));
 
-	pr_notice("type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d\n",
+	pr_notice("type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d\n",
 		info->chr_type, info->usb_unlimited,
 		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state,
-		_uA_to_mA(pdata->input_current_limit_by_aicl));
+		_uA_to_mA(pdata->input_current_limit_by_aicl),
+		info->atm_enabled);
 
 	charger_dev_set_input_current(info->chg1_dev,
 					pdata->input_current_limit);

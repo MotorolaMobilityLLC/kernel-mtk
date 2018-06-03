@@ -44,10 +44,11 @@ void mtk_pdc_check_cable_impedance(struct charger_manager *pinfo)
 
 	get_monotonic_boottime(&ptime[0]);
 
-	/* Set ichg = 2500mA, set MIVR=4.5V */
+	/* Set ichg = 2500mA, set MIVR */
 	charger_dev_set_charging_current(pinfo->chg1_dev, 2500000);
 	mdelay(240);
-	ret = charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
+	ret = charger_dev_set_mivr(pinfo->chg1_dev,
+				pinfo->data.min_charger_voltage);
 	if (ret < 0)
 		chr_err("%s: failed, ret = %d\n", __func__, ret);
 

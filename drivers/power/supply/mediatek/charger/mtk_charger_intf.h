@@ -139,6 +139,7 @@ struct charger_custom_data {
 	int battery_cv;	/* uv */
 	int max_charger_voltage;
 	int max_charger_voltage_setting;
+	int min_charger_voltage;
 
 	int usb_charger_current_suspend;
 	int usb_charger_current_unconfigured;
@@ -330,6 +331,9 @@ struct charger_manager {
 
 	/* kpoc */
 	atomic_t enable_kpoc_shdn;
+
+	/* ATM */
+	bool atm_enabled;
 };
 
 /* charger related module interface */
