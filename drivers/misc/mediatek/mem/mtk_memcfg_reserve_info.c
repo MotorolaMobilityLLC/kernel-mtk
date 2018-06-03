@@ -196,7 +196,7 @@ static unsigned long long get_memtotal(void)
 	unsigned long long memtotal;
 
 	si_meminfo(&i);
-	memtotal = i.totalram << PAGE_SHIFT;
+	memtotal = (unsigned long long)i.totalram << PAGE_SHIFT;
 
 	return memtotal;
 }
