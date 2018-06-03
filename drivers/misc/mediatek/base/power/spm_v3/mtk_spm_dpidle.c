@@ -53,9 +53,6 @@
 #ifdef CONFIG_MTK_ICCS_SUPPORT
 #include <mtk_hps_internal.h>
 #endif
-#ifndef SPM_NO_GPT
-#include <mach/mtk_gpt.h>
-#endif
 /*
  * only for internal debug
  */
@@ -1262,10 +1259,6 @@ enum wk_reason spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond,
 	spm_dpidle_pcm_setup_before_wfi(false, cpu, pcmdesc,
 					pwrctrl, operation_cond);
 
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
-#endif
-
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
 
 	spm_dpidle_notify_spm_before_wfi_async_wait();
@@ -1288,10 +1281,6 @@ enum wk_reason spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond,
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_WFI);
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
-
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[2]);
-#endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_WFI);
 

@@ -63,9 +63,6 @@
 #ifndef SPM_NO_CPUFREQ
 #include <mtk_cpufreq_api.h>
 #endif
-#ifndef SPM_NO_GPT
-#include <mach/mtk_gpt.h>
-#endif
 #define IDLE_TAG     "Power/swap "
 #define idle_err(fmt, args...)		pr_info(IDLE_TAG fmt, ##args)
 #define idle_warn(fmt, args...)		pr_info(IDLE_TAG fmt, ##args)
@@ -84,11 +81,8 @@
 		pr_info(IDLE_TAG fmt, ##args); \
 	}
 
-#define IDLE_GPT GPT4
 #define log2buf(p, s, fmt, args...) \
 	(p += scnprintf(p, sizeof(s) - strlen(s), fmt, ##args))
-
-#define USING_STD_TIMER_OPS
 
 static bool mt_idle_chk_golden;
 static bool mt_dpidle_chk_golden;
@@ -371,32 +365,6 @@ void mtk_idle_notifier_call_chain(unsigned long val)
 }
 EXPORT_SYMBOL_GPL(mtk_idle_notifier_call_chain);
 
-#ifndef USING_STD_TIMER_OPS
-/* Workaround of static analysis defect*/
-int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
-{
-	unsigned int val[2] = {0};
-	int ret = 0;
-
-	ret = gpt_get_cnt(id, val);
-	*ptr = val[0];
-
-	return ret;
-}
-
-int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
-{
-	unsigned int val[2] = {0};
-	int ret = 0;
-
-	ret = gpt_get_cmp(id, val);
-	*ptr = val[0];
-
-	return ret;
-}
-#endif
-
-#ifdef USING_STD_TIMER_OPS
 static bool next_timer_criteria_check(unsigned int timer_criteria)
 {
 	unsigned int timer_left;
@@ -411,72 +379,6 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 		ret = false;
 
 	return ret;
-}
-#else
-static bool next_timer_criteria_check(unsigned int timer_criteria)
-{
-	return true;
-}
-#endif
-
-static void timer_setting_before_wfi(bool f26m_off)
-{
-#ifndef USING_STD_TIMER_OPS
-#ifdef CONFIG_SMP
-	unsigned int timer_left = 0;
-
-	timer_left = localtimer_get_counter();
-
-	if ((int)timer_left <= 0)
-		/* Trigger idle_gpt Timeout imediately */
-		gpt_set_cmp(IDLE_GPT, 1);
-	else {
-		if (f26m_off)
-			gpt_set_cmp(IDLE_GPT, div_u64(timer_left, 406.25));
-	else
-		gpt_set_cmp(IDLE_GPT, timer_left);
-	}
-
-	if (f26m_off)
-		gpt_set_clk(IDLE_GPT, GPT_CLK_SRC_RTC, GPT_CLK_DIV_1);
-
-	start_gpt(IDLE_GPT);
-#else
-	gpt_get_cnt(GPT1, &timer_left);
-#endif
-#endif
-}
-
-static void timer_setting_after_wfi(bool f26m_off)
-{
-#ifndef USING_STD_TIMER_OPS
-#ifdef CONFIG_SMP
-	if (gpt_check_and_ack_irq(IDLE_GPT)) {
-		localtimer_set_next_event(1);
-		if (f26m_off)
-			gpt_set_clk(IDLE_GPT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1);
-	} else {
-		/* waked up by other wakeup source */
-		unsigned int cnt, cmp;
-
-		idle_gpt_get_cnt(IDLE_GPT, &cnt);
-		idle_gpt_get_cmp(IDLE_GPT, &cmp);
-		if (unlikely(cmp < cnt)) {
-			idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n",
-					__func__, IDLE_GPT + 1, cnt, cmp);
-			/* BUG(); */
-		}
-
-		if (f26m_off) {
-			localtimer_set_next_event((cmp - cnt) * 1625 / 4);
-			gpt_set_clk(IDLE_GPT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1);
-		} else {
-		localtimer_set_next_event(cmp - cnt);
-		}
-		stop_gpt(IDLE_GPT);
-	}
-#endif
-#endif
 }
 
 static unsigned int idle_spm_lock;
@@ -685,13 +587,10 @@ out:
 
 void soidle3_before_wfi(int cpu)
 {
-	timer_setting_before_wfi(true);
 }
 
 void soidle3_after_wfi(int cpu)
 {
-	timer_setting_after_wfi(true);
-
 	soidle3_cnt[cpu]++;
 }
 
@@ -802,14 +701,10 @@ void soidle_before_wfi(int cpu)
 #ifdef CONFIG_MACH_MT6799
 	faudintbus_pll2sq();
 #endif
-
-	timer_setting_before_wfi(false);
 }
 
 void soidle_after_wfi(int cpu)
 {
-	timer_setting_after_wfi(false);
-
 #ifdef CONFIG_MACH_MT6799
 	faudintbus_sq2pll();
 #endif
@@ -1292,8 +1187,6 @@ static unsigned int dpidle_pre_process(int cpu)
 #endif
 #endif
 
-	timer_setting_before_wfi(false);
-
 	/* Check clkmux condition after */
 	memset(clkmux_block_mask[IDLE_TYPE_DP], 0,
 		NF_CLK_CFG * sizeof(unsigned int));
@@ -1306,7 +1199,6 @@ static unsigned int dpidle_pre_process(int cpu)
 static void dpidle_post_process(int cpu, unsigned int op_cond)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	timer_setting_after_wfi(false);
 
 #ifdef CONFIG_MACH_MT6799
 	faudintbus_sq2pll();
@@ -2590,21 +2482,6 @@ static int mtk_cpuidle_debugfs_init(void)
 	return 0;
 }
 
-void mtk_idle_gpt_init(void)
-{
-#ifndef USING_STD_TIMER_OPS
-	int err = 0;
-
-	err = request_gpt(IDLE_GPT, GPT_ONE_SHOT,
-			GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
-			  0, NULL, GPT_NOAUTOEN);
-
-	if (err)
-		idle_warn("[%s] fail to request GPT %d\n",
-				__func__, IDLE_GPT + 1);
-#endif
-}
-
 static void mtk_idle_profile_init(void)
 {
 	mtk_idle_twam_init();
@@ -2648,8 +2525,6 @@ void __init mtk_cpuidle_framework_init(void)
 
 	iomap_init();
 	mtk_cpuidle_debugfs_init();
-
-	mtk_idle_gpt_init();
 
 #if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 	dpidle_by_pass_pg = true;
