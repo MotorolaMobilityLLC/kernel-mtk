@@ -1301,23 +1301,44 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_CAPTURE_FRAMEBUFFER:
 		{
-			unsigned long pbuf = 0;
+			unsigned long dst_pbuf = 0;
+			unsigned long *src_pbuf = 0;
+			unsigned int pixel_bpp = primary_display_get_bpp() / 8;
+			unsigned int fbsize = DISP_GetScreenHeight() * DISP_GetScreenWidth() * pixel_bpp;
 
-			if (copy_from_user(&pbuf, (void __user *)arg, sizeof(pbuf))) {
+			if (copy_from_user(&dst_pbuf, (void __user *)arg, sizeof(dst_pbuf))) {
 				MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 				r = -EFAULT;
 			} else {
-				dprec_logger_start(DPREC_LOGGER_WDMA_DUMP, 0, 0);
-				primary_display_capture_framebuffer_ovl(pbuf, UFMT_BGRA8888);
-				dprec_logger_done(DPREC_LOGGER_WDMA_DUMP, 0, 0);
+				src_pbuf = vmalloc(fbsize);
+				if (!src_pbuf) {
+					MTKFB_LOG("[FB]: vmalloc capture src_pbuf failed! line:%d\n", __LINE__);
+					r = -EFAULT;
+				} else {
+					dprec_logger_start(DPREC_LOGGER_WDMA_DUMP, 0, 0);
+					r = primary_display_capture_framebuffer_ovl((unsigned long)src_pbuf,
+						UFMT_BGRA8888);
+					if (r < 0)
+						DISPERR("primary display capture framebuffer failed!\n");
+					dprec_logger_done(DPREC_LOGGER_WDMA_DUMP, 0, 0);
+					if (copy_to_user((unsigned long *)dst_pbuf, src_pbuf, fbsize)) {
+						MTKFB_LOG("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+						r = -EFAULT;
+					}
+					vfree(src_pbuf);
+				}
 			}
 
 			return r;
 		}
 
+
 	case MTKFB_SLT_AUTO_CAPTURE:
 		{
 			struct fb_slt_catpure capConfig;
+			unsigned long *src_pbuf = 0;
+			unsigned int pixel_bpp = primary_display_get_bpp() / 8;
+			unsigned int fbsize = DISP_GetScreenHeight() * DISP_GetScreenWidth() * pixel_bpp;
 
 			if (copy_from_user(&capConfig, (void __user *)arg, sizeof(capConfig))) {
 				MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
@@ -1346,13 +1367,27 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 					format = UFMT_ABGR8888;
 					break;
 				}
-				primary_display_capture_framebuffer_ovl((unsigned long)
-									capConfig.outputBuffer,
+				src_pbuf = vmalloc(fbsize);
+				if (!src_pbuf) {
+					MTKFB_LOG("[FB]: vmalloc capture src_pbuf failed! line:%d\n", __LINE__);
+					return -EFAULT;
+				}
+
+				r = primary_display_capture_framebuffer_ovl((unsigned long)src_pbuf,
 									format);
+				if (r < 0)
+					DISPERR("primary display capture framebuffer failed!\n");
+
+				if (copy_to_user((unsigned long *)capConfig.outputBuffer, src_pbuf, fbsize)) {
+					MTKFB_LOG("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+					r = -EFAULT;
+				}
+				vfree(src_pbuf);
 			}
 
 			return r;
 		}
+
 	case MTKFB_GET_OVERLAY_LAYER_INFO:
 		{
 			struct fb_overlay_layer_info layerInfo;
@@ -1741,7 +1776,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			pbuf = compat_alloc_user_space(sizeof(unsigned long));
 			ret = get_user(l, data32);
 			ret |= put_user(l, pbuf);
-			primary_display_capture_framebuffer_ovl(*pbuf, UFMT_BGRA8888);
+			ret = mtkfb_ioctl(info, MTKFB_CAPTURE_FRAMEBUFFER, (unsigned long)pbuf);
 			break;
 		}
 	case COMPAT_MTKFB_TRIG_OVERLAY_OUT:
