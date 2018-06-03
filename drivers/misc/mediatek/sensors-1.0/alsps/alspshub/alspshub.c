@@ -16,6 +16,7 @@
 #include <hwmsensor.h>
 #include <SCP_sensorHub.h>
 #include "SCP_power_monitor.h"
+#include <linux/pm_wakeup.h>
 
 
 #define ALSPSHUB_DEV_NAME     "alsps_hub_pl"
@@ -49,6 +50,7 @@ struct alspshub_ipi_data {
 	bool ps_factory_enable;
 	bool als_android_enable;
 	bool ps_android_enable;
+	struct wakeup_source ps_wake_lock;
 };
 
 static struct alspshub_ipi_data *obj_ipi_data;
@@ -300,8 +302,10 @@ static int ps_recv_data(struct data_unit_t *event, void *reserved)
 
 	if (event->flush_action == FLUSH_ACTION)
 		ps_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	else if (event->flush_action == DATA_ACTION) {
+		__pm_wakeup_event(&obj->ps_wake_lock, msecs_to_jiffies(100));
 		ps_data_report(event->proximity_t.oneshot, SENSOR_STATUS_ACCURACY_HIGH);
+	}
 	return 0;
 }
 static int als_recv_data(struct data_unit_t *event, void *reserved)
@@ -846,6 +850,7 @@ static int alspshub_probe(struct platform_device *pdev)
 		APS_PR_ERR("tregister fail = %d\n", err);
 		goto exit_create_attr_failed;
 	}
+	wakeup_source_init(&obj->ps_wake_lock, "ps_wake_lock");
 
 	alspshub_init_flag = 0;
 	APS_LOG("%s: OK\n", __func__);
