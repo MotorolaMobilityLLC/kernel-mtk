@@ -632,6 +632,7 @@ CONFIG_MTK_PICKUPHUB,PROJECT,weiqi.fu,,,,,
 CONFIG_MTK_PLATFORM,PLATFORM,,project config should be platform,mt6758,mt6771,mt6765,mt6765
 CONFIG_MTK_PMIC_CHIP_MT6353,PROJECT,jimmy-yj.huang,,,,,
 CONFIG_MTK_PMIC_NEW_ARCH,PROJECT,jimmy-yj.huang,,,,,
+CONFIG_MTK_PMIC_WRAP_HAL,PLATFORM,brian-py.chen,pmic wrap support option,X,X,y,y
 CONFIG_MTK_PSCI,PLATFORM,scott.shu,,y,X,X,y
 CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT,PROJECT,wy.chuang,(<NEW>new config in this commit 0a8d9b64437012ca7ccadfe1338fa26d74f49b16),,,,
 CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT,PROJECT,elvin.lin,,,,,
