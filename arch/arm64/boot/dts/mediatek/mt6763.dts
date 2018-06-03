@@ -1232,8 +1232,8 @@
 		seninf_7_fifo_full = <334>;
 		dsi0_te_from_infra = <898>;
 		max_prefetch_cnt = <4>;
-		prefetch_size = <160 32 32 32>;
-		sram_size_cpr_64 = <384>;
+		prefetch_size = <256 32 32 32>;
+		sram_size_cpr_64 = <272>;
 		mmsys_config = <&mmsys_config>;
 		mm_mutex = <&disp_mutex>;
 		mdp_rdma0 = <&mdp_rdma0>;
