@@ -785,7 +785,7 @@ static int get_devinfo(void)
 	 * Since MT6739 has the 2L cluster only, Picachu just needs
 	 * to configure the MTDES/BDES/MDES of the EEM_CTRL_2L cluster.
 	 */
-	det = id_to_eem_det(EEM_CTRL_2L);
+	det = id_to_eem_det(EEM_DET_2L);
 	if (det->pi_efuse) {
 		/* Update BDES */
 		val[1] = (val[1] & 0xFFFFFF00) | ((det->pi_efuse >> PI_PTP1_BDES_START_BIT) & 0xff);
@@ -4840,7 +4840,7 @@ void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 }
 #endif
 
-void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse)
+void eem_set_pi_efuse(enum eem_det_id id, unsigned int pi_efuse)
 {
 	struct eem_det *det = id_to_eem_det(id);
 
