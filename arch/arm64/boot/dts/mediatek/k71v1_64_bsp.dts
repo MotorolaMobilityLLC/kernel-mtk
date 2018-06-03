@@ -554,6 +554,82 @@ initcall_debug=1";
 	status = "okay";
 };
 
+/* UART GPIO */
+&apuart0 {
+	pinctrl-names = "uart0_gpio_default",
+			"uart0_rx_set",
+			"uart0_rx_clear",
+			"uart0_tx_set",
+			"uart0_tx_clear";
+	pinctrl-0 = <&uart0_gpio_def_cfg>;
+	pinctrl-1 = <&uart0_rx_set_cfg>;
+	pinctrl-2 = <&uart0_rx_clr_cfg>;
+	pinctrl-3 = <&uart0_tx_set_cfg>;
+	pinctrl-4 = <&uart0_tx_clr_cfg>;
+	status = "okay";
+};
+
+&pio {
+	/* UART GPIO Settings - Start */
+	/* UART0: rx set, rx clear, tx clear, tx clear*/
+	uart0_gpio_def_cfg:uart0gpiodefault {
+
+	};
+	uart0_rx_set_cfg:uart0_rx_set@gpio95 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO95__FUNC_URXD0>;
+		};
+	};
+	uart0_rx_clr_cfg:uart0_rx_clear@gpio95 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO95__FUNC_GPIO95>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	uart0_tx_set_cfg:uart0_tx_set@gpio96 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO96__FUNC_UTXD0>;
+		};
+	};
+	uart0_tx_clr_cfg:uart0_tx_clear@gpio96 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO96__FUNC_GPIO96>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};/* UART GPIO end */
+
+/* IRTX GPIO Start */
+&irtx_pwm {
+	pinctrl-names = "irtx_gpio_led_default", "irtx_gpio_led_set";
+	pinctrl-0 = <&irtx_gpio_led_default>;
+	pinctrl-1 = <&irtx_gpio_led_set>;
+	status = "okay";
+};
+&pio {
+	/* IRTX GPIO Settings -Start */
+	/* default: GPIO0, output, high */
+	irtx_gpio_led_default:irtx_gpio_led_def@gpio90 {
+		pins_cmd_dat {
+			/* pins = <PINMUX_GPIO90__FUNC_GPIO90>; */
+			slew-rate = <1>;
+			bias-disable;
+			output-low;
+			input-schmitt-enable = <0>;
+		};
+	};
+
+	irtx_gpio_led_set:irtx_gpio_led_set@gpio90 {
+		pins_cmd_dat {
+			/* pins = <PINMUX_GPIO90__FUNC_PWMA>; */
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+}; /* IRTX GPIO Settings -End */
+
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <10>; /* direct defined GPIO num */
 	mt6370,intr_gpio = <&pio 10 0x0>;
