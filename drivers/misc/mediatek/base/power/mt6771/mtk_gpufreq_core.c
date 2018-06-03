@@ -446,7 +446,6 @@ void mt_gpufreq_enable_MTCMOS(void)
 	aee_rr_rec_gpu_dvfs_status(0x80 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
 	gpufreq_pr_debug("@%s: enable MTCMOS done\n", __func__);
-	GPULOG2("@%s: MTCMOS on", __func__);
 
 	mutex_unlock(&mt_gpufreq_lock);
 }
@@ -472,7 +471,6 @@ void mt_gpufreq_disable_MTCMOS(void)
 	aee_rr_rec_gpu_dvfs_status(0xA0 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
 	gpufreq_pr_debug("@%s: disable MTCMOS done\n", __func__);
-	GPULOG2("@%s: MTCMOS off", __func__);
 
 	mutex_unlock(&mt_gpufreq_lock);
 }
@@ -498,14 +496,12 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		g_volt_enable_state = true;
 		__mt_gpufreq_kick_pbm(1);
 		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is on\n", __func__);
-		GPULOG2("@%s: VGPU/VSRAM_GPU on\n", __func__);
 	} else if (enable == 0)  {
 		/* Turn off GPU Bucks */
 		__mt_gpufreq_bucks_disable();
 		g_volt_enable_state = false;
 		__mt_gpufreq_kick_pbm(0);
 		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is off\n", __func__);
-		GPULOG2("@%s: VGPU/VSRAM_GPU off\n", __func__);
 	}
 
 	gpufreq_pr_debug("@%s: enable = %d, g_volt_enable_state = %d\n",
