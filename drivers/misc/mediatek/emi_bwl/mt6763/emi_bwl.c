@@ -36,13 +36,21 @@ static void __iomem *CEN_EMI_BASE;
 static void __iomem *CHA_EMI_BASE;
 static void __iomem *CHB_EMI_BASE;
 static void __iomem *EMI_MPU_BASE;
+static unsigned int mpu_irq;
 
 static int emi_probe(struct platform_device *pdev)
 {
 	struct resource *res;
+	struct device_node *node = pdev->dev.of_node;
 	int ret;
 
 	pr_debug("[EMI] module probe.\n");
+
+	if (node) {
+		mpu_irq = irq_of_parse_and_map(node, 0);
+		pr_err("get EMI_MPU irq = %d\n", mpu_irq);
+	} else
+		mpu_irq = 0;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	CEN_EMI_BASE = devm_ioremap_resource(&pdev->dev, res);
@@ -372,4 +380,9 @@ void __iomem *mt_emi_mpu_base_get(void)
 	return EMI_MPU_BASE;
 }
 EXPORT_SYMBOL(mt_emi_mpu_base_get);
+
+unsigned int mt_emi_mpu_irq_get(void)
+{
+	return mpu_irq;
+}
 
