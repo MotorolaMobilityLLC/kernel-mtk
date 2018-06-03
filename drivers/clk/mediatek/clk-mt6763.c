@@ -777,7 +777,7 @@ static const struct mtk_mux_clr_set_upd top_muxes[] __initconst = {
 
 static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
 {
-#if 0
+#if 1
 	struct mtk_clk_gate *cg = to_clk_gate(hw);
 	u32 val;
 
@@ -792,7 +792,7 @@ static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
 
 static int mtk_cg_bit_is_set(struct clk_hw *hw)
 {
-#if 0
+#if 1
 	struct mtk_clk_gate *cg = to_clk_gate(hw);
 	u32 val;
 
@@ -804,7 +804,7 @@ static int mtk_cg_bit_is_set(struct clk_hw *hw)
 #endif
 	return 0;
 }
-#if 0
+#if 1
 static void mtk_cg_set_bit(struct clk_hw *hw)
 {
 	struct mtk_clk_gate *cg = to_clk_gate(hw);
@@ -814,7 +814,7 @@ static void mtk_cg_set_bit(struct clk_hw *hw)
 
 static void mtk_cg_clr_bit(struct clk_hw *hw)
 {
-#if 0
+#if 1
 	struct mtk_clk_gate *cg = to_clk_gate(hw);
 
 	regmap_update_bits(cg->regmap, cg->sta_ofs, BIT(cg->bit), 0);
@@ -824,27 +824,26 @@ static void mtk_cg_clr_bit(struct clk_hw *hw)
 #endif
 static int mtk_cg_enable(struct clk_hw *hw)
 {
-	/*mtk_cg_clr_bit(hw);*/
+	mtk_cg_clr_bit(hw);
 
 	return 0;
 }
 
 static void mtk_cg_disable(struct clk_hw *hw)
 {
-	/*mtk_cg_set_bit(hw);*/
+	mtk_cg_set_bit(hw);
 }
 
 static int mtk_cg_enable_inv(struct clk_hw *hw)
 {
-	/*mtk_cg_set_bit(hw);*/
+	mtk_cg_set_bit(hw);
 
 	return 0;
 }
 
 static void mtk_cg_disable_inv(struct clk_hw *hw)
 {
-	return;
-	/*mtk_cg_clr_bit(hw);*/
+	mtk_cg_clr_bit(hw);
 }
 
 const struct clk_ops mtk_clk_gate_ops = {
