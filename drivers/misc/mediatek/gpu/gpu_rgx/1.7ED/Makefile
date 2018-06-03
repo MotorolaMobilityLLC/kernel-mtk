@@ -3,14 +3,14 @@
 OPTIM = -Os
 
 
-RGX_TOP := $(srctree)/drivers/misc/mediatek/gpu/gpu_rgx/rgx_austin
+RGX_TOP := $(srctree)/drivers/misc/mediatek/gpu/gpu_rgx/1.7ED
 
 $(info *RGX_TOP = $(RGX_TOP))
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt6799/include/ 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/met/mt6799/platform/mt6799/ 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/ 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/met/$(MTK_PLATFORM)/platform/$(MTK_PLATFORM)/ 
 
 
 VER := $(if $(filter eng,$(TARGET_BUILD_VARIANT)),eng,user)
@@ -20,7 +20,7 @@ VER := $(if $(filter eng,$(TARGET_BUILD_VARIANT)),eng,user)
 ifeq ($(MTK_DDK_DEBUG),y)
 ccflags-y += -include $(RGX_TOP)/include/config_kernel_debug.h
 else
-ccflags-y += -include $(RGX_TOP)/include/config_kernel_$(VER).h
+ccflags-y += -include $(RGX_TOP)/include/config_kernel_$(VER)_$(MTK_PLATFORM).h
 endif
 
 ccflags-y += \
@@ -119,10 +119,10 @@ pvrsrvkm-y += \
  services/srvinit/devices/rgx/rgxfwimageutils.o \
  services/srvinit/devices/rgx/rgxsrvinit_script.o \
  services/srvinit/devices/rgx/rgxsrvinit.o \
- services/system/rgx_mt6799/ion_support.o \
- services/system/rgx_mt6799/mtk_mfgsys.o \
- services/system/rgx_mt6799/mtk_pp.o \
- services/system/rgx_mt6799/sysconfig.o \
+ services/system/rgx_$(MTK_PLATFORM)/ion_support.o \
+ services/system/rgx_$(MTK_PLATFORM)/mtk_mfgsys.o \
+ services/system/rgx_$(MTK_PLATFORM)/mtk_pp.o \
+ services/system/rgx_$(MTK_PLATFORM)/sysconfig.o \
  services/system/common/env/linux/interrupt_support.o \
  kernel/drivers/staging/imgtec/pvr_platform_drv.o \
  kernel/drivers/staging/imgtec/pvr_sync.o \
@@ -214,7 +214,7 @@ ccflags-y += \
  -I$(RGX_TOP)/services/srvinit/devices/rgx \
  -I$(RGX_TOP)/services/srvinit/include \
  -I$(RGX_TOP)/services/system/include \
- -I$(RGX_TOP)/services/system/rgx_mt6799
+ -I$(RGX_TOP)/services/system/rgx_$(MTK_PLATFORM)
 
 ifeq ($(MTK_DDK_DEBUG),y)
 ccflags-y += \
