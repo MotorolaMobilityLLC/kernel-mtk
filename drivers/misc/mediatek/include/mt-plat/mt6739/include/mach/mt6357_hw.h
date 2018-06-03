@@ -14437,6 +14437,7 @@
 #define PMIC_DA_NI_EINT1CMPEN_SHIFT                        15
 #define PMIC_ACCDET_EINT1_CUR_DEB_ADDR                     MT6357_ACCDET_CON28
 #define PMIC_ACCDET_EINT1_CUR_DEB_MASK                     0x7FFF
+#define PMIC_ACCDET_EINT1_CUR_DEB_SHIFT                    0
 
 typedef enum {
 	PMIC_TOP0_ANA_ID,
