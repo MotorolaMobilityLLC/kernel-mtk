@@ -178,6 +178,13 @@ static int get_devinfo(void)
 	val[4] = get_devinfo_with_index(DEVINFO_IDX_4);
 	val[5] = get_devinfo_with_index(DEVINFO_IDX_5);
 	val[6] = get_devinfo_with_index(DEVINFO_IDX_6);
+	val[7] = get_devinfo_with_index(DEVINFO_IDX_7);
+	val[8] = get_devinfo_with_index(DEVINFO_IDX_8);
+	val[9] = get_devinfo_with_index(DEVINFO_IDX_9);
+	val[10] = get_devinfo_with_index(DEVINFO_IDX_10);
+	val[11] = get_devinfo_with_index(DEVINFO_IDX_11);
+	val[12] = get_devinfo_with_index(DEVINFO_IDX_12);
+	val[13] = get_devinfo_with_index(DEVINFO_IDX_13);
 
 #if EEM_FAKE_EFUSE
 	/* for verification */
@@ -188,6 +195,13 @@ static int get_devinfo(void)
 	val[4] = DEVINFO_4;
 	val[5] = DEVINFO_5;
 	val[6] = DEVINFO_6;
+	val[7] = DEVINFO_7;
+	val[8] = DEVINFO_8;
+	val[9] = DEVINFO_9;
+	val[10] = DEVINFO_10;
+	val[11] = DEVINFO_11;
+	val[12] = DEVINFO_12;
+	val[13] = DEVINFO_13;
 #endif
 
 #ifdef CONFIG_EEM_AEE_RR_REC
@@ -200,6 +214,9 @@ static int get_devinfo(void)
 	aee_rr_rec_ptp_e5((unsigned int)val[6]);
 	aee_rr_rec_ptp_e6((unsigned int)val[7]);
 	aee_rr_rec_ptp_e7((unsigned int)val[8]);
+	aee_rr_rec_ptp_e8((unsigned int)val[11]);
+	aee_rr_rec_ptp_e9((unsigned int)val[12]);
+	aee_rr_rec_ptp_e10((unsigned int)val[13]);
 #endif
 
 	eem_debug("M_HW_RES0 = 0x%08X\n", val[0]);
@@ -211,6 +228,11 @@ static int get_devinfo(void)
 	eem_debug("M_HW_RES6 = 0x%08X\n", val[6]);
 	eem_debug("M_HW_RES7 = 0x%08X\n", val[7]);
 	eem_debug("M_HW_RES8 = 0x%08X\n", val[8]);
+	eem_debug("M_HW_RES9 = 0x%08X\n", val[9]);
+	eem_debug("M_HW_RES10= 0x%08X\n", val[10]);
+	eem_debug("M_HW_RES11= 0x%08X\n", val[11]);
+	eem_debug("M_HW_RES12= 0x%08X\n", val[12]);
+	eem_debug("M_HW_RES13= 0x%08X\n", val[13]);
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -1797,6 +1819,7 @@ div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK2), 1000);
 			sizeof(det->volt_tbl));
 	}
 
+	/* Fix me */
 	eem_set_eem_volt(det);
 
 out:
