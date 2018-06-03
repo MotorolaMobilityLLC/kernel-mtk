@@ -774,7 +774,7 @@ void _vdo_mode_enter_idle(void)
 {
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	unsigned int bandwidth;
-	unsigned int in_fps = 60;
+	unsigned int out_fps = 60;
 #endif
 
 	DISPDBG("[disp_lowpower]%s\n", __func__);
@@ -830,7 +830,7 @@ void _vdo_mode_enter_idle(void)
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	/* update bandwidth */
-	disp_get_rdma_bandwidth(in_fps, &bandwidth);
+	disp_get_rdma_bandwidth(out_fps, &bandwidth);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_START,
 			 !primary_display_is_decouple_mode(), bandwidth);
 	pm_qos_update_request(&primary_display_qos_request, bandwidth);
