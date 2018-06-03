@@ -1443,7 +1443,7 @@ static signed int TSF_open(struct inode *pInode, struct file *pFile)
 	/* Enable clock */
 	TSF_EnableClock(MTRUE);
 	/* ISP_EnableClock(MTRUE); */
-	LOG_DBG("TSF open g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	LOG_INF("TSF open g_u4EnableClockCount: %d", g_u4EnableClockCount);
 	/*  */
 
 	/*  */
@@ -1501,7 +1501,7 @@ static signed int TSF_release(struct inode *pInode, struct file *pFile)
 
 	/* Disable clock. */
 	TSF_EnableClock(MFALSE);
-	LOG_DBG("TSF release g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	LOG_INF("TSF release g_u4EnableClockCount: %d", g_u4EnableClockCount);
 
 	/*  */
 EXIT:
@@ -1887,7 +1887,7 @@ int TSF_pm_suspend(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	pr_debug("calling %s()\n", __func__);
+	LOG_INF("TSF suspend g_u4EnableClockCount: %d", g_u4EnableClockCount);
 
 	return TSF_suspend(pdev, PMSG_SUSPEND);
 }
@@ -1898,7 +1898,7 @@ int TSF_pm_resume(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	pr_debug("calling %s()\n", __func__);
+	LOG_INF("TSF resume g_u4EnableClockCount: %d", g_u4EnableClockCount);
 
 	return TSF_resume(pdev);
 }
