@@ -57,6 +57,9 @@
 
 
 #include <mt-plat/upmu_common.h>
+#if defined(CONFIG_RTC_DRV_MT6397)
+#include <linux/mfd/mt6397/rtc_misc.h>
+#endif
 
 
 /* ============================================================ // */
@@ -1814,7 +1817,11 @@ void sw_oam_init_v2(void)
 #if defined(CONFIG_POWER_EXT)
 	g_rtc_fg_soc = gFG_capacity_by_v;
 #else
+#if defined(CONFIG_RTC_DRV_MT6397)
+	g_rtc_fg_soc = mtk_misc_get_spare_fg_value();
+#else
 	g_rtc_fg_soc = get_rtc_spare_fg_value();
+#endif
 #endif
 
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_BATTERY_PLUG_STATUS, &plugout_status);
@@ -1904,7 +1911,11 @@ void dod_init(void)
 #if defined(CONFIG_POWER_EXT)
 	g_rtc_fg_soc = gFG_capacity_by_v;
 #else
+#if defined(CONFIG_RTC_DRV_MT6397)
+	g_rtc_fg_soc = mtk_misc_get_spare_fg_value();
+#else
 	g_rtc_fg_soc = get_rtc_spare_fg_value();
+#endif
 #endif
 
 

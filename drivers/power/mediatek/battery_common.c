@@ -110,6 +110,10 @@
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 #include <mach/mtk_pe.h>
 #endif
+
+#if defined(CONFIG_RTC_DRV_MT6397)
+#include <linux/mfd/mt6397/rtc_misc.h>
+#endif
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* Battery Logging Entry */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -1934,10 +1938,17 @@ static void battery_update(struct battery_data *bat_data)
 
 	/* set RTC SOC to 1 to avoid SOC jump in charger boot.*/
 	if (BMT_status.UI_SOC <= 1)
+#if defined(CONFIG_RTC_DRV_MT6397)
+		mtk_misc_set_spare_fg_value(1);
+#else
 		set_rtc_spare_fg_value(1);
+#endif
 	else
+#if defined(CONFIG_RTC_DRV_MT6397)
+		mtk_misc_set_spare_fg_value(BMT_status.UI_SOC);
+#else
 		set_rtc_spare_fg_value(BMT_status.UI_SOC);
-
+#endif
 
 	mt_battery_update_EM(bat_data);
 
