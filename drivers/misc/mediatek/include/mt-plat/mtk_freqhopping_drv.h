@@ -115,7 +115,7 @@ struct mt_fh_hal_driver *mt_get_fh_hal_drv(void);
 #define FH_BUG_ON(x) \
 do {    \
 	if ((x)) \
-		pr_err("BUGON %s:%d %s:%d\n", __func__, __LINE__, current->comm, current->pid); \
+		pr_notice("BUGON %s:%d %s:%d\n", __func__, __LINE__, current->comm, current->pid); \
 } while (0)
 
 #endif
