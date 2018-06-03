@@ -16,9 +16,6 @@
 
 #define ENABLE_AP_REGION	0
 
-#define EMI_CONA                (CEN_EMI_BASE + 0x000)
-#define EMI_CONH                (CEN_EMI_BASE + 0x038)
-
 #define EMI_MPUD0_ST            (CEN_EMI_BASE + 0x160)
 #define EMI_MPUD_ST(domain)     (EMI_MPUD0_ST + (4*domain)) /* violation status domain */
 #define EMI_MPUD0_ST2           (CEN_EMI_BASE + 0x200)     /* violation status domain */
@@ -193,9 +190,6 @@ unsigned long long end_addr, int region, unsigned long long access_permission);
 extern void acquire_dram_setting(struct basic_dram_setting *pasrdpd);
 #endif
 extern void emi_wp_get_status(void);
-extern void __iomem *mt_cen_emi_base_get(void);
-extern void __iomem *mt_chn_emi_base_get(int chn);
-extern void __iomem *mt_emi_mpu_base_get(void);
 extern unsigned int mt_emi_mpu_irq_get(void);
 extern void mt_emi_reg_base_set(void *base);
 extern void *mt_emi_reg_base_get(void);

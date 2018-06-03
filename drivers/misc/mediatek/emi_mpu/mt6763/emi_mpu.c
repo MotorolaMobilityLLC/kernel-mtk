@@ -39,6 +39,7 @@
 #include <linux/of_irq.h>
 #include <mt-plat/mtk_io.h>
 #include "emi_mpu.h"
+#include "emi_bwl.h"
 #include <mt-plat/mtk_ccci_common.h>
 #include <linux/delay.h>
 
@@ -627,107 +628,46 @@ static irqreturn_t mpu_violation_irq(int irq, void *dev_id)
 
 #if defined(CONFIG_MTK_PASR)
 /* Acquire DRAM Setting for PASR/DPD */
-void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
+static unsigned int get_segment_nr(unsigned int rk_index)
 {
-	int ch_nr = MAX_CHANNELS;
-	unsigned int emi_cona, emi_conh, col_bit, row_bit;
-	unsigned int ch0_rank0_size, ch0_rank1_size;
-	unsigned int ch1_rank0_size, ch1_rank1_size;
-	unsigned int shift_for_16bit = 1;
+	unsigned int rank_size;
+	unsigned int num_of_1;
+	unsigned int i;
 
-	pasrdpd->channel_nr = ch_nr;
+	rank_size = get_rank_size(rk_index) / get_ch_num();
+	num_of_1 = 0;
 
-	emi_cona = readl(IOMEM(EMI_CONA));
-	emi_conh = readl(IOMEM(EMI_CONH));
-
-	/* Is it 32-bit or 16-bit I/O */
-	if (emi_cona & 0x2)
-		shift_for_16bit = 0;
-
-	ch0_rank0_size = (emi_conh >> 16) & 0xf;
-	ch0_rank1_size = (emi_conh >> 20) & 0xf;
-	ch1_rank0_size = (emi_conh >> 24) & 0xf;
-	ch1_rank1_size = (emi_conh >> 28) & 0xf;
-
-	{
-		pasrdpd->channel[0].rank[0].valid_rank = true;
-
-		if (ch0_rank0_size == 0) {
-			col_bit = ((emi_cona >> 4) & 0x03) + 9;
-			row_bit = (((emi_cona >> 24) & 0x1) << 2) + ((emi_cona >> 12) & 0x03) + 13;
-			pasrdpd->channel[0].rank[0].rank_size =
-			(1 << (row_bit + col_bit)) >> (22 + shift_for_16bit);
-			pasrdpd->channel[0].rank[0].segment_nr = 8;
-		} else {
-			pasrdpd->channel[0].rank[0].rank_size =
-			(ch0_rank0_size * 2);
-			pasrdpd->channel[0].rank[0].segment_nr = 6;
-		}
-
-		if (0 != (emi_cona & (1 << 17))) {
-			pasrdpd->channel[0].rank[1].valid_rank = true;
-
-			if (ch0_rank1_size == 0) {
-				col_bit = ((emi_cona >> 6) & 0x03) + 9;
-				row_bit = (((emi_cona >> 25) & 0x1) << 2) + ((emi_cona >> 14) & 0x03) + 13;
-				pasrdpd->channel[0].rank[1].rank_size =
-				(1 << (row_bit + col_bit)) >> (22 + shift_for_16bit);
-				pasrdpd->channel[0].rank[1].segment_nr = 8;
-			} else {
-				pasrdpd->channel[0].rank[1].rank_size =
-				(ch0_rank1_size * 2);
-				pasrdpd->channel[0].rank[1].segment_nr = 6;
-			}
-		} else {
-			pasrdpd->channel[0].rank[1].valid_rank = false;
-			pasrdpd->channel[0].rank[1].segment_nr = 0;
-			pasrdpd->channel[0].rank[1].rank_size = 0;
-		}
+	for (i = 0; i < 32; i++) {
+		if (rank_size & 0x1)
+			num_of_1++;
+		rank_size = rank_size >> 1;
 	}
 
-	if (0 != ((emi_cona >> 8) & 0x01)) {
+	if (num_of_1 > 1)
+		return 6;
+	else
+		return 8;
+}
 
-		pasrdpd->channel[1].rank[0].valid_rank = true;
+void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
+{
+	unsigned int ch, rk;
 
-		if (ch1_rank0_size == 0) {
-			col_bit = ((emi_cona >> 20) & 0x03) + 9;
-			row_bit = (((emi_conh >> 4) & 0x1) << 2) + ((emi_cona >> 28) & 0x03) + 13;
-			pasrdpd->channel[1].rank[0].rank_size =
-			(1 << (row_bit + col_bit)) >> (22 + shift_for_16bit);
-			pasrdpd->channel[1].rank[0].segment_nr = 8;
-		} else {
-			pasrdpd->channel[1].rank[0].rank_size =
-			(ch1_rank0_size * 2);
-			pasrdpd->channel[1].rank[0].segment_nr = 6;
-		}
+	pasrdpd->channel_nr = get_ch_num();
 
-		if (0 != (emi_cona & (1 << 16))) {
-			pasrdpd->channel[1].rank[1].valid_rank = true;
-
-			if (ch1_rank1_size == 0) {
-				col_bit = ((emi_cona >> 22) & 0x03) + 9;
-				row_bit = (((emi_conh >> 5) & 0x1) << 2) + ((emi_cona >> 30) & 0x03) + 13;
-				pasrdpd->channel[1].rank[1].rank_size =
-				(1 << (row_bit + col_bit)) >> (22 + shift_for_16bit);
-				pasrdpd->channel[1].rank[1].segment_nr = 8;
-			} else {
-				pasrdpd->channel[1].rank[1].rank_size =
-				(ch1_rank1_size * 2);
-				pasrdpd->channel[1].rank[1].segment_nr = 6;
+	for (ch = 0; ch < MAX_CHANNELS; ch++) {
+		for (rk = 0; rk < MAX_RANKS; rk++) {
+			if ((ch >= pasrdpd->channel_nr) || (rk >= get_rk_num())) {
+				pasrdpd->channel[ch].rank[rk].valid_rank = false;
+				pasrdpd->channel[ch].rank[rk].rank_size = 0;
+				pasrdpd->channel[0].rank[0].segment_nr = 0;
+				continue;
 			}
-		} else {
-			pasrdpd->channel[1].rank[1].valid_rank = false;
-			pasrdpd->channel[1].rank[1].segment_nr = 0;
-			pasrdpd->channel[1].rank[1].rank_size = 0;
-		}
-	} else {
-		pasrdpd->channel[1].rank[0].valid_rank = false;
-		pasrdpd->channel[1].rank[0].segment_nr = 0;
-		pasrdpd->channel[1].rank[0].rank_size = 0;
+			pasrdpd->channel[ch].rank[rk].valid_rank = true;
+			pasrdpd->channel[ch].rank[rk].rank_size = get_rank_size(rk) / (pasrdpd->channel_nr);
+			pasrdpd->channel[ch].rank[rk].segment_nr = get_segment_nr(rk);
 
-		pasrdpd->channel[1].rank[1].valid_rank = false;
-		pasrdpd->channel[1].rank[1].segment_nr = 0;
-		pasrdpd->channel[1].rank[1].rank_size = 0;
+		}
 	}
 }
 #endif
