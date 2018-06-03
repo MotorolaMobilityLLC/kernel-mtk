@@ -258,7 +258,8 @@ int mt6660_codec_trigger_param_write(struct mt6660_chip *chip,
 				     void *param, int size)
 {
 	struct snd_soc_codec *codec = chip->codec;
-	int ret = 0;
+	u8 *data = (u8 *)param;
+	int i = 0, ret = 0;
 
 	dev_dbg(codec->dev, "%s: ++\n", __func__);
 	mutex_lock(&chip->var_lock);
@@ -272,6 +273,23 @@ int mt6660_codec_trigger_param_write(struct mt6660_chip *chip,
 	if (ret < 0)
 		dev_err(codec->dev, "%s: power on fail\n", __func__);
 	dev_info(codec->dev, "writing proprietary param\n");
+	while (i < size) {
+		dev_dbg(codec->dev, "[%02x] [%02x] -> [%02x]\n",
+			data[i], data[i + 1], *(data + i + 2));
+#ifdef CONFIG_RT_REGMAP
+		ret = rt_regmap_block_write(chip->regmap, data[i],
+					    data[i + 1], data + i + 2);
+#else
+		ret = i2c_smbus_write_i2c_block_data(chip->i2c, data[i],
+						     data[i + 1], data + i + 2);
+#endif /* CONFIG_RT_REGMAP */
+		if (ret <  0) {
+			dev_err(codec->dev, "reg[0x%02x] write fail\n",
+				data[i]);
+			break;
+		}
+		i += (data[i + 1] + 2);
+	}
 	ret = mt6660_chip_power_on(codec, 0);
 	if (ret < 0)
 		dev_err(codec->dev, "%s: power off fail\n", __func__);
