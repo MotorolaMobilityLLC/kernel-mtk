@@ -14,7 +14,7 @@
 #include "mtk_cpufreq_struct.h"
 #include "mtk_cpufreq_config.h"
 
-/* FY */
+/* V3 */
 /* for DVFS OPP table L */
 #define CPU_DVFS_FREQ0_LL_FY		1989000		/* KHz */
 #define CPU_DVFS_FREQ1_LL_FY		1924000		/* KHz */
@@ -105,7 +105,7 @@
 #define CPU_DVFS_VOLT14_VPROC2_FY	 67500		/* 10uV */
 #define CPU_DVFS_VOLT15_VPROC2_FY	 65000		/* 10uV */
 
-/* FY2 */
+/* V4 & V5_1*/
 /* for DVFS OPP table L */
 #define CPU_DVFS_FREQ0_LL_FY2		1989000		/* KHz */
 #define CPU_DVFS_FREQ1_LL_FY2		1924000		/* KHz */
@@ -161,131 +161,404 @@
 #define CPU_DVFS_FREQ15_CCI_FY2		273000		/* KHz */
 
 /* for DVFS OPP table L|CCI */
-#define CPU_DVFS_VOLT0_VPROC1_FY2	 100000		/* 10uV */
-#define CPU_DVFS_VOLT1_VPROC1_FY2	 97500		/* 10uV */
-#define CPU_DVFS_VOLT2_VPROC1_FY2	 95000		/* 10uV */
-#define CPU_DVFS_VOLT3_VPROC1_FY2	 92500		/* 10uV */
-#define CPU_DVFS_VOLT4_VPROC1_FY2	 90000		/* 10uV */
-#define CPU_DVFS_VOLT5_VPROC1_FY2	 88125		/* 10uV */
-#define CPU_DVFS_VOLT6_VPROC1_FY2	 86250		/* 10uV */
-#define CPU_DVFS_VOLT7_VPROC1_FY2	 85000		/* 10uV */
-#define CPU_DVFS_VOLT8_VPROC1_FY2	 82500		/* 10uV */
-#define CPU_DVFS_VOLT9_VPROC1_FY2	 80000		/* 10uV */
-#define CPU_DVFS_VOLT10_VPROC1_FY2	 77500		/* 10uV */
-#define CPU_DVFS_VOLT11_VPROC1_FY2	 75000		/* 10uV */
-#define CPU_DVFS_VOLT12_VPROC1_FY2	 72500		/* 10uV */
-#define CPU_DVFS_VOLT13_VPROC1_FY2	 70000		/* 10uV */
-#define CPU_DVFS_VOLT14_VPROC1_FY2	 67500		/* 10uV */
-#define CPU_DVFS_VOLT15_VPROC1_FY2	 65000		/* 10uV */
+#define CPU_DVFS_VOLT0_VPROC1_FY2	 97500		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC1_FY2	 95000		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC1_FY2	 92500		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC1_FY2	 90000		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC1_FY2	 87500		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC1_FY2	 85625		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC1_FY2	 83750		/* 10uV */
+#define CPU_DVFS_VOLT7_VPROC1_FY2	 82500		/* 10uV */
+#define CPU_DVFS_VOLT8_VPROC1_FY2	 80000		/* 10uV */
+#define CPU_DVFS_VOLT9_VPROC1_FY2	 77500		/* 10uV */
+#define CPU_DVFS_VOLT10_VPROC1_FY2	 75000		/* 10uV */
+#define CPU_DVFS_VOLT11_VPROC1_FY2	 71875		/* 10uV */
+#define CPU_DVFS_VOLT12_VPROC1_FY2	 69375		/* 10uV */
+#define CPU_DVFS_VOLT13_VPROC1_FY2	 66250		/* 10uV */
+#define CPU_DVFS_VOLT14_VPROC1_FY2	 63125		/* 10uV */
+#define CPU_DVFS_VOLT15_VPROC1_FY2	 60000		/* 10uV */
 
 /* for DVFS OPP table B */
-#define CPU_DVFS_VOLT0_VPROC2_FY2	 100000		/* 10uV */
-#define CPU_DVFS_VOLT1_VPROC2_FY2	 97500		/* 10uV */
-#define CPU_DVFS_VOLT2_VPROC2_FY2	 95000		/* 10uV */
-#define CPU_DVFS_VOLT3_VPROC2_FY2	 92500		/* 10uV */
-#define CPU_DVFS_VOLT4_VPROC2_FY2	 90000		/* 10uV */
-#define CPU_DVFS_VOLT5_VPROC2_FY2	 88125		/* 10uV */
-#define CPU_DVFS_VOLT6_VPROC2_FY2	 86250		/* 10uV */
-#define CPU_DVFS_VOLT7_VPROC2_FY2	 85000		/* 10uV */
-#define CPU_DVFS_VOLT8_VPROC2_FY2	 82500		/* 10uV */
+#define CPU_DVFS_VOLT0_VPROC2_FY2	 98125		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC2_FY2	 95625		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC2_FY2	 93125		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC2_FY2	 90625		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC2_FY2	 88125		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC2_FY2	 86250		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC2_FY2	 84375		/* 10uV */
+#define CPU_DVFS_VOLT7_VPROC2_FY2	 83125		/* 10uV */
+#define CPU_DVFS_VOLT8_VPROC2_FY2	 80625		/* 10uV */
 #define CPU_DVFS_VOLT9_VPROC2_FY2	 80000		/* 10uV */
-#define CPU_DVFS_VOLT10_VPROC2_FY2	 77500		/* 10uV */
-#define CPU_DVFS_VOLT11_VPROC2_FY2	 75000		/* 10uV */
-#define CPU_DVFS_VOLT12_VPROC2_FY2	 72500		/* 10uV */
-#define CPU_DVFS_VOLT13_VPROC2_FY2	 70000		/* 10uV */
-#define CPU_DVFS_VOLT14_VPROC2_FY2	 67500		/* 10uV */
-#define CPU_DVFS_VOLT15_VPROC2_FY2	 65000		/* 10uV */
+#define CPU_DVFS_VOLT10_VPROC2_FY2	 75625		/* 10uV */
+#define CPU_DVFS_VOLT11_VPROC2_FY2	 73125		/* 10uV */
+#define CPU_DVFS_VOLT12_VPROC2_FY2	 70625		/* 10uV */
+#define CPU_DVFS_VOLT13_VPROC2_FY2	 68125		/* 10uV */
+#define CPU_DVFS_VOLT14_VPROC2_FY2	 65625		/* 10uV */
+#define CPU_DVFS_VOLT15_VPROC2_FY2	 63125		/* 10uV */
 
-/* SB */
-/* for DVFS OPP table LL B FY*/
-#define CPU_DVFS_FREQ0_LL_SB		2197000		/* KHz */
-#define CPU_DVFS_FREQ1_LL_SB		2106000		/* KHz */
-#define CPU_DVFS_FREQ2_LL_SB		1989000		/* KHz */
-#define CPU_DVFS_FREQ3_LL_SB		1846000		/* KHz */
-#define CPU_DVFS_FREQ4_LL_SB		1716000		/* KHz */
-#define CPU_DVFS_FREQ5_LL_SB		1677000		/* KHz */
-#define CPU_DVFS_FREQ6_LL_SB		1625000		/* KHz */
-#define CPU_DVFS_FREQ7_LL_SB		1586000		/* KHz */
-#define CPU_DVFS_FREQ8_LL_SB		1508000		/* KHz */
-#define CPU_DVFS_FREQ9_LL_SB		1417000		/* KHz */
-#define CPU_DVFS_FREQ10_LL_SB		1326000		/* KHz */
-#define CPU_DVFS_FREQ11_LL_SB		1248000		/* KHz */
-#define CPU_DVFS_FREQ12_LL_SB		1131000		/* KHz */
-#define CPU_DVFS_FREQ13_LL_SB		1014000		/* KHz */
-#define CPU_DVFS_FREQ14_LL_SB		910000		/* KHz */
-#define CPU_DVFS_FREQ15_LL_SB		793000		/* KHz */
+/* V5_2 */
+/* for DVFS OPP table L */
+#define CPU_DVFS_FREQ0_LL_FY3		1989000		/* KHz */
+#define CPU_DVFS_FREQ1_LL_FY3		1924000		/* KHz */
+#define CPU_DVFS_FREQ2_LL_FY3		1846000		/* KHz */
+#define CPU_DVFS_FREQ3_LL_FY3		1781000		/* KHz */
+#define CPU_DVFS_FREQ4_LL_FY3		1716000		/* KHz */
+#define CPU_DVFS_FREQ5_LL_FY3		1677000		/* KHz */
+#define CPU_DVFS_FREQ6_LL_FY3		1625000		/* KHz */
+#define CPU_DVFS_FREQ7_LL_FY3		1586000		/* KHz */
+#define CPU_DVFS_FREQ8_LL_FY3		1508000		/* KHz */
+#define CPU_DVFS_FREQ9_LL_FY3		1417000		/* KHz */
+#define CPU_DVFS_FREQ10_LL_FY3		1326000		/* KHz */
+#define CPU_DVFS_FREQ11_LL_FY3		1248000		/* KHz */
+#define CPU_DVFS_FREQ12_LL_FY3		1131000		/* KHz */
+#define CPU_DVFS_FREQ13_LL_FY3		1014000		/* KHz */
+#define CPU_DVFS_FREQ14_LL_FY3		910000		/* KHz */
+#define CPU_DVFS_FREQ15_LL_FY3		793000		/* KHz */
 
-/* for DVFS OPP table L B FY */
-#define CPU_DVFS_FREQ0_L_SB		2197000		/* KHz */
-#define CPU_DVFS_FREQ1_L_SB		2106000		/* KHz */
-#define CPU_DVFS_FREQ2_L_SB		1989000		/* KHz */
-#define CPU_DVFS_FREQ3_L_SB		1846000		/* KHz */
-#define CPU_DVFS_FREQ4_L_SB		1716000		/* KHz */
-#define CPU_DVFS_FREQ5_L_SB		1677000		/* KHz */
-#define CPU_DVFS_FREQ6_L_SB		1625000		/* KHz */
-#define CPU_DVFS_FREQ7_L_SB		1586000		/* KHz */
-#define CPU_DVFS_FREQ8_L_SB		1508000		/* KHz */
-#define CPU_DVFS_FREQ9_L_SB		1417000		/* KHz */
-#define CPU_DVFS_FREQ10_L_SB		1326000		/* KHz */
-#define CPU_DVFS_FREQ11_L_SB		1248000		/* KHz */
-#define CPU_DVFS_FREQ12_L_SB		1131000		/* KHz */
-#define CPU_DVFS_FREQ13_L_SB		1014000		/* KHz */
-#define CPU_DVFS_FREQ14_L_SB		910000		/* KHz */
-#define CPU_DVFS_FREQ15_L_SB		793000		/* KHz */
+/* for DVFS OPP table B */
+#define CPU_DVFS_FREQ0_L_FY3		1989000		/* KHz */
+#define CPU_DVFS_FREQ1_L_FY3		1924000		/* KHz */
+#define CPU_DVFS_FREQ2_L_FY3		1846000		/* KHz */
+#define CPU_DVFS_FREQ3_L_FY3		1781000		/* KHz */
+#define CPU_DVFS_FREQ4_L_FY3		1716000		/* KHz */
+#define CPU_DVFS_FREQ5_L_FY3		1677000		/* KHz */
+#define CPU_DVFS_FREQ6_L_FY3		1625000		/* KHz */
+#define CPU_DVFS_FREQ7_L_FY3		1586000		/* KHz */
+#define CPU_DVFS_FREQ8_L_FY3		1508000		/* KHz */
+#define CPU_DVFS_FREQ9_L_FY3		1417000		/* KHz */
+#define CPU_DVFS_FREQ10_L_FY3		1326000		/* KHz */
+#define CPU_DVFS_FREQ11_L_FY3		1248000		/* KHz */
+#define CPU_DVFS_FREQ12_L_FY3		1131000		/* KHz */
+#define CPU_DVFS_FREQ13_L_FY3		1014000		/* KHz */
+#define CPU_DVFS_FREQ14_L_FY3		910000		/* KHz */
+#define CPU_DVFS_FREQ15_L_FY3		793000		/* KHz */
 
 /* for DVFS OPP table CCI */
-#define CPU_DVFS_FREQ0_CCI_SB		1339000		/* KHz */
-#define CPU_DVFS_FREQ1_CCI_SB		1274000		/* KHz */
-#define CPU_DVFS_FREQ2_CCI_SB		1196000		/* KHz */
-#define CPU_DVFS_FREQ3_CCI_SB		1092000		/* KHz */
-#define CPU_DVFS_FREQ4_CCI_SB		962000		/* KHz */
-#define CPU_DVFS_FREQ5_CCI_SB		923000		/* KHz */
-#define CPU_DVFS_FREQ6_CCI_SB		871000		/* KHz */
-#define CPU_DVFS_FREQ7_CCI_SB		845000		/* KHz */
-#define CPU_DVFS_FREQ8_CCI_SB		767000		/* KHz */
-#define CPU_DVFS_FREQ9_CCI_SB		689000		/* KHz */
-#define CPU_DVFS_FREQ10_CCI_SB		624000		/* KHz */
-#define CPU_DVFS_FREQ11_CCI_SB		546000		/* KHz */
-#define CPU_DVFS_FREQ12_CCI_SB		481000		/* KHz */
-#define CPU_DVFS_FREQ13_CCI_SB		403000		/* KHz */
-#define CPU_DVFS_FREQ14_CCI_SB		338000		/* KHz */
-#define CPU_DVFS_FREQ15_CCI_SB		273000		/* KHz */
+#define CPU_DVFS_FREQ0_CCI_FY3		1196000		/* KHz */
+#define CPU_DVFS_FREQ1_CCI_FY3		1144000		/* KHz */
+#define CPU_DVFS_FREQ2_CCI_FY3		1092000		/* KHz */
+#define CPU_DVFS_FREQ3_CCI_FY3		1027000		/* KHz */
+#define CPU_DVFS_FREQ4_CCI_FY3		962000		/* KHz */
+#define CPU_DVFS_FREQ5_CCI_FY3		923000		/* KHz */
+#define CPU_DVFS_FREQ6_CCI_FY3		871000		/* KHz */
+#define CPU_DVFS_FREQ7_CCI_FY3		845000		/* KHz */
+#define CPU_DVFS_FREQ8_CCI_FY3		767000		/* KHz */
+#define CPU_DVFS_FREQ9_CCI_FY3		689000		/* KHz */
+#define CPU_DVFS_FREQ10_CCI_FY3		624000		/* KHz */
+#define CPU_DVFS_FREQ11_CCI_FY3		546000		/* KHz */
+#define CPU_DVFS_FREQ12_CCI_FY3		481000		/* KHz */
+#define CPU_DVFS_FREQ13_CCI_FY3		403000		/* KHz */
+#define CPU_DVFS_FREQ14_CCI_FY3		338000		/* KHz */
+#define CPU_DVFS_FREQ15_CCI_FY3		273000		/* KHz */
 
 /* for DVFS OPP table L|CCI */
-#define CPU_DVFS_VOLT0_VPROC1_SB	 111875    /* 10uV */
-#define CPU_DVFS_VOLT1_VPROC1_SB	 105000    /* 10uV */
-#define CPU_DVFS_VOLT2_VPROC1_SB	 95000     /* 10uV */
-#define CPU_DVFS_VOLT3_VPROC1_SB	 90000     /* 10uV */
-#define CPU_DVFS_VOLT4_VPROC1_SB	 85000     /* 10uV */
-#define CPU_DVFS_VOLT5_VPROC1_SB	 83125     /* 10uV */
-#define CPU_DVFS_VOLT6_VPROC1_SB	 81250     /* 10uV */
-#define CPU_DVFS_VOLT7_VPROC1_SB	 80000     /* 10uV */
-#define CPU_DVFS_VOLT8_VPROC1_SB	 77500     /* 10uV */
-#define CPU_DVFS_VOLT9_VPROC1_SB	 75000     /* 10uV */
-#define CPU_DVFS_VOLT10_VPROC1_SB	 72500     /* 10uV */
-#define CPU_DVFS_VOLT11_VPROC1_SB	 70000     /* 10uV */
-#define CPU_DVFS_VOLT12_VPROC1_SB	 67500     /* 10uV */
-#define CPU_DVFS_VOLT13_VPROC1_SB	 65000     /* 10uV */
-#define CPU_DVFS_VOLT14_VPROC1_SB	 62500     /* 10uV */
-#define CPU_DVFS_VOLT15_VPROC1_SB	 60000     /* 10uV */
+#define CPU_DVFS_VOLT0_VPROC1_FY3	 100000		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC1_FY3	 97500		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC1_FY3	 95000		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC1_FY3	 92500		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC1_FY3	 89375		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC1_FY3	 88125		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC1_FY3	 85625		/* 10uV */
+#define CPU_DVFS_VOLT7_VPROC1_FY3	 84375		/* 10uV */
+#define CPU_DVFS_VOLT8_VPROC1_FY3	 81875		/* 10uV */
+#define CPU_DVFS_VOLT9_VPROC1_FY3	 80000		/* 10uV */
+#define CPU_DVFS_VOLT10_VPROC1_FY3	 76875		/* 10uV */
+#define CPU_DVFS_VOLT11_VPROC1_FY3	 73750		/* 10uV */
+#define CPU_DVFS_VOLT12_VPROC1_FY3	 70625		/* 10uV */
+#define CPU_DVFS_VOLT13_VPROC1_FY3	 66875		/* 10uV */
+#define CPU_DVFS_VOLT14_VPROC1_FY3	 63750		/* 10uV */
+#define CPU_DVFS_VOLT15_VPROC1_FY3	 60000		/* 10uV */
 
 /* for DVFS OPP table B */
-#define CPU_DVFS_VOLT0_VPROC2_SB	 111875    /* 10uV */
-#define CPU_DVFS_VOLT1_VPROC2_SB	 105000    /* 10uV */
-#define CPU_DVFS_VOLT2_VPROC2_SB	 95000     /* 10uV */
-#define CPU_DVFS_VOLT3_VPROC2_SB	 90000     /* 10uV */
-#define CPU_DVFS_VOLT4_VPROC2_SB	 85000     /* 10uV */
-#define CPU_DVFS_VOLT5_VPROC2_SB	 83125     /* 10uV */
-#define CPU_DVFS_VOLT6_VPROC2_SB	 81250     /* 10uV */
-#define CPU_DVFS_VOLT7_VPROC2_SB	 80000     /* 10uV */
-#define CPU_DVFS_VOLT8_VPROC2_SB	 77500     /* 10uV */
-#define CPU_DVFS_VOLT9_VPROC2_SB	 75000     /* 10uV */
-#define CPU_DVFS_VOLT10_VPROC2_SB	 72500     /* 10uV */
-#define CPU_DVFS_VOLT11_VPROC2_SB	 70000     /* 10uV */
-#define CPU_DVFS_VOLT12_VPROC2_SB	 67500     /* 10uV */
-#define CPU_DVFS_VOLT13_VPROC2_SB	 65000     /* 10uV */
-#define CPU_DVFS_VOLT14_VPROC2_SB	 62500     /* 10uV */
-#define CPU_DVFS_VOLT15_VPROC2_SB	 60000     /* 10uV */
+#define CPU_DVFS_VOLT0_VPROC2_FY3	 100000		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC2_FY3	 97500		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC2_FY3	 95000		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC2_FY3	 92500		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC2_FY3	 90000		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC2_FY3	 88125		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC2_FY3	 86250		/* 10uV */
+#define CPU_DVFS_VOLT7_VPROC2_FY3	 85000		/* 10uV */
+#define CPU_DVFS_VOLT8_VPROC2_FY3	 82500		/* 10uV */
+#define CPU_DVFS_VOLT9_VPROC2_FY3	 80000		/* 10uV */
+#define CPU_DVFS_VOLT10_VPROC2_FY3	 77500		/* 10uV */
+#define CPU_DVFS_VOLT11_VPROC2_FY3	 75000		/* 10uV */
+#define CPU_DVFS_VOLT12_VPROC2_FY3	 72500		/* 10uV */
+#define CPU_DVFS_VOLT13_VPROC2_FY3	 70000		/* 10uV */
+#define CPU_DVFS_VOLT14_VPROC2_FY3	 67500		/* 10uV */
+#define CPU_DVFS_VOLT15_VPROC2_FY3	 65000		/* 10uV */
+
+/* V5_3 */
+/* for DVFS OPP table L */
+#define CPU_DVFS_FREQ0_LL_FY4		1989000		/* KHz */
+#define CPU_DVFS_FREQ1_LL_FY4		1924000		/* KHz */
+#define CPU_DVFS_FREQ2_LL_FY4		1846000		/* KHz */
+#define CPU_DVFS_FREQ3_LL_FY4		1781000		/* KHz */
+#define CPU_DVFS_FREQ4_LL_FY4		1716000		/* KHz */
+#define CPU_DVFS_FREQ5_LL_FY4		1677000		/* KHz */
+#define CPU_DVFS_FREQ6_LL_FY4		1625000		/* KHz */
+#define CPU_DVFS_FREQ7_LL_FY4		1586000		/* KHz */
+#define CPU_DVFS_FREQ8_LL_FY4		1508000		/* KHz */
+#define CPU_DVFS_FREQ9_LL_FY4		1417000		/* KHz */
+#define CPU_DVFS_FREQ10_LL_FY4		1326000		/* KHz */
+#define CPU_DVFS_FREQ11_LL_FY4		1248000		/* KHz */
+#define CPU_DVFS_FREQ12_LL_FY4		1131000		/* KHz */
+#define CPU_DVFS_FREQ13_LL_FY4		1014000		/* KHz */
+#define CPU_DVFS_FREQ14_LL_FY4		910000		/* KHz */
+#define CPU_DVFS_FREQ15_LL_FY4		793000		/* KHz */
+
+/* for DVFS OPP table B */
+#define CPU_DVFS_FREQ0_L_FY4		1989000		/* KHz */
+#define CPU_DVFS_FREQ1_L_FY4		1924000		/* KHz */
+#define CPU_DVFS_FREQ2_L_FY4		1846000		/* KHz */
+#define CPU_DVFS_FREQ3_L_FY4		1781000		/* KHz */
+#define CPU_DVFS_FREQ4_L_FY4		1716000		/* KHz */
+#define CPU_DVFS_FREQ5_L_FY4		1677000		/* KHz */
+#define CPU_DVFS_FREQ6_L_FY4		1625000		/* KHz */
+#define CPU_DVFS_FREQ7_L_FY4		1586000		/* KHz */
+#define CPU_DVFS_FREQ8_L_FY4		1508000		/* KHz */
+#define CPU_DVFS_FREQ9_L_FY4		1417000		/* KHz */
+#define CPU_DVFS_FREQ10_L_FY4		1326000		/* KHz */
+#define CPU_DVFS_FREQ11_L_FY4		1248000		/* KHz */
+#define CPU_DVFS_FREQ12_L_FY4		1131000		/* KHz */
+#define CPU_DVFS_FREQ13_L_FY4		1014000		/* KHz */
+#define CPU_DVFS_FREQ14_L_FY4		910000		/* KHz */
+#define CPU_DVFS_FREQ15_L_FY4		793000		/* KHz */
+
+/* for DVFS OPP table CCI */
+#define CPU_DVFS_FREQ0_CCI_FY4		1196000		/* KHz */
+#define CPU_DVFS_FREQ1_CCI_FY4		1144000		/* KHz */
+#define CPU_DVFS_FREQ2_CCI_FY4		1092000		/* KHz */
+#define CPU_DVFS_FREQ3_CCI_FY4		1027000		/* KHz */
+#define CPU_DVFS_FREQ4_CCI_FY4		962000		/* KHz */
+#define CPU_DVFS_FREQ5_CCI_FY4		923000		/* KHz */
+#define CPU_DVFS_FREQ6_CCI_FY4		871000		/* KHz */
+#define CPU_DVFS_FREQ7_CCI_FY4		845000		/* KHz */
+#define CPU_DVFS_FREQ8_CCI_FY4		767000		/* KHz */
+#define CPU_DVFS_FREQ9_CCI_FY4		689000		/* KHz */
+#define CPU_DVFS_FREQ10_CCI_FY4		624000		/* KHz */
+#define CPU_DVFS_FREQ11_CCI_FY4		546000		/* KHz */
+#define CPU_DVFS_FREQ12_CCI_FY4		481000		/* KHz */
+#define CPU_DVFS_FREQ13_CCI_FY4		403000		/* KHz */
+#define CPU_DVFS_FREQ14_CCI_FY4		338000		/* KHz */
+#define CPU_DVFS_FREQ15_CCI_FY4		273000		/* KHz */
+
+/* for DVFS OPP table L|CCI */
+#define CPU_DVFS_VOLT0_VPROC1_FY4	 100000		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC1_FY4	 97500		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC1_FY4	 95000		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC1_FY4	 92500		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC1_FY4	 89375		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC1_FY4	 88125		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC1_FY4	 85625		/* 10uV */
+#define CPU_DVFS_VOLT7_VPROC1_FY4	 84375		/* 10uV */
+#define CPU_DVFS_VOLT8_VPROC1_FY4	 81875		/* 10uV */
+#define CPU_DVFS_VOLT9_VPROC1_FY4	 80000		/* 10uV */
+#define CPU_DVFS_VOLT10_VPROC1_FY4	 76875		/* 10uV */
+#define CPU_DVFS_VOLT11_VPROC1_FY4	 73750		/* 10uV */
+#define CPU_DVFS_VOLT12_VPROC1_FY4	 70625		/* 10uV */
+#define CPU_DVFS_VOLT13_VPROC1_FY4	 66875		/* 10uV */
+#define CPU_DVFS_VOLT14_VPROC1_FY4	 63750		/* 10uV */
+#define CPU_DVFS_VOLT15_VPROC1_FY4	 60000		/* 10uV */
+
+/* for DVFS OPP table B */
+#define CPU_DVFS_VOLT0_VPROC2_FY4	 102500		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC2_FY4	 100000		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC2_FY4	 97500		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC2_FY4	 95000		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC2_FY4	 92500		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC2_FY4	 90625		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC2_FY4	 88750		/* 10uV */
+#define CPU_DVFS_VOLT7_VPROC2_FY4	 87500		/* 10uV */
+#define CPU_DVFS_VOLT8_VPROC2_FY4	 85000		/* 10uV */
+#define CPU_DVFS_VOLT9_VPROC2_FY4	 82500		/* 10uV */
+#define CPU_DVFS_VOLT10_VPROC2_FY4	 80000		/* 10uV */
+#define CPU_DVFS_VOLT11_VPROC2_FY4	 77500		/* 10uV */
+#define CPU_DVFS_VOLT12_VPROC2_FY4	 75000		/* 10uV */
+#define CPU_DVFS_VOLT13_VPROC2_FY4	 72500		/* 10uV */
+#define CPU_DVFS_VOLT14_VPROC2_FY4	 70000		/* 10uV */
+#define CPU_DVFS_VOLT15_VPROC2_FY4	 67500		/* 10uV */
+
+/* V5_4 */
+/* for DVFS OPP table L */
+#define CPU_DVFS_FREQ0_LL_FY5		1989000		/* KHz */
+#define CPU_DVFS_FREQ1_LL_FY5		1924000		/* KHz */
+#define CPU_DVFS_FREQ2_LL_FY5		1846000		/* KHz */
+#define CPU_DVFS_FREQ3_LL_FY5		1781000		/* KHz */
+#define CPU_DVFS_FREQ4_LL_FY5		1716000		/* KHz */
+#define CPU_DVFS_FREQ5_LL_FY5		1677000		/* KHz */
+#define CPU_DVFS_FREQ6_LL_FY5		1625000		/* KHz */
+#define CPU_DVFS_FREQ7_LL_FY5		1586000		/* KHz */
+#define CPU_DVFS_FREQ8_LL_FY5		1508000		/* KHz */
+#define CPU_DVFS_FREQ9_LL_FY5		1417000		/* KHz */
+#define CPU_DVFS_FREQ10_LL_FY5		1326000		/* KHz */
+#define CPU_DVFS_FREQ11_LL_FY5		1248000		/* KHz */
+#define CPU_DVFS_FREQ12_LL_FY5		1131000		/* KHz */
+#define CPU_DVFS_FREQ13_LL_FY5		1014000		/* KHz */
+#define CPU_DVFS_FREQ14_LL_FY5		910000		/* KHz */
+#define CPU_DVFS_FREQ15_LL_FY5		793000		/* KHz */
+
+/* for DVFS OPP table B */
+#define CPU_DVFS_FREQ0_L_FY5		1989000		/* KHz */
+#define CPU_DVFS_FREQ1_L_FY5		1924000		/* KHz */
+#define CPU_DVFS_FREQ2_L_FY5		1846000		/* KHz */
+#define CPU_DVFS_FREQ3_L_FY5		1781000		/* KHz */
+#define CPU_DVFS_FREQ4_L_FY5		1716000		/* KHz */
+#define CPU_DVFS_FREQ5_L_FY5		1677000		/* KHz */
+#define CPU_DVFS_FREQ6_L_FY5		1625000		/* KHz */
+#define CPU_DVFS_FREQ7_L_FY5		1586000		/* KHz */
+#define CPU_DVFS_FREQ8_L_FY5		1508000		/* KHz */
+#define CPU_DVFS_FREQ9_L_FY5		1417000		/* KHz */
+#define CPU_DVFS_FREQ10_L_FY5		1326000		/* KHz */
+#define CPU_DVFS_FREQ11_L_FY5		1248000		/* KHz */
+#define CPU_DVFS_FREQ12_L_FY5		1131000		/* KHz */
+#define CPU_DVFS_FREQ13_L_FY5		1014000		/* KHz */
+#define CPU_DVFS_FREQ14_L_FY5		910000		/* KHz */
+#define CPU_DVFS_FREQ15_L_FY5		793000		/* KHz */
+
+/* for DVFS OPP table CCI */
+#define CPU_DVFS_FREQ0_CCI_FY5		1196000		/* KHz */
+#define CPU_DVFS_FREQ1_CCI_FY5		1144000		/* KHz */
+#define CPU_DVFS_FREQ2_CCI_FY5		1092000		/* KHz */
+#define CPU_DVFS_FREQ3_CCI_FY5		1027000		/* KHz */
+#define CPU_DVFS_FREQ4_CCI_FY5		962000		/* KHz */
+#define CPU_DVFS_FREQ5_CCI_FY5		923000		/* KHz */
+#define CPU_DVFS_FREQ6_CCI_FY5		871000		/* KHz */
+#define CPU_DVFS_FREQ7_CCI_FY5		845000		/* KHz */
+#define CPU_DVFS_FREQ8_CCI_FY5		767000		/* KHz */
+#define CPU_DVFS_FREQ9_CCI_FY5		689000		/* KHz */
+#define CPU_DVFS_FREQ10_CCI_FY5		624000		/* KHz */
+#define CPU_DVFS_FREQ11_CCI_FY5		546000		/* KHz */
+#define CPU_DVFS_FREQ12_CCI_FY5		481000		/* KHz */
+#define CPU_DVFS_FREQ13_CCI_FY5		403000		/* KHz */
+#define CPU_DVFS_FREQ14_CCI_FY5		338000		/* KHz */
+#define CPU_DVFS_FREQ15_CCI_FY5		273000		/* KHz */
+
+/* for DVFS OPP table L|CCI */
+#define CPU_DVFS_VOLT0_VPROC1_FY5	 100000		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC1_FY5	 97500		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC1_FY5	 95000		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC1_FY5	 92500		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC1_FY5	 89375		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC1_FY5	 88125		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC1_FY5	 85625		/* 10uV */
+#define CPU_DVFS_VOLT7_VPROC1_FY5	 84375		/* 10uV */
+#define CPU_DVFS_VOLT8_VPROC1_FY5	 81875		/* 10uV */
+#define CPU_DVFS_VOLT9_VPROC1_FY5	 80000		/* 10uV */
+#define CPU_DVFS_VOLT10_VPROC1_FY5	 76875		/* 10uV */
+#define CPU_DVFS_VOLT11_VPROC1_FY5	 73750		/* 10uV */
+#define CPU_DVFS_VOLT12_VPROC1_FY5	 70625		/* 10uV */
+#define CPU_DVFS_VOLT13_VPROC1_FY5	 66875		/* 10uV */
+#define CPU_DVFS_VOLT14_VPROC1_FY5	 63750		/* 10uV */
+#define CPU_DVFS_VOLT15_VPROC1_FY5	 60000		/* 10uV */
+
+/* for DVFS OPP table B */
+#define CPU_DVFS_VOLT0_VPROC2_FY5	 105000		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC2_FY5	 102500		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC2_FY5	 100000		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC2_FY5	 97500		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC2_FY5	 95000		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC2_FY5	 93125		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC2_FY5	 91250		/* 10uV */
+#define CPU_DVFS_VOLT7_VPROC2_FY5	 90000		/* 10uV */
+#define CPU_DVFS_VOLT8_VPROC2_FY5	 87500		/* 10uV */
+#define CPU_DVFS_VOLT9_VPROC2_FY5	 85000		/* 10uV */
+#define CPU_DVFS_VOLT10_VPROC2_FY5	 82500		/* 10uV */
+#define CPU_DVFS_VOLT11_VPROC2_FY5	 80000		/* 10uV */
+#define CPU_DVFS_VOLT12_VPROC2_FY5	 77500		/* 10uV */
+#define CPU_DVFS_VOLT13_VPROC2_FY5	 75000		/* 10uV */
+#define CPU_DVFS_VOLT14_VPROC2_FY5	 72500		/* 10uV */
+#define CPU_DVFS_VOLT15_VPROC2_FY5	 70000		/* 10uV */
+
+/* V6 */
+/* for DVFS OPP table L */
+#define CPU_DVFS_FREQ0_LL_FY6		1807000		/* KHz */
+#define CPU_DVFS_FREQ1_LL_FY6		1729000		/* KHz */
+#define CPU_DVFS_FREQ2_LL_FY6		1664000		/* KHz */
+#define CPU_DVFS_FREQ3_LL_FY6		1612000		/* KHz */
+#define CPU_DVFS_FREQ4_LL_FY6		1547000		/* KHz */
+#define CPU_DVFS_FREQ5_LL_FY6		1495000		/* KHz */
+#define CPU_DVFS_FREQ6_LL_FY6		1456000		/* KHz */
+#define CPU_DVFS_FREQ7_LL_FY6		1430000		/* KHz */
+#define CPU_DVFS_FREQ8_LL_FY6		1365000		/* KHz */
+#define CPU_DVFS_FREQ9_LL_FY6		1287000		/* KHz */
+#define CPU_DVFS_FREQ10_LL_FY6		1209000		/* KHz */
+#define CPU_DVFS_FREQ11_LL_FY6		1118000		/* KHz */
+#define CPU_DVFS_FREQ12_LL_FY6		1027000		/* KHz */
+#define CPU_DVFS_FREQ13_LL_FY6		962000		/* KHz */
+#define CPU_DVFS_FREQ14_LL_FY6		884000		/* KHz */
+#define CPU_DVFS_FREQ15_LL_FY6		793000		/* KHz */
+
+/* for DVFS OPP table B */
+#define CPU_DVFS_FREQ0_L_FY6		1807000		/* KHz */
+#define CPU_DVFS_FREQ1_L_FY6		1729000		/* KHz */
+#define CPU_DVFS_FREQ2_L_FY6		1664000		/* KHz */
+#define CPU_DVFS_FREQ3_L_FY6		1612000		/* KHz */
+#define CPU_DVFS_FREQ4_L_FY6		1547000		/* KHz */
+#define CPU_DVFS_FREQ5_L_FY6		1495000		/* KHz */
+#define CPU_DVFS_FREQ6_L_FY6		1456000		/* KHz */
+#define CPU_DVFS_FREQ7_L_FY6		1430000		/* KHz */
+#define CPU_DVFS_FREQ8_L_FY6		1378000		/* KHz */
+#define CPU_DVFS_FREQ9_L_FY6		1300000		/* KHz */
+#define CPU_DVFS_FREQ10_L_FY6		1222000		/* KHz */
+#define CPU_DVFS_FREQ11_L_FY6		1144000		/* KHz */
+#define CPU_DVFS_FREQ12_L_FY6		1040000		/* KHz */
+#define CPU_DVFS_FREQ13_L_FY6		962000		/* KHz */
+#define CPU_DVFS_FREQ14_L_FY6		871000		/* KHz */
+#define CPU_DVFS_FREQ15_L_FY6		793000		/* KHz */
+
+/* for DVFS OPP table CCI */
+#define CPU_DVFS_FREQ0_CCI_FY6		1079000		/* KHz */
+#define CPU_DVFS_FREQ1_CCI_FY6		1027000		/* KHz */
+#define CPU_DVFS_FREQ2_CCI_FY6		988000		/* KHz */
+#define CPU_DVFS_FREQ3_CCI_FY6		936000		/* KHz */
+#define CPU_DVFS_FREQ4_CCI_FY6		884000		/* KHz */
+#define CPU_DVFS_FREQ5_CCI_FY6		819000		/* KHz */
+#define CPU_DVFS_FREQ6_CCI_FY6		780000		/* KHz */
+#define CPU_DVFS_FREQ7_CCI_FY6		754000		/* KHz */
+#define CPU_DVFS_FREQ8_CCI_FY6		689000		/* KHz */
+#define CPU_DVFS_FREQ9_CCI_FY6		637000		/* KHz */
+#define CPU_DVFS_FREQ10_CCI_FY6		572000		/* KHz */
+#define CPU_DVFS_FREQ11_CCI_FY6		494000		/* KHz */
+#define CPU_DVFS_FREQ12_CCI_FY6		429000		/* KHz */
+#define CPU_DVFS_FREQ13_CCI_FY6		377000		/* KHz */
+#define CPU_DVFS_FREQ14_CCI_FY6		325000		/* KHz */
+#define CPU_DVFS_FREQ15_CCI_FY6		273000		/* KHz */
+
+/* for DVFS OPP table L|CCI */
+#define CPU_DVFS_VOLT0_VPROC1_FY6	 100000		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC1_FY6	 97500		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC1_FY6	 95000		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC1_FY6	 92500		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC1_FY6	 90000		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC1_FY6	 87500		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC1_FY6	 85625		/* 10uV */
+#define CPU_DVFS_VOLT7_VPROC1_FY6	 84375		/* 10uV */
+#define CPU_DVFS_VOLT8_VPROC1_FY6	 81875		/* 10uV */
+#define CPU_DVFS_VOLT9_VPROC1_FY6	 80000		/* 10uV */
+#define CPU_DVFS_VOLT10_VPROC1_FY6	 76875		/* 10uV */
+#define CPU_DVFS_VOLT11_VPROC1_FY6	 73750		/* 10uV */
+#define CPU_DVFS_VOLT12_VPROC1_FY6	 70000		/* 10uV */
+#define CPU_DVFS_VOLT13_VPROC1_FY6	 66875		/* 10uV */
+#define CPU_DVFS_VOLT14_VPROC1_FY6	 63750		/* 10uV */
+#define CPU_DVFS_VOLT15_VPROC1_FY6	 60000		/* 10uV */
+
+/* for DVFS OPP table B */
+#define CPU_DVFS_VOLT0_VPROC2_FY6	 100000		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC2_FY6	 97500		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC2_FY6	 95000		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC2_FY6	 93125		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC2_FY6	 90000		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC2_FY6	 87500		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC2_FY6	 86250		/* 10uV */
+#define CPU_DVFS_VOLT7_VPROC2_FY6	 85000		/* 10uV */
+#define CPU_DVFS_VOLT8_VPROC2_FY6	 83125		/* 10uV */
+#define CPU_DVFS_VOLT9_VPROC2_FY6	 80000		/* 10uV */
+#define CPU_DVFS_VOLT10_VPROC2_FY6	 78125		/* 10uV */
+#define CPU_DVFS_VOLT11_VPROC2_FY6	 75625		/* 10uV */
+#define CPU_DVFS_VOLT12_VPROC2_FY6	 72500		/* 10uV */
+#define CPU_DVFS_VOLT13_VPROC2_FY6	 70000		/* 10uV */
+#define CPU_DVFS_VOLT14_VPROC2_FY6	 67500		/* 10uV */
+#define CPU_DVFS_VOLT15_VPROC2_FY6	 65000		/* 10uV */
 
 /* DVFS OPP table */
 #define OPP_TBL(cluster, seg, lv, vol)	\
@@ -307,18 +580,34 @@ static struct mt_cpu_freq_info opp_tbl_##cluster##_e##lv##_0[] = {	\
 	OP(CPU_DVFS_FREQ14_##cluster##_##seg, CPU_DVFS_VOLT14_VPROC##vol##_##seg),	\
 	OP(CPU_DVFS_FREQ15_##cluster##_##seg, CPU_DVFS_VOLT15_VPROC##vol##_##seg),	\
 }
-
+/* V3 */
 OPP_TBL(LL, FY, 0, 1);
 OPP_TBL(L, FY, 0, 2);
 OPP_TBL(CCI, FY, 0, 1);
-
+/* V4 */
 OPP_TBL(LL, FY2, 1, 1);
 OPP_TBL(L, FY2, 1, 2);
 OPP_TBL(CCI, FY2, 1, 1);
-
-OPP_TBL(LL, SB, 2, 1);
-OPP_TBL(L, SB, 2, 2);
-OPP_TBL(CCI, SB, 2, 1);
+/* V5_1 */
+OPP_TBL(LL, FY2, 2, 1);
+OPP_TBL(L, FY2, 2, 2);
+OPP_TBL(CCI, FY2, 2, 1);
+/* V5_2 */
+OPP_TBL(LL, FY3, 3, 1);
+OPP_TBL(L, FY3, 3, 2);
+OPP_TBL(CCI, FY3, 3, 1);
+/* V5_3 */
+OPP_TBL(LL, FY4, 4, 1);
+OPP_TBL(L, FY4, 4, 2);
+OPP_TBL(CCI, FY4, 4, 1);
+/* V5_4 */
+OPP_TBL(LL, FY5, 5, 1);
+OPP_TBL(L, FY5, 5, 2);
+OPP_TBL(CCI, FY5, 5, 1);
+/* V6 */
+OPP_TBL(LL, FY6, 6, 1);
+OPP_TBL(L, FY6, 6, 2);
+OPP_TBL(CCI, FY6, 6, 1);
 
 struct opp_tbl_info opp_tbls[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {		/* v1.1 */
 	/* LL */
@@ -326,23 +615,36 @@ struct opp_tbl_info opp_tbls[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {		/* v1.1 */
 		[CPU_LEVEL_0] = { opp_tbl_LL_e0_0, ARRAY_SIZE(opp_tbl_LL_e0_0) },
 		[CPU_LEVEL_1] = { opp_tbl_LL_e1_0, ARRAY_SIZE(opp_tbl_LL_e1_0) },
 		[CPU_LEVEL_2] = { opp_tbl_LL_e2_0, ARRAY_SIZE(opp_tbl_LL_e2_0) },
+		[CPU_LEVEL_3] = { opp_tbl_LL_e3_0, ARRAY_SIZE(opp_tbl_LL_e3_0) },
+		[CPU_LEVEL_4] = { opp_tbl_LL_e4_0, ARRAY_SIZE(opp_tbl_LL_e4_0) },
+		[CPU_LEVEL_5] = { opp_tbl_LL_e5_0, ARRAY_SIZE(opp_tbl_LL_e5_0) },
+		[CPU_LEVEL_6] = { opp_tbl_LL_e6_0, ARRAY_SIZE(opp_tbl_LL_e6_0) },
 	},
 	/* L */
 	{
 		[CPU_LEVEL_0] = { opp_tbl_L_e0_0, ARRAY_SIZE(opp_tbl_L_e0_0) },
 		[CPU_LEVEL_1] = { opp_tbl_L_e1_0, ARRAY_SIZE(opp_tbl_L_e1_0) },
 		[CPU_LEVEL_2] = { opp_tbl_L_e2_0, ARRAY_SIZE(opp_tbl_L_e2_0) },
+		[CPU_LEVEL_3] = { opp_tbl_L_e3_0, ARRAY_SIZE(opp_tbl_L_e3_0) },
+		[CPU_LEVEL_4] = { opp_tbl_L_e4_0, ARRAY_SIZE(opp_tbl_L_e4_0) },
+		[CPU_LEVEL_5] = { opp_tbl_L_e5_0, ARRAY_SIZE(opp_tbl_L_e5_0) },
+		[CPU_LEVEL_6] = { opp_tbl_L_e6_0, ARRAY_SIZE(opp_tbl_L_e6_0) },
 	},
 	/* CCI */
 	{
 		[CPU_LEVEL_0] = { opp_tbl_CCI_e0_0, ARRAY_SIZE(opp_tbl_CCI_e0_0) },
 		[CPU_LEVEL_1] = { opp_tbl_CCI_e1_0, ARRAY_SIZE(opp_tbl_CCI_e1_0) },
 		[CPU_LEVEL_2] = { opp_tbl_CCI_e2_0, ARRAY_SIZE(opp_tbl_CCI_e2_0) },
+		[CPU_LEVEL_3] = { opp_tbl_CCI_e3_0, ARRAY_SIZE(opp_tbl_CCI_e3_0) },
+		[CPU_LEVEL_4] = { opp_tbl_CCI_e4_0, ARRAY_SIZE(opp_tbl_CCI_e4_0) },
+		[CPU_LEVEL_5] = { opp_tbl_CCI_e5_0, ARRAY_SIZE(opp_tbl_CCI_e5_0) },
+		[CPU_LEVEL_6] = { opp_tbl_CCI_e6_0, ARRAY_SIZE(opp_tbl_CCI_e6_0) },
 	},
 };
 
 /* 16 steps OPP table */
-static struct mt_cpu_freq_method opp_tbl_method_LL_e0[] = {	/* FY */
+/* < V6 */
+static struct mt_cpu_freq_method opp_tbl_method_LL_e0[] = {
 	/* POS,	CLK */
 	FP(1,	1),
 	FP(1,	1),
@@ -362,7 +664,7 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_e0[] = {	/* FY */
 	FP(2,	1),
 };
 
-static struct mt_cpu_freq_method opp_tbl_method_L_e0[] = {	/* FY */
+static struct mt_cpu_freq_method opp_tbl_method_L_e0[] = {
 	/* POS,	CLK */
 	FP(1,	1),
 	FP(1,	1),
@@ -382,7 +684,7 @@ static struct mt_cpu_freq_method opp_tbl_method_L_e0[] = {	/* FY */
 	FP(2,	1),
 };
 
-static struct mt_cpu_freq_method opp_tbl_method_CCI_e0[] = {	/* FY */
+static struct mt_cpu_freq_method opp_tbl_method_CCI_e0[] = {
 	/* POS,	CLK */
 	FP(2,	1),
 	FP(2,	1),
@@ -403,17 +705,18 @@ static struct mt_cpu_freq_method opp_tbl_method_CCI_e0[] = {	/* FY */
 };
 
 /* 16 steps OPP table */
-static struct mt_cpu_freq_method opp_tbl_method_LL_e1[] = {	/* FY2 */
+/* V6 */
+static struct mt_cpu_freq_method opp_tbl_method_LL_e1[] = {
 	/* POS,	CLK */
 	FP(1,	1),
 	FP(1,	1),
 	FP(1,	1),
 	FP(1,	1),
 	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
+	FP(2,	1),
+	FP(2,	1),
+	FP(2,	1),
+	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
@@ -430,50 +733,10 @@ static struct mt_cpu_freq_method opp_tbl_method_L_e1[] = {	/* FY2 */
 	FP(1,	1),
 	FP(1,	1),
 	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-};
-
-static struct mt_cpu_freq_method opp_tbl_method_CCI_e1[] = {	/* FY2 */
-	/* POS,	CLK */
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	2),
-	FP(2,	2),
-	FP(2,	2),
-	FP(2,	2),
-	FP(2,	2),
-	FP(4,	2),
-	FP(4,	2),
-};
-
-static struct mt_cpu_freq_method opp_tbl_method_LL_e2[] = {	/* SB */
-	/* POS,	CLK */
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
@@ -483,27 +746,7 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_e2[] = {	/* SB */
 	FP(2,	1),
 };
 
-static struct mt_cpu_freq_method opp_tbl_method_L_e2[] = {	/* SB */
-	/* POS,	CLK */
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(1,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-};
-
-static struct mt_cpu_freq_method opp_tbl_method_CCI_e2[] = {	/* SB */
+static struct mt_cpu_freq_method opp_tbl_method_CCI_e1[] = {
 	/* POS,	CLK */
 	FP(2,	1),
 	FP(2,	1),
@@ -513,7 +756,7 @@ static struct mt_cpu_freq_method opp_tbl_method_CCI_e2[] = {	/* SB */
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
-	FP(2,	1),
+	FP(2,	2),
 	FP(2,	2),
 	FP(2,	2),
 	FP(2,	2),
@@ -527,19 +770,31 @@ struct opp_tbl_m_info opp_tbls_m[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {	/* v1.1 */
 	/* LL */
 	{
 		[CPU_LEVEL_0] = { opp_tbl_method_LL_e0 },
-		[CPU_LEVEL_1] = { opp_tbl_method_LL_e1 },
-		[CPU_LEVEL_2] = { opp_tbl_method_LL_e2 },
+		[CPU_LEVEL_1] = { opp_tbl_method_LL_e0 },
+		[CPU_LEVEL_2] = { opp_tbl_method_LL_e0 },
+		[CPU_LEVEL_3] = { opp_tbl_method_LL_e0 },
+		[CPU_LEVEL_4] = { opp_tbl_method_LL_e0 },
+		[CPU_LEVEL_5] = { opp_tbl_method_LL_e0 },
+		[CPU_LEVEL_6] = { opp_tbl_method_LL_e1 },
 	},
 	/* L */
 	{
 		[CPU_LEVEL_0] = { opp_tbl_method_L_e0 },
-		[CPU_LEVEL_1] = { opp_tbl_method_L_e1 },
-		[CPU_LEVEL_2] = { opp_tbl_method_L_e2 },
+		[CPU_LEVEL_1] = { opp_tbl_method_L_e0 },
+		[CPU_LEVEL_2] = { opp_tbl_method_L_e0 },
+		[CPU_LEVEL_3] = { opp_tbl_method_L_e0 },
+		[CPU_LEVEL_4] = { opp_tbl_method_L_e0 },
+		[CPU_LEVEL_5] = { opp_tbl_method_L_e0 },
+		[CPU_LEVEL_6] = { opp_tbl_method_L_e1 },
 	},
 	/* CCI */
 	{
 		[CPU_LEVEL_0] = { opp_tbl_method_CCI_e0 },
-		[CPU_LEVEL_1] = { opp_tbl_method_CCI_e1 },
-		[CPU_LEVEL_2] = { opp_tbl_method_CCI_e2 },
+		[CPU_LEVEL_1] = { opp_tbl_method_CCI_e0 },
+		[CPU_LEVEL_2] = { opp_tbl_method_CCI_e0 },
+		[CPU_LEVEL_3] = { opp_tbl_method_CCI_e0 },
+		[CPU_LEVEL_4] = { opp_tbl_method_CCI_e0 },
+		[CPU_LEVEL_5] = { opp_tbl_method_CCI_e0 },
+		[CPU_LEVEL_6] = { opp_tbl_method_CCI_e1 },
 	},
 };
