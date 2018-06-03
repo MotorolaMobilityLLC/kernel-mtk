@@ -201,6 +201,7 @@ unsigned char pd_j = MT6336_INT_TYPE_C_PD_IRQ % CHR_INT_WIDTH;
  ******************************************************************************/
 static DEFINE_MUTEX(mt6336_mutex);
 struct task_struct *mt6336_thread_handle;
+struct mt6336_ctrl *irq_ctrl;
 
 #if !defined CONFIG_HAS_WAKELOCKS
 struct wakeup_source mt6336Thread_lock;
@@ -401,7 +402,9 @@ int mt6336_thread_kthread(void *x)
 	while (1) {
 		mutex_lock(&mt6336_mutex);
 
+		mt6336_ctrl_enable(irq_ctrl);
 		mt6336_int_handler();
+		mt6336_ctrl_disable(irq_ctrl);
 		for (i = 0; i < ARRAY_SIZE(mt6336_interrupts); i++) {
 			int_status_val = mt6336_get_register_value(mt6336_interrupts[i].address);
 			MT6336LOG("[CHR_INT] %d after, status[0x%x]=0x%x\n", i,
@@ -425,6 +428,8 @@ void MT6336_EINT_SETTING(void)
 {
 	struct device_node *node = NULL;
 	int ret = 0;
+
+	irq_ctrl = mt6336_ctrl_get("mt6336_irq");
 
 	/* create MT6336 irq thread handler*/
 	mt6336_thread_handle = kthread_create(mt6336_thread_kthread, (void *)NULL, "mt6336_thread");
