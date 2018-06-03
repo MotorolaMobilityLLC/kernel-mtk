@@ -17,21 +17,23 @@
 #include <linux/module.h>
 #include <linux/clk.h>
 
-#define MAX_VCO_VALUE	4000000
-#define MIN_VCO_VALUE	2000000
+#define MAX_VCO_VALUE	3800000
+#define MIN_VCO_VALUE	1500000
 
+#define DIV2_MAX_FREQ   1900000
+#define DIV2_MIN_FREQ   750000
 #define DIV4_MAX_FREQ	950000
 #define DIV4_MIN_FREQ	375000
 #define DIV8_MAX_FREQ   475000
 #define DIV8_MIN_FREQ   187500
 #define DIV16_MAX_FREQ  237500
-#define DIV16_MIN_FREQ  125000
+#define DIV16_MIN_FREQ  93750
 
 #define TO_MHz_HEAD 100
 #define TO_MHz_TAIL 10
 #define ROUNDING_VALUE 5
 #define DDS_SHIFT 14
-#define POST_DIV_SHIFT 28
+#define POST_DIV_SHIFT 24
 #define POST_DIV_MASK 0x70000000
 #define GPUPLL_FIN 26
 
@@ -96,6 +98,7 @@ extern void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power);
 extern unsigned int mt_gpufreq_get_leakage_mw(void);
 
 extern unsigned int mt_get_mfgclk_freq(void);	/* Freq Meter API */
+extern unsigned int mt_get_ckgen_freq(unsigned int);
 extern u32 get_devinfo_with_index(u32 index);
 extern int mt_gpufreq_fan53555_init(void);
 /* #ifdef MT_GPUFREQ_AEE_RR_REC */

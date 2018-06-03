@@ -29,7 +29,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/
 endif
 
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
-
+$(info CONFIG_MACH_MT6763: $(CONFIG_MACH_MT6763))
 #obj-$(CONFIG_MACH_MT6763) += mtk_clkmgr.o
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
