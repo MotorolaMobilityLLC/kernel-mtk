@@ -486,7 +486,8 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 				charger_dev_enable_termination(info->chg1_dev, false);
 			} else {
 				charger_dev_set_eoc_current(info->chg1_dev, 150000);
-				charger_dev_enable_termination(info->chg1_dev, true);
+				if (mtk_pe40_get_is_connect(info) == false)
+					charger_dev_enable_termination(info->chg1_dev, true);
 			}
 		} else {
 			if (chg2_chip_enabled) {
@@ -811,7 +812,8 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 
 				charger_dev_enable(info->chg2_dev, false);
 				charger_dev_set_eoc_current(info->chg1_dev, 150000);
-				charger_dev_enable_termination(info->chg1_dev, true);
+				if (mtk_pe40_get_is_connect(info) == false)
+					charger_dev_enable_termination(info->chg1_dev, true);
 			} else {
 				if (is_in_pe40_state(info))
 					swchgalg->state = CHR_PE40_TUNING;
