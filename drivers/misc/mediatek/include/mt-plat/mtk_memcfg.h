@@ -64,7 +64,7 @@ extern void split_page(struct page *page, unsigned int order);
 
 #else
 
-#define MTK_MEMCFG_LOG_AND_PRINTK(fmt, arg...) pr_alert(fmt, ##arg)
+#define MTK_MEMCFG_LOG_AND_PRINTK(fmt, arg...) pr_info(fmt, ##arg)
 
 #define mtk_memcfg_get_force_inode_gfp_lowmem()  do { } while (0)
 #define mtk_memcfg_set_force_inode_gfp_lowmem(flag)  do { } while (0)
