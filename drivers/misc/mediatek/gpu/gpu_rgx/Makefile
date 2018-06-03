@@ -12,7 +12,10 @@
 #
 
 MTK_GPU_VERSION = $(subst ",,$(CONFIG_MTK_GPU_VERSION))
-$(info *MTK_GPU_VERSION 3 = $(word 3,$(MTK_GPU_VERSION)))
+$(info *MTK_GPU_VERSION 2 = $(word 2,$(MTK_GPU_VERSION)))
 
-obj-y += $(word 3,$(MTK_GPU_VERSION))/
-
+ifeq ($(word 2,$(MTK_GPU_VERSION)),austin)
+	obj-y += m1.7ED4276001/
+else
+	obj-y += 1.7ED/
+endif
