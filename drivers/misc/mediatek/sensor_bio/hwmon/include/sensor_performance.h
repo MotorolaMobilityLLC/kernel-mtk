@@ -32,7 +32,7 @@ struct time_records {
 
 #define LIMIT 1000
 
-#define DEBUG_PERFORMANCE
+/* #define DEBUG_PERFORMANCE */
 
 #ifdef DEBUG_PERFORMANCE
 extern void mark_timestamp(u8 sensor_type, enum SENSOR_STATUS status, u64 current_time,
