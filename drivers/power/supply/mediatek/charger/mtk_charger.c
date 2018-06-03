@@ -81,13 +81,20 @@ static DEFINE_MUTEX(consumer_mutex);
 
 #define USE_FG_TIMER 1
 
+bool is_disable_charger(void)
+{
+	if (pinfo == NULL)
+		return true;
 
-/*=============== fix me==================*/
-
+	if (pinfo->disable_charger == true || IS_ENABLED(CONFIG_POWER_EXT))
+		return true;
+	else
+		return false;
+}
 
 void BATTERY_SetUSBState(int usb_state_value)
 {
-	if (IS_ENABLED(CONFIG_POWER_EXT)) {
+	if (is_disable_charger()) {
 		chr_err("[BATTERY_SetUSBState] in FPGA/EVB, no service\n");
 	} else {
 		if ((usb_state_value < USB_SUSPEND) ||
@@ -1401,12 +1408,15 @@ static int charger_routine_thread(void *arg)
 		charger_update_data(info);
 		charger_check_status(info);
 		kpoc_power_off_check(info);
-#ifndef CONFIG_POWER_EXT
-		if (is_charger_on == true) {
-			if (info->do_algorithm)
-				info->do_algorithm(info);
-		}
-#endif
+
+		if (is_disable_charger() == false) {
+			if (is_charger_on == true) {
+				if (info->do_algorithm)
+					info->do_algorithm(info);
+			}
+		} else
+			chr_debug("disable charging\n");
+
 		spin_lock_irqsave(&info->slock, flags);
 		__pm_relax(&info->charger_wakelock);
 		spin_unlock_irqrestore(&info->slock, flags);
@@ -1447,6 +1457,8 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 		mtk_dual_switch_charging_init(info);
 	}
 #endif
+
+	info->disable_charger = of_property_read_bool(np, "disable_charger");
 	info->enable_sw_safety_timer =
 			of_property_read_bool(np, "enable_sw_safety_timer");
 	info->enable_sw_jeita = of_property_read_bool(np, "enable_sw_jeita");

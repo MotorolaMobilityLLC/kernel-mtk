@@ -214,6 +214,7 @@ struct charger_manager {
 	void	*algorithm_data;
 	int usb_state;
 	bool usb_unlimited;
+	bool disable_charger;
 
 	struct charger_device *chg1_dev;
 	struct notifier_block chg1_nb;
