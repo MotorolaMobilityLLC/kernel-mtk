@@ -125,6 +125,9 @@ static void musb_port_reset(struct musb *musb, bool do_reset)
 	 */
 	power = musb_readb(mbase, MUSB_POWER);
 	if (do_reset) {
+		DBG(0, "force musb_platform_reset\n");
+		musb_platform_reset(musb);
+		mdelay(3);
 
 		/*
 		 * If RESUME is set, we must make sure it stays minimum 20 ms.

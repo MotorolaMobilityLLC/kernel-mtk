@@ -1700,17 +1700,24 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 		 * FIFO mode too...
 		 */
 		{
-			u32 cnt = 1000000000;	/* 1GHZ, (1000*1000*1000) */
+			struct timeval tv_before, tv_after;
+			int timeout = 0;
 
-			while (cnt--) {
+			do_gettimeofday(&tv_before);
+			while (1) {
 				if (tx_csr & (MUSB_TXCSR_FIFONOTEMPTY | MUSB_TXCSR_TXPKTRDY))
 					tx_csr = musb_readw(epio, MUSB_TXCSR);
 				else
 					break;
-			}
-			if (!cnt)
-				DBG(0, "ERROR !!!, DMA complete but packet still in FIFO, CSR %04x", tx_csr);
 
+				do_gettimeofday(&tv_after);
+				if ((tv_after.tv_sec - tv_before.tv_sec) >= 1) {
+					timeout = 1;
+					break;
+				}
+			}
+			if (timeout)
+				DBG(0, "ERROR !!!, DMA complete but packet still in FIFO, CSR %04x\n", tx_csr);
 		}
 	}
 
@@ -2741,6 +2748,11 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 			qh->is_ready,
 			urb->urb_list.prev != &qh->hep->urb_list,
 			musb_ep_get_qh(qh->hw_ep, is_in) == qh);
+#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+	/* abort HW transaction on this ep */
+	if (qh->is_use_qmu)
+		mtk_disable_q(musb, qh->hw_ep->epnum, is_in);
+#endif
 	/*
 	 * Any URB not actively programmed into endpoint hardware can be
 	 * immediately given back; that's any URB not at the head of an
