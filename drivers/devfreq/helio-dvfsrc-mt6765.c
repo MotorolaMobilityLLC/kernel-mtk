@@ -301,7 +301,7 @@ int helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc)
 	helio_dvfsrc_sram_reg_init();
 
 	if (can_dvfsrc_enable())
-		helio_dvfsrc_enable(0);
+		helio_dvfsrc_enable(1);
 	else
 		helio_dvfsrc_enable(0);
 
