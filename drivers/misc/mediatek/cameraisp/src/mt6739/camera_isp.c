@@ -11253,8 +11253,12 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 		FirstUnusedIrqUserKey = 1;
 		memset((void *)IrqUserKey_UserInfo[i].userName, '\0', USERKEY_STR_LEN);
 		IrqUserKey_UserInfo[i].userKey = -1;
-		/* flushIRQ     v3 */
-		IrqFlush_v3[i] = 0x0;
+
+	/* flushIRQ     v3 */
+	IrqFlush_v3[i] =
+		(ISP_IRQ_P1_STATUS_VS1_INT_ST | ISP_IRQ_P1_STATUS_D_VS1_INT_ST |
+		 ISP_IRQ_P1_STATUS_AF_DON_ST | ISP_IRQ_P1_STATUS_D_AF_DON_ST |
+		 ISP_IRQ_P1_STATUS_PASS1_DON_ST | ISP_IRQ_P1_STATUS_D_PASS1_DON_ST);
 	}
 
 	/* flushIRQ     v1 */
