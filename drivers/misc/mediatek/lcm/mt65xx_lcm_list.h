@@ -277,6 +277,7 @@ extern struct LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_lcm_drv;
 extern struct LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_nt50358_lcm_drv;
 extern struct LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_720p_lcm_drv;
 extern struct LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_qhd_lcm_drv;
+extern struct LCM_DRIVER ili9881c_hdp_dsi_vdo_ilitek_rt5081_lcm_drv;
 extern struct LCM_DRIVER nt51021_wuxga_dsi_vdo_mt8173_lcm_drv;
 
 #ifdef BUILD_LK

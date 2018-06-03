@@ -1060,6 +1060,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 	&nt35695B_fhd_dsi_cmd_auo_nt50358_qhd_lcm_drv,
 #endif
 
+#if defined(ILI9881C_HDP_DSI_VDO_ILITEK_RT5081)
+	&ili9881c_hdp_dsi_vdo_ilitek_rt5081_lcm_drv,
+#endif
+
 #if defined(NT51021_WUXGA_DSI_VDO_MT8173)
 	&nt51021_wuxga_dsi_vdo_mt8173_lcm_drv,
 #endif
