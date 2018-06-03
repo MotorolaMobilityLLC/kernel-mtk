@@ -471,12 +471,24 @@ int mt_cpufreq_dts_map(void)
 }
 
 #define SEG_EFUSE 30
-#define BIN_EFUSE 52 /* 588 */
-#define TURBO_EFUSE 54 /* 590 */
+#define TURBO_EFUSE 29 /* 590 */
 
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = CPU_LEVEL_0;
+	unsigned int seg_code = 0;
+	unsigned int turbo_code = 0;
+
+	seg_code = get_devinfo_with_index(SEG_EFUSE);
+	seg_code = _GET_BITS_VAL_(6:0, seg_code);
+
+	turbo_code = get_devinfo_with_index(TURBO_EFUSE);
+	turbo_code = _GET_BITS_VAL_(21:20, turbo_code);
+
+	if (seg_code == 0x4 && turbo_code == 0x3)
+		lv = CPU_LEVEL_1;
+	else
+		lv = CPU_LEVEL_0;
 
 	return lv;
 }
