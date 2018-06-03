@@ -727,15 +727,10 @@ int ddp_path_top_clock_on(void)
 	ddp_clk_prepare_enable(CLK_MM_GALS_COMM0);
 	ddp_clk_prepare_enable(CLK_MM_GALS_COMM1);
 	ddp_clk_prepare_enable(DISP0_DISP_26M);
-#if 1
+
 	/* hw workaround : begin */
-	/* 2. gce event 34 workaround */
-	ddp_clk_prepare_enable(DISP0_DISP_OVL1_2L);
-	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET0, 1<<16);
-	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR0, 1<<16);
-	ddp_clk_disable_unprepare(DISP0_DISP_OVL1_2L);
+	ddp_ovl_dcm_reset();
 	/* hw workaround : end */
-#endif
 
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP_MUTEX"); */
 	DDPDUMP("ddp CG0:%x, CG1:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
