@@ -466,7 +466,7 @@ void clk_buf_dump_dts_log(void)
 		     PMIC_CLK_BUF7_DRIVING_CURR);
 }
 
-static void clk_buf_dump_clkbuf_log(void)
+void clk_buf_dump_clkbuf_log(void)
 {
 	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw14 = 0,
 	    pmic_cw16 = 0, top_spi_con1 = 0;
