@@ -112,6 +112,7 @@ enum {
 	MD_EE_PENDING_TOO_LONG	= (1 << 4),
 	MD_EE_WDT_GET		= (1 << 5),
 	MD_EE_DUMP_IN_GPD	= (1 << 6),
+	MD_EE_SWINT_GET		= (1 << 7),
 };
 
 enum {

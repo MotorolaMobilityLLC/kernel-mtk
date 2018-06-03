@@ -52,7 +52,7 @@ void fsm_md_exception_stage(struct ccci_fsm_ee *ee_ctl, int stage)
 		ee_ctl->mdlog_dump_done = 0;
 		ee_ctl->ee_info_flag = 0;
 		spin_lock_irqsave(&ee_ctl->ctrl_lock, flags);
-		ee_ctl->ee_info_flag |= MD_EE_FLOW_START;
+		ee_ctl->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_SWINT_GET);
 		if (ccci_fsm_get_md_state(ee_ctl->md_id) == BOOT_WAITING_FOR_HS1)
 			ee_ctl->ee_info_flag |= MD_EE_DUMP_IN_GPD;
 		spin_unlock_irqrestore(&ee_ctl->ctrl_lock, flags);
@@ -73,13 +73,16 @@ void fsm_md_exception_stage(struct ccci_fsm_ee *ee_ctl, int stage)
 		ee_info_flag = ee_ctl->ee_info_flag;
 		spin_unlock_irqrestore(&ee_ctl->ctrl_lock, flags);
 
-		if ((ee_info_flag & (MD_EE_MSG_GET | MD_EE_OK_MSG_GET)) ==
-		    (MD_EE_MSG_GET | MD_EE_OK_MSG_GET)) {
+		if ((ee_info_flag & (MD_EE_SWINT_GET | MD_EE_MSG_GET | MD_EE_OK_MSG_GET)) ==
+		    (MD_EE_SWINT_GET | MD_EE_MSG_GET | MD_EE_OK_MSG_GET)) {
 			ee_case = MD_EE_CASE_NORMAL;
-			CCCI_DEBUG_LOG(md_id, FSM, "Recv MD_EX & MD_EX_REC_OK\n");
+			CCCI_DEBUG_LOG(md_id, FSM, "Recv SWINT & MD_EX & MD_EX_REC_OK\n");
 		} else if (ee_info_flag & MD_EE_MSG_GET) {
 			ee_case = MD_EE_CASE_ONLY_EX;
 			CCCI_NORMAL_LOG(md_id, FSM, "Only recv MD_EX.\n");
+		} else if (ee_info_flag & MD_EE_SWINT_GET) {
+			ee_case = MD_EE_CASE_ONLY_SWINT;
+			CCCI_NORMAL_LOG(md_id, FSM, "Only recv SWINT.\n");
 		} else if (ee_info_flag & MD_EE_PENDING_TOO_LONG) {
 			ee_case = MD_EE_CASE_NO_RESPONSE;
 		} else if (ee_info_flag & MD_EE_WDT_GET) {
