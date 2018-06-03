@@ -76,7 +76,8 @@
 
 #define CCU_DEV_NAME            "ccu"
 
-struct clk *ccu_clock_ctrl;
+#define CCU_CLK_NUM 2 /* [0]: Camsys, [1]: Mmsys */
+struct clk *ccu_clk_ctrl[CCU_CLK_NUM];
 
 struct ccu_device_s *g_ccu_device;
 static struct ccu_power_s power;
@@ -550,17 +551,18 @@ int ccu_clock_enable(void)
 
 	LOG_DBG_MUST("ccu_clock_enable.\n");
 
-	ret = clk_prepare_enable(ccu_clock_ctrl);
+	ret = (clk_prepare_enable(ccu_clk_ctrl[0]) | clk_prepare_enable(ccu_clk_ctrl[1]));
 	if (ret)
 		LOG_ERR("clock enable fail.\n");
-
 	return ret;
 }
 
 void ccu_clock_disable(void)
 {
 	LOG_DBG_MUST("ccu_clock_disable.\n");
-	clk_disable_unprepare(ccu_clock_ctrl);
+	clk_disable_unprepare(ccu_clk_ctrl[0]);
+	clk_disable_unprepare(ccu_clk_ctrl[1]);
+
 }
 
 static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
@@ -1089,9 +1091,12 @@ static int ccu_probe(struct platform_device *pdev)
 		}
 		/* get Clock control from device tree.  */
 		{
-			ccu_clock_ctrl = devm_clk_get(g_ccu_device->dev, "CCU_CLK_CAM_CCU");
-			if (ccu_clock_ctrl == NULL)
-				LOG_ERR("Get ccu clock ctrl fail.\n");
+			ccu_clk_ctrl[0] = devm_clk_get(g_ccu_device->dev, "CCU_CLK_CAM_CCU");
+			if (ccu_clk_ctrl[0] == NULL)
+				LOG_ERR("Get ccu clock ctrl camsys fail.\n");
+			ccu_clk_ctrl[1] = devm_clk_get(g_ccu_device->dev, "CCU_CLK_MMSYS_CCU");
+			if (ccu_clk_ctrl[1] == NULL)
+				LOG_ERR("Get ccu clock ctrl mmsys fail.\n");
 		}
 		/**/
 		g_ccu_device->irq_num = irq_of_parse_and_map(node, 0);
