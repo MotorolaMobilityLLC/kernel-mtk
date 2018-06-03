@@ -51,6 +51,7 @@
 #include "cmdq_reg.h"
 #include "cmdq_core.h"
 #include "disp_lowpower.h"
+#include "disp_arr.h"
 #include "disp_recovery.h"
 #include "disp_partial.h"
 #include "mtk_ion.h"
@@ -1016,6 +1017,20 @@ static void process_dbg_opt(const char *opt)
 		DDPMSG("Display debug command: disp_set_fps start\n");
 		primary_display_force_set_vsync_fps(disp_fps, 0);
 		DDPMSG("Display debug command: disp_set_fps done\n");
+	} else if (strncmp(opt, "disp_set_max_fps", 16) == 0) {
+		int fps = 0;
+
+		DDPMSG("Display debug command: disp_set_max_fps start\n");
+		fps = primary_display_get_max_refresh_rate();
+		primary_display_force_set_vsync_fps(fps, 0);
+		DDPMSG("Display debug command: disp_set_max_fps done\n");
+	} else if (strncmp(opt, "disp_set_min_fps", 16) == 0) {
+		int fps = 0;
+
+		DDPMSG("Display debug command: disp_set_min_fps start\n");
+		fps = primary_display_get_min_refresh_rate();
+		primary_display_force_set_vsync_fps(fps, 0);
+		DDPMSG("Display debug command: disp_set_min_fps done\n");
 	} else if (strncmp(opt, "disp_enter_idle_fps", 19) == 0) {
 		DDPMSG("Display debug command: disp_enter_idle_fps start\n");
 		primary_display_force_set_vsync_fps(50, 1);

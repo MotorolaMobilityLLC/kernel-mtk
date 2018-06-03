@@ -92,6 +92,7 @@
 #include "ddp_od.h"
 #include "layering_rule.h"
 #include "disp_rect.h"
+#include "disp_arr.h"
 #include "disp_partial.h"
 #include "ddp_aal.h"
 
@@ -178,62 +179,9 @@ static int dvfs_last_ovl_req = HRT_LEVEL_LPM;
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
 static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 
-struct display_primary_path_context {
-	enum DISP_POWER_STATE state;
-	unsigned int lcm_fps;
-	unsigned int dynamic_fps;
-	int lcm_refresh_rate;
-	int max_layer;
-	int need_trigger_overlay;
-	int need_trigger_ovl1to2;
-	int need_trigger_dcMirror_out;
-	enum DISP_PRIMARY_PATH_MODE mode;
-	unsigned int session_id;
-	int session_mode;
-	int ovl1to2_mode;
-	unsigned int last_vsync_tick;
-	unsigned long framebuffer_mva;
-	unsigned long framebuffer_va;
-	struct mutex lock;
-	struct mutex capture_lock;
-	struct mutex switch_dst_lock;
-	struct disp_lcm_handle *plcm;
-	struct cmdqRecStruct *cmdq_handle_config_esd;
-	struct cmdqRecStruct *cmdq_handle_config;
-	disp_path_handle dpmgr_handle;
-	disp_path_handle ovl2mem_path_handle;
-	struct cmdqRecStruct *cmdq_handle_ovl1to2_config;
-	struct cmdqRecStruct *cmdq_handle_trigger;
-	char *mutex_locker;
-	int vsync_drop;
-	unsigned int dc_buf_id;
-	unsigned int dc_buf[DISP_INTERNAL_BUFFER_COUNT];
-	unsigned int force_fps_keep_count;
-	unsigned int force_fps_skip_count;
-	cmdqBackupSlotHandle cur_config_fence;
-	cmdqBackupSlotHandle subtractor_when_free;
-	cmdqBackupSlotHandle rdma_buff_info;
-	cmdqBackupSlotHandle ovl_status_info;
-	cmdqBackupSlotHandle ovl_config_time;
-	cmdqBackupSlotHandle dither_status_info;
-	cmdqBackupSlotHandle dsi_vfp_line;
-
-	int is_primary_sec;
-	int primary_display_scenario;
-#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-	int request_fps;
-#endif
-	enum mtkfb_power_mode pm;
-	enum lcm_power_state lcm_ps;
-};
-
-#define pgc	_get_context()
-
 static int smart_ovl_try_switch_mode_nolock(void);
 
-
-
-static struct display_primary_path_context *_get_context(void)
+struct display_primary_path_context *_get_context(void)
 {
 	static int is_context_inited;
 	static struct display_primary_path_context g_context;
@@ -246,14 +194,14 @@ static struct display_primary_path_context *_get_context(void)
 	return &g_context;
 }
 
-static void _primary_path_lock(const char *caller)
+void _primary_path_lock(const char *caller)
 {
 	dprec_logger_start(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 	disp_sw_mutex_lock(&(pgc->lock));
 	pgc->mutex_locker = (char *)caller;
 }
 
-static void _primary_path_unlock(const char *caller)
+void _primary_path_unlock(const char *caller)
 {
 	pgc->mutex_locker = NULL;
 	disp_sw_mutex_unlock(&(pgc->lock));
@@ -6211,7 +6159,8 @@ unsigned int primary_display_force_get_vsync_fps(void)
 {
 	if (primary_display_is_idle()) {
 		DISPMSG("primary_display_force_get_vsync_fps=50, currently it is idle\n");
-		return 50; /* idle fps is 50 */
+		if (pgc->plcm->params->min_refresh_rate != 0)
+			return pgc->plcm->params->min_refresh_rate;
 	} else if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
 		DISPMSG("primary_display_force_get_vsync_fps=%d, not idle and support ARR\n", pgc->dynamic_fps);
 		return pgc->dynamic_fps;
@@ -6242,7 +6191,7 @@ int primary_display_force_set_vsync_fps(unsigned int fps, unsigned int scenario)
 		arr_fps_backup = fps;
 
 		/* mark arr fps enable or disable */
-		if ((fps < 60) && (fps >  50)) {
+		if ((fps < primary_display_get_min_refresh_rate()) && (fps > primary_display_get_max_refresh_rate())) {
 			DISPMSG("mark ARR fps enable\n");
 			arr_fps_enable = 1;
 		} else if (fps == 60) {

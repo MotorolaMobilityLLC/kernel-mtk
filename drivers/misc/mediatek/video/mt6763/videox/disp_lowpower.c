@@ -57,6 +57,7 @@
 #include "mtk_smi.h"
 #include "disp_drv_log.h"
 #include "disp_lowpower.h"
+#include "disp_arr.h"
 #include "disp_rect.h"
 #include "layering_rule.h"
 #include "ddp_reg.h"
@@ -696,6 +697,7 @@ void _primary_display_enable_mmsys_clk(void)
 /* Share wrot sram end */
 void _vdo_mode_enter_idle(void)
 {
+	int ret = 0;
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 
 	/* backup for DL <-> DC */
@@ -749,8 +751,10 @@ void _vdo_mode_enter_idle(void)
 				DISPMSG("vdo_mode_enter_idle set fps to be 50\n");
 				primary_display_dsi_vfp_change(1);
 #else
-				DISPMSG("vdo_mode_enter_idle set fps to be 50\n");
-				primary_display_force_set_vsync_fps(50, 1); /* second parameter: 1 means enter ilde */
+				ret = primary_display_get_min_refresh_rate();
+				DISPMSG("vdo_mode_enter_idle fps to be %d\n", ret);
+				/* second parameter: 1 means enter ilde */
+				primary_display_force_set_vsync_fps(ret, 1);
 #endif
 				idlemgr_pgc->cur_lp_cust_mode = 1;
 			}
@@ -773,6 +777,8 @@ void _vdo_mode_enter_idle(void)
 
 void _vdo_mode_leave_idle(void)
 {
+	int ret = 0;
+
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 
 	/* set golden setting */
@@ -799,8 +805,10 @@ void _vdo_mode_leave_idle(void)
 			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 				_idle_set_golden_setting();
 #else
-			DISPMSG("vdo_mode_leave_idle, set fps to be 60\n");
-			primary_display_force_set_vsync_fps(60, 2); /* second parameter: 2 means leave ilde */
+			ret = primary_display_get_max_refresh_rate();
+			DISPMSG("vdo_mode_leave_idle, fps to be 60\n");
+			/* second parameter: 2 means leave ilde */
+			primary_display_force_set_vsync_fps(ret, 2);
 			idlemgr_pgc->cur_lp_cust_mode = 0;
 			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 				_idle_set_golden_setting();
