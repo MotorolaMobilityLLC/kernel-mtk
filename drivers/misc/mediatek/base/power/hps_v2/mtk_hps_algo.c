@@ -491,9 +491,10 @@ void hps_algo_main(void)
 
 	if (hps_sys.action_id == 0) {
 #if TURBO_CORE_SUPPORT
-		if (hps_sys.turbo_core_supp && hps_sys.smart_dect_hint)
-			hps_sys.action_id = 0xE2;
-		else
+		if (hps_sys.turbo_core_supp && hps_sys.smart_dect_hint) {
+			for (i = 0; i < hps_sys.cluster_num; i++)
+				hps_sys.cluster_info[i].target_core_num = hps_sys.cluster_info[i].online_core_num;
+		} else
 #endif
 			goto HPS_END;
 	}
@@ -632,7 +633,8 @@ HPS_END:
 				 str_criteria_limit, str_criteria_base, hps_sys.up_load_avg,
 				 hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
 				 str_target);
-				trace_hps_update(hps_sys.action_id, str_online, hps_ctxt.cur_loads,
+				trace_hps_update((hps_ctxt.hps_func_control << 12) | hps_sys.action_id,
+						 str_online, hps_ctxt.cur_loads,
 						 hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk,
 						 str_criteria_limit, str_criteria_base,
 						 hps_sys.up_load_avg, hps_sys.down_load_avg,
