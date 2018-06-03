@@ -1042,6 +1042,71 @@ kalP2PIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 }				/* kalP2PIndicateBssInfo */
 
 VOID
+kalP2PIndicateCompleteBssInfo(IN P_GLUE_INFO_T prGlueInfo, IN P_BSS_DESC_T prSpecificBssDesc)
+{
+	P_GL_P2P_INFO_T prGlueP2pInfo = (P_GL_P2P_INFO_T) NULL;
+	struct ieee80211_channel *prChannelEntry = (struct ieee80211_channel *)NULL;
+	struct cfg80211_bss *prCfg80211Bss = (struct cfg80211_bss *)NULL;
+	RF_CHANNEL_INFO_T rChannelInfo;
+
+	if ((prGlueInfo == NULL) || (prSpecificBssDesc == NULL)) {
+		ASSERT(FALSE);
+		return;
+	}
+
+	prGlueP2pInfo = prGlueInfo->prP2PInfo;
+
+	if (prGlueP2pInfo == NULL) {
+		DBGLOG(P2P, WARN, "kalP2PIndicateCompleteBssInfo: prGlueP2pInfo is NULL\n");
+		ASSERT(FALSE);
+		return;
+	}
+
+	rChannelInfo.ucChannelNum = prSpecificBssDesc->ucChannelNum;
+	rChannelInfo.eBand = prSpecificBssDesc->eBand;
+	prChannelEntry = kalP2pFuncGetChannelEntry(prGlueP2pInfo, &rChannelInfo);
+
+	if (prChannelEntry == NULL) {
+		DBGLOG(P2P, WARN, "kalP2PIndicateCompleteBssInfo: Unknown channel info\n");
+		return;
+	}
+
+	prCfg80211Bss = cfg80211_inform_bss(prGlueP2pInfo->prWdev->wiphy, prChannelEntry,
+						((prSpecificBssDesc->fgSeenProbeResp == TRUE) ?
+							CFG80211_BSS_FTYPE_PRESP : CFG80211_BSS_FTYPE_BEACON),
+						prSpecificBssDesc->aucBSSID, 0,	/* TSF */
+						prSpecificBssDesc->u2CapInfo,
+						prSpecificBssDesc->u2BeaconInterval,	/* beacon interval */
+						prSpecificBssDesc->aucIEBuf,	/* IE */
+						prSpecificBssDesc->u2IELength,	/* IE Length */
+						RCPI_TO_dBm(prSpecificBssDesc->ucRCPI) * 100,	/* MBM */
+						GFP_KERNEL);
+
+	if (!prCfg80211Bss) {
+		DBGLOG(P2P, WARN,
+			"kalP2PIndicateCompleteBssInfo fail, BSSID[%pM] SSID[%s] Chnl[%d] RCPI[%d] IELng[%d] Bcn[%d]\n",
+			prSpecificBssDesc->aucBSSID,
+			prSpecificBssDesc->aucSSID,
+			prSpecificBssDesc->ucChannelNum,
+			RCPI_TO_dBm(prSpecificBssDesc->ucRCPI),
+			prSpecificBssDesc->u2IELength,
+			prSpecificBssDesc->u2BeaconInterval);
+		dumpMemory8IEOneLine(prSpecificBssDesc->aucBSSID,
+			prSpecificBssDesc->aucIEBuf, prSpecificBssDesc->u2IELength);
+	} else
+		DBGLOG(P2P, TRACE,
+			"kalP2PIndicateCompleteBssInfo, BSS[%p] BSSID[%pM] SSID[%s] Chnl[%d] RCPI[%d] IELng[%d] Bcn[%d]\n",
+			prCfg80211Bss,
+			prSpecificBssDesc->aucBSSID,
+			prSpecificBssDesc->aucSSID,
+			prSpecificBssDesc->ucChannelNum,
+			RCPI_TO_dBm(prSpecificBssDesc->ucRCPI),
+			prSpecificBssDesc->u2IELength,
+			prSpecificBssDesc->u2BeaconInterval);
+}
+
+
+VOID
 kalP2PIndicateMgmtTxStatus(IN P_GLUE_INFO_T prGlueInfo,
 			   IN UINT_64 u8Cookie, IN BOOLEAN fgIsAck, IN PUINT_8 pucFrameBuf, IN UINT_32 u4FrameLen)
 {
