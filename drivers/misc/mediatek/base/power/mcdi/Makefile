@@ -16,5 +16,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
 
 obj-$(CONFIG_MACH_MT6763) += mcdi_v1/
 obj-$(CONFIG_MACH_MT6763) += mtk_mcdi_governor.o
+obj-$(CONFIG_MACH_MT6763) += mtk_mcdi_governor_hint.o
 obj-$(CONFIG_MACH_MT6758) += mcdi_v1/
 obj-$(CONFIG_MACH_MT6758) += mtk_mcdi_governor.o
+obj-$(CONFIG_MACH_MT6758) += mtk_mcdi_governor_hint.o
