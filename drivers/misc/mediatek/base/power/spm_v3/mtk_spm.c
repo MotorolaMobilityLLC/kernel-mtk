@@ -396,7 +396,8 @@ int __init spm_module_init(void)
 	spm_sodi3_init();
 	spm_sodi_init();
 	spm_deepidle_init();
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) \
+	&& !defined(CONFIG_MACH_MT6775)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_DRAMC
 	if (spm_golden_setting_cmp(1) != 0)
@@ -552,7 +553,8 @@ EXPORT_SYMBOL(spm_twam_disable_monitor);
 /**************************************
  * SPM Golden Seting API(MEMPLL Control, DRAMC)
  **************************************/
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) \
+	&& !defined(CONFIG_MACH_MT6775)
 #ifdef CONFIG_MTK_DRAMC
 struct ddrphy_golden_cfg {
 	u32 base;
