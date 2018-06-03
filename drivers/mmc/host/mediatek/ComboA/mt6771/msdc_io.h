@@ -36,7 +36,7 @@ void msdc_sd_power_off(void);
 void msdc_set_host_power_control(struct msdc_host *host);
 void msdc_clksrc_onoff(struct msdc_host *host, u32 on);
 void msdc_clk_pre_enable(struct msdc_host *host);
-void msdc_clk_post_disble(struct msdc_host *host);
+void msdc_clk_post_disable(struct msdc_host *host);
 
 #if !defined(FPGA_PLATFORM)
 void msdc_pmic_force_vcore_pwm(bool enable);
@@ -47,7 +47,7 @@ void msdc_HQA_set_voltage(struct msdc_host *host);
 
 #else
 #define msdc_clk_pre_enable(host)
-#define msdc_clk_post_disble(host)
+#define msdc_clk_post_disable(host)
 #define msdc_power_calibration_init(host)
 #define msdc_pmic_force_vcore_pwm(enable)
 void msdc_fpga_pwr_init(void);
@@ -99,7 +99,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 		clk_disable(host->clk_ctl); \
 		if (host->hclk_ctl) \
 			clk_disable(host->hclk_ctl); \
-		msdc_clk_post_disble(host); \
+		msdc_clk_post_disable(host); \
 	} while (0)
 
 #endif
