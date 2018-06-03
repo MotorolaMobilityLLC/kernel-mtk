@@ -202,7 +202,7 @@ static int m4u_client_add_buf(m4u_client_t *client, m4u_buf_info_t *pList)
 * @to-do    we need to add multi domain support here.
 * @author K Zhang      @date 2013/11/14
 ************************************************************/
-static m4u_buf_info_t *m4u_client_find_buf(m4u_client_t *client, unsigned int mva, int del)
+static m4u_buf_info_t *m4u_client_find_buf(m4u_client_t *client, unsigned int mva, int del, unsigned int domain)
 {
 	struct list_head *pListHead;
 	m4u_buf_info_t *pList = NULL;
@@ -217,7 +217,7 @@ static m4u_buf_info_t *m4u_client_find_buf(m4u_client_t *client, unsigned int mv
 	mutex_lock(&(client->dataMutex));
 	list_for_each(pListHead, &(client->mvaList)) {
 		pList = container_of(pListHead, m4u_buf_info_t, link);
-		if (pList->mva == mva)
+		if (pList->mva == mva && pList->domain_idx == domain)
 			break;
 	}
 	if (pListHead == &(client->mvaList)) {
@@ -674,6 +674,7 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 	pMvaInfo->mva = mva;
 	pMvaInfo->mva_align = mva_align;
 	pMvaInfo->size_align = size_align;
+	pMvaInfo->domain_idx = domain_idx;
 	*pMva = mva;
 
 	if (flags & M4U_FLAGS_SEQ_ACCESS)
@@ -684,6 +685,8 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 	M4ULOG_MID("%s: pMvaInfo=0x%p, port=%d,module=%s,va=0x%lx,sg=0x%p,size=%d,prot=0x%x,flags=0x%x,mva=0x%x\n",
 		__func__, pMvaInfo, port, m4u_get_port_name(port), va, sg_table,
 		size, prot, flags, mva);
+	M4ULOG_MID("%s: mva=0x%x, domain=%d\n",
+		__func__, mva, pMvaInfo->domain_idx);
 
 #ifdef M4U_PROFILE
 	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], MMPROFILE_FLAG_END, port, mva);
@@ -820,10 +823,10 @@ int m4u_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva)
 	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], MMPROFILE_FLAG_START, port, mva);
 #endif
 
-	pMvaInfo = m4u_client_find_buf(client, mva, 1);
+	pMvaInfo = m4u_client_find_buf(client, mva, 1, domain_idx);
 	if (unlikely(!pMvaInfo)) {
-		M4UMSG("error: m4u_dealloc_mva no mva found in client! module=%s, mva=0x%x\n",
-		       m4u_get_port_name(port), mva);
+		M4UMSG("error: m4u_dealloc_mva no mva found in client! module=%s, mva=0x%x, domain_idx=%d\n",
+		       m4u_get_port_name(port), mva, domain_idx);
 		m4u_dump_buf_info(NULL);
 #ifdef M4U_PROFILE
 		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], MMPROFILE_FLAG_START, 0x5a5a5a5a, mva);
@@ -859,7 +862,9 @@ int m4u_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva)
 	ret = m4u_do_mva_free(domain_idx, mva, pMvaInfo->size);
 	if (ret) {
 		is_err = 1;
-		M4UMSG("do_mva_free fail\n");
+		M4UMSG("do_mva_free fail, domain_idx: (%d, %d); port(%s, %s)\n",
+			domain_idx, pMvaInfo->domain_idx, m4u_get_port_name(port),
+			m4u_get_port_name(pMvaInfo->port));
 	}
 
 	if (pMvaInfo->va) {	/* buffer is allocated by va */
@@ -1090,15 +1095,15 @@ int m4u_cache_sync(m4u_client_t *client, M4U_PORT_ID port,
 	if (sync_type < M4U_CACHE_CLEAN_ALL) {
 		m4u_buf_info_t *pMvaInfo = NULL;
 
+		if (port == M4U_PORT_VPU)
+			domain_idx = 1;
+
 		if (client)
-			pMvaInfo = m4u_client_find_buf(client, mva, 0);
+			pMvaInfo = m4u_client_find_buf(client, mva, 0, domain_idx);
 
 		/* some user may sync mva from other client (eg. ovl may not know*/
 		/* who allocated this buffer, but he need to sync cache). */
 		/* we make a workaround here by query mva from mva manager */
-
-		if (port == M4U_PORT_VPU)
-			domain_idx = 1;
 
 
 		if (!pMvaInfo)
@@ -1182,16 +1187,17 @@ long m4u_dma_op(m4u_client_t *client, M4U_PORT_ID port,
 	m4u_buf_info_t *pMvaInfo = NULL;
 	unsigned int domain_idx = 0;
 
+	if (port == M4U_PORT_VPU)
+		domain_idx = 1;
+
 	if (client)
-		pMvaInfo = m4u_client_find_buf(client, mva, 0);
+		pMvaInfo = m4u_client_find_buf(client, mva, 0, domain_idx);
 
 	/* some user may sync mva from other client */
 	/* (eg. ovl may not know who allocated this buffer, */
 	/* but he need to sync cache). */
 	/* we make a workaround here by query mva from mva manager */
 
-	if (port == M4U_PORT_VPU)
-		domain_idx = 1;
 
 	if (!pMvaInfo)
 		pMvaInfo = mva_get_priv(domain_idx, mva);
