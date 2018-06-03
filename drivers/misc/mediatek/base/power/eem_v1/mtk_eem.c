@@ -263,7 +263,7 @@ static unsigned int eem_checkEfuse = 1;
 /* static unsigned int informGpuEEMisReady;*/
 
 /* Global variable for slow idle*/
-volatile unsigned int ptp_data[3] = {0, 0, 0};
+unsigned int ptp_data[3] = {0, 0, 0};
 #ifdef CONFIG_OF
 void __iomem *eem_base;
 static u32 eem_irq_number;
@@ -1989,18 +1989,18 @@ static void mt_eem_reg_dump_locked(void)
 	unsigned int addr;
 
 	for (addr = (unsigned int)EEM_DESCHAR; addr <= (unsigned int)EEM_SMSTATE1; addr += 4)
-		eem_isr_info("0x%08X = 0x%08X\n", addr, *(volatile unsigned int *)addr);
+		eem_isr_info("0x%08X = 0x%08X\n", addr, *(unsigned int *)addr);
 
 	addr = (unsigned int)EEMCORESEL;
-	eem_isr_info("0x%08X = 0x%08X\n", addr, *(volatile unsigned int *)addr);
+	eem_isr_info("0x%08X = 0x%08X\n", addr, *(unsigned int *)addr);
 #else
 	unsigned long addr;
 
 	for (addr = (unsigned long)EEM_DESCHAR; addr <= (unsigned long)EEM_SMSTATE1; addr += 4)
-		eem_isr_info("0x %lu = 0x %lu\n", addr, *(volatile unsigned long *)addr);
+		eem_isr_info("0x %lu = 0x %lu\n", addr, *(unsigned long *)addr);
 
 	addr = (unsigned long)EEMCORESEL;
-	eem_isr_info("0x %lu = 0x %lu\n", addr, *(volatile unsigned long *)addr);
+	eem_isr_info("0x %lu = 0x %lu\n", addr, *(unsigned long *)addr);
 #endif
 }
 #endif
@@ -4432,12 +4432,12 @@ void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 }
 #endif
 
-/*
+#if 0
 unsigned int get_efuse_status(void)
 {
 	return eem_checkEfuse;
 }
-*/
+#endif
 
 #if 0 /* gpu dvfs no need this anymore */
 unsigned int get_eem_status_for_gpu(void)

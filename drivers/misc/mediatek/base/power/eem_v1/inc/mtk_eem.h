@@ -23,47 +23,6 @@
 
 /* Thermal Register Definition */
 
-/* EEM Structure */
-typedef struct {
-	unsigned int ADC_CALI_EN;
-	unsigned int PTPINITEN;
-	unsigned int PTPMONEN;
-
-	unsigned int MDES;
-	unsigned int BDES;
-	unsigned int DCCONFIG;
-	unsigned int DCMDET;
-	unsigned int DCBDET;
-	unsigned int AGECONFIG;
-	unsigned int AGEM;
-	unsigned int AGEDELTA;
-	unsigned int DVTFIXED;
-	unsigned int VCO;
-	unsigned int MTDES;
-	unsigned int MTS;
-	unsigned int BTS;
-
-	unsigned char FREQPCT0;
-	unsigned char FREQPCT1;
-	unsigned char FREQPCT2;
-	unsigned char FREQPCT3;
-	unsigned char FREQPCT4;
-	unsigned char FREQPCT5;
-	unsigned char FREQPCT6;
-	unsigned char FREQPCT7;
-
-	unsigned int DETWINDOW;
-	unsigned int VMAX;
-	unsigned int VMIN;
-	unsigned int DTHI;
-	unsigned int DTLO;
-	unsigned int VBOOT;
-	unsigned int DETMAX;
-
-	unsigned int DCVOFFSETIN;
-	unsigned int AGEVOFFSETIN;
-} PTP_INIT_T;
-
 /* have 10 banks */
 enum eem_ctrl_id {
 	EEM_CTRL_BIG = 0,
