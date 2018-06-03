@@ -1817,20 +1817,26 @@ static inline void handle_init02_isr(struct eem_det *det)
 	read_volt_from_VOP(det);
 
 #if ENABLE_LOO
-	if ((detid == EEM_DET_L_HI) ||
-		(detid == EEM_DET_2L_HI)
-		) {
+	if ((detid == EEM_DET_L_HI) || (detid == EEM_DET_2L_HI)) {
 		backupdet = (detid == EEM_DET_L_HI) ?
 			id_to_eem_det(EEM_DET_L) : id_to_eem_det(EEM_DET_2L);
 		memcpy(backupdet->volt_tbl_init2, det->volt_tbl,
 			sizeof(det->volt_tbl_init2)/2);
+		memcpy(det->volt_tbl_init2, det->volt_tbl,
+			sizeof(det->volt_tbl_init2)/2);
 		final_init02_flag |= BIT(detid);
-	} else if ((detid == EEM_DET_L) || (detid == EEM_DET_2L))
+	} else if ((detid == EEM_DET_L) || (detid == EEM_DET_2L)) {
+		memcpy(&(det->volt_tbl_init2[NR_FREQ/2]),
+			&(det->volt_tbl[NR_FREQ/2]),
+			sizeof(det->volt_tbl_init2)/2);
 		final_init02_flag |= BIT(detid);
-#endif
-
+	} else
+		memcpy(det->volt_tbl_init2, det->volt_tbl,
+			sizeof(det->volt_tbl_init2));
+#else
 	/* backup to volt_tbl_init2 */
 	memcpy(det->volt_tbl_init2, det->volt_tbl, sizeof(det->volt_tbl_init2));
+#endif
 
 	for (i = 0; i < NR_FREQ; i++) {
 #ifdef CONFIG_EEM_AEE_RR_REC

@@ -56,7 +56,7 @@
  ******************************************
  */
 #define NR_HW_RES_FOR_BANK	(12) /* real eem banks for efuse */
-#define EEM_INIT01_FLAG (0x7) /* [3]:GPU, [2]:CCI, [1]:LL, [0]:L */
+#define EEM_INIT01_FLAG (0x3) /* [3]:GPU, [2]:CCI, [1]:LL, [0]:L */
 #if ENABLE_LOO
 #define EEM_L_INIT02_FLAG (0x9) /* should be 0x0F=> [3]:L_HI, [0]:L */
 #define EEM_2L_INIT02_FLAG (0x12) /* should be 0x0F=> [4]:2L_HI, [1]:2L */
