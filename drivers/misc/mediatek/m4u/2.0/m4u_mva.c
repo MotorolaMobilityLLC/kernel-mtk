@@ -353,14 +353,13 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, uns
 	unsigned long startRequire, endRequire, sizeRequire;
 	unsigned long irq_flags;
 	short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	short region_start, region_end;
+	short region_start, region_end, next_region_start = 0;
 
 	if (size == 0)
 		return 0;
 
 	startIdx = (mva + MVA_BLOCK_ALIGN_MASK) >> MVA_BLOCK_SIZE_ORDER;
 
-	M4UMSG("m4u_do_mva_alloc mva:0x%x, s= %d\n", mva, s);
 	/* ----------------------------------------------------- */
 	/* calculate mva block number */
 	startRequire = va & (~M4U_PAGE_MASK);
@@ -369,37 +368,61 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, uns
 	nr = (sizeRequire + MVA_BLOCK_ALIGN_MASK) >> MVA_BLOCK_SIZE_ORDER;
 	/* (sizeRequire>>MVA_BLOCK_SIZE_ORDER) + ((sizeRequire&MVA_BLOCK_ALIGN_MASK)!=0); */
 
+	M4ULOG_MID("m4u_do_mva_alloc_start_from mva:0x%x, startIdx=%d, size = %d, nr= %d\n", mva, startIdx, size, nr);
+
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 
-	region_start = startIdx;
-	/* find prev head of this region */
-	while (mvaGraph[region_start] == 0)
-		region_start--;
-
-	region_end = region_start + MVA_GET_NR(region_start) - 1;
-
-	M4UMSG("region_start: %d, region_end= %d, nr= %d\n", region_start, region_end, nr);
-
-
-	if (MVA_IS_BUSY(region_start)) {
-		M4UMSG("mva is inuse index=0x%x, mvaGraph=0x%x\n", region_start, mvaGraph[region_start]);
-		s = region_start;
-	} else {
-		if ((region_end - startIdx + 1) < nr)
-			s = region_end;
-		else {
-			spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
-			return m4u_do_mva_alloc_fix(va, mva, size, priv);
+	/* find this region */
+	for (region_start = 1; (region_start < (MVA_MAX_BLOCK_NR + 1));
+		 region_start += (MVA_GET_NR(region_start) & MVA_BLOCK_NR_MASK)) {
+		if ((mvaGraph[region_start] & MVA_BLOCK_NR_MASK) == 0) {
+			m4u_mvaGraph_dump();
+			m4u_aee_print("%s: s=%d, 0x%x\n", __func__, s, mvaGraph[region_start]);
+		}
+		if ((region_start + MVA_GET_NR(region_start)) > startIdx) {
+			next_region_start = region_start + MVA_GET_NR(region_start);
+			break;
 		}
 	}
 
-	M4UMSG("s: %d\n", s);
+	if (region_start > MVA_MAX_BLOCK_NR) {
+		M4UMSG("%s:alloc mva fail,no available MVA for %d blocks\n", __func__, nr);
+		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+		return 0;
+	}
+
+	region_end = region_start + MVA_GET_NR(region_start) - 1;
+
+	if (next_region_start == 0) {
+		m4u_aee_print("%s: region_start: %d, region_end= %d, region= %d\n",
+			__func__, region_start, region_end, MVA_GET_NR(region_start));
+	}
+
+	if (MVA_IS_BUSY(region_start)) {
+		M4UMSG("mva is inuse index=%d, mvaGraph=0x%x\n", region_start, mvaGraph[region_start]);
+		s = region_start;
+	} else {
+		if ((region_end - startIdx + 1) < nr)
+			s = next_region_start;
+		else
+			M4UMSG("mva is free region_start=%d, s=%d\n", region_start, s);
+	}
+
+	M4ULOG_MID("region_start: %d, region_end= %d, region= %d, next_region_start= %d, search start: %d\n",
+		region_start, region_end, MVA_GET_NR(region_start), next_region_start, s);
 
 	/* ----------------------------------------------- */
-	/* find first match free region */
-	for (; (s < (MVA_MAX_BLOCK_NR + 1)) && (mvaGraph[s] < nr);
-			s += (mvaGraph[s] & MVA_BLOCK_NR_MASK))
-		;
+	if (s != 0) {
+		/* find first match free region */
+		for (; (s < (MVA_MAX_BLOCK_NR + 1)) && (mvaGraph[s] < nr);
+				s += (mvaGraph[s] & MVA_BLOCK_NR_MASK)) {
+			if ((mvaGraph[s] & MVA_BLOCK_NR_MASK) == 0) {
+				m4u_aee_print("%s: s=%d, 0x%x\n", __func__, s, mvaGraph[s]);
+				m4u_mvaGraph_dump();
+			}
+		}
+	}
+
 	if (s > MVA_MAX_BLOCK_NR) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 		M4UMSG("mva_alloc error: no available MVA region for %d blocks!\n", nr);
@@ -410,6 +433,41 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, uns
 		return 0;
 	}
 	/* ----------------------------------------------- */
+	if (s == 0) {
+		/* same as m4u_do_mva_alloc_fix */
+		short endIdx = startIdx + nr - 1;
+
+		region_end = region_start + MVA_GET_NR(region_start) - 1;
+		M4UMSG("region_start: %d, region_end= %d, startIdx: %d, endIdx= %d\n",
+			region_start, region_end, startIdx, endIdx);
+
+		if (startIdx == region_start && endIdx == region_end) {
+			MVA_SET_BUSY(startIdx);
+			MVA_SET_BUSY(endIdx);
+
+	} else if (startIdx == region_start) {
+		mvaGraph[startIdx] = nr | MVA_BUSY_MASK;
+		mvaGraph[endIdx] = mvaGraph[startIdx];
+		mvaGraph[endIdx + 1] = region_end - endIdx;
+		mvaGraph[region_end] = mvaGraph[endIdx + 1];
+	} else if (endIdx == region_end) {
+		mvaGraph[region_start] = startIdx - region_start;
+		mvaGraph[startIdx - 1] = mvaGraph[region_start];
+		mvaGraph[startIdx] = nr | MVA_BUSY_MASK;
+		mvaGraph[endIdx] = mvaGraph[startIdx];
+	} else {
+		mvaGraph[region_start] = startIdx - region_start;
+		mvaGraph[startIdx - 1] = mvaGraph[region_start];
+		mvaGraph[startIdx] = nr | MVA_BUSY_MASK;
+		mvaGraph[endIdx] = mvaGraph[startIdx];
+		mvaGraph[endIdx + 1] = region_end - endIdx;
+		mvaGraph[region_end] = mvaGraph[endIdx + 1];
+	}
+
+	mvaInfoGraph[startIdx] = priv;
+	mvaInfoGraph[endIdx] = priv;
+		s = startIdx;
+	} else {
 		/* alloc a mva region */
 		end = s + mvaGraph[s] - 1;
 
@@ -430,13 +488,14 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, uns
 			mvaInfoGraph[s] = priv;
 			mvaInfoGraph[new_end] = priv;
 		}
-
+	}
 	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 
 	mvaRegionStart = (unsigned int)s;
 
 	return (mvaRegionStart << MVA_BLOCK_SIZE_ORDER) + mva_pageOffset(va);
 }
+
 
 #define RightWrong(x) ((x) ? "correct" : "error")
 int m4u_do_mva_free(unsigned int mva, unsigned int size)
