@@ -499,9 +499,14 @@ static ssize_t mag_show_sensordevnum(struct device *dev,
 	int ret;
 	struct mag_context *cxt = NULL;
 	const char *devname = NULL;
+	struct input_handle *handle;
 
 	cxt = mag_context_obj;
-	devname = dev_name(&cxt->idev->dev);
+	list_for_each_entry(handle, &cxt->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
 	ret = sscanf(devname+5, "%d", &devnum);
 	return snprintf(buf, PAGE_SIZE, "%d\n", devnum);
 }
