@@ -465,12 +465,13 @@ static void do_host_plug_test_work(struct work_struct *data)
 			host_on = 1;
 			DBG(0, "ON\n");
 
-			_set_vbus(mtk_musb, 1);
-			msleep(100);
-
 			ktime_begin = ktime_get();
 			if (!host_test_vbus_only)
 				schedule_delayed_work(&mtk_musb->host_work, 0);
+
+			_set_vbus(mtk_musb, 1);
+			msleep(100);
+
 		}
 	}
 
@@ -573,7 +574,7 @@ static void musb_host_work(struct work_struct *data)
 		USBPHY_SET32(0x6c, (0x11<<0));
 		USBPHY_CLR32(0x6c, (0x2e<<0));
 		USBPHY_SET32(0x6c, (0x3f<<8));
-		DBG(0, "force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
+		DBG(1, "force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
 		/* wait */
 		mdelay(5);
 		/* restart session */
@@ -584,7 +585,7 @@ static void musb_host_work(struct work_struct *data)
 		USBPHY_CLR32(0x6c, (0x10<<0));
 		USBPHY_SET32(0x6c, (0x2d<<0));
 		USBPHY_SET32(0x6c, (0x3f<<8));
-		DBG(0, "force PHY to host mode, 0x6c=%x\n", USBPHY_READ32(0x6c));
+		DBG(1, "force PHY to host mode, 0x6c=%x\n", USBPHY_READ32(0x6c));
 	#endif
 
 		musb_start(mtk_musb);
@@ -603,7 +604,7 @@ static void musb_host_work(struct work_struct *data)
 		}
 		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
-		DBG(0, "devctl is %x\n", musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
+		DBG(1, "devctl is %x\n", musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 		if (wake_lock_active(&mtk_musb->usb_lock))
 			wake_unlock(&mtk_musb->usb_lock);
@@ -616,7 +617,7 @@ static void musb_host_work(struct work_struct *data)
 		USBPHY_SET32(0x6c, (0x11<<0));
 		USBPHY_CLR32(0x6c, (0x2e<<0));
 		USBPHY_SET32(0x6c, (0x3f<<8));
-		DBG(0, "force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
+		DBG(1, "force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
 	#endif
 
 		musb_stop(mtk_musb);

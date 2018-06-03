@@ -101,7 +101,16 @@ static void usb_6763_dpidle_request(int mode)
 	switch (mode) {
 	case USB_DPIDLE_ALLOWED:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_RELEASE);
-		DBG(0, "USB_DPIDLE_ALLOWED\n");
+		{
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
+			static int skip_cnt;
+
+			if (__ratelimit(&ratelimit)) {
+				DBG(0, "USB_DPIDLE_ALLOWED, skip_cnt<%d>\n", skip_cnt);
+				skip_cnt = 0;
+			} else
+				skip_cnt++;
+		}
 		break;
 	case USB_DPIDLE_FORBIDDEN:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_ALL);
