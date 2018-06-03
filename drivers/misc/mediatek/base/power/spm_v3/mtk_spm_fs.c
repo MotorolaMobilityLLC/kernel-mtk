@@ -17,7 +17,7 @@
 #include <linux/sysfs.h>
 #include <linux/string.h>
 #ifdef CONFIG_MTK_SPM_IN_ATF
-#include <mach/mt_secure_api.h>
+#include <mtk_secure_api.h>
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 
 #include <mtk_spm_internal.h>
@@ -183,14 +183,6 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_REG_MD_SRCCLKENA_0_VRF18_MASK_B] = "reg_md_srcclkena_0_vrf18_mask_b",
 	[PWR_REG_WAKEUP_EVENT_MASK] = "reg_wakeup_event_mask",
 	[PWR_REG_EXT_WAKEUP_EVENT_MASK] = "reg_ext_wakeup_event_mask",
-	[PWR_MSDC_ALL_DVFS_HALT] = "msdc_all_dvfs_halt",
-	[PWR_MSDC1_DVFS_HALT] = "msdc1_dvfs_halt",
-	[PWR_MSDC2_DVFS_HALT] = "msdc2_dvfs_halt",
-	[PWR_MSDC3_DVFS_HALT] = "msdc3_dvfs_halt",
-	[PWR_BYPASS_MSDC1_DVFS_HALT] = "bypass_msdc1_dvfs_halt",
-	[PWR_BYPASS_MSDC2_DVFS_HALT] = "bypass_msdc2_dvfs_halt",
-	[PWR_BYPASS_MSDC3_DVFS_HALT] = "bypass_msdc3_dvfs_halt",
-	[PWR_BYPASS_MSDC_DVFS_HALT_ALL] = "bypass_msdc_dvfs_halt_all",
 	[PWR_MCU0_WFI_EN] = "mcu0_wfi_en",
 	[PWR_MCU1_WFI_EN] = "mcu1_wfi_en",
 	[PWR_MCU2_WFI_EN] = "mcu2_wfi_en",
@@ -353,14 +345,6 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 	p += sprintf(p, "reg_md_srcclkena_0_vrf18_mask_b = 0x%x\n", pwrctrl->reg_md_srcclkena_0_vrf18_mask_b);
 	p += sprintf(p, "reg_wakeup_event_mask = 0x%x\n", pwrctrl->reg_wakeup_event_mask);
 	p += sprintf(p, "reg_ext_wakeup_event_mask = 0x%x\n", pwrctrl->reg_ext_wakeup_event_mask);
-	p += sprintf(p, "msdc_all_dvfs_halt = 0x%x\n", pwrctrl->msdc_all_dvfs_halt);
-	p += sprintf(p, "msdc1_dvfs_halt = 0x%x\n", pwrctrl->msdc1_dvfs_halt);
-	p += sprintf(p, "msdc2_dvfs_halt = 0x%x\n", pwrctrl->msdc2_dvfs_halt);
-	p += sprintf(p, "msdc3_dvfs_halt = 0x%x\n", pwrctrl->msdc3_dvfs_halt);
-	p += sprintf(p, "bypass_msdc1_dvfs_halt = 0x%x\n", pwrctrl->bypass_msdc1_dvfs_halt);
-	p += sprintf(p, "bypass_msdc2_dvfs_halt = 0x%x\n", pwrctrl->bypass_msdc2_dvfs_halt);
-	p += sprintf(p, "bypass_msdc3_dvfs_halt = 0x%x\n", pwrctrl->bypass_msdc3_dvfs_halt);
-	p += sprintf(p, "bypass_msdc_dvfs_halt_all = 0x%x\n", pwrctrl->bypass_msdc_dvfs_halt_all);
 	p += sprintf(p, "mcu0_wfi_en = 0x%x\n", pwrctrl->mcu0_wfi_en);
 	p += sprintf(p, "mcu1_wfi_en = 0x%x\n", pwrctrl->mcu1_wfi_en);
 	p += sprintf(p, "mcu2_wfi_en = 0x%x\n", pwrctrl->mcu2_wfi_en);
@@ -1238,54 +1222,6 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 #ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_EXT_WAKEUP_EVENT_MASK, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MSDC_ALL_DVFS_HALT])) {
-		pwrctrl->msdc_all_dvfs_halt = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_MSDC_ALL_DVFS_HALT, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MSDC1_DVFS_HALT])) {
-		pwrctrl->msdc1_dvfs_halt = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_MSDC1_DVFS_HALT, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MSDC2_DVFS_HALT])) {
-		pwrctrl->msdc2_dvfs_halt = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_MSDC2_DVFS_HALT, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MSDC3_DVFS_HALT])) {
-		pwrctrl->msdc3_dvfs_halt = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_MSDC3_DVFS_HALT, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_BYPASS_MSDC1_DVFS_HALT])) {
-		pwrctrl->bypass_msdc1_dvfs_halt = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_BYPASS_MSDC1_DVFS_HALT, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_BYPASS_MSDC2_DVFS_HALT])) {
-		pwrctrl->bypass_msdc2_dvfs_halt = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_BYPASS_MSDC2_DVFS_HALT, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_BYPASS_MSDC3_DVFS_HALT])) {
-		pwrctrl->bypass_msdc3_dvfs_halt = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_BYPASS_MSDC3_DVFS_HALT, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_BYPASS_MSDC_DVFS_HALT_ALL])) {
-		pwrctrl->bypass_msdc_dvfs_halt_all = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_BYPASS_MSDC_DVFS_HALT_ALL, val);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU0_WFI_EN])) {
 		pwrctrl->mcu0_wfi_en = val;

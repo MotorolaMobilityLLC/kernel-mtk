@@ -210,16 +210,6 @@ static struct pwr_ctrl sodi_ctrl = {
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
 
-	/* MSDC_DVFS_HALT */
-	.msdc_all_dvfs_halt = 0,
-	.msdc1_dvfs_halt = 0,
-	.msdc2_dvfs_halt = 0,
-	.msdc3_dvfs_halt = 0,
-	.bypass_msdc1_dvfs_halt = 0,
-	.bypass_msdc2_dvfs_halt = 0,
-	.bypass_msdc3_dvfs_halt = 0,
-	.bypass_msdc_dvfs_halt_all = 0,
-
 	/* SLEEP_MCU0_WFI_EN */
 	.mcu0_wfi_en = 1,
 
@@ -275,7 +265,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.mcu17_wfi_en = 0,
 
 	/* Auto-gen End */
-}
+};
 
 struct spm_lp_scen __spm_sodi = {
 	/*.pcmdesc = &sodi_pcm,*/
@@ -547,7 +537,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 #ifdef CONFIG_MTK_GIC_V3_EXT
 	mt_irq_mask_all(&mask);
-	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
 #endif
 
 #ifdef CONFIG_MTK_SYS_CIRQ

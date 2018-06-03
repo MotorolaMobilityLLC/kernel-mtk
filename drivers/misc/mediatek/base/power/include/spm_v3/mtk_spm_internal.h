@@ -284,16 +284,6 @@ struct pwr_ctrl {
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	u32 reg_ext_wakeup_event_mask;
 
-	/* MSDC_DVFS_HALT */
-	u8 msdc_all_dvfs_halt;
-	u8 msdc1_dvfs_halt;
-	u8 msdc2_dvfs_halt;
-	u8 msdc3_dvfs_halt;
-	u8 bypass_msdc1_dvfs_halt;
-	u8 bypass_msdc2_dvfs_halt;
-	u8 bypass_msdc3_dvfs_halt;
-	u8 bypass_msdc_dvfs_halt_all;
-
 	/* MCU0_WFI_EN */
 	u8 mcu0_wfi_en;
 
@@ -487,14 +477,6 @@ enum pwr_ctrl_enum {
 	PWR_REG_MD_SRCCLKENA_0_VRF18_MASK_B,
 	PWR_REG_WAKEUP_EVENT_MASK,
 	PWR_REG_EXT_WAKEUP_EVENT_MASK,
-	PWR_MSDC_ALL_DVFS_HALT,
-	PWR_MSDC1_DVFS_HALT,
-	PWR_MSDC2_DVFS_HALT,
-	PWR_MSDC3_DVFS_HALT,
-	PWR_BYPASS_MSDC1_DVFS_HALT,
-	PWR_BYPASS_MSDC2_DVFS_HALT,
-	PWR_BYPASS_MSDC3_DVFS_HALT,
-	PWR_BYPASS_MSDC_DVFS_HALT_ALL,
 	PWR_MCU0_WFI_EN,
 	PWR_MCU1_WFI_EN,
 	PWR_MCU2_WFI_EN,
