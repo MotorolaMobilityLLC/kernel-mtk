@@ -67,6 +67,7 @@ struct lb_env {
 };
 
 extern bool sched_boost(void);
+extern void unthrottle_offline_rt_rqs(struct rq *rq);
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
 #define LB_POLICY_SHIFT 16
