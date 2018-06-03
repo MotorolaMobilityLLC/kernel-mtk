@@ -76,6 +76,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags);
 void spm_enable_sodi(bool);
 bool spm_get_sodi_en(void);
 
+void spm_sodi_set_vdo_mode(bool);
 void spm_sodi_mempll_pwr_mode(bool pwr_mode);
 bool spm_get_sodi_mempll(void);
 

@@ -542,6 +542,7 @@ static bool soidle3_can_enter(int cpu, int reason)
 			if (idle_block_mask[IDLE_TYPE_SO3][NR_GRPS])
 				goto out;
 		}
+		reason = NR_REASONS;
 	} else if (reason < NR_REASONS)
 		goto out;
 
@@ -690,6 +691,7 @@ static bool soidle_can_enter(int cpu, int reason)
 			if (idle_block_mask[IDLE_TYPE_SO][NR_GRPS])
 				goto out;
 		}
+		reason = NR_REASONS;
 	} else if (reason < NR_REASONS)
 		goto out;
 
@@ -1101,7 +1103,8 @@ static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
+	SPM_FLAG_DIS_PERI_PDN |
+	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
 	SPM_FLAG_SODI_OPTION
 };
@@ -1111,7 +1114,8 @@ static u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
+	SPM_FLAG_DIS_PERI_PDN |
+	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
 	SPM_FLAG_SODI_OPTION
 };
@@ -1285,11 +1289,13 @@ int mt_idle_select(int cpu)
 	dump_idle_cnt_in_interval(cpu);
 
 	#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	/* check if firmware loaded or not */
 	if (!spm_load_firmware_status()) {
 		reason = BY_FRM;
 		goto get_idle_idx;
 	}
+	#endif
 	#endif
 
 	#if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -1371,11 +1377,13 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 		return menu_select_state;
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	/* check if firmware loaded or not */
 	if (!spm_load_firmware_status()) {
 		reason = BY_FRM;
 		goto get_idle_idx_2;
 	}
+#endif
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -1947,7 +1955,6 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	mt_idle_log("\n*********** soidle3 command help  ************\n");
 	mt_idle_log("soidle3 help:  cat /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("switch on/off: echo [soidle3] 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	mt_idle_log("cpupdn on/off: echo cpupdn 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle3_state\n");
@@ -2053,7 +2060,6 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("\n*********** soidle command help  ************\n");
 	mt_idle_log("soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("switch on/off: echo [soidle] 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
-	mt_idle_log("cpupdn on/off: echo cpupdn 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle_state\n");
