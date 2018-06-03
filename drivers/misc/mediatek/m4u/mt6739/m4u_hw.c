@@ -2140,13 +2140,6 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 
 	m4u_reg_init(&gM4uDomain, ProtectPA, m4u_id);
 
-	if (request_irq(m4u_dev->irq_num[m4u_id], MTK_M4U_isr, IRQF_TRIGGER_NONE, "m4u", NULL)) {
-		M4UERR("request M4U%d IRQ line failed\n", m4u_id);
-		return -ENODEV;
-	}
-
-	M4UMSG("request_irq, irq_num=%d\n", m4u_dev->irq_num[m4u_id]);
-
 	m4u_isr_pause_timer_init();
 
 	m4u_monitor_start(m4u_id);
@@ -2176,6 +2169,12 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 		m4u_config_port(&port);
 	}
 
+	if (request_irq(m4u_dev->irq_num[m4u_id], MTK_M4U_isr, IRQF_TRIGGER_NONE, "m4u", NULL)) {
+		M4UERR("request M4U%d IRQ line failed\n", m4u_id);
+		return -ENODEV;
+	}
+
+	M4UMSG("request_irq, irq_num=%d\n", m4u_dev->irq_num[m4u_id]);
 	return 0;
 }
 
