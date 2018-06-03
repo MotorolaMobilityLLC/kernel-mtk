@@ -23,9 +23,7 @@
 #include "ion_priv.h"
 #include <linux/slab.h>
 #include <linux/mutex.h>
-#ifdef ION_TO_BE_IMPL
 #include <mmprofile.h>
-#endif
 #include <linux/debugfs.h>
 #include <linux/kthread.h>
 #include "ion_profile.h"

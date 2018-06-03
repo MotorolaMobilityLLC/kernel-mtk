@@ -21,9 +21,7 @@
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
-#ifdef ION_TO_BE_IMPL
 #include <mmprofile.h>
-#endif
 #include <linux/debugfs.h>
 #include <linux/kthread.h>
 #include <linux/fdtable.h>
@@ -35,16 +33,14 @@
 #include "mtk/ion_drv.h"
 #include "ion_sec_heap.h"
 
-#ifdef CONFIG_MTK_IOMMU
-
 #ifdef CONFIG_MTK_PSEUDO_M4U
-#include <pseudo_m4u.h>
-#else
+#include <mach/pseudo_m4u.h>
+#ifdef CONFIG_MTK_IOMMU_V2
+#include "mtk_iommu_ext.h"
 #endif
-
-#endif
-///#include <pseudo_m4u.h>
+#elif defined(CONFIG_MTK_M4U)
 #include <m4u.h>
+#endif
 
 struct ion_mm_buffer_info {
 	int module_id;
@@ -244,13 +240,13 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	unsigned long long start, end;
 	unsigned long user_va = 0;
 
-#ifdef CONFIG_MTK_M4U
+#if (defined(CONFIG_MTK_M4U) || defined(CONFIG_MTK_PSEUDO_M4U))
 	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) {
 		/*for va-->mva case, align is used for va value */
 		table = m4u_create_sgtable(align, (unsigned int)size);
 		user_va = align;
 		if (size % PAGE_SIZE != 0)
-			IONDBG("%s va(0x%lx)size(%ld) not align page.\n",
+			IONMSG("%s va(0x%lx)size(%ld) not align page.\n",
 			       __func__, user_va, size);
 		goto map_mva_exit;
 	}
@@ -264,6 +260,7 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 		sg_alloc_table(table, 1, GFP_KERNEL);
 		sg_dma_address(table->sgl) = align;
 		sg_dma_len(table->sgl) = size;
+		table->sgl->length = size;
 
 		goto map_mva_exit;
 	}
@@ -332,7 +329,8 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 		list_del(&info->list);
 		kfree(info);
 	}
-#ifdef CONFIG_MTK_M4U
+
+#if (defined(CONFIG_MTK_M4U) || defined(CONFIG_MTK_PSEUDO_M4U))
 map_mva_exit:
 #endif
 	/* create MM buffer info for it */
@@ -399,27 +397,33 @@ void ion_mm_heap_free_buffer_info(struct ion_buffer *buffer)
 	struct sg_table *table = buffer->sg_table;
 	struct ion_mm_buffer_info *buffer_info =
 	    (struct ion_mm_buffer_info *)buffer->priv_virt;
+	unsigned int free_mva = 0;
 
 	buffer->priv_virt = NULL;
 
 	if (buffer_info) {
 		if ((buffer_info->destroy_fn) && (buffer_info->MVA))
 			buffer_info->destroy_fn(buffer, buffer_info->MVA);
-#ifdef CONFIG_MTK_M4U
-		if ((buffer_info->module_id != -1) && (buffer_info->MVA))
+#if (defined(CONFIG_MTK_M4U) || defined(CONFIG_MTK_PSEUDO_M4U))
+		if ((buffer_info->module_id != -1) && (buffer_info->MVA)) {
+			free_mva = buffer_info->MVA;
 			m4u_dealloc_mva_sg(buffer_info->module_id, table,
 					   buffer->size, buffer_info->MVA);
+		}
 		if ((buffer_info->fix_module_id != -1) &&
 		    (buffer_info->FIXED_MVA)) {
-			IONMSG
-			    (" %s fix mva(%d-0x%x), mva(%d-0x%x)\n",
-			     __func__, buffer_info->fix_module_id,
-			     buffer_info->FIXED_MVA,
-			     buffer_info->module_id, buffer_info->MVA);
+			free_mva = buffer_info->FIXED_MVA;
 			m4u_dealloc_mva_sg(buffer_info->fix_module_id, table,
 					   buffer->size,
 					   buffer_info->FIXED_MVA);
 		}
+#ifdef CONFIG_MTK_PSEUDO_M4U
+		if (free_mva)
+			mmprofile_log_ex(ion_mmp_events[PROFILE_MVA_DEALLOC],
+					 MMPROFILE_FLAG_PULSE,
+					 free_mva,
+					 free_mva + buffer->size);
+#endif
 #endif
 		kfree(buffer_info);
 	}
@@ -436,8 +440,9 @@ void ion_mm_heap_free(struct ion_buffer *buffer)
 	int i;
 
 	mm_heap_total_memory -= buffer->size;
-#ifdef CONFIG_MTK_M4U
-	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) {
+#if (defined(CONFIG_MTK_M4U) || defined(CONFIG_MTK_PSEUDO_M4U))
+	if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) ||
+	    (heap->id == ION_HEAP_TYPE_MULTIMEDIA_PA2MVA)) {
 		ion_mm_heap_free_buffer_info(buffer);
 		return;
 	}
@@ -532,8 +537,9 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 			IONMSG("ion_mm_heap_phys: config buffer fail\n");
 			return -EFAULT;
 		}
-#ifdef CONFIG_MTK_M4U
-		if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) {
+#if (defined(CONFIG_MTK_M4U) || defined(CONFIG_MTK_PSEUDO_M4U))
+		if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) ||
+		    (heap->id == ION_HEAP_TYPE_MULTIMEDIA_PA2MVA)) {
 			port_info.va = (unsigned long)buffer_info->VA;
 			port_info.flags |= M4U_FLAGS_SG_READY;
 			/*userspace va without vmalloc, has no page struct */
@@ -544,10 +550,10 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 		}
 #endif
 
-#ifdef CONFIG_MTK_M4U
+#if (defined(CONFIG_MTK_M4U) || defined(CONFIG_MTK_PSEUDO_M4U))
 		ret = m4u_alloc_mva_sg(&port_info, buffer->sg_table);
 #endif
-		*(unsigned int *)addr = port_info.mva;
+		*addr = port_info.mva;
 
 		if (ret < 0) {
 			IONMSG("[%s]Error: port %d MVA(0x%x)",
@@ -557,7 +563,7 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 			       port_info.iova_start, port_info.iova_end,
 			       (unsigned long)buffer_info->VA, buffer->size,
 			       non_vmalloc_request);
-			*(unsigned int *)addr = 0;
+			*addr = 0;
 			if (port_info.flags > 0)
 				buffer_info->FIXED_MVA = 0;
 			return -EFAULT;
@@ -566,6 +572,12 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 			buffer_info->MVA = port_info.mva;
 		else
 			buffer_info->FIXED_MVA = port_info.mva;
+#ifdef CONFIG_MTK_PSEUDO_M4U
+		mmprofile_log_ex(ion_mmp_events[PROFILE_MVA_ALLOC],
+				 MMPROFILE_FLAG_PULSE,
+				 port_info.mva,
+				 port_info.mva + port_info.bufsize);
+#endif
 
 	} else {
 		*(unsigned int *)addr = (port_info.flags
@@ -815,6 +827,9 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 	ION_PRINT_LOG_OR_SEQ(s,
 			     "current time %lld ms, total: %16zu!!\n",
 			     current_ts, mm_heap_total_memory);
+#ifdef CONFIG_MTK_PSEUDO_M4U
+	mtk_iommu_log_dump(s);
+#endif
 	up_read(&dev->lock);
 
 	return 0;

@@ -31,10 +31,12 @@ enum ION_PROFILE_TYPE {
 	PROFILE_DMA_CLEAN_ALL,
 	PROFILE_DMA_FLUSH_ALL,
 	PROFILE_DMA_INVALID_ALL,
+	PROFILE_MVA_ALLOC,
+	PROFILE_MVA_DEALLOC,
 	PROFILE_MAX,
 };
 
-///#define ION_PROFILE
+#define ION_PROFILE
 
 #define mmp_root_event 1
 
@@ -51,9 +53,9 @@ enum ION_PROFILE_TYPE {
 void mmprofile_enable(int enable);
 void mmprofile_start(int start);
 
+void ion_profile_init(void);
 #endif
 
-void ion_profile_init(void);
 extern mmp_event ion_mmp_events[PROFILE_MAX];
 
 #endif

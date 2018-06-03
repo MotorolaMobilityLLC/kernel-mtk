@@ -34,19 +34,10 @@
 #include <linux/fb.h>
 #endif
 
-#ifdef ION_TO_BE_IMPL
 #include <mmprofile.h>
-#define MMPS MMPROFILE_FLAG_START
-#define MMPE MMPROFILE_FLAG_END
-#define ION_FUNC_ENTER mmprofile_log_meta_string(MMP_ION_DEBUG, MMPS, __func__)
-#define ION_FUNC_LEAVE mmprofile_log_meta_string(MMP_ION_DEBUG, MMPE, __func__)
 
-#else
-#define MMPS 0
-#define MMPE 1
-#define ION_FUNC_ENTER IONDBG("%s enter", __func__)
-#define ION_FUNC_LEAVE IONDBG("%s leave", __func__)
-#endif
+#define ION_FUNC_ENTER
+#define ION_FUNC_LEAVE
 
 /* #pragma GCC optimize ("O0") */
 #define DEFAULT_PAGE_SIZE 0x1000
@@ -60,9 +51,6 @@ EXPORT_SYMBOL(g_ion_device);
 #endif
 #ifndef dmac_unmap_area
 #define dmac_unmap_area __dma_unmap_area
-#endif
-#ifndef dmac_flush_range
-#define dmac_flush_range __dma_flush_range
 #endif
 
 #define __ION_CACHE_SYNC_USER_VA_EN__
@@ -91,12 +79,7 @@ static int ion_cache_sync_kernel(unsigned long start, size_t size,
 		   (sync_type == ION_CACHE_FLUSH_BY_RANGE_USE_VA)) {
 		mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE],
 				 MMPROFILE_FLAG_START, size, start);
-#ifdef CONFIG_ARM64
 		__dma_flush_area((void *)start, size);
-#else
-		dmac_flush_range((void *)start, (void *)(start + size - 1));
-#endif
-
 	}
 
 	return 0;
@@ -162,6 +145,9 @@ static long ion_sys_cache_sync(struct ion_client *client,
 			int i, j;
 			struct sg_table *table = NULL;
 			int npages = 0;
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+			int ret = 0;
+#endif
 
 			mutex_lock(&client->lock);
 
@@ -169,6 +155,25 @@ static long ion_sys_cache_sync(struct ion_client *client,
 
 			table = buffer->sg_table;
 			npages = PAGE_ALIGN(buffer->size) / PAGE_SIZE;
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+			if ((sync_type == ION_CACHE_FLUSH_BY_RANGE) ||
+			    (sync_type == ION_CACHE_FLUSH_BY_RANGE_USE_VA)) {
+				mutex_unlock(&client->lock);
+
+				ion_sync_kernel_func = &ion_cache_sync_kernel;
+
+				ret = mt_smp_cache_flush(table,
+							 sync_type,
+							 npages);
+				if (ret < 0) {
+					IONMSG("error in smp_sync_sg_list\n");
+					return -EFAULT;
+				}
+
+				return ret;
+			}
+			{
+#endif
 			mutex_lock(&ion_cache_sync_lock);
 
 			if (!cache_map_vm_st) {
@@ -220,6 +225,9 @@ static long ion_sys_cache_sync(struct ion_client *client,
 
 			mutex_unlock(&ion_cache_sync_lock);
 			mutex_unlock(&client->lock);
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+			}
+#endif
 		} else {
 			start = (unsigned long)param->va;
 			size = param->size;
@@ -254,9 +262,7 @@ static long ion_sys_cache_sync(struct ion_client *client,
 		if (sync_type == ION_CACHE_CLEAN_ALL) {
 			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_CLEAN_ALL],
 					 MMPROFILE_FLAG_START, 1, 1);
-#ifdef ION_TO_BE_IMPL
 			smp_inner_dcache_flush_all();
-#endif
 			/* outer_clean_all(); */
 			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_CLEAN_ALL],
 					 MMPROFILE_FLAG_END, 1, 1);
@@ -264,9 +270,7 @@ static long ion_sys_cache_sync(struct ion_client *client,
 			mmprofile_log_ex(ion_mmp_events
 					 [PROFILE_DMA_INVALID_ALL],
 					 MMPROFILE_FLAG_START, 1, 1);
-#ifdef ION_TO_BE_IMPL
 			smp_inner_dcache_flush_all();
-#endif
 			/* outer_inv_all(); */
 			/* outer_flush_all(); */
 			mmprofile_log_ex(ion_mmp_events
@@ -275,9 +279,7 @@ static long ion_sys_cache_sync(struct ion_client *client,
 		} else if (sync_type == ION_CACHE_FLUSH_ALL) {
 			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_ALL],
 					 MMPROFILE_FLAG_START, 1, 1);
-#ifdef ION_TO_BE_IMPL
 			smp_inner_dcache_flush_all();
-#endif
 			/* outer_flush_all(); */
 			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_ALL],
 					 MMPROFILE_FLAG_END, 1, 1);
@@ -304,11 +306,7 @@ static int ion_cache_sync_flush(unsigned long start, size_t size,
 {
 	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE],
 			 MMPROFILE_FLAG_START, size, 0);
-#ifdef CONFIG_ARM64
 	__dma_flush_area((void *)start, size);
-#else
-	dmac_flush_range((void *)start, (void *)(start + size - 1));
-#endif
 	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE],
 			 MMPROFILE_FLAG_END, size, 0);
 
@@ -324,6 +322,9 @@ long ion_dma_op(struct ion_client *client, struct ion_dma_param *param,
 	struct sg_table *table = NULL;
 	int npages = 0;
 	unsigned long start = -1;
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+	int ret = 0;
+#endif
 
 	struct ion_handle *kernel_handle;
 
@@ -340,6 +341,23 @@ long ion_dma_op(struct ion_client *client, struct ion_dma_param *param,
 	table = buffer->sg_table;
 	npages = PAGE_ALIGN(buffer->size) / PAGE_SIZE;
 
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+	if ((param->dma_type == ION_DMA_FLUSH_BY_RANGE) ||
+	    (param->dma_type == ION_DMA_FLUSH_BY_RANGE_USE_VA)) {
+		mutex_unlock(&client->lock);
+
+		if (!ion_sync_kernel_func)
+			ion_sync_kernel_func = &ion_cache_sync_flush;
+
+		ret = mt_smp_cache_flush(table, param->dma_type, npages);
+		if (ret < 0) {
+			IONMSG("[smp cache flush] error!!\n");
+			return -EFAULT;
+		}
+
+		return ret;
+	}
+#endif
 	mutex_lock(&ion_cache_sync_lock);
 
 	if (!cache_map_vm_st) {
@@ -394,6 +412,9 @@ long ion_dma_op(struct ion_client *client, struct ion_dma_param *param,
 
 	ion_drv_put_kernel_handle(kernel_handle);
 
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+	}
+#endif
 	return 0;
 }
 
@@ -422,9 +443,7 @@ void ion_cache_flush_all(void)
 	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_ALL],
 			 MMPROFILE_FLAG_START, 1, 1);
 	/* IONMSG("[ion_cache_flush_all]: ION cache flush all.\n"); */
-#ifdef ION_TO_BE_IMPL
 	smp_inner_dcache_flush_all();
-#endif
 	/* outer_clean_all(); */
 	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_ALL],
 			 MMPROFILE_FLAG_END, 1, 1);
@@ -863,6 +882,15 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
+	 .type = ION_HEAP_TYPE_MULTIMEDIA,
+	 .id = ION_HEAP_TYPE_MULTIMEDIA_PA2MVA,
+	 .name = "ion_mm_heap_for_pa2mva",
+	 .base = 0,
+	 .size = 0,
+	 .align = 0,
+	 .priv = NULL,
+	 },
+	{
 	 .type = ION_HEAP_TYPE_CARVEOUT,
 	 .id = ION_HEAP_TYPE_CARVEOUT,
 	 .name = "ion_carveout_heap",
@@ -879,10 +907,11 @@ struct ion_platform_data ion_drv_platform_data = {
 };
 
 static struct platform_driver ion_driver = {
-	.probe = ion_drv_probe,
-	.remove = ion_drv_remove,
-	.driver = {
-		   .name = "ion-drv"}
+		.probe = ion_drv_probe,
+		.remove = ion_drv_remove,
+		.driver = {
+				.name = "ion-drv"
+		}
 };
 
 static struct platform_device ion_device = {
@@ -906,8 +935,10 @@ static int __init ion_init(void)
 		IONMSG("%s platform driver register failed.\n", __func__);
 		return -ENODEV;
 	}
+
 #ifdef CONFIG_PM
-	fb_register_client(&ion_fb_notifier_block);
+	if (fb_register_client(&ion_fb_notifier_block))
+		IONMSG("%s fb_register_client failed.\n", __func__);
 #endif
 	return 0;
 }

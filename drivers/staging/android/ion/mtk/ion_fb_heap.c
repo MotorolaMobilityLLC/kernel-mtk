@@ -27,16 +27,12 @@
 #include "mtk/ion_drv.h"
 #include "mtk/mtk_ion.h"
 
-#ifdef CONFIG_MTK_IOMMU
 
 #ifdef CONFIG_MTK_PSEUDO_M4U
-#include <pseudo_m4u.h>
-#else
-#endif
-
-#endif
-///#include <pseudo_m4u.h>
+#include <mach/pseudo_m4u.h>
+#elif defined(CONFIG_MTK_M4U)
 #include <m4u.h>
+#endif
 
 #define ION_FB_ALLOCATE_FAIL	-1
 
@@ -50,6 +46,35 @@ struct ion_fb_heap {
 
 static int ion_fb_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 				  void *unused);
+
+struct sg_table *ion_fb_heap_map_dma(struct ion_heap *heap,
+				     struct ion_buffer *buffer)
+{
+	struct sg_table *table;
+	int ret;
+	struct ion_fb_buffer_info *buffer_info =
+	    (struct ion_fb_buffer_info *)buffer->priv_virt;
+
+	table = kzalloc(sizeof(*table), GFP_KERNEL);
+	if (!table)
+		return ERR_PTR(-ENOMEM);
+	ret = sg_alloc_table(table, 1, GFP_KERNEL);
+	if (ret) {
+		kfree(table);
+		return ERR_PTR(ret);
+	}
+	sg_set_page(table->sgl, phys_to_page(buffer_info->priv_phys),
+		    buffer->size, 0);
+	sg_dma_len(table->sgl) = buffer->size;
+	table->sgl->length = buffer->size;
+	return table;
+}
+
+void ion_fb_heap_unmap_dma(struct ion_heap *heap, struct ion_buffer *buffer)
+{
+	sg_free_table(buffer->sg_table);
+	kfree(buffer->sg_table);
+}
 
 ion_phys_addr_t ion_fb_allocate(struct ion_heap *heap, unsigned long size,
 				unsigned long align)
@@ -103,21 +128,20 @@ static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 
 	/*Allocate MVA */
 	mutex_lock(&buffer_info->lock);
-#ifdef CONFIG_MTK_M4U
 	if (buffer_info->MVA == 0) {
+#if (defined(CONFIG_MTK_M4U)) || defined(CONFIG_MTK_PSEUDO_M4U)
 		int ret = m4u_alloc_mva_sg(&port_info, buffer->sg_table);
-
 		if (ret < 0) {
 			mutex_unlock(&buffer_info->lock);
 			IONMSG(" %s: Error. Alloc MVA failed.\n", __func__);
 			return -EFAULT;
 		}
-
+#endif
 		buffer_info->MVA = port_info.mva;
 		*addr = (ion_phys_addr_t)buffer_info->MVA;
 	} else
 		*addr = (ion_phys_addr_t)buffer_info->MVA;
-#endif
+
 	mutex_unlock(&buffer_info->lock);
 	*len = buffer->size;
 
@@ -159,6 +183,8 @@ static int ion_fb_heap_allocate(struct ion_heap *heap,
 	mutex_init(&buffer_info->lock);
 
 	buffer->priv_virt = buffer_info;
+	buffer->size = size;
+	buffer->sg_table = ion_fb_heap_map_dma(heap, buffer);
 
 	return buffer_info->priv_phys == ION_FB_ALLOCATE_FAIL ? -ENOMEM : 0;
 }
@@ -176,42 +202,17 @@ static void ion_fb_heap_free(struct ion_buffer *buffer)
 	}
 
 	buffer->priv_virt = NULL;
-#ifdef CONFIG_MTK_M4U
+#if (defined(CONFIG_MTK_M4U)) || defined(CONFIG_MTK_PSEUDO_M4U)
 	if (buffer_info->MVA)
 		m4u_dealloc_mva_sg(buffer_info->module_id, table, buffer->size,
 				   buffer_info->MVA);
 #endif
 	ion_fb_free(heap, buffer_info->priv_phys, buffer->size);
-
+	ion_fb_heap_unmap_dma(heap, buffer);
 	buffer_info->priv_phys = ION_FB_ALLOCATE_FAIL;
 	kfree(buffer_info);
 }
 
-struct sg_table *ion_fb_heap_map_dma(struct ion_heap *heap,
-				     struct ion_buffer *buffer)
-{
-	struct sg_table *table;
-	int ret;
-	struct ion_fb_buffer_info *buffer_info =
-	    (struct ion_fb_buffer_info *)buffer->priv_virt;
-
-	table = kzalloc(sizeof(*table), GFP_KERNEL);
-	if (!table)
-		return ERR_PTR(-ENOMEM);
-	ret = sg_alloc_table(table, 1, GFP_KERNEL);
-	if (ret) {
-		kfree(table);
-		return ERR_PTR(ret);
-	}
-	sg_set_page(table->sgl, phys_to_page(buffer_info->priv_phys),
-		    buffer->size, 0);
-	return table;
-}
-
-void ion_fb_heap_unmap_dma(struct ion_heap *heap, struct ion_buffer *buffer)
-{
-	sg_free_table(buffer->sg_table);
-}
 
 static struct ion_heap_ops fb_heap_ops = {
 	.allocate = ion_fb_heap_allocate,
