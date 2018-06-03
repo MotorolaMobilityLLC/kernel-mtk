@@ -897,6 +897,7 @@ static int __init dvfsp_module_init(void)
 static void init_cpuhvfs_debug_repo(void)
 {
 	u32 __iomem *dbg_repo = csram_base;
+	int c, repo_i;
 
 	/* backup debug repo for later analysis */
 	memcpy_fromio(dbg_repo_bak, dbg_repo, DBG_REPO_SIZE);
@@ -912,6 +913,12 @@ static void init_cpuhvfs_debug_repo(void)
 		  DBG_REPO_E - DBG_REPO_DATA_S);
 
 	dbg_repo[REPO_I_DATA_S] = REPO_GUARD0;
+
+	for (c = 0; c < NR_MT_CPU_DVFS && c != MT_CPU_DVFS_CCI; c++) {
+		repo_i = OFFS_PPM_LIMIT_S / sizeof(u32) + c;
+		dbg_repo[repo_i] = (0 << 16) | (NR_FREQ - 1);
+	}
+
 	g_dbg_repo = dbg_repo;
 }
 
