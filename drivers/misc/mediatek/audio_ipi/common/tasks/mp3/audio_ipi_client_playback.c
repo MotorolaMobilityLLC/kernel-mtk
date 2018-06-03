@@ -185,27 +185,22 @@ void playback_close_dump_file(void)
 
 static void dump_data_routine(struct work_struct *ws)
 {
+	dump_work_t *dump_work = NULL;
 	char *data_addr = NULL;
 	unsigned long flags = 0;
+	dump_work = container_of(ws, dump_work_t, work);
+	data_addr = get_resv_dram_vir_addr(dump_work->dma_addr);
+	AUD_LOG_E("data %p, dma %p, vp %p, pp %p\n",
+		  data_addr, dump_work->dma_addr,
+		  p_resv_dram->vir_addr, p_resv_dram->phy_addr);
 
-	if (dump_data_routine_cnt_pass) {
-		int offset = datasize * dump_data_routine_cnt_pass;
+	spin_lock_irqsave(&dump_queue_lock, flags);
+	dump_queue->dump_package[dump_queue->idx_w].dump_data_type = DUMP_DECODE;
+	dump_queue->dump_package[dump_queue->idx_w].data_addr = data_addr;
+	dump_queue->idx_w++;
+	spin_unlock_irqrestore(&dump_queue_lock, flags);
 
-		data_addr = get_resv_dram_vir_addr(dump_work[0].dma_addr - offset);
-	} else
-		data_addr = get_resv_dram_vir_addr(dump_work[0].dma_addr);
-	if (dump_queue != NULL) {
-		spin_lock_irqsave(&dump_queue_lock, flags);
-		dump_queue->dump_package[dump_queue->idx_w].dump_data_type = DUMP_DECODE;
-		dump_queue->dump_package[dump_queue->idx_w].data_addr = data_addr;
-		dump_queue->idx_w++;
-		if (dump_queue->idx_w == 256)
-			dump_queue->idx_w = 0;
-		if (dump_queue->idx_w == dump_queue->idx_r)
-			AUD_LOG_D("%s Buffer Full\n", __func__);
-		spin_unlock_irqrestore(&dump_queue_lock, flags);
-		wake_up_interruptible(&wq_dump_pcm);
-	}
+	wake_up_interruptible(&wq_dump_pcm);
 }
 
 
@@ -283,9 +278,10 @@ static int dump_kthread(void *data)
 						      pcm_dump->decode_pcm,
 						      writedata,
 						      &file_decode_pcm->f_pos);
+					size -= writedata;
+					pcm_dump++;
 				}
-				size -= FRAME_BUF_SIZE;
-				pcm_dump++;
+
 			}
 			break;
 		}
