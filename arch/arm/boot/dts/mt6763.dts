@@ -1226,8 +1226,8 @@
 		seninf_7_fifo_full = <334>;
 		dsi0_te_from_infra = <898>;
 		max_prefetch_cnt = <4>;
-		prefetch_size = <160 32 32 32>;
-		sram_size_cpr_64 = <384>;
+		prefetch_size = <256 32 32 32>;
+		sram_size_cpr_64 = <272>;
 		mmsys_config = <&mmsys_config>;
 		mm_mutex = <&disp_mutex>;
 		mdp_rdma0 = <&mdp_rdma0>;
@@ -1238,11 +1238,18 @@
 		mdp_wdma0 = <&mdp_wdma>;
 		mdp_tdshp0 = <&mdp_tdshp>;
 		disp_color0 = <&disp_color0>;
+		disp_ovl0 = <&disp_ovl0>;
+		disp_ovl0_2l = <&disp_ovl0_2l>;
+		disp_ovl1_2l = <&disp_ovl1_2l>;
 		venc = <&venc>;
 		msdc0 = <&msdc0>;
 		audio = <&audio>;
-		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>;
-		clock-names = "GCE";
+		uart = <&apuart0>;
+		sram_share_cnt = <1>;
+		sram_share_engine = <11>;
+		sram_share_event = <480>;
+		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>, <&infracfg_ao INFRACFG_AO_GCE_26M_CG>;
+		clock-names = "GCE", "GCE_TIMER";
 	};
 
 	met_cci_pmu@10390000 {
@@ -2022,22 +2029,28 @@
 		clock-names = "MDP_TDSHP";
 	};
 
-	disp_ovl0@14008000 {
+	disp_ovl0: disp_ovl0@14008000 {
 		compatible = "mediatek,disp_ovl0";
 		reg = <0 0x14008000 0 0x1000>;
 		interrupts = <GIC_SPI 214 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_DISP_OVL0>;
+		clock-names = "DISP_OVL0";
 	};
 
-	disp_ovl0_2l@14009000 {
+	disp_ovl0_2l: disp_ovl0_2l@14009000 {
 		compatible = "mediatek,disp_ovl0_2l";
 		reg = <0 0x14009000 0 0x1000>;
 		interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_DISP_OVL0_2L>;
+		clock-names = "DISP_OVL0_2L";
 	};
 
-	disp_ovl1_2l@1400a000 {
+	disp_ovl1_2l: disp_ovl1_2l@1400a000 {
 		compatible = "mediatek,disp_ovl1_2l";
 		reg = <0 0x1400a000 0 0x1000>;
 		interrupts = <GIC_SPI 216 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config MMSYS_DISP_OVL1_2L>;
+		clock-names = "DISP_OVL1_2L";
 	};
 
 	disp_rdma0@1400b000 {
