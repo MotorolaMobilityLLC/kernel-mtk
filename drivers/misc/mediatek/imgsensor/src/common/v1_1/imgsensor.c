@@ -777,6 +777,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_GET_DEFAULT_FRAME_RATE_BY_SCENARIO:
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
 	case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
+	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
 		{
 			MUINT32 *pValue = NULL;
 			unsigned long long *pFeaturePara_64 = (unsigned long long *)pFeaturePara;
