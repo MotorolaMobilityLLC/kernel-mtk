@@ -175,6 +175,9 @@ struct disp_mem_output_config {
 	enum DISP_BUFFER_TYPE security;
 	unsigned int dirty;
 	int mode;
+
+	/* night light setting */
+	struct disp_ccorr_config m_ccorr_config;
 };
 
 #define DISP_INTERNAL_BUFFER_COUNT 3
@@ -260,6 +263,7 @@ struct display_primary_path_context {
 	cmdqBackupSlotHandle ovl_config_time;
 	cmdqBackupSlotHandle dither_status_info;
 	cmdqBackupSlotHandle dsi_vfp_line;
+	cmdqBackupSlotHandle night_light_params;
 
 	int is_primary_sec;
 	int primary_display_scenario;
