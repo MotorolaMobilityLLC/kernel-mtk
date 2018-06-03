@@ -547,7 +547,7 @@ static int rndis_handle_md_msg(struct usb_function *f, int msg_id, void *data)
 {
 	struct f_rndis *rndis = func_to_rndis(f);
 	int handled = 0;
-	local_para_struct *local_para_ptr = (local_para_struct *)data;
+	struct local_para *local_para_ptr = (struct local_para *)data;
 	ufpm_md_fast_path_common_rsp_t *rsp;
 	ufpm_deactivate_md_func_rsp_t *deactivate_rsp;
 	ufpm_send_ap_ep0_msg_t *ep0_msg;
@@ -738,7 +738,7 @@ void rndis_set_direct_tethering(struct usb_function *f, bool direct)
 	}
 }
 
-int rndis_md_msg_hdlr(ipc_ilm_t *ilm)
+int rndis_md_msg_hdlr(struct ipc_ilm *ilm)
 {
 	struct f_rndis *rndis = _rndis;
 	unsigned long flags;
