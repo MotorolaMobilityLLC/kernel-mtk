@@ -257,6 +257,14 @@ static void temp_valid_unlock(unsigned long *flags);
  *Weak functions
  *=============================================================
  */
+
+unsigned int  __attribute__((weak))
+mt_gpufreq_get_max_power(void)
+{
+	pr_notice("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
 int __attribute__ ((weak))
 IMM_IsAdcInitReady(void)
 {

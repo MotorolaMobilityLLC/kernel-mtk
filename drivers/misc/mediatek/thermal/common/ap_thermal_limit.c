@@ -32,7 +32,6 @@
 #else
 #include "mt_cpufreq.h"
 #endif
-#include "mtk_gpufreq.h"
 
 /*=============================================================
 * Local variable definition
