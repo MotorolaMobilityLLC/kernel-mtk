@@ -132,20 +132,20 @@ extern void mt_eint_print_status(void);
 __attribute__ ((weak))
 unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val, unsigned int MASK, unsigned int SHIFT)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_notice("NO %s !!!\n", __func__);
 	return 0;
 }
 
 __attribute__ ((weak))
 unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsigned int MASK, unsigned int SHIFT)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_notice("NO %s !!!\n", __func__);
 	return 0;
 }
 __attribute__ ((weak))
 unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val, unsigned int MASK, unsigned int SHIFT)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_notice("NO %s !!!\n", __func__);
 	return 0;
 }
 #endif /* CONFIG_FPGA_EARLY_PORTING */
@@ -153,7 +153,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 __attribute__ ((weak))
 int vcorefs_get_curr_ddr(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_notice("NO %s !!!\n", __func__);
 	return -1;
 }
 
@@ -164,7 +164,7 @@ extern int univpll_is_used(void);
 __attribute__ ((weak))
 int hps_get_root_id(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_notice("NO %s !!!\n", __func__);
 	return 0;
 }
 
