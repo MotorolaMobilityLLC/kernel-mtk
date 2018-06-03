@@ -1400,6 +1400,11 @@ static int charger_routine_thread(void *arg)
 		wait_event(info->wait_que, (info->charger_thread_timeout == true));
 
 		mutex_lock(&info->charger_lock);
+		spin_lock_irqsave(&info->slock, flags);
+		if (wake_lock_active(&info->charger_wakelock) == 0)
+			wake_lock(&info->charger_wakelock);
+		spin_unlock_irqrestore(&info->slock, flags);
+
 		info->charger_thread_timeout = false;
 		i++;
 		curr_sign = battery_get_bat_current_sign();
