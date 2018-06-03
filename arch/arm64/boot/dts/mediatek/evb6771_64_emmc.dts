@@ -201,6 +201,7 @@ initcall_debug=1";
 			"aud_dat_mosi_on",
 			"aud_dat_miso_off",
 			"aud_dat_miso_on",
+			"aud_smartpa_off",
 			"aud_smartpa_on",
 			"vow_dat_miso_off",
 			"vow_dat_miso_on",
@@ -212,11 +213,12 @@ initcall_debug=1";
 	pinctrl-3 = <&aud_dat_mosi_on>;
 	pinctrl-4 = <&aud_dat_miso_off>;
 	pinctrl-5 = <&aud_dat_miso_on>;
-	pinctrl-6 = <&aud_pins_smartpa_on>;
-	pinctrl-7 = <&vow_dat_miso_off>;
-	pinctrl-8 = <&vow_dat_miso_on>;
-	pinctrl-9 = <&vow_clk_miso_off>;
-	pinctrl-10 = <&vow_clk_miso_on>;
+	pinctrl-6 = <&aud_pins_smartpa_off>;
+	pinctrl-7 = <&aud_pins_smartpa_on>;
+	pinctrl-8 = <&vow_dat_miso_off>;
+	pinctrl-9 = <&vow_dat_miso_on>;
+	pinctrl-10 = <&vow_clk_miso_off>;
+	pinctrl-11 = <&vow_clk_miso_on>;
 	status = "okay";
 };
 
@@ -236,15 +238,9 @@ initcall_debug=1";
 	aud_dat_mosi_off: aud_dat_mosi_off {
 		pins_cmd1_dat {
 			pins = <PINMUX_GPIO138__FUNC_GPIO138>;
-			input-enable;
-			slew-rate = <0>;
-			bias-disable;
 		};
 		pins_cmd2_dat {
 			pins = <PINMUX_GPIO139__FUNC_GPIO139>;
-			input-enable;
-			slew-rate = <0>;
-			bias-disable;
 		};
 	};
 
@@ -260,15 +256,9 @@ initcall_debug=1";
 	aud_dat_miso_off: aud_dat_miso_off {
 		pins_cmd1_dat {
 			pins = <PINMUX_GPIO142__FUNC_GPIO142>;
-			input-enable;
-			slew-rate = <0>;
-			bias-disable;
 		};
 		pins_cmd2_dat {
 			pins = <PINMUX_GPIO143__FUNC_GPIO143>;
-			input-enable;
-			slew-rate = <0>;
-			bias-disable;
 		};
 	};
 
@@ -278,6 +268,21 @@ initcall_debug=1";
 		};
 		pins_cmd2_dat {
 			pins = <PINMUX_GPIO143__FUNC_AUD_DAT_MISO1>;
+		};
+	};
+
+	aud_pins_smartpa_off: aud_pins_smartpa_off {
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO174__FUNC_GPIO174>;
+		};
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO170__FUNC_GPIO170>;
+		};
+		pins_cmd2_dat {
+			pins = <PINMUX_GPIO171__FUNC_GPIO171>;
+		};
+		pins_cmd3_dat {
+			pins = <PINMUX_GPIO172__FUNC_GPIO172>;
 		};
 	};
 
