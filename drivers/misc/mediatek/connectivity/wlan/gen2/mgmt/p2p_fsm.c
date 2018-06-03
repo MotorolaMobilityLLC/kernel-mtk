@@ -1167,6 +1167,12 @@ VOID p2pFsmRunEventBeaconUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 		    (prP2pBssInfo->eIntendOPMode == OP_MODE_NUM)) {
 			/* AP is created, Beacon Update. */
 			bssUpdateBeaconContent(prAdapter, NETWORK_TYPE_P2P_INDEX);
+
+#if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
+			p2pFuncUpdateProbeRspIEs(prAdapter, prBcnUpdateMsg,
+						NETWORK_TYPE_P2P_INDEX);
+#endif
+			/* nicPmIndicateBssCreated(prAdapter, NETWORK_TYPE_P2P_INDEX); */
 		}
 
 	} while (FALSE);

@@ -776,7 +776,10 @@
 
 #define CFG_SUPPORT_FCC_POWER_BACK_OFF             0
 
+
 #define CFG_SUPPORT_P2P_ECSA                       0
+
+#define CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP       0
 /*------------------------------------------------------------------------------
  * Flags of Packet Lifetime Profiling Mechanism
  *------------------------------------------------------------------------------
@@ -855,6 +858,8 @@
  */
 #define CFG_SUPPORT_NCHO		0
 
+#define CFG_SUPPORT_ADD_CONN_AP		1
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -872,7 +877,7 @@
 /*Branch: 00 for Trunk, 01->mp1,02->mp2*/
 /*Date: relase date*/
 /*Serial Number :start form 1*/
-#define WIFI_DRIVER_VERSION		"11_70_00_20170217_1"
+#define WIFI_DRIVER_VERSION		"11_70_00_20170303_1"
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A

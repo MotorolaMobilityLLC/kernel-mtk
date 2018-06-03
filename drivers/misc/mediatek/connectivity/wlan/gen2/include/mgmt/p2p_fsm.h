@@ -373,6 +373,10 @@ typedef struct _MSG_P2P_BEACON_UPDATE_T {
 	UINT_32 u4BcnHdrLen;
 	UINT_32 u4BcnBodyLen;
 	PUINT_8 pucBcnHdr;
+#if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
+	PUINT_8 pucProbeRsp;
+	UINT_32 u4ProbeRsp_len;
+#endif
 	PUINT_8 pucBcnBody;
 	UINT_8 aucBuffer[1];	/* Header & Body are put here. */
 } MSG_P2P_BEACON_UPDATE_T, *P_MSG_P2P_BEACON_UPDATE_T;

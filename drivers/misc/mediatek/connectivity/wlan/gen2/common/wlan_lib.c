@@ -1054,7 +1054,7 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 			if (rStatus == WLAN_STATUS_RESOURCES) {
 				/* no more TC4 resource for further transmission */
 				QUEUE_INSERT_TAIL(prMergeCmdQue, prQueueEntry);
-				DBGLOG(TX, EVENT,
+				DBGLOG(TX, INFO,
 					"No TC4 resource to send cmd, CID=0x%x, SEQ=%d, CMD type=%d, OID=%d\n",
 					prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum,
 					prCmdInfo->eCmdType, prCmdInfo->fgIsOid);
@@ -4354,6 +4354,134 @@ P_BSS_DESC_T wlanGetTargetBssDescByNetwork(IN P_ADAPTER_T prAdapter, IN ENUM_NET
 		return NULL;
 	}
 }
+
+#if CFG_SUPPORT_ADD_CONN_AP
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief This function is to
+*       check if there is the connected AP in the scan list while the connected AP is weak signal. If there is no,
+*	add a connected AP to scan result list.
+*
+* @param prAdapter      Pointer of Adapter Data Structure
+*
+* @return WLAN_STATUS_SUCCESS
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS wlanCheckConnectedAP(IN P_ADAPTER_T prAdapter)
+{
+	const UINT_8 aucBCAddr[] = BC_MAC_ADDR;
+	BOOLEAN fgGenAPMsg = FALSE;
+	P_WLAN_BEACON_FRAME_T prBeacon = NULL;
+	P_IE_SSID_T prSsid = NULL;
+	PARAM_SSID_T rSsid;
+	PARAM_802_11_CONFIG_T rConfiguration;
+	PARAM_RATES_EX rSupportedRates;
+	P_BSS_DESC_T prBssDesc = NULL;
+	ENUM_PARAM_NETWORK_TYPE_T eNetworkType;
+	ENUM_PARAM_OP_MODE_T eOpMode;
+
+	DEBUGFUNC("wlanCheckConnectedAP");
+
+	ASSERT(prAdapter);
+
+	prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
+	if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) == PARAM_MEDIA_STATE_DISCONNECTED) {
+		DBGLOG(SCN, WARN, "disconnect state, no need to report!\n");
+		return WLAN_STATUS_ADAPTER_NOT_READY;
+	} else if (prBssDesc &&
+			(prBssDesc->u2RawLength == 0) &&
+			prAdapter->fgIsLinkQualityValid &&
+			(prAdapter->rLinkQuality.cRssi != -127)) {
+		DBGLOG(SCN, WARN,
+			"connected state but no connected ap in scan results and poll signal is %d!\n",
+			(PARAM_RSSI)prAdapter->rLinkQuality.cRssi);
+		fgGenAPMsg = TRUE;
+	}
+
+	if (fgGenAPMsg == TRUE) {
+		prBeacon = cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(WLAN_BEACON_FRAME_T) + sizeof(IE_SSID_T));
+		if (!prBeacon) {
+			ASSERT(FALSE);
+			return WLAN_STATUS_FAILURE;
+		}
+
+		/* initialization */
+		kalMemZero(prBeacon, sizeof(WLAN_BEACON_FRAME_T) + sizeof(IE_SSID_T));
+
+		/* prBeacon initialization */
+		prBeacon->u2FrameCtrl = MAC_FRAME_BEACON;
+		COPY_MAC_ADDR(prBeacon->aucDestAddr, aucBCAddr);
+		COPY_MAC_ADDR(prBeacon->aucSrcAddr, prBssDesc->aucSrcAddr);
+		COPY_MAC_ADDR(prBeacon->aucBSSID, prBssDesc->aucBSSID);
+		prBeacon->u2BeaconInterval = prBssDesc->u2BeaconInterval;
+		prBeacon->u2CapInfo = prBssDesc->u2CapInfo;
+
+		/* prSSID initialization */
+		if (prBssDesc->ucSSIDLen > ELEM_MAX_LEN_SSID)
+			prBssDesc->ucSSIDLen = ELEM_MAX_LEN_SSID;
+		kalMemCopy(prBeacon->aucInfoElem, prBssDesc->aucIEBuf, prBssDesc->ucSSIDLen + OFFSET_OF(IE_SSID_T,
+										 aucSSID));
+		prSsid = (P_IE_SSID_T) (&prBeacon->aucInfoElem[0]);
+		COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen, prSsid->aucSSID, prSsid->ucLength);
+
+		/* rConfiguration initialization */
+		rConfiguration.u4Length = sizeof(PARAM_802_11_CONFIG_T);
+		rConfiguration.u4BeaconPeriod = (UINT_32) prBeacon->u2BeaconInterval;
+		rConfiguration.u4ATIMWindow = prBssDesc->u2ATIMWindow;
+		rConfiguration.u4DSConfig = nicChannelNum2Freq(prBssDesc->ucChannelNum);
+		rConfiguration.rFHConfig.u4Length = sizeof(PARAM_802_11_CONFIG_FH_T);
+
+		if (prBssDesc->eBand == BAND_2G4) {
+			if ((prBssDesc->u2OperationalRateSet & RATE_SET_OFDM)
+			    || prBssDesc->fgIsERPPresent) {
+				eNetworkType = PARAM_NETWORK_TYPE_OFDM24;
+			} else {
+				eNetworkType = PARAM_NETWORK_TYPE_DS;
+			}
+		} else {
+			ASSERT(prBssDesc->eBand == BAND_5G);
+			eNetworkType = PARAM_NETWORK_TYPE_OFDM5;
+		}
+
+		switch (prBssDesc->eBSSType) {
+		case BSS_TYPE_IBSS:
+			eOpMode = NET_TYPE_IBSS;
+			break;
+
+		case BSS_TYPE_INFRASTRUCTURE:
+		case BSS_TYPE_P2P_DEVICE:
+		case BSS_TYPE_BOW_DEVICE:
+		default:
+			eOpMode = NET_TYPE_INFRA;
+			break;
+		}
+		/* rSupportedRates initialization */
+		kalMemZero(rSupportedRates, sizeof(PARAM_RATES_EX));
+	}
+	if ((prBeacon) && (prSsid)) {
+		kalIndicateBssInfo(prAdapter->prGlueInfo,
+				   (PUINT_8) prBeacon,
+				   OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem) + OFFSET_OF(IE_SSID_T,
+											   aucSSID) + prSsid->ucLength,
+				   prBssDesc->ucChannelNum, (PARAM_RSSI) prAdapter->rLinkQuality.cRssi);
+		nicAddScanResult(prAdapter,
+			 prBeacon->aucBSSID,
+			 &rSsid,
+			 prBeacon->u2CapInfo & CAP_INFO_PRIVACY ? 1 : 0,
+			 (PARAM_RSSI) prAdapter->rLinkQuality.cRssi,
+			 eNetworkType,
+			 &rConfiguration,
+			 eOpMode,
+			 rSupportedRates,
+			 OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem) + OFFSET_OF(IE_SSID_T,
+										 aucSSID) + prSsid->ucLength -
+			 WLAN_MAC_MGMT_HEADER_LEN, (PUINT_8) ((ULONG) (prBeacon) + WLAN_MAC_MGMT_HEADER_LEN));
+		cnmMemFree(prAdapter, prBeacon);
+	}
+
+	return WLAN_STATUS_SUCCESS;
+}
+#endif
 
 /*----------------------------------------------------------------------------*/
 /*!
