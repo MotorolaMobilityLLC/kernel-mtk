@@ -154,6 +154,20 @@ struct usbtypc {
 #elif defined(CONFIG_TCPC_RT1711H)
 struct usbtypc {
 };
+#else
+struct usbtypc {
+	int irqnum;
+	int en_irq;
+	spinlock_t fsm_lock;
+	struct delayed_work fsm_work;
+	struct i2c_client *i2c_hd;
+	struct hrtimer toggle_timer;
+	struct hrtimer debounce_timer;
+	struct typec_switch_data *host_driver;
+	struct typec_switch_data *device_driver;
+	struct usb3_switch *u3_sw;
+	struct usb_redriver *u_rd;
+};
 #endif
 
 extern int register_typec_switch_callback(struct typec_switch_data *new_driver);
