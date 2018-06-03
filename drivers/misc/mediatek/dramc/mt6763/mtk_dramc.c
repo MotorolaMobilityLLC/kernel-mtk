@@ -1314,8 +1314,82 @@ read_dram_data_rate_show, read_dram_data_rate_store);
 
 /*DRIVER_ATTR(dram_dfs, 0664, dram_dfs_show, dram_dfs_store);*/
 static struct timer_list zqcs_timer;
+static struct timer_list lp3_zq_timer;
 static unsigned char low_freq_counter;
 
+void lp3_zq_timer_callback(unsigned long data)
+{
+	unsigned char drs_status;
+	struct timespec time_start;
+	struct timespec time_end;
+	long time_interval;
+	unsigned int RankCounter, Response, TimeCnt;
+	void __iomem *u4rg_24;
+	void __iomem *u4rg_38;
+	void __iomem *u4rg_5C;
+	void __iomem *u4rg_60;
+	void __iomem *u4rg_88;
+	unsigned long save_flags;
+
+	u4rg_24 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x24);
+	u4rg_38 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x38);
+	u4rg_5C = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x5C);
+	u4rg_60 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x60);
+	u4rg_88 = IOMEM(DRAMC_NAO_CHA_BASE_ADDR + 0x88);
+
+	if (disable_drs(&drs_status)) {
+		pr_info("[DRAMC] disable DRS fail\n");
+		return;
+	}
+	getnstimeofday(&time_start);
+
+	local_irq_save(save_flags);
+	if (acquire_dram_ctrl() != 0) {
+		pr_info("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
+		local_irq_restore(save_flags);
+	} else {
+	for (RankCounter = 0; RankCounter < get_rk_num(); RankCounter++) {
+		TimeCnt = 100;
+		writel(readl(u4rg_38) & 0xBFFFFFFF, u4rg_38); /* DMPHYCLKDYNGEN */
+		writel(readl(u4rg_38) | 0x4000000, u4rg_38); /* DMMIOCKCTRLOFF */
+		writel(readl(u4rg_24) | 0x40, u4rg_24); /* DMCKEFIXON */
+		writel(readl(u4rg_24) | 0x10, u4rg_24); /* DMCKE1FIXON */
+
+		if (RankCounter == 0)
+			writel(readl(u4rg_5C) & 0xFCFFFFFF, u4rg_5C); /* Rank 0 */
+		else if (RankCounter == 1)
+			writel((readl(u4rg_5C) & 0xFCFFFFFF) | 0x1000000, u4rg_5C); /* Rank 1 */
+
+		writel((readl(u4rg_5C) & 0xFFE000FF) | 0xA00, u4rg_5C); /* 0x5c[20:8]=0x0A */
+		writel((readl(u4rg_5C) & 0xFFFFFF00) | 0x56, u4rg_5C); /* R0x5c[7:0]=0x56 */
+
+		writel(readl(u4rg_60) | 0x1, u4rg_60); /* 0x60[0]=1 for ZQ Calibration */
+
+		do {
+			Response = readl(u4rg_88) & 0x1;
+			TimeCnt--;
+			udelay(1);  /* Wait tZQCAL(min) 1us for next polling */
+			} while ((Response == 0) && (TimeCnt > 0));
+
+		writel(readl(u4rg_60) & 0xFFFFFFFE, u4rg_60); /* 0x60[0])=0 */
+
+		writel(readl(u4rg_38) | 0x40000000, u4rg_38); /* DMPHYCLKDYNGEN */
+		writel(readl(u4rg_24) & 0xFFFFFFBF, u4rg_24); /* DMCKEFIXON */
+		writel(readl(u4rg_24) & 0xFFFFFFEF, u4rg_24); /* DMCKE1FIXON */
+		writel(readl(u4rg_38) & 0xFBFFFFFF, u4rg_38); /* DMMIOCKCTRLOFF */
+	}
+	if (release_dram_ctrl() != 0)
+		pr_info("[DRAMC] release SPM HW SEMAPHORE fail!\n");
+	local_irq_restore(save_flags);
+	}
+	mod_timer(&lp3_zq_timer, jiffies + msecs_to_jiffies(2800));
+
+	getnstimeofday(&time_end);
+	time_interval = (time_end.tv_nsec - time_start.tv_nsec) / 1000;
+	if (time_interval < 1000)
+		udelay(1000 - time_interval);
+	enable_drs(drs_status);
+}
 void zqcs_timer_callback(unsigned long data)
 {
 	unsigned char drs_status;
@@ -1338,7 +1412,7 @@ void zqcs_timer_callback(unsigned long data)
 #endif
 
 	if (disable_drs(&drs_status)) {
-		pr_err("[DRAMC] disable DRS fail\n");
+		pr_info("[DRAMC] disable DRS fail\n");
 		return;
 	}
 	getnstimeofday(&time_start);
@@ -1346,7 +1420,7 @@ void zqcs_timer_callback(unsigned long data)
 #ifdef SW_ZQCS
 	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
-		pr_warn("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
+		pr_info("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
 		local_irq_restore(save_flags);
 	} else {
   /* CH0_Rank0 --> CH1Rank0 */
@@ -1430,7 +1504,7 @@ void zqcs_timer_callback(unsigned long data)
 		}
 	}
 	if (release_dram_ctrl() != 0)
-		pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
+		pr_info("[DRAMC] release SPM HW SEMAPHORE fail!\n");
 	local_irq_restore(save_flags);
 }
 #endif
@@ -1603,7 +1677,11 @@ static int dram_probe(struct platform_device *pdev)
 		low_freq_counter = 10;
 		setup_deferrable_timer_on_stack(&zqcs_timer, zqcs_timer_callback, 0);
 		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
-			pr_err("[DRAMC Driver] Error in ZQCS mod_timer\n");
+			pr_info("[DRAMC Driver] Error in ZQCS mod_timer\n");
+	} else if (DRAM_TYPE == TYPE_LPDDR3) {
+		setup_deferrable_timer_on_stack(&lp3_zq_timer, lp3_zq_timer_callback, 0);
+		if (mod_timer(&lp3_zq_timer, jiffies + msecs_to_jiffies(2800)))
+			pr_info("[DRAMC Driver] Error in ZQCS mod_timer\n");
 	}
 
 	ret = driver_create_file(pdev->dev.driver,
