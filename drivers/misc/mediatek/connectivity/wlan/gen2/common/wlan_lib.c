@@ -661,6 +661,10 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					    NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) (&rCmdSwCtrl), NULL, 0);
 		}
 #endif
+#if (CFG_SRAM_SIZE_OPTION == 1 || CFG_SRAM_SIZE_OPTION == 0)
+		/* ALPS02494017 for DIR-635/DIR-655 IOT issue (BA size must be power of 2) */
+		nicQmSetRxBASize(prAdapter, true, IOT_RX_BA_SIZE);
+#endif
 
 #if 0
 		/* Update Auto rate parameters in FW */
