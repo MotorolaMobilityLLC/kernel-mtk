@@ -1865,6 +1865,18 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 
 	if (kalHaltLock(2 * WLAN_OID_TIMEOUT_THRESHOLD)) {
 		DBGLOG(OID, WARN, "kalIoctl: WLAN_STATUS_FAILURE\n");
+
+		prIoReq->rStatus = WLAN_STATUS_FAILURE;
+
+		prIoReq = &(prGlueInfo->OidEntry);
+		ASSERT(prIoReq);
+		DBGLOG(OID, WARN, "OidHandler 0x%p pvInfoBuf 0x%p,Buflen =%d,InfoLen=%p fgRead=%d,fgWaitRsp=%d\n"
+		, prIoReq->pfnOidHandler
+		, prIoReq->pvInfoBuf
+		, prIoReq->u4InfoBufLen
+		, prIoReq->pu4QryInfoLen
+		, prIoReq->fgRead
+		, prIoReq->fgWaitResp);
 		return WLAN_STATUS_FAILURE;
 	}
 
@@ -4260,8 +4272,10 @@ INT_32 kalHaltLock(UINT_32 waitMs)
 			wlanExportGlueInfo(&prGlueInfo);
 
 			DBGLOG(INIT, ERROR,
-				"kalIoctl was executed longer than %u ms, show backtrace of tx_thread!\n",
-				kalGetTimeTick() - rHaltCtrl.u4HoldStart);
+				"kalIoctl was executed longer than %u ms by %s pid %d, show backtrace of tx_thread!\n",
+				kalGetTimeTick() - rHaltCtrl.u4HoldStart,
+				rHaltCtrl.owner->comm, rHaltCtrl.owner->pid);
+
 			if (prGlueInfo)
 				show_stack(prGlueInfo->main_thread, NULL);
 		} else {
