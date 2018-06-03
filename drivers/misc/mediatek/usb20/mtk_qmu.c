@@ -938,7 +938,7 @@ void qmu_done_tx(struct musb *musb, u8 ep_num)
 	gpd_current = gpd_phys_to_virt((dma_addr_t)(uintptr_t)gpd_current, TXQ, ep_num);
 
 	/*
-	*   gpd or Last       gdp_current
+	*   gpd or Last       gpd_current
 	*   |                  |
 	*   |->  GPD1 --> GPD2 --> GPD3 --> GPD4 --> GPD5 -|
 	*   |----------------------------------------------|
