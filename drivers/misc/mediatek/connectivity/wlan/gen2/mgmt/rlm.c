@@ -1932,7 +1932,7 @@ schedule_next:
 		rRepIE.ucId = ELEM_ID_MEASUREMENT_REPORT;
 		rRepIE.ucToken = prCurrReq->ucToken;
 		rRepIE.ucMeasurementType = prCurrReq->ucMeasurementType;
-		rRepIE.ucReportMode = 0;
+		rRepIE.aucReportFields[0] = 0;
 		rRepIE.ucLength = 3;
 		rRepIE.ucReportMode = RM_REP_MODE_INCAPABLE;
 		kalMemCopy(pucReportFrame, &rRepIE, IE_SIZE(&rRepIE));
