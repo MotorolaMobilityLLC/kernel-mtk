@@ -1264,7 +1264,7 @@ static void slim_video_setting(void)
 
 static kal_uint16 read_sensor_version(void)
 {
-	UINT32 ver;
+	UINT32 ver = 0;
 
 	LOG_INF("0x0018:0x%x, 0x9001:0x%x\n",
 		read_cmos_sensor_8(0x0018),
