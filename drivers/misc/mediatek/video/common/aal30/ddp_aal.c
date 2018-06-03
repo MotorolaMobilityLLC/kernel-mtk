@@ -97,25 +97,28 @@ static volatile bool g_aal0_is_clock_on;
 static atomic_t g_aal_allowPartial = ATOMIC_INIT(0);
 static volatile int g_led_mode = MT65XX_LED_MODE_NONE;
 
+#define AAL0_OFFSET (0)
+#define AAL1_OFFSET (DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE)
+
 #if defined(CONFIG_MACH_MT6799)
 #define AAL_TOTAL_MODULE_NUM (2)
-#define aal_get_module_from_id(id) (id == DISP_AAL0 ? AAL0_MODULE_NAMING : DISP_MODULE_AAL1)
+
+#define aal_get_module_from_id(id) ((id == DISP_AAL0) ? AAL0_MODULE_NAMING : DISP_MODULE_AAL1)
+#define aal_get_offset(module) ((module == AAL0_MODULE_NAMING) ? AAL0_OFFSET : AAL1_OFFSET)
+#define index_of_aal(module) ((module == AAL0_MODULE_NAMING) ? 0 : 1)
 
 /* Locked by  g_aal_module#_hist_lock */
 static volatile int g_aal_dirty_frame_retrieved[AAL_TOTAL_MODULE_NUM] = {1, 1};
 #else
 #define AAL_TOTAL_MODULE_NUM (1)
+
 #define aal_get_module_from_id(id) (AAL0_MODULE_NAMING)
+#define aal_get_offset(module) (AAL0_OFFSET)
+#define index_of_aal(module) (0)
 
 /* Locked by  g_aal_module#_hist_lock */
 static volatile int g_aal_dirty_frame_retrieved[AAL_TOTAL_MODULE_NUM] = {1};
 #endif
-
-#define AAL0_OFFSET (0)
-#define AAL1_OFFSET (DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE)
-
-#define aal_get_offset(module) ((module == AAL0_MODULE_NAMING ? AAL0_OFFSET : AAL1_OFFSET))
-#define index_of_aal(module) ((module == AAL0_MODULE_NAMING) ? 0 : 1)
 
 #ifdef CONFIG_MTK_AAL_SUPPORT
 static DEFINE_SPINLOCK(g_aal0_hist_lock);
