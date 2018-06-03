@@ -44,33 +44,6 @@ static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_EARLY_POR
 static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_NORMAL;
 #endif
 
-#if 0 /* defined but not used */
-static int _is_E1(void)
-{
-	unsigned int ver = mt_get_chip_sw_ver();
-
-	if (ver == CHIP_SW_VER_01)
-		return 1;
-
-	return 0;
-}
-
-static int _is_E2(void)
-{
-	unsigned int ver = mt_get_chip_sw_ver();
-
-	if (ver == CHIP_SW_VER_02)
-		return 1;
-
-	return 0;
-}
-
-static int _is_E3(void)
-{
-	return !(_is_E1() || _is_E2());
-}
-#endif
-
 static unsigned int _is_early_porting_stage(void)
 {
 	return (disp_global_stage & (~MAGIC_CODE)) == DISP_HELPER_STAGE_EARLY_PORTING;
@@ -86,66 +59,72 @@ static unsigned int _is_normal_stage(void)
 	return (disp_global_stage & (~MAGIC_CODE)) == DISP_HELPER_STAGE_NORMAL;
 }
 
-static int _disp_helper_option_value[DISP_OPT_NUM] = { 0 };
-
-const char *disp_helper_option_string[DISP_OPT_NUM] = {
-	"DISP_OPT_USE_CMDQ",
-	"DISP_OPT_USE_M4U",
-	"DISP_OPT_MIPITX_ON_CHIP",
-	"DISP_OPT_USE_DEVICE_TREE",
-	"DISP_OPT_FAKE_LCM_X",
-	"DISP_OPT_FAKE_LCM_Y",
-	"DISP_OPT_FAKE_LCM_WIDTH",
-	"DISP_OPT_FAKE_LCM_HEIGHT",
-	"DISP_OPT_OVL_WARM_RESET",
-	"DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN",
-	/* Begin: lowpower option*/
-	"DISP_OPT_SODI_SUPPORT",
-	"DISP_OPT_IDLE_MGR",
-	"DISP_OPT_IDLEMGR_SWTCH_DECOUPLE",
-	"DISP_OPT_IDLEMGR_ENTER_ULPS",
-	"DISP_OPT_SHARE_SRAM",
-	"DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK",
-	"DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING",
-	"DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ",
-	"DISP_OPT_MET_LOG", /* for met */
-	/* End: lowpower option */
-	"DISP_OPT_DECOUPLE_MODE_USE_RGB565",
-	"DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT",
-	"DISP_OPT_NO_LK",
-	"DISP_OPT_BYPASS_PQ",
-	"DISP_OPT_ESD_CHECK_RECOVERY",
-	"DISP_OPT_ESD_CHECK_SWITCH",
-	"DISP_OPT_PRESENT_FENCE",
-	"DISP_OPT_PERFORMANCE_DEBUG",
-	"DISP_OPT_SWITCH_DST_MODE",
-	"DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE",
-	"DISP_OPT_SCREEN_CAP_FROM_DITHER",
-	"DISP_OPT_BYPASS_OVL",
-	"DISP_OPT_FPS_CALC_WND",
-	"DISP_OPT_FPS_EXT",
-	"DISP_OPT_FPS_EXT_INTERVAL",
-	"DISP_OPT_SMART_OVL",
-	"DISP_OPT_DYNAMIC_DEBUG",
-	"DISP_OPT_SHOW_VISUAL_DEBUG_INFO",
-	"DISP_OPT_RDMA_UNDERFLOW_AEE",
-	"DISP_OPT_HRT",
-	"DISP_OPT_PARTIAL_UPDATE",
-	"DISP_OPT_CV_BYSUSPEND",
-	"DISP_OPT_DELAYED_TRIGGER",
-	"DISP_OPT_SHADOW_REGISTER",
-	"DISP_OPT_SHADOW_MODE",
-	"DISP_OPT_OVL_EXT_LAYER",
-	"DISP_OPT_REG_PARSER_RAW_DUMP",
-	"DISP_OPT_AOD",
-	"DISP_OPT_ARR_PHASE_1",
+static struct {
+	enum DISP_HELPER_OPT opt;
+	unsigned int val;
+	const char *desc;
+} help_info[] = {
+	{DISP_OPT_USE_CMDQ, 0, "DISP_OPT_USE_CMDQ"}, /* must enable */
+	{DISP_OPT_USE_M4U, 0, "DISP_OPT_USE_M4U"},   /* must enable */
+	{DISP_OPT_MIPITX_ON_CHIP, 0, "DISP_OPT_MIPITX_ON_CHIP"}, /* not use now */
+	{DISP_OPT_USE_DEVICE_TREE, 0, "DISP_OPT_USE_DEVICE_TREE"}, /* not use now */
+	{DISP_OPT_FAKE_LCM_X, 0, "DISP_OPT_FAKE_LCM_X"},
+	{DISP_OPT_FAKE_LCM_Y, 0, "DISP_OPT_FAKE_LCM_Y"},
+	{DISP_OPT_FAKE_LCM_WIDTH, 0, "DISP_OPT_FAKE_LCM_WIDTH"},
+	{DISP_OPT_FAKE_LCM_HEIGHT, 0, "DISP_OPT_FAKE_LCM_HEIGHT"},
+	{DISP_OPT_OVL_WARM_RESET, 0, "DISP_OPT_OVL_WARM_RESET"}, /* not use now */
+	{DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN, 0, "DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN"}, /* not use now */
+	{DISP_OPT_SODI_SUPPORT, 0, "DISP_OPT_SODI_SUPPORT"}, /* low power */
+	{DISP_OPT_IDLE_MGR, 0, "DISP_OPT_IDLE_MGR"}, /* low power */
+	{DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 0, "DISP_OPT_IDLEMGR_SWTCH_DECOUPLE"}, /* low power */
+	{DISP_OPT_IDLEMGR_ENTER_ULPS, 0, "DISP_OPT_IDLEMGR_ENTER_ULPS"}, /* low power */
+	{DISP_OPT_SHARE_SRAM, 0, "DISP_OPT_SHARE_SRAM"}, /* low power */
+	{DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0, "DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK"}, /* low power */
+	{DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 0, "DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING"}, /* low power */
+	{DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 0, "DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ"}, /* low power */
+	{DISP_OPT_MET_LOG, 0, "DISP_OPT_MET_LOG"}, /* low power */
+	{DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0, "DISP_OPT_DECOUPLE_MODE_USE_RGB565"}, /* not use now */
+	{DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT, 0, "DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT"},
+	{DISP_OPT_NO_LK, 0, "DISP_OPT_NO_LK"}, /* not use now */
+	{DISP_OPT_BYPASS_PQ, 1, "DISP_OPT_BYPASS_PQ"},
+	{DISP_OPT_ESD_CHECK_RECOVERY, 0, "DISP_OPT_ESD_CHECK_RECOVERY"},
+	{DISP_OPT_ESD_CHECK_SWITCH, 0, "DISP_OPT_ESD_CHECK_SWITCH"},
+	{DISP_OPT_PRESENT_FENCE, 0, "DISP_OPT_PRESENT_FENCE"},
+	{DISP_OPT_PERFORMANCE_DEBUG, 0, "DISP_OPT_PERFORMANCE_DEBUG"},
+	{DISP_OPT_SWITCH_DST_MODE, 0, "DISP_OPT_SWITCH_DST_MODE"},
+	{DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 1, "DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE"},
+	{DISP_OPT_SCREEN_CAP_FROM_DITHER, 0, "DISP_OPT_SCREEN_CAP_FROM_DITHER"},
+	{DISP_OPT_BYPASS_OVL, 0, "DISP_OPT_BYPASS_OVL"},
+	{DISP_OPT_FPS_CALC_WND, 10, "DISP_OPT_FPS_CALC_WND"},
+	{DISP_OPT_FPS_EXT, 0, "DISP_OPT_FPS_EXT"},
+	{DISP_OPT_FPS_EXT_INTERVAL, 0, "DISP_OPT_FPS_EXT_INTERVAL"},
+	{DISP_OPT_SMART_OVL, 0, "DISP_OPT_SMART_OVL"},
+	{DISP_OPT_DYNAMIC_DEBUG, 0, "DISP_OPT_DYNAMIC_DEBUG"}, /* not use now */
+	{DISP_OPT_SHOW_VISUAL_DEBUG_INFO, 0, "DISP_OPT_SHOW_VISUAL_DEBUG_INFO"},
+	{DISP_OPT_RDMA_UNDERFLOW_AEE, 0, "DISP_OPT_RDMA_UNDERFLOW_AEE"},
+	{DISP_OPT_HRT, 0, "DISP_OPT_HRT"},
+	{DISP_OPT_PARTIAL_UPDATE, 0, "DISP_OPT_PARTIAL_UPDATE"},
+	{DISP_OPT_CV_BYSUSPEND, 0, "DISP_OPT_CV_BYSUSPEND"},
+	{DISP_OPT_DELAYED_TRIGGER, 0, "DISP_OPT_DELAYED_TRIGGER"},
+	{DISP_OPT_SHADOW_REGISTER, 0, "DISP_OPT_SHADOW_REGISTER"},
+	{DISP_OPT_SHADOW_MODE, 0, "DISP_OPT_SHADOW_MODE"},
+	{DISP_OPT_OVL_EXT_LAYER, 0, "DISP_OPT_OVL_EXT_LAYER"},
+	{DISP_OPT_REG_PARSER_RAW_DUMP, 0, "DISP_OPT_REG_PARSER_RAW_DUMP"},
+	{DISP_OPT_AOD, 0, "DISP_OPT_AOD"},
+	{DISP_OPT_ARR_PHASE_1, 0, "DISP_OPT_ARR_PHASE_1"},
+	{DISP_OPT_RSZ, 0, "DISP_OPT_RSZ"},
 };
 
 const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)
 {
-	if (option >= DISP_OPT_NUM)
-		return "unknown option!!";
-	return disp_helper_option_string[option];
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(help_info); i++) {
+		if (help_info[i].opt == option)
+			return help_info[i].desc;
+	}
+
+	return "unknown option!!";
 }
 
 enum DISP_HELPER_OPT disp_helper_name_to_opt(const char *name)
@@ -165,6 +144,7 @@ enum DISP_HELPER_OPT disp_helper_name_to_opt(const char *name)
 int disp_helper_set_option(enum DISP_HELPER_OPT option, int value)
 {
 	int ret;
+	unsigned int i;
 
 	if (option == DISP_OPT_FPS_CALC_WND) {
 		ret = primary_fps_ctx_set_wnd_sz(value);
@@ -174,20 +154,16 @@ int disp_helper_set_option(enum DISP_HELPER_OPT option, int value)
 		}
 	}
 
-	if (option == DISP_OPT_FPS_EXT_INTERVAL) {
-		ret = primary_fps_ext_ctx_set_interval(value);
-		if (ret) {
-			DISPERR("%s error to set fps_ext_interval to %d\n", __func__, value);
-			return ret;
-		}
-	}
-
 	if (option < DISP_OPT_NUM) {
-		DISPCHECK("Set Option %d(%s) from (%d) to (%d)\n", option,
-			  disp_helper_option_spy(option), disp_helper_get_option(option), value);
-		_disp_helper_option_value[option] = value;
-		DISPCHECK("After set (%s) is (%d)\n", disp_helper_option_spy(option),
-			  disp_helper_get_option(option));
+		for (i = 0; i < ARRAY_SIZE(help_info); i++) {
+			if (help_info[i].opt == option && help_info[i].val != value) {
+				DISPCHECK("Set Option %d(%s) from (%d) to (%d)\n", option,
+							disp_helper_option_spy(option),
+							disp_helper_get_option(option),
+							value);
+				help_info[i].val = value;
+			}
+		}
 	} else {
 		DISPERR("Wrong option: %d\n", option);
 	}
@@ -215,15 +191,6 @@ int disp_helper_get_option(enum DISP_HELPER_OPT option)
 	}
 
 	switch (option) {
-	case DISP_OPT_USE_CMDQ:
-	case DISP_OPT_SHOW_VISUAL_DEBUG_INFO:
-		{
-			return _disp_helper_option_value[option];
-		}
-	case DISP_OPT_USE_M4U:
-		{
-			return _disp_helper_option_value[option];
-		}
 	case DISP_OPT_MIPITX_ON_CHIP:
 		{
 			if (_is_normal_stage())
@@ -279,10 +246,6 @@ int disp_helper_get_option(enum DISP_HELPER_OPT option)
 				h = DISP_GetScreenHeight();
 			return h;
 		}
-	case DISP_OPT_OVL_WARM_RESET:
-		{
-			return 0;
-		}
 	case DISP_OPT_NO_LK:
 		{
 			return 1;
@@ -307,7 +270,14 @@ int disp_helper_get_option(enum DISP_HELPER_OPT option)
 		}
 	default:
 		{
-			return _disp_helper_option_value[option];
+			unsigned int i;
+
+			for (i = 0; i < ARRAY_SIZE(help_info); i++) {
+				if (help_info[i].opt == option)
+					return help_info[i].val;
+			}
+
+			return 0;
 		}
 	}
 
@@ -402,17 +372,23 @@ void disp_helper_option_init(void)
 
 	/* ARR phase 1 option*/
 	disp_helper_set_option(DISP_OPT_ARR_PHASE_1, 0);
+	/* HW does not support this */
+	disp_helper_set_option(DISP_OPT_RSZ, 0);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)
 {
 	int len = 0;
 	int i = 0;
+	for (i = 0; i < ARRAY_SIZE(help_info); i++) {
+		DISPMSG("Option: [%s] Value: [%d]\n", disp_helper_option_spy(i),
+			disp_helper_get_option(i));
 
-	for (i = 0; i < DISP_OPT_NUM; i++) {
-		len +=
-		    scnprintf(stringbuf + len, buf_len - len, "Option: [%d][%s] Value: [%d]\n", i,
-			      disp_helper_option_spy(i), disp_helper_get_option(i));
+		if (stringbuf != NULL && buf_len > 0)
+			len += scnprintf(stringbuf + len, buf_len - len,
+								"Option: [%d][%s] Value: [%d]\n", i,
+								disp_helper_option_spy(i),
+								disp_helper_get_option(i));
 	}
 
 	return len;

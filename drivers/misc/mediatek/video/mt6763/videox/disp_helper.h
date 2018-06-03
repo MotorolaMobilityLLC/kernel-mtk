@@ -68,6 +68,7 @@ enum DISP_HELPER_OPT {
 	DISP_OPT_AOD,
 	/*ARR phase 1 option*/
 	DISP_OPT_ARR_PHASE_1,
+	DISP_OPT_RSZ,
 
 	DISP_OPT_NUM
 };

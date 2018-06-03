@@ -1451,13 +1451,18 @@ static void _cmdq_build_trigger_loop(void)
 		/* waiting for frame done, because we can't use mutex stream eof here,*/
 		/* so need to let dpmanager help to decide which event to wait */
 		/* most time we wait rdmax frame done event. */
-		/*ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_DSI0_EOF);
-		*dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
-		*		CMDQ_WAIT_STREAM_EOF_EVENT, 0);
-		*/
+#if 0
+		/* wait rdma frame done */
 		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
+		/* polling dsi not busy */
 		DISP_REG_CMDQ_POLLING(pgc->cmdq_handle_trigger, DISPSYS_DSI0_BASE + 0x0c,
 						  0x80000000, 0x0);
+#else
+		/* wait dsi frame done */
+		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_DSI0_EOF);
+		/* wait dsi not busy */
+		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DSI0_DONE_EVENT);
+#endif
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_WAIT_STREAM_EOF_EVENT, 0);
 
