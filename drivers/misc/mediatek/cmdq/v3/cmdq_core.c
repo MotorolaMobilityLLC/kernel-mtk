@@ -4727,46 +4727,6 @@ static void cmdq_core_parse_error(const struct TaskStruct *pTask, uint32_t threa
 
 }
 
-static bool cmdq_core_is_poll(const struct TaskStruct *task, dma_addr_t thread_pc_pa)
-{
-	const u32 polling_max_size = 10 * CMDQ_INST_SIZE;
-	u32 begin_offset = 0, jump_offset = 0;
-	u32 *instruction = NULL;
-	bool found = false;
-
-	if (!thread_pc_pa || CMDQ_IS_END_ADDR(thread_pc_pa))
-		return false;
-
-	/* get current offset */
-	begin_offset = cmdq_core_task_get_offset_by_pa(task, thread_pc_pa, NULL);
-	if (begin_offset >= task->bufferSize)
-		return false;
-	jump_offset = begin_offset;
-	while (jump_offset < task->bufferSize && jump_offset - begin_offset < polling_max_size) {
-		instruction = cmdq_core_task_get_va_by_offset(task, jump_offset);
-		if (!instruction)
-			return false;
-		if ((instruction[1] >> 24) == CMDQ_CODE_JUMP_C_ABSOLUTE) {
-			found = true;
-			break;
-		}
-		jump_offset += CMDQ_INST_SIZE;
-	}
-
-	/* cannot find end_do_while in polling */
-	if (!found || jump_offset < CMDQ_INST_SIZE * 2)
-		return false;
-
-	/* try to check wait polling timer */
-	instruction = cmdq_core_task_get_va_by_offset(task, jump_offset - CMDQ_INST_SIZE * 2);
-	if (!instruction || (instruction[1] & 0xFFFFFF) != CMDQ_EVENT_TIMER_00 + CMDQ_POLLING_TPR_MASK_BIT) {
-		/* backward 3 instruction should be wait TIMER 10 in polling */
-		return false;
-	}
-
-	return true;
-}
-
 void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct ResourceUnitStruct *pResource = NULL;
@@ -6331,6 +6291,11 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 		printEngineFlag |= pTask->engineFlag;
 	}
 
+	/* skip internal testcase */
+	if (gCmdqContext.errNum > 1 &&
+		((pTask && CMDQ_TASK_IS_INTERNAL(pTask)) || (pNGTask && CMDQ_TASK_IS_INTERNAL(pNGTask))))
+		return;
+
 	/* dump tasks in error thread */
 	cmdq_core_dump_task_in_thread(thread, false, false, false);
 	cmdq_core_dump_task_with_engine_flag(printEngineFlag, thread);
@@ -6343,25 +6308,21 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 	CMDQ_ERR("=============== [CMDQ] CMDQ Status ===============\n");
 	cmdq_core_dump_status("ERR");
 
-#ifndef CONFIG_MTK_FPGA
 	if (!pTask || !CMDQ_TASK_IS_INTERNAL(pTask)) {
+#ifndef CONFIG_MTK_FPGA
 		CMDQ_ERR("=============== [CMDQ] SMI Status ===============\n");
 		cmdq_get_func()->dumpSMI(1);
-	}
 #endif
 
-	CMDQ_ERR("=============== [CMDQ] Clock Gating Status ===============\n");
-	CMDQ_ERR("[CLOCK] common clock ref=%d\n", atomic_read(&gCmdqThreadUsage));
+		CMDQ_ERR("=============== [CMDQ] Clock Gating Status ===============\n");
+		CMDQ_ERR("[CLOCK] common clock ref=%d\n", atomic_read(&gCmdqThreadUsage));
 
-	/*      */
-	/* Dump MMSYS configuration */
-	/*      */
-	CMDQ_ERR("=============== [CMDQ] MMSYS_CONFIG ===============\n");
-	cmdq_mdp_get_func()->dumpMMSYSConfig();
+		/* Dump MMSYS configuration */
+		CMDQ_ERR("=============== [CMDQ] MMSYS_CONFIG ===============\n");
+		cmdq_mdp_get_func()->dumpMMSYSConfig();
+	}
 
-	/*      */
 	/* ask each module to print their status */
-	/*      */
 	CMDQ_ERR("=============== [CMDQ] Engine Status ===============\n");
 	pCallback = gCmdqGroupCallback;
 	for (index = 0; index < CMDQ_MAX_GROUP_COUNT; ++index) {
@@ -7010,7 +6971,7 @@ static struct TaskStruct *cmdq_core_search_task_by_pc(uint32_t threadPC,
  */
 static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTask, int32_t thread)
 {
-	s32 waitQ;
+	s32 waitq;
 	unsigned long flags;
 	struct ThreadStruct *pThread = NULL;
 	s32 retry_count = 0;
@@ -7022,18 +6983,18 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 	/* timeout wait & make sure this task is finished. */
 	/* pTask->taskState flag is updated in IRQ handlers like cmdqCoreHandleDone. */
 	retry_count = 0;
-	waitQ = wait_event_timeout(gCmdWaitQueue[thread],
+	waitq = wait_event_timeout(gCmdWaitQueue[thread],
 				   (pTask->taskState != TASK_STATE_BUSY
 				    && pTask->taskState != TASK_STATE_WAITING),
 				   /* timeout_jiffies); */
 				   msecs_to_jiffies(CMDQ_PREDUMP_TIMEOUT_MS));
 
 	/* if SW-timeout, pre-dump hang instructions */
-	while (waitQ == 0 && retry_count < max_retry_count) {
+	while (waitq == 0 && retry_count < max_retry_count) {
 		CMDQ_LOG("=============== [CMDQ] SW timeout Pre-dump(%d)===============\n",
 			retry_count);
 
-		++retry_count;
+		retry_count++;
 
 		spin_lock_irqsave(&gCmdqExecLock, flags);
 		cmdq_core_dump_status("INFO");
@@ -7069,13 +7030,13 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 		}
 
 		/* then we wait again */
-		waitQ = wait_event_timeout(gCmdWaitQueue[thread],
+		waitq = wait_event_timeout(gCmdWaitQueue[thread],
 					   (pTask->taskState != TASK_STATE_BUSY
 					    && pTask->taskState != TASK_STATE_WAITING),
 					   msecs_to_jiffies(CMDQ_PREDUMP_TIMEOUT_MS));
 	}
 
-	return waitQ;
+	return waitq;
 }
 
 bool cmdq_core_check_task_finished(struct TaskStruct *pTask)
@@ -7288,14 +7249,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 			}
 			cmdq_core_parse_error(pNGTask, thread, &module, &irqFlag, &instA, &instB);
 			status = -ETIMEDOUT;
-
-			if (private && private->internal && (((instA & 0xFF000000) >> 24) == CMDQ_CODE_WFE ||
-				cmdq_core_is_poll(pTask, (dma_addr_t)threadPC))) {
-				/* this is testcase timeout in purpose case, ignore aee and set ignore flag */
-				private->ignore_timeout = true;
-			} else {
-				throwAEE = true;
-			}
+			throwAEE = !(private && private->internal && private->ignore_timeout);
 		} else if (waitQ < 0) {
 			/* Task be killed. Not an error, but still need removal. */
 
@@ -8593,7 +8547,6 @@ int32_t cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask, struct cmdqRe
 	int32_t status;
 	int32_t thread;
 	int i;
-	struct TaskPrivateStruct *private;
 
 	if (pTask == NULL) {
 		CMDQ_ERR("cmdqCoreWaitAndReleaseTask err ptr=0x%p\n", pTask);
@@ -8625,14 +8578,6 @@ int32_t cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask, struct cmdqRe
 			CMDQ_U32_PTR(pResult->regValues)[i] = pTask->regResults[i];
 		}
 		mutex_unlock(&gCmdqTaskMutex);
-	}
-
-	/* For testcase do not return timeout, so that testcase run as pass. */
-	if (pTask->privateData) {
-		private = CMDQ_TASK_PRIVATE(pTask);
-		if (private->internal && private->ignore_timeout &&
-			status == -ETIMEDOUT)
-			status = -CMDQ_ERROR_TIMEOUT_IGNORE;
 	}
 
 	cmdq_core_track_task_record(pTask, thread);

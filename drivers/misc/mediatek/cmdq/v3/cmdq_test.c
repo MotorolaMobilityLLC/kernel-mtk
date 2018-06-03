@@ -115,13 +115,13 @@ if (1) {	\
 }
 
 static int32_t _test_submit_async_internal(struct cmdqRecStruct *handle, struct TaskStruct **ppTask,
-	bool internal)
+	bool internal, bool ignore_timeout)
 
 {
 	struct TaskPrivateStruct private = {
 		.node_private_data = NULL,
 		.internal = internal,
-		.ignore_timeout = false,
+		.ignore_timeout = ignore_timeout,
 	};
 	struct cmdqCommandStruct desc = {
 		.scenario = handle->scenario,
@@ -144,16 +144,16 @@ static int32_t _test_submit_async_internal(struct cmdqRecStruct *handle, struct 
 
 static int32_t _test_submit_async(struct cmdqRecStruct *handle, struct TaskStruct **ppTask)
 {
-	return _test_submit_async_internal(handle, ppTask, false);
+	return _test_submit_async_internal(handle, ppTask, false, false);
 }
 
-static s32 _test_submit_sync(struct cmdqRecStruct *handle)
+static s32 _test_submit_sync(struct cmdqRecStruct *handle, bool ignore_timeout)
 {
 	struct cmdqCommandStruct desc = { 0 };
 	struct TaskPrivateStruct private = {
 		.node_private_data = NULL,
 		.internal = true,
-		.ignore_timeout = false,
+		.ignore_timeout = ignore_timeout,
 	};
 	s32 status;
 
@@ -5739,6 +5739,26 @@ static bool _append_random_instructions(struct cmdqRecStruct *handle,
 	return true;
 }
 
+bool _stress_is_ignore_timeout(struct stress_policy *policy)
+{
+	bool ignore = false;
+
+	/* exclude some case that timeout is expected */
+	if (policy->wait_policy != CMDQ_TESTCASE_WAITOP_NOT_SET) {
+		/* insert wait op into testcase will trigger timeout */
+		ignore = true;
+	} else if (policy->engines_policy ==
+		CMDQ_TESTCASE_ENGINE_RANDOM) {
+		/* random engine flag may cause task never able to run, thus timedout */
+		ignore = true;
+	} else if (policy->poll_policy != CMDQ_TESTCASE_POLL_NONE) {
+		/* timeout due to poll fail */
+		ignore = true;
+	}
+
+	return ignore;
+}
+
 static void _dump_stress_task_result(s32 status, struct random_data *random_context,
 	s32 *insts_buffer, u32 insts_buffer_size)
 {
@@ -5746,22 +5766,8 @@ static void _dump_stress_task_result(s32 status, struct random_data *random_cont
 	bool error_happen = false;
 
 	do {
-		if (status == -CMDQ_ERROR_TIMEOUT_IGNORE) {
-			error_happen = true;
-
-			/* exclude some case that timeout is expected */
-			if (random_context->thread->policy.wait_policy != CMDQ_TESTCASE_WAITOP_NOT_SET) {
-				/* insert wait op into testcase will trigger timeout */
-				error_happen = false;
-			} else if (random_context->thread->policy.engines_policy ==
-				CMDQ_TESTCASE_ENGINE_RANDOM) {
-				/* random engine flag may cause task never able to run, thus timedout */
-				error_happen = false;
-			} else if (random_context->thread->policy.poll_policy != CMDQ_TESTCASE_POLL_NONE) {
-				/* timeout due to poll fail */
-				error_happen = false;
-			}
-
+		if (status == -ETIMEDOUT) {
+			error_happen = !_stress_is_ignore_timeout(&random_context->thread->policy);
 			if (!error_happen) {
 				CMDQ_LOG("Task timeout: %p round: %u skip compare ...\n",
 					random_context->task, random_context->round);
@@ -5875,7 +5881,8 @@ void _testcase_stress_submit_release_work(struct work_struct *work_item)
 	s32 status = 0;
 
 	do {
-		status = _test_submit_sync(random_context->handle);
+		status = _test_submit_sync(random_context->handle,
+			_stress_is_ignore_timeout(&random_context->thread->policy));
 		_dump_stress_task_result(status, random_context, NULL, 0);
 	} while (0);
 
@@ -5914,6 +5921,7 @@ static int _testcase_gen_task_thread(void *data)
 	const u32 max_buffer_count = 4;
 	struct thread_param *thread_data = (struct thread_param *)data;
 	struct workqueue_struct *release_queues[MAX_RELEASE_QUEUE] = {0};
+	const bool ignore_timeout = _stress_is_ignore_timeout(&thread_data->policy);
 	u32 engines[] = {CMDQ_ENG_MDP_CAMIN, CMDQ_ENG_MDP_RDMA0, CMDQ_ENG_MDP_RDMA1,
 		CMDQ_ENG_MDP_WROT0, CMDQ_ENG_MDP_WROT1};
 	u32 task_count = 0;
@@ -6088,7 +6096,7 @@ static int _testcase_gen_task_thread(void *data)
 			}
 
 			/* async submit case, with contains more info during release */
-			status = _test_submit_async_internal(handle, &random_context->task, true);
+			status = _test_submit_async_internal(handle, &random_context->task, true, ignore_timeout);
 			if (status < 0) {
 				CMDQ_ERR("Fail to submit round: %u status: %d\n",
 					task_count, status);
@@ -6247,10 +6255,16 @@ void testcase_stress_basic(void)
 		policy.secure_policy = CMDQ_TESTCASE_SECURE_RANDOM;
 #endif
 
-	policy.engines_policy = CMDQ_TESTCASE_ENGINE_SAME;
-	policy.wait_policy = CMDQ_TESTCASE_WAITOP_BEFORE_END;
+	policy.engines_policy = CMDQ_TESTCASE_ENGINE_NOT_SET;
+	policy.wait_policy = CMDQ_TESTCASE_WAITOP_NOT_SET;
 	policy.condition_policy = CMDQ_TESTCASE_CONDITION_NONE;
 	policy.loop_policy = CMDQ_TESTCASE_LOOP_FAST;
+	policy.trigger_policy = CMDQ_TESTCASE_TRIGGER_SLOW;
+	testcase_gen_random_case(true, policy);
+
+	msleep_interruptible(10);
+	policy.engines_policy = CMDQ_TESTCASE_ENGINE_SAME;
+	policy.wait_policy = CMDQ_TESTCASE_WAITOP_BEFORE_END;
 	policy.trigger_policy = CMDQ_TESTCASE_TRIGGER_MEDIUM;
 	testcase_gen_random_case(true, policy);
 
