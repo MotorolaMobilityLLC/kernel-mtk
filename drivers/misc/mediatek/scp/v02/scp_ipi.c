@@ -36,7 +36,7 @@ struct mutex scp_A_ipi_mutex, scp_B_ipi_mutex;
  */
 void scp_A_ipi_handler(void)
 {
-	pr_debug("scp A ipi handler %d\n", scp_A_rcv_obj->id);
+	/*pr_debug("scp A ipi handler %d\n", scp_A_rcv_obj->id);*/
 
 	if (scp_ipi_desc[scp_A_rcv_obj->id].handler && scp_A_rcv_obj->id < SCP_NR_IPI) {
 		memcpy_from_scp(scp_A_recv_buff, (void *)scp_A_rcv_obj->share_buf, scp_A_rcv_obj->len);
@@ -74,7 +74,7 @@ void scp_A_ipi_init(void)
  */
 void scp_B_ipi_handler(void)
 {
-	pr_debug("scp B ipi handler %d\n", scp_B_rcv_obj->id);
+	/*pr_debug("scp B ipi handler %d\n", scp_B_rcv_obj->id);*/
 
 	if (scp_ipi_desc[scp_B_rcv_obj->id].handler && scp_B_rcv_obj->id < SCP_NR_IPI) {
 		memcpy_from_scp(scp_B_recv_buff, (void *)scp_B_rcv_obj->share_buf, scp_B_rcv_obj->len);
@@ -186,7 +186,7 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 			return ERROR;
 		}
 
-		pr_debug("scp_ipi_send: SCP A ipi id = %d\n", id);
+		/*pr_debug("scp_ipi_send: SCP A ipi id = %d\n", id);*/
 		if (len > sizeof(scp_A_send_obj->share_buf) || buf == NULL) {
 			pr_err("scp_ipi_send: SCP A buffer is error\n");
 			return ERROR;
@@ -227,14 +227,14 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		scp_A_ipi_owner = id;
 
 		memcpy(scp_A_send_buff, buf, len);
-		pr_debug("scp_ipi_send: SCP A memory copy to scp sram\n");
+		/*pr_debug("scp_ipi_send: SCP A memory copy to scp sram\n");*/
 		memcpy_to_scp((void *)scp_A_send_obj->share_buf, scp_A_send_buff, len);
 		scp_A_send_obj->len = len;
 		scp_A_send_obj->id = id;
 		dsb(SY);
 
 		/*send host to scp ipi*/
-		pr_debug("scp_ipi_send: SCP A send host to scp ipi\n");
+		/*pr_debug("scp_ipi_send: SCP A send host to scp ipi\n");*/
 		GIPC_TO_SCP_REG = HOST_TO_SCP_A;
 
 		if (wait)
@@ -244,7 +244,7 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		scp_awake_unlock(SCP_A_ID);
 		mutex_unlock(&scp_A_ipi_mutex);
 
-		pr_debug("scp_ipi_send: SCP A ipi send id = %d done\n", id);
+		/*pr_debug("scp_ipi_send: SCP A ipi send id = %d done\n", id);*/
 
 	} else {
 		/*Send IPI to SCP B*/
@@ -258,7 +258,7 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 			return ERROR;
 		}
 
-		pr_debug("scp_ipi_send: SCP B ipi id = %d\n", id);
+		/*pr_debug("scp_ipi_send: SCP B ipi id = %d\n", id);*/
 		if (len > sizeof(scp_B_send_obj->share_buf) || buf == NULL) {
 			pr_err("scp_ipi_send: SCP B buffer is error\n");
 			return ERROR;
@@ -300,14 +300,14 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		scp_B_ipi_owner = id;
 
 		memcpy(scp_B_send_buff, buf, len);
-		pr_debug("scp_ipi_send: SCP B memory copy to scp sram\n");
+		/*pr_debug("scp_ipi_send: SCP B memory copy to scp sram\n");*/
 		memcpy_to_scp((void *)scp_B_send_obj->share_buf, scp_B_send_buff, len);
 		scp_B_send_obj->len = len;
 		scp_B_send_obj->id = id;
 		dsb(SY);
 
 		/*send host to scp ipi*/
-		pr_debug("scp_ipi_send: SCP B send host to scp ipi\n");
+		/*pr_debug("scp_ipi_send: SCP B send host to scp ipi\n");*/
 		GIPC_TO_SCP_REG = HOST_TO_SCP_B;
 
 		if (wait)
@@ -317,7 +317,7 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		scp_awake_unlock(SCP_B_ID);
 		mutex_unlock(&scp_B_ipi_mutex);
 
-		pr_debug("scp_ipi_send: SCP B ipi send id = %d done\n", id);
+		/*pr_debug("scp_ipi_send: SCP B ipi send id = %d done\n", id);*/
 
 	}
 	return DONE;

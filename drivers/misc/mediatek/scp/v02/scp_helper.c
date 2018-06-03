@@ -363,7 +363,7 @@ int scp_awake_lock(scp_core_id scp_id)
 	}
 
 	/* WE1: set a direct IPI to awake SCP */
-	pr_debug("scp_awake_lock: try to awake %s\n", core_id);
+	/*pr_debug("scp_awake_lock: try to awake %s\n", core_id);*/
 	writel((1 << scp_ipi_awake_num), SCP_GIPC_REG);
 
 	/*
@@ -398,7 +398,7 @@ int scp_awake_lock(scp_core_id scp_id)
 	*scp_awake_count = *scp_awake_count + 1;
 	wake_unlock(scp_wakelock);
 	mutex_unlock(scp_awake_mutex);
-	pr_debug("scp_awake_lock: %s lock, count=%d\n", core_id, *scp_awake_count);
+	/*pr_debug("scp_awake_lock: %s lock, count=%d\n", core_id, *scp_awake_count);*/
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_awake_lock);
@@ -469,7 +469,7 @@ int scp_awake_unlock(scp_core_id scp_id)
 
 	wake_unlock(scp_wakelock);
 	mutex_unlock(scp_awake_mutex);
-	pr_debug("scp_awake_unlock: %s unlock, count=%d\n", core_id, *scp_awake_count);
+	/*pr_debug("scp_awake_unlock: %s unlock, count=%d\n", core_id, *scp_awake_count);*/
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_awake_unlock);
