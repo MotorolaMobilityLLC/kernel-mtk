@@ -15,7 +15,14 @@
 #include <linux/of_address.h>
 #include <linux/regulator/consumer.h>
 
+#ifdef CONFIG_MTK_FREQ_HOPPING
 #include <mach/mtk_freqhopping.h>
+#else
+#define FH_PLL0 0
+#define FH_PLL1 1
+#define FH_PLL3 3
+#endif
+
 #include <mt-plat/upmu_common.h>
 #include "mtk_cpufreq_platform.h"
 #include "../../mtk_cpufreq_hybrid.h"
@@ -309,7 +316,9 @@ unsigned char get_clkdiv(struct pll_ctrl_t *pll_p)
 
 static void adjust_freq_hopping(struct pll_ctrl_t *pll_p, unsigned int dds)
 {
+#ifdef CONFIG_MTK_FREQ_HOPPING
 	mt_dfs_armpll(pll_p->hopping_id, dds);
+#endif
 }
 
 /* Frequency API */
