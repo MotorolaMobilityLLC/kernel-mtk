@@ -6501,8 +6501,7 @@ static void cmdq_core_attach_engine_error(const struct TaskStruct *task, int32_t
 	}
 
 	/* force dump DISP for DISP scenario with 0x0 engine flag */
-	if (task != NULL)
-		disp_scn = cmdq_get_func()->isDispScenario(task->scenario);
+	disp_scn = cmdq_get_func()->isDispScenario(task->scenario);
 
 	if (nginfo != NULL)
 		disp_scn = disp_scn | cmdq_get_func()->isDispScenario(nginfo->scenario);
@@ -6538,10 +6537,8 @@ static void cmdq_core_dump_task_command(const struct TaskStruct *task,
 		cmdq_core_dump_ng_error_buffer(nginfo);
 	}
 
-	if (task != NULL) {
-		CMDQ_ERR("=============== [CMDQ] Error Command Buffer ===============\n");
-		cmdq_core_dump_error_buffer(task, pc);
-	}
+	CMDQ_ERR("=============== [CMDQ] Error Command Buffer ===============\n");
+	cmdq_core_dump_error_buffer(task, pc);
 }
 
 static void cmdq_core_attach_error_task(const struct TaskStruct *task, int32_t thread,
