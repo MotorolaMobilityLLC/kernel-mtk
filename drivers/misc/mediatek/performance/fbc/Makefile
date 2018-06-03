@@ -15,6 +15,11 @@ ifeq ($(CONFIG_MACH_MT6739), y)
         ccflags-y += -DTOUCH_VCORE_OPP=0
 endif
 
+ifeq ($(CONFIG_MACH_MT6771), y)
+		ccflags-y += -DCONFIG_MTK_FPSGO_V2
+		ccflags-y += -I$(srctree)/drivers/misc/mediatek/performance/fpsgo_v2/fstb/
+endif
+
 ifeq ($(CONFIG_MTK_FPSGO_FBT_UX),y)
         obj-y += fbc.o
 else
