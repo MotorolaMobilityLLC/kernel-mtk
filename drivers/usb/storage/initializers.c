@@ -103,3 +103,149 @@ int usb_stor_huawei_e220_init(struct us_data *us)
 	usb_stor_dbg(us, "Huawei mode set result is %d\n", result);
 	return 0;
 }
+
+#define IS_HUAWEI_DONGLES 1
+#define NOT_HUAWEI_DONGLES 0
+static int usb_stor_huawei_dongles_pid(struct us_data *us)
+{
+	int ret = NOT_HUAWEI_DONGLES;
+	struct usb_interface_descriptor *idesc = NULL;
+
+	idesc = &us->pusb_intf->cur_altsetting->desc;
+	if (idesc != NULL) {
+		if ((idesc->bInterfaceNumber == 0x0000)) {
+			if ((us->pusb_dev->descriptor.idProduct >= 0x1401 &&
+				us->pusb_dev->descriptor.idProduct <= 0x1600)
+			    || (us->pusb_dev->descriptor.idProduct >= 0x1c02
+				&& us->pusb_dev->descriptor.idProduct <= 0x2202)
+			    || (us->pusb_dev->descriptor.idProduct == 0x1001)
+			    || (us->pusb_dev->descriptor.idProduct == 0x1003)
+			    || (us->pusb_dev->descriptor.idProduct == 0x1004)) {
+				if ((us->pusb_dev->descriptor.idProduct >= 0x1501)
+				    && (us->pusb_dev->descriptor.idProduct <= 0x1504)) {
+					ret = NOT_HUAWEI_DONGLES;
+				} else {
+					ret = IS_HUAWEI_DONGLES;
+				}
+			}
+		}
+	}
+	return ret;
+}
+
+int usb_stor_huawei_scsi_init(struct us_data *us)
+{
+	int result = 0;
+	int act_len = 0;
+	unsigned char cmd[32] = { 0x55, 0x53, 0x42, 0x43, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11,
+		0x06, 0x30, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, cmd, 31, &act_len);
+	return result;
+}
+
+int usb_stor_huawei_init(struct us_data *us)
+{
+	int result = 0;
+
+	if (usb_stor_huawei_dongles_pid(us)) {
+		if ((us->pusb_dev->descriptor.idProduct >= 0x1446))
+			result = usb_stor_huawei_scsi_init(us);
+		else
+			result = usb_stor_huawei_e220_init(us);
+	}
+
+	return result;
+}
+
+/* This places the zte devices in multi-port mode */
+int usb_stor_zte_scsi_init(struct us_data *us)
+{
+	int result = 0;
+	int act_len = 0;
+	unsigned char cmd[32] = { 0x55, 0x53, 0x42, 0x43, 0x68, 0xF6, 0x2E, 0x89,
+		0xC0, 0x00, 0x00, 0x00, 0x80, 0x00, 0x06, 0x9F,
+		0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, cmd, 31, &act_len);
+	return result;
+}
+
+int usb_stor_zte_scsi_init_1232(struct us_data *us)
+{
+	int result = 0;
+	int act_len = 0;
+
+	/*SCSI CMD:55534243123456702000000080000c85010101180101010101000000000000 */
+	unsigned char cmd[32] = { 0x55, 0x53, 0x42, 0x43, 0x12, 0x34, 0x56, 0x70,
+		0x20, 0x00, 0x00, 0x00, 0x80, 0x00, 0x0c, 0x85,
+		0x01, 0x01, 0x01, 0x18, 0x01, 0x01, 0x01, 0x01,
+		0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, cmd, 31, &act_len);
+	return result;
+}
+
+int usb_stor_zte_scsi_init_1588(struct us_data *us)
+{
+	int result = 0;
+	int act_len = 0;
+
+	/*SCSI CMD:5553424312345679000000000000061b000000020000000000000000000000 */
+	unsigned char cmd[32] = { 0x55, 0x53, 0x42, 0x43, 0x12, 0x34, 0x56, 0x79,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x1b,
+		0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, cmd, 31, &act_len);
+	return result;
+}
+
+int usb_stor_zte_init(struct us_data *us)
+{
+	int result;
+	int iProduct;
+
+	if (!us)
+		return 0;
+
+	iProduct = us->pusb_dev->descriptor.idProduct;
+	if ((iProduct == 0x0154) || (iProduct == 0x0166) || (iProduct == 0x2000)) {
+		result = usb_stor_control_msg(us, us->send_ctrl_pipe, 0xA1,	/*request */
+					      0xC0,	/*request type */
+					      0x01, 0x0, NULL, 0x0, 1000);
+
+		usb_stor_dbg(us, "ZTE mode set result is %d\n", result);
+	} else if (iProduct == 0xFFF5)
+		result = usb_stor_zte_scsi_init(us);
+	else if (iProduct == 0x1232)
+		result = usb_stor_zte_scsi_init_1232(us);
+	else if (iProduct == 0x1588)
+		result = usb_stor_zte_scsi_init_1588(us);
+
+	return 0;
+}
+
+int usb_stor_dlink_scsi_init(struct us_data *us)
+{
+	int result = 0;
+	int act_len = 0;
+	int iProduct;
+	unsigned char cmd[32] = { 0x55, 0x53, 0x42, 0x43, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xF0,
+		0x01, 0x03, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+	iProduct = us->pusb_dev->descriptor.idProduct;
+	if ((iProduct == 0xa708))
+		result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, cmd, 31, &act_len);
+
+	return result;
+}

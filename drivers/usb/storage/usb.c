@@ -136,6 +136,16 @@ MODULE_PARM_DESC(quirks, "supplemental list of device IDs and their quirks");
 	.initFunction = init_function,	\
 }
 
+#define HW_UNUSUAL_DEV(idVendor, cl, sc, pr, \
+vendor_name, product_name, use_protocol, use_transport, \
+init_function, Flags) \
+{ \
+.vendorName = vendor_name, \
+.productName = product_name, \
+.useProtocol = use_protocol, \
+.useTransport = use_transport, \
+.initFunction = init_function, \
+}
 static struct us_unusual_dev us_unusual_dev_list[] = {
 #	include "unusual_devs.h"
 	{ }		/* Terminating entry */
@@ -146,6 +156,7 @@ static struct us_unusual_dev for_dynamic_ids =
 
 #undef UNUSUAL_DEV
 #undef COMPLIANT_DEV
+#undef HW_UNUSUAL_DEV
 #undef USUAL_DEV
 #undef UNUSUAL_VENDOR_INTF
 
@@ -616,11 +627,12 @@ static int get_device_info(struct us_data *us, const struct usb_device_id *id,
 	 * from the unusual_devs.h table.
 	 */
 	if (id->idVendor || id->idProduct) {
-		static const char *msgs[3] = {
+		/*static const char *msgs[3] = {
 			"an unneeded SubClass entry",
 			"an unneeded Protocol entry",
 			"unneeded SubClass and Protocol entries"};
 		struct usb_device_descriptor *ddesc = &dev->descriptor;
+		*/
 		int msg = -1;
 
 		if (unusual_dev->useProtocol != USB_SC_DEVICE &&
@@ -629,7 +641,7 @@ static int get_device_info(struct us_data *us, const struct usb_device_id *id,
 		if (unusual_dev->useTransport != USB_PR_DEVICE &&
 			us->protocol == idesc->bInterfaceProtocol)
 			msg += 2;
-		if (msg >= 0 && !(us->fflags & US_FL_NEED_OVERRIDE))
+		/*if (msg >= 0 && !(us->fflags & US_FL_NEED_OVERRIDE))
 			dev_notice(pdev, "This device "
 					"(%04x,%04x,%04x S %02x P %02x)"
 					" has %s in unusual_devs.h (kernel"
@@ -644,6 +656,7 @@ static int get_device_info(struct us_data *us, const struct usb_device_id *id,
 					idesc->bInterfaceProtocol,
 					msgs[msg],
 					utsname()->release);
+				*/
 	}
 
 	return 0;
