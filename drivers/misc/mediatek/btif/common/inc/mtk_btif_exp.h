@@ -18,19 +18,19 @@
 #define BTIF_MAX_LEN_PER_PKT 2048
 #define BTIF_RXD_BE_BLOCKED_DETECT 1
 /*--------------Enum Defination---------------*/
-enum ENUM_BTIF_DPIDLE_CTRL {
+enum _ENUM_BTIF_DPIDLE_ {
 	BTIF_DPIDLE_DISABLE = 0,
 	BTIF_DPIDLE_ENABLE = BTIF_DPIDLE_DISABLE + 1,
 	BTIF_DPIDLE_MAX,
 };
 
-enum ENUM_BTIF_LPBK_MODE {
+enum _ENUM_BTIF_LPBK_MODE_ {
 	BTIF_LPBK_DISABLE = 0,
 	BTIF_LPBK_ENABLE = BTIF_LPBK_DISABLE + 1,
 	BTIF_LPBK_MAX,
 };
 
-enum ENUM_BTIF_DBG_ID {
+enum _ENUM_BTIF_DBG_ID_ {
 	BTIF_DISABLE_LOGGER = 0,
 	BTIF_ENABLE_LOGGER = BTIF_DISABLE_LOGGER + 1,
 	BTIF_DUMP_LOG = BTIF_ENABLE_LOGGER + 1,
@@ -41,7 +41,7 @@ enum ENUM_BTIF_DBG_ID {
 	BTIF_DBG_MAX,
 };
 
-enum ENUM_BTIF_OP_ERROR_CODE {
+enum _ENUM_BTIF_OP_ERROR_CODE_ {
 	E_BTIF_AGAIN = 0,
 	E_BTIF_FAIL = -1,
 	E_BTIF_BAD_POINTER = -2,
@@ -164,11 +164,12 @@ int mtk_wcn_btif_read(unsigned long u_id,
 *  control if BTIF module allow system enter deepidle state or not
 * PARAMETERS
 *  p_btif      [IN] pointer returned by mtk_wcn_btif_open
-*  en_flag    [IN] one of ENUM_BTIF_DPIDLE_CTRL
+*  en_flag    [IN] one of enum _ENUM_BTIF_DPIDLE_
 * RETURNS
 *  int          always return 0
 *****************************************************************************/
-int mtk_wcn_btif_dpidle_ctrl(unsigned long u_id, enum ENUM_BTIF_DPIDLE_CTRL en_flag);
+int mtk_wcn_btif_dpidle_ctrl(unsigned long u_id,
+			     enum _ENUM_BTIF_DPIDLE_ en_flag);
 
 /*****************************************************************************
 * FUNCTION
@@ -215,12 +216,13 @@ int mtk_wcn_btif_wakeup_consys(unsigned long u_id);
 * PARAMETERS
 *  p_btif      [IN] pointer returned by mtk_wcn_btif_open
 *  enable     [IN] loopback mode control flag, enable or disable,
-*  shou be one of ENUM_BTIF_LPBK_MODE
+*  shou be one of enum _ENUM_BTIF_LPBK_MODE_
 * RETURNS
 *  int          0 = succeed;
 *  others = fail, for detailed information, please see ENUM_BTIF_OP_ERROR_CODE
 *****************************************************************************/
-int mtk_wcn_btif_loopback_ctrl(unsigned long u_id, enum ENUM_BTIF_LPBK_MODE enable);
+int mtk_wcn_btif_loopback_ctrl(unsigned long u_id,
+			       enum _ENUM_BTIF_LPBK_MODE_ enable);
 
 /*****************************************************************************
 * FUNCTION
@@ -229,7 +231,7 @@ int mtk_wcn_btif_loopback_ctrl(unsigned long u_id, enum ENUM_BTIF_LPBK_MODE enab
 *  control BTIF logger function's behavior
 * PARAMETERS
 *  p_btif      [IN] pointer returned by mtk_wcn_btif_open
-*  flag         [IN] should be one of ENUM_BTIF_DBG_ID
+*  flag         [IN] should be one of enum _ENUM_BTIF_DBG_ID_
 *                      BTIF_DISABLE_LOGGER  - disable btif logger
 *                      BTIF_ENABLE_LOGGER   - enable btif logger
 *                      BTIF_DUMP_LOG           - dump log logged by btif
@@ -241,7 +243,7 @@ int mtk_wcn_btif_loopback_ctrl(unsigned long u_id, enum ENUM_BTIF_LPBK_MODE enab
 *        others = fail, for detailed information,
 *        please see ENUM_BTIF_OP_ERROR_CODE
 *****************************************************************************/
-int mtk_wcn_btif_dbg_ctrl(unsigned long u_id, enum ENUM_BTIF_DBG_ID flag);
+int mtk_wcn_btif_dbg_ctrl(unsigned long u_id, enum _ENUM_BTIF_DBG_ID_ flag);
 /*-----------End of Debug Purpose API declearation------------*/
 
 /*****************************************************************************

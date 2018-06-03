@@ -148,17 +148,17 @@ extern struct clk *clk_btif_apdma; /*btif apdma clock*/
 #define RX_DMA_VFF_LEFT_MASK (0x0000FFFF)
 
 struct _MTK_BTIF_DMA_VFIFO_ {
-	DMA_VFIFO vfifo;
+	struct _DMA_VFIFO_ vfifo;
 	unsigned int wpt;	/*DMA's write pointer, which is maintained by SW for Tx DMA and HW for Rx DMA */
 	unsigned int last_wpt_wrap;	/*last wrap bit for wpt */
 	unsigned int rpt;	/*DMA's read pointer, which is maintained by HW for Tx DMA and SW for Rx DMA */
 	unsigned int last_rpt_wrap;	/*last wrap bit for rpt */
-} MTK_BTIF_DMA_VFIFO, *P_MTK_BTIF_DMA_VFIFO;
+};
 
 /*for DMA debug purpose*/
 struct _MTK_BTIF_DMA_REG_DMP_DBG_ {
 	unsigned long reg_addr;
 	unsigned int reg_val;
-} MTK_BTIF_DMA_REG_DMP_DBG, *P_MTK_BTIF_DMA_REG_DMP_DBG;
+};
 
 #endif /*__HAL_BTIF_DMA_H_*/
