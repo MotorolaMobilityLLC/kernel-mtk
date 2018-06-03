@@ -1306,8 +1306,14 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		void *usr_ptr_Reg = (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
 		kal_uint32 *pReg = NULL;
 
-		pReg = kmalloc(sizeof(kal_uint8)*u4RegLen, GFP_KERNEL);
+		/* buffer size exam */
+		if ((sizeof(kal_uint8) * u4RegLen) > FEATURE_CONTROL_MAX_DATA_SIZE) {
+			kfree(pFeaturePara);
+			PK_PR_ERR(" buffer size (%u) is too large\n", u4RegLen);
+			return -EINVAL;
+		}
 
+		pReg = kmalloc_array(u4RegLen, sizeof(kal_uint8), GFP_KERNEL);
 		if (pReg == NULL) {
 			kfree(pFeaturePara);
 			PK_PR_ERR(" ioctl allocate mem failed\n");
