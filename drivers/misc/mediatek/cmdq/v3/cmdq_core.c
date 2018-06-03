@@ -6128,11 +6128,6 @@ static void cmdq_core_fill_task_record(struct RecordStruct *pRecord, const struc
 				       uint32_t thread)
 {
 	if (pRecord && pTask) {
-		struct CmdBufferStruct *first_entry = list_first_entry(
-			&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
-		struct CmdBufferStruct *last_entry = list_last_entry(
-			&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
-
 		/* Record scenario */
 		pRecord->user = pTask->callerPid;
 		pRecord->scenario = pTask->scenario;
@@ -6155,10 +6150,21 @@ static void cmdq_core_fill_task_record(struct RecordStruct *pRecord, const struc
 		pRecord->durRelease = pTask->durRelease;
 
 		/* Record address */
-		pRecord->start = (u32)first_entry->MVABase;
-		pRecord->end = (u32)last_entry->MVABase +
-			CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
-		pRecord->jump = pTask->pCMDEnd[-1];
+		if (!list_empty(&pTask->cmd_buffer_list)) {
+			struct CmdBufferStruct *first_entry = list_first_entry(
+				&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
+			struct CmdBufferStruct *last_entry = list_last_entry(
+				&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
+
+			pRecord->start = (u32)first_entry->MVABase;
+			pRecord->end = (u32)last_entry->MVABase +
+				CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
+			pRecord->jump = pTask->pCMDEnd ? pTask->pCMDEnd[-1] : 0;
+		} else {
+			pRecord->start = 0;
+			pRecord->end = 0;
+			pRecord->jump = 0;
+		}
 
 		cmdq_core_fill_task_profile_marker_record(pRecord, pTask);
 #ifdef CMDQ_INSTRUCTION_COUNT
