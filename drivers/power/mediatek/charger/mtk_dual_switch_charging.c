@@ -356,7 +356,7 @@ static int mtk_dual_switch_charging_plug_in(struct charger_manager *info)
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 
 	swchgalg->state = CHR_CC;
-	info->polling_interval = 10;
+	info->polling_interval = CHARGING_INTERVAL;
 	swchgalg->disable_charging = false;
 	charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
 
@@ -462,7 +462,7 @@ int mtk_dual_switch_chr_full(struct charger_manager *info)
 	 * Reset CV to normal value if temperture is in normal zone
 	 */
 	swchg_select_cv(info);
-	info->polling_interval = 20;
+	info->polling_interval = CHARGING_FULL_INTERVAL;
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
 	if (!chg_done) {
 		swchgalg->state = CHR_CC;
@@ -470,7 +470,7 @@ int mtk_dual_switch_chr_full(struct charger_manager *info)
 		mtk_pe20_set_to_check_chr_type(info, true);
 		info->enable_dynamic_cv = true;
 		pr_err("battery recharging!\n");
-		info->polling_interval = 10;
+		info->polling_interval = CHARGING_INTERVAL;
 	}
 
 	return 0;

@@ -361,13 +361,14 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 		ptr = container_of(pos, struct gtimer, list);
 
 		get_monotonic_boottime(&time_now);
-		duraction = timespec_sub(time_now, ptr->endtime);
+		duraction = timespec_sub(ptr->endtime, time_now);
 		sec = duraction.tv_sec + 1;
 		if (sec <= 10)
 			sec = 10;
-	}
-
-	ft_err("get_dynamic_period time:%d\n", sec);
+		ft_err("get_dynamic_period time:now:%ld next:%ld diff:%d\n",
+		time_now.tv_sec, ptr->endtime.tv_sec, sec);
+	} else
+		ft_err("get_dynamic_period time:%d\n", sec);
 
 	return sec;
 }

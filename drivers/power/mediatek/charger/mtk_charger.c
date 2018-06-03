@@ -2001,7 +2001,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	/* init thread */
 	init_waitqueue_head(&info->wait_que);
-	info->polling_interval = 10;
+	info->polling_interval = CHARGING_INTERVAL;
 	info->enable_dynamic_cv = true;
 
 	info->chg1_data.thermal_charging_current_limit = -1;
