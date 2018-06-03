@@ -256,8 +256,10 @@ enum rt9466_reg_addr {
 
 /* ========== CHG_CTRL13 0x0D ============ */
 #define RT9466_SHIFT_WDT_EN	7
+#define RT9466_SHIFT_IRQ_REZ	0
 
 #define RT9466_MASK_WDT_EN	(1 << RT9466_SHIFT_WDT_EN)
+#define RT9466_MASK_IRQ_REZ	(1 << RT9466_SHIFT_IRQ_REZ)
 
 /* ========== CHG_CTRL14 0x0E ============ */
 #define RT9466_SHIFT_AICL_MEAS	7
