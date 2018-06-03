@@ -533,6 +533,41 @@ unsigned int upmu_get_rgs_chrdet(void)
 	return val;
 }
 
+#if defined(IPIMB)
+/*****************************************************************************
+ * mt-pmic dev_attr APIs
+ ******************************************************************************/
+unsigned int g_ret_type;
+static ssize_t show_pmic_regulator_prof(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	pr_err("[show_pmic_regulator_prof] 0x%x\n", g_ret_type);
+	return sprintf(buf, "%u\n", g_ret_type);
+}
+
+static ssize_t store_pmic_regulator_prof(struct device *dev, struct device_attribute *attr, const char *buf,
+				 size_t size)
+{
+	int ret = 0;
+	char *pvalue = NULL, *type;
+	unsigned int ret_type = 0;
+
+	pr_err("[store_pmic_regulator_prof]\n");
+	if (buf != NULL && size != 0) {
+		pr_err("[store_pmic_regulator_prof] buf is %s\n", buf);
+
+		pvalue = (char *)buf;
+		type = strsep(&pvalue, " ");
+		ret = kstrtou32(type, 16, (unsigned int *)&ret_type);
+
+		pr_err("[pmic_regulator_profiling] = %d\n", ret_type);
+		pmic_regulator_profiling(ret_type);
+	}
+
+	return size;
+}
+
+static DEVICE_ATTR(pmic_regulator_prof, 0664, show_pmic_regulator_prof, store_pmic_regulator_prof);	/*664*/
+#endif
 /*****************************************************************************
  * mt-pmic dev_attr APIs
  ******************************************************************************/
@@ -956,6 +991,9 @@ static int pmic_mt_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_access);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_dvt);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_auxadc_ut);
+#if defined(IPIMB)
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_regulator_prof);
+#endif
 	PMICLOG("[PMIC] device_create_file for EM : done.\n");
 
 	/* 0.1V */
