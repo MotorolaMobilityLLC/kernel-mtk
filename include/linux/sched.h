@@ -354,6 +354,42 @@ extern cpumask_var_t cpu_isolated_map;
 
 extern int runqueue_is_locked(int cpu);
 
+#ifdef CONFIG_HOTPLUG_CPU
+extern int sched_isolate_count(const cpumask_t *mask, bool include_offline);
+extern int sched_isolate_cpu(int cpu);
+extern int sched_deisolate_cpu(int cpu);
+extern int sched_deisolate_cpu_unlocked(int cpu);
+extern void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask);
+#else
+static inline int sched_isolate_count(const cpumask_t *mask,
+				      bool include_offline)
+{
+	cpumask_t count_mask;
+
+	if (include_offline)
+		cpumask_andnot(&count_mask, mask, cpu_online_mask);
+	else
+		return 0;
+
+	return cpumask_weight(&count_mask);
+}
+
+static inline int sched_isolate_cpu(int cpu)
+{
+	return 0;
+}
+
+static inline int sched_deisolate_cpu(int cpu)
+{
+	return 0;
+}
+
+static inline int sched_deisolate_cpu_unlocked(int cpu)
+{
+	return 0;
+}
+#endif
+
 #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ_COMMON)
 extern void nohz_balance_enter_idle(int cpu);
 extern void set_cpu_sd_state_idle(void);
@@ -1659,9 +1695,6 @@ struct task_struct {
 	unsigned int policy;
 	int nr_cpus_allowed;
 	cpumask_t cpus_allowed;
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-	cpumask_t cpus_allowed_isolated;
-#endif
 
 #ifdef CONFIG_PREEMPT_RCU
 	int rcu_read_lock_nesting;
@@ -2103,28 +2136,12 @@ extern int arch_task_struct_size __read_mostly;
 #endif
 
 /* Future-safe accessor for struct task_struct's cpus_allowed. */
-#ifndef CONFIG_MTK_ACAO_SUPPORT
 #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
-#else
-extern struct cpumask *iso_cpus_ptr;
-extern int enter_isolation;
-enum iso_prio_t {ISO_TURBO, ISO_SCHED, ISO_UNSET};
-
-static inline struct cpumask *tsk_cpus_allowed(struct task_struct *tsk)
-{
-
-	if (enter_isolation &&
-			cpumask_and(&(tsk)->cpus_allowed_isolated, &(tsk)->cpus_allowed, iso_cpus_ptr) &&
-			cpumask_and(&(tsk)->cpus_allowed_isolated, &(tsk)->cpus_allowed_isolated, cpu_active_mask))
-		return (&(tsk)->cpus_allowed_isolated);
-	else
-		return (&(tsk)->cpus_allowed);
-}
-
+enum iso_prio_t {ISO_CUSTOMIZE, ISO_TURBO, ISO_SCHED, ISO_UNSET};
 extern int set_cpu_isolation(enum iso_prio_t prio, struct cpumask *cpumask_ptr);
 extern int unset_cpu_isolation(enum iso_prio_t prio);
-extern void iso_cpumask_init(void);
-#endif
+extern struct cpumask cpu_all_masks;
+extern enum iso_prio_t iso_prio;
 
 #define TNF_MIGRATED	0x01
 #define TNF_NO_GROUP	0x02

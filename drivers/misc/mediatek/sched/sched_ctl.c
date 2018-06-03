@@ -78,6 +78,9 @@ static enum sched_status_t sched_status = SCHED_STATUS_INIT;
 static int sched_hint_loading_thresh = 5; /* 5% (max 100%) */
 static BLOCKING_NOTIFIER_HEAD(sched_hint_notifier_list);
 static DEFINE_SPINLOCK(status_lock);
+static struct kobj_attribute sched_iso_attr;
+static struct kobj_attribute set_sched_iso_attr;
+static struct kobj_attribute set_sched_deiso_attr;
 
 static int sched_hint_status(int util, int cap)
 {
@@ -265,6 +268,9 @@ static struct attribute *sched_attrs[] = {
 	&sched_info_attr.attr,
 	&sched_load_thresh_attr.attr,
 	&sched_enable_attr.attr,
+	&sched_iso_attr.attr,
+	&set_sched_iso_attr.attr,
+	&set_sched_deiso_attr.attr,
 	NULL,
 };
 
@@ -385,3 +391,47 @@ static int __init sched_init_ops(void)
 	return 0;
 }
 late_initcall(sched_init_ops);
+
+/* turn on/off sched boost scheduling */
+static ssize_t show_sched_iso(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len += snprintf(buf+len, max_len-len, "cpu_isolated_mask=0x%lx\n", cpu_isolated_mask->bits[0]);
+	len += snprintf(buf+len, max_len-len, "iso_prio=%d\n", iso_prio);
+
+	return len;
+}
+
+static ssize_t set_sched_iso(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+
+	if (sscanf(buf, "%iu", &val) < nr_cpu_ids)
+		sched_isolate_cpu(val);
+
+	return count;
+}
+
+static ssize_t set_sched_deiso(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+
+	if (sscanf(buf, "%iu", &val) < nr_cpu_ids)
+		sched_deisolate_cpu(val);
+
+	return count;
+}
+
+static struct kobj_attribute sched_iso_attr =
+__ATTR(sched_isolation, S_IRUSR, show_sched_iso, NULL);
+
+static struct kobj_attribute set_sched_iso_attr =
+__ATTR(set_sched_isolation, S_IWUSR, NULL, set_sched_iso);
+
+static struct kobj_attribute set_sched_deiso_attr =
+__ATTR(set_sched_deisolation, S_IWUSR, NULL, set_sched_deiso);

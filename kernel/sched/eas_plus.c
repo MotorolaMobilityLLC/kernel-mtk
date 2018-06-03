@@ -47,7 +47,8 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	/* If the prevous cpu is cache affine and idle, choose it first. */
-	if (cpu != l_plus_cpu && cpu != target && cpus_share_cache(cpu, target) && idle_cpu(cpu))
+	if (cpu != l_plus_cpu && cpu != target && cpus_share_cache(cpu, target) && idle_cpu(cpu) &&
+		!cpu_isolated(cpu))
 		return cpu;
 
 	arch_get_cluster_cpus(&cls_cpus, cid);
@@ -58,6 +59,9 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 		unsigned long int spare_cap;
 
 		if (!cpu_online(cpu))
+			continue;
+
+		if (cpu_isolated(cpu))
 			continue;
 
 #ifdef CONFIG_MTK_SCHED_INTEROP
@@ -116,7 +120,7 @@ int select_prefer_idle_cpu(struct task_struct *p)
 		 */
 		int i = boosted ? nr_cpu_ids - iter_cpu - 1 : iter_cpu;
 
-		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allow))
+		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allow) || cpu_isolated(i))
 			continue;
 
 		new_util = cpu_util(i) + min_util;
@@ -164,7 +168,7 @@ int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
 		int i = (prefer_idle && (task_util(p) > stune_task_threshold)) ?
 			nr_cpu_ids-iter_cpu-1 : iter_cpu;
 
-		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allow))
+		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allow) || cpu_isolated(i))
 			continue;
 
 
@@ -225,6 +229,9 @@ static int select_energy_cpu_plus(struct task_struct *p, int target)
 			if (!cpu_online(cpu))
 				continue;
 
+			if (cpu_isolated(cpu))
+				continue;
+
 			if (capacity_of(max_cap_cpu) < target_max_cap &&
 					task_fits_max(p, max_cap_cpu)) {
 				best_cpu = cpu;
@@ -260,7 +267,7 @@ static int select_energy_cpu_plus(struct task_struct *p, int target)
 		}
 
 		nrg_diff = energy_diff(&eenv);
-		if (nrg_diff >= 0) {
+		if (nrg_diff >= 0 && !cpu_isolated(task_cpu(p))) {
 			trace_energy_aware_wake_cpu(p, task_cpu(p), target_cpu,
 					(int)task_util(p), nrg_diff, false, is_tiny);
 			return task_cpu(p);
