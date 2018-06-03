@@ -6877,7 +6877,8 @@ static int cpu_util_wake(int cpu, struct task_struct *p)
 	return (util >= capacity) ? capacity : util;
 }
 
-static int start_cpu(bool boosted, int cap_min, bool *t)
+static int start_cpu(struct task_struct *p, bool prefer_idle,
+		bool boosted, int cap_min, bool *t)
 {
 	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
 	int cap_limit;
@@ -6890,6 +6891,10 @@ static int start_cpu(bool boosted, int cap_min, bool *t)
 
 	if (boosted)
 		return boosted ? rd->max_cap_orig_cpu : rd->min_cap_orig_cpu;
+
+	/* favor small cpu for tiny task */
+	if (!prefer_idle && is_tiny_task(p))
+		return rd->min_cap_orig_cpu;
 
 	capacity_curr_little = capacity_curr_of(rd->min_cap_orig_cpu);
 	capacity_real_little = capacity_hw_of(rd->min_cap_orig_cpu);
@@ -6941,7 +6946,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 	schedstat_inc(this_rq()->eas_stats.fbt_attempts);
 
 	/* Find start CPU based on boost value */
-	cpu = start_cpu(boosted, cap_min, &turning);
+	cpu = start_cpu(p, prefer_idle, boosted, cap_min, &turning);
 	if (cpu < 0) {
 		schedstat_inc(p->se.statistics.nr_wakeups_fbt_no_cpu);
 		schedstat_inc(this_rq()->eas_stats.fbt_no_cpu);
