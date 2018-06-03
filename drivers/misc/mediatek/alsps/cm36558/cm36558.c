@@ -144,7 +144,7 @@ struct PS_CALI_DATA_STRUCT {
 /*----------------------------------------------------------------------------*/
 static struct i2c_client *CM36558_i2c_client;
 static struct CM36558_priv *CM36558_obj;
-
+static int intr_flag = 1;	/* hw default away after enable. */
 
 static int CM36558_local_init(void);
 static int CM36558_remove(void);
@@ -265,6 +265,7 @@ int CM36558_enable_ps(struct i2c_client *client, int enable)
 		}
 		atomic_set(&obj->ps_deb_on, 1);
 		atomic_set(&obj->ps_deb_end, jiffies + atomic_read(&obj->ps_debounce) / (1000 / HZ));
+		intr_flag = 1;	/* reset hw status to away after enable. */
 
 	} else {
 		APS_LOG("CM36558_enable_ps disable_ps\n");
@@ -408,7 +409,7 @@ static int CM36558_get_ps_value(struct CM36558_priv *obj, u8 ps)
 	int val = 0, mask = atomic_read(&obj->ps_mask);
 	int invalid = 0;
 
-	val = 0;
+	val = intr_flag;	/* value between high/low threshold should sync. with hw status. */
 
 	if (ps > atomic_read(&obj->ps_thd_val_high))
 		val = 0;
@@ -869,7 +870,6 @@ static int CM36558_delete_attr(struct device_driver *driver)
 
 	return err;
 }
-static int intr_flag;
 /*----------------------------------------------------------------------------*/
 static int CM36558_check_intr(struct i2c_client *client)
 {
@@ -895,9 +895,9 @@ static int CM36558_check_intr(struct i2c_client *client)
 	pr_warn("CM36558_REG_INT_FLAG value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 
 	if (databuf[1] & 0x02) {
-		intr_flag = 0;
+		intr_flag = 0;	/* for close */
 	} else if (databuf[1] & 0x01) {
-		intr_flag = 1;
+		intr_flag = 1;	/* for away */
 	} else {
 		res = -1;
 		APS_ERR("CM36558_check_intr fail databuf[1]&0x01: %d\n", res);
