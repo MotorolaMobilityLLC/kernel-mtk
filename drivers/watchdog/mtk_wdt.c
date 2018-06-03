@@ -36,6 +36,9 @@
 #include <linux/reset-controller.h>
 #include <linux/reset.h>
 #include <linux/sched.h>
+#ifdef CONFIG_MT6397_MISC
+#include <linux/mfd/mt6397/rtc_misc.h>
+#endif
 
 #define WDT_MAX_TIMEOUT		31
 #define WDT_MIN_TIMEOUT		1
@@ -59,6 +62,7 @@
 
 #define WDT_STATUS		0x0c
 #define WDT_NONRST_REG		0x20
+#define WDT_NONRST_REG2		0x24
 
 #define WDT_SWRST		0x14
 #define WDT_SWRST_KEY		0x1209
@@ -181,6 +185,20 @@ static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
 	reg &= ~(WDT_MODE_DUAL_EN | WDT_MODE_IRQ_EN | WDT_MODE_EN);
 	reg |= WDT_MODE_KEY;
 	iowrite32(reg, wdt_base + WDT_MODE);
+
+	if (cmd && !strcmp(cmd, "rpmbpk")) {
+		iowrite32(ioread32(wdt_base + WDT_NONRST_REG2) | (1 << 0), wdt_base + WDT_NONRST_REG2);
+	} else if (cmd && !strcmp(cmd, "recovery")) {
+		iowrite32(ioread32(wdt_base + WDT_NONRST_REG2) | (1 << 1), wdt_base + WDT_NONRST_REG2);
+		#ifdef CONFIG_MT6397_MISC
+		mtk_misc_mark_recovery();
+		#endif
+	} else if (cmd && !strcmp(cmd, "bootloader")) {
+		iowrite32(ioread32(wdt_base + WDT_NONRST_REG2) | (1 << 2), wdt_base + WDT_NONRST_REG2);
+		#ifdef CONFIG_MT6397_MISC
+		mtk_misc_mark_fast();
+		#endif
+	}
 
 	while (1) {
 		writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
