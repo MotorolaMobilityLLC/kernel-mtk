@@ -732,7 +732,7 @@ void ipanic_zap_console_sem(void)
 	console_unlock();
 }
 
-#ifdef CONFIG_RANDOMIZE_BASE
+#if defined(CONFIG_RANDOMIZE_BASE) && defined(ARM64)
 static u64 show_kaslr(void)
 {
 	u64 const kaslr_offset = kimage_vaddr - KIMAGE_VADDR;
