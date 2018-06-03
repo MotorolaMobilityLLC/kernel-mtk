@@ -281,8 +281,20 @@ WLAN_STATUS
 nicConfigPowerSaveProfile(IN P_ADAPTER_T prAdapter, UINT_8 ucBssIndex, PARAM_POWER_MODE ePwrMode, BOOLEAN fgEnCmdEvent);
 
 WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent);
+
 WLAN_STATUS nicEnterTPTestMode(IN P_ADAPTER_T prAdapter, IN UINT_8 ucFuncMask);
 
+WLAN_STATUS nicEnterCtiaModeOfScan(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent);
+
+WLAN_STATUS nicEnterCtiaModeOfRoaming(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent);
+
+WLAN_STATUS nicEnterCtiaModeOfCAM(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent);
+
+WLAN_STATUS nicEnterCtiaModeOfBCNTimeout(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent);
+
+WLAN_STATUS nicEnterCtiaModeOfAutoTxPower(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent);
+
+WLAN_STATUS nicEnterCtiaModeOfFIFOFullNoAck(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent);
 /*----------------------------------------------------------------------------*/
 /* Scan Result Processing                                                     */
 /*----------------------------------------------------------------------------*/

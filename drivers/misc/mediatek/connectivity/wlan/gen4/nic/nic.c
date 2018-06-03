@@ -1778,6 +1778,197 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 	return rWlanStatus;
 }				/* end of nicEnterCtiaMode() */
 
+WLAN_STATUS nicEnterCtiaModeOfScan(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent)
+{
+	WLAN_STATUS rWlanStatus;
+
+	ASSERT(prAdapter);
+	DBGLOG(INIT, INFO, "nicEnterCtiaModeOfScan: %d\n", fgEnterCtia);
+
+	rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	if (fgEnterCtia) {
+		/* Disable On-Line Scan */
+		prAdapter->fgEnOnlineScan = FALSE;
+	} else {
+		/* Enable On-Line Scan */
+		prAdapter->fgEnOnlineScan = TRUE;
+	}
+
+	return rWlanStatus;
+}
+
+WLAN_STATUS nicEnterCtiaModeOfRoaming(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent)
+{
+	CMD_SW_DBG_CTRL_T rCmdSwCtrl;
+	WLAN_STATUS rWlanStatus;
+
+	ASSERT(prAdapter);
+	DBGLOG(INIT, INFO, "nicEnterCtiaModeOfRoaming: %d\n", fgEnterCtia);
+
+	rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	if (fgEnterCtia) {
+		/* Disable Roaming */
+		rCmdSwCtrl.u4Id = 0x55660000;
+		rCmdSwCtrl.u4Data = 0x0;
+		wlanSendSetQueryCmd(prAdapter,
+				    CMD_ID_SW_DBG_CTRL,
+				    TRUE,
+				    FALSE,
+				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) & rCmdSwCtrl, NULL, 0);
+	} else {
+		/* Enable Roaming */
+		rCmdSwCtrl.u4Id = 0x55660000;
+		rCmdSwCtrl.u4Data = 0x1;
+		wlanSendSetQueryCmd(prAdapter,
+				    CMD_ID_SW_DBG_CTRL,
+				    TRUE,
+				    FALSE,
+				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) & rCmdSwCtrl, NULL, 0);
+	}
+
+	return rWlanStatus;
+}
+
+WLAN_STATUS nicEnterCtiaModeOfCAM(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent)
+{
+	WLAN_STATUS rWlanStatus;
+
+	ASSERT(prAdapter);
+	DBGLOG(INIT, INFO, "nicEnterCtiaModeOfCAM: %d\n", fgEnterCtia);
+
+	rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	if (fgEnterCtia) {
+		/* Keep at CAM mode */
+		{
+			PARAM_POWER_MODE ePowerMode;
+
+			prAdapter->u4CtiaPowerMode = 0;
+			prAdapter->fgEnCtiaPowerMode = TRUE;
+
+			ePowerMode = Param_PowerModeCAM;
+			rWlanStatus = nicConfigPowerSaveProfile(prAdapter,
+				   prAdapter->prAisBssInfo->ucBssIndex,
+								ePowerMode, fgEnCmdEvent);
+		}
+	} else {
+		/* Keep at Fast PS */
+		{
+			PARAM_POWER_MODE ePowerMode;
+
+			prAdapter->u4CtiaPowerMode = 2;
+			prAdapter->fgEnCtiaPowerMode = TRUE;
+
+			ePowerMode = Param_PowerModeFast_PSP;
+			rWlanStatus = nicConfigPowerSaveProfile(prAdapter,
+				prAdapter->prAisBssInfo->ucBssIndex,
+								ePowerMode, fgEnCmdEvent);
+		}
+	}
+
+	return rWlanStatus;
+}
+
+WLAN_STATUS nicEnterCtiaModeOfBCNTimeout(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent)
+{
+	WLAN_STATUS rWlanStatus;
+
+	ASSERT(prAdapter);
+	DBGLOG(INIT, INFO, "nicEnterCtiaModeOfBCNTimeout: %d\n", fgEnterCtia);
+
+	rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	if (fgEnterCtia) {
+		/* Disable Beacon Timeout Detection */
+		prAdapter->fgDisBcnLostDetection = TRUE;
+	} else {
+		/* Enable Beacon Timeout Detection */
+		prAdapter->fgDisBcnLostDetection = FALSE;
+	}
+
+	return rWlanStatus;
+}
+
+WLAN_STATUS nicEnterCtiaModeOfAutoTxPower(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent)
+{
+	CMD_SW_DBG_CTRL_T rCmdSwCtrl;
+	WLAN_STATUS rWlanStatus;
+
+	ASSERT(prAdapter);
+	DBGLOG(INIT, INFO, "nicEnterCtiaModeOfAutoTxPower: %d\n", fgEnterCtia);
+
+	rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	if (fgEnterCtia) {
+		/* Disalbe auto tx power */
+		rCmdSwCtrl.u4Id = 0x55670003;
+		rCmdSwCtrl.u4Data = 0x0;
+		wlanSendSetQueryCmd(prAdapter,
+			CMD_ID_SW_DBG_CTRL,
+			TRUE,
+			FALSE,
+			FALSE,
+			NULL,
+			NULL,
+			sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) & rCmdSwCtrl, NULL, 0);
+	} else {
+		/* Enable auto tx power */
+		rCmdSwCtrl.u4Id = 0x55670003;
+		rCmdSwCtrl.u4Data = 0x1;
+		wlanSendSetQueryCmd(prAdapter,
+			CMD_ID_SW_DBG_CTRL,
+			TRUE,
+			FALSE,
+			FALSE,
+			NULL,
+			NULL,
+			sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) & rCmdSwCtrl, NULL, 0);
+	}
+
+	return rWlanStatus;
+}
+
+WLAN_STATUS nicEnterCtiaModeOfFIFOFullNoAck(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOLEAN fgEnCmdEvent)
+{
+	CMD_SW_DBG_CTRL_T rCmdSwCtrl;
+	WLAN_STATUS rWlanStatus;
+
+	ASSERT(prAdapter);
+	DBGLOG(INIT, INFO, "nicEnterCtiaModeOfFIFOFullNoAck: %d\n", fgEnterCtia);
+
+	rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	if (fgEnterCtia) {
+		/* Disable FIFO FULL no ack */
+		rCmdSwCtrl.u4Id = 0x55680000;
+		rCmdSwCtrl.u4Data = 0x0;
+		wlanSendSetQueryCmd(prAdapter,
+			CMD_ID_SW_DBG_CTRL,
+			TRUE,
+			FALSE,
+			FALSE,
+			NULL,
+			NULL,
+			sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) & rCmdSwCtrl, NULL, 0);
+	} else {
+		/* Enable FIFO FULL no ack */
+		rCmdSwCtrl.u4Id = 0x55680000;
+		rCmdSwCtrl.u4Data = 0x1;
+		wlanSendSetQueryCmd(prAdapter,
+			CMD_ID_SW_DBG_CTRL,
+			TRUE,
+			FALSE,
+			FALSE,
+			NULL,
+			NULL,
+			sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) & rCmdSwCtrl, NULL, 0);
+	}
+
+	return rWlanStatus;
+}
+
 WLAN_STATUS nicEnterTPTestMode(IN P_ADAPTER_T prAdapter, IN UINT_8 ucFuncMask)
 {
 	CMD_SW_DBG_CTRL_T rCmdSwCtrl;
