@@ -3242,8 +3242,15 @@
 		compatible = "simple-bus";
 		/* reserved for overlay by odm */
 	};
+
+	subpmic_pmu_eint: mt6370_pmu_eint {
+	};
+
+	tcpc_pd: mt6370_pd_eint {
+	};
 };
 
 #include "mt6358.dtsi"
 #include "cust_mt6771_msdc.dtsi"
-
+#include "mt6370.dtsi"
+#include "mt6370_pd.dtsi"
