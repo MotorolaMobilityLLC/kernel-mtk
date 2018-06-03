@@ -404,7 +404,7 @@ void __exit fbt_fteh_exit(void)
 int __init fbt_fteh_init(void)
 {
 	cap_th = 85;
-	time_th = 5;
+	time_th = 15;
 	enter_loading_th = 60;
 	loading_th = 80;
 	sampling_period_MS = 256;
