@@ -1224,7 +1224,7 @@ static long unix_wait_for_peer(struct sock *other, long timeo)
 	wait_sk_info.pid = current->pid;
 	wait_sk_info.process = current->comm;
 	wait_sk_info.when = jiffies;
-	init_timer(&wait_peer_timer);
+	init_timer_on_stack(&wait_peer_timer);
 	wait_peer_timer.function = print_wait_peer_sock_info;
 	wait_peer_timer.expires = jiffies + 10 * HZ;
 	wait_peer_timer.data = (unsigned long)&wait_sk_info;
@@ -1245,6 +1245,7 @@ static long unix_wait_for_peer(struct sock *other, long timeo)
 	finish_wait(&u->peer_wait, &wait);
 #ifdef CONFIG_MTK_NET_LOGGING
 	del_timer(&wait_peer_timer);
+	destroy_timer_on_stack(&wait_peer_timer);
 #endif
 	return timeo;
 }
