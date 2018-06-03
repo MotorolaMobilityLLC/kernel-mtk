@@ -39,8 +39,9 @@
 #include <linux/uaccess.h>
 
 #include <mt-plat/mtk_boot.h>
+#ifndef CONFIG_RTC_DRV_MT6397
 #include <mt-plat/mtk_rtc.h>
-
+#endif
 
 #include <mt-plat/mtk_boot_reason.h>
 
