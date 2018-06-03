@@ -1815,8 +1815,8 @@ static int mt6358_codec_init_reg(struct snd_soc_codec *codec)
 	/* disable LO buffer left short circuit protection */
 	snd_soc_update_bits(codec, AUDDEC_ANA_CON7, 0x1 << 4, 0x1 << 4);
 
-	/* gpio miso driving set to default 6mA, 0xcccc */
-	snd_soc_update_bits(codec, DRV_CON3, 0xffff, 0xcccc);
+	/* gpio miso driving set to 4mA */
+	snd_soc_update_bits(codec, DRV_CON3, 0xffff, 0x8888);
 
 	/* set gpio */
 	set_playback_gpio(codec, false);
