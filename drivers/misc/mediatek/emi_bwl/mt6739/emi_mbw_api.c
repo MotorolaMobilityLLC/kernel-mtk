@@ -960,4 +960,5 @@ void dump_emi_outstanding_for_md(void)
 void dump_emi_latency(void)
 {
 	/* legacy API */
+	return;
 }

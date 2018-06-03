@@ -14,7 +14,7 @@
 #ifndef __MT_MEM_BW_H__
 #define __MT_MEM_BW_H__
 
-#define ENABLE_MBW		0
+#define ENABLE_MBW		1
 #define DISABLE_FLIPPER_FUNC	0
 #ifdef CONFIG_MTK_ENG_BUILD
 /* #define ENABLE_RUNTIME_BM */
@@ -78,7 +78,7 @@
 #define EMI_TTYPE19	(CEN_EMI_BASE + 0x590)
 #define EMI_TTYPE20	(CEN_EMI_BASE + 0x598)
 #define EMI_TTYPE21	(CEN_EMI_BASE + 0x5A0)
-#define EMI_TTYPE(i)	(EMI_TTYPE1 + (i*4))
+#define EMI_TTYPE(i)	(EMI_TTYPE1 + (i*8))
 
 #define EMI_BWCT0	(CEN_EMI_BASE + 0x5B0)
 #define EMI_BWST0	(CEN_EMI_BASE + 0x5C4)

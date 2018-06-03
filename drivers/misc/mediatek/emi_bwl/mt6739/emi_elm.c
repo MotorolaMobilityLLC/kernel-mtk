@@ -75,7 +75,7 @@ void enable_elm(void)
 	/* Setup and enable BM */
 	mt_reg_sync_writel(readl(IOMEM(EMI_BMEN)) & 0xfffffffc, EMI_BMEN);
 	writel(0x00ff0000, IOMEM(EMI_BMEN));
-	writel(0x00240003, IOMEM(EMI_MSEL));
+	writel(0x00020001, IOMEM(EMI_MSEL));
 	writel(0x00000018, IOMEM(EMI_MSEL2));
 	writel(0x02000000, IOMEM(EMI_BMEN2));
 	writel(0xffffffff, IOMEM(EMI_BMRW0));
@@ -127,12 +127,12 @@ static void lt_init(void)
 	/* Ask EMI DE to provide the setting of EMI_LTCT0~3,
 	 * which control the period and the threshold of ELM
 	 */
-	writel(0x0000cc08, IOMEM(EMI_LTCT0_2ND));
-	writel(0x09c40b5b, IOMEM(EMI_LTCT1_2ND));
-	writel(0x00000754, IOMEM(EMI_LTCT2_2ND));
-	mt_reg_sync_writel(0x007194ad, EMI_LTCT3_2ND);
+	writel(0x1000cc08, IOMEM(EMI_LTCT0_2ND));
+	writel(0x08230823, IOMEM(EMI_LTCT1_2ND));
+	writel(0x08230682, IOMEM(EMI_LTCT2_2ND));
+	mt_reg_sync_writel(0x362B3636, EMI_LTCT3_2ND);
 
-	/* enable_elm(); */
+	enable_elm();
 }
 
 static int lt_reg_save(void)
@@ -342,7 +342,6 @@ int elm_init(unsigned int elm_irq)
 
 void suspend_elm(void)
 {
-#if 0
 	unsigned long flags;
 	int emi_dcm_status;
 
@@ -362,14 +361,11 @@ void suspend_elm(void)
 
 	BM_SetEmiDcm(emi_dcm_status);
 	spin_unlock_irqrestore(&elm_lock, flags);
-#endif
 }
 
 void resume_elm(void)
 {
-#if 0
 	if (is_elm_enabled())
 		lt_init();
-#endif
 }
 

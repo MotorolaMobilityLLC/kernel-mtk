@@ -227,26 +227,6 @@ void disable_dump_latency(void)
 
 static int __init dvfs_bwct_init(void)
 {
-#if ENABLE_MBW
-
-	unsigned int ch_num;
-
-	ch_num = get_ch_num();
-
-	pr_info("[EMI] set BWCT for DRAM type(%d), ch(%d)\n", ch_num);
-
-	switch (ch_num) {
-	case 1:
-		BM_SetBW(0x05000405);
-		break;
-	case 2:
-		BM_SetBW(0x0a000705);
-		break;
-	default:
-		pr_info("[EMI] unsupported channel number\n");
-		return -1;
-	}
-#endif
 	return 0;
 }
 

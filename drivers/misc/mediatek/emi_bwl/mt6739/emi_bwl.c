@@ -97,7 +97,7 @@ static int emi_probe(struct platform_device *pdev)
 		pr_info("[EMI/BWL] fail to set EMI bandwidth limiter\n");
 
 	writel(0x00000040, CHA_EMI_BASE+0x0008);
-	mt_reg_sync_writel(0x00000911, CEN_EMI_BASE+0x5B0);
+	mt_reg_sync_writel(0x00000913, CEN_EMI_BASE+0x5B0);
 #if ENABLE_MBW
 	mbw_init();
 #endif
@@ -169,7 +169,7 @@ static int cur_con_sce = 0x0FFFFFFF;
 /* define concurrency scenario strings */
 static const char * const con_sce_str[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) (#con_sce),
+conm, mdct) (#con_sce),
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 };
@@ -178,55 +178,61 @@ conm) (#con_sce),
 
 static const unsigned int emi_arba_lpddr4_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) arba,
+conm, mdct) arba,
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbb_lpddr4_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) arbb,
+conm, mdct) arbb,
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbc_lpddr4_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) arbc,
+conm, mdct) arbc,
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbd_lpddr4_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) arbd,
+conm, mdct) arbd,
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbe_lpddr4_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) arbe,
+conm, mdct) arbe,
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbf_lpddr4_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) arbf,
+conm, mdct) arbf,
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbg_lpddr4_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) arbg,
+conm, mdct) arbg,
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbh_lpddr4_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) arbh,
+conm, mdct) arbh,
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_conm_lpddr4_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) conm,
+conm, mdct) conm,
+#include "con_sce_lpddr3.h"
+#undef X_CON_SCE
+};
+static const unsigned int emi_mdct_lpddr4_val[] = {
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, mdct) mdct,
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 };
@@ -281,7 +287,8 @@ int mtk_mem_bw_ctrl(int sce, int op)
 		writel(emi_arbf_lpddr4_val[highest], EMI_ARBF);
 		writel(emi_arbg_lpddr4_val[highest], EMI_ARBG);
 		writel(emi_arbh_lpddr4_val[highest], EMI_ARBH);
-		mt_reg_sync_writel(emi_conm_lpddr4_val[highest], EMI_CONM);
+		writel(emi_conm_lpddr4_val[highest], EMI_CONM);
+		mt_reg_sync_writel(emi_mdct_lpddr4_val[highest], EMI_MDCT);
 		cur_con_sce = highest;
 	}
 
@@ -318,6 +325,7 @@ static ssize_t con_sce_show(struct device_driver *driver, char *buf)
 	ptr += sprintf(ptr, "EMI_ARBG = 0x%x\n",  readl(IOMEM(EMI_ARBG)));
 	ptr += sprintf(ptr, "EMI_ARBH = 0x%x\n",  readl(IOMEM(EMI_ARBH)));
 	ptr += sprintf(ptr, "EMI_CONM = 0x%x\n",  readl(IOMEM(EMI_CONM)));
+	ptr += sprintf(ptr, "EMI_MDCT = 0x%x\n",  readl(IOMEM(EMI_MDCT)));
 	for (i = 0; i < NR_CON_SCE; i++)
 		ptr += snprintf(ptr, 64, "%s = 0x%x\n",
 			con_sce_str[i], ctrl_tbl[i].ref_cnt);
@@ -331,6 +339,7 @@ static ssize_t con_sce_show(struct device_driver *driver, char *buf)
 	pr_debug("[EMI BWL] EMI_ARBG = 0x%x\n", readl(IOMEM(EMI_ARBG)));
 	pr_debug("[EMI BWL] EMI_ARBH = 0x%x\n", readl(IOMEM(EMI_ARBH)));
 	pr_debug("[EMI BWL] EMI_CONM = 0x%x\n", readl(IOMEM(EMI_CONM)));
+	pr_debug("[EMI BWL] EMI_MDCT = 0x%x\n", readl(IOMEM(EMI_MDCT)));
 #endif
 
 	return strlen(buf);
@@ -355,13 +364,13 @@ const char *buf, size_t count)
 				EN_CON_SCE_STR, strlen(EN_CON_SCE_STR))) {
 
 				mtk_mem_bw_ctrl(i, ENABLE_CON_SCE);
-				pr_debug("concurrency scenario %s ON\n", con_sce_str[i]);
+				/* pr_debug("concurrency scenario %s ON\n", con_sce_str[i]); */
 				break;
 			} else if (!strncmp(buf + strlen(con_sce_str[i]) + 1,
 				DIS_CON_SCE_STR, strlen(DIS_CON_SCE_STR))) {
 
 				mtk_mem_bw_ctrl(i, DISABLE_CON_SCE);
-				pr_debug("concurrency scenario %s OFF\n", con_sce_str[i]);
+				/* pr_debug("concurrency scenario %s OFF\n", con_sce_str[i]); */
 				break;
 			}
 		}

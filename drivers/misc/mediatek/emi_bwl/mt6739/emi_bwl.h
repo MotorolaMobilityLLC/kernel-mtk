@@ -19,6 +19,7 @@
  */
 
 #define EMI_CONM		(CEN_EMI_BASE + 0x0060)
+#define EMI_MDCT		(CEN_EMI_BASE + 0x0078)
 #define EMI_ARBA		(CEN_EMI_BASE + 0x0100)
 #define EMI_ARBB		(CEN_EMI_BASE + 0x0108)
 #define EMI_ARBC		(CEN_EMI_BASE + 0x0110)
@@ -37,7 +38,7 @@
 /* define concurrency scenario ID */
 enum {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
-conm) con_sce,
+conm, mdct) con_sce,
 #include "con_sce_lpddr3.h"
 #undef X_CON_SCE
 	NR_CON_SCE
