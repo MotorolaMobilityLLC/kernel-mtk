@@ -97,11 +97,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.eem_step	= EEM_STEP,
 		.pmic_base	= CPU_PMIC_BASE_6358,
 		.pmic_step	= CPU_PMIC_STEP,
-#if EEM_FAKE_EFUSE
-		.DETWINDOW	= DETWINDOW_VAL_FAKE,
-#else
 		.DETWINDOW	= DETWINDOW_VAL,
-#endif
 		.DTHI		= DTHI_VAL,
 		.DTLO		= DTLO_VAL,
 		.DETMAX		= DETMAX_VAL,
@@ -132,11 +128,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.eem_step	= EEM_STEP,
 		.pmic_base	= CPU_PMIC_BASE_6358,
 		.pmic_step	= CPU_PMIC_STEP,
-#if EEM_FAKE_EFUSE
-		.DETWINDOW	= DETWINDOW_VAL_FAKE,
-#else
 		.DETWINDOW      = DETWINDOW_VAL,
-#endif
 		.DTHI		= DTHI_VAL,
 		.DTLO		= DTLO_VAL,
 		.DETMAX		= DETMAX_VAL,
@@ -167,11 +159,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.eem_step	= EEM_STEP,
 		.pmic_base	= CPU_PMIC_BASE_6358,
 		.pmic_step	= CPU_PMIC_STEP,
-#if EEM_FAKE_EFUSE
-		.DETWINDOW	= DETWINDOW_VAL_FAKE,
-#else
 		.DETWINDOW      = DETWINDOW_VAL,
-#endif
 		.DTHI		= DTHI_VAL,
 		.DTLO		= DTLO_VAL,
 		.DETMAX		= DETMAX_VAL,
@@ -203,11 +191,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.eem_step	= EEM_STEP,
 		.pmic_base	= GPU_PMIC_BASE,
 		.pmic_step	= GPU_PMIC_STEP,
-#if EEM_FAKE_EFUSE
-		.DETWINDOW	= DETWINDOW_VAL_FAKE,
-#else
 		.DETWINDOW	= DETWINDOW_VAL,
-#endif
 		.DTHI		= DTHI_VAL,
 		.DTLO		= DTLO_VAL,
 		.DETMAX		= DETMAX_VAL,

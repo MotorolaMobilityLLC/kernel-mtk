@@ -100,7 +100,6 @@ enum mt_cpu_dvfs_id {
  * cycles of bclk_ck during INIT. 52 MHz
  */
 #define DETWINDOW_VAL		0xA28
-#define DETWINDOW_VAL_FAKE	0xA28
 
 /*
  * mili Volt to config value. voltage = 600mV + val * 6.25mV

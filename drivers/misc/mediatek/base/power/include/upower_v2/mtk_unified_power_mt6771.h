@@ -37,7 +37,8 @@ extern "C" {
 	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
 #endif
 
-/* #define EARLY_PORTING_EEM */
+/* FIX ME */
+#define EARLY_PORTING_EEM
 /* #define EARLY_PORTING_SPOWER */
 /* #define UPOWER_UT */
 /* #define UPOWER_PROFILE_API_TIME */
