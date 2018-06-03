@@ -63,22 +63,7 @@
 #include <mtk_hps_internal.h>
 #endif
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-#include <mtk_mcdi_api.h>
-#endif
-
-/**************************************
- * only for internal debug
- **************************************/
-#ifdef CONFIG_MTK_LDVT
-#define SPM_PWAKE_EN            0
-#define SPM_PCMWDT_EN           0
-#define SPM_BYPASS_SYSPWREQ     1
-#else
-#define SPM_PWAKE_EN            1
-#define SPM_PCMWDT_EN           1
-#define SPM_BYPASS_SYSPWREQ     1
-#endif
+#include <mtk_spm_sleep_internal.h>
 
 static int spm_dormant_sta;
 int spm_ap_mdsrc_req_cnt;
@@ -90,15 +75,6 @@ u8 spm_snapshot_golden_setting;
 
 struct wake_status spm_wakesta; /* record last wakesta */
 static unsigned int spm_sleep_count;
-
-/**************************************
- * SW code for suspend
- **************************************/
-#define SPM_SYSCLK_SETTLE       99	/* 3ms */
-
-#define WAIT_UART_ACK_TIMES     10	/* 10 * 10us */
-
-#define spm_is_wakesrc_invalid(wakesrc)     (!!((u32)(wakesrc) & 0xc0003803))
 
 int __attribute__ ((weak)) mtk_enter_idle_state(int idx)
 {
@@ -125,17 +101,6 @@ void __attribute__((weak)) mt_cirq_disable(void)
 {
 	pr_err("NO %s !!!\n", __func__);
 }
-
-enum spm_suspend_step {
-	SPM_SUSPEND_ENTER = 0x00000001,
-	SPM_SUSPEND_ENTER_UART_SLEEP = 0x00000003,
-	SPM_SUSPEND_ENTER_WFI = 0x000000ff,
-	SPM_SUSPEND_LEAVE_WFI = 0x000001ff,
-	SPM_SUSPEND_ENTER_UART_AWAKE = 0x000003ff,
-	SPM_SUSPEND_LEAVE = 0x000007ff,
-};
-
-#define CPU_FOOTPRINT_SHIFT 24
 
 static inline void spm_suspend_footprint(enum spm_suspend_step step)
 {
@@ -221,10 +186,8 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 	if (log_wakesta_index >= 0xFFFFFFF0)
 		log_wakesta_index = 0;
 
-#if !defined(CONFIG_MACH_MT6771)
 	ddr_status = vcorefs_get_curr_ddr();
 	vcore_status = vcorefs_get_curr_vcore();
-#endif
 
 	spm_crit2("dormant = %d, s_ddr = %d, s_vcore = %d, ddr = %d, vcore = %d, sleep_count = %d\n",
 		  spm_dormant_sta, sleep_ddr_status, sleep_vcore_status,
@@ -233,7 +196,7 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
 
-#if !defined(CONFIG_MACH_MT6771)
+#if defined(CONFIG_MTK_EIC) || defined(CONFIG_PINCTRL_MTK_COMMON)
 	if (wakesta->r12 & WAKE_SRC_R12_EINT_EVENT_B)
 		mt_eint_print_status();
 #endif
@@ -326,12 +289,7 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	static unsigned int last_wr = WR_NONE;
 	struct pwr_ctrl *pwrctrl;
 	u32 cpu = 0;
-
-#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-	mcdi_task_pause(true);
-#endif
-#endif /* CONFIG_MACH_MT6763 */
+	u32 spm_flags1 = spm_data;
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER);
 
@@ -348,7 +306,10 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 			SPM_PWR_CTRL_SUSPEND, PWR_WAKE_SRC, 0);
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+
+	__sync_big_buck_ctrl_pcm_flag(&spm_flags1);
+	set_pwrctrl_pcm_flags1(pwrctrl, spm_flags1);
+
 
 #if SPM_PWAKE_EN
 	sec = _spm_get_wake_period(-1, last_wr);
@@ -444,12 +405,6 @@ RESTORE_IRQ:
 		mtk_usb2jtag_resume();
 #endif
 	spm_suspend_footprint(0);
-
-#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-	mcdi_task_pause(false);
-#endif
-#endif /* CONFIG_MACH_MT6763 */
 
 	if (last_wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();

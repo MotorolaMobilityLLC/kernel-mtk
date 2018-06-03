@@ -966,10 +966,7 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	int cpu = smp_processor_id();
-
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-	mcdi_task_pause(true);
-#endif
+	u32 spm_flags1 = spm_data;
 
 	cpu_footprint = cpu << CPU_FOOTPRINT_SHIFT;
 
@@ -982,7 +979,10 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	dpidle_wake_src = pwrctrl->wake_src;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+
+	__sync_big_buck_ctrl_pcm_flag(&spm_flags1);
+	set_pwrctrl_pcm_flags1(pwrctrl, spm_flags1);
+
 
 #if SPM_PWAKE_EN
 	sec = _spm_get_wake_period(-1, last_wr);
@@ -1092,10 +1092,6 @@ RESTORE_IRQ:
 	spm_dpidle_notify_sspm_after_wfi_async_wait();
 
 	spm_dpidle_reset_footprint();
-
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-	mcdi_task_pause(false);
-#endif
 
 #if 1
 	if (last_wr == WR_PCM_ASSERT)
