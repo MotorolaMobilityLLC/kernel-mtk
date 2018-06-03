@@ -609,10 +609,10 @@ static void pmic_sp_irq_handler(unsigned int spNo, unsigned int sp_conNo, unsign
 		return; /* this subpack control has no interrupt triggered */
 
 	IRQLOG("[PMIC_INT] Reg[0x%x]=0x%x\n",
-		(sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
+		(sp_interrupts[spNo].status + 0x2 * sp_conNo), sp_int_status);
 
 	/* clear interrupt status in this subpack control */
-	upmu_set_reg_value((sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
+	upmu_set_reg_value((sp_interrupts[spNo].status + 0x2 * sp_conNo), sp_int_status);
 
 	for (i = 0; i < PMIC_INT_WIDTH; i++) {
 		if (sp_int_status & (1 << i)) {
@@ -643,7 +643,7 @@ static void pmic_int_handler(void)
 		if (!(top_int_status & (1 << sp_interrupts[spNo].top_int_bit)))
 			continue; /* this subpack has no interrupt triggered */
 		for (sp_conNo = 0; sp_conNo < sp_interrupts[spNo].con_len; sp_conNo++) {
-			status_reg = sp_interrupts[spNo].status + 0x6 * sp_conNo;
+			status_reg = sp_interrupts[spNo].status + 0x2 * sp_conNo;
 			sp_int_status = upmu_get_reg_value(status_reg);
 			pmic_sp_irq_handler(spNo, sp_conNo, sp_int_status);
 		}
@@ -685,7 +685,7 @@ int pmic_thread_kthread(void *x)
 #endif
 		for (spNo = 0; spNo < sp_interrupt_size; spNo++) {
 			for (sp_conNo = 0; sp_conNo < sp_interrupts[spNo].con_len; sp_conNo++) {
-				status_reg = sp_interrupts[spNo].status + 0x6 * sp_conNo;
+				status_reg = sp_interrupts[spNo].status + 0x2 * sp_conNo;
 				sp_int_status = upmu_get_reg_value(status_reg);
 				IRQLOG("[PMIC_INT] after, Reg[0x%x]=0x%x\n",
 					status_reg, sp_int_status);
