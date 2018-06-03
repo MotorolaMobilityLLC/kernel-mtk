@@ -982,7 +982,7 @@ int rpmb_req_ioctl_read_data(struct rpmb_ioc_param *param)
 	u16 blkaddr;
 	u8 nonce[RPMB_SZ_NONCE] = {0};
 	u8 hmac[RPMB_SZ_MAC];
-	u8 *dataBuf, *dataBuf_start;
+	u8 *dataBuf, *dataBuf_start, *data_for_hmac;
 	int i, ret = 0;
 
 	MSG(DBG_INFO, "%s start!!!\n", __func__);
@@ -1072,7 +1072,10 @@ int rpmb_req_ioctl_read_data(struct rpmb_ioc_param *param)
 			 * dataBuf used for hmac calculation. we need to aggregate each block's data till to type field.
 			 * each block has 284 bytes need to aggregate.
 			*/
-			memcpy(dataBuf, data.ocmd.frames[iCnt].data, 284);
+			data_for_hmac = data.ocmd.frames[iCnt].data;
+
+			memcpy(dataBuf, data_for_hmac, 284);
+
 			dataBuf = dataBuf + 284;
 
 			/*
