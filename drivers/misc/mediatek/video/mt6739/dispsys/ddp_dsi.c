@@ -627,8 +627,7 @@ static void dsi_wait_not_busy(enum DISP_MODULE_ENUM module, struct cmdqRecStruct
 
 	if (!(DSI_REG[i]->DSI_INTSTA.BUSY))
 		return;
-	/* FIXME: workaround for bringup issue */
-	mdelay(1);
+
 	ret = wait_event_timeout(_dsi_context[i].cmddone_wq.wq,
 					       !(DSI_REG[i]->DSI_INTSTA.BUSY), HZ/10);
 	if (ret == 0) {
