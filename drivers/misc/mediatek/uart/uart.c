@@ -2329,11 +2329,17 @@ static int mtk_uart_probe(struct platform_device *pdev)
 /* For clock setting */
 #if !defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	uart_setting = get_uart_default_settings(pdev->id);
+
 	uart_setting->clk_uart_main = devm_clk_get(&pdev->dev, clk_uart_name[pdev->id]);
 	if (IS_ERR(uart_setting->clk_uart_main)) {
 		pr_err("[UART%d][CCF]cannot get %s clock. ptr_err:%ld\n", pdev->id, clk_uart_name[pdev->id]
 		       , PTR_ERR(uart_setting->clk_uart_main));
 		return PTR_ERR(uart_setting->clk_uart_main);
+	}
+	err = clk_prepare(uart_setting->clk_uart_main);
+	if (err) {
+		pr_err("[UART%d] cannot prepare main clk ctrl\n", pdev->id);
+		return err;
 	}
 	pr_debug("[UART%d][CCF]clk_uart%d_main:%p\n", pdev->id, pdev->id, uart_setting->clk_uart_main);
 
@@ -2344,6 +2350,12 @@ static int mtk_uart_probe(struct platform_device *pdev)
 			pr_err("[UART][CCF]cannot get clk_uart0_dma clock. ptr_err:%ld\n", PTR_ERR(clk_uart0_dma));
 			return PTR_ERR(clk_uart0_dma);
 		}
+		err = clk_prepare(clk_uart0_dma);
+		if (err) {
+			pr_err("[UART%d] cannot prepare dma clk ctrl\n", pdev->id);
+			return err;
+		}
+
 		set_uart_dma_clk(pdev->id, clk_uart0_dma);
 		pr_debug("[UART][CCF]clk_uart0_dma:%p\n", clk_uart0_dma);
 	}
