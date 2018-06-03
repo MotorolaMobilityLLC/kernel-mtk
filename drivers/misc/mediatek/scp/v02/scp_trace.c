@@ -31,6 +31,7 @@
 
 MODULE_LICENSE("GPL");
 
+#define TRACE_BUFFER (0x4000)
 typedef struct {
 	uint32_t MARKER1;
 	uint32_t MARKER2;
@@ -38,23 +39,20 @@ typedef struct {
 	uint32_t trace_data_end;
 	uint32_t cpu_id;
 	uint32_t configuration;
-} met_trace_info_t;
+} trace_info_t;
 
-static met_trace_info_t met_trace_info[SCP_CORE_TOTAL];
+static trace_info_t trace_info[SCP_CORE_TOTAL];
 
 unsigned int scp_trace_run_flag;
 unsigned int scp_trace_run_command;
 unsigned int trace_data_selected_id;
 unsigned int trace_r_pos[SCP_CORE_TOTAL] = {0, 0};
 unsigned int sram_offset[SCP_CORE_TOTAL] = {0, 0};
-static void scp_met_handler(int id, void *data, unsigned int len)
+static void scp_trace_handler(int id, void *data, unsigned int len)
 {
-	met_trace_info_t *tmp = (met_trace_info_t *)data;
+	trace_info_t *tmp = (trace_info_t *)data;
 
-	memcpy((void *)&met_trace_info[tmp->cpu_id], data, sizeof(met_trace_info_t));
-	pr_err("[scp_trace] cpu_id:0x%x\n", tmp->cpu_id);
-	pr_err("[scp_trace] start addr:0x%x\n", met_trace_info[tmp->cpu_id].trace_data_start);
-	pr_err("[scp_trace] end addr:0x%x\n", met_trace_info[tmp->cpu_id].trace_data_end);
+	memcpy((void *)&trace_info[tmp->cpu_id], data, sizeof(trace_info_t));
 }
 
 static ssize_t scp_trace_run_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -67,11 +65,11 @@ static ssize_t scp_trace_run_show(struct device *dev, struct device_attribute *a
 	return sz;
 }
 
-#define MET_OP_START        0x00000001
-#define MET_OP_STOP         0x00000002
-#define MET_OP_EXTRACT      0x00000003
+#define TRACE_OP_START        0x00000001
+#define TRACE_OP_STOP         0x00000002
+#define TRACE_OP_EXTRACT      0x00000003
 #define FUNC_BIT_SHIF       18
-#define MET_OP            (1 << FUNC_BIT_SHIF)
+#define TRACE_OP            (1 << FUNC_BIT_SHIF)
 
 static ssize_t scp_trace_run_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -88,31 +86,31 @@ static ssize_t scp_trace_run_store(struct device *dev, struct device_attribute *
 
 	pr_err("[scp_trace] status:%d\n", scp_trace_run_flag);
 	if (prev_run_state == 0 && scp_trace_run_flag == 1) {
-		value = MET_OP|MET_OP_START;
+		value = TRACE_OP|TRACE_OP_START;
 		if (scp_trace_run_command & (1<<SCP_A_ID))
-			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_A_ID);
+			ret = scp_ipi_send(IPI_TRACE_SCP, &value, sizeof(value), 0, SCP_A_ID);
 		udelay(1000);
 		if (scp_trace_run_command & (1<<SCP_B_ID))
-			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_B_ID);
+			ret = scp_ipi_send(IPI_TRACE_SCP, &value, sizeof(value), 0, SCP_B_ID);
 		trace_r_pos[SCP_A_ID] = 0;
 		trace_r_pos[SCP_B_ID] = 0;
 		sram_offset[SCP_A_ID] = 0;
 		sram_offset[SCP_B_ID] = SCP_A_TCM_SIZE;
 	} else if (prev_run_state == 1 && scp_trace_run_flag == 0) {
 		if (scp_trace_run_command & (1<<SCP_A_ID)) {
-			value = MET_OP|MET_OP_STOP;
-			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_A_ID);
+			value = TRACE_OP|TRACE_OP_STOP;
+			ret = scp_ipi_send(IPI_TRACE_SCP, &value, sizeof(value), 0, SCP_A_ID);
 			udelay(1000);
-			value = MET_OP|MET_OP_EXTRACT;
-			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_A_ID);
+			value = TRACE_OP|TRACE_OP_EXTRACT;
+			ret = scp_ipi_send(IPI_TRACE_SCP, &value, sizeof(value), 0, SCP_A_ID);
 		}
 		udelay(1000);
 		if (scp_trace_run_command & (1<<SCP_B_ID)) {
-			value = MET_OP|MET_OP_STOP;
-			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_B_ID);
+			value = TRACE_OP|TRACE_OP_STOP;
+			ret = scp_ipi_send(IPI_TRACE_SCP, &value, sizeof(value), 0, SCP_B_ID);
 			udelay(1000);
-			value = MET_OP|MET_OP_EXTRACT;
-			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_B_ID);
+			value = TRACE_OP|TRACE_OP_EXTRACT;
+			ret = scp_ipi_send(IPI_TRACE_SCP, &value, sizeof(value), 0, SCP_B_ID);
 		}
 
 
@@ -199,11 +197,11 @@ ssize_t scp_trace_read(char __user *data, size_t len)
 	}
 
 	buf = ((char *) SCP_TCM)
-		+ met_trace_info[trace_data_selected_id].trace_data_start
+		+ trace_info[trace_data_selected_id].trace_data_start
 		+ sram_offset[trace_data_selected_id];
 
-	len = met_trace_info[trace_data_selected_id].trace_data_end
-		- met_trace_info[trace_data_selected_id].trace_data_start
+	len = trace_info[trace_data_selected_id].trace_data_end
+		- trace_info[trace_data_selected_id].trace_data_start
 		- trace_r_pos[trace_data_selected_id];
 
 	pr_err("[scp_trace] len:%d\n", (int) len);
@@ -215,7 +213,7 @@ ssize_t scp_trace_read(char __user *data, size_t len)
 	/*SCP leaave awake */
 	scp_awake_unlock(trace_data_selected_id);
 
-	trace_r_pos[trace_data_selected_id] = 0x4000;
+	trace_r_pos[trace_data_selected_id] = TRACE_BUFFER;
 
 	return len;
 
@@ -303,7 +301,7 @@ static int __init init_scp_trace(void)
 	}
 
 
-	scp_ipi_registration(IPI_MET_SCP, scp_met_handler, "met scp trace");
+	scp_ipi_registration(IPI_TRACE_SCP, scp_trace_handler, "scp trace");
 	return 0;
 }
 
