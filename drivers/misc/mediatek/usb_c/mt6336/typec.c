@@ -1843,10 +1843,6 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 #else
 	if (cc_is0 & (TYPE_C_CC_ENT_ATTACH_SNK_INTR | TYPE_C_CC_ENT_ATTACH_SRC_INTR)) {
 #endif
-		if (hba->is_lowq) {
-			mt6336_ctrl_enable(hba->core_ctrl);
-			hba->is_lowq = false;
-		}
 
 #if ENABLE_ACC
 		/*SNK<->ACC toggle happens ONLY for sink*/
@@ -1855,6 +1851,11 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		else
 #endif
 			typec_int_enable(hba, TYPE_C_INTR_DRP_TOGGLE, TYPE_C_INTR_SRC_ADVERTISE);
+
+		if (hba->is_lowq) {
+			mt6336_ctrl_enable(hba->core_ctrl);
+			hba->is_lowq = false;
+		}
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
