@@ -78,7 +78,7 @@ static phys_addr_t __init early_pgtable_alloc(void)
 	phys_addr_t phys;
 	void *ptr;
 
-	phys = memblock_alloc(PAGE_SIZE, PAGE_SIZE);
+	phys = memblock_alloc_base(PAGE_SIZE, PAGE_SIZE, arm64_dma_phys_limit);
 	BUG_ON(!phys);
 
 	/*
