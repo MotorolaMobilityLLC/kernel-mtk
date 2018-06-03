@@ -91,19 +91,25 @@ static int mmdvfs_apply_hw_configurtion_by_step(struct mmdvfs_adaptor *self,
 int mmdvfs_step, const int current_step)
 {
 	MMDVFSDEBUG(3, "current = %d, target = %d\n", current_step, mmdvfs_step);
-	if (current_step == -1 || ((mmdvfs_step != -1) && (mmdvfs_step
-	<= current_step))) {
-		MMDVFSDEBUG(3, "Apply Vcore setting(%d --> %d):\n", current_step,
-		mmdvfs_step);
-		MMDVFSDEBUG(3, "current = %d, target = %d\n", current_step, mmdvfs_step);
-		self->apply_vcore_hw_configurtion_by_step(self, mmdvfs_step);
-		MMDVFSDEBUG(3, "Apply CLK setting:\n");
-		self->apply_clk_hw_configurtion_by_step(self, mmdvfs_step);
+
+	if (mmdvfs_step == current_step) {
+		MMDVFSDEBUG(3, "Doesn't change step, already in step: %d\n", mmdvfs_step);
 	} else {
-		MMDVFSDEBUG(3, "Apply CLK setting:\n");
-		self->apply_clk_hw_configurtion_by_step(self, mmdvfs_step);
-		MMDVFSDEBUG(3, "Apply Vcore setting:\n");
-		self->apply_vcore_hw_configurtion_by_step(self, mmdvfs_step);
+
+		if (current_step == -1 || ((mmdvfs_step != -1) && (mmdvfs_step
+		< current_step))) {
+			MMDVFSDEBUG(3, "Apply Vcore setting(%d --> %d):\n", current_step,
+			mmdvfs_step);
+			MMDVFSDEBUG(3, "current = %d, target = %d\n", current_step, mmdvfs_step);
+			self->apply_vcore_hw_configurtion_by_step(self, mmdvfs_step);
+			MMDVFSDEBUG(3, "Apply CLK setting:\n");
+			self->apply_clk_hw_configurtion_by_step(self, mmdvfs_step);
+		} else {
+			MMDVFSDEBUG(3, "Apply CLK setting:\n");
+			self->apply_clk_hw_configurtion_by_step(self, mmdvfs_step);
+			MMDVFSDEBUG(3, "Apply Vcore setting:\n");
+			self->apply_vcore_hw_configurtion_by_step(self, mmdvfs_step);
+		}
 	}
 
 	return 0;
