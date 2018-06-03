@@ -16,6 +16,7 @@
 ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/base/power/include \
 	-I$(srctree)/drivers/misc/mediatek/scp/$(MTK_PLATFORM) \
+	-I$(srctree)/drivers/misc/mediatek/audio_ipi/$(CONFIG_MTK_PLATFORM) \
 	-I$(srctree)/drivers/misc/mediatek/audio_ipi/common/utility
 
 ### DO

@@ -18,7 +18,7 @@
 
 #include "audio_log.h"
 #include "audio_assert.h"
-
+#include "audio_ipi_platform.h"
 
 static audio_resv_dram_t resv_dram;
 static audio_resv_dram_t resv_dram_spkprotect;
@@ -33,7 +33,7 @@ void init_reserved_dram(void)
 	AUD_LOG_D("resv_dram: pa %p, va %p, sz 0x%x\n",
 		  resv_dram.phy_addr, resv_dram.vir_addr, resv_dram.size);
 
-	if (is_scp_ready(SCP_B_ID)) {
+	if (audio_ipi_check_scp_status()) {
 		AUD_ASSERT(resv_dram.phy_addr != NULL);
 		AUD_ASSERT(resv_dram.vir_addr != NULL);
 		AUD_ASSERT(resv_dram.size > 0);
@@ -47,7 +47,7 @@ void init_reserved_dram(void)
 	AUD_LOG_D("resv_dram: pa %p, va %p, sz 0x%x\n",
 		resv_dram_spkprotect.phy_addr, resv_dram_spkprotect.vir_addr, resv_dram_spkprotect.size);
 
-	if (is_scp_ready(SCP_B_ID)) {
+	if (audio_ipi_check_scp_status()) {
 		AUD_ASSERT(resv_dram_spkprotect.phy_addr != NULL);
 		AUD_ASSERT(resv_dram_spkprotect.vir_addr != NULL);
 		AUD_ASSERT(resv_dram_spkprotect.size > 0);
