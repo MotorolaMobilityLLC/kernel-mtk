@@ -104,7 +104,17 @@ void __attribute__((weak)) spm_vcorefs_init(void)
 	spm_crit2("NO %s !!!\n", __func__);
 }
 
-void __attribute__((weak)) mt_power_gs_dump_suspend(void)
+void __attribute__((weak)) mt_power_gs_t_dump_suspend(int count, ...)
+{
+	spm_crit2("NO %s !!!\n", __func__);
+}
+
+void __attribute__((weak)) mt_power_gs_t_dump_dpidle(int count, ...)
+{
+	spm_crit2("NO %s !!!\n", __func__);
+}
+
+void __attribute__((weak)) mt_power_gs_t_dump_sodi3(int count, ...)
 {
 	spm_crit2("NO %s !!!\n", __func__);
 }
