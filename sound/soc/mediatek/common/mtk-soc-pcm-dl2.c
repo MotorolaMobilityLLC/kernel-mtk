@@ -619,6 +619,9 @@ retry:
 		if (!ISRCopyBuffer.u4BufferSize)
 			goto exit;
 
+		if (unlikely(ISRCopyBuffer.u4BufferSize < count))
+			count = ISRCopyBuffer.u4BufferSize;
+
 		ret = mtk_pcm_dl2_copy_((void *)ISRCopyBuffer.pBufferIndx, &count, Afe_Block, true);
 
 		ISRCopyBuffer.pBufferIndx += count;
