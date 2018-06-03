@@ -168,6 +168,11 @@ static int __init zmc_memory_init(struct reserved_mem *rmem)
 			if (p == END_OF_REGISTER)
 				break;
 
+			if (p->preinit) {
+				if (p->preinit(rmem))
+					break;
+			}
+
 			end = rmem->base + rmem->size;
 			pr_info("::[%s]: size: %pa, align: %pa\n",
 					p->name, &p->size, &p->align);
