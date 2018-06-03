@@ -148,24 +148,6 @@ static void usb_6763_dpidle_request(int mode)
 	spin_unlock_irqrestore(&usb_hal_dpidle_lock, flags);
 }
 
-/* default value 0 */
-static int usb_rdy;
-void set_usb_rdy(void)
-{
-	DBG(0, "set usb_rdy, wake up bat\n");
-	usb_rdy = 1;
-#ifdef CONFIG_MTK_SMART_BATTERY
-	wake_up_bat();
-#endif
-}
-kal_bool is_usb_rdy(void)
-{
-	if (usb_rdy)
-		return KAL_TRUE;
-	else
-		return KAL_FALSE;
-}
-
 /* static bool platform_init_first = true; */
 static u32 cable_mode = CABLE_MODE_NORMAL;
 #ifndef FPGA_PLATFORM
@@ -503,12 +485,6 @@ void mt_usb_disconnect(void)
 	DBG(0, "[MUSB] USB disconnect\n");
 }
 
-static void do_connect_rescue_work(struct work_struct *work)
-{
-	DBG(0, "do_connect_rescue_work, issue connection work\n");
-	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
-}
-
 /* build time force on */
 #if defined(CONFIG_FPGA_EARLY_PORTING) || defined(U3_COMPLIANCE) || defined(FOR_BRING_UP)
 #define BYPASS_PMIC_LINKAGE
@@ -555,19 +531,16 @@ bool usb_cable_connected(void)
 {
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
 	bool connected = false, vbus_exist = false;
-	int delay_time;
 
 	mutex_lock(&cable_connected_lock);
 	/* FORCE USB ON case */
 	if (musb_force_on) {
-		delay_time = 0;    /* directly issue connection */
 		chg_type = STANDARD_HOST;
 		vbus_exist = true;
 		connected = true;
 		DBG(0, "%s type force to STANDARD_HOST\n", __func__);
 	} else {
 		/* TYPE CHECK*/
-		delay_time = 2000; /* issue connection one time in case, BAT THREAD didn't come*/
 		chg_type = musb_hal_get_charger_type();
 		if (musb_fake_CDP && chg_type == STANDARD_HOST) {
 			DBG(0, "%s, fake to type 2\n", __func__);
@@ -588,18 +561,6 @@ bool usb_cable_connected(void)
 	/* CMODE CHECK */
 	if (cable_mode == CABLE_MODE_CHRG_ONLY || (cable_mode == CABLE_MODE_HOST_ONLY && chg_type != CHARGING_HOST))
 		connected = false;
-
-	/* one time job, set_usb_rdy, issue connect_rescue_work */
-	if (is_usb_rdy() == KAL_FALSE && mtk_musb->is_ready) {
-		static struct delayed_work connect_rescue_work;
-
-		set_usb_rdy();
-
-		INIT_DELAYED_WORK(&connect_rescue_work, do_connect_rescue_work);
-		DBG(0, "issue connect_rescue_work on is_ready begin, delay_time:%d ms\n", delay_time);
-		schedule_delayed_work(&connect_rescue_work, msecs_to_jiffies(delay_time));
-		DBG(0, "issue connect_rescue_work on is_ready end, delay_time:%d ms\n", delay_time);
-	}
 
 	mutex_unlock(&cable_connected_lock);
 	DBG(0, "%s, connected:%d, cable_mode:%d\n", __func__, connected, cable_mode);

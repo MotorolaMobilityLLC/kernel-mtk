@@ -31,7 +31,6 @@ typedef bool	kal_bool;
 extern unsigned int upmu_get_rgs_chrdet(void);
 #endif
 
-extern void wake_up_bat(void);
 extern CHARGER_TYPE mt_charger_type_detection(void);
 extern kal_bool upmu_is_chr_det(void);
 extern void BATTERY_SetUSBState(int usb_state);
