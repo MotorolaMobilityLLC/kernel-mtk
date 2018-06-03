@@ -33,7 +33,7 @@ extern
 #define U3_PHY_I2C_PCLK_DRV_REG	    0x0A
 #define U3_PHY_I2C_PCLK_PHASE_REG	0x0B
 
-EXTERN DEV_INT32 mu3d_hal_phy_scan(DEV_INT32 latch_val, DEV_UINT8 driving);
+EXTERN int mu3d_hal_phy_scan(int latch_val, DEV_UINT8 driving);
 EXTERN PHY_INT32 _U3Read_Reg(PHY_INT32 address);
 EXTERN PHY_INT32 _U3Write_Reg(PHY_INT32 address, PHY_INT32 value);
 

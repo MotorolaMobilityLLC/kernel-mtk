@@ -43,55 +43,55 @@ extern
 #endif
 
 /* IN, OUT pipe index for ep_number */
-typedef enum {
+enum USB_DIR {
 	USB_TX = 0,
 	USB_RX
-} USB_DIR;
+};
 
 /* CTRL, BULK, INTR, ISO endpoint */
-typedef enum {
+enum TRANSFER_TYPE {
 	USB_CTRL = 0,
 	USB_BULK = 2,
 	USB_INTR = 3,
 	USB_ISO = 1
-} TRANSFER_TYPE;
+};
 
-typedef enum {
+enum USB_SPEED {
 	SSUSB_SPEED_INACTIVE = 0,
 	SSUSB_SPEED_FULL = 1,
 	SSUSB_SPEED_HIGH = 3,
 	SSUSB_SPEED_SUPER = 4,
-} USB_SPEED;
+};
 
-typedef enum {
+enum EP0_STATE {
 	EP0_IDLE = 0,
 	EP0_TX,
 	EP0_RX,
-} EP0_STATE;
+};
 
 struct USB_EP_SETTING {
-	TRANSFER_TYPE transfer_type;
-	DEV_UINT32 fifoaddr;
-	DEV_UINT32 fifosz;
-	DEV_UINT32 maxp;
-	USB_DIR dir;
-	DEV_UINT8 enabled;
+	enum TRANSFER_TYPE transfer_type;
+	unsigned int fifoaddr;
+	unsigned int fifosz;
+	unsigned int maxp;
+	enum USB_DIR dir;
+	unsigned char enabled;
 };
 
 struct USB_REQ {
-	DEV_UINT8 *buf;
-	/* DEV_UINT8* dma_adr; */
+	unsigned char *buf;
+	/* unsigned char* dma_adr; */
 	dma_addr_t dma_adr;
-	DEV_UINT32 actual;
-	DEV_UINT32 count;
-	DEV_UINT32 currentCount;
-	DEV_UINT32 complete;
-	DEV_UINT32 needZLP;
-	DEV_UINT32 transferCount;
+	unsigned int actual;
+	unsigned int count;
+	unsigned int currentCount;
+	unsigned int complete;
+	unsigned int needZLP;
+	unsigned int transferCount;
 };
 
 struct USB_TEST_SETTING {
-	USB_SPEED speed;
+	enum USB_SPEED speed;
 	struct USB_EP_SETTING ep_setting[2 * MAX_EP_NUM + 1];
 };
 
@@ -162,43 +162,42 @@ struct USB_TEST_SETTING {
 
 EXTERN struct USB_REQ g_u3d_req[2 * MAX_EP_NUM + 1];
 EXTERN struct USB_TEST_SETTING g_u3d_setting;
-EXTERN DEV_UINT32 g_TxFIFOadd;
-EXTERN DEV_UINT32 g_RxFIFOadd;
+EXTERN unsigned int g_TxFIFOadd;
+EXTERN unsigned int g_RxFIFOadd;
 
 
-EXTERN struct USB_REQ *mu3d_hal_get_req(DEV_INT32 ep_num, USB_DIR dir);
+EXTERN struct USB_REQ *mu3d_hal_get_req(int ep_num, enum USB_DIR dir);
 EXTERN void mu3d_hal_pdn_dis(void);
 EXTERN void mu3d_hal_ssusb_en(void);
 EXTERN void _ex_mu3d_hal_ssusb_en(void);
 EXTERN void mu3d_hal_rst_dev(void);
-EXTERN DEV_INT32 mu3d_hal_check_clk_sts(void);
-EXTERN DEV_INT32 mu3d_hal_link_up(DEV_INT32 latch_val);
+EXTERN int mu3d_hal_check_clk_sts(void);
+EXTERN int mu3d_hal_link_up(int latch_val);
 EXTERN void mu3d_hal_initr_dis(void);
 EXTERN void mu3d_hal_clear_intr(void);
 EXTERN void mu3d_hal_system_intr_en(void);
 EXTERN void _ex_mu3d_hal_system_intr_en(void);
-EXTERN DEV_INT32 mu3d_hal_read_fifo_burst(DEV_INT32 ep_num, DEV_UINT8 *buf);
-EXTERN DEV_INT32 mu3d_hal_read_fifo(DEV_INT32 ep_num, DEV_UINT8 *buf);
-EXTERN DEV_INT32 mu3d_hal_write_fifo_burst(DEV_INT32 ep_num, DEV_INT32 length, DEV_UINT8 *buf,
-					   DEV_INT32 maxp);
-EXTERN DEV_INT32 mu3d_hal_write_fifo(DEV_INT32 ep_num, DEV_INT32 length, DEV_UINT8 *buf,
-				     DEV_INT32 maxp);
-EXTERN void _ex_mu3d_hal_ep_enable(DEV_UINT8 ep_num, USB_DIR dir, TRANSFER_TYPE type,
-				   DEV_INT32 maxp, DEV_INT8 interval, DEV_INT8 slot, DEV_INT8 burst,
-				   DEV_INT8 mult);
-EXTERN void mu3d_hal_ep_enable(DEV_UINT8 ep_num, USB_DIR dir, TRANSFER_TYPE type, DEV_INT32 maxp,
-			       DEV_INT8 interval, DEV_INT8 slot, DEV_INT8 burst, DEV_INT8 mult);
+EXTERN int mu3d_hal_read_fifo_burst(int ep_num, unsigned char *buf);
+EXTERN int mu3d_hal_read_fifo(int ep_num, unsigned char *buf);
+EXTERN int mu3d_hal_write_fifo_burst(int ep_num, int length, unsigned char *buf,
+					   int maxp);
+EXTERN int mu3d_hal_write_fifo(int ep_num, int length, unsigned char *buf,
+				     int maxp);
+EXTERN void _ex_mu3d_hal_ep_enable(unsigned char ep_num, enum USB_DIR dir, enum TRANSFER_TYPE type,
+				   int maxp, char interval, char slot, char burst, char mult);
+EXTERN void mu3d_hal_ep_enable(unsigned char ep_num, enum USB_DIR dir, enum TRANSFER_TYPE type, int maxp,
+			       char interval, char slot, char burst, char mult);
 EXTERN void mu3d_hal_resume(void);
 EXTERN void mu3d_hal_u2dev_connect(void);
 EXTERN void mu3d_hal_u2dev_disconn(void);
 EXTERN void mu3d_hal_u3dev_en(void);
 EXTERN void mu3d_hal_u3dev_dis(void);
 EXTERN void mu3d_hal_unfigured_ep(void);
-EXTERN void mu3d_hal_unfigured_ep_num(DEV_UINT8 ep_num, USB_DIR dir);
-EXTERN void mu3d_hal_set_speed(USB_SPEED usb_speed);
-EXTERN void mu3d_hal_det_speed(USB_SPEED speed, DEV_UINT8 det_speed);
+EXTERN void mu3d_hal_unfigured_ep_num(unsigned char ep_num, enum USB_DIR dir);
+EXTERN void mu3d_hal_set_speed(enum USB_SPEED usb_speed);
+EXTERN void mu3d_hal_det_speed(enum USB_SPEED speed, unsigned char det_speed);
 EXTERN void mu3d_hal_pdn_cg_en(void);
-EXTERN void mu3d_hal_pdn_ip_port(DEV_UINT8 on, DEV_UINT8 touch_dis, DEV_UINT8 u3, DEV_UINT8 u2);
+EXTERN void mu3d_hal_pdn_ip_port(unsigned char on, unsigned char touch_dis, unsigned char u3, unsigned char u2);
 EXTERN void mu3d_hal_dft_reg(void);
 
 #undef EXTERN

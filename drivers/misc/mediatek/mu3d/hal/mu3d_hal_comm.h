@@ -38,17 +38,17 @@ extern
 
 /* TYPES */
 
-typedef unsigned int DEV_UINT32;
-typedef int DEV_INT32;
-typedef unsigned short DEV_UINT16;
-typedef short DEV_INT16;
-typedef unsigned char DEV_UINT8;
-typedef char DEV_INT8;
+#define DEV_UINT32 unsigned int
+#define DEV_INT32 int
+#define DEV_UINT16 unsigned short
+#define DEV_INT16 short
+#define DEV_UINT8 unsigned char
+#define DEV_INT8 char
 
-typedef enum {
+enum USB_RESULT {
 	RET_SUCCESS = 0,
 	RET_FAIL,
-} USB_RESULT;
+};
 
 #ifdef NEVER
 #define os_writelmsk(addr, data, msk) \
@@ -173,7 +173,7 @@ static inline int wait_for_value_us(void __iomem *addr, unsigned int msk,
 #define USB_WriteCsr32(_bOffset, _bEnd, _bData) \
 			do {\
 				writel(_bData, (void __iomem *)(uintptr_t)(USB_END_OFFSET(_bEnd, _bOffset)));\
-				mb();\
+				mb(); /* avoid context switch */ \
 			} while (0)
 
 #endif

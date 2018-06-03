@@ -3197,12 +3197,12 @@ extern bool usb_phy_sib_enable_switch_status(void);
 #endif /*CONFIG_MTK_SIB_USB_SWITCH*/
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-typedef enum {
+enum PORT_MODE {
 	PORT_MODE_USB = 0,
 	PORT_MODE_UART,
 
 	PORT_MODE_MAX
-} PORT_MODE;
+};
 
 extern bool in_uart_mode;
 extern void uart_usb_switch_dump_register(void);

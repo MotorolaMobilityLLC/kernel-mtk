@@ -52,12 +52,12 @@
 
 
 /* TYPE DEFINE */
-typedef unsigned int PHY_UINT32;
-typedef int PHY_INT32;
-typedef unsigned short PHY_UINT16;
-typedef short PHY_INT16;
-typedef unsigned char PHY_UINT8;
-typedef char PHY_INT8;
+#define PHY_UINT32 unsigned int
+#define PHY_INT32 int
+#define PHY_UINT16 unsigned short
+#define PHY_INT16 short
+#define PHY_UINT8 unsigned char
+#define PHY_INT8 char
 
 typedef PHY_UINT32 __bitwise PHY_LE32;
 

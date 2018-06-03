@@ -233,10 +233,10 @@ PHY_INT32 U3PhyWriteField8(phys_addr_t addr, PHY_INT32 offset, PHY_INT32 mask, P
 	cur_value = U3PhyReadReg8((u3phy_addr_t) addr);
 	new_value = (cur_value & (~mask)) | ((value << offset) & mask);
 
-	mb();
+	mb(); /* avoid context switch */
 	/**/ U3PhyWriteReg8((u3phy_addr_t) addr, new_value);
 
-	mb();
+	mb(); /* avoid context switch */
 	/**/ return PHY_TRUE;
 }
 
@@ -248,10 +248,10 @@ PHY_INT32 U3PhyWriteField32(phys_addr_t addr, PHY_INT32 offset, PHY_INT32 mask, 
 	cur_value = U3PhyReadReg32((u3phy_addr_t) addr);
 	new_value = (cur_value & (~mask)) | ((value << offset) & mask);
 
-	mb();
+	mb(); /* avoid context switch */
 	/**/ U3PhyWriteReg32((u3phy_addr_t) addr, new_value);
 
-	mb();
+	mb(); /* avoid context switch */
 	/**/ return PHY_TRUE;
 }
 

@@ -20,12 +20,12 @@
  * mu3d_hal_phy_scan - u3 phy clock phase scan
  *
  */
-DEV_INT32 mu3d_hal_phy_scan(DEV_INT32 latch_val, DEV_UINT8 driving)
+int mu3d_hal_phy_scan(int latch_val, unsigned char driving)
 {
 #ifdef CONFIG_U3_PHY_GPIO_SUPPORT
-	DEV_INT32 count, fset_phase_val, recov_cnt, link_error_count, U0_count;
-	DEV_UINT8 phase_val;
-	/* DEV_UINT8 driving; */
+	int count, fset_phase_val, recov_cnt, link_error_count, U0_count;
+	unsigned char phase_val;
+	/* unsigned char driving; */
 
 	/* disable ip power down,disable U2/U3 ip power down. */
 	mu3d_hal_ssusb_en();
