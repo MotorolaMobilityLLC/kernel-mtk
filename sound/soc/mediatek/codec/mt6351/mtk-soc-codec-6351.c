@@ -1675,9 +1675,9 @@ static void TurnOffDacPower(void)
 	Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x0001, 0xffff);	/* Disable NCP */
 #endif
 	/* upmu_set_rg_vio18_cal(0);// for MT6328 E1 VIO18 patch only */
-	NvregEnable(false);
-	ClsqEnable(false);
 	Topck_Enable(false);
+	ClsqEnable(false);
+	NvregEnable(false);
 	audckbufEnable(false);
 }
 
