@@ -937,6 +937,10 @@ void hw_breakpoint_thread_switch(struct task_struct *next)
  */
 static int hw_breakpoint_reset(unsigned int cpu)
 {
+#ifdef CONFIG_MTK_WATCHPOINT
+	/* mediatek will use our own operations for hw breakpoint/watchpoint */
+	return;
+#endif
 	int i;
 	struct perf_event **slots;
 	/*
