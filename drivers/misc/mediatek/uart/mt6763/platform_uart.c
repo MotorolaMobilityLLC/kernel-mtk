@@ -21,11 +21,6 @@
 #include <linux/serial_core.h>
 #include <linux/serial.h>
 
-#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
-#include <mach/mt_clkmgr.h>
-#include <mach/mt_idle.h>
-#endif /* defined(CONFIG_MTK_CLKMGR) && !defined (CONFIG_FPGA_EARLY_PORTING)*/
-
 #if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_FPGA_EARLY_PORTING)
 #include "mach/mt_gpio.h"
 #include <cust_gpio_usage.h>
@@ -37,6 +32,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <mt-plat/mtk_lpae.h>
+#include "mtk_spm_resource_req.h"
 
 #if !defined(CONFIG_MTK_LEGACY)
 /* #include <mach/mt_typedefs.h> */
@@ -63,15 +59,15 @@ void set_uart_pinctrl(int idx, struct pinctrl *ppinctrl)
 }
 #endif				/* !defined(CONFIG_MTK_LEGACY) */
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING) && !defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 /* struct clk *clk_uart_main; */
 struct clk *clk_uart_dma;
 void set_uart_dma_clk(int idx, struct clk *dma_clk)
 {
-	pr_debug("[UART%d][CCF]enabled clk_uart%d_dma:%p\n", idx, idx, dma_clk);
+	pr_debug("[UART%d][CCF]enabled clk_uart_dma:%p\n", idx, dma_clk);
 	clk_uart_dma = dma_clk;
 }
-#endif		/* !defined(CONFIG_FPGA_EARLY_PORTING) && !defined(CONFIG_MTK_CLKMGR) */
+#endif
 
 #ifdef ENABLE_RAW_DATA_DUMP
 static void save_tx_raw_data(struct mtk_uart *uart, void *addr);
@@ -100,9 +96,6 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART0_BASE, .irq_num = UART0_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
-	 .set_bit = PDN_FOR_UART1, .clr_bit = PDN_FOR_UART1, .pll_id = PDN_FOR_UART1,
-#endif	/* defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_FPGA_EARLY_PORTING) */
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
 	 },
 	{
@@ -110,9 +103,6 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART1_BASE, .irq_num = UART1_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
-	 .set_bit = PDN_FOR_UART2, .clr_bit = PDN_FOR_UART2, .pll_id = PDN_FOR_UART2,
-#endif	/* defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_FPGA_EARLY_PORTING) */
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
 	 },
 #if 0
@@ -1338,7 +1328,7 @@ void mtk_uart_set_auto_baud(struct mtk_uart *uart)
 		reg_sync_writel(UART_AUTOBADUSAM_52M, UART_AUTOBAUD_SAMPLE);
 		break;
 	default:
-		dev_err(uart->port.dev, "SYSCLK = %ldMHZ doesn't support autobaud\n", uart->sysclk);
+		pr_notice("SYSCLK = %ldMHZ doesn't support autobaud\n", uart->sysclk);
 		return;
 	}
 	reg_sync_writel(0x01, UART_AUTOBAUD_EN);	/* Enable Auto Baud */
@@ -1572,10 +1562,7 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	struct mtk_uart_setting *setting;
-
-#if !defined(CONFIG_MTK_CLKMGR)
 	int clk_en_ret = 0;
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 
 	if (!uart || uart->nport >= UART_NR)
 		return;
@@ -1586,37 +1573,24 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 		MSG(FUC, "%s(%d)\n", __func__, uart->poweron_count);
 	} else {
 #ifdef POWER_FEATURE
-
-#if !defined(CONFIG_MTK_CLKMGR)
 		clk_en_ret = clk_enable(setting->clk_uart_main);
 		if (clk_en_ret) {
-			pr_err("[UART%d][CCF]enable clk_uart_main failed. ret:%d, clk_main:%p\n", uart->nport,
+			pr_notice("[UART%d][CCF]enable clk_uart_main failed. ret:%d, clk_main:%p\n", uart->nport,
 			       clk_en_ret, setting->clk_uart_main);
 		} else {
-			pr_debug("[UART%d][CCF]enabled clk_uart%d_main:%p\n", uart->nport, uart->nport,
+			pr_debug("[UART%d][CCF]enabled clk_uart_main:%p\n", uart->nport,
 				  setting->clk_uart_main);
 			if ((uart != console_port)
 			    && (uart->tx_mode == UART_TX_VFIFO_DMA || uart->rx_mode == UART_RX_VFIFO_DMA)) {
 				clk_en_ret = clk_enable(clk_uart_dma);
 				if (clk_en_ret) {
-					pr_err("[UART%d][CCF]enable clk_uart_main failed. ret:%d, clk_dma:%p\n",
+					pr_notice("[UART%d][CCF]enable clk_uart_main failed. ret:%d, clk_dma:%p\n",
 					       uart->nport, clk_en_ret, clk_uart_dma);
 				} else {
 					pr_debug("[UART%d][CCF]enabled clk_uart_dma:%p\n", uart->nport, clk_uart_dma);
 				}
 			}
 		}
-
-#else				/* !defined(CONFIG_MTK_CLKMGR) */
-		if (enable_clock(setting->pll_id, "UART") != 0)
-			MSG(ERR, "power on fail!!\n");
-		if ((uart != console_port)
-		    && (uart->tx_mode == UART_TX_VFIFO_DMA || uart->rx_mode == UART_RX_VFIFO_DMA)) {
-			if (enable_clock(PDN_FOR_DMA, "VFIFO") != 0)
-				MSG(ERR, "power on dma fail!\n");
-		}
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
-
 		uart->poweron_count++;
 #endif
 	}
@@ -1639,8 +1613,7 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 		MSG(FUC, "%s(%d)\n", __func__, uart->poweron_count);
 	} else {
 #ifdef POWER_FEATURE
-#if !defined(CONFIG_MTK_CLKMGR)
-		pr_debug("[UART%d][CCF]disable clk_uart%d_main:%p\n", uart->nport, uart->nport,
+		pr_debug("[UART%d][CCF]disable clk_uart_main:%p\n", uart->nport,
 			  setting->clk_uart_main);
 
 		clk_disable(setting->clk_uart_main);
@@ -1649,15 +1622,6 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 			clk_disable(clk_uart_dma);
 			pr_debug("[UART%d][CCF]disable clk_uart_dma:%p\n", uart->nport, clk_uart_dma);
 		}
-#else				/* !defined(CONFIG_MTK_CLKMGR) */
-		if (disable_clock(setting->pll_id, "UART") != 0)
-			MSG(ERR, "power off fail!!\n");
-		if ((uart != console_port)
-		    && (uart->tx_mode == UART_TX_VFIFO_DMA || uart->rx_mode == UART_RX_VFIFO_DMA)) {
-			if (disable_clock(PDN_FOR_DMA, "VFIFO") != 0)
-				MSG(ERR, "power off dma fail!\n");
-		}
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 		uart->poweron_count--;
 #endif
 		MSG(FUC, "%s(%d) => dn\n", __func__, uart->poweron_count);
@@ -2274,13 +2238,13 @@ void switch_uart_gpio(int uartport, int gpioopid)
 
 
 	if ((uartport >= UART_NR) || (uartport > 3)) {
-		pr_err("[UART%d][PinC]%s: port error!!\n", uartport, __func__);
+		pr_notice("[UART%d][PinC]%s: port error!!\n", uartport, __func__);
 		return;
 	}
 
 	ppinctrl = ppinctrl_uart[uartport];
 	if (IS_ERR(ppinctrl)) {
-		pr_err("[UART%d][PinC]%s get pinctrl fail!! err:%ld\n", uartport, __func__, PTR_ERR(ppinctrl));
+		pr_notice("[UART%d][PinC]%s get pinctrl fail!! err:%ld\n", uartport, __func__, PTR_ERR(ppinctrl));
 		return;
 	}
 
@@ -2288,7 +2252,7 @@ void switch_uart_gpio(int uartport, int gpioopid)
 
 
 	if (IS_ERR(pins_uart)) {
-		pr_err("[UART%d][PinC]%s pinctrl_lockup(%d, %s) fail!! pctrl:%p, err:%ld\n", uartport, __func__,
+		pr_notice("[UART%d][PinC]%s pinctrl_lockup(%d, %s) fail!! pctrl:%p, err:%ld\n", uartport, __func__,
 		       uartport, uart_gpio_cmds[uartport][gpioopid], ppinctrl, PTR_ERR(pins_uart));
 		return;
 	}
@@ -2308,7 +2272,7 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 	/* pr_debug("[UART]%s port:0x%x\n", __func__, uartport); */
 
 	if (uartport > 3) {
-		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
+		pr_notice("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
 #ifdef CONFIG_PM
@@ -2370,7 +2334,7 @@ void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 	/* pr_debug("[UART]%s port:0x%x\n", __func__, uartport);*/
 
 	if (uartport > 3) {
-		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
+		pr_notice("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
 #ifdef CONFIG_PM
@@ -2427,7 +2391,7 @@ void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 	/* pr_debug("[UART]%s port:0x%x\n", __func__, uartport); */
 
 	if (uartport > 3) {
-		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
+		pr_notice("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
 #ifdef CONFIG_PM
@@ -2485,7 +2449,7 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 	/* pr_debug("[UART]%s port:0x%x\n", __func__, uartport);*/
 
 	if (uartport > 3) {
-		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
+		pr_notice("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
 #ifdef CONFIG_PM
@@ -2539,9 +2503,7 @@ void mtk_uart_enable_dpidle(struct mtk_uart *uart)
 {
 /* FIX-ME early porting */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#if defined(CONFIG_MTK_CLKMGR)
 	spm_resource_req(SPM_RESOURCE_USER_UART, SPM_RESOURCE_RELEASE);
-#endif
 #endif
 }
 
@@ -2550,9 +2512,7 @@ void mtk_uart_disable_dpidle(struct mtk_uart *uart)
 {
 /* FIX-ME early porting */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#if defined(CONFIG_MTK_CLKMGR)
 	spm_resource_req(SPM_RESOURCE_USER_UART, SPM_RESOURCE_ALL);
-#endif
 #endif
 }
 

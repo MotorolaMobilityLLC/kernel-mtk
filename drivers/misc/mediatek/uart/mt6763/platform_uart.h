@@ -16,10 +16,7 @@
 
 #include <asm/irq.h>
 #include <linux/irq.h>
-
-#if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 #include <linux/pinctrl/consumer.h>
 
 /******************************************************************************
@@ -87,16 +84,6 @@
 #define UART3_VFF_TX_IRQ_ID  AP_DMA_UART2_TX_IRQ_BIT_ID
 #define UART3_VFF_RX_IRQ_ID  AP_DMA_UART2_RX_IRQ_BIT_ID
 #endif
-/*------ PDN Section -----------------------*/
-#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
-#define PDN_FOR_UART1   MT_CG_INFRA_UART0
-#define PDN_FOR_UART2   MT_CG_INFRA_UART1
-/*
-*#define PDN_FOR_UART3   MT_CG_INFRA_UART2
-*#define PDN_FOR_UART4   MT_CG_INFRA_UART3
-*/
-#define PDN_FOR_DMA     MT_CG_INFRA_APDMA
-#endif
 
 #if (defined(CONFIG_FIQ_DEBUGGER_CONSOLE) && defined(CONFIG_FIQ_DEBUGGER))
 #define DEFAULT_FIQ_UART_PORT           (3)
@@ -163,7 +150,7 @@ do { \
 	if ((DBG_EVT_##evt) & uart->evt_mask) { \
 		const char *s = #evt; \
 	if (DBG_EVT_##evt & DBG_EVT_ERR) \
-		pr_err("  [UART%d]:%c:%4d: " fmt, \
+		pr_notice("  [UART%d]:%c:%4d: " fmt, \
 		   uart->nport, s[0], __LINE__, ##args); \
 	else \
 		pr_debug("  [UART%d]:%c: " fmt, uart->nport, s[0], ##args); \
@@ -177,7 +164,7 @@ do { \
 /*---------------------------------------------------------------------------*/
 #else				/* release mode: only enable error log */
 #define MSG(evt, fmt, args...)  MSG##evt(fmt, ##args)
-#define MSGERR(fmt, args...)    pr_err("  [UART%d]:E:%4d: " fmt, uart->nport, __LINE__, ##args)
+#define MSGERR(fmt, args...)    pr_notice("  [UART%d]:E:%4d: " fmt, uart->nport, __LINE__, ##args)
 #define MSGDMA(fmt, args...)
 #define MSGCFG(fmt, args...)
 #define MSGFUC(fmt, args...)
@@ -187,10 +174,9 @@ do { \
 #define MSG_RAW(fmt, args...)
 #define MSG_FUNC_ENTRY(f)       do {} while (0)
 #endif /**/
-#define MSG_ERR(fmt, args...)   pr_err("[UARTX]:E:%4d: " fmt, __LINE__, ##args)
+#define MSG_ERR(fmt, args...)   pr_notice("[UARTX]:E:%4d: " fmt, __LINE__, ##args)
 #define MSG_TRC(fmt, args...)   pr_debug("[UARTX]:T: " fmt, ##args)
 #define DEV_TRC(fmt, args...)   pr_debug("[UART%d]:T: " fmt, uart->nport, ##args)
-#define DEV_ERR(fmt, args...)   pr_err("[UART%d]:E: " fmt, uart->nport, ##args)
 /*---------------------------------------------------------------------------*/
 #define DRV_NAME                "mtk-uart"
 /*---------------------------------------------------------------------------*/

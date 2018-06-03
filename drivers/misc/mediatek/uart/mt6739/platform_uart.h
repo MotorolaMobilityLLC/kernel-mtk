@@ -16,10 +16,7 @@
 
 #include <asm/irq.h>
 #include <linux/irq.h>
-
-#if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 #include <linux/pinctrl/consumer.h>
 
 /******************************************************************************
@@ -86,16 +83,6 @@
 #define UART2_VFF_RX_IRQ_ID  AP_DMA_UART1_RX_IRQ_BIT_ID
 #define UART3_VFF_TX_IRQ_ID  AP_DMA_UART2_TX_IRQ_BIT_ID
 #define UART3_VFF_RX_IRQ_ID  AP_DMA_UART2_RX_IRQ_BIT_ID
-#endif
-/*------ PDN Section -----------------------*/
-#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
-#define PDN_FOR_UART1   MT_CG_INFRA_UART0
-#define PDN_FOR_UART2   MT_CG_INFRA_UART1
-/*
-*#define PDN_FOR_UART3   MT_CG_INFRA_UART2
-*#define PDN_FOR_UART4   MT_CG_INFRA_UART3
-*/
-#define PDN_FOR_DMA     MT_CG_INFRA_APDMA
 #endif
 
 #if (defined(CONFIG_FIQ_DEBUGGER_CONSOLE) && defined(CONFIG_FIQ_DEBUGGER))
