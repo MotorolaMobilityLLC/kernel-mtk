@@ -253,8 +253,8 @@ static struct regulator_init_data
 			.valid_modes_mask =
 				(REGULATOR_MODE_NORMAL|REGULATOR_MODE_FAST),
 			.valid_ops_mask =
-				REGULATOR_CHANGE_MODE|REGULATOR_CHANGE_VOLTAGE,
-			.always_on = 1,
+				REGULATOR_CHANGE_MODE|REGULATOR_CHANGE_VOLTAGE|
+				REGULATOR_CHANGE_STATUS,
 		},
 	},
 	{
@@ -265,8 +265,9 @@ static struct regulator_init_data
 			.valid_modes_mask =
 				(REGULATOR_MODE_NORMAL|REGULATOR_MODE_FAST),
 			.valid_ops_mask =
-				REGULATOR_CHANGE_MODE|REGULATOR_CHANGE_VOLTAGE,
-			.always_on = 1,
+				REGULATOR_CHANGE_MODE|REGULATOR_CHANGE_VOLTAGE|
+				REGULATOR_CHANGE_STATUS,
+			.boot_on = 1,
 		},
 	},
 	{
@@ -277,7 +278,8 @@ static struct regulator_init_data
 			.valid_modes_mask =
 				(REGULATOR_MODE_NORMAL|REGULATOR_MODE_FAST),
 			.valid_ops_mask =
-				REGULATOR_CHANGE_MODE|REGULATOR_CHANGE_VOLTAGE,
+				REGULATOR_CHANGE_MODE|REGULATOR_CHANGE_VOLTAGE|
+				REGULATOR_CHANGE_STATUS,
 			.always_on = 1,
 		},
 	},

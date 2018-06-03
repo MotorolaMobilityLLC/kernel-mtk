@@ -71,6 +71,7 @@ extern int isl91302a_assign_bit(void *client, uint32_t reg,
 					uint32_t mask, uint32_t data);
 extern int isl91302a_regulator_init(struct isl91302a_chip *chip);
 extern int isl91302a_regulator_deinit(struct isl91302a_chip *chip);
+extern int force_enable_proc2(void);
 
 #define isl91302a_set_bit(spi, reg, mask) \
 	isl91302a_assign_bit(spi, reg, mask, mask)
