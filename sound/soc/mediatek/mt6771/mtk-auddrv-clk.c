@@ -279,8 +279,8 @@ static int audio_idle_notify_call(struct notifier_block *nfb,
 		/* intbus pll -> 26m */
 		if (aud_clk_enable(&aud_clks[CLOCK_MUX_AUDIOINTBUS]))
 			return NOTIFY_OK;
-
-		AudDrv_AUDINTBUS_Sel(0);
+		/* don't use AudDrv_AUDINTBUS_Sel in notify_call */
+		aud_intbus_mux_sel(0);
 
 		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare)
 			clk_disable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
@@ -291,8 +291,8 @@ static int audio_idle_notify_call(struct notifier_block *nfb,
 		/* Audio Clock: 26m -> pll */
 		if (aud_clk_enable(&aud_clks[CLOCK_MUX_AUDIOINTBUS]))
 			return NOTIFY_OK;
-
-		AudDrv_AUDINTBUS_Sel(1);
+		/* don't use AudDrv_AUDINTBUS_Sel in notify_call */
+		aud_intbus_mux_sel(1);
 
 		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare)
 			clk_disable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
