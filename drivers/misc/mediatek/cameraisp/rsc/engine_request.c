@@ -97,7 +97,7 @@ signed int init_request(struct request *req)
 */
 signed int set_frame_data(struct frame *f, void *engine)
 {
-	if (engine == NULL || f == NULL) {
+	if (f == NULL) {
 		LOG_ERR("NULL frame(%p)", (void *)f);
 		return -1;
 }
@@ -153,10 +153,19 @@ signed int register_requests(struct engine_requests *eng, size_t size)
 
 signed int unregister_requests(struct engine_requests *eng)
 {
+	int f, r;
+
 	if (eng == NULL)
 		return -1;
 
 	vfree(eng->reqs[0].frames[0].data);
+
+	for (r = 0; r < MAX_REQUEST_SIZE_PER_ENGINE; r++) {
+		init_request(&eng->reqs[r]);
+
+		for (f = 0; f < MAX_FRAMES_PER_REQUEST; f++)
+			set_frame_data(&eng->reqs[r].frames[f], NULL);
+	}
 
 	return 0;
 }
