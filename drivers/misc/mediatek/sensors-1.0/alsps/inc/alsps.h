@@ -66,14 +66,17 @@
 #define MAX_CHOOSE_ALSPS_NUM 5
 
 struct als_control_path {
-	int (*open_report_data)(int open);/* open data rerport to HAL */
-	int (*enable_nodata)(int en);/* only enable not report event to HAL */
+	int (*open_report_data)(int open);
+	int (*enable_nodata)(int en);
 	int (*set_delay)(u64 delay);
 	int (*batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
-	int (*flush)(void);/* open data rerport to HAL */
-	int (*access_data_fifo)(void);/* version2.used for flush operate */
+	int (*flush)(void);
+	int (*rgbw_enable)(int en);
+	int (*rgbw_batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
+	int (*rgbw_flush)(void);
+	int (*access_data_fifo)(void);
 	bool is_report_input_direct;
-	bool is_support_batch;/* version2.used for batch mode support flag */
+	bool is_support_batch;
 	bool is_polling_mode;
 	bool is_use_common_factory;
 };
@@ -149,7 +152,6 @@ struct alsps_context {
 	struct ps_data_path	ps_data;
 
 	bool is_als_active_nodata;/* Active, but HAL don't need data sensor. such as orientation need */
-	bool is_als_active_data;/* Active and HAL need data . */
 	bool is_ps_active_nodata;/* Active, but HAL don't need data sensor. such as orientation need */
 	bool is_ps_active_data;/* Active and HAL need data . */
 
@@ -162,9 +164,13 @@ struct alsps_context {
 	bool is_get_valid_ps_data_after_enable;
 	bool is_get_valid_als_data_after_enable;
 	int als_power;
+	int rgbw_power;
 	int als_enable;
+	int rgbw_enable;
 	int64_t als_delay_ns;
 	int64_t als_latency_ns;
+	int64_t rgbw_delay_ns;
+	int64_t rgbw_latency_ns;
 	int ps_power;
 	int ps_enable;
 	int64_t ps_delay_ns;
@@ -182,6 +188,8 @@ extern int ps_report_interrupt_data(int value);
 extern int ps_flush_report(void);
 extern int als_data_report(int value, int status);
 extern int als_flush_report(void);
+extern int rgbw_data_report(int value[4]);
+extern int rgbw_flush_report(void);
 extern int als_register_control_path(struct als_control_path *ctl);
 extern int als_register_data_path(struct als_data_path *data);
 extern int ps_data_report(int value, int status);

@@ -325,6 +325,15 @@ static int als_recv_data(struct data_unit_t *event, void *reserved)
 	return 0;
 }
 
+static int rgbw_recv_data(struct data_unit_t *event, void *reserved)
+{
+	if (event->flush_action == FLUSH_ACTION)
+		rgbw_flush_report();
+	else if (event->flush_action == DATA_ACTION)
+		rgbw_data_report(event->data);
+	return 0;
+}
+
 static int set_psensor_threshold(void)
 {
 	struct alspshub_ipi_data *obj = obj_ipi_data;
@@ -608,6 +617,28 @@ static int als_flush(void)
 	return sensor_flush_to_hub(ID_LIGHT);
 }
 
+static int rgbw_enable(int en)
+{
+	int res = 0;
+
+	res = sensor_enable_to_hub(ID_RGBW, en);
+	if (res < 0) {
+		APS_PR_ERR("rgbw_enable is failed!!\n");
+		return -1;
+	}
+	return 0;
+}
+
+static int rgbw_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+{
+	return sensor_batch_to_hub(ID_RGBW, flag, samplingPeriodNs, maxBatchReportLatencyNs);
+}
+
+static int rgbw_flush(void)
+{
+	return sensor_flush_to_hub(ID_RGBW);
+}
+
 static int als_get_data(int *value, int *status)
 {
 	int err = 0;
@@ -795,6 +826,11 @@ static int alspshub_probe(struct platform_device *pdev)
 		APS_PR_ERR("scp_sensorHub_data_registration failed\n");
 		goto exit_kfree;
 	}
+	err = scp_sensorHub_data_registration(ID_RGBW, rgbw_recv_data);
+	if (err < 0) {
+		APS_PR_ERR("scp_sensorHub_data_registration failed\n");
+		goto exit_kfree;
+	}
 	err = alsps_factory_device_register(&alspshub_factory_device);
 	if (err) {
 		APS_PR_ERR("alsps_factory_device_register register failed\n");
@@ -813,6 +849,9 @@ static int alspshub_probe(struct platform_device *pdev)
 	als_ctl.set_delay = als_set_delay;
 	als_ctl.batch = als_batch;
 	als_ctl.flush = als_flush;
+	als_ctl.rgbw_enable = rgbw_enable;
+	als_ctl.rgbw_batch = rgbw_batch;
+	als_ctl.rgbw_flush = rgbw_flush;
 	als_ctl.is_report_input_direct = false;
 
 	als_ctl.is_support_batch = false;
