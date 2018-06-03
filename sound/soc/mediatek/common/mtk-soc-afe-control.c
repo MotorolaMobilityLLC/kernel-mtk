@@ -1908,7 +1908,7 @@ void Auddrv_AWB_Interrupt_Handler(void)
 	}
 
 	mBlock = &Mem_Block->rBlock;
-	HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_AWB_CUR));
+	HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_AWB_CUR));
 	PRINTK_AUD_AWB("+%s HW_Cur_ReadIdx = 0x%x\n ", __func__, HW_Cur_ReadIdx);
 
 	if (CheckSize(HW_Cur_ReadIdx)) {
@@ -2005,7 +2005,7 @@ void Auddrv_DAI_Interrupt_Handler(void)
 	}
 
 	mBlock = &Mem_Block->rBlock;
-	HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_DAI_CUR));
+	HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_DAI_CUR));
 
 	if (CheckSize(HW_Cur_ReadIdx)) {
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
@@ -2056,7 +2056,6 @@ void Auddrv_DAI_Interrupt_Handler(void)
 void Auddrv_DL1_Interrupt_Handler(void)
 {
 	/* irq1 ISR handler */
-#define MAGIC_NUMBER 0xFFFFFFC0
 	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1];
 	kal_int32 Afe_consumed_bytes = 0;
 	kal_int32 HW_memory_index = 0;
@@ -2104,7 +2103,7 @@ void Auddrv_DL1_Interrupt_Handler(void)
 		    Afe_Block->u4BufferSize + HW_memory_index - Afe_Block->u4DMAReadIdx;
 	}
 
-	Afe_consumed_bytes = Afe_consumed_bytes & MAGIC_NUMBER;	/* 64 bytes align */
+	Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
 	PRINTK_AUD_DL1("+%s ReadIdx:%x WriteIdx:%x,Remained:%x,  consumed_bytes:%x HW_memory_index = %x\n",
 	__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx, Afe_Block->u4DataRemained,
 	Afe_consumed_bytes, HW_memory_index);
@@ -2158,7 +2157,6 @@ void Auddrv_DL1_Interrupt_Handler(void)
 void Auddrv_DL2_Interrupt_Handler(void)
 {
 	/* irq2 ISR handler */
-#define MAGIC_NUMBER 0xFFFFFFC0
 	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2];
 	kal_int32 Afe_consumed_bytes = 0;
 	kal_int32 HW_memory_index = 0;
@@ -2206,10 +2204,7 @@ void Auddrv_DL2_Interrupt_Handler(void)
 		    Afe_Block->u4BufferSize + HW_memory_index - Afe_Block->u4DMAReadIdx;
 	}
 
-	if (get_voice_usb_status())
-		Afe_consumed_bytes = Afe_consumed_bytes & 0xFFFFFFF8;	/* 8 bytes align */
-	else
-		Afe_consumed_bytes = Afe_consumed_bytes & MAGIC_NUMBER;	/* 64 bytes align */
+	Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
 
 	PRINTK_AUD_DL2("+%s ReadIdx:%x WriteIdx:%x,Remained:%x, consumed_bytes:%x HW_memory_index = %x\n",
 	__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
@@ -2327,7 +2322,7 @@ void Auddrv_UL1_Interrupt_Handler(void)
 	}
 
 	mBlock = &Mem_Block->rBlock;
-	HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_VUL_CUR));
+	HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_VUL_CUR));
 
 	if (CheckSize(HW_Cur_ReadIdx)) {
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
@@ -2483,7 +2478,7 @@ void Auddrv_UL2_Interrupt_Handler(void)
 	}
 
 	mBlock = &Mem_Block->rBlock;
-	HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_VUL_D2_CUR));
+	HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_VUL_D2_CUR));
 	PRINTK_AUD_UL2("Auddrv_UL2_Interrupt_Handler HW_Cur_ReadIdx = 0x%x\n ", HW_Cur_ReadIdx);
 
 	if (CheckSize(HW_Cur_ReadIdx)) {
@@ -2548,7 +2543,7 @@ void Auddrv_MOD_DAI_Interrupt_Handler(void)
 	}
 
 	mBlock = &Mem_Block->rBlock;
-	HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_MOD_DAI_CUR));
+	HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_MOD_DAI_CUR));
 
 	if (CheckSize(HW_Cur_ReadIdx)) {
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
@@ -2589,12 +2584,12 @@ bool Restore_Audio_Register(void)
 	return true;
 }
 
-unsigned int Align64ByteSize(unsigned int insize)
+unsigned int word_size_align(unsigned int in_size)
 {
-#define MAGIC_NUMBER 0xFFFFFFC0
 	unsigned int align_size;
 
-	align_size = insize & MAGIC_NUMBER;
+	/* sram is device memory, need word size align, 8 byte for 64 bit platform */
+	align_size = in_size & 0xFFFFFFF8;
 
 	return align_size;
 }
@@ -3357,7 +3352,7 @@ static snd_pcm_uframes_t get_dlmem_frame_index(struct snd_pcm_substream *substre
 					     Afe_Block->u4DMAReadIdx;
 		}
 
-		Afe_consumed_bytes = Align64ByteSize(Afe_consumed_bytes); /* TODO: is this necessary? */
+		Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
 
 		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
@@ -3392,16 +3387,16 @@ static snd_pcm_uframes_t get_ulmem_frame_index(struct snd_pcm_substream *substre
 	if (GetMemoryPathEnable(mem_block) == true) {
 		switch (mem_block) {
 		case Soc_Aud_Digital_Block_MEM_VUL:
-			HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_VUL_CUR));
+			HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_VUL_CUR));
 			break;
 		case Soc_Aud_Digital_Block_MEM_DAI:
-			HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_DAI_CUR));
+			HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_DAI_CUR));
 			break;
 		case Soc_Aud_Digital_Block_MEM_AWB:
-			HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_AWB_CUR));
+			HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_AWB_CUR));
 			break;
 		case Soc_Aud_Digital_Block_MEM_MOD_DAI:
-			HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_MOD_DAI_CUR));
+			HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_MOD_DAI_CUR));
 			break;
 		default:
 			pr_err("%s error mem_block = %d", __func__, mem_block);
@@ -3585,7 +3580,7 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream,
 			copy_size = count;
 	}
 
-	copy_size = Align64ByteSize(copy_size);
+	copy_size = word_size_align(copy_size);
 	PRINTK_AUD_DL1("copy_size=0x%x, count=0x%x\n", copy_size, (unsigned int)count);
 
 	if (copy_size != 0) {
@@ -3624,8 +3619,8 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream,
 		} else { /* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
 
-			size_1 = Align64ByteSize((Afe_Block->u4BufferSize - Afe_WriteIdx_tmp));
-			size_2 = Align64ByteSize((copy_size - size_1));
+			size_1 = word_size_align((Afe_Block->u4BufferSize - Afe_WriteIdx_tmp));
+			size_2 = word_size_align((copy_size - size_1));
 			PRINTK_AUD_DL1("size_1=0x%x, size_2=0x%x\n", size_1, size_2);
 			if (!access_ok(VERIFY_READ, data_w_ptr, size_1)) {
 				pr_warn(" 1ptr invalid data_w_ptr=%p, size_1=%d", data_w_ptr, size_1);
@@ -3703,7 +3698,7 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream,
 
 	PRINTK_AUD_UL1("mtk_capture_pcm_copy pos = %lucount = %lu\n ", pos, count);
 	/* get total bytes to copy */
-	count = Align64ByteSize(audio_frame_to_bytes(substream, count));
+	count = word_size_align(audio_frame_to_bytes(substream, count));
 
 	/* check which memif nned to be write */
 	pVUL_MEM_ConTrol = pMemControl;

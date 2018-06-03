@@ -728,11 +728,11 @@ int OffloadService_CopyDatatoRAM(void __user *buf, size_t count)
 		free_space = (u4BufferSize - u4WriteIdx) + u4ReadIdx;
 	else
 		free_space = u4ReadIdx - u4WriteIdx;
-	free_space = Align64ByteSize(free_space);
+	free_space = word_size_align(free_space);
 	if (count < free_space) {
 		if (count > (u4BufferSize - u4WriteIdx)) {
-			copy1 = Align64ByteSize(u4BufferSize - u4WriteIdx);
-			copy2 = Align64ByteSize(count - copy1);
+			copy1 = word_size_align(u4BufferSize - u4WriteIdx);
+			copy2 = word_size_align(count - copy1);
 			if (copy_from_user(afe_offload_block.buf.pucVirtBufAddr + u4WriteIdx, buf, copy1))
 				goto Error;
 			if (copy2 > 0)
@@ -740,7 +740,7 @@ int OffloadService_CopyDatatoRAM(void __user *buf, size_t count)
 					goto Error;
 			u4WriteIdx = copy2;
 		} else {
-			count = Align64ByteSize(count);
+			count = word_size_align(count);
 			if (copy_from_user(afe_offload_block.buf.pucVirtBufAddr + u4WriteIdx, buf, count))
 				goto Error;
 			u4WriteIdx += count; /* update write index */

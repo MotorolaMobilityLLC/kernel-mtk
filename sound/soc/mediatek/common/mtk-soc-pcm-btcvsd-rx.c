@@ -359,8 +359,7 @@ static int mtk_pcm_btcvsd_rx_copy(struct snd_pcm_substream *substream,
 	char *Read_Data_Ptr = (char *)dst;
 
 	count = btcvsd_frame_to_bytes(substream, count);
-	/*count = Align64ByteSize(count);*/
-	count = count & 0xFFFFFFC0;
+
 	AudDrv_btcvsd_read(Read_Data_Ptr, count);
 
 	LOGBT("pcm_copy return\n");
