@@ -97,6 +97,15 @@ int charger_dev_plug_out(struct charger_device *charger_dev)
 }
 EXPORT_SYMBOL(charger_dev_plug_out);
 
+int charger_dev_do_event(struct charger_device *charger_dev, u32 event, u32 args)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->plug_out)
+		return charger_dev->ops->event(charger_dev, event, args);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_do_event);
+
 int charger_dev_set_charging_current(struct charger_device *charger_dev, u32 uA)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_charging_current)
