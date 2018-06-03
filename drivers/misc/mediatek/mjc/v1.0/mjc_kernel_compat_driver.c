@@ -27,30 +27,30 @@
 /* ************************************ */
 
 /* See mjc_kernel_compat_driver.h for the definition of these structs */
-typedef struct {
+struct compat_MJC_READ_REG_T {
 	compat_ulong_t reg;
 	compat_uint_t val;
 	compat_uint_t mask;
-} compat_MJC_READ_REG_T;
+};
 
-typedef struct {
+struct compat_MJC_WRITE_REG_T {
 	compat_ulong_t reg;
 	compat_uint_t val;
 	compat_uint_t mask;
-} compat_MJC_WRITE_REG_T;
+};
 
-typedef struct {
+struct compat_MJC_IOCTL_REG_INFO_T {
 	compat_uint_t u4StructSize;
 	compat_ulong_t ulRegPAddress;
 	compat_ulong_t ulRegPSize;
-} compat_MJC_IOCTL_REG_INFO_T;
+};
 
 
 #define MJC_IOC_MAGIC    'N'
 
-#define COMPAT_MJC_READ_REG    _IOW(MJC_IOC_MAGIC, 0x02, compat_MJC_READ_REG_T)
-#define COMPAT_MJC_WRITE_REG   _IOW(MJC_IOC_MAGIC, 0x03, compat_MJC_WRITE_REG_T)
-#define COMPAT_MJC_REG_INFO    _IOW(MJC_IOC_MAGIC, 0x07, compat_MJC_IOCTL_REG_INFO_T)
+#define COMPAT_MJC_READ_REG    _IOW(MJC_IOC_MAGIC, 0x02, struct compat_MJC_READ_REG_T)
+#define COMPAT_MJC_WRITE_REG   _IOW(MJC_IOC_MAGIC, 0x03, struct compat_MJC_WRITE_REG_T)
+#define COMPAT_MJC_REG_INFO    _IOW(MJC_IOC_MAGIC, 0x07, struct compat_MJC_IOCTL_REG_INFO_T)
 
 /*****************************************************************************
  * FUNCTION
@@ -62,8 +62,8 @@ typedef struct {
  * RETURNS
  *    None.
  ****************************************************************************/
-static int compat_get_mjc_read_reg(compat_MJC_READ_REG_T __user *data32,
-				   MJC_READ_REG_T __user *data)
+static int compat_get_mjc_read_reg(struct compat_MJC_READ_REG_T __user *data32,
+				   struct MJC_READ_REG_T __user *data)
 {
 	compat_ulong_t reg;
 	compat_uint_t val;
@@ -92,8 +92,8 @@ static int compat_get_mjc_read_reg(compat_MJC_READ_REG_T __user *data32,
  * RETURNS
  *    None.
  ****************************************************************************/
-static int compat_put_mjc_read_reg(compat_MJC_READ_REG_T __user *data32,
-				   MJC_READ_REG_T __user *data)
+static int compat_put_mjc_read_reg(struct compat_MJC_READ_REG_T __user *data32,
+				   struct MJC_READ_REG_T __user *data)
 {
 	compat_ulong_t reg;
 	compat_uint_t val;
@@ -122,8 +122,8 @@ static int compat_put_mjc_read_reg(compat_MJC_READ_REG_T __user *data32,
  * RETURNS
  *    None.
  ****************************************************************************/
-static int compat_get_mjc_write_reg(compat_MJC_WRITE_REG_T __user *data32,
-				    MJC_WRITE_REG_T __user *data)
+static int compat_get_mjc_write_reg(struct compat_MJC_WRITE_REG_T __user *data32,
+				    struct MJC_WRITE_REG_T __user *data)
 {
 	compat_ulong_t reg;
 	compat_uint_t val;
@@ -152,8 +152,8 @@ static int compat_get_mjc_write_reg(compat_MJC_WRITE_REG_T __user *data32,
  * RETURNS
  *    None.
  ****************************************************************************/
-static int compat_get_mjc_reg_info(compat_MJC_IOCTL_REG_INFO_T __user *data32,
-				   MJC_IOCTL_REG_INFO_T __user *data)
+static int compat_get_mjc_reg_info(struct compat_MJC_IOCTL_REG_INFO_T __user *data32,
+				   struct MJC_IOCTL_REG_INFO_T __user *data)
 {
 	compat_uint_t u4StructSize;
 	compat_ulong_t ulRegPAddress;
@@ -161,12 +161,12 @@ static int compat_get_mjc_reg_info(compat_MJC_IOCTL_REG_INFO_T __user *data32,
 	int err;
 
 	err = get_user(u4StructSize, &data32->u4StructSize);
-	if (u4StructSize != sizeof(compat_MJC_IOCTL_REG_INFO_T)) {
+	if (u4StructSize != sizeof(struct compat_MJC_IOCTL_REG_INFO_T)) {
 		MJCDBG("[Error] compat_get_mjc_reg_info() structure size mismatch (%d, %ld)",
-		       u4StructSize, sizeof(compat_MJC_IOCTL_REG_INFO_T));
+		       u4StructSize, sizeof(struct compat_MJC_IOCTL_REG_INFO_T));
 		err = -EFAULT;
 	}
-	u4StructSize = sizeof(MJC_IOCTL_REG_INFO_T);
+	u4StructSize = sizeof(struct MJC_IOCTL_REG_INFO_T);
 	err |= put_user(u4StructSize, &data->u4StructSize);
 
 	err |= get_user(ulRegPAddress, &data32->ulRegPAddress);
@@ -188,8 +188,8 @@ static int compat_get_mjc_reg_info(compat_MJC_IOCTL_REG_INFO_T __user *data32,
  * RETURNS
  *    None.
  ****************************************************************************/
-static int compat_put_mjc_reg_info(compat_MJC_IOCTL_REG_INFO_T __user *data32,
-				   MJC_IOCTL_REG_INFO_T __user *data)
+static int compat_put_mjc_reg_info(struct compat_MJC_IOCTL_REG_INFO_T __user *data32,
+				   struct MJC_IOCTL_REG_INFO_T __user *data)
 {
 	/* compat_uint_t u4StructSize; */
 	compat_ulong_t ulRegPAddress;
@@ -230,8 +230,8 @@ long compat_mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 	switch (u4cmd) {
 	case COMPAT_MJC_READ_REG:
 		{
-			compat_MJC_READ_REG_T __user *data32;
-			MJC_READ_REG_T __user *data;
+			struct compat_MJC_READ_REG_T __user *data32;
+			struct MJC_READ_REG_T __user *data;
 			int err;
 
 			data32 = compat_ptr(u4arg);
@@ -262,8 +262,8 @@ long compat_mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 
 	case COMPAT_MJC_WRITE_REG:
 		{
-			compat_MJC_WRITE_REG_T __user *data32;
-			MJC_WRITE_REG_T __user *data;
+			struct compat_MJC_WRITE_REG_T __user *data32;
+			struct MJC_WRITE_REG_T __user *data;
 			int err;
 
 			data32 = compat_ptr(u4arg);
@@ -288,8 +288,8 @@ long compat_mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 
 	case COMPAT_MJC_REG_INFO:
 		{
-			compat_MJC_IOCTL_REG_INFO_T __user *data32;
-			MJC_IOCTL_REG_INFO_T __user *data;
+			struct compat_MJC_IOCTL_REG_INFO_T __user *data32;
+			struct MJC_IOCTL_REG_INFO_T __user *data;
 			int err;
 
 			data32 = compat_ptr(u4arg);
