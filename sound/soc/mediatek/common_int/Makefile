@@ -32,6 +32,11 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/tasks/mp3
 endif
 
+# MENU Governor Predict(low power)
+ifeq ($(CONFIG_MTK_ACAO_SUPPORT),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
+endif
+
 # Feature support
 ifeq ($(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework
