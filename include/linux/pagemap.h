@@ -223,11 +223,7 @@ extern struct page *__page_cache_alloc(gfp_t gfp);
 #else
 static inline struct page *__page_cache_alloc(gfp_t gfp)
 {
-#ifdef CONFIG_CMA_REFUSE_PAGE_CACHE
 	return alloc_pages(gfp, 0);
-#else
-	return alloc_pages(gfp | __GFP_CMA, 0);
-#endif
 }
 #endif
 
@@ -243,8 +239,13 @@ static inline struct page *page_cache_alloc_cold(struct address_space *x)
 
 static inline struct page *page_cache_alloc_readahead(struct address_space *x)
 {
+#ifdef CONFIG_CMA_REFUSE_PAGE_CACHE
 	return __page_cache_alloc(mapping_gfp_mask(x) |
 				  __GFP_COLD | __GFP_NORETRY | __GFP_NOWARN);
+#else
+	return __page_cache_alloc(mapping_gfp_mask(x) |
+				  __GFP_COLD | __GFP_NORETRY | __GFP_NOWARN | __GFP_CMA);
+#endif
 }
 
 typedef int filler_t(void *, struct page *);

@@ -340,6 +340,30 @@ static unsigned long global_dirtyable_memory(void)
 	if (!vm_highmem_is_dirtyable)
 		x -= highmem_dirtyable_memory(x);
 
+	/*
+	 * movable zone is consider as memory backup pool,
+	 * remove movable zone from dirtyable memory count
+	 */
+	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA)) {
+		int node;
+		unsigned long dirtyable_memory = 0;
+
+		for_each_node(node) {
+			struct zone *z = &NODE_DATA(node)->node_zones[ZONE_MOVABLE];
+
+			dirtyable_memory += zone_dirtyable_memory(z);
+		}
+
+		if ((long)dirtyable_memory < 0)
+			dirtyable_memory = 0;
+
+		/*
+		 * Make sure that the number of movable pages is never larger
+		 * than the number of the total dirtyable memory.
+		 */
+		x -= min(x, dirtyable_memory);
+	}
+
 	return x + 1;	/* Ensure that we never return 0 */
 }
 
