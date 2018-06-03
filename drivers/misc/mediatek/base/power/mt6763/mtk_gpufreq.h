@@ -17,20 +17,39 @@
 #include <linux/module.h>
 #include <linux/clk.h>
 
-#define MAX_VCO_VALUE	3800000
-#define MIN_VCO_VALUE	1500000
-#define DIV4_MAX_FREQ	(MAX_VCO_VALUE / (POST_DIV4 << 2))
-#define DIV4_MIN_FREQ	(MIN_VCO_VALUE / (POST_DIV4 << 2))
+#define MAX_VCO_VALUE	4000000
+#define MIN_VCO_VALUE	2000000
 
-enum post_div_enum {
-	POST_DIV2 = 0,
+#define DIV4_MAX_FREQ	988000
+#define DIV4_MIN_FREQ	507000
+#define DIV8_MAX_FREQ   494000
+#define DIV8_MIN_FREQ   273000
+#define DIV16_MAX_FREQ  247000
+#define DIV16_MIN_FREQ  169000
+
+#define TO_MHz_HEAD 100
+#define TO_MHz_TAIL 10
+#define ROUNDING_VALUE 5
+#define DDS_SHIFT 14
+#define POST_DIV_SHIFT 28
+#define POST_DIV_MASK 0x70000000
+#define GPUPLL_FIN 26
+
+#define BUCK_ON 1
+#define BUCK_OFF 0
+#define BUCK_ENFORCE_OFF 4
+
+enum post_div_order_enum {
+	POST_DIV2 = 1,
 	POST_DIV4,
 	POST_DIV8,
+	POST_DIV16,
 };
 
 struct mt_gpufreq_table_info {
 	unsigned int gpufreq_khz;
 	unsigned int gpufreq_volt;
+	unsigned int gpufreq_vsram;
 	unsigned int gpufreq_idx;
 };
 
@@ -45,6 +64,12 @@ struct mt_gpufreq_clk_t {
 	struct clk *clk_main_parent;	 /* substitution clock for mfg transient mux setting */
 	struct clk *clk_sub_parent;	 /* substitution clock for mfg transient parent setting */
 };
+
+struct mt_gpufreq_pmic_t {
+	struct regulator *reg_vgpu;		/* vgpu regulator */
+	struct regulator *reg_vsram;	/* vgpu sram regulator */
+};
+
 /*****************
  * extern function
  ******************/
@@ -104,6 +129,8 @@ extern void mt_gpufreq_update_volt_registerCB(gpufreq_ptpod_update_notify pCB);
 typedef void (*sampler_func)(unsigned int);
 extern void mt_gpufreq_setfreq_registerCB(sampler_func pCB);
 extern void mt_gpufreq_setvolt_registerCB(sampler_func pCB);
+
+extern void switch_mfg_clk(int src);
 
 #ifdef MTK_GPU_SPM
 void mtk_gpu_spm_fix_by_idx(unsigned int idx);
