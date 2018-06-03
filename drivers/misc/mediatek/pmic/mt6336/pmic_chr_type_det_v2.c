@@ -38,6 +38,7 @@
 #include <linux/time.h>
 #include <linux/uaccess.h>
 
+#include <mt-plat/mtk_battery.h>
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
@@ -592,6 +593,7 @@ void do_charger_detect(void)
 		mt_usb_disconnect();
 
 	mtk_charger_int_handler();
+	fg_charger_in_handler();
 
 
 	if (g_mt_charger) {
@@ -662,6 +664,7 @@ int typec_chrdet_int_handler(int enable)
 	}
 
 	mtk_charger_int_handler();
+	fg_charger_in_handler();
 
 	if (g_mt_charger) {
 		power_supply_changed(g_mt_charger->charger_psy);
