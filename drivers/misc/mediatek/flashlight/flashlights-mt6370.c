@@ -430,7 +430,8 @@ static int mt6370_operate(int channel, int enable)
 			mt6370_timer_cancel(MT6370_CHANNEL_CH1);
 			mt6370_timer_cancel(MT6370_CHANNEL_CH2);
 		} else {
-			if (mt6370_timeout_ms[MT6370_CHANNEL_CH1]) {
+			if (mt6370_timeout_ms[MT6370_CHANNEL_CH1] &&
+				mt6370_en_ch1 != MT6370_DISABLE) {
 				s = mt6370_timeout_ms[MT6370_CHANNEL_CH1] /
 					1000;
 				ns = mt6370_timeout_ms[MT6370_CHANNEL_CH1] %
@@ -438,7 +439,8 @@ static int mt6370_operate(int channel, int enable)
 				ktime = ktime_set(s, ns);
 				mt6370_timer_start(MT6370_CHANNEL_CH1, ktime);
 			}
-			if (mt6370_timeout_ms[MT6370_CHANNEL_CH2]) {
+			if (mt6370_timeout_ms[MT6370_CHANNEL_CH2] &&
+				mt6370_en_ch2 != MT6370_DISABLE) {
 				s = mt6370_timeout_ms[MT6370_CHANNEL_CH2] /
 					1000;
 				ns = mt6370_timeout_ms[MT6370_CHANNEL_CH2] %
