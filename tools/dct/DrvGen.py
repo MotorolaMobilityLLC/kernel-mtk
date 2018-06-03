@@ -163,10 +163,12 @@ if __name__ == '__main__':
         chipObj = MT6739(dws_path, gen_path)
     elif cmp(chipId, 'MT8695') == 0:
         chipObj = MT8695(dws_path, gen_path)
-    elif cmp(chipId, 'MT6771') == 0:
+    elif cmp(chipId, 'MT6771') == 0 or \
+         cmp(chipId, 'MT6775') == 0 or \
+         cmp(chipId, 'MT6765') == 0:
         chipObj = MT6771(dws_path, gen_path)
-    elif cmp(chipId, 'MT6775') == 0 or cmp(chipId, 'MT6765') == 0:
-        chipObj = MT6775(dws_path, gen_path)
+    #elif cmp(chipId, 'MT6775') == 0 or cmp(chipId, 'MT6765') == 0:
+        #chipObj = MT6775(dws_path, gen_path)
     else:
         chipObj = ChipObj(dws_path, gen_path)
 
