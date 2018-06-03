@@ -125,6 +125,7 @@ unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
 #ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
 /* shorten the schedule migration cost and let the idle balance more aggregative */
 const_debug unsigned int sysctl_sched_migration_cost = 33000UL;
+const_debug unsigned int sched_cache_hot_migration_cost = 500000UL;
 #else
 const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
 #endif
@@ -6746,9 +6747,18 @@ int task_hot(struct task_struct *p, struct lb_env *env)
 	if (sysctl_sched_migration_cost == 0)
 		return 0;
 
-	delta = rq_clock_task(env->src_rq) - p->se.exec_start;
+	/* If sched_clock_cpu and rq_clock_task are different, change rq_clock_task to sched_clock_cpu. */
+	delta = sched_clock_cpu(cpu_of(env->src_rq)) - rq_clock_task(env->src_rq);
+	if (delta > 0)
+		delta = sched_clock_cpu(cpu_of(env->src_rq)) - p->se.exec_start;
+	else
+		delta = rq_clock_task(env->src_rq) - p->se.exec_start;
 
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+	return delta < (s64)sched_cache_hot_migration_cost;
+#else
 	return delta < (s64)sysctl_sched_migration_cost;
+#endif
 }
 
 #ifdef CONFIG_NUMA_BALANCING
