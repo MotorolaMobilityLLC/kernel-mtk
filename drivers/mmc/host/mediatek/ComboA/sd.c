@@ -1637,8 +1637,8 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 				cmd->opcode, host->cmd13_timeout_cont);
 		}
 #endif
-		if (((mmc_resp_type(cmd) == MMC_RSP_R1B) || (cmd->opcode == 13))
-			&& (host->hw->host_function != MSDC_SDIO)) {
+		if ((mmc_resp_type(cmd) == MMC_RSP_R1B) ||
+	((cmd->opcode == 13) && (mmc_cmd_type(cmd) != MMC_CMD_ADTC))) {
 			pr_notice("[%s]: msdc%d XXX CMD<%d> ARG<0x%.8X> is R1B, TMO not reset hw\n",
 				__func__, host->id, cmd->opcode, cmd->arg);
 		} else {
