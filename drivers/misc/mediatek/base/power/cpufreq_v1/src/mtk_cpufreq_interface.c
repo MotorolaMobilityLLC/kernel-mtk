@@ -387,11 +387,10 @@ static ssize_t cpufreq_turbo_mode_proc_write(struct file *file, const char __use
 	return count;
 }
 
-int sched_assist_is_disable;
 /* cpufreq_sched_disable */
 static int cpufreq_sched_disable_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "cpufreq_sched_disable = %d\n", sched_assist_is_disable);
+	seq_printf(m, "cpufreq_sched_disable = %d\n", cpuhvfs_get_sched_dvfs_disable());
 
 	return 0;
 }
@@ -408,7 +407,6 @@ static ssize_t cpufreq_sched_disable_proc_write(struct file *file, const char __
 	if (rc < 0)
 		cpufreq_err("echo 0/1 > /proc/cpufreq/cpufreq_sched_disable\n");
 	else {
-		sched_assist_is_disable = sched_disable;
 #ifdef CONFIG_HYBRID_CPU_DVFS
 		cpuhvfs_set_sched_dvfs_disable(sched_disable);
 #endif
