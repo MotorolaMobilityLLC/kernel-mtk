@@ -416,7 +416,7 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 
 #ifdef CCCI_SKB_TRACE
 	netif_rx_profile[3] = sched_clock() - netif_time;
-	ccmni_ops.dump_rx_status(port->md_id, ccci_h->channel, netif_rx_profile);
+	ccmni_ops.dump_rx_status(port->md_id, netif_rx_profile);
 #endif
 #ifdef PORT_NET_TRACE
 	rx_cb_time = sched_clock() - rx_cb_time;
