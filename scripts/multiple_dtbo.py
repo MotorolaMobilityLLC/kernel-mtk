@@ -38,19 +38,18 @@ def parse_dtb(input):
 	return dtb_list
 
 def write_header(output_file, input_file, dtb_list):
-	head[0] = struct.pack('I',0x58881688) #Magic number
+	head[0] = struct.pack('I',0xdeaddead) #Magic number
 	head[1] = struct.pack('I', os.path.getsize(input_file))#dtbo size without header
-	head[2] = struct.pack('I',0x6f627464)  #Image Name: "dtbo"
-	for i in range (3, 10, 1): #clear the rest of name array
-		head[i] = struct.pack('I',0x00000000);
-	head[10] = struct.pack('I', 0xffffffff) #Reserved
-	head[14] = struct.pack('I', 512) #Header Size
-	head[15] = struct.pack('I', 1) #Header version
-	head[16] = struct.pack('I', len(dtb_list)) #number of dtbo
+	head[2] = struct.pack('I', 512) #Header Size
+	head[3] = struct.pack('I', 2) #Header version
+	head[4] = struct.pack('I', len(dtb_list)) #number of dtbo
+	head[5] = struct.pack('I', 0xffffffff) #Reserved
+	head[6] = struct.pack('I', 0xffffffff) #Reserved
+	head[7] = struct.pack('I', 0xffffffff) #Reserved
 
 	i = 0
 	for offset in dtb_list:
-		head[17 + i] = struct.pack('I', offset)
+		head[8 + i] = struct.pack('I', offset)
 		i = i + 1
 
 	with open(output_file, 'w') as fo:
