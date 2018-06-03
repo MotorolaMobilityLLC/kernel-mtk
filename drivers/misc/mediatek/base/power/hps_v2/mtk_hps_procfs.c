@@ -33,18 +33,12 @@ static ssize_t hps_proc_uint_write(struct file *file, const char __user *buffer,
 				   size_t count, loff_t *pos,
 				   func_void before_write, func_void after_write)
 {
-	int len = 0;
-	char desc[32];
 	unsigned int var;
 	unsigned int *pv;
 
 	pv = (unsigned int *)((struct seq_file *)file->private_data)->private;
-	len = min(count, sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
-		return 0;
-	desc[len] = '\0';
 
-	if (!kstrtouint(desc, 0, &var)) {
+	if (!kstrtouint_from_user(buffer, count, 0, &var)) {
 		if (before_write)
 			before_write();
 
