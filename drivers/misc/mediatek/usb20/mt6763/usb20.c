@@ -404,11 +404,14 @@ void trigger_disconnect_check_work(void)
 }
 
 #define CONN_WORK_DELAY 50
+#define USB_PROPERTY_GAP_MS 3000
 static struct delayed_work connection_work;
 void do_connection_work(struct work_struct *data)
 {
 	unsigned long flags = 0;
 	bool usb_in = false;
+	/* 0 to enable, 1 to disable, disable currently */
+	static int exceed_gap = 1;
 
 	if (!mtk_musb->is_ready) {
 		/* re issue work */
@@ -418,6 +421,26 @@ void do_connection_work(struct work_struct *data)
 				mtk_musb->power);
 		queue_delayed_work(mtk_musb->st_wq, &connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
 		return;
+	} else if (!exceed_gap) {
+		s64 diff_time;
+		ktime_t ktime_now;
+
+		ktime_now = ktime_get();
+		diff_time = ktime_to_ms(ktime_sub(ktime_now, ktime_ready));
+
+		/* only normal mode could suffer rapid config switch at boot time */
+		if (get_boot_mode() == NORMAL_BOOT && diff_time < USB_PROPERTY_GAP_MS) {
+			/* re issue work */
+			DBG_LIMIT(3, "diff<%lld>, retrigger after %d ms, is_host<%d>, power<%d>",
+					diff_time,
+					CONN_WORK_DELAY,
+					mtk_musb->is_host,
+					mtk_musb->power);
+			queue_delayed_work(mtk_musb->st_wq, &connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
+			return;
+		}
+		DBG(0, "exceed_gap to 1, diff_time<%lld>\n", diff_time);
+		exceed_gap = 1;
 	}
 
 	DBG(0, "is_host<%d>, power<%d>\n",

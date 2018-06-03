@@ -2105,6 +2105,7 @@ static void do_connect_rescue_work(struct work_struct *work)
 	mt_usb_connect();
 }
 
+ktime_t ktime_ready;
 static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 {
 	struct musb *musb = gadget_to_musb(gadget);
@@ -2129,6 +2130,7 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 		int delay_time;
 		static struct delayed_work connect_rescue_work;
 
+		ktime_ready = ktime_get();
 		musb->is_ready = true;
 		set_usb_rdy();
 
