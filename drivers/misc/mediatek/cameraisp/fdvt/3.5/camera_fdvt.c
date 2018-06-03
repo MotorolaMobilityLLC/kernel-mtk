@@ -549,15 +549,17 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 
 	for (i = 0; i < pREGIO->u4Count; i++) {
 		if ((FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) >= FDVT_ADDR &&
-			(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) <= (FDVT_ADDR + FDVT_MAX_OFFSET)) {
+			(pFDVTWriteBuffer.u4Addr[i]) <= FDVT_MAX_OFFSET) {
 			/* LOG_DBG("Write: FDVT[0x%03lx](0x%08lx) = 0x%08lx\n", */
 			/* (unsigned long)pFDVTWriteBuffer.u4Addr[i], */
 			/* (unsigned long)(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]), */
 			/* (unsigned long)pFDVTWriteBuffer.u4Data[i]); */
 			FDVT_WR32(pFDVTWriteBuffer.u4Data[i], FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]);
 		} else {
-			/* LOG_DBG("Error: Writing Memory(0x%8x) Excess FDVT Range!  FD Offset: 0x%x\n",*/
-			/*FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i], pFDVTWriteBuffer.u4Addr[i]);*/
+			LOG_ERR("Error: Writing Memory(0x%lx) Excess FDVT Range!  FD Offset: 0x%lx, FD Base: 0x%lx\n",
+			(unsigned long)(FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]),
+			(unsigned long)pFDVTReadBuffer.u4Addr[i],
+			(unsigned long)FDVT_ADDR);
 		}
 	}
 
@@ -593,13 +595,15 @@ static int FDVT_ReadRegHW(FDVTRegIO *a_pstCfg)
 
 	for (i = 0; i < a_pstCfg->u4Count; i++) {
 		if ((FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]) >= FDVT_ADDR &&
-			(FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]) <= (FDVT_ADDR + FDVT_MAX_OFFSET)) {
+			(pFDVTReadBuffer.u4Addr[i]) <= FDVT_MAX_OFFSET) {
 			pFDVTReadBuffer.u4Data[i] = ioread32((void *)(FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]));
 			/*LOG_DBG("Read  addr/val: 0x%08x/0x%08x\n", (u32) (FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]),*/
 			/*(u32) pFDVTReadBuffer.u4Data[i]);*/
 		} else {
-			/*LOG_DBG("Error: Reading Memory(0x%8x) Excess FDVT Range!  FD Offset: 0x%x\n",*/
-			/*FDVT_ADDR + pFDVTReadBuffer.u4Addr[i], pFDVTReadBuffer.u4Addr[i]);*/
+			LOG_ERR("Error: Reading Memory(0x%lx) Excess FDVT Range!  FD Offset: 0x%lx, FD Base: 0x%lx\n",
+			(unsigned long)(FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]),
+			(unsigned long)pFDVTReadBuffer.u4Addr[i],
+			(unsigned long)FDVT_ADDR);
 			ret = -EFAULT;
 			goto mt_FDVT_read_reg_exit;
 		}
