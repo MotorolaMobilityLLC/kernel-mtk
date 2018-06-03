@@ -24,6 +24,8 @@
 #include <linux/fs.h>
 #include <linux/file.h>
 #include <linux/sched.h>
+#include <linux/kthread.h>
+
 #include "m4u.h"
 #include "ddp_m4u.h"
 #include "disp_drv_log.h"
@@ -69,6 +71,12 @@ int lcm_mode_status;
 int layer_layout_allow_non_continuous;
 /* Boundary of enter screen idle */
 unsigned idle_check_interval = 50;
+
+static struct task_struct *debugger_thread;
+static unsigned int debugger_buffer_size = 1920;
+static unsigned int debugger_sleep_ms;
+static unsigned int debugger_running;
+static DECLARE_WAIT_QUEUE_HEAD(debugger_running_wq);
 
 struct BMP_FILE_HEADER {
 	UINT16 bfType;
@@ -1432,6 +1440,29 @@ static const struct file_operations partial_fops = {
 	.read = partial_read,
 };
 
+static int _debugger_worker_thread(void *data)
+{
+	char *pBuffer = NULL;
+	unsigned int buffer_size = 0;
+
+	while (1) {
+		wait_event_interruptible(debugger_running_wq, debugger_running);
+
+		if (buffer_size != debugger_buffer_size) {
+			if (pBuffer != NULL)
+				kfree(pBuffer);
+			buffer_size = debugger_buffer_size;
+			pBuffer = kmalloc(buffer_size, GFP_KERNEL);
+		}
+		memset(pBuffer, 0, buffer_size);
+		/*void* buffer = const_cast<void*>(pBuffer);*/
+		ASSERT(pBuffer != NULL);
+		if (debugger_sleep_ms != 0)
+			msleep(debugger_sleep_ms);
+	}
+	return 0;
+}
+
 void DBG_Init(void)
 {
 	struct dentry *d_folder;
@@ -1443,6 +1474,11 @@ void DBG_Init(void)
 	if (d_folder) {
 		d_file = debugfs_create_file("kickdump", S_IFREG | S_IRUGO, d_folder, NULL, &kickidle_fops);
 		d_file = debugfs_create_file("partial", S_IFREG | S_IRUGO, d_folder, NULL, &partial_fops);
+	}
+
+	if (debugger_thread == NULL) {
+		debugger_thread = kthread_create(_debugger_worker_thread, NULL, "disp_dbg");
+		wake_up_process(debugger_thread);
 	}
 }
 

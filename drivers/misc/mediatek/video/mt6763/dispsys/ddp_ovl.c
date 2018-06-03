@@ -170,6 +170,9 @@ int ovl_start(enum DISP_MODULE_ENUM module, void *handle)
 			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 1);
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_OUTPUT_CLAMP,
 			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 1);
+	/* for hw compatible purpose */
+	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_COMPATIBLE,
+			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 1);
 	return 0;
 }
 

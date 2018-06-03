@@ -14,9 +14,6 @@
 
 #define LOG_TAG "IRQ"
 
-#include "ddp_log.h"
-#include "ddp_debug.h"
-
 #include <linux/interrupt.h>
 #include <linux/wait.h>
 #include <linux/spinlock.h>
@@ -24,6 +21,9 @@
 #include <linux/timer.h>
 
 /* #include <mach/mt_irq.h> */
+#include "disp_drv_platform.h"	/* must be at the top-most */
+#include "ddp_log.h"
+#include "ddp_debug.h"
 #include "ddp_reg.h"
 #include "ddp_irq.h"
 #include "ddp_aal.h"
@@ -32,12 +32,18 @@
 #include "ddp_dsi.h"
 #include "disp_drv_log.h"
 #include "primary_display.h"
+#include "smi_debug.h"
+#include "disp_lowpower.h"
+#include "layering_rule.h"
+#ifdef MTK_FB_MMDVFS_SUPPORT
+#include "mmdvfs_mgr.h"
+#endif
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
 static wait_queue_head_t disp_irq_log_wq;
 static int disp_irq_log_module;
-
+static int disp_irq_rdma_underflow;
 static int irq_init;
 
 static unsigned int cnt_rdma_underflow[2];
@@ -375,16 +381,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 					    DISP_RDMA_INDEX_OFFSET * index),
 			       DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT +
 					    DISP_RDMA_INDEX_OFFSET * index));
-			cnt_rdma_underflow[index]++;
-			DDPERR("IRQ: RDMA%d underflow! cnt=%d\n", index,
-			       cnt_rdma_underflow[index]);
-			if ((cnt_rdma_underflow[index] % 60) == 0)
-				primary_display_diagnose();
-
-			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
-				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]);
 			disp_irq_log_module |= 1 << module;
 			rdma_underflow_irq_cnt[index]++;
+			cnt_rdma_underflow[index]++;
+			disp_irq_rdma_underflow = 1;
 		}
 		if (reg_val & (1 << 5)) {
 			DDPIRQ("IRQ: RDMA%d target line!\n", index);
@@ -468,6 +468,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 static int disp_irq_log_kthread_func(void *data)
 {
+	static unsigned long long last_timer;
+	static unsigned int considerable_cnt;
 	unsigned int i = 0;
 
 	while (1) {
@@ -480,6 +482,34 @@ static int disp_irq_log_kthread_func(void *data)
 
 		}
 		disp_irq_log_module = 0;
+		if (disp_irq_rdma_underflow) {
+			/* Request highest dvfs */
+			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_UHPM);
+
+			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE)) {
+				/* Just count the underflow which happens more frequently */
+				if (last_timer != 0) {
+					unsigned long long freq = 1000 * 1000000;
+
+					do_div(freq, sched_clock() - last_timer);
+					if (freq > 0)
+						considerable_cnt++;
+					else
+						considerable_cnt = 0;
+				}
+				/* Should trigger AEE as more than 5 times continuous underflow happens */
+				/* TODO: need more precise data from test */
+				if (considerable_cnt >= 5) {
+					primary_display_diagnose();
+					smi_dumpDebugMsg();
+					DDPAEE("RDMA0 underflow!cnt=%d\n", cnt_rdma_underflow[0]);
+					considerable_cnt = 0;
+				}
+				last_timer = sched_clock();
+			}
+			disp_irq_rdma_underflow = 0;
+		}
+
 	}
 	return 0;
 }
