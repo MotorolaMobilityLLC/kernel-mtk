@@ -199,11 +199,13 @@ static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 unsigned int round_corner_offset_enable;
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 unsigned int lcm_corner_en;
+unsigned int full_content;
 unsigned int top_mva, bottom_mva;
 unsigned int corner_pattern_width, corner_pattern_height;
+unsigned int corner_pattern_height_bot;
 static int get_round_corner_param(unsigned int *tp_mva, unsigned int *bt_mva,
 				phys_addr_t *tp_pa, phys_addr_t *bt_pa,
-				unsigned int *pitch, unsigned int *height);
+				unsigned int *pitch, unsigned int *height, unsigned int *height_bot);
 #endif
 /* hold the wakelock to make kernel awake when primary display is on*/
 struct wake_lock pri_wk_lock;
@@ -3756,7 +3758,7 @@ static int _decouple_update_rdma_config_nolock(void)
 }
 
 void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, unsigned int h,
-	unsigned int pitch, unsigned long mva_top, unsigned long mva_bot,
+	unsigned int h_bot, unsigned int pitch, unsigned long mva_top, unsigned long mva_bot,
 	enum DISP_MODULE_ENUM module, unsigned int layer, unsigned int phy_layer, unsigned int enable);
 
 static int _decouple_update_ovl1_config_nolock(void)
@@ -3842,11 +3844,15 @@ static int _decouple_update_ovl1_config_nolock(void)
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	if (lcm_corner_en) {
 		if (disp_helper_get_option(DISP_OPT_ROUND_CORNER))
-			add_round_corner_layers(pconfig, primary_display_get_width(), corner_pattern_height,
-			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL1_2L, TOTAL_OVL_LAYER_NUM, 1, 1);
+			add_round_corner_layers(pconfig, primary_display_get_width(),
+			corner_pattern_height, corner_pattern_height_bot,
+			corner_pattern_width, top_mva, bottom_mva,
+			DISP_MODULE_OVL1_2L, TOTAL_OVL_LAYER_NUM, 1, 1);
 		else
-			add_round_corner_layers(pconfig, primary_display_get_width(), corner_pattern_height,
-			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL1_2L, TOTAL_OVL_LAYER_NUM, 1, 0);
+			add_round_corner_layers(pconfig, primary_display_get_width(),
+			corner_pattern_height, corner_pattern_height_bot,
+			corner_pattern_width, top_mva, bottom_mva,
+			DISP_MODULE_OVL1_2L, TOTAL_OVL_LAYER_NUM, 1, 0);
 	}
 #endif
 
@@ -4428,9 +4434,11 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	lcm_corner_en = primary_display_get_lcm_corner_en();
+	full_content = primary_display_get_corner_full_content();
 	if (lcm_corner_en)
 		get_round_corner_param(&top_mva, &bottom_mva, NULL, NULL,
-			&corner_pattern_width, &corner_pattern_height);
+		&corner_pattern_width, &corner_pattern_height,
+		&corner_pattern_height_bot);
 #endif
 
 	primary_display_set_max_layer(PRIMARY_SESSION_INPUT_LAYER_COUNT);
@@ -6189,11 +6197,12 @@ static int evaluate_bandwidth_save(struct disp_ddp_path_config *cfg, int *ori, i
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 static int get_round_corner_param(unsigned int *tp_mva, unsigned int *bt_mva,
 				phys_addr_t *tp_pa, phys_addr_t *bt_pa,
-				unsigned int *pitch, unsigned int *height)
+				unsigned int *pitch, unsigned int *height, unsigned int *height_bot)
 {
 	unsigned char ret = -1;
 	unsigned char argb4444_bpp = 2;
 	unsigned int corner_size = 0;
+	unsigned int bt_size = 0;
 	unsigned int dal_buf_size = DAL_GetLayerSize();
 	unsigned int frame_buf_size = DISP_GetFBRamSize();
 	unsigned int vram_buf_size = mtkfb_get_fb_size();
@@ -6202,11 +6211,19 @@ static int get_round_corner_param(unsigned int *tp_mva, unsigned int *bt_mva,
 
 	if (vram_buf_size > dal_buf_size + frame_buf_size) {
 		*height = primary_display_get_corner_pattern_height();
+		*height_bot = primary_display_get_corner_pattern_height_bot();
+		*height = primary_display_get_corner_pattern_height();
 		*pitch = primary_display_get_width();
 		corner_size = (*pitch) * (*height) * argb4444_bpp;
+		bt_size = (*pitch) * (*height_bot) * argb4444_bpp;
 
-		tp = frame_buf_mva + vram_buf_size - 2 * corner_size;
-		bt = tp + corner_size;
+		if (full_content) {
+			tp = frame_buf_mva + vram_buf_size - corner_size;
+			bt = frame_buf_mva + vram_buf_size - corner_size - bt_size;
+		} else {
+			tp = frame_buf_mva + vram_buf_size - 2 * corner_size;
+			bt = tp + corner_size;
+		}
 		if (tp_mva)
 			*tp_mva = tp;
 		if (bt_mva)
@@ -6224,7 +6241,7 @@ static int get_round_corner_param(unsigned int *tp_mva, unsigned int *bt_mva,
 }
 
 void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, unsigned int h,
-	unsigned int pitch, unsigned long mva_top, unsigned long mva_bot,
+	unsigned int h_bot, unsigned int pitch, unsigned long mva_top, unsigned long mva_bot,
 	enum DISP_MODULE_ENUM module, unsigned int layer, unsigned int phy_layer, unsigned int enable)
 {
 	struct OVL_CONFIG_STRUCT *input_phy, *input_ext;
@@ -6296,6 +6313,12 @@ void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, u
 	input_ext->ext_layer = 2;
 	input_ext->ext_sel_layer = 3;
 	input_ext->phy_layer = phy_layer;
+
+	if (full_content) {
+		input_ext->src_h = h_bot;
+		input_ext->dst_y = primary_display_get_height() - h_bot - offset;
+		input_ext->dst_h = h_bot;
+	}
 }
 
 #define __ALPHA_BLENDING(val, n, alpha) \
@@ -6383,7 +6406,7 @@ static struct rc_buf *get_rc_buf(void)
 	if (rc.lt)
 		return &rc;
 
-	ret = get_round_corner_param(NULL, NULL, &lt_pa, &lb_pa, &rc.pitch, &rc.h);
+	ret = get_round_corner_param(NULL, NULL, &lt_pa, &lb_pa, &rc.pitch, &rc.h, &rc.h);
 	if (ret)
 		return NULL;
 
@@ -6800,11 +6823,21 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	if (lcm_corner_en) {
 		if (disp_helper_get_option(DISP_OPT_ROUND_CORNER) &&
 			!primary_display_is_OVL_DCM_mode() && !is_DAL_Enabled())
-			add_round_corner_layers(data_config, primary_display_get_width(), corner_pattern_height,
-			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL0, TOTAL_OVL_LAYER_NUM, 3, 1);
+			add_round_corner_layers(data_config, primary_display_get_width(),
+									corner_pattern_height,
+									corner_pattern_height_bot,
+									corner_pattern_width,
+									top_mva, bottom_mva,
+									DISP_MODULE_OVL0, TOTAL_OVL_LAYER_NUM,
+									3, 1);
 		else
-			add_round_corner_layers(data_config, primary_display_get_width(), corner_pattern_height,
-			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL0, TOTAL_OVL_LAYER_NUM, 3, 0);
+			add_round_corner_layers(data_config, primary_display_get_width(),
+									corner_pattern_height,
+									corner_pattern_height_bot,
+									corner_pattern_width,
+									top_mva, bottom_mva,
+									DISP_MODULE_OVL0, TOTAL_OVL_LAYER_NUM,
+									3, 0);
 	}
 #endif
 
@@ -7535,6 +7568,20 @@ int primary_display_get_bpp(void)
 }
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+int primary_display_get_corner_full_content(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->full_content;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
 int primary_display_get_lcm_corner_en(void)
 {
 	if (pgc->plcm == NULL) {
@@ -7572,6 +7619,20 @@ int primary_display_get_corner_pattern_height(void)
 
 	if (pgc->plcm->params)
 		return pgc->plcm->params->corner_pattern_height;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+int primary_display_get_corner_pattern_height_bot(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->corner_pattern_height_bot;
 
 	DISPERR("lcm_params is null!\n");
 	return 0;
