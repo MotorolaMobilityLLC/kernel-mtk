@@ -69,11 +69,13 @@
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define QUERY_REQ_TIMEOUT 1000  /* unit: ms, align as BootROM */
 #else
-#define QUERY_REQ_TIMEOUT 600   /* unit: ms, depend on vendor's requirement */
+/* Max Query Req cmd timeout = 1.5s * 32QueueDepth = 48s */
+#define QUERY_REQ_TIMEOUT 48000   /* unit: ms, depend on vendor's requirement */
 #endif
 
 /* Task management command timeout */
-#define TM_CMD_TIMEOUT	100 /* msecs */
+/* Max TM cmd timeout = 1.3s * 8QueueDepth = 10.4s */
+#define TM_CMD_TIMEOUT	10400 /* msecs */
 
 /* maximum number of link-startup retries */
 #define DME_LINKSTARTUP_RETRIES 3
