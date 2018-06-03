@@ -633,19 +633,14 @@ int mtk8250_request_to_sleep(void)
 	for (line = 0; line < CONFIG_SERIAL_8250_NR_UARTS; line++) {
 		up = serial8250_get_port(line);
 
-		if (up->port.dev == NULL) {
+		if (up->port.dev == NULL)
 			continue;
-		} else if (dev_get_drvdata(up->port.dev) == NULL) {
-			pr_info("[UART%d] no need sleep\n", line);
+		else if (dev_get_drvdata(up->port.dev) == NULL)
 			continue;
-		}
 
 		data = dev_get_drvdata(up->port.dev);
-		if (data->clk_count <= 0U) {
-			pr_info("[UART%d] clock is off[%d]\n",
-				up->port.line, data->clk_count);
+		if (data->clk_count <= 0U)
 			continue;
-		}
 
 		/* request UART to sleep */
 		sleep_req = serial_in(up, MTK_UART_SLEEP_REQ);
@@ -679,19 +674,14 @@ int mtk8250_request_to_wakeup(void)
 	for (line = 0; line < CONFIG_SERIAL_8250_NR_UARTS; line++) {
 		up = serial8250_get_port(line);
 
-		if (up->port.dev == NULL) {
+		if (up->port.dev == NULL)
 			continue;
-		} else if (dev_get_drvdata(up->port.dev) == NULL) {
-			pr_info("[UART%d] no need wakeup\n", line);
+		else if (dev_get_drvdata(up->port.dev) == NULL)
 			continue;
-		}
 
 		data = dev_get_drvdata(up->port.dev);
-		if (data->clk_count <= 0U) {
-			pr_info("[UART%d] clock is already wakeup[%d]\n",
-				up->port.line, data->clk_count);
+		if (data->clk_count <= 0U)
 			continue;
-		}
 
 		/* wakeup uart */
 		sleep_req = serial_in(up, MTK_UART_SLEEP_REQ);
