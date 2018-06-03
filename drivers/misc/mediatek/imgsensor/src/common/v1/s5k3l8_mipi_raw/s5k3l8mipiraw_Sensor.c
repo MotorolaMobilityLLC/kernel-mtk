@@ -46,7 +46,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 2104,
 		.grabwindow_height = 1560,
 		.mipi_data_lp2hs_settle_dc = 21,
-		.mipi_pixel_rate = 449000000,
+		.mipi_pixel_rate = 435200000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -60,7 +60,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 449000000,
+		.mipi_pixel_rate = 435200000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -74,7 +74,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 21,
-		.mipi_pixel_rate = 449000000,
+		.mipi_pixel_rate = 435200000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -88,7 +88,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 449000000,
+		.mipi_pixel_rate = 435200000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 150,
 	},
@@ -101,7 +101,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 21,
-		.mipi_pixel_rate = 449000000,
+		.mipi_pixel_rate = 435200000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -1093,7 +1093,7 @@ kal_uint16 addr_data_pair_preview_s5k3l8[] = {
 	0x0302, 0x0001,
 	0x0300, 0x0005,
 	0x030C, 0x0006,
-	0x030E, 0x0119,
+	0x030E, 0x0110,
 	0x030A, 0x0001,
 	0x0308, 0x0008,
 #ifdef NONCONTINUEMODE
@@ -1146,7 +1146,7 @@ kal_uint16 addr_data_pair_capture_s5k3l8_30fps[] = {
 	0x0302, 0x0001,
 	0x0300, 0x0005,
 	0x030C, 0x0006,
-	0x030E, 0x0119,
+	0x030E, 0x0110,
 	0x030A, 0x0001,
 	0x0308, 0x0008,
 #ifdef NONCONTINUEMODE
@@ -1190,7 +1190,7 @@ kal_uint16 addr_data_pair_capture_s5k3l8_24fps[] = {
 	0x0302, 0x0001,
 	0x0300, 0x0005,
 	0x030C, 0x0006,
-	0x030E, 0x0119,
+	0x030E, 0x0110,
 	0x030A, 0x0001,
 	0x0308, 0x0008,
 #ifdef NONCONTINUEMODE
@@ -1351,7 +1351,7 @@ kal_uint16 addr_data_pair_hs_video_s5k3l8[] = {
 	0x0302, 0x0001,
 	0x0300, 0x0005,
 	0x030C, 0x0006,
-	0x030E, 0x0119,
+	0x030E, 0x0110,
 	0x030A, 0x0001,
 	0x0308, 0x0008,
 #ifdef NONCONTINUEMODE
@@ -1402,7 +1402,7 @@ kal_uint16 addr_data_pair_slim_video_s5k3l8[] = {
 	0x0302, 0x0001,
 	0x0300, 0x0005,
 	0x030C, 0x0006,
-	0x030E, 0x0119,
+	0x030E, 0x0110,
 	0x030A, 0x0001,
 	0x0308, 0x0008,
 #ifdef NONCONTINUEMODE
