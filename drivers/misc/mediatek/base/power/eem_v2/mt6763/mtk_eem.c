@@ -2237,6 +2237,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 			break;
 		}
 		#endif
+
 		#if 0
 		eem_debug("init02_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i, det->volt_tbl[i], det->ops->pmic_2_volt(det, det->volt_tbl[i]));
@@ -2304,7 +2305,7 @@ TODO: FIXME
 
 static inline void handle_mon_mode_isr(struct eem_det *det)
 {
-	unsigned int i;
+	unsigned int i, verr = 0;
 	#if defined(CONFIG_THERMAL) && !defined(EARLY_PORTING_THERMAL)
 	unsigned long long temp_long;
 	unsigned long long temp_cur = (unsigned long long)aee_rr_curr_ptp_temp();
@@ -2512,6 +2513,23 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 			break;
 		}
 		#endif
+
+		if ((i > 0) && (det->volt_tbl[i] > det->volt_tbl[i-1])) {
+			verr = 1;
+			aee_kernel_warning("mt_eem",
+				"@%s():%d; (%s) [%d] = [%x] > [%d] = [%x]\n",
+				__func__, __LINE__, ((char *)(det->name) + 8),
+				i, det->volt_tbl[i], i-1, det->volt_tbl[i-1]);
+
+			aee_kernel_warning("mt_eem",
+				"@%s():%d; (%s) V30_[0x%x], V74_[0x%x], VD30_[0x%x], VD74_[0x%x]\n",
+				__func__, __LINE__, ((char *)(det->name) + 8),
+				eem_read(EEM_VOP30), eem_read(EEM_VOP74),
+				eem_read(EEM_VDESIGN30), eem_read(EEM_VDESIGN74));
+
+			WARN_ON(det->volt_tbl[i] > det->volt_tbl[i-1]);
+		}
+
 		/*
 		*eem_debug("mon_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 		*	det->name, i, det->volt_tbl[i], det->ops->pmic_2_volt(det, det->volt_tbl[i]));
@@ -2523,6 +2541,8 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		*/
 	}
 	/* eem_isr_info("ISR : EEM_TEMPSPARE1 = 0x%08X\n", eem_read(EEM_TEMPSPARE1)); */
+	if (verr == 1)
+		memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl));
 
 	#if defined(__MTK_SLT_)
 		if ((cpu_in_mon == 1) && (det->ctrl_id <= EEM_CTRL_CCI))
