@@ -23,5 +23,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 	obj-$(CONFIG_MTK_SMART_BATTERY) += charger_class.o mtk_charger.o mtk_switch_charging.o mt6336_charger.o mtk_pe20_intf.o
+	obj-$(CONFIG_LOAD_SWITCH_RT9750) += rt9750.o
 endif
 

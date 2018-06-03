@@ -47,6 +47,9 @@ struct charger_ops {
 	int (*enable)(struct charger_device *);
 	int (*disable)(struct charger_device *);
 
+	/* enable/disable chip */
+	int (*enable_chip)(struct charger_device *, bool en);
+
 	/* get/set charging current*/
 	int (*get_charging_current)(struct charger_device *);
 	int (*set_charging_current)(struct charger_device *, int uA);
@@ -94,6 +97,10 @@ struct charger_ops {
 	int (*get_charging_status)(struct charger_device *);
 	int (*set_pe20_efficiency_table)(struct charger_device *);
 	int (*dump_registers)(struct charger_device *);
+
+	int (*get_ibus_adc)(struct charger_device *, u32 *ibus);
+	int (*get_tchg_adc)(struct charger_device *, int *tchg_min,
+		int *tchg_max);
 };
 
 static inline void *charger_dev_get_drvdata(const struct charger_device *charger_dev)

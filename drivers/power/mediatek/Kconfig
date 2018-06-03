@@ -3,6 +3,14 @@
 	help
 	  Check this to enable MediaTek charging configuration.
 
+config LOAD_SWITCH_RT9750
+	bool "Richtek Load Switch"
+	help
+	  RT9750 driver supports
+	  RT9750 is a load switch from Richtek.
+	  This driver supports
+	  load switch for direct charge.
+
 config MTK_SMART_BATTERY
 	tristate "MediaTek Smart Battery Driver"
 	default n
