@@ -27,7 +27,7 @@
 #elif defined(CONFIG_MACH_MT6757) && !defined(CONFIG_FPGA_EARLY_PORTING)
 #define CONFIG_HYBRID_CPU_DVFS
 #ifdef CONFIG_HYBRID_CPU_DVFS
-/*#define CPUHVFS_HW_GOVERNOR*/
+#define CPUHVFS_HW_GOVERNOR
 #endif
 /*#define __TRIAL_RUN__*/
 
