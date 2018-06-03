@@ -112,12 +112,6 @@ struct imgsensor_info_struct {
 	/* capture scenario relative information */
 	struct imgsensor_mode_struct cap;
 
-	/* capture for PIP 24fps relative information,
-	 * capture1 mode must use same framelength,
-	 * linelength with Capture mode for shutter calculate
-	 */
-	struct imgsensor_mode_struct cap1;
-
 	/* normal video  scenario relative information */
 	struct imgsensor_mode_struct normal_video;
 

@@ -477,7 +477,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
 
-	pr_info("set_gain %d\n", gain);
+	/*pr_info("set_gain %d\n", gain);*/
 	if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
 		pr_info("Error gain setting");
 		if (gain < BASEGAIN)
@@ -2514,7 +2514,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 	struct SET_PD_BLOCK_INFO_T *PDAFinfo;
 
-	pr_info("feature_id = %d\n", feature_id);
+	/*pr_info("feature_id = %d\n", feature_id);*/
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_PERIOD:
 	    *feature_return_para_16++ = imgsensor.line_length;
@@ -2676,6 +2676,47 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		}
 		break;
+	case SENSOR_FEATURE_GET_PIXEL_RATE:
+
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+			(imgsensor_info.cap.pclk /
+			(imgsensor_info.cap.linelength - 80))*
+			imgsensor_info.cap.grabwindow_width;
+
+			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+			(imgsensor_info.normal_video.pclk /
+			(imgsensor_info.normal_video.linelength - 80))*
+			imgsensor_info.normal_video.grabwindow_width;
+
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+			(imgsensor_info.hs_video.pclk /
+			(imgsensor_info.hs_video.linelength - 80))*
+			imgsensor_info.hs_video.grabwindow_width;
+
+			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+			(imgsensor_info.slim_video.pclk /
+			(imgsensor_info.slim_video.linelength - 80))*
+			imgsensor_info.slim_video.grabwindow_width;
+
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		default:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+			(imgsensor_info.pre.pclk /
+			(imgsensor_info.pre.linelength - 80))*
+			imgsensor_info.pre.grabwindow_width;
+			break;
+		}
+		break;
+
 	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
