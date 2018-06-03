@@ -24,7 +24,8 @@
 #else
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799) || \
+	defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 #include <ddp_clkmgr.h>
 #endif
 #endif
