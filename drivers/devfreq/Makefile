@@ -13,3 +13,12 @@ obj-$(CONFIG_ARM_TEGRA_DEVFREQ)		+= tegra-devfreq.o
 
 # DEVFREQ Event Drivers
 obj-$(CONFIG_PM_DEVFREQ_EVENT)		+= event/
+
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
+
+obj-y					+= helio-dvfsrc.o helio-dvfsrc-opp.o helio-dvfsrc-sysfs.o
+obj-$(CONFIG_MACH_MT6765)		+= helio-dvfsrc-mt6765.o helio-dvfsrc-opp-mt6765.o

@@ -42,3 +42,4 @@ obj-y += mtk_sodi3.o
 obj-y += mtk_spm_resource_req.o
 obj-y += mtk_sleep.o
 obj-y += mtk_sleep_init.o
+obj-y += mtk_vcore_dvfs.o
