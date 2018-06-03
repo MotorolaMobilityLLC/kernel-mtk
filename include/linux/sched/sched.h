@@ -133,4 +133,7 @@ static inline unsigned int hmp_cpu_is_slowest(int cpu) { return false; }
 
 extern void
 get_task_util(struct task_struct *p, unsigned long *util, unsigned long *boost);
+#ifdef CONFIG_MTK_SCHED_INTEROP
+extern bool is_rt_throttle(int cpu);
+#endif
 
