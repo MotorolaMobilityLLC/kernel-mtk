@@ -25,7 +25,6 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
-/*#include "kd_camera_hw.h"*/
 #include "eeprom.h"
 #include "eeprom_define.h"
 #include "GT24c32a.h"
@@ -42,7 +41,6 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
-#include "kd_camera_hw.h"
 #include "cam_cal.h"
 #include "cam_cal_define.h"
 #include <linux/delay.h>
