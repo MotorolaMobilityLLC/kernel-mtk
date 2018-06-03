@@ -67,4 +67,23 @@ struct lb_env {
 };
 
 extern bool sched_boost(void);
+
+#ifdef CONFIG_MTK_SCHED_TRACERS
+#define LB_POLICY_SHIFT 16
+#define LB_CPU_MASK ((1 << LB_POLICY_SHIFT) - 1)
+
+#define LB_FORK			(0x1 << LB_POLICY_SHIFT)
+#define LB_SMP			(0x2 << LB_POLICY_SHIFT)
+#define LB_HMP			(0x4 << LB_POLICY_SHIFT)
+#define LB_EAS			(0x8 << LB_POLICY_SHIFT)
+
+#else
+#define LB_FORK			(0)
+#define LB_SMP			(0)
+#define LB_HMP			(0)
+#define LB_EAS			(0)
+#endif
+
+
+
 #include "rt_enh.h"

@@ -322,29 +322,42 @@ TRACE_EVENT(sched_hmp_migrate,
 TRACE_EVENT(sched_select_task_rq,
 
 	TP_PROTO(struct task_struct *tsk,
-		int policy, int prev_cpu, int target_cpu),
+		int policy, int prev_cpu, int target_cpu,
+		int task_util, int boost, bool prefer),
 
-	TP_ARGS(tsk, policy, prev_cpu, target_cpu),
+	TP_ARGS(tsk, policy, prev_cpu, target_cpu, task_util, boost, prefer),
 
 	TP_STRUCT__entry(
 		__field(pid_t, pid)
 		__field(int, policy)
 		__field(int, prev_cpu)
 		__field(int, target_cpu)
+		__field(int, task_util)
+		__field(int, boost)
+		__field(long, task_mask)
+		__field(bool, prefer)
 		),
 
 	TP_fast_assign(
-		__entry->pid              = tsk->pid;
-		__entry->policy           = policy;
-		__entry->prev_cpu         = prev_cpu;
-		__entry->target_cpu       = target_cpu;
+		__entry->pid        = tsk->pid;
+		__entry->policy     = policy;
+		__entry->prev_cpu   = prev_cpu;
+		__entry->target_cpu = target_cpu;
+		__entry->task_util	= task_util;
+		__entry->boost		= boost;
+		__entry->task_mask	= tsk_cpus_allowed(tsk)->bits[0];
+		__entry->prefer		= prefer;
 		),
 
-	TP_printk("pid=%4d policy=0x%08x pre-cpu=%d target=%d",
+	TP_printk("pid=%4d policy=0x%08x pre-cpu=%d target=%d util=%d boost=%d mask=0x%lx prefer=%d",
 		__entry->pid,
 		__entry->policy,
 		__entry->prev_cpu,
-		__entry->target_cpu)
+		__entry->target_cpu,
+		__entry->task_util,
+		__entry->boost,
+		__entry->task_mask,
+		__entry->prefer)
 );
 #ifdef CONFIG_HMP_TRACER
 /*
@@ -1750,6 +1763,48 @@ TRACE_EVENT(sched_avg_heavy_task_load,
 	)
 )
 
+/*sched: add trace_sched*/
+TRACE_EVENT(sched_task_entity_avg,
+
+	TP_PROTO(unsigned int tag, struct task_struct *tsk,
+		struct sched_avg *avg),
+
+	TP_ARGS(tag, tsk, avg),
+
+	TP_STRUCT__entry(
+		__field(u32, tag)
+		__array(char, comm,     TASK_COMM_LEN)
+		__field(pid_t, tgid)
+		__field(pid_t, pid)
+		__field(u64, load_sum)
+		__field(u32, util_sum)
+		__field(u32, period_contrib)
+		__field(unsigned long, ratio)
+		__field(u32, usage_sum)
+		__field(unsigned long, load_avg)
+		__field(unsigned long, util_avg)
+	),
+
+	TP_fast_assign(
+		__entry->tag		= tag;
+		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+		__entry->tgid		= task_pid_nr(tsk->group_leader);
+		__entry->pid		= task_pid_nr(tsk);
+		__entry->load_sum	= avg->load_sum;
+		__entry->util_sum	= avg->util_sum;
+		__entry->period_contrib	= avg->period_contrib;
+		__entry->ratio		= 0;
+		__entry->usage_sum	= -1;
+		__entry->load_avg	= avg->load_avg;
+		__entry->util_avg	= avg->util_avg;
+	),
+
+	TP_printk("[%d]comm=%s tgid=%d pid=%d load_sum=%lld util_sum=%d period_contrib=%d ratio=%lu exe_time=%d load_avg=%lu util_avg=%lu",
+		__entry->tag, __entry->comm, __entry->tgid, __entry->pid,
+		__entry->load_sum, __entry->util_sum, __entry->period_contrib,
+		__entry->ratio, __entry->usage_sum, __entry->load_avg,
+		__entry->util_avg)
+);
 #endif /* _TRACE_SCHED_H */
 
 /* This part must be outside protection */
