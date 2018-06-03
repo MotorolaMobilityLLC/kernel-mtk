@@ -1528,7 +1528,7 @@ static unsigned int lcm_compare_id(void)
 	pr_debug("[LCM]%s,nt35695_id=0x%08x,version_id=0x%x\n",
 		__func__, id, version_id);
 
-	if (id == LCM_ID_NT35695 && version_id == 0x81)
+	if (id == LCM_ID_NT35695 && version_id == 0x80)
 		return 1;
 	else
 		return 0;
