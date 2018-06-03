@@ -15,6 +15,15 @@ config PINCTRL_MT6758
 	select PINCTRL_MTK_NO_UPSTREAM
 	select MTK_EINT_MULTI_TRIGGER_DESIGN
 
+#For SOC MT6765
+config PINCTRL_MT6765
+	bool "Mediatek MT6765 pin control"
+	default n
+	depends on (!ARCH_MEDIATEK) && MACH_MT6765
+	select PINCTRL_MTK
+	select PINCTRL_MTK_NO_UPSTREAM
+	select MTK_EINT_MULTI_TRIGGER_DESIGN
+
 config MTK_EINT_MULTI_TRIGGER_DESIGN
 	bool "Mediatek EINT multi-trigger design"
 	depends on PINCTRL_MTK
