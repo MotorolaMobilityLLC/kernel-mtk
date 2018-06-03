@@ -21,6 +21,7 @@
 #include <linux/of.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
+#include <linux/sched_energy.h>
 
 #include <asm/cputype.h>
 #include <asm/topology.h>
@@ -136,8 +137,6 @@ static void __init parse_dt_topology(void)
 				>> (SCHED_CAPACITY_SHIFT-1)) + 1;
 
 }
-
-static const struct sched_group_energy * const cpu_core_energy(int cpu);
 
 /*
  * Look for a customed capacity of a CPU in the cpu_capacity table during the
@@ -271,6 +270,7 @@ void store_cpu_topology(unsigned int cpuid)
  * normalization must be consistent. That is, one bogo-joule/watt must be the
  * same quantity for all data, but we don't care what it is.
  */
+#ifndef CONFIG_MTK_UNIFY_POWER
 static struct idle_state idle_states_cluster_a7[] = {
 	 { .power = 25 }, /* arch_cpu_idle() (active idle) = WFI */
 	 { .power = 25 }, /* WFI */
@@ -370,25 +370,27 @@ static struct sched_group_energy energy_core_a15 = {
 	  .nr_cap_states  = ARRAY_SIZE(cap_states_core_a15),
 	  .cap_states     = cap_states_core_a15,
 };
+#endif
 
 /* sd energy functions */
 inline
 const struct sched_group_energy * const cpu_cluster_energy(int cpu)
 {
+#ifndef CONFIG_MTK_UNIFY_POWER
+	return cpu_topology[cpu].socket_id ? &energy_cluster_a7 :
+			&energy_cluster_a15;
+#else
 	struct sched_group_energy *sge = sge_array[cpu][SD_LEVEL1];
-#ifdef CONFIG_MTK_UNIFY_POWER
-	int cluster_id = cpu_topology[cpu].cluster_id;
+	int cluster_id = cpu_topology[cpu].socket_id;
 	struct upower_tbl_info **addr_ptr_tbl_info;
 	struct upower_tbl_info *ptr_tbl_info;
 	struct upower_tbl *ptr_tbl;
-#endif
 
 	if (!sge) {
 		pr_warn("Invalid sched_group_energy for Cluster%d\n", cpu);
 		return NULL;
 	}
 
-#ifdef CONFIG_MTK_UNIFY_POWER
 	addr_ptr_tbl_info = upower_get_tbl();
 	ptr_tbl_info = *addr_ptr_tbl_info;
 
@@ -397,33 +399,34 @@ const struct sched_group_energy * const cpu_cluster_energy(int cpu)
 	sge->nr_cap_states = ptr_tbl->row_num;
 	sge->cap_states = ptr_tbl->row;
 	sge->lkg_idx = ptr_tbl->lkg_idx;
-#endif
 
 	return sge;
+#endif
 }
 
 inline
 const struct sched_group_energy * const cpu_core_energy(int cpu)
 {
+#ifndef CONFIG_MTK_UNIFY_POWER
+	return cpu_topology[cpu].socket_id ? &energy_core_a7 :
+			&energy_core_a15;
+#else
 	struct sched_group_energy *sge = sge_array[cpu][SD_LEVEL0];
-#ifdef CONFIG_MTK_UNIFY_POWER
 	struct upower_tbl *ptr_tbl;
-#endif
 
 	if (!sge) {
 		pr_warn("Invalid sched_group_energy for CPU%d\n", cpu);
 		return NULL;
 	}
 
-#ifdef CONFIG_MTK_UNIFY_POWER
 	ptr_tbl = upower_get_core_tbl(cpu);
 
 	sge->nr_cap_states = ptr_tbl->row_num;
 	sge->cap_states = ptr_tbl->row;
 	sge->lkg_idx = ptr_tbl->lkg_idx;
-#endif
 
 	return sge;
+#endif
 }
 
 static inline int cpu_corepower_flags(void)
