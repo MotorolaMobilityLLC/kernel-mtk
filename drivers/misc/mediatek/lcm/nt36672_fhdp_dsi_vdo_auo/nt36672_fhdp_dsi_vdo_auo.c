@@ -668,6 +668,12 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
 
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	params->round_corner_en = 1;
+	params->corner_pattern_width = 1080;
+	params->corner_pattern_height = 32;
+#endif
+
 #ifdef CONFIG_NT35695_LANESWAP
 	params->dsi.lane_swap_en = 1;
 
