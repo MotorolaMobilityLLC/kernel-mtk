@@ -121,15 +121,15 @@ void fg_dump_register(void)
 {
 	unsigned int i = 0;
 
-	pr_err("dump fg register 0x40c=0x%x\n", upmu_get_reg_value(0x40c));
+	bm_err("dump fg register 0x40c=0x%x\n", upmu_get_reg_value(0x40c));
 	for (i = 0x2000; i <= 0x207a; i = i + 10) {
-		pr_err
+		bm_err
 		("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
 			i, upmu_get_reg_value(i), i + 1, upmu_get_reg_value(i + 1), i + 2,
 			upmu_get_reg_value(i + 2), i + 3, upmu_get_reg_value(i + 3), i + 4,
 			upmu_get_reg_value(i + 4));
 
-		pr_err
+		bm_err
 		("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
 			i + 5, upmu_get_reg_value(i + 5), i + 6, upmu_get_reg_value(i + 6), i + 7,
 			upmu_get_reg_value(i + 7), i + 8, upmu_get_reg_value(i + 8), i + 9,
@@ -786,7 +786,7 @@ signed int fgauge_set_columb_interrupt_internal1(void *data, int reset)
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0001, 0x1F0F, 0x0);
 	} else {
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x1F05, 0xFF0F, 0x0);
-		pr_err("[fgauge_set_columb_interrupt_internal1] reset fgadc 0x1F05\n");
+		bm_err("[fgauge_set_columb_interrupt_internal1] reset fgadc 0x1F05\n");
 	}
 
 	/*(2)    Keep i2c read when status = 1 (0x06) */
@@ -902,7 +902,7 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0001, 0x1F05, 0x0);
 	else {
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0705, 0x1F05, 0x0); /*weiching0803*/
-		pr_err("[fgauge_read_columb_internal] reset fgadc 0x0705\n");
+		bm_err("[fgauge_read_columb_internal] reset fgadc 0x0705\n");
 	}
 
 	/*(2)    Keep i2c read when status = 1 (0x06) */
@@ -1276,7 +1276,7 @@ static signed int fgauge_hw_reset(void *data)
 
 	while (val_car != 0x0) {
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0600, 0x1F00, 0x0);
-		pr_err("[fgauge_hw_reset] reset fgadc 0x0600\n");
+		bm_err("[fgauge_hw_reset] reset fgadc 0x0600\n");
 
 		fgauge_read_columb_internal(&val_car_temp, 0, 0);
 		val_car = val_car_temp;
@@ -1728,7 +1728,7 @@ static signed int read_fg_hw_info(void *data)
 
 
 	*(signed int *) (data) = 0;
-	pr_err("[FGADC_intr_end][%s][read_fg_hw_info] curr_1 %d curr_2 %d Iavg %d sign %d car %d ncar %d time %d\n",
+	bm_err("[FGADC_intr_end][%s][read_fg_hw_info] curr_1 %d curr_2 %d Iavg %d sign %d car %d ncar %d time %d\n",
 		intr_name, fg_hw_info.current_1, fg_hw_info.current_2,
 		fg_hw_info.current_avg, fg_hw_info.current_avg_sign,
 		fg_hw_info.car, fg_hw_info.ncar, fg_hw_info.time);
@@ -1749,7 +1749,7 @@ static signed int read_nafg_vbat(void *data)
 
 	*(signed int *) (data) = nag_vbat_mv;
 
-	pr_err("[FGADC_intr_end][read_nafg_vbat] nag_vbat_reg 0x%x nag_vbat_mv %d\n",
+	bm_err("[FGADC_intr_end][read_nafg_vbat] nag_vbat_reg 0x%x nag_vbat_mv %d\n",
 		nag_vbat_reg, nag_vbat_mv);
 
 	return STATUS_OK;
@@ -2329,7 +2329,7 @@ static signed int fg_set_cycle_interrupt(void *data)
 	pmic_set_register_value(PMIC_FG_N_CHARGE_LTH_15_14, (carReg & 0xffff)>>14);
 	pmic_set_register_value(PMIC_FG_N_CHARGE_LTH_31_16, (carReg & 0xffff0000) >> 16);
 
-	pr_err("car:%d carR:%lld r:%lld current:low:0x%x high:0x%x target:low:0x%x high:0x%x",
+	bm_debug("car:%d carR:%lld r:%lld current:low:0x%x high:0x%x target:low:0x%x high:0x%x",
 		*(unsigned int *) (data), car, carReg,
 		pmic_get_register_value(PMIC_FG_NCAR_15_00),
 		pmic_get_register_value(PMIC_FG_NCAR_31_16),
@@ -2456,7 +2456,7 @@ int read_hw_ocv_6336_charger_in(void)
 			zcv_36_high = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_WAKEUP1_H);
 			hw_ocv_36_reg1 = (zcv_36_high << 8) + zcv_36_low;
 			hw_ocv_36_1 = REG_to_MV_value(hw_ocv_36_reg1);
-			pr_err("[read_hw_ocv_6336_charger_in] zcv_36_rdy %d hw_ocv_36_1 %d [0x%x:0x%x]\n",
+			bm_err("[read_hw_ocv_6336_charger_in] zcv_36_rdy %d hw_ocv_36_1 %d [0x%x:0x%x]\n",
 				zcv_36_rdy, hw_ocv_36_1, zcv_36_low, zcv_36_high);
 
 			mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
@@ -2469,7 +2469,7 @@ int read_hw_ocv_6336_charger_in(void)
 			zcv_chrgo_1_hi = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_CHRGO1_H);
 			hw_ocv_36_reg2 = (zcv_chrgo_1_hi << 8) + zcv_chrgo_1_lo;
 			hw_ocv_36_2 = REG_to_MV_value(hw_ocv_36_reg2);
-			pr_err("[read_hw_ocv_6336_charger_in] zcv_chrgo_1_rdy %d hw_ocv_36_2 %d [0x%x:0x%x]\n",
+			bm_err("[read_hw_ocv_6336_charger_in] zcv_chrgo_1_rdy %d hw_ocv_36_2 %d [0x%x:0x%x]\n",
 				zcv_chrgo_1_rdy, hw_ocv_36_2, zcv_chrgo_1_lo, zcv_chrgo_1_hi);
 			mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_CHRGO_CLR, 1);
 			mdelay(1);
@@ -2481,7 +2481,7 @@ int read_hw_ocv_6336_charger_in(void)
 			zcv_fgadc1_hi = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_FGADC1_H);
 			hw_ocv_36_reg3 = (zcv_fgadc1_hi << 8) + zcv_fgadc1_lo;
 			hw_ocv_36_3 = REG_to_MV_value(hw_ocv_36_reg3);
-			pr_err("[read_hw_ocv_6336_charger_in] FGADC1 %d hw_ocv_36_3 %d [0x%x:0x%x]\n",
+			bm_err("[read_hw_ocv_6336_charger_in] FGADC1 %d hw_ocv_36_3 %d [0x%x:0x%x]\n",
 				zcv_fgadc1_rdy, hw_ocv_36_3, zcv_fgadc1_lo, zcv_fgadc1_hi);
 			mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_FGADC_CLR, 1);
 			mdelay(1);
@@ -2729,7 +2729,7 @@ static signed int fg_set_fg_reset_rtc_status(void *data)
 	/* read spare3 again */
 	after_rst_spare3_reg = get_rtc_spare_fg_value();
 
-	pr_err("[fgauge_read_RTC_boot_status] spare0 0x%x 0x%x, spare3 0x%x 0x%x\n",
+	bm_err("[fgauge_read_RTC_boot_status] spare0 0x%x 0x%x, spare3 0x%x 0x%x\n",
 		spare0_reg, after_rst_spare0_reg, spare3_reg, after_rst_spare3_reg);
 
 	return STATUS_OK;
@@ -2867,7 +2867,7 @@ static signed int fg_set_vbat2_l_th(void *data)
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DET_PRD_19_16, vbat2_det_time_19_16);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DEBT_MIN, vbat2_det_counter);
 
-	pr_err("[fg_set_vbat2_l_th] set [0x%x 0x%x 0x%x 0x%x] get [0x%x 0x%x 0x%x 0x%x]\n",
+	bm_debug("[fg_set_vbat2_l_th] set [0x%x 0x%x 0x%x 0x%x] get [0x%x 0x%x 0x%x 0x%x]\n",
 		vbat2_l_th_reg, vbat2_det_time_15_0, vbat2_det_time_19_16, vbat2_det_counter,
 		pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MIN),
 		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0),
@@ -2890,7 +2890,7 @@ static signed int fg_set_vbat2_h_th(void *data)
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DET_PRD_19_16, vbat2_det_time_19_16);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DEBT_MAX, vbat2_det_counter);
 
-	pr_err("[fg_set_vbat2_h_th] set [0x%x 0x%x 0x%x 0x%x] get [0x%x 0x%x 0x%x 0x%x]\n",
+	bm_debug("[fg_set_vbat2_h_th] set [0x%x 0x%x 0x%x 0x%x] get [0x%x 0x%x 0x%x 0x%x]\n",
 		vbat2_h_th_reg, vbat2_det_time_15_0, vbat2_det_time_19_16, vbat2_det_counter,
 		pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MAX),
 		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0),
@@ -2985,19 +2985,19 @@ static signed int fgauge_meta_cali_car_tune_value(void *data)
 				uvalue32 = (unsigned int) uvalue16;
 				if (uvalue32 <= 0x8000) {
 					Temp_Value1 = (long long)uvalue32;
-					pr_err("[111]uvalue16 %d uvalue32 %d Temp_Value1 %lld\n",
+					bm_err("[111]uvalue16 %d uvalue32 %d Temp_Value1 %lld\n",
 						uvalue16, uvalue32, Temp_Value1);
 				} else if (uvalue32 > 0x8000) {
 					/*Temp_Value1 = (long long) (uvalue32 - 65535);*/
 					/*Temp_Value1 = 0 - Temp_Value1;*/
 					Temp_Value1 = (long long) (65535 - uvalue32);
-					pr_err("[222]uvalue16 %d uvalue32 %d Temp_Value1 %lld\n",
+					bm_err("[222]uvalue16 %d uvalue32 %d Temp_Value1 %lld\n",
 						uvalue16, uvalue32, Temp_Value1);
 				}
 				sum_all += Temp_Value1;
 				avg_cnt++;
 				/*****************/
-				pr_err("[333]uvalue16 %d uvalue32 %d Temp_Value1 %lld sum_all %lld\n",
+				bm_err("[333]uvalue16 %d uvalue32 %d Temp_Value1 %lld sum_all %lld\n",
 						uvalue16, uvalue32, Temp_Value1, sum_all);
 				/*****************/
 			}
@@ -3006,23 +3006,23 @@ static signed int fgauge_meta_cali_car_tune_value(void *data)
 		/*calculate the real world data    */
 		/*current_from_ADC = sum_all / avg_cnt;*/
 		temp_sum = sum_all;
-		pr_err("[444]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
+		bm_err("[444]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
 			sum_all, temp_sum, avg_cnt, current_from_ADC);
 
 		do_div(temp_sum, avg_cnt);
 		current_from_ADC = temp_sum;
 
-		pr_err("[555]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
+		bm_err("[555]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
 			sum_all, temp_sum, avg_cnt, current_from_ADC);
 
 		Temp_Value2 = current_from_ADC * UNIT_FGCURRENT;
 
-		pr_err("[555]Temp_Value2 %lld current_from_ADC %lld UNIT_FGCURRENT %d\n",
+		bm_err("[555]Temp_Value2 %lld current_from_ADC %lld UNIT_FGCURRENT %d\n",
 			Temp_Value2, current_from_ADC, UNIT_FGCURRENT);
 
 		do_div(Temp_Value2, 1000000);
 
-		pr_err("[666]Temp_Value2 %lld current_from_ADC %lld UNIT_FGCURRENT %d\n",
+		bm_err("[666]Temp_Value2 %lld current_from_ADC %lld UNIT_FGCURRENT %d\n",
 			Temp_Value2, current_from_ADC, UNIT_FGCURRENT);
 
 		dvalue = (unsigned int) Temp_Value2;
@@ -3031,15 +3031,15 @@ static signed int fgauge_meta_cali_car_tune_value(void *data)
 		if (fg_cust_data.r_fg_value != 100)
 			dvalue = (dvalue * 100) / fg_cust_data.r_fg_value;
 
-		pr_err("[666]dvalue %d fg_cust_data.r_fg_value %d\n", dvalue, fg_cust_data.r_fg_value);
+		bm_err("[666]dvalue %d fg_cust_data.r_fg_value %d\n", dvalue, fg_cust_data.r_fg_value);
 
 		cali_car_tune = g_meta_input_cali_current * 1000 / dvalue;	/* 1000 base, so multiple by 1000*/
 
-		pr_err("[777]dvalue %d fg_cust_data.r_fg_value %d cali_car_tune %d\n",
+		bm_err("[777]dvalue %d fg_cust_data.r_fg_value %d cali_car_tune %d\n",
 			dvalue, fg_cust_data.r_fg_value, cali_car_tune);
 		*(signed int *) (data) = cali_car_tune;
 
-		pr_err(
+		bm_err(
 			"[fgauge_meta_cali_car_tune_value][%d] meta:%d, adc:%lld, UNI_FGCUR:%d, r_fg_value:%d\n",
 			cali_car_tune, g_meta_input_cali_current, current_from_ADC,
 			UNIT_FGCURRENT, fg_cust_data.r_fg_value);
