@@ -116,6 +116,7 @@ struct cmdq_pkt {
 	struct cmdq_task_cb	cb;
 	u32			timeout;
 	struct cmdq_task_cb	err_cb;
+	void			*user_data;
 };
 
 extern int mtk_cmdq_log;
@@ -154,5 +155,8 @@ s32 cmdq_task_get_thread_end_addr(struct mbox_chan *chan,
 	dma_addr_t *end_addr_out);
 s32 cmdq_task_get_task_info_from_thread_unlock(struct mbox_chan *chan,
 	struct list_head *task_list_out, u32 *task_num_out);
+
+s32 cmdq_task_get_pkt_from_thread(struct mbox_chan *chan,
+	struct cmdq_pkt **pkt_list_out, u32 pkt_list_size, u32 *pkt_count_out);
 
 #endif /* __MTK_CMDQ_MAILBOX_H__ */

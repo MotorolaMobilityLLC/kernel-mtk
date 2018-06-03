@@ -901,6 +901,17 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	if (private)
 		handle->node_private = private->node_private_data;
 
+	if (desc->prop_size && desc->prop_addr &&
+		desc->prop_size < CMDQ_MAX_USER_PROP_SIZE) {
+		handle->prop_addr = kzalloc(desc->prop_size, GFP_KERNEL);
+		memcpy(handle->prop_addr, (void *)CMDQ_U32_PTR(desc->prop_addr),
+			desc->prop_size);
+		handle->prop_size = desc->prop_size;
+	} else {
+		handle->prop_addr = NULL;
+		handle->prop_size = 0;
+	}
+
 	if (desc->regRequest.count &&
 		desc->regRequest.count <= CMDQ_MAX_DUMP_REG_COUNT &&
 		desc->regRequest.regAddresses) {
@@ -1597,6 +1608,16 @@ void cmdq_mdp_unmap_mmsys_VA(void)
 	cmdq_dev_free_module_base_VA(cmdq_mmsys_base);
 }
 
+static void cmdq_mdp_begin_task_virtual(struct cmdqRecStruct *handle,
+	struct cmdqRecStruct **handle_list, u32 size)
+{
+}
+
+static void cmdq_mdp_end_task_virtual(struct cmdqRecStruct *handle,
+	struct cmdqRecStruct **handle_list, u32 size)
+{
+}
+
 void cmdq_mdp_virtual_function_setting(void)
 {
 	struct cmdqMDPFuncStruct *pFunc;
@@ -1642,6 +1663,8 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits_virtual;
 	pFunc->errorReset = cmdq_mdp_error_reset_virtual;
 	pFunc->mdpEnableCommonClock = cmdq_mdp_enable_common_clock_virtual;
+	pFunc->beginTask = cmdq_mdp_begin_task_virtual;
+	pFunc->endTask = cmdq_mdp_end_task_virtual;
 }
 
 struct cmdqMDPFuncStruct *cmdq_mdp_get_func(void)

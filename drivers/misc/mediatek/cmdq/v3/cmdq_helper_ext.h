@@ -242,6 +242,15 @@ typedef s32(*CmdqResourceReleaseCB) (enum cmdq_event resourceEvent);
 typedef s32(*CmdqResourceAvailableCB) (
 	enum cmdq_event resourceEvent);
 
+/* PMQOS */
+/* task begin for pmqos */
+typedef void(*CmdqBeginTaskCB) (struct cmdqRecStruct *handle,
+	struct cmdqRecStruct **handle_list, u32 size);
+
+/* task end for pmqos */
+typedef void(*CmdqEndTaskCB) (struct cmdqRecStruct *handle,
+	struct cmdqRecStruct **handle_list, u32 size);
+
 /* TaskID is passed down from IOCTL */
 /* client should fill "regCount" and "regAddress" */
 /* the buffer pointed by (*regAddress) must be valid until */
@@ -270,6 +279,8 @@ struct CmdqCBkStruct {
 	CmdqDispatchModuleCB dispatchMod;
 	CmdqTrackTaskCB trackTask;
 	CmdqErrorResetCB errorReset;
+	CmdqBeginTaskCB beginTask;
+	CmdqEndTaskCB endTask;
 };
 
 struct CmdqDebugCBkStruct {
@@ -446,6 +457,7 @@ struct cmdq_core_thread {
 	bool used;	/* true if thread static allocated */
 	u32 acquire;	/* acquired ref count */
 	s32 scenario;
+	u32 handle_count;
 };
 
 struct RecordStruct {
@@ -700,6 +712,10 @@ struct cmdqRecStruct {
 	u32 durAlloc;	/* allocae time duration */
 	u32 durReclaim;	/* allocae time duration */
 	u32 durRelease;	/* release time duration */
+
+	/* PMQoS information */
+	void *prop_addr;
+	u32 prop_size;
 };
 
 /* TODO: add controller support */
@@ -939,5 +955,9 @@ s32 cmdq_helper_mbox_register(struct device *dev);
 void cmdq_core_initialize(void);
 void cmdq_core_deinitialize(void);
 void cmdq_helper_ext_deinit(void);
+
+/* PMQoS register function */
+s32 cmdq_core_register_task_cycle_cb(enum CMDQ_GROUP_ENUM group,
+	CmdqBeginTaskCB beginTask, CmdqEndTaskCB endTask);
 
 #endif

@@ -104,6 +104,8 @@ struct cmdqMDPFuncStruct {
 	CmdqMdpGetEngineGroupBits getEngineGroupBits;
 	CmdqErrorResetCB errorReset;
 	CmdqMdpEnableCommonClock mdpEnableCommonClock;
+	CmdqBeginTaskCB beginTask;
+	CmdqEndTaskCB endTask;
 };
 
 /* track MDP task */

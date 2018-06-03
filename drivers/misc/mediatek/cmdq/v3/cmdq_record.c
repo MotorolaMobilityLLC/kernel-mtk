@@ -1076,6 +1076,8 @@ s32 cmdq_task_reset(struct cmdqRecStruct *handle)
 	}
 #endif
 
+	/* assign handle to pkt */
+	handle->pkt->user_data = (void *)handle;
 	/* reset pkt data */
 	handle->pkt->timeout = CMDQ_DEFAULT_TIMEOUT_MS;
 	handle->pkt->priority = CMDQ_REC_DEFAULT_PRIORITY;
@@ -1718,6 +1720,40 @@ void cmdq_task_unprepare(struct cmdqRecStruct *handle)
 		cmdq_mdp_enable_res(handle->res_flag_release, false);
 }
 
+void cmdq_task_release_property(struct cmdqRecStruct *handle)
+{
+	if (!handle)
+		return;
+
+	kfree(handle->prop_addr);
+	handle->prop_addr = NULL;
+	handle->prop_size = 0;
+}
+
+s32 cmdq_task_update_property(struct cmdqRecStruct *handle,
+	void *prop_addr, u32 prop_size)
+{
+	void *pprop_addr;
+
+	if (!handle || !prop_addr || !prop_size)
+		return -EINVAL;
+
+	CMDQ_LOG("enter %s, handle=%p, prop_addr=%p, prop_size=%d",
+		__func__, handle, prop_addr, prop_size);
+
+	pprop_addr = kzalloc(prop_size, GFP_KERNEL);
+	if (!pprop_addr)
+		return -ENOMEM;
+
+	cmdq_task_release_property(handle);
+
+	memcpy(prop_addr, pprop_addr, prop_size);
+	handle->prop_addr = pprop_addr;
+	handle->prop_size = prop_size;
+
+	return 0;
+}
+
 s32 cmdq_task_flush(struct cmdqRecStruct *handle)
 {
 	s32 status;
@@ -2054,6 +2090,8 @@ s32 cmdq_task_destroy(struct cmdqRecStruct *handle)
 	}
 	kfree(handle->timeout_info);
 	handle->timeout_info = NULL;
+
+	cmdq_task_release_property(handle);
 
 	kfree(handle);
 
