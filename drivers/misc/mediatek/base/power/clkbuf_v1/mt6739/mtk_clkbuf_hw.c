@@ -484,6 +484,7 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	else
 		return true;
 }
+EXPORT_SYMBOL(clk_buf_ctrl);
 
 static u32 dcxo_dbg_read_auxout(u16 sel)
 {
