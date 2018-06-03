@@ -92,6 +92,7 @@ void __iomem *venc_gcon_base;
 #define AP_PLL_CON2		(apmixed_base + 0x0008)
 #define AP_PLL_CON3		(apmixed_base + 0x000C)
 #define AP_PLL_CON4		(apmixed_base + 0x0010)
+#define AP_PLL_CON6		(apmixed_base + 0x0018)
 #define AP_PLL_CON8		(apmixed_base + 0x0020)
 #define ARMPLL_LL_CON0		(apmixed_base + 0x0200)
 #define ARMPLL_LL_CON1		(apmixed_base + 0x0204)
@@ -1551,6 +1552,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	/*clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xee2b8ae2);*/
 	clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0x007d5550);/* MPLL, CCIPLL, MAINPLL, TDCLKSQ, CLKSQ1 */
 	clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0x7f5);
+	clk_writel(AP_PLL_CON6, clk_readl(AP_PLL_CON6) & 0xfffdffff);/* [17] = 0 */
 	clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xfffff6af);/*[4]SSUSB26M, [11][6]MIPIC camera, [8] mm26m*/
 #if 0
 /*MFGPLL*/
