@@ -663,7 +663,7 @@ static int _is_lcm_cmd_mode(enum DISP_MODULE_ENUM module)
 static void dsi_wait_not_busy(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
-	int ret = 0;
+	unsigned int loop_cnt = 0;
 
 	if (module == DISP_MODULE_DSI0)
 		i = 0;
@@ -687,6 +687,7 @@ static void dsi_wait_not_busy(enum DISP_MODULE_ENUM module, struct cmdqRecStruct
 	if (!(DSI_REG[i]->DSI_INTSTA.BUSY))
 		return;
 
+#if 0
 	ret = wait_event_timeout(_dsi_context[i].cmddone_wq.wq,
 					       !(DSI_REG[i]->DSI_INTSTA.BUSY), HZ/10);
 	if (ret == 0) {
@@ -694,7 +695,14 @@ static void dsi_wait_not_busy(enum DISP_MODULE_ENUM module, struct cmdqRecStruct
 		DSI_DumpRegisters(module, 1);
 		DSI_Reset(module, NULL);
 	}
-
+#else
+	while (loop_cnt < 100*1000) {
+		if (!(DSI_REG[i]->DSI_INTSTA.BUSY))
+			break;
+		loop_cnt++;
+		udelay(1);
+	}
+#endif
 }
 
 #if 0
