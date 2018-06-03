@@ -178,15 +178,15 @@ void __iomem *ipu_core1_base;
 #define IPU_CORE1_CG_CLR              (ipu_core1_base + 0x0008)
 
 #if MT_CCF_BRINGUP
-#define INFRA_CG0 0x132f8110/*[25:24][21][19:15][8][4]*/
-#define INFRA_CG1 0x080a0a64/*[27][11][9], [17][6][5][2], [19]*/
-#define INFRA_CG2 0x08000005/*[2][0], [27]*/
-#define INFRA_CG3 0x000001c7/*[6][2:0], [8:7]*/
+#define INFRA_CG0 0x020f8100/*[25][19:15][8]*/
+#define INFRA_CG1 0x08000800/*[27][11]*/
+#define INFRA_CG2 0x00000805/*[11][2][0]*/
+#define INFRA_CG3 0x000000c7/*[2:0], [7:6]*/
 #define CAMSYS_CG	0x1FFF
 #define IMG_CG	0x3FF
 #define MFG_CG	0x1
-#define MM_CG0	0xFFFFFFFF /* un-gating in preloader */
-#define MM_CG1  0x000003FF /* un-gating in preloader */
+#define MM_CG0	0x810ffc20/*[31][24][19:10][5]*/
+#define MM_CG1  0x00003f7c/*[13:8][6:2]*/
 #define VENC_CG 0x00111 /* inverse */
 #define VDEC_CG 0x1 /* inverse */
 #define VDEC_LARB1_CG 0x1 /* inverse */
@@ -1904,7 +1904,7 @@ static void __init mtk_infracfg_ao_init(struct device_node *node)
 	pr_err("%s: infra mfg debug: %08x\n",
 			__func__, clk_readl(INFRA_TOPAXI_SI0_CTL));
 	/*mtk_clk_enable_critical();*/
-#if MT_CCF_BRINGUP
+#if 0/*MT_CCF_BRINGUP*/
 #else
 	clk_writel(INFRA_PDN_SET0, INFRA_CG0);
 	clk_writel(INFRA_PDN_SET1, INFRA_CG1);
