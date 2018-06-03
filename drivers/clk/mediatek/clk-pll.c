@@ -145,7 +145,11 @@ static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 		u32 freq, u32 fin)
 {
+#if defined(CONFIG_MACH_MT6763)
+	unsigned long fmin = 1500 * MHZ;
+#else
 	unsigned long fmin = 1000 * MHZ;
+#endif
 	const struct mtk_pll_div_table *div_table = pll->data->div_table;
 	u64 _pcw;
 	u32 val;
