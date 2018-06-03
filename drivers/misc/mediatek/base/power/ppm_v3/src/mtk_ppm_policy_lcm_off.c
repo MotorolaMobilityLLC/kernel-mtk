@@ -23,6 +23,7 @@
 
 static void ppm_lcmoff_update_limit_cb(void);
 static void ppm_lcmoff_status_change_cb(bool enable);
+static int lcmoff_min_freq;
 
 /* other members will init by ppm_main */
 static struct ppm_policy_data lcmoff_policy = {
@@ -58,7 +59,7 @@ static void ppm_lcmoff_update_limit_cb(void)
 	/* for (i = 0; i < lcmoff_policy.req.cluster_num; i++) { */
 		if (lcmoff_policy.req.limit[i].min_cpufreq_idx != -1) {
 			int idx = ppm_main_freq_to_idx(i,
-				get_cluster_lcmoff_min_freq(i),
+				lcmoff_min_freq,
 				CPUFREQ_RELATION_L);
 
 			lcmoff_policy.req.limit[i].min_cpufreq_idx =
@@ -150,14 +151,62 @@ static struct notifier_block ppm_lcmoff_fb_notifier = {
 	.notifier_call = ppm_lcmoff_fb_notifier_callback,
 };
 
+static int ppm_lcmoff_min_freq_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "lcmoff_min_freq = %d KHz\n", lcmoff_min_freq);
+
+	return 0;
+}
+
+static ssize_t ppm_lcmoff_min_freq_proc_write(struct file *file,
+		const char __user *buffer, size_t count, loff_t *pos)
+{
+	unsigned int freq;
+
+	char *buf = ppm_copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (!kstrtouint(buf, 10, &freq))
+		lcmoff_min_freq = freq;
+	else
+		ppm_err("@%s: Invalid input!\n", __func__);
+
+	free_page((unsigned long)buf);
+	return count;
+}
+
+PROC_FOPS_RW(lcmoff_min_freq);
 static int __init ppm_lcmoff_policy_init(void)
 {
-	int ret = 0;
+	int ret = 0, i;
+
+	struct pentry {
+		const char *name;
+		const struct file_operations *fops;
+	};
+
+	const struct pentry entries[] = {
+		PROC_ENTRY(lcmoff_min_freq),
+	};
 
 	FUNC_ENTER(FUNC_LV_POLICY);
 
+	/* create procfs */
+	for (i = 0; i < ARRAY_SIZE(entries); i++) {
+		if (!proc_create(entries[i].name, 0664,
+			policy_dir, entries[i].fops)) {
+			ppm_err("%s(), create /proc/ppm/policy/%s failed\n",
+				__func__, entries[i].name);
+			ret = -EINVAL;
+			goto out;
+		}
+	}
+
 	if (fb_register_client(&ppm_lcmoff_fb_notifier)) {
-		ppm_err("lcmoff policy register FB client failed!\n");
+		ppm_err("@%s: lcmoff policy register FB client failed!\n",
+			__func__);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -167,6 +216,12 @@ static int __init ppm_lcmoff_policy_init(void)
 		ret = -EINVAL;
 		goto out;
 	}
+
+#ifdef LCMOFF_MIN_FREQ
+	lcmoff_min_freq = LCMOFF_MIN_FREQ;
+#else
+	lcmoff_policy.is_enabled = false;
+#endif
 
 	ppm_info("@%s: register %s done!\n", __func__, lcmoff_policy.name);
 
