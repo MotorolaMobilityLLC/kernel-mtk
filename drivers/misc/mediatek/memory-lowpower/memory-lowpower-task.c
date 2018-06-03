@@ -744,7 +744,7 @@ static ssize_t memory_lowpower_write(struct file *file, const char __user *buffe
 	struct fb_event fb_event;
 	int blank;
 
-	if (count > 0) {
+	if (memory_lowpower_task_inited() && count > 0) {
 		if (get_user(state, buffer))
 			return -EFAULT;
 		state -= '0';
