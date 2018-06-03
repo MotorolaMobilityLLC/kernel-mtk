@@ -23,6 +23,7 @@
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
 #include <linux/sched/rt.h>
+#include <mt-plat/mtk_io_boost.h>
 
 #include "queue.h"
 #include "block.h"
@@ -107,6 +108,7 @@ static int mmc_queue_thread(void *d)
 	int cmdq_full = 0;
 	unsigned int tmo;
 #endif
+	bool io_boost_done = false;
 
 	scheduler_params.sched_priority = 1;
 	sched_setscheduler(current, SCHED_FIFO, &scheduler_params);
@@ -115,8 +117,12 @@ static int mmc_queue_thread(void *d)
 
 	down(&mq->thread_sem);
 	mt_bio_queue_alloc(current, q);
+
 	do {
 		struct request *req = NULL;
+
+		mtk_io_boost_test_and_add_tid(current->pid,
+			&io_boost_done);
 
 		spin_lock_irq(q->queue_lock);
 
