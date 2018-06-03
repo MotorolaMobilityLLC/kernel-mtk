@@ -63,16 +63,19 @@ struct xgf_timer {
 
 extern int (*xgf_est_slptime_fp)(struct xgf_proc *proc,
 		unsigned long long *slptime, struct xgf_tick *ref,
-		struct xgf_tick *now);
+		struct xgf_tick *now, pid_t r_pid);
 extern void xgf_dequeuebuffer(unsigned long arg);
 extern void xgf_game_mode_exit(int val);
 extern void xgf_get_deqend_time(void);
 
 void xgf_lockprove(const char *tag);
 int xgf_est_slptime(struct xgf_proc *proc, unsigned long long *slptime,
-		    struct xgf_tick *ref, struct xgf_tick *now);
+		    struct xgf_tick *ref, struct xgf_tick *now, pid_t r_pid);
 void xgf_trace(const char *fmt, ...);
 void xgf_reset_render(struct xgf_proc *proc);
+
+void *xgf_kzalloc(size_t size);
+void xgf_kfree(const void *block);
 
 int xgf_query_blank_time(pid_t, unsigned long long*,
 			 unsigned long long*);

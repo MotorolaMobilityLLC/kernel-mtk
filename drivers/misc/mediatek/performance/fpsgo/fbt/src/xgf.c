@@ -48,7 +48,8 @@ int (*xgf_est_slptime_fp)(
 	struct xgf_proc *proc,
 	unsigned long long *slptime,
 	struct xgf_tick *ref,
-	struct xgf_tick *now);
+	struct xgf_tick *now,
+	pid_t r_pid);
 EXPORT_SYMBOL(xgf_est_slptime_fp);
 
 static inline void xgf_lock(const char *tag)
@@ -444,6 +445,24 @@ void xgf_reset_render(struct xgf_proc *proc)
 }
 EXPORT_SYMBOL(xgf_reset_render);
 
+/**
+ * xgf_kzalloc
+ */
+void *xgf_kzalloc(size_t size)
+{
+	return kzalloc(size, GFP_KERNEL);
+}
+EXPORT_SYMBOL(xgf_kzalloc);
+
+/**
+ * xgf_kfree
+ */
+void xgf_kfree(const void *block)
+{
+	kfree(block);
+}
+EXPORT_SYMBOL(xgf_kfree);
+
 static void xgf_reset_procs(void)
 {
 	struct xgf_proc *iter;
@@ -564,8 +583,12 @@ static unsigned long long xgf_qudeq_enter(struct xgf_proc *proc,
 
 	trace_xgf_intvl("enter", NULL, &ref->ts, &now->ts);
 
-	if (xgf_est_slptime_fp)
-		ret = xgf_est_slptime_fp(proc, &slptime, ref, now);
+	BUG_ON(!xgf_est_slptime_fp);
+	if (xgf_est_slptime_fp) {
+		pid_t rpid = task_pid_nr(current);
+
+		ret = xgf_est_slptime_fp(proc, &slptime, ref, now, rpid);
+	}
 	else
 		ret = -ENOENT;
 
