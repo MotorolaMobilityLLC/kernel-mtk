@@ -1968,9 +1968,9 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 
 			MMU_INT_REPORT(m4u_index, m4u_slave_id,
 				       F_INT_TRANSLATION_FAULT(m4u_slave_id));
-			M4UMSG("fault: port=%s, mva=0x%x, pa=0x%x, layer=%d, wr=%d, 0x%x\n",
+			M4UMSG("fault: port=%s, mva=0x%x, pa=0x%x, layer=%d, wr=%d, 0x%x, protctPA 0x%x\n",
 			       m4u_get_port_name(m4u_port), fault_mva, fault_pa, layer, write,
-			       regval);
+			       regval, M4U_ReadReg32(m4u_base, REG_MMU_IVRP_PADDR));
 
 			if (m4u_port == M4U_PORT_DISP_OVL0) {
 				unsigned int valid_mva = 0;
