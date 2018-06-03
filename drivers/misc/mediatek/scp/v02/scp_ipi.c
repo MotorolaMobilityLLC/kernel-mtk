@@ -177,7 +177,7 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 	if (scp_id == SCP_A_ID) {
 		/*Send IPI to SCP A */
 		if (is_scp_ready(SCP_A_ID) == 0) {
-			pr_err("scp_ipi_send: SCP A not enabled\n");
+			pr_err("scp_ipi_send: SCP A not enabled, id=%d\n", id);
 			return ERROR;
 		}
 
