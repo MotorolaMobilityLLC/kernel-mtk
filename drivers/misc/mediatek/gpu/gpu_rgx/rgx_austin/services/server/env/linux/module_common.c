@@ -131,20 +131,6 @@ EXPORT_SYMBOL(PVRSRVSystemUninstallDeviceLISR);
 #include "mtk_pp.h"
 #endif
 
-#if defined(MTK_CONFIG_OF) && defined(CONFIG_OF)
-#include <linux/of.h>
-
-static const struct of_device_id mtk_dt_ids[] = {
-	{ .compatible = "mediatek,HAN" },
-	{ /* sentinel */ }
-};
-MODULE_DEVICE_TABLE(of, mtk_dt_ids);
-#endif
-
-/* MTK: fixme */
-#ifndef MODULE
-#define MODULE
-#endif
 
 /* Host para-virtz call handlers  (required by guest drivers) */
 #if defined(PVRSRV_GPUVIRT_MULTIDRV_MODEL)

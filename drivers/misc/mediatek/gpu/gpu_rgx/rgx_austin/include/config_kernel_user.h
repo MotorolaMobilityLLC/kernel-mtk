@@ -7,8 +7,8 @@
 #define SUPPORT_RGX 1
 #define DMABUF_IMPORT_PHYSHEAP_ID  0
 #define RELEASE 
-#define RGX_BVNC_CORE_KM_HEADER "cores/rgxcore_km_1.75.2.20.h"
-#define RGX_BNC_CONFIG_KM_HEADER "configs/rgxconfig_km_1.V.2.20.h"
+#define RGX_BVNC_CORE_KM_HEADER "cores/rgxcore_km_10.30.2.26.h"
+#define RGX_BNC_CONFIG_KM_HEADER "configs/rgxconfig_km_10.V.2.26.h"
 #define SUPPORT_DBGDRV_EVENT_OBJECTS 
 #define PDUMP_STREAMBUF_MAX_SIZE_MB 16
 #define PVRSRV_NEED_PVR_DPF 
@@ -26,6 +26,8 @@
 #define PVR_LDM_DRIVER_REGISTRATION_NAME "pvrsrvkm"
 #define PVRSRV_FULL_SYNC_TRACKING_HISTORY_LEN 256
 #define PVR_DUMMY_PAGE_INIT_VALUE 0x00
+#define SUPPORT_OPENCL_2_X 
+#define SUPPORT_SIGNAL_FILTER 
 #define PVRSRV_UNMAP_ON_SPARSE_CHANGE 
 #define SUPPORT_PERCONTEXT_FREELIST 
 #define HWR_DEFAULT_ENABLED 
@@ -83,4 +85,5 @@
 #define PVR_ANDROID_ION_PRIV_HEADER "../drivers/staging/android/ion/ion_priv.h"
 #define PVR_ANDROID_ION_USE_SG_LENGTH 
 #define PVR_ANDROID_SYNC_HEADER "../drivers/staging/android/sync.h"
+#define MTK_CONFIG_OF 
 #define ENABLE_COMMON_DVFS 
