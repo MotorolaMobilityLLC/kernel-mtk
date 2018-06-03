@@ -61,10 +61,12 @@
 #define DITHER1_OFFSET (DISPSYS_DITHER1_BASE - DISPSYS_DITHER0_BASE)
 
 #define dither_get_offset(module) ((module == DITHER0_MODULE_NAMING) ? DITHER0_OFFSET : DITHER1_OFFSET)
+#define index_of_dither(module) ((module == DITHER0_MODULE_NAMING) ? 0 : 1)
 #else
 #define DITHER_TOTAL_MODULE_NUM (1)
 
 #define dither_get_offset(module) (DITHER0_OFFSET)
+#define index_of_dither(module) (0)
 #endif
 
 int dither_dbg_en;
@@ -74,7 +76,7 @@ int dither_dbg_en;
 
 #define DITHER_REG(reg_base, index) ((reg_base) + 0x100 + (index) * 4)
 
-static unsigned int g_dither_relay_value;
+static unsigned int g_dither_relay_value[DITHER_TOTAL_MODULE_NUM];
 
 void disp_dither_init(enum DISP_MODULE_ENUM module, int width, int height,
 			     unsigned int dither_bpp, void *cmdq)
@@ -119,7 +121,7 @@ void disp_dither_init(enum DISP_MODULE_ENUM module, int width, int height,
 	}
 
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_EN + offset, enable, 0x1);
-	cfg_val = (enable << 1) | g_dither_relay_value;
+	cfg_val = (enable << 1) | g_dither_relay_value[index_of_dither(module)];
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG + offset, cfg_val, 0x3);
 	/* Disable dither MODULE_STALL / SUB_MODULE_STALL  */
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
@@ -166,9 +168,9 @@ static int disp_dither_bypass(enum DISP_MODULE_ENUM module, int bypass)
 
 	if (bypass) {
 		relay = 1;
-		g_dither_relay_value = 0x1;
+		g_dither_relay_value[index_of_dither(module)] = 0x1;
 	} else {
-		g_dither_relay_value = 0x0;
+		g_dither_relay_value[index_of_dither(module)] = 0x0;
 	}
 
 	DISP_REG_MASK(NULL, DISP_REG_DITHER_CFG + dither_get_offset(module), relay, 0x1);
