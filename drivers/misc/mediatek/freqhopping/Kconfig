@@ -3,4 +3,7 @@ config MTK_FREQ_HOPPING
 	default N
 	help
 	  FREQHOPPING driver support for MediaTek SOC
-	  If you want to use MediaTek FREQHOPPING driver, say Y or M here.If unsure, say N.
+	  If you want to use MediaTek FREQHOPPING driver,
+	  say Y or M here.
+	  If unsure, say N.
+

@@ -1436,7 +1436,7 @@ static void __ioctl(unsigned int ctlid, void *arg)
 	switch (ctlid) {
 	case FH_IO_PROC_READ:
 		{
-			FH_IO_PROC_READ_T *tmp = (FH_IO_PROC_READ_T *) (arg);
+			struct FH_IO_PROC_READ_T *tmp = (struct FH_IO_PROC_READ_T *)(arg);
 
 			__fh_debug_proc_read(tmp->m, tmp->v, tmp->pll);
 		}
