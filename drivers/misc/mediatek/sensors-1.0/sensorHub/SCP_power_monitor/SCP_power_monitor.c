@@ -27,8 +27,9 @@ static atomic_t power_status = ATOMIC_INIT(SENSOR_POWER_DOWN);
 void scp_power_monitor_notify(uint8_t action, void *data)
 {
 	struct scp_power_monitor *c;
+	unsigned long flags;
 
-	spin_lock(&pm_lock);
+	spin_lock_irqsave(&pm_lock, flags);
 	list_for_each_entry(c, &power_monitor_list, list) {
 		WARN_ON(c->notifier_call == NULL);
 		c->notifier_call(action, data);
@@ -43,7 +44,7 @@ void scp_power_monitor_notify(uint8_t action, void *data)
 		atomic_set(&power_status, SENSOR_POWER_UP);
 		break;
 	}
-	spin_unlock(&pm_lock);
+	spin_unlock_irqrestore(&pm_lock, flags);
 }
 int scp_power_monitor_register(struct scp_power_monitor *monitor)
 {

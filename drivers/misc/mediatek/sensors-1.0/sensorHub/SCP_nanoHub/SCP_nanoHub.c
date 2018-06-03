@@ -109,7 +109,9 @@ static atomic_t power_status = ATOMIC_INIT(SENSOR_POWER_DOWN);
 static DECLARE_WAIT_QUEUE_HEAD(chre_kthread_wait);
 static DECLARE_WAIT_QUEUE_HEAD(power_reset_wait);
 static uint8_t chre_kthread_wait_condition;
-static uint8_t power_reset_wait_condition;
+static DEFINE_SPINLOCK(scp_state_lock);
+static uint8_t scp_system_ready;
+static uint8_t scp_chre_ready;
 static struct SCP_sensorHub_data *obj_data;
 
 enum scp_ipi_status __attribute__((weak)) scp_ipi_registration(enum ipi_id id,
@@ -627,6 +629,7 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp,
 	struct data_unit_t *event;
 	int handle = 0;
 #endif
+	unsigned long flags = 0;
 
 	switch (rsp->notify_rsp.event) {
 	case SCP_DIRECT_PUSH:
@@ -664,15 +667,18 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp,
 		}
 #endif
 		break;
-#ifdef CHRE_POWER_RESET_NOTIFY
 	case SCP_INIT_DONE:
-		atomic_set(&power_status, SENSOR_POWER_UP);
-		scp_power_monitor_notify(SENSOR_POWER_UP, NULL);
-		/* schedule_work(&obj->power_up_work); */
-		WRITE_ONCE(power_reset_wait_condition, true);
-		wake_up(&power_reset_wait);
+		spin_lock_irqsave(&scp_state_lock, flags);
+		WRITE_ONCE(scp_chre_ready, true);
+		if (READ_ONCE(scp_system_ready) && READ_ONCE(scp_chre_ready)) {
+			spin_unlock_irqrestore(&scp_state_lock, flags);
+			atomic_set(&power_status, SENSOR_POWER_UP);
+			scp_power_monitor_notify(SENSOR_POWER_UP, NULL);
+			/* schedule_work(&obj->power_up_work); */
+			wake_up(&power_reset_wait);
+		} else
+			spin_unlock_irqrestore(&scp_state_lock, flags);
 		break;
-#endif
 	default:
 		break;
 	}
@@ -1980,9 +1986,14 @@ void sensorHub_power_up_loop(void *data)
 {
 	int handle = 0;
 	struct SCP_sensorHub_data *obj = obj_data;
+	unsigned long flags = 0;
 
-	wait_event(power_reset_wait, READ_ONCE(power_reset_wait_condition));
-	WRITE_ONCE(power_reset_wait_condition, false);
+	wait_event(power_reset_wait,
+		READ_ONCE(scp_system_ready) && READ_ONCE(scp_chre_ready));
+	spin_lock_irqsave(&scp_state_lock, flags);
+	WRITE_ONCE(scp_chre_ready, false);
+	WRITE_ONCE(scp_system_ready, false);
+	spin_unlock_irqrestore(&scp_state_lock, flags);
 
 	/* firstly we should update dram information */
 	/* 1. reset wp queue head and tail */
@@ -2026,23 +2037,29 @@ static int sensorHub_power_up_work(void *data)
 static int sensorHub_ready_event(struct notifier_block *this,
 	unsigned long event, void *ptr)
 {
-#ifndef CHRE_POWER_RESET_NOTIFY
-	struct SCP_sensorHub_data *obj = obj_data;
-#endif
+	unsigned long flags = 0;
 
 	if (event == SCP_EVENT_STOP) {
+		spin_lock_irqsave(&scp_state_lock, flags);
+		WRITE_ONCE(scp_system_ready, false);
+		spin_unlock_irqrestore(&scp_state_lock, flags);
 		atomic_set(&power_status, SENSOR_POWER_DOWN);
 		scp_power_monitor_notify(SENSOR_POWER_DOWN, ptr);
 	}
-#ifndef CHRE_POWER_RESET_NOTIFY
+
 	if (event == SCP_EVENT_READY) {
-		atomic_set(&power_status, SENSOR_POWER_UP);
-		scp_power_monitor_notify(SENSOR_POWER_UP, ptr);
-		/* schedule_work(&obj->power_up_work); */
-		WRITE_ONCE(power_reset_wait_condition, true);
-		wake_up(&power_reset_wait);
+		spin_lock_irqsave(&scp_state_lock, flags);
+		WRITE_ONCE(scp_system_ready, true);
+		if (READ_ONCE(scp_system_ready) && READ_ONCE(scp_chre_ready)) {
+			spin_unlock_irqrestore(&scp_state_lock, flags);
+			atomic_set(&power_status, SENSOR_POWER_UP);
+			scp_power_monitor_notify(SENSOR_POWER_UP, ptr);
+			/* schedule_work(&obj->power_up_work); */
+			wake_up(&power_reset_wait);
+		} else
+			spin_unlock_irqrestore(&scp_state_lock, flags);
 	}
-#endif
+
 	return NOTIFY_DONE;
 }
 
