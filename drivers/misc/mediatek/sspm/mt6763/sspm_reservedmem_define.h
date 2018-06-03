@@ -19,7 +19,7 @@ enum {
 	NUMS_MEM_ID,
 };
 
-#define SSPM_PLT_LOGGER_BUF_LEN        (512 * 1024)
+#define SSPM_PLT_LOGGER_BUF_LEN        (511 * 1024)
 
 #ifdef _SSPM_INTERNAL_
 /* The total size of sspm_reserve_mblock should less equal than reserve-memory-sspm_share of device tree */
