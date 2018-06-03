@@ -26,7 +26,7 @@
 
 #define TARGET_CORE (3)
 #define TARGET_FREQ (1183000)
-#define CLUSTER_NUM (2)
+#define CLUSTER_NUM (1)
 
 /*-----------------------------------------------*/
 
@@ -47,30 +47,22 @@ void init_perfmgr_boost(void)
 
 void perfmgr_boost(int enable, int core, int freq)
 {
-	struct ppm_limit_data core_to_set[2], freq_to_set[2];
+	struct ppm_limit_data core_to_set, freq_to_set;
 
 	if (enable) {
-		core_to_set[0].min = core;
-		core_to_set[0].max = -1;
-		core_to_set[1].min = -1;
-		core_to_set[1].max = -1;
-		freq_to_set[0].min = freq;
-		freq_to_set[0].max = -1;
-		freq_to_set[1].min = -1;
-		freq_to_set[1].max = -1;
+		core_to_set.min = core;
+		core_to_set.max = -1;
+		freq_to_set.min = freq;
+		freq_to_set.max = -1;
 	} else {
-		core_to_set[0].min = -1;
-		core_to_set[0].max = -1;
-		core_to_set[1].min = -1;
-		core_to_set[1].max = -1;
-		freq_to_set[0].min = -1;
-		freq_to_set[0].max = -1;
-		freq_to_set[1].min = -1;
-		freq_to_set[1].max = -1;
+		core_to_set.min = -1;
+		core_to_set.max = -1;
+		freq_to_set.min = -1;
+		freq_to_set.max = -1;
 	}
 
-	update_userlimit_cpu_core(PPM_KIR_FBC, CLUSTER_NUM, core_to_set);
-	update_userlimit_cpu_freq(PPM_KIR_FBC, CLUSTER_NUM, freq_to_set);
+	update_userlimit_cpu_core(PPM_KIR_FBC, CLUSTER_NUM, &core_to_set);
+	update_userlimit_cpu_freq(PPM_KIR_FBC, CLUSTER_NUM, &freq_to_set);
 }
 
 /* redundant API */

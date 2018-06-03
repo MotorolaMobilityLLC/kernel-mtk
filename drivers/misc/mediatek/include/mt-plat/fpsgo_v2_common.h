@@ -27,12 +27,18 @@
 void fpsgo_switch_enable(int enable);
 int fpsgo_is_enable(void);
 void fpsgo_sched_nominate(pid_t *, int *);
+int fpsgo_fstb_process_fps_range(char *proc_name, int nr_level, struct fps_level *level);
+int fpsgo_fstb_thread_fps_range(pid_t pid, int nr_level, struct fps_level *level);
 
 #else
 
 static inline void fpsgo_switch_enable(int enable) { }
 static inline int fpsgo_is_enable(void) { return 0; }
 static inline void fpsgo_sched_nominate(pid_t *tid, int *util) { }
+static inline int fpsgo_fstb_process_fps_range(char *proc_name,
+		int nr_level, struct fps_level *level) { return 0; }
+static inline int fpsgo_fstb_thread_fps_range(pid_t pid,
+		int nr_level, struct fps_level *level) { return 0; }
 
 #endif
 
