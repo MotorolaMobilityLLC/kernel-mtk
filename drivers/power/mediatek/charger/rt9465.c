@@ -846,6 +846,21 @@ static int rt9465_get_ieoc(struct rt9465_info *info, u32 *ieoc)
 	return ret;
 }
 
+static int rt9465_is_charging_enabled(struct charger_device *chg_dev, bool *en)
+{
+	int ret = 0;
+	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
+
+	ret = rt9465_i2c_read_byte(info, RT9465_REG_CHG_CTRL1);
+	if (ret < 0)
+		return ret;
+
+	*en = (((ret & RT9465_MASK_CHG_EN) >> RT9465_SHIFT_CHG_EN) & 0xFF)
+		> 0 ? true : false;
+
+	return ret;
+}
+
 static int rt9465_is_charging_enable(struct rt9465_info *info, bool *enable)
 {
 	int ret = 0;
@@ -1168,6 +1183,16 @@ static int rt9465_get_ichg(struct charger_device *chg_dev, u32 *uA)
 	return ret;
 }
 
+static int rt9465_get_min_ichg(struct charger_device *chg_dev, u32 *uA)
+{
+	int ret = 0;
+
+	*uA = rt9465_find_closest_real_value(RT9465_ICHG_MIN, RT9465_ICHG_MAX,
+		RT9465_ICHG_STEP, 0);
+
+	return ret;
+}
+
 static int rt9465_get_tchg(struct charger_device *chg_dev,
 	int *tchg_min, int *tchg_max)
 {
@@ -1246,12 +1271,14 @@ static int rt9465_kick_wdt(struct charger_device *chg_dev)
 
 static struct charger_ops rt9465_chg_ops = {
 	.enable = rt9465_enable_charging,
+	.is_enabled = rt9465_is_charging_enabled,
 	.enable_safety_timer = rt9465_enable_safety_timer,
 	.enable_chip = rt9465_enable_chip,
 	.dump_registers = rt9465_dump_register,
 	.is_charging_done = rt9465_is_charging_done,
 	.get_charging_current = rt9465_get_ichg,
 	.set_charging_current = rt9465_set_ichg,
+	.get_min_charging_current = rt9465_get_min_ichg,
 	.set_constant_voltage = rt9465_set_battery_voreg,
 	.kick_wdt = rt9465_kick_wdt,
 	.get_tchg_adc = rt9465_get_tchg,
