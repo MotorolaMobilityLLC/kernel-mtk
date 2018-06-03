@@ -18,7 +18,7 @@
 
 #ifdef CONFIG_MTK_KERNEL_MARKER
 static unsigned long __read_mostly mark_addr;
-static int kernel_marker_on;
+static bool kernel_marker_on = true;
 
 static inline void update_tracing_mark_write_addr(void)
 {
@@ -83,7 +83,7 @@ kernel_marker_on_simple_write(struct file *filp, const char __user *ubuf,
 
 	kernel_marker_on = !!val;
 
-	if (kernel_marker_on)
+	if (kernel_marker_on && !mark_addr)
 		update_tracing_mark_write_addr();
 
 	(*ppos)++;
@@ -100,15 +100,17 @@ static const struct file_operations kernel_marker_on_simple_fops = {
 
 static __init int init_kernel_marker(void)
 {
+	struct trace_array *tr;
 	struct dentry *d_tracer;
 
+	tr  = top_trace_array();
 	d_tracer = tracing_init_dentry();
-	if (!d_tracer)
+
+	if (!tr || IS_ERR(d_tracer))
 		return 0;
-
-	trace_create_file("kernel_marker_on", 0644, d_tracer, NULL,
+	trace_create_file("kernel_marker_on", 0644, d_tracer, tr,
 			  &kernel_marker_on_simple_fops);
-
+	update_tracing_mark_write_addr();
 	return 0;
 }
 
