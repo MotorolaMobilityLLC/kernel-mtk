@@ -314,7 +314,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dpi.width = FRAME_WIDTH;
 	params->dpi.height = FRAME_HEIGHT;
 
-	params->dpi.PLL_CLOCK = 75;
+	params->dpi.PLL_CLOCK = 67;
 	params->dpi.ssc_disable = 1;
 
 	params->dpi.lvds_tx_en = 1;
