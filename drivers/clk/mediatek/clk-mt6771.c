@@ -507,7 +507,7 @@ static const char * const camtg_parents[] __initconst = {
 	"univpll_d3_d16",
 	"csw_f26m_ck_d2",
 	"univ_192m_d16",
-	"univ_192m_ck_d32"
+	"univ_192m_d32"
 };
 
 static const char * const camtg2_parents[] __initconst = {
@@ -518,7 +518,7 @@ static const char * const camtg2_parents[] __initconst = {
 	"univpll_d3_d16",
 	"csw_f26m_ck_d2",
 	"univ_192m_d16",
-	"univ_192m_ck_d32"
+	"univ_192m_d32"
 };
 
 static const char * const camtg3_parents[] __initconst = {
@@ -529,7 +529,7 @@ static const char * const camtg3_parents[] __initconst = {
 	"univpll_d3_d16",
 	"csw_f26m_ck_d2",
 	"univ_192m_d16",
-	"univ_192m_ck_d32"
+	"univ_192m_d32"
 };
 
 static const char * const camtg4_parents[] __initconst = {
@@ -540,7 +540,7 @@ static const char * const camtg4_parents[] __initconst = {
 	"univpll_d3_d16",
 	"csw_f26m_ck_d2",
 	"univ_192m_d16",
-	"univ_192m_ck_d32"
+	"univ_192m_d32"
 };
 
 static const char * const uart_parents[] __initconst = {
