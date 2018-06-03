@@ -1278,11 +1278,10 @@ int dlpt_notify_handler(void *unused)
 			if (ptim_rac_val_avg == 0)
 				pr_err("[DLPT] ptim_rac_val_avg=0 , skip\n");
 			else {
-				if (upmu_get_rgs_chrdet()) {
+				if (upmu_get_rgs_chrdet())
 					g_imix_val = get_dlpt_imix_charging();
-				} else {
+				else
 					g_imix_val = get_dlpt_imix();
-				}
 
 				/*Notify*/
 				if (g_imix_val >= 1) {
