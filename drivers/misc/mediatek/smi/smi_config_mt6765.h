@@ -34,9 +34,10 @@
 #define SMI_ESL_VR4K		(SMI_ESL_INIT)
 #define SMI_ESL_ICFP		1
 
-/* CMD_GP_EN: SMI_LARB_NON_SEC_CON */
-#define SMI_LARB_CMD_GP_EN_LARB_NUM	1
-#define SMI_LARB_CMD_GP_EN_PORT_NUM	5
+static unsigned int smi_larb_cmd_gr_en_port[SMI_LARB_NUM][2] = {
+	{0, 5}, {0, 0}, {0, 0}, {0, 0}
+};
+
 static unsigned int smi_larb_bw_thrt_en_port[SMI_LARB_NUM][2] = { /* non-HRT */
 	{4, SMI_LARB0_PORT_NUM}, {0, SMI_LARB1_PORT_NUM},
 	{0, SMI_LARB2_PORT_NUM}, {0, 0}

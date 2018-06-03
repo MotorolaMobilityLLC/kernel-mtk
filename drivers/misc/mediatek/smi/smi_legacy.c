@@ -233,31 +233,7 @@ int smi_bus_disable_unprepare(const unsigned int reg_indx,
 }
 EXPORT_SYMBOL_GPL(smi_bus_disable_unprepare);
 
-static int smi_larb_cmd_grp_enable(void)
-{
-	int i, j;
-
-	for (i = 0; i < SMI_LARB_CMD_GP_EN_LARB_NUM; i++) {
-		struct mtk_smi_dev *smi = larbs[i];
-
-		if (!smi) {
-			SMIDBG("No such device or address\n");
-			return -ENXIO;
-		} else if (!smi->base) {
-			SMIDBG("LARB%u no such device or address\n", i);
-			return -ENXIO;
-		}
-
-		for (j = 0; j < SMI_LARB_CMD_GP_EN_PORT_NUM; j++)
-			writel(readl(smi->base + SMI_LARB_NON_SEC_CON(j)) | 0x2,
-				smi->base + SMI_LARB_NON_SEC_CON(j));
-	}
-	SMIDBG("CMD_GP_EN: LARB_NUM=%u, PORT_NUM=%u\n",
-		SMI_LARB_CMD_GP_EN_LARB_NUM, SMI_LARB_CMD_GP_EN_PORT_NUM);
-	return 0;
-}
-
-static int smi_larb_bw_thrt_enable(const unsigned int reg_indx)
+static int smi_larb_non_sec_con_set(const unsigned int reg_indx)
 {
 	struct mtk_smi_dev *smi = larbs[reg_indx];
 	int i;
@@ -272,15 +248,24 @@ static int smi_larb_bw_thrt_enable(const unsigned int reg_indx)
 	} else if (!smi->base) {
 		SMIDBG("LARB%u no such device or address\n", smi->index);
 		return -ENXIO;
+	} else if (!mtk_smi_clk_ref_cnts_read(smi) && smi->index
+#if IS_ENABLED(CONFIG_MACH_MT6758)
+		&& smi->index != 1
+#endif /* SYS_MM0 or SYS_DIS */
+		) {
+		SMIDBG("LARB%u without clock=%d\n",
+			smi->index, mtk_smi_clk_ref_cnts_read(smi));
+		return 0;
 	}
 
+	for (i = smi_larb_cmd_gr_en_port[reg_indx][0];
+		i < smi_larb_cmd_gr_en_port[reg_indx][1]; i++) /* CMD_GR */
+		writel(readl(smi->base + SMI_LARB_NON_SEC_CON(i)) | 0x2,
+			smi->base + SMI_LARB_NON_SEC_CON(i));
 	for (i = smi_larb_bw_thrt_en_port[reg_indx][0];
-		i < smi_larb_bw_thrt_en_port[reg_indx][1]; i++)
+		i < smi_larb_bw_thrt_en_port[reg_indx][1]; i++) /* BW_THRT */
 		writel(readl(smi->base + SMI_LARB_NON_SEC_CON(i)) | 0x8,
 			smi->base + SMI_LARB_NON_SEC_CON(i));
-	SMIDBG("BW_THRT_EN: reg_indx=%u, PORT=(%u, %u)\n", reg_indx,
-		smi_larb_bw_thrt_en_port[reg_indx][0],
-		smi_larb_bw_thrt_en_port[reg_indx][1]);
 	return 0;
 }
 
@@ -343,9 +328,7 @@ static void smi_clk_subsys_after_on(enum subsys_id sys)
 		if (subsys & (1 << i)) {
 			mtk_smi_config_set(larbs[i], SMI_SCEN_NUM, false);
 			mtk_smi_config_set(larbs[i], smi_scen, false);
-			smi_larb_bw_thrt_enable(i);
-			if (!i) /* DISP */
-				smi_larb_cmd_grp_enable();
+			smi_larb_non_sec_con_set(i);
 		}
 }
 
@@ -1256,14 +1239,10 @@ int smi_register(struct platform_driver *drv)
 			smi, smi_scen_map[smi_drv->scen], true);
 		if (ret)
 			return ret;
-		if (!i) { /* DISP */
-			ret = smi_larb_cmd_grp_enable();
-			if (ret)
-				return ret;
-			ret = smi_larb_bw_thrt_enable(i);
-			if (ret)
-				return ret;
-		}
+		if (i < SMI_LARB_NUM)
+			ret = smi_larb_non_sec_con_set(i);
+		if (ret)
+			return ret;
 	}
 	ret = smi_mmsys_offset_get();
 	if (ret)
