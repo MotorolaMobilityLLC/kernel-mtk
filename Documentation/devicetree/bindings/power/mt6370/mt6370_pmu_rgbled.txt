@@ -1,0 +1,48 @@
+Mediatek MT6370 rgb led subdev
+MT6370 rgb led control.
+
+Required properties:
+- compatible : Must be "mediatek,mt6370_pmu_rgbled";
+- interrupt-names : MT6370 rgbled enabled interrupts.
+	(R:required, O:optional)
+	1. (O)isink4_short: isink4 short led event.
+	2. (O)isink3_short: isink3 short led event.
+	3. (O)isink2_short: isink2 short led event.
+	4. (O)isink1_short: isink1 short led event.
+	5. (O)isink4_open: isink4 open led event.
+	6. (O)isink3_open: isink3 open led event.
+	7. (O)isink2_open: isink2 open led event.
+	8. (O)isink1_open: isink1 open led event.
+
+- mt,led_name : led classdev name for each led channel.
+- mt,led_default_trigger : default led trigger mode. cc_mode -> constant current mode,
+			   pwm_mode -> pwm mode, breath_mode -> breath mode.
+
+Optional node:
+
+Example:
+mt6370_pmu@34 {
+	status = "ok";
+	compatible = "mediatek,mt6370_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	mt6370,intr_gpio_num = <3>; /* direct defined GPIO num */
+	mt6370,intr_gpio = <&pio 3 0>; /* genernal GPIO */
+	rgbled {
+		compatible = "mediatek,mt6370_pmu_rgbled";
+		interrupt-names = "isink4_short", "isink3_short",
+				  "isink2_short", "isink1_short",
+				  "isink4_open", "isink3_open",
+				  "isink2_open", "isink1_open";
+		/* name cnt must be 4 */
+		mt,led_name = "mt6370_pmu_led1", "mt6370_pmu_led2",
+			      "mt6370_pmu_led3", "mt6370_pmu_led4";
+		/* trigger cnt must be 4, mode can be selected as */
+		/* cc_mode -> const current mode */
+		/* pwm_mode -> pwm dimming mode */
+		/* breath_mode -> as the name */
+		mt,led_default_trigger = "cc_mode", "cc_mode",
+					 "cc_mode", "cc_mode";
+	};
+};

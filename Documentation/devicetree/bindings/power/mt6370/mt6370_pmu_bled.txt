@@ -1,0 +1,56 @@
+Mediatek MT6370 backlight led subdev
+MT6370 backlight led control.
+
+Required properties:
+- compatible : Must be "mediatek,mt6370_pmu_bled";
+- interrupt-names : MT6370 bled enabled interrupts.
+	(R: required, O: optional)
+	1. (O)bled_ocp: Backlight over current flag.
+	2. (O)bled_ovp: Backlight over voltage protection flag.
+
+- mt,bled_name : led classdev name.
+- mt,chan_en : channel enabled bit 0 1 2 3 -> chan 1 2 3 4.
+	       ex. enable all 4 channal 0xf. only enable channel 1 and 3 configure 0x5.
+- mt,bl_ovp_level : 0 -> 17V, 1 -> 21V, 2 -> 25V, 3 -> 29V.
+- mt,bl_ocp_level : 0 -> 900mA, 1 -> 1200mA, 2 -> 1500mA, 3 -> 1800mA.
+- mt,pwm_fsample : 0 -> 1MHz, 1 -> 4MHz, 2 or 3 24MHz.
+- mt,pwm_deglitch : 0 -> no filter, 1 -> 100ns, 2 -> 160ns, 3 -> 200ns.
+- mt,pwm_avg_cycle : 0 -> disable avg, 1 -> avg 2 cycles, 2 -> avg 4 cycles.
+		     3 -> avg 8 cycles, 4 -> avg 16 cycles, 5 -> avg 32 cycles.
+- mt,bled_ramptime : 0 -> 0us, 1 -> 500us, 2 -> 750us, 3 -> 1ms, 4 -> 2ms, 5 -> 5ms, 6 -> 10ms,
+		     7 -> 20ms, 8 -> 50ms, 9 -> 100ms, 10 -> 250ms, 11 -> 800ms, 12 -> 1s,
+		     13 -> 2s, 14 -> 4s, 15 -> 8s.
+- mt,bled_flash_ramp : 0 -> 0us, 1 -> 500us, 2 -> 750us, 3 -> 1ms, 4 -> 2ms, 5 -> 5ms.
+- mt,max_bled_brightness : default max backlight brightness setting.
+
+Optional node:
+
+Example:
+mt6370_pmu@34 {
+	status = "ok";
+	compatible = "mediatek,mt6370_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	mt6370,intr_gpio_num = <3>; /* direct defined GPIO num */
+	mt6370,intr_gpio = <&pio 3 0>; /* genernal GPIO */
+	bled {
+		compatible = "mediatek,mt6370_pmu_bled";
+		interrupt-names = "bled_ocp", "bled_ovp";
+		mt,bled_name = "mt6370_pmu_bled";
+		//mt,ext_en_pin;
+		mt,chan_en  = <0xf>; /* bit 0 1 2 3 -> chan 1 2 3 4 */
+		mt,map_linear;
+		mt,bl_ovp_level = <3>; /* 0 17v, 1 21v, 2 25v, 3 29v */
+		mt,bl_ocp_level = <2>; /* 0 900mA, 1 1200mA, 2 1500mA, 3 1800mA */
+		//mt,use_pwm;
+		mt,pwm_fsample = <2>; /* 0 1MHz, 1 4MHz, 2 or 3 24mHz */
+		mt,pwm_deglitch = <1>; /* 0 no filter, 1 100ns, 2 160ns, 3 200ns */
+		mt,pwm_avg_cycle = <0>; /* 0 disable avg, 1 avg 2 cycle, 2 avg 4 cycle */
+					/* 3 avg 8 cycle, 4 avg 16 cycle, 5 avg 32 cycle */
+		mt,bled_ramptime = <3>; /* 0, 500us, 750us, 1ms, 2ms, 5ms, 10ms, 20ms */
+					/* 50ms, 100ms, 250ms, 800ms, 1s, 2s, 4s, 8s */
+		mt,bled_flash_ramp = <1>; /* 0, 500us, 750us, 1ms, 2ms, 5ms */
+		mt,max_bled_brightness = <512>; /* we have 11 bit resolution, quantize in driver */
+	};
+};

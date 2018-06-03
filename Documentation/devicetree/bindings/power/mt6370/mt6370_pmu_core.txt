@@ -1,0 +1,45 @@
+Mediatek MT6370 core subdev
+MT6370 core control.
+
+Required properties:
+- compatible : Must be "mediatek,mt6370_pmu_core";
+- interrupt-names : MT6370 core enabled interrupts.
+	(R:required, O:optional)
+	1. (O)otpi: report whether the protection event of OTP ever occurs.
+	2. (O)vdda_ovp: report whether the protection event of VDDA OVP occurs.
+	3. (O)vdda_uv: report whether the protection event of VDDA UVLO occurs.
+
+- i2cstmr_rst_tmr : i2c safe timer selection, 0 -> 0.5s, 1 -> 0.75s, 2 -> 1s, 3 -> 2s.
+- mrstb_tmr : debounce time selection for external reset pin. 0 -> 0.75s, 1 -> 1s, 2 -> 1.25s,
+	      3 -> 1.5s, 4 -> 1.75s, 5 -> 2s, 6 -> 2.25s, 7 -> 2.5s.
+- int_wdt : interrupt pin watchdog timer selection, 0 -> disable interrupt watchdog timer, 1 -> 250ms,
+	    2 -> 500ms, 3-> 1s.
+- int_deg : interrupt pin deglitch timer selection, 0 -> 1ms, 1 -> 2ms, 2 -> 5ms, 3 -> 10ms.
+
+Optional node:
+- i2cstmr_rst_en : i2c safe timer reset function enable,
+		   comment this line to disable this function.
+- mrstb_en : external reset pin function enalbe,
+	     comment this line to disable this function.
+
+Example:
+mt6370_pmu@34 {
+	status = "ok";
+	compatible = "mediatek,mt6370_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	mt6370,intr_gpio_num = <3>; /* direct defined GPIO num */
+	mt6370,intr_gpio = <&pio 3 0>; /* genernal GPIO */
+	core {
+		compatible = "mediatek,mt6370_pmu_core";
+		interrupt-names = "otp", "vdda_ovp", "vdda_uv";
+		//i2cstmr_rst_en; /* i2c safe timer reset function */
+		i2cstmr_rst_tmr = <0>; /* 0: 0.5s, 1: 0.75s, 2: 1s, 3: 2s */
+		//mrstb_en; /* external reset pin enable */
+		mrstb_tmr = <0>; /* 0: 0.75s, 1: 1s, 2: 1.25s, 3: 1.5s */
+				 /* 4: 1.75s, 5: 2s, 6: 2.25s, 7: 2.5s */
+		int_wdt = <0>; /* 0: disable, 1: 250ms, 2: 500ms, 3: 1s */
+		int_deg = <0>; /* interrupt deglitch, 0: 1ms, 1: 2ms, 2: 5ms, 3: 10ms */
+	};
+};

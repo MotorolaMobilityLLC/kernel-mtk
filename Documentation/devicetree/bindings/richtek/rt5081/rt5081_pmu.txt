@@ -1,0 +1,38 @@
+Richtek RT5081 I2C Sub-pmic
+
+Richtek RT5081 is Integrated Sub Power Management Chips.
+RT5081 integrates the functions included Charger, Backlight,
+RGBLED, DisplayBias, Vib LDO, Flash LED.
+Richtek RT5081 is connected to an i2c bus.
+
+
+Required properties:
+- compatible : Must be "richtek,rt5081_pmu";
+- reg : Must be 0x34, it's RT5081 PMU default I2C Slave address.
+- interrupt-controller : Since the RT5081 support several interrupts internally,
+  it is considered as an interrupt controller cascaded to the SoC one.
+- #interrupt-cells = <1>;
+/* If CONFIG_MTK_GPIOLIB_STAND is defined, rt,intr_gpio_num is used. Otherwise we use rt,intr_gpio. */
+- rt,intr_gpio_num : IRQ GPIO pin that's connected to RT5081 interrupt.
+- rt,intr_gpio : general IRQ GPIO pin.
+
+Optional node:
+- core : core subdev for RT5081 core part.
+- charger : charger subdev for RT5081 charger part.
+- fled : flash led subdev for RT5081 flashLED part.
+- ldo : ldo subdev for RT5081 Vib LDO part.
+- rgbled : rgbled subdev for RT5081 RGB indicator part.
+- bled : backlight subdev for RT5081 backlight led part.
+- dsv : dsv subdev for RT5081 display bias part.
+
+
+Example:
+rt5081_pmu@34 {
+	status = "ok";
+	compatible = "richtek,rt5081_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	rt,intr_gpio_num = <3>; /* direct defined GPIO num */
+	rt,intr_gpio = <&pio 3 0>; /* genernal GPIO */
+};
