@@ -72,12 +72,12 @@
 #define SCP_CLK_HIGH_CORE_CG		(scpreg.clkctrl + 0x005C)
 
 /* INFRA_IRQ */
-#define INFRA_IRQ_SET			(scpreg.scpsys + 0x0A20)
+#define INFRA_IRQ_SET			(scpreg.scpsys + 0x0B14)
 	#define AP_AWAKE_LOCK		(0)
 	#define AP_AWAKE_UNLOCK		(1)
 	#define CONNSYS_AWAKE_LOCK	(2)
 	#define CONNSYS_AWAKE_UNLOCK	(3)
-#define INFRA_IRQ_CLEAR			(scpreg.scpsys + 0x0A24)
+#define INFRA_IRQ_CLEAR			(scpreg.scpsys + 0x0B18)
 
 #define SCP_SCP2SPM_VOL_LV		(scpreg.cfg + 0x0094)
 
