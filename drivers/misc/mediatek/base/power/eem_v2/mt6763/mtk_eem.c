@@ -246,13 +246,73 @@ struct clk *clk_mfg0, *clk_mfg1, *clk_mfg2, *clk_mfg3, *clk_mfg4;
 #endif
 
 /* SOC v1 Voltage (10uv)*/
-static unsigned int vcore_opp_1[VCORE_NR_FREQ][4] = {
-	{75000, 0, 0, 0},
-	{62500, 0, 0, 0},
-	{62500, 0, 0, 0},
-	{62500, 0, 0, 0},
+static unsigned int vcore_opp_L4_2CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
+	{80000, 79375, 78750, 78125,
+	 77500, 76875, 76250, 75625,
+	 75000, 74375, 73750, 73125,
+	 72500, 71875, 71250, 70625},
+
+	{72500, 71875, 71250, 70625,
+	 70000, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500},
+
+	{72500, 71875, 71250, 70625,
+	 70000, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500},
+
+	{72500, 71875, 71250, 70625,
+	 70000, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500},
 };
+
 #if 0
+static unsigned int vcore_opp_L4_1CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
+	{80000, 79375, 78750, 78125,
+	 77500, 76875, 76250, 75625,
+	 75000, 74375, 73750, 73125,
+	 72500, 71875, 71250, 70625},
+
+	{80000, 79375, 78750, 78125,
+	 77500, 76875, 76250, 75625,
+	 75000, 74375, 73750, 73125,
+	 72500, 71875, 71250, 70625},
+
+	{72500, 71875, 71250, 70625,
+	 70000, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500},
+
+	{72500, 71875, 71250, 70625,
+	 70000, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500},
+};
+
+static unsigned int vcore_opp_L3_1CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
+	{80000, 79375, 78750, 78125,
+	 77500, 76875, 76250, 75625,
+	 75000, 74375, 73750, 73125,
+	 72500, 71875, 71250, 70625},
+
+	{80000, 79375, 78750, 78125,
+	 77500, 76875, 76250, 75625,
+	 75000, 74375, 73750, 73125,
+	 72500, 71875, 71250, 70625},
+
+	{72500, 71875, 71250, 70625,
+	 70000, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500},
+
+	{72500, 71875, 71250, 70625,
+	 70000, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500,
+	 72500, 72500, 72500, 72500},
+};
+
 /* SOC v2 Voltage (10uv)*/
 static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
 	{84000, 815000, 79000, 76500},
@@ -263,7 +323,7 @@ static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
 #endif
 
 /* ptr that points to v1 or v2 opp table */
-unsigned int (*vcore_opp)[VCORE_NR_FREQ];
+unsigned int (*vcore_opp)[VCORE_NR_FREQ_EFUSE];
 /* final vcore opp table */
 unsigned int eem_vcore[VCORE_NR_FREQ];
 /* record index for vcore opp table from efuse */
@@ -326,7 +386,14 @@ static void get_vcore_opp(void)
 	eem_debug("chip ver=%d\n", eem_chip_ver);
 #else
 	/* default setting */
-	vcore_opp = &vcore_opp_1[0];
+	/*
+	 * The opp table selection is depend on DRAM type and
+	 * DRAM channel, need to consult with Max Yu for the
+	 * relative api.
+	 * vcore_opp_L4_2CH, vcore_opp_L4_1CH, vcore_opp_L3_1CH
+	*/
+
+	vcore_opp = &vcore_opp_L4_2CH[0];
 #endif
 }
 
@@ -380,8 +447,6 @@ static int __init vcore_ptp_init(void)
 			eem_vcore[i] = det->ops->volt_2_pmic(det, *(vcore_opp[i]+eem_vcore_index[i]));
 	}
 
-	/*vcore1 = (vcore1 < vcore2) ? vcore2 : vcore1;*/
-	/*vcore0 = (vcore0 < vcore1) ? vcore1 : vcore0;*/
 	/* bottom up compare each volt to ensure each opp is in descending order */
 	for (i = VCORE_NR_FREQ - 2; i >= 0; i--)
 		eem_vcore[i] = (eem_vcore[i] < eem_vcore[i+1]) ? eem_vcore[i+1] : eem_vcore[i];

@@ -111,6 +111,7 @@
 */
 #define NR_HW_RES			(12) /* reserve for eem log */
 #define NR_HW_RES_FOR_BANK	(10) /* real eem banks for efuse */
+#define VCORE_NR_FREQ_EFUSE     (16)
 #define VCORE_NR_FREQ		(4)
 #define HW_RES_IDX_TURBO	(11) /* for providing turbo value to cpu dvfs */
 #define EEM_INIT01_FLAG		(0x1F) /* should be 0x5F if vcore eem enable */
