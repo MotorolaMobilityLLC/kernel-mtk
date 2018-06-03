@@ -2799,9 +2799,23 @@ static int _disp_primary_path_check_trigger(void *data)
 
 static int _disp_primary_path_check_trigger_delay_33ms(void *data)
 {
+	struct sched_param param = {.sched_priority = 94 };
+
+	sched_setscheduler(current, SCHED_RR, &param);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_DELAYED_TRIGGER_33ms);
 	while (1) {
+		unsigned int hwc_fps = 0;
+		int stable = 0;
 		dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_DELAYED_TRIGGER_33ms);
+		/* if current fps < 20, trigger immediately, so we may enter idle state quickly
+		 * if fps > 20, delay AAL trigger to align with HWC trigger, this can save power
+		 */
+		fps_ctx_get_fps(&primary_fps_ctx, &hwc_fps, &stable);
+
+		if (hwc_fps < 20) {
+			__primary_check_trigger();
+			continue;
+		}
 		atomic_set(&delayed_trigger_kick, 0);
 
 		if (disp_helper_get_option(DISP_OPT_DELAYED_TRIGGER))

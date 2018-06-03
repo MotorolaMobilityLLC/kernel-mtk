@@ -362,7 +362,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 0);
 #endif
 	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 1);
-	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 0);
+	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
 	disp_helper_set_option(DISP_OPT_SHADOW_REGISTER, 0);
 	disp_helper_set_option(DISP_OPT_SHADOW_MODE, 0);
 
