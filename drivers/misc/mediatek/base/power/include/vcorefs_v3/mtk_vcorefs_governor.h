@@ -78,7 +78,7 @@ struct opp_profile {
 #define BOOT_UP_OPP             OPP_0
 
 /* target OPP when feature enable */
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 #define LATE_INIT_OPP           (NUM_OPP - 2) /* for hwc enabled display temp-fix */
 #elif defined(CONFIG_MACH_MT6763)
 #define LATE_INIT_OPP           (NUM_OPP - 1)
@@ -101,7 +101,7 @@ struct opp_profile {
 #define VCORE_BASE_UV           400000
 #elif defined(CONFIG_MACH_MT6763)        /* PMIC MT6356 */
 #define VCORE_BASE_UV           500000
-#elif defined(CONFIG_MACH_MT6759)        /* PMIC MT6355 */
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)       /* PMIC MT6355 */
 #define VCORE_BASE_UV           406250
 #else
 #error "Not set pmic config properly!"

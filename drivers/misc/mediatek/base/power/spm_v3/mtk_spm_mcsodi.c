@@ -229,7 +229,7 @@ static struct pwr_ctrl mcsodi_ctrl = {
 
 	/* Auto-gen End */
 };
-#elif defined(CONFIG_MACH_MT6759)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 /* TODO: Wait SPM auto-gen */
 static struct pwr_ctrl mcsodi_ctrl;
 #else

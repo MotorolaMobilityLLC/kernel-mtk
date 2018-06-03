@@ -34,7 +34,10 @@
 #endif
 #include <mt-plat/upmu_common.h>
 #include <mtk_spm_misc.h>
+/* 20170407 Owen fix build error */
+#ifndef CONFIG_MACH_MT6758
 #include <mtk_dramc.h>
+#endif
 
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
@@ -404,12 +407,12 @@ static void spm_set_sysclk_settle(void)
 	/* md_settle is keyword for suspend status */
 	spm_crit2("md_settle = %u, settle = %u\n", SPM_SYSCLK_SETTLE, settle);
 }
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 static int mt_power_gs_dump_suspend_count = 2;
 #endif
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
@@ -434,9 +437,12 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 		mt_power_gs_dump_suspend(GS_PMIC);
 #endif
 
-#ifdef CONFIG_MACH_MT6759
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+	/* 20170407 Owen fix build error */
+	#if 0
 	if (slp_dump_golden_setting)
 		mt_power_gs_dump_suspend();
+	#endif
 #endif
 }
 
@@ -447,7 +453,7 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	dvfsrc_md_scenario_update(0);
 #endif
 
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
@@ -542,7 +548,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta)
 	if (log_wakesta_index >= 0xFFFFFFF0)
 		log_wakesta_index = 0;
 #endif
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 	ddr_status = vcorefs_get_curr_ddr();
 	vcore_status = vcorefs_get_curr_vcore();
 #endif

@@ -34,7 +34,10 @@
 
 #include <asm/system_misc.h>
 #include <mt-plat/sync_write.h>
+/* Owen 20170407 Fix Build error */
+#ifndef CONFIG_MACH_MT6758
 #include <mach/mtk_gpt.h>
+#endif
 #include <mtk_spm.h>
 #include <mtk_spm_dpidle.h>
 #include <mtk_spm_idle.h>
@@ -70,8 +73,10 @@
 		pr_warn(IDLE_TAG fmt, ##args); \
 	}
 
+/* 20170407 Owen fix build error */
+#if 0
 #define IDLE_GPT GPT4
-
+#endif
 #define log2buf(p, s, fmt, args...) \
 	(p += snprintf(p, sizeof(s) - strlen(s), fmt, ##args))
 
@@ -370,6 +375,7 @@ EXPORT_SYMBOL_GPL(mtk_idle_notifier_call_chain);
 /* Workaround of static analysis defect*/
 int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
 {
+#if 0
 	unsigned int val[2] = {0};
 	int ret = 0;
 
@@ -377,10 +383,15 @@ int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
 	*ptr = val[0];
 
 	return ret;
+#else
+	/* Owen 20170407 Fix Build error */
+	return 0;
+#endif
 }
 
 int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
 {
+#if 0
 	unsigned int val[2] = {0};
 	int ret = 0;
 
@@ -388,6 +399,10 @@ int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
 	*ptr = val[0];
 
 	return ret;
+#else
+	/* Owen 20170407 Fix Build error */
+	return 0;
+#endif
 }
 #endif
 
@@ -414,9 +429,11 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 #else
 	unsigned int timer_cmp = 0;
 
+/* Owen 20170407 Fix Build error */
+#if 0
 	gpt_get_cnt(GPT1, &timer_left);
 	gpt_get_cmp(GPT1, &timer_cmp);
-
+#endif
 	if ((timer_cmp - timer_left) < timer_criteria)
 		ret = false;
 #endif
@@ -427,6 +444,8 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 
 static void timer_setting_before_wfi(bool f26m_off)
 {
+/* Owen 20170407 Fix Build error */
+#if 0
 #ifndef USING_STD_TIMER_OPS
 #ifdef CONFIG_SMP
 	unsigned int timer_left = 0;
@@ -450,10 +469,13 @@ static void timer_setting_before_wfi(bool f26m_off)
 	gpt_get_cnt(GPT1, &timer_left);
 #endif
 #endif
+#endif
 }
 
 static void timer_setting_after_wfi(bool f26m_off)
 {
+/* Owen 20170407 Fix Build error */
+#if 0
 #ifndef USING_STD_TIMER_OPS
 #ifdef CONFIG_SMP
 	if (gpt_check_and_ack_irq(IDLE_GPT)) {
@@ -480,6 +502,7 @@ static void timer_setting_after_wfi(bool f26m_off)
 		}
 		stop_gpt(IDLE_GPT);
 	}
+#endif
 #endif
 #endif
 }
@@ -608,7 +631,7 @@ static bool mtk_idle_cpu_criteria(void)
 }
 #endif
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 #define CPU_PWR_STATUS_MASK 0x6F78
 #endif
 
@@ -1152,7 +1175,7 @@ static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 	SPM_FLAG_DIS_PERI_PDN |
 #endif
 	SPM_FLAG_ENABLE_ATF_ABORT |
@@ -1167,7 +1190,7 @@ static u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 	SPM_FLAG_DIS_PERI_PDN |
 #endif
 	SPM_FLAG_ENABLE_ATF_ABORT |
@@ -1190,7 +1213,7 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DEEPIDLE_OPTION
 };
 
-#elif defined(CONFIG_MACH_MT6759)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 
 u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
@@ -1206,7 +1229,7 @@ u32 slp_spm_deepidle_flags = {
 #endif /* platform difference */
 
 static u32 slp_spm_MCSODI_flags = {
-#ifdef CONFIG_MACH_MT6759
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	SPM_FLAG_ENABLE_MCSODI |
 #endif
 	SPM_FLAG_RUN_COMMON_SCENARIO
@@ -2548,13 +2571,17 @@ static int mtk_idle_hotplug_cb_init(void)
 
 void mtk_idle_gpt_init(void)
 {
+/* 20170407 Owen fix build error */
+#if 0
 #ifndef USING_STD_TIMER_OPS
 	int err = 0;
 
 	err = request_gpt(IDLE_GPT, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
 			  0, NULL, GPT_NOAUTOEN);
+
 	if (err)
 		idle_warn("[%s] fail to request GPT %d\n", __func__, IDLE_GPT + 1);
+#endif
 #endif
 }
 
