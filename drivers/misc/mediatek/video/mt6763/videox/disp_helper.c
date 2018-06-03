@@ -102,6 +102,7 @@ static struct {
 	{DISP_OPT_DYNAMIC_DEBUG, 0, "DISP_OPT_DYNAMIC_DEBUG"}, /* not use now */
 	{DISP_OPT_SHOW_VISUAL_DEBUG_INFO, 0, "DISP_OPT_SHOW_VISUAL_DEBUG_INFO"},
 	{DISP_OPT_RDMA_UNDERFLOW_AEE, 0, "DISP_OPT_RDMA_UNDERFLOW_AEE"},
+	{DISP_OPT_FENCE_TIMEOUT_AEE, 0, "DISP_OPT_FENCE_TIMEOUT_AEE"},
 	{DISP_OPT_HRT, 0, "DISP_OPT_HRT"},
 	{DISP_OPT_PARTIAL_UPDATE, 0, "DISP_OPT_PARTIAL_UPDATE"},
 	{DISP_OPT_CV_BYSUSPEND, 0, "DISP_OPT_CV_BYSUSPEND"},
@@ -382,6 +383,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 0);
 	disp_helper_set_option(DISP_OPT_SHARE_WDMA0, 1);
 	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 1);
+	disp_helper_set_option(DISP_OPT_FENCE_TIMEOUT_AEE, 1);
 	disp_helper_set_option(DISP_OPT_DC_BY_HRT, 1);
 }
 

@@ -3622,6 +3622,8 @@ static int _present_fence_release_worker_thread(void *data)
 
 		wait_event_interruptible(primary_display_present_fence_wq,
 					 atomic_read(&primary_display_present_fence_update_event));
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_present_fence_release, MMPROFILE_FLAG_PULSE,
+			0, 0);
 		atomic_set(&primary_display_present_fence_update_event, 0);
 		if (!islcmconnected && !primary_display_is_video_mode()) {
 			DISPCHECK("LCM Not Connected && CMD Mode\n");
@@ -3632,6 +3634,8 @@ static int _present_fence_release_worker_thread(void *data)
 		} else {
 			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 			/* dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_present_fence_release, MMPROFILE_FLAG_PULSE,
+				1, 1);
 		}
 
 		_primary_path_lock(__func__);
@@ -5041,6 +5045,8 @@ done:
 void primary_display_update_present_fence(unsigned int fence_idx)
 {
 	gCurrentPresentFenceIndex = fence_idx;
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_present_fence_set, MMPROFILE_FLAG_PULSE,
+		       fence_idx, 1);
 	atomic_set(&primary_display_present_fence_update_event, 1);
 	if (disp_helper_get_option(DISP_OPT_PRESENT_FENCE))
 		wake_up_interruptible(&primary_display_present_fence_wq);

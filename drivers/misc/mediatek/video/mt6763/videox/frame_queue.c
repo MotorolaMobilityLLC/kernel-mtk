@@ -21,6 +21,7 @@
 #include "mtkfb_fence.h"
 #include "mtk_disp_mgr.h"
 #include "ged_log.h"
+#include "disp_helper.h"
 
 
 static struct frame_queue_head_t frame_q_head[MAX_SESSION_COUNT];
@@ -136,6 +137,7 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 	int i, ret = 0, tmp;
 	int session_id = cfg->session_id;
 	unsigned int present_fence_idx = cfg->present_fence_idx;
+	static int cnt;
 
 	/* wait present fence */
 	if (cfg->prev_present_fence_struct) {
@@ -144,7 +146,10 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 					cfg->prev_present_fence_fd, present_fence_idx, present_fence_idx);
 
 		if (tmp) {
-			DISPERR("wait present fence fail!\n");
+			DISPERR("wait present fence fail! cnt=%d\n", cnt);
+			cnt++;
+			if (disp_helper_get_option(DISP_OPT_FENCE_TIMEOUT_AEE) && (cnt == 1))
+				disp_aee_print_with_ftrace("wait present fence fail!\n");
 			ret = -1;
 		}
 	}
