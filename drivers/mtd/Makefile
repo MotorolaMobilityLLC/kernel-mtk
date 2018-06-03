@@ -26,11 +26,11 @@ obj-$(CONFIG_SSFDC)		+= ssfdc.o
 obj-$(CONFIG_SM_FTL)		+= sm_ftl.o
 obj-$(CONFIG_MTD_OOPS)		+= mtdoops.o
 obj-$(CONFIG_MTD_SWAP)		+= mtdswap.o
-obj-$(CONFIG_MTK_FTL)		+= mtftl.o
+obj-$(CONFIG_MTK_FTL)		+= mtkftl.o
 
 nftl-objs		:= nftlcore.o nftlmount.o
 inftl-objs		:= inftlcore.o inftlmount.o
-mtftl-objs		:= mt_ftl_blkdevs.o mt_ftl.o
+mtkftl-objs		:= mtk_ftl_blkdevs.o mtk_ftl.o
 
 obj-y		+= chips/ lpddr/ maps/ devices/ nand/ onenand/ tests/
 

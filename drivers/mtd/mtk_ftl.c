@@ -14,12 +14,12 @@
  * GNU General Public License for more details.
  */
 
-#include "mt_ftl.h"
+#include "mtk_ftl.h"
 #include "ubi/ubi.h"
 #include <linux/crypto.h>
 
 #define CREATE_TRACE_POINTS
-#include <trace/events/mt_ftl.h>
+#include <trace/events/mtk_ftl.h>
 
 #ifdef MT_FTL_PROFILE
 #include <linux/time.h>

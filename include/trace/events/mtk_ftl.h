@@ -12,7 +12,7 @@
  */
 
 #undef TRACE_SYSTEM
-#define TRACE_SYSTEM mt_ftl
+#define TRACE_SYSTEM mtk_ftl
 
 #if !defined(_TRACE_MT_FTL_H) || defined(TRACE_HEADER_MULTI_READ)
 #define _TRACE_MT_FTL_H
