@@ -21,8 +21,6 @@
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 #include <linux/delay.h>
 
-#define ISL91302A_BUCK_DRV_VERSION	"1.0.0_MTK"
-
 #define ISL91302A_BUCK_MAX	3
 
 struct isl91302a_regulator_info {
@@ -442,7 +440,9 @@ int isl91302a_regulator_init(struct isl91302a_chip *chip)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(isl91302a_desc_table); i++) {
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		isl91302a_desc_table[i].client = chip->spi;
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 		isl91302a_desc_table[i].def_init_data =
 					&isl91302a_buck_init_data[i];
 		ret = mtk_simple_regulator_register(&isl91302a_desc_table[i],

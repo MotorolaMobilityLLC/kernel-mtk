@@ -18,15 +18,15 @@
 #include <linux/regulator/consumer.h>
 
 struct isl91302a_chip {
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	struct spi_device *spi;
-	struct device *dev;
 	struct mutex io_lock;
-#ifdef CONFIG_RT_REGMAP
+	#ifdef CONFIG_RT_REGMAP
 	struct rt_regmap_device *regmap_dev;
-#endif /* CONFIG_RT_REGMAP */
-	int irq;
+	#endif /* CONFIG_RT_REGMAP */
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+	struct device *dev;
 };
-
 
 #define ISL91302A_CHIPNAME	(0x03)
 
@@ -65,13 +65,31 @@ struct isl91302a_chip {
 #define FLT_RECORDBUCK2_FLT_BUCK2_OV_M      (0x20)
 #define FLT_RECORDBUCK2_FLT_BUCK2_UV_M      (0x10)
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+static inline int isl91302a_read_byte(void *client, uint32_t addr, uint32_t *val)
+{
+	pr_err("%s not support in sspm\n", __func__);
+	return -EINVAL;
+}
+static inline int isl91302a_write_byte(void *client, uint32_t addr, uint32_t value)
+{
+	pr_err("%s not support in sspm\n", __func__);
+	return -EINVAL;
+}
+static inline int isl91302a_assign_bit(void *client, uint32_t reg,
+					uint32_t mask, uint32_t data)
+{
+	pr_err("%s not support in sspm\n", __func__);
+	return -EINVAL;
+}
+#else
 extern int isl91302a_read_byte(void *client, uint32_t addr, uint32_t *val);
 extern int isl91302a_write_byte(void *client, uint32_t addr, uint32_t value);
 extern int isl91302a_assign_bit(void *client, uint32_t reg,
 					uint32_t mask, uint32_t data);
+#endif /*  CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 extern int isl91302a_regulator_init(struct isl91302a_chip *chip);
 extern int isl91302a_regulator_deinit(struct isl91302a_chip *chip);
-extern int force_enable_proc2(void);
 
 #define isl91302a_set_bit(spi, reg, mask) \
 	isl91302a_assign_bit(spi, reg, mask, mask)
