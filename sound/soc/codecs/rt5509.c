@@ -183,7 +183,7 @@ static const struct reg_config revd_general_config[] = {
 	{ 0x83, 0x54},
 	{ 0x86, 0x38},
 	{ 0x87, 0x1f},
-	{ 0x92, 0x57},
+	{ 0x92, 0x54},
 	{ 0x93, 0xd4},
 	{ 0x94, 0x12},
 	{ 0x9a, 0xdc},
@@ -541,6 +541,28 @@ static int rt5509_adap_coefficent_fix(struct snd_soc_codec *codec)
 	return 0;
 }
 
+static int rt5509_init_impedance_ctrl_fix(struct snd_soc_codec *codec)
+{
+	u32 gsense_otp, rspk_otp, result;
+	int ret = 0;
+
+	dev_dbg(codec->dev, "%s\n", __func__);
+	ret = snd_soc_read(codec, RT5509_REG_ISENSEGAIN);
+	if (ret == 0)
+		ret = 0x800000;
+	gsense_otp = ret & 0xffffff;
+	dev_dbg(codec->dev, "gsense otp 0x%08x\n", gsense_otp);
+	ret = snd_soc_read(codec, RT5509_REG_CALIB_DCR);
+	if (ret == 0)
+		ret = 0x800000;
+	rspk_otp = ret & 0xffffff;
+	dev_dbg(codec->dev, "rspk otp 0x%08x\n", rspk_otp);
+	result = ((rspk_otp << 7) / gsense_otp) << 16;
+	result &= 0xffffff;
+	dev_dbg(codec->dev, "final result 0x%08x\n", result);
+	return snd_soc_write(codec, RT5509_REG_DELAYRES, result);
+}
+
 static int rt5509_init_proprietary_setting(struct snd_soc_codec *codec)
 {
 	struct rt5509_chip *chip = snd_soc_codec_get_drvdata(codec);
@@ -577,6 +599,9 @@ static int rt5509_init_proprietary_setting(struct snd_soc_codec *codec)
 	ret = rt5509_adap_coefficent_fix(codec);
 	if (ret < 0)
 		dev_err(chip->dev, "fix adap coefficient fail\n");
+	ret = rt5509_init_impedance_ctrl_fix(codec);
+	if (ret < 0)
+		dev_err(chip->dev, "init impedance ctrl fix fail\n");
 	if (p_param->cfg_size[RT5509_CFG_SPEAKERPROT]) {
 		ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
 			RT5509_SPKPROT_ENMASK, RT5509_SPKPROT_ENMASK);
@@ -860,10 +885,6 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 			RT5509_TRIWAVE_ENMASK, RT5509_TRIWAVE_ENMASK);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_BLOCKREF2,
-			0x08, 0x08);
-		if (ret < 0)
-			goto out_boost_event;
 		mdelay(1);
 		ret = snd_soc_update_bits(codec, RT5509_REG_MSKFLAG,
 			0x3F, 0x00);
@@ -1082,10 +1103,6 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 			goto out_boost_event;
 		ret = snd_soc_update_bits(codec, RT5509_REG_BSTTM,
 			0x40, 0x00);
-		if (ret < 0)
-			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_BLOCKREF2,
-			0x08, 0x00);
 		if (ret < 0)
 			goto out_boost_event;
 		ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
@@ -2245,4 +2262,4 @@ module_exit(rt5509_driver_exit);
 MODULE_AUTHOR("CY_Huang <cy_huang@richtek.com>");
 MODULE_DESCRIPTION("RT5509 SPKAMP Driver");
 MODULE_LICENSE("GPL");
-MODULE_VERSION("1.0.13_M");
+MODULE_VERSION("1.0.14_M");
