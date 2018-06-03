@@ -10334,7 +10334,7 @@ wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 
 	if (prSetP2P->u4Enable) {
 		p2pSetMode((prSetP2P->u4Mode == 1) ? TRUE : FALSE);
-		if (p2pLaunch(prAdapter->prGlueInfo))
+		if (p2pLaunch(prAdapter->prGlueInfo)) {
 			ASSERT(prAdapter->fgIsP2PRegistered);
 			if (prAdapter->rWifiVar.ucApUapsd && prSetP2P->u4Mode == 1) {
 				PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T rUapsdParams;
@@ -10348,6 +10348,7 @@ wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 				rUapsdParams.ucMaxSpLen = 0; /* default:0, Do not limit delivery pkt num */
 				nicSetUapsdParam(prAdapter, &rUapsdParams, NETWORK_TYPE_P2P);
 			}
+		}
 	} else {
 		if (prAdapter->fgIsP2PRegistered)
 			p2pRemove(prAdapter->prGlueInfo);
