@@ -238,17 +238,17 @@ struct clk *clk_mfg0, *clk_mfg1, *clk_mfg2, *clk_mfg3;
 
 /* SOC v1 Voltage (10uv)*/
 static unsigned int vcore_opp_L4_2CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
-	{79375, 76875, 74375, 71875},
-	{71875, 69375, 66875, 64375},
-	{71875, 69375, 66875, 64375},
-	{71875, 69375, 66875, 64375}
+{79375, 79375, 79375, 79375, 79375, 79375, 79375, 79375, 79375, 76875, 76875, 76875, 76875, 76875, 76875, 76875},
+{72500, 72500, 72500, 72500, 72500, 72500, 72500, 72500, 72500, 66875, 66875, 66875, 66875, 66875, 66875, 66875},
+{72500, 72500, 72500, 72500, 72500, 72500, 72500, 72500, 72500, 66875, 66875, 66875, 66875, 66875, 66875, 66875},
+{72500, 72500, 72500, 72500, 72500, 72500, 72500, 72500, 72500, 66875, 66875, 66875, 66875, 66875, 66875, 66875}
 };
 
 static unsigned int vcore_opp_L3_1CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
-	{79375, 76875, 74375, 71875},
-	{79375, 76875, 74375, 71875},
-	{71875, 69375, 66875, 64375},
-	{71875, 69375, 66875, 64375}
+{79375, 79375, 79375, 79375, 79375, 79375, 79375, 79375, 79375, 76875, 76875, 76875, 76875, 76875, 76875, 76875},
+{79375, 79375, 79375, 79375, 79375, 79375, 79375, 79375, 79375, 76875, 76875, 76875, 76875, 76875, 76875, 76875},
+{72500, 72500, 72500, 72500, 72500, 72500, 72500, 72500, 72500, 66875, 66875, 66875, 66875, 66875, 66875, 66875},
+{72500, 72500, 72500, 72500, 72500, 72500, 72500, 72500, 72500, 66875, 66875, 66875, 66875, 66875, 66875, 66875}
 };
 
 #if 0
@@ -357,7 +357,7 @@ static void get_vcore_opp(void)
 #if !EEM_BANK_SOC
 static void get_soc_efuse(void)
 {
-	unsigned int soc_efuse = 0, mask = 0x3, ft_pgm_ver = 0;
+	unsigned int soc_efuse = 0, mask = 0xF, ft_pgm_ver = 0, backup_2 = 0, backup_3 = 0;
 	#if 1
 		int ddr_type = get_ddr_type();
 		int emi_ch_num = get_emi_ch_num();
@@ -366,10 +366,18 @@ static void get_soc_efuse(void)
 		int emi_ch_num = 1;
 	#endif
 
-	ft_pgm_ver = GET_BITS_VAL(7:4, get_devinfo_with_index(DEVINFO_IDX_0));
+	backup_2 = get_devinfo_with_index(152); /* for 0.7V */
+	eem_error("backup_2 eufse = (0x%x)\n", backup_2);
+	backup_3 = get_devinfo_with_index(153); /* for 0.8V */
+	eem_error("backup_3 eufse = (0x%x)\n", backup_3);
 
-	if (ft_pgm_ver >= 3)
-		soc_efuse = 0; /* get_devinfo_with_index(DEVINFO_IDX_10); */
+	if (backup_3 != 0) {
+		soc_efuse = ((backup_2 & 0xF) << 4) | (backup_3 & 0xF);
+	} else {
+		ft_pgm_ver = GET_BITS_VAL(7:4, get_devinfo_with_index(DEVINFO_IDX_0));
+		if (ft_pgm_ver >= 3)
+			soc_efuse = 0; /* get_devinfo_with_index(DEVINFO_IDX_10); */
+	}
 
 	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2) {
 		eem_vcore_index[0] = GET_BITS_VAL(3:0, soc_efuse) & mask;
@@ -419,7 +427,7 @@ static int __init vcore_ptp_init(void)
 	}
 
 	/* read efuse (0x11F107C0[8]) to patch opp-1 */
-	if (get_devinfo_with_index(138) & 0x100)
+	if ((get_devinfo_with_index(138) & 0x100) || ((get_devinfo_with_index(151) & 0x03) == 0x01))
 		eem_vcore[1] = eem_vcore[0];
 
 	/* bottom up compare each volt to ensure each opp is in descending order */
