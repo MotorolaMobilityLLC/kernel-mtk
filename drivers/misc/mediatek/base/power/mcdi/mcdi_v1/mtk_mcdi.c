@@ -47,10 +47,12 @@
 #define MCDI_SYSRAM_NF_WORD (MCDI_SYSRAM_SIZE / 4)
 #define SYSRAM_DUMP_RANGE   50
 
+#define MCDI_DEBUG_INFO_MAGIC_NUM       0x1eef9487
+#define MCDI_DEBUG_INFO_VERSION         0x2
+
 static unsigned long mcdi_cnt_cpu[NF_CPU];
 static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
 
-void __iomem *sspm_base;
 void __iomem *mcdi_sysram_base;
 
 static unsigned long mcdi_cnt_cpu_last[NF_CPU];
@@ -313,6 +315,9 @@ void mcdi_sysram_init(void)
 		return;
 
 	memset_io((void __iomem *)mcdi_sysram_base, 0, MCDI_SYSRAM_SIZE);
+
+	mcdi_write(mcdi_sysram_base + 0x000, MCDI_DEBUG_INFO_MAGIC_NUM);
+	mcdi_write(mcdi_sysram_base + 0x004, MCDI_DEBUG_INFO_VERSION);
 }
 
 void mcdi_cpu_off(int cpu)
@@ -390,6 +395,8 @@ void mcdi_heart_beat_log_dump(void)
 	unsigned long mcdi_cnt;
 	unsigned long any_core_info = 0;
 	unsigned long any_core_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
+	unsigned int cpu_mask = 0;
+	unsigned int cluster_mask = 0;
 
 	spin_lock_irqsave(&mcdi_heart_beat_spin_lock, flags);
 
@@ -435,6 +442,10 @@ void mcdi_heart_beat_log_dump(void)
 		mcdi_buf_append(buf, "%s = %lu, ", any_core_cpu_cond_name[i], any_core_info);
 		any_core_cpu_cond_info_last[i] = any_core_cpu_cond_info[i];
 	}
+
+	get_mcdi_avail_mask(&cpu_mask, &cluster_mask);
+
+	mcdi_buf_append(buf, "avail cpu = %04x, cluster = %04x", cpu_mask, cluster_mask);
 
 	pr_warn("%s\n", get_mcdi_buf(buf));
 }
@@ -562,6 +573,11 @@ bool mcdi_task_pause(bool paused)
 	return ret;
 }
 
+void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask)
+{
+	mcdi_mbox_write(MCDI_MBOX_AVAIL_CPU_MASK, cpu_mask);
+}
+
 /* Disable MCDI during cpu_up/cpu_down period */
 static int mcdi_cpu_callback(struct notifier_block *nfb,
 				   unsigned long action, void *hcpu)
@@ -604,24 +620,11 @@ static int mcdi_hotplug_cb_init(void)
 	return 0;
 }
 
-static const char sspm_node_name[] = "mediatek,sspm";
 static const char mcdi_node_name[] = "mediatek,mt6763-mcdi";
 
 static void mcdi_of_init(void)
 {
 	struct device_node *node = NULL;
-
-	node = of_find_compatible_node(NULL, NULL, sspm_node_name);
-
-	if (!node)
-		pr_err("node '%s' not found!\n", sspm_node_name);
-
-	sspm_base = of_iomap(node, 0);
-
-	if (!sspm_base)
-		pr_err("node '%s' can not iomap!\n", sspm_node_name);
-
-	pr_info("sspm_base = %p\n", sspm_base);
 
 	/* MCDI sysram base */
 	node = of_find_compatible_node(NULL, NULL, mcdi_node_name);
