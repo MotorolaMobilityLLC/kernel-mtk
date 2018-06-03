@@ -1802,9 +1802,7 @@ static int rt5509_i2c_initreg(struct rt5509_chip *chip)
 	/* disable TriWave */
 	ret = rt5509_clr_bits(chip->i2c, RT5509_REG_CHIPEN,
 		RT5509_TRIWAVE_ENMASK);
-	if (ret < 0)
-		goto out_init_reg;
-out_init_reg:
+
 	return ret;
 }
 
