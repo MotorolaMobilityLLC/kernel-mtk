@@ -443,11 +443,6 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
-
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
-			IDX_ALL_VCORE_SUSPEND,
-			pwrctrl->vcore_volt_pmic_val);
-
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
 }
