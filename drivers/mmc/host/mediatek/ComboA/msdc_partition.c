@@ -85,6 +85,9 @@ int msdc_get_part_info(unsigned char *name, struct hd_struct *part)
 
 	disk = mmc_get_disk(host->mmc->card);
 
+	if (!disk)
+		return 0;
+
 	disk_part_iter_init(&piter, disk, 0);
 	while ((l_part = disk_part_iter_next(&piter))) {
 		if (!strncmp(l_part->info->volname, name, strlen(name))) {
@@ -220,6 +223,9 @@ static int proc_emmc_show(struct seq_file *m, void *v)
 
 	host = mtk_msdc_host[0];
 	disk = mmc_get_disk(host->mmc->card);
+
+	if (!disk)
+		return 0;
 
 	seq_puts(m, "partno:    start_sect   nr_sects  partition_name\n");
 	disk_part_iter_init(&piter, disk, 0);
