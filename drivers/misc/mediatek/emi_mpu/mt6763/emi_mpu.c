@@ -1271,7 +1271,6 @@ DRIVER_ATTR(emi_wp_vio, 0644, emi_wp_vio_show, emi_wp_vio_store);
 #define AP_REGION_ID   31
 static void protect_ap_region(void)
 {
-
 	unsigned int ap_mem_mpu_id;
 	unsigned long long ap_mem_mpu_attr;
 	unsigned long long kernel_base;
@@ -1283,7 +1282,7 @@ static void protect_ap_region(void)
 	ap_mem_mpu_id = AP_REGION_ID;
 	ap_mem_mpu_attr = SET_ACCESS_PERMISSON(LOCK,
 		FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-		FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+		FORBIDDEN, FORBIDDEN, NO_PROTECTION, NO_PROTECTION,
 		FORBIDDEN, SEC_R_NSEC_RW, FORBIDDEN, NO_PROTECTION,
 		FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION);
 

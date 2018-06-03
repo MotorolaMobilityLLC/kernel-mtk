@@ -14,7 +14,7 @@
 #ifndef __MT_EMI_MPU_H
 #define __MT_EMI_MPU_H
 
-#define ENABLE_AP_REGION	0
+#define ENABLE_AP_REGION	1
 
 #define EMI_MPUD0_ST            (CEN_EMI_BASE + 0x160)
 #define EMI_MPUD_ST(domain)     (EMI_MPUD0_ST + (4*domain)) /* violation status domain */
