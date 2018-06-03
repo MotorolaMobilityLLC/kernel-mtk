@@ -361,23 +361,24 @@ static int ufs_mtk_pre_link(struct ufs_hba *hba)
 	ufshcd_vops_auto_hibern8(hba, false);
 
 	/* configure deep stall */
-	ufshcd_dme_get(hba, UIC_ARG_MIB(VENDOR_SAVEPOWERCONTROL), &tmp);
+	ret = ufshcd_dme_get(hba, UIC_ARG_MIB(VENDOR_SAVEPOWERCONTROL), &tmp);
+	if (ret)
+		return ret;
 
 	if (ufs_mtk_host_deep_stall_enable)   /* enable deep stall */
 		tmp |= (1 << 6);
 	else
 		tmp &= ~(1 << 6);   /* disable deep stall */
 
-	ufshcd_dme_set(hba, UIC_ARG_MIB(VENDOR_SAVEPOWERCONTROL), tmp);
+	ret = ufshcd_dme_set(hba, UIC_ARG_MIB(VENDOR_SAVEPOWERCONTROL), tmp);
+	if (ret)
+		return ret;
 
 	/* configure scrambling */
 	if (ufs_mtk_host_scramble_enable)
-		ufshcd_dme_set(hba, UIC_ARG_MIB(PA_SCRAMBLING), 1);
+		ret = ufshcd_dme_set(hba, UIC_ARG_MIB(PA_SCRAMBLING), 1);
 	else
-		ufshcd_dme_set(hba, UIC_ARG_MIB(PA_SCRAMBLING), 0);
-
-	if (ret != 0)
-		ret = 1;
+		ret = ufshcd_dme_set(hba, UIC_ARG_MIB(PA_SCRAMBLING), 0);
 
 	return ret;
 }
@@ -696,23 +697,26 @@ void ufs_mtk_parse_auto_hibern8_timer(struct ufs_hba *hba)
  */
 static int ufs_mtk_ffu_send_cmd(struct scsi_device *dev, struct ufs_ioctl_ffu_data *idata)
 {
-	struct ufs_hba *hba = shost_priv(dev->host);
+	struct ufs_hba *hba;
 	unsigned char cmd[10];
 	struct scsi_sense_hdr sshdr;
 	unsigned long flags;
 	int ret;
 
+	if (dev) {
+		hba = shost_priv(dev->host);
+	} else {
+		return -ENODEV;
+	}
+
 	spin_lock_irqsave(hba->host->host_lock, flags);
 
-	if (dev) {
-		ret = scsi_device_get(dev);
-		if (!ret && !scsi_device_online(dev)) {
-			ret = -ENODEV;
-			scsi_device_put(dev);
-		}
-	} else {
+	ret = scsi_device_get(dev);
+	if (!ret && !scsi_device_online(dev)) {
 		ret = -ENODEV;
+		scsi_device_put(dev);
 	}
+
 
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
 
@@ -768,12 +772,18 @@ static int ufs_mtk_ffu_send_cmd(struct scsi_device *dev, struct ufs_ioctl_ffu_da
  */
 int ufs_mtk_ioctl_get_fw_ver(struct scsi_device *dev, void __user *buf_user)
 {
-	struct ufs_hba *hba = shost_priv(dev->host);
+	struct ufs_hba *hba;
 	struct ufs_ioctl_query_fw_ver_data *idata = NULL;
 	int err;
 
+	if (dev) {
+		hba = shost_priv(dev->host);
+	} else {
+		return -ENODEV;
+	}
+
 	/* check scsi device instance */
-	if (!dev || !dev->rev) {
+	if (!dev->rev) {
 		dev_err(hba->dev, "%s: scsi_device or rev is NULL\n", __func__);
 		err = -ENOENT;
 		goto out;
@@ -840,11 +850,14 @@ int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user)
 	u32 attr;
 
 	idata = kzalloc(sizeof(struct ufs_ioctl_ffu_data), GFP_KERNEL);
-	idata_user = kzalloc(sizeof(struct ufs_ioctl_ffu_data), GFP_KERNEL);
+	if (!idata) {
+		err = -ENOMEM;
+		goto out;
+	}
 
-	if (!idata || !idata_user) {
-		dev_err(hba->dev, "%s: failed allocating %zu bytes\n", __func__,
-				sizeof(struct ufs_ioctl_ffu_data));
+	idata_user = kzalloc(sizeof(struct ufs_ioctl_ffu_data), GFP_KERNEL);
+	if (!idata_user) {
+		kfree(idata);
 		err = -ENOMEM;
 		goto out;
 	}
@@ -862,6 +875,14 @@ int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user)
 	memcpy(idata, idata_user, sizeof(struct ufs_ioctl_ffu_data));
 
 	/* extract firmware from user buffer */
+	if (idata->buf_byte > (u32)UFS_IOCTL_FFU_MAX_FW_SIZE_BYTES) {
+		kfree(idata);
+		kfree(idata_user);
+		dev_err(hba->dev, "%s: idata->buf_byte:0x%x > max 0x%x bytes\n", __func__,
+				idata->buf_byte, (u32)UFS_IOCTL_FFU_MAX_FW_SIZE_BYTES);
+		err = -ENOMEM;
+		goto out;
+	}
 	idata->buf_ptr = kzalloc(idata->buf_byte, GFP_KERNEL);
 
 	if (!idata->buf_ptr) {
