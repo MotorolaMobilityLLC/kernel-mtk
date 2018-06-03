@@ -16,7 +16,7 @@
 #define __ACTIVITY_H__
 
 
-#include <linux/wakelock.h>
+//#include <linux/pm_wakeup.h>
 #include <linux/interrupt.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
