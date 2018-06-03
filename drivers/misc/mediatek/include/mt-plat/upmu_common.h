@@ -201,6 +201,7 @@ extern unsigned int pmic_get_vbif28_volt(void);
 extern void pmic_auxadc_debug(int index);
 #ifndef CONFIG_MACH_MT8167
 #ifndef CONFIG_MTK_PMIC_NEW_ARCH
+#ifndef CONFIG_FPGA_EARLY_PORTING
 extern void pmic_auxadc_init(void);
 extern signed int PMIC_IMM_GetCurrent(void);
 extern unsigned int PMIC_IMM_GetOneChannelValue(
@@ -209,6 +210,7 @@ extern unsigned int PMIC_IMM_GetOneChannelValue(
 					int trimd);
 extern bool hwPowerOn(MT65XX_POWER powerId, int voltage_uv, char *mode_name);
 extern bool hwPowerDown(MT65XX_POWER powerId, char *mode_name);
+#endif
 #endif
 #else
 extern int PMIC_IMM_GetOneChannelValue(unsigned int dwChannel,
