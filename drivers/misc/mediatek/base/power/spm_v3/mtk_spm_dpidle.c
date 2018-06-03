@@ -80,7 +80,9 @@
 #define CPUCFG                  (MCUCFG_BASE + 0x2008)
 #define MP2_AXI_CONFIG          (MCUCFG_BASE + 0x220C)
 #define ACINACTM                (1 << 4)
+#define AINACTS                 (1 << 5)
 #define MP2_ACINACTM            (1 << 0)
+#define MP2_AINACTS             (1 << 4)
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 
 enum spm_deepidle_step {
@@ -830,31 +832,14 @@ static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle)
 
 static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
-	u32 v0, v1, v2;
-
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
 		spm_dormant_sta = mtk_enter_idle_state(MTK_DPIDLE_MODE);
 		if (spm_dormant_sta < 0)
 			pr_err("dpidle spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
 	} else {
-		spm_dormant_sta = -1;
-		/* backup MPx_AXI_CONFIG */
-		v0 = reg_read(MP0_AXI_CONFIG);
-		v1 = reg_read(MP1_AXI_CONFIG);
-		v2 = reg_read(MP2_AXI_CONFIG);
-
-		/* disable snoop function */
-		spm_write(MP0_AXI_CONFIG, v0 | ACINACTM);
-		spm_write(MP1_AXI_CONFIG, v1 | ACINACTM);
-		spm_write(CPUCFG, 0x1);
-		spm_write(MP2_AXI_CONFIG, v2 | (MP2_ACINACTM));
-
-		wfi_with_sync();
-
-		/* restore MPx_AXI_CONFIG */
-		spm_write(MP0_AXI_CONFIG, v0);
-		spm_write(MP1_AXI_CONFIG, v1);
-		spm_write(MP2_AXI_CONFIG, v2);
+		spm_dormant_sta = mt_secure_call(MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
+		if (spm_dormant_sta < 0)
+			pr_err("dpidle(legacy) SMC ret(%d) >>\n", spm_dormant_sta);
 	}
 }
 
