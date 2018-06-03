@@ -74,10 +74,12 @@ void update_pwd_tbl(void)
 		power_b[i][1] = upower_get_power(UPOWER_BANK_B, 15 - i, UPOWER_CPU_STATES);
 	}
 
+#if 0
 	for (i = 0; i < 16; i++) {
 		pr_crit(TAG"ll freq:%d, cap:%d", power_ll[i][0], power_ll[i][1]);
 		pr_crit(TAG"b freq:%d, cap:%d", power_b[i][0], power_b[i][1]);
 	}
+#endif
 }
 
 static void boost_freq(int capacity)
@@ -107,8 +109,10 @@ static void boost_freq(int capacity)
 		freq_limit[2].min = freq_limit[2].max = power_b[11][0];
 #endif
 	mt_ppm_userlimit_cpu_freq(NR_PPM_CLUSTERS, freq_limit);
+#if 0
 	pr_crit(TAG"[boost_freq_2] capacity=%d (i,j)=(%d,%d), ll_freq=%d, b_freq=%d\n",
 			capacity, i, j, freq_limit[0].max, freq_limit[2].max);
+#endif
 	fbc_tracer(-1, "fbc_freq_ll", freq_limit[0].max);
 	fbc_tracer(-2, "fbc_freq_b", freq_limit[2].max);
 
@@ -139,7 +143,7 @@ static void disable_frame_twanted_timer(void)
 static enum hrtimer_restart mt_power_pef_transfer(struct hrtimer *timer)
 {
 	mt_power_pef_transfer_work();
-	pr_crit(TAG"chase_frame\n");
+	/*pr_crit(TAG"chase_frame\n");*/
 	return HRTIMER_NORESTART;
 }
 
@@ -431,10 +435,12 @@ ssize_t device_ioctl(struct file *filp,
 			fbc_tracer(-4, "avg_frame_time", avgFT);
 			fbc_tracer(-5, "frame_time", frame_time);
 
+#if 0
 			pr_crit(TAG" frame complete FT=%lu, avgFT=%lld, boost_linear=%lld, capacity=%d",
 					frame_time, avgFT, boost_linear, capacity);
 			if (frame_time > Twanted)
 				pr_crit(TAG"chase_frame\n");
+#endif
 		}
 
 	break;
@@ -445,7 +451,7 @@ ssize_t device_ioctl(struct file *filp,
 			/*	if (boost_method == 1) {*/
 			/*		frame_done = 0;*/
 			/*		enable_frame_twanted_timer();*/
-			pr_crit(TAG" frame: Intended Vsync\n");
+			/*pr_crit(TAG" frame: Intended Vsync\n");*/
 			/*		mt_kernel_trace_counter("averaged_frame_time", avgFT);*/
 					/*trace_counter("Intended Vsync:enable_twanted_timer", 1);*/
 					/*trace_sched_heavy_task("Intended Vsync: enable_twanted_timer");*/
