@@ -31,9 +31,13 @@
 
 #if IS_ENABLED(CONFIG_MACH_MT6758)
 #include <clk-mt6758-pg.h>
+#include "smi_config_default.h"
 #elif IS_ENABLED(CONFIG_MACH_MT6765)
 #include <clk-mt6765-pg.h>
 #include "smi_config_mt6765.h"
+#elif IS_ENABLED(CONFIG_MACH_MT6761)
+#include <clk-mt6761-pg.h>
+#include "smi_config_mt6761.h"
 #else
 #include "smi_config_default.h"
 #endif
@@ -304,6 +308,17 @@ static unsigned int smi_clk_subsys_larbs(enum subsys_id sys)
 	case SYS_CAM:
 		return 0x8; /* larb 3 */
 	case SYS_ISP:
+		return 0x4; /* larb 2 */
+	case SYS_VCODEC:
+		return 0x2; /* larb 1 */
+	default:
+		return 0x0;
+	}
+#elif IS_ENABLED(CONFIG_MACH_MT6761)
+	switch (sys) {
+	case SYS_DIS:
+		return 0x1; /* larb 0 */
+	case SYS_CAM:
 		return 0x4; /* larb 2 */
 	case SYS_VCODEC:
 		return 0x2; /* larb 1 */
@@ -1241,14 +1256,14 @@ int smi_register(struct platform_driver *drv)
 			smi, smi_scen_map[smi_drv->scen], true);
 		if (ret)
 			return ret;
-		if (!i) /* DISP */
+		if (!i) { /* DISP */
 			ret = smi_larb_cmd_grp_enable();
-		if (ret)
-			return ret;
-		if (i < SMI_LARB_NUM)
+			if (ret)
+				return ret;
 			ret = smi_larb_bw_thrt_enable(i);
-		if (ret)
-			return ret;
+			if (ret)
+				return ret;
+		}
 	}
 	ret = smi_mmsys_offset_get();
 	if (ret)
