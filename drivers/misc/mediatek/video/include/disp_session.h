@@ -26,6 +26,8 @@
 #define DISP_SESSION_DEV(id) ((id)&0xff)
 #define MAKE_DISP_SESSION(type, dev) (unsigned int)((type)<<16 | (dev))
 
+#define RSZ_RES_LIST_NUM 4
+
 /* /============================================================================= */
 /* structure declarations */
 /* /=========================== */
@@ -381,6 +383,7 @@ enum DISP_FEATURE {
 	DISP_FEATURE_HRT = 0x00000002,
 	DISP_FEATURE_PARTIAL = 0x00000004,
 	DISP_FEATURE_FENCE_WAIT = 0x00000008,
+	DISP_FEATURE_RSZ = 0x00000010,
 };
 
 struct disp_caps_info {
@@ -393,6 +396,12 @@ struct disp_caps_info {
 	unsigned int disp_feature;
 	int is_support_frame_cfg_ioctl;
 	int is_output_rotated;
+	/* resizer input resolution list
+	 * format:
+	 *   sequence from big resolution to small
+	 *   portrait width first then height
+	 */
+	unsigned int rsz_in_res_list[RSZ_RES_LIST_NUM][2];
 };
 
 struct disp_session_buf_info {
