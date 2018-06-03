@@ -91,6 +91,9 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_DBM, "ccci_raw_dbm",},
 #ifdef FEATURE_DHL_CCB_RAW_SUPPORT
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_CCB_DHL, "ccci_ccb_dhl",},
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_CCB_MD_MONITOR,
+		"ccci_ccb_md_monitor",},
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_CCB_META, "ccci_ccb_meta",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, SMEM_USER_RAW_DHL, "ccci_raw_dhl",},
 #endif
 #ifdef FEATURE_DIRECT_TETHERING_LOGGING

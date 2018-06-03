@@ -3426,6 +3426,12 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 				curr_p = (unsigned int *)curr_ch_p;
 			}
 		}
+
+		curr_ch_p = md->mem_layout.ccci_raw_dhl_base_vir;
+		curr_p = (unsigned int *)curr_ch_p;
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB RAW share memory\n");
+		ccci_dump_write(md->index, CCCI_DUMP_MEM_DUMP, 0, "%p: %08X %08X %08X %08X\n",
+				curr_p, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
 	}
 	if (flag & DUMP_FLAG_IMAGE) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD image memory\n");
