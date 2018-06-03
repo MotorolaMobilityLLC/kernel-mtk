@@ -759,8 +759,7 @@ void AudDrv_APLL22M_Clk_On(void)
 
 	if (Aud_APLL22M_Clk_cntr == 0) {
 #ifdef PM_MANAGER_API
-		if (aud_clks[CLOCK_APLL22M].clk_prepare) {
-			if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
+		if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
 			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock,
 					   180633600);
 			if (ret) {
@@ -769,8 +768,9 @@ void AudDrv_APLL22M_Clk_On(void)
 					 aud_clks[CLOCK_APMIXED_APLL1].name,
 					 ret);
 				goto EXIT;
-				}
 			}
+		}
+		if (aud_clks[CLOCK_APLL22M].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL22M].clock);
 			if (ret) {
 				pr_debug("%s [CCF]Aud enable_clock %s fail",
