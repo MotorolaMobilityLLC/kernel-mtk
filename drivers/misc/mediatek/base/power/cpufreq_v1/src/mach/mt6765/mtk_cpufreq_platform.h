@@ -18,10 +18,10 @@
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #define CONFIG_HYBRID_CPU_DVFS	1
-/* #define PPM_AP_SIDE	1 */
+#define PPM_AP_SIDE	1
 #define EEM_AP_SIDE	1
-#define CPU_DVFS_NOT_READY	1
-#define DRCC_SUPPORT 1
+/* #define CPU_DVFS_NOT_READY	1*/
+/* #define DRCC_SUPPORT 1*/
 #else
 #define CPU_DVFS_NOT_READY	1 /* for bring up, remove for MP */
 #endif
