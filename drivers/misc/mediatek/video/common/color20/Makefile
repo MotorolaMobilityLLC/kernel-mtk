@@ -44,12 +44,12 @@ ifneq (y, $(filter y, $(CONFIG_MACH_MT6580) $(CONFIG_MACH_MT6570)))
 endif
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6799) \
-			$(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6763)))
+			$(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6758)))
     ccflags-y += -DCOLOR_2_1
 endif
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6799) \
-			$(CONFIG_MACH_MT6763)))
+			$(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6758)))
     ccflags-y += -DCOLOR_3_0
 endif
 
@@ -57,7 +57,8 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
     ccflags-y += -DSUPPORT_HDR
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6763)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6763) \
+             $(CONFIG_MACH_MT6758)))
     ccflags-y += -DSUPPORT_ULTRA_RESOLUTION
 endif
 
