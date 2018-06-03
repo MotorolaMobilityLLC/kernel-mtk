@@ -21,6 +21,10 @@
 #define MTK_WDT_REQ_SYSRST_MARK			(1<<3)
 #define MTK_WDT_REQ_THERMAL_MARK		(1<<18)
 
+/* wd_sw_reset options */
+#define WD_SW_RESET_BYPASS_PWR_KEY    (1 << 0)
+#define WD_SW_RESET_KEEP_DDR_RESERVE  (1 << 1)
+
 #ifndef FALSE
   #define FALSE (0)
 #endif

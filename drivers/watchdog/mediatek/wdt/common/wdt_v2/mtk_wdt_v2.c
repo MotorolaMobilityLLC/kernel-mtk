@@ -355,8 +355,7 @@ void wdt_arch_reset(char mode)
 {
 	unsigned int wdt_mode_val;
 	struct device_node *np_rgu;
-
-	pr_debug("wdt_arch_reset called@Kernel mode =%d\n", mode);
+	pr_debug("%s: mode=0x%x\n", __func__, mode);
 	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
 
 	if (!toprgu_base) {
@@ -389,7 +388,7 @@ void wdt_arch_reset(char mode)
 
 	wdt_mode_val = __raw_readl(MTK_WDT_MODE);
 
-	pr_debug("wdt_arch_reset called MTK_WDT_MODE =%x\n", wdt_mode_val);
+	pr_debug("%s: wdt_mode=0x%x\n", __func__, wdt_mode_val);
 
 	/* clear autorestart bit: autoretart: 1, bypass power key, 0: not bypass power key */
 	wdt_mode_val &= (~MTK_WDT_MODE_AUTO_RESTART);
@@ -398,10 +397,10 @@ void wdt_arch_reset(char mode)
 	wdt_mode_val &= (~(MTK_WDT_MODE_IRQ | MTK_WDT_MODE_IRQ_LEVEL_EN |
 						MTK_WDT_MODE_ENABLE | MTK_WDT_MODE_DUAL_MODE));
 
-	if (mode)
-		/* mode != 0 means by pass power key reboot, We using auto_restart bit as by pass power key flag */
+	if (mode & WD_SW_RESET_BYPASS_PWR_KEY) {
+		/* Bypass power key reboot, We using auto_restart bit as by pass power key flag */
 		wdt_mode_val = wdt_mode_val | (MTK_WDT_MODE_KEY | MTK_WDT_MODE_EXTEN | MTK_WDT_MODE_AUTO_RESTART);
-	else
+	} else
 		wdt_mode_val = wdt_mode_val | (MTK_WDT_MODE_KEY | MTK_WDT_MODE_EXTEN);
 
 	/*set latch register to 0 for SW reset*/
@@ -409,11 +408,21 @@ void wdt_arch_reset(char mode)
 
 	mt_reg_sync_writel(wdt_mode_val, MTK_WDT_MODE);
 
-	pr_debug("wdt_arch_reset called end MTK_WDT_MODE =%x\n", wdt_mode_val);
+	/*
+	 * disable ddr reserve mode if we are doing normal reboot to avoid unexpected dram issue.
+	 * exception types:
+	 *   0: normal
+	 *   1: HWT
+	 *   2: KE
+	 *   3: nested panic
+	 *   4: mrdump key
+	 */
+	if (!(mode & WD_SW_RESET_KEEP_DDR_RESERVE))
+		mtk_rgu_dram_reserved(0);
 
 	udelay(100);
 
-	pr_debug("wdt_arch_reset: SW_reset happen\n");
+	pr_debug("%s: sw reset happen!\n", __func__);
 
 	__inner_flush_dcache_all();
 
