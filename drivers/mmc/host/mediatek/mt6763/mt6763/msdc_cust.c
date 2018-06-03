@@ -67,7 +67,7 @@ unsigned int sd_register_zone[HOST_MAX_NUM] = {
 /* mode select */
 u32 dma_size[HOST_MAX_NUM] = {
 	512,
-	8,
+	512,
 	512
 };
 
@@ -396,9 +396,10 @@ void msdc_set_host_power_control(struct msdc_host *host)
 void msdc_HQA_set_voltage(struct msdc_host *host)
 {
 #if defined(MSDC_HQA_HV) || defined(MSDC_HQA_LV)
-	static int vcore_orig = -1, vio_orig = -1;
-	u32 vcore, vio, vio_cal = 0, val_delta;
+	u32 vcore, vio = 0, val_delta;
 #endif
+	u32 vio_cal = 0;
+	static int vcore_orig = -1, vio_orig = -1;
 
 	if (host->is_autok_done == 1)
 		return;

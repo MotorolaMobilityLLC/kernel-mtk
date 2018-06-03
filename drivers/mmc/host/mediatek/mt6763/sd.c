@@ -1993,6 +1993,10 @@ int msdc_pio_read(struct msdc_host *host, struct mmc_data *data)
 	int flag = 0;
 	ulong *kaddr = host->pio_kaddr;
 
+	/* default 100ms, *2 for better compatibility */
+	if (host->xfer_size < 512)
+		tmo = jiffies + (host->timeout_ns / (1000000000 / HZ)) * 2;
+
 	WARN_ON(!kaddr);
 	WARN_ON(sg == NULL);
 	/* MSDC_CLR_BIT32(MSDC_INTEN, wints); */
@@ -3741,12 +3745,12 @@ static void msdc_post_req(struct mmc_host *mmc, struct mmc_request *mrq,
 		dir = data->flags & MMC_DATA_READ ?
 			DMA_FROM_DEVICE : DMA_TO_DEVICE;
 		dma_unmap_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
-		data->host_cookie = 0;
 		N_MSG(OPS, "CMD<%d> ARG<0x%x> blksz<%d> block<%d> error<%d>",
 			mrq->cmd->opcode, mrq->cmd->arg, data->blksz,
 			data->blocks, data->error);
 	}
-	data->host_cookie = 0;
+	if (data)
+		data->host_cookie = 0;
 
 }
 
@@ -4171,6 +4175,16 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		__pm_relax(&host->trans_lock);
 }
 
+void msdc_sd_clock_run(struct msdc_host *host)
+{
+	void __iomem *base = host->base;
+
+	msdc_set_mclk(host, MMC_TIMING_LEGACY, 260000);
+	MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_CKPDN);
+	mdelay(1);
+	MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_CKPDN);
+}
+
 /* ops.set_ios */
 void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
@@ -4191,6 +4205,8 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 			spin_lock(&host->lock);
 			break;
 		case MMC_POWER_ON:
+			if (host->hw->host_function == MSDC_SD)
+				msdc_sd_clock_run(host);
 		default:
 			break;
 		}
