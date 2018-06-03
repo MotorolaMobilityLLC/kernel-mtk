@@ -1076,7 +1076,7 @@ static signed int rds_retrieve_g0_af(unsigned short *block_data, unsigned char S
 
 	if ((AF_H > 224) && (AF_H < 250)) {
 		/* Followed AF Number, see RDS spec Table 11, valid(224-249) */
-		WCN_DBG(FM_NTC | RDSC, "RetrieveGroup0 AF_H:%d, AF_L:%d\n", AF_H, AF_L);
+		WCN_DBG(FM_DBG | RDSC, "RetrieveGroup0 AF_H:%d, AF_L:%d\n", AF_H, AF_L);
 		preAF_Num = AF_H - 224;	/* AF Number */
 
 		if (preAF_Num != pstRDSData->AF_Data.AF_Num) {
