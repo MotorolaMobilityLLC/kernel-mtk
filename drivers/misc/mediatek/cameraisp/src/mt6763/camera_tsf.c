@@ -330,8 +330,11 @@ static struct SV_LOG_STR gSvLog[TSF_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...) do {\
 	char *ptr; \
 	char *pDes;\
+	int avaLen;\
 	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
+	unsigned int logi;\
+	struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 	if (logT == _LOG_ERR) {\
 		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
 	} else if (logT == _LOG_DBG) {\
@@ -342,13 +345,67 @@ static struct SV_LOG_STR gSvLog[TSF_IRQ_TYPE_AMOUNT];
 		str_leng = 0;\
 	} \
 	ptr = pDes = (char *)&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);    \
-	sprintf((char *)(pDes), fmt, ##__VA_ARGS__);   \
-	if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
-		LOG_ERR("log str over flow(%d)", irq);\
+	avaLen = str_leng - 1 - gSvLog[irq]._cnt[ppb][logT];\
+	if (avaLen > 1) {\
+		snprintf((char *)(pDes), avaLen, fmt,\
+			##__VA_ARGS__);   \
+		if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
+			LOG_ERR("log str over flow(%d)", irq);\
+		} \
+		while (*ptr++ != '\0') {        \
+			(*ptr2)++;\
+		}     \
+	} else { \
+		LOG_INF("(%d)(%d)log str avalible=0, print log\n", irq, logT);\
+		ptr = pSrc->_str[ppb][logT];\
+		if (pSrc->_cnt[ppb][logT] != 0) {\
+			if (logT == _LOG_DBG) {\
+				for (logi = 0; logi < DBG_PAGE; logi++) {\
+					if (ptr[NORMAL_STR_LEN*(logi+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(logi+1) - 1] = '\0';\
+						LOG_DBG("%s", &ptr[NORMAL_STR_LEN*logi]);\
+					} else{\
+						LOG_DBG("%s", &ptr[NORMAL_STR_LEN*logi]);\
+						break;\
+					} \
+				} \
+			} \
+			else if (logT == _LOG_INF) {\
+				for (logi = 0; logi < INF_PAGE; logi++) {\
+					if (ptr[NORMAL_STR_LEN*(logi+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(logi+1) - 1] = '\0';\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+					} else{\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+						break;\
+					} \
+				} \
+			} \
+			else if (logT == _LOG_ERR) {\
+				for (logi = 0; logi < ERR_PAGE; logi++) {\
+					if (ptr[NORMAL_STR_LEN*(logi+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(logi+1) - 1] = '\0';\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+					} else{\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+						break;\
+					} \
+				} \
+			} \
+			else {\
+				LOG_INF("N.S.%d", logT);\
+			} \
+			ptr[0] = '\0';\
+			pSrc->_cnt[ppb][logT] = 0;\
+			avaLen = str_leng - 1;\
+			ptr = pDes = (char *)&(pSrc->_str[ppb][logT][pSrc->_cnt[ppb][logT]]);\
+			ptr2 = &(pSrc->_cnt[ppb][logT]);\
+			snprintf((char *)(pDes), avaLen, fmt, ##__VA_ARGS__);   \
+			while (*ptr++ != '\0') {\
+				(*ptr2)++;\
+			} \
+		} \
 	} \
-	while (*ptr++ != '\0') {        \
-		(*ptr2)++;\
-	}     \
 } while (0)
 #else
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...)  xlog_printk(ANDROID_LOG_DEBUG,\
