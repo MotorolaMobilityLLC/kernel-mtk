@@ -55,9 +55,9 @@
 #endif
 
 #define CMDQ_INITIAL_CMD_BLOCK_SIZE     (PAGE_SIZE)
-#define CMDQ_EMERGENCY_BLOCK_SIZE       (256 * 1024)	/* 256 KB command buffer */
-#define CMDQ_EMERGENCY_BLOCK_COUNT      (4)
 #define CMDQ_INST_SIZE                  (2 * sizeof(uint32_t))	/* instruction is 64-bit */
+#define CMDQ_CMD_BUFFER_SIZE			(PAGE_SIZE)
+
 
 #define CMDQ_MAX_LOOP_COUNT             (1000000)
 #define CMDQ_MAX_INST_CYCLE             (27)
@@ -329,11 +329,27 @@ struct cmdqSecAddrMetadataStruct {
 	/* [IN]_d, index of instruction. Update its arg_b value to real PA/MVA in secure world */
 	uint32_t instrIndex;
 
+	/*
+	 * Note: Buffer and offset
+	 *
+	 *   -------------
+	 *   |     |     |
+	 *   -------------
+	 *   ^     ^  ^  ^
+	 *   A     B  C  D
+	 *
+	 *	A: baseHandle
+	 *	B: baseHandle + blockOffset
+	 *  C: baseHandle + blockOffset + offset
+	 *	A~B or B~D: size
+	 */
+
 	enum CMDQ_SEC_ADDR_METADATA_TYPE type;	/* [IN] addr handle type */
 	uint32_t baseHandle;	/* [IN]_h, secure address handle */
-	uint32_t offset;	/* [IN]_b, buffser offset to secure handle */
-	uint32_t size;		/* buffer size */
-	uint32_t port;		/* hw port id (i.e. M4U port id) */
+	uint32_t blockOffset;	/* [IN]_b, block offset from handle(PA) to current block(plane) */
+	uint32_t offset;		/* [IN]_b, buffser offset to secure handle */
+	uint32_t size;			/* buffer size */
+	uint32_t port;			/* hw port id (i.e. M4U port id) */
 };
 
 struct cmdqSecDataStruct {
@@ -396,6 +412,8 @@ struct cmdqCommandStruct {
 #ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	struct cmdqProfileMarkerStruct profileMarker;
 #endif
+	cmdqU32Ptr_t userDebugStr;
+	uint32_t userDebugStrLen;
 };
 
 enum CMDQ_CAP_BITS {

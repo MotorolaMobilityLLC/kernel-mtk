@@ -12,6 +12,7 @@
  */
 
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 #include <linux/errno.h>
 #include <linux/memory.h>
 #include <mt-plat/mtk_lpae.h>
@@ -291,7 +292,7 @@ int cmdq_rec_realloc_cmd_buffer(struct cmdqRecStruct *handle, uint32_t size)
 	if (size <= handle->bufferSize)
 		return 0;
 
-	pNewBuf = kzalloc(size, GFP_KERNEL);
+	pNewBuf = vzalloc(size);
 
 	if (pNewBuf == NULL) {
 		CMDQ_ERR("REC: kzalloc %d bytes cmd_buffer failed\n", size);
@@ -305,7 +306,7 @@ int cmdq_rec_realloc_cmd_buffer(struct cmdqRecStruct *handle, uint32_t size)
 
 	CMDQ_VERBOSE("REC: realloc size from %d to %d bytes\n", handle->bufferSize, size);
 
-	kfree(handle->pBuffer);
+	vfree(handle->pBuffer);
 	handle->pBuffer = pNewBuf;
 	handle->bufferSize = size;
 
@@ -334,6 +335,13 @@ static int32_t cmdq_reset_profile_maker_data(struct cmdqRecStruct *handle)
 int32_t cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct **pHandle)
 {
 	struct cmdqRecStruct *handle = NULL;
+
+	if (pHandle == NULL) {
+		CMDQ_ERR("Invalid empty handle\n");
+		return -EINVAL;
+	}
+
+	*pHandle = NULL;
 
 	if (scenario < 0 || scenario >= CMDQ_MAX_SCENARIO_COUNT) {
 		CMDQ_ERR("Unknown scenario type %d\n", scenario);
@@ -377,9 +385,10 @@ int32_t cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct 
 }
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
-int32_t cmdq_append_addr_metadata(struct cmdqRecStruct *handle, const cmdqSecAddrMetadataStruct *pMetadata)
+int32_t cmdq_append_addr_metadata(struct cmdqRecStruct *handle,
+	const struct cmdqSecAddrMetadataStruct *pMetadata)
 {
-	cmdqSecAddrMetadataStruct *pAddrs;
+	struct cmdqSecAddrMetadataStruct *pAddrs;
 	int32_t status;
 	uint32_t size;
 	/* element index of the New appended addr metadat */
@@ -413,7 +422,7 @@ int32_t cmdq_append_addr_metadata(struct cmdqRecStruct *handle, const cmdqSecAdd
 		status = -EFAULT;
 	} else {
 		pAddrs =
-		    (cmdqSecAddrMetadataStruct *) (CMDQ_U32_PTR(handle->secData.addrMetadatas));
+		    (struct cmdqSecAddrMetadataStruct *) (CMDQ_U32_PTR(handle->secData.addrMetadatas));
 		/* append meatadata */
 		pAddrs[index].instrIndex = pMetadata->instrIndex;
 		pAddrs[index].baseHandle = pMetadata->baseHandle;
@@ -926,7 +935,7 @@ int32_t cmdq_op_write_reg_secure(struct cmdqRecStruct *handle, uint32_t addr,
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status;
 	int32_t writeInstrIndex;
-	cmdqSecAddrMetadataStruct metadata;
+	struct cmdqSecAddrMetadataStruct metadata;
 	const uint32_t mask = 0xFFFFFFFF;
 
 	/* append command */
@@ -1192,12 +1201,11 @@ int32_t cmdq_op_read_reg_to_mem(struct cmdqRecStruct *handle,
 	const enum CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
 	const dma_addr_t dramAddr = h_backup_slot + slot_index * sizeof(uint32_t);
 	uint32_t highAddr = 0;
-	int32_t subsys_code = cmdq_core_subsys_from_phys_addr(addr);
 
 	/* lock GPR because we may access it in multiple CMDQ HW threads */
 	cmdq_op_wait(handle, regAccessToken);
 
-	if (subsys_code != CMDQ_SPECIAL_SUBSYS_ADDR) {
+	if (cmdq_core_subsys_from_phys_addr(addr) != CMDQ_SPECIAL_SUBSYS_ADDR) {
 		/* Load into 32-bit GPR (R0-R15) */
 		cmdq_append_command(handle, CMDQ_CODE_READ, addr, valueRegId, 0, 1);
 	} else {
@@ -1775,7 +1783,7 @@ int32_t cmdq_task_destroy(struct cmdqRecStruct *handle)
 	}
 
 	/* Free command buffer */
-	kfree(handle->pBuffer);
+	vfree(handle->pBuffer);
 	handle->pBuffer = NULL;
 
 	/* Free command handle */

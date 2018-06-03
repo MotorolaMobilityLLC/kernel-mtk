@@ -35,7 +35,7 @@ static struct list_head gCmdqSecContextList;	/* secure context list. note each p
 #include <linux/sectrace.h>
 #endif
 /* secure path header */
-#include "cmdqSecTl_Api.h"
+#include "cmdqsectl_api.h"
 
 #define CMDQ_DR_UUID { { 2, 0xb, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
 #define CMDQ_TL_UUID { { 9, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
@@ -218,7 +218,7 @@ int32_t cmdq_sec_init_session_unlocked(const struct mc_uuid_t *uuid,
 				       uint8_t **ppWsm,
 				       uint32_t wsmSize,
 				       struct mc_session_handle *pSessionHandle,
-				       CMDQ_IWC_STATE_ENUM *pIwcState,
+				       enum CMDQ_IWC_STATE_ENUM *pIwcState,
 				       uint32_t *openMobicoreByOther)
 {
 	int32_t openRet = 0;
@@ -284,12 +284,12 @@ int32_t cmdq_sec_init_session_unlocked(const struct mc_uuid_t *uuid,
 int32_t cmdq_sec_fill_iwc_command_basic_unlocked(int32_t iwcCommand, void *_pTask, int32_t thread,
 						 void *_pIwc)
 {
-	iwcCmdqMessage_t *pIwc;
+	struct iwcCmdqMessage_t *pIwc;
 
-	pIwc = (iwcCmdqMessage_t *) _pIwc;
+	pIwc = (struct iwcCmdqMessage_t *) _pIwc;
 
 	/* specify command id only, don't care other other */
-	memset(pIwc, 0x0, sizeof(iwcCmdqMessage_t));
+	memset(pIwc, 0x0, sizeof(struct iwcCmdqMessage_t));
 	pIwc->cmd = iwcCommand;
 
 	/* medatada: debug config */
@@ -304,16 +304,24 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 {
 	int32_t status;
 
-	const TaskStruct *pTask = (TaskStruct *) _pTask;
-	iwcCmdqMessage_t *pIwc;
+	const struct TaskStruct *pTask = (struct TaskStruct *) _pTask;
+	struct iwcCmdqMessage_t *pIwc;
 	/* cmdqSecDr will insert some instr */
 	const uint32_t reservedCommandSize = 4 * CMDQ_INST_SIZE;
+	struct CmdBufferStruct *cmd_buffer = NULL;
+	uint32_t buffer_index = 0;
+
+	/* check task first */
+	if (!pTask) {
+		CMDQ_ERR("[SEC]SESSION_MSG: Unable to fill message by empty task.\n");
+		return -EFAULT;
+	}
 
 	status = 0;
-	pIwc = (iwcCmdqMessage_t *) _pIwc;
+	pIwc = (struct iwcCmdqMessage_t *) _pIwc;
 
 	/* check command size first */
-	if (pTask && (CMDQ_TZ_CMD_BLOCK_SIZE < (pTask->commandSize + reservedCommandSize))) {
+	if ((pTask->commandSize + reservedCommandSize) > CMDQ_TZ_CMD_BLOCK_SIZE) {
 		CMDQ_ERR("[SEC]SESSION_MSG: pTask %p commandSize %d > %d\n",
 			 pTask, pTask->commandSize, CMDQ_TZ_CMD_BLOCK_SIZE);
 		return -EFAULT;
@@ -322,28 +330,47 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	CMDQ_MSG("[SEC]-->SESSION_MSG: cmdId[%d]\n", iwcCommand);
 
 	/* fill message buffer for inter world communication */
-	memset(pIwc, 0x0, sizeof(iwcCmdqMessage_t));
+	memset(pIwc, 0x0, sizeof(struct iwcCmdqMessage_t));
 	pIwc->cmd = iwcCommand;
 
 	/* metadata */
 	pIwc->command.metadata.enginesNeedDAPC = pTask->secData.enginesNeedDAPC;
 	pIwc->command.metadata.enginesNeedPortSecurity = pTask->secData.enginesNeedPortSecurity;
 
-	if (NULL != pTask && CMDQ_INVALID_THREAD != thread) {
+	if (thread != CMDQ_INVALID_THREAD) {
 		/* basic data */
 		pIwc->command.scenario = pTask->scenario;
 		pIwc->command.thread = thread;
 		pIwc->command.priority = pTask->priority;
 		pIwc->command.engineFlag = pTask->engineFlag;
-		pIwc->command.commandSize = pTask->commandSize;
 		pIwc->command.hNormalTask = 0LL | ((unsigned long)pTask);
-		memcpy((pIwc->command.pVABase), (pTask->pVABase), (pTask->commandSize));
+		pIwc->command.commandSize = pTask->bufferSize;
+
+		buffer_index = 0;
+		list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
+			uint32_t copy_size = list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list) ?
+				CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size : CMDQ_CMD_BUFFER_SIZE;
+			uint32_t *start_va = (pIwc->command.pVABase +
+				buffer_index * CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE * 2);
+			uint32_t *end_va = start_va + copy_size / sizeof(uint32_t);
+
+			memcpy(start_va, (cmd_buffer->pVABase), (copy_size));
+
+			/* we must reset the jump inst since now buffer is continues */
+			if (((end_va[-1] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
+				(end_va[-1] & 0x1) == 1) {
+				end_va[-1] = CMDQ_CODE_JUMP << 24;
+				end_va[-2] = 0x8;
+			}
+
+			buffer_index++;
+		}
 
 		/* cookie */
 		pIwc->command.waitCookie = pTask->secData.waitCookie;
 		pIwc->command.resetExecCnt = pTask->secData.resetExecCnt;
 
-		CMDQ_MSG("[SEC]SESSION_MSG: task 0x%p, thread: %d, size: %d, scenario:%d, flag:0x%08llx\n",
+		CMDQ_MSG("[SEC]SESSION_MSG: task: 0x%p, thread: %d, size: %d, scenario: %d, flag: 0x%016llx\n",
 				   pTask, thread, pTask->commandSize, pTask->scenario, pTask->engineFlag);
 
 		CMDQ_VERBOSE("[SEC]SESSION_MSG: addrList[%d][0x%p]\n",
@@ -352,7 +379,7 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 		if (pTask->secData.addrMetadataCount > 0) {
 			pIwc->command.metadata.addrListLength = pTask->secData.addrMetadataCount;
 			memcpy((pIwc->command.metadata.addrList), CMDQ_U32_PTR(pTask->secData.addrMetadatas),
-			       (pTask->secData.addrMetadataCount) * sizeof(iwcCmdqAddrMetadata_t));
+			       (pTask->secData.addrMetadataCount) * sizeof(struct iwcCmdqAddrMetadata_t));
 		}
 
 		/* medatada: debug config */
@@ -373,7 +400,7 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 int32_t cmdq_sec_fill_iwc_resource_msg_unlocked(int32_t iwcCommand, void *_pTask, int32_t thread,
 						void *_pIwc)
 {
-	iwcCmdqMessage_t *pIwc;
+	struct iwcCmdqMessage_t *pIwc;
 	struct cmdqSecSharedMemoryStruct *pSharedMem;
 
 	pSharedMem = cmdq_core_get_secure_shared_memory();
@@ -387,8 +414,8 @@ int32_t cmdq_sec_fill_iwc_resource_msg_unlocked(int32_t iwcCommand, void *_pTask
 		return -EFAULT;
 	}
 
-	pIwc = (iwcCmdqMessage_t *) _pIwc;
-	memset(pIwc, 0x0, sizeof(iwcCmdqMessage_t));
+	pIwc = (struct iwcCmdqMessage_t *) _pIwc;
+	memset(pIwc, 0x0, sizeof(struct iwcCmdqMessage_t));
 
 	pIwc->cmd = iwcCommand;
 	pIwc->pathResource.shareMemoyPA = 0LL | (pSharedMem->MVABase);
@@ -412,11 +439,11 @@ int32_t cmdq_sec_fill_iwc_resource_msg_unlocked(int32_t iwcCommand, void *_pTask
 int32_t cmdq_sec_fill_iwc_cancel_msg_unlocked(int32_t iwcCommand, void *_pTask, int32_t thread,
 					      void *_pIwc)
 {
-	const TaskStruct *pTask = (TaskStruct *) _pTask;
-	iwcCmdqMessage_t *pIwc;
+	const struct TaskStruct *pTask = (struct TaskStruct *) _pTask;
+	struct iwcCmdqMessage_t *pIwc;
 
-	pIwc = (iwcCmdqMessage_t *) _pIwc;
-	memset(pIwc, 0x0, sizeof(iwcCmdqMessage_t));
+	pIwc = (struct iwcCmdqMessage_t *) _pIwc;
+	memset(pIwc, 0x0, sizeof(struct iwcCmdqMessage_t));
 
 	pIwc->cmd = iwcCommand;
 	pIwc->cancelTask.waitCookie = pTask->secData.waitCookie;
@@ -433,7 +460,7 @@ int32_t cmdq_sec_fill_iwc_cancel_msg_unlocked(int32_t iwcCommand, void *_pTask, 
 }
 
 int32_t cmdq_sec_execute_session_unlocked(struct mc_session_handle *pSessionHandle,
-					  CMDQ_IWC_STATE_ENUM *pIwcState, int32_t timeout_ms)
+					  enum CMDQ_IWC_STATE_ENUM *pIwcState, int32_t timeout_ms)
 {
 	enum mc_result mcRet;
 	int32_t status = 0;
@@ -484,7 +511,7 @@ int32_t cmdq_sec_execute_session_unlocked(struct mc_session_handle *pSessionHand
 
 void cmdq_sec_deinit_session_unlocked(uint8_t **ppWsm,
 				      struct mc_session_handle *pSessionHandle,
-				      const CMDQ_IWC_STATE_ENUM iwcState,
+				      const enum CMDQ_IWC_STATE_ENUM iwcState,
 				      const uint32_t openMobicoreByOther)
 {
 	uint32_t deviceId = MC_DEVICE_ID_DEFAULT;
@@ -533,7 +560,7 @@ int32_t cmdq_sec_setup_context_session(struct cmdqSecContextStruct *handle)
 	/* init secure session */
 	status = cmdq_sec_init_session_unlocked(&(handle->uuid),
 						(uint8_t **) (&(handle->iwcMessage)),
-						sizeof(iwcCmdqMessage_t),
+						sizeof(struct iwcCmdqMessage_t),
 						&(handle->sessionHandle),
 						&(handle->state), &(handle->openMobicoreByOther));
 	CMDQ_MSG("SEC_SETUP: status[%d], tgid[%d], mobicoreOpenByOther[%d]\n",
@@ -541,20 +568,94 @@ int32_t cmdq_sec_setup_context_session(struct cmdqSecContextStruct *handle)
 	return status;
 }
 
-int32_t cmdq_sec_handle_session_reply_unlocked(const iwcCmdqMessage_t *pIwc,
-					       const int32_t iwcCommand, TaskStruct *pTask,
+void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, uint32_t iwcCommand,
+	const struct iwcCmdqMessage_t *pIwc, int32_t sec_status_code, char **dispatch_mod_ptr)
+{
+	int index = 0;
+	const struct iwcCmdqSecStatus_t *secStatus = NULL;
+
+	if (!pIwc || !dispatch_mod_ptr)
+		return;
+
+	/* assign status ptr to print without task */
+	secStatus = &pIwc->secStatus;
+
+	if (pTask) {
+		if (pTask->secStatus) {
+			if (iwcCommand == CMD_CMDQ_TL_CANCEL_TASK) {
+				const struct iwcCmdqSecStatus_t *last_sec_status = pTask->secStatus;
+
+				/* cancel task uses same errored task thus secStatus may exist */
+				CMDQ_ERR(
+					"Last secure status: %d step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x dispatch: %s task: 0x%p\n",
+					last_sec_status->status, last_sec_status->step,
+					last_sec_status->args[0], last_sec_status->args[1],
+					last_sec_status->args[2], last_sec_status->args[3],
+					last_sec_status->dispatch, pTask);
+			} else {
+				/* task should not send to secure twice, aee it */
+				CMDQ_AEE("CMDQ", "Last secure status still exists, task: 0x%p command: %u\n",
+					pTask, iwcCommand);
+			}
+			kfree(pTask->secStatus);
+			pTask->secStatus = NULL;
+		}
+
+		pTask->secStatus = kzalloc(sizeof(struct iwcCmdqSecStatus_t), GFP_KERNEL);
+		if (pTask->secStatus) {
+			memcpy(pTask->secStatus, &pIwc->secStatus, sizeof(struct iwcCmdqSecStatus_t));
+			secStatus = pTask->secStatus;
+		}
+	}
+
+	if (secStatus->status != 0 || sec_status_code != 0) {
+		/* secure status may contains debug information */
+		CMDQ_ERR(
+			"Secure status: %d (%d) step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x dispatch: %s task: 0x%p\n",
+			secStatus->status, sec_status_code, secStatus->step,
+			secStatus->args[0], secStatus->args[1],
+			secStatus->args[2], secStatus->args[3],
+			secStatus->dispatch, pTask);
+		for (index = 0; index < secStatus->inst_index; index += 2) {
+			CMDQ_ERR("Secure instruction %d: 0x%08x:%08x\n", (index / 2),
+				secStatus->sec_inst[index],
+				secStatus->sec_inst[index+1]);
+		}
+
+		switch (secStatus->status) {
+		case -CMDQ_ERR_ADDR_CONVERT_HANDLE_2_PA:
+			*dispatch_mod_ptr = "TEE";
+			break;
+		case -CMDQ_ERR_ADDR_CONVERT_ALLOC_MVA:
+		case -CMDQ_ERR_ADDR_CONVERT_ALLOC_MVA_N2S:
+			switch (pIwc->command.thread) {
+			case CMDQ_THREAD_SEC_PRIMARY_DISP:
+			case CMDQ_THREAD_SEC_SUB_DISP:
+				*dispatch_mod_ptr = "DISP";
+				break;
+			case CMDQ_THREAD_SEC_MDP:
+				*dispatch_mod_ptr = "MDP";
+				break;
+			}
+			break;
+		}
+	}
+}
+
+int32_t cmdq_sec_handle_session_reply_unlocked(const struct iwcCmdqMessage_t *pIwc,
+					       const int32_t iwcCommand, struct TaskStruct *pTask,
 					       void *data)
 {
 	int32_t status;
 	int32_t iwcRsp;
-	cmdqSecCancelTaskResultStruct *pCancelResult = NULL;
+	struct cmdqSecCancelTaskResultStruct *pCancelResult = NULL;
 
 	/* get secure task execution result */
 	iwcRsp = (pIwc)->rsp;
 	status = iwcRsp;
 
 	if (iwcCommand == CMD_CMDQ_TL_CANCEL_TASK) {
-		pCancelResult = (cmdqSecCancelTaskResultStruct *) data;
+		pCancelResult = (struct cmdqSecCancelTaskResultStruct *) data;
 		if (pCancelResult) {
 			pCancelResult->throwAEE = pIwc->cancelTask.throwAEE;
 			pCancelResult->hasReset = pIwc->cancelTask.hasReset;
@@ -566,7 +667,7 @@ int32_t cmdq_sec_handle_session_reply_unlocked(const iwcCmdqMessage_t *pIwc,
 		}
 
 		/* for WFE, we specifically dump the event value */
-		if (CMDQ_CODE_WFE == ((pIwc->cancelTask.errInstr[1] & 0xFF000000) >> 24)) {
+		if (((pIwc->cancelTask.errInstr[1] & 0xFF000000) >> 24) == CMDQ_CODE_WFE) {
 			const uint32_t eventID = 0x3FF & pIwc->cancelTask.errInstr[1];
 
 			CMDQ_ERR
@@ -629,7 +730,7 @@ CmdqSecFillIwcCB cmdq_sec_get_iwc_msg_fill_cb_by_iwc_command(uint32_t iwcCommand
 
 int32_t cmdq_sec_send_context_session_message(struct cmdqSecContextStruct *handle,
 					      uint32_t iwcCommand,
-					      TaskStruct *pTask,
+					      struct TaskStruct *pTask,
 					      int32_t thread, CmdqSecFillIwcCB cb, void *data)
 {
 	int32_t status;
@@ -687,7 +788,7 @@ int32_t cmdq_sec_teardown_context_session(struct cmdqSecContextStruct *handle)
 }
 
 void cmdq_sec_track_task_record(const uint32_t iwcCommand,
-				TaskStruct *pTask, CMDQ_TIME *pEntrySec, CMDQ_TIME *pExitSec)
+	struct TaskStruct *pTask, CMDQ_TIME *pEntrySec, CMDQ_TIME *pExitSec)
 {
 	if (pTask == NULL)
 		return;
@@ -704,9 +805,9 @@ void cmdq_sec_track_task_record(const uint32_t iwcCommand,
 }
 
 int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
-						       TaskStruct *pTask, int32_t thread,
-						       CmdqSecFillIwcCB iwcFillCB, void *data,
-						       bool throwAEE)
+	struct TaskStruct *pTask, int32_t thread,
+	CmdqSecFillIwcCB iwcFillCB, void *data,
+	bool throwAEE)
 {
 	const int32_t tgid = current->tgid;
 	const int32_t pid = current->pid;
@@ -716,6 +817,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 	char longMsg[CMDQ_LONGSTRING_MAX];
 	uint32_t msgOffset;
 	int32_t msgMAXSize;
+	char *dispatch_mod = "CMDQ";
 
 	CMDQ_TIME tEntrySec;
 	CMDQ_TIME tExitSec;
@@ -755,6 +857,16 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		CMDQ_GET_TIME_IN_US_PART(tEntrySec, tExitSec, duration);
 		cmdq_sec_track_task_record(iwcCommand, pTask, &tEntrySec, &tExitSec);
 
+		/* check status and attach secure error before session teardown */
+		if (handle) {
+			/* try to print out secure status if handle exist. */
+			cmdq_sec_handle_attach_status(pTask, iwcCommand, handle->iwcMessage, status, &dispatch_mod);
+		} else if (status < 0) {
+			/* handle does not exist, output message */
+			CMDQ_ERR("[SEC] No secure handle for error attach, task: 0x%p status: %d\n",
+				pTask, status);
+		}
+
 		/* release resource */
 #if !(CMDQ_OPEN_SESSION_ONCE)
 		cmdq_sec_teardown_context_session(handle)
@@ -763,8 +875,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		    /* No need reset module HW for config failed case */
 	} while (0);
 
-
-	if (-ETIMEDOUT == status) {
+	if (status == -ETIMEDOUT) {
 		/* t-base strange issue, mc_wait_notification false timeout when secure world has done */
 		/* because retry may failed, give up retry method */
 		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
@@ -778,8 +889,8 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		if (msgOffset > 0) {
 			/* print message */
 			if (throwAEE) {
-				/* print message */
-				CMDQ_AEE("CMDQ", "%s", longMsg);
+				/* In timeout case, error come from TEE API, dispatch to AEE directly. */
+				CMDQ_AEE("TEE", "%s", longMsg);
 			}
 			cmdq_core_turnon_first_dump(pTask);
 			cmdq_core_dump_secure_task_status();
@@ -797,7 +908,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 			/* print message */
 			if (throwAEE) {
 				/* print message */
-				CMDQ_AEE("CMDQ", "%s", longMsg);
+				CMDQ_AEE(dispatch_mod, "%s", longMsg);
 			}
 			cmdq_core_turnon_first_dump(pTask);
 			CMDQ_ERR("%s", longMsg);
@@ -842,12 +953,12 @@ int32_t cmdq_sec_init_allocate_resource_thread(void *data)
 int32_t cmdq_sec_fill_iwc_command_sectrace_unlocked(int32_t iwcCommand, void *_pTask,
 						    int32_t thread, void *_pIwc)
 {
-	iwcCmdqMessage_t *pIwc;
+	struct iwcCmdqMessage_t *pIwc;
 
-	pIwc = (iwcCmdqMessage_t *) _pIwc;
+	pIwc = (struct iwcCmdqMessage_t *) _pIwc;
 
 	/* specify command id only, don't care other other */
-	memset(pIwc, 0x0, sizeof(iwcCmdqMessage_t));
+	memset(pIwc, 0x0, sizeof(struct iwcCmdqMessage_t));
 	pIwc->cmd = iwcCommand;
 
 	switch (iwcCommand) {
@@ -1071,8 +1182,8 @@ int32_t cmdq_sec_exec_task_async_unlocked(struct TaskStruct *pTask, int32_t thre
 	int32_t status = 0;
 
 	status =
-	    cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_SUBMIT_TASK, pTask, thread,
-							   NULL, NULL, true);
+		cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_SUBMIT_TASK, pTask, thread,
+		NULL, NULL, true);
 	if (status < 0) {
 		/* Error status print */
 		CMDQ_ERR("%s[%d]\n", __func__, status);
@@ -1119,7 +1230,9 @@ int32_t cmdq_sec_allocate_path_resource_unlocked(bool throwAEE)
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status = 0;
 
-	if (atomic_read(&gCmdqSecPathResource) == 1) {
+	CMDQ_MSG("%s throwAEE: %s", __func__, throwAEE ? "true" : "false");
+
+	if (atomic_cmpxchg(&gCmdqSecPathResource, 0, 1) != 0) {
 		/* has allocated successfully */
 		return status;
 	}
@@ -1130,10 +1243,10 @@ int32_t cmdq_sec_allocate_path_resource_unlocked(bool throwAEE)
 							   throwAEE);
 	if (status < 0) {
 		/* Error status print */
-		CMDQ_ERR("%s[%d]\n", __func__, status);
-	} else {
-		/* Set resource successfully */
-		atomic_set(&gCmdqSecPathResource, 1);
+		CMDQ_ERR("%s[%d] reset context\n", __func__, status);
+
+		/* in fail case, we want function alloc again */
+		atomic_set(&gCmdqSecPathResource, 0);
 	}
 
 	return status;
