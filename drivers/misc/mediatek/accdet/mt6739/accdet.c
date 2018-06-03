@@ -109,12 +109,16 @@ static int g_accdet_auxadc_offset;
 static int g_moisture_vdd_offset; /* unit is mv */
 static int g_moisture_offset; /* unit is mv */
 static int g_moisture_vm; /* unit is mv */
+static int water_r; /* moisture resister ohm */
 #endif
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
 static int g_moisture_eint_offset; /* unit is ohm */
 #endif
 #ifdef CONFIG_MOISTURE_EXTERNAL_SUPPORT
 static int external_r; /* unit is ohm */
+#endif
+#ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
+static int internal_r; /* unit is ohm */
 #endif
 static int g_cur_key;
 static unsigned int g_accdet_eint_type = IRQ_TYPE_LEVEL_LOW;
@@ -327,6 +331,12 @@ static int accdet_get_dts_data(void)
 #ifdef CONFIG_MOISTURE_EXTERNAL_SUPPORT
 		of_property_read_u32(node, "moisture-external-r", &external_r);
 #endif
+#ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
+		of_property_read_u32(node, "moisture-internal-r", &internal_r);
+#endif
+#if defined(CONFIG_MOISTURE_EXTERNAL_SUPPORT) || defined(CONFIG_MOISTURE_INTERNAL_SUPPORT)
+		of_property_read_u32(node, "moisture-water-r", &water_r);
+#endif
 		of_property_read_u32_array(node, "headset-mode-setting", debounce, ARRAY_SIZE(debounce));
 		of_property_read_u32(node, "accdet-mic-vol", &headset_dts_data.mic_bias_vol);
 		/* for GPIO debounce */
@@ -429,28 +439,26 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	/* moisture eint efuse offset */
 	efusevalue = pmic_Read_Efuse_HPOffset(84);
 	moisture_eint0 = (int)((efusevalue >> 8) & ACCDET_CALI_MASK0);
-	if (moisture_eint0 > 128)
-		moisture_eint0 -= 256;
 	ACCDET_INFO("[moisture_eint0]efuse=0x%x,moisture_eint0=0x%x\n",
 		efusevalue, moisture_eint0);
 
 	efusevalue = pmic_Read_Efuse_HPOffset(85);
 	moisture_eint1 = (int)(efusevalue & ACCDET_CALI_MASK0);
-	if (moisture_eint1 > 128)
-		moisture_eint1 -= 256;
 	ACCDET_INFO("[moisture_eint1]efuse=0x%x,moisture_eint1=0x%x\n",
 		efusevalue, moisture_eint1);
 
-	/* RG_EINT_RES = RG_EINT1_RES<<8 | RG_EINT0_RES */
 	g_moisture_eint_offset = (moisture_eint1 << 8) | moisture_eint0;
+	if (g_moisture_eint_offset > 32768)
+		g_moisture_eint_offset -= 65536;
 
-	ACCDET_INFO("[moisture_eint_efuse]moisture_eint_offset=%d mv\n", g_moisture_eint_offset);
-	g_moisture_vm = (2800 + g_moisture_vdd_offset) * 57000 / (57000 + (8 * g_moisture_eint_offset) + 450000)
+	ACCDET_INFO("[moisture_eint_efuse]moisture_eint_offset=%d ohm\n", g_moisture_eint_offset);
+	g_moisture_vm = (2800 + g_moisture_vdd_offset) * (water_r + internal_r) / ((water_r + internal_r)
+		+ (8 * g_moisture_eint_offset) + 450000)
 		+ g_moisture_offset / 2;
 	ACCDET_INFO("[moisture_vm]moisture_vm=%d mv\n", g_moisture_vm);
 #endif
 #ifdef CONFIG_MOISTURE_EXTERNAL_SUPPORT
-	g_moisture_vm = (2800 + g_moisture_vdd_offset) * 10000 / (10000 + external_r) + g_moisture_offset / 2;
+	g_moisture_vm = (2800 + g_moisture_vdd_offset) * water_r / (water_r + external_r) + g_moisture_offset / 2;
 	ACCDET_INFO("[moisture_vm]moisture_vm=%d mv\n", g_moisture_vm);
 #endif
 }
@@ -1364,7 +1372,7 @@ static int accdet_irq_handler(void)
 		pmic_pwrap_write(AUD_TOP_INT_STATUS0, RG_INT_STATUS_ACCDET_EINT0_B6);
 		return 1;
 	}
-	if (moisture > 300) {
+	if (moisture > g_moisture_vm) {
 		ACCDET_DEBUG("ACCDET Moisture plug in detectecd\n");
 		if (g_cur_eint_state == EINT_PIN_PLUG_OUT) {/*just for low level trigger*/
 			if (g_accdet_eint_type == IRQ_TYPE_LEVEL_HIGH)
@@ -2418,8 +2426,6 @@ int mt_accdet_probe(struct platform_device *dev)
 	accdet_init_timer.function = &accdet_delay_callback;
 	accdet_init_timer.data = ((unsigned long)0);
 
-	accdet_pmic_Read_Efuse_HPOffset();
-
 	/* Create workqueue */
 	accdet_workqueue = create_singlethread_workqueue("accdet");
 	INIT_WORK(&accdet_work, accdet_work_callback);
@@ -2467,6 +2473,7 @@ int mt_accdet_probe(struct platform_device *dev)
 		atomic_set(&s_accdet_first, 0);
 		ACCDET_INFO("[mt_accdet_probe]accdet_get_dts_data Failed\n");
 	}
+	accdet_pmic_Read_Efuse_HPOffset();
 
 	ACCDET_INFO("[mt_accdet_probe]probe done!\n");
 	return 0;
