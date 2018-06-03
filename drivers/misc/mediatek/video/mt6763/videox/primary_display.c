@@ -6571,6 +6571,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 
 	primary_display_idlemgr_kick(__func__, 0);
 	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, cmdq_handle);
+	cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	pconfig->wdma_dirty = 1;
@@ -6596,6 +6597,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	DISPMSG("primary capture:Flush add memout mva(0x%x)\n", mva);
 	/* wait wdma0 sof */
 	cmdqRecWait(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
+	cmdqRecWait(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 	cmdqRecFlush(cmdq_wait_handle);
 	DISPMSG("primary capture:Flush wait wdma sof\n");
 	cmdqRecReset(cmdq_handle);
