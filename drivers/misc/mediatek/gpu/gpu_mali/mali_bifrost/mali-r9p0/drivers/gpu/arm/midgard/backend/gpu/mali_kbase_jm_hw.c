@@ -49,6 +49,11 @@ static enum hrtimer_restart kbasep_reset_timer_callback(struct hrtimer *timer);
 #endif /* KBASE_GPU_RESET_EN */
 
 #ifdef ENABLE_MTK_DEBUG
+#include "mtk_gpufreq.h"
+static unsigned int need_reset_MFG_wrapper;
+#endif
+
+#ifdef ENABLE_MTK_DEBUG
 static inline void debug_cmd(struct kbase_device *kbdev, u32 completion_code)
 {
 	/* DEBUG ONLY! Send debug command to GPU and get relavant status */
@@ -1225,9 +1230,14 @@ static void kbasep_reset_timeout_worker(struct work_struct *data)
 	 * assume that anything that is still left on the GPU is stuck there and
 	 * we'll kill it when we reset the GPU */
 
-	if (!silent)
+	if (!silent) {
+#ifdef ENABLE_MTK_DEBUG
+		if (mt_gpufreq_check_GPU_non_idle_infra_idle() == 1)
+			need_reset_MFG_wrapper = 1;
+#endif
 		dev_err(kbdev->dev, "Resetting GPU (allowing up to %d ms)",
 								RESET_TIMEOUT);
+	}
 
 	/* Output the state of some interesting registers to help in the
 	 * debugging of GPU resets */
@@ -1262,8 +1272,15 @@ static void kbasep_reset_timeout_worker(struct work_struct *data)
 	kbase_disjoint_state_down(kbdev);
 
 	wake_up(&kbdev->hwaccess.backend.reset_wait);
-	if (!silent)
+	if (!silent) {
 		dev_err(kbdev->dev, "Reset complete");
+#ifdef ENABLE_MTK_DEBUG
+		if (need_reset_MFG_wrapper == 1) {
+			mt_gpufreq_reset_MFG_wrapper();
+			need_reset_MFG_wrapper = 0;
+		}
+#endif
+	}
 
 	if (js_devdata->nr_contexts_pullable > 0 && !kbdev->poweroff_pending)
 		try_schedule = true;
