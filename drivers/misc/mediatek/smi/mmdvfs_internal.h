@@ -22,7 +22,7 @@
 
 #define MMDVFSDEBUG(level, x...)            \
 		do {                        \
-			if (g_mmvfs_debug_level && (*g_mmvfs_debug_level) >= (level))    \
+			if (g_mmdvfs_debug_level && (*g_mmdvfs_debug_level) >= (level))    \
 				MMDVFSMSG(x);            \
 		} while (0)
 
@@ -38,7 +38,7 @@
 
 extern void mmdvfs_internal_handle_state_change(struct mmdvfs_state_change_event *event);
 extern void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event *event);
-extern unsigned int *g_mmvfs_debug_level;
-extern unsigned int *g_mmdvfs_rt_debug_disable_mask;
+extern unsigned int *g_mmdvfs_debug_level;
+extern unsigned int *g_mmdvfs_scen_log_mask;
 extern int mmdvfs_internal_set_vpu_step(int current_step, int update_step);
 #endif				/* __MMDVFS_INTERNAL_H__ */
