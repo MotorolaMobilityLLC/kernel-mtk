@@ -21,6 +21,7 @@
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
 #include <mtk_pmic_api_buck.h>
+#include <mtk_spm_vcore_dvfs.h>
 
 void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctrl)
 {
@@ -33,10 +34,14 @@ void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctr
 #endif
 
 	__spm_sync_pcm_flags(pwrctrl);
+
+	dvfsrc_md_scenario_update(1);
 }
 
 void spm_dpidle_post_process(void)
 {
+	dvfsrc_md_scenario_update(0);
+
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);

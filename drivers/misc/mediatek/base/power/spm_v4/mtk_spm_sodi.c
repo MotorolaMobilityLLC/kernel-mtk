@@ -39,6 +39,7 @@
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_spm_pmic_wrap.h>
+#include <mtk_spm_vcore_dvfs.h>
 
 #include <mtk_power_gs_api.h>
 
@@ -84,10 +85,18 @@ static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 
 	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
 #endif
+
+#if defined(CONFIG_MACH_MT6763)
+	dvfsrc_md_scenario_update(1);
+#endif
 }
 
 static void spm_sodi_post_process(void)
 {
+#if defined(CONFIG_MACH_MT6763)
+	dvfsrc_md_scenario_update(0);
+#endif
+
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #endif

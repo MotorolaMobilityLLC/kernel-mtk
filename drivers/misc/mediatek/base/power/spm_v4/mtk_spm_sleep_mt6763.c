@@ -40,6 +40,7 @@
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
 #include <mtk_pmic_api_buck.h>
+#include <mtk_spm_vcore_dvfs.h>
 
 #include <mt-plat/mtk_ccci_common.h>
 
@@ -152,6 +153,8 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(slp_dump_golden_setting_type);
 
+	dvfsrc_md_scenario_update(1);
+
 #ifdef SPM_PMIC_DEBUG
 	spm_dump_pmic_reg();
 #endif /* SPM_PMIC_DEBUG */
@@ -162,6 +165,8 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	int ret;
 	struct spm_data spm_d;
+
+	dvfsrc_md_scenario_update(0);
 
 #ifdef SPM_PMIC_DEBUG
 	spm_dump_pmic_reg();
@@ -178,6 +183,8 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
 #else
+	dvfsrc_md_scenario_update(0);
+
 #ifdef SPM_PMIC_DEBUG
 	spm_dump_pmic_reg();
 #endif /* SPM_PMIC_DEBUG */
