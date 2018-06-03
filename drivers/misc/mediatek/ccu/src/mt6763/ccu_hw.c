@@ -476,10 +476,14 @@ static bool users_queue_is_empty(void)
 
 	list_for_each(head, &ccu_dev->user_list) {
 		user = vlist_node_of(head, ccu_user_t);
+		mutex_lock(&user->data_mutex);
+
 		if (!list_empty(&user->enque_ccu_cmd_list)) {
+			mutex_unlock(&user->data_mutex);
 			ccu_unlock_user_mutex();
 			return false;
 		}
+		mutex_unlock(&user->data_mutex);
 	}
 
 	ccu_unlock_user_mutex();
@@ -519,10 +523,10 @@ static int ccu_enque_cmd_loop(void *arg)
 		list_for_each(head, &ccu_dev->user_list) {
 
 			user = vlist_node_of(head, ccu_user_t);
-			/*mutex_lock(&user->data_mutex);*/
+			mutex_lock(&user->data_mutex);
 			/* flush thread will handle the remaining queue if flush */
 			if (user->flush || list_empty(&user->enque_ccu_cmd_list)) {
-				/*mutex_unlock(&user->data_mutex);*/
+				mutex_unlock(&user->data_mutex);
 				continue;
 			}
 
@@ -531,18 +535,18 @@ static int ccu_enque_cmd_loop(void *arg)
 
 			list_del_init(vlist_link(cmd, ccu_cmd_st));
 			user->running = true;
-			/*mutex_unlock(&user->data_mutex);*/
+			mutex_unlock(&user->data_mutex);
 
 			LOG_DBG("%s +:new command\n", __func__);
 			ccu_send_command(cmd);
 
-			/*mutex_lock(&user->data_mutex);*/
+			mutex_lock(&user->data_mutex);
 			list_add_tail(vlist_link(cmd, ccu_cmd_st), &user->deque_ccu_cmd_list);
 			user->running = false;
 
 			LOG_DBG("list_empty(%d)\n", (int)list_empty(&user->deque_ccu_cmd_list));
 
-			/*mutex_unlock(&user->data_mutex);*/
+			mutex_unlock(&user->data_mutex);
 
 			wake_up_interruptible_all(&user->deque_wait);
 

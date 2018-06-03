@@ -277,14 +277,14 @@ int ccu_push_command_to_queue(ccu_user_t *user, ccu_cmd_st *cmd)
 
 	LOG_DBG("+:%s\n", __func__);
 
-	spin_lock(&g_ccu_device->cmd_wait.lock);
+	/*spin_lock(&g_ccu_device->cmd_wait.lock);*/
 
-	/*mutex_lock(&user->data_mutex);*/
+	mutex_lock(&user->data_mutex);
 	list_add_tail(vlist_link(cmd, ccu_cmd_st), &user->enque_ccu_cmd_list);
-	/*mutex_unlock(&user->data_mutex);*/
+	mutex_unlock(&user->data_mutex);
 
 	wake_up_locked(&g_ccu_device->cmd_wait);
-	spin_unlock(&g_ccu_device->cmd_wait.lock);
+	/*spin_unlock(&g_ccu_device->cmd_wait.lock);*/
 
 	return 0;
 }
@@ -295,21 +295,21 @@ int ccu_flush_commands_from_queue(ccu_user_t *user)
 	struct list_head *head, *temp;
 	ccu_cmd_st *cmd;
 
-	/*mutex_lock(&user->data_mutex);*/
+	mutex_lock(&user->data_mutex);
 
 	if (!user->running && list_empty(&user->enque_ccu_cmd_list)
 	    && list_empty(&user->deque_ccu_cmd_list)) {
-		/*mutex_unlock(&user->data_mutex);*/
+		mutex_unlock(&user->data_mutex);
 		return 0;
 	}
 
 	user->flush = true;
-	/*mutex_unlock(&user->data_mutex);*/
+	mutex_unlock(&user->data_mutex);
 
 	/* the running command will add to the deque before interrupt */
 	wait_event_interruptible(user->deque_wait, !user->running);
 
-	/*mutex_lock(&user->data_mutex);*/
+	mutex_lock(&user->data_mutex);
 	/* push the remaining enque to the deque */
 	list_for_each_safe(head, temp, &user->enque_ccu_cmd_list) {
 		cmd = vlist_node_of(head, ccu_cmd_st);
@@ -319,7 +319,7 @@ int ccu_flush_commands_from_queue(ccu_user_t *user)
 	}
 
 	user->flush = false;
-	/*mutex_unlock(&user->data_mutex);*/
+	mutex_unlock(&user->data_mutex);
 	return 0;
 }
 
@@ -346,10 +346,10 @@ int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd)
 
 		return ret;
 	}
-	/*mutex_lock(&user->data_mutex);*/
+	mutex_lock(&user->data_mutex);
 	/* This part should not be happened */
 	if (list_empty(&user->deque_ccu_cmd_list)) {
-		/*mutex_unlock(&user->data_mutex);*/
+		mutex_unlock(&user->data_mutex);
 		LOG_ERR("pop a command from empty queue! ret=%d\n", ret);
 		*rcmd = NULL;
 		return -1;
@@ -357,9 +357,9 @@ int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd)
 
 	/* get first node from deque list */
 	cmd = vlist_node_of(user->deque_ccu_cmd_list.next, ccu_cmd_st);
-
 	list_del_init(vlist_link(cmd, ccu_cmd_st));
-	/*mutex_unlock(&user->data_mutex);*/
+
+	mutex_unlock(&user->data_mutex);
 
 	*rcmd = cmd;
 	return 0;
@@ -801,10 +801,13 @@ static int ccu_release(struct inode *inode, struct file *flip)
 {
 	ccu_user_t *user = flip->private_data;
 
+	LOG_INF_MUST("ccu_release +");
+
 	ccu_delete_user(user);
 
-
 	ccu_force_powerdown();
+
+	LOG_INF_MUST("ccu_release -");
 
 	return 0;
 }
