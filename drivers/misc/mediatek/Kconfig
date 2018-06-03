@@ -193,7 +193,7 @@ config MTK_SENSORS_1_0
 	  between kernel space and user space.
 	  And we support loadble drivers
 
-#source "drivers/misc/mediatek/sensors-1.0/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/Kconfig"
 
 endmenu  # Sensors
 
