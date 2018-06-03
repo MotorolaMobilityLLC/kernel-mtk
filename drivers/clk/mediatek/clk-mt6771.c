@@ -1721,6 +1721,15 @@ static const struct mtk_gate_regs ipu_conn_axi2_cg_regs = {
 		.ops = &mtk_clk_gate_ops_setclr,	\
 	}
 
+#define GATE_IPU_CONN_DUMMY(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &ipu_conn_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_dummy,	\
+	}
+
 #define GATE_IPU_CONN_APB(_id, _name, _parent, _shift) {	\
 		.id = _id,			\
 		.name = _name,			\
@@ -1758,12 +1767,12 @@ static const struct mtk_gate_regs ipu_conn_axi2_cg_regs = {
 	}
 
 static const struct mtk_gate ipu_conn_clks[] __initconst = {
-	GATE_IPU_CONN(IPU_CONN_IPU_CG, "ipu_conn_ipu", "dsp_sel", 0),
-	GATE_IPU_CONN(IPU_CONN_AHB_CG, "ipu_conn_ahb", "dsp_sel", 1),
-	GATE_IPU_CONN(IPU_CONN_AXI_CG, "ipu_conn_axi", "dsp_sel", 2),
-	GATE_IPU_CONN(IPU_CONN_ISP_CG, "ipu_conn_isp", "dsp_sel", 3),
-	GATE_IPU_CONN(IPU_CONN_CAM_ADL_CG, "ipu_conn_cam_adl", "dsp_sel", 4),
-	GATE_IPU_CONN(IPU_CONN_IMG_ADL_CG, "ipu_conn_img_adl", "dsp_sel", 5),
+	GATE_IPU_CONN_DUMMY(IPU_CONN_IPU_CG, "ipu_conn_ipu", "dsp_sel", 0),
+	GATE_IPU_CONN_DUMMY(IPU_CONN_AHB_CG, "ipu_conn_ahb", "dsp_sel", 1),
+	GATE_IPU_CONN_DUMMY(IPU_CONN_AXI_CG, "ipu_conn_axi", "dsp_sel", 2),
+	GATE_IPU_CONN_DUMMY(IPU_CONN_ISP_CG, "ipu_conn_isp", "dsp_sel", 3),
+	GATE_IPU_CONN_DUMMY(IPU_CONN_CAM_ADL_CG, "ipu_conn_cam_adl", "dsp_sel", 4),
+	GATE_IPU_CONN_DUMMY(IPU_CONN_IMG_ADL_CG, "ipu_conn_img_adl", "dsp_sel", 5),
 
 	GATE_IPU_CONN_APB(IPU_CONN_DAP_RX_CG, "ipu_conn_dap_rx", "dsp1_sel", 0),
 	GATE_IPU_CONN_APB(IPU_CONN_APB2AXI_CG, "ipu_conn_apb2axi", "dsp1_sel", 3),
