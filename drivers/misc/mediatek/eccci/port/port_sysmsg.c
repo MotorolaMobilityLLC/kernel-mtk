@@ -131,7 +131,7 @@ void exec_ccci_sys_call_back(int md_id, int cb_id, int data)
 			cb_id);
 }
 
-unsigned long __weak BAT_Get_Battery_Voltage(int polling_mode)
+signed int __weak battery_get_bat_voltage(void)
 {
 	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
 	return 0;
@@ -139,9 +139,9 @@ unsigned long __weak BAT_Get_Battery_Voltage(int polling_mode)
 
 static int sys_msg_send_battery(struct port_t *port)
 {
-	unsigned int data;
+	int data;
 
-	data = (unsigned int)BAT_Get_Battery_Voltage(0);
+	data = (int)battery_get_bat_voltage();
 	CCCI_REPEAT_LOG(port->md_id, SYS, "get bat voltage %d\n", data);
 	port_send_msg_to_md(port, MD_GET_BATTERY_INFO, data, 1);
 	return 0;
