@@ -3410,6 +3410,10 @@
 
 	rt5081_pd: rt5081_pd_eint {
 	};
+
+	rt-pd-manager {
+		compatible = "mediatek,rt-pd-manager";
+	};
 };
 
 #include "mt6356.dtsi"
