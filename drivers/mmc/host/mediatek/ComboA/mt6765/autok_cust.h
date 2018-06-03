@@ -13,7 +13,7 @@
 #ifndef _AUTOK_CUST_H_
 #define _AUTOK_CUST_H_
 
-#define AUTOK_VERSION                   (0x17080217)
+#define AUTOK_VERSION                   (0x17122120)
 
 struct AUTOK_PLAT_PARA_TX {
 	/* chip_hw_ver:  in case E2's tune values
@@ -203,16 +203,16 @@ struct AUTOK_PLAT_FUNC {
 #define get_platform_para_rx(autok_para_rx) \
 	do { \
 		autok_para_rx.ckgen_val = 0; \
-		autok_para_rx.latch_en_cmd_hs400 = 3; \
-		autok_para_rx.latch_en_crc_hs400 = 3; \
-		autok_para_rx.latch_en_cmd_hs200 = 2; \
-		autok_para_rx.latch_en_crc_hs200 = 2; \
-		autok_para_rx.latch_en_cmd_ddr208 = 4; \
-		autok_para_rx.latch_en_crc_ddr208 = 4; \
+		autok_para_rx.latch_en_cmd_hs400 = 2; \
+		autok_para_rx.latch_en_crc_hs400 = 2; \
+		autok_para_rx.latch_en_cmd_hs200 = 1; \
+		autok_para_rx.latch_en_crc_hs200 = 1; \
+		autok_para_rx.latch_en_cmd_ddr208 = 2; \
+		autok_para_rx.latch_en_crc_ddr208 = 2; \
 		autok_para_rx.latch_en_cmd_sd_sdr104 = 1; \
 		autok_para_rx.latch_en_crc_sd_sdr104 = 1; \
-		autok_para_rx.latch_en_cmd_sdio_sdr104 = 2; \
-		autok_para_rx.latch_en_crc_sdio_sdr104 = 2; \
+		autok_para_rx.latch_en_cmd_sdio_sdr104 = 1; \
+		autok_para_rx.latch_en_crc_sdio_sdr104 = 1; \
 		autok_para_rx.latch_en_cmd_hs = 1; \
 		autok_para_rx.latch_en_crc_hs = 1; \
 		autok_para_rx.cmd_ta_val = 0; \
@@ -239,13 +239,13 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_rx.old_water_hs = 8; \
 		autok_para_rx.old_stop_hs = 3; \
 		autok_para_rx.read_dat_cnt_hs400 = 1; \
-		autok_para_rx.read_dat_cnt_ddr208 = 7; \
+		autok_para_rx.read_dat_cnt_ddr208 = 1; \
 		autok_para_rx.end_bit_chk_cnt_hs400 = 3; \
 		autok_para_rx.end_bit_chk_cnt_ddr208 = 3; \
 		autok_para_rx.latchck_switch_cnt_hs400 = 5; \
-		autok_para_rx.latchck_switch_cnt_ddr208 = 4; \
-		autok_para_rx.ds_dly3_hs400 = 0; \
-		autok_para_rx.ds_dly3_ddr208 = 24; \
+		autok_para_rx.latchck_switch_cnt_ddr208 = 3; \
+		autok_para_rx.ds_dly3_hs400 = 20; \
+		autok_para_rx.ds_dly3_ddr208 = 20; \
 	} while (0)
 
 #define get_platform_para_misc(autok_para_misc) \
@@ -259,8 +259,8 @@ struct AUTOK_PLAT_FUNC {
 
 #define get_platform_top_ctrl(autok_top_ctrl) \
 	do { \
-		autok_top_ctrl.msdc0_rx_enhance_top = 0; \
-		autok_top_ctrl.msdc1_rx_enhance_top = 0; \
+		autok_top_ctrl.msdc0_rx_enhance_top = 1; \
+		autok_top_ctrl.msdc1_rx_enhance_top = 1; \
 		autok_top_ctrl.msdc2_rx_enhance_top = 0; \
 	} while (0)
 /*
