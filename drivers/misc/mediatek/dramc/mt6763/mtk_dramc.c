@@ -1394,135 +1394,6 @@ DRIVER_ATTR(read_dram_data_rate, 0664,
 read_dram_data_rate_show, read_dram_data_rate_store);
 
 /*DRIVER_ATTR(dram_dfs, 0664, dram_dfs_show, dram_dfs_store);*/
-
-static int dram_probe(struct platform_device *pdev)
-{
-	unsigned int i;
-	struct resource *res;
-	void __iomem *base_temp[6];
-	struct device_node *node = NULL;
-
-	pr_debug("[DRAMC] module probe.\n");
-
-	for (i = 0; i < 6; i++) {
-		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-		base_temp[i] = devm_ioremap_resource(&pdev->dev, res);
-		if (IS_ERR(base_temp[i])) {
-			pr_err("[DRAMC] unable to map %d base\n", i);
-			return -EINVAL;
-		}
-	}
-
-	DRAMC_AO_CHA_BASE_ADDR = base_temp[0];
-	DRAMC_AO_CHB_BASE_ADDR = base_temp[1];
-
-	DRAMC_NAO_CHA_BASE_ADDR = base_temp[2];
-	DRAMC_NAO_CHB_BASE_ADDR = base_temp[3];
-
-	DDRPHY_AO_CHA_BASE_ADDR = base_temp[4];
-	DDRPHY_AO_CHB_BASE_ADDR = base_temp[5];
-
-	DDRPHY_NAO_CHA_BASE_ADDR = base_temp[6];
-	DDRPHY_NAO_CHB_BASE_ADDR = base_temp[7];
-
-	pr_warn("[DRAMC]get DRAMC_AO_CHA_BASE_ADDR @ %p\n", DRAMC_AO_CHA_BASE_ADDR);
-	pr_warn("[DRAMC]get DRAMC_AO_CHB_BASE_ADDR @ %p\n", DRAMC_AO_CHB_BASE_ADDR);
-
-	pr_warn("[DRAMC]get DDRPHY_AO_CHA_BASE_ADDR @ %p\n", DDRPHY_AO_CHA_BASE_ADDR);
-	pr_warn("[DRAMC]get DDRPHY_AO_CHB_BASE_ADDR @ %p\n", DDRPHY_AO_CHB_BASE_ADDR);
-
-	pr_warn("[DRAMC]get DRAMC_NAO_CHA_BASE_ADDR @ %p\n", DRAMC_NAO_CHA_BASE_ADDR);
-	pr_warn("[DRAMC]get DRAMC_NAO_CHB_BASE_ADDR @ %p\n", DRAMC_NAO_CHB_BASE_ADDR);
-
-	pr_warn("[DRAMC]get DDRPHY_NAO_CHA_BASE_ADDR @ %p\n", DDRPHY_NAO_CHA_BASE_ADDR);
-	pr_warn("[DRAMC]get DDRPHY_NAO_CHB_BASE_ADDR @ %p\n", DDRPHY_NAO_CHB_BASE_ADDR);
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
-	if (node) {
-		SLEEP_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get SLEEP_BASE_ADDR @ %p\n",
-		SLEEP_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find SLEEP_BASE_ADDR compatible node\n");
-		return -1;
-	}
-
-	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
-	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
-
-#ifdef MIX_MODE
-	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_01C) & 0xF000) >> 12;
-#else
-	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
-#endif
-	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
-#ifdef MIX_MODE
-	switch (CBT_MODE) {
-	case NORMAL_MODE:
-		cbt_mode_rank[0] = RANK_NORMAL;
-		cbt_mode_rank[1] = RANK_NORMAL;
-		break;
-	case BYTE_MODE:
-		cbt_mode_rank[0] = RANK_BYTE;
-		cbt_mode_rank[1] = RANK_BYTE;
-		break;
-	case R0_NORMAL_R1_BYTE:
-		cbt_mode_rank[0] = RANK_NORMAL;
-		cbt_mode_rank[1] = RANK_BYTE;
-		break;
-	case R0_BYTE_R1_NORMAL:
-		cbt_mode_rank[0] = RANK_BYTE;
-		cbt_mode_rank[1] = RANK_NORMAL;
-		break;
-	default:
-		pr_err("[DRAMC] CBT mode error!!!\n");
-		break;
-	}
-#endif
-
-	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
-	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
-
-#if 0
-	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-		low_freq_counter = 10;
-		setup_deferrable_timer_on_stack(&zqcs_timer, zqcs_timer_callback, 0);
-		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
-			pr_err("[DRAMC Driver] Error in ZQCS mod_timer\n");
-	}
-#endif
-	if (dram_can_support_fh())
-		pr_err("[DRAMC Driver] dram can support DFS\n");
-	else
-		pr_err("[DRAMC Driver] dram can not support DFS\n");
-
-	return 0;
-}
-
-static int dram_remove(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id dram_of_ids[] = {
-	{.compatible = "mediatek,dramc",},
-	{}
-};
-#endif
-
-static struct platform_driver dram_test_drv = {
-	.probe = dram_probe,
-	.remove = dram_remove,
-	.driver = {
-		.name = "emi_clk_test",
-		.owner = THIS_MODULE,
-#ifdef CONFIG_OF
-		.of_match_table = dram_of_ids,
-#endif
-		},
-};
-
 static struct timer_list zqcs_timer;
 static unsigned char low_freq_counter;
 
@@ -1689,6 +1560,133 @@ void add_zqcs_timer(void)
 {
 	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)); /* add_timer(&zqcs_timer); */
 }
+
+static int dram_probe(struct platform_device *pdev)
+{
+	unsigned int i;
+	struct resource *res;
+	void __iomem *base_temp[6];
+	struct device_node *node = NULL;
+
+	pr_debug("[DRAMC] module probe.\n");
+
+	for (i = 0; i < 6; i++) {
+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
+		base_temp[i] = devm_ioremap_resource(&pdev->dev, res);
+		if (IS_ERR(base_temp[i])) {
+			pr_err("[DRAMC] unable to map %d base\n", i);
+			return -EINVAL;
+		}
+	}
+
+	DRAMC_AO_CHA_BASE_ADDR = base_temp[0];
+	DRAMC_AO_CHB_BASE_ADDR = base_temp[1];
+
+	DRAMC_NAO_CHA_BASE_ADDR = base_temp[2];
+	DRAMC_NAO_CHB_BASE_ADDR = base_temp[3];
+
+	DDRPHY_AO_CHA_BASE_ADDR = base_temp[4];
+	DDRPHY_AO_CHB_BASE_ADDR = base_temp[5];
+
+	DDRPHY_NAO_CHA_BASE_ADDR = base_temp[6];
+	DDRPHY_NAO_CHB_BASE_ADDR = base_temp[7];
+
+	pr_warn("[DRAMC]get DRAMC_AO_CHA_BASE_ADDR @ %p\n", DRAMC_AO_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DRAMC_AO_CHB_BASE_ADDR @ %p\n", DRAMC_AO_CHB_BASE_ADDR);
+
+	pr_warn("[DRAMC]get DDRPHY_AO_CHA_BASE_ADDR @ %p\n", DDRPHY_AO_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DDRPHY_AO_CHB_BASE_ADDR @ %p\n", DDRPHY_AO_CHB_BASE_ADDR);
+
+	pr_warn("[DRAMC]get DRAMC_NAO_CHA_BASE_ADDR @ %p\n", DRAMC_NAO_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DRAMC_NAO_CHB_BASE_ADDR @ %p\n", DRAMC_NAO_CHB_BASE_ADDR);
+
+	pr_warn("[DRAMC]get DDRPHY_NAO_CHA_BASE_ADDR @ %p\n", DDRPHY_NAO_CHA_BASE_ADDR);
+	pr_warn("[DRAMC]get DDRPHY_NAO_CHB_BASE_ADDR @ %p\n", DDRPHY_NAO_CHB_BASE_ADDR);
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
+	if (node) {
+		SLEEP_BASE_ADDR = of_iomap(node, 0);
+		pr_warn("[DRAMC]get SLEEP_BASE_ADDR @ %p\n",
+		SLEEP_BASE_ADDR);
+	} else {
+		pr_err("[DRAMC]can't find SLEEP_BASE_ADDR compatible node\n");
+		return -1;
+	}
+
+	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
+	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
+
+#ifdef MIX_MODE
+	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_01C) & 0xF000) >> 12;
+#else
+	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
+#endif
+	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
+#ifdef MIX_MODE
+	switch (CBT_MODE) {
+	case NORMAL_MODE:
+		cbt_mode_rank[0] = RANK_NORMAL;
+		cbt_mode_rank[1] = RANK_NORMAL;
+		break;
+	case BYTE_MODE:
+		cbt_mode_rank[0] = RANK_BYTE;
+		cbt_mode_rank[1] = RANK_BYTE;
+		break;
+	case R0_NORMAL_R1_BYTE:
+		cbt_mode_rank[0] = RANK_NORMAL;
+		cbt_mode_rank[1] = RANK_BYTE;
+		break;
+	case R0_BYTE_R1_NORMAL:
+		cbt_mode_rank[0] = RANK_BYTE;
+		cbt_mode_rank[1] = RANK_NORMAL;
+		break;
+	default:
+		pr_err("[DRAMC] CBT mode error!!!\n");
+		break;
+	}
+#endif
+
+	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
+	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
+
+	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+		low_freq_counter = 10;
+		setup_deferrable_timer_on_stack(&zqcs_timer, zqcs_timer_callback, 0);
+		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
+			pr_err("[DRAMC Driver] Error in ZQCS mod_timer\n");
+	}
+
+	if (dram_can_support_fh())
+		pr_err("[DRAMC Driver] dram can support DFS\n");
+	else
+		pr_err("[DRAMC Driver] dram can not support DFS\n");
+
+	return 0;
+}
+
+static int dram_remove(struct platform_device *dev)
+{
+	return 0;
+}
+
+#ifdef CONFIG_OF
+static const struct of_device_id dram_of_ids[] = {
+	{.compatible = "mediatek,dramc",},
+	{}
+};
+#endif
+
+static struct platform_driver dram_test_drv = {
+	.probe = dram_probe,
+	.remove = dram_remove,
+	.driver = {
+		.name = "emi_clk_test",
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = dram_of_ids,
+#endif
+		},
+};
 
 #ifdef DRAM_HQA
 static unsigned int hqa_vcore;
