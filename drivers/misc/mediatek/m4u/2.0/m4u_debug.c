@@ -506,13 +506,13 @@ static int m4u_debug_set(void *data, u64 val)
 	{
 		unsigned int mva;
 
-		mva = m4u_do_mva_alloc_fix(0x90000000, 0x10000000, NULL);
+		mva = m4u_do_mva_alloc_fix(0, 0x90000000, 0x10000000, NULL);
 		M4UINFO("mva alloc fix done:mva=0x%x\n", mva);
-		mva = m4u_do_mva_alloc_fix(0xb0000000, 0x10000000, NULL);
+		mva = m4u_do_mva_alloc_fix(0, 0xb0000000, 0x10000000, NULL);
 		M4UINFO("mva alloc fix done:mva=0x%x\n", mva);
-		mva = m4u_do_mva_alloc_fix(0xa0000000, 0x10000000, NULL);
+		mva = m4u_do_mva_alloc_fix(0, 0xa0000000, 0x10000000, NULL);
 		M4UINFO("mva alloc fix done:mva=0x%x\n", mva);
-		mva = m4u_do_mva_alloc_fix(0xa4000000, 0x10000000, NULL);
+		mva = m4u_do_mva_alloc_fix(0, 0xa4000000, 0x10000000, NULL);
 		M4UINFO("mva alloc fix done:mva=0x%x\n", mva);
 		m4u_mvaGraph_dump();
 		m4u_do_mva_free(0x90000000, 0x10000000);
