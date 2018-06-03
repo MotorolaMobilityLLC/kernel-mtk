@@ -105,8 +105,8 @@ static int scp_dvfs_flag = -1;
 static int scp_sleep_flag = -1;
 
 static int mt_scp_dvfs_debug = -1;
-static unsigned int scp_cur_volt = -1;
-static unsigned int pre_pll_sel;
+static int scp_cur_volt = -1;
+static int pre_pll_sel = -1;
 static struct mt_scp_pll_t *mt_scp_pll;
 static struct wake_lock scp_suspend_lock;
 static int g_scp_dvfs_init_flag = -1;
@@ -120,7 +120,7 @@ static void __iomem *gpio_base;
 
 unsigned int scp_get_dvfs_opp(void)
 {
-	return scp_cur_volt;
+	return (unsigned int)scp_cur_volt;
 }
 
 int scp_set_pmic_vcore(unsigned int cur_freq)
@@ -274,7 +274,7 @@ int scp_request_freq(void)
 		} while (scp_current_freq != scp_expected_freq);
 
 		#if SCP_DVFS_USE_PLL
-		scp_pll_ctrl_set(PLL_DISABLE, 0); /* turn off PLL */
+		scp_pll_ctrl_set(PLL_DISABLE, scp_expected_freq); /* turn off PLL */
 		#endif
 
 		/* do DVS after DFS if decreasing frequency */
@@ -351,11 +351,21 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 			break;
 		}
 
+		if (ret) {
+			SCP_DBG("ERROR: %s: clk_set_parent() failed, opp=%d\n",
+				__func__, pll_sel);
+			WARN_ON(1);
+		}
+
 		if (pre_pll_sel != pll_sel)
 			pre_pll_sel = pll_sel;
 
-	} else if (pll_ctrl_flag == PLL_DISABLE && pll_sel != CLK_OPP2)
+	} else if (pll_ctrl_flag == PLL_DISABLE && pll_sel != CLK_OPP2) {
 		clk_disable_unprepare(mt_scp_pll->clk_mux);
+		SCP_DBG("clk_disable_unprepare()\n");
+	} else {
+		SCP_DBG("no need to do clk_disable_unprepare\n");
+	}
 
 	return ret;
 }
@@ -463,6 +473,7 @@ static ssize_t mt_scp_dvfs_sleep_proc_write(struct file *file, const char __user
 	char desc[64];
 	unsigned int val = 0;
 	int len = 0;
+	int ret = 0;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -474,8 +485,10 @@ static ssize_t mt_scp_dvfs_sleep_proc_write(struct file *file, const char __user
 			if (val != scp_sleep_flag) {
 				scp_sleep_flag = val;
 				SCP_INFO("scp_sleep_flag = %d\n", scp_sleep_flag);
-				scp_ipi_send(IPI_DVFS_SLEEP, (void *)&scp_sleep_flag, sizeof(scp_sleep_flag),
+				ret = scp_ipi_send(IPI_DVFS_SLEEP, (void *)&scp_sleep_flag, sizeof(scp_sleep_flag),
 							0, SCP_A_ID);
+				if (ret != SCP_IPI_DONE)
+					SCP_INFO("%s: SCP send IPI fail - %d\n", __func__, ret);
 			} else
 				SCP_INFO("SCP sleep setting is not changed. keep in %d\n", val);
 		} else {
