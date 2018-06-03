@@ -81,8 +81,8 @@ static struct nanohub_packet_pad *packet_alloc(int flags)
 	    sizeof(struct nanohub_packet_pad) + MAX_UINT8 +
 	    sizeof(struct nanohub_packet_crc);
 	u8 *packet = kmalloc(len, flags);
-
-	memset(packet, 0xFF, len);
+	if (packet)
+		memset(packet, 0xFF, len);
 	return (struct nanohub_packet_pad *)packet;
 }
 
