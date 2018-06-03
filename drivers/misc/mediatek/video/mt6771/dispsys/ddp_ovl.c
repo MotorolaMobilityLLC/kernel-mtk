@@ -1252,8 +1252,14 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 
 	_ovl_set_rsz_roi(module, pConfig, handle);
 
+	if (golden_setting->fps)
+		fps = golden_setting->fps;
+	else {
+		DDPDBG("no fps information, set fps as default 60\n");
+		fps = 60;
+	}
+
 	ovl_bw = 0;
-	fps = golden_setting->fps;
 	for (layer_id = 0; layer_id < TOTAL_REAL_OVL_LAYER_NUM; layer_id++) {
 		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[layer_id];
 		int enable = ovl_cfg->layer_en;
