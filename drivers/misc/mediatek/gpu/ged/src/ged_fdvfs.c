@@ -371,7 +371,6 @@ GED_ERROR ged_fdvfs_system_init(void)
 #endif
 #endif
 
-	mfg_is_power_on = 0;
 
 	return GED_OK;
 }
