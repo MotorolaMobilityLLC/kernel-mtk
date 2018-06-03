@@ -365,7 +365,7 @@ static const char * const cam_parents[] __initconst = {
 
 static const char * const mfg_parents[] __initconst = {
 	"clk26m",
-	"mmpll_ck",
+	"mfgpll_ck",
 	"univpll_d3",
 	"syspll_d2"
 };
@@ -1511,6 +1511,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_clrl(MFGPLL_CON0, PLL_EN);
 	clk_setl(MFGPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(MFGPLL_PWR_CON0, PLL_PWR_ON);
+#endif
 /*UNIVPLL*/
 	clk_clrl(UNIVPLL_CON0, PLL_EN);
 	clk_setl(UNIVPLL_PWR_CON0, PLL_ISO_EN);
@@ -1535,7 +1536,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_clrl(APLL2_CON0, PLL_EN);
 	clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
-#endif
+
 }
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,apmixed",
 		mtk_apmixedsys_init);
@@ -1928,6 +1929,16 @@ void armpll_control(int id, int on)
 			mt_reg_sync_writel((clk_readl(ARMPLL_L_PWR_CON0) | 0x00000002), ARMPLL_L_PWR_CON0);
 			mt_reg_sync_writel((clk_readl(ARMPLL_L_PWR_CON0) & 0xfffffffe), ARMPLL_L_PWR_CON0);
 		}
+	}
+}
+
+void cam_mtcmos_patch(int on)
+{
+	if (on) {
+		/* do something */
+		/* do something */
+	} else {
+		clk_writel(CAMSYS_CG_CLR, 0x0001);
 	}
 }
 

@@ -1245,6 +1245,7 @@ int spm_mtcmos_ctrl_cam(int state)
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
+		cam_mtcmos_patch(state);
 		/* TINFO="Start to turn off CAM" */
 		/* TINFO="Set bus protect(SMI_LARB2_SLP_CON)" */
 		spm_write(SMI_LARB2_SLP_CON, spm_read(SMI_LARB2_SLP_CON) | 0x1);
@@ -1734,7 +1735,7 @@ int allow[NR_SYSS] = {
 1,	/*SYS_VEN = 5,*/
 1,	/*SYS_MFG_ASYNC = 6,*/
 1,	/*SYS_AUDIO = 7,*/
-0,	/*SYS_CAM = 8,*//*There is no process hold rtnl lock*/
+1,	/*SYS_CAM = 8,*//*There is no process hold rtnl lock*/
 1,	/*SYS_MFG_CORE1 = 9,*/
 1,	/*SYS_MFG_CORE0 = 10,*/
 };
@@ -1985,6 +1986,7 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define pg_mfg_core0   "pg_mfg_core0"
 
 #define img_sel	"img_sel"
+#define cam_sel	"cam_sel"
 #define mm_sel			"mm_sel"
 #define f26m_sel	"f26m_sel"
 #define infracfg_ao_audio_26m_bclk_ck "infracfg_ao_audio_26m_bclk_ck"
@@ -2016,7 +2018,7 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_ISP, pg_isp, NULL, img_sel, SYS_ISP),
 	PGATE(SCP_SYS_VEN, pg_ven, NULL, mm_sel, SYS_VEN),
 	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, infracfg_ao_audio_26m_bclk_ck, SYS_AUDIO),
-	PGATE(SCP_SYS_CAM, pg_cam, NULL, img_sel, SYS_CAM),
+	PGATE(SCP_SYS_CAM, pg_cam, NULL, cam_sel, SYS_CAM),
 	PGATE(SCP_SYS_MFG_CORE1, pg_mfg_core1, pg_mfg, NULL, SYS_MFG_CORE1),
 	PGATE(SCP_SYS_MFG_CORE0, pg_mfg_core0, pg_mfg, NULL, SYS_MFG_CORE0),
 };
