@@ -177,15 +177,10 @@ u32 mt_irq_get_pol(u32 irq)
 int mt_irq_mask_all(struct mtk_irq_mask *mask)
 {
 	void __iomem *dist_base;
-	void __iomem *redist_base;
 
 	dist_base = GIC_DIST_BASE;
-	gic_populate_rdist(&redist_base);
-	redist_base += SZ_64K;
 
 	if (mask) {
-		/* for SGI & PPI */
-		mask->mask0 = readl((redist_base + GIC_DIST_ENABLE_SET));
 		/* for SPI */
 		mask->mask1 = readl((dist_base + GIC_DIST_ENABLE_SET + 0x4));
 		mask->mask2 = readl((dist_base + GIC_DIST_ENABLE_SET + 0x8));
@@ -200,8 +195,6 @@ int mt_irq_mask_all(struct mtk_irq_mask *mask)
 		mask->mask11 = readl((dist_base + GIC_DIST_ENABLE_SET + 0x2c));
 		mask->mask12 = readl((dist_base + GIC_DIST_ENABLE_SET + 0x30));
 
-		/* for SGI & PPI */
-		writel(0xFFFFFFFF, (redist_base + GIC_DIST_ENABLE_CLEAR));
 		/* for SPI */
 		writel(0xFFFFFFFF, (dist_base + GIC_DIST_ENABLE_CLEAR + 0x4));
 		writel(0xFFFFFFFF, (dist_base + GIC_DIST_ENABLE_CLEAR + 0x8));
@@ -235,11 +228,8 @@ int mt_irq_mask_all(struct mtk_irq_mask *mask)
 int mt_irq_mask_restore(struct mtk_irq_mask *mask)
 {
 	void __iomem *dist_base;
-	void __iomem *redist_base;
 
 	dist_base = GIC_DIST_BASE;
-	gic_populate_rdist(&redist_base);
-	redist_base += SZ_64K;
 
 	if (!mask)
 		return -1;
@@ -248,7 +238,6 @@ int mt_irq_mask_restore(struct mtk_irq_mask *mask)
 	if (mask->footer != IRQ_MASK_FOOTER)
 		return -1;
 
-	writel(mask->mask0, (redist_base + GIC_DIST_ENABLE_SET));
 	writel(mask->mask1, (dist_base + GIC_DIST_ENABLE_SET + 0x4));
 	writel(mask->mask2, (dist_base + GIC_DIST_ENABLE_SET + 0x8));
 	writel(mask->mask3, (dist_base + GIC_DIST_ENABLE_SET + 0xc));
