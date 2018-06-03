@@ -151,7 +151,6 @@ if (cmdq_core_should_print_msg()) { \
 }			\
 }
 
-
 #define CMDQ_ERR(string, args...) \
 {			\
 if (1) {	\
@@ -253,6 +252,9 @@ CMDQ_TIME _duration = end - start;		\
 do_div(_duration, 1000);				\
 target += (int32_t)_duration;			\
 }
+
+#define CMDQ_TASK_PRIVATE(task) ((struct TaskPrivateStruct *)task->privateData)
+#define CMDQ_TASK_IS_INTERNAL(task) (task->privateData && (CMDQ_TASK_PRIVATE(task)->internal))
 
 #define CMDQ_ENG_ISP_GROUP_FLAG(flag)   ((flag) & (CMDQ_ENG_ISP_GROUP_BITS))
 
@@ -464,6 +466,12 @@ struct CmdBufferStruct {
 struct CmdFreeWorkStruct {
 	struct list_head cmd_buffer_list;
 	struct work_struct free_buffer_work;
+};
+
+struct TaskPrivateStruct {
+	void *node_private_data;
+	bool internal;		/* internal used only task */
+	bool ignore_timeout;	/* timeout is expected */
 };
 
 struct TaskStruct {
@@ -714,6 +722,12 @@ struct DumpCommandBufferStruct {
 	char *cmdqString;
 };
 
+typedef void (*cmdqStressCallback)(struct TaskStruct *task, s32 thread);
+
+struct StressContextStruct {
+	cmdqStressCallback exec_suspend;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -919,6 +933,7 @@ extern "C" {
 					  uint32_t **regAddress);
 	int32_t cmdqCoreDebugRegDumpEnd(uint32_t taskID, uint32_t regCount, uint32_t *regValues);
 	int32_t cmdqCoreDebugDumpCommand(struct TaskStruct *pTask);
+	void cmdqCoreDumpCommandMem(const u32 *pCmd, s32 commandSize);
 	int32_t cmdqCoreQueryUsage(int32_t *pCount);
 
 	int cmdqCorePrintRecordSeq(struct seq_file *m, void *v);
@@ -985,6 +1000,7 @@ extern "C" {
  */
 	void cmdq_core_turnon_first_dump(const struct TaskStruct *pTask);
 	void cmdq_core_turnoff_first_dump(void);
+	void cmdq_core_reset_first_dump(void);
 /**
  * cmdq_core_save_first_dump - save a CMDQ first error dump to file
  */
@@ -1037,6 +1053,9 @@ extern "C" {
 	void cmdq_core_set_mem_monitor(bool enable);
 	void cmdq_core_dump_mem_monitor(void);
 	struct ContextStruct *cmdq_core_get_cmdqcontext(void);
+	void cmdq_core_dump_task_mem(const struct TaskStruct *pTask);
+	struct StressContextStruct *cmdq_core_get_stress_context(void);
+	void cmdq_core_clean_stress_context(void);
 	bool cmdq_core_is_clock_enabled(void);
 #ifdef __cplusplus
 }
