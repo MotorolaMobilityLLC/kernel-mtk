@@ -295,7 +295,7 @@ int ccu_i2c_buf_mode_en(int enable)
 	int ret = 0;
 	struct i2c_client *pClient = NULL;
 
-	LOG_DBG("i2c_buf_mode_en %d\n", enable);
+	LOG_DBG_MUST("i2c_buf_mode_en %d\n", enable);
 
 	pClient = getCcuI2cClient();
 
@@ -304,12 +304,16 @@ int ccu_i2c_buf_mode_en(int enable)
 		return -1;
 
 	if (enable) {
-		ret = hw_trig_i2c_enable(pClient->adapter);
-		ccu_i2c_enabled = MTRUE;
+		if (ccu_i2c_enabled == MFALSE) {
+			ret = hw_trig_i2c_enable(pClient->adapter);
+			ccu_i2c_enabled = MTRUE;
+			LOG_DBG_MUST("hw_trig_i2c_enable done.\n");
+		}
 	} else {
 		if (ccu_i2c_enabled == MTRUE) {
 			ret = hw_trig_i2c_disable(pClient->adapter);
 			ccu_i2c_enabled = MFALSE;
+			LOG_DBG_MUST("hw_trig_i2c_disable done.\n");
 		}
 	}
 	return ret;
