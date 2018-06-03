@@ -84,7 +84,7 @@
 	PD_TIMER0_TIMEOUT_INTR)
 
 /* Time to wait to complete transmit */
-#define PD_TX_TIMEOUT (30)
+#define PD_TX_TIMEOUT (100)/*(30)*/
 #define PD_VDM_TX_TIMEOUT (500)
 
 #define PD_STRESS_DELAY 2500
