@@ -876,6 +876,12 @@ int tcpm_get_remote_power_cap(struct tcpc_device *tcpc_dev,
 	return TCPM_SUCCESS;
 }
 
+int tcpm_set_remote_power_cap(struct tcpc_device *tcpc_dev,
+				int mv, int ma)
+{
+	return tcpm_dpm_pd_request(tcpc_dev, mv, ma, NULL);
+}
+
 static int _tcpm_get_cable_capability(struct tcpc_device *tcpc_dev,
 					unsigned char *capability)
 {
