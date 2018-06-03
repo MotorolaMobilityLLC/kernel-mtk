@@ -35,10 +35,6 @@
 #include "fpsgo_base.h"
 #include "fstb.h"
 #include "fstb_usedext.h"
-/* fps update from display */
-#ifdef CONFIG_MTK_FB
-#include "disp_session.h"
-#endif
 
 #ifdef CONFIG_MTK_GPU_SUPPORT
 #include "ged_kpi.h"
@@ -80,6 +76,9 @@ static int min_fps_limit = CFG_MIN_FPS_LIMIT;
 static struct fps_level fps_levels[MAX_NR_FPS_LEVELS];
 static int nr_fps_levels = MAX_NR_FPS_LEVELS;
 #define DISPLAY_FPS_FILTER_NS 100000000ULL
+#define MAX_FSTB_RENDER_TARGET 10
+static struct FSTB_RENDER_TARGET_FPS render_target[MAX_FSTB_RENDER_TARGET];
+static int nr_render_target_fps;
 
 /* in percentage */
 static int fps_error_threshold = 10;
@@ -100,7 +99,7 @@ static int set_soft_fps_level(int nr_level, struct fps_level *level);
 static DEFINE_MUTEX(fstb_lock);
 
 
-static int calculate_fps_limit(int target_fps);
+static int calculate_fps_limit(struct FSTB_FRAME_INFO *iter, int target_fps);
 
 static void enable_fstb_timer(void)
 {
@@ -773,15 +772,62 @@ static int fps_update(struct FSTB_FRAME_INFO *iter)
  *                     is just larger than current target.
  * For contiguous range: if the new limit is between [start,end], use new limit
  */
-static int calculate_fps_limit(int target_fps)
+static int calculate_fps_limit(struct FSTB_FRAME_INFO *iter, int target_fps)
 {
-	if (target_fps >= max_fps_limit)
+	int ret_fps = target_fps;
+	int i, j;
+	struct task_struct *tsk, *gtsk;
+	char proc_name[16];
+
+	rcu_read_lock();
+	tsk = find_task_by_vpid(iter->pid);
+	if (tsk) {
+		get_task_struct(tsk);
+		gtsk = find_task_by_vpid(tsk->tgid);
+		put_task_struct(tsk);
+		if (gtsk)
+			get_task_struct(gtsk);
+		else {
+			rcu_read_unlock();
+			goto out;
+		}
+	} else {
+		rcu_read_unlock();
+		goto out;
+	}
+	rcu_read_unlock();
+	if (!strncpy(proc_name, gtsk->comm, 16)) {
+		mtk_fstb_dprintk_always("%s strncpy null\n", __func__);
+		goto out;
+	}
+	put_task_struct(gtsk);
+
+	for (i = 0; i < nr_render_target_fps; i++) {
+		mtk_fstb_dprintk("%s %s %s\n",
+				__func__, proc_name, render_target[i].process_name);
+
+		if (!strncmp(proc_name, render_target[i].process_name, 16)) {
+
+			for (j = render_target[i].nr_level - 1; j >= 0; j--) {
+				if (render_target[i].level[j].start >= target_fps) {
+					ret_fps = target_fps >= render_target[i].level[j].end ?
+						target_fps : render_target[i].level[j].end;
+					break;
+				}
+			}
+			break;
+		}
+	}
+
+out:
+
+	if (ret_fps >= max_fps_limit)
 		return max_fps_limit;
 
-	if (target_fps <= min_fps_limit)
+	if (ret_fps <= min_fps_limit)
 		return min_fps_limit;
 
-	return target_fps;
+	return ret_fps;
 }
 
 
@@ -948,7 +994,7 @@ static void fstb_fps_stats(struct work_struct *work)
 
 			mtk_fstb_dprintk_always("%s pid:%d target_fps:%d frame_type %d\n",
 					__func__, iter->pid, iter->target_fps, iter->frame_type);
-			iter->target_fps = calculate_fps_limit(target_fps);
+			iter->target_fps = calculate_fps_limit(iter, target_fps);
 			ged_kpi_set_target_FPS(iter->bufid, iter->target_fps);
 			/* if queue fps == 0, we delete that frame_info */
 		} else {
@@ -987,25 +1033,19 @@ static void fstb_fps_stats(struct work_struct *work)
 
 static int set_soft_fps_level(int nr_level, struct fps_level *level)
 {
-	int i;
-
 	mutex_lock(&fstb_lock);
 
 	if (nr_level != 1)
 		goto set_fps_level_err;
 
-	for (i = 0; i < nr_level; i++) {
-		/* check if they are interleaving */
-		if (level[i].end > level[i].start ||
-				(i > 0 && level[i].start > level[i - 1].end))
-			goto set_fps_level_err;
-	}
+	if (level->end > level->start)
+		goto set_fps_level_err;
 
 	memcpy(fps_levels, level, nr_level * sizeof(struct fps_level));
 
 	nr_fps_levels = nr_level;
-	max_fps_limit = min(dfps_ceiling, fps_levels[0].start);
-	min_fps_limit = min(dfps_ceiling, fps_levels[nr_fps_levels - 1].end);
+	max_fps_limit = min(dfps_ceiling, fps_levels->start);
+	min_fps_limit = min(dfps_ceiling, fps_levels->end);
 
 	mutex_unlock(&fstb_lock);
 
@@ -1224,6 +1264,92 @@ static const struct file_operations fstb_level_fops = {
 	.release = single_release,
 };
 
+static int fstb_fps_list_read(struct seq_file *m, void *v)
+{
+	int i, j;
+
+	for (i = 0; i < nr_render_target_fps && i < MAX_FSTB_RENDER_TARGET; i++) {
+		seq_printf(m, "%s %d ", render_target[i].process_name, render_target[i].nr_level);
+		for (j = 0; j < render_target[i].nr_level; j++)
+			seq_printf(m, "%d-%d ", render_target[i].level[j].start, render_target[i].level[j].end);
+		seq_puts(m, "\n");
+	}
+
+	return 0;
+}
+
+static ssize_t fstb_fps_list_write(struct file *file, const char __user *buffer,
+		size_t count, loff_t *data)
+{
+	int ret = 0;
+	char *sepstr, *substr, *buf;
+	int i;
+	int  start_fps, end_fps;
+
+	buf = kmalloc(count + 1, GFP_KERNEL);
+	if (buf == NULL)
+		return -ENOMEM;
+
+	mutex_lock(&fstb_lock);
+
+	if (copy_from_user(buf, buffer, count)) {
+		ret = -EFAULT;
+		goto err;
+	}
+	buf[count] = '\0';
+	sepstr = buf;
+
+	if (nr_render_target_fps >= 0 && nr_render_target_fps < MAX_FSTB_RENDER_TARGET) {
+
+		substr = strsep(&sepstr, " ");
+		if (!strncpy(render_target[nr_render_target_fps].process_name, substr, 16)) {
+			ret = -EINVAL;
+			goto err;
+		}
+		substr = strsep(&sepstr, " ");
+		if (kstrtoint(substr, 10, &(render_target[nr_render_target_fps].nr_level)) != 0 ||
+				render_target[nr_render_target_fps].nr_level > 3) {
+			ret = -EINVAL;
+			goto err;
+		}
+
+		for (i = 0; i < render_target[nr_render_target_fps].nr_level; i++) {
+			substr = strsep(&sepstr, " ");
+			if (!substr) {
+				ret = -EINVAL;
+				goto err;
+			}
+
+			if (sscanf(substr, "%d-%d", &start_fps, &end_fps) != 2) {
+				ret = -EINVAL;
+				goto err;
+			}
+			render_target[nr_render_target_fps].level[i].start = start_fps;
+			render_target[nr_render_target_fps].level[i].end = end_fps;
+		}
+		nr_render_target_fps++;
+	} else
+		mtk_fstb_dprintk_always("%s nr_render_target_fps %d\n", __func__, nr_render_target_fps);
+
+err:
+	mutex_unlock(&fstb_lock);
+	return ret;
+}
+
+static int fstb_fps_list_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, fstb_fps_list_read, NULL);
+}
+
+static const struct file_operations fstb_fps_list_fops = {
+	.owner = THIS_MODULE,
+	.open = fstb_fps_list_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = fstb_fps_list_write,
+	.release = single_release,
+};
+
 static int fstb_tune_window_size_read(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%lld ", FRAME_TIME_WINDOW_SIZE_US);
@@ -1368,9 +1494,9 @@ static int mtk_fstb_fps_proc_read(struct seq_file *m, void *v)
 	 *  kernel_log <0 or 1>
 	 */
 	seq_printf(m, "fstb_enable %d\n", fstb_enable);
+	seq_printf(m, "fstb_log %d\n", fstb_fps_klog_on);
 	seq_printf(m, "fstb_active %d\n", fstb_active);
 	seq_printf(m, "fstb_idle_cnt %d\n", fstb_idle_cnt);
-	seq_printf(m, "klog %d\n", fstb_fps_klog_on);
 
 	return 0;
 }
@@ -1569,6 +1695,12 @@ int mtk_fstb_init(void)
 			fstb_debugfs_dir,
 			NULL,
 			&fstb_level_fops);
+
+	debugfs_create_file("fstb_fps_list",
+			S_IRUGO | S_IWUSR | S_IWGRP,
+			fstb_debugfs_dir,
+			NULL,
+			&fstb_fps_list_fops);
 
 	debugfs_create_file("fstb_tune_error_threshold",
 			S_IRUGO | S_IWUSR | S_IWGRP,
