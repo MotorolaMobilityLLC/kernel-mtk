@@ -18,10 +18,10 @@
 #include "ccu_kd_mailbox.h"
 #include "ccu_mailbox_extif.h"
 
-static volatile ccu_mailbox_t *_ccu_mailbox;
-static volatile ccu_mailbox_t *_apmcu_mailbox;
+static ccu_mailbox_t *_ccu_mailbox;
+static ccu_mailbox_t *_apmcu_mailbox;
 
-static mb_result _mailbox_write_to_buffer(ccu_msg_t *task);
+static mb_result _mailbox_write_to_buffer(struct ccu_msg_t *task);
 
 /*******************************************************************************
 * Public functions
@@ -44,7 +44,7 @@ mb_result mailbox_init(ccu_mailbox_t *apmcu_mb_addr, ccu_mailbox_t *ccu_mb_addr)
 }
 
 
-mb_result mailbox_send_cmd(ccu_msg_t *task)
+mb_result mailbox_send_cmd(struct ccu_msg_t *task)
 {
 		/*Fill slot*/
 		mb_result result = _mailbox_write_to_buffer(task);
@@ -67,7 +67,7 @@ mb_result mailbox_send_cmd(ccu_msg_t *task)
 }
 
 
-mb_result mailbox_receive_cmd(ccu_msg_t *task)
+mb_result mailbox_receive_cmd(struct ccu_msg_t *task)
 {
 		mb_result result;
 		volatile MUINT32 rear;
@@ -83,7 +83,7 @@ mb_result mailbox_receive_cmd(ccu_msg_t *task)
 		if (rear != front) {
 			/*modulus add: rear+1 = rear+1 % CCU_MAILBOX_QUEUE_SIZE*/
 			nextReadSlot = (_apmcu_mailbox->front + 1) & (CCU_MAILBOX_QUEUE_SIZE - 1);
-			ccu_memcpy(task, &(_apmcu_mailbox->queue[nextReadSlot]), sizeof(ccu_msg_t));
+			ccu_memcpy(task, &(_apmcu_mailbox->queue[nextReadSlot]), sizeof(struct ccu_msg_t));
 			_apmcu_mailbox->front = nextReadSlot;
 
 			LOG_DBG("received cmd: f(%d), r(%d), cmd(%d), in(%x), out(%x)\n",
@@ -106,7 +106,7 @@ mb_result mailbox_receive_cmd(ccu_msg_t *task)
 /*******************************************************************************
 * Private functions
 ********************************************************************************/
-static int ccu_msg_copy(volatile ccu_msg_t *dest, ccu_msg_t *src)
+static int ccu_msg_copy(struct ccu_msg_t *dest, struct ccu_msg_t *src)
 {
 		/*LOG_DBG("src->msg_id: %d\n", src->msg_id);*/
 		dest->msg_id = src->msg_id;
@@ -119,10 +119,13 @@ static int ccu_msg_copy(volatile ccu_msg_t *dest, ccu_msg_t *src)
 		/*LOG_DBG("src->out_data_ptr: %d\n", src->out_data_ptr);*/
 		dest->out_data_ptr = src->out_data_ptr;
 		/*LOG_DBG("dest->out_data_ptr: %d\n", dest->out_data_ptr);*/
+
+		dest->tg_info = src->tg_info;
+		/*LOG_DBG_MUST("dest->tg_info: %d\n", dest->tg_info);*/
 		return 0;
 }
 
-static mb_result _mailbox_write_to_buffer(ccu_msg_t *task)
+static mb_result _mailbox_write_to_buffer(struct ccu_msg_t *task)
 {
 		mb_result result;
 		MUINT32 nextWriteSlot = (_ccu_mailbox->rear + 1) & (CCU_MAILBOX_QUEUE_SIZE - 1);

@@ -11,25 +11,17 @@
  * GNU General Public License for more details.
  */
 
-#ifdef CONFIG_MTK_CHIP
+#ifndef __CCU_N3D_A_H__
+#define __CCU_N3D_A_H__
 
-#include <linux/kernel.h>
+enum N3DA_REGS_OFFSET {
+	OFFSET_CTL = 0x100,
+	OFFSET_TRIG = 0x108,
+	OFFSET_INT = 0x10C,
+};
 
-#include "ccu_cmn.h"
-#include "ccu_sw_ver.h"
+extern u32 n3d_a_readw(unsigned long n3d_a_base, u32 offset);
+extern void n3d_a_writew(u32 value, unsigned long n3d_a_base, u32 offset);
 
-enum chip_sw_ver g_ccu_sw_version = -1;
-
-int init_check_sw_ver(void)
-{
-	g_ccu_sw_version = mt_get_chip_sw_ver();
-
-	if ((g_ccu_sw_version != CHIP_SW_VER_02) && (g_ccu_sw_version == CHIP_SW_VER_01)) {
-		LOG_ERR("have a wrong software version:%x!\n", g_ccu_sw_version);
-		return -EINVAL;
-	}
-
-	return 0;
-}
 
 #endif

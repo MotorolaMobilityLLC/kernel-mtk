@@ -11,12 +11,17 @@
  * GNU General Public License for more details.
  */
 
+#ifdef CONFIG_MTK_CHIP
+
 #ifndef _CCU_SW_VER_H_
 #define _CCU_SW_VER_H_
+
 #include <mt-plat/mtk_chip.h>
 
 extern enum chip_sw_ver g_ccu_sw_version;
 
 int init_check_sw_ver(void);
+
+#endif
 
 #endif

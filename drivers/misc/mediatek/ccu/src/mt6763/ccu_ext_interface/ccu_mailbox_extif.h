@@ -22,7 +22,7 @@
 
 #include "ccu_ext_interface/ccu_ext_interface.h"
 
-#define CCU_MAILBOX_QUEUE_SIZE 16	/*must be power of 2 for modulo operation take work*/
+#define CCU_MAILBOX_QUEUE_SIZE 8	/*must be power of 2 for modulo operation take work*/
 
 /******************************************************************************
 * Mailbox is a circular queue
@@ -36,9 +36,9 @@
     - Queue is empty when front=rear
 ******************************************************************************/
 typedef struct _ccu_mailbox_t {
-		volatile MUINT32 front;
-		volatile MUINT32 rear;
-		volatile ccu_msg_t queue[CCU_MAILBOX_QUEUE_SIZE];
+		MUINT32 front;
+		MUINT32 rear;
+		struct ccu_msg_t queue[CCU_MAILBOX_QUEUE_SIZE];
 } ccu_mailbox_t;
 
 #endif

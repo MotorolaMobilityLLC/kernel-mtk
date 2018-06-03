@@ -57,11 +57,6 @@
 #define CCU_SET_BIT(reg, bit)   ((*(volatile unsigned int *)(reg)) |= (unsigned int)(1 << (bit)))
 #define CCU_CLR_BIT(reg, bit)   ((*(volatile unsigned int *)(reg)) &= ~((unsigned int)(1 << (bit))))
 
-/*REG size for each module is 0x1000*/
-#define CCU_REG_RANGE   (PAGE_SIZE)
-#define REG_SIZE        (CCU_REG_RANGE)
-#define CCU_BASE_RANGE  (REG_SIZE)
-
 extern uint64_t ccu_base;
 
 #endif

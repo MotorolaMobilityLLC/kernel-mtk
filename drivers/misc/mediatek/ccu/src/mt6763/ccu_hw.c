@@ -51,10 +51,10 @@ static uint64_t camsys_base;
 static uint64_t bin_base;
 static uint64_t dmem_base;
 
-static ccu_device_t *ccu_dev;
+static struct ccu_device_s *ccu_dev;
 static struct task_struct *enque_task;
 static struct ion_client *ccu_ion_client;
-static struct ion_handle *handle;
+static struct ion_handle *i2c_buffer_handle;
 
 static struct mutex cmd_mutex;
 static wait_queue_head_t cmd_wait;
@@ -70,8 +70,8 @@ static struct ccu_sensor_info g_ccu_sensor_info_sub  = {-1, NULL};
 static char g_ccu_sensor_name_sub[SENSOR_NAME_MAX_LEN];
 
 volatile ccu_mailbox_t *pMailBox[MAX_MAILBOX_NUM];
-static ccu_msg_t receivedCcuCmd;
-static ccu_msg_t CcuAckCmd;
+static struct ccu_msg_t receivedCcuCmd;
+static struct ccu_msg_t CcuAckCmd;
 static uint32_t i2c_buffer_mva;
 
 /*isr work management*/
@@ -84,13 +84,15 @@ struct ap_task_manage_t {
 struct ap_task_manage_t ap_task_manage;
 
 
-static CCU_INFO_STRUCT ccuInfo;
+static struct CCU_INFO_STRUCT ccuInfo;
 static volatile bool bWaitCond;
+static bool AFbWaitCond[2];
 static unsigned int g_LogBufIdx = 1;
+static unsigned int AFg_LogBufIdx[2] = {1, 1};
 
 static int _ccu_powerdown(void);
-static int _ccu_allocate_mva(uint32_t *mva, void *va);
-static int _ccu_deallocate_mva(struct ion_client **client, struct ion_handle *handle);
+static int _ccu_allocate_mva(uint32_t *mva, void *va, struct ion_handle **handle);
+static int _ccu_deallocate_mva(struct ion_client **client, struct ion_handle **handle);
 
 static int _ccu_config_m4u_port(void)
 {
@@ -132,7 +134,8 @@ static int _ccu_ion_get_mva(struct ion_client *client, struct ion_handle *handle
 		unsigned int *mva, int port)
 {
 	struct ion_mm_data mm_data;
-	unsigned int mva_size;
+	size_t mva_size;
+	ion_phys_addr_t phy_addr = 0;
 
 	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER_EXT;
 	mm_data.config_buffer_param.kernel_handle = handle;
@@ -152,9 +155,10 @@ static int _ccu_ion_get_mva(struct ion_client *client, struct ion_handle *handle
 	*mva = (port<<24) | ION_FLAG_GET_FIXED_PHYS;
 	mva_size = ION_FLAG_GET_FIXED_PHYS;
 
-
-	ion_phys(client, handle, (ion_phys_addr_t *)mva, (size_t *)&mva_size);
-	LOG_DBG("alloc mmu addr hnd=0x%p,mva=0x%08x\n", handle, (unsigned int)*mva);
+	phy_addr = *mva;
+	ion_phys(client, handle, &phy_addr, &mva_size);
+	*mva = (unsigned int)phy_addr;
+	LOG_DBG_MUST("alloc mmu addr hnd=0x%p,mva=0x%08x\n", handle, (unsigned int)*mva);
 	return 0;
 }
 
@@ -179,16 +183,19 @@ static void _ccu_ion_destroy(struct ion_client *client)
 		ion_client_destroy(client);
 }
 
-static int _ccu_deallocate_mva(struct ion_client **client, struct ion_handle *handle)
+static int _ccu_deallocate_mva(struct ion_client **client, struct ion_handle **handle)
 {
 	LOG_DBG("X-:%s\n", __func__);
-	_ccu_ion_free_handle(*client, handle);
-	_ccu_ion_destroy(*client);
-	*client = NULL;
+	if (*handle != NULL) {
+		_ccu_ion_free_handle(*client, *handle);
+		_ccu_ion_destroy(*client);
+		*handle = NULL;
+		*client = NULL;
+	}
 	return 0;
 }
 
-static int _ccu_allocate_mva(uint32_t *mva, void *va)
+static int _ccu_allocate_mva(uint32_t *mva, void *va, struct ion_handle **handle)
 {
 	int ret = 0;
 	int buffer_size = 4096;
@@ -212,27 +219,27 @@ static int _ccu_allocate_mva(uint32_t *mva, void *va)
 		return ret;
 	}
 
-	handle = _ccu_ion_alloc(ccu_ion_client,
+	*handle = _ccu_ion_alloc(ccu_ion_client,
 			ION_HEAP_MULTIMEDIA_MAP_MVA_MASK, (unsigned long)va, buffer_size);
 
 	/*i2c dma buffer is PAGE_SIZE(4096B)*/
 
-	if (!(handle)) {
+	if (!(*handle)) {
 		LOG_ERR("Fatal Error, ion_alloc for size %d failed\n", 4096);
 		if (ccu_ion_client != NULL)
 			_ccu_deallocate_mva(&ccu_ion_client, handle);
 
-		return !handle;
+		return -1;
 	}
 
-	ret = _ccu_ion_get_mva(ccu_ion_client, handle, mva, CCUG_OF_M4U_PORT);
+	ret = _ccu_ion_get_mva(ccu_ion_client, *handle, mva, CCUG_OF_M4U_PORT);
 
 	if (ret) {
 		LOG_ERR("ccu ion_get_mva failed\n");
 
 		if (ccu_ion_client != NULL)
 			_ccu_deallocate_mva(&ccu_ion_client, handle);
-		return !handle;
+		return -1;
 	}
 
 	return ret;
@@ -313,11 +320,11 @@ static void isr_sp_task(void)
 /*
  * static atomic_t isr_work_idx_front = ATOMIC_INIT(0);
  * static atomic_t isr_work_idx_rear = ATOMIC_INIT(0);
- * static struct work_struct isr_works[CCU_ISR_WORK_BUFFER_SZIE];
+ * static work_struct_t isr_works[CCU_ISR_WORK_BUFFER_SZIE];
  */
 
 #if 0
-static void isr_worker(struct work_struct *isr_work)
+static void isr_worker(work_struct_t *isr_work)
 {
 	LOG_DBG("+++++++");
 
@@ -428,6 +435,7 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 				g_LogBufIdx = 0xFFFFFFFF;	/* -1*/
 
 				wake_up_interruptible(&ccuInfo.WaitQueueHead);
+				ccu_i2c_dump_errr();
 				LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
 				break;
 			}
@@ -442,14 +450,44 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 				g_LogBufIdx = -2;
 
 				wake_up_interruptible(&ccuInfo.WaitQueueHead);
+				if ((receivedCcuCmd.in_data_ptr == 0xEE)  || (receivedCcuCmd.in_data_ptr == 0xDD))
+					ccu_i2c_dump_errr();
 				LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
+				break;
+			}
+			case MSG_TO_APMCU_CAM_A_AFO_i:
+			{
+				LOG_DBG
+				       ("AFWaitQueueHead:%d\n",
+					receivedCcuCmd.in_data_ptr);
+				LOG_DBG
+				       ("================== AFO_A_done_from_CCU ===================\n");
+				AFbWaitCond[0] = true;
+				AFg_LogBufIdx[0] = 3;
+
+				wake_up_interruptible(&ccuInfo.AFWaitQueueHead[0]);
+				LOG_DBG("wakeup ccuInfo.AFWaitQueueHead done\n");
+				break;
+			}
+			case MSG_TO_APMCU_CAM_B_AFO_i:
+			{
+				LOG_DBG
+				       ("AFBWaitQueueHead:%d\n",
+					receivedCcuCmd.in_data_ptr);
+				LOG_DBG
+				       ("================== AFO_B_done_from_CCU ===================\n");
+				AFbWaitCond[1] = true;
+				AFg_LogBufIdx[1] = 4;
+
+				wake_up_interruptible(&ccuInfo.AFWaitQueueHead[1]);
+				LOG_DBG("wakeup ccuInfo.AFBWaitQueueHead done\n");
 				break;
 			}
 #endif
 		default:
 			{
 				LOG_DBG("got msgId: %d, cmd_wait\n", receivedCcuCmd.msg_id);
-				ccu_memcpy(&CcuAckCmd, &receivedCcuCmd, sizeof(ccu_msg_t));
+				ccu_memcpy(&CcuAckCmd, &receivedCcuCmd, sizeof(struct ccu_msg_t));
 
 				cmd_done = true;
 				wake_up_interruptible(&cmd_wait);
@@ -470,12 +508,12 @@ ISR_EXIT:
 static bool users_queue_is_empty(void)
 {
 	struct list_head *head;
-	ccu_user_t *user;
+	struct ccu_user_s *user;
 
 	ccu_lock_user_mutex();
 
 	list_for_each(head, &ccu_dev->user_list) {
-		user = vlist_node_of(head, ccu_user_t);
+		user = vlist_node_of(head, struct ccu_user_s);
 		mutex_lock(&user->data_mutex);
 
 		if (!list_empty(&user->enque_ccu_cmd_list)) {
@@ -494,8 +532,8 @@ static bool users_queue_is_empty(void)
 static int ccu_enque_cmd_loop(void *arg)
 {
 	struct list_head *head;
-	ccu_user_t *user;
-	ccu_cmd_st *cmd;
+	struct ccu_user_s *user;
+	struct ccu_cmd_s *cmd;
 
 	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 
@@ -522,7 +560,7 @@ static int ccu_enque_cmd_loop(void *arg)
 		/* consume the user's queue */
 		list_for_each(head, &ccu_dev->user_list) {
 
-			user = vlist_node_of(head, ccu_user_t);
+			user = vlist_node_of(head, struct ccu_user_s);
 			mutex_lock(&user->data_mutex);
 			/* flush thread will handle the remaining queue if flush */
 			if (user->flush || list_empty(&user->enque_ccu_cmd_list)) {
@@ -531,9 +569,9 @@ static int ccu_enque_cmd_loop(void *arg)
 			}
 
 			/* get first node from enque list */
-			cmd = vlist_node_of(user->enque_ccu_cmd_list.next, ccu_cmd_st);
+			cmd = vlist_node_of(user->enque_ccu_cmd_list.next, struct ccu_cmd_s);
 
-			list_del_init(vlist_link(cmd, ccu_cmd_st));
+			list_del_init(vlist_link(cmd, struct ccu_cmd_s));
 			user->running = true;
 			mutex_unlock(&user->data_mutex);
 
@@ -541,7 +579,7 @@ static int ccu_enque_cmd_loop(void *arg)
 			ccu_send_command(cmd);
 
 			mutex_lock(&user->data_mutex);
-			list_add_tail(vlist_link(cmd, ccu_cmd_st), &user->deque_ccu_cmd_list);
+			list_add_tail(vlist_link(cmd, struct ccu_cmd_s), &user->deque_ccu_cmd_list);
 			user->running = false;
 
 			LOG_DBG("list_empty(%d)\n", (int)list_empty(&user->deque_ccu_cmd_list));
@@ -582,19 +620,21 @@ static void ccu_ap_task_mgr_init(void)
 
 }
 
-int ccu_init_hw(ccu_device_t *device)
+int ccu_init_hw(struct ccu_device_s *device)
 {
 	int ret = 0, n;
 
+#ifdef CONFIG_MTK_CHIP
 	init_check_sw_ver();
-
-
+#endif
 
 	/* init mutex */
 	mutex_init(&cmd_mutex);
 	/* init waitqueue */
 	init_waitqueue_head(&cmd_wait);
 	init_waitqueue_head(&ccuInfo.WaitQueueHead);
+	init_waitqueue_head(&ccuInfo.AFWaitQueueHead[0]);
+	init_waitqueue_head(&ccuInfo.AFWaitQueueHead[1]);
 	/* init atomic task counter */
 	/*ccuInfo.taskCount = ATOMIC_INIT(0);*/
 
@@ -642,10 +682,10 @@ out:
 	return ret;
 }
 
-int ccu_uninit_hw(ccu_device_t *device)
+int ccu_uninit_hw(struct ccu_device_s *device)
 {
 	if (ccu_ion_client != NULL)
-		_ccu_deallocate_mva(&ccu_ion_client, handle);
+		_ccu_deallocate_mva(&ccu_ion_client, &i2c_buffer_handle);
 
 	if (enque_task) {
 		kthread_stop(enque_task);
@@ -660,63 +700,22 @@ int ccu_uninit_hw(ccu_device_t *device)
 
 int ccu_mmap_hw(struct file *filp, struct vm_area_struct *vma)
 {
-#if 0
-	int ret;
-	unsigned long length = 0;
-	void *va = NULL;
-
-	length = (vma->vm_end - vma->vm_start);
-
-	/* map the whole physically contiguous area in one piece */
-	LOG_DBG("Vma->vm_pgoff(0x%lx),Vma->vm_start(0x%lx),Vma->vm_end(0x%lx),length(0x%lx)",
-			vma->vm_pgoff, vma->vm_start, vma->vm_end, length);
-
-	/* check length - do not allow larger mappings than the number of pages allocated */
-	if (length > SIZE_1MB) {
-		LOG_ERR("mmap range error! : length(%ld),CCU_RTBUF_REG_RANGE(%d)!", length,
-				SIZE_1MB);
-		return -EIO;
-	}
-	/**/
-	switch (vma->vm_pgoff << PAGE_SHIFT) {
-	case CCU_MMAP_LOG0:
-		va = (void *)pLogBuf[0];
-		break;
-	case CCU_MMAP_LOG1:
-		va = (void *)pLogBuf[1];
-		break;
-	case CCU_MMAP_LOG2:
-		va = (void *)pLogBuf[2];
-		break;
-	default:
-		LOG_ERR("0x%lx\n", vma->vm_pgoff << PAGE_SHIFT);
-		return -1;
-	}
-	/**/
-	ret = remap_pfn_range(vma,
-			vma->vm_start,
-			virt_to_phys((void *)va) >> PAGE_SHIFT,
-			length, vma->vm_page_prot | PAGE_SHARED);
-
-	if (ret < 0) {
-		LOG_ERR("remap_pfn_range fail:\n");
-		return ret;
-	}
-#endif
 	return 0;
 }
 
-int ccu_get_i2c_dma_buf_addr(uint32_t *mva)
+int ccu_get_i2c_dma_buf_addr(uint32_t *mva, uint32_t *pa_h, uint32_t *pa_l)
 {
 	int ret = 0;
 	void *va;
 
-	ret = i2c_get_dma_buffer_addr(&va);
-
+	ret = i2c_get_dma_buffer_addr(&va, pa_h, pa_l);
+	LOG_DBG_MUST("got i2c buf pa: %d, %d\n", *pa_l, *pa_h);
 	if (ret != 0)
 		return ret;
 
-	ret = _ccu_allocate_mva(mva, va);
+	/*If there is existing i2c buffer mva allocated, deallocate it first*/
+	_ccu_deallocate_mva(&ccu_ion_client, &i2c_buffer_handle);
+	ret = _ccu_allocate_mva(mva, va, &i2c_buffer_handle);
 
 	/*Record i2c_buffer_mva in kernel driver, thus can deallocate it at powerdown*/
 	i2c_buffer_mva = *mva;
@@ -724,7 +723,7 @@ int ccu_get_i2c_dma_buf_addr(uint32_t *mva)
 	return ret;
 }
 
-int ccu_memcpy(volatile void *dest, volatile void *src, int length)
+int ccu_memcpy(void *dest, void *src, int length)
 {
 	int i = 0;
 
@@ -737,7 +736,7 @@ int ccu_memcpy(volatile void *dest, volatile void *src, int length)
 	return length;
 }
 
-int ccu_memclr(volatile void *dest, int length)
+int ccu_memclr(void *dest, int length)
 {
 	int i = 0;
 
@@ -750,7 +749,7 @@ int ccu_memclr(volatile void *dest, int length)
 }
 
 
-int ccu_send_command(ccu_cmd_st *pCmd)
+int ccu_send_command(struct ccu_cmd_s *pCmd)
 {
 	int ret;
 	/*unsigned int mva_buffers = 0;*/
@@ -785,7 +784,7 @@ int ccu_send_command(ccu_cmd_st *pCmd)
 	pCmd->status = CCU_ENG_STATUS_SUCCESS;
 
 	/* 3. fill pCmd with received command */
-	ccu_memcpy(&pCmd->task, &CcuAckCmd, sizeof(ccu_msg_t));
+	ccu_memcpy(&pCmd->task, &CcuAckCmd, sizeof(struct ccu_msg_t));
 
 	LOG_DBG("got ack command: id(%d), in(%x), out(%x)\n",
 			pCmd->task.msg_id, pCmd->task.in_data_ptr, pCmd->task.out_data_ptr);
@@ -812,7 +811,7 @@ int32_t ccu_get_current_fps(void)
 }
 
 
-int ccu_power(ccu_power_t *power)
+int ccu_power(struct ccu_power_s *power)
 {
 	int ret = 0;
 	int32_t timeout = 10;
@@ -895,7 +894,7 @@ int ccu_power(ccu_power_t *power)
 		ccuInfo.IsCcuPoweredOn = 0;
 
 	if (ccu_ion_client != NULL)
-		_ccu_deallocate_mva(&ccu_ion_client, handle);
+		_ccu_deallocate_mva(&ccu_ion_client, &i2c_buffer_handle);
 	} else if (power->bON == 4) {
 		/*CCU boot fail, just enable CG*/
 
@@ -914,7 +913,7 @@ int ccu_force_powerdown(void)
 	int ret = 0;
 
 	if (ccuInfo.IsCcuPoweredOn == 1) {
-		LOG_WRN("CCU kernel drv released on CCU running, try to force shutdown\n");
+		LOG_WARN("CCU kernel drv released on CCU running, try to force shutdown\n");
 		/*Set special isr task to MSG_TO_CCU_SHUTDOWN*/
 		ccu_write_reg(ccu_base, CCU_INFO29, MSG_TO_CCU_SHUTDOWN);
 		/*Interrupt to CCU*/
@@ -925,7 +924,7 @@ int ccu_force_powerdown(void)
 		if (ret < 0)
 			return ret;
 
-		LOG_WRN("CCU force shutdown success\n");
+		LOG_WARN("CCU force shutdown success\n");
 	}
 
 	return 0;
@@ -969,7 +968,7 @@ static int _ccu_powerdown(void)
 	ccuInfo.IsCcuPoweredOn = 0;
 
 	if (ccu_ion_client != NULL)
-		_ccu_deallocate_mva(&ccu_ion_client, handle);
+		_ccu_deallocate_mva(&ccu_ion_client, &i2c_buffer_handle);
 
 	return 0;
 }
@@ -987,7 +986,7 @@ int ccu_run(void)
 	/*3. Set CCU_A_RESET. CCU_HW_RST=0*/
 	ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 0);
 
-	LOG_DBG("released CCU reset, wait for initial done\n", ccu_read_reg(ccu_base, RESET));
+	LOG_DBG("released CCU reset, wait for initial done, %x\n", ccu_read_reg(ccu_base, RESET));
 	LOG_DBG("CCU reset: %x\n", ccu_read_reg(ccu_base, RESET));
 
 	/*4. Pulling CCU init done spare register*/
@@ -1055,12 +1054,12 @@ int ccu_run(void)
 }
 
 
-int ccu_waitirq(CCU_WAIT_IRQ_STRUCT *WaitIrq)
+int ccu_waitirq(struct CCU_WAIT_IRQ_STRUCT *WaitIrq)
 {
 	signed int ret = 0, Timeout = WaitIrq->EventInfo.Timeout;
 
 	LOG_DBG("Clear(%d),bWaitCond(%d),Timeout(%d)\n", WaitIrq->EventInfo.Clear, bWaitCond, Timeout);
-	LOG_DBG("arg is CCU_WAIT_IRQ_STRUCT, size:%zu\n", sizeof(CCU_WAIT_IRQ_STRUCT));
+	LOG_DBG("arg is struct CCU_WAIT_IRQ_STRUCT, size:%zu\n", sizeof(struct CCU_WAIT_IRQ_STRUCT));
 
 	if (Timeout != 0) {
 		/* 2. start to wait signal */
@@ -1102,6 +1101,54 @@ int ccu_waitirq(CCU_WAIT_IRQ_STRUCT *WaitIrq)
 	return ret;
 }
 
+int ccu_AFwaitirq(struct CCU_WAIT_IRQ_STRUCT *WaitIrq, int tg_num)
+{
+	signed int ret = 0, Timeout = WaitIrq->EventInfo.Timeout;
+
+	LOG_DBG("Clear(%d),AFbWaitCond(%d),Timeout(%d)\n", WaitIrq->EventInfo.Clear, AFbWaitCond[tg_num-1], Timeout);
+	LOG_DBG("arg is struct CCU_WAIT_IRQ_STRUCT, size:%zu\n", sizeof(struct CCU_WAIT_IRQ_STRUCT));
+
+	if (Timeout != 0) {
+		/* 2. start to wait signal */
+		LOG_DBG("+:wait_event_interruptible_timeout\n");
+	AFbWaitCond[tg_num-1] = false;
+		Timeout = wait_event_interruptible_timeout(ccuInfo.AFWaitQueueHead[tg_num-1],
+				AFbWaitCond[tg_num-1],
+				CCU_MsToJiffies(WaitIrq->EventInfo.
+					Timeout));
+
+		LOG_DBG("-:wait_event_interruptible_timeout\n");
+	} else {
+		LOG_DBG("+:ccu wait_event_interruptible\n");
+		/*task_count_temp = atomic_read(&(ccuInfo.taskCount))*/
+		/*if(task_count_temp == 0)*/
+		/*{*/
+
+		mutex_unlock(&ap_task_manage.ApTaskMutex);
+		LOG_DBG("unlock ApTaskMutex\n");
+		wait_event_interruptible(ccuInfo.AFWaitQueueHead[tg_num-1], AFbWaitCond[tg_num-1]);
+		LOG_DBG("accuiring ApTaskMutex\n");
+		mutex_lock(&ap_task_manage.ApTaskMutex);
+		LOG_DBG("got ApTaskMutex\n");
+		/*}*/
+		/*else*/
+		/*{*/
+		/*LOG_DBG("ccuInfo.taskCount is not zero: %d\n", task_count_temp);*/
+		/*}*/
+		AFbWaitCond[tg_num-1] = false;
+		LOG_DBG("-:ccu wait_event_interruptible\n");
+	}
+
+	if (Timeout > 0) {
+		LOG_DBG("remain timeout:%d, task: %d\n", Timeout, AFg_LogBufIdx[tg_num-1]);
+		/*send to user if not timeout*/
+		WaitIrq->EventInfo.TimeInfo.passedbySigcnt = (int)AFg_LogBufIdx[tg_num-1];
+	}
+	/*EXIT:*/
+
+	return ret;
+}
+
 int ccu_flushLog(int argc, int *argv)
 {
 	LOG_DBG("bWaitCond(%d)\n", bWaitCond);
@@ -1124,16 +1171,9 @@ int ccu_i2c_ctrl(unsigned char i2c_write_id, int transfer_len)
 
 	LOG_DBG("+:%s\n", __func__);
 
-	/**/
-	if (ccu_i2c_buf_mode_en(1) == -1) {
-		LOG_DBG("i2c_buf_mode_en fail\n");
+	if (ccu_i2c_buf_mode_init(i2c_write_id, transfer_len) == -1) {
+		LOG_DBG("ccu_i2c_buf_mode_init fail\n");
 		return 0;
-	}
-	/*to set i2c buffer mode configuration*/
-	{
-		/*Transfer a dummy data, must>8 to let i2c drv go to dma mode*/
-		ccu_init_i2c_buf_mode(i2c_write_id);
-		ccu_config_i2c_buf_mode(transfer_len);
 	}
 
 	LOG_DBG("-:%s\n", __func__);
@@ -1199,4 +1239,9 @@ void ccu_get_sensor_name(char **sensor_name)
 	sensor_name[0] = g_ccu_sensor_info_main.sensor_name_string;
 	sensor_name[1] = g_ccu_sensor_info_sub.sensor_name_string;
 	sensor_name[2] = g_ccu_sensor_info_main2.sensor_name_string;
+}
+
+int ccu_query_power_status(void)
+{
+	return ccuInfo.IsCcuPoweredOn;
 }

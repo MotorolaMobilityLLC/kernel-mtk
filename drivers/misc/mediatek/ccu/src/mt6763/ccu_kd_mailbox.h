@@ -24,8 +24,8 @@ typedef enum {
 
 mb_result mailbox_init(ccu_mailbox_t *apmcu_mb_addr, ccu_mailbox_t *ccu_mb_addr);
 
-mb_result mailbox_send_cmd(ccu_msg_t *task);
+mb_result mailbox_send_cmd(struct ccu_msg_t *task);
 
-mb_result mailbox_receive_cmd(ccu_msg_t *task);
+mb_result mailbox_receive_cmd(struct ccu_msg_t *task);
 
 #endif
