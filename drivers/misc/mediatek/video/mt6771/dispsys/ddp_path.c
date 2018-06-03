@@ -745,6 +745,37 @@ void ddp_check_path(enum DDP_SCENARIO_ENUM scenario)
 }
 
 
+void ddp_check_smi_status(void)
+{
+	unsigned int reg_value;
+	static char first_off = 1;
+
+	if (first_off) {
+		first_off = 0;
+		return;
+	}
+
+	/* check LARB0 display port ostd*/
+	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x280); /* ovl0 */
+	if (reg_value != 0)
+		DDPERR("smi larb0 ovl0 port ostd not 0\n");
+	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x284); /* ovl0_2L */
+	if (reg_value != 0)
+		DDPERR("smi larb0 ovl0_2L port ostd not 0\n");
+	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x288); /* ovl1_2L */
+	if (reg_value != 0)
+		DDPERR("smi larb0 ovl1_2L port ostd not 0\n");
+	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x28c); /* rdma0 */
+	if (reg_value != 0)
+		DDPERR("smi larb0 rdma0 port ostd not 0\n");
+	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x290); /* rdma1 */
+	if (reg_value != 0)
+		DDPERR("smi larb0 rdma1 port ostd not 0\n");
+	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x294); /* wdma0 */
+	if (reg_value != 0)
+		DDPERR("smi larb0 wdma0 port ostd not 0\n");
+}
+
 int ddp_check_engine_status(int mutexID)
 {
 	/* check engines' clock bit &  enable bit & status bit before unlock mutex */
@@ -948,7 +979,26 @@ int ddp_path_mmsys_sw_reset(enum DISP_MODULE_ENUM module)
 		return -1;
 	}
 
+	pr_info("before access smi_larb0 + 0x280: %8x %8x %8x\n",
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x280),
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x284),
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x288));
+	pr_info("smi_larb0 + 0x28c: %8x %8x %8x\n",
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x28c),
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x290),
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x294));
+
 	DISP_REG_SET_FIELD(NULL, REG_FLD(1, bit), DISP_REG_CONFIG_MMSYS_SW0_RST_B, 0x0);
 	DISP_REG_SET_FIELD(NULL, REG_FLD(1, bit), DISP_REG_CONFIG_MMSYS_SW0_RST_B, 0x1);
+
+	pr_info("after access smi_larb0 + 0x280: %8x %8x %8x\n",
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x280),
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x284),
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x288));
+	pr_info("smi_larb0 + 0x28c: %8x %8x %8x\n",
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x28c),
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x290),
+		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x294));
+
 	return 0;
 }
