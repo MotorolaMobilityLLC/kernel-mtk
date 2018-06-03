@@ -31,7 +31,7 @@
 #define ANY_CORE_DPIDLE_SODI
 
 static DEFINE_SPINLOCK(mcdi_enabled_spin_lock);
-static bool mcdi_enabled = true;
+static bool mcdi_enabled;
 static bool mcdi_paused;
 int last_core_token = -1;
 static int boot_time_check;
