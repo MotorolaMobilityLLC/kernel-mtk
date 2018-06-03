@@ -626,22 +626,36 @@ void ddp_clk_force_on(unsigned int on)
 
 int ddp_ovl_dcm_reset(void)
 {
+	unsigned int reg = 0;
 	DDPDBG("ddp_ovl_dcm_reset\n");
 	/* hw workaround : begin */
 	/* if the mmsys_clk restart, we should do it for all the ovl modules*/
 	/*  gce event 32/33/34 workaround */
-	ddp_clk_prepare_enable(DISP0_DISP_OVL1_2L);
-	ddp_clk_prepare_enable(DISP0_DISP_OVL0_2L);
-	ddp_clk_prepare_enable(DISP0_DISP_OVL0);
-	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET0, 1<<16);/*ovl1_2l dcm*/
-	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET0, 1<<15);/*ovl0_2l dcm*/
-	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET0, 1<<14);/*ovl0 dcm*/
-	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR0, 1<<16);
-	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR0, 1<<15);
-	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR0, 1<<14);
-	ddp_clk_disable_unprepare(DISP0_DISP_OVL1_2L);
-	ddp_clk_disable_unprepare(DISP0_DISP_OVL0_2L);
-	ddp_clk_disable_unprepare(DISP0_DISP_OVL0);
+
+	reg = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0);
+
+	if ((reg & (1 << 20)) != 0) {
+		/*if the ovl cg is already on, skip it.*/
+		ddp_clk_prepare_enable(DISP0_DISP_OVL0);
+		DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET0, 1<<14);/*ovl0 dcm*/
+		DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR0, 1<<14);
+		ddp_clk_disable_unprepare(DISP0_DISP_OVL0);
+	}
+
+	if ((reg & (1 << 21)) != 0) {
+		ddp_clk_prepare_enable(DISP0_DISP_OVL0_2L);
+		DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET0, 1<<15);/*ovl0_2l dcm*/
+		DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR0, 1<<15);
+		ddp_clk_disable_unprepare(DISP0_DISP_OVL0_2L);
+	}
+
+	if ((reg & (1 << 22)) != 0) {
+		ddp_clk_prepare_enable(DISP0_DISP_OVL1_2L);
+		DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_SET0, 1<<16);/*ovl1_2l dcm*/
+		DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_HW_DCM_DIS_CLR0, 1<<16);
+		ddp_clk_disable_unprepare(DISP0_DISP_OVL1_2L);
+	}
+
 	/* hw workaround : end */
 
 	return 0;
