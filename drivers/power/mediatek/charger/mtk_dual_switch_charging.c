@@ -148,13 +148,13 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 			case CHR_PE40_INIT:
 			case CHR_PE40_CC:
 				pdata->charging_current_limit
-					= 1700000;
+					= 2000000;
 				pdata2->charging_current_limit
-					= 2300000;
+					= 2000000;
 				break;
 			case CHR_PE40_TUNING:
 				pdata->charging_current_limit
-					= 1700000;
+					= 2000000;
 				break;
 			default:
 				break;
