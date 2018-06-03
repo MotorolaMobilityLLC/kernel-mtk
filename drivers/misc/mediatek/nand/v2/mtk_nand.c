@@ -4485,8 +4485,9 @@ int mtk_nand_exec_read_page_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4Pa
 					data_sector_num /= 2;
 					real_row_addr = NFI_TLC_SetpPlaneAddr(real_row_addr, tlc_left_plane);
 				}
-				pr_debug("mtk_nand_exec_read_page, u4RowAddr: 0x%x real_row_addr 0x%x %d\n",
-					u4RowAddr, real_row_addr, devinfo.tlcControl.slcopmodeEn);
+				/* pr_debug("mtk_nand_exec_read_page, u4RowAddr: 0x%x real_row_addr 0x%x %d\n",
+				 * u4RowAddr, real_row_addr, devinfo.tlcControl.slcopmodeEn);
+				 */
 			} else {
 				real_row_addr = NFI_TLC_GetRowAddr(u4RowAddr);
 			}
