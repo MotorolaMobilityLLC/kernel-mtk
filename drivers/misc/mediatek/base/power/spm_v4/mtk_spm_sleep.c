@@ -91,45 +91,6 @@ static unsigned int spm_sleep_count;
 
 #define WAIT_UART_ACK_TIMES     10	/* 10 * 10us */
 
-#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
-#define WAKE_SRC_FOR_SUSPEND \
-	(WAKE_SRC_R12_PCM_TIMER | \
-	WAKE_SRC_R12_SSPM_WDT_EVENT_B | \
-	WAKE_SRC_R12_KP_IRQ_B | \
-	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
-	WAKE_SRC_R12_EINT_EVENT_B | \
-	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
-	WAKE_SRC_R12_CCIF0_EVENT_B | \
-	WAKE_SRC_R12_SSPM_SPM_IRQ_B | \
-	WAKE_SRC_R12_USB_CDSC_B | \
-	WAKE_SRC_R12_USB_POWERDWN_B | \
-	WAKE_SRC_R12_SYS_TIMER_EVENT_B | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_CCIF1_EVENT_B | \
-	WAKE_SRC_R12_MD2AP_PEER_EVENT_B | \
-	WAKE_SRC_R12_MD1_WDT_B | \
-	WAKE_SRC_R12_CLDMA_EVENT_B)
-#else
-#define WAKE_SRC_FOR_SUSPEND \
-	(WAKE_SRC_R12_PCM_TIMER | \
-	WAKE_SRC_R12_SSPM_WDT_EVENT_B | \
-	WAKE_SRC_R12_KP_IRQ_B | \
-	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
-	WAKE_SRC_R12_EINT_EVENT_B | \
-	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
-	WAKE_SRC_R12_CCIF0_EVENT_B | \
-	WAKE_SRC_R12_SSPM_SPM_IRQ_B | \
-	WAKE_SRC_R12_USB_CDSC_B | \
-	WAKE_SRC_R12_USB_POWERDWN_B | \
-	WAKE_SRC_R12_SYS_TIMER_EVENT_B | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_CCIF1_EVENT_B | \
-	WAKE_SRC_R12_MD2AP_PEER_EVENT_B | \
-	WAKE_SRC_R12_MD1_WDT_B | \
-	WAKE_SRC_R12_CLDMA_EVENT_B | \
-	WAKE_SRC_R12_SEJ_WDT_GPT_B)
-#endif /* #if defined(CONFIG_MICROTRUST_TEE_SUPPORT) */
-
 #define spm_is_wakesrc_invalid(wakesrc)     (!!((u32)(wakesrc) & 0xc0003803))
 
 int __attribute__ ((weak)) mtk_enter_idle_state(int idx)
@@ -174,154 +135,7 @@ static inline void spm_suspend_footprint(enum spm_suspend_step step)
 #endif
 }
 
-static struct pwr_ctrl suspend_ctrl = {
-	.wake_src = WAKE_SRC_FOR_SUSPEND,
-
-	/* Auto-gen Start */
-
-	/* SPM_AP_STANDBY_CON */
-	.wfi_op = WFI_OP_AND,
-	.mp0_cputop_idle_mask = 0,
-	.mp1_cputop_idle_mask = 0,
-	.mcusys_idle_mask = 0,
-	.mm_mask_b = 0,
-	.md_ddr_en_0_dbc_en = 0x1,
-	.md_ddr_en_1_dbc_en = 0,
-	.md_mask_b = 0x1,
-	.sspm_mask_b = 0x1,
-	.lte_mask_b = 0,
-	.srcclkeni_mask_b = 0x1,
-	.md_apsrc_1_sel = 0,
-	.md_apsrc_0_sel = 0,
-	.conn_ddr_en_dbc_en = 0x1,
-	.conn_mask_b = 0x1,
-	.conn_apsrc_sel = 0,
-
-	/* SPM_SRC_REQ */
-	.spm_apsrc_req = 0,
-	.spm_f26m_req = 0,
-	.spm_lte_req = 0,
-	.spm_infra_req = 0,
-	.spm_vrf18_req = 0,
-	.spm_dvfs_req = 0,
-	.spm_dvfs_force_down = 0,
-	.spm_ddren_req = 0,
-	.spm_rsv_src_req = 0,
-	.spm_ddren_2_req = 0,
-	.cpu_md_dvfs_sop_force_on = 0,
-
-	/* SPM_SRC_MASK */
-#if SPM_BYPASS_SYSPWREQ
-	.csyspwreq_mask = 0x1,
-#endif
-	.ccif0_md_event_mask_b = 0x1,
-	.ccif0_ap_event_mask_b = 0x1,
-	.ccif1_md_event_mask_b = 0x1,
-	.ccif1_ap_event_mask_b = 0x1,
-	.ccifmd_md1_event_mask_b = 0,
-	.ccifmd_md2_event_mask_b = 0,
-	.dsi0_vsync_mask_b = 0,
-	.dsi1_vsync_mask_b = 0,
-	.dpi_vsync_mask_b = 0,
-	.isp0_vsync_mask_b = 0,
-	.isp1_vsync_mask_b = 0,
-	.md_srcclkena_0_infra_mask_b = 0x1,
-	.md_srcclkena_1_infra_mask_b = 0,
-	.conn_srcclkena_infra_mask_b = 0x1,
-	.sspm_srcclkena_infra_mask_b = 0,
-	.srcclkeni_infra_mask_b = 0,
-	.md_apsrc_req_0_infra_mask_b = 0,
-	.md_apsrc_req_1_infra_mask_b = 0,
-	.conn_apsrcreq_infra_mask_b = 0,
-	.sspm_apsrcreq_infra_mask_b = 0,
-	.md_ddr_en_0_mask_b = 0x1,
-	.md_ddr_en_1_mask_b = 0,
-	.md_vrf18_req_0_mask_b = 0x1,
-	.md_vrf18_req_1_mask_b = 0,
-	.md1_dvfs_req_mask = 0x1,
-	.cpu_dvfs_req_mask = 0x1,
-	.emi_bw_dvfs_req_mask = 0x1,
-	.md_srcclkena_0_dvfs_req_mask_b = 0,
-	.md_srcclkena_1_dvfs_req_mask_b = 0,
-	.conn_srcclkena_dvfs_req_mask_b = 0,
-
-	/* SPM_SRC2_MASK */
-	.dvfs_halt_mask_b = 0,
-	.vdec_req_mask_b = 0,
-	.gce_req_mask_b = 0,
-	.cpu_md_dvfs_req_merge_mask_b = 0,
-	.md_ddr_en_dvfs_halt_mask_b = 0,
-	.dsi0_vsync_dvfs_halt_mask_b = 0,
-	.dsi1_vsync_dvfs_halt_mask_b = 0,
-	.dpi_vsync_dvfs_halt_mask_b = 0,
-	.isp0_vsync_dvfs_halt_mask_b = 0,
-	.isp1_vsync_dvfs_halt_mask_b = 0,
-	.conn_ddr_en_mask_b = 0x1,
-	.disp_req_mask_b = 0,
-	.disp1_req_mask_b = 0,
-	.mfg_req_mask_b = 0,
-	.ufs_srcclkena_mask_b = 0,
-	.ufs_vrf18_req_mask_b = 0,
-	.ps_c2k_rccif_wake_mask_b = 0,
-	.l1_c2k_rccif_wake_mask_b = 0,
-	.sdio_on_dvfs_req_mask_b = 0,
-	.emi_boost_dvfs_req_mask_b = 0,
-	.cpu_md_emi_dvfs_req_prot_dis = 0,
-	.dramc_spcmd_apsrc_req_mask_b = 0,
-	.emi_boost_dvfs_req_2_mask_b = 0,
-	.emi_bw_dvfs_req_2_mask = 0,
-	.gce_vrf18_req_mask_b = 0,
-
-	/* SPM_WAKEUP_EVENT_MASK */
-	.spm_wakeup_event_mask = 0xF1783A18,
-
-	/* SPM_WAKEUP_EVENT_EXT_MASK */
-	.spm_wakeup_event_ext_mask = 0xffffffff,
-
-	/* SPM_SRC3_MASK */
-	.md_ddr_en_2_0_mask_b = 0,
-	.md_ddr_en_2_1_mask_b = 0,
-	.conn_ddr_en_2_mask_b = 0,
-	.dramc_spcmd_apsrc_req_2_mask_b = 0,
-	.spare1_ddren_2_mask_b = 0,
-	.spare2_ddren_2_mask_b = 0,
-	.ddren_emi_self_refresh_ch0_mask_b = 0,
-	.ddren_emi_self_refresh_ch1_mask_b = 0,
-	.ddren_mm_state_mask_b = 0,
-	.ddren_sspm_apsrc_req_mask_b = 0,
-	.ddren_dqssoc_req_mask_b = 0,
-	.ddren2_emi_self_refresh_ch0_mask_b = 0,
-	.ddren2_emi_self_refresh_ch1_mask_b = 0,
-	.ddren2_mm_state_mask_b = 0,
-	.ddren2_sspm_apsrc_req_mask_b = 0,
-	.ddren2_dqssoc_req_mask_b = 0,
-
-	/* MP0_CPU0_WFI_EN */
-	.mp0_cpu0_wfi_en = 0x1,
-
-	/* MP0_CPU1_WFI_EN */
-	.mp0_cpu1_wfi_en = 0x1,
-
-	/* MP0_CPU2_WFI_EN */
-	.mp0_cpu2_wfi_en = 0x1,
-
-	/* MP0_CPU3_WFI_EN */
-	.mp0_cpu3_wfi_en = 0x1,
-
-	/* MP1_CPU0_WFI_EN */
-	.mp1_cpu0_wfi_en = 0x1,
-
-	/* MP1_CPU1_WFI_EN */
-	.mp1_cpu1_wfi_en = 0x1,
-
-	/* MP1_CPU2_WFI_EN */
-	.mp1_cpu2_wfi_en = 0x1,
-
-	/* MP1_CPU3_WFI_EN */
-	.mp1_cpu3_wfi_en = 0x1,
-
-	/* Auto-gen End */
-};
+static struct pwr_ctrl suspend_ctrl;
 
 struct spm_lp_scen __spm_suspend = {
 	.pwrctrl = &suspend_ctrl,
@@ -449,6 +263,8 @@ int spm_set_sleep_wakesrc(u32 wakesrc, bool enable, bool replace)
 		else
 			__spm_suspend.pwrctrl->wake_src &= ~wakesrc;
 	}
+	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS, SPM_PWR_CTRL_SUSPEND,
+			PWR_WAKE_SRC, __spm_suspend.pwrctrl->wake_src);
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	return 0;
@@ -459,7 +275,8 @@ int spm_set_sleep_wakesrc(u32 wakesrc, bool enable, bool replace)
  */
 u32 spm_get_sleep_wakesrc(void)
 {
-	return __spm_suspend.pwrctrl->wake_src;
+	return mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+			SPM_PWR_CTRL_SUSPEND, PWR_WAKE_SRC, 0);
 }
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -503,18 +320,11 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 
 	pwrctrl = __spm_suspend.pwrctrl;
+	pwrctrl->wake_src = mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+			SPM_PWR_CTRL_SUSPEND, PWR_WAKE_SRC, 0);
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
-
-	/* FIXME: */
-#if 0
-	/* for gps only case */
-	if (spm_for_gps_flag) {
-		spm_crit2("spm_for_gps_flag %d\n", spm_for_gps_flag);
-		pwrctrl->pcm_flags |= SPM_FLAG_DIS_ULPOSC_OFF;
-	}
-#endif
 
 #if SPM_PWAKE_EN
 	sec = _spm_get_wake_period(-1, last_wr);
