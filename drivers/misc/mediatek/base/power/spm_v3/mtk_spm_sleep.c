@@ -190,11 +190,11 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_sysclk1_src_mask_b = 0x20,
 
 	/* SPM_SRC_REQ */
-	.reg_spm_apsrc_req = 0,
-	.reg_spm_f26m_req = 0,
-	.reg_spm_infra_req = 0,
-	.reg_spm_ddren_req = 0,
-	.reg_spm_vrf18_req = 0,
+	.reg_spm_apsrc_req = 1,
+	.reg_spm_f26m_req = 1,
+	.reg_spm_infra_req = 1,
+	.reg_spm_ddren_req = 1,
+	.reg_spm_vrf18_req = 1,
 	.reg_spm_dvfs_level0_req = 0,
 	.reg_spm_dvfs_level1_req = 0,
 	.reg_spm_dvfs_level2_req = 0,
