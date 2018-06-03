@@ -244,7 +244,7 @@ static int mtk_pinctrl_get_gpio_pullen(struct mtk_pinctrl *pctl, int pin)
 	if (pull_en & (MTK_PUPD_BIT_PU | MTK_PUPD_BIT_PD))
 		pull_en = GPIO_PULL_ENABLE;
 	else if (pull_en == -EPERM)
-		pull_en = GPIO_PULL_UNSUPPORTED;
+		pull_en = GPIO_PULL_EN_UNSUPPORTED;
 	else
 		pull_en = GPIO_PULL_DISABLE;
 #endif
