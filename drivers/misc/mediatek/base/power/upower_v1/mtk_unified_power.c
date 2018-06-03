@@ -23,6 +23,7 @@
 #include <linux/io.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/sched.h>
 
 /* local include */
 #include "mtk_unified_power_internal.h"
@@ -153,8 +154,15 @@ void upower_ut(void)
 					ptr_tbl->row[j].lkg_pwr[3], ptr_tbl->row[j].lkg_pwr[4],
 					ptr_tbl->row[j].lkg_pwr[5]);
 		}
-		upower_debug(" lkg_idx, num_row: %d, %d\n",
-					ptr_tbl->lkg_idx, ptr_tbl->row_num);
+		upower_debug(" lkg_idx, num_row, nr_idle_states: %d, %d ,%d\n",
+					ptr_tbl->lkg_idx, ptr_tbl->row_num, ptr_tbl->nr_idle_states);
+
+		for (i = 0; i < NR_UPOWER_DEGREE; i++) {
+			upower_debug("(%d)C c0 = %lu, c1 = %lu\n",
+					degree_set[i],
+					ptr_tbl->idle_states[i][0].power, ptr_tbl->idle_states[i][1].power);
+
+		}
 	}
 
 	upower_debug("----upower_get_power()----\n");
@@ -246,21 +254,26 @@ static int upower_bank_to_spower_bank(int upower_bank)
 static void upower_update_lkg_pwr(void)
 {
 	int i, j, k;
-	#ifdef EARLY_PORTING_SPOWER
 	struct upower_tbl *tbl;
-	#else
 	unsigned int spower_bank_id;
 	unsigned int volt;
 	int degree;
 	unsigned int temp;
-	#endif
 
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
-		#ifdef EARLY_PORTING_SPOWER
 		tbl = upower_tbl_infos[i].p_upower_tbl;
+
+		#ifdef EARLY_PORTING_SPOWER
+		/* get p-state lkg */
 		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			for (k = 0; k < NR_UPOWER_DEGREE; k++)
 				upower_tbl_ref[i].row[j].lkg_pwr[k] = tbl->row[j].lkg_pwr[k];
+		}
+
+		/* get c-state lkg */
+		for (j = 0; j < NR_UPOWER_DEGREE; j++) {
+			for (k = 0; k < NR_UPOWER_CSTATES; k++)
+				upower_tbl_ref[i].idle_states[j][k].power = tbl->idle_states[j][k].power;
 		}
 		#else
 		spower_bank_id = upower_bank_to_spower_bank(i);
@@ -275,6 +288,7 @@ static void upower_update_lkg_pwr(void)
 		if (spower_bank_id == -1)
 			continue;
 
+		/* get p-state lkg */
 		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			volt = (unsigned int)upower_tbl_ref[i].row[j].volt;
 			for (k = 0; k < NR_UPOWER_DEGREE; k++) {
@@ -297,6 +311,23 @@ static void upower_update_lkg_pwr(void)
 							upower_tbl_ref[i].row[j].lkg_pwr[5]);
 			#endif
 		}
+
+		/* get c-state lkg */
+		upower_tbl_ref[i].nr_idle_states = NR_UPOWER_CSTATES;
+		volt = UPOWER_C1_VOLT;
+		for (j = 0; j < NR_UPOWER_DEGREE; j++) {
+			for (k = 0; k < NR_UPOWER_CSTATES; k++) {
+				/* if c1 state, query lkg from lkg driver */
+				if (k == UPOWER_C1_IDX) {
+					degree = degree_set[j];
+					/* get leakage from spower driver and transfer mw to uw */
+					temp = mt_spower_get_leakage(spower_bank_id, (volt/100), degree);
+					upower_tbl_ref[i].idle_states[j][k].power = (unsigned long)(temp * 1000);
+				} else {
+					upower_tbl_ref[i].idle_states[j][k].power = tbl->idle_states[j][k].power;
+				}
+			}
+		}
 		#endif
 	}
 }
@@ -317,13 +348,8 @@ static void upower_init_rownum(void)
 {
 	int i;
 
-	for (i = 0; i < NR_UPOWER_BANK; i++) {
+	for (i = 0; i < NR_UPOWER_BANK; i++)
 		upower_tbl_ref[i].row_num = UPOWER_OPP_NUM;
-		/*
-		*upower_error("[bank %d]lkg_idx=%d, row num = %d\n", i, upower_tbl_ref[i].lkg_idx,
-		*								upower_tbl_ref[i].row_num);
-		*/
-	}
 }
 
 #ifdef EARLY_PORTING_EEM
@@ -391,15 +417,21 @@ static int upower_update_tbl_ref(void)
 
 static int __init upower_get_tbl_ref(void)
 {
+	/* get table size */
+	unsigned long long size = sizeof(struct upower_tbl) * NR_UPOWER_BANK;
+	/* UPOWER_TBL_LIMIT is the bottom address of unified power table */
+	unsigned long long upower_tbl_base = UPOWER_TBL_LIMIT - size;
+
+	upower_debug("upower table size=%llu\n", size);
+	upower_debug("upower table start=0x%llx\n", upower_tbl_base);
+
 	/* get table address on sram */
-	upower_tbl_ref = ioremap_nocache(UPOWER_TBL_BASE, UPOWER_TBL_TOTAL_SIZE);
+	upower_tbl_ref = ioremap_nocache(upower_tbl_base, size);
 	if (upower_tbl_ref == NULL)
 		return -ENOMEM;
 
-	upower_error("upower tbl location = %p, limit = %p\n",
-					upower_tbl_ref, upower_tbl_ref+UPOWER_TBL_TOTAL_SIZE);
-
-	memset_io((u8 *)upower_tbl_ref, 0x00, UPOWER_TBL_TOTAL_SIZE);
+	upower_error("upower tbl location = %p, size = %llu\n", upower_tbl_ref, size);
+	memset_io((u8 *)upower_tbl_ref, 0x00, size);
 
 	return 0;
 }
