@@ -899,6 +899,7 @@ P_BSS_INFO_T cnmGetBssInfoAndInit(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_T eNe
 		prBssInfo->fgIsPNOEnable = FALSE;
 		prBssInfo->fgIsNetRequestInActive = FALSE;
 #endif
+		prBssInfo->ucKeyCmdAction = SEC_TX_KEY_COMMAND;
 		return prBssInfo;
 	}
 
@@ -966,6 +967,8 @@ P_BSS_INFO_T cnmGetBssInfoAndInit(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_T eNe
 		prBssInfo->fgIsNetRequestInActive = FALSE;
 	}
 #endif
+	if (prBssInfo)
+		prBssInfo->ucKeyCmdAction = SEC_TX_KEY_COMMAND;
 	return prBssInfo;
 }
 

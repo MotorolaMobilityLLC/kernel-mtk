@@ -965,8 +965,32 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 		prCmdInfo = (P_CMD_INFO_T) prQueueEntry;
 
 		switch (prCmdInfo->eCmdType) {
-		case COMMAND_TYPE_GENERAL_IOCTL:
 		case COMMAND_TYPE_NETWORK_IOCTL:
+			if (prCmdInfo->ucCID == CMD_ID_ADD_REMOVE_KEY) {
+				P_WIFI_CMD_T prWifiCmd = (P_WIFI_CMD_T) (prCmdInfo->pucInfoBuffer);
+				P_CMD_802_11_KEY prKey = (P_CMD_802_11_KEY)prWifiCmd->aucBuffer;
+				P_BSS_INFO_T prBssInfo = prAdapter->aprBssInfo[prKey->ucBssIdx];
+
+				if (!prKey->ucIsAuthenticator &&
+					prKey->ucAddRemove && prKey->ucTxKey &&
+					(prKey->ucAlgorithmId == CIPHER_SUITE_TKIP ||
+					prKey->ucAlgorithmId == CIPHER_SUITE_CCMP)) {/* add key */
+					switch (prBssInfo->ucKeyCmdAction) {
+					case SEC_DROP_KEY_COMMAND:
+						eFrameAction = FRAME_ACTION_DROP_PKT;
+						break;
+					case SEC_QUEUE_KEY_COMMAND:
+						eFrameAction = FRAME_ACTION_QUEUE_PKT;
+						break;
+					case SEC_TX_KEY_COMMAND:
+						eFrameAction = FRAME_ACTION_TX_PKT;
+						break;
+					}
+					DBGLOG(TX, INFO, "Add Key Cmd Action %d\n", eFrameAction);
+					break;
+				}
+			}
+		case COMMAND_TYPE_GENERAL_IOCTL:
 			/* command packet will be always sent */
 			eFrameAction = FRAME_ACTION_TX_PKT;
 			break;
@@ -4270,6 +4294,7 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 	UINT_32 u4SysTime;
 	UINT_8 ucMacHeaderLen;
 	TX_PACKET_INFO rTxPacketInfo;
+	P_BSS_INFO_T prBssInfo;
 
 	ASSERT(prAdapter);
 	ASSERT(prPacket);
@@ -4291,10 +4316,19 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 								 rTxPacketInfo.aucEthDestAddr);
 
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_1X);
-/*
-*				if (secIsProtected1xFrame(prAdapter, prStaRec) && !kalIs24Of4Packet(prPacket))
-*					GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
-*/
+				if (prStaRec != NULL && prStaRec->ucBssIndex <= HW_BSSID_NUM)
+					prBssInfo = prAdapter->aprBssInfo[prStaRec->ucBssIndex];
+				else {
+					prBssInfo = NULL;
+					DBGLOG(TX, WARN, "Bss Index is invaild\n");
+				}
+				if (secIsProtected1xFrame(prAdapter, prStaRec)) {
+					/* 1st 4way-handshake don't encrpted it */
+					if (!prBssInfo || !(prBssInfo->fgUnencryptedEapol)) {
+						GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
+						DBGLOG(RSN, INFO, "This EAP Frame will be encrypyed\n");
+					}
+				}
 			}
 
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_NON_PROTECTED_1X))
@@ -4358,6 +4392,25 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 	return FALSE;
 }
 
+WLAN_STATUS
+nicTxSecFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
+		IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	UINT_8 ucKeyCmdAction = SEC_TX_KEY_COMMAND;
+
+	DBGLOG(TX, INFO, "SEC Msdu WIDX:PID[%u:%u] Status[%u], SeqNo[%u]\n",
+			   prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus,
+			   prMsduInfo->ucTxSeqNum);
+	if (rTxDoneStatus != TX_RESULT_SUCCESS)
+		ucKeyCmdAction = SEC_DROP_KEY_COMMAND;
+	else
+		ucKeyCmdAction = SEC_TX_KEY_COMMAND;
+	secSetKeyCmdAction(prAdapter->aprBssInfo[prMsduInfo->ucBssIndex],
+		prMsduInfo->ucEapolKeyType, ucKeyCmdAction);
+	kalSetEvent(prAdapter->prGlueInfo);
+	return WLAN_STATUS_SUCCESS;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function is called to identify 802.1x and Bluetooth-over-Wi-Fi
@@ -4415,7 +4468,7 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 
 		/* Fill-up MSDU_INFO */
 		nicTxSetDataPacket(prAdapter, prMsduInfo, ucBssIndex,
-				   ucStaRecIndex, 0, u4PacketLen, nicTxDummyTxDone,
+				   ucStaRecIndex, 0, u4PacketLen, nicTxSecFrameTxDone,
 				   MSDU_RATE_MODE_AUTO, TX_PACKET_OS, 0, FALSE, TRUE);
 
 		prMsduInfo->prPacket = prPacket;
@@ -4478,6 +4531,8 @@ VOID wlanSecurityFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 			/* secFsmEventEapolTxDone(prAdapter, prSta, TX_RESULT_SUCCESS); */
 		}
 	}
+	/* Clear the flag when Eapol frame tx Done */
+	GET_BSS_INFO_BY_INDEX(prAdapter, prMsduInfo->ucBssIndex)->fgUnencryptedEapol = FALSE;
 
 	kalSecurityFrameSendComplete(prAdapter->prGlueInfo, prCmdInfo->prPacket, WLAN_STATUS_SUCCESS);
 }

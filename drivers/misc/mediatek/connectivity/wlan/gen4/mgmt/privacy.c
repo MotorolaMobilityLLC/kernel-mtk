@@ -1148,3 +1148,97 @@ void secPostUpdateAddr(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo)
 		}
 	}
 }
+
+/* return the type of Eapol frame. */
+enum EAPOL_KEY_TYPE secGetEapolKeyType(PUINT_8 pucPacket)
+{
+	UINT_16 u2EthType = 0;
+	UINT_16 u2KeyInfo = 0;
+
+	if (!pucPacket)
+	return EAPOL_KEY_NOT_KEY;
+	WLAN_GET_FIELD_BE16(&pucPacket[ETHER_HEADER_LEN - ETHER_TYPE_LEN], &u2EthType);
+	if (u2EthType != ETH_P_1X)
+	return EAPOL_KEY_NOT_KEY;
+	u2KeyInfo = pucPacket[5+ETHER_HEADER_LEN]<<8 | pucPacket[6+ETHER_HEADER_LEN];
+	/* 802.11-2012, 11.6.2, Figure 11-29
+	** Key Info: BIT(0,2)-Key descriptor & Version; BIT(3)-Key type; BIT(4,5)-reserved;
+	** BIT(6)-install; BIT(7)-Ack; BIT(8)-MIC; BIT(9)-secure; BIT(10)-error; BIT(11)-request
+	** BIT(12)-Encrypted data; BIT(13)-SMK; BIT(14,15)-reserved;
+	** 802.11-2012, 11.6.6 ~ 11.6.7
+	** 1/4: 0x89
+	** 2/4: 0x109
+	** 3/4: 0x13c9 or 0x1389
+	** 4/4: 0x309
+	** 1/2: 0x381
+	** 2/2: 0x301
+	**/
+	DBGLOG(RSN, TRACE, "u2KeyInfo=0x%x\n", (u2KeyInfo & 0x388));
+	/* Only check Bit9, Bit8, Bit7 and Bit3, for Bit6, some times it may be missing */
+	switch (u2KeyInfo & 0x388) {
+	case 0x388:
+	case 0x188: /* BIT(9) may be missing in some AP, we should compatiable with it */
+		return EAPOL_KEY_3_OF_4;
+	case 0x308: /* if BIT(9) in 3/4 is missing, it is hard to distinguish 4/4 and 2/4 */
+		return EAPOL_KEY_4_OF_4;
+	case 0x108: /* BIT(8) | BIT(3) */
+		return EAPOL_KEY_2_OF_4;
+	case 0x88: /* BIT(3) | BIT(7) */
+		return EAPOL_KEY_1_OF_4;
+	case 0x180: /* don't check BIT(9) since some Authenticator may miss it */
+		return EAPOL_KEY_1_OF_2;
+	case 0x100: /* don't check BIT(9) since some Authenticator may miss it */
+		return EAPOL_KEY_2_OF_2;
+	}
+	return EAPOL_KEY_NOT_KEY;
+}
+
+VOID secSetKeyCmdAction(P_BSS_INFO_T prBssInfo, UINT_8 ucEapolKeyType, UINT_8 ucAction)
+{
+	ASSERT(prBssInfo);
+
+	switch (ucEapolKeyType) {
+	/* some AP may miss Bit9 in KeyInfo, so the 4/4 we send will also miss it, and it seems like 2/4 */
+	case EAPOL_KEY_4_OF_4:
+	case EAPOL_KEY_2_OF_4:
+		prBssInfo->ucKeyCmdAction = ucAction;
+		break;
+	case EAPOL_KEY_3_OF_4:
+		prBssInfo->ucKeyCmdAction = ucAction;
+		/* If 3/4 is unencrypted,then 4/4 will be unencrypted */
+		prBssInfo->fgUnencryptedEapol = (ucAction != SEC_QUEUE_KEY_COMMAND);
+		DBGLOG(RSN, INFO, "ucKeyCmdAction is %d, prBssInfo->fgUnencryptedEapol is %d\n",
+			   prBssInfo->ucKeyCmdAction, prBssInfo->fgUnencryptedEapol);
+		break;
+	}
+}
+
+UINT_8 secGetBssIdxByNetType(P_ADAPTER_T prAdapter)
+{
+	P_BSS_INFO_T prBssInfo = NULL;
+	UINT_8 i = 0;
+	UINT_8 ucBssIndex = 0xff;
+	BOOLEAN fgP2pDevice = FALSE;
+	BOOLEAN fgAisDevice = FALSE;
+
+	for (; i < BSS_INFO_NUM; i++) {
+		prBssInfo = prAdapter->aprBssInfo[i];
+		if (prBssInfo->eConnectionState != PARAM_MEDIA_STATE_CONNECTED)
+			continue;
+		if (prBssInfo->eNetworkType == NETWORK_TYPE_AIS) {
+			fgAisDevice = TRUE;
+			ucBssIndex = prBssInfo->ucBssIndex;
+#if CFG_ENABLE_WIFI_DIRECT
+		} else	if (prBssInfo->eNetworkType == NETWORK_TYPE_P2P &&
+			prBssInfo->eCurrentOPMode == OP_MODE_P2P_DEVICE) {
+			fgP2pDevice = TRUE;
+			ucBssIndex = prBssInfo->ucBssIndex;
+#endif
+		}
+	}
+	if (fgP2pDevice && fgAisDevice) {
+		DBGLOG(RSN, INFO, "p2p device & ais co-exist\n");
+		return 0xff;
+	}
+	return ucBssIndex;
+}

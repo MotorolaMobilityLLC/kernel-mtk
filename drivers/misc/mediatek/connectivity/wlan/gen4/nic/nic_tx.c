@@ -1728,6 +1728,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		skb = (struct sk_buff *)prMsduInfo->prPacket;
 		prCmdInfo->pucTxp = skb->data;
 		prCmdInfo->u4TxpLen = skb->len;
+		prMsduInfo->ucEapolKeyType = kalGetEapolKeyType(skb);
 
 		HAL_WRITE_TX_CMD(prAdapter, prCmdInfo, ucTC);
 
