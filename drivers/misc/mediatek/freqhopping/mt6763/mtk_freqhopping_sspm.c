@@ -422,29 +422,44 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 	/* Check the out of range of frequency hopping PLL ID */
 	VALIDATE_PLLID(fh_ctl->pll_id);
 
-	fh_pll.setting_idx_pattern = mt_fh_pll_struct_get(fh_ctl->pll_id, SETTING_IDX_PATTERN);
+	if (enable == true) {
+		fh_pll.user_defined = mt_fh_pll_struct_get(fh_ctl->pll_id, USER_DEFINED);
+		if (fh_pll.user_defined == true) {
+			FH_MSG("Apply user defined setting");
 
-	if (fh_pll.setting_idx_pattern != 0) {
-		ssc_setting_id = __freq_to_index(fh_ctl->pll_id,
-						fh_pll.setting_idx_pattern);
-	} else {
-		ssc_setting_id = 0;
+			pSSC_setting = &mt_ssc_fhpll_userdefined[fh_ctl->pll_id];
+			ssc_setting_id = PLL_SETTING_IDX__USER;
+		} else {
+
+			fh_pll.setting_idx_pattern = mt_fh_pll_struct_get(fh_ctl->pll_id, SETTING_IDX_PATTERN);
+
+			if (fh_pll.setting_idx_pattern != 0) {
+				ssc_setting_id = __freq_to_index(fh_ctl->pll_id,
+								fh_pll.setting_idx_pattern);
+			} else {
+				ssc_setting_id = 0;
+			}
+			if (ssc_setting_id == 0) {
+				FH_MSG("!!! No corresponding setting found !!!");
+				/* just disable FH & exit */
+				goto Exit;
+			}
+			pSSC_setting =
+					&g_pll_ssc_setting_tbl[fh_ctl->pll_id][ssc_setting_id];
+		}
+		if (pSSC_setting == NULL) {
+			FH_MSG("SSC_setting is NULL!");
+
+			/* disable FH & exit */
+			goto Exit;
+		}
+		mt_fh_pll_struct_set(fh_ctl->pll_id, SETTING_ID, ssc_setting_id);
+
+		memset(&ipi_data, 0, sizeof(struct fhctl_ipi_data));
+		memcpy(&ipi_data.u.fh_ctl, fh_ctl, sizeof(struct freqhopping_ioctl));
+		memcpy(&ipi_data.u.fh_ctl.ssc_setting, pSSC_setting, sizeof(struct freqhopping_ssc));
+		fhctl_to_sspm_command(FH_DCTL_CMD_SSC_TBL_CONFIG, &ipi_data);
 	}
-	if (ssc_setting_id == 0) {
-		FH_MSG("!!! No corresponding setting found !!!");
-
-		/* just disable FH & exit */
-		goto Exit;
-	}
-
-	pSSC_setting =
-				&g_pll_ssc_setting_tbl[fh_ctl->pll_id][ssc_setting_id];
-	mt_fh_pll_struct_set(fh_ctl->pll_id, SETTING_ID, ssc_setting_id);
-
-	memset(&ipi_data, 0, sizeof(struct fhctl_ipi_data));
-	memcpy(&ipi_data.u.fh_ctl, fh_ctl, sizeof(struct freqhopping_ioctl));
-	memcpy(&ipi_data.u.fh_ctl.ssc_setting, pSSC_setting, sizeof(struct freqhopping_ssc));
-	fhctl_to_sspm_command(FH_DCTL_CMD_SSC_TBL_CONFIG, &ipi_data);
 
 	memset(&ipi_data, 0, sizeof(struct fhctl_ipi_data));
 	ipi_data.u.args[0] = fh_ctl->pll_id;
