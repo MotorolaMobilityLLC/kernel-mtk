@@ -152,16 +152,6 @@
 
 #define MSDC_SRC_FPGA           12000000
 
-#ifdef MSDC_BRING_UP
-#define MSDC0_CG_NAME           MTK_CG_PERI2_RG_MSDC0_CK_PDN_AP_NORM_STA
-#define MSDC1_CG_NAME           MTK_CG_PERI2_RG_MSDC1_CK_PDN_STA
-#define MSDC2_CG_NAME           MTK_CG_PERI2_RG_MSDC2_CK_PDN_STA
-#else
-#define MSDC0_CG_NAME           0
-#define MSDC1_CG_NAME           0
-#define MSDC2_CG_NAME           0
-#endif
-
 /**************************************************************/
 /* Section 4: GPIO and Pad                                    */
 /**************************************************************/

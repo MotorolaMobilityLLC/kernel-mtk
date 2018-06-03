@@ -87,26 +87,6 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host);
 
-#ifdef CONFIG_MTK_HW_FDE_AES
-#define msdc_clk_enable(host) \
-	do { \
-		msdc_clk_pre_enable(host); \
-		if (host->hw->host_function != MSDC_SDIO) \
-			fde_aes_check_enable(host->id, 1); \
-		(void)clk_enable(host->clk_ctl); \
-		if (host->hclk_ctl) \
-			(void)clk_enable(host->hclk_ctl); \
-	} while (0)
-#define msdc_clk_disable(host) \
-	do { \
-		clk_disable(host->clk_ctl); \
-		if (host->hclk_ctl) \
-			clk_disable(host->hclk_ctl); \
-		if (host->hw->host_function != MSDC_SDIO) \
-			fde_aes_check_enable(host->id, 0); \
-		msdc_clk_post_disble(host); \
-	} while (0)
-#else
 #define msdc_clk_enable(host) \
 	do { \
 		msdc_clk_pre_enable(host); \
@@ -121,7 +101,6 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 			clk_disable(host->hclk_ctl); \
 		msdc_clk_post_disble(host); \
 	} while (0)
-#endif
 #endif
 
 /**************************************************************/

@@ -422,13 +422,15 @@ void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m)
 #else
 	seq_puts(m, "driver not supported\n");
 #endif
+#ifdef CONFIG_MTK_HW_FDE
+	seq_puts(m, "hardware fde support\n");
+#endif
 }
 
 void msdc_cmdq_func(struct msdc_host *host, const int num, struct seq_file *m)
 {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	void __iomem *base;
-	int a, b;
 #endif
 
 	if (!host || !host->mmc || !host->mmc->card)
@@ -450,30 +452,6 @@ void msdc_cmdq_func(struct msdc_host *host, const int num, struct seq_file *m)
 		break;
 	case 2:
 		mmc_cmd_dump(host->mmc);
-		break;
-	case 3:
-		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a);
-		MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a+1);
-		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, b);
-		seq_printf(m, "force MSDC_PAD_TUNE0_CMDRDLY %d -> %d\n", a, b);
-		break;
-	case 4:
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a);
-		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a+1);
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, b);
-		seq_printf(m, "force MSDC_EMMC50_PAD_DS_TUNE_DLY1 %d -> %d\n", a, b);
-		break;
-	case 5:
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a);
-		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a+1);
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, b);
-		seq_printf(m, "force MSDC_EMMC50_PAD_DS_TUNE_DLY2 %d -> %d\n", a, b);
-		break;
-	case 6:
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a);
-		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a+1);
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, b);
-		seq_printf(m, "force MSDC_EMMC50_PAD_DS_TUNE_DLY3  %d -> %d\n", a, b);
 		break;
 #endif
 	default:
@@ -2248,7 +2226,12 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 		/* FIX ME, move to user space */
 		seq_puts(m, "==== CRC Stress Test ====\n");
-		base = mtk_msdc_host[0]->base;
+		id = 0;
+		host = mtk_msdc_host[id];
+		if (!host)
+			goto invalid_host_id;
+
+		base = host->base;
 		if (p1 == 0) {
 			/* do nothing */
 		} else if (p1 == 1)  {

@@ -30,11 +30,6 @@
 #include "autok.h"
 #include "autok_dvfs.h"
 
-#ifdef CONFIG_MTK_HW_FDE_AES
-#include <fde_aes.h>
-#include <fde_aes_dbg.h>
-#endif
-
 /* MSDC_SWITCH_MODE_WHEN_ERROR */
 #define TUNE_NONE                (0)        /* No need tune */
 #define TUNE_ASYNC_CMD           (0x1 << 0) /* async transfer cmd crc */

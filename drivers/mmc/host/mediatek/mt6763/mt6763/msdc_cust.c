@@ -461,14 +461,6 @@ u32 *hclks_msdc_all[] = {
 };
 u32 *hclks_msdc;
 
-#include <mtk_clk_id.h>
-
-int msdc_cg_clk_id[HOST_MAX_NUM] = {
-	MSDC0_CG_NAME,
-	MSDC1_CG_NAME,
-	MSDC2_CG_NAME
-};
-
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host)
 {
@@ -629,23 +621,6 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
 	msdc_dump_clock_sts_core(host, m);
 }
 
-void msdc_clk_status(int *status)
-{
-	int clk_gate = 0;
-	int i = 0;
-	unsigned long flags;
-
-	for (i = 0; i < HOST_MAX_NUM; i++) {
-		if (!mtk_msdc_host[i])
-			continue;
-
-		spin_lock_irqsave(&mtk_msdc_host[i]->clk_gate_lock, flags);
-		if (mtk_msdc_host[i]->clk_gate_count > 0)
-			clk_gate |= 1 << msdc_cg_clk_id[i];
-		spin_unlock_irqrestore(&mtk_msdc_host[i]->clk_gate_lock, flags);
-	}
-	*status = clk_gate;
-}
 #endif /*if !defined(FPGA_PLATFORM)*/
 
 void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
@@ -1479,6 +1454,61 @@ u16 msdc_offsets[] = {
 	OFFSET_EMMC50_CFG4,
 	OFFSET_SDC_FIFO_CFG,
 	OFFSET_MSDC_AES_SEL,
+
+#ifdef _MTK_HW_FDE_DEBUG
+	OFFSET_EMMC52_AES_EN,
+	OFFSET_EMMC52_AES_CFG_GP0,
+	OFFSET_EMMC52_AES_IV0_GP0,
+	OFFSET_EMMC52_AES_IV1_GP0,
+	OFFSET_EMMC52_AES_IV2_GP0,
+	OFFSET_EMMC52_AES_IV3_GP0,
+	OFFSET_EMMC52_AES_CTR0_GP0,
+	OFFSET_EMMC52_AES_CTR1_GP0,
+	OFFSET_EMMC52_AES_CTR2_GP0,
+	OFFSET_EMMC52_AES_CTR3_GP0,
+	OFFSET_EMMC52_AES_KEY0_GP0,
+	OFFSET_EMMC52_AES_KEY1_GP0,
+	OFFSET_EMMC52_AES_KEY2_GP0,
+	OFFSET_EMMC52_AES_KEY3_GP0,
+	OFFSET_EMMC52_AES_KEY4_GP0,
+	OFFSET_EMMC52_AES_KEY5_GP0,
+	OFFSET_EMMC52_AES_KEY6_GP0,
+	OFFSET_EMMC52_AES_KEY7_GP0,
+	OFFSET_EMMC52_AES_TKEY0_GP0,
+	OFFSET_EMMC52_AES_TKEY1_GP0,
+	OFFSET_EMMC52_AES_TKEY2_GP0,
+	OFFSET_EMMC52_AES_TKEY3_GP0,
+	OFFSET_EMMC52_AES_TKEY4_GP0,
+	OFFSET_EMMC52_AES_TKEY5_GP0,
+	OFFSET_EMMC52_AES_TKEY6_GP0,
+	OFFSET_EMMC52_AES_TKEY7_GP0,
+	OFFSET_EMMC52_AES_SWST,
+	OFFSET_EMMC52_AES_CFG_GP1,
+	OFFSET_EMMC52_AES_IV0_GP1,
+	OFFSET_EMMC52_AES_IV1_GP1,
+	OFFSET_EMMC52_AES_IV2_GP1,
+	OFFSET_EMMC52_AES_IV3_GP1,
+	OFFSET_EMMC52_AES_CTR0_GP1,
+	OFFSET_EMMC52_AES_CTR1_GP1,
+	OFFSET_EMMC52_AES_CTR2_GP1,
+	OFFSET_EMMC52_AES_CTR3_GP1,
+	OFFSET_EMMC52_AES_KEY0_GP1,
+	OFFSET_EMMC52_AES_KEY1_GP1,
+	OFFSET_EMMC52_AES_KEY2_GP1,
+	OFFSET_EMMC52_AES_KEY3_GP1,
+	OFFSET_EMMC52_AES_KEY4_GP1,
+	OFFSET_EMMC52_AES_KEY5_GP1,
+	OFFSET_EMMC52_AES_KEY6_GP1,
+	OFFSET_EMMC52_AES_KEY7_GP1,
+	OFFSET_EMMC52_AES_TKEY0_GP1,
+	OFFSET_EMMC52_AES_TKEY1_GP1,
+	OFFSET_EMMC52_AES_TKEY2_GP1,
+	OFFSET_EMMC52_AES_TKEY3_GP1,
+	OFFSET_EMMC52_AES_TKEY4_GP1,
+	OFFSET_EMMC52_AES_TKEY5_GP1,
+	OFFSET_EMMC52_AES_TKEY6_GP1,
+	OFFSET_EMMC52_AES_TKEY7_GP1,
+#endif
 
 	0xFFFF /*as mark of end */
 };
