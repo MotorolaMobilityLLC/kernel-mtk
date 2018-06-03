@@ -1070,18 +1070,19 @@ phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank)
 		return 0;
 	}
 }
-void mt_dramc_ta_addr_set(unsigned int rank, unsigned int temp_addr)
+unsigned int  mt_dramc_ta_addr_set(unsigned int rank, unsigned int temp_addr)
 {
 	/*zion : 0x38[3:0] ->test addr [31:28],ofset 0x3c[23:0] ->test addr [27:4]*/
 	unsigned int test_agent_base_temp;
-
 	test_agent_base_temp = (Reg_Readl(DRAMC_AO_CHA_BASE_ADDR+0x3c) & ~(0xffffff)) | ((temp_addr>>4) & 0xffffff);
 	Reg_Sync_Writel(DRAMC_AO_CHA_BASE_ADDR+0x3c, test_agent_base_temp);
 	test_agent_base_temp = ((Reg_Readl(DRAMC_AO_CHA_BASE_ADDR+0x38) & ~(0xf)) | ((temp_addr>>28) & 0xf));
 	Reg_Sync_Writel(DRAMC_AO_CHA_BASE_ADDR+0x38, test_agent_base_temp);
 	/*pr_info("\n\n[LastDRAMC] temp addr =0x%x",test_agent_base_temp);*/
-
+	return 1;
 }
+EXPORT_SYMBOL(mt_dramc_ta_addr_set);
+
 #endif
 
 MODULE_DESCRIPTION("MediaTek DRAMC Driver v0.1");
