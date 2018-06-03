@@ -817,17 +817,17 @@ EXPORT_SYMBOL(dump_i2c_status);
 
 static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 {
-	u16 addr_reg;
-	u16 control_reg;
-	u16 ioconfig_reg;
-	u16 start_reg;
-	u16 int_reg;
+	u16 addr_reg = 0;
+	u16 control_reg = 0;
+	u16 ioconfig_reg = 0;
+	u16 start_reg = 0;
+	u16 int_reg = 0;
 	int tmo = i2c->adap.timeout;
-	unsigned int speed_hz;
+	unsigned int speed_hz = 0;
 	bool isDMA = false;
-	int data_size;
+	int data_size = 0;
 	u8 *ptr;
-	int ret;
+	int ret = 0;
 	/* u16 ch_offset; */
 
 	i2c->trans_stop = false;
@@ -1099,8 +1099,11 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		dev_info(i2c->dev, "SLAVE_ADDR=0x%x (shadow RG)",
 			i2c_readw_shadow(i2c, OFFSET_SLAVE_ADDR));
 		mt_i2c_init_hw(i2c);
-		if (i2c->ch_offset)
+		if ((i2c->ch_offset) && (start_reg & I2C_RESUME_ARBIT)) {
 			i2c_writew_shadow(I2C_RESUME_ARBIT, i2c, OFFSET_START);
+			dev_info(i2c->dev, "bus channel transferred\n");
+		}
+
 		if (start_reg & I2C_TRANSAC_START) {
 			dev_info(i2c->dev, "bus tied low/high(0x%x)\n",
 				start_reg);
@@ -1111,8 +1114,8 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR |
 	    I2C_TIMEOUT | I2C_BUS_ERR | I2C_IBI)) {
 		dev_info(i2c->dev,
-			"error:addr=0x%x,irq_stat=0x%x,ch_offset=0x%x\n",
-			i2c->addr, i2c->irq_stat, i2c->ch_offset);
+			"error:addr=0x%x,irq_stat=0x%x,ch_offset=0x%x,mask:0x%x\n",
+			i2c->addr, i2c->irq_stat, i2c->ch_offset, int_reg);
 
 		/* clear fifo addr:bit2,multi-chn;bit0,normal */
 		i2c_writew(I2C_FIFO_ADDR_CLR_MCH | I2C_FIFO_ADDR_CLR,
@@ -1121,15 +1124,23 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		if (i2c->ext_data.isEnable ==  false ||
 			i2c->ext_data.isFilterMsg == false)
 			i2c_dump_info(i2c);
+		else
+			dev_info(i2c->dev, "addr:0x%x,ext_data skip more log\n",
+				i2c->addr);
+
+		if ((i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)))
+			dev_info(i2c->dev, "addr:0x%x,ACK error\n", i2c->addr);
 
 		if (i2c->irq_stat & I2C_TIMEOUT)
-			dev_info(i2c->dev, "scl timeout error.\n");
+			dev_info(i2c->dev, "addr:0x%x,SCL tied low timeout error\n",
+				i2c->addr);
 
-		if ((i2c->irq_stat & I2C_TRANSAC_COMP) && i2c->ch_offset &&
-		    (!(i2c->irq_stat & I2C_BUS_ERR))) {
-			dev_info(i2c->dev, "trans done with error.");
-			return -EREMOTEIO;
-		}
+		if ((i2c->irq_stat & I2C_BUS_ERR))
+			dev_info(i2c->dev,
+				"bus error:start=0x%x,ch_err=0x%x,dbg_stat=0x%x\n",
+				i2c_readw(i2c, OFFSET_START),
+				i2c_readw(i2c, OFFSET_ERROR),
+				i2c_readw(i2c, OFFSET_DEBUGSTAT));
 
 		if ((i2c->irq_stat & I2C_IBI)) {
 			dev_info(i2c->dev,
@@ -1137,20 +1148,23 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 				i2c_readw(i2c, OFFSET_START),
 				i2c_readw(i2c, OFFSET_ERROR),
 				i2c_readw(i2c, OFFSET_DEBUGSTAT));
-			return -EREMOTEIO;
 		}
-		if ((i2c->irq_stat & I2C_BUS_ERR)) {
-			dev_info(i2c->dev,
-				"bus error:start=0x%x,ch_err=0x%x,DEBUG_STAT=0x%x\n",
-				i2c_readw(i2c, OFFSET_START),
-				i2c_readw(i2c, OFFSET_ERROR),
-				i2c_readw(i2c, OFFSET_DEBUGSTAT));
+
+		if ((i2c->irq_stat & I2C_TRANSAC_COMP) && i2c->ch_offset &&
+		    (!(i2c->irq_stat & I2C_BUS_ERR))) {
+			dev_info(i2c->dev, "trans done with error");
 			return -EREMOTEIO;
 		}
 
-		mt_i2c_init_hw(i2c);
-		if (i2c->ch_offset)
-			i2c_writew_shadow(I2C_RESUME_ARBIT, i2c, OFFSET_START);
+		/* Need init&kick if (intr_state&intr_mask) is greater than 1 */
+		if ((i2c->irq_stat & int_reg) > 1) {
+			mt_i2c_init_hw(i2c);
+			if (i2c->ch_offset) {
+				i2c_writew_shadow(I2C_RESUME_ARBIT,
+					i2c, OFFSET_START);
+				dev_info(i2c->dev, "bus channel transferred\n");
+			}
+		}
 		return -EREMOTEIO;
 	}
 	if (i2c->op != I2C_MASTER_WR && isDMA == false) {
@@ -1167,7 +1181,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			ptr++;
 		}
 	}
-	dev_dbg(i2c->dev, "i2c transfer done.\n");
+	dev_dbg(i2c->dev, "i2c transferred done.\n");
 
 	return 0;
 }
