@@ -1128,10 +1128,30 @@ int ufshcd_copy_query_response(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
  */
 static inline void ufshcd_hba_capabilities(struct ufs_hba *hba)
 {
+	u32 nutrs;
+
 	hba->capabilities = ufshcd_readl(hba, REG_CONTROLLER_CAPABILITIES);
 
 	/* nutrs and nutmrs are 0 based values */
-	hba->nutrs = (hba->capabilities & MASK_TRANSFER_REQUESTS_SLOTS) + 1;
+
+	/*
+	 * MTK PATCH:
+	 *
+	 * Fix NUTRS if required.
+	 *
+	 * New NUTRS is parsed in vendor init vop and saved in hba->nutrs.
+	 * hba->nutrs will be 0 if no limitation.
+	 *
+	 * For example, if file-based encryption is enabled,
+	 * NUTRS may be limited by the maximum number of crypto configurations.
+	 */
+	nutrs = (hba->capabilities & MASK_TRANSFER_REQUESTS_SLOTS) + 1;
+
+	if (!hba->nutrs)
+		hba->nutrs = nutrs;
+	else
+		hba->nutrs = min_t(unsigned int, nutrs, hba->nutrs);
+
 	hba->nutmrs =
 	((hba->capabilities & MASK_TASK_MANAGEMENT_REQUEST_SLOTS) >> 16) + 1;
 }
@@ -1399,7 +1419,7 @@ static void ufshcd_prepare_req_desc_hdr(struct ufs_hba *hba,
 		dword_0 = data_direction | (lrbp->command_type
 				<< UPIU_COMMAND_TYPE_OFFSET);
 
-#ifdef CONFIG_MTK_HW_FDE
+#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
 	if (lrbp->crypto_en) {
 		dword_0 |= (1 << UPIU_COMMAND_CRYPTO_EN_OFFSET);  /* crypto enable */
 		dword_0 |= lrbp->crypto_cfgid;
@@ -1572,10 +1592,6 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	int tag;
 	int err = 0;
 	int cmd_allowed = 0;
-#ifdef CONFIG_MTK_HW_FDE
-	int hw_crypto_en = 0;
-	u32 dunl, dunu, lba;
-#endif
 
 	hba = shost_priv(host);
 
@@ -1601,9 +1617,6 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 		cmd->scsi_done(cmd);
 		goto out_unlock;
 	}
-
-	/* MTK Patch: Check if HW FDE key change is required */
-	ufs_mtk_hwfde_key_config(hba, cmd);
 
 	/* MTK Patch: Check if this cmd can get ticket */
 	err = ufs_mtk_perf_heurisic_if_allow_cmd(hba, cmd);
@@ -1648,22 +1661,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 
 	WARN_ON(hba->clk_gating.state != CLKS_ON);
 
-#ifdef CONFIG_MTK_HW_FDE
-	if (cmd->request->bio) {
-		hw_crypto_en = cmd->request->bio->bi_hw_fde;
-
-		if (hw_crypto_en) {
-			lba = ((cmd->cmnd[2]) << 24) | ((cmd->cmnd[3]) << 16) |
-			((cmd->cmnd[4]) << 8) | (cmd->cmnd[5]);
-
-			ufs_mtk_crypto_cal_dun(UFS_CRYPTO_ALGO_ESSIV_AES_CBC, lba, &dunl, &dunu);
-		}
-	}
-#endif
-
 	ufs_mtk_cache_setup_cmd(cmd);
-
-	ufs_mtk_dbg_dump_scsi_cmd(hba, cmd, UFSHCD_DBG_PRINT_QCMD_EN);
 
 	lrbp = &hba->lrb[tag];
 
@@ -1677,15 +1675,33 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	lrbp->req_abort_skip = false;
 	lrbp->command_type = UTP_CMD_TYPE_SCSI;
 
-#ifdef CONFIG_MTK_HW_FDE
-	if (hw_crypto_en) {
-		lrbp->crypto_cfgid = 0;
-		lrbp->crypto_dunl = dunl;
-		lrbp->crypto_dunu = dunu;
-		lrbp->crypto_en = 1;
-	} else
-		lrbp->crypto_en = 0;
-#endif
+	/*
+	 * file-based inline encryption:
+	 * call UFS registered decryption/encryption function.
+	 */
+	if (hie_request_crypted(cmd->request)) {
+		struct ufs_crypt_info info = {
+			.hba = hba,
+			.cmd = cmd,
+		};
+
+		if (ufs_mtk_is_data_write_cmd(cmd->cmnd[0]))
+			err = hie_encrypt(ufs_mtk_hie_get_dev(), cmd->request, &info);
+		else
+			err = hie_decrypt(ufs_mtk_hie_get_dev(), cmd->request, &info);
+
+		if (err) {
+			err = -EIO;
+			clear_bit_unlock(tag, &hba->lrb_in_use);
+			dev_info(hba->dev, "%s: fail in crypto hook, req: %p\n", __func__, cmd->request);
+			goto out;
+		}
+	} else {
+		/* configuration for other disk encryption method (e.g., hw fde) or not encrypted */
+		ufs_mtk_hwfde_cfg_cmd(hba, cmd);
+	}
+
+	ufs_mtk_dbg_dump_scsi_cmd(hba, cmd, UFSHCD_DBG_PRINT_QCMD_EN);
 
 	/* form UPIU before issuing the command */
 	ufshcd_compose_upiu(hba, lrbp);
@@ -1751,7 +1767,7 @@ static int ufshcd_compose_dev_cmd(struct ufs_hba *hba,
 	lrbp->intr_cmd = true; /* No interrupt aggregation */
 	hba->dev_cmd.type = cmd_type;
 
-#ifdef CONFIG_MTK_HW_FDE
+#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
 	lrbp->crypto_en = 0;
 #endif
 
@@ -3686,6 +3702,22 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 						delta_us);
 				}
 			}
+
+			/*
+			 * Callback for hie dummy crypto.
+			 *
+			 * Dummy crypto use XOR as crypto methodology for hie logic verification:
+			 *
+			 * For write, XOR is applied on bio data buffer directly to emulate
+			 * "encryption" thus we need to "reverse it" (XOR buffer again)
+			 * after transfer done (written to disk) and before buffer is used
+			 * by upper users in the future.
+			 *
+			 * For read, XOR shall be applied on bio data buffer to emulate
+			 * "decryption".
+			 */
+			hie_req_end(req);
+
 			/* Do not touch lrbp after scsi done */
 			ufs_mtk_biolog_scsi_done_start(index);
 			cmd->scsi_done(cmd);
@@ -6453,7 +6485,7 @@ int ufshcd_runtime_suspend(struct ufs_hba *hba)
 
 	ret = ufshcd_suspend(hba, UFS_RUNTIME_PM);
 
-	dev_dbg(hba->dev, "rs,ret %d,%d us\n", ret, (int)ktime_to_us(ktime_sub(ktime_get(), start)));
+	dev_info(hba->dev, "rs,ret %d,%d us\n", ret, (int)ktime_to_us(ktime_sub(ktime_get(), start)));
 
 	return ret;
 }
@@ -6494,7 +6526,7 @@ int ufshcd_runtime_resume(struct ufs_hba *hba)
 		return 0;
 	else {
 		ret = ufshcd_resume(hba, UFS_RUNTIME_PM);
-		dev_dbg(hba->dev, "rr,ret %d,%d us\n", ret, (int)ktime_to_us(ktime_sub(ktime_get(), start)));
+		dev_info(hba->dev, "rr,ret %d,%d us\n", ret, (int)ktime_to_us(ktime_sub(ktime_get(), start)));
 		return ret;
 	}
 }

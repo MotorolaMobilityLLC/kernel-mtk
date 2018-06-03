@@ -18,7 +18,11 @@
 #include <linux/kernel.h>
 #include <mt-plat/sync_write.h>
 
-#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI) || defined(CONFIG_MTK_UFS_BOOTING)
+#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
+#define _STORAGE_HW_CRYPTO
+#endif
+
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI) || defined(_STORAGE_HW_CRYPTO)
 /* Error Code */
 #define SIP_SVC_E_SUCCESS               0
 #define SIP_SVC_E_NOT_SUPPORTED         -1
@@ -114,6 +118,10 @@
 
 /* UFS generic SMC call */
 #define MTK_SIP_KERNEL_UFS_CTL				(0x82000260 | MTK_SIP_SMC_AARCH_BIT)
+
+/* HIE related SMC call */
+#define MTK_SIP_KERNEL_CRYPTO_HIE_CFG_REQUEST  (0x8200024E | MTK_SIP_SMC_AARCH_BIT)
+#define MTK_SIP_KERNEL_CRYPTO_HIE_INIT         (0x8200024F | MTK_SIP_SMC_AARCH_BIT)
 
 #define MTK_SIP_KERNEL_DRAM_DCS_CHB		(0x82000289 | MTK_SIP_SMC_AARCH_BIT)
 #define MTK_SIP_KERNEL_MSG                  (0x820002ff | MTK_SIP_SMC_AARCH_BIT)
