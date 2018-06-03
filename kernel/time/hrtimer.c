@@ -1081,6 +1081,11 @@ int hrtimer_try_to_cancel(struct hrtimer *timer)
 	unlock_hrtimer_base(timer, &flags);
 
 #if defined(CONFIG_SMP) && !defined(CONFIG_ARM64_LSE_ATOMICS)
+
+#ifndef dmac_flush_range
+#define dmac_flush_range __dma_flush_range
+#endif
+
 	/*
 	 * MTK PATCH to fix ARM v8.0 live spinlock issue.
 	 *
@@ -1091,8 +1096,10 @@ int hrtimer_try_to_cancel(struct hrtimer *timer)
 	 * to promise that other CPU can see correct lock value to avoid
 	 * starvation or unfair spinlock competition.
 	 */
-	if (ret == -1 && irqs_disabled())
-		__flush_dcache_area(&base->cpu_base->lock, sizeof(raw_spinlock_t));
+	if (ret == -1 && irqs_disabled()) {
+		dmac_flush_range((void *)&base->cpu_base->lock,
+			(void *)&base->cpu_base->lock + sizeof(raw_spinlock_t) - 1);
+	}
 #endif
 
 	return ret;
