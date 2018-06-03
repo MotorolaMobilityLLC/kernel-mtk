@@ -30,6 +30,9 @@
 #define MTK_SMI_LARB_NR_MAX	8
 #define MT8173_MMU_EN	0xf00
 #define MT8167_MMU_EN	0xfc0
+#define MT8167_LARB0_OFF	0
+#define MT8167_LARB1_OFF	8
+#define MT8167_LARB2_OFF	21
 
 struct mtk_smi {
 	struct device	*dev;
@@ -39,6 +42,7 @@ struct mtk_smi {
 struct mtk_larb_plat {
 	int larb_nr;
 	u32 mmu_offset;
+	int port_in_larb[MTK_LARB_NR_MAX + 1];
 };
 
 struct mtk_smi_larb { /* larb: local arbiter */
@@ -119,12 +123,10 @@ int mtk_smi_larb_get(struct device *larbdev)
 				if (BIT(i) & (*larb->mmu)) {
 #ifdef CONFIG_MACH_MT8167
 					/*
-					 * for mt8167, we only config port for disp,
-					 * other larb would call m4u_config_port
-					 * in userspace.
+					 * for mt8167, we need to get the global larbid
+					 * for trustzone to config the port.
 					 */
-					if (larb->larbid == 0)
-						pseudo_config_port_tee(i);
+					pseudo_config_port_tee(i + larb->mt_plat->port_in_larb[larb->larbid]);
 #else
 					pseudo_config_port_tee(i + (larb->larbid << 5));
 #endif
@@ -218,6 +220,9 @@ static const struct mtk_larb_plat mt8173_larb_plat = {
 static const struct mtk_larb_plat mt8167_larb_plat = {
 	.larb_nr = MT8167_SMI_LARB_NR,
 	.mmu_offset = MT8167_MMU_EN,
+	.port_in_larb = {
+		MT8167_LARB0_OFF, MT8167_LARB1_OFF, MT8167_LARB2_OFF
+	},
 };
 
 static const struct of_device_id mtk_smi_larb_of_ids[] = {
