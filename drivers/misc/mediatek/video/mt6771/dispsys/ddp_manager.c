@@ -1671,24 +1671,31 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	int i = 0;
 	int *modules;
 	int module_num;
-	struct ddp_path_handle handle;
+	struct ddp_path_handle *handle;
 	struct DDP_MANAGER_CONTEXT *context = _get_context();
 
 	ASSERT(dp_handle != NULL);
-	memcpy(&handle, dp_handle, sizeof(struct ddp_path_handle));
-	modules = ddp_get_scenario_list(handle.scenario);
-	module_num = ddp_get_module_num(handle.scenario);
+	handle = kmalloc(sizeof(struct ddp_path_handle), GFP_KERNEL);
+	if (IS_ERR_OR_NULL(handle)) {
+		DDPERR("%s:%d alloc path handle fail!\n", __func__, __LINE__);
+		return 0;
+	}
 
-	DDPDUMP("--> check status on scenario %s\n", ddp_get_scenario_name(handle.scenario));
+	memcpy(handle, dp_handle, sizeof(struct ddp_path_handle));
+	modules = ddp_get_scenario_list(handle->scenario);
+	module_num = ddp_get_module_num(handle->scenario);
+
+	DDPDUMP("--> check status on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 
 	if (!(context->power_state)) {
 		DDPDUMP("cannot check ddp status due to already power off\n");
+		kfree(handle);
 		return 0;
 	}
 
 	ddp_dump_analysis(DISP_MODULE_CONFIG);
-	ddp_check_path(handle.scenario);
-	ddp_check_mutex(handle.hwmutexid, handle.scenario, handle.mode);
+	ddp_check_path(handle->scenario);
+	ddp_check_mutex(handle->hwmutexid, handle->scenario, handle->mode);
 
 	/* dump path */
 	{
@@ -1710,6 +1717,7 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	ddp_dump_reg(DISP_MODULE_CONFIG);
 	ddp_dump_reg(DISP_MODULE_MUTEX);
 
+	kfree(handle);
 	return 0;
 }
 
