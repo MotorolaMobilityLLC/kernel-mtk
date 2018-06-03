@@ -59,9 +59,7 @@ obj-y += wdma20/
 endif
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6775) $(CONFIG_MACH_MT6771) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6739)))
-obj-y += layering_rule_base/v1/
-endif
+obj-y += layering_rule_base/
 
 ccflags-y += \
 				-I$(srctree)/drivers/misc/mediatek/video/include     \
