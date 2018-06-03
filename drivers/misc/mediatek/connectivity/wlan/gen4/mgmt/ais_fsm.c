@@ -1977,6 +1977,13 @@ VOID aisFsmRunEventAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			/* 4 <3> invoke abort handler */
 			aisFsmStateAbort(prAdapter, ucReasonOfDisconnect, fgDelayIndication);
 		} else {
+			/* 1. release channel */
+			aisFsmReleaseCh(prAdapter);
+			/* 2.1 stop join timeout timer */
+			cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rJoinTimeoutTimer);
+			/* 2.2 reset local variable */
+			prAisFsmInfo->fgIsInfraChannelFinished = TRUE;
+
 			prAdapter->prAisBssInfo->ucReasonOfDisconnect = ucReasonOfDisconnect;
 			aisFsmSteps(prAdapter, AIS_STATE_IDLE);
 		}
