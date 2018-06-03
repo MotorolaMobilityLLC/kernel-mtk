@@ -371,8 +371,7 @@ extern int hw_trig_i2c_enable(struct i2c_adapter *adap);
 extern int hw_trig_i2c_disable(struct i2c_adapter *adap);
 extern int hw_trig_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 		int num);
-extern int i2c_ccu_enable(struct i2c_adapter *adap, struct i2c_msg *msgs,
-		int num, u16 ch_offset);
+extern int i2c_ccu_enable(struct i2c_adapter *adap, u16 ch_offset);
 extern int i2c_ccu_disable(struct i2c_adapter *adap);
 
 #endif
