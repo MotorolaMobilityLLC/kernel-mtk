@@ -222,19 +222,47 @@ int mtk_smi_larb_get_ext(struct device *larbdev)
 
 }
 
-void *mtk_iommu_iova_to_va(struct device *dev, dma_addr_t iova, size_t size)
+int mtk_iommu_iova_to_va(struct device *dev,
+			 dma_addr_t iova,
+			 unsigned long *map_va,
+			 size_t size)
 {
-#ifdef CONFIG_MTK_M4U
-	unsigned long map_va;
-	unsigned int map_size;
+	struct iommu_domain *domain;
+	unsigned int page_count;
+	unsigned int i = 0;
+	struct page **pages;
+	void *va = NULL;
+	phys_addr_t pa = 0;
 
-	m4u_mva_map_kernel((unsigned int)iova,
-			   (unsigned int)size,
-			   &map_va, &map_size);
-	return (void *)map_va;
-#else
-	return NULL;
-#endif
+	if (dev == NULL)
+		return 1;
+
+	domain = iommu_get_domain_for_dev(dev);
+
+	if (domain)
+		pa = iommu_iova_to_phys(domain, iova);
+
+	if ((domain == NULL) || (pa == 0)) {
+		pr_info("func %s dom: %p, pa: 0x%lx\n",
+		       __func__, domain, (unsigned long)pa);
+		return 1;
+	}
+
+	page_count = (size + PAGE_SIZE - 1) / PAGE_SIZE;
+	pages = kmalloc((sizeof(struct page *) * page_count), GFP_KERNEL);
+	for (i = 0; i < page_count; i++) {
+		pa = iommu_iova_to_phys(domain, iova + i * PAGE_SIZE);
+		pages[i] = pfn_to_page(pa >> PAGE_SHIFT);
+	}
+
+	va = vmap(pages, page_count, VM_MAP, PAGE_KERNEL);
+	if (va == 0)
+		pr_info("func %s map iova(0x%lx) fail to null\n",
+		       __func__, (unsigned long)iova);
+	*map_va = (unsigned long)va;
+
+	kfree(pages);
+	return 0;
 }
 
 

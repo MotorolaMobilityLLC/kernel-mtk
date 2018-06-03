@@ -7,8 +7,9 @@ ccflags-y += -I$(srctree)/include/trustzone/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/trustzone
 endif
 ccflags-y += -I$(srctree)/drivers/iommu
+ccflags-y += -I$(srctree)/arch/arm/
 
-ifneq (,$(filter $(strip $(CONFIG_MTK_PLATFORM)), "mt6765" "mt6758"))
+ifneq (,$(filter $(strip $(CONFIG_MTK_PLATFORM)), "mt6761" "mt6758"))
 obj-y += pseudo_m4u_v2.o
 else
 obj-y += pseudo_m4u.o

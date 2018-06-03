@@ -480,6 +480,8 @@ static int __finalise_sg(struct device *dev, struct scatterlist *sg, int nents,
 		unsigned int s_length = sg_dma_len(s);
 		unsigned int s_iova_len = s->length;
 
+		if (sg_page(s) == NULL)
+			s_iova_off = 0;
 		s->offset += s_iova_off;
 		s->length = s_length;
 		sg_dma_address(s) = DMA_ERROR_CODE;
@@ -564,11 +566,15 @@ int iommu_dma_map_sg(struct device *dev, struct scatterlist *sg,
 		size_t s_length = s->length;
 		size_t pad_len = (mask - iova_len + 1) & mask;
 
-		sg_dma_address(s) = s_iova_off;
-		sg_dma_len(s) = s_length;
-		s->offset -= s_iova_off;
-		s_length = iova_align(iovad, s_length + s_iova_off);
-		s->length = s_length;
+		if (sg_page(s)) {
+
+			sg_dma_address(s) = s_iova_off;
+			sg_dma_len(s) = s_length;
+			s->offset -= s_iova_off;
+			s->length = s_length;
+			s_length = iova_align(iovad, s_length + s_iova_off);
+
+
 
 		/*
 		 * Due to the alignment of our single IOVA allocation, we can
@@ -583,18 +589,21 @@ int iommu_dma_map_sg(struct device *dev, struct scatterlist *sg,
 		 *   iova_len == 0, thus we cannot dereference prev the first
 		 *   time through here (i.e. before it has a meaningful value).
 		 */
-		if (pad_len && pad_len < s_length - 1) {
-			prev->length += pad_len;
-			iova_len += pad_len;
+			if (pad_len && pad_len < s_length - 1) {
+				prev->length += pad_len;
+				iova_len += pad_len;
+			}
 		}
-
 		iova_len += s_length;
 		prev = s;
 	}
 
 	iova = __alloc_iova(domain, iova_len, dma_get_mask(dev));
-	if (!iova)
+	if (!iova) {
+		pr_info("iommu map_sg2 size %zu, 0x%llx\n",
+			iova_len, dma_get_mask(dev));
 		goto out_restore_sg;
+	}
 
 	/*
 	 * We'll leave any physical concatenation to the IOMMU driver's

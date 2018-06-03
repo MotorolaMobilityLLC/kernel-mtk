@@ -17,6 +17,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/mt6761-pinfunc.h>
+#include <dt-bindings/memory/mt6761-larb-port.h>
 #include <dt-bindings/mmc/mt6761-msdc.h>
 #include <dt-bindings/clock/mt6761-clk.h>
 #include <dt-bindings/iio/mt635x-auxadc.h>
@@ -803,11 +804,13 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x10200000 0 0x4000>;
 	};
 
-	m4u@10205000 {
+	iommu: m4u@10205000 {
 		cell-index = <0>;
-		compatible = "mediatek,m4u";
+		compatible = "mediatek,iommu_v0";
 		reg = <0 0x10205000 0 0x1000>;
-		interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_LOW>;
+		mediatek,larbs = <&smi_larb0 &smi_larb1 &smi_larb2>;
+		interrupts = <GIC_SPI 158 IRQ_TYPE_LEVEL_LOW>;
+		#iommu-cells = <1>;
 	};
 
 	devapc@10207000 {
@@ -2895,6 +2898,37 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		mediatek,clkbuf-quantity = <7>;
 		mediatek,clkbuf-config = <2 1 1 2 0 0 0>;
 		mediatek,clkbuf-driving-current = <1 1 1 1 1 1 1>;
+	};
+	pseudo_m4u {
+		compatible = "mediatek,mt-pseudo_m4u";
+		iommus = <&iommu M4U_PORT_DISP_RDMA0>;
+	};
+
+	pseudo_m4u-larb0 {
+		compatible = "mediatek,mt-pseudo_m4u-port";
+		mediatek,larbid = <0>;
+		iommus = <&iommu M4U_PORT_DISP_OVL0>,
+			 <&iommu M4U_PORT_DISP_2L_OVL0_LARB0>,
+			 <&iommu M4U_PORT_DISP_RDMA0>,
+			 <&iommu M4U_PORT_DISP_WDMA0>,
+			 <&iommu M4U_PORT_MDP_RDMA0>,
+			 <&iommu M4U_PORT_MDP_WDMA0>,
+			 <&iommu M4U_PORT_MDP_WROT0>,
+			 <&iommu M4U_PORT_DISP_FAKE0>;
+	};
+
+	pseudo_m4u-larb1 {
+		compatible = "mediatek,mt-pseudo_m4u-port";
+		mediatek,larbid = <1>;
+		iommus = <&iommu M4U_PORT_VENC_RCPU>,
+			 <&iommu M4U_PORT_VENC_REC>;
+	};
+
+	pseudo_m4u-larb2 {
+		compatible = "mediatek,mt-pseudo_m4u-port";
+		mediatek,larbid = <2>;
+		iommus = <&iommu M4U_PORT_CAM_IMGO>,
+			 <&iommu M4U_PORT_CAM_RRZO>;
 	};
 };
 
