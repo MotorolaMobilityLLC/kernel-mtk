@@ -161,6 +161,14 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x7,
 			PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
 			PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
+
+	/* set vsram_others sleep to 0.85v */
+	pmic_config_interface(PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_ADDR, 0x35,
+			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_MASK,
+			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_SHIFT);
+	pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x7,
+			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
+			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
 #endif
 
 	rtc_clock_enable(0);
@@ -227,6 +235,14 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x3,
 			PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
 			PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
+
+	/* set vsram_others sleep to 1.15v */
+	pmic_config_interface(PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_ADDR, 0x65,
+			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_MASK,
+			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_SHIFT);
+	pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x5,
+			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
+			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
 #endif
 
 	rtc_clock_enable(1);
