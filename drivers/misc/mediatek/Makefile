@@ -123,6 +123,7 @@ obj-$(CONFIG_MTK_LCM) += lcm/
 obj-$(CONFIG_MTK_LCM) += ext_disp/
 obj-$(CONFIG_MTK_HDMI_SUPPORT) += hdmi/
 obj-$(CONFIG_MTK_FB) += video/
+obj-y += dfrc/
 obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/
 obj-$(CONFIG_MTK_SMI_EXT)	+= smi/
 obj-$(CONFIG_MTK_CQDMA) += cqdma/
