@@ -514,14 +514,18 @@ static void trigger_driver(struct work_struct *work)
 	break;
 	case 1: /*Disable device driver*/
 		disable_ufp(hba);
+		usb3_switch_en(typec, DISABLE);
 	break;
 	case 2: /*Disable host driver*/
 		disable_dfp(hba);
+		usb3_switch_en(typec, DISABLE);
 	break;
 	case 3: /*Enable device driver*/
+		usb3_switch_en(typec, ENABLE);
 		enable_ufp(hba);
 	break;
 	case 4: /*Enable host driver*/
+		usb3_switch_en(typec, ENABLE);
 		enable_dfp(hba);
 	break;
 	case 5: /*Swap from host to device*/
