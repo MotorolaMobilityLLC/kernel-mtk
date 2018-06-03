@@ -139,20 +139,24 @@ const char *wakesrc_str[32] = {
  **************************************/
 int __spm_check_opp_level_impl(int ch)
 {
-	int opp = vcorefs_get_sw_opp();
-
+	int opp = 0;
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	opp = scp_get_dvfs_opp();
+#else
+	opp = 0;
+#endif
+#else
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	int scp_opp = scp_get_dvfs_opp();
 
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
-	if (scp_opp > OPP_0)
-		scp_opp = (NUM_OPP - 1);
-#endif
-
+	opp = vcorefs_get_sw_opp();
 	if (scp_opp >= 0)
 		opp = min(scp_opp, opp);
+#else
+	opp = vcorefs_get_sw_opp();
 #endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
-
+#endif
 	return opp;
 }
 
@@ -160,12 +164,7 @@ int __spm_check_opp_level(int ch)
 {
 	int opp;
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
-	int level[4] = {2, 1, 1, 1};
-
-#if 0 /* TODO: 6758 EP */
-	if (get_ddr_type() == TYPE_LPDDR3)
-		level[1] = 2;
-#endif
+	int level[3] = {2, 1, 0};
 #else
 	int level[4] = {4, 3, 1, 0};
 
@@ -180,8 +179,8 @@ int __spm_check_opp_level(int ch)
 		spm_crit2("%s: error opp number %d\n", __func__, opp);
 		opp = 0;
 	}
-
 	return level[opp];
+
 }
 
 unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch)
