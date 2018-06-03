@@ -48,6 +48,10 @@
 #include <ddp_aal.h>
 #include <ddp_pwm.h>
 
+#if defined(CONFIG_MACH_MT6799)
+#include "mt-plat/mtk_chip.h"
+#endif
+
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define AAL0_MODULE_NAMING (DISP_MODULE_AAL0)
@@ -96,6 +100,8 @@ static volatile int g_aal_initialed;
 static volatile bool g_aal0_is_clock_on;
 static atomic_t g_aal_allowPartial = ATOMIC_INIT(0);
 static volatile int g_led_mode = MT65XX_LED_MODE_NONE;
+static bool g_aal_hw_offset;
+static bool g_aal_dre_offset_separate;
 
 #define AAL0_OFFSET (0)
 #define AAL1_OFFSET (DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE)
@@ -771,15 +777,30 @@ static int disp_aal_write_init_regs(enum DISP_MODULE_ENUM module, void *cmdq)
 		int i, j;
 		int *gain;
 
-		DISP_REG_MASK(cmdq, DISP_AAL_DRE_MAPPING_00 + offset, (init_regs->dre_map_bypass << 4),
+		if (g_aal_hw_offset == true) {
+#if defined(CONFIG_MACH_MT6799)
+			DISP_REG_MASK(cmdq, DISP_AAL_DRE_MAPPING_00_2 + offset, (init_regs->dre_map_bypass << 4),
 			      1 << 4);
 
-		gain = init_regs->cabc_gainlmt;
-		j = 0;
-		for (i = 0; i <= 10; i++) {
-			DISP_REG_SET(cmdq, DISP_AAL_CABC_GAINLMT_TBL(i) + offset,
-				     CABC_GAINLMT(gain[j], gain[j + 1], gain[j + 2]));
-			j += 3;
+			gain = init_regs->cabc_gainlmt;
+			j = 0;
+			for (i = 0; i <= 10; i++) {
+				DISP_REG_SET(cmdq, DISP_AAL_CABC_GAINLMT_TBL_2(i) + offset,
+					     CABC_GAINLMT(gain[j], gain[j + 1], gain[j + 2]));
+				j += 3;
+			}
+#endif
+		} else {
+			DISP_REG_MASK(cmdq, DISP_AAL_DRE_MAPPING_00 + offset, (init_regs->dre_map_bypass << 4),
+			      1 << 4);
+
+			gain = init_regs->cabc_gainlmt;
+			j = 0;
+			for (i = 0; i <= 10; i++) {
+				DISP_REG_SET(cmdq, DISP_AAL_CABC_GAINLMT_TBL(i) + offset,
+					     CABC_GAINLMT(gain[j], gain[j + 1], gain[j + 2]));
+				j += 3;
+			}
 		}
 
 		AAL_DBG("Module(%d): disp_aal_write_init_regs: done", module);
@@ -855,7 +876,13 @@ static int disp_aal_write_param_to_reg(enum DISP_MODULE_ENUM module, struct cmdq
 		      DRE_REG_3(gain[21], 0, gain[22], 9, gain[23], 18), ~0);
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(10) + offset,
 		      DRE_REG_3(gain[24], 0, gain[25], 9, gain[26], 18), ~0);
-	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE_11 + offset, DRE_REG_2(gain[27], 0, gain[28], 9), ~0);
+	if (g_aal_dre_offset_separate == true) {
+		/* Write dre curve to different register */
+		DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE_11 + offset, DRE_REG_2(gain[27], 0, gain[28], 9), ~0);
+	} else {
+		/* Write dre curve to different register */
+		DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(11) + offset, DRE_REG_2(gain[27], 0, gain[28], 9), ~0);
+	}
 #else
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(0) + offset, DRE_REG_2(gain[0], 0, gain[1], 12), ~0);
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(1) + offset, DRE_REG_2(gain[2], 0, gain[3], 12), ~0);
@@ -909,15 +936,24 @@ static int aal_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config 
 
 #ifdef DISP_PLATFORM_HAS_SHADOW_REG
 		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+			unsigned long aal_shadow_ctl;
+#if defined(CONFIG_MACH_MT6799)
+			if (g_aal_hw_offset == true)
+				aal_shadow_ctl = DISP_AAL_SHADOW_CTL_2;
+			else
+				aal_shadow_ctl = DISP_AAL_SHADOW_CTL;
+#else
+			aal_shadow_ctl = DISP_AAL_SHADOW_CTL;
+#endif
 			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
 				/* full shadow mode*/
-				DISP_REG_SET(cmdq, DISP_AAL_SHADOW_CTL + offset, 0x0);
+				DISP_REG_SET(cmdq, aal_shadow_ctl + offset, 0x0);
 			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
 				/* force commit */
-				DISP_REG_SET(cmdq, DISP_AAL_SHADOW_CTL + offset, 0x2);
+				DISP_REG_SET(cmdq, aal_shadow_ctl + offset, 0x2);
 			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
 				/* bypass shadow */
-				DISP_REG_SET(cmdq, DISP_AAL_SHADOW_CTL + offset, 0x1);
+				DISP_REG_SET(cmdq, aal_shadow_ctl + offset, 0x1);
 			}
 		}
 #endif
@@ -966,18 +1002,31 @@ static void ddp_aal_backup(void)
 
 	g_aal_backup.CABC_00 = DISP_REG_GET(DISP_AAL_CABC_00);
 	g_aal_backup.CABC_02 = DISP_REG_GET(DISP_AAL_CABC_02);
-	for (i = 0; i <= 10; i++)
-		g_aal_backup.CABC_GAINLMT[i] = DISP_REG_GET(DISP_AAL_CABC_GAINLMT_TBL(i));
-
-	g_aal_backup.DRE_MAPPING = DISP_REG_GET(DISP_AAL_DRE_MAPPING_00);
+	if (g_aal_hw_offset == true) {
 #if defined(CONFIG_MACH_MT6799)
-	for (i = 0; i < (DRE_FLT_NUM-1); i++)
-		g_aal_backup.DRE_FLT_FORCE[i] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE(i));
-	g_aal_backup.DRE_FLT_FORCE[11] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE_11);
-#else
-	for (i = 0; i < DRE_FLT_NUM; i++)
-		g_aal_backup.DRE_FLT_FORCE[i] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE(i));
+		for (i = 0; i <= 10; i++)
+			g_aal_backup.CABC_GAINLMT[i] = DISP_REG_GET(DISP_AAL_CABC_GAINLMT_TBL_2(i));
+
+		g_aal_backup.DRE_MAPPING = DISP_REG_GET(DISP_AAL_DRE_MAPPING_00_2);
 #endif
+	} else {
+		for (i = 0; i <= 10; i++)
+			g_aal_backup.CABC_GAINLMT[i] = DISP_REG_GET(DISP_AAL_CABC_GAINLMT_TBL(i));
+
+		g_aal_backup.DRE_MAPPING = DISP_REG_GET(DISP_AAL_DRE_MAPPING_00);
+	}
+
+	if (g_aal_dre_offset_separate == true) {
+#if defined(CONFIG_MACH_MT6799)
+		for (i = 0; i < (DRE_FLT_NUM-1); i++)
+			g_aal_backup.DRE_FLT_FORCE[i] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE(i));
+		g_aal_backup.DRE_FLT_FORCE[11] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE_11);
+#endif
+	} else {
+		for (i = 0; i < DRE_FLT_NUM; i++)
+			g_aal_backup.DRE_FLT_FORCE[i] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE(i));
+	}
+
 	g_aal_initialed = 1;
 
 }
@@ -987,22 +1036,34 @@ static void ddp_aal_restore(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	int i;
 	const int offset = aal_get_offset(module);
 
-	if (g_aal_initialed == 1) {
-		AAL_DBG("ddp_aal_restore, module(%d)", module);
-		DISP_REG_SET(cmq_handle, DISP_AAL_CABC_00 + offset, g_aal_backup.CABC_00);
-		DISP_REG_SET(cmq_handle, DISP_AAL_CABC_02 + offset, g_aal_backup.CABC_02);
+	if (g_aal_initialed != 1)
+		return;
+
+	AAL_DBG("ddp_aal_restore, module(%d)", module);
+	DISP_REG_SET(cmq_handle, DISP_AAL_CABC_00 + offset, g_aal_backup.CABC_00);
+	DISP_REG_SET(cmq_handle, DISP_AAL_CABC_02 + offset, g_aal_backup.CABC_02);
+	if (g_aal_hw_offset == true) {
+#if defined(CONFIG_MACH_MT6799)
+		for (i = 0; i <= 10; i++)
+			DISP_REG_SET(cmq_handle, DISP_AAL_CABC_GAINLMT_TBL_2(i) + offset, g_aal_backup.CABC_GAINLMT[i]);
+
+		DISP_REG_SET(cmq_handle, DISP_AAL_DRE_MAPPING_00_2 + offset, g_aal_backup.DRE_MAPPING);
+#endif
+	} else {
 		for (i = 0; i <= 10; i++)
 			DISP_REG_SET(cmq_handle, DISP_AAL_CABC_GAINLMT_TBL(i) + offset, g_aal_backup.CABC_GAINLMT[i]);
 
 		DISP_REG_SET(cmq_handle, DISP_AAL_DRE_MAPPING_00 + offset, g_aal_backup.DRE_MAPPING);
+	}
+	if (g_aal_dre_offset_separate == true) {
 #if defined(CONFIG_MACH_MT6799)
 		for (i = 0; i < (DRE_FLT_NUM-1); i++)
 			DISP_REG_SET(cmq_handle, DISP_AAL_DRE_FLT_FORCE(i) + offset, g_aal_backup.DRE_FLT_FORCE[i]);
 		DISP_REG_SET(cmq_handle, DISP_AAL_DRE_FLT_FORCE_11 + offset, g_aal_backup.DRE_FLT_FORCE[11]);
-#else
+#endif
+	} else {
 		for (i = 0; i < DRE_FLT_NUM; i++)
 			DISP_REG_SET(cmq_handle, DISP_AAL_DRE_FLT_FORCE(i) + offset, g_aal_backup.DRE_FLT_FORCE[i]);
-#endif
 	}
 }
 
@@ -1078,6 +1139,13 @@ static int aal_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 static int aal_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	aal_clock_on(module, cmq_handle);
+#if defined(CONFIG_MACH_MT6799)
+	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
+		g_aal_hw_offset = true;
+	else
+		g_aal_dre_offset_separate = true;
+#endif
+
 	return 0;
 }
 
