@@ -46,6 +46,8 @@
 #include "i2c-mtk.h"
 #include <m4u.h>
 
+#include <linux/clk.h>
+
 #include "ccu_drv.h"
 #include "ccu_cmn.h"
 #include "ccu_reg.h"
@@ -57,6 +59,8 @@
 
 #define CCU_DEV_NAME            "ccu"
 
+
+struct clk *ccu_clock_ctrl;
 
 ccu_device_t *g_ccu_device;
 static ccu_power_t power;
@@ -951,6 +955,24 @@ static int ccu_free_command(ccu_cmd_st *cmd)
 	return 0;
 }
 
+int ccu_clock_enable(void)
+{
+	int ret;
+
+	LOG_DBG_MUST("ccu_clock_enable.\n");
+
+	ret = clk_prepare_enable(ccu_clock_ctrl);
+	if (ret)
+		LOG_ERR("clock enable fail.\n");
+
+	return ret;
+}
+
+void ccu_clock_disable(void)
+{
+	LOG_DBG_MUST("ccu_clock_disable.\n");
+	clk_disable_unprepare(ccu_clock_ctrl);
+}
 
 static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
@@ -1338,6 +1360,12 @@ static int ccu_probe(struct platform_device *pdev)
 
 			g_ccu_device->camsys_base = (unsigned long)of_iomap(node, 0);
 			LOG_DBG("ccu_base_camsys=0x%lx\n", g_ccu_device->camsys_base);
+		}
+		/* get Clock control from device tree.  */
+		{
+			ccu_clock_ctrl = devm_clk_get(g_ccu_device->dev, "CCU_CLK_CAM_CCU");
+			if (ccu_clock_ctrl == NULL)
+				LOG_ERR("Get clock ctrl fail.\n");
 		}
 		/**/
 		g_ccu_device->irq_num = irq_of_parse_and_map(node, 0);
