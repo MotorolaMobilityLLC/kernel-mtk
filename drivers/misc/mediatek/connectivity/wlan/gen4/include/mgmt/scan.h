@@ -349,6 +349,7 @@ struct _BSS_DESC_T {
 	UINT_8 aucRawBuf[CFG_RAW_BUFFER_SIZE];
 	UINT_8 aucIEBuf[CFG_IE_BUFFER_SIZE];
 	UINT_8 ucJoinFailureCount;
+	UINT_16 u2JoinStatus;
 	OS_SYSTIME rJoinFailTime;
 	struct AIS_BLACKLIST_ITEM *prBlack;
 	UINT_16 u2StaCnt;
