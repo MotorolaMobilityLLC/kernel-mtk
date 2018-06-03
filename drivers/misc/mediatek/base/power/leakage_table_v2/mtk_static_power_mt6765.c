@@ -22,6 +22,7 @@ char *spower_name[] = {
 	"MTK_SPOWER_CCI",
 	"MTK_SPOWER_GPU",
 	"MTK_SPOWER_VCORE",
+	"MTK_SPOWER_VMD",
 	"MTK_SPOWER_MODEM",
 
 	"MTK_SPOWER_MAX"
@@ -69,12 +70,12 @@ struct spower_leakage_info spower_lkg_info[MTK_SPOWER_MAX] = {
 		.v_of_fuse = V_OF_FUSE_VCORE,
 		.t_of_fuse = T_OF_FUSE,
 	},
-	[MTK_MD1_LEAKAGE] = {
-		.name = __stringify(MTK_MD1_LEAKAGE),
-		.devinfo_idx = DEVINFO_IDX_MD1,
-		.devinfo_offset = DEVINFO_OFF_MD1,
-		.value = DEF_MD1_LEAKAGE,
-		.v_of_fuse = V_OF_FUSE_MD1,
+	[MTK_VMD_LEAKAGE] = {
+		.name = __stringify(MTK_VMD_LEAKAGE),
+		.devinfo_idx = DEVINFO_IDX_VMD,
+		.devinfo_offset = DEVINFO_OFF_VMD,
+		.value = DEF_VMD_LEAKAGE,
+		.v_of_fuse = V_OF_FUSE_VMD,
 		.t_of_fuse = T_OF_FUSE,
 	},
 	[MTK_MODEM_LEAKAGE] = {
