@@ -70,6 +70,12 @@
 * #include <mt-plat/mt_lpae.h>
 */
 
+#include <linux/ftrace.h>
+
+#ifdef AUDIO_VCOREFS_SUPPORT
+#include <mtk_vcorefs_manager.h>
+#endif
+
 
 static DEFINE_SPINLOCK(afe_control_lock);
 static DEFINE_SPINLOCK(afe_sram_control_lock);
@@ -131,6 +137,8 @@ static struct mtk_afe_platform_ops *s_afe_platform_ops;
 
 #define IrqShortCounter  512
 #define SramBlockSize (4096)
+
+static bool ScreenState;
 
 /*
  * Function Forward Declaration
@@ -2967,6 +2975,61 @@ bool is_irq_from_ext_module(void)
 {
 	return irq_from_ext_module > 0 ? true : false;
 }
+
+/* VCORE DVFS START*/
+static void vcore_dvfs_enable(bool enable, bool reset)
+{
+#ifdef AUDIO_VCOREFS_SUPPORT
+	static DEFINE_MUTEX(vcore_control_mutex);
+	static int counter;
+
+	/* pr_warn("%s(), Caller %pf -> %pf\n", __func__, (void *)CALLER_ADDR1, (void *)CALLER_ADDR2); */
+	pr_warn("%s(), counter %d, enable %d, reset %d\n", __func__, counter, enable, reset);
+
+	mutex_lock(&vcore_control_mutex);
+	if (enable) {
+		counter++;
+		if (counter == 1) {
+			vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_ULTRA_LOW_PWR);
+			pr_warn("%s(), OPPI_ULTRA_LOW_PWR\n", __func__);
+		}
+	} else {
+		counter--;
+		if (counter == 0) {
+			vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_UNREQ);
+			pr_warn("%s(), OPPI_UNREQ\n", __func__);
+		}
+	}
+
+	if (reset) {
+		counter = 0;
+		vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_UNREQ);
+	}
+	mutex_unlock(&vcore_control_mutex);
+#endif
+}
+
+int vcore_dvfs(bool *enable, bool reset)
+{
+	if (ScreenState == false && reset == false && *enable == false) {
+		*enable = true;
+		vcore_dvfs_enable(true, false);
+	} else if ((ScreenState == true || reset == true) && *enable == true) {
+		*enable = false;
+		vcore_dvfs_enable(false, false);
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(vcore_dvfs);
+
+
+void set_screen_state(bool state)
+{
+	ScreenState = state;
+}
+EXPORT_SYMBOL(set_screen_state);
+/* VCORE DVFS END*/
 
 struct timeval ext_time;
 struct timeval ext_time_prev;

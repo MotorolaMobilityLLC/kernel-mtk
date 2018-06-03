@@ -71,6 +71,9 @@ static struct snd_dma_buffer *Capture_dma_buf;
 static AudioDigtalI2S *mAudioDigitalI2S;
 static bool mCaptureUseSram;
 
+static bool vcore_dvfs_enable;
+
+
 /*
  *    function implementation
  */
@@ -282,6 +285,7 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 {
 	AudDrv_ADC_Clk_Off();
 	AudDrv_Clk_Off();
+	vcore_dvfs(&vcore_dvfs_enable, true);
 	return 0;
 }
 
@@ -290,7 +294,6 @@ static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 	pr_aud("mtk_capture_alsa_start\n");
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
 	StartAudioCaptureHardware(substream);
-
 	return 0;
 }
 
@@ -313,6 +316,7 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos,
 				void __user *dst, snd_pcm_uframes_t count)
 {
+	vcore_dvfs(&vcore_dvfs_enable, false);
 	return mtk_memblk_copy(substream, channel, pos, dst, count, VUL_Control_context, Soc_Aud_Digital_Block_MEM_VUL);
 }
 
