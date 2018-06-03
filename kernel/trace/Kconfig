@@ -243,6 +243,7 @@ config FTRACE_SYSCALLS
 
 config TRACER_SNAPSHOT
 	bool "Create a snapshot trace buffer"
+	default y
 	select TRACER_MAX_TRACE
 	help
 	  Allow tracing users to take snapshot of the current buffer using the
