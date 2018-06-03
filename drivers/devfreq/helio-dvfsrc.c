@@ -19,6 +19,7 @@
 #include <linux/platform_device.h>
 #include <linux/pm_qos.h>
 #include <linux/sched.h>
+#include <linux/mutex.h>
 
 #include "governor.h"
 
@@ -35,6 +36,7 @@
 #endif
 
 static struct helio_dvfsrc *dvfsrc;
+static DEFINE_MUTEX(sw_req1_mutex);
 
 #define DVFSRC_REG(offset) (dvfsrc->regs + offset)
 #define DVFSRC_SRAM_REG(offset) (dvfsrc->sram_regs + offset)
@@ -151,6 +153,7 @@ static int commit_data(int type, int data, int check_spmfw)
 		dvfsrc_set_sw_bw(type, data);
 		break;
 	case PM_QOS_DDR_OPP:
+		mutex_lock(&sw_req1_mutex);
 		if (data >= DDR_OPP_NUM || data < 0)
 			data = DDR_OPP_NUM - 1;
 
@@ -162,8 +165,10 @@ static int commit_data(int type, int data, int check_spmfw)
 		if (!is_opp_forced() && check_spmfw)
 			ret = wait_for_completion(get_cur_ddr_opp() <= opp,
 					DVFSRC_TIMEOUT);
+		mutex_unlock(&sw_req1_mutex);
 		break;
 	case PM_QOS_VCORE_OPP:
+		mutex_lock(&sw_req1_mutex);
 		if (data >= VCORE_OPP_NUM || data < 0)
 			data = VCORE_OPP_NUM - 1;
 
@@ -175,6 +180,7 @@ static int commit_data(int type, int data, int check_spmfw)
 		if (!is_opp_forced() && check_spmfw)
 			ret = wait_for_completion(get_cur_vcore_opp() <= opp,
 					DVFSRC_TIMEOUT);
+		mutex_unlock(&sw_req1_mutex);
 		break;
 	case PM_QOS_SCP_VCORE_REQUEST:
 		if (data >= VCORE_OPP_NUM || data < 0)
