@@ -117,6 +117,9 @@ scanP2pProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter,
 				 IN P_BSS_DESC_T prBssDesc, IN P_WLAN_BEACON_FRAME_T prWlanBeaconFrame)
 {
 	BOOLEAN fgIsSkipThisBeacon = FALSE;
+	P_P2P_DEV_FSM_INFO_T prP2pDevFsmInfo = (P_P2P_DEV_FSM_INFO_T) NULL;
+
+	prP2pDevFsmInfo = prAdapter->rWifiVar.prP2pDevFsmInfo;
 
 	if (prBssDesc->fgIsP2PPresent) {
 		if ((prBssDesc->fgIsConnected) &&	/* P2P GC connected. */
@@ -170,7 +173,12 @@ scanP2pProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter,
 			rChannelInfo.eBand = prBssDesc->eBand;
 			prBssDesc->fgIsP2PReport = TRUE;
 
-			DBGLOG(P2P, STATE, "indicate %s [%d]\n", prBssDesc->aucSSID, prBssDesc->ucChannelNum);
+			if (prP2pDevFsmInfo && prP2pDevFsmInfo->rScanReqInfo.fgIsScanRequest)
+				DBGLOG(P2P, INFO, "indicate [%pM][%s][%s][ch %d]\n",
+					prWlanBeaconFrame->aucBSSID,
+					ieee80211_is_beacon(prWlanBeaconFrame->u2FrameCtrl) ?
+						"Beacon" : "Probe Response",
+					prBssDesc->aucSSID, prBssDesc->ucChannelNum);
 
 			kalP2PIndicateBssInfo(prAdapter->prGlueInfo,
 					      (PUINT_8) prSwRfb->pvHeader,

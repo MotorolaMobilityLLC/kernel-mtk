@@ -710,15 +710,16 @@ VOID p2pDevFsmRunEventMgmtTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			break;
 		}
 
-		DBGLOG(P2P, TRACE, " Device Interface\n");
-		DBGLOG(P2P, STATE, "p2pDevFsmRunEventMgmtTx\n");
+		DBGLOG(P2P, TRACE, "p2pDevFsmRunEventMgmtTx with Device Interface\n");
 
 		prMgmtTxMsg->ucBssIdx = P2P_DEV_BSS_INDEX;
 
 		prP2pDevFsmInfo = prAdapter->rWifiVar.prP2pDevFsmInfo;
 
-		if (prP2pDevFsmInfo == NULL)
+		if (prP2pDevFsmInfo == NULL) {
+			DBGLOG(P2P, WARN, "p2pDevFsmInfo not Initiated\n");
 			break;
+		}
 
 		prP2pChnlReqInfo = &(prP2pDevFsmInfo->rChnlReqInfo);
 		prP2pMgmtTxReqInfo = &(prP2pDevFsmInfo->rMgmtTxInfo);
@@ -788,9 +789,19 @@ p2pDevFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 {
 	BOOLEAN fgIsSuccess = FALSE;
 	P_P2P_DEV_FSM_INFO_T prP2pDevFsmInfo = (P_P2P_DEV_FSM_INFO_T) NULL;
+	PUINT_64 pu8GlCookie = (PUINT_64) NULL;
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMsduInfo != NULL));
+
+		if (!prMsduInfo->prPacket) {
+			DBGLOG(P2P, WARN, "Freed Msdu, do not indicate to host\n");
+			break;
+		}
+
+		pu8GlCookie =
+			(PUINT_64) ((ULONG) prMsduInfo->prPacket +
+				(ULONG) prMsduInfo->u2FrameLength + MAC_TX_RESERVED_FIELD);
 
 		prP2pDevFsmInfo = prAdapter->rWifiVar.prP2pDevFsmInfo;
 
@@ -798,10 +809,11 @@ p2pDevFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 			p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo, P2P_DEV_STATE_OFF_CHNL_TX);
 
 		if (rTxDoneStatus != TX_RESULT_SUCCESS) {
-			DBGLOG(P2P, TRACE, "Mgmt Frame TX Fail, Status:%d.\n", rTxDoneStatus);
+			DBGLOG(P2P, INFO, "Mgmt Frame TX Fail, Status: %d. cookie: 0x%llx\n",
+				rTxDoneStatus, *pu8GlCookie);
 		} else {
 			fgIsSuccess = TRUE;
-			DBGLOG(P2P, TRACE, "Mgmt Frame TX Done.\n");
+			DBGLOG(P2P, INFO, "Mgmt Frame TX Done. cookie: 0x%llx\n", *pu8GlCookie);
 		}
 
 		kalP2PIndicateMgmtTxStatus(prAdapter->prGlueInfo, prMsduInfo, fgIsSuccess);
