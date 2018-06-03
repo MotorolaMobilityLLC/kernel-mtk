@@ -197,14 +197,8 @@ static bool lr_rsz_layout(struct disp_layer_info *disp_info)
 	int disp_idx;
 	int ratio = HRT_SCALE_UNKNOWN;
 
-	if (l_rule_info.dal_enable) {
-		rollback_all_resize_layer_to_GPU(disp_info, HRT_PRIMARY);
+	if (is_ext_path(disp_info))
 		rollback_all_resize_layer_to_GPU(disp_info, HRT_SECONDARY);
-
-		return 0;
-	} else if (is_ext_path(disp_info)) {
-		rollback_all_resize_layer_to_GPU(disp_info, HRT_SECONDARY);
-	}
 
 	for (disp_idx = 0; disp_idx < 2; disp_idx++) {
 		if (disp_info->layer_num[disp_idx] <= 0)
