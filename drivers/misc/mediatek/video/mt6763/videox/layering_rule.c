@@ -32,13 +32,17 @@ static struct layering_rule_info_t l_rule_info;
 
 int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
-	{400, 600, 600, 800},
+	{400, 400, 400, 600},
 	/* HRT_BOUND_TYPE_LP3 */
-	{400, 400, 400, 500},
+	{350, 350, 350, 350},
 	/* HRT_BOUND_TYPE_LP4_1CH */
-	{0, 400, 400, 500},
+	{350, 350, 350, 350},
 	/* HRT_BOUND_TYPE_LP4_HYBRID */
-	{400, 600, 600, 800},
+	{400, 400, 400, 600},
+	/* HRT_BOUND_TYPE_LP3_HD */
+	{750, 750, 750, 750},
+	/* HRT_BOUND_TYPE_LP4_HD */
+	{900, 900, 900, 1350},
 };
 
 int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
@@ -49,6 +53,10 @@ int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4_1CH */
 	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP4_HYBRID */
+	{1200, 1200, 1200, 1200},
+	/* HRT_BOUND_TYPE_LP3_HD */
+	{1200, 1200, 1200, 1200},
+	/* HRT_BOUND_TYPE_LP4_HD */
 	{1200, 1200, 1200, 1200},
 };
 
@@ -74,10 +82,15 @@ static int larb_mapping_table[HRT_TB_NUM] = {
  * The OVL mapping table is used to get the OVL index of correcponding layer.
  * The bit value 1 means the position of the last layer in OVL engine.
  */
+#ifndef CONFIG_MTK_ROUND_CORNER_SUPPORT
 static int ovl_mapping_table[HRT_TB_NUM] = {
 	0x00020028,
 };
-
+#else
+static int ovl_mapping_table[HRT_TB_NUM] = {
+	0x00020018,
+};
+#endif
 #define GET_SYS_STATE(sys_state) ((l_rule_info.hrt_sys_state >> sys_state) & 0x1)
 
 static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
@@ -95,13 +108,27 @@ static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 	}
 
 	l_rule_info.primary_fps = 60;
-	if (get_ddr_type() == TYPE_LPDDR3) {	/* LPDDR3 */
-		l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP3;
-	} else {								/* LPDDR4, LPDDR4X */
-		if (get_emi_ch_num() == 2)
-			l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4;
-		else
-			l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4_1CH;
+	if (get_ddr_type() == TYPE_LPDDR3) {
+		if (primary_display_get_width() < 800) {
+			/* HD or HD+ */
+			l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP3_HD;
+		} else {
+			l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP3;
+		}
+
+	} else {
+		/* LPDDR4, LPDDR4X */
+		if (primary_display_get_width() < 800) {
+			if (get_emi_ch_num() == 2)
+				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4_HD;
+			else
+				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP3_HD;
+		} else {
+			if (get_emi_ch_num() == 2)
+				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4;
+			else
+				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4_1CH;
+		}
 	}
 
 	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_END, l_rule_info.disp_path,
