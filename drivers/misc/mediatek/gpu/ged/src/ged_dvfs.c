@@ -347,19 +347,20 @@ void ged_dvfs_get_bw_record(unsigned int *pui32MaxBW,
 		while ((g_bw_head + CurMaxInst)%MAX_BW_PROFILE != g_bw_tail) {
 			idx = g_bw_head + CurMaxInst;
 			if (gsBWprofile[(idx % MAX_BW_PROFILE)].ui32MaxBW >
-				ui64MaxBW){
+				ui64MaxBW) {
 				ui64MaxBW =
 				gsBWprofile[(idx % MAX_BW_PROFILE)].ui32MaxBW;
-				}
-				ui64AvgBW +=
-				gsBWprofile[(idx % MAX_BW_PROFILE)].ui32AvgBW;
+			}
+
+			ui64AvgBW +=
+			gsBWprofile[(idx % MAX_BW_PROFILE)].ui32AvgBW;
 			CurMaxInst++;
 		}
 
 		/* Find Max BW among previous four inst */
 		ui32MaxBW = ui64MaxBW;
 		/* sampling average as GPU DVFS did (not used) */
-		/* ui32AvgBW = ui64AvgBW / CurMaxInst; */
+		/* ui32AvgBW = ui64AvgBW / cur_max_inst; */
 
 		if ((g_bw_tail + 1)%MAX_BW_PROFILE == g_bw_head) {
 			/* queue full, drop head */
@@ -370,7 +371,7 @@ void ged_dvfs_get_bw_record(unsigned int *pui32MaxBW,
  * GED_LOGE("@%s: Frame-based: ui64MaxBW:%llu, ui64AvgBW:%llu h/t %u/%u\n",
  * __func__, ui64MaxBW, ui64AvgBW, g_bw_head, g_bw_tail);
  * GED_LOGE("@%s: Frame-based: ui32MaxBW:%u, ui32AvgBW:%u, inst:%d\n",
- * __func__, ui32MaxBW, ui32AvgBW, CurMaxInst);
+ * __func__, ui32MaxBW, ui32AvgBW, cur_max_inst);
  */
 	} else {
 		g_bw_head = 0;
