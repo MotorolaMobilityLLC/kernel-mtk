@@ -994,10 +994,19 @@ bool set_chip_sine_gen_amplitude(unsigned int amp_divide)
 
 bool set_chip_afe_enable(bool enable)
 {
-	if (enable)
+	if (enable) {
 		Afe_Set_Reg(AFE_DAC_CON0, 0x1, 0x1);
-	else
+	} else {
+		int retry = 0;
+
 		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
+
+		while ((Afe_Get_Reg(AFE_DAC_MON) & 0x1) && ++retry < 100000)
+			udelay(10);
+
+		if (retry)
+			pr_debug("%s(), retry %d\n", __func__, retry);
+	}
 	return true;
 }
 
