@@ -1984,12 +1984,13 @@ static int find_lowest_rq(struct task_struct *task)
 	 * just give the caller *something* to work with from the compatible
 	 * locations.
 	 */
-	if (this_cpu != -1)
+	if (this_cpu != -1 && !cpu_isolated(this_cpu))
 		return this_cpu;
 
 	cpu = cpumask_any(lowest_mask);
 	if (cpu < nr_cpu_ids && !cpu_isolated(cpu))
 		return cpu;
+
 	return -1;
 }
 
