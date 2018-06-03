@@ -42,7 +42,7 @@ config MTK_LM_MODE
 
 config DMAUSER_PAGES
 	bool "allocate highuser movable pages from dma zone"
-	depends on MTK_LM_MODE
+	depends on MTK_LM_MODE && !MTK_MEMORY_LOWPOWER
 	help
 	  An internal debug kernel config for testing large memory mode.
 	  To test if kernel drivers are fully compatible to large
