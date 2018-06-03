@@ -90,7 +90,12 @@
 
 #define BM_DAEMON_DEFAULT_LOG_LEVEL 3
 
+enum gauge_hw_version {
+	GAUGE_HW_V1000 = 1000,
+	GAUGE_HW_V2000 = 2000,
 
+	GAUGE_HW_MAX
+};
 
 enum Fg_daemon_cmds {
 	FG_DAEMON_CMD_PRINT_LOG,
@@ -234,6 +239,7 @@ struct fuel_gauge_custom_data {
 	int versionID1;
 	int versionID2;
 	int versionID3;
+	int hardwareVersion;
 
 	/* Qmax for battery  */
 	int q_max_L_current;
@@ -319,7 +325,9 @@ struct fuel_gauge_custom_data {
 	int hwocv_swocv_diff_lt;	/* 0.1 mv */
 	int hwocv_swocv_diff_lt_temp;	/* degree */
 	int hwocv_oldocv_diff;	/* 0.1 mv */
+	int hwocv_oldocv_diff_chr;	/* 0.1 mv */
 	int swocv_oldocv_diff;	/* 0.1 mv */
+	int swocv_oldocv_diff_chr;	/* 0.1 mv */
 	int vbat_oldocv_diff;	/* 0.1 mv */
 	int tnew_told_pon_diff;	/* degree */
 	int tnew_told_pon_diff2;/* degree */
@@ -431,6 +439,9 @@ struct fuel_gauge_custom_data {
 	int zcv_car_gap_percentage;
 	int uisoc_update_type;
 
+	/* boot status */
+	int pl_charger_status;
+
 #if 0
 /*======old setting ======*/
 	/* cust_battery_meter.h */
@@ -492,16 +503,6 @@ struct fuel_gauge_custom_data {
 	/* SW Fuel gauge */
 	int apsleep_battery_voltage_compensate;
 #endif
-};
-
-struct hw_info_data {
-	int current_1;
-	int current_2;
-	int current_avg;
-	int current_avg_sign;
-	int car;
-	int ncar;
-	int time;
 };
 
 struct fuel_gauge_table_custom_data {

@@ -64,6 +64,8 @@
 
 #include <mtk_gauge_class.h>
 #include "mtk_battery_internal.h"
+#include <pmic_lbat_service.h>
+
 
 /* ============================================================ */
 /* define */
@@ -127,6 +129,8 @@ static struct gauge_consumer coulomb_minus;
 static struct gauge_consumer soc_plus;
 static struct gauge_consumer soc_minus;
 
+
+
 static struct timespec gchr_full_handler_time;
 /*sw average current*/
 static struct timespec sw_iavg_time;
@@ -137,10 +141,11 @@ static int sw_iavg_lt;
 static int sw_iavg_gap = 3000;
 
 /*sw low battery interrupt*/
-int sw_low_battery_ht_en;
-int sw_low_battery_ht_threshold;
-int sw_low_battery_lt_en;
-int sw_low_battery_lt_threshold;
+static struct lbat_user lowbat_service;
+static int sw_low_battery_ht_en;
+static int sw_low_battery_ht_threshold;
+static int sw_low_battery_lt_en;
+static int sw_low_battery_lt_threshold;
 static DEFINE_MUTEX(sw_low_battery_mutex);
 
 /*disable nafg interrupt*/
@@ -1031,6 +1036,11 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.versionID2 = sizeof(fg_cust_data);
 	fg_cust_data.versionID3 = FG_KERNEL_CMD_FROM_USER_NUMBER;
 
+	if (gauge_dev != NULL) {
+		fg_cust_data.hardwareVersion = gauge_get_hw_version();
+		fg_cust_data.pl_charger_status = gauge_dev->fg_hw_info.pl_charger_status;
+	}
+
 	fg_cust_data.q_max_L_current = Q_MAX_L_CURRENT;
 	fg_cust_data.q_max_H_current = Q_MAX_H_CURRENT;
 	fg_cust_data.q_max_t0 = g_Q_MAX_T0[g_fg_battery_id];
@@ -1143,10 +1153,12 @@ void fg_custom_init_from_header(void)
 
 	/* dod_init */
 	fg_cust_data.hwocv_oldocv_diff = HWOCV_OLDOCV_DIFF;
+	fg_cust_data.hwocv_oldocv_diff_chr = HWOCV_OLDOCV_DIFF_CHR;
 	fg_cust_data.hwocv_swocv_diff = HWOCV_SWOCV_DIFF;
 	fg_cust_data.hwocv_swocv_diff_lt = HWOCV_SWOCV_DIFF_LT;
 	fg_cust_data.hwocv_swocv_diff_lt_temp = HWOCV_SWOCV_DIFF_LT_TEMP;
 	fg_cust_data.swocv_oldocv_diff = SWOCV_OLDOCV_DIFF;
+	fg_cust_data.swocv_oldocv_diff_chr = SWOCV_OLDOCV_DIFF_CHR;
 	fg_cust_data.vbat_oldocv_diff = VBAT_OLDOCV_DIFF;
 	fg_cust_data.swocv_oldocv_diff_emb = SWOCV_OLDOCV_DIFF_EMB;
 
@@ -3447,15 +3459,14 @@ void fg_nafg_monitor(void)
 		(int)dtime.tv_sec, last_nafg_cnt);
 }
 
-void fg_update_sw_low_battery_check(void)
+void fg_update_sw_low_battery_check(unsigned int thd)
 {
 	int vbat;
 
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000)
 		return;
 
-	vbat = pmic_get_battery_voltage();
-
+	vbat = thd * 10;
 	bm_debug("[fg_update_sw_low_battery_check]vbat:%d ht:%d %d lt:%d %d\n",
 		vbat, sw_low_battery_ht_en, sw_low_battery_ht_threshold,
 		sw_low_battery_lt_en, sw_low_battery_lt_threshold);
@@ -3492,7 +3503,6 @@ void fg_drv_update_hw_status(void)
 			gauge_coulomb_start(&coulomb_test2, -10);
 #endif
 	fg_update_sw_iavg();
-	fg_update_sw_low_battery_check();
 
 	gauge_dev_get_boot_battery_plug_out_status(gauge_dev, &plugout_status, &bat_plugout_time);
 
@@ -4933,6 +4943,10 @@ static int __init battery_probe(struct platform_device *dev)
 
 		/* init ZCV INT */
 		pmic_register_interrupt_callback(FG_ZCV_NO, fg_zcv_int_handler);
+
+		lbat_user_register(&lowbat_service, "fuel gauge",
+			fg_cust_data.vbat2_det_voltage3 / 10, fg_cust_data.vbat2_det_voltage1 / 10,
+			fg_cust_data.vbat2_det_voltage2 / 10, fg_update_sw_low_battery_check);
 	}
 
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
@@ -5084,7 +5098,7 @@ static int battery_suspend(struct platform_device *dev, pm_message_t state)
 {
 	bm_debug("******** battery_suspend!! iavg=%d ********\n", FG_status.iavg_intr_flag);
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000 && FG_status.iavg_intr_flag == 1) {
-	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
+		pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
 		if (gauge_dev->fg_hw_info.iavg_lt > 0)
 			pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
 	}
@@ -5095,7 +5109,7 @@ static int battery_resume(struct platform_device *dev)
 {
 	bm_debug("******** battery_resume!! iavg=%d ********\n", FG_status.iavg_intr_flag);
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000 && FG_status.iavg_intr_flag == 1) {
-	pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
+		pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
 		if (gauge_dev->fg_hw_info.iavg_lt > 0)
 			pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
 	}
