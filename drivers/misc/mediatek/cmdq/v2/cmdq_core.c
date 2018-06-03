@@ -2411,7 +2411,7 @@ static void cmdq_core_insert_backup_instr(struct TaskStruct *pTask,
  *     >=0, okay case, return number of bytes for inserting instruction
  */
 #ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
-tatic int32_t cmdq_core_insert_backup_cookie_instr(struct TaskStruct *pTask, int32_t thread)
+static int32_t cmdq_core_insert_backup_cookie_instr(struct TaskStruct *pTask, int32_t thread)
 {
 	const enum CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
 	const enum CMDQ_DATA_REGISTER_ENUM destRegId = CMDQ_DATA_REG_DEBUG_DST;
