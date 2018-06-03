@@ -35,6 +35,7 @@ extern void __iomem *mcdi_mcupm_sram_base;
 #define MCDI_MBOX_CLUSTER_0_ATF_ACTION_DONE  (MCUPM_CFGREG_WFI_EN_SET)
 #define MCDI_MBOX_PAUSE_ACTION               (MCUPM_SRAM_MBOX_BASE + 0x00)
 #define MCDI_MBOX_AVAIL_CPU_MASK             (MCUPM_SRAM_MBOX_BASE + 0x08)
+#define MCDI_MBOX_BUCK_POWER_OFF_MASK        (MCUPM_SRAM_MBOX_BASE + 0x28)
 /* MBOX: AP read, MCUPM write */
 #define MCDI_MBOX_PAUSE_ACK                  (MCUPM_SRAM_MBOX_BASE + 0x04)
 #define MCUPM_CFGREG_CPU_PDN_STA             (MCUPM_SRAM_MBOX_BASE + 0x20)

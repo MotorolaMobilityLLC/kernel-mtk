@@ -73,6 +73,12 @@ int mcdi_get_mcdi_idle_state(int idx)
 	return mcdi_idle_state_mapping[idx];
 }
 
+/* can't control buck */
+unsigned int mcdi_get_buck_ctrl_mask(void)
+{
+	return 0;
+}
+
 void mcdi_status_init(void)
 {
 	set_mcdi_enable_status(true);
