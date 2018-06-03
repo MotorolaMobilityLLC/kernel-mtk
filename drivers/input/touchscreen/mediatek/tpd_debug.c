@@ -46,7 +46,8 @@ void tpd_debug_no_response(struct i2c_client *i2c_client)
 		i2c_master_send(i2c_client, sleep, 2);
 		msleep(delay[delay_index]);
 		for (j = 0; j < wakeup_count; j++) {
-			i2c_master_send(i2c_client, wakeup, 2);
+			if (i2c_master_send(i2c_client, wakeup, 2) != 2)
+				pr_debug("i2c_master_send wakeup fail\n");
 			if (i2c_master_send(i2c_client, wakeup, 2) == 2)
 				break;
 			msleep(20);
