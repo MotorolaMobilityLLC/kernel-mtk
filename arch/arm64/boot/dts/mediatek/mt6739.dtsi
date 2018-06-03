@@ -1732,6 +1732,7 @@
 };
 
 #include "cust_mt6739_msdc.dtsi"
+#include "trusty.dtsi"
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6357
 #include "mt6357.dtsi"
