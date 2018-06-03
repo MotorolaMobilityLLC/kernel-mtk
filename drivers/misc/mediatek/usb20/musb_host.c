@@ -538,6 +538,20 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb, struct mus
 	struct musb_hw_ep *ep = qh->hw_ep;
 	int ready = qh->is_ready;
 	int status;
+	u64 urb_val;
+
+	/* special case to handle QH memory leak */
+	urb_val = (u64)urb;
+	switch (urb_val) {
+	case QH_FREE_RESCUE_INTERRUPT:
+	case QH_FREE_RESCUE_EP_DISABLE:
+		DBG(0, "case<%d>, ep<%d>, qh<%p> use_qmu<%d>, type<%d>, is_in<%d>, empty<%d>\n",
+				(unsigned int)urb_val, hw_ep->epnum, qh, qh->is_use_qmu, qh->type,
+				is_in, list_empty(&qh->hep->urb_list));
+		goto check_recycle_qh;
+	default:
+		break;
+	}
 
 	status = (urb->status == -EINPROGRESS) ? 0 : urb->status;
 
@@ -556,6 +570,7 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb, struct mus
 	qh->is_ready = 0;
 	musb_giveback(musb, urb, status);
 
+	/* QH might be freed after giveback, check again */
 	if ((is_in && !hw_ep->in_qh)
 			|| (!is_in && !hw_ep->out_qh)
 	   ) {
@@ -564,6 +579,7 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb, struct mus
 	}
 	qh->is_ready = ready;
 
+check_recycle_qh:
 	/* reclaim resources (and bandwidth) ASAP; deschedule it, and
 	 * invalidate qh as soon as list_empty(&hep->urb_list)
 	 */
@@ -1525,7 +1541,7 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 	struct musb_hw_ep *hw_ep = musb->endpoints + epnum;
 	void __iomem *epio = hw_ep->regs;
 	struct musb_qh *qh = hw_ep->out_qh;
-	struct urb *urb = next_urb(qh);
+	struct urb *urb = NULL;
 	u32 status = 0;
 	void __iomem *mbase = musb->mregs;
 	struct dma_channel *dma;
@@ -1535,13 +1551,19 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 	if (qh && qh->is_use_qmu)
 		return;
 #endif
+	if (unlikely(!qh)) {
+		DBG(0, "hw_ep:%d, QH NULL\n", epnum);
+		return;
+	}
 
 	musb_ep_select(mbase, epnum);
 	tx_csr = musb_readw(epio, MUSB_TXCSR);
 
+	urb = next_urb(qh);
 	/* with CPPI, DMA sometimes triggers "extra" irqs */
-	if (!urb) {
+	if (unlikely(!urb)) {
 		DBG(0, "extra TX%d ready, csr %04x\n", epnum, tx_csr);
+		musb_advance_schedule(musb, (struct urb *)QH_FREE_RESCUE_INTERRUPT, hw_ep, USB_DIR_OUT);
 		return;
 	}
 
@@ -1794,7 +1816,7 @@ void musb_host_tx(struct musb *musb, u8 epnum)
  */
 void musb_host_rx(struct musb *musb, u8 epnum)
 {
-	struct urb *urb;
+	struct urb *urb = NULL;
 	struct musb_hw_ep *hw_ep = musb->endpoints + epnum;
 	void __iomem *epio = hw_ep->regs;
 	struct musb_qh *qh = hw_ep->in_qh;
@@ -1812,6 +1834,10 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 	if (qh && qh->is_use_qmu)
 		return;
 #endif
+	if (unlikely(!qh)) {
+		DBG(0, "hw_ep:%d, QH NULL\n", epnum);
+		return;
+	}
 
 	musb_ep_select(mbase, epnum);
 
@@ -1832,6 +1858,7 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 		    musb_readw(epio, MUSB_RXCOUNT));
 		/* musb_h_flush_rxfifo(hw_ep, MUSB_RXCSR_CLRDATATOG); */
 		musb_h_flush_rxfifo(hw_ep, 0);
+		musb_advance_schedule(musb, (struct urb *)QH_FREE_RESCUE_INTERRUPT, hw_ep, USB_DIR_IN);
 		return;
 	}
 
@@ -2665,18 +2692,30 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 	int is_in = usb_pipein(urb->pipe);
 	int ret;
 
-	DBG(4, "urb=%p, dev%d ep%d%s\n", urb,
-	    usb_pipedevice(urb->pipe), usb_pipeendpoint(urb->pipe), is_in ? "in" : "out");
 
 	spin_lock_irqsave(&musb->lock, flags);
+	DBG(0, "urb=%p, dev%d ep%d%s\n",
+			urb,
+			usb_pipedevice(urb->pipe),
+			usb_pipeendpoint(urb->pipe),
+			is_in ? "in" : "out");
 	ret = usb_hcd_check_unlink_urb(hcd, urb, status);
-	if (ret)
+	if (ret) {
+		DBG(0, "ret<%d>\n", ret);
 		goto done;
+	}
 
 	qh = urb->hcpriv;
-	if (!qh)
+	if (!qh) {
+		DBG(0, "!qh\n");
 		goto done;
+	}
 
+	DBG(0, "qh<%p>, ready<%d>, prev_condition<%d>, cur_qh<%d>\n",
+			qh,
+			qh->is_ready,
+			urb->urb_list.prev != &qh->hep->urb_list,
+			musb_ep_get_qh(qh->hw_ep, is_in) == qh);
 	/*
 	 * Any URB not actively programmed into endpoint hardware can be
 	 * immediately given back; that's any URB not at the head of an
@@ -2692,9 +2731,19 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 	if (!qh->is_ready
 	    || urb->urb_list.prev != &qh->hep->urb_list || musb_ep_get_qh(qh->hw_ep, is_in) != qh) {
 		int ready = qh->is_ready;
+		struct musb_hw_ep *hw_ep = qh->hw_ep;
 
 		qh->is_ready = 0;
 		musb_giveback(musb, urb, 0);
+
+		/* QH might be freed after giveback, check again */
+		if ((is_in && !hw_ep->in_qh)
+				|| (!is_in && !hw_ep->out_qh)
+		   ) {
+			DBG(0, "QH already freed\n");
+			goto done;
+		}
+
 		qh->is_ready = ready;
 
 		/* If nothing else (usually musb_giveback) is using it
@@ -2702,19 +2751,38 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 		 */
 		if (ready && list_empty(&qh->hep->urb_list)) {
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
-			if (qh->is_use_qmu)
-				mtk_disable_q(musb, qh->hw_ep->epnum, is_in);
+			if (qh->is_use_qmu && mtk_host_qmu_concurrent) {
+				DBG(0, "qmu with concurrent, exit\n");
+				goto done;
+			} else
+				DBG(0, "qmu<%d>, concurrent<%d>\n",
+						qh->is_use_qmu,
+						mtk_host_qmu_concurrent);
 #endif
+			DBG(0, "why here, this is ring case?\n");
+			musb_bug();
+
 			qh->hep->hcpriv = NULL;
 			list_del(&qh->ring);
 
-			if (musb_host_dynamic_fifo && qh->type != USB_ENDPOINT_XFER_CONTROL)
-				musb_host_free_ep_fifo(musb, qh, is_in);
-
 			kfree(qh);
 		}
-	} else
+	} else {
+#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+		/* qmu non-concurrent case, stop HW */
+		if (qh->is_use_qmu && !mtk_host_qmu_concurrent)
+			mtk_disable_q(musb, qh->hw_ep->epnum, is_in);
+
+		if (qh->is_use_qmu && mtk_host_qmu_concurrent) {
+			/* concurrent case, recycle SW part, leave HW part go */
+			ret = 0;
+			musb_advance_schedule(musb, urb, qh->hw_ep, is_in);
+		} else
+			ret = musb_cleanup_urb(urb, qh);
+#else
 		ret = musb_cleanup_urb(urb, qh);
+#endif
+	}
 done:
 	spin_unlock_irqrestore(&musb->lock, flags);
 	return ret;
@@ -2741,22 +2809,38 @@ static void musb_h_disable(struct usb_hcd *hcd, struct usb_host_endpoint *hep)
 		else
 			qh = hw_ep->out_qh;
 
-		if (qh == NULL)
+		if (qh == NULL) {
+			DBG(1, "qh:%p, is_in:%x, epnum:%d, hep<%p>\n",
+					qh, is_in, epnum, hep);
 			goto exit;
-
-		DBG(0, "qh:%p, is_in:%x, epnum:%d\n", qh, is_in, epnum);
+		}
 
 		if (is_in)
 			hep = hw_ep->in_qh->hep;
 		else
 			hep = hw_ep->out_qh->hep;
 
+		DBG(0, "qh:%p, is_in:%x, epnum:%d, hep<%p>\n",
+				qh, is_in, epnum, hep);
+
+
 	} else {
 		qh = hep->hcpriv;
-		if (qh == NULL)
+		if (qh == NULL) {
+			DBG(1, "qh:%p, virt-epnum:%d, hep<%p>\n",
+					qh, hep->desc.bEndpointAddress, hep);
 			goto exit;
+		}
+
+		DBG(0, "qh:%p, is_in:%x, epnum:%d, hep<%p>\n",
+				qh, is_in, qh->hw_ep->epnum, hep);
 	}
 
+#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+	/* abort HW transaction on this ep */
+	if (qh->is_use_qmu)
+		mtk_disable_q(musb, qh->hw_ep->epnum, is_in);
+#endif
 	/* NOTE: qh is invalid unless !list_empty(&hep->urb_list) */
 
 	/* Kick the first URB off the hardware, if needed */
@@ -2769,8 +2853,17 @@ static void musb_h_disable(struct usb_hcd *hcd, struct usb_host_endpoint *hep)
 			if (!urb->unlinked)
 				urb->status = -ESHUTDOWN;
 			/* cleanup */
+			DBG(0, "list_empty<%d>, urb<%p,%d,%d>\n",
+					list_empty(&hep->urb_list),
+					urb,
+					urb->unlinked,
+					urb->status);
 			musb_cleanup_urb(urb, qh);
+		} else {
+			DBG(0, "list_empty<%d>\n", list_empty(&hep->urb_list));
+			musb_advance_schedule(musb, (struct urb *)QH_FREE_RESCUE_EP_DISABLE, qh->hw_ep, is_in);
 		}
+
 		/* Then nuke all the others ... and advance the
 		 * queue on hw_ep (e.g. bulk ring) when we're done.
 		 */
@@ -2780,21 +2873,18 @@ static void musb_h_disable(struct usb_hcd *hcd, struct usb_host_endpoint *hep)
 			musb_advance_schedule(musb, urb, qh->hw_ep, is_in);
 		}
 	} else {
+		DBG(0, "why here, this is ring case?\n");
+		musb_bug();
+
 		/* Just empty the queue; the hardware is busy with
 		 * other transfers, and since !qh->is_ready nothing
 		 * will activate any of these as it advances.
 		 */
 		while (!list_empty(&hep->urb_list))
 			musb_giveback(musb, next_urb(qh), -ESHUTDOWN);
-#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
-		if (qh->is_use_qmu)
-			mtk_disable_q(musb, qh->hw_ep->epnum, is_in);
-#endif
+
 		hep->hcpriv = NULL;
 		list_del(&qh->ring);
-
-		if (musb_host_dynamic_fifo && qh->type != USB_ENDPOINT_XFER_CONTROL)
-			musb_host_free_ep_fifo(musb, qh, is_in);
 
 		kfree(qh);
 	}

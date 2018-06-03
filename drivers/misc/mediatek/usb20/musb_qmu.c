@@ -468,7 +468,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 	}
 
 	if (!mtk_is_qmu_enabled(hw_ep->epnum, isRx)) {
-		DBG(4, "! mtk_is_qmu_enabled\n");
+		DBG(0, "! mtk_is_qmu_enabled<%d,%s>\n", hw_ep->epnum, isRx?"RXQ":"TXQ");
 
 		musb_ep_select(mbase, hw_ep->epnum);
 		flush_ep_csr(musb, hw_ep->epnum,  isRx);
@@ -531,7 +531,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			musb_writew(musb->mregs, MUSB_INTRTXE, intr_e);
 		}
 
-		DBG(4, "mtk_qmu_enable\n");
+		DBG(0, "mtk_qmu_enable<%d,%s>\n", hw_ep->epnum, isRx?"RXQ":"TXQ");
 		mtk_qmu_enable(musb, hw_ep->epnum, isRx);
 	}
 
