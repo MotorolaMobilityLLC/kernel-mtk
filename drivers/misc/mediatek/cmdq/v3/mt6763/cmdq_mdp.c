@@ -225,9 +225,10 @@ void cmdq_mdp_dump_mmsys_config(void)
 int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 {
 	long MMSYS_SW0_RST_B_REG = MMSYS_CONFIG_BASE + (0x140);
-	int mdpColorResetBit = -1;
 #ifdef CMDQ_MDP_COLOR
-	mdpColorResetBit = CMDQ_ENG_MDP_COLOR0;
+	int mdpColorResetBit = CMDQ_ENG_MDP_COLOR0;
+#else
+	int mdpColorResetBit = -1;
 #endif
 	int i = 0;
 	uint32_t reset_bits = 0L;
