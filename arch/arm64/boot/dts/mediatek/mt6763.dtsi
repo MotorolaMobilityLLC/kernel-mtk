@@ -648,11 +648,6 @@
 		reg = <0 0x10448000 0 0x1000>;
 	};
 
-	devapc_ao_infra_peri@1000e000 {
-		compatible = "mediatek,devapc_ao_infra_peri";
-		reg = <0 0x1000e000 0 0x1000>;
-	};
-
 	sleep_reg_md@1000f000 {
 		compatible = "mediatek,sleep_reg_md";
 		reg = <0 0x1000f000 0 0x1000>;
@@ -720,11 +715,6 @@
 		reg = <0 0x10018000 0 0x1000>;
 	};
 
-	devapc_ao_md@10019000 {
-		compatible = "mediatek,devapc_ao_md";
-		reg = <0 0x10019000 0 0x1000>;
-	};
-
 	mbist_ao@10013000 {
 		compatible = "mediatek,mbist_ao";
 		reg = <0 0x10013000 0 0x1000>;
@@ -738,11 +728,6 @@
 	topckgen_ao@1001b000 {
 		compatible = "mediatek,topckgen_ao";
 		reg = <0 0x1001b000 0 0x1000>;
-	};
-
-	devapc_ao_mm@1001c000 {
-		compatible = "mediatek,devapc_ao_mm";
-		reg = <0 0x1001c000 0 0x1000>;
 	};
 
 	dbgapb@0d000000 {
@@ -814,6 +799,8 @@
 		compatible = "mediatek,devapc";
 		reg = <0 0x10207000 0 0x1000>;
 		interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infracfg_ao INFRACFG_AO_DEVICE_APC_CG>;
+		clock-names = "devapc-infra-clock";
 	};
 
 	bus_dbg@10208000 {

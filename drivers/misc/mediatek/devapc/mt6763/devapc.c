@@ -44,9 +44,6 @@
 #include "sync_write.h"
 #include "devapc.h"
 
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
-#include <linux/aee.h>
-#endif
 
 /* 0 for early porting */
 #define DEVAPC_TURN_ON         0
@@ -94,393 +91,406 @@
 
 /* bypass clock! */
 #if DEVAPC_USE_CCF
-static struct clk *dapc_clk;
+static struct clk *dapc_infra_clk;
 #endif
 
 static struct cdev *g_devapc_ctrl;
-static unsigned int devapc_irq;
-static void __iomem *devapc_pd_base;
+static unsigned int devapc_infra_irq;
+static void __iomem *devapc_pd_infra_base;
 
 static unsigned int enable_dynamic_one_core_violation_debug;
 
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
-static unsigned long long devapc_vio_first_trigger_time[DEVAPC_TOTAL_SLAVES];
-
-/* violation times */
-static unsigned int devapc_vio_count[DEVAPC_TOTAL_SLAVES];
-
-/* show the status of whether AEE warning has been populated */
-static unsigned int devapc_vio_aee_shown[DEVAPC_TOTAL_SLAVES];
-static unsigned int devapc_vio_current_aee_trigger_times;
-#endif
-
 #if DEVAPC_TURN_ON
-static struct DEVICE_INFO devapc_devices[] = {
-	/*device name                          enable_vio_irq */
-    /* 0 */
-	{"INFRA_AO_TOP_LEVEL_CLOCK_GENERATOR",      true},
-	{"INFRA_AO_INFRASYS_CONFIG_REGS",           true},
-	{"INFRA_AO_IO_CFG",                         true},
-	{"INFRA_AO_PERICFG",                        true},
-	{"RESERVE",                                 true},
-	{"INFRA_AO_GPIO",                           true},
-	{"INFRA_AO_TOP_LEVEL_SLP_MANAGER",          true},
-	{"INFRA_AO_TOP_RGU",                        true},
-	{"INFRA_AO_APXGPT",                         true},
-	{"INFRA_AO_RESERVE_REGION",                 true},
+static struct DEVICE_INFO devapc_infra_devices[] = {
+	/* device name                          enable_vio_irq */
 
-    /* 10 */
-	{"INFRA_AO_SEJ",                            true},
-	{"INFRA_AO_AP_CIRQ_EINT",                   true},
-	{"INFRA_AO_APMIXEDSYS_FHCTL",               true},
-	{"INFRA_AO_PMIC_WRAP",                      true},
-	{"INFRA_AO_DEVICE_APC_AO",                  true},
-	{"RESERVE",                                 true},
-	{"INFRA_AO_KEYPAD",                         true},
-	{"INFRA_AO_TOP_MISC",                       true},
-	{"INFRA_AO_RESERVE_REGION",                 true},
-	{"INFRA_AO_RESERVE_REGION",                 true},
+	/* 0 */
+	{"INFRA_AO_TOPCKGEN",                     true    },
+	{"INFRA_AO_INFRASYS_CONFIG_REGS",         true    },
+	{"INFRA_AO_RESERVE",                      true    },
+	{"INFRA_AO_PERICFG",                      true    },
+	{"INFRA_AO_EFUSE_AO_DEBUG",               true    },
+	{"INFRA_AO_GPIO",                         true    },
+	{"INFRA_AO_SLEEP_CONTROLLER",             true    },
+	{"INFRA_AO_TOPRGU",                       true    },
+	{"INFRA_AO_APXGPT",                       true    },
+	{"INFRA_AO_RESERVE",                      true    },
 
-    /* 20 */
-	{"INFRA_AO_CLDMA_AO_TOP_AP",                true},
-	{"INFRA_AO_CLDMA_AO_TOP_MD",                true},
-	{"INFRA_AO_AES_TOP0",                       true},
-	{"INFRA_AO_AES_TOP1",                       true},
-	{"INFRA_AO_MDEM_TEMP_SHARE",                true},
-	{"RESERVE",                                 true},
-	{"INFRASYS_MCUSYS_CONFIG_REG",              true},
-	{"INFRASYS_MCUSYS_CONFIG_REG1",             true},
-	{"INFRASYS_MCUSYS_CONFIG_REG2",             true},
-	{"INFRASYS_MCUSYS_CONFIG_REG3",             true},
+	/* 10 */
+	{"INFRA_AO_SEJ",                          true    },
+	{"INFRA_AO_AP_CIRQ_EINT",                 true    },
+	{"INFRA_AO_APMIXEDSYS",                   true    },
+	{"INFRA_AO_PMIC_WRAP",                    true    },
+	{"INFRA_AO_DEVICE_APC_AO_INFRA_PERI",     true    },
+	{"INFRA_AO_SLEEP_CONTROLLER_MD",          true    },
+	{"INFRA_AO_KEYPAD",                       true    },
+	{"INFRA_AO_TOP_MISC",                     true    },
+	{"INFRA_AO_DVFS_CTRL_PROC",               true    },
+	{"INFRA_AO_MBIST_AO_REG",                 true    },
 
-    /* 30 */
-	{"INFRASYS_SYSTEM_CIRQ",                    true},
-	{"INFRASYS_MM_IOMMU_CONFIGURATION",         true},
-	{"INFRASYS_EFUSEC",                         true},
-	{"INFRASYS_DEVICE_APC_MONITOR",             true},
-	{"INFRASYS_DEBUG_TRACKER",                  true},
-	{"INFRASYS_CCI0_AP",                        true},
-	{"INFRASYS_CCI0_MD",                        true},
-	{"INFRASYS_CCI1_AP",                        true},
-	{"INFRASYS_CCI1_MD",                        true},
-	{"INFRASYS_MBIST_CONTROL_REG",              true},
+	/* 20 */
+	{"INFRA_AO_CLDMA_AO_AP",                  true    },
+	{"INFRA_AO_RESERVE",                      true    },
+	{"INFRA_AO_AES_TOP_0",                    true    },
+	{"INFRA_AO_SYS_TIMER",                    true    },
+	{"INFRA_AO_MDEM_TEMP_SHARE",              true    },
+	{"INFRA_AO_DEVICE_APC_AO_MD",             true    },
+	{"INFRA_AO_SECURITY_AO",                  true    },
+	{"INFRA_AO_TOPCKGEN_REG",                 true    },
+	{"INFRA_AO_DEVICE_APC_AO_MM",             true    },
+	{"INFRASYS_RESERVE",                      true    },
 
-    /* 40 */
-	{"INFRASYS_CONTROL_REG",                    true},
-	{"INFRASYS_TRNG",                           true},
-	{"INFRASYS_GCPU",                           true},
-	{"INFRASYS_MD_CCIF_MD1",                    true},
-	{"INFRASYS_GCE",                            true},
-	{"INFRASYS_MD_CCIF_MD2",                    true},
-	{"INFRASYS_BOOTROM/SRAM",                   true},
-	{"INFRASYS_ANA_MIPI_DSI0",                  true},
-	{"INFRASYS_ANA_MIPI_DSI1",                  true},
-	{"INFRASYS_ANA_MIPI_CSI0",                  true},
+	/* 30 */
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_SYS_CIRQ",                     true    },
+	{"INFRASYS_MM_IOMMU",                     true    },
+	{"INFRASYS_EFUSE_PDN_DEBUG",              true    },
+	{"INFRASYS_DEVICE_APC",                   true    },
+	{"INFRASYS_DBG_TRACKER",                  true    },
+	{"INFRASYS_CCIF0_AP",                     true    },
+	{"INFRASYS_CCIF0_MD",                     true    },
 
-    /* 50 */
-	{"INFRASYS_ANA_MIPI_CSI1",                  true},
-	{"INFRASYS_EMI_BUS_INTERFACE",              true},
-	{"INFRASYS_GPU_RSA",                        true},
-	{"INFRASYS_CLDMA_PDN_AP",                   true},
-	{"INFRASYS_CLDMA_PDN_MD",                   true},
-	{"INFRASYS_MDSYS_INTF",                     true},
-	{"INFRASYS_BPI_BIS_SLV0",                   true},
-	{"INFRASYS_BPI_BIS_SLV1",                   true},
-	{"INFRASYS_BPI_BIS_SLV2",                   true},
-	{"INFRAYS_EMI_MPU_REG",                     true},
+	/* 40 */
+	{"INFRASYS_CCIF1_MD",                     true    },
+	{"INFRASYS_CLDMA_MD",                     true    },
+	{"INFRASYS_MBIST",                        true    },
+	{"INFRASYS_INFRA_PDN_REGISTER",           true    },
+	{"INFRASYS_TRNG",                         true    },
+	{"INFRASYS_DX_CC",                        true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_CQ_DMA",                       true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_SRAMROM",                      true    },
 
-    /* 60 */
-	{"INFRAYS_DVFS_PROC",                       true},
-	{"DRAMC_CH0_TOP0_CONFIGURATION",            true},
-	{"DRAMC_CH0_TOP1_CONFIGURATION",            true},
-	{"DRAMC_CH0_TOP2_CONFIGURATION",            true},
-	{"DRAMC_CH0_TOP3_CONFIGURATION",            true},
-	{"RESERVE",                                 true},
-	{"DRAMC_CH1_TOP0_CONFIGURATION",            true},
-	{"DRAMC_CH1_TOP1_CONFIGURATION",            true},
-	{"DRAMC_CH1_TOP2_CONFIGURATION",            true},
-	{"DRAMC_CH1_TOP3_CONFIGURATION",            true},
+	/* 50 */
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_EMI",                          true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_CLDMA_PDN",                    true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_RESERVE",                      true    },
 
-    /* 70 */
-	{"RESERVE",                                 true},
-	{"PERI_GPU_SMI_COMMON",                     true},
-	{"RESERVE",                                 true},
-	{"INFRASYS_DEBUGTOP",                       true},
-	{"DMA",                                     true},
-	{"AUXADC",                                  true},
-	{"UART0",                                   true},
-	{"UART1",                                   true},
-	{"UART2",                                   true},
-	{"RESERVE",                                 true},
+	/* 60 */
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_RESERVE",                      true    },
+	{"INFRASYS_EMI_MPU",                      true    },
+	{"INFRASYS_DVFS_PROC",                    true    },
+	{"INFRASYS_DRAMC_CH0_TOP0_CONFIGURATION", true    },
+	{"INFRASYS_DRAMC_CH0_TOP1_CONFIGURATION", true    },
+	{"INFRASYS_DRAMC_CH0_TOP2_CONFIGURATION", true    },
+	{"INFRASYS_DRAMC_CH0_TOP3_CONFIGURATION", true    },
+	{"INFRASYS_DRAMC_CH0_TOP4_CONFIGURATION", true    },
+	{"INFRASYS_DRAMC_CH1_TOP0_CONFIGURATION", true    },
 
-    /* 80 */
-	{"PWM",                                     true},
-	{"I2C0",                                    true},
-	{"I2C1",                                    true},
-	{"I2C2",                                    true},
-	{"SPI0",                                    true},
-	{"PTP_THERMAL_CTL",                         true},
-	{"BTIF",                                    true},
-	{"IRTX",                                    true},
-	{"DISP_PWM",                                true},
-	{"I2C3",                                    true},
+	/* 70 */
+	{"INFRASYS_DRAMC_CH1_TOP1_CONFIGURATION", true    },
+	{"INFRASYS_DRAMC_CH1_TOP2_CONFIGURATION", true    },
+	{"INFRASYS_DRAMC_CH1_TOP3_CONFIGURATION", true    },
+	{"INFRASYS_DRAMC_CH1_TOP4_CONFIGURATION", true    },
+	{"INFRASYS_GCE",                          true    },
+	{"INFRA_AO_PWRMCU_PARTITION_1",           true    },
+	{"INFRA_AO_PWRMCU_PARTITION_2",           true    },
+	{"INFRA_AO_PWRMCU_PARTITION_3",           true    },
+	{"INFRA_AO_PWRMCU_PARTITION_4",           true    },
+	{"INFRA_AO_PWRMCU_PARTITION_5",           true    },
 
-    /* 90 */
-	{"SPI1",                                    true},
-	{"I2C4",                                    true},
-	{"SPI2",                                    true},
-	{"SPI3",                                    true},
-	{"I2C1_IMM",                                true},
-	{"I2C2_IMM",                                true},
-	{"I2C5",                                    true},
-	{"I2C5_IMM",                                true},
-	{"SPI4",                                    true},
-	{"SPI5",                                    true},
+	/* 80 */
+	{"INFRA_AO_PWRMCU_PARTITION_6",           true    },
+	{"INFRA_AO_PWRMCU_PARTITION_7",           true    },
+	{"INFRA_AO_PWRMCU_PARTITION_8",           true    },
+	{"INFRA_AO_MCUCFG",                       true    },
+	{"INFRASYS_DBUGSYS",                      true    },
+	{"PERISYS_APDMA",                         true    },
+	{"PERISYS_AUXADC",                        true    },
+	{"PERISYS_UART0",                         true    },
+	{"PERISYS_UART1",                         true    },
+	{"PERISYS_UART2",                         true    },
 
-    /* 100 */
-	{"USB2.0",                                  true},
-	{"USB2.0_SIF",                              true},
-	{"MSDC0",                                   true},
-	{"MSDC1",                                   true},
-	{"MSDC2",                                   true},
-	{"RESERVE",                                 true},
-	{"USB3.0",                                  true},
-	{"USB3.0_SIF",                              true},
-	{"USB3.0_SIF2",                             true},
-	{"AUDIO",                                   true},
+	/* 90 */
+	{"PERISYS_UART3",                         true    },
+	{"PERISYS_PWM",                           true    },
+	{"PERISYS_I2C0",                          true    },
+	{"PERISYS_I2C1",                          true    },
+	{"PERISYS_I2C2",                          true    },
+	{"PERISYS_SPI0",                          true    },
+	{"PERISYS_PTP",                           true    },
+	{"PERISYS_BTIF",                          true    },
+	{"PERISYS_IRTX",                          true    },
+	{"PERISYS_DISP_PWM",                      true    },
 
-    /* 110 */
-	{"WCN_AHB_SLAVE",                           true},
-	{"MD_PERIPHERALS",                          true},
-	{"MD2_PERIPHERALS",                         true},
-	{"RESERVE",                                 true},
-	{"RESERVE",                                 true},
-	{"RESERVE",                                 true},
-	{"G3D_CONFIG_0",                            true},
-	{"G3D_CONFIG_1",                            true},
-	{"G3D_CONFIG_2",                            true},
-	{"G3D_CONFIG_3",                            true},
+	/* 100 */
+	{"PERISYS_I2C3",                          true    },
+	{"PERISYS_SPI1",                          true    },
+	{"PERISYS_I2C4",                          true    },
+	{"PERISYS_SPI2",                          true    },
+	{"PERISYS_SPI3",                          true    },
+	{"PERISYS_I2C1_IMM",                      true    },
+	{"PERISYS_I2C2_IMM",                      true    },
+	{"PERISYS_I2C5",                          true    },
+	{"PERISYS_I2C5_IMM",                      true    },
+	{"PERISYS_SPI4",                          true    },
 
-    /* 120 */
-	{"RESERVE",                                 true},
-	{"G3D_POWER_CONTROL",                       true},
-	{"MALI_CONFIG",                             true},
-	{"MMSYS_CONFIG",                            true},
-	{"MDP_RDMA0",                               true},
-	{"MDP_RDMA1",                               true},
-	{"RESERVE",                                 true},
-	{"MDP_RSZ1",                                true},
-	{"MDP_RSZ2",                                true},
-	{"RESERVE",                                 true},
+	/* 110 */
+	{"PERISYS_SPI5",                          true    },
+	{"PERISYS_USB",                           true    },
+	{"PERISYS_USB_2.0_SUB",                   true    },
+	{"PERISYS_MSDC0",                         true    },
+	{"PERISYS_MSDC1",                         true    },
+	{"PERISYS_MSDC2",                         true    },
+	{"PERISYS_MSDC3",                         true    },
+	{"PERISYS_UFS",                           true    },
+	{"PERISUS_USB3.0_SIF",                    true    },
+	{"PERISUS_USB3.0_SIF2",                   true    },
 
-    /* 130 */
-	{"MDP_WROT0",                               true},
-	{"MDP_WROT1",                               true},
-	{"MDP_TDSHP",                               true},
-	{"MDP_COLOR",                               true},
-	{"DISP_OVL0",                               true},
-	{"DISP_OVL1",                               true},
-	{"DISP_OVL0_2L",                            true},
-	{"DISP_OVL1_2L",                            true},
-	{"DISP_RDMA0",                              true},
-	{"DISP_RDMA1",                              true},
+	/* 120 */
+	{"PERISYS_RESERVE",                       true    },
+	{"PERISYS_AUDIO",                         true    },
+	{"EAST_RESERVE_0",                        true    },
+	{"EAST_RESERVE_1",                        true    },
+	{"EAST_RESERVE_2",                        true    },
+	{"EAST_RESERVE_3",                        true    },
+	{"EAST_RESERVE_4",                        true    },
+	{"EAST_IO_CFG_RT",                        true    },
+	{"EAST_IO_CFG_RM",                        true    },
+	{"EAST_RESERVE_7",                        true    },
 
-    /* 140 */
-	{"RESERVE",                                 true},
-	{"DISP_WDMA0",                              true},
-	{"DISP_WDMA1",                              true},
-	{"DISP_COLOR0",                             true},
-	{"RESERVE",                                 true},
-	{"DISP_CCORR0",                             true},
-	{"RESERVE",                                 true},
-	{"DISP_AAL0",                               true},
-	{"RESERVE",                                 true},
-	{"DISP_GAMMA0",                             true},
+	/* 130 */
+	{"EAST_CSI0_TOP_AO",                      true    },
+	{"EAST_CSI1_TOP_AO",                      true    },
+	{"EAST_RESERVE_A",                        true    },
+	{"EAST_RESERVE_B",                        true    },
+	{"EAST_RESERVE_C",                        true    },
+	{"EAST_RESERVE_D",                        true    },
+	{"EAST_RESERVE_E",                        true    },
+	{"EAST_RESERVE_F",                        true    },
+	{"SOUTH_RESERVE_0",                       true    },
+	{"SOUTH_RESERVE_1",                       true    },
 
-    /* 150 */
-	{"RESERVE",                                 true},
-	{"RESERVE",                                 true},
-	{"DISP_DITHER0",                            true},
-	{"RESERVE",                                 true},
-	{"DSI_UFOE",                                true},
-	{"RESERVE",                                 true},
-	{"DSI_SPLIT",                               true},
-	{"DSI0",                                    true},
-	{"DSI1",                                    true},
-	{"DPI0",                                    true},
+	/* 140 */
+	{"SOUTH_RESERVE_2",                       true    },
+	{"SOUTH_IO_CFG_RB",                       true    },
+	{"SOUTH_RESERVE_4",                       true    },
+	{"SOUTH_RESERVE_5",                       true    },
+	{"SOUTH_RESERVE_6",                       true    },
+	{"SOUTH_RESERVE_7",                       true    },
+	{"SOUTH_RESERVE_8",                       true    },
+	{"SOUTH_RESERVE_9",                       true    },
+	{"SOUTH_RESERVE_A",                       true    },
+	{"SOUTH_RESERVE_B",                       true    },
 
-    /* 160 */
-	{"MM_MUTEX",                                true},
-	{"SMI_LARB0",                               true},
-	{"SMI_LARB4",                               true},
-	{"SMI_COMMON",                              true},
-	{"RESERVE",                                 true},
-	{"RESERVE",                                 true},
-	{"IMGSYS_CONFIG",                           true},
-	{"SMI_LARB5",                               true},
-	{"DIP_A0",                                  true},
-	{"DIP_A1",                                  true},
+	/* 150 */
+	{"SOUTH_RESERVE_C",                       true    },
+	{"SOUTH_RESERVE_D",                       true    },
+	{"SOUTH_RESERVE_E",                       true    },
+	{"SOUTH_RESERVE_F",                       true    },
+	{"WEST_RESERVE_0",                        true    },
+	{"WEST_MSDC1_PAD_MACRO",                  true    },
+	{"WEST_PCIE_PHYD",                        true    },
+	{"WEST_ANA_HDMI",                         true    },
+	{"WEST_RESERVE_4",                        true    },
+	{"WEST_MIPI_TX_CONFIG",                   true    },
 
-    /* 170 */
-	{"DIP_A2",                                  true},
-	{"RESERVE",                                 true},
-	{"RESERVE",                                 true},
-	{"VAD",                                     true},
-	{"DPE",                                     true},
-	{"RSC",                                     true},
-	{"RESERVE",                                 true},
-	{"FDVT",                                    true},
-	{"GEPF",                                    true},
-	{"RESERVE",                                 true},
+	/* 160 */
+	{"WEST_MIPI_TX_CONFIG",                   true    },
+	{"WEST_IO_CFG_LB",                        true    },
+	{"WEST_IO_CFG_LM",                        true    },
+	{"WEST_RESERVE_9",                        true    },
+	{"WEST_RESERVE_A",                        true    },
+	{"WEST_RESERVE_B",                        true    },
+	{"WEST_RESERVE_C",                        true    },
+	{"WEST_RESERVE_D",                        true    },
+	{"WEST_RESERVE_E",                        true    },
+	{"WEST_RESERVE_F",                        true    },
 
-    /* 180 */
-	{"DFP",                                     true},
-	{"RESERVE",                                 true},
-	{"VDEC_GLOBAL_CON",                         true},
-	{"SMI_LARB1",                               true},
-	{"VDEC_FULL_TOP",                           true},
-	{"VENC_GLOBAL_CON",                         true},
-	{"SMI_LARB3",                               true},
-	{"VENC",                                    true},
-	{"JPEGENC",                                 true},
-	{"JPEGDEC",                                 true},
+	/* 170 */
+	{"NORTH_RESERVE_0",                       true    },
+	{"NORTH_EFUSE",                           true    },
+	{"NORTH_IO_CFG_LT",                       true    },
+	{"NORTH_IO_CFG_TL",                       true    },
+	{"NORTH_USB20_PHY",                       true    },
+	{"NORTH_MSDC0_PAD_MACRO",                 true    },
+	{"NORTH_RESERVE_6",                       true    },
+	{"NORTH_RESERVE_7",                       true    },
+	{"NORTH_RESERVE_8",                       true    },
+	{"NORTH_RESERVE_9",                       true    },
 
-    /* 190 */
-	{"CAMSYS_TOP",                              true},
-	{"LARB2",                                   true},
-	{"CAM_TOP",                                 true},
-	{"CAM_A",                                   true},
-	{"CAM_B",                                   true},
-	{"CAM_TOP_SET",                             true},
-	{"CAM_A_SET",                               true},
-	{"CAM_B_SET",                               true},
-	{"CAM_TOP_INNER",                           true},
-	{"CAM_A_INNER",                             true},
+	/* 180 */
+	{"NORTH_UFS_MPHY",                        true    },
+	{"NORTH_RESERVE_B",                       true    },
+	{"NORTH_RESERVE_C",                       true    },
+	{"NORTH_RESERVE_D",                       true    },
+	{"NORTH_RESERVE_E",                       true    },
+	{"NORTH_RESERVE_F",                       true    },
+	{"PERISYS_CONN",                          true    },
+	{"PERISYS_RESERVE",                       true    },
+	{"PERISYS_RESERVE",                       true    },
+	{"G3D_CONFIG",                            true    },
 
-    /* 200 */
-	{"CAM_B_INNER",                             true},
-	{"CAM_TOP_CLR",                             true},
-	{"CAM_A_CLR",                               true},
-	{"CAM_B_CLR",                               true},
-	{"SENINF_A",                                true},
-	{"SENINF_B",                                true},
-	{"RESERVE",                                 true},
-	{"RESERVE",                                 true},
-	{"RESERVE",                                 true},
-	{"RESERVE",                                 true},
+	/* 190 */
+	{"MFG_VAD",                               true    },
+	{"SC0_VAD",                               true    },
+	{"MFG_OTHERS",                            true    },
+	{"MMSYS_CONFIG",                          true    },
+	{"MDP_RDMA0",                             true    },
+	{"MDP_RDMA1",                             true    },
+	{"MDP_RSZ0",                              true    },
+	{"MDP_RSZ1",                              true    },
+	{"MDP_WROT0",                             true    },
+	{"MDP_WDMA",                              true    },
 
-    /* 210 */
-	{"RESERVE",                                 true},
-	{"RESERVE",                                 true},
-	{"CAMSV_A",                                 true},
-	{"CAMSV_B",                                 true},
-	{"CAMSV_C",                                 true},
-	{"CAMSV_D",                                 true},
-	{"CAMSV_E",                                 true},
-	{"CAMSV_F",                                 true},
-	{"TSF",                                     true},
-	{"CAMSYS_OTHERS",                           true},
+	/* 200 */
+	{"MDP_TDSHP",                             true    },
+	{"DISP_OVL0",                             true    },
+	{"DISP_OVL0_2L",                          true    },
+	{"DISP_OVL1_2L",                          true    },
+	{"DISP_RDMA0",                            true    },
+	{"DISP_RDMA1",                            true    },
+	{"DISP_WDMA0",                            true    },
+	{"DISP_COLOR0",                           true    },
+	{"DISP_CCORR0",                           true    },
+	{"DISP_AAL0",                             true    },
 
-    /* 220 */
-	{"RESERVE",                                 true},
+	/* 210 */
+	{"DISP_GAMMA0",                           true    },
+	{"DISP_DITHER0",                          true    },
+	{"DSI_SPLIT",                             true    },
+	{"DSI0",                                  true    },
+	{"DPI",                                   true    },
+	{"MM_MUTEX",                              true    },
+	{"SMI_LARB0",                             true    },
+	{"SMI_LARB1",                             true    },
+	{"SMI_COMMON",                            true    },
+	{"IMGSYS_CONFIG",                         true    },
+
+	/* 220 */
+	{"IMGSYS_SMI_LARB1",                      true    },
+	{"IMGSYS_DISP_A0",                        true    },
+	{"IMGSYS_DISP_A1",                        true    },
+	{"IMGSYS_DISP_A2",                        true    },
+	{"IMGSYS_RESERVE",                        true    },
+	{"IMGSYS_RESERVE",                        true    },
+	{"IMGSYS_VAD",                            true    },
+	{"IMGSYS_DPE",                            true    },
+	{"IMGSYS_RSC",                            true    },
+	{"IMGSYS_RESERVE",                        true    },
+
+	/* 230 */
+	{"IMGSYS_FDVT",                           true    },
+	{"IMGSYS_GEPF",                           true    },
+	{"IMGSYS_RESERVE",                        true    },
+	{"IMGSYS_DFP",                            true    },
+	{"IMGSYS_RESERVE",                        true    },
+	{"VCODESYS_VENC_GLOBAL_CON",              true    },
+	{"VCODESYS_SMI_LARB3",                    true    },
+	{"VCODESYS_VENC",                         true    },
+	{"VCODESYS_JPGENC",                       true    },
+	{"VCODESYS_VDEC_FULL_TOP",                true    },
+
+	/* 240 */
+	{"VCODESYS_MBIST_CTRL",                   true    },
+	{"CAMSYS_CAMSYS_TOP",                     true    },
+	{"CAMSYS_LARB2",                          true    },
+	{"CAMSYS_CAM_TOP",                        true    },
+	{"CAMSYS_CAM_A",                          true    },
+	{"CAMSYS_CAM_B",                          true    },
+	{"CAMSYS_CAM_TOP_SET",                    true    },
+	{"CAMSYS_CAM_A_SET",                      true    },
+	{"CAMSYS_CAM_B_SET",                      true    },
+	{"CAMSYS_CAM_TOP_INNER",                  true    },
+
+	/* 250 */
+	{"CAMSYS_CAM_A_INNER",                    true    },
+	{"CAMSYS_CAM_B_INNER",                    true    },
+	{"CAMSYS_CAM_TOP_CLR",                    true    },
+	{"CAMSYS_CAM_A_CLR",                      true    },
+	{"CAMSYS_CAM_B_CLR",                      true    },
+	{"CAMSYS_SENINF_A",                       true    },
+	{"CAMSYS_SENINF_B",                       true    },
+	{"CAMSYS_SENINF_C",                       true    },
+	{"CAMSYS_SENINF_D",                       true    },
+	{"CAMSYS_SENINF_E",                       true    },
+
+	/* 260 */
+	{"CAMSYS_SENINF_F",                       true    },
+	{"CAMSYS_SENINF_G",                       true    },
+	{"CAMSYS_SENINF_H",                       true    },
+	{"CAMSYS_CAMSV_A",                        true    },
+	{"CAMSYS_CAMSV_B",                        true    },
+	{"CAMSYS_CAMSV_C",                        true    },
+	{"CAMSYS_CAMSV_D",                        true    },
+	{"CAMSYS_CAMSV_E",                        true    },
+	{"CAMSYS_CAMSV_F",                        true    },
+	{"CAMSYS_OTHERS_0",                       true    },
+
+	/* 270 */
+	{"CAMSYS_MD32_DMEM",                      true    },
+	{"CAMSYS_RESERVED",                       true    },
+	{"CAMSYS_MD32_PMEM",                      true    },
+	{"CAMSYS_MD32_IP",                        true    },
+	{"CAMSYS_CCU_DMA_TSF",                    true    },
+	{"PWR_MCU_UNALIGN",                       true    },
+	{"PWR_MCU_OUT_OF_BOUND",                  true    },
+	{"PWR_MCU_ERR_WAY_EN",                    true    },
+	{"EAST_PERIAPB_UNALIGN",                  true    },
+	{"EAST_PERIAPB_OUT_OF_BOUND",             true    },
+
+	/* 280 */
+	{"EAST_PERIAPB_ERR_WAY_EN",               true    },
+	{"SOUTH_PERIAPB_UNALIGN",                 true    },
+	{"SOUTH_PERIAPB_OUT_OF_BOUND",            true    },
+	{"SOUTH_PERIAPB_ERR_WAY_EN",              true    },
+	{"WEST_PERIAPB_UNALIGN",                  true    },
+	{"WEST_PERIAPB_OUT_OF_BOUND",             true    },
+	{"WEST_PERIAPB_ERR_WAY_EN",               true    },
+	{"NORTH_PERIAPB_UNALIGN",                 true    },
+	{"NORTH_PERIAPB_OUT_OF_BOUND",            true    },
+	{"NORTH_PERIAPB_ERR_WAY_EN",              true    },
+
+	/* 290 */
+	{"INFRA_PDN_DECODE_ERROR",                true    },
+	{"TOPAXI_SI2_DECERR",                     true    },
+	{"TOPAXI_SI1_DECERR",                     true    },
+	{"TOPAXI_SI0_DECERR",                     true    },
+	{"PERIAXI_SI0_DECERR",                    true    },
+	{"PERIAXI_SI1_DECERR",                    true    },
+	{"SRAMROM",                               false   },
+	{"AP_DMA",                                false   },
+	{"DEVICE_APC_AO_INFRA_PERI",              false   },
+	{"DEVICE_APC_AO_MD",                      false   },
+
+	/* 300 */
+	{"DEVICE_APC_AO_MM",                      false   },
+	{"CM_DQ_SECURE",                          false   },
+	{"MM_IOMMU_DOMAIN",                       false   },
+	{"DISP_GCE",                              false   },
+	{"DEVICE_APC",                            false   },
+	{"EMI",                                   false   },
+	{"EMI_MPU",                               false   },
+	{"PMIC_WRAP",                             false   },
 };
 #endif
 
-/*****************************************************************************
-*FUNCTION DEFINITION
-*****************************************************************************/
-#if DEVAPC_TURN_ON
-static int clear_vio_status(unsigned int module);
-#endif
-static int devapc_ioremap(void);
-
-/**************************************************************************
-*EXTERN FUNCTION
-**************************************************************************/
-int mt_devapc_emi_initial(void)
-{
-	devapc_ioremap();
-
-	if (devapc_pd_base != NULL) {
-		mt_reg_sync_writel(readl(IOMEM(DEVAPC0_PD_APC_CON)) & (0xFFFFFFFF ^ (1 << 2)),
-				   DEVAPC0_PD_APC_CON);
-		mt_reg_sync_writel(ABORT_EMI, DEVAPC0_D0_VIO_STA_7);
-		mt_reg_sync_writel(ABORT_EMI_MPU, DEVAPC0_D0_VIO_STA_7);
-
-		/* Notice: You cannot unmask Type B slave (e.g. EMI, EMI_MPU) unless unregistering IRQ */
-		/* EMI and EMI_MPU are moved from Type B to Type 2 slave */
-
-		pr_err("[DEVAPC] EMI_MPU Init done\n");
-		return 0;
-	}
-
-	return -1;
-}
-
-int mt_devapc_check_emi_violation(void)
-{
-	if ((readl(IOMEM(DEVAPC0_D0_VIO_STA_7)) & ABORT_EMI) == 0)
-		return -1;
-
-	DEVAPC_VIO_MSG("EMI violation...\n");
-	return 0;
-}
-
-int mt_devapc_check_emi_mpu_violation(void)
-{
-	if ((readl(IOMEM(DEVAPC0_D0_VIO_STA_7)) & ABORT_EMI_MPU) == 0)
-		return -1;
-
-	DEVAPC_VIO_MSG("EMI_MPU violation...\n");
-	return 0;
-}
-
-int mt_devapc_clear_emi_violation(void)
-{
-	if ((readl(IOMEM(DEVAPC0_D0_VIO_STA_7)) & ABORT_EMI) != 0)
-		mt_reg_sync_writel(ABORT_EMI, DEVAPC0_D0_VIO_STA_7);
-
-	return 0;
-}
-
-int mt_devapc_clear_emi_mpu_violation(void)
-{
-	if ((readl(IOMEM(DEVAPC0_D0_VIO_STA_7)) & ABORT_EMI_MPU) != 0)
-		mt_reg_sync_writel(ABORT_EMI_MPU, DEVAPC0_D0_VIO_STA_7);
-
-	return 0;
-}
+/*
+ * The extern functions for EMI MPU are removed because EMI MPU and Device APC
+ * do not share the same IRQ now.
+ */
 
 /**************************************************************************
 *STATIC FUNCTION
 **************************************************************************/
 
-static int devapc_ioremap(void)
-{
-	if (devapc_pd_base == NULL) {
-		struct device_node *node = NULL;
-		/*IO remap */
-
-		node = of_find_compatible_node(NULL, NULL, "mediatek,devapc");
-		if (node) {
-			devapc_pd_base = of_iomap(node, 0);
-			devapc_irq = irq_of_parse_and_map(node, 0);
-			DEVAPC_MSG("[DEVAPC] PD_ADDRESS %p, IRD: %d\n", devapc_pd_base, devapc_irq);
-		} else {
-			pr_err("[DEVAPC] can't find DAPC_PD compatible node\n");
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
 #ifdef CONFIG_MTK_HIBERNATION
 static int devapc_pm_restore_noirq(struct device *device)
 {
-	if (devapc_irq != 0) {
-		mt_irq_set_sens(devapc_irq, MT_LEVEL_SENSITIVE);
-		mt_irq_set_polarity(devapc_irq, MT_POLARITY_LOW);
+	if (devapc_infra_irq != 0) {
+		mt_irq_set_sens(devapc_infra_irq, MT_LEVEL_SENSITIVE);
+		mt_irq_set_polarity(devapc_infra_irq, MT_POLARITY_LOW);
 	}
 
 	return 0;
@@ -488,281 +498,193 @@ static int devapc_pm_restore_noirq(struct device *device)
 #endif
 
 #if DEVAPC_TURN_ON
-static void unmask_module_irq(unsigned int module)
+static void unmask_infra_module_irq(unsigned int module)
 {
 	unsigned int apc_index = 0;
 	unsigned int apc_bit_index = 0;
 
-	apc_index = module / (MOD_NO_IN_1_DEVAPC*2);
-	apc_bit_index = module % (MOD_NO_IN_1_DEVAPC*2);
-
-	switch (apc_index) {
-	case 0:
-		*DEVAPC0_D0_VIO_MASK_0 &= (0xFFFFFFFF ^ (1 << apc_bit_index));
-		break;
-	case 1:
-		*DEVAPC0_D0_VIO_MASK_1 &= (0xFFFFFFFF ^ (1 << apc_bit_index));
-		break;
-	case 2:
-		*DEVAPC0_D0_VIO_MASK_2 &= (0xFFFFFFFF ^ (1 << apc_bit_index));
-		break;
-	case 3:
-		*DEVAPC0_D0_VIO_MASK_3 &= (0xFFFFFFFF ^ (1 << apc_bit_index));
-		break;
-	case 4:
-		*DEVAPC0_D0_VIO_MASK_4 &= (0xFFFFFFFF ^ (1 << apc_bit_index));
-		break;
-	case 5:
-		*DEVAPC0_D0_VIO_MASK_5 &= (0xFFFFFFFF ^ (1 << apc_bit_index));
-		break;
-	case 6:
-		*DEVAPC0_D0_VIO_MASK_6 &= (0xFFFFFFFF ^ (1 << apc_bit_index));
-		break;
-	case 7:
-		*DEVAPC0_D0_VIO_MASK_7 &= (0xFFFFFFFF ^ (1 << apc_bit_index));
-		break;
-	default:
-		pr_err("[DEVAPC] unmask_module_irq: module overflow!\n");
-		break;
+	if (module > PD_INFRA_VIO_MASK_MAX_INDEX) {
+		pr_err("[DEVAPC] unmask_infra_module_irq: module overflow!\n");
+		return;
 	}
+
+	apc_index = module / (MOD_NO_IN_1_DEVAPC * 2);
+	apc_bit_index = module % (MOD_NO_IN_1_DEVAPC * 2);
+
+	*DEVAPC_PD_INFRA_VIO_MASK(apc_index) &= (0xFFFFFFFF ^ (1 << apc_bit_index));
+}
+
+static int clear_infra_vio_status(unsigned int module)
+{
+	unsigned int apc_index = 0;
+	unsigned int apc_bit_index = 0;
+
+	if (module > PD_INFRA_VIO_STA_MAX_INDEX) {
+		pr_err("[DEVAPC] clear_infra_vio_status: module overflow!\n");
+		return -1;
+	}
+
+	apc_index = module / (MOD_NO_IN_1_DEVAPC * 2);
+	apc_bit_index = module % (MOD_NO_IN_1_DEVAPC * 2);
+
+	*DEVAPC_PD_INFRA_VIO_STA(apc_index) = (0x1 << apc_bit_index);
+
+	return 0;
+}
+
+static int check_infra_vio_status(unsigned int module)
+{
+	unsigned int apc_index = 0;
+	unsigned int apc_bit_index = 0;
+
+	if (module > PD_INFRA_VIO_STA_MAX_INDEX) {
+		pr_err("[DEVAPC] check_infra_vio_status: module overflow!\n");
+		return -1;
+	}
+
+	apc_index = module / (MOD_NO_IN_1_DEVAPC * 2);
+	apc_bit_index = module % (MOD_NO_IN_1_DEVAPC * 2);
+
+	if (*DEVAPC_PD_INFRA_VIO_STA(apc_index) & (0x1 << apc_bit_index))
+		return 1;
+
+	return 0;
 }
 
 static void start_devapc(void)
 {
 	unsigned int i;
 
-	mt_reg_sync_writel(readl(DEVAPC0_PD_APC_CON) & (0xFFFFFFFF ^ (1 << 2)), DEVAPC0_PD_APC_CON);
+	mt_reg_sync_writel(0x80000000, DEVAPC_PD_INFRA_APC_CON);
 
-	/* SMC call is called in LK instead */
+	/* SMC call is called to set Device APC in LK instead */
 
-	for (i = 0; i < ARRAY_SIZE(devapc_devices); i++) {
-		clear_vio_status(i);
-		if (true == devapc_devices[i].enable_vio_irq)
-			unmask_module_irq(i);
-	}
+	pr_err("[DEVAPC] INFRA VIO_MASK 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+		readl(DEVAPC_PD_INFRA_VIO_MASK(0)), readl(DEVAPC_PD_INFRA_VIO_MASK(1)),
+		readl(DEVAPC_PD_INFRA_VIO_MASK(2)), readl(DEVAPC_PD_INFRA_VIO_MASK(3)),
+		readl(DEVAPC_PD_INFRA_VIO_MASK(4)), readl(DEVAPC_PD_INFRA_VIO_MASK(5)),
+		readl(DEVAPC_PD_INFRA_VIO_MASK(6)), readl(DEVAPC_PD_INFRA_VIO_MASK(7)),
+		readl(DEVAPC_PD_INFRA_VIO_MASK(8)), readl(DEVAPC_PD_INFRA_VIO_MASK(9)));
 
-	pr_err("[DEVAPC] start_devapc: Current VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x\n",
-		       readl(DEVAPC0_D0_VIO_STA_0), readl(DEVAPC0_D0_VIO_STA_1),
-		       readl(DEVAPC0_D0_VIO_STA_2), readl(DEVAPC0_D0_VIO_STA_3),
-		       readl(DEVAPC0_D0_VIO_STA_4), readl(DEVAPC0_D0_VIO_STA_5),
-			   readl(DEVAPC0_D0_VIO_STA_6), readl(DEVAPC0_D0_VIO_STA_7));
+	pr_err("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+		readl(DEVAPC_PD_INFRA_VIO_STA(0)), readl(DEVAPC_PD_INFRA_VIO_STA(1)),
+		readl(DEVAPC_PD_INFRA_VIO_STA(2)), readl(DEVAPC_PD_INFRA_VIO_STA(3)),
+		readl(DEVAPC_PD_INFRA_VIO_STA(4)), readl(DEVAPC_PD_INFRA_VIO_STA(5)),
+		readl(DEVAPC_PD_INFRA_VIO_STA(6)), readl(DEVAPC_PD_INFRA_VIO_STA(7)),
+		readl(DEVAPC_PD_INFRA_VIO_STA(8)), readl(DEVAPC_PD_INFRA_VIO_STA(9)));
 
-	pr_err("[DEVAPC] start_devapc: Current VIO_MASK 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x\n",
-		       readl(DEVAPC0_D0_VIO_MASK_0), readl(DEVAPC0_D0_VIO_MASK_1),
-		       readl(DEVAPC0_D0_VIO_MASK_2), readl(DEVAPC0_D0_VIO_MASK_3),
-		       readl(DEVAPC0_D0_VIO_MASK_4), readl(DEVAPC0_D0_VIO_MASK_5),
-			   readl(DEVAPC0_D0_VIO_MASK_6), readl(DEVAPC0_D0_VIO_MASK_7));
-}
+	pr_err("[DEVAPC] Clear INFRA VIO_STA and unmask INFRA VIO_MASK...\n",
 
-static int clear_vio_status(unsigned int module)
-{
-
-	unsigned int apc_index = 0;
-	unsigned int apc_bit_index = 0;
-
-	apc_index = module / (MOD_NO_IN_1_DEVAPC * 2);
-	apc_bit_index = module % (MOD_NO_IN_1_DEVAPC * 2);
-
-	switch (apc_index) {
-	case 0:
-		*DEVAPC0_D0_VIO_STA_0 = (0x1 << apc_bit_index);
-		break;
-	case 1:
-		*DEVAPC0_D0_VIO_STA_1 = (0x1 << apc_bit_index);
-		break;
-	case 2:
-		*DEVAPC0_D0_VIO_STA_2 = (0x1 << apc_bit_index);
-		break;
-	case 3:
-		*DEVAPC0_D0_VIO_STA_3 = (0x1 << apc_bit_index);
-		break;
-	case 4:
-		*DEVAPC0_D0_VIO_STA_4 = (0x1 << apc_bit_index);
-		break;
-	case 5:
-		*DEVAPC0_D0_VIO_STA_5 = (0x1 << apc_bit_index);
-		break;
-	case 6:
-		*DEVAPC0_D0_VIO_STA_6 = (0x1 << apc_bit_index);
-		break;
-	case 7:
-		*DEVAPC0_D0_VIO_STA_7 = (0x1 << apc_bit_index);
-		break;
-	default:
-	    pr_err("[DEVAPC] clear_vio_status: module overflow!\n");
-		break;
-	}
-
-	return 0;
-}
-
-static int check_vio_status(unsigned int module)
-{
-	unsigned int apc_index = 0;
-	unsigned int apc_bit_index = 0;
-	unsigned int vio_status = 0;
-
-	apc_index = module / (MOD_NO_IN_1_DEVAPC * 2);
-	apc_bit_index = module % (MOD_NO_IN_1_DEVAPC * 2);
-
-	switch (apc_index) {
-	case 0:
-		vio_status = (*DEVAPC0_D0_VIO_STA_0 & (0x1 << apc_bit_index));
-		break;
-	case 1:
-		vio_status = (*DEVAPC0_D0_VIO_STA_1 & (0x1 << apc_bit_index));
-		break;
-	case 2:
-		vio_status = (*DEVAPC0_D0_VIO_STA_2 & (0x1 << apc_bit_index));
-		break;
-	case 3:
-		vio_status = (*DEVAPC0_D0_VIO_STA_3 & (0x1 << apc_bit_index));
-		break;
-	case 4:
-		vio_status = (*DEVAPC0_D0_VIO_STA_4 & (0x1 << apc_bit_index));
-		break;
-	case 5:
-		vio_status = (*DEVAPC0_D0_VIO_STA_5 & (0x1 << apc_bit_index));
-		break;
-	case 6:
-		vio_status = (*DEVAPC0_D0_VIO_STA_6 & (0x1 << apc_bit_index));
-		break;
-	case 7:
-		vio_status = (*DEVAPC0_D0_VIO_STA_7 & (0x1 << apc_bit_index));
-		break;
-	default:
-	    pr_err("[DEVAPC] check_vio_status: module overflow!\n");
-		break;
-	}
-
-	if (vio_status)
-		return 1;
-
-	return 0;
-}
-#endif
-
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
-static void evaluate_aee_warning(unsigned int i, unsigned int dbg1)
-{
-	char aee_str[256];
-	unsigned long long current_time;
-
-	if (devapc_vio_aee_shown[i] == 0) {
-		if (devapc_vio_count[i] < DEVAPC_VIO_AEE_TRIGGER_TIMES) {
-			devapc_vio_count[i]++;
-
-			if (devapc_vio_count[i] == 1) {
-				/* violation for this slave is triggered the first time */
-
-				/* get current time from start-up in ns */
-				devapc_vio_first_trigger_time[i] = sched_clock();
-#if 0
-				DEVAPC_VIO_MSG("[DEVAPC] devapc_vio_first_trigger_time: %llu\n",
-					devapc_vio_first_trigger_time[i] / 1000000); /* ms */
-#endif
-			}
+	for (i = 0; i < ARRAY_SIZE(devapc_infra_devices); i++)
+		if (true == devapc_infra_devices[i].enable_vio_irq) {
+			clear_infra_vio_status(i);
+			unmask_infra_module_irq(i);
 		}
 
-		if (devapc_vio_count[i] >= DEVAPC_VIO_AEE_TRIGGER_TIMES) {
-			current_time = sched_clock(); /* get current time from start-up in ns */
-#if 0
-			DEVAPC_VIO_MSG("[DEVAPC] current_time: %llu\n",
-				current_time / 1000000); /* ms */
-			DEVAPC_VIO_MSG("[DEVAPC] devapc_vio_count[%d]: %d\n",
-				i, devapc_vio_count[i]);
-#endif
-			if (((current_time - devapc_vio_first_trigger_time[i]) / 1000000) <=
-					(unsigned long long)DEVAPC_VIO_AEE_TRIGGER_FREQUENCY) {  /* diff time by ms */
-				/* Mark the flag for showing AEE (AEE should be shown only once) */
-				devapc_vio_aee_shown[i] = 1;
+	pr_err("[DEVAPC] INFRA VIO_MASK 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+		readl(DEVAPC_PD_INFRA_VIO_MASK(0)), readl(DEVAPC_PD_INFRA_VIO_MASK(1)),
+		readl(DEVAPC_PD_INFRA_VIO_MASK(2)), readl(DEVAPC_PD_INFRA_VIO_MASK(3)),
+		readl(DEVAPC_PD_INFRA_VIO_MASK(4)), readl(DEVAPC_PD_INFRA_VIO_MASK(5)),
+		readl(DEVAPC_PD_INFRA_VIO_MASK(6)), readl(DEVAPC_PD_INFRA_VIO_MASK(7)),
+		readl(DEVAPC_PD_INFRA_VIO_MASK(8)), readl(DEVAPC_PD_INFRA_VIO_MASK(9)));
 
-				DEVAPC_VIO_MSG("[DEVAPC] Populating AEE Warning...\n");
+	pr_err("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+		readl(DEVAPC_PD_INFRA_VIO_STA(0)), readl(DEVAPC_PD_INFRA_VIO_STA(1)),
+		readl(DEVAPC_PD_INFRA_VIO_STA(2)), readl(DEVAPC_PD_INFRA_VIO_STA(3)),
+		readl(DEVAPC_PD_INFRA_VIO_STA(4)), readl(DEVAPC_PD_INFRA_VIO_STA(5)),
+		readl(DEVAPC_PD_INFRA_VIO_STA(6)), readl(DEVAPC_PD_INFRA_VIO_STA(7)),
+		readl(DEVAPC_PD_INFRA_VIO_STA(8)), readl(DEVAPC_PD_INFRA_VIO_STA(9)));
 
-				if (devapc_vio_current_aee_trigger_times <
-						DEVAPC_VIO_MAX_TOTAL_MODULE_AEE_TRIGGER_TIMES) {
-					devapc_vio_current_aee_trigger_times++;
-
-					sprintf(aee_str, "[DEVAPC] Access Violation Slave: %s (index=%d)\n",
-						devapc_devices[i].device, i);
-
-					aee_kernel_warning(aee_str,
-						"%s\nAccess Violation Slave: %s\nVio Addr: 0x%x\n%s%s\n",
-						"Device APC Violation",
-						devapc_devices[i].device,
-						dbg1,
-						"CRDISPATCH_KEY:Device APC Violation Issue/",
-						devapc_devices[i].device
-					);
-				}
-			}
-
-			devapc_vio_count[i] = 0;
-		}
-	}
 }
-#endif
 
-#if DEVAPC_TURN_ON
-static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
+
+static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 {
 	unsigned int dbg0 = 0, dbg1 = 0;
 	unsigned int master_id;
 	unsigned int domain_id;
-	unsigned int r_w_violation;
+	unsigned int vio_addr_high;
+	unsigned int read_violation;
+	unsigned int write_violation;
 	unsigned int device_count;
 	unsigned int i;
 	struct pt_regs *regs;
 
-	dbg0 = readl(DEVAPC0_VIO_DBG0);
-	dbg1 = readl(DEVAPC0_VIO_DBG1);
-	master_id = (dbg0 & VIO_DBG_MSTID) >> 0;
-	domain_id = (dbg0 & VIO_DBG_DMNID) >> 16;
-	r_w_violation = (dbg0 & VIO_DBG_W) >> 28;
+	if (irq_number == devapc_infra_irq) {
+		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_MASK 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
+			readl(DEVAPC_PD_INFRA_VIO_MASK(0)), readl(DEVAPC_PD_INFRA_VIO_MASK(1)),
+			readl(DEVAPC_PD_INFRA_VIO_MASK(2)), readl(DEVAPC_PD_INFRA_VIO_MASK(3)),
+			readl(DEVAPC_PD_INFRA_VIO_MASK(4)));
+		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_MASK 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+			readl(DEVAPC_PD_INFRA_VIO_MASK(5)), readl(DEVAPC_PD_INFRA_VIO_MASK(6)),
+			readl(DEVAPC_PD_INFRA_VIO_MASK(7)), readl(DEVAPC_PD_INFRA_VIO_MASK(8)),
+			readl(DEVAPC_PD_INFRA_VIO_MASK(9)));
 
-	/* violation information improvement */
-	if (r_w_violation == 1) {
-		DEVAPC_VIO_MSG
-		    ("[DEVAPC] Violation(W) - Process:%s, PID:%i, Vio Addr:0x%x, Bus ID:0x%x, Dom ID:0x%x, DBG0:0x%x\n",
-		     current->comm, current->pid, dbg1, master_id, domain_id, (*DEVAPC0_VIO_DBG0));
+		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
+			readl(DEVAPC_PD_INFRA_VIO_STA(0)), readl(DEVAPC_PD_INFRA_VIO_STA(1)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(2)), readl(DEVAPC_PD_INFRA_VIO_STA(3)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(4)));
+		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+			readl(DEVAPC_PD_INFRA_VIO_STA(5)), readl(DEVAPC_PD_INFRA_VIO_STA(6)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(7)), readl(DEVAPC_PD_INFRA_VIO_STA(8)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(9)));
+
+		DEVAPC_VIO_MSG("[DEVAPC] VIO_SHIFT_STA: 0x%x\n", readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA));
+
+		DEVAPC_VIO_MSG("[DEVAPC] Dump INFRA DBG0 & DBG1...\n");
+		for (i = 0; i <= PD_INFRA_VIO_SHIFT_MAX_BIT; ++i)
+			if (readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA) & (0x1 << i)) {
+				mt_reg_sync_writel(0x1 << i, DEVAPC_PD_INFRA_VIO_SHIFT_SEL);
+				mt_reg_sync_writel(0x1, DEVAPC_PD_INFRA_VIO_SHIFT_CON);
+				while (readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON) & 0x3 != 0x3)
+					DEVAPC_VIO_MSG("[DEVAPC] Syncing INFRA DBG0 & DBG1...\n");
+				DEVAPC_VIO_MSG("[DEVAPC] VIO_SHIFT_STA=0x%X, VIO_SHIFT_SEL=0x%X, VIO_SHIFT_CON=0x%X\n",
+					readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA), readl(DEVAPC_PD_INFRA_VIO_SHIFT_SEL),
+					readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON));
+				mt_reg_sync_writel(0x0, DEVAPC_PD_INFRA_VIO_SHIFT_CON);
+				dbg0 = readl(DEVAPC_PD_INFRA_VIO_DBG0);
+				dbg1 = readl(DEVAPC_PD_INFRA_VIO_DBG1);
+				master_id = (dbg0 & INFRA_VIO_DBG_MSTID) >> INFRA_VIO_DBG_MSTID_START_BIT;
+				domain_id = (dbg0 & INFRA_VIO_DBG_DMNID) >> INFRA_VIO_DBG_DMNID_START_BIT;
+				write_violation = (dbg0 & INFRA_VIO_DBG_W_VIO) >> INFRA_VIO_DBG_W_VIO_START_BIT;
+				read_violation = (dbg0 & INFRA_VIO_DBG_R_VIO) >> INFRA_VIO_DBG_R_VIO_START_BIT;
+				vio_addr_high = (dbg0 & INFRA_VIO_ADDR_HIGH) >> INFRA_VIO_ADDR_HIGH_START_BIT;
+				mt_reg_sync_writel(0x0, DEVAPC_PD_INFRA_VIO_SHIFT_SEL);
+				mt_reg_sync_writel(0x1 << i, DEVAPC_PD_INFRA_VIO_SHIFT_STA);
+
+				/* violation information improvement */
+				DEVAPC_VIO_MSG("[DEVAPC] Violation(Infra,%s%s) - Process:%s, PID:%i\n",
+					read_violation == 1 ? "R" : " ", write_violation == 1 ? "W" : " ",
+					current->comm, current->pid);
+				DEVAPC_VIO_MSG("[DEVAPC] Vio Addr:0x%x (High:0x%x), Bus ID:0x%x, Dom ID:0x%x\n",
+					dbg1, vio_addr_high, master_id, domain_id);
+			}
+
+		device_count = ARRAY_SIZE(devapc_infra_devices);
+
+		/* No need to check violation of EMI & EMI MPU slaves for Infra because they will not be unmasked */
+
+		/* checking and showing violation normal slaves */
+		for (i = 0; i < device_count; i++)
+			if (devapc_infra_devices[i].enable_vio_irq == true && check_infra_vio_status(i) == 1) {
+				clear_infra_vio_status(i);
+				DEVAPC_VIO_MSG("[DEVAPC] Access Violation Slave: %s (infra index=%d)\n",
+									devapc_infra_devices[i].device, i);
+			}
+
+		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
+			readl(DEVAPC_PD_INFRA_VIO_STA(0)), readl(DEVAPC_PD_INFRA_VIO_STA(1)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(2)), readl(DEVAPC_PD_INFRA_VIO_STA(3)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(4)));
+		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 5:0x%x, 6:0x%x, 7:0x%x, 8:0x%x, 9:0x%x\n",
+			readl(DEVAPC_PD_INFRA_VIO_STA(5)), readl(DEVAPC_PD_INFRA_VIO_STA(6)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(7)), readl(DEVAPC_PD_INFRA_VIO_STA(8)),
+			readl(DEVAPC_PD_INFRA_VIO_STA(9)));
+
+		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_SHIFT_STA: 0x%x\n", readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA));
+
 	} else {
-		DEVAPC_VIO_MSG
-		    ("[DEVAPC] Violation(R) - Process:%s, PID:%i, Vio Addr:0x%x, Bus ID:0x%x, Dom ID:0x%x, DBG0:0x%x\n",
-		     current->comm, current->pid, dbg1, master_id, domain_id, (*DEVAPC0_VIO_DBG0));
-	}
-
-	DEVAPC_VIO_MSG("[DEVAPC] VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, 5:0x%x, 6:0x%x, 7:0x%x\n",
-		       readl(DEVAPC0_D0_VIO_STA_0), readl(DEVAPC0_D0_VIO_STA_1),
-		       readl(DEVAPC0_D0_VIO_STA_2), readl(DEVAPC0_D0_VIO_STA_3),
-		       readl(DEVAPC0_D0_VIO_STA_4), readl(DEVAPC0_D0_VIO_STA_5),
-			   readl(DEVAPC0_D0_VIO_STA_6), readl(DEVAPC0_D0_VIO_STA_7));
-
-	/* device_count = (sizeof(devapc_devices) / sizeof(devapc_devices[0])); */
-	device_count = ARRAY_SIZE(devapc_devices);
-
-	/* checking and showing violation EMI & EMI MPU slaves */
-	if (check_vio_status(INDEX_EMI))
-		DEVAPC_VIO_MSG("[DEVAPC] Access Violation Slave: EMI (index=%d)\n", INDEX_EMI);
-
-	if (check_vio_status(INDEX_EMI_MPU))
-		DEVAPC_VIO_MSG("[DEVAPC] Access Violation Slave: EMI_MPU (index=%d)\n", INDEX_EMI_MPU);
-
-	/* checking and showing violation normal slaves */
-	for (i = 0; i < device_count; i++) {
-		/* violation information improvement */
-
-		if ((check_vio_status(i)) && (devapc_devices[i].enable_vio_irq == true)) {
-			DEVAPC_VIO_MSG("[DEVAPC] Access Violation Slave: %s (index=%d)\n",
-								devapc_devices[i].device, i);
-
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
-			/* Frequency-based Violation AEE Warning (Under the condition that the violation */
-			/* for the module is not shown, it will trigger the AEE if "x" violations in "y" ms) */
-			evaluate_aee_warning(i, dbg1);
-#endif
-		}
-
-		clear_vio_status(i);
+		DEVAPC_VIO_MSG("[DEVAPC] (ERROR) irq_number %d is not registered!\n", irq_number);
 	}
 
 	if ((DEVAPC_ENABLE_ONE_CORE_VIOLATION_DEBUG) || (enable_dynamic_one_core_violation_debug)) {
@@ -778,52 +700,47 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 		DEVAPC_VIO_MSG("[DEVAPC] ====== End of dumping Device APC violation tracing ======\n");
 	}
 
-	mt_reg_sync_writel(VIO_DBG_CLR, DEVAPC0_VIO_DBG0);
-	dbg0 = readl(DEVAPC0_VIO_DBG0);
-	dbg1 = readl(DEVAPC0_VIO_DBG1);
-
-	if ((dbg0 != 0) || (dbg1 != 0)) {
-		DEVAPC_VIO_MSG("[DEVAPC] Multi-violation!\n");
-		DEVAPC_VIO_MSG("[DEVAPC] DBG0 = %x, DBG1 = %x\n", dbg0, dbg1);
-	}
-
 	return IRQ_HANDLED;
 }
 #endif
 
-static int devapc_probe(struct platform_device *dev)
+static int devapc_probe(struct platform_device *pdev)
 {
+	struct device_node *node = pdev->dev.of_node;
 #if DEVAPC_TURN_ON
 	int ret;
 #endif
 
 	DEVAPC_MSG("[DEVAPC] module probe.\n");
 
-	/*IO remap */
-	devapc_ioremap();
+	if (devapc_pd_infra_base == NULL) {
+		if (node) {
+			devapc_pd_infra_base = of_iomap(node, DAPC_DEVICE_TREE_NODE_PD_INFRA_INDEX);
+			devapc_infra_irq = irq_of_parse_and_map(node, DAPC_DEVICE_TREE_NODE_PD_INFRA_INDEX);
+			DEVAPC_MSG("[DEVAPC] PD_INFRA_ADDRESS: %p, IRQ: %d\n", devapc_pd_infra_base, devapc_infra_irq);
+		} else {
+			pr_err("[DEVAPC] can't find DAPC_INFRA_PD compatible node\n");
+			return -1;
+		}
+	}
 
-	/*Temporarily disable Device APC kernel driver for bring-up */
-	/*
-	 * Interrupts of vilation (including SPC in SMI, or EMI MPU) are triggered by the device APC.
-	 * need to share the interrupt with the SPC driver.
-	 */
 #if DEVAPC_TURN_ON
-	ret = request_irq(devapc_irq, (irq_handler_t) devapc_violation_irq,
+	ret = request_irq(devapc_infra_irq, (irq_handler_t) devapc_violation_irq,
 			  IRQF_TRIGGER_LOW | IRQF_SHARED, "devapc", &g_devapc_ctrl);
 	if (ret) {
-		pr_err("[DEVAPC] Failed to request irq! (%d)\n", ret);
+		pr_err("[DEVAPC] Failed to request infra irq! (%d)\n", ret);
 		return ret;
 	}
 #endif
 
 /* CCF */
 #if DEVAPC_USE_CCF
-	dapc_clk = devm_clk_get(&dev->dev, "devapc-main");
-	if (IS_ERR(dapc_clk)) {
-		pr_err("[DEVAPC] cannot get devapc clock from common clock framework.\n");
-		return PTR_ERR(dapc_clk);
+	dapc_infra_clk = devm_clk_get(&pdev->dev, "devapc-infra-clock");
+	if (IS_ERR(dapc_infra_clk)) {
+		pr_err("[DEVAPC] (Infra) Cannot get devapc clock from common clock framework.\n");
+		return PTR_ERR(dapc_infra_clk);
 	}
-	clk_prepare_enable(dapc_clk);
+	clk_prepare_enable(dapc_infra_clk);
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
@@ -839,6 +756,7 @@ static int devapc_probe(struct platform_device *dev)
 
 static int devapc_remove(struct platform_device *dev)
 {
+	clk_disable_unprepare(dapc_infra_clk);
 	return 0;
 }
 
@@ -850,7 +768,6 @@ static int devapc_suspend(struct platform_device *dev, pm_message_t state)
 static int devapc_resume(struct platform_device *dev)
 {
 	DEVAPC_MSG("[DEVAPC] module resume.\n");
-
 	return 0;
 }
 
@@ -896,16 +813,16 @@ static int devapc_dbg_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-struct platform_device devapc_device = {
-	.name = "devapc",
-	.id = -1,
-};
-
 static const struct file_operations devapc_dbg_fops = {
 	.owner = THIS_MODULE,
 	.open  = devapc_dbg_open,
 	.write = devapc_dbg_write,
 	.read = NULL,
+};
+
+static const struct of_device_id plat_devapc_dt_match[] = {
+	{ .compatible = "mediatek,devapc" },
+	{},
 };
 
 static struct platform_driver devapc_driver = {
@@ -914,9 +831,10 @@ static struct platform_driver devapc_driver = {
 	.suspend = devapc_suspend,
 	.resume = devapc_resume,
 	.driver = {
-		   .name = "devapc",
-		   .owner = THIS_MODULE,
-		   },
+			.name = "devapc",
+			.owner = THIS_MODULE,
+			.of_match_table	= plat_devapc_dt_match,
+	},
 };
 
 /*
@@ -926,18 +844,11 @@ static int __init devapc_init(void)
 {
 	int ret;
 
-	DEVAPC_MSG("[DEVAPC] module init.\n");
-
-	ret = platform_device_register(&devapc_device);
-	if (ret) {
-		pr_err("[DEVAPC] Unable to do device register(%d)\n", ret);
-		return ret;
-	}
+	DEVAPC_MSG("[DEVAPC] kernel module init.\n");
 
 	ret = platform_driver_register(&devapc_driver);
 	if (ret) {
 		pr_err("[DEVAPC] Unable to register driver (%d)\n", ret);
-		platform_device_unregister(&devapc_device);
 		return ret;
 	}
 
@@ -945,7 +856,6 @@ static int __init devapc_init(void)
 	if (!g_devapc_ctrl) {
 		pr_err("[DEVAPC] Failed to add devapc device! (%d)\n", ret);
 		platform_driver_unregister(&devapc_driver);
-		platform_device_unregister(&devapc_device);
 		return ret;
 	}
 	g_devapc_ctrl->owner = THIS_MODULE;
@@ -967,6 +877,7 @@ static void __exit devapc_exit(void)
 #endif
 }
 
-late_initcall(devapc_init);
+/* Device APC no longer shares IRQ with EMI and can be changed to use the earlier "arch_initcall" */
+arch_initcall(devapc_init);
 module_exit(devapc_exit);
 MODULE_LICENSE("GPL");
