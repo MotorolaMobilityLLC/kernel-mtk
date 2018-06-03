@@ -864,6 +864,7 @@ void enable_mm_clk(void)
 int spm_mtcmos_ctrl_dis(int state)
 {
 	int err = 0;
+	int retry = 0;
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off DIS" */
@@ -872,20 +873,69 @@ int spm_mtcmos_ctrl_dis(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1) & DIS_PROT_STEP1_0_ACK_MASK) !=
 			DIS_PROT_STEP1_0_ACK_MASK) {
+			retry++;
+			if (retry == 5000) {
+				pr_notice("INFRA_TOPAXI_PROTECTEN_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_1));
+				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1));
+				pr_notice("PWR_STATUS = %08x, %08x\n",
+					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN));
+				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
+				pr_notice("INFRA_TOPAXI_PROTECTSTA0_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+				BUG_ON(1);
+			}
 		}
 #endif
 		/* TINFO="Set bus protect - step2 : 0" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_SET, DIS_PROT_STEP2_0_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
+		retry = 0;
 		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1) & DIS_PROT_STEP2_0_ACK_MASK) !=
 			DIS_PROT_STEP2_0_ACK_MASK) {
+			retry++;
+			if (retry == 5000) {
+				pr_notice("INFRA_TOPAXI_PROTECTEN_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_1));
+				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1));
+				pr_notice("PWR_STATUS = %08x, %08x\n",
+					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN));
+				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
+				pr_notice("INFRA_TOPAXI_PROTECTSTA0_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+				BUG_ON(1);
+			}
 		}
 #endif
 		/* TINFO="Set bus protect - step2 : 1" */
 		spm_write(SMI_COMMON_SMI_CLAMP_SET, DIS_PROT_STEP2_1_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
+		retry = 0;
 		while ((spm_read(SMI_COMMON_SMI_CLAMP) & DIS_PROT_STEP2_1_ACK_MASK) !=
 			DIS_PROT_STEP2_1_ACK_MASK) {
+			retry++;
+			if (retry == 5000) {
+				pr_notice("INFRA_TOPAXI_PROTECTEN_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_1));
+				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1));
+				pr_notice("PWR_STATUS = %08x, %08x\n",
+					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN));
+				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
+				pr_notice("INFRA_TOPAXI_PROTECTSTA0_1 = %08x\n",
+					spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+			}
 		}
 #endif
 		/* TINFO="Set SRAM_PDN = 1" */
