@@ -85,19 +85,12 @@ static inline void __mt_update_tracing_mark_write_addr(void)
 		tracing_mark_write_addr = kallsyms_lookup_name("tracing_mark_write");
 }
 
-static inline void lhd_kernel_trace_begin(char *name, int id, int min, int max)
+static inline void lhd_kernel_trace(char *name, int id, int min, int max)
 {
 	__mt_update_tracing_mark_write_addr();
 	preempt_disable();
-	event_trace_printk(tracing_mark_write_addr, "B|%d|%s|%d|%d|%d\n", current->tgid, name, id, min, max);
-	preempt_enable();
-}
-
-static inline void lhd_kernel_trace_end(void)
-{
-	__mt_update_tracing_mark_write_addr();
-	preempt_disable();
-	event_trace_printk(tracing_mark_write_addr, "E\n");
+	event_trace_printk(tracing_mark_write_addr,
+			"boost_controller: %d %s %d %d %d\n", current->tgid, name, id, min, max);
 	preempt_enable();
 }
 
@@ -187,15 +180,12 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 		legacy_debug(log_enable, TAG"cluster %d, current_core_min %d current_core_max %d\n",
 			 i, current_core[i].min, current_core[i].max);
 #ifdef CONFIG_TRACING
-		lhd_kernel_trace_begin("current_core", i, current_core[i].min, current_core[i].max);
+		lhd_kernel_trace("current_core", i, current_core[i].min, current_core[i].max);
 #endif
 	}
 
 	mt_ppm_userlimit_cpu_core(nr_ppm_clusters, final_core);
 
-#ifdef CONFIG_TRACING
-	lhd_kernel_trace_end();
-#endif
 
 ret_update:
 	kfree(final_core);
@@ -264,15 +254,12 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 		legacy_debug(log_enable, TAG"cluster %d, freq_min %d freq_max %d\n",
 				i, current_freq[i].min, current_freq[i].max);
 #ifdef CONFIG_TRACING
-		lhd_kernel_trace_begin("current_freq", i, current_freq[i].min, current_freq[i].max);
+		lhd_kernel_trace("current_freq", i, current_freq[i].min, current_freq[i].max);
 #endif
 	}
 
 	mt_ppm_userlimit_cpu_freq(nr_ppm_clusters, final_freq);
 
-#ifdef CONFIG_TRACING
-	lhd_kernel_trace_end();
-#endif
 
 ret_update:
 	kfree(final_freq);
