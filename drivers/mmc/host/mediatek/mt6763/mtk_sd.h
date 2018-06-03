@@ -154,11 +154,6 @@ enum {
 typedef void (*sdio_irq_handler_t)(void *);  /* external irq handler */
 typedef void (*pm_callback_t)(pm_message_t state, void *data);
 
-#ifdef CONFIG_MTK_COMBO_COMM
-#include <mt-plat/mtk_wcn_cmb_stub.h>
-#define CFG_DEV_MSDC3
-#endif
-
 #define MSDC_CD_PIN_EN      (1 << 0)  /* card detection pin is wired   */
 #define MSDC_WP_PIN_EN      (1 << 1)  /* write protection pin is wired */
 #define MSDC_RST_PIN_EN     (1 << 2)  /* emmc reset pin is wired       */
