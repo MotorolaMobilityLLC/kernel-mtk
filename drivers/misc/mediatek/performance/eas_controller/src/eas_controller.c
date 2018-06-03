@@ -547,11 +547,11 @@ static ssize_t perfmgr_perfserv_ext_launch_mon_write(struct file *filp, const ch
 	if (kstrtoint(buf, 10, &data))
 		return -1;
 
-	if (!data) {
+	if (data) {
 		ext_launch_start();
 		ext_launch_state = 1;
 	} else {
-		ext_launch_cond(2);
+		ext_launch_end();
 		ext_launch_state = 0;
 	}
 
@@ -702,8 +702,8 @@ void perfmgr_eas_boost_init(void)
 	/*update pwr table for CPI monitor*/
 	update_pwd_tbl();
 
-	/*init timer*/
-	ext_launch_notify_init();
+	/*fb notification*/
+	eas_ctrl_extend_notify_init();
 }
 
 void init_perfmgr_eas_controller(void)
