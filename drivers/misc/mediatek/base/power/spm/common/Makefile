@@ -17,7 +17,7 @@ include $(srctree)/drivers/misc/mediatek/teei/Makefile.include
 endif
 # Include pwm header ddp_pwm.h
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/
-# Include mcdi header mtk_mcdi_governor.h
+# Include mcdi header mtk_mcdi_api.h
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
 # Include clkbuf header mtk_clkbuf_ctl.h
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1/
