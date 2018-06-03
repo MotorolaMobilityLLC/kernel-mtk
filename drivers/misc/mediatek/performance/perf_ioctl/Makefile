@@ -11,5 +11,8 @@
 # GNU General Public License for more details.
 #
 
+ifeq ($(CONFIG_MACH_MT6771), y)
+	ccflags-y += -DCONFIG_MTK_FPSGO_V2
+endif
 obj-y += perf_ioctl.o
 
