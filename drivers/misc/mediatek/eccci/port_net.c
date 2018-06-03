@@ -267,12 +267,6 @@ int ccmni_send_pkt(int md_id, int ccmni_idx, void *data, int is_ack)
 		CCCI_ERROR_LOG(0, NET, "port is NULL for CCMNI%d\n", ccmni_idx);
 		return CCMNI_ERR_TX_INVAL;
 	}
-	if (unlikely(skb->len > CCCI_NET_MTU)) {
-		CCCI_ERROR_LOG(port->md_id, NET, "exceeds MTU(%d) with %d\n",
-				CCCI_NET_MTU, skb->len);
-		dev_kfree_skb(skb);
-		return CCMNI_ERR_TX_OK;
-	}
 
 	ccci_h = (struct ccci_header *)skb_push(skb, sizeof(struct ccci_header));
 	ccci_h = (struct ccci_header *)skb->data;
