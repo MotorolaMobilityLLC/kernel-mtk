@@ -4247,6 +4247,10 @@ static unsigned int lost_pass1_d_done_cnt;
 #endif
 /* record lost p1_done or not, 1 for lost p1_done. 0 for normal , 2 for last working buffer. */
 static unsigned int gSof_camsvdone[2] = { 0, 0 };
+static unsigned int lost_camsv_done_cnt;
+
+static unsigned int lost_camsv2_done_cnt;
+
 
 static bool g1stSof[4] = { MTRUE, MTRUE };
 
@@ -8763,7 +8767,8 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 
 	unsigned int curr_pa;
 	struct timeval time_frmb;
-	unsigned int idx = 0, k = 0;
+	unsigned int j = 0, idx = 0, k = 0;
+
 	unsigned long long sec = 0;
 	unsigned long usec = 0;
 
@@ -8846,24 +8851,53 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 		ISP_CAMSV_DONE_Buf_Time(_camsv_imgo_, sec, usec);
 #else
 		ISP_CAMSV_DONE_Buf_Time(_camsv_imgo_, fbc, 0, 0);
+		lost_camsv_done_cnt = 0;
 #endif
 	}
 	if (IrqStatus_CAMSV & ISP_IRQ_CAMSV_STATUS_TG_SOF1_ST) {
+		unsigned int rt_dma = 0;
 		unsigned long long sec;
 		unsigned long usec;
 		ktime_t time;
 		unsigned int z, buf_idx;
 
+		if (pstRTBuf->ring_buf[_camsv_imgo_].active)
+			rt_dma = _camsv_imgo_;
+		else
+			LOG_INF("no main dma port opened at CAMSV SOF\n");
 		buf_idx = (pstRTBuf->ring_buf[_camsv_imgo_].start + 1) %
 			pstRTBuf->ring_buf[_camsv_imgo_].total_count;
 		/* chk this frame have EOF or not */
 		if ((fbc.Bits.FB_NUM - fbc.Bits.FBC_CNT) == 0) {
 			gSof_camsvdone[0] = 1;
+			lost_camsv_done_cnt++;
+			if (lost_camsv_done_cnt == 2) {
+				/*check any buffer is ready? */
+				for (k = 0; k < pstRTBuf->ring_buf[rt_dma].total_count; k++) {
+
+					if (pstRTBuf->ring_buf[rt_dma].data[k].bFilled
+						== ISP_RTBC_BUF_FILLED) {
+
+					for (j = 0; j < ISP_IRQ_USER_MAX; j++) {
+						IspInfo.IrqInfo.Status[j][ISP_IRQ_TYPE_INT_CAMSV] |=
+							ISP_IRQ_CAMSV_STATUS_PASS1_DON_ST;
+					}
+
+					lost_camsv_done_cnt = 0;
+					IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
+						"camsv buf rdy but lost pass1 done, wakeup by sof!!");
+					break;
+
+					}
+				}
+			}
 			IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
 				       CAMSV_TAG "Lost done_%d\n", sof_count[_CAMSV]);
 
 		} else {
 			gSof_camsvdone[0] = 0;
+			if (fbc.Bits.FB_NUM == (fbc.Bits.FBC_CNT + 1))
+				gSof_camsvdone[0] = 2;
 		}
 #ifdef _rtbc_buf_que_2_0_
 
@@ -8874,6 +8908,15 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 					pstRTBuf->ring_buf[_camsv_imgo_].data[buf_idx].base_pAddr);
 				ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
 					pstRTBuf->ring_buf[_camsv_imgo_].data[buf_idx].base_pAddr);
+			}
+			if ((fbc.Bits.FB_NUM - fbc.Bits.FBC_CNT) == 0) {
+				IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
+					CAMSV_TAG "drop wr2Phy_0x%x: ",
+					pstRTBuf->ring_buf[_camsv_imgo_].
+					data[pstRTBuf->ring_buf[_camsv_imgo_].start].base_pAddr);
+				ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
+					pstRTBuf->ring_buf[_camsv_imgo_].
+					data[pstRTBuf->ring_buf[_camsv_imgo_].start].base_pAddr);
 			}
 		}
 		/* equal case is for clear curidx */
@@ -8907,10 +8950,12 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 				       ISP_RD32(ISP_REG_ADDR_IMGO_SV_XSIZE),
 				       ISP_RD32(ISP_REG_ADDR_IMGO_SV_YSIZE));
 
-			if ((_fbc_chk.Bits.WCNT - fbc.Bits.WCNT) != 0)
-				IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
-					       "sv1:SW ISR right on next hw p1_done(0x%x_0x%x)\n",
-					       _fbc_chk.Reg_val, fbc.Reg_val);
+			if (pstRTBuf->ring_buf[_camsv_imgo_].active) {
+				if ((_fbc_chk.Bits.WCNT - fbc.Bits.WCNT) != 0)
+					IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
+					"sv1:SW ISR right on next hw p1_done(0x%x_0x%x)\n",
+					_fbc_chk.Reg_val, fbc.Reg_val);
+			}
 		}
 		/*		unsigned long long sec;*/
 		/*		unsigned long usec;*/
@@ -8920,8 +8965,10 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 		do_div(sec, 1000);      /*     usec */
 		usec = do_div(sec, 1000000);    /* sec and usec */
 		curr_pa = ISP_RD32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR);
-
-		ISP_CAMSV_SOF_Buf_Get(_camsv_imgo_, fbc, curr_pa, sec, usec, gSof_camsvdone[0]);
+		if (gSof_camsvdone[0] == 1)
+			ISP_CAMSV_SOF_Buf_Get(_camsv_imgo_, fbc, curr_pa, sec, usec, MTRUE);
+		else
+			ISP_CAMSV_SOF_Buf_Get(_camsv_imgo_, fbc, curr_pa, sec, usec, MFALSE);
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[_CAMSV_IRQ]));
 #ifdef ISR_LOG_ON
@@ -8948,7 +8995,8 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 
 	unsigned int curr_pa;
 	struct timeval time_frmb;
-	unsigned int idx = 0, k = 0;
+	unsigned int j = 0, idx = 0, k = 0;
+
 	unsigned long long sec = 0;
 	unsigned long usec = 0;
 
@@ -9008,8 +9056,9 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 
 	if (IrqStatus_CAMSV2 & ISP_IRQ_CAMSV2_STATUS_PASS1_DON_ST) {
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF, CAMSV2_TAG "fbc(0x%x)",
-				       (unsigned int)(fbc.Reg_val));
+			/* IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF, CAMSV2_TAG "fbc(0x%x)",
+			 *	       (unsigned int)(fbc.Reg_val));
+			 */
 
 			IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
 				       CAMSV2_TAG
@@ -9033,34 +9082,74 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		ISP_CAMSV_DONE_Buf_Time(_camsv2_imgo_, sec, usec);
 #else
 		ISP_CAMSV_DONE_Buf_Time(_camsv2_imgo_, fbc, 0, 0);
+		lost_camsv2_done_cnt = 0;
 #endif
 	}
 	if (IrqStatus_CAMSV2 & ISP_IRQ_CAMSV2_STATUS_TG_SOF1_ST) {
+		unsigned int rt_dma = 0;
+
 		unsigned long long sec;
 		unsigned long usec;
 		ktime_t time;
 		unsigned int z, buf_idx;
+
+		if (pstRTBuf->ring_buf[_camsv2_imgo_].active)
+			rt_dma = _camsv2_imgo_;
+		else
+			LOG_INF("no main dma port opened at CAMSV2 SOF\n");
 
 		buf_idx = (pstRTBuf->ring_buf[_camsv2_imgo_].start + 1) %
 			pstRTBuf->ring_buf[_camsv2_imgo_].total_count;
 		/* chk this     frame have EOF or not */
 		if ((fbc.Bits.FB_NUM - fbc.Bits.FBC_CNT) == 0) {
 			gSof_camsvdone[1] = 1;
+			lost_camsv2_done_cnt++;
+			if (lost_camsv2_done_cnt == 2) {
+				/* check any buffer is ready? */
+				for (k = 0; k < pstRTBuf->ring_buf[rt_dma].total_count; k++) {
+
+					if (pstRTBuf->ring_buf[rt_dma].data[k].bFilled
+						== ISP_RTBC_BUF_FILLED) {
+
+					for (j = 0; j < ISP_IRQ_USER_MAX; j++) {
+
+					IspInfo.IrqInfo.Status[j][ISP_IRQ_TYPE_INT_CAMSV2] |=
+						ISP_IRQ_CAMSV2_STATUS_PASS1_DON_ST;
+					}
+					lost_camsv2_done_cnt = 0;
+					IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
+						"camsv2 buf rdy but lost pass1 done, wakeup by sof!!");
+					break;
+
+					}
+				}
+			}
 			IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
 				       CAMSV2_TAG "Lost done %d", sof_count[_CAMSV_D]);
 
 		} else {
 			gSof_camsvdone[1] = 0;
+			if (fbc.Bits.FB_NUM == (fbc.Bits.FBC_CNT - 1))
+				gSof_camsvdone[1] = 2;
 		}
 #ifdef _rtbc_buf_que_2_0_
 
 		if (pstRTBuf->ring_buf[_camsv2_imgo_].active) {
 			if (pstRTBuf->ring_buf[_camsv2_imgo_].empty_count > 0) {
 				IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
-					 CAMSV_TAG "wr2Phy, 0x%x",
+					 CAMSV2_TAG "wr2Phy, 0x%x",
 					 pstRTBuf->ring_buf[_camsv2_imgo_].data[buf_idx].base_pAddr);
 				ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
 					pstRTBuf->ring_buf[_camsv2_imgo_].data[buf_idx].base_pAddr);
+			}
+			if ((fbc.Bits.FB_NUM - fbc.Bits.FBC_CNT) == 0) {
+				IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
+					CAMSV2_TAG "drop wr2Phy_0x%x: ",
+					pstRTBuf->ring_buf[_camsv2_imgo_].
+					data[pstRTBuf->ring_buf[_camsv2_imgo_].start].base_pAddr);
+				ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
+					pstRTBuf->ring_buf[_camsv2_imgo_].
+					data[pstRTBuf->ring_buf[_camsv2_imgo_].start].base_pAddr);
 			}
 		}
 		/* equal case is for clear curidx */
@@ -9096,11 +9185,12 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 				       ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR),
 				       ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_XSIZE),
 				       ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_YSIZE));
-
-			if ((_fbc_chk.Bits.WCNT - fbc.Bits.WCNT) != 0)
-				IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
-					       "sv2:SW ISR right on next hw p1_done(0x%x_0x%x)\n",
-					       _fbc_chk.Reg_val, fbc.Reg_val);
+			if (pstRTBuf->ring_buf[_camsv2_imgo_].active) {
+				if ((_fbc_chk.Bits.WCNT - fbc.Bits.WCNT) != 0)
+					IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
+						"sv2:SW ISR right on next hw p1_done(0x%x_0x%x)\n",
+						_fbc_chk.Reg_val, fbc.Reg_val);
+			}
 		}
 		/*              unsigned long long sec;*/
 		/*              unsigned long usec;*/
@@ -9111,8 +9201,10 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		do_div(sec, 1000);      /*     usec */
 		usec = do_div(sec, 1000000);    /* sec and usec */
 		curr_pa = ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR);
-
-		ISP_CAMSV_SOF_Buf_Get(_camsv2_imgo_, fbc, curr_pa, sec, usec, gSof_camsvdone[1]);
+		if (gSof_camsvdone[1] == 1)
+			ISP_CAMSV_SOF_Buf_Get(_camsv2_imgo_, fbc, curr_pa, sec, usec, MTRUE);
+		else
+			ISP_CAMSV_SOF_Buf_Get(_camsv2_imgo_, fbc, curr_pa, sec, usec, MFALSE);
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[_CAMSV_D_IRQ]));
 	/* dump log     during spin     lock */
