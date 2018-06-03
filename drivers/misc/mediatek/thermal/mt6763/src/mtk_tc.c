@@ -927,14 +927,14 @@ static void set_tc_trigger_hw_protect(int temperature, int temperature2, int tc_
 	mt_reg_sync_writel(temp | 0x80000000, offset + TEMPMONINT);	/* enable trigger Hot SPM interrupt */
 }
 
-static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, enum thermal_sensor ts_name)
+static int read_tc_raw_and_temp(u32 *tempmsr_name, enum thermal_sensor ts_name)
 {
 	int temp = 0, raw = 0;
 
 	if (tempmsr_name == 0)
 		return 0;
 
-	raw = readl((tempmsr_name)) & 0x0fff;
+	raw = readl(tempmsr_name) & 0x0fff;
 	temp = raw_to_temperature_roomt(raw, ts_name);
 
 	tscpu_dprintk("read_tc_raw_temp,ts_raw=%d,temp=%d\n", raw, temp * 100);
@@ -953,31 +953,31 @@ void tscpu_thermal_read_tc_temp(int tc_num, enum thermal_sensor type, int order)
 	switch (order) {
 	case 0:
 		tscpu_ts_temp[type] =
-		    read_tc_raw_and_temp((volatile u32 *)(offset + TEMPMSR0), type);
+		    read_tc_raw_and_temp((offset + TEMPMSR0), type);
 		tscpu_dprintk("%s order %d tc_num %d type %d temp %d\n",
 			      __func__, order, tc_num, type, tscpu_ts_temp[type]);
 		break;
 	case 1:
 		tscpu_ts_temp[type] =
-		    read_tc_raw_and_temp((volatile u32 *)(offset + TEMPMSR1), type);
+		    read_tc_raw_and_temp((offset + TEMPMSR1), type);
 		tscpu_dprintk("%s order %d tc_num %d type %d temp %d\n",
 			      __func__, order, tc_num, type, tscpu_ts_temp[type]);
 		break;
 	case 2:
 		tscpu_ts_temp[type] =
-		    read_tc_raw_and_temp((volatile u32 *)(offset + TEMPMSR2), type);
+		    read_tc_raw_and_temp((offset + TEMPMSR2), type);
 		tscpu_dprintk("%s order %d tc_num %d type %d temp %d\n",
 			      __func__, order, tc_num, type, tscpu_ts_temp[type]);
 		break;
 	case 3:
 		tscpu_ts_temp[type] =
-		    read_tc_raw_and_temp((volatile u32 *)(offset + TEMPMSR3), type);
+		    read_tc_raw_and_temp((offset + TEMPMSR3), type);
 		tscpu_dprintk("%s order %d tc_num %d type %d temp %d\n",
 			      __func__, order, tc_num, type, tscpu_ts_temp[type]);
 		break;
 	default:
 		tscpu_ts_temp[type] =
-		    read_tc_raw_and_temp((volatile u32 *)(offset + TEMPMSR0), type);
+		    read_tc_raw_and_temp((offset + TEMPMSR0), type);
 		tscpu_dprintk("%s order %d tc_num %d type %d temp %d\n",
 			      __func__, order, tc_num, type, tscpu_ts_temp[type]);
 		break;
