@@ -943,7 +943,7 @@ RESTORE_IRQ:
 	return last_wr;
 }
 
-void spm_deepidle_init(void)
+void __init spm_deepidle_init(void)
 {
 #if defined(CONFIG_OF)
 	struct device_node *node;
