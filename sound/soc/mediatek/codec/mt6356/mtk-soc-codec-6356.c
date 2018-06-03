@@ -3686,43 +3686,44 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
 				/* "ADC1", main_mic */
 				/* Audio L preamplifier input sel : AIN0. Enable audio L PGA */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0041, 0xf0ff);
+				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0045, 0xf0ff);
 				/* Audio L preamplifier DCCEN */
 				Ana_Set_Reg(AUDENC_ANA_CON0, 0x1 << 1, 0x1 << 1);
 				/* Audio L ADC input sel : L PGA. Enable audio L ADC */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5041, 0xf000);
+				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5047, 0xf000);
 			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
 				/* "ADC2", headset mic */
 				/* Audio L preamplifier input sel : AIN1. Enable audio L PGA */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0081, 0xf0ff);
+				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0085, 0xf0ff);
 				/* Audio L preamplifier DCCEN */
 				Ana_Set_Reg(AUDENC_ANA_CON0, 0x1 << 1, 0x1 << 1);
 				/* Audio L ADC input sel : L PGA. Enable audio L ADC */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5081, 0xf000);
+				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5087, 0xf000);
 			}
+
+			usleep_range(100, 150);
+			/* Audio L preamplifier DCC precharge off */
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0, 0x1 << 2);
 		} else if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC2) {
 			/* Audio R preamplifier DCC precharge */
 			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0004, 0xf8ff);
 
 			/* ref mic */
 			/* Audio R preamplifier input sel : AIN2. Enable audio R PGA */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x00c1, 0xf0ff);
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x00c5, 0xf0ff);
 			/* Audio R preamplifier DCCEN */
 			Ana_Set_Reg(AUDENC_ANA_CON1, 0x1 << 1, 0x1 << 1);
 			/* Audio R ADC input sel : R PGA. Enable audio R ADC */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x50c1, 0xf000);
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x50c7, 0xf000);
+
+			usleep_range(100, 150);
+			/* Audio R preamplifier DCC precharge off */
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0, 0x1 << 2);
 		}
 
 		if (GetAdcStatus() == false) {
-
 			/* Short body to VCM in PGA */
 			Ana_Set_Reg(AUDENC_ANA_CON7, 0x0400, 0xffff);
-			usleep_range(100, 150);
-
-			/* Audio R preamplifier DCC precharge off */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0, 0x1 << 2);
-			/* Audio L preamplifier DCC precharge off */
-			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0, 0x1 << 2);
 
 			/* here to set digital part */
 			/* power on clock */
