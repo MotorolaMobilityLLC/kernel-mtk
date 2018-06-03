@@ -506,7 +506,12 @@ struct provider_clk *get_all_provider_clks(void)
 		node_name = get_provider_name(node, &cells);
 
 		if (cells == 0) {
-			provider_clks[n].ck = __clk_lookup(node_name);
+			struct clk *ck = __clk_lookup(node_name);
+
+			if (IS_ERR_OR_NULL(ck))
+				continue;
+
+			provider_clks[n].ck = ck;
 			setup_provider_clk(&provider_clks[n]);
 			++n;
 		} else {
