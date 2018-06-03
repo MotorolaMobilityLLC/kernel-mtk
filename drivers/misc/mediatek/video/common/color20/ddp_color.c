@@ -1286,7 +1286,7 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 	unsigned int pq_index;
 #endif
 #endif
-	int wide_gamut_en = 0;
+	const int wide_gamut_en = 0;
 
 	if (is_color1_module(module)) {
 		offset = C1_OFFSET;
@@ -1648,7 +1648,7 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 #if defined(COLOR_2_1) || defined(COLOR_3_0)
 	int i, j, reg_index;
 #endif
-	int wide_gamut_en = 0;
+	const int wide_gamut_en = 0;
 
 	offset = color_get_offset(module);
 
