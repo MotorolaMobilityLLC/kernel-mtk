@@ -1722,9 +1722,6 @@ static int bmp_i2c_remove(struct i2c_client *client)
 	int err = 0;
 
 	bmp_power(hw, 0);
-	err = hwmsen_detach(ID_PRESSURE);
-	if (err)
-		BAR_ERR("hwmsen_detach ID_PRESSURE failed, err = %d\n", err);
 
 #ifdef CONFIG_ID_TEMPERATURE
 	err = hwmsen_detach(ID_TEMPRERATURE);
