@@ -23,12 +23,6 @@
 
 #define SPM_DVFS_TIMEOUT       1000	/* 1ms */
 
-/* msdc dvfs setting api */
-#define MSDC0_DVFS 0
-#define MSDC1_DVFS 1
-#define MSDC2_DVFS 2
-#define MSDC3_DVFS 3
-
 enum dvfsrc_channel {
 	DVFSRC_CHANNEL_1 = 1,
 	DVFSRC_CHANNEL_2,
@@ -47,11 +41,9 @@ enum dvfsrc_hrt_kir {
 enum vcorefs_smc_cmd {
 	VCOREFS_SMC_CMD_0,
 	VCOREFS_SMC_CMD_1,
-	VCOREFS_SMC_CMD_2,
 	NUM_VCOREFS_SMC_CMD,
 };
 
-extern int spm_msdc_dvfs_setting(int msdc, bool enable);
 extern void spm_go_to_vcorefs(int spm_flags);
 extern int spm_set_vcore_dvfs(struct kicker_config *krconf);
 extern void spm_vcorefs_init(void);
