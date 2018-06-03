@@ -22,7 +22,9 @@
 #include <linux/of_address.h>
 #endif
 
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
+#endif
 #include <mtk_vcorefs_manager.h>
 
 #include <mtk_spm_vcore_dvfs.h>
@@ -32,7 +34,6 @@
 #include <mtk_eem.h>
 #include "mmdvfs_mgr.h"
 
-#if defined(CONFIG_MACH_MT6758) /* TODO: 6758 EP */
 __weak unsigned int get_dram_data_rate(void)
 {
 	return 0;
@@ -43,7 +44,10 @@ __weak int dram_steps_freq(unsigned int step)
 	return 0;
 }
 
-#endif
+__weak int dram_can_support_fh(void)
+{
+	return 0;
+}
 
 __weak int emmc_autok(void)
 {
@@ -160,6 +164,7 @@ static char *kicker_name[] = {
 	"KIR_APCCCI",
 	"KIR_BOOTUP",
 	"KIR_FBT",
+	"KIR_TLC",
 	"KIR_SYSFS",
 	"KIR_MM_NON_FORCE",
 	"KIR_SYSFS_N",
@@ -191,7 +196,7 @@ void vcorefs_update_opp_table(void)
 bool is_vcorefs_feature_enable(void)
 {
 #if 1
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)  /* TODO: 6759 EP */
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) /* TODO: 6759 EP */
 	if (!dram_can_support_fh()) {
 		vcorefs_err("DISABLE DVFS DUE TO NOT SUPPORT DRAM FH\n");
 		return false;
@@ -402,7 +407,7 @@ int governor_debug_store(const char *buf)
 	if (sscanf(buf, "%31s 0x%x 0x%x", cmd, &val, &val2) == 3 ||
 	    sscanf(buf, "%31s %d %d", cmd, &val, &val2) == 3) {
 
-		if (log_mask() != 65535)
+		if ((log_mask() & 0xFFFF) != 65535)
 			vcorefs_crit("vcore_debug: cmd: %s, val: %d val2: %d\n", cmd, val, val2);
 
 		if (!strcmp(cmd, "emibw"))
@@ -418,7 +423,7 @@ int governor_debug_store(const char *buf)
 	if (sscanf(buf, "%31s 0x%x", cmd, &val) == 2 ||
 		sscanf(buf, "%31s %d", cmd, &val) == 2) {
 
-		if (log_mask() != 65535)
+		if ((log_mask() & 0xFFFF) != 65535)
 			vcorefs_crit("vcore_debug: cmd: %s, val: %d\n", cmd, val);
 
 		if (!strcmp(cmd, "vcore_dvs")) {
