@@ -1478,9 +1478,10 @@ static int _debugger_worker_thread(void *data)
 			buffer_size = debugger_buffer_size;
 			pBuffer = kmalloc(buffer_size, GFP_KERNEL);
 		}
-		memset(pBuffer, 0, buffer_size);
+		if (pBuffer != NULL)
+			memset(pBuffer, 0, buffer_size);
 		/*void* buffer = const_cast<void*>(pBuffer);*/
-		ASSERT(pBuffer != NULL);
+		/*ASSERT(pBuffer != NULL);*/
 		if (debugger_sleep_ms != 0)
 			msleep(debugger_sleep_ms);
 	}
