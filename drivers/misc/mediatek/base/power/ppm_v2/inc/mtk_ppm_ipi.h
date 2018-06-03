@@ -40,7 +40,7 @@ struct ppm_ipi_data {
 	union {
 		struct {
 			unsigned int efuse_val;
-			unsigned int ratio;
+			unsigned int cobra_tbl_addr;
 			unsigned int dvfs_tbl_type;
 		} init;
 		struct {
@@ -64,7 +64,7 @@ struct ppm_ipi_data {
 };
 
 #ifdef PPM_SSPM_SUPPORT
-extern void ppm_ipi_init(unsigned int efuse_val, unsigned int ratio);
+extern void ppm_ipi_init(unsigned int efuse_val, unsigned int cobra_tbl_addr);
 extern void ppm_ipi_update_act_core(struct ppm_cluster_status *cluster_status,
 					unsigned int cluster_num);
 extern void ppm_ipi_update_limit(struct ppm_client_req req);

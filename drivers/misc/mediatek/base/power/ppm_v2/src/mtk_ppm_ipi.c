@@ -32,8 +32,8 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 	case PPM_IPI_INIT:
 		data->cmd = cmd;
 
-		ppm_dbg(IPI, "efuse_val = %d, ratio = %d, dvfs_tbl_type = %d\n",
-			data->u.init.efuse_val, data->u.init.ratio, data->u.init.dvfs_tbl_type);
+		ppm_dbg(IPI, "efuse_val = %d, cobra_tbl_addr = 0x%x, dvfs_tbl_type = %d\n",
+			data->u.init.efuse_val, data->u.init.cobra_tbl_addr, data->u.init.dvfs_tbl_type);
 
 		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data);
 		if (ret != 0)
@@ -115,12 +115,12 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 	return ret;
 }
 
-void ppm_ipi_init(unsigned int efuse_val, unsigned int ratio)
+void ppm_ipi_init(unsigned int efuse_val, unsigned int cobra_tbl_addr)
 {
 	struct ppm_ipi_data data;
 
 	data.u.init.efuse_val = efuse_val;
-	data.u.init.ratio = ratio;
+	data.u.init.cobra_tbl_addr = cobra_tbl_addr;
 	data.u.init.dvfs_tbl_type = (unsigned int)ppm_main_info.dvfs_tbl_type;
 
 	ppm_ipi_to_sspm_command(PPM_IPI_INIT, &data);
