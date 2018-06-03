@@ -943,13 +943,13 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			primary_display_manual_unlock();
 			continue;
 		}
-		mmprofile_log_ex(ddp_mmp_get_events()->idlemgr, MMPROFILE_FLAG_START, 0, 0);
-		DISPINFO("[disp_lowpower]primary enter idle state\n");
-
-		/* enter idle state */
-		primary_display_idlemgr_enter_idle_nolock();
-		primary_display_set_idle_stat(1);
-
+		if (atomic_read(&idlemgr_task_wakeup)) {	/* double check if dynamic switch on/off */
+			mmprofile_log_ex(ddp_mmp_get_events()->idlemgr, MMPROFILE_FLAG_START, 0, 0);
+			DISPINFO("[disp_lowpower]primary enter idle state\n");
+			/* enter idle state */
+			primary_display_idlemgr_enter_idle_nolock();
+			primary_display_set_idle_stat(1);
+		}
 #ifdef MTK_FB_MMDVFS_SUPPORT
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
 		if (get_ddr_type() == TYPE_LPDDR3)

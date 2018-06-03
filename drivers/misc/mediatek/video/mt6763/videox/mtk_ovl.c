@@ -57,8 +57,6 @@ static int is_context_inited;
 static int ovl2mem_layer_num;
 static int ovl2mem_use_m4u = 1;
 static int ovl2mem_use_cmdq = CMDQ_ENABLE;
-static int idle_switch_enable;
-static int smart_ovl_enable;
 
 struct ovl2mem_path_context {
 	int state;
@@ -317,27 +315,6 @@ int ovl2mem_init(unsigned int session)
 	dpmgr_init();
 	mutex_init(&(pgc->lock));
 
-	if (disp_helper_get_option(DISP_OPT_SHARE_WDMA0)) {
-		/* decouple mode by screen idle dynamic switch */
-		if (disp_helper_get_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE)) {
-			idle_switch_enable = 1;
-			primary_display_idlemgr_kick(__func__, 0);
-			disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 0);
-		}
-		/* decouple mode by smart OVL dynamic switch */
-		if (disp_helper_get_option(DISP_OPT_SMART_OVL)) {
-			smart_ovl_enable = 1;
-			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
-					primary_get_sess_id(), 0, NULL, 1);
-			disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
-		}
-		/* decouple mode by others: SF/HWC, et.al. */
-		if (primary_display_is_decouple_mode()) {
-			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
-					primary_get_sess_id(), 0, NULL, 1);
-		}
-	}
-
 	_ovl2mem_path_lock(__func__);
 
 	if (pgc->state > 0) {
@@ -422,7 +399,7 @@ Exit:
 	_ovl2mem_path_unlock(__func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x01, 1);
 
-	DISPDBG("ovl2mem_init done\n");
+	DISPMSG("ovl2mem_init done\n");
 
 	return ret;
 }
@@ -719,16 +696,6 @@ Exit:
 	_ovl2mem_path_unlock(__func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_END, 0x03, (loop_cnt<<24)|1);
 
-	if (disp_helper_get_option(DISP_OPT_SHARE_WDMA0)) {
-		if (idle_switch_enable) {
-			idle_switch_enable = 0;
-			disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 1);
-		}
-		if (smart_ovl_enable) {
-			smart_ovl_enable = 0;
-			disp_helper_set_option(DISP_OPT_SMART_OVL, 1);
-		}
-	}
 	DISPMSG("ovl2mem_deinit done\n");
 	return ret;
 }

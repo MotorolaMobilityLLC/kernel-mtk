@@ -26,6 +26,10 @@
 #ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
 #include "layering_rule.h"
 #endif
+#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
+#include "disp_lowpower.h"
+static int idle_flag = 1;
+#endif
 
 
 static const struct EXTD_DRIVER  *extd_driver[DEV_MAX_NUM];
@@ -111,6 +115,13 @@ static int create_external_display_path(unsigned int session, int mode)
 	MULTI_COTRL_LOG("create_external_display_path session:%08x, mode:%d\n", session, mode);
 
 	if (DISP_SESSION_TYPE(session) == DISP_SESSION_MEMORY && EXTD_OVERLAY_CNT > 0) {
+
+#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
+	/* disable dynamic switch for screen idle, avoid conflict */
+	if (idle_flag)
+		idle_flag = set_idlemgr(0, 1);
+#endif
+
 		if (mode < DISP_SESSION_DIRECT_LINK_MIRROR_MODE
 		&& (path_info.old_mode[DEV_WFD] >= DISP_SESSION_DIRECT_LINK_MIRROR_MODE
 		|| path_info.old_session[DEV_WFD] != DISP_SESSION_MEMORY)) {
@@ -229,6 +240,11 @@ static void destroy_external_display_path(unsigned int session, int mode)
 #ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
 		/* Notify primary display can switch to dual pipe */
 		set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 0);
+#endif
+#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
+	/* disable dynamic switch for screen idle, avoid conflict */
+	if (idle_flag)
+		set_idlemgr(idle_flag, 1);
 #endif
 	}
 }
