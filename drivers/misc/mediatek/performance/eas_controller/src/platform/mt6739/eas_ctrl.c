@@ -16,7 +16,6 @@
 
 #define TAG "[Boost Controller]"
 
-#ifdef CONFIG_MTK_FPSGO_FBT_GAME
 #include <asm/div64.h>
 #include <linux/kernel.h>
 
@@ -123,4 +122,3 @@ int reduce_stall(int boost_value, int cpi_thres, int unlimit)
 def_ret:
 	return vcore_opp;
 }
-#endif

@@ -22,6 +22,7 @@ ccflags-y += -DNR_FREQ_CPU=16
 obj-$(CONFIG_MACH_MT6739) += platform/mt6739/fbt_cpu_platform.o
 obj-$(CONFIG_MACH_MT6758) += platform/mt6758/fbt_cpu_platform.o
 obj-$(CONFIG_MACH_MT6763) += platform/mt6763/fbt_cpu_platform.o
+obj-$(CONFIG_MACH_MT6771) += platform/mt6771/fbt_cpu_platform.o
 
 obj-$(CONFIG_MTK_FPSGO_FBT_GAME) += \
 	src/fbt_main.o \

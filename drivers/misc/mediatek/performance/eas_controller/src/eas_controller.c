@@ -25,7 +25,7 @@
 #include <linux/string.h>
 #include <asm/div64.h>
 
-#ifdef CONFIG_MTK_FPSGO_FBT_GAME
+#if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
 #include <fpsgo_common.h>
 #include <mtk_vcorefs_governor.h>
 #include <mtk_vcorefs_manager.h>
@@ -47,7 +47,7 @@ static int boost_value[NR_CGROUP][EAS_MAX_KIR];
 static int debug_boost_value[NR_CGROUP];
 static int debug;
 
-#ifdef CONFIG_MTK_FPSGO_FBT_GAME
+#if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
 /* for CPI monitor */
 static int vcore_high;
 static int vcore;
@@ -529,7 +529,7 @@ static const struct file_operations perfmgr_debug_ta_boost_fops = {
 	.release = single_release,
 };
 /*************************************************************************************/
-#ifdef CONFIG_MTK_FPSGO_FBT_GAME
+#if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
 static ssize_t perfmgr_cpi_thres_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *pos)
 {
@@ -632,7 +632,7 @@ void perfmgr_eas_boost_init(void)
 	proc_create("current_ta_boost", 0644, boost_dir, &perfmgr_current_ta_boost_fops);
 	proc_create("debug_ta_boost", 0644, boost_dir, &perfmgr_debug_ta_boost_fops);
 
-#ifdef CONFIG_MTK_FPSGO_FBT_GAME
+#if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
 	proc_create("vcore_high", 0644, boost_dir, &perfmgr_vcore_high_fops);
 	proc_create("cpi_thres", 0644, boost_dir, &perfmgr_cpi_thres_fops);
 
