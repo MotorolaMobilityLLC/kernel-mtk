@@ -92,6 +92,7 @@ struct baro_init_info {
 
 struct baro_data {
 	struct hwm_sensor_data baro_data;
+	struct hwm_sensor_data uncali_baro_data;
 	int data_updata;
 };
 
@@ -105,6 +106,8 @@ struct baro_drv_obj {
 struct baro_context {
 	struct input_dev *idev;
 	struct miscdevice mdev;
+	struct input_dev *uncali_idev;
+	struct miscdevice uncali_mdev;
 	struct work_struct report;
 	struct mutex baro_op_mutex;
 	atomic_t delay;
@@ -120,6 +123,7 @@ struct baro_context {
 	struct baro_data_path baro_data;
 	bool is_active_nodata;
 	bool is_active_data;
+	bool is_uncali_active_data;
 	bool is_first_data_after_enable;
 	bool is_polling_run;
 	bool is_batch_enable;
