@@ -1926,7 +1926,7 @@ static int mt6370_enable_otg(struct charger_device *chg_dev, bool en)
 
 	/* Turn off USB charger detection/Enable WDT */
 	if (en) {
-#ifdef CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT
+#if 0
 		ret = mt6370_enable_chgdet_flow(chg_data, false);
 		if (ret < 0)
 			dev_err(chg_data->dev, "%s: disable usb chrdet fail\n",
@@ -1955,7 +1955,7 @@ static int mt6370_enable_otg(struct charger_device *chg_dev, bool en)
 			dev_err(chg_data->dev, "%s: fail(%d)\n", __func__, ret);
 			goto err_en_otg;
 		}
-#if defined(CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT) && defined(CONFIG_TCPC_CLASS)
+#if 0
 		mt6370_set_usbsw_state(chg_data, MT6370_USBSW_USB);
 #endif /* CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT && CONFIG_TCPC_CLASS */
 	}

@@ -20,11 +20,7 @@
 #include "pd_dbg_info.h"
 #include "tcpm.h"
 
-#ifdef CONFIG_PD_BEGUG_ON
 #define PD_BUG_ON(x)	WARN_ON(x)
-#else
-#define PD_BUG_ON(x)
-#endif
 /*---------------------------------------------------------------------------*/
 
 #ifndef CONFIG_TCPC_SOURCE_VCONN
