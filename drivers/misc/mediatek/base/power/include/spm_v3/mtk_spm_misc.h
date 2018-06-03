@@ -47,20 +47,12 @@ extern void aee_rr_rec_sodi3_val(u32 val);
 extern u32 aee_rr_curr_sodi3_val(void);
 #endif
 
-#ifdef SPM_SODI_PROFILE_TIME
-extern unsigned int soidle3_profile[4];
-#endif
-
 /* SODI */
 extern void soidle_before_wfi(int cpu);
 extern void soidle_after_wfi(int cpu);
 #if SPM_AEE_RR_REC
 extern void aee_rr_rec_sodi_val(u32 val);
 extern u32 aee_rr_curr_sodi_val(void);
-#endif
-
-#ifdef SPM_SODI_PROFILE_TIME
-extern unsigned int soidle_profile[4];
 #endif
 
 extern bool mtk_gpu_sodi_entry(void);

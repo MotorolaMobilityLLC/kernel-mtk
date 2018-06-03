@@ -16,6 +16,10 @@
 #include "mtk_idle_profile.h"
 #include "mtk_spm_resource_req_internal.h"
 
+#if defined(CONFIG_CPU_FREQ)
+#include <mtk_cpufreq_api.h>
+#endif
+
 #if SPM_MET_TAGGING
 #include <core/met_drv.h>
 #endif
@@ -29,6 +33,11 @@
 #define idle_prof_pr_notice(fmt, args...)  pr_notice(IDLE_PROF_TAG fmt, ##args)
 #define idle_prof_pr_info(fmt, args...)    pr_info(IDLE_PROF_TAG fmt, ##args)
 #define idle_prof_pr_dbg(fmt, args...)     pr_debug(IDLE_PROF_TAG fmt, ##args)
+
+unsigned int __attribute__((weak))mt_cpufreq_get_cur_freq(unsigned int id)
+{
+	return 0;
+}
 
 /* idle ratio */
 static bool idle_ratio_en;
@@ -527,3 +536,74 @@ void mtk_idle_twam_init(void)
 	idle_twam.event = 29;
 }
 
+static bool profile_latency_enabled;
+void mtk_idle_latency_profile_enable(bool enable)
+{
+	profile_latency_enabled = enable;
+}
+
+bool mtk_idle_latency_profile_is_on(void)
+{
+	return profile_latency_enabled;
+}
+
+static unsigned int idle_profile[NR_TYPES][NR_PIDX];
+void mtk_idle_latency_profile(unsigned int idle_type, int idx)
+{
+	unsigned int cur_count = 0;
+	unsigned int *data;
+
+	data = &idle_profile[idle_type][0];
+
+	cur_count = lower_32_bits(sched_clock());
+
+	if (idx % 2 == 0)
+		data[idx/2] = cur_count;
+	else
+		data[idx/2] = cur_count - data[idx/2];
+}
+
+static char plog[256] = { 0 };
+#define log(fmt, args...) \
+		(p += scnprintf(p, sizeof(plog) - strlen(plog), fmt, ##args))
+
+#define PROFILE_LATENCY_NUMBER	(200)
+struct idle_profile_data {
+	unsigned long total[3];
+	unsigned int count;
+};
+
+static struct idle_profile_data g_pdata[NR_TYPES];
+
+void mtk_idle_latency_profile_result(unsigned int idle_type)
+{
+	unsigned int i;
+	char *p = plog;
+	unsigned int *data;
+	struct idle_profile_data *pdata;
+
+	data = &idle_profile[idle_type][0];
+	pdata  = &g_pdata[idle_type];
+
+	log("%s (%u/%u),", mtk_get_idle_name(idle_type),
+		mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1));
+
+	for (i = 0; i < NR_PIDX; i++)
+		log("%u%s", data[i], (i == NR_PIDX - 1) ? "":",");
+
+	if (pdata->count < PROFILE_LATENCY_NUMBER) {
+		pdata->total[0] += (data[0]);
+		pdata->total[1] += (data[1]);
+		pdata->total[2] += (data[2]);
+		pdata->count++;
+	} else {
+		idle_prof_pr_notice("avg %s: %u, %u, %u\n", mtk_get_idle_name(idle_type),
+			(unsigned int)pdata->total[0]/PROFILE_LATENCY_NUMBER,
+			(unsigned int)pdata->total[1]/PROFILE_LATENCY_NUMBER,
+			(unsigned int)pdata->total[2]/PROFILE_LATENCY_NUMBER);
+		pdata->count = 0;
+		pdata->total[0] = pdata->total[1] = pdata->total[2] = 0;
+	}
+
+	idle_prof_pr_notice("%s\n", plog);
+}

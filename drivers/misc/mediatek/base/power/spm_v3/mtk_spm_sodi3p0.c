@@ -54,6 +54,8 @@
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <trace/events/mtk_idle_event.h>
 #endif
+#include <mtk_idle_internal.h>
+#include <mtk_idle_profile.h>
 
 /**************************************
  * only for internal debug
@@ -348,8 +350,12 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 #ifdef CONFIG_MTK_ICCS_SUPPORT
 	iccs_enter_low_power_state();
 #endif
-	spm_sodi3_notify_sspm_before_wfi(pwrctrl, operation_cond);
 
+	profile_so3_start(PIDX_SSPM_BEFORE_WFI);
+	spm_sodi3_notify_sspm_before_wfi(pwrctrl, operation_cond);
+	profile_so3_end(PIDX_SSPM_BEFORE_WFI);
+
+	profile_so3_start(PIDX_PRE_IRQ_PROCESS);
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
@@ -360,15 +366,19 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
-
+	profile_so3_end(PIDX_PRE_IRQ_PROCESS);
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_SPM_FLOW);
 
+	profile_so3_start(PIDX_PCM_SETUP_BEFORE_WFI);
 	spm_sodi3_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
+	profile_so3_end(PIDX_PCM_SETUP_BEFORE_WFI);
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
 
+	profile_so3_start(PIDX_SSPM_BEFORE_WFI_ASYNC_WAIT);
 	spm_sodi3_notify_sspm_before_wfi_async_wait();
+	profile_so3_end(PIDX_SSPM_BEFORE_WFI_ASYNC_WAIT);
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_SLEEP);
 
@@ -391,7 +401,11 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 	trace_sodi3_rcuidle(cpu, 1);
 #endif
 
+	profile_so3_end(PIDX_ENTER_TOTAL);
+
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
+
+	profile_so3_start(PIDX_LEAVE_TOTAL);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_sodi3_rcuidle(cpu, 0);
@@ -405,16 +419,19 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 RESTORE_IRQ:
 #endif
 
+	profile_so3_start(PIDX_SSPM_AFTER_WFI);
 	spm_sodi3_notify_sspm_after_wfi(operation_cond);
+	profile_so3_end(PIDX_SSPM_AFTER_WFI);
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_SSPM_ASYNC_IPI_AFTER_WFI);
 
 	__spm_get_wakeup_status(&wakesta);
 
+	profile_so3_start(PIDX_PCM_SETUP_AFTER_WFI);
 	spm_sodi3_pcm_setup_after_wfi(pwrctrl, operation_cond);
+	profile_so3_end(PIDX_PCM_SETUP_AFTER_WFI);
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_SPM_FLOW);
-
 
 	if (wr == WR_UART_BUSY)
 		sodi3_pr_info("request uart sleep: fail\n");
@@ -423,6 +440,7 @@ RESTORE_IRQ:
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_AWAKE);
 
+	profile_so3_start(PIDX_POST_IRQ_PROCESS);
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
@@ -431,6 +449,7 @@ RESTORE_IRQ:
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_restore(&mask);
 #endif
+	profile_so3_end(PIDX_POST_IRQ_PROCESS);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
@@ -438,7 +457,11 @@ RESTORE_IRQ:
 	get_channel_unlock();
 
 	soidle3_after_wfi(cpu);
+
+	profile_so3_start(PIDX_SSPM_AFTER_WFI_ASYNC_WAIT);
 	spm_sodi3_notify_sspm_after_wfi_async_wait();
+	profile_so3_end(PIDX_SSPM_AFTER_WFI_ASYNC_WAIT);
+
 	spm_sodi3_resume_wdt(pwrctrl, api);
 
 	spm_sodi3_atf_time_sync();

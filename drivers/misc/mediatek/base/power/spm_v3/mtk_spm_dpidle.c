@@ -60,6 +60,8 @@
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <trace/events/mtk_idle_event.h>
 #endif
+#include <mtk_idle_internal.h>
+#include <mtk_idle_profile.h>
 
 /*
  * only for internal debug
@@ -696,6 +698,9 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta,
 	bool log_print = false;
 	static bool timer_out_too_short;
 
+	if (mtk_idle_latency_profile_is_on())
+		return wr;
+
 #if defined(CONFIG_MACH_MT6799)
 	/* Note: Print EMI Idle Fail */
 	if (spm_read(SPM_SW_RSV_3) & 0x1)
@@ -821,8 +826,11 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 #ifdef CONFIG_MTK_ICCS_SUPPORT
 	iccs_enter_low_power_state();
 #endif
+	profile_dp_start(PIDX_SSPM_BEFORE_WFI);
 	spm_dpidle_notify_sspm_before_wfi(false, operation_cond, pwrctrl);
+	profile_dp_end(PIDX_SSPM_BEFORE_WFI);
 
+	profile_dp_start(PIDX_PRE_IRQ_PROCESS);
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
@@ -833,8 +841,11 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
+	profile_dp_end(PIDX_PRE_IRQ_PROCESS);
 
+	profile_dp_start(PIDX_PCM_SETUP_BEFORE_WFI);
 	spm_dpidle_pcm_setup_before_wfi(false, cpu, pcmdesc, pwrctrl, operation_cond);
+	profile_dp_end(PIDX_PCM_SETUP_BEFORE_WFI);
 
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
@@ -842,7 +853,9 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
 
+	profile_dp_start(PIDX_SSPM_BEFORE_WFI_ASYNC_WAIT);
 	spm_dpidle_notify_sspm_before_wfi_async_wait();
+	profile_dp_end(PIDX_SSPM_BEFORE_WFI_ASYNC_WAIT);
 
 	/* Dump low power golden setting */
 	if (operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)
@@ -865,7 +878,11 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	trace_dpidle_rcuidle(cpu, 1);
 #endif
 
+	profile_dp_end(PIDX_ENTER_TOTAL);
+
 	spm_trigger_wfi_for_dpidle(pwrctrl);
+
+	profile_dp_start(PIDX_LEAVE_TOTAL);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_dpidle_rcuidle(cpu, 0);
@@ -884,18 +901,23 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 RESTORE_IRQ:
 #endif
 
+	profile_dp_start(PIDX_SSPM_AFTER_WFI);
 	spm_dpidle_notify_sspm_after_wfi(false, operation_cond);
+	profile_dp_end(PIDX_SSPM_AFTER_WFI);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_SSPM_ASYNC_IPI_AFTER_WFI);
 
 	__spm_get_wakeup_status(&wakesta);
 
+	profile_dp_start(PIDX_PCM_SETUP_AFTER_WFI);
 	spm_dpidle_pcm_setup_after_wfi(false, operation_cond);
+	profile_dp_end(PIDX_PCM_SETUP_AFTER_WFI);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_AWAKE);
 
 	wr = spm_output_wake_reason(&wakesta, pcmdesc, log_cond, operation_cond);
 
+	profile_dp_start(PIDX_POST_IRQ_PROCESS);
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
@@ -904,6 +926,7 @@ RESTORE_IRQ:
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_restore(&mask);
 #endif
+	profile_dp_end(PIDX_POST_IRQ_PROCESS);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
