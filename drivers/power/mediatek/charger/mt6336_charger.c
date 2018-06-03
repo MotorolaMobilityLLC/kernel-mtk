@@ -771,7 +771,7 @@ static int mt6336_send_ta20_current_pattern(struct charger_device *chg_dev, u32 
 		return -1;
 	}
 
-	/* Set charging current to 500mA */
+	/* Set input current to 500mA */
 	mt6336_set_aicr(chg_dev, 500000);
 	mt6336_set_ichg(chg_dev, 500000);
 	usleep_range(1000, 1200);
@@ -797,14 +797,15 @@ static int mt6336_send_ta20_current_pattern(struct charger_device *chg_dev, u32 
 
 static int mt6336_set_ta20_reset(struct charger_device *chg_dev)
 {
-	unsigned int val;
+	u32 aicr = 0;
 
 	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
 
-	val = mt6336_get_flag_register_value(MT6336_RG_ICL);
-	mt6336_set_flag_register_value(MT6336_RG_ICL, 0x0);
+	/* Set AICR to 50mA to reset TA */
+	mt6336_get_aicr(chg_dev, &aicr);
+	mt6336_set_aicr(chg_dev, 50000);
 	msleep(250);
-	mt6336_set_flag_register_value(MT6336_RG_ICL, val);
+	mt6336_set_aicr(chg_dev, aicr);
 
 	return 0;
 }
