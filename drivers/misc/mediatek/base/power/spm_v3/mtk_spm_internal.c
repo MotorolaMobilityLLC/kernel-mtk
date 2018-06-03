@@ -837,7 +837,7 @@ int get_channel_lock(void)
 	spm_crit("[%s] NOT SUPPORT DCS\n", __func__);
 
 	/* return get_dram_channel_number(); */
-	return -1; /* FIXME */
+	return 4; /* FIXME */
 #endif
 }
 
