@@ -23,10 +23,18 @@
 #include <bwl_platform.h>
 #include "bwl_v1.h"
 
+#ifdef DECS_ON_SSPM
+#include <dramc.h>
+#endif
+
 DEFINE_SEMAPHORE(bwl_sem);
 
 static void __iomem *CEN_EMI_BASE;
 static void __iomem *CHN_EMI_BASE[MAX_CH];
+
+#ifdef DECS_ON_SSPM
+static void __iomem *LAST_EMI_BASE;
+#endif
 
 /* reg table and pointer*/
 static struct scn_reg_t (*env_cen_reg)[BWL_CEN_MAX];
@@ -183,6 +191,11 @@ static ssize_t scn_store(struct device_driver *driver,
 	int i;
 	char *name;
 
+#ifdef DECS_ON_SSPM
+	if (acquire_bwl_ctrl(LAST_EMI_BASE))
+		return count;
+#endif
+
 	for (i = 0; i < BWL_SCN_MAX; i++) {
 		name = scn_name[i].name;
 
@@ -204,6 +217,10 @@ static ssize_t scn_store(struct device_driver *driver,
 		}
 	}
 
+#ifdef DECS_ON_SSPM
+	release_bwl_ctrl(LAST_EMI_BASE);
+#endif
+
 	return count;
 }
 
@@ -218,6 +235,10 @@ void bwl_init(struct platform_driver *emi_ctrl)
 	CEN_EMI_BASE = mt_cen_emi_base_get();
 	for (i = 0; i < MAX_CH; i++)
 		CHN_EMI_BASE[i] = mt_chn_emi_base_get(i);
+
+#ifdef DECS_ON_SSPM
+	LAST_EMI_BASE = get_dbg_info_base(0xE31C);
+#endif
 
 	env = decode_bwl_env(get_dram_type(), get_ch_num(), get_rk_num());
 	env_cen_reg = cen_reg[env];
