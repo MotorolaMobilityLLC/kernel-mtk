@@ -19,6 +19,9 @@
 #include <upmu_common.h>
 #include "accdet.h"
 
+#ifndef CONFIG_ACCDET_SUPPORT_EINT1
+#define CONFIG_ACCDET_SUPPORT_EINT1/* Just for sync */
+#endif
 
 #define DEBUG_THREAD			(1)
 #define ACCDET_INIT0_ONCE	0/* reset accdet sw, enable clock...  */
@@ -34,7 +37,7 @@
 #define ACCDET_INFO(format, args...)	pr_debug_ratelimited(format, ##args)
 #define ACCDET_ERROR(format, args...)	pr_debug_ratelimited(format, ##args)
 #endif
-#define ACCDET_DEBUG(format, args...)	pr_debug(format, ##args)
+#define ACCDET_DEBUG(format, args...)	pr_warn(format, ##args)
 #define ACCDET_INFO(format, args...)	pr_warn(format, ##args)
 #define ACCDET_ERROR(format, args...)	pr_err(format, ##args)
 
@@ -353,7 +356,7 @@ static int accdet_get_dts_data(void)
 		of_property_read_u32_array(node, "headset-mode-setting", debounce, ARRAY_SIZE(debounce));
 		of_property_read_u32(node, "accdet-mic-vol", &headset_dts_data.mic_bias_vol);
 		/* for GPIO debounce */
-		of_property_read_u32(node, "accdet-plugout-debounce", &headset_dts_data.accdet_plugout_debounce);
+		of_property_read_u32(node, "accdet-plugout-debounce", &headset_dts_data.accdet_plugout_deb);
 		of_property_read_u32(node, "accdet-mic-mode", &headset_dts_data.accdet_mic_mode);
 		of_property_read_u32(node, "accdet-eint-level-pol", &headset_dts_data.eint_level_pol);
 #ifdef CONFIG_FOUR_KEY_HEADSET
@@ -375,17 +378,15 @@ static int accdet_get_dts_data(void)
 #endif
 		/* debounce8(auxadc debounce) is default, needn't get from dts */
 		memcpy(&headset_dts_data.cfg_cust_accdet, debounce, sizeof(debounce));
-		/* headset_dts_data.cfg_cust_accdet.debounce8 = ACCDET_AUXADC_DEBOUNCE;//default 2ms */
 		/* for discharge:0xB00 about 86ms */
 		s_button_press_debounce = (headset_dts_data.cfg_cust_accdet.debounce0 >> 1);
 		accdet_cust_setting = &headset_dts_data.cfg_cust_accdet;
 		ACCDET_INFO("[accdet_get_dts_data]pwm_width=0x%x, pwm_thresh=0x%x, mic_mode=%d\n",
 		     accdet_cust_setting->pwm_width, accdet_cust_setting->pwm_thresh,
 		     headset_dts_data.accdet_mic_mode);
-		ACCDET_INFO("[accdet_get_dts_data] deb0=0x%x,deb1=0x%x,deb3=0x%x,deb5=0x%x,deb8=0x%x\n",
+		ACCDET_INFO("[accdet_get_dts_data] deb0=0x%x,deb1=0x%x,deb3=0x%x,deb4=0x%x\n",
 		     accdet_cust_setting->debounce0, accdet_cust_setting->debounce1,
-		     accdet_cust_setting->debounce3, accdet_cust_setting->debounce5,
-		     accdet_cust_setting->debounce8);
+		     accdet_cust_setting->debounce3, accdet_cust_setting->debounce4);
 	} else {
 		ACCDET_ERROR("%s can't find compatible dts node\n", __func__);
 		return -1;
@@ -440,14 +441,14 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 	unsigned int timeout_flag = 10;/* read 10 times most */
 	unsigned int valid_data_flag = 1;/* read 2 times valid data */
 
-	reg_val = pmic_pwrap_read(AUXADC_ADC5_CHN_REG);
+	reg_val = pmic_pwrap_read(AUXADC_ADC5);
 	/* read ch5 data */
 	/* pmic_pwrap_write(AUXADC_RQST0_CH_SET, AUXADC_RQST_CH5_SET); *//* overwrite the HW pre-read value */
 	do {
 		mdelay(3);/* need delay over 1.3ms */
 		timeout_flag--;
-		tmp_val = pmic_pwrap_read(AUXADC_ADC5_CHN_REG);
-		if ((tmp_val & AUXADC_DATA_RDY_CH5) == AUXADC_DATA_RDY_CH5) {/* valid data */
+		tmp_val = pmic_pwrap_read(AUXADC_ADC5);
+		if ((tmp_val & AUXADC_ADC5) == AUXADC_DATA_RDY_CH5) {/* valid data */
 			reg_val = tmp_val;
 			valid_data_flag--;
 			#if 0
@@ -455,7 +456,7 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 			if (!(--valid_data_flag))
 				reg_val = (reg_val>>1);/* average 2 */
 			#endif
-			ACCDET_INFO("[accdet] [%d]0x%x=0x%x\n", timeout_flag, AUXADC_ADC5_CHN_REG, tmp_val);
+			ACCDET_INFO("[accdet] [%d]0x%x=0x%x\n", timeout_flag, AUXADC_ADC5, tmp_val);
 		}
 	} while (valid_data_flag && timeout_flag);/* wait AUXADC data ready for 3*10 ms more */
 
@@ -857,6 +858,7 @@ static inline void disable_accdet(void)
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
 
 #ifdef CONFIG_ACCDET_EINT_IRQ
+#if 0
 	#ifdef CONFIG_ACCDET_SUPPORT_EINT0
 		pmic_pwrap_write(ACCDET_CON02, ACCDET_EINT0_PWM_EN|ACCDET_EINT0_PWM_IDLE);
 	#elif defined CONFIG_ACCDET_SUPPORT_EINT1
@@ -865,6 +867,7 @@ static inline void disable_accdet(void)
 		pmic_pwrap_write(ACCDET_CON02, ACCDET_EINT0_PWM_EN|ACCDET_EINT1_PWM_EN|
 			ACCDET_EINT1_PWM_IDLE|ACCDET_EINT0_PWM_IDLE);
 	#endif
+#endif
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01) & (~(ACCDET_ENABLE_B0)));
 	ACCDET_INFO("[disable_accdet][0x%x]=0x%x\n", ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
 #endif
@@ -897,29 +900,6 @@ static inline void clear_accdet_eint_interrupt(int eint_id)
 /*
  * PART5.3: static  workqueue callback functions
  */
-#if 0
-#ifdef CONFIG_ACCDET_EINT_IRQ
-static void disable_micbias_callback(struct work_struct *work)
-{
-	unsigned int reg_val = 0;
-
-	reg_val = pmic_pwrap_read(ACCDET_CON02);
-	/* setting pwm idle; */
-	if (s_cable_type == HEADSET_NO_MIC) {
-#ifdef CONFIG_ACCDET_SUPPORT_EINT0
-		pmic_pwrap_write(ACCDET_CON02, reg_val & ~(ACCDET_SWCTRL_ACCDET_EN);
-#elif defined CONFIG_ACCDET_SUPPORT_EINT1
-		pmic_pwrap_write(ACCDET_CON02, reg_val & ~ACCDET_SWCTRL1_EN);
-#elif defined CONFIG_ACCDET_SUPPORT_BI_EINT
-		pmic_pwrap_write(ACCDET_CON02, reg_val & ~ACCDET_SWCTRL_EN);
-#endif
-		disable_accdet();
-		ACCDET_DEBUG("[accdet]DCC more than 5s MICBIAS : Disabled\n");
-	}
-}
-#endif
-#endif
-
 static void disable_micbias_callback(struct work_struct *work)
 {
 	unsigned int reg_val = 0;
@@ -968,7 +948,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		reg_val = pmic_pwrap_read(ACCDET_CON02);
 		/* set PWM IDLE on */
 		/* pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_PWM_IDLE_B8_9_10); */
-		enable_accdet(ACCDET_SWCTRL_ACCDET_EN);/* enable ACCDET unit */
+		enable_accdet(ACCDET_EINT_PWM_IDLE_B11_12);/* enable ACCDET unit */
 
 	} else {/* EINT_PIN_PLUG_OUT */
 /* Disable ACCDET */
@@ -990,7 +970,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		/* recover EINT irq clear bit  */
 		/* TODO: need think~~~ */
 		irq_temp = pmic_pwrap_read(ACCDET_CON12);
-		irq_temp = irq_temp & (~ACCDET_IRQ_EINT_CLR);/* need think??? */
+		irq_temp = irq_temp & (~ACCDET_EINT_IRQ_CLR_B10_11);/* need think??? */
 		pmic_pwrap_write(ACCDET_CON12, irq_temp);
 		ACCDET_INFO("[accdet]plug-out,[0x%x]=0x%x\n", ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
 	}
@@ -1009,9 +989,9 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		reg_val = pmic_pwrap_read(ACCDET_CON02);
 		/* set PWM IDLE on */
 		pmic_pwrap_write(ACCDET_CON02,
-			(reg_val|ACCDET_PWM_IDLE|ACCDET_CMP0_PWM_IDLE|ACCDET_CMP1_PWM_IDLE));
+			(reg_val|ACCDET_PWM_IDLE_B8_9_10));
 		/*enable ACCDET unit*/
-		enable_accdet(ACCDET_SWCTRL_EN);
+		enable_accdet(ACCDET_PWM_IDLE_B8_9_10);
 	} else {/* EINT_PIN_PLUG_OUT */
 /* Disable ACCDET */
 		ACCDET_INFO("[accdet]ACC plug-out, g_cur_eint_state = %d\n", g_cur_eint_state);
@@ -1189,6 +1169,7 @@ static void accdet_work_callback(struct work_struct *work)
 
 	reg_val = 0;
 	wake_lock(&accdet_irq_lock);
+#if 0
 #if	HW_MODE_SUPPORT/* open HW-mode for plug-out to avoid pop-noise */
 	reg_val = pmic_pwrap_read(ACCDET_CON24);
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
@@ -1199,6 +1180,7 @@ static void accdet_work_callback(struct work_struct *work)
 	pwrap_write(ACCDET_CON24, reg_val|ACCDET_HWMODE_EN|ACCDET_HWEN_SEL_0_AND_1);
 #else/* uncertain state */
 	pwrap_write(ACCDET_CON24, reg_val|ACCDET_HWMODE_EN|ACCDET_HWEN_SEL_0_OR_1);
+#endif
 #endif
 	/* disable ACCDET unit */
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)&(~ACCDET_ENABLE_B0));
@@ -1255,7 +1237,7 @@ static irqreturn_t accdet_ap_eint_func(int irq, void *data)
 		else
 			irq_set_irq_type(g_accdet_irq, IRQ_TYPE_LEVEL_HIGH);
 
-		gpio_set_debounce(g_gpio_pin, headset_dts_data.accdet_plugout_debounce * 1000);
+		gpio_set_debounce(g_gpio_pin, headset_dts_data.accdet_plugout_deb * 1000);
 
 		/* update the eint status */
 		g_cur_eint_state = EINT_PIN_PLUG_IN;
@@ -1334,6 +1316,7 @@ static int accdet_irq_handler(void)
 	unsigned int reg_val = 0;
 	u64 cur_time = 0;
 
+	eint_type = 0;
 	cur_time = accdet_get_current_time();
 	reg_val = pmic_pwrap_read(ACCDET_CON12);
 	ACCDET_INFO("[accdet_irq_handler][0x%x]=0x%x\n", ACCDET_CON12, reg_val);
@@ -1532,6 +1515,7 @@ static inline void accdet_eint_high_level_support(void)
 	reg_val = 0;
 	ACCDET_DEBUG("[accdet]accdet_eint_high_level_support\n");
 
+#if 0
 	/* set high level trigger */
 #ifdef CONFIG_ACCDET_EINT_IRQ
 		/* pwrap_write(ACCDET_CON01, ACCDET_DISABLE); */
@@ -1584,7 +1568,7 @@ static inline void accdet_eint_high_level_support(void)
 					reg_val = pmic_pwrap_read(ACCDET_CON01);
 					ACCDET_INFO("[accdet1]high:1.[0x%x]=0x%x\n", ACCDET_CON01, reg_val);
 					/* set bit5 to enable default EINT init status */
-					pmic_pwrap_write(ACCDET_CON01, reg_val|ACCDET_EINT1_SEQ_INIT_EN);
+					pmic_pwrap_write(ACCDET_CON01, reg_val|ACCDET_EINT1_SEQ_INIT_EN_B5);
 					mdelay(2);
 					reg_val = pmic_pwrap_read(ACCDET_CON01);
 					ACCDET_INFO("[accdet1]high:2.[0x%x]=0x%x\n", ACCDET_CON01, reg_val);
@@ -1643,7 +1627,7 @@ static inline void accdet_eint_high_level_support(void)
 			}
 			/* maybe need judge the bit3 is clear actually??? */
 			reg_val = pmic_pwrap_read(ACCDET_CON12);
-			pmic_pwrap_write(ACCDET_CON12, reg_val & (~ACCDET_IRQ_EINT_CLR));
+			pmic_pwrap_write(ACCDET_CON12, reg_val & (~ACCDET_EINT_IRQ_CLR_B10_11));
 
 			reg_val = pmic_pwrap_read(ACCDET_CON15)&(~(0x0F<<3));
 			pwrap_write(ACCDET_CON15, reg_val);
@@ -1655,6 +1639,7 @@ static inline void accdet_eint_high_level_support(void)
 		}
 	/* pwrap_write(ACCDET_CON02, */
 	/* pmic_pwrap_read(ACCDET_CON02)|ACCDET_EINT0_PWM_EN|ACCDET_EINT1_PWM_EN); */
+#endif
 #endif
 #endif
 }
@@ -1678,10 +1663,10 @@ void accdet_init_once(int init_flag)
 		pmic_pwrap_write(ACCDET_CON03, REGISTER_VALUE(accdet_cust_setting->pwm_width));
 		pmic_pwrap_write(ACCDET_CON05,
 			  (accdet_cust_setting->fall_delay << 15 | accdet_cust_setting->rise_delay));
-		 accdet_eint_set_debounce(eint_plugin_debounce);/* set eint debounce */
+		/* accdet_eint_set_debounce(eint_plugin_debounce); *//* set eint debounce */
 
 #ifdef HW_MODE_SUPPORT
-		 pmic_pwrap_write(ACCDET_CON1, pmic_pwrap_read(ACCDET_CON1)&(~ACCDET_ENABLE_B0));/* close accdet en */
+		 pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)&(~ACCDET_ENABLE_B0));/* close accdet en */
 #ifdef CONFIG_ACCDET_EINT_IRQ
 		reg_val = pmic_pwrap_read(ACCDET_CON24);
 	#ifdef CONFIG_ACCDET_SUPPORT_EINT0
@@ -1753,24 +1738,24 @@ void accdet_init_once(int init_flag)
 		 reg_val = pmic_pwrap_read(ACCDET_CON15);
 		 pmic_pwrap_write(ACCDET_CON15, reg_val|ACCDET_EINT0_PWM_THRSH|ACCDET_EINT0_PWM_WIDTH);
 
-		 reg_val = pmic_pwrap_read(ACCDET_CON2);
-		 pmic_pwrap_write(ACCDET_CON2, reg_val|ACCDET_EINT0_PWM_EN_B3|ACCDET_EINT0_PWM_IDLE_B11);
+		 reg_val = pmic_pwrap_read(ACCDET_CON02);
+		 pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_EINT0_PWM_EN_B3|ACCDET_EINT0_PWM_IDLE_B11);
 		 /* pmic_pwrap_write(ACCDET_CON2, reg_val|ACCDET_EINT0_PWM_EN_B3); *//* discard */
-		 ACCDET_INFO("[accdet_init_once]-1[0x%x]=0x%x\n", ACCDET_CON2, pmic_pwrap_read(ACCDET_CON2));
+		 ACCDET_INFO("[accdet_init_once]-1[0x%x]=0x%x\n", ACCDET_CON02, pmic_pwrap_read(ACCDET_CON02));
 
 		 /* open top interrupt eint0 */
 		pmic_pwrap_write(AUD_TOP_INT_CON0_SET, RG_INT_EN_ACCDET_EINT0_B6);
 		/* pmic_pwrap_write(AUD_TOP_INT_MASK_CON0_SET, RG_INT_MASK_ACCDET_EINT0_B6); */
 
 		/* open accdet interrupt eint0 */
-		pwrap_write(ACCDET_CON1, pmic_pwrap_read(ACCDET_CON1)|ACCDET_EINT0_EN_B2);
+		pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)|ACCDET_EINT0_EN_B2);
 #elif defined CONFIG_ACCDET_SUPPORT_EINT1
 		pmic_pwrap_write(ACCDET_CON25, pmic_pwrap_read(ACCDET_CON25)&(~(0x1F<<8)));
 		reg_val = pmic_pwrap_read(ACCDET_CON25);
 		pmic_pwrap_write(ACCDET_CON25, reg_val|ACCDET_EINT1_PWM_THRSH|ACCDET_EINT1_PWM_WIDTH);
 
-		reg_val = pmic_pwrap_read(ACCDET_CON2);
-		pmic_pwrap_write(ACCDET_CON2, reg_val|ACCDET_EINT1_PWM_EN_B4|ACCDET_EINT1_PWM_IDLE_B12);
+		reg_val = pmic_pwrap_read(ACCDET_CON02);
+		pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_EINT1_PWM_EN_B4|ACCDET_EINT1_PWM_IDLE_B12);
 		/* pmic_pwrap_write(ACCDET_CON2, reg_val|ACCDET_EINT1_PWM_EN_B4); *//* discard */
 
 		/* open top interrupt eint1 */
@@ -1778,7 +1763,7 @@ void accdet_init_once(int init_flag)
 		/* pmic_pwrap_write(AUD_TOP_INT_MASK_CON0_SET, RG_INT_MASK_ACCDET_EINT1_B7); */
 
 		/* open accdet interrupt eint1 */
-		pwrap_write(ACCDET_CON1, pmic_pwrap_read(ACCDET_CON1)|ACCDET_EINT1_EN_B4);
+		pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)|ACCDET_EINT1_EN_B4);
 #elif defined CONFIG_ACCDET_SUPPORT_BI_EINT
 		pmic_pwrap_write(ACCDET_CON15, pmic_pwrap_read(ACCDET_CON15)&(~(0x1F<<8)));
 		reg_val = pmic_pwrap_read(ACCDET_CON15);
@@ -1787,16 +1772,16 @@ void accdet_init_once(int init_flag)
 		reg_val = pmic_pwrap_read(ACCDET_CON25);
 		pmic_pwrap_write(ACCDET_CON25, reg_val|ACCDET_EINT1_PWM_THRSH|ACCDET_EINT1_PWM_WIDTH);
 
-		reg_val = pmic_pwrap_read(ACCDET_CON2);
-		pmic_pwrap_write(ACCDET_CON2, reg_val|ACCDET_EINT_PWM_IDLE_B11_12|ACCDET_EINT_PWM_EN_B3_4);
-		/* pmic_pwrap_write(ACCDET_CON2, reg_val|ACCDET_EINT_PWM_EN_B3_4); *//* discard */
+		reg_val = pmic_pwrap_read(ACCDET_CON02);
+		pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_EINT_PWM_IDLE_B11_12|ACCDET_EINT_PWM_EN_B3_4);
+		/* pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_EINT_PWM_EN_B3_4); *//* discard */
 
 		/* open top interrupt eint0 & eint1 */
 		pmic_pwrap_write(AUD_TOP_INT_CON0_SET, RG_INT_EN_ACCDET_EINT_B6_7);
 		/* pmic_pwrap_write(AUD_TOP_INT_MASK_CON0_SET, RG_INT_EMASK_ACCDET_EINT_B6_7); */
 
 		/* open accdet interrupt eint0&eint1 */
-		pwrap_write(ACCDET_CON1, pmic_pwrap_read(ACCDET_CON1)|ACCDET_EINT_EN_B2_4);
+		pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)|ACCDET_EINT_EN_B2_4);
 #else
 		ACCDET_ERROR("[accdet_init_once]CONFIG_ACCDET_EINT_IRQ defined error\n");
 #endif
@@ -1823,10 +1808,10 @@ static inline void accdet_init(void)
 
 	/* add new of DE for fix icon cann't appear */
 	/* set and clear initial bit every eint interrutp */
-	pmic_pwrap_write(ACCDET_CON1, pmic_pwrap_read(ACCDET_CON1)|ACCDET_SEQ_INIT_EN_B1);
+	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)|ACCDET_SEQ_INIT_EN_B1);
 	mdelay(2);/* 2ms */
-	ACCDET_INFO("[accdet_init][0x%x]=0x%x\n", ACCDET_CON1, pmic_pwrap_read(ACCDET_CON1));
-	pmic_pwrap_write(ACCDET_CON1, pmic_pwrap_read(ACCDET_CON1)&(~ACCDET_SEQ_INIT_EN_B1));
+	ACCDET_INFO("[accdet_init][0x%x]=0x%x\n", ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01));
+	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)&(~ACCDET_SEQ_INIT_EN_B1));
 	mdelay(1);
 
 	/* just need run once, for fix icon disappear HW */
@@ -1847,7 +1832,7 @@ static inline void accdet_init(void)
 	/* pwrap_write(ACCDET_CON0, RG_ACCDET2AUXADC_SW_NORMAL); *//* control ACCDET to AUXADC switch */
 	pwrap_write(AUDENC_ANA_CON11, pmic_pwrap_read(AUDENC_ANA_CON11)|RG_AUD_ACCDET_MBIAS1_EN);
 	pmic_pwrap_write(AUDENC_ANA_CON10, pmic_pwrap_read(AUDENC_ANA_CON10)
-		|(accdet_cust_setting.mic_bias_vol<<4));
+		|(headset_dts_data.mic_bias_vol<<4));
 	/* | RG_AUD_PW_MBIAS1);|RG_AUD_MICBIAS1_LOWP_EN|RG_AUD_MICBIAS1_BYPASS_EN); */
 
 	 if (s_accdet_first == 1)/* just do once*/
@@ -1915,7 +1900,7 @@ static int dump_register(void)
 	ACCDET_INFO("[NO_CONFIG_ACCDET_EINT]Error2.\n");
 #endif
 
-	for (i = ACCDET_CON00; i <= ACCDET_ELR2; i += 2)/* accdet addr */
+	for (i = ACCDET_CON00; i <= ACCDET_ELR_NUM; i += 2)/* accdet addr */
 		ACCDET_INFO("ACCDET_ADDR:(0x%x)=0x%x\n", i, pmic_pwrap_read(i));
 
 	ACCDET_INFO("(0x%x)=0x%x\n", TOP_CON, pmic_pwrap_read(TOP_CON));
@@ -1932,9 +1917,9 @@ static int dump_register(void)
 	ACCDET_INFO("(0x%x)=0x%x\n", AUXADC_ACCDET, pmic_pwrap_read(AUXADC_ACCDET));
 	ACCDET_INFO("(0x%x)=0x%x\n", AUXADC_ADC5, pmic_pwrap_read(AUXADC_ADC5));
 
-	ACCDET_INFO("(0x%x)=0x%x\n", REG_ACCDET_AD_CALI, pmic_pwrap_read(REG_ACCDET_AD_CALI));
-	ACCDET_INFO("(0x%x)=0x%x\n", REG_ACCDET_AD_0, pmic_pwrap_read(REG_ACCDET_AD_0));
-	ACCDET_INFO("(0x%x)=0x%x\n", REG_ACCDET_AD_1, pmic_pwrap_read(REG_ACCDET_AD_1));
+	ACCDET_INFO("(0x%x)=0x%x\n", REG_ACCDET_AD_CALI_0, pmic_pwrap_read(REG_ACCDET_AD_CALI_0));
+	ACCDET_INFO("(0x%x)=0x%x\n", REG_ACCDET_AD_CALI_1, pmic_pwrap_read(REG_ACCDET_AD_CALI_1));
+	ACCDET_INFO("(0x%x)=0x%x\n", REG_ACCDET_AD_CALI_2, pmic_pwrap_read(REG_ACCDET_AD_CALI_2));
 
 	ACCDET_INFO("[accdet_dts]deb0=0x%x,deb1=0x%x,deb3=0x%x,deb4=0x%x\n",
 		 accdet_cust_setting->debounce0, accdet_cust_setting->debounce1,
@@ -1976,7 +1961,7 @@ static int cat_register(char *buf)
 	strncat(buf, "[NO_CONFIG_ACCDET_EINT_SUPPORT]Error!\n", 64);
 #endif
 
-	for (i = ACCDET_CON00; i <= ACCDET_ELR2; i += 2) {/* accdet addr */
+	for (i = ACCDET_CON00; i <= ACCDET_ELR_NUM; i += 2) {/* accdet addr */
 		sprintf(buf_temp, "ADDR[0x%x]=0x%x\n", i, pmic_pwrap_read(i));
 		strncat(buf, buf_temp, strlen(buf_temp));
 	}
@@ -2012,9 +1997,9 @@ static int cat_register(char *buf)
 	strncat(buf, buf_temp, strlen(buf_temp));
 
 	sprintf(buf_temp, "(0x%x)=0x%x, (0x%x)=0x%x, (0x%x)=0x%x\n",
-		REG_ACCDET_AD_CALI, pmic_pwrap_read(REG_ACCDET_AD_CALI),
-		REG_ACCDET_AD_0, pmic_pwrap_read(REG_ACCDET_AD_0),
-		REG_ACCDET_AD_1, pmic_pwrap_read(REG_ACCDET_AD_1));
+		REG_ACCDET_AD_CALI_0, pmic_pwrap_read(REG_ACCDET_AD_CALI_0),
+		REG_ACCDET_AD_CALI_1, pmic_pwrap_read(REG_ACCDET_AD_CALI_1),
+		REG_ACCDET_AD_CALI_2, pmic_pwrap_read(REG_ACCDET_AD_CALI_2));
 	strncat(buf, buf_temp, strlen(buf_temp));
 
 	sprintf(buf_temp, "[accdet_dts]deb0=0x%x,deb1=0x%x,deb3=0x%x,deb4=0x%x\n",
@@ -2391,13 +2376,14 @@ int mt_accdet_probe(struct platform_device *dev)
 #endif
 #endif
 
+#if 0/* need check, temp delete */
 	/* for fix the risk of interrupt trigger before accdet_init when adb reboot */
 	/* close top eint and AB interrupt before accdet_init in the first anyhow */
 	pmic_pwrap_write(INT_CON_ACCDET_CLR, (0x07<<4));
 	pmic_pwrap_write(INT_CON1_ACCDET_CLR, (0x07<<4));
 	ACCDET_INFO("[mt_accdet_probe](0x%x)=0x%x\n", INT_CON1_ACCDET, pmic_pwrap_read(INT_CON1_ACCDET));
 	ACCDET_INFO("[mt_accdet_probe](0x%x)=0x%x\n", INT_STATUS_ACCDET, pmic_pwrap_read(INT_STATUS_ACCDET));
-
+#endif
 	s_eint_accdet_sync_flag = 1;
 	s_accdet_first = 1;
 	/* Accdet Hardware Init */
@@ -2511,7 +2497,7 @@ void mt_accdet_pm_restore_noirq(void)
 #ifdef CONFIG_ACCDET_EINT_IRQ
 	/* pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_EINT_IRQ_CLR);//????? */
 	/* pmic_pwrap_write(ACCDET_CON00, pmic_pwrap_read(ACCDET_CON00) | RG_ACCDET_INPUT_MICP); */
-	pmic_pwrap_write(AUDENC_ADC_REG, pmic_pwrap_read(AUDENC_ADC_REG) | ACCDET_SEL_EINT_EN);
+	/* pmic_pwrap_write(AUDENC_ADC_REG, pmic_pwrap_read(AUDENC_ADC_REG) | ACCDET_SEL_EINT_EN); */
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
 	pmic_pwrap_write(ACCDET_CON01, ACCDET_EINT0_EN_B2);
 #elif defined CONFIG_ACCDET_SUPPORT_EINT1
@@ -2520,7 +2506,7 @@ void mt_accdet_pm_restore_noirq(void)
 	pmic_pwrap_write(ACCDET_CON01, ACCDET_EINT_EN_B2_4);
 #endif
 #endif
-	enable_accdet(ACCDET_SWCTRL_EN);
+	enable_accdet(ACCDET_PWM_IDLE_B8_9_10);
 
 #ifdef CONFIG_ACCDET_EINT_IRQ
 #ifdef CONFIG_HEADSET_SUPPORT_FIVE_POLE
@@ -2531,11 +2517,11 @@ void mt_accdet_pm_restore_noirq(void)
 #else
 	/* set PWM IDLE on */
 /* pmic_pwrap_write(ACCDET_CON02, (pmic_pwrap_read(ACCDET_CON02)|ACCDET_PWM_IDLE_0)); */
-	enable_accdet(ACCDET_SWCTRL_EN);
+	enable_accdet(ACCDET_PWM_IDLE_B8_9_10);
 #endif
 #endif
 
-	enable_accdet(ACCDET_SWCTRL_EN);
+	enable_accdet(ACCDET_PWM_IDLE_B8_9_10);
 	s_eint_accdet_sync_flag = 1;
 	/* A=bit2; B=bit1;C=bit0 */
 	current_status_restore =

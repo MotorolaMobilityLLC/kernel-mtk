@@ -188,8 +188,6 @@
 #define ACCDET_CMP_PWM_EN_B0					(0x01<<0)
 #define ACCDET_SWCTRL_ACCDET_EN					(0x07)
 #define ACCDET_EINT_PWM_EN_B3_4					(0x03<<3)
-#define ACCDET_SWCTRL_EN		(ACCDET_SWCTRL_ACCDET_EN|ACCDET_SWCTRL_CMP_EN|ACCDET_EINT_PWM_EN)
-
 
 /* ACCDET_CON3-CON5,0x16CC ~ 0x16D0 set ACCDET PWM width, thresh, rise/falling */
 /* ACCDET_CON6-CON10,0x16D2 ~ 0x16DA  set debounce[0-4].  deb/freq=(deb/32768) s */
@@ -413,39 +411,8 @@
 #define RG_OTP_PA_ADDR_WORD_INDEX			(0x03)
 #define RG_OTP_PA_ACCDET_BIT_SHIFT			(0x06)
 
-
-#ifdef MTKDRV_GPIO
-#define SLT_RESULT_GPIO	GPIO8
-#endif
-
-#if 0
-typedef enum/* Headset mode MIC define */
-{
-	ACCDET_MIC_MODE_ACC = 1,
-	ACCDET_MIC_MODE_LOW_COST_WITHOUT_IN_BIAS = 2,
-	ACCDET_MIC_MODE_LOW_COST_WITH_IN_BIAS = 6,
-} ACCDET_MIC_MODE;
-#define ACCDET_MIC_MODE	(2)
-#endif
-
-
-#define ACCDET_SWCTRL_EN	0x07
 #define ACCDET_IN_SW			0x10
 #define ACCDET_DE4			0x42 /* 2ms */
-/*
- * #define ACCDET_PWM_SEL_CMP       0x00
- * #define ACCDET_PWM_SEL_VTH       0x01
- * #define ACCDET_PWM_SEL_MIC       0x10
- * #define ACCDET_PWM_SEL_SW        0x11
- *
- * #define ACCDET_TEST_MODE5_ACCDET_IN_GPI        (1<<5)
- * #define ACCDET_TEST_MODE4_ACCDET_IN_SW        (1<<4)
- * #define ACCDET_TEST_MODE3_MIC_SW        (1<<3)
- * #define ACCDET_TEST_MODE2_VTH_SW        (1<<2)
- * #define ACCDET_TEST_MODE1_CMP_SW        (1<<1)
- * #define ACCDET_TEST_MODE0_GPI        (1<<0)
- * //#define ACCDET_DEFVAL_SEL        (1<<15)
- */
 
 /* power mode and auxadc switch on/off */
 #define ACCDET_1V9_MODE_OFF   0x1A10
