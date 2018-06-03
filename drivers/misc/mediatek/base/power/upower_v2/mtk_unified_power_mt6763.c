@@ -38,6 +38,10 @@
 #include "mtk_common_static_power.h"
 #endif
 
+/* #if (NR_UPOWER_TBL_LIST <= 1) */
+struct upower_tbl final_upower_tbl[NR_UPOWER_BANK] = {};
+/* #endif */
+
 int degree_set[NR_UPOWER_DEGREE] = {
 		UPOWER_DEGREE_0,
 		UPOWER_DEGREE_1,
@@ -49,40 +53,40 @@ int degree_set[NR_UPOWER_DEGREE] = {
 
 /* collect all the raw tables */
 #define INIT_UPOWER_TBL_INFOS(name, tbl) {__stringify(name), &tbl}
-/* v1 FY */
-struct upower_tbl_info upower_tbl_infos_FY[NR_UPOWER_BANK] = {
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_1_FY),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_1_FY),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_1_FY),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_FY),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_FY),
+struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK] = {
+	[0] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_1_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_1_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_1_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_FY),
+	},
+	[1] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_1_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_1_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_1_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_SB),
+	},
+	[2] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_2_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_2_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_2_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_2_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_2_FY),
+	},
 };
-
-struct upower_tbl_info upower_tbl_infos_SB[NR_UPOWER_BANK] = {
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_1_SB),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_1_SB),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_1_SB),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_SB),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_SB),
-};
-
-/* for M17 minus */
-struct upower_tbl_info upower_tbl_infos_FY_2[NR_UPOWER_BANK] = {
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_2_FY),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_2_FY),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_2_FY),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_2_FY),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_2_FY),
-};
-
-struct upower_tbl_info *upower_tbl_infos_list[NR_UPOWER_TBL_LIST] = {
-			&upower_tbl_infos_FY[0],
-			&upower_tbl_infos_SB[0],
-			&upower_tbl_infos_FY_2[0],
+/* Upower will know how to apply voltage that comes from EEM */
+unsigned char upower_recognize_by_eem[NR_UPOWER_BANK] = {
+	UPOWER_BANK_LL, /* LL EEM apply voltage to LL upower bank */
+	UPOWER_BANK_L, /* L EEM apply voltage to L upower bank */
+	UPOWER_BANK_LL, /* LL EEM apply voltage to CLS_LL upower bank */
+	UPOWER_BANK_L, /* L EEM apply voltage to CLS_L upower bank */
+	UPOWER_BANK_CCI, /* CCI EEM apply voltage to CCI upower bank */
 };
 
 /* Used for rcu lock, points to all the raw tables list*/
-struct upower_tbl_info *p_upower_tbl_infos = &upower_tbl_infos_FY[0];
+struct upower_tbl_info *p_upower_tbl_infos = &upower_tbl_infos_list[0][0];
 
 #ifndef EARLY_PORTING_SPOWER
 int upower_bank_to_spower_bank(int upower_bank)
@@ -128,13 +132,6 @@ void get_original_table(void)
 	unsigned short idx = 0;
 	unsigned int i, j;
 
-#if 0
-	int i = 0;
-
-	for (i = 0; i < NR_UPOWER_BANK; i++)
-		upower_debug("(FY)raw table[%d] at %p\n", i, upower_tbl_infos_FY[i].p_upower_tbl);
-#endif
-
 	upower_proj_ver = is_ext_buck_exist();
 	/* if M17+, use FY or SB */
 	if (upower_proj_ver == 1) {
@@ -159,28 +156,23 @@ void get_original_table(void)
 	upower_error("projver, binLevel, idx=%d, %d, %d\n", upower_proj_ver, binLevel, idx);
 
 	/* get location of reference table */
-	upower_tbl_infos = upower_tbl_infos_list[idx];
+	upower_tbl_infos = &upower_tbl_infos_list[idx][0];
 
 	/* get location of target table */
-#if 0
-#if (NR_UPOWER_TBL_LIST <= 1)
+/* #if (NR_UPOWER_TBL_LIST <= 1) */
 	upower_tbl_ref = &final_upower_tbl[0];
-#else
-	upower_tbl_ref = upower_tbl_infos_list[(idx+1) % NR_UPOWER_TBL_LIST]->p_upower_tbl;
-#endif
-#endif
-	upower_tbl_ref = &final_upower_tbl[0];
+/* #else */
+/*	upower_tbl_ref = upower_tbl_infos_list[(idx+1) % NR_UPOWER_TBL_LIST][0].p_upower_tbl; */
+/* #endif */
 
-	upower_debug("idx %d upower_tbl_ref %p, upower_tbl_infos %p\n",
+	upower_debug("idx %d dest:%p, src:%p\n",
 					(idx+1)%NR_UPOWER_TBL_LIST, upower_tbl_ref, upower_tbl_infos);
 	/* p_upower_tbl_infos = upower_tbl_infos; */
 
 #if 0
+	upower_debug("upower_tbl_ll_1_FY %p\n", &upower_tbl_ll_1_FY);
 	upower_debug("upower_tbl_ll_1_SB %p\n", &upower_tbl_ll_1_SB);
-	upower_debug("upower_tbl_l_1_SB %p\n", &upower_tbl_l_1_SB);
-	upower_debug("upower_tbl_cluster_ll_1_SB %p\n", &upower_tbl_cluster_ll_1_SB);
-	upower_debug("upower_tbl_cluster_l_1_SB %p\n", &upower_tbl_cluster_l_1_SB);
-	upower_debug("upower_tbl_cci_1_SB %p\n", &upower_tbl_cci_1_SB);
+	upower_debug("upower_tbl_ll_2_FY %p\n", &upower_tbl_ll_2_FY);
 #endif
 
 	/*
@@ -192,12 +184,9 @@ void get_original_table(void)
 		for (j = 0; j < UPOWER_OPP_NUM; j++)
 			upower_tbl_ref[i].row[j].volt = 0;
 	}
-#if 1
 	for (i = 0; i < NR_UPOWER_BANK; i++)
-		upower_debug("upower_tbl_ref[%d] %p %u, %u\n", i, &upower_tbl_ref[i],
+		upower_debug("bank[%d] dest:%p dyn_pwr:%u, volt[0]%u\n", i, &upower_tbl_ref[i],
 					upower_tbl_ref[i].row[0].dyn_pwr, upower_tbl_ref[i].row[0].volt);
-#endif
-
 }
 
 MODULE_DESCRIPTION("MediaTek Unified Power Driver v0.0");
