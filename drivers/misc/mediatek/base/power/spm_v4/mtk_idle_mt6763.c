@@ -413,3 +413,8 @@ bool mtk_idle_check_clkmux(
 {
 	return true;
 }
+
+bool mtk_idle_check_vcore_cond(void)
+{
+	return true;
+}

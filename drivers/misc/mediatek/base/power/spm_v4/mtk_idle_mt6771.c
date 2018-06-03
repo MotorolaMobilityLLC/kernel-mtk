@@ -293,12 +293,12 @@ unsigned int clkmux_condition_mask[NF_CLKMUX][NF_CLKMUX_COND_SET] = {
 			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 }, /* skip */
 	[CLKMUX_AUD_2]
-		= { 2,
-			0x80, 0x00, 0x00, 0x00,
+		= { 0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 	[CLKMUX_AUD_1]
-		= { 2,
-			0x80, 0x00, 0x00, 0x00,
+		= { 0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 };
 
@@ -676,4 +676,26 @@ bool mtk_idle_check_clkmux(
 	}
 
 	return final_result;
+}
+
+bool mtk_idle_check_vcore_cond(void)
+{
+	uint32_t val = 0;
+	bool ret = false;
+
+	/* All PLLs in check list have to power down */
+	val = idle_readl(APLL1_CON0);
+
+	if ((val & 0x00000001))
+		goto RET;
+
+	val = idle_readl(APLL2_CON0);
+
+	if ((val & 0x00000001))
+		goto RET;
+
+	ret = true;
+
+RET:
+	return ret;
 }

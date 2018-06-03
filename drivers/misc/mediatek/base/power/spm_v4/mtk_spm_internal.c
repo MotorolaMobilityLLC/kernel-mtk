@@ -21,6 +21,7 @@
 #include <linux/random.h>
 #include <asm/setup.h>
 #include <mtk_eem.h>
+#include <mtk_spm_idle.h>
 #include <mtk_spm_internal.h>
 #include <mtk_spm_misc.h>
 #include <mtk_spm_pmic_wrap.h>
@@ -413,6 +414,16 @@ void __sync_big_buck_ctrl_pcm_flag(u32 *flag)
 		*flag &= ~(SPM_FLAG1_BIG_BUCK_OFF_ENABLE |
 				SPM_FLAG1_BIG_BUCK_ON_ENABLE);
 	}
+#endif
+}
+
+void __sync_vcore_ctrl_pcm_flag(u32 oper_cond, u32 *flag)
+{
+#if defined(CONFIG_MACH_MT6771)
+	if (oper_cond & DEEPIDLE_OPT_VCORE_LOW_VOLT)
+		*flag &= ~SPM_FLAG1_VCORE_LP_0P7V;
+	else
+		*flag |= SPM_FLAG1_VCORE_LP_0P7V;
 #endif
 }
 
