@@ -43,6 +43,7 @@
 #endif
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
+#include <mtk_idle_profile.h>
 #include <mtk_spm_reg.h>
 #include <mtk_spm_misc.h>
 
@@ -232,22 +233,7 @@ void __attribute__((weak)) ufs_mtk_deepidle_leave(void)
 #endif
 #endif
 
-static char log_buf[500];
-static char log_buf_2[500];
-
-static unsigned long long idle_block_log_prev_time;
-static unsigned int idle_block_log_time_criteria = 65000;	/* 5 sec */
-static unsigned long long idle_cnt_dump_prev_time;
-static unsigned int idle_cnt_dump_criteria = 10000;			/* 10 sec */
-
 static bool idle_by_pass_secure_cg;
-
-static bool             idle_ratio_en;
-static unsigned long long idle_ratio_profile_start_time;
-static unsigned long long idle_ratio_profile_duration;
-static unsigned long long idle_ratio_start_time[NR_TYPES];
-static unsigned long long idle_ratio_value[NR_TYPES];
-
 
 static unsigned int idle_block_mask[NR_TYPES][NF_CG_STA_RECORD];
 
@@ -273,12 +259,9 @@ static unsigned int clkmux_addr[NF_CLK_CFG] = {
 
 /* DeepIdle */
 static unsigned int     dpidle_time_criteria = 26000; /* 2ms */
-static unsigned int     dpidle_block_time_criteria = 30000; /* 30sec */
 static unsigned long    dpidle_cnt[NR_CPUS] = {0};
-static unsigned long    dpidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_f26m_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
-static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
 bool                    dpidle_by_pass_pg;
 static bool             dpidle_gs_dump_req;
@@ -289,13 +272,12 @@ static unsigned int     dpidle_run_once;
 static bool             dpidle_force_vcore_lp_mode;
 
 /* SODI3 */
+
 static unsigned int     soidle3_pll_block_mask[NR_PLLS] = {0x0};
 static unsigned int     soidle3_time_criteria = 65000; /* 5ms */
-static unsigned int     soidle3_block_time_criteria = 30000; /* 30sec */
 static unsigned long    soidle3_cnt[NR_CPUS] = {0};
-static unsigned long    soidle3_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle3_block_cnt[NR_REASONS] = {0};
-static unsigned long long soidle3_block_prev_time;
+
 static bool             soidle3_by_pass_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
@@ -307,11 +289,8 @@ unsigned int            soidle3_profile[4];
 
 /* SODI */
 static unsigned int     soidle_time_criteria = 26000; /* 2ms */
-static unsigned int     soidle_block_time_criteria = 30000; /* 30sec */
 static unsigned long    soidle_cnt[NR_CPUS] = {0};
-static unsigned long    soidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_block_cnt[NR_REASONS] = {0};
-static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
 bool                    soidle_by_pass_pg;
 static bool             soidle_by_pass_en;
@@ -374,14 +353,6 @@ void mtk_idle_notifier_call_chain(unsigned long val)
 	atomic_notifier_call_chain(&mtk_idle_notifier, val, NULL);
 }
 EXPORT_SYMBOL_GPL(mtk_idle_notifier_call_chain);
-
-static long int idle_get_current_time_ms(void)
-{
-	struct timeval t;
-
-	do_gettimeofday(&t);
-	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
-}
 
 #ifndef USING_STD_TIMER_OPS
 /* Workaround of static analysis defect*/
@@ -589,11 +560,6 @@ static bool mtk_idle_cpu_criteria(void)
 
 static bool soidle3_can_enter(int cpu, int reason)
 {
-	int i;
-	unsigned long long soidle3_block_curr_time = 0;
-	char *p;
-	bool ret = false;
-
 	#ifdef SPM_SODI3_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[0]);
 	#endif
@@ -650,52 +616,7 @@ static bool soidle3_can_enter(int cpu, int reason)
 	}
 
 out:
-	if (reason < NR_REASONS) {
-		if (soidle3_block_prev_time == 0)
-			soidle3_block_prev_time = idle_get_current_time_ms();
-
-		soidle3_block_curr_time = idle_get_current_time_ms();
-		if (((soidle3_block_curr_time - soidle3_block_prev_time) > soidle3_block_time_criteria)
-			&& ((soidle3_block_curr_time - idle_block_log_prev_time) > idle_block_log_time_criteria)) {
-
-			if ((cpu % 4) == 0) {
-				/* soidle3,rgidle count */
-				p = log_buf;
-				log2buf(p, log_buf, "CNT(soidle3,rgidle): ");
-
-				for (i = 0; i < nr_cpu_ids; i++)
-					log2buf(p, log_buf, "[%d] = (%lu,%lu), ",
-						i, soidle3_cnt[i], rgidle_cnt[i]);
-				idle_warn("%s\n", log_buf);
-
-				/* block category */
-				p = log_buf;
-				log2buf(p, log_buf, "soidle3_block_cnt: ");
-				for (i = 0; i < NR_REASONS; i++)
-					log2buf(p, log_buf, "[%s] = %lu, ",
-						mtk_get_reason_name(i), soidle3_block_cnt[i]);
-				idle_warn("%s\n", log_buf);
-
-				p = log_buf;
-				log2buf(p, log_buf, "soidle3_block_mask: ");
-				for (i = 0; i < NR_GRPS; i++)
-					log2buf(p, log_buf, "0x%08x, ", idle_block_mask[IDLE_TYPE_SO3][i]);
-				idle_warn("%s\n", log_buf);
-
-				memset(soidle3_block_cnt, 0, sizeof(soidle3_block_cnt));
-				soidle3_block_prev_time = idle_get_current_time_ms();
-				idle_block_log_prev_time = soidle3_block_prev_time;
-			}
-		}
-
-		soidle3_block_cnt[reason]++;
-		ret = false;
-	} else {
-		soidle3_block_prev_time = idle_get_current_time_ms();
-		ret = true;
-	}
-
-	return ret;
+	return mtk_idle_select_state(IDLE_TYPE_SO3, reason);
 }
 
 void soidle3_before_wfi(int cpu)
@@ -759,11 +680,6 @@ EXPORT_SYMBOL(disable_soidle_by_bit);
 
 static bool soidle_can_enter(int cpu, int reason)
 {
-	int i;
-	unsigned long long soidle_block_curr_time = 0;
-	char *p;
-	bool ret = false;
-
 	#ifdef SPM_SODI_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[0]);
 	#endif
@@ -804,52 +720,7 @@ static bool soidle_can_enter(int cpu, int reason)
 	}
 
 out:
-	if (reason < NR_REASONS) {
-		if (soidle_block_prev_time == 0)
-			soidle_block_prev_time = idle_get_current_time_ms();
-
-		soidle_block_curr_time = idle_get_current_time_ms();
-		if (((soidle_block_curr_time - soidle_block_prev_time) > soidle_block_time_criteria)
-			&& ((soidle_block_curr_time - idle_block_log_prev_time) > idle_block_log_time_criteria)) {
-
-			if ((cpu % 4) == 0) {
-				/* soidle,rgidle count */
-				p = log_buf;
-				log2buf(p, log_buf, "CNT(soidle,rgidle): ");
-				for (i = 0; i < nr_cpu_ids; i++)
-					log2buf(p, log_buf, "[%d] = (%lu,%lu), ",
-						i, soidle_cnt[i], rgidle_cnt[i]);
-				idle_warn("%s\n", log_buf);
-
-				/* block category */
-				p = log_buf;
-				log2buf(p, log_buf, "soidle_block_cnt: ");
-				for (i = 0; i < NR_REASONS; i++)
-					log2buf(p, log_buf, "[%s] = %lu, ",
-						mtk_get_reason_name(i), soidle_block_cnt[i]);
-				idle_warn("%s\n", log_buf);
-
-				p = log_buf;
-				log2buf(p, log_buf, "soidle_block_mask: ");
-				for (i = 0; i < NR_GRPS; i++)
-					log2buf(p, log_buf, "0x%08x, ",
-						idle_block_mask[IDLE_TYPE_SO][i]);
-				idle_warn("%s\n", log_buf);
-
-				memset(soidle_block_cnt, 0, sizeof(soidle_block_cnt));
-				soidle_block_prev_time = idle_get_current_time_ms();
-				idle_block_log_prev_time = soidle_block_prev_time;
-			}
-		}
-
-		soidle_block_cnt[reason]++;
-		ret = false;
-	} else {
-		soidle_block_prev_time = idle_get_current_time_ms();
-		ret = true;
-	}
-
-	return ret;
+	return mtk_idle_select_state(IDLE_TYPE_SO, reason);
 }
 
 void soidle_before_wfi(int cpu)
@@ -966,11 +837,6 @@ EXPORT_SYMBOL(disable_dpidle_by_bit);
 
 static bool dpidle_can_enter(int cpu, int reason)
 {
-	int i = 0;
-	unsigned long long dpidle_block_curr_time = 0;
-	char *p;
-	bool ret = false;
-
 	/* check previous common criterion */
 	if (reason == BY_CLK) {
 		if (dpidle_by_pass_cg == 0) {
@@ -996,51 +862,7 @@ static bool dpidle_can_enter(int cpu, int reason)
 	}
 
 out:
-	if (reason < NR_REASONS) {
-		if (dpidle_block_prev_time == 0)
-			dpidle_block_prev_time = idle_get_current_time_ms();
-
-		dpidle_block_curr_time = idle_get_current_time_ms();
-		if (((dpidle_block_curr_time - dpidle_block_prev_time) > dpidle_block_time_criteria)
-			&& ((dpidle_block_curr_time - idle_block_log_prev_time) > idle_block_log_time_criteria)) {
-
-			if ((cpu % 4) == 0) {
-				/* dpidle,rgidle count */
-				p = log_buf;
-				log2buf(p, log_buf, "CNT(dpidle,rgidle): ");
-				for (i = 0; i < nr_cpu_ids; i++)
-					log2buf(p, log_buf, "[%d] = (%lu,%lu), ",
-						i, dpidle_cnt[i], rgidle_cnt[i]);
-				idle_warn("%s\n", log_buf);
-
-				/* block category */
-				p = log_buf;
-				log2buf(p, log_buf, "dpidle_block_cnt: ");
-				for (i = 0; i < NR_REASONS; i++)
-					log2buf(p, log_buf, "[%s] = %lu, ",
-						mtk_get_reason_name(i), dpidle_block_cnt[i]);
-				idle_warn("%s\n", log_buf);
-
-				p = log_buf;
-				log2buf(p, log_buf, "dpidle_block_mask: ");
-				for (i = 0; i < NR_GRPS; i++)
-					log2buf(p, log_buf, "0x%08x, ",
-						idle_block_mask[IDLE_TYPE_DP][i]);
-				idle_warn("%s\n", log_buf);
-
-				memset(dpidle_block_cnt, 0, sizeof(dpidle_block_cnt));
-				dpidle_block_prev_time = idle_get_current_time_ms();
-				idle_block_log_prev_time = dpidle_block_prev_time;
-			}
-		}
-		dpidle_block_cnt[reason]++;
-		ret = false;
-	} else {
-		dpidle_block_prev_time = idle_get_current_time_ms();
-		ret = true;
-	}
-
-	return ret;
+	return mtk_idle_select_state(IDLE_TYPE_DP, reason);
 }
 
 /*
@@ -1318,106 +1140,6 @@ static bool (*idle_can_enter[NR_TYPES])(int cpu, int reason) = {
 	rgidle_can_enter,
 };
 
-void dump_idle_cnt_in_interval(int cpu)
-{
-	int i = 0;
-	char *p = log_buf;
-	char *p2 = log_buf_2;
-	unsigned long long idle_cnt_dump_curr_time = 0;
-	bool have_dpidle = false;
-	bool have_soidle3 = false;
-	bool have_soidle = false;
-
-	if (idle_cnt_dump_prev_time == 0)
-		idle_cnt_dump_prev_time = idle_get_current_time_ms();
-
-	idle_cnt_dump_curr_time = idle_get_current_time_ms();
-
-	if (!(cpu == 0 || cpu == 4))
-		return;
-
-	if (!((idle_cnt_dump_curr_time - idle_cnt_dump_prev_time) > idle_cnt_dump_criteria))
-		return;
-
-	/* dump idle count */
-	/* deepidle */
-	p = log_buf;
-	for (i = 0; i < nr_cpu_ids; i++) {
-		if ((dpidle_cnt[i] - dpidle_last_cnt[i]) != 0) {
-			log2buf(p, log_buf, "[%d] = %lu, ",
-				i, dpidle_cnt[i] - dpidle_last_cnt[i]);
-			have_dpidle = true;
-		}
-
-		dpidle_last_cnt[i] = dpidle_cnt[i];
-	}
-
-	log2buf(p2, log_buf_2, "DP: %s --- ", have_dpidle ? log_buf : "No enter");
-
-	/* sodi3 */
-	p = log_buf;
-	for (i = 0; i < nr_cpu_ids; i++) {
-		if ((soidle3_cnt[i] - soidle3_last_cnt[i]) != 0) {
-			log2buf(p, log_buf, "[%d] = %lu, ",
-				i, soidle3_cnt[i] - soidle3_last_cnt[i]);
-			have_soidle3 = true;
-		}
-
-		soidle3_last_cnt[i] = soidle3_cnt[i];
-	}
-
-	log2buf(p2, log_buf_2, "SODI3: %s --- ",
-		have_soidle3 ? log_buf : "No enter");
-
-	/* sodi3 */
-	p = log_buf;
-	for (i = 0; i < nr_cpu_ids; i++) {
-		if ((soidle_cnt[i] - soidle_last_cnt[i]) != 0) {
-			log2buf(p, log_buf, "[%d] = %lu, ",
-				i, soidle_cnt[i] - soidle_last_cnt[i]);
-			have_soidle = true;
-		}
-
-		soidle_last_cnt[i] = soidle_cnt[i];
-	}
-
-	log2buf(p2, log_buf_2, "SODI: %s --- ",
-		have_soidle ? log_buf : "No enter");
-
-	/* dump log */
-	idle_warn("%s\n", log_buf_2);
-
-	/* dump idle ratio */
-	if (idle_ratio_en) {
-		idle_ratio_profile_duration = idle_get_current_time_ms() - idle_ratio_profile_start_time;
-		idle_warn("--- CPU 0 idle: %llu, DP = %llu, SO3 = %llu, SO = %llu, RG = %llu --- (ms)\n",
-				idle_ratio_profile_duration,
-				idle_ratio_value[IDLE_TYPE_DP],
-				idle_ratio_value[IDLE_TYPE_SO3],
-				idle_ratio_value[IDLE_TYPE_SO],
-				idle_ratio_value[IDLE_TYPE_RG]);
-
-		idle_ratio_profile_start_time = idle_get_current_time_ms();
-		for (i = 0; i < NR_TYPES; i++)
-			idle_ratio_value[i] = 0;
-	}
-
-	/* update time base */
-	idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
-}
-
-inline void idle_ratio_calc_start(int type, int cpu)
-{
-	if (type >= 0 && type < NR_TYPES && cpu == 0)
-		idle_ratio_start_time[type] = idle_get_current_time_ms();
-}
-
-inline void idle_ratio_calc_stop(int type, int cpu)
-{
-	if (type >= 0 && type < NR_TYPES && cpu == 0)
-		idle_ratio_value[type] += (idle_get_current_time_ms() - idle_ratio_start_time[type]);
-}
-
 #if 0
 int mt_idle_select(int cpu)
 {
@@ -1515,7 +1237,7 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	bool dcs_lock_get = false;
 #endif
 
-	dump_idle_cnt_in_interval(cpu);
+	mtk_idle_dump_cnt_in_interval();
 
 	if (menu_select_state < 0)
 		return menu_select_state;
@@ -1623,7 +1345,7 @@ int dpidle_enter(int cpu)
 	int ret = CPUIDLE_STATE_DP;
 	u32 operation_cond = 0;
 
-	idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
+	mtk_idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
 
 	operation_cond |= dpidle_pre_process(cpu);
 
@@ -1645,7 +1367,7 @@ int dpidle_enter(int cpu)
 
 	dpidle_post_process(cpu);
 
-	idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
+	mtk_idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
 
 	/* For test */
 	if (dpidle_run_once)
@@ -1665,7 +1387,7 @@ int soidle3_enter(int cpu)
 	if (sodi3_flags & SODI_FLAG_RESIDENCY)
 		soidle3_time = idle_get_current_time_ms();
 
-	idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
+	mtk_idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
 
 	/* clkmux for sodi3 */
 	memset(clkmux_block_mask[IDLE_TYPE_SO3], 0, NF_CLK_CFG * sizeof(unsigned int));
@@ -1693,7 +1415,7 @@ int soidle3_enter(int cpu)
 
 	soidle_post_handler();
 
-	idle_ratio_calc_stop(IDLE_TYPE_SO3, cpu);
+	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO3, cpu);
 
 	if (sodi3_flags & SODI_FLAG_RESIDENCY) {
 		soidle3_residency += idle_get_current_time_ms() - soidle3_time;
@@ -1722,7 +1444,7 @@ int soidle_enter(int cpu)
 	if (sodi_flags & SODI_FLAG_RESIDENCY)
 		soidle_time = idle_get_current_time_ms();
 
-	idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
+	mtk_idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
 
 	operation_cond |= soidle_pre_handler();
 
@@ -1741,7 +1463,7 @@ int soidle_enter(int cpu)
 
 	soidle_post_handler();
 
-	idle_ratio_calc_stop(IDLE_TYPE_SO, cpu);
+	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO, cpu);
 
 	if (sodi_flags & SODI_FLAG_RESIDENCY) {
 		soidle_residency += idle_get_current_time_ms() - soidle_time;
@@ -1787,11 +1509,11 @@ int rgidle_enter(int cpu)
 {
 	int ret = CPUIDLE_STATE_RG;
 
-	idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
+	mtk_idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
 
 	go_to_rgidle(cpu);
 
-	idle_ratio_calc_stop(IDLE_TYPE_RG, cpu);
+	mtk_idle_ratio_calc_stop(IDLE_TYPE_RG, cpu);
 
 	return ret;
 }
@@ -1837,7 +1559,11 @@ static ssize_t idle_state_read(struct file *filp,
 		mt_idle_log("%s_switch=%d, ", mtk_get_idle_name(i), idle_switch[i]);
 
 	mt_idle_log("\n");
-	mt_idle_log("idle_ratio_en = %u\n", idle_ratio_en);
+	mt_idle_log("idle_ratio_en = %u\n", mtk_idle_get_ratio_status());
+	mt_idle_log("twam_handler:%s (clk:%s)\n",
+					(mtk_idle_get_twam()->running)?"on":"off",
+					(mtk_idle_get_twam()->speed_mode)?"speed":"normal");
+
 	mt_idle_log("bypass_secure_cg = %u\n", idle_by_pass_secure_cg);
 
 	mt_idle_log("\n********** idle command help **********\n");
@@ -1876,13 +1602,22 @@ static ssize_t idle_state_write(struct file *filp,
 			for (idx = 0; idx < NR_TYPES; idx++)
 				idle_switch[idx] = (param & (1U << idx)) ? 1 : 0;
 		} else if (!strcmp(cmd, "ratio")) {
-			idle_ratio_en = param;
-
-			if (idle_ratio_en) {
-				idle_ratio_profile_start_time = idle_get_current_time_ms();
-				for (idx = 0; idx < NR_TYPES; idx++)
-					idle_ratio_value[idx] = 0;
-			}
+			if (param == 1)
+				mtk_idle_enable_ratio_calc();
+			else
+				mtk_idle_disable_ratio_calc();
+		} else if (!strcmp(cmd, "spmtwam_clk")) {
+			mtk_idle_get_twam()->speed_mode = param;
+		} else if (!strcmp(cmd, "spmtwam_sel")) {
+			mtk_idle_get_twam()->sel = param;
+		} else if (!strcmp(cmd, "spmtwam")) {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+			idle_dbg("spmtwam_event = %d\n", param);
+			if (param >= 0)
+				mtk_idle_twam_enable((u32)param);
+			else
+				mtk_idle_twam_disable();
+#endif
 		} else if (!strcmp(cmd, "bypass_secure_cg")) {
 			idle_by_pass_secure_cg = param;
 		}
@@ -2581,6 +2316,16 @@ void mtk_idle_gpt_init(void)
 #endif
 }
 
+static void mtk_idle_profile_init(void)
+{
+	mtk_idle_twam_init();
+	mtk_idle_block_setting(IDLE_TYPE_DP, dpidle_cnt, dpidle_block_cnt, idle_block_mask[IDLE_TYPE_DP]);
+	mtk_idle_block_setting(IDLE_TYPE_SO3, soidle3_cnt, soidle3_block_cnt, idle_block_mask[IDLE_TYPE_SO3]);
+	mtk_idle_block_setting(IDLE_TYPE_SO, soidle_cnt, soidle_block_cnt, idle_block_mask[IDLE_TYPE_SO]);
+	mtk_idle_block_setting(IDLE_TYPE_SL, slidle_cnt, slidle_block_cnt, idle_block_mask[IDLE_TYPE_SL]);
+	mtk_idle_block_setting(IDLE_TYPE_RG, rgidle_cnt, NULL, NULL);
+}
+
 void mtk_cpuidle_framework_init(void)
 {
 	idle_ver("[%s]entry!!\n", __func__);
@@ -2592,6 +2337,7 @@ void mtk_cpuidle_framework_init(void)
 	mtk_idle_gpt_init();
 
 	dpidle_by_pass_pg = true;
+	mtk_idle_profile_init();
 }
 EXPORT_SYMBOL(mtk_cpuidle_framework_init);
 
