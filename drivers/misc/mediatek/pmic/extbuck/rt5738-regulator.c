@@ -394,8 +394,9 @@ static int rt5738_i2c_probe(struct i2c_client *i2c,
 	case 0x52: /* RT5738_C */
 	case 0x51: /* RT5738_G */
 	case 0x53: /* RT5738_H */
-	case 0x55: /* RT5738_F */
 		break;
+	case 0x55: /* RT5738_F */
+		return -ENODEV;
 	default:
 		pr_notice("%s invalid Slave Addr\n", __func__);
 		return -ENODEV;

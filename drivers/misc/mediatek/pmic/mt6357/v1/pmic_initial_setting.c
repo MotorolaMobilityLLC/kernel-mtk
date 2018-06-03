@@ -23,7 +23,7 @@
 #include "include/pmic_api.h"
 #include "include/pmic_api_buck.h"
 
-#define LP_INIT_SETTING_VERIFIED	1
+#define LP_INIT_SETTING_VERIFIED	0
 
 /* used for Zion E1/E2 PMIC clear interrupt */
 unsigned int g_pmic_chip_version = 1;
@@ -324,5 +324,79 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_ldo_tref_lp(SRCLKEN2, 1, HW_OFF);
 #endif /*LP_INIT_SETTING_VERIFIED*/
 }
-
+#elif defined(CONFIG_MACH_MT6761)
+void PMIC_LP_INIT_SETTING(void)
+{
+	g_pmic_chip_version = PMIC_CHIP_VER();
+	PMICLOG("[PMIC_LP_INIT_SETTING_v1] Chip Ver = %d\n"
+		, g_pmic_chip_version);
+#if LP_INIT_SETTING_VERIFIED
+	/* Suspend */
+	pmic_buck_vproc_lp(SW, 1, SW_OFF);
+	pmic_buck_vcore_lp(SRCLKEN0, 1, HW_LP);
+	pmic_buck_vmodem_lp(SRCLKEN0, 1, HW_LP);
+	pmic_buck_vs1_lp(SRCLKEN0, 1, HW_LP);
+	pmic_buck_vpa_lp(SW, 1, SW_OFF);
+	pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);
+	pmic_ldo_vsram_others_lp(SRCLKEN0, 1, HW_LP);
+	pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
+	pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_LP);
+	pmic_ldo_vrf18_lp(SRCLKEN1, 1, HW_OFF);
+	pmic_ldo_vrf12_lp(SRCLKEN1, 1, HW_OFF);
+	pmic_ldo_vefuse_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcn33_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcn28_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcn18_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcama_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcamd_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcamio_lp(SW, 1, SW_OFF);
+	pmic_ldo_vldo28_lp(SW, 1, SW_OFF);
+	pmic_ldo_vaux18_lp(SRCLKEN0, 1, HW_LP);
+	pmic_ldo_vaud28_lp(SRCLKEN0, 1, HW_LP);
+	pmic_ldo_vio28_lp(SRCLKEN0, 1, HW_LP);
+	pmic_ldo_vio18_lp(SRCLKEN0, 1, HW_LP);
+	pmic_ldo_vdram_lp(SRCLKEN0, 1, HW_LP);
+	pmic_ldo_vmc_lp(SW, 1, SW_OFF);
+	pmic_ldo_vmch_lp(SW, 1, SW_OFF);
+	pmic_ldo_vemc_lp(SW, 1, SW_OFF);
+	pmic_ldo_vsim1_lp(SW, 1, SW_OFF);
+	pmic_ldo_vsim2_lp(SW, 1, SW_OFF);
+	pmic_ldo_vibr_lp(SW, 1, SW_OFF);
+	pmic_ldo_vusb33_lp(SRCLKEN0, 1, HW_LP);
+	pmic_ldo_tref_lp(SRCLKEN0, 1, HW_OFF);
+	/*Deepidle*/
+	pmic_buck_vproc_lp(SW, 1, SW_OFF);
+	pmic_buck_vcore_lp(SRCLKEN2, 1, HW_LP);
+	pmic_buck_vmodem_lp(SRCLKEN2, 1, HW_LP);
+	pmic_buck_vs1_lp(SRCLKEN2, 1, HW_LP);
+	pmic_buck_vpa_lp(SW, 1, SW_OFF);
+	pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);
+	pmic_ldo_vsram_others_lp(SRCLKEN2, 1, HW_LP);
+	pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
+	pmic_ldo_vxo22_lp(SRCLKEN2, 1, HW_LP);
+	pmic_ldo_vrf18_lp(SRCLKEN1, 1, HW_OFF);
+	pmic_ldo_vrf12_lp(SRCLKEN1, 1, HW_OFF);
+	pmic_ldo_vefuse_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcn33_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcn28_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcn18_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcama_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcamd_lp(SW, 1, SW_OFF);
+	pmic_ldo_vcamio_lp(SW, 1, SW_OFF);
+	pmic_ldo_vldo28_lp(SW, 1, SW_OFF);
+	pmic_ldo_vaux18_lp(SRCLKEN2, 1, HW_LP);
+	pmic_ldo_vaud28_lp(SW, 1, SW_ON);
+	pmic_ldo_vio28_lp(SRCLKEN2, 1, HW_LP);
+	pmic_ldo_vio18_lp(SRCLKEN2, 1, HW_LP);
+	pmic_ldo_vdram_lp(SRCLKEN2, 1, HW_LP);
+	pmic_ldo_vmc_lp(SW, 1, SW_OFF);
+	pmic_ldo_vmch_lp(SW, 1, SW_OFF);
+	pmic_ldo_vemc_lp(SW, 1, SW_OFF);
+	pmic_ldo_vsim1_lp(SW, 1, SW_OFF);
+	pmic_ldo_vsim2_lp(SW, 1, SW_OFF);
+	pmic_ldo_vibr_lp(SW, 1, SW_OFF);
+	pmic_ldo_vusb33_lp(SRCLKEN2, 1, HW_LP);
+	pmic_ldo_tref_lp(SRCLKEN2, 1, HW_OFF);
+#endif /*LP_INIT_SETTING_VERIFIED*/
+}
 #endif
