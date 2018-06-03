@@ -3845,6 +3845,10 @@
 	rt5081_pd: rt5081_pd_eint {
 	};
 
+	rt9465_slave_chr: rt9465_slave_chr {
+		compatible = "richtek,rt9465";
+	};
+
 	mrdump_ext_rst: mrdump_ext_rst {
 		compatible = "mediatek, mrdump_ext_rst-eint";
 		source = "SYSRST";
