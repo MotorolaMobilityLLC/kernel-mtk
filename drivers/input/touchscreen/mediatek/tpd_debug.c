@@ -24,52 +24,6 @@
 int tpd_fail_count;
 int tpd_trial_count;
 
-void tpd_debug_no_response(struct i2c_client *i2c_client)
-{
-	char sleep[2] = { 0x07, 0x01 };
-	char wakeup[2] = { 0x07, 0x02 };
-	char threshold[2] = { 0x09, 0x04 };
-	char gesture[2] = { 0x08, 0x11 };
-	char sleeptime[2] = { 0x0d, 0x01 };
-	char idletime[2] = { 0x0c, 0xff };
-	static int trial_index;
-	static int delay_index;
-	int trial[] = { 1, 9, 2, 8, 3, 7, 4, 6, 5 };
-	int delay[] = { 1, 100, 2, 50, 3, 25, 4, 12,
-			5, 6, 6, 1, 1, 500, 500 };
-	int trial_max = 9;
-	int delay_max = 15;
-	int i, j;
-
-	int wakeup_count = 200;
-
-	for (i = 0; i < trial[trial_index]; i++) {
-		i2c_master_send(i2c_client, sleep, 2);
-		msleep(delay[delay_index]);
-		for (j = 0; j < wakeup_count; j++) {
-			i2c_master_send(i2c_client, wakeup, 2);
-			if (i2c_master_send(i2c_client, wakeup, 2) == 2)
-				break;
-			msleep(20);
-		}
-		if (i2c_master_send(i2c_client, gesture, 2) != 2)
-			i = wakeup_count;
-		if (i2c_master_send(i2c_client, threshold, 2) != 2)
-			i = wakeup_count;
-		if (i2c_master_send(i2c_client, idletime, 2) != 2)
-			i = wakeup_count;
-		if (i2c_master_send(i2c_client, sleeptime, 2) != 2)
-			i = wakeup_count;
-		if (i == wakeup_count)
-			tpd_fail_count++;
-		tpd_trial_count++;
-		pr_info("trial: %d    /    fail: %d\n",
-				tpd_trial_count, tpd_fail_count);
-		delay_index = ((delay_index + 1) % delay_max);
-	}
-	trial_index = ((trial_index + 1) % trial_max);
-}
-
 int tpd_debug_nr;
 module_param(tpd_debug_nr, int, 0644);
 module_param(tpd_fail_count, int, 0644);

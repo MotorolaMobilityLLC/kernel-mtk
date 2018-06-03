@@ -67,36 +67,47 @@ void tpd_get_dts_info(void)
 			"use-tpd-button", &tpd_dts_data.use_tpd_button);
 		pr_debug("[tpd]use-tpd-button = %d\n",
 			tpd_dts_data.use_tpd_button);
-		of_property_read_u32_array(node1, "tpd-resolution",
+		if (of_property_read_u32_array(node1, "tpd-resolution",
 			tpd_dts_data.tpd_resolution,
-			ARRAY_SIZE(tpd_dts_data.tpd_resolution));
+			ARRAY_SIZE(tpd_dts_data.tpd_resolution))) {
+			pr_debug("[tpd] resulution is %d %d",
+				tpd_dts_data.tpd_resolution[0],
+				tpd_dts_data.tpd_resolution[1]);
+		}
 		if (tpd_dts_data.use_tpd_button) {
 			of_property_read_u32(node1,
 				"tpd-key-num", &tpd_dts_data.tpd_key_num);
-			of_property_read_u32_array(node1, "tpd-key-local",
+			if (of_property_read_u32_array(node1, "tpd-key-local",
 				tpd_dts_data.tpd_key_local,
-				ARRAY_SIZE(tpd_dts_data.tpd_key_local));
-			of_property_read_u32_array(node1, "tpd-key-dim-local",
-				key_dim_local, ARRAY_SIZE(key_dim_local));
-			memcpy(tpd_dts_data.tpd_key_dim_local,
-				key_dim_local, sizeof(key_dim_local));
-			for (i = 0; i < 4; i++) {
-				pr_debug("[tpd]key[%d].key_x = %d\n", i,
-					tpd_dts_data
-						.tpd_key_dim_local[i]
-						.key_x);
-				pr_debug("[tpd]key[%d].key_y = %d\n", i,
-					tpd_dts_data
-						.tpd_key_dim_local[i]
-						.key_y);
-				pr_debug("[tpd]key[%d].key_W = %d\n", i,
-					tpd_dts_data
-						.tpd_key_dim_local[i]
-						.key_width);
-				pr_debug("[tpd]key[%d].key_H = %d\n", i,
-					tpd_dts_data
-						.tpd_key_dim_local[i]
-						.key_height);
+				ARRAY_SIZE(tpd_dts_data.tpd_key_local)))
+				pr_debug("tpd-key-local: %d %d %d %d",
+					tpd_dts_data.tpd_key_local[0],
+					tpd_dts_data.tpd_key_local[1],
+					tpd_dts_data.tpd_key_local[2],
+					tpd_dts_data.tpd_key_local[3]);
+			if (of_property_read_u32_array(node1,
+				"tpd-key-dim-local",
+				key_dim_local, ARRAY_SIZE(key_dim_local))) {
+				memcpy(tpd_dts_data.tpd_key_dim_local,
+					key_dim_local, sizeof(key_dim_local));
+				for (i = 0; i < 4; i++) {
+					pr_debug("[tpd]key[%d].key_x = %d\n", i,
+						tpd_dts_data
+							.tpd_key_dim_local[i]
+							.key_x);
+					pr_debug("[tpd]key[%d].key_y = %d\n", i,
+						tpd_dts_data
+							.tpd_key_dim_local[i]
+							.key_y);
+					pr_debug("[tpd]key[%d].key_W = %d\n", i,
+						tpd_dts_data
+							.tpd_key_dim_local[i]
+							.key_width);
+					pr_debug("[tpd]key[%d].key_H = %d\n", i,
+						tpd_dts_data
+							.tpd_key_dim_local[i]
+							.key_height);
+				}
 			}
 		}
 		of_property_read_u32(node1, "tpd-filter-enable",
@@ -105,16 +116,18 @@ void tpd_get_dts_info(void)
 			of_property_read_u32(node1,
 				"tpd-filter-pixel-density",
 				&tpd_dts_data.touch_filter.pixel_density);
-			of_property_read_u32_array(node1,
+			if (of_property_read_u32_array(node1,
 				"tpd-filter-custom-prameters",
 				(u32 *)tpd_dts_data.touch_filter.W_W,
-				ARRAY_SIZE(tpd_dts_data.touch_filter.W_W));
-			of_property_read_u32_array(node1,
+				ARRAY_SIZE(tpd_dts_data.touch_filter.W_W)))
+				pr_debug("get tpd-filter-custom-parameters");
+			if (of_property_read_u32_array(node1,
 				"tpd-filter-custom-speed",
 				tpd_dts_data.touch_filter.VECLOCITY_THRESHOLD,
 				ARRAY_SIZE(tpd_dts_data
 						.touch_filter
-						.VECLOCITY_THRESHOLD));
+						.VECLOCITY_THRESHOLD)))
+				pr_debug("get tpd-filter-custom-speed");
 		}
 		memcpy(&tpd_filter,
 			&tpd_dts_data.touch_filter, sizeof(tpd_filter));

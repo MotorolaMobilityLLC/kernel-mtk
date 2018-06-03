@@ -16,20 +16,8 @@
 #ifdef TPD_DEBUG_CODE
 #include<linux/i2c.h>
 
-void tpd_debug_no_response(struct i2c_client *i2c_client);
 extern int tpd_debug_nr;
 
-#define TPD_DEBUG_CHECK_NO_RESPONSE	\
-	do {					\
-		if (tpd_debug_nr) {		\
-			wait_event_interruptible_timeout(\
-			waiter, tpd_flag != 0, HZ/10); \
-			if (tpd_flag == 0) { \
-				tpd_debug_no_response(i2c_client); \
-				continue; \
-			} \
-		} \
-	} while (0)
 
 
 void tpd_debug_set_time(void);
@@ -139,9 +127,6 @@ void tpd_down_debug_track(int x, int y);
 
 /* Macros that will be embedded in code */
 
-#ifndef TPD_DEBUG_CHECK_NO_RESPONSE
-#define TPD_DEBUG_CHECK_NO_RESPONSE
-#endif
 
 #ifndef TPD_DEBUG_SET_TIME
 #define TPD_DEBUG_SET_TIME
