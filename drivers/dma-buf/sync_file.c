@@ -172,11 +172,16 @@ static struct fence **get_fences(struct sync_file *sync_file, int *num_fences)
 
 static void add_fence(struct fence **fences, int *i, struct fence *fence)
 {
-	fences[*i] = fence;
-
 	if (!fence_is_signaled(fence)) {
+		fences[*i] = fence;
 		fence_get(fence);
 		(*i)++;
+	} else {
+		if (fences[*i] == NULL)
+			fences[*i] = fence;
+		else if (ktime_to_ns(fence->timestamp) >
+				ktime_to_ns(fences[*i]->timestamp))
+			fences[*i] = fence;
 	}
 }
 
@@ -249,7 +254,7 @@ static struct sync_file *sync_file_merge(const char *name, struct sync_file *a,
 		add_fence(fences, &i, b_fences[i_b]);
 
 	if (i == 0)
-		fences[i++] = fence_get(a_fences[0]);
+		fences[i++] = fence_get(fences[0]);
 
 	if (num_fences > i) {
 		nfences = krealloc(fences, i * sizeof(*fences),
