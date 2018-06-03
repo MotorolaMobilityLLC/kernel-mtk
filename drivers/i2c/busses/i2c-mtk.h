@@ -195,6 +195,9 @@ struct mtk_i2c_compatible {
 	unsigned char set_dt_div; /* use dt to set div */
 	unsigned char check_max_freq; /* check max freq */
 	u16 ext_time_config;
+	char clk_compatible[128];
+	u16 clk_sta_offset;
+	u8 cg_bit[10];
 };
 
 struct mt_i2c {
@@ -221,6 +224,7 @@ struct mt_i2c {
 	u16 irq_stat;			/* interrupt status */
 	unsigned int speed_hz;		/* The speed in transfer */
 	unsigned int clk_src_div;
+	int cg_cnt;
 	bool trans_stop;		/* i2c transfer stop */
 	enum mt_trans_op op;
 	u16 total_len;
