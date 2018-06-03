@@ -3284,6 +3284,11 @@ int xfrm_migrate(const struct xfrm_selector *sel, u8 dir, u8 type,
 		goto out;
 	}
 
+	if (dir >= XFRM_POLICY_MAX) {
+		err = -EINVAL;
+		goto out;
+	}
+
 	/* Stage 1 - find policy */
 	if ((pol = xfrm_migrate_policy_find(sel, dir, type, net)) == NULL) {
 		err = -ENOENT;
