@@ -3335,7 +3335,7 @@
 
 	irtx_pwm:irtx_pwm {
 		compatible = "mediatek,irtx-pwm";
-		pwm_ch = <2>;
+		pwm_ch = <1>;
 		pwm_data_invert = <0>;
 	};
 
