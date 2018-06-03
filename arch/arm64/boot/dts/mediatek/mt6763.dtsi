@@ -559,10 +559,25 @@
 		interrupts = <GIC_SPI 185 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	apirq@1000b000 {
-		compatible = "mediatek,apirq";
+	eintc: eintc@1000b000 {
+		compatible = "mediatek,mt-eic";
 		reg = <0 0x1000b000 0 0x1000>;
 		interrupts = <GIC_SPI 167 IRQ_TYPE_LEVEL_HIGH>;
+		mediatek,max_hw_deb_cnt = <13>;
+		#interrupt-cells = <2>;
+		interrupt-controller;
+		mediatek,max_eint_num = <152>;
+		mediatek,debtime_setting_entry = <10>;
+		mediatek,debtime_setting_array  = <0 128>,
+						<1 256>,
+						<2 512>,
+						<3 1024>,
+						<4 16384>,
+						<5 32768>,
+						<6 65536>,
+						<7 131072>,
+						<8 262144>,
+						<9 524288>;
 	};
 
 	apmixed: apmixed@1000c000 {
