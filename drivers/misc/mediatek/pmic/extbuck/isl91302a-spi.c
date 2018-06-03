@@ -273,7 +273,7 @@ static void isl91302a_reg_init(struct spi_device *spi)
 {
 	int ret = 0;
 
-	/* Aaron Tian Provide for SPM Init*/
+	/* Sleeping voltage inti setting for SPM*/
 	/* VDVFS1 */
 	ret = isl91302a_write_byte(spi, 0x7e, 0x76);
 	ret |= isl91302a_write_byte(spi, 0x7f, 0x00);
