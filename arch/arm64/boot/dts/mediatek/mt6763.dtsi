@@ -175,7 +175,7 @@
 		};
 	};
 
-	memory@40000000 {
+	memory {
 		device_type = "memory";
 		reg = <0 0x40000000 0 0x1e605000>;
 	};
