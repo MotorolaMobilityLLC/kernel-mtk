@@ -26,6 +26,7 @@ struct mt6336_ctrl *auxadc_intf_ctrl;
 static struct mtk_auxadc_intf *auxadc_intf;
 
 const char *pmic_auxadc_channel_name[] = {
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
 	/* mt6335 */
 	"BATADC",
 	"VCDT",
@@ -35,6 +36,8 @@ const char *pmic_auxadc_channel_name[] = {
 	"MT6335 CHIP TEMP",
 	"DCXO",
 	"TSX",
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6336
 	/* mt6336 */
 	"BATSNS",
 	"VBUS",
@@ -44,11 +47,27 @@ const char *pmic_auxadc_channel_name[] = {
 	"BATID",
 	"VLED1",
 	"VLED2",
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6337
 	/* mt6337 */
 	"BATSNS",
 	"MT6337 CHIP TEMP",
 	"ACCDET",
 	"HPOPS_CAL",
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	/* mt6355 */
+	"BATADC",
+	"VCDT",
+	"BAT TEMP",
+	"BATID",
+	"VBIF",
+	"MT6355 CHIP TEMP",
+	"DCXO",
+	"ACCDET",
+	"TSX",
+	"HP",
+#endif
 };
 #define PMIC_AUXADC_CHANNEL_MAX	ARRAY_SIZE(pmic_auxadc_channel_name)
 
@@ -84,6 +103,13 @@ int pmic_get_auxadc_value(u8 list)
 		return value;
 	}
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6337 */
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	if (list >= AUXADC_LIST_MT6355_START &&
+			list <= AUXADC_LIST_MT6355_END) {
+		value = mt6355_get_auxadc_value(list);
+		return value;
+	}
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 
 	pr_err("%s Invalid AUXADC LIST\n", __func__);
 	return -EINVAL;
@@ -101,6 +127,9 @@ void pmic_auxadc_dump_regs(char *buf)
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6337
 	mt6337_auxadc_dump_regs(buf);
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6337 */
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	mt6355_auxadc_dump_regs(buf);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 }
 
 static struct mtk_auxadc_ops pmic_auxadc_ops = {
@@ -134,6 +163,9 @@ void mtk_auxadc_init(void)
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6337
 	mt6337_auxadc_init();
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6337 */
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	mt6355_auxadc_init();
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 
 	if (register_mtk_auxadc_intf(&pmic_auxadc_intf) < 0)
 		pr_err("[%s] register MTK Auxadc Intf Fail\n", __func__);

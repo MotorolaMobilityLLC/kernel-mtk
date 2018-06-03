@@ -25,6 +25,7 @@ extern int pmic_get_auxadc_value(u8 list);
 extern const char *pmic_get_auxadc_name(u8 list);
 
 enum {
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
 	/* mt6335 */
 	AUXADC_LIST_BATADC,
 	AUXADC_LIST_MT6335_START = AUXADC_LIST_BATADC,
@@ -36,6 +37,8 @@ enum {
 	AUXADC_LIST_DCXO,
 	AUXADC_LIST_TSX,
 	AUXADC_LIST_MT6335_END = AUXADC_LIST_TSX,
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6336
 	/* mt6336*/
 	AUXADC_LIST_BATSNS,
 	AUXADC_LIST_MT6336_START = AUXADC_LIST_BATSNS,
@@ -47,6 +50,8 @@ enum {
 	AUXADC_LIST_VLED1,
 	AUXADC_LIST_VLED2,
 	AUXADC_LIST_MT6336_END = AUXADC_LIST_VLED2,
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6337
 	/* mt6337 */
 	AUXADC_LIST_BATSNS_37,
 	AUXADC_LIST_MT6337_START = AUXADC_LIST_BATSNS_37,
@@ -54,6 +59,22 @@ enum {
 	AUXADC_LIST_ACCDET,
 	AUXADC_LIST_HPOFS_CAL,
 	AUXADC_LIST_MT6337_END = AUXADC_LIST_HPOFS_CAL,
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+	/* mt6355 */
+	AUXADC_LIST_BATADC,
+	AUXADC_LIST_MT6355_START = AUXADC_LIST_BATADC,
+	AUXADC_LIST_VCDT,
+	AUXADC_LIST_BATTEMP,
+	AUXADC_LIST_BATID,
+	AUXADC_LIST_VBIF,
+	AUXADC_LIST_MT6355_CHIP_TEMP,
+	AUXADC_LIST_DCXO,
+	AUXADC_LIST_ACCDET,
+	AUXADC_LIST_TSX,
+	AUXADC_LIST_HPOFS_CAL,
+	AUXADC_LIST_MT6355_END = AUXADC_LIST_HPOFS_CAL,
+#endif
 	AUXADC_LIST_MAX,
 };
 
@@ -114,6 +135,14 @@ extern void mt6337_auxadc_init(void);
 extern void mt6337_auxadc_dump_regs(char *buf);
 extern int mt6337_get_auxadc_value(u8 channel);
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6337 */
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+extern void mt6355_auxadc_init(void);
+extern void mt6355_auxadc_dump_regs(char *buf);
+extern int mt6355_get_auxadc_value(u8 channel);
+extern void mt6355_auxadc_lock(void);
+extern void mt6355_auxadc_unlock(void);
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6335 */
 
 /* ============ kernel Layer =================== */
 extern void mtk_auxadc_init(void);
