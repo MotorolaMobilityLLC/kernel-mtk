@@ -423,7 +423,8 @@ struct mmc_host {
 
 	unsigned long		state;
 	wait_queue_head_t	cmp_que;
-	struct mmc_request	*done_mrq;
+	wait_queue_head_t	cmdq_que;
+	struct mmc_request	*volatile done_mrq;
 	struct mmc_command	chk_cmd;
 	struct mmc_request	chk_mrq;
 	struct mmc_command	que_cmd;

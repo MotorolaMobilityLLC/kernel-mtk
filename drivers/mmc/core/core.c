@@ -456,10 +456,11 @@ int mmc_run_queue_thread(void *data)
 	struct mmc_request *cmd_mrq = NULL;
 	struct mmc_request *dat_mrq = NULL;
 	struct mmc_request *done_mrq = NULL;
-	unsigned int task_id;
+	unsigned int task_id, areq_cnt_chk, tmo;
 	bool is_err = false;
 	bool is_done = false;
 	int err;
+	u64 polling_tmo;
 
 	pr_notice("[CQ] start cmdq thread\n");
 	mt_bio_queue_alloc(current, NULL);
@@ -546,9 +547,9 @@ int mmc_run_queue_thread(void *data)
 
 				atomic_set(&host->cq_rw, true);
 				task_id = ((dat_mrq->cmd->arg >> 16) & 0x1f);
-				mt_biolog_cmdq_dma_start(task_id);
 				host->cur_rw_task = task_id;
 				host->ops->request(host, dat_mrq);
+				mt_biolog_cmdq_dma_start(task_id);
 				atomic_dec(&host->cq_rdy_cnt);
 				dat_mrq = NULL;
 			}
@@ -566,7 +567,6 @@ int mmc_run_queue_thread(void *data)
 			mt_biolog_cmdq_check();
 			mmc_blk_end_queued_req(host, done_mrq->areq, task_id,
 				err);
-			wake_up_interruptible(&host->cmp_que);
 			done_mrq = NULL;
 			is_done = false;
 		}
@@ -622,6 +622,37 @@ int mmc_run_queue_thread(void *data)
 		if (atomic_read(&host->cq_wait_rdy) > 0
 			&& atomic_read(&host->cq_rdy_cnt) == 0)
 			mmc_do_check(host);
+
+		else if (atomic_read(&host->cq_rw)) {
+			/* wait for event to wakeup */
+			/* wake up when new request arrived and dma done */
+			areq_cnt_chk = atomic_read(&host->areq_cnt);
+			polling_tmo = sched_clock();
+			while (!(host->done_mrq ||
+			(atomic_read(&host->areq_cnt) > areq_cnt_chk))) {
+				/* delay 1ms to check new request or dma done*/
+				if (sched_clock() - polling_tmo > 1000000) {
+					tmo =
+				wait_event_interruptible_timeout(host->cmdq_que,
+				host->done_mrq ||
+				(atomic_read(&host->areq_cnt) > areq_cnt_chk),
+				10 * HZ);
+					if (!tmo) {
+					pr_info("%s:tmo,mrq(%p),chk(%d),cnt(%d)\n",
+						__func__,
+						host->done_mrq,
+						areq_cnt_chk,
+						atomic_read(&host->areq_cnt));
+					pr_info("%s:tmo,rw(%d),wait(%d),rdy(%d)\n",
+						__func__,
+						atomic_read(&host->cq_rw),
+						atomic_read(&host->cq_wait_rdy),
+						atomic_read(&host->cq_rdy_cnt));
+					}
+					break;
+				}
+			}
+		}
 
 		/* Sleep when nothing to do */
 		mt_biolog_cmdq_check();
@@ -718,9 +749,11 @@ request_end:
 		WARN_ON(cmd->opcode != 46 && cmd->opcode != 47);
 		WARN_ON(host->done_mrq);
 		host->done_mrq = mrq;
+		/*
+		 * Need to wake up cmdq thread, after done rw.
+		 */
+		wake_up_interruptible(&host->cmdq_que);
 	}
-
-	wake_up_interruptible(&host->cmp_que);
 }
 
 static void mmc_wait_for_cmdq_done(struct mmc_host *host)
