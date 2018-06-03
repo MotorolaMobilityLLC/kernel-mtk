@@ -22,4 +22,4 @@ $(warning CCU_INC=$(srctree)/drivers/misc/mediatek/ccu/src/$(MTK_PLATFORM)/ccu_e
 #$(warning $(subdir-ccflags-y))
 
 #obj-$(CONFIG_MTK_VPU) += ccu_drv.o ccu_algo.o ccu_dbg.o
-obj-y += ccu_drv.o ccu_n3d_a.o
+obj-y += ccu_drv.o ccu_n3d_a.o ccu_i2c.o

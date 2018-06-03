@@ -17,5 +17,5 @@
 #subdir-ccflags-y += -DMTK_VPU_EMULATOR
 subdir-ccflags-y += -DMTK_VPU_KERNEL
 
-obj-y += mt6799/
+obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-y += 1.0/
