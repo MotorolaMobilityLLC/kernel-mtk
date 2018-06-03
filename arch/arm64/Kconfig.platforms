@@ -151,6 +151,7 @@ config MACH_MT6765
 	select PM_DEVFREQ
 	select MTK_EMI
 	select MTK_SYS_CIRQ
+	select MTK_GIC_TARGET_ALL
 	help
 	  This enables support for MediaTek MT6765
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
