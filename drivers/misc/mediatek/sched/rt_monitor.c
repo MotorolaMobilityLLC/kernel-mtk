@@ -247,7 +247,8 @@ void mt_rt_mon_print_task(int cpu)
 	list_for_each_entry(tmp, list_head, list) {
 		memcpy(&buffer[count], tmp, sizeof(struct mt_rt_mon_struct));
 		count++;
-		printk_deferred("[name:rt_monitor&]sched:[%s] pid:%d prio:%d old:%d exec_time[%lld.%06lu ms] percen[%d.%04d%%] isr_time[%lld.%06lu ms]\n",
+		printk_deferred(
+			"[name:rt_monitor&]sched:[%s] pid:%d prio:%d old:%d exec[%lld.%06lu ms] per[%d.%04d%%] isr[%lld.%06lu ms]\n",
 			tmp->comm, tmp->pid, tmp->prio, tmp->old_prio,
 			SPLIT_NS_H(tmp->cost_cputime), SPLIT_NS_L(tmp->cost_cputime),
 			tmp->cputime_percen_6 / 10000, tmp->cputime_percen_6 % 10000,
