@@ -753,6 +753,7 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 		md_ctrl->tx_traffic_monitor[queue->index]++;
 #endif
 		/* resume channel */
+#if MD_GENERATION < (6293)
 		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 		if (md_ctrl->txq_active & (1 << queue->index)) {
 			if (!(cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << queue->index)))
@@ -760,6 +761,11 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 					CLDMA_BM_ALL_QUEUE & (1 << queue->index));
 		}
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
+#else
+		/* clear IP busy register wake up cpu case */
+		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY,
+			      cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY));
+#endif
 	}
 	if (count)
 		wake_up_nr(&queue->req_wq, count);
