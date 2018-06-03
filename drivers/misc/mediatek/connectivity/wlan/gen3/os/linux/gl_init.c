@@ -1808,8 +1808,8 @@ static void wlan_early_suspend(struct early_suspend *h)
 	P_GLUE_INFO_T prGlueInfo = NULL;
 
 	/* 4 <1> Sanity Check */
-	if ((u4WlanDevNum == 0) && (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
-		DBGLOG(INIT, ERROR, "wlanLateResume u4WlanDevNum==0 invalid!!\n");
+	if ((u4WlanDevNum == 0) || (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
+		DBGLOG(INIT, ERROR, "wlanEarlySuspend u4WlanDevNum: %u!!\n", u4WlanDevNum);
 		return;
 	}
 
@@ -1840,8 +1840,8 @@ static void wlan_late_resume(struct early_suspend *h)
 	P_GLUE_INFO_T prGlueInfo = NULL;
 
 	/* 4 <1> Sanity Check */
-	if ((u4WlanDevNum == 0) && (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
-		DBGLOG(INIT, ERROR, "wlanLateResume u4WlanDevNum==0 invalid!!\n");
+	if ((u4WlanDevNum == 0) || (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
+		DBGLOG(INIT, ERROR, "wlanLateResume u4WlanDevNum: %u!!\n", u4WlanDevNum);
 		return;
 	}
 
@@ -1878,8 +1878,8 @@ VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled)
 	CMD_PS_PROFILE_T rPowerSaveMode;
 
 	/* 4 <1> Sanity Check */
-	if ((u4WlanDevNum == 0) && (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
-		DBGLOG(INIT, ERROR, "wlanLateResume u4WlanDevNum==0 invalid!!\n");
+	if ((u4WlanDevNum == 0) || (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
+		DBGLOG(INIT, ERROR, "ProcSetCamCfgWrite u4WlanDevNum: %u!!\n", u4WlanDevNum);
 		return;
 	}
 
