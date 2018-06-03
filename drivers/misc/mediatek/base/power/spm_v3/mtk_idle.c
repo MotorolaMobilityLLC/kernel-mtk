@@ -38,7 +38,7 @@
 #include <mtk_spm.h>
 #include <mtk_spm_idle.h>
 #ifdef CONFIG_THERMAL
-#include <mach/mt_thermal.h>
+#include <mach/mtk_thermal.h>
 #endif
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
@@ -1375,15 +1375,11 @@ static int idle_stat_mapping_table[NR_TYPES] = {
 	CPUIDLE_STATE_RG
 };
 
-int mt_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
+int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 {
 	int i = NR_TYPES - 1;
 	int state = CPUIDLE_STATE_RG;
 	int reason = NR_REASONS;
-
-	/* disable deepidle/SODI3/SODI for bring-up */
-	if (1)
-		return CPUIDLE_STATE_RG;
 
 	dump_idle_cnt_in_interval(cpu);
 
@@ -1826,6 +1822,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 				mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_DP][i]);
 	}
 
+#if 0
 	for (i = 0; i < NR_GRPS; i++) {
 		mt_idle_log("[%-8s]\n", mtk_get_cg_group_name(i));
 
@@ -1834,6 +1831,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 				mt_idle_log("%-2d: %d\n", k, dpidle_blocking_stat[i][k]);
 		}
 	}
+#endif
 	for (i = 0; i < NR_GRPS; i++)
 		for (k = 0; k < 32; k++)
 			dpidle_blocking_stat[i][k] = 0;
@@ -2372,7 +2370,7 @@ void mtk_idle_gpt_init(void)
 #endif
 }
 
-void mt_cpuidle_framework_init(void)
+void mtk_cpuidle_framework_init(void)
 {
 	idle_ver("[%s]entry!!\n", __func__);
 
@@ -2382,7 +2380,7 @@ void mt_cpuidle_framework_init(void)
 
 	mtk_idle_gpt_init();
 }
-EXPORT_SYMBOL(mt_cpuidle_framework_init);
+EXPORT_SYMBOL(mtk_cpuidle_framework_init);
 
 module_param(mt_idle_chk_golden, bool, 0644);
 module_param(mt_dpidle_chk_golden, bool, 0644);

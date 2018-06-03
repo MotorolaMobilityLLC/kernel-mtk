@@ -389,7 +389,7 @@ static void spm_sodi3_pcm_setup_before_wfi(
 	__spm_kick_pcm_to_run(pwrctrl);
 }
 
-static void spm_sodi_pcm_setup_after_wfi(void)
+static void spm_sodi3_pcm_setup_after_wfi(void)
 {
 	spm_sodi3_notify_sspm_after_wfi();
 
