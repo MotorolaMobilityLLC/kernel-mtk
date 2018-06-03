@@ -42,10 +42,14 @@
 #include <linux/rcupdate.h>
 #include <linux/profile.h>
 #include <linux/notifier.h>
+#include <linux/freezer.h>
+
+#include "internal.h"
 
 #define CREATE_TRACE_POINTS
 #include "trace/lowmemorykiller.h"
 
+static DEFINE_SPINLOCK(lowmem_shrink_lock);
 static u32 lowmem_debug_level = 1;
 static short lowmem_adj[6] = {
 	0,
@@ -75,10 +79,124 @@ static unsigned long lowmem_deathpending_timeout;
 static unsigned long lowmem_count(struct shrinker *s,
 				  struct shrink_control *sc)
 {
+#ifdef CONFIG_FREEZER
+	/* Don't bother LMK when system is freezing */
+	if (pm_freezing)
+		return 0;
+#endif
 	return global_node_page_state(NR_ACTIVE_ANON) +
 		global_node_page_state(NR_ACTIVE_FILE) +
 		global_node_page_state(NR_INACTIVE_ANON) +
 		global_node_page_state(NR_INACTIVE_FILE);
+}
+
+/* Check memory status by zone, pgdat */
+static int lowmem_check_status_by_zone(enum zone_type high_zoneidx,
+				       int *other_free, int *other_file)
+{
+	struct pglist_data *pgdat;
+	struct zone *z;
+	enum zone_type zoneidx;
+	unsigned long accumulated_pages = 0;
+	u64 scale = (u64)totalram_pages;
+	int new_other_free = 0, new_other_file = 0;
+	int memory_pressure = 0;
+	int unreclaimable = 0;
+
+	if (high_zoneidx < MAX_NR_ZONES - 1) {
+		/* Go through all memory nodes */
+		for_each_online_pgdat(pgdat) {
+			for (zoneidx = 0; zoneidx <= high_zoneidx; zoneidx++) {
+				z = pgdat->node_zones + zoneidx;
+				accumulated_pages += z->managed_pages;
+				new_other_free +=
+					zone_page_state(z, NR_FREE_PAGES);
+				new_other_free -= high_wmark_pages(z);
+				new_other_file +=
+					zone_page_state(z, NR_FILE_PAGES);
+				new_other_file -= zone_page_state(z, NR_SHMEM);
+
+				/* Compute memory pressure level */
+				memory_pressure +=
+					zone_page_state(z, NR_ACTIVE_FILE) +
+					zone_page_state(z, NR_INACTIVE_FILE) +
+					zone_page_state(z, NR_ACTIVE_ANON) +
+					zone_page_state(z, NR_INACTIVE_ANON) +
+					new_other_free;
+			}
+
+			/* Check whether there is any unreclaimable pgdat */
+			if (pgdat_reclaimable(pgdat))
+				unreclaimable++;
+		}
+
+		/*
+		 * Update if we go through ONLY lower zone(s) ACTUALLY
+		 * and scale in totalram_pages
+		 */
+		if (totalram_pages > accumulated_pages) {
+			do_div(scale, accumulated_pages);
+			if ((u64)totalram_pages >
+			    (u64)accumulated_pages * scale)
+				scale += 1;
+			new_other_free *= scale;
+			new_other_file *= scale;
+		}
+
+		/*
+		 * Update if not kswapd or
+		 * "being kswapd and high memory pressure"
+		 */
+		if (!current_is_kswapd() ||
+		    (current_is_kswapd() && memory_pressure < 0)) {
+			*other_free = new_other_free;
+			*other_file = new_other_file;
+		}
+	}
+
+	return unreclaimable;
+}
+
+/* Aggressive Memory Reclaim(AMR) */
+static short lowmem_amr_check(int *to_be_aggressive)
+{
+#ifdef CONFIG_SWAP
+#ifdef CONFIG_64BIT
+#define ENABLE_AMR_RAMSIZE	(0x60000)	/* > 1.5GB */
+#else
+#define ENABLE_AMR_RAMSIZE	(0x40000)	/* > 1GB */
+#endif
+
+	unsigned long swap_pages = 0;
+	short amr_adj = OOM_SCORE_ADJ_MAX + 1;
+	int i;
+
+	swap_pages = atomic_long_read(&nr_swap_pages);
+	/* More than 1/2 swap usage */
+	if (swap_pages * 2 < total_swap_pages)
+		(*to_be_aggressive)++;
+	/* More than 3/4 swap usage */
+	if (swap_pages * 4 < total_swap_pages)
+		(*to_be_aggressive)++;
+
+#ifndef CONFIG_MTK_GMO_RAM_OPTIMIZE
+	/* Try to enable AMR when we have enough memory */
+	if (totalram_pages < ENABLE_AMR_RAMSIZE) {
+		*to_be_aggressive = 0;
+	} else {
+		i = lowmem_adj_size - 1 - *to_be_aggressive;
+		if (*to_be_aggressive > 0 && i >= 0)
+			amr_adj = lowmem_adj[i];
+	}
+#endif
+
+	return amr_adj;
+#undef ENABLE_AMR_RAMSIZE
+
+#else	/* !CONFIG_SWAP */
+	*to_be_aggressive = 0;
+	return OOM_SCORE_ADJ_MAX + 1;
+#endif
 }
 
 static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
@@ -98,6 +216,31 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 				global_node_page_state(NR_SHMEM) -
 				global_node_page_state(NR_UNEVICTABLE) -
 				total_swapcache_pages();
+	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
+	int d_state_is_found = 0;
+	short other_min_score_adj = OOM_SCORE_ADJ_MAX + 1;
+	int to_be_aggressive = 0;
+
+	if (!spin_trylock(&lowmem_shrink_lock)) {
+		lowmem_print(4, "lowmem_shrink lock failed\n");
+		return SHRINK_STOP;
+	}
+
+	/*
+	 * Check whether it is caused by low memory in lower zone(s)!
+	 * This will help solve over-reclaiming situation while total number
+	 * of free pages is enough, but lower one(s) is(are) under low memory.
+	 */
+	if (lowmem_check_status_by_zone(high_zoneidx, &other_free, &other_file)
+			> 0)
+		other_min_score_adj = 0;
+
+	other_min_score_adj =
+		min(other_min_score_adj, lowmem_amr_check(&to_be_aggressive));
+
+	/* Let other_free be positive or zero */
+	if (other_free < 0)
+		other_free = 0;
 
 	if (lowmem_adj_size < array_size)
 		array_size = lowmem_adj_size;
@@ -106,10 +249,18 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	for (i = 0; i < array_size; i++) {
 		minfree = lowmem_minfree[i];
 		if (other_free < minfree && other_file < minfree) {
+			if (to_be_aggressive != 0 && i > 3) {
+				i -= to_be_aggressive;
+				if (i < 3)
+					i = 3;
+			}
 			min_score_adj = lowmem_adj[i];
 			break;
 		}
 	}
+
+	/* Compute suitable min_score_adj */
+	min_score_adj = min(min_score_adj, other_min_score_adj);
 
 	lowmem_print(3, "lowmem_scan %lu, %x, ofree %d %d, ma %hd\n",
 		     sc->nr_to_scan, sc->gfp_mask, other_free,
@@ -118,6 +269,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	if (min_score_adj == OOM_SCORE_ADJ_MAX + 1) {
 		lowmem_print(5, "lowmem_scan %lu, %x, return 0\n",
 			     sc->nr_to_scan, sc->gfp_mask);
+		spin_unlock(&lowmem_shrink_lock);
 		return 0;
 	}
 
@@ -131,22 +283,35 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		if (tsk->flags & PF_KTHREAD)
 			continue;
 
+		if (task_lmk_waiting(tsk) &&
+		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
+			rcu_read_unlock();
+			spin_unlock(&lowmem_shrink_lock);
+			return 0;
+		}
+
 		p = find_lock_task_mm(tsk);
 		if (!p)
 			continue;
 
-		if (task_lmk_waiting(p) &&
-		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
+		/* Bypass D-state process */
+		if (p->state & TASK_UNINTERRUPTIBLE) {
+			lowmem_print(2,
+				     "lowmem_scan filter D state process: %d (%s) state:0x%lx\n",
+				     p->pid, p->comm, p->state);
 			task_unlock(p);
-			rcu_read_unlock();
-			return 0;
+			d_state_is_found = 1;
+			continue;
 		}
+
 		oom_score_adj = p->signal->oom_score_adj;
 		if (oom_score_adj < min_score_adj) {
 			task_unlock(p);
 			continue;
 		}
-		tasksize = get_mm_rss(p->mm);
+
+		tasksize = get_mm_rss(p->mm) +
+			get_mm_counter(p->mm, MM_SWAPENTS);
 		task_unlock(p);
 		if (tasksize <= 0)
 			continue;
@@ -176,22 +341,29 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		trace_lowmemory_kill(selected, cache_size, cache_limit, free);
 		lowmem_print(1, "Killing '%s' (%d) (tgid %d), adj %hd,\n"
 				 "   to free %ldkB on behalf of '%s' (%d) because\n"
-				 "   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n"
-				 "   Free memory is %ldkB above reserved\n",
+				 "   cache %ldkB is below limit %ldkB for oom_score_adj %hd (%hd)\n"
+				 "   Free memory is %ldkB above reserved\n"
+				 "   (decrease %d level)\n",
 			     selected->comm, selected->pid, selected->tgid,
 			     selected_oom_score_adj,
 			     selected_tasksize * (long)(PAGE_SIZE / 1024),
 			     current->comm, current->pid,
 			     cache_size, cache_limit,
-			     min_score_adj,
-			     free);
+			     min_score_adj, other_min_score_adj,
+			     free, to_be_aggressive);
 		lowmem_deathpending_timeout = jiffies + HZ;
 		rem += selected_tasksize;
+	} else {
+		if (d_state_is_found == 1)
+			lowmem_print(2,
+				     "No selected (full of D-state processes at %d)\n",
+				     (int)min_score_adj);
 	}
 
 	lowmem_print(4, "lowmem_scan %lu, %x, return %lu\n",
 		     sc->nr_to_scan, sc->gfp_mask, rem);
 	rcu_read_unlock();
+	spin_unlock(&lowmem_shrink_lock);
 	return rem;
 }
 

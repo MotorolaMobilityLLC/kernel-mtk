@@ -1,4 +1,5 @@
 ccflags-y += -I$(src)			# needed for trace events
+subdir-ccflags-y += -I$(srctree)/mm/
 
 obj-y					+= ion/
 obj-$(CONFIG_FIQ_DEBUGGER)		+= fiq_debugger/
