@@ -545,9 +545,14 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb, struct mus
 	switch (urb_val) {
 	case QH_FREE_RESCUE_INTERRUPT:
 	case QH_FREE_RESCUE_EP_DISABLE:
-		DBG(0, "case<%d>, ep<%d>, qh<%p> use_qmu<%d>, type<%d>, is_in<%d>, empty<%d>\n",
-				(unsigned int)urb_val, hw_ep->epnum, qh, qh->is_use_qmu, qh->type,
-				is_in, list_empty(&qh->hep->urb_list));
+		DBG(0, "case<%d>, ep<%d>, qh<%p>, type<%d>, is_in<%d>, empty<%d>, use_qmu<%d>\n",
+				(unsigned int)urb_val, hw_ep->epnum, qh, qh->type,
+				is_in, list_empty(&qh->hep->urb_list),
+#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+				qh->is_use_qmu);
+#else
+				0);
+#endif
 		goto check_recycle_qh;
 	default:
 		break;
