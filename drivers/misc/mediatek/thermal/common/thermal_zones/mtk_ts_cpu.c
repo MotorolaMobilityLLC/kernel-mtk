@@ -2353,7 +2353,7 @@ void tscpu_workqueue_start_timer(void)
 {
 #ifdef FAST_RESPONSE_ATM
 	if (!is_worktimer_en && thz_dev != NULL && interval != 0 && !doing_tz_unregister) {
-		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), 0);
+		mod_delayed_work(system_freezable_power_efficient_wq, &(thz_dev->poll_queue), 0);
 
 		tscpu_dprintk("[tTimer] workqueue starting\n");
 		spin_lock(&timer_lock);
@@ -2363,7 +2363,8 @@ void tscpu_workqueue_start_timer(void)
 #else
 	/* resume thermal framework polling when leaving deep idle */
 	if (thz_dev != NULL && interval != 0 && !doing_tz_unregister)
-		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
+		mod_delayed_work(system_freezable_power_efficient_wq,
+				&(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
 #endif
 
 }

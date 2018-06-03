@@ -1323,7 +1323,7 @@ static void mtkts_wmt_start_thermal_timer(void)
 	/* pr_debug("mtkts_wmt_start_thermal_timer\n"); */
 	/* resume thermal framework polling when leaving deep idle */
 	if (p_linux_if->thz_dev != NULL && p_linux_if->interval != 0  && !doing_tz_unregister)
-		mod_delayed_work(system_freezable_wq, &(p_linux_if->thz_dev->poll_queue),
+		mod_delayed_work(system_freezable_power_efficient_wq, &(p_linux_if->thz_dev->poll_queue),
 				 round_jiffies(msecs_to_jiffies(2000)));
 }
 

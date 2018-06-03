@@ -502,7 +502,7 @@ static void clfps_fps_stats(struct work_struct *work)
 	fps_update();
 	set_sma_val(fps_history, fps_sma_len, &fps_history_idx, tm_input_fps);
 
-	schedule_delayed_work(&fps_stats_work, msecs_to_jiffies(FPS_STATS_WAKEUP_TIME_MS));
+	queue_delayed_work(system_unbound_wq, &fps_stats_work, msecs_to_jiffies(FPS_STATS_WAKEUP_TIME_MS));
 }
 
 static int adp_fps_set_cur_state(struct thermal_cooling_device *cdev,
@@ -977,7 +977,7 @@ static int __init mtk_cooler_fps_init(void)
 #endif
 
 	INIT_DEFERRABLE_WORK(&fps_stats_work, clfps_fps_stats);
-	schedule_delayed_work(&fps_stats_work, msecs_to_jiffies(FPS_STATS_START_TIME_MS));
+	queue_delayed_work(system_unbound_wq, &fps_stats_work, msecs_to_jiffies(FPS_STATS_START_TIME_MS));
 
 	return 0;
 }

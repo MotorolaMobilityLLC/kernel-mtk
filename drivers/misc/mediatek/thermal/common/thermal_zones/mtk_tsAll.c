@@ -212,7 +212,7 @@ static void mtkts_allts_start_timer(void)
 
 	for (i = 0; i < TS_ENUM_MAX; i++) {
 		if (g_tsData[i].thz_dev != NULL && g_tsData[i].interval != 0 && !g_tsData[i].doing_tz_unregister)
-			mod_delayed_work(system_freezable_wq, &(g_tsData[i].thz_dev->poll_queue),
+			mod_delayed_work(system_freezable_power_efficient_wq, &(g_tsData[i].thz_dev->poll_queue),
 				round_jiffies(msecs_to_jiffies(1000)));
 		/*1000 = 1sec */
 	}
