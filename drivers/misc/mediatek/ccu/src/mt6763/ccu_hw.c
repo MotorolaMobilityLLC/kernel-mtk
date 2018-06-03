@@ -768,6 +768,12 @@ int ccu_power(ccu_power_t *power)
 		ccuInfo.IsCcuPoweredOn = 0;
 
 		_ccu_deallocate_mva(&i2c_buffer_mva);
+	} else if (power->bON == 4) {
+		/*CCU boot fail, just enable CG*/
+
+		ccu_clock_disable();
+		ccuInfo.IsCcuPoweredOn = 0;
+
 	} else {
 	}
 
@@ -852,7 +858,8 @@ int ccu_run(void)
 	/*3. Set CCU_A_RESET. CCU_HW_RST=0*/
 	ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 0);
 
-	LOG_DBG("released CCU reset, wait for initial done\n");
+	LOG_DBG("released CCU reset, wait for initial done\n", ccu_read_reg(ccu_base, RESET));
+	LOG_DBG("CCU reset: %x\n", ccu_read_reg(ccu_base, RESET));
 
 	/*4. Pulling CCU init done spare register*/
 	while ((ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE) && (timeout >= 0)) {

@@ -18,38 +18,41 @@
 #include "ccu_sw_ver.h"
 #include "CCU_A_c_header.h"
 
-#define SW_VER_SPLIT 1
-
-#if (SW_VER_SPLIT == 1)
-#include "CCU_A_c_header_v2.h"
-#define ccu_read_reg(base, regName)					\
-	((g_ccu_sw_version == CHIP_SW_VER_01) ?			\
-			((PCCU_A_REGS)base)->regName.Raw :		\
-			((PCCU_A_REGS_V2)base)->regName.Raw		\
-	)
-#define ccu_write_reg(base, regName, val)				\
-	do { if (g_ccu_sw_version == CHIP_SW_VER_01) {		\
-			((PCCU_A_REGS)base)->regName.Raw = val;		\
-		} else {										\
-			((PCCU_A_REGS_V2)base)->regName.Raw = val;	\
-		} } while (0)
-#define ccu_read_reg_bit(base, regName, fieldNmae)			\
-	((g_ccu_sw_version == CHIP_SW_VER_01) ?					\
-			((PCCU_A_REGS)base)->regName.Bits.fieldNmae :	\
-			((PCCU_A_REGS_V2)base)->regName.Bits.fieldNmae	\
-	)
-#define ccu_write_reg_bit(base, regName, fieldNmae, val)			\
-	do { if (g_ccu_sw_version == CHIP_SW_VER_01) {					\
-			((PCCU_A_REGS)base)->regName.Bits.fieldNmae = val;		\
-		} else { \
-			((PCCU_A_REGS_V2)base)->regName.Bits.fieldNmae = val;	\
-		} } while (0)
-#else
+/*For CCU_A_c_header_v2*/
+/*
+	*#define SW_VER_SPLIT 0
+	*#if (SW_VER_SPLIT == 1)
+	*#include "CCU_A_c_header_v2.h"
+	*#define ccu_read_reg(base, regName)					\
+	*	((g_ccu_sw_version == CHIP_SW_VER_01) ?			\
+	*			((PCCU_A_REGS)base)->regName.Raw :		\
+	*			((PCCU_A_REGS_V2)base)->regName.Raw		\
+	*	)
+	*#define ccu_write_reg(base, regName, val)				\
+	*	do { if (g_ccu_sw_version == CHIP_SW_VER_01) {		\
+	*			((PCCU_A_REGS)base)->regName.Raw = val;		\
+	*		} else {										\
+	*			((PCCU_A_REGS_V2)base)->regName.Raw = val;	\
+	*		} } while (0)
+	*#define ccu_read_reg_bit(base, regName, fieldNmae)			\
+	*	((g_ccu_sw_version == CHIP_SW_VER_01) ?					\
+	*			((PCCU_A_REGS)base)->regName.Bits.fieldNmae :	\
+	*			((PCCU_A_REGS_V2)base)->regName.Bits.fieldNmae	\
+	*	)
+	*#define ccu_write_reg_bit(base, regName, fieldNmae, val)			\
+	*	do { if (g_ccu_sw_version == CHIP_SW_VER_01) {					\
+	*			((PCCU_A_REGS)base)->regName.Bits.fieldNmae = val;		\
+	*		} else { \
+	*			((PCCU_A_REGS_V2)base)->regName.Bits.fieldNmae = val;	\
+	*		} } while (0)
+	*#else
+*/
 #define ccu_read_reg(base, regName)       (((PCCU_A_REGS)base)->regName.Raw)
 #define ccu_write_reg(base, regName, val)  (((PCCU_A_REGS)base)->regName.Raw = val)
 #define ccu_read_reg_bit(base, regName, fieldNmae)       (((PCCU_A_REGS)base)->regName.Bits.fieldNmae)
 #define ccu_write_reg_bit(base, regName, fieldNmae, val)  (((PCCU_A_REGS)base)->regName.Bits.fieldNmae = val)
-#endif
+/*#endif*/
+
 
 #define CCU_SET_BIT(reg, bit)   ((*(volatile unsigned int *)(reg)) |= (unsigned int)(1 << (bit)))
 #define CCU_CLR_BIT(reg, bit)   ((*(volatile unsigned int *)(reg)) &= ~((unsigned int)(1 << (bit))))
