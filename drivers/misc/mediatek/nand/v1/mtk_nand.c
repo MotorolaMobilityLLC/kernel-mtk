@@ -8035,7 +8035,9 @@ static int __init mtk_nand_init(void)
 	if (base != 0) {
 		va = ioremap_wc(base, size);
 		if (va) {
-			pr_debug("load ko %p\n", va);
+			size = *(int *)va;
+			va = (char *)va + 4;
+			pr_debug("load ko %p w/ size %lld\n", va, size);
 			init_module_mem((void *)va, size);
 		} else
 			pr_info("remap ko memory fail\n");
