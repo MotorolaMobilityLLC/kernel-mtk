@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="09.25.2017.19:04:34"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="09.28.2017.16:38:56"-->
 <dct_cfg>
     <general chip="MT6771">
         <proj>Sylvia</proj>
@@ -1315,7 +1315,7 @@
             </gpio109>
             <gpio110>
                 <eint_mode>false</eint_mode>
-                <def_mode>7</def_mode>
+                <def_mode>3</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
@@ -1337,7 +1337,7 @@
             </gpio111>
             <gpio112>
                 <eint_mode>false</eint_mode>
-                <def_mode>7</def_mode>
+                <def_mode>3</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
@@ -2078,15 +2078,15 @@
             <count>32</count>
             <i2c_bus0>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus0>
             <i2c_bus1>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus1>
             <i2c_bus2>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus2>
             <i2c_bus3>
                 <speed_kbps>1300</speed_kbps>
@@ -2094,7 +2094,7 @@
             </i2c_bus3>
             <i2c_bus4>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus4>
             <i2c_bus5>
                 <speed_kbps>3400</speed_kbps>
