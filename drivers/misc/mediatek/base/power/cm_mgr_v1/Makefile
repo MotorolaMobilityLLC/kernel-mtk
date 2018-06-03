@@ -28,6 +28,7 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include \
 	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include/mach \
 	-I$(srctree)/drivers/devfreq \
+	-I$(srctree)/include \
 
 # main
 obj-y += mtk_cm_mgr.o

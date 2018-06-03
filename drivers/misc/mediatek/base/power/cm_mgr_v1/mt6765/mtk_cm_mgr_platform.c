@@ -52,6 +52,7 @@
 #include <linux/notifier.h>
 
 #include <linux/pm_qos.h>
+#include <helio-dvfsrc.h>
 #ifdef USE_IDLE_NOTIFY
 #include "mtk_idle.h"
 #endif /* USE_IDLE_NOTIFY */
@@ -63,8 +64,6 @@ void __iomem *spm_sleep_base;
 void __iomem *mcucfg_mp0_counter_base;
 
 spinlock_t cm_mgr_cpu_mask_lock;
-
-struct pm_qos_request cm_mgr_qos_req;
 
 #define diff_value_overflow(diff, a, b) do {\
 	if ((a) >= (b)) \
@@ -426,7 +425,7 @@ static int cm_mgr_fb_notifier_callback(struct notifier_block *self,
 	case FB_BLANK_POWERDOWN:
 		pr_info("#@# %s(%d) SCREEN OFF\n", __func__, __LINE__);
 		cm_mgr_blank_status = 1;
-		pm_qos_update_request(&cm_mgr_qos_req, 0);
+		dvfsrc_set_power_model_ddr_request(0);
 		break;
 	default:
 		break;
@@ -547,9 +546,6 @@ int cm_mgr_platform_init(void)
 
 	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);
 
-	pm_qos_add_request(&cm_mgr_qos_req,
-			PM_QOS_POWER_MODEL_DDR_REQUEST,
-			PM_QOS_POWER_MODEL_DDR_REQUEST_DEFAULT_VALUE);
 
 	return r;
 }
