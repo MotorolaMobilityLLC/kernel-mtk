@@ -87,6 +87,7 @@ void __iomem *venc_gcon_base;
 
 #define AP_PLL_CON3		(apmixed_base + 0x000C)
 #define AP_PLL_CON4		(apmixed_base + 0x0010)
+#define AP_PLL_CON8		(apmixed_base + 0x0020)
 #define ARMPLL_LL_CON0		(apmixed_base + 0x0200)
 #define ARMPLL_LL_CON1		(apmixed_base + 0x0204)
 #define ARMPLL_LL_PWR_CON0	(apmixed_base + 0x020C)
@@ -143,10 +144,10 @@ void __iomem *venc_gcon_base;
 #define VENC_CG_CLR		(venc_gcon_base + 0x0008)
 
 #if MT_CCF_BRINGUP
-#define INFRA_CG0 0x032f8100/*[25:24][21][19:15][8]*/
-#define INFRA_CG1 0x08000a00/*[27][11][9]*/
+#define INFRA_CG0 0x032f8110/*[25:24][21][19:15][8][4]*/
+#define INFRA_CG1 0x08020a64/*[27][11][9], [17][6][5][2]*/
 #define INFRA_CG2 0x00000005/*[2][0]*/
-#define INFRA_CG3 0xFFFFFFFF
+#define INFRA_CG3 0x00000047/*[6][2:0]*/
 #define CAMSYS_CG	0x1FFF
 #define IMG_CG	0x3FFF
 #define MFG_CG	0x1
@@ -611,7 +612,7 @@ static const struct mtk_mux_clr_set_upd top_muxes[] __initconst = {
 		CK_CFG_1_SET, CK_CFG_1_CLR, 8, 3, 15, CLK_CFG_UPDATE, 5),
 	/* PDN: No HS */
 	MUX_CLR_SET_UPD(TOP_MUX_MFG, "mfg_sel", mfg_parents, CK_CFG_1,
-		CK_CFG_1_SET, CK_CFG_1_CLR, 24, 2, INVALID_MUX_GATE, CLK_CFG_UPDATE, 7),
+		CK_CFG_1_SET, CK_CFG_1_CLR, 24, 2, 31, CLK_CFG_UPDATE, 7),
 	/* CLK_CFG_2 */
 	MUX_CLR_SET_UPD(TOP_MUX_CAMTG, "camtg_sel", camtg_parents, CK_CFG_2,
 		CK_CFG_2_SET, CK_CFG_2_CLR, 0, 3, 7, CLK_CFG_UPDATE, 8),
@@ -1388,6 +1389,31 @@ static void __init mtk_topckgen_init(struct device_node *node)
 
 	clk_writel(CLK_SCP_CFG_0, clk_readl(CLK_SCP_CFG_0) | 0x3FF);
 	clk_writel(CLK_SCP_CFG_1, clk_readl(CLK_SCP_CFG_1) | 0x11);
+#if 1
+	/* PWM7, MFG31 MUX PDN */
+	clk_writel(cksys_base + CK_CFG_1_CLR, 0x00000080);
+	clk_writel(cksys_base + CK_CFG_1_SET, 0x00000080);
+
+	/* msdc50_0_hclk15, msdc50_023 MUX PDN */
+	clk_writel(cksys_base + CK_CFG_3_CLR, 0x00808000);
+	clk_writel(cksys_base + CK_CFG_3_SET, 0x00808000);
+
+	/* msdc30_2 7, msdc30_3 15 MUX PDN */
+	clk_writel(cksys_base + CK_CFG_4_CLR, 0x00008080);
+	clk_writel(cksys_base + CK_CFG_4_SET, 0x00008080);
+
+	/* scp15 MUX PDN */
+	clk_writel(cksys_base + CK_CFG_5_CLR, 0x00008000);
+	clk_writel(cksys_base + CK_CFG_5_SET, 0x00008000);
+
+	/* dpi0 7, scam 15 MUX PDN */
+	clk_writel(cksys_base + CK_CFG_6_CLR, 0x00008080);
+	clk_writel(cksys_base + CK_CFG_6_SET, 0x00008080);
+
+	/* ssusb_top_sys 15, ssusb_top_xhci 23 MUX PDN */
+	clk_writel(cksys_base + CK_CFG_7_CLR, 0x00808000);
+	clk_writel(cksys_base + CK_CFG_7_SET, 0x00808000);
+#endif
 
 }
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,topckgen", mtk_topckgen_init);
@@ -1419,6 +1445,7 @@ static void __init mtk_infracfg_ao_init(struct device_node *node)
 	clk_writel(INFRA_PDN_SET0, INFRA_CG0);
 	clk_writel(INFRA_PDN_SET1, INFRA_CG1);
 	clk_writel(INFRA_PDN_SET2, INFRA_CG2);
+	clk_writel(INFRA_PDN_SET3, INFRA_CG3);
 #else
 #endif
 }
@@ -1510,6 +1537,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	/*clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xee2b8ae2);*/
 	clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0x007d5550);/* MPLL, CCIPLL, MAINPLL, TDCLKSQ, CLKSQ1 */
 	clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0x7f5);
+	clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xffffffef);/*[4]PLL_SSUSB26M_EN*/
 #if 0
 /*MFGPLL*/
 	clk_clrl(MFGPLL_CON0, PLL_EN);
