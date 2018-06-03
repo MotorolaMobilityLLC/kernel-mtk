@@ -181,7 +181,7 @@ const char *uname, int depth, void *data)
 	return node;
 }
 
-#if defined(CONFIG_MTK_ENG_BUILD)
+#ifdef INTERFACE_READ_MR4
 static unsigned int read_dram_mode_reg(
 unsigned int mr_index, unsigned int *mr_value,
 void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
@@ -1314,7 +1314,7 @@ const char *buf, size_t count)
 	return count;
 }
 
-#if defined(CONFIG_MTK_ENG_BUILD)
+#ifdef INTERFACE_READ_MR4
 static ssize_t read_mr4_show(struct device_driver *driver, char *buf)
 {
 	unsigned int rank, channel, temp;
@@ -1391,7 +1391,7 @@ complex_mem_test_show, complex_mem_test_store);
 DRIVER_ATTR(read_dram_data_rate, 0664,
 read_dram_data_rate_show, read_dram_data_rate_store);
 
-#if defined(CONFIG_MTK_ENG_BUILD)
+#ifdef INTERFACE_READ_MR4
 DRIVER_ATTR(read_mr4, 0664,
 read_mr4_show, read_mr4_store);
 #endif
@@ -1744,7 +1744,7 @@ static int dram_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-#if defined(CONFIG_MTK_ENG_BUILD)
+#ifdef INTERFACE_READ_MR4
 	ret = driver_create_file(pdev->dev.driver,
 	&driver_attr_read_mr4);
 	if (ret) {
