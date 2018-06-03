@@ -63,7 +63,7 @@ def write_header(output_file, input_file, dtb_list):
 
 def main(argv):
 	if len(argv) < 2:
-		print("Usage: python post_process_dtbs.py odmdtbs.dtb odmdtbo.img")
+		print("Usage: python post_process_dtbs.py odmdtbs.dtb dtbo.img")
 		sys.exit(1)
 	input_img = argv[1]
 	output_img = argv[2]
