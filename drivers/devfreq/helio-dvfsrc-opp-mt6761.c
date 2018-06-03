@@ -62,6 +62,10 @@ void dvfsrc_opp_level_mapping(void)
 		vcore_opp_1_uv = 700000;
 		vcore_opp_2_uv = 700000;
 		vcore_opp_3_uv = 650000;
+		/* apply MD VB */
+		vcore_opp_2_uv = 700000 - get_vb_volt(VCORE_OPP_2);
+		pr_info("%s: vcore_opp_2: %d uv (MD VB:%d)\n", __func__,
+				vcore_opp_2_uv, get_vb_volt(VCORE_OPP_2));
 	}
 
 	pr_info("%s: FINAL vcore_opp_uv [%d]: %d, %d, %d, %d\n",
