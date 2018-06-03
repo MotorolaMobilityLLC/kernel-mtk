@@ -8272,6 +8272,13 @@ int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart)
 		}
 		*paStart = 0;
 
+		if (count > CMDQ_MAX_WRITE_ADDR_COUNT) {
+			CMDQ_ERR("invalid alloc write addr count:%u max:%u\n",
+				count, (u32)CMDQ_MAX_WRITE_ADDR_COUNT);
+			status = -EINVAL;
+			break;
+		}
+
 		CMDQ_VERBOSE("ALLOC: line %d\n", __LINE__);
 
 		pWriteAddr = kzalloc(sizeof(struct WriteAddrStruct), GFP_KERNEL);
