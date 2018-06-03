@@ -294,7 +294,6 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 		pr_info("sys_dcs_status=%s\n", dcs_status_name(sys_dcs_status));
 		nr_swap++;
 
-		mdelay(500);
 		/* notify bwm */
 		notify_bwm_dcs(status == DCS_NORMAL ?
 				normal_channel_num : lowpower_channel_num);
