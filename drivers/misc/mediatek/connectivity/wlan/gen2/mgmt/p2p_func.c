@@ -1996,6 +1996,8 @@ BOOLEAN p2pFuncValidateProbeReq(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 VOID p2pFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 {
 	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T) NULL;
+	P_WLAN_ACTION_FRAME prActFrame;
+	PUINT_8 pucVendor = NULL;
 
 	DEBUGFUNC("p2pFuncValidateProbeReq");
 
@@ -2004,6 +2006,20 @@ VOID p2pFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 		ASSERT_BREAK((prAdapter != NULL) && (prSwRfb != NULL));
 
 		prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
+		prActFrame = (P_WLAN_ACTION_FRAME) prSwRfb->pvHeader;
+		pucVendor = (PUINT_8)prActFrame + 26;
+
+		switch (prActFrame->ucCategory) {
+		case CATEGORY_PUBLIC_ACTION:
+			if (prActFrame->ucAction == 0x9 && (*(pucVendor + 4)) == P2P_GO_NEG_REQ) {
+				/* Abort scan while receiving P2P_GO_NEG_REQ */
+				DBGLOG(P2P, INFO, "p2pFuncValidateRxActionFrame: P2P_GO_NEG_REQ");
+				p2pFsmRunEventScanAbort(prAdapter, NULL);
+			}
+			break;
+		default:
+			break;
+		}
 
 		if (prP2pFsmInfo->u4P2pPacketFilter & PARAM_PACKET_FILTER_ACTION_FRAME) {
 			/* Leave the probe response to p2p_supplicant. */
