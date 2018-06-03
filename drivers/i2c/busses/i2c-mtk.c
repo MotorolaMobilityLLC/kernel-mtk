@@ -994,7 +994,7 @@ static bool mt_i2c_should_batch(struct i2c_msg *prev, struct i2c_msg *next)
 	if ((prev == NULL) || (next == NULL) ||
 	    (prev->flags & I2C_M_RD) || (next->flags & I2C_M_RD))
 		return false;
-	if ((next != NULL) && (next != NULL) &&
+	if ((next != NULL) && (prev != NULL) &&
 	    (prev->len == next->len && prev->addr == next->addr))
 		return true;
 	return false;
