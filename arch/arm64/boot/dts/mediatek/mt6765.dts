@@ -2252,10 +2252,14 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_SPI 230 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	jpgenc@17030000 {
-		compatible = "mediatek,jpgenc";
-		reg = <0 0x17030000 0 0x10000>;
+	venc_jpg@17030000 {
+		compatible = "mediatek,venc_jpg";
+		reg =	<0 0x17030000 0 0x10000>;
 		interrupts = <GIC_SPI 232 IRQ_TYPE_LEVEL_LOW>;
+		clocks =
+			<&venc_gcon CLK_VENC_SET2_JPGENC>;
+		clock-names =
+			"MT_CG_VENC_JPGENC";
 	};
 
 	vdec@17040000 {

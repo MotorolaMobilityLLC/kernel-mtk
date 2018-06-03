@@ -23,6 +23,10 @@ ifeq ($(CONFIG_MACH_MT6799),y)
   ccflags-y += -DJPEG_DEC_DRIVER
 endif
 
+ifeq ($(CONFIG_MACH_MT6765),y)
+  ccflags-y += -DSMI_CG_SUPPORT
+endif
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
 #obj-$(CONFIG_MTK_JPEG) += jpeg_driver.o
