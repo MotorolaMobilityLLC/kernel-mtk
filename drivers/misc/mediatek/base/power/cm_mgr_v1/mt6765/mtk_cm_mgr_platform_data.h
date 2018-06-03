@@ -370,6 +370,49 @@ static unsigned int cpu_power_gain_DownHigh1[][CM_MGR_CPU_ARRAY_SIZE] = {
 #define CPU_POWER_GAIN(a, b, c) \
 	(&cpu_power_gain_##a##b##c[0][0])
 
+static unsigned int *_cpu_power_gain_ptr(int isUP, int isLow, int idx)
+{
+	switch (isUP) {
+	case 0:
+		switch (isLow) {
+		case 0:
+			switch (idx) {
+			case 0:
+				return CPU_POWER_GAIN(Down, High, 0);
+			case 1:
+				return CPU_POWER_GAIN(Down, High, 1);
+			}
+		case 1:
+			switch (idx) {
+			case 0:
+				return CPU_POWER_GAIN(Down, Low, 0);
+			case 1:
+				return CPU_POWER_GAIN(Down, Low, 1);
+			}
+		}
+	case 1:
+		switch (isLow) {
+		case 0:
+			switch (idx) {
+			case 0:
+				return CPU_POWER_GAIN(Up, High, 0);
+			case 1:
+				return CPU_POWER_GAIN(Up, High, 1);
+			}
+		case 1:
+			switch (idx) {
+			case 0:
+				return CPU_POWER_GAIN(Up, Low, 0);
+			case 1:
+				return CPU_POWER_GAIN(Up, Low, 1);
+			}
+		}
+	}
+
+	pr_info("#@# %s(%d) warning value %d\n", __func__, __LINE__, idx);
+	return NULL;
+};
+
 static unsigned int *cpu_power_gain_up = CPU_POWER_GAIN(Up, High, 0);
 static unsigned int *cpu_power_gain_down = CPU_POWER_GAIN(Down, High, 0);
 
