@@ -30,6 +30,7 @@
 
 struct sensor_event_client {
 	spinlock_t buffer_lock;
+	struct lock_class_key buffer_lock_key;
 	unsigned int head;
 	unsigned int tail;
 	unsigned int bufsize;
@@ -193,6 +194,7 @@ unsigned int sensor_event_register(unsigned char handle)
 	case ID_PEDOMETER:
 	case ID_ACTIVITY:
 		spin_lock_init(&obj->client[handle].buffer_lock);
+		lockdep_set_class(&obj->client[handle].buffer_lock, &obj->client[handle].buffer_lock_key);
 		obj->client[handle].head = 0;
 		obj->client[handle].tail = 0;
 		obj->client[handle].bufsize = CONTINUE_SENSOR_BUF_SIZE;
