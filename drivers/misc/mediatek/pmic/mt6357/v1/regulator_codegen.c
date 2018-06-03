@@ -1677,7 +1677,7 @@ static int pmic_ldo_vldo28_enable(struct regulator_dev *rdev)
 
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
-	RGLTRLOG("ldo vldo28 enable\n");
+	pr_info("ldo vldo28 enable\n");
 	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
 		/* this OC interrupt needs to delay 1ms after enable power */
