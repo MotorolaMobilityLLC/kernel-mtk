@@ -21,10 +21,12 @@
 #include <mt-plat/aee.h>
 #include <mt-plat/sync_write.h>
 #include <linux/sched_clock.h>
+#include <linux/ratelimit.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
 #include "scp_feature_define.h"
+
 
 
 struct scp_aed_cfg {
@@ -260,17 +262,17 @@ uint32_t scp_dump_pc(void)
 void scp_A_dump_regs(void)
 {
 	if (is_scp_ready(SCP_A_ID)) {
-		pr_err("[SCP} SCP A is alive\n");
-		pr_err("[SCP] SCP_A_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
-		pr_err("[SCP] SCP_A_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
-		pr_err("[SCP] SCP_A_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
-		pr_err("[SCP] SCP_A_DEBUG_SP_REG:0x%x\n", SCP_A_DEBUG_SP_REG);
+		pr_err_ratelimited("[SCP} SCP A is alive\n");
+		pr_err_ratelimited("[SCP] SCP_A_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
+		pr_err_ratelimited("[SCP] SCP_A_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
+		pr_err_ratelimited("[SCP] SCP_A_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
+		pr_err_ratelimited("[SCP] SCP_A_DEBUG_SP_REG:0x%x\n", SCP_A_DEBUG_SP_REG);
 	} else {
-		pr_err("[SCP} SCP A is dead\n");
-		pr_err("[SCP] SCP_A_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
-		pr_err("[SCP] SCP_A_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
-		pr_err("[SCP] SCP_A_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
-		pr_err("[SCP] SCP_A_DEBUG_SP_REG:0x%x\n", SCP_A_DEBUG_SP_REG);
+		pr_err_ratelimited("[SCP} SCP A is dead\n");
+		pr_err_ratelimited("[SCP] SCP_A_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
+		pr_err_ratelimited("[SCP] SCP_A_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
+		pr_err_ratelimited("[SCP] SCP_A_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
+		pr_err_ratelimited("[SCP] SCP_A_DEBUG_SP_REG:0x%x\n", SCP_A_DEBUG_SP_REG);
 	}
 }
 
@@ -280,17 +282,17 @@ void scp_A_dump_regs(void)
 void scp_B_dump_regs(void)
 {
 	if (is_scp_ready(SCP_B_ID)) {
-		pr_err("[SCP} SCP B is alive\n");
-		pr_err("[SCP] SCP_B_DEBUG_PC_REG:0x%x\n", SCP_B_DEBUG_PC_REG);
-		pr_err("[SCP] SCP_B_DEBUG_LR_REG:0x%x\n", SCP_B_DEBUG_LR_REG);
-		pr_err("[SCP] SCP_B_DEBUG_PSP_REG:0x%x\n", SCP_B_DEBUG_PSP_REG);
-		pr_err("[SCP] SCP_B_DEBUG_SP_REG:0x%x\n", SCP_B_DEBUG_SP_REG);
+		pr_err_ratelimited("[SCP} SCP B is alive\n");
+		pr_err_ratelimited("[SCP] SCP_B_DEBUG_PC_REG:0x%x\n", SCP_B_DEBUG_PC_REG);
+		pr_err_ratelimited("[SCP] SCP_B_DEBUG_LR_REG:0x%x\n", SCP_B_DEBUG_LR_REG);
+		pr_err_ratelimited("[SCP] SCP_B_DEBUG_PSP_REG:0x%x\n", SCP_B_DEBUG_PSP_REG);
+		pr_err_ratelimited("[SCP] SCP_B_DEBUG_SP_REG:0x%x\n", SCP_B_DEBUG_SP_REG);
 	} else {
-		pr_err("[SCP} SCP B is dead\n");
-		pr_err("[SCP] SCP_B_DEBUG_PC_REG:0x%x\n", SCP_B_DEBUG_PC_REG);
-		pr_err("[SCP] SCP_B_DEBUG_LR_REG:0x%x\n", SCP_B_DEBUG_LR_REG);
-		pr_err("[SCP] SCP_B_DEBUG_PSP_REG:0x%x\n", SCP_B_DEBUG_PSP_REG);
-		pr_err("[SCP] SCP_B_DEBUG_SP_REG:0x%x\n", SCP_B_DEBUG_SP_REG);
+		pr_err_ratelimited("[SCP} SCP B is dead\n");
+		pr_err_ratelimited("[SCP] SCP_B_DEBUG_PC_REG:0x%x\n", SCP_B_DEBUG_PC_REG);
+		pr_err_ratelimited("[SCP] SCP_B_DEBUG_LR_REG:0x%x\n", SCP_B_DEBUG_LR_REG);
+		pr_err_ratelimited("[SCP] SCP_B_DEBUG_PSP_REG:0x%x\n", SCP_B_DEBUG_PSP_REG);
+		pr_err_ratelimited("[SCP] SCP_B_DEBUG_SP_REG:0x%x\n", SCP_B_DEBUG_SP_REG);
 	}
 }
 
