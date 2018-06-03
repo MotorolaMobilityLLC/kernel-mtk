@@ -136,10 +136,8 @@ static const struct reg_config revc_general_config[] = {
 	{ 0x81, 0xbb},
 	{ 0x82, 0x43},
 	{ 0x83, 0x54},
-	{ 0x85, 0xd9},
 	{ 0x86, 0x3f},
 	{ 0x87, 0x1f},
-	{ 0x88, 0x92},
 	{ 0x8a, 0x02},
 	{ 0x8d, 0xe0},
 	{ 0x93, 0xd4},
@@ -152,8 +150,7 @@ static const struct reg_config revc_general_config[] = {
 	{ 0xec, 0x7474},
 	{ 0xee, 0x06},
 	{ 0xf8, 0xd7},
-	{ 0xfc, 0x955},
-	{ 0xfd, 0xd8},
+	{ 0xfd, 0xd0},
 	{ 0xef, 0x001201},
 	{ 0xb4, 0x81},
 };
@@ -170,7 +167,7 @@ static const struct reg_config revd_general_config[] = {
 	{ 0x1f, 0x085b},
 	{ 0x20, 0x05cf},
 	{ 0x21, 0x02c7},
-	{ 0x22, 0x08},
+	{ 0x22, 0x05},
 	{ 0x24, 0xb1},
 	{ 0x25, 0x04},
 	{ 0x2c, 0x00},
@@ -179,10 +176,8 @@ static const struct reg_config revd_general_config[] = {
 	{ 0x81, 0xbb},
 	{ 0x82, 0x43},
 	{ 0x83, 0x54},
-	{ 0x85, 0xd9},
 	{ 0x86, 0x38},
 	{ 0x87, 0x1f},
-	{ 0x88, 0x97},
 	{ 0x92, 0x57},
 	{ 0x93, 0xd4},
 	{ 0x94, 0x12},
@@ -190,13 +185,11 @@ static const struct reg_config revd_general_config[] = {
 	{ 0xb3, 0x00},
 	{ 0xea, 0x90},
 	{ 0xf9, 0x01},
-	{ 0xfc, 0x0955},
-	{ 0xfd, 0xd8},
+	{ 0xfd, 0xd0},
 	{ 0xef, 0x001201},
 	{ 0xee, 0x05},
 	{ 0xb4, 0x81},
 	{ 0x2b, 0x5f},
-	{ 0xfa, 0x0510},
 };
 
 static int rt5509_block_read(
@@ -377,10 +370,40 @@ static int rt5509_set_bias_level(struct snd_soc_codec *codec,
 					  0x20, 0x20);
 		if (ret < 0)
 			goto out_set_bias;
+		ret = snd_soc_update_bits(codec, RT5509_REG_BLOCKREF2,
+					  0x08, 0x08);
+		if (ret < 0)
+			goto out_set_bias;
+		if (chip->chip_rev >= RT5509_CHIP_REVD) {
+			ret = snd_soc_update_bits(codec,
+						  RT5509_REG_BIASRESISTOR,
+						  0x01, 0x00);
+			if (ret < 0)
+				goto out_set_bias;
+			ret = snd_soc_update_bits(codec, RT5509_REG_BLOCKREF1,
+						  0x300, 0x100);
+			if (ret < 0)
+				goto out_set_bias;
+		}
 		dapm->bias_level = level;
 		ret = 0;
 		break;
 	case SND_SOC_BIAS_OFF:
+		if (chip->chip_rev >= RT5509_CHIP_REVD) {
+			ret = snd_soc_update_bits(codec, RT5509_REG_BLOCKREF1,
+						  0x300, 0x00);
+			if (ret < 0)
+				goto out_set_bias;
+			ret = snd_soc_update_bits(codec,
+						  RT5509_REG_BIASRESISTOR,
+						  0x01, 0x01);
+			if (ret < 0)
+				goto out_set_bias;
+		}
+		ret = snd_soc_update_bits(codec, RT5509_REG_BLOCKREF2,
+					  0x08, 0x00);
+		if (ret < 0)
+			goto out_set_bias;
 		ret = snd_soc_update_bits(codec, RT5509_REG_VBATSENSE,
 					  0x20, 0x00);
 		if (ret < 0)
@@ -878,6 +901,12 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 			0x40, 0x40);
 		if (ret < 0)
 			goto out_boost_event;
+		ret = snd_soc_write(codec, RT5509_REG_DSPKCONF4, 0xd9);
+		if (ret < 0)
+			goto out_boost_event;
+		ret = snd_soc_write(codec, RT5509_REG_ISENSE_CTRL, 0x97);
+		if (ret < 0)
+			goto out_boost_event;
 		dev_info(chip->dev, "amp turn on\n");
 		break;
 	case SND_SOC_DAPM_POST_PMU:
@@ -917,6 +946,12 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		dev_info(chip->dev, "amp turn off\n");
+		ret = snd_soc_write(codec, RT5509_REG_ISENSE_CTRL, 0x03);
+		if (ret < 0)
+			goto out_boost_event;
+		ret = snd_soc_write(codec, RT5509_REG_DSPKCONF4, 0x15);
+		if (ret < 0)
+			goto out_boost_event;
 		ret = snd_soc_update_bits(codec, RT5509_REG_CLKEN1,
 			0x40, 0x00);
 		if (ret < 0)
