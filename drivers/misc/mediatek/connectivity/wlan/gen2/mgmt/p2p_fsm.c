@@ -943,6 +943,7 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	P_MSG_P2P_START_AP_T prP2pStartAPMsg = (P_MSG_P2P_START_AP_T) NULL;
 	P_P2P_SPECIFIC_BSS_INFO_T prP2pSpecificBssInfo = (P_P2P_SPECIFIC_BSS_INFO_T) NULL;
+	P_P2P_CONNECTION_REQ_INFO_T prConnReqInfo = (P_P2P_CONNECTION_REQ_INFO_T) NULL;
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
@@ -956,6 +957,7 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 		prP2pStartAPMsg = (P_MSG_P2P_START_AP_T) prMsgHdr;
 		prP2pSpecificBssInfo = prAdapter->rWifiVar.prP2pSpecificBssInfo;
+		prConnReqInfo = &(prP2pFsmInfo->rConnReqInfo);
 
 		if (prP2pStartAPMsg->u4BcnInterval) {
 			DBGLOG(P2P, TRACE, "Beacon interval updated to: %u\n", prP2pStartAPMsg->u4BcnInterval);
@@ -1005,6 +1007,9 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 			/* Trigger P2P FSM to REQING_CHANNEL state for AP mode. */
 			prP2pBssInfo->eIntendOPMode = OP_MODE_ACCESS_POINT;
+
+			/* Clear GC's connection request. */
+			prConnReqInfo->fgIsConnRequest = FALSE;
 
 			if ((cnmPreferredChannel(prAdapter,
 						 &eBand,
