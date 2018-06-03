@@ -38,7 +38,7 @@
 #define SPOWER_INFO(fmt, args...)	 pr_emerg(SP_TAG fmt, ##args)
 #endif
 
-static sptbl_t sptab[MTK_SPOWER_MAX];
+static struct sptab_s sptab[MTK_SPOWER_MAX];
 static char static_power_buf[128];
 
 int interpolate(int x1, int x2, int x3, int y1, int y2)
@@ -53,7 +53,7 @@ int interpolate(int x1, int x2, int x3, int y1, int y2)
 #endif
 }
 
-int interpolate_2d(sptbl_t *tab, int v1, int v2, int t1, int t2, int voltage, int degree)
+int interpolate_2d(struct sptab_s *tab, int v1, int v2, int t1, int t2, int voltage, int degree)
 {
 	int c1, c2, p1, p2, p;
 
@@ -82,7 +82,7 @@ int interpolate_2d(sptbl_t *tab, int v1, int v2, int t1, int t2, int voltage, in
 	return p;
 }
 
-void interpolate_table(sptbl_t *spt, int c1, int c2, int c3, sptbl_t *tab1, sptbl_t *tab2)
+void interpolate_table(struct sptab_s *spt, int c1, int c2, int c3, struct sptab_s *tab1, struct sptab_s *tab2)
 {
 	int v, t;
 
@@ -110,7 +110,7 @@ void interpolate_table(sptbl_t *spt, int c1, int c2, int c3, sptbl_t *tab1, sptb
 }
 
 
-int sptab_lookup(sptbl_t *tab, int voltage, int degree)
+int sptab_lookup(struct sptab_s *tab, int voltage, int degree)
 {
 	int x1, x2, y1, y2, i;
 	int mamper;
@@ -164,10 +164,10 @@ int sptab_lookup(sptbl_t *tab, int voltage, int degree)
 	return mamper;
 }
 
-int mtk_spower_make_table(sptbl_t *spt, int voltage, int degree, unsigned int id, sptbl_list * all_tab[])
+int mtk_spower_make_table(struct sptab_s *spt, int voltage, int degree, unsigned int id, struct sptab_list *all_tab[])
 {
 	int i, j;
-	sptbl_t *tab[MAX_TABLE_SIZE], *tab1, *tab2, *tspt;
+	struct sptab_s *tab[MAX_TABLE_SIZE], *tab1, *tab2, *tspt;
 	int wat; /* leakage that reads from efuse */
 	int devinfo_domain;
 	int c[MAX_TABLE_SIZE] = {0};
@@ -268,7 +268,7 @@ void mtk_spower_ut(void)
 	int v, t, p, i;
 
 	for (i = 0; i < MTK_SPOWER_MAX; i++) {
-		sptbl_t *spt = &sptab[i];
+		struct sptab_s *spt = &sptab[i];
 
 		SPOWER_INFO("This is %s\n", spower_name[i]);
 
@@ -404,10 +404,10 @@ int mt_spower_init(void)
 	char *p_buf = static_power_buf;
 
 	/* Group FF,TT,SS tables of all the banks together */
-	sptbl_list * tab[MTK_SPOWER_MAX];
+	struct sptab_list *tab[MTK_SPOWER_MAX];
 
 	for (i = 0; i < MTK_SPOWER_MAX; i++)
-		tab[i] = kmalloc(sizeof(sptbl_list), GFP_KERNEL);
+		tab[i] = kmalloc(sizeof(struct sptab_list), GFP_KERNEL);
 
 	if (mtSpowerInited == 1)
 		return 0;

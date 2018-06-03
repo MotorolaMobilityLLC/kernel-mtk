@@ -1376,7 +1376,7 @@ int modem_leakage_data[][VSIZE*TSIZE+VSIZE+TSIZE] = {
 		MODEM_TABLE_2,
 };
 
-spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
+struct spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 	{
 		.vsize = VSIZE,
 		.tsize = TSIZE,
