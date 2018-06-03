@@ -30,7 +30,7 @@ unsigned int irq_nr[IRQ_NR_MAX];
 
 int wake_src_irq[] = {
 	WAKE_SRC_R12_KP_IRQ_B,
-	WAKE_SRC_R12_CONN2AP_WDT_IRQ_B,
+	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B,
 	WAKE_SRC_R12_MD1_WDT_B,
 #ifdef CONFIG_MTK_MD3_SUPPORT
 #if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
