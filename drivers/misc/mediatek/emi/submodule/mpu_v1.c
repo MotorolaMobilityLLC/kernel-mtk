@@ -440,8 +440,7 @@ void mpu_init(struct platform_driver *emi_ctrl, struct platform_device *pdev)
 		clear_violation();
 
 	if (node) {
-		/*mpu_irq = irq_of_parse_and_map(node, MPU_IRQ_INDEX);*/
-		mpu_irq = 193;
+		mpu_irq = irq_of_parse_and_map(node, MPU_IRQ_INDEX);
 		pr_info("[MPU] get MPU IRQ: %d\n", mpu_irq);
 
 		ret = request_irq(mpu_irq, (irq_handler_t)violation_irq,
