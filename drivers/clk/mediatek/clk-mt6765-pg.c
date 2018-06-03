@@ -2920,6 +2920,7 @@ int mtcmos_mfg_series_on(void)
 
 void subsys_if_on(void)
 {
+#if 0
 	unsigned int sta = spm_read(PWR_STATUS);
 	unsigned int sta_s = spm_read(PWR_STATUS_2ND);
 	int ret = 0;
@@ -2967,6 +2968,7 @@ void subsys_if_on(void)
 	}
 	if (ret > 0)
 		WARN_ON(1);
+#endif
 }
 
 #if 1 /*only use for suspend test*/

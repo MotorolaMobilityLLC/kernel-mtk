@@ -16,7 +16,7 @@
 #include <linux/syscore_ops.h>
 #include <linux/version.h>
 
-#define WARN_ON_CHECK_PLL_FAIL		0
+#define WARN_ON_CHECK_FAIL		0
 #define CLKDBG_CCF_API_4_4		1
 
 #define TAG	"[clkchk] "
@@ -393,16 +393,11 @@ static void print_enabled_clks(void)
 static void check_pll_off(void)
 {
 	static const char * const off_pll_names[] = {
-		"armpll",
-		"armpll_l",
-		"ccipll",
 		"univpll",
-		"mainpll",
 		"apll1",
 		"mfgpll",
 		"msdcpll",
 		"mmpll",
-		"mpll",
 		NULL
 	};
 
@@ -426,7 +421,7 @@ static void check_pll_off(void)
 		if (!c_hw)
 			continue;
 
-		if (!clk_hw_is_prepared(c_hw) && !clk_hw_is_enabled(c_hw))
+		if (!clk_hw_is_enabled(c_hw))
 			continue;
 
 		n += snprintf(buf + n, sizeof(buf) - n, "%s ",
@@ -439,7 +434,59 @@ static void check_pll_off(void)
 		clk_warn("unexpected unclosed PLL: %s\n", buf);
 		print_enabled_clks();
 
-#if WARN_ON_CHECK_PLL_FAIL
+#if WARN_ON_CHECK_FAIL
+		WARN_ON(1);
+#endif
+	}
+}
+
+static void check_mtcmos_off(void)
+{
+	static const char * const off_mtcmos_names[] = {
+		"pg_conn",
+		"pg_dis",
+		"pg_mfg",
+		"pg_isp",
+		"pg_mfg_core0",
+		"pg_mfg_async",
+		"pg_cam",
+		"pg_vcodec",
+		NULL
+	};
+
+	static struct clk *off_mtcmos[ARRAY_SIZE(off_mtcmos_names)];
+
+	struct clk **c;
+	int invalid = 0;
+	char buf[128] = {0};
+	int n = 0;
+
+	if (!off_mtcmos[0]) {
+		const char * const *pn;
+
+		for (pn = off_mtcmos_names, c = off_mtcmos; *pn; pn++, c++)
+			*c = __clk_lookup(*pn);
+	}
+
+	for (c = off_mtcmos; *c; c++) {
+		struct clk_hw *c_hw = __clk_get_hw(*c);
+
+		if (!c_hw)
+			continue;
+
+		if (!clk_hw_is_prepared(c_hw) && !clk_hw_is_enabled(c_hw))
+			continue;
+
+		n += snprintf(buf + n, sizeof(buf) - n, "%s ",
+				clk_hw_get_name(c_hw));
+
+		invalid++;
+	}
+
+	if (invalid) {
+		clk_warn("unexpected unclosed MTCMOS: %s\n", buf);
+
+#if WARN_ON_CHECK_FAIL
 		WARN_ON(1);
 #endif
 	}
@@ -448,6 +495,7 @@ static void check_pll_off(void)
 static int clkchk_syscore_suspend(void)
 {
 	check_pll_off();
+	check_mtcmos_off();
 
 	return 0;
 }
