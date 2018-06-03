@@ -19,6 +19,8 @@
 #include <upmu_common.h>
 #include "accdet.h"
 
+#include "mtk_auxadc_intf.h"
+
 #define DEBUG_THREAD			(1)
 #define ACCDET_INIT0_ONCE	0/* reset accdet sw, enable clock...  */
 #define ACCDET_INIT1_ONCE	1/* config analog, enable accdet eint, top interrupt...  */
@@ -433,6 +435,20 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 	unsigned int vol_val = 0;
 	unsigned int reg_val = 0;
 
+#if 1
+	/* use auxadc API */
+	vol_val = pmic_get_auxadc_value(AUXADC_LIST_ACCDET);
+	if (!s_4_key_efuse_flag) {
+		vol_val -= g_accdet_auxadc_offset;
+		ACCDET_INFO("[accdet] adc_offset=%d mv,MIC_Vol=%d mv\n", g_accdet_auxadc_offset, vol_val);
+		return vol_val;
+	}
+
+	reg_val = pmic_pwrap_read(AUXADC_ADC5);
+	ACCDET_INFO("[accdet] err: adc_offset=%d mv,code=0x%x\n", g_accdet_auxadc_offset, reg_val);
+	return (reg_val & AUXADC_DATA_MASK);/* return read code directly */
+#endif
+#if 0
 	unsigned int tmp_val = 0;
 	unsigned int timeout_flag = 10;/* read 10 times most */
 	unsigned int valid_data_flag = 1;/* read 2 times valid data */
@@ -468,6 +484,7 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 	} else {
 		return (reg_val & AUXADC_DATA_MASK);/* return read code directly */
 	}
+#endif
 }
 
 #ifdef CONFIG_FOUR_KEY_HEADSET
