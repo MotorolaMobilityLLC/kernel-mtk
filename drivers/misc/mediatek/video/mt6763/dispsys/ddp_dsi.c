@@ -1842,7 +1842,17 @@ UINT32 DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 		dsi_wait_not_busy(module, NULL);
 
 		/* 2. Check rd_rdy & cmd_done irq */
-		DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTEN, RD_RDY, 1);
+		if (DSI_REG[d]->DSI_INTEN.RD_RDY == 0) {
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTEN,
+				      RD_RDY, 1);
+
+		}
+
+		if (DSI_REG[d]->DSI_INTEN.CMD_DONE == 0) {
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTEN,
+				      CMD_DONE, 1);
+		}
+
 		ASSERT(DSI_REG[d]->DSI_INTEN.RD_RDY == 1);
 		ASSERT(DSI_REG[d]->DSI_INTEN.CMD_DONE == 1);
 
