@@ -42,6 +42,8 @@
 #include "clk-mt6763-pg.h"
 #elif defined(SMI_VIN)
 #include "clk-mt6758-pg.h"
+#elif defined(SMI_ZIO)
+#include "clk-mt6739-pg.h"
 #endif
 #endif				/* defined(SMI_INTERNAL_CCF_SUPPORT) */
 
@@ -166,6 +168,8 @@ static unsigned long mmsys_reg;
 #define SMI_REG_REGION_MAX 9
 #elif defined(SMI_BIA)
 #define SMI_REG_REGION_MAX 5
+#elif defined(SMI_ZIO)
+#define SMI_REG_REGION_MAX 4
 #elif defined(SMI_DUMMY)
 #define SMI_REG_REGION_MAX 1
 #endif
@@ -250,6 +254,17 @@ struct smi_device {
 	struct clk *img_mtcmos;   /* LARB1 */
 	struct clk *cam_mtcmos;   /* LARB2 */
 	struct clk *ven_mtcmos;   /* LARB3 */
+#elif defined(SMI_ZIO)
+	struct clk *smi_common_gals_comm0_clk;
+	struct clk *smi_common_gals_comm1_clk;
+	struct clk *smi_common_clk;
+	struct clk *smi_larb0_clk;
+	struct clk *smi_larb1_clk_larb;
+	struct clk *smi_larb1_clk_venc;
+	struct clk *smi_larb2_clk;
+	struct clk *mm_mtcmos;    /* LARB0 */
+	struct clk *ven_mtcmos;   /* LARB1 */
+	struct clk *img_mtcmos;   /* LARB2 */
 #endif
 #endif
 };
@@ -430,11 +445,7 @@ static void smi_common_clk_operation(enum smi_clk_operation op)
 		smi_prepare_clk(smi_dev->smi_common_upsz1_clk, "smi_common_upsz1_clk");
 		smi_prepare_clk(smi_dev->smi_common_clk, "smi_common_clk");
 		smi_prepare_clk(smi_dev->smi_common_2x_clk, "smi_common_2x_clk");
-#elif defined(SMI_ALA) || defined(SMI_VIN)
-		smi_prepare_clk(smi_dev->smi_common_gals_comm0_clk, "smi_common_gals_comm0_clk");
-		smi_prepare_clk(smi_dev->smi_common_gals_comm1_clk, "smi_common_gals_comm1_clk");
-		smi_prepare_clk(smi_dev->smi_common_clk, "smi_common_clk");
-#elif defined(SMI_BIA)
+#elif defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_VIN) || defined(SMI_ZIO)
 		smi_prepare_clk(smi_dev->smi_common_gals_comm0_clk, "smi_common_gals_comm0_clk");
 		smi_prepare_clk(smi_dev->smi_common_gals_comm1_clk, "smi_common_gals_comm1_clk");
 		smi_prepare_clk(smi_dev->smi_common_clk, "smi_common_clk");
@@ -450,11 +461,7 @@ static void smi_common_clk_operation(enum smi_clk_operation op)
 		smi_enable_clk(smi_dev->smi_common_upsz1_clk, "smi_common_upsz1_clk");
 		smi_enable_clk(smi_dev->smi_common_clk, "smi_common_clk");
 		smi_enable_clk(smi_dev->smi_common_2x_clk, "smi_common_2x_clk");
-#elif defined(SMI_ALA) || defined(SMI_VIN)
-		smi_enable_clk(smi_dev->smi_common_gals_comm0_clk, "smi_common_gals_comm0_clk");
-		smi_enable_clk(smi_dev->smi_common_gals_comm1_clk, "smi_common_gals_comm1_clk");
-		smi_enable_clk(smi_dev->smi_common_clk, "smi_common_clk");
-#elif defined(SMI_BIA)
+#elif defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_VIN) || defined(SMI_ZIO)
 		smi_enable_clk(smi_dev->smi_common_gals_comm0_clk, "smi_common_gals_comm0_clk");
 		smi_enable_clk(smi_dev->smi_common_gals_comm1_clk, "smi_common_gals_comm1_clk");
 		smi_enable_clk(smi_dev->smi_common_clk, "smi_common_clk");
@@ -470,11 +477,7 @@ static void smi_common_clk_operation(enum smi_clk_operation op)
 		smi_disable_clk(smi_dev->smi_common_fifo0_clk, "smi_common_fifo0_clk");
 		smi_disable_clk(smi_dev->smi_common_gals1_clk, "smi_common_gals1_clk");
 		smi_disable_clk(smi_dev->smi_common_gals0_clk, "smi_common_gals0_clk");
-#elif defined(SMI_ALA) || defined(SMI_VIN)
-		smi_disable_clk(smi_dev->smi_common_clk, "smi_common_clk");
-		smi_disable_clk(smi_dev->smi_common_gals_comm1_clk, "smi_common_gals_comm1_clk");
-		smi_disable_clk(smi_dev->smi_common_gals_comm0_clk, "smi_common_gals_comm0_clk");
-#elif defined(SMI_BIA)
+#elif defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_VIN) || defined(SMI_ZIO)
 		smi_disable_clk(smi_dev->smi_common_clk, "smi_common_clk");
 		smi_disable_clk(smi_dev->smi_common_gals_comm1_clk, "smi_common_gals_comm1_clk");
 		smi_disable_clk(smi_dev->smi_common_gals_comm0_clk, "smi_common_gals_comm0_clk");
@@ -490,11 +493,7 @@ static void smi_common_clk_operation(enum smi_clk_operation op)
 		smi_unprepare_clk(smi_dev->smi_common_fifo0_clk, "smi_common_fifo0_clk");
 		smi_unprepare_clk(smi_dev->smi_common_gals1_clk, "smi_common_gals1_clk");
 		smi_unprepare_clk(smi_dev->smi_common_gals0_clk, "smi_common_gals0_clk");
-#elif defined(SMI_ALA) || defined(SMI_VIN)
-		smi_unprepare_clk(smi_dev->smi_common_clk, "smi_common_clk");
-		smi_unprepare_clk(smi_dev->smi_common_gals_comm1_clk, "smi_common_gals_comm1_clk");
-		smi_unprepare_clk(smi_dev->smi_common_gals_comm0_clk, "smi_common_gals_comm0_clk");
-#elif defined(SMI_BIA)
+#elif defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_VIN) || defined(SMI_ZIO)
 		smi_unprepare_clk(smi_dev->smi_common_clk, "smi_common_clk");
 		smi_unprepare_clk(smi_dev->smi_common_gals_comm1_clk, "smi_common_gals_comm1_clk");
 		smi_unprepare_clk(smi_dev->smi_common_gals_comm0_clk, "smi_common_gals_comm0_clk");
@@ -520,12 +519,7 @@ static int larb_clock_enable(int larb_id, int enable_mtcmos)
 			smi_enable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
 		smi_common_clk_operation(SMI_ENABLE_CLK);
 		smi_enable_clk(smi_dev->smi_larb0_clk, "smi_larb0_clk");
-#elif defined(SMI_ALA) || defined(SMI_VIN)
-		if (enable_mtcmos)
-			smi_enable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
-		smi_common_clk_operation(SMI_ENABLE_CLK);
-		smi_enable_clk(smi_dev->smi_larb0_clk, "smi_larb0_clk");
-#elif defined(SMI_BIA)
+#elif defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_VIN) || defined(SMI_ZIO)
 		if (enable_mtcmos)
 			smi_enable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
 		smi_common_clk_operation(SMI_ENABLE_CLK);
@@ -550,6 +544,14 @@ static int larb_clock_enable(int larb_id, int enable_mtcmos)
 		}
 		smi_common_clk_operation(SMI_ENABLE_CLK);
 		smi_enable_clk(smi_dev->smi_larb1_clk, "smi_larb1_clk");
+#elif defined(SMI_ZIO)
+		if (enable_mtcmos) {
+			smi_enable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
+			smi_enable_clk(smi_dev->ven_mtcmos, "ven_mtcmos");
+		}
+		smi_common_clk_operation(SMI_ENABLE_CLK);
+		smi_enable_clk(smi_dev->smi_larb1_clk_larb, "smi_larb1_clk_larb");
+		smi_enable_clk(smi_dev->smi_larb1_clk_venc, "smi_larb1_clk_venc");
 #endif
 		break;
 	case 2:
@@ -576,6 +578,13 @@ static int larb_clock_enable(int larb_id, int enable_mtcmos)
 		smi_common_clk_operation(SMI_ENABLE_CLK);
 		smi_enable_clk(smi_dev->smi_larb2_clk, "smi_larb2_clk");
 		smi_enable_clk(smi_dev->gals_cam2mm_clk, "gals_cam2mm_clk");
+#elif defined(SMI_ZIO)
+		if (enable_mtcmos) {
+			smi_enable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
+			smi_enable_clk(smi_dev->img_mtcmos, "img_mtcmos");
+		}
+		smi_common_clk_operation(SMI_ENABLE_CLK);
+		smi_enable_clk(smi_dev->smi_larb2_clk, "smi_larb2_clk");
 #endif
 		break;
 	case 3:
@@ -720,12 +729,7 @@ static int larb_clock_prepare(int larb_id, int enable_mtcmos)
 			smi_prepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
 		smi_common_clk_operation(SMI_PREPARE_CLK);
 		smi_prepare_clk(smi_dev->smi_larb0_clk, "smi_larb0_clk");
-#elif defined(SMI_ALA) || defined(SMI_VIN)
-		if (enable_mtcmos)
-			smi_prepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
-		smi_common_clk_operation(SMI_PREPARE_CLK);
-		smi_prepare_clk(smi_dev->smi_larb0_clk, "smi_larb0_clk");
-#elif defined(SMI_BIA)
+#elif defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_VIN) || defined(SMI_ZIO)
 		if (enable_mtcmos)
 			smi_prepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
 		smi_common_clk_operation(SMI_PREPARE_CLK);
@@ -750,6 +754,14 @@ static int larb_clock_prepare(int larb_id, int enable_mtcmos)
 		}
 		smi_common_clk_operation(SMI_PREPARE_CLK);
 		smi_prepare_clk(smi_dev->smi_larb1_clk, "smi_larb1_clk");
+#elif defined(SMI_ZIO)
+		if (enable_mtcmos) {
+			smi_prepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
+			smi_prepare_clk(smi_dev->ven_mtcmos, "ven_mtcmos");
+		}
+		smi_common_clk_operation(SMI_PREPARE_CLK);
+		smi_prepare_clk(smi_dev->smi_larb1_clk_larb, "smi_larb1_clk_larb");
+		smi_prepare_clk(smi_dev->smi_larb1_clk_venc, "smi_larb1_clk_venc");
 #endif
 		break;
 	case 2:
@@ -776,6 +788,13 @@ static int larb_clock_prepare(int larb_id, int enable_mtcmos)
 		smi_common_clk_operation(SMI_PREPARE_CLK);
 		smi_prepare_clk(smi_dev->smi_larb2_clk, "smi_larb2_clk");
 		smi_prepare_clk(smi_dev->gals_cam2mm_clk, "gals_cam2mm_clk");
+#elif defined(SMI_ZIO)
+		if (enable_mtcmos) {
+			smi_prepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
+			smi_prepare_clk(smi_dev->img_mtcmos, "img_mtcmos");
+		}
+		smi_common_clk_operation(SMI_PREPARE_CLK);
+		smi_prepare_clk(smi_dev->smi_larb2_clk, "smi_larb2_clk");
 #endif
 		break;
 	case 3:
@@ -918,12 +937,7 @@ static int larb_clock_disable(int larb_id, int enable_mtcmos)
 		smi_common_clk_operation(SMI_DISABLE_CLK);
 		if (enable_mtcmos)
 			smi_disable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
-#elif defined(SMI_ALA) || defined(SMI_VIN)
-		smi_disable_clk(smi_dev->smi_larb0_clk, "smi_larb0_clk");
-		smi_common_clk_operation(SMI_DISABLE_CLK);
-		if (enable_mtcmos)
-			smi_disable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
-#elif defined(SMI_BIA)
+#elif defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_VIN) || defined(SMI_ZIO)
 		smi_disable_clk(smi_dev->smi_larb0_clk, "smi_larb0_clk");
 		smi_common_clk_operation(SMI_DISABLE_CLK);
 		if (enable_mtcmos)
@@ -946,6 +960,14 @@ static int larb_clock_disable(int larb_id, int enable_mtcmos)
 		smi_common_clk_operation(SMI_DISABLE_CLK);
 		if (enable_mtcmos) {
 			smi_disable_clk(smi_dev->img_mtcmos, "img_mtcmos");
+			smi_disable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
+		}
+#elif defined(SMI_ZIO)
+		smi_disable_clk(smi_dev->smi_larb1_clk_venc, "smi_larb1_clk_venc");
+		smi_disable_clk(smi_dev->smi_larb1_clk_larb, "smi_larb1_clk_larb");
+		smi_common_clk_operation(SMI_DISABLE_CLK);
+		if (enable_mtcmos) {
+			smi_disable_clk(smi_dev->ven_mtcmos, "ven_mtcmos");
 			smi_disable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
 		}
 #endif
@@ -972,6 +994,13 @@ static int larb_clock_disable(int larb_id, int enable_mtcmos)
 		smi_common_clk_operation(SMI_DISABLE_CLK);
 		if (enable_mtcmos) {
 			smi_disable_clk(smi_dev->cam_mtcmos, "cam_mtcmos");
+			smi_disable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
+		}
+#elif defined(SMI_ZIO)
+		smi_disable_clk(smi_dev->smi_larb2_clk, "smi_larb2_clk");
+		smi_common_clk_operation(SMI_DISABLE_CLK);
+		if (enable_mtcmos) {
+			smi_disable_clk(smi_dev->img_mtcmos, "img_mtcmos");
 			smi_disable_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
 		}
 #endif
@@ -1117,12 +1146,7 @@ static int larb_clock_unprepare(int larb_id, int enable_mtcmos)
 		smi_common_clk_operation(SMI_UNPREPARE_CLK);
 		if (enable_mtcmos)
 			smi_unprepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
-#elif defined(SMI_ALA) || defined(SMI_VIN)
-		smi_unprepare_clk(smi_dev->smi_larb0_clk, "smi_larb0_clk");
-		smi_common_clk_operation(SMI_UNPREPARE_CLK);
-		if (enable_mtcmos)
-			smi_unprepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
-#elif defined(SMI_BIA)
+#elif defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_VIN) || defined(SMI_ZIO)
 		smi_unprepare_clk(smi_dev->smi_larb0_clk, "smi_larb0_clk");
 		smi_common_clk_operation(SMI_UNPREPARE_CLK);
 		if (enable_mtcmos)
@@ -1145,6 +1169,14 @@ static int larb_clock_unprepare(int larb_id, int enable_mtcmos)
 		smi_common_clk_operation(SMI_UNPREPARE_CLK);
 		if (enable_mtcmos) {
 			smi_unprepare_clk(smi_dev->img_mtcmos, "img_mtcmos");
+			smi_unprepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
+		}
+#elif defined(SMI_ZIO)
+		smi_unprepare_clk(smi_dev->smi_larb1_clk_venc, "smi_larb1_clk_venc");
+		smi_unprepare_clk(smi_dev->smi_larb1_clk_larb, "smi_larb1_clk_larb");
+		smi_common_clk_operation(SMI_UNPREPARE_CLK);
+		if (enable_mtcmos) {
+			smi_unprepare_clk(smi_dev->ven_mtcmos, "ven_mtcmos");
 			smi_unprepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
 		}
 #endif
@@ -1171,6 +1203,13 @@ static int larb_clock_unprepare(int larb_id, int enable_mtcmos)
 		smi_common_clk_operation(SMI_UNPREPARE_CLK);
 		if (enable_mtcmos) {
 			smi_unprepare_clk(smi_dev->cam_mtcmos, "cam_mtcmos");
+			smi_unprepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
+		}
+#elif defined(SMI_ZIO)
+		smi_unprepare_clk(smi_dev->smi_larb2_clk, "smi_larb2_clk");
+		smi_common_clk_operation(SMI_UNPREPARE_CLK);
+		if (enable_mtcmos) {
+			smi_unprepare_clk(smi_dev->img_mtcmos, "img_mtcmos");
 			smi_unprepare_clk(smi_dev->mm_mtcmos, "mm_mtcmos");
 		}
 #endif
@@ -1532,6 +1571,20 @@ static unsigned int smiclk_subsys_2_larb(enum subsys_id sys)
 		i4larbid = 0x8;   /* larb3 */
 	break;
 	case SYS_CAM:
+		i4larbid = 0x4;   /* larb2 */
+		break;
+	default:
+		break;
+	}
+#elif defined(SMI_ZIO)
+	switch (sys) {
+	case SYS_MM0:
+		i4larbid = 0x1;   /* larb0 */
+		break;
+	case SYS_VEN:
+		i4larbid = 0x2;   /* larb1 */
+		break;
+	case SYS_ISP:
 		i4larbid = 0x4;   /* larb2 */
 		break;
 	default:
@@ -2237,7 +2290,7 @@ static int smi_probe(struct platform_device *pdev)
 		smi_dev->smi_larb8_mjc0_clk = get_smi_clk("smi-larb8-mjc-0");
 		smi_dev->smi_larb8_mjc1_clk = get_smi_clk("smi-larb8-mjc-1");
 		smi_dev->smi_larb8_mm_clk = get_smi_clk("smi-larb8-mm");
-		/* MTCMOS */
+
 		smi_dev->mm_mtcmos = get_smi_clk("mtcmos-mm");
 		smi_dev->img_mtcmos = get_smi_clk("mtcmos-img");
 		smi_dev->cam_mtcmos = get_smi_clk("mtcmos-cam");
@@ -2263,7 +2316,7 @@ static int smi_probe(struct platform_device *pdev)
 		smi_dev->smi_larb7_cke1venc_clk = get_smi_clk("venc-larb7-cke1venc");
 		smi_dev->smi_larb7_jpgenc_clk = get_smi_clk("venc-larb7-jpgenc");
 		smi_dev->gals_venc2mm_clk = get_smi_clk("gals-venc2mm");
-		/* MTCMOS */
+
 		smi_dev->mm_mtcmos = get_smi_clk("mtcmos-mm");
 		smi_dev->img_mtcmos = get_smi_clk("mtcmos-isp");
 		smi_dev->cam_mtcmos = get_smi_clk("mtcmos-cam");
@@ -2280,11 +2333,24 @@ static int smi_probe(struct platform_device *pdev)
 		smi_dev->smi_larb3_clk_larb = get_smi_clk("venc-larb");
 		smi_dev->smi_larb3_clk_venc = get_smi_clk("venc-venc");
 		smi_dev->gals_cam2mm_clk = get_smi_clk("gals-cam2mm");
-		/* MTCMOS */
+
 		smi_dev->mm_mtcmos = get_smi_clk("mtcmos-mm");
 		smi_dev->img_mtcmos = get_smi_clk("mtcmos-isp");
 		smi_dev->cam_mtcmos = get_smi_clk("mtcmos-cam");
 		smi_dev->ven_mtcmos = get_smi_clk("mtcmos-ven");
+		smi_mmdvfs_clks_init();
+#elif defined(SMI_ZIO)
+		smi_dev->smi_common_gals_comm0_clk = get_smi_clk("smi-common-gals0");
+		smi_dev->smi_common_gals_comm1_clk = get_smi_clk("smi-common-gals1");
+		smi_dev->smi_common_clk = get_smi_clk("smi-common");
+		smi_dev->smi_larb0_clk = get_smi_clk("mm-larb0");
+		smi_dev->smi_larb1_clk_larb = get_smi_clk("venc-larb");
+		smi_dev->smi_larb1_clk_venc = get_smi_clk("venc-venc");
+		smi_dev->smi_larb2_clk = get_smi_clk("img-larb2");
+
+		smi_dev->mm_mtcmos = get_smi_clk("mtcmos-mm");
+		smi_dev->ven_mtcmos = get_smi_clk("mtcmos-ven");
+		smi_dev->img_mtcmos = get_smi_clk("mtcmos-img");
 		smi_mmdvfs_clks_init();
 #endif
 #endif
@@ -2750,7 +2816,7 @@ int force_always_on_mm_clks(void)
 	return force_always_on_mm_clks_mask;
 }
 
-arch_initcall(smi_init);
+arch_initcall_sync(smi_init);
 
 static void smi_driver_setting(void)
 {

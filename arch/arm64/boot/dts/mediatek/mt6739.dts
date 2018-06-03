@@ -1281,7 +1281,23 @@
 
 	smi_common@14002000 {
 		compatible = "mediatek,smi_common";
-		reg = <0 0x14002000 0 0x1000>;
+		reg = <0 0x14002000 0 0x1000>,
+			<0 0x14003000 0 0x1000>,
+			<0 0x17010000 0 0x1000>,
+			<0 0x15001000 0 0x1000>;
+		clocks = <&mmsys_config CLK_MM_GALS_COMM0>,
+			<&mmsys_config CLK_MM_GALS_COMM1>,
+			<&mmsys_config CLK_MM_SMI_COMMON>,
+			<&mmsys_config CLK_MM_SMI_LARB0>,
+			<&venc_global_con CLK_VENC_SET0_LARB>,
+			<&venc_global_con CLK_VENC_SET1_VENC>,
+			<&imgsys_config CLK_IMG_LARB2_SMI>,
+			<&scpsys SCP_SYS_MM0>,
+			<&scpsys SCP_SYS_VEN>,
+			<&scpsys SCP_SYS_ISP>;
+		clock-names = "smi-common-gals0", "smi-common-gals1", "smi-common",
+			"mm-larb0", "venc-larb", "venc-venc", "img-larb2",
+			"mtcmos-mm", "mtcmos-ven", "mtcmos-img";
 	};
 
 	smi_larb0@14003000 {
@@ -1502,7 +1518,7 @@
 
 	smi_larb1@17010000 {
 		compatible = "mediatek,smi_larb1";
-		reg = <0 0x17010000 0 0x0>;
+		reg = <0 0x17010000 0 0x1000>;
 	};
 
 	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {
