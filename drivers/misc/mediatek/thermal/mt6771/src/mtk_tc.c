@@ -1354,9 +1354,9 @@ int tscpu_get_curr_temp(void)
 	tscpu_prev_gpu_temp = tscpu_curr_gpu_temp;
 
 	/* It is platform dependent which TS is better to present CPU/GPU temperature */
-	tscpu_curr_cpu_temp = MAX(tscpu_ts_temp[TS_MCU1], tscpu_ts_temp[TS_MCU2]);
+	tscpu_curr_cpu_temp = MAX(tscpu_ts_temp[TS_MCU4], tscpu_ts_temp[TS_MCU5]);
 
-	tscpu_curr_gpu_temp = tscpu_ts_temp[TS_MCU3];
+	tscpu_curr_gpu_temp = tscpu_ts_temp[TS_MCU2];
 #endif
 	/* though tscpu_max_temperature is common, put it in mtk_ts_cpu.c is weird. */
 	tscpu_curr_max_ts_temp = tscpu_max_temperature();
