@@ -1465,8 +1465,6 @@ static void msdc_set_buswidth(struct msdc_host *host, u32 width)
 
 static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 {
-
-#if 0
 	struct msdc_host *host = mmc_priv(mmc);
 	int min_uv, max_uv;
 	int ret = 0;
@@ -1496,8 +1494,6 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		}
 	}
 	return ret;
-#endif
-	return 0;
 }
 
 static void msdc_request_timeout(struct work_struct *work)
@@ -1660,12 +1656,12 @@ static void msdc_init_gpd_bd(struct msdc_host *host, struct msdc_dma *dma)
 static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
 	struct msdc_host *host = mmc_priv(mmc);
+	int ret = 0;
 
 	pm_runtime_get_sync(host->dev);
 	msdc_set_buswidth(host, ios->bus_width);
 
 	/* Suspend/Resume will do power off/on */
-#if 0
 	switch (ios->power_mode) {
 	case MMC_POWER_UP:
 		if (!IS_ERR(mmc->supply.vmmc)) {
@@ -1700,7 +1696,6 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	default:
 		break;
 	}
-#endif
 
 	if (host->mclk != ios->clock || host->timing != ios->timing)
 		msdc_set_mclk(host, ios->timing, ios->clock);
