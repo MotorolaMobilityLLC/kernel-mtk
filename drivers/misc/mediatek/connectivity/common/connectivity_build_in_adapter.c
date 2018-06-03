@@ -236,7 +236,11 @@ EXPORT_SYMBOL(connectivity_export_mmc_io_rw_direct);
 
 void connectivity_flush_dcache_area(void *addr, size_t len)
 {
+#ifdef CONFIG_ARM64
 	__flush_dcache_area(addr, len);
+#else
+	v7_flush_kern_dcache_area(addr, len);
+#endif
 }
 EXPORT_SYMBOL(connectivity_flush_dcache_area);
 
