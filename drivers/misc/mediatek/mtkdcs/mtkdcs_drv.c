@@ -708,13 +708,12 @@ static int __init mtkdcs_init(void)
 
 	dcs_initialized = true;
 
-	/* switch to lowpower mode */
-	dcs_switch_to_lowpower();
-
 	return 0;
 }
 
 static void __exit mtkdcs_exit(void) { }
 
+/* switch to lowpower mode */
+late_initcall(dcs_switch_to_lowpower);
 module_init(mtkdcs_init);
 module_exit(mtkdcs_exit);
