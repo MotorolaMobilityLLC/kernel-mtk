@@ -24,7 +24,7 @@
 #include <linux/clk.h>
 #include "clk-mtk-v1.h"
 #include "clk-mt6771-pg.h"
-/*#include "../../misc/mediatek/base/power/mt6771/mtk_gpufreq.h"*/
+#include "../../misc/mediatek/base/power/mt6771/mtk_gpufreq.h"
 
 #include <dt-bindings/clock/mt6771-clk.h>
 
@@ -1542,6 +1542,7 @@ int spm_mtcmos_ctrl_mfg_2d(int state)
 			MFG_PROT_STEP1_0_ACK_MASK) {
 			retry++;
 			if (retry == 5000) {
+				mt_gpufreq_dump_reg();
 				gpu_dump();
 				/*mt_gpufreq_dump_DVFS_status();*/
 				BUG_ON(1);
