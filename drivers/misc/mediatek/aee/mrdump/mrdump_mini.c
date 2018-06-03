@@ -19,6 +19,9 @@
 #include <linux/kdebug.h>
 #include <linux/module.h>
 #include <linux/vmalloc.h>
+#include <linux/bug.h>
+#include <linux/compiler.h>
+#include <linux/sizes.h>
 #include <linux/spinlock.h>
 #include <linux/stacktrace.h>
 #include <asm/pgtable.h>
@@ -695,11 +698,54 @@ int mrdump_modules_info(unsigned char *buffer, size_t sz_buf)
 #endif
 }
 
+#define EXTRA_MISC(func, name, max_size) \
+	__weak void func(unsigned long *vaddr, unsigned long *size) \
+	{ \
+		if (size != NULL) \
+			*size = 0; \
+	}
+#include "mrdump_mini_extra_misc.h"
+
+#undef EXTRA_MISC
+#define EXTRA_MISC(func, name, max_size) \
+	{func, name, max_size},
+
+static struct mrdump_mini_extra_misc extra_members[] = {
+	#include "mrdump_mini_extra_misc.h"
+};
+#define EXTRA_TOTAL_NUM ((sizeof(extra_members)) / (sizeof(extra_members[0])))
+static size_t __maybe_unused dummy_check(void)
+{
+	size_t dummy;
+
+	dummy = BUILD_BUG_ON_ZERO(EXTRA_TOTAL_NUM > 10);
+	return dummy;
+}
+
+static int mrdump_mini_add_extra_misc(unsigned long vaddr, unsigned long size,
+	const char *name)
+{
+	char name_buf[SZ_128];
+
+	if (mrdump_mini_ehdr == NULL ||
+		size == 0 ||
+		size > SZ_512K ||
+		name == NULL)
+		return -1;
+	snprintf(name_buf, SZ_128, "_EXTRA_%s_", name);
+	mrdump_mini_add_misc(vaddr, size, 0, name_buf);
+	return 0;
+}
+
 static void mrdump_mini_add_loads(void);
 void mrdump_mini_ke_cpu_regs(struct pt_regs *regs)
 {
 	int cpu;
 	struct pt_regs context;
+	static int once;
+	int i;
+	unsigned long vaddr = 0;
+	unsigned long size = 0;
 
 	if (!regs) {
 		regs = &context;
@@ -710,6 +756,18 @@ void mrdump_mini_ke_cpu_regs(struct pt_regs *regs)
 	mrdump_mini_cpu_regs(cpu, regs, current, 1);
 	mrdump_mini_add_loads();
 	mrdump_mini_build_task_info(regs);
+	if (once == 0) {
+		once = 1;
+		mrdump_mini_add_extra_misc((unsigned long)extra_members,
+			sizeof(extra_members), "ALL");
+		for (i = 0; i < EXTRA_TOTAL_NUM; i++) {
+			extra_members[i].dump_func(&vaddr, &size);
+			if (size > extra_members[i].max_size)
+				continue;
+			mrdump_mini_add_extra_misc(vaddr, size,
+				extra_members[i].dump_name);
+		}
+	}
 }
 EXPORT_SYMBOL(mrdump_mini_ke_cpu_regs);
 
