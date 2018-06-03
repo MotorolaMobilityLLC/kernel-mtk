@@ -41,9 +41,6 @@
 #include <mt-plat/sync_write.h>
 #include <ext_wd_drv.h>
 
-#include <mach/wd_api.h>
-#include <linux/irqchip/mtk-eic.h>
-
 #ifndef __USING_DUMMY_WDT_DRV__
 #include <mt-plat/upmu_common.h>
 #endif
