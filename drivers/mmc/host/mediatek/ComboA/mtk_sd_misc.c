@@ -831,7 +831,7 @@ static int simple_mmc_erase_partition_wrap(struct msdc_ioctl *msdc_ctl)
 	if (!msdc_ctl)
 		return -EINVAL;
 
-	if (msdc_ctl->total_size > PARTITION_NAME_LENGTH)
+	if (msdc_ctl->total_size >= PARTITION_NAME_LENGTH)
 		return -EFAULT;
 
 	if (copy_from_user(name, (unsigned char *)msdc_ctl->buffer,
