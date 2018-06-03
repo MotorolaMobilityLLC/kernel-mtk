@@ -2194,6 +2194,7 @@ static int _DC_switch_to_DL_fast(int block)
 	data_config_dl->rdma_config.security = DISP_NORMAL_BUFFER;
 	data_config_dl->rdma_dirty = 1;
 	data_config_dl->dst_dirty = 1;
+	data_config_dl->ovl_dirty = 1;
 
 	/* no need ioctl because of rdma_dirty */
 	set_is_dc(0);
@@ -2608,9 +2609,8 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp
 	dst->dst_x = src->tgt_offset_x;
 	dst->dst_y = src->tgt_offset_y;
 
-	/* dst W/H should <= src W/H */
-	dst->dst_w = min(src->src_width, src->tgt_width);
-	dst->dst_h = min(src->src_height, src->tgt_height);
+	dst->dst_w = src->tgt_width;
+	dst->dst_h = src->tgt_height;
 
 	dst->keyEn = src->src_use_color_key;
 	dst->key = src->src_color_key;
@@ -5242,6 +5242,7 @@ static int can_bypass_ovl(struct disp_ddp_path_config *data_config, int *bypass_
 	int total_layer = 0;
 	int i;
 	unsigned int w, h;
+	struct OVL_CONFIG_STRUCT *oc;
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
 	/* rdma doesn't support rotation */
@@ -5259,6 +5260,10 @@ static int can_bypass_ovl(struct disp_ddp_path_config *data_config, int *bypass_
 	}
 
 	if (total_layer != 1)
+		return 0;
+
+	oc = &data_config->ovl_config[*bypass_layer_id];
+	if (oc->src_w != oc->dst_w || oc->src_h != oc->dst_h)
 		return 0;
 
 	/* rdma cannot process dim layer */
@@ -5429,6 +5434,26 @@ void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, u
 }
 #endif
 
+static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
+{
+	int i = 0;
+	bool rsz = false;
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		struct disp_input_config *input_cfg = &cfg->input_cfg[i];
+
+		if (!input_cfg->layer_enable)
+			continue;
+
+		if (input_cfg->src_width != input_cfg->tgt_width ||
+		    input_cfg->src_height != input_cfg->tgt_height) {
+			rsz = true;
+			break;
+		}
+	}
+	return rsz;
+}
+
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle,
 			     struct cmdqRecStruct *cmdq_handle)
@@ -5454,6 +5479,9 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		else
 			assign_full_lcm_roi(&total_dirty_roi);
 	}
+
+	if (disp_rsz_frame_has_rsz_layer(cfg))
+		assign_full_lcm_roi(&total_dirty_roi);
 
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		struct disp_input_config *input_cfg = &cfg->input_cfg[i];

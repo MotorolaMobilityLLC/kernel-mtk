@@ -138,6 +138,8 @@ struct layering_rule_ops {
 	int (*get_hrt_bound)(int is_larb, int hrt_level);
 	void (*rsz_by_gpu_info_change)(void);
 	bool (*rollback_to_gpu_by_hw_limitation)(struct disp_layer_info *disp_info);
+	bool (*unset_disp_rsz_attr)(struct disp_layer_info *disp_info,
+								int disp_idx);
 };
 
 #define HRT_GET_DVFS_LEVEL(hrt_num) (hrt_num & 0xF)
@@ -163,6 +165,8 @@ bool is_ext_path(struct disp_layer_info *disp_info);
 int get_phy_ovl_layer_cnt(struct disp_layer_info *disp_info, int disp_idx);
 bool is_max_lcm_resolution(void);
 bool is_decouple_path(struct disp_layer_info *disp_info);
+int rollback_resize_layer_to_GPU_range(struct disp_layer_info *disp_info,
+				int disp_idx, int start_idx, int end_idx);
 int rollback_all_resize_layer_to_GPU(struct disp_layer_info *disp_info, int disp_idx);
 bool is_yuv(enum DISP_FORMAT format);
 bool is_argb_fmt(enum DISP_FORMAT format);

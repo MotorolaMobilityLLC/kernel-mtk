@@ -78,6 +78,7 @@
 #include "frame_queue.h"
 #include "disp_lowpower.h"
 #include "ddp_irq.h"
+#include "ddp_rsz.h"
 
 #define DDP_OUTPUT_LAYID 4
 
@@ -615,13 +616,14 @@ static int _sync_convert_fb_layer_to_disp_input(unsigned int session_id, struct 
 void dump_input_cfg_info(struct disp_input_config *input_cfg, unsigned int session_id, int is_err)
 {
 	_DISP_PRINT_FENCE_OR_ERR(is_err,
-		"S+/%sL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/mva%p/t%d/s%d\n",
+		"S+/%sL%d/e%d/id%d/(%d,%d,%dx%d)(%d,%d,%dx%d)/%s/%d/mva%p/t%d/s%d\n",
 		disp_session_mode_spy(session_id),
 		input_cfg->layer_id, input_cfg->layer_enable,
-		input_cfg->next_buff_idx, input_cfg->src_width,
-		input_cfg->src_height, input_cfg->src_offset_x,
-		input_cfg->src_offset_y, input_cfg->tgt_offset_x,
-		input_cfg->tgt_offset_y,
+		input_cfg->next_buff_idx,
+		input_cfg->src_offset_x, input_cfg->src_offset_y,
+		input_cfg->src_width, input_cfg->src_height,
+		input_cfg->tgt_offset_x, input_cfg->tgt_offset_y,
+		input_cfg->tgt_width, input_cfg->tgt_height,
 		_disp_format_spy(input_cfg->src_fmt), input_cfg->src_pitch,
 		input_cfg->src_phy_addr, get_ovl2mem_ticket(), input_cfg->security);
 
@@ -1129,6 +1131,18 @@ int _ioctl_get_display_caps(unsigned long arg)
 	caps_info.disp_feature |= DISP_FEATURE_FENCE_WAIT;
 
 	caps_info.disp_feature |= DISP_FEATURE_DISP_SELF_REFRESH;
+
+	if (disp_helper_get_option(DISP_OPT_RSZ))
+		caps_info.disp_feature |= DISP_FEATURE_RSZ;
+	if (disp_helper_get_option(DISP_OPT_RPO))
+		caps_info.disp_feature |= DISP_FEATURE_RPO;
+
+	if (disp_helper_get_option(DISP_OPT_RSZ) ||
+	    disp_helper_get_option(DISP_OPT_RPO)) {
+		caps_info.rsz_in_max[0] = RSZ_TILE_LENGTH -
+						RSZ_ALIGNMENT_MARGIN;
+		caps_info.rsz_in_max[1] = RSZ_IN_MAX_HEIGHT;
+	}
 
 	if (copy_to_user(argp, &caps_info, sizeof(caps_info))) {
 		DISPPR_ERROR("[FB]: copy_to_user failed! line:%d\n", __LINE__);

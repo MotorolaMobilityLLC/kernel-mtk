@@ -711,9 +711,13 @@ int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_DITHER0:
 		ddp_clk_prepare_enable(DISP0_DISP_DITHER0);
 		break;
+	case DISP_MODULE_RSZ0:
+		ddp_clk_prepare_enable(DISP0_DISP_RSZ);
+		break;
 	default:
 		DDPPR_ERR("invalid module id=%d\n", module);
 		ret = -1;
+		break;
 	}
 	return ret;
 }
@@ -756,9 +760,13 @@ int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_DITHER0:
 		ddp_clk_disable_unprepare(DISP0_DISP_DITHER0);
 		break;
+	case DISP_MODULE_RSZ0:
+		ddp_clk_disable_unprepare(DISP0_DISP_RSZ);
+		break;
 	default:
 		DDPPR_ERR("invalid module id=%d\n", module);
 		ret = -1;
+		break;
 	}
 	return ret;
 }

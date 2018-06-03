@@ -110,7 +110,7 @@ static bool ddp_valid_engine[DISP_MODULE_NUM] = {
 	0, /* DISP_MODULE_MIPI0 */
 	0, /* DISP_MODULE_MIPI1 */
 
-	0, /* DISP_MODULE_RSZ0 */
+	1, /* DISP_MODULE_RSZ0 */
 	0, /* DISP_MODULE_DPI */
 	0, /* DISP_MODULE_DBI */
 	0, /* DISP_MODULE_DPI_VIRTUAL */
