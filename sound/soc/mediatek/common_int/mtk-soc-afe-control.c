@@ -4470,6 +4470,17 @@ int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params 
 	return 0;
 }
 
+bool handle_suspend(bool suspend)
+{
+	bool ret = false;
+
+	if (s_afe_platform_ops->handle_suspend != NULL) {
+		s_afe_platform_ops->handle_suspend(suspend);
+		ret = true;
+	}
+	return ret;
+}
+
 void set_mem_blk_ops(struct mtk_mem_blk_ops *ops)
 {
 	s_mem_blk_ops = ops;

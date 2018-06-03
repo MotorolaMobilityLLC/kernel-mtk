@@ -987,6 +987,8 @@ static int mtk_routing_pm_ops_suspend(struct device *device)
 			SetAnalogSuspend(true);
 			/* clkmux_sel(MT_MUX_AUDINTBUS, 0, "AUDIO"); //select 26M */
 			/* AudDrv_Suspend_Clk_Off(); */
+			/* Pull high for 6757p LPDDR3 low power */
+			handle_suspend(true);
 		}
 		AudDrvSuspendStatus = true;
 	}
@@ -1008,6 +1010,8 @@ static int mtk_routing_pm_ops_resume(struct device *device)
 		if (ConditionEnterSuspend() == true) {
 			/*Restore_Audio_Register();*/	/* KC: no use */
 			SetAnalogSuspend(false);
+			/* Pull high for 6757p LPDDR3 low power */
+			handle_suspend(false);
 		}
 		AudDrvSuspendStatus = false;
 	}
