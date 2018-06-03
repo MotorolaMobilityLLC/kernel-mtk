@@ -58,10 +58,123 @@
 
 #define CMDQ_GET_COOKIE_CNT(thread) (CMDQ_REG_GET32(CMDQ_THR_EXEC_CNT(thread)) & CMDQ_MAX_COOKIE_VALUE)
 #define CMDQ_SYNC_TOKEN_APPEND_THR(id)     (CMDQ_SYNC_TOKEN_APPEND_THR0 + id)
+#define CMDQ_PROFILE_LIMIT_0	3000000
+#define CMDQ_PROFILE_LIMIT_1	5000000
+#define CMDQ_PROFILE_LIMIT_2	10000000
+
+#ifdef CMDQ_PROFILE_LOCK
+static CMDQ_TIME cost_gCmdqTaskMutex;
+static CMDQ_TIME cost_gCmdqClockMutex;
+static bool print_lock_cost;
+
+#define CMDQ_PROF_MUTEX_LOCK(lock, tag)	\
+{					\
+CMDQ_TIME lock_cost_##tag;		\
+lock_cost_##tag = sched_clock();	\
+print_lock_cost = true;			\
+mutex_lock(&lock);			\
+print_lock_cost = false;		\
+lock_cost_##tag = sched_clock() - lock_cost_##tag;	\
+if (lock_cost_##tag > CMDQ_PROFILE_LIMIT_2) {		\
+	CMDQ_ERR("[%s]wait lock: %llu us > %ums\n",	\
+		#tag, lock_cost_##tag/1000,		\
+		CMDQ_PROFILE_LIMIT_2/1000000);		\
+}					\
+cost_##lock = sched_clock();		\
+}
+
+#define CMDQ_PROF_MUTEX_UNLOCK(lock, tag)	\
+{						\
+bool force_print_lock = print_lock_cost;	\
+cost_##lock = sched_clock() - cost_##lock;	\
+if (cost_##lock > CMDQ_PROFILE_LIMIT_1) {	\
+	CMDQ_ERR("[%s]lock cost: %llu us > %ums\n",	\
+	#tag, cost_##lock/1000,		\
+		CMDQ_PROFILE_LIMIT_1/1000000);	\
+} else if (force_print_lock) {			\
+	CMDQ_LOG("[%s]lock cost: %llu us < %ums\n",	\
+	#tag, cost_##lock/1000,		\
+		CMDQ_PROFILE_LIMIT_1/1000000);	\
+}						\
+mutex_unlock(&lock);				\
+}
+
+#define CMDQ_PROF_TIME_BEGIN(cost)	\
+{					\
+cost = sched_clock();			\
+}
+
+#define CMDQ_PROF_TIME_END(cost, tag)	\
+{					\
+cost = sched_clock() - cost;		\
+if (cost > CMDQ_PROFILE_LIMIT_1) {	\
+	CMDQ_ERR("[%s] t_cost %llu > %ums\n",	\
+		tag, cost/1000,			\
+		CMDQ_PROFILE_LIMIT_1/1000000);	\
+}					\
+cost = sched_clock();			\
+}
+
+static CMDQ_TIME cost_gCmdqExecLock;
+static CMDQ_TIME cost_gCmdqWriteAddrLock;
+static CMDQ_TIME cost_gCmdqThreadLock;
+static CMDQ_TIME cost_gCmdqRecordLock;
+static CMDQ_TIME cost_g_delay_thread_lock;
+
+#define CMDQ_PROF_SPIN_LOCK(lock, flags, tag)	\
+{						\
+spin_lock_irqsave(&lock, flags);		\
+cost_##lock = sched_clock();			\
+}
+
+#define CMDQ_PROF_SPIN_UNLOCK(lock, flags, tag)	\
+{						\
+cost_##lock = sched_clock() - cost_##lock;	\
+if (cost_##lock > CMDQ_PROFILE_LIMIT_0) {	\
+CMDQ_ERR("[%s]spin lock cost: %llu > %ums\n",	\
+	#tag, (u64)(cost_##lock/1000),		\
+	(u32)(CMDQ_PROFILE_LIMIT_0/1000000));	\
+}						\
+spin_unlock_irqrestore(&lock, flags);		\
+}
+
+#else
+
+#define CMDQ_PROF_MUTEX_LOCK(lock, tag)	\
+{					\
+mutex_lock(&lock);			\
+}
+
+#define CMDQ_PROF_MUTEX_UNLOCK(lock, tag)	\
+{						\
+mutex_unlock(&lock);				\
+}
+
+#define CMDQ_PROF_TIME_BEGIN(cost)	\
+{					\
+cost = sched_clock();			\
+}
+
+#define CMDQ_PROF_TIME_END(cost, tag)	\
+{					\
+}
+
+#define CMDQ_PROF_SPIN_LOCK(lock, flags, tag)	\
+{						\
+spin_lock_irqsave(&lock, flags);		\
+}
+
+#define CMDQ_PROF_SPIN_UNLOCK(lock, flags, tag)	\
+{						\
+spin_unlock_irqrestore(&lock, flags);		\
+}
+#endif
 
 /* use mutex because we don't access task list in IRQ */
 /* and we may allocate memory when create list items */
 static DEFINE_MUTEX(gCmdqTaskMutex);
+static DEFINE_MUTEX(gCmdqClockMutex);
+
 static DEFINE_MUTEX(gCmdqSaveBufferMutex);
 /* static DEFINE_MUTEX(gCmdqWriteAddrMutex); */
 static DEFINE_SPINLOCK(gCmdqWriteAddrLock);
@@ -70,12 +183,6 @@ static DEFINE_SPINLOCK(gCmdqWriteAddrLock);
 /* ensure atomic start/stop notify loop*/
 static DEFINE_MUTEX(gCmdqNotifyLoopMutex);
 #endif
-
-/* t-base(secure OS) doesn't allow entry secure world in ISR context, */
-/* but M4U has to restore lab0 register in secure world when enable lab 0 first time. */
-/* HACK: use m4u_larb0_enable() to lab0 on/off to ensure larb0 restore and clock on/off sequence */
-/* HACK: use gCmdqClockMutex to ensure acquire/release thread and enable/disable clock sequence */
-static DEFINE_MUTEX(gCmdqClockMutex);
 
 /* These may access in IRQ so use spin lock. */
 static DEFINE_SPINLOCK(gCmdqThreadLock);
@@ -343,15 +450,15 @@ static int32_t cmdq_delay_thread_start(void)
 	u32 tpr_mask_value = CMDQ_DELAY_TPR_MASK_VALUE |
 						 (1 << CMDQ_POLLING_TPR_MASK_BIT);
 #endif
-	spin_lock_irqsave(&g_delay_thread_lock, flags);
+	CMDQ_PROF_SPIN_LOCK(g_delay_thread_lock, flags, delay_thread);
 	if (!g_delay_thread_inited || g_delay_thread_started || atomic_read(&gCmdqThreadUsage) < 1) {
-		spin_unlock_irqrestore(&g_delay_thread_lock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(g_delay_thread_lock, flags, delay_thread_ignore);
 		return 0;
 	}
 
 	CMDQ_MSG("EXEC: new delay thread(%d)\n", thread);
 	if (cmdq_core_reset_HW_thread(thread) < 0) {
-		spin_unlock_irqrestore(&g_delay_thread_lock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(g_delay_thread_lock, flags, delay_thread_fail);
 		return -EFAULT;
 	}
 
@@ -396,7 +503,7 @@ static int32_t cmdq_delay_thread_start(void)
 
 	g_delay_thread_started = true;
 
-	spin_unlock_irqrestore(&g_delay_thread_lock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(g_delay_thread_lock, flags, delay_thread);
 
 	return 0;
 }
@@ -406,21 +513,21 @@ static int32_t cmdq_delay_thread_stop(void)
 	unsigned long flags;
 	const int32_t thread = CMDQ_DELAY_THREAD_ID;
 
-	spin_lock_irqsave(&g_delay_thread_lock, flags);
+	CMDQ_PROF_SPIN_LOCK(g_delay_thread_lock, flags, delay_thread_stop);
 	if (g_delay_thread_started == false || atomic_read(&gCmdqThreadUsage) > 1) {
-		spin_unlock_irqrestore(&g_delay_thread_lock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(g_delay_thread_lock, flags, delay_thread_stop_ignore);
 		return 0;
 	}
 
 	if (cmdq_core_suspend_HW_thread(thread, __LINE__) < 0) {
-		spin_unlock_irqrestore(&g_delay_thread_lock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(g_delay_thread_lock, flags, delay_thread_fail_stop);
 		return -EFAULT;
 	}
 
 	cmdq_core_disable_HW_thread(thread);
 
 	g_delay_thread_started = false;
-	spin_unlock_irqrestore(&g_delay_thread_lock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(g_delay_thread_lock, flags, delay_thread_stop_done);
 	CMDQ_MSG("EXEC: stop delay thread(%d)\n", thread);
 
 	return 0;
@@ -1014,19 +1121,28 @@ void *cmdq_core_alloc_hw_buffer(struct device *dev, size_t size, dma_addr_t *dma
 {
 	void *pVA;
 	dma_addr_t PA;
+	CMDQ_TIME alloc_cost = 0;
 
 	do {
 		PA = 0;
 		pVA = NULL;
 
 		CMDQ_PROF_START(current->pid, __func__);
+		CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_buffer, MMPROFILE_FLAG_START, current->pid, size);
+		alloc_cost = sched_clock();
 
 		pVA = dma_alloc_coherent(dev, size, &PA, flag);
+
+		alloc_cost = sched_clock() - alloc_cost;
+		CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_buffer, MMPROFILE_FLAG_END, current->pid, alloc_cost);
+		CMDQ_PROF_END(current->pid, __func__);
 
 		if (pVA != NULL && atomic_read(&g_cmdq_mem_monitor.monitor_mem_enable) != 0)
 			cmdq_core_monitor_record_alloc(size);
 
-		CMDQ_PROF_END(current->pid, __func__);
+		if (alloc_cost > CMDQ_PROFILE_LIMIT_2)
+			CMDQ_LOG("[warn] alloc buffer (size: %zu) cost %llu us > %ums\n",
+				size, alloc_cost/1000, CMDQ_PROFILE_LIMIT_2/1000000);
 	} while (0);
 
 	*dma_handle = PA;
@@ -1039,9 +1155,17 @@ void *cmdq_core_alloc_hw_buffer(struct device *dev, size_t size, dma_addr_t *dma
 void cmdq_core_free_hw_buffer(struct device *dev, size_t size, void *cpu_addr,
 			      dma_addr_t dma_handle)
 {
+	CMDQ_TIME free_cost = 0;
+
+	free_cost = sched_clock();
 	dma_free_coherent(dev, size, cpu_addr, dma_handle);
+	free_cost = sched_clock() - free_cost;
 	if (atomic_read(&g_cmdq_mem_monitor.monitor_mem_enable) != 0)
 		cmdq_core_monitor_record_free(size);
+
+	if (free_cost > CMDQ_PROFILE_LIMIT_2)
+		CMDQ_LOG("[warn] free buffer (size: %zu) cost %llu us > %ums\n",
+			size, free_cost/1000, CMDQ_PROFILE_LIMIT_2/1000000);
 }
 
 s32 cmdq_core_alloc_sram_buffer(size_t size, const char *owner_name, u32 *out_cpr_offset)
@@ -1710,10 +1834,10 @@ int cmdqCorePrintRecordSeq(struct seq_file *m, void *v)
 	/* we try to minimize time spent in spin lock */
 	/* since record is an array so it is okay to */
 	/* allow displaying an out-of-date entry. */
-	spin_lock_irqsave(&gCmdqRecordLock, flags);
+	CMDQ_PROF_SPIN_LOCK(gCmdqRecordLock, flags, print_record);
 	numRec = gCmdqContext.recNum;
 	index = gCmdqContext.lastID - 1;
-	spin_unlock_irqrestore(&gCmdqRecordLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqRecordLock, flags, print_record);
 
 	/* we print record in reverse order. */
 	cmdq_core_print_record_title(msg, sizeof(msg));
@@ -1724,9 +1848,9 @@ int cmdqCorePrintRecordSeq(struct seq_file *m, void *v)
 		else if (index < 0)
 			index = CMDQ_MAX_RECORD_COUNT - 1;
 
-		spin_lock_irqsave(&gCmdqRecordLock, flags);
+		CMDQ_PROF_SPIN_LOCK(gCmdqRecordLock, flags, print_record_loop);
 		record = gCmdqContext.record[index];
-		spin_unlock_irqrestore(&gCmdqRecordLock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(gCmdqRecordLock, flags, print_record_loop);
 
 		cmdq_core_print_record(&record, index, msg, sizeof(msg));
 		seq_printf(m, "%s", msg);
@@ -1793,10 +1917,10 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 		int32_t buffer_id;
 
 		seq_puts(m, "================= [CMDQ] Dump Command Buffer =================\n");
-		mutex_lock(&gCmdqTaskMutex);
+		CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, dump_status_buffer);
 		for (buffer_id = 0; buffer_id < gCmdqBufferDump.bufferSize; buffer_id++)
 			seq_printf(m, "%c", gCmdqBufferDump.cmdqString[buffer_id]);
-		mutex_unlock(&gCmdqTaskMutex);
+		CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, dump_status_buffer);
 		seq_puts(m, "\n=============== [CMDQ] Dump Command Buffer END ===============\n\n\n");
 	}
 
@@ -1848,7 +1972,7 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 		mutex_unlock(&gCmdqResourceMutex);
 	}
 
-	mutex_lock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, dump_status_list);
 
 	/* print all tasks in both list */
 	for (listIdx = 0; listIdx < ARRAY_SIZE(lists); listIdx++) {
@@ -1892,7 +2016,7 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 			seq_printf(m, "Wait Cookie %d, Next Cookie %d\n", pThread->waitCookie,
 				   pThread->nextCookie);
 
-			spin_lock_irqsave(&gCmdqThreadLock, flags);
+			CMDQ_PROF_SPIN_LOCK(gCmdqThreadLock, flags, print_status);
 
 			for (inner = 0; inner < cmdq_core_max_task_in_thread(index); inner++) {
 				pTask = pThread->pCurTask[inner];
@@ -1936,11 +2060,11 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 				}
 			}
 
-			spin_unlock_irqrestore(&gCmdqThreadLock, flags);
+			CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, print_status);
 		}
 	}
 
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, dump_status_list);
 
 	return 0;
 }
@@ -2365,7 +2489,7 @@ bool cmdqIsValidTaskPtr(void *pTask)
 	struct list_head *p = NULL;
 	bool ret = false;
 
-	mutex_lock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, valid_task_ptr);
 
 	list_for_each(p, &gCmdqContext.taskActiveList) {
 		ptr = list_entry(p, struct TaskStruct, listEntry);
@@ -2383,7 +2507,7 @@ bool cmdqIsValidTaskPtr(void *pTask)
 		}
 	}
 
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, valid_task_ptr);
 	return ret;
 }
 
@@ -2455,18 +2579,19 @@ static void cmdq_core_release_task(struct TaskStruct *pTask)
 	pTask->secStatus = NULL;
 #endif
 
-	mutex_lock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_remove);
+	/* remove from active/waiting list */
+	list_del_init(&(pTask->listEntry));
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, release_task_remove);
 
 	cmdq_core_release_buffer(pTask);
 	kfree(pTask->privateData);
 	pTask->privateData = NULL;
 
-	/* remove from active/waiting list */
-	list_del_init(&(pTask->listEntry));
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_add);
 	/* insert into free list. Currently we don't shrink free list. */
 	list_add_tail(&(pTask->listEntry), &gCmdqContext.taskFreeList);
-
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, release_task_async);
 
 	CMDQ_MSG("<--TASK: Release task structure end\n");
 }
@@ -2484,7 +2609,7 @@ static void cmdq_core_release_task_in_queue(struct work_struct *workItem)
 
 	cmdq_core_release_buffer(pTask);
 
-	mutex_lock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_in_queue);
 
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 	kfree(pTask->secStatus);
@@ -2499,7 +2624,7 @@ static void cmdq_core_release_task_in_queue(struct work_struct *workItem)
 	/* insert into free list. Currently we don't shrink free list. */
 	list_add_tail(&(pTask->listEntry), &gCmdqContext.taskFreeList);
 
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, release_task_in_queue);
 
 	CMDQ_MSG("<--Work QUEUE: TASK: Release task structure end\n");
 }
@@ -2663,7 +2788,7 @@ static void cmdq_core_dump_all_task(void)
 	struct TaskStruct *ptr = NULL;
 	struct list_head *p = NULL;
 
-	mutex_lock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, dump_all_task);
 
 	CMDQ_ERR("=============== [CMDQ] All active tasks ===============\n");
 	list_for_each(p, &gCmdqContext.taskActiveList) {
@@ -2679,7 +2804,7 @@ static void cmdq_core_dump_all_task(void)
 			cmdq_core_dump_task(ptr);
 	}
 
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, dump_all_task);
 }
 
 static void cmdq_core_insert_backup_instr(struct TaskStruct *pTask,
@@ -3226,19 +3351,20 @@ static struct TaskStruct *cmdq_core_find_free_task(void)
 {
 	struct TaskStruct *pTask = NULL;
 
-	mutex_lock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, find_free_task);
 
 	/* Pick from free list first; */
 	/* create one if there is no free entry. */
-	if (list_empty(&gCmdqContext.taskFreeList)) {
-		pTask = cmdq_core_task_create();
-	} else {
+	if (!list_empty(&gCmdqContext.taskFreeList)) {
 		pTask = list_first_entry(&(gCmdqContext.taskFreeList), struct TaskStruct, listEntry);
 		/* remove from free list */
 		list_del_init(&(pTask->listEntry));
 	}
 
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, find_free_task);
+
+	if (!pTask)
+		pTask = cmdq_core_task_create();
 
 	return pTask;
 }
@@ -3412,13 +3538,14 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 	void *p_metadatas = NULL;
 	uint32_t metadata_length;
 	int32_t status;
+	CMDQ_TIME time_cost;
 
 	CMDQ_MSG("-->TASK: acquire task begin CMD: 0x%p, size: %d, Eng: 0x%016llx\n",
 		 CMDQ_U32_PTR(pCommandDesc->pVABase), pCommandDesc->blockSize,
 		 pCommandDesc->engineFlag);
 	CMDQ_PROF_START(current->pid, __func__);
-
 	pTask = cmdq_core_find_free_task();
+	CMDQ_PROF_TIME_BEGIN(time_cost);
 	do {
 		struct TaskPrivateStruct *private = NULL, *desc_private = NULL;
 
@@ -3490,7 +3617,9 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 		memset(&(pTask->wakedUp), 0x0, sizeof(pTask->wakedUp));
 
 		/* profile marker */
+		CMDQ_PROF_TIME_END(time_cost, "before_init_profile");
 		cmdq_task_init_profile_marker_data(pCommandDesc, pTask);
+		CMDQ_PROF_TIME_END(time_cost, "after_init_profile");
 
 		pTask->commandSize = pCommandDesc->blockSize;
 		pTask->regCount = pCommandDesc->regRequest.count;
@@ -3524,8 +3653,9 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 					pCommandDesc->userDebugStrLen);
 			}
 		}
-
+		CMDQ_PROF_TIME_END(time_cost, "before_insert_read_reg");
 		status = cmdq_core_insert_read_reg_command(pTask, pCommandDesc);
+		CMDQ_PROF_TIME_END(time_cost, "after_insert_read_reg");
 		if (status >= 0 && pCommandDesc->use_sram_buffer) {
 			u32 cpr_offset = CMDQ_INVALID_CPR_OFFSET;
 			dma_addr_t paBase = cmdq_core_task_get_first_pa(pTask);
@@ -3565,7 +3695,7 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 	/*  */
 	/* insert into waiting list to process */
 	/*  */
-	mutex_lock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, acquire_task_done);
 	if (pTask) {
 		struct list_head *insertAfter = &gCmdqContext.taskWaitList;
 
@@ -3586,7 +3716,7 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 
 		list_add(&(pTask->listEntry), insertAfter);
 	}
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, acquire_task_done);
 
 	CMDQ_MSG("<--TASK: acquire task 0x%p end\n", pTask);
 	CMDQ_PROF_END(current->pid, __func__);
@@ -3943,7 +4073,7 @@ static int32_t cmdq_core_find_a_free_HW_thread(uint64_t engineFlag,
 			    CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT : max_thread_count;
 
 			for (index = startIndex; index < endIndex; ++index) {
-				spin_lock_irqsave(&gCmdqExecLock, flagsExecLock);
+				CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flagsExecLock, find_free_hw_thread);
 
 				if ((pThread[index].engineFlag == 0) &&
 				    (pThread[index].taskCount == 0) &&
@@ -3956,11 +4086,11 @@ static int32_t cmdq_core_find_a_free_HW_thread(uint64_t engineFlag,
 
 					thread = index;
 					pThread[index].allowDispatching = 0;
-					spin_unlock_irqrestore(&gCmdqExecLock, flagsExecLock);
+					CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flagsExecLock, find_free_hw_thread_stop);
 					break;
 				}
 
-				spin_unlock_irqrestore(&gCmdqExecLock, flagsExecLock);
+				CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flagsExecLock, find_free_hw_thread);
 			}
 		}
 
@@ -4011,8 +4141,8 @@ static int32_t cmdq_core_acquire_thread(uint64_t engineFlag,
 	CMDQ_PROF_START(current->pid, __func__);
 
 	do {
-		mutex_lock(&gCmdqClockMutex);
-		spin_lock_irqsave(&gCmdqThreadLock, flags);
+		CMDQ_PROF_MUTEX_LOCK(gCmdqClockMutex, acquire_thread_clock);
+		CMDQ_PROF_SPIN_LOCK(gCmdqThreadLock, flags, acquire_thread);
 
 		thread =
 		    cmdq_core_find_a_free_HW_thread(engineFlag, thread_prio, scenario, forceLog,
@@ -4027,7 +4157,7 @@ static int32_t cmdq_core_acquire_thread(uint64_t engineFlag,
 		if (thread == CMDQ_INVALID_THREAD && is_secure == true && scenario == CMDQ_SCENARIO_USER_MDP)
 			g_cmdq_consume_again = true;
 
-		spin_unlock_irqrestore(&gCmdqThreadLock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, acquire_thread);
 
 		if (thread != CMDQ_INVALID_THREAD) {
 			/* enable clock */
@@ -4036,7 +4166,7 @@ static int32_t cmdq_core_acquire_thread(uint64_t engineFlag,
 			cmdq_delay_thread_start();
 		}
 
-		mutex_unlock(&gCmdqClockMutex);
+		CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, acquire_thread_clock);
 	} while (0);
 
 	CMDQ_PROF_END(current->pid, __func__);
@@ -4161,14 +4291,14 @@ static void cmdq_core_release_thread(struct TaskStruct *pTask)
 	if (thread == CMDQ_INVALID_THREAD)
 		return;
 
-	mutex_lock(&gCmdqClockMutex);
-	spin_lock_irqsave(&gCmdqThreadLock, flags);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqClockMutex, release_thread_clock);
+	CMDQ_PROF_SPIN_LOCK(gCmdqThreadLock, flags, release_thread);
 
 	/* get not used engines for disable clock */
 	engineNotUsed = cmdq_core_get_not_used_engine_flag_for_disable_clock(engineFlag);
 	pTask->thread = CMDQ_INVALID_THREAD;
 
-	spin_unlock_irqrestore(&gCmdqThreadLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, release_thread);
 
 	/* Stop delay thread after last task is done */
 	cmdq_delay_thread_stop();
@@ -4177,7 +4307,7 @@ static void cmdq_core_release_thread(struct TaskStruct *pTask)
 	/* Delay release resource  */
 	cmdq_core_delay_check_unlock(engineFlag, engineNotUsed);
 
-	mutex_unlock(&gCmdqClockMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, release_thread_clock);
 }
 
 static void cmdq_core_reset_hw_engine(int32_t engineFlag)
@@ -5185,7 +5315,7 @@ void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize)
 	static char textBuf[128] = { 0 };
 	int i;
 
-	mutex_lock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, dump_command_mem);
 
 	print_hex_dump(KERN_ERR, "[CMDQ]", DUMP_PREFIX_ADDRESS, 16, 4, pCmd, commandSize, false);
 	CMDQ_LOG("======TASK command buffer END\n");
@@ -5196,7 +5326,7 @@ void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize)
 	}
 	CMDQ_LOG("TASK command buffer TRANSLATED END\n");
 
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, dump_command_mem);
 }
 
 void cmdq_core_dump_task_mem(const struct TaskStruct *pTask, bool full_dump)
@@ -5671,10 +5801,10 @@ int cmdqCorePrintInstructionCountSeq(struct seq_file *m, void *v)
 	/* we try to minimize time spent in spin lock */
 	/* since record is an array so it is okay to */
 	/* allow displaying an out-of-date entry. */
-	spin_lock_irqsave(&gCmdqRecordLock, flags);
+	CMDQ_PROF_SPIN_LOCK(gCmdqRecordLock, flags, print_inst);
 	numRec = gCmdqContext.recNum;
 	index = gCmdqContext.lastID - 1;
-	spin_unlock_irqrestore(&gCmdqRecordLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqRecordLock, flags, print_inst);
 
 	/* we print record in reverse order. */
 	for (; numRec > 0; --numRec, --index) {
@@ -5683,9 +5813,9 @@ int cmdqCorePrintInstructionCountSeq(struct seq_file *m, void *v)
 		else if (index < 0)
 			index = CMDQ_MAX_RECORD_COUNT - 1;
 
-		spin_lock_irqsave(&gCmdqRecordLock, flags);
+		CMDQ_PROF_SPIN_LOCK(gCmdqRecordLock, flags, print_inst_loop);
 		record = gCmdqContext.record[index];
-		spin_unlock_irqrestore(&gCmdqRecordLock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(gCmdqRecordLock, flags, print_inst_loop);
 
 		if ((record.instructionStat[CMDQ_STAT_EOC] == 0) &&
 		    (record.instructionStat[CMDQ_STAT_JUMP] == 0)) {
@@ -5722,10 +5852,10 @@ int cmdqCorePrintInstructionCountSeq(struct seq_file *m, void *v)
 	/* we try to minimize time spent in spin lock */
 	/* since record is an array so it is okay to */
 	/* allow displaying an out-of-date entry. */
-	spin_lock_irqsave(&gCmdqRecordLock, flags);
+	CMDQ_PROF_SPIN_LOCK(gCmdqRecordLock, flags, print_inst_finish);
 	numRec = gCmdqContext.recNum;
 	index = gCmdqContext.lastID - 1;
-	spin_unlock_irqrestore(&gCmdqRecordLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqRecordLock, flags, print_inst_finish);
 
 	/* we print record in reverse order. */
 	for (; numRec > 0; --numRec, --index) {
@@ -5734,9 +5864,9 @@ int cmdqCorePrintInstructionCountSeq(struct seq_file *m, void *v)
 		else if (index < 0)
 			index = CMDQ_MAX_RECORD_COUNT - 1;
 
-		spin_lock_irqsave(&gCmdqRecordLock, flags);
+		CMDQ_PROF_SPIN_LOCK(gCmdqRecordLock, flags, print_inst_record);
 		record = gCmdqContext.record[index];
-		spin_unlock_irqrestore(&gCmdqRecordLock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(gCmdqRecordLock, flags, print_inst_record);
 
 		for (i = 0; i < record.otherInstrNUM; i++)
 			seq_printf(m, "0x%08x\n", record.otherInstr[i]);
@@ -5816,7 +5946,7 @@ static void cmdq_core_track_task_record(struct TaskStruct *pTask, uint32_t threa
 
 	done = sched_clock();
 
-	spin_lock_irqsave(&gCmdqRecordLock, flags);
+	CMDQ_PROF_SPIN_LOCK(gCmdqRecordLock, flags, track_record);
 
 	pRecord = &(gCmdqContext.record[gCmdqContext.lastID]);
 	lastID = gCmdqContext.lastID;
@@ -5833,7 +5963,7 @@ static void cmdq_core_track_task_record(struct TaskStruct *pTask, uint32_t threa
 	if (gCmdqContext.recNum >= CMDQ_MAX_RECORD_COUNT)
 		gCmdqContext.recNum = CMDQ_MAX_RECORD_COUNT;
 
-	spin_unlock_irqrestore(&gCmdqRecordLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqRecordLock, flags, track_record);
 
 	if (pTask->dumpAllocTime) {
 		length = cmdq_core_print_record(pRecord, lastID, buf, ARRAY_SIZE(buf));
@@ -6415,6 +6545,7 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 		}
 	}
 #endif
+
 	wake_up(&gCmdWaitQueue[thread]);
 }
 
@@ -6562,6 +6693,7 @@ static void cmdqCoreHandleDone(int32_t thread, int32_t value, CMDQ_TIME *pGotIRQ
 		/* loop CB failed. the EXECUTION count should not be used as cookie, */
 		/* since it will increase by each loop iteration. */
 		cookie = pThread->waitCookie;
+
 	} else {
 		/* task cookie */
 		cookie = cmdq_core_thread_exec_counter(thread);
@@ -6583,11 +6715,13 @@ void cmdqCoreHandleIRQ(int32_t thread)
 	/* note that do_gettimeofday may cause HWT in spin_lock_irqsave (ALPS01496779) */
 	gotIRQ = sched_clock();
 
+	snprintf(thread_label, ARRAY_SIZE(thread_label), "CMDQ_IRQ_THR_%d", thread);
+
 	/*  */
 	/* Normal execution, marks tasks done and remove from thread */
 	/* Also, handle "loop CB fail" case */
 	/*  */
-	spin_lock_irqsave(&gCmdqExecLock, flags);
+	CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, handle_irq);
 
 	/* it is possible for another CPU core */
 	/* to run "releaseTask" right before we acquire the spin lock */
@@ -6598,7 +6732,7 @@ void cmdqCoreHandleIRQ(int32_t thread)
 	if ((value & 0x13) == 0) {
 		CMDQ_ERR("IRQ: thread %d got interrupt but IRQ flag is 0x%08x in NWd\n", thread,
 			 value);
-		spin_unlock_irqrestore(&gCmdqExecLock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, handle_irq);
 		return;
 	}
 
@@ -6608,12 +6742,11 @@ void cmdqCoreHandleIRQ(int32_t thread)
 		if ((enabled & 0x01) == 0) {
 			CMDQ_ERR("IRQ: thread %d got interrupt already disabled 0x%08x\n", thread,
 				 enabled);
-			spin_unlock_irqrestore(&gCmdqExecLock, flags);
+			CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, handle_irq_disable);
 			return;
 		}
 	}
 
-	snprintf(thread_label, ARRAY_SIZE(thread_label), "CMDQ_IRQ_THR_%d", thread);
 	CMDQ_PROF_START(0, thread_label);
 
 	/* Read HW cookie here to print message only */
@@ -6630,7 +6763,7 @@ void cmdqCoreHandleIRQ(int32_t thread)
 
 	CMDQ_PROF_END(0, thread_label);
 
-	spin_unlock_irqrestore(&gCmdqExecLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, handle_irq_done);
 }
 
 static struct TaskStruct *cmdq_core_search_task_by_pc(uint32_t threadPC,
@@ -6686,7 +6819,7 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 
 		retry_count++;
 
-		spin_lock_irqsave(&gCmdqExecLock, flags);
+		CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, wait_task_dump);
 		cmdq_core_dump_status("INFO");
 		cmdq_core_dump_pc(pTask, thread, "INFO");
 		cmdq_core_dump_thread(thread, "INFO");
@@ -6701,7 +6834,7 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 		cmdq_core_dump_disp_trigger_loop("INFO");
 		/* end of HACK */
 
-		spin_unlock_irqrestore(&gCmdqExecLock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, wait_task_dump);
 
 		if (delay_id >= 0) {
 			/* TODO: add mechanism to detect if current thread is delaying */
@@ -6878,7 +7011,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 
 	/* Note that although we disable IRQ, HW continues to execute */
 	/* so it's possible to have pending IRQ */
-	spin_lock_irqsave(&gCmdqExecLock, flags);
+	CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, wait_task);
 
 	do {
 		struct TaskStruct *pNextTask = NULL;
@@ -7130,7 +7263,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 		cmdq_core_resume_HW_thread(thread);
 	}
 
-	spin_unlock_irqrestore(&gCmdqExecLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, wait_task_done);
 
 	if (throwAEE) {
 		const uint32_t op = (instA & 0xFF000000) >> 24;
@@ -7178,7 +7311,7 @@ static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_j
 
 		CMDQ_PROF_END(current->pid, "wait_for_thread");
 		if (waitQ == 0 || pTask->thread == CMDQ_INVALID_THREAD) {
-			mutex_lock(&gCmdqTaskMutex);
+			CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, wait_thread_done);
 			/* it's possible that the task was just consumed now. */
 			/* so check again. */
 			if (pTask->thread == CMDQ_INVALID_THREAD) {
@@ -7195,12 +7328,12 @@ static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_j
 				if (private && private->internal)
 					private->ignore_timeout = true;
 
-				mutex_unlock(&gCmdqTaskMutex);
+				CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, wait_thread_invalid);
 				return -ETIMEDOUT;
 			}
 
 			/* valid thread, so we keep going */
-			mutex_unlock(&gCmdqTaskMutex);
+			CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, wait_thread_done);
 		}
 	}
 
@@ -7500,7 +7633,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 	pTask->trigger = sched_clock();
 
-	spin_lock_irqsave(&gCmdqExecLock, flags);
+	CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, exec_task);
 
 	/* update task's thread info */
 	pTask->thread = thread;
@@ -7518,7 +7651,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 		CMDQ_MSG("EXEC: new HW thread(%d)\n", thread);
 		if (cmdq_core_reset_HW_thread(thread) < 0) {
-			spin_unlock_irqrestore(&gCmdqExecLock, flags);
+			CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, exec_task_fail);
 			return -EFAULT;
 		}
 
@@ -7592,7 +7725,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 		if (unlikely(pTask->use_sram_buffer)) {
 			CMDQ_AEE("CMDQ", "SRAM task should not execute append\n");
-			spin_unlock_irqrestore(&gCmdqExecLock, flags);
+			CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, exec_task_sram_fail);
 			return -EFAULT;
 		}
 
@@ -7605,7 +7738,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 		status = cmdq_core_suspend_HW_thread(thread, __LINE__);
 		if (status < 0) {
-			spin_unlock_irqrestore(&gCmdqExecLock, flags);
+			CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, exec_task_suspend_fail);
 			return status;
 		}
 
@@ -7643,7 +7776,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 			cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 				" oriNextCookie:%d, oriTaskCount:%d\n",
 					   cookie, pThread->taskCount);
-			CMDQ_LOG("%s", long_msg);
+			CMDQ_MSG("%s", long_msg);
 
 			/* set to pTask directly */
 			EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread));
@@ -7699,7 +7832,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 #ifdef CMDQ_APPEND_WITHOUT_SUSPEND
 				cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_APPEND_THR(thread));
 #endif
-				spin_unlock_irqrestore(&gCmdqExecLock, flags);
+				CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, exec_task_connect_fail);
 				return -EFAULT;
 			}
 
@@ -7716,7 +7849,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 #ifdef CMDQ_APPEND_WITHOUT_SUSPEND
 				cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_APPEND_THR(thread));
 #endif
-				spin_unlock_irqrestore(&gCmdqExecLock, flags);
+				CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, exec_task_invalid_task);
 				CMDQ_AEE(
 					"CMDQ", "Invalid task state for reorder, thread: %d status: %d task: 0x%p\n",
 					thread, status, pTask);
@@ -7728,6 +7861,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 			pThread->taskCount++;
 			pThread->allowDispatching = 1;
+
 		}
 
 		pThread->nextCookie += 1;
@@ -7749,7 +7883,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 #endif
 	}
 
-	spin_unlock_irqrestore(&gCmdqExecLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, exec_task_done);
 
 	CMDQ_MSG("<--EXEC: status: %d\n", status);
 
@@ -7804,12 +7938,12 @@ int32_t cmdqCoreSuspend(void)
 			pTask = list_entry(p, struct TaskStruct, listEntry);
 
 			if (pTask->thread != CMDQ_INVALID_THREAD) {
-				spin_lock_irqsave(&gCmdqExecLock, flags);
+				CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, suspend_loop);
 
 				cmdq_core_force_remove_task_from_thread(pTask, pTask->thread);
 				pTask->taskState = TASK_STATE_KILLED;
 
-				spin_unlock_irqrestore(&gCmdqExecLock, flags);
+				CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, suspend_loop);
 
 				/* release all thread and mark all active tasks as "KILLED" */
 				/* (so that thread won't release again) */
@@ -7832,9 +7966,9 @@ int32_t cmdqCoreSuspend(void)
 		cmdq_core_reset_engine_struct();
 	}
 
-	spin_lock_irqsave(&gCmdqThreadLock, flags);
+	CMDQ_PROF_SPIN_LOCK(gCmdqThreadLock, flags, suspend);
 	gCmdqSuspended = true;
-	spin_unlock_irqrestore(&gCmdqThreadLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, suspend);
 
 	CMDQ_MSG("CMDQ is suspended\n");
 	g_delay_thread_inited = false;
@@ -7848,14 +7982,14 @@ int32_t cmdq_core_resume_impl(const char *tag)
 	unsigned long flags = 0L;
 	int refCount = 0;
 
-	spin_lock_irqsave(&gCmdqThreadLock, flags);
+	CMDQ_PROF_SPIN_LOCK(gCmdqThreadLock, flags, resume);
 
 	refCount = atomic_read(&gCmdqThreadUsage);
 	CMDQ_MSG("[%s] resume, refCount:%d\n", tag, refCount);
 
 	gCmdqSuspended = false;
 
-	spin_unlock_irqrestore(&gCmdqThreadLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, resume);
 
 	if (!g_delay_thread_inited) {
 		cmdq_copy_delay_to_sram();
@@ -7982,6 +8116,7 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 	uint32_t disp_list_count = 0;
 	uint32_t user_list_count = 0;
 	uint32_t index = 0;
+	CMDQ_TIME consume_cost;
 
 	/* when we're suspending, do not execute any tasks. delay & hold them. */
 	if (gCmdqSuspended)
@@ -7991,9 +8126,10 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_done, MMPROFILE_FLAG_START, current->pid, 0);
 	consumeTime = sched_clock();
 
-	mutex_lock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, consume_wait_list);
 
 	threadAcquired = false;
+	CMDQ_PROF_TIME_BEGIN(consume_cost);
 
 	/* scan and remove (if executed) waiting tasks */
 	list_for_each_safe(p, n, &gCmdqContext.taskWaitList) {
@@ -8023,9 +8159,11 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 		}
 
 		/* Allocate hw thread */
+		CMDQ_PROF_TIME_END(consume_cost, "before_acquire_thread");
 		thread = cmdq_core_acquire_thread(pTask->engineFlag,
 						  thread_prio, pTask->scenario, needLog,
 						  pTask->secData.is_secure);
+		CMDQ_PROF_TIME_END(consume_cost, "after_acquire_thread");
 
 		if (thread == CMDQ_INVALID_THREAD) {
 			/* have to wait, remain in wait list */
@@ -8071,7 +8209,9 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 		}
 
 		/* Run task on thread */
+		CMDQ_PROF_TIME_END(consume_cost, "before_exec_task");
 		status = cmdq_core_exec_task_async_with_retry(pTask, thread);
+		CMDQ_PROF_TIME_END(consume_cost, "after_exec_task");
 		if (status < 0) {
 			CMDQ_ERR
 			    ("<--THREAD: cmdq_core_exec_task_async_with_retry fail, release task 0x%p\n",
@@ -8105,7 +8245,7 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 		wake_up_all(&gCmdqThreadDispatchQueue);
 	}
 
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, consume_wait_list);
 
 	CMDQ_PROF_END(current->pid, __func__);
 
@@ -8127,6 +8267,7 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
 {
 	struct TaskStruct *pTask = NULL;
 	int32_t status = 0;
+	CMDQ_TIME alloc_cost = 0;
 
 	if (!gCmdqSuspended && !g_delay_thread_inited
 		&& pCommandDesc->scenario != CMDQ_SCENARIO_MOVE) {
@@ -8143,16 +8284,23 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
 	CMDQ_PROF_START(current->pid, __func__);
 
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_START, current->pid, pCommandDesc->scenario);
+	alloc_cost = sched_clock();
 
 	/* Allocate Task. This creates a new task */
 	/* and put into tail of waiting list */
 	pTask = cmdq_core_acquire_task(pCommandDesc, loopCB, loopData);
 
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_END, current->pid, pCommandDesc->blockSize/8);
+	alloc_cost = sched_clock() - alloc_cost;
 
 	if (pTask == NULL) {
 		CMDQ_PROF_END(current->pid, __func__);
 		return -EFAULT;
+	}
+
+	if (alloc_cost > CMDQ_PROFILE_LIMIT_2) {
+		CMDQ_ERR("alloc task cost %llu us > %u ms\n",
+			alloc_cost/1000, CMDQ_PROFILE_LIMIT_2/1000000);
 	}
 
 	if (ppTaskOut != NULL)
@@ -8205,7 +8353,7 @@ int32_t cmdqCoreReleaseTask(struct TaskStruct *pTask)
 		/* this task is being executed (or queueed) on a HW thread */
 
 		/* get SW lock first to ensure atomic access HW */
-		spin_lock_irqsave(&gCmdqExecLock, flags);
+		CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, release_task);
 		/* make sure instructions are really in DRAM */
 		smp_mb();
 
@@ -8230,7 +8378,7 @@ int32_t cmdqCoreReleaseTask(struct TaskStruct *pTask)
 				cmdq_core_resume_HW_thread(thread);
 		}
 
-		spin_unlock_irqrestore(&gCmdqExecLock, flags);
+		CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, release_task);
 		wake_up(&gCmdWaitQueue[thread]);
 	}
 
@@ -8277,12 +8425,12 @@ int32_t cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask, struct cmdqRe
 		memset(CMDQ_U32_PTR(pResult->regValues), 0,
 		       pResult->count * sizeof(CMDQ_U32_PTR(pResult->regValues)[0]));
 
-		mutex_lock(&gCmdqTaskMutex);
+		CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, fill_reg_result);
 		for (i = 0; i < pResult->count && i < pTask->regCount; ++i) {
 			/* fill results */
 			CMDQ_U32_PTR(pResult->regValues)[i] = pTask->regResults[i];
 		}
-		mutex_unlock(&gCmdqTaskMutex);
+		CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, fill_reg_result);
 	}
 
 	cmdq_core_track_task_record(pTask, thread);
@@ -8443,12 +8591,12 @@ int32_t cmdqCoreQueryUsage(int32_t *pCount)
 
 	pEngine = gCmdqContext.engine;
 
-	spin_lock_irqsave(&gCmdqThreadLock, flags);
+	CMDQ_PROF_SPIN_LOCK(gCmdqThreadLock, flags, query_usage);
 
 	for (index = 0; index < CMDQ_MAX_ENGINE_COUNT; index++)
 		pCount[index] = pEngine[index].userCount;
 
-	spin_unlock_irqrestore(&gCmdqThreadLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, query_usage);
 
 	return 0;
 }
@@ -8464,7 +8612,7 @@ void cmdq_core_release_task_by_file_node(void *file_node)
 	/* to prevent resource leakage */
 
 	/* walk through active and waiting lists and release them */
-	mutex_lock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_by_node);
 
 	list_for_each(p, &gCmdqContext.taskActiveList) {
 		pTask = list_entry(p, struct TaskStruct, listEntry);
@@ -8510,7 +8658,7 @@ void cmdq_core_release_task_by_file_node(void *file_node)
 		}
 	}
 
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, release_task_by_node);
 }
 
 unsigned long long cmdq_core_get_GPR64(const enum CMDQ_DATA_REGISTER_ENUM regID)
@@ -8620,8 +8768,8 @@ int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
 		return -EINVAL;
 
 	/* make sure context does not change during get and copy */
-	mutex_lock(&gCmdqTaskMutex);
-	spin_lock_irqsave(&gCmdqThreadLock, flags);
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, get_running_task);
+	CMDQ_PROF_SPIN_LOCK(gCmdqThreadLock, flags, running_task);
 
 	pEngine = gCmdqContext.engine;
 	pThread = gCmdqContext.thread;
@@ -8654,13 +8802,13 @@ int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
 			uint32_t currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
 
 			CMDQ_LOG("cannot find pc (0x%08x) at thread (%d)\n", currPC, thread);
-			spin_lock_irqsave(&gCmdqExecLock, flagsExec);
+			CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flagsExec, running_task_loop);
 			cmdq_core_dump_task_in_thread(thread, false, true, false);
-			spin_unlock_irqrestore(&gCmdqExecLock, flagsExec);
+			CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flagsExec, running_task_loop);
 		}
 	}
 
-	spin_unlock_irqrestore(&gCmdqThreadLock, flags);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, running_task);
 
 	if (pTargetTask) {
 		uint32_t current_debug_str_len = pTargetTask->userDebugStr ?
@@ -8685,7 +8833,7 @@ int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
 		status = 0;
 	}
 
-	mutex_unlock(&gCmdqTaskMutex);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, get_running_task);
 
 	return status;
 }
@@ -8749,9 +8897,9 @@ int32_t cmdqCoreInitialize(void)
 	for (index = 0; index < CMDQ_INIT_FREE_TASK_COUNT; index++) {
 		pTask = cmdq_core_task_create();
 		if (pTask) {
-			mutex_lock(&gCmdqTaskMutex);
+			CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, pre_alloc_free);
 			list_add_tail(&(pTask->listEntry), &gCmdqContext.taskFreeList);
-			mutex_unlock(&gCmdqTaskMutex);
+			CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, pre_alloc_free);
 		}
 	}
 
@@ -8875,7 +9023,7 @@ void cmdqCoreDeInitialize(void)
 	/* release all tasks in both list */
 	for (index = 0; index < ARRAY_SIZE(lists); ++index) {
 		list_for_each(p, lists[index]) {
-			mutex_lock(&gCmdqTaskMutex);
+			CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, deinitialize);
 
 			pTask = list_entry(p, struct TaskStruct, listEntry);
 
@@ -8884,7 +9032,7 @@ void cmdqCoreDeInitialize(void)
 			kmem_cache_free(gCmdqContext.taskCache, pTask);
 			list_del(p);
 
-			mutex_unlock(&gCmdqTaskMutex);
+			CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, deinitialize);
 		}
 	}
 
@@ -8974,9 +9122,9 @@ int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart)
 		/* assign output pa */
 		*paStart = pWriteAddr->pa;
 
-		spin_lock_irqsave(&gCmdqWriteAddrLock, flagsWriteAddr);
+		CMDQ_PROF_SPIN_LOCK(gCmdqWriteAddrLock, flagsWriteAddr, alloc_write);
 		list_add_tail(&(pWriteAddr->list_node), &gCmdqContext.writeAddrList);
-		spin_unlock_irqrestore(&gCmdqWriteAddrLock, flagsWriteAddr);
+		CMDQ_PROF_SPIN_UNLOCK(gCmdqWriteAddrLock, flagsWriteAddr, alloc_write);
 
 		status = 0;
 
@@ -9009,7 +9157,7 @@ uint32_t cmdqCoreReadWriteAddress(dma_addr_t pa)
 	unsigned long flagsWriteAddr = 0L;
 
 	/* search for the entry */
-	spin_lock_irqsave(&gCmdqWriteAddrLock, flagsWriteAddr);
+	CMDQ_PROF_SPIN_LOCK(gCmdqWriteAddrLock, flagsWriteAddr, read_write_addr);
 	list_for_each(p, &gCmdqContext.writeAddrList) {
 		pWriteAddr = list_entry(p, struct WriteAddrStruct, list_node);
 		if (pWriteAddr == NULL)
@@ -9028,7 +9176,7 @@ uint32_t cmdqCoreReadWriteAddress(dma_addr_t pa)
 			break;
 		}
 	}
-	spin_unlock_irqrestore(&gCmdqWriteAddrLock, flagsWriteAddr);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqWriteAddrLock, flagsWriteAddr, read_write_addr);
 
 	return value;
 }
@@ -9044,7 +9192,7 @@ uint32_t cmdqCoreWriteWriteAddress(dma_addr_t pa, uint32_t value)
 	s32 msg_max_size;
 
 	/* search for the entry */
-	spin_lock_irqsave(&gCmdqWriteAddrLock, flagsWriteAddr);
+	CMDQ_PROF_SPIN_LOCK(gCmdqWriteAddrLock, flagsWriteAddr, write_write_addr);
 	list_for_each(p, &gCmdqContext.writeAddrList) {
 		pWriteAddr = list_entry(p, struct WriteAddrStruct, list_node);
 		if (pWriteAddr == NULL)
@@ -9068,7 +9216,7 @@ uint32_t cmdqCoreWriteWriteAddress(dma_addr_t pa, uint32_t value)
 			break;
 		}
 	}
-	spin_unlock_irqrestore(&gCmdqWriteAddrLock, flagsWriteAddr);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqWriteAddrLock, flagsWriteAddr, write_write_addr);
 
 	return value;
 }
@@ -9084,7 +9232,7 @@ int cmdqCoreFreeWriteAddress(dma_addr_t paStart)
 	foundEntry = false;
 
 	/* search for the entry */
-	spin_lock_irqsave(&gCmdqWriteAddrLock, flagsWriteAddr);
+	CMDQ_PROF_SPIN_LOCK(gCmdqWriteAddrLock, flagsWriteAddr, free_write_addr);
 	list_for_each_safe(p, n, &gCmdqContext.writeAddrList) {
 		pWriteAddr = list_entry(p, struct WriteAddrStruct, list_node);
 		if (pWriteAddr && pWriteAddr->pa == paStart) {
@@ -9093,7 +9241,7 @@ int cmdqCoreFreeWriteAddress(dma_addr_t paStart)
 			break;
 		}
 	}
-	spin_unlock_irqrestore(&gCmdqWriteAddrLock, flagsWriteAddr);
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqWriteAddrLock, flagsWriteAddr, free_write_addr);
 
 	/* when list is not empty, we always get a entry even we don't found a valid entry */
 	/* use foundEntry to confirm search result */

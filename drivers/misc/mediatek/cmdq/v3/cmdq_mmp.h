@@ -34,6 +34,7 @@ struct CMDQ_MMP_events_t {
 	mmp_event MDP_reset;
 	mmp_event thread_suspend;
 	mmp_event thread_resume;
+	mmp_event alloc_buffer;
 };
 
 void cmdq_mmp_init(void);
