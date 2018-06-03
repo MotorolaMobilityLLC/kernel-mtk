@@ -417,6 +417,11 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 	struct fhctl_ipi_data ipi_data;
 	struct fh_pll_t fh_pll;
 
+	if ((fh_ctl->pll_id == 2) || (fh_ctl->pll_id == 6) || (fh_ctl->pll_id == 10)) {
+		/* FHCTL not support  */
+		return retVal;
+	}
+
 	FH_MSG("%s for pll %d", __func__, fh_ctl->pll_id);
 
 	/* Check the out of range of frequency hopping PLL ID */
@@ -495,6 +500,12 @@ static void mt_fh_hal_default_conf(void)
 static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_dds)
 {
 	struct fhctl_ipi_data ipi_data;
+
+	if ((pll_id == 2) || (pll_id == 6) || (pll_id == 10)) {
+		/* FHCTL not support  */
+		return 0;
+	}
+
 
 	VALIDATE_PLLID(pll_id);
 	if (g_initialize == 0) {
