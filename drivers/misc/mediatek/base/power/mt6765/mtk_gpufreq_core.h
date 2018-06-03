@@ -26,7 +26,7 @@
 /**************************************************
  * MT6762 segment_2 : GPU DVFS OPP table Setting
  **************************************************/
-#define SEG2_GPU_DVFS_FREQ0			(660000)/* KHz */
+#define SEG2_GPU_DVFS_FREQ0			(650000)/* KHz */
 #define SEG2_GPU_DVFS_FREQ1			(500000)/* KHz */
 #define SEG2_GPU_DVFS_FREQ2			(400000)/* KHz */
 
@@ -260,6 +260,8 @@ struct g_clk_info {
 struct g_pmic_info {
 	struct regulator *reg_vgpu;
 	struct regulator *reg_vsram_gpu;
+	struct regulator *reg_vcore;
+	struct pm_qos_request pm_vgpu;
 };
 
 /**************************************************
