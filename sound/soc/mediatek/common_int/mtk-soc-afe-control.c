@@ -3050,6 +3050,8 @@ static void update_sram_block_valid(enum audio_sram_mode mode)
 		if ((i + 1) * mAud_Sram_Manager.mBlockSize >
 		    sram_mode_size[mode]) {
 			mAud_Sram_Manager.mAud_Sram_Block[i].mValid = false;
+		} else {
+			mAud_Sram_Manager.mAud_Sram_Block[i].mValid = true;
 		}
 	}
 }
