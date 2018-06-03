@@ -17,7 +17,7 @@
 /* use bit 0 - 7 of IN_IRQ of mailbox 0 */
 #define IPI_ID_PLATFORM     0  /* the following will use mbox 0 */
 #define IPI_ID_CPU_DVFS     1
-#define IPI_ID_GPU_DVFS     2
+#define IPI_ID_TST1         2
 #define IPI_ID_FHCTL        3
 #define IPI_ID_PMIC         4
 /* use bit 8 - 15 of IN_IRQ of mailbox 1 */

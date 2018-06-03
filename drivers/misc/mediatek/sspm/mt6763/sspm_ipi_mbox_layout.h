@@ -31,7 +31,7 @@
 /* definition of slot size for received PINs */
 #define PINS_SIZE_PLATFORM       3  /* the following will use mbox 0 */
 #define PINS_SIZE_CPU_DVFS       4
-#define PINS_SIZE_GPU_DVFS       3
+#define PINS_SIZE_TST1           4
 #define PINS_SIZE_FHCTL          9
 #define PINS_SIZE_PMIC           5
 /* ============================================================ */
@@ -43,8 +43,8 @@
 /* definition of slot offset for PINs */
 #define PINS_OFFSET_PLATFORM     0  /* the following will use mbox 0 */
 #define PINS_OFFSET_CPU_DVFS     (PINS_OFFSET_PLATFORM + PINS_SIZE_PLATFORM)
-#define PINS_OFFSET_GPU_DVFS     (PINS_OFFSET_CPU_DVFS + PINS_SIZE_CPU_DVFS)
-#define PINS_OFFSET_FHCTL        (PINS_OFFSET_GPU_DVFS + PINS_SIZE_GPU_DVFS)
+#define PINS_OFFSET_TST1         (PINS_OFFSET_CPU_DVFS + PINS_SIZE_CPU_DVFS)
+#define PINS_OFFSET_FHCTL        (PINS_OFFSET_TST1 + PINS_SIZE_TST1)
 #define PINS_OFFSET_PMIC         (PINS_OFFSET_FHCTL + PINS_SIZE_FHCTL)
 #define PINS_MBOX0_USED          (PINS_OFFSET_PMIC + PINS_SIZE_PMIC)
 #if (PINS_MBOX0_USED > IPI_MBOX0_SLOTS)
@@ -62,12 +62,12 @@
 /* definition of slot size for received PINs */
 #define PINR_SIZE_PLATFORM       3  /* the following will use mbox 2 */
 #define PINR_SIZE_CPU_DVFS       4
-#define PINR_SIZE_GPU_DVFS       3
+#define PINR_SIZE_TST1           4
 /* definition of slot offset for PINs */
 #define PINR_OFFSET_PLATFORM     0  /* the following will use mbox 2 */
 #define PINR_OFFSET_CPU_DVFS     (PINR_OFFSET_PLATFORM + PINR_SIZE_PLATFORM)
-#define PINR_OFFSET_GPU_DVFS     (PINR_OFFSET_CPU_DVFS + PINR_SIZE_CPU_DVFS)
-#define PINR_MBOX2_USED          (PINR_OFFSET_GPU_DVFS + PINR_SIZE_GPU_DVFS)
+#define PINR_OFFSET_TST1         (PINR_OFFSET_CPU_DVFS + PINR_SIZE_CPU_DVFS)
+#define PINR_MBOX2_USED          (PINR_OFFSET_TST1 + PINR_SIZE_TST1)
 #if (PINR_MBOX2_USED > IPI_MBOX2_SLOTS)
 #error "MBOX2 cannot hold all pin definitions"
 #endif

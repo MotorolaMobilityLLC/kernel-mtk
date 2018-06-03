@@ -19,7 +19,7 @@
 struct _pin_send send_pintable[] = {
 	{{{0} }, {0}, 0, PINS_OFFSET_PLATFORM, PINS_SIZE_PLATFORM, 0, 1, 0, 0, 0, 0}, /* platform */
 	{{{0} }, {0}, 0, PINS_OFFSET_CPU_DVFS, PINS_SIZE_CPU_DVFS, 0, 1, 0, 0, 0, 0}, /* CPU DVFS */
-	{{{0} }, {0}, 0, PINS_OFFSET_GPU_DVFS, PINS_SIZE_GPU_DVFS, 0, 1, 0, 0, 0, 0}, /* GPU DVFS */
+	{{{0} }, {0}, 0, PINS_OFFSET_TST1, PINS_SIZE_TST1, 0, 1, 0, 0, 0, 0}, /* GPU DVFS */
 	{{{0} }, {0}, 0, PINS_OFFSET_FHCTL,  PINS_SIZE_FHCTL, 0, 1, 0, 0, 0, 0},  /* FHCTL */
 	{{{0} }, {0}, 0, PINS_OFFSET_PMIC,  PINS_SIZE_PMIC, 0, 1, 0, 0, 0, 0},  /* PMIC */
 	/*====================================================================*/
@@ -34,7 +34,7 @@ struct _pin_send send_pintable[] = {
 struct _pin_recv recv_pintable[] = {
 	{NULL, 2, PINR_OFFSET_PLATFORM, PINR_SIZE_PLATFORM, 0, 1, 0, 0, 0},   /* platform */
 	{NULL, 2, PINR_OFFSET_CPU_DVFS, PINR_SIZE_CPU_DVFS, 0, 1, 0, 0, 0},   /* CPU DVFS */
-	{NULL, 2, PINR_OFFSET_GPU_DVFS, PINR_SIZE_GPU_DVFS, 0, 1, 0, 0, 0},   /* GPU DVFS */
+	{NULL, 2, PINR_OFFSET_TST1, PINR_SIZE_TST1, 0, 1, 0, 0, 0},   /* GPU DVFS */
 };
 #define TOTAL_RECV_PIN      (sizeof(recv_pintable)/sizeof(struct _pin_recv))
 
@@ -49,7 +49,7 @@ struct _mbox_info mbox_table[IPI_MBOX_TOTAL] = {
 static char *pin_name[IPI_ID_TOTAL] = {
 	"PLATFORM",
 	"CPU_DVFS",
-	"GPU_DVFS",
+	"TST1",
 	"FHCTL",
 	"PMIC",
 	"MCDI",
