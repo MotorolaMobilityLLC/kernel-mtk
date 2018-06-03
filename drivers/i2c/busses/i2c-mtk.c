@@ -333,9 +333,11 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 		}
 	}
 #endif
-	if (i2c->have_scp)
-		id = (int)i2c->scp_ch;
-	else
+	if (i2c->have_scp) {
+		if (i2c->scp_ch == -1)
+			return 0;
+		id = i2c->scp_ch;
+	} else
 		id = i2c->id;
 
 	switch (id) {
@@ -356,14 +358,21 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 
 static int i2c_release_semaphore(struct mt_i2c *i2c)
 {
+	int id;
 	if (i2c->appm)
 		cpuhvfs_release_dvfsp_semaphore(SEMA_I2C_DRV);
 #ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 	if (i2c->gpupm)
 		dvfs_gpu_pm_spin_unlock_for_vgpu();
 #endif
+	if (i2c->have_scp) {
+		if (i2c->scp_ch == -1)
+			return 0;
+		id = i2c->scp_ch;
+	} else
+		id = i2c->id;
 
-	switch (i2c->id) {
+	switch (id) {
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	case 0:
 		return release_scp_semaphore(SEMAPHORE_I2C0) == 1 ? 0 : -EBUSY;
@@ -1409,7 +1418,7 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	of_property_read_u32(np, "ch_offset_default", &i2c->ch_offset_default);
 	of_property_read_u32(np, "dma_ch_offset_default", &i2c->dma_ch_offset_default);
 	of_property_read_u32(np, "aed", &i2c->aed);
-	ret = of_property_read_u32(np, "scp-ch", &i2c->scp_ch);
+	ret = of_property_read_s32(np, "scp-ch", &i2c->scp_ch);
 	if (ret >= 0)
 		i2c->have_scp = true;
 

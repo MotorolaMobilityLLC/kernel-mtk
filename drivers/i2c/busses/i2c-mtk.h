@@ -347,7 +347,7 @@ struct mt_i2c {
 	int dma_ch_offset_default;
 	int dma_ch_offset;
 	bool have_scp;
-	u32 scp_ch;
+	int scp_ch;
 };
 
 #if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
