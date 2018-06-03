@@ -41,11 +41,14 @@
 #include "ddp_color.h"
 #include "cmdq_def.h"
 
+#if defined(CONFIG_MACH_MT6757)
+#include "mt-plat/mtk_chip.h"
+#endif
+
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define COLOR_SUPPORT_PARTIAL_UPDATE
 #endif
-
 
 /* global PQ param for kernel space */
 static struct DISP_PQ_PARAM g_Color_Param[2] = {
@@ -1022,6 +1025,13 @@ static unsigned long g_mdp_rdma0_va;
 
 static unsigned long g_tdshp_va;
 
+/* set cboost_en = 0 for projects before 6755 to resolve contour in some special color pattern */
+#if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6799)
+static bool g_config_cboost_en = true;
+#else
+static bool g_config_cboost_en;
+#endif
+
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
 			   unsigned int hue_upper, unsigned int hue_lower)
 {
@@ -1208,10 +1218,8 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0x80 << 16, 0x00FF0000);
 #endif
 
-#if !defined(CONFIG_MACH_MT6797) && !defined(CONFIG_MACH_MT6799)
-	/* set cboost_en = 0 for projects before 6755 */
-	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
-#endif
+	if (g_config_cboost_en == false)
+		_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
 
 #if defined(COLOR_2_1)
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
@@ -1506,10 +1514,8 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0x80 << 16, 0x00FF0000);
 #endif
 
-#if !defined(CONFIG_MACH_MT6797) && !defined(CONFIG_MACH_MT6799)
-	/* set cboost_en = 0 for projects before 6755 */
-	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
-#endif
+	if (g_config_cboost_en == false)
+		_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
 
 #if defined(COLOR_2_1)
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
@@ -2358,7 +2364,10 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 #if defined(SUPPORT_HDR)
 	g_mdp_rdma0_va = color_get_MDP_RDMA0_VA();
 #endif
-
+#if defined(CONFIG_MACH_MT6757)
+	if (mt_get_chip_hw_ver() >= 0xCB00)
+		g_config_cboost_en = true;
+#endif
 	return 0;
 }
 
