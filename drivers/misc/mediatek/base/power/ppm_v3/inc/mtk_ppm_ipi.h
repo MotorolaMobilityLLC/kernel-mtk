@@ -46,6 +46,7 @@ struct ppm_ipi_data {
 				unsigned char max_cpu_core;
 				unsigned char advise_cpufreq_idx;
 			} cluster_limit[NR_PPM_CLUSTERS];
+			unsigned int reserved[PPM_D_LEN-NR_PPM_CLUSTERS-1];
 		} update_limit;
 		struct {
 			unsigned int budget;
@@ -53,6 +54,9 @@ struct ppm_ipi_data {
 		struct {
 			unsigned int activate;
 		} ptpod_test;
+		struct {
+			unsigned int ppm_data[6];
+		};
 	} u;
 };
 
