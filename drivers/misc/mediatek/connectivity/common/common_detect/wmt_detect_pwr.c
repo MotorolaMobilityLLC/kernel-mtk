@@ -52,8 +52,8 @@ int _wmt_detect_output_low(unsigned int id)
 {
 	if (gpio_ctrl_info.gpio_ctrl_state[id].gpio_num != INVALID_PIN_ID) {
 		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num, 0);
-		WMT_DETECT_DBG_FUNC("WMT-DETECT: set GPIO%d to output %d\n",
-				gpio_ctrl_info.gpio_ctrl_state[id].gpio_num,
+		WMT_DETECT_INFO_FUNC("WMT-DETECT: set GPIO%d to output %d\n",
+				gpio_ctrl_info.gpio_ctrl_state[id].gpio_num-280,
 				gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num));
 	}
 
@@ -64,8 +64,8 @@ int _wmt_detect_output_high(unsigned int id)
 {
 	if (gpio_ctrl_info.gpio_ctrl_state[id].gpio_num != INVALID_PIN_ID) {
 		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num, 1);
-		WMT_DETECT_DBG_FUNC("WMT-DETECT: set GPIO%d to output %d\n",
-				gpio_ctrl_info.gpio_ctrl_state[id].gpio_num,
+		WMT_DETECT_INFO_FUNC("WMT-DETECT: set GPIO%d to output %d\n",
+				gpio_ctrl_info.gpio_ctrl_state[id].gpio_num-280,
 				gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[id].gpio_num));
 	}
 
@@ -96,6 +96,7 @@ int _wmt_detect_read_gpio_input(unsigned int id)
 static int wmt_detect_chip_pwr_on(void)
 {
 	int retval = -1;
+
 	/*setting validiation check*/
 	if ((gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num == INVALID_PIN_ID) ||
 		(gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_num == INVALID_PIN_ID)) {
@@ -179,7 +180,6 @@ static int wmt_detect_chip_pwr_on(void)
 	/*RST output high, and sleep for power on stable time */
 	_wmt_detect_output_high(GPIO_COMBO_RST_PIN);
 	msleep(MAX_ON_STABLE_TIME);
-
 	retval = 0;
 	return retval;
 }

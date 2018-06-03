@@ -258,6 +258,41 @@ GPIO_CTRL_INFO gpio_ctrl_info;
 *                              F U N C T I O N S
 ********************************************************************************
 */
+int __weak mt_get_gpio_mode_base(unsigned long pin)
+{
+	return 0;
+}
+
+int __weak mt_get_gpio_pull_select_base(unsigned long pin)
+{
+	return 0;
+}
+
+int __weak mt_get_gpio_in_base(unsigned long pin)
+{
+	return 0;
+}
+
+int __weak mt_get_gpio_out_base(unsigned long pin)
+{
+	return 0;
+}
+
+int __weak mt_get_gpio_pull_enable_base(unsigned long pin)
+{
+	return 0;
+}
+
+int __weak mt_get_gpio_dir_base(unsigned long pin)
+{
+	return 0;
+}
+
+int __weak mt_get_gpio_ies_base(unsigned long pin)
+{
+	return 0;
+}
+
 INT32 wmt_gpio_init(struct platform_device *pdev)
 {
 	INT32 iret = 0;
@@ -421,4 +456,42 @@ INT32 wmt_gpio_deinit(VOID)
 	}
 
 	return iret;
+}
+
+VOID _wmt_dump_gpio_regs(INT32 idx)
+{
+	ULONG idxl = (ULONG)idx;
+
+	pr_err("PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES]\n");
+	pr_err("idx = %3d: %d %d %d %d %d %d %d\n",
+	       idx, mt_get_gpio_mode_base(idxl),
+	       mt_get_gpio_pull_select_base(idxl),
+	       mt_get_gpio_in_base(idxl),
+	       mt_get_gpio_out_base(idxl),
+	       mt_get_gpio_pull_enable_base(idxl),
+	       mt_get_gpio_dir_base(idxl),
+	       mt_get_gpio_ies_base(idxl));
+}
+
+VOID _wmt_gpio_pre_regs(INT32 num, WMT_GPIO_STATE_INFO *gpio_state)
+{
+	gpio_state->gpio_num = num;
+	gpio_state->mode = mt_get_gpio_mode_base(num);
+	gpio_state->pull_sel = mt_get_gpio_pull_select_base(num);
+	gpio_state->in = mt_get_gpio_in_base(num);
+	gpio_state->out = mt_get_gpio_out_base(num);
+	gpio_state->pull_en = mt_get_gpio_pull_enable_base(num);
+	gpio_state->dir = mt_get_gpio_dir_base(num);
+	gpio_state->ies = mt_get_gpio_ies_base(num);
+
+}
+
+VOID _wmt_dump_gpio_pre_regs(WMT_GPIO_STATE_INFO gpio_state)
+{
+	pr_err("PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES]\n");
+	pr_err("idx = %3d: %d %d %d %d %d %d %d\n",
+		gpio_state.gpio_num, gpio_state.mode,
+		gpio_state.pull_sel, gpio_state.in,
+		gpio_state.out, gpio_state.pull_en,
+		gpio_state.dir, gpio_state.ies);
 }

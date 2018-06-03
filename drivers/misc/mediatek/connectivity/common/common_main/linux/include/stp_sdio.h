@@ -72,8 +72,8 @@
 #define CTMDPCR0	(0x00B8)
 #define CTMDPCR1	(0x00BC)
 #define CSR		(0x00D8)	/* MT6630 & MT6632 only for the moment */
-#define SWPCDBGR	(0x0154)
-#define CCCR_F8	(0X00F8)
+
+
 
 /* Common HIF register bit field address */
 /* CCCR_F0*/
@@ -313,5 +313,7 @@ INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 		MTK_WCN_HIF_SDIO_CLTCTX clt_ctx, UINT32 offset, PUINT32 pData, UINT32 len);
 VOID stp_sdio_retry_flag_ctrl(INT32 flag);
 INT32 stp_sdio_retry_flag_get(VOID);
+INT32 stp_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx);
+INT32 stp_sdio_issue_fake_coredump(UINT8 *str);
 
 #endif				/* _STP_SDIO_H */

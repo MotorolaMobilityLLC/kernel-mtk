@@ -42,7 +42,6 @@
 #include <linux/proc_fs.h>
 #include "hif_sdio.h"
 #include "wmt_gpio.h"
-
 /* #include "hif_sdio_chrdev.h" */
 
 #define mmc_power_up_ext(x)
@@ -118,7 +117,7 @@ static _osal_inline_ INT32 hif_sdio_deep_sleep_info_init(VOID);
 static _osal_inline_ INT32 hif_sdio_deep_sleep_info_set_act(UINT32 chipid, UINT16 func_num,
 		MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT8 act_flag);
 
-static INT32 _hif_sdio_wake_up_ctrl(VOID);
+static INT32 _hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx);
 
 static _osal_inline_ INT32 wmt_tra_sdio_update(VOID);
 
@@ -422,7 +421,7 @@ static _osal_inline_ INT32 hif_sdio_deep_sleep_info_set_act(UINT32 chipid, UINT1
 	return 0;
 }
 
-static INT32 _hif_sdio_wake_up_ctrl(VOID)
+static INT32 _hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 {
 	INT32 ret = 0;
 	INT32 gpio_state = -1;
@@ -431,9 +430,27 @@ static INT32 _hif_sdio_wake_up_ctrl(VOID)
 	INT32 sec = 0;
 	INT32 usec = 0;
 	INT32 polling_counter = 0;
+	UINT8 cccr_value = 0x0;
+	UINT32 cpupcr_value = 0x00;
+	INT32 i = 0;
+	UINT32 delay_us = 500;
+	WMT_GPIO_STATE_INFO gpio_state_list[2];
 
-	/*1.pull GPIO_CHIP_WAKE_UP_PIN  out 0*/
 	HIF_SDIO_DBG_FUNC("wakeup  chip from deep sleep!\n");
+	if (gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].gpio_num != DEFAULT_PIN_ID) {
+		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].gpio_num, 1);
+		HIF_SDIO_DBG_FUNC("wmt_gpio:set GPIO_CHIP_WAKE_UP_PIN out to 1: %d!\n",
+		gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].gpio_num));
+	} else {
+		HIF_SDIO_ERR_FUNC("wmt_gpio:get GPIO_CHIP_WAKE_UP_PIN number error!\n");
+		return -2;
+	}
+	/*1.pull GPIO_CHIP_WAKE_UP_PIN  out 0*/
+	gpio_state_list[0].gpio_num =  gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].gpio_num-280;
+	_wmt_gpio_pre_regs(gpio_state_list[0].gpio_num,  &gpio_state_list[0]);
+	gpio_state_list[1].gpio_num =  gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_DEEP_SLEEP_PIN].gpio_num-280;
+	_wmt_gpio_pre_regs(gpio_state_list[1].gpio_num,  &gpio_state_list[1]);
+
 	if (gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].gpio_num != DEFAULT_PIN_ID) {
 		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].gpio_num, 0);
 		HIF_SDIO_DBG_FUNC("wmt_gpio:set GPIO_CHIP_WAKE_UP_PIN out to 0: %d!\n",
@@ -446,27 +463,56 @@ static INT32 _hif_sdio_wake_up_ctrl(VOID)
 	osal_gettimeofday(&sec_old, &usec_old);
 	HIF_SDIO_DBG_FUNC("wakeup flow, prepare polling DEEP_SLEEP_PIN high state, timing: %d us\n", usec_old);
 	while (1) {
+		osal_gettimeofday(&sec, &usec);
 		gpio_state =
 			gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_DEEP_SLEEP_PIN].gpio_num);
-		osal_gettimeofday(&sec, &usec);
 		if (gpio_state == 0) {
 			HIF_SDIO_DBG_FUNC("wmt_gpio:Polling GPIO_CHIP_DEEP_SLEEP_PIN low success!\n");
-			if ((usec - usec_old) >= 10000)
+			if (polling_counter >= 20)
 				HIF_SDIO_WARN_FUNC
-					("polling [GPIO_CHIP_DEEP_SLEEP_PIN] low success but over 10ms, time=(%d)us\n",
-					(usec - usec_old));
+					("polling ACK_B pin low success but over 20 count, time:%dus, count:%d\n",
+					(usec - usec_old), polling_counter);
 			polling_counter = 0;
 			break;
 		}
-		polling_counter++;
-		osal_gettimeofday(&sec, &usec);
-		if ((usec - usec_old) >= 30000) {
+		if (polling_counter >= 60) {
 			HIF_SDIO_ERR_FUNC
-				("wake up fail!, polling [GPIO_CHIP_DEEP_SLEEP_PIN] low over 30ms, timing:%dus\n",
-				usec - usec_old);
+				("wake up fail!, polling ACK_B pin low over 50 count, time:%dus, count:%d\n",
+				(usec - usec_old), polling_counter);
+			HIF_SDIO_INFO_FUNC("Dump EINT_B, ACT_B history states!\n");
+			_wmt_dump_gpio_pre_regs(gpio_state_list[0]);
+			_wmt_dump_gpio_pre_regs(gpio_state_list[1]);
+			HIF_SDIO_INFO_FUNC("Dump EINT_B, ACT_B current states!\n");
+			_wmt_dump_gpio_regs(gpio_state_list[0].gpio_num);
+			_wmt_dump_gpio_regs(gpio_state_list[1].gpio_num);
+
+			HIF_SDIO_INFO_FUNC("read cccr info !\n");
+			for (i = 0; i < 8; i++) {
+				ret = mtk_wcn_hif_sdio_f0_readb(ctx, CCCR_F8 + i, &cccr_value);
+			if (ret)
+				HIF_SDIO_ERR_FUNC("read CCCR fail(%d), address(0x%x)\n", ret, CCCR_F8 + i);
+			else
+				HIF_SDIO_INFO_FUNC("read CCCR value(0x%x), address(0x%x)\n",
+						   cccr_value, CCCR_F8 + i);
+				cccr_value = 0x0;
+			}
+
+			HIF_SDIO_INFO_FUNC("read cpupcr info !\n");
+			for (i = 0; i < 5; i++) {
+				ret = mtk_wcn_hif_sdio_readl(ctx, SWPCDBGR, &cpupcr_value);
+				if (ret)
+					HIF_SDIO_ERR_FUNC("read cpupcr fail, ret(%d)\n", ret);
+				else
+				HIF_SDIO_ERR_FUNC("read cpupcr value (0x%x)\n", cpupcr_value);
+				msleep(20);
+			}
+			_wmt_dump_gpio_regs(gpio_state_list[0].gpio_num);
+			_wmt_dump_gpio_regs(gpio_state_list[1].gpio_num);
 			ret = -11;
 			break;
 		}
+		polling_counter++;
+		osal_usleep_range(delay_us, 2 * delay_us);
 	}
 	/*3.pull GPIO_CHIP_WAKE_UP_PIN high, clear interrupt*/
 	if (gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_WAKE_UP_PIN].gpio_num != DEFAULT_PIN_ID) {
@@ -487,7 +533,7 @@ INT32 mtk_wcn_hif_sdio_deep_sleep_flag_set(MTK_WCN_BOOL flag)
 	return 0;
 }
 #endif
-INT32 mtk_wcn_hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
+INT32 hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 {
 	UINT32 i = 0;
 	UINT32 j = 0;
@@ -527,13 +573,12 @@ INT32 mtk_wcn_hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 		p_ds_clt_info->func_num, p_ds_info->chip_id);
 	if (g_hif_deep_sleep_flag) {
 		HIF_SDIO_DBG_FUNC("deep sleep feature is enable!\n");
-		ret = _hif_sdio_wake_up_ctrl();
+		ret = _hif_sdio_wake_up_ctrl(ctx);
 	} else
 		HIF_SDIO_DBG_FUNC("deep sleep feature is disable!\n");
 	mutex_unlock(&(g_hif_sdio_ds_info_list[i].lock));
 	return ret;
 }
-EXPORT_SYMBOL(mtk_wcn_hif_sdio_wake_up_ctrl);
 
 /*!
  * \brief MTK hif sdio client registration function
