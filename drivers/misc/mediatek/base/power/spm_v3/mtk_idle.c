@@ -36,6 +36,7 @@
 #include <mt-plat/sync_write.h>
 #include <mach/mtk_gpt.h>
 #include <mtk_spm.h>
+#include <mtk_spm_dpidle.h>
 #include <mtk_spm_idle.h>
 #ifdef CONFIG_THERMAL
 #include <mach/mtk_thermal.h>
@@ -1298,6 +1299,8 @@ static void dpidle_post_process(int cpu)
 	mtk_idle_notifier_call_chain(DPIDLE_END);
 
 	ufs_cb_after_xxidle();
+
+	spm_dpidle_notify_sspm_after_wfi_async_wait();
 
 	dpidle_cnt[cpu]++;
 }

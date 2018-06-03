@@ -764,9 +764,18 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 	spm_d.u.suspend.spm_opt = spm_opt;
 	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
 
-	ret = spm_to_sspm_command(SPM_DPIDLE_ENTER, &spm_d);
+	ret = spm_to_sspm_command_async(SPM_DPIDLE_ENTER, &spm_d);
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
+}
+
+static void spm_dpidle_notify_spm_before_wfi_async_wait(void)
+{
+	int ret = 0;
+
+	ret = spm_to_sspm_command_async_wait(SPM_DPIDLE_ENTER);
+	if (ret < 0)
+		spm_crit2("SPM_DPIDLE_ENTER async wait: ret %d", ret);
 }
 
 static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle, u32 operation_cond)
@@ -786,16 +795,33 @@ static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle, u32 operation_co
 
 	spm_d.u.suspend.spm_opt = spm_opt;
 
-	ret = spm_to_sspm_command(SPM_DPIDLE_LEAVE, &spm_d);
+	ret = spm_to_sspm_command_async(SPM_DPIDLE_LEAVE, &spm_d);
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
+}
+
+void spm_dpidle_notify_sspm_after_wfi_async_wait(void)
+{
+	int ret = 0;
+
+	ret = spm_to_sspm_command_async_wait(SPM_DPIDLE_LEAVE);
+	if (ret < 0)
+		spm_crit2("SPM_DPIDLE_LEAVE async wait: ret %d", ret);
 }
 #else
 static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_cond, struct pwr_ctrl *pwrctrl)
 {
 }
 
+static void spm_dpidle_notify_spm_before_wfi_async_wait(void)
+{
+}
+
 static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle, u32 operation_cond)
+{
+}
+
+void spm_dpidle_notify_sspm_after_wfi_async_wait(void)
 {
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
@@ -817,8 +843,6 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 {
 	unsigned int resource_usage = 0;
 
-	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle, operation_cond, pwrctrl);
-
 	spm_dpidle_pre_process(operation_cond, pwrctrl);
 
 	/* Get SPM resource request and update reg_spm_xxx_req */
@@ -833,8 +857,6 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 
 static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle, u32 operation_cond)
 {
-	spm_dpidle_notify_sspm_after_wfi(sleep_dpidle, operation_cond);
-
 	spm_dpidle_post_process();
 }
 
@@ -884,8 +906,6 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 		__spm_set_pcm_wdt(1);
 #endif
 
-	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle, operation_cond, pwrctrl);
-
 	spm_dpidle_pre_process(operation_cond, pwrctrl);
 
 	__spm_kick_pcm_to_run(pwrctrl);
@@ -893,8 +913,6 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 
 static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle, u32 operation_cond)
 {
-	spm_dpidle_notify_sspm_after_wfi(sleep_dpidle, operation_cond);
-
 	spm_dpidle_post_process();
 
 #if SPM_PCMWDT_EN
@@ -1038,6 +1056,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
+	spm_dpidle_notify_sspm_before_wfi(false, operation_cond, pwrctrl);
+
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
@@ -1068,6 +1088,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
 #endif
 
+	spm_dpidle_notify_spm_before_wfi_async_wait();
+
 	/* Dump low power golden setting */
 	if (operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)
 		mt_power_gs_dump_dpidle();
@@ -1079,6 +1101,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 #endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_WFI);
+
+	spm_dpidle_notify_sspm_after_wfi(false, operation_cond);
 
 	__spm_get_wakeup_status(&wakesta);
 
@@ -1199,6 +1223,8 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
+	spm_dpidle_notify_sspm_before_wfi(false, 0, pwrctrl);
+
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
@@ -1226,11 +1252,15 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_pcm_setup_before_wfi(true, cpu, pcmdesc, pwrctrl, 0);
 
+	spm_dpidle_notify_spm_before_wfi_async_wait();
+
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_WFI);
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_LEAVE_WFI);
+
+	spm_dpidle_notify_sspm_after_wfi(false, 0);
 
 	__spm_get_wakeup_status(&wakesta);
 
@@ -1275,6 +1305,8 @@ RESTORE_IRQ:
 	/* restore original dpidle setting */
 	pwrctrl->timer_val = dpidle_timer_val;
 	pwrctrl->wake_src = dpidle_wake_src;
+
+	spm_dpidle_notify_sspm_after_wfi_async_wait();
 
 	spm_dpidle_footprint(0);
 

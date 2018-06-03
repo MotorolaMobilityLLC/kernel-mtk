@@ -949,12 +949,58 @@ EXPORT_SYMBOL(mt_spm_dcs_s1_setting);
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 
+#define SPM_D_LEN		(8) /* # of cmd + arg0 + arg1 + ... */
+#define SPM_VCOREFS_D_LEN	(4) /* # of cmd + arg0 + arg1 + ... */
+
 #include <sspm_ipi.h>
+
+int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
+{
+	unsigned int ret = 0;
+
+	switch (cmd) {
+	case SPM_DPIDLE_ENTER:
+	case SPM_DPIDLE_LEAVE:
+		spm_d->cmd = cmd;
+		ret = sspm_ipi_send_async(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN);
+		if (ret != 0)
+			pr_err("#@# %s(%d) sspm_ipi_send_async(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+		break;
+	default:
+		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
+		break;
+	}
+
+	return ret;
+}
+
+int spm_to_sspm_command_async_wait(u32 cmd)
+{
+	int ack_data;
+	unsigned int ret = 0;
+
+	switch (cmd) {
+	case SPM_DPIDLE_ENTER:
+	case SPM_DPIDLE_LEAVE:
+		ret = sspm_ipi_send_async_wait(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, &ack_data);
+
+		if (ret != 0) {
+			pr_err("#@# %s(%d) sspm_ipi_send_async_wait(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+		} else if (ack_data < 0) {
+			ret = ack_data;
+			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+		}
+		break;
+	default:
+		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
+		break;
+	}
+
+	return ret;
+}
 
 int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 {
-#define SPM_D_LEN		(8) /* # of cmd + arg0 + arg1 + ... */
-#define SPM_VCOREFS_D_LEN	(4) /* # of cmd + arg0 + arg1 + ... */
 	int ack_data;
 	unsigned int ret = 0;
 	/* struct spm_data _spm_d; */
