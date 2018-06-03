@@ -46,7 +46,9 @@
 #include <pmic.h>
 #include "mt6336.h"
 
+#if !defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT)
 #define __SW_CHRDET_IN_PROBE_PHASE__
+#endif
 
 static CHARGER_TYPE g_chr_type;
 static struct mt_charger *g_mt_charger;
