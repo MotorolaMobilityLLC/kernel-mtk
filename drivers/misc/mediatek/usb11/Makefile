@@ -2,5 +2,7 @@ obj-$(CONFIG_MTK_USBFSH) := musbfsh_host.o musbfsh_hsdma.o musbfsh_virthub.o
 obj-$(CONFIG_MTK_ICUSB_SUPPORT) += musbfsh_icusb.o
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb11/$(subst ",,$(CONFIG_MTK_PLATFORM))/
 ccflags-y += -I$(srctree)/drivers/usb/core/
-
 obj-$(CONFIG_MACH_MT8167) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+
+# QMU Realted
+obj-$(CONFIG_MTK_MUSBFSH_QMU_SUPPORT) += mtk11_qmu.o musbfsh_qmu.o

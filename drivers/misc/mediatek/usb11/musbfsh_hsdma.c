@@ -95,10 +95,17 @@ static struct dma_channel *dma_channel_allocate(struct dma_controller *c,
 		container_of(c, struct musbfsh_dma_controller, controller);
 	struct musbfsh_dma_channel *musbfsh_channel = NULL;
 	struct dma_channel *channel = NULL;
-	u8 bit;
+	u8 bit, start_bit;
 
 	INFO("epnum=%d\n", hw_ep->epnum);
-	for (bit = 0; bit < MUSBFSH_HSDMA_CHANNELS; bit++) {
+
+/* reserve dma channel 0 for QMU */
+#ifdef CONFIG_MTK_MUSBFSH_QMU_SUPPORT
+	start_bit = 1;
+#else
+	start_bit = 0;
+#endif
+	for (bit = start_bit; bit < MUSBFSH_HSDMA_CHANNELS; bit++) {
 		if (!(controller->used_channels & (1 << bit))) {
 			controller->used_channels |= (1 << bit);
 			musbfsh_channel = &(controller->channel[bit]);
