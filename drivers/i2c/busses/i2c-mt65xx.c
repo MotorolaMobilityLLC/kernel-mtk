@@ -150,6 +150,10 @@ struct mtk_i2c {
 	/* set in i2c probe */
 	void __iomem *base;		/* i2c base addr */
 	void __iomem *pdmabase;		/* dma base address*/
+	struct clk *clk_top_source;	/* top source clock for i2c bus */
+	struct clk *clk_top_sel;	/* top sel clock for i2c bus */
+	struct clk *clk_main_source;	/* main source clock for i2c bus */
+	struct clk *clk_main_sel;	/* main sel clock for i2c bus */
 	struct clk *clk_main;		/* main clock for i2c bus */
 	struct clk *clk_dma;		/* DMA clock for i2c via DMA */
 	struct clk *clk_pmic;		/* PMIC clock for i2c from PMIC */
@@ -759,6 +763,46 @@ static int mtk_i2c_probe(struct platform_device *pdev)
 
 	if (i2c->have_pmic && !i2c->dev_comp->pmic_i2c)
 		return -EINVAL;
+
+	if (i2c->dev_comp->timing_adjust) {
+		i2c->clk_top_source = devm_clk_get(&pdev->dev, "top-source");
+		if (IS_ERR(i2c->clk_top_source)) {
+			dev_err(&pdev->dev, "cannot get top source clock\n");
+			return PTR_ERR(i2c->clk_top_source);
+		}
+
+		i2c->clk_top_sel = devm_clk_get(&pdev->dev, "top-sel");
+		if (IS_ERR(i2c->clk_top_sel)) {
+			dev_err(&pdev->dev, "cannot get top sel clock\n");
+			return PTR_ERR(i2c->clk_top_sel);
+		}
+
+		ret = clk_set_parent(i2c->clk_top_sel, i2c->clk_top_source);
+		if (ret < 0) {
+			dev_err(&pdev->dev,
+				"failed to clk_set_parent (%d)\n", ret);
+			return ret;
+		}
+
+		i2c->clk_main_source = devm_clk_get(&pdev->dev, "main-source");
+		if (IS_ERR(i2c->clk_main_source)) {
+			dev_err(&pdev->dev, "cannot get main source clock\n");
+			return PTR_ERR(i2c->clk_main_source);
+		}
+
+		i2c->clk_main_sel = devm_clk_get(&pdev->dev, "main-sel");
+		if (IS_ERR(i2c->clk_main_sel)) {
+			dev_err(&pdev->dev, "cannot get main sel clock\n");
+			return PTR_ERR(i2c->clk_main_sel);
+		}
+
+		ret = clk_set_parent(i2c->clk_main_sel, i2c->clk_main_source);
+		if (ret < 0) {
+			dev_err(&pdev->dev,
+				"failed to clk_set_parent (%d)\n", ret);
+			return ret;
+		}
+	}
 
 	i2c->clk_main = devm_clk_get(&pdev->dev, "main");
 	if (IS_ERR(i2c->clk_main)) {
