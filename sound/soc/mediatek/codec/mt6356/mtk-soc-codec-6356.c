@@ -676,15 +676,6 @@ static void OpenTrimBufferHardware(bool enable, bool buffer_on)
 	if (enable) {
 		TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_HEADSETL);
 
-		/* reset all dc compensation */
-		if (enable_dc_compensation &&
-		    set_lch_dc_compensation &&
-		    set_rch_dc_compensation) {
-			enable_dc_compensation(false);
-			set_lch_dc_compensation(0);
-			set_rch_dc_compensation(0);
-		}
-
 		/* sdm output mute enable */
 		Ana_Set_Reg(AFUNC_AUD_CON1, 0x0000, 0xffff);
 		Ana_Set_Reg(AFUNC_AUD_CON0, 0xcbad, 0xffff);
