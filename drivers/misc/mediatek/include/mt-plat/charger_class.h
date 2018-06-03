@@ -127,6 +127,8 @@ struct charger_ops {
 	/* reset EOC state */
 	int (*reset_eoc_state)(struct charger_device *);
 
+	int (*safety_check)(struct charger_device *);
+
 	int (*is_charging_done)(struct charger_device *, bool *done);
 	int (*set_pe20_efficiency_table)(struct charger_device *);
 	int (*dump_registers)(struct charger_device *);
@@ -194,6 +196,7 @@ extern int charger_dev_set_boost_current_limit(struct charger_device *charger_de
 extern int charger_dev_get_zcv(struct charger_device *charger_dev, u32 *uV);
 extern int charger_dev_run_aicl(struct charger_device *charger_dev, u32 *uA);
 extern int charger_dev_reset_eoc_state(struct charger_device *charger_dev);
+extern int charger_dev_safety_check(struct charger_device *charger_dev);
 
 /* PE */
 extern int charger_dev_send_ta_current_pattern(struct charger_device *charger_dev, bool is_increase);

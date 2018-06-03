@@ -476,7 +476,9 @@ static int mtk_dual_switch_charging_do_charging(struct charger_manager *info, bo
 static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 {
 	bool chg_done = false;
+	bool chg2_en = false;
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
+	struct charger_data *pdata = &info->chg1_data;
 
 	/* check bif */
 	if (IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
@@ -490,6 +492,14 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 	/* turn on LED */
 
 	dual_swchg_turn_on_charging(info);
+
+	charger_dev_is_enabled(info->chg2_dev, &chg2_en);
+	/* Check whether eoc condition is met */
+	if (swchgalg->state != CHR_POSTCC && chg2_en
+	    && (pdata->thermal_charging_current_limit > 500000 ||
+		pdata->thermal_charging_current_limit ==  -1)) {
+		charger_dev_safety_check(info->chg1_dev);
+	}
 
 	if (info->enable_sw_jeita) {
 		if (info->sw_jeita.pre_sm != TEMP_T2_TO_T3
@@ -616,8 +626,7 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 	struct charger_data *pdata2 = &info->chg2_data;
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 	u32 ichg2, ichg2_min;
-	bool chg_en;
-	int ret;
+	bool chg_en = false;
 	bool chg2_chip_enabled = false;
 
 	charger_dev_is_chip_enabled(info->chg2_dev, &chg2_chip_enabled);
@@ -625,11 +634,7 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 	pr_err("charger_dev_event %ld\n", event);
 
 	if (event == CHARGER_DEV_NOTIFY_EOC) {
-		ret = charger_dev_is_enabled(info->chg2_dev, &chg_en);
-		if (ret < 0) {
-			pr_err("is_enabled callback is not registered\n");
-			return NOTIFY_DONE;
-		}
+		charger_dev_is_enabled(info->chg2_dev, &chg_en);
 
 		if (!chg_en || !chg2_chip_enabled) {
 			swchgalg->state = CHR_BATFULL;

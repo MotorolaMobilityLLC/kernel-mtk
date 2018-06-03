@@ -25,7 +25,7 @@
 		charger_name = "secondary_chg";
 		ichg = <1500000>; /* uA */
 		mivr = <4500000>; /* uV */
-		cv = <4350000>; /* uV */
+		cv = <4550000>; /* uV */
 		ieoc = <700000>; /* uA */
 		safety_timer = <12>; /* hour */
 		en_st; /* safety timer */
