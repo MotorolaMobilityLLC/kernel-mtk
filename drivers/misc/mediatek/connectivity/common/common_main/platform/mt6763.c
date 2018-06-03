@@ -408,10 +408,15 @@ static INT32 consys_co_clock_type(VOID)
 static INT32 consys_clock_buffer_ctrl(MTK_WCN_BOOL enable)
 {
 #if CONSYS_CLOCK_BUF_CTRL
-	if (enable == MTK_WCN_BOOL_TRUE)
+	if (enable == MTK_WCN_BOOL_TRUE) {
 		clk_buf_ctrl(CLK_BUF_CONN, 1);
-	else if (enable == MTK_WCN_BOOL_FALSE)
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_EN, 1);
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_SW_OP_EN, 1);
+	} else if (enable == MTK_WCN_BOOL_FALSE) {
 		clk_buf_ctrl(CLK_BUF_CONN, 0);
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_EN, 0);
+		pmic_set_register_value(PMIC_RG_LDO_VCN28_SW_OP_EN, 0);
+	}
 #endif
 	return 0;
 }
@@ -806,23 +811,7 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 /* Wayne Chen - This function was copied from mt6759.c */
 static VOID consys_vcn28_hw_mode_ctrl(UINT32 enable)
 {
-#if CONSYS_PMIC_CTRL_ENABLE
-	if (enable) {
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
-		pmic_set_register_value(PMIC_RG_LDO_VCN28_EN, 1);
-		pmic_set_register_value(PMIC_RG_LDO_VCN28_SW_OP_EN, 1);
-#else
-		pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 1);
-#endif
-	} else {
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
-		pmic_set_register_value(PMIC_RG_LDO_VCN28_EN, 1);
-		pmic_set_register_value(PMIC_RG_LDO_VCN28_SW_OP_EN, 1);
-#else
-		pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 0);
-#endif
-	}
-#endif
+	/* Will be set in clk_buf_ctrl() */
 }
 
 /* Wayne Chen - This function was copied from mt6759.c */
