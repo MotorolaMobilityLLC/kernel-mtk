@@ -74,7 +74,7 @@ static m4u_buf_info_t gMvaNode_unknown = {
 
 /* -------------------------------------Global variables------------------------------------------------// */
 #ifdef M4U_PROFILE
-MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
+mmp_event M4U_MMP_Events[M4U_MMP_MAX];
 #endif
 
 #define M4U_DEV_NAME "m4u"
@@ -113,26 +113,26 @@ int m4u_dump_buf_info(struct seq_file *seq)
 #ifdef M4U_PROFILE
 static void m4u_profile_init(void)
 {
-	MMP_Event M4U_Event;
+	mmp_event M4U_Event;
 
-	MMProfileEnable(1);
-	M4U_Event = MMProfileRegisterEvent(MMP_RootEvent, "M4U");
+	mmprofile_enable(1);
+	M4U_Event = mmprofile_register_event(MMP_ROOT_EVENT, "M4U");
 	/* register events */
-	M4U_MMP_Events[M4U_MMP_ALLOC_MVA] = MMProfileRegisterEvent(M4U_Event, "Alloc MVA");
-	M4U_MMP_Events[M4U_MMP_DEALLOC_MVA] = MMProfileRegisterEvent(M4U_Event, "DeAlloc MVA");
-	M4U_MMP_Events[M4U_MMP_CONFIG_PORT] = MMProfileRegisterEvent(M4U_Event, "Config Port");
-	M4U_MMP_Events[M4U_MMP_M4U_ERROR] = MMProfileRegisterEvent(M4U_Event, "M4U ERROR");
-	M4U_MMP_Events[M4U_MMP_CACHE_SYNC] = MMProfileRegisterEvent(M4U_Event, "M4U_CACHE_SYNC");
-	M4U_MMP_Events[M4U_MMP_TOGGLE_CG] = MMProfileRegisterEvent(M4U_Event, "M4U_Toggle_CG");
+	M4U_MMP_Events[M4U_MMP_ALLOC_MVA] = mmprofile_register_event(M4U_Event, "Alloc MVA");
+	M4U_MMP_Events[M4U_MMP_DEALLOC_MVA] = mmprofile_register_event(M4U_Event, "DeAlloc MVA");
+	M4U_MMP_Events[M4U_MMP_CONFIG_PORT] = mmprofile_register_event(M4U_Event, "Config Port");
+	M4U_MMP_Events[M4U_MMP_M4U_ERROR] = mmprofile_register_event(M4U_Event, "M4U ERROR");
+	M4U_MMP_Events[M4U_MMP_CACHE_SYNC] = mmprofile_register_event(M4U_Event, "M4U_CACHE_SYNC");
+	M4U_MMP_Events[M4U_MMP_TOGGLE_CG] = mmprofile_register_event(M4U_Event, "M4U_Toggle_CG");
 
 	/* enable events by default */
-	MMProfileEnableEvent(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], 1);
-	MMProfileEnableEvent(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], 1);
-	MMProfileEnableEvent(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], 1);
-	MMProfileEnableEvent(M4U_MMP_Events[M4U_MMP_M4U_ERROR], 1);
-	MMProfileEnableEvent(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], 1);
-	/* MMProfileEnableEvent(M4U_MMP_Events[M4U_MMP_TOGGLE_CG], 0); */
-	MMProfileStart(1);
+	mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], 1);
+	mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], 1);
+	mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], 1);
+	mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_M4U_ERROR], 1);
+	mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], 1);
+	/* mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_TOGGLE_CG], 0); */
+	mmprofile_start(1);
 }
 #endif
 
@@ -603,7 +603,7 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 	unsigned int domain_idx = 0;
 
 #ifdef M4U_PROFILE
-	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], MMProfileFlagStart, va, size);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], MMPROFILE_FLAG_START, va, size);
 #endif
 
 	if (va && sg_table) {
@@ -682,7 +682,7 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 		size, prot, flags, mva);
 
 #ifdef M4U_PROFILE
-	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], MMProfileFlagEnd, port, mva);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], MMPROFILE_FLAG_END, port, mva);
 #endif
 
 #ifdef __M4U_MAP_MVA_TO_KERNEL_FOR_DEBUG__
@@ -721,7 +721,7 @@ err:
 		m4u_port_2_larb_id(port), m4u_get_port_name(port), va, size, prot, flags, mva);
 
 #ifdef M4U_PROFILE
-	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], MMProfileFlagEnd, port, 0);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], MMPROFILE_FLAG_END, port, 0);
 #endif
 
 	return ret;
@@ -799,7 +799,7 @@ int m4u_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva)
 		domain_idx = 1;
 
 #ifdef M4U_PROFILE
-	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], MMProfileFlagStart, port, mva);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], MMPROFILE_FLAG_START, port, mva);
 #endif
 
 	pMvaInfo = m4u_client_find_buf(client, mva, 1);
@@ -808,7 +808,7 @@ int m4u_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva)
 		       m4u_get_port_name(port), mva);
 		m4u_dump_buf_info(NULL);
 #ifdef M4U_PROFILE
-		MMProfileLogEx(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], MMProfileFlagStart, 0x5a5a5a5a, mva);
+		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], MMPROFILE_FLAG_START, 0x5a5a5a5a, mva);
 #endif
 		return -EINVAL;
 	}
@@ -877,7 +877,7 @@ int m4u_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva)
 	m4u_free_buf_info(pMvaInfo);
 
 #ifdef M4U_PROFILE
-	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], MMProfileFlagEnd, size, mva);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], MMPROFILE_FLAG_END, size, mva);
 #endif
 
 	return ret;
@@ -1063,8 +1063,8 @@ int m4u_cache_sync(m4u_client_t *client, M4U_PORT_ID port,
 	unsigned int domain_idx = 0;
 
 #ifdef M4U_PROFILE
-	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMProfileFlagStart, va, mva);
-	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMProfileFlagPulse, size, ((sync_type)<<24) | port);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMPROFILE_FLAG_START, va, mva);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMPROFILE_FLAG_PULSE, size, ((sync_type)<<24) | port);
 #endif
 	M4ULOG_MID("cache_sync port=%s, va=0x%lx, size=0x%x, mva=0x%x, type=%d\n",
 		   m4u_get_port_name(port), va, size, mva, sync_type);
@@ -1091,7 +1091,7 @@ int m4u_cache_sync(m4u_client_t *client, M4U_PORT_ID port,
 			       client);
 			m4u_dump_buf_info(NULL);
 #ifdef M4U_PROFILE
-			MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMProfileFlagEnd, 0, 0);
+			mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMPROFILE_FLAG_END, 0, 0);
 #endif
 			return -1;
 		}
@@ -1100,7 +1100,7 @@ int m4u_cache_sync(m4u_client_t *client, M4U_PORT_ID port,
 			M4UMSG("cache_sync fail: expect mva=0x%x,size=0x%x,va=0x%lx, but mva=0x%x,size=0x%x,va=0x%lx\n",
 			       pMvaInfo->mva, pMvaInfo->size, pMvaInfo->va, mva, size, va);
 #ifdef M4U_PROFILE
-			MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMProfileFlagEnd,
+			mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMPROFILE_FLAG_END,
 				       pMvaInfo->va, pMvaInfo->mva);
 #endif
 			return -1;
@@ -1126,7 +1126,7 @@ int m4u_cache_sync(m4u_client_t *client, M4U_PORT_ID port,
 		}
 	}
 #ifdef M4U_PROFILE
-	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMProfileFlagEnd, size, mva);
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], MMPROFILE_FLAG_END, size, mva);
 #endif
 	return ret;
 }
