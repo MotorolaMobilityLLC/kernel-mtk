@@ -28,8 +28,13 @@
 #define GPD_EXT_LEN (48)	/* GPD_LEN_ALIGNED - 16(should be sizeof(TGPD) */
 #define GPD_SZ (16)
 #define DFT_MAX_GPD_NUM 36
+#ifndef MUSB_QMU_LIMIT_SUPPORT
 #define RXQ_NUM 8
 #define TXQ_NUM 8
+#else
+#define RXQ_NUM MUSB_QMU_LIMIT_RXQ_NUM
+#define TXQ_NUM MUSB_QMU_LIMIT_TXQ_NUM
+#endif
 #define MAX_QMU_EP RXQ_NUM
 #define TXQ	0
 #define RXQ	1
