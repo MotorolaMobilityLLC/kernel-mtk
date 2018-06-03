@@ -992,6 +992,7 @@ static int eem_init1stress_thread_handler(void *data)
 	unsigned long flag;
 	unsigned int out = 0, timeout = 0;
 
+<<<<<<< HEAD
 	do {
 		wait_event_interruptible(wqStress, eem_init1stress_en);
 		eem_error("eem init1stress start\n");
@@ -1016,10 +1017,45 @@ static int eem_init1stress_thread_handler(void *data)
 			mt_ptp_lock(&flag);
 #if ENABLE_LOO
 			det = &eem_detector_cci;
+=======
+	/* CPU/GPU pre-process */
+	mt_ppm_ptpod_policy_activate();
+
+	if (setup_max_cpus > 4 && !cpu_online(4)) {
+		cpu_up(4);
+		get_online_cpus();
+		release_cpu4 = 1;
+	}
+
+#ifdef CONFIG_MTK_GPU_SUPPORT
+	mt_gpufreq_disable_by_ptpod();
+#endif
+	eem_buck_set_mode(1);
+
+#ifdef __KERNEL__
+	do {
+		wait_event_interruptible(wqStress, eem_init1stress_en);
+
+		/* Start to clear previour ptp init status */
+		mt_ptp_lock(&flag);
+#if ENABLE_LOO
+		det = &eem_detector_cci;
+		det->ops->switch_bank(det, NR_EEM_PHASE);
+		eem_write(EEMEN, 0x0 | SEC_MOD_SEL);
+		/* Clear EEM INIT interrupt EEMINTSTS = 0x00ff0000 */
+		eem_write(EEMINTSTS, 0x00ff0000);
+		cci_init02_done = 0;
+		det->eem_eemEn[EEM_PHASE_INIT01] = 0;
+		det->features = FEA_INIT01;
+#endif
+
+		for_each_det(det) {
+>>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
 			det->ops->switch_bank(det, NR_EEM_PHASE);
 			eem_write(EEMEN, 0x0 | SEC_MOD_SEL);
 			/* Clear EEM INIT interrupt EEMINTSTS = 0x00ff0000 */
 			eem_write(EEMINTSTS, 0x00ff0000);
+<<<<<<< HEAD
 			cci_init02_done = 0;
 			det->eem_eemEn[EEM_PHASE_INIT01] = 0;
 			det->features = FEA_INIT01;
@@ -1052,6 +1088,29 @@ static int eem_init1stress_thread_handler(void *data)
 
 			if (testCnt++ % 200 == 0)
 				eem_error("eem_init1stress_thread_handler, test counter:%d\n", testCnt);
+=======
+			det->eem_eemEn[EEM_PHASE_INIT01] = 0;
+
+#if ENABLE_LOO
+			if ((det->ctrl_id == EEM_CTRL_2L) || (det->ctrl_id == EEM_CTRL_L)
+				|| (det->ctrl_id == EEM_CTRL_GPU))
+				det->features = FEA_INIT01;
+#else
+			det->features = FEA_INIT01;
+#endif
+			/* No Big EEM init */
+			if (setup_max_cpus <= 4) {
+				if (det->ctrl_id == EEM_CTRL_L) {
+					det->features = 0;
+					final_init01_flag = BIT(EEM_CTRL_2L) | BIT(EEM_CTRL_CCI) | BIT(EEM_CTRL_GPU);
+				}
+			}
+		}
+		mt_ptp_unlock(&flag);
+
+		if (testCnt++ % 200 == 0)
+			eem_error("eem_init1stress_thread_handler, test counter:%d\n", testCnt);
+>>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
 
 #if ENABLE_LOO
 			/* For share cci bank, run cci init01 first */
@@ -1104,6 +1163,7 @@ static int eem_init1stress_thread_handler(void *data)
 					eem_error("init01 wait time is %d, bankmask:0x%x[/0x%x]\n",
 						timeout, out, final_init01_flag);
 			}
+<<<<<<< HEAD
 			msleep(100);
 		}
 
@@ -1124,6 +1184,15 @@ static int eem_init1stress_thread_handler(void *data)
 		eem_error("eem init1stress end, total test counter:%d\n", testCnt);
 	} while (!kthread_should_stop());
 
+=======
+
+
+
+		msleep(100);
+
+	} while (!kthread_should_stop());
+	#endif
+>>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
 	FUNC_EXIT(FUNC_LV_HELP);
 
 	return 0;
@@ -1675,6 +1744,7 @@ static void read_volt_from_VOP(struct eem_det *det)
 		det->volt_tbl[6] = (temp >> 16) & 0xff;
 		det->volt_tbl[7] = (temp >> 24) & 0xff;
 	} else {
+<<<<<<< HEAD
 	temp = eem_read(EEM_VOP30);
 	/* eem_debug("read(EEM_VOP30) = 0x%08X\n", temp); */
 	/* EEM_VOP30=>pmic value */
@@ -1721,6 +1791,54 @@ static void read_volt_from_VOP(struct eem_det *det)
 		}
 	} /* if (NR_FREQ > 8)*/
 }
+=======
+		temp = eem_read(EEM_VOP30);
+		/* eem_debug("read(EEM_VOP30) = 0x%08X\n", temp); */
+		/* EEM_VOP30=>pmic value */
+		det->volt_tbl[0] = (temp & 0xff);
+		det->volt_tbl[1 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 8)  & 0xff;
+		det->volt_tbl[2 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 16) & 0xff;
+		det->volt_tbl[3 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 24) & 0xff;
+
+		temp = eem_read(EEM_VOP74);
+		/* eem_debug("read(EEM_VOP74) = 0x%08X\n", temp); */
+		/* EEM_VOP74=>pmic value */
+		det->volt_tbl[4 * ((det->num_freq_tbl + 7) / 8)] = (temp & 0xff);
+		det->volt_tbl[5 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 8)  & 0xff;
+		det->volt_tbl[6 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 16) & 0xff;
+		det->volt_tbl[7 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 24) & 0xff;
+
+		if ((det->num_freq_tbl > 8) && (ref_idx > 0)) {
+			for (i = 0; i <= ref_idx; i++) { /* i < 8 */
+				for (j = 1; j < step; j++) {
+					if (i < ref_idx) {
+						det->volt_tbl[(i * step) + j] =
+							interpolate(
+								det->freq_tbl[(i * step)],
+								det->freq_tbl[((1 + i) * step)],
+								det->volt_tbl[(i * step)],
+								det->volt_tbl[((1 + i) * step)],
+								det->freq_tbl[(i * step) + j]
+							);
+					} else {
+						det->volt_tbl[(i * step) + j] =
+						clamp(
+							interpolate(
+								det->freq_tbl[((i - 1) * step)],
+								det->freq_tbl[((i) * step)],
+								det->volt_tbl[((i - 1) * step)],
+								det->volt_tbl[((i) * step)],
+								det->freq_tbl[(i * step) + j]
+							),
+							det->VMIN,
+							det->VMAX
+						);
+					}
+				}
+			}
+		} /* if (NR_FREQ > 8)*/
+	}
+>>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
 #else
 	temp = eem_read(EEM_VOP30);
 	/* eem_debug("read(EEM_VOP30) = 0x%08X\n", temp); */
@@ -2068,7 +2186,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 			aee_rr_rec_ptp_temp(temp_long << (8 * EEM_CPU_LITTLE_IS_SET_VOLT) |
 			(temp_cur & ~((unsigned long long)0xFF << (8 * EEM_CPU_LITTLE_IS_SET_VOLT))));
 		}
-		#endif
+#endif
 		break;
 
 #if ENABLE_LOO
@@ -2155,7 +2273,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	/* 0x64 mappint to 100 + 25 = 125C,
 	*   0xB2 mapping to 178 - 128 = 50, -50 + 25 = -25C
 	*/
-	if (((det->t250 & 0xff)  > 0x64) && ((det->t250  & 0xff) < 0xB2)) {
+	if (((det->t250 & 0xff) > 0x64) && ((det->t250  & 0xff) < 0xB2)) {
 		eem_error("Temperature > 125C or < -25C !!\n");
 		goto out;
 	}
@@ -2347,10 +2465,17 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 			backupdet = (detid == EEM_DET_2L_HI) ? id_to_eem_det(EEM_DET_2L) : id_to_eem_det(EEM_DET_L);
 			memcpy(backupdet->volt_tbl, backupdet->volt_tbl_init2, sizeof(det->volt_tbl));
 		} else {
+<<<<<<< HEAD
 		memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl));
 		}
 #else
 		memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl));
+=======
+			memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl));
+		}
+#else
+		memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl));
+>>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
 #endif
 	}
 
@@ -2492,9 +2617,15 @@ static irqreturn_t eem_isr(int irq, void *dev_id)
 		if ((i == EEM_CTRL_CCI) && (cci_init02_done == 0))
 			det = &eem_detector_cci;
 		else
+<<<<<<< HEAD
 		det = &eem_detectors[i];
 #else
 		det = &eem_detectors[i];
+=======
+			det = &eem_detectors[i];
+#else
+		det = &eem_detectors[i];
+>>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
 #endif
 		det->ops->switch_bank(det, NR_EEM_PHASE);
 
@@ -2670,12 +2801,12 @@ void eem_init01(void)
 				det->real_vboot = det->ops->volt_2_eem(det, det->ops->get_volt(det));
 
 #ifdef CONFIG_EEM_AEE_RR_REC
-					aee_rr_rec_ptp_vboot(
-						((unsigned long long)(det->real_vboot) << (8 * det->ctrl_id)) |
-						(aee_rr_curr_ptp_vboot() & ~
-							((unsigned long long)(0xFF) << (8 * det->ctrl_id))
-						)
-					);
+			aee_rr_rec_ptp_vboot(
+				((unsigned long long)(det->real_vboot) << (8 * det->ctrl_id)) |
+				(aee_rr_curr_ptp_vboot() & ~
+					((unsigned long long)(0xFF) << (8 * det->ctrl_id))
+				)
+			);
 #endif
 			}
 
@@ -3062,6 +3193,7 @@ out:
  * show current EEM data
  */
 void eem_dump_reg_by_det(struct eem_det *det, struct seq_file *m)
+<<<<<<< HEAD
 {
 	unsigned int i, k;
 #if DUMP_DATA_TO_DE
@@ -3091,19 +3223,78 @@ void eem_dump_reg_by_det(struct eem_det *det, struct seq_file *m)
 						seq_printf(m, "%d, ",
 						det->ops->pmic_2_volt(det, det->volt_tbl_pmic[k]));
 					seq_printf(m, "%d) - (", det->ops->pmic_2_volt(det, det->volt_tbl_pmic[k]));
-
-					for (k = 0; k < det->num_freq_tbl - 1; k++)
-						seq_printf(m, "%d, ", det->freq_tbl[k]);
-					seq_printf(m, "%d)\n", det->freq_tbl[k]);
-				}
-			} /* if (eem_log_en) */
+=======
+{
+	unsigned int i, k;
 #if DUMP_DATA_TO_DE
-			for (j = 0; j < ARRAY_SIZE(reg_dump_addr_off); j++)
-				seq_printf(m, "0x%08lx = 0x%08x\n",
-					(unsigned long)EEM_BASEADDR + reg_dump_addr_off[j],
-					det->reg_dump_data[j][i]
-					);
+	unsigned int j;
 #endif
+
+	for (i = EEM_PHASE_INIT01; i < NR_EEM_PHASE; i++) {
+		seq_printf(m, "Bank_number = %d\n", det->ctrl_id);
+		if (i < EEM_PHASE_MON)
+			seq_printf(m, "mode = init%d\n", i+1);
+		else
+			seq_puts(m, "mode = mon\n");
+		if (eem_log_en) {
+			seq_printf(m, "0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
+				det->dcvalues[i],
+				det->freqpct30[i],
+				det->eem_26c[i],
+				det->vop30[i],
+				det->eem_eemEn[i]
+			);
+
+			if (det->eem_eemEn[i] == (0x5 | SEC_MOD_SEL)) {
+				seq_printf(m, "EEM_LOG: Bank_number = [%d] (%d) - (",
+				det->ctrl_id, det->ops->get_temp(det));
+
+				for (k = 0; k < det->num_freq_tbl - 1; k++)
+					seq_printf(m, "%d, ",
+					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[k]));
+				seq_printf(m, "%d) - (", det->ops->pmic_2_volt(det, det->volt_tbl_pmic[k]));
+
+				for (k = 0; k < det->num_freq_tbl - 1; k++)
+					seq_printf(m, "%d, ", det->freq_tbl[k]);
+				seq_printf(m, "%d)\n", det->freq_tbl[k]);
+			}
+		} /* if (eem_log_en) */
+#if DUMP_DATA_TO_DE
+		for (j = 0; j < ARRAY_SIZE(reg_dump_addr_off); j++)
+			seq_printf(m, "0x%08lx = 0x%08x\n",
+				(unsigned long)EEM_BASEADDR + reg_dump_addr_off[j],
+				det->reg_dump_data[j][i]
+				);
+#endif
+	}
+}
+
+static int eem_dump_proc_show(struct seq_file *m, void *v)
+{
+	struct eem_det *det;
+	int *val = (int *)&eem_devinfo;
+	int i;
+
+	FUNC_ENTER(FUNC_LV_HELP);
+
+	for (i = 0; i < sizeof(struct eem_devinfo) / sizeof(unsigned int); i++) {
+		/* Depend on EFUSE location */
+		if (i < 10)
+			seq_printf(m, "M_HW_RES%d\t= 0x%08X\n", i, val[i]);
+		else
+			seq_printf(m, "M_HW_RES%d\t= 0x%08X\n", i + 6, val[i]);
+	}
+
+	for_each_det(det) {
+		eem_dump_reg_by_det(det, m);
+	}
+>>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
+
+#if ENABLE_LOO
+	/* For share cci bank */
+	eem_dump_reg_by_det(&eem_detector_cci, m);
+#endif
+<<<<<<< HEAD
 		}
 	}
 
@@ -3131,6 +3322,8 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 	/* For share cci bank */
 	eem_dump_reg_by_det(&eem_detector_cci, m);
 #endif
+=======
+>>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
 	FUNC_EXIT(FUNC_LV_HELP);
 	return 0;
 }
