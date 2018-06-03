@@ -202,6 +202,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 	struct device_node *node;
 
 	switch (clk_req) {
+#if 0
 	case HDMI_VIDEO_720x480p_60Hz:
 		{
 			clksrc = TVDPLL_D8;
@@ -220,6 +221,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 			con1 = 0x8316D89D;
 			break;
 		}
+#endif
 #if 0
 	case HDMI_VIDEO_1920x1080p_60Hz:	/*297M*/
 		{
@@ -243,10 +245,10 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 	}
 
 	pr_info("DISP/DPI,TVDPLL clock setting clk %d, clksrc: %d\n", clk_req, clksrc);
-
+#if 0
 	ddp_clk_prepare_enable(MUX_DPI0);
 	ddp_clk_set_parent(MUX_DPI0, clksrc);
-
+#endif
 	/* apmixed */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 	if (!node)
@@ -444,7 +446,7 @@ int ddp_dpi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 		ddp_clk_check();
 
-		ddp_clk_prepare_enable(MUX_DPI0);
+		/* ddp_clk_prepare_enable(MUX_DPI0); */
 
 		/* apmixed */
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");

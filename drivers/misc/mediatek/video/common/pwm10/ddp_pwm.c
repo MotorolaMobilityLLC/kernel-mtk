@@ -577,7 +577,8 @@ static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 	int ret = -1;
 
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
-	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739)
+	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739) || \
+	defined(CONFIG_MACH_MT6771)
 	/* pwm ccf api */
 	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 #elif defined(CONFIG_MACH_MT6763)
@@ -631,7 +632,8 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 	disp_pwm_backlight_status(id, 1);
 
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
-	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739)
+	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739) || \
+	defined(CONFIG_MACH_MT6771)
 	/* pwm ccf api */
 	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 #elif defined(CONFIG_MACH_MT6763)

@@ -2746,8 +2746,8 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 		ddp_set_mipi26m(module, 1);
 
 		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-			ddp_clk_prepare_enable(CLK_DSI0_MM_CLK);
-			ddp_clk_prepare_enable(CLK_DSI0_IF_CLK);
+			ddp_clk_prepare_enable(DISP1_DSI0_MM_CLOCK);
+			ddp_clk_prepare_enable(DISP1_DSI0_INTERFACE_CLOCK);
 		}
 
 		/* __close_dsi_default_clock(module); */
@@ -3683,8 +3683,8 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	DSI_PHY_clk_switch(module, NULL, true);
 
 	if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-		ddp_clk_prepare_enable(CLK_DSI0_MM_CLK);
-		ddp_clk_prepare_enable(CLK_DSI0_IF_CLK);
+		ddp_clk_prepare_enable(DISP1_DSI0_MM_CLOCK);
+		ddp_clk_prepare_enable(DISP1_DSI0_INTERFACE_CLOCK);
 	}
 
 	/* DSI_RestoreRegisters(module, NULL); */
@@ -3717,8 +3717,8 @@ int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-		ddp_clk_disable_unprepare(CLK_DSI0_MM_CLK);
-		ddp_clk_disable_unprepare(CLK_DSI0_IF_CLK);
+		ddp_clk_disable_unprepare(DISP1_DSI0_MM_CLOCK);
+		ddp_clk_disable_unprepare(DISP1_DSI0_INTERFACE_CLOCK);
 	}
 #endif
 

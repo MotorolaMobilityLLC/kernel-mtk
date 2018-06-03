@@ -739,14 +739,14 @@ int ddp_path_top_clock_on(void)
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
 		;/*ddp_clk_prepare_enable(MM_VENCPLL);*/
-	ddp_clk_prepare_enable(CLK_MM_MTCMOS);
+	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
 	/*ddp_clk_prepare_enable(TOP_26M);*/
-	ddp_clk_prepare_enable(CLK_SMI_COMMON);
-	ddp_clk_prepare_enable(CLK_GALS_COMM0);
-	ddp_clk_prepare_enable(CLK_GALS_COMM1);
-	ddp_clk_prepare_enable(CLK_SMI_LARB0);
-	ddp_clk_prepare_enable(CLK_SMI_LARB1);
-	ddp_clk_prepare_enable(CLK_MM_26M);
+	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
+	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
+	/*ddp_clk_prepare_enable(DISP0_SMI_LARB1);*/
+	ddp_clk_prepare_enable(CLK_MM_GALS_COMM0);
+	ddp_clk_prepare_enable(CLK_MM_GALS_COMM1);
+	ddp_clk_prepare_enable(DISP0_DISP_26M);
 
 	/* hw workaround : begin */
 	/* 2. gce event 34 workaround */
@@ -762,14 +762,14 @@ int ddp_path_top_clock_on(void)
 
 int ddp_path_top_clock_off(void)
 {
-	ddp_clk_disable_unprepare(CLK_MM_26M);
-	ddp_clk_disable_unprepare(CLK_SMI_LARB1);
-	ddp_clk_disable_unprepare(CLK_SMI_LARB0);
-	ddp_clk_disable_unprepare(CLK_GALS_COMM1);
-	ddp_clk_disable_unprepare(CLK_GALS_COMM0);
-	ddp_clk_disable_unprepare(CLK_SMI_COMMON);
+	ddp_clk_disable_unprepare(DISP0_DISP_26M);
+	ddp_clk_disable_unprepare(CLK_MM_GALS_COMM1);
+	ddp_clk_disable_unprepare(CLK_MM_GALS_COMM0);
+	/*ddp_clk_disable_unprepare(DISP0_SMI_LARB1);*/
+	ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
+	ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
 	/*ddp_clk_disable_unprepare(TOP_26M);*/
-	ddp_clk_disable_unprepare(CLK_MM_MTCMOS);
+	ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
 		;/*ddp_clk_disable_unprepare(MM_VENCPLL);*/
