@@ -270,10 +270,12 @@ static int isl91302a_enable_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 		pr_err("%s only support proc2\n", __func__);
 		return 0;
 	}
-	pr_err("isl91302a_enable_ipi [%s] buck_id = %d\n",
-					mreg_desc->rdesc.name, buck_id);
 	ret = extbuck_ipi_enable(buck_id, 1);
-	return ret;
+	pr_err("isl91302a_enable_ipi [%s] buck_id = %d, ret = %d\n",
+				mreg_desc->rdesc.name, buck_id, ret);
+	if (ret != 0)
+		return -EINVAL;
+	return 0;
 }
 
 static int isl91302a_disable_ipi(struct mtk_simple_regulator_desc *mreg_desc)
@@ -286,10 +288,12 @@ static int isl91302a_disable_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 		pr_err("%s only support proc2\n", __func__);
 		return 0;
 	}
-	pr_err("isl91302a_disable_ipi [%s] buck_id = %d\n",
-					mreg_desc->rdesc.name, buck_id);
 	ret = extbuck_ipi_enable(buck_id, 0);
-	return ret;
+	pr_err("isl91302a_disable_ipi [%s] buck_id = %d, ret = %d\n",
+				mreg_desc->rdesc.name, buck_id, ret);
+	if (ret != 0)
+		return -EINVAL;
+	return 0;
 }
 
 static int isl91302a_is_enabled_ipi(struct mtk_simple_regulator_desc *mreg_desc)
@@ -305,7 +309,9 @@ static int isl91302a_is_enabled_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 	ret = extbuck_ipi_enable(buck_id, 0xF);
 	pr_err("isl91302a_is_enabled_ipi [%s] buck_id = %d, ret = %d\n",
 			mreg_desc->rdesc.name, buck_id, ret);
-	return ret;
+	if (ret != 0 && ret != 1)
+		return -EINVAL;
+	return 0;
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
