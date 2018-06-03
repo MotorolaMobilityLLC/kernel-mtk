@@ -551,7 +551,6 @@ int spm_mtcmos_ctrl_md1(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MD1" */
@@ -690,7 +689,6 @@ int spm_mtcmos_ctrl_conn(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CONN" */
@@ -821,7 +819,6 @@ int spm_mtcmos_ctrl_dpy(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off DPY" */
@@ -976,7 +973,6 @@ int spm_mtcmos_ctrl_dis(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off DIS" */
@@ -1132,7 +1128,6 @@ int spm_mtcmos_ctrl_mfg(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG" */
@@ -1254,7 +1249,7 @@ int spm_mtcmos_ctrl_isp(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off ISP" */
@@ -1376,7 +1371,7 @@ int spm_mtcmos_ctrl_ifr(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off IFR" */
@@ -1469,7 +1464,7 @@ int spm_mtcmos_ctrl_mfg_core0(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_CORE0" */
@@ -1570,7 +1565,7 @@ int spm_mtcmos_ctrl_mfg_async(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_ASYNC" */
@@ -1653,7 +1648,7 @@ int spm_mtcmos_ctrl_cam(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CAM" */
@@ -1797,7 +1792,6 @@ int spm_mtcmos_ctrl_vcodec(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VCODEC" */
