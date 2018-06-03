@@ -1571,10 +1571,15 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->AGEDELTA	= devinfo->CPU_2L_AGEDELTA;
 		det->MTDES	= devinfo->CPU_2L_MTDES;
 		det->SPEC	= devinfo->CPU_2L_SPEC;
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+		det->pmic_base = CPU_PMIC_BASE_6356;
+#else
 		if (is_ext_buck_exist())
 			det->pmic_base = CPU_PMIC_BASE_6311;
 		else
 			det->pmic_base = CPU_PMIC_BASE_6356;
+#endif
 		#if 0
 		det->recordRef	= recordRef;
 		int i;
@@ -1597,10 +1602,14 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->AGEDELTA	= devinfo->CPU_L_AGEDELTA;
 		det->MTDES	= devinfo->CPU_L_MTDES;
 		det->SPEC	= devinfo->CPU_L_SPEC;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+		det->pmic_base = CPU_PMIC_BASE_6356;
+#else
 		if (is_ext_buck_exist())
 			det->pmic_base = CPU_PMIC_BASE_6311;
 		else
 			det->pmic_base = CPU_PMIC_BASE_6356;
+#endif
 		#if 0
 		det->recordRef	= recordRef + 36;
 		int i;
@@ -1623,10 +1632,15 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->AGEDELTA	= devinfo->CCI_AGEDELTA;
 		det->MTDES	= devinfo->CCI_MTDES;
 		det->SPEC       = devinfo->CCI_SPEC;
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+		det->pmic_base = CPU_PMIC_BASE_6356;
+#else
 		if (is_ext_buck_exist())
 			det->pmic_base = CPU_PMIC_BASE_6311;
 		else
 			det->pmic_base = CPU_PMIC_BASE_6356;
+#endif
 		#if 0
 		det->recordRef	= recordRef + 72;
 		int i;
