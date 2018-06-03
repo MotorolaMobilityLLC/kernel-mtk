@@ -530,6 +530,10 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 		       dst_w, dst_h);
 	}
 
+	/* sbch can use the variable */
+	cfg->real_dst_x = dst_x;
+	cfg->real_dst_y = dst_y;
+
 	if (dst_w > OVL_MAX_WIDTH)
 		ASSERT(dst_w < OVL_MAX_WIDTH);
 	if (dst_h > OVL_MAX_HEIGHT)
@@ -1200,6 +1204,8 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	int cnst_en = 0;
 
 	data->pre_addr = cfg->real_addr;
+	data->dst_x = cfg->real_dst_x;
+	data->dst_y = cfg->real_dst_y;
 	data->height = cfg->src_h;
 	data->width = cfg->src_w;
 	data->fmt = cfg->fmt;
@@ -1299,7 +1305,9 @@ static int check_ext_update(struct sbch *sbch_data, int ext_num,
 		struct OVL_CONFIG_STRUCT *ext_cfg =
 					&pConfig->ovl_config[layer + j + 1];
 
-		if (sbch_data[layer + j + 1].height != ext_cfg->src_h ||
+		if (sbch_data[layer + j + 1].dst_x != ext_cfg->real_dst_x ||
+			sbch_data[layer + j + 1].dst_y != ext_cfg->real_dst_y ||
+			sbch_data[layer + j + 1].height != ext_cfg->src_h ||
 			sbch_data[layer + j + 1].width != ext_cfg->src_w ||
 			sbch_data[layer + j + 1].fmt != ext_cfg->fmt ||
 			sbch_data[layer + j + 1].pre_addr != ext_cfg->real_addr)
@@ -1412,6 +1420,9 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 		/*1. limit 18:9 */
 		if (ovl_cfg->dst_h > SBCH_HEIGHT ||
 			ovl_cfg->dst_w > SBCH_WIDTH || !ovl_cfg->layer_en) {
+			ovl_cfg->real_addr = 0;
+			ovl_cfg->real_dst_x = 0;
+			ovl_cfg->real_dst_y = 0;
 			memset(&sbch_data[i], 0, sizeof(struct sbch));
 			continue;
 		}
@@ -1430,6 +1441,8 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 		 * maybe use BCH.
 		 */
 		if (sbch_data[i].pre_addr == ovl_cfg->real_addr &&
+			sbch_data[i].dst_x == ovl_cfg->real_dst_x &&
+			sbch_data[i].dst_y == ovl_cfg->real_dst_y &&
 			sbch_data[i].height == ovl_cfg->src_h &&
 			sbch_data[i].width == ovl_cfg->src_w &&
 			sbch_data[i].fmt == ovl_cfg->fmt &&
