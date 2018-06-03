@@ -532,6 +532,7 @@ struct SensorState {
 	uint8_t sensorType;
 	uint8_t alt;
 	bool enable;
+	atomic_t flushCnt;
 };
 
 #define SCP_SENSOR_HUB_TEMP_BUFSIZE     256

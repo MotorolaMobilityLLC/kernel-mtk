@@ -15,8 +15,7 @@
 #include <alsps.h>
 #include <hwmsensor.h>
 #include <SCP_sensorHub.h>
-#include <linux/notifier.h>
-#include "scp_helper.h"
+#include "SCP_power_monitor.h"
 
 
 #define ALSPSHUB_DEV_NAME     "alsps_hub_pl"
@@ -378,11 +377,6 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 			goto err_out;
 		}
 		APS_LOG("ps enable value = %d\n", enable);
-		if (!atomic_read(&obj->scp_init_done)) {
-			APS_ERR("sensor hub has not been ready!!\n");
-			err = -1;
-			goto err_out;
-		}
 		err = sensor_enable_to_hub(ID_PROXIMITY, enable);
 		if (err < 0) {
 			APS_ERR("ALSPS_SET_PS_MODE fail\n");
@@ -413,17 +407,12 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_PS_DATA:
-		if (atomic_read(&obj_ipi_data->scp_init_done)) {
-			err = sensor_get_data_from_hub(ID_PROXIMITY, &data);
-			if (err < 0) {
-				err = -1;
-				goto err_out;
-			}
-			dat = data.proximity_t.steps;
-		} else {
-			APS_ERR("sensor hub has not been ready!!\n");
+		err = sensor_get_data_from_hub(ID_PROXIMITY, &data);
+		if (err < 0) {
 			err = -1;
+			goto err_out;
 		}
+		dat = data.proximity_t.steps;
 		if (copy_to_user(ptr, &dat, sizeof(dat))) {
 			err = -EFAULT;
 			goto err_out;
@@ -431,17 +420,12 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_PS_RAW_DATA:
-		if (atomic_read(&obj_ipi_data->scp_init_done)) {
-			err = sensor_get_data_from_hub(ID_PROXIMITY, &data);
-			if (err < 0) {
-				err = -1;
-				goto err_out;
-			}
-			dat = data.proximity_t.steps;
-		} else {
-			APS_ERR("sensor hub has not been ready!!\n");
+		err = sensor_get_data_from_hub(ID_PROXIMITY, &data);
+		if (err < 0) {
 			err = -1;
+			goto err_out;
 		}
+		dat = data.proximity_t.steps;
 		if (copy_to_user(ptr, &dat, sizeof(dat))) {
 			err = -EFAULT;
 			goto err_out;
@@ -459,11 +443,6 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 			goto err_out;
 		}
 		APS_LOG("als enable value = %d\n", enable);
-		if (!atomic_read(&obj->scp_init_done)) {
-			APS_ERR("sensor hub has not been ready!!\n");
-			err = -1;
-			goto err_out;
-		}
 		err = sensor_enable_to_hub(ID_LIGHT, enable);
 		if (err < 0) {
 			APS_ERR("ALSPS_SET_ALS_MODE fail\n");
@@ -493,20 +472,14 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_ALS_DATA:
-		if (atomic_read(&obj_ipi_data->scp_init_done)) {
-			err = sensor_get_data_from_hub(ID_LIGHT, &data);
-			if (err < 0) {
-				err = -1;
-				goto err_out;
-			}
-			dat = data.light;
-			if (atomic_read(&obj_ipi_data->trace) & CMC_TRC_ALS_DATA)
-				APS_LOG("value = %d\n", dat);
-		} else {
-			APS_ERR("sensor hub has not been ready!!\n");
+		err = sensor_get_data_from_hub(ID_LIGHT, &data);
+		if (err < 0) {
 			err = -1;
 			goto err_out;
 		}
+		dat = data.light;
+		if (atomic_read(&obj_ipi_data->trace) & CMC_TRC_ALS_DATA)
+			APS_LOG("value = %d\n", dat);
 
 		if (copy_to_user(ptr, &dat, sizeof(dat))) {
 			err = -EFAULT;
@@ -515,20 +488,14 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_ALS_RAW_DATA:
-		if (atomic_read(&obj_ipi_data->scp_init_done)) {
-			err = sensor_get_data_from_hub(ID_LIGHT, &data);
-			if (err < 0) {
-				err = -1;
-				goto err_out;
-			}
-			dat = data.light;
-			if (atomic_read(&obj_ipi_data->trace) & CMC_TRC_ALS_DATA)
-				APS_LOG("value = %d\n", dat);
-		} else {
-			APS_ERR("sensor hub has not been ready!!\n");
+		err = sensor_get_data_from_hub(ID_LIGHT, &data);
+		if (err < 0) {
 			err = -1;
 			goto err_out;
 		}
+		dat = data.light;
+		if (atomic_read(&obj_ipi_data->trace) & CMC_TRC_ALS_DATA)
+			APS_LOG("value = %d\n", dat);
 
 		if (copy_to_user(ptr, &dat, sizeof(dat))) {
 			err = -EFAULT;
@@ -559,14 +526,8 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 			err = -EFAULT;
 			goto err_out;
 		}
-		if (!atomic_read(&obj->scp_init_done)) {
-			APS_ERR("sensor hub has not been ready!!\n");
-			err = -1;
-			goto err_out;
-		}
 		if (dat == 0)
 			obj->ps_cali = 0;
-		APS_ERR("[Lomen] ALSPS_IOCTL_CLR_CALI\n");
 		err = sensor_set_cmd_to_hub(ID_PROXIMITY, CUST_ACTION_RESET_CALI, &obj->ps_cali);
 		if (err < 0) {
 			APS_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n",
@@ -588,11 +549,7 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 			err = -EFAULT;
 			goto err_out;
 		}
-		if (!atomic_read(&obj->scp_init_done)) {
-			APS_ERR("sensor hub has not been ready!!\n");
-			err = -1;
-			goto err_out;
-		}
+
 		obj->ps_cali = ps_cali;
 		APS_ERR("[Lomen] ALSPS_IOCTL_SET_CALI\n");
 		/* workaround for UT, need fix before QC
@@ -608,11 +565,6 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 	case ALSPS_SET_PS_THRESHOLD:
 		if (copy_from_user(threshold, ptr, sizeof(threshold))) {
 			err = -EFAULT;
-			goto err_out;
-		}
-		if (!atomic_read(&obj->scp_init_done)) {
-			APS_ERR("sensor hub has not been ready!!\n");
-			err = -1;
 			goto err_out;
 		}
 		APS_ERR("%s set threshold high: 0x%x, low: 0x%x\n", __func__, threshold[0], threshold[1]);
@@ -692,16 +644,12 @@ static int als_enable_nodata(int en)
 
 	APS_LOG("obj_ipi_data als enable value = %d\n", en);
 
-	if (atomic_read(&obj_ipi_data->scp_init_done)) {
-		res = sensor_enable_to_hub(ID_LIGHT, en);
-		if (res < 0) {
-			APS_ERR("als_enable_nodata is failed!!\n");
-			return -1;
-		}
-	} else {
-		APS_ERR("sensor hub has not been ready!!\n");
+	res = sensor_enable_to_hub(ID_LIGHT, en);
+	if (res < 0) {
+		APS_ERR("als_enable_nodata is failed!!\n");
 		return -1;
 	}
+
 	mutex_lock(&alspshub_mutex);
 	if (en)
 		set_bit(CMC_BIT_ALS, &obj_ipi_data->enable);
@@ -718,15 +666,10 @@ static int als_set_delay(u64 ns)
 	unsigned int delayms = 0;
 
 	delayms = (unsigned int)ns / 1000 / 1000;
-	if (atomic_read(&obj_ipi_data->scp_init_done)) {
-		err = sensor_set_delay_to_hub(ID_LIGHT, delayms);
-		if (err) {
-			APS_ERR("als_set_delay fail!\n");
-			return err;
-		}
-	} else {
-		APS_ERR("sensor hub has not been ready!!\n");
-		return -1;
+	err = sensor_set_delay_to_hub(ID_LIGHT, delayms);
+	if (err) {
+		APS_ERR("als_set_delay fail!\n");
+		return err;
 	}
 	APS_LOG("als_set_delay (%d)\n", delayms);
 	return 0;
@@ -756,27 +699,18 @@ static int als_get_data(int *value, int *status)
 	uint64_t time_stamp = 0;
 	uint64_t time_stamp_gpt = 0;
 
-	if (atomic_read(&obj_ipi_data->scp_init_done)) {
-		err = sensor_get_data_from_hub(ID_LIGHT, &data);
-		if (err) {
-			APS_ERR("sensor_get_data_from_hub fail!\n");
-		} else {
-			time_stamp = data.time_stamp;
-			time_stamp_gpt = data.time_stamp_gpt;
-			*value = data.light;
-#if 0
-			APS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, light: %d!\n",
-				time_stamp, time_stamp_gpt, *value);
-#endif
-			*status = SENSOR_STATUS_ACCURACY_MEDIUM;
-		}
-
-		if (atomic_read(&obj_ipi_data->trace) & CMC_TRC_PS_DATA)
-			APS_LOG("value = %d\n", *value);
+	err = sensor_get_data_from_hub(ID_LIGHT, &data);
+	if (err) {
+		APS_ERR("sensor_get_data_from_hub fail!\n");
 	} else {
-		APS_ERR("sensor hub hat not been ready!!\n");
-		err = -1;
+		time_stamp = data.time_stamp;
+		time_stamp_gpt = data.time_stamp_gpt;
+		*value = data.light;
+		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	}
+
+	if (atomic_read(&obj_ipi_data->trace) & CMC_TRC_PS_DATA)
+		APS_LOG("value = %d\n", *value);
 	return 0;
 }
 
@@ -791,16 +725,12 @@ static int ps_enable_nodata(int en)
 
 	APS_LOG("obj_ipi_data als enable value = %d\n", en);
 
-	if (atomic_read(&obj_ipi_data->scp_init_done)) {
-		res = sensor_enable_to_hub(ID_PROXIMITY, en);
-		if (res < 0) {
-			APS_ERR("als_enable_nodata is failed!!\n");
-			return -1;
-		}
-	} else {
-		APS_ERR("sensor hub has not been ready!!\n");
+	res = sensor_enable_to_hub(ID_PROXIMITY, en);
+	if (res < 0) {
+		APS_ERR("als_enable_nodata is failed!!\n");
 		return -1;
 	}
+
 	mutex_lock(&alspshub_mutex);
 	if (en)
 		set_bit(CMC_BIT_PS, &obj_ipi_data->enable);
@@ -820,15 +750,10 @@ static int ps_set_delay(u64 ns)
 	unsigned int delayms = 0;
 
 	delayms = (unsigned int)ns / 1000 / 1000;
-	if (atomic_read(&obj_ipi_data->scp_init_done)) {
-		err = sensor_set_delay_to_hub(ID_PROXIMITY, delayms);
-		if (err < 0) {
-			APS_ERR("ps_set_delay fail!\n");
-			return err;
-		}
-	} else {
-		APS_ERR("sensor hub has not been ready!!\n");
-		return -1;
+	err = sensor_set_delay_to_hub(ID_PROXIMITY, delayms);
+	if (err < 0) {
+		APS_ERR("ps_set_delay fail!\n");
+		return err;
 	}
 
 	APS_LOG("ps_set_delay (%d)\n", delayms);
@@ -859,49 +784,41 @@ static int ps_get_data(int *value, int *status)
 	uint64_t time_stamp = 0;
 	uint64_t time_stamp_gpt = 0;
 
-	if (atomic_read(&obj_ipi_data->scp_init_done)) {
-		err = sensor_get_data_from_hub(ID_PROXIMITY, &data);
-		if (err < 0) {
-			APS_ERR("sensor_get_data_from_hub fail!\n");
-			*value = -1;
-			err = -1;
-		} else {
-			time_stamp = data.time_stamp;
-			time_stamp_gpt = data.time_stamp_gpt;
-			*value = data.proximity_t.oneshot;
-#if 0
-			APS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, distance: %d!\n",
-				time_stamp, time_stamp_gpt, *value);
-#endif
-			*status = SENSOR_STATUS_ACCURACY_MEDIUM;
-		}
-
-		if (atomic_read(&obj_ipi_data->trace) & CMC_TRC_PS_DATA)
-			APS_LOG("value = %d\n", *value);
-	} else {
-		APS_ERR("sensor hub has not been ready!!\n");
+	err = sensor_get_data_from_hub(ID_PROXIMITY, &data);
+	if (err < 0) {
+		APS_ERR("sensor_get_data_from_hub fail!\n");
+		*value = -1;
 		err = -1;
+	} else {
+		time_stamp = data.time_stamp;
+		time_stamp_gpt = data.time_stamp_gpt;
+		*value = data.proximity_t.oneshot;
+		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	}
+
+	if (atomic_read(&obj_ipi_data->trace) & CMC_TRC_PS_DATA)
+		APS_LOG("value = %d\n", *value);
 
 	return err;
 }
-static int scp_ready_event(struct notifier_block *this, unsigned long event, void *ptr)
+static int scp_ready_event(uint8_t event, void *ptr)
 {
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 
 	switch (event) {
-	case SCP_EVENT_READY:
+	case SENSOR_POWER_UP:
 	    atomic_set(&obj->scp_init_done, 1);
-			schedule_work(&obj->init_done_work);
+		schedule_work(&obj->init_done_work);
 	    break;
-	case SCP_EVENT_STOP:
+	case SENSOR_POWER_DOWN:
 	    atomic_set(&obj->scp_init_done, 0);
 	    break;
-		}
-	return NOTIFY_DONE;
+	}
+	return 0;
 }
 
-static struct notifier_block scp_ready_notifier = {
+static struct scp_power_monitor scp_ready_notifier = {
+	.name = "alsps",
 	.notifier_call = scp_ready_event,
 };
 
@@ -944,7 +861,7 @@ static int alspshub_probe(struct platform_device *pdev)
 
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);
-	scp_A_register_notify(&scp_ready_notifier);
+	scp_power_monitor_register(&scp_ready_notifier);
 	err = scp_sensorHub_data_registration(ID_PROXIMITY, ps_recv_data);
 	if (err < 0) {
 		APS_ERR("scp_sensorHub_data_registration failed\n");
