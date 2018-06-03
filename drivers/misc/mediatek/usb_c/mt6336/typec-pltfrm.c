@@ -143,7 +143,7 @@ static void typec_shutdown(struct platform_device *pdev)
 	pd_rx_enable(hba, 0);
 
 	if (hba->vbus_en == 1)
-		typec_drive_vbus(hba, 0);
+		hba->drive_vbus(hba, 0);
 
 	if (hba->vconn_en == 1)
 		typec_drive_vconn(hba, 0);
