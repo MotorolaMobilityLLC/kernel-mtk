@@ -32,9 +32,7 @@
 #include <mtk_rtc_hal_common.h>
 #include "mtk_rtc_hw.h"
 #include <mach/mtk_pmic_wrap.h>
-#if defined CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 #include <mtk_boot.h>
-#endif
 
 #ifdef CONFIG_MTK_SMART_BATTERY
 #include <mt-plat/charging.h>
