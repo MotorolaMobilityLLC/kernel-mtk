@@ -2229,9 +2229,9 @@ static struct page *alloc_movable_target(struct page *page, unsigned long privat
 {
 	struct page *newpage;
 
-	newpage = alloc_page(__GFP_HIGHMEM | __GFP_CMA | __GFP_NORETRY);
+	newpage = alloc_page(__GFP_HIGHMEM | __GFP_MOVABLE | __GFP_NORETRY | __GFP_NOWARN);
 
-	if (newpage != NULL && zone_idx(page_zone(newpage)) != ZONE_MOVABLE) {
+	if (newpage != NULL && zone_idx(page_zone(newpage)) < OPT_ZONE_MOVABLE_CMA) {
 		if (put_page_testzero(newpage))
 			free_hot_cold_page(newpage, true);
 		else
@@ -2252,7 +2252,7 @@ static unsigned long migrate_lru_pages(unsigned long *nr, enum lru_list lru,
 {
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 	LIST_HEAD(page_list);
-	struct zone *src_zone, *dst_zone;
+	struct zone *src_zone;
 	unsigned long nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
 	unsigned long nr_scanned, nr_taken;
 	int err;
@@ -2267,18 +2267,6 @@ static unsigned long migrate_lru_pages(unsigned long *nr, enum lru_list lru,
 		return 0;
 
 	src_zone = lruvec_zone(lruvec);
-	dst_zone = src_zone + (ZONE_MOVABLE - zone_idx(src_zone));
-
-	/* Migrate active anon LRU when no swap space & inactive < active */
-	if (!total_swap_pages &&
-			zone_page_state(src_zone, NR_INACTIVE_ANON) <
-			zone_page_state(src_zone, NR_ACTIVE_ANON))
-		lru = LRU_ACTIVE_ANON;
-
-	/* Check dst_zone's watermark */
-	if (!zone_watermark_ok_safe(dst_zone, 0, high_wmark_pages(dst_zone) +
-				    low_wmark_pages(dst_zone), ZONE_MOVABLE))
-		return 0;
 
 	/* Update nr[lru] to avoid needless shrinking */
 	nr[lru] -= min(nr[lru], nr_to_scan);
@@ -2384,8 +2372,7 @@ static void shrink_lruvec(struct lruvec *lruvec, int swappiness,
 		unsigned long nr_scanned;
 
 		/* Before shrinking inactive anon lru, let us try to do migration */
-		if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) &&
-				zone_idx(lruvec_zone(lruvec)) != ZONE_MOVABLE)
+		if (zone_idx(lruvec_zone(lruvec)) < OPT_ZONE_MOVABLE_CMA)
 			nr_reclaimed += migrate_lru_pages(nr, LRU_INACTIVE_ANON, lruvec, sc);
 
 		for_each_evictable_lru(lru) {
@@ -2711,7 +2698,7 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
 			continue;
 
 		/* If no reclaimable pages, just skip ZONE_MOVABLE. */
-		if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && zone_idx(zone) == ZONE_MOVABLE)
+		if (IS_ZONE_MOVABLE_CMA_ZONE(zone))
 			if (zone_reclaimable_pages(zone) == 0)
 				continue;
 
@@ -3116,7 +3103,7 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
 {
 	struct mem_cgroup *memcg;
 
-	if (!total_swap_pages)
+	if (!total_swap_pages && !IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA))
 		return;
 
 	memcg = mem_cgroup_iter(NULL, NULL, NULL);
@@ -3134,7 +3121,7 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
 static bool zone_balanced(struct zone *zone, int order,
 			  unsigned long balance_gap, int classzone_idx)
 {
-	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && zone_idx(zone) == ZONE_MOVABLE) {
+	if (IS_ZONE_MOVABLE_CMA_ZONE(zone)) {
 		unsigned long reclaimable = zone_reclaimable_pages(zone);
 		unsigned long min = min_wmark_pages(zone);
 
@@ -3274,17 +3261,17 @@ static bool kswapd_shrink_zone(struct zone *zone,
 	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
 
 	/*
-	 * Reclaim the number of pages in ZONE_MOVABLE to be up to zone_reclaimable_pages(zone)
-	 * if there is fewer reclaimable pages.
+	 * Reclaim the number of pages in ZONE_MOVABLE/ZONE_NORMAL to be
+	 * up to zone_reclaimable_pages(zone) if there is fewer reclaimable pages.
 	 */
-	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && zone_idx(zone) == ZONE_MOVABLE) {
+	if (IS_ZONE_MOVABLE_CMA_ZONE(zone)) {
 		unsigned long nr_to_reclaim = zone_reclaimable_pages(zone);
 
 		if (nr_to_reclaim == 0)
 			return true;
 
 		if (nr_to_reclaim < sc->nr_to_reclaim)
-			sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, nr_to_reclaim);
+			sc->nr_to_reclaim = min(SWAP_CLUSTER_MAX, nr_to_reclaim);
 	}
 
 	/*

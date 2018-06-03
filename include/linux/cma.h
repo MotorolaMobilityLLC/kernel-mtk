@@ -32,7 +32,6 @@ extern bool cma_release(struct cma *cma, const struct page *pages, unsigned int 
 extern struct page *cma_alloc_large(struct cma *cma, int count, unsigned int align);
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 extern int cma_alloc_range_ok(struct cma *cma, int count, int align);
-extern void cma_resize_front(struct cma *cma, unsigned long nr_pfn);
 #endif
 
 #endif

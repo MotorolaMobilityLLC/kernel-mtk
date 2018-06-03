@@ -86,6 +86,11 @@ early_param("initrd", early_initrd);
 static phys_addr_t __init max_zone_dma_phys(void)
 {
 	phys_addr_t offset = memblock_start_of_DRAM() & GENMASK_ULL(63, 32);
+
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+	if (is_zmc_inited())
+		return min(offset + ZMC_MAX_ZONE_DMA_PHYS, memblock_end_of_DRAM());
+#endif
 	return min(offset + (1ULL << 32), memblock_end_of_DRAM());
 }
 
@@ -98,7 +103,11 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max)
 	phys_addr_t cma_base, cma_size;
 	unsigned long cma_base_pfn = ULONG_MAX;
 
-	cma_get_range(&cma_base, &cma_size);
+	if (is_zmc_inited())
+		zmc_get_range(&cma_base, &cma_size);
+	else
+		cma_get_range(&cma_base, &cma_size);
+
 	if (cma_size)
 		cma_base_pfn = PFN_DOWN(cma_base);
 #endif

@@ -769,7 +769,10 @@ done_merging:
 		}
 	}
 
-	list_add(&page->lru, &zone->free_area[order].free_list[migratetype]);
+	if (page_to_pfn(page) < zone->zone_start_pfn + zone->spanned_pages / 2)
+		list_add(&page->lru, &zone->free_area[order].free_list[migratetype]);
+	else
+		list_add_tail(&page->lru, &zone->free_area[order].free_list[migratetype]);
 out:
 	zone->free_area[order].nr_free++;
 }
@@ -1323,36 +1326,6 @@ void __init init_cma_reserved_pageblock(struct page *page)
 	adjust_managed_page_count(page, pageblock_nr_pages);
 }
 
-#ifdef CONFIG_ZONE_MOVABLE_CMA
-void __init free_cma_reserved_pageblock(struct page *page)
-{
-	unsigned i = pageblock_nr_pages;
-	struct page *p = page;
-
-	do {
-		__ClearPageReserved(p);
-		set_page_count(p, 0);
-	} while (++p, --i);
-
-	set_pageblock_migratetype(page, MIGRATE_MOVABLE);
-
-	if (pageblock_order >= MAX_ORDER) {
-		i = pageblock_nr_pages;
-		p = page;
-		do {
-			set_page_refcounted(p);
-			__free_pages(p, MAX_ORDER - 1);
-			p += MAX_ORDER_NR_PAGES;
-		} while (i -= MAX_ORDER_NR_PAGES);
-	} else {
-		set_page_refcounted(page);
-		__free_pages(page, pageblock_order);
-	}
-
-	adjust_managed_page_count(page, pageblock_nr_pages);
-}
-#endif
-
 #endif
 
 /*
@@ -1484,6 +1457,9 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
 	unsigned int current_order;
 	struct free_area *area;
 	struct page *page;
+
+	if (IS_ZONE_MOVABLE_CMA_ZONE(zone) && migratetype == MIGRATE_MOVABLE)
+		migratetype = MIGRATE_CMA;
 
 	/* Find a page of the appropriate size in the preferred list */
 	for (current_order = order; current_order < MAX_ORDER; ++current_order) {
@@ -1862,12 +1838,6 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
 				int migratetype, gfp_t gfp_flags)
 {
 	struct page *page;
-
-#ifdef CONFIG_ZONE_MOVABLE_CMA
-	/* No fallback for page allocation on ZONE_MOVABLE */
-	if (zone_idx(zone) == ZONE_MOVABLE)
-		migratetype = MIGRATE_CMA;
-#endif
 
 	page = __rmqueue_smallest(zone, order, migratetype);
 	if (unlikely(!page)) {
@@ -2473,7 +2443,7 @@ static bool __zone_watermark_ok(struct zone *z, unsigned int order,
 		free_cma = zone_page_state(z, NR_FREE_CMA_PAGES);
 
 	/* If it is ZONE_MOVABLE and alloc_flags is 0, don't count the number of free_cma */
-	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && zone_idx(z) == ZONE_MOVABLE)
+	if (IS_ZONE_MOVABLE_CMA_ZONE(z))
 		free_cma = !!(alloc_flags) ? free_cma : 0;
 
 	free_pages -= free_cma;
@@ -2820,7 +2790,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
 		if (order > PAGE_ALLOC_COSTLY_ORDER)
 			goto out;
 		/* The OOM killer does not needlessly kill tasks for lowmem */
-		if (ac->high_zoneidx < ZONE_NORMAL)
+		if (ac->high_zoneidx < ZONE_NORMAL && ZONE_NORMAL != OPT_ZONE_MOVABLE_CMA)
 			goto out;
 		/* The OOM killer does not compensate for IO-less reclaim */
 		if (!(gfp_mask & __GFP_FS)) {
@@ -3283,35 +3253,15 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 	static DEFINE_RATELIMIT_STATE(dmawarn, (180 * HZ), 1);
 #endif
 	gfp_t alloc_mask; /* The gfp_t that was actually used for allocation */
-#ifndef CONFIG_ZONE_MOVABLE_CMA
 	struct alloc_context ac = {
 		.high_zoneidx = gfp_zone(gfp_mask),
 		.nodemask = nodemask,
 		.migratetype = gfpflags_to_migratetype(gfp_mask),
 	};
-#else
-	struct alloc_context ac = {
-		.nodemask = nodemask,
-	};
-
-	/* special case:
-	 *
-	 * __GFP_HIGHMEM | __GFP_MOVABLE | __GFP_CMA =>
-	 *  first  time: DMA
-	 *  second time: MOVABLE -> DMA
-	 * __GFP_HIGHMEM | __GFP_CMA =>
-	 *  first  time: MOVABLE -> DMA
-	 *  second time: MOVABLE -> DMA
-	 */
-	if ((gfp_mask & (GFP_ZONEMASK | __GFP_CMA)) == (__GFP_HIGHMEM | __GFP_CMA)) {
-		gfp_mask |= __GFP_MOVABLE;
-
-		ac.high_zoneidx = gfp_zone(gfp_mask);
-		ac.migratetype = gfpflags_to_migratetype(gfp_mask);
-	} else {
-		ac.high_zoneidx = gfp_zone(gfp_mask & ~__GFP_MOVABLE);
-		ac.migratetype = gfpflags_to_migratetype(gfp_mask);
-	}
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+	/* No fast allocation gets into movable zone */
+	if (ac.high_zoneidx == ZONE_MOVABLE)
+		ac.high_zoneidx -= 1;
 #endif
 
 	gfp_mask &= gfp_allowed_mask;
@@ -3331,14 +3281,8 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 	if (unlikely(!zonelist->_zonerefs->zone))
 		return NULL;
 
-	if (IS_ENABLED(CONFIG_CMA) && ac.migratetype == MIGRATE_MOVABLE) {
-		if (gfp_mask & __GFP_CMA) {
-			/* Assign high watermakr for __GFP_CMA page allocation */
-			alloc_flags &= ~ALLOC_WMARK_MASK;
-			alloc_flags |= ALLOC_WMARK_HIGH;
-		}
+	if (IS_ENABLED(CONFIG_CMA) && ac.migratetype == MIGRATE_MOVABLE)
 		alloc_flags |= ALLOC_CMA;
-	}
 
 retry_cpuset:
 	cpuset_mems_cookie = read_mems_allowed_begin();
@@ -3368,8 +3312,10 @@ retry_cpuset:
 		 */
 		alloc_mask = memalloc_noio_flags(gfp_mask);
 		ac.spread_dirty_pages = false;
+#ifdef CONFIG_ZONE_MOVABLE_CMA
 		/* reassign gfp_flags */
 		ac.high_zoneidx = gfp_zone(gfp_mask);
+#endif
 
 		page = __alloc_pages_slowpath(alloc_mask, order, &ac);
 	}
@@ -4698,7 +4644,7 @@ static int zone_batchsize(struct zone *zone)
 	 *
 	 * OK, so we don't know how big the cache is.  So guess.
 	 */
-	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && zone_idx(zone) == ZONE_MOVABLE)
+	if (IS_ZONE_MOVABLE_CMA_ZONE(zone))
 		batch = zone->present_pages / 1024;
 	else
 		batch = zone->managed_pages / 1024;
@@ -6198,12 +6144,8 @@ static void __setup_per_zone_wmarks(void)
 
 	/* Calculate total number of !ZONE_HIGHMEM pages */
 	for_each_zone(zone) {
-		if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA)) {
-			int zone_off = (char *)zone - (char *)zone->zone_pgdat->node_zones;
-
-			if (zone_off == ZONE_MOVABLE * sizeof(*zone))
-				continue;
-		}
+		if (IS_ZONE_MOVABLE_CMA_ZONE(zone))
+			continue;
 		if (!is_highmem(zone))
 			lowmem_pages += zone->managed_pages;
 	}
