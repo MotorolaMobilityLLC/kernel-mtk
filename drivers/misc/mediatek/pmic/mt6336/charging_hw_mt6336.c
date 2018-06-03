@@ -405,6 +405,7 @@ static int charging_set_current(void *data)
 	array_size = ARRAY_SIZE(CS_VTH);
 	set_chr_current = bmt_find_closest_level(CS_VTH, array_size, current_value);
 	register_value = charging_parameter_to_value(CS_VTH, array_size, set_chr_current);
+	mt6336_set_flag_register_value(MT6336_RG_ICC, 0x1);
 	mt6336_set_flag_register_value(MT6336_RG_ICC, register_value);
 
 	return status;
@@ -468,7 +469,7 @@ static int charging_reset_watch_dog_timer(void *data)
 	int status = STATUS_OK;
 
 	/* reset watchdog timer */
-	mt6336_set_flag_register_value(MT6336_RG_WR_TRI, 0x1);
+	/* mt6336_set_flag_register_value(MT6336_RG_WR_TRI, 0x1); */
 
 	return status;
 }
