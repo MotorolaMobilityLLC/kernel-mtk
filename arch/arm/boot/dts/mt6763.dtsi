@@ -582,6 +582,11 @@
 		      <0 0x0011bc00 0 0x1400>;
 	};
 
+	mcdi@0011b000 {
+		compatible = "mediatek,mt6763-mcdi";
+		reg = <0 0x0011b000 0 0x800>;
+	};
+
 	sleep@10006000 {
 		compatible = "mediatek,sleep";
 		reg = <0 0x10006000 0 0x1000>;

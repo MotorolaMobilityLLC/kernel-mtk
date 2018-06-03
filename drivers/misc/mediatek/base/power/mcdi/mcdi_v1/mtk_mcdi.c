@@ -41,12 +41,17 @@
 #define MCDI_CLUSTER_OFF    1
 
 #define NF_CMD_BUF          128
-#define LOG_BUF_LEN         512
+#define LOG_BUF_LEN         1024
+
+#define MCDI_SYSRAM_SIZE    0x800
+#define MCDI_SYSRAM_NF_WORD (MCDI_SYSRAM_SIZE / 4)
+#define SYSRAM_DUMP_RANGE   50
 
 static unsigned long mcdi_cnt_cpu[NF_CPU];
 static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
 
 void __iomem *sspm_base;
+void __iomem *mcdi_sysram_base;
 
 static unsigned long mcdi_cnt_cpu_last[NF_CPU];
 static unsigned long mcdi_cnt_cluster_last[NF_CLUSTER];
@@ -188,10 +193,75 @@ static ssize_t mcdi_state_write(struct file *filp,
 	return -EINVAL;
 }
 
+/* mcdi_debug */
+static int sysram_dump_start_idx;
+
+static int _mcdi_debug_open(struct seq_file *s, void *data)
+{
+	return 0;
+}
+
+static int mcdi_debug_open(struct inode *inode, struct file *filp)
+{
+	return single_open(filp, _mcdi_debug_open, inode->i_private);
+}
+
+static ssize_t mcdi_debug_read(struct file *filp,
+			       char __user *userbuf, size_t count, loff_t *f_pos)
+{
+	int len = 0;
+	int i;
+	char *p = dbg_buf;
+	int end_idx = 0;
+
+	end_idx = (sysram_dump_start_idx + (SYSRAM_DUMP_RANGE >= MCDI_SYSRAM_NF_WORD)) ?
+				MCDI_SYSRAM_NF_WORD :
+				(sysram_dump_start_idx + SYSRAM_DUMP_RANGE);
+
+	mcdi_log("\nsysram: 0x%x\n", sysram_dump_start_idx);
+	for (i = sysram_dump_start_idx; i < end_idx; i++)
+		mcdi_log("[0x%04x] = %08x\n", i * 4, mcdi_read(mcdi_sysram_base + 4 * i));
+
+	len = p - dbg_buf;
+
+	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
+}
+
+static ssize_t mcdi_debug_write(struct file *filp,
+				const char __user *userbuf, size_t count, loff_t *f_pos)
+{
+	char cmd[NF_CMD_BUF];
+	int param;
+
+	count = min(count, sizeof(cmd_buf) - 1);
+
+	if (copy_from_user(cmd_buf, userbuf, count))
+		return -EFAULT;
+
+	cmd_buf[count] = '\0';
+
+	if (sscanf(cmd_buf, "%127s %x", cmd, &param) == 2) {
+		if (!strcmp(cmd, "sysram")) {
+			if (param >= 0 && param < MCDI_SYSRAM_NF_WORD)
+				sysram_dump_start_idx = param;
+		}
+		return count;
+	}
+
+	return -EINVAL;
+}
 static const struct file_operations mcdi_state_fops = {
 	.open = mcdi_state_open,
 	.read = mcdi_state_read,
 	.write = mcdi_state_write,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static const struct file_operations mcdi_debug_fops = {
+	.open = mcdi_debug_open,
+	.read = mcdi_debug_read,
+	.write = mcdi_debug_write,
 	.llseek = seq_lseek,
 	.release = single_release,
 };
@@ -211,6 +281,7 @@ static int mcdi_debugfs_init(void)
 	}
 
 	debugfs_create_file("mcdi_state", 0644, root_entry, NULL, &mcdi_state_fops);
+	debugfs_create_file("mcdi_debug", 0644, root_entry, NULL, &mcdi_debug_fops);
 
 	return 0;
 }
@@ -236,24 +307,13 @@ void mcdi_mbox_write(int id, unsigned int val)
 	sspm_mbox_write(MCDI_MBOX, id, (void *)&val, 1);
 }
 
-void mcdi_mbox_init(void)
+void mcdi_sysram_init(void)
 {
-#if 0
-	int i = 0;
+	if (!mcdi_sysram_base)
+		return;
 
-	for (i = 0; i < NF_CLUSTER; i++)
-		mcdi_mbox_write(MCDI_MBOX_CLUSTER_0_CAN_POWER_OFF + i, 0);
-
-	mcdi_mbox_write(MCDI_MBOX_PAUSE_ACTION, 0);
-#endif
+	memset_io((void __iomem *)mcdi_sysram_base, 0, MCDI_SYSRAM_SIZE);
 }
-
-#if 0
-static void sspm_standbywfi_irq_enable(int cpu)
-{
-	mcdi_write(SSPM_CFGREG_ACAO_INT_SET, STANDBYWFI_EN(cpu));
-}
-#endif
 
 void mcdi_cpu_off(int cpu)
 {
@@ -264,7 +324,6 @@ void mcdi_cpu_off(int cpu)
 
 	switch (state) {
 	case MCDI_STATE_CPU_OFF:
-/*		sspm_standbywfi_irq_enable(cpu); */
 
 #ifdef USING_TICK_BROADCAST
 		tick_broadcast_enter();
@@ -281,7 +340,7 @@ void mcdi_cpu_off(int cpu)
 	case MCDI_STATE_SODI:
 	case MCDI_STATE_DPIDLE:
 	case MCDI_STATE_SODI3:
-/*		sspm_standbywfi_irq_enable(cpu); */
+
 #ifdef USING_TICK_BROADCAST
 		tick_broadcast_enter();
 #endif
@@ -546,6 +605,7 @@ static int mcdi_hotplug_cb_init(void)
 }
 
 static const char sspm_node_name[] = "mediatek,sspm";
+static const char mcdi_node_name[] = "mediatek,mt6763-mcdi";
 
 static void mcdi_of_init(void)
 {
@@ -562,6 +622,19 @@ static void mcdi_of_init(void)
 		pr_err("node '%s' can not iomap!\n", sspm_node_name);
 
 	pr_info("sspm_base = %p\n", sspm_base);
+
+	/* MCDI sysram base */
+	node = of_find_compatible_node(NULL, NULL, mcdi_node_name);
+
+	if (!node)
+		pr_err("node '%s' not found!\n", mcdi_node_name);
+
+	mcdi_sysram_base = of_iomap(node, 0);
+
+	if (!mcdi_sysram_base)
+		pr_err("node '%s' can not iomap!\n", mcdi_node_name);
+
+	pr_info("mcdi_sysram_base = %p\n", mcdi_sysram_base);
 }
 
 static int __init mcdi_init(void)
@@ -581,8 +654,8 @@ static int __init mcdi_init(void)
 	/* of init */
 	mcdi_of_init();
 
-	/* mbox init */
-	mcdi_mbox_init();
+	/* MCDI sysram space init */
+	mcdi_sysram_init();
 
 	return 0;
 }
