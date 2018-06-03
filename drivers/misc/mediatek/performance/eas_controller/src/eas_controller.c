@@ -609,6 +609,48 @@ static const struct file_operations perfmgr_perfserv_ext_launch_mon_fops = {
 	.release = single_release,
 };
 
+/* Add procfs to control sysctl_sched_migration_cost */
+static ssize_t perfmgr_m_sched_migrate_cost_n_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *pos)
+{
+	unsigned int data;
+	char buf[128];
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+
+	if (kstrtoint(buf, 10, &data))
+		return -1;
+
+	sysctl_sched_migration_cost = data;
+
+	return cnt;
+}
+
+static int perfmgr_m_sched_migrate_cost_n_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", sysctl_sched_migration_cost);
+
+	return 0;
+}
+
+static int perfmgr_m_sched_migrate_cost_n_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, perfmgr_m_sched_migrate_cost_n_show, inode->i_private);
+}
+
+static const struct file_operations perfmgr_m_sched_migrate_cost_n_fops = {
+	.open = perfmgr_m_sched_migrate_cost_n_open,
+	.write = perfmgr_m_sched_migrate_cost_n_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 /*************************************************************************************/
 #if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
 static ssize_t perfmgr_cpi_thres_write(struct file *filp, const char *ubuf,
@@ -716,6 +758,9 @@ void perfmgr_eas_boost_init(void)
 	proc_create("boot_boost", 0644, boost_dir, &perfmgr_boot_boost_fops);
 	/*--ext_launch--*/
 	proc_create("perfserv_ext_launch_mon", 0644, boost_dir, &perfmgr_perfserv_ext_launch_mon_fops);
+
+	/*--sched migrate cost n--*/
+	proc_create("m_sched_migrate_cost_n", 0644, boost_dir, &perfmgr_m_sched_migrate_cost_n_fops);
 
 #if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
 	proc_create("vcore_high", 0644, boost_dir, &perfmgr_vcore_high_fops);
