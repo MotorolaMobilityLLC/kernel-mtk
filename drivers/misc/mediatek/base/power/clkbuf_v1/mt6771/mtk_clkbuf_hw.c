@@ -733,6 +733,7 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	else
 		return true;
 }
+EXPORT_SYMBOL(clk_buf_ctrl);
 
 void clk_buf_dump_dts_log(void)
 {
@@ -1091,9 +1092,8 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 static ssize_t clk_buf_debug_store(struct kobject *kobj, struct kobj_attribute *attr,
 				   const char *buf, size_t count)
 {
-	int len = 0;
 	u32 onoff;
-	char cmd[32], xo_user[10];
+	char cmd[32] =  {'\0'}, xo_user[11] = {'\0'};
 
 	if ((sscanf(buf, "%31s %10s %x", cmd, xo_user, &onoff) != 3))
 		return -EPERM;
@@ -1176,7 +1176,7 @@ static ssize_t clk_buf_debug_store(struct kobject *kobj, struct kobj_attribute *
 	return count;
 ERROR_CMD:
 	clk_buf_pr_info("bad argument!! please follow correct format\n");
-	return len;
+	return -EPERM;
 }
 
 static ssize_t clk_buf_debug_show(struct kobject *kobj, struct kobj_attribute *attr,
