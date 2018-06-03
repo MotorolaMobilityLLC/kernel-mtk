@@ -273,16 +273,19 @@ long long est_next_submit(struct codec_history *hist)
 		prev_idx, hist->submit[prev_idx]);
 #endif
 
+	/* next_submit need to *2 because it's estimating 2 gaps after
+	 * (1 for current, 1 for next)
+	 */
 	next_submit = div_64(
 		(hist->submit[prev_idx] - hist->submit[first_idx]) * 2,
 		(hist->cur_cnt - 1));
 
-	if (next_submit > MAX_SUBMIT) {
+	if (next_submit > MAX_SUBMIT * 2) {
 #if SHOW_ALGO_INFO
 		pr_info("est_next_submit %lld -> MAX SUBMIT(%d)",
 			next_submit, MAX_SUBMIT);
 #endif
-		next_submit = MAX_SUBMIT;
+		next_submit = MAX_SUBMIT * 2;
 	}
 
 	return hist->submit[prev_idx] + next_submit;
