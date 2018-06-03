@@ -28,6 +28,8 @@
 #include "layering_rule.h"
 #include "disp_drv_log.h"
 #include "ddp_rsz.h"
+#include "primary_display.h"
+#include "disp_lowpower.h"
 
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;
@@ -406,6 +408,23 @@ int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level)
 	mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, dramc_type, opp_level);
 
 	return mm_freq_table[dramc_type][opp_level];
+}
+
+void antilatency_config_hrt(void)
+{
+	primary_display_manual_lock();
+
+	l_rule_info.wrot_sram = is_wrot_sram_available();
+
+	/* There would be frame with wrot_sram in frame queue
+	 * therefore, we may need to repaint when release wrot_sram
+	 * TODO: the logic could be improved
+	 */
+
+	if (l_rule_info.wrot_sram)
+		set_antilatency_need_repaint();
+
+	primary_display_manual_unlock();
 }
 
 static struct layering_rule_ops l_rule_ops = {

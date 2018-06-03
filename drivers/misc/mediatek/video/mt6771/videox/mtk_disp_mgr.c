@@ -1231,6 +1231,9 @@ static long _ioctl_query_valid_layer(unsigned long arg)
 		return -EINVAL;
 	}
 
+	if (disp_helper_get_option(DISP_OPT_ANTILATENCY))
+		antilatency_config_hrt();
+
 	layering_rule_start(&disp_info_user, 0);
 
 	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {

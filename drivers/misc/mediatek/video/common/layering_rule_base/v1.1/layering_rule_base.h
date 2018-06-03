@@ -128,6 +128,7 @@ struct layering_rule_info_t {
 	int dal_enable;
 	int primary_fps;
 	int hrt_sys_state;
+	int wrot_sram;
 };
 
 struct layering_rule_ops {
@@ -148,6 +149,8 @@ struct layering_rule_ops {
 #define HRT_SET_SCALE_SCENARIO(hrt_num, value) (hrt_num = ((hrt_num & ~(0xF0)) | ((value & 0xF) << 4)))
 #define HRT_GET_AEE_FLAG(hrt_num) ((hrt_num & 0x100) >> 8)
 #define HRT_SET_AEE_FLAG(hrt_num, value) (hrt_num = ((hrt_num & ~(0x100)) | ((value & 0x1) << 8)))
+#define HRT_GET_WROT_SRAM_FLAG(hrt_num) ((hrt_num & 0x600) >> 9)
+#define HRT_SET_WROT_SRAM_FLAG(hrt_num, value) (hrt_num = ((hrt_num & ~(0x600)) | ((value & 0x3) << 9)))
 #define HRT_GET_PATH_SCENARIO(hrt_num) ((hrt_num & 0xFFFF0000) >> 16)
 #define HRT_SET_PATH_SCENARIO(hrt_num, value) (hrt_num = ((hrt_num & ~(0xFFFF0000)) | ((value & 0xFFFF) << 16)))
 #define HRT_GET_PATH_RSZ_TYPE(hrt_path) ((hrt_path >> PATH_FMT_RSZ_SHIFT) & 0x3)

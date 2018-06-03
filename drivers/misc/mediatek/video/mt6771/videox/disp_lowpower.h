@@ -65,4 +65,10 @@ void enable_ext_idlemgr(unsigned int flag);
 void external_display_idlemgr_kick(const char *source, int need_lock);
 
 #endif
+
+/* functions for anti-latency 2.0 */
+int is_wrot_sram_available(void);
+void unblock_release_wrot_sram(void);
+void set_antilatency_need_repaint(void);
+
 #endif
