@@ -28,7 +28,7 @@ endif
     subdir-ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 	subdir-ccflags-y += -D CONFIG_OF
 
-    obj-y += common/
+    #obj-y += common/
 
     # MINI PLATFORM VERSION = Android O
     MINI_PLATFORM_VER = O
@@ -60,9 +60,9 @@ endif
         obj-y += common/connectivity_build_in_adapter.o
     else
         $(warning Android($(TARGET_PLATFORM_VERSION) < $(MINI_PLATFORM_VER)) do build-in)
-        obj-$(CONFIG_MTK_FMRADIO) += fmradio/
+        #obj-$(CONFIG_MTK_FMRADIO) += fmradio/
         obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/
-        obj-$(CONFIG_MTK_COMBO_GPS) += gps/
+        #obj-$(CONFIG_MTK_COMBO_GPS) += gps/
         obj-$(CONFIG_MTK_COMBO_BT) += bt/
     endif
 
