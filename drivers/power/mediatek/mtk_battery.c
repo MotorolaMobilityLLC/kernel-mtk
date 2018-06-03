@@ -3951,17 +3951,9 @@ static int battery_callback(struct notifier_block *nb, unsigned long event, void
 		break;
 	case CHARGER_NOTIFY_START_CHARGING:
 		{
-			static struct timespec stime;
-
 /* START CHARGING */
-			dtime = timespec_sub(ctime, stime);
-			if (dtime.tv_sec >= 10) {
-				stime = ctime;
-				battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
-				battery_update(&battery_main);
-			} else {
-				bm_err("duraction:%d ,skip\n", (int)dtime.tv_sec);
-			}
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
+			battery_update(&battery_main);
 		}
 		break;
 	case CHARGER_NOTIFY_STOP_CHARGING:
