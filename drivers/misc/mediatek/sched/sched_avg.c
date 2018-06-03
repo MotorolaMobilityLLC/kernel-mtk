@@ -416,34 +416,48 @@ int sched_get_nr_heavy_running_avg(int cluster_id, int *avg)
 }
 EXPORT_SYMBOL(sched_get_nr_heavy_running_avg);
 
-#if 0
-int sched_get_cluster_utilization(int cluster_id)
+/* sched_get_cluster_util:
+ *
+ * returns: 0 if success
+ *
+ * usage: the amount of capacity of a cluster that is used by CFS tasks.
+ * capacity: the max capacity of this cluster
+ */
+int sched_get_cluster_util(int cluster_id, unsigned long *usage, unsigned long *capacity)
 {
 	int cluster_nr;
 	int cpu;
 	struct cpumask cls_cpus;
-	int total_util = 0;
 
 	/* cluster_id  need reasonale. */
 	cluster_nr = arch_get_nr_clusters();
 	if (cluster_id < 0 || cluster_id >= cluster_nr)
-		return 0;
+		return -1;
+
+	/* initialized  */
+	*usage = *capacity = 0;
 
 	arch_get_cluster_cpus(&cls_cpus, cluster_id);
+
 	 /* visit all cpus of this cluster */
-	for_each_cpu_mask(cpu, cls_cpus) {
-		int cpu_util = get_cpu_usage(cpu);
+	for_each_cpu(cpu, &cls_cpus) {
+		/*
+		 * cpu_util returns the amount of capacity of
+		 * a CPU that is used by CFS tasks
+		 */
+		*capacity += capacity_orig_of(cpu);
 
 		if (!cpu_online(cpu))
 			continue;
 
-		total_util += cpu_util;
+		*usage += cpu_util(cpu);
 	}
 
-	return total_util;
+
+	return 0;
 }
-EXPORT_SYMBOL(sched_get_cluster_utilization);
-#endif
+EXPORT_SYMBOL(sched_get_cluster_util);
+
 
 int sched_get_nr_overutil_avg(int cluster_id, int *l_avg, int *h_avg)
 {
