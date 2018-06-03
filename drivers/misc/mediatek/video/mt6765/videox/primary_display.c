@@ -3700,7 +3700,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	init_cmdq_slots(&(pgc->dither_status_info), 1, 0x10001);
 	init_cmdq_slots(&(pgc->dsi_vfp_line), 1, 0);
 	init_cmdq_slots(&(pgc->night_light_params), 17, 0);
-
+	init_cmdq_slots(&(pgc->ovl_dummy_info), OVL_NUM, 0);
 
 	/* init night light related variable */
 	mem_config.m_ccorr_config.is_dirty = 1;
@@ -6357,6 +6357,19 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			sub |= hrt_level << 16;
 		cmdqRecBackupUpdateSlot(cmdq_handle,
 			pgc->subtractor_when_free, layer, sub);
+	}
+
+	/* GCE read ovl register about full transparent layer */
+	for (i = 0; i < OVL_NUM; i++) {
+		if (data_config->read_dum_reg[i]) {
+			unsigned long ovl_base = ovl_base_addr(i);
+
+			data_config->read_dum_reg[i] = 0;
+			cmdqRecBackupRegisterToSlot(cmdq_handle,
+				pgc->ovl_dummy_info, i,
+				disp_addr_convert
+				(DISP_REG_OVL_DUMMY_REG + ovl_base));
+		}
 	}
 
 	/* check last ovl status: should be idle when config */

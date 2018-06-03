@@ -162,6 +162,8 @@ struct sbch {
 	unsigned int width;
 	int phy_layer;
 	enum UNIFIED_COLOR_FMT fmt;
+	unsigned long long sbch_en_cnt;
+	int full_trans_en;
 };
 
 struct disp_rect {
@@ -371,6 +373,7 @@ struct disp_ddp_path_config {
 	int hrt_path;
 	int hrt_scale;
 	int sbch_enable;
+	int read_dum_reg[OVL_NUM];
 };
 
 /* dpmgr_ioctl cmd definition */
