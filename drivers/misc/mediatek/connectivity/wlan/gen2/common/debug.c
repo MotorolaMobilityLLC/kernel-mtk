@@ -1120,6 +1120,7 @@ VOID wlanReadFwInfoFromEmi(IN PUINT32 pAddr)
 		if (gPrevIdxPagedtrace >= 0x8000) {
 			DBGLOG(RX, WARN, "++ prev_idx_pagedtrace invalid ...+\n");
 			gPrevIdxPagedtrace = 0x8000 - 1;
+			kalMemFree(pEmiBuf, VIR_MEM_TYPE, WLAN_EMI_DEBUG_BUF_SIZE);
 			return;
 		}
 
