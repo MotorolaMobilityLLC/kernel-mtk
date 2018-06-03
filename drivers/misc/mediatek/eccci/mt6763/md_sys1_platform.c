@@ -705,7 +705,16 @@ void md1_pll_init(struct ccci_modem *md)
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
 	struct md_pll_reg *md_pll = md_info->md_pll_base;
 	void __iomem *map_addr = (void __iomem *)(md->hw_info->ap_mixed_base);
+	int cnt = 0;
+	unsigned int reg_val;
 
+	while (1) {
+		reg_val = cldma_read32(md_pll->md_top_Pll, 0x0);
+		CCCI_BOOTUP_LOG(md->index, TAG, "Curr pll ver:0x%X\n", reg_val);
+		if (reg_val != 0)
+			break;
+		msleep(20);
+	}
 	/* Enables clock square1 low-pass filter for 26M quality. */
 	ROr2W(map_addr, 0x0, 0x2);
 	udelay(100);
@@ -727,11 +736,19 @@ void md1_pll_init(struct ccci_modem *md)
 
 	cldma_write32(md_pll->md_top_Pll, 0x104, 0x4C43100);
 	cldma_write32(md_pll->md_top_Pll, 0x10, 0x100010);
+	do {
+		reg_val = cldma_read32(md_pll->md_top_Pll, 0x10);
+		cnt++;
+		if ((cnt % 5) == 0) {
+			CCCI_BOOTUP_LOG(md->index, TAG, "pll init: rewrite 0x100010(%d)\n", cnt);
+			cldma_write32(md_pll->md_top_Pll, 0x10, 0x100010);
+		}
+		msleep(20);
+	} while (reg_val != 0x100010);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: check 0x100010[0x%X], cnt:%d\n", reg_val, cnt);
 
-	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0x8000, [0x%x]=0x%x\n", MDTOP_CLKSW_BASE + 0x0,
-		cldma_read32(md_pll->md_top_clkSW, 0x0));
 	while ((cldma_read32(md_pll->md_top_clkSW, 0x84) & 0x8000) != 0x8000) {
-		udelay(200);
+		msleep(20);
 		CCCI_BOOTUP_LOG(md->index, TAG, "pll init: [0x%x]=0x%x\n", MDTOP_CLKSW_BASE + 0x84,
 			cldma_read32(md_pll->md_top_clkSW, 0x84));
 	}
@@ -804,7 +821,9 @@ int md_cd_power_on(struct ccci_modem *md)
 	inform_nfc_vsim_change(md->index, 1, 0);
 #endif
 	/* step 4: pll init */
+	CCCI_BOOTUP_LOG(md->index, CORE, "md_cd_power_on: md1_pll_init ++++++++++++\n");
 	md1_pll_init(md);
+	CCCI_BOOTUP_LOG(md->index, CORE, "md_cd_power_on: md1_pll_init ------------\n");
 
 	/* step 5: disable MD WDT */
 	cldma_write32(md_info->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
