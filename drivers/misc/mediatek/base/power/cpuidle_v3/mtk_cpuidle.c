@@ -232,7 +232,7 @@ static void mtk_spm_wakeup_src_restore(void)
 		if (!spm_wakeup_src[i].irq_nr)
 			return;
 
-		if (readl_relaxed(SPM_WAKEUP_STA) & spm_wakeup_src[i].irq_pending)
+		if (readl_relaxed(SPM_SW_RSV_0) & spm_wakeup_src[i].irq_pending)
 			mt_irq_set_pending(spm_wakeup_src[i].irq_nr);
 	}
 }
