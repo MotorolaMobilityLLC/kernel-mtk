@@ -33,7 +33,7 @@ static int __init mrdump_key_init(void)
 	enum MRDUMP_RST_SOURCE source = MRDUMP_EINT;
 	enum MRDUMP_NOTIFY_MODE mode = MRDUMP_IRQ;
 	struct device_node *node;
-	const char *source_str, *mode_str;
+	const char *source_str, *mode_str, *interrupts;
 	char node_name[] = "mediatek, mrdump_ext_rst-eint";
 
 	node = of_find_compatible_node(NULL, NULL, node_name);
@@ -41,9 +41,14 @@ static int __init mrdump_key_init(void)
 		if (!of_property_read_string(node, "source", &source_str)) {
 			if (strcmp(source_str, "SYSRST") == 0)
 				source = MRDUMP_SYSRST;
-		} else {
-			pr_notice("MRDUMP_KEY: no source property, use legacy value EINT");
-		}
+			else if (!of_property_read_string(node, "interrupts", &interrupts))
+				source = MRDUMP_EINT;
+			else {
+				pr_notice("mrdump_key:EINT disabled,no dws configuration found\n");
+				goto out;
+			}
+		} else
+			pr_notice("mrdump_key, source is not found, default to EINT\n");
 
 		if (!of_property_read_string(node, "mode", &mode_str)) {
 			if (strcmp(mode_str, "RST") == 0)
