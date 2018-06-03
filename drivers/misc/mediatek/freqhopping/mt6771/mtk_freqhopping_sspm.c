@@ -501,6 +501,7 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 {
 	struct fhctl_ipi_data ipi_data;
 
+    /* mt6771 only */
 	if ((pll_id == 2) || (pll_id == 6) || (pll_id == 10)) {
 		/* FHCTL not support  */
 		return 0;
@@ -518,16 +519,6 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 		       target_dds);
 		/* Check dds overflow (22 bit) */
 		WARN_ON(1);
-	}
-
-	/* [MT6763 Only] All new platform should confirm again!!! */
-	switch (pll_id) {
-	case FH_MEM_PLLID: /* [MT6763 Only] dram should use MPLL instead of MEMPLL*/
-		FH_MSG("ERROR! The [PLL_ID]:%d was forbidden hopping by MT6763 FHCTL.", pll_id);
-		WARN_ON(1);
-		break;
-	default:
-		break;
 	}
 
 #if 0
