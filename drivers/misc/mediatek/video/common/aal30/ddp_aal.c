@@ -1533,7 +1533,7 @@ static int disp_aal_write_param_to_reg(enum DISP_MODULE_ENUM module, struct cmdq
 		/* Write dre curve to different register */
 		DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(11) + offset, DRE_REG_2(gain[27], 0, gain[28], 9), ~0);
 	}
-#elif defined(CONFIG_MACH_MT6763)
+#elif defined(CONFIG_MACH_MT6763)  || defined(CONFIG_MACH_MT6758)
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(0) + offset, DRE_REG_2(gain[0], 0, gain[1], 14), ~0);
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(1) + offset, DRE_REG_2(gain[2], 0, gain[3], 13), ~0);
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(2) + offset, DRE_REG_2(gain[4], 0, gain[5], 12), ~0);
@@ -1674,7 +1674,7 @@ static int aal_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config 
  *****************************************************************************/
 #if defined(CONFIG_MACH_MT6799)
 #define DRE_FLT_NUM	(12)
-#elif defined(CONFIG_MACH_MT6763)
+#elif defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 #define DRE_FLT_NUM	(13)
 #else
 #define DRE_FLT_NUM	(11)
@@ -1749,7 +1749,7 @@ static void ddp_aal_backup(void)
 #endif
 	}
 
-#if defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 		g_aal_backup.DRE_FLT_FORCE[11] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE_11);
 		g_aal_backup.DRE_FLT_FORCE[12] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE_12);
 #endif
@@ -1820,7 +1820,7 @@ static void ddp_aal_restore(enum DISP_MODULE_ENUM module, void *cmq_handle)
 #endif
 	}
 
-#if defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 		DISP_REG_SET(cmq_handle, DISP_AAL_DRE_FLT_FORCE_11 + offset, g_aal_backup.DRE_FLT_FORCE[11]);
 		DISP_REG_SET(cmq_handle, DISP_AAL_DRE_FLT_FORCE_12 + offset, g_aal_backup.DRE_FLT_FORCE[12]);
 #endif
