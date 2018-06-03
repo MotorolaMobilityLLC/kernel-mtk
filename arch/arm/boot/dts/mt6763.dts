@@ -3784,10 +3784,10 @@
 		compatible = "mediatek,usb_iddig_bi_eint";
 	};
 
-	rt5081_pmu_eint: rt5081_pmu_eint {
+	mt6370_pmu_eint: mt6370_pmu_eint {
 	};
 
-	rt5081_pd: rt5081_pd_eint {
+	mt6370_pd: mt6370_pd_eint {
 	};
 
 	mrdump_ext_rst: mrdump_ext_rst {

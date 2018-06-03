@@ -104,7 +104,7 @@
                 <debounce_en>Disable</debounce_en>
             </eint22>
             <eint41>
-                <varName>RT5081_PD</varName>
+                <varName>MT6370_PD</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Edge</sensitive_level>
@@ -118,7 +118,7 @@
                 <debounce_en>Disable</debounce_en>
             </eint44>
             <eint91>
-                <varName>RT5081_PMU_EINT</varName>
+                <varName>MT6370_PMU_EINT</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
@@ -707,7 +707,7 @@
                 <in>true</in>
                 <out>false</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_RT5081_IRQB_EINT_PIN</varName0>
+                <varName0>GPIO_MT6370_IRQB_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio41>
@@ -2251,7 +2251,7 @@
                 <address>0x1C</address>
             </device15>
             <device16>
-                <varName>RT5081_PMU</varName>
+                <varName>MT6370_PMU</varName>
                 <channel>I2C_CHANNEL_5</channel>
                 <address>0x34</address>
             </device16>
