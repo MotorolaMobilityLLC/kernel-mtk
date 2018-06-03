@@ -50,10 +50,10 @@
 #ifdef COFNIG_MTK_IOMMU
 #include <mtk_iommu.h>
 #else
-/*#include <m4u.h>*/
+#include <m4u.h>
 #endif
 
-/*#define EP_CODE_MARK_CMDQ*/
+#define EP_CODE_MARK_CMDQ
 #ifndef EP_CODE_MARK_CMDQ
 #include <cmdq_core.h>
 #endif
@@ -129,19 +129,10 @@ struct mmdvfs_pm_qos_request dip_qos;
 #endif
 
 #define DIP_DEV_NAME                "camera-dip"
-#define SMI_LARB_MMU_CTL            (0)
 #define DUMMY_INT                   (0)   /*for early if load dont need to use camera*/
 #define EP_NO_CLKMGR
 /* #define EP_NO_CLKMGR *//* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
-/*#define ENABLE_WAITIRQ_LOG*/ /* wait irq debug logs */
-/*#define ENABLE_STT_IRQ_LOG*/  /*show STT irq debug logs */
-/* Queue timestamp for deque. Update when non-drop frame @SOF */
-#define TIMESTAMP_QUEUE_EN          (0)
-#if (TIMESTAMP_QUEUE_EN == 1)
-#define TSTMP_SUBSAMPLE_INTPL		(1)
-#else
-#define TSTMP_SUBSAMPLE_INTPL		(0)
-#endif
+
 #define DIP_BOTTOMHALF_WORKQ		(1)
 
 #if (DIP_BOTTOMHALF_WORKQ == 1)
@@ -201,21 +192,21 @@ static irqreturn_t DIP_Irq_DIP_A(signed int  Irq, void *DeviceId);
 
 typedef irqreturn_t (*IRQ_CB)(signed int, void *);
 
-struct {
+struct ISR_TABLE {
 	IRQ_CB          isr_fp;
 	unsigned int    int_number;
 	char            device_name[16];
-} ISR_TABLE;
+};
 
 #ifndef CONFIG_OF
-const ISR_TABLE DIP_IRQ_CB_TBL[DIP_IRQ_TYPE_AMOUNT] = {
+const struct ISR_TABLE DIP_IRQ_CB_TBL[DIP_IRQ_TYPE_AMOUNT] = {
 	{NULL,              0,    "DIP_A"}
 };
 
 #else
 /* int number is got from kernel api */
 
-const ISR_TABLE DIP_IRQ_CB_TBL[DIP_IRQ_TYPE_AMOUNT] = {
+const struct ISR_TABLE DIP_IRQ_CB_TBL[DIP_IRQ_TYPE_AMOUNT] = {
 	{DIP_Irq_DIP_A,     0,  "dip"}
 };
 
@@ -233,26 +224,26 @@ static const struct of_device_id dip_of_ids[] = {
 /* //////////////////////////////////////////////////////////////////////////////////////////// */
 /*  */
 typedef void (*tasklet_cb)(unsigned long);
-struct {
+struct Tasklet_table {
 	tasklet_cb tkt_cb;
 	struct tasklet_struct  *pIsp_tkt;
-} Tasklet_table;
+};
 
 struct tasklet_struct DIP_tkt[DIP_IRQ_TYPE_AMOUNT];
 
-static Tasklet_table dip_tasklet[DIP_IRQ_TYPE_AMOUNT] = {
+static struct Tasklet_table dip_tasklet[DIP_IRQ_TYPE_AMOUNT] = {
 	{NULL,                  &DIP_tkt[DIP_IRQ_TYPE_INT_DIP_A_ST]},
 };
 
 #if (DIP_BOTTOMHALF_WORKQ == 1)
-struct {
-	DIP_IRQ_TYPE_ENUM	module;
+struct IspWorkqueTable {
+	enum DIP_IRQ_TYPE_ENUM	module;
 	struct work_struct  dip_bh_work;
-} IspWorkqueTable;
+};
 
 static void DIP_BH_Workqueue(struct work_struct *pWork);
 
-static IspWorkqueTable dip_workque[DIP_IRQ_TYPE_AMOUNT] = {
+static struct IspWorkqueTable dip_workque[DIP_IRQ_TYPE_AMOUNT] = {
 	{DIP_IRQ_TYPE_INT_DIP_A_ST},
 };
 #endif
@@ -272,12 +263,12 @@ enum {
 
 #ifndef CONFIG_MTK_CLKMGR /*CCF*/
 #include <linux/clk.h>
-struct {
+struct DIP_CLK_STRUCT {
 	struct clk *DIP_SCP_SYS_DIS;
 	struct clk *DIP_SCP_SYS_DIP;
 	struct clk *DIP_IMG_DIP;
-} DIP_CLK_STRUCT;
-DIP_CLK_STRUCT dip_clk;
+};
+struct DIP_CLK_STRUCT dip_clk;
 #endif
 
 /* TODO: Remove, Jessy */
@@ -295,7 +286,7 @@ static struct dip_device *dip_devs;
 static int nr_dip_devs;
 #endif
 
-#define AEE_DUMP_BY_USING_ION_MEMORY
+/*#define AEE_DUMP_BY_USING_ION_MEMORY*/
 #define AEE_DUMP_REDUCE_MEMORY
 #ifdef AEE_DUMP_REDUCE_MEMORY
 /* ion */
@@ -344,9 +335,9 @@ static unsigned int DumpBufferField;
 static bool g_bDumpPhyDIPBuf = MFALSE;
 static unsigned int g_tdriaddr = 0xffffffff;
 static unsigned int g_cmdqaddr = 0xffffffff;
-static DIP_GET_DUMP_INFO_STRUCT g_dumpInfo = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-static DIP_MEM_INFO_STRUCT g_TpipeBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
-static DIP_MEM_INFO_STRUCT g_CmdqBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
+static struct DIP_GET_DUMP_INFO_STRUCT g_dumpInfo = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+static struct DIP_MEM_INFO_STRUCT g_TpipeBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
+static struct DIP_MEM_INFO_STRUCT g_CmdqBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
 static unsigned int m_CurrentPPB;
 
 #ifdef CONFIG_PM_WAKELOCKS
@@ -374,11 +365,6 @@ void __iomem *DIP_CLOCK_CELL_BASE;
 
 void __iomem *DIP_MMSYS_CONFIG_BASE;
 
-#if (SMI_LARB_MMU_CTL == 1)
-void __iomem *DIP_SMI_LARB_BASE[8];
-#endif
-
-
 /* TODO: Remove start, Jessy */
 #define DIP_ADDR                        (gDIPSYS_Reg[DIP_BASE_ADDR])
 #define DIP_IMGSYS_BASE                 (gDIPSYS_Reg[DIP_IMGSYS_CONFIG_BASE_ADDR])
@@ -405,14 +391,13 @@ void __iomem *DIP_SMI_LARB_BASE[8];
 #define DIP_REG_SW_CTL_RST_CAMSV        (3)
 #define DIP_REG_SW_CTL_RST_CAMSV2       (4)
 
-struct {
+struct S_START_T {
 	unsigned int sec;
 	unsigned int usec;
-} S_START_T;
+};
 
 /* QQ, remove later */
 /* record remain node count(success/fail) excludes head when enque/deque control */
-static signed int EDBufQueRemainNodeCnt;
 static unsigned int g_regScen = 0xa5a5a5a5; /* remove later */
 
 
@@ -423,32 +408,32 @@ static spinlock_t      SpinLock_P2FrameList;
 #define _MAX_SUPPORT_P2_FRAME_NUM_ 512
 #define _MAX_SUPPORT_P2_BURSTQ_NUM_ 8
 #define _MAX_SUPPORT_P2_PACKAGE_NUM_ (_MAX_SUPPORT_P2_FRAME_NUM_/_MAX_SUPPORT_P2_BURSTQ_NUM_)
-struct {
+struct DIP_P2_BUFQUE_IDX_STRUCT {
 	signed int start; /* starting index for frames in the ring list */
 	signed int curr; /* current index for running frame in the ring list */
 	signed int end; /* ending index for frames in the ring list */
-} DIP_P2_BUFQUE_IDX_STRUCT;
+};
 
-struct {
+struct DIP_P2_FRAME_UNIT_STRUCT {
 	unsigned int               processID;  /* caller process ID */
 	unsigned int               callerID;   /* caller thread ID */
 	unsigned int               cqMask; /* QQ. optional -> to judge cq combination(for judging frame) */
 
-	DIP_P2_BUF_STATE_ENUM  bufSts;     /* buffer status */
-} DIP_P2_FRAME_UNIT_STRUCT;
+	enum DIP_P2_BUF_STATE_ENUM  bufSts;     /* buffer status */
+};
 
-static DIP_P2_BUFQUE_IDX_STRUCT P2_FrameUnit_List_Idx[DIP_P2_BUFQUE_PROPERTY_NUM];
-static DIP_P2_FRAME_UNIT_STRUCT P2_FrameUnit_List[DIP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_FRAME_NUM_];
+static struct DIP_P2_BUFQUE_IDX_STRUCT P2_FrameUnit_List_Idx[DIP_P2_BUFQUE_PROPERTY_NUM];
+static struct DIP_P2_FRAME_UNIT_STRUCT P2_FrameUnit_List[DIP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_FRAME_NUM_];
 
-struct {
+struct DIP_P2_FRAME_PACKAGE_STRUCT {
 	unsigned int                processID;  /* caller process ID */
 	unsigned int                callerID;   /* caller thread ID */
 	unsigned int                dupCQIdx;       /* to judge it belongs to which frame package */
 	signed int                   frameNum;
 	signed int                   dequedNum;  /* number of dequed buffer no matter deque success or fail */
-} DIP_P2_FRAME_PACKAGE_STRUCT;
-static DIP_P2_BUFQUE_IDX_STRUCT P2_FramePack_List_Idx[DIP_P2_BUFQUE_PROPERTY_NUM];
-static DIP_P2_FRAME_PACKAGE_STRUCT
+};
+static struct DIP_P2_BUFQUE_IDX_STRUCT P2_FramePack_List_Idx[DIP_P2_BUFQUE_PROPERTY_NUM];
+static struct DIP_P2_FRAME_PACKAGE_STRUCT
 	P2_FramePackage_List[DIP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_PACKAGE_NUM_];
 
 
@@ -462,15 +447,6 @@ static  spinlock_t      SpinLockRegScen;
 static  spinlock_t      SpinLock_UserKey;
 
 
-
-#if (TIMESTAMP_QUEUE_EN == 1)
-static void DIP_GetDmaPortsStatus(DIP_DEV_NODE_ENUM reg_module, unsigned int *DmaPortsStats);
-static CAM_FrameST Irq_CAM_SttFrameStatus(DIP_DEV_NODE_ENUM module, DIP_IRQ_TYPE_ENUM irq_mod, unsigned int dma_id,
-					unsigned int delayCheck);
-static int32_t DIP_PopBufTimestamp(unsigned int module, unsigned int dma_id, S_START_T *pTstp);
-static int32_t DIP_WaitTimestampReady(unsigned int module, unsigned int dma_id);
-#endif
-
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -481,10 +457,6 @@ static int Tbl_RTBuf_MMPSize[DIP_IRQ_TYPE_AMOUNT];
 
 /* original pointer for kmalloc'd area as returned by kmalloc */
 static void *pBuf_kmalloc[DIP_IRQ_TYPE_AMOUNT];
-/*  */
-static DIP_RT_BUF_STRUCT *pstRTBuf[DIP_IRQ_TYPE_AMOUNT] = {NULL};
-
-/* static DIP_DEQUE_BUF_INFO_STRUCT g_deque_buf = {0,{}};    // Marked to remove build warning. */
 
 unsigned long FIP_g_Flash_SpinLock;
 
@@ -494,7 +466,7 @@ static unsigned int G_u4EnableClockCount;
 int DIP_pr_detect_count;
 
 /*save ion fd*/
-#define ENABLE_KEEP_ION_HANDLE
+/*#define ENABLE_KEEP_ION_HANDLE*/
 
 #ifdef ENABLE_KEEP_ION_HANDLE
 #define _ion_keep_max_   (64)/*32*/
@@ -505,25 +477,25 @@ static struct ion_client *pIon_client;
 /*static struct ion_handle *G_WRDMA_IonHnd[2][_dma_max_wr_*_ion_keep_max_] = { {NULL}, {NULL} };*/
 /*static spinlock_t SpinLock_IonHnd[2][_dma_max_wr_]; */ /* protect G_WRDMA_IonHnd & G_WRDMA_IonFd */
 
-struct{
-	DIP_DEV_NODE_ENUM node;
+struct T_ION_TBL {
+	enum DIP_DEV_NODE_ENUM node;
 	signed int *pIonCt;
 	signed int *pIonFd;
 	struct ion_handle **pIonHnd;
 	spinlock_t *pLock;
-} T_ION_TBL;
+};
 
-static T_ION_TBL gION_TBL[DIP_DEV_NODE_NUM] = {
+static struct T_ION_TBL gION_TBL[DIP_DEV_NODE_NUM] = {
 	{DIP_DEV_NODE_NUM, NULL, NULL, NULL, NULL},
 };
 #endif
 /*******************************************************************************
 *
 ********************************************************************************/
-struct {
+struct DIP_USER_INFO_STRUCT {
 	pid_t   Pid;
 	pid_t   Tid;
-} DIP_USER_INFO_STRUCT;
+};
 
 /*******************************************************************************
 *
@@ -532,22 +504,22 @@ struct {
 #define DIP_BUF_SIZE_WRITE      1024
 #define DIP_BUF_WRITE_AMOUNT    6
 
-enum {
+enum DIP_BUF_STATUS_ENUM {
 	DIP_BUF_STATUS_EMPTY,
 	DIP_BUF_STATUS_HOLD,
 	DIP_BUF_STATUS_READY
-} DIP_BUF_STATUS_ENUM;
+};
 
-struct {
-	DIP_BUF_STATUS_ENUM Status;
+struct DIP_BUF_STRUCT {
+	enum DIP_BUF_STATUS_ENUM Status;
 	unsigned int                Size;
 	unsigned char *pData;
-} DIP_BUF_STRUCT;
+};
 
-struct {
-	DIP_BUF_STRUCT      Read;
-	DIP_BUF_STRUCT      Write[DIP_BUF_WRITE_AMOUNT];
-} DIP_BUF_INFO_STRUCT;
+struct DIP_BUF_INFO_STRUCT {
+	struct DIP_BUF_STRUCT      Read;
+	struct DIP_BUF_STRUCT      Write[DIP_BUF_WRITE_AMOUNT];
+};
 
 
 /*******************************************************************************
@@ -557,69 +529,38 @@ struct {
 #define INT_ERR_WARN_TIMER_THREAS 1000
 #define INT_ERR_WARN_MAX_TIME 1
 
-struct {
+struct DIP_IRQ_ERR_WAN_CNT_STRUCT {
 	unsigned int m_err_int_cnt[DIP_IRQ_TYPE_AMOUNT][DIP_ISR_MAX_NUM]; /* cnt for each err int # */
 	unsigned int m_warn_int_cnt[DIP_IRQ_TYPE_AMOUNT][DIP_ISR_MAX_NUM]; /* cnt for each warning int # */
 	unsigned int m_err_int_mark[DIP_IRQ_TYPE_AMOUNT]; /* mark for err int, where its cnt > threshold */
 	unsigned int m_warn_int_mark[DIP_IRQ_TYPE_AMOUNT]; /* mark for warn int, where its cnt > threshold */
 	unsigned long m_int_usec[DIP_IRQ_TYPE_AMOUNT];
-} DIP_IRQ_ERR_WAN_CNT_STRUCT;
+};
 
 static signed int FirstUnusedIrqUserKey = 1;
 #define USERKEY_STR_LEN 128
 
-struct {
+struct UserKeyInfo {
 	char userName[USERKEY_STR_LEN]; /* name for the user that register a userKey */
 	int userKey;    /* the user key for that user */
-} UserKeyInfo;
+};
 /* array for recording the user name for a specific user key */
-static UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];
+static struct UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];
 
-struct {
+struct DIP_IRQ_INFO_STRUCT {
 	/* Add an extra index for status type in Everest -> signal or dma */
-	unsigned int    Status[DIP_IRQ_TYPE_AMOUNT][DIP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
-	unsigned int             Mask[DIP_IRQ_TYPE_AMOUNT][DIP_IRQ_ST_AMOUNT];
-	unsigned int             ErrMask[DIP_IRQ_TYPE_AMOUNT][DIP_IRQ_ST_AMOUNT];
-	unsigned int              WarnMask[DIP_IRQ_TYPE_AMOUNT][DIP_IRQ_ST_AMOUNT];
-	/* flag for indicating that user do mark for a interrupt or not */
-	unsigned int    MarkedFlag[DIP_IRQ_TYPE_AMOUNT][DIP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
-	/* time for marking a specific interrupt */
-	unsigned int    MarkedTime_sec[DIP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
-	/* time for marking a specific interrupt */
-	unsigned int    MarkedTime_usec[DIP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
-	/* number of a specific signal that passed by */
-	signed int     PassedBySigCnt[DIP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
-	/* */
-	unsigned int    LastestSigTime_sec[DIP_IRQ_TYPE_AMOUNT][32];
-	/* latest time for each interrupt */
-	unsigned int    LastestSigTime_usec[DIP_IRQ_TYPE_AMOUNT][32];
-	/* latest time for each interrupt */
-} DIP_IRQ_INFO_STRUCT;
+	unsigned int    Status[DIP_IRQ_TYPE_AMOUNT][IRQ_USER_NUM_MAX];
+	unsigned int    Mask[DIP_IRQ_TYPE_AMOUNT];
+};
 
-struct {
+struct DIP_TIME_LOG_STRUCT {
 	unsigned int     Vd;
 	unsigned int     Expdone;
 	unsigned int     WorkQueueVd;
 	unsigned int     WorkQueueExpdone;
 	unsigned int     TaskletVd;
 	unsigned int     TaskletExpdone;
-} DIP_TIME_LOG_STRUCT;
-
-#if (TIMESTAMP_QUEUE_EN == 1)
-#define DIP_TIMESTPQ_DEPTH      (256)
-struct {
-	struct {
-		S_START_T   TimeQue[DIP_TIMESTPQ_DEPTH];
-		unsigned int     WrIndex; /* increase when p1done or dmao done */
-		unsigned int     RdIndex; /* increase when user deque */
-		unsigned long long  TotalWrCnt;
-		unsigned long long  TotalRdCnt;
-		/* TSTP_V3 unsigned int	    PrevFbcDropCnt; */
-		unsigned int     PrevFbcWCnt;
-	} Dmao[_cam_max_];
-	unsigned int  DmaEnStatus[_cam_max_];
-} DIP_TIMESTPQ_INFO_STRUCT;
-#endif
+};
 
 enum _eChannel {
 	_PASS1      = 0,
@@ -647,13 +588,8 @@ enum _eChannel {
 	})
 
 
-static unsigned int g_DIPIntErr[DIP_IRQ_TYPE_AMOUNT] = {0};
-static unsigned int g_DmaErr_CAM[DIP_IRQ_TYPE_AMOUNT][_cam_max_] = {{0} };
-
-
-
 #define SUPPORT_MAX_IRQ 32
-struct {
+struct DIP_INFO_STRUCT {
 	spinlock_t                      SpinLockIspRef;
 	spinlock_t                      SpinLockIsp;
 	spinlock_t                      SpinLockIrq[DIP_IRQ_TYPE_AMOUNT];
@@ -666,18 +602,15 @@ struct {
 	unsigned int                         UserCount;
 	unsigned int                         DebugMask;
 	signed int							IrqNum;
-	DIP_IRQ_INFO_STRUCT			IrqInfo;
-	DIP_IRQ_ERR_WAN_CNT_STRUCT		IrqCntInfo;
-	DIP_BUF_INFO_STRUCT			BufInfo;
-	DIP_TIME_LOG_STRUCT             TimeLog;
-	#if (TIMESTAMP_QUEUE_EN == 1)
-	DIP_TIMESTPQ_INFO_STRUCT        TstpQInfo[DIP_IRQ_TYPE_AMOUNT];
-	#endif
-} DIP_INFO_STRUCT;
+	struct DIP_IRQ_INFO_STRUCT			IrqInfo;
+	struct DIP_IRQ_ERR_WAN_CNT_STRUCT		IrqCntInfo;
+	struct DIP_BUF_INFO_STRUCT			BufInfo;
+	struct DIP_TIME_LOG_STRUCT             TimeLog;
+};
 
 
 
-static DIP_INFO_STRUCT IspInfo;
+static struct DIP_INFO_STRUCT IspInfo;
 static bool    SuspnedRecord[DIP_DEV_NODE_NUM] = {0};
 
 enum _eLOG_TYPE {
@@ -703,15 +636,15 @@ enum _eLOG_OP {
 /* #define SV_LOG_STR_LEN NORMAL_STR_LEN */
 
 #define LOG_PPNUM 2
-struct _SV_LOG_STR {
+struct SV_LOG_STR {
 	unsigned int _cnt[LOG_PPNUM][_LOG_MAX];
 	/* char   _str[_LOG_MAX][SV_LOG_STR_LEN]; */
 	char *_str[LOG_PPNUM][_LOG_MAX];
-	S_START_T   _lastIrqTime;
-} SV_LOG_STR, *PSV_LOG_STR;
+	struct S_START_T   _lastIrqTime;
+};
 
 static void *pLog_kmalloc;
-static SV_LOG_STR gSvLog[DIP_IRQ_TYPE_AMOUNT];
+static struct SV_LOG_STR gSvLog[DIP_IRQ_TYPE_AMOUNT];
 
 /**
  *   for irq used,keep log until IRQ_LOG_PRINTER being involked,
@@ -734,7 +667,7 @@ static SV_LOG_STR gSvLog[DIP_IRQ_TYPE_AMOUNT];
 	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
 	unsigned int i;\
-	SV_LOG_STR *pSrc = &gSvLog[irq];\
+	struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 	if (logT == _LOG_ERR) {\
 		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
 	} else if (logT == _LOG_DBG) {\
@@ -814,7 +747,7 @@ static SV_LOG_STR gSvLog[DIP_IRQ_TYPE_AMOUNT];
 
 #if 1
 #define IRQ_LOG_PRINTER(irq, ppb_in, logT_in) do {\
-		SV_LOG_STR *pSrc = &gSvLog[irq];\
+		struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 		char *ptr;\
 		unsigned int i;\
 		signed int ppb = 0;\
@@ -907,11 +840,11 @@ union _FBC_CTRL_2_ {
 } FBC_CTRL_2;  /* CAM_A_FBC_IMGO_CTL2 */
 
 
-struct _dip_bk_reg {
+struct _dip_bk_reg_t {
 	unsigned int  CAM_TG_INTER_ST;                                 /* 453C*/
-} _dip_bk_reg_t;
+};
 
-static _dip_bk_reg_t g_BkReg[DIP_IRQ_TYPE_AMOUNT];
+static struct _dip_bk_reg_t g_BkReg[DIP_IRQ_TYPE_AMOUNT];
 
 /* Everest top registers */
 /*#define CAMSYS_REG_CG_CON               (DIP_CAMSYS_CONFIG_BASE + 0x0)*/
@@ -1001,342 +934,6 @@ static inline unsigned int DIP_JiffiesToMs(unsigned int Jiffies)
 			(unsigned int)(DIP_TPIPE_ADDR + i+0x8), (unsigned int)DIP_RD32(DIP_ADDR + i+0x8),\
 			(unsigned int)(DIP_TPIPE_ADDR + i+0xc), (unsigned int)DIP_RD32(DIP_ADDR + i+0xc));\
 	} \
-}
-static signed int DIP_DumpReg(void)
-{
-	signed int Ret = 0;
-
-#if 0
-	/*  */
-	/* spin_lock_irqsave(&(IspInfo.SpinLock), flags); */
-
-	/* tile tool parse range */
-	/* #define DIP_ADDR_START  0x15004000 */
-	/* #define DIP_ADDR_END    0x15006000 */
-	/*  */
-	/* N3D control */
-	DIP_WR32((DIP_ADDR + 0x40c0), 0x746);
-	LOG_DBG("[0x%08X %08X] [0x%08X %08X]",
-		(unsigned int)(DIP_TPIPE_ADDR + 0x40c0), (unsigned int)DIP_RD32(DIP_ADDR + 0x40c0),
-		(unsigned int)(DIP_TPIPE_ADDR + 0x40d8), (unsigned int)DIP_RD32(DIP_ADDR + 0x40d8));
-	DIP_WR32((DIP_ADDR + 0x40c0), 0x946);
-	LOG_DBG("[0x%08X %08X] [0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x40c0),
-		(unsigned int)DIP_RD32(DIP_ADDR + 0x40c0),
-		(unsigned int)(DIP_TPIPE_ADDR + 0x40d8), (unsigned int)DIP_RD32(DIP_ADDR + 0x40d8));
-
-	/* dip top */
-	RegDump(0x0, 0x200);
-	/* dump p1 dma reg */
-	RegDump(0x3200, 0x3570);
-	/* dump all dip dma reg */
-	RegDump(0x3300, 0x3400);
-	/* dump all dip dma err reg */
-	RegDump(0x3560, 0x35e0);
-	/* TG1 */
-	RegDump(0x410, 0x4a0);
-	/* TG2 */
-	RegDump(0x2410, 0x2450);
-	/* hbin */
-	LOG_ERR("[0x%08X %08X],[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x4f0),
-		(unsigned int)DIP_RD32(DIP_ADDR + 0x534), (unsigned int)(DIP_TPIPE_ADDR + 0x4f4),
-		(unsigned int)DIP_RD32(DIP_ADDR + 0x538));
-	/* LSC */
-	RegDump(0x530, 0x550);
-	/* awb win */
-	RegDump(0x5b0, 0x5d0);
-	/* ae win */
-	RegDump(0x650, 0x690);
-	/* af win */
-	RegDump(0x6b0, 0x700);
-	/* flk */
-	RegDump(0x770, 0x780);
-	/* rrz */
-	RegDump(0x7a0, 0x7d0);
-	/* eis */
-	RegDump(0xdc0, 0xdf0);
-	/* dmx/rmx/bmx */
-	RegDump(0xe00, 0xe30);
-	/* Mipi source */
-	LOG_DBG("[0x%08X %08X],[0x%08X %08X]", (unsigned int)(0x10217000),
-		(unsigned int)DIP_RD32(DIP_MIPI_ANA_ADDR), (unsigned int)(0x10217004),
-		(unsigned int)DIP_RD32(DIP_MIPI_ANA_ADDR + 0x4));
-	LOG_DBG("[0x%08X %08X],[0x%08X %08X]", (unsigned int)(0x10217008),
-		(unsigned int)DIP_RD32(DIP_MIPI_ANA_ADDR + 0x8), (unsigned int)(0x1021700c),
-		(unsigned int)DIP_RD32(DIP_MIPI_ANA_ADDR + 0xc));
-	LOG_DBG("[0x%08X %08X],[0x%08X %08X]", (unsigned int)(0x10217030),
-		(unsigned int)DIP_RD32(DIP_MIPI_ANA_ADDR + 0x30), (unsigned int)(0x10219030),
-		(unsigned int)DIP_RD32(DIP_MIPI_ANA_ADDR + 0x2030));
-
-	/* NSCI2 1 debug */
-	DIP_WR32((DIP_ADDR + 0x43B8), 0x02);
-	LOG_DBG("[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x43B8), (unsigned int)DIP_RD32(DIP_ADDR + 0x43B8));
-	LOG_DBG("[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x43BC), (unsigned int)DIP_RD32(DIP_ADDR + 0x43BC));
-	DIP_WR32((DIP_ADDR + 0x43B8), 0x12);
-	LOG_DBG("[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x43B8), (unsigned int)DIP_RD32(DIP_ADDR + 0x43B8));
-	LOG_DBG("[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x43BC), (unsigned int)DIP_RD32(DIP_ADDR + 0x43BC));
-	/* NSCI2 3 debug */
-	DIP_WR32((DIP_ADDR + 0x4BB8), 0x02);
-	LOG_DBG("[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x4BB8), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BB8));
-	LOG_DBG("[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x4BBC), (unsigned int)DIP_RD32(DIP_ADDR + 0x43BC));
-	DIP_WR32((DIP_ADDR + 0x4BB8), 0x12);
-	LOG_DBG("[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x43B8), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BB8));
-	LOG_DBG("[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x4BBC), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BBC));
-
-	/* seninf1 */
-	LOG_ERR("[0x%08X %08X],[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x4008),
-		(unsigned int)DIP_RD32(DIP_ADDR + 0x4008), (unsigned int)(DIP_TPIPE_ADDR + 0x4100),
-		(unsigned int)DIP_RD32(DIP_ADDR + 0x4100));
-	RegDump(0x4120, 0x4160);
-	RegDump(0x4360, 0x43f0)
-	/* seninf2 */
-	LOG_ERR("[0x%08X %08X],[0x%08X %08X]", (unsigned int)(DIP_TPIPE_ADDR + 0x4008),
-		(unsigned int)DIP_RD32(DIP_ADDR + 0x4008), (unsigned int)(DIP_TPIPE_ADDR + 0x4100),
-		(unsigned int)DIP_RD32(DIP_ADDR + 0x4100));
-	RegDump(0x4520, 0x4560);
-	RegDump(0x4600, 0x4610);
-	RegDump(0x4760, 0x47f0);
-	/* LSC_D */
-	RegDump(0x2530, 0x2550);
-	/* awb_d */
-	RegDump(0x25b0, 0x25d0);
-	/* ae_d */
-	RegDump(0x2650, 0x2690);
-	/* af_d */
-	RegDump(0x26b0, 0x2700);
-	/* rrz_d */
-	RegDump(0x27a0, 0x27d0);
-	/* rmx_d/bmx_d/dmx_d */
-	RegDump(0x2e00, 0x2e30);
-
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x800), (unsigned int)DIP_RD32(DIP_ADDR + 0x800));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x880), (unsigned int)DIP_RD32(DIP_ADDR + 0x880));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x884), (unsigned int)DIP_RD32(DIP_ADDR + 0x884));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x888), (unsigned int)DIP_RD32(DIP_ADDR + 0x888));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x8A0), (unsigned int)DIP_RD32(DIP_ADDR + 0x8A0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x920), (unsigned int)DIP_RD32(DIP_ADDR + 0x920));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x924), (unsigned int)DIP_RD32(DIP_ADDR + 0x924));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x928), (unsigned int)DIP_RD32(DIP_ADDR + 0x928));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x92C), (unsigned int)DIP_RD32(DIP_ADDR + 0x92C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x930), (unsigned int)DIP_RD32(DIP_ADDR + 0x930));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x934), (unsigned int)DIP_RD32(DIP_ADDR + 0x934));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x938), (unsigned int)DIP_RD32(DIP_ADDR + 0x938));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x93C), (unsigned int)DIP_RD32(DIP_ADDR + 0x93C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x960), (unsigned int)DIP_RD32(DIP_ADDR + 0x960));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x9C4), (unsigned int)DIP_RD32(DIP_ADDR + 0x9C4));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x9E4), (unsigned int)DIP_RD32(DIP_ADDR + 0x9E4));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x9E8), (unsigned int)DIP_RD32(DIP_ADDR + 0x9E8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x9EC), (unsigned int)DIP_RD32(DIP_ADDR + 0x9EC));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xA00), (unsigned int)DIP_RD32(DIP_ADDR + 0xA00));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xA04), (unsigned int)DIP_RD32(DIP_ADDR + 0xA04));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xA08), (unsigned int)DIP_RD32(DIP_ADDR + 0xA08));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xA0C), (unsigned int)DIP_RD32(DIP_ADDR + 0xA0C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xA10), (unsigned int)DIP_RD32(DIP_ADDR + 0xA10));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xA14), (unsigned int)DIP_RD32(DIP_ADDR + 0xA14));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xA20), (unsigned int)DIP_RD32(DIP_ADDR + 0xA20));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xAA0), (unsigned int)DIP_RD32(DIP_ADDR + 0xAA0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xACC), (unsigned int)DIP_RD32(DIP_ADDR + 0xACC));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB00), (unsigned int)DIP_RD32(DIP_ADDR + 0xB00));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB04), (unsigned int)DIP_RD32(DIP_ADDR + 0xB04));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB08), (unsigned int)DIP_RD32(DIP_ADDR + 0xB08));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB0C), (unsigned int)DIP_RD32(DIP_ADDR + 0xB0C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB10), (unsigned int)DIP_RD32(DIP_ADDR + 0xB10));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB14), (unsigned int)DIP_RD32(DIP_ADDR + 0xB14));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB18), (unsigned int)DIP_RD32(DIP_ADDR + 0xB18));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB1C), (unsigned int)DIP_RD32(DIP_ADDR + 0xB1C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB20), (unsigned int)DIP_RD32(DIP_ADDR + 0xB20));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB44), (unsigned int)DIP_RD32(DIP_ADDR + 0xB44));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB48), (unsigned int)DIP_RD32(DIP_ADDR + 0xB48));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB4C), (unsigned int)DIP_RD32(DIP_ADDR + 0xB4C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB50), (unsigned int)DIP_RD32(DIP_ADDR + 0xB50));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB54), (unsigned int)DIP_RD32(DIP_ADDR + 0xB54));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB58), (unsigned int)DIP_RD32(DIP_ADDR + 0xB58));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB5C), (unsigned int)DIP_RD32(DIP_ADDR + 0xB5C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xB60), (unsigned int)DIP_RD32(DIP_ADDR + 0xB60));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xBA0), (unsigned int)DIP_RD32(DIP_ADDR + 0xBA0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xBA4), (unsigned int)DIP_RD32(DIP_ADDR + 0xBA4));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xBA8), (unsigned int)DIP_RD32(DIP_ADDR + 0xBA8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xBAC), (unsigned int)DIP_RD32(DIP_ADDR + 0xBAC));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xBB0), (unsigned int)DIP_RD32(DIP_ADDR + 0xBB0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xBB4), (unsigned int)DIP_RD32(DIP_ADDR + 0xBB4));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xBB8), (unsigned int)DIP_RD32(DIP_ADDR + 0xBB8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xBBC), (unsigned int)DIP_RD32(DIP_ADDR + 0xBBC));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xBC0), (unsigned int)DIP_RD32(DIP_ADDR + 0xBC0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xC20), (unsigned int)DIP_RD32(DIP_ADDR + 0xC20));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xCC0), (unsigned int)DIP_RD32(DIP_ADDR + 0xCC0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xCE4), (unsigned int)DIP_RD32(DIP_ADDR + 0xCE4));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xCE8), (unsigned int)DIP_RD32(DIP_ADDR + 0xCE8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xCEC), (unsigned int)DIP_RD32(DIP_ADDR + 0xCEC));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xCF0), (unsigned int)DIP_RD32(DIP_ADDR + 0xCF0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xCF4), (unsigned int)DIP_RD32(DIP_ADDR + 0xCF4));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xCF8), (unsigned int)DIP_RD32(DIP_ADDR + 0xCF8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xCFC), (unsigned int)DIP_RD32(DIP_ADDR + 0xCFC));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD24), (unsigned int)DIP_RD32(DIP_ADDR + 0xD24));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD28), (unsigned int)DIP_RD32(DIP_ADDR + 0xD28));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD2C), (unsigned int)DIP_RD32(DIP_ADDR + 0xD2c));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD40), (unsigned int)DIP_RD32(DIP_ADDR + 0xD40));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD64), (unsigned int)DIP_RD32(DIP_ADDR + 0xD64));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD68), (unsigned int)DIP_RD32(DIP_ADDR + 0xD68));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD6C), (unsigned int)DIP_RD32(DIP_ADDR + 0xD6c));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD70), (unsigned int)DIP_RD32(DIP_ADDR + 0xD70));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD74), (unsigned int)DIP_RD32(DIP_ADDR + 0xD74));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD78), (unsigned int)DIP_RD32(DIP_ADDR + 0xD78));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xD7C), (unsigned int)DIP_RD32(DIP_ADDR + 0xD7C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xDA4), (unsigned int)DIP_RD32(DIP_ADDR + 0xDA4));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xDA8), (unsigned int)DIP_RD32(DIP_ADDR + 0xDA8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0xDAC), (unsigned int)DIP_RD32(DIP_ADDR + 0xDAC));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x2410), (unsigned int)DIP_RD32(DIP_ADDR + 0x2410));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x2414), (unsigned int)DIP_RD32(DIP_ADDR + 0x2414));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x2418), (unsigned int)DIP_RD32(DIP_ADDR + 0x2418));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x241C), (unsigned int)DIP_RD32(DIP_ADDR + 0x241C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x2420), (unsigned int)DIP_RD32(DIP_ADDR + 0x2420));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x243C), (unsigned int)DIP_RD32(DIP_ADDR + 0x243C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x2440), (unsigned int)DIP_RD32(DIP_ADDR + 0x2440));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x2444), (unsigned int)DIP_RD32(DIP_ADDR + 0x2444));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x2448), (unsigned int)DIP_RD32(DIP_ADDR + 0x2448));
-
-	/* seninf3 */
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4900), (unsigned int)DIP_RD32(DIP_ADDR + 0x4900));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4920), (unsigned int)DIP_RD32(DIP_ADDR + 0x4920));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4924), (unsigned int)DIP_RD32(DIP_ADDR + 0x4924));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4928), (unsigned int)DIP_RD32(DIP_ADDR + 0x4928));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x492C), (unsigned int)DIP_RD32(DIP_ADDR + 0x492C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4930), (unsigned int)DIP_RD32(DIP_ADDR + 0x4930));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4934), (unsigned int)DIP_RD32(DIP_ADDR + 0x4934));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4938), (unsigned int)DIP_RD32(DIP_ADDR + 0x4938));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BA0), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BA0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BA4), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BA4));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BA8), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BA8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BAC), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BAC));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BB0), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BB0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BB4), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BB4));
-	DIP_WR32((DIP_ADDR + 0x4BB8), 0x10);
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BB8), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BB8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BBC), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BBC));
-	DIP_WR32((DIP_ADDR + 0x4BB8), 0x11);
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BB8), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BB8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BBC), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BBC));
-	DIP_WR32((DIP_ADDR + 0x4BB8), 0x12);
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BB8), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BB8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4BBC), (unsigned int)DIP_RD32(DIP_ADDR + 0x4BBC));
-	/* seninf4 */
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4D00), (unsigned int)DIP_RD32(DIP_ADDR + 0x4D00));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4D20), (unsigned int)DIP_RD32(DIP_ADDR + 0x4D20));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4D24), (unsigned int)DIP_RD32(DIP_ADDR + 0x4D24));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4D28), (unsigned int)DIP_RD32(DIP_ADDR + 0x4D28));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4D2C), (unsigned int)DIP_RD32(DIP_ADDR + 0x4D2C));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4D30), (unsigned int)DIP_RD32(DIP_ADDR + 0x4D30));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4D34), (unsigned int)DIP_RD32(DIP_ADDR + 0x4D34));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4D38), (unsigned int)DIP_RD32(DIP_ADDR + 0x4D38));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FA0), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FA0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FA4), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FA4));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FA8), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FA8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FAC), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FAC));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FB0), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FB0));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FB4), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FB4));
-	DIP_WR32((DIP_ADDR + 0x4FB8), 0x10);
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FB8), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FB8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FBC), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FBC));
-	DIP_WR32((DIP_ADDR + 0x4FB8), 0x11);
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FB8), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FB8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FBC), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FBC));
-	DIP_WR32((DIP_ADDR + 0x4FB8), 0x12);
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FB8), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FB8));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x4FBC), (unsigned int)DIP_RD32(DIP_ADDR + 0x4FBC));
-
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_TPIPE_ADDR + 0x35FC), (unsigned int)DIP_RD32(DIP_ADDR + 0x35FC));
-	LOG_DBG("end MT6593");
-
-	/*  */
-	LOG_DBG("0x%08X %08X ", (unsigned int)DIP_ADDR_CAMINF, (unsigned int)DIP_RD32(DIP_ADDR_CAMINF));
-	LOG_DBG("0x%08X %08X ", (unsigned int)(DIP_TPIPE_ADDR + 0x150), (unsigned int)DIP_RD32(DIP_ADDR + 0x150));
-	/*  */
-	/* debug msg for direct link */
-
-
-	/* mdp crop */
-	LOG_DBG("MDPCROP Related");
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_ADDR + 0xd10), (unsigned int)DIP_RD32(DIP_ADDR + 0xd10));
-	LOG_DBG("0x%08X %08X", (unsigned int)(DIP_ADDR + 0xd20), (unsigned int)DIP_RD32(DIP_ADDR + 0xd20));
-	/* cq */
-	LOG_DBG("CQ Related");
-	DIP_WR32(DIP_IMGSYS_BASE + 0x4160, 0x6000);
-	LOG_DBG("0x%08X %08X (0x15004160=6000)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	DIP_WR32(DIP_IMGSYS_BASE + 0x4160, 0x7000);
-	LOG_DBG("0x%08X %08X (0x15004160=7000)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	DIP_WR32(DIP_IMGSYS_BASE + 0x4160, 0x8000);
-	LOG_DBG("0x%08X %08X (0x15004160=8000)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	/* imgi_debug */
-	LOG_DBG("IMGI_DEBUG Related");
-	DIP_WR32(DIP_IMGSYS_BASE + 0x75f4, 0x001e);
-	LOG_DBG("0x%08X %08X (0x150075f4=001e)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	DIP_WR32(DIP_IMGSYS_BASE + 0x75f4, 0x011e);
-	LOG_DBG("0x%08X %08X (0x150075f4=011e)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	DIP_WR32(DIP_IMGSYS_BASE + 0x75f4, 0x021e);
-	LOG_DBG("0x%08X %08X (0x150075f4=021e)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	DIP_WR32(DIP_IMGSYS_BASE + 0x75f4, 0x031e);
-	LOG_DBG("0x%08X %08X (0x150075f4=031e)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	/* yuv */
-	LOG_DBG("yuv-mdp crop Related");
-	DIP_WR32(DIP_IMGSYS_BASE + 0x4160, 0x3014);
-	LOG_DBG("0x%08X %08X (0x15004160=3014)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	LOG_DBG("yuv-c24b out Related");
-	DIP_WR32(DIP_IMGSYS_BASE + 0x4160, 0x301e);
-	LOG_DBG("0x%08X %08X (0x15004160=301e)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	DIP_WR32(DIP_IMGSYS_BASE + 0x4160, 0x301f);
-	LOG_DBG("0x%08X %08X (0x15004160=301f)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	DIP_WR32(DIP_IMGSYS_BASE + 0x4160, 0x3020);
-	LOG_DBG("0x%08X %08X (0x15004160=3020)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-	DIP_WR32(DIP_IMGSYS_BASE + 0x4160, 0x3021);
-	LOG_DBG("0x%08X %08X (0x15004160=3021)", (unsigned int)(DIP_IMGSYS_BASE + 0x4164),
-	(unsigned int)DIP_RD32(DIP_IMGSYS_BASE + 0x4164));
-
-
-#if 0 /* _mt6593fpga_dvt_use_ */
-	{
-		int tpipePA = DIP_RD32(DIP_ADDR + 0x204);
-		int ctlStart = DIP_RD32(DIP_ADDR + 0x000);
-		int ctlTcm = DIP_RD32(DIP_ADDR + 0x054);
-		int map_va = 0, map_size;
-		int i;
-		int *pMapVa;
-#define TPIPE_DUMP_SIZE    200
-
-		if ((ctlStart & 0x01) && (tpipePA) && (ctlTcm & 0x80000000)) {
-			map_va = 0;
-			m4u_mva_map_kernel(tpipePA, TPIPE_DUMP_SIZE, 0, &map_va, &map_size);
-			pMapVa = map_va;
-			LOG_DBG("pMapVa(0x%x),map_size(0x%x)", pMapVa, map_size);
-			LOG_DBG("ctlStart(0x%x),tpipePA(0x%x),ctlTcm(0x%x)", ctlStart, tpipePA, ctlTcm);
-			if (pMapVa) {
-				for (i = 0; i < TPIPE_DUMP_SIZE; i += 10) {
-					LOG_DBG("[idx(%d)]%08X-%08X-%08X-%08X-%08X-%08X-%08X-%08X-%08X-%08X", i,
-					pMapVa[i], pMapVa[i + 1], pMapVa[i + 2], pMapVa[i + 3],
-					pMapVa[i + 4], pMapVa[i + 5], pMapVa[i + 6], pMapVa[i + 7],
-					pMapVa[i + 8], pMapVa[i + 9]);
-				}
-			}
-			m4u_mva_unmap_kernel(tpipePA, map_size, map_va);
-		}
-	}
-#endif
-
-	/* spin_unlock_irqrestore(&(IspInfo.SpinLock), flags); */
-	/*  */
-#endif
-	LOG_DBG("- X.");
-	/*  */
-	return Ret;
 }
 
 static signed int DIP_DumpDIPReg(void)
@@ -1907,7 +1504,7 @@ static inline void DIP_Reset(signed int module)
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int DIP_ReadReg(DIP_REG_IO_STRUCT *pRegIo)
+static signed int DIP_ReadReg(struct DIP_REG_IO_STRUCT *pRegIo)
 {
 	unsigned int i;
 	signed int Ret = 0;
@@ -1917,9 +1514,9 @@ static signed int DIP_ReadReg(DIP_REG_IO_STRUCT *pRegIo)
 
 
 	/*  */
-	DIP_REG_STRUCT reg;
+	struct DIP_REG_STRUCT reg;
 	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
-	DIP_REG_STRUCT *pData = (DIP_REG_STRUCT *)pRegIo->pData;
+	struct DIP_REG_STRUCT *pData = (struct DIP_REG_STRUCT *)pRegIo->pData;
 
 	module = pData->module;
 
@@ -1970,7 +1567,7 @@ EXIT:
 ********************************************************************************/
 /* Note: Can write sensor's test model only, if need write to other modules, need modify current code flow */
 static signed int DIP_WriteRegToHw(
-	DIP_REG_STRUCT *pReg,
+	struct DIP_REG_STRUCT *pReg,
 	unsigned int         Count)
 {
 	signed int Ret = 0;
@@ -2022,14 +1619,14 @@ static signed int DIP_WriteRegToHw(
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int DIP_WriteReg(DIP_REG_IO_STRUCT *pRegIo)
+static signed int DIP_WriteReg(struct DIP_REG_IO_STRUCT *pRegIo)
 {
 	signed int Ret = 0;
 	/*    signed int TimeVd = 0;*/
 	/*    signed int TimeExpdone = 0;*/
 	/*    signed int TimeTasklet = 0;*/
 	/* unsigned char* pData = NULL; */
-	DIP_REG_STRUCT *pData = NULL;
+	struct DIP_REG_STRUCT *pData = NULL;
 
 	if (pRegIo->Count > 0xFFFFFFFF) {
 		LOG_ERR("pRegIo->Count error");
@@ -2041,7 +1638,7 @@ static signed int DIP_WriteReg(DIP_REG_IO_STRUCT *pRegIo)
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 
 	/* pData = (unsigned char*)kmalloc((pRegIo->Count)*sizeof(DIP_REG_STRUCT), GFP_ATOMIC); */
-	pData = kmalloc((pRegIo->Count) * sizeof(DIP_REG_STRUCT), GFP_ATOMIC);
+	pData = kmalloc((pRegIo->Count) * sizeof(struct DIP_REG_STRUCT), GFP_ATOMIC);
 	if (pData == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
 		current->comm, current->pid, current->tgid);
@@ -2056,7 +1653,7 @@ static signed int DIP_WriteReg(DIP_REG_IO_STRUCT *pRegIo)
 	}
 
 	/*  */
-	if (copy_from_user(pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(DIP_REG_STRUCT)) != 0) {
+	if (copy_from_user(pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(struct DIP_REG_STRUCT)) != 0) {
 		LOG_ERR("copy_from_user failed\n");
 		Ret = -EFAULT;
 		goto EXIT;
@@ -2163,7 +1760,7 @@ static void dip_freebuf(struct dip_imem_memory *pMemInfo)
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int DIP_DumpBuffer(DIP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
+static signed int DIP_DumpBuffer(struct DIP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 {
 	signed int Ret = 0;
 
@@ -2336,7 +1933,7 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int DIP_SetMemInfo(DIP_MEM_INFO_STRUCT *pMemInfoStruct)
+static signed int DIP_SetMemInfo(struct DIP_MEM_INFO_STRUCT *pMemInfoStruct)
 {
 	signed int Ret = 0;
 	/*  */
@@ -2347,11 +1944,11 @@ static signed int DIP_SetMemInfo(DIP_MEM_INFO_STRUCT *pMemInfoStruct)
 	}
 	switch (pMemInfoStruct->MemInfoCmd) {
 	case DIP_MEMORY_INFO_TPIPE_CMD:
-		memcpy(&g_TpipeBaseAddrInfo, pMemInfoStruct, sizeof(DIP_MEM_INFO_STRUCT));
+		memcpy(&g_TpipeBaseAddrInfo, pMemInfoStruct, sizeof(struct DIP_MEM_INFO_STRUCT));
 		LOG_INF("set tpipe memory info is done!!\n");
 		break;
 	case DIP_MEMORY_INFO_CMDQ_CMD:
-		memcpy(&g_CmdqBaseAddrInfo, pMemInfoStruct, sizeof(DIP_MEM_INFO_STRUCT));
+		memcpy(&g_CmdqBaseAddrInfo, pMemInfoStruct, sizeof(struct DIP_MEM_INFO_STRUCT));
 		LOG_INF("set comq memory info is done!!\n");
 		break;
 	default:
@@ -2367,285 +1964,23 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static atomic_t g_imem_ref_cnt[DIP_REF_CNT_ID_MAX];
-/*  */
-/* static long DIP_REF_CNT_CTRL_FUNC(unsigned int Param) */
-static long DIP_REF_CNT_CTRL_FUNC(unsigned long Param)
-{
-	signed int Ret = 0;
-	DIP_REF_CNT_CTRL_STRUCT ref_cnt_ctrl;
-	signed int imem_ref_cnt = 0;
-
-	/* LOG_INF("[rc]+ QQ"); */ /* for memory corruption check */
-
-
-	/* //////////////////---add lock here */
-	/* spin_lock_irq(&(IspInfo.SpinLock)); */
-	/* ////////////////// */
-	/*  */
-	if (IspInfo.DebugMask & DIP_DBG_REF_CNT_CTRL)
-		LOG_DBG("[rc]+");
-
-	/*  */
-	if (NULL == (void __user *)Param)  {
-		LOG_ERR("[rc]NULL Param");
-		/* //////////////////---add unlock here */
-		/* spin_unlock_irqrestore(&(IspInfo.SpinLock), flags); */
-		/* ////////////////// */
-		return -EFAULT;
-	}
-	/*  */
-	if (copy_from_user(&ref_cnt_ctrl, (void __user *)Param, sizeof(DIP_REF_CNT_CTRL_STRUCT)) == 0) {
-
-
-		if (IspInfo.DebugMask & DIP_DBG_REF_CNT_CTRL)
-			LOG_DBG("[rc]ctrl(%d),id(%d)", ref_cnt_ctrl.ctrl, ref_cnt_ctrl.id);
-
-		/*  */
-		if (ref_cnt_ctrl.id < DIP_REF_CNT_ID_MAX) {
-			/* //////////////////---add lock here */
-			spin_lock(&(IspInfo.SpinLockIspRef));
-			/* ////////////////// */
-			/*  */
-			switch (ref_cnt_ctrl.ctrl) {
-			case DIP_REF_CNT_GET:
-				break;
-			case DIP_REF_CNT_INC:
-				atomic_inc(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
-				/* g_imem_ref_cnt++; */
-				break;
-			case DIP_REF_CNT_DEC:
-			case DIP_REF_CNT_DEC_AND_RESET_P1_P2_IF_LAST_ONE:
-			case DIP_REF_CNT_DEC_AND_RESET_P1_IF_LAST_ONE:
-			case DIP_REF_CNT_DEC_AND_RESET_P2_IF_LAST_ONE:
-				atomic_dec(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
-				/* g_imem_ref_cnt--; */
-				break;
-			default:
-			case DIP_REF_CNT_MAX:   /* Add this to remove build warning. */
-				/* Do nothing. */
-				break;
-			}
-			/*  */
-			imem_ref_cnt = (signed int)atomic_read(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
-
-			if (imem_ref_cnt == 0) {
-				/* No user left and ctrl is RESET_IF_LAST_ONE, do DIP reset. */
-				if (ref_cnt_ctrl.ctrl == DIP_REF_CNT_DEC_AND_RESET_P1_P2_IF_LAST_ONE ||
-					ref_cnt_ctrl.ctrl == DIP_REF_CNT_DEC_AND_RESET_P1_IF_LAST_ONE) {
-					DIP_Reset(DIP_REG_SW_CTL_RST_CAM_P1);
-					LOG_DBG("Reset P1\n");
-				}
-
-				if (ref_cnt_ctrl.ctrl == DIP_REF_CNT_DEC_AND_RESET_P1_P2_IF_LAST_ONE ||
-					ref_cnt_ctrl.ctrl == DIP_REF_CNT_DEC_AND_RESET_P2_IF_LAST_ONE)
-					DIP_Reset(DIP_REG_SW_CTL_RST_CAM_P2);
-
-			}
-			/* //////////////////---add unlock here */
-			spin_unlock(&(IspInfo.SpinLockIspRef));
-			/* ////////////////// */
-
-			/*  */
-			if (IspInfo.DebugMask & DIP_DBG_REF_CNT_CTRL)
-				LOG_DBG("[rc]ref_cnt(%d)", imem_ref_cnt);
-
-			/*  */
-			if ((void __user *)(ref_cnt_ctrl.data_ptr) == NULL) {
-				LOG_ERR("NULL data_ptr");
-				return -EFAULT;
-			}
-			if (put_user(imem_ref_cnt, (signed int *)ref_cnt_ctrl.data_ptr) != 0) {
-				LOG_ERR("[rc][GET]:copy_to_user failed");
-				Ret = -EFAULT;
-			}
-		} else {
-			LOG_ERR("[rc]:id(%d) exceed", ref_cnt_ctrl.id);
-			Ret = -EFAULT;
-		}
-
-
-	} else {
-		LOG_ERR("[rc]copy_from_user failed");
-		Ret = -EFAULT;
-	}
-
-	/*  */
-	if (IspInfo.DebugMask & DIP_DBG_REF_CNT_CTRL)
-		LOG_DBG("[rc]-");
-
-	/* LOG_INF("[rc]QQ return value:(%d)", Ret); */
-	/*  */
-	/* //////////////////---add unlock here */
-	/* spin_unlock_irqrestore(&(IspInfo.SpinLock), flags); */
-	/* ////////////////// */
-	return Ret;
-}
-/*******************************************************************************
-*
-********************************************************************************/
 
 /*  */
 /* isr dbg log , sw isr response counter , +1 when sw receive 1 sof isr. */
-static unsigned int sof_count[DIP_IRQ_TYPE_AMOUNT] = {0};
 int DIP_Vsync_cnt[2] = {0, 0};
-
-/* keep current frame status */
-static CAM_FrameST FrameStatus[DIP_IRQ_TYPE_AMOUNT] = {0};
-
-/* current invoked time is at 1st sof or not during each streaming, reset when streaming off */
-static bool g1stSof[DIP_IRQ_TYPE_AMOUNT] = {0};
-#if (TSTMP_SUBSAMPLE_INTPL == 1)
-static bool g1stSwP1Done[DIP_IRQ_TYPE_AMOUNT] = {0};
-static unsigned long long gPrevSofTimestp[DIP_IRQ_TYPE_AMOUNT];
-#endif
-
-/*static S_START_T gSTime[DIP_IRQ_TYPE_AMOUNT] = {{0} };*/
-
-#ifdef _MAGIC_NUM_ERR_HANDLING_
-#define _INVALID_FRM_CNT_ 0xFFFF
-#define _MAX_FRM_CNT_ 0xFF
-
-#define _UNCERTAIN_MAGIC_NUM_FLAG_ 0x40000000
-#define _DUMMY_MAGIC_              0x20000000
-static unsigned int m_LastMNum[_cam_max_] = {0}; /* imgo/rrzo */
-
-#endif
-/* static long DIP_Buf_CTRL_FUNC(unsigned int Param) */
-static long DIP_Buf_CTRL_FUNC(unsigned long Param)
-{
-	signed int Ret = 0;
-	_dip_dma_enum_ rt_dma;
-	unsigned int i = 0;
-	/*    unsigned int x = 0;*/
-	/*    unsigned int iBuf = 0;*/
-	/*    unsigned int size = 0;*/
-	/*    unsigned int bWaitBufRdy = 0;*/
-	DIP_BUFFER_CTRL_STRUCT         rt_buf_ctrl;
-	/*    unsigned int flags;*/
-	/*    DIP_RT_BUF_INFO_STRUCT       rt_buf_info;*/
-	/*    DIP_DEQUE_BUF_INFO_STRUCT    deque_buf;*/
-	/*    DIP_IRQ_TYPE_ENUM irqT = DIP_IRQ_TYPE_AMOUNT;*/
-	/*    DIP_IRQ_TYPE_ENUM irqT_Lock = DIP_IRQ_TYPE_AMOUNT;*/
-	/*    bool CurVF_En = MFALSE;*/
-	/*  */
-	if ((void __user *)Param == NULL)  {
-		LOG_ERR("[rtbc]NULL Param");
-		return -EFAULT;
-	}
-	/*  */
-	if (copy_from_user(&rt_buf_ctrl, (void __user *)Param, sizeof(DIP_BUFFER_CTRL_STRUCT)) == 0) {
-		if (rt_buf_ctrl.module >= DIP_IRQ_TYPE_AMOUNT) {
-			LOG_ERR("[rtbc]not supported module:0x%x\n", rt_buf_ctrl.module);
-			return -EFAULT;
-		}
-
-		if (pstRTBuf[rt_buf_ctrl.module] == NULL)  {
-			LOG_ERR("[rtbc]NULL pstRTBuf, module:0x%x\n", rt_buf_ctrl.module);
-			return -EFAULT;
-		}
-
-		rt_dma = rt_buf_ctrl.buf_id;
-		if (rt_dma >= _cam_max_) {
-			LOG_ERR("[rtbc]buf_id error:0x%x\n", rt_dma);
-			return -EFAULT;
-		}
-
-		/*  */
-		switch (rt_buf_ctrl.ctrl) {
-		case DIP_RT_BUF_CTRL_CLEAR:
-			/*  */
-			if (IspInfo.DebugMask & DIP_DBG_BUF_CTRL)
-				LOG_INF("[rtbc][%d][CLEAR]:rt_dma(%d)\n", rt_buf_ctrl.module, rt_dma);
-			/*  */
-
-			memset((void *)IspInfo.IrqInfo.LastestSigTime_usec[rt_buf_ctrl.module],
-				0, sizeof(unsigned int) * 32);
-			memset((void *)IspInfo.IrqInfo.LastestSigTime_sec[rt_buf_ctrl.module],
-				0, sizeof(unsigned int) * 32);
-			/* remove, cause clear will be involked only when current module r totally stopped */
-			/* spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqT_Lock]), flags); */
-
-			/* reset active record*/
-			pstRTBuf[rt_buf_ctrl.module]->ring_buf[rt_dma].active = MFALSE;
-			memset((char *)&pstRTBuf[rt_buf_ctrl.module]->ring_buf[rt_dma],
-				0x00, sizeof(DIP_RT_RING_BUF_INFO_STRUCT));
-			/* init. frmcnt before vf_en */
-			for (i = 0; i < DIP_RT_BUF_SIZE; i++)
-				pstRTBuf[rt_buf_ctrl.module]->ring_buf[rt_dma].data[i].image.frm_cnt =
-					_INVALID_FRM_CNT_;
-
-			switch (rt_buf_ctrl.module) {
-			case DIP_IRQ_TYPE_INT_DIP_A_ST:
-				sof_count[rt_buf_ctrl.module] = 0;
-				g1stSof[rt_buf_ctrl.module] = MTRUE;
-				g_DIPIntErr[rt_buf_ctrl.module] = 0;
-				pstRTBuf[rt_buf_ctrl.module]->dropCnt = 0;
-				pstRTBuf[rt_buf_ctrl.module]->state = 0;
-				break;
-			default:
-				LOG_ERR("unsupported module:0x%x\n", rt_buf_ctrl.module);
-				break;
-			}
-
-#ifdef _MAGIC_NUM_ERR_HANDLING_
-			m_LastMNum[rt_dma] = 0;
-#endif
-
-			/* spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqT_Lock]), flags); */
-
-			break;
-		case DIP_RT_BUF_CTRL_DMA_EN: {
-			unsigned char array[_cam_max_];
-			unsigned int z;
-			unsigned char *pExt;
-
-			if (rt_buf_ctrl.pExtend == NULL) {
-				LOG_ERR("NULL pExtend");
-				Ret = -EFAULT;
-				break;
-			}
-
-			pExt = (unsigned char *)(rt_buf_ctrl.pExtend);
-			for (z = 0; z < _cam_max_; z++) {
-				if (get_user(array[z], (unsigned char *)pExt) == 0) {
-					pstRTBuf[rt_buf_ctrl.module]->ring_buf[z].active = array[z];
-					if (IspInfo.DebugMask & DIP_DBG_BUF_CTRL)
-						LOG_INF("[rtbc][DMA_EN]:dma_%d:%d", z, array[z]);
-				} else {
-					LOG_ERR("[rtbc][DMA_EN]:get_user failed(%d)", z);
-					Ret = -EFAULT;
-				}
-				pExt++;
-			}
-		}
-		break;
-		case DIP_RT_BUF_CTRL_MAX:   /* Add this to remove build warning. */
-			/* Do nothing. */
-			break;
-
-		}
-	} else {
-		LOG_ERR("[rtbc]copy_from_user failed");
-		Ret = -EFAULT;
-	}
-
-	return Ret;
-}
-
-
 
 /*******************************************************************************
 * update current idnex to working frame
 ********************************************************************************/
-static signed int DIP_P2_BufQue_Update_ListCIdx(DIP_P2_BUFQUE_PROPERTY property, DIP_P2_BUFQUE_LIST_TAG listTag)
+static signed int DIP_P2_BufQue_Update_ListCIdx(enum DIP_P2_BUFQUE_PROPERTY property,
+enum DIP_P2_BUFQUE_LIST_TAG listTag)
 {
 	signed int ret = 0;
 	signed int tmpIdx = 0;
 	signed int cnt = 0;
 	bool stop = false;
 	int i = 0;
-	DIP_P2_BUF_STATE_ENUM cIdxSts = DIP_P2_BUF_STATE_NONE;
+	enum DIP_P2_BUF_STATE_ENUM cIdxSts = DIP_P2_BUF_STATE_NONE;
 
 	switch (listTag) {
 	case DIP_P2_BUFQUE_LIST_TAG_UNIT:
@@ -2732,7 +2067,8 @@ static signed int DIP_P2_BufQue_Update_ListCIdx(DIP_P2_BUFQUE_PROPERTY property,
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int DIP_P2_BufQue_Erase(DIP_P2_BUFQUE_PROPERTY property, DIP_P2_BUFQUE_LIST_TAG listTag, signed int idx)
+static signed int DIP_P2_BufQue_Erase(enum DIP_P2_BUFQUE_PROPERTY property,
+enum DIP_P2_BUFQUE_LIST_TAG listTag, signed int idx)
 {
 	signed int ret =  -1;
 	bool stop = false;
@@ -2832,8 +2168,8 @@ static signed int DIP_P2_BufQue_Erase(DIP_P2_BUFQUE_PROPERTY property, DIP_P2_BU
 /*******************************************************************************
 * get first matched element idnex
 ********************************************************************************/
-static signed int DIP_P2_BufQue_GetMatchIdx(DIP_P2_BUFQUE_STRUCT param,
-		DIP_P2_BUFQUE_MATCH_TYPE matchType, DIP_P2_BUFQUE_LIST_TAG listTag)
+static signed int DIP_P2_BufQue_GetMatchIdx(struct  DIP_P2_BUFQUE_STRUCT param,
+		enum DIP_P2_BUFQUE_MATCH_TYPE matchType, enum DIP_P2_BUFQUE_LIST_TAG listTag)
 {
 	int idx = -1;
 	int i = 0;
@@ -2995,12 +2331,12 @@ static signed int DIP_P2_BufQue_GetMatchIdx(DIP_P2_BUFQUE_STRUCT param,
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline unsigned int DIP_P2_BufQue_WaitEventState(DIP_P2_BUFQUE_STRUCT param,
-		DIP_P2_BUFQUE_MATCH_TYPE type, signed int *idx)
+static inline unsigned int DIP_P2_BufQue_WaitEventState(struct DIP_P2_BUFQUE_STRUCT param,
+		enum DIP_P2_BUFQUE_MATCH_TYPE type, signed int *idx)
 {
 	unsigned int ret = MFALSE;
 	signed int index = -1;
-	DIP_P2_BUFQUE_PROPERTY property;
+	enum DIP_P2_BUFQUE_PROPERTY property;
 
 	if (param.property >= DIP_P2_BUFQUE_PROPERTY_NUM) {
 		LOG_ERR("property err(%d)\n", param.property);
@@ -3058,7 +2394,7 @@ static inline unsigned int DIP_P2_BufQue_WaitEventState(DIP_P2_BUFQUE_STRUCT par
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int DIP_P2_BufQue_CTRL_FUNC(DIP_P2_BUFQUE_STRUCT param)
+static signed int DIP_P2_BufQue_CTRL_FUNC(struct DIP_P2_BUFQUE_STRUCT param)
 {
 	signed int ret = 0;
 	int i = 0, q = 0;
@@ -3411,168 +2747,15 @@ static signed int DIP_REGISTER_IRQ_USERKEY(char *userName)
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int DIP_MARK_IRQ(DIP_WAIT_IRQ_STRUCT *irqinfo)
-{
-	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
-	int idx = my_get_pow_idx(irqinfo->EventInfo.Status);
-
-	unsigned long long  sec = 0;
-	unsigned long       usec = 0;
-
-	if (irqinfo->Type >= DIP_IRQ_TYPE_AMOUNT) {
-		LOG_ERR("MARK_IRQ: type error(%d)", irqinfo->Type);
-		return -EFAULT;
-	}
-
-	if (irqinfo->EventInfo.UserKey >= IRQ_USER_NUM_MAX || irqinfo->EventInfo.UserKey < 0) {
-		LOG_ERR("MARK_IRQ: userkey error(%d)", irqinfo->EventInfo.UserKey);
-		return -EFAULT;
-	}
-
-	if (irqinfo->EventInfo.St_type == SIGNAL_INT) {
-		/* 1. enable marked flag */
-		spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-		IspInfo.IrqInfo.MarkedFlag[irqinfo->Type][irqinfo->EventInfo.St_type][irqinfo->EventInfo.UserKey] |=
-			irqinfo->EventInfo.Status;
-		spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-
-		/* 2. record mark time */
-		sec = cpu_clock(0);     /* ns */
-		do_div(sec, 1000);    /* usec */
-		usec = do_div(sec, 1000000);    /* sec and usec */
-
-		spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-		IspInfo.IrqInfo.MarkedTime_usec[irqinfo->Type][idx][irqinfo->EventInfo.UserKey] = (unsigned int)usec;
-		IspInfo.IrqInfo.MarkedTime_sec[irqinfo->Type][idx][irqinfo->EventInfo.UserKey] = (unsigned int)sec;
-		spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-
-		/* 3. clear passed by signal count */
-		spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-		IspInfo.IrqInfo.PassedBySigCnt[irqinfo->Type][idx][irqinfo->EventInfo.UserKey] = 0;
-		spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-
-		LOG_VRB("[MARK]  key/type/sts/idx (%d/%d/0x%x/%d), t(%d/%d)\n",
-		irqinfo->EventInfo.UserKey, irqinfo->Type, irqinfo->EventInfo.Status, idx, (int)sec, (int)usec);
-
-	} else {
-		LOG_WRN("Not support DMA interrupt type(%d), Only support signal interrupt!!!",
-		irqinfo->EventInfo.St_type);
-	}
-
-	return 0;
-}
-
-
-/*******************************************************************************
-*
-********************************************************************************/
-static signed int DIP_GET_MARKtoQEURY_TIME(DIP_WAIT_IRQ_STRUCT *irqinfo)
-{
-	signed int Ret = 0;
-	/*    unsigned int flags;*/
-	/*    struct timeval time_getrequest;*/
-	/*    struct timeval time_ready2return;*/
-
-	/*    unsigned long long  sec = 0;*/
-	/*    unsigned long       usec = 0;*/
-
-#if 0
-	if (irqinfo->EventInfo.St_type == SIGNAL_INT) {
-
-
-		/* do_gettimeofday(&time_ready2return); */
-		sec = cpu_clock(0);     /* ns */
-		do_div(sec, 1000);    /* usec */
-		usec = do_div(sec, 1000000);    /* sec and usec */
-		time_ready2return.tv_usec = usec;
-		time_ready2return.tv_sec = sec;
-
-		int idx = my_get_pow_idx(irqinfo->EventInfo.Status);
-
-
-		spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-		if (irqinfo->EventInfo.Status & IspInfo.IrqInfo.MarkedFlag[irqinfo->Type][irqinfo->EventInfo.UserKey]) {
-			/*  */
-			irqinfo->EventInfo.TimeInfo.passedbySigcnt =
-			IspInfo.IrqInfo.PassedBySigCnt[irqinfo->Type][idx][irqinfo->EventInfo.UserKey];
-			/*  */
-			irqinfo->EventInfo.TimeInfo.tMark2WaitSig_usec =
-			(time_ready2return.tv_usec -
-			IspInfo.IrqInfo.MarkedTime_usec[irqinfo->Type][idx][irqinfo->EventInfo.UserKey]);
-			irqinfo->EventInfo.TimeInfo.tMark2WaitSig_sec =
-			(time_ready2return.tv_sec -
-			IspInfo.IrqInfo.MarkedTime_sec[irqinfo->Type][idx][irqinfo->EventInfo.UserKey]);
-			if ((int)(irqinfo->EventInfo.TimeInfo.tMark2WaitSig_usec) < 0) {
-				irqinfo->EventInfo.TimeInfo.tMark2WaitSig_sec =
-				irqinfo->EventInfo.TimeInfo.tMark2WaitSig_sec - 1;
-				if ((int)(irqinfo->EventInfo.TimeInfo.tMark2WaitSig_sec) < 0)
-					irqinfo->EventInfo.TimeInfo.tMark2WaitSig_sec = 0;
-
-				irqinfo->EventInfo.TimeInfo.tMark2WaitSig_usec =
-				1 * 1000000 + irqinfo->EventInfo.TimeInfo.tMark2WaitSig_usec;
-			}
-			/*  */
-			if (irqinfo->EventInfo.TimeInfo.passedbySigcnt > 0) {
-				irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_usec =
-				(time_ready2return.tv_usec - IspInfo.IrqInfo.LastestSigTime_usec[irqinfo->Type][idx]);
-				irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_sec =
-				(time_ready2return.tv_sec - IspInfo.IrqInfo.LastestSigTime_sec[irqinfo->Type][idx]);
-				if ((int)(irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_usec) < 0) {
-					irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_sec =
-					irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_sec - 1;
-					if ((int)(irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_sec) < 0)
-						irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_sec = 0;
-
-					irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_usec =
-					1 * 1000000 + irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_usec;
-				}
-			} else {
-				irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_usec = 0;
-				irqinfo->EventInfo.TimeInfo.tLastSig2GetSig_sec = 0;
-			}
-		} else {
-			LOG_WRN("plz mark irq first, userKey/Type/Status (%d/%d/0x%x)",
-			irqinfo->EventInfo.UserKey, irqinfo->Type, irqinfo->EventInfo.Status);
-			Ret = -EFAULT;
-		}
-		spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-		LOG_VRB("MKtoQT:u/t/i(%d/%d/%d) (%d/%d) (%d/%d) (%d/%d) sig(%d)\n",
-		irqinfo->EventInfo.UserKey, irqinfo->Type, idx,
-			IspInfo.IrqInfo.MarkedTime_sec[irqinfo->Type][idx][irqinfo->EventInfo.UserKey],
-			IspInfo.IrqInfo.MarkedTime_usec[irqinfo->Type][idx][irqinfo->EventInfo.UserKey],
-			IspInfo.IrqInfo.LastestSigTime_sec[irqinfo->Type][idx],
-			IspInfo.IrqInfo.LastestSigTime_usec[irqinfo->Type][idx], (int)time_ready2return.tv_sec,
-			(int)time_ready2return.tv_usec,
-			IspInfo.IrqInfo.PassedBySigCnt[irqinfo->Type][idx][irqinfo->EventInfo.UserKey]);
-		return Ret;
-	}
-	{
-		LOG_WRN("Not support DMA interrupt type(%d), Only support signal interrupt!!!",
-		irqinfo->EventInfo.St_type);
-	}
-#endif
-
-	return Ret;
-
-}
-
-/*******************************************************************************
-*
-********************************************************************************/
-static signed int DIP_FLUSH_IRQ(DIP_WAIT_IRQ_STRUCT *irqinfo)
+static signed int DIP_FLUSH_IRQ(struct DIP_WAIT_IRQ_STRUCT *irqinfo)
 {
 	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 
-	LOG_INF("type(%d)userKey(%d)St_type(%d)St(0x%x)",
-		irqinfo->Type, irqinfo->EventInfo.UserKey, irqinfo->EventInfo.St_type, irqinfo->EventInfo.Status);
+	LOG_INF("type(%d)userKey(%d)St(0x%x)",
+		irqinfo->Type, irqinfo->EventInfo.UserKey, irqinfo->EventInfo.Status);
 
 	if (irqinfo->Type >= DIP_IRQ_TYPE_AMOUNT) {
 		LOG_ERR("FLUSH_IRQ: type error(%d)", irqinfo->Type);
-		return -EFAULT;
-	}
-
-	if (irqinfo->EventInfo.St_type >= DIP_IRQ_ST_AMOUNT) {
-		LOG_ERR("FLUSH_IRQ: st_type error(%d)", irqinfo->EventInfo.St_type);
 		return -EFAULT;
 	}
 
@@ -3583,7 +2766,7 @@ static signed int DIP_FLUSH_IRQ(DIP_WAIT_IRQ_STRUCT *irqinfo)
 
 	/* 1. enable signal */
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-	IspInfo.IrqInfo.Status[irqinfo->Type][irqinfo->EventInfo.St_type][irqinfo->EventInfo.UserKey] |=
+	IspInfo.IrqInfo.Status[irqinfo->Type][irqinfo->EventInfo.UserKey] |=
 	irqinfo->EventInfo.Status;
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
 
@@ -3597,7 +2780,7 @@ static signed int DIP_FLUSH_IRQ(DIP_WAIT_IRQ_STRUCT *irqinfo)
 /*******************************************************************************
 *
 ********************************************************************************/
-static signed int DIP_WaitIrq(DIP_WAIT_IRQ_STRUCT *WaitIrq)
+static signed int DIP_WaitIrq(struct DIP_WAIT_IRQ_STRUCT *WaitIrq)
 {
 
 	signed int Ret = 0;
@@ -3697,7 +2880,7 @@ static void DIP_ion_free_handle_by_module(unsigned int module)
 	int i, j;
 	signed int nFd;
 	struct ion_handle *p_IonHnd;
-	T_ION_TBL *ptbl = &gION_TBL[module];
+	struct T_ION_TBL *ptbl = &gION_TBL[module];
 
 	if (IspInfo.DebugMask & DIP_DBG_ION_CTRL)
 		LOG_INF("[ion_free_hd_by_module]%d\n", module);
@@ -3742,23 +2925,21 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	/*    bool   HoldEnable = MFALSE;*/
 	unsigned int DebugFlag[3] = {0};
 	/*    unsigned int pid = 0;*/
-	DIP_REG_IO_STRUCT       RegIo;
-	DIP_DUMP_BUFFER_STRUCT DumpBufStruct;
-	DIP_MEM_INFO_STRUCT MemInfoStruct;
-	DIP_WAIT_IRQ_STRUCT     IrqInfo;
-	DIP_CLEAR_IRQ_STRUCT    ClearIrq;
-	DIP_USER_INFO_STRUCT *pUserInfo;
-	DIP_P2_BUFQUE_STRUCT    p2QueBuf;
-	unsigned int                 regScenInfo_value = 0xa5a5a5a5;
-	/*    signed int                  burstQNum;*/
+	struct DIP_REG_IO_STRUCT       RegIo;
+	struct DIP_DUMP_BUFFER_STRUCT DumpBufStruct;
+	struct DIP_MEM_INFO_STRUCT MemInfoStruct;
+	struct DIP_WAIT_IRQ_STRUCT     IrqInfo;
+	struct DIP_CLEAR_IRQ_STRUCT    ClearIrq;
+	struct DIP_USER_INFO_STRUCT *pUserInfo;
+	struct  DIP_P2_BUFQUE_STRUCT    p2QueBuf;
 	unsigned int                 wakelock_ctrl;
 	unsigned int                 module;
 	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 	int userKey =  -1;
-	DIP_REGISTER_USERKEY_STRUCT RegUserKey;
+	struct DIP_REGISTER_USERKEY_STRUCT RegUserKey;
 	int i;
 	#ifdef ENABLE_KEEP_ION_HANDLE
-	DIP_DEV_ION_NODE_STRUCT IonNode;
+	struct DIP_DEV_ION_NODE_STRUCT IonNode;
 	struct ion_handle *handle;
 	struct ion_handle *p_IonHnd;
 	#endif
@@ -3770,7 +2951,7 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		return -EFAULT;
 	}
 	/*  */
-	pUserInfo = (DIP_USER_INFO_STRUCT *)(pFile->private_data);
+	pUserInfo = (struct DIP_USER_INFO_STRUCT *)(pFile->private_data);
 	/*  */
 	switch (Cmd) {
 	case DIP_WAKELOCK_CTRL:
@@ -3801,75 +2982,6 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
-	case DIP_GET_DROP_FRAME:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)) != 0) {
-			LOG_ERR("get irq from user fail\n");
-			Ret = -EFAULT;
-		} else {
-			switch (DebugFlag[0]) {
-			default:
-				LOG_ERR("err TG(0x%x)\n", DebugFlag[0]);
-				Ret = -EFAULT;
-				break;
-			}
-			if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(unsigned int)) != 0) {
-				LOG_ERR("copy to user fail\n");
-				Ret = -EFAULT;
-			}
-		}
-		break;
-	case DIP_GET_INT_ERR:
-		if (copy_to_user((void *)Param, (void *)g_DIPIntErr, sizeof(unsigned int)*DIP_IRQ_TYPE_AMOUNT) != 0)
-			LOG_ERR("get int err fail\n");
-		else
-			memset((void *)g_DIPIntErr, 0, sizeof(g_DIPIntErr));
-
-		break;
-	case DIP_GET_DMA_ERR:
-
-		break;
-	case DIP_GET_CUR_SOF:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)) != 0) {
-			LOG_ERR("get cur sof from user fail\n");
-			Ret = -EFAULT;
-		} else {
-#if 0
-			switch (DebugFlag[0]) {
-			case DIP_IRQ_TYPE_INT_CAM_A_ST:
-				/*DebugFlag[1] = ((DIP_RD32(CAM_REG_TG_INTER_ST(DIP_CAM_A_IDX)) & 0x00FF0000) >> 16);*/
-				DebugFlag[1] = DIP_RD32_TG_CAM_FRM_CNT(DIP_IRQ_TYPE_INT_CAM_A_ST, DIP_CAM_A_IDX);
-				break;
-			case DIP_IRQ_TYPE_INT_CAM_B_ST:
-				/*DebugFlag[1] = ((DIP_RD32(CAM_REG_TG_INTER_ST(DIP_CAM_B_IDX)) & 0x00FF0000) >> 16);*/
-				DebugFlag[1] = DIP_RD32_TG_CAM_FRM_CNT(DIP_IRQ_TYPE_INT_CAM_B_ST, DIP_CAM_B_IDX));
-				break;
-			case DIP_IRQ_TYPE_INT_CAMSV_0_ST:
-				/*DebugFlag[1] = ((DIP_RD32(CAM_REG_TG_INTER_ST(DIP_CAMSV0_IDX)) & 0x00FF0000) >> 16);*/
-				DebugFlag[1] = DIP_RD32_TG_CAM_FRM_CNT(DIP_IRQ_TYPE_INT_CAMSV_0_ST, DIP_CAMSV0_IDX);
-				break;
-			case DIP_IRQ_TYPE_INT_CAMSV_1_ST:
-				/*DebugFlag[1] = ((DIP_RD32(CAM_REG_TG_INTER_ST(DIP_CAMSV1_IDX)) & 0x00FF0000) >> 16);*/
-				DebugFlag[1] =  DIP_RD32_TG_CAM_FRM_CNT(DIP_IRQ_TYPE_INT_CAMSV_1_ST, DIP_CAMSV1_IDX);
-				break;
-			default:
-				LOG_ERR("err TG(0x%x)\n", DebugFlag[0]);
-				Ret = -EFAULT;
-				break;
-			}
-#else
-			if (DebugFlag[0] >= DIP_IRQ_TYPE_AMOUNT) {
-				LOG_ERR("cursof: error type(%d)\n", DebugFlag[0]);
-				Ret = -EFAULT;
-				break;
-			}
-			DebugFlag[1] = sof_count[DebugFlag[0]];
-#endif
-		}
-		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(unsigned int)) != 0) {
-			LOG_ERR("copy to user fail\n");
-			Ret = -EFAULT;
-		}
-		break;
 	case DIP_RESET_BY_HWMODULE: {
 		if (copy_from_user(&module, (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get hwmodule from user fail\n");
@@ -3880,7 +2992,7 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	}
 	case DIP_READ_REGISTER: {
-		if (copy_from_user(&RegIo, (void *)Param, sizeof(DIP_REG_IO_STRUCT)) == 0) {
+		if (copy_from_user(&RegIo, (void *)Param, sizeof(struct DIP_REG_IO_STRUCT)) == 0) {
 			/* 2nd layer behavoir of copy from user is implemented in DIP_ReadReg(...) */
 			Ret = DIP_ReadReg(&RegIo);
 		} else {
@@ -3890,7 +3002,7 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	}
 	case DIP_WRITE_REGISTER: {
-		if (copy_from_user(&RegIo, (void *)Param, sizeof(DIP_REG_IO_STRUCT)) == 0) {
+		if (copy_from_user(&RegIo, (void *)Param, sizeof(struct DIP_REG_IO_STRUCT)) == 0) {
 			/* 2nd layer behavoir of copy from user is implemented in DIP_WriteReg(...) */
 			Ret = DIP_WriteReg(&RegIo);
 		} else {
@@ -3900,18 +3012,12 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	}
 	case DIP_WAIT_IRQ: {
-		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(DIP_WAIT_IRQ_STRUCT)) == 0) {
+		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(struct DIP_WAIT_IRQ_STRUCT)) == 0) {
 			/*  */
 			if ((IrqInfo.Type >= DIP_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
 				Ret = -EFAULT;
 				LOG_ERR("invalid type(%d)\n", IrqInfo.Type);
 				goto EXIT;
-			}
-
-			if ((IrqInfo.EventInfo.St_type >= DIP_IRQ_ST_AMOUNT) || (IrqInfo.EventInfo.St_type < 0)) {
-				LOG_ERR("invalid St_type(%d), max(%d), force St_type = 0\n",
-					IrqInfo.EventInfo.St_type, DIP_IRQ_ST_AMOUNT);
-				IrqInfo.EventInfo.St_type = 0;
 			}
 
 			if ((IrqInfo.EventInfo.UserKey >= IRQ_USER_NUM_MAX) || (IrqInfo.EventInfo.UserKey < 0)) {
@@ -3920,9 +3026,9 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				IrqInfo.EventInfo.UserKey = 0;
 			}
 #ifdef ENABLE_WAITIRQ_LOG
-			LOG_INF("IRQ type(%d), userKey(%d), timeout(%d), userkey(%d), st_status(%d), status(%d)\n",
+			LOG_INF("IRQ type(%d), userKey(%d), timeout(%d), userkey(%d), status(%d)\n",
 				IrqInfo.Type, IrqInfo.EventInfo.UserKey, IrqInfo.EventInfo.Timeout,
-				IrqInfo.EventInfo.UserKey, IrqInfo.EventInfo.St_type, IrqInfo.EventInfo.Status);
+				IrqInfo.EventInfo.UserKey, IrqInfo.EventInfo.Status);
 #endif
 			Ret = DIP_WaitIrq(&IrqInfo);
 		} else {
@@ -3932,19 +3038,13 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	}
 	case DIP_CLEAR_IRQ: {
-		if (copy_from_user(&ClearIrq, (void *)Param, sizeof(DIP_CLEAR_IRQ_STRUCT)) == 0) {
+		if (copy_from_user(&ClearIrq, (void *)Param, sizeof(struct DIP_CLEAR_IRQ_STRUCT)) == 0) {
 			LOG_DBG("DIP_CLEAR_IRQ Type(%d)\n", ClearIrq.Type);
 
 			if ((ClearIrq.Type >= DIP_IRQ_TYPE_AMOUNT) || (ClearIrq.Type < 0)) {
 				Ret = -EFAULT;
 				LOG_ERR("invalid type(%d)\n", ClearIrq.Type);
 				goto EXIT;
-			}
-
-			if ((ClearIrq.EventInfo.St_type >= DIP_IRQ_ST_AMOUNT) || (ClearIrq.EventInfo.St_type < 0)) {
-				LOG_ERR("invalid St_type(%d), max(%d), force St_type = 0\n",
-					ClearIrq.EventInfo.St_type, DIP_IRQ_ST_AMOUNT);
-				ClearIrq.EventInfo.St_type = 0;
 			}
 
 			/*  */
@@ -3955,11 +3055,11 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 
 			i = ClearIrq.EventInfo.UserKey;/*avoid line over 120 char per line */
-			LOG_DBG("DIP_CLEAR_IRQ:Type(%d),Status(0x%x),st_status(%d),IrqStatus(0x%x)\n",
-				ClearIrq.Type, ClearIrq.EventInfo.Status, ClearIrq.EventInfo.St_type,
-				IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.St_type][i]);
+			LOG_DBG("DIP_CLEAR_IRQ:Type(%d),Status(0x%x),IrqStatus(0x%x)\n",
+				ClearIrq.Type, ClearIrq.EventInfo.Status,
+				IspInfo.IrqInfo.Status[ClearIrq.Type][i]);
 			spin_lock_irqsave(&(IspInfo.SpinLockIrq[ClearIrq.Type]), flags);
-			IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.St_type][ClearIrq.EventInfo.UserKey] &=
+			IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.UserKey] &=
 				(~ClearIrq.EventInfo.Status);
 			spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[ClearIrq.Type]), flags);
 		} else {
@@ -3970,10 +3070,10 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	}
 	/*  */
 	case DIP_REGISTER_IRQ_USER_KEY:
-		if (copy_from_user(&RegUserKey, (void *)Param, sizeof(DIP_REGISTER_USERKEY_STRUCT)) == 0) {
+		if (copy_from_user(&RegUserKey, (void *)Param, sizeof(struct DIP_REGISTER_USERKEY_STRUCT)) == 0) {
 			userKey = DIP_REGISTER_IRQ_USERKEY(RegUserKey.userName);
 			RegUserKey.userKey = userKey;
-			if (copy_to_user((void *)Param, &RegUserKey, sizeof(DIP_REGISTER_USERKEY_STRUCT)) != 0)
+			if (copy_to_user((void *)Param, &RegUserKey, sizeof(struct DIP_REGISTER_USERKEY_STRUCT)) != 0)
 				LOG_ERR("copy_to_user failed\n");
 
 			if (RegUserKey.userKey < 0) {
@@ -3986,57 +3086,8 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 		break;
 	/*  */
-	case DIP_MARK_IRQ_REQUEST:
-		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(DIP_WAIT_IRQ_STRUCT)) == 0) {
-			if ((IrqInfo.EventInfo.UserKey >= IRQ_USER_NUM_MAX) || (IrqInfo.EventInfo.UserKey < 1)) {
-				LOG_ERR("invalid userKey(%d), max(%d)\n", IrqInfo.EventInfo.UserKey, IRQ_USER_NUM_MAX);
-				Ret = -EFAULT;
-				break;
-			}
-			if ((IrqInfo.Type >= DIP_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
-				LOG_ERR("invalid type(%d), max(%d)\n", IrqInfo.Type, DIP_IRQ_TYPE_AMOUNT);
-				Ret = -EFAULT;
-				break;
-			}
-
-			if ((IrqInfo.EventInfo.St_type >= DIP_IRQ_ST_AMOUNT) || (IrqInfo.EventInfo.St_type < 0)) {
-				LOG_ERR("invalid St_type(%d), max(%d), force St_type = 0\n",
-					IrqInfo.EventInfo.St_type, DIP_IRQ_ST_AMOUNT);
-				IrqInfo.EventInfo.St_type = 0;
-			}
-			Ret = DIP_MARK_IRQ(&IrqInfo);
-		} else {
-			LOG_ERR("DIP_MARK_IRQ, copy_from_user failed\n");
-			Ret = -EFAULT;
-		}
-		break;
-	/*  */
-	case DIP_GET_MARK2QUERY_TIME:
-		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(DIP_WAIT_IRQ_STRUCT)) == 0) {
-			if ((IrqInfo.EventInfo.UserKey >= IRQ_USER_NUM_MAX) || (IrqInfo.EventInfo.UserKey < 1)) {
-				LOG_ERR("invalid userKey(%d), max(%d)\n", IrqInfo.EventInfo.UserKey, IRQ_USER_NUM_MAX);
-				Ret = -EFAULT;
-				break;
-			}
-			if ((IrqInfo.Type >= DIP_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
-				LOG_ERR("invalid type(%d), max(%d)\n", IrqInfo.Type, DIP_IRQ_TYPE_AMOUNT);
-				Ret = -EFAULT;
-				break;
-			}
-			Ret = DIP_GET_MARKtoQEURY_TIME(&IrqInfo);
-			/*  */
-			if (copy_to_user((void *)Param, &IrqInfo, sizeof(DIP_WAIT_IRQ_STRUCT)) != 0) {
-				LOG_ERR("copy_to_user failed\n");
-				Ret = -EFAULT;
-			}
-		} else {
-			LOG_ERR("DIP_GET_MARK2QUERY_TIME, copy_from_user failed\n");
-			Ret = -EFAULT;
-		}
-		break;
-	/*  */
 	case DIP_FLUSH_IRQ_REQUEST:
-		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(DIP_WAIT_IRQ_STRUCT)) == 0) {
+		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(struct DIP_WAIT_IRQ_STRUCT)) == 0) {
 			if ((IrqInfo.EventInfo.UserKey >= IRQ_USER_NUM_MAX) || (IrqInfo.EventInfo.UserKey < 0)) {
 				LOG_ERR("invalid userKey(%d), max(%d)\n", IrqInfo.EventInfo.UserKey, IRQ_USER_NUM_MAX);
 				Ret = -EFAULT;
@@ -4047,18 +3098,13 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 				break;
 			}
-			if ((IrqInfo.EventInfo.St_type >= DIP_IRQ_ST_AMOUNT) || (IrqInfo.EventInfo.St_type < 0)) {
-				LOG_ERR("invalid St_type(%d), max(%d), force St_type = 0\n",
-					IrqInfo.EventInfo.St_type, DIP_IRQ_ST_AMOUNT);
-				IrqInfo.EventInfo.St_type = 0;
-			}
 
 			Ret = DIP_FLUSH_IRQ(&IrqInfo);
 		}
 		break;
 	/*  */
 	case DIP_P2_BUFQUE_CTRL:
-		if (copy_from_user(&p2QueBuf, (void *)Param, sizeof(DIP_P2_BUFQUE_STRUCT)) == 0) {
+		if (copy_from_user(&p2QueBuf, (void *)Param, sizeof(struct DIP_P2_BUFQUE_STRUCT)) == 0) {
 			p2QueBuf.processID = pUserInfo->Pid;
 			Ret = DIP_P2_BufQue_CTRL_FUNC(p2QueBuf);
 		} else {
@@ -4066,58 +3112,7 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			Ret = -EFAULT;
 		}
 		break;
-	/*  */
-	case DIP_UPDATE_REGSCEN:
-		if (copy_from_user(&regScenInfo_value, (void *)Param, sizeof(unsigned int)) == 0) {
-			spin_lock((spinlock_t *)(&SpinLockRegScen));
-			g_regScen = regScenInfo_value;
-			spin_unlock((spinlock_t *)(&SpinLockRegScen));
-		} else {
-			LOG_ERR("copy_from_user	failed\n");
-			Ret = -EFAULT;
-		}
-		break;
-	case DIP_QUERY_REGSCEN:
-		spin_lock((spinlock_t *)(&SpinLockRegScen));
-		regScenInfo_value = g_regScen;
-		spin_unlock((spinlock_t *)(&SpinLockRegScen));
-		/*      */
-		if (copy_to_user((void *)Param, &regScenInfo_value, sizeof(unsigned int)) != 0) {
-			LOG_ERR("copy_to_user failed\n");
-			Ret = -EFAULT;
-		}
-		break;
-	/*  */
-	case DIP_UPDATE_BURSTQNUM:
-#if 0 /* QQ, remove later*/
-		if (copy_from_user(&burstQNum, (void *)Param, sizeof(signed int)) == 0) {
-			spin_lock(&SpinLockRegScen);
-			P2_Support_BurstQNum = burstQNum;
-			spin_unlock(&SpinLockRegScen);
-			LOG_DBG("new BurstQNum(%d)", P2_Support_BurstQNum);
-		} else {
-			LOG_ERR("copy_from_user failed");
-			Ret = -EFAULT;
-		}
-#endif
-		break;
-	case DIP_QUERY_BURSTQNUM:
-#if 0 /* QQ, remove later*/
-		spin_lock(&SpinLockRegScen);
-		burstQNum = P2_Support_BurstQNum;
-		spin_unlock(&SpinLockRegScen);
-		/*  */
-		if (copy_to_user((void *)Param, &burstQNum, sizeof(unsigned int)) != 0) {
-			LOG_ERR("copy_to_user failed");
-			Ret = -EFAULT;
-		}
-#endif
-		break;
-	/*  */
-	case DIP_DUMP_REG:
-		/* TODO: modify this... to everest */
-		Ret = DIP_DumpReg();
-		break;
+
 	case DIP_DEBUG_FLAG:
 		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int)) == 0) {
 
@@ -4129,16 +3124,12 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			Ret = -EFAULT;
 		}
 		break;
-	case DIP_BUFFER_CTRL:
-		Ret = DIP_Buf_CTRL_FUNC(Param);
-		break;
-	case DIP_REF_CNT_CTRL:
-		Ret = DIP_REF_CNT_CTRL_FUNC(Param);
+
 		break;
 	#ifdef ENABLE_KEEP_ION_HANDLE
 	case DIP_ION_IMPORT:
-		if (copy_from_user(&IonNode, (void *)Param, sizeof(DIP_DEV_ION_NODE_STRUCT)) == 0) {
-			T_ION_TBL *ptbl = NULL;
+		if (copy_from_user(&IonNode, (void *)Param, sizeof(struct DIP_DEV_ION_NODE_STRUCT)) == 0) {
+			struct T_ION_TBL *ptbl = NULL;
 			unsigned int jump;
 
 			if (!pIon_client) {
@@ -4234,8 +3225,8 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case DIP_ION_FREE:
-		if (copy_from_user(&IonNode, (void *)Param, sizeof(DIP_DEV_ION_NODE_STRUCT)) == 0) {
-			T_ION_TBL *ptbl = NULL;
+		if (copy_from_user(&IonNode, (void *)Param, sizeof(struct DIP_DEV_ION_NODE_STRUCT)) == 0) {
+			struct T_ION_TBL *ptbl = NULL;
 			unsigned int jump;
 
 			if (!pIon_client) {
@@ -4344,50 +3335,15 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	#endif
-	#if (SMI_LARB_MMU_CTL == 1)
-	case DIP_LARB_MMU_CTL: {
-
-		DIP_LARB_MMU_STRUCT larbInfo;
-
-		if (copy_from_user(&larbInfo, (void *)Param, sizeof(DIP_LARB_MMU_STRUCT)) != 0) {
-			LOG_ERR("copy_from_user LARB_MMU_CTL failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-
-		switch (larbInfo.LarbNum) {
-		case 2:
-		case 3:
-		case 5:
-		case 6:
-			break;
-		default:
-			LOG_ERR("Wrong SMI_LARB port=%d\n", larbInfo.LarbNum);
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-
-		if ((DIP_SMI_LARB_BASE[larbInfo.LarbNum] == NULL) || (larbInfo.regOffset >= 0x1000)) {
-			LOG_ERR("Wrong SMI_LARB port=%d base addr=%p offset=0x%x\n",
-				larbInfo.LarbNum, DIP_SMI_LARB_BASE[larbInfo.LarbNum], larbInfo.regOffset);
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-
-		*(unsigned int *)((char *)DIP_SMI_LARB_BASE[larbInfo.LarbNum] + larbInfo.regOffset) = larbInfo.regVal;
-
-		}
-		break;
-	#endif
 	case DIP_GET_DUMP_INFO: {
-		if (copy_to_user((void *)Param, &g_dumpInfo, sizeof(DIP_GET_DUMP_INFO_STRUCT)) != 0) {
+		if (copy_to_user((void *)Param, &g_dumpInfo, sizeof(struct DIP_GET_DUMP_INFO_STRUCT)) != 0) {
 			LOG_ERR("DIP_GET_DUMP_INFO copy to user fail");
 			Ret = -EFAULT;
 		}
 		break;
 	}
 	case DIP_DUMP_BUFFER: {
-		if (copy_from_user(&DumpBufStruct, (void *)Param, sizeof(DIP_DUMP_BUFFER_STRUCT)) == 0) {
+		if (copy_from_user(&DumpBufStruct, (void *)Param, sizeof(struct DIP_DUMP_BUFFER_STRUCT)) == 0) {
 			/* 2nd layer behavoir of copy from user is implemented in DIP_DumpTuningBuffer(...) */
 			Ret = DIP_DumpBuffer(&DumpBufStruct);
 		} else {
@@ -4397,7 +3353,7 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	}
 	case DIP_SET_MEM_INFO: {
-		if (copy_from_user(&MemInfoStruct, (void *)Param, sizeof(DIP_MEM_INFO_STRUCT)) == 0) {
+		if (copy_from_user(&MemInfoStruct, (void *)Param, sizeof(struct DIP_MEM_INFO_STRUCT)) == 0) {
 			/* 2nd layer behavoir of copy from user is implemented in DIP_SetMemInfo(...) */
 			Ret = DIP_SetMemInfo(&MemInfoStruct);
 		} else {
@@ -4428,8 +3384,8 @@ EXIT:
 *
 ********************************************************************************/
 static int compat_get_dip_read_register_data(
-	compat_DIP_REG_IO_STRUCT __user *data32,
-	DIP_REG_IO_STRUCT __user *data)
+	struct compat_DIP_REG_IO_STRUCT __user *data32,
+	struct DIP_REG_IO_STRUCT __user *data)
 {
 	compat_uint_t count;
 	compat_uptr_t uptr;
@@ -4443,8 +3399,8 @@ static int compat_get_dip_read_register_data(
 }
 
 static int compat_put_dip_read_register_data(
-	compat_DIP_REG_IO_STRUCT __user *data32,
-	DIP_REG_IO_STRUCT __user *data)
+	struct compat_DIP_REG_IO_STRUCT __user *data32,
+	struct DIP_REG_IO_STRUCT __user *data)
 {
 	compat_uint_t count;
 	/*      compat_uptr_t uptr;*/
@@ -4457,99 +3413,9 @@ static int compat_put_dip_read_register_data(
 	return err;
 }
 
-
-
-
-
-static int compat_get_dip_buf_ctrl_struct_data(
-	compat_DIP_BUFFER_CTRL_STRUCT __user *data32,
-	DIP_BUFFER_CTRL_STRUCT __user *data)
-{
-	compat_uint_t tmp;
-	compat_uptr_t uptr;
-	int err = 0;
-
-	err = get_user(tmp, &data32->ctrl);
-	err |= put_user(tmp, &data->ctrl);
-	err |= get_user(tmp, &data32->module);
-	err |= put_user(tmp, &data->module);
-	err |= get_user(tmp, &data32->buf_id);
-	err |= put_user(tmp, &data->buf_id);
-	err |= get_user(uptr, &data32->data_ptr);
-	err |= put_user(compat_ptr(uptr), &data->data_ptr);
-	err |= get_user(uptr, &data32->ex_data_ptr);
-	err |= put_user(compat_ptr(uptr), &data->ex_data_ptr);
-	err |= get_user(uptr, &data32->pExtend);
-	err |= put_user(compat_ptr(uptr), &data->pExtend);
-
-	return err;
-}
-
-static int compat_put_dip_buf_ctrl_struct_data(
-	compat_DIP_BUFFER_CTRL_STRUCT __user *data32,
-	DIP_BUFFER_CTRL_STRUCT __user *data)
-{
-	compat_uint_t tmp;
-	/*      compat_uptr_t uptr;*/
-	int err = 0;
-
-	err = get_user(tmp, &data->ctrl);
-	err |= put_user(tmp, &data32->ctrl);
-	err |= get_user(tmp, &data->module);
-	err |= put_user(tmp, &data32->module);
-	err |= get_user(tmp, &data->buf_id);
-	err |= put_user(tmp, &data32->buf_id);
-	/* Assume data pointer is unchanged. */
-	/* err |= get_user(compat_ptr(uptr), &data->data_ptr); */
-	/* err |= put_user(uptr, &data32->data_ptr); */
-	/* err |= get_user(compat_ptr(uptr), &data->ex_data_ptr); */
-	/* err |= put_user(uptr, &data32->ex_data_ptr); */
-	/* err |= get_user(compat_ptr(uptr), &data->pExtend); */
-	/* err |= put_user(uptr, &data32->pExtend); */
-
-	return err;
-}
-
-static int compat_get_dip_ref_cnt_ctrl_struct_data(
-	compat_DIP_REF_CNT_CTRL_STRUCT __user *data32,
-	DIP_REF_CNT_CTRL_STRUCT __user *data)
-{
-	compat_uint_t tmp;
-	compat_uptr_t uptr;
-	int err = 0;
-
-	err = get_user(tmp, &data32->ctrl);
-	err |= put_user(tmp, &data->ctrl);
-	err |= get_user(tmp, &data32->id);
-	err |= put_user(tmp, &data->id);
-	err |= get_user(uptr, &data32->data_ptr);
-	err |= put_user(compat_ptr(uptr), &data->data_ptr);
-
-	return err;
-}
-
-static int compat_put_dip_ref_cnt_ctrl_struct_data(
-	compat_DIP_REF_CNT_CTRL_STRUCT __user *data32,
-	DIP_REF_CNT_CTRL_STRUCT __user *data)
-{
-	compat_uint_t tmp;
-	/*      compat_uptr_t uptr;*/
-	int err = 0;
-
-	err = get_user(tmp, &data->ctrl);
-	err |= put_user(tmp, &data32->ctrl);
-	err |= get_user(tmp, &data->id);
-	err |= put_user(tmp, &data32->id);
-	/* Assume data pointer is unchanged. */
-	/* err |= get_user(compat_ptr(uptr), &data->data_ptr); */
-	/* err |= put_user(uptr, &data32->data_ptr); */
-
-	return err;
-}
-
 static int compat_get_dip_dump_buffer(
-	compat_DIP_DUMP_BUFFER_STRUCT __user *data32,
-	DIP_DUMP_BUFFER_STRUCT __user *data)
+	struct compat_DIP_DUMP_BUFFER_STRUCT __user *data32,
+	struct DIP_DUMP_BUFFER_STRUCT __user *data)
 {
 	compat_uint_t count;
 	compat_uint_t cmd;
@@ -4566,8 +3432,8 @@ static int compat_get_dip_dump_buffer(
 }
 
 static int compat_get_dip_mem_info(
-	compat_DIP_MEM_INFO_STRUCT __user *data32,
-	DIP_MEM_INFO_STRUCT __user *data)
+	struct compat_DIP_MEM_INFO_STRUCT __user *data32,
+	struct DIP_MEM_INFO_STRUCT __user *data)
 {
 	compat_uint_t cmd;
 	compat_uint_t mempa;
@@ -4586,41 +3452,6 @@ static int compat_get_dip_mem_info(
 	return err;
 }
 
-#if 0
-static int compat_get_dip_register_userkey_struct_data(
-	compat_DIP_REGISTER_USERKEY_STRUCT __user *data32,
-	DIP_REGISTER_USERKEY_STRUCT __user *data)
-{
-	compat_uint_t tmp;
-	compat_uptr_t uptr;
-	int err = 0;
-
-	err = get_user(tmp, &data32->userKey);
-	err |= put_user(tmp, &data->userKey);
-	err |= get_user(uptr, &data32->userName);
-	/* err |= put_user(compat_ptr(uptr), &data->userName); */
-
-	return err;
-}
-
-static int compat_put_dip_register_userkey_struct_data(
-	compat_DIP_REGISTER_USERKEY_STRUCT __user *data32,
-	DIP_REGISTER_USERKEY_STRUCT __user *data)
-{
-	compat_uint_t tmp;
-	/*      compat_uptr_t uptr;*/
-	int err = 0;
-
-	err = get_user(tmp, &data->userKey);
-	err |= put_user(tmp, &data32->userKey);
-	/* Assume data pointer is unchanged. */
-	/* err |= get_user(uptr, &data->userName); */
-	/* err |= put_user(uptr, &data32->userName); */
-
-	return err;
-}
-#endif
-
 static long DIP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	long ret = 0;
@@ -4630,8 +3461,8 @@ static long DIP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 
 	switch (cmd) {
 	case COMPAT_DIP_READ_REGISTER: {
-		compat_DIP_REG_IO_STRUCT __user *data32;
-		DIP_REG_IO_STRUCT __user *data;
+		struct compat_DIP_REG_IO_STRUCT __user *data32;
+		struct DIP_REG_IO_STRUCT __user *data;
 
 		int err = 0;
 
@@ -4654,8 +3485,8 @@ static long DIP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		return ret;
 	}
 	case COMPAT_DIP_WRITE_REGISTER: {
-		compat_DIP_REG_IO_STRUCT __user *data32;
-		DIP_REG_IO_STRUCT __user *data;
+		struct compat_DIP_REG_IO_STRUCT __user *data32;
+		struct DIP_REG_IO_STRUCT __user *data;
 
 		int err = 0;
 
@@ -4672,119 +3503,15 @@ static long DIP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		ret = filp->f_op->unlocked_ioctl(filp, DIP_WRITE_REGISTER, (unsigned long)data);
 		return ret;
 	}
-	case COMPAT_DIP_BUFFER_CTRL: {
-		compat_DIP_BUFFER_CTRL_STRUCT __user *data32;
-		DIP_BUFFER_CTRL_STRUCT __user *data;
 
-		int err = 0;
-
-		data32 = compat_ptr(arg);
-		data = compat_alloc_user_space(sizeof(*data));
-		if (data == NULL)
-			return -EFAULT;
-
-		err = compat_get_dip_buf_ctrl_struct_data(data32, data);
-		if (err)
-			return err;
-
-		if (err) {
-			LOG_INF("compat_get_dip_buf_ctrl_struct_data error!!!\n");
-			return err;
-		}
-		ret = filp->f_op->unlocked_ioctl(filp, DIP_BUFFER_CTRL, (unsigned long)data);
-		err = compat_put_dip_buf_ctrl_struct_data(data32, data);
-
-		if (err) {
-			LOG_INF("compat_put_dip_buf_ctrl_struct_data error!!!\n");
-			return err;
-		}
-		return ret;
-
-	}
-	case COMPAT_DIP_REF_CNT_CTRL: {
-		compat_DIP_REF_CNT_CTRL_STRUCT __user *data32;
-		DIP_REF_CNT_CTRL_STRUCT __user *data;
-
-		int err = 0;
-
-		data32 = compat_ptr(arg);
-		data = compat_alloc_user_space(sizeof(*data));
-		if (data == NULL)
-			return -EFAULT;
-
-		err = compat_get_dip_ref_cnt_ctrl_struct_data(data32, data);
-		if (err) {
-			LOG_INF("compat_get_dip_ref_cnt_ctrl_struct_data error!!!\n");
-			return err;
-		}
-		ret = filp->f_op->unlocked_ioctl(filp, DIP_REF_CNT_CTRL, (unsigned long)data);
-		err = compat_put_dip_ref_cnt_ctrl_struct_data(data32, data);
-		if (err) {
-			LOG_INF("compat_put_dip_ref_cnt_ctrl_struct_data error!!!\n");
-			return err;
-		}
-		return ret;
-	}
-#if 0
-	case COMPAT_DIP_REGISTER_IRQ_USER_KEY: {
-		compat_DIP_REGISTER_USERKEY_STRUCT __user *data32;
-		DIP_REGISTER_USERKEY_STRUCT __user *data;
-
-		int err = 0;
-
-		data32 = compat_ptr(arg);
-		data = compat_alloc_user_space(sizeof(*data));
-		if (data == NULL)
-			return -EFAULT;
-
-		err = compat_get_dip_register_userkey_struct_data(data32, data);
-		if (err) {
-			LOG_INF("compat_get_dip_register_userkey_struct_data error!!!\n");
-			return err;
-		}
-		ret = filp->f_op->unlocked_ioctl(filp, DIP_REGISTER_IRQ_USER_KEY, (unsigned long)data);
-		err = compat_put_dip_register_userkey_struct_data(data32, data);
-		if (err) {
-			LOG_INF("compat_put_dip_register_userkey_struct_data error!!!\n");
-			return err;
-		}
-		return ret;
-	}
-#endif
 	case COMPAT_DIP_DEBUG_FLAG: {
 		/* compat_ptr(arg) will convert the arg */
 		ret = filp->f_op->unlocked_ioctl(filp, DIP_DEBUG_FLAG, (unsigned long)compat_ptr(arg));
 		return ret;
 	}
-	case COMPAT_DIP_GET_INT_ERR: {
-		/* compat_ptr(arg) will convert the arg */
-		ret =
-			filp->f_op->unlocked_ioctl(filp, DIP_GET_INT_ERR,
-						   (unsigned long)compat_ptr(arg));
-		return ret;
-	}
-	case COMPAT_DIP_GET_DMA_ERR: {
-		/* compat_ptr(arg) will convert the arg */
-		ret =
-			filp->f_op->unlocked_ioctl(filp, DIP_GET_DMA_ERR,
-						   (unsigned long)compat_ptr(arg));
-		return ret;
-	}
 	case COMPAT_DIP_WAKELOCK_CTRL: {
 		ret =
 			filp->f_op->unlocked_ioctl(filp, DIP_WAKELOCK_CTRL,
-						   (unsigned long)compat_ptr(arg));
-		return ret;
-	}
-	case COMPAT_DIP_GET_DROP_FRAME: {
-		ret =
-			filp->f_op->unlocked_ioctl(filp, DIP_GET_DROP_FRAME,
-						   (unsigned long)compat_ptr(arg));
-		return ret;
-	}
-	case COMPAT_DIP_GET_CUR_SOF: {
-		ret =
-			filp->f_op->unlocked_ioctl(filp, DIP_GET_CUR_SOF,
 						   (unsigned long)compat_ptr(arg));
 		return ret;
 	}
@@ -4794,27 +3521,9 @@ static long DIP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 						   (unsigned long)compat_ptr(arg));
 		return ret;
 	}
-	case COMPAT_DIP_DUMP_ISR_LOG: {
-		ret =
-			filp->f_op->unlocked_ioctl(filp, DIP_DUMP_ISR_LOG,
-						   (unsigned long)compat_ptr(arg));
-		return ret;
-	}
-	case COMPAT_DIP_VF_LOG: {
-		ret =
-			filp->f_op->unlocked_ioctl(filp, DIP_VF_LOG,
-						   (unsigned long)compat_ptr(arg));
-		return ret;
-	}
-	case COMPAT_DIP_GET_START_TIME: {
-		ret =
-			filp->f_op->unlocked_ioctl(filp, DIP_GET_START_TIME,
-						   (unsigned long)compat_ptr(arg));
-		return ret;
-	}
 	case COMPAT_DIP_DUMP_BUFFER: {
-		compat_DIP_DUMP_BUFFER_STRUCT __user *data32;
-		DIP_DUMP_BUFFER_STRUCT __user *data;
+		struct compat_DIP_DUMP_BUFFER_STRUCT __user *data32;
+		struct DIP_DUMP_BUFFER_STRUCT __user *data;
 
 		int err = 0;
 
@@ -4832,8 +3541,8 @@ static long DIP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		return ret;
 	}
 	case COMPAT_DIP_SET_MEM_INFO: {
-		compat_DIP_MEM_INFO_STRUCT __user *data32;
-		DIP_MEM_INFO_STRUCT __user *data;
+		struct compat_DIP_MEM_INFO_STRUCT __user *data32;
+		struct DIP_MEM_INFO_STRUCT __user *data;
 		int err = 0;
 
 		data32 = compat_ptr(arg);
@@ -4852,25 +3561,11 @@ static long DIP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case DIP_WAIT_IRQ:
 	case DIP_CLEAR_IRQ: /* structure (no pointer) */
 	case DIP_REGISTER_IRQ_USER_KEY:
-	case DIP_MARK_IRQ_REQUEST:
-	case DIP_GET_MARK2QUERY_TIME:
 	case DIP_FLUSH_IRQ_REQUEST:
 	case DIP_P2_BUFQUE_CTRL:/* structure (no pointer) */
-	case DIP_UPDATE_REGSCEN:
-	case DIP_QUERY_REGSCEN:
-	case DIP_UPDATE_BURSTQNUM:
-	case DIP_QUERY_BURSTQNUM:
-	case DIP_DUMP_REG:
-	case DIP_GET_VSYNC_CNT:
-	case DIP_RESET_VSYNC_CNT:
 	case DIP_ION_IMPORT:
 	case DIP_ION_FREE:
 	case DIP_ION_FREE_BY_HWMODULE:
-	case DIP_CQ_SW_PATCH:
-	case DIP_LARB_MMU_CTL:
-	case DIP_DFS_UPDATE:
-	case DIP_GET_SUPPORTED_DIP_CLOCKS:
-	case DIP_GET_CUR_DIP_CLOCK:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
@@ -4888,9 +3583,9 @@ static signed int DIP_open(
 	struct file *pFile)
 {
 	signed int Ret = 0;
-	unsigned int i, j;
-	int q = 0, p = 0;
-	DIP_USER_INFO_STRUCT *pUserInfo;
+	unsigned int i;
+	int q = 0;
+	struct DIP_USER_INFO_STRUCT *pUserInfo;
 
 	LOG_DBG("- E. UserCount: %d.\n", IspInfo.UserCount);
 
@@ -4899,13 +3594,13 @@ static signed int DIP_open(
 	spin_lock(&(IspInfo.SpinLockIspRef));
 
 	pFile->private_data = NULL;
-	pFile->private_data = kmalloc(sizeof(DIP_USER_INFO_STRUCT), GFP_ATOMIC);
+	pFile->private_data = kmalloc(sizeof(struct DIP_USER_INFO_STRUCT), GFP_ATOMIC);
 	if (pFile->private_data == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
 			current->comm, current->pid, current->tgid);
 		Ret = -ENOMEM;
 	} else {
-		pUserInfo = (DIP_USER_INFO_STRUCT *)pFile->private_data;
+		pUserInfo = (struct DIP_USER_INFO_STRUCT *)pFile->private_data;
 		pUserInfo->Pid = current->pid;
 		pUserInfo->Tid = current->tgid;
 	}
@@ -4998,6 +3693,7 @@ static signed int DIP_open(
 #endif
 
 	if (g_bIonBufferAllocated == MTRUE) {
+#ifdef AEE_DUMP_BY_USING_ION_MEMORY
 		g_pPhyDIPBuffer = (unsigned int *)(uintptr_t)(g_dip_p2_imem_buf.va);
 		g_pTuningBuffer = (unsigned int *)(((uintptr_t)g_pPhyDIPBuffer) + DIP_DIP_REG_SIZE);
 		g_pTpipeBuffer = (unsigned int *)(((uintptr_t)g_pTuningBuffer) + DIP_DIP_REG_SIZE);
@@ -5007,6 +3703,7 @@ static signed int DIP_open(
 		g_pKWTpipeBuffer = (unsigned int *)(((uintptr_t)g_pCmdqBuffer) + MAX_DIP_CMDQ_BUFFER_SIZE);
 		g_pKWCmdqBuffer = (unsigned int *)(((uintptr_t)g_pKWTpipeBuffer) + MAX_DIP_TILE_TDR_HEX_NO);
 		g_pKWVirDIPBuffer = (unsigned int *)(((uintptr_t)g_pKWCmdqBuffer) + MAX_DIP_CMDQ_BUFFER_SIZE);
+#endif
 	} else {
 		/* Navtive Exception */
 		g_pPhyDIPBuffer = NULL;
@@ -5036,29 +3733,13 @@ static signed int DIP_open(
 	g_CmdqBaseAddrInfo.MemVa = NULL;
 	g_CmdqBaseAddrInfo.MemSizeDiff = 0x0;
 
-
-	/*  */
-	for (i = 0; i < DIP_REF_CNT_ID_MAX; i++)
-		atomic_set(&g_imem_ref_cnt[i], 0);
-
 	/*  */
 	for (i = 0; i < DIP_IRQ_TYPE_AMOUNT; i++) {
-		for (j = 0; j < DIP_IRQ_ST_AMOUNT; j++) {
-			for (q = 0; q < IRQ_USER_NUM_MAX; q++) {
-				IspInfo.IrqInfo.Status[i][j][q] = 0;
-				IspInfo.IrqInfo.MarkedFlag[i][j][q] = 0;
-				for (p = 0; p < 32; p++) {
-					IspInfo.IrqInfo.MarkedTime_sec[i][p][q] = 0;
-					IspInfo.IrqInfo.MarkedTime_usec[i][p][q] = 0;
-					IspInfo.IrqInfo.PassedBySigCnt[i][p][q] = 0;
-					IspInfo.IrqInfo.LastestSigTime_sec[i][p] = 0;
-					IspInfo.IrqInfo.LastestSigTime_usec[i][p] = 0;
-				}
-			}
-		}
+		for (q = 0; q < IRQ_USER_NUM_MAX; q++)
+			IspInfo.IrqInfo.Status[i][q] = 0;
 	}
 	/* reset backup regs*/
-	memset(g_BkReg, 0, sizeof(_dip_bk_reg_t) * DIP_IRQ_TYPE_AMOUNT);
+	memset(g_BkReg, 0, sizeof(struct _dip_bk_reg_t) * DIP_IRQ_TYPE_AMOUNT);
 
 #ifdef ENABLE_KEEP_ION_HANDLE
 	/* create ion client*/
@@ -5097,7 +3778,7 @@ static signed int DIP_release(
 	struct inode *pInode,
 	struct file *pFile)
 {
-	DIP_USER_INFO_STRUCT *pUserInfo;
+	struct DIP_USER_INFO_STRUCT *pUserInfo;
 	unsigned int i = 0;
 
 	LOG_DBG("- E. UserCount: %d.\n", IspInfo.UserCount);
@@ -5108,7 +3789,7 @@ static signed int DIP_release(
 	/* LOG_DBG("UserCount(%d)",IspInfo.UserCount); */
 	/*  */
 	if (pFile->private_data != NULL) {
-		pUserInfo = (DIP_USER_INFO_STRUCT *)pFile->private_data;
+		pUserInfo = (struct DIP_USER_INFO_STRUCT *)pFile->private_data;
 		kfree(pFile->private_data);
 		pFile->private_data = NULL;
 	}
@@ -5218,7 +3899,7 @@ static signed int DIP_release(
 	}
 #endif
 	/* reset backup regs*/
-	memset(g_BkReg, 0, sizeof(_dip_bk_reg_t) * DIP_IRQ_TYPE_AMOUNT);
+	memset(g_BkReg, 0, sizeof(struct _dip_bk_reg_t) * DIP_IRQ_TYPE_AMOUNT);
 
 	/*  */
 #ifdef ENABLE_KEEP_ION_HANDLE
@@ -6253,40 +4934,6 @@ static signed int __init DIP_Init(void)
 
 	/* Use of_find_compatible_node() sensor registers from device tree */
 	/* Don't use compatitble define in probe(). Otherwise, probe() of Seninf driver cannot be called. */
-	#if (SMI_LARB_MMU_CTL == 1)
-	do {
-		char *comp_str = NULL;
-
-		comp_str = kmalloc(64, GFP_KERNEL);
-		if (comp_str == NULL) {
-			LOG_ERR("kmalloc failed for finding compatible\n");
-			break;
-		}
-
-		for (i = 0; i < ARRAY_SIZE(DIP_SMI_LARB_BASE); i++) {
-
-			snprintf(comp_str, 64, "mediatek,smi_larb%d", i);
-			LOG_INF("Finding SMI_LARB compatible: %s\n", comp_str);
-
-			node = of_find_compatible_node(NULL, NULL, comp_str);
-			if (!node) {
-				LOG_ERR("find %s node failed!!!\n", comp_str);
-				DIP_SMI_LARB_BASE[i] = 0;
-				continue;
-			}
-			DIP_SMI_LARB_BASE[i] = of_iomap(node, 0);
-			if (!DIP_SMI_LARB_BASE[i]) {
-				LOG_ERR("unable to map DIP_SENINF0_BASE registers!!!\n");
-				break;
-			}
-			LOG_INF("SMI_LARB%d_BASE: %p\n", i, DIP_SMI_LARB_BASE[i]);
-		}
-
-		/* if (comp_str) coverity: no need if, kfree is safe */
-		kfree(comp_str);
-	} while (0);
-	#endif
-
 	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 	if (!node) {
 		LOG_ERR("find mediatek,apmixed node failed!!!\n");
@@ -6385,14 +5032,6 @@ static signed int __init DIP_Init(void)
 	cmdqCoreRegisterDebugRegDumpCB(DIP_BeginGCECallback, DIP_EndGCECallback);
 #endif
 	/* m4u_enable_tf(M4U_PORT_CAM_IMGI, 0);*/
-
-#ifdef _MAGIC_NUM_ERR_HANDLING_
-	LOG_DBG("init m_LastMNum");
-	for (i = 0; i < _cam_max_; i++)
-		m_LastMNum[i] = 0;
-
-#endif
-
 
 	for (i = 0; i < DIP_DEV_NODE_NUM; i++)
 		SuspnedRecord[i] = 0;
@@ -6654,7 +5293,7 @@ static signed int DMAErrHandler(void)
 #endif
 
 
-void DIP_IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus, DIP_IRQ_TYPE_ENUM module)
+void DIP_IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus, enum DIP_IRQ_TYPE_ENUM module)
 {
 	/* ERR print */
 	/* unsigned int i = 0; */
@@ -6678,177 +5317,6 @@ void DIP_IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus, 
 	}
 }
 
-#if (TIMESTAMP_QUEUE_EN == 1)
-static void DIP_GetDmaPortsStatus(DIP_DEV_NODE_ENUM reg_module, unsigned int *DmaPortsStats)
-{
-	unsigned int dma_en = DIP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
-	unsigned int hds2_sel = (DIP_RD32(CAM_UNI_REG_TOP_PATH_SEL(DIP_UNI_A_IDX)) & 0x3);
-	unsigned int flk2_sel = ((DIP_RD32(CAM_UNI_REG_TOP_PATH_SEL(DIP_UNI_A_IDX)) >> 8) & 0x3);
-	unsigned int uni_dma_en = 0;
-
-	DmaPortsStats[_imgo_] = ((dma_en & 0x01) ? 1 : 0);
-	DmaPortsStats[_ufeo_] = ((dma_en & 0x02) ? 1 : 0);
-	DmaPortsStats[_rrzo_] = ((dma_en & 0x04) ? 1 : 0);
-	DmaPortsStats[_lcso_] = ((dma_en & 0x10) ? 1 : 0);
-
-	uni_dma_en = 0;
-	if (((hds2_sel == 0) && (reg_module == DIP_CAM_A_IDX)) || ((hds2_sel == 1) && (reg_module == DIP_CAM_B_IDX)))
-		uni_dma_en = DIP_RD32(CAM_UNI_REG_TOP_DMA_EN(DIP_UNI_A_IDX));
-
-	DmaPortsStats[_eiso_] = ((uni_dma_en & 0x04) ? 1 : 0);
-	DmaPortsStats[_rsso_] = ((uni_dma_en & 0x08) ? 1 : 0);
-
-	DmaPortsStats[_aao_] = ((dma_en & 0x20) ? 1 : 0);
-	DmaPortsStats[_pso_] = ((dma_en & 0x40) ? 1 : 0);
-	DmaPortsStats[_afo_] = ((dma_en & 0x08) ? 1 : 0);
-	DmaPortsStats[_pdo_] = ((dma_en & 0x400) ? 1 : 0);
-
-
-	uni_dma_en = 0;
-	if (((flk2_sel == 0) && (reg_module == DIP_CAM_A_IDX)) || ((flk2_sel == 1) && (reg_module == DIP_CAM_B_IDX)))
-		uni_dma_en = DIP_RD32(CAM_UNI_REG_TOP_DMA_EN(DIP_UNI_A_IDX));
-
-	DmaPortsStats[_flko_] = ((uni_dma_en & 0x02) ? 1 : 0);
-
-}
-
-static int32_t DIP_PopBufTimestamp(unsigned int module, unsigned int dma_id, S_START_T *pTstp)
-{
-	switch (module) {
-	default:
-		LOG_ERR("Unsupport module:x%x\n", module);
-		return -EFAULT;
-	}
-
-	if (pTstp)
-		*pTstp = IspInfo.TstpQInfo[module].Dmao[dma_id].
-				TimeQue[IspInfo.TstpQInfo[module].Dmao[dma_id].RdIndex];
-
-	if (IspInfo.TstpQInfo[module].Dmao[dma_id].RdIndex >= (DIP_TIMESTPQ_DEPTH-1))
-		IspInfo.TstpQInfo[module].Dmao[dma_id].RdIndex = 0;
-	else
-		IspInfo.TstpQInfo[module].Dmao[dma_id].RdIndex++;
-
-	IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt++;
-
-	return 0;
-}
-
-
-static int32_t DIP_WaitTimestampReady(unsigned int module, unsigned int dma_id)
-{
-	unsigned int _timeout = 0;
-	unsigned int wait_cnt = 0;
-
-	if (IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt > IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt)
-		return 0;
-
-	LOG_INF("Wait module:%d dma:%d timestamp ready W/R:%d/%d\n", module, dma_id,
-		(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
-		(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
-
-	#if 1
-	for (wait_cnt = 3; wait_cnt > 0; wait_cnt--) {
-		_timeout = wait_event_interruptible_timeout(
-			IspInfo.WaitQueueHead[module],
-			(IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt >
-				IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt),
-			DIP_MsToJiffies(2000));
-		/* check if user is interrupted by system signal */
-		if ((_timeout != 0) && (!(IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt >
-				IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt))) {
-			LOG_INF("interrupted by system signal, return value(%d)\n", _timeout);
-			return -ERESTARTSYS;
-		}
-
-		if (_timeout > 0)
-			break;
-
-		LOG_INF("WARNING: cam:%d dma:%d wait left count %d\n", module, dma_id, wait_cnt);
-	}
-	if (wait_cnt == 0) {
-		LOG_ERR("ERROR: cam:%d dma:%d wait timestamp timeout!!!\n", module, dma_id);
-		return -EFAULT;
-	}
-	#else
-	while (IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt <=
-		IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt) {
-
-		msleep(20);
-
-		if ((wait_cnt & 0x7) == 0x7)
-			LOG_INF("WARNING: module:%d dma:%d wait long %d W/R:%d/%d\n",
-				module, dma_id, wait_cnt,
-				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
-				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
-
-		if (wait_cnt > 3000) {
-			LOG_INF("ERROR: module:%d dma:%d wait timeout %d W/R:%d/%d\n",
-				module, dma_id, wait_cnt,
-				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
-				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
-			break;
-		}
-
-		wait_cnt++;
-	}
-	#endif
-
-	return 0;
-}
-
-#if (TSTMP_SUBSAMPLE_INTPL == 1)
-static int32_t DIP_PatchTimestamp(unsigned int module, unsigned int dma_id, unsigned int frmPeriod,
-		unsigned long long refTimestp, unsigned long long prevTimestp)
-{
-	unsigned long long prev_tstp = prevTimestp, cur_tstp = refTimestp;
-	unsigned int target_wridx = 0, curr_wridx = 0, frm_dt = 0, last_frm_dt = 0, i = 1;
-
-	/* Only sub-sample case needs patch */
-	if (frmPeriod <= 1)
-		return 0;
-
-	curr_wridx = IspInfo.TstpQInfo[module].Dmao[dma_id].WrIndex;
-
-	if (curr_wridx < frmPeriod)
-		target_wridx = (curr_wridx + DIP_TIMESTPQ_DEPTH - frmPeriod);
-	else
-		target_wridx = curr_wridx - frmPeriod;
-
-	frm_dt = (((unsigned int)(cur_tstp - prev_tstp)) / frmPeriod);
-	last_frm_dt = ((cur_tstp - prev_tstp) - frm_dt*(frmPeriod-1));
-
-	if (frm_dt == 0)
-		LOG_INF("WARNING: timestamp delta too small: %d\n", (int)(cur_tstp - prev_tstp));
-
-	i = 0;
-	while (target_wridx != curr_wridx) {
-
-		if (i > frmPeriod) {
-			LOG_ERR("Error: too many intpl in sub-sample period %d_%d\n", target_wridx, curr_wridx);
-			return -EFAULT;
-		}
-
-		IspInfo.TstpQInfo[module].Dmao[dma_id].TimeQue[target_wridx].usec += (frm_dt * i);
-
-		while (IspInfo.TstpQInfo[module].Dmao[dma_id].TimeQue[target_wridx].usec >= 1000000) {
-
-			IspInfo.TstpQInfo[module].Dmao[dma_id].TimeQue[target_wridx].usec -= 1000000;
-			IspInfo.TstpQInfo[module].Dmao[dma_id].TimeQue[target_wridx].sec++;
-		}
-
-		i++;
-		target_wridx++; /* patch from 2nd time */
-		if (target_wridx >= DIP_TIMESTPQ_DEPTH)
-			target_wridx = 0;
-	}
-
-	return 0;
-}
-#endif
-
-#endif
-
 irqreturn_t DIP_Irq_DIP_A(signed int  Irq, void *DeviceId)
 {
 	int i = 0;
@@ -6868,7 +5336,7 @@ irqreturn_t DIP_Irq_DIP_A(signed int  Irq, void *DeviceId)
 	IrqCQLDStatus = DIP_RD32(DIP_DIP_A_BASE + 0x038);
 
 	for (i = 0; i < IRQ_USER_NUM_MAX; i++)
-		IspInfo.IrqInfo.Status[DIP_IRQ_TYPE_INT_DIP_A_ST][SIGNAL_INT][i] |= IrqINTStatus;
+		IspInfo.IrqInfo.Status[DIP_IRQ_TYPE_INT_DIP_A_ST][i] |= IrqINTStatus;
 
 	spin_unlock(&(IspInfo.SpinLockIrq[DIP_IRQ_TYPE_INT_DIP_A_ST]));
 
@@ -6890,7 +5358,7 @@ irqreturn_t DIP_Irq_DIP_A(signed int  Irq, void *DeviceId)
 #if (DIP_BOTTOMHALF_WORKQ == 1)
 static void DIP_BH_Workqueue(struct work_struct *pWork)
 {
-	IspWorkqueTable *pWorkTable = container_of(pWork, IspWorkqueTable, dip_bh_work);
+	struct IspWorkqueTable *pWorkTable = container_of(pWork, struct IspWorkqueTable, dip_bh_work);
 
 	IRQ_LOG_PRINTER(pWorkTable->module, m_CurrentPPB, _LOG_ERR);
 	IRQ_LOG_PRINTER(pWorkTable->module, m_CurrentPPB, _LOG_INF);
