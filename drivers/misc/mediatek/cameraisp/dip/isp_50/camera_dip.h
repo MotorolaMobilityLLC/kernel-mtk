@@ -38,8 +38,7 @@ m4u_callback_ret_t DIP_M4U_TranslationFault_callback(int port, unsigned int mva,
 
 /*Chip Dependent Constanct*/
 #define DIP_A_BASE_HW   0x15022000
-#define DIP_REG_RANGE           (PAGE_SIZE*6) /* 4096*6 */
-#define DIP_PHYSICAL_REG_SIZE   (0x6000) /* dependent on device tree setting */
+#define DIP_REG_RANGE           (0x6000) /*PAGE_SIZE*6 = 4096*6 <=dependent on device tree setting */
 
 #define MAX_TILE_TOT_NO (256)
 #define MAX_ISP_DUMP_HEX_PER_TILE (256)

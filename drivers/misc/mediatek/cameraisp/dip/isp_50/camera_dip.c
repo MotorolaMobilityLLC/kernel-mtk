@@ -932,7 +932,7 @@ static signed int DIP_DumpDIPReg(void)
 				vfree(g_pPhyDIPBuffer);
 				g_pPhyDIPBuffer = NULL;
 			}
-			g_pPhyDIPBuffer = vmalloc(DIP_PHYSICAL_REG_SIZE);
+			g_pPhyDIPBuffer = vmalloc(DIP_REG_RANGE);
 			if (g_pPhyDIPBuffer == NULL)
 				LOG_DBG("ERROR: g_pPhyDIPBuffer kmalloc failed\n");
 
@@ -965,7 +965,7 @@ static signed int DIP_DumpDIPReg(void)
 		}
 
 		if (g_pPhyDIPBuffer != NULL) {
-			for (i = 0; i < (DIP_PHYSICAL_REG_SIZE >> 2); i = i + 4) {
+			for (i = 0; i < (DIP_REG_RANGE >> 2); i = i + 4) {
 				g_pPhyDIPBuffer[i] = DIP_RD32(DIP_A_BASE + (i*4));
 				g_pPhyDIPBuffer[i+1] = DIP_RD32(DIP_A_BASE + ((i+1)*4));
 				g_pPhyDIPBuffer[i+2] = DIP_RD32(DIP_A_BASE + ((i+2)*4));
@@ -1213,6 +1213,10 @@ static signed int DIP_DumpDIPReg(void)
 		DIP_RD32(DIP_A_BASE + 0x5328), DIP_RD32(DIP_A_BASE + 0x532C));
 	LOG_INF("crz: 0x15027330(0x%x)\n", DIP_RD32(DIP_A_BASE + 0x5330));
 
+     /* NR3D */
+	LOG_INF("tnr and color: 0x15027380(0x%x)-0x15027398(0x%x)-0x15027110(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x5380), DIP_RD32(DIP_A_BASE + 0x5398),
+		DIP_RD32(DIP_A_BASE + 0x5110));
 	LOG_DBG("- X.");
 	/*  */
 	return Ret;
@@ -3772,9 +3776,9 @@ static signed int DIP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 
 	switch (pfn) {
 	case DIP_A_BASE_HW:
-		if (length > DIP_PHYSICAL_REG_SIZE) {
-			LOG_ERR("mmap range error :module(0x%x),length(0x%lx),DIP_PHYSICAL_REG_SIZE(0x%x)!\n",
-				pfn, length, DIP_PHYSICAL_REG_SIZE);
+		if (length > DIP_REG_RANGE) {
+			LOG_ERR("mmap range error :module(0x%x),length(0x%lx),DIP_REG_RANGE(0x%x)!\n",
+				pfn, length, DIP_REG_RANGE);
 			return -EAGAIN;
 		}
 		break;
@@ -4459,7 +4463,7 @@ static int dip_p2_ke_dump_read(struct seq_file *m, void *v)
 	if (g_bDumpPhyDIPBuf == MFALSE)
 		return 0;
 	if (g_pPhyDIPBuffer != NULL) {
-		for (i = 0; i < (DIP_PHYSICAL_REG_SIZE >> 2); i = i + 4) {
+		for (i = 0; i < (DIP_REG_RANGE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
 					DIP_A_BASE_HW+4*i, (unsigned int)g_pPhyDIPBuffer[i],
 					DIP_A_BASE_HW+4*(i+1), (unsigned int)g_pPhyDIPBuffer[i+1],
@@ -4534,7 +4538,7 @@ static int dip_p2_dump_read(struct seq_file *m, void *v)
 	if (g_bUserBufIsReady == MFALSE)
 		return 0;
 	if (g_pPhyDIPBuffer != NULL) {
-		for (i = 0; i < (DIP_PHYSICAL_REG_SIZE >> 2); i = i + 4) {
+		for (i = 0; i < (DIP_REG_RANGE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
 					DIP_A_BASE_HW+4*i, (unsigned int)g_pPhyDIPBuffer[i],
 					DIP_A_BASE_HW+4*(i+1), (unsigned int)g_pPhyDIPBuffer[i+1],
