@@ -394,6 +394,9 @@ static int md_cd_start(struct ccci_modem *md)
 #endif
 	/* 5. update mutex */
 	atomic_set(&md->reset_on_going, 0);
+
+	md->per_md_data.md_dbg_dump_flag = MD_DBG_DUMP_AP_REG;
+
 	/* 7. let modem go */
 	md_cd_let_md_go(md);
 	wdt_enable_irq(md);

@@ -150,7 +150,7 @@
 #define MD1_ECT_REG_LEN1			0x8
 #define MD1_ECT_REG_BASE2		(0x0D0CE014)/* MD32 ECT status */
 #define MD1_ECT_REG_LEN2			0x4
-#define MD1_ECT_REG_BASE3		(0x0D0EA00C)/* MD32 ECT status */
+#define MD1_ECT_REG_BASE3		(0x0D0CE00C)/* MD32 ECT status */
 #define MD1_ECT_REG_LEN3			0x4
 /* TOPSM reg */
 #define MD1_TOPSM_REG_BASE0		(0x0200D0000)

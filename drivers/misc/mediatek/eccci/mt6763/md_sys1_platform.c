@@ -420,9 +420,10 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 
 		/* MD GLOBAL CON */
 		CCCI_MEM_LOG_TAG(md->index, TAG,
-		"GLOBAL CON: [0]0x%X, [1]0x%X, [2]0x%X, [3]0x%X, [4]0x%X, [5]0x%X\n",
+		"GLOBAL CON: [0]0x%X, [1]0x%X, [2]0x%X, [3]0x%X, [4]0x%X, [5]0x%X, [6]0x%X, [7]0x%X, [8]0x%X\n",
 			MD1_GLOBALCON_BASE0, MD1_GLOBALCON_BASE1, MD1_GLOBALCON_BASE2,
-			MD1_GLOBALCON_BASE3, MD1_GLOBALCON_BASE4, MD1_GLOBALCON_BASE5);
+			MD1_GLOBALCON_BASE3, MD1_GLOBALCON_BASE4, MD1_GLOBALCON_BASE5,
+			MD1_GLOBALCON_BASE5 + 0x300, MD1_GLOBALCON_BASE5 + 0x400, MD1_GLOBALCON_BASE5 + 0x600);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_0, MD1_GLOBALCON_LEN0);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_1, MD1_GLOBALCON_LEN1);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_2, MD1_GLOBALCON_LEN2);
@@ -472,15 +473,25 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	if (per_md_data->md_dbg_dump_flag & ((1 << MD_DBG_DUMP_TOPSM) | (1 << MD_DBG_DUMP_MDRGU) |
 			(1 << MD_DBG_DUMP_OST))) {
 		RAnd2W(infra_ao_base, INFRA_AP2MD_DUMMY_REG, (~(0x1 << INFRA_AP2MD_DUMMY_BIT)));
+		CCCI_MEM_LOG_TAG(md->index, TAG, "ap2md dummy reg 0x%X: 0x%X\n", INFRA_AP2MD_DUMMY_REG,
+			cldma_read32(infra_ao_base, INFRA_AP2MD_DUMMY_REG));
+		/*disable MD to AP*/
 		ROr2W(infra_ao_base, INFRA_MD2PERI_PROT_EN, (0x1 << INFRA_MD2PERI_PROT_BIT));
 		while ((cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY) & (0x1 << INFRA_MD2PERI_PROT_BIT))
 				!= (0x1 << INFRA_MD2PERI_PROT_BIT))
 			;
-		ROr2W(infra_ao_base, INFRA_PERI2MD_PROT_EN, (0x1 << INFRA_PERI2MD_PROT_BIT));
-		while ((cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY) & (0x1 << INFRA_PERI2MD_PROT_BIT))
-				!= (0x1 << INFRA_PERI2MD_PROT_BIT))
+		CCCI_MEM_LOG_TAG(md->index, TAG, "md2peri: en[0x%X], rdy[0x%X]\n",
+			cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_EN),
+			cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY));
+		/*make sure AP to MD is enabled*/
+		RAnd2W(infra_ao_base, INFRA_PERI2MD_PROT_EN, (~(0x1 << INFRA_PERI2MD_PROT_BIT)));
+		while ((cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY) & (0x1 << INFRA_PERI2MD_PROT_BIT)))
 			;
+		CCCI_MEM_LOG_TAG(md->index, TAG, "peri2md: en[0x%X], rdy[0x%X]\n",
+			cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_EN),
+			cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY));
 	}
+
 	/* 6. TOPSM */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_TOPSM)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD TOPSM status: 0x%X\n", MD1_TOPSM_REG_BASE0);
@@ -496,7 +507,8 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	}
 	/* 8 OST */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_OST)) {
-		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD OST status: 0x%X\n", MD_OST_STATUS_BASE);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD OST status: [0]0x%X, [1]0x%X\n",
+			MD_OST_STATUS_BASE, MD_OST_STATUS_BASE + 0x200);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ost_status, 0xF0);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ost_status + 0x200, 0x8);
 		/* 9 CSC */
