@@ -265,6 +265,7 @@ struct spm_lp_scen __spm_sodi = {
 static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
 static bool gSpm_lcm_vdo_mode;
+static int by_md2ap_count;
 
 static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
@@ -453,8 +454,20 @@ static wake_reason_t spm_sodi_output_log(
 
 		if (wakesta->assert_pc != 0) {
 			need_log_out = 1;
-		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
-			need_log_out = 1;
+		} else if ((wakesta->r12 & R12_APXGPT1_EVENT_B) == 0) {
+			if (wakesta->r12 & R12_MD2AP_PEER_WAKEUP_EVENT) {
+				/* wake up by R12_MD2AP_PEER_WAKEUP_EVENT */
+				if ((by_md2ap_count >= 5) ||
+				    ((sodi_logout_curr_time - sodi_logout_prev_time) > 20U)) {
+					need_log_out = 1;
+					by_md2ap_count = 0;
+				} else if (by_md2ap_count == 0) {
+					need_log_out = 1;
+				}
+				by_md2ap_count++;
+			} else {
+				need_log_out = 1;
+			}
 		} else if (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) {
 			need_log_out = 1;
 		} else if ((spm_read(SPM_PASR_DPD_0) == 0 && pre_emi_refresh_cnt > 0) ||
