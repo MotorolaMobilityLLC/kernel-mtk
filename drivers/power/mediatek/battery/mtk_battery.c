@@ -787,14 +787,12 @@ static void battery_update(struct battery_data *bat_data)
 
 unsigned int bat_is_kpoc(void)
 {
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	int boot_mode = get_boot_mode();
 
 	if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 		return true;
 	}
-#endif
 	return false;
 }
 
