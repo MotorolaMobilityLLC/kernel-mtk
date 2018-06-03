@@ -15,6 +15,7 @@
 #include <linux/spinlock.h>
 
 #include "mtk_mcdi_governor_hint.h"
+#include "mtk_mcdi_api.h"
 
 static DEFINE_SPINLOCK(system_idle_hint_spin_lock);
 
@@ -39,7 +40,7 @@ bool system_idle_hint_result(void)
 	return (system_idle_hint_result_raw() != 0);
 }
 
-bool system_idle_hint_request(unsigned int id, bool value)
+bool _system_idle_hint_request(unsigned int id, bool value)
 {
 	unsigned long flags = 0;
 

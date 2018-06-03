@@ -11,15 +11,28 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 #include <stdbool.h>
+#include <mtk_mcdi.h>
+#include <mtk_mcdi_governor.h>
+#include <mtk_mcdi_governor_hint.h>
 
-void __attribute__((weak))
-update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
+void mcdi_cpu_iso_mask(unsigned int iso_mask)
 {
-
+	_mcdi_cpu_iso_mask(iso_mask);
 }
 
-bool __attribute__((weak))
-mcdi_task_pause(bool paused)
+bool mcdi_task_pause(bool paused)
 {
-	return true;
+	return _mcdi_task_pause(paused);
 }
+
+bool system_idle_hint_request(unsigned int id, bool value)
+{
+	return _system_idle_hint_request(id, value);
+}
+
+bool mcdi_is_buck_off(int cluster_idx)
+{
+	return _mcdi_is_buck_off(cluster_idx);
+}
+
+

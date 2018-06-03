@@ -48,6 +48,7 @@ bool is_mcdi_working(void);
 bool is_last_core_in_mcusys(void);
 bool is_last_core_in_this_cluster(int cluster);
 unsigned int mcdi_get_gov_data_num_mcusys(void);
+bool _mcdi_is_buck_off(int cluster_idx);
 
 void idle_refcnt_inc(void);
 void idle_refcnt_dec(void);

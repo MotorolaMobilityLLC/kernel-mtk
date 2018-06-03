@@ -28,10 +28,10 @@ unsigned int get_menu_predict_us(void);
 /* main */
 int wfi_enter(int cpu);
 int mcdi_enter(int cpu);
-bool mcdi_task_pause(bool paused);
-void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask);
+bool _mcdi_task_pause(bool paused);
+void mcdi_avail_cpu_mask(unsigned int cpu_mask);
 bool is_cpu_pwr_on_event_pending(void);
-void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask);
+void _mcdi_cpu_iso_mask(unsigned int iso_mask);
 void mcdi_wakeup_all_cpu(void);
 
 #endif /* __MTK_MCDI_H__ */
