@@ -17,9 +17,10 @@
 #include "mach/mtk_ppm_api.h"
 #include "mtk_ppm_platform.h"
 
-
+#if 0 /* force off util verification done */
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #define PPM_SSPM_SUPPORT	(1)
+#endif
 #endif
 
 #define OPT		(IPI_OPT_DEFAUT)

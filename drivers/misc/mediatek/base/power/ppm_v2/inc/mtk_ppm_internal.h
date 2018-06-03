@@ -150,7 +150,7 @@ static const struct file_operations ppm_ ## name ## _proc_fops = {		\
 /* Enum								*/
 /*==============================================================*/
 enum {
-	NONE	= 0,
+	NO_LOG	= 0,
 	ALL	= 1 << 0,
 	MAIN	= 1 << 1,
 	HICA	= 1 << 2,
