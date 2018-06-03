@@ -1858,7 +1858,7 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 
 			if ((prWlanMacHeader->u2FrameCtrl & MASK_FRAME_TYPE) ==
 				MAC_FRAME_BLOCK_ACK_REQ) {
-				DBGLOG(RX, INFO, "BAR frame[SSN:%d, TID:%d] wakeup host\n",
+				DBGLOG(RX, INFO, "First Pkt is BAR frame[SSN:%d, TID:%d] after resume\n",
 					prSwRfb->u2SSN, prSwRfb->ucTid);
 				break;
 			}
@@ -1869,11 +1869,15 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 		switch (u2Temp) {
 		case ETH_P_IPV4:
 			u2Temp = *(UINT_16 *) &pvHeader[ETH_HLEN + 4];
-			DBGLOG(RX, INFO, "IP Packet from:%d.%d.%d.%d, IP ID 0x%04x wakeup host\n",
+			DBGLOG(RX, INFO, "First Pkt is IP Packet from:%d.%d.%d.%d, IP ID 0x%04x after resume\n",
 				pvHeader[ETH_HLEN + 12], pvHeader[ETH_HLEN + 13],
 				pvHeader[ETH_HLEN + 14], pvHeader[ETH_HLEN + 15], u2Temp);
 			break;
 		case ETH_P_ARP:
+			pvHeader += ETH_HLEN;
+			DBGLOG(RX, TRACE, "First Pkt is Arp %s From IP: %d.%d.%d.%d after resume\n",
+				(pvHeader[7] == 1) ? "Req":"Rsp",
+				pvHeader[14], pvHeader[15], pvHeader[16], pvHeader[17]);
 			break;
 		case ETH_P_1X:
 		case ETH_P_PRE_1X:
@@ -1885,10 +1889,10 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 		case ETH_P_IPX:
 		case 0x8100: /* VLAN */
 		case 0x890d: /* TDLS */
-			DBGLOG(RX, INFO, "Data Packet, EthType 0x%04x wakeup host\n", u2Temp);
+			DBGLOG(RX, INFO, "First Pkt is Data Packet, EthType 0x%04x after resume\n", u2Temp);
 			break;
 		default:
-			DBGLOG(RX, WARN, "maybe abnormal data packet, EthType 0x%04x wakeup host, dump it\n",
+			DBGLOG(RX, WARN, "First pkt maybe abnormal data packet, EthType 0x%04x after resume, dump it\n",
 				u2Temp);
 			DBGLOG_MEM8(RX, INFO, pvHeader, u2PktLen > 50 ? 50:u2PktLen);
 			break;
@@ -1900,7 +1904,7 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 		if ((prSwRfb->prRxStatus->u2PktTYpe & RXM_RXD_PKT_TYPE_SW_BITMAP) == RXM_RXD_PKT_TYPE_SW_EVENT) {
 			P_WIFI_EVENT_T prEvent = (P_WIFI_EVENT_T) prSwRfb->pucRecvBuff;
 
-			DBGLOG(RX, INFO, "Event 0x%02x wakeup host\n", prEvent->ucEID);
+			DBGLOG(RX, INFO, "First pkt is Event 0x%02x after resume\n", prEvent->ucEID);
 			break;
 
 		}
@@ -1928,7 +1932,7 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 			prWlanMgmtHeader = (P_WLAN_MAC_MGMT_HEADER_T)pvHeader;
 			ucSubtype = (prWlanMgmtHeader->u2FrameCtrl & MASK_FC_SUBTYPE) >>
 				OFFSET_OF_FC_SUBTYPE;
-			DBGLOG(RX, INFO, "MGMT frame subtype: %d SeqCtrl %d wakeup host\n",
+			DBGLOG(RX, INFO, "First pkt is MGMT frame subtype: %d SeqCtrl %d after resume\n",
 				ucSubtype, prWlanMgmtHeader->u2SeqCtrl);
 		} else {
 			DBGLOG(RX, ERROR,
@@ -1938,7 +1942,7 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 		}
 		break;
 	default:
-		DBGLOG(RX, WARN, "Unknown Packet %d wakeup host\n", prSwRfb->ucPacketType);
+		DBGLOG(RX, WARN, "First pkt is Unknown Packet %d after resume\n", prSwRfb->ucPacketType);
 		break;
 	}
 }
