@@ -217,8 +217,6 @@ config MTK_SENSOR_SUPPORT
 	  with mediatek sensor architecture.
 	  If unsure, say N.
 
-source "drivers/misc/mediatek/alsps/Kconfig"
-
 config MTK_SENSORS_1_0
 	bool "MTK SENSORs driver 1.0 SUPPORT"
 	help
