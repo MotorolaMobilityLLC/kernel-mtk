@@ -43,7 +43,7 @@ static ssize_t sspm_log_if_read(struct file *file, char __user *data, size_t len
 {
 	ssize_t ret;
 
-	pr_debug("[SSPM] sspm_log_if_read\n");
+	/* pr_debug("[SSPM] sspm_log_if_read\n"); */
 
 	ret = 0;
 
@@ -55,7 +55,7 @@ static ssize_t sspm_log_if_read(struct file *file, char __user *data, size_t len
 
 static int sspm_log_if_open(struct inode *inode, struct file *file)
 {
-	pr_debug("[SSPM] sspm_log_if_open\n");
+	/* pr_debug("[SSPM] sspm_log_if_open\n"); */
 	return nonseekable_open(inode, file);
 }
 

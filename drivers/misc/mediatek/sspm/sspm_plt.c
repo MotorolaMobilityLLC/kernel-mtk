@@ -67,14 +67,12 @@ struct plt_ctrl_s {
 
 };
 
-static struct plt_ctrl_s *plt_ctl;
-static struct ipi_action dev;
-static struct task_struct *sspm_task;
-
+#if (SSPM_COREDUMP_SUPPORT || SSPM_LASTK_SUPPORT)
 /* dont send any IPI from this thread, use workqueue instead */
 static int sspm_recv_thread(void *userdata)
 {
 	struct plt_ipi_data_s data;
+	struct ipi_action dev;
 	unsigned int rdata, ret;
 
 	dev.data = &data;
@@ -102,6 +100,7 @@ static int sspm_recv_thread(void *userdata)
 
 	return 0;
 }
+#endif
 
 static ssize_t sspm_alive_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
@@ -123,6 +122,10 @@ int __init sspm_plt_init(void)
 {
 	phys_addr_t phys_addr, virt_addr, mem_sz;
 	struct plt_ipi_data_s ipi_data;
+	struct plt_ctrl_s *plt_ctl;
+#if (SSPM_COREDUMP_SUPPORT || SSPM_LASTK_SUPPORT)
+	struct task_struct *sspm_task;
+#endif
 	int ret, ackdata;
 	unsigned int last_ofs, last_sz;
 	unsigned int *mark;
@@ -152,8 +155,9 @@ int __init sspm_plt_init(void)
 		goto error;
 	}
 
+#if (SSPM_COREDUMP_SUPPORT || SSPM_LASTK_SUPPORT)
 	sspm_task = kthread_run(sspm_recv_thread, NULL, "sspm_recv");
-
+#endif
 	b = (unsigned char *) virt_addr;
 	for (last_ofs = 0; last_ofs < sizeof(*plt_ctl); last_ofs++)
 		b[last_ofs] = 0x0;
