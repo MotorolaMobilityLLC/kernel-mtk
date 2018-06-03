@@ -172,8 +172,9 @@ class ChipObj:
         fp = open(os.path.join(ModuleObj.get_genPath(), 'cust.dtsi'), 'w')
         gen_str = ModuleObj.writeComment()
 
-        sorted_list = sorted(self.__objs.keys())
-        for tag in sorted_list:
+        #sorted_list = sorted(self.__objs.keys())
+        #for tag in sorted_list:
+        for tag in self.__objs.keys():
             if cmp(tag, 'gpio') == 0:
                 gpioObj = self.create_obj(tag)
                 gen_str += ModuleObj.writeHeader(gpioObj.get_dtsiFileName())
