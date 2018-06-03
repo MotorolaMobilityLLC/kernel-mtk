@@ -3222,7 +3222,6 @@ static inline void Prepare_Enable_ccf_clock(void)
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_ISP/CAM -> ISP clk */
 
 	/* enable through smi API */
-	LOG_DBG("enable CG/MTCMOS through SMI CLK API\n");
 	smi_bus_enable(SMI_LARB1, ISP_DEV_NAME);
 	smi_bus_enable(SMI_LARB2, ISP_DEV_NAME);
 
@@ -3282,7 +3281,6 @@ static inline void Disable_Unprepare_ccf_clock(void)
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_ISP);
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_DIS);
 
-	LOG_DBG("disable CG/MTCMOS through SMI CLK API\n");
 	smi_bus_disable(SMI_LARB2, ISP_DEV_NAME);
 	smi_bus_disable(SMI_LARB1, ISP_DEV_NAME);
 }
@@ -10782,7 +10780,7 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 		/* update pass1 done time stamp for eis user(need match with the time stamp in image header) */
 		IspInfo.IrqInfo.LastestSigTime_usec[module][10] = (unsigned int)(usec);
 		IspInfo.IrqInfo.LastestSigTime_sec[module][10] = (unsigned int)(sec);
-
+#if 0
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
 				"CAMSV1 P1_DON_%d(0x%08x_0x%08x) stamp[0x%08x]\n",
@@ -10791,7 +10789,7 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 				(unsigned int)(fbc_ctrl1[0].Raw), (unsigned int)(fbc_ctrl2[0].Raw),
 				time_stamp);
 		}
-
+#endif
 		/* for dbg log only */
 		if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 			pstRTBuf[module]->ring_buf[_camsv_imgo_].img_cnt = sof_count[module];
@@ -10829,7 +10827,7 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 				gSTime[module].sec = sec;
 				gSTime[module].usec = usec;
 			}
-
+#if 0
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
 				       "CAMSV1 P1_SOF_%d_%d(0x%08x_0x%08x,0x%08x),int_us:0x%08x, stamp[0x%08x]\n",
 				       sof_count[module], cur_v_cnt,
@@ -10838,6 +10836,7 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
 				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
+#endif
 			/* keep current time */
 			m_sec = sec;
 			m_usec = usec;
