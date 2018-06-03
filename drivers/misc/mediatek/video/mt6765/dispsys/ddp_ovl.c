@@ -2430,6 +2430,12 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module,
 
 	layer_num = ovl_layer_num(module);
 
+	/* TODO: temp solution */
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	if (module == DISP_MODULE_OVL0)
+		layer_num += 1;
+#endif
+
 	dst_w = primary_display_get_width();
 	dst_h = primary_display_get_height();
 
