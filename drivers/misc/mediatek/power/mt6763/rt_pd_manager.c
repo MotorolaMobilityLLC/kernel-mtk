@@ -240,6 +240,10 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 {
 	struct tcp_notify *noti = data;
 	u32 vbus = 0;
+	int ret = 0;
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	int boot_mode = 0;
+#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
 
 	switch (event) {
 	case TCP_NOTIFY_PR_SWAP:
@@ -376,10 +380,21 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #endif
 #endif
 #if CONFIG_MTK_GAUGE_VERSION == 30
-			charger_dev_enable_chg_type_det(primary_charger, false);
+			ret = charger_dev_enable_chg_type_det(primary_charger, false);
 #else
-			mtk_chr_enable_chr_type_det(false);
+			ret = mtk_chr_enable_chr_type_det(false);
 #endif
+
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+			boot_mode = get_boot_mode();
+			if (ret < 0) {
+				if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+					|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+					pr_err("%s: notify chg detach fail, power off\n", __func__);
+					mt_power_off();
+				}
+			}
+#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
 		}
 		break;
 	case TCP_NOTIFY_PD_STATE:
@@ -442,6 +457,15 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		charger_dev_enable_discharge(primary_charger,
 			noti->en_state.en);
 #endif
+		break;
+
+	case TCP_NOTIFY_HARD_RESET_STATE:
+		if (noti->hreset_state.state == TCP_HRESET_RESULT_DONE ||
+			noti->hreset_state.state == TCP_HRESET_RESULT_FAIL)
+			charger_manager_enable_kpoc_shutdown(chg_consumer, true);
+		else if (noti->hreset_state.state == TCP_HRESET_SIGNAL_SEND ||
+			noti->hreset_state.state == TCP_HRESET_SIGNAL_RECV)
+			charger_manager_enable_kpoc_shutdown(chg_consumer, false);
 		break;
 	default:
 		break;
