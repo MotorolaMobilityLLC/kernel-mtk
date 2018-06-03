@@ -23,12 +23,6 @@
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
 
-#define CLK_DEBUG		0
-#define DUMMY_REG_TEST		0
-#define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP	0 /* 1: only for bring up */
-
-
 extern spinlock_t *get_mtk_clk_lock(void);
 
 #define mtk_clk_lock(flags)	spin_lock_irqsave(get_mtk_clk_lock(), flags)

@@ -33,12 +33,13 @@
 /* #ifdef CONFIG_FPGA_EARLY_PORTING */
 #define IGNORE_MTCMOS_CHECK
 /* #endif */
-#if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
-#define MT_CCF_DEBUG	1
+#if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP) \
+		|| !defined(CLK_DEBUG) || !defined(DUMMY_REG_TEST)
+#define MT_CCF_DEBUG	0
 #define MT_CCF_BRINGUP	1
-#define CONTROL_LIMIT	1
-#else
 #define CONTROL_LIMIT	0
+#define CLK_DEBUG	0
+#define DUMMY_REG_TEST	0
 #endif
 
 #define	CHECK_PWR_ST	1

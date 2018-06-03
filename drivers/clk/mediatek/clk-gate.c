@@ -23,16 +23,27 @@
 #include "clk-mtk.h"
 #include "clk-gate.h"
 
+
+int __attribute__ ((weak))
+	mtk_is_clk_bring_up(void)
+{
+	return 0;
+}
+
 static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
 {
 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
 	u32 val;
 
-	regmap_read(cg->regmap, cg->sta_ofs, &val);
+	if (!mtk_is_clk_bring_up()) {
+		regmap_read(cg->regmap, cg->sta_ofs, &val);
 
-	val &= BIT(cg->bit);
+		val &= BIT(cg->bit);
 
-	return val == 0;
+		return val == 0;
+	}
+
+	return 1;
 }
 
 static int mtk_cg_bit_is_set(struct clk_hw *hw)
@@ -40,25 +51,31 @@ static int mtk_cg_bit_is_set(struct clk_hw *hw)
 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
 	u32 val;
 
-	regmap_read(cg->regmap, cg->sta_ofs, &val);
+	if (!mtk_is_clk_bring_up()) {
+		regmap_read(cg->regmap, cg->sta_ofs, &val);
 
-	val &= BIT(cg->bit);
+		val &= BIT(cg->bit);
 
-	return val != 0;
+		return val != 0;
+	}
+
+	return 0;
 }
 
 static void mtk_cg_set_bit(struct clk_hw *hw)
 {
 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
 
-	regmap_write(cg->regmap, cg->set_ofs, BIT(cg->bit));
+	if (!mtk_is_clk_bring_up())
+		regmap_write(cg->regmap, cg->set_ofs, BIT(cg->bit));
 }
 
 static void mtk_cg_clr_bit(struct clk_hw *hw)
 {
 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
 
-	regmap_write(cg->regmap, cg->clr_ofs, BIT(cg->bit));
+	if (!mtk_is_clk_bring_up())
+		regmap_write(cg->regmap, cg->clr_ofs, BIT(cg->bit));
 }
 
 static void mtk_cg_set_bit_no_setclr(struct clk_hw *hw)
@@ -66,7 +83,8 @@ static void mtk_cg_set_bit_no_setclr(struct clk_hw *hw)
 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
 	u32 cgbit = BIT(cg->bit);
 
-	regmap_update_bits(cg->regmap, cg->sta_ofs, cgbit, cgbit);
+	if (!mtk_is_clk_bring_up())
+		regmap_update_bits(cg->regmap, cg->sta_ofs, cgbit, cgbit);
 }
 
 static void mtk_cg_clr_bit_no_setclr(struct clk_hw *hw)
@@ -74,7 +92,8 @@ static void mtk_cg_clr_bit_no_setclr(struct clk_hw *hw)
 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
 	u32 cgbit = BIT(cg->bit);
 
-	regmap_update_bits(cg->regmap, cg->sta_ofs, cgbit, 0);
+	if (!mtk_is_clk_bring_up())
+		regmap_update_bits(cg->regmap, cg->sta_ofs, cgbit, 0);
 }
 
 static int mtk_cg_enable(struct clk_hw *hw)
