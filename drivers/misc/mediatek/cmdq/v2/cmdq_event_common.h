@@ -315,6 +315,10 @@ DECLARE_CMDQ_EVENT(CMDQ_EVENT_SENINF_5_FIFO_FULL, 254, seninf_5_fifo_full)
 DECLARE_CMDQ_EVENT(CMDQ_EVENT_SENINF_6_FIFO_FULL, 255, seninf_6_fifo_full)
 DECLARE_CMDQ_EVENT(CMDQ_EVENT_SENINF_7_FIFO_FULL, 256, seninf_7_fifo_full)
 
+/* DPI1 frame done */
+DECLARE_CMDQ_EVENT(CMDQ_EVENT_DISP_DPI1_EOF, 257, disp_dpi1_frame_done)
+
+
 /* Keep this at the end of HW events */
 DECLARE_CMDQ_EVENT(CMDQ_MAX_HW_EVENT_COUNT, 400, hw_event_conunt)
 

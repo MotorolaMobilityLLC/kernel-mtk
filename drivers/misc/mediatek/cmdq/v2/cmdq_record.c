@@ -23,7 +23,7 @@
 #include "cmdq_reg.h"
 #include "cmdq_prof.h"
 
-#ifdef CMDQ_SECURE_PATH_SUPPORT
+#if defined(CMDQ_SECURE_PATH_SUPPORT) || defined(CONFIG_MTK_CMDQ_TAB)
 #include "cmdq_sec_iwc_common.h"
 #endif
 
@@ -514,6 +514,21 @@ int32_t cmdq_task_is_secure(struct cmdqRecStruct *handle)
 	return handle->secData.is_secure;
 }
 
+#ifdef CONFIG_MTK_CMDQ_TAB
+int32_t cmdq_task_set_secure_mode(struct cmdqRecStruct *handle, enum CMDQ_DISP_MODE mode)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	if (handle == NULL)
+		return -EFAULT;
+
+	handle->secData.secMode = mode;
+	return 0;
+#else
+	return -EFAULT;
+#endif
+}
+#endif
+
 int32_t cmdq_task_secure_enable_dapc(struct cmdqRecStruct *handle, const uint64_t engineFlag)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
@@ -599,6 +614,41 @@ int32_t cmdq_op_write_reg_secure(struct cmdqRecStruct *handle, uint32_t addr,
 	return -EFAULT;
 #endif
 }
+
+#ifdef CONFIG_MTK_CMDQ_TAB
+int32_t cmdq_op_write_reg_secure_mask(struct cmdqRecStruct *handle, uint32_t addr,
+				enum CMDQ_SEC_ADDR_METADATA_TYPE type, uint32_t value, uint32_t mask)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	int32_t status;
+	int32_t writeInstrIndex;
+	cmdqSecAddrMetadataStruct metadata;
+	/* const uint32_t mask = 0xFFFFFFFF; */
+
+	/* append command */
+	status = cmdqRecWrite(handle, addr, value, mask);
+	if (status != 0)
+		return status;
+
+
+	/* append to metadata list */
+	writeInstrIndex = (handle->blockSize) / CMDQ_INST_SIZE - 1;	/* start from 0 */
+
+	memset(&metadata, 0, sizeof(cmdqSecAddrMetadataStruct));
+	metadata.instrIndex = writeInstrIndex;
+	metadata.type = type;
+	metadata.baseHandle = value;
+	metadata.offset = mask;
+
+	status = cmdq_append_addr_metadata(handle, &metadata);
+
+	return 0;
+#else
+	CMDQ_ERR("%s failed since not support secure path\n", __func__);
+	return -EFAULT;
+#endif
+}
+#endif
 
 int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
 {
@@ -988,6 +1038,11 @@ int32_t cmdq_setup_sec_data_of_command_desc_by_rec_handle(struct cmdqCommandStru
 	pDesc->secData.addrMetadataCount = handle->secData.addrMetadataCount;
 	pDesc->secData.addrMetadatas = handle->secData.addrMetadatas;
 	pDesc->secData.addrMetadataMaxCount = handle->secData.addrMetadataMaxCount;
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+#ifdef CONFIG_MTK_CMDQ_TAB
+	pDesc->secData.secMode = handle->secData.secMode;
+#endif
+#endif
 
 	/* init reserved field */
 	pDesc->secData.resetExecCnt = false;
@@ -1533,6 +1588,14 @@ int32_t cmdqRecIsSecure(struct cmdqRecStruct *handle)
 	return cmdq_task_is_secure(handle);
 }
 
+/* tablet use */
+#ifdef CONFIG_MTK_CMDQ_TAB
+int32_t cmdqRecSetSecureMode(struct cmdqRecStruct *handle, enum CMDQ_DISP_MODE mode)
+{
+	return cmdq_task_set_secure_mode(handle, mode);
+}
+#endif
+
 int32_t cmdqRecSecureEnableDAPC(struct cmdqRecStruct *handle, const uint64_t engineFlag)
 {
 	return cmdq_task_secure_enable_dapc(handle, engineFlag);
@@ -1585,6 +1648,14 @@ int32_t cmdqRecWriteSecure(struct cmdqRecStruct *handle, uint32_t addr,
 {
 	return cmdq_op_write_reg_secure(handle, addr, type, baseHandle, offset, size, port);
 }
+
+#ifdef CONFIG_MTK_CMDQ_TAB
+int32_t cmdqRecWriteSecureMask(struct cmdqRecStruct *handle, uint32_t addr,
+				enum CMDQ_SEC_ADDR_METADATA_TYPE type, uint32_t value, uint32_t mask)
+{
+	return cmdq_op_write_reg_secure_mask(handle, addr, type, value, mask);
+}
+#endif
 
 int32_t cmdqRecPoll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
 {
