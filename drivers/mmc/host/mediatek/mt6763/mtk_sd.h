@@ -388,6 +388,7 @@ struct msdc_host {
 #endif
 #ifdef CONFIG_MTK_HW_FDE
 	bool                    is_fde_init;
+	u32                     key_idx;
 #endif
 	/* BEGIN temporarily debug  ALPS03052531*/
 	int                     resume_write_times;

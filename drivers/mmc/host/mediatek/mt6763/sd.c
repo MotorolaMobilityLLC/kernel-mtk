@@ -2790,10 +2790,11 @@ static void msdc_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 
 check_hw_fde:
 	if (mq_rq && mq_rq->req->bio && mq_rq->req->bio->bi_hw_fde) {
-		if (!host->is_fde_init) {
+		if (!host->is_fde_init || (host->key_idx != mq_rq->req->bio->bi_key_idx)) {
 			/* fde init */
 			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL, (1 << 3), 4, 1);
 			host->is_fde_init = true;
+			host->key_idx = mq_rq->req->bio->bi_key_idx;
 		}
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
