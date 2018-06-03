@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 
-/* #define DEBUG 1 */
 #include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -37,8 +36,8 @@
 #include <linux/clk.h>
 #endif
 
-#include <mach/wd_api.h>
 
+#include <mt-plat/mtk_wd_api.h>
 #include <linux/time.h>
 
 #define __MT_MTK_TS_CPU_C__
@@ -60,6 +59,13 @@
 #define __MT_MTK_TS_CPU_C__
 
 #include <mt-plat/mtk_devinfo.h>
+
+#define DEBUG_THERMAL_SSPM 0
+
+#if DEBUG_THERMAL_SSPM
+#include "mtk_thermal_ipi.h"
+#endif
+
 /*=============================================================
  * Local variable definition
  *=============================================================
@@ -67,15 +73,15 @@
 
 
 /*
- *Bank0: MP0(TSMCU4)   (LL)
- *Bank1: MP1(TSMCU5)   (L)
- *Bank2: GPU(TSMCU3)
- *Bank3: CCI(TSMCU4,TSMCU5)
- *Bank4: SOC(TSMCU2)
+ *Bank0: MP0(TSMCU1)   (LL)
+ *Bank1: MP1(TSMCU2)   (L)
+ *Bank2: CCI(TSMCU1,TSMCU2)
+ *Bank3: GPU(TSMCU3)
+ *Bank4: SOC(TSMCU4,TSMCU5)
  */
 /*
- * TC0:(TS_MCU5, TS_MCU4)
- * TC1:(TS_MCU1, TS_MCU2, TS_MCU3, TS_ABB)
+ * TC0: (TS_MCU1, TS_MCU2, TS_MCU3)
+ * TC1: (TS_MCU5, TS_MCU4)
  */
 
 int tscpu_ts_temp[TS_ENUM_MAX];
@@ -95,8 +101,8 @@ int tscpu_ts_temp_r[TS_ENUM_MAX];
  */
 struct thermal_controller tscpu_g_tc[THERMAL_CONTROLLER_NUM] = {
 	[0] = {
-		.ts = {TS_MCU5, TS_MCU4},
-		.ts_number = 2,
+		.ts = {TS_MCU1, TS_MCU2, TS_MCU3},
+		.ts_number = 3,
 		.tc_offset = 0x0,
 		.tc_speed = {
 			0x0000000C,
@@ -105,8 +111,8 @@ struct thermal_controller tscpu_g_tc[THERMAL_CONTROLLER_NUM] = {
 		} /* 4.9ms */
 	},
 	[1] = {
-		.ts = {TS_MCU1, TS_MCU2, TS_MCU3, TS_ABB},
-		.ts_number = 4,
+		.ts = {TS_MCU4, TS_MCU5},
+		.ts_number = 2,
 		.tc_offset = 0x100,
 		.tc_speed = {
 			0x0000000C,
@@ -277,15 +283,15 @@ thermal_bank_name ts_bank)
 	tscpu_dprintk("get_thermal_slope_intercept\n");
 
 	/*
-	 *Bank0: MP0(TSMCU4)   (LL)
-	 *Bank1: MP1(TSMCU5)   (L)
-	 *Bank2: GPU(TSMCU3)
-	 *Bank3: CCI(TSMCU4,TSMCU5)
-	 *Bank4: SOC(TSMCU2)
+	 *Bank0: MP0(TSMCU1)   (LL)
+	 *Bank1: MP1(TSMCU2)   (L)
+	 *Bank2: CCI(TSMCU1,TSMCU2)
+	 *Bank3: GPU(TSMCU3)
+	 *Bank4: SOC(TSMCU4,TSMCU5)
 	 */
 	/*
-	 *TC0:(TS_MCU5, TS_MCU4)
-	 *TC1:(TS_MCU1, TS_MCU2, TS_MCU3, TS_ABB)
+	 * TC0: (TS_MCU1, TS_MCU2, TS_MCU3)
+	 * TC1: (TS_MCU5, TS_MCU4)
 	 */
 	/* chip dependent */
 
@@ -300,22 +306,22 @@ thermal_bank_name ts_bank)
 
 	switch (ts_bank) {
 	case THERMAL_BANK0:
-		x_roomt = g_x_roomt[3];
+		x_roomt = g_x_roomt[0];
 		break;
 	case THERMAL_BANK1:
-		x_roomt = g_x_roomt[4];
+		x_roomt = g_x_roomt[1];
 		break;
 	case THERMAL_BANK2:
-		x_roomt = g_x_roomt[2];
+		x_roomt = g_x_roomt[1];
 		break;
 	case THERMAL_BANK3:
 		x_roomt = g_x_roomt[2];
 		break;
 	case THERMAL_BANK4:
-		x_roomt = g_x_roomt[4];/*TSMCU4 almost same as TSMCU5*/
+		x_roomt = g_x_roomt[3];/*TSMCU4 almost same as TSMCU5*/
 		break;
 	default:		/*choose high temp */
-		x_roomt = g_x_roomt[3];
+		x_roomt = g_x_roomt[1];
 		break;
 	}
 
@@ -328,9 +334,9 @@ thermal_bank_name ts_bank)
 	temp0 = (10000 * 100000 / g_gain) * 15 / 18;
 
 	if (g_o_slope_sign == 0)
-		temp1 = (temp0 * 10) / (1528 + g_o_slope * 10);
+		temp1 = (temp0 * 10) / (1534 + g_o_slope * 10);
 	else
-		temp1 = (temp0 * 10) / (1528 - g_o_slope * 10);
+		temp1 = (temp0 * 10) / (1534 - g_o_slope * 10);
 
 	ts_ptpod.ts_MTS = temp1;
 
@@ -339,9 +345,9 @@ thermal_bank_name ts_bank)
 	((10000 * 100000 / 4096 / g_gain) * g_oe + x_roomt * 10) * 15 / 18;
 
 	if (g_o_slope_sign == 0)
-		temp2 = temp1 * 100 / (1528 + g_o_slope * 10);
+		temp2 = temp1 * 100 / (1534 + g_o_slope * 10);
 	else
-		temp2 = temp1 * 100 / (1528 - g_o_slope * 10);
+		temp2 = temp1 * 100 / (1534 - g_o_slope * 10);
 
 	ts_ptpod.ts_BTS = (temp0 + temp2 - 250) * 4 / 10;
 
@@ -435,12 +441,22 @@ void tscpu_thermal_cal_prepare(void)
 
 	pr_notice("[calibration] temp0=0x%x, temp1=0x%x, temp2=0x%x\n",
 							temp0, temp1, temp2);
-
-
+	/*
+	 *   chip dependent
+	 *   ADC_GE_T
+	 *   ADC_OE_T
+	 */
 	g_adc_ge_t = ((temp0 & _BITMASK_(31:22)) >> 22);
 	g_adc_oe_t = ((temp0 & _BITMASK_(21:12)) >> 12);
 
-
+	/*
+	 *   O_VTSMCU1
+	 *   O_VTSMCU2
+	 *   O_VTSMCU3
+	 *   O_VTSMCU4
+	 *   O_VTSMCU5
+	 *   O_VTSABB
+	 */
 	g_o_vtsmcu1 = ((temp1 & _BITMASK_(25:17)) >> 17);
 	g_o_vtsmcu2 = ((temp1 & _BITMASK_(16:8)) >> 8);
 	g_o_vtsmcu3 = (temp0 & _BITMASK_(8:0));
@@ -448,15 +464,32 @@ void tscpu_thermal_cal_prepare(void)
 	g_o_vtsmcu5 = ((temp2 & _BITMASK_(13:5)) >> 5);
 	g_o_vtsabb = ((temp2 & _BITMASK_(22:14)) >> 14);
 
+	/*
+	 *   DEGC_cali    (6b)
+	 *   ADC_CALI_EN_T(1b)
+	 */
 	g_degc_cali = ((temp1 & _BITMASK_(6:1)) >> 1);
 	g_adc_cali_en_t = (temp1 & _BIT_(0));
+
+	/*
+	 *   O_SLOPE_SIGN (1b)
+	 *   O_SLOPE      (6b)
+	 */
 	g_o_slope_sign = ((temp1 & _BIT_(7)) >> 7);
 	g_o_slope = ((temp1 & _BITMASK_(31:26)) >> 26);
 
+	/*ID*/
 	g_id = ((temp0 & _BIT_(9)) >> 9);
 
-	g_ts_offset = ((temp2 & _BIT_(4)) >> 4);
 
+
+	/*
+	 *   Check ID bit
+	 *   If ID=0 (TSMC sample)    , ignore O_SLOPE EFuse value and set
+	 *   O_SLOPE=0.
+	 *   If ID=1 (non-TSMC sample), read O_SLOPE EFuse value for following
+	 *   calculation.
+	 */
 	if (g_id == 0)
 		g_o_slope = 0;
 
@@ -503,6 +536,12 @@ void tscpu_thermal_cal_prepare_2(__u32 ret)
 {
 	__s32 format[TS_ENUM_MAX] = { 0 };
 	int i = 0;
+#if DEBUG_THERMAL_SSPM
+#if THERMAL_ENABLE_TINYSYS_SSPM
+	int count = 0, offset = 0;
+	struct thermal_ipi_data thermal_data;
+#endif
+#endif
 
 	/* tscpu_printk("tscpu_thermal_cal_prepare_2\n"); */
 	g_ge = ((g_adc_ge_t - 512) * 10000) / 4096;	/* ge * 10000 */
@@ -528,12 +567,44 @@ void tscpu_thermal_cal_prepare_2(__u32 ret)
 	for (i = 0; i < TS_ENUM_MAX; i++)
 		tscpu_printk("[T_De][cal] g_x_roomt%d   = %d\n", i,
 							g_x_roomt[i]);
+#if DEBUG_THERMAL_SSPM
+#if THERMAL_ENABLE_TINYSYS_SSPM
+	thermal_data.u.data.arg[0] = g_degc_cali;
+	thermal_data.u.data.arg[1] = g_o_slope_sign;
+	thermal_data.u.data.arg[2] = g_o_slope;
+	while (thermal_to_sspm(THERMAL_IPI_INIT_GRP1, &thermal_data) != 0)
+		udelay(100);
+
+	thermal_data.u.data.arg[0] = g_oe;
+	thermal_data.u.data.arg[1] = g_gain;
+	thermal_data.u.data.arg[2] = g_x_roomt[0];
+	while (thermal_to_sspm(THERMAL_IPI_INIT_GRP2, &thermal_data) != 0)
+		udelay(100);
+
+	for (i = 1 ; i < TS_ENUM_MAX; i++) {
+		thermal_data.u.data.arg[count] = g_x_roomt[i];
+		if (count == (THERMAL_SLOT_NUM - 2)) {
+			while (thermal_to_sspm(THERMAL_IPI_INIT_GRP3 + offset,
+						&thermal_data) != 0)
+				udelay(100);
+			offset++;
+		}
+		count = (count + 1) % (THERMAL_SLOT_NUM - 1);
+	}
+
+	if (count != 0) {
+		while (thermal_to_sspm(THERMAL_IPI_INIT_GRP3 + offset,
+					&thermal_data) != 0)
+			udelay(100);
+	}
+#endif
+#endif
 }
 
 #if THERMAL_CONTROLLER_HW_TP
 static __s32 temperature_to_raw_room(__u32 ret, enum thermal_sensor ts_name)
 {
-	/* Ycurr = [(Tcurr - DEGC_cali/2)*(1528+O_slope*10)/10*(18/15)*
+	/* Ycurr = [(Tcurr - DEGC_cali/2)*(1534+O_slope*10)/10*(18/15)*
 	 *				(1/10000)+X_roomtabb]*Gain*4096 + OE
 	 */
 
@@ -547,14 +618,14 @@ static __s32 temperature_to_raw_room(__u32 ret, enum thermal_sensor ts_name)
 
 	if (g_o_slope_sign == 0) {	/* O_SLOPE is Positive. */
 		format_1 = t_curr - (g_degc_cali * 1000 / 2);
-		format_2 = format_1 * (1528 + g_o_slope * 10) / 10 * 18 / 15;
+		format_2 = format_1 * (1534 + g_o_slope * 10) / 10 * 18 / 15;
 		format_2 = format_2 - 2 * format_2;
 
 		format_3 = format_2 / 1000 + g_x_roomt[ts_name] * 10;
 		format_4 = (format_3 * 4096 / 10000 * g_gain) / 100000 + g_oe;
 	} else {		/* O_SLOPE is Negative. */
 		format_1 = t_curr - (g_degc_cali * 1000 / 2);
-		format_2 = format_1 * (1528 - g_o_slope * 10) / 10 * 18 / 15;
+		format_2 = format_1 * (1534 - g_o_slope * 10) / 10 * 18 / 15;
 		format_2 = format_2 - 2 * format_2;
 
 		format_3 = format_2 / 1000 + g_x_roomt[ts_name] * 10;
@@ -592,9 +663,9 @@ static __s32 raw_to_temperature_roomt(__u32 ret, enum thermal_sensor ts_name)
 
 
 	if (g_o_slope_sign == 0) /* uint = 0.1 deg */
-		format_4 = ((format_3 * 1000) / (1528 + g_o_slope * 10));
+		format_4 = ((format_3 * 1000) / (1534 + g_o_slope * 10));
 	else			/* uint = 0.1 deg */
-		format_4 = ((format_3 * 1000) / (1528 - g_o_slope * 10));
+		format_4 = ((format_3 * 1000) / (1534 - g_o_slope * 10));
 
 	format_4 = format_4 - (format_4 << 1);
 
@@ -612,15 +683,15 @@ int get_immediate_none_wrap(void)
 
 
 /*
- *Bank0: MP0(TSMCU4)   (LL)
- *Bank1: MP1(TSMCU5)   (L)
- *Bank2: GPU(TSMCU3)
- *Bank3: CCI(TSMCU4,TSMCU5)
- *Bank4: SOC(TSMCU2)
+ *Bank0: MP0(TSMCU1)   (LL)
+ *Bank1: MP1(TSMCU2)   (L)
+ *Bank2: CCI(TSMCU1,TSMCU2)
+ *Bank3: GPU(TSMCU3)
+ *Bank4: SOC(TSMCU4,TSMCU5)
  */
 /*
- *TC0:(TS_MCU5, TS_MCU4)
- *TC1:(TS_MCU1, TS_MCU2, TS_MCU3, TS_ABB)
+ * TC0: (TS_MCU1, TS_MCU2, TS_MCU3)
+ * TC1: (TS_MCU5, TS_MCU4)
  */
 
 /* chip dependent */
@@ -633,7 +704,7 @@ int get_immediate_mcucci_wrap(void)
 {
 	int curr_temp;
 
-	curr_temp = MAX(tscpu_ts_temp[TS_MCU4], tscpu_ts_temp[TS_MCU5]);
+	curr_temp = MAX(tscpu_ts_temp[TS_MCU1], tscpu_ts_temp[TS_MCU2]);
 
 	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
 
@@ -655,7 +726,7 @@ int get_immediate_cpuLL_wrap(void)
 {
 	int curr_temp;
 
-	curr_temp = tscpu_ts_temp[TS_MCU4];
+	curr_temp = tscpu_ts_temp[TS_MCU1];
 
 	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
 
@@ -666,7 +737,7 @@ int get_immediate_cpuL_wrap(void)
 {
 	int curr_temp;
 
-	curr_temp = tscpu_ts_temp[TS_MCU5];
+	curr_temp = tscpu_ts_temp[TS_MCU2];
 
 
 	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
@@ -678,7 +749,8 @@ int get_immediate_coreSoC_wrap(void)
 {
 	int curr_temp;
 
-	curr_temp = tscpu_ts_temp[TS_MCU2];
+	curr_temp = MAX(tscpu_ts_temp[TS_MCU4], tscpu_ts_temp[TS_MCU5]);
+
 
 	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
 
@@ -688,24 +760,25 @@ int get_immediate_coreSoC_wrap(void)
 int (*max_temperature_in_bank[THERMAL_BANK_NUM])(void) = {
 	get_immediate_cpuLL_wrap,
 	get_immediate_cpuL_wrap,
-	get_immediate_gpu_wrap,
 	get_immediate_mcucci_wrap,
+	get_immediate_gpu_wrap,
 	get_immediate_coreSoC_wrap
 };
 
 
 
 /*
- *Bank0: MP0(TSMCU4)   (LL)
- *Bank1: MP1(TSMCU5)   (L)
- *Bank2: GPU(TSMCU3)
- *Bank3: CCI(TSMCU4,TSMCU5)
- *Bank4: SOC(TSMCU2)
+ *Bank0: MP0(TSMCU1)   (LL)
+ *Bank1: MP1(TSMCU2)   (L)
+ *Bank2: CCI(TSMCU1,TSMCU2)
+ *Bank3: GPU(TSMCU3)
+ *Bank4: SOC(TSMCU4,TSMCU5)
  */
 /*
- *TC0: (TS_MCU5, TS_MCU4)
- *TC1: (TS_MCU1, TS_MCU2, TS_MCU3, TS_ABB)
+ * TC0: (TS_MCU1, TS_MCU2, TS_MCU3)
+ * TC1: (TS_MCU5, TS_MCU4)
  */
+
 
 /* chip dependent */
 int get_immediate_ts1_wrap(void)
@@ -1425,7 +1498,11 @@ void tscpu_reset_thermal(void)
 int tscpu_read_temperature_info(struct seq_file *m, void *v)
 {
 	int i;
-
+#if DEBUG_THERMAL_SSPM
+#if THERMAL_ENABLE_TINYSYS_SSPM
+	struct thermal_ipi_data thermal_data;
+#endif
+#endif
 	seq_printf(m, "current temp:%d\n", tscpu_curr_max_ts_temp);
 	seq_printf(m, "[cal] g_adc_ge_t      = %d\n", g_adc_ge_t);
 	seq_printf(m, "[cal] g_adc_oe_t      = %d\n", g_adc_oe_t);
@@ -1452,6 +1529,15 @@ int tscpu_read_temperature_info(struct seq_file *m, void *v)
 	seq_printf(m, "calefuse2:0x%x\n", calefuse2);
 	seq_printf(m, "calefuse3:0x%x\n", calefuse3);
 
+#if DEBUG_THERMAL_SSPM
+#if THERMAL_ENABLE_TINYSYS_SSPM
+	thermal_data.u.data.arg[0] = 0;
+	thermal_data.u.data.arg[1] = 0;
+	thermal_data.u.data.arg[2] = 0;
+	while (thermal_to_sspm(THERMAL_IPI_GET_TEMP, &thermal_data) != 0)
+		udelay(500);
+#endif
+#endif
 	return 0;
 }
 
@@ -1479,8 +1565,8 @@ int tscpu_get_curr_temp(void)
 	/* It is platform dependent which TS is better to
 	 * present CPU/GPU temperature
 	 */
-	tscpu_curr_cpu_temp = MAX(tscpu_ts_temp[TS_MCU4],
-					tscpu_ts_temp[TS_MCU5]);
+	tscpu_curr_cpu_temp = MAX(tscpu_ts_temp[TS_MCU1],
+					tscpu_ts_temp[TS_MCU2]);
 
 	tscpu_curr_gpu_temp = tscpu_ts_temp[TS_MCU3];
 #endif
@@ -1556,7 +1642,7 @@ int get_io_reg_base(void)
 		 */
 	}
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixedsys");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 	WARN_ON_ONCE(node == 0);
 	if (node) {
 		/* Setup IO addresses */

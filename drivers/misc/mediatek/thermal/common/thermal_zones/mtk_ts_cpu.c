@@ -40,7 +40,7 @@
 
 
 /* #include <mach/mt_wtd.h> */
-#include <mach/wd_api.h>
+#include <mt-plat/mtk_wd_api.h>
 #include <mtk_gpu_utility.h>
 #include <linux/time.h>
 

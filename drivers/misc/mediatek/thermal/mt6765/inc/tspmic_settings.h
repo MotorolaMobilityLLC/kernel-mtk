@@ -44,6 +44,8 @@ extern int mtktspmic_debug_log;
 extern void mtktspmic_cali_prepare(void);
 extern void mtktspmic_cali_prepare2(void);
 extern int mtktspmic_get_hw_temp(void);
+extern int mt6357tsbuck1_get_hw_temp(void);
+extern int mt6357tsbuck2_get_hw_temp(void);
 extern u32 pmic_Read_Efuse_HPOffset(int i);
 
 #endif	/* __TSPMIC_SETTINGS_H__ */
