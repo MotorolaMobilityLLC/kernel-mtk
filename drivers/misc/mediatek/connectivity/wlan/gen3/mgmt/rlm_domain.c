@@ -121,7 +121,7 @@ static const UINT_16 g_u2CountryGroup6[] = { COUNTRY_CODE_JP };
 
 static const UINT_16 g_u2CountryGroup7[] = {
 	COUNTRY_CODE_AM, COUNTRY_CODE_IL, COUNTRY_CODE_KW, COUNTRY_CODE_MA,
-	COUNTRY_CODE_NE, COUNTRY_CODE_TN, COUNTRY_CODE_MA
+	COUNTRY_CODE_NE, COUNTRY_CODE_TN,
 };
 
 static const UINT_16 g_u2CountryGroup8[] = { COUNTRY_CODE_NP };
@@ -585,38 +585,38 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains_Passive[] = {
 	{
 	 (PUINT_16) g_u2CountryGroup0_Passive, sizeof(g_u2CountryGroup0_Passive) / 2,
 	 {
-	  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, 0}
+	  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, FALSE}
 	  ,			/* CH_SET_2G4_1_14_NA */
-	  {82, BAND_2G4, CHNL_SPAN_5, 14, 0, 0}
+	  {82, BAND_2G4, CHNL_SPAN_5, 14, 0, FALSE}
 	  ,
 
-	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, 0}
-	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, 0}
-	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, 0}
+	  {115, BAND_5G, CHNL_SPAN_20, 36, 0, FALSE}
+	  ,			/* CH_SET_UNII_LOW_NA */
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 0, FALSE}
+	  ,			/* CH_SET_UNII_MID_NA */
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_140 */
-	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, 0}
+	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_NA */
 	 }
 	}
 	,
 	{
-	 /* Default passive channel table is empty */
-	 COUNTRY_CODE_NULL, 0,
+	 /* Default passive scan channel table: ch52~64, ch100~144 */
+	 NULL, 0,
 	 {
-	  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, 0}
+	  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, FALSE}
 	  ,			/* CH_SET_2G4_1_14_NA */
-	  {82, BAND_2G4, CHNL_SPAN_5, 14, 0, 0}
+	  {82, BAND_2G4, CHNL_SPAN_5, 14, 0, FALSE}
 	  ,
 
-	  {115, BAND_5G, CHNL_SPAN_20, 36, 0, 0}
+	  {115, BAND_5G, CHNL_SPAN_20, 36, 0, FALSE}
 	  ,			/* CH_SET_UNII_LOW_NA */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, 0}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, 0}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_144 */
-	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, 0}
+	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_NA */
 	 }
 	}
@@ -841,10 +841,10 @@ VOID rlmDomainGetDfsChnls(P_ADAPTER_T prAdapter,
 * @return (none)
 */
 /*----------------------------------------------------------------------------*/
-VOID rlmDomainSendCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
+VOID rlmDomainSendCmd(P_ADAPTER_T prAdapter)
 {
-	rlmDomainSendPassiveScanInfoCmd(prAdapter, fgIsOid);
-	rlmDomainSendDomainInfoCmd(prAdapter, fgIsOid);
+	rlmDomainSendPassiveScanInfoCmd(prAdapter);
+	rlmDomainSendDomainInfoCmd(prAdapter);
 #if CFG_SUPPORT_PWR_LIMIT_COUNTRY
 	rlmDomainSendPwrLimitCmd(prAdapter);
 #endif
@@ -859,7 +859,7 @@ VOID rlmDomainSendCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 * @return (none)
 */
 /*----------------------------------------------------------------------------*/
-VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
+VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter)
 {
 	P_DOMAIN_INFO_ENTRY prDomainInfo;
 	P_CMD_SET_DOMAIN_INFO_T prCmd;
@@ -898,16 +898,16 @@ VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 
 	/* Set domain info to chip */
 	wlanSendSetQueryCmd(prAdapter, /* prAdapter */
-			 CMD_ID_SET_DOMAIN_INFO, /* ucCID */
-			 TRUE,	/* fgSetQuery */
-			 FALSE, /* fgNeedResp */
-			 fgIsOid, /* fgIsOid */
-			 NULL, /* pfCmdDoneHandler */
-			 NULL, /* pfCmdTimeoutHandler */
-			 sizeof(CMD_SET_DOMAIN_INFO_T), /* u4SetQueryInfoLen */
-			 (PUINT_8) prCmd, /* pucInfoBuffer */
-			 NULL, /* pvSetQueryBuffer */
-			 0     /* u4SetQueryBufferLen */
+			    CMD_ID_SET_DOMAIN_INFO, /* ucCID */
+			    TRUE,  /* fgSetQuery */
+			    FALSE, /* fgNeedResp */
+			    FALSE, /* fgIsOid */
+			    NULL,  /* pfCmdDoneHandler */
+			    NULL,  /* pfCmdTimeoutHandler */
+			    sizeof(CMD_SET_DOMAIN_INFO_T), /* u4SetQueryInfoLen */
+			    (PUINT_8) prCmd, /* pucInfoBuffer */
+			    NULL,  /* pvSetQueryBuffer */
+			    0      /* u4SetQueryBufferLen */
 	    );
 
 	cnmMemFree(prAdapter, prCmd);
@@ -922,7 +922,7 @@ VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 * @return (none)
 */
 /*----------------------------------------------------------------------------*/
-VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
+VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter)
 {
 #define REG_DOMAIN_PASSIVE_DEF_IDX	1
 #define REG_DOMAIN_PASSIVE_GROUP_NUM \
@@ -981,16 +981,16 @@ VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid)
 
 	/* Set passive scan channel info to chip */
 	wlanSendSetQueryCmd(prAdapter, /* prAdapter */
-			 CMD_ID_SET_DOMAIN_INFO, /* ucCID */
-			 TRUE,	/* fgSetQuery */
-			 FALSE, /* fgNeedResp */
-			 fgIsOid, /* fgIsOid */
-			 NULL, /* pfCmdDoneHandler */
-			 NULL, /* pfCmdTimeoutHandler */
-			 sizeof(CMD_SET_DOMAIN_INFO_T), /* u4SetQueryInfoLen */
-			 (PUINT_8) prCmd, /* pucInfoBuffer */
-			 NULL, /* pvSetQueryBuffer */
-			 0     /* u4SetQueryBufferLen */
+			    CMD_ID_SET_DOMAIN_INFO, /* ucCID */
+			    TRUE,  /* fgSetQuery */
+			    FALSE, /* fgNeedResp */
+			    FALSE, /* fgIsOid */
+			    NULL,  /* pfCmdDoneHandler */
+			    NULL,  /* pfCmdTimeoutHandler */
+			    sizeof(CMD_SET_DOMAIN_INFO_T), /* u4SetQueryInfoLen */
+			    (PUINT_8) prCmd, /* pucInfoBuffer */
+			    NULL,  /* pvSetQueryBuffer */
+			    0      /* u4SetQueryBufferLen */
 	    );
 
 	cnmMemFree(prAdapter, prCmd);
