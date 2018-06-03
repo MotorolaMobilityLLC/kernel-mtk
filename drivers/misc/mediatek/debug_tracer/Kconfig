@@ -1,0 +1,27 @@
+menuconfig MTK_DEBUG_TRACER
+	bool "MediaTek Debug Tracer Configuration"
+	help
+	  Select to enable MediaTek Debug Tracer configuration.
+	  Includes BUS_TRACER module and MCSI_B_TRACER module
+	  for recording the historical information to debug
+
+if  MTK_DEBUG_TRACER
+
+config MTK_BUS_TRACER
+	bool "MediaTek BUS TRACER"
+	default n
+	help
+	  BUS TRACER is a debugging feature to record the historical
+	  information on bus. After rebooting, these information could
+	  be dumped for debugging. It can also debug with watchpoint,
+	  bypass, id, and rw filters
+
+config MTK_MCSI_B_TRACER
+	bool "MediaTek MCSI-B TRACER"
+	default n
+	help
+	  MCSI-B TRACER is a debugging feature to record the historical
+	  information on MCSI-B. After rebooting, these information could
+	  be dumped for debugging.
+
+endif
