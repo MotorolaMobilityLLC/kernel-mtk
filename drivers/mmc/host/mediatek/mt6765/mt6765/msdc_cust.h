@@ -22,12 +22,13 @@
 /* #define MTK_MSDC_BRINGUP_DEBUG */
 #endif
 
-#if !defined(FPGA_PLATFORM)
+#define CONFIG_MTK_MSDC_BRING_UP_BYPASS
+#define CONFIG_MTK_MSDC_MIGRATION_BYPASS
+
+#if !defined(FPGA_PLATFORM) \
+	&& !defined(CONFIG_MTK_MSDC_BRING_UP_BYPASS)
 #include <dt-bindings/clock/mt6765-clk.h>
 #endif
-
-/* #define CONFIG_MTK_MSDC_BRING_UP_BYPASS */
-#define CONFIG_MTK_MSDC_MIGRATION_BYPASS
 
 #if !defined(CONFIG_MTK_MSDC_BRING_UP_BYPASS) \
 	&& !defined(CONFIG_MTK_MSDC_MIGRATION_BYPASS)
