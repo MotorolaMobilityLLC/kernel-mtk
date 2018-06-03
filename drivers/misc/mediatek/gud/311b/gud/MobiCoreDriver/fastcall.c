@@ -235,14 +235,20 @@ static int mobicore_cpu_callback(struct notifier_block *nfb,
 	int cpu = (int)(uintptr_t)hcpu;
 
 	switch (action) {
+	case CPU_ONLINE:
+		mc_dev_devel("Cpu %d CPU_ONLINE\n", cpu);
+		break;
+	case CPU_UP_PREPARE:
+		mc_dev_devel("Cpu %d CPU_UP_PREPARE\n", cpu);
+		break;
 	case CPU_DOWN_PREPARE:
 	case CPU_DOWN_PREPARE_FROZEN:
-		mc_dev_devel("Cpu %d is going to die\n", cpu);
+		mc_dev_devel("Cpu %d CPU_DOWN_PREPARE_[FROZEN]\n", cpu);
 		mc_cpu_offline(cpu);
 		break;
 	case CPU_DEAD:
 	case CPU_DEAD_FROZEN:
-		mc_dev_devel("Cpu %d is dead\n", cpu);
+		mc_dev_devel("Cpu %d CPU_DEAD_[FROZEN]\n", cpu);
 		break;
 	}
 	return NOTIFY_OK;
@@ -263,18 +269,39 @@ static cpumask_t mc_exec_core_switch(union mc_fc_generic *mc_fc_generic)
 	mc_fc_generic->as_in.param[0] = cpu_id[mc_fc_generic->as_in.param[0]];
 
 	if (_smc(mc_fc_generic) != 0 || mc_fc_generic->as_out.ret != 0) {
-		mc_dev_devel("CoreSwap failed %d -> %d (cpu %d still active)\n",
+		mc_dev_err("CoreSwap failed %d -> %d (cpu %d still active)\n",
 			     raw_smp_processor_id(),
 			     mc_fc_generic->as_in.param[0],
 			     raw_smp_processor_id());
 	} else {
 		active_cpu = new_cpu;
-		mc_dev_devel("CoreSwap ok %d -> %d\n",
+		mc_dev_info("CoreSwap ok %d -> %d\n",
 			     raw_smp_processor_id(), active_cpu);
 	}
 	cpumask_clear(&cpu);
 	cpumask_set_cpu(active_cpu, &cpu);
 	return cpu;
+}
+
+static ssize_t debug_coreswitch_read(struct file *file,
+		char __user *buf, size_t count, loff_t *f_pos)
+{
+	char act_cpu_str[] = {(active_cpu + '0'), '\n'};
+
+	mc_dev_devel("buf %p count %zu f_pos %lld\n", buf, count, *f_pos);
+
+	if ((size_t)*f_pos >= sizeof(act_cpu_str))
+		return 0;
+
+	if ((count + (size_t)*f_pos) > sizeof(act_cpu_str))
+		count = (sizeof(act_cpu_str) - (size_t)*f_pos);
+
+	if (copy_to_user(buf, act_cpu_str + (size_t)*f_pos, count))
+		return -EFAULT;
+
+	*f_pos += count;
+
+	return count;
 }
 
 static ssize_t debug_coreswitch_write(struct file *file,
@@ -296,6 +323,7 @@ static ssize_t debug_coreswitch_write(struct file *file,
 }
 
 static const struct file_operations mc_debug_coreswitch_ops = {
+	.read = debug_coreswitch_read,
 	.write = debug_coreswitch_write,
 };
 #else /* TBASE_CORE_SWITCHER */

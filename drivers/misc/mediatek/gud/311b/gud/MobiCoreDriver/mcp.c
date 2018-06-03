@@ -1089,9 +1089,9 @@ int mcp_notify(struct mcp_session *session)
 
 	mutex_lock(&mcp_ctx.notifications_mutex);
 	if (session->id == SID_MCP)
-		mc_dev_devel("notify MCP");
+		mc_dev_devel("notify MCP\n");
 	else
-		mc_dev_devel("notify %x", session->id);
+		mc_dev_devel("notify %x\n", session->id);
 
 	/* Notify TEE */
 	if (!list_empty(&mcp_ctx.notifications) || notif_queue_full()) {
