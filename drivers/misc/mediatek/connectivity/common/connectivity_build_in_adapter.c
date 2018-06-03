@@ -104,6 +104,12 @@ void connectivity_export_tracing_record_cmdline(struct task_struct *tsk)
 EXPORT_SYMBOL(connectivity_export_tracing_record_cmdline);
 
 #ifdef CPU_BOOST
+bool connectivity_export_spm_resource_req(unsigned int user, unsigned int req_mask)
+{
+	return spm_resource_req(user, req_mask);
+}
+EXPORT_SYMBOL(connectivity_export_spm_resource_req);
+
 void connectivity_export_mt_ppm_sysboost_freq(enum ppm_sysboost_user user, unsigned int freq)
 {
 	mt_ppm_sysboost_freq(user, freq);
@@ -116,18 +122,19 @@ void connectivity_export_mt_ppm_sysboost_core(enum ppm_sysboost_user user, unsig
 }
 EXPORT_SYMBOL(connectivity_export_mt_ppm_sysboost_core);
 
-void KERNEL_spm_resource_req(unsigned int user, unsigned int req_mask)
-{
-	spm_resource_req(user, req_mask);
-}
-EXPORT_SYMBOL(KERNEL_spm_resource_req);
-
-void KERNEL_mt_ppm_sysboost_set_core_limit(enum ppm_sysboost_user user, unsigned int cluster,
-					int min_core, int max_core)
+void connectivity_export_mt_ppm_sysboost_set_core_limit(enum ppm_sysboost_user user, unsigned int cluster,
+							int min_core, int max_core)
 {
 	mt_ppm_sysboost_set_core_limit(user, cluster, min_core, max_core);
 }
-EXPORT_SYMBOL(KERNEL_mt_ppm_sysboost_set_core_limit);
+EXPORT_SYMBOL(connectivity_export_mt_ppm_sysboost_set_core_limit);
+
+void connectivity_export_mt_ppm_sysboost_set_freq_limit(enum ppm_sysboost_user user, unsigned int cluster,
+							int min_freq, int max_freq)
+{
+	mt_ppm_sysboost_set_freq_limit(user, cluster, min_freq, max_freq);
+}
+EXPORT_SYMBOL(connectivity_export_mt_ppm_sysboost_set_freq_limit);
 #endif
 
 /*******************************************************************************

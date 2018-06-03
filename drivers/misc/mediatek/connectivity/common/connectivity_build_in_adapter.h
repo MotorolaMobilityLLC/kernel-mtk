@@ -102,13 +102,62 @@ void connectivity_export_mt6306_set_gpio_dir(unsigned long pin, unsigned long di
 #endif
 
 
+#ifdef CONFIG_MACH_MT6757
+#define CPU_BOOST y
+#endif
+#ifdef CONFIG_MACH_MT6758
+#define CPU_BOOST y
+#endif
+#ifdef CONFIG_MACH_MT6763
+#define CPU_BOOST y
+#endif
+#ifdef CONFIG_MACH_MT6799
+#define CPU_BOOST y
+#endif
+#ifdef CPU_BOOST
+#include "mach/mtk_ppm_api.h"
+#include "mtk_spm_resource_req.h"
+#endif
+
 #define KERNEL_show_stack connectivity_export_show_stack
 #define KERNEL_tracing_record_cmdline connectivity_export_tracing_record_cmdline
+#ifdef CPU_BOOST
+#define KERNEL_mt_ppm_sysboost_freq connectivity_export_mt_ppm_sysboost_freq
+#define KERNEL_mt_ppm_sysboost_core connectivity_export_mt_ppm_sysboost_core
+#define KERNEL_mt_ppm_sysboost_set_core_limit connectivity_export_mt_ppm_sysboost_set_core_limit
+#define KERNEL_mt_ppm_sysboost_set_freq_limit connectivity_export_mt_ppm_sysboost_set_freq_limit
+#define KERNEL_spm_resource_req  connectivity_export_spm_resource_req
+#else
+#define KERNEL_mt_ppm_sysboost_freq
+#define KERNEL_mt_ppm_sysboost_core
+#define KERNEL_mt_ppm_sysboost_set_core_limit
+#define KERNEL_mt_ppm_sysboost_set_freq_limit
+#define KERNEL_spm_resource_req
+#endif
+
+extern void tracing_record_cmdline(struct task_struct *tsk);
+extern void show_stack(struct task_struct *tsk, unsigned long *sp);
+#ifdef CPU_BOOST
+extern void mt_ppm_sysboost_freq(enum ppm_sysboost_user user, unsigned int freq);
+extern void mt_ppm_sysboost_core(enum ppm_sysboost_user user, unsigned int core_num);
+extern void mt_ppm_sysboost_set_core_limit(enum ppm_sysboost_user user, unsigned int cluster,
+					   int min_core, int max_core);
+extern void mt_ppm_sysboost_set_freq_limit(enum ppm_sysboost_user user, unsigned int cluster,
+					   int min_freq, int max_freq);
+extern bool spm_resource_req(unsigned int user, unsigned int req_mask);
+#endif
 
 void connectivity_export_show_stack(struct task_struct *tsk, unsigned long *sp);
 void connectivity_export_tracing_record_cmdline(struct task_struct *tsk);
-extern void tracing_record_cmdline(struct task_struct *tsk);
-extern void show_stack(struct task_struct *tsk, unsigned long *sp);
+#ifdef CPU_BOOST
+void connectivity_export_mt_ppm_sysboost_freq(enum ppm_sysboost_user user, unsigned int freq);
+void connectivity_export_mt_ppm_sysboost_core(enum ppm_sysboost_user user, unsigned int core_num);
+void connectivity_export_mt_ppm_sysboost_set_core_limit(enum ppm_sysboost_user user, unsigned int cluster,
+							int min_core, int max_core);
+void connectivity_export_mt_ppm_sysboost_set_freq_limit(enum ppm_sysboost_user user, unsigned int cluster,
+							int min_freq, int max_freq);
+bool connectivity_export_spm_resource_req(unsigned int user, unsigned int req_mask);
+#endif
 
 /*********************************************
  * copy from
