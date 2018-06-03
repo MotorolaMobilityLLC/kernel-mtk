@@ -174,6 +174,19 @@ unsigned int pmic_ipi_config_interface(unsigned int RegNum, unsigned int val, un
 	return ret;
 }
 
+unsigned int rt5738_ipi_set_mode(unsigned char mode)
+{
+	struct pmic_ipi_cmds send = { {0} };
+	struct pmic_ipi_ret_datas recv = { {0} };
+	unsigned int ret = 0;
+
+	send.cmd[0] = RT5738_FPWM;
+	send.cmd[1] = mode;
+	ret = pmic_ipi_to_sspm(&send, &recv, 1);
+
+	return ret;
+}
+
 static unsigned int pmic_regulator_test_code(unsigned char type)
 {
 	struct pmic_ipi_cmds send = { {0} };

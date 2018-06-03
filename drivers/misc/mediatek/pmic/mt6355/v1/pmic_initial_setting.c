@@ -550,6 +550,11 @@ void PMIC_LP_INIT_SETTING(void)
 		pmic_get_register_value(PMIC_RG_REG_CK_PDN_HWEN),
 		pmic_get_register_value(PMIC_RG_REG_CK_PDN));
 }
+#elif defined(CONFIG_MACH_MT6775)
+void PMIC_LP_INIT_SETTING(void)
+{
+	/* TODO int ret = 0; */
+}
 #else
 void PMIC_LP_INIT_SETTING(void)
 {
