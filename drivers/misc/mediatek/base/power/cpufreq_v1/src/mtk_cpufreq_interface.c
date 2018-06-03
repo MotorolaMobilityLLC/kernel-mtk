@@ -310,7 +310,7 @@ static ssize_t cpufreq_volt_proc_write(struct file *file, const char __user *buf
 #ifdef CONFIG_HYBRID_CPU_DVFS
 		/* cpuhvfs_set_volt(arch_get_cluster_id(p->cpu_id), mv * 100); */
 #else
-		vproc_p->fix_volt = mv * 100;
+		vproc_p->fix_volt = mv;
 		set_cur_volt_wrapper(p, vproc_p->fix_volt);
 #endif
 		cpufreq_unlock(flags);
