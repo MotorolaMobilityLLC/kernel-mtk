@@ -331,8 +331,6 @@ void vcorefs_drv_init(int plat_init_opp)
 	for (i = 0; i < NUM_KICKER; i++)
 		kicker_table[i] = -1;
 
-	kicker_table[KIR_SYSFS] = OPP_0;
-
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_vcore_dvfs_opp(0xffffffff);
 #endif
