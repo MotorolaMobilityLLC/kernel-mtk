@@ -73,7 +73,7 @@
 #define DDRPHY_SHU1_R1_B0_DQ7	(ddrphy_chx_base+0xF1C)
 #define DDRPHY_SHU1_R1_B1_DQ7	(ddrphy_chx_base+0xF6C)
 
-typedef enum {
+enum TX_RESULT {
 	TX_DONE = 0,
 	TX_TIMEOUT_MRR_ENABLE,
 	TX_TIMEOUT_MRR_DISABLE,
@@ -81,7 +81,7 @@ typedef enum {
 	TX_TIMEOUT_DDRPHY,
 	TX_FAIL_DATA_RATE,
 	TX_FAIL_VARIATION
-} tx_result;
+};
 #endif
 
 #define LAST_DRAMC
