@@ -62,7 +62,7 @@
 #include "ddp_clkmgr.h"
 
 static struct dentry *mtkfb_dbgfs;
-unsigned int g_mobilelog;
+unsigned int g_mobilelog = 1;
 int bypass_blank;
 int lcm_mode_status;
 int layer_layout_allow_non_continuous;
