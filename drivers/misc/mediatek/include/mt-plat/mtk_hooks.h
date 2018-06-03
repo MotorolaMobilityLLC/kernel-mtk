@@ -16,7 +16,4 @@
 /* platform-dependent hook functions */
 int arm_undefinstr_retry(struct pt_regs *regs, unsigned int instr);
 
-/* common hook functoins */
-int mem_fault_debug_hook(struct pt_regs *regs);
-
 #endif /* __MTK_HOOKS_H__ */
