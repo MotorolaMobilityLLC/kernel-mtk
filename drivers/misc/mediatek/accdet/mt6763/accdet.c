@@ -893,6 +893,11 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
 		del_timer_sync(&micbias_timer);
 
+		/* need close idle, otherwise will make leakage */
+		reg_val = pmic_pwrap_read(ACCDET_CON02);
+		pmic_pwrap_write(ACCDET_CON02,
+				(reg_val&(~ACCDET_PWM_IDLE_B8_9_10)));
+
 		/* accdet_auxadc_switch(0); */
 		disable_accdet();
 		headset_plug_out();
