@@ -584,9 +584,8 @@ static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 			>> INFRA_VIO_DBG_DMNID_START_BIT;
 		if (domain_id == 1) {
 			aee_kernel_exception(aee_str,
-				"%s\n%s: %s\nVio Addr: 0x%x\n%s%s\n",
-				"Device APC Violation",
-				"Access Violation Slave",
+				"%s %s, Vio Addr: 0x%x\n%s%s\n",
+				"[DEVAPC] Violation Slave:",
 				devapc_infra_devices[i].device,
 				dbg1,
 				"CRDISPATCH_KEY:Device APC Violation Issue/",
@@ -594,9 +593,8 @@ static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 				);
 		} else {
 			aee_kernel_exception(aee_str,
-				"%s\n%s: %s\nVio Addr: 0x%x\n%s%s\n",
-				"Device APC Violation",
-				"Access Violation Slave",
+				"%s %s, Vio Addr: 0x%x\n%s%s\n",
+				"[DEVAPC] Violation Slave:",
 				devapc_infra_devices[i].device,
 				dbg1,
 				"CRDISPATCH_KEY:Device APC Violation Issue/",
