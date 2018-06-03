@@ -652,12 +652,30 @@ int dcs_full_init(void)
  */
 int dcs_mpu_protection(int enable)
 {
+	int count = 0;
+
 	emi_mpu_set_region_protection((unsigned long long)mpu_start,
 			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
 			enable ? MPU_ACCESS_PERMISSON_FORBIDDEN :
 				MPU_ACCESS_PERMISSON_NO_PROTECTION);
 
 	pr_info("%s MPU\n", enable ? "enable" : "disable");
+
+	if (!enable)
+		return 0;
+
+	/*
+	 * We're going to turn-off ch2, ch3 after
+	 * returning to the caller.
+	 * Wait until ch2 and ch3 are idle
+	 */
+	while (count < 10) {
+		if (lpdma_emi_ch23_get_status())
+			count++;
+		else
+			count = 0;
+	}
+	pr_info("ch2,3 idle\n");
 
 	return 0;
 }
