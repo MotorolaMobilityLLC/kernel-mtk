@@ -580,7 +580,7 @@ static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
 
 	mmc = host_ctl->mmc;
 
-	mmc_put_card(mmc->card);
+	mmc_get_card(mmc->card);
 
 	MMC_IOCTL_PR_DBG("get size of partition=%d\n", msdc_ctl->partition);
 
