@@ -34,7 +34,7 @@ void handle_db_destroy(struct handle_db *db)
 
 int handle_get(struct handle_db *db, void *ptr)
 {
-	unsigned n;
+	unsigned int n;
 	void *p;
 	unsigned new_max_ptrs;
 

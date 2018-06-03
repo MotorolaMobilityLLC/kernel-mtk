@@ -199,15 +199,19 @@ static int tee_ctx_open(struct inode *inode, struct file *filp)
 
 	WD_DEV_DBG(_DEV(tee), "%s: > name=\"%s\"\n", __func__, tee->name);
 
+	mutex_lock(&tee->opensession_lock);
 	ret = tee_supp_open(tee);
 	if (ret) {
 		dev_err(_DEV(tee), "%s: failed ret=%d\n", __func__, ret);
+		mutex_unlock(&tee->opensession_lock);
 		return ret;
 	}
 
 	ctx = tee_context_create(tee);
-	if (IS_ERR_OR_NULL(ctx))
+	if (IS_ERR_OR_NULL(ctx)) {
+		mutex_unlock(&tee->opensession_lock);
 		return PTR_ERR(ctx);
+	}
 
 	ctx->usr_client = 1;
 	filp->private_data = ctx;
@@ -215,6 +219,8 @@ static int tee_ctx_open(struct inode *inode, struct file *filp)
 	WD_DEV_DBG(_DEV(tee),
 		"%s: < ctx=%p is created\n",
 		__func__, (void *)ctx);
+
+	mutex_unlock(&tee->opensession_lock);
 
 	return 0;
 }
@@ -388,9 +394,6 @@ static long tee_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 						u_arg);
 		break;
 	default:
-/*
-*		ret = -ENOSYS;
-*/
 		break;
 	}
 
@@ -447,6 +450,7 @@ struct tee *tee_core_alloc(struct device *dev, char *name, int id,
 	tee->miscdev.fops = &tee_fops;
 
 	mutex_init(&tee->lock);
+	mutex_init(&tee->opensession_lock);
 	atomic_set(&tee->refcount, 0);
 	INIT_LIST_HEAD(&tee->list_ctx);
 	INIT_LIST_HEAD(&tee->list_rpc_shm);

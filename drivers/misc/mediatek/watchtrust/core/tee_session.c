@@ -50,7 +50,7 @@ static inline bool is_mapped_temp(int flags)
 
 /******************************************************************************/
 
-#define _UUID_STR_SIZE 35
+#define _UUID_STR_SIZE 36
 static __attribute__((unused)) char *_uuid_to_str(const struct TEEC_UUID *uuid)
 {
 	static char uuid_str[_UUID_STR_SIZE];
@@ -687,8 +687,9 @@ static void _update_client_tee_cmd(struct tee_session *sess,
 				   struct tee_cmd_io *cmd_io,
 				   struct tee_cmd *cmd)
 {
-	int idx;
+	int idx, ret;
 	struct tee_context *ctx;
+	struct TEEC_Operation op;
 
 	ctx = sess->ctx;
 
@@ -697,6 +698,13 @@ static void _update_client_tee_cmd(struct tee_session *sess,
 
 	cmd_io->origin = cmd->origin;
 	cmd_io->err = cmd->err;
+	ret = tee_context_copy_from_client(ctx, &op, cmd_io->op, sizeof(op));
+	if (ret) {
+		dev_err(_DEV_TEE, "tee_context_copy_from_client ERROR ret %d\n",
+			ret);
+		return;
+	}
+
 
 	if (cmd->param.type_original == TEEC_PARAM_TYPES(TEEC_NONE,
 							 TEEC_NONE, TEEC_NONE,
@@ -747,11 +755,11 @@ static void _update_client_tee_cmd(struct tee_session *sess,
 				cmd->param.params[idx].shm->kaddr);
 
 			/* ensure we do not exceed the shared buffer length */
-			if (size_new > cmd_io->op->params[idx].tmpref.size)
+			if (size_new > op.params[idx].tmpref.size)
 				dev_err(_DEV_TEE,
 					"  *** Wrong returned size from %d:%zd > %zd\n",
 					idx, size_new,
-					cmd_io->op->params[idx].tmpref.size);
+					op.params[idx].tmpref.size);
 
 			else if (tee_copy_to_user
 				 (ctx,
@@ -761,11 +769,11 @@ static void _update_client_tee_cmd(struct tee_session *sess,
 					"%s:%d: can't update %d result to user\n",
 					__func__, __LINE__, idx);
 
-			if (size_new != cmd_io->op->params[idx].tmpref.size) {
+			if (size_new != op.params[idx].tmpref.size) {
 				WD_DEV_DBG(_DEV_TEE,
 					"Size has been updated by the TA %zd != %zd\n",
 					size_new,
-					cmd_io->op->params[idx].tmpref.size);
+					op.params[idx].tmpref.size);
 				tee_put_user(ctx, size_new,
 					     &cmd_io->op->params[idx].tmpref.
 					     size);
@@ -780,8 +788,8 @@ static void _update_client_tee_cmd(struct tee_session *sess,
 				offset = 0;
 				size = parent->size;
 			} else {
-				offset = cmd_io->op->params[idx].memref.offset;
-				size = cmd_io->op->params[idx].memref.size;
+				offset = op.params[idx].memref.offset;
+				size = op.params[idx].memref.size;
 			}
 
 			/* Returned updated size */

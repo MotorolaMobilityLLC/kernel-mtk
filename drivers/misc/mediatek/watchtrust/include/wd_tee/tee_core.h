@@ -62,6 +62,7 @@ struct tee {
 	const struct tee_ops *ops;
 	struct device *dev;
 	struct miscdevice miscdev;
+	struct mutex opensession_lock;
 	struct tee_rpc *rpc;
 	struct dentry *dbg_dir;
 	atomic_t refcount;
@@ -179,7 +180,7 @@ struct tee_cmd {
 };
 
 struct tee_shm *tee_shm_alloc_from_rpc(struct tee *tee, size_t size);
-void tee_shm_free_from_rpc(struct tee_shm *);
+void tee_shm_free_from_rpc(struct tee_shm *shm);
 
 int tee_core_add(struct tee *tee);
 int tee_core_del(struct tee *tee);
