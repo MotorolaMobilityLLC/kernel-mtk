@@ -179,8 +179,3 @@ int send_message_to_scp(const struct ipi_msg_t *p_ipi_msg)
 	return (send_status == DONE) ? 0 : -1;
 }
 
-
-
-
-
-
