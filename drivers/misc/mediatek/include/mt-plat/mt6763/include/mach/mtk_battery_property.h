@@ -27,9 +27,9 @@
 
 #define SHUTDOWN_GAUGE0 1
 #define SHUTDOWN_GAUGE1_XMINS 1
-#define SHUTDOWN_GAUGE0_VOLTAGE 35000
+#define SHUTDOWN_GAUGE0_VOLTAGE 34000
 
-#define POWERON_SYSTEM_IBOOT 1000	/* mA */
+#define POWERON_SYSTEM_IBOOT 500	/* mA */
 
 #define D0_SEL 0	/* not implement */
 #define AGING_SEL 0	/* not implement */
@@ -44,7 +44,7 @@
 #define QMAX_SEL 1
 #define IBOOT_SEL 0
 #define SHUTDOWN_SYSTEM_IBOOT 15000	/* 0.1mA */
-#define PMIC_MIN_VOL 32000
+#define PMIC_MIN_VOL 34000
 
 /*ui_soc related */
 #define DIFFERENCE_FULL_CV 1000 /*0.01%*/
