@@ -68,7 +68,7 @@
 #include "ddp_m4u.h"
 #include "display_recorder.h"
 
-#define DISP_NO_DPI  /* FIXME: tmp define */
+/* #define DISP_NO_DPI */
 #ifndef DISP_NO_DPI
 #include "ddp_dpi_reg.h"
 #endif
@@ -607,6 +607,8 @@ static int __init disp_probe_1(void)
 		} else {
 			ddp_set_module_va(i, va);
 		}
+
+		DPI_REG = (struct DPI_REGS *)ddp_get_module_va(DISP_MODULE_DPI);
 
 		status = of_address_to_resource(node, 0, &res);
 		if (status < 0) {

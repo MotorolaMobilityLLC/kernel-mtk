@@ -438,6 +438,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPERR("PWM APB TX Error!\n");
 
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_INTSTA, ~reg_val);
+	} else if (irq == ddp_get_module_irq(DISP_MODULE_DPI)) {
+		module = DISP_MODULE_DPI;
+		reg_val = DISP_REG_GET(DISP_REG_DPI_INSTA) & 0x7;
+		DISP_CPU_REG_SET(DISP_REG_DPI_INSTA, ~reg_val);
 	} else {
 		module = DISP_MODULE_UNKNOWN;
 		reg_val = 0;

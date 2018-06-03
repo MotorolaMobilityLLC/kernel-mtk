@@ -92,12 +92,12 @@
 
 #define SOF_VAL_MUTEX0_SOF_SINGLE_MODE					(0)
 #define SOF_VAL_MUTEX0_SOF_FROM_DSI0					(1)
-#define SOF_VAL_MUTEX0_SOF_FROM_DSI1					(2)
-#define SOF_VAL_MUTEX0_SOF_FROM_DPI						(3)
+#define SOF_VAL_MUTEX0_SOF_FROM_DSI1					(0) /*Bianco no DSI1*/
+#define SOF_VAL_MUTEX0_SOF_FROM_DPI						(2)
 #define SOF_VAL_MUTEX0_SOF_FROM_RESERVED				(5)
 #define SOF_VAL_MUTEX0_EOF_DISABLE						(0)
 #define SOF_VAL_MUTEX0_EOF_FROM_DSI0					(1)
-#define SOF_VAL_MUTEX0_EOF_FROM_DSI1					(2)
-#define SOF_VAL_MUTEX0_EOF_FROM_DPI						(3)
+#define SOF_VAL_MUTEX0_EOF_FROM_DSI1					(0) /*Bianco no DSI1*/
+#define SOF_VAL_MUTEX0_EOF_FROM_DPI						(2)
 
 #endif

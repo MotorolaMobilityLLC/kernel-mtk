@@ -342,7 +342,7 @@ static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
 	 DISP_T_DPI,
 	 "dpi0",
 	 1,
-	 NULL,
+	 &ddp_driver_dpi,
 	 {"mediatek,dpi0",
 	  0x14015000,
 	  258,

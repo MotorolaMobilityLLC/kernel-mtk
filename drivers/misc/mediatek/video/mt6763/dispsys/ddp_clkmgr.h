@@ -93,6 +93,8 @@ int ddp_main_modules_clk_on(void);
 int ddp_main_modules_clk_off(void);
 int ddp_ext_modules_clk_on(void);
 int ddp_ext_modules_clk_off(void);
+int ddp_ovl2mem_modules_clk_on(void);
+int ddp_ovl2mem_modules_clk_off(void);
 int ddp_module_clk_enable(enum DISP_MODULE_TYPE_ENUM module_t);
 int ddp_module_clk_disable(enum DISP_MODULE_TYPE_ENUM module_t);
 enum DDP_CLK_ID ddp_get_module_clk_id(enum DISP_MODULE_ENUM module_id);

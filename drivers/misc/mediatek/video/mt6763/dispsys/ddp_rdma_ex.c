@@ -289,6 +289,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		bpp = 24;
 		frame_rate = 60;
 
+		if ((rdma_golden_setting->ext_dst_width == 1920) &&
+				(rdma_golden_setting->ext_dst_height == 1080))
+			frame_rate = 30;
+
 		if ((rdma_golden_setting->ext_dst_width == 3840) &&
 				(rdma_golden_setting->ext_dst_height == 2160))
 			frame_rate = 30;
@@ -364,7 +368,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 		else
 			fifo_valid_size = 320;
 	} else {
-		fifo_valid_size = 320;
+		fifo_valid_size = 128;
 	}
 	issue_req_threshold = min(fifo_valid_size - preultra_low, (unsigned int)255);
 
@@ -795,7 +799,7 @@ void rdma_dump_reg(enum DISP_MODULE_ENUM module)
 	DDPDUMP("(0x0b4)DISP_REG_RDMA_STALL_CG_CON=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_STALL_CG_CON + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("(0x0b8)DISP_REG_RDMA_SHADOW_UPDATE=0x%x\n",
-	DISP_REG_GET(DISP_REG_RDMA_STALL_CG_CON + DISP_REG_RDMA_SHADOW_UPDATE * idx));
+		DISP_REG_GET(DISP_REG_RDMA_SHADOW_UPDATE + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("(0x0f0)R_IN_PXL_CNT=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("(0x0f4)R_IN_LINE_CNT=0x%x\n",
@@ -815,9 +819,9 @@ void rdma_dump_analysis(enum DISP_MODULE_ENUM module)
 
 	DDPDUMP("== DISP RDMA%d ANALYSIS ==\n", idx);
 	DDPDUMP("rdma%d: en=%d,memory_mode=%d,smi_busy=%d,w=%d,h=%d,pitch=%d,addr=0x%x,fmt=%s,fifo_min=%d,\n",
-		idx, REG_FLD_VAL_GET(GLOBAL_CON_FLD_ENGINE_EN, global_ctrl),
-		REG_FLD_VAL_GET(GLOBAL_CON_FLD_MODE_SEL, global_ctrl),
-		REG_FLD_VAL_GET(GLOBAL_CON_FLD_SMI_BUSY, global_ctrl),
+		idx, REG_FLD_VAL_GET(GLOBAL_CON_FLD_ENGINE_EN + DISP_RDMA_INDEX_OFFSET * idx, global_ctrl),
+		REG_FLD_VAL_GET(GLOBAL_CON_FLD_MODE_SEL + DISP_RDMA_INDEX_OFFSET * idx, global_ctrl),
+		REG_FLD_VAL_GET(GLOBAL_CON_FLD_SMI_BUSY + DISP_RDMA_INDEX_OFFSET * idx, global_ctrl),
 		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx) & 0xfff,
 		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + DISP_RDMA_INDEX_OFFSET * idx) & 0xfffff,
 		DISP_REG_GET(DISP_REG_RDMA_MEM_SRC_PITCH + DISP_RDMA_INDEX_OFFSET * idx),
@@ -833,10 +837,10 @@ void rdma_dump_analysis(enum DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_RDMA_IN_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx),
 		DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT + DISP_RDMA_INDEX_OFFSET * idx),
 		DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx),
-		REG_FLD_VAL_GET(RDMA_BG_CON_1_TOP, bg1),
-		REG_FLD_VAL_GET(RDMA_BG_CON_1_BOTTOM, bg1),
-		REG_FLD_VAL_GET(RDMA_BG_CON_0_LEFT, bg0),
-		REG_FLD_VAL_GET(RDMA_BG_CON_0_RIGHT, bg0),
+		REG_FLD_VAL_GET(RDMA_BG_CON_1_TOP + DISP_RDMA_INDEX_OFFSET * idx, bg1),
+		REG_FLD_VAL_GET(RDMA_BG_CON_1_BOTTOM + DISP_RDMA_INDEX_OFFSET * idx, bg1),
+		REG_FLD_VAL_GET(RDMA_BG_CON_0_LEFT + DISP_RDMA_INDEX_OFFSET * idx, bg0),
+		REG_FLD_VAL_GET(RDMA_BG_CON_0_RIGHT + DISP_RDMA_INDEX_OFFSET * idx, bg0),
 		rdma_start_time[idx], rdma_end_time[idx]);
 	DDPDUMP("irq cnt: start=%d, end=%d, underflow=%d, targetline=%d\n",
 		rdma_start_irq_cnt[idx], rdma_done_irq_cnt[idx], rdma_underflow_irq_cnt[idx],

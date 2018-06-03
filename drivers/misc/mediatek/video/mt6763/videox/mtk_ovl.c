@@ -306,9 +306,9 @@ void ovl2mem_power_control(unsigned int enable)
 {
 	/* clk op */
 	if (enable)
-		ddp_ext_modules_clk_on();
+		ddp_ovl2mem_modules_clk_on();
 	else
-		ddp_ext_modules_clk_off();
+		ddp_ovl2mem_modules_clk_off();
 
 	ddp_clk_check();
 }

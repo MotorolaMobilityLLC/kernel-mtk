@@ -35,7 +35,8 @@
  * -- by chip
  *	struct clk *pclk;
  *	const char *clk_name;
- *	unsigned int belong_to; 1: main display 2 externel display
+ *	int refcnt;
+ *	unsigned int belong_to; 1: main display 2 externel display 4 visual display
  *	enum DISP_MODULE_ENUM module_id;
  */
 static ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
@@ -52,10 +53,10 @@ static ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
 	{NULL, "MMSYS_GALS_IPU2MM", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
 	{NULL, "MMSYS_DISP_OVL0", 0, (1), DISP_MODULE_OVL0},		/* 11 */
 	{NULL, "MMSYS_DISP_OVL0_2L", 0, (1), DISP_MODULE_OVL0_2L},
-	{NULL, "MMSYS_DISP_OVL1_2L", 0, (1<<1), DISP_MODULE_OVL1_2L},
+	{NULL, "MMSYS_DISP_OVL1_2L", 0, (1<<1|1<<2), DISP_MODULE_OVL1_2L},
 	{NULL, "MMSYS_DISP_RDMA0", 0, (1), DISP_MODULE_RDMA0},
 	{NULL, "MMSYS_DISP_RDMA1", 0, (1<<1), DISP_MODULE_RDMA1},
-	{NULL, "MMSYS_DISP_WDMA0", 0, (1|1<<1), DISP_MODULE_WDMA0},
+	{NULL, "MMSYS_DISP_WDMA0", 0, (1|1<<2), DISP_MODULE_WDMA0},
 	{NULL, "MMSYS_DISP_COLOR0", 0, (1), DISP_MODULE_COLOR0},
 	{NULL, "MMSYS_DISP_CCORR0", 0, (1), DISP_MODULE_CCORR0},
 	{NULL, "MMSYS_DISP_AAL0", 0, (1), DISP_MODULE_AAL0},
@@ -258,6 +259,11 @@ static unsigned int _is_ext_module(ddp_clk *pclk)
 	return (pclk->belong_to & 0x2);
 }
 
+static unsigned int _is_ovl2mem_module(ddp_clk *pclk)
+{
+	return (pclk->belong_to & 0x4);
+}
+
 /* ddp_main_modules_clk_on
  *
  * success: ret = 0
@@ -352,6 +358,46 @@ int ddp_ext_modules_clk_on(void)
 	return ret;
 }
 
+int ddp_ovl2mem_modules_clk_on(void)
+{
+	unsigned int i = 0;
+	int ret = 0;
+	enum DISP_MODULE_ENUM module;
+
+	DISPFUNC();
+	/* --TOP CLK-- */
+	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
+	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
+	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
+	ddp_clk_prepare_enable(DISP0_SMI_LARB1);
+	ddp_clk_prepare_enable(CLK_MM_GALS_COMM0);
+	ddp_clk_prepare_enable(CLK_MM_GALS_COMM1);
+	ddp_clk_prepare_enable(DISP0_DISP_26M);
+
+	/* --MODULE CLK-- */
+	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
+		if (!_is_ovl2mem_module(&ddp_clks[i]))
+			continue;
+
+		module = ddp_clks[i].module_id;
+		if (module != DISP_MODULE_UNKNOWN
+			&& ddp_get_module_driver(module) != 0) {
+			/* module driver power on */
+			if (ddp_get_module_driver(module)->power_on != 0
+				&& ddp_get_module_driver(module)->power_off != 0) {
+				pr_warn("%s power_on\n", ddp_get_module_name(module));
+				ddp_get_module_driver(module)->power_on(module, NULL);
+			} else {
+				DDPERR("[modules_clk_on] %s no power on(off) function\n", ddp_get_module_name(module));
+				ret = -1;
+			}
+		}
+	}
+
+	pr_warn("CG0 0x%x, CG1 0x%x\n", clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
+									clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON1));
+	return ret;
+}
 
 /* ddp_main_modules_clk_on
  *
@@ -418,6 +464,47 @@ int ddp_ext_modules_clk_off(void)
 	/* --MODULE CLK-- */
 	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
 		if (!_is_ext_module(&ddp_clks[i]))
+			continue;
+
+		module = ddp_clks[i].module_id;
+		if (module != DISP_MODULE_UNKNOWN
+			&& ddp_get_module_driver(module) != 0) {
+			/* module driver power off */
+			if (ddp_get_module_driver(module)->power_on != 0
+				&& ddp_get_module_driver(module)->power_off != 0) {
+				pr_warn("%s power_off\n", ddp_get_module_name(module));
+				ddp_get_module_driver(module)->power_off(module, NULL);
+			} else {
+				DDPERR("[modules_clk_on] %s no power on(off) function\n", ddp_get_module_name(module));
+				ret = -1;
+			}
+		}
+	}
+
+	/* --TOP CLK-- */
+	ddp_clk_disable_unprepare(DISP0_DISP_26M);
+	ddp_clk_disable_unprepare(CLK_MM_GALS_COMM1);
+	ddp_clk_disable_unprepare(CLK_MM_GALS_COMM0);
+	ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
+	ddp_clk_disable_unprepare(DISP0_SMI_LARB1);
+	ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
+	ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
+
+	pr_warn("CG0 0x%x, CG1 0x%x\n", clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
+									clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON1));
+	return ret;
+}
+
+int ddp_ovl2mem_modules_clk_off(void)
+{
+	unsigned int i = 0;
+	int ret = 0;
+	enum DISP_MODULE_ENUM module;
+
+	DISPFUNC();
+	/* --MODULE CLK-- */
+	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
+		if (!_is_ovl2mem_module(&ddp_clks[i]))
 			continue;
 
 		module = ddp_clks[i].module_id;

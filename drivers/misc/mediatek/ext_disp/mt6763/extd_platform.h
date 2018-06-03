@@ -21,19 +21,13 @@
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
 
-
-/*#define EXTD_SHADOW_REGISTER_SUPPORT*/
-/* #define EXTD_SMART_OVL_SUPPORT */
 /* #define EXTD_DEBUG_SUPPORT */
 
 /* /#define EXTD_DBG_USE_INNER_BUF */
 
-#define HW_OVERLAY_COUNT  4
-#ifdef EXTD_SMART_OVL_SUPPORT
-#define EXTD_OVERLAY_CNT  (4+6)
-#else
-#define EXTD_OVERLAY_CNT  4
-#endif
+#define HW_OVERLAY_COUNT  2
+
+#define EXTD_OVERLAY_CNT  2
 
 #define HW_DPI_VSYNC_SUPPORT 1
 
@@ -47,7 +41,7 @@
 
 #define MHL_RESOLUTION_LIMIT_1080P_30
 
-#define CONFIG_IO_DRIVING
+/* #define CONFIG_IO_DRIVING */
 
 #define DP_EINT_GPIO_NUMBER 98
 

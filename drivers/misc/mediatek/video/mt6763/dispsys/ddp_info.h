@@ -390,6 +390,8 @@ struct DDP_MODULE_DRIVER {
 extern struct DDP_MODULE_DRIVER ddp_driver_dsi0;
 extern struct DDP_MODULE_DRIVER ddp_driver_dsi1;
 extern struct DDP_MODULE_DRIVER ddp_driver_dsidual;
+/* dpi */
+extern struct DDP_MODULE_DRIVER ddp_driver_dpi;
 
 /* ovl */
 extern struct DDP_MODULE_DRIVER ddp_driver_ovl;

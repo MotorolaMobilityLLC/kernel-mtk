@@ -150,7 +150,7 @@ static struct sel_s sel_out_map[] = {
 
 	/* RDMA1_SOUT */
 	{DISP_MODULE_RDMA1,
-		{DISP_MODULE_DSI0, DISP_MODULE_DPI}, 0, 0},
+		{DISP_MODULE_DPI, DISP_MODULE_DSI0}, 0, 0},
 };
 
 /* 1st para is sout's output, 2nd para is sout's input */

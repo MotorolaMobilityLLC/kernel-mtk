@@ -39,6 +39,7 @@
 #include "ddp_mmp.h"
 #include "ddp_ovl.h"
 #include "ddp_reg.h"
+#include "ddp_clkmgr.h"
 #include "lcm_drv.h"
 
 #include "extd_platform.h"
@@ -54,11 +55,6 @@
 
 #include "mtkfb_fence.h"
 #include "disp_drv_log.h"
-
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-#include "disp_helper.h"
-#endif
-
 
 
 int ext_disp_use_cmdq;
@@ -681,9 +677,7 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp
 		EXT_DISP_ERR("unknown source = %d", src->buffer_source);
 		dst->source = OVL_LAYER_SOURCE_MEM;
 	}
-#ifdef EXTD_SMART_OVL_SUPPORT
 	dst->ext_sel_layer = src->ext_sel_layer;
-#endif
 
 	return 0;
 }
@@ -809,6 +803,15 @@ void ext_disp_probe(void)
 	ext_disp_mode = EXTD_DIRECT_LINK_MODE;
 }
 
+void ext_disp_power_control(unsigned int enable)
+{
+	/* clk op */
+	if (enable)
+		ddp_ext_modules_clk_on();
+	else
+		ddp_ext_modules_clk_off();
+}
+
 int ext_disp_init(char *lcm_name, unsigned int session)
 {
 	struct disp_ddp_path_config *data_config = NULL;
@@ -869,6 +872,8 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 	EXT_DISP_LOG("ext_disp display START cmdq trigger loop finished\n");
 
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, ext_disp_is_video_mode());
+
+	ext_disp_power_control(1);
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -936,6 +941,8 @@ int ext_disp_deinit(unsigned int session)
 		dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 
 	dpmgr_path_deinit(pgc->dpmgr_handle, CMDQ_DISABLE);
+
+	ext_disp_power_control(0);
 
 	dpmgr_destroy_path_handle(pgc->dpmgr_handle);
 
@@ -1012,6 +1019,8 @@ int ext_disp_suspend(unsigned int session)
 
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
 
+	ext_disp_power_control(0);
+
 	pgc->state = EXTD_SUSPEND;
 
  done:
@@ -1038,6 +1047,8 @@ int ext_disp_resume(unsigned int session)
 
 	if (_should_reset_cmdq_config_handle() && DISP_SESSION_DEV(session) != DEV_EINK + 1)
 		_cmdq_reset_config_handle();
+
+	ext_disp_power_control(1);
 
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 

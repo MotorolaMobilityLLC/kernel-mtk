@@ -380,8 +380,12 @@ char *ddp_get_mutex_sof_name(unsigned int regval)
 		return "single";
 	case SOF_VAL_MUTEX0_SOF_FROM_DSI0:
 		return "dsi0";
+/*
+*	Bianco no DSI1
+*
 	case SOF_VAL_MUTEX0_SOF_FROM_DSI1:
 		return "dsi1";
+*/
 	case SOF_VAL_MUTEX0_SOF_FROM_DPI:
 		return "dpi";
 	default:
