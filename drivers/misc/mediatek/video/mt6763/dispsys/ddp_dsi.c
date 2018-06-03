@@ -1310,7 +1310,7 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 	unsigned int pcw = 0;
 	unsigned int posdiv    = 0;
 	unsigned int prediv    = 0;
-	unsigned int delta1 = 5; /* Delta1 is SSC range, default is 0%~-5% */
+	unsigned int delta1 = 2; /* Delta1 is SSC range, default is 0%~-5% */
 	unsigned int pdelta1 = 0;
 	MIPITX_PAD_VALUE pad_mapping[MIPITX_PHY_LANE_NUM]
 		= {PAD_D0P_V, PAD_D1P_V, PAD_D2P_V, PAD_D3P_V, PAD_CKP_V, PAD_CKP_V};
