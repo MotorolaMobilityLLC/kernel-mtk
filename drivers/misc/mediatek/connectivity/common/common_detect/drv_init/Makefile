@@ -10,7 +10,7 @@ ifneq ($(filter "MT6632",$(CONFIG_MTK_COMBO_CHIP)),)
 	ccflags-y += -D MTK_WCN_WLAN_GEN4
 endif
 
-ifneq ($(filter "CONSYS_6797" "CONSYS_6759",$(CONFIG_MTK_COMBO_CHIP)),)
+ifneq ($(filter "CONSYS_6797" "CONSYS_6759" "CONSYS_6758",$(CONFIG_MTK_COMBO_CHIP)),)
 	ccflags-y += -D MTK_WCN_WLAN_GEN3
 else ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
 	ccflags-y += -D MTK_WCN_WLAN_GEN2
