@@ -1803,7 +1803,13 @@
 			<&clk26m>,
 			<&topckgen TOP_UNIVPLL2_D4>,
 			<&topckgen TOP_OSC_D4>,
-			<&topckgen TOP_OSC_D16>;
+			<&topckgen TOP_OSC_D16>,
+			<&topckgen TOP_MUX_DPI0>,
+			<&topckgen TOP_TVDPLL_D2>,
+			<&topckgen TOP_TVDPLL_D4>,
+			<&topckgen TOP_TVDPLL_D8>,
+			<&topckgen TOP_TVDPLL_D16>,
+			<&topckgen TOP_TVDPLL_CK>;
 
 		clock-names =
 			"MMSYS_MTCMOS",
@@ -1831,8 +1837,8 @@
 			"MMSYS_DISP_SPLIT",
 			"MMSYS_DSI0_MM_CK",
 			"MMSYS_DSI0_IF_CK",
-			"MMSYS_DSI1_MM_CK",
-			"MMSYS_DSI1_IF_CK",
+			"MMSYS_DPI_MM_CK",
+			"MMSYS_DPI_IF_CK",
 			"MMSYS_26M",
 			"MMSYS_DISP_RSZ",
 			"TOP_MUX_MM",
@@ -1842,7 +1848,17 @@
 			"TOP_26M",
 			"TOP_UNIVPLL2_D4",
 			"TOP_OSC_D4",
-			"TOP_OSC_D16";
+			"TOP_OSC_D16",
+			"MUX_DPI0",
+			"TVDPLL_D2",
+			"TVDPLL_D4",
+			"TVDPLL_D8",
+			"TVDPLL_D16",
+			"DPI_CK";
+	};
+
+	mhl:mhl@0 {
+		compatible = "mediatek,extd_dev";
 	};
 
 	mdp_rdma0: mdp_rdma0@14001000 {

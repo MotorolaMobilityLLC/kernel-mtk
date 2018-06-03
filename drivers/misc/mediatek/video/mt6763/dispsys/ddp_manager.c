@@ -94,7 +94,7 @@ static struct DDP_IRQ_EVENT_MAPPING ddp_irq_event_list[DEFAULT_IRQ_EVENT_SCENARI
 	 {DDP_IRQ_WDMA0_FRAME_COMPLETE},	/*FRAME_COMPLETE */
 	 {DDP_IRQ_RDMA1_TARGET_LINE},	/*FRAME_STOP */
 	 {DDP_IRQ_RDMA1_REG_UPDATE},	/*IF_CMD_DONE */
-	 {DDP_IRQ_RDMA1_TARGET_LINE},	/*IF_VSYNC */
+	 {DDP_IRQ_DPI_VSYNC},	/*IF_VSYNC */
 	 {DDP_IRQ_UNKNOWN}, /*TRIGER*/ {DDP_IRQ_AAL0_OUT_END_FRAME},	/*AAL_OUT_END_EVENT */
 	 },
 	{			/* rdma path */
@@ -1773,10 +1773,10 @@ int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config)
 {
 	if (ddp_get_module_driver(module_name) != 0) {
 		if (ddp_get_module_driver(module_name)->ioctl != 0) {
-			DISP_LOG_I(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DSI1));
-			/* ddp_get_module_driver(DISP_MODULE_DSI1)->ioctl(module_name, cmdqhandle,
-			*					   DDP_DSI_FACTORY_TEST, config);
-			*/
+			DISP_LOG_I(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DPI));
+			ddp_get_module_driver(DISP_MODULE_DPI)->ioctl(module_name, cmdqhandle,
+								   DDP_DPI_FACTORY_TEST, config);
+
 		}
 	}
 
@@ -1787,10 +1787,9 @@ int dpmgr_factory_mode_reset(int module_name, void *cmdqhandle, void *config)
 {
 	if (ddp_get_module_driver(module_name) != 0) {
 		if (ddp_get_module_driver(module_name)->ioctl != 0) {
-			DISP_LOG_I(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DSI1));
-			/* ddp_get_module_driver(DISP_MODULE_DSI1)->ioctl(module_name, cmdqhandle,
-			*					   DDP_DSI_FACTORY_RESET, config);
-			*/
+			DISP_LOG_I(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DPI));
+			ddp_get_module_driver(DISP_MODULE_DPI)->ioctl(module_name, cmdqhandle,
+								   DDP_DPI_FACTORY_TEST, config);
 		}
 	}
 

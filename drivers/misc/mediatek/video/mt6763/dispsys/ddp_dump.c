@@ -351,12 +351,8 @@ static char *ddp_clock_1(int bit)
 	case 1:
 		return "dsi0_interface(cg), ";
 	case 2:
-		return "dsi1_mm(cg), ";
-	case 3:
-		return "dsi1_interface(cg), ";
-	case 4:
 		return "dpi_mm(cg), ";
-	case 5:
+	case 3:
 		return "dpi_interface, ";
 	case 8:
 		return "ovl0_mout, ";

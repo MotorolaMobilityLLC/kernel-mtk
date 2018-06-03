@@ -100,6 +100,12 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 		DISP_MODULE_RDMA1, DISP_MODULE_DPI,
 		-1,
 	},
+
+	/* DDP_SCENARIO_SUB_OVL_MEMOUT */
+	{
+		DISP_MODULE_OVL1_2L, DISP_MODULE_WDMA_VIRTUAL0, DISP_MODULE_WDMA_VIRTUAL1,
+		DISP_MODULE_WDMA0, -1,
+	},
 };
 
 /* 1st para is mout's input, 2nd para is mout's output */

@@ -52,6 +52,8 @@ enum DDP_CLK_ID {
 	DISP1_DSI0_INTERFACE_CLOCK,
 	DISP1_DSI1_MM_CLOCK,
 	DISP1_DSI1_INTERFACE_CLOCK,
+	DISP1_DPI_MM_CLOCK,
+	DISP1_DPI_INTERFACE_CLOCK,
 	DISP0_DISP_26M,
 	DISP0_DISP_RSZ,
 	/* topgen clock */
@@ -62,6 +64,12 @@ enum DDP_CLK_ID {
 	TOP_UNIVPLL2_D4,
 	TOP_OSC_D4,
 	TOP_OSC_D16,
+	MUX_DPI0,
+	TVDPLL_D2,
+	TVDPLL_D4,
+	TVDPLL_D8,
+	TVDPLL_D16,
+	DPI_CK,
 	MAX_DISP_CLK_CNT
 };
 
@@ -87,6 +95,8 @@ int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en);
 int ddp_parse_apmixed_base(void);
 int ddp_main_modules_clk_on(void);
 int ddp_main_modules_clk_off(void);
+int ddp_ext_modules_clk_on(void);
+int ddp_ext_modules_clk_off(void);
 int ddp_module_clk_enable(enum DISP_MODULE_TYPE_ENUM module_t);
 int ddp_module_clk_disable(enum DISP_MODULE_TYPE_ENUM module_t);
 enum DDP_CLK_ID ddp_get_module_clk_id(enum DISP_MODULE_ENUM module_id);

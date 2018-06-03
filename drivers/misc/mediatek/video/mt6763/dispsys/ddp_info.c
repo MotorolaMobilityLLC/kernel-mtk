@@ -339,14 +339,14 @@ static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
 	},
 
 	{DISP_MODULE_DPI,
-	 DISP_T_DSI,
+	 DISP_T_DPI,
 	 "dpi0",
 	 1,
-	 NULL,	/*TODO: will be filled later */
+	 NULL,
 	 {"mediatek,dpi0",
 	  0x14015000,
 	  258,
-	  15,
+	  3,
 	  0,
 	  0}
 	},

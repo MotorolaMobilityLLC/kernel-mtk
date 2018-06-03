@@ -27,6 +27,7 @@
 #include "ddp_dump.h"
 #include "ddp_path.h"
 #include "ddp_drv.h"
+#include "ddp_clkmgr.h"
 
 #include "disp_session.h"
 #include "primary_display.h"
@@ -50,9 +51,6 @@
 
 #include "extd_platform.h"
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-#include "disp_helper.h"
-#endif
 
 static int is_context_inited;
 static int ovl2mem_layer_num;
@@ -300,6 +298,15 @@ int get_ovl2mem_ticket(void)
 
 }
 
+void ovl2mem_power_control(unsigned int enable)
+{
+	/* clk op */
+	if (enable)
+		ddp_ext_modules_clk_on();
+	else
+		ddp_ext_modules_clk_off();
+}
+
 int ovl2mem_init(unsigned int session)
 {
 	int ret = -1;
@@ -338,6 +345,7 @@ int ovl2mem_init(unsigned int session)
 
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, false);
 
+	ovl2mem_power_control(1);
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
 	/* dpmgr_path_set_dst_module(pgc->dpmgr_handle,DISP_MODULE_ENUM dst_module) */
@@ -666,6 +674,7 @@ int ovl2mem_deinit(void)
 	atomic_set(&g_trigger_ticket, 1);
 	atomic_set(&g_release_ticket, 0);
 
+	ovl2mem_power_control(0);
 Exit:
 	_ovl2mem_path_unlock(__func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_END, 0x03, (loop_cnt<<24)|1);
@@ -673,3 +682,4 @@ Exit:
 	DISPMSG("ovl2mem_deinit done\n");
 	return ret;
 }
+
