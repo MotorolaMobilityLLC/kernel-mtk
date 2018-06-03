@@ -193,7 +193,8 @@ int ged_bridge_query_target_fps(
 	GED_BRIDGE_IN_QUERY_TARGET_FPS * in,
 	GED_BRIDGE_OUT_QUERY_TARGET_FPS *out)
 {
-	out->fps = ged_frr_table_get_fps(in->pid, in->cid);
+	ged_frr_fence2context_table_update(in->pid, in->cid, in->fenceFd);
+	out->fps = ged_frr_get_fps(in->pid, in->cid);
 	return 0;
 }
 module_param(ged_boost_enable, uint, 0644);

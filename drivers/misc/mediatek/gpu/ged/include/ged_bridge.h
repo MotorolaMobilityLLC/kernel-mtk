@@ -382,6 +382,7 @@ typedef struct GED_BRIDGE_OUT_TARGET_FPS {
 typedef struct GED_BRIDGE_IN_QUERY_TARGET_FPS_TAG {
 	int pid;
 	uint64_t cid;
+	int fenceFd;
 } GED_BRIDGE_IN_QUERY_TARGET_FPS;
 
 typedef struct GED_BRIDGE_OUT_QUERY_TARGET_FPS_TAG {
