@@ -434,8 +434,8 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 		_set_condition_and_wake_up(&(_dsi_context[i].sleep_in_done_wq));
 
 	if (status.BUFFER_UNDERRUN_INT_EN) {
-		DDPPR_ERR("%s:buffer underrun\n", ddp_get_module_name(module));
 		if (dsi_underflow == 0) {
+			DDPPR_ERR("%s:buffer underrun\n", ddp_get_module_name(module));
 			primary_display_diagnose();
 			dsi_underflow = 1;
 			disp_aee_print("DSI buffer underrun\n");
@@ -443,8 +443,8 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 	}
 
 	if (status.INP_UNFINISH_INT_EN) {
-		DDPPR_ERR("%s:input relay unfinish\n", ddp_get_module_name(module));
 		if (dsi_inp_relay_not_ready == 0) {
+			DDPPR_ERR("%s:input relay unfinish\n", ddp_get_module_name(module));
 			dsi_inp_relay_not_ready = 1;
 			primary_display_diagnose();
 			disp_aee_print("DSI input relay unfinish\n");
