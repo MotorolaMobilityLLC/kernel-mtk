@@ -876,12 +876,14 @@ static signed int mt6580_PowerUp(unsigned short *chip_id, unsigned short *device
 	}
 
 	fm_reg_read(0x62, &tmp_reg);
-	*chip_id = tmp_reg;
+	/* *chip_id = tmp_reg; */
+	if ((tmp_reg == 0x6580) || (tmp_reg == 0x0633))
+		*chip_id = 0x6580;
 	*device_id = tmp_reg;
 	mt6580_hw_info.chip_id = (signed int) tmp_reg;
 	WCN_DBG(FM_NTC | CHIP, "chip_id:0x%04x\n", tmp_reg);
 
-	if (mt6580_hw_info.chip_id != 0x6580) {
+	if ((mt6580_hw_info.chip_id != 0x6580) && (mt6580_hw_info.chip_id != 0x0633)) {
 		WCN_DBG(FM_NTC | CHIP, "fm sys error, reset hw\n");
 		return -FM_EFW;
 	}
