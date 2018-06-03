@@ -83,6 +83,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include "kernel_compatibility.h"
+#include "ged_log.h"
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0))
 static IMG_UINT32 g_uiMaxOrder = PVR_LINUX_PHYSMEM_MAX_ALLOC_ORDER_NUM;
@@ -2387,6 +2388,18 @@ _AllocOSPages(PMR_OSPAGEARRAY_DATA *psPageArrayData,
 	_DumpPageArray(ppsPageArray,
 	               psPageArrayData->uiTotalNumOSPages >>
 					   (psPageArrayData->uiLog2AllocPageSize - PAGE_SHIFT) );
+
+
+	for (i = 0; i < uiPagesToAlloc; i++) {
+		IMG_CPU_PHYADDR sCPUPhysAddr;
+		IMG_UINT32 uiIdx = puiAllocIndices ? puiAllocIndices[i] : i;
+
+		sCPUPhysAddr.uiAddr = page_to_phys(ppsPageArray[uiIdx]);
+		if ((sCPUPhysAddr.uiAddr < 0x40000000) ||
+(sCPUPhysAddr.uiAddr >= 0xC0000000))
+		ged_log_buf_print2(_mpu_ged_log, GED_LOG_ATTR_TIME,
+"sCPUPhysAddr.uiAddr=0x%llx out of range", sCPUPhysAddr.uiAddr);
+	}
 
 #if defined(PVRSRV_ENABLE_PROCESS_STATS)
 #if defined(PVRSRV_ENABLE_MEMORY_STATS)
