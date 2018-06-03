@@ -139,14 +139,18 @@ static ssize_t mcdi_state_read(struct file *filp,
 	int len = 0;
 	int i;
 	char *p = dbg_buf;
-	bool mcdi_enabled = false;
-	bool mcdi_paused = false;
 	unsigned long any_core_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
 
-	get_mcdi_enable_status(&mcdi_enabled, &mcdi_paused);
+	struct mcdi_feature_status feature_stat;
 
-	mcdi_log("mcdi_enabled = %d\n", mcdi_enabled);
-	mcdi_log("mcdi_paused = %d\n", mcdi_paused);
+	get_mcdi_feature_status(&feature_stat);
+
+	mcdi_log("Feature:\n");
+	mcdi_log("\tenable = %d\n", feature_stat.enable);
+	mcdi_log("\tpause = %d\n", feature_stat.pause);
+	mcdi_log("\tmax s_state = %d\n", feature_stat.s_state);
+	mcdi_log("\tcluster_off = %d\n", feature_stat.cluster_off);
+	mcdi_log("\tany_core = %d\n", feature_stat.any_core);
 
 	mcdi_log("\n");
 
@@ -192,6 +196,8 @@ static ssize_t mcdi_state_write(struct file *filp,
 	if (sscanf(cmd_buf, "%127s %x", cmd, &param) == 2) {
 		if (!strcmp(cmd, "enable"))
 			set_mcdi_enable_status(param);
+		else if (!strcmp(cmd, "s_state"))
+			set_mcdi_s_state(param);
 		return count;
 	}
 
@@ -399,6 +405,7 @@ void mcdi_heart_beat_log_dump(void)
 	unsigned long any_core_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
 	unsigned int cpu_mask = 0;
 	unsigned int cluster_mask = 0;
+	struct mcdi_feature_status feature_stat;
 
 	spin_lock_irqsave(&mcdi_heart_beat_spin_lock, flags);
 
@@ -448,6 +455,12 @@ void mcdi_heart_beat_log_dump(void)
 	get_mcdi_avail_mask(&cpu_mask, &cluster_mask);
 
 	mcdi_buf_append(buf, "avail cpu = %04x, cluster = %04x", cpu_mask, cluster_mask);
+
+	get_mcdi_feature_status(&feature_stat);
+
+	mcdi_buf_append(buf, ", enabled = %d, max_s_state = %d",
+						feature_stat.enable,
+						feature_stat.s_state);
 
 	pr_warn("%s\n", get_mcdi_buf(buf));
 }
@@ -526,12 +539,11 @@ void wait_until_all_cpu_powered_on(void)
 
 bool mcdi_pause(bool paused)
 {
-	bool mcdi_enabled = false;
-	bool mcdi_paused = false;
+	struct mcdi_feature_status feature_stat;
 
-	get_mcdi_enable_status(&mcdi_enabled, &mcdi_paused);
+	get_mcdi_feature_status(&feature_stat);
 
-	if (!mcdi_enabled)
+	if (!feature_stat.enable)
 		return true;
 
 	if (paused) {

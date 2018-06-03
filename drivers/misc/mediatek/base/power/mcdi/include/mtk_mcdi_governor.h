@@ -22,12 +22,21 @@ enum {
 	NF_ANY_CORE_CPU_COND_INFO
 };
 
+struct mcdi_feature_status {
+	bool enable;
+	bool pause;
+	bool cluster_off;
+	bool any_core;
+	int s_state;
+};
+
 int mcdi_governor_select(int cpu, int cluster_idx);
 void mcdi_governor_reflect(int cpu, int state);
 void mcdi_avail_cpu_cluster_update(void);
 void mcdi_governor_init(void);
 void set_mcdi_enable_status(bool enabled);
-void get_mcdi_enable_status(bool *enabled, bool *paused);
+void set_mcdi_s_state(int state);
+void get_mcdi_feature_status(struct mcdi_feature_status *stat);
 void get_mcdi_avail_mask(unsigned int *cpu_mask, unsigned int *cluster_mask);
 int get_residency_latency_result(int cpu);
 void mcdi_state_pause(bool pause);
