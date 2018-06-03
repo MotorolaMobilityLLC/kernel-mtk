@@ -163,7 +163,7 @@ typedef struct {
 } ISP_CLEAR_IRQ_STRUCT;
 
 typedef struct {
-	unsigned int module;
+	unsigned int module; /*plz refer to ISP_DEV_NODE_ENUM */
 	unsigned int Addr; /* register's addr */
 	unsigned int Val; /* register's value */
 } ISP_REG_STRUCT;
@@ -341,7 +341,7 @@ typedef enum {
 } ISP_WRDMA_ENUM;
 
 typedef struct {
-	unsigned int       devNode;
+	unsigned int       devNode; /*plz refer to ISP_DEV_NODE_ENUM*/
 	ISP_WRDMA_ENUM     dmaPort;
 	int                memID;
 } ISP_DEV_ION_NODE_STRUCT;
@@ -572,10 +572,6 @@ typedef struct {
  *
  ********************************************************************************/
 typedef enum {
-	ISP_CMD_RESET_CAM_P1, /* Reset */
-	ISP_CMD_RESET_CAM_P2,
-	ISP_CMD_RESET_CAMSV,
-	ISP_CMD_RESET_CAMSV2,
 	ISP_CMD_RESET_BY_HWMODULE,
 	ISP_CMD_READ_REG, /* Read register from driver */
 	ISP_CMD_WRITE_REG, /* Write register to driver */
@@ -634,7 +630,6 @@ typedef enum {
 
 
 /* Everest reset ioctl */
-#define ISP_RESET_CAM_P1         _IOWR(ISP_MAGIC, ISP_CMD_RESET_CAM_P1, unsigned int)
 #define ISP_RESET_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_RESET_BY_HWMODULE, unsigned long)
 
 /* read phy reg  */
