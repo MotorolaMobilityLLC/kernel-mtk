@@ -336,6 +336,10 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 	__mt_gpufreq_set(g_cur_opp_freq, target_freq, g_cur_opp_volt, target_volt,
 			g_cur_opp_vsram_volt, __mt_gpufreq_get_vsram_volt_by_target_volt(target_volt));
 
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_oppidx(target_idx);
+#endif
+
 	g_cur_opp_idx = target_idx;
 	g_cur_opp_cond_idx = target_cond_idx;
 
@@ -1327,13 +1331,9 @@ static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new, unsig
 	g_cur_opp_volt = volt_new;
 	g_cur_opp_vsram_volt = vsram_volt_new;
 
-#ifdef MT_GPUFREQ_DEBUG_ENABLE
-	gpufreq_pr_info("@%s: done, freq: %d ---> %d, volt: %d ---> %d, vsram_volt: %d ---> %d\n",
-			__func__, freq_old, mt_get_ckgen_freq(9), volt_old, volt_new, vsram_volt_old, vsram_volt_new);
-#else
 	gpufreq_pr_debug("@%s: done, freq: %d ---> %d, volt: %d ---> %d, vsram_volt: %d ---> %d\n",
 			__func__, freq_old, mt_get_ckgen_freq(9), volt_old, volt_new, vsram_volt_old, vsram_volt_new);
-#endif
+
 	__mt_gpufreq_kick_pbm(1);
 }
 
@@ -2440,8 +2440,8 @@ static int __init __mt_gpufreq_init(void)
 
 out:
 #ifdef MT_GPUFREQ_SRAM_DEBUG
-	aee_rr_rec_gpu_dvfs_vgpu(0x0);
-	aee_rr_rec_gpu_dvfs_oppidx(0x0);
+	aee_rr_rec_gpu_dvfs_vgpu(0xFF);
+	aee_rr_rec_gpu_dvfs_oppidx(0xFF);
 	aee_rr_rec_gpu_dvfs_status(0x0);
 #endif
 	return ret;
