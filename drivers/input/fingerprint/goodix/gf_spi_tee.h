@@ -42,7 +42,7 @@
 extern u8 g_debug_level;
 #define gf_debug(level, fmt, args...) do { \
 			if (g_debug_level >= level) {\
-				pr_debug("[gf] " fmt, ##args); \
+				pr_info("[gf] " fmt, ##args); \
 			} \
 		} while (0)
 
@@ -93,7 +93,7 @@ enum gf_key_event_t {
 };
 
 struct gf_key {
-	enum gf_key_event key;
+	enum gf_key_event_t key;
 	uint32_t value;   /* key down = 1, key up = 0 */
 };
 
@@ -255,7 +255,6 @@ struct gf_device {
 	struct pinctrl_state *rst_high;
 	struct pinctrl_state *rst_low;
 	//struct pinctrl_state *pins_reset_high, *pins_reset_low;
-#endif
 #endif
 };
 

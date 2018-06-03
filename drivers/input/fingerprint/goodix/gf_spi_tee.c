@@ -275,7 +275,7 @@ static int gf_get_gpio_dts_info(struct gf_device *gf_dev)
 #ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 	if (rst_mt6306_support != 1) {
 #endif
-		gf_dev->pin_rst_high =
+		gf_dev->rst_high =
 		pinctrl_lookup_state(gf_dev->pinctrl_gpio, "reset_high");
 
 		if (IS_ERR(gf_dev->rst_high)) {
