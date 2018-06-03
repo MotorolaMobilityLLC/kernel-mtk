@@ -479,33 +479,21 @@ static int write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
     char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
 	return iWriteRegI2CTiming(pu_send_cmd, 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 }
-#if 0
+#if 1
 static kal_uint32 imx338_ATR(UINT16 DarkLimit, UINT16 OverExp)
 {
-/*
-    write_cmos_sensor(0x6e50,sensorATR_Info[DarkLimit].DarkLimit_H);
-    write_cmos_sensor(0x6e51,sensorATR_Info[DarkLimit].DarkLimit_L);
-    write_cmos_sensor(0x9340,sensorATR_Info[OverExp].OverExp_Min_H);
-    write_cmos_sensor(0x9341,sensorATR_Info[OverExp].OverExp_Min_L);
-    write_cmos_sensor(0x9342,sensorATR_Info[OverExp].OverExp_Max_H);
-    write_cmos_sensor(0x9343,sensorATR_Info[OverExp].OverExp_Max_L);
-    write_cmos_sensor(0x9706,0x10);
-    write_cmos_sensor(0x9707,0x03);
-    write_cmos_sensor(0x9708,0x03);
-    write_cmos_sensor(0x9e24,0x00);
-    write_cmos_sensor(0x9e25,0x8c);
-    write_cmos_sensor(0x9e26,0x00);
-    write_cmos_sensor(0x9e27,0x94);
-    write_cmos_sensor(0x9e28,0x00);
-    write_cmos_sensor(0x9e29,0x96);
-    LOG_INF("DarkLimit 0x6e50(0x%x), 0x6e51(0x%x)\n",sensorATR_Info[DarkLimit].DarkLimit_H,
-                                                     sensorATR_Info[DarkLimit].DarkLimit_L);
-    LOG_INF("OverExpMin 0x9340(0x%x), 0x9341(0x%x)\n",sensorATR_Info[OverExp].OverExp_Min_H,
-                                                     sensorATR_Info[OverExp].OverExp_Min_L);
-    LOG_INF("OverExpMin 0x9342(0x%x), 0x9343(0x%x)\n",sensorATR_Info[OverExp].OverExp_Max_H,
-                                                     sensorATR_Info[OverExp].OverExp_Max_L);
-                                                     */
-    return ERROR_NONE;
+	write_cmos_sensor(0xAA16, 0x01);
+	write_cmos_sensor(0xAA17, 0x00);
+	/*write_cmos_sensor(0xAA18, 0x00);*/
+	/*write_cmos_sensor(0xAA19, 0x3C);*/
+	/*write_cmos_sensor(0xAA1A, 0x10);*/
+	/*write_cmos_sensor(0xAA1B, 0x00);*/
+	LOG_INF("bk_ imx338_ATR 0x%x-%x, 0x%x-%x, 0x%x-%x",
+		read_cmos_sensor(0xAA16), read_cmos_sensor(0xAA17),
+		read_cmos_sensor(0xAA18), read_cmos_sensor(0xAA19),
+		read_cmos_sensor(0xAA1A), read_cmos_sensor(0xAA1B));
+
+	return ERROR_NONE;
 }
 #endif
 
@@ -2249,7 +2237,7 @@ kal_uint16 addr_data_pair_preview_imx338_hdr[] =
 	,0x0900 ,0x01
 	,0x0901 ,0x22
 	,0x0902 ,0x02
-	,0x3000 ,0x74
+	, 0x3000, 0x75
 	,0x3001 ,0x00
 	,0x305C ,0x11
 
@@ -2327,6 +2315,7 @@ static void preview_setting(void)
 {
 	if((imgsensor.hdr_mode == 2) || (imgsensor.hdr_mode == 9)){
 		imx338_table_write_cmos_sensor(addr_data_pair_preview_imx338_hdr, sizeof(addr_data_pair_preview_imx338_hdr)/sizeof(kal_uint16));
+		imx338_ATR(3, 3);
 		zvhdr_setting();
 	}
 	else{
@@ -3966,9 +3955,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             *feature_para_len=4;
             break;
         case SENSOR_FEATURE_SET_FRAMERATE:
-		LOG_INF("current fps :%llu\n", *feature_data);
+		LOG_INF("current fps :%d\n", *feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.current_fps = (UINT16)*feature_data;
+		imgsensor.current_fps = *feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
         case SENSOR_FEATURE_GET_CROP_INFO:
@@ -3995,11 +3984,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             }
             break;
 		/*HDR CMD*/
-		case SENSOR_FEATURE_SET_HDR:
-            LOG_INF("hdr enable :%d\n", (BOOL)*feature_data);
-            spin_lock(&imgsensor_drv_lock);
-			imgsensor.hdr_mode = *feature_data;
-            spin_unlock(&imgsensor_drv_lock);
+	case SENSOR_FEATURE_SET_HDR:
+		LOG_INF("hdr enable :%d\n", (BOOL)*feature_data_32);
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.hdr_mode = *feature_data_32;
+		spin_unlock(&imgsensor_drv_lock);
             break;
 		case SENSOR_FEATURE_SET_HDR_SHUTTER:
             LOG_INF("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n",(UINT16)*feature_data,(UINT16)*(feature_data+1));
