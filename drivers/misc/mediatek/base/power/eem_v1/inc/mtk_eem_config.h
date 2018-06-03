@@ -51,7 +51,7 @@
 
 /* only used for ap ptp */
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	#define EEM_ENABLE_TINYSYS_SSPM (1)
+	#define EEM_ENABLE_TINYSYS_SSPM (0)
 #else
 	#define EEM_ENABLE_TINYSYS_SSPM (0)
 #endif
