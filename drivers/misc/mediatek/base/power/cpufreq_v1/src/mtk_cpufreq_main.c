@@ -21,7 +21,6 @@
 #include "mtk_cpufreq_hybrid.h"
 #include "mtk_cpufreq_opp_table.h"
 
-/* #define CLUSTER_BUCK_OFF 1 */
 #define DCM_ENABLE 1
 /*
  * Global Variables
@@ -58,15 +57,13 @@ static int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned in
 {
 	int i;
 
-	FUNC_ENTER(FUNC_LV_HELP);
-
 	/* search available voltage */
 	for (i = 0; i < p->nr_opp_tbl; i++) {
 		if (volt >= cpu_dvfs_get_volt_by_idx(p, i))
 			break;
 	}
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	BUG_ON(i >= p->nr_opp_tbl);
 
 	return i;
 }
@@ -76,8 +73,6 @@ int _search_available_freq_idx(struct mt_cpu_dvfs *p, unsigned int target_khz,
 {
 	int new_opp_idx = -1;
 	int i;
-
-	FUNC_ENTER(FUNC_LV_HELP);
 
 	if (relation == CPUFREQ_RELATION_L) {
 		for (i = (signed)(p->nr_opp_tbl - 1); i >= 0; i--) {
@@ -94,8 +89,6 @@ int _search_available_freq_idx(struct mt_cpu_dvfs *p, unsigned int target_khz,
 			}
 		}
 	}
-
-	FUNC_EXIT(FUNC_LV_HELP);
 
 	return new_opp_idx;
 }
@@ -148,15 +141,13 @@ static unsigned int _search_available_volt(struct mt_cpu_dvfs *p, unsigned int t
 {
 	int i;
 
-	FUNC_ENTER(FUNC_LV_HELP);
-
 	/* search available voltage */
 	for (i = p->nr_opp_tbl - 1; i >= 0; i--) {
 		if (target_khz <= cpu_dvfs_get_freq_by_idx(p, i))
 			break;
 	}
 
-	FUNC_EXIT(FUNC_LV_HELP);
+	BUG_ON(i < 0);		/* i.e. target_khz > p->opp_tbl[0].cpufreq_khz */
 
 	return cpu_dvfs_get_volt_by_idx(p, i);	/* mv * 100 */
 }
@@ -313,15 +304,14 @@ static unsigned int _calc_pmic_settle_time(struct mt_cpu_dvfs *p, unsigned int o
 	return delay;
 }
 
-static void dump_opp_table(struct mt_cpu_dvfs *p)
+static inline void assert_volt_valid(int line, unsigned int volt, unsigned int cur_vsram, unsigned int cur_vproc,
+				     unsigned int old_vsram, unsigned int old_vproc)
 {
-	int i;
-
-	cpufreq_err("[%s/%u] oppidx = %d\n", p->name, p->cpu_id, p->idx_opp_tbl);
-
-	for (i = 0; i < p->nr_opp_tbl; i++) {
-		cpufreq_err("%-2d (%u, %u)\n",
-			    i, cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i));
+	if (unlikely(cur_vsram < cur_vproc ||
+		     cur_vsram - cur_vproc > MAX_DIFF_VSRAM_VPROC)) {
+		cpufreq_err("@%d, volt = %u, cur_vsram = %u (%u), cur_vproc = %u (%u)\n",
+			    line, volt, cur_vsram, old_vsram, cur_vproc, old_vproc);
+		BUG();
 	}
 }
 
@@ -329,17 +319,14 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 {				/* volt: vproc (mv*100) */
 	unsigned int cur_vsram;
 	unsigned int cur_vproc;
-	unsigned int delay_us = 0;
-	int ret = 0;
+	unsigned int delay_us;
 
 	struct buck_ctrl_t *vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
 	struct buck_ctrl_t *vsram_p = id_to_buck_ctrl(p->Vsram_buck_id);
 
-	FUNC_ENTER(FUNC_LV_LOCAL);
-
 	/* For avoiding i2c violation during suspend */
 	if (p->dvfs_disable_by_suspend)
-		return ret;
+		return 0;
 
 	cur_vproc = get_cur_volt_wrapper(p, vproc_p);
 	cur_vsram = get_cur_volt_wrapper(p, vsram_p);
@@ -352,28 +339,19 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 		return -1;
 	}
 
-	if (unlikely
-	    (!((cur_vsram >= cur_vproc) && (MAX_DIFF_VSRAM_VPROC >= (cur_vsram - cur_vproc))))) {
-#ifdef __KERNEL__
-		aee_kernel_warning(TAG, "@%s():%d, cur_vsram = %d, cur_vproc = %d\n",
-				   __func__, __LINE__, cur_vsram, cur_vproc);
-#endif
-		cpufreq_err("@%s():%d, cur_vsram = %d, cur_vproc = %d\n",
-					__func__, __LINE__, cur_vsram, cur_vproc);
-		dump_opp_table(p);
-	}
+	assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, cur_vsram, cur_vproc);
 
 	/* UP */
 	if (volt > cur_vproc) {
 		unsigned int target_vsram = volt + NORMAL_DIFF_VRSAM_VPROC;
 		unsigned int next_vsram;
 
-		notify_cpu_volt_sampler(arch_get_cluster_id(p->cpu_id), volt, VOLT_UP, VOLT_PRECHANGE);
+		notify_cpu_volt_sampler(p->id, volt, VOLT_UP, VOLT_PRECHANGE);
 		do {
 			unsigned int old_vproc = cur_vproc;
 			unsigned int old_vsram = cur_vsram;
 
-			next_vsram = MIN(((MAX_DIFF_VSRAM_VPROC - 2500) + cur_vproc), target_vsram);
+			next_vsram = MIN((MAX_DIFF_VSRAM_VPROC - 2500) + cur_vproc, target_vsram);
 
 			/* update vsram */
 			cur_vsram = MAX(next_vsram, MIN_VSRAM_VOLT);
@@ -383,13 +361,7 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 				target_vsram = MAX_VSRAM_VOLT;	/* to end the loop */
 			}
 
-			if (unlikely
-			    (!((cur_vsram >= cur_vproc)
-			       && (MAX_DIFF_VSRAM_VPROC >= (cur_vsram - cur_vproc))))) {
-				dump_opp_table(p);
-				cpufreq_err("@%s():%d, old_vsram=%d, old_vproc=%d, cur_vsram = %d, cur_vproc = %d\n",
-					__func__, __LINE__, old_vsram, old_vproc, cur_vsram, cur_vproc);
-			}
+			assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, old_vsram, old_vproc);
 
 			/* update vsram */
 			vsram_p->buck_ops->set_cur_volt(vsram_p, cur_vsram);
@@ -400,13 +372,7 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 			else
 				cur_vproc = next_vsram - NORMAL_DIFF_VRSAM_VPROC;
 
-			if (unlikely
-			    (!((cur_vsram >= cur_vproc)
-			       && (MAX_DIFF_VSRAM_VPROC >= (cur_vsram - cur_vproc))))) {
-				dump_opp_table(p);
-				cpufreq_err("@%s():%d, old_vsram=%d, old_vproc=%d, cur_vsram = %d, cur_vproc = %d\n",
-					__func__, __LINE__, old_vsram, old_vproc, cur_vsram, cur_vproc);
-			}
+			assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, old_vsram, old_vproc);
 
 			/* update vproc */
 			vproc_p->buck_ops->set_cur_volt(vproc_p, cur_vproc);
@@ -418,31 +384,25 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 			cpufreq_ver
 			    ("@%s(): UP --> old_vsram=%d, cur_vsram=%d, old_vproc=%d, cur_vproc=%d, delay=%d\n",
 			     __func__, old_vsram, cur_vsram, old_vproc, cur_vproc, delay_us);
-		} while (target_vsram > cur_vsram);
-		notify_cpu_volt_sampler(arch_get_cluster_id(p->cpu_id), volt, VOLT_UP, VOLT_POSTCHANGE);
+		} while (cur_vsram < target_vsram);
+		notify_cpu_volt_sampler(p->id, volt, VOLT_UP, VOLT_POSTCHANGE);
 	}
 	/* DOWN */
 	else if (volt < cur_vproc) {
 		unsigned int next_vproc;
 		unsigned int next_vsram = cur_vproc + NORMAL_DIFF_VRSAM_VPROC;
 
-		notify_cpu_volt_sampler(arch_get_cluster_id(p->cpu_id), volt, VOLT_DOWN, VOLT_PRECHANGE);
+		notify_cpu_volt_sampler(p->id, volt, VOLT_DOWN, VOLT_PRECHANGE);
 		do {
 			unsigned int old_vproc = cur_vproc;
 			unsigned int old_vsram = cur_vsram;
 
-			next_vproc = MAX((next_vsram - (MAX_DIFF_VSRAM_VPROC - 2500)), volt);
+			next_vproc = MAX(next_vsram - (MAX_DIFF_VSRAM_VPROC - 2500), volt);
 
 			/* update vproc */
 			cur_vproc = next_vproc;
 
-			if (unlikely
-			    (!((cur_vsram >= cur_vproc)
-			       && (MAX_DIFF_VSRAM_VPROC >= (cur_vsram - cur_vproc))))) {
-				dump_opp_table(p);
-				cpufreq_err("@%s():%d, old_vsram=%d, old_vproc=%d, cur_vsram = %d, cur_vproc = %d\n",
-					__func__, __LINE__, old_vsram, old_vproc, cur_vsram, cur_vproc);
-			}
+			assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, old_vsram, old_vproc);
 
 			/* update vproc */
 			vproc_p->buck_ops->set_cur_volt(vproc_p, cur_vproc);
@@ -452,13 +412,7 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 			cur_vsram = MAX(next_vsram, MIN_VSRAM_VOLT);
 			cur_vsram = MIN(cur_vsram, MAX_VSRAM_VOLT);
 
-			if (unlikely
-			    (!((cur_vsram >= cur_vproc)
-			       && (MAX_DIFF_VSRAM_VPROC >= (cur_vsram - cur_vproc))))) {
-				dump_opp_table(p);
-				cpufreq_err("@%s():%d, old_vsram=%d, old_vproc=%d, cur_vsram = %d, cur_vproc = %d\n",
-					__func__, __LINE__, old_vsram, old_vproc, cur_vsram, cur_vproc);
-			}
+			assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, old_vsram, old_vproc);
 
 			/* update vsram */
 			vsram_p->buck_ops->set_cur_volt(vsram_p, cur_vsram);
@@ -471,7 +425,7 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 			    ("@%s(): DOWN --> old_vsram=%d, cur_vsram=%d, old_vproc=%d, cur_vproc=%d, delay=%d\n",
 			     __func__, old_vsram, cur_vsram, old_vproc, cur_vproc, delay_us);
 		} while (cur_vproc > volt);
-		notify_cpu_volt_sampler(arch_get_cluster_id(p->cpu_id), volt, VOLT_DOWN, VOLT_POSTCHANGE);
+		notify_cpu_volt_sampler(p->id, volt, VOLT_DOWN, VOLT_POSTCHANGE);
 	}
 
 	vsram_p->cur_volt = cur_vsram;
@@ -486,9 +440,7 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 		cpu_dvfs_get_name(vsram_p), get_cur_volt_wrapper(p, vsram_p),
 		cpu_dvfs_get_name(vproc_p), get_cur_volt_wrapper(p, vproc_p));
 
-	FUNC_EXIT(FUNC_LV_LOCAL);
-
-	return ret;
+	return 0;
 }
 
 static int _cpufreq_set_locked_cci(unsigned int target_cci_khz, unsigned int target_cci_volt)
@@ -1585,10 +1537,6 @@ static int __init _mt_cpufreq_pdrv_init(void)
 
 	cluster_num = (unsigned int)arch_get_nr_clusters();
 
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	cluster_num = 3;
-#endif
-
 	for (i = 0; i < cluster_num; i++) {
 		arch_get_cluster_cpus(&cpu_mask, i);
 		cpu_dvfs[i].cpu_id = cpumask_first(&cpu_mask);
@@ -1639,4 +1587,3 @@ late_initcall(_mt_cpufreq_pdrv_init);
 module_exit(_mt_cpufreq_pdrv_exit);
 
 MODULE_DESCRIPTION("MediaTek CPU DVFS Driver v0.3");
-MODULE_LICENSE("GPL");
