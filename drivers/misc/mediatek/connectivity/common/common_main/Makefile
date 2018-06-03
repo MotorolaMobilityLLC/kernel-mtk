@@ -1,6 +1,7 @@
 subdir-ccflags-y += \
 	-I$(src)/linux/include \
 	-I$(src)/linux/pri/include \
+	-I$(src)/platform/include \
 	-I$(src)/core/include \
 	-I$(src)/include \
 	-I$(src)/../common_detect \

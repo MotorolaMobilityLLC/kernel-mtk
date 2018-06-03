@@ -119,9 +119,6 @@ struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
 /* struct clk *clk_infra_conn_main; */	/*ctrl infra_connmcu_bus clk */
 #endif /* !defined(CONFIG_MTK_LEGACY) */
 
-#ifdef CONFIG_OF
-struct CONSYS_BASE_ADDRESS conn_reg;
-#endif
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE
