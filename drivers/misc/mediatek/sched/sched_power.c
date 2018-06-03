@@ -154,7 +154,7 @@ int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv)
 }
 
 inline
-const int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
+int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
 {
 	int energy_cost = 0;
 	struct sched_domain *sd;
@@ -270,7 +270,7 @@ const int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
 }
 
 inline
-const int mtk_busy_power(int cpu, void *argu, int sd_level)
+int mtk_busy_power(int cpu, void *argu, int sd_level)
 {
 	struct energy_env *eenv = (struct energy_env *)argu;
 	struct sched_domain *sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
