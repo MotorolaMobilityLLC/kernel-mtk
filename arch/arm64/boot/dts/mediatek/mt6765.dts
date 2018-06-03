@@ -19,6 +19,7 @@
 #include <dt-bindings/memory/mt6765-larb-port.h>
 #include <dt-bindings/mmc/mt6765-msdc.h>
 #include <dt-bindings/clock/mt6765-clk.h>
+#include <dt-bindings/iio/mt635x-auxadc.h>
 #include <generated/autoconf.h>
 
 /dts-v1/;
@@ -576,10 +577,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,pwrap";
 		reg = <0 0x1000d000 0 0x1000>;
 		interrupts = <GIC_SPI 179 IRQ_TYPE_LEVEL_HIGH>;
-		main_pmic: pmic_irq {
-			compatible = "mediatek,pmic-eint";
-			interrupt-controller;
-		};
+	};
+
+	main_pmic: mt-pmic {
+		compatible = "mediatek,mt_pmic";
+		interrupt-controller;
 	};
 
 	scp@10500000 {

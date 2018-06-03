@@ -32,30 +32,12 @@
 #include <linux/uaccess.h>
 
 #include <mt-plat/upmu_common.h>
-#if defined(CONFIG_MTK_PMIC_WRAP_HAL)
-#include <mach/mtk_pmic_wrap.h>
-#endif
 #include "include/pmic_regulator.h"
 #include "include/regulator_codegen.h"
 
 /*****************************************************************************
  * Global variable
  ******************************************************************************/
-unsigned int g_pmic_pad_vbif28_vol = 1;
-
-unsigned int pmic_read_vbif28_volt(unsigned int *val)
-{
-	if (g_pmic_pad_vbif28_vol != 0x1) {
-		*val = g_pmic_pad_vbif28_vol;
-		return 1;
-	} else
-		return 0;
-}
-
-unsigned int pmic_get_vbif28_volt(void)
-{
-	return g_pmic_pad_vbif28_vol;
-}
 
 /*****************************************************************************
  * PMIC BUCK/LDO info for EM
@@ -395,9 +377,7 @@ static int pmic_regulator_init(struct platform_device *pdev)
 	struct device_node *np;
 	int ret = 0;
 
-	pdev->dev.of_node = of_find_compatible_node(NULL,
-					NULL, "mediatek,mt_pmic");
-	np = of_node_get(pdev->dev.of_node);
+	np = pdev->dev.of_node;
 	if (!np) {
 		pr_info("%s np = NULL\n", __func__);
 		return -EINVAL;

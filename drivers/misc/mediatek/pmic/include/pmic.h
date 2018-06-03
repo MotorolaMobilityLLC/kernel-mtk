@@ -65,8 +65,6 @@ extern int g_lowbat_int_bottom;
 extern int g_low_battery_level;
 /*----- BATTERY_OC_PROTECT -----*/
 extern int g_battery_oc_level;
-/* for update VBIF28 by AUXADC */
-extern unsigned int g_pmic_pad_vbif28_vol;
 /* for chip version used */
 extern unsigned int g_pmic_chip_version;
 
@@ -106,13 +104,11 @@ extern void pmic_auxadc_unlock(void);
 extern unsigned int bat_get_ui_percentage(void);
 extern signed int fgauge_read_v_by_d(int d_val);
 extern signed int fgauge_read_r_bat_by_v(signed int voltage);
-/*extern PMU_ChargerStruct BMT_status;*//*have defined in battery_common.h */
 extern void kpd_pwrkey_pmic_handler(unsigned long pressed);
 extern void kpd_pmic_rstkey_handler(unsigned long pressed);
 extern int is_mt6311_sw_ready(void);
 extern int is_mt6311_exist(void);
 extern int get_mt6311_i2c_ch_num(void);
-/*extern bool crystal_exist_status(void);*//*have defined in mtk_rtc.h */
 #if !defined CONFIG_MTK_LEGACY
 extern void pmu_drv_tool_customization_init(void);
 #endif
@@ -143,6 +139,7 @@ struct mtk_regulator_vosel {
 	unsigned int cur_sel; /*-- current vosel --*/
 	bool restore;
 };
+
 struct mtk_regulator {
 	struct regulator_desc desc;
 	struct regulator_init_data init_data;

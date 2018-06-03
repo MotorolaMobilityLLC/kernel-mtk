@@ -161,7 +161,6 @@ extern const PMU_FLAG_TABLE_ENTRY pmu_flags_table[];
 extern unsigned short is_battery_remove;
 extern unsigned short is_wdt_reboot_pmic;
 extern unsigned short is_wdt_reboot_pmic_chk;
-extern unsigned int g_pmic_pad_vbif28_vol;
 
 /*=============================================================================
  * PMIC IRQ ENUM define
