@@ -43,12 +43,8 @@
 #include "mtk_devinfo.h"
 
 static int usb20_phy_rev6;
-/* FIXME , CG */
-#if 0
 static struct clk *ssusb_clk;
-static struct clk *ssusb_clk_sck;
 static DEFINE_SPINLOCK(mu3phy_clock_lock);
-#endif
 bool sib_mode;
 static struct regulator *reg_vusb;
 static struct regulator *reg_va09;
@@ -88,8 +84,6 @@ static void VA09_operation(int op, bool force)
 	}
 }
 
-/* FIXME, DPIDLE */
-#if 0
 static int dpidle_status = USB_DPIDLE_ALLOWED;
 static DEFINE_SPINLOCK(usb_hal_dpidle_lock);
 #define DPIDLE_TIMER_INTERVAL_MS 30
@@ -128,12 +122,9 @@ static void issue_dpidle_timer(void)
 	timer->expires = jiffies + msecs_to_jiffies(DPIDLE_TIMER_INTERVAL_MS);
 	add_timer(timer);
 }
-#endif
 
 void usb_hal_dpidle_request(int mode)
 {
-	/* FIXME, DPIDLE */
-#if 0
 	unsigned long flags;
 
 #ifdef U3_COMPLIANCE
@@ -148,14 +139,11 @@ void usb_hal_dpidle_request(int mode)
 
 	switch (mode) {
 	case USB_DPIDLE_ALLOWED:
-		spm_resource_req(SPM_RESOURCE_USER_SSUSB, 0);
-		enable_dpidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
-		enable_soidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_RELEASE);
 		os_printk(K_INFO, "USB_DPIDLE_ALLOWED\n");
 		break;
 	case USB_DPIDLE_FORBIDDEN:
-		disable_dpidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
-		disable_soidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_ALL);
 		{
 			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
 
@@ -166,8 +154,6 @@ void usb_hal_dpidle_request(int mode)
 	case USB_DPIDLE_SRAM:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
 				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
-		enable_dpidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
-		enable_soidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
 		{
 			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
 			static int skip_cnt;
@@ -180,9 +166,8 @@ void usb_hal_dpidle_request(int mode)
 		}
 		break;
 	case USB_DPIDLE_TIMER:
-		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_CK_26M);
-		enable_dpidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
-		enable_soidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
+				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
 		os_printk(K_INFO, "USB_DPIDLE_TIMER\n");
 		issue_dpidle_timer();
 		break;
@@ -192,23 +177,15 @@ void usb_hal_dpidle_request(int mode)
 	}
 
 	spin_unlock_irqrestore(&usb_hal_dpidle_lock, flags);
-#endif
 }
 
 static bool usb_enable_clock(bool enable)
 {
-	/* FIXME , CG */
-#if 0
 	static int count;
 	unsigned long flags;
 
 	if (!ssusb_clk || IS_ERR(ssusb_clk)) {
 		pr_notice("clock not ready, ssusb_clk:%p", ssusb_clk);
-		return -1;
-	}
-
-	if ((mt_get_chip_sw_ver() >= CHIP_SW_VER_02) && (!ssusb_clk_sck || IS_ERR(ssusb_clk_sck))) {
-		pr_notice("clock not ready, ssusb_clk_sck:%p", ssusb_clk_sck);
 		return -1;
 	}
 
@@ -219,13 +196,7 @@ static bool usb_enable_clock(bool enable)
 		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 		if (clk_enable(ssusb_clk) != 0)
 			pr_notice("ssusb_ref_clk enable fail\n");
-		if ((mt_get_chip_sw_ver() >= CHIP_SW_VER_02) && clk_enable(ssusb_clk_sck) != 0)
-			pr_notice("ssusb_ref_clk_sck enable fail\n");
-
-
 	} else if (!enable && count == 1) {
-		if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
-			clk_disable(ssusb_clk_sck);
 		clk_disable(ssusb_clk);
 		usb_hal_dpidle_request(USB_DPIDLE_ALLOWED);
 	}
@@ -236,7 +207,6 @@ static bool usb_enable_clock(bool enable)
 		count = (count == 0) ? 0 : (count - 1);
 
 	spin_unlock_irqrestore(&mu3phy_clock_lock, flags);
-#endif
 
 	return 0;
 }
@@ -542,12 +512,12 @@ void usb_phy_sib_enable_switch(bool enable)
 	 * 0x0629 just likes a signature. Can't be removed.
 	 */
 	if (enable) {
-		U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif2_base+0x300), 0x62910008);
+		U3PhyWriteReg32((phys_addr_t) (uintptr_t) SSUSB_SIFSLV_CHIP_BASE, 0x62910008);
 		sib_mode = true;
 		if (!wake_lock_active(&sib_wakelock))
 			wake_lock(&sib_wakelock);
 	} else {
-		U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif2_base+0x300), 0x62910002);
+		U3PhyWriteReg32((phys_addr_t) (uintptr_t) SSUSB_SIFSLV_CHIP_BASE, 0x62910002);
 		sib_mode = false;
 		if (wake_lock_active(&sib_wakelock))
 			wake_unlock(&sib_wakelock);
@@ -567,7 +537,7 @@ bool usb_phy_sib_enable_switch_status(void)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB10_ON_OFST,
 			  RG_SSUSB_VUSB10_ON, 1);
 
-	reg = U3PhyReadReg32((phys_addr_t) (uintptr_t) (u3_sif2_base+0x300));
+	reg = U3PhyReadReg32((phys_addr_t) (uintptr_t) SSUSB_SIFSLV_CHIP_BASE);
 	if (reg == 0x62910008)
 		ret = true;
 	else
@@ -598,20 +568,20 @@ int usb2jtag_usb_init(void)
 	}
 
 	/* rg_usb20_gpio_ctl: bit[9] = 1 */
-	temp = readl(usb3_sif2_base + 0x820);
-	writel(temp | (1 << 9), usb3_sif2_base + 0x820);
+	temp = readl(usb3_sif2_base + 0x320);
+	writel(temp | (1 << 9), usb3_sif2_base + 0x320);
 
 	/* RG_USB20_BC11_SW_EN: bit[23] = 0 */
-	temp = readl(usb3_sif2_base + 0x818);
-	writel(temp & ~(1 << 23), usb3_sif2_base + 0x818);
+	temp = readl(usb3_sif2_base + 0x318);
+	writel(temp & ~(1 << 23), usb3_sif2_base + 0x318);
 
 	/* RG_USB20_BGR_EN: bit[0] = 1 */
-	temp = readl(usb3_sif2_base + 0x800);
-	writel(temp | (1 << 0), usb3_sif2_base + 0x800);
+	temp = readl(usb3_sif2_base + 0x300);
+	writel(temp | (1 << 0), usb3_sif2_base + 0x300);
 
 	/* rg_sifslv_mac_bandgap_en: bit[17] = 0 */
-	temp = readl(usb3_sif2_base + 0x808);
-	writel(temp & ~(1 << 17), usb3_sif2_base + 0x808);
+	temp = readl(usb3_sif2_base + 0x308);
+	writel(temp & ~(1 << 17), usb3_sif2_base + 0x308);
 
 	/* wait stable */
 	mdelay(1);
@@ -744,22 +714,22 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 
 	/* => USBPHY base address + 0x110 = 1 */
 	/* Enable free run clock */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x110)
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (SSUSB_SIFSLV_FM_BASE + 0x10)
 			  , RG_FRCK_EN_OFST, RG_FRCK_EN, 0x1);
 
 	/* => USBPHY base address + 0x100 = 0x04 */
 	/* Setting cyclecnt */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x100)
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (SSUSB_SIFSLV_FM_BASE)
 			  , RG_CYCLECNT_OFST, RG_CYCLECNT, 0x400);
 
 	/* => USBPHY base address + 0x100 = 0x01 */
 	/* Enable frequency meter */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x100)
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (SSUSB_SIFSLV_FM_BASE)
 			  , RG_FREQDET_EN_OFST, RG_FREQDET_EN, 0x1);
 
 	/* USB_FM_VLD, should be 1'b1, Read frequency valid */
 	os_printk(K_DEBUG, "Freq_Valid=(0x%08X)\n",
-		  U3PhyReadReg32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x110)));
+		  U3PhyReadReg32((phys_addr_t) (uintptr_t) (SSUSB_SIFSLV_FM_BASE + 0x10)));
 
 	mdelay(1);
 
@@ -767,7 +737,7 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 	for (i = 0; i < 10; i++) {
 		/* => USBPHY base address + 0x10C = FM_OUT */
 		/* Read result */
-		u4FmOut = U3PhyReadReg32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x10C));
+		u4FmOut = U3PhyReadReg32((phys_addr_t) (uintptr_t) (SSUSB_SIFSLV_FM_BASE + 0xC));
 		os_printk(K_DEBUG, "FM_OUT value: u4FmOut = %d(0x%08X)\n", u4FmOut, u4FmOut);
 
 		/* check if FM detection done */
@@ -781,12 +751,12 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 	}
 	/* => USBPHY base address + 0x100 = 0x00 */
 	/* Disable Frequency meter */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x100)
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (SSUSB_SIFSLV_FM_BASE)
 			  , RG_FREQDET_EN_OFST, RG_FREQDET_EN, 0);
 
 	/* => USBPHY base address + 0x110 = 0x00 */
 	/* Disable free run clock */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x110)
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (SSUSB_SIFSLV_FM_BASE + 0x10)
 			  , RG_FRCK_EN_OFST, RG_FRCK_EN, 0);
 
 	/* RG_USB20_HSTX_SRCTRL[2:0] = (1024/FM_OUT) * reference clock frequency * 0.028 */
@@ -1052,8 +1022,6 @@ void usb_phy_recover(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_SESSEND_OFST, RG_SESSEND, 0);
 
 	/* EFUSE related sequence */
-	/* FIXME, EFUSE */
-#if 0
 	{
 		u32 evalue;
 
@@ -1094,7 +1062,6 @@ void usb_phy_recover(unsigned int clk_on)
 		} else
 			os_printk(K_DEBUG, "!evalue\n");
 	}
-#endif
 
 	/* For host, disconnect threshold */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_DISCTH_OFST, RG_USB20_DISCTH, 0xF);
@@ -1267,40 +1234,16 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 		reg_va09 = NULL;
 	}
 
-	/* FIXME , CG */
-#if 0
-	struct clk *clk_tmp;
-
-	clk_tmp = devm_clk_get(&pdev->dev, "ssusb_clk");
-	if (IS_ERR(clk_tmp)) {
-		pr_notice("clk_tmp get ssusb_clk fail\n");
-		return PTR_ERR(clk_tmp);
-	}
-
-	ssusb_clk = clk_tmp;
-
-	retval = clk_prepare(ssusb_clk);
-	if (retval == 0)
-		pr_debug("ssusb_clk<%p> prepare done\n", ssusb_clk);
-	else
-		pr_notice("ssusb_clk prepare fail\n");
-
-	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02) {
-		clk_tmp = devm_clk_get(&pdev->dev, "ssusb_clk_sck");
-		if (IS_ERR(clk_tmp)) {
-			pr_notice("clk_tmp get ssusb_clk_sck fail\n");
-			return PTR_ERR(clk_tmp);
-		}
-
-		ssusb_clk_sck = clk_tmp;
-
-		retval = clk_prepare(ssusb_clk_sck);
+	ssusb_clk = devm_clk_get(&pdev->dev, "ssusb_clk");
+	if (IS_ERR(ssusb_clk)) {
+		pr_notice("ssusb_clk get ssusb_clk fail\n");
+	} else {
+		retval = clk_prepare(ssusb_clk);
 		if (retval == 0)
-			pr_debug("ssusb_clk_sck<%p> prepare done\n", ssusb_clk_sck);
+			pr_debug("ssusb_clk<%p> prepare done\n", ssusb_clk);
 		else
-			pr_notice("ssusb_clk_sck prepare fail\n");
+			pr_notice("ssusb_clk prepare fail\n");
 	}
-#endif
 
 	usb20_phy_rev6 = 1;
 	pr_notice("%s, usb20_phy_rev6 to %d\n", __func__, usb20_phy_rev6);
@@ -1310,13 +1253,8 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 
 static int mt_usb_dts_remove(struct platform_device *pdev)
 {
-	/* FIXME , CG */
-#if 0
-	if ((mt_get_chip_sw_ver() >= CHIP_SW_VER_02) && !IS_ERR(ssusb_clk_sck))
-		clk_unprepare(ssusb_clk_sck);
 	if (!IS_ERR(ssusb_clk))
 		clk_unprepare(ssusb_clk);
-#endif
 
 	/* POWER */
 	if (reg_vusb)

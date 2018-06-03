@@ -16,13 +16,15 @@
 #define __MTK_PROJECT_PHY__H
 
 extern void __iomem *u3_sif2_base;
-#define SSUSB_SIFSLV_SPLLC_BASE		(u3_sif2_base+0x000)
-#define SSUSB_SIFSLV_U2PHY_COM_BASE	(u3_sif2_base+0x800)
+#define SSUSB_SIFSLV_SPLLC_BASE		(u3_sif2_base+0x700)
+#define SSUSB_SIFSLV_U2PHY_COM_BASE	(u3_sif2_base+0x300)
 #define SSUSB_SIFSLV_U3PHYD_BASE	(u3_sif2_base+0x900)
-#define SSUSB_SIFSLV_U2PHY_COM_SIV_B_BASE  (u3_sif2_base+0x800)
+#define SSUSB_SIFSLV_U2PHY_COM_SIV_B_BASE  (u3_sif2_base+0x300)
 #define SSUSB_USB30_PHYA_SIV_B2_BASE	(u3_sif2_base+0xA00)
 #define SSUSB_USB30_PHYA_SIV_B_BASE	(u3_sif2_base+0xB00)
 #define SSUSB_SIFSLV_U3PHYA_DA_BASE	(u3_sif2_base+0xC00)
+#define SSUSB_SIFSLV_CHIP_BASE (u3_sif2_base+0x800)
+#define SSUSB_SIFSLV_FM_BASE (u3_sif2_base+0x100)
 
 /* referenecd from ssusb_USB20_PHY_regmap_com_T28HPM.xls */
 #define U3D_USBPHYACR0      (SSUSB_SIFSLV_U2PHY_COM_SIV_B_BASE+0x0000)	/*2:30 SIV_B */
