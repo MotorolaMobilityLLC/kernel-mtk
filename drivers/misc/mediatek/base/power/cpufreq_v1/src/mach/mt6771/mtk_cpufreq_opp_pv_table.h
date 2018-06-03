@@ -66,8 +66,8 @@ static unsigned int fyTbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	{ 546,  32, 2, 2 },
 	{ 481,  28, 2, 2 },
 	{ 403,  24, 2, 2 },
-	{ 338,  20, 2, 4 },
-	{ 273,  16, 2, 4 },
+	{ 338,  20, 4, 2 },
+	{ 273,  16, 4, 2 },
 };
 
 static unsigned int fy2Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
@@ -120,8 +120,8 @@ static unsigned int fy2Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	{ 546,  32, 2, 2 },
 	{ 481,  28, 2, 2 },
 	{ 403,  24, 2, 2 },
-	{ 338,  20, 2, 4 },
-	{ 273,  16, 2, 4 },
+	{ 338,  20, 4, 2 },
+	{ 273,  16, 4, 2 },
 };
 
 unsigned int *xrecordTbl[NUM_CPU_LEVEL] = {	/* v1.1 */
