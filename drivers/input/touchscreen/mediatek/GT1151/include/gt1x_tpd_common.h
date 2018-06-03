@@ -386,6 +386,7 @@ extern s32 gt1x_send_cfg(u8 *config, int cfg_len);
 extern void gt1x_select_addr(void);
 extern s32 gt1x_reset_guitar(void);
 extern void gt1x_power_reset(void);
+extern void gt1x_power_reset2(void);
 extern int gt1x_parse_config(char *filename, u8 *gt1x_config);
 extern s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *pen_dev);
 
