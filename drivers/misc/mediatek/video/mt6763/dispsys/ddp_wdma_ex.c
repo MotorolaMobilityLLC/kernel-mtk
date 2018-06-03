@@ -563,9 +563,9 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	frame_rate = p_golden_setting->fps;
 
 	if (is_primary_flag) {
-		fifo_off_drs_enter = 4;
-		fifo_off_drs_leave = 2;
-		fifo_off_dvfs = 4;
+		fifo_off_drs_enter = 0;
+		fifo_off_drs_leave = 0;
+		fifo_off_dvfs = 2;
 		res = p_golden_setting->dst_width * p_golden_setting->dst_height;
 	} else {
 		res = p_golden_setting->ext_dst_width *
