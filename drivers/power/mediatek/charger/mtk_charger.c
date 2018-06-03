@@ -1134,22 +1134,34 @@ static void charger_update_data(struct charger_manager *info)
 	info->battery_temperature = battery_meter_get_battery_temperature();
 }
 
+/* return false if vbus is over max_charger_voltage */
+static bool mtk_chg_check_vbus(struct charger_manager *info)
+{
+	int vchr = 0;
+
+	vchr = pmic_get_vbus() * 1000; /* uV */
+	if (vchr > info->data.max_charger_voltage) {
+		chr_err("%s: vbus(%d mV) > %d mV\n", __func__, vchr / 1000,
+			info->data.max_charger_voltage / 1000);
+		return false;
+	}
+
+	return true;
+}
+
 static void mtk_battery_notify_VCharger_check(struct charger_manager *info)
 {
 #if defined(BATTERY_NOTIFY_CASE_0001_VCHARGER)
 	int vchr = 0;
 
 	vchr = pmic_get_vbus() * 1000; /* uV */
-	if (vchr > info->data.max_charger_voltage) {
-		info->notify_code |= 0x0001;
-		chr_err("[BATTERY] charger_vol(%d) > %d mV\n",
-			vchr, info->data.max_charger_voltage);
-	} else {
+	if (vchr < info->data.max_charger_voltage)
 		info->notify_code &= ~(0x0001);
+	else {
+		info->notify_code |= 0x0001;
+		chr_err("[BATTERY] charger_vol(%d mV) > %d mV\n",
+			vchr / 1000, info->data.max_charger_voltage / 1000);
 	}
-	if (info->notify_code != 0x0000)
-		chr_err("[BATTERY] BATTERY_NOTIFY_CASE_0001_VCHARGER (%x)\n",
-			info->notify_code);
 #endif
 }
 
@@ -1279,6 +1291,11 @@ static void charger_check_status(struct charger_manager *info)
 		}
 	}
 
+	if (!mtk_chg_check_vbus(info)) {
+		charging = false;
+		goto stop_charging;
+	}
+
 	if (info->cmd_discharging)
 		charging = false;
 	if (info->safety_timeout)
@@ -1396,6 +1413,9 @@ static int charger_routine_thread(void *arg)
 
 		is_charger_on = mtk_is_charger_on(info);
 
+		if (info->charger_thread_polling == true)
+			mtk_charger_start_timer(info);
+
 		charger_update_data(info);
 		charger_check_status(info);
 		kpoc_power_off_check(info);
@@ -1405,9 +1425,6 @@ static int charger_routine_thread(void *arg)
 				info->do_algorithm(info);
 		}
 #endif
-		if (info->charger_thread_polling == true)
-			mtk_charger_start_timer(info);
-
 		spin_lock_irqsave(&info->slock, flags);
 		wake_unlock(&info->charger_wakelock);
 		spin_unlock_irqrestore(&info->slock, flags);
@@ -1447,6 +1464,11 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		mtk_dual_switch_charging_init(info);
 	}
 #endif
+
+	if (strcmp(info->algorithm_name, "LinearCharging") == 0) {
+		pr_info("%s: LinearCharging\n", __func__);
+		mtk_linear_charging_init(info);
+	}
 
 	info->enable_sw_safety_timer = of_property_read_bool(np, "enable_sw_safety_timer");
 	info->enable_sw_jeita = of_property_read_bool(np, "enable_sw_jeita");
@@ -1869,6 +1891,9 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 			BIF_CV_UNDER_THRESHOLD2);
 		info->data.bif_cv_under_threshold2 = BIF_CV_UNDER_THRESHOLD2;
 	}
+
+	info->data.power_path_support = of_property_read_bool(np, "power_path_support");
+	chr_debug("%s: power_path_support: %d\n", __func__, info->data.power_path_support);
 
 	chr_err("algorithm name:%s\n", info->algorithm_name);
 
