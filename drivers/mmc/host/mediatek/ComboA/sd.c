@@ -3413,6 +3413,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	int ret = 0;
 	int autok_err_type = -1;
 	unsigned int tune_smpl = 0;
+	u32 status;
 
 	msdc_ungate_clock(host);
 
@@ -3467,17 +3468,28 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		pr_info("%s: host->need_tune : 0x%x CMD<%d>\n", __func__,
 			host->need_tune, mrq->cmd->opcode);
 
-	pr_info("msdc%d saved device status: %x", host->id, host->device_status);
+	status = host->device_status;
 	/* clear device status */
 	host->device_status = 0x0;
+	pr_info("msdc%d saved device status: %x", host->id, status);
 
 	if (host->hw->host_function == MSDC_SDIO) {
 		host->need_tune = TUNE_NONE;
 		goto end;
 	}
 
-	/* force send stop command to turn device to transfer status */
-	if (msdc_stop_and_wait_busy(host))
+	if (host->hw->host_function == MSDC_SD) {
+		if (autok_err_type == CRC_STATUS_ERROR) {
+			pr_notice("%s: reset sdcard\n",
+				__func__);
+			(void)sdcard_hw_reset(mmc);
+			goto start_tune;
+		}
+	}
+
+	/* send stop command if device not in transfer state */
+	if (R1_CURRENT_STATE(status) != R1_STATE_TRAN &&
+		msdc_stop_and_wait_busy(host))
 		goto recovery;
 
 	/*  need low level protect tuning phase fail in re-tuning arch */
@@ -3490,6 +3502,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	}
 #endif
 
+start_tune:
 	msdc_pmic_force_vcore_pwm(true);
 
 	switch (mmc->ios.timing) {
