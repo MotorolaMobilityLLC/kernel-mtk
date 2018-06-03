@@ -437,6 +437,7 @@ unsigned int slp_get_wake_reason(void)
 {
 	return slp_wake_reason;
 }
+EXPORT_SYMBOL(slp_get_wake_reason);
 
 bool slp_will_infra_pdn(void)
 {
