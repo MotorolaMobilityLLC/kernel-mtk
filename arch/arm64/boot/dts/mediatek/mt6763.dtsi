@@ -2305,6 +2305,12 @@
 		reg = <0 0x1a055000 0 0x1000>;
 	};
 
+	tsf@1a0b1000 {
+		compatible = "mediatek,tsf";
+		reg = <0 0x1a0b1000 0 0x1000>;
+		clocks = <&camsys CAMSYS_CCU_CGPDN>;
+		clock-names = "TSF_CLK_CAM_CCU";
+	};
 	camsys_dfp@1a008000 {
 		compatible = "mediatek,camsys_dfp";
 		reg = <0 0x1a008000 0 0x1000>;
