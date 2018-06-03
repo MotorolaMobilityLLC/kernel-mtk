@@ -256,7 +256,7 @@ BOOLEAN p2pLaunch(P_GLUE_INFO_T prGlueInfo);
 
 BOOLEAN p2pRemove(P_GLUE_INFO_T prGlueInfo);
 
-VOID p2pSetMode(IN BOOLEAN fgIsAPMOde);
+VOID p2pSetMode(IN BOOLEAN fgIsAPMode);
 
 BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, BOOLEAN fgIsApMode);
 

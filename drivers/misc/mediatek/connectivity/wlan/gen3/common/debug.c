@@ -182,33 +182,33 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 VOID wlanPrintFwLog(PUINT_8 pucLogContent, UINT_16 u2MsgSize, UINT_8 ucMsgType)
 {
 #define OLD_KBUILD_MODNAME KBUILD_MODNAME
-#define OLD_DBGFUNC DBGFUNC
+#define OLD_LOG_FUNC LOG_FUNC
 #undef KBUILD_MODNAME
-#undef DBGFUNC
+#undef LOG_FUNC
 #define KBUILD_MODNAME "wlan_gen3_fw"
-#define DBGFUNC pr_debug
+#define LOG_FUNC pr_debug
 
 	if (u2MsgSize > DEBUG_MSG_SIZE_MAX - 1) {
-		DBGFUNC("Firmware Log Size(%d) is too large, type %d\n", u2MsgSize, ucMsgType);
+		LOG_FUNC("Firmware Log Size(%d) is too large, type %d\n", u2MsgSize, ucMsgType);
 		return;
 	}
 	switch (ucMsgType) {
 	case DEBUG_MSG_TYPE_ASCII:
 		pucLogContent[u2MsgSize] = '\0';
-		DBGFUNC("%s\n", pucLogContent);
+		LOG_FUNC("%s\n", pucLogContent);
 		break;
 	case DEBUG_MSG_TYPE_MEM8:
-		dumpMemory8(DBG_RX_IDX, DBG_CLASS_INFO, pucLogContent, u2MsgSize);
+		DBGLOG_MEM8(RX, INFO, pucLogContent, u2MsgSize);
 		break;
 	default:
-		dumpMemory32(DBG_RX_IDX, DBG_CLASS_INFO, (PUINT_32)pucLogContent, u2MsgSize);
+		DBGLOG_MEM32(RX, INFO, (PUINT_32)pucLogContent, u2MsgSize);
 		break;
 	}
 
 #undef KBUILD_MODNAME
-#undef DBGFUNC
+#undef LOG_FUNC
 #define KBUILD_MODNAME OLD_KBUILD_MODNAME
-#define DBGFUNC OLD_DBGFUNC
+#define LOG_FUNC OLD_LOG_FUNC
 #undef OLD_KBUILD_MODNAME
-#undef OLD_DBGFUNC
+#undef OLD_LOG_FUNC
 }

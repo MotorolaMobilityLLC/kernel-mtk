@@ -645,7 +645,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		wlanLoadManufactureData(prAdapter, prRegInfo);
 #endif
 
-#ifdef CONFIG_MTK_TC1_FEATURE	/* 1 //keep alive packet time change from default 30secs to 20secs. //TC01// */
+#if CFG_TC1_FEATURE	/* 1 //keep alive packet time change from default 30secs to 20secs. //TC01// */
 		{
 			CMD_SW_DBG_CTRL_T rCmdSwCtrl;
 

@@ -354,9 +354,6 @@ VOID swCtrlCmdCategory0(P_ADAPTER_T prAdapter, UINT_8 ucCate, UINT_8 ucAction, U
 	if (ucRead == SWCR_WRITE) {
 		switch (ucIndex) {
 		case SWCTRL_DEBUG:
-#if DBG
-			aucDebugModule[ucOpt0] = (UINT_8) g_au4SwCr[1];
-#endif
 			break;
 		case SWCTRL_WIFI_VAR:
 			break;
@@ -525,9 +522,6 @@ VOID swCtrlCmdCategory0(P_ADAPTER_T prAdapter, UINT_8 ucCate, UINT_8 ucAction, U
 	} else {
 		switch (ucIndex) {
 		case SWCTRL_DEBUG:
-#if DBG
-			g_au4SwCr[1] = aucDebugModule[ucOpt0];
-#endif
 			break;
 		case SWCTRL_MAGIC:
 			g_au4SwCr[1] = _SWCTRL_MAGIC;
