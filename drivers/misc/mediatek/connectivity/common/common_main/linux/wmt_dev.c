@@ -1217,11 +1217,11 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			pBuf[DYNAMIC_DUMP_BUF] = '\0';
 			WMT_INFO_FUNC("get dynamic dump data from property(%s)\n", pBuf);
 			memset(Buffer, 0, 10*11);
-			for (i = 0; i < DYNAMIC_DUMP_BUF; i++) {
+			for (i = 0; i < DYNAMIC_DUMP_BUF && j <= 9; i++) {
 				if (pBuf[i] == '/') {
 					k = 0;
 					j++;
-				} else if (isascii(pBuf[i])) {
+				} else if (isascii(pBuf[i]) && k <= 10) {
 					Buffer[j][k] = pBuf[i];
 					k++;
 				}
