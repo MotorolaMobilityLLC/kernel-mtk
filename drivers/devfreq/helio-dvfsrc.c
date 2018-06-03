@@ -129,7 +129,7 @@ static void dvfsrc_set_sw_bw(int type, int data)
 	}
 }
 
-static int commit_data(int type, int data)
+static int commit_data(int type, int data, int check_spmfw)
 {
 	int ret = 0;
 	int level = 16, opp = 16;
@@ -137,7 +137,8 @@ static int commit_data(int type, int data)
 	if (!is_dvfsrc_enabled())
 		return ret;
 
-	mtk_spmfw_init(1, 0);
+	if (check_spmfw)
+		mtk_spmfw_init(1, 0);
 
 	switch (type) {
 	case PM_QOS_MEMORY_BANDWIDTH:
@@ -158,7 +159,7 @@ static int commit_data(int type, int data)
 
 		dvfsrc_set_sw_req(level, EMI_SW_AP_MASK, EMI_SW_AP_SHIFT);
 
-		if (!is_opp_forced())
+		if (!is_opp_forced() && check_spmfw)
 			ret = wait_for_completion(get_cur_ddr_opp() <= opp,
 					DVFSRC_TIMEOUT);
 		break;
@@ -171,7 +172,7 @@ static int commit_data(int type, int data)
 
 		dvfsrc_set_sw_req(level, VCORE_SW_AP_MASK, VCORE_SW_AP_SHIFT);
 
-		if (!is_opp_forced())
+		if (!is_opp_forced() && check_spmfw)
 			ret = wait_for_completion(get_cur_vcore_opp() <= opp,
 					DVFSRC_TIMEOUT);
 		break;
@@ -185,7 +186,7 @@ static int commit_data(int type, int data)
 		dvfsrc_set_vcore_request(level,
 				VCORE_SCP_GEAR_MASK, VCORE_SCP_GEAR_SHIFT);
 
-		if (!is_opp_forced())
+		if (!is_opp_forced() && check_spmfw)
 			ret = wait_for_completion(get_cur_vcore_opp() <= opp,
 					DVFSRC_TIMEOUT);
 		break;
@@ -221,8 +222,10 @@ static int commit_data(int type, int data)
 			break;
 		}
 		dvfsrc_set_force_start(1 << level);
-		ret = wait_for_completion(get_cur_vcore_dvfs_opp() == opp,
-				DVFSRC_TIMEOUT);
+		if (check_spmfw)
+			ret = wait_for_completion(
+					get_cur_vcore_dvfs_opp() == opp,
+					DVFSRC_TIMEOUT);
 
 		dvfsrc_set_force_end();
 		break;
@@ -245,7 +248,7 @@ static void dvfsrc_restore(void)
 	int i;
 
 	for (i = PM_QOS_CPU_MEMORY_BANDWIDTH; i < PM_QOS_NUM_CLASSES; i++)
-		commit_data(i, pm_qos_request(i));
+		commit_data(i, pm_qos_request(i), 0);
 }
 
 void helio_dvfsrc_enable(int dvfsrc_en)
@@ -262,8 +265,8 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
 #endif
-	dvfsrc_restore();
 
+	dvfsrc_restore();
 	mtk_spmfw_init(dvfsrc_en, 1);
 }
 
@@ -469,8 +472,7 @@ void helio_dvfsrc_sram_reg_init(void)
 
 void dvfsrc_set_power_model_ddr_request(unsigned int level)
 {
-	dvfsrc_set_sw_req2(level,
-				EMI_SW_AP2_MASK, EMI_SW_AP2_SHIFT);
+	commit_data(PM_QOS_POWER_MODEL_DDR_REQUEST, level, 1);
 }
 
 static int helio_governor_event_handler(struct devfreq *devfreq,
@@ -497,7 +499,7 @@ static struct devfreq_governor helio_dvfsrc_governor = {
 static int pm_qos_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_MEMORY_BANDWIDTH, l);
+	commit_data(PM_QOS_MEMORY_BANDWIDTH, l, 1);
 
 	return NOTIFY_OK;
 }
@@ -505,7 +507,7 @@ static int pm_qos_memory_bw_notify(struct notifier_block *b,
 static int pm_qos_cpu_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_CPU_MEMORY_BANDWIDTH, l);
+	commit_data(PM_QOS_CPU_MEMORY_BANDWIDTH, l, 1);
 
 	return NOTIFY_OK;
 }
@@ -513,7 +515,7 @@ static int pm_qos_cpu_memory_bw_notify(struct notifier_block *b,
 static int pm_qos_gpu_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_GPU_MEMORY_BANDWIDTH, l);
+	commit_data(PM_QOS_GPU_MEMORY_BANDWIDTH, l, 1);
 
 	return NOTIFY_OK;
 }
@@ -521,7 +523,7 @@ static int pm_qos_gpu_memory_bw_notify(struct notifier_block *b,
 static int pm_qos_mm_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_MM_MEMORY_BANDWIDTH, l);
+	commit_data(PM_QOS_MM_MEMORY_BANDWIDTH, l, 1);
 
 	return NOTIFY_OK;
 }
@@ -529,7 +531,7 @@ static int pm_qos_mm_memory_bw_notify(struct notifier_block *b,
 static int pm_qos_other_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_OTHER_MEMORY_BANDWIDTH, l);
+	commit_data(PM_QOS_OTHER_MEMORY_BANDWIDTH, l, 1);
 
 	return NOTIFY_OK;
 }
@@ -537,7 +539,7 @@ static int pm_qos_other_memory_bw_notify(struct notifier_block *b,
 static int pm_qos_ddr_opp_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_DDR_OPP, l);
+	commit_data(PM_QOS_DDR_OPP, l, 1);
 
 	return NOTIFY_OK;
 }
@@ -545,7 +547,7 @@ static int pm_qos_ddr_opp_notify(struct notifier_block *b,
 static int pm_qos_vcore_opp_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_VCORE_OPP, l);
+	commit_data(PM_QOS_VCORE_OPP, l, 1);
 
 	return NOTIFY_OK;
 }
@@ -553,7 +555,7 @@ static int pm_qos_vcore_opp_notify(struct notifier_block *b,
 static int pm_qos_scp_vcore_request_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_SCP_VCORE_REQUEST, l);
+	commit_data(PM_QOS_SCP_VCORE_REQUEST, l, 1);
 
 	return NOTIFY_OK;
 }
@@ -561,7 +563,7 @@ static int pm_qos_scp_vcore_request_notify(struct notifier_block *b,
 static int pm_qos_power_model_ddr_request_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_POWER_MODEL_DDR_REQUEST, l);
+	commit_data(PM_QOS_POWER_MODEL_DDR_REQUEST, l, 1);
 
 	return NOTIFY_OK;
 }
@@ -569,7 +571,7 @@ static int pm_qos_power_model_ddr_request_notify(struct notifier_block *b,
 static int pm_qos_power_model_vcore_request_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_POWER_MODEL_VCORE_REQUEST, l);
+	commit_data(PM_QOS_POWER_MODEL_VCORE_REQUEST, l, 1);
 
 	return NOTIFY_OK;
 }
@@ -577,7 +579,7 @@ static int pm_qos_power_model_vcore_request_notify(struct notifier_block *b,
 static int pm_qos_vcore_dvfs_force_opp_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	commit_data(PM_QOS_VCORE_DVFS_FORCE_OPP, l);
+	commit_data(PM_QOS_VCORE_DVFS_FORCE_OPP, l, 1);
 
 	return NOTIFY_OK;
 }
