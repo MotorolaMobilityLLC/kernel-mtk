@@ -468,15 +468,13 @@ static void spm_set_sysclk_settle(void)
 	/* md_settle is keyword for suspend status */
 	spm_crit2("md_settle = %u, settle = %u\n", SPM_SYSCLK_SETTLE, settle);
 }
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) && \
-	!defined(CONFIG_MACH_MT6775)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 static int mt_power_gs_dump_suspend_count = 2;
 #endif
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if !defined(CONFIG_MACH_MT6759) \
-	&& !defined(CONFIG_MACH_MT6758) \
-	&& !defined(CONFIG_MACH_MT6775)
+	&& !defined(CONFIG_MACH_MT6758)
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
@@ -502,7 +500,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 #endif
 
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
-		mt_power_gs_dump_suspend(GS_PMIC);
+		mt_power_gs_dump_suspend(slp_dump_golden_setting_type);
 #endif
 
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)

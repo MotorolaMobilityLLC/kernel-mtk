@@ -18,6 +18,7 @@
 #include <linux/smp.h>
 #include <linux/delay.h>
 #include <linux/atomic.h>
+#include <mtk_sleep.h>
 #include <mtk_spm_idle.h>
 #include <mt-plat/upmu_common.h>
 #include "include/pmic_api_buck.h"
@@ -428,6 +429,7 @@ int __init spm_module_init(void)
 	spm_file = debugfs_create_file("spm_sleep_count", S_IRUGO, spm_dir, NULL, &spm_sleep_count_fops);
 	spm_file = debugfs_create_file("spm_last_wakeup_src", S_IRUGO, spm_dir, NULL, &spm_last_wakeup_src_fops);
 	spm_resource_req_debugfs_init(spm_dir);
+	spm_suspend_debugfs_init(spm_dir);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_PM
@@ -922,7 +924,6 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		}
 #endif
 		break;
-#if !defined(CONFIG_MACH_MT6775)
 	case SPM_SUSPEND_PREPARE:
 	case SPM_POST_SUSPEND:
 		spm_d->cmd = cmd;
@@ -967,7 +968,6 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		} else
 			ret = ack_data;
 		break;
-#endif
 	default:
 		pr_info("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
