@@ -143,7 +143,6 @@ struct disp_session_sync_info {
 	struct dprec_logger_event event_frame_cfg;
 };
 
-
 void mtkfb_init_fence(void);
 unsigned int mtkfb_query_buf_mva(unsigned int session_id, unsigned int layer_id,
 				 unsigned int idx);
@@ -172,9 +171,10 @@ void mtkfb_update_present_fence_ticket(unsigned int session_id, int fence,
 				       unsigned int ticket);
 void mtkfb_update_fence_trigger_ticket(unsigned int session_id, unsigned int layer_id,
 				       int fence, unsigned int ticket);
-void mtkfb_release_present_fence(unsigned int session_id, int fence);
 void mtkfb_release_layer_fence(unsigned int session_id, unsigned int layer_id);
-/* int mtkfb_get_present_fence(disp_present_fence_info *buf, unsigned int *fence_fd, unsigned int *idx); */
+int mtkfb_release_present_fence(unsigned int session_id, unsigned int fence_idx);
+void mtkfb_release_present_timeline_fence(unsigned int session_id);
+
 int mtkfb_fence_clean_thread(void *data);
 int mtkfb_fence_timeline_index(void);
 
@@ -203,7 +203,7 @@ int disp_sync_get_debug_info(char *stringbuf, int buf_len);
 int disp_sync_get_ovl_timeline_id(int layer_id);
 int disp_sync_get_output_timeline_id(void);
 int disp_sync_get_output_interface_timeline_id(void);
-int disp_sync_get_present_timeline_id(void);
+int disp_sync_get_present_timeline_id(unsigned int session_id);
 struct disp_session_sync_info *disp_get_session_sync_info_for_debug(unsigned int session_id);
 
 void mtkfb_release_session_fence(unsigned int session_id);

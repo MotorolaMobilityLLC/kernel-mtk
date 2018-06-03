@@ -348,38 +348,34 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 	void __user *argp = (void __user *)arg;
 	struct fence_data data;
 	struct disp_present_fence preset_fence_struct;
-	static unsigned int fence_idx;
 	struct disp_sync_info *layer_info = NULL;
-	int timeline_id = disp_sync_get_present_timeline_id();
+	int timeline_id;
 
 	if (copy_from_user(&preset_fence_struct, (void __user *)arg, sizeof(struct disp_present_fence))) {
 		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
 
-	if (DISP_SESSION_TYPE(preset_fence_struct.session_id) != DISP_SESSION_PRIMARY) {
-		DISPERR("non-primary ask for present fence! session=0x%x\n",
-			preset_fence_struct.session_id);
-		data.fence = MTK_FB_INVALID_FENCE_FD;
-		data.value = 0;
-	} else {
-		layer_info = _get_sync_info(preset_fence_struct.session_id, timeline_id);
-		if (layer_info == NULL) {
-			DISPERR("layer_info is null\n");
-			ret = -EFAULT;
-			return ret;
-		}
-		/* create fence */
-		data.fence = MTK_FB_INVALID_FENCE_FD;
-		data.value = ++fence_idx;
-		ret = fence_create(layer_info->timeline, &data);
-		if (ret != 0) {
-			DISPPR_ERROR("%s%d,layer%d create Fence Object failed!\n",
-				     disp_session_mode_spy(preset_fence_struct.session_id),
-				     DISP_SESSION_DEV(preset_fence_struct.session_id), timeline_id);
-			ret = -EFAULT;
-		}
+	timeline_id = disp_sync_get_present_timeline_id(preset_fence_struct.session_id);
+	layer_info = _get_sync_info(preset_fence_struct.session_id, timeline_id);
+	if (layer_info == NULL) {
+		DISPERR("layer_info is null\n");
+		ret = -EFAULT;
+		return ret;
 	}
+
+	mutex_lock(&layer_info->sync_lock);
+	/* create fence */
+	data.fence = MTK_FB_INVALID_FENCE_FD;
+	data.value = ++prepare_present_fence_idx[DISP_SESSION_TYPE(preset_fence_struct.session_id) - 1];
+	ret = fence_create(layer_info->timeline, &data);
+	if (ret != 0) {
+		DISPPR_ERROR("%s%d,layer%d create Fence Object failed!\n",
+			     disp_session_mode_spy(preset_fence_struct.session_id),
+			     DISP_SESSION_DEV(preset_fence_struct.session_id), timeline_id);
+		ret = -EFAULT;
+	}
+	mutex_unlock(&layer_info->sync_lock);
 
 	preset_fence_struct.present_fence_fd = data.fence;
 	preset_fence_struct.present_fence_index = data.value;
@@ -387,9 +383,11 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 		pr_err("[FB Driver]: copy_to_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
-	mmprofile_log_ex(ddp_mmp_get_events()->present_fence_get, MMPROFILE_FLAG_PULSE,
-		       preset_fence_struct.present_fence_fd,
-		       preset_fence_struct.present_fence_index);
+	if (DISP_SESSION_TYPE(preset_fence_struct.session_id) == DISP_SESSION_PRIMARY) {
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_present_fence_get, MMPROFILE_FLAG_PULSE,
+			       preset_fence_struct.present_fence_fd,
+			       preset_fence_struct.present_fence_index);
+	}
 	DISPPR_FENCE("P+/%s%d/L%d/id%d/fd%d\n",
 		     disp_session_mode_spy(preset_fence_struct.session_id),
 		     DISP_SESSION_DEV(preset_fence_struct.session_id), timeline_id,
@@ -413,7 +411,7 @@ int _ioctl_prepare_buffer(unsigned long arg, enum PREPARE_FENCE_TYPE type)
 	if (type == PREPARE_INPUT_FENCE)
 		DISPDBG("There is do nothing in input fence.\n");
 	else if (type == PREPARE_PRESENT_FENCE)
-		info.layer_id = disp_sync_get_present_timeline_id();
+		info.layer_id = disp_sync_get_present_timeline_id(info.session_id);
 	else if (type == PREPARE_OUTPUT_FENCE)
 		info.layer_id = disp_sync_get_output_timeline_id();
 	else

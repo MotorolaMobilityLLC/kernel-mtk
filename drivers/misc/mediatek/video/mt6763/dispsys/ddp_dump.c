@@ -22,6 +22,8 @@
 #include "ddp_rdma.h"
 #include "ddp_rdma_ex.h"
 #include "ddp_dsi.h"
+#include "ddp_dpi.h"
+
 
 static char *ddp_signal_0(int bit)
 {
@@ -1441,6 +1443,26 @@ static void dither_dump_analyze(enum DISP_MODULE_ENUM module)
 	     (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT + i * offset) >> 16) & 0x1fff);
 }
 
+static void dpi_dump_reg(enum DISP_MODULE_ENUM module)
+{
+	ddp_dpi_dump(module, 1);
+#if 0
+	int i;
+
+	DDPDUMP("-- Start dump DPI registers --\n");
+
+	for (i = 0; i <= 0x40; i += 4)
+		DDPDUMP("DPI+%04x: 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
+
+	for (i = 0x68; i <= 0x7C; i += 4)
+		DDPDUMP("DPI+%04x: 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
+
+	DDPDUMP("DPI+Color Bar    : 0x%04x : 0x%08x\n", 0xF00, INREG32(DISPSYS_DPI_BASE + 0xF00));
+	DDPDUMP("DPI MMSYS_CG_CON0: 0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DDPDUMP("DPI MMSYS_CG_CON1: 0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON1));
+#endif
+}
+
 static void dsi_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	DSI_DumpRegisters(module, 1);
@@ -1514,6 +1536,9 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 		break;
 	case DISP_MODULE_PWM0:
 		pwm_dump_reg(module);
+		break;
+	case DISP_MODULE_DPI:
+		dpi_dump_reg(module);
 		break;
 	case DISP_MODULE_DSI0:
 	case DISP_MODULE_DSI1:

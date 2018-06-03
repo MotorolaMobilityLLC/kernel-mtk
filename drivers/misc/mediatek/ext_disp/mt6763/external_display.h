@@ -131,6 +131,7 @@ int ext_disp_is_dim_layer(unsigned long mva);
 int extd_disp_get_interface(struct disp_lcm_handle **plcm);
 int ext_disp_get_max_layer(void);
 void extd_disp_drv_set_util_funcs(const struct EXTERNAL_DISPLAY_UTIL_FUNCS *util);
+void _ext_cmdq_insert_wait_frame_done_token(void *handle);
 
 extern int is_dim_layer(unsigned long mva);
 
@@ -146,7 +147,6 @@ extern char ext_mtkfb_lcm_name[];
 int external_display_setbacklight(unsigned int level);
 enum EXTD_POWER_STATE ext_disp_get_state(void);
 long ext_disp_wait_state(enum EXTD_POWER_STATE state, long timeout);
-void _ext_cmdq_insert_wait_frame_done_token_no_clear(void *handle);
 void *ext_disp_get_dpmgr_handle(void);
 enum EXTD_POWER_STATE ext_disp_set_state(enum EXTD_POWER_STATE new_state);
 

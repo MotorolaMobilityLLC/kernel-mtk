@@ -612,8 +612,6 @@ static int __init disp_probe_1(void)
 			ddp_set_module_va(i, va);
 		}
 
-		DPI_REG = (struct DPI_REGS *)ddp_get_module_va(DISP_MODULE_DPI);
-
 		status = of_address_to_resource(node, 0, &res);
 		if (status < 0) {
 			DDPERR("[ERR]DT, i=%d, module=%s, unable to get PA\n",
@@ -670,6 +668,8 @@ static int __init disp_probe_1(void)
 		}
 
 	}
+
+	DPI_REG = (struct DPI_REGS *)ddp_get_module_va(DISP_MODULE_DPI);
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
 #if 0

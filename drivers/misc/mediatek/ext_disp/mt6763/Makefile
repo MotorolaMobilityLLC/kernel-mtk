@@ -20,7 +20,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/ \
              -I$(srctree)/drivers/misc/mediatek/ext_disp/v2/  \
              -I$(srctree)/drivers/misc/mediatek/ext_disp/common/test/ \
              -I$(srctree)/drivers/misc/mediatek/gpu/ged/include \
-             -I$(srctree)/drivers/misc/mediatek/video/common \
              -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \

@@ -22,6 +22,8 @@ enum PREPARE_FENCE_TYPE {
 	PREPARE_PRESENT_FENCE
 };
 
+extern unsigned int prepare_present_fence_idx[];
+
 long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 int disp_create_session(struct disp_session_config *config);
 int disp_destroy_session(struct disp_session_config *config);

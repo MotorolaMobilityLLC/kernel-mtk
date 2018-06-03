@@ -1339,7 +1339,7 @@ int _ext_blocking_flush(void)
 
 	cmdqRecReset(handle);
 
-	_ext_cmdq_insert_wait_frame_done_token_no_clear(handle);
+	_ext_cmdq_insert_wait_frame_done_token(handle);
 
 	cmdqRecFlush(handle);
 	cmdqRecDestroy(handle);

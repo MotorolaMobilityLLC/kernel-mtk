@@ -52,6 +52,8 @@
 #include <linux/atomic.h>
 
 #include "extd_platform.h"
+#include "mtk_sync.h"
+
 
 
 struct wake_lock mem_wk_lock;
@@ -59,6 +61,7 @@ static int is_context_inited;
 static int ovl2mem_layer_num;
 static int ovl2mem_use_m4u = 1;
 static int ovl2mem_use_cmdq = CMDQ_ENABLE;
+static unsigned int gCurrentPresentFenceIndex = -1;
 
 struct ovl2mem_path_context {
 	int state;
@@ -261,14 +264,19 @@ static int ovl2mem_callback(unsigned int userdata)
 	int fence_idx = 0;
 	int layid = 0;
 
+	_ovl2mem_path_lock(__func__);
+
 	DISPDBG("ovl2mem_callback(%x), current tick=%d, release tick: %d\n", pgcl->session,
 		get_ovl2mem_ticket(), userdata);
+
+	/* Release input fence */
 	for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT); layid++) {
 		fence_idx = mtkfb_query_idx_by_ticket(pgcl->session, layid, userdata);
 		if (fence_idx >= 0)
 			mtkfb_release_fence(pgcl->session, layid, fence_idx);
 	}
 
+	/* Release output fence */
 	layid = disp_sync_get_output_timeline_id();
 	fence_idx = mtkfb_query_idx_by_ticket(pgcl->session, layid, userdata);
 	if (fence_idx >= 0) {
@@ -292,9 +300,16 @@ static int ovl2mem_callback(unsigned int userdata)
 			mtkfb_release_fence(pgcl->session, layid, fence_idx);
 	}
 
+	/* Release present fence */
+	if (gCurrentPresentFenceIndex != -1)
+		mtkfb_release_present_fence(pgcl->session, gCurrentPresentFenceIndex);
+
+	/* Update ticket */
 	atomic_set(&g_release_ticket, userdata);
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x05,
 			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
+
+	_ovl2mem_path_unlock(__func__);
 
 	return 0;
 }
@@ -608,6 +623,10 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 		dprec_done(output_event, 0, 0);
 	}
 
+	/* Update present fence index */
+	if (cfg->present_fence_idx != (unsigned int)-1)
+		gCurrentPresentFenceIndex = cfg->present_fence_idx;
+
 	if (trigger_event) {
 		/* to debug UI thread or MM thread */
 		unsigned int proc_name = (current->comm[0] << 24) |
@@ -687,6 +706,9 @@ int ovl2mem_deinit(void)
 
 	dpmgr_destroy_path_handle(pgcl->dpmgr_handle);
 	cmdqRecDestroy(pgcl->cmdq_handle_config);
+
+	/* Release present timeline fence */
+	mtkfb_release_present_timeline_fence(pgcl->session);
 
 	pgcl->dpmgr_handle = NULL;
 	pgcl->cmdq_handle_config = NULL;

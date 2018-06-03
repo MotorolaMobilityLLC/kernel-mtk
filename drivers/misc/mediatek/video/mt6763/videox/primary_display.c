@@ -111,7 +111,7 @@ atomic_t hwc_configing = ATOMIC_INIT(0);
 static unsigned int primary_session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 static struct disp_frm_seq_info frm_update_sequence[FRM_UPDATE_SEQ_CACHE_NUM];
 static unsigned int frm_update_cnt;
-static unsigned int gPresentFenceIndex;
+static unsigned int gCurrentPresentFenceIndex;
 unsigned int gTriggerDispMode; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 static unsigned int g_keep;
 static unsigned int g_skip;
@@ -3274,9 +3274,7 @@ static int _present_fence_release_worker_thread(void *data)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
 	while (1) {
-		int fence_increment = 0;
-		int timeline_id;
-		struct disp_sync_info *layer_info;
+		int ret = 0;
 
 		wait_event_interruptible(primary_display_present_fence_wq,
 					 atomic_read(&primary_display_present_fence_update_event));
@@ -3292,27 +3290,11 @@ static int _present_fence_release_worker_thread(void *data)
 			/* dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
 		}
 
-		timeline_id = disp_sync_get_present_timeline_id();
-
-		layer_info = _get_sync_info(primary_session_id, timeline_id);
-		if (layer_info == NULL) {
-			mmprofile_log_ex(ddp_mmp_get_events()->present_fence_release,
-				       MMPROFILE_FLAG_PULSE, -1, 0x5a5a5a5a);
-			continue;
-		}
-
 		_primary_path_lock(__func__);
-		fence_increment = gPresentFenceIndex - layer_info->timeline->value;
-		if (fence_increment > 0) {
-			timeline_inc(layer_info->timeline, fence_increment);
-			DISPPR_FENCE("R+/%s%d/L%d/id%d\n",
-				     disp_session_mode_spy(primary_session_id),
-				     DISP_SESSION_DEV(primary_session_id), timeline_id,
-				     gPresentFenceIndex);
-		}
-		mmprofile_log_ex(ddp_mmp_get_events()->present_fence_release, MMPROFILE_FLAG_PULSE,
-			       gPresentFenceIndex, fence_increment);
+		ret = mtkfb_release_present_fence(primary_session_id, gCurrentPresentFenceIndex);
 		_primary_path_unlock(__func__);
+		if (ret == -1)
+			continue;
 
 		if (atomic_read(&od_trigger_kick)) {
 			atomic_set(&od_trigger_kick, 0);
@@ -4678,7 +4660,7 @@ done:
 
 void primary_display_update_present_fence(unsigned int fence_idx)
 {
-	gPresentFenceIndex = fence_idx;
+	gCurrentPresentFenceIndex = fence_idx;
 	atomic_set(&primary_display_present_fence_update_event, 1);
 	if (disp_helper_get_option(DISP_OPT_PRESENT_FENCE))
 		wake_up_interruptible(&primary_display_present_fence_wq);

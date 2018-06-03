@@ -140,7 +140,7 @@ static int frame_wait_all_fence(struct disp_frame_cfg_t *cfg)
 	/* wait present fence */
 	if (cfg->prev_present_fence_struct) {
 		tmp = _do_wait_fence((struct sync_fence **)&cfg->prev_present_fence_struct,
-					session_id, disp_sync_get_present_timeline_id(),
+					session_id, disp_sync_get_present_timeline_id(session_id),
 					cfg->prev_present_fence_fd, present_fence_idx, present_fence_idx);
 
 		if (tmp) {
