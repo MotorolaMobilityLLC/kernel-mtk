@@ -1541,6 +1541,7 @@ static void cpuset_attach(struct cgroup_taskset *tset)
 	cs = css_cs(css);
 
 	mutex_lock(&cpuset_mutex);
+	get_online_cpus();
 
 	/* prepare for attach */
 	if (cs == &top_cpuset)
@@ -1560,6 +1561,7 @@ static void cpuset_attach(struct cgroup_taskset *tset)
 		cpuset_change_task_nodemask(task, &cpuset_attach_nodemask_to);
 		cpuset_update_task_spread_flag(cs, task);
 	}
+	put_online_cpus();
 
 	/*
 	 * Change mm for all threadgroup leaders. This is expensive and may
