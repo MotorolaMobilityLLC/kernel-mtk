@@ -78,8 +78,8 @@ extern unsigned int hps_get_bigtsk(unsigned int cluster_id);
 /* other policy settings */
 /* check these settings */
 #define	LCMOFF_MIN_FREQ		(598000)
-#define	PTPOD_FREQ_IDX_FY	(11)
-#define	PTPOD_FREQ_IDX_SB	(11)
+#define	PTPOD_FREQ_IDX_FY	(10)
+#define	PTPOD_FREQ_IDX_SB	(10)
 #define PWRTHRO_BAT_PER_MW	(600)
 #define PWRTHRO_BAT_OC_MW	(600)
 #define PWRTHRO_LOW_BAT_LV1_MW	(600)
