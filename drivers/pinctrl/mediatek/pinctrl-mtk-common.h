@@ -242,6 +242,7 @@ struct mtk_pinctrl {
 	struct device           *dev;
 	struct gpio_chip	*chip;
 	struct mtk_pinctrl_group *groups;
+	struct timer_list	*eint_timers;
 	unsigned int		ngroups;
 	const char              **grp_names;
 	struct pinctrl_dev      *pctl_dev;
@@ -249,6 +250,8 @@ struct mtk_pinctrl {
 	void __iomem		*eint_reg_base;
 	struct irq_domain	*domain;
 	int			*eint_dual_edges;
+	int			*eint_sw_debounce_en;
+	u32			*eint_sw_debounce;
 	u32                     *wake_mask;
 	u32                     *cur_mask;
 };
