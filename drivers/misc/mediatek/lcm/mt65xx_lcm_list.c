@@ -27,12 +27,6 @@ enum LCM_DSI_MODE_CON lcm_dsi_mode;
 #define LCD_HW_ID_STATUS_FLOAT 0x02
 #define LCD_HW_ID_STATUS_ERROR  0x03
 
-#ifdef BUILD_LK
-#define LCD_DEBUG(fmt)  dprintf(CRITICAL, fmt)
-#else
-#define LCD_DEBUG(fmt, args...)  pr_debug("[KERNEL/LCM]"fmt, ##args)
-#endif
-
 struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
@@ -1168,36 +1162,36 @@ unsigned char which_lcd_module_triple(void)
 	/*Solve Coverity scan warning : check return value*/
 	ret = mt_set_gpio_mode(GPIO_DISP_ID0_PIN, GPIO_MODE_00);
 	if (ret != 0)
-		LCD_DEBUG("ID0 mt_set_gpio_mode fail\n");
+		pr_debug("[LCM]ID0 mt_set_gpio_mode fail\n");
 
 	ret = mt_set_gpio_dir(GPIO_DISP_ID0_PIN, GPIO_DIR_IN);
 	if (ret != 0)
-		LCD_DEBUG("ID0 mt_set_gpio_dir fail\n");
+		pr_debug("[LCM]ID0 mt_set_gpio_dir fail\n");
 
 	ret = mt_set_gpio_pull_enable(GPIO_DISP_ID0_PIN, GPIO_PULL_ENABLE);
 	if (ret != 0)
-		LCD_DEBUG("ID0 mt_set_gpio_pull_enable fail\n");
+		pr_debug("[LCM]ID0 mt_set_gpio_pull_enable fail\n");
 
 	ret = mt_set_gpio_mode(GPIO_DISP_ID1_PIN, GPIO_MODE_00);
 	if (ret != 0)
-		LCD_DEBUG("ID1 mt_set_gpio_mode fail\n");
+		pr_debug("[LCM]ID1 mt_set_gpio_mode fail\n");
 
 	ret = mt_set_gpio_dir(GPIO_DISP_ID1_PIN, GPIO_DIR_IN);
 	if (ret != 0)
-		LCD_DEBUG("ID1 mt_set_gpio_dir fail\n");
+		pr_debug("[LCM]ID1 mt_set_gpio_dir fail\n");
 
 	ret = mt_set_gpio_pull_enable(GPIO_DISP_ID1_PIN, GPIO_PULL_ENABLE);
 	if (ret != 0)
-		LCD_DEBUG("ID1 mt_set_gpio_pull_enable fail\n");
+		pr_debug("[LCM]ID1 mt_set_gpio_pull_enable fail\n");
 
 	/*pull down ID0 ID1 PIN*/
 	ret = mt_set_gpio_pull_select(GPIO_DISP_ID0_PIN, GPIO_PULL_DOWN);
 	if (ret != 0)
-		LCD_DEBUG("ID0 mt_set_gpio_pull_select->Down fail\n");
+		pr_debug("[LCM]ID0 mt_set_gpio_pull_select->Down fail\n");
 
 	ret = mt_set_gpio_pull_select(GPIO_DISP_ID1_PIN, GPIO_PULL_DOWN);
 	if (ret != 0)
-		LCD_DEBUG("ID1 mt_set_gpio_pull_select->Down fail\n");
+		pr_debug("[LCM]ID1 mt_set_gpio_pull_select->Down fail\n");
 
 	/* delay 100ms , for discharging capacitance*/
 	mdelay(100);
@@ -1207,11 +1201,11 @@ unsigned char which_lcd_module_triple(void)
 	/* pull up ID0 ID1 PIN */
 	ret = mt_set_gpio_pull_select(GPIO_DISP_ID0_PIN, GPIO_PULL_UP);
 	if (ret != 0)
-		LCD_DEBUG("ID0 mt_set_gpio_pull_select->UP fail\n");
+		pr_debug("[LCM]ID0 mt_set_gpio_pull_select->UP fail\n");
 
 	ret = mt_set_gpio_pull_select(GPIO_DISP_ID1_PIN, GPIO_PULL_UP);
 	if (ret != 0)
-		LCD_DEBUG("ID1 mt_set_gpio_pull_select->UP fail\n");
+		pr_debug("[LCM]ID1 mt_set_gpio_pull_select->UP fail\n");
 
 	/* delay 100ms , for charging capacitance */
 	mdelay(100);
@@ -1224,7 +1218,7 @@ unsigned char which_lcd_module_triple(void)
 		ret = mt_set_gpio_pull_select(GPIO_DISP_ID0_PIN,
 			GPIO_PULL_DOWN);
 		if (ret != 0)
-			LCD_DEBUG("ID0 mt_set_gpio_pull_select->Down fail\n");
+			pr_debug("[LCM]ID0 mt_set_gpio_pull_select->Down fail\n");
 
 		lcd_id0 = LCD_HW_ID_STATUS_FLOAT;
 	} else if ((low_read0 == LCD_HW_ID_STATUS_LOW) &&
@@ -1233,7 +1227,7 @@ unsigned char which_lcd_module_triple(void)
 		ret = mt_set_gpio_pull_select(GPIO_DISP_ID0_PIN,
 			GPIO_PULL_DOWN);
 		if (ret != 0)
-			LCD_DEBUG("ID0 mt_set_gpio_pull_select->Down fail\n");
+			pr_debug("[LCM]ID0 mt_set_gpio_pull_select->Down fail\n");
 
 		lcd_id0 = LCD_HW_ID_STATUS_LOW;
 	} else if ((low_read0 == LCD_HW_ID_STATUS_HIGH) &&
@@ -1241,11 +1235,11 @@ unsigned char which_lcd_module_triple(void)
 		/*high status , pull up ID0 ,to prevent electric leakage*/
 		ret = mt_set_gpio_pull_select(GPIO_DISP_ID0_PIN, GPIO_PULL_UP);
 		if (ret != 0)
-			LCD_DEBUG("ID0 mt_set_gpio_pull_select->UP fail\n");
+			pr_debug("[LCM]ID0 mt_set_gpio_pull_select->UP fail\n");
 
 		lcd_id0 = LCD_HW_ID_STATUS_HIGH;
 	} else {
-		LCD_DEBUG(" Read LCD_id0 error\n");
+		pr_debug("[LCM] Read LCD_id0 error\n");
 		ret = mt_set_gpio_pull_select(GPIO_DISP_ID0_PIN,
 			GPIO_PULL_DISABLE);
 		if (ret != 0)
@@ -1260,7 +1254,7 @@ unsigned char which_lcd_module_triple(void)
 		ret = mt_set_gpio_pull_select(GPIO_DISP_ID1_PIN,
 			GPIO_PULL_DOWN);
 		if (ret != 0)
-			LCD_DEBUG("ID1 mt_set_gpio_pull_select->Down fail\n");
+			pr_debug("[LCM]ID1 mt_set_gpio_pull_select->Down fail\n");
 
 		lcd_id1 = LCD_HW_ID_STATUS_FLOAT;
 	} else if ((low_read1 == LCD_HW_ID_STATUS_LOW) &&
@@ -1269,7 +1263,7 @@ unsigned char which_lcd_module_triple(void)
 		ret = mt_set_gpio_pull_select(GPIO_DISP_ID1_PIN,
 			GPIO_PULL_DOWN);
 		if (ret != 0)
-			LCD_DEBUG("ID1 mt_set_gpio_pull_select->Down fail\n");
+			pr_debug("[LCM]ID1 mt_set_gpio_pull_select->Down fail\n");
 
 		lcd_id1 = LCD_HW_ID_STATUS_LOW;
 	} else if ((low_read1 == LCD_HW_ID_STATUS_HIGH) &&
@@ -1277,12 +1271,12 @@ unsigned char which_lcd_module_triple(void)
 		/*high status , pull up ID1 ,to prevent electric leakage*/
 		ret = mt_set_gpio_pull_select(GPIO_DISP_ID1_PIN, GPIO_PULL_UP);
 		if (ret != 0)
-			LCD_DEBUG("ID1 mt_set_gpio_pull_select->UP fail\n");
+			pr_debug("[LCM]ID1 mt_set_gpio_pull_select->UP fail\n");
 
 		lcd_id1 = LCD_HW_ID_STATUS_HIGH;
 	} else {
 
-		LCD_DEBUG(" Read LCD_id1 error\n");
+		pr_debug("[LCM] Read LCD_id1 error\n");
 		ret = mt_set_gpio_pull_select(GPIO_DISP_ID1_PIN,
 			GPIO_PULL_DISABLE);
 		if (ret != 0)
@@ -1294,15 +1288,15 @@ unsigned char which_lcd_module_triple(void)
 	dprintf(CRITICAL, "which_lcd_module_triple,lcd_id0:%d\n", lcd_id0);
 	dprintf(CRITICAL, "which_lcd_module_triple,lcd_id1:%d\n", lcd_id1);
 #else
-	LCD_DEBUG("which_lcd_module_triple,lcd_id0:%d\n", lcd_id0);
-	LCD_DEBUG("which_lcd_module_triple,lcd_id1:%d\n", lcd_id1);
+	pr_debug("[LCM]which_lcd_module_triple,lcd_id0:%d\n", lcd_id0);
+	pr_debug("[LCM]which_lcd_module_triple,lcd_id1:%d\n", lcd_id1);
 #endif
 	lcd_id =  lcd_id0 | (lcd_id1 << 2);
 
 #ifdef BUILD_LK
 	dprintf(CRITICAL, "which_lcd_module_triple,lcd_id:%d\n", lcd_id);
 #else
-	LCD_DEBUG("which_lcd_module_triple,lcd_id:%d\n", lcd_id);
+	pr_debug("[LCM]which_lcd_module_triple,lcd_id:%d\n", lcd_id);
 #endif
 
 	lcd_id_pins_value = lcd_id;

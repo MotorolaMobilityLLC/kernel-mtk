@@ -31,14 +31,14 @@ int display_bias_regulator_init(void)
 	disp_bias_pos = regulator_get(NULL, "dsv_pos");
 	if (IS_ERR(disp_bias_pos)) { /* handle return value */
 		ret = PTR_ERR(disp_bias_pos);
-		pr_err("get dsv_pos fail, error: %d\n", ret);
+		pr_info("get dsv_pos fail, error: %d\n", ret);
 		return ret;
 	}
 
 	disp_bias_neg = regulator_get(NULL, "dsv_neg");
 	if (IS_ERR(disp_bias_neg)) { /* handle return value */
 		ret = PTR_ERR(disp_bias_neg);
-		pr_err("get dsv_neg fail, error: %d\n", ret);
+		pr_info("get dsv_neg fail, error: %d\n", ret);
 		return ret;
 	}
 
@@ -58,36 +58,36 @@ int display_bias_enable(void)
 	/* set voltage with min & max*/
 	ret = regulator_set_voltage(disp_bias_pos, 5400000, 5400000);
 	if (ret < 0)
-		pr_err("set voltage disp_bias_pos fail, ret = %d\n", ret);
+		pr_info("set voltage disp_bias_pos fail, ret = %d\n", ret);
 	retval |= ret;
 
 	ret = regulator_set_voltage(disp_bias_neg, 5400000, 5400000);
 	if (ret < 0)
-		pr_err("set voltage disp_bias_neg fail, ret = %d\n", ret);
+		pr_info("set voltage disp_bias_neg fail, ret = %d\n", ret);
 	retval |= ret;
 
 #if 0
 	/* get voltage */
 	ret = mtk_regulator_get_voltage(&disp_bias_pos);
 	if (ret < 0)
-		pr_err("get voltage disp_bias_pos fail\n");
+		pr_info("get voltage disp_bias_pos fail\n");
 	pr_debug("pos voltage = %d\n", ret);
 
 	ret = mtk_regulator_get_voltage(&disp_bias_neg);
 	if (ret < 0)
-		pr_err("get voltage disp_bias_neg fail\n");
+		pr_info("get voltage disp_bias_neg fail\n");
 	pr_debug("neg voltage = %d\n", ret);
 #endif
 	/* enable regulator */
 	ret = regulator_enable(disp_bias_pos);
 	if (ret < 0)
-		pr_err("enable regulator disp_bias_pos fail, ret = %d\n",
+		pr_info("enable regulator disp_bias_pos fail, ret = %d\n",
 			ret);
 	retval |= ret;
 
 	ret = regulator_enable(disp_bias_neg);
 	if (ret < 0)
-		pr_err("enable regulator disp_bias_neg fail, ret = %d\n",
+		pr_info("enable regulator disp_bias_neg fail, ret = %d\n",
 			ret);
 	retval |= ret;
 
@@ -104,13 +104,13 @@ int display_bias_disable(void)
 
 	ret = regulator_disable(disp_bias_neg);
 	if (ret < 0)
-		pr_err("disable regulator disp_bias_neg fail, ret = %d\n",
+		pr_info("disable regulator disp_bias_neg fail, ret = %d\n",
 			ret);
 	retval |= ret;
 
 	ret = regulator_disable(disp_bias_pos);
 	if (ret < 0)
-		pr_err("disable regulator disp_bias_pos fail, ret = %d\n",
+		pr_info("disable regulator disp_bias_pos fail, ret = %d\n",
 			ret);
 	retval |= ret;
 

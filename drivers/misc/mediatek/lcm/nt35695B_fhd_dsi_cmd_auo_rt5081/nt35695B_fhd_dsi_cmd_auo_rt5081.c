@@ -31,14 +31,6 @@
 #include <asm/arch/mt_gpio.h>
 #endif
 
-#ifdef BUILD_LK
-#define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
-#define LCM_LOGD(string, args...)  dprintf(1, "[LK/"LOG_TAG"]"string, ##args)
-#else
-#define LCM_LOGI(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
-#define LCM_LOGD(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
-#endif
-
 #define LCM_ID_NT35695 (0xf5)
 
 static const unsigned int BL_MIN_LEVEL = 20;
@@ -1299,7 +1291,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.switch_mode = CMD_MODE;
 	lcm_dsi_mode = SYNC_PULSE_VDO_MODE;
 #endif
-	LCM_LOGI("lcm_get_params lcm_dsi_mode %d\n", lcm_dsi_mode);
+	pr_debug("[LCM]lcm_get_params lcm_dsi_mode %d\n", lcm_dsi_mode);
 	params->dsi.switch_mode_enable = 0;
 
 	/* DSI */
@@ -1401,13 +1393,13 @@ static void lcm_init(void)
 		size = sizeof(init_setting_cmd) /
 			sizeof(struct LCM_setting_table);
 		push_table(NULL, init_setting_cmd, size, 1);
-		LCM_LOGI("nt35695----tps6132----lcm mode = cmd mode :%d----\n",
+		pr_debug("[LCM]nt35695----tps6132----lcm mode = cmd mode :%d----\n",
 			lcm_dsi_mode);
 	} else {
 		size = sizeof(init_setting_vdo) /
 			sizeof(struct LCM_setting_table);
 		push_table(NULL, init_setting_vdo, size, 1);
-		LCM_LOGI("nt35695----tps6132----lcm mode = vdo mode :%d----\n",
+		pr_debug("[LCM]nt35695----tps6132----lcm mode = vdo mode :%d----\n",
 			lcm_dsi_mode);
 	}
 }
@@ -1481,7 +1473,7 @@ static unsigned int lcm_compare_id(void)
 	read_reg_v2(0xDB, buffer, 1);
 	version_id = buffer[0];
 
-	LCM_LOGI("%s,nt35695_id=0x%08x,version_id=0x%x\n",
+	pr_debug("[LCM]%s,nt35695_id=0x%08x,version_id=0x%x\n",
 		__func__, id, version_id);
 
 	if (id == LCM_ID_NT35695 && version_id == 0x81)
@@ -1506,10 +1498,10 @@ static unsigned int lcm_esd_check(void)
 	read_reg_v2(0x53, buffer, 1);
 
 	if (buffer[0] != 0x24) {
-		LCM_LOGI("[LCM ERROR] [0x53]=0x%02x\n", buffer[0]);
+		pr_debug("[LCM][LCM ERROR] [0x53]=0x%02x\n", buffer[0]);
 		return TRUE;
 	}
-	LCM_LOGI("[LCM NORMAL] [0x53]=0x%02x\n", buffer[0]);
+	pr_debug("[LCM][LCM NORMAL] [0x53]=0x%02x\n", buffer[0]);
 	return FALSE;
 #else
 	return FALSE;
@@ -1532,7 +1524,7 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 	unsigned int data_array[3];
 	unsigned char read_buf[4];
 
-	LCM_LOGI("ATA check size = 0x%x,0x%x,0x%x,0x%x\n",
+	pr_debug("[LCM]ATA check size = 0x%x,0x%x,0x%x,0x%x\n",
 		x0_MSB, x0_LSB, x1_MSB, x1_LSB);
 	data_array[0] = 0x0005390A;	/* HS packet */
 	data_array[1] = (x1_MSB << 24) | (x0_LSB << 16) | (x0_MSB << 8) | 0x2a;
@@ -1572,7 +1564,7 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 
-	LCM_LOGI("%s,nt35695 backlight: level = %d\n", __func__, level);
+	pr_debug("[LCM]%s,nt35695 backlight: level = %d\n", __func__, level);
 
 	bl_level[0].para_list[0] = level;
 
@@ -1636,7 +1628,7 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 	/* check height again */
 	if (y1 >= FRAME_HEIGHT || y1 + h > FRAME_HEIGHT) {
 		/* assign full screen roi */
-		pr_warn("%s calc error,assign full roi:y=%d,h=%d\n",
+		pr_info("%s calc error,assign full roi:y=%d,h=%d\n",
 			__func__, *y, *height);
 		y1 = 0;
 		h = FRAME_HEIGHT;
