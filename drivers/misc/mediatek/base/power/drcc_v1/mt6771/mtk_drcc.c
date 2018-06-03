@@ -73,6 +73,7 @@
 ************************************************/
 #define LOG_INTERVAL	(2LL * NSEC_PER_SEC)
 
+#ifdef TIME_LOG
 /* Get time stmp to known the time period */
 static unsigned long long drcc_pTime_us, drcc_cTime_us, drcc_diff_us;
 #ifdef __KERNEL__
@@ -89,6 +90,8 @@ static unsigned long long drcc_pTime_us, drcc_cTime_us, drcc_diff_us;
 		}							\
 	} while (0)
 #endif
+#endif
+
 /************************************************
  * bit operation
 ************************************************/
@@ -181,6 +184,7 @@ static void _mt_drcc_aee_init(void)
 }
 #endif
 
+#ifdef TIME_LOG
 static long long drcc_get_current_time_us(void)
 {
 	struct timeval t;
@@ -188,20 +192,25 @@ static long long drcc_get_current_time_us(void)
 	do_gettimeofday(&t);
 	return((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec);
 }
+#endif
 
 static void mtk_drcc_lock(unsigned long *flags)
 {
 #ifdef __KERNEL__
 	spin_lock_irqsave(&drcc_spinlock, *flags);
+	#ifdef TIME_LOG
 	drcc_pTime_us = drcc_get_current_time_us();
+	#endif
 #endif
 }
 
 static void mtk_drcc_unlock(unsigned long *flags)
 {
 #ifdef __KERNEL__
+	#ifdef TIME_LOG
 	drcc_cTime_us = drcc_get_current_time_us();
 	DRCC_IS_TOO_LONG();
+	#endif
 	spin_unlock_irqrestore(&drcc_spinlock, *flags);
 #endif
 }
