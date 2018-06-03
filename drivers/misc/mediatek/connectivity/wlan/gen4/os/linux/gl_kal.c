@@ -908,6 +908,9 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 
 	}
 #endif
+
+	StatsEnvRxTime2Host(prGlueInfo->prAdapter, prSkb);
+
 	prNetDev->last_rx = jiffies;
 #if CFG_SUPPORT_SNIFFER
 	if (prGlueInfo->fgIsEnableMon) {
@@ -1055,6 +1058,9 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 				} else
 					break;
 			}
+
+			StatsResetTxRx();
+
 			/* CFG80211 Indication */
 			if (eStatus == WLAN_STATUS_ROAM_OUT_FIND_BEST) {
 				cfg80211_roamed_bss(prGlueInfo->prDevHandler,
