@@ -43,6 +43,7 @@ enum dvfs_kicker {
 	KIR_PERF,
 	KIR_ANC_MD32,
 	KIR_EFUSE,
+	KIR_PASR,
 	KIR_SYSFS,
 	KIR_SYSFSX,
 	NUM_KICKER,

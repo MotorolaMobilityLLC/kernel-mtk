@@ -631,8 +631,8 @@ extern int spm_golden_setting_cmp(bool en);
 extern void __spm_set_pcm_wdt(int en);
 extern u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr);
 
-extern int dcs_get_channel_lock(void);
-extern void dcs_get_channel_unlock(void);
+extern int get_channel_lock(void);
+extern void get_channel_unlock(void);
 
 /**************************************
  * Macro and Inline

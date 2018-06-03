@@ -466,7 +466,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	/* soidle3_before_wfi(cpu); */
 
 	/* need be called before spin_lock_irqsave() */
-	ch = dcs_get_channel_lock();
+	ch = get_channel_lock();
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 
 	lockdep_off();
@@ -561,7 +561,7 @@ RESTORE_IRQ:
 	lockdep_on();
 
 	/* need be called after spin_unlock_irqrestore() */
-	dcs_get_channel_unlock();
+	get_channel_unlock();
 
 	/* stop APxGPT timer and enable caore0 local timer */
 	/* soidle3_after_wfi(cpu); */
