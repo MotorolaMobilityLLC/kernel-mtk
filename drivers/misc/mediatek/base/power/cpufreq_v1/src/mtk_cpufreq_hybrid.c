@@ -124,8 +124,9 @@ int Ripi_cpu_dvfs_thread(void *data)
 			}
 			/* cpufreq_para_lock(para_flags); */
 			if (p->mt_policy && p->mt_policy->governor) {
-				p->idx_opp_ppm_base = (int)((pwdata[1] >> (8*i)) & 0xF);
-				p->idx_opp_ppm_limit = (int)((pwdata[1] >> (8*i+4)) & 0xF);
+				p->idx_opp_ppm_base = (int)((pwdata[2] >> (8*i)) & 0xF);
+				p->idx_opp_ppm_limit = (int)((pwdata[1] >> (8*i)) & 0xF);
+
 				p->mt_policy->min =
 					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
 				p->mt_policy->max =
@@ -186,22 +187,6 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		}
 		break;
 
-	case IPI_SET_DVFS:
-		cdvfs_d->cmd = cmd;
-
-		cpufreq_ver("I'd like to set cluster%d to freq%d\n", cdvfs_d->u.set_fv.arg[0],
-			cdvfs_d->u.set_fv.arg[1]);
-
-		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
-		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
-		if (ret != 0) {
-			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
-		} else if (ack_data < 0) {
-			ret = ack_data;
-			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
-		}
-		break;
-
 	case IPI_SET_CLUSTER_ON_OFF:
 		cdvfs_d->cmd = cmd;
 
@@ -221,7 +206,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
-
+#if 0
 	case IPI_SET_FREQ:
 		cdvfs_d->cmd = cmd;
 
@@ -237,7 +222,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
-#if 0
+
 	case IPI_SET_VOLT:
 		cdvfs_d->cmd = cmd;
 
@@ -253,7 +238,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
-#endif
+
 	case IPI_GET_VOLT:
 		cdvfs_d->cmd = cmd;
 
@@ -290,22 +275,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		}
 		ret = ack_data;
 		break;
-
-	case IPI_PAUSE_DVFS:
-		cdvfs_d->cmd = cmd;
-
-		cpufreq_ver("I'd like to set dvfs enable status to %d\n", cdvfs_d->u.set_fv.arg[0]);
-
-		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
-		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
-		if (ret != 0) {
-			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
-		} else if (ack_data < 0) {
-			ret = ack_data;
-			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
-		}
-		break;
-
+#endif
 	case IPI_TURBO_MODE:
 		cdvfs_d->cmd = cmd;
 
@@ -373,9 +343,16 @@ static void __iomem *csram_base;
 #define REPO_GUARD0		0x55aa55aa
 #define REPO_GUARD1		0xaa55aa55
 
-#define OFFS_TURBO_EN	0x0328 /* 202 */
-#define OFFS_SCHED_EN	0x032c /* 203 */
-#define OFFS_STRESS_EN	0x0330 /* 204 */
+#define OFFS_TURBO_FREQ	0x02a4 /* 169 */
+#define OFFS_TURBO_VOLT	0x02a8 /* 170 */
+
+#define OFFS_TURBO_EN	0x02b8 /* 202 */
+#define OFFS_SCHED_EN	0x02bc /* 203 */
+#define OFFS_STRESS_EN	0x02c0 /* 204 */
+
+/* CUR Vproc */
+#define OFFS_CUR_VPROC_S  0x032c
+#define OFFS_CUR_VPROC_E  0x0350
 
 /* CUR idx */
 #define OFFS_CUR_FREQ_S  0x0354 /* 213 */
@@ -439,6 +416,13 @@ int cpuhvfs_set_init_ptbl(void)
 	return 0;
 }
 
+int cpuhvfs_set_turbo_scale(unsigned int turbo_f, unsigned int turbo_v)
+{
+	csram_write(OFFS_TURBO_FREQ, turbo_f);
+	csram_write(OFFS_TURBO_VOLT, turbo_v);
+
+	return 0;
+}
 
 int cpuhvfs_set_init_sta(void)
 {
@@ -498,7 +482,6 @@ int cpuhvfs_get_cur_dvfs_freq_idx(int cluster_id)
 
 int cpuhvfs_set_dvfs(int cluster_id, unsigned int freq)
 {
-#if 1
 	struct mt_cpu_dvfs *p;
 	unsigned int freq_idx = 0;
 
@@ -507,20 +490,18 @@ int cpuhvfs_set_dvfs(int cluster_id, unsigned int freq)
 	/* [3:0] freq_idx */
 	freq_idx = _search_available_freq_idx(p, freq, 0);
 	csram_write((OFFS_WFI_S + (cluster_id * 4)), freq_idx);
-#else
-	struct cdvfs_data cdvfs_d;
 
-	/* Cluster, Freq */
-	cdvfs_d.u.set_fv.arg[0] = cluster_id;
-	cdvfs_d.u.set_fv.arg[1] = freq;
-
-	dvfs_to_spm2_command(IPI_SET_DVFS, &cdvfs_d);
-#endif
 	return 0;
+}
+
+int cpuhvfs_get_cur_volt(int cluster_id)
+{
+	return csram_read(OFFS_CUR_VPROC_S + (cluster_id * 4));
 }
 
 int cpuhvfs_get_volt(int buck_id)
 {
+#if 0
 	struct cdvfs_data cdvfs_d;
 	int ret = 0;
 
@@ -530,10 +511,14 @@ int cpuhvfs_get_volt(int buck_id)
 	ret = dvfs_to_spm2_command(IPI_GET_VOLT, &cdvfs_d);
 
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 int cpuhvfs_get_freq(int pll_id)
 {
+#if 0
 	struct cdvfs_data cdvfs_d;
 	int ret = 0;
 
@@ -543,6 +528,9 @@ int cpuhvfs_get_freq(int pll_id)
 	ret = dvfs_to_spm2_command(IPI_GET_FREQ, &cdvfs_d);
 
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 int cpuhvfs_set_volt(int cluster_id, unsigned int volt)
@@ -560,13 +548,14 @@ int cpuhvfs_set_volt(int cluster_id, unsigned int volt)
 
 int cpuhvfs_set_freq(int cluster_id, unsigned int freq)
 {
+#if 0
 	struct cdvfs_data cdvfs_d;
 
 	cdvfs_d.u.set_fv.arg[0] = cluster_id;
 	cdvfs_d.u.set_fv.arg[1] = freq;
 
 	dvfs_to_spm2_command(IPI_SET_FREQ, &cdvfs_d);
-
+#endif
 	return 0;
 }
 
