@@ -127,7 +127,7 @@ int musb_host_dynamic_fifo = 1;
 int musb_host_dynamic_fifo_usage_msk;
 module_param(musb_fake_CDP, int, 0400);
 module_param(kernel_init_done, int, 0644);
-module_param(musb_host_dynamic_fifo, int, 0400);
+module_param(musb_host_dynamic_fifo, int, 0644);
 module_param(musb_host_dynamic_fifo_usage_msk, int, 0400);
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 int mtk_host_qmu_concurrent = 1;
@@ -161,7 +161,7 @@ int mtk_qmu_dbg_level = LOG_WARN;
 int mtk_qmu_max_gpd_num;
 int isoc_ep_end_idx = 3;
 int isoc_ep_gpd_count = 260;
-module_param(mtk_qmu_dbg_level, int, 0400);
+module_param(mtk_qmu_dbg_level, int, 0644);
 module_param(mtk_qmu_max_gpd_num, int, 0400);
 module_param(isoc_ep_end_idx, int, 0400);
 module_param(isoc_ep_gpd_count, int, 0400);
@@ -193,7 +193,7 @@ static const struct of_device_id apusb_of_ids[] = {
 
 module_param_named(speed, musb_speed, int, 0400);
 MODULE_PARM_DESC(debug, "USB speed configuration. default = 1, high speed");
-module_param_named(debug, musb_debug, int, 0400);
+module_param_named(debug, musb_debug, int, 0644);
 MODULE_PARM_DESC(debug, "Debug message level. Default = 0");
 module_param_named(debug_limit, musb_debug_limit, int, 0400);
 module_param_named(dbg_uart, musb_uart_debug, int, 0400);

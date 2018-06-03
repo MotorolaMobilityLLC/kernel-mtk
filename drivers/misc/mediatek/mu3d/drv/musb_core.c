@@ -140,7 +140,7 @@ struct musb *_mu3d_musb;
 int debug_level = K_WARNIN;
 int fake_CDP;
 
-module_param(debug_level, int, 0400);
+module_param(debug_level, int, 0644);
 MODULE_PARM_DESC(debug_level, "Debug Print Log Lvl");
 module_param(fake_CDP, int, 0400);
 

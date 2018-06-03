@@ -468,6 +468,8 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 					int offset = MUSB_EP_OFFSET(epnum,
 								    MUSB_TXCSR);
 					u16 txcsr;
+					struct timeval tv_before, tv_after;
+					u64 diff_ns = 0;
 
 					/*
 					 * The programming guide says that we
@@ -481,6 +483,19 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 					txcsr &= ~MUSB_TXCSR_DMAMODE;
 					txcsr |= MUSB_TXCSR_TXPKTRDY;
 					musb_writew(mbase, offset, txcsr);
+
+					/* doueble buffer may issue two interrupt, 1 for pkt to fifo, 1 for pkt sent */
+					/* , wait until pkt sent to merge two interrupt service */
+					txcsr = musb_readw(mbase, offset);
+					do_gettimeofday(&tv_before);
+					while ((txcsr & (MUSB_TXCSR_FIFONOTEMPTY | MUSB_TXCSR_TXPKTRDY))
+								&& (diff_ns < 1000000000)) {
+						txcsr = musb_readw(mbase, offset);
+						do_gettimeofday(&tv_after);
+						diff_ns = timeval_to_ns(&tv_after) - timeval_to_ns(&tv_before);
+					}
+					if (diff_ns >= 1000000000)
+						DBG(0, "ERROR !!!, packet still in FIFO, CSR %04x\n", txcsr);
 				} else
 					musb_dma_completion(musb, musb_channel->epnum,
 							musb_channel->transmit);
