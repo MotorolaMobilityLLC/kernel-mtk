@@ -2370,7 +2370,15 @@ static int autok_adjust_param(struct msdc_host *host,
 			     __func__, *value);
 			return -1;
 		}
-		if (host->base_top) {
+		if (((host->hw->host_function == MSDC_EMMC)
+		&& (platform_top_ctrl.msdc0_rx_enhance_top == 1)
+		&& host->base_top)
+		|| ((host->hw->host_function == MSDC_SD)
+		&& (platform_top_ctrl.msdc1_rx_enhance_top == 1)
+		&& host->base_top)
+		|| ((host->hw->host_function == MSDC_SDIO)
+		&& (platform_top_ctrl.msdc2_rx_enhance_top == 1)
+		&& host->base_top)) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (AUTOK_TOP_SDC_RX_ENHANCE_EN);
