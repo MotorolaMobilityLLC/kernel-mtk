@@ -328,7 +328,7 @@ static void devinfo_parse_dt(void)
 			hrid_magic_num_and_size = g_devinfo_data[EFUSE_FIXED_HRID_SIZE_INDEX];
 			hrid_magic_num = (hrid_magic_num_and_size & 0xFFFF0000);
 			hrid_tmp_size = (hrid_magic_num_and_size & 0x0000FFFF);
-			if ((hrid_magic_num & HRID_SIZE_MAGIC_NUM) == HRID_SIZE_MAGIC_NUM) {
+			if (hrid_magic_num == HRID_SIZE_MAGIC_NUM) {
 				if (hrid_tmp_size > HRID_MAX_ALLOWED_SIZE)
 					g_hrid_size = HRID_MAX_ALLOWED_SIZE;
 				else if (hrid_tmp_size < HRID_MIN_ALLOWED_SIZE)
