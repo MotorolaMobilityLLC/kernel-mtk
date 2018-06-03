@@ -421,6 +421,7 @@ static int mtk_dual_switch_charging_plug_out(struct charger_manager *info)
 {
 	mtk_pe20_set_is_cable_out_occur(info, true);
 	mtk_pe_set_is_cable_out_occur(info, true);
+	mtk_pdc_plugout(info);
 	/* charger_dev_enable(info->chg2_dev, false); */
 	charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
 	return 0;
