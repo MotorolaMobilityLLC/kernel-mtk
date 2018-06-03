@@ -122,6 +122,7 @@ static signed int ptim_lk_i;
 static int pl_bat_vol;
 static int pl_shutdown_time;
 static u32 pl_two_sec_reboot;
+static int g_plug_miss_count;
 
 
 static struct gtimer tracking_timer;
@@ -3806,6 +3807,7 @@ void fg_drv_update_hw_status(void)
 
 	fg_current_iavg = gauge_get_average_current(&valid);
 	fg_nafg_monitor();
+	gauge_dev_dump(gauge_dev, NULL);
 
 	bm_err("tmp:%d %d %d hcar2:%d lcar2:%d time:%d sw_iavg:%d %d %d nafg_m:%d %d %d\n",
 		tmp, fg_bat_tmp_int_ht, fg_bat_tmp_int_lt,
@@ -3958,18 +3960,26 @@ void fg_bat_plugout_int_handler(void)
 	if (fg_interrupt_check() == false)
 		return;
 
-	bm_err("[fg_bat_plugout_int_handler]\n");
-	battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
-	wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
-	battery_update(&battery_main);
-
-	fg_bat_temp_int_sw_check();
-
 	is_bat_exist = pmic_is_battery_exist();
-	bm_err("[fg_bat_plugout_int_handler] is_bat_exist %d\n", is_bat_exist);
+	bm_err("[fg_bat_plugout_int_handler] is_bat_exist %d miss:%d\n", is_bat_exist, g_plug_miss_count);
 
-	if (is_bat_exist == 0)
+	/* avoid battery plug status mismatch case*/
+	if (is_bat_exist == 1) {
+		g_plug_miss_count++;
+		gauge_dev_dump(gauge_dev, NULL);
+		aee_kernel_warning("GAUGE", "PLUGOUT error!\n");
+
+		if (g_plug_miss_count >= 5)
+			pmic_enable_interrupt(FG_BAT_PLUGOUT_NO, 0, "GM30");
+	}
+
+	if (is_bat_exist == 0) {
+		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
+		wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
+		battery_update(&battery_main);
+		fg_bat_temp_int_sw_check();
 		kernel_power_off();
+	}
 }
 
 static CHARGER_TYPE chr_type;

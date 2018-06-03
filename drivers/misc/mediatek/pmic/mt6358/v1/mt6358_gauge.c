@@ -2661,6 +2661,21 @@ static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
 			charger_zcv, pmic_rdy, pmic_zcv, pmic_in_zcv, swocv, zcv_from, zcv_tmp);
 	}
 
+
+	bm_err("[fg_bat_plugout_int_handler] %d %d %d %d %d 0x%x 0x%x %d %d %d %d\n",
+		pmic_get_register_value(PMIC_RG_BATON_EN),
+		pmic_get_register_value(PMIC_RG_QI_BATON_LT_EN),
+		pmic_get_register_value(PMIC_AD_BATON_HV),
+		pmic_get_register_value(PMIC_AD_BATON_UNDET_RAW),
+		pmic_get_register_value(PMIC_AD_BATON_UNDET),
+		pmic_get_register_value(PMIC_RG_HW_VTH1),
+		pmic_get_register_value(PMIC_RG_HW_VTH2),
+		pmic_get_register_value(PMIC_RG_HW_VTH_CTRL),
+		pmic_get_register_value(PMIC_RG_LDO_VBIF28_EN),
+		pmic_get_register_value(PMIC_DA_VBIF28_EN),
+		pmic_get_v_bat_temp()
+	);
+
 	bm_debug(
 		"1st chr_zcv:%d pmic_zcv:%d %d pmic_in_zcv:%d swocv:%d zcv_from:%d tmp:%d\n",
 		charger_zcv_1st, pmic_rdy_1st, pmic_zcv_1st, pmic_in_zcv_1st,
