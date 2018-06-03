@@ -1117,24 +1117,31 @@ static s32 cmdq_core_thread_exec_counter(const s32 thread)
 #endif
 }
 
-static void cmdq_core_dump_thread(s32 thread, const char *tag)
+static void cmdq_core_dump_thread(const struct cmdqRecStruct *handle,
+	s32 thread, const char *tag)
 {
 	u32 value[15] = { 0 };
 
-	CMDQ_LOG(
-		"[%s]===== Error Thread Status index:%d enabled:%d scenario:%d =====\n",
-		tag, thread, value[8], cmdq_ctx.thread[thread].scenario);
-	/* normal thread */
-	value[0] = CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread));
-	value[1] = CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread));
-	value[2] = CMDQ_REG_GET32(CMDQ_THR_WAIT_TOKEN(thread));
-	value[3] = cmdq_core_thread_exec_counter(thread);
-	value[4] = CMDQ_REG_GET32(CMDQ_THR_IRQ_STATUS(thread));
+	if (thread == CMDQ_INVALID_THREAD)
+		return;
+
+	if (handle && handle->timeout_info) {
+		value[0] = (u32)handle->timeout_info->curr_pc;
+		value[1] = (u32)handle->timeout_info->end_addr;
+		value[2] = handle->timeout_info->irq;
+	} else {
+		/* normal thread */
+		value[0] = CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread));
+		value[1] = CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread));
+		value[2] = CMDQ_REG_GET32(CMDQ_THR_IRQ_STATUS(thread));
+	}
+
+	value[3] = CMDQ_REG_GET32(CMDQ_THR_WAIT_TOKEN(thread));
+	value[4] = cmdq_core_thread_exec_counter(thread);
 	value[5] = CMDQ_REG_GET32(CMDQ_THR_INST_CYCLES(thread));
 	value[6] = CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(thread));
 	value[7] = CMDQ_REG_GET32(CMDQ_THR_IRQ_ENABLE(thread));
 	value[8] = CMDQ_REG_GET32(CMDQ_THR_ENABLE_TASK(thread));
-
 	value[9] = CMDQ_REG_GET32(CMDQ_THR_WARM_RESET(thread));
 	value[10] = CMDQ_REG_GET32(CMDQ_THR_SUSPEND_TASK(thread));
 	value[11] = CMDQ_REG_GET32(CMDQ_THR_SECURITY(thread));
@@ -1143,13 +1150,17 @@ static void cmdq_core_dump_thread(s32 thread, const char *tag)
 	value[14] = CMDQ_REG_GET32(CMDQ_THR_INST_THRESX(thread));
 
 	CMDQ_LOG(
+		"[%s]===== Error Thread Status index:%d enabled:%d scenario:%d =====\n",
+		tag, thread, value[8], cmdq_ctx.thread[thread].scenario);
+
+	CMDQ_LOG(
 		"[%s]PC:0x%08x End:0x%08x Wait Token:0x%08x IRQ:0x%x IRQ_EN:0x%x\n",
-		tag, value[0], value[1], value[2], value[4], value[7]);
+		tag, value[0], value[1], value[3], value[2], value[7]);
 	/* TODO: support cookie */
 #if 0
 	CMDQ_LOG(
 		"[%s]Curr Cookie:%d Wait Cookie:%d Next Cookie:%d Task Count:%d engineFlag:0x%llx\n",
-		tag, value[3], pThread->waitCookie, pThread->nextCookie,
+		tag, value[4], pThread->waitCookie, pThread->nextCookie,
 		pThread->taskCount, pThread->engineFlag);
 #endif
 	CMDQ_LOG(
@@ -1158,16 +1169,23 @@ static void cmdq_core_dump_thread(s32 thread, const char *tag)
 		value[11], value[12], value[13], value[14]);
 }
 
-static void cmdq_core_dump_trigger_loop_thread(const char *tag)
+void cmdq_core_dump_trigger_loop_thread(const char *tag)
 {
 	u32 i;
 	const u32 max_thread_count = cmdq_dev_get_thread_count();
+	u32 val;
+	const u32 evt_rdma = CMDQ_EVENT_DISP_RDMA0_EOF;
 
 	/* dump trigger loop */
 	for (i = 0; i < max_thread_count; i++) {
 		if (cmdq_ctx.thread[i].scenario != CMDQ_SCENARIO_TRIGGER_LOOP)
 			continue;
-		cmdq_core_dump_thread(i, tag);
+		cmdq_core_dump_thread(NULL, i, tag);
+		cmdq_core_dump_pc(NULL, i, tag);
+		val = cmdqCoreGetEvent(evt_rdma);
+		CMDQ_LOG("[%s]CMDQ_SYNC_TOKEN_VAL of %s is %d\n",
+			tag, cmdq_core_get_event_name_enum(evt_rdma),
+			val);
 		break;
 	}
 }
@@ -1844,7 +1862,7 @@ static void cmdq_delay_thread_deinit(void)
 
 void cmdq_delay_dump_thread(bool dump_sram)
 {
-	cmdq_core_dump_thread(CMDQ_DELAY_THREAD_ID, "INFO");
+	cmdq_core_dump_thread(NULL, CMDQ_DELAY_THREAD_ID, "INFO");
 	CMDQ_LOG(
 		"==Delay Thread Task, size:%u started:%d pa:%pa va:0x%p sram:%u\n",
 		cmdq_delay_thd_cmd.buffer_size, cmdq_delay_thd_started,
@@ -2972,13 +2990,13 @@ static void cmdq_core_dump_status(
 	const struct cmdqRecStruct *handle, const char *tag)
 {
 	s32 coreExecThread = CMDQ_INVALID_THREAD;
-	struct cmdq_timeout_info *timeout_info = NULL;
 	u32 value[6] = { 0 };
+	u32 irq;
 
-	if (!handle || !handle->timeout_info)
-		return;
-
-	timeout_info = handle->timeout_info;
+	if (handle && handle->timeout_info)
+		irq = handle->timeout_info->irq;
+	else
+		irq = CMDQ_REG_GET32(CMDQ_CURR_IRQ_STATUS);
 
 	value[0] = CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR);
 	value[1] = CMDQ_REG_GET32(CMDQ_THR_EXEC_CYCLES);
@@ -2990,8 +3008,7 @@ static void cmdq_core_dump_status(
 
 	CMDQ_LOG(
 		"[%s]IRQ:0x%08x Execing:%d Thread:%d CURR_LOADED_THR:0x%08x THR_EXEC_CYCLES:0x%08x\n",
-		tag, timeout_info->irq,
-		 (0x80000000 & value[0]) ? 1 : 0,
+		tag, irq, (0x80000000 & value[0]) ? 1 : 0,
 		 coreExecThread, value[0], value[1]);
 	CMDQ_LOG(
 		"[%s]THR_TIMER:0x%x BUS_CTRL:0x%x DEBUG: 0x%x 0x%x 0x%x 0x%x\n",
@@ -3042,29 +3059,20 @@ static void cmdq_core_dump_handle(const struct cmdqRecStruct *handle,
 			handle->reg_count);
 }
 
-static u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
+u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
 	int thread, const char *tag)
 {
-	u32 *pcVA = NULL, pcPA = 0;
+	u32 *pcVA = NULL;
 	u32 insts[2] = { 0 };
 	char parsedInstruction[128] = { 0 };
-	dma_addr_t curr_pc = 0, pa_base = 0;
+	dma_addr_t curr_pc;
 	u32 tmp_insts[2] = { 0 };
-	struct cmdq_timeout_info *timeout_info = NULL;
-	struct cmdq_thread_task_info *timeout_task = NULL;
 
-	if (!handle || !handle->timeout_info ||
-		!handle->timeout_info->timeout_task)
-		return NULL;
-
-	timeout_info = handle->timeout_info;
-	timeout_task = timeout_info->timeout_task;
-
-	CMDQ_MSG("%s handle:0x%p info:0x%p task:0x%p\n",
-		__func__, handle, timeout_info, timeout_task);
-
-	curr_pc = timeout_info->curr_pc;
-	pa_base = timeout_task->pa_base;
+	if (handle && handle->timeout_info)
+		curr_pc = handle->timeout_info->curr_pc;
+	else
+		curr_pc = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(
+			CMDQ_THR_CURR_ADDR(thread)));
 
 	pcVA = cmdq_core_get_pc_va(curr_pc, handle);
 
@@ -3090,14 +3098,14 @@ static u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
 			CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, eventID);
 			regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
 			CMDQ_LOG(
-				"[%s]Thread %d PC:0x%p(0x%08x) 0x%08x:0x%08x => %s value:%d",
-				tag, thread, pcVA, pcPA,
+				"[%s]Thread %d PC:0x%p(%pa) 0x%08x:0x%08x => %s value:%d",
+				tag, thread, pcVA, &curr_pc,
 				insts[0], insts[1],
 				parsedInstruction, regValue);
 		} else {
 			CMDQ_LOG(
-				"[%s]Thread %d PC:0x%p(0x%08x), 0x%08x:0x%08x => %s",
-				tag, thread, pcVA, pcPA,
+				"[%s]Thread %d PC:0x%p(%pa), 0x%08x:0x%08x => %s",
+				tag, thread, pcVA, &curr_pc,
 				insts[0], insts[1], parsedInstruction);
 		}
 	} else {
@@ -3110,69 +3118,13 @@ static u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
 	return pcVA;
 }
 
-void cmdq_core_dump_thread_with_handle(const struct cmdqRecStruct *handle,
-	s32 thread, const char *tag)
-{
-	struct cmdq_timeout_info *timeout_info = NULL;
-	struct cmdq_thread_task_info *timeout_task = NULL;
-	u32 value[15] = { 0 };
-	u32 wait_cookie = 0, next_cookie = 0;
-
-	/* TODO: design cookie mechanism */
-#if 0
-	cur_thread = &cmdq_ctx.thread[thread];
-	wait_cookie = cur_thread->waitCookie;
-	next_cookie = cur_thread->nextCookie;
-#endif
-
-	if (!handle || thread == CMDQ_INVALID_THREAD ||
-		!handle->timeout_info || !handle->timeout_info->timeout_task)
-		return;
-
-	timeout_info = handle->timeout_info;
-	timeout_task = timeout_info->timeout_task;
-
-	CMDQ_LOG("[%s]== [CMDQ] Error Thread Status index:%d enabled:%d ==\n",
-		tag, thread, value[8]);
-	/* normal thread */
-	value[0] = (u32)timeout_info->curr_pc;
-	value[1] = (u32)timeout_info->end_addr;
-	value[2] = CMDQ_REG_GET32(CMDQ_THR_WAIT_TOKEN(thread));
-	value[3] = cmdq_core_thread_exec_counter(thread);
-	value[4] = timeout_info->irq;
-	value[5] = CMDQ_REG_GET32(CMDQ_THR_INST_CYCLES(thread));
-	value[6] = CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(thread));
-	value[7] = CMDQ_REG_GET32(CMDQ_THR_IRQ_ENABLE(thread));
-	value[8] = CMDQ_REG_GET32(CMDQ_THR_ENABLE_TASK(thread));
-
-	value[9] = CMDQ_REG_GET32(CMDQ_THR_WARM_RESET(thread));
-	value[10] = CMDQ_REG_GET32(CMDQ_THR_SUSPEND_TASK(thread));
-	value[11] = CMDQ_REG_GET32(CMDQ_THR_SECURITY(thread));
-	value[12] = CMDQ_REG_GET32(CMDQ_THR_CFG(thread));
-	value[13] = CMDQ_REG_GET32(CMDQ_THR_PREFETCH(thread));
-	value[14] = CMDQ_REG_GET32(CMDQ_THR_INST_THRESX(thread));
-
-	CMDQ_LOG(
-		"[%s]PC:0x%08x End:0x%08x Wait Token:0x%08x IRQ:0x%x IRQ_EN:0x%x\n",
-		tag, value[0], value[1], value[2], value[4], value[7]);
-	CMDQ_LOG(
-		"[%s]Curr Cookie:%d Wait Cookie:%d Next Cookie:%d Task Count:%d engineFlag:0x%llx\n",
-		tag, value[3], wait_cookie, next_cookie,
-		timeout_info ? timeout_info->task_num : 0,
-		handle->engineFlag);
-	CMDQ_LOG(
-		"[%s]Timeout Cycle:%d Status:0x%x reset:0x%x Suspend:%d sec:%d cfg:%d prefetch:%d thrsex:%d\n",
-		tag, value[5], value[6], value[9], value[10],
-		value[11], value[12], value[13], value[14]);
-}
-
 static void cmdq_core_dump_error_handle(const struct cmdqRecStruct *handle,
 	u32 thread, u32 **pc_out)
 {
 	u32 *hwPC = NULL;
 	u64 printEngineFlag = 0;
 
-	cmdq_core_dump_thread_with_handle(handle, thread, "ERR");
+	cmdq_core_dump_thread(handle, thread, "ERR");
 
 	if (handle) {
 		CMDQ_ERR("============ [CMDQ] Error Thread PC ============\n");
@@ -3213,7 +3165,6 @@ static void cmdq_core_attach_cmdq_error(
 	s32 index = 0;
 	struct EngineStruct *engines = cmdq_mdp_get_engines();
 
-	CMDQ_LOG("%s handle:0x%p thread:%d\n", __func__, handle, thread);
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->warning, MMPROFILE_FLAG_PULSE,
 		((unsigned long)handle), thread);
 
@@ -3451,8 +3402,6 @@ static void cmdq_core_attach_error_handle_detail(
 	u32 *pc = NULL;
 	struct cmdq_ng_handle_info nginfo = {0};
 	bool detail_log = false;
-
-	CMDQ_LOG("%s enter handle:0x%p thread:%d\n", __func__, handle, thread);
 
 	if (!handle) {
 		CMDQ_ERR("attach error failed since handle is NULL");
@@ -4843,7 +4792,7 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 			count, handle, handle->pkt, handle->thread);
 		cmdq_core_dump_status(handle, "INFO");
 		cmdq_core_dump_pc(handle, handle->thread, "INFO");
-		cmdq_core_dump_thread(handle->thread, "INFO");
+		cmdq_core_dump_thread(handle, handle->thread, "INFO");
 
 		if (count == 0) {
 			cmdq_core_dump_trigger_loop_thread("INFO");
