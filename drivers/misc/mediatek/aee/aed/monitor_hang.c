@@ -332,10 +332,28 @@ static void get_kernel_bt(struct task_struct *tsk)
 		Log2HangInfo("<%lx> %pS\n", (long)trace.entries[i], (void *)trace.entries[i]);
 }
 
+static long long nsec_high(unsigned long long nsec)
+{
+	if ((long long)nsec < 0) {
+		nsec = -nsec;
+		do_div(nsec, 1000000);
+		return -nsec;
+	}
+	do_div(nsec, 1000000);
+
+	return nsec;
+}
+
+static unsigned long nsec_low(unsigned long long nsec)
+{
+	if ((long long)nsec < 0)
+		nsec = -nsec;
+
+	return do_div(nsec, 1000000);
+}
 
 void sched_show_task_local(struct task_struct *p)
 {
-	unsigned long free = -1;
 	int ppid;
 	unsigned state;
 	char stat_nam[] = TASK_STATE_TO_CHAR_STR;
@@ -354,19 +372,16 @@ void sched_show_task_local(struct task_struct *p)
 	else
 		LOGV(" %016lx ", thread_saved_pc(p));
 #endif
-#ifdef CONFIG_DEBUG_STACK_USAGE
-	free = stack_not_used(p);
-#endif
 	rcu_read_lock();
 	ppid = task_pid_nr(rcu_dereference(p->real_parent));
 	pid = task_pid_nr(p);
 	rcu_read_unlock();
-	LOGV("%5lu %5d %6d 0x%08lx\n", free,
-	     task_pid_nr(p), ppid, (unsigned long)task_thread_info(p)->flags);
+	LOGV("%lld.%06ld %5d %lld 0x%08lx\n", nsec_high(p->se.vruntime), nsec_low(p->se.vruntime),
+			 task_pid_nr(p), (long long)(p->nvcsw + p->nivcsw), (unsigned long)task_thread_info(p)->flags);
 
 	Log2HangInfo("%-15.15s %c ", p->comm, state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-	Log2HangInfo("%5lu %d %d x%lx\n", free, task_pid_nr(p), ppid,
-		     (unsigned long)task_thread_info(p)->flags);
+	Log2HangInfo("%lld.%06ld %d %1ld 0x%lx\n", nsec_high(p->se.vruntime), nsec_low(p->se.vruntime), task_pid_nr(p),
+		(long long)(p->nvcsw + p->nivcsw), (unsigned long)task_thread_info(p)->flags);
 	get_kernel_bt(p);	/* Catch kernel-space backtrace */
 
 }
@@ -853,8 +868,13 @@ static int hang_detect_warn_thread(void *arg)
 	snprintf(string_tmp, 30, "hang_detect:[pid:%d]\n", system_server_pid);
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	pr_notice("hang_detect create warning api: %s.", string_tmp);
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_PROCESS_COREDUMP,
-		"maybe have other hang_detect KE DB, please send together!!\n", string_tmp);
+#ifdef __aarch64__
+		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_PROCESS_COREDUMP | DB_OPT_AARCH64,
+			"maybe have other hang_detect KE DB, please send together!!\n", string_tmp);
+#else
+		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_PROCESS_COREDUMP,
+			"maybe have other hang_detect KE DB, please send together!!\n", string_tmp);
+#endif
 	return 0;
 }
 #endif
