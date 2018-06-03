@@ -242,7 +242,12 @@ int lcm_get_dev_info(int is_sf, void *info)
 void lcm_set_layer_num(int layer_num)
 {
 	if (layer_num >= 0)
+#ifdef FIX_EXTD_TO_OVL_PATH
+		ovl_layer_num = FIX_EXTD_TO_OVL_PATH;
+#else
 		ovl_layer_num = layer_num;
+#endif
+
 }
 
 int lcm_ioctl(unsigned int ioctl_cmd, int param1, int param2, unsigned long *params)
