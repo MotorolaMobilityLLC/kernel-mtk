@@ -309,6 +309,8 @@ static int32_t cmdq_delay_thread_start(void)
 	uint32_t end_address;
 	const int32_t thread = CMDQ_DELAY_THREAD_ID;
 	unsigned long flags;
+	u32 tpr_mask_value = (1 << CMDQ_DELAY_TPR_MASK_VALUE) |
+						 (1 << CMDQ_POLLING_TPR_MASK_VALUE);
 
 	spin_lock_irqsave(&g_delay_thread_lock, flags);
 	if (g_delay_thread_started == true || atomic_read(&gCmdqThreadUsage) < 1) {
@@ -346,7 +348,7 @@ static int32_t cmdq_delay_thread_start(void)
 	CMDQ_REG_SET32(CMDQ_THR_IRQ_ENABLE(thread), 0x011);
 
 	/* set TPR mask */
-	CMDQ_REG_SET32(CMDQ_TPR_MASK, (1 << CMDQ_DELAY_TPR_MASK_VALUE));
+	CMDQ_REG_SET32(CMDQ_TPR_MASK, tpr_mask_value);
 
 	/* enable thread */
 	CMDQ_REG_SET32(CMDQ_THR_ENABLE_TASK(thread), 0x01);
