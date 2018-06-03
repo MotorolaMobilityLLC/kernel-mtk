@@ -3316,8 +3316,6 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 		goto err_chg_sw_workaround;
 	}
 
-	rt5081_pmu_charger_irq_register(pdev);
-
 	/* Register charger device */
 	chg_data->chg_dev = charger_device_register(
 		chg_data->chg_desc->chg_dev_name,
@@ -3338,6 +3336,7 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 	}
 	chg_data->ls_dev->is_polling_mode = chg_data->chg_desc->en_polling;
 
+	rt5081_pmu_charger_irq_register(pdev);
 	rt5081_dump_register(chg_data->chg_dev);
 	dev_info(&pdev->dev, "%s successfully\n", __func__);
 
