@@ -78,7 +78,7 @@ static void __iomem *pwrap_base;
 #define PMIC_CW15_INIT_VAL			0xA2AA
 
 /* TODO: marked this after driver is ready */
-#define CLKBUF_BRINGUP
+/* #define CLKBUF_BRINGUP */
 
 /* #define CLKBUF_CONN_SUPPORT_CTRL_FROM_I1 */
 
