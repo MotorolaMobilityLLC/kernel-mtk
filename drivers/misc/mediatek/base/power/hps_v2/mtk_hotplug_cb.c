@@ -66,7 +66,10 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				/*1. Turn on ARM PLL*/
 				armpll_control(1, 1);
 				/*2. Non-pause FQHP function*/
-				mt_pause_armpll(FH_PLL0, 0);
+				if (action == CPU_UP_PREPARE_FROZEN)
+					mt_pause_armpll(FH_PLL0, 0, 1);
+				else
+					mt_pause_armpll(FH_PLL0, 0, 0)
 
 				/*3. Switch to HW mode*/
 				mp_enter_suspend(0, 1);
@@ -89,7 +92,11 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					hps_power_on_vproc2();
 #endif
 					/*4. Turn on ARM PLL*/
-					armpll_control(2, 1);
+					if (action == CPU_UP_PREPARE_FROZEN)
+						mt_pause_armpll(FH_PLL1, 0, 1);
+					else
+						mt_pause_armpll(FH_PLL1, 0, 0);
+
 					/*5. Non-pause FQHP function*/
 					mt_pause_armpll(FH_PLL1, 0);
 					/*6. Switch to HW mode*/
@@ -110,7 +117,10 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				armpll_control(3, 1);
 
 				/*2. Non-pause FQHP function*/
-				mt_pause_armpll(FH_PLL2, 0);
+				if (action == CPU_UP_PREPARE_FROZEN)
+					mt_pause_armpll(FH_PLL2, 0, 1);
+				else
+					mt_pause_armpll(FH_PLL2, 0, 0);
 #endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0);
 			}
@@ -130,14 +140,30 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #if CPU_BUCK_CTRL
 			switch (cpu/4) {/*Turn off ARM PLL*/
 			case 0:
-				mp_enter_suspend(0, 0);/*1. Switch to SW mode*/
-				mt_pause_armpll(FH_PLL0, 1);/*2. Pause FQHP function*/
-				armpll_control(1, 0);/*3. Turn off ARM PLL*/
+				/*1. Switch to SW mode*/
+				mp_enter_suspend(0, 0);
+
+				/*2. Pause FQHP function*/
+				if (action == CPU_DEAD_FROZEN)
+					mt_pause_armpll(FH_PLL0, 1, 1);
+				else
+					mt_pause_armpll(FH_PLL0, 1, 0);
+
+				/*3. Turn off ARM PLL*/
+				armpll_control(1, 0);
 				break;
 			case 1:
-				mp_enter_suspend(1, 0);/*1. Switch to SW mode*/
-				mt_pause_armpll(FH_PLL1, 1);/*2. Pause FQHP function*/
-				armpll_control(2, 0);/*3. Turn off ARM PLL*/
+				/*1. Switch to SW mode*/
+				mp_enter_suspend(1, 0);
+
+				/*2. Pause FQHP function*/
+				if (action == CPU_DEAD_FROZEN)
+					mt_pause_armpll(FH_PLL1, 1, 1);
+				else
+					mt_pause_armpll(FH_PLL1, 1, 0)
+
+				/*3. Turn off ARM PLL*/
+				armpll_control(2, 0);
 #ifdef CONFIG_MACH_MT6799
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 					hps_power_off_vproc2(); /*4. Power off Vproc2*/
@@ -146,8 +172,14 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #endif
 				break;
 			case 2:
-				mt_pause_armpll(FH_PLL2, 1);/*1. Pause FQHP function*/
-				armpll_control(3, 0);/*2. Turn off ARM PLL*/
+				/*1. Pause FQHP function*/
+				mt_pause_armpll(FH_PLL2, 1);
+
+				/*2. Turn off ARM PLL*/
+				if (action == CPU_DEAD_FROZEN)
+					mt_pause_armpll(FH_PLL2, 1, 1);
+				else
+					mt_pause_armpll(FH_PLL2, 1, 0);
 				break;
 			default:
 				break;
