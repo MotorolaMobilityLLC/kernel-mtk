@@ -239,4 +239,6 @@ static inline void mtk_register_reset_controller(struct device_node *np,
 }
 #endif
 
+int mtk_is_clk_bring_up(void);
+
 #endif /* __DRV_CLK_MTK_H */
