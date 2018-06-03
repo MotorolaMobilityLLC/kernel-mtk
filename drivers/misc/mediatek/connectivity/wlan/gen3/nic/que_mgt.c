@@ -1010,8 +1010,6 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 			wlanUpdateTxStatistics(prAdapter, prCurrentMsduInfo, FALSE);	/*get per-AC Tx packets */
 
-			DBGLOG(QM, LOUD, "Enqueue MSDU by StaRec[%u]!\n", prCurrentMsduInfo->ucStaRecIndex);
-
 			switch (prCurrentMsduInfo->ucStaRecIndex) {
 			case STA_REC_INDEX_BMCAST:
 				prTxQue = &prQM->arTxQueue[TX_QUEUE_INDEX_BMCAST];
@@ -1051,21 +1049,22 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 				break;	/*default */
 			}	/* switch (prCurrentMsduInfo->ucStaRecIndex) */
 
-			if (prCurrentMsduInfo->eSrc == TX_PACKET_FORWARDING) {
-				DBGLOG(QM, TRACE, "Forward Pkt to STA[%u] BSS[%u]\n",
-						   prCurrentMsduInfo->ucStaRecIndex, prCurrentMsduInfo->ucBssIndex);
-
-				if (prTxQue && (prTxQue->u4NumElem >= prQM->u4MaxForwardBufferCount)) {
-					DBGLOG(QM, INFO,
-					       "Drop the Packet for full Tx queue (forwarding) Bss %u\n",
-						prCurrentMsduInfo->ucBssIndex);
+			if ((prTxQue != &rNotEnqueuedQue) &&
+			    (prCurrentMsduInfo->eSrc == TX_PACKET_FORWARDING)) {
+				if (prTxQue->u4NumElem >= prQM->u4MaxForwardBufferCount) {
+					DBGLOG_LIMITED(QM, INFO,
+					       "Drop the Packet for full TxQue on forwarding (%u>=%u)\n",
+					       prTxQue->u4NumElem, prQM->u4MaxForwardBufferCount);
 					prTxQue = &rNotEnqueuedQue;
 					TX_INC_CNT(&prAdapter->rTxCtrl, TX_FORWARD_OVERFLOW_DROP);
+				} else {
+					DBGLOG(QM, LOUD, "Forward Pkt to STA[%u] TC[%u]\n",
+					       prCurrentMsduInfo->ucStaRecIndex, ucTC);
 				}
 			}
 
 		} else {
-			DBGLOG(QM, TRACE, "Drop the Packet for inactive Bss %u\n", prCurrentMsduInfo->ucBssIndex);
+			DBGLOG(QM, INFO, "Drop the Packet for inactive BSS[%u]\n", prCurrentMsduInfo->ucBssIndex);
 			QM_DBG_CNT_INC(prQM, QM_DBG_CNT_31);
 			prTxQue = &rNotEnqueuedQue;
 			TX_INC_CNT(&prAdapter->rTxCtrl, TX_INACTIVE_BSS_DROP);
@@ -1086,6 +1085,8 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 		 * Record how many packages enqueue to TX during statistic intervals
 		 */
 		if (prTxQue != &rNotEnqueuedQue) {
+			DBGLOG(QM, LOUD, "Enqueue MSDU[0x%p] to STA[%u] TC[%u]\n",
+			       prCurrentMsduInfo, prCurrentMsduInfo->ucStaRecIndex, prCurrentMsduInfo->ucTC);
 			prQM->u4EnqueueCounter++;
 			/* how many page count this frame wanted */
 			prQM->au4QmTcWantedPageCounter[ucTC] += prCurrentMsduInfo->ucPageCount;
@@ -1096,7 +1097,6 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 			if (prCurrentMsduInfo->ucPageCount > prTxCtrl->rTc.au2FreePageCount[ucTC])
 				prQM->au4QmTcResourceEmptyCounter[prCurrentMsduInfo->ucBssIndex][ucTC]++;
-
 		}
 #endif
 
@@ -1113,7 +1113,6 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 			qmTestCases(prAdapter);
 		}
 #endif
-
 	} while (prNextMsduInfo);
 
 	if (QUEUE_IS_NOT_EMPTY(&rNotEnqueuedQue)) {
@@ -1150,8 +1149,8 @@ VOID qmDetermineStaRecIndex(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInf
 
 	ASSERT(prMsduInfo);
 
-	DBGLOG(QM, LOUD, "Msdu BSS Idx[%u] OpMode[%u] StaRecOfApExist[%u]\n",
-			  prMsduInfo->ucBssIndex, prBssInfo->eCurrentOPMode, prBssInfo->prStaRecOfAP ? TRUE : FALSE);
+	DBGLOG(QM, LOUD, "MSDU BSS[%u] OpMode[%u] StaRecOfApExist[%u]\n",
+	       prMsduInfo->ucBssIndex, prBssInfo->eCurrentOPMode, prBssInfo->prStaRecOfAP ? TRUE : FALSE);
 
 	switch (prBssInfo->eCurrentOPMode) {
 	case OP_MODE_IBSS:
@@ -1183,7 +1182,7 @@ VOID qmDetermineStaRecIndex(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInf
 			prTempStaRec = prBssInfo->prStaRecOfAP;
 
 			DBGLOG(QM, LOUD,
-			       "StaOfAp Idx[%u] WIDX[%u] Valid[%u] TxAllowed[%u] InUse[%u] Type[%u]\n",
+			       "StaRecOfAP Idx[%u] WIDX[%u] Valid[%u] TxAllowed[%u] InUse[%u] Type[%u]\n",
 				prTempStaRec->ucIndex, prTempStaRec->ucWlanIndex,
 				prTempStaRec->fgIsValid, prTempStaRec->fgIsTxAllowed,
 				prTempStaRec->fgIsInUse, prTempStaRec->eStaType);
@@ -1217,7 +1216,7 @@ VOID qmDetermineStaRecIndex(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInf
 
 	/* 4 <4> No STA found, Not BMCAST --> Indicate NOT_FOUND to FW */
 	prMsduInfo->ucStaRecIndex = STA_REC_INDEX_NOT_FOUND;
-	DBGLOG(QM, LOUD, "QM: TX with STA_REC_INDEX_NOT_FOUND\n");
+	DBGLOG(QM, LOUD, "TX with STA_REC_INDEX_NOT_FOUND\n");
 
 #if (QM_TEST_MODE && QM_TEST_FAIR_FORWARDING)
 	prMsduInfo->ucStaRecIndex = (UINT_8) prQM->u4CurrentStaRecIndexToEnqueue;

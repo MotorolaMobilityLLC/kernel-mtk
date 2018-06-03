@@ -182,8 +182,6 @@ VOID bssAddClient(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN P_STA_
 
 BOOLEAN bssRemoveClient(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN P_STA_RECORD_T prStaRec);
 
-P_STA_RECORD_T bssRemoveClientByMac(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN PUINT_8 pucMac);
-
 P_STA_RECORD_T bssGetClientByMac(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN PUINT_8 pucMac);
 
 P_STA_RECORD_T bssRemoveHeadClient(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo);
