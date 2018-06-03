@@ -133,9 +133,63 @@ static int g_RAP_ntc_table = BTSMDPA_RAP_NTC_TABLE;
 static int g_RAP_ADC_channel = BTSMDPA_RAP_ADC_CHANNEL;
 
 static int g_btsmdpa_TemperatureR;
+/* struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table[] = {0}; */
 
-static struct BTSMDPA_TEMPERATURE *BTSMDPA_Temperature_Table;
-static int ntc_tbl_size;
+static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table[] = {
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+#if defined(APPLY_PRECISE_NTC_TABLE)
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+#endif
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0}
+};
+
 
 /* AP_NTC_BL197 */
 static struct BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table1[] = {
@@ -460,8 +514,7 @@ static __s16 mtkts_btsmdpa_thermistor_conver_temp(__s32 Res)
 	__s32 RES1 = 0, RES2 = 0;
 	__s32 TAP_Value = -200, TMP1 = 0, TMP2 = 0;
 
-	asize = (ntc_tbl_size / sizeof(struct BTSMDPA_TEMPERATURE));
-
+	asize = (sizeof(BTSMDPA_Temperature_Table) / sizeof(struct BTSMDPA_TEMPERATURE));
 	/* mtkts_btsmdpa_dprintk("mtkts_btsmdpa_thermistor_conver_temp() : asize = %d, Res = %d\n",asize,Res); */
 	if (Res >= BTSMDPA_Temperature_Table[0].TemperatureR) {
 		TAP_Value = -40;	/* min */
@@ -936,60 +989,66 @@ static ssize_t mtkts_btsmdpa_write(struct file *file, const char __user *buffer,
 	return -EINVAL;
 }
 
+
+void mtkts_btsmdpa_copy_table(struct BTSMDPA_TEMPERATURE *des, struct BTSMDPA_TEMPERATURE *src)
+{
+	int i = 0;
+	int j = 0;
+
+	j = (sizeof(BTSMDPA_Temperature_Table) / sizeof(struct BTSMDPA_TEMPERATURE));
+	/* mtkts_btsmdpa_dprintk("mtkts_btsmdpa_copy_table() : j = %d\n",j); */
+	for (i = 0; i < j; i++)
+		des[i] = src[i];
+}
+
 void mtkts_btsmdpa_prepare_table(int table_num)
 {
 
 	switch (table_num) {
 	case 1:		/* AP_NTC_BL197 */
-		BTSMDPA_Temperature_Table = BTSMDPA_Temperature_Table1;
-		ntc_tbl_size = sizeof(BTSMDPA_Temperature_Table1);
+		mtkts_btsmdpa_copy_table(BTSMDPA_Temperature_Table, BTSMDPA_Temperature_Table1);
+		WARN_ON_ONCE(sizeof(BTSMDPA_Temperature_Table) != sizeof(BTSMDPA_Temperature_Table1));
 		break;
 	case 2:		/* AP_NTC_TSM_1 */
-		BTSMDPA_Temperature_Table = BTSMDPA_Temperature_Table2;
-		ntc_tbl_size = sizeof(BTSMDPA_Temperature_Table2);
+		mtkts_btsmdpa_copy_table(BTSMDPA_Temperature_Table, BTSMDPA_Temperature_Table2);
+		WARN_ON_ONCE(sizeof(BTSMDPA_Temperature_Table) != sizeof(BTSMDPA_Temperature_Table2));
 		break;
 	case 3:		/* AP_NTC_10_SEN_1 */
-		BTSMDPA_Temperature_Table = BTSMDPA_Temperature_Table3;
-		ntc_tbl_size = sizeof(BTSMDPA_Temperature_Table3);
+		mtkts_btsmdpa_copy_table(BTSMDPA_Temperature_Table, BTSMDPA_Temperature_Table3);
+		WARN_ON_ONCE(sizeof(BTSMDPA_Temperature_Table) != sizeof(BTSMDPA_Temperature_Table3));
 		break;
 	case 4:		/* AP_NTC_10 */
-		BTSMDPA_Temperature_Table = BTSMDPA_Temperature_Table4;
-		ntc_tbl_size = sizeof(BTSMDPA_Temperature_Table4);
+		mtkts_btsmdpa_copy_table(BTSMDPA_Temperature_Table, BTSMDPA_Temperature_Table4);
+		WARN_ON_ONCE(sizeof(BTSMDPA_Temperature_Table) != sizeof(BTSMDPA_Temperature_Table4));
 		break;
 	case 5:		/* AP_NTC_47 */
-		BTSMDPA_Temperature_Table = BTSMDPA_Temperature_Table5;
-		ntc_tbl_size = sizeof(BTSMDPA_Temperature_Table5);
+		mtkts_btsmdpa_copy_table(BTSMDPA_Temperature_Table, BTSMDPA_Temperature_Table5);
+		WARN_ON_ONCE(sizeof(BTSMDPA_Temperature_Table) != sizeof(BTSMDPA_Temperature_Table5));
 		break;
 	case 6:		/* NTCG104EF104F */
-		BTSMDPA_Temperature_Table = BTSMDPA_Temperature_Table6;
-		ntc_tbl_size = sizeof(BTSMDPA_Temperature_Table6);
+		mtkts_btsmdpa_copy_table(BTSMDPA_Temperature_Table, BTSMDPA_Temperature_Table6);
+		WARN_ON_ONCE(sizeof(BTSMDPA_Temperature_Table) != sizeof(BTSMDPA_Temperature_Table6));
 		break;
 	case 7:		/* NCP15WF104F03RC */
-		BTSMDPA_Temperature_Table = BTSMDPA_Temperature_Table7;
-		ntc_tbl_size = sizeof(BTSMDPA_Temperature_Table7);
+		mtkts_btsmdpa_copy_table(BTSMDPA_Temperature_Table, BTSMDPA_Temperature_Table7);
+		WARN_ON_ONCE(sizeof(BTSMDPA_Temperature_Table) != sizeof(BTSMDPA_Temperature_Table7));
 		break;
 	default:		/* AP_NTC_10 */
-		BTSMDPA_Temperature_Table = BTSMDPA_Temperature_Table4;
-		ntc_tbl_size = sizeof(BTSMDPA_Temperature_Table4);
+		mtkts_btsmdpa_copy_table(BTSMDPA_Temperature_Table, BTSMDPA_Temperature_Table4);
+		WARN_ON_ONCE(sizeof(BTSMDPA_Temperature_Table) != sizeof(BTSMDPA_Temperature_Table4));
 		break;
 	}
-
-	pr_notice("[Thermal/TZ/BTSMDPA] %s table_num=%d, table_rows=%lu\n",
-			__func__, table_num,
-			(ntc_tbl_size / sizeof(struct BTSMDPA_TEMPERATURE)));
 
 #if 0
 	{
 		int i = 0;
-		for (i = 0; i < (ntc_tbl_size
-					/ sizeof(struct BTSMDPA_TEMPERATURE));
+
+		for (i = 0; i < (sizeof(BTSMDPA_Temperature_Table) / sizeof(struct BTSMDPA_TEMPERATURE));
 		     i++) {
-			pr_notice(
-				"BTSMDPA_Temperature_Table[%d].APteryTemp =%d\n",
-				i, BTSMDPA_Temperature_Table[i].BTSMDPA_Temp);
-			pr_notice(
-				"BTSMDPA_Temperature_Table[%d].TemperatureR=%d\n",
-				i, BTSMDPA_Temperature_Table[i].TemperatureR);
+			mtkts_btsmdpa_dprintk("BTSMDPA_Temperature_Table[%d].APteryTemp =%d\n", i,
+					      BTSMDPA_Temperature_Table[i].BTSMDPA_Temp);
+			mtkts_btsmdpa_dprintk("BTSMDPA_Temperature_Table[%d].TemperatureR=%d\n", i,
+					      BTSMDPA_Temperature_Table[i].TemperatureR);
 		}
 	}
 #endif
