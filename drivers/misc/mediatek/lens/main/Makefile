@@ -35,6 +35,7 @@ ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 MAIN_CFILES += main_lens.c
 
 MAIN_CFILES  += common/fm50af/FM50AF.c
+MAIN_CFILES  += common/fp5510e2af/FP5510E2AF.c
 MAIN_CFILES  += common/bu6424af/BU6424AF.c
 MAIN_CFILES  += common/bu6429af/BU6429AF.c
 MAIN_CFILES  += common/bu6429af/bu64748af.c
@@ -77,6 +78,7 @@ else
 
 obj-y  += main_lens.o
 obj-y  += common/fm50af/
+obj-y  += common/fp5510e2af/
 obj-y  += common/bu6424af/
 obj-y  += common/bu6429af/
 obj-y  += common/bu64748af/

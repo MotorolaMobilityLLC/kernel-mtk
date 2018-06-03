@@ -110,7 +110,7 @@ static enum IMGSENSOR_RETURN regulator_set(
 	atomic_t	*enable_cnt;
 
 
-	if (pin > IMGSENSOR_HW_PIN_DOVDD   ||
+	if (pin > IMGSENSOR_HW_PIN_AFVDD   ||
 		pin < IMGSENSOR_HW_PIN_AVDD    ||
 		pin_state < IMGSENSOR_HW_PIN_STATE_LEVEL_0 ||
 		pin_state >= IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH)
