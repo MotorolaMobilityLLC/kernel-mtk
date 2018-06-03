@@ -132,7 +132,7 @@ void _mt_spm_pmic_table_init(void)
 
 void mt_spm_pmic_wrap_set_phase(enum pmic_wrap_phase_id phase)
 {
-	int i;
+	int idx;
 	unsigned long flags;
 
 	WARN_ON(phase >= NR_PMIC_WRAP_PHASE);
@@ -147,9 +147,9 @@ void mt_spm_pmic_wrap_set_phase(enum pmic_wrap_phase_id phase)
 
 	pw.phase = phase;
 
-	for (i = 0; i < pw.set[phase].nr_idx; i++)
-		spm_write(pw.addr[i].cmd_addr,
-				(pw.set[phase]._[i].cmd_addr << SPM_DATA_SHIFT) | (pw.set[phase]._[i].cmd_wdata));
+	for (idx = 0; idx < pw.set[phase].nr_idx; idx++)
+		spm_write(pw.addr[idx].cmd_addr,
+				(pw.set[phase]._[idx].cmd_addr << SPM_DATA_SHIFT) | (pw.set[phase]._[idx].cmd_wdata));
 
 	spm_pwrap_warn("pmic table init: done\n");
 
@@ -169,7 +169,8 @@ void mt_spm_pmic_wrap_set_cmd(enum pmic_wrap_phase_id phase, int idx, unsigned i
 	pw.set[phase]._[idx].cmd_wdata = cmd_wdata;
 
 	if (pw.phase == phase)
-		spm_write(pw.addr[idx].cmd_wdata, (pw.addr[idx].cmd_wdata << SPM_DATA_SHIFT) | cmd_wdata);
+		spm_write(pw.addr[idx].cmd_addr,
+				(pw.set[phase]._[idx].cmd_addr << SPM_DATA_SHIFT) | cmd_wdata);
 
 	pmic_wrap_unlock(flags);
 }
