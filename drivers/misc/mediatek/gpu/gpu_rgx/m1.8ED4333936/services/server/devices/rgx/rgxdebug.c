@@ -3650,6 +3650,9 @@ void RGXDebugRequestProcess(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 		PVR_DPF((PVR_DBG_ERROR,	"RGXDebugRequestProcess : failed to acquire lock, error:0x%x", eError));
 		return;
 	}
+#if defined(CONFIG_MACH_MT6799)
+	MTKQueryPowerState(2);
+#endif
 
 	if (!pfnDumpDebugPrintf)
 	{

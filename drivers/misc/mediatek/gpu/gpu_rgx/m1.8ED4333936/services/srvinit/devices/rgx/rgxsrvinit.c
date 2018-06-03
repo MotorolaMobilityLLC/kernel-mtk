@@ -484,12 +484,12 @@ static INLINE void GetApphints(RGX_SRVINIT_APPHINTS *psHints, IMG_UINT64 ui64Ern
 			ui32LogType |= RGXFWIF_LOG_TYPE_TRACE;
 		}
 
-		ui32LogType |= (RGXFWIF_LOG_TYPE_TRACE | \
-							RGXFWIF_LOG_TYPE_GROUP_MAIN | \
-							RGXFWIF_LOG_TYPE_GROUP_PM | \
-							RGXFWIF_LOG_TYPE_GROUP_POW | \
-							RGXFWIF_LOG_TYPE_GROUP_HWR | \
-                                                        RGXFWIF_LOG_TYPE_GROUP_BIF);
+		ui32LogType |= (RGXFWIF_LOG_TYPE_TRACE		|
+						RGXFWIF_LOG_TYPE_GROUP_MAIN	|
+						/* RGXFWIF_LOG_TYPE_GROUP_PM	| */
+						/* RGXFWIF_LOG_TYPE_GROUP_POW	| */
+						/* RGXFWIF_LOG_TYPE_GROUP_BIF	| */
+						RGXFWIF_LOG_TYPE_GROUP_HWR);
 
 		psHints->ui32LogType = ui32LogType;
 	}
