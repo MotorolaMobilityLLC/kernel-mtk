@@ -715,7 +715,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 							+ MAC_TX_RESERVED_FIELD);
 			/* in case of prMgmtTxMsdu reallocated */
 			*pu8Cookie = u8Cookie;
-			ucRetryLimit = 2;
+			ucRetryLimit = 7;
 			break;
 		default:
 			prMgmtTxMsdu->ucBssIndex = ucBssIndex;
