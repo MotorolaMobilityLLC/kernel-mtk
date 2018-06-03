@@ -277,8 +277,8 @@ struct akm09916_platform_data {
 #define TLIMIT_HI_RST_WIA1_09916				0x48
 #define TLIMIT_NO_RST_WIA2_09916				"1-4"
 #define TLIMIT_TN_RST_WIA2_09916				"RST_WIA2"
-#define TLIMIT_LO_RST_WIA2_09916				0x09
-#define TLIMIT_HI_RST_WIA2_09916				0x09
+#define TLIMIT_LO_RST_WIA2_09916				0x10
+#define TLIMIT_HI_RST_WIA2_09916				0x10
 
 #define TLIMIT_NO_SNG_ST1_09916				"2-3"
 #define TLIMIT_TN_SNG_ST1_09916				"SNG_ST1"
@@ -322,7 +322,7 @@ struct akm09916_platform_data {
 
 #define TLIMIT_NO_SLF_RVHZ_09916				"2-18"
 #define TLIMIT_TN_SLF_RVHZ_09916				"SLF_REVSHZ"
-#define TLIMIT_LO_SLF_RVHZ_09916			-1000
+#define TLIMIT_LO_SLF_RVHZ_09916			-800
 #define TLIMIT_HI_SLF_RVHZ_09916			-200
 
 #define TLIMIT_NO_SLF_ST2_09916				"2-20"
