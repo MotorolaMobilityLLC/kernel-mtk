@@ -534,9 +534,7 @@ void spm_set_dummy_read_addr(int debug);
 
 extern int spm_fs_init(void);
 
-#if 0
 extern int spm_golden_setting_cmp(bool en);
-#endif
 extern void __spm_set_pcm_wdt(int en);
 extern u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr);
 
