@@ -33,10 +33,6 @@ ccflags-y += -Wno-unused-function
 
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
-ifeq ($(TARGET_BUILD_VARIANT), eng)
-ccflags-y += -DMT_GPUFREQ_DEBUG_ENABLE
-endif
-
 obj-$(CONFIG_MACH_MT6771) += mtk_picachu.o
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
