@@ -74,7 +74,8 @@ static int tilt_detect_recv_data(struct data_unit_t *event, void *reserved)
 	if (event->flush_action == FLUSH_ACTION)
 		situation_flush_report(ID_TILT_DETECTOR);
 	else if (event->flush_action == DATA_ACTION)
-		situation_notify(ID_TILT_DETECTOR);
+		situation_data_report(ID_TILT_DETECTOR,
+			event->tilt_event.state);
 	return 0;
 }
 
