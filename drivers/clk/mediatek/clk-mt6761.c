@@ -31,7 +31,7 @@
 #define MT_CG_ENABLE		0
 #define MT_MTCMOS_ENABLE	0
 #else
-#define MT_MUXPLL_ENABLE	0
+#define MT_MUXPLL_ENABLE	1
 #define MT_CG_ENABLE		1
 #define MT_MTCMOS_ENABLE	0
 #endif
