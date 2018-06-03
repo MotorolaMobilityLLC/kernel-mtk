@@ -1157,12 +1157,18 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			cfg80211_scan_done(prScanRequest, FALSE);
 		break;
 	case WLAN_STATUS_CONNECT_INDICATION:
-		/*
-		 * indicate AIS Jion fail  event
-		 * if (prGlueInfo->prDevHandler->ieee80211_ptr->sme_state == CFG80211_SME_CONNECTING)
-		 */
+		prBssDesc = prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
+
+		if (prBssDesc)
+			COPY_MAC_ADDR(arBssid, prBssDesc->aucBSSID);
+		else
+			COPY_MAC_ADDR(arBssid, prGlueInfo->prAdapter->rWifiVar.rConnSettings.aucBSSID);
+
+		/* indicate AIS Jion fail  event
+		*if (prGlueInfo->prDevHandler->ieee80211_ptr->sme_state == CFG80211_SME_CONNECTING)
+		*/
 		cfg80211_connect_result(prGlueInfo->prDevHandler,
-					prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc->aucBSSID,
+					arBssid,
 					prGlueInfo->aucReqIe,
 					prGlueInfo->u4ReqIeLength,
 					prGlueInfo->aucRspIe,

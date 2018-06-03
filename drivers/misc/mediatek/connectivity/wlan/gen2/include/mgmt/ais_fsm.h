@@ -54,6 +54,8 @@
 #define AIS_SCN_DONE_TIMEOUT_SEC            30	/* 15 for 2.4G + 5G */ /* 5 */
 
 #define AIS_AUTORN_MIN_INTERVAL			20
+#define AIS_BLACKLIST_TIMEOUT               15 /* seconds */
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -395,6 +397,7 @@ VOID aisTest(VOID);
 
 struct AIS_BLACKLIST_ITEM *aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
 VOID aisRemoveBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
+VOID aisRemoveTimeoutBlacklist(P_ADAPTER_T prAdapter);
 struct AIS_BLACKLIST_ITEM *aisQueryBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
 VOID aisRecordBeaconTimeout(P_ADAPTER_T prAdapter, P_BSS_INFO_T prAisBssInfo);
 VOID aisRemoveBeaconTimeoutEntry(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
