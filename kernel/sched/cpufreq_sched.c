@@ -147,6 +147,10 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	for_each_cpu(cpu, &cls_cpus) {
 		per_cpu(freq_scale, cpu) = scale;
 		arch_scale_set_curr_freq(cpu, freq); /* per_cpu(cpu_freq_capacity) */
+
+#ifdef CONFIG_SCHED_WALT
+		walt_cpufreq_notifier_trans(cpu, freq);
+#endif
 	}
 
 	mt_cpufreq_set_by_schedule_load_cluster(cid, freq);
