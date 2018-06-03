@@ -30,11 +30,25 @@
 #include "include/pmic_api_buck.h"
 #include "include/pmic_bif.h"
 #include "include/pmic_auxadc.h"
-#include "pwrap_hal.h"
 
 #ifdef CONFIG_MTK_AUXADC_INTF
 #include <mt-plat/mtk_auxadc_intf.h>
 #endif /* CONFIG_MTK_AUXADC_INTF */
+
+/*****************************************************************************
+ * PMIC read/write APIs
+ ******************************************************************************/
+#ifdef CONFIG_FPGA_EARLY_PORTING /* defined(CONFIG_FPGA_EARLY_PORTING) */
+    /* no CONFIG_PMIC_HW_ACCESS_EN in FPGA */
+#else
+#ifdef CONFIG_MTK_PMIC_WRAP_HAL
+#include "pwrap_hal.h"
+#define CONFIG_PMIC_HW_ACCESS_EN
+#else
+    /* no pwrap_hal.h */
+    /* no CONFIG_PMIC_HW_ACCESS_EN in EVB/PHONE */
+#endif
+#endif
 
 /*****************************************************************************
  * PMIC related define

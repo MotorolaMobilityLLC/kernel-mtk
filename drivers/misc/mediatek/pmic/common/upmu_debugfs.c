@@ -31,6 +31,11 @@
 
 /*-------pmic_dbg_level global variable-------*/
 unsigned int gPMICDbgLvl;
+unsigned int gPMICHKDbgLvl;
+unsigned int gPMICCOMDbgLvl;
+unsigned int gPMICIRQDbgLvl;
+unsigned int gPMICREGDbgLvl;
+
 #define DUMP_ALL_REG 0
 
 int pmic_pre_wdt_reset(void)
@@ -236,13 +241,15 @@ static ssize_t pmic_dbg_level_write(struct file *file, const char __user *buf, s
 
 	if (value < 5) {
 		pmic_dbg_level_set(value);
-		pr_err("pmic_dbg_level_write = %d\n", gPMICDbgLvl);
+		pr_err("D %d, HK %d, COM %d, IRQ %d, REG %d\n",
+				gPMICDbgLvl, gPMICHKDbgLvl, gPMICCOMDbgLvl,
+				gPMICIRQDbgLvl, gPMICREGDbgLvl);
 	} else {
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		pmic_ipi_test_code();
-		pr_err("pmic_ipi_test_code\n");
+		pr_debug("pmic_ipi_test_code\n");
 #else
-		pr_err("pmic_dbg_level should < 5\n");
+		pr_debug("pmic_dbg_level should < 5\n");
 #endif
 	}
 
@@ -257,6 +264,10 @@ static int pmic_dbg_level_show(struct seq_file *s, void *unused)
 	seq_puts(s, "1:PMIC_LOG_WARN\n");
 	seq_puts(s, "0:PMIC_LOG_ERR\n");
 	seq_printf(s, "PMIC_Dbg_Lvl = %d\n", gPMICDbgLvl);
+	seq_printf(s, "PMIC_HK_Dbg_Lvl = %d\n", gPMICHKDbgLvl);
+	seq_printf(s, "PMIC_COM_Dbg_Lvl = %d\n", gPMICCOMDbgLvl);
+	seq_printf(s, "PMIC_IRQ_Dbg_Lvl = %d\n", gPMICIRQDbgLvl);
+	seq_printf(s, "PMIC_REG_Dbg_Lvl = %d\n", gPMICREGDbgLvl);
 	return 0;
 }
 
