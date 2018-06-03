@@ -425,17 +425,21 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	moisture_eint0 = (int)((efusevalue >> 8) & ACCDET_CALI_MASK0);
 	if (moisture_eint0 > 128)
 		moisture_eint0 -= 256;
+	ACCDET_INFO("[moisture_eint0]efuse=0x%x,moisture_eint0=0x%x\n",
+		efusevalue, moisture_eint0);
 
 	/* RG_EINT1_RES: efuse bit 1808--1815 map to bit0-bit7. (1808)/16=113  */
 	efusevalue = pmic_Read_Efuse_HPOffset(113);
 	moisture_eint1 = (int)(efusevalue & ACCDET_CALI_MASK0);
 	if (moisture_eint1 > 128)
 		moisture_eint1 -= 256;
+	ACCDET_INFO("[moisture_eint1]efuse=0x%x,moisture_eint1=0x%x\n",
+		efusevalue, moisture_eint1);
 
 	/* RG_EINT_RES = RG_EINT1_RES<<8 | RG_EINT0_RES */
 	g_moisture_eint_offset = (moisture_eint1 << 8) | moisture_eint0;
 
-	ACCDET_INFO("[moisture_eint_efuse]moisture_vdd_offset=%d mv\n", g_moisture_eint_offset);
+	ACCDET_INFO("[moisture_eint_efuse]moisture_eint_offset=%d mv\n", g_moisture_eint_offset);
 	g_moisture_vm = (2800 + g_moisture_vdd_offset) * 57000 / (57000 + (8 * g_moisture_eint_offset) + 450000)
 		+ g_moisture_offset / 2;
 	ACCDET_INFO("[moisture_vm]moisture_vm=%d mv\n", g_moisture_vm);
@@ -1164,7 +1168,7 @@ static void accdet_work_callback(struct work_struct *work)
 
 	mutex_lock(&accdet_eint_irq_sync_mutex);
 	if (s_eint_accdet_sync_flag == 1)
-		send_accdet_status_event(cable_type, 1);
+		send_accdet_status_event(s_cable_type, 1);
 	else
 		ACCDET_ERROR("[accdet]Headset has plugged out don't set accdet state\n");
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -1309,8 +1313,7 @@ static int accdet_irq_handler(void)
 		old_value2 = pmic_pwrap_read(AUDENC_ANA_CON10);
 		old_value3 = pmic_pwrap_read(AUDENC_ANA_CON11);
 
-		ACCDET_DEBUG("[accdet_irq_handler] before config moisture,ACCDET_CON0:0x%x,
-			AUDENC_ANA_CON10:0x%x AUDENC_ANA_CON11:0x%x\n",
+		ACCDET_DEBUG("Moisture:before config ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x CON11:0x%x\n",
 			old_value1, old_value2, old_value3);
 
 		/* Disable ACCDET to AUXADC */
@@ -1332,8 +1335,8 @@ static int accdet_irq_handler(void)
 		pmic_pwrap_write(AUDENC_ANA_CON11, pmic_pwrap_read(AUDENC_ANA_CON11) & 0xE7FF);
 #endif
 
-		dbg_print("[ACCDET_LISR]config moisture Done,ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x,
-			AUDENC_ANA_CON11:0x%x \n", pmic_pwrap_read(ACCDET_CON0), pmic_pwrap_read(AUDENC_ANA_CON10),
+		dbg_print("Moisture:config done,ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x,CON11:0x%x\n",
+			pmic_pwrap_read(ACCDET_CON0), pmic_pwrap_read(AUDENC_ANA_CON10),
 			pmic_pwrap_read(AUDENC_ANA_CON11));
 
 		moisture = Accdet_PMIC_IMM_GetOneChannelValue(0);
@@ -1351,16 +1354,16 @@ static int accdet_irq_handler(void)
 		pmic_pwrap_write(AUDENC_ANA_CON11, pmic_pwrap_read(AUDENC_ANA_CON11) & 0xEBFF);
 		pmic_pwrap_write(AUDENC_ANA_CON11, pmic_pwrap_read(AUDENC_ANA_CON11) | 0x0800);
 #endif
-		dbg_print("[ACCDET_LISR]revert moisture-1 Done,ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x,
-			AUDENC_ANA_CON11:0x%x \n", pmic_pwrap_read(ACCDET_CON0), pmic_pwrap_read(AUDENC_ANA_CON10),
+		dbg_print("Moisture:revert-1 Done,ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x,CON11:0x%x\n",
+			pmic_pwrap_read(ACCDET_CON0), pmic_pwrap_read(AUDENC_ANA_CON10),
 			pmic_pwrap_read(AUDENC_ANA_CON11));
 
-		dbg_print("[ACCDET_LISR] now revert moisture setting--2,write old value\n");
+		dbg_print("Accdet now revert moisture setting-2,write old value\n");
 		pmic_pwrap_write(ACCDET_CON0, old_value1);
 		pmic_pwrap_write(AUDENC_ANA_CON10, old_value2);
 		pmic_pwrap_write(AUDENC_ANA_CON11, old_value3);
-		dbg_print("[ACCDET_LISR]revert moisture-2 Done,ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x,
-			AUDENC_ANA_CON11:0x%x \n", pmic_pwrap_read(ACCDET_CON0), pmic_pwrap_read(AUDENC_ANA_CON10),
+		dbg_print("Moisture:revert-2 Done,ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x,CON11:0x%x\n",
+			pmic_pwrap_read(ACCDET_CON0), pmic_pwrap_read(AUDENC_ANA_CON10),
 			pmic_pwrap_read(AUDENC_ANA_CON11));
 	} else if (g_cur_eint_state == EINT_PIN_MOISTURE_DETECED) {
 		ACCDET_DEBUG("ACCDET Moisture plug out detectecd\n");
@@ -1412,7 +1415,7 @@ static int accdet_irq_handler(void)
 			ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
 	} else {
 #endif
-	if ((reg_val & ACCDET_IRQ_B0) &&) {
+	if ((reg_val & ACCDET_IRQ_B0)) {
 		eint_type = ACCDET_IRQ_IN;
 		clear_accdet_interrupt();
 		/* 201709 no need to set accdet PWM width&thresh again ,because we set it when init accdet */
