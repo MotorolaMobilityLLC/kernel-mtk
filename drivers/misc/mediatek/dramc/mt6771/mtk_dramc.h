@@ -19,7 +19,7 @@
 /* #define SW_ZQCS */
 /* #define SW_TX_TRACKING */
 /* #define DVFS_READY */
-/* #define EMI_READY */
+#define EMI_READY
 
 /* Registers define */
 #define PDEF_DRAMC0_CHA_REG_0E4	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x00e4))
