@@ -25,6 +25,7 @@
 #define MAX_PARTITION_NAME_LEN 64
 
 int new_part_tab(u8 *buf, struct mtd_info *mtd);
+int update_and_check_to_lastest(void);
 int update_part_tab(struct mtd_info *mtd);
 static int read_pmt(void __user *arg);
 typedef u32(*GetLowPageNumber) (u32 pageNo);
@@ -41,10 +42,18 @@ extern bool g_bInitDone;
 #define REGION_TLC_MODE 0x00544C43
 #endif
 
+struct extension {
+	unsigned int type;
+	unsigned int attr;
+};
+
 struct pt_resident {
 	unsigned char name[MAX_PARTITION_NAME_LEN];	/* partition name */
 	unsigned long long size;	/* partition size */
-	unsigned long long part_id;                          /* partition region */
+	union {
+		unsigned long long part_id;
+		struct extension ext;
+	};
 	unsigned long long offset;	/* partition start */
 	unsigned long long mask_flags;	/* partition flags */
 };

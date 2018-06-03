@@ -684,5 +684,9 @@
 };
 /* AUDIO end */
 
+&msdc0 {
+	status = "disable";
+};
+
 #include <k39tlc_bsp/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/

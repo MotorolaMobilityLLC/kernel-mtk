@@ -25,8 +25,8 @@
 #define NFI_PAGEFMT_REG32       ((u32 *)(NFI_BASE+0x0004))
 #define NFI_CON_REG32           ((u32 *)(NFI_BASE+0x0008))
 #define NFI_ACCCON_REG32        ((u32 *)(NFI_BASE+0x000C))
-#define NFI_INTR_EN_REG16       ((u16 *)(NFI_BASE+0x0010))
-#define NFI_INTR_REG16          ((u16 *)(NFI_BASE+0x0014))
+#define NFI_INTR_EN_REG16       ((u32 *)(NFI_BASE+0x0010))
+#define NFI_INTR_REG16          ((u32 *)(NFI_BASE+0x0014))
 
 #define NFI_CMD_REG16           ((u16 *)(NFI_BASE+0x0020))
 
@@ -80,8 +80,8 @@
 #define NFI_ACCCON1_REG32           ((u32 *)(NFI_BASE+0x0244))
 #define NFI_DLYCTRL_REG32           ((u32 *)(NFI_BASE+0x0248))
 
-#define NFI_RANDOM_TSB_SEED0    ((u32 *)(NFIIO_BASE+0x024C))
-#define NFI_RANDOM_TSB_SEED15   ((u32 *)(NFIIO_BASE+0x0290))
+#define NFI_RANDOM_TSB_SEED0    ((u32 *)(NFI_BASE+0x024C))
+#define NFI_RANDOM_TSB_SEED15   ((u32 *)(NFI_BASE+0x0290))
 
 #define NFI_TLC_RD_WHR2_REG16   ((u16 *)(NFI_BASE+0x0300))
 #define NFI_DQS_HIGH_SET        ((u16 *)(NFI_BASE+0x0304))
@@ -239,6 +239,8 @@
 #define INTR_BSY_RTN         (0x0010)
 #define INTR_ACC_LOCK        (0x0020)
 #define INTR_AHB_DONE        (0x0040)
+#define INTR_EN			(0x80000000)
+
 
 /* NFI_ADDRNOB */
 #define ADDR_COL_NOB_MASK    (0x0007)
@@ -288,9 +290,15 @@
 #define ERASE_CADD_NOB_SHIFT  (0)
 
 /* NFI_DEBUG_CON1 */
-#define HWDCM_SWCON_ON    (1<<1)
-#define WBUF_EN           (1<<2)
-#define NFI_BYPASS        0x8000
+#define HWDCM_SWCON_EN        (1<<0)
+#define HWDCM_SWCON_ON        (1<<1)
+#define WBUF_EN               (1<<2)
+#define HWDCM_SWCON_EN_VAL    (1<<7)
+#define AUTOC_HPROT_EN        (1<<8)
+#define NFI_ECC_CLK_EN        (1<<11)
+#define REG_CE_HOLD           (1<<14)
+#define NFI_BYPASS            (1<<15)
+
 #define ECC_BYPASS        0x1
 #define PAD_MACRO_RST     2
 

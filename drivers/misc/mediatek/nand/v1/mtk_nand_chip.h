@@ -77,6 +77,7 @@ struct mtk_nand_chip_info {
 	/*      1: Single plane, 2: Multi-plane, 4: Quad plane */
 	unsigned int chip_num;       /* Chip number, 1/2/4 or more */
 	unsigned int option;            /* Chip ability information */
+	unsigned char block_type_bitmap[250];
 	/*      bit[0]: FDM partial read */
 	/*              0: Not support, 1: Support(Next Gen IP) */
 	/*      bit[1]: Plane mode, 0: Not support, 1: Support */
@@ -226,4 +227,7 @@ const struct mtk_nand_chip_bbt_info *mtk_nand_chip_bmt(
  */
 void mtk_chip_mark_bad_block(struct mtk_nand_chip_info *info, unsigned int block);
 
+int mtk_nand_update_block_type(int num, unsigned int *blk);
+
+void dump_record(void);
 #endif
