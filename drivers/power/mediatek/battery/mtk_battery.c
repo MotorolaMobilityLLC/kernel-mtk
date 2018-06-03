@@ -114,6 +114,9 @@ static int fg_bat_tmp_int_lt = 0xffff;
 
 static int bat_cycle_thr;
 
+static int g_old_uisoc;
+static struct timespec gt_oldtime_uisoc;
+
 static signed int ptim_lk_v;
 static signed int ptim_lk_i;
 static int pl_bat_vol;
@@ -1108,6 +1111,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.difference_fullocv_vth = DIFFERENCE_FULLOCV_VTH;
 	fg_cust_data.difference_fullocv_ith = UNIT_TRANS_10 * DIFFERENCE_FULLOCV_ITH;
 	fg_cust_data.charge_pseudo_full_level = CHARGE_PSEUDO_FULL_LEVEL;
+	fg_cust_data.over_discharge_level = OVER_DISCHARGE_LEVEL;
 
 	/* pre tracking */
 	fg_cust_data.fg_pre_tracking_en = FG_PRE_TRACKING_EN;
@@ -1552,6 +1556,30 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 			 fg_cust_data.car_tune_value);
 	} else {
 		bm_err("Get CAR_TUNE_VALUE failed\n");
+	}
+
+	if (!of_property_read_u32(np, "PMIC_MIN_VOL", &val)) {
+		fg_cust_data.pmic_min_vol = (int)val;
+		bm_debug("Get PMIC_MIN_VOL: %d\n",
+			 fg_cust_data.pmic_min_vol);
+	} else {
+		bm_err("Get PMIC_MIN_VOL failed\n");
+	}
+
+	if (!of_property_read_u32(np, "POWERON_SYSTEM_IBOOT", &val)) {
+		fg_cust_data.poweron_system_iboot = (int)val * UNIT_TRANS_10;
+		bm_debug("Get POWERON_SYSTEM_IBOOT: %d\n",
+			 fg_cust_data.poweron_system_iboot);
+	} else {
+		bm_err("Get POWERON_SYSTEM_IBOOT failed\n");
+	}
+
+	if (!of_property_read_u32(np, "SHUTDOWN_GAUGE0_VOLTAGE", &val)) {
+		fg_cust_data.shutdown_gauge0_voltage = (int)val;
+		bm_debug("Get SHUTDOWN_GAUGE0_VOLTAGE: %d\n",
+			 fg_cust_data.shutdown_gauge0_voltage);
+	} else {
+		bm_err("Get SHUTDOWN_GAUGE0_VOLTAGE failed\n");
 	}
 
 	if (!of_property_read_u32(np, "FG_METER_RESISTANCE", &val)) {
@@ -2926,6 +2954,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	case FG_DAEMON_CMD_SET_KERNEL_UISOC:
 	{
 		int daemon_ui_soc;
+		struct timespec now_time, diff;
 
 		memcpy(&daemon_ui_soc, &msg->fgd_data[0], sizeof(daemon_ui_soc));
 
@@ -2933,12 +2962,26 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			FG_status.ui_soc = 50;
 		else
 			FG_status.ui_soc = (daemon_ui_soc + 50) / 100;
-		bm_debug("[fg_res] FG_DAEMON_CMD_SET_KERNEL_UISOC = %d %d GM3:%d\n",
-			daemon_ui_soc, FG_status.ui_soc, gDisableGM30);
 
-		battery_main.BAT_CAPACITY = FG_status.ui_soc;
-		/* ac_update(&ac_main); */
-		battery_update(&battery_main);
+		/* when UISOC changes, check the diff time for smooth */
+		if (g_old_uisoc != FG_status.ui_soc) {
+			get_monotonic_boottime(&now_time);
+			diff = timespec_sub(now_time, gt_oldtime_uisoc);
+
+			bm_debug("[fg_res] FG_DAEMON_CMD_SET_KERNEL_UISOC = %d %d GM3:%d old:%d diff=%ld\n",
+				daemon_ui_soc, FG_status.ui_soc, gDisableGM30, g_old_uisoc, diff.tv_sec);
+			gt_oldtime_uisoc = now_time;
+			g_old_uisoc = FG_status.ui_soc;
+
+			battery_main.BAT_CAPACITY = FG_status.ui_soc;
+			battery_update(&battery_main);
+		} else {
+			bm_debug("[fg_res] FG_DAEMON_CMD_SET_KERNEL_UISOC = %d %d GM3:%d\n",
+				daemon_ui_soc, FG_status.ui_soc, gDisableGM30);
+			/* ac_update(&ac_main); */
+			battery_main.BAT_CAPACITY = FG_status.ui_soc;
+			battery_update(&battery_main);
+		}
 	}
 	break;
 
@@ -4062,8 +4105,9 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 706:
 		{
-			fg_cust_data.poweron_system_iboot = param;
-			bm_err("[FG_IT] exe_BAT_EC cmd %d, param %d, poweron_system_iboot\n", cmd, param);
+			fg_cust_data.poweron_system_iboot = param * UNIT_TRANS_10;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, param %d, poweron_system_iboot\n"
+				, cmd, param * UNIT_TRANS_10);
 		}
 		break;
 	case 707:

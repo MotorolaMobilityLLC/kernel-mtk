@@ -166,6 +166,7 @@
 #define BATTERY_TMP_TO_ENABLE_NAFG -20
 /* #define GM30_DISABLE_NAFG */
 
+#define OVER_DISCHARGE_LEVEL 100
 #define UISOC_UPDATE_TYPE 2
 /*
 *	uisoc_update_type:
