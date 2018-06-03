@@ -30,7 +30,8 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/sync/      \
 	-I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach/ \
 	-I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM) \
-	-I$(srctree)/drivers/misc/mediatek/base/power/include
+	-I$(srctree)/drivers/misc/mediatek/base/power/include \
+	-I$(srctree)/drivers/misc/mediatek/gpu/ged/include
 
 ccflags-$(CONFIG_MTK_LCM) += \
 	-I$(srctree)/drivers/misc/mediatek/lcm/inc/

@@ -58,7 +58,7 @@ struct DFRC_DRV_POLICY {
 	int fps;
 	int mode;
 	int target_pid;
-	void *gl_context_id;
+	unsigned long long gl_context_id;
 };
 
 struct DFRC_DRV_HWC_INFO {
