@@ -27,32 +27,27 @@
 	#if CFG_FPGA_PLATFORM
 		#define PMIC_WRAP_NO_PMIC
 	#else
-		#undef PMIC_WRAP_NO_PMIC
-		#define PWRAP_TIMEOUT
+		/* #define PWRAP_TIMEOUT */
 	#endif
 #elif (PMIC_WRAP_LK)
 	#if defined(MACH_FPGA)
 		#define PMIC_WRAP_NO_PMIC
 	#else
-		#undef PMIC_WRAP_NO_PMIC
 		#define PWRAP_TIMEOUT
 	#endif
 #elif (PMIC_WRAP_KERNEL)
 	#if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
 		#define PMIC_WRAP_NO_PMIC
 	#else
-		#undef PMIC_WRAP_NO_PMIC
 		/* #define PWRAP_TIMEOUT */
 	#endif
 #elif (PMIC_WRAP_CTP)
 	#if defined(CONFIG_MTK_FPGA)
 		#define PMIC_WRAP_NO_PMIC
 	#else
-		#undef PMIC_WRAP_NO_PMIC
 		/* #define PWRAP_TIMEOUT */
 	#endif
 #else
-	#undef PMIC_WRAP_NO_PMIC
 	#define PWRAP_TIMEOUT
 #endif
 
@@ -63,7 +58,7 @@
 	#include <sync_write.h>
 	#include <typedefs.h>
 	#include <gpio.h>
-	#include <mt6799.h>
+	#include <mt6763.h>
 #elif (PMIC_WRAP_LK)
 	#include <debug.h>
 	#include <platform/mt_typedefs.h>
@@ -79,8 +74,6 @@
 		#include <mach/mtk_irq.h>
 	#endif
 	#include "mt-plat/sync_write.h"
-/*******************macro for  regsister@PMIC *******************************/
-	#include <mach/upmu_hw.h>
 #elif (PMIC_WRAP_SCP)
 	#include "stdio.h"
 	#include <string.h>
@@ -93,6 +86,12 @@
 	### Compile error, check SW ENV define
 #endif
 
+/*******************macro for  regsister@PMIC *******************************/
+#if (PMIC_WRAP_KERNEL)
+	#include <mach/upmu_hw.h>
+#else
+	#include <upmu_hw.h>
+#endif
 /*******************start ---external API********************************/
 extern signed int pwrap_read(unsigned int adr, unsigned int *rdata);
 extern signed int pwrap_write(unsigned int adr, unsigned int wdata);
@@ -169,6 +168,7 @@ extern signed int pwrap_init(void);
 #define DEFAULT_VALUE_READ_TEST                 (0x5aa5)
 #define DEFAULT_VALUE_WRITE_TEST                (0xa55a)
 #define PWRAP_WRITE_TEST_VALUE                  (0x1234)
+#define PWRAP_EXT_WRITE_TEST_VALUE              (0x4321)
 
 
 #ifdef CONFIG_OF
@@ -186,8 +186,6 @@ extern signed int pwrap_init(void);
 	#define INFRACFG_AO_REG_BASE    (INFRACFG_AO_BASE)
 	#define CKSYS_BASE              (0x10000000)
 	#define TOPCKGEN_BASE           (CKSYS_BASE)
-	#define SCP_CLK_CTRL_BASE       (0x10059000)
-	#define PMIC_WRAP_P2P_BASE      (0x1005E000)
 #endif
 
 #define UINT32  unsigned int
