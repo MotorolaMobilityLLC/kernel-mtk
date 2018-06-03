@@ -24,8 +24,9 @@
 #include "mtk_eem_internal_ap.h"
 #include "mtk_eem_internal.h"
 #include "mtk_cpufreq_api.h"
+#ifdef CONFIG_MTK_GPU_SUPPORT
 #include "mtk_gpufreq.h"
-
+#endif
 /*
  * operation of EEM detectors
  */
@@ -210,15 +211,19 @@ int get_volt_gpu(struct eem_det *det)
 {
 	FUNC_ENTER(FUNC_LV_HELP);
 
+#ifdef CONFIG_MTK_GPU_SUPPORT
 	/* eem_debug("get_volt_gpu=%d\n",mt_gpufreq_get_cur_volt()); */
 
 	return mt_gpufreq_get_cur_volt(); /* unit  mv * 100 = 10uv */
-
+#else
+	return 0;
+#endif
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
 int set_volt_gpu(struct eem_det *det)
 {
+#ifdef CONFIG_MTK_GPU_SUPPORT
 	int i;
 	unsigned int output[NR_FREQ_GPU];
 
@@ -233,19 +238,25 @@ int set_volt_gpu(struct eem_det *det)
 	}
 
 	return mt_gpufreq_update_volt(output, det->num_freq_tbl);
+#else
+	return 0;
+#endif
 }
 
 void restore_default_volt_gpu(struct eem_det *det)
 {
 	FUNC_ENTER(FUNC_LV_HELP);
 
+#ifdef CONFIG_MTK_GPU_SUPPORT
 	mt_gpufreq_restore_default_volt();
+#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
 void get_freq_table_gpu(struct eem_det *det)
 {
+#ifdef CONFIG_MTK_GPU_SUPPORT
 	int i = 0;
 
 	memset(det->freq_tbl, 0, sizeof(det->freq_tbl));
@@ -266,12 +277,14 @@ void get_freq_table_gpu(struct eem_det *det)
 
 	det->num_freq_tbl = i;
 	eem_debug("[%s] freq_num:%d, max_freq=%d\n", det->name+8, det->num_freq_tbl, det->max_freq_khz);
+#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
 void get_orig_volt_table_gpu(struct eem_det *det)
 {
+#ifdef CONFIG_MTK_GPU_SUPPORT
 #if SET_PMIC_VOLT_TO_DVFS
 	int i = 0, volt = 0;
 
@@ -290,6 +303,7 @@ void get_orig_volt_table_gpu(struct eem_det *det)
 #endif
 	}
 	FUNC_EXIT(FUNC_LV_HELP);
+#endif
 #endif
 }
 

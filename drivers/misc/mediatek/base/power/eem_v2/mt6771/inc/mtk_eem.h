@@ -182,7 +182,6 @@ extern u8 aee_rr_curr_ptp_status(void);
 
 /* EEM Extern Function */
 extern int mt_eem_status(enum eem_det_id id);
-extern void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse);
 extern unsigned int get_efuse_status(void);
 extern unsigned int mt_eem_is_enabled(void);
 #endif

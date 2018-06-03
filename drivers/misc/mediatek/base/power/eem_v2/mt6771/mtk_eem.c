@@ -44,6 +44,7 @@
 #include <linux/time.h>
 #include <linux/slab.h>
 #include <linux/math64.h>
+#include <linux/uaccess.h>
 
 #ifdef CONFIG_OF
 	#include <linux/cpu.h>
@@ -57,8 +58,12 @@
 #include <mt-plat/mtk_chip.h>
 #include <mt-plat/mtk_gpio.h>
 #include "upmu_common.h"
+#ifdef CONFIG_MTK_FREQ_HOPPING
 #include "mach/mtk_freqhopping.h"
+#endif
+#ifdef CONFIG_THERMAL
 #include "mtk_thermal.h"
+#endif
 #include "mtk_ppm_api.h"
 #include "mtk_cpufreq_api.h"
 #include "mtk_eem_config.h"
@@ -67,7 +72,9 @@
 #include "mtk_eem_internal_ap.h"
 
 #include "mtk_eem_internal.h"
+#ifdef CONFIG_MTK_GPU_SUPPORT
 #include "mtk_gpufreq.h"
+#endif
 #include <mt-plat/mtk_devinfo.h>
 #include <regulator/consumer.h>
 #include "pmic_regulator.h"
@@ -135,7 +142,6 @@ static struct eem_det *id_to_eem_det(enum eem_det_id id)
 
 static int get_devinfo(void)
 {
-	unsigned int mtdes_idx, bdes_mdes_idx;
 	int ret = 0;
 	int *val;
 	int i = 0;
@@ -145,18 +151,18 @@ static int get_devinfo(void)
 
 	/* FTPGM */
 	val[0] = get_devinfo_with_index(DEVINFO_IDX_0);
-	/* LL */
 	val[1] = get_devinfo_with_index(DEVINFO_IDX_1);
 	val[2] = get_devinfo_with_index(DEVINFO_IDX_2);
-	/* L */
 	val[3] = get_devinfo_with_index(DEVINFO_IDX_3);
 	val[4] = get_devinfo_with_index(DEVINFO_IDX_4);
-	/* CCI */
 	val[5] = get_devinfo_with_index(DEVINFO_IDX_5);
 	val[6] = get_devinfo_with_index(DEVINFO_IDX_6);
-	/* GPU */
 	val[7] = get_devinfo_with_index(DEVINFO_IDX_7);
 	val[8] = get_devinfo_with_index(DEVINFO_IDX_8);
+	val[9] = get_devinfo_with_index(DEVINFO_IDX_9);
+	val[10] = get_devinfo_with_index(DEVINFO_IDX_16);
+	val[11] = get_devinfo_with_index(DEVINFO_IDX_17);
+	val[12] = get_devinfo_with_index(DEVINFO_IDX_18);
 
 #if EEM_FAKE_EFUSE
 	/* for verification */
@@ -170,9 +176,12 @@ static int get_devinfo(void)
 	val[7] = DEVINFO_7;
 	val[8] = DEVINFO_8;
 	val[9] = DEVINFO_9;
+	val[10] = DEVINFO_16;
+	val[11] = DEVINFO_17;
+	val[12] = DEVINFO_18;
 #endif
 
-#ifdef CONFIG_EEM_AEE_RR_REC)
+#ifdef CONFIG_EEM_AEE_RR_REC
 	aee_rr_rec_ptp_e0((unsigned int)val[0]);
 	aee_rr_rec_ptp_e1((unsigned int)val[1]);
 	aee_rr_rec_ptp_e2((unsigned int)val[2]);
@@ -195,6 +204,9 @@ static int get_devinfo(void)
 	eem_debug("M_HW_RES7 = 0x%08X\n", val[7]);
 	eem_debug("M_HW_RES8 = 0x%08X\n", val[8]);
 	eem_debug("M_HW_RES9 = 0x%08X\n", val[9]);
+	eem_debug("M_HW_RES16 = 0x%08X\n", val[10]);
+	eem_debug("M_HW_RES17 = 0x%08X\n", val[11]);
+	eem_debug("M_HW_RES18 = 0x%08X\n", val[12]);
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -258,6 +270,7 @@ static void _mt_eem_aee_init(void)
 }
 #endif
 
+#ifdef CONFIG_THERMAL
 /* common part in thermal */
 int __attribute__((weak))
 tscpu_get_temp_by_bank(enum thermal_bank_name ts_bank)
@@ -272,6 +285,7 @@ tscpu_is_temp_valid(void)
 	eem_error("cannot find %s (thermal has not ready yet!)\n", __func__);
 	return 0;
 }
+#endif
 
 static struct eem_ctrl *id_to_eem_ctrl(enum eem_ctrl_id id)
 {
@@ -444,7 +458,7 @@ int base_ops_mon_mode(struct eem_det *det)
 		return -2;
 	}
 
-#ifndef CONFIG_THERMAL)
+#ifndef CONFIG_THERMAL
 	det->MTS = MTS_VAL;
 	det->BTS = BTS_VAL;
 #else
@@ -993,7 +1007,8 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
-#if UPDATE_TO_UPOWER
+/* #if UPDATE_TO_UPOWER */
+#if 0
 static enum upower_bank transfer_ptp_to_upower_bank(unsigned int det_id)
 {
 	enum upower_bank bank;
@@ -1048,9 +1063,13 @@ static void eem_set_eem_volt(struct eem_det *det)
 	upower_update_degree_by_eem(transfer_ptp_to_upower_bank(det_to_id(det)), det->temp/1000);
 #endif
 
+#ifdef CONFIG_THERMAL
 	/* eem_debug("eem_set_eem_volt cur_temp = %d, valid = %d\n", det->temp, tscpu_is_temp_valid()); */
 	/* 6250 * 10uV = 62.5mv */
 	if (det->temp <= INVERT_TEMP_VAL || !tscpu_is_temp_valid())
+#else
+	if (det->temp <= INVERT_TEMP_VAL)
+#endif
 		det->isTempInv = 1;
 	else if ((det->isTempInv) && (det->temp > OVER_INV_TEM_VAL))
 		det->isTempInv = 0;
@@ -1920,7 +1939,9 @@ void eem_init01(void)
 
 	/* CPU/GPU post-process */
 	eem_buck_set_mode(0);
+#ifdef CONFIG_MTK_GPU_SUPPORT
 	mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
+#endif
 	mt_ppm_ptpod_policy_deactivate();
 
 	/* This patch is waiting for whole bank finish the init01 then go
@@ -2001,7 +2022,9 @@ static int eem_probe(struct platform_device *pdev)
 
 	/* CPU/GPU pre-process */
 	mt_ppm_ptpod_policy_activate();
+#ifdef CONFIG_MTK_GPU_SUPPORT
 	mt_gpufreq_disable_by_ptpod();
+#endif
 	ret = eem_buck_get(pdev);
 	if (ret != 0)
 		eem_error("eem_buck_get failed\n");
@@ -2568,10 +2591,6 @@ static int create_procfs(void)
 }
 #endif /* CONFIG_PROC_FS */
 
-void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse)
-{
-}
-
 unsigned int get_efuse_status(void)
 {
 	return eem_checkEfuse;
@@ -2579,27 +2598,15 @@ unsigned int get_efuse_status(void)
 /*
  * Module driver
  */
-
-static int new_eem_val = 1; /* default no change */
-static int  __init fn_change_eem_status(char *str)
-{
-	int new_set_val;
-
-	eem_debug("fn_change_eem_status\n");
-	if (get_option(&str, &new_set_val)) {
-		new_eem_val = new_set_val;
-		eem_debug("new_eem_val = %d\n", new_eem_val);
-		return 0;
-	}
-	return -EINVAL;
-}
-early_param("eemen", fn_change_eem_status);
-
 static int __init eem_init(void)
 {
 	int err = 0;
 
-	eem_debug("[EEM] new_eem_val=%d, ctrl_EEM_Enable=%d\n", new_eem_val, ctrl_EEM_Enable);
+#ifdef EEM_NOT_READY
+	return 0;
+#endif
+
+	eem_debug("[EEM] ctrl_EEM_Enable=%d\n", ctrl_EEM_Enable);
 
 	get_devinfo();
 	create_procfs();
