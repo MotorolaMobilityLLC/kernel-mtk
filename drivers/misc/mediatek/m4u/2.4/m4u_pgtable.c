@@ -248,6 +248,52 @@ void *m4u_for_each_pte(struct m4u_domain_t *domain, m4u_pte_fn_t *fn, void *data
 	return NULL;
 }
 
+/* after m4u client allocated mva space, we can use this function to traverse
+ * the pagetable corresponding to the mva space.
+ * @param   domain   m4u0 or m4u1
+ * @param   fn       -- to be called for each pte
+ * @param   allocated mva
+ * @param   requeired mva size
+ */
+void m4u_for_each_pte_in_range(struct m4u_domain_t *domain,
+					m4u_pte_fn_t *fn,
+					unsigned int mva,
+					unsigned int mva_size)
+{
+	unsigned int pt_num = M4U_GET_PAGE_NUM(mva, mva_size);
+	m4u_pte_info_t pte_info;
+	int i;
+	unsigned int mva_step = 0, tmp_mva = 0;
+	int pt_type = m4u_get_pt_type(domain, mva);
+
+	if (pt_type == -1) {
+		M4U_PRINT_LOG_OR_SEQ(NULL, "invalid pagetable type.\n");
+		return;
+	}
+	switch (pt_type) {
+	case MMU_PT_TYPE_SMALL_PAGE:
+		mva_step = MMU_SMALL_PAGE_SIZE;
+		break;
+	case MMU_PT_TYPE_LARGE_PAGE:
+		mva_step = MMU_LARGE_PAGE_SIZE;
+		break;
+	case MMU_PT_TYPE_SECTION:
+		mva_step = MMU_SECTION_SIZE;
+		break;
+	case MMU_PT_TYPE_SUPERSECTION:
+		mva_step = MMU_SUPERSECTION_SIZE;
+		break;
+	}
+	read_lock_domain(domain);
+
+	for (i = 0; i < pt_num; i++) {
+		tmp_mva = mva + i * mva_step;
+		m4u_get_pte_info(domain, tmp_mva, &pte_info);
+		fn(&pte_info, NULL);
+	}
+	read_unlock_domain(domain);
+}
+
 /* dump pte info for mva, no matter it's valid or not */
 /* this function doesn't lock pgtable lock. */
 void m4u_dump_pte_nolock(struct m4u_domain_t *domain, unsigned int mva)
@@ -291,6 +337,18 @@ void m4u_dump_pgtable(struct m4u_domain_t *domain, struct seq_file *seq)
 	m4u_for_each_pte(domain, __m4u_print_pte, seq);
 	M4U_PRINT_LOG_OR_SEQ(seq, "m4u dump pgtable done ==============>\n");
 }
+
+void m4u_dump_pgtable_in_range(struct m4u_domain_t *domain,
+					unsigned int mva,
+					unsigned int mva_size)
+{
+	M4U_PRINT_LOG_OR_SEQ(NULL, "m4u dump pgtable[0x%x - 0x%x] start ==============>\n",
+				mva, mva + mva_size);
+	m4u_for_each_pte_in_range(domain, __m4u_print_pte, mva, mva_size);
+	M4U_PRINT_LOG_OR_SEQ(NULL, "m4u dump pgtable[0x%x - 0x%x] done ==============>\n",
+				mva, mva + mva_size);
+}
+
 
 /* M4U_PROT_CACHE indicates M4U_PROT_SHARE, which route transaction to CCI*/
 static inline unsigned int m4u_prot_fixup(unsigned int prot)

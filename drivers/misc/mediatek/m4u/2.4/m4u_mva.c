@@ -144,9 +144,11 @@ int is_in_vpu_region(unsigned int index, unsigned int nr)
 		|| (index >= vpu_fix_block_start
 		&& GET_END_INDEX(index, nr) <= vpu_fix_block_end))
 		ret = 1;
+#if 0
 	if (ret)
 		M4UINFO("input region[0x%x - 0x%x] is in the vpu region.\n",
 			index, GET_END_INDEX(index, nr));
+#endif
 	return ret;
 }
 
@@ -195,8 +197,10 @@ int is_intersected_with_vpu_region(unsigned int start, unsigned int nr)
 		&& (GET_END_INDEX(start, nr) >= (vpu_fix_block_end + 1)
 			&& GET_END_INDEX(start, nr) <= MVA_MAX_BLOCK_NR))
 		ret = 1;
+#if 0
 	if (ret)
 		M4UINFO("input region intersects to vpu region\n");
+#endif
 	return ret;
 
 }
@@ -212,6 +216,10 @@ int check_reserved_region_integrity(unsigned int start, unsigned int nr)
 	}
 	if (i == nr)
 		integrity = 1;
+	else {
+		M4UMSG("reserved blocks[0x%x-0x%x] corruptted at 0x%x\n",
+			start, GET_END_INDEX(start, nr), i);
+	}
 	return integrity;
 }
 
@@ -242,6 +250,7 @@ void m4u_mvaGraph_dump(void)
 				is_reserve = 0;
 			nr_alloc += nr;
 		} else {		/* mva region is free */
+			/* mva region is free */
 			is_busy = 0;
 			if (MVA_IS_RESERVED(index))
 				is_reserve = 1;
@@ -374,7 +383,8 @@ void *mva_get_priv(unsigned int mva)
 	return priv;
 }
 
-/*return 0 means non-vpu region access.
+/*make sure @param priv is not NULL before call this function.
+ *return 0 means non-vpu region access.
  *return -1 means input mva region allocated by non-vpu port is in vpu reserved region.
  *or input mva region intersectst to vpu reserved region.
  *return 1 means vpu port alloc mva in vpu reserved region.
@@ -433,7 +443,7 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	unsigned short nr = 0;
 	unsigned int mvaRegionStart;
 	unsigned long startRequire, endRequire, sizeRequire;
-	int   requeired_mva_status = 0;
+	int   region_status = 0;
 	const short fix_index0 = MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START);
 	const short fix_index1 = MVAGRAPH_INDEX(VPU_FIX_MVA_START);
 	const short gap_start_idx = GET_END_INDEX(fix_index0, VPU_RESET_VECTOR_BLOCK_NR) + 1;
@@ -501,10 +511,10 @@ stage3:
 	}
 
 	/*double check if mva region we got is in vpu reserved region. */
-	requeired_mva_status = m4u_check_mva_region(s, nr, priv);
-	if (requeired_mva_status) {
+	region_status = m4u_check_mva_region(s, nr, priv);
+	if (region_status) {
 		spin_unlock(&gMvaGraph_lock);
-		M4UMSG("mva_alloc error: fault cursor(%d)\n", s);
+		M4UMSG("mva_alloc error: fault cursor(%d) access vpu region\n", s);
 		return 0;
 	}
 
@@ -572,7 +582,7 @@ unsigned int m4u_do_mva_alloc_fix(unsigned long va,
 	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
 	unsigned short endIdx;
 	unsigned short region_start, region_end;
-	int   requeired_mva_status = 0, is_in_vpu_region = 0;
+	int   region_status = 0, is_in_vpu_region = 0;
 
 	if (size == 0) {
 		M4UMSG("%s: size = %d\n", __func__, size);
@@ -587,16 +597,19 @@ unsigned int m4u_do_mva_alloc_fix(unsigned long va,
 	sizeRequire = endRequire - startRequire + 1;
 	nr = (sizeRequire + MVA_BLOCK_ALIGN_MASK) >> MVA_BLOCK_SIZE_ORDER;
 
-	requeired_mva_status = m4u_check_mva_region(startIdx, nr, priv);
-	if (requeired_mva_status == -1)
+	region_status = m4u_check_mva_region(startIdx, nr, priv);
+	if (region_status == -1)
 		return 0;
-	else if (requeired_mva_status == 1)
+	else if (region_status == 1)
 		is_in_vpu_region = 1;
 
 	spin_lock(&gMvaGraph_lock);
 
 	region_start = startIdx;
-	/* find prev head of this region */
+	/* find prev head of this region. it may be the following relation:
+	 *   |-----------|-------------|----------------|--------|----------|
+	 *  0x0       region_start  startIdx         endIdx  region_end    0xFFF
+	 */
 	while (mvaGraph[region_start] == 0)
 		region_start--;
 
@@ -613,6 +626,12 @@ unsigned int m4u_do_mva_alloc_fix(unsigned long va,
 	region_end = region_start + MVA_GET_NR(region_start) - 1;
 
 	if (startIdx == region_start && endIdx == region_end) {
+		/* case 1:
+		 *   |-----------|-----------------------------|-------------|
+		 *  0x0       region_start                  region_end    0xFFF
+		 *            startIdx                      endIdx
+		 *           alloc(start)                   alloc(end)
+		 */
 		MVA_SET_BUSY(startIdx);
 		MVA_SET_BUSY(endIdx);
 		if (is_in_vpu_region) {
@@ -620,6 +639,12 @@ unsigned int m4u_do_mva_alloc_fix(unsigned long va,
 			MVA_SET_RESERVED(endIdx);
 		}
 	} else if (startIdx == region_start) {
+		/* case 2:
+		 *   |-----------|-------------------|----------|-------------|
+		 *  0x0       region_start         endIdx    region_end    0xFFF
+		 *            startIdx
+		 *           alloc(start)         alloc(end)
+		 */
 		mvaGraph[startIdx] = nr | MVA_BUSY_MASK;
 		mvaGraph[endIdx] = mvaGraph[startIdx];
 		mvaGraph[endIdx + 1] = region_end - endIdx;
@@ -631,6 +656,12 @@ unsigned int m4u_do_mva_alloc_fix(unsigned long va,
 			MVA_SET_RESERVED(region_end);
 		}
 	} else if (endIdx == region_end) {
+		/* case 3:
+		 *   |-----------|------------|---------------|-------------|
+		 *  0x0       region_start startIdx       region_end      0xFFF
+		 *                                          endIdx
+		 *                         alloc(start)    alloc(end)
+		 */
 		mvaGraph[region_start] = startIdx - region_start;
 		mvaGraph[startIdx - 1] = mvaGraph[region_start];
 		mvaGraph[startIdx] = nr | MVA_BUSY_MASK;
@@ -642,6 +673,11 @@ unsigned int m4u_do_mva_alloc_fix(unsigned long va,
 			MVA_SET_RESERVED(endIdx);
 		}
 	} else {
+		/* case 4:
+		 *   |-----------|-------------|----------------|--------|----------|
+		 *  0x0       region_start  startIdx         endIdx  region_end    0xFFF
+		 *                         alloc(start)    alloc(end)
+		 */
 		mvaGraph[region_start] = startIdx - region_start;
 		mvaGraph[startIdx - 1] = mvaGraph[region_start];
 		mvaGraph[startIdx] = nr | MVA_BUSY_MASK;
@@ -667,9 +703,12 @@ out:
 	return mva;
 }
 
-/*m4u_do_mva_alloc_start_from is used to allocate a sub range from the reserved fix region for
- * the fix port. As similar as m4u_do_mva_alloc_fix do, m4u_do_mva_alloc_start_from starts from
- * parameter [mva + va]. And allocate a sub range in the fix region.
+/*m4u_do_mva_alloc_start_from is used to allocate a mva region start from iova_start to iova_end
+ * for CCU & VPU. if [iova_start, iova_end] is busy, it will return alloc failed.
+ * for example: if [iova_start, iova_end] = [0x10000000, 0xffffffff] size = 0x100000,
+ * we will find a size = 0x100000 region started from 0x10000000 to 0xfffffff, until there is
+ * a right one.
+ * NOTICE: vpu should not use the api.
  *@Param va[in]    virtual address used by cpu, we use it to get cpu page table offset.
  *@Param mva[in]   modified virtual start address used by m4u. user must provide the right one.
  *@Param size[in]      the size of requeired sub range.
@@ -685,15 +724,20 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 	unsigned short nr = 0;
 	unsigned int mvaRegionStart;
 	unsigned long startRequire, endRequire, sizeRequire;
-	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
+	unsigned short startIdx, endIdx;
 	unsigned short region_start, region_end, next_region_start = 0;
-	int   requeired_mva_status = 0, is_in_vpu_region = 0;
+	int   region_status = 0, is_in_vpu_region = 0;
 
-	if (size == 0) {
-		M4UMSG("%s: size = %d\n", __func__, size);
+	if (size == 0 || priv == NULL) {
+		M4UMSG("%s: invalid size & port info\n", __func__);
 		return 0;
 	}
 	/*TODO:Need to check if sub range in fix range need to align to MVA_BLOCK_ALIGN_MASK*/
+	/* find this region[startIdx ~ endIdx].
+	 *  |-----------|-|---------------|----------------|----------------|
+	 *  0x0    iova_start_idx                    iova_end_idx        0xFFF
+	 *             startIdx         endIdx
+	 */
 	startIdx = (mva + MVA_BLOCK_ALIGN_MASK) >> MVA_BLOCK_SIZE_ORDER;
 
 
@@ -703,21 +747,29 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 	endRequire = (va + size - 1) | M4U_PAGE_MASK;
 	sizeRequire = endRequire - startRequire + 1;
 	nr = (sizeRequire + MVA_BLOCK_ALIGN_MASK) >> MVA_BLOCK_SIZE_ORDER;
-	/* (sizeRequire>>MVA_BLOCK_SIZE_ORDER) + ((sizeRequire&MVA_BLOCK_ALIGN_MASK)!=0); */
+	endIdx = startIdx + nr - 1;
 
-	requeired_mva_status = m4u_check_mva_region(startIdx, nr, priv);
-	if (requeired_mva_status == -1)
+	/*check [startIdx, endIdx] status*/
+	region_status = m4u_check_mva_region(startIdx, nr, priv);
+	if (region_status == -1)
 		return 0;
-	else if (requeired_mva_status == 1)
+	else if (region_status == 1)
 		is_in_vpu_region = 1;
 
-	M4UMSG("m4u_do_mva_alloc_start_from mva:0x%x, startIdx=%d, size = %d, nr= %d\n",
-		mva, startIdx, size, nr);
+	M4UINFO("%s: iova_start_idx:0x%x, startIdx=0x%x, endIdx = 0x%x, nr= 0x%x\n",
+		__func__, MVAGRAPH_INDEX(mva), startIdx, endIdx, nr);
 	spin_lock(&gMvaGraph_lock);
 
-	/* find this region */
+	/* use cursor region_start to find the region after the region including the "startIdx"th block.
+	 * if we find the startIdx's neighbour and graph, we maybe need to split it.
+	 *  |-----|------|-|-----------|--------|-----------------|---------|----------|
+	 *  0x0    iova_start_idx                                    iova_end_idx   0xFFF
+	 *             startIdx              endIdx(may be here)
+	 *     region start       next region start          next region end
+	 */
 	for (region_start = 1; region_start < (MVA_MAX_BLOCK_NR + 1);
 		region_start += MVA_GET_NR(region_start)) {
+		/*error check*/
 		if ((mvaGraph[region_start] & MVA_BLOCK_NR_MASK) == 0) {
 			m4u_mvaGraph_dump();
 			m4u_aee_print("%s: s=%d, 0x%x\n", __func__, s, mvaGraph[region_start]);
@@ -733,34 +785,69 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 		return 0;
 	}
 	region_end = region_start + MVA_GET_NR(region_start) - 1;
+	M4UINFO("%s: found region_start(0x%x) region_end(0x%x) next_region_start(0x%x)\n",
+		__func__, region_start, region_end, next_region_start);
 
+	/*if not found, it means error.*/
 	if (next_region_start == 0) {
+		M4UMSG("no enough mva to allocate.\n");
 		m4u_aee_print("%s: region_start: %d, region_end= %d, region block count= %d\n",
 			__func__, region_start, region_end, MVA_GET_NR(region_start));
 	}
 
+	/*check the found region status.*/
 	if (MVA_IS_BUSY(region_start)) {
-		M4UMSG("mva is inuse index=0x%x, mvaGraph=0x%x\n",
-			region_start, mvaGraph[region_start]);
+		/*if [region_start, region_end] is busy, need to use another cursor s to continue.
+		 *  |-----|------|------------|--------|-----------------|---------|----------|
+		 *  0x0    iova_start_idx                                    iova_end_idx   0xFFF
+		 *           startIdx                endIdx(may be here)
+		 *    region start       next region start          next region end
+		 *        s
+		 */
 		s = region_start;
+		M4UINFO("found region is busy. need to traverse again from s=0x%x.\n", s);
 	} else {
-		if ((region_end - startIdx + 1) < nr)
+		/*if [region_start, region_end] is free, need to check
+		 *whether the nr of [region_start, region_end] is enough to alloc.
+		 *if enough, alloc it. if not, need to continue with "s = next_region_start".
+		 *  |-----|------|------------|--------|-----------------|---------|----------|
+		 *  0x0    iova_start_idx                                    iova_end_idx   0xFFF
+		 *           startIdx                endIdx(may be here)
+		 *    region start       next region start          next region end
+		 *                             s
+		 */
+		if ((region_end - startIdx + 1) < nr) {
 			s = next_region_start;
-		else
-			M4UMSG("mva is free region_start=%d, s=%d\n", region_start, s);
+			M4UINFO("the size of found region is not enough. need to traverse again from s=0x%x\n",
+				s);
+		} else
+			M4UINFO("found region is free. region_start=%d, s=%d\n", region_start, s);
 	}
 
-	M4UMSG("region_start: %d, region_end= %d, region= %d, next_start= %d, search start: %d\n",
-		region_start, region_end, MVA_GET_NR(region_start), next_region_start, s);
-
-	/* ----------------------------------------------- */
+	/* now [region_start, region_end] is not free or enough to allocate.
+	 * so traverse mvaGraph to find the first right one.
+	 * here we should also need to traverse mvaGraph.
+	 */
 	if (s != 0) {
 		/* find first match free region */
-		for (; (s < (MVA_MAX_BLOCK_NR + 1)) && (mvaGraph[s] < nr);
-				s += (mvaGraph[s] & MVA_BLOCK_NR_MASK)) {
+		for (; s < (MVA_MAX_BLOCK_NR + 1); s += (mvaGraph[s] & MVA_BLOCK_NR_MASK)) {
+			/*error check*/
 			if ((mvaGraph[s] & MVA_BLOCK_NR_MASK) == 0) {
 				m4u_aee_print("%s: s=%d, 0x%x\n", __func__, s, mvaGraph[s]);
 				m4u_mvaGraph_dump();
+			}
+
+			if (MVA_GET_NR(s) > nr && !MVA_IS_BUSY(s)) {
+				/*check [s, s + MVA_GET_NR(s) -1] status*/
+				region_status = m4u_check_mva_region(s, MVA_GET_NR(s), priv);
+				if (region_status == -1) /*skip the illegal allocation*/
+					continue;
+				else if (region_status == 1) {
+					/*NOTICE: need to mark reserved region flag again.*/
+					is_in_vpu_region = 1;
+					break;
+				} else if (region_status == 0)
+					break;
 			}
 		}
 	}
@@ -774,16 +861,16 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 
 		return 0;
 	}
+
+	if (s != 0)
+		M4UINFO("after 2nd traverse, found region s = 0x%x\n", s);
+
 	/* ----------------------------------------------- */
 	/*s==0 means startIdx == mva_start >> 20*/
 	if (s == 0) {
-		/* same as m4u_do_mva_alloc_fix */
-		short endIdx = startIdx + nr - 1;
-
-		region_end = region_start + MVA_GET_NR(region_start) - 1;
-		M4UMSG("region_start: %d, region_end= %d, startIdx: %d, endIdx= %d\n",
-			region_start, region_end, startIdx, endIdx);
-
+		/*[region_start, region_end] is free or enough to allocate.
+		 *it's same to m4u_do_mva_alloc_fix
+		 */
 		if (startIdx == region_start && endIdx == region_end) {
 			MVA_SET_BUSY(startIdx);
 			MVA_SET_BUSY(endIdx);
@@ -882,8 +969,10 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	unsigned short endIdx;
 	unsigned int startRequire, endRequire, sizeRequire;
 	unsigned short nrRequire, nr_tmp = 0;
-	int   requeired_mva_status, is_in_vpu_region_flag = 0;
+	int   region_status, is_in_vpu_region_flag = 0;
 	int ret = 0;
+	struct m4u_buf_info_t *p_mva_info = (struct m4u_buf_info_t *)mvaInfoGraph[startIdx];
+	int port;
 
 	if (startIdx == 0 || startIdx > MVA_MAX_BLOCK_NR) {
 		M4UMSG("mvaGraph index is 0. mva=0x%x\n", mva);
@@ -892,19 +981,21 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
 	endIdx = startIdx + nr - 1;
 
-	/*if nr == 0, it means the mva has been freed, Or mvaGraph is corruptted.*/
-	if (nr == 0) {
-		M4UMSG("%s error: the nr of mva which will be freed is 0.\n", __func__);
-		return -1;
-	}
-
-	requeired_mva_status = m4u_check_mva_region(startIdx, nr, (void *)mvaInfoGraph[startIdx]);
-	if (requeired_mva_status == -1) {
-		M4UMSG("m4u_check_mva_region[0x%x - 0x%x] error when free mva\n",
-			startIdx, GET_END_INDEX(startIdx, nr));
+	if (size == 0 || nr == 0 || p_mva_info == NULL) {
+		M4UMSG("%s error: the input size = %d nr = %d mva_info = %p.\n",
+			__func__, size, nr, p_mva_info);
+		if (p_mva_info)
+			M4UMSG("error port id = %d\n", p_mva_info->port);
 		m4u_mvaGraph_dump();
 		return -1;
-	} else if (requeired_mva_status == 1)
+	} else
+		port = p_mva_info->port;
+	/*check if reserved region meets free condition.*/
+	region_status = m4u_check_mva_region(startIdx, nr, (void *)p_mva_info);
+	if (region_status == -1) {
+		m4u_mvaGraph_dump();
+		return -1;
+	} else if (region_status == 1)
 		is_in_vpu_region_flag = 1;
 
 	spin_lock(&gMvaGraph_lock);
@@ -1012,17 +1103,21 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	ret = check_reserved_region_integrity(MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START),
 						VPU_RESET_VECTOR_BLOCK_NR);
 	if (!ret)
-		M4UMSG("check_reserved_region_integrity error when free mva(0x%x)\n", mva);
+		M4UMSG("VPU_RESET_VECTOR region is corruptted when port(%d) free mva(0x%x)\n", port, mva);
 
 	ret = check_reserved_region_integrity(MVAGRAPH_INDEX(VPU_FIX_MVA_START),
 						VPU_FIX_BLOCK_NR);
 	if (!ret)
-		M4UMSG("check_reserved_region_integrity error when free mva(0x%x)\n", mva);
+		M4UMSG("VPU reserved data region is corruptted when port(%d) free mva(0x%x)\n", port, mva);
 
 	return 0;
 }
 
-/*for debug*/
+/*for debug.
+ *  |-----------|--------------------|-------------|----------------|----------------|
+ *  0x0    VPU_VECTOR_S        VPU_VECTOR_E    VPU_DATA_S       VPU_DATA_E        0xFFF
+ *      stage1         reserve            stage2        reserve            stage3
+ */
 unsigned int get_last_free_graph_idx_in_stage1_region(void)
 {
 	unsigned int index, nr;
@@ -1033,4 +1128,13 @@ unsigned int get_last_free_graph_idx_in_stage1_region(void)
 	index = GET_START_INDEX(index, nr);
 	spin_unlock(&gMvaGraph_lock);
 	return index;
+}
+
+unsigned int get_first_free_idx(void)
+{
+	int first_valid_mva, first_free_idx;
+
+	first_valid_mva = get_first_valid_mva();
+	first_free_idx = MVAGRAPH_INDEX(first_valid_mva) + MVA_GET_NR(first_valid_mva);
+	return first_free_idx;
 }
