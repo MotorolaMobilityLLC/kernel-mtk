@@ -481,9 +481,38 @@ void __attribute__((weak)) met_mmsys_event_isp_pass1_end(int sensor_id);
 
 /* ====================== SMI/EMI Interface ================================ */
 
+enum SMI_DEST {
+	SMI_DEST_ALL		= 0,
+	SMI_DEST_EMI		= 1,
+	SMI_DEST_INTERNAL	= 2,
+	SMI_DEST_NONE		= 9
+};
+
+enum SMI_RW {
+	SMI_RW_ALL		= 0,
+	SMI_READ_ONLY		= 1,
+	SMI_WRITE_ONLY		= 2,
+	SMI_RW_RESPECTIVE	= 3,
+	SMI_RW_NONE		= 9
+};
+
+enum SMI_BUS {
+	SMI_BUS_GMC		= 0,
+	SMI_BUS_AXI		= 1,
+	SMI_BUS_NONE		= 9
+};
+
+enum SMI_REQUEST {
+	SMI_REQ_ALL		= 0,
+	SMI_REQ_ULTRA		= 1,
+	SMI_REQ_PREULTRA	= 2,
+	SMI_NORMAL_ULTRA	= 3,
+	SMI_REQ_NONE		= 9
+};
+
 struct met_smi_conf {
 	unsigned int master;	/*Ex : Whitney: 0~8 for larb0~larb8,  9 for common larb*/
-	int	porta[4];	/* port select : [0] only for legacy mode, [0~3] ports for parallel mode, -1 no select*/
+	int	port[4];	/* port select : [0] only for legacy mode, [0~3] ports for parallel mode, -1 no select*/
 	unsigned int reqtype; /* Selects request type : 0 for all,1 for ultra,2 for preultra,3 for normal*/
 	unsigned int rwtype[4]; /* Selects read/write:  0 for R+W,  1 for read,  2 for write;*/
 				/* [0] for legacy and parallel larb0~8, [0~3] for parallel mode common*/
