@@ -478,7 +478,7 @@ static int mtu3_gadget_set_self_powered(struct usb_gadget *gadget,
 	return 0;
 }
 
-static int usb_rdy = 1;
+static int usb_rdy;
 
 void set_usb_rdy(void)
 {
@@ -501,6 +501,7 @@ static int mtu3_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	dev_dbg(mtu->dev, "%s (%s) for %sactive device\n", __func__,
 		is_on ? "on" : "off", mtu->is_active ? "" : "in");
 
+	dump_stack();
 	/* we'd rather not pullup unless the device is active. */
 	spin_lock_irqsave(&mtu->lock, flags);
 

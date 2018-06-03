@@ -574,18 +574,24 @@ static int phy_iowrite(struct mtk_phy_instance  *instance,
 	return 0;
 }
 
-#ifdef CONFIG_U3_PHY_SMT_LOOP_BACK_SUPPORT
+
 static bool phy_u3_loop_back_test(struct mtk_phy_instance *instance)
 {
 	int reg;
 	bool loop_back_ret = false;
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
+	int r_pipe0, r_rx0, rx_mix0, r_t2rlb;
 
 	/* VA10 is shared by U3/UFS */
 	/* default on and set voltage by PMIC */
 	/* off/on in SPM suspend/resume */
 
 	usb_enable_clock(phy_drv, true);
+
+	r_pipe0 = readl(U3D_PHYD_PIPE0);
+	r_rx0 = readl(U3D_PHYD_RX0);
+	rx_mix0 = readl(U3D_PHYD_MIX0);
+	r_t2rlb = readl(U3D_PHYD_T2RLB);
 
 	writel((readl(U3D_PHYD_PIPE0) & ~(0x01<<30)) | 0x01<<30,
 							U3D_PHYD_PIPE0);
@@ -658,10 +664,15 @@ static bool phy_u3_loop_back_test(struct mtk_phy_instance *instance)
 	else
 		loop_back_ret = false;
 
+	writel(r_rx0, U3D_PHYD_RX0);
+	writel(r_pipe0, U3D_PHYD_PIPE0);
+	writel(rx_mix0, U3D_PHYD_MIX0);
+	writel(r_t2rlb, U3D_PHYD_T2RLB);
+
 	usb_enable_clock(phy_drv, false);
 	return loop_back_ret;
 }
-#endif
+
 
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
 static void phy_sib_enable(struct mtk_phy_instance *instance, bool enable)
@@ -862,9 +873,7 @@ static const struct mtk_phy_interface ssusb_phys[] = {
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
 	.usb_phy_sib_enable_switch = phy_sib_enable,
 #endif
-#ifdef CONFIG_U3_PHY_SMT_LOOP_BACK_SUPPORT
 	.usb_phy_u3_loop_back_test = phy_u3_loop_back_test,
-#endif
 	},
 };
 

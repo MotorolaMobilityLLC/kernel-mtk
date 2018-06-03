@@ -26,7 +26,7 @@
 #include <linux/platform_device.h>
 
 #include <linux/gpio.h>
-
+#include "tcpm.h"
 
 #define K_EMERG	(1<<7)
 #define K_QMU	(1<<7)
@@ -369,6 +369,38 @@ static int usb_switch_set(void *data, u64 val)
 }
 DEFINE_SIMPLE_ATTRIBUTE(usb_debugfs_fops, NULL, usb_switch_set, "%llu\n");
 
+#ifdef CONFIG_TCPC_CLASS
+static int usb_cc_smt_status(void *data, u64 *val)
+{
+	struct tcpc_device *tcpc_dev;
+	uint8_t cc1, cc2;
+
+	tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+	if (!tcpc_dev) {
+		pr_info("[TYPEC] get device type_c_port0 fail\n");
+		return 0;
+	}
+
+	tcpm_inquire_remote_cc(tcpc_dev, &cc1, &cc2, false);
+	pr_info("[TYPEC] cc1=%d, cc2=%d\n", cc1, cc2);
+
+	if (cc1 == TYPEC_CC_VOLT_OPEN || cc1 == TYPEC_CC_DRP_TOGGLING)
+		*val = 0;
+	else if (cc2 == TYPEC_CC_VOLT_OPEN || cc2 == TYPEC_CC_DRP_TOGGLING)
+		*val = 0;
+	else
+		*val = 1;
+
+	return 0;
+}
+#else
+static int usb_check_cc_smt_status(void *data, u64 *val)
+{
+	return 0;
+}
+#endif
+DEFINE_SIMPLE_ATTRIBUTE(usb_cc_smt_fops, usb_cc_smt_status, NULL, "%llu\n");
+
 static int usb_typec_init_debugfs(struct usbtypc *typec)
 {
 	struct dentry *root;
@@ -386,7 +418,8 @@ static int usb_typec_init_debugfs(struct usbtypc *typec)
 
 	file = debugfs_create_file("smt", 0200, root, typec,
 			&usb_debugfs_fops);
-
+	file = debugfs_create_file("smt_u2_cc_mode", 0400, root, typec,
+			&usb_cc_smt_fops);
 	if (!file) {
 		ret = -ENOMEM;
 		goto err1;
@@ -635,8 +668,54 @@ static void usbc_redriver_lookup(struct usbtypc *typec, struct device_node *np)
 		usbc_dbg(K_ERR, "[USBC] get c2_pin_val fail\n");
 
 	if (typec->u_rd->c2_gpio != 0) {
-		usbc_dbg(K_ERR, "[USBC] C1[%d]=%d\n",
+		usbc_dbg(K_ERR, "[USBC] C2[%d]=%d\n",
 			typec->u_rd->c2_gpio, typec->u_rd->eq_c2);
+	}
+}
+
+
+void usb3_switch_dps_en(bool en)
+{
+	struct usbtypc *typec;
+	int retval = 0;
+
+	typec = get_usbtypec();
+
+	if (!typec->pinctrl || !typec->pin_cfg || !typec->u_rd) {
+		usbc_dbg(K_ERR, "%s not init\n", __func__);
+		return;
+	}
+
+	if (typec->u_rd->c1_gpio == 0 || typec->u_rd->c2_gpio == 0) {
+		usbc_dbg(K_ERR, "%s not support dps mode\n", __func__);
+		return;
+	}
+
+	usbc_dbg(K_DEBUG, "%s en=%d\n", __func__, en);
+
+	if (en) {
+		retval |= usb_redriver_config(typec, U3_EQ_C1, U3_EQ_LOW);
+		retval |= usb_redriver_config(typec, U3_EQ_C2, U3_EQ_LOW);
+	} else {
+		if ((typec->u_rd->eq_c1 == U3_EQ_HIGH)
+			|| (typec->u_rd->eq_c2 == U3_EQ_HIGH)) {
+			retval |= usb_redriver_config(typec, U3_EQ_C1,
+				typec->u_rd->eq_c1);
+			retval |= usb_redriver_config(typec, U3_EQ_C2,
+				typec->u_rd->eq_c2);
+		} else {
+			retval |= usb_redriver_config(typec, U3_EQ_C1,
+				U3_EQ_HIGH);
+			retval |= usb_redriver_config(typec, U3_EQ_C2,
+				U3_EQ_HIGH);
+
+			udelay(1);
+
+			retval |= usb_redriver_config(typec, U3_EQ_C1,
+				typec->u_rd->eq_c1);
+			retval |= usb_redriver_config(typec, U3_EQ_C2,
+				typec->u_rd->eq_c2);
+		}
 	}
 }
 

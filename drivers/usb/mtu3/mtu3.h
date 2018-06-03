@@ -282,6 +282,7 @@ struct ssusb_mtk {
 	bool wakeup_en;
 	bool force_vbus;
 	bool u1u2_disable;
+	bool u3_loopb_support;
 	struct clk *wk_deb_p0;
 	struct clk *wk_deb_p1;
 	struct regmap *pericfg;
