@@ -104,13 +104,6 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint23>
-            <eint41>
-                <varName>TCPC_PD</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Edge</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint41>
             <eint44>
                 <varName>DSI_TE</varName>
                 <debounce_time>0</debounce_time>
@@ -125,6 +118,13 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint144>
+            <eint147>
+                <varName>OTG_IDDIG</varName>
+                <debounce_time>0</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint147>
         </module>
         <module name="gpio">
             <count>180</count>
@@ -446,12 +446,11 @@
             </gpio40>
             <gpio41>
                 <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_USB_TYPEC_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio41>
