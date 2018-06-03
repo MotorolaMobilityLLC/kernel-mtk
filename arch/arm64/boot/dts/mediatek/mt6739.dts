@@ -11,7 +11,9 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6739-msdc.h>
 #include <generated/autoconf.h>
-
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/dts-v1/;
+#endif
 / {
 	model = "MT6739";
 	compatible = "mediatek,MT6739";
@@ -20,7 +22,7 @@
 	#size-cells = <2>;
 
 	/* chosen */
-	chosen {
+	chosen: chosen {
 		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram initrd=0x44000000,\
 0x1000000 loglevel=8 androidboot.selinux=permissive";
 	};
@@ -49,7 +51,7 @@
 		interrupts = <GIC_SPI 241 IRQ_TYPE_EDGE_RISING>;
 	};
 
-	reserved-memory {
+	reserved_memory: reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
@@ -1485,6 +1487,11 @@
 		mediatek,clkbuf-quantity = <7>;
 		mediatek,clkbuf-config = <2 1 1 2 0 0 0>;
 		mediatek,clkbuf-driving-current = <(-1) (-1) (-1) (-1) (-1) (-1) (-1)>;
+	};
+
+	odm: odm{
+		compatible = "simple-bus";
+		/* reserved for overlay by odm */
 	};
 };
 
