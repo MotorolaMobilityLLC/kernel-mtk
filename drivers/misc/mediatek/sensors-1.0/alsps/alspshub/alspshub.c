@@ -328,8 +328,7 @@ static int ps_recv_data(struct data_unit_t *event, void *reserved)
 	if (!obj)
 		return -1;
 
-	if (event->flush_action == FLUSH_ACTION &&
-			READ_ONCE(obj->ps_android_enable) == true)
+	if (event->flush_action == FLUSH_ACTION)
 		ps_flush_report();
 	else if (event->flush_action == DATA_ACTION &&
 			READ_ONCE(obj->ps_android_enable) == true) {
@@ -352,8 +351,7 @@ static int als_recv_data(struct data_unit_t *event, void *reserved)
 	if (!obj)
 		return -1;
 
-	if ((event->flush_action == FLUSH_ACTION) &&
-			READ_ONCE(obj->als_android_enable) == true)
+	if (event->flush_action == FLUSH_ACTION)
 		als_flush_report();
 	else if ((event->flush_action == DATA_ACTION) &&
 			READ_ONCE(obj->als_android_enable) == true)
