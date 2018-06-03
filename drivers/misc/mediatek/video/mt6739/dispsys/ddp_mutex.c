@@ -31,7 +31,7 @@ static module_map_t module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_RDMA1, -1, 0},
 	{DISP_MODULE_RDMA2, -1, 0},
 
-	{DISP_MODULE_WDMA0, 8, 0},
+	{DISP_MODULE_WDMA0, 8, 0}, /*10*/
 	{DISP_MODULE_WDMA0, -1, 0},
 	{DISP_MODULE_WDMA_VIRTUAL0, -1, 0},
 	{DISP_MODULE_WDMA_VIRTUAL1, -1, 0},
@@ -42,7 +42,7 @@ static module_map_t module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_CCORR1, -1, 0},
 	{DISP_MODULE_AAL0, 11, 0},
 	{DISP_MODULE_AAL1, -1, 0},
-	{DISP_MODULE_GAMMA0, 12, 0},
+	{DISP_MODULE_GAMMA0, 12, 0}, /*20*/
 	{DISP_MODULE_GAMMA1, -1, 0},
 	{DISP_MODULE_OD, -1, 0},
 	{DISP_MODULE_DITHER0, 13, 0},
@@ -52,11 +52,13 @@ static module_map_t module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_PATH1, -1, 0},
 
 	{DISP_MODULE_UFOE, -1, 0},
+	{DISP_MODULE_UFOE_VIRTUAL, -1, 0},
 	{DISP_MODULE_DSC, -1, 0},
-	{DISP_MODULE_DSC_2ND, -1, 0},
+	{DISP_MODULE_DSC_2ND, -1, 0}, /*30*/
 	{DISP_MODULE_SPLIT0, -1, 0},
 
 	{DISP_MODULE_DPI, -1, 0},
+	{DISP_MODULE_DBI, -1, 0},
 
 	{DISP_MODULE_DSI0, 14, 0},
 	{DISP_MODULE_DSI1, -1, 0},
@@ -66,7 +68,7 @@ static module_map_t module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_PWM1, -1, 0},
 
 	{DISP_MODULE_CONFIG, -1, 0},
-	{DISP_MODULE_MUTEX, -1, 0},
+	{DISP_MODULE_MUTEX, -1, 0},		/*40*/
 	{DISP_MODULE_SMI_COMMON, -1, 0},
 	{DISP_MODULE_SMI_LARB0, -1, 0},
 	{DISP_MODULE_SMI_LARB1, -1, 0},
@@ -76,7 +78,7 @@ static module_map_t module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_RSZ0, -1, 0},
 	{DISP_MODULE_RSZ1, -1, 0},
 
-	{DISP_MODULE_UNKNOWN, -1, 0},
+	{DISP_MODULE_UNKNOWN, -1, 0}, /*48*/
 };
 
 

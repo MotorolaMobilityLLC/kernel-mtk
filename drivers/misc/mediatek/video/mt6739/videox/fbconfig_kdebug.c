@@ -445,7 +445,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
-		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[6]);
+		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[3]);
 		for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++)
 			layers.layer_en[i] = (ovl_all[i].layer_en ? 1 : 0);
 #else
@@ -475,10 +475,14 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			return -EFAULT;
 		}
 		global_layer_id = layer_info.index;
+		if (layer_info.index < 0 || layer_info.index >= TOTAL_OVL_LAYER_NUM) {
+			pr_debug("[FB_LAYER_GET_INFO]: global_layer_id = %d is wrong:%d\n", layer_info.index, __LINE__);
+			return -EFAULT;
+		}
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
-		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[6]);
+		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[3]);
 #else
 		ovl_get_info(DISP_MODULE_OVL0, ovl_all);
 #endif
@@ -515,6 +519,11 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 #else
 		ovl_get_info(DISP_MODULE_OVL0, ovl_all);
 #endif
+		if (global_layer_id < 0 || global_layer_id >= TOTAL_OVL_LAYER_NUM) {
+			pr_debug("[FB_LAYER_DUMP]: global_layer_id = %d is wrong:%d\n", global_layer_id, __LINE__);
+			return -EFAULT;
+		}
+
 		layer_size = ovl_all[global_layer_id].src_pitch * ovl_all[global_layer_id].src_h;
 		mva = ovl_all[global_layer_id].addr;
 		pr_debug("layer_size=%d, src_pitch=%d, h=%d, mva=0x%x,\n",
@@ -556,6 +565,10 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		if (copy_from_user(&esd_para, (void __user *)arg, sizeof(esd_para))) {
 			pr_debug("[LCM_GET_ESD]: copy_from_user failed! line:%d\n",
 				 __LINE__);
+			return -EFAULT;
+		}
+		if (esd_para.para_num < 0 || esd_para.para_num > 0x30) {
+			pr_debug("wrong  esd_para.para_num = %d\n", esd_para.para_num);
 			return -EFAULT;
 		}
 		buffer = kzalloc(esd_para.para_num + 6, GFP_KERNEL);

@@ -82,11 +82,15 @@
 #define BIF_CV_UNDER_THRESHOLD2 4450000	/* UV */
 #define BIF_CV BATTERY_CV /* UV */
 
+#define R_SENSE 56 /* mohm */
+
+#define MAX_CHARGING_TIME (12 * 60 * 60) /* 12 hours */
+
 /* battery warning */
 #define BATTERY_NOTIFY_CASE_0001_VCHARGER
 #define BATTERY_NOTIFY_CASE_0002_VBATTEMP
 
 /* TODO :need change to CONFIG_MTK_SWCHR_SUPPORT config */
-#define SWCHR_POWER_PATH
+/* #define SWCHR_POWER_PATH */
 
 #endif /*__MTK_CHARGER_INIT_H__*/

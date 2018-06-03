@@ -69,7 +69,6 @@ obj-y += ddp_pwm_mux.o
 
 obj-y += ddp_mmp.o
 obj-y += ddp_met.o
-
 obj-y += display_recorder.o
 
 ifeq ($(CONFIG_MMPROFILE),y)

@@ -1046,7 +1046,7 @@ int dpmgr_path_config(disp_path_handle dp_handle, struct disp_ddp_path_config *c
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	pr_debug("path config ovl %d, rdma %d, wdma %d, dst %d on handle %p scenario %s\n",
+	DDPDBG("path config ovl %d, rdma %d, wdma %d, dst %d on handle %p scenario %s\n",
 		   config->ovl_dirty, config->rdma_dirty, config->wdma_dirty, config->dst_dirty,
 		   handle, ddp_get_scenario_name(handle->scenario));
 

@@ -22,10 +22,12 @@
 
 #include <linux/delay.h>
 
+#include "ddp_dump.h"
 #include "ddp_info.h"
 #include "ddp_hal.h"
 #include "ddp_reg.h"
 #include "disp_helper.h"
+
 
 static char *split_state(unsigned int state)
 {
@@ -135,41 +137,9 @@ int split_reset(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int split_dump_regs(enum DISP_MODULE_ENUM module)
-{
-	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
-		DDPDUMP("== START: DISP SPLIT REGS ==\n");
-		DDPDUMP("SPLIT: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x00, INREG32(DDP_REG_BASE_DISP_SPLIT0 + 0x00),
-			0x04, INREG32(DDP_REG_BASE_DISP_SPLIT0 + 0x04),
-			0x20, INREG32(DDP_REG_BASE_DISP_SPLIT0 + 0x20),
-			0x60, INREG32(DDP_REG_BASE_DISP_SPLIT0 + 0x60));
-		DDPDUMP("SPLIT: 0x%04x=0x%08x\n",
-			0x80, INREG32(DDP_REG_BASE_DISP_SPLIT0 + 0x80));
-		DDPDUMP("-- END: DISP SPLIT REGS --\n");
-	} else {
-		DDPMSG("== DISP SPLIT0 REGS ==\n");
-		DDPMSG("(0x000)S_ENABLE=0x%x\n", DISP_REG_GET(DISP_REG_SPLIT_ENABLE));
-		DDPMSG("(0x004)S_SW_RST=0x%x\n", DISP_REG_GET(DISP_REG_SPLIT_SW_RESET));
-		DDPMSG("(0x008)S_DEBUG=0x%x\n", DISP_REG_GET(DISP_REG_SPLIT_DEBUG));
-	}
-	return 0;
-}
-
-static int split_dump_analysis(enum DISP_MODULE_ENUM module)
-{
-	unsigned int pixel = DISP_REG_GET_FIELD(DEBUG_FLD_IN_PIXEL_CNT, DISP_REG_SPLIT_DEBUG);
-	unsigned int state = DISP_REG_GET_FIELD(DEBUG_FLD_SPLIT_FSM, DISP_REG_SPLIT_DEBUG);
-
-	DDPMSG("== DISP SPLIT0 ANALYSIS ==\n");
-	DDPMSG("cur_pixel %u, state %s\n", pixel, split_state(state));
-	return 0;
-}
-
 static int split_dump(enum DISP_MODULE_ENUM module, int level)
 {
-	split_dump_analysis(module);
-	split_dump_regs(module);
+	disp_split_dump_regs(module);
 
 	return 0;
 }

@@ -341,7 +341,7 @@ int ovl2mem_init(unsigned int session)
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
 	/* dpmgr_path_set_dst_module(pgc->dpmgr_handle,DISP_MODULE_ENUM dst_module) */
 
-/*	sPort.ePortID = M4U_PORT_DISP_2L_OVL1_LARB0;*/
+	sPort.ePortID = M4U_PORT_DISP_OVL0;
 	sPort.Virtuality = ovl2mem_use_m4u;
 	sPort.Security = 0;
 	sPort.Distance = 1;

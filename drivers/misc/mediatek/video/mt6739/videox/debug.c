@@ -49,6 +49,7 @@
 #include "cmdq_reg.h"
 #include "cmdq_core.h"
 #include "disp_lowpower.h"
+#include "disp_arr.h"
 #include "disp_recovery.h"
 #include "disp_partial.h"
 #include "mtk_ion.h"
@@ -305,6 +306,51 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 	kfree(input_config);
 	return 0;
 }
+/*
+ * provided by @CJ
+ * disp_fake_engine_config (rd_addr, wr_add, 1, 2047, 3, 0, 0, 0, 1, 0)
+ * wr_pat: 1
+ * length: 2047
+ * burst : 3
+ * disable_rd : 0
+ * disable_wr : 0
+ * latency : 0
+ * loop : 1
+ */
+static int  disp_fake_engine_config(unsigned int rd_add, unsigned int wr_add,
+				unsigned int wr_pat, unsigned int length, unsigned int brust,
+				unsigned int disable_rd, unsigned int disable_wr,
+				unsigned int latency, unsigned int loop)
+{
+	primary_display_idlemgr_kick(__func__, 1);
+	DISP_REG_SET_FIELD(NULL, MMSYS_CG_FLD_FAKE_ENG, DISP_REG_CONFIG_MMSYS_CG_CLR0, 0x01);
+	DISP_REG_SET(NULL, DISP_REG_CONFIG_DISP_FAKE_ENG_RD_ADDR, rd_add);
+	DISP_REG_SET(NULL, DISP_REG_CONFIG_DISP_FAKE_ENG_WR_ADDR, wr_add);
+	DISP_REG_SET(NULL, DISP_REG_CONFIG_DISP_FAKE_ENG_CON0,
+			(wr_pat<<24) | (loop<<22) | (length));
+	DISP_REG_SET(NULL, DISP_REG_CONFIG_DISP_FAKE_ENG_CON1,
+			(brust<<12) | (disable_wr<<11) | (disable_rd<<10) | (latency));
+	DISP_REG_SET(NULL, DISP_REG_CONFIG_DISP_FAKE_ENG_EN, 3);
+	DISPMSG("Fake eng start dump CG_CON0 = 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DISPMSG("Fake eng start dump RD_ADDR = 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_FAKE_ENG_RD_ADDR));
+	DISPMSG("Fake eng start dump WD_ADDR = 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_FAKE_ENG_WR_ADDR));
+	DISPMSG("Fake eng start dump FAKE_CON0 = 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_FAKE_ENG_CON0));
+	DISPMSG("Fake eng start dump FAKE_CON1 = 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_FAKE_ENG_CON1));
+	DISPMSG("Fake eng start dump FAKE_EN = 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_FAKE_ENG_EN));
+	return 0;
+}
+
+static int disp_fake_engine_stop(void)
+{
+	DISP_REG_SET(NULL, DISP_REG_CONFIG_DISP_FAKE_ENG_EN, 1);
+
+	DISP_REG_SET(NULL, DISP_REG_CONFIG_DISP_FAKE_ENG_RST, 1);
+	DISP_REG_SET(NULL, DISP_REG_CONFIG_DISP_FAKE_ENG_RST, 0);
+	DISP_REG_SET_FIELD(NULL, MMSYS_CG_FLD_FAKE_ENG, DISP_REG_CONFIG_MMSYS_CG_SET0, 0x01);
+	DISPMSG("Fake eng end dump CG_CON0 = 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	return 0;
+}
+
 
 #if 0 /* defined but not used */
 static char STR_HELP[] =
@@ -427,6 +473,28 @@ static void process_dbg_opt(const char *opt)
 		else
 			bypass_blank = 0;
 
+	} else if (strncmp(opt, "stop_fake_eng", 13) == 0) {
+		DISPMSG("STOP FAKE\n");
+		disp_fake_engine_stop();
+	} else if (strncmp(opt, "fake_eng:", 9) == 0) {
+		DISPMSG("START FAKE, THE CMD:%s", opt+9);
+		if (strncmp(opt + 9, "de", 2) == 0) {
+			disp_fake_engine_config(fb_pa, fb_pa+4, 1, 2047, 3, 0, 0, 0, 1);
+		} else {
+			unsigned int WR_mode = 0;
+			unsigned int loop_mode = 0;
+			unsigned int test_len = 0;
+			unsigned int burst_len = 0;
+			unsigned int latency = 0;
+
+			ret = sscanf(opt, "fake_eng:%d,%d,%d,%d,%d\n",
+				     &WR_mode, &loop_mode, &test_len, &burst_len, &latency);
+			if (ret != 5) {
+				pr_debug("%d error to parse cmd %s\n", __LINE__, opt);
+				return;
+			}
+			disp_fake_engine_config(fb_pa, fb_pa+1, 1, test_len, burst_len, 0, 0, latency, loop_mode);
+		}
 	} else if (strncmp(opt, "force_fps:", 9) == 0) {
 		unsigned int keep;
 		unsigned int skip;
@@ -726,12 +794,42 @@ static void process_dbg_opt(const char *opt)
 			pr_debug("DISP/%s: errno %d\n", __func__, ret);
 
 		DISPMSG("DDP: gTriggerDispMode=%d\n", gTriggerDispMode);
-	} else if (strncmp(opt, "disp_fps:", 9) == 0) {
-		char *p = (char *)opt + 9;
+	} else if (strncmp(opt, "disp_set_fps:", 13) == 0) {
+		char *p = (char *)opt + 13;
 		unsigned int disp_fps = 0;
 
 		ret = kstrtouint(p, 0, &disp_fps);
-		primary_display_force_set_vsync_fps(disp_fps);
+		DDPMSG("Display debug command: disp_set_fps start\n");
+		primary_display_force_set_vsync_fps(disp_fps, 0);
+		DDPMSG("Display debug command: disp_set_fps done\n");
+	} else if (strncmp(opt, "disp_set_max_fps", 16) == 0) {
+		int fps = 0;
+
+		DDPMSG("Display debug command: disp_set_max_fps start\n");
+		fps = primary_display_get_max_refresh_rate();
+		primary_display_force_set_vsync_fps(fps, 0);
+		DDPMSG("Display debug command: disp_set_max_fps done\n");
+	} else if (strncmp(opt, "disp_set_min_fps", 16) == 0) {
+		int fps = 0;
+
+		DDPMSG("Display debug command: disp_set_min_fps start\n");
+		fps = primary_display_get_min_refresh_rate();
+		primary_display_force_set_vsync_fps(fps, 0);
+		DDPMSG("Display debug command: disp_set_min_fps done\n");
+	} else if (strncmp(opt, "disp_enter_idle_fps", 19) == 0) {
+		DDPMSG("Display debug command: disp_enter_idle_fps start\n");
+		primary_display_force_set_vsync_fps(50, 1);
+		DDPMSG("Display debug command: disp_enter_idle_fps done\n");
+	} else if (strncmp(opt, "disp_leave_idle_fps", 19) == 0) {
+		DDPMSG("Display debug command: disp_leave_idle_fps start\n");
+		primary_display_force_set_vsync_fps(60, 2);
+		DDPMSG("Display debug command: disp_leave_idle_fps done\n");
+	} else if (strncmp(opt, "disp_get_fps", 12) == 0) {
+		unsigned int disp_fps = 0;
+
+		DDPMSG("Display debug command: disp_get_fps start\n");
+		disp_fps = primary_display_force_get_vsync_fps();
+		DDPMSG("Display debug command: disp_get_fps done, disp_fps=%d\n", disp_fps);
 	}
 
 	if (strncmp(opt, "primary_basic_test:", 19) == 0) {

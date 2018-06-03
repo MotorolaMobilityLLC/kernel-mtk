@@ -44,6 +44,9 @@ extern unsigned int FB_LAYER;	/* default LCD layer */
 #define DISP_DEFAULT_UI_LAYER_ID (DDP_OVL_LAYER_MUN-1)
 #define DISP_CHANGED_UI_LAYER_ID (DDP_OVL_LAYER_MUN-2)
 
+extern unsigned int ap_fps_changed;
+extern unsigned int arr_fps_backup;
+extern unsigned int arr_fps_enable;
 struct DISP_LAYER_INFO {
 	unsigned int id;
 	unsigned int curr_en;
@@ -202,6 +205,55 @@ enum mtkfb_power_mode {
 	MTKFB_POWER_MODE_UNKNOWN,
 };
 
+struct display_primary_path_context {
+	enum DISP_POWER_STATE state;
+	unsigned int lcm_fps;
+	unsigned int dynamic_fps;
+	int lcm_refresh_rate;
+	int max_layer;
+	int need_trigger_overlay;
+	int need_trigger_ovl1to2;
+	int need_trigger_dcMirror_out;
+	enum DISP_PRIMARY_PATH_MODE mode;
+	unsigned int session_id;
+	int session_mode;
+	int ovl1to2_mode;
+	unsigned int last_vsync_tick;
+	unsigned long framebuffer_mva;
+	unsigned long framebuffer_va;
+	struct mutex lock;
+	struct mutex capture_lock;
+	struct mutex switch_dst_lock;
+	struct disp_lcm_handle *plcm;
+	struct cmdqRecStruct *cmdq_handle_config_esd;
+	struct cmdqRecStruct *cmdq_handle_config;
+	disp_path_handle dpmgr_handle;
+	disp_path_handle ovl2mem_path_handle;
+	struct cmdqRecStruct *cmdq_handle_ovl1to2_config;
+	struct cmdqRecStruct *cmdq_handle_trigger;
+	char *mutex_locker;
+	int vsync_drop;
+	unsigned int dc_buf_id;
+	unsigned int dc_buf[DISP_INTERNAL_BUFFER_COUNT];
+	unsigned int force_fps_keep_count;
+	unsigned int force_fps_skip_count;
+	cmdqBackupSlotHandle cur_config_fence;
+	cmdqBackupSlotHandle subtractor_when_free;
+	cmdqBackupSlotHandle rdma_buff_info;
+	cmdqBackupSlotHandle ovl_status_info;
+	cmdqBackupSlotHandle ovl_config_time;
+	cmdqBackupSlotHandle dither_status_info;
+	cmdqBackupSlotHandle dsi_vfp_line;
+
+	int is_primary_sec;
+	int primary_display_scenario;
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	int request_fps;
+#endif
+	enum mtkfb_power_mode pm;
+	enum lcm_power_state lcm_ps;
+};
+
 static inline char *lcm_power_state_to_string(enum lcm_power_state ps)
 {
 	switch (ps) {
@@ -294,7 +346,8 @@ void primary_display_reset(void);
 void primary_display_esd_check_enable(int enable);
 int primary_display_config_input_multiple(struct disp_session_input_config *session_input);
 int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg);
-int primary_display_force_set_vsync_fps(unsigned int fps);
+unsigned int primary_display_force_get_vsync_fps(void);
+int primary_display_force_set_vsync_fps(unsigned int fps, unsigned int scenario);
 unsigned int primary_display_get_fps(void);
 unsigned int primary_display_get_fps_nolock(void);
 int primary_display_get_original_width(void);
@@ -363,6 +416,8 @@ extern unsigned int gTriggerDispMode;	/* 0: normal, 1: lcd only, 2: none of lcd 
 extern unsigned int islcmconnected;
 
 size_t mtkfb_get_fb_size(void);
+void stop_smart_ovl_nolock(void);
+void restart_smart_ovl_nolock(void);
 
 int primary_fps_ctx_set_wnd_sz(unsigned int wnd_sz);
 

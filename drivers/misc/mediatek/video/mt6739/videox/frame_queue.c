@@ -20,17 +20,55 @@
 #include "disp_drv_log.h"
 #include "mtkfb_fence.h"
 #include "mtk_disp_mgr.h"
+#include "ged_log.h"
 
 
 static struct frame_queue_head_t frame_q_head[MAX_SESSION_COUNT];
 DEFINE_MUTEX(frame_q_head_lock);
+static LIST_HEAD(framequeue_pool_head);
+static DEFINE_MUTEX(framequeue_pool_lock);
 
+#ifdef CONFIG_MTK_GPU_SUPPORT
+static GED_LOG_BUF_HANDLE ghlog;
+atomic_t ged_log_inited = ATOMIC_INIT(0);
+
+#define GEDLOG(fmt, ...) \
+	do { \
+		if (atomic_read(&ged_log_inited) == 0) {\
+			if (ged_log_buf_get_early("FENCE", &ghlog) == 0) \
+				atomic_set(&ged_log_inited, 1); \
+			else \
+				break; \
+		} \
+		ged_log_buf_print2(ghlog, GED_LOG_ATTR_TIME_TPT, fmt, __VA_ARGS__); \
+	} while (0)
+
+void disp_init_ged_log_handle(void)
+{
+	int ret;
+
+	ret = ged_log_buf_get_early("FENCE", &ghlog);
+	if (ret != 0)
+		DISPERR("ged_log_buf_get_early Failed!\n");
+}
+#else
+#define GEDLOG(fmt, ...)
+
+void disp_init_ged_log_handle(void)
+{
+}
+#endif
 static int disp_dump_fence_info(struct sync_fence *fence, int is_err)
 {
 	int i;
 
 	_DISP_PRINT_FENCE_OR_ERR(is_err, "fence[%p] %s: stat=%d ==>\n",
 		fence, fence->name, atomic_read(&fence->status));
+
+	if (is_err) {
+		GEDLOG("fence[%p] %s: stat=%d ==>\n",
+			fence, fence->name, atomic_read(&fence->status));
+	}
 
 	for (i = 0; i < fence->num_fences; ++i) {
 		struct fence *pt = fence->cbs[i].sync_pt;
@@ -48,6 +86,12 @@ static int disp_dump_fence_info(struct sync_fence *fence, int is_err)
 			i, timeline_name, drv_name,
 			fence_val, timeline_val,
 			fence_is_signaled(pt), pt->status);
+		if (is_err) {
+			GEDLOG("pt%d:tl=%s,drv=%s,val(%s/%s),sig=%d,stat=%d\n",
+				i, timeline_name, drv_name,
+				fence_val, timeline_val,
+				fence_is_signaled(pt), pt->status);
+		}
 	}
 	return 0;
 }
@@ -75,8 +119,12 @@ static int _do_wait_fence(struct sync_fence **src_fence, int session_id,
 	if (ret == -ETIME) {
 		DISPERR("== display fence wait timeout for 1000ms. ret%d,layer%d,fd%d,idx%d ==>\n",
 				ret, timeline, fence_fd, buf_idx);
+		GEDLOG("== display fence wait timeout for 1000ms. ret%d,layer%d,fd%d,idx%d ==>\n",
+				ret, timeline, fence_fd, buf_idx);
 	} else if (ret != 0) {
 		DISPERR("== display fence wait status error. ret%d,layer%d,fd%d,idx%d ==>\n",
+				ret, timeline, fence_fd, buf_idx);
+		GEDLOG("== display fence wait status error. ret%d,layer%d,fd%d,idx%d ==>\n",
 				ret, timeline, fence_fd, buf_idx);
 	} else {
 		DISPDBG("== display fence wait done! ret%d,layer%d,fd%d,idx%d ==\n",
@@ -232,24 +280,38 @@ static int frame_queue_size(struct frame_queue_head_t *head)
 
 struct frame_queue_t *frame_queue_node_create(void)
 {
-	struct frame_queue_t *node;
+	struct frame_queue_t *framequeue = NULL;
 
-	node = kzalloc(sizeof(struct frame_queue_t), GFP_KERNEL);
-	if (IS_ERR_OR_NULL(node)) {
-		disp_aee_print("fail to kzalloc %zu of frame_queue\n",
-			sizeof(struct frame_queue_t));
-		return ERR_PTR(-ENOMEM);
+	mutex_lock(&framequeue_pool_lock);
+	/* query a node from the pool if possible */
+	if (!list_empty(&framequeue_pool_head)) {
+		framequeue = list_first_entry(&framequeue_pool_head, struct frame_queue_t, link);
+		list_del_init(&framequeue->link);
 	}
+	mutex_unlock(&framequeue_pool_lock);
+	/* create a new one if the pool is empty */
+	if (framequeue == NULL) {
+		framequeue = kzalloc(sizeof(struct frame_queue_t), GFP_KERNEL);
+		if (IS_ERR_OR_NULL(framequeue)) {
+			disp_aee_print("fail to kzalloc %zu of frame_queue\n",
+				sizeof(struct frame_queue_t));
+			return ERR_PTR(-ENOMEM);
+		}
+	}
+	/* (re)init this node first */
+	INIT_LIST_HEAD(&framequeue->link);
+	memset(&framequeue->frame_cfg, 0, sizeof(framequeue->frame_cfg));
+	framequeue->do_frame_cfg = NULL;
 
-	INIT_LIST_HEAD(&node->link);
-
-	return node;
+	return framequeue;
 }
 
-void frame_queue_node_destroy(struct frame_queue_t *node)
+void frame_queue_node_destroy(struct frame_queue_t *framequeue)
 {
-	disp_input_free_dirty_roi(&node->frame_cfg);
-	kfree(node);
+	disp_input_free_dirty_roi(&framequeue->frame_cfg);
+	mutex_lock(&framequeue_pool_lock);
+	list_add_tail(&framequeue->link, &framequeue_pool_head);
+	mutex_unlock(&framequeue_pool_lock);
 }
 
 static int fence_wait_worker_func(void *data)

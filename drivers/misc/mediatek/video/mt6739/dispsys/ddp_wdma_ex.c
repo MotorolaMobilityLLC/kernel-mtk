@@ -23,6 +23,8 @@
 #include "primary_display.h"
 #include "ddp_m4u.h"
 #include "ddp_mmp.h"
+#include "ddp_dump.h"
+
 
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
@@ -116,7 +118,7 @@ int wdma_start(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = wdma_index(module);
 
-	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_INTEN, 0x03);
+	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_INTEN, 0x07);
 
 	DISP_REG_SET_FIELD(handle, WDMA_EN_FLD_ENABLE,
 		idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_EN, 0x1);
@@ -304,137 +306,11 @@ void wdma_dump_analysis(enum DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_WDMA_CT_DBG + idx_offst) & 0xffff);
 }
 
-void wdma_dump_reg(enum DISP_MODULE_ENUM module)
-{
-	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
-		unsigned int idx = wdma_index(module);
-		unsigned long module_base = DISPSYS_WDMA0_BASE + idx * DISP_WDMA_INDEX_OFFSET;
-
-		DDPDUMP("== START: DISP WDMA%d REGS ==\n", idx);
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x0, INREG32(module_base + 0x0),
-			0x4, INREG32(module_base + 0x4),
-			0x8, INREG32(module_base + 0x8),
-			0xC, INREG32(module_base + 0xC));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x10, INREG32(module_base + 0x10),
-			0x14, INREG32(module_base + 0x14),
-			0x18, INREG32(module_base + 0x18),
-			0x1C, INREG32(module_base + 0x1C));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x20, INREG32(module_base + 0x20),
-			0x28, INREG32(module_base + 0x28),
-			0x2C, INREG32(module_base + 0x2C),
-			0x38, INREG32(module_base + 0x38));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x3C, INREG32(module_base + 0x3C),
-			0x40, INREG32(module_base + 0x40),
-			0x44, INREG32(module_base + 0x44),
-			0x48, INREG32(module_base + 0x48));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x4C, INREG32(module_base + 0x4C),
-			0x50, INREG32(module_base + 0x50),
-			0x54, INREG32(module_base + 0x54),
-			0x58, INREG32(module_base + 0x58));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x5C, INREG32(module_base + 0x5C),
-			0x60, INREG32(module_base + 0x60),
-			0x64, INREG32(module_base + 0x64),
-			0x78, INREG32(module_base + 0x78));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x80, INREG32(module_base + 0x80),
-			0x84, INREG32(module_base + 0x84),
-			0x88, INREG32(module_base + 0x88),
-			0x90, INREG32(module_base + 0x90));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0x94, INREG32(module_base + 0x94),
-			0x98, INREG32(module_base + 0x98),
-			0xA0, INREG32(module_base + 0xA0),
-			0xA4, INREG32(module_base + 0xA4));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0xA8, INREG32(module_base + 0xA8),
-			0xAC, INREG32(module_base + 0xAC),
-			0xB0, INREG32(module_base + 0xB0),
-			0xB4, INREG32(module_base + 0xB4));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0xB8, INREG32(module_base + 0xB8),
-			0x100, INREG32(module_base + 0x100),
-			0xE00, INREG32(module_base + 0xE00),
-			0xE14, INREG32(module_base + 0xE14));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0xE18, INREG32(module_base + 0xE18),
-			0xE1C, INREG32(module_base + 0xE1C),
-			0xE20, INREG32(module_base + 0xE20),
-			0xE24, INREG32(module_base + 0xE24));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0xE28, INREG32(module_base + 0xE28),
-			0xE2C, INREG32(module_base + 0xE2C),
-			0xE30, INREG32(module_base + 0xE30),
-			0xE34, INREG32(module_base + 0xE34));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0xE38, INREG32(module_base + 0xE38),
-			0xE3C, INREG32(module_base + 0xE3C),
-			0xE40, INREG32(module_base + 0xE40),
-			0xE44, INREG32(module_base + 0xE44));
-		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
-			0xF00, INREG32(module_base + 0xF00),
-			0xF04, INREG32(module_base + 0xF04),
-			0xF08, INREG32(module_base + 0xF08));
-		DDPDUMP("-- END: DISP WDMA0 REGS --\n");
-	} else {
-		unsigned int idx = wdma_index(module);
-		unsigned int off_sft = idx * DISP_WDMA_INDEX_OFFSET;
-
-		DDPDUMP("== DISP WDMA%d REGS ==\n", idx);
-
-		DDPDUMP("0x000: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-			DISP_REG_GET(DISP_REG_WDMA_INTEN + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_INTSTA + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_EN + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_RST + off_sft));
-
-		DDPDUMP("0x010: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-			DISP_REG_GET(DISP_REG_WDMA_SMI_CON + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_CFG + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_SRC_SIZE + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_CLIP_SIZE + off_sft));
-
-		DDPDUMP("0x020=0x%08x,0x028=0x%08x,0x02c=0x%08x,0x038=0x%08x\n",
-			DISP_REG_GET(DISP_REG_WDMA_CLIP_COORD + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_DST_W_IN_BYTE + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_ALPHA + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_BUF_CON1 + off_sft));
-
-		DDPDUMP("0x03c=0x%08x,0x058=0x%08x,0x05c=0x%08x,0x060=0x%08x\n",
-			DISP_REG_GET(DISP_REG_WDMA_BUF_CON2 + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_PRE_ADD0 + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_PRE_ADD2 + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_POST_ADD0 + off_sft));
-
-		DDPDUMP("0x064=0x%08x,0x078=0x%08x,0x080=0x%08x,0x084=0x%08x\n",
-			DISP_REG_GET(DISP_REG_WDMA_POST_ADD2 + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_DST_UV_PITCH + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR_OFFSET0 + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR_OFFSET1 + off_sft));
-
-		DDPDUMP("0x088=0x%08x,0x0a0=0x%08x,0x0a4=0x%08x,0x0a8=0x%08x\n",
-			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR_OFFSET2 + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_FLOW_CTRL_DBG + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_EXEC_DBG + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_CT_DBG + off_sft));
-
-		DDPDUMP("0x0ac=0x%08x,0xf00=0x%08x,0xf04=0x%08x,0xf08=0x%08x,\n",
-			DISP_REG_GET(DISP_REG_WDMA_DEBUG + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR0 + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR1 + off_sft),
-			DISP_REG_GET(DISP_REG_WDMA_DST_ADDR2 + off_sft));
-	}
-}
 
 static int wdma_dump(enum DISP_MODULE_ENUM module, int level)
 {
 	wdma_dump_analysis(module);
-	wdma_dump_reg(module);
+	disp_wdma_dump_reg(module);
 
 	return 0;
 }
@@ -449,26 +325,25 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	unsigned int ultra_high_us = 4;
 	unsigned int preultra_low_us = 7;
 	unsigned int preultra_high_us = ultra_low_us;
-	unsigned int fifo_pseudo_size = 244;
+	int fifo_pseudo_size = 116;
 	unsigned int frame_rate = 60;
 	unsigned int bytes_per_sec = 3;
-	unsigned int is_primary_flag = 1;  /*primary or external*/
-	long long temp;
+	unsigned long long temp = 0;
 
-	unsigned int fifo_off_drs_enter = 4;
-	unsigned int fifo_off_drs_leave = 2;
-	unsigned int fifo_off_dvfs = 4;
+	int fifo_off_drs_enter = 4;
+	int fifo_off_drs_leave = 2;
+	int fifo_off_dvfs = 4;
 
 	unsigned long long consume_rate = 0;
-	unsigned int ultra_low;
-	unsigned int preultra_low;
-	unsigned int preultra_high;
-	unsigned int ultra_high;
+	int ultra_low;
+	int preultra_low;
+	int preultra_high;
+	int ultra_high;
 
-	unsigned int ultra_low_UV;
-	unsigned int preultra_low_UV;
-	unsigned int preultra_high_UV;
-	unsigned int ultra_high_UV;
+	int ultra_low_UV;
+	int preultra_low_UV;
+	int preultra_high_UV;
+	int ultra_high_UV;
 
 	if (!p_golden_setting) {
 		DDPERR("golden setting is null, %s,%d\n", __FILE__, __LINE__);
@@ -478,18 +353,11 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 
 	frame_rate = p_golden_setting->fps;
 
-	if (is_primary_flag) {
-		fifo_off_drs_enter = 4;
-		fifo_off_drs_leave = 2;
-		fifo_off_dvfs = 4;
-		res = p_golden_setting->dst_width * p_golden_setting->dst_height;
-	} else {
-		res = p_golden_setting->ext_dst_width *
-				p_golden_setting->ext_dst_height;
-		if ((p_golden_setting->ext_dst_width == 3840 &&
-			p_golden_setting->ext_dst_height == 2160))
-			frame_rate = 30;
-	}
+	fifo_off_drs_enter = 4;
+	fifo_off_drs_leave = 1;
+	fifo_off_dvfs = 2;
+	res = (unsigned long)p_golden_setting->dst_width * p_golden_setting->dst_height;
+
 	/* DISP_REG_WDMA_SMI_CON */
 	regval = 0;
 	regval |= REG_FLD_VAL(SMI_CON_FLD_THRESHOLD, 7);
@@ -532,23 +400,23 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON4, regval);
 
-	consume_rate = res * frame_rate;
+	consume_rate = (unsigned long long)res * frame_rate;
 	do_div(consume_rate, 1000);
 	consume_rate *= 1250;
 	do_div(consume_rate, 16 * 1000);
 
-	preultra_low = (preultra_low_us + fifo_off_drs_enter) * consume_rate * bytes_per_sec;
-	preultra_low_UV = (preultra_low_us + fifo_off_drs_enter) * consume_rate;
+	preultra_low = (preultra_low_us) * consume_rate * bytes_per_sec;
+	preultra_low_UV = (preultra_low_us) * consume_rate;
 	do_div(preultra_low, 1000);
 	do_div(preultra_low_UV, 1000);
 
-	preultra_high = (preultra_high_us + fifo_off_drs_enter) * consume_rate * bytes_per_sec;
-	preultra_high_UV = (preultra_high_us + fifo_off_drs_enter) * consume_rate;
+	preultra_high = (preultra_high_us) * consume_rate * bytes_per_sec;
+	preultra_high_UV = (preultra_high_us) * consume_rate;
 	do_div(preultra_high, 1000);
 	do_div(preultra_high_UV, 1000);
 
-	ultra_high = (ultra_high_us + fifo_off_drs_enter) * consume_rate * bytes_per_sec;
-	ultra_high_UV = (ultra_high_us + fifo_off_drs_enter) * consume_rate;
+	ultra_high = (ultra_high_us) * consume_rate * bytes_per_sec;
+	ultra_high_UV = (ultra_high_us) * consume_rate;
 	do_div(ultra_high, 1000);
 	do_div(ultra_high_UV, 1000);
 
@@ -558,10 +426,10 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	/* DISP_REG_WDMA_BUF_CON5  Y*/
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
 	temp = fifo_pseudo_size - ultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON5, regval);
@@ -569,10 +437,10 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	/* DISP_REG_WDMA_BUF_CON6 Y*/
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_high;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
 	temp = fifo_pseudo_size - ultra_high;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON6, regval);
@@ -581,11 +449,11 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
 	temp = fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON7, regval);
@@ -594,11 +462,11 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
 	temp = fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON8, regval);
@@ -607,11 +475,11 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
 	temp = fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON9, regval);
@@ -620,20 +488,26 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
 	temp = fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON10, regval);
 
 	/* DISP_REG_WDMA_DRS_CON0 */
-	regval = 0;
+
 	/* TODO: SET DRS_EN */
+	ultra_low = (ultra_low_us + fifo_off_drs_enter) * consume_rate * bytes_per_sec;
+	ultra_low_UV = (ultra_low_us + fifo_off_drs_enter) * consume_rate;
+	do_div(ultra_low, 1000);
+	do_div(ultra_low_UV, 1000);
+
+	regval = 0;
 	temp = fifo_pseudo_size - ultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_ENTER_DRS_TH_Y, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_DRS_CON0, regval);
@@ -642,7 +516,7 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_ENTER_DRS_TH_U, temp);
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_ENTER_DRS_TH_V, temp);
 
@@ -655,7 +529,7 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 
 	regval = 0;
 	temp = fifo_pseudo_size - ultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_LEAVE_DRS_TH_Y, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_DRS_CON2, regval);
@@ -663,7 +537,7 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_LEAVE_DRS_TH_U, temp);
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_LEAVE_DRS_TH_V, temp);
 
@@ -691,10 +565,10 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	/* DISP_REG_WDMA_BUF_CON11 */
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
 	temp = fifo_pseudo_size - ultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON11, regval);
@@ -702,10 +576,10 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	/* DISP_REG_WDMA_BUF_CON12 */
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_high;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
 	temp = fifo_pseudo_size - ultra_high;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 
@@ -715,11 +589,11 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
 	temp = fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 
@@ -729,11 +603,11 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
 	temp = fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 
@@ -743,11 +617,11 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
 	temp = fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 
@@ -757,11 +631,11 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - preultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
 	temp = fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 
@@ -771,7 +645,7 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	/* TODO: SET DVFS_EN */
 	temp = fifo_pseudo_size - ultra_high;
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON17_FLD_DVFS_TH_Y, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON17, regval);
@@ -780,11 +654,11 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	regval = 0;
 	temp = fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON18_FLD_DVFS_TH_U, temp);
 	temp = fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON18_FLD_DVFS_TH_V, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON18, regval);

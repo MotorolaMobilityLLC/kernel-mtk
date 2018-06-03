@@ -74,6 +74,13 @@
 #else
 #include "disp_dts_gpio.h"
 #endif
+#ifdef MTK_FB_SPM_SUPPORT
+#include "mtk_spm_idle.h"
+#endif
+#ifdef MTK_FB_MMDVFS_SUPPORT
+#include "mmdvfs_mgr.h"
+#endif
+
 #include "mt-plat/aee.h"
 
 #include "ddp_clkmgr.h"
@@ -84,8 +91,9 @@
 #include "disp_recovery.h"
 /* #include "mt_spm_sodi_cmdq.h" */
 #include "ddp_od.h"
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 #include "disp_rect.h"
+#include "disp_arr.h"
 #include "disp_partial.h"
 #include "ddp_aal.h"
 
@@ -108,7 +116,6 @@ static unsigned int gPresentFenceIndex;
 unsigned int gTriggerDispMode; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 static unsigned int g_keep;
 static unsigned int g_skip;
-static unsigned int ap_fps_changed;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 static struct switch_dev disp_switch_data;
 #endif
@@ -150,6 +157,9 @@ int primary_display_cur_dst_mode;
 unsigned long long last_primary_trigger_time;
 bool is_switched_dst_mode;
 int primary_trigger_cnt;
+unsigned int dynamic_fps_changed;
+unsigned int arr_fps_enable;
+unsigned int arr_fps_backup;
 atomic_t decouple_update_rdma_event = ATOMIC_INIT(0);
 DECLARE_WAIT_QUEUE_HEAD(decouple_update_rdma_wq);
 atomic_t decouple_trigger_event = ATOMIC_INIT(0);
@@ -162,63 +172,16 @@ static unsigned int _need_lfr_check(void);
 static int od_need_start;
 #endif
 
+#ifdef MTK_FB_MMDVFS_SUPPORT
 /* dvfs */
-static int dvfs_last_ovl_req = HRT_LEVEL_LOW;
+static int dvfs_last_ovl_req = HRT_LEVEL_HPM;
+#endif
 
 /* delayed trigger */
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
 static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 
-struct display_primary_path_context {
-	enum DISP_POWER_STATE state;
-	unsigned int lcm_fps;
-	unsigned int ap_fps;
-	int lcm_refresh_rate;
-	int max_layer;
-	int need_trigger_overlay;
-	int need_trigger_ovl1to2;
-	int need_trigger_dcMirror_out;
-	enum DISP_PRIMARY_PATH_MODE mode;
-	unsigned int session_id;
-	int session_mode;
-	int ovl1to2_mode;
-	unsigned int last_vsync_tick;
-	unsigned long framebuffer_mva;
-	unsigned long framebuffer_va;
-	struct mutex lock;
-	struct mutex capture_lock;
-	struct mutex switch_dst_lock;
-	struct disp_lcm_handle *plcm;
-	struct cmdqRecStruct *cmdq_handle_config_esd;
-	struct cmdqRecStruct *cmdq_handle_config;
-	disp_path_handle dpmgr_handle;
-	disp_path_handle ovl2mem_path_handle;
-	struct cmdqRecStruct *cmdq_handle_ovl1to2_config;
-	struct cmdqRecStruct *cmdq_handle_trigger;
-	char *mutex_locker;
-	int vsync_drop;
-	unsigned int dc_buf_id;
-	unsigned int dc_buf[DISP_INTERNAL_BUFFER_COUNT];
-	unsigned int force_fps_keep_count;
-	unsigned int force_fps_skip_count;
-	cmdqBackupSlotHandle cur_config_fence;
-	cmdqBackupSlotHandle subtractor_when_free;
-	cmdqBackupSlotHandle rdma_buff_info;
-	cmdqBackupSlotHandle ovl_status_info;
-	cmdqBackupSlotHandle ovl_config_time;
-	cmdqBackupSlotHandle dither_status_info;
-	cmdqBackupSlotHandle dsi_vfp_line;
-
-	int is_primary_sec;
-	int primary_display_scenario;
-#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-	int request_fps;
-#endif
-	enum mtkfb_power_mode pm;
-	enum lcm_power_state lcm_ps;
-};
-
-#define pgc	_get_context()
+#define pgc    _get_context()
 
 static int smart_ovl_try_switch_mode_nolock(void);
 
@@ -1230,7 +1193,7 @@ static void _cmdq_build_trigger_loop(void)
 
 	if (primary_display_is_video_mode() && disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
 		int VFP_PORTCH = pgc->plcm->params->dsi.vertical_frontporch;
-		unsigned int gsync_fps = (pgc->ap_fps ? pgc->ap_fps : 60);
+		unsigned int gsync_fps = (pgc->dynamic_fps ? pgc->dynamic_fps : 60);
 
 		int line_num = (pgc->plcm->params->dsi.vertical_frontporch +
 					pgc->plcm->params->dsi.vertical_sync_active +
@@ -1690,9 +1653,13 @@ static int _DL_switch_to_DC_fast(void)
 	wdma_config.dstAddress = mva;
 	wdma_config.security = DISP_NORMAL_BUFFER;
 
+	/* overlap=4 && wdma_en, need increase dvfs*/
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	if (dvfs_last_ovl_req > HRT_LEVEL_HPM)
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_UHPM);
+#endif
 	/* 1.save a temp frame to intermediate buffer */
 	directlink_path_add_memory(&wdma_config, DISP_MODULE_OVL0);
-
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0);
 
 	/* 2.reset primary handle */
@@ -1749,6 +1716,10 @@ static int _DL_switch_to_DC_fast(void)
 	_cmdq_set_config_handle_dirty();
 	_cmdq_flush_config_handle(1, NULL, 0);
 
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	if (dvfs_last_ovl_req > HRT_LEVEL_HPM)
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HPM);
+#endif
 	/* dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0); */
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 0);
@@ -2409,10 +2380,11 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 	if (_should_start_path())
 		dpmgr_path_start(pgc->dpmgr_handle, primary_display_cmdq_enabled());
 
-	if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)
-		&& primary_display_is_video_mode() && ap_fps_changed) {
-		change_dsi_vfp(pgc->cmdq_handle_config, pgc->ap_fps);
-		ap_fps_changed = 0;
+	if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+		if (primary_display_is_video_mode() && dynamic_fps_changed) {
+			change_dsi_vfp(pgc->cmdq_handle_config, pgc->dynamic_fps);
+			dynamic_fps_changed = 0;
+		}
 	}
 
 	if (_should_trigger_path()) {
@@ -2754,10 +2726,11 @@ static int _decouple_update_rdma_config_nolock(void)
 			_config_rdma_input_data(&tmpConfig, pgc->dpmgr_handle, cmdq_handle);
 			_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 
-			if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)
-				&& primary_display_is_video_mode() && ap_fps_changed) {
-				change_dsi_vfp(cmdq_handle, pgc->ap_fps);
-				ap_fps_changed = 0;
+			if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+				if (primary_display_is_video_mode() && dynamic_fps_changed) {
+					change_dsi_vfp(cmdq_handle, pgc->dynamic_fps);
+					dynamic_fps_changed = 0;
+				}
 			}
 
 			cmdqRecFlushAsyncCallback(cmdq_handle, (CmdqAsyncFlushCB)_Interface_fence_release_callback,
@@ -2796,25 +2769,6 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	/* check overlap layer */
 	cmdqBackupReadSlot(pgc->subtractor_when_free, i, &real_hrt_level);
 	real_hrt_level >>= 16;
-
-	_primary_path_lock(__func__);
-
-#ifdef MTK_FB_MMDVFS_SUPPORT
-	if (real_hrt_level > HRT_LEVEL_LOW &&
-		primary_display_is_directlink_mode()) {
-
-		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HIGH);
-	} else if (real_hrt_level > HRT_LEVEL_EXTREME_LOW) {
-		/* be carefull for race condition !! because callback may delay */
-		/* so we need to check last request when ovl_config */
-		if (dvfs_last_ovl_req == HRT_LEVEL_LOW)
-			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LOW);
-	} else {
-		if (dvfs_last_ovl_req == HRT_LEVEL_EXTREME_LOW)
-			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_EXTREME_LOW);
-	}
-#endif
-	_primary_path_unlock(__func__);
 
 	/* check last ovl status: should be idle when config */
 	if (primary_display_is_video_mode() && !primary_display_is_decouple_mode()) {
@@ -2935,6 +2889,19 @@ static int decouple_mirror_update_rdma_config_thread(void *data)
 	return 0;
 }
 #endif
+static int _remove_memout_callback(unsigned long userdata)
+{
+	int ret = 0;
+	CmdqInterruptCB orig_callback = (CmdqInterruptCB)userdata;
+
+	if (ddp_get_module_driver(DISP_MODULE_WDMA0)->deinit != 0)
+		ddp_get_module_driver(DISP_MODULE_WDMA0)->deinit(DISP_MODULE_WDMA0, NULL);
+
+	if (orig_callback)
+		ret = orig_callback(0);
+
+	return ret;
+}
 
 static int primary_display_remove_output(void *callback, unsigned int userdata)
 {
@@ -2971,7 +2938,7 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 		cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 
 		_cmdq_set_config_handle_dirty_mira(cmdq_handle);
-		cmdqRecFlushAsyncCallback(cmdq_handle, callback, 0);
+		cmdqRecFlushAsyncCallback(cmdq_handle, _remove_memout_callback, (unsigned long)callback);
 		pgc->need_trigger_ovl1to2 = 0;
 		/* cmdqRecDestroy(cmdq_handle); */
 	} else {
@@ -3047,9 +3014,6 @@ static int _present_fence_release_worker_thread(void *data)
 		if (!islcmconnected && !primary_display_is_video_mode()) {
 			DISPCHECK("LCM Not Connected && CMD Mode\n");
 			msleep(20);
-		} else if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
-			/*dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);*/
-			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
 		} else {
 			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 			/* dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
@@ -3289,13 +3253,13 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	config_display_m4u_port();
 
 	primary_display_set_max_layer(PRIMARY_SESSION_INPUT_LAYER_COUNT);
-	if (0) {
+
 	init_decouple_buffer_thread = kthread_run(_init_decouple_buffers_thread,
 								    NULL, "init_decouple_buffer");
 	if (IS_ERR(init_decouple_buffer_thread))
 		DISPERR("kthread_run init_decouple_buffer_thread err = %d",
 					IS_ERR(init_decouple_buffer_thread));
-	}
+
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_DSI_SW_INIT, &(pgc->plcm->params->dsi));
 
@@ -3326,8 +3290,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	}
 
 	if (use_cmdq) {
-		if (primary_display_is_video_mode() && pgc->ap_fps == 0)
-			pgc->ap_fps = 60;
+		if (primary_display_is_video_mode() && pgc->dynamic_fps == 0)
+			pgc->dynamic_fps = 60;
 
 		_cmdq_build_trigger_loop();
 		_cmdq_start_trigger_loop();
@@ -3364,8 +3328,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	memset(&gset_arg, 0, sizeof(gset_arg));
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
 	gset_arg.is_decouple_mode = 0;
-/*	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);*/
-	if (0 /*is_lcm_inited*/) {
+	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
+	if (is_lcm_inited) {
 		/* ??? why need */
 		/* no need lcm power on,because lk power on lcm */
 		/*ret = disp_lcm_init(pgc->plcm, 0);*/
@@ -3399,7 +3363,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	/* set_enterulps(0); */
 
 	/* Part5: Top sw init */
-	if (0) {
 	primary_display_check_recovery_init();
 
 	if (disp_helper_get_option(DISP_OPT_SWITCH_DST_MODE)) {
@@ -3457,7 +3420,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 			wake_up_process(primary_display_frame_update_task);
 		}
 	}
-		}
+
 	if (primary_display_is_video_mode()) {
 		/*if (disp_helper_get_option(DISP_HELPER_OPTION_IDLE_MGR))*/
 			/*primary_display_idlemgr_init();*/
@@ -3500,6 +3463,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 done:
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		primary_display_diagnose();
+
+	layering_rule_init();
 
 	_primary_path_unlock(__func__);
 	return ret;
@@ -3938,7 +3903,8 @@ int primary_display_suspend(void)
 	}
 	primary_display_idlemgr_kick(__func__, 0);
 
-	if (pgc->session_mode == DISP_SESSION_RDMA_MODE) {
+	if (pgc->session_mode == DISP_SESSION_RDMA_MODE
+		|| pgc->session_mode == DISP_SESSION_DECOUPLE_MODE) {
 		/* switch back to DL mode before suspend */
 		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
 					pgc->session_id, 0, NULL, 1);
@@ -3952,7 +3918,7 @@ int primary_display_suspend(void)
 
 	/* need leave share sram for suspend */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
+		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 
 	/* switch to vencpll before disable mmsys clk */
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
@@ -4010,7 +3976,7 @@ int primary_display_suspend(void)
 	} else if (primary_display_get_power_mode_nolock() == FB_SUSPEND) {
 		DISPINFO("[POWER]lcm suspend[begin]\n");
 		/*FIXME: workaround for pmic error, will be removed soon */
-		/*disp_lcm_suspend(pgc->plcm);*/
+		disp_lcm_suspend(pgc->plcm);
 		DISPCHECK("[POWER]lcm suspend[end]\n");
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 6);
 		DISPDBG("[POWER]primary display path Release Fence[begin]\n");
@@ -4018,7 +3984,7 @@ int primary_display_suspend(void)
 		DISPINFO("[POWER]primary display path Release Fence[end]\n");
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 7);
 		/*FIXME: workaround for pmic error, will be removed soon */
-		/*primary_display_set_lcm_power_state_nolock(LCM_OFF);*/
+		primary_display_set_lcm_power_state_nolock(LCM_OFF);
 	}
 
 	DISPDBG("[POWER]dpmanager path power off[begin]\n");
@@ -4046,8 +4012,10 @@ done:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_END, 0, 0);
 	DISPCHECK("primary_display_suspend end\n");
 
+#ifdef MTK_FB_MMDVFS_SUPPORT
 	/* set MMDVFS to default, do not prevent it from stepping into ULPM */
-	/* primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_DEFAULT); */
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_DEFAULT);
+#endif
 
 	return ret;
 }
@@ -4378,7 +4346,7 @@ done:
 
 	/* need enter share sram for resume */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
+		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 	if (disp_helper_get_option(DISP_OPT_CV_BYSUSPEND))
 		DSI_ForceConfig(0);
 
@@ -4904,6 +4872,135 @@ static int evaluate_bandwidth_save(struct disp_ddp_path_config *cfg, int *ori, i
 	return 0;
 }
 
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+int primary_display_get_corner_pattern_width(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->corner_pattern_width;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+int primary_display_get_round_corner_mva(unsigned int *top_mva, unsigned int *bottom_mva,
+				unsigned int *pitch, unsigned int *height)
+{
+	unsigned char ret = -1;
+	unsigned char argb444_bpp = 2;
+	unsigned int corner_size = 0;
+	unsigned int dal_buf_size = DAL_GetLayerSize();
+	unsigned int frame_buf_size = DISP_GetFBRamSize();
+	unsigned int  vram_buf_size = mtkfb_get_fb_size();
+	unsigned long  frame_buf_mva = primary_display_get_frame_buffer_mva_address();
+
+	if (vram_buf_size > dal_buf_size + frame_buf_size) {
+		*height = primary_display_get_corner_pattern_width();
+		*pitch = primary_display_get_width();
+		corner_size = (*pitch) * (*height) * argb444_bpp;
+
+		*top_mva = frame_buf_mva + vram_buf_size - 2 * corner_size;
+		*bottom_mva = *top_mva + corner_size;
+		ret = 0;
+	} else {
+		DISPERR("vram_buf may not contain corner size!\n");
+	}
+
+	return ret;
+}
+void primary_display_set_round_corner_layers(struct disp_ddp_path_config *cfg)
+{
+	int ret = 0;
+	static unsigned char init_corner;
+	static unsigned int pitch;
+	static unsigned int h;
+	static unsigned int top_mva, bottom_mva;
+	struct OVL_CONFIG_STRUCT *input_phy, *input_ext;
+	/* by chip */
+	int phy_layer_idx = 3;
+	int phy_layer_id = PRIMARY_SESSION_INPUT_LAYER_COUNT;
+	int ext_layer_id = phy_layer_id + 1;
+	enum DISP_MODULE_ENUM module = DISP_MODULE_OVL0;
+
+	if (unlikely(init_corner == 0)) {
+		ret = primary_display_get_round_corner_mva(&top_mva, &bottom_mva, &pitch, &h);
+		init_corner = 1;
+	}
+	if (ret || h == 0 || h > (primary_display_get_height()>>1)) {
+		DISPERR("round corner init fail: ret:%d, h:%u\n", ret, h);
+		return;
+	}
+
+	input_phy = &(cfg->ovl_config[phy_layer_id]);
+	input_phy->ovl_index = module;
+	input_phy->layer = phy_layer_id;
+	input_phy->isDirty = 1;
+	input_phy->buff_idx = -1;
+	input_phy->layer_en = 1;
+	input_phy->fmt = UFMT_RGBA4444;
+	input_phy->addr = (unsigned long)top_mva;
+	input_phy->const_bld = 0;
+	input_phy->src_x = 0;
+	input_phy->src_y = 0;
+	input_phy->src_w = pitch;
+	input_phy->src_h = h;
+	input_phy->src_pitch = pitch*2;
+	input_phy->dst_x = 0;
+	input_phy->dst_y = 0;
+	input_phy->dst_w = pitch;
+	input_phy->dst_h = h;
+	input_phy->aen = 1;
+	input_phy->sur_aen = 1;
+	input_phy->alpha = 255;
+	input_phy->keyEn = 0;
+	input_phy->key = 0;
+	input_phy->src_alpha = 1;
+	input_phy->dst_alpha = 2;
+	input_phy->source = OVL_LAYER_SOURCE_MEM;
+	input_phy->security = 0;
+	input_phy->yuv_range = 0;
+	input_phy->ext_layer = -1;
+	input_phy->ext_sel_layer = -1;
+	input_phy->phy_layer = phy_layer_idx;
+
+	input_ext = &(cfg->ovl_config[ext_layer_id]);
+	input_ext->ovl_index = module;
+	input_ext->layer = ext_layer_id;
+	input_ext->isDirty = 1;
+	input_ext->buff_idx = -1;
+	input_ext->layer_en = 1;
+	input_ext->fmt = UFMT_RGBA4444;
+	input_ext->addr = (unsigned long)bottom_mva;
+	input_ext->const_bld = 0;
+	input_ext->src_x = 0;
+	input_ext->src_y = 0;
+	input_ext->src_w = pitch;
+	input_ext->src_h = h;
+	input_ext->src_pitch = pitch*2;
+	input_ext->dst_x = 0;
+	input_ext->dst_y = primary_display_get_height() - h;
+	input_ext->dst_w = pitch;
+	input_ext->dst_h = h;
+	input_ext->aen = 1;
+	input_ext->sur_aen = 1;
+	input_ext->alpha = 255;
+	input_ext->keyEn = 0;
+	input_ext->key = 0;
+	input_ext->src_alpha = 1;
+	input_ext->dst_alpha = 2;
+	input_ext->source = OVL_LAYER_SOURCE_MEM;
+	input_ext->security = 0;
+	input_ext->yuv_range = 0;
+	input_ext->ext_layer = 2;
+	input_ext->ext_sel_layer = 3;
+	input_ext->phy_layer = phy_layer_idx;
+}
+#endif
+
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle, struct cmdqRecStruct *cmdq_handle)
 {
@@ -4963,25 +5060,18 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	hrt_level = HRT_LEVEL(cfg->overlap_layer_num);
 #else
-	hrt_level = cfg->overlap_layer_num;
+	hrt_level = HRT_GET_DVFS_LEVEL(cfg->overlap_layer_num);
 #endif
 	data_config->overlap_layer_num = hrt_level;
 
-#if 0
-	if (hrt_level > HRT_LEVEL_HIGH)
-		DISPCHECK("overlayed layer num is %d > %d\n", hrt_level, HRT_LEVEL_HIGH);
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	if (hrt_level > HRT_LEVEL_HPM)
+		dvfs_last_ovl_req = HRT_LEVEL_UHPM;
+	else
+		dvfs_last_ovl_req = HRT_LEVEL_HPM;
 
-	if (hrt_level > HRT_LEVEL_LOW &&
-		primary_display_is_directlink_mode()) {
-		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HIGH);
-		dvfs_last_ovl_req = HRT_LEVEL_HIGH;
-	} else if (hrt_level > HRT_LEVEL_EXTREME_LOW) {
-		dvfs_last_ovl_req = HRT_LEVEL_LOW;
-	} else{
-		dvfs_last_ovl_req = HRT_LEVEL_EXTREME_LOW;
-	}
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HPM);
 #endif
-	dvfs_last_ovl_req = HRT_LEVEL_HIGH;
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
 		char msg[10];
@@ -5014,6 +5104,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			data_config->overlap_layer_num = hrt_level;
 		}
 	}
+
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	primary_display_set_round_corner_layers(data_config);
+#endif
 
 	/* check bypass ovl */
 	bypass = can_bypass_ovl(data_config, &bypass_layer_id);
@@ -5154,7 +5248,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		cmdqRecBackupUpdateSlot(cmdq_handle, pgc->subtractor_when_free, layer, sub);
 	}
 	if (primary_display_is_video_mode() && !primary_display_is_decouple_mode()) {
-		unsigned long ovl_base = ovl_base_addr(DISP_MODULE_OVL1_2L);
+		unsigned long ovl_base = ovl_base_addr(DISP_MODULE_OVL0);
 
 		cmdqRecBackupRegisterToSlot(cmdq_handle, pgc->ovl_status_info,
 					    0, disp_addr_convert(DISP_REG_OVL_STA + ovl_base));
@@ -5166,6 +5260,9 @@ done:
 #endif
 	return ret;
 }
+/* FSTB will get display fps by this api, and to adjust the DFPS with the fps information*/
+void (*display_time_fps_stablizer)(unsigned long long ts);
+EXPORT_SYMBOL(display_time_fps_stablizer);
 
 /* notes: primary lock should be held when call this func */
 static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
@@ -5198,15 +5295,24 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			struct disp_ddp_path_config *data_config = dpmgr_path_get_last_config(disp_handle);
 			int layer = cfg->input_cfg[0].layer_id;
 
-			ret = _convert_disp_input_to_ovl(&(data_config->ovl_config[layer]),
-					&cfg->input_cfg[0]);
-		}
+			if (layer < ARRAY_SIZE(data_config->ovl_config)) {
+				ret = _convert_disp_input_to_ovl(&(data_config->ovl_config[layer]),
+						&cfg->input_cfg[0]);
+			} else
+				DISPERR("%s:layer index out of array bound!\n", __func__);
+			}
 
 		goto done;
 	}
 
 	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
 		fps_ctx_update(&primary_fps_ctx);
+	/* for FSTB */
+	if (display_time_fps_stablizer) {
+		unsigned long long ns = sched_clock();
+
+		display_time_fps_stablizer(ns);
+	}
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO))
 		primary_show_basic_debug_info(cfg);
 
@@ -5575,7 +5681,7 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	data_config = dpmgr_path_get_last_config(disp_handle);
 
 	/* calc wdma/rdma data size */
-	rdma_sz = data_config->dst_h * data_config->dst_w * 3;
+	rdma_sz = (unsigned long long)data_config->dst_h * data_config->dst_w * 3;
 
 	/* calc ovl data size */
 	ovl_sz = 0;
@@ -5833,6 +5939,7 @@ int primary_display_diagnose(void)
 	int ret = 0;
 
 	DISPMSG("==== %s ===>\n", __func__);
+	ddp_clk_tree_dump();
 	dpmgr_check_status(pgc->dpmgr_handle);
 
 	if (primary_display_is_decouple_mode()) {
@@ -5900,29 +6007,98 @@ int primary_display_force_set_fps(unsigned int keep, unsigned int skip)
 	return ret;
 }
 
-int primary_display_force_set_vsync_fps(unsigned int fps)
+unsigned int primary_display_force_get_vsync_fps(void)
+{
+	if (primary_display_is_idle()) {
+		DISPMSG("primary_display_force_get_vsync_fps=50, currently it is idle\n");
+		if (pgc->plcm->params->min_refresh_rate != 0)
+			return pgc->plcm->params->min_refresh_rate;
+	} else if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+		DISPMSG("primary_display_force_get_vsync_fps=%d, not idle and support ARR\n", pgc->dynamic_fps);
+		return pgc->dynamic_fps;
+	}
+
+	DISPMSG("primary_display_force_get_vsync_fps=%d, not idle and not support ARR\n", 60);
+	return 60;
+}
+
+int primary_display_force_set_vsync_fps(unsigned int fps, unsigned int scenario)
 {
 	int ret = 0;
 
-	DISPMSG("force set fps to %d\n", fps);
-	_primary_path_lock(__func__);
-	if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1) &&
-		primary_display_is_video_mode() && pgc->ap_fps != fps) {
-		pgc->ap_fps = fps;
-		ap_fps_changed = 1;
+	if (!primary_display_is_video_mode()) {
+		DISPERR("currently display is not video mode. fps changing fail\n");
+		return -1;
 	}
+
+	DISPMSG("primary_display_force_set_vsync_fps scenario=%d, fps=%d\n", scenario, fps);
+
+	/* scenario is APP, and support ARR change fps */
+	if ((scenario == 0) && disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+		_primary_path_lock(__func__);
+		/* record dynamic fps */
+		pgc->dynamic_fps = fps;
+
+		/* backup ARR fps */
+		arr_fps_backup = fps;
+
+		/* mark arr fps enable or disable */
+		if ((fps < primary_display_get_min_refresh_rate()) || (fps > primary_display_get_max_refresh_rate())) {
+			DISPMSG("wrong fps value setting, ARR fps is not changed\n");
+			return -1;
+		} else if (fps == primary_display_get_max_refresh_rate()) {
+			DISPMSG("mark ARR fps disable, fps=%d\n", fps);
+			arr_fps_enable = 0;
+		} else {
+			DISPMSG("mark ARR fps enable\n");
+			arr_fps_enable = 1;
+		}
+
+		/* if need to change ARR fps? */
+		/* idle status, no need to change ARR fps, because idle fps is lowest. */
+		/* after leave idle, dynamic_fps_changed will be set 1 to backup ARR fps. */
+		if (primary_display_is_idle()) {
+			DISPMSG("it is idle, won't change dynamic fps\n");
+			dynamic_fps_changed = 0;
+		} else {
+			DISPMSG("it is not idle, will change dynamic fps=%d\n", pgc->dynamic_fps);
+			dynamic_fps_changed = 1;
+		}
+		_primary_path_unlock(__func__);
+	}
+
+	/* scenario is "enter idle", change fps to be input idle fps */
+	if (scenario == 1) {
+		/* record dynamic fps */
+		pgc->dynamic_fps = fps;
+		dynamic_fps_changed = 1;
+		DISPMSG("enter idle, change dynamic fps to be %d of idle status\n", pgc->dynamic_fps);
+	}
+
+	/* scenario is "leave idle", change fps to be ARR fps */
+	if (scenario == 2) {
+		if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1) && (arr_fps_enable == 1)) {
+			pgc->dynamic_fps = arr_fps_backup; /* support ARR, leave idle will change to ARR_fps_backup */
+			DISPMSG("leave idle and support ARR, change dynamic fps=%d\n", pgc->dynamic_fps);
+		} else {
+			pgc->dynamic_fps = fps; /* not support ARR, leave idle will change fps to be 60 */
+			DISPMSG("leave idle and does not support ARR, change dynamic fps=%d\n", pgc->dynamic_fps);
+		}
+		dynamic_fps_changed = 1;
+		/* DISPMSG("Currently leave idle, change dynamic fps to be %d\n", pgc->dynamic_fps); */
+	}
+
 #if 0
-	if (fps == pgc->lcm_fps) {
-		pgc->vsync_drop = 0;
-		ret = 0;
-	} else if (fps == 30) {
-		pgc->vsync_drop = 1;
-		ret = 0;
+	if (fps == 60) {
+		DISPMSG("primary_display_force_set_vsync_fps arr_fps_enabled=0\n");
+		arr_fps_enabled = 0;
 	} else {
-		ret = -1;
+		DISPMSG("primary_display_force_set_vsync_fps arr_fps_enabled=1\n");
+		arr_fps_enabled = 1;
 	}
 #endif
-	_primary_path_unlock(__func__);
+
+	DISPMSG("primary_display_force_set_vsync_fps done\n");
 
 	return ret;
 }
@@ -6354,6 +6530,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 
 	primary_display_idlemgr_kick(__func__, 0);
 	dpmgr_path_add_memout(pgc->dpmgr_handle, after_eng, cmdq_handle);
+	cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	pconfig->wdma_dirty = 1;
@@ -6379,6 +6556,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	DISPMSG("primary capture:Flush add memout mva(0x%x)\n", mva);
 	/* wait wdma0 sof */
 	cmdqRecWait(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
+	cmdqRecWait(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 	cmdqRecFlush(cmdq_wait_handle);
 	DISPMSG("primary capture:Flush wait wdma sof\n");
 	cmdqRecReset(cmdq_handle);
@@ -6390,6 +6568,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 	/* flush remove memory to cmdq */
+	/*cmdqRecFlushAsyncCallback(cmdq_handle, _remove_memout_callback, 0);*/
 	_cmdq_flush_config_handle_mira(cmdq_handle, 1);
 	DISPMSG("primary capture: Flush remove memout\n");
 

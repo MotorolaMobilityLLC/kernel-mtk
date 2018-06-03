@@ -515,7 +515,8 @@ static void ddp_print_scenario(enum DDP_SCENARIO_ENUM scenario)
 	int num = ddp_get_module_num(scenario);
 
 	for (i = 0; i < num; i++)
-		strncat(path, ddp_get_module_name(module_list_scenario[scenario][i]), sizeof(path));
+		strncat(path, ddp_get_module_name(module_list_scenario[scenario][i]),
+				(sizeof(path) - strlen(path)));
 	DDPMSG("scenario %s have modules: %s\n", ddp_get_scenario_name(scenario), path);
 }
 
@@ -671,7 +672,6 @@ int ddp_path_top_clock_on(void)
 		ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
 		ddp_clk_prepare_enable(DISP0_SMI_COMMON);
 		ddp_clk_prepare_enable(DISP0_SMI_LARB0);
-		ddp_clk_prepare_enable(DISP0_SMI_LARB1);
 	} else {
 		need_enable = 1;
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
@@ -685,7 +685,6 @@ int ddp_path_top_clock_on(void)
 
 int ddp_path_top_clock_off(void)
 {
-	ddp_clk_disable_unprepare(DISP0_SMI_LARB1);
 	ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
 	ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
 	ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);

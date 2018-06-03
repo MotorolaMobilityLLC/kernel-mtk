@@ -20,6 +20,7 @@
 #include "display_recorder.h"
 #include "mtkfb_fence.h"
 #include "disp_drv_platform.h"
+#include "disp_arr.h"
 
 
 #ifdef CONFIG_COMPAT
@@ -1222,23 +1223,28 @@ int _compat_ioctl_get_display_caps(struct file *file, unsigned long arg)
 	return ret;
 }
 
+int _compat_ioctl_get_vsync(struct file *file, unsigned long arg)
+{
+	int ret = 0;
+
+	DISPMSG("_compat_ioctl_get_vsync begin\n");
+	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_GET_VSYNC_FPS, arg);
+	DISPMSG("_compat_ioctl_get_vsync done\n");
+	return ret;
+}
+
 int _compat_ioctl_set_vsync(struct file *file, unsigned long arg)
 {
 	int ret = 0;
-#if 0
-	int err = 0;
+	unsigned int fps = (unsigned int)arg;
 
-	compat_uint_t __user *data32;
-	unsigned int __user data;
-
-	data32 = compat_ptr(arg);
-
-	if (get_user(data, data32)) {
-		DISPERR("compat_get_fps fail!\n");
-		return err;
+	if ((fps < primary_display_get_min_refresh_rate()) || (fps > primary_display_get_max_refresh_rate())) {
+		DISPERR("_compat_ioctl_set_vsync fps setting is out of range, fps=%d\n", fps);
+		return  -EFAULT;
 	}
-#endif
+	DISPMSG("_compat_ioctl_set_vsync begin\n");
 	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_SET_VSYNC_FPS, arg);
+	DISPMSG("_compat_ioctl_set_vsync done\n");
 	return ret;
 }
 

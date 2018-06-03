@@ -19,14 +19,19 @@
 #ifndef __MT_PWM_PRV_H__
 #define __MT_PWM_PRV_H__
 
+/* #define PWM_OVER_4G */
 extern void __iomem *pwm_base;
+#ifdef PWM_OVER_4G
 extern void __iomem *pwm_pericfg_base;
+#endif
 
 /* unsigned int pwm_irqnr; */
 
 #undef PWM_BASE
 #define PWM_BASE pwm_base
+#ifdef PWM_OVER_4G
 #define PWM_PERICFG_BASE pwm_pericfg_base
+#endif
 
 /***********************************
 * PWM register address             *
@@ -72,11 +77,14 @@ extern void __iomem *pwm_pericfg_base;
 #define BLOCK_CLK     (66UL*1000*1000)
 #define PWM_26M_CLK   (26UL*1000*1000)
 
-/*PWM pericfg control register*/
+void mt_pwm_platform_init(void);
+#ifdef PWM_OVER_4G
+/* PWM pericfg control register */
 #define PERI_8GB_DDR_EN (PWM_PERICFG_BASE+0x94)
 
 #define PWM_PERI_SHIFT (PWM_PERICFG_BASE+0x98)
 #define PWM_PERI_SHIFT_OFFSET 18
+#endif
 
 
 #endif

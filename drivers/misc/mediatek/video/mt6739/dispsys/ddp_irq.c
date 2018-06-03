@@ -354,9 +354,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMPROFILE_FLAG_PULSE,
 				       reg_val, DISP_REG_GET(DISPSYS_DSI0_BASE + 0x4));
 
-			DDPERR("IRQ: RDMA%d abnormal! cnt=%d\n", index, cnt_rdma_abnormal[index]++);
+			DDPERR("IRQ: RDMA%d abnormal eof! cnt=%d\n", index, cnt_rdma_abnormal[index]++);
 			disp_irq_log_module |= 1 << module;
-
 		}
 		if (reg_val & (1 << 4)) {
 
@@ -384,6 +383,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPIRQ("IRQ: RDMA%d target line!\n", index);
 			rdma_targetline_irq_cnt[index]++;
 		}
+		if (reg_val & (1 << 7))
+			DDPIRQ("IRQ: RDMA%d abnormal sof!\n", index);
 		/* clear intr */
 		DISP_CPU_REG_SET(DISP_REG_RDMA_INT_STATUS + index * DISP_RDMA_INDEX_OFFSET, ~reg_val);
 		mmprofile_log_ex(ddp_mmp_get_events()->RDMA_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val, 0);

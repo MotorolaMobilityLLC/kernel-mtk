@@ -91,6 +91,7 @@ enum DPREC_LOGGER_ENUM {
 	DPREC_LOGGER_ESD_RECOVERY,
 	DPREC_LOGGER_ESD_CHECK,
 	DPREC_LOGGER_ESD_CMDQ,
+	DPREC_LOGGER_IDLEMGR,
 	DPREC_LOGGER_WDMA_DUMP,
 	DPREC_LOGGER_EXTD_START,
 	DPREC_LOGGER_EXTD_STATUS = DPREC_LOGGER_EXTD_START,
@@ -218,7 +219,7 @@ void init_log_buffer(void);
 char *get_dprec_status_ptr(int buffer_idx);
 
 /* systrace utils functions */
-#ifdef CONFIG_TRACING
+#if defined(CONFIG_TRACING) && (defined(CONFIG_MTK_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE))
 
 #include <linux/trace_events.h>
 unsigned long disp_get_tracing_mark(void);

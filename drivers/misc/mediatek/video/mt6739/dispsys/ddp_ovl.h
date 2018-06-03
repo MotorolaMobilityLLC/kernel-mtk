@@ -21,9 +21,9 @@
 #define OVL_MAX_WIDTH  (4095)
 #define OVL_MAX_HEIGHT (4095)
 
-#define TOTAL_OVL_LAYER_NUM	(4+3+2+3)
-#define OVL_NUM			(3)
-#define PRIMARY_THREE_OVL_CASCADE
+#define TOTAL_OVL_LAYER_NUM	(7)
+#define OVL_NUM			(1)
+
 
 /* start overlay module */
 int ovl_start(enum DISP_MODULE_ENUM module, void *handle);
@@ -54,5 +54,7 @@ unsigned long ovl_to_index(enum DISP_MODULE_ENUM module);
 
 void ovl_get_info(enum DISP_MODULE_ENUM module, void *data);
 unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid);
+
+int is_slt_test(void);
 
 #endif

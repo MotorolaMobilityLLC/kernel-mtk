@@ -28,6 +28,10 @@ void init_ddp_mmp_events(void)
 		DDP_MMP_Events.DDP = mmprofile_register_event(MMP_ROOT_EVENT, "Display");
 		DDP_MMP_Events.primary_Parent =
 		    mmprofile_register_event(DDP_MMP_Events.DDP, "primary_disp");
+		DDP_MMP_Events.hrt =
+		    mmprofile_register_event(DDP_MMP_Events.DDP, "hrt");
+		DDP_MMP_Events.dvfs =
+		    mmprofile_register_event(DDP_MMP_Events.DDP, "dvfs");
 		DDP_MMP_Events.primary_trigger =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "trigger");
 		DDP_MMP_Events.primary_config =
@@ -267,8 +271,6 @@ void init_ddp_mmp_events(void)
 		    mmprofile_register_event(DDP_MMP_Events.DDP_IRQ, "OVL_IRQ");
 		DDP_MMP_Events.OVL_IRQ[0] =
 		    mmprofile_register_event(DDP_MMP_Events.OVL_IRQ_Parent, "OVL_IRQ_0");
-		DDP_MMP_Events.OVL_IRQ[1] =
-		    mmprofile_register_event(DDP_MMP_Events.OVL_IRQ_Parent, "OVL_IRQ_1");
 		DDP_MMP_Events.WDMA_IRQ_Parent =
 		    mmprofile_register_event(DDP_MMP_Events.DDP_IRQ, "WDMA_IRQ");
 		DDP_MMP_Events.WDMA_IRQ[0] =

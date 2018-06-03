@@ -148,7 +148,7 @@ static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
 	{DISP_MODULE_WDMA_VIRTUAL0,
 	 DISP_T_UNKNOWN,
 	 "wdma_virtual0",
-	 1,
+	 0,
 	 NULL,
 	 {reg_magic,}
 	},
@@ -156,7 +156,7 @@ static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
 	{DISP_MODULE_WDMA_VIRTUAL1,
 	 DISP_T_UNKNOWN,
 	 "wdma_virtual1",
-	 1,
+	 0,
 	 NULL,
 	 {reg_magic,}
 	},
@@ -302,7 +302,7 @@ static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
 	{DISP_MODULE_UFOE_VIRTUAL,
 	 DISP_T_UFOE,
 	 "ufoe",
-	 0,
+	 1,
 	 NULL,
 	 {reg_magic,}
 	},
@@ -422,7 +422,7 @@ static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
 	 NULL,
 	 {"mediatek,disp_mutex",
 	  0x14001000,
-	  194,
+	  226,
 	  21,
 	  0,
 	  0}
@@ -642,7 +642,7 @@ unsigned int ddp_get_module_irq(enum DISP_MODULE_ENUM module)
 	if (is_ddp_module_has_reg_info(module))
 		return ddp_modules[module].reg_info.reg_irq;
 
-	DDPDBG("ddp_get_module_irq: invalid module id=%d\n", module);
+	/*DDPDBG("ddp_get_module_irq: invalid module id=%d\n", module);*/
 	return 0;
 }
 

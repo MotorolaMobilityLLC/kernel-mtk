@@ -512,6 +512,7 @@ static int disp_probe(struct platform_device *pdev)
 {
 
 	static unsigned int disp_probe_cnt;
+	pr_debug("disp driver(1) disp_probe early\n");
 
 	if (disp_probe_cnt != 0)
 		return 0;
@@ -619,7 +620,7 @@ static int __init disp_probe_1(void)
 		if (ddp_get_module_pa(i) != res.start)
 			DDPERR("[ERR]DT, i=%d, module=%s, map_addr=%p, reg_pa=0x%lx!=0x%pa\n",
 			       i, ddp_get_module_name(i), (void *)ddp_get_module_va(i),
-			       ddp_get_module_pa(i), (void *)res.start);
+			       ddp_get_module_pa(i), (void *)(uintptr_t)res.start);
 
 		/* get IRQ ID and request IRQ */
 		irq = irq_of_parse_and_map(node, 0);
@@ -639,17 +640,9 @@ static int __init disp_probe_1(void)
 				ddp_module_irq_disable(i);
 				continue;
 			}
-
-			if (ddp_get_module_checkirq(i) != virq_to_hwirq(ddp_get_module_irq(i))) {
-				DDPERR("[ERR]DT, i=%d, module=%s, map_irq=%d, virtohw_irq=%d, check_irq=%d\n",
-					   i,
-					   ddp_get_module_name(i),
-					   ddp_get_module_irq(i),
-					   virq_to_hwirq(ddp_get_module_irq(i)),
-					   ddp_get_module_checkirq(i));
-				ddp_module_irq_disable(i);
-				continue;
-			}
+			DDPMSG("DT, i=%d, module=%s, map_irq=%d, hw_irq = %d\n",
+				i, ddp_get_module_name(i),
+				ddp_get_module_irq(i), virq_to_hwirq(ddp_get_module_irq(i)));
 
 			/* IRQF_TRIGGER_NONE dose not take effect here, real trigger mode set in dts file */
 			ret = request_irq(ddp_get_module_irq(i), (irq_handler_t)disp_irq_handler,

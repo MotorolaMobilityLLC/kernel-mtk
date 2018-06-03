@@ -83,7 +83,9 @@ static unsigned int bl_duty_hal = 21;
 static unsigned int bl_div_hal = CLK_DIV1;
 static unsigned int bl_frequency_hal = 32000;
 /* for button led don't do ISINK disable first time */
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6356
 static int button_flag_isink0;
+#endif
 static int button_flag_isink1;
 
 struct wake_lock leds_suspend_lock;
@@ -761,8 +763,10 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 		/* button flag ==0, means this ISINK is not for button backlight */
 		if ((button_flag_isink1 == 0) && (first_time == true)) {
 			/* sw workround for sync leds status */
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6356
 			if (button_flag_isink0 == 0)
 				pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_OFF);
+#endif
 			first_time = false;
 		}
 		pmic_set_register_value(PMIC_RG_DRV_128K_CK_PDN, 0x0);	/* Disable power down */

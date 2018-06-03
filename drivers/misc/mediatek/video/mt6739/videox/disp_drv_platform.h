@@ -41,16 +41,20 @@
 #endif
 
 /* Wrap SPM/MMDVFS code for early porting */
-/* #define MTK_FB_SPM_SUPPORT */
-/* #define MTK_FB_MMDVFS_SUPPORT */
+#define MTK_FB_SPM_SUPPORT
+#define MTK_FB_MMDVFS_SUPPORT
 
 #define MTK_FB_ION_SUPPORT
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
-
-#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(6) /* phy(4+2) + ext(3+3) */
-#define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(2 /*2+3*/) /* 2 is enough, no need ext layer */
-#define MEMORY_SESSION_INPUT_LAYER_COUNT			(2 /*2+3*/) /* 2 is enough, no need ext layer */
+/*be careful, change ovl config arry size at same time*/
+#ifndef CONFIG_MTK_ROUND_CORNER_SUPPORT
+#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(7) /* phy(4+2) + ext(3+3) */
+#else
+#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(5) /* phy(4+2) + ext(3+3) */
+#endif
+#define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(0 /*2+3*/) /* 2 is enough, no need ext layer */
+#define MEMORY_SESSION_INPUT_LAYER_COUNT			(1 /*2+3*/) /* 2 is enough, no need ext layer */
 #define DISP_SESSION_OVL_TIMELINE_ID(x)				(x)
 
 /* Display HW Capabilities */

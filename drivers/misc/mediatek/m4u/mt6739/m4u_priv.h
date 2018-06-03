@@ -38,7 +38,7 @@
 #endif
 #define M4U_PROFILE
 /*#define M4U_4GBDRAM*/
-#define M4U_FPGAPORTING
+/*#define M4U_FPGAPORTING*/
 #define M4U_DVT 0
 
 
@@ -190,7 +190,7 @@ int m4u_dump_main_tlb(int m4u_id, int m4u_slave_id);
 int m4u_dump_pfh_tlb(int m4u_id);
 int m4u_domain_init(struct m4u_device *m4u_dev, void *priv_reserve);
 
-int config_mau(M4U_MAU_STRUCT mau);
+/*int config_mau(M4U_MAU_STRUCT mau);*/
 int m4u_enable_tf(int port, bool fgenable);
 
 
@@ -338,7 +338,7 @@ typedef struct _M4U_DMA {
 #define MTK_M4U_T_REGISTER_BUFFER     _IOW(MTK_M4U_MAGICNO, 22, int)
 #define MTK_M4U_T_CACHE_FLUSH_ALL     _IOW(MTK_M4U_MAGICNO, 23, int)
 #define MTK_M4U_T_CONFIG_PORT_ARRAY   _IOW(MTK_M4U_MAGICNO, 26, int)
-#define MTK_M4U_T_CONFIG_MAU	  _IOW(MTK_M4U_MAGICNO, 27, int)
+/*#define MTK_M4U_T_CONFIG_MAU	  _IOW(MTK_M4U_MAGICNO, 27, int)*/
 #define MTK_M4U_T_CONFIG_TF	   _IOW(MTK_M4U_MAGICNO, 28, int)
 #define MTK_M4U_T_DMA_OP	      _IOW(MTK_M4U_MAGICNO, 29, int)
 

@@ -65,7 +65,7 @@ static int debug_init;
 unsigned char pq_debug_flag;
 unsigned char aal_debug_flag;
 
-static unsigned int dbg_log_level = 2;
+static unsigned int dbg_log_level;
 static unsigned int irq_log_level;
 static unsigned int dump_to_buffer;
 
@@ -298,7 +298,7 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		if (level) {
-			enum disp_pwm_id_t pwm_id = DISP_PWM0;
+			disp_pwm_id_t pwm_id = DISP_PWM0;
 
 			if (opt[3] == '1')
 				pwm_id = DISP_PWM1;
@@ -341,6 +341,7 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		sprintf(buf, "aal_dbg_en = 0x%x\n", aal_dbg_en);
+#if 1 /* FIXME: tmp comment */
 	} else if (strncmp(opt, "color_dbg:", 10) == 0) {
 		char *p = (char *)opt + 10;
 		unsigned int debug_level;
@@ -364,6 +365,7 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		sprintf(buf, "corr_dbg_en = 0x%x\n", corr_dbg_en);
+#endif
 	} else if (strncmp(opt, "aal_test:", 9) == 0) {
 		aal_test(opt + 9, buf);
 	} else if (strncmp(opt, "pwm_test:", 9) == 0) {

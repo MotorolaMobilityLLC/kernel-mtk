@@ -34,6 +34,7 @@
 #include <mt-plat/upmu_common.h>
 #include <mtk_spm_sleep.h>
 #include <mtk_vcorefs_manager.h>
+#include <mtk_spm_vcore_dvfs.h>
 #include "ccci_core.h"
 #include "ccci_platform.h"
 
@@ -54,6 +55,7 @@ static struct pinctrl *mdcldma_pinctrl;
 #endif
 
 static void __iomem *md_sram_pd_psmcusys_base;
+static void __iomem *md_cldma_misc_base;
 
 #define TAG "mcd"
 
@@ -138,6 +140,12 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 
 		hw_info->md_pcore_pccif_base = ioremap_nocache(MD_PCORE_PCCIF_BASE, 0x20);
 		CCCI_BOOTUP_LOG(dev_cfg->index, TAG, "pccif:%x\n", MD_PCORE_PCCIF_BASE);
+
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mdcldmamisc");
+		if (node)
+			md_cldma_misc_base = of_iomap(node, 0);
+		else
+			CCCI_BOOTUP_LOG(dev_cfg->index, TAG, "warning: no md cldma misc in dts\n");
 
 		/* Device tree using none flag to register irq, sensitivity has set at "irq_of_parse_and_map" */
 		cldma_hw->cldma_irq_flags = IRQF_TRIGGER_NONE;
@@ -347,6 +355,29 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats1:0x%X\n", cldma_read32(md_reg->md_boot_stats1, 0));
 }
 
+void md_cd_get_md_bootup_status(struct ccci_modem *md, unsigned int *buff, int length)
+{
+	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
+	struct md_pll_reg *md_reg = md_info->md_pll_base;
+
+	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats len %d\n", length);
+
+	if (length < 2) {
+		md_cd_dump_md_bootup_status(md);
+		return;
+	}
+
+	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
+	cldma_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
+	buff[0] = cldma_read32(md_reg->md_boot_stats0, 0);
+
+	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
+	cldma_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
+	buff[1] = cldma_read32(md_reg->md_boot_stats1, 0);
+	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats0 / 1:0x%X / 0x%X\n", buff[0], buff[1]);
+
+}
+
 static int dump_emi_last_bm(struct ccci_modem *md)
 {
 	u32 buf_len = 1024;
@@ -374,9 +405,20 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
 	struct md_pll_reg *md_reg = md_info->md_pll_base;
 	struct ccci_per_md *per_md_data = &md->per_md_data;
+	unsigned int reg_value[2] = { 0 };
+	unsigned int ccif_sram[CCCI_EE_SIZE_CCIF_SRAM/sizeof(unsigned int)] = { 0 };
 
 	/*dump_emi_latency();*/
 	dump_emi_last_bm(md);
+
+	md_cd_get_md_bootup_status(md, reg_value, 2);
+	md->ops->dump_info(md, DUMP_FLAG_CCIF, ccif_sram, 0);
+	/* copy from HS1 timeout */
+	if ((reg_value[0] == 0) && (ccif_sram[1] == 0))
+		return;
+	else if (!((reg_value[0] == 0x54430007) || (reg_value[0] == 0) ||
+		(reg_value[0] >= 0x53310000 && reg_value[0] <= 0x533100FF)))
+		return;
 
 	md_cd_lock_modem_clock_src(1);
 
@@ -881,6 +923,7 @@ int md_cd_power_on(struct ccci_modem *md)
 	md1_pre_access_md_reg(md);
 
 	/*md1_pcore_sram_on(md);*/
+	dvfsrc_mdsrclkena_control(1);
 
 	/* step 4: MD srcclkena setting */
 	reg_value = ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA);
@@ -949,6 +992,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 		CCCI_BOOTUP_LOG(md->index, CORE, "md_cd_power_off: set md1_srcclkena=0x%x\n",
 			     ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA));
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call md1_pmic_setting_off\n");
+		dvfsrc_mdsrclkena_control(0);
 		/* 3. PMIC off */
 		md1_pmic_setting_off();
 		/* 4. gating md related clock */
@@ -967,6 +1011,8 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 
 void cldma_dump_register(struct md_cd_ctrl *md_ctrl)
 {
+	if (md_cldma_misc_base)
+		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "MD CLDMA IP busy = %x\n", ccci_read32(md_cldma_misc_base, 0));
 
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "dump AP CLDMA Tx pdn register, active=%x\n", md_ctrl->txq_active);
 	ccci_util_mem_dump(md_ctrl->md_id, CCCI_DUMP_MEM_DUMP, md_ctrl->cldma_ap_pdn_base + CLDMA_AP_UL_START_ADDR_0,
@@ -1056,7 +1102,7 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)ccci_hif_get_by_id(CLDMA_HIF_ID);
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
-	enum MD_STATE md_state = ccci_fsm_get_md_state(md->index);
+	MD_STATE md_state = ccci_fsm_get_md_state(md->index);
 	int i;
 	unsigned long flags;
 	unsigned int val = 0;
@@ -1072,6 +1118,11 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 		|| cldma_reg_get_4msb_val(md_ctrl->cldma_ap_ao_base,
 					CLDMA_AP_UL_START_ADDR_4MSB, md_ctrl->txq[0].index)) {
 		CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma pdn register: No need  ...\n");
+		if (!(cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS))) {
+			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD, CLDMA_BM_ALL_QUEUE & 0x1);
+			cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD); /* dummy read */
+		} else
+			CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma ao register: No need  ...\n");
 	} else {
 		CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma pdn register ...11\n");
 		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
@@ -1080,6 +1131,9 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG,
 				      cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG) | 0x40);
 #endif
+		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD, CLDMA_BM_ALL_QUEUE & 0x1);
+		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD); /* dummy read */
+
 		/* set start address */
 		for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
 			if (cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)) == 0

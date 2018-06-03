@@ -304,6 +304,8 @@ static const char *dprec_logger_spy(enum DPREC_LOGGER_ENUM l)
 		return "ESD Check";
 	case DPREC_LOGGER_ESD_CMDQ:
 		return "ESD CMDQ Keep";
+	case DPREC_LOGGER_IDLEMGR:
+		return "IDLE_MANAGER";
 	case DPREC_LOGGER_PRIMARY_CONFIG:
 		return "Primary Path Config";
 	case DPREC_LOGGER_DISPMGR_PREPARE:
@@ -851,7 +853,7 @@ int dprec_logger_get_result_string_all(char *stringbuf, int strlen)
 		       "|Event                   | count   | fps        |average(ms) | max(ms)    | min(ms)    |\n");
 	n += scnprintf(stringbuf + n, strlen - n,
 		       "|------------------------+---------+------------+------------+------------+------------|\n");
-	for (i = 0; i < ARRAY_SIZE(logger) / sizeof(logger[0]); i++)
+	for (i = 0; i < ARRAY_SIZE(logger); i++)
 		n += dprec_logger_get_result_string(i, stringbuf + n, strlen - n);
 
 	n += scnprintf(stringbuf + n, strlen - n,
@@ -1170,11 +1172,11 @@ static char **dbg_buffer;
 static char **dump_buffer;
 static char **status_buffer;
 static struct logger_buffer dprec_logger_buffer[DPREC_LOGGER_PR_NUM] = {
-	{0, 0, 0, ERROR_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
-	{0, 0, 0, FENCE_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
-	{0, 0, 0, DEBUG_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
-	{0, 0, 0, DUMP_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
-	{0, 0, 0, STATUS_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{0, LOGGER_BUFFER_SIZE, 0, ERROR_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{0, LOGGER_BUFFER_SIZE, 0, FENCE_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{0, LOGGER_BUFFER_SIZE, 0, DEBUG_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{0, LOGGER_BUFFER_SIZE, 0, DUMP_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{0, LOGGER_BUFFER_SIZE, 0, STATUS_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
 };
 bool is_buffer_init;
 char *debug_buffer;
@@ -1307,6 +1309,9 @@ int dprec_logger_pr(unsigned int type, char *fmt, ...)
 	if (dprec_logger_buffer[type].len < 128) {
 		dprec_logger_buffer[type].id++;
 		dprec_logger_buffer[type].id = dprec_logger_buffer[type].id % dprec_logger_buffer[type].count;
+		/*not coverage the first error buf*/
+		if (type == DPREC_LOGGER_ERROR && dprec_logger_buffer[type].id == 0)
+			dprec_logger_buffer[type].id++;
 		dprec_logger_buffer[type].len = dprec_logger_buffer[type].size;
 	}
 	buf_arr = dprec_logger_buffer[type].buffer_ptr;

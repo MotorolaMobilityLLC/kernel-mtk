@@ -20,6 +20,7 @@ void DBG_Deinit(void);
 #include "mmprofile.h"
 extern int bypass_blank;
 extern int lcm_mode_status;
+extern unsigned long fb_pa;
 
 #ifdef MTKFB_DBG
 #include "disp_drv_log.h"

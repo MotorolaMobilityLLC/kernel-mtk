@@ -39,6 +39,7 @@
 #include "sspm_ipi.h"
 #endif
 #define PMIC_WRAP_DEVICE "pmic_wrap"
+#include <mt-plat/aee.h>
 
 /************* marco    ******************************************************/
 #if (PMIC_WRAP_PRELOADER)
@@ -151,7 +152,7 @@ static unsigned long long _pwrap_get_current_time(void);
 static unsigned long long _pwrap_time2ns(unsigned long long time_us);
 static signed int _pwrap_reset_spislv(void);
 static signed int _pwrap_init_dio(unsigned int dio_en);
-static signed int _pwrap_init_cipher(void);
+/* static signed int _pwrap_init_cipher(void); */
 static signed int _pwrap_init_reg_clock(unsigned int regck_sel);
 static void _pwrap_enable(void);
 static void _pwrap_starve_set(void);
@@ -443,6 +444,16 @@ static signed int pwrap_wacs2_hal(unsigned int write, unsigned int adr, unsigned
 	if ((wdata & ~(0xffff)) != 0)
 		return E_PWR_INVALID_WDAT;
 
+	/* Check gauge clock */
+#if (MTK_PLATFORM_MT6357)
+	if (write == 1) {
+		if ((adr == 0x0f8c) && (((wdata & 0x0008) >> 3) == 0)) {
+			PWRAP_PR_ERR("gauge clock check fail\n");
+			aee_kernel_warning("PMIC WRAP:WACS2_HAL", "Gauge clock check fail in pmic wrap");
+		}
+	}
+#endif
+
 	spin_lock_irqsave(&wrp_lock, flags);
 
 	/* Check IDLE & INIT_DONE in advance */
@@ -520,6 +531,16 @@ static signed int _pwrap_wacs2_nochk(unsigned int write, unsigned int adr, unsig
 		return E_PWR_INVALID_ADDR;
 	if ((wdata & ~(0xffff)) != 0)
 		return E_PWR_INVALID_WDAT;
+
+	/* Check gauge clock */
+#if (MTK_PLATFORM_MT6357)
+	if (write == 1) {
+		if ((adr == 0x0f8c) && (((wdata & 0x0008) >> 3) == 0)) {
+			PWRAP_PR_ERR("gauge clock check fail\n");
+			aee_kernel_warning("PMIC WRAP:WACS2_HAL", "Gauge clock check fail in pmic wrap");
+		}
+	}
+#endif
 
 	/* Check IDLE */
 	return_value =
@@ -612,108 +633,6 @@ static signed int _pwrap_init_dio(unsigned int dio_en)
 	WRAP_WR32(PMIC_WRAP_DIO_EN, 0x1);
 #else
 	WRAP_WR32(PMIC_WRAP_DIO_EN, 0x3);
-#endif
-
-	return 0;
-}
-
-/***************************************************
- * Function : _pwrap_init_cipher()
- * Description :
- * Parameter :
- * Return :
- ****************************************************/
-static signed int _pwrap_init_cipher(void)
-{
-	unsigned int rdata = 0;
-	unsigned int return_value = 0;
-	unsigned int start_time_ns = 0, timeout_ns = 0;
-
-	WRAP_WR32(PMIC_WRAP_CIPHER_SWRST, 1);
-	WRAP_WR32(PMIC_WRAP_CIPHER_SWRST, 0);
-	WRAP_WR32(PMIC_WRAP_CIPHER_KEY_SEL, 1);
-	WRAP_WR32(PMIC_WRAP_CIPHER_IV_SEL, 2);
-	WRAP_WR32(PMIC_WRAP_CIPHER_EN, 1);
-	/* Config CIPHER @ PMIC */
-	pwrap_write_nochk(PMIC_DEW_CIPHER_SWRST_ADDR, 0x1);
-	pwrap_write_nochk(PMIC_DEW_CIPHER_SWRST_ADDR, 0x0);
-	pwrap_write_nochk(PMIC_DEW_CIPHER_KEY_SEL_ADDR, 0x1);
-	pwrap_write_nochk(PMIC_DEW_CIPHER_IV_SEL_ADDR,  0x2);
-	pwrap_write_nochk(PMIC_DEW_CIPHER_EN_ADDR,  0x1);
-	PWRAPLOG("[_pwrap_init_cipher]Config CIPHER of PMIC 0 ok\n");
-
-#ifdef DUAL_PMICS
-	/* Config CIPHER of PMIC 1 */
-	pwrap_write_nochk(EXT_DEW_CIPHER_SWRST, 0x1);
-	pwrap_write_nochk(EXT_DEW_CIPHER_SWRST, 0x0);
-	pwrap_write_nochk(EXT_DEW_CIPHER_KEY_SEL, 0x1);
-	pwrap_write_nochk(EXT_DEW_CIPHER_IV_SEL,  0x2);
-	pwrap_write_nochk(EXT_DEW_CIPHER_EN,  0x1);
-	PWRAPLOG("[_pwrap_init_cipher]Config CIPHER of PMIC 1 ok\n");
-#endif
-	/*wait for cipher data ready@AP */
-	return_value = wait_for_state_ready_init(wait_for_cipher_ready, TIMEOUT_WAIT_IDLE, PMIC_WRAP_CIPHER_RDY, 0);
-	if (return_value != 0) {
-		PWRAPLOG("cipher fail,ret=%x\n", return_value);
-		return return_value;
-	}
-	PWRAPLOG("wait for cipher 0 and 1 to be ready ok\n");
-
-	/* wait for cipher 0 data ready@PMIC */
-	start_time_ns = _pwrap_get_current_time();
-	timeout_ns = _pwrap_time2ns(0xFFFFFF);
-	do {
-		if (_pwrap_timeout_ns(start_time_ns, timeout_ns))
-			PWRAPLOG("cipher 0 data\n");
-
-		pwrap_read_nochk(PMIC_DEW_CIPHER_RDY_ADDR, &rdata);
-	} while (rdata != 0x1); /* cipher_ready */
-
-	return_value = pwrap_write_nochk(PMIC_DEW_CIPHER_MODE_ADDR, 0x1);
-	if (return_value != 0) {
-		PWRAPLOG("CIPHER_MODE fail,ret=%x\n", return_value);
-		return return_value;
-	}
-	PWRAPLOG("wait for cipher0 data ready ok\n");
-
-#ifdef DUAL_PMICS
-	start_time_ns = _pwrap_get_current_time();
-	timeout_ns = _pwrap_time2ns(0xFFFFFF);
-	do {
-		if (_pwrap_timeout_ns(start_time_ns, timeout_ns))
-			PWRAPLOG("cipher 1 data\n");
-		pwrap_read_nochk(EXT_DEW_CIPHER_RDY, &rdata);
-	} while (rdata != 0x1); /* cipher_ready */
-
-	return_value = pwrap_write_nochk(EXT_DEW_CIPHER_MODE, 0x1);
-	if (return_value != 0) {
-		PWRAPLOG("EXT_CIPHER_MODE fail,ret=%x\n", return_value);
-		return return_value;
-	}
-#endif
-	PWRAPLOG("wait for cipher 1 data ready@PMIC ok\n");
-
-	/* wait for cipher mode idle */
-	return_value = wait_for_state_ready_init(wait_for_idle_and_sync, TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA, 0);
-	if (return_value != 0) {
-		PWRAPLOG("cipher mode idle fail,ret=%x\n", return_value);
-		return return_value;
-	}
-	WRAP_WR32(PMIC_WRAP_CIPHER_MODE, 1);
-
-	/* Read Test */
-	pwrap_read_nochk(PMIC_DEW_READ_TEST_ADDR, &rdata);
-	if (rdata != DEFAULT_VALUE_READ_TEST) {
-		PWRAPLOG("cipher,err=%x, rdata=%x\n", 1, rdata);
-		return E_PWR_READ_TEST_FAIL;
-	}
-
-#ifdef DUAL_PMICS
-	pwrap_read_nochk(EXT_DEW_READ_TEST, &rdata);
-	if (rdata != DEFAULT_VALUE_READ_TEST) {
-		PWRAPLOG("cipher,err=%x, rdata=%x\n", 1, rdata);
-		return E_PWR_READ_TEST_FAIL;
-	}
 #endif
 
 	return 0;
@@ -1135,19 +1054,6 @@ static void pwrap_ut(unsigned int ut_test)
 		break;
 	}
 }
-static void _pwrap_set_DCM(void)
-{
-#if 0
-#ifndef PWRAP_DCM_ALL_ON
-	WRAP_WR32(PMIC_WRAP_DCM_EN, 1);
-#else
-	WRAP_WR32(PMIC_WRAP_DCM_EN, 0x3fff);
-#endif
-	/* no debounce */
-	WRAP_WR32(PMIC_WRAP_DCM_DBC_PRD, DISABLE);
-#endif
-}
-
 
 signed int pwrap_init(void)
 {
@@ -1236,13 +1142,13 @@ signed int pwrap_init(void)
 	/*  Write test using WACS2.  check Wtiet test default value */
 	sub_return = _pwrap_wacs2_write_test(0);
 	if (rdata != 0) {
-		PWRAPERR("write test 0 fail\n");
+		PWRAPLOG("write test 0 fail\n");
 		return E_PWR_INIT_WRITE_TEST;
 	}
 #ifdef DUAL_PMICS
 	sub_return = _pwrap_wacs2_write_test(1);
 	if (rdata != 0) {
-		PWRAPERR("write test 1 fail\n");
+		PWRAPLOG("write test 1 fail\n");
 		return E_PWR_INIT_WRITE_TEST;
 	}
 #endif

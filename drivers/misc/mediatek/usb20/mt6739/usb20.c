@@ -130,6 +130,8 @@ static void usb_dpidle_request(int mode)
 static u32 cable_mode = CABLE_MODE_NORMAL;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 struct clk *musb_clk;
+struct clk *musb_clk_top_sel;
+struct clk *musb_clk_univpll3_d4;
 static struct regulator *reg_vusb;
 static struct regulator *reg_va12;
 #endif
@@ -189,21 +191,22 @@ static const struct of_device_id apusb_of_ids[] = {
 
 MODULE_DEVICE_TABLE(of, apusb_of_ids);
 
-static struct timer_list musb_idle_timer;
+static struct delayed_work idle_work;
 
-static void musb_do_idle(unsigned long _musb)
+void do_idle_work(struct work_struct *data)
 {
-	struct musb *musb = (void *)_musb;
+	struct musb *musb = mtk_musb;
 	unsigned long flags;
 	u8 devctl;
 	enum usb_otg_state old_state;
+
+	usb_prepare_clock(true);
 
 	spin_lock_irqsave(&musb->lock, flags);
 	old_state = musb->xceiv->otg->state;
 	if (musb->is_active) {
 		DBG(0, "%s active, igonre do_idle\n", otg_state_string(musb->xceiv->otg->state));
-		spin_unlock_irqrestore(&musb->lock, flags);
-		return;
+		goto exit;
 	}
 
 	switch (musb->xceiv->otg->state) {
@@ -232,8 +235,19 @@ static void musb_do_idle(unsigned long _musb)
 			otg_state_string(old_state),
 			otg_state_string(musb->xceiv->otg->state),
 			musb->is_active);
+exit:
 	spin_unlock_irqrestore(&musb->lock, flags);
 
+	usb_prepare_clock(false);
+}
+
+static struct timer_list musb_idle_timer;
+
+static void musb_do_idle(unsigned long _musb)
+{
+	struct musb *musb = (void *)_musb;
+
+	queue_delayed_work(musb->st_wq, &idle_work, 0);
 }
 
 static void mt_usb_try_idle(struct musb *musb, unsigned long timeout)
@@ -274,6 +288,9 @@ static int virt_enable = 0, virt_disable;
 static void mt_usb_enable(struct musb *musb)
 {
 	unsigned long flags;
+	#ifdef CONFIG_MTK_UART_USB_SWITCH
+	static int is_check;
+	#endif
 
 	virt_enable++;
 	DBG(0, "begin <%d,%d>,<%d,%d,%d,%d>\n", mtk_usb_power, musb->power, virt_enable, virt_disable,
@@ -281,9 +298,19 @@ static void mt_usb_enable(struct musb *musb)
 	if (musb->power == true)
 		return;
 
-	flags = musb_readl(musb->mregs, USB_L1INTM);
+	/* clock alredy prepare before enter here */
+	usb_enable_clock(true);
 
 	mdelay(10);
+
+	#ifdef CONFIG_MTK_UART_USB_SWITCH
+	if (!is_check) {
+		usb_phy_check_in_uart_mode();
+	    is_check = 1;
+	}
+	#endif
+
+	flags = musb_readl(musb->mregs, USB_L1INTM);
 
 	usb_phy_recover();
 
@@ -310,6 +337,10 @@ static void mt_usb_disable(struct musb *musb)
 		return;
 
 	usb_phy_savecurrent();
+
+	usb_enable_clock(false);
+	/* clock will unprepare when leave here */
+
 	real_disable++;
 	DBG(0, "end, <%d,%d,%d,%d>\n", virt_enable, virt_disable, real_enable, real_disable);
 
@@ -396,6 +427,7 @@ void do_connection_work(struct work_struct *data)
 	bool usb_in = false;
 	/* 0 to enable, 1 to disable, disable currently */
 	static int exceed_gap = 1;
+	int usb_clk_state = NO_CHANGE;
 
 	if (!mtk_musb->is_ready) {
 		/* re issue work */
@@ -433,6 +465,10 @@ void do_connection_work(struct work_struct *data)
 			mtk_musb->is_host,
 			mtk_musb->power);
 
+	/* always prepare clock and check if need to unprepater later */
+	/* clk_prepare_cnt +1 here*/
+	usb_prepare_clock(true);
+
 	/* be aware this could not be used in non-sleep context */
 	usb_in = usb_cable_connected();
 
@@ -440,15 +476,13 @@ void do_connection_work(struct work_struct *data)
 
 	if (mtk_musb->is_host) {
 		DBG(0, "is host, return\n");
-		spin_unlock_irqrestore(&mtk_musb->lock, flags);
-		return;
+		goto exit;
 	}
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode) {
 		DBG(0, "in uart mode, return\n");
-		spin_unlock_irqrestore(&mtk_musb->lock, flags);
-		return;
+		goto exit;
 	}
 #endif
 
@@ -460,9 +494,9 @@ void do_connection_work(struct work_struct *data)
 		} else {
 			DBG(0, "already lock\n");
 		}
-
 		/* note this already put SOFTCON */
 		musb_start(mtk_musb);
+		usb_clk_state = OFF_TO_ON;
 
 	} else if (mtk_musb->power && (usb_in == false)) {
 		/* disable usb */
@@ -473,13 +507,21 @@ void do_connection_work(struct work_struct *data)
 		} else {
 			DBG(0, "lock not active\n");
 		}
-
+		usb_clk_state = ON_TO_OFF;
 	} else
 		DBG(0, "do nothing, usb_in:%d, power:%d\n",
 				usb_in, mtk_musb->power);
-
+exit:
 	spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
+	if (usb_clk_state == ON_TO_OFF) {
+		/* clock on -> of: clk_prepare_cnt -2 */
+		usb_prepare_clock(false);
+		usb_prepare_clock(false);
+	} else if (usb_clk_state == NO_CHANGE) {
+		/* clock no change : clk_prepare_cnt -1 */
+		usb_prepare_clock(false);
+	}
 }
 
 void mt_usb_connect(void)
@@ -647,11 +689,6 @@ void musb_platform_reset(struct musb *musb)
 {
 	u16 swrst = 0;
 	void __iomem *mbase = musb->mregs;
-	u8 bit;
-
-	/* clear all DMA enable bit */
-	for (bit = 0; bit < MUSB_HSDMA_CHANNELS; bit++)
-		musb_writew(mbase, MUSB_HSDMA_CHANNEL_OFFSET(bit, MUSB_HSDMA_CONTROL), 0);
 
 	/* set DMA channel 0 burst mode to boost QMU speed */
 	musb_writel(musb->mregs, 0x204, musb_readl(musb->mregs, 0x204) | 0x600);
@@ -892,14 +929,11 @@ DEVICE_ATTR(saving, 0664, mt_usb_show_saving_mode, mt_usb_store_saving_mode);
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 static void uart_usb_switch_dump_register(void)
 {
-	usb_enable_clock(true);
-
 	DBG(0, "[MUSB]addr: 0x68, value: %x\n", USBPHY_READ32(0x68));
 	DBG(0, "[MUSB]addr: 0x6C, value: %x\n", USBPHY_READ32(0x6C));
 	DBG(0, "[MUSB]addr: 0x20, value: %x\n", USBPHY_READ32(0x20));
 	DBG(0, "[MUSB]addr: 0x18, value: %x\n", USBPHY_READ32(0x18));
 
-	usb_enable_clock(false);
 	DBG(0, "[MUSB]GPIO_SEL=%x\n", GET_GPIO_SEL_VAL(readl(ap_gpio_base)));
 }
 
@@ -909,6 +943,7 @@ static ssize_t mt_usb_show_portmode(struct device *dev, struct device_attribute 
 		DBG(0, "dev is null!!\n");
 		return 0;
 	}
+	usb_prepare_enable_clock(true);
 
 	if (usb_phy_check_in_uart_mode())
 		port_mode = PORT_MODE_UART;
@@ -922,6 +957,8 @@ static ssize_t mt_usb_show_portmode(struct device *dev, struct device_attribute 
 
 	uart_usb_switch_dump_register();
 
+	usb_prepare_enable_clock(false);
+
 	return scnprintf(buf, PAGE_SIZE, "%d\n", port_mode);
 }
 
@@ -934,6 +971,7 @@ static ssize_t mt_usb_store_portmode(struct device *dev, struct device_attribute
 		DBG(0, "dev is null!!\n");
 		return count;
 	} else if (kstrtouint(buf, 10, &portmode) == 0) {
+		usb_prepare_enable_clock(true);
 		DBG(0, "\nUSB Port mode: current => %d (port_mode), change to => %d (portmode)\n",
 		    port_mode, portmode);
 		if (portmode >= PORT_MODE_MAX)
@@ -950,6 +988,7 @@ static ssize_t mt_usb_store_portmode(struct device *dev, struct device_attribute
 			uart_usb_switch_dump_register();
 			port_mode = portmode;
 		}
+		usb_prepare_enable_clock(false);
 	}
 	return count;
 }
@@ -1327,17 +1366,8 @@ static int __init mt_usb_init(struct musb *musb)
 	wake_lock_init(&musb->usb_lock, WAKE_LOCK_SUSPEND, "USB suspend lock");
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	reg_vusb = regulator_get(musb->controller, "vusb");
+	reg_vusb = regulator_get(musb->controller, "vusb33");
 	if (!IS_ERR(reg_vusb)) {
-#ifdef NEVER
-#define	VUSB33_VOL_MIN 3070000
-#define	VUSB33_VOL_MAX 3070000
-		ret = regulator_set_voltage(reg_vusb, VUSB33_VOL_MIN, VUSB33_VOL_MAX);
-		if (ret < 0)
-			pr_notice("regulator set vol failed: %d\n", ret);
-		else
-			DBG(0, "regulator set vol ok, <%d,%d>\n", VUSB33_VOL_MIN, VUSB33_VOL_MAX);
-#endif /* NEVER */
 		ret = regulator_enable(reg_vusb);
 		if (ret < 0) {
 			pr_notice("regulator_enable vusb failed: %d\n", ret);
@@ -1346,19 +1376,6 @@ static int __init mt_usb_init(struct musb *musb)
 			DBG(0, "enable USB regulator\n");
 	} else
 		pr_notice("regulator_get vusb failed\n");
-
-
-	reg_va12 = regulator_get(musb->controller, "va12");
-	if (!IS_ERR(reg_va12)) {
-		ret = regulator_enable(reg_va12);
-		if (ret < 0) {
-			pr_notice("regulator_enable va12 failed: %d\n", ret);
-			regulator_put(reg_va12);
-		} else
-			DBG(0, "enable USB regulator\n");
-	} else
-		pr_notice("regulator_get va12 failed\n");
-
 #endif
 
 	ret = device_create_file(musb->controller, &dev_attr_cmode);
@@ -1403,6 +1420,26 @@ static int mt_usb_exit(struct musb *musb)
 	return 0;
 }
 
+static void mt_usb_enable_clk(struct musb *musb)
+{
+	usb_enable_clock(true);
+}
+
+static void mt_usb_disable_clk(struct musb *musb)
+{
+	usb_enable_clock(false);
+}
+
+static void mt_usb_prepare_clk(struct musb *musb)
+{
+	usb_prepare_clock(true);
+}
+
+static void mt_usb_unprepare_clk(struct musb *musb)
+{
+	usb_prepare_clock(false);
+}
+
 static const struct musb_platform_ops mt_usb_ops = {
 	.init = mt_usb_init,
 	.exit = mt_usb_exit,
@@ -1411,7 +1448,11 @@ static const struct musb_platform_ops mt_usb_ops = {
 	.enable = mt_usb_enable,
 	.disable = mt_usb_disable,
 	/* .set_vbus = mt_usb_set_vbus, */
-	.vbus_status = mt_usb_get_vbus_status
+	.vbus_status = mt_usb_get_vbus_status,
+	.enable_clk =  mt_usb_enable_clk,
+	.enable_clk =  mt_usb_disable_clk,
+	.prepare_clk = mt_usb_prepare_clk,
+	.unprepare_clk = mt_usb_unprepare_clk,
 };
 
 #ifdef CONFIG_MTK_MUSB_DRV_36BIT
@@ -1536,8 +1577,9 @@ static int mt_usb_probe(struct platform_device *pdev)
 #endif
 	register_usb_hal_disconnect_check(trigger_disconnect_check_work);
 
-	DBG(0, "init connection_work\n");
+	DBG(0, "init connection_work and idle_work\n");
 	INIT_DELAYED_WORK(&connection_work, do_connection_work);
+	INIT_DELAYED_WORK(&idle_work, do_idle_work);
 
 	DBG(0, "keep musb->power & mtk_usb_power in the samae value\n");
 	mtk_usb_power = false;
@@ -1545,26 +1587,32 @@ static int mt_usb_probe(struct platform_device *pdev)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	musb_clk = devm_clk_get(&pdev->dev, "usb0");
 	if (IS_ERR(musb_clk)) {
-		DBG(0, KERN_WARNING "cannot get musb clock\n");
+		DBG(0, "cannot get musb_clk clock\n");
 		goto err2;
 	}
 
-	ret = clk_prepare(musb_clk);
-	if (ret < 0) {
-		DBG(0, KERN_WARNING "prepare fail\n");
-		goto err3;
+	musb_clk_top_sel = devm_clk_get(&pdev->dev, "usb0_clk_top_sel");
+	if (IS_ERR(musb_clk_top_sel)) {
+		DBG(0, "cannot get musb_clk_top_sel clock\n");
+		goto err2;
+	}
+
+	musb_clk_univpll3_d4 = devm_clk_get(&pdev->dev, "usb0_clk_univpll3_d4");
+	if (IS_ERR(musb_clk_univpll3_d4)) {
+		DBG(0, "cannot get musb_clk_univpll3_d4 clock\n");
+		goto err2;
 	}
 
 #ifdef CONFIG_DEBUG_FS
 	if (usb20_phy_init_debugfs()) {
 		DBG(0, "usb20_phy_init_debugfs fail!\n");
-		goto err3;
+		goto err2;
 	}
 #endif
 
 	if (init_sysfs(&pdev->dev)) {
 		DBG(0, "failed to init_sysfs\n");
-		goto err3;
+		goto err2;
 	}
 #endif
 	DBG(0, "USB probe done!\n");
@@ -1581,10 +1629,6 @@ static int mt_usb_probe(struct platform_device *pdev)
 #endif
 	return 0;
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
-err3:
-	clk_unprepare(musb_clk);
-#endif
 err2:
 	platform_device_put(musb);
 err1:

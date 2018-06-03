@@ -25,7 +25,7 @@
 #define PWM_ERR(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
 #define PWM_NOTICE(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
 
-#define BYPASS_CLK_SELECT
+/*#define BYPASS_CLK_SELECT*/
 
 /*****************************************************************************
  *

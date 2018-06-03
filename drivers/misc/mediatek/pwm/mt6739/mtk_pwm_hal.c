@@ -22,6 +22,13 @@
 #include <mach/mtk_pwm_hal.h>
 #include <mach/mtk_pwm_prv.h>
 #include <linux/clk.h>
+#ifdef PWM_OVER_4G
+#include <mt-plat/mtk_chip.h>
+#include <linux/device.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_irq.h>
+#endif
 
 /**********************************
 * Global  data
@@ -46,6 +53,9 @@ enum {
 
 
 unsigned long PWM_register[PWM_NUM] = {};
+#ifdef PWM_OVER_4G
+void __iomem *pwm_pericfg_base;
+#endif
 /**************************************************************/
 
 enum {
@@ -55,16 +65,14 @@ enum {
 	PWM4_CLK,
 	PWM5_CLK,
 	PWM6_CLK,
-	PWM7_CLK,
-	/* HCLK cg is merge to BCLK */
-	/*PWM_HCLK,*/
+	PWM_HCLK,
 	PWM_CLK,
 	PWM_CLK_NUM,
 };
 
 const char *pwm_clk_name[] = {
-	"PWM1-main", "PWM2-main", "PWM3-main", "PWM4-main", "PWM5-main", "PWM6-main", "PWM7-main",
-	/*"PWM-HCLK-main",*/ "PWM-main"
+	"PWM1-main", "PWM2-main", "PWM3-main", "PWM4-main", "PWM5-main", "PWM6-main",
+	"PWM-HCLK-main", "PWM-main"
 };
 
 struct clk *pwm_clk[PWM_CLK_NUM];
@@ -74,24 +82,20 @@ void mt_pwm_power_on_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 	int clk_en_ret;
 	/*Set pwm_main , pwm_hclk_main(for memory and random mode) */
 	if (0 == (*power_flag)) {
-		/* HCLK cg is merge to BCLK */
-		/*pr_debug("[PWM][CCF]enable clk PWM_CLK:%p PWM_HCLK: %p\n", pwm_clk[PWM_CLK], pwm_clk[PWM_HCLK]);*/
-		pr_debug("[PWM][CCF]enable clk PWM_CLK:%p\n", pwm_clk[PWM_CLK]);
+		pr_debug("[PWM][CCF]enable clk PWM_CLK:%p PWM_HCLK: %p\n", pwm_clk[PWM_CLK], pwm_clk[PWM_HCLK]);
 		clk_en_ret = clk_prepare_enable(pwm_clk[PWM_CLK]);
 		if (clk_en_ret) {
 			pr_notice("[PWM][CCF]enable clk PWM_CLK failed. ret:%d, clk_pwm_main:%p\n",
 			clk_en_ret, pwm_clk[PWM_CLK]);
 		} else
 			set_bit(PWM_CLK, power_flag);
-		/* HCLK cg is merge to BCLK */
-		/*
-		 * clk_en_ret = clk_prepare_enable(pwm_clk[PWM_HCLK]);
-		 * if (clk_en_ret) {
-		 *	pr_notice("[PWM][CCF]enable clk PWM_HCLK failed. ret:%d, clk_pwm_hclk_main:%p\n",
-		 *	clk_en_ret, pwm_clk[PWM_HCLK]);
-		 * } else
-		 *	set_bit(PWM_HCLK, power_flag);
-		 */
+
+		clk_en_ret = clk_prepare_enable(pwm_clk[PWM_HCLK]);
+		if (clk_en_ret) {
+			pr_notice("[PWM][CCF]enable clk PWM_HCLK failed. ret:%d, clk_pwm_hclk_main:%p\n",
+			clk_en_ret, pwm_clk[PWM_HCLK]);
+		} else
+			set_bit(PWM_HCLK, power_flag);
 	}
 	/* Set pwm_no clk */
 	if (!test_bit(pwm_no, power_flag)) {
@@ -114,17 +118,12 @@ void mt_pwm_power_off_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 		clear_bit(pwm_no, power_flag);
 	}
 
-	/*Disable PWM-main, PWM-HCLK-main */
-	/* HCLK cg is merge to BCLK */
-	/*pr_debug("[PWM][CCF]disable clk_pwm :%p, clk_pwm_hclk :%p\n", pwm_clk[PWM_CLK], pwm_clk[PWM_HCLK]);*/
-	pr_debug("[PWM][CCF]disable clk_pwm :%p\n", pwm_clk[PWM_CLK]);
-	/* HCLK cg is merge to BCLK */
-	/*
-	 * if (test_bit(PWM_HCLK, power_flag)) {
-	 *	clk_disable_unprepare(pwm_clk[PWM_HCLK]);
-	 *	clear_bit(PWM_HCLK, power_flag);
-	 * }
-	*/
+	/* Disable PWM-main, PWM-HCLK-main */
+	pr_debug("[PWM][CCF]disable clk_pwm :%p, clk_pwm_hclk :%p\n", pwm_clk[PWM_CLK], pwm_clk[PWM_HCLK]);
+	if (test_bit(PWM_HCLK, power_flag)) {
+		clk_disable_unprepare(pwm_clk[PWM_HCLK]);
+		clear_bit(PWM_HCLK, power_flag);
+	}
 	if (test_bit(PWM_CLK, power_flag)) {
 		clk_disable_unprepare(pwm_clk[PWM_CLK]);
 		clear_bit(PWM_CLK, power_flag);
@@ -139,7 +138,6 @@ void mt_pwm_init_power_flag(unsigned long *power_flag)
 	PWM_register[PWM4] = (unsigned long)pwm_base + 0x00d0;
 	PWM_register[PWM5] = (unsigned long)pwm_base + 0x0110;
 	PWM_register[PWM6] = (unsigned long)pwm_base + 0x0150;
-	PWM_register[PWM7] = (unsigned long)pwm_base + 0x0190;
 }
 
 s32 mt_pwm_sel_pmic_hal(u32 pwm_no)
@@ -406,6 +404,7 @@ void mt_set_intr_ack_hal(u32 pwm_intr_ack_bit)
 void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 {
 	unsigned long reg_buff0_addr;
+#ifdef PWM_OVER_4G
 	int addr_shift_ctrl = 0;
 	/*
 	 * 0: Register access for 0~4G
@@ -434,7 +433,11 @@ void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 		CLRREG32(PWM_PERI_SHIFT, 0x3F << PWM_PERI_SHIFT_OFFSET);
 		OUTREG32_DMA(reg_buff0_addr, addr);
 	}
+#else
+	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
 
+	OUTREG32_DMA(reg_buff0_addr, addr);
+#endif
 }
 
 void mt_set_pwm_buf0_size_hal(u32 pwm_no, uint16_t size)
@@ -547,6 +550,19 @@ void mt_pwm_26M_clk_enable_hal(u32 enable)
 
 void mt_pwm_platform_init(void)
 {
+#ifdef PWM_OVER_4G
+	struct device_node *node;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
+	if (node) {
+		pwm_pericfg_base = of_iomap(node, 0);
+		pr_debug("PWM pwm_pericfg_base=0x%p\n", pwm_pericfg_base);
+		if (!pwm_pericfg_base)
+			pr_err("PWM pwm_pericfg_base error!!\n");
+	} else {
+		pr_err("PWM can't find pericfg node!!\n");
+	}
+#endif
 }
 
 int mt_get_pwm_clk_src(struct platform_device *pdev)

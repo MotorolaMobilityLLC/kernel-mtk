@@ -73,10 +73,11 @@
 #include "mtkfb_fence.h"
 #include "extd_multi_control.h"
 #include "m4u.h"
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 #include "compat_mtk_disp_mgr.h"
 #include "disp_partial.h"
 #include "frame_queue.h"
+#include "disp_arr.h"
 
 
 #define DDP_OUTPUT_LAYID 4
@@ -593,7 +594,55 @@ static int _get_max_layer(unsigned int session_id)
 	DISPERR("session_id is wrong!!\n");
 	return 0;
 }
+static int disp_validate_input_params(struct disp_input_config *cfg, int layer_num)
+{
+	if (cfg->layer_id >= layer_num) {
+		disp_aee_print("layer_id=%d > layer_num=%d\n", cfg->layer_id, layer_num);
+		return -1;
+	}
+	if (cfg->layer_enable) {
+		if ((cfg->src_fmt <= 0) || ((cfg->src_fmt >> 8) == 15) ||
+			((cfg->src_fmt >> 8) > (DISP_FORMAT_DIM >> 8))) {
+			disp_aee_print("layer_id=%d,src_fmt=0x%x is invalid color format\n",
+				cfg->layer_id, cfg->src_fmt);
+			return -1;
+		}
+	}
+	return 0;
+}
 
+static int disp_validate_output_params(struct disp_output_config *cfg)
+{
+	if ((cfg->fmt <= 0) || ((cfg->fmt >> 8) == 15) ||
+		((cfg->fmt >> 8) > (DISP_FORMAT_DIM >> 8))) {
+		disp_aee_print("output fmt=0x%x is invalid color format\n", cfg->fmt);
+		return -1;
+	}
+
+	return 0;
+}
+
+int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg)
+{
+	int i;
+
+	/* TODO: check session_id */
+
+	if (cfg->input_layer_num > _get_max_layer(cfg->session_id)) {
+		disp_aee_print("sess:0x%x layer_num %d>%d\n", cfg->session_id,
+			cfg->input_layer_num, _get_max_layer(cfg->session_id));
+		return -1;
+	}
+
+	for (i = 0; i < cfg->input_layer_num; i++)
+		if (disp_validate_input_params(&cfg->input_cfg[i], _get_max_layer(cfg->session_id)) != 0)
+			return -1;
+
+	if (cfg->output_en && disp_validate_output_params(&cfg->output_cfg) != 0)
+		return -1;
+
+	return 0;
+}
 static int disp_input_get_dirty_roi(struct disp_frame_cfg_t *cfg)
 {
 	int i;
@@ -659,8 +708,8 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	if (cfg->input_layer_num == 0 || cfg->input_layer_num > _get_max_layer(session_id)) {
-		DISPERR("set_%s_buffer, config_layer_num invalid = %d!\n",
-			disp_session_mode_spy(session_id), cfg->input_layer_num);
+		DISPERR("set_%s_buffer, config_layer_num invalid = %d, max_layer_num = %d!\n",
+			disp_session_mode_spy(session_id), cfg->input_layer_num, _get_max_layer(session_id));
 		return 0;
 	}
 
@@ -884,22 +933,34 @@ static int __frame_config(struct frame_queue_t *frame_node)
 }
 static int _ioctl_frame_config(unsigned long arg)
 {
+	void *ret_val = NULL;
 	struct frame_queue_t *frame_node;
 	struct disp_frame_cfg_t *frame_cfg;
 
 	frame_node = frame_queue_node_create();
-	if (IS_ERR_OR_NULL(frame_node))
-		return PTR_ERR(frame_node);
+	if (IS_ERR_OR_NULL(frame_node)) {
+		ret_val = ERR_PTR(-ENOMEM);
+		goto Error;
+	}
 
-	frame_cfg = &frame_node->frame_cfg;
+	frame_cfg = &frame_node->frame_cfg;	/* this is initialized correctly when get node from framequeue list */
 
 	if (copy_from_user(frame_cfg, (void __user *)arg, sizeof(*frame_cfg))) {
+		ret_val = ERR_PTR(-EFAULT);
 		DISPERR("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
-		return -EINVAL;
+		goto Error;
+	}
+
+	if (disp_validate_ioctl_params(frame_cfg)) {
+		ret_val = ERR_PTR(-EINVAL);
+		goto Error;
 	}
 
 	return __frame_config(frame_node);
 
+Error:
+	frame_queue_node_destroy(frame_node);
+	return PTR_ERR(ret_val);
 }
 
 static int _ioctl_wait_all_jobs_done(unsigned long arg)
@@ -1042,11 +1103,11 @@ int _ioctl_wait_vsync(unsigned long arg)
 	session_info = disp_get_session_sync_info_for_debug(vsync_config.session_id);
 	if (session_info)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
-	#ifdef CONFIG_MTK_HDMI_SUPPORT
+#ifdef CONFIG_MTK_HDMI_SUPPORT
 	if (DISP_SESSION_TYPE(vsync_config.session_id) == DISP_SESSION_EXTERNAL)
 		ret = external_display_wait_for_vsync(&vsync_config, vsync_config.session_id);
-	#endif
 	else
+#endif
 		ret = primary_display_wait_for_vsync(&vsync_config);
 
 	if (session_info)
@@ -1059,18 +1120,34 @@ int _ioctl_wait_vsync(unsigned long arg)
 	return ret;
 }
 
+int _ioctl_get_vsync(unsigned long arg)
+{
+	int ret = 0;
+	void __user *argp = (void __user *)arg;
+	unsigned int fps = 0;
+
+	fps = primary_display_force_get_vsync_fps();
+	DISPMSG("ioctl_get_vsync, fps=%d\n", fps);
+	if (copy_to_user(argp, &fps, sizeof(int))) {
+		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+		ret = -EFAULT;
+	}
+
+	return ret;
+}
+
 int _ioctl_set_vsync(unsigned long arg)
 {
 	int ret = 0;
-	/*void __user *argp = (void __user *)arg;*/
 	unsigned int fps = (unsigned int)arg;
-#if 0
-	if (copy_from_user(&fps, argp, sizeof(unsigned int))) {
-		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
-		return -EFAULT;
+
+	if ((fps < primary_display_get_min_refresh_rate()) || (fps > primary_display_get_max_refresh_rate())) {
+		DISPERR("_ioctl_set_vsync fps setting is out of range, fps=%d\n", fps);
+		return  -EFAULT;
 	}
-#endif
-	ret = primary_display_force_set_vsync_fps(fps);
+	DISPMSG("_ioctl_set_vsync fps setting is %d\n", fps);
+	ret = primary_display_force_set_vsync_fps(fps, 1); /* second parameter means APP set FPS */
+
 	return ret;
 }
 
@@ -1082,14 +1159,21 @@ int _ioctl_query_valid_layer(unsigned long arg)
 
 	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+		return -EFAULT;
+	}
+	/* check data from userspace is legal */
+	if (disp_info_user.layer_num[0] < 0 || disp_info_user.layer_num[0] > 0x300 ||
+		disp_info_user.layer_num[1] < 0 || disp_info_user.layer_num[1] > 0x300) {
+		DISPERR("[FB]: disp_info_user.layer_num[0]= %d, disp_info_user.layer_num[1]= %d!\n",
+			disp_info_user.layer_num[0], disp_info_user.layer_num[1]);
+		return -EINVAL;
 	}
 
-	ret = dispsys_hrt_calc(&disp_info_user);
+	ret = layering_rule_start(&disp_info_user, 0);
 
 	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+		return -EFAULT;
 	}
 
 	return ret;
@@ -1258,6 +1342,10 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_GET_DISPLAY_CAPS:
 		{
 			return _ioctl_get_display_caps(arg);
+		}
+	case DISP_IOCTL_GET_VSYNC_FPS:
+		{
+			return _ioctl_get_vsync(arg);
 		}
 	case DISP_IOCTL_SET_VSYNC_FPS:
 		{
@@ -1435,6 +1523,10 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 	case COMPAT_DISP_IOCTL_GET_DISPLAY_CAPS:
 		{
 			return _compat_ioctl_get_display_caps(file, arg);
+		}
+	case COMPAT_DISP_IOCTL_GET_VSYNC_FPS:
+		{
+			return _compat_ioctl_get_vsync(file, arg);
 		}
 	case COMPAT_DISP_IOCTL_SET_VSYNC_FPS:
 		{

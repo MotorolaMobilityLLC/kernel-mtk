@@ -27,7 +27,9 @@
 #include "mtk_ion.h"
 /* #include "mtk_idle.h" */
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
+#ifdef CONFIG_MTK_BOOT
 #include "mtk_boot_common.h"
+#endif
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
 /* #include "mtk_spm_idle.h" */
 #include "mt-plat/mtk_smi.h"
@@ -51,13 +53,17 @@
 #include "mtk_smi.h"
 #include "disp_drv_log.h"
 #include "disp_lowpower.h"
+#include "disp_arr.h"
 #include "disp_rect.h"
-#include "mtk_hrt.h"
 #include "ddp_reg.h"
+#include "layering_rule.h"
 /*#include "mtk_dramc.h"*/
 #include "disp_partial.h"
 #ifdef MTK_FB_MMDVFS_SUPPORT
 #include "mmdvfs_mgr.h"
+#endif
+#ifdef MTK_FB_SPM_SUPPORT
+#include "mtk_spm_idle.h"
 #endif
 
 /* device tree */
@@ -78,9 +84,8 @@ static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
 #ifdef MTK_FB_MMDVFS_SUPPORT
 /* dvfs */
-static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LOW);
+static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_DEFAULT);
 #endif
-
 
 /* Local API */
 /*********************************************************************************************************************/
@@ -665,6 +670,8 @@ void _primary_display_enable_mmsys_clk(void)
 /* Share wrot sram end */
 void _vdo_mode_enter_idle(void)
 {
+	int fps = 0;
+
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 
 	/* backup for DL <-> DC */
@@ -713,8 +720,17 @@ void _vdo_mode_enter_idle(void)
 				primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power = get_backup_vfp();
 
 			if (primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power) {
-				set_fps(45);
-				primary_display_dsi_vfp_change(1);
+#if 1
+				if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+					fps = primary_display_get_min_refresh_rate();
+					DISPMSG("vdo_mode_enter_idle fps to be %d\n", fps);
+					/* second parameter: 1 means enter ilde */
+					primary_display_force_set_vsync_fps(fps, 1);
+				} else {
+					set_fps(45);
+					primary_display_dsi_vfp_change(1);
+				}
+#endif
 				idlemgr_pgc->cur_lp_cust_mode = 1;
 			}
 		}
@@ -734,24 +750,14 @@ void _vdo_mode_enter_idle(void)
 		_idle_set_golden_setting();
 
 	/* Enable sodi - need wait golden setting done ??? */
-#ifdef MTK_FB_SPM_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT)) {
-		/* set power down mode forbidden */
-		spm_sodi_mempll_pwr_mode(1);
-		spm_enable_sodi(1);
-	}
-#endif
+
 }
 
 void _vdo_mode_leave_idle(void)
 {
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	int fps = 0;
 
-	/* Disable sodi */
-#ifdef MTK_FB_SPM_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		spm_enable_sodi(0);
-#endif
+	DISPMSG("[disp_lowpower]%s\n", __func__);
 
 	/* set golden setting */
 	set_is_display_idle(0);
@@ -769,11 +775,20 @@ void _vdo_mode_leave_idle(void)
 	if (!primary_is_sec()) {
 
 		if (idlemgr_pgc->cur_lp_cust_mode != 0) {
-			set_fps(primary_display_get_fps_nolock()/100);
-			primary_display_dsi_vfp_change(0);
+#if 1
+			if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+				fps = primary_display_get_max_refresh_rate();
+				DISPMSG("vdo_mode_leave_idle, fps to be 60\n");
+				/* second parameter: 2 means leave ilde */
+				primary_display_force_set_vsync_fps(fps, 2);
+			} else {
+				set_fps(primary_display_get_fps_nolock()/100);
+				primary_display_dsi_vfp_change(0);
+			}
 			idlemgr_pgc->cur_lp_cust_mode = 0;
 			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 				_idle_set_golden_setting();
+#endif
 		}
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ)) {
 			/* enable routine irq after switch to directlink mode, otherwise we need to disable two paths */
@@ -800,7 +815,7 @@ void _cmd_mode_enter_idle(void)
 
 	/* need leave share sram for disable mmsys clk */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
+		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 
 	/* please keep last */
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS)) {
@@ -830,7 +845,7 @@ void _cmd_mode_leave_idle(void)
 
 
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
+		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 }
 
 void primary_display_idlemgr_enter_idle_nolock(void)
@@ -852,28 +867,33 @@ void primary_display_idlemgr_leave_idle_nolock(void)
 int primary_display_request_dvfs_perf(int scenario, int req)
 {
 #ifdef MTK_FB_MMDVFS_SUPPORT
-	if (atomic_read(&dvfs_ovl_req_status) != req) {
+	int step = MMDVFS_FINE_STEP_UNREQUEST;
+
+	mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, scenario, req);
+
+	if ((scenario != MMDVFS_SCEN_DISP) || (atomic_read(&dvfs_ovl_req_status) != req)) {
 		switch (req) {
-		case HRT_LEVEL_HIGH:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_HIGH);
+		case HRT_LEVEL_UHPM:
+			step = MMDVFS_FINE_STEP_OPP0;
 			break;
-		case HRT_LEVEL_LOW:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_LOW);
-			break;
-		case HRT_LEVEL_EXTREME_LOW:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_LOW_LOW);
+		case HRT_LEVEL_HPM:
+			step = MMDVFS_FINE_STEP_OPP3;
 			break;
 		case HRT_LEVEL_DEFAULT:
-			mmdvfs_set_step(scenario, MMDVFS_VOLTAGE_DEFAULT_STEP);
+			step = MMDVFS_FINE_STEP_UNREQUEST;
 			break;
 		default:
 			break;
 		}
-		atomic_set(&dvfs_ovl_req_status, req);
+		mmdvfs_set_fine_step(scenario, step);
+
+		if (scenario == MMDVFS_SCEN_DISP)
+			atomic_set(&dvfs_ovl_req_status, req);
 	}
 #endif
 	return 0;
 }
+
 
 static int _primary_path_idlemgr_monitor_thread(void *data)
 {
@@ -910,21 +930,23 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		}
 		mmprofile_log_ex(ddp_mmp_get_events()->idlemgr, MMPROFILE_FLAG_START, 0, 0);
 		DISPINFO("[disp_lowpower]primary enter idle state\n");
+		dprec_logger_start(DPREC_LOGGER_IDLEMGR, 0, 0);
 
 		/* enter idle state */
 		primary_display_idlemgr_enter_idle_nolock();
 		primary_display_set_idle_stat(1);
 
 #ifdef MTK_FB_MMDVFS_SUPPORT
-		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
-		if (get_ddr_type() == TYPE_LPDDR3)
-			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_LOW);
-		else
-			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_EXTREME_LOW);
+		/* when screen idle:let smi know */
+		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_HPM);
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HPM);
+
 #endif
+
 		primary_display_manual_unlock();
 
 		wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue, !primary_display_is_idle());
+
 #ifdef MTK_FB_MMDVFS_SUPPORT
 		/* when leave screen idle: reset to default */
 		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_DEFAULT);
@@ -1017,11 +1039,10 @@ int primary_display_lowpower_init(void)
 	set_fps(primary_display_get_fps_nolock()/100);
 	backup_vfp_for_lp_cust(primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power);
 	/* init idlemgr */
-	#if 0
+#ifdef CONFIG_MTK_BOOT
 	if (disp_helper_get_option(DISP_OPT_IDLE_MGR) && get_boot_mode() == NORMAL_BOOT)
 		primary_display_idlemgr_init();
-
-	#endif
+#endif
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		primary_display_sodi_rule_init();
 
@@ -1031,7 +1052,7 @@ int primary_display_lowpower_init(void)
 
 	/* always enable share sram */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
+		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 
 	return 0;
 }
@@ -1062,6 +1083,7 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 		primary_display_set_idle_stat(0);
 
 		mmprofile_log_ex(ddp_mmp_get_events()->idlemgr, MMPROFILE_FLAG_END, 0, 0);
+		dprec_logger_done(DPREC_LOGGER_IDLEMGR, 0, 0);
 		/* wake up idlemgr process to monitor next idle stat */
 		wake_up_interruptible(&(idlemgr_pgc->idlemgr_wait_queue));
 	}
@@ -1097,20 +1119,20 @@ void __attribute__((weak)) enter_pd_by_cmdq(struct cmdqRecStruct *handler)
 void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. register call back first */
-	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT1,
+	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0,
 		_acquire_wrot_resource, _release_wrot_resource);
 
 	/* 2. try to allocate sram at the fisrt time */
-	_acquire_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT1);
+	_acquire_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);
 }
 
 void leave_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. unregister call back */
-	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT1, NULL, NULL);
+	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0, NULL, NULL);
 
 	/* 2. try to release share sram */
-	_release_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT1);
+	_release_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);
 }
 
 void set_hrtnum(unsigned int new_hrtnum)
@@ -1226,9 +1248,12 @@ unsigned int time_to_line(unsigned int ms, unsigned int width)
 	unsigned int line = 0;
 
 	tline_us = get_us_perline(width);
-	time_us = ms * 1000 * LINE_ACCURACY;
-
+	time_us = (unsigned long long)ms * 1000 * LINE_ACCURACY;
+#if defined(__LP64__) || defined(_LP64)
 	line = time_us / tline_us;
+#else
+	line = div_u64(time_us, tline_us);
+#endif
 
 	return line;
 }

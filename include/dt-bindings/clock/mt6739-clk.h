@@ -206,7 +206,8 @@
 #define CLK_INFRA_MSDC1_SRC		76	/* infra_msdc1_clk	MSDC1_SRC_CLK_CG */
 #define CLK_INFRA_MSDC2_SRC		77	/* infra_msdc2_clk	MSDC2_SRC_CLK_CG */
 #define CLK_INFRA_PERI_DCM_RG_FORCE_CLKOFF 78	/* infra_dcmforce	PERI_DCM_RG_FORCE_CLKOFF */
-#define CLK_INFRA_NR_CLK		79
+#define CLK_INFRA_NFI_1X                79      /* infra_nfi_1x         NFI_1X_CG */
+#define CLK_INFRA_NR_CLK		80
 
 /* MMSYS_CONFIG */
 
@@ -258,12 +259,12 @@
 #define CLK_PER_NR_CLK			1
 
 /* SCP_SYS */
-#define SCP_SYS_MFG0  1
-#define SCP_SYS_MFG1  2
-#define SCP_SYS_MD1  3
-#define SCP_SYS_CONN  4
-#define SCP_SYS_MM0  5
-#define SCP_SYS_ISP  6
-#define SCP_SYS_VEN  7
-#define SCP_NR_SYSS  8
+#define SCP_SYS_MFG0  0
+#define SCP_SYS_MFG1  1
+#define SCP_SYS_MD1  2
+#define SCP_SYS_CONN  3
+#define SCP_SYS_MM0  4
+#define SCP_SYS_ISP  5
+#define SCP_SYS_VEN  6
+#define SCP_NR_SYSS  7
 #endif
