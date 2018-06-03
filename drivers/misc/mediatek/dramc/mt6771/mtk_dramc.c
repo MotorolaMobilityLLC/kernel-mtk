@@ -181,6 +181,7 @@ const char *uname, int depth, void *data)
 	return node;
 }
 
+#if defined(CONFIG_MTK_ENG_BUILD)
 static unsigned int read_dram_mode_reg(
 unsigned int mr_index, unsigned int *mr_value,
 void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
@@ -235,6 +236,7 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 
 	return TX_DONE;
 }
+#endif
 
 #ifdef SW_TX_TRACKING
 static unsigned int start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
