@@ -395,12 +395,16 @@ static const struct file_operations mt6392_codec_debug_ops = {
 };
 #endif
 
-static void mt6392_codec_init_regs(struct snd_soc_codec *codec)
+static void mt6392_codec_init_regs(struct mt6392_codec_priv *codec_data)
 {
+	struct snd_soc_codec *codec = codec_data->codec;
+
 	dev_dbg(codec->dev, "%s\n", __func__);
 
 	/* default PGA gain: 12dB */
-	snd_soc_update_bits(codec, SPK_CON9, 0x0A00, 0x0F00);
+	codec_data->spk_amp_gain = 0xA;
+	snd_soc_update_bits(codec, SPK_CON9,
+		GENMASK(11, 8), (codec_data->spk_amp_gain) << 8);
 }
 
 static int mt6392_codec_parse_dt(struct snd_soc_codec *codec)
@@ -451,7 +455,7 @@ int mt6392_codec_probe(struct snd_soc_codec *codec)
 
 	mt6392_codec_parse_dt(codec);
 
-	mt6392_codec_init_regs(codec);
+	mt6392_codec_init_regs(codec_data);
 
 	mt6392_codec_get_spk_trim_offset(codec);
 
