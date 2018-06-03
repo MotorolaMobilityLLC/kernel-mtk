@@ -25,9 +25,7 @@
 #include <mtk_leds_hal.h>
 #include <mtk_leds_drv.h>
 #include <mt-plat/mtk_pwm.h>
-#ifdef CONFIG_MTK_AAL_SUPPORT
 #include <ddp_aal.h>
-#endif
 
 #ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 #include <linux/of_gpio.h>
@@ -38,9 +36,7 @@
  * variables
  ***************************************************************************/
 struct cust_mt65xx_led *bl_setting;
-#ifndef CONFIG_MTK_AAL_SUPPORT
 static unsigned int bl_div = CLK_DIV1;
-#endif
 #define PWM_DIV_NUM 8
 static unsigned int div_array[PWM_DIV_NUM];
 struct mt65xx_led_data *g_leds_data[MT65XX_LED_TYPE_TOTAL];
@@ -105,47 +101,48 @@ static DEFINE_MUTEX(bl_level_limit_mutex);
  ***************************************************************************/
 int setMaxbrightness(int max_level, int enable)
 {
-#if !defined(CONFIG_MTK_AAL_SUPPORT)
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
 
-	mutex_lock(&bl_level_limit_mutex);
-	if (enable == 1) {
-		limit_flag = 1;
-		limit = max_level;
-		mutex_unlock(&bl_level_limit_mutex);
-		/* if (limit < last_level){ */
-		if (current_level != 0) {
-			if (limit < last_level) {
-				LEDS_DRV_DEBUG
-				    ("mt65xx_leds_set_cust in setMaxbrightness:value control start! limit=%d\n",
-				     limit);
-				mt65xx_led_set_cust(&cust_led_list
-						    [MT65XX_LED_TYPE_LCD],
-						    limit);
-			} else {
-				mt65xx_led_set_cust(&cust_led_list
-						    [MT65XX_LED_TYPE_LCD],
+	if (disp_aal_is_support() == true) {
+		mutex_lock(&bl_level_limit_mutex);
+		if (enable == 1) {
+			limit_flag = 1;
+			limit = max_level;
+			mutex_unlock(&bl_level_limit_mutex);
+			/* if (limit < last_level){ */
+			if (current_level != 0) {
+				if (limit < last_level) {
+					LEDS_DRV_DEBUG
+					    ("mt65xx_leds_set_cust in setMaxbrightness:value control start! limit=%d\n",
+					     limit);
+					mt65xx_led_set_cust(&cust_led_list
+							    [MT65XX_LED_TYPE_LCD],
+							    limit);
+				} else {
+					mt65xx_led_set_cust(&cust_led_list
+							    [MT65XX_LED_TYPE_LCD],
+							    last_level);
+				}
+			}
+		} else {
+			limit_flag = 0;
+			limit = 255;
+			mutex_unlock(&bl_level_limit_mutex);
+
+			if (current_level != 0) {
+				LEDS_DRV_DEBUG("control temperature close:limit=%d\n",
+					       limit);
+				mt65xx_led_set_cust(&cust_led_list[MT65XX_LED_TYPE_LCD],
 						    last_level);
+
 			}
 		}
 	} else {
-		limit_flag = 0;
-		limit = 255;
-		mutex_unlock(&bl_level_limit_mutex);
-
-		if (current_level != 0) {
-			LEDS_DRV_DEBUG("control temperature close:limit=%d\n",
-				       limit);
-			mt65xx_led_set_cust(&cust_led_list[MT65XX_LED_TYPE_LCD],
-					    last_level);
-
-		}
+		LEDS_DRV_DEBUG("setMaxbrightness go through AAL\n");
+		disp_bls_set_max_backlight(((((1 << LED_INTERNAL_LEVEL_BIT_CNT) -
+					      1) * max_level + 127) / 255));
 	}
-#else
-	LEDS_DRV_DEBUG("setMaxbrightness go through AAL\n");
-	disp_bls_set_max_backlight(((((1 << LED_INTERNAL_LEVEL_BIT_CNT) -
-				      1) * max_level + 127) / 255));
-#endif				/* endif CONFIG_MTK_AAL_SUPPORT */
+
 	return 0;
 }
 EXPORT_SYMBOL(setMaxbrightness);
@@ -789,20 +786,19 @@ static void mt65xx_leds_shutdown(struct platform_device *pdev)
 			break;
 		case MT65XX_LED_MODE_CUST_LCM:
 			LEDS_DRV_DEBUG("backlight control through LCM!!1\n");
-#ifdef CONFIG_MTK_AAL_SUPPORT
-			disp_aal_notify_backlight_changed(0);
-#else
-			((cust_brightness_set) (g_leds_data[i]->cust.data)) (0,
-									     bl_div);
-#endif
+			if (disp_aal_is_support() == true)
+				disp_aal_notify_backlight_changed(0);
+			else
+				((cust_brightness_set) (g_leds_data[i]->cust.data)) (0,
+										     bl_div);
 			break;
 		case MT65XX_LED_MODE_CUST_BLS_PWM:
 			LEDS_DRV_DEBUG("backlight control through BLS!!1\n");
-#ifdef CONFIG_MTK_AAL_SUPPORT
-			disp_aal_notify_backlight_changed(0);
-#else
-			((cust_set_brightness) (g_leds_data[i]->cust.data)) (0);
-#endif
+			if (disp_aal_is_support() == true)
+				disp_aal_notify_backlight_changed(0);
+			else
+				((cust_set_brightness) (g_leds_data[i]->cust.data)) (0);
+
 			break;
 		case MT65XX_LED_MODE_NONE:
 		default:

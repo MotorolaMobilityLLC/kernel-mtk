@@ -24,10 +24,8 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 
-#ifdef CONFIG_MTK_AAL_SUPPORT
 #include <ddp_aal.h>
 /* #include <linux/aee.h> */
-#endif
 
 #include <ddp_gamma.h>
 
@@ -905,68 +903,68 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 	/* unsigned long flags; */
 	/* spin_lock_irqsave(&leds_lock, flags); */
 
-#ifdef CONFIG_MTK_AAL_SUPPORT
-	if (led_data->level != level) {
-		led_data->level = level;
-		if (strcmp(led_data->cust.name, "lcd-backlight") != 0) {
-			LEDS_DEBUG("Set NLED directly %d at time %lu\n",
-				   led_data->level, jiffies);
-			schedule_work(&led_data->work);
-		} else {
-			if (level != 0
-			    && level * CONFIG_LIGHTNESS_MAPPING_VALUE < 255) {
-				level = 1;
+	if (disp_aal_is_support() == true) {
+		if (led_data->level != level) {
+			led_data->level = level;
+			if (strcmp(led_data->cust.name, "lcd-backlight") != 0) {
+				LEDS_DEBUG("Set NLED directly %d at time %lu\n",
+					   led_data->level, jiffies);
+				schedule_work(&led_data->work);
 			} else {
-				level =
-				    (level * CONFIG_LIGHTNESS_MAPPING_VALUE) /
-				    255;
-			}
-			backlight_debug_log(led_data->level, level);
-			disp_pq_notify_backlight_changed((((1 <<
-							     MT_LED_INTERNAL_LEVEL_BIT_CNT)
-							    - 1) * level +
-							   127) / 255);
-			disp_aal_notify_backlight_changed((((1 <<
-							     MT_LED_INTERNAL_LEVEL_BIT_CNT)
-							    - 1) * level +
-							   127) / 255);
-		}
-	}
-#else
-	/* do something only when level is changed */
-	if (led_data->level != level) {
-		led_data->level = level;
-		if (strcmp(led_data->cust.name, "lcd-backlight") != 0) {
-			LEDS_DEBUG("Set NLED directly %d at time %lu\n",
-				   led_data->level, jiffies);
-			schedule_work(&led_data->work);
-		} else {
-			if (level != 0
-			    && level * CONFIG_LIGHTNESS_MAPPING_VALUE < 255) {
-				level = 1;
-			} else {
-				level =
-				    (level * CONFIG_LIGHTNESS_MAPPING_VALUE) /
-				    255;
-			}
-			backlight_debug_log(led_data->level, level);
-			disp_pq_notify_backlight_changed((((1 <<
-							     MT_LED_INTERNAL_LEVEL_BIT_CNT)
-							    - 1) * level +
-							   127) / 255);
-			if (led_data->cust.mode == MT65XX_LED_MODE_CUST_BLS_PWM) {
-				mt_mt65xx_led_set_cust(&led_data->cust,
-						       ((((1 <<
-							   MT_LED_INTERNAL_LEVEL_BIT_CNT)
-							  - 1) * level +
-							 127) / 255));
-			} else {
-				mt_mt65xx_led_set_cust(&led_data->cust, level);
+				if (level != 0
+				    && level * CONFIG_LIGHTNESS_MAPPING_VALUE < 255) {
+					level = 1;
+				} else {
+					level =
+					    (level * CONFIG_LIGHTNESS_MAPPING_VALUE) /
+					    255;
+				}
+				backlight_debug_log(led_data->level, level);
+				disp_pq_notify_backlight_changed((((1 <<
+								     MT_LED_INTERNAL_LEVEL_BIT_CNT)
+								    - 1) * level +
+								   127) / 255);
+				disp_aal_notify_backlight_changed((((1 <<
+								     MT_LED_INTERNAL_LEVEL_BIT_CNT)
+								    - 1) * level +
+								   127) / 255);
 			}
 		}
+	} else {
+		/* do something only when level is changed */
+		if (led_data->level != level) {
+			led_data->level = level;
+			if (strcmp(led_data->cust.name, "lcd-backlight") != 0) {
+				LEDS_DEBUG("Set NLED directly %d at time %lu\n",
+					   led_data->level, jiffies);
+				schedule_work(&led_data->work);
+			} else {
+				if (level != 0
+				    && level * CONFIG_LIGHTNESS_MAPPING_VALUE < 255) {
+					level = 1;
+				} else {
+					level =
+					    (level * CONFIG_LIGHTNESS_MAPPING_VALUE) /
+					    255;
+				}
+				backlight_debug_log(led_data->level, level);
+				disp_pq_notify_backlight_changed((((1 <<
+								     MT_LED_INTERNAL_LEVEL_BIT_CNT)
+								    - 1) * level +
+								   127) / 255);
+				if (led_data->cust.mode == MT65XX_LED_MODE_CUST_BLS_PWM) {
+					mt_mt65xx_led_set_cust(&led_data->cust,
+							       ((((1 <<
+								   MT_LED_INTERNAL_LEVEL_BIT_CNT)
+								  - 1) * level +
+								 127) / 255));
+				} else {
+					mt_mt65xx_led_set_cust(&led_data->cust, level);
+				}
+			}
+		}
+		/* spin_unlock_irqrestore(&leds_lock, flags); */
 	}
-	/* spin_unlock_irqrestore(&leds_lock, flags); */
-#endif
 /* if(0!=aee_kernel_Powerkey_is_press()) */
 /* aee_kernel_wdt_kick_Powkey_api("mt_mt65xx_led_set",WDT_SETBY_Backlight); */
 }

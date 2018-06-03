@@ -147,6 +147,7 @@ void disp_aal_on_end_of_frame_by_module(enum disp_aal_id_t id);
 
 extern int aal_dbg_en;
 void aal_test(const char *cmd, char *debug_output);
+bool disp_aal_is_support(void);
 int aal_is_partial_support(void);
 int aal_request_partial_support(int partial);
 

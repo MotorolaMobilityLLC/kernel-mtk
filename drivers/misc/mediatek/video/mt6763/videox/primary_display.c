@@ -6397,6 +6397,7 @@ int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
 	static unsigned int last_level;
+	bool aal_is_support = disp_aal_is_support();
 
 	DISPFUNC();
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
@@ -6408,11 +6409,13 @@ int primary_display_setbacklight(unsigned int level)
 		return 0;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_START, 0, 0);
-#ifndef CONFIG_MTK_AAL_SUPPORT
-	_primary_path_switch_dst_lock();
 
-	_primary_path_lock(__func__);
-#endif
+	if (aal_is_support == false) {
+		_primary_path_switch_dst_lock();
+
+		_primary_path_lock(__func__);
+	}
+
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set backlight invald\n");
 	} else {
@@ -6431,11 +6434,13 @@ int primary_display_setbacklight(unsigned int level)
 		}
 		last_level = level;
 	}
-#ifndef CONFIG_MTK_AAL_SUPPORT
-	_primary_path_unlock(__func__);
 
-	_primary_path_switch_dst_unlock();
-#endif
+	if (aal_is_support == false) {
+		_primary_path_unlock(__func__);
+
+		_primary_path_switch_dst_unlock();
+	}
+
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_END, 0, 0);
 	return ret;
 }

@@ -1870,10 +1870,11 @@
 		interrupts = <GIC_SPI 205 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	disp_aal0@1400f000 {
+	disp_aal0:disp_aal0@1400f000 {
 		compatible = "mediatek,disp_aal0";
 		reg = <0 0x1400f000 0 0x1000>;
 		interrupts = <GIC_SPI 206 IRQ_TYPE_LEVEL_LOW>;
+		aal_support = <1>;
 	};
 
 	disp_gamma0@14010000 {

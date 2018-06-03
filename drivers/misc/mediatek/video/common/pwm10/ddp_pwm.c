@@ -294,15 +294,17 @@ static int disp_pwm_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_co
 static void disp_pwm_trigger_refresh(enum disp_pwm_id_t id, int quick)
 {
 	if (g_ddp_notify != NULL) {
-#if defined(CONFIG_MTK_AAL_SUPPORT) && defined(DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT)
-		if (quick) { /* Turn off backlight immediately */
-			g_ddp_notify(DISP_MODULE_PWM0, DISP_PATH_EVENT_TRIGGER);
-		} else {
-			/*
-			 * If AAL is present, AAL will dominate the refresh rate,
-			 * maybe 17ms or 33ms. 33ms will be the upper bound of latency.
-			 */
-			g_ddp_notify(DISP_MODULE_PWM0, DISP_PATH_EVENT_DELAYED_TRIGGER_33ms);
+#if defined(DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT)
+		if (disp_aal_is_support() == true) {
+			if (quick) { /* Turn off backlight immediately */
+				g_ddp_notify(DISP_MODULE_PWM0, DISP_PATH_EVENT_TRIGGER);
+			} else {
+				/*
+				* If AAL is present, AAL will dominate the refresh rate,
+				* maybe 17ms or 33ms. 33ms will be the upper bound of latency.
+				*/
+				g_ddp_notify(DISP_MODULE_PWM0, DISP_PATH_EVENT_DELAYED_TRIGGER_33ms);
+			}
 		}
 #else
 		g_ddp_notify(DISP_MODULE_PWM0, DISP_PATH_EVENT_TRIGGER);
