@@ -758,6 +758,11 @@ void set_all_clk_cg_disable(unsigned int disable)
 	mtk_set_cg_disable(disable);
 }
 
+void set_all_pll_disable(unsigned int disable)
+{
+	mtk_set_pll_disable(disable);
+}
+
 void set_all_mtcmos_disable(unsigned int disable)
 {
 	mtk_set_mtcmos_disable(disable);
@@ -803,6 +808,7 @@ static struct clkdbg_ops clkdbg_mt6761_ops = {
 	.get_pwr_names = get_pwr_names,
 	.setup_provider_clk = setup_provider_clk,
 	.set_all_clk_cg_disable = set_all_clk_cg_disable,
+	.set_all_pll_disable = set_all_pll_disable,
 	.set_all_mtcmos_disable = set_all_mtcmos_disable,
 };
 

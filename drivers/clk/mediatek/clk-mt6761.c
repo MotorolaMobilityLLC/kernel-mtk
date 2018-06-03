@@ -23,15 +23,16 @@
 #include "clk-mux.h"
 
 #include <dt-bindings/clock/mt6761-clk.h>
+#include "clk-mt6761-pg.h"
 
-#define MT_CCF_BRINGUP		1
+#define MT_CCF_BRINGUP		0
 #if MT_CCF_BRINGUP
 #define MT_MUXPLL_ENABLE	0
 #define MT_CG_ENABLE		0
 #define MT_MTCMOS_ENABLE	0
 #else
 #define MT_MUXPLL_ENABLE	0
-#define MT_CG_ENABLE		0
+#define MT_CG_ENABLE		1
 #define MT_MTCMOS_ENABLE	0
 #endif
 
@@ -71,6 +72,7 @@ while (0)
 
 
 static bool cg_disable;
+static bool pll_disable;
 static bool mtcmos_disable;
 
 const char *ckgen_array[] = {
@@ -393,7 +395,7 @@ void __iomem *venc_gcon_base;
 #define INFRA_CG1		0x00000004
 #define INFRA_CG2		0x983fff00
 #define INFRA_CG3		0x86947E16
-#define INFRA_CG4		0x2ffc06dd
+#define INFRA_CG4		0x2ffc06d9
 #define INFRA_CG5		0x00020fe7
 
 #define MM_DISABLE_CG		0x0c840040 /* un-gating in preloader */
@@ -784,118 +786,118 @@ static const struct mtk_mux_clr_set_upd top_muxes[] __initconst = {
 	/* CLK_CFG_0 */
 	MUX_CLR_SET_UPD(CLK_TOP_AXI_SEL, "axi_sel", axi_parents,
 		CLK_CFG_0, CLK_CFG_0_SET, CLK_CFG_0_CLR, 0, 2,
-		INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		INVALID_MUX_GATE, CLK_CFG_UPDATE, 0),
 	MUX_CLR_SET_UPD(CLK_TOP_MEM_SEL, "mem_sel", mem_parents,
 		CLK_CFG_0, CLK_CFG_0_SET, CLK_CFG_0_CLR, 8, 2,
-		INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		INVALID_MUX_GATE, CLK_CFG_UPDATE, 1),
 	MUX_CLR_SET_UPD(CLK_TOP_MM_SEL, "mm_sel", mm_parents, CLK_CFG_0,
 		CLK_CFG_0_SET, CLK_CFG_0_CLR, 16, 3, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 2),
 	MUX_CLR_SET_UPD(CLK_TOP_SCP_SEL, "scp_sel", scp_parents, CLK_CFG_0,
 		CLK_CFG_0_SET, CLK_CFG_0_CLR, 24, 3, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 3),
 	/* CLK_CFG_1 */
 	MUX_CLR_SET_UPD(CLK_TOP_MFG_SEL, "mfg_sel", mfg_parents, CLK_CFG_1,
 		CLK_CFG_1_SET, CLK_CFG_1_CLR, 0, 2, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 4),
 	MUX_CLR_SET_UPD(CLK_TOP_ATB_SEL, "atb_sel", atb_parents, CLK_CFG_1,
 		CLK_CFG_1_SET, CLK_CFG_1_CLR, 8, 2, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 5),
 	MUX_CLR_SET_UPD(CLK_TOP_CAMTG_SEL, "camtg_sel",
 		camtg_parents, CLK_CFG_1, CLK_CFG_1_SET, CLK_CFG_1_CLR,
-		16, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		16, 3, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		6),
 	MUX_CLR_SET_UPD(CLK_TOP_CAMTG1_SEL, "camtg1_sel",
 		camtg_parents, CLK_CFG_1, CLK_CFG_1_SET, CLK_CFG_1_CLR,
-		24, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		24, 3, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		7),
 	/* CLK_CFG_2 */
 	MUX_CLR_SET_UPD(CLK_TOP_CAMTG2_SEL, "camtg2_sel",
 		camtg_parents, CLK_CFG_2, CLK_CFG_2_SET, CLK_CFG_2_CLR,
-		0, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		0, 3, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		8),
 	MUX_CLR_SET_UPD(CLK_TOP_CAMTG3_SEL, "camtg3_sel",
 		camtg_parents, CLK_CFG_2, CLK_CFG_2_SET, CLK_CFG_2_CLR,
-		8, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		8, 3, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		9),
 	MUX_CLR_SET_UPD(CLK_TOP_UART_SEL, "uart_sel", uart_parents, CLK_CFG_2,
 		CLK_CFG_2_SET, CLK_CFG_2_CLR, 16, 1, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 10),
 	MUX_CLR_SET_UPD(CLK_TOP_SPI_SEL, "spi_sel", spi_parents, CLK_CFG_2,
 		CLK_CFG_2_SET, CLK_CFG_2_CLR, 24, 2, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 11),
 	/* CLK_CFG_3 */
 	MUX_CLR_SET_UPD(CLK_TOP_MSDC50_0_HCLK_SEL, "msdc5hclk",
 		msdc5hclk_parents, CLK_CFG_3, CLK_CFG_3_SET, CLK_CFG_3_CLR, 0,
-		2, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		2, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		12),
 	MUX_CLR_SET_UPD(CLK_TOP_MSDC50_0_SEL, "msdc50_0_sel",
 		msdc50_0_parents, CLK_CFG_3, CLK_CFG_3_SET, CLK_CFG_3_CLR,
-		8, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		8, 3, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		13),
 	MUX_CLR_SET_UPD(CLK_TOP_MSDC30_1_SEL, "msdc30_1_sel",
 		msdc30_1_parents, CLK_CFG_3, CLK_CFG_3_SET, CLK_CFG_3_CLR,
-		16, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		16, 3, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		14),
 	MUX_CLR_SET_UPD(CLK_TOP_AUDIO_SEL, "audio_sel",
 		audio_parents, CLK_CFG_3, CLK_CFG_3_SET, CLK_CFG_3_CLR,
-		24, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		24, 2, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		15),
 	/* CLK_CFG_4 */
 	MUX_CLR_SET_UPD(CLK_TOP_AUD_INTBUS_SEL, "aud_intbus_sel",
 		aud_intbus_parents, CLK_CFG_4, CLK_CFG_4_SET, CLK_CFG_4_CLR,
-		0, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		0, 2, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		16),
 	MUX_CLR_SET_UPD(CLK_TOP_AUD_1_SEL, "aud_1_sel",
 		aud_1_parents, CLK_CFG_4, CLK_CFG_4_SET, CLK_CFG_4_CLR,
-		8, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		8, 1, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		17),
 	MUX_CLR_SET_UPD(CLK_TOP_AUD_ENGEN1_SEL, "aud_engen1_sel",
 		aud_engen1_parents, CLK_CFG_4, CLK_CFG_4_SET, CLK_CFG_4_CLR,
-		16, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		16, 2, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		18),
 	MUX_CLR_SET_UPD(CLK_TOP_DISP_PWM_SEL, "disp_pwm_sel",
 		disp_pwm_parents, CLK_CFG_4, CLK_CFG_4_SET, CLK_CFG_4_CLR,
-		24, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		24, 2, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		19),
 	/* CLK_CFG_5 */
 	MUX_CLR_SET_UPD(CLK_TOP_SSPM_SEL, "sspm_sel", sspm_parents, CLK_CFG_5,
 		CLK_CFG_5_SET, CLK_CFG_5_CLR, 0, 2, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 20),
 	MUX_CLR_SET_UPD(CLK_TOP_DXCC_SEL, "dxcc_sel", dxcc_parents, CLK_CFG_5,
 		CLK_CFG_5_SET, CLK_CFG_5_CLR, 8, 2, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 21),
 	MUX_CLR_SET_UPD(CLK_TOP_USB_TOP_SEL, "usb_top_sel",
 		usb_top_parents, CLK_CFG_5, CLK_CFG_5_SET, CLK_CFG_5_CLR,
-		16, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		16, 1, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		22),
 	MUX_CLR_SET_UPD(CLK_TOP_SPM_SEL, "spm_sel", spm_parents, CLK_CFG_5,
 		CLK_CFG_5_SET, CLK_CFG_5_CLR, 24, 1, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 23),
 	/* CLK_CFG_6 */
 	MUX_CLR_SET_UPD(CLK_TOP_I2C_SEL, "i2c_sel", i2c_parents, CLK_CFG_6,
 		CLK_CFG_6_SET, CLK_CFG_6_CLR, 0, 3, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 24),
 	MUX_CLR_SET_UPD(CLK_TOP_PWM_SEL, "pwm_sel", pwm_parents, CLK_CFG_6,
 		CLK_CFG_6_SET, CLK_CFG_6_CLR, 8, 2, INVALID_MUX_GATE,
-		INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+		CLK_CFG_UPDATE, 25),
 	MUX_CLR_SET_UPD(CLK_TOP_SENINF_SEL, "seninf_sel",
 		seninf_parents, CLK_CFG_6, CLK_CFG_6_SET, CLK_CFG_6_CLR,
-		16, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		16, 2, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		26),
 	MUX_CLR_SET_UPD(CLK_TOP_AES_FDE_SEL, "aes_fde_sel",
 		aes_fde_parents, CLK_CFG_6, CLK_CFG_6_SET, CLK_CFG_6_CLR,
-		24, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		24, 3, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		27),
 	/* CLK_CFG_7 */
 	MUX_CLR_SET_UPD(CLK_TOP_PWRAP_ULPOSC_SEL, "ulposc_sel",
 		ulposc_parents, CLK_CFG_7, CLK_CFG_7_SET, CLK_CFG_7_CLR,
-		0, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		0, 3, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		28),
 	MUX_CLR_SET_UPD(CLK_TOP_CAMTM_SEL, "camtm_sel",
 		camtm_parents, CLK_CFG_7, CLK_CFG_7_SET, CLK_CFG_7_CLR,
-		8, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG,
-		INVALID_UPDATE_SHIFT),
+		8, 2, INVALID_MUX_GATE, CLK_CFG_UPDATE,
+		29),
 #else
 	/* CLK_CFG_0 */
 	MUX_CLR_SET_UPD_FLAGS(CLK_TOP_AXI_SEL, "axi_sel", axi_parents,
@@ -2565,12 +2567,7 @@ void pll_force_off(void)
 	clk_clrl(MFGPLL_CON0, PLL_EN);
 	clk_setl(MFGPLL_CON3, PLL_ISO_EN);
 	clk_clrl(MFGPLL_CON3, PLL_PWR_ON);
-/*MPLL Control by dram*/
-#if 0
-	clk_clrl(MMPLL_CON0, PLL_EN);
-	clk_setl(MMPLL_CON3, PLL_ISO_EN);
-	clk_clrl(MMPLL_CON3, PLL_PWR_ON);
-#endif
+
 /*UNIVPLL*/
 	clk_clrl(UNIVPLL_CON0, PLL_EN);
 	clk_setl(UNIVPLL_CON3, PLL_ISO_EN);
@@ -2647,9 +2644,10 @@ void armpll_control(int id, int on)
 
 void mtk_set_cg_disable(unsigned int disable)
 {
-	if (disable == 1)
+	if (disable == 1) {
+		clock_force_on();
 		cg_disable = true;
-	else if (disable == 0)
+	} else if (disable == 0)
 		cg_disable = false;
 }
 
@@ -2657,7 +2655,6 @@ int mtk_is_cg_enable(void)
 {
 #if MT_CG_ENABLE
 	if (cg_disable) {
-		clock_force_on();
 		pr_debug("%s: skipped for cg control disable\n", __func__);
 		return 0;
 	} else {
@@ -2668,11 +2665,26 @@ int mtk_is_cg_enable(void)
 #endif
 }
 
+void mtk_set_pll_disable(unsigned int disable)
+{
+	if (disable == 1) {
+#if !MT_MUXPLL_ENABLE
+		pll_force_off();
+#endif
+		pll_disable = true;
+	} else if (disable == 0)
+		pll_disable = false;
+}
+
 int mtk_is_pll_enable(void)
 {
 #if MT_MUXPLL_ENABLE
-	/* pr_debug("%s: skipped for bring up\n", __func__); */
-	return 1;
+	if (pll_disable) {
+		pr_debug("%s: skipped for cg control disable\n", __func__);
+		return 0;
+	} else {
+		return 1;
+	}
 #else
 	return 0;
 #endif
@@ -2680,9 +2692,12 @@ int mtk_is_pll_enable(void)
 
 void mtk_set_mtcmos_disable(unsigned int disable)
 {
-	if (disable == 1)
+	if (disable == 1) {
+#if !MT_MTCMOS_ENABLE
+		mtcmos_force_off();
+#endif
 		mtcmos_disable = true;
-	else if (disable == 0)
+	} else if (disable == 0)
 		mtcmos_disable = false;
 }
 

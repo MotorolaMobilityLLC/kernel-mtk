@@ -78,6 +78,7 @@ struct clkdbg_ops {
 	const char * const *(*get_pwr_names)(void);
 	void (*setup_provider_clk)(struct provider_clk *pvdck);
 	void (*set_all_clk_cg_disable)(unsigned int disable);
+	void (*set_all_pll_disable)(unsigned int disable);
 	void (*set_all_mtcmos_disable)(unsigned int disable);
 };
 

@@ -2070,6 +2070,23 @@ static int clkdbg_cg_disable(struct seq_file *s, void *v)
 	return 0;
 }
 
+static int clkdbg_pll_disable(struct seq_file *s, void *v)
+{
+	unsigned long val;
+
+	if (parse_val_from_cmd(&val) != 1)
+		return 0;
+
+	if (val == 1)
+		clkdbg_ops->set_all_pll_disable(1);
+	else if (val == 0)
+		clkdbg_ops->set_all_pll_disable(0);
+
+	seq_printf(s, "%s: %s\n", __func__, val?"true":"false");
+
+	return 0;
+}
+
 static int clkdbg_mtcmos_disable(struct seq_file *s, void *v)
 {
 	unsigned long val;
@@ -2130,6 +2147,7 @@ static const struct cmd_fn common_cmds[] = {
 	CMDFN("dump_suspend_clks_3", clkdbg_dump_suspend_clks_3),
 	CMDFN("cmds", clkdbg_cmds),
 	CMDFN("cg_disable", clkdbg_cg_disable),
+	CMDFN("pll_disable", clkdbg_pll_disable),
 	CMDFN("mtcmos_disable", clkdbg_mtcmos_disable),
 	{}
 };
