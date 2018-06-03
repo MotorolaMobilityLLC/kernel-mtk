@@ -144,7 +144,7 @@ int msdc_rsp[] = {
 		((struct bd_t *)bd)->blkpad = blkpad; \
 		((struct bd_t *)bd)->dwpad = dwpad; \
 		((struct bd_t *)bd)->ptrh4 = upper_32_bits(dptr) & 0xF; \
-		((struct bd_t *)bd)->ptr = (u32)(dptr & 0xFFFFFFFFUL); \
+		((struct bd_t *)bd)->ptr = lower_32_bits(dptr); \
 		((struct bd_t *)bd)->buflen = dlen; \
 	} while (0)
 
@@ -251,6 +251,9 @@ void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m)
 	}
 	if (!m)
 		pr_err("%s\n", buffer);
+
+	if (host->use_hw_dvfs != 1)
+		return;
 
 	MSDC_RST_REG_PRINT_BUF(msg_size, PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr);
 	if (!m)
@@ -583,37 +586,6 @@ void msdc_set_check_endbit(struct msdc_host *host, bool enable)
 	} else {
 		MSDC_CLR_BIT32(SDC_ADV_CFG0, SDC_ADV_CFG0_INDEX_CHECK);
 		MSDC_CLR_BIT32(SDC_ADV_CFG0, SDC_ADV_CFG0_ENDBIT_CHECK);
-	}
-}
-
-static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
-{
-	void __iomem *base = host->base;
-	u32 div, mode, hs400_div_dis;
-	u32 val;
-
-	if ((on) && (host->core_clkon == 0)) {
-
-		msdc_clk_enable(host);
-
-		host->core_clkon = 1;
-		udelay(10);
-
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
-
-		val = MSDC_READ32(MSDC_CFG);
-		GET_FIELD(val, CFG_CKDIV_SHIFT, CFG_CKDIV_MASK, div);
-		GET_FIELD(val, CFG_CKMOD_SHIFT, CFG_CKMOD_MASK, mode);
-		GET_FIELD(val, CFG_CKMOD_HS400_SHIFT, CFG_CKMOD_HS400_MASK,
-			hs400_div_dis);
-		msdc_clk_stable(host, mode, div, hs400_div_dis);
-
-	} else if ((!on) && (host->core_clkon == 1)) {
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
-
-		msdc_clk_disable(host);
-
-		host->core_clkon = 0;
 	}
 }
 
@@ -996,10 +968,11 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 
 		mdelay(10);
 
-		if (msdc_oc_check(host, 1))
-			return;
 		if (host->id == 1) {
-			if (!msdc_io_check(host))
+			if (msdc_oc_check(host, 1))
+				return;
+
+			if (msdc_io_check(host))
 				return;
 
 			msdc_set_check_endbit(host, 1);
@@ -2421,7 +2394,7 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 
 		MSDC_SET_FIELD(MSDC_DMA_SA_HIGH, MSDC_DMA_SURR_ADDR_HIGH4BIT,
 			upper_32_bits(dma_address) & 0xF);
-		MSDC_WRITE32(MSDC_DMA_SA, (u32) (dma_address & 0xFFFFFFFFUL));
+		MSDC_WRITE32(MSDC_DMA_SA, lower_32_bits(dma_address));
 
 		MSDC_SET_FIELD(MSDC_DMA_CTRL, MSDC_DMA_CTRL_LASTBUF, 1);
 		MSDC_WRITE32(MSDC_DMA_LEN, dma_len);
@@ -2498,7 +2471,7 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 
 		MSDC_SET_FIELD(MSDC_DMA_SA_HIGH, MSDC_DMA_SURR_ADDR_HIGH4BIT,
 			upper_32_bits(dma->gpd_addr) & 0xF);
-		MSDC_WRITE32(MSDC_DMA_SA, (u32) (dma->gpd_addr & 0xFFFFFFFFUL));
+		MSDC_WRITE32(MSDC_DMA_SA, lower_32_bits(dma->gpd_addr));
 		break;
 
 	default:
@@ -4367,7 +4340,6 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		 * Must keep clock gate 5ms before switch voltage
 		 */
 		usleep_range(10000, 10500);
-
 		/* set as 500T -> 1.25ms for 400KHz or 1.9ms for 260KHz */
 		msdc_set_vol_change_wait_count(VOL_CHG_CNT_DEFAULT_VAL);
 		/* start to provide clock to device */
@@ -4394,6 +4366,9 @@ static int msdc_card_busy(struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 	void __iomem *base = host->base;
 	u32 status;
+
+	if (host->block_bad_card)
+		return 0;
 
 	/* SDIO check card busy before send request in kernel 4.4.
 	 * So that host need ungate/gate clock first otherwise read busy fail.
@@ -4766,13 +4741,12 @@ static void msdc_init_gpd_bd(struct msdc_host *host, struct msdc_dma *dma)
 	memset(gpd, 0, sizeof(struct gpd_t) * 2);
 	dma_addr = dma->gpd_addr + sizeof(struct gpd_t);
 	gpd->nexth4 = upper_32_bits(dma_addr) & 0xF;
-	gpd->next = (u32) (dma_addr & 0xFFFFFFFFUL);
+	gpd->next = lower_32_bits(dma_addr);
 
-	/* gpd->intr = 0; */
 	gpd->bdp = 1;           /* hwo, cs, bd pointer */
 	dma_addr = dma->bd_addr;
 	gpd->ptrh4 = upper_32_bits(dma_addr) & 0xF;
-	gpd->ptr = (u32) (dma_addr & 0xFFFFFFFFUL); /* physical address */
+	gpd->ptr = lower_32_bits(dma_addr); /* physical address */
 
 	memset(bd, 0, sizeof(struct bd_t) * bdlen);
 	ptr = bd + bdlen - 1;
@@ -4780,7 +4754,7 @@ static void msdc_init_gpd_bd(struct msdc_host *host, struct msdc_dma *dma)
 		prev = ptr - 1;
 		dma_addr = dma->bd_addr + sizeof(struct bd_t) * (ptr - bd);
 		prev->nexth4 = upper_32_bits(dma_addr) & 0xF;
-		prev->next = (u32) (dma_addr & 0xFFFFFFFFUL);
+		prev->next = lower_32_bits(dma_addr);
 		ptr = prev;
 	}
 }
@@ -5155,7 +5129,6 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 			host->saved_para.hz = host->mclk;
 			if (host->saved_para.hz) {
 				host->saved_para.suspend_flag = 1;
-				/* mb(); */
 				msdc_ungate_clock(host);
 				msdc_save_timing_setting(host, 2);
 				msdc_gate_clock(host, 0);
@@ -5164,8 +5137,7 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 					host->error = 0;
 				}
 			}
-			ERR_MSG("msdc suspend cur_cfg=%x, save_cfg=%x, cur_hz=%d",
-				MSDC_READ32(MSDC_CFG),
+			ERR_MSG("msdc suspend save_cfg=%x, cur_hz=%d",
 				host->saved_para.msdc_cfg, host->mclk);
 		}
 	}

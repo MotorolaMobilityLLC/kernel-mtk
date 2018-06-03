@@ -28,17 +28,17 @@
 #include <linux/io.h>
 #include <linux/scatterlist.h>
 
+#include "mtk_sd.h"
+#include <mmc/core/core.h>
+#include "dbg.h"
+#include "autok_dvfs.h"
+
 #ifndef FPGA_PLATFORM
 #include <mt-plat/upmu_common.h>
 #endif
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 #include <mach/mtk_pmic_wrap.h>
 #endif
-
-#include "mtk_sd.h"
-#include <mmc/core/core.h>
-#include "dbg.h"
-#include "autok_dvfs.h"
 
 #ifdef CONFIG_MTK_ENG_BUILD
 #define MTK_EMMC_CQ_DEBUG
@@ -2266,18 +2266,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			pr_err("[****MMC_CRC_STRESS****] CMDRDLY<%d>\n", p2);
 		}
 #endif
-	} else if (cmd == DO_AUTOK_OFFLINE_TUNE_TX) {
-		host = mtk_msdc_host[p1]; /*p1 = id */
-		mmc_claim_host(host->mmc);
-		#if 0
-		do_autok_offline_tune_tx = 1;
-		host->mmc->ops->execute_tuning(host->mmc,
-			MMC_SEND_TUNING_BLOCK_HS200);
-		do_autok_offline_tune_tx = 0;
-		#else
-		/*autok_offline_tuning_TX(host);*/
-		#endif
-		mmc_release_host(host->mmc);
 	} else if (cmd == SDIO_AUTOK_RESULT) {
 		id = p1;
 		vcore = p2;

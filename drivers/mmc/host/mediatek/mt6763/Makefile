@@ -22,7 +22,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335
 #workaround for include mmc/card/queue.h and mmc/core/core.h
 ccflags-y += -I$(srctree)/drivers
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6763/$(MTK_PLATFORM)
 
 ifeq ($(CONFIG_MTK_HW_FDE_AES),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/fde_aes/$(subst ",,$(CONFIG_MTK_PLATFORM))

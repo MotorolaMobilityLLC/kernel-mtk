@@ -32,7 +32,7 @@
 #include "include/pmic_regulator.h"
 
 
-struct msdc_host *mtk_msdc_host[] = { NULL, NULL, NULL};
+struct msdc_host *mtk_msdc_host[] = {NULL, NULL, NULL};
 EXPORT_SYMBOL(mtk_msdc_host);
 
 int g_dma_debug[HOST_MAX_NUM] = { 0, 0, 0};
@@ -229,32 +229,34 @@ int msdc_oc_check(struct msdc_host *host, u32 en)
 	u32 val = 0;
 	int ret = 0;
 
-	if (host->id == 1) {
-		if (en) {
-			/*need mask & enable int for 6335*/
-			pmic_mask_interrupt(INT_VMCH_OC, "VMCH_OC");
-			pmic_enable_interrupt(INT_VMCH_OC, 1, "VMCH_OC");
+	if (host->id != 1)
+		goto out;
 
-			pmic_read_interface(REG_VMCH_OC_RAW_STATUS, &val,
-				MASK_VMCH_OC_RAW_STATUS, SHIFT_VMCH_OC_RAW_STATUS);
+	if (en) {
+		/*need mask & enable int for 6335*/
+		pmic_mask_interrupt(INT_VMCH_OC, "VMCH_OC");
+		pmic_enable_interrupt(INT_VMCH_OC, 1, "VMCH_OC");
 
-			if (val) {
-				host->block_bad_card = 1;
-				pr_err("msdc1 OC status = %x\n", val);
-				host->power_control(host, 0);
+		pmic_read_interface(REG_VMCH_OC_RAW_STATUS, &val,
+			MASK_VMCH_OC_RAW_STATUS, SHIFT_VMCH_OC_RAW_STATUS);
 
-				/*need clear status for 6335*/
-				upmu_set_reg_value(REG_VMCH_OC_STATUS, FIELD_VMCH_OC_STATUS);
+		if (val) {
+			host->block_bad_card = 1;
+			pr_err("msdc1 OC status = %x\n", val);
+			host->power_control(host, 0);
 
-				ret = -1;
-			}
-		} else {
-			/*need disable & unmask int for 6335*/
-			pmic_enable_interrupt(INT_VMCH_OC, 0, "VMCH_OC");
-			pmic_unmask_interrupt(INT_VMCH_OC, "VMCH_OC");
+			/*need clear status for 6335*/
+			upmu_set_reg_value(REG_VMCH_OC_STATUS, FIELD_VMCH_OC_STATUS);
+
+			ret = 1;
 		}
+	} else {
+		/*need disable & unmask int for 6335*/
+		pmic_enable_interrupt(INT_VMCH_OC, 0, "VMCH_OC");
+		pmic_unmask_interrupt(INT_VMCH_OC, "VMCH_OC");
 	}
 
+out:
 	return ret;
 }
 
@@ -295,9 +297,6 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		/* VMC VOLSEL */
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_3000,
 			&host->power_io);
-
-		if (!on)
-			msdc_oc_check(host, 0);
 		break;
 
 	default:
@@ -307,28 +306,6 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	msdc_dump_ldo_sts(host);
 #endif
-}
-
-void msdc_clk_pre_enable(struct msdc_host *host)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&msdc_cg_lock, flags);
-	msdc_cg_cnt++;
-	if (msdc_cg_cnt > 0)
-		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_ALL);
-	spin_unlock_irqrestore(&msdc_cg_lock, flags);
-}
-
-void msdc_clk_post_disble(struct msdc_host *host)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&msdc_cg_lock, flags);
-	msdc_cg_cnt--;
-	if (msdc_cg_cnt == 0)
-		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_RELEASE);
-	spin_unlock_irqrestore(&msdc_cg_lock, flags);
 }
 
 void msdc_sd_power_off(void)
@@ -348,23 +325,32 @@ void msdc_sd_power_off(void)
 	}
 }
 EXPORT_SYMBOL(msdc_sd_power_off);
-#else /*else !defined(FPGA_PLATFORM)*/
-void msdc_clk_pre_enable(struct msdc_host *host)
+
+void msdc_dump_vcore(void)
 {
+	pr_err("%s: Vcore %d\n", __func__, vcorefs_get_hw_opp());
 }
 
-void msdc_clk_post_disble(struct msdc_host *host)
+/* FIXME: check if sleep_base is correct */
+void msdc_dump_dvfs_reg(struct msdc_host *host)
 {
+	void __iomem *base = host->base;
+
+	pr_err("SDC_STS:0x%x", MSDC_READ32(SDC_STS));
+	if (sleep_base) {
+		/* bit24 high is in dvfs request status, which cause sdc busy */
+		pr_err("DVFS_REQUEST@0x%p = 0x%x, bit[24] shall 0b\n",
+			sleep_base + 0x478,
+			MSDC_READ32(sleep_base + 0x478));
+	}
 }
-#endif /*endif !defined(FPGA_PLATFORM)*/
 
 void msdc_pmic_force_vcore_pwm(bool enable)
 {
-#if !defined(FPGA_PLATFORM)
 	/* Temporarily disable force pwm */
 	/* buck_set_mode(VCORE, enable); */
-#endif
 }
+#endif /*dif !defined(FPGA_PLATFORM)*/
 
 void msdc_set_host_power_control(struct msdc_host *host)
 {
@@ -538,6 +524,28 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 		host->id, clksrc, host->hclk/1000);
 }
 
+void msdc_clk_pre_enable(struct msdc_host *host)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&msdc_cg_lock, flags);
+	msdc_cg_cnt++;
+	if (msdc_cg_cnt > 0)
+		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_ALL);
+	spin_unlock_irqrestore(&msdc_cg_lock, flags);
+}
+
+void msdc_clk_post_disble(struct msdc_host *host)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&msdc_cg_lock, flags);
+	msdc_cg_cnt--;
+	if (msdc_cg_cnt == 0)
+		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_RELEASE);
+	spin_unlock_irqrestore(&msdc_cg_lock, flags);
+}
+
 #include <linux/seq_file.h>
 static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 {
@@ -608,19 +616,6 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 	}
 }
 
-void msdc_dump_dvfs_reg(struct msdc_host *host)
-{
-	void __iomem *base = host->base;
-
-	pr_err("SDC_STS:0x%x", MSDC_READ32(SDC_STS));
-	if (sleep_base) {
-		/* bit24 high is in dvfs request status, which cause sdc busy */
-		pr_err("DVFS_REQUEST@0x%p = 0x%x, bit[24] shall 0b\n",
-			sleep_base + 0x478,
-			MSDC_READ32(sleep_base + 0x478));
-	}
-}
-
 void msdc_dump_clock_sts(struct msdc_host *host)
 {
 	msdc_dump_clock_sts_core(host, NULL);
@@ -651,15 +646,39 @@ void msdc_clk_status(int *status)
 }
 #endif /*if !defined(FPGA_PLATFORM)*/
 
+void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
+{
+	void __iomem *base = host->base;
+	u32 div, mode, hs400_div_dis;
+	u32 val;
+
+	if ((on) && (host->core_clkon == 0)) {
+
+		msdc_clk_enable(host);
+
+		host->core_clkon = 1;
+		udelay(10);
+
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
+
+		val = MSDC_READ32(MSDC_CFG);
+		GET_FIELD(val, CFG_CKDIV_SHIFT, CFG_CKDIV_MASK, div);
+		GET_FIELD(val, CFG_CKMOD_SHIFT, CFG_CKMOD_MASK, mode);
+		GET_FIELD(val, CFG_CKMOD_HS400_SHIFT, CFG_CKMOD_HS400_MASK,
+			hs400_div_dis);
+		msdc_clk_stable(host, mode, div, hs400_div_dis);
+
+	} else if ((!on) && (host->core_clkon == 1)) {
+		msdc_clk_disable(host);
+
+		host->core_clkon = 0;
+	}
+}
+
 /**************************************************************/
 /* Section 4: GPIO and Pad                                    */
 /**************************************************************/
 #if !defined(FPGA_PLATFORM)
-void msdc_dump_vcore(void)
-{
-	pr_err("%s: Vcore %d\n", __func__, vcorefs_get_hw_opp());
-}
-
 /*
  * Power off card on the 2 bad card conditions:
  * 1. if dat pins keep high when pulled low or
@@ -667,17 +686,31 @@ void msdc_dump_vcore(void)
  */
 int msdc_io_check(struct msdc_host *host)
 {
-	int result = 1, i;
+	int i;
 	void __iomem *base = host->base;
 	unsigned long polling_tmo = 0;
-	u32 pupd_patterns[3] = {0x226226, 0x622226, 0x262226};
-	u32 check_patterns[3] = {0xe0000, 0xd0000, 0xb0000};
+	void __iomem *pupd_addr[3] = {
+		MSDC1_PUPD_DAT0_ADDR,
+		MSDC1_PUPD_DAT1_ADDR,
+		MSDC1_PUPD_DAT2_ADDR
+	};
+	u32 pupd_mask[3] = {
+		MSDC1_PUPD0_DAT0_MASK,
+		MSDC1_PUPD0_DAT1_MASK,
+		MSDC1_PUPD0_DAT2_MASK
+	};
+	u32 check_patterns[3] = {0xE0000, 0xD0000, 0xB0000};
+	u32 orig_pull;
 
 	if (host->id != 1)
-		return 1;
+		return 0;
+
+	if (host->block_bad_card)
+		goto POWER_OFF;
 
 	for (i = 0; i < 3; i++) {
-		MSDC_SET_FIELD(MSDC1_GPIO_PUPD0_ADDR, MSDC1_PUPD0_MASK, pupd_patterns[i]);
+		MSDC_GET_FIELD(pupd_addr[i], pupd_mask[i], orig_pull);
+		MSDC_SET_FIELD(pupd_addr[i], pupd_mask[i], MSDC_PD_50K);
 		polling_tmo = jiffies + POLLING_PINS;
 		while ((MSDC_READ32(MSDC_PS) & 0xF0000) != check_patterns[i]) {
 			if (time_after(jiffies, polling_tmo)) {
@@ -686,15 +719,15 @@ int msdc_io_check(struct msdc_host *host)
 				goto POWER_OFF;
 			}
 		}
+		MSDC_SET_FIELD(pupd_addr[i], pupd_mask[i], orig_pull);
 	}
 
-	MSDC_SET_FIELD(MSDC1_GPIO_PUPD0_ADDR, MSDC1_PUPD0_MASK, 0x222226);
-	return result;
+	return 0;
 
 POWER_OFF:
 	host->block_bad_card = 1;
 	host->power_control(host, 0);
-	return 0;
+	return 1;
 }
 
 void msdc_dump_padctl_by_id(u32 id)
@@ -960,7 +993,7 @@ void msdc_get_rdsel_by_id(u32 id, u32 *value)
 void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 {
 	if (id == 0) {
-		/* do nothing since 10nm does not have SR control for 1.8V */
+		/* do nothing since 16nm does not have SR control for 1.8V */
 	} else if (id == 1) {
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV0_ADDR, MSDC1_SR_CMD_MASK,
 			(cmd != 0));
@@ -969,15 +1002,7 @@ void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV0_ADDR, MSDC1_SR_DAT_MASK,
 			(dat != 0));
 	} else if (id == 2) {
-		/* FIX ME, check if SR exist for 16nm 1.8V */
-		#if 0
-		MSDC_SET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_SR_CMD_MASK,
-			(cmd != 0));
-		MSDC_SET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_SR_CLK_MASK,
-			(clk != 0));
-		MSDC_SET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_SR_DAT_MASK,
-			(dat != 0));
-		#endif
+		/* do nothing since 16nm does not have SR control for 1.8V */
 	}
 }
 
@@ -1275,9 +1300,9 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 
 	ret = of_property_read_u8(np, "hw_dvfs", &hw_dvfs_support);
 	if (ret || (hw_dvfs_support == 0))
-		host->use_hw_dvfs = 0xFF;
-	else
 		host->use_hw_dvfs = 0;
+	else
+		host->use_hw_dvfs = 1;
 
 	msdc_get_register_settings(host, np);
 

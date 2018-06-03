@@ -313,7 +313,6 @@ struct msdc_host {
 	void __iomem            *base;          /* host base address */
 	void __iomem            *base_top;      /* base address for msdc_top*/
 	int                     id;             /* host id */
-	int			dvfs_id;
 
 	u32                     xfer_size;      /* total transferred size */
 
@@ -332,7 +331,6 @@ struct msdc_host {
 	struct delayed_work     set_vcore_workq;
 	struct completion       autok_done;
 
-	struct completion       cmd_done;	/* FIX ME, try to removed it */
 	struct completion       xfer_done;
 	struct pm_message       pm_state;
 

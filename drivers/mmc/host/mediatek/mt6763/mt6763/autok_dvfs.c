@@ -368,13 +368,6 @@ static void msdc_set_hw_dvfs(int vcore, struct msdc_host *host)
 	}
 }
 
-/* For backward compatible, remove later */
-int wait_sdio_autok_ready(void *data)
-{
-	return 0;
-}
-EXPORT_SYMBOL(wait_sdio_autok_ready);
-
 void sdio_autok_wait_dvfs_ready(void)
 {
 	int dvfs;
@@ -398,25 +391,15 @@ void sdio_autok_wait_dvfs_ready(void)
 int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 {
 	int ret = 0;
-	int vcore, vcore_dvfs_work;
 	u8 *res;
 
-	vcore_dvfs_work = is_vcorefs_can_work();
-	if (vcore_dvfs_work == -1) {
-		vcore = 0;
-		pr_err("DVFS feature not enabled\n");
-	} else if (vcore_dvfs_work == 0) {
-		vcore = vcorefs_get_hw_opp();
-		pr_err("DVFS not ready\n");
-	} else if (vcore_dvfs_work == 1) {
-		vcore = vcorefs_get_hw_opp();
-		pr_err("DVFS ready\n");
-	} else {
-		vcore = 0;
-		pr_err("Invalid return value from is_vcorefs_can_work()\n");
-	}
-
-	res = host->autok_res[vcore];
+	/* For SD, HW_DVFS is always not feasible because:
+	 * 1. SD insertion can be performed at anytime
+	 * 2. Lock vcore at low vcore is not allowed after booting
+	 * Therefore, SD autok is performed on one vcore, current vcore.
+	 * We always store autok result at host->autok_res[0].
+	 */
+	res = host->autok_res[0];
 	if (host->mmc->ios.timing == MMC_TIMING_UHS_SDR104 ||
 	    host->mmc->ios.timing == MMC_TIMING_UHS_SDR50) {
 		if (host->is_autok_done == 0) {
@@ -449,29 +432,45 @@ void msdc_dvfs_reg_backup_init(struct msdc_host *host)
 	}
 }
 
+/* Table for usage of use_hw_dvfs and lock_vcore:
+ * use_hw_dvfs  lock_vcore  Usage
+ * ===========  ==========  ==========================================
+ *      1           X       Use HW_DVFS
+ *      0           0       Don't use HW_DVFS and
+ *                           1. Let CRC error.
+ *                           2. Autok window of all vcores can overlap properly
+ *      0           1       Don't use HW_DVFS and lock vcore
+ */
+
 int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 {
 	int ret = 0;
 	int vcore, vcore_dvfs_work;
 	u8 *res;
 
-	vcore_dvfs_work = is_vcorefs_can_work();
-	if (vcore_dvfs_work == -1) {
+	if (host->use_hw_dvfs == 0) {
 		vcore = 0;
-		pr_err("DVFS feature not enabled\n");
-	} else if (vcore_dvfs_work == 0) {
-		vcore = vcorefs_get_hw_opp();
-		pr_err("DVFS not ready\n");
-	} else if (vcore_dvfs_work == 1) {
-		vcore = vcorefs_get_hw_opp();
-		pr_err("DVFS ready\n");
 	} else {
-		vcore = 0;
-		pr_err("Invalid return value from is_vcorefs_can_work()\n");
+		vcore_dvfs_work = is_vcorefs_can_work();
+		if (vcore_dvfs_work == -1) {
+			vcore = 0;
+			pr_err("DVFS feature not enabled\n");
+		} else if (vcore_dvfs_work == 0) {
+			vcore = vcorefs_get_hw_opp();
+			pr_err("DVFS not ready\n");
+		} else if (vcore_dvfs_work == 1) {
+			vcore = vcorefs_get_hw_opp();
+			pr_err("DVFS ready\n");
+		} else {
+			vcore = 0;
+			pr_err("Invalid return value from is_vcorefs_can_work()\n");
+		}
+		if (vcore >= AUTOK_VCORE_NUM)
+			vcore = AUTOK_VCORE_NUM - 1;
 	}
 
-	res = host->autok_res[vcore];
 	pr_err("[AUTOK]emmc_execute_dvfs_autok %d\n", vcore);
+	res = host->autok_res[vcore];
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
 		#ifdef MSDC_HQA
 		msdc_HQA_set_voltage(host);
@@ -505,7 +504,6 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 		complete(&host->autok_done);
 	}
 
-	/* Enable this line if eMMC use HW DVFS */
 	if (host->use_hw_dvfs == 1)
 		msdc_set_hw_dvfs(vcore, host);
 	/* msdc_dump_register_core(host, NULL); */
@@ -536,16 +534,14 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		autok_init(host);
 
 		/* Check which vcore setting to apply */
-		if (((host->use_hw_dvfs == (u8)0xFF) && (host->lock_vcore == 0))
-		 || (host->use_hw_dvfs == 0)) {
-			vcore = AUTOK_VCORE_NUM - 1;
-		} else if ((host->use_hw_dvfs == (u8)0xFF)
-		 && (host->lock_vcore == 1)) {
-			/* FIXME */
-			vcore = AUTOK_VCORE_LEVEL0;
+		if (host->use_hw_dvfs == 0) {
+			if (host->lock_vcore == 0)
+				vcore = AUTOK_VCORE_NUM - 1;
+			else
+				vcore = AUTOK_VCORE_LEVEL0;
 		} else {
 			/* Force use_hw_dvfs as 1 to shut-up annoying
-			 * "maybe-uninitialized" error
+			   "maybe-uninitialized" error
 			 */
 			host->use_hw_dvfs = 1;
 			vcore = vcorefs_get_hw_opp();
@@ -553,14 +549,10 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
 
-		if (host->use_hw_dvfs == 0) {
-			pr_err("[AUTOK]Apply first tune para (vcore = %d) without HW DVFS\n", vcore);
-		} else if (host->use_hw_dvfs == 1) {
-			pr_err("[AUTOK]Apply first tune para (vcore = %d) with HW DVFS\n", vcore);
-
-			/* Use HW DVFS */
+		pr_err("[AUTOK]Apply first tune para (vcore = %d) %s HW DVFS\n",
+			vcore, (host->use_hw_dvfs ? "with" : "without"));
+		if (host->use_hw_dvfs == 1)
 			msdc_dvfs_reg_restore(host);
-		}
 
 		return;
 	}
@@ -589,24 +581,25 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		else
 			autok_execute(host, host->autok_res[i]);
 
-		/* FIX ME, check if it is necessary for Bianco */
-		msdc_set_hw_dvfs(i, host);
+		if (host->use_hw_dvfs == 1)
+			msdc_set_hw_dvfs(i, host);
 	}
 
 	if (autok_res_check(host->autok_res[AUTOK_VCORE_NUM - 1],
-			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
-		if (host->use_hw_dvfs == 1)
-			host->use_hw_dvfs = 0;
-		/* host->use_hw_dvfs will be 0 or 0xFF now */
-
+		host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
+		host->lock_vcore = 0;
+		host->use_hw_dvfs = 0;
 		pr_err("[AUTOK]No need change para when dvfs\n");
-	} else if (host->use_hw_dvfs != 0xFF) {
+	} else if (host->use_hw_dvfs == 0) {
+		host->lock_vcore = 1;
+		pr_err("[AUTOK]Need lock vcore for SDIO access\n");
+	} else {
+		/* host->use_hw_dvfs == 1 and
+		 * autok window of all vcores cannot overlap properly
+		 */
 		pr_err("[AUTOK]Need change para when dvfs\n");
 
 		msdc_dvfs_reg_backup(host);
-
-		/* Use HW DVFS */
-		host->use_hw_dvfs = 1;
 
 		/* Enable HW DVFS, but setting used now is at register offset <=0x104.
 		 * Setting at register offset >=0x300 will effect after SPM handshakes
@@ -614,10 +607,6 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		 */
 		MSDC_WRITE32(MSDC_CFG,
 			MSDC_READ32(MSDC_CFG) | (MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
-	} else {
-		/* host->use_hw_dvfs is 0xFF now */
-		/* Don't use HW DVFS since window cannot overlap */
-		host->lock_vcore = 1;
 	}
 
 	/* Un-request, return 0 pass */
@@ -625,8 +614,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
 
 	/* Tell DVFS can start now because AUTOK done */
-	host->dvfs_id = KIR_AUTOK_SDIO;
-	spm_msdc_dvfs_setting(host->dvfs_id, 1);
+	spm_msdc_dvfs_setting(KIR_AUTOK_SDIO, 1);
 
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
@@ -861,7 +849,7 @@ int emmc_autok(void)
 		return -1;
 	}
 
-	if (host->use_hw_dvfs == 0xFF)
+	if (host->use_hw_dvfs == 0)
 		return 0;
 
 	/* Wait completion of AUTOK triggered by eMMC initialization */
@@ -893,18 +881,15 @@ int emmc_autok(void)
 		/* Backup the register, restore when resume */
 		msdc_dvfs_reg_backup(host);
 
-		/* Use HW DVFS */
-		host->use_hw_dvfs = 1;
 		MSDC_WRITE32(MSDC_CFG,
 			MSDC_READ32(MSDC_CFG) | (MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
-		host->dvfs_id = KIR_AUTOK_EMMC;
 	}
 
 	/* Un-request, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPP_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
 
-	/* spm_msdc_dvfs_setting(host->dvfs_id, 1); */
+	/* spm_msdc_dvfs_setting(KIR_AUTOK_EMMC, 1); */
 
 	msdc_gate_clock(host, 1);
 
@@ -953,8 +938,8 @@ int sdio_autok(void)
 		return -1;
 	}
 
-	if (host->use_hw_dvfs == 0xFF) {
-		/* HW DVFS disabled by device tree */
+	if (host->use_hw_dvfs == 0) {
+		/* HW DVFS not support or disabled by device tree */
 		spm_msdc_dvfs_setting(KIR_AUTOK_SDIO, 1);
 		return 0;
 	}

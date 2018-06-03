@@ -38,8 +38,7 @@
 /**************************************************************/
 /* Section 2: Power                                           */
 /**************************************************************/
-#define SD_POWER_DEFAULT_ON     (0)
-
+#if !defined(FPGA_PLATFORM)
 #include <mt-plat/upmu_common.h>
 
 #define REG_VEMC_VOSEL_CAL      PMIC_RG_VEMC_VOCAL_ADDR
@@ -113,7 +112,9 @@
 #define VMCH_VOSEL_2V9          (0xa)
 #define VMCH_VOSEL_3V           (0xb)
 #define VMCH_VOSEL_3V3          (0xd)
+#endif
 
+#define SD_POWER_DEFAULT_ON     (0)
 #define EMMC_VOL_ACTUAL         VOL_3000
 #define SD_VOL_ACTUAL           VOL_3000
 
@@ -203,7 +204,7 @@
 #define MSDC2_GPIO_SMT_ADDR     (MSDC2_IO_PAD_BASE + 0x10)
 #define MSDC2_GPIO_TDSEL_ADDR   (MSDC2_IO_PAD_BASE + 0x20)
 #define MSDC2_GPIO_RDSEL_ADDR   (MSDC2_IO_PAD_BASE + 0x40)
-#define MSDC2_GPIO_DRV_ADDR     (MSDC2_IO_PAD_BASE + 0xA0) /* Default 1 : 4mA */
+#define MSDC2_GPIO_DRV_ADDR     (MSDC2_IO_PAD_BASE + 0xA0)
 #define MSDC2_GPIO_PUPD0_ADDR   (MSDC2_IO_PAD_BASE + 0xC0)
 #define MSDC2_GPIO_PUPD1_ADDR   (MSDC2_IO_PAD_BASE + 0xD0)
 
@@ -365,7 +366,7 @@
 #define MSDC2_RDSEL_CLK_MASK    (0x3F << 22)
 #define MSDC2_RDSEL_ALL_MASK    (0x3FFFF << 10)
 /* MSDC2 SR mask */
-/* Note: 10nm 1.8V IO does not have SR control */
+/* Note: 16nm 1.8V IO does not have SR control */
 /* MSDC2 DRV mask */
 #define MSDC2_DRV_DAT_MASK      (0x7 << 12)
 #define MSDC2_DRV_CMD_MASK      (0x7 << 16)
@@ -383,6 +384,16 @@
 
 #define MSDC_HW_TRAPPING_ADDR   (MSDC_GPIO_BASE + 0x6E0)
 #define MSDC_HW_TRAPPING_MASK   (0x3 << 25) /* 0: Aux2, other:Aux1 */
+
+/* FOR msdc_io_check() */
+#define MSDC1_PUPD_DAT0_ADDR    (MSDC1_IO_PAD_BASE + 0xC0)
+#define MSDC1_PUPD_DAT1_ADDR    (MSDC1_IO_PAD_BASE + 0xC0)
+#define MSDC1_PUPD_DAT2_ADDR    (MSDC1_IO_PAD_BASE + 0xC0)
+#define MSDC_PU_10K             1
+#define MSDC_PU_50K             2
+#define MSDC_PD_10K             5
+#define MSDC_PD_50K             6
+
 
 /**************************************************************/
 /* Section 5: Adjustable Driver Parameter                     */
