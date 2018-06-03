@@ -613,7 +613,7 @@ initcall_debug=1";
 	/* default: GPIO0, output, high */
 	irtx_gpio_led_default:irtx_gpio_led_def@gpio90 {
 		pins_cmd_dat {
-			/* pins = <PINMUX_GPIO90__FUNC_GPIO90>; */
+			pins = <PINMUX_GPIO90__FUNC_GPIO90>;
 			slew-rate = <1>;
 			bias-disable;
 			output-low;
@@ -623,7 +623,7 @@ initcall_debug=1";
 
 	irtx_gpio_led_set:irtx_gpio_led_set@gpio90 {
 		pins_cmd_dat {
-			/* pins = <PINMUX_GPIO90__FUNC_PWMA>; */
+			pins = <PINMUX_GPIO90__FUNC_PWM_A>;
 			slew-rate = <1>;
 			output-high;
 		};
