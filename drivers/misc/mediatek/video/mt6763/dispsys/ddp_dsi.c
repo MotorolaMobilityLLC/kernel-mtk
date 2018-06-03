@@ -2079,7 +2079,7 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, u
 	int d = 0;
 	unsigned long goto_addr, mask_para, set_para;
 	struct DSI_T0_INS t0;
-	struct DSI_T2_INS t2;
+	struct DSI_T2_INS t2 = { 0 };
 
 	if (module == DISP_MODULE_DSI0)
 		d = 0;
