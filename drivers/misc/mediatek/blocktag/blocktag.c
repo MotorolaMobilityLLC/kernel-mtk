@@ -195,7 +195,7 @@ void mtk_btag_pidlog_write_begin(struct page *p)
 	unsigned long flags;
 	unsigned long page_index;
 
-	if (!p)
+	if (!mtk_btag_pagelogger || !p)
 		return;
 
 	page_index = (unsigned long)(__page_to_pfn(p)) - PHYS_PFN_OFFSET;
@@ -857,8 +857,8 @@ static void mtk_btag_pidlogger_init(void)
 init:
 	if (mtk_btag_pagelogger)
 		memset(mtk_btag_pagelogger, -1, size);
-
-	pr_warn("[BLOCK_TAG] blockio: fail to allocate mtk_btag_pagelogger\n");
+	else
+		pr_info("[BLOCK_TAG] blockio: fail to allocate mtk_btag_pagelogger\n");
 }
 
 static int mtk_btag_seq_main_show(struct seq_file *seq, void *v)
