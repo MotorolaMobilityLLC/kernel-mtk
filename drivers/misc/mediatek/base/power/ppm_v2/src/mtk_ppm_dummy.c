@@ -105,3 +105,8 @@ void mt_set_ppm_state_registerCB(met_set_ppm_state_funcMET pCB)
 {
 }
 
+unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
+{
+	return 0;
+}
+
