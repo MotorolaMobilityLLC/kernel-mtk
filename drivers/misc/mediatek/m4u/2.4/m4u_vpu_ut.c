@@ -498,3 +498,46 @@ void test_dummy(void)
 		M4UMSG("%dth buf m4u_do_mva_alloc region [0x%x, 0x%x] success.\n",
 			0, gtest_mva_start[0], gtest_mva_end[0]);
 }
+
+void test_m4u_do_mva_alloc_stage3(void)
+{
+	int last_free_index_in_stage1, size0, size1, size2, nr;
+	m4u_buf_info_t *pinfo;
+	unsigned int result_mva0, result_mva1, result_mva2;
+
+	M4UMSG("start to test_m4u_do_mva_alloc_stage3\n");
+	pinfo = vmalloc(sizeof(m4u_buf_info_t));
+	pinfo->port = 0;
+	last_free_index_in_stage1 = get_last_free_graph_idx_in_stage1_region();
+	M4UMSG("cur_first_index = 0x%x\n", last_free_index_in_stage1);
+	if (last_free_index_in_stage1 < MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START)) {
+		nr = MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START) - 1 - last_free_index_in_stage1 + 1;
+		size0 = MVA_GRAPH_NR_TO_SIZE(nr);
+		/*stage 1*/
+		result_mva0 = m4u_do_mva_alloc(0, size0, pinfo);
+		M4UMSG("allocated all remained free blocks in stage 1, result_mva = 0x%x size = 0x%x\n",
+			result_mva0, size0);
+
+		nr = MVAGRAPH_INDEX(VPU_FIX_MVA_START) - 1
+			- MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_END);
+		size1 = MVA_GRAPH_NR_TO_SIZE(nr);
+		/*stage 2*/
+		result_mva1 = m4u_do_mva_alloc(0, size1, pinfo);
+		M4UMSG("allocated all remained free blocks in stage 2, result_mva = 0x%x size = 0x%x\n",
+			result_mva1, size1);
+		/*stage 3*/
+		size2 = 0x5000000;
+		result_mva2 = m4u_do_mva_alloc(0, size2, pinfo);
+		if (result_mva2 <= VPU_FIX_MVA_END)
+			M4UMSG("result_mva = 0x%x is not in stage 3, case failed!\n", result_mva2);
+		else
+			M4UMSG("result_mva = 0x%x is in stage 3, case succed!\n", result_mva2);
+		m4u_mvaGraph_dump();
+		m4u_do_mva_free(result_mva0, size0);
+		m4u_do_mva_free(result_mva1, size1);
+		m4u_do_mva_free(result_mva2, size2);
+		m4u_mvaGraph_dump();
+	} else
+		M4UMSG("after just boot, mva should not be allocated in stage 3!\n");
+	vfree(pinfo);
+}

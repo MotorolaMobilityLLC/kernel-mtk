@@ -734,6 +734,13 @@ static int m4u_debug_set(void *data, u64 val)
 		break;
 	}
 
+	case 35:
+	{
+		M4UMSG("start to test m4u 2.4\n");
+		test_m4u_do_mva_alloc_stage3();
+		break;
+	}
+
 #ifdef M4U_TEE_SERVICE_ENABLE
 	case 50:
 	{

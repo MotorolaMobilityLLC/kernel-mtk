@@ -33,4 +33,5 @@ extern void test_case_m4u_do_mva_alloc_fix(void);
 extern void test_case_m4u_do_mva_alloc_start_from(void);
 extern void test_case_m4u_do_mva_free(void);
 extern void test_dummy(void);
+extern void test_m4u_do_mva_alloc_stage3(void);
 #endif
