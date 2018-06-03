@@ -60,12 +60,12 @@ int PMIC_MD_INIT_SETTING_V1(void)
 	if ((pmic_reg & 0x200) == 0x200) {
 		/* VCTCXO on MT6176, OFF XO on MT6353, HW control, use srclken_0 */
 		ret = pmic_config_interface(0xA04, 0x0, 0x7, 11);
-		pr_err("[PMIC] VCTCXO on MT6176 , OFF XO on MT6353\n");
+		pr_info("[PMIC] VCTCXO on MT6176 , OFF XO on MT6353\n");
 	} else {
 		/*  HW control, use srclken_1, for LP */
 		ret = pmic_config_interface(0xA04, 0x1, 0x1, 4);
 		ret = pmic_config_interface(0xA04, 0x1, 0x7, 11);
-		pr_err("[PMIC] VCTCXO 0x7000=0x%x\n", pmic_reg);
+		pr_info("[PMIC] VCTCXO 0x7000=0x%x\n", pmic_reg);
 	}
 #endif
 
@@ -73,7 +73,7 @@ int PMIC_MD_INIT_SETTING_V1(void)
 	modem_temp_node = of_find_compatible_node(NULL, NULL, "mediatek,MODEM_TEMP_SHARE");
 
 	if (modem_temp_node == NULL) {
-		pr_err("PMIC get modem_temp_node failed\n");
+		pr_info("PMIC get modem_temp_node failed\n");
 		if (modem_temp_base)
 			iounmap(modem_temp_base);
 		modem_temp_base = 0;
@@ -85,27 +85,38 @@ int PMIC_MD_INIT_SETTING_V1(void)
 #if defined(CONFIG_MACH_MT6757)
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base, 0x033f);
-	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x\n", PMIC_DRV_Reg32(modem_temp_base));
+	pr_info("[PMIC] TEMP_SHARE_CTRL:0x%x\n", PMIC_DRV_Reg32(modem_temp_base));
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base + 0x04, 0x013f);
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base, 0x0);
-	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x _RATIO:0x%x\n", PMIC_DRV_Reg32(modem_temp_base),
+	pr_info("[PMIC] TEMP_SHARE_CTRL:0x%x _RATIO:0x%x\n", PMIC_DRV_Reg32(modem_temp_base),
 	       PMIC_DRV_Reg32(modem_temp_base + 0x04));
 #endif
 
 #if defined(CONFIG_MACH_MT6759)
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base, 0x033f);
-	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x\n", PMIC_DRV_Reg32(modem_temp_base));
+	pr_info("[PMIC] TEMP_SHARE_CTRL:0x%x\n", PMIC_DRV_Reg32(modem_temp_base));
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base + 0x04, 0x013f);
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base, 0x0);
-	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x _RATIO:0x%x\n", PMIC_DRV_Reg32(modem_temp_base),
+	pr_info("[PMIC] TEMP_SHARE_CTRL:0x%x _RATIO:0x%x\n", PMIC_DRV_Reg32(modem_temp_base),
 	       PMIC_DRV_Reg32(modem_temp_base + 0x04));
 #endif
 
+#if defined(CONFIG_MACH_MT6758)
+	/* modem temp */
+	PMIC_DRV_WriteReg32(modem_temp_base, 0x033f);
+	pr_info("[PMIC] TEMP_SHARE_CTRL:0x%x\n", PMIC_DRV_Reg32(modem_temp_base));
+	/* modem temp */
+	PMIC_DRV_WriteReg32(modem_temp_base + 0x04, 0x013f);
+	/* modem temp */
+	PMIC_DRV_WriteReg32(modem_temp_base, 0x0);
+	pr_info("[PMIC] TEMP_SHARE_CTRL:0x%x _RATIO:0x%x\n", PMIC_DRV_Reg32(modem_temp_base),
+	       PMIC_DRV_Reg32(modem_temp_base + 0x04));
+#endif
 #endif
 	return ret;
 }
