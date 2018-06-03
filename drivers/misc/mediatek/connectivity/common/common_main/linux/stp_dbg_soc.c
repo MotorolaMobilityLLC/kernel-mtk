@@ -186,8 +186,17 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			loop_cnt1++;
 			osal_sleep_ms(5);
 
-			if (loop_cnt1 > 10)
+			if (loop_cnt1 > 10) {
+				STP_DBG_INFO_FUNC("host sync num(%d),chip sync num(%d)\n",
+						wmt_plat_get_dump_info(p_ecsi->p_ecso->
+							emi_apmem_ctrl_host_sync_num),
+						wmt_plat_get_dump_info(p_ecsi->p_ecso->
+							emi_apmem_ctrl_chip_sync_num));
+				STP_DBG_INFO_FUNC("ctrl state(%d)\n",
+						wmt_plat_get_dump_info(p_ecsi->p_ecso->
+							emi_apmem_ctrl_state));
 				goto paged_dump_end;
+			}
 		}
 
 		wmt_plat_set_host_dump_state(STP_HOST_DUMP_GET);
@@ -269,8 +278,17 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 			loop_cnt2++;
 			osal_sleep_ms(10);
 
-			if (loop_cnt2 > 10)
+			if (loop_cnt2 > 10) {
+				STP_DBG_INFO_FUNC("host sync num(%d),chip sync num(%d)\n",
+						wmt_plat_get_dump_info(p_ecsi->p_ecso->
+							emi_apmem_ctrl_host_sync_num),
+						wmt_plat_get_dump_info(p_ecsi->p_ecso->
+							emi_apmem_ctrl_chip_sync_num));
+				STP_DBG_INFO_FUNC("ctrl state(%d)\n",
+						wmt_plat_get_dump_info(p_ecsi->p_ecso->
+							emi_apmem_ctrl_state));
 				goto paged_dump_end;
+			}
 		}
 
 paged_dump_end:
