@@ -32,6 +32,7 @@
 #include <mt-plat/mtk_ram_console.h>
 #endif
 #ifdef CONFIG_MTK_ACAO_SUPPORT
+#include <linux/tick.h>
 #include <mt-plat/mtk_gpt.h>
 #endif
 #include <ext_wd_drv.h>
@@ -346,6 +347,7 @@ void dump_wdk_bind_info(void)
 
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	mt_gpt_clkevt_aee_dump();
+	tick_broadcast_mtk_aee_dump();
 #endif
 }
 
