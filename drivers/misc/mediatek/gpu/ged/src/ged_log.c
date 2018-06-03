@@ -283,7 +283,7 @@ static int __ged_log_buf_write(GED_LOG_BUF *psGEDLogBuf, const char __user *pszB
 
 	buf[cnt] = 0;
 
-	__ged_log_buf_print(psGEDLogBuf, buf);
+	__ged_log_buf_print(psGEDLogBuf, "%s", buf);
 
 	return cnt;
 }

@@ -42,7 +42,7 @@ int ged_bridge_log_buf_write(
 		GED_BRIDGE_OUT_LOGBUFWRITE *psLogBufWriteOUT)
 {
 	psLogBufWriteOUT->eError = 
-		ged_log_buf_print2(psLogBufWriteIN->hLogBuf, psLogBufWriteIN->attrs, psLogBufWriteIN->acLogBuf);
+		ged_log_buf_print2(psLogBufWriteIN->hLogBuf, psLogBufWriteIN->attrs, "%s", psLogBufWriteIN->acLogBuf);
 	return 0;
 }
 //-----------------------------------------------------------------------------
