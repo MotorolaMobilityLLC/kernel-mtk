@@ -18,6 +18,8 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
 #include <linux/uaccess.h>
 #include <linux/atomic.h>
 #include <mtk_leds_drv.h>
@@ -64,6 +66,7 @@
 int aal_dbg_en;
 
 #define AAL_ERR(fmt, arg...) pr_err("[AAL] " fmt "\n", ##arg)
+#define AAL_NOTICE(fmt, arg...) pr_warn("[AAL] " fmt "\n", ##arg)
 #define AAL_DBG(fmt, arg...) \
 	do { if (aal_dbg_en) pr_debug("[AAL] " fmt "\n", ##arg); } while (0)
 
@@ -86,6 +89,47 @@ static volatile int g_aal_is_init_regs_valid;
 static volatile int g_aal_backlight_notified = 1023;
 static volatile int g_aal_initialed;
 static atomic_t g_aal_allowPartial = ATOMIC_INIT(0);
+static volatile int g_led_mode = MT65XX_LED_MODE_NONE;
+
+static int disp_aal_get_cust_led(void)
+{
+	struct device_node *led_node = NULL;
+	int ret = 0;
+	int led_mode;
+	int pwm_config[5] = { 0 };
+
+	led_node = of_find_compatible_node(NULL, NULL, "mediatek,lcd-backlight");
+	if (!led_node) {
+		ret = -1;
+		AAL_ERR("Cannot find LED node from dts\n");
+	} else {
+		ret = of_property_read_u32(led_node, "led_mode", &led_mode);
+		if (!ret)
+			g_led_mode = led_mode;
+		else
+			AAL_ERR("led dts can not get led mode data.\n");
+
+		ret = of_property_read_u32_array(led_node, "pwm_config", pwm_config,
+						       ARRAY_SIZE(pwm_config));
+	}
+
+	if (ret)
+		AAL_ERR("get pwm cust info fail");
+	AAL_DBG("mode=%u", g_led_mode);
+
+	return ret;
+}
+
+static void backlight_brightness_set_with_lock(int bl_1024)
+{
+	_primary_path_switch_dst_lock();
+	primary_display_manual_lock();
+
+	backlight_brightness_set(bl_1024);
+
+	primary_display_manual_unlock();
+	_primary_path_switch_dst_unlock();
+}
 
 static int disp_aal_exit_idle(const char *caller, int need_kick)
 {
@@ -113,6 +157,9 @@ static int disp_aal_init(enum DISP_MODULE_ENUM module, int width, int height, vo
 	/* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_AAL_CFG, 0x1 << 4, 0x1 << 4);
 #endif
+	/* get lcd-backlight mode from dts */
+	if (g_led_mode == MT65XX_LED_MODE_NONE)
+		disp_aal_get_cust_led();
 	g_aal_hist_available = 0;
 	g_aal_dirty_frame_retrieved = 1;
 
@@ -358,7 +405,11 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 
 	service_flags = 0;
 	if (bl_1024 == 0) {
-		backlight_brightness_set(0);
+		if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
+			backlight_brightness_set_with_lock(0);
+		else
+			backlight_brightness_set(0);
+
 		/* set backlight = 0 may be not from AAL, */
 		/* we have to let AALService can turn on backlight on phone resumption */
 		service_flags = AAL_SERVICE_FORCE_UPDATE;
@@ -367,8 +418,12 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 		disp_pwm_set_force_update_flag();
 	} else if (!g_aal_is_init_regs_valid) {
 		/* AAL Service is not running */
-		backlight_brightness_set(bl_1024);
+		if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
+			backlight_brightness_set_with_lock(bl_1024);
+		else
+			backlight_brightness_set(bl_1024);
 	}
+	AAL_NOTICE("led_mode=%d", g_led_mode);
 
 	spin_lock_irqsave(&g_aal_hist_lock, flags);
 	g_aal_hist.backlight = bl_1024;
