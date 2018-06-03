@@ -156,9 +156,6 @@ static void msdc_pre_crypto(struct mmc_host *mmc, struct mmc_request *mrq)
 	return;
 
 check_hw_crypto:
-	if (!mq_rq)
-		return;
-
 	dir = cmd->data->flags & MMC_DATA_READ ?
 		DMA_FROM_DEVICE : DMA_TO_DEVICE;
 
