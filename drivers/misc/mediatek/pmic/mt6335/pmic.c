@@ -538,10 +538,16 @@ unsigned int upmu_get_rgs_chrdet(void)
  * mt-pmic dev_attr APIs
  ******************************************************************************/
 unsigned int g_ret_type;
+unsigned int g_ret_gpu, g_ret_proc1, g_ret_proc2;
 static ssize_t show_pmic_regulator_prof(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	pr_err("[show_pmic_regulator_prof] 0x%x\n", g_ret_type);
-	return sprintf(buf, "%u\n", g_ret_type);
+	if (g_ret_type)
+		return sprintf(buf, "gpu:%d, proc1:%d, proc2:%d\n",
+						g_ret_gpu, g_ret_proc1, g_ret_proc2);
+	else
+		return sprintf(buf, "vsram_vgpu:%d, vsram_dvfs1:%d, vsram_dvfs2:%d\n",
+						g_ret_gpu, g_ret_proc1, g_ret_proc2);
 }
 
 static ssize_t store_pmic_regulator_prof(struct device *dev, struct device_attribute *attr, const char *buf,
@@ -550,6 +556,7 @@ static ssize_t store_pmic_regulator_prof(struct device *dev, struct device_attri
 	int ret = 0;
 	char *pvalue = NULL, *type;
 	unsigned int ret_type = 0;
+	unsigned int diff_us = 0;
 
 	pr_err("[store_pmic_regulator_prof]\n");
 	if (buf != NULL && size != 0) {
@@ -560,7 +567,22 @@ static ssize_t store_pmic_regulator_prof(struct device *dev, struct device_attri
 		ret = kstrtou32(type, 16, (unsigned int *)&ret_type);
 
 		pr_err("[pmic_regulator_profiling] = %d\n", ret_type);
-		pmic_regulator_profiling(ret_type);
+		g_ret_type = ret_type;
+		diff_us = pmic_regulator_profiling(ret_type);
+		pr_err("[pmic_regulator_profiling] diff_us = %d\n", diff_us);
+		g_ret_gpu = (diff_us & 0x7FF);
+		g_ret_proc1 = ((diff_us >>= 11)&0x7FF);
+		g_ret_proc2 = ((diff_us >>= 11)&0x3FF);
+
+		if (ret_type) {
+			pr_err("[pmic_regulator_profiling] gpu = %d\n", g_ret_gpu);
+			pr_err("[pmic_regulator_profiling] proc1 = %d\n", g_ret_proc1);
+			pr_err("[pmic_regulator_profiling] proc2 = %d\n", g_ret_proc2);
+		} else {
+			pr_err("[pmic_regulator_profiling] vsram_vgpu = %d\n", g_ret_gpu);
+			pr_err("[pmic_regulator_profiling] vsram_dvfs1 = %d\n", g_ret_proc1);
+			pr_err("[pmic_regulator_profiling] vsram_dvfs2 = %d\n", g_ret_proc2);
+		}
 	}
 
 	return size;
