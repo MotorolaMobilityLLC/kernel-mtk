@@ -167,7 +167,10 @@ static int get_mapping_table(enum DISP_HW_MAPPING_TB_TYPE tb_type, int param)
 	case DISP_HW_LARB_TB:
 		return larb_mapping_table[l_rule_info.layer_tb_idx];
 	case DISP_HW_LAYER_TB:
-		return layer_mapping_table[l_rule_info.layer_tb_idx][param];
+		if (param < MAX_PHY_OVL_CNT && param >= 0)
+			return layer_mapping_table[l_rule_info.layer_tb_idx][param];
+		else
+			return -1;
 	default:
 		return -1;
 	}
