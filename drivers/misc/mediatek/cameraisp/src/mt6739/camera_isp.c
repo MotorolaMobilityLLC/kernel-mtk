@@ -9338,14 +9338,15 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(signed int Irq, void *DeviceId)
 				for (k = 0; k < pstRTBuf->ring_buf[rt_dma].total_count; k++) {
 					if (pstRTBuf->ring_buf[rt_dma].data[k].bFilled == ISP_RTBC_BUF_FILLED) {
 
-					for (j = 0; j < ISP_IRQ_USER_MAX; j++)
+					for (j = 0; j < ISP_IRQ_USER_MAX; j++) {
 						IspInfo.IrqInfo.Status[j][ISP_IRQ_TYPE_INT_P1_ST] |=
 						ISP_IRQ_P1_STATUS_PASS1_DON_ST;
+					}
 
-						lost_pass1_done_cnt = 0;
-						IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
-							       "raw buf rdy but lost pass1 done, wakeup by sof!!");
-						break;
+					lost_pass1_done_cnt = 0;
+					IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
+					       "raw buf rdy but lost pass1 done, wakeup by sof!!");
+					break;
 					}
 				}
 			}
@@ -11325,18 +11326,18 @@ static signed int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 	/* at offset RT_BUF_TBL_NPAGES we map the kmalloc'd     area */
 	if (pVma->vm_pgoff == RT_BUF_TBL_NPAGES)
 		return mmap_kmem(pFile, pVma);
-		/*      */
-		pVma->vm_page_prot = pgprot_noncached(pVma->vm_page_prot);
-		LOG_DBG
-		("pVma->vm_pgoff(0x%lx),phy(0x%lx),pVmapVma->vm_start(0x%lx),pVma->vm_end(0x%lx),length(0x%lx)",
+	/*      */
+	pVma->vm_page_prot = pgprot_noncached(pVma->vm_page_prot);
+	LOG_DBG
+	("pVma->vm_pgoff(0x%lx),phy(0x%lx),pVmapVma->vm_start(0x%lx),pVma->vm_end(0x%lx),length(0x%lx)",
 		 pVma->vm_pgoff, pVma->vm_pgoff << PAGE_SHIFT, pVma->vm_start, pVma->vm_end,
 		 length);
-		pfn = pVma->vm_pgoff << PAGE_SHIFT;
-		switch (pfn) {
+	pfn = pVma->vm_pgoff << PAGE_SHIFT;
+	switch (pfn) {
 		case IMGSYS_BASE_ADDR:  /* imgsys */
 			if (length > ISP_REG_RANGE) {
 				LOG_PR_ERR("mmap range	error :	length(0x%lx),ISP_REG_RANGE(0x%x)!",
-					length, ISP_REG_RANGE);
+				length, ISP_REG_RANGE);
 				return -EAGAIN;
 			}
 			break;
@@ -11344,14 +11345,14 @@ static signed int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 			if (length > SENINF_REG_RANGE) {
 				LOG_PR_ERR
 				("mmap range	error :	length(0x%lx),SENINF_REG_RANGE(0x%x)!",
-				 length, SENINF_REG_RANGE);
+				length, SENINF_REG_RANGE);
 				return -EAGAIN;
 			}
 			break;
 		case PLL_BASE_ADDR:
 			if (length > PLL_RANGE) {
 				LOG_PR_ERR("mmap range	error :	length(0x%lx),PLL_RANGE(0x%x)!",
-					length, PLL_RANGE);
+				length, PLL_RANGE);
 				return -EAGAIN;
 			}
 			break;
@@ -11359,7 +11360,7 @@ static signed int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 			if (length > MIPIRX_CONFIG_RANGE) {
 				LOG_PR_ERR
 				("mmap range	error :	length(0x%lx),MIPIRX_CONFIG_RANGE(0x%x)!",
-				 length, MIPIRX_CONFIG_RANGE);
+				length, MIPIRX_CONFIG_RANGE);
 				return -EAGAIN;
 			}
 			break;
@@ -11374,7 +11375,7 @@ static signed int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 		case GPIO_BASE_ADDR:
 			if (length > GPIO_RANGE) {
 				LOG_PR_ERR("mmap range	error :	length(0x%lx),GPIO_RANGE(0x%x)!",
-					length, GPIO_RANGE);
+				length, GPIO_RANGE);
 				return -EAGAIN;
 			}
 			break;
@@ -11383,11 +11384,11 @@ static signed int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 			return -EAGAIN;
 		}
 
-		if (remap_pfn_range
-		    (pVma, pVma->vm_start, pVma->vm_pgoff, pVma->vm_end - pVma->vm_start,
-		     pVma->vm_page_prot)) {
-			return -EAGAIN;
-		}
+	if (remap_pfn_range
+	    (pVma, pVma->vm_start, pVma->vm_pgoff, pVma->vm_end - pVma->vm_start,
+	     pVma->vm_page_prot)) {
+		return -EAGAIN;
+	}
 
 	/*      */
 	return 0;
