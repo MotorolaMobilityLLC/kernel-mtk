@@ -1783,6 +1783,7 @@ int musb_gadget_setup(struct musb *musb)
 	if (is_otg_enabled(musb))
 		musb->g.is_otg = 1;
 
+	musb->g.quirk_ep_out_aligned_size = true;
 	musb_g_init_endpoints(musb);
 
 	musb->is_active = 0;
