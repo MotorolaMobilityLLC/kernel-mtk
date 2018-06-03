@@ -66,7 +66,7 @@ static spinlock_t   wrp_lock = __SPIN_LOCK_UNLOCKED(lock);
 
 static unsigned int pwrap_recv_data[4] = {0};
 static signed int pwrap_wacs2_ipi(unsigned int  adr, unsigned int rdata,
-					unsigned int flag);
+					  unsigned int flag);
 static int pwrap_ipi_register(void);
 #endif
 
@@ -151,7 +151,7 @@ signed int pwrap_init_preloader(void)
 #else /* #ifdef PMIC_WRAP_NO_PMIC */
 /*********************start ---internal API***********************************/
 static int _pwrap_timeout_ns(unsigned long long start_time_ns,
-				unsigned long long timeout_time_ns);
+				      unsigned long long timeout_time_ns);
 static unsigned long long _pwrap_get_current_time(void);
 static unsigned long long _pwrap_time2ns(unsigned long long time_us);
 static signed int _pwrap_reset_spislv(void);
@@ -161,9 +161,9 @@ static signed int _pwrap_init_reg_clock(unsigned int regck_sel);
 static void _pwrap_enable(void);
 static void _pwrap_starve_set(void);
 static signed int _pwrap_wacs2_nochk(unsigned int write, unsigned int adr,
-				unsigned int wdata, unsigned int *rdata);
+				      unsigned int wdata, unsigned int *rdata);
 static signed int pwrap_wacs2_hal(unsigned int write, unsigned int adr,
-				unsigned int wdata, unsigned int *rdata);
+				      unsigned int wdata, unsigned int *rdata);
 /*********************test API************************************************/
 static inline void pwrap_dump_ap_register(void);
 static unsigned int pwrap_write_test(void);
@@ -258,7 +258,7 @@ static unsigned long long _pwrap_get_current_time(void)
 	return 0;
 }
 static int _pwrap_timeout_ns(unsigned long long start_time_ns,
-					unsigned long long elapse_time)
+				      unsigned long long elapse_time)
 {
 	return 0;
 }
@@ -449,7 +449,7 @@ static inline unsigned int wait_for_state_ready(
  * Return :
  ******************************************************/
 static signed int pwrap_wacs2_hal(unsigned int write, unsigned int adr,
-				unsigned int wdata, unsigned int *rdata)
+				       unsigned int wdata, unsigned int *rdata)
 {
 	unsigned int reg_rdata = 0;
 	unsigned int wacs_write = 0;
@@ -488,7 +488,7 @@ static signed int pwrap_wacs2_hal(unsigned int write, unsigned int adr,
 			goto FAIL;
 		}
 		return_value =
-			wait_for_state_ready(wait_for_fsm_vldclr, TIMEOUT_READ,
+		    wait_for_state_ready(wait_for_fsm_vldclr, TIMEOUT_READ,
 					PMIC_WRAP_WACS2_RDATA, &reg_rdata);
 		if (return_value != 0) {
 			pr_err("fsm_vldclr fail, ret=%d\n", return_value);
@@ -595,14 +595,6 @@ static void __pwrap_spi_clk_set(void)
 	/* turn off clock */
 	WRAP_WR32(MODULE_SW_CG_2_SET, 0x00000100);
 
-	/* Select ULPOSC/16 Clock as SYS, TMR and SPI Clocks */
-	/* in SODI-3.0 and Suspend Modes */
-#if !defined(CONFIG_MTK_FPGA)
-	WRAP_WR32(CLK_CFG_7_CLR, 0x00000097);
-	WRAP_WR32(CLK_CFG_7_SET, 0x00000003);
-	WRAP_WR32(CLK_CFG_UPDATE, (0x1 << 28));
-#endif
-
 	/* Disable Clock Source Control By SPM */
 	pr_info("=====PMICW_CLOCK_CTRL===== (Write before): %x\n",
 		 WRAP_RD32(PMICW_CLOCK_CTRL));
@@ -650,9 +642,9 @@ static signed int _pwrap_init_dio(unsigned int dio_en)
 		 (GET_SYNC_IDLE2(rdata) != WACS_SYNC_IDLE));
 
 #ifndef DUAL_PMICS
-	WRAP_WR32(PMIC_WRAP_DIO_EN, 0x1);
+	WRAP_WR32(PMIC_WRAP_DIO_EN, dio_en);
 #else
-	WRAP_WR32(PMIC_WRAP_DIO_EN, 0x3);
+	WRAP_WR32(PMIC_WRAP_DIO_EN, 0x2 | dio_en);
 #endif
 
 	return 0;
@@ -678,7 +670,7 @@ static void _pwrap_InitStaUpd(void)
 	pwrap_write_nochk(EXT_DEW_CRC_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_CRC_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_SIG_ADR, (PMIC_EXT_DEW_CRC_VAL_ADDR << 16 |
-					PMIC_DEW_CRC_VAL_ADDR));
+				      PMIC_DEW_CRC_VAL_ADDR));
 #endif
 #else
 	/* Signature */
@@ -689,7 +681,7 @@ static void _pwrap_InitStaUpd(void)
 #else
 	WRAP_WR32(PMIC_WRAP_SIG_MODE, 0x3);
 	WRAP_WR32(PMIC_WRAP_SIG_ADR, (PMIC_EXT_DEW_CRC_VAL_ADDR << 16) |
-					PMIC_DEW_CRC_VAL_ADDR);
+				      PMIC_DEW_CRC_VAL_ADDR);
 	WRAP_WR32(PMIC_WRAP_SIG_VALUE, (0x83 << 16) | 0x83);
 #endif
 #endif /* end of crc */
@@ -849,8 +841,9 @@ static void _pwrap_enable(void)
 	WRAP_WR32(PMIC_WRAP_WDT_SRC_EN_0, 0xffffffff);
 	WRAP_WR32(PMIC_WRAP_WDT_SRC_EN_1, 0xffffffff);
 	WRAP_WR32(PMIC_WRAP_TIMER_CTRL, 0x3);
-	WRAP_WR32(PMIC_WRAP_INT0_EN, 0xffffffff);
-	WRAP_WR32(PMIC_WRAP_INT1_EN, 0xffffffff);
+	WRAP_WR32(PMIC_WRAP_INT0_EN, 0x00000007);
+	/* disable Matching interrupt for bit 13 */
+	WRAP_WR32(PMIC_WRAP_INT1_EN, 0xffffd800);
 }
 
 /************************************************
@@ -862,18 +855,14 @@ static void _pwrap_enable(void)
 static signed int _pwrap_init_sistrobe(int dual_si_sample_settings)
 {
 	unsigned int rdata;
-	int si_en_sel, si_ck_sel, si_dly, si_sample_ctrl;
-	int clk_edge_no, reserved = 0;
-	char result_faulty = 0;
-	char found;
+	int si_en_sel, si_ck_sel, si_dly, si_sample_ctrl, clk_edge_no, i;
+	int found, result_faulty = 0;
 	int test_data[30] = {0x6996, 0x9669, 0x6996, 0x9669, 0x6996, 0x9669,
 			     0x6996, 0x9669, 0x6996, 0x9669, 0x5AA5, 0xA55A,
 			     0x5AA5, 0xA55A, 0x5AA5, 0xA55A, 0x5AA5, 0xA55A,
 			     0x5AA5, 0xA55A, 0x1B27, 0x1B27, 0x1B27, 0x1B27,
 			     0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27
 			    };
-	int i;
-	int error = 0;
 
 	/* TINFO = "[InitSiStrobe] SI Strobe Calibration For PMIC 0" */
 	/* TINFO = "[InitSiStrobe] Scan For First Valid Sampling Clock Edge" */
@@ -914,7 +903,7 @@ static signed int _pwrap_init_sistrobe(int dual_si_sample_settings)
 	for (si_dly = 0; si_dly < 10; si_dly++) {
 		pwrap_write_nochk(PMIC_RG_SPI_DLY_SEL_ADDR, si_dly);
 
-		error = 0;
+		found = 0;
 #ifndef SPEED_UP_PWRAP_INIT
 		for (i = 0; i < 30; i++)
 #else
@@ -928,16 +917,13 @@ static signed int _pwrap_init_sistrobe(int dual_si_sample_settings)
 				pr_notice("[InitSiStrobe] ");
 				pr_notice("Data Boundary Is Found !!!\n");
 				pr_notice("si_dly = %x\n", si_dly);
-				pr_notice("reserved = %x\n", reserved);
 				pr_notice("rdata = %x\n", rdata);
-				error = 1;
+				found = 1;
 				break;
 			}
 		}
-		if (error == 1)
+		if (found == 1)
 			break;
-		pr_notice("si_dly = %x, *PMIC_WRAP_RESERVED = %x, rdata = %x\n",
-				 si_dly, reserved, rdata);
 		pr_notice("si_dly = %x, *RG_SPI_CON2 = %x, rdata = %x\n",
 				 si_dly, si_dly, rdata);
 	}
@@ -952,9 +938,7 @@ static signed int _pwrap_init_sistrobe(int dual_si_sample_settings)
 		si_dly--;
 	}
 	pr_info("SI Strobe Calibration For PMIC 0 Done, (%x, %x)\n",
-		  si_sample_ctrl, reserved);
-	pr_info("SI Strobe Calibration For PMIC 0 Done, (%x, %x)\n",
-		  si_sample_ctrl, si_dly);
+		 si_sample_ctrl, si_dly);
 
 #if PMIC_WRAP_ULPOSC_CAL
 	/* SI Strobe Calibration For ULPOSC Clock */
@@ -962,7 +946,7 @@ static signed int _pwrap_init_sistrobe(int dual_si_sample_settings)
 	si_en_sel = (WRAP_RD32(PMIC_WRAP_SI_SAMPLE_CTRL) << 23) >> 29;
 	si_ck_sel = (WRAP_RD32(PMIC_WRAP_SI_SAMPLE_CTRL) << 26) >> 31;
 	clk_edge_no = (((si_en_sel * 2 + si_ck_sel) * 100) *
-			CLK_26M_PRD / CLK_ULPOSC_PRD + 50) / 100;
+		      CLK_26M_PRD / CLK_ULPOSC_PRD + 50) / 100;
 	/* TINFO = "[InitSiStrobe] Sampling Clock Edge Is Chosen" */
 	si_en_sel = clk_edge_no / 2;
 	si_ck_sel = clk_edge_no % 2;
@@ -1155,7 +1139,7 @@ static unsigned int pwrap_write_test(void)
 	/* Write test using WACS2 */
 	pr_info("start pwrap_write\n");
 	sub_return = pwrap_wacs2_write(PMIC_DEW_WRITE_TEST_ADDR,
-					DEFAULT_VALUE_READ_TEST);
+				       DEFAULT_VALUE_READ_TEST);
 	pr_info("after pwrap_write\n");
 	sub_return1 = pwrap_wacs2_read(PMIC_DEW_WRITE_TEST_ADDR, &rdata);
 	if ((rdata != DEFAULT_VALUE_READ_TEST) ||
@@ -1171,6 +1155,8 @@ static unsigned int pwrap_write_test(void)
 }
 static void pwrap_ut(unsigned int ut_test)
 {
+	unsigned int sub_return = 0;
+
 	switch (ut_test) {
 	case 1:
 		pwrap_write_test();
@@ -1184,6 +1170,14 @@ static void pwrap_ut(unsigned int ut_test)
 				(WRITE_CMD | WRITE_PMIC_WRAP));
 		break;
 #endif
+	case 4:
+		sub_return =
+			pwrap_write_nochk(PMIC_DEW_WRITE_TEST_ADDR, 0x1234);
+		sub_return =
+			pwrap_write_nochk(PMIC_DEW_WRITE_TEST_ADDR, 0x4321);
+		sub_return =
+			pwrap_write_nochk(PMIC_DEW_WRITE_TEST_ADDR, 0xF0F0);
+		break;
 	default:
 		pr_info("default test.\n");
 		break;
@@ -1195,6 +1189,7 @@ signed int pwrap_init(void)
 	signed int sub_return = 0;
 
 	pr_notice(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__);
+
 #ifdef CONFIG_OF
 	sub_return = pwrap_of_iomap();
 	if (sub_return)
@@ -1204,12 +1199,12 @@ signed int pwrap_init(void)
 	pr_info("pwrap_init start!!!!!!!!!!!!!\n");
 
 	/* Set SoC SPI IO Driving Strength to 4 mA */
-	WRAP_WR32(IOCFG_LM_DRV_CFG1_CLR, 0x3f);
-	WRAP_WR32(IOCFG_LM_DRV_CFG1_SET, 0x9);
+	WRAP_WR32(IOCFG_LM_DRV_CFG1_CLR, 0x7 | (0x7 << 3));
+	WRAP_WR32(IOCFG_LM_DRV_CFG1_SET, 0x1 | (0x1 << 3));
 
-	/* Set SPI MI IO to Pull Down */
-	WRAP_WR32(IOCFG_LM_PU_CFG0_CLR, (0x1 << 12));
-	WRAP_WR32(IOCFG_LM_PD_CFG0_SET, (0x1 << 12));
+	/* Set SPI MO and MI IOs to Pull Down */
+	WRAP_WR32(IOCFG_LM_PU_CFG0_CLR, (0x1 << 12) | (0x1 << 13));
+	WRAP_WR32(IOCFG_LM_PD_CFG0_SET, (0x1 << 12) | (0x1 << 13));
 
 	__pwrap_spi_clk_set();
 
@@ -1352,25 +1347,27 @@ static inline void pwrap_dump_ap_register(void)
 	pr_notice("dump reg\n");
 	if (__ratelimit(&ratelimit)) {
 		for (i = 0; i <= PMIC_WRAP_REG_RANGE; i++) {
+#if (PMIC_WRAP_KERNEL) || (PMIC_WRAP_CTP)
 			reg_addr = (unsigned int *) (PMIC_WRAP_BASE + i * 4);
-#if (PMIC_WRAP_KERNEL)
 			reg_value = WRAP_RD32(((unsigned int *)
 					      (PMIC_WRAP_BASE + i * 4)));
 			pr_notice("addr:0x%p = 0x%x\n", reg_addr, reg_value);
 #else
+			reg_addr = (PMIC_WRAP_BASE + i * 4);
 			reg_value = WRAP_RD32(reg_addr);
 			pr_notice("addr:0x%x = 0x%x\n", reg_addr, reg_value);
 #endif
 		}
 	}
+
 	for (i = 0; i <= 14; i++) {
 		offset = 0xc00 + i * 4;
-		reg_addr = (PMIC_WRAP_BASE + offset);
-#if (PMIC_WRAP_KERNEL)
-		reg_value = WRAP_RD32(((unsigned int *)
-					(PMIC_WRAP_BASE + offset)));
+#if (PMIC_WRAP_KERNEL) || (PMIC_WRAP_CTP)
+		reg_addr = (unsigned int *) (PMIC_WRAP_BASE + offset);
+		reg_value = WRAP_RD32(reg_addr);
 		pr_notice("addr:0x%p = 0x%x\n", reg_addr, reg_value);
 #else
+		reg_addr = (PMIC_WRAP_BASE + offset);
 		reg_value = WRAP_RD32(reg_addr);
 		pr_notice("addr:0x%x = 0x%x\n", reg_addr, reg_value);
 #endif
@@ -1447,15 +1444,26 @@ static void pwrap_logging_at_isr(void)
 	pr_info("WDATA_SEQ_5=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_5));
 	pr_info("WDATA_SEQ_6=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_6));
 	pr_info("WDATA_SEQ_7=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_7));
+
 	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x8); /* clear log */
-	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x2); /* reenable */
+
+#ifdef PMIC_WRAP_MATCH_SUPPORT
+	/* Matching mode and Stop recording after interrupt trigger */
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x5); /* reenable */
+#else
+	/* Matching mode and Continue recording after interrupt trigger */
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x1); /* reenable */
+#endif
+
 	for (i = 0; i <= 14; i++) {
 		offset = 0xc00 + i * 4;
-		reg_addr = (PMIC_WRAP_BASE + offset);
-#if (PMIC_WRAP_KERNEL)
-		val = WRAP_RD32(((unsigned int *) (PMIC_WRAP_BASE + offset)));
+
+#if (PMIC_WRAP_KERNEL) || (PMIC_WRAP_CTP)
+		reg_addr = (unsigned int *) (PMIC_WRAP_BASE + offset);
+		val = WRAP_RD32(reg_addr);
 		pr_info("addr:0x%p = 0x%x\n", reg_addr, val);
 #else
+		reg_addr = (PMIC_WRAP_BASE + offset);
 		val = WRAP_RD32(reg_addr);
 		pr_info("addr:0x%x = 0x%x\n", reg_addr, val);
 #endif
@@ -1636,7 +1644,7 @@ static int pwrap_ipi_register(void)
 }
 #endif
 
-/*Interrupt handler function*/
+/* Interrupt handler function */
 static int g_wrap_wdt_irq_count;
 static int g_case_flag;
 static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
@@ -1648,7 +1656,8 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 	int1_flg = WRAP_RD32(PMIC_WRAP_INT1_FLG);
 
 	if ((int0_flg & 0xffffffff) != 0) {
-		pr_notice("[PWRAP]INT0 error:0x%x\n", int0_flg);
+		pr_notice("[PWRAP] INT0 error = 0x%x\n", int0_flg);
+		pwrap_dump_all_register();
 		WRAP_WR32(PMIC_WRAP_INT0_CLR, 0xffffffff);
 #if 0
 		/* trigger MD ASSERT when CRC fail*/
@@ -1660,7 +1669,7 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 	}
 
 	if ((int1_flg & 0xffffffff) != 0) {
-		pr_notice("[PWRAP]INT1 error:0x%x\n", int1_flg);
+		pr_notice("[PWRAP] INT1 error = 0x%x\n", int1_flg);
 		pwrap_dump_all_register();
 		WRAP_WR32(PMIC_WRAP_INT1_CLR, 0xffffffff);
 	}
@@ -1668,10 +1677,10 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 	if ((int0_flg & 0x01) == 0x01) {
 		g_wrap_wdt_irq_count++;
 		g_case_flag = 0;
-		pr_notice("g_wrap_wdt_irq_count=%d\n", g_wrap_wdt_irq_count);
+		pr_notice("g_wrap_wdt_irq_count = %d\n", g_wrap_wdt_irq_count);
 
 	} else if ((int0_flg & 0x02) == 0x02) {
-		snprintf(str, 50, "PWRAP CRC=0x%x",
+		snprintf(str, 50, "[PWRAP] CRC = 0x%x",
 			WRAP_RD32(PMIC_WRAP_SIG_ERRVAL));
 		aee_kernel_warning(str, str);
 		pwrap_logging_at_isr();
@@ -1698,6 +1707,7 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 		WARN_ON(1);
 
 	return IRQ_HANDLED;
+
 }
 
 static void pwrap_int_test(void)
@@ -1832,7 +1842,7 @@ static int __init pwrap_hal_init(void)
 /******************************************************************************/
 /* extern API for PMIC driver, INT related control (for PMIC chip to AP) */
 /******************************************************************************/
-#endif/*PMIC_WRAP_NO_PMIC*/
+#endif /* PMIC_WRAP_NO_PMIC */
 unsigned int mt_pmic_wrap_eint_status(void)
 {
 	return WRAP_RD32(PMIC_WRAP_EINT_STA);
