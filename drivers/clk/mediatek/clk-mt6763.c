@@ -501,7 +501,7 @@ static const char * const disppwm_parents[] __initconst = {
 	"clk26m",
 	"univpll2_d4",
 	"osc_d4",
-	"osc_d8"
+	"osc_d16"
 };
 
 static const char * const ssusb_top_sys_parents[] __initconst = {
@@ -821,7 +821,6 @@ static void mtk_cg_clr_bit(struct clk_hw *hw)
 
 	regmap_update_bits(cg->regmap, cg->sta_ofs, BIT(cg->bit), 0);
 #endif
-	return;
 }
 #endif
 static int mtk_cg_enable(struct clk_hw *hw)
@@ -1470,10 +1469,10 @@ static const struct mtk_pll_data plls[] = {
 
 	PLL(APMIXED_TVDPLL, "tvdpll", 0x0260, 0x026C, 0x00000001, 0,
 		22, 0x0264, 24, 0x0, 0x0264, 0),
-#if 0
+
 	PLL(APMIXED_MMPLL, "mmpll", 0x0270, 0x027C, 0x00000001, 0,
 		22, 0x0274, 24, 0x0, 0x0274, 0),
-#endif
+
 	PLL(APMIXED_APLL1, "apll1", 0x02A0, 0x02B0, 0x00000001, 0,
 		32, 0x02A0, 1, 0x0, 0x02A4, 0),
 
