@@ -56,5 +56,7 @@ imgsensor_sensor_control(
 	struct IMGSENSOR_SENSOR *psensor,
 	MSDK_SCENARIO_ID_ENUM ScenarioId);
 
+extern unsigned int mt_get_ckgen_freq(int ID);
+
 #endif
 

@@ -1888,7 +1888,6 @@ static long imgsensor_compat_ioctl(struct file *filp, unsigned int cmd, unsigned
 /*******************************************************************************
 * imgsensor_ioctl
 ********************************************************************************/
-extern unsigned int mt_get_ckgen_freq(int ID);
 static long imgsensor_ioctl(
     struct file *a_pstFile,
     unsigned int a_u4Command,
@@ -1953,10 +1952,11 @@ static long imgsensor_ioctl(
 		break;
 
 	case KDIMGSENSORIOC_X_GET_CSI_CLK:
-		*(unsigned int *)pBuff = mt_get_ckgen_freq(*(unsigned int *)pBuff);
-		PK_DBG("f_fcamtg_ck = %d\n", mt_get_ckgen_freq(11));
-		PK_DBG("hf_fcam_ck = %d\n", mt_get_ckgen_freq(38));
-		PK_DBG("f_fseninf_ck = %d\n", mt_get_ckgen_freq(56));
+		*(unsigned int *) pBuff = mt_get_ckgen_freq(*(unsigned int *) pBuff);
+		PK_DBG("f_fcamtg_ck = %d\n", mt_get_ckgen_freq(8));
+		PK_DBG("f_fcamtg2_ck = %d\n", mt_get_ckgen_freq(41));
+		PK_DBG("f_fcam_ck = %d\n", mt_get_ckgen_freq(5));
+		PK_DBG("f_fseninf_ck = %d\n", mt_get_ckgen_freq(35));
 		break;
 
 	case KDIMGSENSORIOC_T_OPEN:
