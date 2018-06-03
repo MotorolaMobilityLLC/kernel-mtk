@@ -2090,16 +2090,16 @@ static int _DC_switch_to_DL_fast(int block)
 
 	/* copy ovl config from DC handle to DL handle */;
 	memcpy(data_config_dl->ovl_config, data_config_dc->ovl_config, sizeof(data_config_dl->ovl_config));
-	/*before power off, we should wait wdma0_eof first!!!*/
-	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
-	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
-	/* wait and get_mutex in the last frame configs */
-	dpmgr_path_deinit(pgc->ovl2mem_path_handle, (unsigned long)(pgc->cmdq_handle_ovl1to2_config));
 #if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
 		defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	/*[SVP]switch ddp mosule to nonsec when deinit the extension path*/
 	switch_module_to_nonsec(pgc->ovl2mem_path_handle, NULL, DISP_MODULE_WDMA0, __func__);
 #endif
+	/*before power off, we should wait wdma0_eof first!!!*/
+	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
+	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
+	/* wait and get_mutex in the last frame configs */
+	dpmgr_path_deinit(pgc->ovl2mem_path_handle, (unsigned long)(pgc->cmdq_handle_ovl1to2_config));
 	dpmgr_destroy_path(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
 	/* clear sof token for next dl to dc */
 	cmdqRecClearEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_SOF);
