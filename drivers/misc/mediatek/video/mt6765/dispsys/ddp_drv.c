@@ -156,6 +156,19 @@ int disp_get_ovl_bandwidth(unsigned long long in_fps,
 				* OCCUPIED_BW_RATIO;
 
 		do_div(*bandwidth, 1000 * 1000);
+
+		if (is_dc)
+			DISPDBG(
+				"%s ovl0:%d, ovl0_2l:%d, wdma0:%d, rdma0:%d, in_fps:%llu, out_fps:%llu, bw:%llu\n",
+				__func__,
+				ovl0_bw, ovl0_2l_bw, wdma0_bw, rdma0_bw,
+				in_fps, out_fps, *bandwidth);
+		else
+			DISPDBG(
+				"%s ovl0:%d, ovl0_2l:%d, out_fps:%llu, bw:%llu\n",
+				__func__,
+				ovl0_bw, ovl0_2l_bw,
+				out_fps, *bandwidth);
 	}
 
 	return ret;
@@ -179,6 +192,10 @@ int disp_get_rdma_bandwidth(unsigned long long out_fps,
 			out_fps * OCCUPIED_BW_RATIO;
 
 		do_div(*bandwidth, 1000 * 1000);
+
+	DISPDBG(
+		"%s rdma0:%d, out_fps:%llu, bw:%llu\n",
+		__func__, rdma0_bw, out_fps, *bandwidth);
 	}
 
 	return ret;
