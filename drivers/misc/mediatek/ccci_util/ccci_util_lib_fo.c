@@ -1797,9 +1797,11 @@ int check_md_type(int data)
 	unsigned int val = (unsigned int)data;
 	int i;
 
+	/* check ap view md type */
+	if (val >= LEGACY_UBIN_START_ID && val <= LEGACY_UBIN_END_ID)
+		return val;
 	/* check md view md type */
 	if ((val >> 8) == (MD_CAP_ENHANCE >> 8)) {
-		if ((val & MD_CAP_ENHANCE) == MD_CAP_ENHANCE) {
 			val &= MD_CAP_MASK;
 			val = compatible_convert(val);
 			for (i = 0;
@@ -1808,13 +1810,8 @@ int check_md_type(int data)
 				if (val == legacy_ubin_rat_map[i])
 					return LEGACY_UBIN_START_ID + i;
 			}
-		}
 	}
-	/* check ap view md type */
-	if (val >= LEGACY_UBIN_START_ID && val <= LEGACY_UBIN_END_ID)
-		return val;
-	else
-		return 0;
+	return 0;
 }
 
 int get_legacy_md_type(int md_id)
