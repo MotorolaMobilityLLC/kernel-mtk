@@ -103,12 +103,6 @@
 #define WAKE_MISC_PCM_TIMER	(1U << 23)
 #define WAKE_MISC_CPU_WAKE	(1U << 24)
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#if defined(CONFIG_MACH_MT6799)
-#define SPM_VCORE_EN_MT6799
-#endif
-#endif
-
 struct pcm_desc {
 	const char *version;	/* PCM code version */
 	const u32 *base;	/* binary array base */
