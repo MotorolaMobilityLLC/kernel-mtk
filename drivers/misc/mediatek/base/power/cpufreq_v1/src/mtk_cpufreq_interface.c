@@ -220,16 +220,10 @@ static ssize_t cpufreq_oppidx_proc_write(struct file *file, const char __user *b
 static int cpufreq_freq_proc_show(struct seq_file *m, void *v)
 {
 	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)m->private;
-
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	seq_printf(m, "%d KHz\n",
-		mt_cpufreq_get_cur_freq(p->cpu_id/4));
-#else
 	struct pll_ctrl_t *pll_p = id_to_pll_ctrl(p->Pll_id);
 
 	seq_printf(m, "%d KHz\n",
 		pll_p->pll_ops->get_cur_freq(pll_p));
-#endif
 
 	return 0;
 }
@@ -290,21 +284,15 @@ end:
 static int cpufreq_volt_proc_show(struct seq_file *m, void *v)
 {
 	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)m->private;
-
-#ifndef CONFIG_HYBRID_CPU_DVFS
 	struct buck_ctrl_t *vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
 	struct buck_ctrl_t *vsram_p = id_to_buck_ctrl(p->Vsram_buck_id);
 	unsigned long flags;
-#endif
 
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	seq_printf(m, "Vproc: %d mv\n", cpuhvfs_get_cur_volt(p->cpu_id/4) / 100);	/* mv */
-#else
 	cpufreq_lock(flags);
 	seq_printf(m, "Vproc: %d mv\n", vproc_p->buck_ops->get_cur_volt(vproc_p) / 100);	/* mv */
 	seq_printf(m, "Vsram: %d mv\n", vsram_p->buck_ops->get_cur_volt(vsram_p) / 100);	/* mv */
 	cpufreq_unlock(flags);
-#endif
+
 	return 0;
 }
 

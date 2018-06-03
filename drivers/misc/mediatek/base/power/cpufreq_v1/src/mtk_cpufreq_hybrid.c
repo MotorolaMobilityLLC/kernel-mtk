@@ -542,7 +542,7 @@ int cpuhvfs_get_volt(int buck_id)
 
 	return ret;
 #else
-	return 0;
+	return csram_read(OFFS_CUR_VPROC_S + (buck_id * 4));
 #endif
 }
 
