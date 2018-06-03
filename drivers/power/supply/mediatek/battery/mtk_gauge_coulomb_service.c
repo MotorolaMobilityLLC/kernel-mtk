@@ -10,12 +10,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+#ifndef _DEA_MODIFY_
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_battery.h>
 #include <linux/list.h>
 #include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/kthread.h>
+#endif
 
 #include "mtk_gauge_class.h"
 #include <mtk_battery_internal.h>

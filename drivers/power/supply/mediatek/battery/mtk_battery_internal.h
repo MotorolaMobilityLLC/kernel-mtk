@@ -14,9 +14,15 @@
 #ifndef __MTK_BATTERY_INTF_H__
 #define __MTK_BATTERY_INTF_H__
 
+#ifndef _DEA_MODIFY_
 #include <linux/power_supply.h>
-#include <mtk_gauge_time_service.h>
 #include <pmic_lbat_service.h>
+#else
+#include "module_hrtimer.h"
+#include "mtk_battery.h"
+#endif
+
+#include <mtk_gauge_time_service.h>
 #include <mtk_gauge_class.h>
 
 
@@ -628,7 +634,7 @@ struct mtk_battery {
 	struct notifier_block bat_nb;
 
 /* ptim */
-	int ptim_vol;
+	unsigned int ptim_vol;
 	int ptim_curr;
 
 /* proc */
@@ -665,7 +671,7 @@ struct mtk_battery {
 	signed int ptim_lk_i;
 	int pl_bat_vol;
 	int pl_shutdown_time;
-	u32 pl_two_sec_reboot;
+	int pl_two_sec_reboot;
 	int plug_miss_count;
 
 	struct gtimer tracking_timer;

@@ -16,6 +16,11 @@
 
 #include "mtk_battery.h"
 
+#ifndef _DEA_MODIFY_
+#else
+#include "mtk_battery_internal.h"
+#endif
+
 /* ============================================================
  * define
  * ============================================================

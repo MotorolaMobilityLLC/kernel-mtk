@@ -30,21 +30,24 @@
  * Timo Liao
  *
  ****************************************************************************/
-
+#ifndef _DEA_MODIFY_
 #include <linux/module.h>
 #include <linux/stat.h>
 #include <linux/init.h>
 #include <linux/ctype.h>
 #include <linux/err.h>
 #include <linux/slab.h>
+#include <linux/proc_fs.h>
+#include <linux/reboot.h>
 #include <mach/mtk_pmic.h>
 #include <mt-plat/mtk_battery.h>
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_rtc_hal_common.h>
 #include <mt-plat/mtk_rtc.h>
-#include <linux/proc_fs.h>
+#else
+#include <string.h>
+#endif
 
-#include <linux/reboot.h>
 #include <mtk_gauge_class.h>
 #include "mtk_battery_internal.h"
 #include "mtk_battery_recovery.h"
@@ -307,7 +310,6 @@ void fg_update_fg_bat_tmp_threshold_c(void)
 void fg_set_int1(void)
 {
 	int car_now = get_fg_hw_car();
-	int ret;
 
 	fg_update_quse(1);
 
@@ -335,9 +337,9 @@ void fg_set_int1(void)
 	set_fg_vbat2_l_th(fg_vbat2_lt);
 	enable_fg_vbat2_l_int(true);
 
-	ret = set_kernel_soc(soc);
-	ret = set_kernel_uisoc(ui_soc);
-	ret = set_kernel_init_vbat(get_ptim_vbat());
+	set_kernel_soc(soc);
+	set_kernel_uisoc(ui_soc);
+	set_kernel_init_vbat(get_ptim_vbat());
 
 	set_rtc_ui_soc((ui_soc+50) / 100);
 
@@ -565,9 +567,9 @@ void fg_error_calibration2(int intr_no)
 }
 
 
-void fg_int_end_flow(intr_no)
+void fg_int_end_flow(unsigned int intr_no)
 {
-	int ret, curr_temp, vbat;
+	int curr_temp, vbat;
 	char intr_name[32];
 
 	switch (intr_no) {
@@ -682,12 +684,12 @@ void fg_int_end_flow(intr_no)
 	}
 
 	car = get_fg_hw_car();
-	ret = get_hw_info(intr_no);
+	get_hw_info(intr_no);
 	vbat = get_vbat();
 	curr_temp = force_get_tbat(true);
 
-	ret = set_kernel_soc(soc);
-	ret = set_kernel_uisoc(ui_soc);
+	set_kernel_soc(soc);
+	set_kernel_uisoc(ui_soc);
 	set_rtc_ui_soc((ui_soc+50) / 100);
 
 	if (soc <= 100)

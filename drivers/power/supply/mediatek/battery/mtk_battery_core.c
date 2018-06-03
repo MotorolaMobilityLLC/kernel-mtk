@@ -31,6 +31,7 @@
  * Weiching Lin
  *
  ****************************************************************************/
+#ifndef _DEA_MODIFY_
 #include <linux/init.h>		/* For init/exit macros */
 #include <linux/module.h>	/* For MODULE_ marcros  */
 #include <linux/wait.h>		/* For wait queue*/
@@ -57,14 +58,27 @@
 #include <mt-plat/mtk_charger.h>
 #include <mt-plat/mtk_battery.h>
 #include <mt-plat/mtk_boot.h>
+#include <mt-plat/upmu_common.h>
+#include <pmic_lbat_service.h>
 
 #include <mtk_gauge_class.h>
 #include "mtk_battery_internal.h"
+#include <mtk_gauge_time_service.h>
+
 #include <mach/mtk_battery_property.h>
 #include <mach/mtk_battery_table.h>
+#else
+#include <string.h>
+
+#include <mtk_gauge_class.h>
+#include "mtk_battery_internal.h"
 #include <mtk_gauge_time_service.h>
-#include <mt-plat/upmu_common.h>
-#include <pmic_lbat_service.h>
+#include <mtk_battery_property.h>
+#include <mtk_battery_table.h>
+#include "simulator_kernel.h"
+#endif
+
+
 
 /* ============================================================ */
 /* global variable */
@@ -1251,10 +1265,9 @@ struct BAT_EC_Struct *get_ec(void)
 /* ============================================================ */
 static void _do_ptim(void)
 {
-	int ret;
 	bool is_charging = false;
 
-	ret = do_ptim_gauge(false, &gm.ptim_vol, &gm.ptim_curr, &is_charging);
+	do_ptim_gauge(false, &gm.ptim_vol, &gm.ptim_curr, &is_charging);
 
 	if ((is_charging == false) && (gm.ptim_curr >= 0))
 		gm.ptim_curr = 0 - gm.ptim_curr;

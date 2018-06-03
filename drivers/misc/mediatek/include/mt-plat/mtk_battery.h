@@ -14,8 +14,12 @@
 #ifndef _MTK_BATTERY_H
 #define _MTK_BATTERY_H
 
+#ifndef _DEA_MODIFY_
 #include <linux/list.h>
 #include <linux/notifier.h>
+#else
+#include "simulator_kernel.h"
+#endif
 
 
 /* ============================================================ */
