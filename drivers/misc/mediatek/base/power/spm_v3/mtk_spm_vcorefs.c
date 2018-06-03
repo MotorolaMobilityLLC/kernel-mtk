@@ -1056,10 +1056,10 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		/* FIXME 11/12 */
 		if (1) {
 			/* E1 C+G jump level */
-			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aa2);
 		} else {
 			/* E2 C+G jump level */
-			spm_write(DVFSRC_SIGNAL_CTRL, 0x808aaa);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0x808aa2);
 		}
 
 		/* FIXME 11/12 */
@@ -1093,10 +1093,10 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		/* FIXME 11/12 */
 		if (1) {
 			/* E1 C+G jump level*/
-			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aa2);
 		} else {
 			/* E2 C+G jump level */
-			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aa2);
 		}
 
 		/* FIXME 11/12 */
