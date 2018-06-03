@@ -152,7 +152,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			else
 				pdata->input_current_limit = info->data.usb_charger_current_unconfigured;
 
-				pdata->charging_current_limit = pdata->input_current_limit;
+			pdata->charging_current_limit = pdata->input_current_limit;
 		} else {
 			pdata->input_current_limit = info->data.usb_charger_current;
 			pdata->charging_current_limit = info->data.usb_charger_current;	/* it can be larger */

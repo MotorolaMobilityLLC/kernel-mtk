@@ -1361,7 +1361,7 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 			gMtkWmtCtx.eDrvStatus[drvType] = DRV_STS_POWER_OFF;
 		else if (drvType == WMTDRV_TYPE_COREDUMP)
 			gMtkWmtCtx.eDrvStatus[drvType] = DRV_STS_POWER_OFF;
-			iRet = 0;
+		iRet = 0;
 	}
 
 	/* shall we put device state to POWER_OFF state when fail? */

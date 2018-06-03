@@ -1426,7 +1426,7 @@ static ssize_t dpidle_state_write(struct file *filp,
 			dpidle_force_vcore_lp_mode = param;
 
 		return count;
-	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
+	} else if ((!kstrtoint(cmd_buf, 10, &param)) == 1) {
 		idle_switch[IDLE_TYPE_DP] = param;
 
 		return count;
@@ -1541,7 +1541,7 @@ static ssize_t soidle3_state_write(struct file *filp,
 			idle_dbg("sodi3_force_vcore_lp_mode = %d\n", sodi3_force_vcore_lp_mode);
 		}
 		return count;
-	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
+	} else if ((!kstrtoint(cmd_buf, 10, &param)) == 1) {
 		idle_switch[IDLE_TYPE_SO3] = param;
 		return count;
 	}
@@ -1644,7 +1644,7 @@ static ssize_t soidle_state_write(struct file *filp,
 			idle_dbg("sodi_flags = 0x%x\n", sodi_flags);
 		}
 		return count;
-	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
+	} else if ((!kstrtoint(cmd_buf, 10, &param)) == 1) {
 		idle_switch[IDLE_TYPE_SO] = param;
 		return count;
 	}
