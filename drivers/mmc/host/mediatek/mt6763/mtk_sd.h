@@ -386,7 +386,9 @@ struct msdc_host {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	volatile int            cq_error_need_stop;
 #endif
-
+#ifdef CONFIG_MTK_HW_FDE
+	bool                    is_fde_init;
+#endif
 	/* BEGIN temporarily debug  ALPS03052531*/
 	int                     resume_write_times;
 	/* END temporarily debug  ALPS03052531*/

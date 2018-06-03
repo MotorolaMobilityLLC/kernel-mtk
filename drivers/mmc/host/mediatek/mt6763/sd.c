@@ -1077,10 +1077,7 @@ static void msdc_pm(pm_message_t state, void *data)
 			evt == PM_EVENT_SUSPEND ? "PM" : "USR");
 
 #ifdef CONFIG_MTK_HW_FDE
-		if (host->id == 0) {
-			/* HW FDE related suspend operation */
-			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL, (1 << 1), 4, 1);
-		}
+		host->is_fde_init = false;
 #endif
 
 		if (host->hw->flags & MSDC_SYS_SUSPEND) {
@@ -1107,13 +1104,6 @@ static void msdc_pm(pm_message_t state, void *data)
 
 		N_MSG(PWR, "msdc%d -> %s Resume", host->id,
 			evt == PM_EVENT_RESUME ? "PM" : "USR");
-
-#ifdef CONFIG_MTK_HW_FDE
-		if (host->id == 0) {
-			/* HW FDE related resume operation */
-			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL, (1 << 2), 4, 1);
-		}
-#endif
 
 		if (!(host->hw->flags & MSDC_SYS_SUSPEND)) {
 			host->mmc->pm_flags |= MMC_PM_IGNORE_PM_NOTIFY;
@@ -2800,6 +2790,12 @@ static void msdc_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 
 check_hw_fde:
 	if (mq_rq && mq_rq->req->bio && mq_rq->req->bio->bi_hw_fde) {
+		if (!host->is_fde_init) {
+			/* fde init */
+			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL, (1 << 3), 4, 1);
+			host->is_fde_init = true;
+		}
+
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 		if (cq_on)
 			blk_addr = mq_rq->brq.que.arg;
