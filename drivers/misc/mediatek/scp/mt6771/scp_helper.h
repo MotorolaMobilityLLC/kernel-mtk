@@ -148,6 +148,7 @@ extern struct bin_attribute bin_attr_scp_dump;
 
 /* scp loggger */
 extern int scp_logger_init(phys_addr_t, phys_addr_t);
+extern void scp_logger_uninit(void);
 
 extern void scp_logger_stop(void);
 extern void scp_logger_cleanup(void);
