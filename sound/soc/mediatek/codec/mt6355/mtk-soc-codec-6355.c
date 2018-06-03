@@ -4963,7 +4963,7 @@ static void VOW_Pwr_Enable(int MicType, bool enable)
 
 		NvregEnable(false); /* 0x0D04 Disable audio globe bias */
 
-		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0000, 0x0400); /*0x0D06*/
+		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0000, 0x0040); /*0x0D06*/
 	}
 }
 
@@ -5203,7 +5203,7 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01:
 			VOW_DMIC_CLK_Enable(true);
 			/* 0x0D1A MIC Bias 0 LowPower: 1_LPW, MISBIAS0 = 1P9V, Enable MICBIAS0 */
-			/* Ana_Set_Reg(AUDENC_ANA_CON10,  0x00A1, 0x00F1); */
+			Ana_Set_Reg(AUDENC_ANA_CON10, 0x00A1, 0x00F1);
 			Ana_Set_Reg(AUDENC_ANA_CON9,  0x0005, 0x0007); /* 0xD18 Enable DMIC*/
 			/* Set Eint GPIO */
 			VowDrv_SetSmartDevice_GPIO(true);
@@ -5272,7 +5272,11 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		msleep(20);
 
 		VOW_GPIO_Enable(false);
-
+		if ((MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
+		 || (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)) {
+			VowDrv_SetDmicLowPower(false);
+			Ana_Set_Reg(AFE_VOW_TOP, 0x0000, 0x20C0);   /*VOW disable, with bit7*/
+		}
 		switch (MicType) {
 		/* for ACC Mic */
 		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
@@ -5293,13 +5297,14 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		/* for Digital Mic */
 		case AUDIO_VOW_MIC_TYPE_Handset_DMIC:
 		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K:
-			Ana_Set_Reg(AUDENC_ANA_CON8,  0x0004, 0x0007); /*0x0D08*/
-			Ana_Set_Reg(AUDENC_ANA_CON9,  0x0000, 0x00F1); /*0x0D1A*/
+			Ana_Set_Reg(AUDENC_ANA_CON9,  0x0004, 0x0007); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON10,  0x0000, 0x00F1); /*0x0D1A*/
 			VOW_DMIC_CLK_Enable(false);
 			break;
 		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01:
 			/* Set Eint GPIO */
 			VowDrv_SetSmartDevice_GPIO(false);
+			Ana_Set_Reg(AUDENC_ANA_CON10,  0x0000, 0x00F1); /*0x0D1A*/
 			Ana_Set_Reg(AFE_VOW_TOP, 0x0000, 0x0080); /* bit7 , clock select */
 			VOW_DMIC_CLK_Enable(false);
 			break;

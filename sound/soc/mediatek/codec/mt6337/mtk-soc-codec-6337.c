@@ -4727,7 +4727,11 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		msleep(20);
 
 		VOW_GPIO_Enable(false);
-
+		if ((MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
+		 || (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)) {
+			VowDrv_SetDmicLowPower(false);
+			Ana_Set_Reg(AFE_VOW_TOP, 0x0000, 0x20C0);   /*VOW disable, with bit7*/
+		}
 		switch (MicType) {
 		/* for ACC Mic */
 		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
