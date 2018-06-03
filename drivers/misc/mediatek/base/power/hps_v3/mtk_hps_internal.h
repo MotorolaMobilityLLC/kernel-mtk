@@ -52,8 +52,8 @@
 #define DEF_CPU_DOWN_TIMES		(1)
 #define DEF_TLP_TIMES			(1)
 
-#define DEF_EAS_UP_THRESHOLD_0            (20)
-#define DEF_EAS_DOWN_THRESHOLD_0          (10)
+#define DEF_EAS_UP_THRESHOLD_0            (40)
+#define DEF_EAS_DOWN_THRESHOLD_0          (20)
 #define DEF_EAS_UP_THRESHOLD_1            (70)
 #define DEF_EAS_DOWN_THRESHOLD_1          (60)
 #define DEF_EAS_UP_THRESHOLD_2            (80)
