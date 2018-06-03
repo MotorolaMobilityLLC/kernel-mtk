@@ -14,22 +14,38 @@
 #ifndef __SMI_PUBLIC_H__
 #define __SMI_PUBLIC_H__
 
-#include <mt-plat/mtk_smi.h>
-#include "smi_configuration.h"
+#define SMI_LARB0_REG_INDX 0
+#define SMI_LARB1_REG_INDX 1
+#define SMI_LARB2_REG_INDX 2
+#define SMI_LARB3_REG_INDX 3
+#define SMI_LARB4_REG_INDX 4
+#define SMI_LARB5_REG_INDX 5
+#define SMI_LARB6_REG_INDX 6
+#define SMI_LARB7_REG_INDX 7
+#define SMI_LARB8_REG_INDX 8
+#define SMI_PARAM_BUS_OPTIMIZATION	(0x1FF)
 
-#ifdef CONFIG_MTK_SMI_EXT
+struct smi_bwc_scen_cb {
+	struct list_head list;
+	char *name;
+	void (*smi_bwc_scen_cb_handle)(const unsigned int scen);
+};
+
+#if IS_ENABLED(CONFIG_MTK_SMI_EXT)
 int smi_bus_prepare_enable(const unsigned int reg_indx,
 	const char *user_name, const bool mtcmos);
 int smi_bus_disable_unprepare(const unsigned int reg_indx,
 	const char *user_name, const bool mtcmos);
-enum MTK_SMI_BWC_SCEN smi_get_current_profile(void);
-void smi_common_ostd_setting(int enable);
-
+int smi_debug_dump_status(const unsigned int reg_indx);
+int smi_debug_bus_hang_detect(unsigned int reg_indx, const bool dump,
+	const bool gce, const bool m4u);
+struct smi_bwc_scen_cb *smi_bwc_scen_cb_register(struct smi_bwc_scen_cb *cb);
 #else
 #define smi_bus_prepare_enable(reg_indx, user_name, mtcmos) ((void)0)
 #define smi_bus_disable_unprepare(reg_indx, user_name, mtcmos) ((void)0)
-#define smi_get_current_profile() ((void)0)
-#define smi_common_ostd_setting(enable) ((void)0)
+#define smi_debug_dump_status(reg_indx) ((void)0)
+#define smi_debug_bus_hang_detect(larb_indx, dump, gce, m4u) ((void)0)
+#define smi_bwc_scen_cb_register(cb) ((void)0)
 #endif
 
 #endif

@@ -17,6 +17,15 @@
 #include <linux/plist.h>
 #include <mt-plat/mtk_smi.h>
 
+/* from smi_configuration.h */
+#define SMI_PARAM_DISABLE_MMDVFS		(0)
+#define SMI_PARAM_DISABLE_FREQ_MUX		(1)
+#define SMI_PARAM_DISABLE_FREQ_HOPPING		(1)
+#define SMI_PARAM_DISABLE_FORCE_MMSYS_MAX_CLK	(1)
+/* implement in smi_legacy.c */
+int mmdvfs_scen_log_mask_get(void);
+int mmdvfs_debug_level_get(void);
+
 /* MMDVFS extern APIs */
 extern void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info);
 extern void mmdvfs_handle_cmd(struct MTK_MMDVFS_CMD *cmd);

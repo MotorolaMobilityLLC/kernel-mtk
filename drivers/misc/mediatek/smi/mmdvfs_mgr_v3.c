@@ -31,6 +31,10 @@
 #include <mach/fliper.h>
 #endif
 
+#if IS_ENABLED(CONFIG_MTK_SMI_EXT)
+#include <soc/mediatek/smi.h>
+#endif
+
 /* Keep to adapt the new MMDVFS profile management method */
 /* to the legacy IOCTL command quickly */
 static int mmdvfs_query(enum MTK_SMI_BWC_SCEN scenario,
@@ -238,9 +242,9 @@ int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 	/* Change HW configuration */
 	adaptor->apply_hw_config(adaptor, final_step, original_step);
 
-	if (((*g_mmdvfs_scen_log_mask) == (1 << MMDVFS_SCEN_COUNT)
+	if ((mmdvfs_scen_log_mask_get() == (1 << MMDVFS_SCEN_COUNT)
 		&& original_step == final_step) ||
-		((1 << smi_scenario) & (*g_mmdvfs_scen_log_mask))) {
+		((1 << smi_scenario) & mmdvfs_scen_log_mask_get())) {
 		MMDVFSDEBUG(3,
 		"%s,set scen:(%d,0x%x)step(%d,%d,0x%x,0x%x,0x%x,0x%x)\n",
 		adaptor_name, smi_scenario, g_mmdvfs_concurrency,
@@ -541,7 +545,47 @@ void mmdvfs_notify_scenario_enter(enum MTK_SMI_BWC_SCEN scen)
 
 }
 
+#if IS_ENABLED(CONFIG_MTK_SMI_EXT)
+static struct clk *mmdvfs_clk_get_by_name(char *clk_name)
+{
+	struct clk *clk_ptr = NULL;
 
+	clk_ptr = clk_get(common->dev, clk_name);
+	if (IS_ERR(clk_ptr)) {
+		MMDVFSMSG("cannot get %s\n", clk_name);
+		clk_ptr = NULL;
+	}
+	return clk_ptr;
+}
+
+static int mmdvfs_clks_init(void)
+{
+	int i;
+
+	for (i = 0; i < g_mmdvfs_adaptor->mmdvfs_clk_hw_maps_num; i++) {
+		struct mmdvfs_clk_hw_map *hw_map_ptr =
+			g_mmdvfs_adaptor->mmdvfs_clk_hw_maps + i;
+
+		if (hw_map_ptr->config_method != MMDVFS_CLK_NONE) {
+			MMDVFSMSG("init clk %s\n",
+				hw_map_ptr->clk_mux.ccf_name);
+			hw_map_ptr->clk_mux.ccf_handle = mmdvfs_clk_get_by_name(
+				hw_map_ptr->clk_mux.ccf_name);
+		}
+	}
+
+	for (i = 0; i < g_mmdvfs_adaptor->mmdvfs_clk_sources_num; i++) {
+		MMDVFSMSG("init clk %s\n",
+			g_mmdvfs_adaptor->mmdvfs_clk_sources[i].ccf_name);
+		g_mmdvfs_adaptor->mmdvfs_clk_sources[i].ccf_handle =
+			mmdvfs_clk_get_by_name(
+			g_mmdvfs_adaptor->mmdvfs_clk_sources[i].ccf_name);
+	}
+
+	mmdvfs_default_start_delayed_setting();
+	return 0;
+}
+#endif
 
 void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info)
 {
@@ -557,7 +601,9 @@ void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info)
 
 	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_VIN)
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
-
+#if IS_ENABLED(CONFIG_MTK_SMI_EXT)
+	mmdvfs_clks_init();
+#endif
 }
 
 /* To be implemented */
