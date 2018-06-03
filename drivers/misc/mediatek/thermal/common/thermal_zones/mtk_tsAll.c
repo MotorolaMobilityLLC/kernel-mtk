@@ -30,7 +30,7 @@
 #include <linux/uidgid.h>
 #include <linux/slab.h>
 
-#define RESERVED_TZS (9)
+#define RESERVED_TZS (10)
 
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);

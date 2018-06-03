@@ -51,6 +51,12 @@ set_bat_charging_current_limit(int current_limit)
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
+unsigned int __attribute__ ((weak))
+set_chr_input_current_limit(int current_limit)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
 /* ************************************ */
 
 #define mtk_cooler_bcct_dprintk_always(fmt, args...) \
