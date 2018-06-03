@@ -65,8 +65,8 @@ static struct snd_dma_buffer *Awb_Capture_dma_buf;
 /*
  *    function implementation
  */
-static void StartAudioI2S0AWBHardware(struct snd_pcm_substream *substream);
-static void StopAudioI2S0AWBHardware(struct snd_pcm_substream *substream);
+static void StartAudioAWBHardware(struct snd_pcm_substream *substream);
+static void StopAudioAWBHardware(struct snd_pcm_substream *substream);
 static int mtk_i2s0_awb_probe(struct platform_device *pdev);
 static int mtk_i2s0_awb_pcm_close(struct snd_pcm_substream *substream);
 static int mtk_asoc_i2s0_awb_pcm_new(struct snd_soc_pcm_runtime *rtd);
@@ -87,49 +87,21 @@ static struct snd_pcm_hardware mtk_I2S0_awb_hardware = {
 	.fifo_size =        0,
 };
 
-static void StopAudioI2S0AWBHardware(struct snd_pcm_substream *substream)
+static void StopAudioAWBHardware(struct snd_pcm_substream *substream)
 {
-	pr_warn("StopAudioI2S0AWBHardware\n");
+	pr_warn("StopAudioAWBHardware\n");
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, false);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, false);
 
 	/* here to set interrupt */
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
 
-	/* stop I2S */
-	Afe_Set_Reg(AFE_I2S_CON, 0x0, 0x1);
-
 	EnableAfe(false);
 }
 
-static void StartAudioI2S0AWBHardware(struct snd_pcm_substream *substream)
+static void StartAudioAWBHardware(struct snd_pcm_substream *substream)
 {
-	struct snd_pcm_runtime *runtime = substream->runtime;
-
-	uint32 Audio_I2S_Dac = 0;
-	uint32 MclkDiv0 = 0;
-
-	const bool bEnablePhaseShiftFix = true;
-
-	pr_warn("StartAudioI2S0AWBHardware\n");
-
-
-	MclkDiv0 = SetCLkMclk(Soc_Aud_I2S0, runtime->rate); /* select I2S */
-	SetCLkBclk(MclkDiv0,  runtime->rate, runtime->channels,
-		   Soc_Aud_I2S_WLEN_WLEN_32BITS);
-
-	/* 2nd I2S In */
-	SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S,  runtime->rate);
-
-	Audio_I2S_Dac |= (bEnablePhaseShiftFix << 31);
-	Audio_I2S_Dac |= (Soc_Aud_I2S_IN_PAD_SEL_I2S_IN_FROM_IO_MUX <<
-			  28);/* I2S in from io_mux */
-	Audio_I2S_Dac |= Soc_Aud_LOW_JITTER_CLOCK << 12; /* Low jitter mode */
-	Audio_I2S_Dac |= (Soc_Aud_INV_LRCK_NO_INVERSE << 5);
-	Audio_I2S_Dac |= (Soc_Aud_I2S_FORMAT_I2S << 3);
-	Audio_I2S_Dac |= (Soc_Aud_I2S_WLEN_WLEN_32BITS << 1);
-	Afe_Set_Reg(AFE_I2S_CON, Audio_I2S_Dac | 0x1, MASK_ALL);
+	pr_warn("StartAudioAWBHardware\n");
 
 	/* here to set interrupt */
 	irq_add_user(substream,
@@ -139,11 +111,6 @@ static void StartAudioI2S0AWBHardware(struct snd_pcm_substream *substream)
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_AWB, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, true);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, true);
-
-	/* here to turn off digital part */
-	SetIntfConnection(Soc_Aud_InterCon_Connection,
-			Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);
 
 	EnableAfe(true);
 }
@@ -159,7 +126,7 @@ static int mtk_i2s0_awb_alsa_stop(struct snd_pcm_substream *substream)
 {
 	/* AFE_BLOCK_T *Awb_Block = &(I2S0_AWB_Control_context->rBlock); */
 	pr_warn("mtk_i2s0_awb_alsa_stop\n");
-	StopAudioI2S0AWBHardware(substream);
+	StopAudioAWBHardware(substream);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
 	return 0;
 }
@@ -278,7 +245,7 @@ static int mtk_i2s0_awb_alsa_start(struct snd_pcm_substream *substream)
 {
 	pr_warn("mtk_i2s0_awb_alsa_start\n");
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
-	StartAudioI2S0AWBHardware(substream);
+	StartAudioAWBHardware(substream);
 	return 0;
 }
 
