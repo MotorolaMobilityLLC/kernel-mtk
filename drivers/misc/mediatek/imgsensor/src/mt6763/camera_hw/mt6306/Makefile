@@ -11,17 +11,4 @@
 # GNU General Public License for more details.
 #
 
-#
-# Makefile for misc devices that really don't fit anywhere else.
-#
-ifneq ($(CONFIG_PINCTRL_MT6799),y)
-# to use mtk legacy pinctrl
-subdir-ccflags-y += -I$(DRVGEN_OUT)/inc
-endif
-MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
-
-ccflags-y += -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
-
-obj-y		+= regulator/
-obj-y		+= gpio/
-
+obj-y				+= mt6306.o

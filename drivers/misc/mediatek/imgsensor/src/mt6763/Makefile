@@ -32,15 +32,24 @@ endef
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
 
+obj-y				+= imgsensor.o
+obj-y				+= imgsensor_hw.o
+obj-y				+= imgsensor_i2c.o
+obj-y				+= imgsensor_legacy.o
+obj-y				+= imgsensor_proc.o
+obj-y				+= imgsensor_clk.o
+obj-y				+= imgsensor_custom.o
 obj-y				+= kd_sensorlist.o
 
 #$(info -= project path  $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/ =-)
 
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw),)
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/camera_hw/
+subdir-ccflags-y		+= -I$(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw
 #$(info by porject kd_camera_hw)
 else
-obj-y                           += camera_hw/
+obj-y				+= camera_hw/
+subdir-ccflags-y		+= -I$(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_hw
 endif
 
 $(foreach drv,$(subst $\",,$(CONFIG_CUSTOM_KERNEL_IMGSENSOR)),$(eval $(call FILTER_PROJECT_DRV,$(drv))))
