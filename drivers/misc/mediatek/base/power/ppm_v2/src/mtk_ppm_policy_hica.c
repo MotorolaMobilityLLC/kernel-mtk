@@ -253,20 +253,6 @@ void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 			policy->req.limit[1].min_cpufreq_idx = get_cluster_min_cpufreq_idx(1);
 #endif
 
-#ifdef PPM_HICA_2P0
-	if (state == PPM_POWER_STATE_ALL && hica_is_limit_big_freq) {
-		/* hica_limit_idx = 0: DVFS table is not ready yet. */
-		/* hica_limit_idx < 0: First init or freq not found. */
-		if (hica_limit_idx <= 0) {
-			hica_limit_idx = ppm_main_freq_to_idx(
-				PPM_CLUSTER_B, PPM_HICA_BIG_LIMIT_FREQ, CPUFREQ_RELATION_H);
-			policy->req.limit[PPM_CLUSTER_B].max_cpufreq_idx =
-				(hica_limit_idx <= 0) ? (DVFS_OPP_NUM / 2) : hica_limit_idx;
-		} else
-			policy->req.limit[PPM_CLUSTER_B].max_cpufreq_idx = hica_limit_idx;
-	}
-#endif
-
 	FUNC_EXIT(FUNC_LV_HICA);
 }
 
@@ -449,6 +435,20 @@ static void ppm_hica_update_limit_cb(enum ppm_power_state new_state)
 		__func__, ppm_get_power_state_name(new_state));
 
 	ppm_hica_set_default_limit_by_state(new_state, &hica_policy);
+
+#ifdef PPM_HICA_2P0
+	if (new_state == PPM_POWER_STATE_ALL && hica_is_limit_big_freq) {
+		/* hica_limit_idx = 0: DVFS table is not ready yet. */
+		/* hica_limit_idx < 0: First init or freq not found. */
+		if (hica_limit_idx <= 0) {
+			hica_limit_idx = ppm_main_freq_to_idx(
+				PPM_CLUSTER_B, PPM_HICA_BIG_LIMIT_FREQ, CPUFREQ_RELATION_H);
+			hica_policy.req.limit[PPM_CLUSTER_B].max_cpufreq_idx =
+				(hica_limit_idx <= 0) ? (DVFS_OPP_NUM / 2) : hica_limit_idx;
+		} else
+			hica_policy.req.limit[PPM_CLUSTER_B].max_cpufreq_idx = hica_limit_idx;
+	}
+#endif
 
 	if (new_state >= NR_PPM_POWER_STATE)
 		ppm_dbg(HICA, "PPM current state is NONE, skip HICA result...\n");
