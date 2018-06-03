@@ -1140,6 +1140,7 @@ int mtk_cfg80211_vendor_packet_keep_alive_start(struct wiphy *wiphy, struct wire
 						const void *data, int data_len)
 {
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	UINT_16 u2IpPktLen = 0;
 	UINT_32 u4BufLen = 0;
 	P_GLUE_INFO_T prGlueInfo = NULL;
 
@@ -1179,7 +1180,8 @@ int mtk_cfg80211_vendor_packet_keep_alive_start(struct wiphy *wiphy, struct wire
 				prPkt->u2IpPktLen = nla_get_u16(attr[i]);
 				break;
 			case MKEEP_ALIVE_ATTRIBUTE_IP_PKT:
-				kalMemCopy(prPkt->pIpPkt, nla_data(attr[i]), prPkt->u2IpPktLen);
+				u2IpPktLen = prPkt->u2IpPktLen <= 256 ? prPkt->u2IpPktLen : 256;
+				kalMemCopy(prPkt->pIpPkt, nla_data(attr[i]), u2IpPktLen);
 				break;
 			case MKEEP_ALIVE_ATTRIBUTE_SRC_MAC_ADDR:
 				kalMemCopy(prPkt->ucSrcMacAddr, nla_data(attr[i]), sizeof(mac_addr));
