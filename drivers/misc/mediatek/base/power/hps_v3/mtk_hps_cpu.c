@@ -17,9 +17,6 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/random.h>
-#ifdef CONFIG_ARM64
-#include <asm/cpu_ops.h>
-#endif
 
 #include "mtk_hps_internal.h"
 
@@ -137,15 +134,6 @@ int hps_cpu_init(void)
 	i = j = 0;
 	hps_warn("hps_cpu_init\n");
 
-	for (i = setup_max_cpus; i < num_possible_cpus(); i++) {
-#ifdef CONFIG_ARM64
-		if (!cpu_ops[i])
-			WARN_ON(1);
-		if (cpu_ops[i]->cpu_prepare(i))
-			WARN_ON(1);
-#endif
-		set_cpu_present(i, true);
-	}
 
 	/* =======================================New algo. definition ========================================== */
 	hps_sys.cluster_num = (unsigned int)arch_get_nr_clusters();

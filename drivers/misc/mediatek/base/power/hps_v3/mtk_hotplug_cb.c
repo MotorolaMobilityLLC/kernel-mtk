@@ -1,15 +1,14 @@
 /*
- * Copyright (c) 2016 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <linux/io.h>
@@ -22,7 +21,12 @@
 #include <linux/delay.h>
 #include <linux/bug.h>
 #include <linux/suspend.h>
+
 #include <asm/cacheflush.h>
+#ifdef CONFIG_ARM64
+#include <asm/cpu_ops.h>
+#endif
+
 #include <mt-plat/mtk_secure_api.h>
 #include <mt-plat/mtk_auxadc_intf.h>
 #include <linux/topology.h>
@@ -290,6 +294,18 @@ static __init int hotplug_cb_init(void)
 {
 	int ret;
 	int i;
+
+	for (i = setup_max_cpus; i < num_possible_cpus(); i++) {
+#ifdef CONFIG_ARM64
+		if (!cpu_ops[i])
+			WARN_ON(1);
+		if (cpu_ops[i]->cpu_prepare(i))
+			WARN_ON(1);
+
+		per_cpu(cpu_number, i) = i;
+#endif
+		set_cpu_present(i, true);
+	}
 
 	mp_enter_suspend(0, 1);/*Switch LL cluster to HW mode*/
 	cpumask_clear(mtk_cpu_cluster0_mask);
