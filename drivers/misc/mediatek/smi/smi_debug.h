@@ -40,6 +40,8 @@ enum smi_subsys_id {
 int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump);
     /* output_gce_buffer = 1, pass log to CMDQ error dumping messages */
 int smi_debug_bus_hanging_detect_ext(unsigned short larbs, int show_dump, int output_gce_buffer);
+int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
+	int output_gce_buffer, int enable_m4u_reg_dump);
 
 #endif
 void smi_dumpCommonDebugMsg(int output_gce_buffer);
