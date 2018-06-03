@@ -168,6 +168,10 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	int ret;
 	struct spm_data spm_d;
 
+#ifdef SPM_PMIC_DEBUG
+	spm_dump_pmic_reg();
+#endif /* SPM_PMIC_DEBUG */
+
 	memset(&spm_d, 0, sizeof(struct spm_data));
 
 #ifdef SSPM_TIMESYNC_SUPPORT
