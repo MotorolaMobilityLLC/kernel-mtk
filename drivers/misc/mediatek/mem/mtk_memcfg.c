@@ -72,8 +72,8 @@ struct mtk_memcfg_layout_info {
 
 struct reserved_mem_ext {
 	const char	*name;
-	unsigned long	base;
-	unsigned long	size;
+	unsigned long long base;
+	unsigned long long size;
 	int		nomap;
 };
 
@@ -92,11 +92,18 @@ static int mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved_
 
 	for (index = 0; index < *reserved_mem_count; index++) {
 		rmem = &reserved_mem[index];
-		start_pfn = virt_to_pfn(__va(rmem->base));
-		end_pfn = virt_to_pfn(__va(rmem->base + rmem->size));
+		start_pfn = __phys_to_pfn(rmem->base);
+		end_pfn = __phys_to_pfn(rmem->base + rmem->size);
 
-		if (start_pfn > end_pfn)
+		if (start_pfn > end_pfn) {
+			pr_err("start_pfn %lu > end_pfn %lu\n", start_pfn, end_pfn);
+			pr_err("reserved_mem: %s, base: %llu, size: %llu, nomap: %d\n",
+					rmem->name,
+					rmem->base,
+					rmem->size,
+					rmem->nomap);
 			BUG();
+		}
 
 		page_count = end_pfn - start_pfn;
 		start = 0;
