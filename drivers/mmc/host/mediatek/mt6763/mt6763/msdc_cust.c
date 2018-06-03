@@ -25,6 +25,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/clk.h>
 #include <linux/slab.h>
+#include <linux/of_gpio.h>
 
 #include "mtk_sd.h"
 #include "dbg.h"
@@ -409,14 +410,14 @@ void msdc_set_host_power_control(struct msdc_host *host)
 /**************************************************************/
 #if !defined(FPGA_PLATFORM)
 u32 hclks_msdc0[] = { MSDC0_SRC_0, MSDC0_SRC_1, MSDC0_SRC_2, MSDC0_SRC_3,
-		      MSDC0_SRC_4, MSDC0_SRC_5, MSDC0_SRC_6, MSDC0_SRC_7};
+		      MSDC0_SRC_4, MSDC0_SRC_5};
 
 /* msdc1/2 clock source reference value is 200M */
 u32 hclks_msdc1[] = { MSDC1_SRC_0, MSDC1_SRC_1, MSDC1_SRC_2, MSDC1_SRC_3,
-		      MSDC1_SRC_4, MSDC1_SRC_5, MSDC1_SRC_6, MSDC1_SRC_7};
+		      MSDC1_SRC_4};
 
 u32 hclks_msdc2[] = { MSDC2_SRC_0, MSDC2_SRC_1, MSDC2_SRC_2, MSDC2_SRC_3,
-		      MSDC2_SRC_4, MSDC2_SRC_5, MSDC2_SRC_6, MSDC2_SRC_7};
+		      MSDC2_SRC_4};
 
 u32 *hclks_msdc_all[] = {
 	hclks_msdc0,
@@ -731,7 +732,7 @@ void msdc_set_ies_by_id(u32 id, int set_ies)
 			(set_ies ? 0x7 : 0));
 	} else if (id == 2) {
 		MSDC_SET_FIELD(MSDC2_GPIO_IES_ADDR, MSDC2_IES_ALL_MASK,
-			(set_ies ? 0x1 : 0));
+			(set_ies ? 0x7 : 0));
 	}
 }
 
@@ -745,7 +746,7 @@ void msdc_set_smt_by_id(u32 id, int set_smt)
 			(set_smt ? 0x7 : 0));
 	} else if (id == 2) {
 		MSDC_SET_FIELD(MSDC2_GPIO_SMT_ADDR, MSDC2_SMT_ALL_MASK,
-			(set_smt ? 0x1 : 0));
+			(set_smt ? 0x7 : 0));
 	}
 }
 
@@ -784,7 +785,11 @@ void msdc_set_tdsel_by_id(u32 id, u32 flag, u32 value)
 			cust_val = value;
 		else
 			cust_val = 0;
-		MSDC_SET_FIELD(MSDC2_GPIO_TDSEL_ADDR, MSDC2_TDSEL_ALL_MASK,
+		MSDC_SET_FIELD(MSDC2_GPIO_TDSEL_ADDR, MSDC2_TDSEL_CMD_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC2_GPIO_TDSEL_ADDR, MSDC2_TDSEL_DAT_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC2_GPIO_TDSEL_ADDR, MSDC2_TDSEL_CLK_MASK,
 			cust_val);
 	}
 }
@@ -824,7 +829,11 @@ void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value)
 			cust_val = value;
 		else
 			cust_val = 0;
-		MSDC_SET_FIELD(MSDC2_GPIO_RDSEL_ADDR, MSDC2_RDSEL_ALL_MASK,
+		MSDC_SET_FIELD(MSDC2_GPIO_RDSEL_ADDR, MSDC2_RDSEL_CMD_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC2_GPIO_RDSEL_ADDR, MSDC2_RDSEL_DAT_MASK,
+			cust_val);
+		MSDC_SET_FIELD(MSDC2_GPIO_RDSEL_ADDR, MSDC2_RDSEL_CLK_MASK,
 			cust_val);
 	}
 }
@@ -838,7 +847,7 @@ void msdc_get_tdsel_by_id(u32 id, u32 *value)
 		MSDC_GET_FIELD(MSDC1_GPIO_TDSEL0_ADDR, MSDC1_TDSEL0_CMD_MASK,
 			*value);
 	} else if (id == 2) {
-		MSDC_GET_FIELD(MSDC2_GPIO_TDSEL_ADDR, MSDC2_TDSEL_ALL_MASK,
+		MSDC_GET_FIELD(MSDC2_GPIO_TDSEL_ADDR, MSDC2_TDSEL_CMD_MASK,
 			*value);
 	}
 }
@@ -852,7 +861,7 @@ void msdc_get_rdsel_by_id(u32 id, u32 *value)
 		MSDC_GET_FIELD(MSDC1_GPIO_RDSEL0_ADDR, MSDC1_RDSEL0_CMD_MASK,
 			*value);
 	} else if (id == 2) {
-		MSDC_GET_FIELD(MSDC2_GPIO_RDSEL_ADDR, MSDC2_RDSEL_ALL_MASK,
+		MSDC_GET_FIELD(MSDC2_GPIO_RDSEL_ADDR, MSDC2_RDSEL_CMD_MASK,
 			*value);
 	}
 }
@@ -869,7 +878,15 @@ void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV0_ADDR, MSDC1_SR_DAT_MASK,
 			(dat != 0));
 	} else if (id == 2) {
-		/* do nothing since 10nm does not have SR control for 1.8V */
+		/* FIX ME, check if SR exist for 16nm 1.8V */
+		#if 0
+		MSDC_SET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_SR_CMD_MASK,
+			(cmd != 0));
+		MSDC_SET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_SR_CLK_MASK,
+			(clk != 0));
+		MSDC_SET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_SR_DAT_MASK,
+			(dat != 0));
+		#endif
 	}
 }
 
@@ -1165,7 +1182,9 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 			host->id);
 
 	/* get cd_gpio and cd_level */
-	if (of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio) == 0) {
+	ret = of_get_named_gpio(np, "cd-gpios", 0);
+	if (ret >= 0) {
+		cd_gpio = ret;
 		if (of_property_read_u8(np, "cd_level", &host->hw->cd_level))
 			pr_err("[msdc%d] cd_level isn't found in device tree\n",
 				host->id);
@@ -1259,14 +1278,14 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 	}
 
 	if (apmixed_base == NULL) {
-		np = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
+		np = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		apmixed_base = of_iomap(np, 0);
 		pr_debug("of_iomap for apmixed base @ 0x%p\n",
 			apmixed_base);
 	}
 
 	if (topckgen_base == NULL) {
-		np = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-topckgen");
+		np = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
 		topckgen_base = of_iomap(np, 0);
 		pr_debug("of_iomap for topckgen base @ 0x%p\n",
 			topckgen_base);
@@ -1280,7 +1299,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 	}
 
 	if (pericfg_base == NULL) {
-		np = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-pericfg");
+		np = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
 		pericfg_base = of_iomap(np, 0);
 		pr_debug("of_iomap for pericfg base @ 0x%p\n",
 			pericfg_base);

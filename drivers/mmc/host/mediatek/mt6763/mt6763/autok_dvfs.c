@@ -796,6 +796,9 @@ int emmc_autok(void)
 		return -1;
 	}
 
+	if (host->use_hw_dvfs == 0xFF)
+		return 0;
+
 	/* Wait completion of AUTOK triggered by eMMC initialization */
 	if (!wait_for_completion_timeout(&host->autok_done, 10 * HZ)) {
 		pr_err("eMMC 1st autok not done\n");
@@ -883,6 +886,12 @@ int sdio_autok(void)
 	if (host->hw->host_function != MSDC_SDIO) {
 		pr_err("SDIO device not in this host\n");
 		return -1;
+	}
+
+	if (host->use_hw_dvfs == 0xFF) {
+		/* HW DVFS disabled by device tree */
+		spm_msdc_dvfs_setting(KIR_AUTOK_SDIO, 1);
+		return 0;
 	}
 
 	pr_err("sdio autok\n");

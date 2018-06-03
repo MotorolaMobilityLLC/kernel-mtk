@@ -15,6 +15,9 @@
 #define _AUTOK_DVFS_H_
 
 #define VOREFS_READY
+#ifdef CONFIG_MTK_COMBO_COMM /* Temp for 6630 bring-up */
+#undef VOREFS_READY
+#endif
 /* #define SDIO_HQA */
 
 #include "autok.h"
@@ -32,6 +35,15 @@ enum AUTOK_VCORE {
 };
 
 #else
+enum dvfs_opp {
+	OPP_UNREQ = -1,
+	OPP_0 = 0,
+	OPP_1,
+	OPP_2,
+	OPP_3,
+	NUM_OPP,
+};
+
 #define KIR_AUTOK_EMMC	9
 #define KIR_AUTOK_SDIO	10
 #define KIR_AUTOK_SD	11

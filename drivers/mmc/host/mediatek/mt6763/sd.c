@@ -536,8 +536,12 @@ void msdc_set_smpl(struct msdc_host *host, u32 clock_mode, u8 mode, u8 type,
 		}
 		if (mode == MSDC_SMPL_RISING || mode == MSDC_SMPL_FALLING) {
 			MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_R_D_SMPL_SEL, 0);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT0,
-				MSDC_PB0_RD_DAT_SEL, mode);
+			if ((clock_mode == 2) || (clock_mode == 3))
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, 0);
+			else
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, mode);
 		} else {
 			ERR_MSG("invalid read parameter: type=%d, mode=%d\n",
 				type, mode);
@@ -4390,7 +4394,7 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		/* Clock is gated by HW after CMD11,
 		 * Must keep clock gate 5ms before switch voltage
 		 */
-		usleep_range(5000, 5500);
+		usleep_range(10000, 10500);
 
 		/* set as 500T -> 1.25ms for 400KHz or 1.9ms for 260KHz */
 		msdc_set_vol_change_wait_count(VOL_CHG_CNT_DEFAULT_VAL);

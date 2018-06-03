@@ -11,11 +11,11 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _MSDC_CUST_MT6799_H_
-#define _MSDC_CUST_MT6799_H_
+#ifndef _MSDC_CUST_MT6763_H_
+#define _MSDC_CUST_MT6763_H_
 
-#include <dt-bindings/mmc/mt6799-msdc.h>
-#include <dt-bindings/clock/mt6799-clk.h>
+#include <dt-bindings/mmc/mt6763-msdc.h>
+#include <dt-bindings/clock/mt6763-clk.h>
 
 #include <spm_v4/mtk_spm_resource_req.h>
 
@@ -128,37 +128,26 @@
 #define MSDCPLL_PWR_CON0_OFFSET (0x25c)
 #endif
 
-#define MSDCPLL_FREQ            728000000
-#ifdef MT6799_E2_CLK
-#define MSDCPLL_FREQ            800000000
-#endif
+#define MSDCPLL_FREQ            400000000
 
-#define MSDC0_SRC_0             260000
-#define MSDC0_SRC_1             (MSDCPLL_FREQ/2)
-#define MSDC0_SRC_2             MSDCPLL_FREQ
+#define MSDC0_SRC_0             26000000
+#define MSDC0_SRC_1             MSDCPLL_FREQ
+#define MSDC0_SRC_2             (MSDCPLL_FREQ/2)
 #define MSDC0_SRC_3             156000000
 #define MSDC0_SRC_4             182000000
-#define MSDC0_SRC_5             364000000
-#define MSDC0_SRC_6             (MSDCPLL_FREQ/4)
-#define MSDC0_SRC_7             312000000
+#define MSDC0_SRC_5             312000000
 
-#define MSDC1_SRC_0             260000
+#define MSDC1_SRC_0             26000000
 #define MSDC1_SRC_1             208000000
-#define MSDC1_SRC_2             (MSDCPLL_FREQ/4)
-#define MSDC1_SRC_3             156000000
-#define MSDC1_SRC_4             182000000
-#define MSDC1_SRC_5             156000000
-#define MSDC1_SRC_6             178000000
-#define MSDC1_SRC_7             480000000
+#define MSDC1_SRC_2             182000000
+#define MSDC1_SRC_3             0
+#define MSDC1_SRC_4             (MSDCPLL_FREQ/2)
 
-#define MSDC2_SRC_0             260000
+#define MSDC2_SRC_0             26000000
 #define MSDC2_SRC_1             208000000
-#define MSDC2_SRC_2             (MSDCPLL_FREQ/2)
-#define MSDC2_SRC_3             156000000
-#define MSDC2_SRC_4             182000000
-#define MSDC2_SRC_5             312000000
-#define MSDC2_SRC_6             364000000
-#define MSDC2_SRC_7             (MSDCPLL_FREQ/4)
+#define MSDC2_SRC_2             182000000
+#define MSDC2_SRC_3             0
+#define MSDC2_SRC_4             (MSDCPLL_FREQ/2)
 
 #define MSDC_SRC_FPGA           12000000
 
@@ -208,8 +197,8 @@
 #define MSDC1_GPIO_PUPD0_ADDR   (MSDC1_IO_PAD_BASE + 0xC0)
 
 /* MSDC2 */
-#define MSDC2_GPIO_MODE15       (MSDC_GPIO_BASE    + 0x5E0)
-#define MSDC2_GPIO_MODE16       (MSDC_GPIO_BASE    + 0x5F0)
+#define MSDC2_GPIO_MODE15       (MSDC_GPIO_BASE    + 0x3E0)
+#define MSDC2_GPIO_MODE16       (MSDC_GPIO_BASE    + 0x3F0)
 #define MSDC2_GPIO_IES_ADDR     (MSDC2_IO_PAD_BASE + 0x0)
 #define MSDC2_GPIO_SMT_ADDR     (MSDC2_IO_PAD_BASE + 0x10)
 #define MSDC2_GPIO_TDSEL_ADDR   (MSDC2_IO_PAD_BASE + 0x20)
@@ -453,4 +442,4 @@
 #define CFG_DEV_MSDC2
 #endif
 
-#endif /* _MSDC_CUST_MT6799_H_ */
+#endif /* _MSDC_CUST_MT6763_H_ */

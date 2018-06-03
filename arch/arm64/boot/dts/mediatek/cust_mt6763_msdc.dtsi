@@ -1,5 +1,5 @@
 /**********************************************
- *MT6757 MSDC DTSI File
+ *MT6763 MSDC DTSI File
 ********************************************/
 
 &msdc0 {
@@ -58,11 +58,11 @@
 	bus-width = <4>;
 	max-frequency = <200000000>;
 	cap-sd-highspeed;
-	sd-uhs-sdr12;
-	sd-uhs-sdr25;
-	/*sd-uhs-sdr50;*/
-	/*sd-uhs-sdr104;*/
-	/*sd-uhs-ddr50;*/
+	/* sd-uhs-sdr12; */
+	/* sd-uhs-sdr25; */
+	/* sd-uhs-sdr50; */
+	/* sd-uhs-sdr104; */
+	/* sd-uhs-ddr50; */
 	keep-power-in-suspend;
 	non-removable;
 	pinctl = <&msdc2_pins_default>;
@@ -166,9 +166,9 @@
 	};
 
 	msdc2_register_setting_default: msdc2@register_default {
-		cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-		rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-		wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		cmd_edge = /bits/ 8 <MSDC_SMPL_RISING>;
+		rdata_edge = /bits/ 8 <MSDC_SMPL_RISING>;
+		wdata_edge = /bits/ 8 <MSDC_SMPL_RISING>;
 	};
 };
 

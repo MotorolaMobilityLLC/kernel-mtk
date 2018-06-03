@@ -32,7 +32,7 @@
 #define MSDC30_CLKSRC_26MHZ     (0)
 #define MSDC30_CLKSRC_208MHZ    (1)
 #define MSDC30_CLKSRC_182MHZ    (2)
-/* #define MSDC30_CLKSRC_156MHZ    (3) */
+/* #define MSDC30_CLKSRC_0HZ    (3) */
 #define MSDC30_CLKSRC_200MHZ    (4)
 
 #define MSDC_SMPL_RISING        (0)
