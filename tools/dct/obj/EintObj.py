@@ -245,7 +245,8 @@ class EintObj(ModuleObj):
         gpio_vec= []
 
         gpio_num = EintData.get_gpioNum(string.atoi(eint_num))
-        if gpio_num >= 0:
+        gpio_item = self.__gpio_obj.get_gpioData(gpio_num)
+        if gpio_num >= 0 and gpio_item.get_smtNum() != -1:
             gpio_vec.append(gpio_num)
             if flag:
                 item_data = self.__gpio_obj.get_gpioData(gpio_num)
@@ -375,7 +376,8 @@ class EintObj_MT6739(EintObj):
         refGpio_defMode = 0
 
         gpio_num = EintData.get_gpioNum(string.atoi(eint_num))
-        if gpio_num >= 0:
+        gpio_item = self.get_gpioObj().get_gpioData(gpio_num)
+        if gpio_num >= 0 and gpio_item.get_smtNum() != -1:
             if flag:
                 item_data = self.get_gpioObj().get_gpioData(gpio_num)
                 refGpio_defMode = item_data.get_defMode()
