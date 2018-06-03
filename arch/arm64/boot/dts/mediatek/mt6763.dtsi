@@ -1704,45 +1704,84 @@
 
 	dispsys: dispsys@14000000 {
 		compatible = "mediatek,dispsys";
-		reg = <0 0x14000000 0 0x1000>,  /*disp_sys	*/
-			<0 0x14008000 0 0x1000>,  /*disp_ovl0	*/
-			<0 0x14009000 0 0x1000>,  /*disp_ovl0_2l*/
-			<0 0x1400a000 0 0x1000>,  /*disp_ovl1_2l*/
-			<0 0x1400b000 0 0x1000>,  /*disp_rdma0	*/
-			<0 0x1400c000 0 0x1000>,  /*disp_rdma1	*/
-			<0 0x1400d000 0 0x1000>,  /*disp_wdma0	*/
-			<0 0x1400e000 0 0x1000>,  /*disp_color0	*/
-			<0 0x1400f000 0 0x1000>,  /*disp_ccorr0	*/
-			<0 0x14010000 0 0x1000>,  /*disp_aal0	*/
-			<0 0x14011000 0 0x1000>,  /*disp_gamma0	*/
-			<0 0x14012000 0 0x1000>,  /*disp_dither0*/
-			<0 0x14014000 0 0x1000>,  /*disp_dsi0	*/
-			<0 0x14015000 0 0x1000>,  /*disp_dpi0	*/
-			<0 0x1100e000 0 0x1000>,  /*disp_pwm0	*/
-			<0 0x14016000 0 0x1000>,  /*disp_mm_mutex	*/
-			<0 0x14017000 0 0x1000>,  /*disp_smi_larb0	*/
-			<0 0x14019000 0 0x1000>,  /*disp_smi_commom	*/
-			<0 0x11e50000 0 0x10000>;  /*mipitx0	*/
 
-		interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /*disp_sys */
-			<GIC_SPI 214 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl0 */
-			<GIC_SPI 215 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl0_2l */
-			<GIC_SPI 216 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl1_2l */
-			<GIC_SPI 217 IRQ_TYPE_LEVEL_LOW>, /*disp_rdma0 */
-			<GIC_SPI 218 IRQ_TYPE_LEVEL_LOW>, /*disp_rdma1 */
-			<GIC_SPI 219 IRQ_TYPE_LEVEL_LOW>, /*disp_wdma0 */
-			<GIC_SPI 220 IRQ_TYPE_LEVEL_LOW>, /*disp_color0 */
-			<GIC_SPI 221 IRQ_TYPE_LEVEL_LOW>, /*disp_ccorr0 */
-			<GIC_SPI 222 IRQ_TYPE_LEVEL_LOW>, /*disp_aal0 */
-			<GIC_SPI 223 IRQ_TYPE_LEVEL_LOW>, /*disp_gamma0 */
-			<GIC_SPI 224 IRQ_TYPE_LEVEL_LOW>, /*disp_dither0 */
-			<GIC_SPI 225 IRQ_TYPE_LEVEL_LOW>, /*disp_dsi0 */
-			<GIC_SPI 226 IRQ_TYPE_LEVEL_LOW>, /*disp_dpi0 */
-			<GIC_SPI 126 IRQ_TYPE_LEVEL_LOW>, /*disp_pwm */
-			<GIC_SPI 206 IRQ_TYPE_LEVEL_LOW>, /*disp_mutex */
-			<GIC_SPI 229 IRQ_TYPE_LEVEL_LOW>, /*disp_smi_larb0 */
-			<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /*disp_smi_commom*/
-			<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>; /*mipitx0 */
+		clocks =
+			<&scpsys SCP_SYS_DIS>,	/*DISP_MTCMOS_CLK*/
+			<&mmsys_config MMSYS_SMI_COMMON>,
+			<&mmsys_config MMSYS_SMI_LARB0>,
+			<&mmsys_config MMSYS_SMI_LARB1>,
+			<&mmsys_config MMSYS_GALS_COMM0>,
+			<&mmsys_config MMSYS_GALS_COMM1>,
+			<&mmsys_config MMSYS_GALS_VENC2MM>,
+			<&mmsys_config MMSYS_GALS_VDEC2MM>,
+			<&mmsys_config MMSYS_GALS_IMG2MM>,
+			<&mmsys_config MMSYS_GALS_CAM2MM>,
+			<&mmsys_config MMSYS_GALS_IPU2MM>,
+			<&mmsys_config MMSYS_DISP_OVL0>,
+			<&mmsys_config MMSYS_DISP_OVL0_2L>,
+			<&mmsys_config MMSYS_DISP_OVL1_2L>,
+			<&mmsys_config MMSYS_DISP_RDMA0>,
+			<&mmsys_config MMSYS_DISP_RDMA1>,
+			<&mmsys_config MMSYS_DISP_WDMA0>,
+			<&mmsys_config MMSYS_DISP_COLOR0>,
+			<&mmsys_config MMSYS_DISP_CCORR0>,
+			<&mmsys_config MMSYS_DISP_AAL0>,
+			<&mmsys_config MMSYS_DISP_GAMMA0>,
+			<&mmsys_config MMSYS_DISP_DITHER0>,
+			<&mmsys_config MMSYS_DISP_SPLIT>,
+			<&mmsys_config MMSYS_DSI0_MM_CK>,
+			<&mmsys_config MMSYS_DSI0_IF_CK>,
+			<&mmsys_config MMSYS_DPI_MM_CK>,
+			<&mmsys_config MMSYS_DPI_IF_CK>,
+			<&mmsys_config MMSYS_26M>,
+			<&mmsys_config MMSYS_DISP_RSZ>,
+			<&topckgen TOP_MUX_MM>,
+			<&topckgen TOP_MUX_DISP_PWM>,
+
+			<&infracfg_ao INFRACFG_AO_DISP_PWM_CG>,
+			<&clk26m>,
+			<&topckgen TOP_UNIVPLL2_D4>,
+			<&topckgen TOP_OSC_D4>,
+			<&topckgen TOP_OSC_D16>;
+
+		clock-names =
+			"MMSYS_MTCMOS",
+			"MMSYS_SMI_COMMON",
+			"MMSYS_SMI_LARB0",
+			"MMSYS_SMI_LARB1",
+			"MMSYS_GALS_COMM0",
+			"MMSYS_GALS_COMM1",
+			"MMSYS_GALS_VENC2MM",
+			"MMSYS_GALS_VDEC2MM",
+			"MMSYS_GALS_IMG2MM",
+			"MMSYS_GALS_CAM2MM",
+			"MMSYS_GALS_IPU2MM",
+			"MMSYS_DISP_OVL0",
+			"MMSYS_DISP_OVL0_2L",
+			"MMSYS_DISP_OVL1_2L",
+			"MMSYS_DISP_RDMA0",
+			"MMSYS_DISP_RDMA1",
+			"MMSYS_DISP_WDMA0",
+			"MMSYS_DISP_COLOR0",
+			"MMSYS_DISP_CCORR0",
+			"MMSYS_DISP_AAL0",
+			"MMSYS_DISP_GAMMA0",
+			"MMSYS_DISP_DITHER0",
+			"MMSYS_DISP_SPLIT",
+			"MMSYS_DSI0_MM_CK",
+			"MMSYS_DSI0_IF_CK",
+			"MMSYS_DSI1_MM_CK",
+			"MMSYS_DSI1_IF_CK",
+			"MMSYS_26M",
+			"MMSYS_DISP_RSZ",
+			"TOP_MUX_MM",
+			"TOP_MUX_DISP_PWM",
+
+			"DISP_PWM",
+			"TOP_26M",
+			"TOP_UNIVPLL2_D4",
+			"TOP_OSC_D4",
+			"TOP_OSC_D16";
 	};
 
 	mdp_rdma0: mdp_rdma0@14001000 {
