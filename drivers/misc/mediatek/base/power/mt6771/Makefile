@@ -32,4 +32,10 @@ ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6771) += mtk_gpufreq_core.o
+ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
+#ccflags-y += -DCONFIG_MTK_QOS_SUPPORT
+obj-$(CONFIG_MACH_MT6771) += mtk_gpu_bw.o
+endif
 endif
