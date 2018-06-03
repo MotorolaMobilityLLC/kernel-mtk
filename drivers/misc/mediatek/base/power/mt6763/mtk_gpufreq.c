@@ -342,7 +342,6 @@ typedef enum {
 } chip_ip_table;
 
 static chip_ip_table device_id;
-static unsigned int ext_buck_exist;
 
 
 /***************************
@@ -835,7 +834,7 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		goto SET_EXIT;
 	}
 
-	if (ext_buck_exist) {
+	if (device_id == C_MT6763TT) {
 		if (enable == mt_gpufreq_volt_enable_state) {
 			ret = 0;
 			/* check if really consist */
@@ -1023,7 +1022,7 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 		goto SET_LPM_EXIT;
 	}
 
-	if (ext_buck_exist) {
+	if (device_id == C_MT6763TT) {
 		if (enable_lpm && !mt_gpufreq_ptpod_disable) {
 			ret = _mt_gpufreq_set_lpm_status(VPROC, 1);
 			if (ret != 0)
@@ -1136,7 +1135,7 @@ void mt_gpufreq_restore_default_volt(void)
 				mt_gpufreqs[i].gpufreq_volt);
 	}
 
-	if (ext_buck_exist) /* Use VPROC for power Control */
+	if (device_id == C_MT6763TT) /* Use VPROC for power Control */
 		mt_gpufreq_volt_switch(g_cur_gpu_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
 	else /* Use VCORE for power Control */
 		mt_gpufreq_volt_switch_vcore(g_cur_gpu_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
@@ -1166,7 +1165,7 @@ unsigned int mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array
 				mt_gpufreqs[i].gpufreq_volt);
 	}
 
-	if (ext_buck_exist) /* Use VPROC for power Control */
+	if (device_id == C_MT6763TT) /* Use VPROC for power Control */
 		mt_gpufreq_volt_switch(g_cur_gpu_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
 	else /* Use VCORE for power Control */
 		mt_gpufreq_volt_switch_vcore(g_cur_gpu_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
@@ -1735,7 +1734,7 @@ static unsigned int _mt_gpufreq_get_cur_volt(void)
 #ifdef MTK_SSPM
 	gpu_volt = mt_gpufreq_ap2sspm(IPI_GPU_DVFS_STATUS_OP, QUERY_CUR_VOLT, 0);
 #else
-	if (ext_buck_exist) {
+	if (device_id == C_MT6763TT) {
 		/* WARRNING: regulator_get_voltage prints uV */
 		gpu_volt = regulator_get_voltage(mt_gpufreq_pmic->reg_vproc) / 10;
 		gpufreq_dbg("gpu_dvfs_get_cur_volt:[PMIC] volt = %d\n", gpu_volt);
@@ -1825,14 +1824,14 @@ static void mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
 			   unsigned int volt_old, unsigned int volt_new)
 {
 	if (freq_new > freq_old) {
-		if (ext_buck_exist)
+		if (device_id == C_MT6763TT)
 			mt_gpufreq_volt_switch(volt_old, volt_new);
 		else
 			mt_gpufreq_volt_switch_vcore(volt_old, volt_new);
 		mt_gpufreq_clock_switch(freq_new);
 	} else {
 		mt_gpufreq_clock_switch(freq_new);
-		if (ext_buck_exist)
+		if (device_id == C_MT6763TT)
 			mt_gpufreq_volt_switch(volt_old, volt_new);
 		else
 			mt_gpufreq_volt_switch_vcore(volt_old, volt_new);
@@ -2808,8 +2807,6 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		return PTR_ERR(mt_gpufreq_clk->clk_sub_parent);
 	}
 
-	ext_buck_exist = is_ext_buck_exist();
-
 	if (get_devinfo_with_index(30) == 0x10) {
 		gpufreq_info("@%s: I am 6763 (%x)\n", __func__, get_devinfo_with_index(30));
 		device_id = C_MT6763;
@@ -2817,7 +2814,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		gpufreq_info("@%s: I am 6763T (%x)\n", __func__, get_devinfo_with_index(30));
 		device_id = C_MT6763T;
 	} else if (get_devinfo_with_index(30) == 0x30) {
-		if (ext_buck_exist) {
+		if (is_ext_buck_exist()) {
 			gpufreq_info("@%s: I am 6763TT (%x)\n", __func__, get_devinfo_with_index(30));
 			device_id = C_MT6763TT;
 		} else {
@@ -2829,7 +2826,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	}
 
 	/* alloc PMIC regulator */
-	if (ext_buck_exist) {
+	if (device_id == C_MT6763TT) {
 		mt_gpufreq_pmic = kzalloc(sizeof(struct mt_gpufreq_pmic_t), GFP_KERNEL);
 		if (mt_gpufreq_pmic == NULL)
 			return -ENOMEM;
@@ -2900,7 +2897,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	 * setup PMIC init value
 	 ***********************/
 #ifdef VPROC_SET_BY_PMIC
-	if (ext_buck_exist) {
+	if (device_id == C_MT6763TT) {
 		g_vproc_sfchg_rrate = _calculate_vproc_sfchg_rate(true); /* rising rate */
 		g_vproc_sfchg_frate = _calculate_vproc_sfchg_rate(false); /* falling rate */
 		g_vsram_sfchg_rrate = _calculate_vsram_sfchg_rate(true); /* rising rate */
@@ -4080,7 +4077,7 @@ static void _mt_gpufreq_fixed_volt(int fixed_volt)
 #endif
 		gpufreq_dbg("@ %s, mt_gpufreq_volt_switch2 fix frq = %d, fix volt = %d, volt = %d\n",
 			__func__, mt_gpufreq_fixed_frequency, mt_gpufreq_fixed_voltage, g_cur_gpu_volt);
-		if (ext_buck_exist)
+		if (device_id == C_MT6763TT)
 			mt_gpufreq_volt_switch(g_cur_gpu_volt, mt_gpufreq_fixed_voltage);
 		else
 			mt_gpufreq_volt_switch_vcore(g_cur_gpu_volt, mt_gpufreq_fixed_voltage);
