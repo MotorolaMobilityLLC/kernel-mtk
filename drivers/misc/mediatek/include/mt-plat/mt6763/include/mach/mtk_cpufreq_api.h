@@ -70,6 +70,13 @@ extern unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id);
 extern unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(enum mt_cpu_dvfs_id id);
 extern void mt_cpufreq_setvolt_ocp_registerCB(cpuVoltsampler_func pCB);
 
+/* CM_MGR */
+extern unsigned int mt_cpufreq_get_cur_freq_idx(unsigned int cluster_id);
+extern unsigned int mt_cpufreq_get_cur_phy_freq_idx_no_lock(unsigned int cluster_id);
+
+typedef void (*cpuFreqsampler_func)(unsigned int cluster_id, unsigned int freq);
+extern void mt_cpufreq_set_governor_freq_registerCB(cpuFreqsampler_func pCB);
+
 /* CPUFREQ */
 extern void aee_record_cpufreq_cb(unsigned int step);
 #endif

@@ -283,6 +283,10 @@ extern int is_in_suspend(void);
 extern int cpufreq_procfs_init(void);
 extern char *_copy_from_user_for_proc(const char __user *buffer, size_t count);
 
+#ifdef CONFIG_MACH_MT6763
+extern void check_cm_mgr_status(unsigned int freq_idx, unsigned int cluster);
+#endif
+
 /* SRAM debugging*/
 extern void aee_rr_rec_cpu_dvfs_vproc_big(u8 val);
 extern void aee_rr_rec_cpu_dvfs_vproc_little(u8 val);

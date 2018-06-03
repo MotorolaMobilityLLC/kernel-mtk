@@ -51,6 +51,8 @@
 #define is_dvfs_in_progress()    (spm_read(DVFSRC_LEVEL) & 0xFFFF)
 #define get_dvfs_level()         (spm_read(DVFSRC_LEVEL) >> 16)
 
+#define MIN(a, b)                ((a) >= (b) ? (b) : (a))
+
 /*
  * only for internal debug
  */
@@ -699,17 +701,32 @@ void spm_go_to_vcorefs(int spm_flags)
 }
 
 #if defined(CONFIG_MACH_MT6763)
+unsigned int dram_request_opp = OPP_3;
+unsigned int cmmgr_request_opp = OPP_3;
 void spm_request_dvfs_opp(int id, enum dvfs_opp opp)
 {
 	u32 emi_req[NUM_OPP] = {0x2, 0x2, 0x1, 0x0};
+	u32 emi_req_lp3[NUM_OPP] = {0x2, 0x1, 0x1, 0x0};
 
 	switch (id) {
 	case 0: /* ZQTX */
 		if (__spm_get_dram_type() != SPMFW_LP4X_2CH)
 			return;
 
+		dram_request_opp = (unsigned int)opp;
+		opp = MIN(dram_request_opp, cmmgr_request_opp);
+
 		mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, id, emi_req[opp]);
 		/* spm_vcorefs_warn("DRAM ZQTX tracking request: %d\n", opp); */
+		break;
+	case 1: /* CMMGR */
+		cmmgr_request_opp = (unsigned int)opp;
+		opp = MIN(dram_request_opp, cmmgr_request_opp);
+
+		if (__spm_get_dram_type() == SPMFW_LP3_1CH)
+			mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, 0, emi_req_lp3[opp]);
+		else
+			mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, 0, emi_req[opp]);
 		break;
 	default:
 		break;
