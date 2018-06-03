@@ -190,7 +190,7 @@ typedef struct dump_info_fatal {
 	char *ExStr;
 	char *err_sec;
 	char offender[64];
-	char fatal_fname[EX_BRIEF_FATALERR_SIZE]; /*must be larger than EX_FATAL_V3_T filename*/
+	char fatal_fname[EX_BRIEF_FATALERR_SIZE]; /*must be larger than EX_FATAL_V3_T filename: pre-fix + fatal_fname*/
 } DUMP_INFO_FATAL;
 
 enum {
