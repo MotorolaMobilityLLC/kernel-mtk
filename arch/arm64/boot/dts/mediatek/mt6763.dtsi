@@ -1349,6 +1349,7 @@
 		clocks = <&infracfg_ao INFRACFG_AO_I2C6_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
+		mediatek,hs_only;
 	};
 
 	i2c7: i2c@11008000 {
