@@ -108,11 +108,11 @@ config MTK_HP_ANASWITCH
 	  Only enable this when you have headphone analog switch
 	  If you say Y, enable MTK_HP_ANASWITCH
 
-config MTK_BTCVSD_ALSA
+config SND_SOC_MTK_BTCVSD
 	bool "MTK BT CVSD ALSA ARICHITECTURE"
 	default n
 	help
-	  If you say Y, enable MTK_BTCVSD_ALSA.
+	  If you say Y, enable SND_SOC_MTK_BTCVSD.
 	  This is for software BTCVSD. This enable
 	  the function for transferring/receiving
 	  BT encoded data to/from BT firmware.
