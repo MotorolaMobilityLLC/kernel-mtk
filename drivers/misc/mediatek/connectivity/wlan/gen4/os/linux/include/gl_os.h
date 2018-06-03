@@ -228,6 +228,7 @@
 #include <mt-plat/met_drv.h>
 #endif
 #include <linux/time.h>
+#include <linux/fb.h>
 
 extern BOOLEAN fgIsBusAccessFailed;
 extern const struct ieee80211_iface_combination *p_mtk_iface_combinations_sta;
