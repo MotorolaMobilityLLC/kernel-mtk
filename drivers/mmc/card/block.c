@@ -1132,6 +1132,7 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 	int i, err = 0, ioc_err = 0;
 	__u64 num_of_cmds;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_blk_data *main_md;
 	unsigned char cmdq_en;
 #endif
 
@@ -1181,7 +1182,7 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 		mmc_claim_host(card->host);
 		err = mmc_blk_cmdq_switch(card, 0);
 		if (err) {
-			pr_notice("MMC ioctl: %s disable cmdq error %d\n",
+			pr_notice("MMC ioctl: %s disable CQ err %d\n",
 				mmc_hostname(card->host), err);
 			mmc_release_host(card->host);
 			goto cmd_done;
@@ -1202,11 +1203,12 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (cmdq_en) {
-		err = mmc_blk_cmdq_switch(card, 1);
+		main_md = dev_get_drvdata(&card->dev);
+		if  (main_md->part_curr <= 2)
+			if (mmc_blk_cmdq_switch(card, 1))
+				pr_notice("MMC ioctl: %s re-enable CQ err %d\n",
+					mmc_hostname(card->host), err);
 		mmc_release_host(card->host);
-		if (err)
-			pr_notice("MMC ioctl: %s re-enable CMDQ error %d\n",
-				mmc_hostname(card->host), err);
 	}
 #endif
 
