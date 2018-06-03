@@ -377,6 +377,10 @@ int port_ipc_init(struct port_t *port)
 	int ret = 0;
 	struct ccci_ipc_ctrl *ipc_ctrl = kmalloc(sizeof(struct ccci_ipc_ctrl), GFP_KERNEL);
 
+	if (unlikely(!ipc_ctrl)) {
+		CCCI_ERROR_LOG(port->md_id, IPC, "alloc ipc_ctrl fail!!\n");
+		return -1;
+	}
 	port->rx_length_th = MAX_QUEUE_LENGTH;
 	port->private_data = ipc_ctrl;
 	/*
@@ -391,6 +395,11 @@ int port_ipc_init(struct port_t *port)
 	port->skb_from_pool = 1;
 	if (port->flags & PORT_F_WITH_CHAR_NODE) {
 		dev = kmalloc(sizeof(struct cdev), GFP_KERNEL);
+		if (unlikely(!dev)) {
+			CCCI_ERROR_LOG(port->md_id, IPC, "alloc ipc char dev fail!!\n");
+			kfree(ipc_ctrl);
+			return -1;
+		}
 		cdev_init(dev, &ipc_dev_fops);
 		dev->owner = THIS_MODULE;
 		ret = cdev_add(dev, MKDEV(port->major, port->minor_base + port->minor), 1);
