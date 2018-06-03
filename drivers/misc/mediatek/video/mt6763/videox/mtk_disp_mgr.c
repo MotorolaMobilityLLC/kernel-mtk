@@ -470,6 +470,22 @@ int _ioctl_prepare_buffer(unsigned long arg, enum PREPARE_FENCE_TYPE type)
 	return ret;
 }
 
+int _ioctl_screen_freeze(unsigned long arg)
+{
+	int ret = 0;
+	void __user *argp = (void __user *)arg;
+	unsigned int enable;
+	int need_lock = 1;
+
+	if (copy_from_user(&enable, argp, sizeof(unsigned int))) {
+		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
+		return -EFAULT;
+	}
+	ret = display_freeze_mode(enable, need_lock);
+
+	return ret;
+}
+
 const char *_disp_format_spy(enum DISP_FORMAT format)
 {
 	switch (format) {
@@ -1305,6 +1321,8 @@ const char *_session_ioctl_spy(unsigned int cmd)
 		}
 	case DISP_IOCTL_GET_SESSION_INFO:
 		return "DISP_IOCTL_GET_SESSION_INFO";
+	case DISP_IOCTL_SCREEN_FREEZE:
+		return "DISP_IOCTL_SCREEN_FREEZE";
 	case DISP_IOCTL_AAL_EVENTCTL:
 		return "DISP_IOCTL_AAL_EVENTCTL";
 	case DISP_IOCTL_AAL_GET_HIST:
@@ -1426,6 +1444,8 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	{
 		return _ioctl_set_scenario(arg);
 	}
+	case DISP_IOCTL_SCREEN_FREEZE:
+		return _ioctl_screen_freeze(arg);
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_INIT_REG:
@@ -1598,7 +1618,8 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 		/* arg of this ioctl is all unsigned int, don't need special compat ioctl */
 		return file->f_op->unlocked_ioctl(file, cmd, (unsigned long)data32);
 	}
-
+	case COMPAT_DISP_IOCTL_SCREEN_FREEZE:
+		return _compat_ioctl_screen_freeze(file, arg);
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_INIT_REG:

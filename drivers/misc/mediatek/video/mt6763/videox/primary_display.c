@@ -104,6 +104,7 @@
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
 static struct disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
+static struct disp_internal_buffer_info *freeze_buffer_info;
 static struct RDMA_CONFIG_STRUCT decouple_rdma_config;
 static struct WDMA_CONFIG_STRUCT decouple_wdma_config;
 static struct disp_mem_output_config mem_config;
@@ -115,6 +116,8 @@ static unsigned int gCurrentPresentFenceIndex;
 unsigned int gTriggerDispMode; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 static unsigned int g_keep;
 static unsigned int g_skip;
+static enum DISP_POWER_STATE power_stat_backup;
+static int session_mode_backup;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 static struct switch_dev disp_switch_data;
 #endif
@@ -2420,6 +2423,7 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 			kfree(buf_info);
 			return NULL;
 		}
+		buf_info->client = client;
 		buf_info->handle = handle;
 		buf_info->mva = buffer_mva;
 		buf_info->size = mva_size;
@@ -7761,6 +7765,89 @@ int primary_display_set_scenario(int scenario)
 	}
 
 	return ret;
+}
+
+
+static int _allocate_freeze_buffer(void)
+{
+	enum UNIFIED_COLOR_FMT fmt = UFMT_RGB888;
+	int height = primary_display_get_height();
+	int width = primary_display_get_width();
+	int Bpp = UFMT_GET_Bpp(fmt);
+	int buffer_size =  width * height * Bpp;
+
+	freeze_buffer_info = allocat_decouple_buffer(buffer_size);
+	if (freeze_buffer_info != NULL)
+		pgc->freeze_buf = freeze_buffer_info->mva;
+	else
+		return -1;
+
+	return 0;
+}
+
+static int release_freeze_buffer(void)
+{
+	if (freeze_buffer_info) {
+		ion_free(freeze_buffer_info->client, freeze_buffer_info->handle);
+		ion_client_destroy(freeze_buffer_info->client);
+		kfree(freeze_buffer_info);
+		freeze_buffer_info = NULL;
+		pgc->freeze_buf = 0;
+	}
+	return 0;
+}
+
+int display_freeze_mode(int enable, int need_lock)
+{
+
+	DISPMSG("%s, enable:%d\n", __func__, enable);
+
+	if (need_lock)
+		_primary_path_lock(__func__);
+	if (enable) {
+		if (primary_get_state() != DISP_ALIVE) {
+			DISPERR("Can't enter freeze mode: current_stat=%d is not alive\n", primary_get_state());
+			goto end;
+		}
+		/*disp_helper_set_option(DISP_OPT_SMART_OVL, 0);*/
+		_allocate_freeze_buffer();
+		power_stat_backup = primary_set_state(DISP_FREEZE);
+		if (primary_display_is_mirror_mode()) {
+			DISPERR("Can't enter freeze mode: current_mode=%s\n", session_mode_spy(pgc->session_mode));
+			goto err1;
+		}
+		primary_display_idlemgr_kick((char *)__func__, 0);
+		session_mode_backup = pgc->session_mode;
+		if (session_mode_backup == DISP_SESSION_DECOUPLE_MODE
+			|| session_mode_backup == DISP_SESSION_RDMA_MODE) {
+			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+				pgc->session_id, 0, NULL, 0);
+			session_mode_backup = DISP_SESSION_DIRECT_LINK_MODE;
+		}
+		do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE,
+				pgc->session_id, 0, NULL, 0);
+	} else {
+		if (primary_get_state() != DISP_FREEZE)
+			goto end;
+		primary_set_state(power_stat_backup);
+		primary_display_idlemgr_kick((char *)__func__, 0);
+		do_primary_display_switch_mode(session_mode_backup, pgc->session_id,
+			0, NULL, 0);
+		release_freeze_buffer();
+		/*disp_helper_set_option(DISP_OPT_SMART_OVL, 1);*/
+	}
+	if (need_lock)
+		_primary_path_unlock(__func__);
+	return 0;
+
+err1:
+	primary_set_state(power_stat_backup);
+	release_freeze_buffer();
+end:
+	if (need_lock)
+		_primary_path_unlock(__func__);
+
+	return -1;
 }
 
 

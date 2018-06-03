@@ -1329,4 +1329,21 @@ int _compat_ioctl_frame_config(struct file *file, unsigned long arg)
 	return ret;
 }
 
+int _compat_ioctl_screen_freeze(struct file *file, unsigned long arg)
+{
+	int ret = 0;
+	compat_uint_t __user *data32;
+	unsigned int data;
+
+	data32 = compat_ptr(arg);
+	if (get_user(data, data32)) {
+		DISPERR("screen_freeze get_user failed\n");
+		ret = -EFAULT;
+	}
+
+	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_SCREEN_FREEZE, (unsigned long)data);
+	pr_debug("compat screen_freeze ret %d\n", ret);
+	return ret;
+}
+
 #endif

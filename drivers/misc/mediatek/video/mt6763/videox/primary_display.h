@@ -89,7 +89,8 @@ enum DISP_OP_STATE {
 enum DISP_POWER_STATE {
 	DISP_ALIVE = 0xf0,
 	DISP_SLEPT,
-	DISP_BLANK
+	DISP_BLANK,
+	DISP_FREEZE,
 };
 
 enum DISP_FRM_SEQ_STATE {
@@ -169,6 +170,7 @@ struct disp_mem_output_config {
 
 struct disp_internal_buffer_info {
 	struct list_head list;
+	struct ion_client *client;
 	struct ion_handle *handle;
 	struct sync_fence *pfence;
 	void *va;
@@ -238,6 +240,7 @@ struct display_primary_path_context {
 	int vsync_drop;
 	unsigned int dc_buf_id;
 	unsigned int dc_buf[DISP_INTERNAL_BUFFER_COUNT];
+	unsigned int freeze_buf;
 	unsigned int force_fps_keep_count;
 	unsigned int force_fps_skip_count;
 	cmdqBackupSlotHandle cur_config_fence;
@@ -437,5 +440,6 @@ int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, disp_p
 int primary_display_set_scenario(int scenario);
 enum DISP_MODULE_ENUM _get_dst_module_by_lcm(struct disp_lcm_handle *plcm);
 extern void check_mm0_clk_sts(void);
+int display_freeze_mode(int enable, int need_lock);
 
 #endif
