@@ -305,7 +305,7 @@ static INT32 wmt_conf_parse(P_DEV_WMT pWmtDev, const PINT8 pInBuf, UINT32 size)
 	INT32 i = 0;
 	PINT8 pa = NULL;
 
-	pBuf = osal_malloc(size);
+	pBuf = osal_malloc(size+1);
 	if (!pBuf)
 		return -1;
 
