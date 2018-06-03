@@ -350,8 +350,10 @@ int LC898217AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		unsigned int diff_ms;
 
 		g_TSAFClose = CURRENT_TIME;
-		start_ms = g_TSAFOpen.tv_sec * 1000 + (g_TSAFOpen.tv_nsec / 1000000);
-		end_ms = g_TSAFClose.tv_sec * 1000 + (g_TSAFClose.tv_nsec / 1000000);
+		start_ms = (unsigned long long)g_TSAFOpen.tv_sec * 1000L +
+						(g_TSAFOpen.tv_nsec / 1000000);
+		end_ms = (unsigned long long)g_TSAFClose.tv_sec * 1000L +
+						(g_TSAFClose.tv_nsec / 1000000);
 		diff_ms = end_ms - start_ms;
 
 		LOG_INF("Wait - Excute Time %d , FirstAFUninit(%d)\n", diff_ms, g_FirstAFUninit);
