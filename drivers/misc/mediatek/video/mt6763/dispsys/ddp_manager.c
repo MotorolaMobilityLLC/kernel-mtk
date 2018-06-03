@@ -261,6 +261,7 @@ static int assign_default_irqs_table(enum DDP_SCENARIO_ENUM scenario, struct DDP
 	int idx = 0;
 	switch (scenario) {
 	case DDP_SCENARIO_PRIMARY_DISP:
+	case DDP_SCENARIO_PRIMARY_BYPASS_PQ_DISP:
 	case DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP:
 	case DDP_SCENARIO_PRIMARY_RDMA0_DISP:
 	case DDP_SCENARIO_PRIMARY_ALL:

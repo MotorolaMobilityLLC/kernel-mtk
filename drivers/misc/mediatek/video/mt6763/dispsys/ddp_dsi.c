@@ -333,7 +333,7 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 			DDPDUMP("== DSI_PHY%d REGS ==\n", i);
-				for (k = 0; k < sizeof(struct DSI_PHY_REGS); k += 16) {
+				for (k = 0; k < 0x6A0; k += 16) {
 				DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
 					INREG32((mipi_base_addr + k)),
 					INREG32((mipi_base_addr + k + 0x4)),

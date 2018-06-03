@@ -3334,10 +3334,10 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
 	gset_arg.is_decouple_mode = 0;
 	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
-	if (0 /*is_lcm_inited*/) {
+	if (is_lcm_inited) {
 		/* ??? why need */
 		/* no need lcm power on,because lk power on lcm */
-		/*ret = disp_lcm_init(pgc->plcm, 0);*/
+		ret = disp_lcm_init(pgc->plcm, 0);
 	} else {
 		/* lcm not inited : 1. fpga no lk(verify done); 2. evb no lk(need verify) */
 		if (use_cmdq) {
