@@ -205,7 +205,8 @@ VOID wlanPktDebugDumpInfo(P_ADAPTER_T prAdapter)
 				, prPktInfo->u2IpId
 				, prPktInfo->u2ArpOpCode);
 
-				if (index % PKT_INFO_MSG_GROUP_RANGE == 0) {
+				if ((index == PKT_INFO_BUF_MAX_NUM - 1) ||
+					(index % PKT_INFO_MSG_GROUP_RANGE == (PKT_INFO_MSG_GROUP_RANGE - 1))) {
 					if (i == 0)
 						DBGLOG(TX, INFO, "%s\n", pucMsg);
 					else if (i == 1)

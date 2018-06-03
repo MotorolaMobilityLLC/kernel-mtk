@@ -1106,7 +1106,7 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 		memcpy(aucCfgQueryKey, aucCfgBuf, u4CopySize);
 
 		/*replace Carriage Return (0x0a) to string end of terminal */
-		if (aucCfgQueryKey[u4CopySize - 1] == 0x0a)
+		if ((u4CopySize > 0) && (aucCfgQueryKey[u4CopySize - 1] == 0x0a))
 			aucCfgQueryKey[u4CopySize - 1] = '\0';
 
 	} else {

@@ -929,8 +929,11 @@ scnFsmGenerateScanDoneMsg(IN P_ADAPTER_T prAdapter,
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prScanParam = &prScanInfo->rScanParam;
 
-	DBGLOG(SCN, INFO, "Rcv Scan Done, NetIdx %d, Obss %d, Status %d, Seq %d\n",
-					ucNetTypeIndex, prScanParam->fgIsObssScan, eScanStatus, ucSeqNum);
+	DBGLOG(SCN, INFO, "Rcv Scan Done, NetIdx %d, Obss %d, Status %d, Seq %d ,STA MAC:[%pM] FwVer: 0x%x.%x\n",
+				  ucNetTypeIndex, prScanParam->fgIsObssScan, eScanStatus, ucSeqNum,
+				  prAdapter->rWifiVar.aucMacAddress,
+				  prAdapter->rVerInfo.u2FwOwnVersion,
+				  prAdapter->rVerInfo.u2FwOwnVersionExtend);
 	prScanDoneMsg = (P_MSG_SCN_SCAN_DONE) cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_SCN_SCAN_DONE));
 	if (!prScanDoneMsg) {
 		ASSERT(0);	/* Can't indicate SCAN FSM Complete */
@@ -1036,7 +1039,6 @@ VOID scnEventNloDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_NLO_DONE_T prNloDone)
 
 }
 
-
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief         handler for starting scheduled scan
@@ -1064,7 +1066,7 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 	prScanParam = &prNloParam->rScanParam;
 
 	if (prScanInfo->fgNloScanning) {
-		DBGLOG(SCN, INFO, "prScanInfo->fgNloScanning == TRUE  already scanning\n");
+		DBGLOG(SCN, WARN, "prScanInfo->fgNloScanning == TRUE  already scanning\n");
 		return TRUE;
 	}
 
@@ -1072,12 +1074,17 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 
 	/* 1. load parameters */
 	prScanParam->ucSeqNum++;
-	/* prScanParam->ucBssIndex             = prAdapter->prAisBssInfo->ucBssIndex; */
+	/* prScanParam->ucBssIndex = prAdapter->prAisBssInfo->ucBssIndex; */
 
 	prNloParam->fgStopAfterIndication = FALSE;
-	prNloParam->ucFastScanIteration = 0;
-	prNloParam->u2FastScanPeriod = u2Interval;
-	prNloParam->u2SlowScanPeriod = u2Interval;
+	prNloParam->ucFastScanIteration = 1;
+
+	if (u2Interval < SCAN_NLO_DEFAULT_INTERVAL) {
+		u2Interval = SCAN_NLO_DEFAULT_INTERVAL; /* millisecond */
+		DBGLOG(SCN, TRACE, "force interval to SCAN_NLO_DEFAULT_INTERVAL\n");
+	}
+	prNloParam->u2FastScanPeriod = SCAN_NLO_MIN_INTERVAL; /* use second instead of millisecond for UINT_16*/
+	prNloParam->u2SlowScanPeriod = SCAN_NLO_MAX_INTERVAL;
 
 	if (prScanParam->ucSSIDNum > CFG_SCAN_SSID_MAX_NUM)
 		prScanParam->ucSSIDNum = CFG_SCAN_SSID_MAX_NUM;
@@ -1105,6 +1112,9 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 			prNloParam->aucChannelHint[i][j] = 0;
 	}
 
+	DBGLOG(SCN, INFO, "ssidNum %d, %s, Iteration=%d, FastScanPeriod=%d\n",
+		prNloParam->ucMatchSSIDNum, prNloParam->aucMatchSSID[0],
+		prNloParam->ucFastScanIteration, prNloParam->u2FastScanPeriod);
 	/* 2. prepare command for sending */
 	prCmdNloReq = (P_CMD_NLO_REQ) cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(CMD_NLO_REQ) + prScanParam->u2IELen);
 
@@ -1146,8 +1156,8 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 
 	if (prScanParam->u2IELen)
 		kalMemCopy(prCmdNloReq->aucIE, prScanParam->aucIE, sizeof(UINT_8) * prCmdNloReq->u2IELen);
-#if !CFG_SUPPORT_GSCN
 
+#if !CFG_SUPPORT_SCN_PSCN
 	wlanSendSetQueryCmd(prAdapter,
 			    CMD_ID_SET_NLO_REQ,
 			    TRUE,
@@ -1191,8 +1201,7 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 	/* send cancel message to firmware domain */
 	rCmdNloCancel.ucSeqNum = prScanParam->ucSeqNum;
 
-#if !CFG_SUPPORT_GSCN
-
+#if !CFG_SUPPORT_SCN_PSCN
 	wlanSendSetQueryCmd(prAdapter,
 			    CMD_ID_SET_NLO_CANCEL,
 			    TRUE,
@@ -1202,7 +1211,11 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 			    nicOidCmdTimeoutCommon, sizeof(CMD_NLO_CANCEL), (PUINT_8)(&rCmdNloCancel), NULL, 0);
 #else
 	scnCombineParamsIntoPSCN(prAdapter, NULL, NULL, NULL, NULL, TRUE, FALSE, FALSE);
-	scnPSCNFsm(prAdapter, PSCN_RESET);
+	if (prScanInfo->prPscnParam->fgGScnEnable
+		|| prScanInfo->prPscnParam->fgBatchScnEnable)
+		scnPSCNFsm(prAdapter, PSCN_RESET); /* in case there is any PSCN */
+	else
+		scnPSCNFsm(prAdapter, PSCN_IDLE);
 #endif
 
 	prScanInfo->fgNloScanning = FALSE;
@@ -1265,7 +1278,6 @@ BOOLEAN scnFsmPSCNSetParam(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM pr
 
 	ASSERT(prAdapter);
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-	/*prCmdPscnParam->u4BasePeriod = prCmdPscnParam->u4BasePeriod;*/
 
 	DBGLOG(SCN, INFO, "fgNLOScnEnable=%d %d %d, basePeriod=%d\n",
 		prCmdPscnParam->fgNLOScnEnable, prCmdPscnParam->fgBatchScnEnable,
@@ -1535,14 +1547,15 @@ scnRemoveFromPSCN(IN P_ADAPTER_T prAdapter,
 		prCmdPscnParam->fgGScnEnable = FALSE;
 		prScanInfo->fgGScnParamSet = FALSE;
 		prScanInfo->fgGScnConfigSet = FALSE;
+		prScanInfo->fgGScnAction = FALSE;
 		kalMemZero(&prCmdPscnParam->rCmdGscnReq, sizeof(CMD_GSCN_REQ_T));
 	}
 
-	/* sync to firmware*/
+	/* sync to firmware */
 	if (fgRemoveNLOfromPSCN || fgRemoveBatchSCNfromPSCN || fgRemoveGSCNfromPSCN) {
-		prScanInfo->fgPscnOngoing = FALSE;
-		scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
-		scnFsmPSCNSetParam(prAdapter, prCmdPscnParam);
+		/* prScanInfo->fgPscnOngoing = FALSE;
+		* scnPSCNFsm(prAdapter, PSCN_RESET);
+		*/
 	}
 
 }
@@ -1615,8 +1628,10 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 			scnFsmPSCNSetParam(prAdapter, prScanInfo->prPscnParam);
 
-			if (prScanInfo->prPscnParam->fgNLOScnEnable) {
-				eNextPSCNState = PSCN_SCANNING; /* upper layer trigger GSCN Action */
+			if (prScanInfo->prPscnParam->fgNLOScnEnable
+				|| prScanInfo->prPscnParam->fgBatchScnEnable
+				|| (prScanInfo->prPscnParam->fgGScnEnable && prScanInfo->fgGScnAction)) {
+				eNextPSCNState = PSCN_SCANNING; /* keep original operation if there is any PSCN */
 				DBGLOG(SCN, TRACE,
 				       "PSCN_RESET->PSCN_SCANNING....fgNLOScnEnable/fgBatchScnEnable/fgGScnEnable ENABLE\n");
 			} else {
@@ -1673,7 +1688,7 @@ BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARA
 	kalMemZero(prCmdGscnReq, sizeof(CMD_GSCN_REQ_T));
 	prCmdGscnReq->u4NumBuckets = prCmdGscnParam->num_buckets;
 	prCmdGscnReq->u4BasePeriod = prCmdGscnParam->base_period;
-	DBGLOG(SCN, INFO, "u4BasePeriod[%d], u4NumBuckets[%d]\n",
+	DBGLOG(SCN, TRACE, "u4BasePeriod[%d], u4NumBuckets[%d]\n",
 		prCmdGscnReq->u4BasePeriod, prCmdGscnReq->u4NumBuckets);
 
 	for (i = 0; i < prCmdGscnReq->u4NumBuckets; i++) {

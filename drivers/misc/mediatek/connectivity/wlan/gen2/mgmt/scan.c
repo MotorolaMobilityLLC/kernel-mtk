@@ -3110,6 +3110,7 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 	prAisSpecificBssInfo = &prAdapter->rWifiVar.rAisSpecificBssInfo;
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 	prEssLink = &prAisSpecificBssInfo->rCurEssLink;
+
 #if CFG_SUPPORT_CHNL_CONFLICT_REVISE
 	fgIsFixedChannel = cnmAisDetectP2PChannel(prAdapter, &eBand, &ucChannel);
 #else
@@ -3128,7 +3129,9 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 		}
 	}
 #endif
-	DBGLOG(SCN, INFO, "Max RSSI %d\n", cMaxRssi);
+	DBGLOG(SCN, INFO, "Max RSSI %d, ConnectionPolicy =%d\n",
+		  cMaxRssi,
+		  prConnSettings->eConnectionPolicy);
 try_again:
 	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
 		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
@@ -3228,6 +3231,7 @@ try_again:
 			u2CandBssScore = u2ScoreTotal;
 		}
 	}
+
 	if (prCandBssDesc) {
 		if (prCandBssDesc->fgIsConnected && !fgSearchBlackList && prEssLink->u4NumElem > 0) {
 			fgSearchBlackList = TRUE;
