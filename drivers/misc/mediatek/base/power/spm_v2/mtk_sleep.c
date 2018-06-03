@@ -83,7 +83,7 @@
 #define slp_debug(fmt, args...)     pr_debug("[SLP] " fmt, ##args)
 static DEFINE_SPINLOCK(slp_lock);
 
-static wake_reason_t slp_wake_reason = WR_NONE;
+static unsigned int slp_wake_reason = WR_NONE;
 
 static bool slp_ck26m_on;
 bool slp_dump_gpio;
@@ -432,7 +432,7 @@ int slp_set_wakesrc(u32 wakesrc, bool enable, bool ck26m_on)
 	return r;
 }
 
-wake_reason_t slp_get_wake_reason(void)
+unsigned int slp_get_wake_reason(void)
 {
 	return slp_wake_reason;
 }

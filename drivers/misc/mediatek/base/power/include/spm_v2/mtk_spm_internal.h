@@ -505,7 +505,7 @@ extern void __spm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl);
 
 extern void __spm_get_wakeup_status(struct wake_status *wakesta);
 extern void __spm_clean_after_wakeup(void);
-extern wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
+extern unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 					      const struct pcm_desc *pcmdesc, bool suspend);
 
 extern void __spm_dbgout_md_ddr_en(bool enable);
@@ -542,7 +542,7 @@ extern void __spm_pmic_pg_force_on(void);
 extern void __spm_pmic_pg_force_off(void);
 extern void __spm_pmic_low_iq_mode(int en);
 extern void __spm_set_pcm_wdt(int en);
-extern u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr);
+extern u32 _spm_get_wake_period(int pwake_time, unsigned int last_wr);
 extern struct dram_info *g_dram_info_dummy_read;
 
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
@@ -577,6 +577,7 @@ do {					\
 #define wfi_with_sync()					\
 do {							\
 	isb();						\
+	/* add mb() before wfi */			\
 	mb();						\
 	__asm__ __volatile__("wfi" : : : "memory");	\
 } while (0)

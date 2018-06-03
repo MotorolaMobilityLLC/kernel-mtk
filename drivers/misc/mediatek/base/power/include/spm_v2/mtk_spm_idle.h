@@ -50,8 +50,8 @@ extern long int spm_get_current_time_ms(void);
 void spm_deepidle_init(void);
 void spm_dpidle_before_wfi(int cpu);		 /* can be redefined */
 void spm_dpidle_after_wfi(int cpu, u32 spm_debug_flag);		 /* can be redefined */
-wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log);
-wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data);
+unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log);
+unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data);
 int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace);
 bool spm_set_dpidle_pcm_init_flag(void);
 
@@ -63,7 +63,7 @@ bool spm_set_dpidle_pcm_init_flag(void);
  * for Screen On Deep Idle 3.0
  */
 void spm_sodi3_init(void);
-wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags);
+unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags);
 void spm_enable_sodi3(bool);
 bool spm_get_sodi3_en(void);
 
@@ -71,7 +71,7 @@ bool spm_get_sodi3_en(void);
  * for Screen On Deep Idle
  */
 void spm_sodi_init(void);
-wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags);
+unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags);
 void spm_enable_sodi(bool);
 bool spm_get_sodi_en(void);
 

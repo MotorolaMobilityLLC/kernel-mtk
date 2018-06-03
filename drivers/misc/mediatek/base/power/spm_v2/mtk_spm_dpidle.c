@@ -571,9 +571,9 @@ int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace)
 	return 0;
 }
 
-static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 dump_log)
+static unsigned int spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 dump_log)
 {
-	wake_reason_t wr = WR_NONE;
+	unsigned int wr = WR_NONE;
 	unsigned long int dpidle_log_print_curr_time = 0;
 	bool log_print = false;
 	static bool timer_out_too_short;
@@ -656,12 +656,12 @@ int dpidle_active_status(void)
 EXPORT_SYMBOL(dpidle_active_status);
 #endif
 
-wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
+unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
 	struct mtk_irq_mask mask;
-	static wake_reason_t wr = WR_NONE;
+	static unsigned int wr = WR_NONE;
 	/* struct pcm_desc *pcmdesc = __spm_dpidle.pcmdesc; */
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
@@ -802,7 +802,7 @@ RESTORE_IRQ:
  * pwake_time:
  *    >= 0  = specific wakeup period
  */
-wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
+unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 {
 	u32 sec = 0;
 	u32 dpidle_timer_val = 0;
@@ -814,7 +814,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	struct wd_api *wd_api;
 	int wd_ret;
 #endif
-	static wake_reason_t last_wr = WR_NONE;
+	static unsigned int last_wr = WR_NONE;
 	/* struct pcm_desc *pcmdesc = __spm_dpidle.pcmdesc; */
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;

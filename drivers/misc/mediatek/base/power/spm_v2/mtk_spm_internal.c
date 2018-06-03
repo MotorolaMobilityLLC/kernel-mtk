@@ -742,12 +742,12 @@ do {						\
 		spm_crit2(fmt, ##args);		\
 } while (0)
 
-wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
+unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 				       const struct pcm_desc *pcmdesc, bool suspend)
 {
 	int i;
 	char buf[LOG_BUF_SIZE] = { 0 };
-	wake_reason_t wr = WR_UNKNOWN;
+	unsigned int wr = WR_UNKNOWN;
 
 	if (wakesta->assert_pc != 0) {
 		/* add size check for vcoredvfs */
@@ -1245,7 +1245,7 @@ int __attribute__ ((weak)) get_dynamic_period(int first_use, int first_wakeup_ti
 	return 60;
 }
 
-u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
+u32 _spm_get_wake_period(int pwake_time, unsigned int last_wr)
 {
 	int period = SPM_WAKE_PERIOD;
 

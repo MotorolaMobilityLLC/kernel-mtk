@@ -4798,7 +4798,7 @@ UINT_64 kalGetBootTime(void)
 
 #if CFG_SUPPORT_WAKEUP_REASON_DEBUG
 /* if SPM is not implement this function, we will use this default one */
-wake_reason_t __weak slp_get_wake_reason(VOID)
+unsigned int __weak slp_get_wake_reason(VOID)
 {
 	DBGLOG(INIT, WARN, "SPM didn't define this function!\n");
 	return WR_NONE;
