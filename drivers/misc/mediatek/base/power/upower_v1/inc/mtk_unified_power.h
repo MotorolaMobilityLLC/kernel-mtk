@@ -55,6 +55,7 @@ enum upower_bank {
 enum upower_dtype {
 	UPOWER_DYN,
 	UPOWER_LKG,
+	UPOWER_CPU_STATES,
 
 	NR_UPOWER_DTYPE,
 };
