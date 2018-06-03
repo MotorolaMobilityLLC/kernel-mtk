@@ -87,7 +87,7 @@ check_defconfig() {
 	fi
 
 	# Check if there is a warning message
-	if echo "$OUTPUT" | grep -q "^warning:"; then
+	if echo "$OUTPUT" | grep -q ":warning:"; then
 		echo error: there is a warning message with Kconfig
 		rm -rf ${OUT}
 		FAIL=1
