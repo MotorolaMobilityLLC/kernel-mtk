@@ -444,6 +444,7 @@ static ssize_t ppm_smart_detect_boost_proc_write(struct file *file, const char _
 		ppm_main_info.smart_detect_boost = smart_detect;
 		ppm_unlock(&ppm_main_info.lock);
 
+		ppm_info("smart detect = %d\n", smart_detect);
 		mt_ppm_main();
 	} else
 		ppm_err("echo [0/1] > /proc/ppm/smart_detect_boost\n");
