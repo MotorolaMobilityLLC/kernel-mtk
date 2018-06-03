@@ -86,7 +86,6 @@
 
 #define CMDQ_ACQUIRE_THREAD_TIMEOUT_MS  (2000)
 #define CMDQ_PREDUMP_TIMEOUT_MS         (200)
-#define CMDQ_PREDUMP_RETRY_COUNT        (5)
 
 #ifndef CONFIG_MTK_FPGA
 #define CMDQ_PWR_AWARE		/* FPGA does not have ClkMgr */
