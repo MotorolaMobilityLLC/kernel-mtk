@@ -388,7 +388,7 @@ void *mva_get_priv(unsigned int mva)
  */
 int m4u_check_mva_region(unsigned int startIdx, unsigned int nr, void *priv)
 {
-	m4u_buf_info_t *pMvaInfo = (m4u_buf_info_t *)priv;
+	struct m4u_buf_info_t *pMvaInfo = (struct m4u_buf_info_t *)priv;
 	int is_in = 0, is_interseted = 0;
 
 	/*check if input mva region is in vpu region.
