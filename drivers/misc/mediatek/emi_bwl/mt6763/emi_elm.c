@@ -371,6 +371,7 @@ void suspend_elm(void)
 
 void resume_elm(void)
 {
-	lt_init();
+	if (is_elm_enabled())
+		lt_init();
 }
 
