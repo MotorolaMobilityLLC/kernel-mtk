@@ -179,7 +179,6 @@ config MACH_MT6763
 	select MFD_SYSCON
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
-	select MTK_CPU_STRESS
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_EIC_HISTORY_DUMP
 	select MTK_EIC
