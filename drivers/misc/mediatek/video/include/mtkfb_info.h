@@ -65,9 +65,9 @@ struct mtk_dispif_info {
 	unsigned int physicalWidth;
 	unsigned int physicalHeight;
 	unsigned int isConnected;
-/* this value is for DFO Multi-Resolution feature, which stores the original LCM Wdith */
+/* it's for DFO Multi-Resolution feature, stores the original LCM Wdith */
 	unsigned int lcmOriginalWidth;
-/* this value is for DFO Multi-Resolution feature, which stores the original LCM Height */
+/* it's for DFO Multi-Resolution feature, stores the original LCM Height */
 	unsigned int lcmOriginalHeight;
 };
 

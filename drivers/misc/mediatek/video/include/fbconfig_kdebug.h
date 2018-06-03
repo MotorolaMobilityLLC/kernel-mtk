@@ -159,7 +159,8 @@ struct misc_property {
 };
 
 void Panel_Master_DDIC_config(void);
-int fbconfig_get_esd_check(enum DSI_INDEX dsi_id, uint32_t cmd, uint8_t *buffer, uint32_t num);
+int fbconfig_get_esd_check(enum DSI_INDEX dsi_id, uint32_t cmd,
+						uint8_t *buffer, uint32_t num);
 
 #include <linux/uaccess.h>
 #include <linux/compat.h>

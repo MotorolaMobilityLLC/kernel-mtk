@@ -24,7 +24,7 @@
 #define MAX_INPUT_CONFIG		4
 #define MAKE_DISP_FORMAT_ID(id, bpp)  (((id) << 8) | (bpp))
 
-/* /============================================================================= */
+/* /========================================================================= */
 /* structure declarations */
 /* /=========================== */
 
@@ -72,24 +72,30 @@ enum DISP_FORMAT {
 	DISP_FORMAT_BGRA8888 = MAKE_DISP_FORMAT_ID(7, 4),
 	DISP_FORMAT_XRGB8888 = MAKE_DISP_FORMAT_ID(8, 4),
 	DISP_FORMAT_XBGR8888 = MAKE_DISP_FORMAT_ID(9, 4),
+
 	/* Packed YUV Formats */
 	DISP_FORMAT_YUV444 = MAKE_DISP_FORMAT_ID(10, 3),
-	DISP_FORMAT_YVYU = MAKE_DISP_FORMAT_ID(11, 2),	/* Same as UYVY, but replace Y/U/V */
+	/* Same as UYVY, but replace Y/U/V */
+	DISP_FORMAT_YVYU = MAKE_DISP_FORMAT_ID(11, 2),
 	DISP_FORMAT_VYUY = MAKE_DISP_FORMAT_ID(12, 2),
 	DISP_FORMAT_UYVY = MAKE_DISP_FORMAT_ID(13, 2),
 	DISP_FORMAT_Y422 = MAKE_DISP_FORMAT_ID(13, 2),
-	DISP_FORMAT_YUYV = MAKE_DISP_FORMAT_ID(14, 2),	/* Same as UYVY but replace U/V */
+	/* Same as UYVY but replace U/V */
+	DISP_FORMAT_YUYV = MAKE_DISP_FORMAT_ID(14, 2),
 	DISP_FORMAT_YUY2 = MAKE_DISP_FORMAT_ID(14, 2),
-	DISP_FORMAT_YUV422 = MAKE_DISP_FORMAT_ID(14, 2),	/* Will be removed */
+	DISP_FORMAT_YUV422 = MAKE_DISP_FORMAT_ID(14, 2),  /* Will be removed */
 	DISP_FORMAT_GREY = MAKE_DISP_FORMAT_ID(15, 1),	/* Single Y plane */
 	DISP_FORMAT_Y800 = MAKE_DISP_FORMAT_ID(15, 1),
 	DISP_FORMAT_Y8 = MAKE_DISP_FORMAT_ID(15, 1),
+
 	/* Planar YUV Formats */
 	DISP_FORMAT_YV12 = MAKE_DISP_FORMAT_ID(16, 1),	/* BPP = 1.5 */
-	DISP_FORMAT_I420 = MAKE_DISP_FORMAT_ID(17, 1),	/* Same as YV12 but replace U/V */
+	/* Same as YV12 but replace U/V */
+	DISP_FORMAT_I420 = MAKE_DISP_FORMAT_ID(17, 1),
 	DISP_FORMAT_IYUV = MAKE_DISP_FORMAT_ID(17, 1),
 	DISP_FORMAT_NV12 = MAKE_DISP_FORMAT_ID(18, 1),	/* BPP = 1.5 */
-	DISP_FORMAT_NV21 = MAKE_DISP_FORMAT_ID(19, 1),	/* Same as NV12 but replace U/V */
+	/* Same as NV12 but replace U/V */
+	DISP_FORMAT_NV21 = MAKE_DISP_FORMAT_ID(19, 1),
 
 	DISP_FORMAT_BPP_MASK = 0xFFFF,
 };
@@ -181,7 +187,8 @@ struct disp_input_config {
 	enum DISP_LAYER_TYPE layer_type;
 	enum DISP_ORIENTATION video_rotation;
 
-	unsigned int isTdshp;	/* set to 1, will go through tdshp first, then layer blending, then to color */
+	/* if 1, go through tdshp first, then layer blending, then to color */
+	unsigned int isTdshp;
 
 	unsigned int next_buff_idx;
 	int identity;
@@ -238,8 +245,10 @@ struct disp_session_info {
 	unsigned int vsyncFPS;
 	unsigned int physicalWidth;	/* length: mm, for legacy use */
 	unsigned int physicalHeight;	/* length: mm, for legacy use */
-	unsigned int physicalWidthUm;	/* length: um, for more precise precision */
-	unsigned int physicalHeightUm;	/* length: um, for more precise precision */
+	/* length: um, for more precise precision */
+	unsigned int physicalWidthUm;
+	/* length: um, for more precise precision */
+	unsigned int physicalHeightUm;
 	unsigned int isConnected;
 };
 
@@ -262,21 +271,25 @@ struct disp_buffer_info {
 #define DISP_IO(num)             _IO('O', num)
 
 
-#define	DISP_IOCTL_CREATE_SESSION				DISP_IOW(201, struct disp_session_config)
-#define	DISP_IOCTL_DESTROY_SESSION				DISP_IOW(202, struct disp_session_config)
-#define	DISP_IOCTL_TRIGGER_SESSION				DISP_IOW(203, struct disp_session_config)
-#define DISP_IOCTL_PREPARE_INPUT_BUFFER			DISP_IOW(204, struct disp_buffer_info)
-#define DISP_IOCTL_PREPARE_OUTPUT_BUFFER		DISP_IOW(205, struct disp_buffer_info)
-#define DISP_IOCTL_SET_INPUT_BUFFER			DISP_IOW(206, struct disp_session_input_config)
-#define DISP_IOCTL_SET_OUTPUT_BUFFER			DISP_IOW(207, struct disp_session_output_config)
-#define	DISP_IOCTL_GET_SESSION_INFO				DISP_IOW(208, struct disp_session_info)
+#define	DISP_IOCTL_CREATE_SESSION      DISP_IOW(201, struct disp_session_config)
+#define	DISP_IOCTL_DESTROY_SESSION     DISP_IOW(202, struct disp_session_config)
+#define	DISP_IOCTL_TRIGGER_SESSION     DISP_IOW(203, struct disp_session_config)
+#define DISP_IOCTL_PREPARE_INPUT_BUFFER	  DISP_IOW(204, struct disp_buffer_info)
+#define DISP_IOCTL_PREPARE_OUTPUT_BUFFER  DISP_IOW(205, struct disp_buffer_info)
+#define DISP_IOCTL_SET_INPUT_BUFFER  \
+				 DISP_IOW(206, struct disp_session_input_config)
+#define DISP_IOCTL_SET_OUTPUT_BUFFER \
+				DISP_IOW(207, struct disp_session_output_config)
+#define	DISP_IOCTL_GET_SESSION_INFO      DISP_IOW(208, struct disp_session_info)
 
-#define	DISP_IOCTL_SET_SESSION_MODE			    DISP_IOW(209, struct disp_session_config)
-#define	DISP_IOCTL_GET_SESSION_MODE			    DISP_IOW(210, struct disp_session_config)
-#define	DISP_IOCTL_SET_SESSION_TYPE				DISP_IOW(211, struct disp_session_config)
-#define	DISP_IOCTL_GET_SESSION_TYPE				DISP_IOW(212, struct disp_session_config)
-#define	DISP_IOCTL_WAIT_FOR_VSYNC				DISP_IOW(213, struct disp_session_vsync_config)
-#define	DISP_IOCTL_SET_MAX_LAYER_NUM			DISP_IOW(214, struct disp_session_layer_num_config)
+#define	DISP_IOCTL_SET_SESSION_MODE    DISP_IOW(209, struct disp_session_config)
+#define	DISP_IOCTL_GET_SESSION_MODE    DISP_IOW(210, struct disp_session_config)
+#define	DISP_IOCTL_SET_SESSION_TYPE    DISP_IOW(211, struct disp_session_config)
+#define	DISP_IOCTL_GET_SESSION_TYPE    DISP_IOW(212, struct disp_session_config)
+#define	DISP_IOCTL_WAIT_FOR_VSYNC  \
+				 DISP_IOW(213, struct disp_session_vsync_config)
+#define	DISP_IOCTL_SET_MAX_LAYER_NUM \
+			     DISP_IOW(214, struct disp_session_layer_num_config)
 
 
 #endif				/* __DISP_SVP_H */

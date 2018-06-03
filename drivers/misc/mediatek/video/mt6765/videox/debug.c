@@ -914,6 +914,7 @@ struct completion dump_buf_comp;
 static void process_dbg_opt(const char *opt)
 {
 	int ret;
+
 	DISPWARN("disp debug cmd %s\n", opt);
 
 	if (strncmp(opt, "helper", 6) == 0) {
