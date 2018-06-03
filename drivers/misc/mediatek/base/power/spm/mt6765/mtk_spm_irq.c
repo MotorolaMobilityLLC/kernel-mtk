@@ -76,22 +76,32 @@ static void mtk_spm_get_edge_trigger_irq(void)
 {
 	int i;
 	struct device_node *node;
+	unsigned int irq_type;
 
 	pr_info("[SPM] edge trigger irqs:\n");
 	for (i = 0; i < IRQ_NUMBER; i++) {
 		node = of_find_compatible_node(NULL, NULL, list[i].name);
-		if (!node)
+		if (!node) {
 			pr_info("[SPM] find '%s' node failed\n",
 				list[i].name);
-		else {
-			edge_trig_irqs[i] =
-				irq_of_parse_and_map(node, list[i].order);
-			if (!edge_trig_irqs[i])
-				pr_info("[SPM] get '%s' failed\n",
-					list[i].name);
+			continue;
 		}
-		pr_info("[SPM] '%s', irq=%d\n", list[i].name,
-			edge_trig_irqs[i]);
+
+		edge_trig_irqs[i] =
+			irq_of_parse_and_map(node, list[i].order);
+
+		if (!edge_trig_irqs[i]) {
+			pr_info("[SPM] get '%s' failed\n",
+				list[i].name);
+			continue;
+		}
+
+		/* Note: Initialize irq type to avoid pending irqs */
+		irq_type = irq_get_trigger_type(edge_trig_irqs[i]);
+		irq_set_irq_type(edge_trig_irqs[i], irq_type);
+
+		pr_info("[SPM] '%s', irq=%d, type=%d\n", list[i].name,
+			edge_trig_irqs[i], irq_type);
 	}
 }
 
