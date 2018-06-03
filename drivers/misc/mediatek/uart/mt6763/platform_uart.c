@@ -179,12 +179,16 @@ void set_uart_default_settings(int idx)
 	case 1:
 		node = of_find_node_by_name(NULL, "apuart1");
 		break;
+#if (UART_NR > 2)
 	case 2:
 		node = of_find_node_by_name(NULL, "apuart2");
 		break;
+#endif
+#if (UART_NR > 3)
 	case 3:
 		node = of_find_node_by_name(NULL, "apuart3");
 		break;
+#endif
 	default:
 		break;
 	}
@@ -2177,6 +2181,10 @@ void mtk_uart_save(struct mtk_uart *uart)
 	unsigned long base;
 	unsigned long flags;
 
+	/* UART never power on, no need save */
+	if (uart->poweron_count == 0)
+		return;
+
 	base = uart->base;
 
 	/* DLL may be changed by console write. To avoid this, use spinlock */
@@ -2532,8 +2540,7 @@ void mtk_uart_enable_dpidle(struct mtk_uart *uart)
 /* FIX-ME early porting */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if defined(CONFIG_MTK_CLKMGR)
-	enable_dpidle_by_bit(uart->setting->pll_id);
-	enable_soidle_by_bit(uart->setting->pll_id);
+	spm_resource_req(SPM_RESOURCE_USER_UART, SPM_RESOURCE_RELEASE);
 #endif
 #endif
 }
@@ -2544,8 +2551,7 @@ void mtk_uart_disable_dpidle(struct mtk_uart *uart)
 /* FIX-ME early porting */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if defined(CONFIG_MTK_CLKMGR)
-	disable_dpidle_by_bit(uart->setting->pll_id);
-	disable_soidle_by_bit(uart->setting->pll_id);
+	spm_resource_req(SPM_RESOURCE_USER_UART, SPM_RESOURCE_ALL);
 #endif
 #endif
 }
