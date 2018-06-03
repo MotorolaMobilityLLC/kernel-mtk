@@ -156,6 +156,7 @@ static void sched_monitor_aee(struct sched_block_event *b)
 static void event_duration_check(struct sched_block_event *b)
 {
 	unsigned long long t_dur;
+
 	t_dur = b->last_te - b->last_ts;
 
 	if (!sched_mon_enable)
@@ -186,8 +187,8 @@ static void event_duration_check(struct sched_block_event *b)
 		break;
 	case evt_SOFTIRQ:
 		if (t_dur > WARN_SOFTIRQ_DUR) {
-
 			struct sched_block_event *b_isr;
+
 			b_isr = &__raw_get_cpu_var(ISR_mon);
 			if (sched_mon_warn_enable || t_dur > AEE_WARN_DUR) {
 				pr_info("[SOFTIRQ DURATION WARN%s] SoftIRQ:%d[%s] dur:%llu ms > %d ms (s:%llu,e:%llu)\n",
