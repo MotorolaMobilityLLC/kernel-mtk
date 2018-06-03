@@ -554,9 +554,9 @@ GED_LOG_BUF_HANDLE ged_log_buf_alloc(
 
 	GED_LOGI("ged_log_buf_alloc OK\n");
 
-	while (__ged_log_buf_check_get_early_list(psGEDLogBuf->ulHashNodeID, pszName)) {
-		continue;
-	};
+	if (pszName)
+		while (__ged_log_buf_check_get_early_list(psGEDLogBuf->ulHashNodeID, pszName))
+			;
 
 	return (GED_LOG_BUF_HANDLE)psGEDLogBuf->ulHashNodeID;
 }

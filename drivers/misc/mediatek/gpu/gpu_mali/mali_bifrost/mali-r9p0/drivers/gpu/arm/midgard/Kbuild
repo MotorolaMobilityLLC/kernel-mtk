@@ -68,6 +68,8 @@ else
 DEFINES +=-DMALI_KBASE_PLATFORM_PATH=$(src)/platform/$(CONFIG_MALI_PLATFORM_NAME)
 endif
 
+DEFINES +=-DCONFIG_GPU_TRACEPOINTS=y
+
 DEFINES += -I$(srctree)/drivers/staging/android
 
 # Use our defines when compiling
@@ -117,7 +119,7 @@ SRC := \
 	mali_kbase_regs_history_debugfs.c
 
 
-
+SRC += mali_gputrace.c
 
 ifeq ($(MALI_UNIT_TEST),1)
 	SRC += mali_kbase_tlstream_test.c

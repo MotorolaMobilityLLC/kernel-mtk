@@ -46,6 +46,10 @@
 #define MOCKABLE(function) function
 #endif				/* MALI_MOCK_TEST */
 
+#ifdef ENABLE_MTK_DEBUG
+#include <mtk_gpufreq.h>
+#endif
+
 /**
  * enum kbasep_pm_action - Actions that can be performed on a core.
  *
@@ -1439,6 +1443,11 @@ static int kbase_pm_do_reset(struct kbase_device *kbdev)
 	 * reset */
 	dev_err(kbdev->dev, "Failed to soft-reset GPU (timed out after %d ms), now attempting a hard reset\n",
 								RESET_TIMEOUT);
+
+#ifdef ENABLE_MTK_DEBUG
+	mt_gpufreq_dump_reg();
+#endif
+
 	KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
 	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
 						GPU_COMMAND_HARD_RESET, NULL);

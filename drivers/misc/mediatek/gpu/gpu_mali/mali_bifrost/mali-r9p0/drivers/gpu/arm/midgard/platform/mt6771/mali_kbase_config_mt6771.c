@@ -92,7 +92,7 @@ static void _mtk_check_MFG_idle(void)
 	writel(0x00000003, g_MFG_base + 0x180);
 	/* mali_pr_debug("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180)); */
 
-	/* polling register MFG_DEBUG_TOP (0x13000188) bit 2 = 0x1 */
+	/* polling register MFG_DEBUG_TOP (0x13000188) bit 2 = 0x1 */
 	/* => 1 for GPU (BUS) idle, 0 for GPU (BUS) non-idle */
 	/* do not care about 0x13000184 */
 	do {
@@ -102,9 +102,10 @@ static void _mtk_check_MFG_idle(void)
 	} while ((val & 0x4) != 0x4);
 }
 
-static int pm_callback_power_on(struct kbase_device *kbdev)
+static int pm_callback_power_on_nolock(struct kbase_device *kbdev)
 {
-	mutex_lock(&g_mfg_lock);
+	if (mtk_get_vgpu_power_on_flag() == MTK_VGPU_POWER_ON)
+		return 0;
 
 	mali_pr_debug("@%s: power on ...\n", __func__);
 
@@ -146,14 +147,13 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	ged_dvfs_gpu_clock_switch_notify(1);
 #endif
 
-	mutex_unlock(&g_mfg_lock);
-
 	return 1;
 }
 
-static void pm_callback_power_off(struct kbase_device *kbdev)
+static void pm_callback_power_off_nolock(struct kbase_device *kbdev)
 {
-	mutex_lock(&g_mfg_lock);
+	if (mtk_get_vgpu_power_on_flag() == MTK_VGPU_POWER_OFF)
+		return;
 
 	mali_pr_debug("@%s: power off ...\n", __func__);
 
@@ -191,7 +191,23 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
 	/* Turn off GPU MTCMOS */
 	mt_gpufreq_disable_MTCMOS();
+}
 
+static int pm_callback_power_on(struct kbase_device *kbdev)
+{
+	int ret = 0;
+
+	mutex_lock(&g_mfg_lock);
+	ret = pm_callback_power_on_nolock(kbdev);
+	mutex_unlock(&g_mfg_lock);
+
+	return ret;
+}
+
+static void pm_callback_power_off(struct kbase_device *kbdev)
+{
+	mutex_lock(&g_mfg_lock);
+	pm_callback_power_off_nolock(kbdev);
 	mutex_unlock(&g_mfg_lock);
 }
 
@@ -204,6 +220,8 @@ void pm_callback_power_suspend(struct kbase_device *kbdev)
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0xB | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
+
+	pm_callback_power_off_nolock(kbdev);
 
 	/* Turn off GPU PMIC Buck */
 	mt_gpufreq_voltage_enable_set(0);
@@ -223,6 +241,8 @@ void pm_callback_power_resume(struct kbase_device *kbdev)
 
 	/* Turn on GPU PMIC Buck */
 	mt_gpufreq_voltage_enable_set(1);
+
+	pm_callback_power_on_nolock(kbdev);
 
 	mutex_unlock(&g_mfg_lock);
 }
