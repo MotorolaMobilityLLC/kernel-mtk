@@ -690,14 +690,18 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		psKPI->if_fallback_to_ft = if_fallback_to_ft;
 		boost_accum_cpu = temp_boost_accum_cpu;
 		psKPI->cpu_max_freq_LL = arch_scale_get_max_freq(0);
+#ifndef GED_KPI_CPU_SINGLE_CLUSTER
 		psKPI->cpu_max_freq_L = arch_scale_get_max_freq(4);
 #ifdef GED_KPI_CPU_TRI_CLUSTER
 		psKPI->cpu_max_freq_B = arch_scale_get_max_freq(8);
 #endif
+#endif
 		psKPI->cpu_cur_freq_LL = psKPI->cpu_max_freq_LL * cpufreq_scale_freq_capacity(NULL, 0) / 1024;
+#ifndef GED_KPI_CPU_SINGLE_CLUSTER
 		psKPI->cpu_cur_freq_L = psKPI->cpu_max_freq_L * cpufreq_scale_freq_capacity(NULL, 4) / 1024;
 #ifdef GED_KPI_CPU_TRI_CLUSTER
 		psKPI->cpu_cur_freq_B = psKPI->cpu_max_freq_B * cpufreq_scale_freq_capacity(NULL, 8) / 1024;
+#endif
 #endif
 
 		ged_kpi_check_if_fallback_is_needed(boost_accum_cpu, psKPI->t_cpu);
