@@ -11,8 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "mtk_unified_power_internal.h"
-#include "mtk_unified_power.h"
+#include <linux/module.h>
+#include "mtk_upower.h"
 
 /* PTP will update volt in init2 isr handler */
 void upower_update_volt_by_eem(enum upower_bank bank, unsigned int *volt, unsigned int opp_num)

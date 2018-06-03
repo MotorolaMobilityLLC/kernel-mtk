@@ -11,7 +11,6 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "mtk_eem.h"
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/spinlock.h>
@@ -29,8 +28,11 @@
 #include <mt-plat/mtk_chip.h>
 
 /* local include */
-#include "mtk_unified_power_internal.h"
-#include "mtk_unified_power.h"
+#include "mtk_upower.h"
+
+#ifndef EARLY_PORTING_SPOWER
+#include "mtk_eem.h"
+#endif
 
 #if UPOWER_ENABLE_TINYSYS_SSPM
 #include <sspm_reservedmem_define.h>
@@ -55,6 +57,10 @@ struct upower_tbl_info *upower_tbl_infos;
 /* sspm reserved mem info for sspm upower */
 phys_addr_t upower_data_phy_addr, upower_data_virt_addr;
 unsigned long long upower_data_size;
+
+#if (NR_UPOWER_TBL_LIST <= 1)
+struct upower_tbl final_upower_tbl[NR_UPOWER_BANK] = {};
+#endif
 
 #if 0
 static void print_tbl(void)
@@ -186,7 +192,7 @@ static void upower_update_dyn_pwr(void)
 			temp2 = (refVolt * refVolt);
 			newPower = temp1 / temp2;
 			upower_tbl_ref[i].row[j].dyn_pwr = newPower;
-			/* upower_debug("dyn_pwr= %u\n", upower_tbl_ref[i].row[j].dyn_pwr);*/
+			/* upower_debug("dyn_pwr= %u\n", upower_tbl_ref[i].row[j].dyn_pwr); */
 		}
 	}
 }
@@ -314,14 +320,10 @@ static void upower_init_lkgidx(void)
 {
 	int i;
 
-	for (i = 0; i < NR_UPOWER_BANK; i++) {
+	for (i = 0; i < NR_UPOWER_BANK; i++)
 		upower_tbl_ref[i].lkg_idx = DEFAULT_LKG_IDX;
-		/*
-		*upower_error("[bank %d]lkg_idx=%d, row num = %d\n", i, upower_tbl_ref[i].lkg_idx,
-		*								upower_tbl_ref[i].row_num);
-		*/
-	}
 }
+
 static void upower_init_volt(void)
 {
 	int i, j;
@@ -566,6 +568,7 @@ static int __init upower_init(void)
 
 	create_procfs();
 
+	/* print_tbl(); */
 	return 0;
 }
 #ifdef __KERNEL__

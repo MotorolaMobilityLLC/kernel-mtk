@@ -11,8 +11,17 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "mtk_unified_power_internal.h"
-#include "mtk_unified_power.h"
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/spinlock.h>
+#include <linux/rcupdate.h>
+#include <linux/slab.h>
+#include <linux/errno.h>
+#include <linux/export.h>
+#include <linux/module.h>
+#include <linux/ktime.h>
+
+#include "mtk_upower.h"
 
 #ifdef UPOWER_PROFILE_API_TIME
 #define TEST_TIMES (10)
