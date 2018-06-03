@@ -32,7 +32,7 @@
 #define MCDI_MBOX_ACTION_STAT                   9
 #define MCDI_MBOX_CLUSTER_0_CNT                 10
 #define MCDI_MBOX_CLUSTER_1_CNT                 11
-#define MCDI_MBOX_CLUSTER_2_CNT                 12
+#define MCDI_MBOX_CPU_ISOLATION_MASK            12
 #define MCDI_MBOX_PAUSE_ACK                     13
 #define MCDI_MBOX_PENDING_ON_EVENT              14
 #define MCDI_MBOX_PROF_CMD                      15

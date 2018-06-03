@@ -860,6 +860,20 @@ void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask)
 	mcdi_mbox_write(MCDI_MBOX_AVAIL_CPU_MASK, cpu_mask);
 }
 
+void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
+{
+	iso_mask &= 0xff;
+
+	/*
+	 * If isolation bit of ALL CPU are set, means iso_mask is not reasonable
+	 * Do NOT update iso_mask to mcdi controller
+	 */
+	if (iso_mask == 0xff)
+		return;
+
+	mcdi_mbox_write(MCDI_MBOX_CPU_ISOLATION_MASK, iso_mask);
+}
+
 bool is_cpu_pwr_on_event_pending(void)
 {
 	return (!(mcdi_mbox_read(MCDI_MBOX_PENDING_ON_EVENT) == 0));
@@ -931,6 +945,8 @@ static int __init mcdi_init(void)
 	mcdi_sysram_init();
 
 	mcdi_pm_qos_init();
+
+	update_cpu_isolation_mask_to_mcdi_controller(0x0);
 
 	return 0;
 }
