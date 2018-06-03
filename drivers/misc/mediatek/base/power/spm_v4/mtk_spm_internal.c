@@ -221,15 +221,15 @@ unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 
 	if (wakesta->r12 & WAKE_SRC_R12_PCM_TIMER) {
 		if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER) {
-			strcat(buf, " PCM_TIMER");
+			strncat(buf, " PCM_TIMER", strlen(" PCM_TIMER"));
 			wr = WR_PCM_TIMER;
 		}
 		if (wakesta->wake_misc & WAKE_MISC_TWAM) {
-			strcat(buf, " TWAM");
+			strncat(buf, " TWAM", strlen(" TWAM"));
 			wr = WR_WAKE_SRC;
 		}
 		if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE) {
-			strcat(buf, " CPU");
+			strncat(buf, " CPU", strlen(" CPU"));
 			wr = WR_WAKE_SRC;
 		}
 	}
