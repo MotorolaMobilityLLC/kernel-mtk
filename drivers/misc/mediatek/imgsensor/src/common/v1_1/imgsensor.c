@@ -730,16 +730,19 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		break;
 
 	case SENSOR_FEATURE_SET_DRIVER:
-		{
-			psensor->inst.sensor_idx = pFeatureCtrl->InvokeCamera;
-			if (imgsensor_set_driver(psensor) != -EIO) {
-				memcpy(pFeaturePara,
-				       psensor->inst.psensor_list,
-				       sizeof(struct IMGSENSOR_SENSOR_LIST));
-			}
-
-			break;
+	{
+		struct IMGSENSOR_SENSOR_LIST *psensor_list =
+			(struct IMGSENSOR_SENSOR_LIST *)pFeaturePara;
+		psensor->inst.sensor_idx = pFeatureCtrl->InvokeCamera;
+		if (imgsensor_set_driver(psensor) != -EIO) {
+			psensor_list->id = psensor->inst.psensor_list->id;
+			memcpy(psensor_list->name,
+			       psensor->inst.psensor_list->name,
+			       32);
 		}
+
+		break;
+	}
 
 	case SENSOR_FEATURE_CHECK_IS_ALIVE:
 		imgsensor_check_is_alive(psensor);
