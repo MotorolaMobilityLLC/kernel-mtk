@@ -13,6 +13,7 @@
 
 #include <linux/vmalloc.h>
 #include "inc/gyroscope.h"
+#include "performance.h"
 
 struct gyro_context *gyro_context_obj/* = NULL*/;
 static struct platform_device *pltfm_dev;
@@ -681,6 +682,8 @@ int gyro_data_report(struct gyro_data *data)
 	event.word[2] = data->z;
 	event.reserved = data->reserved[0];
 
+	if (event.reserved == 1)
+		mark_timestamp(ID_GYROSCOPE, DATA_REPORT, ktime_get_raw_ns(), event.time_stamp);
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
 		GYRO_ERR("failed due to event buffer full\n");

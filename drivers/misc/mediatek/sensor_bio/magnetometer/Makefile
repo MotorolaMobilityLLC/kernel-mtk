@@ -2,6 +2,7 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensor_bio/hwmon/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensor_bio/accelerometer/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensor_bio/magnetometer/inc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensor_bio/include
 obj-y   +=  mag.o
 obj-y   +=  mag_factory.o
 
