@@ -2097,7 +2097,7 @@ static void read_volt_from_VOP(struct eem_det *det)
 	det->volt_tbl[6 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 16) & 0xff;
 	det->volt_tbl[7 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 24) & 0xff;
 
-	if (det->num_freq_tbl > 8) {
+	if ((det->num_freq_tbl > 8) && (ref_idx > 0)) {
 		for (i = 0; i <= ref_idx; i++) { /* i < 8 */
 			for (j = 1; j < step; j++) {
 				if (i < ref_idx) {
