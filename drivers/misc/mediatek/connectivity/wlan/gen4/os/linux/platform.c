@@ -90,6 +90,7 @@
 ********************************************************************************
 */
 #define WIFI_NVRAM_FILE_NAME   "/vendor/nvdata/APCFG/APRDEB/WIFI"
+#define WIFI_NVRAM_FILE_NAME_LEGACY   "/data/nvram/APCFG/APRDEB/WIFI"
 #define WIFI_NVRAM_CUSTOM_NAME "/vendor/nvdata/APCFG/APRDEB/WIFI_CUSTOM"
 
 /*******************************************************************************
@@ -459,7 +460,11 @@ BOOLEAN kalCfgDataRead16(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Offset, OUT P
 
 	if (nvram_read(WIFI_NVRAM_FILE_NAME,
 		       (char *)pu2Data, sizeof(unsigned short), u4Offset) != sizeof(unsigned short)) {
-		return FALSE;
+		if (nvram_read(WIFI_NVRAM_FILE_NAME_LEGACY,
+		       (char *)pu2Data, sizeof(unsigned short), u4Offset) != sizeof(unsigned short))
+			return FALSE;
+		else
+			return TRUE;
 	} else {
 		return TRUE;
 	}
@@ -482,7 +487,11 @@ BOOLEAN kalCfgDataWrite16(IN P_GLUE_INFO_T prGlueInfo, UINT_32 u4Offset, UINT_16
 {
 	if (nvram_write(WIFI_NVRAM_FILE_NAME,
 			(char *)&u2Data, sizeof(unsigned short), u4Offset) != sizeof(unsigned short)) {
-		return FALSE;
+		if (nvram_write(WIFI_NVRAM_FILE_NAME_LEGACY,
+			(char *)&u2Data, sizeof(unsigned short), u4Offset) != sizeof(unsigned short))
+			return FALSE;
+		else
+			return TRUE;
 	} else {
 		return TRUE;
 	}
