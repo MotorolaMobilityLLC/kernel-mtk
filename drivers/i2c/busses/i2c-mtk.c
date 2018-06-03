@@ -890,10 +890,12 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	int_reg = I2C_HS_NACKERR | I2C_ACKERR |
 		  I2C_TRANSAC_COMP | I2C_ARB_LOST;
 	if (i2c->dev_comp->ver == 0x2)
-		int_reg = I2C_INTR_ALL;
+		int_reg |= I2C_MAS_ERR | I2C_TIMEOUT;
+	if (i2c->ch_offset)
+		int_reg &= ~(I2C_HS_NACKERR | I2C_ACKERR);
 
 	/* Clear interrupt status */
-	i2c_writew(int_reg, i2c, OFFSET_INTR_STAT);
+	i2c_writew(I2C_INTR_ALL, i2c, OFFSET_INTR_STAT);
 
 	if (i2c->ch_offset != 0)
 		i2c_writew(I2C_FIFO_ADDR_CLR_MCH | I2C_FIFO_ADDR_CLR,
@@ -1025,7 +1027,8 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		}
 		return -ETIMEDOUT;
 	}
-	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR | I2C_TIMEOUT)) {
+	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR |
+	    I2C_TIMEOUT | I2C_MAS_ERR)) {
 		if (i2c->irq_stat & I2C_TIMEOUT)
 			dev_info(i2c->dev, "addr: %x, scl timeout error\n",
 				i2c->addr);
@@ -1042,6 +1045,13 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 
 		if (i2c->ext_data.isEnable ==  false || i2c->ext_data.isFilterMsg == false)
 			i2c_dump_info(i2c);
+
+		if ((i2c->irq_stat & I2C_TRANSAC_COMP) && i2c->ch_offset &&
+		    (!(i2c->irq_stat & I2C_MAS_ERR))) {
+			dev_info(i2c->dev, "addr: %x, trans done with err %x",
+				 i2c->addr, i2c->irq_stat);
+			return -EREMOTEIO;
+		}
 
 		mt_i2c_init_hw(i2c);
 		if (i2c->ch_offset)
