@@ -152,7 +152,7 @@ static void slimport_drv_get_params(struct HDMI_PARAMS *params)
 			
 			params->width       = 720;
 			params->height      = 480;
-			params->input_clock = 27027;
+			params->input_clock = HDMI_VIDEO_720x480p_60Hz;
 
 			params->init_config.vformat = HDMI_VIDEO_720x480p_60Hz;
 			break;
@@ -179,7 +179,7 @@ static void slimport_drv_get_params(struct HDMI_PARAMS *params)
 				params->height = 768;
 			}
 #endif
-			params->input_clock = 74250;
+			params->input_clock = HDMI_VIDEO_1280x720p_60Hz;
 
 			params->init_config.vformat = HDMI_VIDEO_1280x720p_60Hz;
 			break;
@@ -199,7 +199,7 @@ static void slimport_drv_get_params(struct HDMI_PARAMS *params)
 			
 			params->width       = 1920;
 			params->height      = 1080;
-			params->input_clock = 74250;
+			params->input_clock = HDMI_VIDEO_1920x1080p_30Hz;
 
 			params->init_config.vformat = HDMI_VIDEO_1920x1080p_30Hz;
 			break;
@@ -219,7 +219,7 @@ static void slimport_drv_get_params(struct HDMI_PARAMS *params)
 			
 			params->width       = 1920;
 			params->height      = 1080;
-			params->input_clock = 148500;
+			params->input_clock = HDMI_VIDEO_1920x1080p_60Hz;
 
 			params->init_config.vformat = HDMI_VIDEO_1920x1080p_60Hz;
 			break;
