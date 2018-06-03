@@ -16,7 +16,7 @@
 
 #include <linux/of.h>
 #include <linux/of_fdt.h>
-
+#include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/pinctrl/pinctrl.h>
 #include "imgsensor_hw.h"
@@ -90,6 +90,7 @@ struct GPIO_PINCTRL {
 struct GPIO {
 	struct pinctrl       *ppinctrl;
 	struct pinctrl_state *ppinctrl_state[GPIO_CTRL_STATE_MAX_NUM];
+	struct mutex         *pgpio_mutex;
 };
 
 enum IMGSENSOR_RETURN imgsensor_hw_gpio_open(struct IMGSENSOR_HW_DEVICE **pdevice);

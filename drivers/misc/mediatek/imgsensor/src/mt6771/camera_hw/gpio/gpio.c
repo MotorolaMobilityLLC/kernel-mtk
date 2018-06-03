@@ -78,6 +78,8 @@ static enum IMGSENSOR_RETURN gpio_init(
 	struct GPIO_PINCTRL    *pgpio_pinctrl    = gpio_pinctrl_list;
 	enum   IMGSENSOR_RETURN ret              = IMGSENSOR_RETURN_SUCCESS;
 
+	pgpio->pgpio_mutex = &pcommon->pinctrl_mutex;
+
 	pgpio->ppinctrl = devm_pinctrl_get(&pcommon->pplatform_device->dev);
 	if (IS_ERR(pgpio->ppinctrl)) {
 		PK_PR_ERR("%s : Cannot find camera pinctrl!", __func__);
@@ -143,10 +145,15 @@ static enum IMGSENSOR_RETURN gpio_set(
 		ppinctrl_state = pgpio->ppinctrl_state[ctrl_state_offset +
 						((pin - IMGSENSOR_HW_PIN_PDN) << 1) + gpio_state];
 	}
+
+	mutex_lock(pgpio->pgpio_mutex);
+
 	if (ppinctrl_state != NULL && !IS_ERR(ppinctrl_state))
 		pinctrl_select_state(pgpio->ppinctrl, ppinctrl_state);
 	else
 		PK_PR_ERR("%s : pinctrl err, PinIdx %d, Val %d\n", __func__, pin, pin_state);
+
+	mutex_unlock(pgpio->pgpio_mutex);
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }

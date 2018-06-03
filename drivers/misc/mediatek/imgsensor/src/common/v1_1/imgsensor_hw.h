@@ -14,6 +14,8 @@
 #ifndef __IMGSENSOR_PWR_CTRL_H__
 #define __IMGSENSOR_PWR_CTRL_H__
 
+#include <linux/mutex.h>
+
 #include "imgsensor_sensor.h"
 #include "imgsensor_cfg_table.h"
 #include "imgsensor_common.h"
@@ -49,6 +51,7 @@ struct IMGSENSOR_HW_POWER_SEQ {
 
 struct IMGSENSOR_HW_DEVICE_COMMON {
 	struct platform_device *pplatform_device;
+	struct mutex            pinctrl_mutex;
 };
 
 struct IMGSENSOR_HW_DEVICE {
