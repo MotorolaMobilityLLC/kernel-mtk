@@ -266,10 +266,10 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 	int mivr_state = 0;
 	struct timespec ptime[2], diff;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
-
+#if 0
 	if (!pe20->is_connect)
 		return;
-
+#endif
 	pr_debug("%s: starts\n", __func__);
 
 	if (pe20->vbat_orig > VBAT_CABLE_IMP_THRESHOLD) {
@@ -279,20 +279,18 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 		pe20->aicr_cable_imp = pinfo->data.ac_charger_input_current;
 		goto end;
 	}
-
+#if 0
 	/* Trigger adapter WDT to drop VBUS to 5V */
 	aicr_value = 100000;
-	/* battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &aicr_value); */
 	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
 	mdelay(240);
-
+#endif
 	/* Disable cable drop compensation */
 	__pe20_set_ta_vchr(pinfo, 25000); /* FIXME: hack this value to send current pattern */
 
 	get_monotonic_boottime(&ptime[0]);
 
 	/* Set ichg = 2500mA, set MIVR=4.5V */
-	/* battery_charging_control(CHARGING_CMD_SET_CURRENT, &CC_value); */
 	charger_dev_set_charging_current(pinfo->chg1_dev, 2500000);
 	mdelay(240);
 	pe20_set_mivr(pinfo, 4500);
@@ -441,7 +439,7 @@ int mtk_pe20_plugout_reset(struct charger_manager *pinfo)
 	pr_err("%s: starts\n", __func__);
 
 	pe20->is_connect = false;
-	pe20->is_cable_out_occur = true;
+	pe20->is_cable_out_occur = false;
 	pe20->to_check_chr_type = true;
 	pe20->idx = -1;
 	pe20->vbus = 5000; /* mV */
@@ -503,14 +501,14 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 	if (ret < 0)
 		goto _err;
 
+	/* TODO: check its functionality */
+	/* mtk_pe20_check_cable_impedance(pinfo); */
+
 	ret = pe20_detect_ta(pinfo);
 	if (ret < 0)
 		goto _err;
 
 	pe20->to_check_chr_type = false;
-
-	/* TODO: check its functionality */
-	/* mtk_pe20_check_cable_impedance(pinfo); */
 
 	pr_err("%s: OK, to_check_chr_type = %d\n",
 		__func__, pe20->to_check_chr_type);
