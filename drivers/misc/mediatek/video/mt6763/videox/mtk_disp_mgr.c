@@ -1185,9 +1185,12 @@ static long _ioctl_query_valid_layer(unsigned long arg)
 		return -EFAULT;
 	}
 	/* check data from userspace is legal */
-	if (disp_info_user.layer_num[0] > PRIMARY_SESSION_INPUT_LAYER_COUNT ||
-		disp_info_user.layer_num[1] > EXTERNAL_SESSION_INPUT_LAYER_COUNT)
+	if (disp_info_user.layer_num[0] < 0 || disp_info_user.layer_num[0] > 0x300 ||
+		disp_info_user.layer_num[1] < 0 || disp_info_user.layer_num[1] > 0x300) {
+		DISPERR("[FB]: disp_info_user.layer_num[0]= %d, disp_info_user.layer_num[1]= %d!\n",
+			disp_info_user.layer_num[0], disp_info_user.layer_num[1]);
 		return -EINVAL;
+	}
 
 	layering_rule_start(&disp_info_user, 0);
 
