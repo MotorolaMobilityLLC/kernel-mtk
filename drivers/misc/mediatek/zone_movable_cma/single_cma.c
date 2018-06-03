@@ -306,6 +306,9 @@ static int __init fix_up_normal_zone(void)
 		for (pfn = zone_start_pfn;
 				pfn < zone_end_pfn;
 				pfn += pageblock_nr_pages) {
+			if (!pfn_valid(pfn))
+				continue;
+
 			page = pfn_to_page(pfn);
 			set_pageblock_migratetype(page, MIGRATE_CMA);
 			move_freepages_block(z, page, MIGRATE_CMA);
