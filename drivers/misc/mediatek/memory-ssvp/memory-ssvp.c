@@ -694,6 +694,8 @@ static int _svp_wdt_kthread_func(void *data)
 
 	ion_sec_heap_dump_info();
 
+	/* There might be false-alarm in Android O, temporarily disable the warning trigger */
+#if 0
 	pr_info("Shareable SVP trigger kernel warning");
 	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
 			| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
@@ -703,6 +705,7 @@ static int _svp_wdt_kthread_func(void *data)
 			| DB_OPT_DUMPSYS_PROCSTATS,
 			"SVP online fail.\nCRDISPATCH_KEY:SVP_SS1\n",
 			"[SSVP ONLINE FAIL]: online timeout due to none free memory region.\n");
+#endif
 
 	reset_svp_online_task();
 	return 0;
