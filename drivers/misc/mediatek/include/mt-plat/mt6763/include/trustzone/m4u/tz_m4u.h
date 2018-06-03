@@ -107,7 +107,7 @@ struct m4u_systrace_param {
 	unsigned long size;
 };
 
-struct m4u_systrace_param {
+struct m4u_cfg_port_array_param {
 	unsigned char m4u_port_array[(M4U_PORT_NR+1)/2];
 };
 
