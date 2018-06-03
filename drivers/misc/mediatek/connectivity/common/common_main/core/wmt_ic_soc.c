@@ -667,6 +667,14 @@ static UINT8 WMT_COEX_LTE_FREQ_IDX_TABLE_CMD_6752[] = {
 };
 #endif
 
+static UINT8 WMT_BT_TSSI_FROM_WIFI_CONFIG_CMD[] = {
+		0x01, 0x02, 0x04, 0x00, 0x0D, 0x01, 0x1E, 0x00
+};
+
+static UINT8 WMT_BT_TSSI_FROM_WIFI_EVENT[] = {
+		0x02, 0x02, 0x01, 0x00, 0x00
+};
+
 #if CFG_WMT_POWER_ON_DLM
 static UINT8 WMT_POWER_CTRL_DLM_CMD1[] = {
 		0x01, 0x08, 0x10, 0x00,
@@ -814,6 +822,10 @@ static struct init_script get_tdm_req_antsel_num_table[] = {
 	INIT_CMD(WMT_COEX_TDM_REQ_ANTSEL_NUM_CMD, WMT_COEX_SPLIT_MODE_EVT, "get tdm req antsel num"),
 };
 #endif
+
+static struct init_script bt_tssi_from_wifi_table[] = {
+	INIT_CMD(WMT_BT_TSSI_FROM_WIFI_CONFIG_CMD, WMT_BT_TSSI_FROM_WIFI_EVENT, "get bt tssi value from wifi"),
+};
 
 #if CFG_SET_OPT_REG
 static struct init_script set_registers[] = {
@@ -994,6 +1006,8 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	UINT32 u4Res;
 	UINT32 pmicChipid = 0;
 #endif
+	P_WMT_GEN_CONF pWmtGenConf = NULL;
+
 	WMT_DBG_FUNC(" start\n");
 
 	osal_assert(gp_soc_info != NULL);
@@ -1174,6 +1188,17 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			WMT_ERR_FUNC("get_tdm_req_antsel_num_table fail(%d)\n", iRet);
 	}
 #endif
+	pWmtGenConf = wmt_get_gen_conf_pointer();
+	WMT_ERR_FUNC("bt_tssi_from_wifi=%d, bt_tssi_target=%d\n",
+		pWmtGenConf->bt_tssi_from_wifi, pWmtGenConf->bt_tssi_target);
+	if (pWmtGenConf->bt_tssi_from_wifi == 1) {
+		WMT_BT_TSSI_FROM_WIFI_CONFIG_CMD[5] = pWmtGenConf->bt_tssi_from_wifi;
+		WMT_BT_TSSI_FROM_WIFI_CONFIG_CMD[6] = (pWmtGenConf->bt_tssi_target & 0x00FF) >> 0;
+		WMT_BT_TSSI_FROM_WIFI_CONFIG_CMD[7] = (pWmtGenConf->bt_tssi_target & 0xFF00) >> 8;
+		iRet = wmt_core_init_script(bt_tssi_from_wifi_table, osal_array_size(bt_tssi_from_wifi_table));
+		if (iRet)
+			WMT_ERR_FUNC("bt_tssi_from_wifi_table fail(%d)\n", iRet);
+	}
 	/* 7. start RF calibration data */
 	ctrlPa1 = BT_PALDO;
 	ctrlPa2 = PALDO_ON;
