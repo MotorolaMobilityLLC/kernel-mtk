@@ -1479,7 +1479,7 @@ int __m4u_dealloc_mva(M4U_MODULE_ID_ENUM eModuleID,
 				vma = find_vma(current->mm, BufAddr);
 			} else if (current->active_mm) {
 				down_read(&current->active_mm->mmap_sem);
-				vma = find_vma(current->active_mm, BufAddr);
+				vma = NULL;
 			}
 			M4UTRACE();
 			if (vma == NULL) {
