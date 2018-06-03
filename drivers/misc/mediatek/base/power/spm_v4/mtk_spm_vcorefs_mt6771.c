@@ -57,6 +57,7 @@
 #define spm_vcorefs_info(fmt, args...)	pr_notice(SPM_VCOREFS_TAG fmt, ##args)
 
 void __iomem *dvfsrc_base;
+void __iomem *qos_sram_base;
 
 u32 plat_channel_num;
 u32 plat_chip_ver;
@@ -517,6 +518,13 @@ static void dvfsrc_register_init(void)
 		goto dvfsrc_exit;
 	}
 
+#if defined(CONFIG_MACH_MT6775)
+	qos_sram_base = of_iomap(node, 1);
+	if (!qos_sram_base) {
+		spm_vcorefs_err("[QOS_SRAM] base failed\n");
+		goto dvfsrc_exit;
+	}
+#endif
 dvfsrc_exit:
 
 	spm_vcorefs_warn("spm_dvfsrc_register_init: dvfsrc_base = %p\n", dvfsrc_base);

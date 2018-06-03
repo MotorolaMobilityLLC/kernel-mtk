@@ -183,4 +183,11 @@ extern bool governor_autok_lock_check(int kicker, int opp);
 extern int vcorefs_get_hw_opp(void);
 extern int vcorefs_enable_debug_isr(bool enable);
 
+#if defined(CONFIG_MACH_MT6775)
+extern int dvfsrc_get_bw(int type);
+extern int get_cur_vcore_dvfs_opp(void);
+
+extern void __iomem *qos_sram_base;
+#endif
+
 #endif	/* _MTK_VCOREFS_GOVERNOR_H */

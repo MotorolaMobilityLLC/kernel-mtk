@@ -34,11 +34,34 @@
 #include <mtk_eem.h>
 #include "mmdvfs_mgr.h"
 
+#if defined(CONFIG_MACH_MT6775)
+#include <mtk_dvfsrc_reg.h>
 #include <helio-dvfsrc-opp.h>
 #include <mtk_spm_vcore_dvfs_ipi.h>
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <sspm_ipi.h>
 #include <sspm_ipi_pin.h>
+#endif
+
+#define QOS_SRAM_BASE (qos_sram_base)
+
+#define QOS_TOTAL_BW_BUF_SIZE 8
+
+#define QOS_TOTAL_BW_BUF(idx) (QOS_SRAM_BASE + idx * 4)
+#define QOS_TOTAL_BW          (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4)
+#define QOS_CPU_BW            (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0x4)
+#define QOS_MM_BW             (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0x8)
+#define QOS_GPU_BW            (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0xC)
+#define QOS_MD_PERI_BW        (QOS_SRAM_BASE + QOS_TOTAL_BW_BUF_SIZE * 4 + 0x10)
+
+enum {
+	QOS_TOTAL = 0,
+	QOS_CPU,
+	QOS_MM,
+	QOS_GPU,
+	QOS_MD_PERI,
+	QOS_TOTAL_AVE
+};
 #endif
 
 __weak unsigned int get_dram_data_rate(void)
@@ -583,6 +606,54 @@ void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
 	sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 3);
 }
 #endif
+#endif
+
+#if defined(CONFIG_MACH_MT6775)
+int dvfsrc_get_bw(int type)
+{
+	int ret = 0;
+	int i;
+
+	switch (type) {
+	case QOS_TOTAL:
+		ret = readl(QOS_TOTAL_BW);
+		break;
+	case QOS_CPU:
+		ret = readl(QOS_CPU_BW);
+		break;
+	case QOS_MM:
+		ret = readl(QOS_MM_BW);
+		break;
+	case QOS_GPU:
+		ret = readl(QOS_GPU_BW);
+		break;
+	case QOS_MD_PERI:
+		ret = readl(QOS_MD_PERI_BW);
+		break;
+	case QOS_TOTAL_AVE:
+		for (i = 0; i < QOS_TOTAL_BW_BUF_SIZE; i++)
+			ret += readl(QOS_TOTAL_BW_BUF(i));
+		ret /= QOS_TOTAL_BW_BUF_SIZE;
+		break;
+	default:
+		break;
+	}
+
+	return ret;
+}
+
+int get_cur_vcore_dvfs_opp(void)
+{
+	int dvfsrc_level_bit = readl(DVFSRC_LEVEL) >> 16;
+	int dvfsrc_level = 0;
+
+	for (dvfsrc_level = 0; dvfsrc_level < VCORE_DVFS_OPP_NUM - 1; dvfsrc_level++)
+		if ((dvfsrc_level_bit & (1 << dvfsrc_level)) > 0)
+			break;
+
+	return VCORE_DVFS_OPP_NUM - dvfsrc_level - 1;
+}
+
 #endif
 
 void vcorefs_init_opp_table(void)
