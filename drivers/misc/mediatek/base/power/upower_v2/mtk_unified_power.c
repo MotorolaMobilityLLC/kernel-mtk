@@ -44,9 +44,11 @@
 #include "mtk_common_static_power.h"
 #endif
 
-#if UPOWER_ENABLE_TINYSYS_SSPM && UPOWER_USE_QOS_IPI
+#ifdef UPOWER_USE_QOS_IPI
+#if UPOWER_ENABLE_TINYSYS_SSPM
 #include <mtk_spm_vcore_dvfs_ipi.h>
 #include <mtk_vcorefs_governor.h>
+#endif
 #endif
 
 
@@ -401,7 +403,8 @@ static int upower_update_tbl_ref(void)
 	return ret;
 }
 
-#if UPOWER_ENABLE_TINYSYS_SSPM && UPOWER_USE_QOS_IPI
+#ifdef UPOWER_USE_QOS_IPI
+#if UPOWER_ENABLE_TINYSYS_SSPM
 void upower_send_data_ipi(phys_addr_t phy_addr, unsigned long long size)
 {
 	struct qos_data qos_d;
@@ -419,6 +422,7 @@ void upower_dump_data_ipi(void)
 	qos_d.cmd = QOS_IPI_UPOWER_DUMP_TABLE;
 	qos_ipi_to_sspm_command(&qos_d, 1);
 }
+#endif
 #endif
 
 static int __init upower_get_tbl_ref(void)
@@ -508,10 +512,11 @@ static int upower_debug_proc_show(struct seq_file *m, void *v)
 					ptr_tbl->lkg_idx, ptr_tbl->row_num);
 	}
 
-#if UPOWER_ENABLE_TINYSYS_SSPM && UPOWER_USE_QOS_IPI
+#ifdef UPOWER_USE_QOS_IPI
+#if UPOWER_ENABLE_TINYSYS_SSPM
 	upower_dump_data_ipi();
 #endif
-
+#endif
 	return 0;
 }
 
