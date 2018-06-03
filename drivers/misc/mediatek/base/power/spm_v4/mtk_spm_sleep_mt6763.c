@@ -38,10 +38,8 @@
 #include <mtk_dramc.h>
 
 #include <mtk_spm_internal.h>
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <mtk_spm_pmic_wrap.h>
 #include <mtk_pmic_api_buck.h>
-#endif /* CONFIG_FPGA_EARLY_PORTING */
 
 #include <mt-plat/mtk_ccci_common.h>
 
@@ -116,28 +114,10 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
-	/* FIXME: */
-#if 0
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
-
-	pmic_config_interface_nolock(
-		PMIC_RG_BUCK_VCORE_HW0_OP_EN_ADDR,
-		1,
-		PMIC_RG_BUCK_VCORE_HW0_OP_EN_MASK,
-		PMIC_RG_BUCK_VCORE_HW0_OP_EN_SHIFT);
-
-	pmic_config_interface_nolock(
-		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_ADDR,
-		1,
-		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_MASK,
-		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
-
-	wk_auxadc_bgd_ctrl(0);
-#endif
 #endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 
-	/* FIXME: */
 #if 0
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
@@ -161,12 +141,7 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
-	/* FIXME: */
-#if 0
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-
-	wk_auxadc_bgd_ctrl(1);
-#endif
 #endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 }
 

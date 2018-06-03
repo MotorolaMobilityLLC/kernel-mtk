@@ -537,6 +537,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE; /* PDN mode */
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
+	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 
 #if 0
 	/* for gps only case */

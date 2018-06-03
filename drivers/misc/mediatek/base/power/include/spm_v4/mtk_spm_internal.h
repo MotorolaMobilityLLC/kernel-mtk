@@ -137,6 +137,10 @@ struct pwr_ctrl {
 	u32 pcm_flags_cust;	/* can override pcm_flags */
 	u32 pcm_flags_cust_set;	/* set bit of pcm_flags, after pcm_flags_cust */
 	u32 pcm_flags_cust_clr;	/* clr bit of pcm_flags, after pcm_flags_cust */
+	u32 pcm_flags1;
+	u32 pcm_flags1_cust;	/* can override pcm_flags1 */
+	u32 pcm_flags1_cust_set;	/* set bit of pcm_flags1, after pcm_flags1_cust */
+	u32 pcm_flags1_cust_clr;	/* clr bit of pcm_flags1, after pcm_flags1_cust */
 	u32 timer_val;		/* @ 1T 32K */
 	u32 timer_val_cust;	/* @ 1T 32K, can override timer_val */
 	u32 timer_val_ramp_en;		/* stress for dpidle */
@@ -295,6 +299,10 @@ enum pwr_ctrl_enum {
 	PWR_PCM_FLAGS_CUST,
 	PWR_PCM_FLAGS_CUST_SET,
 	PWR_PCM_FLAGS_CUST_CLR,
+	PWR_PCM_FLAGS1,
+	PWR_PCM_FLAGS1_CUST,
+	PWR_PCM_FLAGS1_CUST_SET,
+	PWR_PCM_FLAGS1_CUST_CLR,
 	PWR_TIMER_VAL,
 	PWR_TIMER_VAL_CUST,
 	PWR_TIMER_VAL_RAMP_EN,
@@ -488,6 +496,7 @@ struct wake_status {
 	u32 r13;		/* PCM_REG13_DATA */
 	u32 idle_sta;		/* SLEEP_SUBSYS_IDLE_STA */
 	u32 debug_flag;		/* PCM_PASR_DPD_3 */
+	u32 debug_flag1;	/* WDT_LATCH_SPARE0_FIX */
 	u32 event_reg;		/* PCM_EVENT_REG_STA */
 	u32 isr;		/* SLEEP_ISR_STATUS */
 	u32 log_index;
@@ -565,6 +574,14 @@ static inline void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
 		pwrctrl->pcm_flags = flags;
 	else
 		pwrctrl->pcm_flags = pwrctrl->pcm_flags_cust;
+}
+
+static inline void set_pwrctrl_pcm_flags1(struct pwr_ctrl *pwrctrl, u32 flags)
+{
+	if (pwrctrl->pcm_flags1_cust == 0)
+		pwrctrl->pcm_flags1 = flags;
+	else
+		pwrctrl->pcm_flags1 = pwrctrl->pcm_flags1_cust;
 }
 
 #endif
