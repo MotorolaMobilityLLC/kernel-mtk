@@ -1652,7 +1652,8 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
 			larb_base = gLarbBaseAddr[larb];
-
+			if (larb >= 7)
+				continue;
 			mmu_en =
 				m4uHw_get_field_by_mask(larb_base, SMI_LARB_NON_SEC_CONx(larb_port),
 							F_SMI_NON_SEC_MMU_EN(1));

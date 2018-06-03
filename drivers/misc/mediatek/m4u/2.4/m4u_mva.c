@@ -483,7 +483,7 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 		 */
 #if defined(CONFIG_MACH_MT6758)
 		if (nr <= gap_nr) {
-			M4UINFO("stage 2: stopped cursor(%d) on stage 1\n", s);
+			M4ULOG_LOW("stage 2: stopped cursor(%d) on stage 1\n", s);
 			s = gap_start_idx;
 			for (; (s <= gap_end_idx) && (mvaGraph[s] < nr);
 				s += (mvaGraph[s] & MVA_BLOCK_NR_MASK))
@@ -503,7 +503,7 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 		 * allocate from common region directly.
 		 */
 stage3:
-		M4UINFO("stage 3: stopped cursor(%d) on stage 2\n", s);
+		M4ULOG_LOW("stage 3: stopped cursor(%d) on stage 2\n", s);
 		/*workaround for disp fb*/
 #ifdef WORKAROUND_FOR_DISPLAY_FB
 		s = MVAGRAPH_INDEX(VPU_FIX_MVA_END + 1) +
@@ -762,7 +762,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 	else if (region_status == 1)
 		is_in_vpu_region = 1;
 
-	M4UINFO("%s: iova_start_idx:0x%x, startIdx=0x%x, endIdx = 0x%x, nr= 0x%x\n",
+	M4ULOG_LOW("%s: iova_start_idx:0x%x, startIdx=0x%x, endIdx = 0x%x, nr= 0x%x\n",
 		__func__, MVAGRAPH_INDEX(mva), startIdx, endIdx, nr);
 	spin_lock(&gMvaGraph_lock);
 
@@ -791,7 +791,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 		return 0;
 	}
 	region_end = region_start + MVA_GET_NR(region_start) - 1;
-	M4UINFO("%s: found region_start(0x%x) region_end(0x%x) next_region_start(0x%x)\n",
+	M4ULOG_LOW("%s: found region_start(0x%x) region_end(0x%x) next_region_start(0x%x)\n",
 		__func__, region_start, region_end, next_region_start);
 
 	/*if not found, it means error.*/
@@ -811,7 +811,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 		 *        s
 		 */
 		s = region_start;
-		M4UINFO("found region is busy. need to traverse again from s=0x%x.\n", s);
+		M4ULOG_LOW("found region is busy. need to traverse again from s=0x%x.\n", s);
 	} else {
 		/*if [region_start, region_end] is free, need to check
 		 *whether the nr of [region_start, region_end] is enough to alloc.
@@ -869,7 +869,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 	}
 
 	if (s != 0)
-		M4UINFO("after 2nd traverse, found region s = 0x%x\n", s);
+		M4ULOG_MID("after 2nd traverse, found region s = 0x%x\n", s);
 
 	/* ----------------------------------------------- */
 	/*s==0 means startIdx == mva_start >> 20*/
@@ -970,22 +970,24 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 #define RightWrong(x) ((x) ? "correct" : "error")
 int m4u_do_mva_free(unsigned int mva, unsigned int size)
 {
-	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
+	unsigned short startIdx;
 	unsigned short nr;
 	unsigned short endIdx;
 	unsigned int startRequire, endRequire, sizeRequire;
 	unsigned short nrRequire, nr_tmp = 0;
 	int   region_status, is_in_vpu_region_flag = 0;
 	int ret = 0;
-	struct m4u_buf_info_t *p_mva_info = (struct m4u_buf_info_t *)mvaInfoGraph[startIdx];
+	struct m4u_buf_info_t *p_mva_info;
 	int port;
 
+	startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
 	if (startIdx == 0 || startIdx > MVA_MAX_BLOCK_NR) {
 		M4UMSG("mvaGraph index is 0. mva=0x%x\n", mva);
 		return -1;
 	}
 	nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
 	endIdx = startIdx + nr - 1;
+	p_mva_info = (struct m4u_buf_info_t *)mvaInfoGraph[startIdx];
 
 	if (size == 0 || nr == 0 || p_mva_info == NULL) {
 		M4UMSG("%s error: the input size = %d nr = %d mva_info = %p.\n",
