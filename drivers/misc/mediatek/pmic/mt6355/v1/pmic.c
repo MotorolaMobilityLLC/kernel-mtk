@@ -34,12 +34,6 @@
 #include <mt-plat/mtk_auxadc_intf.h>
 #endif /* CONFIG_MTK_AUXADC_INTF */
 
-#if defined(CONFIG_MTK_SMART_BATTERY)
-#include <mt-plat/battery_meter.h>
-#include <mt-plat/battery_common.h>
-#include <mach/mtk_battery_meter.h>
-#endif
-
 #if defined(CONFIG_MTK_EXTBUCK)
 #include "include/extbuck/fan53526.h"
 #endif
@@ -345,38 +339,6 @@ unsigned int upmu_get_rgs_chrdet(void)
 	PMICLOG("[upmu_get_rgs_chrdet] CHRDET status = %d\n", val);
 
 	return val;
-}
-
-int pmic_rdy;
-int usb_rdy;
-void pmic_enable_charger_detection_int(int x)
-{
-
-	if (x == 0) {
-		pmic_rdy = 1;
-		PMICLOG("[pmic_enable_charger_detection_int] PMIC\n");
-	} else if (x == 1) {
-		usb_rdy = 1;
-		PMICLOG("[pmic_enable_charger_detection_int] USB\n");
-	}
-
-	PMICLOG("[pmic_enable_charger_detection_int] pmic_rdy=%d usb_rdy=%d\n", pmic_rdy, usb_rdy);
-	if (pmic_rdy == 1 && usb_rdy == 1) {
-#if defined(CONFIG_MTK_SMART_BATTERY)
-		wake_up_bat();
-#endif
-		PMICLOG("[pmic_enable_charger_detection_int] enable charger detection interrupt\n");
-	}
-}
-
-
-bool is_charger_detection_rdy(void)
-{
-
-	if (pmic_rdy == 1 && usb_rdy == 1)
-		return true;
-	else
-		return false;
 }
 
 int is_ext_buck2_exist(void)

@@ -553,25 +553,8 @@ void bat_percent_notify_init(void)
 #endif				/* #ifdef BATTERY_PERCENT_PROTECT */
 
 /*******************************************************************
- * DLPT service
+ * AuxADC Impedence Measurement
  *******************************************************************/
-#ifndef DISABLE_DLPT_FEATURE
-#define DLPT_FEATURE_SUPPORT
-#endif
-
-#ifdef DLPT_FEATURE_SUPPORT
-
-unsigned int ptim_bat_vol;
-signed int ptim_R_curr;
-int ptim_imix;
-int ptim_rac_val_avg;
-
-signed int pmic_ptimretest;
-
-
-
-unsigned int ptim_cnt;
-
 signed int count_time_out_adc_imp = 36;
 unsigned int count_adc_imp;
 
@@ -684,6 +667,36 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 	return ret;
 }
 
+int do_ptim_gauge(bool isSuspend, unsigned int *bat, signed int *cur, bool *is_charging)
+{
+	int ret;
+
+	if (isSuspend == false)
+		pmic_auxadc_lock();
+
+	ret = do_ptim_internal(isSuspend, bat, cur, is_charging);
+
+	if (isSuspend == false)
+		pmic_auxadc_unlock();
+	return ret;
+}
+
+/*******************************************************************
+ * DLPT service
+ *******************************************************************/
+#ifndef DISABLE_DLPT_FEATURE
+#define DLPT_FEATURE_SUPPORT
+#endif
+
+#ifdef DLPT_FEATURE_SUPPORT
+
+unsigned int ptim_bat_vol;
+signed int ptim_R_curr;
+int ptim_imix;
+int ptim_rac_val_avg;
+signed int pmic_ptimretest;
+unsigned int ptim_cnt;
+
 int do_ptim(bool isSuspend)
 {
 	int ret;
@@ -714,20 +727,6 @@ int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur)
 	return ret;
 }
 
-int do_ptim_gauge(bool isSuspend, unsigned int *bat, signed int *cur, bool *is_charging)
-{
-	int ret;
-
-	if (isSuspend == false)
-		pmic_auxadc_lock();
-
-	ret = do_ptim_internal(isSuspend, bat, cur, is_charging);
-
-	if (isSuspend == false)
-		pmic_auxadc_unlock();
-	return ret;
-}
-
 void get_ptim_value(bool isSuspend, unsigned int *bat, signed int *cur)
 {
 	if (isSuspend == false)
@@ -737,8 +736,6 @@ void get_ptim_value(bool isSuspend, unsigned int *bat, signed int *cur)
 	if (isSuspend == false)
 		pmic_auxadc_unlock();
 }
-
-
 
 void enable_dummy_load(unsigned int en)
 {
