@@ -813,6 +813,9 @@ balanced:
 		/* Make rt_rq available for pick_next_task() */
 		sched_rt_rq_enqueue(rt_rq);
 	}
+	/* sched:add trace_sched*/
+	mt_sched_printf(sched_rt_info, "%s: cpu=%d rt_throttled=%d",
+			__func__, rq->cpu, rq->rt.rt_throttled);
 }
 
 static void __enable_runtime(struct rq *rq)
@@ -837,6 +840,9 @@ static void __enable_runtime(struct rq *rq)
 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
 		raw_spin_unlock(&rt_b->rt_runtime_lock);
 	}
+	/* sched:add trace_sched*/
+	mt_sched_printf(sched_rt_info, "%s: cpu=%d rt_throttled=%d",
+			__func__, rq->cpu, rq->rt.rt_throttled);
 }
 
 static void balance_runtime(struct rt_rq *rt_rq)
@@ -912,6 +918,10 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 				/* sched: print unthrottle*/
 				printk_deferred("[name:rt&]sched: RT throttling inactivated cpu=%d\n",
 						i);
+				mt_sched_printf(sched_rt_info,
+						"%s: cpu=%d rt_throttled=%d",
+						__func__, rq_cpu(rq),
+						rq->rt.rt_throttled);
 #ifdef CONFIG_MTK_RT_THROTTLE_MON
 				if (rt_rq->rt_time != 0) {
 					mt_rt_mon_switch(MON_RESET, i);
@@ -1040,6 +1050,9 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 			/* sched: print throttle every time*/
 			dump_throttled_rt_tasks(rt_rq);
 #ifdef CONFIG_RT_GROUP_SCHED
+			mt_sched_printf(sched_rt_info,
+					"%s: cpu=%d rt_throttled=%d",
+					__func__, cpu, rt_rq->rt_throttled);
 			per_cpu(rt_throttling_start, cpu) =
 				rq_clock_task(rt_rq->rq);
 #ifdef CONFIG_MTK_RT_THROTTLE_MON

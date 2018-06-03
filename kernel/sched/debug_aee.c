@@ -13,6 +13,9 @@
 
 #include <linux/sched.h>
 #include "mtk_ram_console.h"
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
+#include "mtk_rt_mon.h"
+#endif
 
 /* sched: aee for sched/debug */
 /* #define TEST_SCHED_DEBUG_ENHANCEMENT */
@@ -20,6 +23,16 @@
 #include <linux/delay.h>
 
 char print_at_AEE_buffer[160];
+/* sched: add rt_exec_task info */
+DECLARE_PER_CPU(u64, rt_throttling_start);
+DECLARE_PER_CPU(u64, exec_delta_time);
+DECLARE_PER_CPU(u64, clock_task);
+DECLARE_PER_CPU(u64, exec_start);
+DECLARE_PER_CPU(struct task_struct, exec_task);
+DECLARE_PER_CPU(u64, old_rt_time);
+DECLARE_PER_CPU(u64, init_rt_time);
+DECLARE_PER_CPU(u64, rt_period_time);
+
 #define SEQ_printf_at_AEE(m, x...)		\
 do {						\
 	snprintf(print_at_AEE_buffer, sizeof(print_at_AEE_buffer), x);	\
@@ -396,6 +409,7 @@ void print_cfs_stats_at_AEE(struct seq_file *m, int cpu)
 void print_rt_rq_at_AEE(struct seq_file *m, int cpu, struct rt_rq *rt_rq)
 {
 #ifdef CONFIG_RT_GROUP_SCHED
+	int cpu_rq_throttle = rq_cpu(rt_rq->rq);
 	SEQ_printf_at_AEE(m, "\nrt_rq[%d]:%s\n",
 			cpu, task_group_path(rt_rq->tg));
 #else
@@ -409,6 +423,15 @@ void print_rt_rq_at_AEE(struct seq_file *m, int cpu, struct rt_rq *rt_rq)
 
 	P(rt_nr_running);
 	P(rt_throttled);
+
+	SEQ_printf_at_AEE(m, "  exec_task[%d:%s], prio=%d\n",
+			per_cpu(exec_task, cpu).pid,
+			per_cpu(exec_task, cpu).comm,
+			per_cpu(exec_task, cpu).prio);
+#ifdef CONFIG_RT_GROUP_SCHED
+	SEQ_printf_at_AEE(m, "  .rt_throttling_start   : [%llu]\n",
+			per_cpu(rt_throttling_start, cpu_rq_throttle));
+#endif
 
 	PN(rt_time);
 	PN(rt_runtime);
@@ -640,4 +663,9 @@ void sysrq_sched_debug_show_at_AEE(void)
 	}
 	if (locked)
 		read_unlock_irqrestore(&tasklist_lock, flags);
+
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
+	/* sched:rt throttle monitor */
+	mt_rt_mon_print_task_from_buffer();
+#endif
 }
