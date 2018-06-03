@@ -1408,7 +1408,7 @@ static const struct mtk_gate mm_clks[] __initconst = {
 	GATE_MM0(MMSYS_MDP_RSZ1, "mm_mdp_rsz1", "mm_sel", 15),
 	GATE_MM0(MMSYS_MDP_TDSHP, "mm_mdp_tdshp", "mm_sel", 16),
 	GATE_MM0(MMSYS_MDP_WROT0, "mm_mdp_wrot0", "mm_sel", 17),
-	GATE_MM0(MMSYS_MDP_WROT1, "mm_mdp_wrot1", "mm_sel", 18),
+	GATE_MM0(MMSYS_MDP_WDMA, "mm_mdp_wdma", "mm_sel", 18),
 	GATE_MM0(MMSYS_FAKE_ENG, "mm_fake_eng", "mm_sel", 19),
 	GATE_MM0(MMSYS_DISP_OVL0, "mm_disp_ovl0", "mm_sel", 20),
 	GATE_MM0(MMSYS_DISP_OVL0_2L, "mm_disp_ovl0_2l", "mm_sel", 21),
