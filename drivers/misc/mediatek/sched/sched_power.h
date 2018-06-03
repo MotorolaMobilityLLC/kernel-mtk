@@ -53,3 +53,7 @@ extern int group_boost_read(int group_idx);
 #else
 static int group_boost_read(int group_idx) { return 0; }
 #endif
+
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+extern int dbg_id;
+#endif

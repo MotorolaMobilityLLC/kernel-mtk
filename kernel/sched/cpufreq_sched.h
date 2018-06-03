@@ -21,6 +21,14 @@ enum mt_cpu_dvfs_id {
 	NR_MT_CPU_DVFS,
 };
 
+enum mt_dvfs_debug_id {
+	DEBUG_FREQ_CLUSTER0,
+	DEBUG_FREQ_CLUSTER1,
+	DEBUG_FREQ_CLUSTER2,
+	DEBUG_FREQ_ALL,
+	DEBUG_FREQ_DISABLED = 100,
+};
+
 /*
  * extern int mt_cpufreq_set_by_schedule_load(unsigned int cpu,
  *		enum cpu_dvfs_sched_type state, unsigned int freq);
