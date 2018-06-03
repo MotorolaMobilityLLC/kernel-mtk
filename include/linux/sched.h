@@ -1574,11 +1574,7 @@ struct sched_entity {
 	u64			exec_start;
 	u64			sum_exec_runtime;
 	u64			vruntime;
-	int			idx;
-	int			update_reason[5];
-	u64			old_vruntime[5];
-	u64			old_min_vruntime[5];
-	int			old_cpu[5];
+	u64			old_vruntime;
 #ifdef CONFIG_SCHED_HMP
 	unsigned long pending_load;
 	u32 nr_pending;

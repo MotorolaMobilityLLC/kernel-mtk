@@ -2333,15 +2333,6 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 	p->se.prev_sum_exec_runtime	= 0;
 	p->se.nr_migrations		= 0;
 	p->se.vruntime			= 0;
-
-	p->se.idx			= -1;
-	{
-		int i = 0;
-
-		for (i = 0; i < 5; i++)
-			p->se.old_vruntime[i] = 0;
-	}
-
 	INIT_LIST_HEAD(&p->se.group_node);
 	walt_init_new_task_load(p);
 
