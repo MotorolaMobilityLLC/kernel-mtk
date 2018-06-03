@@ -347,6 +347,7 @@ void MT6337_EINT_SETTING(void)
 			IRQF_TRIGGER_NONE, "mt6337-eint", NULL);
 		if (ret > 0)
 			pr_err(MT6337TAG "EINT IRQ LINENNOT AVAILABLE\n");
+		enable_irq_wake(g_mt6337_irq);
 	} else
 		pr_err(MT6337TAG "can't find compatible node\n");
 

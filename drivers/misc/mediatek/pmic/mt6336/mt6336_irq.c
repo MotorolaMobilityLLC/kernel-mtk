@@ -451,6 +451,7 @@ void MT6336_EINT_SETTING(void)
 	mt6336_set_register_value(MT6336_PMIC_INT_CON7_CLR, 0xff);
 	mt6336_set_register_value(MT6336_PMIC_INT_CON8_CLR, 0xff);
 	mt6336_set_register_value(MT6336_PMIC_INT_CON9_CLR, 0xff);
+	mt6336_set_register_value(MT6336_PMIC_INT_CON10_CLR, 0xff);
 
 	/* for all interrupt events, turn on interrupt module clock (default on)*/
 	/*mt6336_set_flag_register_value(CLK_INTRP_CK_PDN, 0);*/
@@ -465,6 +466,7 @@ void MT6336_EINT_SETTING(void)
 		ret = request_irq(g_chr_irq, (irq_handler_t) mt6336_eint_irq, IRQF_TRIGGER_NONE, "mt6336-eint", NULL);
 		if (ret > 0)
 			pr_err(MT6336TAG "EINT IRQ LINENNOT AVAILABLE\n");
+		enable_irq_wake(g_chr_irq);
 	} else
 		pr_err(MT6336TAG "can't find compatible node\n");
 }
