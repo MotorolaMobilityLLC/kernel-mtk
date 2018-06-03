@@ -167,12 +167,20 @@ void __iomem *get_smem_start_addr(int md_id, SMEM_USER_ID user_id, int *size_o)
 	return addr;
 }
 
+static struct port_t *find_smem_port_by_user_id(int md_id, int user_id)
+{
+	return port_get_by_minor(md_id, user_id + CCCI_SMEM_MINOR_BASE);
+}
+
 long port_ccb_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 {
 	int md_id = port->md_id;
 	long ret = 0;
 	struct ccci_ccb_config in_ccb, out_ccb;
 	struct ccci_smem_region *ccb_ctl = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_RAW_CCB_CTRL);
+	struct ccb_ctrl_info ctrl_info;
+	struct port_t *s_port;
+	struct ccci_smem_port *smem_port;
 
 	/*
 	 * all users share this ccb ctrl region, and port CCCI_SMEM_CH's initailization is special,
@@ -188,6 +196,39 @@ long port_ccb_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 		break;
 	case CCCI_IOC_CCB_CTRL_LEN:
 		ret = put_user((unsigned int)ccb_ctl->size, (unsigned int __user *)arg);
+		break;
+	case CCCI_IOC_CCB_CTRL_INFO:
+		if (copy_from_user(&ctrl_info, (void __user *)arg, sizeof(struct ccb_ctrl_info))) {
+			CCCI_ERROR_LOG(md_id, TAG, "get ccb ctrl fail: copy_from_user fail!\n");
+			ret = -EINVAL;
+			break;
+		}
+		/*user id counts from ccb start*/
+		if (ctrl_info.user_id + SMEM_USER_CCB_START > SMEM_USER_CCB_END) {
+			CCCI_ERROR_LOG(md_id, TAG, "get ccb ctrl fail: user_id = %d!\n", ctrl_info.user_id);
+			ret = -EINVAL;
+			break;
+		}
+		/*get ctrl info by user id*/
+		s_port = find_smem_port_by_user_id(md_id, ctrl_info.user_id + SMEM_USER_CCB_START);
+		if (!s_port) {
+			CCCI_ERROR_LOG(md_id, TAG, "get ccb port fail: user_id = %d!\n", ctrl_info.user_id);
+			ret = -EINVAL;
+			break;
+		}
+		CCCI_NORMAL_LOG(md_id, TAG, "find ccb port %s for user%d!\n",
+			s_port->name, ctrl_info.user_id + SMEM_USER_CCB_START);
+		smem_port = (struct ccci_smem_port *)s_port->private_data;
+		ctrl_info.ctrl_offset = smem_port->ccb_ctrl_offset;
+		ctrl_info.ctrl_addr = (unsigned int)ccb_ctl->base_ap_view_phy;
+		ctrl_info.ctrl_length = (unsigned int)ccb_ctl->size;
+		if (copy_to_user((void __user *)arg, &ctrl_info, sizeof(struct ccb_ctrl_info))) {
+			CCCI_ERROR_LOG(md_id, TAG, "copy_to_user ccb ctrl failed !!\n");
+			ret = -EINVAL;
+			break;
+		}
+		/*set smem state as OK if get ccb ctrl success*/
+		smem_port->state = CCB_USER_OK;
 		break;
 	case CCCI_IOC_GET_CCB_CONFIG_LENGTH:
 		CCCI_NORMAL_LOG(md_id, TAG, "ccb_configs_len: %d\n", ccb_configs_len);
