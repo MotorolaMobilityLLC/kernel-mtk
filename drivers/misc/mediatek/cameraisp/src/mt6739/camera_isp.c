@@ -6014,7 +6014,6 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				}
 
 				if (ii == _rt_dma_max_) {
-					pstRTBuf->dropCnt = 0;
 					pstRTBuf->state = 0;
 				}
 			}
@@ -6161,20 +6160,18 @@ static signed int ISP_SOF_Buf_Get(enum eISPIrq irqT, union CQ_RTBC_FBC *pFbc, un
 #if     0                       /* this can't be trusted , because rcnt_in is pull high at sof */
 	/* No drop */
 	if ((imgo_fbc.Bits.FB_NUM - imgo_fbc.Bits.FBC_CNT) != 0) {
-		pstRTBuf->dropCnt = 0;
+		bDrop = 0;
 	} else {
 		/* dropped */
-		pstRTBuf->dropCnt = 1;
+		bDrop = 1;
 	}
-#else
-	pstRTBuf->dropCnt = bDrop;
 #endif
 	/*      */
 	/* if(IspInfo.DebugMask & ISP_DBG_INT_2) { */
-	/* IRQ_LOG_KEEPER(irqT,m_CurrentPPB,_LOG_INF,"[rtbc]dropCnt(%d)\n",pstRTBuf->dropCnt); */
+	/* IRQ_LOG_KEEPER(irqT,m_CurrentPPB,_LOG_INF,"[rtbc]dropCnt(%d)\n",bDrop); */
 	/* } */
 	/* No drop */
-	if (pstRTBuf->dropCnt == 0) {
+	if (bDrop == 0) {
 
 		/* verify write buffer */
 
@@ -6563,21 +6560,18 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 	}
 #if     0                       /*     this can't be trusted , because rcnt_in is pull high at sof */
 	if ((camsv_fbc.Bits.FB_NUM - camsv_fbc.Bits.FBC_CNT) != 0)
-		pstRTBuf->dropCnt = 0;
+		bDrop = 0;
 	else
-		pstRTBuf->dropCnt = 1;
-
-#else
-	pstRTBuf->dropCnt = bDrop;
+		bDrop = 1;
 #endif
 
 	if (IspInfo.DebugMask & ISP_DBG_INT_2)
-		IRQ_LOG_KEEPER(irqT, m_CurrentPPB, _LOG_INF, "sv%d dropCnt(%ld)\n", dma,
-			       pstRTBuf->dropCnt);
+		IRQ_LOG_KEEPER(irqT, m_CurrentPPB, _LOG_INF, "sv%d dropCnt(%d)\n", dma,
+			       bDrop);
 
 
 	/* No drop */
-	if (pstRTBuf->dropCnt == 0) {
+	if (bDrop == 0) {
 		if (PrvAddr[out] == curr_pa)
 			IRQ_LOG_KEEPER_PR_ERR(irqT, m_CurrentPPB, _LOG_ERR,
 				       "sv%d overlap prv(0x%x) = Cur(0x%x)\n", dma, PrvAddr[out],
