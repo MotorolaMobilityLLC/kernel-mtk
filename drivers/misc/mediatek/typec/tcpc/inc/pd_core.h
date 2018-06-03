@@ -14,7 +14,8 @@
 #ifndef PD_CORE_H_
 #define PD_CORE_H_
 
-#include <linux/wakelock.h>
+#include <linux/platform_device.h>
+#include <linux/pm_wakeup.h>
 #include "tcpci_timer.h"
 #include "tcpci_event.h"
 #include "pd_dbg_info.h"
