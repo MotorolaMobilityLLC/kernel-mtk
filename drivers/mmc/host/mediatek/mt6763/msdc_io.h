@@ -35,7 +35,8 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on);
 void msdc_set_host_power_control(struct msdc_host *host);
 void msdc_pmic_force_vcore_pwm(bool enable);
 void msdc_sd_power_off(void);
-
+void msdc_clk_pre_enable(struct msdc_host *host);
+void msdc_clk_post_disble(struct msdc_host *host);
 #if !defined(FPGA_PLATFORM)
 int msdc_oc_check(struct msdc_host *host, u32 en);
 void msdc_dump_ldo_sts(struct msdc_host *host);
@@ -79,6 +80,7 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
 #ifdef CONFIG_MTK_HW_FDE_AES
 #define msdc_clk_enable(host) \
 	do { \
+		msdc_clk_pre_enable(host); \
 		if (host->hw->host_function != MSDC_SDIO) \
 			fde_aes_check_enable(host->id, 1); \
 		(void)clk_enable(host->clk_ctl); \
@@ -92,10 +94,12 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
 			clk_disable(host->hclk_ctl); \
 		if (host->hw->host_function != MSDC_SDIO) \
 			fde_aes_check_enable(host->id, 0); \
+		msdc_clk_post_disble(host); \
 	} while (0)
 #else
 #define msdc_clk_enable(host) \
 	do { \
+		msdc_clk_pre_enable(host); \
 		(void)clk_enable(host->clk_ctl); \
 		if (host->hclk_ctl) \
 			(void)clk_enable(host->hclk_ctl); \
@@ -105,6 +109,7 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
 		clk_disable(host->clk_ctl); \
 		if (host->hclk_ctl) \
 			clk_disable(host->hclk_ctl); \
+		msdc_clk_post_disble(host); \
 	} while (0)
 #endif
 

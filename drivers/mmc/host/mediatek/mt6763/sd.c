@@ -585,7 +585,6 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 	u32 val;
 
 	if ((on) && (host->core_clkon == 0)) {
-
 		msdc_clk_enable(host);
 
 		host->core_clkon = 1;
@@ -601,10 +600,6 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 		msdc_clk_stable(host, mode, div, hs400_div_dis);
 
 	} else if ((!on) && (host->core_clkon == 1)) {
-		/* SDIO not clock off */
-		if (host->hw->host_function == MSDC_SDIO)
-			return;
-
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
 
 		msdc_clk_disable(host);

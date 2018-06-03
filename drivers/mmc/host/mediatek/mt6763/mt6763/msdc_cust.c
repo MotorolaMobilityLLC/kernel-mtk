@@ -82,6 +82,10 @@ u8 msdc_clock_src[HOST_MAX_NUM] = {
 	0
 };
 
+/* use for SPM spm_resource_req */
+unsigned int msdc_cg_lock_init, msdc_cg_cnt;
+spinlock_t msdc_cg_lock;
+
 /**************************************************************/
 /* Section 1: Device Tree Global Variables                    */
 /**************************************************************/
@@ -306,6 +310,28 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 #endif
 }
 
+void msdc_clk_pre_enable(struct msdc_host *host)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&msdc_cg_lock, flags);
+	msdc_cg_cnt++;
+	if (msdc_cg_cnt > 0)
+		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_ALL);
+	spin_unlock_irqrestore(&msdc_cg_lock, flags);
+}
+
+void msdc_clk_post_disble(struct msdc_host *host)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&msdc_cg_lock, flags);
+	msdc_cg_cnt--;
+	if (msdc_cg_cnt == 0)
+		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_RELEASE);
+	spin_unlock_irqrestore(&msdc_cg_lock, flags);
+}
+
 void msdc_sd_power_off(void)
 {
 	struct msdc_host *host = mtk_msdc_host[1];
@@ -324,6 +350,14 @@ void msdc_sd_power_off(void)
 }
 EXPORT_SYMBOL(msdc_sd_power_off);
 #else /*else !defined(FPGA_PLATFORM)*/
+void msdc_clk_pre_enable(struct msdc_host *host)
+{
+}
+
+void msdc_clk_post_disble(struct msdc_host *host)
+{
+}
+
 void msdc_sd_power_off(void)
 {
 }
@@ -1176,6 +1210,13 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 		host->hw->register_pm = mt_sdio_ops[2].sdio_register_pm;
 	}
 #endif
+
+	/* init spinlock for SPM */
+	if (msdc_cg_lock_init == 0) {
+		msdc_cg_lock_init = 1;
+		spin_lock_init(&msdc_cg_lock);
+		msdc_cg_cnt = 0;
+	}
 
 	if (host->id == 0)
 		device_rename(mmc->parent, "bootdevice");
