@@ -544,6 +544,10 @@ static void scp_A_notify_ws(struct work_struct *ws)
 
 	scp_ready[SCP_A_ID] = scp_notify_flag;
 	if (scp_notify_flag) {
+#ifdef CFG_RECOVERY_SUPPORT
+		/* release pll lock after scp ulposc calibration */
+		scp_pll_ctrl_set(0, 0);
+#endif
 		mutex_lock(&scp_A_notify_mutex);
 		blocking_notifier_call_chain(&scp_A_notifier_list, SCP_EVENT_READY, NULL);
 		mutex_unlock(&scp_A_notify_mutex);
@@ -700,6 +704,11 @@ int reset_scp(int reset)
 					pr_debug("[SCP] wait scp A reset timeout, skip\n");
 			}
 			pr_debug("[SCP] wait scp A reset timeout %d\n", timeout);
+#ifdef CFG_RECOVERY_SUPPORT
+			/* lock pll for ulposc calibration */
+			if (reset & 0x0f) /* do it only in reset */
+				scp_pll_ctrl_set(1, 0);
+#endif
 		}
 		if (scp_enable[SCP_A_ID]) {
 			pr_debug("[SCP] reset scp A\n");
