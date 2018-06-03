@@ -163,6 +163,8 @@ bssCreateStaRecFromBssDesc(IN P_ADAPTER_T prAdapter,
 	prStaRec->u2BSSBasicRateSet = prBssDesc->u2BSSBasicRateSet;
 
 	prStaRec->ucPhyTypeSet = prBssDesc->ucPhyTypeSet;
+
+	prStaRec->ucRCPI = prBssDesc->ucRCPI;
 	if (IS_STA_IN_AIS(prStaRec)) {
 		if (!((prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION3_ENABLED) ||
 		      (prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION3_KEY_ABSENT) ||
