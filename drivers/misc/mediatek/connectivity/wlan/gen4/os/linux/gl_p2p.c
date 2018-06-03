@@ -1259,7 +1259,6 @@ static int p2pStop(IN struct net_device *prDev)
 	P_GL_P2P_DEV_INFO_T prP2pGlueDevInfo = (P_GL_P2P_DEV_INFO_T) NULL;
 	UINT_8 ucRoleIdx = 0;
 	struct net_device *prTargetDev = NULL;
-	struct cfg80211_scan_request *prScanRequest = NULL;
 /* P_MSG_P2P_FUNCTION_SWITCH_T prFuncSwitch; */
 
 	GLUE_SPIN_LOCK_DECLARATION();
@@ -1284,17 +1283,13 @@ static int p2pStop(IN struct net_device *prDev)
 	/*DBGLOG(INIT, INFO, "p2pStop and ucRoleIdx = %u\n", ucRoleIdx);*/
 
 	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
-	if ((prP2pGlueDevInfo->prScanRequest != NULL) &&
+	if (prP2pGlueDevInfo->prScanRequest &&
 		(prP2pGlueDevInfo->prScanRequest->wdev == prTargetDev->ieee80211_ptr)) {
-		prScanRequest = prP2pGlueDevInfo->prScanRequest;
+		DBGLOG(INIT, INFO, "p2pStop and abort scan!!\n");
+		cfg80211_scan_done(prP2pGlueDevInfo->prScanRequest, TRUE);
 		prP2pGlueDevInfo->prScanRequest = NULL;
 	}
 	GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
-
-	if (prScanRequest) {
-		DBGLOG(INIT, INFO, "p2pStop and abort scan!!\n");
-		cfg80211_scan_done(prScanRequest, TRUE);
-	}
 
 	/* 1. stop TX queue */
 	netif_tx_stop_all_queues(prDev);
