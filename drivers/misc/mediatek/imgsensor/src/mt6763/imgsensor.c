@@ -478,7 +478,7 @@ inline static int adopt_CAMERA_HW_GetInfo(void *pBuf)
 	memset(pInfo, 0, sizeof(MSDK_SENSOR_INFO_STRUCT));
 	memset(pConfig, 0, sizeof(MSDK_SENSOR_CONFIG_STRUCT));
 
-	if (pSensorGetInfo == NULL) {
+	if (psensor == NULL || pSensorGetInfo == NULL) {
 		PK_DBG("[CAMERA_HW] NULL arg.\n");
 		return -EFAULT;
 	}
@@ -607,9 +607,10 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 
 	PK_DBG("[adopt_CAMERA_HW_GetInfo2]Entry%d\n", pSensorGetInfo->SensorId);
 
-	if (pSensorGetInfo == NULL) {
-	    PK_DBG("[CAMERA_HW] NULL arg.\n");
-	    return -EFAULT;
+	if (psensor == NULL ||
+	    pSensorGetInfo == NULL) {
+		PK_DBG("[CAMERA_HW] NULL arg.\n");
+		return -EFAULT;
 	}
 
 	pInfo =    kmalloc(sizeof(MSDK_SENSOR_INFO_STRUCT), GFP_KERNEL);
@@ -832,7 +833,8 @@ inline static int adopt_CAMERA_HW_Control(void *pBuf)
 	memset(&imageWindow, 0, sizeof(ACDK_SENSOR_EXPOSURE_WINDOW_STRUCT));
 	memset(&sensorConfigData, 0, sizeof(ACDK_SENSOR_CONFIG_STRUCT));
 
-	if (pSensorCtrl == NULL ||
+	if (psensor == NULL ||
+	    pSensorCtrl == NULL ||
 	    pSensorCtrl->pImageWindow == NULL ||
 	    pSensorCtrl->pSensorConfigData == NULL) {
     	PK_DBG("[CAMERA_HW] NULL arg.\n");
@@ -875,9 +877,10 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	ACDK_KD_SENSOR_SYNC_STRUCT *pSensorSyncInfo = NULL;
 	signed int ret = 0;
 
-	if (pFeatureCtrl == NULL) {
-	    PK_ERR(" NULL arg.\n");
-	    return -EFAULT;
+	if (psensor == NULL ||
+	    pFeatureCtrl == NULL) {
+		PK_ERR(" NULL arg.\n");
+		return -EFAULT;
 	}
 
 	if (SENSOR_FEATURE_SINGLE_FOCUS_MODE == pFeatureCtrl->FeatureId || SENSOR_FEATURE_CANCEL_AF == pFeatureCtrl->FeatureId

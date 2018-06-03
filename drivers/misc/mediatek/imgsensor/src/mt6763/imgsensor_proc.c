@@ -57,8 +57,8 @@ static ssize_t  proc_SensorType_write(struct file *file, const char *buffer, siz
 
 	SENSOR_FUNCTION_STRUCT *psensor_func = pgimgsensor->sensor[IMGSENSOR_SENSOR_IDX_MAIN].pfunc;
 
-    if(copy_from_user(regBuf, buffer, u4CopyBufSize))
-    return -EFAULT;
+	if (copy_from_user(regBuf, buffer, u4CopyBufSize))
+		return -EFAULT;
 
 	if(psensor_func)
 		psensor_func->SensorFeatureControl(SENSOR_FEATURE_SET_PDAF_TYPE, regBuf, &u4CopyBufSize);
@@ -99,8 +99,8 @@ static ssize_t  CAMERA_HW_Reg_Debug(struct file *file, const char *buffer, size_
     MSDK_SENSOR_REG_INFO_STRUCT sensorReg;
     memset(&sensorReg, 0, sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
 
-    if (copy_from_user(regBuf, buffer, u4CopyBufSize))
-    return -EFAULT;
+	if (psensor == NULL || copy_from_user(regBuf, buffer, u4CopyBufSize))
+		return -EFAULT;
 
     if (sscanf(regBuf, "%x %x",  &sensorReg.RegAddr, &sensorReg.RegData) == 2) {
         imgsensor_sensor_feature_control(psensor, SENSOR_FEATURE_SET_REGISTER, (MUINT8 *)&sensorReg, (MUINT32 *)sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
@@ -126,8 +126,8 @@ static ssize_t  CAMERA_HW_Reg_Debug2(struct file *file, const char *buffer, size
     MSDK_SENSOR_REG_INFO_STRUCT sensorReg;
     memset(&sensorReg, 0, sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
 
-    if (copy_from_user(regBuf, buffer, u4CopyBufSize))
-    return -EFAULT;
+	if (psensor == NULL || copy_from_user(regBuf, buffer, u4CopyBufSize))
+		return -EFAULT;
 
 	if (sscanf(regBuf, "%x %x",  &sensorReg.RegAddr, &sensorReg.RegData) == 2) {
 		imgsensor_sensor_feature_control(psensor, SENSOR_FEATURE_SET_REGISTER, (MUINT8 *)&sensorReg, (MUINT32 *)sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
@@ -151,8 +151,8 @@ static ssize_t  CAMERA_HW_Reg_Debug3(struct file *file, const char *buffer, size
     MSDK_SENSOR_REG_INFO_STRUCT sensorReg;
     memset(&sensorReg, 0, sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
 
-    if (copy_from_user(regBuf, buffer, u4CopyBufSize))
-    return -EFAULT;
+	if (psensor == NULL || copy_from_user(regBuf, buffer, u4CopyBufSize))
+		return -EFAULT;
 
     if (sscanf(regBuf, "%x %x",  &sensorReg.RegAddr, &sensorReg.RegData) == 2) {
         imgsensor_sensor_feature_control(psensor, SENSOR_FEATURE_SET_REGISTER, (MUINT8 *)&sensorReg, (MUINT32 *)sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
