@@ -2413,7 +2413,7 @@ static int _aal_partial_update(enum DISP_MODULE_ENUM module, void *arg,
 	return 0;
 }
 
-void disp_aal_set_ess_level(int level)
+void disp_aal_set_ess_level_impl(int level, int need_kick)
 {
 #ifdef AAL_SUPPORT_KERNEL_API
 	unsigned long flags;
@@ -2429,13 +2429,18 @@ void disp_aal_set_ess_level(int level)
 
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 
-	disp_aal_exit_idle(__func__, 1);
+	disp_aal_exit_idle(__func__, need_kick);
 	disp_aal_set_interrupt(1);
 	disp_aal_trigger_refresh(AAL_REFRESH_17MS);
 	AAL_DBG("level = %d (cmd = 0x%x)", level, level_command);
 #else
 	AAL_ERR("not supported");
 #endif
+}
+
+void disp_aal_set_ess_level(int level)
+{
+	disp_aal_set_ess_level_impl(level, 1);
 }
 
 void disp_aal_set_ess_en(int enable)
@@ -2452,13 +2457,6 @@ void disp_aal_set_ess_en(int enable)
 	enable_command = AAL_CONTROL_CMD(g_aal_ess_en_cmd_id, enable);
 
 	g_aal_ess_en = enable_command;
-
-	g_aal_ess_level_cmd_id += 1;
-	g_aal_ess_level_cmd_id = g_aal_ess_level_cmd_id % 64;
-	level_command = AAL_CONTROL_CMD(g_aal_ess_level_cmd_id,
-		ESS_LEVEL_BY_CUSTOM_LIB);
-
-	g_aal_ess_level = level_command;
 
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 
@@ -2597,6 +2595,21 @@ static int aal_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg,
 			return -EFAULT;
 		}
 		break;
+#ifdef AMS_AAL_SUPPORT_KERNEL_API
+	case DISP_IOCTL_SET_SMARTBACKLIGHT:
+		{
+			int smart_ess_level;
+
+			if (copy_from_user(&smart_ess_level, (void *)arg,
+				sizeof(smart_ess_level))) {
+				AAL_ERR("SET_SMARTBACKLIGHT: failed");
+				return -EFAULT;
+			}
+
+			disp_aal_set_ess_level_impl(smart_ess_level, 0);
+			break;
+		}
+#endif
 	default:
 		AAL_ERR("ioctl not supported failed\n");
 		return -EFAULT;

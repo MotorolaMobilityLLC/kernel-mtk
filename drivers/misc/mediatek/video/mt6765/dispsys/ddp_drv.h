@@ -318,6 +318,10 @@ struct disp_iommu_device *disp_get_iommu_dev(void);
 	_IOW(DISP_IOCTL_MAGIC, 17, struct DISP_AAL_PARAM)
 #define DISP_IOCTL_AAL_INIT_REG \
 	_IOW(DISP_IOCTL_MAGIC, 18, struct DISP_AAL_INITREG)
+#define DISP_IOCTL_SET_SMARTBACKLIGHT \
+	_IOW(DISP_IOCTL_MAGIC, 19, int)
+/* Add for AAL control - E */
+
 #define DISP_IOCTL_SET_GAMMALUT \
 	_IOW(DISP_IOCTL_MAGIC, 23, struct DISP_GAMMA_LUT_T)
 #define DISP_IOCTL_SET_CCORR \
@@ -331,7 +335,6 @@ struct disp_iommu_device *disp_get_iommu_dev(void);
 #define DISP_IOCTL_CCORR_GET_IRQ \
 	_IOR(DISP_IOCTL_MAGIC, 111, int)
 
-/* Add for AAL control - E */
 /*---------------------------------------------------------------------------*/
 /*  DDP Kernel Mode API  (for Kernel Trap) */
 /* --------------------------------------------------------------------------*/
