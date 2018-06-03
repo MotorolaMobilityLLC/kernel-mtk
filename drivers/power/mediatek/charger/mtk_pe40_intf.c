@@ -686,20 +686,20 @@ int mtk_pe40_safety_check(struct charger_manager *pinfo)
 			chr_err("[pe40_err] err:1 %d\n", ret);
 			goto err;
 		}
-	}
 
-	if (cap.output_mv != -1 && cap.output_mv - vbus >
-		PE40_VBUS_IR_DROP_THRESHOLD) {
-		chr_err("[pe40_err]vbus ov2 :vbus:%d avbus:%d\n",
-			vbus, cap.output_mv);
-		goto err;
-	}
+		if (cap.output_mv != -1 && cap.output_mv - vbus >
+			PE40_VBUS_IR_DROP_THRESHOLD) {
+			chr_err("[pe40_err]vbus ov2 :vbus:%d avbus:%d\n",
+				vbus, cap.output_mv);
+			goto err;
+		}
 
-	/* TA V_BUS OVP */
-	if (cap.output_mv >= pe40->avbus * 12 / 10) {
-		chr_err("[pe40_err]TA vbus ovp :vbus:%d avbus:%d\n",
-			cap.output_mv, pe40->avbus);
-		goto err;
+		/* TA V_BUS OVP */
+		if (cap.output_mv >= pe40->avbus * 12 / 10) {
+			chr_err("[pe40_err]TA vbus ovp :vbus:%d avbus:%d\n",
+				cap.output_mv, pe40->avbus);
+			goto err;
+		}
 	}
 
 	/* TA Thermal */
