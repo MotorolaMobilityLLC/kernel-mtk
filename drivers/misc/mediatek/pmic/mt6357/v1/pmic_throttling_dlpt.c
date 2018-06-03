@@ -978,7 +978,7 @@ static int get_dlpt_imix_charging(void)
 	zcv_val = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 #endif
 
-	imix_val = (zcv_val - vsys_min_1_val) * 1000 /
+	imix = (zcv_val - vsys_min_1_val) * 1000 /
 				ptim_rac_val_avg * 9 / 10;
 	PMICLOG("[dlpt] get_dlpt_imix_charging %d %d %d %d\n"
 		, imix, zcv_val, vsys_min_1_val, ptim_rac_val_avg);
@@ -1015,11 +1015,14 @@ int dlpt_check_power_off(void)
 			g_low_battery_if_power_off = 0;
 		}
 		PMICLOG("[dlpt_check_power_off]");
-		PMICLOG("ptim_imix=%d, POWEROFF_BAT_CURRENT=%d"
-			, ptim_imix, POWEROFF_BAT_CURRENT);
+		PMICLOG("g_low_battery_level=%d, ret=%d\n"
+			, g_low_battery_level
+			, ret);
 #endif
-		PMICLOG("g_low_battery_level=%d,ret=%d,g_lowbat_int_bottom=%d\n"
-			, g_low_battery_level, ret, g_lowbat_int_bottom);
+		PMICLOG("[dlpt_check_power_off]");
+		PMICLOG("g_imix_val=%d, POWEROFF_BAT_CURRENT=%d"
+			, g_imix_val
+			, POWEROFF_BAT_CURRENT);
 	}
 
 	return ret;
