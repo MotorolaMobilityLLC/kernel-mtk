@@ -1012,10 +1012,17 @@ EXPORT_SYMBOL(mt_fh_unlock);
 
 void mt_freqhopping_all_ssc_off(void)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	if (g_p_fh_hal_drv->mt_ssc_off_before_reset != NULL)
+		g_p_fh_hal_drv->mt_ssc_off_before_reset();
+#else
 	int id = 0;
 
 	for (id = 0; id < FH_PLL_COUNT; id++)
 		freqhopping_config(id, 0, false);
+#endif
+
+
 }
 EXPORT_SYMBOL(mt_freqhopping_all_ssc_off);
 

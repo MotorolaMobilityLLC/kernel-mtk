@@ -947,6 +947,7 @@ static struct mt_fh_hal_driver g_fh_hal_drv = {
 	.fh_usrdef = mt_ssc_fhpll_userdefined,
 	.fh_pll_set = mt_fh_pll_struct_set,
 	.fh_pll_get = mt_fh_pll_struct_get,
+	.mt_ssc_off_before_reset = NULL,
 	/*.fh_usrdef = mt_fh_usrdef_set,*/
 	.pll_cnt = FH_PLL_NUM,
 	.proc.dumpregs_read = fh_dumpregs_proc_read,
