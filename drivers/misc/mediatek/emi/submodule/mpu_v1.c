@@ -478,3 +478,8 @@ int emi_mpu_check_register(void (*cb_func)(void))
 }
 EXPORT_SYMBOL(emi_mpu_check_register);
 
+void clear_md_violation(void)
+{
+	mt_reg_sync_writel(0x80000000, EMI_MPUT_2ND);
+}
+EXPORT_SYMBOL(clear_md_violation);
