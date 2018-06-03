@@ -25,6 +25,7 @@ function remove_value_note
     RESULT_VALUE=$(echo $RESULT_VALUE | sed 's/(PROJECT)//g')
     echo $RESULT_VALUE
 }
+export -f remove_value_note
 
 PDL_CONFIG=""
 PDL_VALUE=""
@@ -91,6 +92,7 @@ function parse_config_item
     done
     PCI_RESULT=$(echo $PCI_RESULT | sed 's/,$//g')
 }
+export -f parse_config_item
 
 PDC_RESULT=""
 function parse_dot_config_value
