@@ -38,7 +38,13 @@
 #include "sspm_sysfs.h"
 #include "sspm_logger.h"
 
+#ifdef SSPM_PLT_LOGGER_BUF_LEN
+/* use platform-defined buffer length */
+#define BUF_LEN				SSPM_PLT_LOGGER_BUF_LEN
+#else
+/* otherwise use default buffer length */
 #define BUF_LEN				(1 * 1024 * 1024)
+#endif
 #define LBUF_LEN			(4 * 1024)
 #define SSPM_TIMER_TIMEOUT	(1 * HZ) /* 1 seconds*/
 #define ROUNDUP(a, b)		(((a) + ((b)-1)) & ~((b)-1))
