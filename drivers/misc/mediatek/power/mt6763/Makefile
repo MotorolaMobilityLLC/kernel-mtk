@@ -24,5 +24,3 @@ ccflags-y += -I$(srctree)/drivers/power/mediatek/battery
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 	obj-$(CONFIG_MTK_SMART_BATTERY) += mtk_battery_intf.o
 endif
-
-obj-$(CONFIG_USB_POWER_DELIVERY) += rt_pd_manager.o

@@ -37,6 +37,11 @@
 #include <mt-plat/charging.h>
 #endif /* CONFIG_MTK_GAUGE_VERSION */
 
+#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+#include "usb_switch.h"
+#include "typec.h"
+#endif
+
 #include <mt-plat/mtk_boot.h>
 #include "musb_core.h"
 #define RT_PD_MANAGER_VERSION	"1.0.5_MTK"
@@ -116,7 +121,7 @@ void pd_wake_unlock(void)
 
 void pd_chrdet_int_handler(void)
 {
-	pr_err("[pd_chrdet_int_handler]CHRDET status = %d....\n",
+	pr_info("[pd_chrdet_int_handler]CHRDET status = %d....\n",
 		pmic_get_register_value(PMIC_RGS_CHRDET));
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
@@ -127,7 +132,7 @@ void pd_chrdet_int_handler(void)
 
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 			|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
-			pr_err("[pd_chrdet_int_handler] Unplug Charger/USB\n");
+			pr_info("[pd_chrdet_int_handler] Unplug Charger/USB\n");
 			mt_power_off();
 		}
 	}
@@ -144,17 +149,17 @@ int chrdet_thread_kthread(void *x)
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	set_current_state(TASK_INTERRUPTIBLE);
 
-	pr_err("[chrdet_thread_kthread] enter\n");
+	pr_info("[chrdet_thread_kthread] enter\n");
 	pmic_enable_interrupt(CHRDET_INT_NO, 0, "pd_manager");
 
 	/* Run on a process content */
 	while (1) {
 		mutex_lock(&pd_chr_mutex);
 		if (updatechrdet == true) {
-			pr_err("chrdet_work_handler\n");
+			pr_info("chrdet_work_handler\n");
 			pd_chrdet_int_handler();
 		} else
-			pr_err("chrdet_work_handler no update\n");
+			pr_info("chrdet_work_handler no update\n");
 		mutex_unlock(&pd_chr_mutex);
 		set_current_state(TASK_INTERRUPTIBLE);
 		pd_wake_unlock();
@@ -166,7 +171,7 @@ int chrdet_thread_kthread(void *x)
 
 void wake_up_pd_chrdet(void)
 {
-	pr_err("[wake_up_pd_chrdet]\r\n");
+	pr_info("[wake_up_pd_chrdet]\r\n");
 	pd_wake_lock();
 	if (pd_thread_handle != NULL)
 		wake_up_process(pd_thread_handle);
@@ -342,6 +347,12 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			mutex_unlock(&tcpc_usb_connect_lock);
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 				noti->typec_state.polarity);
+#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+			if (noti->typec_state.polarity == 0)
+				usb3_switch_ctrl_sel(CC1_SIDE);
+			else
+				usb3_switch_ctrl_sel(CC2_SIDE);
+#endif
 			if (!tcpm_get_boot_check_flag(tcpc_dev))
 				tcpm_set_boot_check_flag(tcpc_dev, 1);
 #if CONFIG_MTK_GAUGE_VERSION == 20
@@ -351,7 +362,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			updatechrdet = true;
 			wake_up_pd_chrdet();
 			mutex_unlock(&pd_chr_mutex);
-			pr_err("TCP_NOTIFY_SINK_VBUS=> plug in");
+			pr_info("TCP_NOTIFY_SINK_VBUS=> plug in");
 #endif
 #endif
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
@@ -383,7 +394,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			updatechrdet = true;
 			wake_up_pd_chrdet();
 			mutex_unlock(&pd_chr_mutex);
-			pr_err("TCP_NOTIFY_SINK_VBUS=> plug out");
+			pr_info("TCP_NOTIFY_SINK_VBUS=> plug out");
 #endif
 #endif
 #if CONFIG_MTK_GAUGE_VERSION == 30
@@ -412,7 +423,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		mutex_unlock(&tcpc_pd_rdy_lock);
 
 #ifdef CONFIG_MTK_SMART_BATTERY
-		pr_err("%s pd state = %d %d\n", __func__,
+		pr_info("%s pd state = %d %d\n", __func__,
 			noti->pd_state.connected, mtk_check_pe_ready_snk());
 #if CONFIG_MTK_GAUGE_VERSION == 20
 		if (mtk_is_pd_chg_ready() == true ||
@@ -565,9 +576,9 @@ static int rt_pd_manager_probe(struct platform_device *pdev)
 	if (IS_ERR(pd_thread_handle)) {
 		pd_thread_handle = NULL;
 		pr_err("[pd_thread_handle] creation fails\n");
-	} else {
-		pr_err("[pd_thread_handle] kthread_create Done\n");
-	}
+	} else
+		pr_info("[pd_thread_handle] kthread_create Done\n");
+
 #endif /* CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT */
 #endif /* This part is for GM20 */
 
