@@ -1373,7 +1373,7 @@ int __init init_smart(void)
 
 	turbo_util_thresh = 80;   /* util <= 80% */
 
-	turbo_support = 1; /* turbo mode support */
+	turbo_support = 0; /* turbo mode support. Todo: We should read efuse to decide it. */
 	log_enable = 0;    /* debug log */
 	trace_enable = 0;  /* debug trace */
 	uevent_enable = 1; /* smart.c will send uevent to user space */
