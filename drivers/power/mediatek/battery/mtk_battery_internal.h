@@ -602,6 +602,9 @@ extern int get_shutdown_cond_flag(void);
 /* end mtk_power_misc.c */
 
 
+/* pmic */
+extern unsigned int upmu_get_rgs_chrdet(void);
+
 /* DLPT */
 extern int do_ptim_gauge(bool isSuspend, unsigned int *bat, signed int *cur, bool *is_charging);
 
