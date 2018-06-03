@@ -27,6 +27,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
 ifeq ($(CONFIG_TCPC_CLASS),y)
 	ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
 endif
+# for ep0 test
+ccflags-y += -I$(srctree)/drivers/usb/core/
 
 obj-$(CONFIG_USB_MTK_HDRC)	:= usb20.o usb20_phy.o
 obj-$(CONFIG_USB_MTK_HDRC)  += usb20_host.o
