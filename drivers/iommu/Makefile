@@ -19,7 +19,11 @@ obj-$(CONFIG_INTEL_IOMMU) += intel-iommu.o
 obj-$(CONFIG_INTEL_IOMMU_SVM) += intel-svm.o
 obj-$(CONFIG_IPMMU_VMSA) += ipmmu-vmsa.o
 obj-$(CONFIG_IRQ_REMAP) += intel_irq_remapping.o irq_remapping.o
-obj-$(CONFIG_MTK_IOMMU) += mtk_iommu.o mtk_iommu_mt8167.o
+ifdef CONFIG_MACH_MT8167
+obj-$(CONFIG_MTK_IOMMU) += mtk_iommu_mt8167.o
+else
+obj-$(CONFIG_MTK_IOMMU) += mtk_iommu.o
+endif
 obj-$(CONFIG_OMAP_IOMMU) += omap-iommu.o
 obj-$(CONFIG_OMAP_IOMMU_DEBUG) += omap-iommu-debug.o
 obj-$(CONFIG_ROCKCHIP_IOMMU) += rockchip-iommu.o
