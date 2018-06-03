@@ -63,7 +63,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "allocmem.h"
 #include "osfunc.h"
 #include "pmr_impl.h"
-#include "hash.h"
 #include "private_data.h"
 #include "module_common.h"
 
@@ -145,15 +144,6 @@ typedef struct _PMR_DMA_BUF_DATA_
 	IMG_UINT32 ui32PhysPageCount;
 	IMG_UINT32 ui32VirtPageCount;
 } PMR_DMA_BUF_DATA;
-
-/* Start size of the g_psDmaBufHash hash table */
-#define DMA_BUF_HASH_SIZE 20
-
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-static DEFINE_MUTEX(g_HashLock);
-#endif
-static HASH_TABLE *g_psDmaBufHash = NULL;
-static IMG_UINT32 g_ui32HashRefCount = 0;
 
 #if defined(PVR_ANDROID_ION_USE_SG_LENGTH)
 #define pvr_sg_length(sg) ((sg)->length)
@@ -666,23 +656,6 @@ static PVRSRV_ERROR PhysmemDestroyDmaBuf(PHYS_HEAP *psHeap,
 
 	PVR_UNREFERENCED_PARAMETER(psHeap);
 
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-	mutex_lock(&g_HashLock);
-#endif
-
-	HASH_Remove(g_psDmaBufHash, (uintptr_t) psDmaBuf);
-	g_ui32HashRefCount--;
-
-	if (g_ui32HashRefCount == 0)
-	{
-		HASH_Delete(g_psDmaBufHash);
-		g_psDmaBufHash = NULL;
-	}
-
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-	mutex_unlock(&g_HashLock);
-#endif
-
 	dma_buf_detach(psDmaBuf, psAttachment);
 	dma_buf_put(psDmaBuf);
 
@@ -866,17 +839,6 @@ PhysmemImportSparseDmaBuf(CONNECTION_DATA *psConnection,
 			goto errDMAPut;
 		}
 	}
-	else if (g_psDmaBufHash)
-	{
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-		mutex_lock(&g_HashLock);
-#endif
-		/* We have a hash table so check if we've seen this dmabuf before */
-		psPMR = (PMR *) HASH_Retrieve(g_psDmaBufHash, (uintptr_t) psDmaBuf);
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-		mutex_unlock(&g_HashLock);
-#endif
-	}
 
 	if (psPMR)
 	{
@@ -977,42 +939,11 @@ PhysmemImportSparseDmaBuf(CONNECTION_DATA *psConnection,
 		goto errDMADetach;
 	}
 
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-	mutex_lock(&g_HashLock);
-#endif
-	if (!g_psDmaBufHash)
-	{
-		/*
-		 * As different processes may import the same dmabuf we need to
-		 * create a hash table so we don't generate a duplicate PMR but
-		 * rather just take a reference on an existing one.
-		 */
-		g_psDmaBufHash = HASH_Create(DMA_BUF_HASH_SIZE);
-		if (!g_psDmaBufHash)
-		{
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-			mutex_unlock(&g_HashLock);
-#endif
-			eError = PVRSRV_ERROR_OUT_OF_MEMORY;
-			goto errUnrefPMR;
-		}
-	}
-
-	/* First time we've seen this dmabuf so store it in the hash table */
-	HASH_Insert(g_psDmaBufHash, (uintptr_t) psDmaBuf, (uintptr_t) psPMR);
-	g_ui32HashRefCount++;
-#if !defined(PVRSRV_USE_BRIDGE_LOCK)
-	mutex_unlock(&g_HashLock);
-#endif
-
 	*ppsPMRPtr = psPMR;
 	*puiSize = ui32NumVirtChunks * uiChunkSize;
 	*puiAlign = PAGE_SIZE;
 
 	return PVRSRV_OK;
-
-errUnrefPMR:
-	PMRUnrefPMR(psPMR);
 
 errDMADetach:
 	dma_buf_detach(psDmaBuf, psAttachment);
