@@ -41,6 +41,7 @@
 #define I2C_ACKERR			(1 << 1)
 #define I2C_TRANSAC_COMP		(1 << 0)
 #define I2C_TRANSAC_START		(1 << 0)
+#define I2C_RESUME_ARBIT                (1 << 1)
 #define I2C_TIMING_STEP_DIV_MASK	(0x3f << 0)
 #define I2C_TIMING_SAMPLE_COUNT_MASK	(0x7 << 0)
 #define I2C_TIMING_SAMPLE_DIV_MASK	(0x7 << 8)
@@ -51,6 +52,7 @@
 #define I2C_IO_CONFIG_PUSH_PULL		0x0000
 #define I2C_IO_CONFIG_OPEN_DRAIN_AED	0x0000
 #define I2C_IO_CONFIG_PUSH_PULL_AED	0x0000
+#define I2C_IO_CONFIG_AED_MASK	(0xfff << 4)
 #define I2C_SOFT_RST			0x0001
 #define I2C_FIFO_ADDR_CLR		0x0001
 #define I2C_DELAY_LEN			0x0002
@@ -90,11 +92,10 @@
 #define I2C_CONTROL_DMAACK_EN           (0x1 << 8)
 #define I2C_CONTROL_ASYNC_MODE          (0x1 << 9)
 #define I2C_CONTROL_WRAPPER             (0x1 << 0)
-
+#define I2C_MCU_INTR_EN                  0x1
+#define I2C_CCU_INTR_EN                  0x2
 #define I2C_DRV_NAME		"mt-i2c"
 #define I2CTAG          "[I2C]"
-#define I2C_RATE_LIMITED_PR_INFO(i2c, fmt, arg...) \
-		pr_info_ratelimited("[i2c-%d]"fmt"\n", i2c->id, ##arg)
 
 
 #define I2C_RECORD_LEN 10
@@ -180,15 +181,82 @@ enum I2C_REGS_OFFSET {
 	OFFSET_DEBUGCTRL = 0x68,
 	OFFSET_TRANSFER_LEN_AUX = 0x6c,
 	OFFSET_CLOCK_DIV = 0x70,
+
+	/*v2 add*/
+	OFFSET_MCU_INTR = 0xfff,
+	OFFSET_TRAFFIC = 0xfff,
+	OFFSET_COMMAND = 0xfff,
+	OFFSET_CRC_CODE_ = 0xfff,
+	OFFSET_TERNARY = 0xfff,
+	OFFSET_IBI_TIMING = 0xfff,
+	OFFSET_SHAPE = 0xfff,
+	OFFSET_HFIFO_DATA = 0xfff,
+	OFFSET_ERROR = 0xfff,
+	OFFSET_DELAY_STEP = 0xfff,
+	OFFSET_DELAY_SAMPLE = 0xfff,
+	OFFSET_DMA_INFO = 0xfff,
+	OFFSET_IRQ_INFO = 0xfff,
+	OFFSET_DMA_FSM_DEBUG = 0xfff,
+	OFFSET_HFIFO_STAT = 0xfff,
+};
+
+enum I2C_REGS_OFFSET_V2 {
+	V2_OFFSET_DATA_PORT = 0x0,
+	V2_OFFSET_SLAVE_ADDR = 0x04,
+	V2_OFFSET_INTR_MASK = 0x08,
+	V2_OFFSET_INTR_STAT = 0x0c,
+	V2_OFFSET_CONTROL = 0x10,
+	V2_OFFSET_TRANSFER_LEN = 0x14,
+	V2_OFFSET_TRANSAC_LEN = 0x18,
+	V2_OFFSET_DELAY_LEN = 0x1c,
+	V2_OFFSET_TIMING = 0x20,
+	V2_OFFSET_START = 0x24,
+	V2_OFFSET_EXT_CONF = 0x28,
+	V2_OFFSET_LTIMING = 0x2c,
+	V2_OFFSET_FIFO_ADDR_CLR = 0x38,
+	V2_OFFSET_SOFTRESET = 0x50,
+
+	/*v2 use different offset*/
+	V2_OFFSET_HS = 0x30,
+	V2_OFFSET_IO_CONFIG = 0x34,
+	V2_OFFSET_TRANSFER_LEN_AUX = 0x44,
+	V2_OFFSET_CLOCK_DIV = 0x48,
+	V2_OFFSET_DEBUGSTAT = 0xe4,
+	V2_OFFSET_DEBUGCTRL = 0xe8,
+	V2_OFFSET_FIFO_STAT = 0xf4,
+	V2_OFFSET_FIFO_THRESH = 0xf8,
+	V2_OFFSET_AED_PATCH = 0x80,
+
+	/*v2 add*/
+	V2_OFFSET_MCU_INTR = 0x40,
+	V2_OFFSET_TRAFFIC = 0x54,
+	V2_OFFSET_COMMAND = 0x58,
+	V2_OFFSET_CRC_CODE_ = 0x5c,
+	V2_OFFSET_TERNARY = 0x60,
+	V2_OFFSET_IBI_TIMING = 0x64,
+	V2_OFFSET_SHAPE = 0x6c,
+	V2_OFFSET_HFIFO_DATA = 0x70,
+	V2_OFFSET_ERROR = 0x84,
+	V2_OFFSET_DELAY_STEP = 0xd4,
+	V2_OFFSET_DELAY_SAMPLE = 0xd8,
+	V2_OFFSET_DMA_INFO = 0xdc,
+	V2_OFFSET_IRQ_INFO = 0xe0,
+	V2_OFFSET_DMA_FSM_DEBUG = 0xec,
+	V2_OFFSET_HFIFO_STAT = 0xfc,
+
+	/*not in v2*/
+	V2_OFFSET_DCM_EN = 0xfff, /*0x54*/
+	V2_OFFSET_PATH_DIR = 0xfff, /*0x60*/
 };
 
 struct i2c_info {
 	unsigned int slave_addr;
 	unsigned int intr_stat;
+	unsigned int control;
 	unsigned int fifo_stat;
 	unsigned int debug_stat;
 	unsigned int tmo;
-	struct timespec endtime;
+	long long end_time;
 };
 
 enum PERICFG_OFFSET {
@@ -210,7 +278,10 @@ struct mt_i2c_ext {
 #define I2C_A_FILTER_MSG	0x00000001
 	bool isEnable;
 	bool isFilterMsg;
+	bool is_ch_offset;
 	u32 timing;
+	u16 ch_offset;
+	u16 dma_ch_offset;
 };
 
 struct mtk_i2c_compatible {
@@ -222,10 +293,11 @@ struct mtk_i2c_compatible {
 	unsigned char check_max_freq; /* check max freq */
 	unsigned char set_ltiming; /* need to set LTIMING */
 	unsigned char set_aed; /* need to set AED */
+	unsigned char ver; /* controller version */
 	u16 ext_time_config;
 	char clk_compatible[128];
 	u16 clk_sta_offset[I2C_MAX_CHANNEL]; /* I2C clock status register */
-	u8 cg_bit[I2C_MAX_CHANNEL]; /* i2c clock bit, i2c0-9 */
+	u8 cg_bit[I2C_MAX_CHANNEL]; /* i2c clock bit */
 	u32 clk_sel_offset;
 	u32 arbit_offset;
 };
@@ -255,6 +327,7 @@ struct mt_i2c {
 	u16 irq_stat;			/* interrupt status */
 	unsigned int speed_hz;		/* The speed in transfer */
 	unsigned int clk_src_div;
+	unsigned int aed;		/* aed value from dt */
 	spinlock_t cg_lock;
 	int cg_cnt;
 	bool trans_stop;		/* i2c transfer stop */
@@ -272,9 +345,14 @@ struct mt_i2c {
 	struct mutex i2c_mutex;
 	struct mt_i2c_ext ext_data;
 	bool is_hw_trig;
+	bool suspended;
 	const struct mtk_i2c_compatible *dev_comp;
 	int rec_idx; /* next record idx */
 	struct i2c_info rec_info[I2C_RECORD_LEN];
+	int ch_offset_default;
+	int ch_offset;
+	int dma_ch_offset_default;
+	int dma_ch_offset;
 };
 
 #if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
@@ -290,7 +368,9 @@ struct mt_i2c {
 
 
 extern void i2c_dump_info(struct mt_i2c *i2c);
+#if defined(CONFIG_MTK_GIC_EXT)
 extern void mt_irq_dump_status(unsigned int irq);
+#endif
 extern unsigned int enable_4G(void);
 extern int mtk_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 					int num, u32 ext_flag, u32 timing);
@@ -299,5 +379,7 @@ extern int hw_trig_i2c_enable(struct i2c_adapter *adap);
 extern int hw_trig_i2c_disable(struct i2c_adapter *adap);
 extern int hw_trig_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 		int num);
+extern int i2c_ccu_enable(struct i2c_adapter *adap, u16 ch_offset);
+extern int i2c_ccu_disable(struct i2c_adapter *adap);
 
 #endif

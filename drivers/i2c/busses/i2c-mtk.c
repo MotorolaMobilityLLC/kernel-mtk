@@ -49,15 +49,31 @@ static struct mt_i2c *g_mt_i2c[I2C_MAX_CHANNEL];
 static struct mtk_i2c_compatible i2c_common_compat;
 
 
-static inline void i2c_writew(u16 value, struct mt_i2c *i2c, u8 offset)
+static inline void _i2c_writew(u16 value, struct mt_i2c *i2c, u8 offset)
 {
-	writew(value, i2c->base + offset);
+	writew(value, i2c->base + i2c->ch_offset + offset);
 }
 
-static inline u16 i2c_readw(struct mt_i2c *i2c, u8 offset)
+static inline u16 _i2c_readw(struct mt_i2c *i2c, u8 offset)
 {
-	return readw(i2c->base + offset);
+	return readw(i2c->base + i2c->ch_offset + offset);
 }
+
+#define i2c_writew(val, i2c, ofs) \
+	do { \
+		if (((i2c)->dev_comp->ver != 0x2) || (V2_##ofs != 0xfff)) \
+			_i2c_writew(val, i2c, ((i2c)->dev_comp->ver == 0x2) \
+				? (V2_##ofs) : ofs); \
+	} while (0)
+
+#define i2c_readw(i2c, ofs) \
+	({ \
+		u16 value = 0; \
+		if (((i2c)->dev_comp->ver != 0x2) || (V2_##ofs != 0xfff)) \
+			value = _i2c_readw(i2c, ((i2c)->dev_comp->ver == 0x2) \
+				? (V2_##ofs) : ofs); \
+		value; \
+	})
 
 void __iomem *cg_base;
 
@@ -159,12 +175,12 @@ void dump_dma_regs(void)
 
 static inline void i2c_writel_dma(u32 value, struct mt_i2c *i2c, u8 offset)
 {
-	writel(value, i2c->pdmabase + offset);
+	writel(value, i2c->pdmabase + i2c->dma_ch_offset + offset);
 }
 
 static inline u32 i2c_readl_dma(struct mt_i2c *i2c, u8 offset)
 {
-	return readl(i2c->pdmabase + offset);
+	return readl(i2c->pdmabase + i2c->dma_ch_offset + offset);
 }
 
 static void record_i2c_dma_info(struct mt_i2c *i2c)
@@ -209,10 +225,11 @@ static void record_i2c_info(struct mt_i2c *i2c, int tmo)
 
 	i2c->rec_info[idx].slave_addr = i2c_readw(i2c, OFFSET_SLAVE_ADDR);
 	i2c->rec_info[idx].intr_stat = i2c->irq_stat;
+	i2c->rec_info[idx].control = i2c_readw(i2c, OFFSET_CONTROL);
 	i2c->rec_info[idx].fifo_stat = i2c_readw(i2c, OFFSET_FIFO_STAT);
 	i2c->rec_info[idx].debug_stat = i2c_readw(i2c, OFFSET_DEBUGSTAT);
 	i2c->rec_info[idx].tmo = tmo;
-	get_monotonic_boottime(&i2c->rec_info[idx].endtime);
+	i2c->rec_info[idx].end_time = sched_clock();
 
 	i2c->rec_idx++;
 	if (i2c->rec_idx == I2C_RECORD_LEN)
@@ -223,23 +240,28 @@ static void dump_i2c_info(struct mt_i2c *i2c)
 {
 	int i;
 	int idx = i2c->rec_idx;
+	long long endtime;
+	unsigned long ns;
 
 	if (i2c->buffermode) /* no i2c history @ buffermode */
 		return;
 
-	I2C_RATE_LIMITED_PR_INFO(i2c, "last transfer info:\n");
+	dev_info(i2c->dev, "last transfer info:\n");
 
 	for (i = 0; i < I2C_RECORD_LEN; i++) {
 		if (idx == 0)
 			idx = I2C_RECORD_LEN;
 		idx--;
-		I2C_RATE_LIMITED_PR_INFO(i2c,
-			"[%02d] [%5d.%06lu] SLAVE_ADDR=%x,INTR_STAT=%x,FIFO_STAT=%x,DEBUGSTAT=%x, tmo=%d\n",
+		endtime = i2c->rec_info[idx].end_time;
+		ns = do_div(endtime, 1000000000);
+		dev_info(i2c->dev,
+			"[%02d] [%5lu.%06lu] SLAVE_ADDR=%x,INTR_STAT=%x,CONTROL=%x,FIFO_STAT=%x,DEBUGSTAT=%x, tmo=%d\n",
 			i,
-			(int)i2c->rec_info[idx].endtime.tv_sec,
-			i2c->rec_info[idx].endtime.tv_nsec/1000,
+			(unsigned long)endtime,
+			ns/1000,
 			i2c->rec_info[idx].slave_addr,
 			i2c->rec_info[idx].intr_stat,
+			i2c->rec_info[idx].control,
 			i2c->rec_info[idx].fifo_stat,
 			i2c->rec_info[idx].debug_stat,
 			i2c->rec_info[idx].tmo
@@ -271,13 +293,26 @@ static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 			goto err_pmic;
 	}
 	spin_lock(&i2c->cg_lock);
-	i2c->cg_cnt++;
+	if (i2c->suspended)
+		ret = -EIO;
+	else
+		i2c->cg_cnt++;
 	spin_unlock(&i2c->cg_lock);
+	if (ret) {
+		dev_info(i2c->dev, "err, access at suspend no irq stage\n");
+		goto err_cg;
+	}
+
 	return 0;
 
+err_cg:
+	if (i2c->have_pmic)
+		clk_disable_unprepare(i2c->clk_pmic);
 err_pmic:
 	clk_disable_unprepare(i2c->clk_main);
 err_main:
+	if (i2c->clk_arb)
+		clk_disable_unprepare(i2c->clk_arb);
 	clk_disable_unprepare(i2c->clk_dma);
 	return ret;
 #else
@@ -575,41 +610,41 @@ static int i2c_set_speed(struct mt_i2c *i2c, unsigned int clk_src_in_hz)
 void i2c_dump_info1(struct mt_i2c *i2c)
 {
 	if (i2c->ext_data.isEnable && i2c->ext_data.timing)
-		I2C_RATE_LIMITED_PR_INFO(i2c, "I2C structure:\nspeed %d\n",
+		dev_info(i2c->dev, "I2C structure:\nspeed %d\n",
 			i2c->ext_data.timing);
 	else
-		I2C_RATE_LIMITED_PR_INFO(i2c, "I2C structure:\nspeed %d\n",
+		dev_info(i2c->dev, "I2C structure:\nspeed %d\n",
 			i2c->speed_hz);
-	I2C_RATE_LIMITED_PR_INFO(i2c, "I2C structure:\nOp %x\n", i2c->op);
-	I2C_RATE_LIMITED_PR_INFO(i2c,
+	dev_info(i2c->dev, "I2C structure:\nOp %x\n", i2c->op);
+	dev_info(i2c->dev,
 		"I2C structure:\nData_size %x\nIrq_stat %x\nTrans_stop %d\n",
 		i2c->msg_len, i2c->irq_stat, i2c->trans_stop);
-	I2C_RATE_LIMITED_PR_INFO(i2c->dev, "base address %p\n", i2c->base);
-	I2C_RATE_LIMITED_PR_INFO(i2c->dev,
+	dev_info(i2c->dev, "base address %p\n", i2c->base);
+	dev_info(i2c->dev,
 		"I2C register:\nSLAVE_ADDR %x\nINTR_MASK %x\n",
 		(i2c_readw(i2c, OFFSET_SLAVE_ADDR)),
 		(i2c_readw(i2c, OFFSET_INTR_MASK)));
-	I2C_RATE_LIMITED_PR_INFO(i2c,
+	dev_info(i2c->dev,
 		"I2C register:\nINTR_STAT %x\nCONTROL %x\n",
 		(i2c_readw(i2c, OFFSET_INTR_STAT)),
 		(i2c_readw(i2c, OFFSET_CONTROL)));
-	I2C_RATE_LIMITED_PR_INFO(i2c,
+	dev_info(i2c->dev,
 		"I2C register:\nTRANSFER_LEN %x\nTRANSAC_LEN %x\n",
 		(i2c_readw(i2c, OFFSET_TRANSFER_LEN)),
 		(i2c_readw(i2c, OFFSET_TRANSAC_LEN)));
-	I2C_RATE_LIMITED_PR_INFO(i2c,
+	dev_info(i2c->dev,
 		"I2C register:\nDELAY_LEN %x\nTIMING %x\n",
 		(i2c_readw(i2c, OFFSET_DELAY_LEN)),
 		(i2c_readw(i2c, OFFSET_TIMING)));
-	I2C_RATE_LIMITED_PR_INFO(i2c,
+	dev_info(i2c->dev,
 		"I2C register:\nSTART %x\nFIFO_STAT %x\n",
 		(i2c_readw(i2c, OFFSET_START)),
 		(i2c_readw(i2c, OFFSET_FIFO_STAT)));
-	I2C_RATE_LIMITED_PR_INFO(i2c,
+	dev_info(i2c->dev,
 		"I2C register:\nIO_CONFIG %x\nHS %x\n",
 		(i2c_readw(i2c, OFFSET_IO_CONFIG)),
 		(i2c_readw(i2c, OFFSET_HS)));
-	I2C_RATE_LIMITED_PR_INFO(i2c,
+	dev_info(i2c->dev,
 		"I2C register:\nDEBUGSTAT %x\nEXT_CONF %x\nPATH_DIR %x\n",
 		(i2c_readw(i2c, OFFSET_DEBUGSTAT)),
 		(i2c_readw(i2c, OFFSET_EXT_CONF)),
@@ -620,14 +655,16 @@ void i2c_dump_info(struct mt_i2c *i2c)
 {
 	/* I2CFUC(); */
 	/* int val=0; */
-	pr_info_ratelimited("i2c_dump_info ++++++++++++++++++++++++++++++++++++++++++\n");
+	pr_info_ratelimited("i2c_dump_info ++++++++++++++++++++++++++++\n");
 	pr_info_ratelimited("I2C structure:\n"
 	       I2CTAG "Clk=%d,Id=%d,Op=%x,Irq_stat=%x,Total_len=%x\n"
 	       I2CTAG "Trans_len=%x,Trans_num=%x,Trans_auxlen=%x,speed=%d\n"
-	       I2CTAG "Trans_stop=%u,cg_cnt=%d,hs_only=%d\n",
+	       I2CTAG "Trans_stop=%u,cg_cnt=%d,hs_only=%d, ch_offset=%d\n"
+	       I2CTAG "ch_offset_default=%d\n",
 	       15600, i2c->id, i2c->op, i2c->irq_stat, i2c->total_len,
-	       i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz,
-	       i2c->trans_stop, i2c->cg_cnt, i2c->hs_only);
+			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz,
+			i2c->trans_stop, i2c->cg_cnt,
+			i2c->hs_only, i2c->ch_offset, i2c->ch_offset_default);
 
 	pr_info_ratelimited("base address 0x%p\n", i2c->base);
 	pr_info_ratelimited("I2C register:\n"
@@ -695,7 +732,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	       (i2c_readl_dma(i2c, OFFSET_DEBUG_STA)),
 	       (i2c_readl_dma(i2c, OFFSET_TX_MEM_ADDR2)),
 	       (i2c_readl_dma(i2c, OFFSET_RX_MEM_ADDR2)));
-	pr_info_ratelimited("i2c_dump_info ------------------------------------------\n");
+	pr_info_ratelimited("i2c_dump_info -----------------------\n");
 
 	dump_i2c_info(i2c);
 }
@@ -736,6 +773,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	int data_size;
 	u8 *ptr;
 	int ret;
+	u16 ch_offset;
 
 	i2c->trans_stop = false;
 	i2c->irq_stat = 0;
@@ -745,6 +783,13 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		speed_hz = i2c->ext_data.timing;
 	else
 		speed_hz = i2c->speed_hz;
+	if (i2c->ext_data.is_ch_offset) {
+		i2c->ch_offset = i2c->ext_data.ch_offset;
+		i2c->dma_ch_offset = i2c->ext_data.dma_ch_offset;
+	} else {
+		i2c->ch_offset = i2c->ch_offset_default;
+		i2c->dma_ch_offset = i2c->dma_ch_offset_default;
+	}
 #if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
 	ret = i2c_set_speed(i2c,
 		clk_get_rate(i2c->clk_main) / i2c->clk_src_div);
@@ -761,7 +806,9 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			dev_info(i2c->dev, "Clock div error\n");
 			return -EINVAL;
 		}
-		i2c_writew((i2c->clk_src_div - 1), i2c, OFFSET_CLOCK_DIV);
+		i2c_writew(((i2c->clk_src_div - 1) << 8) +
+			(i2c->clk_src_div - 1),
+			i2c, OFFSET_CLOCK_DIV);
 	}
 
 	/* If use i2c pin from PMIC mt6397 side, need set PATH_DIR first */
@@ -799,7 +846,8 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	} else {
 		ioconfig_reg = I2C_IO_CONFIG_OPEN_DRAIN;
 		if (i2c->dev_comp->set_aed)
-			ioconfig_reg |= I2C_IO_CONFIG_OPEN_DRAIN_AED;
+			ioconfig_reg |= ((i2c->aed<<4) &
+					I2C_IO_CONFIG_AED_MASK);
 	}
 	i2c_writew(ioconfig_reg, i2c, OFFSET_IO_CONFIG);
 
@@ -911,6 +959,12 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			}
 		}
 	}
+	if (i2c->dev_comp->ver == 0x2) {
+		if (!i2c->is_hw_trig)
+			i2c_writew(I2C_MCU_INTR_EN, i2c, OFFSET_MCU_INTR);
+		else
+			i2c_writew(I2C_CCU_INTR_EN, i2c, OFFSET_MCU_INTR);
+	}
 	/* flush before sending start */
 	mb();
 	if (!i2c->is_hw_trig)
@@ -929,7 +983,9 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			i2c->addr);
 		start_reg = i2c_readw(i2c, OFFSET_START);
 		i2c_dump_info(i2c);
+		#if defined(CONFIG_MTK_GIC_EXT)
 		mt_irq_dump_status(i2c->irqnr);
+		#endif
 		dump_cg_regs(i2c);
 		mt_i2c_init_hw(i2c);
 		if (start_reg & I2C_TRANSAC_START) {
@@ -939,12 +995,15 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		return -ETIMEDOUT;
 	}
 	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
-		I2C_RATE_LIMITED_PR_INFO(i2c, "addr: %x, transfer ACK error\n",
-			i2c->addr);
+		dev_info(i2c->dev, "addr: %x, transfer ACK error\n", i2c->addr);
+		ch_offset = i2c->ch_offset;
+		i2c->ch_offset = 0;
 		if (i2c->ext_data.isEnable ==  false
 			|| i2c->ext_data.isFilterMsg == false)
 			i2c_dump_info(i2c);
 		mt_i2c_init_hw(i2c);
+		if (ch_offset)
+			i2c_writew(I2C_RESUME_ARBIT, i2c, OFFSET_START);
 		return -EREMOTEIO;
 	}
 	if (i2c->op != I2C_MASTER_WR && isDMA == false) {
@@ -1251,6 +1310,43 @@ int hw_trig_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 }
 EXPORT_SYMBOL(hw_trig_i2c_transfer);
 
+int i2c_ccu_enable(struct i2c_adapter *adap, u16 ch_offset)
+{
+	int ret;
+	struct mt_i2c *i2c = i2c_get_adapdata(adap);
+	char buf[1];
+	/*This is just a dummy msg which is meaningless since these parameter
+	 * is actually not used.
+	 */
+	struct i2c_msg dummy_msg = {
+		.addr = 0x1,
+		.flags = I2C_MASTER_RD,
+		.len = 1,
+		.buf = (char *)buf,
+	};
+	if (mt_i2c_clock_enable(i2c))
+		return -EBUSY;
+	mutex_lock(&i2c->i2c_mutex);
+	i2c->is_hw_trig = true;
+	i2c->ext_data.ch_offset = ch_offset;
+	i2c->ext_data.is_ch_offset = true;
+	ret = __mt_i2c_transfer(i2c, &dummy_msg, 1);
+	i2c->is_hw_trig = false;
+	i2c->ext_data.is_ch_offset = false;
+	mutex_unlock(&i2c->i2c_mutex);
+	return ret;
+}
+EXPORT_SYMBOL(i2c_ccu_enable);
+
+int i2c_ccu_disable(struct i2c_adapter *adap)
+{
+	struct mt_i2c *i2c = i2c_get_adapdata(adap);
+
+	mt_i2c_clock_disable(i2c);
+	return 0;
+}
+EXPORT_SYMBOL(i2c_ccu_disable);
+
 static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 {
 	struct mt_i2c *i2c = dev_id;
@@ -1262,12 +1358,20 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP,
 		i2c, OFFSET_INTR_STAT);
 	i2c->trans_stop = true;
-	if (!i2c->is_hw_trig)
+	if (!i2c->is_hw_trig) {
 		wake_up(&i2c->wait);
+		if (!i2c->irq_stat) {
+			dev_info(i2c->dev, "addr: %x, irq stat 0\n", i2c->addr);
+			i2c_dump_info(i2c);
+			#if defined(CONFIG_MTK_GIC_EXT)
+			mt_irq_dump_status(i2c->irqnr);
+			#endif
+		}
+	}
 	else {	/* dump regs info for hw trig i2c if ACK err */
 		if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
-			I2C_RATE_LIMITED_PR_INFO(i2c,
-				"addr:%x, transfer ACK error\n", i2c->addr);
+			dev_info(i2c->dev, "addr: %x, transfer ACK error\n",
+				i2c->addr);
 			i2c_dump_info(i2c);
 			mt_i2c_init_hw(i2c);
 		}
@@ -1294,6 +1398,11 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	of_property_read_u16(np, "clk_sta_offset",
 		(u16 *)&i2c->clk_sta_offset);
 	of_property_read_u8(np, "cg_bit", (u8 *)&i2c->cg_bit);
+	of_property_read_u32(np, "ch_offset_default",
+		&i2c->ch_offset_default);
+	of_property_read_u32(np, "dma_ch_offset_default",
+		&i2c->dma_ch_offset_default);
+	of_property_read_u32(np, "aed", &i2c->aed);
 	i2c->have_pmic
 		= of_property_read_bool(np, "mediatek,have-pmic");
 	i2c->have_dcm
@@ -1305,10 +1414,11 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	i2c->gpupm
 		= of_property_read_bool(np, "mediatek,gpupm_used");
 	i2c->buffermode = of_property_read_bool(np, "mediatek,buffermode_used");
-	i2c->hs_only
-		= of_property_read_bool(np, "mediatek,hs_only");
-	pr_info("[I2C] id : %d, freq : %d, div : %d.\n",
-		i2c->id, i2c->speed_hz, i2c->clk_src_div);
+	i2c->hs_only = of_property_read_bool(np, "mediatek,hs_only");
+	pr_info("[I2C]id:%d,freq :%d,div:%d,ch_offset:%d,dma_ch_offset:%d\n",
+		i2c->id, i2c->speed_hz, i2c->clk_src_div,
+		i2c->ch_offset_default,
+		i2c->dma_ch_offset_default);
 	if (i2c->clk_src_div == 0)
 		return -EINVAL;
 	return 0;
@@ -1345,6 +1455,8 @@ int mt_i2c_parse_comp_data(void)
 		(u32 *)&i2c_common_compat.clk_sel_offset);
 	of_property_read_u32(comp_node, "arbit_offset",
 		(u32 *)&i2c_common_compat.arbit_offset);
+	of_property_read_u8(comp_node, "ver",
+		(u8 *)&i2c_common_compat.ver);
 	return 0;
 }
 
@@ -1511,12 +1623,55 @@ static int mt_i2c_remove(struct platform_device *pdev)
 
 MODULE_DEVICE_TABLE(of, mt_i2c_match);
 
+#ifdef CONFIG_PM_SLEEP
+static int mt_i2c_suspend_noirq(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mt_i2c *i2c = platform_get_drvdata(pdev);
+	int ret = 0;
+
+	spin_lock(&i2c->cg_lock);
+	if (i2c->cg_cnt > 0) {
+		ret = -EBUSY;
+		dev_info(i2c->dev, "%s(%d) busy\n", __func__, i2c->cg_cnt);
+	} else
+		i2c->suspended = true;
+	spin_unlock(&i2c->cg_lock);
+
+	return ret;
+}
+
+static int mt_i2c_resume_noirq(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mt_i2c *i2c = platform_get_drvdata(pdev);
+
+	spin_lock(&i2c->cg_lock);
+	i2c->suspended = false;
+	pr_info("dump i2c when resume\n");
+	mt_i2c_clock_enable(i2c);
+	dump_i2c_info(i2c);
+	mt_i2c_clock_disable(i2c);
+	spin_unlock(&i2c->cg_lock);
+
+	return 0;
+}
+#endif
+
+static const struct dev_pm_ops mt_i2c_dev_pm_ops = {
+#ifdef CONFIG_PM_SLEEP
+	.suspend_noirq = mt_i2c_suspend_noirq,
+	.resume_noirq = mt_i2c_resume_noirq,
+#endif
+};
+
 static struct platform_driver mt_i2c_driver = {
 	.probe = mt_i2c_probe,
 	.remove = mt_i2c_remove,
 	.driver = {
 		.name = I2C_DRV_NAME,
 		.owner = THIS_MODULE,
+		.pm = &mt_i2c_dev_pm_ops,
 		.of_match_table = of_match_ptr(mtk_i2c_of_match),
 	},
 };
