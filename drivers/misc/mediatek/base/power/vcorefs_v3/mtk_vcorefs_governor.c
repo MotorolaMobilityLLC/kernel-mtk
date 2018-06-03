@@ -22,7 +22,7 @@
 #include <linux/of_address.h>
 #endif
 
-#include <mt-plat/mtk_pmic_wrap.h>
+#include <mt-plat/upmu_common.h>
 #include <mtk_vcorefs_manager.h>
 
 #include <mtk_spm_vcore_dvfs.h>
@@ -204,12 +204,12 @@ int vcorefs_get_sw_opp(void)
 
 int vcorefs_get_curr_vcore(void)
 {
-#if 1
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	int vcore = VCORE_INVALID;
 
-	pwrap_read(PMIC_VCORE_ADDR, &vcore);
+	vcore = pmic_get_register_value(PMIC_VCORE_ADDR);
 	if (vcore >= VCORE_INVALID)
-		pwrap_read(PMIC_VCORE_ADDR, &vcore);
+		vcore = pmic_get_register_value(PMIC_VCORE_ADDR);
 
 	return vcore < VCORE_INVALID ? vcore_pmic_to_uv(vcore) : 0;
 #else
