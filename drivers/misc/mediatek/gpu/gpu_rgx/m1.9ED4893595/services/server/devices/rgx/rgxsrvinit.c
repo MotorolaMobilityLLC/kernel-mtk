@@ -495,10 +495,7 @@ static INLINE void GetApphints(RGX_SRVINIT_APPHINTS *psHints, IMG_UINT64 ui64Ern
 		SrvInitParamGetUINT32List(pvParamState, FirmwareLogType, ui32ParamTemp);
 
 		/* Defaulting to TRACE */
-		ui32LogType |= (RGXFWIF_LOG_TYPE_TRACE |
-						RGXFWIF_LOG_TYPE_GROUP_MAIN |
-						RGXFWIF_LOG_TYPE_GROUP_POW |
-						RGXFWIF_LOG_TYPE_GROUP_HWR);
+		ui32LogType |= RGXFWIF_LOG_TYPE_TRACE;
 
 		if (ui32ParamTemp == 2 /* TRACE */)
 		{
@@ -521,6 +518,12 @@ static INLINE void GetApphints(RGX_SRVINIT_APPHINTS *psHints, IMG_UINT64 ui64Ern
 		{
 			ui32LogType = RGXFWIF_LOG_TYPE_NONE;
 		}
+		/* MTK default FW debug flags */
+		ui32LogType |= (RGXFWIF_LOG_TYPE_TRACE |
+				RGXFWIF_LOG_TYPE_GROUP_MAIN |
+				RGXFWIF_LOG_TYPE_GROUP_PM |
+				RGXFWIF_LOG_TYPE_GROUP_POW |
+				RGXFWIF_LOG_TYPE_GROUP_HWR);
 
 		psHints->ui32LogType = ui32LogType;
 	}
