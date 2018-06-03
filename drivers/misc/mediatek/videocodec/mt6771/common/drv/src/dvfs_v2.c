@@ -316,6 +316,8 @@ int est_next_job(long long now_us, long long *t_us, int *kcy, int *min_mhz,
 				*t_us = now_us;
 			}
 		}
+		if (hist->cur_cnt < MAX_HISTORY)
+			*t_us = now_us;
 		AL_INFO("est_next_job deadline %llu, kcy %d\n", deadline, *kcy);
 	}
 
@@ -349,7 +351,7 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 	prev_idx = (hist_idx == 0) ? (MAX_HISTORY-1) : (hist_idx-1);
 
 	/* Previous history is too far away, restart */
-	if (hist->cur_cnt > 0 &&
+	if (hist->cur_cnt > 1 &&
 		(job->submit - hist->submit[prev_idx]) > MAX_SUBMIT_GAP) {
 		AL_INFO("update_hist_item %p, gap (%lld), reset hist\n",
 			hist->handle, (job->submit-hist->submit[prev_idx]));
@@ -363,7 +365,7 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 		hist->submit[0] = job->submit;
 		hist->start[0] = job->start;
 		hist->end[0] = job->end;
-		hist->cur_idx = 0;
+		hist->cur_idx = 1;
 		hist->cur_cnt = 1;
 		hist->tot_kcy = hist->kcy[0];
 		hist->tot_time = hist->end[0] - hist->start[0];
