@@ -69,16 +69,16 @@ static struct pwr_ctrl sodi_ctrl = {
 	.mp1_cputop_idle_mask = 0,
 	.mcusys_idle_mask = 0,
 	.mm_mask_b = 0,
-	.md_ddr_en_0_dbc_en = 0,
+	.md_ddr_en_0_dbc_en = 1,
 	.md_ddr_en_1_dbc_en = 0,
-	.md_mask_b = 0,
-	.pmcu_mask_b = 0,
+	.md_mask_b = 1,
+	.pmcu_mask_b = 1,
 	.lte_mask_b = 0,
-	.srcclkeni_mask_b = 0,
+	.srcclkeni_mask_b = 1,
 	.md_apsrc_1_sel = 0,
 	.md_apsrc_0_sel = 0,
-	.conn_ddr_en_dbc_en = 0,
-	.conn_mask_b = 0,
+	.conn_ddr_en_dbc_en = 1,
+	.conn_mask_b = 1,
 	.conn_apsrc_sel = 0,
 
 	/* SPM_SRC_REQ */
@@ -98,10 +98,10 @@ static struct pwr_ctrl sodi_ctrl = {
 #if SPM_BYPASS_SYSPWREQ
 	.csyspwreq_mask = 1,
 #endif
-	.ccif0_md_event_mask_b = 0,
-	.ccif0_ap_event_mask_b = 0,
-	.ccif1_md_event_mask_b = 0,
-	.ccif1_ap_event_mask_b = 0,
+	.ccif0_md_event_mask_b = 1,
+	.ccif0_ap_event_mask_b = 1,
+	.ccif1_md_event_mask_b = 1,
+	.ccif1_ap_event_mask_b = 1,
 	.ccifmd_md1_event_mask_b = 0,
 	.ccifmd_md2_event_mask_b = 0,
 	.dsi0_vsync_mask_b = 0,
@@ -109,22 +109,22 @@ static struct pwr_ctrl sodi_ctrl = {
 	.dpi_vsync_mask_b = 0,
 	.isp0_vsync_mask_b = 0,
 	.isp1_vsync_mask_b = 0,
-	.md_srcclkena_0_infra_mask_b = 0,
+	.md_srcclkena_0_infra_mask_b = 1,
 	.md_srcclkena_1_infra_mask_b = 0,
-	.conn_srcclkena_infra_mask_b = 0,
+	.conn_srcclkena_infra_mask_b = 1,
 	.md32_srcclkena_infra_mask_b = 0,
 	.srcclkeni_infra_mask_b = 0,
 	.md_apsrc_req_0_infra_mask_b = 0,
 	.md_apsrc_req_1_infra_mask_b = 0,
 	.conn_apsrcreq_infra_mask_b = 0,
 	.md32_apsrcreq_infra_mask_b = 0,
-	.md_ddr_en_0_mask_b = 0,
+	.md_ddr_en_0_mask_b = 1,
 	.md_ddr_en_1_mask_b = 0,
-	.md_vrf18_req_0_mask_b = 0,
+	.md_vrf18_req_0_mask_b = 1,
 	.md_vrf18_req_1_mask_b = 0,
-	.md1_dvfs_req_mask = 0,
-	.cpu_dvfs_req_mask = 0,
-	.emi_bw_dvfs_req_mask = 0,
+	.md1_dvfs_req_mask = 0x3,
+	.cpu_dvfs_req_mask = 1,
+	.emi_bw_dvfs_req_mask = 1,
 	.md_srcclkena_0_dvfs_req_mask_b = 0,
 	.md_srcclkena_1_dvfs_req_mask_b = 0,
 	.conn_srcclkena_dvfs_req_mask_b = 0,
@@ -132,7 +132,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	/* SPM_SRC2_MASK */
 	.dvfs_halt_mask_b = 0,
 	.vdec_req_mask_b = 0,
-	.gce_req_mask_b = 0,
+	.gce_req_mask_b = 1,
 	.cpu_md_dvfs_req_merge_mask_b = 0,
 	.md_ddr_en_dvfs_halt_mask_b = 0,
 	.dsi0_vsync_dvfs_halt_mask_b = 0,
@@ -140,9 +140,9 @@ static struct pwr_ctrl sodi_ctrl = {
 	.dpi_vsync_dvfs_halt_mask_b = 0,
 	.isp0_vsync_dvfs_halt_mask_b = 0,
 	.isp1_vsync_dvfs_halt_mask_b = 0,
-	.conn_ddr_en_mask_b = 0,
-	.disp_req_mask_b = 0,
-	.disp1_req_mask_b = 0,
+	.conn_ddr_en_mask_b = 1,
+	.disp_req_mask_b = 1,
+	.disp1_req_mask_b = 1,
 	.mfg_req_mask_b = 0,
 	.ufs_srcclkena_mask_b = 0,
 	.ufs_vrf18_req_mask_b = 0,
@@ -157,10 +157,10 @@ static struct pwr_ctrl sodi_ctrl = {
 	.gce_vrf18_req_mask_b = 0,
 
 	/* SPM_WAKEUP_EVENT_MASK */
-	.spm_wakeup_event_mask = 0,
+	.spm_wakeup_event_mask = 0xF1683A08,
 
 	/* SPM_WAKEUP_EVENT_EXT_MASK */
-	.spm_wakeup_event_ext_mask = 0,
+	.spm_wakeup_event_ext_mask = 0xFFFFFFFF,
 
 	/* SPM_SRC3_MASK */
 	.md_ddr_en_2_0_mask_b = 0,
@@ -181,28 +181,28 @@ static struct pwr_ctrl sodi_ctrl = {
 	.ddren2_dqssoc_req_mask_b = 0,
 
 	/* MP0_CPU0_WFI_EN */
-	.mp0_cpu0_wfi_en = 0,
+	.mp0_cpu0_wfi_en = 1,
 
 	/* MP0_CPU1_WFI_EN */
-	.mp0_cpu1_wfi_en = 0,
+	.mp0_cpu1_wfi_en = 1,
 
 	/* MP0_CPU2_WFI_EN */
-	.mp0_cpu2_wfi_en = 0,
+	.mp0_cpu2_wfi_en = 1,
 
 	/* MP0_CPU3_WFI_EN */
-	.mp0_cpu3_wfi_en = 0,
+	.mp0_cpu3_wfi_en = 1,
 
 	/* MP1_CPU0_WFI_EN */
-	.mp1_cpu0_wfi_en = 0,
+	.mp1_cpu0_wfi_en = 1,
 
 	/* MP1_CPU1_WFI_EN */
-	.mp1_cpu1_wfi_en = 0,
+	.mp1_cpu1_wfi_en = 1,
 
 	/* MP1_CPU2_WFI_EN */
-	.mp1_cpu2_wfi_en = 0,
+	.mp1_cpu2_wfi_en = 1,
 
 	/* MP1_CPU3_WFI_EN */
-	.mp1_cpu3_wfi_en = 0,
+	.mp1_cpu3_wfi_en = 1,
 
 	/* Auto-gen End */
 };
@@ -219,6 +219,8 @@ static int by_md2ap_count;
 
 static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
+	/* FIXME: */
+#if 0
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	unsigned int value = 0;
 
@@ -253,12 +255,15 @@ static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 #endif
 
 	__spm_sync_pcm_flags(pwrctrl);
+#endif
 }
 
 static void spm_sodi_post_process(void)
 {
+#if 0
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
+#endif
 #endif
 }
 
@@ -339,6 +344,8 @@ static void spm_sodi_notify_sspm_after_wfi_async_wait(void)
 
 void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 {
+	/* FIXME: */
+#if 0
 	int spm_dormant_sta;
 
 	if (is_cpu_pdn(pcm_flags))
@@ -348,6 +355,9 @@ void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 
 	if (spm_dormant_sta < 0)
 		sodi_err("spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
+#else
+	mt_secure_call(MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
+#endif
 }
 
 static void spm_sodi_pcm_setup_before_wfi(
@@ -405,8 +415,8 @@ static wake_reason_t spm_sodi_output_log(
 		if (wakesta->assert_pc != 0) {
 			need_log_out = 1;
 		} else if ((wakesta->r12 & R12_APXGPT1_EVENT_B) == 0) {
-			if (wakesta->r12 & R12_MD2AP_PEER_WAKEUP_EVENT) {
-				/* wake up by R12_MD2AP_PEER_WAKEUP_EVENT */
+			if (wakesta->r12 & R12_MD2AP_PEER_EVENT_B) {
+				/* wake up by R12_MD2AP_PEER_EVENT_B */
 				if ((by_md2ap_count >= 5) ||
 				    ((sodi_logout_curr_time - sodi_logout_prev_time) > 20U)) {
 					need_log_out = 1;
@@ -464,7 +474,7 @@ static wake_reason_t spm_sodi_output_log(
 				char buf[LOG_BUF_SIZE] = { 0 };
 				int i;
 
-				if (wakesta->r12 & WAKE_SRC_R12_PCMTIMER) {
+				if (wakesta->r12 & WAKE_SRC_R12_PCM_TIMER) {
 					if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER)
 						strcat(buf, " PCM_TIMER");
 
@@ -513,7 +523,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
 	u32 cpu = spm_data;
-	int ch;
+	/* int ch; */
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
 
@@ -528,10 +538,13 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	soidle_before_wfi(cpu);
 
 	/* need be called before spin_lock_irqsave() */
+	/* FIXME: */
+#if 0
 	ch = get_channel_lock(0);
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
 	wakesta.dcs_ch = (u32)ch;
+#endif
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -576,7 +589,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 		(1 << SPM_SODI_B4) | (1 << SPM_SODI_B5) | (1 << SPM_SODI_B6));
 
 	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
-		mt_power_gs_dump_sodi3();
+		; /* mt_power_gs_dump_sodi3(); */
 
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 
@@ -619,7 +632,7 @@ RESTORE_IRQ:
 	lockdep_on();
 
 	/* need be called after spin_unlock_irqrestore() */
-	get_channel_unlock();
+	/* get_channel_unlock(); */
 
 	soidle_after_wfi(cpu);
 
@@ -627,9 +640,11 @@ RESTORE_IRQ:
 
 	spm_sodi_reset_footprint();
 
+	/* FIXME: */
+#if 0
 	if (wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();
-
+#endif
 	return wr;
 }
 

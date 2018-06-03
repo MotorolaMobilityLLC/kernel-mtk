@@ -47,23 +47,23 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
 #ccflags-y += -DSPM_SODI_PROFILE_TIME -DSPM_SODI3_PROFILE_TIME
 
-# obj-y += mtk_idle.o
-# obj-y += mtk_idle_mt6763.o
-# obj-y += mtk_idle_profile.o
+obj-y += mtk_idle.o
+obj-y += mtk_idle_mt6763.o
+obj-y += mtk_idle_profile.o
 obj-y += mtk_sleep.o
 obj-y += mtk_spm_init.o
 obj-y += mtk_spm.o
 # obj-y += mtk_spm_dpidle.o
 # obj-y += mtk_spm_dpidle_mt6763.o
-# obj-y += mtk_spm_fs.o
+obj-y += mtk_spm_fs.o
 obj-y += mtk_spm_internal.o
 ifneq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 obj-y += mtk_spm_pmic_wrap.o
 endif
-# obj-y += mtk_spm_resource_req.o
+obj-y += mtk_spm_resource_req.o
 obj-y += mtk_spm_sleep.o
-# obj-y += mtk_spm_sodi.o
-# obj-y += mtk_spm_sodi3p0.o
-# obj-y += mtk_spm_sodi_cmdq.o
+obj-y += mtk_spm_sodi.o
+obj-y += mtk_spm_sodi3p0.o
+obj-y += mtk_spm_sodi_cmdq.o
 # obj-y += mtk_spm_vcorefs.o
 endif
