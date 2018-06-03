@@ -146,8 +146,8 @@ static struct JpegDeviceStruct gJpegqDev;
 static struct JpegDeviceStruct *gJpegqDevs;
 static int nrJpegDevs;
 
-static const struct of_device_id jenc_of_ids[] = {
-	{.compatible = "mediatek,jpgenc",},
+static const struct of_device_id venc_jpg_of_ids[] = {
+	{.compatible = "mediatek,venc_jpg",},
 	{}
 };
 
@@ -1371,7 +1371,7 @@ static int jpeg_probe(struct platform_device *pdev)
 	jpegDev->pDev = &pdev->dev;
 	memset(&gJpegqDev, 0x0, sizeof(JpegDeviceStruct));
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,jpgenc");
+	node = pdev->dev.of_node;
 	jpegDev->encRegBaseVA = (unsigned long)of_iomap(node, 0);
 	jpegDev->encIrqId = irq_of_parse_and_map(node, 0);
   #ifdef CONFIG_MTK_CLKMGR
@@ -1424,17 +1424,18 @@ static int jpeg_probe(struct platform_device *pdev)
 	if (IS_ERR(gJpegClk.clk_venc_jpgEnc))
 		JPEG_ERR("get MT_CG_VENC_JPGENC clk error!");
   #endif
-	node = of_find_compatible_node(NULL, NULL, "mediatek,jpgdec");
-	jpegDev->decRegBaseVA = (unsigned long)of_iomap(node, 0);
-	jpegDev->decIrqId = irq_of_parse_and_map(node, 0);
-  #ifdef CONFIG_MTK_CLKMGR
-  #else
+  #ifdef JPEG_DEC_DRIVER
+	jpegDev->decRegBaseVA = (unsigned long)of_iomap(node, 1);
+	jpegDev->decIrqId = irq_of_parse_and_map(node, 1);
+    #ifdef CONFIG_MTK_CLKMGR
+    #else
 	gJpegClk.clk_venc_jpgDec = of_clk_get_by_name(node, "MT_CG_VENC_JPGDEC");
 	if (IS_ERR(gJpegClk.clk_venc_jpgDec))
 		JPEG_ERR("get MT_CG_VENC_JPGDEC clk error!");
+    #endif
   #endif
 	gJpegqDev = *jpegDev;
-  #else
+#else
 	gJpegqDev.encRegBaseVA = (0L | 0xF7003000);
 	gJpegqDev.decRegBaseVA = (0L | 0xF7004000);
 	gJpegqDev.encIrqId = JPGENC_IRQ_BIT_ID;
@@ -1592,7 +1593,7 @@ static struct platform_driver jpeg_driver = {
 		.name = JPEG_DEVNAME,
 		.pm = &jpeg_pm_ops,
 #ifdef CONFIG_OF
-		.of_match_table = jenc_of_ids,
+		.of_match_table = venc_jpg_of_ids,
 #endif
 		},
 };
