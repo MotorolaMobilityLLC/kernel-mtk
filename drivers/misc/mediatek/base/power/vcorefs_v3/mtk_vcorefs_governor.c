@@ -90,6 +90,8 @@ __weak unsigned int get_vcore_ptp_volt(unsigned int seg)
 
 	vcorefs_crit("VCORE TEMP SETTING\n");
 	return value;
+#elif defined(CONFIG_MACH_MT6775)
+	return 0;
 #else
 	vcorefs_crit("NOT SUPPORT VOLTAG BIN\n");
 	return 0;
