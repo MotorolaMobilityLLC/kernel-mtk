@@ -1597,7 +1597,7 @@ static int lsm6ds3h_gyro_i2c_probe(struct i2c_client *client, const struct i2c_d
 	err = hwmsen_get_convert(obj->hw->direction, &obj->cvt);
 	if (err) {
 		GYRO_PR_ERR("invalid direction: %d\n", obj->hw->direction);
-		goto exit;
+		goto exit_kfree;
 	}
 
 	GYRO_LOG("gyro_default_i2c_addr: %x\n", client->addr);
