@@ -2611,7 +2611,7 @@ static int do_test(const char *alg, u32 type, u32 mask, int m)
  *		test_cipher_speed_64K("ecb(aes)", DECRYPT, sec, NULL, 0,
  *				speed_template_16_24_32);
  */
-		test_cipher_speed_64K("cbc-aes-dx", ENCRYPT, sec, NULL, 0,
+		test_cipher_speed_64K("cbc(aes)", ENCRYPT, sec, NULL, 0,
 				speed_template_16_32);
 /*
  *		test_cipher_speed_64K("cbc(aes)", DECRYPT, sec, NULL, 0,
