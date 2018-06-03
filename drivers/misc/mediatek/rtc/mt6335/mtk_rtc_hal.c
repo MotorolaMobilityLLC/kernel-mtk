@@ -176,7 +176,7 @@ void hal_rtc_set_gpio_32k_status(u16 user, bool enable)
 	}
 	hal_rtc_xinfo("RTC_GPIO user %d enable = %d 32k (0x%x), RTC_CON = %x\n", user, enable, pdn1, rtc_read(RTC_CON));
 }
-#if 0
+
 void rtc_enable_k_eosc(void)
 {
 	u16 osc32;
@@ -211,7 +211,7 @@ void rtc_enable_k_eosc(void)
 		break;
 	}
 	/*Switch the DCXO from 32k-less mode to RTC mode, otherwise, EOSC cali will fail*/
-	/*RTC mode will have only OFF mode and FPM, */
+	/*RTC mode will have only OFF mode and FPM */
 	pmic_config_interface_nolock(PMIC_XO_EN32K_MAN_ADDR, 0, PMIC_XO_EN32K_MAN_MASK, PMIC_XO_EN32K_MAN_SHIFT);
 	pmic_config_interface_nolock(PMIC_EOSC_CALI_START_ADDR, 1, PMIC_EOSC_CALI_START_MASK,
 		PMIC_EOSC_CALI_START_SHIFT);
@@ -223,7 +223,6 @@ void rtc_enable_k_eosc(void)
 	rtc_xosc_write((osc32 & ~RTC_EMBCK_SEL_EOSC) | RTC_EMBCK_SEL_K_EOSC | RTC_EMBCK_SRC_SEL, true);
 	hal_rtc_xinfo("RTC_enable_k_eosc\n");
 }
-#endif
 
 void rtc_disable_2sec_reboot(void)
 {
@@ -253,7 +252,7 @@ void hal_rtc_bbpu_pwdn(bool charger_status)
 	u16 ret_val, con;
 
 	rtc_disable_2sec_reboot();
-	/* rtc_enable_k_eosc(); */
+	rtc_enable_k_eosc();
 	/* disable 32K export if there are no RTC_GPIO users */
 	if (!(rtc_read(RTC_PDN1) & RTC_GPIO_USER_MASK)) {
 		con = rtc_read(RTC_CON) | RTC_CON_F32KOB;
