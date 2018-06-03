@@ -379,6 +379,28 @@ TRACE_EVENT(sspm_ipi,
 	TP_printk("start=%d, id=%d, opt=%d", __entry->start, __entry->ipi_id, __entry->ipi_opt)
 );
 
+TRACE_EVENT(mcdi,
+
+	TP_PROTO(
+		int cpu,
+		int enter
+	),
+
+	TP_ARGS(cpu, enter),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, enter)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->enter = enter;
+	),
+
+	TP_printk("cpu = %d %d", (int)__entry->cpu, (int)__entry->enter)
+);
+
 #endif /* _TRACE_MTK_EVENTS_H */
 
 /* This part must be outside protection */
