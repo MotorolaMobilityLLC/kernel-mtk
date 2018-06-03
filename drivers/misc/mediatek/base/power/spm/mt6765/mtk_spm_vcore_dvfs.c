@@ -29,6 +29,16 @@ int spm_dvfs_flag_init(int dvfsrc_en)
 		SPM_FLAG_DIS_VCORE_DFS;
 }
 
+u32 spm_get_dvfs_level(void)
+{
+	return spm_read(SPM_SW_RSV_9) & 0xFFFF;
+}
+
+u32 spm_get_pcm_reg9_data(void)
+{
+	return spm_read(PCM_REG9_DATA);
+}
+
 u32 spm_vcorefs_get_MD_status(void)
 {
 	return spm_read(MD2SPM_DVFS_CON);
@@ -42,11 +52,14 @@ u32 spm_vcorefs_get_md_srcclkena(void)
 void get_spm_reg(char *p)
 {
 	p += sprintf(p, "%-24s: 0x%08x\n",
+			"POWERON_CONFIG_EN",
+			spm_read(POWERON_CONFIG_EN));
+	p += sprintf(p, "%-24s: 0x%08x\n",
 			"SPM_SW_FLAG",
 			spm_read(SPM_SW_FLAG));
 	p += sprintf(p, "%-24s: 0x%08x\n",
-			"SPM_SW_RSV_5",
-			spm_read(SPM_SW_RSV_5));
+			"SPM_SW_RSV_9",
+			spm_read(SPM_SW_RSV_9));
 	p += sprintf(p, "%-24s: 0x%08x\n",
 			"MD2SPM_DVFS_CON",
 			spm_read(MD2SPM_DVFS_CON));
@@ -62,6 +75,12 @@ void get_spm_reg(char *p)
 	p += sprintf(p, "%-24s: 0x%08x\n",
 			"SPM_DVS_LEVEL",
 			spm_read(SPM_DVS_LEVEL));
+	p += sprintf(p, "%-24s: 0x%08x\n",
+			"SPM_DVFS_CON1",
+			spm_read(SPM_DVFS_CON1));
+	p += sprintf(p, "%-24s: 0x%08x\n",
+			"SPM_DVFS_CON1_STA",
+			spm_read(SPM_DVFS_CON1_STA));
 	p += sprintf(p, "%-24s: 0x%08x\n",
 			"SPM_ACK_CHK_TIMER2",
 			spm_read(SPM_ACK_CHK_TIMER2));
@@ -88,9 +107,11 @@ void get_spm_reg(char *p)
 			spm_read(SLEEP_REG_MD_SPM_DVFS_CMD17),
 			spm_read(SLEEP_REG_MD_SPM_DVFS_CMD18),
 			spm_read(SLEEP_REG_MD_SPM_DVFS_CMD19));
-	p += sprintf(p, "%-24s: 0x%08x, 0x%08x\n",
-			"SPM_DVFS_CMD0~1",
-			spm_read(SPM_DVFS_CMD0), spm_read(SPM_DVFS_CMD1));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+			"SPM_DVFS_CMD0~4",
+			spm_read(SPM_DVFS_CMD0), spm_read(SPM_DVFS_CMD1),
+			spm_read(SPM_DVFS_CMD2), spm_read(SPM_DVFS_CMD3),
+			spm_read(SPM_DVFS_CMD4));
 	p += sprintf(p, "%-24s: 0x%08x (%u)\n",
 			"PCM_IM_PTR",
 			spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
