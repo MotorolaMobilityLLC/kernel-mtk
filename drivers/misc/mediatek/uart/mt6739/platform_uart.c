@@ -1163,8 +1163,6 @@ void mtk_uart_stop_dma(struct mtk_uart_dma *dma)
 	struct mtk_uart *uart = dma->uart;
 	void *base;
 
-	if (!dma)
-		return;
 	if (dma->mode == UART_RX_VFIFO_DMA || dma->mode == UART_TX_VFIFO_DMA) {
 		MSG(DMA, "stop dma (%d)\n", dma->mode);
 		if (!dma->vfifo) {
