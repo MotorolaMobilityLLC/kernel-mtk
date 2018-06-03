@@ -149,7 +149,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 648,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
-		.mipi_pixel_rate = 263000000,
+		.mipi_pixel_rate = 192000000,
 
 	},
 	.slim_video = {
@@ -170,7 +170,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 263000000,
+		.mipi_pixel_rate = 192000000,
 
 	},
 	.margin = 4,                    /*sensor framelength & shutter margin*/
@@ -1540,7 +1540,7 @@ kal_uint16 addr_data_pair_hs_video_s5k2p7[] = {
 	0x0304, 0x0006,
 	0x0306, 0x0069,
 	0x030C, 0x0004,
-	0x030E, 0x006E,
+	0x030E, 0x0050,
 	0x030A, 0x0001,
 	0x0308, 0x0008,
 	0x300A, 0x0001,
@@ -1596,7 +1596,7 @@ kal_uint16 addr_data_pair_slim_video_s5k2p7[] = {
 	0x0304, 0x0006,
 	0x0306, 0x0069,
 	0x030C, 0x0004,
-	0x030E, 0x006E,
+	0x030E, 0x0050,
 	0x030A, 0x0001,
 	0x0308, 0x0008,
 	0x300A, 0x0001,
