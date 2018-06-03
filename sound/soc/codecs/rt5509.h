@@ -18,7 +18,7 @@
 #include <mt-plat/rt-regmap.h>
 
 #define RT5509_DEVICE_NAME		"rt5509"
-#define RT5509_DRV_VER			"1.0.4_M"
+#define RT5509_DRV_VER			"1.0.5_M"
 
 #ifdef CONFIG_RT_REGMAP
 #define RT5509_SIMULATE_DEVICE	0
@@ -72,6 +72,10 @@ struct rt5509_chip {
 	struct semaphore io_semaphore;
 	atomic_t power_count;
 	u8 chip_rev;
+	u8 mode_store;
+	u8 func_en;
+	u8 spk_prot_en;
+	u8 recv_spec_set:1;
 	u8 bypass_dsp:1;
 };
 

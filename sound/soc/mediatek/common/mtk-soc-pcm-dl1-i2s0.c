@@ -121,7 +121,7 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 
 	/* Set SmartPa i2s by platform. Return false if no platform implement.*/
 	ret = set_smartpa_i2s(mi2s0_sidegen_control,
-			mi2s0_hdoutput_control, mi2s0_extcodec_echoref_control);
+			mi2s0_hdoutput_control, mi2s0_extcodec_echoref_control, mtk_soc_always_hd);
 
 	if (ret == false) {
 		if (mi2s0_sidegen_control) {
