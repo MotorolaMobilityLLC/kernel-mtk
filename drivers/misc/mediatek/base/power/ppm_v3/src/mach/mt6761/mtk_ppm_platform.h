@@ -58,15 +58,14 @@ extern "C" {
 #endif
 
 /* other policy settings */
-#define PTPOD_FREQ_IDX		(8)
+#define PTPOD_FREQ_IDX_FY		(8UL)
+#define PTPOD_FREQ_IDX_SB		(9UL)
 #define PWRTHRO_BAT_PER_MW	(600)
 #define PWRTHRO_BAT_OC_MW	(600)
 #define PWRTHRO_LOW_BAT_LV1_MW	(600)
 #define PWRTHRO_LOW_BAT_LV2_MW	(600)
 
 #define DVFS_OPP_NUM		(16)
-
-#define get_cluster_ptpod_fix_freq_idx(id)	PTPOD_FREQ_IDX
 
 /*==============================================================*/
 /* Enum								*/
@@ -131,6 +130,8 @@ unsigned int __attribute__((weak)) mt_cpufreq_get_cur_phy_freq_no_lock(
 {
 	return 0;
 }
+
+unsigned int get_cluster_ptpod_fix_freq_idx(unsigned int id);
 
 #ifdef __cplusplus
 }
