@@ -120,6 +120,8 @@ static struct workqueue_struct *wq_init;
 #define msdc_use_async_dma(x)   (msdc_use_async(x) && (!(x & MSDC_COOKIE_PIO)))
 #define msdc_use_async_pio(x)   (msdc_use_async(x) && ((x & MSDC_COOKIE_PIO)))
 
+#define MSDC_AUTOSUSPEND_DELAY_MS 10
+
 u8 g_emmc_id;
 unsigned int cd_gpio;
 
@@ -467,8 +469,6 @@ int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 		msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry,
 			cnt, host->id);
 		if (retry == 0) {
-			pr_info("msdc%d host->onclock(%d)\n", host->id,
-				host->core_clkon);
 			pr_info("msdc%d on clock failed ===> retry twice\n",
 				host->id);
 
@@ -4243,6 +4243,10 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		return 0;
 
 	case MMC_SIGNAL_VOLTAGE_180:
+		/*
+		 * guarantee clock during voltage switch.
+		 */
+		msdc_clk_enable_and_stable(host);
 		/* switch voltage */
 		if (host->power_switch)
 			host->power_switch(host, 1);
@@ -4260,6 +4264,7 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		while ((status =
 			MSDC_READ32(MSDC_CFG)) & MSDC_CFG_BV18SDT)
 			;
+		msdc_clk_disable(host);
 		if (status & MSDC_CFG_BV18PSS)
 			return 0;
 
@@ -4518,12 +4523,6 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	if (host->hw->flags & MSDC_SDIO_IRQ)
 		spin_lock(&host->sdio_irq_lock);
 
-	if (host->core_clkon == 0) {
-		msdc_clk_enable(host);
-		host->last_cg_clr_time = sched_clock();
-		host->core_clkon = 1;
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
-	}
 	intsts = MSDC_READ32(MSDC_INT);
 
 	latest_int_status[host->id] = intsts;
@@ -4973,9 +4972,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	pm_runtime_set_active(&pdev->dev);
 	pm_runtime_enable(&pdev->dev);
-
-	if (host->id == 1)
-		device_init_wakeup(&pdev->dev, true);
+	pm_runtime_set_autosuspend_delay(&pdev->dev, MSDC_AUTOSUSPEND_DELAY_MS);
+	pm_runtime_use_autosuspend(&pdev->dev);
 
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	pr_info("[%s]: msdc%d, mmc->caps=0x%x, mmc->caps2=0x%x\n",
@@ -5039,20 +5037,30 @@ static int msdc_drv_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int msdc_runtime_suspend(struct device *dev)
 {
+	struct msdc_host *host = dev_get_drvdata(dev);
 #ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
 	unsigned long flags;
+#endif
 
+	/* mclk = 0 means core layer suspend has disabled clk. */
+	if (host->mclk)
+		msdc_clk_disable(host);
+
+#ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
 	spin_lock_irqsave(&msdc_cg_lock, flags);
 	msdc_cg_cnt--;
 	if (msdc_cg_cnt == 0)
 		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_RELEASE);
 	spin_unlock_irqrestore(&msdc_cg_lock, flags);
 #endif
+
 	return 0;
 }
 
 static int msdc_runtime_resume(struct device *dev)
 {
+	struct msdc_host *host = dev_get_drvdata(dev);
+
 #ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
 	unsigned long flags;
 
@@ -5062,6 +5070,11 @@ static int msdc_runtime_resume(struct device *dev)
 		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_ALL);
 	spin_unlock_irqrestore(&msdc_cg_lock, flags);
 #endif
+
+	/* mclk = 0 means core layer resume will enable clk later. */
+	if (host->mclk)
+		msdc_clk_enable_and_stable(host);
+
 	return 0;
 }
 
@@ -5104,7 +5117,7 @@ out:
 
 static const struct dev_pm_ops msdc_pmops = {
 	SET_SYSTEM_SLEEP_PM_OPS(msdc_suspend, msdc_resume)
-		SET_RUNTIME_PM_OPS(msdc_runtime_suspend, msdc_runtime_resume,
+	SET_RUNTIME_PM_OPS(msdc_runtime_suspend, msdc_runtime_resume,
 				NULL)
 };
 #endif
