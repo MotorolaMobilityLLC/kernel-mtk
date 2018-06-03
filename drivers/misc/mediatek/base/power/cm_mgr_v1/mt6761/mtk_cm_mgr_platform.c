@@ -103,36 +103,27 @@ void cm_mgr_update_met(void)
 	int cpu;
 
 	met_data.cm_mgr_power[0] = cpu_power_up_array[0];
-	met_data.cm_mgr_power[1] = cpu_power_up_array[1];
 	met_data.cm_mgr_power[2] = cpu_power_down_array[0];
-	met_data.cm_mgr_power[3] = cpu_power_down_array[1];
 	met_data.cm_mgr_power[4] = cpu_power_up[0];
-	met_data.cm_mgr_power[5] = cpu_power_up[1];
 	met_data.cm_mgr_power[6] = cpu_power_down[0];
-	met_data.cm_mgr_power[7] = cpu_power_down[1];
-	met_data.cm_mgr_power[8] = cpu_power_up[0] + cpu_power_up[1];
-	met_data.cm_mgr_power[9] = cpu_power_down[0] + cpu_power_down[1];
+	met_data.cm_mgr_power[8] = cpu_power_up[0];
+	met_data.cm_mgr_power[9] = cpu_power_down[0];
 	met_data.cm_mgr_power[10] = vcore_power_up;
 	met_data.cm_mgr_power[11] = vcore_power_down;
 	met_data.cm_mgr_power[12] = v2f[0];
-	met_data.cm_mgr_power[13] = v2f[1];
 
 	met_data.cm_mgr_count[0] = count[0];
-	met_data.cm_mgr_count[1] = count[1];
 	met_data.cm_mgr_count[2] = count_ack[0];
-	met_data.cm_mgr_count[3] = count_ack[1];
 
 	met_data.cm_mgr_opp[0] = vcore_dram_opp;
 	met_data.cm_mgr_opp[1] = vcore_dram_opp_cur;
 	met_data.cm_mgr_opp[2] = cpu_opp_cur[0];
-	met_data.cm_mgr_opp[3] = cpu_opp_cur[1];
 	met_data.cm_mgr_opp[4] = debounce_times_up;
 	met_data.cm_mgr_opp[5] = debounce_times_down;
 
 	met_data.cm_mgr_loading[0] = cm_mgr_abs_load;
 	met_data.cm_mgr_loading[1] = cm_mgr_rel_load;
 	met_data.cm_mgr_loading[2] = max_load[0];
-	met_data.cm_mgr_loading[3] = max_load[1];
 	for_each_possible_cpu(cpu) {
 		if (cpu >= CM_MGR_CPU_COUNT)
 			break;
@@ -140,17 +131,11 @@ void cm_mgr_update_met(void)
 	}
 
 	met_data.cm_mgr_ratio[0] = ratio_max[0];
-	met_data.cm_mgr_ratio[1] = ratio_max[1];
 	met_data.cm_mgr_ratio[2] = ratio_scale[0];
-	met_data.cm_mgr_ratio[3] = ratio_scale[1];
 	met_data.cm_mgr_ratio[4] = ratio[0];
 	met_data.cm_mgr_ratio[5] = ratio[1];
 	met_data.cm_mgr_ratio[6] = ratio[2];
 	met_data.cm_mgr_ratio[7] = ratio[3];
-	met_data.cm_mgr_ratio[8] = ratio[4];
-	met_data.cm_mgr_ratio[9] = ratio[5];
-	met_data.cm_mgr_ratio[10] = ratio[6];
-	met_data.cm_mgr_ratio[11] = ratio[7];
 
 	met_data.cm_mgr_bw = total_bw;
 
@@ -180,6 +165,7 @@ void cm_mgr_update_met(void)
 #include <linux/cpu_pm.h>
 static int cm_mgr_idle_mask;
 void __iomem *spm_sleep_base;
+void __iomem *chipid_base;
 
 void __iomem *mcucfg_mp0_counter_base;
 
@@ -308,10 +294,6 @@ static unsigned int cm_mgr_read_stall(int cpu)
 		if (cm_mgr_idle_mask & 0x0f)
 
 			val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
-	} else {
-		if (cm_mgr_idle_mask & 0xf0)
-			val = cm_mgr_read(MP1_CPU0_STALL_COUNTER +
-					4 * (cpu - CM_MGR_CPU_LIMIT));
 	}
 	spin_unlock(&cm_mgr_cpu_mask_lock);
 
@@ -328,7 +310,6 @@ int cm_mgr_check_stall_ratio(int mp0, int mp1)
 #endif /* USE_TIME_NS */
 
 	pstall_all->clustor[0] = mp0;
-	pstall_all->clustor[1] = mp1;
 	pstall_all->cpu = 0;
 	for (i = 0; i < CM_MGR_CPU_CLUSTER; i++) {
 		pstall_all->ratio_max[i] = 0;
@@ -433,31 +414,6 @@ static void init_cpu_stall_counter(int cluster)
 			RG_CPU0_STALL_COUNTER_EN |
 			RG_CPU0_NON_WFX_COUNTER_EN;
 		cm_mgr_write(MP0_CPU3_AVG_STALL_RATIO_CTRL, val);
-	} else {
-		val = 0x11000;
-		cm_mgr_write(MP1_CPU_STALL_INFO, val);
-
-		val = RG_FMETER_EN;
-		val |= RG_MP0_AVG_STALL_PERIOD_1MS;
-		val |= RG_CPU0_AVG_STALL_RATIO_EN |
-			RG_CPU0_STALL_COUNTER_EN |
-			RG_CPU0_NON_WFX_COUNTER_EN;
-		cm_mgr_write(MP1_CPU0_AVG_STALL_RATIO_CTRL, val);
-
-		val = RG_CPU0_AVG_STALL_RATIO_EN |
-			RG_CPU0_STALL_COUNTER_EN |
-			RG_CPU0_NON_WFX_COUNTER_EN;
-		cm_mgr_write(MP1_CPU1_AVG_STALL_RATIO_CTRL, val);
-
-		val = RG_CPU0_AVG_STALL_RATIO_EN |
-			RG_CPU0_STALL_COUNTER_EN |
-			RG_CPU0_NON_WFX_COUNTER_EN;
-		cm_mgr_write(MP1_CPU2_AVG_STALL_RATIO_CTRL, val);
-
-		val = RG_CPU0_AVG_STALL_RATIO_EN |
-			RG_CPU0_STALL_COUNTER_EN |
-			RG_CPU0_NON_WFX_COUNTER_EN;
-		cm_mgr_write(MP1_CPU3_AVG_STALL_RATIO_CTRL, val);
 	}
 }
 
@@ -634,8 +590,6 @@ static void cm_mgr_ratio_timer_fn(unsigned long data)
 {
 	trace_CM_MGR__stall_raio_0(
 			(unsigned int)cm_mgr_read(MP0_CPU_AVG_STALL_RATIO));
-	trace_CM_MGR__stall_raio_1(
-			(unsigned int)cm_mgr_read(MP1_CPU_AVG_STALL_RATIO));
 
 	cm_mgr_ratio_timer.expires = jiffies +
 		msecs_to_jiffies(CM_MGR_RATIO_TIMER_MS);
@@ -673,6 +627,15 @@ int cm_mgr_register_init(void)
 	spm_sleep_base = of_iomap(node, 0);
 	if (!spm_sleep_base) {
 		pr_info("base spm_sleep_base failed\n");
+		return -1;
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,chipid");
+	if (!node)
+		pr_info("find chipid node failed\n");
+	chipid_base = of_iomap(node, 0);
+	if (!chipid_base) {
+		pr_info("base chipid_base failed\n");
 		return -1;
 	}
 

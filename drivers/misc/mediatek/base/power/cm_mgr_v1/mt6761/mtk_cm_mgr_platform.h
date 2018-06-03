@@ -26,12 +26,12 @@
 /* #define USE_IDLE_NOTIFY */
 #define USE_NEW_CPU_OPP
 /* #define USE_CM_MGR_AT_SSPM */
+#define USE_SINGLE_CLUSTER
 
 #define CM_MGR_EMI_OPP	2
-#define CM_MGR_LOWER_OPP 9
-#define CM_MGR_LOWER_OPP_1 12
-#define CM_MGR_CPU_CLUSTER 2
-#define CM_MGR_CPU_COUNT 8
+#define CM_MGR_LOWER_OPP 8
+#define CM_MGR_CPU_CLUSTER 1
+#define CM_MGR_CPU_COUNT 4
 #define CM_MGR_CPU_LIMIT 4
 
 #define VCORE_ARRAY_SIZE CM_MGR_EMI_OPP

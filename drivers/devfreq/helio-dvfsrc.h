@@ -73,6 +73,11 @@ struct helio_dvfsrc {
 #define QOS_MM_BW		(QOS_TOTAL_BW_BUF_SIZE * 4 + 0xC)
 #define QOS_OTHER_BW		(QOS_TOTAL_BW_BUF_SIZE * 4 + 0x10)
 
+#define QOS_CM_GPU_ONOFF	(0x70)
+#define QOS_CM_GPU_OPP		(0x74)
+#define QOS_CM_RESERVE_2	(0x78)
+#define QOS_CM_RESERVE_3	(0x7C)
+
 /* PMIC */
 #define vcore_pmic_to_uv(pmic)	\
 	(((pmic) * VCORE_STEP_UV) + VCORE_BASE_UV)
@@ -116,6 +121,8 @@ extern int helio_dvfsrc_flag_get(void);
 extern char *dvfsrc_dump_reg(char *ptr);
 extern u32 dvfsrc_read(u32 offset);
 extern void dvfsrc_write(u32 offset, u32 val);
+extern u32 dvfsrc_sram_read(u32 offset);
+extern void dvfsrc_sram_write(u32 offset, u32 val);
 extern void dvfsrc_opp_table_init(void);
 extern void helio_dvfsrc_reg_config(struct reg_config *config);
 extern void helio_dvfsrc_sram_reg_init(void);
