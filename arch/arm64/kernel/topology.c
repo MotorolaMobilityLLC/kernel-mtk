@@ -244,11 +244,28 @@ static inline
 const struct sched_group_energy * const cpu_cluster_energy(int cpu)
 {
 	struct sched_group_energy *sge = sge_array[cpu][SD_LEVEL1];
+#ifdef CONFIG_MTK_UNIFY_POWER
+	int cluster_id = cpu_topology[cpu].cluster_id;
+	struct upower_tbl_info **addr_ptr_tbl_info;
+	struct upower_tbl_info *ptr_tbl_info;
+	struct upower_tbl *ptr_tbl;
+#endif
 
 	if (!sge) {
 		pr_warn("Invalid sched_group_energy for Cluster%d\n", cpu);
 		return NULL;
 	}
+
+#ifdef CONFIG_MTK_UNIFY_POWER
+	addr_ptr_tbl_info = upower_get_tbl();
+	ptr_tbl_info = *addr_ptr_tbl_info;
+
+	ptr_tbl = ptr_tbl_info[UPOWER_BANK_CLS_BASE+cluster_id].p_upower_tbl;
+
+	sge->nr_cap_states = ptr_tbl->row_num;
+	sge->cap_states = ptr_tbl->row;
+	sge->lkg_idx = ptr_tbl->lkg_idx;
+#endif
 
 	return sge;
 }
@@ -257,11 +274,22 @@ static inline
 const struct sched_group_energy * const cpu_core_energy(int cpu)
 {
 	struct sched_group_energy *sge = sge_array[cpu][SD_LEVEL0];
+#ifdef CONFIG_MTK_UNIFY_POWER
+	struct upower_tbl *ptr_tbl;
+#endif
 
 	if (!sge) {
 		pr_warn("Invalid sched_group_energy for CPU%d\n", cpu);
 		return NULL;
 	}
+
+#ifdef CONFIG_MTK_UNIFY_POWER
+	ptr_tbl = upower_get_core_tbl(cpu);
+
+	sge->nr_cap_states = ptr_tbl->row_num;
+	sge->cap_states = ptr_tbl->row;
+	sge->lkg_idx = ptr_tbl->lkg_idx;
+#endif
 
 	return sge;
 }

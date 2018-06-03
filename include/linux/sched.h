@@ -4,8 +4,6 @@
 #include <uapi/linux/sched.h>
 
 #include <linux/sched/prio.h>
-#include <linux/sched/sched.h>
-
 
 struct sched_param {
 	int sched_priority;
@@ -1100,8 +1098,15 @@ struct sched_domain_attr {
 extern int sched_domain_level_max;
 
 struct capacity_state {
+#ifndef CONFIG_MTK_UNIFY_POWER
 	unsigned long cap;	/* compute capacity */
 	unsigned long power;	/* power consumption at this compute capacity */
+#else
+	unsigned long long cap;	/* compute capacity */
+	unsigned int volt;	/* 10uv */
+	unsigned int dyn_pwr;	/* power consumption at this compute capacity */
+	unsigned int lkg_pwr[1];
+#endif
 };
 
 struct idle_state {
@@ -1112,7 +1117,12 @@ struct sched_group_energy {
 	unsigned int nr_idle_states;	/* number of idle states */
 	struct idle_state *idle_states;	/* ptr to idle state array */
 	unsigned int nr_cap_states;	/* number of capacity states */
+#ifdef CONFIG_MTK_UNIFY_POWER
+	struct upower_tbl_row *cap_states;
+	unsigned int lkg_idx;
+#else
 	struct capacity_state *cap_states; /* ptr to capacity state array */
+#endif
 };
 
 unsigned long capacity_curr_of(int cpu);
@@ -3793,4 +3803,5 @@ void cpufreq_add_update_util_hook(int cpu, struct update_util_data *data,
 void cpufreq_remove_update_util_hook(int cpu);
 #endif /* CONFIG_CPU_FREQ */
 
+#include <linux/sched/sched.h>
 #endif
