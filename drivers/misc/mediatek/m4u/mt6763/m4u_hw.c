@@ -1253,16 +1253,16 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 {
 	M4U_PORT_ID PortID = (pM4uPort->ePortID);
-/*	int m4u_index = m4u_port_2_m4u_id(PortID);
+	int m4u_index = m4u_port_2_m4u_id(PortID);
 	int larb = m4u_port_2_larb_id(PortID);
-*/
+
 	int ret;
 #ifdef M4U_TEE_SERVICE_ENABLE
 	unsigned int larb_port, mmu_en = 0, sec_en = 0;
 #endif
 
-/*	_m4u_port_clock_toggle(m4u_index, larb, 1);
-*/
+	_m4u_port_clock_toggle(m4u_index, larb, 1);
+
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 	larb_port = m4u_port_2_larb_port(PortID);
@@ -1285,8 +1285,8 @@ int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 		ret = _m4u_config_port(PortID, pM4uPort->Virtuality,
 				       pM4uPort->Security, pM4uPort->Distance, pM4uPort->Direction);
 	}
-	/*_m4u_port_clock_toggle(m4u_index, larb, 0);
-*/
+	_m4u_port_clock_toggle(m4u_index, larb, 0);
+
 
 	return 0;
 }
