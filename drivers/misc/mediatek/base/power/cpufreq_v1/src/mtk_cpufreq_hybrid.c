@@ -787,24 +787,24 @@ void cpuhvfs_pvt_tbl_create(void)
 			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_COL_SIZE + 3) & 0xFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_COL_SIZE + 2) & 0xFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 36 + NR_FREQ, recordRef[i + 36 + NR_FREQ]);
-		/* CCI [31:16] = Vproc, [15:0] = Freq */
+		/* B/CCI [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i + 72] =
 			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE + 1) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE) & 0xFFFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 72, recordRef[i + 72]);
-		/* CCI [31:16] = postdiv, [15:0] = clkdiv */
+		/* B/CCI [31:16] = postdiv, [15:0] = clkdiv */
 		recordRef[i + 72 + NR_FREQ] =
 			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE + 3) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_COL_SIZE + 2) & 0xFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 72 + NR_FREQ, recordRef[i + 72 + NR_FREQ]);
 
 		if (NR_MT_CPU_DVFS > 3) {
-			/* BIG [31:16] = Vproc, [15:0] = Freq */
+			/* CCI [31:16] = Vproc, [15:0] = Freq */
 			recordRef[i + 108] =
 				((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE + 1) & 0xFFF) << 16) |
 				(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE) & 0xFFFF);
 			cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 108, recordRef[i + 108]);
-			/* BIG [31:16] = postdiv, [15:0] = clkdiv */
+			/* CCI [31:16] = postdiv, [15:0] = clkdiv */
 			recordRef[i + 108 + NR_FREQ] =
 				((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE + 3) & 0xFF) << 16) |
 				(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_COL_SIZE + 2) & 0xFF);
