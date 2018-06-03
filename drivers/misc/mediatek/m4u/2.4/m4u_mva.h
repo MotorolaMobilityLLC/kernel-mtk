@@ -35,7 +35,7 @@
 #define MVA_SET_RESERVED(index) (mvaGraph[index] |= MVA_RESERVED_MASK)
 
 /*translate mva to mvaGraph index which mva belongs to*/
-#define MVAGRAPH_INDEX(mva) (mva>>MVA_BLOCK_SIZE_ORDER)
+#define MVAGRAPH_INDEX(mva) ((mva) >> MVA_BLOCK_SIZE_ORDER)
 #define GET_START_INDEX(end, nr) (end - nr + 1)
 #define GET_END_INDEX(start, nr) (start + nr - 1)
 #define GET_RANGE_SIZE(start, end) (end - start + 1)
@@ -64,6 +64,7 @@
 #define VPU_FIX_MVA_SIZE                 (VPU_FIX_MVA_END - VPU_FIX_MVA_START + 1)
 #define VPU_FIX_BLOCK_NR                 MVA_GRAPH_BLOCK_NR_ALIGNED(VPU_FIX_MVA_SIZE)
 
+#define MVA_COMMON_CONTIG_RETGION_START          0x80000000
 
 int check_reserved_region_integrity(unsigned int start, unsigned int nr);
 int m4u_check_mva_region(unsigned int startIdx, unsigned int nr, void *priv);
