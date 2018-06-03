@@ -127,5 +127,6 @@ struct pin_node {
 };
 #ifdef CONFIG_MTK_GPIOLIB_STAND
 extern int mtk_pinctrl_get_gpio_mode_for_eint(int pin);
+extern int mtk_pctrl_get_gpio_chip_base(void);
 #endif
 #endif
