@@ -143,8 +143,6 @@ struct pwr_ctrl {
 	u32 timer_val_ramp_en_sec;	/* stress for suspend */
 	u32 wake_src;
 	u32 wake_src_cust;	/* can override wake_src */
-	u32 vcore_volt_pmic_val;
-	u8 opp_level;
 	u8 wdt_disable;		/* disable wdt in suspend */
 
 	/* Auto-gen Start */
@@ -303,8 +301,6 @@ enum pwr_ctrl_enum {
 	PWR_TIMER_VAL_RAMP_EN_SEC,
 	PWR_WAKE_SRC,
 	PWR_WAKE_SRC_CUST,
-	PWR_VCORE_VOLT_PMIC_VAL,
-	PWR_OPP_LEVEL,
 	PWR_WDT_DISABLE,
 	PWR_WFI_OP,
 	PWR_MP0_CPUTOP_IDLE_MASK,
@@ -463,15 +459,19 @@ struct spm_data {
 			unsigned int sys_src_clk_l;
 			unsigned int sys_src_clk_h;
 			unsigned int spm_opt;
-			unsigned int vcore_volt_pmic_val;
-			unsigned int reserved;
 		} suspend;
-		struct {
-			unsigned int root_id;
-		} notify;
 		struct {
 			unsigned int pcm_flags;
 		} vcorefs;
+		struct {
+			unsigned int args1;
+			unsigned int args2;
+			unsigned int args3;
+			unsigned int args4;
+			unsigned int args5;
+			unsigned int args6;
+			unsigned int args7;
+		} args;
 	} u;
 };
 
@@ -494,7 +494,6 @@ struct wake_status {
 	u32 event_reg;		/* PCM_EVENT_REG_STA */
 	u32 isr;		/* SLEEP_ISR_STATUS */
 	u32 log_index;
-	u32 dcs_ch;
 };
 
 struct spm_lp_scen {
@@ -510,11 +509,6 @@ extern struct spm_lp_scen __spm_dpidle;
 extern struct spm_lp_scen __spm_sodi3;
 extern struct spm_lp_scen __spm_sodi;
 extern struct spm_lp_scen __spm_vcorefs;
-
-#if 0
-extern int __spm_check_opp_level(int ch);
-extern unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch);
-#endif
 
 extern int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl);
 extern void __spm_sync_pcm_flags(struct pwr_ctrl *pwrctrl);
@@ -535,11 +529,6 @@ extern int spm_golden_setting_cmp(bool en);
 #endif
 extern void __spm_set_pcm_wdt(int en);
 extern u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr);
-
-#if 0
-extern int get_channel_lock(bool blocking);
-extern void get_channel_unlock(void);
-#endif
 
 /**************************************
  * Macro and Inline

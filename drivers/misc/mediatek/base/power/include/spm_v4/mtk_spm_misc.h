@@ -150,13 +150,6 @@ extern int mt_cpu_dormant_init(void);
 
 extern int univpll_is_used(void);
 
-__attribute__ ((weak))
-int hps_get_root_id(void)
-{
-	pr_err("NO %s !!!\n", __func__);
-	return 0;
-}
-
 extern struct dram_info *g_dram_info_dummy_read;
 
 #endif  /* __MTK_SPM_MISC_H__ */

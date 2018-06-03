@@ -11,8 +11,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6337/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6356/
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/
@@ -40,7 +39,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
 endif
 
 ifeq ($(CONFIG_MACH_MT6763), y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
 #ccflags-y += -DSPM_SODI_PROFILE_TIME -DSPM_SODI3_PROFILE_TIME
@@ -60,6 +58,7 @@ obj-y += mtk_spm_pmic_wrap.o
 endif
 obj-y += mtk_spm_resource_req.o
 obj-y += mtk_spm_sleep.o
+obj-y += mtk_spm_sleep_mt6763.o
 obj-y += mtk_spm_sodi.o
 obj-y += mtk_spm_sodi3p0.o
 obj-y += mtk_spm_sodi_cmdq.o

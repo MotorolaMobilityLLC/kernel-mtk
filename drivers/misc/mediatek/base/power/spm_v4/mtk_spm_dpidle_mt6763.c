@@ -50,10 +50,6 @@ void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctr
 								IDX_ALL_2_VSRAM_NORMAL,
 								value);
 
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
-								IDX_ALL_VCORE_SUSPEND,
-								pwrctrl->vcore_volt_pmic_val);
-
 	/* TODO: setup PMIC low power mode */
 	/* spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0); */
 
