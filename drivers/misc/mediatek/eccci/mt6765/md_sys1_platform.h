@@ -237,6 +237,6 @@ void ccci_modem_sysresume(void);
 void md_cd_check_md_DCM(struct md_cd_ctrl *md_ctrl);
 
 extern unsigned long infra_ao_base;
-extern unsigned int devapc_check_flag;
+extern volatile unsigned int devapc_check_flag;
 extern void ccci_mem_dump(int md_id, void *start_addr, int len);
 #endif				/* __CLDMA_PLATFORM_H__ */

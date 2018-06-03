@@ -361,6 +361,7 @@ static int md_cd_start(struct ccci_modem *md)
 		md_sys1_sw_init(md);
 
 		md_cd_late_init(CLDMA_HIF_ID);
+		CCCI_INIT_LOG(md->index, TAG, "MD_SETTING_FIRST_BOOT\n");
 		/* init security, as security depends on dummy_char,
 		 * which is ready very late.
 		 */

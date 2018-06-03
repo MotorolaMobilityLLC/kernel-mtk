@@ -56,7 +56,7 @@ static struct ccci_clk_node clk_table[] = {
 static struct pinctrl *mdcldma_pinctrl;
 #endif
 
-unsigned int devapc_check_flag = 1;
+volatile unsigned int devapc_check_flag = 1;
 
 static void __iomem *md_sram_pd_psmcusys_base;
 static void __iomem *md_cldma_misc_base;
@@ -153,6 +153,13 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr,
 		 (unsigned long)of_iomap(dev_ptr->dev.of_node, 2);
 		hw_info->md_ccif_base =
 		 (unsigned long)of_iomap(dev_ptr->dev.of_node, 3);
+		if (!(cldma_hw->cldma_ap_ao_base &&
+			cldma_hw->cldma_ap_pdn_base &&
+			hw_info->ap_ccif_base && hw_info->md_ccif_base)) {
+			CCCI_ERROR_LOG(-1, TAG, "%s: hw_info of_iomap failed\n",
+				       dev_ptr->dev.of_node->full_name);
+			return -1;
+		}
 		cldma_hw->cldma_irq_id =
 		 irq_of_parse_and_map(dev_ptr->dev.of_node, 0);
 		hw_info->ap_ccif_irq0_id =
@@ -169,8 +176,15 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr,
 
 		node = of_find_compatible_node(NULL, NULL,
 				"mediatek,mdcldmamisc");
-		if (node)
+		if (node) {
 			md_cldma_misc_base = of_iomap(node, 0);
+			if (!md_cldma_misc_base) {
+				CCCI_ERROR_LOG(-1, TAG,
+				"%s: md_cldma_misc_base of_iomap failed\n",
+				       node->full_name);
+				return -1;
+			}
+		}
 		else
 			CCCI_BOOTUP_LOG(dev_cfg->index, TAG,
 			 "warning: no md cldma misc in dts\n");
@@ -212,6 +226,12 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr,
 		}
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		hw_info->ap_mixed_base = (unsigned long)of_iomap(node, 0);
+		if (!hw_info->ap_mixed_base) {
+			CCCI_ERROR_LOG(-1, TAG,
+				"%s: hw_info->ap_mixed_base of_iomap failed\n",
+				node->full_name);
+			return -1;
+		}
 		node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
 		if (node)
 			hw_info->ap_topclkgen_base = of_iomap(node, 0);
