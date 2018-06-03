@@ -14,6 +14,7 @@
 #define LOG_TAG "MET"
 
 #include "ddp_log.h"
+#include "disp_drv_platform.h"
 
 #if defined(CONFIG_MTK_MET)
 #include <mt-plat/met_drv.h>
