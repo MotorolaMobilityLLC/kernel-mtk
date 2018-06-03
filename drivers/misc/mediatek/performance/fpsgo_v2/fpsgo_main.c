@@ -522,6 +522,11 @@ int fpsgo_fstb_fps_range(int nr_level, struct fps_level *level)
 	return switch_fps_range(nr_level, level);
 }
 
+int fpsgo_fstb_dfps_ceiling(int fps)
+{
+	return switch_dfps_ceiling(fps);
+}
+
 int fpsgo_fstb_fps_error_threhosld(int threshold)
 {
 	return switch_fps_error_threhosld(threshold);
@@ -530,16 +535,6 @@ int fpsgo_fstb_fps_error_threhosld(int threshold)
 int fpsgo_fstb_percentile_frametime(int ratio)
 {
 	return switch_percentile_frametime(ratio);
-}
-
-int fpsgo_fstb_force_vag(int arg)
-{
-	return switch_force_vag(arg);
-}
-
-int fpsgo_fstb_vag_fps(int arg)
-{
-	return switch_vag_fps(arg);
 }
 
 static void fpsgo_exit(void)

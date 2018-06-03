@@ -95,7 +95,6 @@ static inline int xgf_is_enable(void)
 {
 	xgf_lockprove(__func__);
 
-	xgf_trace("xgf_enable", xgf_enable);
 	return xgf_enable;
 }
 
@@ -596,27 +595,8 @@ void fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd)
 	struct xgf_proc *iter;
 	int proc_cnt = 0;
 	int timer_cnt = 0;
-	struct task_struct *tsk;
 	unsigned long long dur;
 	struct xgf_timer *timer_iter;
-
-	/* filter out main thread to queue/dequeue */
-	rcu_read_lock();
-	tsk = find_task_by_vpid(rpid);
-	if (tsk)
-		get_task_struct(tsk);
-	rcu_read_unlock();
-
-	if (!tsk)
-		return;
-
-	if (tsk->pid == tsk->tgid) {
-		put_task_struct(tsk);
-		fpsgo_systrace_c_xgf(rpid, 1,
-				"qudeq filtered");
-		return;
-	}
-	put_task_struct(tsk);
 
 	xgf_lock(__func__);
 	if (!xgf_is_enable()) {

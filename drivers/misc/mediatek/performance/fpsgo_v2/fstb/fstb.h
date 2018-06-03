@@ -31,10 +31,9 @@ int is_fstb_enable(void);
 int fpsgo_ctrl2fstb_switch_fstb(int);
 int switch_sample_window(long long time_usec);
 int switch_fps_range(int nr_level, struct fps_level *level);
+int switch_dfps_ceiling(int fps);
 int switch_fps_error_threhosld(int threshold);
 int switch_percentile_frametime(int ratio);
-int switch_force_vag(int arg);
-int switch_vag_fps(int arg);
 int fpsgo_fbt2fstb_update_cpu_frame_info(
 	int pid,
 	int frame_type,
@@ -49,10 +48,9 @@ static inline int is_fstb_enable(void) { return 0; }
 static inline int fpsgo_ctrl2fstb_switch_fstb(int en) { return 0; }
 static inline int switch_sample_window(long long time_usec) { return 0; }
 static inline int switch_fps_range(int nr_level, struct fps_level *level) { return 0; }
+static inline int switch_dfps_ceiling(int fps) { return 0; }
 static inline int switch_fps_error_threhosld(int threshold) { return 0; }
 static inline int switch_percentile_frametime(int ratio) { return 0; }
-static inline int switch_force_vag(int arg) { return 0; }
-static inline int switch_vag_fps(int arg) { return 0; }
 static inline int fpsgo_fbt2fstb_update_cpu_frame_info(
 	int pid,
 	int frame_type,
