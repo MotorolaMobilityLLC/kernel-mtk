@@ -18,6 +18,7 @@
 #include <linux/ctype.h>
 #include <linux/clk.h>
 #include <linux/workqueue.h>
+#include <linux/pm_qos.h>
 
 #include <m4u.h>
 #include <ion.h>
@@ -149,6 +150,11 @@ static int power_counter[MTK_VPU_CORE];
 
 /* dvfs */
 static struct vpu_dvfs_opps opps;
+/* #define ENABLE_PMQOS */
+#ifdef ENABLE_PMQOS
+static struct pm_qos_request vpu_qos_request;
+#endif
+static struct mutex pmqos_mutex;
 
 /* jtag */
 static bool is_jtag_enabled;
@@ -441,12 +447,12 @@ static int vpu_disable_regulator_and_clock(int core)
 	DISABLE_VPU_CLK(clk_ipu_conn_cab3to3);
 	DISABLE_VPU_CLK(clk_ipu_conn_cab2to1);
 	DISABLE_VPU_CLK(clk_ipu_conn_cab3to1_slice);
-	/*DISABLE_VPU_CLK(clk_ipu_conn_ipu_cg);*/
-	/*DISABLE_VPU_CLK(clk_ipu_conn_ahb_cg);*/
-	/*DISABLE_VPU_CLK(clk_ipu_conn_axi_cg);*/
-	/*DISABLE_VPU_CLK(clk_ipu_conn_isp_cg);*/
-	/*DISABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);*/
-	/*DISABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);*/
+	DISABLE_VPU_CLK(clk_ipu_conn_ipu_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_ahb_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_axi_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_isp_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);
 	DISABLE_VPU_CLK(clk_mmsys_gals_ipu2mm);
 	DISABLE_VPU_CLK(clk_mmsys_gals_ipu12mm);
 	DISABLE_VPU_CLK(clk_mmsys_gals_comm0);
@@ -464,25 +470,13 @@ static int vpu_disable_regulator_and_clock(int core)
 	}
 
 	DISABLE_VPU_MTCMOS(mtcmos_vpu_core1_shutdown);
-	LOG_INF("[vpu_%d] dis_rc flag4.1\n", core);
 	DISABLE_VPU_MTCMOS(mtcmos_vpu_core0_shutdown);
-	LOG_INF("[vpu_%d] dis_rc flag4.2\n", core);
 	DISABLE_VPU_MTCMOS(mtcmos_vpu_top);
-	LOG_INF("[vpu_%d] dis_rc flag4.3\n", core);
 	DISABLE_VPU_MTCMOS(mtcmos_dis);
 	LOG_INF("[vpu_%d] dis_rc flag4.4\n", core);
 
-	DISABLE_VPU_CLK(clk_ipu_conn_ipu_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_ahb_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_axi_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_isp_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);
-
 	DISABLE_VPU_CLK(clk_top_dsp_sel);
-	LOG_INF("[vpu_%d] dis_rc test_5\n", core);
 	DISABLE_VPU_CLK(clk_top_ipu_if_sel);
-	LOG_INF("[vpu_%d] dis_rc test_5.1\n", core);
 	DISABLE_VPU_CLK(clk_top_dsp1_sel);
 	DISABLE_VPU_CLK(clk_top_dsp2_sel);
 	LOG_INF("[vpu_%d] dis_rc test_5.2\n", core);
@@ -906,6 +900,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		init_waitqueue_head(&cmd_wait);
 		mutex_init(&lock_mutex);
 		init_waitqueue_head(&lock_wait);
+		mutex_init(&pmqos_mutex);
 		vpu_dev = device;
 
 		for (i = 0 ; i < MTK_VPU_CORE ; i++) {
@@ -1034,6 +1029,12 @@ int vpu_init_hw(int core, struct vpu_device *device)
 
 		ret = vpu_prepare_regulator_and_clock(vpu_dev->dev[core]);
 		CHECK_RET("fail to prepare regulator or clock!\n");
+
+		/* pmqos  */
+		#ifdef ENABLE_PMQOS
+		pm_qos_add_request(&vpu_qos_request, PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+		#endif
+
 	}
 	return 0;
 
@@ -1603,12 +1604,20 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	vpu_write_field(core, FLD_XTENSA_INFO15, request->sett_length);
 
 	/* 2. trigger interrupt */
+	#ifdef ENABLE_PMQOS
+	/* pmqos, 10880 Mbytes per second */
+	pm_qos_update_request(&vpu_qos_request, 10880);
+	#endif
 	vpu_trace_begin("dsp:running");
 	LOG_DBG("[vpu] vpu_hw_enque_request running... ");
 	vpu_write_field(core, FLD_CTL_INT, 1);
 
 	/* 3. wait until done */
 	ret = wait_command(core);
+	#ifdef ENABLE_PMQOS
+	/* pmqos, release request after d2d done */
+	pm_qos_update_request(&vpu_qos_request, 0);
+	#endif
 	vpu_trace_end();
 	if (ret) {
 		request->status = VPU_REQ_STATUS_TIMEOUT;
