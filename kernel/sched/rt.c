@@ -2567,6 +2567,24 @@ const struct sched_class rt_sched_class = {
 	.update_curr		= update_curr_rt,
 };
 
+#ifdef CONFIG_MTK_SCHED_INTEROP
+bool is_rt_throttle(int cpu)
+{
+	struct rq *rq = cpu_rq(cpu);
+	rt_rq_iter_t iter;
+	struct rt_rq *rt_rq;
+	bool rt_throttle = false;
+
+	for_each_rt_rq(rt_rq, iter, rq) {
+		if (rt_rq->rt_throttled) {
+			rt_throttle = true;
+			break;
+		}
+	}
+	return rt_throttle;
+}
+#endif
+
 #ifdef CONFIG_SCHED_DEBUG
 extern void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq);
 
