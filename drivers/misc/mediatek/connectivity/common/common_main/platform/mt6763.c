@@ -783,8 +783,8 @@ static INT32 consys_hw_vcn18_ctrl(MTK_WCN_BOOL enable)
 
 		/*AP power off MT6351L VCN_1V8 LDO */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
-		pmic_set_register_value(PMIC_RG_LDO_VCN18_EN, 1);
-		pmic_set_register_value(PMIC_RG_LDO_VCN18_SW_OP_EN, 1);
+		pmic_set_register_value(PMIC_RG_LDO_VCN18_EN, 0);
+		pmic_set_register_value(PMIC_RG_LDO_VCN18_SW_OP_EN, 0);
 #else
 		pmic_set_register_value(MT6351_PMIC_RG_VCN18_ON_CTRL, 0);
 #endif
