@@ -660,6 +660,8 @@ int mcdi_enter(int cpu)
 	int cluster_idx = cluster_idx_get(cpu);
 	int state = -1;
 
+	idle_refcnt_inc();
+
 	state = mcdi_governor_select(cpu, cluster_idx);
 
 	if (state >= MCDI_STATE_WFI && state <= MCDI_STATE_CLUSTER_OFF)
@@ -718,6 +720,8 @@ int mcdi_enter(int cpu)
 		sched_idle_set_state(NULL, -1);
 
 	mcdi_governor_reflect(cpu, state);
+
+	idle_refcnt_dec();
 
 	return 0;
 }

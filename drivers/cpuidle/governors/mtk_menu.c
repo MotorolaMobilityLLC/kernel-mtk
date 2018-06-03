@@ -44,6 +44,11 @@ void __attribute__((weak)) mcdi_heart_beat_log_dump(void)
 {
 }
 
+bool __attribute__((weak)) is_all_cpu_idle_criteria(void)
+{
+	return false;
+}
+
 static int mtk_menu_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct fb_event *evdata = data;
@@ -418,7 +423,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 #endif
 
 #ifdef USE_TYPICAL_INTERVAL
-	get_typical_interval(data);
+	if (!is_all_cpu_idle_criteria())
+		get_typical_interval(data);
 #endif
 
 #ifdef USE_INTERACTIVITY_REQ

@@ -255,6 +255,49 @@ TRACE_EVENT(mcdi_task_pause,
 	TP_printk("cpu = %d %d", (int)__entry->cpu, (int)__entry->enter)
 );
 
+TRACE_EVENT(mtk_menu,
+	TP_PROTO(
+		int cpu,
+		int ratio,
+		int dur
+	),
+
+	TP_ARGS(cpu, ratio, dur),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, ratio)
+		__field(int, dur)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->ratio = ratio;
+		__entry->dur = dur;
+	),
+
+	TP_printk("cpu = %d %d %d", (int)__entry->cpu, (int)__entry->ratio, (int)__entry->dur)
+);
+
+TRACE_EVENT(all_cpu_idle,
+
+	TP_PROTO(
+		int enter
+	),
+
+	TP_ARGS(enter),
+
+	TP_STRUCT__entry(
+		__field(int, enter)
+	),
+
+	TP_fast_assign(
+		__entry->enter = enter;
+	),
+
+	TP_printk("enter = %d", (int)__entry->enter)
+);
+
 #endif /* _TRACE_MTK_IDLE_EVENT_H */
 
 /* This part must be outside protection */
