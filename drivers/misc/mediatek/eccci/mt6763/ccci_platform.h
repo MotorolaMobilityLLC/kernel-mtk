@@ -16,7 +16,8 @@
 
 #include <mt-plat/sync_write.h>
 #include "ccci_config.h"
-#include "ccci_modem.h"
+#include "modem_sys.h"
+#include "hif/ccci_hif_cldma.h"
 
 #define INVALID_ADDR (0xF0000000)	/* the last EMI bank, properly not used */
 #define KERN_EMI_BASE (0x40000000)	/* Bank4 */
@@ -38,31 +39,18 @@
 #define ccci_read16(b, a)               ioread16((void __iomem *)((b)+(a)))
 #define ccci_read8(b, a)                ioread8((void __iomem *)((b)+(a)))
 
-void ccci_clear_md_region_protection(struct ccci_modem *md);
-void ccci_set_mem_access_protection(struct ccci_modem *md);
 #ifdef SET_EMI_STEP_BY_STAGE
 void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md);
-void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md);
-#endif
-void ccci_set_ap_region_protection(struct ccci_modem *md);
-#ifdef ENABLE_DSP_SMEM_SHARE_MPU_REGION
-void ccci_set_exp_region_protection(struct ccci_modem *md);
-#endif
-void ccci_set_mem_remap(struct ccci_modem *md, unsigned long smem_offset, phys_addr_t invalid);
-unsigned int ccci_get_md_debug_mode(struct ccci_modem *md);
-void ccci_get_platform_version(char *ver);
-void ccci_set_dsp_region_protection(struct ccci_modem *md, int loaded);
-void ccci_clear_dsp_region_protection(struct ccci_modem *md);
-int ccci_plat_common_init(void);
-int ccci_platform_init(struct ccci_modem *md);
-void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA, void __iomem *baseB);
-#ifdef FEATURE_CLK_CG_CONTROL
-void ccci_set_clk_cg(struct ccci_modem *md, unsigned int is_on);
-#endif
-#ifdef FEATURE_BSI_BPI_SRAM_CFG
-void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on, unsigned int stop_type);
+void ccci_set_mem_access_protection_second_stage(int md_id);
 #endif
 
+unsigned int ccci_get_md_debug_mode(struct ccci_modem *md);
+void ccci_get_platform_version(char *ver);
+
+int ccci_plat_common_init(void);
+int ccci_platform_init(struct ccci_modem *md);
+void ccci_reset_ccif_hw(unsigned char md_id, int ccif_id, void __iomem *baseA, void __iomem *baseB);
+void ccci_set_clk_cg(struct ccci_modem *md, unsigned int is_on);
 #ifdef ENABLE_DRAM_API
 extern phys_addr_t get_max_DRAM_size(void);
 extern unsigned int get_phys_offset(void);
