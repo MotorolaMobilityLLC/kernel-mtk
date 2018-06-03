@@ -130,7 +130,7 @@ struct mmdvfs_pm_qos_request dip_qos;
 
 #define DIP_DEV_NAME                "camera-dip"
 #define DUMMY_INT                   (0)   /*for early if load dont need to use camera*/
-#define EP_NO_CLKMGR
+
 /* #define EP_NO_CLKMGR *//* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
 
 #define DIP_BOTTOMHALF_WORKQ		(1)
@@ -264,8 +264,8 @@ enum {
 #ifndef CONFIG_MTK_CLKMGR /*CCF*/
 #include <linux/clk.h>
 struct DIP_CLK_STRUCT {
-	struct clk *DIP_SCP_SYS_DIS;
-	struct clk *DIP_SCP_SYS_DIP;
+	struct clk *DIP_IMG_LARB5;
+	struct clk *DIP_IMG_LARB2;
 	struct clk *DIP_IMG_DIP;
 };
 struct DIP_CLK_STRUCT dip_clk;
@@ -1314,21 +1314,19 @@ static inline void Prepare_Enable_ccf_clock(void)
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_DDIP0_SMI_COMMON -> CG_SCP_SYS_DIP/CAM -> DIP clk */
 
 	/* enable through smi API */
-	smi_bus_enable(SMI_LARB1, DIP_DEV_NAME);
-	smi_bus_enable(SMI_LARB2, DIP_DEV_NAME);
+	smi_bus_enable(SMI_LARB_IMGSYS1, DIP_DEV_NAME);
 
-
-	ret = clk_prepare_enable(dip_clk.DIP_SCP_SYS_DIS);
+	ret = clk_prepare_enable(dip_clk.DIP_IMG_LARB5);
 	if (ret)
-		LOG_ERR("cannot pre-en DIP_SCP_SYS_DIS clock\n");
+		LOG_ERR("cannot prepare and enable DIP_IMG_LARB5 clock\n");
 
-	ret = clk_prepare_enable(dip_clk.DIP_SCP_SYS_DIP);
+	ret = clk_prepare_enable(dip_clk.DIP_IMG_LARB2);
 	if (ret)
-		LOG_ERR("cannot pre-en DIP_SCP_SYS_DIP clock\n");
+		LOG_ERR("cannot prepare and enable DIP_IMG_LARB2 clock\n");
 
 	ret = clk_prepare_enable(dip_clk.DIP_IMG_DIP);
 	if (ret)
-		LOG_ERR("cannot pre-en DIP_IMG_DIP clock\n");
+		LOG_ERR("cannot prepare and enable DIP_IMG_DIP clock\n");
 
 }
 
@@ -1336,36 +1334,11 @@ static inline void Disable_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: DIP clk -> CG_SCP_SYS_DIP/CAM -> CG_DDIP0_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable_unprepare(dip_clk.DIP_IMG_DIP);
-	clk_disable_unprepare(dip_clk.DIP_SCP_SYS_DIP);
-	clk_disable_unprepare(dip_clk.DIP_SCP_SYS_DIS);
-
-	smi_bus_disable(SMI_LARB2, DIP_DEV_NAME);
-	smi_bus_disable(SMI_LARB1, DIP_DEV_NAME);
+	clk_disable_unprepare(dip_clk.DIP_IMG_LARB2);
+	clk_disable_unprepare(dip_clk.DIP_IMG_LARB5);
+	smi_bus_disable(SMI_LARB_IMGSYS1, DIP_DEV_NAME);
 }
 
-/* only for suspend/resume, disable dip cg but no MTCMOS*/
-static inline void Prepare_Enable_cg_clock(void)
-{
-	int ret;
-
-	LOG_INF("enable CG through SMI CLK API\n");
-	smi_clk_prepare(SMI_LARB2, DIP_DEV_NAME, 0);
-	smi_clk_enable(SMI_LARB2, DIP_DEV_NAME, 0);
-
-	ret = clk_prepare_enable(dip_clk.DIP_IMG_DIP);
-	if (ret)
-		LOG_ERR("cannot pre-en DIP_IMG_DIP clock\n");
-
-}
-
-static inline void Disable_Unprepare_cg_clock(void)
-{
-	clk_disable_unprepare(dip_clk.DIP_IMG_DIP);
-
-	LOG_INF("disable CG through SMI CLK API\n");
-	smi_clk_disable(SMI_LARB2, DIP_DEV_NAME, 0);
-	smi_clk_unprepare(SMI_LARB2, DIP_DEV_NAME, 0);
-}
 
 #endif
 
@@ -1379,30 +1352,15 @@ static void DIP_EnableClock(bool En)
 #endif
 
 	if (En) {
-#if defined(EP_NO_CLKMGR) || defined(CONFIG_MTK_CLKMGR)
+#if defined(EP_NO_CLKMGR)
 		spin_lock(&(IspInfo.SpinLockClock));
 		/* LOG_DBG("Camera clock enbled. G_u4EnableClockCount: %d.", G_u4EnableClockCount); */
 		switch (G_u4EnableClockCount) {
 		case 0:
-#ifdef EP_NO_CLKMGR  /*FPGA test*/
-			/* Enable clock by hardcode:
-			* 1. CAMSYS_CG_CLR (0x1A000008) = 0xffffffff;
-			* 2. IMG_CG_CLR (0x15000008) = 0xffffffff;
-			*/
+			/* Enable clock by hardcode*/
 			setReg = 0xFFFFFFFF;
 			/*DIP_WR32(CAMSYS_REG_CG_CLR, setReg);*/
 			/*DIP_WR32(IMGSYS_REG_CG_CLR, setReg);*/
-#else /* Everest not support CLKMGR, only CCF!!*/
-			/*LOG_INF("MTK_LEGACY:enable clk");*/
-			enable_clock(MT_CG_DDIP0_SMI_COMMON, "CAMERA");
-			enable_clock(MT_CG_IMAGE_CAM_SMI, "CAMERA");
-			enable_clock(MT_CG_IMAGE_CAM_CAM, "CAMERA");
-			enable_clock(MT_CG_IMAGE_SEN_TG, "CAMERA");
-			enable_clock(MT_CG_IMAGE_SEN_CAM, "CAMERA");
-			enable_clock(MT_CG_IMAGE_CAM_SV, "CAMERA");
-			/* enable_clock(MT_CG_IMAGE_FD, "CAMERA"); */
-			enable_clock(MT_CG_IMAGE_LARB2_SMI, "CAMERA");
-#endif
 			break;
 		default:
 			break;
@@ -1421,19 +1379,13 @@ static void DIP_EnableClock(bool En)
 		spin_unlock(&(IspInfo.SpinLockClock));
 		Prepare_Enable_ccf_clock(); /* !!cannot be used in spinlock!! */
 #endif
-	/* Disable CAMSYS_HALT1_EN: LSCI & BPCI, To avoid DIP halt keep arise */
-		#if 0/* TBD */
-	DIP_WR32(DIP_CAMSYS_CONFIG_BASE + 0x120, 0xFFFFFF4F);
-		#endif
 	} else {                /* Disable clock. */
-#if defined(EP_NO_CLKMGR) || defined(CONFIG_MTK_CLKMGR)
+#if defined(EP_NO_CLKMGR)
 		spin_lock(&(IspInfo.SpinLockClock));
 		/* LOG_DBG("Camera clock disabled. G_u4EnableClockCount: %d.", G_u4EnableClockCount); */
 		G_u4EnableClockCount--;
 		switch (G_u4EnableClockCount) {
 		case 0:
-#ifdef EP_NO_CLKMGR
-
 			/* Disable clock by hardcode:
 			* 1. CAMSYS_CG_SET (0x1A000004) = 0xffffffff;
 			* 2. IMG_CG_SET (0x15000004) = 0xffffffff;
@@ -1441,18 +1393,6 @@ static void DIP_EnableClock(bool En)
 			setReg = 0xFFFFFFFF;
 			/*DIP_WR32(CAMSYS_REG_CG_SET, setReg);*/
 			/*DIP_WR32(IMGSYS_REG_CG_SET, setReg);*/
-#else
-			/*LOG_INF("MTK_LEGACY:disable clk");*/
-			/* do disable clock     */
-			disable_clock(MT_CG_IMAGE_CAM_SMI, "CAMERA");
-			disable_clock(MT_CG_IMAGE_CAM_CAM, "CAMERA");
-			disable_clock(MT_CG_IMAGE_SEN_TG, "CAMERA");
-			disable_clock(MT_CG_IMAGE_SEN_CAM, "CAMERA");
-			disable_clock(MT_CG_IMAGE_CAM_SV, "CAMERA");
-			/* disable_clock(MT_CG_IMAGE_FD, "CAMERA"); */
-			disable_clock(MT_CG_IMAGE_LARB2_SMI, "CAMERA");
-			disable_clock(MT_CG_DDIP0_SMI_COMMON, "CAMERA");
-#endif
 			break;
 		default:
 			break;
@@ -1462,11 +1402,6 @@ static void DIP_EnableClock(bool En)
 		/*LOG_INF("CCF:disable_unprepare clk\n");*/
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4EnableClockCount--;
-		if (G_u4EnableClockCount == 0) {
-			unsigned int _reg = DIP_RD32(DIP_CLOCK_CELL_BASE);
-
-			DIP_WR32(DIP_CLOCK_CELL_BASE, _reg&(~(1<<6)));
-		}
 		spin_unlock(&(IspInfo.SpinLockClock));
 		Disable_Unprepare_ccf_clock(); /* !!cannot be used in spinlock!! */
 #endif
@@ -4212,30 +4147,28 @@ static signed int DIP_probe(struct platform_device *pDev)
 		}
 		#endif
 
-#ifndef EP_NO_CLKMGR
+#ifdef EP_NO_CLKMGR
 
-#ifdef CONFIG_MTK_CLKMGR
+
 #else
-#if 0
 		/*CCF: Grab clock pointer (struct clk*) */
-		dip_clk.DIP_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_DIS");
-		dip_clk.DIP_SCP_SYS_DIP = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_ISP");
-		dip_clk.DIP_IMG_DIP = devm_clk_get(&pDev->dev, "IMG_DIP");
+		dip_clk.DIP_IMG_LARB5 = devm_clk_get(&pDev->dev, "DIP_CG_IMG_LARB5");
+		dip_clk.DIP_IMG_LARB2 = devm_clk_get(&pDev->dev, "DIP_CG_IMG_LARB2");
+		dip_clk.DIP_IMG_DIP = devm_clk_get(&pDev->dev, "DIP_CG_IMG_DIP");
 
-		if (IS_ERR(dip_clk.DIP_SCP_SYS_DIS)) {
-			LOG_ERR("cannot get DIP_SCP_SYS_DIS clock\n");
-			return PTR_ERR(dip_clk.DIP_SCP_SYS_DIS);
+		if (IS_ERR(dip_clk.DIP_IMG_LARB5)) {
+			LOG_ERR("cannot get DIP_IMG_LARB5 clock\n");
+			return PTR_ERR(dip_clk.DIP_IMG_LARB5);
 		}
-		if (IS_ERR(dip_clk.DIP_SCP_SYS_DIP)) {
-			LOG_ERR("cannot get DIP_SCP_SYS_DIP clock\n");
-			return PTR_ERR(dip_clk.DIP_SCP_SYS_DIP);
+		if (IS_ERR(dip_clk.DIP_IMG_LARB2)) {
+			LOG_ERR("cannot get DIP_IMG_LARB2 clock\n");
+			return PTR_ERR(dip_clk.DIP_IMG_LARB2);
 		}
 		if (IS_ERR(dip_clk.DIP_IMG_DIP)) {
-			LOG_ERR("cannot get IMG_DIP clock\n");
+			LOG_ERR("cannot get DIP_IMG_DIP clock\n");
 			return PTR_ERR(dip_clk.DIP_IMG_DIP);
 		}
-#endif
-#endif
+
 #endif
 		/*  */
 		for (i = 0 ; i < DIP_IRQ_TYPE_AMOUNT; i++)
