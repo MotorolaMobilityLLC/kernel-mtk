@@ -3367,13 +3367,13 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MFG_CORE1, pg_mfg_core1, pg_mfg, NULL, SYS_MFG_CORE1),
 	PGATE(SCP_SYS_MFG_CORE0, pg_mfg_core0, pg_mfg, NULL, SYS_MFG_CORE0),
 
-	PGATE(SCP_SYS_MFG_2D, "pg_mfg_2d", NULL, NULL, SYS_MFG_2D),
-	PGATE(SCP_SYS_VDE, "pg_vde", NULL, NULL, SYS_VDE),
-	PGATE(SCP_SYS_VPU_TOP, "pg_vpu_top", NULL, NULL, SYS_VPU_TOP),
-	PGATE(SCP_SYS_VPU_CORE0_DORMANT, "pg_vpu_core0_d", NULL, NULL, SYS_VPU_CORE0_DORMANT),
-	PGATE(SCP_SYS_VPU_CORE0_SHUTDOWN, "pg_vpu_core0_s", NULL, NULL, SYS_VPU_CORE0_SHUTDOWN),
-	PGATE(SCP_SYS_VPU_CORE1_DORMANT, "pg_vpu_core1_d", NULL, NULL, SYS_VPU_CORE1_DORMANT),
-	PGATE(SCP_SYS_VPU_CORE1_SHUTDOWN, "pg_vpu_core1_s", NULL, NULL, SYS_VPU_CORE1_SHUTDOWN),
+	PGATE(SCP_SYS_MFG_2D, "pg_mfg_2d", pg_mfg, NULL, SYS_MFG_2D),
+	PGATE(SCP_SYS_VDE, "pg_vde", NULL, mm_sel, SYS_VDE),
+	PGATE(SCP_SYS_VPU_TOP, "pg_vpu_top", NULL, "ipu_if_sel", SYS_VPU_TOP),
+	PGATE(SCP_SYS_VPU_CORE0_DORMANT, "pg_vpu_core0_d", "pg_vpu_top", NULL, SYS_VPU_CORE0_DORMANT),
+	PGATE(SCP_SYS_VPU_CORE0_SHUTDOWN, "pg_vpu_core0_s", "pg_vpu_top", NULL, SYS_VPU_CORE0_SHUTDOWN),
+	PGATE(SCP_SYS_VPU_CORE1_DORMANT, "pg_vpu_core1_d", "pg_vpu_top", NULL, SYS_VPU_CORE1_DORMANT),
+	PGATE(SCP_SYS_VPU_CORE1_SHUTDOWN, "pg_vpu_core1_s", "pg_vpu_top", NULL, SYS_VPU_CORE1_SHUTDOWN),
 	PGATE(SCP_SYS_VPU_CORE2_DORMANT, "pg_vpu_core2_d", NULL, NULL, SYS_VPU_CORE2_DORMANT),
 	PGATE(SCP_SYS_VPU_CORE2_SHUTDOWN, "pg_vpu_core2_s", NULL, NULL, SYS_VPU_CORE2_SHUTDOWN),
 };
@@ -3561,21 +3561,22 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_mfg(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg_core0(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg_core1(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg_2d(STA_POWER_ON);
 
 	spm_mtcmos_ctrl_dis(STA_POWER_ON);
 	spm_mtcmos_ctrl_cam(STA_POWER_ON);
 	spm_mtcmos_ctrl_ven(STA_POWER_ON);
+	spm_mtcmos_ctrl_vde(STA_POWER_ON);
 	spm_mtcmos_ctrl_isp(STA_POWER_ON);
 
-#if 0 /*avoid hang in bring up*/
+#if 1 /*avoid hang in bring up*/
 	spm_mtcmos_ctrl_vpu_top(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_core0_shut_down(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_core1_shut_down(STA_POWER_ON);
-	spm_mtcmos_ctrl_vpu_core2_shut_down(STA_POWER_ON);
+	/*spm_mtcmos_ctrl_vpu_core2_shut_down(STA_POWER_ON);*/
 #endif
 	/*spm_mtcmos_ctrl_md1(STA_POWER_ON);*/
 	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
-
 	spm_mtcmos_ctrl_audio(STA_POWER_ON);
 #endif
 #endif				/* !MT_CCF_BRINGUP */
