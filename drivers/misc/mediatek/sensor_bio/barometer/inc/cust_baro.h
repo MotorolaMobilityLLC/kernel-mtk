@@ -30,6 +30,6 @@ struct baro_hw {
 	bool is_batch_supported;
 };
 
-struct baro_hw *get_baro_dts_func(const char *name, struct baro_hw *hw);
+struct baro_hw *get_baro_dts_func(struct device_node *node, struct baro_hw *hw);
 
 #endif
