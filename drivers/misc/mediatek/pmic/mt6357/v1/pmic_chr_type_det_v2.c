@@ -383,6 +383,7 @@ void chrdet_int_handler(void)
 	if (!pmic_get_register_value(PMIC_RGS_CHRDET)) {
 		int boot_mode = 0;
 
+		hw_bc11_done();
 		boot_mode = get_boot_mode();
 
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
