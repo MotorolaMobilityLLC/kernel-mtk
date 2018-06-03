@@ -456,6 +456,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 	static unsigned long long last_leave_time[CLDMA_RXQ_NUM] = { 0 };
 	static unsigned int sample_time[CLDMA_RXQ_NUM] = { 0 };
 	static unsigned int sample_bytes[CLDMA_RXQ_NUM] = { 0 };
+	unsigned int *tmp;
 
 	total_time = sched_clock();
 	if (last_leave_time[queue->index] == 0)
@@ -480,6 +481,14 @@ again:
 		skb->len = 0;
 		skb_reset_tail_pointer(skb);
 		/*set data len*/
+		if (unlikely(rgpd->data_buff_len + skb->tail > skb->end)) {
+			tmp = (unsigned int *)rgpd;
+			CCCI_NOTICE_LOG(md->index, TAG, "dump cldma_rgpd(%p):(%x/%x/%x/%x)\n",
+							rgpd, *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+			tmp = (unsigned int *)skb->data;
+			CCCI_NOTICE_LOG(md->index, TAG, "dump skb->data(%p):(%x/%x/%x/%x)\n",
+							rgpd, *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+		}
 		skb_put(skb, rgpd->data_buff_len);
 		skb_bytes = skb->len;
 #ifdef ENABLE_FAST_HEADER
