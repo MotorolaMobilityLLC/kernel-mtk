@@ -226,8 +226,11 @@ void get_original_table(void)
 	unsigned int i, j;
 
 	idx = mt_cpufreq_get_cpu_level();
+	upower_debug("idx = %d", idx);
 	/* get location of reference table */
-	upower_tbl_infos = &upower_tbl_list[0][0];
+	if (idx >= NR_UPOWER_TBL_LIST)
+		idx = 0;
+	upower_tbl_infos = &upower_tbl_list[idx][0];
 
 	/* get location of target table */
 	upower_tbl_ref = &final_upower_tbl[0];
