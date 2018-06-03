@@ -63,7 +63,9 @@
 #define SEMAPHORE_TIMEOUT 5000
 #define SEMAPHORE_3WAY_TIMEOUT 5000
 /* scp ready timout definition*/
-#define SCP_READY_TIMEOUT (2 * HZ) /* 2 seconds*/
+#define SCP_READY_TIMEOUT (30 * HZ) /* 30 seconds*/
+#define SCP_A_TIMER 0
+#define SCP_B_TIMER 1
 
 /* scp ready status for notify*/
 unsigned int scp_ready[SCP_CORE_TOTAL];
@@ -90,9 +92,13 @@ unsigned char *scp_send_buff[SCP_CORE_TOTAL];
 unsigned char *scp_recv_buff[SCP_CORE_TOTAL];
 
 static struct workqueue_struct *scp_workqueue;
-static struct timer_list scp_ready_timer;
+#if SCP_BOOT_TIME_OUT_MONITOR
+static struct timer_list scp_ready_timer[SCP_CORE_TOTAL];
+#endif
 static struct scp_work_struct scp_A_notify_work;
 static struct scp_work_struct scp_B_notify_work;
+static struct scp_work_struct scp_timeout_work;
+
 static DEFINE_MUTEX(scp_A_notify_mutex);
 static DEFINE_MUTEX(scp_B_notify_mutex);
 static DEFINE_MUTEX(scp_feature_mutex);
@@ -646,6 +652,20 @@ static void scp_B_notify_ws(struct work_struct *ws)
 
 }
 
+/*
+ * callback function for work struct
+ * notify apps to start their tasks or generate an exception according to flag
+ * NOTE: this function may be blocked and should not be called in interrupt context
+ * @param ws:   work struct
+ */
+static void scp_timeout_ws(struct work_struct *ws)
+{
+	struct scp_work_struct *sws = container_of(ws, struct scp_work_struct, work);
+	unsigned int scp_timeout_id = sws->id;
+
+	scp_aed(EXCEP_BOOTUP, scp_timeout_id);
+
+}
 
 /*
  * mark notify flag to 1 to notify apps to start their tasks
@@ -653,7 +673,9 @@ static void scp_B_notify_ws(struct work_struct *ws)
 static void scp_A_set_ready(void)
 {
 	pr_debug("%s()\n", __func__);
-	del_timer(&scp_ready_timer);
+#if SCP_BOOT_TIME_OUT_MONITOR
+	del_timer(&scp_ready_timer[SCP_A_ID]);
+#endif
 	scp_A_notify_work.flags = 1;
 	scp_schedule_work(&scp_A_notify_work);
 }
@@ -664,7 +686,9 @@ static void scp_A_set_ready(void)
 static void scp_B_set_ready(void)
 {
 	pr_debug("%s()\n", __func__);
-	del_timer(&scp_ready_timer);
+#if SCP_BOOT_TIME_OUT_MONITOR
+	del_timer(&scp_ready_timer[SCP_B_ID]);
+#endif
 	scp_B_notify_work.flags = 1;
 	scp_schedule_work(&scp_B_notify_work);
 }
@@ -677,10 +701,19 @@ static void scp_B_set_ready(void)
 #if SCP_BOOT_TIME_OUT_MONITOR
 static void scp_wait_ready_timeout(unsigned long data)
 {
-	pr_debug("%s()\n", __func__);
-	scp_A_notify_work.flags = 0;
-	scp_schedule_work(&scp_A_notify_work);
+	pr_err("%s(),timer data=%lu\n", __func__, data);
+	/*data=0: SCP A  ,  data=1: SCP B*/
+	if (data == SCP_A_TIMER) {
+		scp_timeout_work.flags = 0;
+		scp_timeout_work.id = SCP_A_ID;
+		scp_schedule_work(&scp_timeout_work);
+	} else {
+		scp_timeout_work.flags = 0;
+		scp_timeout_work.id = SCP_B_ID;
+		scp_schedule_work(&scp_timeout_work);
+	}
 }
+
 #endif
 /*
  * handle notification from scp
@@ -741,7 +774,10 @@ int reset_scp(int reset)
 {
 	unsigned int *reg;
 #if SCP_BOOT_TIME_OUT_MONITOR
-	del_timer(&scp_ready_timer);
+	int i;
+
+	for (i = 0; i < SCP_CORE_TOTAL ; i++)
+		del_timer(&scp_ready_timer[i]);
 #endif
 	/*scp_logger_stop();*/
 	if (((reset & 0xf0) == 0x10) || ((reset & 0xf0) == 0x00)) { /* reset A or All*/
@@ -789,6 +825,13 @@ int reset_scp(int reset)
 			pr_debug("[SCP] reset scp A\n");
 			*(unsigned int *)reg = 0x1;
 			dsb(SY);
+#if SCP_BOOT_TIME_OUT_MONITOR
+			init_timer(&scp_ready_timer[SCP_A_ID]);
+			scp_ready_timer[SCP_A_ID].expires = jiffies + SCP_READY_TIMEOUT;
+			scp_ready_timer[SCP_A_ID].function = &scp_wait_ready_timeout;
+			scp_ready_timer[SCP_A_ID].data = (unsigned long) SCP_A_TIMER;/*0: SCP A    1: SCP B*/
+			add_timer(&scp_ready_timer[SCP_A_ID]);
+#endif
 		}
 	}
 
@@ -836,17 +879,18 @@ int reset_scp(int reset)
 			pr_debug("[SCP] reset scp B\n");
 			*(unsigned int *)reg = 0x1;
 			dsb(SY);
+#if SCP_BOOT_TIME_OUT_MONITOR
+			init_timer(&scp_ready_timer[SCP_B_ID]);
+			scp_ready_timer[SCP_B_ID].expires = jiffies + SCP_READY_TIMEOUT;
+			scp_ready_timer[SCP_B_ID].function = &scp_wait_ready_timeout;
+			scp_ready_timer[SCP_B_ID].data = (unsigned long) SCP_B_TIMER;/*0: SCP A    1: SCP B*/
+			add_timer(&scp_ready_timer[SCP_B_ID]);
+#endif
 		}
 	}
 
 	pr_debug("[SCP] reset scp done\n");
-#if SCP_BOOT_TIME_OUT_MONITOR
-	init_timer(&scp_ready_timer);
-	scp_ready_timer.expires = jiffies + SCP_READY_TIMEOUT;
-	scp_ready_timer.function = &scp_wait_ready_timeout;
-	scp_ready_timer.data = (unsigned long) 0;
-	add_timer(&scp_ready_timer);
-#endif
+
 	return 0;
 }
 
@@ -1743,6 +1787,8 @@ static int __init scp_init(void)
 
 	INIT_WORK(&scp_A_notify_work.work, scp_A_notify_ws);
 	INIT_WORK(&scp_B_notify_work.work, scp_B_notify_ws);
+	INIT_WORK(&scp_timeout_work.work, scp_timeout_ws);
+
 
 	scp_A_irq_init();
 	scp_B_irq_init();
@@ -1815,13 +1861,20 @@ static int __init scp_init(void)
  */
 static void __exit scp_exit(void)
 {
+#if SCP_BOOT_TIME_OUT_MONITOR
+	int i = 0;
+#endif
+
 	free_irq(scpreg.irq, NULL);
 	misc_deregister(&scp_device);
 	misc_deregister(&scp_B_device);
 	flush_workqueue(scp_workqueue);
 	/*scp_logger_cleanup();*/
 	destroy_workqueue(scp_workqueue);
-	del_timer(&scp_ready_timer);
+#if SCP_BOOT_TIME_OUT_MONITOR
+	for (i = 0; i < SCP_CORE_TOTAL ; i++)
+		del_timer(&scp_ready_timer[i]);
+#endif
 	kfree(scp_swap_buf);
 }
 
