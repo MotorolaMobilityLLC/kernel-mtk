@@ -375,10 +375,10 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case COMBO_IOC_WMT_STATUS:
 		if (rstflag == 1) {
 			/* chip resetting */
-			retval = -5;
+			retval = -888;
 		} else if (rstflag == 2) {
 			/* chip reset end */
-			retval = -6;
+			retval = -889;
 			rstflag = 0;
 		} else {
 			/* normal */
