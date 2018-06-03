@@ -745,8 +745,15 @@ static long _flashlight_ioctl(
 	case FLASHLIGHTIOC_X_SET_DRIVER:
 		pr_debug("FLASHLIGHTIOC_X_SET_DRIVER(%d,%d,%d): %d\n",
 				type, ct, part, fl_arg.arg);
-		if (fdev->ops)
+		if (fdev->ops) {
 			ret = fdev->ops->flashlight_set_driver(fl_arg.arg);
+			if (fdev->dev_id.decouple) {
+				fl_dev_arg.arg = FLASHLIGHT_SCENARIO_DECOUPLE;
+				fdev->ops->flashlight_ioctl(
+					FLASH_IOC_SET_SCENARIO,
+					(unsigned long)&fl_dev_arg);
+			}
+		}
 		else {
 			pr_info("Failed with no flashlight ops\n");
 			return -EFAULT;
