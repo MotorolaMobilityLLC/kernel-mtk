@@ -650,9 +650,7 @@ HPS_ALGO_END:
 						     (((iccs_online_power_state_bitmask >> i) & 1) << 1) |
 						     (((iccs_target_power_state_bitmask >> i) & 1) << 0);
 
-		/*
-		 * pr_err("[%s] cluster: 0x%x iccs_state: 0x%x\n", __func__, i, hps_sys.cluster_info[i].iccs_state);
-		 */
+		/* pr_err("[%s] cluster: 0x%x iccs_state: 0x%x\n", __func__, i, hps_sys.cluster_info[i].iccs_state); */
 
 		if (hps_get_iccs_pwr_status(i) == 0x1)
 			iccs_cluster_on_off(i, 1);
@@ -714,9 +712,10 @@ HPS_ALGO_END:
 	for (i = 0; i < hps_sys.cluster_num; i++) {
 		if (hps_get_cluster_cpus(hps_sys.cluster_info[i].cluster_id) !=
 				hps_sys.cluster_info[i].target_core_num) {
-			if (hps_get_cluster_cpus(hps_sys.cluster_info[i].cluster_id) == 0)
-				iccs_target_power_state_bitmask &= ~(1 << i);
-			else if (hps_sys.cluster_info[i].target_core_num == 0)
+			if (hps_get_cluster_cpus(hps_sys.cluster_info[i].cluster_id) == 0) /* cannot turn on */
+				iccs_target_power_state_bitmask = (iccs_target_power_state_bitmask & ~(1 << i))
+					| (iccs_online_power_state_bitmask & (1 << i));
+			else if (hps_sys.cluster_info[i].target_core_num == 0) /* cannot turn off */
 				iccs_target_power_state_bitmask |= (1 << i);
 		}
 	}
