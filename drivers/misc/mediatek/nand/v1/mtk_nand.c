@@ -279,7 +279,7 @@ u32 pl_merge_time;
 	} while (0)
 
 #define PL_TIME_RAND_ERASE(chip, page_addr) do { \
-	if (host->pl.nand_erase_wdt_enable == 1 && MVG_TRIGGER_HIT) { \
+	if (host->pl.nand_erase_wdt_enable == 1 && MVG_TRIGGER_HIT()) { \
 		PL_TIME_RAND(page_addr, pl_erase_time, host->pl.last_erase_time); \
 		if (pl_erase_time != 0) \
 			pr_info("[MVG_TEST]: Erase reset in %d us\n", pl_erase_time); \
@@ -4245,8 +4245,10 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 	u32 u4SecNum = u4PageSize >> host->hw->nand_sec_shift;
 	u8 *buf = NULL;
 	u8 status;
-#ifdef PWR_LOSS_SPOH
+#ifdef _MTK_NAND_DUMMY_DRIVER_
 	u32 time;
+#endif
+#ifdef PWR_LOSS_SPOH
 	struct timeval pl_time_write;
 	suseconds_t duration;
 #endif

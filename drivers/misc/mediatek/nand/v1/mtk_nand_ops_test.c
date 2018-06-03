@@ -515,8 +515,6 @@ int sim_nand_err(enum operation_types op, int block, int page)
 __aligned(64)
 static u8 retention_test_buf[147456];
 
-static u8 fdm_test_buf[2048];
-
 void __iomem *mtk_top_base;
 struct device_node *mtk_top_node;
 

@@ -233,7 +233,6 @@ extern bool empty_true;
 extern u32 total_error;
 extern void mtk_data_retention_test(struct mtd_info *mtd);
 #endif
-void mtk_write_data_test(struct mtd_info *mtd);
 
 void show_stack(struct task_struct *tsk, unsigned long *sp);
 extern int mtk_nand_interface_async(void);
