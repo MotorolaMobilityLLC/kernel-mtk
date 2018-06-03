@@ -40,6 +40,17 @@ struct rtc_time_wo_cnt {
 	int tm_yday;
 	int tm_isdst;
 };
+/*
+ * This rtc_wkalrm_wo_cnt structure is only for ioctl used.
+ */
+struct rtc_wkalrm_wo_cnt {
+	/* 0 = alarm disabled, 1 = alarm enabled */
+	unsigned char enabled;
+	/* 0 = alarm not pending, 1 = alarm pending */
+	unsigned char pending;
+	/* time without cnt which is only for ioctl */
+	struct rtc_time_wo_cnt time;
+};
 
 /*
  * This data structure is inspired by the EFI (v0.92) wakeup
@@ -107,8 +118,10 @@ struct rtc_pll_info {
 #define RTC_EPOCH_READ	_IOR('p', 0x0d, unsigned long)	 /* Read epoch      */
 #define RTC_EPOCH_SET	_IOW('p', 0x0e, unsigned long)	 /* Set epoch       */
 
-#define RTC_WKALM_SET	_IOW('p', 0x0f, struct rtc_wkalrm)/* Set wakeup alarm*/
-#define RTC_WKALM_RD	_IOR('p', 0x10, struct rtc_wkalrm)/* Get wakeup alarm*/
+/* Set wakeup alarm*/
+#define RTC_WKALM_SET	_IOW('p', 0x0f, struct rtc_wkalrm_wo_cnt)
+/* Get wakeup alarm*/
+#define RTC_WKALM_RD	_IOR('p', 0x10, struct rtc_wkalrm_wo_cnt)
 
 #define RTC_PLL_GET	_IOR('p', 0x11, struct rtc_pll_info)  /* Get PLL correction */
 #define RTC_PLL_SET	_IOW('p', 0x12, struct rtc_pll_info)  /* Set PLL correction */
