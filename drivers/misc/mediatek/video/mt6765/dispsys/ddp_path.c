@@ -644,7 +644,7 @@ int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario,
 {
 	int i = 0;
 
-	DDPMSG("ddp_set_dst_module, scenario=%s, dst_module=%s\n",
+	DDPDBG("ddp_set_dst_module, scenario=%s, dst_module=%s\n",
 		ddp_get_scenario_name(scenario),
 		ddp_get_module_name(dst_module));
 	if (ddp_find_module_index(scenario, dst_module) != -1) {
@@ -787,7 +787,7 @@ void ddp_check_path(enum DDP_SCENARIO_ENUM scenario)
 
 int ddp_path_top_clock_on(void)
 {
-	DDPDBG("ddp path top clock on\n");
+	DISPINFO("ddp path top clock on\n");
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
 		;/*ddp_clk_prepare_enable(MM_VENCPLL);*/
@@ -800,7 +800,7 @@ int ddp_path_top_clock_on(void)
 	ddp_clk_prepare_enable(CLK_MM_26M);
 
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K, "DDP_MUTEX"); */
-	DDPDBG("ddp CG0:%x, CG1:%x\n",
+	DISPINFO("ddp CG0:%x, CG1:%x\n",
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
 

@@ -91,6 +91,7 @@ static atomic_t ext_idlemgr_task_wakeup = ATOMIC_INIT(1);
 /* dvfs */
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LEVEL0);
 #endif
+static int register_share_sram;
 
 /* Local API */
 /******************************************************************************/
@@ -266,6 +267,23 @@ int _blocking_flush(void)
 
 	cmdqRecFlush(handle);
 	cmdqRecDestroy(handle);
+	if (primary_display_is_video_mode()) {
+		struct cmdqRecStruct *handle_vfp = NULL;
+
+		ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_VFP_CHANGE,
+							&handle_vfp);
+		if (ret) {
+			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n",
+				__func__, __LINE__, ret);
+			return -1;
+		}
+		cmdqRecReset(handle_vfp);
+		_cmdq_insert_wait_frame_done_token_mira(handle_vfp);
+		cmdqRecFlush(handle_vfp);
+
+		cmdqRecDestroy(handle_vfp);
+	}
+
 	return ret;
 }
 
@@ -340,9 +358,6 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	if (is_mipi_enterulps())
 		return;
 
-	if (primary_display_is_idle() && !primary_display_is_video_mode())
-		return;
-
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 	cmdqRecReset(handle);
@@ -362,7 +377,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	}
 
 	/* acquire resource success */
-	DISPMSG("share SRAM success\n");
+	DISPINFO("share SRAM success\n");
 	/* cmdqRecClearEventToken(handle, resourceEvent); //???cmdq do it */
 
 	/* set rdma golden setting parameters*/
@@ -381,6 +396,12 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	primary_display_manual_lock();
+
+	if (!register_share_sram) {
+		/* DISPWARN("acquire after unregister callback!\n"); */
+		primary_display_manual_unlock();
+		return 0;
+	}
 	_acquire_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
 
@@ -449,6 +470,12 @@ static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* need lock  */
 	primary_display_manual_lock();
+
+	if (!register_share_sram) {
+		/* DISPWARN("release after unregister callback!\n"); */
+		primary_display_manual_unlock();
+		return 0;
+	}
 	_release_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
 
@@ -462,7 +489,7 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 	struct disp_ddp_path_config *pconfig =
 		dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPINFO("[disp_lowpower]%s\n", __func__);
 	if (mmsys_clk_new == get_mmsys_clk())
 		return ret;
 
@@ -511,7 +538,7 @@ cmdq_d:
 int primary_display_switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 {
 	/* need lock */
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPINFO("[disp_lowpower]%s\n", __func__);
 	primary_display_manual_lock();
 	_switch_mmsys_clk(mmsys_clk_old, mmsys_clk_new);
 	primary_display_manual_unlock();
@@ -578,7 +605,7 @@ void _primary_display_disable_mmsys_clk(void)
 
 		DISPINFO("[LP]3.1 dpmanager path power off: ovl2men[end]\n");
 	}
-	DISPCHECK("[LP]3.dpmanager path power off[end]\n");
+	DISPINFO("[LP]3.dpmanager path power off[end]\n");
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(1);
 }
@@ -659,7 +686,7 @@ void _primary_display_enable_mmsys_clk(void)
 		dpmgr_path_ioctl(primary_get_dpmgr_handle(), NULL,
 			DDP_OVL_GOLDEN_SETTING, &gset_arg);
 	}
-	DISPCHECK("[LP]2.dpmanager path config[end]\n");
+	DISPDBG("[LP]2.dpmanager path config[end]\n");
 
 	DISPDBG("[LP]3.dpmgr path start[begin]\n");
 	dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
@@ -690,7 +717,7 @@ void _vdo_mode_enter_idle(void)
 {
 	struct LCM_PARAMS *params;
 
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPINFO("[disp_lowpower]%s\n", __func__);
 
 	/* backup for DL <-> DC */
 	idlemgr_pgc->session_mode_before_enter_idle = primary_get_sess_mode();
@@ -753,7 +780,7 @@ void _vdo_mode_enter_idle(void)
 
 void _vdo_mode_leave_idle(void)
 {
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPINFO("[disp_lowpower]%s\n", __func__);
 
 	/* set golden setting */
 	set_is_display_idle(0);
@@ -796,7 +823,7 @@ void _vdo_mode_leave_idle(void)
 
 void _cmd_mode_enter_idle(void)
 {
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPINFO("[disp_lowpower]%s\n", __func__);
 
 	/* need leave share sram for disable mmsys clk */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
@@ -814,7 +841,7 @@ void _cmd_mode_enter_idle(void)
 
 void _cmd_mode_leave_idle(void)
 {
-	DISPMSG("[disp_lowpower]%s\n", __func__);
+	DISPINFO("[disp_lowpower]%s\n", __func__);
 
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 		_primary_display_enable_mmsys_clk();
@@ -1105,7 +1132,7 @@ void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 	/* 1. register call back first */
 	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0,
 		_acquire_wrot_resource, _release_wrot_resource);
-
+	register_share_sram = 1;
 	/* 2. try to allocate sram at the fisrt time */
 	_acquire_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);
 }
@@ -1114,7 +1141,7 @@ void leave_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. unregister call back */
 	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0, NULL, NULL);
-
+	register_share_sram = 1;
 	/* 2. try to release share sram */
 	_release_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);
 }

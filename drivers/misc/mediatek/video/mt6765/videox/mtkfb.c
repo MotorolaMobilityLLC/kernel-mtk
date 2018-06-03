@@ -987,6 +987,18 @@ unsigned int mtkfb_fm_auto_test(void)
 		(struct mtkfb_device *)mtkfb_fbi->par;
 	struct fb_var_screeninfo var;
 
+	int idle_state_backup =
+		disp_helper_get_option(DISP_OPT_IDLE_MGR);
+
+	if (primary_display_is_sleepd()) {
+		DISPWARN("primary display path is already sleep, skip\n");
+		return 0;
+	}
+
+	if (idle_state_backup) {
+		primary_display_idlemgr_kick(__func__, 0);
+		disp_helper_set_option(DISP_OPT_IDLE_MGR, 0);
+	}
 	fbVirAddr = (unsigned long)fbdev->fb_va_base;
 	fb_buffer = (unsigned int *)fbVirAddr;
 
@@ -1020,6 +1032,9 @@ unsigned int mtkfb_fm_auto_test(void)
 	msleep(100);
 
 	result = primary_display_lcm_ATA();
+
+	if (idle_state_backup)
+		disp_helper_set_option(DISP_OPT_IDLE_MGR, idle_state_backup);
 
 	if (result == 0)
 		DISPERR("ATA LCM failed\n");
@@ -1143,7 +1158,12 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 		}
 
 		DISPDBG("[FB Driver] enter MTKFB_POWEROFF\n");
-		ret = primary_display_suspend();
+		/* TODO: remove unnessecary IOCTL
+		 * It will call SurfaceFlinger blank before this
+		 * that do the same thing,
+		 * so it is trivial now.
+		 */
+		/*ret = primary_display_suspend();*/
 		if (ret < 0)
 			DISPERR("primary display suspend failed\n");
 		DISPDBG("[FB Driver] leave MTKFB_POWEROFF\n");
@@ -1159,7 +1179,12 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 			return r;
 		}
 		DISPDBG("[FB Driver] enter MTKFB_POWERON\n");
-		primary_display_resume();
+		/* TODO: remove unnessecary IOCTL
+		 * It will call SurfaceFlinger unblank after this
+		 * that do the same thing,
+		 * so it is trivial now.
+		 */
+		/*primary_display_resume();*/
 		DISPDBG("[FB Driver] leave MTKFB_POWERON\n");
 		is_early_suspended = FALSE;	/* no care */
 		return r;
@@ -1434,6 +1459,15 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 		if (copy_from_user(&var, argp, sizeof(var)))
 			return -EFAULT;
 
+		/* invalidate params from userspace */
+		if (var.xres > MTK_FB_XRES ||
+			var.yres > MTK_FB_YRES ||
+			var.xres_virtual > MTK_FB_XRESV ||
+			var.yres_virtual > MTK_FB_YRESV ||
+			var.xoffset > MTK_FB_XRES ||
+			var.yoffset > MTK_FB_YRESV * (MTK_FB_PAGES - 1))
+			return -EFAULT;
+
 		info->var.yoffset = var.yoffset;
 
 		/* check var.yoffset passed by user space */
@@ -1447,7 +1481,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 	}
 	case MTKFB_GET_DEFAULT_UPDATESPEED:
 	{
-		unsigned int speed;
+		unsigned int speed = 0;
 
 		MTKFB_LOG("[MTKFB] get default update speed\n");
 
@@ -1458,7 +1492,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 	}
 	case MTKFB_GET_CURR_UPDATESPEED:
 	{
-		unsigned int speed;
+		unsigned int speed = 0;
 
 		MTKFB_LOG("[MTKFB] get current update speed\n");
 
@@ -1470,7 +1504,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 	}
 	case MTKFB_CHANGE_UPDATESPEED:
 	{
-		unsigned int speed;
+		unsigned int speed = 0;
 
 		MTKFB_LOG("[MTKFB] change update speed\n");
 
@@ -1643,7 +1677,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd,
 			pr_info("COMPAT_MTKFB_GET_DISPLAY_IF_INFORMATION failed\n");
 			return -EFAULT;
 		}
-		if (displayid > MTKFB_MAX_DISPLAY_COUNT) {
+		if (displayid >= MTKFB_MAX_DISPLAY_COUNT) {
 			pr_info("[FB]: invalid display id:%d\n", displayid);
 			return -EFAULT;
 		}
@@ -2666,9 +2700,9 @@ cleanup:
 }
 
 /* Called when the device is being detached from the driver */
-static int mtkfb_remove(struct device *dev)
+static int mtkfb_remove(struct platform_device *pdev)
 {
-	struct mtkfb_device *fbdev = dev_get_drvdata(dev);
+	struct mtkfb_device *fbdev = dev_get_drvdata(&pdev->dev);
 	enum mtkfb_state saved_state = fbdev->state;
 
 	MSG_FUNC_ENTER();
@@ -2681,8 +2715,9 @@ static int mtkfb_remove(struct device *dev)
 	return 0;
 }
 
+
 /* PM suspend */
-static int mtkfb_suspend(struct device *pdev, pm_message_t mesg)
+static int mtkfb_suspend(struct platform_device *pdev, pm_message_t mesg)
 {
 	DISPFUNC();
 	NOT_REFERENCED(pdev);
@@ -2692,6 +2727,37 @@ static int mtkfb_suspend(struct device *pdev, pm_message_t mesg)
 	ovl2mem_suspend();
 	MSG_FUNC_LEAVE();
 	return 0;
+}
+
+/* PM resume */
+static int mtkfb_resume(struct platform_device *pdev)
+{
+	DISPFUNC();
+	NOT_REFERENCED(pdev);
+	MSG_FUNC_ENTER();
+	MTKFB_LOG("[FB Driver] mtkfb_resume()\n");
+	/* memory session resume */
+	ovl2mem_resume();
+	MSG_FUNC_LEAVE();
+	return 0;
+}
+
+static void mtkfb_shutdown(struct platform_device *pdev)
+{
+	MTKFB_LOG("[FB Driver] mtkfb_shutdown()\n");
+	/* mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF); */
+	if (!lcd_fps)
+		msleep(30);
+	else
+		msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
+
+	if (primary_display_is_sleepd()) {
+		MTKFB_LOG("mtkfb has been power off\n");
+		return;
+	}
+	primary_display_set_power_mode(FB_SUSPEND);
+	primary_display_suspend();
+	MTKFB_LOG("[FB Driver] leave mtkfb_shutdown\n");
 }
 
 bool mtkfb_is_suspend(void)
@@ -2729,23 +2795,6 @@ int mtkfb_ipo_init(void)
 	return 0;
 }
 
-static void mtkfb_shutdown(struct device *pdev)
-{
-	MTKFB_LOG("[FB Driver] mtkfb_shutdown()\n");
-	/* mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF); */
-	if (!lcd_fps)
-		msleep(30);
-	else
-		msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
-
-	if (primary_display_is_sleepd()) {
-		MTKFB_LOG("mtkfb has been power off\n");
-		return;
-	}
-	primary_display_suspend();
-	MTKFB_LOG("[FB Driver] leave mtkfb_shutdown\n");
-}
-
 void mtkfb_clear_lcm(void)
 {
 }
@@ -2768,20 +2817,6 @@ static void mtkfb_early_suspend(void)
 
 	DISPWARN("[FB Driver] leave early_suspend\n");
 
-}
-
-
-/* PM resume */
-static int mtkfb_resume(struct device *pdev)
-{
-	DISPFUNC();
-	NOT_REFERENCED(pdev);
-	MSG_FUNC_ENTER();
-	MTKFB_LOG("[FB Driver] mtkfb_resume()\n");
-	/* memory session resume */
-	ovl2mem_resume();
-	MSG_FUNC_LEAVE();
-	return 0;
 }
 
 static void mtkfb_late_resume(void)
@@ -2818,7 +2853,7 @@ int mtkfb_pm_suspend(struct device *device)
 		return -1;
 	}
 
-	return mtkfb_suspend((struct device *)pdev, PMSG_SUSPEND);
+	return mtkfb_suspend(pdev, PMSG_SUSPEND);
 }
 
 int mtkfb_pm_resume(struct device *device)
@@ -2832,7 +2867,7 @@ int mtkfb_pm_resume(struct device *device)
 		return -1;
 	}
 
-	return mtkfb_resume((struct device *)pdev);
+	return mtkfb_resume(pdev);
 }
 
 int mtkfb_pm_freeze(struct device *device)
@@ -2888,16 +2923,17 @@ static const struct dev_pm_ops mtkfb_pm_ops = {
 
 static struct platform_driver mtkfb_driver = {
 	.probe = mtkfb_probe,
+	.remove = mtkfb_remove,
+	.suspend = mtkfb_suspend,
+	.resume = mtkfb_resume,
+	.shutdown = mtkfb_shutdown,
+
 	.driver = {
 		   .name = MTKFB_DRIVER,
 #ifdef CONFIG_PM
 		   .pm = &mtkfb_pm_ops,
 #endif
 		   .bus = &platform_bus_type,
-		   .remove = mtkfb_remove,
-		   .suspend = mtkfb_suspend,
-		   .resume = mtkfb_resume,
-		   .shutdown = mtkfb_shutdown,
 		   .of_match_table = mtkfb_of_ids,
 		   },
 };
