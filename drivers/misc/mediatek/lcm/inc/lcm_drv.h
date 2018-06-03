@@ -853,7 +853,7 @@ typedef struct {
 	/* /////////////PWM///////////////////////////// */
 	void (*set_pwm_for_mix)(int enable);
 
-	void (*aod)(void);
+	void (*aod)(int enter);
 } LCM_DRIVER;
 
 #if	defined(CONFIG_ARCH_MT6735) ||\
