@@ -16,7 +16,9 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#ifdef CONFIG_MTK_PMIC_NEW_ARCH
 #include <mt-plat/upmu_common.h>
+#endif
 #ifdef CONFIG_MT_SND_SOC_NEW_ARCH
 #include <mt_soc_afe_control.h>
 #endif
