@@ -1569,12 +1569,12 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	usb0@11200000 {
 		compatible = "mediatek,mt6765-usb20";
 		reg = <0 0x11200000 0 0x10000>,
-		      <0 0x11F40000 0 0x10000>;
+		      <0 0x11CC0000 0 0x10000>;
 		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_LOW>;
 		mode = <2>;
 		multipoint = <1>;
 		num_eps = <16>;
-		/*clocks = <&infracfg_ao INFRACFG_AO_ICUSB_CG>;*/
+		clocks = <&infracfg_ao CLK_IFR_ICUSB>;
 		clock-names = "usb0";
 	};
 
