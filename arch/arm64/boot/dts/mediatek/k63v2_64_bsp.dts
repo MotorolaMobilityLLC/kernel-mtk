@@ -658,5 +658,10 @@
 	gpio-irq-std = <&pio 22  0x0>;
 };
 
+&mtkfb {
+	partial-update = <1>;
+	status = "okay";
+};
+
 #include <k63v2_64_bsp/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
