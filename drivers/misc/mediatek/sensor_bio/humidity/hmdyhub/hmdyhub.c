@@ -495,9 +495,7 @@ static int hmdyhub_remove(struct platform_device *pdev)
 	if (err)
 		HMDYHUB_ERR("hmdyhub_delete_attr failed, err = %d\n", err);
 
-	err = misc_deregister(&hmdyhub_misc_device);
-	if (err)
-		HMDYHUB_ERR("misc_deregister failed, err = %d\n", err);
+	misc_deregister(&hmdyhub_misc_device);
 
 	obj_ipi_data = NULL;
 	kfree(platform_get_drvdata(pdev));

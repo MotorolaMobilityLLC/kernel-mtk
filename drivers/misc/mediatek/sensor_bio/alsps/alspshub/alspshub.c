@@ -1001,9 +1001,7 @@ static int alspshub_remove(struct platform_device *pdev)
 	err = alspshub_delete_attr(&(alspshub_init_info.platform_diver_addr->driver));
 	if (err)
 		APS_ERR("alspshub_delete_attr fail: %d\n", err);
-	err = misc_deregister(&alspshub_misc_device);
-	if (err)
-		APS_ERR("misc_deregister fail: %d\n", err);
+	misc_deregister(&alspshub_misc_device);
 	kfree(platform_get_drvdata(pdev));
 	return 0;
 
