@@ -1146,7 +1146,7 @@ void spm_twam_set_mon_type(struct twam_sig *mon)
 		mon_type.sig3 = mon->sig3 & 0x3;
 	}
 }
-EXPORT_SYMBOL(spm_twam_set_mon_type)
+EXPORT_SYMBOL(spm_twam_set_mon_type);
 
 void spm_twam_register_handler(twam_handler_t handler)
 {
