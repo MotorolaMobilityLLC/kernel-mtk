@@ -21,7 +21,8 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include/mach	\
 	-I$(srctree)/drivers/misc/mediatek/pmic/	\
 	-I$(srctree)/drivers/misc/mediatek/pmic/include	\
-	-I$(srctree)/drivers/misc/mediatek/pmic/include/mt6355	\
+	-I$(srctree)/drivers/misc/mediatek/pmic/extbuck \
+	-I$(srctree)/drivers/misc/mediatek/pmic/include/mt6356	\
 	-I$(srctree)/include/linux/	\
 	-I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)	\
 	-I$(EEM_ROOT_DIR)/$(CONFIG_MTK_PLATFORM)/inc	\

@@ -93,9 +93,11 @@
 	#include "mtk_dramc.h"
 	#include <mt-plat/mtk_devinfo.h>
 	#include <regulator/consumer.h>
-	#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
 		#include "pmic_regulator.h"
 		#include "mtk_pmic_regulator.h"
+		#include "mt6311-i2c.h"
+		#include "pmic_api_buck.h"
 	#endif
 
 	#if UPDATE_TO_UPOWER
@@ -155,17 +157,11 @@
 
 	/* static unsigned int ateVer; */
 	/* for setting pmic pwm mode and auto mode */
-	struct regulator *eem_regulator_proc1;
-	struct regulator *eem_regulator_gpu;
-#if EEM_BANK_SOC
+	struct regulator *eem_regulator_vproc;
 	struct regulator *eem_regulator_vcore;
-#endif
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-	static unsigned int eem_vproc1_is_enabled_by_eem;
-	static unsigned int eem_vgpu_is_enabled_by_eem;
-	#if EEM_BANK_SOC
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
+	static unsigned int eem_vproc_is_enabled_by_eem;
 	static unsigned int eem_vcore_is_enabled_by_eem;
-	#endif
 #endif
 
 	#if 0 /* no record table */
@@ -2843,26 +2839,19 @@ void eem_init02(void)
 static int eem_buck_get(struct platform_device *pdev)
 {
 	int ret = 0;
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-	/* proc11: big, cci, ll, l */
-	eem_regulator_proc1 = regulator_get(&pdev->dev, "vproc11");
-	if (!eem_regulator_proc1) {
-		eem_error("regulotor_proc1 error\n");
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
+	/* vproc: big, cci, ll, l */
+	eem_regulator_vproc = regulator_get(&pdev->dev, "vproc");
+	if (!eem_regulator_vproc) {
+		eem_error("regulotor_proc error\n");
 		return -EINVAL;
 	}
-	eem_regulator_gpu = regulator_get(&pdev->dev, "vgpu");
-	if (!eem_regulator_gpu) {
-		eem_error("regulotor_gpu error\n");
-		return -EINVAL;
-	}
-
-#if EEM_BANK_SOC
+	/* gpu, soc */
 	eem_regulator_vcore = regulator_get(&pdev->dev, "vcore");
 	if (!eem_regulator_vcore) {
 		eem_error("regulotor_vcore error\n");
 		return -EINVAL;
 	}
-#endif
 #endif
 
 	return ret;
@@ -2876,31 +2865,21 @@ static int eem_buck_get(struct platform_device *pdev)
  */
 static void eem_buck_enable(void)
 {
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
 	int ret = 0;
 
-	ret = regulator_is_enabled(eem_regulator_proc1);
+	ret = regulator_is_enabled(eem_regulator_vproc);
 	if (ret == 0) {
-		ret = regulator_enable(eem_regulator_proc1);
+		ret = regulator_enable(eem_regulator_vproc);
 		if (ret != 0)
 			eem_error("enable vproc1 failed\n");
 		else {
-			eem_vproc1_is_enabled_by_eem = 1;
+			eem_vproc_is_enabled_by_eem = 1;
 			eem_debug("eem vproc1 enable success\n");
 		}
 	}
 
-	ret = regulator_is_enabled(eem_regulator_gpu);
-	if (ret == 0) {
-		ret = regulator_enable(eem_regulator_gpu);
-		if (ret != 0)
-			eem_error("enable vgpu failed\n");
-		else {
-			eem_vgpu_is_enabled_by_eem = 1;
-			eem_debug("eem vgpu enable success\n");
-		}
-	}
-#if EEM_BANK_SOC /* if DVT, set pwm mode for soc to run ptp soc det */
+	/* set pwm mode for soc & gpu to run ptp det */
 	ret = regulator_is_enabled(eem_regulator_vcore);
 	if (ret == 0) {
 		ret = regulator_enable(eem_regulator_vcore);
@@ -2911,32 +2890,23 @@ static void eem_buck_enable(void)
 			eem_debug("eem vcore enable success\n");
 		}
 	}
-
-#endif /* if EEM_BANK_SOC */
+	/* if EEM_BANK_SOC */
 #endif
 }
 
 static void eem_buck_disable(void)
 {
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
 	int ret = 0;
 
-	if (eem_vproc1_is_enabled_by_eem) {
-		ret = regulator_disable(eem_regulator_proc1);
+	if (eem_vproc_is_enabled_by_eem) {
+		ret = regulator_disable(eem_regulator_vproc);
 		if (ret != 0)
 			eem_error("vproc1 disable failed\n");
 		else
 			eem_debug("eem vproc1 disabled success\n");
 	}
-	if (eem_vgpu_is_enabled_by_eem) {
-		ret = regulator_disable(eem_regulator_gpu);
-		if (ret != 0)
-			eem_error("vgpu disable failed\n");
-		else
-			eem_debug("eem vgpu disabled success\n");
-	}
-
-#if EEM_BANK_SOC /* if DVT, set non pwm mode for soc*/
+	/* set non pwm mode for soc & gpu*/
 	if (eem_vcore_is_enabled_by_eem) {
 		ret = regulator_disable(eem_regulator_vcore);
 		if (ret != 0)
@@ -2944,22 +2914,24 @@ static void eem_buck_disable(void)
 		else
 			eem_debug("eem vcore disabled success\n");
 	}
-#endif /* if EEM_BANK_SOC */
+	/* if EEM_BANK_SOC */
 #endif
 }
 
 static void eem_buck_set_mode(unsigned int mode)
 {
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-	int ret = 0;
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
 
 	/* set pwm mode for each buck */
 	eem_debug("pmic set mode (%d)\n", mode);
-	ret = regulator_set_mode(eem_regulator_proc1, mode);
-	ret = regulator_set_mode(eem_regulator_gpu, mode);
-#if EEM_BANK_SOC /* if DVT, set pwm mode for soc to run ptp soc det */
+	#if 0
+	ret = regulator_set_mode(eem_regulator_vproc, mode);
+	/* set pwm mode for soc & gpu to run ptp soc det */
 	ret = regulator_set_mode(eem_regulator_vcore, mode);
-#endif
+	#endif
+	mt6311_vdvfs11_set_mode(mode);
+	vproc_pmic_set_mode(mode);
+	vcore_pmic_set_mode(mode);
 #endif
 }
 
