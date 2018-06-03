@@ -291,7 +291,7 @@ static void nuke(struct musb_ep *ep, const int status)
 		req = list_first_entry(&ep->req_list,
 					struct musb_request, list);
 		musb_g_giveback(ep, &req->request, status);
-		DBG(0, "call musb_g_giveback on function %s ep is %s\n"
+		DBG_LIMIT(5, "call musb_g_giveback on function %s ep is %s\n"
 			, __func__,
 		    ep->end_point.name);
 	}
