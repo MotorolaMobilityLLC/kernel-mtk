@@ -535,8 +535,6 @@ static void musb_host_work(struct work_struct *data)
 	else
 		host_mode = musb_is_host();
 
-	/* this make PHY operation workable */
-	musb_platform_enable(mtk_musb);
 
 	DBG(0, "musb is as %s\n", host_mode?"host":"device");
 	switch_set_state((struct switch_dev *)&otg_state, host_mode);
@@ -561,6 +559,9 @@ static void musb_host_work(struct work_struct *data)
 		ep_config_from_table_for_host(mtk_musb);
 		wake_lock(&mtk_musb->usb_lock);
 		mt_usb_set_vbus(mtk_musb, 1);
+
+		/* this make PHY operation workable */
+		musb_platform_enable(mtk_musb);
 
 	/* for no VBUS sensing IP*/
 	#if 1

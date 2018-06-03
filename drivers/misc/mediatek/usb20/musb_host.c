@@ -2885,8 +2885,15 @@ static int musb_bus_suspend(struct usb_hcd *hcd)
 	}
 
 	if (musb->is_active) {
-		WARNING("trying to suspend as %s while active\n",
-			otg_state_string(musb->xceiv->otg->state));
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
+		static int skip_cnt;
+
+		if (__ratelimit(&ratelimit)) {
+			WARNING("trying to suspend as %s while active, skip_cnt<%d>\n",
+					otg_state_string(musb->xceiv->otg->state), skip_cnt);
+			skip_cnt = 0;
+		} else
+			skip_cnt++;
 		return -EBUSY;
 	} else {
 		usb_hal_dpidle_request(USB_DPIDLE_TIMER);
@@ -2896,8 +2903,12 @@ static int musb_bus_suspend(struct usb_hcd *hcd)
 
 static int musb_bus_resume(struct usb_hcd *hcd)
 {
+	struct musb *musb = hcd_to_musb(hcd);
+
+	if (is_host_active(musb))
+		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
+
 	/* resuming child port does the work */
-	usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 	return 0;
 }
 
