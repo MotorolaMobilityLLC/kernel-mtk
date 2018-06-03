@@ -61,6 +61,7 @@
 #ifdef CMDQ_PROFILE_LOCK
 static CMDQ_TIME cost_gCmdqTaskMutex;
 static CMDQ_TIME cost_gCmdqClockMutex;
+static CMDQ_TIME cost_gCmdqErrMutex;
 static bool print_lock_cost;
 
 #define CMDQ_PROF_MUTEX_LOCK(lock, tag)	\
@@ -188,6 +189,7 @@ static bool gCmdqSuspended;
 static DEFINE_SPINLOCK(gCmdqExecLock);
 static DEFINE_SPINLOCK(gCmdqRecordLock);
 static DEFINE_MUTEX(gCmdqResourceMutex);
+static DEFINE_MUTEX(gCmdqErrMutex);
 
 /* The main context structure */
 static wait_queue_head_t *gCmdWaitQueue;		/* task done notification */
@@ -6577,6 +6579,9 @@ static void cmdq_core_attach_error_task(const struct TaskStruct *task, int32_t t
 		return;
 	}
 
+	/* prevent errors dump at same time */
+	CMDQ_PROF_MUTEX_LOCK(gCmdqErrMutex, dump_error);
+
 	CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, attach_error);
 	cmdq_core_attach_cmdq_error(task, thread, &pc, &nginfo);
 	CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, attach_error_done);
@@ -6587,6 +6592,7 @@ static void cmdq_core_attach_error_task(const struct TaskStruct *task, int32_t t
 	/* skip internal testcase */
 	if (CMDQ_TASK_IS_INTERNAL(task)) {
 		cmdq_core_release_nginfo(nginfo);
+		CMDQ_PROF_MUTEX_UNLOCK(gCmdqErrMutex, dump_error_simple);
 		return;
 	}
 
@@ -6597,6 +6603,7 @@ static void cmdq_core_attach_error_task(const struct TaskStruct *task, int32_t t
 
 	CMDQ_ERR("================= [CMDQ] End of Full Error %d ================\n",
 		error_num);
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqErrMutex, dump_error);
 
 	cmdq_core_release_nginfo(nginfo);
 }
