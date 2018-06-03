@@ -37,10 +37,19 @@
 
 #define I2C_DEBUG_FS
 
+#define I2C_MAS_ERR			(1 << 8)
+#define I2C_IBI				(1 << 7)
+#define I2C_DMAERR			(1 << 6)
 #define I2C_TIMEOUT			(1 << 5)
+#define I2C_RS_MULTI			(1 << 4)
+#define I2C_ARB_LOST			(1 << 3)
 #define I2C_HS_NACKERR			(1 << 2)
 #define I2C_ACKERR			(1 << 1)
 #define I2C_TRANSAC_COMP		(1 << 0)
+#define I2C_INTR_ALL			(I2C_MAS_ERR | I2C_IBI | I2C_DMAERR | \
+					 I2C_TIMEOUT | I2C_RS_MULTI | \
+					 I2C_ARB_LOST | I2C_HS_NACKERR | \
+					 I2C_ACKERR | I2C_TRANSAC_COMP)
 #define I2C_TRANSAC_START		(1 << 0)
 #define I2C_RESUME_ARBIT                (1 << 1)
 #define I2C_TIMING_STEP_DIV_MASK	(0x3f << 0)
