@@ -40,3 +40,5 @@ obj-y += mtk_hps_ops.o
 
 # stress module
 #obj-y += mtk_cpuhp_ut.o
+
+KASAN_SANITIZE_mtk_hps_algo.o := n
