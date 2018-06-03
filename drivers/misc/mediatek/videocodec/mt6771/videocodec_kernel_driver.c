@@ -243,7 +243,6 @@ VAL_ULONG_T KVA_VENC_IRQ_ACK_ADDR, KVA_VENC_IRQ_STATUS_ADDR, KVA_VENC_BASE;
 VAL_ULONG_T KVA_VDEC_MISC_BASE, KVA_VDEC_VLD_BASE, KVA_VDEC_BASE, KVA_VDEC_GCON_BASE;
 VAL_UINT32_T VENC_IRQ_ID, VDEC_IRQ_ID;
 
-extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int value);
 
 /* #define KS_POWER_WORKAROUND */
 
@@ -976,18 +975,12 @@ void enc_isr(void)
 
 static irqreturn_t video_intr_dlr(int irq, void *dev_id)
 {
-	if (met_mmsys_tag)
-		met_mmsys_tag("VDEC", grVcodecDecHWLock.eDriverType | 0x100);
-
 	dec_isr();
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t video_intr_dlr2(int irq, void *dev_id)
 {
-	if (met_mmsys_tag)
-		met_mmsys_tag("VENC", grVcodecEncHWLock.eDriverType | 0x100);
-
 	enc_isr();
 	return IRQ_HANDLED;
 }
