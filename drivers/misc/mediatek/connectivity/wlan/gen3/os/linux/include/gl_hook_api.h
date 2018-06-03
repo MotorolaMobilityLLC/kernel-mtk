@@ -144,7 +144,7 @@ INT_32 TxBfProfileDataWrite(struct net_device *prNetDev,
 			    UINT_16 subcarrierIdx, UINT_16 au2Phi[6], UINT_8 aucPsi[6], UINT_8 aucDSnr[4]
 );
 INT_32 TxBfProfilePnRead(struct net_device *prNetDev, UINT_8 profileIdx);
-INT_32 TxBfProfilePnWrite(struct net_device *prNetDev, UINT_8 ucProfileIdx, UINT_16 u2bw, UINT_16 au2XSTS[12]);
+INT_32 TxBfProfilePnWrite(struct net_device *prNetDev, UINT_8 ucProfileIdx, UINT_16 u2bw, PUINT_16 pau2XSTS);
 
 INT_32 TxBfSounding(struct net_device *prNetDev, UINT_8 ucSuMu,	/* 0/1/2/3 */
 		    UINT_8 ucNumSta,	/* 00~04 */
