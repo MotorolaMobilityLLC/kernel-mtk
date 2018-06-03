@@ -143,9 +143,9 @@ void __iomem *venc_gcon_base;
 #define VENC_CG_CLR		(venc_gcon_base + 0x0008)
 
 #if MT_CCF_BRINGUP
-#define INFRA_CG0 0xFFFFFFFF
-#define INFRA_CG1 0xFFFFFFFF
-#define INFRA_CG2 0xFFFFFFFF
+#define INFRA_CG0 0x032f8100/*[25:24][21][19:15][8]*/
+#define INFRA_CG1 0x00000a00/*[11][9]*/
+#define INFRA_CG2 0x00000005/*[2][0]*/
 #define INFRA_CG3 0xFFFFFFFF
 #define CAMSYS_CG	0x1FFF
 #define IMG_CG	0x3FFF
@@ -1416,8 +1416,9 @@ static void __init mtk_infracfg_ao_init(struct device_node *node)
 	infracfg_base = base;
 	/*mtk_clk_enable_critical();*/
 #if MT_CCF_BRINGUP
-	/*clk_writel(INFRA_PDN_SET0, INFRA_CG0);*/
-	/*clk_writel(INFRA_PDN_SET1, INFRA_CG1);*/
+	clk_writel(INFRA_PDN_SET0, INFRA_CG0);
+	clk_writel(INFRA_PDN_SET1, INFRA_CG1);
+	clk_writel(INFRA_PDN_SET2, INFRA_CG2);
 #else
 #endif
 }
@@ -1599,7 +1600,7 @@ static void __init mtk_camsys_init(struct device_node *node)
 	cam_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(CAMSYS_CG_CLR, CAMSYS_CG);
+	/*clk_writel(CAMSYS_CG_CLR, CAMSYS_CG);*/
 #else
 	clk_writel(CAMSYS_CG_SET, CAMSYS_CG);
 #endif
@@ -1629,7 +1630,7 @@ static void __init mtk_imgsys_init(struct device_node *node)
 	img_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(IMG_CG_CLR, IMG_CG);
+	/*clk_writel(IMG_CG_CLR, IMG_CG);*/
 #else
 	clk_writel(IMG_CG_SET, IMG_CG);
 #endif
@@ -1660,7 +1661,7 @@ static void __init mtk_mfg_cfg_init(struct device_node *node)
 	mfgcfg_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(MFG_CG_CLR, MFG_CG);
+	/*clk_writel(MFG_CG_CLR, MFG_CG);*/
 #else
 	clk_writel(MFG_CG_SET, MFG_CG);
 #endif
@@ -1690,8 +1691,8 @@ static void __init mtk_mmsys_config_init(struct device_node *node)
 			__func__, r);
 	mmsys_config_base = base;
 #if MT_CCF_BRINGUP
-	clk_writel(MM_CG_CLR0, MM_CG0);
-	clk_writel(MM_CG_CLR1, MM_CG1);
+	/*clk_writel(MM_CG_CLR0, MM_CG0);*/
+	/*clk_writel(MM_CG_CLR1, MM_CG1);*/
 #else
 	clk_writel(MM_CG_SET0, MM_CG0);
 	clk_writel(MM_CG_SET1, MM_CG1);
@@ -1723,7 +1724,7 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 	venc_gcon_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(VENC_CG_SET, VENC_CG);
+	/*clk_writel(VENC_CG_SET, VENC_CG);*/
 #else
 	clk_writel(VENC_CG_CLR, VENC_CG);
 #endif
