@@ -241,6 +241,8 @@ typedef struct {
 #define ISP_RT_CQ0C_BUF_SIZE (ISP_RT_BUF_SIZE)/* (ISP_RT_BUF_SIZE>>1) */
 /* pass1 setting sync index */
 #define ISP_REG_P1_CFG_IDX 0x4090
+/* how many clk levels */
+#define ISP_CLK_LEVEL_CNT 10
 
 typedef enum {
 	_cam_tg_ = 0,
@@ -535,6 +537,12 @@ typedef enum {
 	ISP_P2_BUFQUE_MATCH_TYPE_FRAMEOP, /* frame operaetion */
 	ISP_P2_BUFQUE_MATCH_TYPE_WAITFMEQD /* wait frame enqueued for deque */
 } ISP_P2_BUFQUE_MATCH_TYPE;
+
+typedef struct {
+	unsigned char clklevelcnt; /* how many clk levels */
+	unsigned int clklevel[ISP_CLK_LEVEL_CNT]; /* Reocrd each clk level */
+} ISP_CLK_INFO;
+
 /********************************************************************************************
  * pass1 real time buffer control use cq0c
  ********************************************************************************************/
@@ -597,6 +605,9 @@ typedef enum {
 	ISP_CMD_GET_MARK2QUERY_TIME, /* query time information between read and mark */
 	ISP_CMD_FLUSH_IRQ_REQUEST, /* flush signal */
 	ISP_CMD_GET_START_TIME,
+	ISP_CMD_DFS_UPDATE, /* Update clock at run time */
+	ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, /* Get supported isp clocks on current platform */
+	ISP_CMD_GET_CUR_ISP_CLOCK, /* Get cur isp clock level */
 	ISP_CMD_VF_LOG, /* dbg only, prt log on kernel when vf_en is driven */
 	ISP_CMD_GET_VSYNC_CNT,
 	ISP_CMD_RESET_VSYNC_CNT,
@@ -655,6 +666,9 @@ typedef enum {
 #define ISP_GET_INT_ERR     _IOR(ISP_MAGIC, ISP_CMD_GET_INT_ERR,        unsigned char*)
 #define ISP_GET_DROP_FRAME  _IOWR(ISP_MAGIC, ISP_CMD_GET_DROP_FRAME,    unsigned long)
 #define ISP_GET_START_TIME  _IOWR(ISP_MAGIC, ISP_CMD_GET_START_TIME,    unsigned char*)
+#define ISP_DFS_UPDATE              _IOWR(ISP_MAGIC, ISP_CMD_DFS_UPDATE, unsigned int)
+#define ISP_GET_SUPPORTED_ISP_CLOCKS   _IOWR(ISP_MAGIC, ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, ISP_CLK_INFO)
+#define ISP_GET_CUR_ISP_CLOCK   _IOWR(ISP_MAGIC, ISP_CMD_GET_CUR_ISP_CLOCK, unsigned int)
 
 #define ISP_REGISTER_IRQ_USER_KEY   _IOR(ISP_MAGIC, ISP_CMD_REGISTER_IRQ_USER_KEY, ISP_REGISTER_USERKEY_STRUCT)
 
@@ -671,9 +685,9 @@ typedef enum {
 #define ISP_ION_FREE_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_ION_FREE_BY_HWMODULE, unsigned int)
 #define ISP_CQ_SW_PATCH             _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH, unsigned int)
 #define ISP_LARB_MMU_CTL            _IOW(ISP_MAGIC, ISP_CMD_LARB_MMU_CTL, ISP_LARB_MMU_STRUCT)
-#define ISP_DUMP_BUFFER      _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, ISP_DUMP_BUFFER_STRUCT)
-#define ISP_GET_DUMP_INFO    _IOWR(ISP_MAGIC, ISP_CMD_GET_DUMP_INFO, ISP_GET_DUMP_INFO_STRUCT)
-#define ISP_SET_MEM_INFO      _IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO, ISP_MEM_INFO_STRUCT)
+#define ISP_DUMP_BUFFER             _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, ISP_DUMP_BUFFER_STRUCT)
+#define ISP_GET_DUMP_INFO           _IOWR(ISP_MAGIC, ISP_CMD_GET_DUMP_INFO, ISP_GET_DUMP_INFO_STRUCT)
+#define ISP_SET_MEM_INFO            _IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO, ISP_MEM_INFO_STRUCT)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      compat_ISP_REG_IO_STRUCT)
@@ -693,9 +707,9 @@ typedef enum {
 #define COMPAT_ISP_RESET_BY_HWMODULE _IOW(ISP_MAGIC, ISP_CMD_RESET_BY_HWMODULE, compat_uptr_t)
 #define COMPAT_ISP_VF_LOG           _IOW(ISP_MAGIC, ISP_CMD_VF_LOG,         compat_uptr_t)
 #define COMPAT_ISP_CQ_SW_PATCH      _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH,         compat_uptr_t)
-
 #define COMPAT_ISP_DUMP_BUFFER      _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, compat_ISP_DUMP_BUFFER_STRUCT)
 #define COMPAT_ISP_SET_MEM_INFO     _IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO, compat_ISP_MEM_INFO_STRUCT)
+
 #endif
 
 int32_t ISP_MDPClockOnCallback(uint64_t engineFlag);

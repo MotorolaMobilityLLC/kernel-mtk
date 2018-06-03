@@ -107,6 +107,9 @@
 #include <mt-plat/met_drv.h>
 #endif
 
+#include "mmdvfs_mgr.h"
+/* Use this qos request to control camera dynamic frequency change */
+struct mmdvfs_pm_qos_request isp_qos;
 
 #define CAMSV_DBG
 #ifdef CAMSV_DBG
@@ -5785,6 +5788,7 @@ static void ISP_ion_free_handle_by_module(MUINT32 module)
 
 	for (i = 0; i < _dma_max_wr_; i++) {
 		MUINT32 jump = i*_ion_keep_max_;
+
 		for (j = 0; j < _ion_keep_max_ ; j++) {
 			spin_lock(&(ptbl->pLock[i]));
 			/* */
@@ -5842,6 +5846,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	struct ion_handle *handle;
 	struct ion_handle *p_IonHnd;
 	#endif
+	ISP_CLK_INFO ispclks;
+	MUINT32 lv = 0;
 
 	/*  */
 	if (pFile->private_data == NULL) {
@@ -6283,6 +6289,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	case ISP_VF_LOG:
 		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32) * 3) == 0) {
 			MUINT32 vf;
+
 			switch (DebugFlag[0]) {
 			case 1: {
 				MUINT32 module = ISP_IRQ_TYPE_INT_CAM_A_ST;
@@ -6296,11 +6303,11 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					cam_dmao = ISP_RD32(CAM_REG_CTL_DMA_EN(ISP_CAM_A_IDX));
 					LOG_INF("CAM_A:[DMA_EN]:0x%x\n", cam_dmao);
 					vf = ISP_RD32(CAM_REG_TG_VF_CON(ISP_CAM_A_IDX));
-					if (vf & 0x1) {
+					if (vf & 0x1)
 						LOG_ERR("module_%d: vf already enabled\n", ISP_CAM_A_IDX);
-					} else {
+					else
 						ISP_WR32(CAM_REG_TG_VF_CON(ISP_CAM_A_IDX), (vf+0x1));
-					}
+
 					if (hds2_sel == 0) {
 						pstRTBuf[ISP_IRQ_TYPE_INT_CAM_A_ST]->ring_buf[_eiso_].active =
 							((uni_dmao & 0x4) ? (MTRUE) : (MFALSE));
@@ -6324,11 +6331,11 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					cam_dmao = ISP_RD32(CAM_REG_CTL_DMA_EN(ISP_CAM_B_IDX));
 					LOG_INF("CAM_B:[DMA_EN]:0x%x\n", cam_dmao);
 					vf = ISP_RD32(CAM_REG_TG_VF_CON(ISP_CAM_B_IDX));
-					if (vf & 0x1) {
+					if (vf & 0x1)
 						LOG_ERR("module_%d: vf already enabled\n", ISP_CAM_B_IDX);
-					} else {
+					else
 						ISP_WR32(CAM_REG_TG_VF_CON(ISP_CAM_B_IDX), (vf+0x1));
-					}
+
 					if (hds2_sel == 1) {
 						pstRTBuf[ISP_IRQ_TYPE_INT_CAM_A_ST]->ring_buf[_eiso_].active = MFALSE;
 						pstRTBuf[ISP_IRQ_TYPE_INT_CAM_A_ST]->ring_buf[_rsso_].active = MFALSE;
@@ -6388,6 +6395,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			case 11: {
 				MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_0_ST;
 				MUINT32 cam_dmao = 0;
+
 				switch (DebugFlag[1]) {
 				case ISP_CAMSV0_IDX:
 					LOG_INF("CAMSV_0 viewFinder is ON\n");
@@ -6589,6 +6597,50 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
+	case ISP_DFS_UPDATE:
+		{
+			MUINT32 dfs_update;
+
+			if (copy_from_user(&dfs_update, (void *)Param, sizeof(MUINT32)) == 0) {
+				mmdvfs_pm_qos_update_request(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, dfs_update);
+				LOG_VRB("Set clock level:%d", dfs_update);
+			} else {
+				LOG_ERR("ISP_DFS_UPDATE copy_from_user failed\n");
+				Ret = -EFAULT;
+			}
+		}
+		break;
+	case ISP_GET_SUPPORTED_ISP_CLOCKS:
+		/* To get how many clk levels this platform is supported */
+		ispclks.clklevelcnt = mmdvfs_qos_get_thres_count(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA);
+
+		if (ispclks.clklevelcnt > ISP_CLK_LEVEL_CNT)
+			LOG_ERR("clklevelcnt is exceeded");
+
+		for (; lv < ispclks.clklevelcnt; lv++) {
+			/* To get all clk level on this platform */
+			ispclks.clklevel[lv] = mmdvfs_qos_get_thres_value(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, lv);
+			LOG_VRB("DFS Clk level:%d", ispclks.clklevel[lv]);
+		}
+
+		if (copy_to_user((void *)Param, &ispclks, sizeof(ISP_CLK_INFO)) != 0) {
+			LOG_ERR("copy_to_user failed");
+			Ret = -EFAULT;
+		}
+		break;
+	case ISP_GET_CUR_ISP_CLOCK:
+		{
+			MUINT32 curclk;
+
+			curclk = mmdvfs_qos_get_cur_thres(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA);
+			LOG_VRB("Get current clock level:%d", curclk);
+
+			if (copy_to_user((void *)Param, &curclk, sizeof(MUINT32)) != 0) {
+				LOG_ERR("copy_to_user failed");
+				Ret = -EFAULT;
+			}
+		}
+		break;
 	case ISP_GET_VSYNC_CNT:
 		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
 			LOG_ERR("get cur sof from user fail");
@@ -6620,6 +6672,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		if (copy_from_user(&IonNode, (void *)Param, sizeof(ISP_DEV_ION_NODE_STRUCT)) == 0) {
 			T_ION_TBL *ptbl = NULL;
 			MUINT32 jump;
+
 			if (!pIon_client) {
 				LOG_ERR("ion_import: invalid ion client!\n");
 				Ret = -EFAULT;
@@ -6709,6 +6762,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		if (copy_from_user(&IonNode, (void *)Param, sizeof(ISP_DEV_ION_NODE_STRUCT)) == 0) {
 			T_ION_TBL *ptbl = NULL;
 			MUINT32 jump;
+
 			if (!pIon_client) {
 				LOG_ERR("ion_free: invalid ion client!\n");
 				Ret = -EFAULT;
@@ -7362,6 +7416,9 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_ION_FREE_BY_HWMODULE:
 	case ISP_CQ_SW_PATCH:
 	case ISP_LARB_MMU_CTL:
+	case ISP_DFS_UPDATE:
+	case ISP_GET_SUPPORTED_ISP_CLOCKS:
+	case ISP_GET_CUR_ISP_CLOCK:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
@@ -7569,6 +7626,8 @@ EXIT:
 	} else {
 		/* Enable clock */
 		ISP_EnableClock(MTRUE);
+		mmdvfs_pm_qos_add_request(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, 0);
+
 		LOG_DBG("isp open G_u4EnableClockCount: %d\n", G_u4EnableClockCount);
 	}
 
@@ -7870,6 +7929,8 @@ EXIT:
 	*  2. CCF: call clk_enable/disable every time
 	*/
 	ISP_EnableClock(MFALSE);
+	mmdvfs_pm_qos_remove_request(&isp_qos);
+
 	LOG_DBG("isp release G_u4EnableClockCount: %d", G_u4EnableClockCount);
 
 	LOG_INF("- X. UserCount: %d.", IspInfo.UserCount);
