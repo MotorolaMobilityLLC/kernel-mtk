@@ -297,6 +297,13 @@ void (*ged_kpi_output_gfx_info_fp)(long long t_gpu, unsigned int cur_freq, unsig
 EXPORT_SYMBOL(ged_kpi_output_gfx_info_fp);
 
 /* ----------------------------------------------------------------------------- */
+static void ged_kpi_output_gfx_info(long long t_gpu, unsigned int cur_freq, unsigned int cur_max_freq)
+{
+	if (ged_kpi_output_gfx_info_fp)
+		ged_kpi_output_gfx_info_fp(t_gpu, cur_freq, cur_max_freq);
+}
+
+/* ----------------------------------------------------------------------------- */
 #ifdef GED_ENABLE_FB_DVFS
 int (*ged_kpi_gpu_dvfs_fp)(int t_gpu, int t_gpu_target);
 
@@ -1399,6 +1406,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				} else {
 					ged_kpi_set_gpu_dvfs_hint(((int)vsync_period / 1000), 100);
 				}
+				ged_kpi_output_gfx_info(psHead->t_gpu_latest, mt_gpufreq_get_cur_freq(),
+					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()));
 			} else {
 				GED_PR_ERR("[GED_KPI][Exception] TYPE_2: psKPI NULL, frameID: %lu\n",
 										psTimeStamp->i32FrameID);
