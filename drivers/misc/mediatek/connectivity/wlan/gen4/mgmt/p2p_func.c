@@ -1669,7 +1669,7 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 		DBGLOG(P2P, INFO, "p2pFuncDisconnect(): BssMode: %d, reason: %d, SendDeauth %s\n",
 		       prP2pBssInfo->eCurrentOPMode, u2ReasonCode,
 		       fgSendDeauth == TRUE ? "TRUE" : "FALSE");
-
+		prAdapter->prP2pInfo->fgWaitEapFailure = FALSE;
 		if (fgSendDeauth) {
 			/* Send deauth. */
 			authSendDeauthFrame(prAdapter,
