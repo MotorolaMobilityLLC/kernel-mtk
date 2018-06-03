@@ -21,6 +21,7 @@
 #include "dciTui.h"
 #include "tlcTui.h"
 #include "tui-hal.h"
+#include "tui-hal_mt6755.h"
 #include <linux/delay.h>
 
 #include <mach/mt_clkmgr.h>
@@ -37,25 +38,8 @@ struct tui_mempool {
 	size_t size;
 };
 
-/* for TUI EINT mepping to Security World */
-extern void gt1x_power_reset(void);
-extern int mt_eint_set_deint(int eint_num, int irq_num);
-extern int mt_eint_clr_deint(int eint_num);
-extern int tpd_reregister_from_tui(void);
-extern int tpd_enter_tui(void);
-extern int tpd_exit_tui(void);
-extern int i2c_tui_enable_clock(void);
-extern int i2c_tui_disable_clock(void);
-extern int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
-	uint8_t *owner, uint32_t id);
-extern int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
-extern int tui_region_offline(phys_addr_t *pa, unsigned long *size);
-extern int tui_region_online(void);
 static struct tui_mempool g_tui_mem_pool;
 static int g_tui_secmem_handle;
-extern int display_enter_tui(void);
-extern int display_exit_tui(void);
-
 
 /* basic implementation of a memory pool for TUI framebuffer.  This
  * implementation is using kmalloc, for the purpose of demonstration only.
@@ -76,8 +60,9 @@ static bool allocate_tui_memory_pool(struct tui_mempool *pool, size_t size)
 	tui_mem_pool = kmalloc(size, GFP_KERNEL);
 	if (!tui_mem_pool) {
 		pr_debug("ERROR Could not allocate TUI memory pool");
+		return false;
 	} else if (ksize(tui_mem_pool) < size) {
-		pr_debug("ERROR TUI memory pool allocated size is too small."\
+		pr_debug("ERROR TUI memory pool allocated size is too small."
 			 " required=%zd allocated=%zd",
 			 size, ksize(tui_mem_pool));
 		kfree(tui_mem_pool);
@@ -219,8 +204,10 @@ uint32_t hal_tui_alloc(
 			 allocbuffer[1].pa);
 		ret = TUI_DCI_OK;
 	} else {
-		/* requested buffer is bigger than the memory pool, return an
-		   error */
+		/**
+		* requested buffer is bigger than the memory pool,
+		* return an error
+		*/
 		pr_debug("%s(%d): Memory pool too small\n", __func__, __LINE__);
 		ret = TUI_DCI_ERR_INTERNAL_ERROR;
 	}
@@ -240,7 +227,7 @@ void hal_tui_free(void)
 {
 	pr_info("[TUI-HAL] hal_tui_free()\n");
 	if (g_tui_secmem_handle) {
-		//secmem_api_unref(g_tui_secmem_handle, __func__, __LINE__);
+		/* secmem_api_unref(g_tui_secmem_handle, __func__, __LINE__); */
 		tui_region_online();
 		g_tui_secmem_handle = 0;
 	}
@@ -259,7 +246,8 @@ void hal_tui_free(void)
 uint32_t hal_tui_deactivate(void)
 {
 	int ret = TUI_DCI_OK, tmp;
-    pr_info("[TUI-HAL] hal_tui_deactivate()\n");
+
+	pr_info("[TUI-HAL] hal_tui_deactivate()\n");
 	/* Set linux TUI flag */
 	trustedui_set_mask(TRUSTEDUI_MODE_TUI_SESSION);
 	pr_info("TDDP/[TUI-HAL] %s()\n", __func__);
@@ -273,18 +261,18 @@ uint32_t hal_tui_deactivate(void)
 
 	tpd_enter_tui();
 #if 0
-    enable_clock(MT_CG_PERI_I2C0, "i2c");
-    enable_clock(MT_CG_PERI_I2C1, "i2c");
-    enable_clock(MT_CG_PERI_I2C2, "i2c");
-    enable_clock(MT_CG_PERI_I2C3, "i2c");
+	enable_clock(MT_CG_PERI_I2C0, "i2c");
+	enable_clock(MT_CG_PERI_I2C1, "i2c");
+	enable_clock(MT_CG_PERI_I2C2, "i2c");
+	enable_clock(MT_CG_PERI_I2C3, "i2c");
 	enable_clock(MT_CG_PERI_APDMA, "i2c");
 #endif
 	i2c_tui_enable_clock();
 
-	//gt1x_power_reset();
+	/* gt1x_power_reset(); */
 
 	tmp = display_enter_tui();
-	if(tmp) {
+	if (tmp) {
 		pr_debug("TDDP/[TUI-HAL] %s() failed because display\n", __func__);
 		ret = TUI_DCI_ERR_OUT_OF_DISPLAY;
 	}
@@ -310,7 +298,7 @@ uint32_t hal_tui_deactivate(void)
  */
 uint32_t hal_tui_activate(void)
 {
-    pr_info("[TUI-HAL] hal_tui_activate()\n");
+	pr_info("[TUI-HAL] hal_tui_activate()\n");
 	/* Protect NWd */
 	trustedui_clear_mask(TRUSTEDUI_MODE_VIDEO_SECURED|
 			     TRUSTEDUI_MODE_INPUT_SECURED);
@@ -327,10 +315,10 @@ uint32_t hal_tui_activate(void)
 
 	tpd_exit_tui();
 #if 0
-    disable_clock(MT_CG_PERI_I2C0, "i2c");
-    disable_clock(MT_CG_PERI_I2C1, "i2c");
-    disable_clock(MT_CG_PERI_I2C2, "i2c");
-    disable_clock(MT_CG_PERI_I2C3, "i2c");
+	disable_clock(MT_CG_PERI_I2C0, "i2c");
+	disable_clock(MT_CG_PERI_I2C1, "i2c");
+	disable_clock(MT_CG_PERI_I2C2, "i2c");
+	disable_clock(MT_CG_PERI_I2C3, "i2c");
 	disable_clock(MT_CG_PERI_APDMA, "i2c");
 #endif
 	i2c_tui_disable_clock();
