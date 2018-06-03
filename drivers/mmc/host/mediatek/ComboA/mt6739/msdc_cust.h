@@ -17,7 +17,7 @@
 #include <dt-bindings/mmc/mt6739-msdc.h>
 #include <dt-bindings/clock/mt6739-clk.h>
 
-#include <spm_v4/mtk_spm_resource_req.h>
+#include <mtk_spm_resource_req.h>
 
 /**************************************************************/
 /* Section 1: Device Tree                                     */
