@@ -815,10 +815,6 @@ static int acc_probe(void)
 		ACC_ERR("acc real driver init fail\n");
 		goto real_driver_init_fail;
 	}
-	/* init acc common factory mode misc device */
-	err = acc_factory_device_init();
-	if (err)
-		ACC_ERR("acc factory device already registed\n");
 
 	ACC_LOG("----accel_probe OK !!\n");
 	return 0;

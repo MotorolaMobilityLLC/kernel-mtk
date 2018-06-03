@@ -39,6 +39,7 @@
 #include <linux/poll.h>
 #include "sensor_event.h"
 
+#include "accel_factory.h"
 
 #define ACC_TAG						"<ACCELEROMETER> "
 #define ACC_ERR(fmt, args...)		pr_err(ACC_TAG"%s %d : "fmt, __func__, __LINE__, ##args)

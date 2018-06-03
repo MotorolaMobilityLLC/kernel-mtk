@@ -65,17 +65,6 @@ static int barohub_set_powermode(bool enable)
 }
 
 /*
-*get compensated temperature
-*unit:10 degrees centigrade
-*/
-static int barohub_get_temperature(char *buf, int bufsize)
-{
-	int err = 0;
-
-	return err;
-}
-
-/*
 *get compensated pressure
 *unit: hectopascal(hPa)
 */
@@ -217,142 +206,79 @@ static int baro_recv_data(struct data_unit_t *event, void *reserved)
 			(int64_t)(event->time_stamp + event->time_stamp_gpt));
 	return err;
 }
-static int barohub_open(struct inode *inode, struct file *file)
+static int barohub_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
 {
-	file->private_data = obj_ipi_data;
+	int err = 0;
 
-	if (file->private_data == NULL) {
-		BAR_ERR("null pointer\n");
-		return -EINVAL;
+	if (enabledisable == true) {
+		err = sensor_set_delay_to_hub(ID_PRESSURE, sample_periods_ms);
+		if (err) {
+			BAR_ERR("sensor_set_delay_to_hub failed!\n");
+			return -1;
+		}
 	}
-	return nonseekable_open(inode, file);
+	err = sensor_enable_to_hub(ID_PRESSURE, enabledisable);
+	if (err) {
+		BAR_ERR("sensor_enable_to_hub failed!\n");
+		return -1;
+	}
+	return 0;
 }
-
-static int barohub_release(struct inode *inode, struct file *file)
+static int barohub_factory_get_data(int32_t *data)
 {
-	file->private_data = NULL;
+	int err = 0;
+	char strbuf[BAROHUB_BUFSIZE];
+
+	err = barohub_get_pressure(strbuf, BAROHUB_BUFSIZE);
+	if (err < 0) {
+		BAR_ERR("barohub_get_pressure fail\n");
+		return -1;
+	}
+	err = kstrtoint(strbuf, 16, data);
+	return 0;
+}
+static int barohub_factory_get_raw_data(int32_t *data)
+{
+	return 0;
+}
+static int barohub_factory_enable_calibration(void)
+{
+	return sensor_calibration_to_hub(ID_PRESSURE);
+}
+static int barohub_factory_clear_cali(void)
+{
+	return 0;
+}
+static int barohub_factory_set_cali(int32_t offset)
+{
+	return 0;
+}
+static int barohub_factory_get_cali(int32_t *offset)
+{
+	return 0;
+}
+static int barohub_factory_do_self_test(void)
+{
 	return 0;
 }
 
-static long barohub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	char strbuf[BAROHUB_BUFSIZE];
-	u32 dat = 0;
-	void __user *data;
-	int err = 0;
-
-	if (_IOC_DIR(cmd) & _IOC_READ)
-		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
-	else if (_IOC_DIR(cmd) & _IOC_WRITE)
-		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
-
-	if (err) {
-		BAR_ERR("access error: %08X, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
-		return -EFAULT;
-	}
-
-	switch (cmd) {
-	case BAROMETER_IOCTL_INIT:
-#if defined CONFIG_MTK_SCP_SENSORHUB_V1
-		err = barohub_set_powermode(true);
-		if (err < 0) {
-			err = -EFAULT;
-			break;
-		}
-		err = sensor_set_delay_to_hub(ID_PRESSURE, 200);
-		if (err) {
-			BAR_ERR("sensor_set_delay_to_hub failed!\n");
-			break;
-		}
-#elif defined CONFIG_NANOHUB
-		err = sensor_set_delay_to_hub(ID_PRESSURE, 200);
-		if (err) {
-			BAR_ERR("sensor_set_delay_to_hub failed!\n");
-			break;
-		}
-		err = barohub_set_powermode(true);
-		if (err < 0) {
-			err = -EFAULT;
-			break;
-		}
-#else
-
-#endif
-		break;
-
-	case BAROMETER_IOCTL_READ_CHIPINFO:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-		strcpy(strbuf, "baro_hub");
-		if (copy_to_user(data, strbuf, strlen(strbuf) + 1)) {
-			err = -EFAULT;
-			break;
-		}
-		break;
-
-	case BAROMETER_GET_PRESS_DATA:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-
-		err = barohub_get_pressure(strbuf, BAROHUB_BUFSIZE);
-		if (err < 0) {
-			BAR_ERR("barohub_get_pressure fail\n");
-			break;
-		}
-		err = kstrtoint(strbuf, 16, &dat);
-		if (err == 0) {
-			if (copy_to_user(data, &dat, sizeof(dat))) {
-				err = -EFAULT;
-				break;
-			}
-		}
-		break;
-
-	case BAROMETER_GET_TEMP_DATA:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-		err = barohub_get_temperature(strbuf, BAROHUB_BUFSIZE);
-		if (err < 0) {
-			BAR_ERR("barohub_get_temperature fail\n");
-			break;
-		}
-		dat = 0;
-		if (copy_to_user(data, &dat, sizeof(dat))) {
-			err = -EFAULT;
-			break;
-		}
-		break;
-
-	default:
-		BAR_ERR("unknown IOCTL: 0x%08x\n", cmd);
-		err = -ENOIOCTLCMD;
-		break;
-	}
-
-	return err;
-}
-
-static const struct file_operations barohub_fops = {
-	.owner = THIS_MODULE,
-	.open = barohub_open,
-	.release = barohub_release,
-	.unlocked_ioctl = barohub_unlocked_ioctl,
+static struct baro_factory_fops barohub_factory_fops = {
+	.enable_sensor = barohub_factory_enable_sensor,
+	.get_data = barohub_factory_get_data,
+	.get_raw_data = barohub_factory_get_raw_data,
+	.enable_calibration = barohub_factory_enable_calibration,
+	.clear_cali = barohub_factory_clear_cali,
+	.set_cali = barohub_factory_set_cali,
+	.get_cali = barohub_factory_get_cali,
+	.do_self_test = barohub_factory_do_self_test,
 };
 
-static struct miscdevice barohub_misc_device = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name = "barometer",
-	.fops = &barohub_fops,
+static struct baro_factory_public barohub_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &barohub_factory_fops,
 };
+
 static int barohub_open_report_data(int open)
 {
 	return 0;
@@ -473,10 +399,10 @@ static int barohub_probe(struct platform_device *pdev)
 		BAR_ERR("scp_sensorHub_data_registration failed\n");
 		goto exit_kfree;
 	}
-	err = misc_register(&barohub_misc_device);
+	err = baro_factory_device_register(&barohub_factory_device);
 	if (err) {
-		BAR_ERR("misc device register failed, err = %d\n", err);
-		goto exit_misc_device_register_failed;
+		BAR_ERR("baro_factory_device_register failed, err = %d\n", err);
+		goto exit_kfree;
 	}
 
 	ctl.is_use_common_factory = false;
@@ -520,10 +446,9 @@ static int barohub_probe(struct platform_device *pdev)
 
 exit_create_attr_failed:
 	barohub_delete_attr(&(barohub_init_info.platform_diver_addr->driver));
-exit_misc_device_register_failed:
-	misc_deregister(&barohub_misc_device);
 exit_kfree:
 	kfree(obj);
+	obj_ipi_data = NULL;
 exit:
 	BAR_ERR("err = %d\n", err);
 	barohub_init_flag = -1;
@@ -538,7 +463,7 @@ static int barohub_remove(struct platform_device *pdev)
 	if (err)
 		BAR_ERR("barohub_delete_attr failed, err = %d\n", err);
 
-	misc_deregister(&barohub_misc_device);
+	baro_factory_device_deregister(&barohub_factory_device);
 
 	obj_ipi_data = NULL;
 	kfree(platform_get_drvdata(pdev));

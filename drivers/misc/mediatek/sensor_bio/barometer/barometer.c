@@ -713,11 +713,6 @@ static int baro_probe(void)
 		goto real_driver_init_fail;
 	}
 
-	/* init baro common factory mode misc device */
-	err = baro_factory_device_init();
-	if (err)
-		BARO_ERR("baro factory device already registed\n");
-
 	BARO_LOG("----baro_probe OK !!\n");
 	return 0;
 
