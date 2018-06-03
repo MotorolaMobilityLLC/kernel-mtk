@@ -309,7 +309,7 @@ static ssize_t situation_show_devnum(struct device *dev, struct device_attribute
 
 static int situation_real_driver_init(void)
 {
-	int err = 0, i = 0;
+	int err = -1, i = 0;
 
 	SITUATION_LOG(" situation_real_driver_init +\n");
 

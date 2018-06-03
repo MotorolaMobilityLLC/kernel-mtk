@@ -373,7 +373,8 @@ static struct platform_driver biometric_driver = {
 
 static int biometric_real_driver_init(void)
 {
-	int err = 0, i = 0;
+	int i = 0;
+	int err = -1;
 
 	BIOMETRIC_LOG(" biometric_real_driver_init +\n");
 
