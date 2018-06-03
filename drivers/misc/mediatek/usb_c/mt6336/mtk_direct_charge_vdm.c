@@ -157,7 +157,7 @@ end:
 
 int mtk_get_ta_id(void *ptr)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int id = 0;
 	int ret = 0;
 
@@ -175,7 +175,7 @@ int mtk_get_ta_id(void *ptr)
 
 int mtk_clr_ta_pingcheck_fault(void *ptr)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 	uint32_t data = 0;
@@ -207,7 +207,7 @@ int mtk_clr_ta_pingcheck_fault(void *ptr)
 
 int mtk_get_ta_charger_status(void *ptr, struct pd_ta_stat *ta)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 
@@ -238,7 +238,7 @@ int mtk_get_ta_charger_status(void *ptr, struct pd_ta_stat *ta)
 
 int mtk_get_ta_current_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 
@@ -258,7 +258,7 @@ int mtk_get_ta_current_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 
 int mtk_monitor_ta_inform(void *ptr, struct mtk_vdm_ta_cap *cap)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 
@@ -280,7 +280,7 @@ int mtk_monitor_ta_inform(void *ptr, struct mtk_vdm_ta_cap *cap)
 
 int mtk_enable_direct_charge(void *ptr, bool en)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	struct pd_ta_stat stat;
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
@@ -322,7 +322,7 @@ end:
 
 int mtk_enable_ta_dplus_dect(void *ptr, bool en, int time)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	struct pd_ta_stat stat;
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
@@ -366,7 +366,7 @@ end:
 
 int mtk_get_ta_setting_dac(void *ptr, struct mtk_vdm_ta_cap *cap)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 
@@ -386,7 +386,7 @@ int mtk_get_ta_setting_dac(void *ptr, struct mtk_vdm_ta_cap *cap)
 
 int mtk_get_ta_temperature(void *ptr, int *temp)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 
@@ -405,7 +405,7 @@ int mtk_get_ta_temperature(void *ptr, int *temp)
 
 int mtk_set_ta_boundary_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 	uint32_t data = 0;
@@ -429,7 +429,7 @@ int mtk_set_ta_boundary_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 
 int mtk_get_ta_boundary_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 
@@ -449,7 +449,7 @@ int mtk_get_ta_boundary_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 
 int mtk_set_ta_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 	uint32_t data = 0;
@@ -473,7 +473,7 @@ int mtk_set_ta_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 
 int mtk_get_ta_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 
@@ -493,7 +493,7 @@ int mtk_get_ta_cap(void *ptr, struct mtk_vdm_ta_cap *cap)
 
 int mtk_set_ta_uvlo(void *ptr, int mv)
 {
-	struct pd_direct_chrg *dc = ptr;
+	struct pd_direct_chrg *dc = ((!ptr) ? get_dc() : ptr);
 	int ret = 0;
 	int status = MTK_VDM_FAIL;
 	uint32_t data = 0;
@@ -657,7 +657,7 @@ static ssize_t de_write(struct file *file,
 
 	switch (yo) {
 	case 1:
-		mtk_get_ta_id(dc);
+		mtk_get_ta_id(NULL);
 		break;
 	case 2:
 		mtk_get_ta_charger_status(dc, &stat);
