@@ -476,19 +476,24 @@ int charger_manager_get_current_charging_type(struct charger_consumer *consumer)
 int charger_manager_get_zcv(struct charger_consumer *consumer, int idx, u32 *uV)
 {
 	struct charger_manager *info = consumer->cm;
+	int ret = 0;
+	struct charger_device *pchg;
+
 
 	if (info != NULL) {
-		struct charger_device *pchg;
-
-		if (idx == MAIN_CHARGER)
+		if (idx == MAIN_CHARGER) {
 			pchg = info->chg1_dev;
-		else if (idx == SLAVE_CHARGER)
-			pchg = info->chg1_dev;
-		else
-			return -ENOTSUPP;
+			ret = charger_dev_get_zcv(pchg, uV);
+		} else if (idx == SLAVE_CHARGER) {
+			pchg = info->chg2_dev;
+			ret = charger_dev_get_zcv(pchg, uV);
+		} else
+			ret = -1;
 
-		return charger_dev_get_zcv(pchg, uV);
+	} else {
+		pr_err("charger_manager_get_zcv info is null\n");
 	}
+	pr_err("charger_manager_get_zcv zcv:%d ret:%d\n", *uV, ret);
 
 	return 0;
 }

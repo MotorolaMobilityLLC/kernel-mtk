@@ -150,7 +150,8 @@ static void rt5081_pmu_irq_mask(struct irq_data *data)
 {
 	struct rt5081_pmu_chip *chip = data->chip_data;
 
-	dev_dbg(chip->dev, "%s: hwirq = %d\n", __func__, (int)data->hwirq);
+	dev_dbg(chip->dev, "%s: hwirq = %d, %s\n", __func__, (int)data->hwirq,
+		rt5081_pmu_get_hwirq_name(chip, (int)data->hwirq));
 	rt5081_pmu_curr_irqmask[data->hwirq / 8] |= (1 << (data->hwirq % 8));
 }
 
@@ -158,7 +159,8 @@ static void rt5081_pmu_irq_unmask(struct irq_data *data)
 {
 	struct rt5081_pmu_chip *chip = data->chip_data;
 
-	dev_dbg(chip->dev, "%s: hwirq = %d\n", __func__, (int)data->hwirq);
+	dev_dbg(chip->dev, "%s: hwirq = %d, %s\n", __func__, (int)data->hwirq,
+		rt5081_pmu_get_hwirq_name(chip, (int)data->hwirq));
 	rt5081_pmu_curr_irqmask[data->hwirq / 8] &= ~(1 << (data->hwirq % 8));
 }
 
@@ -345,6 +347,18 @@ int rt5081_pmu_get_virq_number(struct rt5081_pmu_chip *chip, const char *name)
 	return -EINVAL;
 }
 EXPORT_SYMBOL(rt5081_pmu_get_virq_number);
+
+const char *rt5081_pmu_get_hwirq_name(struct rt5081_pmu_chip *chip, int hwirq)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(rt5081_pmu_irq_mapping_tbl); i++) {
+		if (rt5081_pmu_irq_mapping_tbl[i].id == hwirq)
+			return rt5081_pmu_irq_mapping_tbl[i].name;
+	}
+	return "not found";
+}
+EXPORT_SYMBOL(rt5081_pmu_get_hwirq_name);
 
 int rt5081_pmu_irq_register(struct rt5081_pmu_chip *chip)
 {

@@ -297,7 +297,7 @@ bool mt_usb_is_device(void)
 		return false;
 	}
 #endif
-#ifdef CONFIG_TCPC_CLASS
+#if defined(CONFIG_USB_MTK_OTG) && defined(CONFIG_TCPC_CLASS)
 	return !tcpc_boost_on;
 #endif
 	return !mtk_musb->is_host;

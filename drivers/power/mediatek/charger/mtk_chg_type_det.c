@@ -38,6 +38,7 @@
 #include <linux/time.h>
 #include <linux/uaccess.h>
 
+#include <mt-plat/mtk_battery.h>
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
@@ -179,6 +180,7 @@ static int mt_charger_set_property(struct power_supply *psy,
 		mt_usb_disconnect();
 
 	mtk_charger_int_handler();
+	fg_charger_in_handler();
 
 	if (g_mt_charger) {
 		power_supply_changed(g_mt_charger->ac_psy);
