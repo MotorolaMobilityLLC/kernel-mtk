@@ -37,7 +37,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.13_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.14_MTK"
 
 #if defined(CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT)
 #define RT5081_CHARGER_DETECT_SUPPORT
@@ -1577,27 +1577,48 @@ static int rt5081_enable_otg(struct charger_device *chg_dev, bool en)
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 	u8 hidden_val = en ? 0x00 : 0x0F;
+	u8 lg_slew_rate = en ? 0x7c : 0x73;
 
 	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
+
+	ret = rt5081_enable_hidden_mode(chg_data, true);
+	if (ret < 0) {
+		dev_err(chg_data->dev, "%s: enter hidden mode failed\n",
+			__func__);
+		goto out;
+	}
 
 	/* Set OTG_OC to 500mA */
 	ret = rt5081_set_otg_current_limit(chg_dev, 500000);
 	if (ret < 0) {
 		dev_err(chg_data->dev, "%s: set otg oc failed\n", __func__);
-		return ret;
+		goto out;
+	}
+
+	/*
+	 * Woraround : slow Low side mos Gate driver slew rate for decline VBUS noise
+	 * reg[0x33] = 0x7c after entering OTG mode
+	 * reg[0x33] = 0x73 after leaving OTG mode
+	 */
+	ret = rt5081_pmu_reg_write(chg_data->chip, RT5081_PMU_REG_LG_CONTROL,
+		lg_slew_rate);
+	if (ret < 0) {
+		dev_err(chg_data->dev, "%s: recover Low side mos Gate drive speed fail(%d)\n",
+			__func__, ret);
+		goto out;
 	}
 
 	/* Turn off USB charger detection/Enable WDT */
 	if (en) {
 		ret = rt5081_enable_chgdet_flow(chg_data, false);
 		if (ret < 0)
-			dev_err(chg_data->dev,
-				"%s: disable usb chrdet failed\n", __func__);
+			dev_err(chg_data->dev, "%s: disable usb chrdet fail\n",
+				__func__);
 
 		if (chg_data->chg_desc->en_wdt) {
 			ret = rt5081_enable_wdt(chg_data, true);
 			if (ret < 0)
-				dev_err(chg_data->dev, "%s: en wdt failed\n",
+				dev_err(chg_data->dev, "%s: en wdt fail\n",
 					__func__);
 		}
 	}
@@ -1612,25 +1633,8 @@ static int rt5081_enable_otg(struct charger_device *chg_dev, bool en)
 		ret = rt5081_pmu_reg_test_bit(chg_data->chip,
 			RT5081_PMU_REG_CHGCTRL1, RT5081_SHIFT_OPA_MODE, &en_otg);
 		if (ret < 0 || !en_otg) {
-			dev_err(chg_data->dev, "%s: failed, ret = %d\n",
-				__func__, ret);
-
-			/* Disable OTG */
-			rt5081_pmu_reg_clr_bit(chg_data->chip,
-				RT5081_PMU_REG_CHGCTRL1, RT5081_MASK_OPA_MODE);
-
-			/* Disable WDT */
-			ret = rt5081_enable_wdt(chg_data, false);
-			if (ret < 0)
-				dev_err(chg_data->dev,
-					"%s: disable wdt failed\n", __func__);
-#ifndef CONFIG_TCPC_CLASS
-			ret = rt5081_enable_chgdet_flow(chg_data, true);
-			if (ret < 0)
-				dev_err(chg_data->dev,
-					"%s: en usb chrdet failed\n", __func__);
-#endif
-			return -EIO;
+			dev_err(chg_data->dev, "%s: fail(%d)\n", __func__, ret);
+			goto err_en_otg;
 		}
 #ifndef CONFIG_TCPC_CLASS
 		rt5081_set_usbsw_state(chg_data, RT5081_USBSW_USB);
@@ -1638,26 +1642,14 @@ static int rt5081_enable_otg(struct charger_device *chg_dev, bool en)
 	}
 
 	/*
-	 * Woraround reg[0x25] = 0x00 after entering OTG mode
-	 * reg[0x25] = 0x0F after leaving OTG mode
+	 * Woraround reg[0x35] = 0x00 after entering OTG mode
+	 * reg[0x35] = 0x0F after leaving OTG mode
 	 */
-	ret = rt5081_enable_hidden_mode(chg_data, true);
+	ret = rt5081_pmu_reg_write(chg_data->chip,
+		RT5081_PMU_REG_CHGHIDDENCTRL6, hidden_val);
 	if (ret < 0)
-		dev_err(chg_data->dev, "%s: enter hidden mode failed\n",
-			__func__);
-	else {
-		ret = rt5081_pmu_reg_write(chg_data->chip,
-			RT5081_PMU_REG_CHGHIDDENCTRL6, hidden_val);
-		if (ret < 0)
-			dev_err(chg_data->dev,
-				"%s: workaroud failed, ret = %d\n",
-				__func__, ret);
-
-		ret = rt5081_enable_hidden_mode(chg_data, false);
-		if (ret < 0)
-			dev_err(chg_data->dev,
-				"%s: exist hidden mode failed\n", __func__);
-	}
+		dev_err(chg_data->dev, "%s: workaroud failed, ret = %d\n",
+			__func__, ret);
 
 	/* Disable WDT */
 	if (!en) {
@@ -1666,7 +1658,33 @@ static int rt5081_enable_otg(struct charger_device *chg_dev, bool en)
 			dev_err(chg_data->dev, "%s: disable wdt failed\n",
 				__func__);
 	}
+	goto out;
 
+err_en_otg:
+	/* Disable OTG */
+	rt5081_pmu_reg_clr_bit(chg_data->chip, RT5081_PMU_REG_CHGCTRL1,
+		RT5081_MASK_OPA_MODE);
+
+	/* Disable WDT */
+	ret = rt5081_enable_wdt(chg_data, false);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: disable wdt failed\n", __func__);
+
+#ifndef CONFIG_TCPC_CLASS
+	ret = rt5081_enable_chgdet_flow(chg_data, true);
+	if (ret < 0)
+		dev_err(chg_data->dev,
+				"%s: en usb chrdet failed\n", __func__);
+#endif
+	/* Recover Low side mos Gate slew rate */
+	ret = rt5081_pmu_reg_write(chg_data->chip,
+			RT5081_PMU_REG_LG_CONTROL, 0x73);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: recover Low side mos Gate drive speed fail(%d)\n",
+			__func__, ret);
+	ret = -EIO;
+out:
+	rt5081_enable_hidden_mode(chg_data, false);
 	return ret;
 }
 
@@ -3463,6 +3481,9 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.14_MTK
+ * (1) Add workaround to adjust slow rate for OTG
+ *
  * 1.1.13_MTK
  * (1) Add polling mode for EOC/Rechg
  * (2) Use charger_dev_notify instead of srcu_notifier_call_chain
