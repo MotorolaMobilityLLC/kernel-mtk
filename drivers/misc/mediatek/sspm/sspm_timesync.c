@@ -35,7 +35,10 @@
 #include "sspm_ipi.h"
 #include "sspm_reservedmem.h"
 #include "sspm_reservedmem_define.h"
+#include "sspm_sysfs.h"
 #include "sspm_timesync.h"
+
+/* #define TINYSYS_TIME_TESTING */
 
 struct timesync_ctrl_s {
 	unsigned int base;
@@ -127,7 +130,7 @@ static void timesync_ws(struct work_struct *ws)
 	tinysys_time_sync();
 }
 
-static void sspm_log_timeout(unsigned long data)
+static void sspm_ts_timeout(unsigned long data)
 {
 	sspm_schedule_work(&sspm_timesync_work);
 
@@ -162,7 +165,7 @@ static ssize_t sspm_time_sync_store(struct device *kobj, struct device_attribute
 
 	return n;
 }
-DEVICE_ATTR(sspm_time_sync, S_IRUSR | S_IRGRP, NULL, sspm_time_sync_store);
+DEVICE_ATTR(sspm_time_sync, S_IWUSR | S_IWGRP, NULL, sspm_time_sync_store);
 #endif
 
 unsigned int __init sspm_timesync_init(phys_addr_t start, phys_addr_t limit)
@@ -203,12 +206,12 @@ int __init sspm_timesync_init_done(void)
 	tinysys_time_sync();
 
 	INIT_WORK(&sspm_timesync_work.work, timesync_ws);
-	setup_timer(&sspm_timesync_timer, &sspm_log_timeout, 0);
+	setup_timer(&sspm_timesync_timer, &sspm_ts_timeout, 0);
 	sspm_timesync_timer.expires = jiffies + TIMESYNC_TIMEOUT;
 	add_timer(&sspm_timesync_timer);
 
 #if defined(TINYSYS_TIME_TESTING) && defined(DEBUG)
-	ret = sspm_sysfs_create_file(&dev_attr_sspm_log_lastk);
+	ret = sspm_sysfs_create_file(&dev_attr_sspm_time_sync);
 
 	if (unlikely(ret != 0))
 		pr_err("[SSPM]: %s create file fail\n", __func__);
