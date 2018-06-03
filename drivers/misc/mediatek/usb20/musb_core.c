@@ -157,7 +157,7 @@ module_param(use_mtk_audio, int, 0644);
 #endif
 
 #include "musb_qmu.h"
-u32 dma_burst_setting, qmu_ioc_setting;
+u32 dma_channel_setting, qmu_ioc_setting;
 int mtk_qmu_dbg_level = LOG_WARN;
 int mtk_qmu_max_gpd_num;
 int isoc_ep_end_idx = 3;
@@ -2538,7 +2538,7 @@ static void musb_save_context(struct musb *musb)
 	void __iomem *epio;
 
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
-	dma_burst_setting = musb_readl(musb->mregs, 0x204);
+	dma_channel_setting = musb_readl(musb->mregs, 0x204);
 	qmu_ioc_setting = musb_readl((musb->mregs + MUSB_QISAR), 0x30);
 #endif
 
@@ -2582,7 +2582,7 @@ static void musb_restore_context(struct musb *musb)
 	void __iomem *epio;
 
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
-	musb_writel(musb->mregs, 0x204, dma_burst_setting);
+	musb_writel(musb->mregs, 0x204, dma_channel_setting);
 	musb_writel((musb->mregs + MUSB_QISAR), 0x30, qmu_ioc_setting);
 #endif
 

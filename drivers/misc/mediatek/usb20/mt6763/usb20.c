@@ -1343,7 +1343,11 @@ static const struct musb_platform_ops mt_usb_ops = {
 	.vbus_status = mt_usb_get_vbus_status
 };
 
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+static u64 mt_usb_dmamask = DMA_BIT_MASK(36);
+#else
 static u64 mt_usb_dmamask = DMA_BIT_MASK(32);
+#endif
 
 static int mt_usb_probe(struct platform_device *pdev)
 {

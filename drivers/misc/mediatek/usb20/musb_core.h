@@ -58,6 +58,11 @@ extern struct clk *usbmcu_clk;
 extern struct clk *usb_clk;
 extern struct clk *icusb_clk;
 
+/* to prevent 32 bit project misuse */
+#if defined(CONFIG_MTK_MUSB_DRV_36BIT) && !defined(CONFIG_64BIT)
+#error
+#endif
+
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 #include "mtk_qmu.h"
 #endif
