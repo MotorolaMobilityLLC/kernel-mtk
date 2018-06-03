@@ -1,0 +1,30 @@
+bat_gm30: bat_gm30{
+	compatible = "mediatek,bat_gm30";
+	g_FG_PSEUDO100_T0 = <(95)>;	/* Pseudo 100% percentage at T0. */
+	g_FG_PSEUDO100_T1 = <(95)>;	/* Pseudo 100% percentage at T1. */
+	g_FG_PSEUDO100_T2 = <(95)>;	/* Pseudo 100% percentage at T2. */
+	g_FG_PSEUDO100_T3 = <(95)>;	/* Pseudo 100% percentage at T3. */
+	DIFFERENCE_FULLOCV_ITH = <(150)>;	/* Charging termination current. */
+	MTK_CHR_EXIST = <(1)>;	/* Configures whether MTK charger exist or not. */
+	Q_MAX_SYS_VOLTAGE = <(3400)>;	/* System shut down voltage. */
+	SHUTDOWN_1_TIME = <(60)>;	/* Configures how long should UI_SOC keep showing 1%. */
+	KEEP_100_PERCENT = <(5)>;	/* how long should UI_SOC keeps 100% after unplugged. */
+	R_FG_VALUE = <(10)>;	/* R_sense resistance. */
+	POWERON_SYSTEM_IBOOT = <(1000)>;	/* System booting current. */
+	TEMPERATURE_T0 = <(50)>;	/* Battery temperature T0 */
+	TEMPERATURE_T1 = <(25)>;	/* Battery temperature T1 */
+	TEMPERATURE_T2 = <(0)>;	/* Battery temperature T2 */
+	TEMPERATURE_T3 = <(-10)>;	/* Battery temperature T3 */
+	EMBEDDED_SEL = <(0)>;	/* Configures whether using embedded battery or not. */
+	PMIC_SHUTDOWN_CURRENT = <(20)>;	/* System shutdown current. */
+	SHUTDOWN_HL_ZCV_T0 = <(3400)>;	/* Heavy loading shutdown ZCV at T0 */
+	SHUTDOWN_HL_ZCV_T1 = <(3400)>;	/* Heavy loading shutdown ZCV at T1 */
+	SHUTDOWN_HL_ZCV_T2 = <(3400)>;	/* Heavy loading shutdown ZCV at T2 */
+	SHUTDOWN_HL_ZCV_T3 = <(3400)>;	/* Heavy loading shutdown ZCV at T3 */
+	CAR_TUNE_VALUE = <(100)>;	/* Tune value for current measurement. */
+#if (ADDITIONAL_BATTERY_TABLE_EN == 1)
+#include "battery_table_ext.dtsi"
+#else
+#include "battery_table.dtsi"
+#endif
+};
