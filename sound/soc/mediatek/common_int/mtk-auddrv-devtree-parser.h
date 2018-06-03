@@ -127,14 +127,14 @@ enum Auddrv_CLK_Setting {
 };
 
 
-typedef struct {
+struct auddrv_i2s_attribute {
 	unsigned int Gpio_Number;
 	unsigned int Gpio_Mode;
-} AUDDRV_I2S_ATTRIBUTE;
+};
 
 void Auddrv_Devtree_Init(void);
 void Auddrv_DevTree_I2S_Setting(const char *DevTreeName);
 void Auddrv_Devtree_Dump(void);
-AUDDRV_I2S_ATTRIBUTE *GetI2SSetting(uint32_t I2S_Number, uint32_t I2S_Setting);
+struct auddrv_i2s_attribute *GetI2SSetting(uint32_t I2S_Number, uint32_t I2S_Setting);
 
 #endif

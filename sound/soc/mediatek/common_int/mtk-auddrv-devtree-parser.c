@@ -40,15 +40,15 @@
 #include "mtk-auddrv-devtree-parser.h"
 
 static int bAuddrv_Dev_Tree_Init;
-static AUDDRV_I2S_ATTRIBUTE Auddrv_I2S_Setting[Auddrv_I2S_Num][Auddrv_I2S_Attribute_Num];
-static AUDDRV_I2S_ATTRIBUTE Auddrv_CLK_Setting[Auddrv_Attribute_num];
+static struct auddrv_i2s_attribute Auddrv_I2S_Setting[Auddrv_I2S_Num][Auddrv_I2S_Attribute_Num];
+static struct auddrv_i2s_attribute Auddrv_CLK_Setting[Auddrv_Attribute_num];
 
 static void Auddrv_Devtree_PinSet(void);
 
 
-AUDDRV_I2S_ATTRIBUTE *GetI2SSetting(uint32_t I2S_Number, uint32_t I2S_Setting)
+struct auddrv_i2s_attribute *GetI2SSetting(uint32_t I2S_Number, uint32_t I2S_Setting)
 {
-	AUDDRV_I2S_ATTRIBUTE *ret = NULL;
+	struct auddrv_i2s_attribute *ret = NULL;
 
 	if ((I2S_Number < Auddrv_I2S_Num) && (I2S_Setting < Auddrv_I2S_Attribute_Num))
 		ret = &Auddrv_I2S_Setting[I2S_Number][I2S_Setting];
@@ -63,9 +63,9 @@ void Auddrv_Devtree_Init(void)
 		/* do some init routine */
 		bAuddrv_Dev_Tree_Init = true;
 		memset(&Auddrv_I2S_Setting[0][0], 0,
-		       sizeof(AUDDRV_I2S_ATTRIBUTE) * Auddrv_I2S_Num * Auddrv_I2S_Attribute_Num);
+		       sizeof(struct auddrv_i2s_attribute) * Auddrv_I2S_Num * Auddrv_I2S_Attribute_Num);
 		memset(&Auddrv_CLK_Setting[0], 0,
-		       sizeof(AUDDRV_I2S_ATTRIBUTE) * Auddrv_Attribute_num);
+		       sizeof(struct auddrv_i2s_attribute) * Auddrv_Attribute_num);
 		Auddrv_DevTree_I2S_Setting("mediatek,mt_soc_pcm_routing");
 		Auddrv_Devtree_PinSet();
 		Auddrv_Devtree_Dump();
