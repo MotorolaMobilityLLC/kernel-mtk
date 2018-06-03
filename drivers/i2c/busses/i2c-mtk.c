@@ -46,15 +46,29 @@
 static struct i2c_dma_info g_dma_regs[I2C_MAX_CHANNEL];
 static struct mt_i2c *g_mt_i2c[I2C_MAX_CHANNEL];
 
-static inline void i2c_writew(u16 value, struct mt_i2c *i2c, u8 offset)
+static inline void _i2c_writew(u16 value, struct mt_i2c *i2c, u8 offset)
 {
-	writew(value, i2c->base + offset);
+	writew(value, i2c->base + i2c->ch_offset + offset);
 }
 
-static inline u16 i2c_readw(struct mt_i2c *i2c, u8 offset)
+static inline u16 _i2c_readw(struct mt_i2c *i2c, u8 offset)
 {
-	return readw(i2c->base + offset);
+	return readw(i2c->base + i2c->ch_offset + offset);
 }
+
+#define i2c_writew(val, i2c, ofs) \
+	do { \
+		if (((i2c)->dev_comp->ver != 0x2) || (V2_##ofs != 0xfff)) \
+			_i2c_writew(val, i2c, ((i2c)->dev_comp->ver == 0x2) ? (V2_##ofs) : ofs); \
+	} while (0)
+
+#define i2c_readw(i2c, ofs) \
+	({ \
+		u16 value = 0; \
+		if (((i2c)->dev_comp->ver != 0x2) || (V2_##ofs != 0xfff)) \
+			value = _i2c_readw(i2c, ((i2c)->dev_comp->ver == 0x2) ? (V2_##ofs) : ofs); \
+		value; \
+	})
 
 void __iomem *cg_base;
 
@@ -143,12 +157,12 @@ void dump_dma_regs(void)
 
 static inline void i2c_writel_dma(u32 value, struct mt_i2c *i2c, u8 offset)
 {
-	writel(value, i2c->pdmabase + offset);
+	writel(value, i2c->pdmabase + i2c->dma_ch_offset + offset);
 }
 
 static inline u32 i2c_readl_dma(struct mt_i2c *i2c, u8 offset)
 {
-	return readl(i2c->pdmabase + offset);
+	return readl(i2c->pdmabase + i2c->dma_ch_offset + offset);
 }
 
 static void record_i2c_dma_info(struct mt_i2c *i2c)
@@ -710,6 +724,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	int data_size;
 	u8 *ptr;
 	int ret;
+	u16 ch_offset;
 
 	i2c->trans_stop = false;
 	i2c->irq_stat = 0;
@@ -719,6 +734,13 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		speed_hz = i2c->ext_data.timing;
 	else
 		speed_hz = i2c->speed_hz;
+	if (i2c->ext_data.is_ch_offset) {
+		i2c->ch_offset = i2c->ext_data.ch_offset;
+		i2c->dma_ch_offset = i2c->ext_data.dma_ch_offset;
+	} else {
+		i2c->ch_offset = i2c->ch_offset_default;
+		i2c->dma_ch_offset = i2c->dma_ch_offset_default;
+	}
 #if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
 	ret = i2c_set_speed(i2c, clk_get_rate(i2c->clk_main) / i2c->clk_src_div);
 #else
@@ -859,6 +881,12 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			}
 		}
 	}
+	if (i2c->dev_comp->ver == 0x2) {
+		if (!i2c->is_hw_trig)
+			i2c_writew(I2C_MCU_INTR_EN, i2c, OFFSET_MCU_INTR);
+		else
+			i2c_writew(I2C_CCU_INTR_EN, i2c, OFFSET_MCU_INTR);
+	}
 	/* flush before sending start */
 	mb();
 	if (!i2c->is_hw_trig)
@@ -871,13 +899,16 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	tmo = wait_event_timeout(i2c->wait, i2c->trans_stop, tmo);
 
 	record_i2c_info(i2c, tmo);
+	i2c_dump_info(i2c);
 
 	if (tmo == 0) {
 		dev_err(i2c->dev, "addr: %x, transfer timeout\n",
 			i2c->addr);
 		start_reg = i2c_readw(i2c, OFFSET_START);
 		i2c_dump_info(i2c);
+		#if defined(CONFIG_MTK_GIC_EXT)
 		mt_irq_dump_status(i2c->irqnr);
+		#endif
 		dump_cg_regs(i2c);
 		mt_i2c_init_hw(i2c);
 		if (start_reg & I2C_TRANSAC_START) {
@@ -888,9 +919,13 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	}
 	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
 		dev_err(i2c->dev, "addr: %x, transfer ACK error\n", i2c->addr);
+		ch_offset = i2c->ch_offset;
+		i2c->ch_offset = 0;
 		if (i2c->ext_data.isEnable ==  false || i2c->ext_data.isFilterMsg == false)
 			i2c_dump_info(i2c);
 		mt_i2c_init_hw(i2c);
+		if (ch_offset)
+			i2c_writew(I2C_RESUME_ARBIT, i2c, OFFSET_START);
 		return -EREMOTEIO;
 	}
 	if (i2c->op != I2C_MASTER_WR && isDMA == false) {
@@ -1271,6 +1306,35 @@ int hw_trig_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 }
 EXPORT_SYMBOL(hw_trig_i2c_transfer);
 
+int i2c_ccu_enable(struct i2c_adapter *adap, struct i2c_msg *msgs,
+		int num, u16 ch_offset)
+{
+	int ret;
+	struct mt_i2c *i2c = i2c_get_adapdata(adap);
+
+	if (mt_i2c_clock_enable(i2c))
+		return -EBUSY;
+	mutex_lock(&i2c->i2c_mutex);
+	i2c->is_hw_trig = true;
+	i2c->ext_data.ch_offset = ch_offset;
+	i2c->ext_data.is_ch_offset = true;
+	ret = __mt_i2c_transfer(i2c, msgs, num);
+	i2c->is_hw_trig = false;
+	i2c->ext_data.is_ch_offset = false;
+	mutex_unlock(&i2c->i2c_mutex);
+	return ret;
+}
+EXPORT_SYMBOL(i2c_ccu_enable);
+
+int i2c_ccu_disable(struct i2c_adapter *adap)
+{
+	struct mt_i2c *i2c = i2c_get_adapdata(adap);
+
+	mt_i2c_clock_disable(i2c);
+	return 0;
+}
+EXPORT_SYMBOL(i2c_ccu_disable);
+
 static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 {
 	struct mt_i2c *i2c = dev_id;
@@ -1287,7 +1351,9 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 		if (!i2c->irq_stat) {
 			dev_info(i2c->dev, "addr: %x, irq stat 0\n", i2c->addr);
 			i2c_dump_info(i2c);
+			#if defined(CONFIG_MTK_GIC_EXT)
 			mt_irq_dump_status(i2c->irqnr);
+			#endif
 		}
 	}
 	else {	/* dump regs info for hw trig i2c if ACK err */
@@ -1316,6 +1382,8 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	of_property_read_u32(np, "clock-frequency", &i2c->speed_hz);
 	of_property_read_u32(np, "clock-div", &i2c->clk_src_div);
 	of_property_read_u32(np, "id", (u32 *)&i2c->id);
+	of_property_read_u16(np, "ch_offset_default", (u16 *)&i2c->ch_offset_default);
+	of_property_read_u16(np, "dma_ch_offset_default", (u16 *)&i2c->dma_ch_offset_default);
 	of_property_read_u32(np, "aed", &i2c->aed);
 	i2c->have_pmic = of_property_read_bool(np, "mediatek,have-pmic");
 	i2c->have_dcm = of_property_read_bool(np, "mediatek,have-dcm");
@@ -1329,6 +1397,19 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 		return -EINVAL;
 	return 0;
 }
+
+
+static const struct mtk_i2c_compatible mt6775_compat = {
+	.dma_support = 2,
+	.idvfs_i2c = 1,
+	.set_dt_div = 1,
+	.set_ltiming = 1,
+	.set_aed = 0,
+	.check_max_freq = 1,
+	.ext_time_config = 0,
+	.ver = 0x2,
+};
+
 
 static const struct mtk_i2c_compatible mt6735_compat = {
 	.dma_support = 0,
@@ -1459,6 +1540,7 @@ static const struct mtk_i2c_compatible elbrus_compat = {
 };
 
 static const struct of_device_id mtk_i2c_of_match[] = {
+	{ .compatible = "mediatek,mt6775-i2c", .data = &mt6775_compat },
 	{ .compatible = "mediatek,mt6735-i2c", .data = &mt6735_compat },
 	{ .compatible = "mediatek,mt6739-i2c", .data = &mt6739_compat },
 	{ .compatible = "mediatek,mt6797-i2c", .data = &mt6797_compat },
