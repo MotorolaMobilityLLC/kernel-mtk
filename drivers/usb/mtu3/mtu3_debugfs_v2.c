@@ -219,7 +219,7 @@ void ssusb_debugfs_init(struct ssusb_mtk *ssusb)
 	struct dentry *root;
 	struct dentry *file;
 
-	root = debugfs_create_dir("musb_hdrc", NULL);
+	root = debugfs_create_dir("musb-hdrc", NULL);
 	if (IS_ERR_OR_NULL(root)) {
 		if (!root)
 			dev_dbg(ssusb->dev, "create debugfs root failed\n");
