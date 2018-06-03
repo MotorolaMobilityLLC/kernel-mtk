@@ -360,6 +360,9 @@ static int md_cd_start(struct ccci_modem *md)
 #endif
 #if (MD_GENERATION >= 6293)
 	md_ccif_sram_reset(CCIF_HIF_ID);
+	md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_EXP);
+	md_ccif_reset_queue(CCIF_HIF_ID, 1);
+	md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_NORMAL);
 	md_ccif_reset_queue(CCIF_HIF_ID, 1);
 #endif
 
