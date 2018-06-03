@@ -28,6 +28,11 @@ signed int battery_get_bat_current(void)
 	return 0;
 }
 
+signed int battery_get_bat_current_mA(void)
+{
+	return 0;
+}
+
 signed int battery_get_soc(void)
 {
 	return 50;
@@ -80,6 +85,11 @@ signed int battery_get_bat_current(void)
 	if (is_charging == false)
 		curr_val = 0 - curr_val;
 	return curr_val;
+}
+
+signed int battery_get_bat_current_mA(void)
+{
+	return battery_get_bat_current() / 10;
 }
 
 signed int battery_get_soc(void)

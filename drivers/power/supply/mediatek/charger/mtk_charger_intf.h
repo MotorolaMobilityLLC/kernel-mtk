@@ -35,6 +35,7 @@
 struct charger_manager;
 #include "mtk_pe_intf.h"
 #include "mtk_pe20_intf.h"
+#include "mtk_pe40_intf.h"
 #include "mtk_pdc_intf.h"
 
 #define CHARGING_INTERVAL 10
@@ -65,6 +66,18 @@ do {								\
 		pr_notice(fmt, ##args);				\
 	}							\
 } while (0)
+
+#define CHR_CC		(0x0001)
+#define CHR_TOPOFF	(0x0002)
+#define CHR_TUNING	(0x0003)
+#define CHR_POSTCC	(0x0004)
+#define CHR_BATFULL	(0x0005)
+#define CHR_ERROR	(0x0006)
+#define	CHR_PE40_INIT	(0x0007)
+#define	CHR_PE40_CC	(0x0008)
+#define	CHR_PE40_TUNING	(0x0009)
+#define	CHR_PE40_POSTCC	(0x000A)
+#define CHR_PE30	(0x000B)
 
 /* charger_algorithm notify charger_dev */
 enum {
@@ -125,6 +138,7 @@ struct battery_thermal_protection_data {
 struct charger_custom_data {
 	int battery_cv;	/* uv */
 	int max_charger_voltage;
+	int max_charger_voltage_setting;
 
 	int usb_charger_current_suspend;
 	int usb_charger_current_unconfigured;
@@ -177,6 +191,14 @@ struct charger_custom_data {
 	int pe20_ichg_level_threshold;	/* ma */
 	int ta_start_battery_soc;
 	int ta_stop_battery_soc;
+
+	/* pe4.0 */
+	int pe40_single_charger_input_current;	/* ma */
+	int pe40_single_charger_current;
+	int pe40_dual_charger_input_current;
+	int pe40_dual_charger_chg1_current;
+	int pe40_dual_charger_chg2_current;
+	int pe40_stop_battery_soc;
 
 	/* dual charger */
 	u32 chg1_ta_ac_charger_current;
@@ -278,8 +300,20 @@ struct charger_manager {
 	bool enable_pe_2;
 	struct mtk_pe20 pe2;
 
+	/* pe 4.0 */
+	bool enable_pe_4;
+	struct mtk_pe40 pe4;
+
+	/* type-C*/
+	bool enable_type_c;
+
 	/* pd */
 	struct mtk_pdc pdc;
+
+	int pd_type;
+	struct tcpc_device *tcpc;
+	struct notifier_block pd_nb;
+	bool pd_reset;
 
 	/* thread related */
 	struct hrtimer charger_kthread_timer;
@@ -287,6 +321,7 @@ struct charger_manager {
 
 	struct wakeup_source charger_wakelock;
 	struct mutex charger_lock;
+	struct mutex charger_pd_lock;
 	spinlock_t slock;
 	unsigned int polling_interval;
 	bool charger_thread_timeout;
@@ -304,6 +339,9 @@ extern int mtk_dual_switch_charging_init(struct charger_manager *info);
 extern int mtk_linear_charging_init(struct charger_manager *info);
 extern void _wake_up_charger(struct charger_manager *info);
 extern int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv);
+extern bool is_dual_charger_supported(struct charger_manager *info);
+extern int charger_enable_vbus_ovp(struct charger_manager *pinfo, bool enable);
+extern bool is_typec_adapter(struct charger_manager *info);
 
 /* pmic API */
 extern unsigned int upmu_get_rgs_chrdet(void);

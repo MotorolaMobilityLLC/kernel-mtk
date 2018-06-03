@@ -47,8 +47,9 @@ void mtk_pdc_check_cable_impedance(struct charger_manager *pinfo)
 	/* Set ichg = 2500mA, set MIVR=4.5V */
 	charger_dev_set_charging_current(pinfo->chg1_dev, 2500000);
 	mdelay(240);
-	charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
-	/* pe20_set_mivr(pinfo, 4300000); */
+	ret = charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
+	if (ret < 0)
+		chr_err("%s: failed, ret = %d\n", __func__, ret);
 
 	get_monotonic_boottime(&ptime[1]);
 	diff = timespec_sub(ptime[1], ptime[0]);
@@ -97,13 +98,14 @@ end:
 
 static bool mtk_is_pdc_ready(struct charger_manager *info)
 {
-	if (info->pdc.tcpc == NULL)
+	if (info->tcpc == NULL)
 		return false;
 
-	if (tcpm_inquire_pd_prev_connected(info->pdc.tcpc) == 0)
-		return false;
+	if (info->pd_type == PD_CONNECT_PE_READY_SNK ||
+		info->pd_type == PD_CONNECT_PE_READY_SNK_PD30)
+		return true;
 
-	return true;
+	return false;
 }
 
 bool mtk_pdc_check_charger(struct charger_manager *info)
@@ -131,7 +133,7 @@ int mtk_pdc_get_max_watt(struct charger_manager *info)
 	int charging_current = info->data.pd_charger_current / 1000;
 	int vbat = pmic_get_battery_voltage();
 
-	if (info->pdc.tcpc == NULL)
+	if (info->tcpc == NULL)
 		return 0;
 
 	if (info->pdc.pdc_max_watt_setting != -1)
@@ -156,11 +158,11 @@ int mtk_pdc_setup(struct charger_manager *info, int idx)
 
 	struct mtk_pdc *pd = &info->pdc;
 
-	if (info->pdc.tcpc == NULL)
+	if (info->tcpc == NULL)
 		return -1;
 
 	if (pd_idx != idx)
-	ret = tcpm_dpm_pd_request(pd->tcpc, pd->cap.max_mv[idx],
+	ret = tcpm_dpm_pd_request(info->tcpc, pd->cap.max_mv[idx],
 					pd->cap.ma[idx], NULL);
 
 	chr_err("[%s]idx:%d:%d vbus:%d cur:%d ret:%d\n", __func__,
@@ -178,7 +180,7 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *vbus, int *cur,
 	struct mtk_pdc *pd = &info->pdc;
 	int min_vbus_idx = -1;
 
-	if (info->pdc.tcpc == NULL)
+	if (info->tcpc == NULL)
 		return -1;
 
 	mtk_pdc_init_table(info);
@@ -251,12 +253,12 @@ void mtk_pdc_init_table(struct charger_manager *info)
 	int i;
 	struct mtk_pdc *pd = &info->pdc;
 
-	if (info->pdc.tcpc == NULL)
+	if (info->tcpc == NULL)
 		return;
 	cap.nr = 0;
 	cap.selected_cap_idx = -1;
 	if (mtk_is_pdc_ready(info)) {
-		tcpm_get_remote_power_cap(info->pdc.tcpc, &cap);
+		tcpm_get_remote_power_cap(info->tcpc, &cap);
 
 		if (cap.nr != 0) {
 			pd->cap.nr = cap.nr;
@@ -302,7 +304,6 @@ void mtk_pdc_init_table(struct charger_manager *info)
 
 bool mtk_pdc_init(struct charger_manager *info)
 {
-	info->pdc.tcpc = tcpc_dev_get_by_name("type_c_port0");
 	info->pdc.pdc_max_watt_setting = -1;
 	return true;
 }
