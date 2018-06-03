@@ -58,6 +58,13 @@ typedef struct _COMMAND_ENTRY {
 	struct COMMAND rCmd;
 } COMMAND_ENTRY, *P_COMMAND_ENTRY;
 
+struct COMMAND_DEBUG_INFO {
+	UINT_8 ucCID;
+	UINT_8 ucCmdSeqNum;
+	UINT_32 u4InqueTime;
+	UINT_32 u4SendToFwTime;
+	UINT_32 u4FwResponseTime;
+};
 typedef struct _PKT_INFO_ENTRY {
 	UINT_64 u8Timestamp;
 	UINT_8 status;
@@ -132,6 +139,8 @@ typedef struct _PKT_STATUS_RECORD {
 #define PKT_STATUS_MSG_GROUP_RANGE 80
 #define PKT_STATUS_MSG_LENGTH 900
 
+#define CMD_BUF_MSG_LENGTH 1024
+
 #if CFG_SUPPORT_EMI_DEBUG
 #define WLAN_EMI_DEBUG_BUF_SIZE 512
 #define WLAN_EMI_DEBUG_LINE_SIZE 256
@@ -140,6 +149,8 @@ typedef struct _PKT_STATUS_RECORD {
 static P_TC_RES_RELEASE_ENTRY gprTcReleaseTraceBuffer;
 static P_CMD_TRACE_ENTRY gprCmdTraceEntry;
 static P_COMMAND_ENTRY gprCommandEntry;
+static struct COMMAND_DEBUG_INFO *gprCommandDebugInfo;
+
 
 static PKT_TRACE_RECORD grPktRec;
 static PKT_STATUS_RECORD grPktStaRec;
@@ -494,6 +505,13 @@ VOID wlanDebugInit(VOID)
 	kalMemZero(gau2PktSeq, PKT_STATUS_BUF_MAX_NUM * sizeof(UINT_16));
 	u4PktSeqCount = 0;
 	/* debug for rx sequence tid end*/
+
+	/*debug for command record begin*/
+	gprCommandDebugInfo = kalMemAlloc(TXED_CMD_TRACE_BUF_MAX_NUM * sizeof(struct COMMAND_DEBUG_INFO)
+	, PHY_MEM_TYPE);
+	kalMemZero(gprCommandDebugInfo, TXED_CMD_TRACE_BUF_MAX_NUM * sizeof(struct COMMAND_DEBUG_INFO));
+	/*debug for command record end*/
+
 }
 
 VOID wlanDebugUninit(VOID)
@@ -539,6 +557,10 @@ VOID wlanDebugUninit(VOID)
 	u4PktSeqCount = 0;
 	/* debug for rx sequence tid end*/
 
+	/*debug for command record begin*/
+	kalMemFree(gprCommandDebugInfo, PHY_MEM_TYPE
+	, TXED_CMD_TRACE_BUF_MAX_NUM * sizeof(struct COMMAND_DEBUG_INFO));
+	/*debug for command record end*/
 }
 VOID wlanDebugScanTargetBSSRecord(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 {
@@ -1210,7 +1232,6 @@ VOID wlanReadFwInfoFromEmi(IN PUINT32 pAddr)
 	kalMemFree(pEmiBuf, VIR_MEM_TYPE, WLAN_EMI_DEBUG_BUF_SIZE);
 }
 #endif
-
 /* Begin: Functions used to breakdown packet jitter, for test case VoE 5.7 */
 static VOID wlanSetBE32(UINT_32 u4Val, PUINT_8 pucBuf)
 {
@@ -1258,3 +1279,59 @@ VOID wlanFillTimestamp(P_ADAPTER_T prAdapter, PVOID pvPacket, UINT_8 ucPhase)
 	wlanSetBE32(tval.tv_usec, pucUdp+4);
 }
 /* End: Functions used to breakdown packet jitter, for test case VoE 5.7 */
+VOID wlanDebugCommandRecodTime(P_CMD_INFO_T prCmdInfo)
+{
+	UINT_32 u4CurCmdIndex = 0;
+	struct COMMAND_DEBUG_INFO *pCommandDebugInfo = NULL;
+
+	if (prCmdInfo == NULL) {
+		DBGLOG(RX, WARN, "prCmdInfo is NULL!\n");
+		return;
+	}
+	/*Getting a index by using  (seq mod size)*/
+	u4CurCmdIndex = prCmdInfo->ucCmdSeqNum % TXED_CMD_TRACE_BUF_MAX_NUM;
+	pCommandDebugInfo = &(gprCommandDebugInfo[u4CurCmdIndex]);
+
+	pCommandDebugInfo->ucCID = prCmdInfo->ucCID;
+	pCommandDebugInfo->ucCmdSeqNum = prCmdInfo->ucCmdSeqNum;
+	pCommandDebugInfo->u4InqueTime = prCmdInfo->u4InqueTime;
+	pCommandDebugInfo->u4SendToFwTime = prCmdInfo->u4SendToFwTime;
+	pCommandDebugInfo->u4FwResponseTime = prCmdInfo->u4FwResponseTime;
+
+	DBGLOG(RX, LOUD, "(%d),CID:0x%02x,SEQ:%d,INQ[%u],SEND[%u],RSP[%u],now[%u]\n"
+	, u4CurCmdIndex
+	, pCommandDebugInfo->ucCID
+	, pCommandDebugInfo->ucCmdSeqNum
+	, pCommandDebugInfo->u4InqueTime
+	, pCommandDebugInfo->u4SendToFwTime
+	, pCommandDebugInfo->u4FwResponseTime, kalGetTimeTick());
+
+}
+VOID wlanDebugCommandRecodDump(VOID)
+{
+	UINT_16 i = 0;
+	UINT_8 pucMsg[CMD_BUF_MSG_LENGTH];
+	UINT_32 offsetMsg = 0;
+
+	DBGLOG(RX, INFO, "now getTimeTick:%u\n", kalGetTimeTick());
+	kalMemZero(pucMsg, sizeof(UINT_8)*CMD_BUF_MSG_LENGTH);
+
+	for (i = 0; i < TXED_CMD_TRACE_BUF_MAX_NUM; i++) {
+		offsetMsg += kalSnprintf(pucMsg + offsetMsg, CMD_BUF_MSG_LENGTH - offsetMsg
+		, "SEQ:%d,CID:0x%02x,,INQ:%u,SEND:%u,RSP:%u |"
+		, gprCommandDebugInfo[i].ucCmdSeqNum
+		, gprCommandDebugInfo[i].ucCID
+		, gprCommandDebugInfo[i].u4InqueTime
+		, gprCommandDebugInfo[i].u4SendToFwTime
+		, gprCommandDebugInfo[i].u4FwResponseTime);
+
+		if (i%5 == 0 && i > 0) {
+			DBGLOG(RX, INFO, "%s\n", pucMsg);
+			kalMemZero(pucMsg, sizeof(UINT_8)*CMD_BUF_MSG_LENGTH);
+			offsetMsg = 0;
+		}
+	}
+	DBGLOG(RX, INFO, "%s\n", pucMsg);
+	kalMemZero(gprCommandDebugInfo, sizeof(struct COMMAND_DEBUG_INFO)*TXED_CMD_TRACE_BUF_MAX_NUM);
+}
+
