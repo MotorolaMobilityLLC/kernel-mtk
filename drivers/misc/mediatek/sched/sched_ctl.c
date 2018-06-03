@@ -279,14 +279,6 @@ static ssize_t store_idle_prefer(struct kobject *kobj,
 	if (!is_dirty)
 		backup_mc = sysctl_sched_migration_cost;
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
-	/*
-	 * perf-driven dvfs control
-	 * throttle down: 20ms
-	 */
-	temporary_dvfs_down_throttle_change(en, 40000000); /* 40ms */
-#endif
-
 #ifdef CONFIG_SCHED_TUNE
 	/*
 	 * set top-app prefer idle cpu via stune
