@@ -1949,6 +1949,22 @@ bool wb_over_bg_thresh(struct bdi_writeback *wb)
 	return false;
 }
 
+/*
+ * Check vmstat snapshot for throttling of vm_writeout
+ */
+static unsigned long check_vm_writeout_snapshot(void)
+{
+	struct zone *z;
+	unsigned long nr_vm_writeout = 0;
+
+	for_each_populated_zone(z) {
+		nr_vm_writeout += zone_page_state_snapshot(z, NR_WRITEBACK);
+		nr_vm_writeout += zone_page_state_snapshot(z, NR_UNSTABLE_NFS);
+	}
+
+	return nr_vm_writeout;
+}
+
 void throttle_vm_writeout(gfp_t gfp_mask)
 {
 	unsigned long background_thresh;
@@ -1968,26 +1984,12 @@ void throttle_vm_writeout(gfp_t gfp_mask)
 			global_page_state(NR_WRITEBACK) <= dirty_thresh)
                         	break;
 
-		/* Take a glance at ZONE_MOVABLE */
-		if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA)) {
-			int node;
-			unsigned long nr_writeback = 0;
-			struct zone *z;
-
-			for_each_node(node) {
-				z = &NODE_DATA(node)->node_zones[ZONE_MOVABLE];
-				nr_writeback += zone_page_state(z, NR_WRITEBACK);
-			}
-
-			if (global_page_state(NR_UNSTABLE_NFS) + global_page_state(NR_WRITEBACK)
-					<= dirty_thresh + nr_writeback)
-				break;
-
-			pr_warn_ratelimited("%s:(%lu)(%lu)(%lu)(%lu)(%lu)\n", __func__,
-					global_page_state(NR_UNSTABLE_NFS),
-					global_page_state(NR_WRITEBACK),
-					dirty_thresh, background_thresh, nr_writeback);
-		}
+		/*
+		 * Take a deeper look at NR_WRITEBACK & NR_UNSTABLE_NFS
+		 * before entering congestion_wait.
+		 */
+		if (check_vm_writeout_snapshot() <= dirty_thresh)
+			break;
 
                 congestion_wait(BLK_RW_ASYNC, HZ/10);
 
