@@ -22,8 +22,9 @@
 /*#include <mach/mt_gpio.h>*/
 /*#include <mt-plat/mt_gpio.h>*/
 /* #include <cust_gpio_usage.h> */
-
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 #include "m4u.h"
+#endif
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 

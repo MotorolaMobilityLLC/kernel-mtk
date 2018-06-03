@@ -13,8 +13,9 @@
 
 #ifndef __HDMI_DRV_H__
 #define __HDMI_DRV_H__
-
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 #include "lcm_drv.h"
+#endif
 #ifdef HDMI_MT8193_SUPPORT
 #include "mt8193hdmictrl.h"
 #include "mt8193edid.h"
@@ -271,8 +272,9 @@ struct HDMI_PARAMS {
 	unsigned int HDCPSupported;
 	int is_3d_support;
 	unsigned int input_clock;
-
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	LCM_DSI_PARAMS dsi_params;
+#endif
 };
 
 enum HDMI_STATE {
