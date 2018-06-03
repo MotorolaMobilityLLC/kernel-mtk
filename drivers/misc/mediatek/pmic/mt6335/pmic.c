@@ -85,6 +85,8 @@ void vmd1_pmic_setting_on(void)
 	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL, vmd1_vosel);
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, vmodem_vosel);
 	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL, vsram_vmd_vosel);
+	pr_err(PMICTAG "[%s] VMD1 / VMODEM / VSRAM_VMD = 0x%x / 0x%x / 0x%x",
+		__func__, vmd1_vosel, vmodem_vosel, vsram_vmd_vosel);
 
 	/* Enable FPFM before enable BUCK, SW workaround to avoid VMD1/VMODEM overshoot */
 	pmic_config_interface(0x0F9C, 0x1, 0x1, 12);	/* 0x0F9C[12] = 1 */
@@ -975,7 +977,13 @@ static int pmic_mt_probe(struct platform_device *dev)
 		vmd1_vosel = 0x48;	/* 0.85V */
 		vmodem_vosel = 0x50;	/* 0.90V */
 		vsram_vmd_vosel = 0x60;	/* 1.00V */
+	} else { /* Apply MD voltage setting by preloader setting */
+		vmd1_vosel = pmic_get_register_value(PMIC_RG_BUCK_VMD1_VOSEL);
+		vmodem_vosel = pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL);
+		vsram_vmd_vosel = pmic_get_register_value(PMIC_RG_VSRAM_VMD_VOSEL);
 	}
+	pr_err(PMICTAG "VMD1 / VMODEM / VSRAM_VMD = 0x%x / 0x%x / 0x%x",
+		vmd1_vosel, vmodem_vosel, vsram_vmd_vosel);
 #endif
 
 	PMIC_INIT_SETTING_V1();
