@@ -9461,7 +9461,7 @@ uint32_t cmdqCoreWriteWriteAddress(dma_addr_t pa, uint32_t value)
 
 		/* note it is 64 bit length for uint32_t variable in 64 bit kernel */
 		/* use sizeof(u_log) to check valid offset range */
-		if (offset >= 0 && (offset / sizeof(unsigned long)) < pWriteAddr->count) {
+		if (offset >= 0 && (offset / sizeof(u32)) < pWriteAddr->count) {
 			cmdq_long_string_init(false, long_msg, &msg_offset, &msg_max_size);
 			cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 					   "cmdqCoreWriteWriteAddress() input:0x%pa,", &pa);
