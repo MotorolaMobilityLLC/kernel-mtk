@@ -600,12 +600,12 @@ static int hdmi_fence_release_kthread(void *data)
 			}
 
 			if (ovl_reg_updated == false) {
-				MMProfileLogEx(ddp_mmp_get_events()->Extd_trigger,
-						MMProfileFlagPulse, input_curr_addr[0], input_curr_addr[1]);
+				mmprofile_log_ex(ddp_mmp_get_events()->Extd_trigger,
+						 MMPROFILE_FLAG_PULSE, input_curr_addr[0], input_curr_addr[1]);
 			}
 
-			MMProfileLogEx(ddp_mmp_get_events()->Extd_UsedBuff,
-					MMProfileFlagPulse, input_curr_addr[0], input_curr_addr[1]);
+			mmprofile_log_ex(ddp_mmp_get_events()->Extd_UsedBuff,
+					 MMPROFILE_FLAG_PULSE, input_curr_addr[0], input_curr_addr[1]);
 		}
 
 		rdmafpscnt++;
@@ -721,7 +721,7 @@ static void hdmi_state_reset(void)
 	if (IS_HDMI_NOT_ON())
 		return;
 
-	MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagStart, Plugout, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_START, Plugout, 0);
 
 	if (down_interruptible(&hdmi_update_mutex)) {
 		HDMI_ERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
@@ -743,7 +743,7 @@ static void hdmi_state_reset(void)
 	rdmafpscnt = 0;
 	up(&hdmi_update_mutex);
 
-	MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagEnd, Plugout, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_END, Plugout, 0);
 }
 
 /*static*/ void hdmi_resume(void)
@@ -752,7 +752,7 @@ static void hdmi_state_reset(void)
 	if (IS_HDMI_NOT_STANDBY())
 		return;
 
-	MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagStart, Plugin, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_START, Plugin, 0);
 
 	if (down_interruptible(&hdmi_update_mutex)) {
 		HDMI_ERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
@@ -764,7 +764,7 @@ static void hdmi_state_reset(void)
 	hdmi_drv->resume();
 	up(&hdmi_update_mutex);
 
-	MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagEnd, Plugin, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_END, Plugin, 0);
 }
 
 /*static*/ void hdmi_power_on(void)
@@ -1197,7 +1197,7 @@ int hdmi_set_resolution(int res)
 	p->is_clock_on = false;
 	hdmi_reschange = res;
 
-	MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagStart, ResChange, res);
+	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_START, ResChange, res);
 
 	if (down_interruptible(&hdmi_update_mutex)) {
 		HDMI_LOG("[HDMI] can't get semaphore in\n");
@@ -1225,7 +1225,7 @@ int hdmi_set_resolution(int res)
 
 	switch_set_state(&hdmires_switch_data, hdmi_reschange + 1);
 	p->is_clock_on = true;
-	MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagEnd, ResChange, hdmi_reschange + 1);
+	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_END, ResChange, hdmi_reschange + 1);
 
 /*
 *
@@ -1248,10 +1248,11 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			return -EFAULT;
 		}
 
-		MMProfileLogEx(ddp_mmp_get_events()->Extd_DevInfo, MMProfileFlagStart, p->is_enabled, p->is_clock_on);
+		mmprofile_log_ex(ddp_mmp_get_events()->Extd_DevInfo, MMPROFILE_FLAG_START,
+				 p->is_enabled, p->is_clock_on);
 
 		if (copy_from_user(&displayid, info, sizeof(displayid))) {
-			MMProfileLogEx(ddp_mmp_get_events()->Extd_ErrorInfo, MMProfileFlagPulse, Devinfo, 0);
+			mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE, Devinfo, 0);
 			HDMI_ERR(": copy_from_user failed! line:%d\n", __LINE__);
 			return -EAGAIN;
 		}
@@ -1286,13 +1287,13 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			hdmi_info.vsyncFPS = 60;
 
 		if (copy_to_user(info, &hdmi_info, sizeof(hdmi_info))) {
-			MMProfileLogEx(ddp_mmp_get_events()->Extd_ErrorInfo, MMProfileFlagPulse, Devinfo, 1);
+			mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE, Devinfo, 1);
 			HDMI_ERR("copy_to_user failed! line:%d\n", __LINE__);
 			ret = -EFAULT;
 		}
 
-		MMProfileLogEx(ddp_mmp_get_events()->Extd_DevInfo, MMProfileFlagEnd,
-				p->is_enabled, hdmi_info.displayType);
+		mmprofile_log_ex(ddp_mmp_get_events()->Extd_DevInfo, MMPROFILE_FLAG_END,
+				 p->is_enabled, hdmi_info.displayType);
 		HDMI_LOG("DEV_INFO configuration get displayType-%d\n", hdmi_info.displayType);
 	} else if (is_sf == SF_GET_INFO) {
 		struct disp_session_info *dispif_info = (disp_session_info *) info;
