@@ -37,6 +37,7 @@
 
 #include <linux/platform_device.h>
 #include <mt-plat/met_drv.h>
+#include <linux/sched.h>
 #include "smart.h"
 
 #define SEQ_printf(m, x...)\
@@ -99,6 +100,9 @@ static unsigned long java_up_count;
 
 static unsigned long turbo_util_thresh;
 static int turbo_mode_enable;
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+struct cpumask turbo_cpus;
+#endif
 
 struct smart_data {
 	int is_hps_heavy;
@@ -974,6 +978,7 @@ static const struct file_operations mt_smart_uevent_enable_fops = {
 	.release = single_release,
 };
 
+#if 0
 int smart_enter_turbo_mode(void)
 {
 #ifdef CONFIG_MTK_ACAO_SUPPORT
@@ -982,6 +987,7 @@ int smart_enter_turbo_mode(void)
 	return 0;
 #endif /* CONFIG_MTK_ACAO_SUPPORT */
 }
+#endif
 
 void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsigned int btask, unsigned int htask)
 {
@@ -1011,23 +1017,31 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 	if (app_is_sports == 1) { /* foreground app enters sports mode  */
 
 		/* check turbo mode */
-		sched_get_cluster_util(0, &ll_util, &ll_cap);
-		prev_enable = turbo_mode_enable;
-		if (htask == 1 && (ll_util < ll_cap * turbo_util_thresh / 100)) {
-			turbo_mode_enable = 1;
-			if (log_enable)
-				pr_debug(TAG"turbo_mode_enable:%d (htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu)",
-				turbo_mode_enable, htask, ll_util, ll_cap, turbo_util_thresh);
-			if (turbo_mode_enable != prev_enable) {
-				smart_tracer(0, "turbo_mode_enable", 1);
-			}
-		} else {
-			turbo_mode_enable = 0;
-			if (log_enable)
-				pr_debug(TAG"turbo_mode_enable:%d (htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu)",
-				turbo_mode_enable, htask, ll_util, ll_cap, turbo_util_thresh);
-			if (turbo_mode_enable != prev_enable) {
-				smart_tracer(0, "turbo_mode_enable", 0);
+		if (turbo_support) {
+			sched_get_cluster_util(0, &ll_util, &ll_cap);
+			prev_enable = turbo_mode_enable;
+			if (htask == 1 && (ll_util < ll_cap * turbo_util_thresh / 100)) {
+				turbo_mode_enable = 1;
+				if (turbo_mode_enable != prev_enable) {
+					if (log_enable)
+						pr_debug(TAG"turbo_mode_enable:%d (htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu)",
+						turbo_mode_enable, htask, ll_util, ll_cap, turbo_util_thresh);
+					smart_tracer(0, "turbo_mode_enable", 1);
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+					set_cpu_isolation(ISO_TURBO, &turbo_cpus);
+#endif
+				}
+			} else {
+				turbo_mode_enable = 0;
+				if (turbo_mode_enable != prev_enable) {
+					if (log_enable)
+						pr_debug(TAG"turbo_mode_enable:%d (htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu)",
+						turbo_mode_enable, htask, ll_util, ll_cap, turbo_util_thresh);
+					smart_tracer(0, "turbo_mode_enable", 0);
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+					unset_cpu_isolation(ISO_TURBO);
+#endif
+				}
 			}
 		}
 
@@ -1068,6 +1082,10 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 			}
 		}
 	} else if (native_is_running == 1) { /* native program is running */
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+		if (turbo_mode_enable)
+			unset_cpu_isolation(ISO_TURBO);
+#endif
 		turbo_mode_enable = 0; /* reset */
 
 		if (htask != native_btask_thresh)
@@ -1087,6 +1105,10 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 			}
 		}
 	} else {
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+		if (turbo_mode_enable)
+			unset_cpu_isolation(ISO_TURBO);
+#endif
 		turbo_mode_enable = 0; /* reset */
 
 		if (htask == native_btask_thresh) { /* detect native program */
@@ -1377,6 +1399,7 @@ int __init init_smart(void)
 	log_enable = 0;    /* debug log */
 	trace_enable = 0;  /* debug trace */
 	uevent_enable = 1; /* smart.c will send uevent to user space */
+	turbo_mode_enable = 0;
 
 	mark_addr = kallsyms_lookup_name("tracing_mark_write");
 
@@ -1397,6 +1420,14 @@ int __init init_smart(void)
 	tsmart.tmr_list.data = (unsigned long)&tsmart;
 	tsmart.tmr_list.expires = jiffies + msecs_to_jiffies(SMART_TIMER_INTERVAL_MS);
 	add_timer(&tsmart.tmr_list);
+
+	/* cpu mask for L plus */
+	cpumask_clear(&turbo_cpus);
+	cpumask_set_cpu(0, &turbo_cpus);
+	cpumask_set_cpu(1, &turbo_cpus);
+	cpumask_set_cpu(2, &turbo_cpus);
+	cpumask_set_cpu(3, &turbo_cpus);
+	cpumask_set_cpu(7, &turbo_cpus);
 #endif /* CONFIG_MTK_ACAO_SUPPORT */
 
 	pr_debug(TAG"init smart driver done\n");
