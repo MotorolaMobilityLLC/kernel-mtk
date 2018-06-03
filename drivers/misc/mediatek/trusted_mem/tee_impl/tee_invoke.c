@@ -42,27 +42,29 @@
 static DEFINE_MUTEX(tee_lock);
 static struct trusted_driver_operations *tee_ops;
 static void *tee_session_data;
-static bool is_session_ready;
 
 static inline int
 tee_directly_invoke_cmd_locked(struct trusted_driver_cmd_params *invoke_params)
 {
+	int ret = TMEM_OK;
+
 	if (unlikely(INVALID(invoke_params)))
 		return TMEM_PARAMETER_ERROR;
 
 	if (unlikely(INVALID(tee_ops)))
 		get_tee_peer_ops(&tee_ops);
 
-	if (unlikely(!is_session_ready)) {
-		if (tee_ops->session_open(&tee_session_data, NULL)) {
-			pr_err("%s:%d tee open session failed!\n", __func__,
-			       __LINE__);
-			return TMEM_TEE_CREATE_SESSION_FAILED;
-		}
-		is_session_ready = true;
+	if (tee_ops->session_open(&tee_session_data, NULL)) {
+		pr_err("%s:%d tee open session failed!\n", __func__, __LINE__);
+		return TMEM_TEE_CREATE_SESSION_FAILED;
 	}
 
-	return tee_ops->invoke_cmd(invoke_params, tee_session_data, NULL);
+	ret = tee_ops->invoke_cmd(invoke_params, tee_session_data, NULL);
+
+	if (tee_ops->session_close(tee_session_data, NULL))
+		pr_err("%s:%d tee close session failed!\n", __func__, __LINE__);
+
+	return ret;
 }
 
 int tee_directly_invoke_cmd(struct trusted_driver_cmd_params *invoke_params)
