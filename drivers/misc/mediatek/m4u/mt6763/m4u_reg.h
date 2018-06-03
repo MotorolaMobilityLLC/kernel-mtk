@@ -110,8 +110,7 @@
 #define F_MMU_TOP_DCM     F_BIT_SET(0)
 
 #define REG_MMU_WR_LEN	  (0x54)
-#define F_MMU_MMU1_WRITE_THROTTLING_DIS    F_BIT_SET(11)
-#define F_MMU_MMU0_WRITE_THROTTLING_DIS    F_BIT_SET(10)
+#define F_MMU_WR_THROT_DIS(sel)    F_VAL(sel, 11, 10)
 #define F_MMU_MMU1_WRITE_LEN    F_MSK(9, 5)
 #define F_MMU_MMU0_WRITE_LEN    F_MSK(4, 0)
 

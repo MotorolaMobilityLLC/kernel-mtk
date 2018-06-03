@@ -2476,15 +2476,14 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 	/* special settings for mmu0 (multimedia iommu) */
 	if (m4u_id == 0) {
 		unsigned long m4u_base = gM4UBaseAddr[0];
+
 		/* 2 disable in-order-write */
-#ifndef M4U_FPGAPORTING
 		M4U_WriteReg32(m4u_base, REG_MMU_IN_ORDER_WR_EN, 0);
-#endif
 
 		/* 3 non-standard AXI mode */
 		M4U_WriteReg32(m4u_base, REG_MMU_STANDARD_AXI_MODE, 0);
 		/* 4 write command throttling mode */
-		m4uHw_set_field_by_mask(m4u_base, REG_MMU_WR_LEN, F_BIT_SET(5), 0);
+		m4uHw_set_field_by_mask(m4u_base, REG_MMU_WR_LEN, F_MMU_WR_THROT_DIS(3), F_MMU_WR_THROT_DIS(0));
 		m4uHw_set_field_by_mask(m4u_base, REG_MMU_DUMMY, F_REG_MMU_IDLE_ENABLE, 1);
 	}
 
