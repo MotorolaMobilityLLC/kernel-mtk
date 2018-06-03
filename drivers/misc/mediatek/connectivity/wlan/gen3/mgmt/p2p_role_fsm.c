@@ -668,6 +668,7 @@ VOID p2pRoleFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 	P_P2P_CONNECTION_REQ_INFO_T prP2pConnReqInfo = (P_P2P_CONNECTION_REQ_INFO_T) NULL;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	P_P2P_SPECIFIC_BSS_INFO_T prP2pSpecificBssInfo = (P_P2P_SPECIFIC_BSS_INFO_T) NULL;
+	P_P2P_DEV_FSM_INFO_T prP2pDevFsmInfo = (P_P2P_DEV_FSM_INFO_T) NULL;
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
@@ -677,12 +678,18 @@ VOID p2pRoleFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 		prP2pStartAPMsg = (P_MSG_P2P_START_AP_T) prMsgHdr;
 
 		prP2pRoleFsmInfo = P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prAdapter, prP2pStartAPMsg->ucRoleIdx);
+		prP2pDevFsmInfo = prAdapter->rWifiVar.prP2pDevFsmInfo;
 
 		if (!prP2pRoleFsmInfo) {
 			DBGLOG(P2P, ERROR,
 			       "p2pRoleFsmRunEventStartAP: Corresponding P2P Role FSM empty: %d.\n",
 				prP2pStartAPMsg->ucRoleIdx);
 			break;
+		}
+
+		if (prP2pDevFsmInfo->eCurrentState != P2P_DEV_STATE_IDLE) {
+			DBGLOG(P2P, INFO, "Going to DEV_IDLE as role FSM running\n");
+			p2pDevFsmRunEventAbort(prAdapter, prP2pDevFsmInfo);
 		}
 
 		prP2pBssInfo = prAdapter->aprBssInfo[prP2pRoleFsmInfo->ucBssIndex];
@@ -932,7 +939,7 @@ VOID p2pRoleFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T 
 
 		prP2pRoleFsmInfo = P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prAdapter, prDisconnMsg->ucRoleIdx);
 
-		DBGLOG(P2P, TRACE, "p2pFsmRunEventConnectionAbort: Connection Abort.\n");
+		DBGLOG(P2P, INFO, "p2pFsmRunEventConnectionAbort: Connection Abort.\n");
 
 		if (!prP2pRoleFsmInfo) {
 			DBGLOG(P2P, ERROR,
