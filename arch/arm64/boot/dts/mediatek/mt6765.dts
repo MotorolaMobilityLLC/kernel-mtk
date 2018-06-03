@@ -347,6 +347,34 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-frequency = <150000000>;
 	};
 
+	clocks {
+		clk_null: clk_null {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <0>;
+		};
+
+		clk26m: clk26m {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <26000000>;
+		};
+
+		clk32k: clk32k {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <32000>;
+		};
+	};
+
+	scpsys: scpsys@10001000 {
+		compatible = "mediatek,scpsys";
+		reg = <0 0x10001000 0 0x1000>,
+		<0 0x10006000 0 0x1000>,
+		<0 0x1020e000 0 0x1000>;
+		#clock-cells = <1>;
+	};
+
 	apxgpt@10008000 {
 		compatible = "mediatek,apxgpt";
 		reg = <0 0x10008000 0 0x1000>;
@@ -365,9 +393,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_SPI 171 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
-	apmixed@1000c000 {
-		compatible = "mediatek,apmixed";
-		reg = <0 0x1000c000 0 0x0>;
+	apmixed: apmixed@1000c000 {
+		compatible = "mediatek,apmixed",
+			     "mediatek,apmixedsys", "syscon";
+		reg = <0 0x1000c000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	fhctl@1000ce00 {
