@@ -471,6 +471,21 @@ static int smi_bus_disable_unprepare(const unsigned int reg_indx,
 			reg_indx, reg_indx, user_name, enable_mtcmos);
 		return -EINVAL;
 	}
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+	comm_ref_cnt = smi_clk_get_ref_count(SMI_COMMON_REG_INDX);
+	larb_ref_cnt = smi_clk_get_ref_count(reg_indx);
+	comm_val = M4U_ReadReg32(get_common_base_addr(), 0x440);
+	larb_val = M4U_ReadReg32(get_larb_base_addr(reg_indx), 0x0);
+
+	if (reg_indx != SMI_LARB0_REG_INDX && reg_indx != SMI_COMMON_REG_INDX
+		&& (larb_ref_cnt - 1 == 0) && larb_val != 0x0) {
+		smi_debug_bus_hanging_detect_ext2(0x1ff, 1, 0, 1);
+		SMIERR("%s(%d, %s, %d): %s want turn off larb%d CG%s(%d) but larb%d is busy %#lx\n",
+			__func__, reg_indx, user_name, enable_mtcmos ? 1 : 0,
+			user_name, reg_indx, enable_mtcmos ? "/MTCMOS" : "", larb_ref_cnt, reg_indx, larb_val);
+	}
+#endif
+
 	/* turn off larb clocks and mtcmos & common clocks and mtcmos */
 	if (reg_indx < SMI_COMMON_REG_INDX) { /* larb */
 		for (i = nr_mtcmos_clks[reg_indx] - 1; i >= 0; i--) {
@@ -489,21 +504,6 @@ static int smi_bus_disable_unprepare(const unsigned int reg_indx,
 
 	SMIDBG(1, "smi_bus_disable_unprepare(%d, %s, %d): prepare=%d, enable=%d\n",
 		reg_indx, user_name, enable_mtcmos, smi_prepare_count, smi_enable_count);
-
-#if IS_ENABLED(CONFIG_MACH_MT6771)
-	comm_ref_cnt = smi_clk_get_ref_count(SMI_COMMON_REG_INDX);
-	larb_ref_cnt = smi_clk_get_ref_count(reg_indx);
-	comm_val = M4U_ReadReg32(get_common_base_addr(), 0x440);
-	larb_val = M4U_ReadReg32(get_larb_base_addr(reg_indx), 0x0);
-
-	if (reg_indx != SMI_LARB0_REG_INDX && reg_indx != SMI_COMMON_REG_INDX
-		&& larb_ref_cnt == 0 && larb_val != 0x0) {
-		smi_debug_bus_hanging_detect_ext2(0x1ff, 1, 0, 1);
-		SMIERR("%s(%d, %s, %d): %s want turn off larb%d CG%s(%d) but larb%d is busy %#lx\n",
-			__func__, reg_indx, user_name, enable_mtcmos ? 1 : 0,
-			user_name, reg_indx, enable_mtcmos ? "/MTCMOS" : "", larb_ref_cnt, reg_indx, larb_val);
-	}
-#endif
 	return 0;
 }
 #endif /* defined(SMI_INTERNAL_CCF_SUPPORT) */
