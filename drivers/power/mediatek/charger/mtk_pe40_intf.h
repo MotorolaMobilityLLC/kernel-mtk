@@ -67,7 +67,7 @@ struct mtk_pe40 {
 };
 
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_40_SUPPORT
-extern int mtk_pe40_init(struct charger_manager *pinfo);
+extern bool mtk_pe40_init(struct charger_manager *pinfo);
 extern bool mtk_is_TA_support_pd_pps(struct charger_manager *info);
 extern bool mtk_pe40_is_ready(struct charger_manager *pinfo);
 extern bool mtk_pe40_get_is_connect(struct charger_manager *pinfo);

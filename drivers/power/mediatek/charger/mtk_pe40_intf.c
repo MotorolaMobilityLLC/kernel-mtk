@@ -139,23 +139,29 @@ void mtk_pe40_reset(struct charger_manager *pinfo, bool enable)
 
 void mtk_pe40_plugout_reset(struct charger_manager *pinfo)
 {
-	mtk_pe40_reset(pinfo, true);
+	if (pinfo->enable_pe_4)
+		mtk_pe40_reset(pinfo, true);
 }
 
 void mtk_pe40_end(struct charger_manager *pinfo, int type, bool retry)
 {
-	mtk_pe40_reset(pinfo, retry);
-	mtk_pe40_reset_ta_vchr(pinfo, 1);
-	chr_err("mtk_pe40_end:%d retry:%d\n", type, retry);
+	if (pinfo->enable_pe_4) {
+		mtk_pe40_reset(pinfo, retry);
+		mtk_pe40_reset_ta_vchr(pinfo, 1);
+		chr_err("mtk_pe40_end:%d retry:%d\n", type, retry);
+	}
 }
 
 
-bool mtk_is_TA_support_pd_pps(struct charger_manager *info)
+bool mtk_is_TA_support_pd_pps(struct charger_manager *pinfo)
 {
-	if (info->tcpc == NULL)
+	if (pinfo->tcpc == NULL)
 		return false;
 
-	if (info->pd_type == PD_CONNECT_PE_READY_SNK_APDO)
+	if (pinfo->enable_pe_4 == false)
+		return false;
+
+	if (pinfo->pd_type == PD_CONNECT_PE_READY_SNK_APDO)
 		return true;
 	return false;
 }
@@ -312,6 +318,9 @@ bool mtk_pe40_get_is_connect(struct charger_manager *pinfo)
 	if (mtk_is_TA_support_pd_pps(pinfo) == false)
 		return false;
 
+	if (pinfo->enable_pe_4 == false)
+		return false;
+
 	if ((get_boot_mode() == META_BOOT) && ((get_boot_mode() == ADVMETA_BOOT)))
 		return false;
 
@@ -320,11 +329,17 @@ bool mtk_pe40_get_is_connect(struct charger_manager *pinfo)
 
 void mtk_pe40_set_is_enable(struct charger_manager *pinfo, bool enable)
 {
+	if (pinfo->enable_pe_4 == false)
+		return;
+
 	pinfo->pe4.is_enabled = enable;
 }
 
 bool mtk_pe40_get_is_enable(struct charger_manager *pinfo)
 {
+	if (pinfo->enable_pe_4 == false)
+		return false;
+
 	return pinfo->pe4.is_enabled;
 }
 
@@ -344,7 +359,8 @@ bool mtk_pe40_is_ready(struct charger_manager *pinfo)
 
 	tmp = battery_get_bat_temperature();
 	pdata = &pinfo->chg1_data;
-	chr_err("mtk_pe40_is_ready: hv:%d thermal:%d,%d tmp:%d,%d,%d pps:%d enable:%d\n",
+	chr_err("mtk_pe40_is_ready:%d hv:%d thermal:%d,%d tmp:%d,%d,%d pps:%d enable:%d\n",
+		pinfo->enable_pe_4,
 		pinfo->enable_hv_charging,
 		pdata->thermal_charging_current_limit,
 		pdata->thermal_input_current_limit,
@@ -354,7 +370,8 @@ bool mtk_pe40_is_ready(struct charger_manager *pinfo)
 		mtk_is_TA_support_pd_pps(pinfo),
 		mtk_pe40_get_is_enable(pinfo));
 
-	if (pinfo->enable_hv_charging == false ||
+	if (pinfo->enable_pe_4 == false ||
+		pinfo->enable_hv_charging == false ||
 		pdata->thermal_charging_current_limit != -1 ||
 		pdata->thermal_input_current_limit != -1 ||
 		tmp > HIGH_TEMP_TO_ENTER_PE40 ||
@@ -512,6 +529,10 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 		chr_err("[pe40_i0] err:2 %d\n", ret);
 		goto err;
 	}
+
+	chr_err("[pe40_i0] can_query:%d ret:%d\n",
+		pe40->can_query,
+		ret);
 
 	pe40->pmic_vbus = pmic_get_vbus();
 	pe40->TA_vbus = cap.output_mv;
@@ -883,11 +904,11 @@ err:
 }
 
 
-int mtk_pe40_init(struct charger_manager *pinfo)
+bool mtk_pe40_init(struct charger_manager *pinfo)
 {
 	mtk_pe40_reset(pinfo, true);
 
-	return 0;
+	return true;
 }
 
 

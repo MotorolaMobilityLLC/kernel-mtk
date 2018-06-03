@@ -3955,6 +3955,7 @@
 		enable_pe_plus;
 		enable_pe_2;
 		enable_pe_3;
+		enable_pe_4;
 		power_path_support;
 
 		/* common */
@@ -4004,6 +4005,15 @@
 		pe20_ichg_level_threshold = <1000>;
 		ta_start_battery_soc = <0>;
 		ta_stop_battery_soc = <85>;
+
+		/* PE 4.0 single charger*/
+		pe40_single_charger_input_current = <3000000>;
+		pe40_single_charger_current = <3000000>;
+
+		/* PE 4.0 dual charger*/
+		pe40_dual_charger_input_current = <3000000>;
+		pe40_dual_charger_chg1_current = <2000000>;
+		pe40_dual_charger_chg2_current = <2000000>;
 
 		/* dual charger */
 		chg1_ta_ac_charger_current = <1500000>;

@@ -232,6 +232,13 @@ struct charger_custom_data {
 	int ta_start_battery_soc;
 	int ta_stop_battery_soc;
 
+	/* pe4.0 */
+	int pe40_single_charger_input_current;	/* ma */
+	int pe40_single_charger_current;
+	int pe40_dual_charger_input_current;
+	int pe40_dual_charger_chg1_current;
+	int pe40_dual_charger_chg2_current;
+
 	/* pe3.0 */
 	int cv_limit;	/* vbus upper bound (mv)*/
 	int bat_upper_bound;	/* battery upper bound (mv)*/

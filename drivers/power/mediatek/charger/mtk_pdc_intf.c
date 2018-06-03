@@ -104,6 +104,9 @@ static bool mtk_is_pdc_ready(struct charger_manager *info)
 	if (tcpm_inquire_pd_prev_connected(info->tcpc) == 0)
 		return false;
 
+	if (info->pd_type == PD_CONNECT_PE_READY_SNK_APDO)
+		return false;
+
 	return true;
 }
 
