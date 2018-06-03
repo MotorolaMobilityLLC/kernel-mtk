@@ -103,14 +103,14 @@ enum CMDQ_SWITCH ovl2mem_cmdq_enabled(void)
 	return ovl2mem_use_cmdq;
 }
 
-static void _ovl2mem_path_lock(const char *caller)
+void ovl2mem_path_lock(const char *caller)
 {
 	dprec_logger_start(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 	disp_sw_mutex_lock(&(pgcl->lock));
 	pgcl->mutex_locker = (char *)caller;
 }
 
-static void _ovl2mem_path_unlock(const char *caller)
+void ovl2mem_path_unlock(const char *caller)
 {
 	pgcl->mutex_locker = NULL;
 	disp_sw_mutex_unlock(&(pgcl->lock));
@@ -248,7 +248,7 @@ static int ovl2mem_callback(unsigned int userdata)
 
 	DISPFUNC();
 
-	_ovl2mem_path_lock(__func__);
+	ovl2mem_path_lock(__func__);
 
 	DISPINFO("ovl2mem_callback(%x), current tick=%d, release tick: %d\n", pgcl->session,
 		get_ovl2mem_ticket(), userdata);
@@ -286,7 +286,7 @@ static int ovl2mem_callback(unsigned int userdata)
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x05,
 			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
 
-	_ovl2mem_path_unlock(__func__);
+	ovl2mem_path_unlock(__func__);
 	DISPINFO("ovl2mem_callback done\n");
 
 	return 0;
@@ -339,7 +339,7 @@ int ovl2mem_init(unsigned int session)
 
 	dpmgr_init();
 
-	_ovl2mem_path_lock(__func__);
+	ovl2mem_path_lock(__func__);
 
 	if (pgcl->state > 0) {
 		DISPPR_ERROR("path has created, state%d\n", pgcl->state);
@@ -428,7 +428,7 @@ int ovl2mem_init(unsigned int session)
 	atomic_set(&g_release_ticket, 0);
 
 Exit:
-	_ovl2mem_path_unlock(__func__);
+	ovl2mem_path_unlock(__func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x01, 1);
 
 	DISPMSG("ovl2mem_init done\n");
@@ -614,11 +614,11 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 	struct disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
 	struct dprec_logger_event *input_event, *output_event, *trigger_event;
 
-	_ovl2mem_path_lock(__func__);
+	ovl2mem_path_lock(__func__);
 
 	if (pgcl->state == 0) {
 		DISPERR("ovl2mem is already slept\n");
-		_ovl2mem_path_unlock(__func__);
+		ovl2mem_path_unlock(__func__);
 		return 0;
 	}
 
@@ -654,7 +654,7 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 
 	dprec_done(trigger_event, 0, 0);
 
-	_ovl2mem_path_unlock(__func__);
+	ovl2mem_path_unlock(__func__);
 	return ret;
 
 }
@@ -700,7 +700,7 @@ int ovl2mem_deinit(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_START, 0x03,
 			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
 
-	_ovl2mem_path_lock(__func__);
+	ovl2mem_path_lock(__func__);
 
 	if (pgcl->state == 0) {
 		DISPMSG("path exit, state%d\n", pgcl->state);
@@ -710,9 +710,9 @@ int ovl2mem_deinit(void)
 	/* ovl2mem_wait_done(); */
 	ovl2mem_layer_num = 0;
 	while (((atomic_read(&g_trigger_ticket) - atomic_read(&g_release_ticket)) != 1) && (loop_cnt < 10)) {
-		_ovl2mem_path_unlock(__func__);
+		ovl2mem_path_unlock(__func__);
 		usleep_range(5000, 6000);
-		_ovl2mem_path_lock(__func__);
+		ovl2mem_path_lock(__func__);
 		/* wait the last configuration done */
 		loop_cnt++;
 	}
@@ -754,7 +754,7 @@ int ovl2mem_deinit(void)
 	ret = 0;
 
 Exit:
-	_ovl2mem_path_unlock(__func__);
+	ovl2mem_path_unlock(__func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_END, 0x03, (loop_cnt<<24)|1);
 
 	DISPMSG("ovl2mem_deinit done\n");
