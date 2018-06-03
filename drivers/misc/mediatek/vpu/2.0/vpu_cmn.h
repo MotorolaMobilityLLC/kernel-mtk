@@ -91,6 +91,19 @@ enum vpu_power_param {
 	VPU_POWER_PARAM_VOLT_STEP,
 };
 
+enum vpu_debug_algo_param {
+	VPU_DEBUG_ALGO_PARAM_DUMP_ALGO,
+};
+
+/* enum & structure */
+enum VpuCoreState {
+	VCT_SHUTDOWN	= 1,
+	VCT_BOOTUP		= 2,
+	VCT_EXECUTING	= 3,
+	VCT_IDLE		= 4,
+	VCT_NONE		= -1,
+};
+
 #define DECLARE_VLIST(type) \
 struct type ## _list { \
 	struct type node; \
@@ -246,6 +259,13 @@ void vpu_free_shared_memory(struct vpu_shared_memory *shmem);
 int vpu_ext_be_busy(void);
 
 /**
+ * vpu_debug_func_core_state - change VPU's status(only for debug function use).
+ * @core:		core index of vpu.
+ * @state:		 expetected state.
+ */
+int vpu_debug_func_core_state(int core, enum VpuCoreState state);
+
+/**
  * vpu_dump_register - dump the register table, and show the content of all fields.
  * @s:		the pointer to seq_file.
  */
@@ -294,6 +314,14 @@ int vpu_dump_vpu(struct seq_file *s);
  * @args:       the pointer of arryf of arguments
  */
 int vpu_set_power_parameter(uint8_t param, int argc, int *args);
+
+/**
+ * vpu_set_algo_parameter - set the specific algo parameter
+ * @param:      the sepcific parameter to update
+ * @argc:       the number of arguments
+ * @args:       the pointer of arryf of arguments
+ */
+int vpu_set_algo_parameter(uint8_t param, int argc, int *args);
 
 /* =============================== define in vpu_drv.c  =============================== */
 
