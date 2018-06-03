@@ -53,7 +53,7 @@ struct mtk_idle_twam *mtk_idle_get_twam(void)
 
 static void mtk_idle_twam_callback(struct twam_sig *ts)
 {
-	idle_warn("spm twam (sel%d: %d) ratio: %5u/1000\n",
+	pr_notice("Power/swap spm twam (sel%d: %d) ratio: %5u/1000\n",
 		idle_twam.sel, idle_twam.event,
 		(idle_twam.speed_mode) ? GET_EVENT_RATIO_SPEED(ts->sig0) :
 			GET_EVENT_RATIO_NORMAL(ts->sig0));

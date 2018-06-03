@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,23 +16,6 @@
 #include <linux/random.h>
 #include <asm/setup.h>
 #include <mtk_spm_internal.h>
-
-
-/**************************************
- * Config and Parameter
- **************************************/
-#define LOG_BUF_SIZE		256
-
-#define SPM_WAKE_PERIOD         600	/* sec */
-
-/**************************************
- * Define and Declare
- **************************************/
-
-#define PCM_TIMER_RAMP_BASE_DPIDLE      80          /*  80/32000 =  2.5 ms */
-#define PCM_TIMER_RAMP_BASE_SUSPEND_50MS	0xA0
-#define PCM_TIMER_RAMP_BASE_SUSPEND_SHORT	0x7D000 /* 16sec */
-#define PCM_TIMER_RAMP_BASE_SUSPEND_LONG	0x927C00 /* 5min */
 static u32 pcm_timer_ramp_max_sec_loop = 1;
 
 const char *wakesrc_str[32] = {
@@ -174,22 +157,13 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	wakesta->isr = spm_read(SPM_IRQ_STA);
 }
 
-#define spm_print(suspend, fmt, args...)	\
-do {						\
-	if (!suspend)				\
-		spm_debug(fmt, ##args);		\
-	else					\
-		spm_crit2(fmt, ##args);		\
-} while (0)
-
 void rekick_vcorefs_scenario(void)
 {
 /* FIXME: */
 }
 
-unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
-		const struct pcm_desc *pcmdesc, bool suspend,
-			const char *scenario)
+unsigned int __spm_output_wake_reason(
+	const struct wake_status *wakesta, bool suspend, const char *scenario)
 {
 	int i;
 	char buf[LOG_BUF_SIZE] = { 0 };
@@ -200,10 +174,14 @@ unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 
 	if (wakesta->assert_pc != 0) {
 		/* add size check for vcoredvfs */
-		spm_crit2("PCM ASSERT AT 0x%x (%s), r13 = 0x%x, ",
+		aee_sram_printk("PCM ASSERT AT 0x%x (%s), r13 = 0x%x, ",
+			  wakesta->assert_pc, scenario, wakesta->r13);
+		pr_info("[SPM] PCM ASSERT AT 0x%x (%s), r13 = 0x%x, ",
 			  wakesta->assert_pc, scenario, wakesta->r13);
 
-		spm_crit2(" debug_flag = 0x%x 0x%x\n",
+		aee_sram_printk(" debug_flag = 0x%x 0x%x\n",
+			  wakesta->debug_flag, wakesta->debug_flag1);
+		pr_info(" debug_flag = 0x%x 0x%x\n",
 			  wakesta->debug_flag, wakesta->debug_flag1);
 
 		return WR_PCM_ASSERT;
@@ -265,7 +243,12 @@ unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 
 	WARN_ON(log_size >= 1024);
 
-	spm_print(suspend, "%s", log_buf);
+	if (!suspend)
+		pr_info("[SPM] %s", log_buf);
+	else {
+		aee_sram_printk("%s", log_buf);
+		pr_info("[SPM] %s", log_buf);
+	}
 
 	return wr;
 }
@@ -299,12 +282,13 @@ u32 __spm_get_wake_period(int pwake_time, unsigned int last_wr)
 		period = get_dynamic_period(last_wr != WR_PCM_TIMER
 				? 1 : 0, SPM_WAKE_PERIOD, 1);
 		if (period <= 0) {
-			spm_warn("CANNOT GET PERIOD FROM FUEL GAUGE\n");
+			pr_info("[SPM] CANNOT GET PERIOD FROM FUEL GAUGE\n");
 			period = SPM_WAKE_PERIOD;
 		}
 	} else {
 		period = pwake_time;
-		spm_crit2("pwake = %d\n", pwake_time);
+		aee_sram_printk("pwake = %d\n", pwake_time);
+		pr_info("[SPM] pwake = %d\n", pwake_time);
 	}
 
 	if (period > 36 * 3600)	/* max period is 36.4 hours */
@@ -313,18 +297,7 @@ u32 __spm_get_wake_period(int pwake_time, unsigned int last_wr)
 	return period;
 }
 
-bool __attribute__ ((weak)) mcdi_is_buck_off(int cluster_idx)
-{
-	spm_crit2("NO %s !!!\n", __func__);
-	return false;
-}
-bool __attribute__ ((weak)) cpuhp_is_buck_off(int cluster_idx)
-{
-	spm_crit2("NO %s !!!\n", __func__);
-	return false;
-}
-
-bool is_big_buck_ctrl_by_spm(void)
+static bool is_big_buck_ctrl_by_spm(void)
 {
 	return false;
 }
@@ -338,22 +311,6 @@ void __sync_big_buck_ctrl_pcm_flag(u32 *flag)
 		*flag &= ~(SPM_FLAG1_BIG_BUCK_OFF_ENABLE |
 				SPM_FLAG1_BIG_BUCK_ON_ENABLE);
 	}
-}
-
-void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
-{
-	if (pwrctrl->pcm_flags_cust == 0)
-		pwrctrl->pcm_flags = flags;
-	else
-		pwrctrl->pcm_flags = pwrctrl->pcm_flags_cust;
-}
-
-void set_pwrctrl_pcm_flags1(struct pwr_ctrl *pwrctrl, u32 flags)
-{
-	if (pwrctrl->pcm_flags1_cust == 0)
-		pwrctrl->pcm_flags1 = flags;
-	else
-		pwrctrl->pcm_flags1 = pwrctrl->pcm_flags1_cust;
 }
 
 MODULE_DESCRIPTION("SPM-Internal Driver v0.1");

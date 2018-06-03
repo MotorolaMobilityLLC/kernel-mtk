@@ -1,6 +1,6 @@
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/common/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/$(MTK_PLATFORM)/
@@ -29,6 +29,5 @@ obj-y += mtk_dpidle.o
 obj-y += mtk_sodi.o
 obj-y += mtk_sodi3.o
 obj-y += mtk_spm_resource_req.o
-obj-y += mtk_sleep_init.o
 obj-y += mtk_sleep.o
-obj-y += mtk_spm_sleep.o
+obj-y += mtk_sleep_init.o

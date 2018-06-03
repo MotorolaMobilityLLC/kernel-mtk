@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,14 +16,13 @@
 #include <linux/init.h>
 
 #include <mtk_spm.h>
-#include <mtk_sleep.h>
+#include <mtk_sleep_internal.h>
 
 static int __init mtk_sleep_init(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	slp_module_init();
 	mtk_spm_init();
-
 #endif
 	return 0;
 }

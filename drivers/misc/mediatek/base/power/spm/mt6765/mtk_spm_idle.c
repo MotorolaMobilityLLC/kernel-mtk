@@ -165,7 +165,8 @@ int mtk_idle_trigger_wfi(int idle_type, int cpu)
 	print_ftrace_tag(idle_type, cpu, 0);
 
 	if (spm_dormant_sta < 0)
-		spm_err("idle spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
+		pr_info("[IDLE] idle spm_dormant_sta(%d) < 0\n",
+			spm_dormant_sta);
 
 	return spm_dormant_sta;
 }
@@ -220,6 +221,7 @@ static void spm_idle_pcm_setup_after_wfi(
 static unsigned int slp_dp_timer_val;
 static unsigned int slp_dp_wake_src;
 static unsigned int slp_dp_last_wr = WR_NONE;
+static unsigned long flags;
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 static struct wd_api *wd_api;
 static int wd_ret;
@@ -265,14 +267,19 @@ void mtk_idle_pre_process_by_chip(
 			wd_api->wd_spmwdt_mode_config(WD_REQ_EN
 							, WD_REQ_RST_MODE);
 			wd_api->wd_suspend_notify();
-		} else
-			spm_crit2("FAILED TO GET WD API\n");
+		} else {
+			aee_sram_printk("FAILED TO GET WD API\n");
+			pr_info("[IDLE] FAILED TO GET WD API\n");
+		}
 #endif
 	}
 
 	/* initialize pcm_flags/pcm_flags1 */
 	__spm_set_pwrctrl_pcm_flags(pwrctrl, pcm_flags);
 	__spm_set_pwrctrl_pcm_flags1(pwrctrl, pcm_flags1);
+
+	/* lock spm spin_lock */
+	spin_lock_irqsave(&__spm_lock, flags);
 
 	/* mask irq and backup cirq */
 	mtk_spm_irq_backup();
@@ -326,6 +333,9 @@ void mtk_idle_post_process_by_chip(
 	/* unmask irq and restore cirq */
 	mtk_spm_irq_restore();
 
+	/* unlock spm spin_lock */
+	spin_unlock_irqrestore(&__spm_lock, flags);
+
 	/* [sleep dpidle only] */
 	if (op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE) {
 		/* post watch dog config */
@@ -333,10 +343,14 @@ void mtk_idle_post_process_by_chip(
 		if (!wd_ret) {
 			if (!pwrctrl->wdt_disable)
 				wd_api->wd_resume_notify();
-			else
-				spm_crit2(
+			else {
+				aee_sram_printk((
 					"pwrctrl->wdt_disable %d\n"
 						, pwrctrl->wdt_disable);
+				pr_info(
+					"[SPM] pwrctrl->wdt_disable %d\n"
+						, pwrctrl->wdt_disable);
+			}
 
 			wd_api->wd_spmwdt_mode_config(WD_REQ_DIS
 							, WD_REQ_RST_MODE);
@@ -408,7 +422,7 @@ static unsigned int mtk_dpidle_output_log(
 	}
 
 	if (print_log) {
-		idle_info("op_cond = 0x%x\n", op_cond);
+		pr_info("Power/swap op_cond = 0x%x\n", op_cond);
 #if 0 //FIXME
 		wr = __spm_output_wake_reason(
 			wakesta, false, mtk_idle_name(idle_type));
@@ -451,7 +465,7 @@ static unsigned int mtk_sodi_output_log(
 	}
 
 	if (print_log) {
-		idle_info("op_cond = 0x%x\n", op_cond);
+		pr_info("Power/swap op_cond = 0x%x\n", op_cond);
 #if 0 //FIXME
 		wr = __spm_output_wake_reason(
 			wakesta, false, mtk_idle_name(idle_type));

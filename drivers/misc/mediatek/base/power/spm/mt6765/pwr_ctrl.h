@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #ifndef __PWR_CTRL_H__
 #define __PWR_CTRL_H__
 
@@ -91,7 +104,7 @@ struct pwr_ctrl {
 	u8 md_ddr_en_0_mask_b;
 	u8 md_ddr_en_1_mask_b;
 	u8 conn_ddr_en_mask_b;
-	u8 ddren_md32_apsrc_req_mask_b;
+	u8 ddren_sspm_apsrc_req_mask_b;
 	u8 ddren_scp_apsrc_req_mask_b;
 	u8 disp0_ddren_mask_b;
 	u8 disp1_ddren_mask_b;
@@ -111,7 +124,7 @@ struct pwr_ctrl {
 	u8 md_ddr_en_2_0_mask_b;
 	u8 md_ddr_en_2_1_mask_b;
 	u8 conn_ddr_en_2_mask_b;
-	u8 ddren2_md32_apsrc_req_mask_b;
+	u8 ddren2_sspm_apsrc_req_mask_b;
 	u8 ddren2_scp_apsrc_req_mask_b;
 	u8 disp0_ddren2_mask_b;
 	u8 disp1_ddren2_mask_b;

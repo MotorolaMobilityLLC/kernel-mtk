@@ -22,10 +22,10 @@
 #include <mt-plat/sync_write.h>
 #include <mt-plat/aee.h>
 
-#include "mtk_spm_reg.h"
+#include <mtk_spm_reg.h>
+#include <pwr_ctrl.h>
 //FIXME
 #include <mtk_spm.h>
-#include "pwr_ctrl.h"
 
 
 /* IMPORTANT NOTE: Check cpuidle header file version every time !! */
@@ -37,34 +37,20 @@
 /**************************************
  * Config and Parameter
  **************************************/
-/* SPM_POWER_ON_VAL1 */
-#define POWER_ON_VAL1_DEF	0x00015820
-/* PCM_FSM_STA */
-#define PCM_FSM_STA_DEF		0x00048490
-/* SPM_WAKEUP_EVENT_MASK */
-#define SPM_WAKEUP_EVENT_MASK_DEF	0xF0F92218
+#define LOG_BUF_SIZE           256
+#define SPM_WAKE_PERIOD         600    /* sec */
 
+/**************************************
+ * Define and Declare
+ **************************************/
+#define PCM_TIMER_RAMP_BASE_DPIDLE      80          /*  80/32000 =  2.5 ms */
+#define PCM_TIMER_RAMP_BASE_SUSPEND_50MS       0xA0
+#define PCM_TIMER_RAMP_BASE_SUSPEND_SHORT      0x7D000 /* 16sec */
+#define PCM_TIMER_RAMP_BASE_SUSPEND_LONG       0x927C00 /* 5min */
 /* PCM_WDT_VAL */
 #define PCM_WDT_TIMEOUT		(30 * 32768)	/* 30s */
 /* PCM_TIMER_VAL */
 #define PCM_TIMER_MAX		(0xffffffff - PCM_WDT_TIMEOUT)
-
-#define spm_emerg(fmt, args...)		pr_info("[SPM] " fmt, ##args)
-#define spm_alert(fmt, args...)		pr_info("[SPM] " fmt, ##args)
-#define spm_crit(fmt, args...)		pr_info("[SPM] " fmt, ##args)
-#define spm_err(fmt, args...)		pr_info("[SPM] " fmt, ##args)
-#define spm_warn(fmt, args...)		pr_info("[SPM] " fmt, ##args)
-#define spm_notice(fmt, args...)	pr_notice("[SPM] " fmt, ##args)
-#define spm_info(fmt, args...)		pr_info("[SPM] " fmt, ##args)
-/* pr_debug show nothing */
-#define spm_debug(fmt, args...)		pr_info("[SPM] " fmt, ##args)
-
-/* just use in suspend flow for important log due to console suspend */
-#define spm_crit2(fmt, args...)		\
-do {					\
-	aee_sram_printk(fmt, ##args);	\
-	spm_crit(fmt, ##args);		\
-} while (0)
 
 /* SMC call's marco */
 #define SMC_CALL(_name, _arg0, _arg1, _arg2) \
@@ -136,16 +122,6 @@ enum {
 	WR_UNKNOWN = 5,
 };
 
-enum {
-	SPM_OPT_SLEEP_DPIDLE  = (1 << 0),
-	SPM_OPT_UNIVPLL_STAT  = (1 << 1),
-	SPM_OPT_GPS_STAT      = (1 << 2),
-	SPM_OPT_VCORE_LP_MODE = (1 << 3),
-	SPM_OPT_XO_UFS_OFF    = (1 << 4),
-	SPM_OPT_CLKBUF_ENTER_BBLPM = (1 << 5),
-	NF_SPM_OPT
-};
-
 struct wake_status {
 	u32 assert_pc;      /* PCM_REG_DATA_INI */
 	u32 r12;            /* PCM_REG12_DATA */
@@ -173,7 +149,8 @@ struct spm_lp_scen {
 /***********************************************************
  * mtk_spm.c
  ***********************************************************/
-
+void spm_pm_stay_awake(int sec);
+int spm_load_firmware_status(void);
 
 
 /***********************************************************
@@ -196,11 +173,10 @@ void __spm_set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags);
 void __spm_set_pwrctrl_pcm_flags1(struct pwr_ctrl *pwrctrl, u32 flags);
 void __spm_sync_pcm_flags(struct pwr_ctrl *pwrctrl);
 void __spm_get_wakeup_status(struct wake_status *wakesta);
-unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
-		const struct pcm_desc *pcmdesc, bool suspend,
-			const char *scenario);
-
+unsigned int __spm_output_wake_reason(
+	const struct wake_status *wakesta, bool suspend, const char *scenario);
 unsigned int __spm_get_wake_period(int pwake_time, unsigned int last_wr);
+void __sync_big_buck_ctrl_pcm_flag(u32 *flag);
 
 /***********************************************************
  * mtk_spm_twam.c
@@ -235,14 +211,6 @@ unsigned int __spm_get_wake_period(int pwake_time, unsigned int last_wr);
 #define ISRC_ALL_EXC_TWAM   ISRS_PCM_RETURN
 #define ISRC_ALL            (ISRC_ALL_EXC_TWAM | ISRC_TWAM)
 
-void spm_pm_stay_awake(int sec);
-
-u32 _spm_get_wake_period(int pwake_time, unsigned int last_wr);
-void __sync_big_buck_ctrl_pcm_flag(u32 *flag);
-void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags);
-void set_pwrctrl_pcm_flags1(struct pwr_ctrl *pwrctrl, u32 flags);
-
-
 void spm_twam_register_handler(twam_handler_t handler);
 twam_handler_t spm_twam_handler_get(void);
 void spm_twam_enable_monitor(const struct twam_sig *twamsig, bool speed_mode);
@@ -262,9 +230,9 @@ struct ddrphy_golden_cfg {
 };
 
 enum {
-	SPMFW_LP4X_2CH = 0,
-	SPMFW_LP4X_1CH,
-	SPMFW_LP3_1CH,
+	SPMFW_LP4X_2CH_3733 = 0,
+	SPMFW_LP4X_2CH_3200,
+	SPMFW_LP3_1CH_1866,
 };
 
 int spm_get_spmfw_idx(void);

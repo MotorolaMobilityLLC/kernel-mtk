@@ -80,7 +80,7 @@ static idle_footprint_t fp[NR_IDLE_TYPES] = {
 int __attribute__((weak)) mtk_idle_trigger_wfi(
 	int idle_type, int cpu)
 {
-	idle_warn("%s is not implemented!\n", __func__);
+	pr_notice("Power/swap %s is not implemented!\n", __func__);
 
 	do {
 		isb();
@@ -287,7 +287,7 @@ int mtk_idle_enter(
 	#if defined(CONFIG_MTK_SERIAL)
 	if (!(idle_flag & MTK_IDLE_LOG_DUMP_LP_GS)) {
 		if (request_uart_to_sleep()) {
-			idle_warn("Fail to request uart sleep\n");
+			pr_notice("Power/swap Fail to request uart sleep\n");
 			goto RESTORE_UART;
 		}
 	}
@@ -372,14 +372,14 @@ int mtk_idle_notifier_register(struct notifier_block *n)
 	symname = kallsyms_lookup((unsigned long)n->notifier_call,
 			NULL, NULL, NULL, namebuf);
 	if (symname) {
-		idle_info("[mt_idle_ntf] <%02d>%08lx (%s)\n",
+		pr_info("Power/swap [mt_idle_ntf] <%02d>%08lx (%s)\n",
 			index++, (unsigned long)n->notifier_call, symname);
 	} else {
-		idle_info("[mt_idle_ntf] <%02d>%08lx\n",
+		pr_info("Power/swap [mt_idle_ntf] <%02d>%08lx\n",
 			index++, (unsigned long)n->notifier_call);
 	}
 	#else
-	idle_info("[mt_idle_ntf] <%02d>%08lx\n",
+	pr_info("Power/swap [mt_idle_ntf] <%02d>%08lx\n",
 			index++, (unsigned long)n->notifier_call);
 	#endif
 

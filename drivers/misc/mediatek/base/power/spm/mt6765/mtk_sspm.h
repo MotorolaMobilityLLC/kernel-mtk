@@ -56,7 +56,6 @@ struct spm_data {
 /**************************************
  * mtk_sspm.c
  **************************************/
-
 int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d);
 int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d);
 int spm_to_sspm_command_async_wait(u32 cmd);

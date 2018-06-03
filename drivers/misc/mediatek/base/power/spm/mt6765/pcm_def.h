@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -232,8 +232,8 @@ static const char *wakesrc_str[32] = {
 	[8] = " R12_CCIF0_EVENT_B",
 	[9] = " R12_LOWBATTERY_IRQ_B",
 	[10] = " R12_SSPM_SPM_IRQ_B",
-	[11] = " R12_26M_WAKE",
-	[12] = " R12_26M_SLEEP",
+	[11] = " R12_SCP_SPM_IRQ_B",
+	[12] = " R12_SCP_WDT_EVENT_B",
 	[13] = " R12_PCM_WDT_WAKEUP_B",
 	[14] = " R12_USB_CDSC_B",
 	[15] = " R12_USB_POWERDWN_B",

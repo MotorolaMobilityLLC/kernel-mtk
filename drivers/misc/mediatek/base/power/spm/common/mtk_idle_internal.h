@@ -27,17 +27,6 @@
  *******************************************************************/
 #define MTK_IDLE_TRACE_TAG_ENABLE       (0)
 
-
-/********************************************************************
- * local log definitions
- *******************************************************************/
-#define IDLE_TAG     "Power/swap "
-#define idle_err(fmt, args...)      pr_notice(IDLE_TAG fmt, ##args)
-#define idle_warn(fmt, args...)     pr_notice(IDLE_TAG fmt, ##args)
-#define idle_info(fmt, args...)     pr_info(IDLE_TAG fmt, ##args)
-#define idle_dbg(fmt, args...)      pr_debug(IDLE_TAG fmt, ##args)
-
-
 /********************************************************************
  * mtk idle related definitions
  *******************************************************************/

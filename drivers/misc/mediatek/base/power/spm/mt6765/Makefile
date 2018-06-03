@@ -1,6 +1,5 @@
 # Include mtk_idle_internal.h for MTK_IDLE_OPT_XXX
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/common/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/$(MTK_PLATFORM)/
 # Include mt-plat/upmu_common.h
 # Include mt-plat/mtk_ccci_common.h
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
@@ -17,21 +16,24 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v2/$(MTK_PLATFORM)/inc/
 # Include mmdvfs_mgr.h
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
-
-# Include pmic_api_buck.h
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/
+# Include uart header mtk_uart_api.h
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/uart/include/
 
 obj-y += mtk_spm.o
 obj-y += mtk_spm_twam.o
 obj-y += mtk_spm_irq.o
+ifeq ($(CONFIG_MTK_DRAMC), y)
 obj-y += mtk_spm_dram.o
+endif
 obj-y += mtk_spm_internal.o
 obj-y += mtk_spm_suspend.o
+obj-y += mtk_spm_suspend_process.o
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 obj-y += mtk_sspm.o
 obj-y += mtk_spm_power.o
 endif
 obj-y += mtk_spm_fs.o
+obj-y += mtk_spm_utils.o
 obj-y += mtk_idle_cond_check.o
 obj-y += mtk_spm_idle.o
 

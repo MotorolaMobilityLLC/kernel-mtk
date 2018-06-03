@@ -101,7 +101,7 @@ bool sodi3_can_enter(int reason)
 			reason = BY_BOOT;
 			goto out;
 		} else {
-			idle_warn("SODI3: blocked by uptime, count = %d\n",
+			pr_notice("Power/swap SODI3: blocked by uptime, count = %d\n",
 				sodi3_uptime_block_count);
 			sodi3_uptime_block_count = -1;
 		}
