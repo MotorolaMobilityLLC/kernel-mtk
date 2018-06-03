@@ -638,16 +638,18 @@ static int rt9750_parse_dt(struct rt9750_info *info, struct device *dev)
 		info->en_pinctrl = NULL;
 	}
 
-	info->en_enable = pinctrl_lookup_state(info->en_pinctrl, "en_enable");
-	if (IS_ERR(info->en_enable)) {
-		dev_err(dev, "%s: cannot find en enable!\n", __func__);
-		info->en_enable = NULL;
-	}
+	if (info->en_pinctrl) {
+		info->en_enable = pinctrl_lookup_state(info->en_pinctrl, "en_enable");
+		if (IS_ERR(info->en_enable)) {
+			dev_err(dev, "%s: cannot find en enable!\n", __func__);
+			info->en_enable = NULL;
+		}
 
-	info->en_disable = pinctrl_lookup_state(info->en_pinctrl, "en_disable");
-	if (IS_ERR(info->en_disable)) {
-		dev_err(dev, "%s: cannot find en disable!\n", __func__);
-		info->en_disable = NULL;
+		info->en_disable = pinctrl_lookup_state(info->en_pinctrl, "en_disable");
+		if (IS_ERR(info->en_disable)) {
+			dev_err(dev, "%s: cannot find en disable!\n", __func__);
+			info->en_disable = NULL;
+		}
 	}
 
 	if (of_property_read_string(np, "charger_name",
@@ -657,12 +659,10 @@ static int rt9750_parse_dt(struct rt9750_info *info, struct device *dev)
 	if (of_property_read_string(np, "eint_name", &desc->eint_name) < 0)
 		pr_err("%s: no eint name\n", __func__);
 
-	if (of_property_read_string(np, "regmap_name",
-		&desc->regmap_name) < 0)
+	if (of_property_read_string(np, "regmap_name", &desc->regmap_name) < 0)
 		pr_err("%s: no regmap name\n", __func__);
 
-	if (of_property_read_string(np, "alias_name",
-		&info->chg_props.alias_name) < 0)
+	if (of_property_read_string(np, "alias_name", &desc->alias_name) < 0)
 		pr_err("%s: no alias name\n", __func__);
 
 	if (of_property_read_u32(np, "vout_reg", &desc->vout_reg) < 0)
@@ -678,6 +678,7 @@ static int rt9750_parse_dt(struct rt9750_info *info, struct device *dev)
 		pr_err("%s: no wdt\n", __func__);
 
 	info->desc = desc;
+	info->chg_props.alias_name = info->desc->alias_name;
 	pr_info("%s: chg_name:%s alias:%s\n", __func__,
 		info->desc->chg_dev_name, info->chg_props.alias_name);
 
