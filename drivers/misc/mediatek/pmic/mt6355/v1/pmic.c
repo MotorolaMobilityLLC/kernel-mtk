@@ -93,8 +93,8 @@ void vmd1_pmic_setting_on(void)
 #elif defined(CONFIG_MACH_MT6758)
 	/* 1.Call PMIC driver API configure VMODEM voltage as 0.9V (0.4+0.00625*step)*/
 	ret = pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x50); /* set to 0.9V */
-	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 1.0V (0.51875+0.00625*step)*/
-	ret = pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL, 0x4D); /* set to 1.0V */
+	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 0.95V (0.51875+0.00625*step)*/
+	ret = pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL, 0x45); /* set to 0.95V */
 #else
 	/* 1.Call PMIC driver API configure VMODEM voltage as 0.8V */
 	ret = pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x40); /* set to 0.8V */
@@ -133,7 +133,7 @@ void vmd1_pmic_setting_on(void)
 #if defined(CONFIG_MACH_MT6759)
 	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x3A)
 #elif defined(CONFIG_MACH_MT6758)
-	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x4D)
+	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x45)
 #else
 	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x42)
 #endif
