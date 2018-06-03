@@ -88,7 +88,7 @@
 	}						\
 } while (0)
 
-#define BM_DAEMON_DEFAULT_LOG_LEVEL 7
+#define BM_DAEMON_DEFAULT_LOG_LEVEL 3
 
 
 
