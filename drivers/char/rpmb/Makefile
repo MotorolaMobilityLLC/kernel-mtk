@@ -9,8 +9,14 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/scsi/ufs
 
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6739")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799/mt6739
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6739
+else ifeq ($(CONFIG_MTK_PLATFORM), "mt6799")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6799
+else ifeq ($(CONFIG_MTK_PLATFORM), "mt6763")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6763
 else
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)/$(MTK_PLATFORM)
