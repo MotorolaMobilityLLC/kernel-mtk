@@ -577,8 +577,13 @@ void scp_aed_reset_inplace(scp_excep_id type, scp_core_id id)
 		return;
 	}
 #endif
-	pr_debug("[SCP] SCP_A_REBOOT\n");
-	reset_scp(SCP_A_REBOOT);
+	if (id == SCP_A_ID) {
+		pr_debug("[SCP] SCP_A_REBOOT\n");
+		reset_scp(SCP_A_REBOOT);
+	} else {
+		pr_debug("[SCP] SCP_B_REBOOT\n");
+		reset_scp(SCP_B_REBOOT);
+	}
 }
 
 /*
