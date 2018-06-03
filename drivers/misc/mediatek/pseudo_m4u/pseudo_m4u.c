@@ -37,6 +37,7 @@
 #ifdef CONFIG_MACH_MT8167
 #include <dt-bindings/memory/mt8167-larb-port.h>
 #endif
+#include "mtk_iommu.h"
 
 #define M4U_LOG_LEVEL_HIGH	3
 #define M4U_LOG_LEVEL_MID	2
@@ -2167,9 +2168,10 @@ static int pseudo_probe(struct platform_device *pdev)
 	unsigned int sec_mem_size = 400 * 0x100000;
 	/*reserve mva range for sec */
 	struct device *dev = &pdev->dev;
+	unsigned long iommu_pgt_base = mtk_get_pgt_base();
 
 	pseudo_m4u_session_init();
-	pseudo_m4u_sec_init(mtk_iommu_pgt_base, gM4U_L2_enable, &sec_mem_size);
+	pseudo_m4u_sec_init(iommu_pgt_base, gM4U_L2_enable, &sec_mem_size);
 		/* reserve mva range for security world */
 	__reserve_iova_sec(dev, 0, sec_mem_size);
 }

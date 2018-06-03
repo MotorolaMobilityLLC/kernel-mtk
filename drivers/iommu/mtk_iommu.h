@@ -14,6 +14,8 @@
 #ifndef _MTK_IOMMU_H_
 #define _MTK_IOMMU_H_
 
+#include "io-pgtable.h"
+
 struct mtk_iommu_suspend_reg {
 	u32				standard_axi_mode;
 	u32				dcm_dis;
