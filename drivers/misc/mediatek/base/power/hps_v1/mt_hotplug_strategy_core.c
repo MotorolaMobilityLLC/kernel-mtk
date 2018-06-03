@@ -26,12 +26,69 @@
 
 #include "mt_hotplug_strategy_internal.h"
 
+#if HPS_PERIODICAL_BY_WAIT_QUEUE
+
+static void hps_periodical_by_wait_queue(void)
+{
+	wait_event_timeout(hps_ctxt.wait_queue,
+		atomic_read(&hps_ctxt.is_ondemand) != 0,
+		msecs_to_jiffies(HPS_TIMER_INTERVAL_MS));
+}
+
+#elif HPS_PERIODICAL_BY_TIMER
+
+static u64 hps_get_current_time_ms(void)
+{
+	struct timeval t;
+
+	do_gettimeofday(&t);
+	return (u64)t.tv_sec * 1000 + t.tv_usec / 1000;
+}
+
+static void hps_timer_callback(unsigned long data)
+{
+	int ret;
+
+	log_tmr("timer(%lu): %llu\n", data, hps_get_current_time_ms());
+
+	if (hps_ctxt.tsk_struct_ptr) {
+		ret = wake_up_process(hps_ctxt.tsk_struct_ptr);
+		if (!ret)
+			hps_err("hps task has waked up: %d\n", ret);
+	}
+}
+
+static void hps_periodical_by_timer(void)
+{
+	unsigned int lo, bo;
+
+	if (atomic_read(&hps_ctxt.is_ondemand) != 0)
+		return;
+
+	if (hps_get_num_online_cpus(&lo, &bo) < 0 || lo + bo > 1)
+		hps_ctxt.active_hps_tmr = &hps_ctxt.hps_tmr;
+	else
+		hps_ctxt.active_hps_tmr = &hps_ctxt.hps_tmr_dfr;
+
+	mod_timer(hps_ctxt.active_hps_tmr, (jiffies + msecs_to_jiffies(
+						HPS_TIMER_INTERVAL_MS)));
+
+	set_current_state(TASK_INTERRUPTIBLE);
+	schedule();
+
+	/* waked up */
+
+	if (timer_pending(hps_ctxt.active_hps_tmr))
+		del_timer(hps_ctxt.active_hps_tmr);
+}
+
+#endif /* HPS_PERIODICAL_BY_ */
+
 /*
  * hps task main loop
  */
 static int _hps_task_main(void *data)
 {
-	int cnt = 0;
 	void (*algo_func_ptr)(void);
 
 	hps_ctxt_print_basic(1);
@@ -42,27 +99,21 @@ static int _hps_task_main(void *data)
 		algo_func_ptr = hps_algo_smp;
 
 	while (1) {
-		/* TODO: showld we do dvfs? */
-		/* struct cpufreq_policy *policy; */
-		/* policy = cpufreq_cpu_get(0); */
-		/* dbs_freq_increase(policy, policy->max); */
-		/* cpufreq_cpu_put(policy); */
-
 		(*algo_func_ptr)();
 
-		/* hps_debug("before schedule, cnt:%08d\n", cnt++); */
-
-		wait_event_timeout(hps_ctxt.wait_queue,
-			atomic_read(&hps_ctxt.is_ondemand) != 0,
-			msecs_to_jiffies(HPS_TIMER_INTERVAL_MS));
-
-		/* hps_debug("after schedule, cnt:%08d\n", cnt++); */
+#if HPS_PERIODICAL_BY_WAIT_QUEUE
+		hps_periodical_by_wait_queue();
+#elif HPS_PERIODICAL_BY_TIMER
+		hps_periodical_by_timer();
+#else
+	#error "Unknown HPS_PERIODICAL"
+#endif
 
 		if (kthread_should_stop())
 			break;
-	} /* while(1) */
+	}
 
-	log_info("leave _hps_task_main, cnt:%08d\n", cnt++);
+	log_info("leave _hps_task_main\n");
 	return 0;
 }
 
@@ -103,10 +154,16 @@ void hps_task_stop(void)
 
 void hps_task_wakeup_nolock(void)
 {
-	if (hps_ctxt.tsk_struct_ptr) {
-		atomic_set(&hps_ctxt.is_ondemand, 1);
-		wake_up(&hps_ctxt.wait_queue);
-	}
+	if (!hps_ctxt.tsk_struct_ptr)
+		return;
+
+	atomic_set(&hps_ctxt.is_ondemand, 1);
+
+#if HPS_PERIODICAL_BY_WAIT_QUEUE
+	wake_up(&hps_ctxt.wait_queue);
+#elif HPS_PERIODICAL_BY_TIMER
+	wake_up_process(hps_ctxt.tsk_struct_ptr);
+#endif
 }
 
 void hps_task_wakeup(void)
@@ -126,6 +183,21 @@ int hps_core_init(void)
 	int r = 0;
 
 	log_info("hps_core_init\n");
+
+#if HPS_PERIODICAL_BY_TIMER
+	init_timer_deferrable(&hps_ctxt.hps_tmr_dfr);
+	hps_ctxt.hps_tmr_dfr.function = hps_timer_callback;
+	hps_ctxt.hps_tmr_dfr.data = 1;
+
+	init_timer(&hps_ctxt.hps_tmr);
+	hps_ctxt.hps_tmr.function = hps_timer_callback;
+	hps_ctxt.hps_tmr.data = 2;
+
+	hps_ctxt.active_hps_tmr = &hps_ctxt.hps_tmr;
+	hps_ctxt.active_hps_tmr->expires = jiffies +
+				msecs_to_jiffies(HPS_TIMER_INTERVAL_MS);
+	add_timer(hps_ctxt.active_hps_tmr);
+#endif /* HPS_PERIODICAL_BY_TIMER */
 
 	/* init and start task */
 	r = hps_task_start();
