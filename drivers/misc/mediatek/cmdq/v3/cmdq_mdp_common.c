@@ -203,7 +203,8 @@ void cmdq_mdp_delay_check_unlock(const u64 engine_not_use)
 			cancel_delayed_work(&res->delayCheckWork);
 		}
 		/* Start a new delay task */
-		CMDQ_VERBOSE("[Res]queue delay unlock resource\n");
+		CMDQ_VERBOSE("[Res]queue delay unlock resource engine:0x%llx\n",
+			engine_not_use);
 		queue_delayed_work(mdp_ctx.resource_check_queue,
 			&res->delayCheckWork,
 			CMDQ_DELAY_RELEASE_RESOURCE_MS);
@@ -445,6 +446,9 @@ static void cmdq_mdp_lock_res_impl(struct ResourceUnitStruct *res,
 			}
 		}
 	} else {
+		CMDQ_VERBOSE(
+			"[Res]resource already in use engine:0x%llx notify:%d\n",
+			engine_flag, from_notify);
 		/* Cancel previous delay task if existed */
 		if (res->delaying) {
 			res->delaying = false;
@@ -620,6 +624,8 @@ void cmdq_mdp_unlock_thread(struct cmdqRecStruct *handle)
 		cmdq_core_release_thread(handle->scenario, thread);
 		mdp_ctx.thread[thread].acquired = false;
 	}
+
+	cmdq_mdp_delay_check_unlock(handle->engine_clk);
 
 	mutex_unlock(&mdp_thread_mutex);
 }
