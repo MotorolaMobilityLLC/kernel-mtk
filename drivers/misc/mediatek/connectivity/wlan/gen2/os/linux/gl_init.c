@@ -1202,7 +1202,7 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 
 	fgIsWorkMcStart = TRUE;
 
-	DBGLOG(INIT, INFO, "wlanSetMulticastListWorkQueue\n");
+	DBGLOG(INIT, TRACE, "wlanSetMulticastListWorkQueue\n");
 
 	if (kalHaltLock(KAL_HALT_LOCK_TIMEOUT_NORMAL_CASE))
 		return;

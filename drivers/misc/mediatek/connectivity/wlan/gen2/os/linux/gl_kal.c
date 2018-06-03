@@ -4373,7 +4373,7 @@ inline INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo)
 	struct PERF_MONITOR_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
-	DBGLOG(SW4, INFO, "enter %s\n", __func__);
+	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
 	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag))
 		DBGLOG(SW4, WARN, "abnormal, perf monitory already running\n");
 	KAL_CLR_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag);
@@ -4383,7 +4383,7 @@ inline INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo)
 	cnmTimerInitTimer(prGlueInfo->prAdapter,
 		&prPerMonitor->rPerfMonTimer,
 		(PFN_MGMT_TIMEOUT_FUNC) kalPerMonHandler, (ULONG) NULL);
-	DBGLOG(SW4, INFO, "exit %s\n", __func__);
+	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
 	return 0;
 }
 

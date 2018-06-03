@@ -1429,7 +1429,7 @@ int mtk_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *ndev, bo
 	UINT_32 u4BufLen;
 	PARAM_POWER_MODE ePowerMode;
 
-	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+	DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -3108,7 +3108,7 @@ int	mtk_cfg80211_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
 
-	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+	DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
 
 	if (kalHaltTryLock())
 		return 0;
@@ -3142,7 +3142,7 @@ int mtk_cfg80211_resume(struct wiphy *wiphy)
 	P_ADAPTER_T prAdapter = NULL;
 	UINT_8 i = 0;
 
-	DBGLOG(SCN, INFO, "--> %s()\n", __func__);
+	DBGLOG(SCN, TRACE, "--> %s()\n", __func__);
 
 	if (kalHaltTryLock())
 		return 0;
