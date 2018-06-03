@@ -55,12 +55,12 @@ static int tsallts_debug_log;
 #define tsallts_dprintk(fmt, args...)   \
 	do {                                    \
 		if (tsallts_debug_log) {                \
-			pr_debug("[Power/ALLTS_Thermal]" fmt, ##args);\
+			pr_debug("[Thermal/TZ/CPUALL]" fmt, ##args);\
 		}                                   \
 	} while (0)
 
 #define tsallts_printk(fmt, args...)   \
-	pr_debug("[Power/ALLTS_Thermal]" fmt, ##args)
+	pr_debug("[Thermal/TZ/CPUALL]" fmt, ##args)
 
 static int tsallts_get_index(struct thermal_zone_device *thermal)
 {

@@ -91,9 +91,13 @@ int bts_cur_temp = 1;
 #define mtkts_bts_dprintk(fmt, args...)   \
 do {                                    \
 	if (mtkts_bts_debug_log) {                \
-		pr_debug("[Power/BTS_Thermal]" fmt, ##args); \
+		pr_debug("[Thermal/TZ/BTS]" fmt, ##args); \
 	}                                   \
 } while (0)
+
+
+#define mtkts_bts_printk(fmt, args...) \
+pr_debug("[Thermal/TZ/BTS]" fmt, ##args)
 
 
 /* #define INPUT_PARAM_FROM_USER_AP */
@@ -556,7 +560,7 @@ static int get_hw_bts_temp(void)
 	static int valid_temp;
 
 	if (IMM_IsAdcInitReady() == 0) {
-		pr_debug("[thermal_auxadc_get_data]: AUXADC is not ready\n");
+		mtkts_bts_printk("[thermal_auxadc_get_data]: AUXADC is not ready\n");
 		return 0;
 	}
 
@@ -606,7 +610,7 @@ int mtkts_bts_get_hw_temp(void)
 	bts_cur_temp = t_ret;
 
 	if (t_ret > 40000)	/* abnormal high temp */
-		pr_debug("[Power/BTS_Thermal] T_AP=%d\n", t_ret);
+		mtkts_bts_printk("T_AP=%d\n", t_ret);
 
 	mtkts_bts_dprintk("[mtkts_bts_get_hw_temp] T_AP, %d\n", t_ret);
 	return t_ret;
@@ -1032,7 +1036,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			g_RAP_pull_up_R = ptr_mtktsbts_parm_data->valR;
 			mtkts_bts_dprintk("g_RAP_pull_up_R=%d\n", g_RAP_pull_up_R);
 		} else {
-			pr_debug("[mtkts_bts_write] bad PUP_R argument\n");
+			mtkts_bts_printk("[mtkts_bts_write] bad PUP_R argument\n");
 			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
@@ -1041,7 +1045,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			g_RAP_pull_up_voltage = ptr_mtktsbts_parm_data->valV;
 			mtkts_bts_dprintk("g_Rat_pull_up_voltage=%d\n", g_RAP_pull_up_voltage);
 		} else {
-			pr_debug("[mtkts_bts_write] bad PUP_VOLT argument\n");
+			mtkts_bts_printk("[mtkts_bts_write] bad PUP_VOLT argument\n");
 			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
@@ -1050,7 +1054,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			g_TAP_over_critical_low = ptr_mtktsbts_parm_data->over_cri_low;
 			mtkts_bts_dprintk("g_TAP_over_critical_low=%d\n", g_TAP_over_critical_low);
 		} else {
-			pr_debug("[mtkts_bts_write] bad OVERCRIT_L argument\n");
+			mtkts_bts_printk("[mtkts_bts_write] bad OVERCRIT_L argument\n");
 			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
@@ -1059,7 +1063,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 			g_RAP_ntc_table = ptr_mtktsbts_parm_data->ntc_table;
 			mtkts_bts_dprintk("g_RAP_ntc_table=%d\n", g_RAP_ntc_table);
 		} else {
-			pr_debug("[mtkts_bts_write] bad NTC_TABLE argument\n");
+			mtkts_bts_printk("[mtkts_bts_write] bad NTC_TABLE argument\n");
 			kfree(ptr_mtktsbts_parm_data);
 			return -EINVAL;
 		}
@@ -1086,7 +1090,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 		return count;
 	}
 
-	pr_debug("[mtkts_bts_write] bad argument\n");
+	mtkts_bts_printk("[mtkts_bts_write] bad argument\n");
 	kfree(ptr_mtktsbts_parm_data);
 	return -EINVAL;
 }
@@ -1103,7 +1107,7 @@ static ssize_t mtkts_bts_param_write(struct file *file, const char __user *buffe
 static void mtkts_bts_cancel_thermal_timer(void)
 {
 	/* cancel timer */
-	/* pr_debug("mtkts_bts_cancel_thermal_timer\n"); */
+	/* mtkts_bts_printk("mtkts_bts_cancel_thermal_timer\n"); */
 
 	/* stop thermal framework polling when entering deep idle */
 
@@ -1120,7 +1124,7 @@ static void mtkts_bts_cancel_thermal_timer(void)
 
 static void mtkts_bts_start_thermal_timer(void)
 {
-	/* pr_debug("mtkts_bts_start_thermal_timer\n"); */
+	/* mtkts_bts_printk("mtkts_bts_start_thermal_timer\n"); */
 	/* resume thermal framework polling when leaving deep idle */
 	/*
 	*if (thz_dev != NULL && interval != 0)

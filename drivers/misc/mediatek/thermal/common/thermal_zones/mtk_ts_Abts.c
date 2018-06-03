@@ -63,7 +63,7 @@ static char g_bind9[20] = { 0 };
 #define mtkts_Abts_dprintk(fmt, args...)   \
 do {                                    \
 	if (mtkts_Abts_debug_log) {                \
-		pr_debug("[Power/Abts_Thermal]" fmt, ##args); \
+		pr_debug("[Thermal/TZ/ABTS]" fmt, ##args); \
 	}                                   \
 } while (0)
 

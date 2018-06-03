@@ -90,12 +90,12 @@ exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned int
 }
 
 #define mtk_cooler_mutt_dprintk_always(fmt, args...) \
-pr_debug("thermal/cooler/mutt" fmt, ##args)
+pr_debug("[Thermal/TC/mutt]" fmt, ##args)
 
 #define mtk_cooler_mutt_dprintk(fmt, args...) \
 do { \
 	if (cl_mutt_klog_on == 1) \
-		pr_debug("[thermal/cooler/mutt]" fmt, ##args); \
+		pr_debug("[Thermal/TC/mutt]" fmt, ##args); \
 } while (0)
 
 /* State of "MD off & noIMS" are not included. */

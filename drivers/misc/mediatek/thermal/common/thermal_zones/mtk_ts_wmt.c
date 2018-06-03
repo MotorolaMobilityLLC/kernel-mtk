@@ -47,14 +47,14 @@ static int wmt_tm_debug_log;
 #define wmt_tm_dprintk(fmt, args...)   \
 do { \
 	if (wmt_tm_debug_log) \
-		pr_debug("[Power/WMT_Thermal]" fmt, ##args); \
+		pr_debug("[Thermal/TZ/WMT]" fmt, ##args); \
 } while (0)
 
 #define wmt_tm_printk(fmt, args...)   \
-pr_debug("[Power/WMT_Thermal]" fmt, ##args)
+pr_debug("[Thermal/WMT]" fmt, ##args)
 
 #define wmt_tm_info(fmt, args...)   \
-pr_debug("[Power/WMT_Thermal]" fmt, ##args)
+pr_debug("[Thermal/WMT]" fmt, ##args)
 
 struct linux_thermal_ctrl_if {
 	int kernel_mode;

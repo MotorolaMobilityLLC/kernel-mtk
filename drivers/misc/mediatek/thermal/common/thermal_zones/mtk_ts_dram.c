@@ -64,7 +64,7 @@ static char g_bind9[20] = "";
 #define mtktsdram_dprintk(fmt, args...)			\
 do {								\
 	if (mtktsdram_debug_log)					\
-		pr_debug("[Power/dram_Thermal]" fmt, ##args);	\
+		pr_debug("[Thermal/TZ/DRAM]" fmt, ##args);	\
 } while (0)
 
 static int mtktsdram_get_temp(struct thermal_zone_device *thermal, unsigned long *t)

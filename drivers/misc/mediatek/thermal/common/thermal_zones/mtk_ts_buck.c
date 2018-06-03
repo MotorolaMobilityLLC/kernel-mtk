@@ -77,7 +77,7 @@ static int polling_factor2 = 10000;
 #define tsbuck_dprintk(fmt, args...)   \
 do {									\
 	if (tsbuck_debug_log) {				\
-		pr_debug("Power/PMIC_Thermal", fmt, ##args); \
+		pr_debug("[Thermal/TZ/BUCK]", fmt, ##args); \
 	}								   \
 } while (0)
 
