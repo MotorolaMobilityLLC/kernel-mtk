@@ -38,6 +38,7 @@
 #include <mtk_mcdi_profile.h>
 
 #include <trace/events/mtk_idle_event.h>
+#include <mt-plat/mtk_secure_api.h>
 
 
 /* #define WORST_LATENCY_DBG */
@@ -49,6 +50,7 @@
 #define NF_CMD_BUF          128
 #define LOG_BUF_LEN         1024
 
+static int mcupm_fw_load_success = -1;
 static unsigned long mcdi_cnt_cpu[NF_CPU];
 static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
 
@@ -650,6 +652,19 @@ void mcdi_heart_beat_log_dump(void)
 	pr_info("%s\n", get_mcdi_buf(buf));
 }
 
+/* if success, return 1. If fail, return 0 */
+static int is_mcupm_fw_load_success(void)
+{
+	if (mcupm_fw_load_success == -1) {
+		mcupm_fw_load_success =
+			mt_secure_call(MTK_SIP_KERNEL_MCUPM_FW_LOAD_STATUS, 0, 0, 0);
+
+		if (!mcupm_fw_load_success)
+			pr_err("[MCDI] load mcupmfw fail\n");
+	}
+	return mcupm_fw_load_success;
+}
+
 int mcdi_enter(int cpu)
 {
 	int cluster_idx = cluster_idx_get(cpu);
@@ -659,6 +674,9 @@ int mcdi_enter(int cpu)
 	mcdi_profile_ts(MCDI_PROFILE_ENTER);
 
 	state = mcdi_governor_select(cpu, cluster_idx);
+
+	if (!is_mcupm_fw_load_success())
+		state = MCDI_STATE_WFI;
 
 	mcdi_profile_ts(MCDI_PROFILE_MCDI_GOVERNOR_SELECT_LEAVE);
 
