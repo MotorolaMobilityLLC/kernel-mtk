@@ -1178,16 +1178,16 @@ static ssize_t show_shipment_test(struct device_driver *ddri, char *buf)
 	res = FctShipmntTestProcess_Body();
 	if (1 == res) {
 		MAGN_LOG("shipment_test pass\n");
-		strcpy(result, "y");
+		strncpy(result, "y", sizeof(result));
 	} else if (-1 == res) {
 		MAGN_LOG("shipment_test fail\n");
-		strcpy(result, "n");
+		strncpy(result, "n", sizeof(result));
 	} else {
 		MAGN_LOG("shipment_test NaN\n");
-		strcpy(result, "NaN");
+		strncpy(result, "NaN", sizeof(result));
 	}
 
-	return sprintf(buf, "%s\n", result);
+	return snprintf(buf, PAGE_SIZE, "%s\n", result);
 }
 
 static ssize_t show_daemon_name(struct device_driver *ddri, char *buf)
@@ -1195,7 +1195,7 @@ static ssize_t show_daemon_name(struct device_driver *ddri, char *buf)
 	char strbuf[AKM09911_BUFSIZE];
 
 	sprintf(strbuf, "akmd09911");
-	return sprintf(buf, "%s", strbuf);
+	return snprintf(buf, PAGE_SIZE, "%s", strbuf);
 }
 
 static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
@@ -1203,7 +1203,7 @@ static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
 	char strbuf[AKM09911_BUFSIZE];
 
 	akm09911_ReadChipInfo(strbuf, AKM09911_BUFSIZE);
-	return sprintf(buf, "%s\n", strbuf);
+	return snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
 }
 /*----------------------------------------------------------------------------*/
 static ssize_t show_sensordata_value(struct device_driver *ddri, char *buf)
@@ -1225,7 +1225,7 @@ static ssize_t show_sensordata_value(struct device_driver *ddri, char *buf)
 	sprintf(strbuf, "%d %d %d %d %d %d %d %d %d\n", sensordata[0], sensordata[1], sensordata[2],
 	sensordata[3], sensordata[4], sensordata[5], sensordata[6], sensordata[7], sensordata[8]);
 
-	return sprintf(buf, "%s\n", strbuf);
+	return snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
 }
 /*----------------------------------------------------------------------------*/
 static ssize_t show_posturedata_value(struct device_driver *ddri, char *buf)
@@ -1238,7 +1238,7 @@ static ssize_t show_posturedata_value(struct device_driver *ddri, char *buf)
 	tmp[2] = sensor_data[15] * CONVERT_O / CONVERT_O_DIV;
 	sprintf(strbuf, "%d, %d, %d\n", tmp[0], tmp[1], tmp[2]);
 
-	return sprintf(buf, "%s\n", strbuf);
+	return snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
 }
 
 /*----------------------------------------------------------------------------*/
