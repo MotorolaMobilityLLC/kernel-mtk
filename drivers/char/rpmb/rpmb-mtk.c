@@ -2217,6 +2217,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct rpmb_ioc_param param;
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	u32 rpmb_size = 0;
+	u32 arg_k;
 	struct rpmb_infor rpmbinfor;
 	struct rpmb_dev *rawdev_ufs_rpmb;
 
@@ -2345,7 +2346,19 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_GET_CNT\n", __func__);
 
-		err = rpmb_req_get_wc(NULL, (u32 *)arg, NULL);
+		err = rpmb_req_get_wc(NULL, &arg_k, NULL);
+
+		if (err) {
+			MSG(ERR, "%s, rpmb_req_get_wc IO error!!!(%x)\n", __func__, err);
+			return err;
+		}
+
+		err = copy_to_user((void *)arg, &arg_k, sizeof(u32));
+
+		if (err) {
+			MSG(ERR, "%s, copy_to_user failed: %x\n", __func__, err);
+			return -EFAULT;
+		}
 
 		break;
 
@@ -2355,9 +2368,16 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		rawdev_ufs_rpmb = ufs_mtk_rpmb_get_raw_dev();
 
-		if (rawdev_ufs_rpmb)
-			*(unsigned int *)arg = rpmb_get_rw_size(rawdev_ufs_rpmb);
-		else
+		if (rawdev_ufs_rpmb) {
+
+			arg_k = rpmb_get_rw_size(rawdev_ufs_rpmb);
+			err = copy_to_user((void *)arg, &arg_k, sizeof(u32));
+
+			if (err) {
+				MSG(ERR, "%s, copy_to_user failed: %x\n", __func__, err);
+				return -EFAULT;
+			}
+		} else
 			err = RPMB_ALLOC_ERROR;
 
 		break;
@@ -2379,6 +2399,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct rpmb_ioc_param param;
 	int ret = 0;
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
+	u32 arg_k;
 	u32 rpmb_size = 0;
 	struct rpmb_infor rpmbinfor;
 
@@ -2489,14 +2510,39 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case RPMB_IOCTL_SOTER_GET_CNT:
 
-		ret = ut_rpmb_req_get_wc(card, (unsigned int *)arg);
-			break;
+		ret = ut_rpmb_req_get_wc(card, (unsigned int *)&arg_k);
+
+		if (ret) {
+			MSG(ERR, "%s, rpmb_req_get_wc IO error!!!(%x)\n", __func__, ret);
+			goto end;
+		}
+
+		ret = copy_to_user((void *)arg, &arg_k, sizeof(u32));
+
+		if (ret) {
+			MSG(ERR, "%s, copy_to_user failed: %x\n", __func__, ret);
+			return -EFAULT;
+		}
+
+		break;
 
 	case RPMB_IOCTL_SOTER_GET_WR_SIZE:
 
-			ret = ut_rpmb_req_get_max_wr_size(card, (unsigned int *)arg);
+		ret = ut_rpmb_req_get_max_wr_size(card, (unsigned int *)&arg_k);
 
-			break;
+		if (ret) {
+			MSG(ERR, "%s, ut_rpmb_req_get_max_wr_size failed: %x\n", __func__, ret);
+			goto end;
+		}
+
+		ret = copy_to_user((void *)arg, &arg_k, sizeof(u32));
+
+		if (ret) {
+			MSG(ERR, "%s, copy_to_user failed: %x\n", __func__, ret);
+			return -EFAULT;
+		}
+
+		break;
 
 #endif
 	default:
