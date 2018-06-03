@@ -372,15 +372,15 @@ static unsigned int dramc_tx_tracking(int channel)
 	shu_level = (Reg_Readl(DRAMC_AO_SHUSTATUS) >> 1) & 0x3;
 	if (shu_level == 0) {
 		tx_freq_ratio[0] = 0x8;
-		tx_freq_ratio[1] = 0x7;
-		tx_freq_ratio[2] = 0x4;
+		tx_freq_ratio[1] = 0x4;
+		tx_freq_ratio[2] = 0x6;
 	} else if (shu_level == 1) {
-		tx_freq_ratio[0] = 0xa;
-		tx_freq_ratio[1] = 0x8;
-		tx_freq_ratio[2] = 0x5;
-	} else {
 		tx_freq_ratio[0] = 0x10;
-		tx_freq_ratio[1] = 0xd;
+		tx_freq_ratio[1] = 0x8;
+		tx_freq_ratio[2] = 0xc;
+	} else {
+		tx_freq_ratio[0] = 0xa;
+		tx_freq_ratio[1] = 0x5;
 		tx_freq_ratio[2] = 0x8;
 	}
 	max_pi_adj[0] = 10;
