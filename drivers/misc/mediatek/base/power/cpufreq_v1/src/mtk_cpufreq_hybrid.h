@@ -1,21 +1,18 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
-#ifndef _MT_CPUFREQ_HYBRID_
-#define _MT_CPUFREQ_HYBRID_
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-#define CONFIG_HYBRID_CPU_DVFS 1
-#endif
+#ifndef __MTK_CPUFREQ_HYBRID__
+#define __MTK_CPUFREQ_HYBRID__
 
 struct cpu_dvfs_log {
 	unsigned int time_stamp_l_log:32;
@@ -94,4 +91,5 @@ int cpuhvfs_set_iccs_freq(enum mt_cpu_dvfs_id id, unsigned int freq);
 int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl, char nr_volt_tbl);
 #endif
 int dvfs_to_sspm_command(u32 cmd, struct cdvfs_data *cdvfs_d);
-#endif
+
+#endif	/* __MTK_CPUFREQ_HYBRID__ */

@@ -16,6 +16,11 @@
 
 #include "mtk_cpufreq_internal.h"
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#define CONFIG_HYBRID_CPU_DVFS	1
+#define CPU_DVFS_NOT_READY	1	/* FIXME */
+#endif
+
 /* buck ctrl configs */
 #define NORMAL_DIFF_VRSAM_VPROC		10000
 #define MAX_DIFF_VSRAM_VPROC		30000
