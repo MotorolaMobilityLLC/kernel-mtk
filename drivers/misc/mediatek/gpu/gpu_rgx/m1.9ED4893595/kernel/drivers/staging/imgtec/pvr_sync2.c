@@ -925,7 +925,9 @@ static void pvr_sync_release_timeline(struct sync_timeline *obj)
 	 * after this function returns, so remove our back reference
 	 * to it.
 	 */
+	mutex_lock(&timeline_list_mutex);
 	timeline->obj = NULL;
+	mutex_unlock(&timeline_list_mutex);
 
 	/* This might be the last reference to the timeline object.
 	 * If so, we'll go ahead and delete it now.

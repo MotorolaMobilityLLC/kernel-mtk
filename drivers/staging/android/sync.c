@@ -71,6 +71,15 @@ static void sync_timeline_free(struct kref *kref)
 	if (obj->ops->release_obj)
 		obj->ops->release_obj(obj);
 
+	#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173) || defined(CONFIG_MACH_MT6739)
+	{
+		unsigned long flags;
+		/* WA */
+		spin_lock_irqsave(&obj->child_list_lock, flags);
+		spin_unlock_irqrestore(&obj->child_list_lock, flags);
+	}
+	#endif
+
 	kfree(obj);
 }
 
