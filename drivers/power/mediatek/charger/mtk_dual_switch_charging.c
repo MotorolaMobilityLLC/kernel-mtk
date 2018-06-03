@@ -449,6 +449,15 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 
 	dual_swchg_turn_on_charging(info);
 
+	if (info->enable_sw_jeita) {
+		if (info->sw_jeita.pre_sm != TEMP_T2_TO_T3
+		    && info->sw_jeita.sm == TEMP_T2_TO_T3) {
+			/* set to CC state to reset chg2's ichg */
+			pr_info("back to normal temp, reset state\n");
+			swchgalg->state = CHR_CC;
+		}
+	}
+
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
 	if (chg_done) {
 		swchgalg->state = CHR_BATFULL;
