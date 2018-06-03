@@ -8221,7 +8221,9 @@ static struct task_struct *dc_trim_task;
 static int dc_trim_thread(void *arg)
 {
 	get_hp_lr_trim_offset();
+#ifdef CONFIG_MTK_ACCDET
 	accdet_late_init(0);
+#endif
 	do_exit(0);
 	return 0;
 }
