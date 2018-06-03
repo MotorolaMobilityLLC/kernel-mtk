@@ -219,6 +219,7 @@ static struct irqaction gpt_irq = {
 };
 
 static uint64_t gpt_clkevt_last_interrupt_time;
+static uint64_t gpt_clkevt_last_setting_time;
 
 static irqreturn_t mt_gpt_clkevt_interrupt(int irq, void *dev_id)
 {
@@ -270,7 +271,8 @@ void mt_gpt_clkevt_aee_dump(void)
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
 	/* last interrutp time */
-	pr_info("[GPT] last interrupt: %llu\n", gpt_clkevt_last_interrupt_time);
+	pr_info("[GPT] last interrupt time: %llu\n", gpt_clkevt_last_interrupt_time);
+	pr_info("[GPT] last setting time: %llu\n", gpt_clkevt_last_setting_time);
 
 	/* global gpt status */
 	pr_info("[GPT] IRQEN: 0x%x\n", __raw_readl(GPT_IRQEN));
@@ -459,7 +461,9 @@ static int mt_gpt_clkevt_next_event(unsigned long cycles,
 	__gpt_enable_irq(dev);
 
 	__gpt_clrcnt_and_start(dev);
-
+#if defined(CONFIG_MTK_TIMER_AEE_DUMP)
+	gpt_clkevt_last_setting_time = sched_clock();
+#endif
 	return 0;
 }
 
