@@ -1320,7 +1320,7 @@ int vpu_get_name_of_algo(int core, int id, char **name)
 	int tmp = id;
 	struct vpu_image_header *header;
 
-	header = (struct vpu_image_header *) (vpu_service_cores[core].bin_base + (VPU_OFFSET_IMAGE_HEADERS));
+	header = (struct vpu_image_header *) ((uintptr_t)vpu_service_cores[core].bin_base + (VPU_OFFSET_IMAGE_HEADERS));
 	for (i = 0; i < VPU_NUMS_IMAGE_HEADER; i++) {
 		if (tmp > header[i].algo_info_count) {
 			tmp -= header[i].algo_info_count;
@@ -1349,7 +1349,7 @@ int vpu_get_entry_of_algo(int core, char *name, int *id, unsigned int *mva, int 
 	/* ignore vpu version */
 	coreMagicNum = (0x01 << core);
 
-	header = (struct vpu_image_header *) (vpu_service_cores[core].bin_base + (VPU_OFFSET_IMAGE_HEADERS));
+	header = (struct vpu_image_header *) ((uintptr_t)vpu_service_cores[core].bin_base + (VPU_OFFSET_IMAGE_HEADERS));
 	for (i = 0; i < VPU_NUMS_IMAGE_HEADER; i++) {
 		for (j = 0; j < header[i].algo_info_count; j++) {
 			algo_info = &header[i].algo_infos[j];
@@ -1584,7 +1584,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 		goto out;
 	}
 
-	memcpy((void *) vpu_service_cores[core].work_buf->va, request->buffers,
+	memcpy((void *)(uintptr_t)vpu_service_cores[core].work_buf->va, request->buffers,
 			sizeof(struct vpu_buffer) * request->buffer_count);
 
 	if (g_vpu_log_level > 4)
@@ -1690,7 +1690,7 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 		port_count, info_desc_count, sett_desc_count);
 
 	/* 5. write back data from working buffer */
-	memcpy((void *) algo->ports, (void *) (vpu_service_cores[core].work_buf->va + ofs_ports),
+	memcpy((void *)(uintptr_t)algo->ports, (void *)((uintptr_t)vpu_service_cores[core].work_buf->va + ofs_ports),
 			sizeof(struct vpu_port) * port_count);
 
 	for (i = 0 ; i < algo->port_count ; i++) {
@@ -1698,11 +1698,13 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 			i, algo->ports[i].id, algo->ports[i].name, algo->ports[i].dir, algo->ports[i].usage);
 	}
 
-	memcpy((void *) algo->info_ptr, (void *) (vpu_service_cores[core].work_buf->va + ofs_info),
+	memcpy((void *)(uintptr_t)algo->info_ptr, (void *)((uintptr_t)vpu_service_cores[core].work_buf->va + ofs_info),
 			algo->info_length);
-	memcpy((void *) algo->info_descs, (void *) (vpu_service_cores[core].work_buf->va + ofs_info_descs),
+	memcpy((void *)(uintptr_t)algo->info_descs,
+			(void *)((uintptr_t)vpu_service_cores[core].work_buf->va + ofs_info_descs),
 			sizeof(struct vpu_prop_desc) * info_desc_count);
-	memcpy((void *) algo->sett_descs, (void *) (vpu_service_cores[core].work_buf->va + ofs_sett_descs),
+	memcpy((void *)(uintptr_t)algo->sett_descs,
+			(void *)((uintptr_t)vpu_service_cores[core].work_buf->va + ofs_sett_descs),
 			sizeof(struct vpu_prop_desc) * sett_desc_count);
 
 	LOG_DBG("end of get algo 2, port_count=%d, info_desc_count=%d, sett_desc_count=%d\n",
@@ -1797,7 +1799,7 @@ int vpu_alloc_shared_memory(struct vpu_shared_memory **shmem, struct vpu_shared_
 
 	/* map va */
 	if (param->require_va) {
-		(*shmem)->va = (uint64_t) ion_map_kernel(ion_client, handle);
+		(*shmem)->va = (uint64_t)(uintptr_t)ion_map_kernel(ion_client, handle);
 		ret = ((*shmem)->va) ? 0 : -ENOMEM;
 		CHECK_RET("fail to map va of buffer!\n");
 	}
@@ -1925,7 +1927,7 @@ int vpu_dump_image_file(struct seq_file *s)
 	vpu_print_seq(s, LINE_BAR);
 
 	for (i = 0; i < VPU_NUMS_IMAGE_HEADER; i++) {
-		header = (struct vpu_image_header *) (vpu_service_cores[TEMP_CORE].bin_base +
+		header = (struct vpu_image_header *) ((uintptr_t)vpu_service_cores[TEMP_CORE].bin_base +
 			(VPU_OFFSET_IMAGE_HEADERS) + sizeof(struct vpu_image_header) * i);
 		for (j = 0; j < header->algo_info_count; j++) {
 			algo_info = &header->algo_infos[j];
@@ -1979,7 +1981,7 @@ int vpu_dump_mesg(struct seq_file *s)
 	char *log_head;
 	/* CHRISTODO */
 	int TEMP_CORE = 0;
-	char *log_buf = (char *) (vpu_service_cores[TEMP_CORE].work_buf->va + VPU_OFFSET_LOG);
+	char *log_buf = (char *) ((uintptr_t)vpu_service_cores[TEMP_CORE].work_buf->va + VPU_OFFSET_LOG);
 
 	if (g_vpu_log_level > 8) {
 		int i;

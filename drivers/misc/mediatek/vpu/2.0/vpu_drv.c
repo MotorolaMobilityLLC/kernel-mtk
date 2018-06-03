@@ -588,14 +588,16 @@ static long vpu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long 
 	case VPU_IOCTL_LOAD_ALG_TO_POOL:
 	case VPU_IOCTL_GET_CORE_STATUS:
 	{
-		void *ptr = compat_ptr(arg);
+		/*void *ptr = compat_ptr(arg);*/
 
-		return vpu_ioctl(flip, cmd, (unsigned long) ptr);
+		/*return vpu_ioctl(flip, cmd, (unsigned long) ptr);*/
+		return flip->f_op->unlocked_ioctl(flip, cmd, arg);
 	}
 	case VPU_IOCTL_LOCK:
 	case VPU_IOCTL_UNLOCK:
 	default:
-		return vpu_ioctl(flip, cmd, arg);
+		return -ENOIOCTLCMD;
+		/*return vpu_ioctl(flip, cmd, arg);*/
 	}
 }
 
@@ -997,7 +999,7 @@ static int vpu_probe(struct platform_device *pdev)
 
 			LOG_INF("probe core:%d, phy_addr: 0x%x, phy_size: 0x%x\n",
 				core, phy_addr, phy_size);
-			vpu_device->bin_base = (uint64_t)ioremap_wc(phy_addr, phy_size);
+			vpu_device->bin_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
 			vpu_device->bin_pa = phy_addr;
 			vpu_device->bin_size = phy_size;
 		}

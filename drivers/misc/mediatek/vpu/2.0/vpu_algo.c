@@ -264,7 +264,7 @@ int vpu_alloc_algo(struct vpu_algo **ralgo)
 		LOG_ERR("vpu_alloc_algo(), algo=0x%p\n", algo);
 		return -ENOMEM;
 	}
-	algo->info_ptr = (uint64_t) algo + sizeof(vlist_type(struct vpu_algo));
+	algo->info_ptr = (uintptr_t) algo + sizeof(vlist_type(struct vpu_algo));
 	algo->info_length = prop_info_data_length;
 
 	INIT_LIST_HEAD(vlist_link(algo, struct vpu_algo));
@@ -357,7 +357,7 @@ int vpu_dump_algo(struct seq_file *s)
 						  prop_desc->count,
 						  0);
 
-			info_data = (unsigned char *) (algo->info_ptr + prop_desc->offset);
+			info_data = (unsigned char *) ((uintptr_t)algo->info_ptr + prop_desc->offset);
 			memset(line_buffer, ' ', 24);
 			for (j = 0; j < data_length; j++, info_data++) {
 				int pos = j % 8;
