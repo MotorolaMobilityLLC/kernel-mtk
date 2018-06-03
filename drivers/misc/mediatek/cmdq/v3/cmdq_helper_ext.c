@@ -3466,19 +3466,46 @@ static void cmdq_core_attach_error_handle_detail(
 	mutex_unlock(&cmdq_err_mutex);
 
 	cmdq_core_release_nghandleinfo(&nginfo);
-
-	CMDQ_LOG("%s leave handle:0x%p thread:%d\n", __func__, handle, thread);
 }
 
 static void cmdq_core_attach_error_handle(const struct cmdqRecStruct *handle,
-	s32 thread)
+	enum TASK_STATE_ENUM state)
 {
 	const struct cmdqRecStruct *nghandle = NULL;
 	const char *module = NULL;
 	u32 irq_flag = 0, inst_a = 0, inst_b = 0;
+	u32 op;
 
-	cmdq_core_attach_error_handle_detail(handle,
-		thread, &nghandle, &module, &irq_flag, &inst_a, &inst_b);
+	if (unlikely(!handle)) {
+		CMDQ_ERR("attach error without handle\n");
+		return;
+	}
+
+	if (unlikely((state != TASK_STATE_TIMEOUT))) {
+		CMDQ_ERR("attach error handle:0x%p state:%d\n",
+			handle, state);
+		return;
+	}
+
+	cmdq_core_attach_error_handle_detail(handle, handle->thread,
+		&nghandle, &module, &irq_flag, &inst_a, &inst_b);
+
+	op = (inst_a & 0xFF000000) >> 24;
+
+	switch (op) {
+	case CMDQ_CODE_WFE:
+		CMDQ_AEE(module,
+			"%s in CMDQ IRQ:0x%02x, INST:(0x%08x, 0x%08x), OP:WAIT EVENT:%s\n",
+			module, irq_flag, inst_a, inst_b,
+			cmdq_core_get_event_name(inst_a & (~0xFF000000)));
+		break;
+	default:
+		CMDQ_AEE(module,
+			"%s in CMDQ IRQ:0x%02x, INST:(0x%08x, 0x%08x), OP:%s\n",
+			module, irq_flag, inst_a, inst_b,
+			cmdq_core_parse_op(op));
+		break;
+	}
 }
 
 static s32 cmdq_core_get_thread_id(s32 scenario)
@@ -4588,14 +4615,14 @@ static s32 cmdq_pkt_lock_handle(struct cmdqRecStruct *handle,
 
 	*client_out = client;
 
-	/* Start delay thread before first task */
-	cmdq_delay_thread_start();
-
 	/* task and thread dispatched, increase usage */
 	cmdq_core_clk_enable(handle);
 
 	/* callback clients we are about to start handle in gce */
 	cmdq_handle_cb.begin(handle);
+
+	/* Start delay thread before first task */
+	cmdq_delay_thread_start();
 
 	mutex_lock(&cmdq_handle_list_mutex);
 	list_add_tail(&handle->list_entry, &cmdq_ctx.handle_active);
@@ -4636,16 +4663,6 @@ void cmdq_pkt_release_handle(struct cmdqRecStruct *handle)
 	mutex_lock(&cmdq_handle_list_mutex);
 	list_del_init(&handle->list_entry);
 	mutex_unlock(&cmdq_handle_list_mutex);
-}
-
-static s32 cmdq_pkt_handle_timeout(struct cmdqRecStruct *handle)
-{
-	if (!handle)
-		return -EINVAL;
-
-	cmdq_core_attach_error_handle(handle, handle->thread);
-
-	return 0;
 }
 
 static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
@@ -4691,13 +4708,14 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 	client = cmdq_clients[handle->thread];
 
 	if (data.err == -ETIMEDOUT) {
-		cmdq_pkt_handle_timeout(handle);
+		cmdq_core_attach_error_handle(handle, TASK_STATE_TIMEOUT);
 		handle->state = TASK_STATE_TIMEOUT;
 	} else if (data.err == -ECONNABORTED) {
 		handle->state = TASK_STATE_KILLED;
 	} else if (data.err < 0) {
 		/* IRQ with error, dump commands */
 		handle->state = TASK_STATE_ERR_IRQ;
+		CMDQ_AEE("CMDQ", "Error IRQ\n");
 	} else {
 		/* success done */
 		handle->state = TASK_STATE_DONE;
@@ -4806,7 +4824,6 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 		status = -ETIMEDOUT;
 	} else if (handle->state == TASK_STATE_ERR_IRQ) {
 		status = -EINVAL;
-		cmdq_pkt_dump_command(handle);
 	}
 
 	cmdq_core_track_handle_record(handle, handle->thread);
