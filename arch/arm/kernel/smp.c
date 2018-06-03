@@ -194,12 +194,16 @@ int platform_can_hotplug_cpu(unsigned int cpu)
 	if (smp_ops.cpu_can_disable)
 		return smp_ops.cpu_can_disable(cpu);
 
+#ifdef CONFIG_MACH_MT6757
+	return 1;
+#else
 	/*
 	 * By default, allow disabling all CPUs except the first one,
 	 * since this is special on a lot of platforms, e.g. because
 	 * of clock tick interrupts.
 	 */
 	return cpu != 0;
+#endif
 }
 
 /*
