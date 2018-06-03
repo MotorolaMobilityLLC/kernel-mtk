@@ -256,14 +256,14 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 		sys_dcs_status = status;
 		pr_info("sys_dcs_status=%s\n", dcs_status_name(sys_dcs_status));
 
+		/* notify bwm */
+		notify_bwm_dcs(status == DCS_NORMAL ?
+				normal_channel_num : lowpower_channel_num);
 		/* release DRAM frequency */
 		vcorefs_request_dvfs_opp(KIR_DCS, OPP_UNREQ);
 		/* update DVFSRC setting */
 		spm_dvfsrc_set_channel_bw(status == DCS_NORMAL ?
 				DVFSRC_CHANNEL_4 : DVFSRC_CHANNEL_2);
-		/* notify bwm */
-		notify_bwm_dcs(status == DCS_NORMAL ?
-				normal_channel_num : lowpower_channel_num);
 	} else {
 		pr_info("sys_dcs_status not changed\n");
 	}
