@@ -179,6 +179,7 @@ static bool idle_by_pass_secure_cg;
 static unsigned int idle_block_mask[NR_TYPES][NF_CG_STA_RECORD];
 static bool clkmux_cond[NR_TYPES];
 static unsigned int clkmux_block_mask[NR_TYPES][NF_CLK_CFG];
+static unsigned int clkmux_addr[NF_CLK_CFG];
 
 /* DeepIdle */
 static unsigned int     dpidle_time_criteria = 26000; /* 2ms */
@@ -1497,6 +1498,13 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 		mt_idle_log("\n");
 	}
 
+	mt_idle_log("dpidle_clkmux_cond = %d\n", clkmux_cond[IDLE_TYPE_DP]);
+	for (i = 0; i < NF_CLK_CFG; i++)
+		mt_idle_log("[%02d]block_cond(0x%08x)=0x%08x\n",
+							i,
+							clkmux_addr[i],
+							clkmux_block_mask[IDLE_TYPE_DP][i]);
+
 	mt_idle_log("dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
 	mt_idle_log("dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
 	mt_idle_log("dpidle_dump_log = %u\n", dpidle_dump_log);
@@ -1616,6 +1624,14 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	}
 
 	mt_idle_log("soidle3 pg_stat=0x%08x\n", idle_block_mask[IDLE_TYPE_SO3][NR_GRPS + 1]);
+
+	mt_idle_log("sodi3_clkmux_cond = %d\n",  clkmux_cond[IDLE_TYPE_SO3]);
+	for (i = 0; i < NF_CLK_CFG; i++)
+		mt_idle_log("[%02d]block_cond(0x%08x)=0x%08x\n",
+							i,
+							clkmux_addr[i],
+							clkmux_block_mask[IDLE_TYPE_SO3][i]);
+
 	mt_idle_log("soidle3_bypass_pll=%u\n", soidle3_by_pass_pll);
 	mt_idle_log("soidle3_bypass_cg=%u\n", soidle3_by_pass_cg);
 	mt_idle_log("soidle3_bypass_en=%u\n", soidle3_by_pass_en);
@@ -1949,6 +1965,14 @@ static void mtk_idle_profile_init(void)
 	mtk_idle_block_setting(IDLE_TYPE_RG, rgidle_cnt, NULL, NULL);
 }
 
+void mtk_idle_set_clkmux_addr(void)
+{
+	unsigned int i;
+
+	for (i = 0; i < NF_CLK_CFG; i++)
+		clkmux_addr[i] = 0x10000040 + i * 0x10;
+}
+
 void __init mtk_cpuidle_framework_init(void)
 {
 	idle_ver("[%s]entry!!\n", __func__);
@@ -1995,6 +2019,8 @@ void __init mtk_cpuidle_framework_init(void)
 	mtk_idle_gpt_init();
 
 	dpidle_by_pass_pg = false;
+
+	mtk_idle_set_clkmux_addr();
 	mtk_idle_profile_init();
 }
 EXPORT_SYMBOL(mtk_cpuidle_framework_init);
