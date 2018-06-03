@@ -572,6 +572,16 @@ static int mt6336_set_ichg(struct charger_device *chg_dev, u32 ichg)
 	return 0;
 }
 
+static int mt6336_get_min_ichg(struct charger_device *chg_dev, u32 *uA)
+{
+	unsigned int array_size;
+
+	array_size = ARRAY_SIZE(CS_VTH);
+	*uA = charging_value_to_parameter(CS_VTH, array_size, 0);
+
+	return 0;
+}
+
 static int mt6336_get_cv(struct charger_device *chg_dev, u32 *uV)
 {
 	unsigned int array_size;
@@ -638,6 +648,16 @@ static int mt6336_set_aicr(struct charger_device *chg_dev, u32 aicr)
 	mt6336_set_flag_register_value(MT6336_RG_ICL, register_value);
 
 	pr_debug_ratelimited("%s: 0x%x %d %d\n", __func__, register_value, aicr, set_aicr);
+
+	return 0;
+}
+
+static int mt6336_get_min_aicr(struct charger_device *chg_dev, u32 *uA)
+{
+	unsigned int array_size;
+
+	array_size = ARRAY_SIZE(INPUT_CS_VTH);
+	*uA = charging_value_to_parameter(INPUT_CS_VTH, array_size, 0);
 
 	return 0;
 }
@@ -1001,10 +1021,12 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.is_powerpath_enabled = mt6336_is_powerpath_enabled,
 	.get_charging_current = mt6336_get_ichg,
 	.set_charging_current = mt6336_set_ichg,
+	.get_min_charging_current = mt6336_get_min_ichg,
 	.get_constant_voltage = mt6336_get_cv,
 	.set_constant_voltage = mt6336_set_cv,
 	.get_input_current = mt6336_get_aicr,
 	.set_input_current = mt6336_set_aicr,
+	.get_min_input_current = mt6336_get_min_aicr,
 	.get_eoc_current = mt6336_get_iterm,
 	.set_eoc_current = mt6336_set_iterm,
 	.dump_registers = mt6336_dump_register,

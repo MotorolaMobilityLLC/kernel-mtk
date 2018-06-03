@@ -63,6 +63,8 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 {
 	struct charger_data *pdata, *pdata2;
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
+	u32 ichg1_min = 0, ichg2_min = 0, aicr1_min = 0, aicr2_min = 0;
+	int ret = 0;
 
 	pdata = &info->chg1_data;
 	pdata2 = &info->chg2_data;
@@ -150,21 +152,48 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 		}
 	}
 
-	if (pdata->thermal_charging_current_limit != -1)
+	/*
+	 * TODO: If thermal current limit is less than the minimum charging
+	 * current setting, disable the charger.
+	 */
+
+	if (pdata->thermal_charging_current_limit != -1) {
 		if (pdata->thermal_charging_current_limit < pdata->charging_current_limit)
 			pdata->charging_current_limit = pdata->thermal_charging_current_limit;
+		ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
+		if (ret != -ENOTSUPP && pdata->thermal_charging_current_limit < ichg1_min)
+			pdata->charging_current_limit = 0;
+	}
 
-	if (pdata2->thermal_charging_current_limit != -1)
+
+	if (pdata2->thermal_charging_current_limit != -1) {
 		if (pdata2->thermal_charging_current_limit < pdata2->charging_current_limit)
 			pdata2->charging_current_limit = pdata2->thermal_charging_current_limit;
 
-	if (pdata->thermal_input_current_limit != -1)
+		ret = charger_dev_get_min_charging_current(info->chg2_dev, &ichg2_min);
+		if (ret != -ENOTSUPP && pdata2->thermal_charging_current_limit < ichg2_min)
+			pdata2->charging_current_limit = 0;
+	}
+
+
+	if (pdata->thermal_input_current_limit != -1) {
 		if (pdata->thermal_input_current_limit < pdata->input_current_limit)
 			pdata->input_current_limit = pdata->thermal_input_current_limit;
 
-	if (pdata2->thermal_input_current_limit != -1)
+		ret = charger_dev_get_min_input_current(info->chg1_dev, &aicr1_min);
+		if (ret != -ENOTSUPP && pdata->thermal_input_current_limit < aicr1_min)
+			pdata->input_current_limit = 0;
+	}
+
+	if (pdata2->thermal_input_current_limit != -1) {
 		if (pdata2->thermal_input_current_limit < pdata2->input_current_limit)
 			pdata2->input_current_limit = pdata2->thermal_input_current_limit;
+
+		ret = charger_dev_get_min_input_current(info->chg2_dev, &aicr2_min);
+		if (ret != -ENOTSUPP && pdata2->thermal_input_current_limit < aicr2_min)
+			pdata2->input_current_limit = 0;
+	}
+
 done:
 	pr_err("force:%d thermal:%d %d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d\n",
 		pdata->force_charging_current,
@@ -199,12 +228,28 @@ done:
 				mtk_pe20_reset_ta_vchr(info);
 		}
 	}
-	if (pdata->input_current_limit > 0 && pdata->charging_current_limit > 0)
+	if (pdata->thermal_input_current_limit == -1 &&
+	    pdata->thermal_charging_current_limit == -1 &&
+	    pdata2->thermal_input_current_limit == -1 &&
+	    pdata2->thermal_charging_current_limit == -1) {
+		if (!mtk_pe20_get_is_enable(info)) {
+			mtk_pe20_set_is_enable(info, true);
+			mtk_pe20_set_to_check_chr_type(info, true);
+		}
+	}
+
+	charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
+	charger_dev_get_min_input_current(info->chg1_dev, &aicr1_min);
+
+	/* For thermal control, need to enable charger immediately */
+	if (pdata->input_current_limit > aicr1_min && pdata->charging_current_limit > ichg1_min)
 		charger_dev_enable(info->chg1_dev, true);
+#if 0 /* Enable slave charger at PE+2.0 flow */
 	if (pdata2->input_current_limit > 0 && pdata2->charging_current_limit > 0) {
 		if (mtk_pe20_get_is_enable(info) && mtk_pe20_get_is_connect(info))
 			charger_dev_enable(info->chg2_dev, true);
 	}
+#endif
 	mutex_unlock(&swchgalg->ichg_aicr_access_mutex);
 }
 
@@ -231,12 +276,15 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 {
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 	bool charging_enable = true;
+	bool charging2_enable = true;
 
 	if (swchgalg->state == CHR_ERROR) {
 		charging_enable = false;
+		charging2_enable = false;
 		pr_err("[charger]Charger Error, turn OFF charging !\n");
 	} else if ((get_boot_mode() == META_BOOT) || ((get_boot_mode() == ADVMETA_BOOT))) {
 		charging_enable = false;
+		charging2_enable = false;
 		pr_err("[charger]In meta or advanced meta mode, disable charging.\n");
 	} else {
 		mtk_pe20_start_algorithm(info);
@@ -244,14 +292,34 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 		dual_swchg_select_charging_current_limit(info);
 		if (info->chg1_data.input_current_limit == 0 || info->chg1_data.charging_current_limit == 0) {
 			charging_enable = false;
-			pr_err("[charger]charging current is set 0mA, turn off charging !\r\n");
-		} else {
-			swchg_select_cv(info);
+			if (info->chg1_data.input_current_limit == 0)
+				charging2_enable = false;
+			pr_err("[charger]charging current is set 0mA, turn off charging !\n");
 		}
+		if (info->chg2_data.input_current_limit == 0 || info->chg2_data.charging_current_limit == 0) {
+			charging2_enable = false;
+			pr_err("[charger2]charging current is set 0mA, turn off charging !\n");
+		}
+		if (charging_enable)
+			swchg_select_cv(info);
 	}
 
-	if (charging_enable == true) {
-		charger_dev_enable(info->chg1_dev, true);
+	/* FIXME */
+#if 0
+	if (charging_enable == false || charging2_enable == false) {
+		if (mtk_pe20_get_is_enable(info)) {
+			mtk_pe20_set_is_enable(info, false);
+			if (mtk_pe20_get_is_connect(info))
+				mtk_pe20_reset_ta_vchr(info);
+		}
+	}
+#endif
+
+	charger_dev_enable(info->chg1_dev, charging_enable);
+
+	/* if (charging_enable == true) { */
+	if (charging2_enable == true) {
+		/* charger_dev_enable(info->chg1_dev, true); */
 		if (mtk_pe20_get_is_enable(info) &&
 		    mtk_pe20_get_is_connect(info)) {
 			if (swchgalg->state != CHR_POSTCC) {
@@ -269,7 +337,7 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 			charger_dev_enable_termination(info->chg1_dev, true);
 		}
 	} else {
-		charger_dev_enable(info->chg1_dev, false);
+		/* charger_dev_enable(info->chg1_dev, false); */
 		charger_dev_enable(info->chg2_dev, false);
 	}
 }
@@ -342,14 +410,14 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 	 * enable PE+/PE+20, if it is disabled
 	 */
 	if (info->chg1_data.thermal_input_current_limit != -1 &&
-		info->chg1_data.thermal_input_current_limit < 300)
+		info->chg1_data.thermal_input_current_limit < 300000)
 		return 0;
-
+#if 0
 	if (!mtk_pe20_get_is_enable(info)) {
 		mtk_pe20_set_is_enable(info, true);
 		mtk_pe20_set_to_check_chr_type(info, true);
 	}
-
+#endif
 	return 0;
 }
 
@@ -468,9 +536,11 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 				swchgalg->state = CHR_TUNING;
 				mutex_lock(&swchgalg->ichg_aicr_access_mutex);
 				if (pdata2->charging_current_limit >= 500000)
-					pdata2->charging_current_limit -= 500000;
+					pdata2->charging_current_limit = ichg2 - 500000;
 				else
 					pdata2->charging_current_limit = 0;
+				charger_dev_set_charging_current(info->chg2_dev,
+						pdata2->charging_current_limit);
 				mutex_unlock(&swchgalg->ichg_aicr_access_mutex);
 			}
 			_wake_up_charger(info);
