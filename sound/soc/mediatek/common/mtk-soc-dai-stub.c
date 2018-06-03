@@ -724,6 +724,7 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		.name = MT_SOC_BTCVSD_TX_DAI_NAME,
 		.ops = &mtk_dai_stub_ops,
 	},
+#ifdef _NON_COMMON_FEATURE_READY
 	{
 		.capture = {
 			.stream_name = MT_SOC_MODDAI_STREAM_NAME,
@@ -733,10 +734,12 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 			.channels_max = 2,
 			.rate_min = 8000,
 			.rate_max = 48000,
-	},
+		},
 		.name = MT_SOC_MOD_DAI_NAME,
 		.ops = &mtk_dai_stub_ops,
-	},};
+	},
+#endif
+	};
 
 static const struct snd_soc_component_driver mt_dai_component = {
 	.name       = MT_SOC_DAI_NAME,
