@@ -352,7 +352,7 @@ static const char * const mm_parents[] __initconst = {
 
 static const char * const pwm_parents[] __initconst = {
 	"clk26m",
-	"univpll2_d22",
+	"univpll2_d2",
 	"univpll2_d4"
 };
 
@@ -371,7 +371,7 @@ static const char * const mfg_parents[] __initconst = {
 	"clk26m",
 	"mfgpll_ck",
 	"univpll_d3",
-	"syspll_d2"
+	"syspll_d3"
 };
 
 static const char * const camtg_parents[] __initconst = {
@@ -428,6 +428,7 @@ static const char * const msdc30_2_parents[] __initconst = {
 	"msdcpll_d2"
 };
 
+/* ignore */
 static const char * const msdc30_3_parents[] __initconst = {
 	"clk26m",
 	"msdcpll_d8",
@@ -456,10 +457,11 @@ static const char * const aud_intbus_parents[] __initconst = {
 static const char * const fpwrap_ulposc_parents[] __initconst = {
 	"clk26m",
 	"osc_d16",
-	"osc_d4",
-	"osc_d8"
+	"osc_d8",
+	"osc_d32"
 };
 
+/* ignore */
 static const char * const scp_parents[] __initconst = {
 	"clk26m",
 	"syspll1_d22",
@@ -474,8 +476,8 @@ static const char * const atb_parents[] __initconst = {
 
 static const char * const sspm_parents[] __initconst = {
 	"clk26m",
-	"syspll_d52",
-	"univpll_d5"
+	"syspll1_d2",
+	"syspll_d3"
 };
 
 static const char * const dpi0_parents[] __initconst = {
@@ -508,11 +510,13 @@ static const char * const disppwm_parents[] __initconst = {
 	"osc_d16"
 };
 
+/* ignore */
 static const char * const ssusb_top_sys_parents[] __initconst = {
 	"clk26m",
 	"univpll3_d2"
 };
 
+/* ignore */
 static const char * const ssusb_top_xhci_parents[] __initconst = {
 	"clk26m",
 	"univpll3_d2"
@@ -543,8 +547,8 @@ static const char * const f52m_mfg_parents[] __initconst = {
 
 static const char * const seninf_parents[] __initconst = {
 	"clk26m",
-	"univpll_d72",
-	"univpll2_d23",
+	"univpll_d7",
+	"univpll2_d2",
 	"univpll1_d4"
 };
 
