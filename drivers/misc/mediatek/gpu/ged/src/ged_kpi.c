@@ -176,7 +176,7 @@ typedef struct GED_TIMESTAMP_TAG {
 
 typedef struct GED_KPI_GPU_TS_TAG {
 	int pid;
-	unsigned long long ullWdnd;
+	u64 ullWdnd;
 	unsigned long i32FrameID;
 	struct sync_fence_waiter sSyncWaiter;
 	struct sync_fence *psSyncFence;
@@ -302,10 +302,20 @@ void (*ged_kpi_cpu_boost_check_01)(
 	int ismainhead);
 EXPORT_SYMBOL(ged_kpi_cpu_boost_check_01);
 
+/* ----------------------------------------------------------------------------- */
+void (*ged_kpi_output_gfx_info2_fp)(long long t_gpu, unsigned int cur_freq, unsigned int cur_max_freq, u64 ulID);
+EXPORT_SYMBOL(ged_kpi_output_gfx_info2_fp);
+
+static void ged_kpi_output_gfx_info2(long long t_gpu, unsigned int cur_freq, unsigned int cur_max_freq, u64 ulID)
+{
+	if (ged_kpi_output_gfx_info2_fp)
+		ged_kpi_output_gfx_info2_fp(t_gpu, cur_freq, cur_max_freq, ulID);
+}
+
+/* ----------------------------------------------------------------------------- */
 void (*ged_kpi_output_gfx_info_fp)(long long t_gpu, unsigned int cur_freq, unsigned int cur_max_freq);
 EXPORT_SYMBOL(ged_kpi_output_gfx_info_fp);
 
-/* ----------------------------------------------------------------------------- */
 static void ged_kpi_output_gfx_info(long long t_gpu, unsigned int cur_freq, unsigned int cur_max_freq)
 {
 	if (ged_kpi_output_gfx_info_fp)
@@ -564,7 +574,7 @@ static GED_BOOL ged_kpi_find_main_head_func(unsigned long ulID, void *pvoid, voi
 /* ----------------------------------------------------------------------------- */
 /* for calculating average per-second performance info */
 /* ----------------------------------------------------------------------------- */
-static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED_KPI_HEAD *psHead)
+static inline void ged_kpi_calc_kpi_info(u64 ulID, GED_KPI *psKPI, GED_KPI_HEAD *psHead)
 {
 	ged_hashtable_iterator(gs_hashtable, ged_kpi_find_main_head_func, (void *)NULL);
 #ifdef GED_KPI_DEBUG
@@ -652,7 +662,7 @@ static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED
 #define GED_KPI_GPU_LOADING_INFO_MASK 0x7F
 static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
-	unsigned long ulID = (unsigned long) psKPI->ullWnd;
+	u64 ulID = psKPI->ullWnd;
 	unsigned long frame_attr = 0;
 	unsigned long gpu_info = 0;
 
@@ -810,7 +820,7 @@ static inline void ged_kpi_cpu_boost(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 }
 #endif /* GED_KPI_CPU_BOOST */
 /* ----------------------------------------------------------------------------- */
-static GED_BOOL ged_kpi_tag_type_s(unsigned long ulID, GED_KPI_HEAD *psHead, GED_TIMESTAMP *psTimeStamp)
+static GED_BOOL ged_kpi_tag_type_s(u64 ulID, GED_KPI_HEAD *psHead, GED_TIMESTAMP *psTimeStamp)
 {
 	GED_KPI *psKPI = NULL;
 	GED_BOOL ret = GED_FALSE;
@@ -969,7 +979,7 @@ static GED_BOOL ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead
 }
 /* ----------------------------------------------------------------------------- */
 typedef struct ged_kpi_miss_tag {
-	unsigned long ulID;
+	u64 ulID;
 	unsigned long i32FrameID;
 	GED_TIMESTAMP_TYPE eTimeStampType;
 	struct list_head sList;
@@ -977,7 +987,7 @@ typedef struct ged_kpi_miss_tag {
 
 static GED_KPI_MISS_TAG *miss_tag_head;
 
-static void ged_kpi_record_miss_tag(unsigned long ulID, int i32FrameID, GED_TIMESTAMP_TYPE eTimeStampType)
+static void ged_kpi_record_miss_tag(u64 ulID, int i32FrameID, GED_TIMESTAMP_TYPE eTimeStampType)
 {
 	GED_KPI_MISS_TAG *psMiss_tag;
 
@@ -1006,7 +1016,7 @@ static void ged_kpi_record_miss_tag(unsigned long ulID, int i32FrameID, GED_TIME
 	psMiss_tag->ulID = ulID;
 	list_add_tail(&psMiss_tag->sList, &miss_tag_head->sList);
 }
-static GED_BOOL ged_kpi_find_and_delete_miss_tag(unsigned long ulID, int i32FrameID, GED_TIMESTAMP_TYPE eTimeStampType)
+static GED_BOOL ged_kpi_find_and_delete_miss_tag(u64 ulID, int i32FrameID, GED_TIMESTAMP_TYPE eTimeStampType)
 {
 	GED_BOOL ret = GED_FALSE;
 
@@ -1038,7 +1048,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 	GED_TIMESTAMP *psTimeStamp = GED_CONTAINER_OF(psWork, GED_TIMESTAMP, sWork);
 	GED_KPI_HEAD *psHead;
 	GED_KPI *psKPI = NULL;
-	unsigned long ulID;
+	u64 ulID;
 	unsigned long long phead_last1;
 
 #ifdef GED_KPI_DEBUG
@@ -1053,8 +1063,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			g_i32Pos = 0;
 
 		/* remove */
-		ulID = (unsigned long) psKPI->ullWnd;
-		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
+		ulID = psKPI->ullWnd;
+		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, (unsigned long)ulID);
 		if (psHead) {
 			psHead->i32Count -= 1;
 			list_del(&psKPI->sList);
@@ -1062,7 +1072,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			if (psHead->i32Count < 1 && (psHead->sList.next == &(psHead->sList))) {
 				if (psHead == main_head)
 					main_head = NULL;
-				ged_hashtable_remove(gs_hashtable, ulID);
+				ged_hashtable_remove(gs_hashtable, (unsigned long)ulID);
 				ged_free(psHead, sizeof(GED_KPI_HEAD));
 			}
 		} else {
@@ -1076,8 +1086,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		INIT_LIST_HEAD(&psKPI->sList);
 
 		/* add */
-		ulID = (unsigned long) psTimeStamp->ullWnd;
-		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
+		ulID = psTimeStamp->ullWnd;
+		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, (unsigned long)ulID);
 		if (!psHead) {
 			psHead = (GED_KPI_HEAD *)ged_alloc_atomic(sizeof(GED_KPI_HEAD));
 			if (psHead) {
@@ -1091,7 +1101,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				ged_kpi_update_target_time_and_target_fps(psHead,
 					GED_KPI_MAX_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
 				INIT_LIST_HEAD(&psHead->sList);
-				ged_hashtable_set(gs_hashtable, ulID, (void *)psHead);
+				ged_hashtable_set(gs_hashtable, (unsigned long)ulID, (void *)psHead);
 			} else {
 				GED_PR_ERR("[GED_KPI][Exception] ged_alloc_atomic(sizeof(GED_KPI_HEAD)) failed\n");
 				goto work_cb_end;
@@ -1108,8 +1118,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		break;
 
 	case GED_TIMESTAMP_TYPE_1:
-		ulID = (unsigned long) psTimeStamp->ullWnd;
-		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
+		ulID = psTimeStamp->ullWnd;
+		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, (unsigned long)ulID);
 
 		if (psHead) {
 #ifdef GED_KPI_DFRC
@@ -1246,8 +1256,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 #endif
 		break;
 	case GED_TIMESTAMP_TYPE_2:
-		ulID = (unsigned long) psTimeStamp->ullWnd;
-		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
+		ulID = psTimeStamp->ullWnd;
+		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, (unsigned long)ulID);
 
 
 		if (psHead) {
@@ -1345,6 +1355,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				}
 				ged_kpi_output_gfx_info(psHead->t_gpu_latest, mt_gpufreq_get_cur_freq(),
 					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()));
+				ged_kpi_output_gfx_info2(psHead->t_gpu_latest, psKPI->gpu_freq,
+					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()), ulID);
 			} else {
 				GED_PR_ERR("[GED_KPI][Exception] TYPE_2: psKPI NULL, frameID: %lu\n",
 										psTimeStamp->i32FrameID);
@@ -1356,8 +1368,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		}
 		break;
 	case GED_TIMESTAMP_TYPE_P:
-		ulID = (unsigned long) psTimeStamp->ullWnd;
-		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
+		ulID = psTimeStamp->ullWnd;
+		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, (unsigned long)ulID);
 
 
 		if (psHead) {
@@ -1390,13 +1402,13 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			}
 		} else {
 #ifdef GED_KPI_DEBUG
-			GED_LOGE("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
+			GED_LOGE("[GED_KPI][Exception] no hashtable head for ulID: %llu\n", ulID);
 #endif
 		}
 		break;
 	case GED_TIMESTAMP_TYPE_S:
-		ulID = (unsigned long) psTimeStamp->ullWnd;
-		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
+		ulID = psTimeStamp->ullWnd;
+		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, (unsigned long)ulID);
 
 #ifdef GED_KPI_DEBUG
 		if (!psHead) {
@@ -1406,7 +1418,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 
 		if (ged_kpi_tag_type_s(ulID, psHead, psTimeStamp) != GED_TRUE) {
 #ifdef GED_KPI_DEBUG
-			GED_LOGE("[GED_KPI] TYPE_S timestamp miss, ulID: %lu\n", ulID);
+			GED_LOGE("[GED_KPI] TYPE_S timestamp miss, ulID: %llu\n", ulID);
 #endif
 			ged_kpi_record_miss_tag(ulID, psTimeStamp->i32FrameID, GED_TIMESTAMP_TYPE_S);
 		} else {
@@ -1460,7 +1472,7 @@ work_cb_end:
 /* ----------------------------------------------------------------------------- */
 static GED_ERROR ged_kpi_push_timestamp(
 	GED_TIMESTAMP_TYPE eTimeStampType,
-	unsigned long long ullTimeStamp,
+	u64 ullTimeStamp,
 	int pid,
 	unsigned long long ullWnd,
 	int i32FrameID,
@@ -1544,32 +1556,32 @@ static GED_ERROR ged_kpi_push_timestamp(
 	return GED_OK;
 }
 /* ----------------------------------------------------------------------------- */
-static GED_ERROR ged_kpi_timeD(int pid, unsigned long long ullWdnd, int i32FrameID, int isSF)
+static GED_ERROR ged_kpi_timeD(int pid, u64 ullWdnd, int i32FrameID, int isSF)
 {
 	return ged_kpi_push_timestamp(GED_TIMESTAMP_TYPE_D, ged_get_time(), pid,
 						ullWdnd, i32FrameID, -1, isSF, NULL);
 }
 /* ----------------------------------------------------------------------------- */
-static GED_ERROR ged_kpi_time1(int pid, unsigned long long ullWdnd, int i32FrameID, int QedBuffer_length
+static GED_ERROR ged_kpi_time1(int pid, u64 ullWdnd, int i32FrameID, int QedBuffer_length
 							, void *fence_addr)
 {
 	return ged_kpi_push_timestamp(GED_TIMESTAMP_TYPE_1, ged_get_time(), pid,
 						ullWdnd, i32FrameID, QedBuffer_length, 0, fence_addr);
 }
 /* ----------------------------------------------------------------------------- */
-static GED_ERROR ged_kpi_time2(int pid, unsigned long long ullWdnd, int i32FrameID)
+static GED_ERROR ged_kpi_time2(int pid, u64 ullWdnd, int i32FrameID)
 {
 	return ged_kpi_push_timestamp(GED_TIMESTAMP_TYPE_2, ged_get_time(), pid,
 								ullWdnd, i32FrameID, -1, -1, NULL);
 }
 /* ----------------------------------------------------------------------------- */
-static GED_ERROR ged_kpi_timeP(int pid, unsigned long long ullWdnd, int i32FrameID)
+static GED_ERROR ged_kpi_timeP(int pid, u64 ullWdnd, int i32FrameID)
 {
 	return ged_kpi_push_timestamp(GED_TIMESTAMP_TYPE_P, ged_get_time(), pid,
 								ullWdnd, i32FrameID, -1, -1, NULL);
 }
 /* ----------------------------------------------------------------------------- */
-static GED_ERROR ged_kpi_timeS(int pid, unsigned long long ullWdnd, int i32FrameID)
+static GED_ERROR ged_kpi_timeS(int pid, u64 ullWdnd, int i32FrameID)
 {
 	return ged_kpi_push_timestamp(GED_TIMESTAMP_TYPE_S, ged_get_time(), pid,
 								ullWdnd, i32FrameID, -1, -1, NULL);
@@ -1608,7 +1620,7 @@ static void ged_kpi_wait_for_hw_vsync_cb(void *data)
 }
 #endif
 /* ----------------------------------------------------------------------------- */
-GED_ERROR ged_kpi_acquire_buffer_ts(int pid, unsigned long long ullWdnd, int i32FrameID)
+GED_ERROR ged_kpi_acquire_buffer_ts(int pid, u64 ullWdnd, int i32FrameID)
 {
 #ifdef MTK_GED_KPI
 	GED_ERROR ret;
@@ -1629,7 +1641,7 @@ unsigned int ged_kpi_enabled(void)
 #endif
 }
 /* ----------------------------------------------------------------------------- */
-GED_ERROR ged_kpi_dequeue_buffer_ts(int pid, unsigned long long ullWdnd, int i32FrameID,
+GED_ERROR ged_kpi_dequeue_buffer_ts(int pid, u64 ullWdnd, int i32FrameID,
 									int fence_fd, int isSF)
 {
 #ifdef MTK_GED_KPI
@@ -1671,7 +1683,7 @@ GED_ERROR ged_kpi_dequeue_buffer_ts(int pid, unsigned long long ullWdnd, int i32
 #endif
 }
 /* ----------------------------------------------------------------------------- */
-GED_ERROR ged_kpi_queue_buffer_ts(int pid, unsigned long long ullWdnd, int i32FrameID,
+GED_ERROR ged_kpi_queue_buffer_ts(int pid, u64 ullWdnd, int i32FrameID,
 								int fence_fd, int QedBuffer_length)
 {
 #ifdef MTK_GED_KPI
