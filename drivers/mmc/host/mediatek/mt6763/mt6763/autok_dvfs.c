@@ -551,7 +551,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 				vcore = AUTOK_VCORE_LEVEL0;
 		} else {
 			/* Force use_hw_dvfs as 1 to shut-up annoying
-			   "maybe-uninitialized" error
+			 * "maybe-uninitialized" error
 			 */
 			host->use_hw_dvfs = 1;
 			vcore = vcorefs_get_hw_opp();
