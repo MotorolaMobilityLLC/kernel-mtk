@@ -11,6 +11,8 @@
  * GNU General Public License for more details.
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": %s: " fmt, __func__
+
 #include <linux/types.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -116,19 +118,19 @@ static int lm3643_pinctrl_init(struct platform_device *pdev)
 	/* get pinctrl */
 	lm3643_pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(lm3643_pinctrl)) {
-		fl_pr_err("Failed to get flashlight pinctrl.\n");
+		pr_err("Failed to get flashlight pinctrl.\n");
 		ret = PTR_ERR(lm3643_pinctrl);
 	}
 
 	/* Flashlight HWEN pin initialization */
 	lm3643_hwen_high = pinctrl_lookup_state(lm3643_pinctrl, LM3643_PINCTRL_STATE_HWEN_HIGH);
 	if (IS_ERR(lm3643_hwen_high)) {
-		fl_pr_err("Failed to init (%s)\n", LM3643_PINCTRL_STATE_HWEN_HIGH);
+		pr_err("Failed to init (%s)\n", LM3643_PINCTRL_STATE_HWEN_HIGH);
 		ret = PTR_ERR(lm3643_hwen_high);
 	}
 	lm3643_hwen_low = pinctrl_lookup_state(lm3643_pinctrl, LM3643_PINCTRL_STATE_HWEN_LOW);
 	if (IS_ERR(lm3643_hwen_low)) {
-		fl_pr_err("Failed to init (%s)\n", LM3643_PINCTRL_STATE_HWEN_LOW);
+		pr_err("Failed to init (%s)\n", LM3643_PINCTRL_STATE_HWEN_LOW);
 		ret = PTR_ERR(lm3643_hwen_low);
 	}
 
@@ -140,7 +142,7 @@ static int lm3643_pinctrl_set(int pin, int state)
 	int ret = 0;
 
 	if (IS_ERR(lm3643_pinctrl)) {
-		fl_pr_err("pinctrl is not available\n");
+		pr_err("pinctrl is not available\n");
 		return -1;
 	}
 
@@ -151,13 +153,13 @@ static int lm3643_pinctrl_set(int pin, int state)
 		else if (state == LM3643_PINCTRL_PINSTATE_HIGH && !IS_ERR(lm3643_hwen_high))
 			pinctrl_select_state(lm3643_pinctrl, lm3643_hwen_high);
 		else
-			fl_pr_err("set err, pin(%d) state(%d)\n", pin, state);
+			pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	default:
-		fl_pr_err("set err, pin(%d) state(%d)\n", pin, state);
+		pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	}
-	fl_pr_debug("pin(%d) state(%d)\n", pin, state);
+	pr_debug("pin(%d) state(%d)\n", pin, state);
 
 	return ret;
 }
@@ -217,7 +219,7 @@ static int lm3643_write_reg(struct i2c_client *client, u8 reg, u8 val)
 	mutex_unlock(&chip->lock);
 
 	if (ret < 0)
-		fl_pr_err("failed writing at 0x%02x\n", reg);
+		pr_err("failed writing at 0x%02x\n", reg);
 
 	return ret;
 }
@@ -264,7 +266,7 @@ static int lm3643_enable(int channel)
 	else if (channel == LM3643_CHANNEL_CH2)
 		lm3643_enable_ch2();
 	else {
-		fl_pr_err("Error channel\n");
+		pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -313,7 +315,7 @@ static int lm3643_disable(int channel)
 	else if (channel == LM3643_CHANNEL_CH2)
 		lm3643_disable_ch2();
 	else {
-		fl_pr_err("Error channel\n");
+		pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -372,7 +374,7 @@ static int lm3643_set_level(int channel, int level)
 	else if (channel == LM3643_CHANNEL_CH2)
 		lm3643_set_level_ch2(level);
 	else {
-		fl_pr_err("Error channel\n");
+		pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -423,13 +425,13 @@ static unsigned int lm3643_timeout_ms[LM3643_CHANNEL_NUM];
 
 static void lm3643_work_disable_ch1(struct work_struct *data)
 {
-	fl_pr_debug("ht work queue callback\n");
+	pr_debug("ht work queue callback\n");
 	lm3643_disable_ch1();
 }
 
 static void lm3643_work_disable_ch2(struct work_struct *data)
 {
-	fl_pr_debug("lt work queue callback\n");
+	pr_debug("lt work queue callback\n");
 	lm3643_disable_ch2();
 }
 
@@ -445,28 +447,28 @@ static enum hrtimer_restart lm3643_timer_func_ch2(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
-int lm3643_timer_start(int channel, ktime_t ktime)
+static int lm3643_timer_start(int channel, ktime_t ktime)
 {
 	if (channel == LM3643_CHANNEL_CH1)
 		hrtimer_start(&lm3643_timer_ch1, ktime, HRTIMER_MODE_REL);
 	else if (channel == LM3643_CHANNEL_CH2)
 		hrtimer_start(&lm3643_timer_ch2, ktime, HRTIMER_MODE_REL);
 	else {
-		fl_pr_err("Error channel\n");
+		pr_err("Error channel\n");
 		return -1;
 	}
 
 	return 0;
 }
 
-int lm3643_timer_cancel(int channel)
+static int lm3643_timer_cancel(int channel)
 {
 	if (channel == LM3643_CHANNEL_CH1)
 		hrtimer_cancel(&lm3643_timer_ch1);
 	else if (channel == LM3643_CHANNEL_CH2)
 		hrtimer_cancel(&lm3643_timer_ch2);
 	else {
-		fl_pr_err("Error channel\n");
+		pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -488,25 +490,25 @@ static int lm3643_ioctl(unsigned int cmd, unsigned long arg)
 
 	/* verify channel */
 	if (channel < 0 || channel >= LM3643_CHANNEL_NUM) {
-		fl_pr_err("Failed with error channel\n");
+		pr_err("Failed with error channel\n");
 		return -EINVAL;
 	}
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+		pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		lm3643_timeout_ms[channel] = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
+		pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		lm3643_set_level(channel, fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
+		pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		if (fl_arg->arg == 1) {
 			if (lm3643_timeout_ms[channel]) {
@@ -522,29 +524,29 @@ static int lm3643_ioctl(unsigned int cmd, unsigned long arg)
 		break;
 
 	case FLASH_IOC_GET_DUTY_NUMBER:
-		fl_pr_debug("FLASH_IOC_GET_DUTY_NUMBER(%d)\n", channel);
+		pr_debug("FLASH_IOC_GET_DUTY_NUMBER(%d)\n", channel);
 		fl_arg->arg = LM3643_LEVEL_NUM;
 		break;
 
 	case FLASH_IOC_GET_MAX_TORCH_DUTY:
-		fl_pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
+		pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
 		fl_arg->arg = LM3643_LEVEL_TORCH - 1;
 		break;
 
 	case FLASH_IOC_GET_DUTY_CURRENT:
 		fl_arg->arg = lm3643_verify_level(fl_arg->arg);
-		fl_pr_debug("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
+		pr_debug("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		fl_arg->arg = lm3643_current[fl_arg->arg];
 		break;
 
 	case FLASH_IOC_GET_HW_TIMEOUT:
-		fl_pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
+		pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
 		fl_arg->arg = LM3643_HW_TIMEOUT;
 		break;
 
 	default:
-		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
+		pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
@@ -574,14 +576,14 @@ static int lm3643_set_driver(int set)
 		if (!use_count)
 			ret = lm3643_init();
 		use_count++;
-		fl_pr_debug("Set driver: %d\n", use_count);
+		pr_debug("Set driver: %d\n", use_count);
 	} else {
 		use_count--;
 		if (!use_count)
 			ret = lm3643_uninit();
 		if (use_count < 0)
 			use_count = 0;
-		fl_pr_debug("Unset driver: %d\n", use_count);
+		pr_debug("Unset driver: %d\n", use_count);
 	}
 	mutex_unlock(&lm3643_mutex);
 
@@ -636,13 +638,13 @@ static int lm3643_parse_dt(struct device *dev,
 
 	pdata->channel_num = of_get_child_count(np);
 	if (!pdata->channel_num) {
-		fl_pr_info("Parse no dt, node.\n");
+		pr_info("Parse no dt, node.\n");
 		return 0;
 	}
-	fl_pr_info("Channel number(%d).\n", pdata->channel_num);
+	pr_info("Channel number(%d).\n", pdata->channel_num);
 
 	if (of_property_read_u32(np, "decouple", &decouple))
-		fl_pr_info("Parse no dt, decouple.\n");
+		pr_info("Parse no dt, decouple.\n");
 
 	pdata->dev_id = devm_kzalloc(dev,
 			pdata->channel_num * sizeof(struct flashlight_device_id),
@@ -661,7 +663,7 @@ static int lm3643_parse_dt(struct device *dev,
 		pdata->dev_id[i].channel = i;
 		pdata->dev_id[i].decouple = decouple;
 
-		fl_pr_info("Parse dt (type,ct,part,name,channel,decouple)=(%d,%d,%d,%s,%d,%d).\n",
+		pr_info("Parse dt (type,ct,part,name,channel,decouple)=(%d,%d,%d,%s,%d,%d).\n",
 				pdata->dev_id[i].type, pdata->dev_id[i].ct,
 				pdata->dev_id[i].part, pdata->dev_id[i].name,
 				pdata->dev_id[i].channel, pdata->dev_id[i].decouple);
@@ -682,11 +684,11 @@ static int lm3643_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	int err;
 	int i;
 
-	fl_pr_debug("Probe start.\n");
+	pr_debug("Probe start.\n");
 
 	/* check i2c */
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-		fl_pr_err("Failed to check i2c functionality.\n");
+		pr_err("Failed to check i2c functionality.\n");
 		err = -ENODEV;
 		goto err_out;
 	}
@@ -750,7 +752,7 @@ static int lm3643_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 		}
 	}
 
-	fl_pr_debug("Probe done.\n");
+	pr_debug("Probe done.\n");
 
 	return 0;
 
@@ -767,7 +769,7 @@ static int lm3643_i2c_remove(struct i2c_client *client)
 	struct lm3643_chip_data *chip = i2c_get_clientdata(client);
 	int i;
 
-	fl_pr_debug("Remove start.\n");
+	pr_debug("Remove start.\n");
 
 	client->dev.platform_data = NULL;
 
@@ -785,7 +787,7 @@ static int lm3643_i2c_remove(struct i2c_client *client)
 	/* free resource */
 	kfree(chip);
 
-	fl_pr_debug("Remove done.\n");
+	pr_debug("Remove done.\n");
 
 	return 0;
 }
@@ -820,31 +822,31 @@ static struct i2c_driver lm3643_i2c_driver = {
  *****************************************************************************/
 static int lm3643_probe(struct platform_device *dev)
 {
-	fl_pr_debug("Probe start.\n");
+	pr_debug("Probe start.\n");
 
 	/* init pinctrl */
 	if (lm3643_pinctrl_init(dev)) {
-		fl_pr_debug("Failed to init pinctrl.\n");
+		pr_debug("Failed to init pinctrl.\n");
 		return -1;
 	}
 
 	if (i2c_add_driver(&lm3643_i2c_driver)) {
-		fl_pr_debug("Failed to add i2c driver.\n");
+		pr_debug("Failed to add i2c driver.\n");
 		return -1;
 	}
 
-	fl_pr_debug("Probe done.\n");
+	pr_debug("Probe done.\n");
 
 	return 0;
 }
 
 static int lm3643_remove(struct platform_device *dev)
 {
-	fl_pr_debug("Remove start.\n");
+	pr_debug("Remove start.\n");
 
 	i2c_del_driver(&lm3643_i2c_driver);
 
-	fl_pr_debug("Remove done.\n");
+	pr_debug("Remove done.\n");
 
 	return 0;
 }
@@ -883,34 +885,34 @@ static int __init flashlight_lm3643_init(void)
 {
 	int ret;
 
-	fl_pr_debug("Init start.\n");
+	pr_debug("Init start.\n");
 
 #ifndef CONFIG_OF
 	ret = platform_device_register(&lm3643_platform_device);
 	if (ret) {
-		fl_pr_err("Failed to register platform device\n");
+		pr_err("Failed to register platform device\n");
 		return ret;
 	}
 #endif
 
 	ret = platform_driver_register(&lm3643_platform_driver);
 	if (ret) {
-		fl_pr_err("Failed to register platform driver\n");
+		pr_err("Failed to register platform driver\n");
 		return ret;
 	}
 
-	fl_pr_debug("Init done.\n");
+	pr_debug("Init done.\n");
 
 	return 0;
 }
 
 static void __exit flashlight_lm3643_exit(void)
 {
-	fl_pr_debug("Exit start.\n");
+	pr_debug("Exit start.\n");
 
 	platform_driver_unregister(&lm3643_platform_driver);
 
-	fl_pr_debug("Exit done.\n");
+	pr_debug("Exit done.\n");
 }
 
 module_init(flashlight_lm3643_init);

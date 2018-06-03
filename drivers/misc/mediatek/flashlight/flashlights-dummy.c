@@ -11,6 +11,8 @@
  * GNU General Public License for more details.
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": %s: " fmt, __func__
+
 #include <linux/types.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -115,7 +117,7 @@ static int dummy_write_reg(struct i2c_client *client, u8 reg, u8 val)
 	mutex_unlock(&chip->lock);
 
 	if (ret < 0)
-		fl_pr_err("failed writing at 0x%02x\n", reg);
+		pr_err("failed writing at 0x%02x\n", reg);
 
 	return ret;
 }
@@ -185,7 +187,7 @@ static unsigned int dummy_timeout_ms;
 
 static void dummy_work_disable(struct work_struct *data)
 {
-	fl_pr_debug("work queue callback\n");
+	pr_debug("work queue callback\n");
 	dummy_disable();
 }
 
@@ -210,19 +212,19 @@ static int dummy_ioctl(unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+		pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		dummy_timeout_ms = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
+		pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		dummy_set_level(fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
+		pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		if (fl_arg->arg == 1) {
 			if (dummy_timeout_ms) {
@@ -238,29 +240,29 @@ static int dummy_ioctl(unsigned int cmd, unsigned long arg)
 		break;
 
 	case FLASH_IOC_GET_DUTY_NUMBER:
-		fl_pr_debug("FLASH_IOC_GET_DUTY_NUMBER(%d)\n", channel);
+		pr_debug("FLASH_IOC_GET_DUTY_NUMBER(%d)\n", channel);
 		fl_arg->arg = DUMMY_LEVEL_NUM;
 		break;
 
 	case FLASH_IOC_GET_MAX_TORCH_DUTY:
-		fl_pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
+		pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
 		fl_arg->arg = DUMMY_LEVEL_TORCH - 1;
 		break;
 
 	case FLASH_IOC_GET_DUTY_CURRENT:
 		fl_arg->arg = dummy_verify_level(fl_arg->arg);
-		fl_pr_debug("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
+		pr_debug("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		fl_arg->arg = dummy_current[fl_arg->arg];
 		break;
 
 	case FLASH_IOC_GET_HW_TIMEOUT:
-		fl_pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
+		pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
 		fl_arg->arg = DUMMY_HW_TIMEOUT;
 		break;
 
 	default:
-		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
+		pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
@@ -290,14 +292,14 @@ static int dummy_set_driver(int set)
 		if (!use_count)
 			ret = dummy_init();
 		use_count++;
-		fl_pr_debug("Set driver: %d\n", use_count);
+		pr_debug("Set driver: %d\n", use_count);
 	} else {
 		use_count--;
 		if (!use_count)
 			ret = dummy_uninit();
 		if (use_count < 0)
 			use_count = 0;
-		fl_pr_debug("Unset driver: %d\n", use_count);
+		pr_debug("Unset driver: %d\n", use_count);
 	}
 	mutex_unlock(&dummy_mutex);
 
@@ -352,13 +354,13 @@ static int dummy_parse_dt(struct device *dev,
 
 	pdata->channel_num = of_get_child_count(np);
 	if (!pdata->channel_num) {
-		fl_pr_info("Parse no dt, node.\n");
+		pr_info("Parse no dt, node.\n");
 		return 0;
 	}
-	fl_pr_info("Channel number(%d).\n", pdata->channel_num);
+	pr_info("Channel number(%d).\n", pdata->channel_num);
 
 	if (of_property_read_u32(np, "decouple", &decouple))
-		fl_pr_info("Parse no dt, decouple.\n");
+		pr_info("Parse no dt, decouple.\n");
 
 	pdata->dev_id = devm_kzalloc(dev,
 			pdata->channel_num * sizeof(struct flashlight_device_id),
@@ -377,7 +379,7 @@ static int dummy_parse_dt(struct device *dev,
 		pdata->dev_id[i].channel = i;
 		pdata->dev_id[i].decouple = decouple;
 
-		fl_pr_info("Parse dt (type,ct,part,name,channel,decouple)=(%d,%d,%d,%s,%d,%d).\n",
+		pr_info("Parse dt (type,ct,part,name,channel,decouple)=(%d,%d,%d,%s,%d,%d).\n",
 				pdata->dev_id[i].type, pdata->dev_id[i].ct,
 				pdata->dev_id[i].part, pdata->dev_id[i].name,
 				pdata->dev_id[i].channel, pdata->dev_id[i].decouple);
@@ -398,11 +400,11 @@ static int dummy_i2c_probe(struct i2c_client *client, const struct i2c_device_id
 	int err;
 	int i;
 
-	fl_pr_debug("Probe start.\n");
+	pr_debug("Probe start.\n");
 
 	/* check i2c */
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-		fl_pr_err("Failed to check i2c functionality.\n");
+		pr_err("Failed to check i2c functionality.\n");
 		err = -ENODEV;
 		goto err_out;
 	}
@@ -462,7 +464,7 @@ static int dummy_i2c_probe(struct i2c_client *client, const struct i2c_device_id
 		}
 	}
 
-	fl_pr_debug("Probe done.\n");
+	pr_debug("Probe done.\n");
 
 	return 0;
 
@@ -479,7 +481,7 @@ static int dummy_i2c_remove(struct i2c_client *client)
 	struct dummy_chip_data *chip = i2c_get_clientdata(client);
 	int i;
 
-	fl_pr_debug("Remove start.\n");
+	pr_debug("Remove start.\n");
 
 	client->dev.platform_data = NULL;
 
@@ -496,7 +498,7 @@ static int dummy_i2c_remove(struct i2c_client *client)
 	/* free resource */
 	kfree(chip);
 
-	fl_pr_debug("Remove done.\n");
+	pr_debug("Remove done.\n");
 
 	return 0;
 }
