@@ -607,6 +607,7 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 	unsigned int read_violation;
 	unsigned int write_violation;
 	unsigned int device_count;
+	unsigned int shift_done;
 	unsigned int i;
 	struct pt_regs *regs;
 
@@ -636,28 +637,44 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 			if (readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA) & (0x1 << i)) {
 				mt_reg_sync_writel(0x1 << i, DEVAPC_PD_INFRA_VIO_SHIFT_SEL);
 				mt_reg_sync_writel(0x1, DEVAPC_PD_INFRA_VIO_SHIFT_CON);
-				while (readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON) & 0x3 != 0x3)
-					DEVAPC_VIO_MSG("[DEVAPC] Syncing INFRA DBG0 & DBG1...\n");
+				for (shift_done = 0; (shift_done < 0x100)
+					&& (readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON) & 0x3 != 0x3); ++shift_done)
+					DEVAPC_VIO_MSG("[DEVAPC] Syncing INFRA DBG0 & DBG1 (%d, %d)\n", i, shift_done);
+
+				DEVAPC_VIO_MSG("[DEVAPC] VIO_SHIFT_SEL=0x%X, VIO_SHIFT_CON=0x%X\n",
+					readl(DEVAPC_PD_INFRA_VIO_SHIFT_SEL), readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON));
+				if (readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON) & 0x3 == 0x3) {
+					DEVAPC_VIO_MSG("[DEVAPC] Sync INFRA DBG0 & DBG1 (%d) SUCCESS\n", i);
+					shift_done = 1;
+				} else {
+					DEVAPC_VIO_MSG("[DEVAPC] Sync INFRA DBG0 & DBG1 (%d) FAIL\n", i);
+					shift_done = 0;
+				}
+
+				mt_reg_sync_writel(0x0, DEVAPC_PD_INFRA_VIO_SHIFT_CON);
+				if (shift_done) {
+					dbg0 = readl(DEVAPC_PD_INFRA_VIO_DBG0);
+					dbg1 = readl(DEVAPC_PD_INFRA_VIO_DBG1);
+					master_id = (dbg0 & INFRA_VIO_DBG_MSTID) >> INFRA_VIO_DBG_MSTID_START_BIT;
+					domain_id = (dbg0 & INFRA_VIO_DBG_DMNID) >> INFRA_VIO_DBG_DMNID_START_BIT;
+					write_violation = (dbg0 & INFRA_VIO_DBG_W_VIO) >> INFRA_VIO_DBG_W_VIO_START_BIT;
+					read_violation = (dbg0 & INFRA_VIO_DBG_R_VIO) >> INFRA_VIO_DBG_R_VIO_START_BIT;
+					vio_addr_high = (dbg0 & INFRA_VIO_ADDR_HIGH) >> INFRA_VIO_ADDR_HIGH_START_BIT;
+				}
+				mt_reg_sync_writel(0x0, DEVAPC_PD_INFRA_VIO_SHIFT_SEL);
+				mt_reg_sync_writel(0x1 << i, DEVAPC_PD_INFRA_VIO_SHIFT_STA);
 				DEVAPC_VIO_MSG("[DEVAPC] VIO_SHIFT_STA=0x%X, VIO_SHIFT_SEL=0x%X, VIO_SHIFT_CON=0x%X\n",
 					readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA), readl(DEVAPC_PD_INFRA_VIO_SHIFT_SEL),
 					readl(DEVAPC_PD_INFRA_VIO_SHIFT_CON));
-				mt_reg_sync_writel(0x0, DEVAPC_PD_INFRA_VIO_SHIFT_CON);
-				dbg0 = readl(DEVAPC_PD_INFRA_VIO_DBG0);
-				dbg1 = readl(DEVAPC_PD_INFRA_VIO_DBG1);
-				master_id = (dbg0 & INFRA_VIO_DBG_MSTID) >> INFRA_VIO_DBG_MSTID_START_BIT;
-				domain_id = (dbg0 & INFRA_VIO_DBG_DMNID) >> INFRA_VIO_DBG_DMNID_START_BIT;
-				write_violation = (dbg0 & INFRA_VIO_DBG_W_VIO) >> INFRA_VIO_DBG_W_VIO_START_BIT;
-				read_violation = (dbg0 & INFRA_VIO_DBG_R_VIO) >> INFRA_VIO_DBG_R_VIO_START_BIT;
-				vio_addr_high = (dbg0 & INFRA_VIO_ADDR_HIGH) >> INFRA_VIO_ADDR_HIGH_START_BIT;
-				mt_reg_sync_writel(0x0, DEVAPC_PD_INFRA_VIO_SHIFT_SEL);
-				mt_reg_sync_writel(0x1 << i, DEVAPC_PD_INFRA_VIO_SHIFT_STA);
 
 				/* violation information improvement */
-				DEVAPC_VIO_MSG("[DEVAPC] Violation(Infra,%s%s) - Process:%s, PID:%i\n",
-					read_violation == 1 ? "R" : " ", write_violation == 1 ? "W" : " ",
-					current->comm, current->pid);
-				DEVAPC_VIO_MSG("[DEVAPC] Vio Addr:0x%x (High:0x%x), Bus ID:0x%x, Dom ID:0x%x\n",
-					dbg1, vio_addr_high, master_id, domain_id);
+				if (shift_done) {
+					DEVAPC_VIO_MSG("[DEVAPC] Violation(Infra,%s%s) - Process:%s, PID:%i\n",
+						read_violation == 1 ? "R" : " ", write_violation == 1 ? "W" : " ",
+						current->comm, current->pid);
+					DEVAPC_VIO_MSG("[DEVAPC] Vio Addr:0x%x (High:0x%x), Bus ID:0x%x, Dom ID:0x%x\n",
+						dbg1, vio_addr_high, master_id, domain_id);
+				}
 			}
 
 		device_count = ARRAY_SIZE(devapc_infra_devices);
@@ -669,7 +686,7 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 			if (devapc_infra_devices[i].enable_vio_irq == true && check_infra_vio_status(i) == 1) {
 				clear_infra_vio_status(i);
 				DEVAPC_VIO_MSG("[DEVAPC] Access Violation Slave: %s (infra index=%d)\n",
-									devapc_infra_devices[i].device, i);
+					devapc_infra_devices[i].device, i);
 			}
 
 		DEVAPC_VIO_MSG("[DEVAPC] INFRA VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
