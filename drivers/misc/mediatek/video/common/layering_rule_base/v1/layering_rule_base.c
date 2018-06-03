@@ -1626,6 +1626,8 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			unsigned long int layer_num = 0;
 
 			tok = parse_hrt_data_value(line_buf, &layer_num);
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &disp_id);
 			if (layer_num != 0)
 				disp_info->input_config[disp_id] =
@@ -1638,6 +1640,8 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			unsigned long int tmp_info;
 
 			tok = strchr(line_buf, ']');
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &disp_id);
 			for (i = 0 ; i < HRT_LAYER_DATA_NUM ; i++) {
 				tok = parse_hrt_data_value(tok, &tmp_info);
@@ -1658,8 +1662,14 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			long int layer_result = 0, layer_id;
 
 			tok = strchr(line_buf, ']');
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &disp_id);
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &layer_id);
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &layer_result);
 			if (layer_result != disp_info->input_config[disp_id][layer_id].ovl_id) {
 				DISPWARN("Test case:%d, ovl_id incorrect, real is %d, expect is %d\n",
@@ -1667,7 +1677,8 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 					(int)layer_result);
 				is_test_pass = false;
 			}
-
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &layer_result);
 			if (layer_result != disp_info->input_config[disp_id][layer_id].ext_sel_layer) {
 				DISPWARN("Test case:%d, ext_sel_layer incorrect, real is %d, expect is %d\n",
@@ -1679,7 +1690,11 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			long int gles_num = 0;
 
 			tok = strchr(line_buf, ']');
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &disp_id);
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &gles_num);
 			if (gles_num != disp_info->gles_head[disp_id]) {
 				DISPWARN("Test case:%d, gles head incorrect, gles head is %d, expect is %d\n",
@@ -1687,6 +1702,8 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 				is_test_pass = false;
 			}
 
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &gles_num);
 			if (gles_num != disp_info->gles_tail[disp_id]) {
 				DISPWARN("Test case:%d, gles tail incorrect, gles tail is %d, expect is %d\n",
@@ -1701,6 +1718,8 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 				DISPWARN("Test case:%d, hrt num incorrect, hrt_num is %d, expect is %d\n",
 					(int)test_case, HRT_GET_DVFS_LEVEL(disp_info->hrt_num), (int)hrt_num);
 
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &hrt_num);
 			if (hrt_num != (HRT_GET_PATH_SCENARIO(disp_info->hrt_num) & 0x1F)) {
 				DISPWARN("Test case:%d, hrt path incorrect, disp_path is %d, expect is %d\n",
@@ -1708,6 +1727,8 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 				is_test_pass = false;
 			}
 
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &hrt_num);
 			if (hrt_num != HRT_GET_SCALE_SCENARIO(disp_info->hrt_num)) {
 				DISPWARN("Test case:%d, hrt scale scenario incorrect, hrt scale is %d, expect is %d\n",
@@ -1719,6 +1740,8 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			unsigned long int layer_num = 0;
 
 			tok = parse_hrt_data_value(line_buf, &layer_num);
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &disp_id);
 			disp_info->layer_num[disp_id] = layer_num;
 		} else if (strncmp(line_buf, "[force_dual_pipe_off]", 21) == 0) {
@@ -1735,16 +1758,24 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			long int gles_num = 0;
 
 			tok = strchr(line_buf, ']');
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &disp_id);
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &gles_num);
 			disp_info->gles_head[disp_id] = gles_num;
 
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &gles_num);
 			disp_info->gles_tail[disp_id] = gles_num;
 		} else if (strncmp(line_buf, "[disp_mode]", 11) == 0) {
 			unsigned long int disp_mode = 0;
 
 			tok = parse_hrt_data_value(line_buf, &disp_mode);
+			if (!tok)
+				goto end;
 			tok = parse_hrt_data_value(tok, &disp_id);
 			disp_info->disp_mode[disp_id] = disp_mode;
 		}
@@ -1753,6 +1784,7 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			break;
 	}
 
+end:
 	filp_close(filp, NULL);
 	set_fs(oldfs);
 	DISPINFO("end set_fs\n");
