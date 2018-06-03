@@ -30,7 +30,7 @@ extern "C" {
 #define NO_SCHEDULE_API		(1)
 
 #ifdef CONFIG_MTK_FPSGO_FBT_GAME
-#define PPM_CPI_CHECK_ENABLE		(1)
+#define PPM_CPI_CHECK_ENABLE		(0)
 #endif
 
 #define DYNAMIC_TABLE2REAL_PERCENTAGE	(58)
@@ -75,8 +75,8 @@ extern "C" {
 /* Enum                                                         */
 /*==============================================================*/
 enum ppm_cluster {
-	PPM_CLUSTER_LL = 0,
-	PPM_CLUSTER_L,
+	PPM_CLUSTER_L = 0,
+	PPM_CLUSTER_LL,
 
 	NR_PPM_CLUSTERS,
 };
