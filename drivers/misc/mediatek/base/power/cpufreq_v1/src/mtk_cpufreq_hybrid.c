@@ -113,6 +113,7 @@ int Ripi_cpu_dvfs_thread(void *data)
 	struct cpufreq_freqs freqs;
 
 	int previous_limit = -1;
+	int previous_base = -1;
 	int num_log;
 	unsigned int buf[ENTRY_EACH_LOG] = {0};
 	unsigned int bk_log_offs;
@@ -204,6 +205,7 @@ int Ripi_cpu_dvfs_thread(void *data)
 				int cid;
 
 				previous_limit = p->idx_opp_ppm_limit;
+				previous_base = p->idx_opp_ppm_base;
 				p->idx_opp_ppm_limit =
 					(int)(log_box_parsed[num_log - 1].cluster_opp_cfg[i].limit_idx);
 				p->idx_opp_ppm_base =
@@ -231,7 +233,8 @@ int Ripi_cpu_dvfs_thread(void *data)
 
 				/* Policy notification */
 				if (p->idx_opp_tbl != j ||
-					(p->idx_opp_ppm_limit != previous_limit)) {
+					(p->idx_opp_ppm_limit != previous_limit) ||
+					(p->idx_opp_ppm_base != previous_base)) {
 					freqs.old = cpu_dvfs_get_cur_freq(p);
 					freqs.new = cpu_dvfs_get_freq_by_idx(p, j);
 					p->idx_opp_tbl = j;
