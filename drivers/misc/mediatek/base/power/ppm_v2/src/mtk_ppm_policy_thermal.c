@@ -169,7 +169,11 @@ static ssize_t ppm_thermal_limit_proc_write(struct file *file, const char __user
 		return -EINVAL;
 
 	if (!kstrtouint(buf, 10, &limited_power))
+#ifdef PPM_SSPM_SUPPORT
+		ppm_ipi_thermal_limit_test(limited_power);
+#else
 		mt_ppm_cpu_thermal_protect(limited_power);
+#endif
 	else
 		ppm_err("@%s: Invalid input!\n", __func__);
 
