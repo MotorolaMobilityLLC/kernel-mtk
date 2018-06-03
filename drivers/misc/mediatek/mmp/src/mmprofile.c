@@ -46,7 +46,7 @@
 #define MMPROFILE_INTERNAL
 #include <mmprofile_internal.h>
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #endif
 
@@ -307,7 +307,7 @@ static void mmprofile_init_buffer(void)
 		}
 		if (b_reset_ring_buffer) {
 			p_mmprofile_ring_buffer =
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 			    (mmprofile_event_t *)
 			    extmem_malloc_page_align(mmprofile_globals.buffer_size_bytes);
 #else
@@ -329,7 +329,7 @@ static void mmprofile_init_buffer(void)
 		}
 		if (b_reset_meta_buffer) {
 			p_mmprofile_meta_buffer =
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 			    (unsigned char *)
 			    extmem_malloc_page_align(mmprofile_globals.meta_buffer_size);
 #else

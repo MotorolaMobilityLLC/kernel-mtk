@@ -30,7 +30,7 @@
 #include <linux/mmc/card.h>
 #include <linux/module.h>
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #endif
 

@@ -376,7 +376,7 @@ static int check_vma_flags(struct vm_area_struct *vma, unsigned long gup_flags)
 {
 	vm_flags_t vm_flags = vma->vm_flags;
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	if (vm_flags & (VM_IO | VM_PFNMAP)) {
 		/*
 		* Would pass VM_IO | VM_DONTEXPAND | VM_PFNMAP.

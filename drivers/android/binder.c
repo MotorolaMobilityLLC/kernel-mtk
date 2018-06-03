@@ -351,7 +351,7 @@ static int log_disable;
 #ifdef RT_PRIO_INHERIT
 #define BINDER_RT_LOG_ENABLE	0x8
 #endif
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #else
 static struct binder_transaction_log_entry entry_t[MAX_ENG_TRANS_LOG_BUFF_LEN];
@@ -5621,7 +5621,7 @@ static int __init binder_init(void)
 	binder_transaction_log_failed.entry = &entry_failed[0];
 	binder_transaction_log_failed.size = ARRAY_SIZE(entry_failed);
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	binder_transaction_log.entry =
 	    extmem_malloc_page_align(sizeof(struct binder_transaction_log_entry)
 				     * MAX_ENG_TRANS_LOG_BUFF_LEN);
