@@ -24,11 +24,17 @@
 
 #define IMGSENSOR_FEATURE_PARA_LEN_MAX 128000
 
+struct IMGSENSOR_STATUS {
+	u32 reserved:31;
+	u32 oc:1;
+};
+
 struct IMGSENSOR {
 	dev_t dev_no;
 	struct cdev *pcdev;
 	struct class *pclass;
 
+	struct IMGSENSOR_STATUS       status;
 	struct IMGSENSOR_HW           hw;
 	struct IMGSENSOR_SENSOR       sensor[IMGSENSOR_SENSOR_IDX_MAX_NUM];
 	struct IMGSENSOR_SENSOR_LIST *psensor_list[MAX_NUM_OF_SUPPORT_SENSOR];

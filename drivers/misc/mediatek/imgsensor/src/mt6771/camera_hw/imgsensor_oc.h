@@ -11,21 +11,19 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __IMGSENSOR_PROC_H__
-#define __IMGSENSOR_PROC_H__
+#ifndef __IMGSENSOR_OC_H__
+#define __IMGSENSOR_OC_H__
 
-#include "kd_imgsensor.h"
-#include "kd_imgsensor_define.h"
+#include "imgsensor.h"
 #include "imgsensor_common.h"
+#include "imgsensor_hw.h"
 
-#define PROC_CAMERA_INFO "driver/camera_info"
-#define IMGSENSOR_STATUS_INFO_LENGTH 128
-#define camera_info_size 4096
+#define IMGSENSOR_OC_ENABLE
 
-extern char mtk_ccm_name[camera_info_size];
-
-enum IMGSENSOR_RETURN imgsensor_proc_init(void);
+enum IMGSENSOR_RETURN imgsensor_oc_init(void);
+enum IMGSENSOR_RETURN imgsensor_oc_interrupt(enum IMGSENSOR_HW_POWER_STATUS pwr_status);
 
 extern struct IMGSENSOR gimgsensor;
+
 #endif
 
