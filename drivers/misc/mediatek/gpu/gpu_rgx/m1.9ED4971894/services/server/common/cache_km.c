@@ -1386,13 +1386,11 @@ static INLINE PVRSRV_ERROR CacheOpValidateVAOffset(PMR *psPMR,
 			For KM requests perform additional VA validation, so we walk the
 			kernel page-table structures to be sure VA is safe to use.
 		*/
-		down_read(&mm->mmap_sem);
 
 		pgd = pgd_offset(mm, (uintptr_t)pvAddress);
 		if (pgd_none(*pgd) || unlikely(pgd_bad(*pgd)))
 		{
 			eError = PVRSRV_ERROR_INVALID_CPU_ADDR;
-			up_read(&mm->mmap_sem);
 			pvAddress = NULL;
 			goto e0;
 		}
@@ -1403,7 +1401,6 @@ static INLINE PVRSRV_ERROR CacheOpValidateVAOffset(PMR *psPMR,
 		if (p4d_none(*(p4d_t*)p4d) || unlikely(p4d_bad(*(p4d_t*)p4d)))
 		{
 			eError = PVRSRV_ERROR_INVALID_CPU_ADDR;
-			up_read(&mm->mmap_sem);
 			pvAddress = NULL;
 			goto e0;
 		}
@@ -1413,7 +1410,6 @@ static INLINE PVRSRV_ERROR CacheOpValidateVAOffset(PMR *psPMR,
 		if (pud_none(*pud) || unlikely(pud_bad(*pud)))
 		{
 			eError = PVRSRV_ERROR_INVALID_CPU_ADDR;
-			up_read(&mm->mmap_sem);
 			pvAddress = NULL;
 			goto e0;
 		}
@@ -1422,7 +1418,6 @@ static INLINE PVRSRV_ERROR CacheOpValidateVAOffset(PMR *psPMR,
 		if (pmd_none(*pmd) || unlikely(pmd_bad(*pmd)))
 		{
 			eError = PVRSRV_ERROR_INVALID_CPU_ADDR;
-			up_read(&mm->mmap_sem);
 			pvAddress = NULL;
 			goto e0;
 		}
@@ -1431,12 +1426,10 @@ static INLINE PVRSRV_ERROR CacheOpValidateVAOffset(PMR *psPMR,
 		if (!ptep || !pte_present(*ptep))
 		{
 			eError = PVRSRV_ERROR_INVALID_CPU_ADDR;
-			up_read(&mm->mmap_sem);
 			pvAddress = NULL;
 			goto e0;
 		}
 
-		up_read(&mm->mmap_sem);
 	}
 #endif
 
