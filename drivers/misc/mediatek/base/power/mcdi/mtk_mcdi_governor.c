@@ -772,8 +772,9 @@ void mcdi_governor_init(void)
 	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
 
 	mcdi_gov_data.num_mcusys           = 0;
-	mcdi_gov_data.num_cluster[0]       = 0;
-	mcdi_gov_data.num_cluster[1]       = 0;
+
+	for (i = 0; i < NF_CLUSTER; i++)
+		mcdi_gov_data.num_cluster[i] = 0;
 
 	for (i = 0; i < NF_CPU; i++) {
 		mcdi_gov_data.status[i].state         = 0;

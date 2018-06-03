@@ -14,33 +14,25 @@
 #ifndef __MTK_MCDI_MT6739_H__
 #define __MTK_MCDI_MT6739_H__
 
-/* #define MCDI_TRACE */
-/* #define MCDI_MBOX*/
+/* #define MCDI_CLUSTER_COUNTER */
+#define MCDI_CLUSTER_THRESHOLD (1)
 
 #define NF_CPU                  4
 #define NF_CLUSTER              1
 
-#define MCDI_SYSRAM_SIZE    0x400
+#define MCDI_RESERVE_FOR_TIMESYNC 0x14 /* 5 words for timesync */
+#define MCDI_DEBUG_VERSION 0x00010002
+
+/* MCUPM sram for mcdi (debug part + mbox part)*/
+#define MCDI_MCUPM_SRAM_DEBUG_SIZE 0x500
+#define MCDI_MCUPM_SRAM_MBOX_SIZE  0x100
+#define MCDI_MCUPM_SRAM_DEBUG_NF_WORD (MCDI_MCUPM_SRAM_DEBUG_SIZE / 4)
+#define MCDI_MCUPM_SRAM_MBOX_NF_WORD  (MCDI_MCUPM_SRAM_MBOX_SIZE / 4)
+
+/* system sram for mcdi */
+#define MCDI_SYSRAM_SIZE    0x400 /* 1K size */
 #define MCDI_SYSRAM_NF_WORD (MCDI_SYSRAM_SIZE / 4)
 #define SYSRAM_DUMP_RANGE   50
-
-#define SYSRAM_TO_MCUPM_BASE_REG   (mcdi_sysram_base + 0xC08)
-#define SYSRAM_PROF_RATIO_REG      (mcdi_sysram_base + 0xC20)
-#define SYSRAM_PROF_BASE_REG       (mcdi_sysram_base + 0xC48)
-#define SYSRAM_PROF_DATA_REG       (mcdi_sysram_base + 0xC70)
-#define SYSRAM_LATENCY_BASE_REG    (mcdi_sysram_base + 0xCA0)
-#define SYSRAM_PROF_RARIO_DUR      (mcdi_sysram_base + 0xC9C)
-#define SYSRAM_DISTRIBUTE_BASE_REG (mcdi_sysram_base + 0xCE0)
-
-#define SYSRAM_PROF_REG(ofs)          (SYSRAM_PROF_BASE_REG + ofs)
-#define CPU_OFF_LATENCY_REG(ofs)      (SYSRAM_LATENCY_BASE_REG + ofs)
-#define CPU_ON_LATENCY_REG(ofs)       (SYSRAM_LATENCY_BASE_REG + 0x10 + ofs)
-#define Cluster_OFF_LATENCY_REG(ofs)  (SYSRAM_LATENCY_BASE_REG + 0x20 + ofs)
-#define Cluster_ON_LATENCY_REG(ofs)   (SYSRAM_LATENCY_BASE_REG + 0x30 + ofs)
-
-#define LATENCY_DISTRIBUTE_REG(ofs) (SYSRAM_DISTRIBUTE_BASE_REG + ofs)
-#define PROF_OFF_CNT_REG(idx)       (LATENCY_DISTRIBUTE_REG(idx * 4))
-#define PROF_ON_CNT_REG(idx)        (LATENCY_DISTRIBUTE_REG((idx + 4) * 4))
 
 enum {
 	ALL_CPU_IN_CLUSTER = 0,

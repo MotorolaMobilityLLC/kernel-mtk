@@ -18,6 +18,7 @@
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_state.h>
 #include <mtk_mcdi_governor.h>
+#include <mtk_mcdi_mbox.h>
 
 unsigned int cpu_cluster_pwr_stat_map[NF_PWR_STAT_MAP_TYPE][NF_CPU] = {
 	[ALL_CPU_IN_CLUSTER] = {
@@ -62,8 +63,6 @@ static int mcdi_idle_state_mapping[NR_TYPES] = {
 	MCDI_STATE_DPIDLE,		/* IDLE_TYPE_DP */
 	MCDI_STATE_SODI3,		/* IDLE_TYPE_SO3 */
 	MCDI_STATE_SODI,		/* IDLE_TYPE_SO */
-	MCDI_STATE_CLUSTER_OFF,	/* IDLE_TYPE_MC */
-	MCDI_STATE_CLUSTER_OFF,	/* IDLE_TYPE_SL */
 	MCDI_STATE_CLUSTER_OFF	/* IDLE_TYPE_RG */
 };
 
@@ -76,7 +75,15 @@ int mcdi_get_mcdi_idle_state(int idx)
 
 void mcdi_status_init(void)
 {
-	set_mcdi_enable_status(false);
+	set_mcdi_enable_status(true);
+}
+
+void mcdi_mcupm_debug_sram_init(void)
+{
+	/* MAGIC NUMBER */
+	mcdi_write(MCUPM_SRAM_DEBUG_BASE, MCDI_DEBUG_INFO_MAGIC_NUM);
+	/* debug version */
+	mcdi_write(MCUPM_SRAM_DEBUG_BASE + 4, MCDI_DEBUG_VERSION);
 }
 
 void mcdi_of_init(void)

@@ -21,6 +21,9 @@
 #define CPU_PWR_STAT_MASK       0x000000FF
 #define CLUSTER_PWR_STAT_MASK   0x00030000
 
+#define MCDI_DEBUG_INFO_MAGIC_NUM           0x1eef9487
+#define MCDI_DEBUG_INFO_NON_REPLACE_OFFSET  0x0008
+
 extern u32 aee_rr_rec_mcdi_val(int id, u32 val);
 
 int cluster_idx_get(int cpu);
@@ -34,5 +37,7 @@ int mcdi_get_mcdi_idle_state(int idx);
 void mcdi_status_init(void);
 void mcdi_of_init(void);
 unsigned int get_pwr_stat_check_map(int type, int idx);
+bool mcdi_pause(bool paused);
+void mcdi_mcupm_debug_sram_init(void);
 
 #endif /* __MTK_MCDI_H__ */
