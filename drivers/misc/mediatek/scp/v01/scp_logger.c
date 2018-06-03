@@ -608,8 +608,11 @@ int scp_logger_init(phys_addr_t start, phys_addr_t limit)
 
 	/*init dram ctrl table*/
 	last_ofs = 0;
-
+#ifdef CONFIG_ARM64
 	SCP_A_log_ctl = (struct log_ctrl_s *) start;
+#else
+	SCP_A_log_ctl = (struct log_ctrl_s *) (u32) start; /* plz fix origial ptr to phys_addr flow */
+#endif
 	SCP_A_log_ctl->base = PLT_LOG_ENABLE; /* magic */
 	SCP_A_log_ctl->enable = 0;
 	SCP_A_log_ctl->size = sizeof(*SCP_A_log_ctl);
