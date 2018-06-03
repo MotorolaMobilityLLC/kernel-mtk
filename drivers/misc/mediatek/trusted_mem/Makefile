@@ -27,6 +27,7 @@ trusted_mem-y += region_mgr.o
 trusted_mem-y += ssmr_mgr.o
 trusted_mem-y += peer_mgr.o
 trusted_mem-y += proc.o
+trusted_mem-y += alloc_api.o
 
 ifeq ($(TCORE_PROFILING_SUPPORT),y)
 trusted_mem-y += profiler.o
