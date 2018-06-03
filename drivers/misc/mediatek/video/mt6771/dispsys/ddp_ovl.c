@@ -1289,7 +1289,8 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 
 	has_sec_layer = setup_ovl_sec(module, pConfig, handle);
 
-	_ovl_set_rsz_roi(module, pConfig, handle);
+	if (!pConfig->ovl_partial_dirty)
+		_ovl_set_rsz_roi(module, pConfig, handle);
 
 	if (golden_setting->fps)
 		fps = golden_setting->fps;
@@ -1350,7 +1351,8 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 		DDPMSG("h:%u, w:%u, fps:%u, Bpp:%u, bw:%llu\n", pConfig->dst_h, pConfig->dst_w, fps, Bpp, tmp_bw);
 	}
 
-	_ovl_lc_config(module, pConfig, handle);
+	if (!pConfig->ovl_partial_dirty)
+		_ovl_lc_config(module, pConfig, handle);
 
 	DDPDBG("%s bw:%llu\n", ddp_get_module_name(module), ovl_bw);
 	DDPDBG("%s: enabled_layers=0x%01x, enabled_ext_layers=0x%01x, ext_sel_layers=0x%04x\n",
@@ -2093,6 +2095,15 @@ int ovl_partial_update(enum DISP_MODULE_ENUM module, unsigned int bg_w,
 	}
 	DDPDBG("ovl%d partial update\n", module);
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_ROI_SIZE, bg_h << 16 | bg_w);
+
+	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_XOFF,
+			   ovl_base + DISP_REG_OVL_LC_OFFSET, 0);
+	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_YOFF,
+			   ovl_base + DISP_REG_OVL_LC_OFFSET, 0);
+	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_SRC_W,
+			   ovl_base + DISP_REG_OVL_LC_SRC_SIZE, bg_w);
+	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_SRC_H,
+			   ovl_base + DISP_REG_OVL_LC_SRC_SIZE, bg_h);
 
 	return 0;
 }
