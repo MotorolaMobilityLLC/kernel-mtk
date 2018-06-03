@@ -14,6 +14,12 @@
 #ifndef __DRAMC_H__
 #define __DRAMC_H__
 
+/* Feature options */
+#define LAST_DRAMC
+#define SW_ZQCS
+#define SW_TX_TRACKING
+#define MIX_MODE
+
 /* Registers define */
 #define PDEF_DRAMC0_CHA_REG_0E4	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x00e4))
 #define PDEF_DRAMC0_CHA_REG_010	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x0010))
@@ -50,10 +56,7 @@
 #define PATTERN1 0x5A5A5A5A
 #define PATTERN2 0xA5A5A5A5
 
-#define SW_ZQCS
-#define SW_TX_TRACKING
 #ifdef SW_TX_TRACKING
-/* #define MIX_MODE */
 #define DRAMC_AO_RKCFG		(dramc_ao_chx_base+0x034)
 #define DRAMC_AO_PD_CTRL	(dramc_ao_chx_base+0x038)
 #define DRAMC_AO_MRS		(dramc_ao_chx_base+0x05C)
@@ -87,9 +90,7 @@ enum TX_RESULT {
 };
 #endif
 
-#define LAST_DRAMC
 #ifdef LAST_DRAMC
-
 #define LAST_DRAMC_SRAM_MGR
 #define LAST_DRAMC_IP_BASED
 

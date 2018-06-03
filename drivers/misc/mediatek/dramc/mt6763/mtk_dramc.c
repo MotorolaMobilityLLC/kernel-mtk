@@ -1541,7 +1541,7 @@ static int dram_probe(struct platform_device *pdev)
 	}
 
 #ifdef MIX_MODE
-	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_01C) & 0xF000) >> 12;
+	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_01C) & 0x6000) >> 13;
 #else
 	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
 #endif
