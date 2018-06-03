@@ -649,7 +649,7 @@ static int BMI160_ACC_SetBWRate(struct i2c_client *client, u8 bwrate)
 			BMI160_USER_ACC_CONF_ODR, bwrate);
 	err += bma_i2c_write_block(client,
 			BMI160_USER_ACC_CONF_ODR__REG, &databuf[0], 1);
-	mdelay(20);
+	mdelay(2);
 	if(err < 0) {
 		GSE_ERR("set bandwidth failed, res = %d\n", err);
 		mutex_unlock(&obj->lock);
