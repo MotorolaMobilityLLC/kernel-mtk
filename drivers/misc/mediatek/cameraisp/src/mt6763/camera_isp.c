@@ -7477,6 +7477,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			if (i == _ion_keep_max_) {
 				LOG_ERR("ion_import: dma(%d)no empty space in list(%d_%d)\n",
 					IonNode.dmaPort, IonNode.memID, _ion_keep_max_);
+				ISP_ion_free_handle(pIon_client, handle);/*can't in spin_lock*/
 				Ret = -EFAULT;
 			}
 		} else {
