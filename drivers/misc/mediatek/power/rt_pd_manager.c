@@ -246,6 +246,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
 		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
+		    noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC) {
 #ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
 #if CONFIG_MTK_GAUGE_VERSION == 30
@@ -269,6 +270,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #endif
 #endif
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
+		    noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC)
 			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			if (tcpc_kpoc) {
