@@ -302,12 +302,13 @@ obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
 obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
 
 ifneq ($(CONFIG_MTK_DUAL_CHARGER_SUPPORT),)
-obj-$(CONFIG_THERMAL) += mtk_ts_charger2.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_charger2.o
 endif
 
 ifneq ($(CONFIG_MTK_COMBO_WIFI),)
     obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
 endif
+
 
 obj-$(CONFIG_THERMAL) += mtk_tsAll.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_Abts.o
