@@ -368,7 +368,7 @@ static void imgsensor_init_sensor_list(void)
 
 	ret = of_property_read_string(of_node, "cust-sensor", &penable_sensor);
 	if (ret < 0) {
-		PK_DBG("Property cust-sensor not defined: %s\n", penable_sensor);
+		PK_DBG("Property cust-sensor not defined\n");
 		while (psensor_list->id && i < MAX_NUM_OF_SUPPORT_SENSOR) {
 			pimgsensor->psensor_list[i] = psensor_list;
 			i++;
