@@ -336,7 +336,7 @@ struct fuel_gauge_custom_data {
 	int difference_fullocv_ith;
 	int charge_pseudo_full_level;
 	int over_discharge_level;
-
+	int full_tracking_bat_int2_multiply;
 
 	/* threshold */
 	int hwocv_swocv_diff;	/* 0.1 mv */
@@ -352,6 +352,8 @@ struct fuel_gauge_custom_data {
 	int pmic_shutdown_time;	/* secs */
 	int bat_plug_out_time;	/* min */
 	int swocv_oldocv_diff_emb;	/* 0.1 mv */
+	int swocv_oldocv_diff_emb_lt;
+	int swocv_oldocv_diff_emb_tmp;
 
 	/* fgc & fgv threshold */
 	int difference_fgc_fgv_th1;
@@ -460,6 +462,9 @@ struct fuel_gauge_custom_data {
 
 	/* boot status */
 	int pl_charger_status;
+	int power_on_car_chr;
+	int power_on_car_nochr;
+	int shutdown_car_ratio;
 
 	/* log_level */
 	int daemon_log_level;
@@ -526,19 +531,6 @@ struct battery_data {
 	/* Add for Battery Service */
 	int BAT_batt_vol;
 	int BAT_batt_temp;
-	/* Add for EM */
-	int BAT_TemperatureR;
-	int BAT_TempBattVoltage;
-	int BAT_InstatVolt;
-	int BAT_BatteryAverageCurrent;
-	int BAT_BatterySenseVoltage;
-	int BAT_ISenseVoltage;
-	int BAT_ChargerVoltage;
-	/* Dual battery */
-	int status_smb;
-	int capacity_smb;
-	int present_smb;
-	int adjust_power;
 };
 
 struct BAT_EC_Struct {
@@ -561,6 +553,7 @@ struct BAT_EC_Struct {
 	int debug_d0_v_value;
 	int debug_uisoc_en;
 	int debug_uisoc_value;
+	int debug_kill_daemontest;
 };
 
 struct battery_temperature_table {
@@ -621,6 +614,7 @@ struct mtk_battery {
 /*battery status*/
 	int soc;
 	int ui_soc;
+	int d_saved_car;
 
 /*battery flag*/
 	bool init_flag;
@@ -678,6 +672,7 @@ struct mtk_battery {
 
 	signed int ptim_lk_v;
 	signed int ptim_lk_i;
+	int lk_boot_coulomb;
 	int pl_bat_vol;
 	int pl_shutdown_time;
 	int pl_two_sec_reboot;

@@ -400,6 +400,8 @@ void fg_custom_init_from_header(void)
 		UNIT_TRANS_10 * DIFFERENCE_FULLOCV_ITH;
 	fg_cust_data.charge_pseudo_full_level = CHARGE_PSEUDO_FULL_LEVEL;
 	fg_cust_data.over_discharge_level = OVER_DISCHARGE_LEVEL;
+	fg_cust_data.full_tracking_bat_int2_multiply =
+		FULL_TRACKING_BAT_INT2_MULTIPLY;
 
 	/* pre tracking */
 	fg_cust_data.fg_pre_tracking_en = FG_PRE_TRACKING_EN;
@@ -440,6 +442,9 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.shutdown_gauge0_voltage = SHUTDOWN_GAUGE0_VOLTAGE;
 	fg_cust_data.shutdown_gauge1_vbat_en = SHUTDOWN_GAUGE1_VBAT_EN;
 	fg_cust_data.shutdown_gauge1_vbat = SHUTDOWN_GAUGE1_VBAT;
+	fg_cust_data.power_on_car_chr = POWER_ON_CAR_CHR;
+	fg_cust_data.power_on_car_nochr = POWER_ON_CAR_NOCHR;
+	fg_cust_data.shutdown_car_ratio = SHUTDOWN_CAR_RATIO;
 
 	/* ZCV update */
 	fg_cust_data.zcv_suspend_time = ZCV_SUSPEND_TIME;
@@ -456,6 +461,8 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.swocv_oldocv_diff_chr = SWOCV_OLDOCV_DIFF_CHR;
 	fg_cust_data.vbat_oldocv_diff = VBAT_OLDOCV_DIFF;
 	fg_cust_data.swocv_oldocv_diff_emb = SWOCV_OLDOCV_DIFF_EMB;
+	fg_cust_data.swocv_oldocv_diff_emb_lt = SWOCV_OLDOCV_DIFF_EMB_LT;
+	fg_cust_data.swocv_oldocv_diff_emb_tmp = SWOCV_OLDOCV_DIFF_EMB_TMP;
 
 	fg_cust_data.pmic_shutdown_time = UNIT_TRANS_60 * PMIC_SHUTDOWN_TIME;
 	fg_cust_data.tnew_told_pon_diff = TNEW_TOLD_PON_DIFF;
@@ -1376,7 +1383,7 @@ void notify_fg_chr_full(void)
 
 	get_monotonic_boottime(&now_time);
 	difftime = timespec_sub(now_time, gm.chr_full_handler_time);
-	if (difftime.tv_sec >= 10) {
+	if (now_time.tv_sec <= 10 || difftime.tv_sec >= 10) {
 		gm.chr_full_handler_time = now_time;
 		bm_err("[fg_chr_full_int_handler]\n");
 		wakeup_fg_algo(FG_INTR_CHR_FULL);
@@ -2403,6 +2410,10 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			memcpy(&gm.init_flag,
 				&msg->fgd_data[0], sizeof(gm.init_flag));
 
+			if (gm.init_flag == 1)
+				gauge_dev_set_info(gm.gdev,
+					GAUGE_SHUTDOWN_CAR, -99999);
+
 			bm_debug(
 				"[fr] FG_DAEMON_CMD_SET_INIT_FLAG = %d\n",
 				gm.init_flag);
@@ -2467,10 +2478,12 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 				memcpy(&gm.g_fgd_pid, &msg->fgd_data[0],
 					sizeof(gm.g_fgd_pid));
 				bm_err(
-					"[fr]FG_DAEMON_CMD_SET_DAEMON_PID=%d,kill daemon case\n",
-					gm.g_fgd_pid);
+					"[fr]FG_DAEMON_CMD_SET_DAEMON_PID=%d,kill daemon case, %d\n",
+					gm.g_fgd_pid,
+					get_ec()->debug_kill_daemontest);
 				/* kill daemon dod_init 14*/
-				fg_cust_data.dod_init_sel = 14;
+				if (get_ec()->debug_kill_daemontest != 1)
+					fg_cust_data.dod_init_sel = 14;
 			}
 
 		}
@@ -3163,12 +3176,28 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_GET_HW_INFO:
 	{
-		int intr_no;
+		int intr_no = 0;
+		int shutdown_car_diff = 0;
+		int cmdtype = 0;
 
-		memcpy(&intr_no, &msg->fgd_data[0], sizeof(intr_no));
+		cmdtype = msg->fgd_subcmd_para1;
+		if (cmdtype == 1) {
+			gauge_dev_get_info(gm.gdev, GAUGE_SHUTDOWN_CAR,
+				&shutdown_car_diff);
 
-		intr_no = gauge_dev_get_hw_status(gm.gdev,
-			&gm.hw_status, intr_no);
+			ret_msg->fgd_data_len += sizeof(shutdown_car_diff);
+			memcpy(ret_msg->fgd_data, &shutdown_car_diff,
+				sizeof(shutdown_car_diff));
+
+			bm_err("FG_DAEMON_CMD_GET_HW_INFO (GAUGE_SHUTDOWN_CAR): %d, cmdtype:%d\n",
+				shutdown_car_diff, cmdtype);
+
+		} else {
+			memcpy(&intr_no, &msg->fgd_data[0], sizeof(intr_no));
+			intr_no = gauge_dev_get_hw_status(gm.gdev,
+				&gm.hw_status, intr_no);
+		}
+
 		bm_trace(
 			"[fr] FG_DAEMON_CMD_GET_HW_INFO = %d\n", intr_no);
 	}
@@ -3229,13 +3258,15 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			fg_cust_data.c_soc = daemon_soc;
 		else if (soc_type == 4)
 			fg_cust_data.v_soc = daemon_soc;
+		else if (soc_type == 6)
+			gm.d_saved_car = daemon_soc;
 
 		if (soc_type == 4)
 			bm_err(
-			"[fg_res] FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d %d %d %d %d, type:%d\n",
+			"[fg_res]FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d %d %d %d %d %d, type:%d\n",
 			daemon_soc, gm.soc, fg_cust_data.c_old_d0,
 			fg_cust_data.v_old_d0, fg_cust_data.c_soc,
-			fg_cust_data.v_soc, soc_type);
+			fg_cust_data.v_soc, gm.d_saved_car, soc_type);
 	}
 	break;
 
@@ -3453,7 +3484,9 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		gauge_dev_get_info(gm.gdev, GAUGE_CON0_SOC, &_soc);
 		ret_msg->fgd_data_len += sizeof(_soc);
 		memcpy(ret_msg->fgd_data, &_soc, sizeof(_soc));
-		bm_debug("[fg_res] FG_DAEMON_CMD_GET_CON0_SOC = %d\n", _soc);
+
+		bm_err("[fg_res] FG_DAEMON_CMD_GET_CON0_SOC = %d\n", _soc);
+
 	}
 	break;
 
