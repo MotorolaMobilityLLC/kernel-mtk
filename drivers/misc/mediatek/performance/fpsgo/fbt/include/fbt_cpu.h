@@ -75,8 +75,10 @@ void fbt_cpu_set_game_hint_cb(int is_game_mode);
 
 #ifdef CONFIG_MTK_FPSGO_FBT_GAME
 int switch_fbt_game(int);
+int switch_fbt_cpuset(int);
 #else
 static inline int switch_fbt_game(int en) { return 0; }
+static inline int switch_fbt_cpuset(int en) { return 0; }
 #endif
 
 #endif

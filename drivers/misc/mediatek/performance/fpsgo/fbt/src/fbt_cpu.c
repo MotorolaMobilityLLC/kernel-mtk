@@ -181,6 +181,8 @@ unsigned long long nsec_to_usec(unsigned long long nsec)
 	return usec;
 }
 
+static int fbt_cpuset_enable;
+
 void fbt_cpu_vag_set_fps(unsigned int fps)
 {
 	unsigned long flags;
@@ -394,10 +396,12 @@ void xgf_setting_exit(void)
 	fpsgo_systrace_c_fbt_gm(-100, atomic_read(&loading_cur), "loading");
 
 	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
-	set_idle_prefer(0); /*todo sync?*/
-	if (cluster_num > 1) /*todo sync?*/
-		set_cpuset(-1);
-	/*vcorefs_request_dvfs_opp(KIR_FBT, -1);*/
+	if (fbt_cpuset_enable) {
+		set_idle_prefer(0); /*todo sync?*/
+		if (cluster_num > 1)
+			set_cpuset(-1); /*todo sync?*/
+		/*vcorefs_request_dvfs_opp(KIR_FBT, -1);*/
+	}
 
 	for (i = 0; i < cluster_num; i++) {
 		pld[i].max = -1;
@@ -434,9 +438,10 @@ void fbt_cpu_set_game_hint_cb(int is_game_mode)
 	game_mode = game_mode_hint && fbt_enable;
 
 	ppm_game_mode_change_cb(game_mode);
-	if (game_mode)
-		set_idle_prefer(1);
-	else
+	if (game_mode) {
+		if (fbt_cpuset_enable)
+			set_idle_prefer(1);
+	} else
 		xgf_setting_exit();
 	mutex_unlock(&xgf_mlock);
 
@@ -576,7 +581,7 @@ unsigned int fbt_get_new_base_blc(void)
 	fpsgo_systrace_c_log(target_cluster, "target_cluster");
 	spin_unlock_irqrestore(&xgf_slock, flags);
 
-	if (move_cluster && cluster_num > 1)
+	if (move_cluster && cluster_num > 1 && fbt_cpuset_enable)
 		set_cpuset(target_cluster);
 	update_userlimit_cpu_freq(EAS_KIR_FBC, cluster_num, pld);
 
@@ -1145,7 +1150,7 @@ void xgf_set_cpuset_and_limit(unsigned int blc_wt)
 	fpsgo_systrace_c_fbt_gm(-100, history_blc_count, "history_blc_count");
 	fpsgo_systrace_c_fbt_gm(-100, tgt_freq, "tgt_freq");
 
-	if (move_cluster && cluster_num > 1) {
+	if (move_cluster && cluster_num > 1 && fbt_cpuset_enable) {
 		set_cpuset(target_cluster);
 #if 0
 		if (target_cluster)
@@ -1474,6 +1479,27 @@ static int fbt_cpu_dfrc_ntf_cb(unsigned int fps_limit)
 	return 0;
 }
 
+int switch_fbt_cpuset(int enable)
+{
+	unsigned long flags;
+	int last_enable;
+
+	spin_lock_irqsave(&xgf_slock, flags);
+
+	last_enable = fbt_cpuset_enable;
+	fbt_cpuset_enable = enable;
+
+	spin_unlock_irqrestore(&xgf_slock, flags);
+
+	if (last_enable && !fbt_cpuset_enable) {
+		set_idle_prefer(0);
+		set_cpuset(-1);
+	} else if (game_mode && !last_enable && fbt_cpuset_enable)
+		set_idle_prefer(1);
+
+	return 0;
+}
+
 #define FBT_DEBUGFS_ENTRY(name) \
 static int fbt_##name##_open(struct inode *i, struct file *file) \
 { \
@@ -1581,6 +1607,28 @@ static ssize_t fbt_lpp_fps_write(struct file *flip,
 
 FBT_DEBUGFS_ENTRY(lpp_fps);
 
+static int fbt_switch_cpuset_show(struct seq_file *m, void *unused)
+{
+	SEQ_printf(m, "fbt_cpuset_enable:%d\n", fbt_cpuset_enable);
+	return 0;
+}
+
+static ssize_t fbt_switch_cpuset_write(struct file *flip,
+			const char *ubuf, size_t cnt, loff_t *data)
+{
+	int val;
+	int ret;
+
+	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
+	if (ret)
+		return ret;
+
+	switch_fbt_cpuset(val);
+
+	return cnt;
+}
+
+FBT_DEBUGFS_ENTRY(switch_cpuset);
 
 void fbt_cpu_exit(void)
 {
@@ -1614,6 +1662,7 @@ int __init fbt_cpu_init(void)
 	floor_opp = 2;
 	_gdfrc_fps_limit    = TARGET_UNLIMITED_FPS;
 	_gdfrc_fps_limit_ex = TARGET_UNLIMITED_FPS;
+	fbt_cpuset_enable = 1;
 
 	cluster_num = arch_get_nr_clusters();
 	target_cluster = cluster_num;
@@ -1675,6 +1724,10 @@ int __init fbt_cpu_init(void)
 		return -ENOMEM;
 
 	pe = proc_create("fbt_cpu/lpp_fps", 0660, NULL, &fbt_lpp_fps_fops);
+	if (!pe)
+		return -ENOMEM;
+
+	pe = proc_create("fbt_cpu/switch_cpuset", 0660, NULL, &fbt_switch_cpuset_fops);
 	if (!pe)
 		return -ENOMEM;
 
