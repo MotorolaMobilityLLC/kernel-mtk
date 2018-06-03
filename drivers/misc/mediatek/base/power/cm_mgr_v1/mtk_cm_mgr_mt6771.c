@@ -347,8 +347,9 @@ static int cm_mgr_sched_pm_notifier(struct notifier_block *self,
 			       unsigned long cmd, void *v)
 {
 	unsigned int cur_cpu = smp_processor_id();
+	unsigned long spinlock_save_flags;
 
-	spin_lock(&sw_zq_tx_lock);
+	spin_lock_irqsave(&sw_zq_tx_lock, spinlock_save_flags);
 
 	if (cmd == CPU_PM_EXIT) {
 		if (((cm_mgr_idle_mask & 0x0f) == 0x0) && (cur_cpu < 4))
@@ -359,7 +360,7 @@ static int cm_mgr_sched_pm_notifier(struct notifier_block *self,
 	} else if (cmd == CPU_PM_ENTER)
 		cm_mgr_idle_mask &= ~(1 << cur_cpu);
 
-	spin_unlock(&sw_zq_tx_lock);
+	spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 
 	return NOTIFY_OK;
 }
@@ -383,8 +384,9 @@ static int cm_mgr_cpu_callback(struct notifier_block *nfb,
 				   unsigned long action, void *hcpu)
 {
 	unsigned int cur_cpu = (long)hcpu;
+	unsigned long spinlock_save_flags;
 
-	spin_lock(&sw_zq_tx_lock);
+	spin_lock_irqsave(&sw_zq_tx_lock, spinlock_save_flags);
 
 	switch (action) {
 	case CPU_ONLINE:
@@ -399,7 +401,7 @@ static int cm_mgr_cpu_callback(struct notifier_block *nfb,
 		break;
 	}
 
-	spin_unlock(&sw_zq_tx_lock);
+	spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 
 	return NOTIFY_OK;
 }
