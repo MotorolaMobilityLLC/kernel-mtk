@@ -149,6 +149,15 @@ extern unsigned long (*mtk_get_gpu_dvfs_cal_freq_fp)(void);
 extern void ged_monitor_3D_fence_set_enable(GED_BOOL bEnable);
 
 
+static unsigned int g_ui32TargetPeriod_us = 16666;
+static unsigned int g_ui32BoostValue = 100;
+
+void ged_dvfs_last_and_target_cb(int t_gpu_target, int boost_accum_gpu)
+{
+	g_ui32TargetPeriod_us = t_gpu_target;
+	g_ui32BoostValue = boost_accum_gpu;
+}
+
 static bool ged_dvfs_policy(
 		unsigned int ui32GPULoading, unsigned int* pui32NewFreqID, 
 		unsigned long t, long phase, unsigned long ul3DFenceDoneTime, bool bRefreshed);
@@ -1011,6 +1020,8 @@ void ged_dvfs_sw_vsync_query_data(GED_DVFS_UM_QUERY_PACK* psQueryData)
 	psQueryData->ulWorkingPeriod_us = gL_ulWorkingPeriod_us;
 	psQueryData->ulPreCalResetTS_us = gL_ulPreCalResetTS_us;
 
+	psQueryData->ui32TargetPeriod_us = g_ui32TargetPeriod_us;
+	psQueryData->ui32BoostValue = g_ui32BoostValue;
 
 }
 
@@ -1241,6 +1252,8 @@ GED_ERROR ged_dvfs_system_init()
 	mtk_get_gpu_bottom_freq_fp = ged_get_gpu_bottom_freq;
 	mtk_get_gpu_custom_boost_freq_fp = ged_get_gpu_custom_boost_freq;
 	mtk_get_gpu_custom_upbound_freq_fp = ged_get_gpu_custom_upbound_freq;
+
+	ged_kpi_set_gpu_dvfs_hint_fp = ged_dvfs_last_and_target_cb;
 
 	/* CAP query */
 	mtk_get_gpu_dvfs_cal_freq_fp = ged_get_gpu_dvfs_cal_freq;

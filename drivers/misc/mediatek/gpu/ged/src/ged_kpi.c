@@ -113,9 +113,10 @@ typedef struct GED_KPI_TAG {
 	int i32QedBuffer_length;
 	int i32Gpu_uncompleted;
 	int i32DebugQedBuffer_length;
-	int boost_linear;
-	int boost_real;
-	int boost_accum;
+	int boost_linear_cpu;
+	int boost_real_cpu;
+	int boost_accum_cpu;
+	int boost_accum_gpu;
 	long long t_cpu_remained_pred;
 	unsigned long long t_acquire_period;
 	unsigned long long QedBufferDelay;
@@ -169,10 +170,12 @@ static GED_THREAD_HANDLE ghThread;
 static unsigned int gx_dfps; /* variable to fix FPS*/
 static unsigned int gx_frc_mode; /* variable to fix FRC mode*/
 static unsigned int enable_cpu_boost = 1;
+static unsigned int enable_gpu_boost = 1;
 static unsigned int is_GED_KPI_enabled = 1;
 module_param(gx_dfps, uint, S_IRUGO|S_IWUSR);
 module_param(gx_frc_mode, uint, S_IRUGO|S_IWUSR);
 module_param(enable_cpu_boost, uint, S_IRUGO|S_IWUSR);
+module_param(enable_gpu_boost, uint, S_IRUGO|S_IWUSR);
 module_param(is_GED_KPI_enabled, uint, S_IRUGO|S_IWUSR);
 
 /* for calculating remained time budgets of CPU and GPU:
@@ -205,7 +208,8 @@ static unsigned int gx_gpu_remained_time_avg;
 static unsigned int gx_cpu_remained_time_avg;
 static unsigned int gx_gpu_freq_avg;
 
-static int boost_accum;
+static int boost_accum_cpu;
+static int boost_accum_gpu = 100;
 static long target_t_cpu_remained = 16000000; /* for non-60-FPS cases */
 /* static long target_t_cpu_remained_min = 8300000; */ /* default 0.5 vsync period */
 static int cpu_boost_policy = 1;
@@ -371,7 +375,7 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 
 	/* statistics */
 	ged_log_buf_print(ghLogBuf,
-"%d,%d,%llu,%lu,%lu,%llu,%llu,%llu,%llu,%d,%d,%d,%u,%d,%d,%d,%lld,%d,%lld,%u,%d,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
+"%d,%d,%llu,%lu,%lu,%llu,%llu,%llu,%llu,%d,%d,%d,%u,%d,%d,%lld,%d,%lld,%u,%d,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
 		psHead->pid,
 		psHead->isSF,
 		psHead->ullWnd,
@@ -385,9 +389,8 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		psKPI->i32DebugQedBuffer_length,
 		psKPI->i32Gpu_uncompleted,
 		psKPI->gpu_freq,
-		psKPI->boost_linear,
-		psKPI->boost_real,
-		psKPI->boost_accum,
+		psKPI->boost_accum_cpu,
+		psKPI->boost_accum_gpu,
 		psKPI->t_cpu_remained_pred,
 		psHead->t_cpu_target,
 		vsync_period,
@@ -407,11 +410,11 @@ static void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
 	if (psHead == main_head) {
 		long long cpu_target_loss;
-		int boost_linear, boost_real;
+		int boost_linear_cpu, boost_real_cpu;
 		long long t_cpu_cur, t_gpu_cur;
 
-		boost_linear = 0;
-		boost_real = 0;
+		boost_linear_cpu = 0;
+		boost_real_cpu = 0;
 
 		/* Game t_cpu_cur*/
 		t_cpu_cur = (long long)psHead->t_cpu_latest;
@@ -422,40 +425,40 @@ static void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 			cpu_target_loss = t_cpu_cur - t_gpu_cur;
 
 		if ((t_cpu_cur - cpu_target_loss) < 1000000)
-			boost_linear = (int)(cpu_target_loss * 100 / 1000000);
+			boost_linear_cpu = (int)(cpu_target_loss * 100 / 1000000);
 		else
-			boost_linear = (int)(cpu_target_loss * 100 / (t_cpu_cur - cpu_target_loss));
+			boost_linear_cpu = (int)(cpu_target_loss * 100 / (t_cpu_cur - cpu_target_loss));
 
-		if (boost_linear < 0)
-			boost_real = (-1)*linear_real_boost((-1)*boost_linear);
+		if (boost_linear_cpu < 0)
+			boost_real_cpu = (-1)*linear_real_boost((-1)*boost_linear_cpu);
 		else
-			boost_real = linear_real_boost(boost_linear);
+			boost_real_cpu = linear_real_boost(boost_linear_cpu);
 
-		if (boost_real != 0) {
-			if (boost_accum <= 0) {
-				boost_accum += boost_linear;
-				if (boost_real > 0 && boost_accum > boost_real)
-					boost_accum = boost_real;
+		if (boost_real_cpu != 0) {
+			if (boost_accum_cpu <= 0) {
+				boost_accum_cpu += boost_linear_cpu;
+				if (boost_real_cpu > 0 && boost_accum_cpu > boost_real_cpu)
+					boost_accum_cpu = boost_real_cpu;
 			} else {
-				boost_accum = (100 + boost_real) * (100 + boost_accum) / 100 - 100;
+				boost_accum_cpu = (100 + boost_real_cpu) * (100 + boost_accum_cpu) / 100 - 100;
 			}
 		}
 
-		if (boost_accum > 100)
-			boost_accum = 100;
-		else if (boost_accum < 0)
-			boost_accum = 0;
+		if (boost_accum_cpu > 100)
+			boost_accum_cpu = 100;
+		else if (boost_accum_cpu < 0)
+			boost_accum_cpu = 0;
 
-		boost_value_for_GED_idx(1, boost_accum);
-		psKPI->boost_linear = boost_linear;
-		psKPI->boost_real = boost_real;
-		psKPI->boost_accum = boost_accum;
+		boost_value_for_GED_idx(1, boost_accum_cpu);
+		psKPI->boost_linear_cpu = boost_linear_cpu;
+		psKPI->boost_real_cpu = boost_real_cpu;
+		psKPI->boost_accum_cpu = boost_accum_cpu;
 
 
 #ifdef GED_KPI_MET_DEBUG
-		met_tag_oneshot(0, "ged_pframeb_boost_accum", boost_accum);
-		met_tag_oneshot(0, "ged_pframeb_boost_real", boost_real);
-		met_tag_oneshot(0, "ged_pframeb_boost_linear", boost_linear);
+		met_tag_oneshot(0, "ged_pframeb_boost_accum_cpu", boost_accum_cpu);
+		met_tag_oneshot(0, "ged_pframeb_boost_real_cpu", boost_real_cpu);
+		met_tag_oneshot(0, "ged_pframeb_boost_linear_cpu", boost_linear_cpu);
 
 		if (psHead->t_cpu_latest < 100*1000*1000)
 			met_tag_oneshot(0, "ged_pframe_t_cpu", (long long)(psHead->t_cpu_latest + 999999)/1000000);
@@ -484,15 +487,15 @@ static void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
 	if (psHead == main_head) {
-		long long cpu_target_loss, temp_cpu_target_loss;
-		int boost_linear, boost_real;
+		long long cpu_target_loss, cpu_target_loss_4_rt;
+		int boost_linear_cpu, boost_real_cpu;
 		long long t_cpu_cur, t_gpu_cur, t_cpu_target;
 		long long t_cpu_rem_cur = 0;
 		int is_gpu_bound;
-		int temp_boost_accum;
+		int temp_boost_accum_cpu;
 
-		boost_linear = 0;
-		boost_real = 0;
+		boost_linear_cpu = 0;
+		boost_real_cpu = 0;
 
 		t_cpu_cur = (long long)psHead->t_cpu_latest;
 		t_gpu_cur = (long long)psHead->t_gpu_latest;
@@ -507,78 +510,68 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		}
 
 		cpu_target_loss = t_cpu_cur - t_cpu_target;
-		temp_cpu_target_loss = cpu_target_loss;
-			/* ARR mode and default mode with 60 FPS */
-		if (!(psHead->frc_mode & GED_KPI_FRC_FRR_MODE)
-			&& !((psHead->frc_mode & GED_KPI_FRC_DEFAULT_MODE)
-			&& psHead->target_fps != 60)) {
 
+		cpu_target_loss_4_rt = cpu_target_loss;
+			/* ARR mode and default mode with 60 FPS */
+		if (psHead->target_fps == 60) {
 			t_cpu_rem_cur = vsync_period * psHead->i32DebugQedBuffer_length;
 			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
 
 			if (t_cpu_rem_cur < target_t_cpu_remained) {
-				if ((temp_cpu_target_loss < 0) && (psKPI->QedBufferDelay == 0))
-					temp_cpu_target_loss = 0;
+				if ((cpu_target_loss_4_rt < 0) && (psKPI->QedBufferDelay == 0))
+					cpu_target_loss_4_rt = 0;
 			} else {
-				if (temp_cpu_target_loss > 0)
-					temp_cpu_target_loss = 0;
+				if (cpu_target_loss_4_rt > 0)
+					cpu_target_loss_4_rt = 0;
 			}
 		} else {  /* FRR mode or (default mode && FPS != 60) */
 			t_cpu_rem_cur = psHead->t_cpu_target;
 			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - (long long)psHead->last_TimeStampS);
-			/* asking half of the remained time loss back as well */
-			if (t_cpu_rem_cur < 0) {
-				if (temp_cpu_target_loss < 0)
-					temp_cpu_target_loss = 0;
-			} else {
-				if (temp_cpu_target_loss > 0)
-					temp_cpu_target_loss = 0;
-			}
 		}
 		psKPI->t_cpu_remained_pred = (long long)t_cpu_rem_cur;
 
 		if (!is_gpu_bound)
-			cpu_target_loss = temp_cpu_target_loss;
+			cpu_target_loss = cpu_target_loss_4_rt;
 
-		boost_linear = (int)(cpu_target_loss * 100 / t_cpu_target);
+		boost_linear_cpu = (int)(cpu_target_loss * 100 / t_cpu_target);
 
-		if (boost_linear < 0)
-			boost_real = (-1)*linear_real_boost((-1)*boost_linear);
+		if (boost_linear_cpu < 0)
+			boost_real_cpu = (-1)*linear_real_boost((-1)*boost_linear_cpu);
 		else
-			boost_real = linear_real_boost(boost_linear);
+			boost_real_cpu = linear_real_boost(boost_linear_cpu);
 
-		if (boost_real > 0)
-			boost_real = boost_real * boost_amp / 100;
+		if (boost_real_cpu > 0)
+			boost_real_cpu = boost_real_cpu * boost_amp / 100;
 
-		if (boost_real != 0) {
-			if (boost_accum <= 0) {
-				boost_accum += boost_linear;
-				if (boost_real > 0 && boost_accum > boost_real)
-					boost_accum = boost_real;
+		if (boost_real_cpu != 0) {
+			if (boost_accum_cpu <= 0) {
+				boost_accum_cpu += boost_linear_cpu;
+				if (boost_real_cpu > 0 && boost_accum_cpu > boost_real_cpu)
+					boost_accum_cpu = boost_real_cpu;
 			} else {
-				boost_accum = (100 + boost_real) * (100 + boost_accum) / 100 - 100;
+				boost_accum_cpu = (100 + boost_real_cpu) * (100 + boost_accum_cpu) / 100 - 100;
 			}
 		}
 
-		if (boost_accum > boost_upper_bound)
-			boost_accum = boost_upper_bound;
-		else if (boost_accum < 0)
-			boost_accum = 0;
+		if (boost_accum_cpu > boost_upper_bound)
+			boost_accum_cpu = boost_upper_bound;
+		else if (boost_accum_cpu < 0)
+			boost_accum_cpu = 0;
 
-		temp_boost_accum = boost_accum;
-		boost_accum += boost_extra;
+		temp_boost_accum_cpu = boost_accum_cpu;
+		boost_accum_cpu += boost_extra;
 
-		if (boost_accum > 100)
-			boost_accum = 100;
-		else if (boost_accum < 0)
-			boost_accum = 0;
+		if (boost_accum_cpu > 100)
+			boost_accum_cpu = 100;
+		else if (boost_accum_cpu < 0)
+			boost_accum_cpu = 0;
 
-		boost_value_for_GED_idx(1, boost_accum);
-		/* perfmgr_kick_fg_boost(KIR_GED, boost_accum); */
-		psKPI->boost_linear = boost_linear;
-		psKPI->boost_real = boost_real;
-		psKPI->boost_accum = boost_accum;
-		boost_accum = temp_boost_accum;
+		boost_value_for_GED_idx(1, boost_accum_cpu);
+		/* perfmgr_kick_fg_boost(KIR_GED, boost_accum_cpu); */
+		psKPI->boost_linear_cpu = boost_linear_cpu;
+		psKPI->boost_real_cpu = boost_real_cpu;
+		psKPI->boost_accum_cpu = boost_accum_cpu;
+		boost_accum_cpu = temp_boost_accum_cpu;
 		psKPI->cpu_max_freq_LL = arch_scale_get_max_freq(0);
 		psKPI->cpu_max_freq_L = arch_scale_get_max_freq(4);
 		psKPI->cpu_max_freq_B = arch_scale_get_max_freq(8);
@@ -587,14 +580,15 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		psKPI->cpu_cur_freq_B = psKPI->cpu_max_freq_B * cpufreq_scale_freq_capacity(NULL, 8) / 1024;
 
 #ifdef GED_KPI_MET_DEBUG
-		met_tag_oneshot(0, "ged_pframeb_boost_accum", boost_accum);
+		met_tag_oneshot(0, "ged_pframeb_boost_accum_cpu", boost_accum_cpu);
 
-		if (boost_real < 100)
-			met_tag_oneshot(0, "ged_pframeb_boost_real", boost_real);
+		if (boost_real_cpu < 100)
+			met_tag_oneshot(0, "ged_pframeb_boost_real_cpu", boost_real_cpu);
 		else
-			met_tag_oneshot(0, "ged_pframeb_boost_real", 100);
+			met_tag_oneshot(0, "ged_pframeb_boost_real_cpu", 100);
 
-		met_tag_oneshot(0, "ged_pframebl_boost_linear", boost_linear);
+		met_tag_oneshot(0, "ged_pframebc_boost_linear_cpu", boost_linear_cpu);
+		met_tag_oneshot(0, "ged_pframebg_boost_accum_gpu", boost_accum_gpu);
 
 		if (psHead->t_cpu_latest < 100*1000*1000)
 			met_tag_oneshot(0, "ged_pframe_t_cpu", (long long)(psHead->t_cpu_latest + 999999)/1000000);
@@ -1069,6 +1063,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		if (psHead) {
 			struct list_head *psListEntry, *psListEntryTemp;
 			struct list_head *psList = &psHead->sList;
+			int boost_linear_gpu;
 
 			list_for_each_prev_safe(psListEntry, psListEntryTemp, psList) {
 				psKPI = list_entry(psListEntry, GED_KPI, sList);
@@ -1095,8 +1090,23 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 							psTimeStamp->ullTimeStamp - psHead->last_TimeStamp1;
 					}
 					/* notify gpu performance info to GPU DVFS module */
-					ged_kpi_set_gpu_dvfs_hint((int)(psHead->t_gpu_target/1000000)
-							, (int)(psHead->t_gpu_latest/1000000));
+					boost_linear_gpu = psHead->t_gpu_latest * 100 / psHead->t_gpu_target;
+					boost_accum_gpu = (boost_accum_gpu * boost_linear_gpu) / 100;
+
+					if (boost_accum_gpu < 100)
+						boost_accum_gpu = 100;
+					else if (boost_accum_gpu > 500)
+						boost_accum_gpu = 500;
+
+					psKPI->boost_accum_gpu = boost_accum_gpu;
+
+					if (enable_gpu_boost) {
+						ged_kpi_set_gpu_dvfs_hint((int)(psHead->t_gpu_target/1000)
+												, (int)boost_accum_gpu);
+					} else {
+						ged_kpi_set_gpu_dvfs_hint((int)(psHead->t_gpu_target/1000), 100);
+					}
+
 					break;
 				}
 #ifdef GED_KPI_DEBUG
@@ -1469,7 +1479,7 @@ GED_ERROR ged_kpi_system_init(void)
 #ifdef MTK_GED_KPI
 	GED_ERROR ret;
 
-	ghLogBuf = ged_log_buf_alloc(60 * 10, 150 * 60 * 10, GED_LOG_BUF_TYPE_RINGBUFFER, NULL, "KPI");
+	ghLogBuf = ged_log_buf_alloc(60 * 5, 220 * 60 * 5, GED_LOG_BUF_TYPE_RINGBUFFER, NULL, "KPI");
 
 	ret = ged_thread_create(&ghThread, "kpi_wait_4_hw_vsync", ged_kpi_wait_for_hw_vsync_cb, (void *)&ghLogBuf);
 	if (ret != GED_OK)
@@ -1498,13 +1508,13 @@ void ged_kpi_system_exit(void)
 #endif
 }
 /* ----------------------------------------------------------------------------- */
-void (*ged_kpi_set_gpu_dvfs_hint_fp)(int t_gpu_target, int t_gpu_cur);
+void (*ged_kpi_set_gpu_dvfs_hint_fp)(int t_gpu_target, int boost_accum_gpu);
 EXPORT_SYMBOL(ged_kpi_set_gpu_dvfs_hint_fp);
 
-bool ged_kpi_set_gpu_dvfs_hint(int t_gpu_target, int t_gpu_cur)
+bool ged_kpi_set_gpu_dvfs_hint(int t_gpu_target, int boost_accum_gpu)
 {
 	if (ged_kpi_set_gpu_dvfs_hint_fp != NULL) {
-		ged_kpi_set_gpu_dvfs_hint_fp(t_gpu_target, t_gpu_cur);
+		ged_kpi_set_gpu_dvfs_hint_fp(t_gpu_target, boost_accum_gpu);
 		return true;
 	}
 	return false;
