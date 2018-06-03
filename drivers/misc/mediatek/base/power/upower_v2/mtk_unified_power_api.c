@@ -162,6 +162,8 @@ upower_dtype type)
 	ptr_tbl_info = rcu_dereference(p_upower_tbl_infos);
 	ptr_tbl = ptr_tbl_info[bank].p_upower_tbl;
 	idx = ptr_tbl->lkg_idx;
+	if (idx >= NR_UPOWER_DEGREE)
+		idx = 0;
 	ret = (type == UPOWER_DYN) ? ptr_tbl->row[volt_idx].dyn_pwr :
 		(type == UPOWER_LKG) ? ptr_tbl->row[volt_idx].lkg_pwr[idx] :
 		ptr_tbl->row[volt_idx].cap;
@@ -170,6 +172,8 @@ upower_dtype type)
 	ptr_tbl_info = p_upower_tbl_infos;
 	ptr_tbl = ptr_tbl_info[bank].p_upower_tbl;
 	idx = ptr_tbl->lkg_idx;
+	if (idx >= NR_UPOWER_DEGREE)
+		idx = 0;
 	ret = (type == UPOWER_DYN) ? ptr_tbl->row[volt_idx].dyn_pwr :
 		(type == UPOWER_LKG) ? ptr_tbl->row[volt_idx].lkg_pwr[idx] :
 		ptr_tbl->row[volt_idx].cap;
