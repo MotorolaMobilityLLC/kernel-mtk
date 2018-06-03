@@ -503,6 +503,7 @@ static int __init mtk_cooler_cam_init(void)
 	}
 
 	/* mtk_cooler_cam_dprintk("%s\n", __func__); */
+{
 
 	struct proc_dir_entry *entry;
 
@@ -530,7 +531,7 @@ static int __init mtk_cooler_cam_init(void)
 	if (!entry)
 		mtk_cooler_cam_dprintk(
 			"%s driver/cl_cam_dual creation failed\n", __func__);
-
+}
 	camsetting_dir = mtk_thermal_get_proc_drv_therm_dir_entry();
 
 	if (!camsetting_dir)

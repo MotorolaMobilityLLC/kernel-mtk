@@ -16,6 +16,8 @@
 
 #include <linux/thermal.h>
 
+#include <mt-plat/mtk_charger.h>
+
 extern
 int mtk_thermal_get_cpu_info(int *nocores, int **cpufreq, int **cpuloading);
 
