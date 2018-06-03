@@ -125,7 +125,11 @@ static const struct mfd_cell mt6392_devs[] = {
 		.num_resources = ARRAY_SIZE(mt6392_keys_resources),
 		.resources = mt6392_keys_resources,
 		.of_compatible = "mediatek,mt6392-keys"
-	}
+	},
+	{
+		.name = "mt6392-thermal",
+		.of_compatible = "mediatek,mt6392-thermal"
+	},
 };
 
 
