@@ -634,6 +634,14 @@ extern "C" {
 	void cmdq_op_init_variable(CMDQ_VARIABLE *arg);
 
 /**
+ * Initialize the logical variable
+ * Parameter:
+ *	   arg: the variable you want to Initialize
+ *      cpr_offset: the cpr offset you want to use
+ */
+	void cmdq_op_init_global_cpr_variable(CMDQ_VARIABLE *arg, u32 cpr_offset);
+
+/**
  * Append logic command for assign
  * arg_out = arg_b
  * Parameter:

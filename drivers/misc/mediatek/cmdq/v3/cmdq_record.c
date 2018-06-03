@@ -1700,8 +1700,7 @@ s32 cmdq_task_copy_to_sram(dma_addr_t pa_src, u32 sram_dest, size_t size)
 
 	for (i = 0; i < size / sizeof(u32); i++) {
 		cmdq_op_assign(handle, &pa_cpr, (u32)pa_src + i * sizeof(u32));
-		sram_cpr = (CMDQ_BIT_VAR<<CMDQ_DATA_BIT) |
-				(CMDQ_CPR_STRAT_ID + sram_dest + i);
+		cmdq_op_init_global_cpr_variable(&sram_cpr, sram_dest + i);
 		cmdq_append_command(handle, CMDQ_CODE_READ_S,
 			(u32)sram_cpr, (u32)pa_cpr, 1, 1);
 	}
@@ -2164,6 +2163,12 @@ static int32_t cmdq_append_logic_command(struct cmdqRecStruct *handle, CMDQ_VARI
 void cmdq_op_init_variable(CMDQ_VARIABLE *arg)
 {
 	*arg = CMDQ_TASK_CPR_INITIAL_VALUE;
+}
+
+void cmdq_op_init_global_cpr_variable(CMDQ_VARIABLE *arg, u32 cpr_offset)
+{
+	*arg = (CMDQ_BIT_VAR<<CMDQ_DATA_BIT) |
+			(CMDQ_CPR_STRAT_ID + cpr_offset);
 }
 
 int32_t cmdq_op_assign(struct cmdqRecStruct *handle, CMDQ_VARIABLE *arg_out, CMDQ_VARIABLE arg_in)
