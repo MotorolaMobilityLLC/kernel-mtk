@@ -32,6 +32,9 @@ struct minitop_work {
 	struct list_head link;
 };
 
+#define MINITOP_SCHED		1
+#define MINITOP_FTEH		2
+
 struct minitop_rec {
 	pid_t tid;
 	struct rb_node node;
@@ -42,6 +45,9 @@ struct minitop_rec {
 	u32 life;
 	int debnc;
 	int ever;
+
+	int source;
+	int debnc_fteh; /* irrelative to ceiling switch */
 };
 
 int __init minitop_init(void);

@@ -29,7 +29,8 @@ obj-$(CONFIG_MACH_MT6775) += platform/mt6775/fbt_cpu_platform.o
 obj-$(CONFIG_MTK_FPSGO_FBT_GAME) += \
 	src/fbt_cpu.o \
 	src/xgf.o \
-	src/mini_top.o
+	src/mini_top.o \
+	src/fbt_fteh.o
 
 ccflags-y += \
 	-I$(srctree)/include/ \
