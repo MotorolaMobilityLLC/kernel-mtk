@@ -314,6 +314,9 @@ static u64 g_enc_freq_steps[MAX_FREQ_STEP];
 static struct codec_history *dec_hists;
 static struct codec_job *dec_jobs;
 static DEFINE_MUTEX(VdecDVFSLock);
+static struct codec_history *enc_hists;
+static struct codec_job *enc_jobs;
+static DEFINE_MUTEX(VencDVFSLock);
 #endif
 
 VAL_UINT32_T TimeDiffMs(VAL_TIME_T timeOld, VAL_TIME_T timeNew)
@@ -1051,6 +1054,36 @@ static long vcodec_lockhw_enc_fail(VAL_HW_LOCK_T rHWLock, VAL_UINT32_T FirstUseE
 	return 0;
 }
 
+void vcodec_venc_pmqos(struct codec_job *enc_cur_job)
+{
+#ifdef VCODEC_DVFS_V2
+	int target_freq;
+	u64 target_freq_64;
+
+	mutex_lock(&VencDVFSLock);
+	if (enc_cur_job == 0) {
+		target_freq_64 = match_freq(99999,
+			&g_enc_freq_steps[0], enc_step_size);
+		pm_qos_update_request(&vcodec_qos_request_f2,
+			target_freq_64);
+	} else {
+		enc_cur_job->start = get_time_us();
+		target_freq = est_freq(enc_cur_job->handle,
+			&enc_jobs, enc_hists);
+		target_freq_64 = match_freq(target_freq,
+			&g_enc_freq_steps[0], enc_step_size);
+		if (target_freq > 0) {
+			enc_cur_job->mhz = (int)target_freq_64;
+			pm_qos_update_request(
+				&vcodec_qos_request_f2,
+			target_freq_64);
+		}
+	}
+	DVFS_DEBUG("enc_cur_job freq %llu", target_freq_64);
+	mutex_unlock(&VencDVFSLock);
+#endif
+}
+
 static long vcodec_lockhw(unsigned long arg)
 {
 	VAL_UINT8_T *user_data_addr;
@@ -1067,7 +1100,9 @@ static long vcodec_lockhw(unsigned long arg)
 	unsigned int suspend_block_cnt = 0;
 #endif
 #ifdef VCODEC_DVFS_V2
-	struct codec_job *cur_job = 0;
+	struct codec_job *dec_cur_job = 0;
+	struct codec_job *enc_cur_job = 0;
+
 	int target_freq;
 	u64 target_freq_64;
 #endif
@@ -1094,8 +1129,8 @@ static long vcodec_lockhw(unsigned long arg)
 
 #ifdef VCODEC_DVFS_V2
 		mutex_lock(&VdecDVFSLock);
-		cur_job = add_job((void *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle), &dec_jobs);
-		DVFS_DEBUG("cur_job's handle %p", cur_job->handle);
+		dec_cur_job = add_job((void *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle), &dec_jobs);
+		DVFS_DEBUG("dec_cur_job's handle %p", dec_cur_job->handle);
 		mutex_unlock(&VdecDVFSLock);
 #endif
 
@@ -1192,25 +1227,25 @@ static long vcodec_lockhw(unsigned long arg)
 				}
 #ifdef VCODEC_DVFS_V2
 				mutex_lock(&VdecDVFSLock);
-				if (cur_job == 0) {
+				if (dec_cur_job == 0) {
 					target_freq_64 = match_freq(99999,
 						&g_dec_freq_steps[0], dec_step_size);
 					pm_qos_update_request(&vcodec_qos_request_f,
 						target_freq_64);
 				} else {
-					cur_job->start = get_time_us();
-					target_freq = est_freq(cur_job->handle,
+					dec_cur_job->start = get_time_us();
+					target_freq = est_freq(dec_cur_job->handle,
 							&dec_jobs, dec_hists);
 					target_freq_64 = match_freq(target_freq,
 						&g_dec_freq_steps[0], dec_step_size);
 					if (target_freq > 0) {
-						cur_job->mhz = (int)target_freq_64;
+						dec_cur_job->mhz = (int)target_freq_64;
 						pm_qos_update_request(
 							&vcodec_qos_request_f,
 							target_freq_64);
 					}
 				}
-				DVFS_DEBUG("cur_job freq %llu", target_freq_64);
+				DVFS_DEBUG("dec_cur_job freq %llu", target_freq_64);
 				mutex_unlock(&VdecDVFSLock);
 #endif
 #ifdef CONFIG_PM
@@ -1325,6 +1360,15 @@ static long vcodec_lockhw(unsigned long arg)
 				if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
 					rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
 					rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
+#ifdef VCODEC_DVFS_V2
+					mutex_lock(&VencDVFSLock);
+					enc_cur_job =
+					  add_job(
+						(void *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
+						&enc_jobs);
+					DVFS_DEBUG("enc_cur_job's handle %p", enc_cur_job->handle);
+					mutex_unlock(&VencDVFSLock);
+#endif
 #if USE_WAKELOCK == 1
 					MODULE_MFV_PR_DEBUG("wake_lock(&vcodec_wake_lock2) +");
 					wake_lock(&vcodec_wake_lock2);
@@ -1357,6 +1401,7 @@ static long vcodec_lockhw(unsigned long arg)
 					bLockedHW = VAL_TRUE;
 					if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
 						rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
+						vcodec_venc_pmqos(enc_cur_job);
 #ifdef CONFIG_PM
 						pm_runtime_get_sync(vcodec_device2);
 #else
@@ -1451,7 +1496,8 @@ static long vcodec_unlockhw(unsigned long arg)
 	VAL_RESULT_T eValRet;
 	VAL_LONG_T ret;
 #ifdef VCODEC_DVFS_V2
-	struct codec_job *cur_job;
+	struct codec_job *dec_cur_job;
+	struct codec_job *enc_cur_job;
 #endif
 
 	MODULE_MFV_LOGD("VCODEC_UNLOCKHW + tid = %d\n", current->pid);
@@ -1478,16 +1524,16 @@ static long vcodec_unlockhw(unsigned long arg)
 		if (grVcodecDecHWLock.pvHandle == (VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle)) {
 #ifdef VCODEC_DVFS_V2
 			mutex_lock(&VdecDVFSLock);
-			cur_job = dec_jobs;
-			if (cur_job->handle ==
+			dec_cur_job = dec_jobs;
+			if (dec_cur_job->handle ==
 				grVcodecDecHWLock.pvHandle) {
-				cur_job->end = get_time_us();
-				update_hist(cur_job, &dec_hists);
+				dec_cur_job->end = get_time_us();
+				update_hist(dec_cur_job, &dec_hists);
 				dec_jobs = dec_jobs->next;
-				kfree(cur_job);
+				kfree(dec_cur_job);
 			} else {
 				pr_info("VCODEC wrong job at dec done %p, %p",
-					cur_job->handle,
+					dec_cur_job->handle,
 					grVcodecDecHWLock.pvHandle);
 			}
 			mutex_unlock(&VdecDVFSLock);
@@ -1530,6 +1576,22 @@ static long vcodec_unlockhw(unsigned long arg)
 		mutex_lock(&VencHWLock);
 		/* Current owner give up hw lock */
 		if (grVcodecEncHWLock.pvHandle == (VAL_VOID_T *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle)) {
+#ifdef VCODEC_DVFS_V2
+			mutex_lock(&VencDVFSLock);
+			enc_cur_job = enc_jobs;
+			if (enc_cur_job->handle ==
+				grVcodecEncHWLock.pvHandle) {
+				enc_cur_job->end = get_time_us();
+				update_hist(enc_cur_job, &enc_hists);
+				enc_jobs = enc_jobs->next;
+				kfree(enc_cur_job);
+			} else {
+				pr_info("VCODEC wrong job at dec done %p, %p",
+					enc_cur_job->handle,
+					grVcodecEncHWLock.pvHandle);
+			}
+			mutex_unlock(&VencDVFSLock);
+#endif
 			if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
 				rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
 				disable_irq(VENC_IRQ_ID);
@@ -1786,11 +1848,6 @@ static long vcodec_set_frame_info(unsigned long arg)
 		pm_qos_update_request(&vcodec_qos_request2, (int)emi_bw);
 #endif
 		gVENCBWRequested = 1;
-#ifdef VCODEC_DVFS_V2
-		QOS_DEBUG("[PMQoS] venc_frame_info set to (0,1) %d", (emi_bw >= 590));
-		pm_qos_update_request(&vcodec_qos_request_f2,
-			(emi_bw >= 590) ? g_enc_freq_steps[0]:g_enc_freq_steps[1]);
-#endif
 		}
 		mutex_unlock(&EncPMQoSLock);
 	}
