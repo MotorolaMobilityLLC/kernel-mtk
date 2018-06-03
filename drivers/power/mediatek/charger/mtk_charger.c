@@ -1524,6 +1524,21 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		info->data.bif_cv_under_threshold2 = BIF_CV_UNDER_THRESHOLD2;
 	}
 
+	info->data.usb_charger_current_suspend = USB_CHARGER_CURRENT_SUSPEND;
+	info->data.usb_charger_current_unconfigured = USB_CHARGER_CURRENT_UNCONFIGURED;
+	info->data.usb_charger_current_configured = USB_CHARGER_CURRENT_CONFIGURED;
+	info->data.usb_charger_current = USB_CHARGER_CURRENT;
+	info->data.ac_charger_current = AC_CHARGER_CURRENT;
+	info->data.ac_charger_input_current = AC_CHARGER_INPUT_CURRENT;
+	info->data.non_std_ac_charger_current = NON_STD_AC_CHARGER_CURRENT;
+	info->data.charging_host_charger_current = CHARGING_HOST_CHARGER_CURRENT;
+	info->data.ta_ac_charger_current = TA_AC_CHARGING_CURRENT;
+	info->data.max_charger_voltage = V_CHARGER_MAX;
+	info->data.pe20_ichg_level_threshold = PE20_ICHG_LEAVE_THRESHOLD;
+	info->data.ta_start_battery_soc = TA_START_BATTERY_SOC;
+	info->data.ta_stop_battery_soc = TA_STOP_BATTERY_SOC;
+
+
 	pr_err("algorithm name:%s\n", info->algorithm_name);
 
 	return 0;
