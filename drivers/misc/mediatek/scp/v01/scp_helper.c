@@ -912,6 +912,31 @@ int scp_reserve_mem_of_init(struct reserved_mem *rmem)
 {
 	enum scp_reserve_mem_id_t id;
 	phys_addr_t accumlate_memory_size = 0;
+	unsigned int num = 0;
+
+	scp_mem_base_phys = (phys_addr_t) 0;
+	scp_mem_size = (phys_addr_t) 0;
+
+	num = (unsigned int)(sizeof(scp_reserve_mblock)
+			/ sizeof(scp_reserve_mblock[0]));
+	if (num != NUMS_MEM_ID) {
+		pr_err("[SCP] number of entries of reserved memory %u / %u\n",
+			num,
+			NUMS_MEM_ID);
+
+		return -1;
+	}
+
+	for (id = 0; id < NUMS_MEM_ID; id++)
+		accumlate_memory_size += scp_reserve_mblock[id].size;
+
+	if (accumlate_memory_size > rmem->size) {
+		pr_err("[SCP] accumlated memory size = %llu / %llu\n"
+			, (unsigned long long)accumlate_memory_size
+			, (unsigned long long)rmem->size);
+
+		return -1;
+	}
 
 	scp_mem_base_phys = (phys_addr_t) rmem->base;
 	scp_mem_size = (phys_addr_t) rmem->size;
@@ -929,7 +954,6 @@ int scp_reserve_mem_of_init(struct reserved_mem *rmem)
 		return -1;
 	}
 
-
 	pr_debug("[SCP] phys:0x%llx - 0x%llx (0x%llx)\n",
 		(unsigned long long)(phys_addr_t)rmem->base,
 		(unsigned long long)((phys_addr_t)rmem->base +
@@ -941,6 +965,7 @@ int scp_reserve_mem_of_init(struct reserved_mem *rmem)
 		scp_reserve_mblock[id].start_phys = scp_mem_base_phys +
 							accumlate_memory_size;
 		accumlate_memory_size += scp_reserve_mblock[id].size;
+
 		pr_debug("[SCP][reserve_mem:%d]:phys:0x%llx - 0x%llx (0x%llx)\n",
 			id,
 			(unsigned long long)scp_reserve_mblock[id].start_phys,
@@ -948,6 +973,7 @@ int scp_reserve_mem_of_init(struct reserved_mem *rmem)
 				scp_reserve_mblock[id].size),
 			(unsigned long long)scp_reserve_mblock[id].size);
 	}
+
 	return 0;
 }
 
@@ -1536,6 +1562,15 @@ static int __init scp_init(void)
 	int ret = 0;
 	int i = 0;
 
+    /* scp platform initialise */
+	pr_debug("[SCP] platform init, scp_init\n");
+
+	/* scp ready static flag initialise */
+	for (i = 0; i < SCP_CORE_TOTAL ; i++) {
+		scp_enable[i] = 0;
+		scp_ready[i] = 0;
+	}
+
 #if SCP_DVFS_INIT_ENABLE
 	scp_dvfs_init();
 	/* pll maybe gate, request pll before access any scp reg/sram */
@@ -1544,10 +1579,10 @@ static int __init scp_init(void)
 	/* keep Univpll */
 	spm_resource_req(SPM_RESOURCE_USER_SCP, SPM_RESOURCE_CK_26M);
 
-	/* scp ready static flag initialise */
-	for (i = 0; i < SCP_CORE_TOTAL ; i++) {
-		scp_enable[i] = 0;
-		scp_ready[i] = 0;
+	/* make sure the reserved memory for scp is ready */
+	if (scp_mem_size == 0) {
+		pr_err("[SCP] Reserving memory by of_device for SCP failed.\n");
+		return -1;
 	}
 
 	/* scp platform initialise */
