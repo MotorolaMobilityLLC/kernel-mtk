@@ -1389,6 +1389,7 @@ spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		.devinfo_domain = LL_DEVINFO_DOMAIN,
 		.leakage_id = MTK_LL_LEAKAGE,
 		.instance = DEFAULT_CORE_INSTANCE,
+		.print_leakage = true,
 	},
 	{
 		.vsize = VSIZE,
@@ -1402,6 +1403,7 @@ spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		.devinfo_domain = LL_DEVINFO_DOMAIN,
 		.leakage_id = MTK_LL_LEAKAGE,
 		.instance = DEFAULT_INSTANCE,
+		.print_leakage = false,
 	},
 	{
 		.vsize = VSIZE,
@@ -1415,6 +1417,7 @@ spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		.devinfo_domain = L_DEVINFO_DOMAIN,
 		.leakage_id = MTK_L_LEAKAGE,
 		.instance = DEFAULT_CORE_INSTANCE,
+		.print_leakage = true,
 	},
 	{
 		.vsize = VSIZE,
@@ -1428,6 +1431,7 @@ spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		.devinfo_domain = L_DEVINFO_DOMAIN,
 		.leakage_id = MTK_L_LEAKAGE,
 		.instance = DEFAULT_INSTANCE,
+		.print_leakage = false,
 	},
 	{
 		.vsize = VSIZE,
@@ -1441,6 +1445,7 @@ spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		.devinfo_domain = CCI_DEVINFO_DOMAIN,
 		.leakage_id = MTK_CCI_LEAKAGE,
 		.instance = DEFAULT_INSTANCE,
+		.print_leakage = true,
 	},
 	{
 		.vsize = VSIZE,
@@ -1454,6 +1459,7 @@ spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		.devinfo_domain = GPU_DEVINFO_DOMAIN,
 		.leakage_id = MTK_GPU_LEAKAGE,
 		.instance = DEFAULT_INSTANCE,
+		.print_leakage = true,
 	},
 	{
 		.vsize = VSIZE,
@@ -1467,6 +1473,7 @@ spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		.devinfo_domain = VCORE_DEVINFO_DOMAIN,
 		.leakage_id = MTK_VCORE_LEAKAGE,
 		.instance = DEFAULT_INSTANCE,
+		.print_leakage = true,
 	},
 	{
 		.vsize = VSIZE,
@@ -1480,6 +1487,7 @@ spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		.devinfo_domain = VMD_DEVINFO_DOMAIN,
 		.leakage_id = MTK_VMD_LEAKAGE,
 		.instance = DEFAULT_INSTANCE,
+		.print_leakage = true,
 	},
 	{
 		.vsize = VSIZE,
@@ -1493,6 +1501,7 @@ spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		.devinfo_domain = MODEM_DEVINFO_DOMAIN,
 		.leakage_id = MTK_MODEM_LEAKAGE,
 		.instance = DEFAULT_INSTANCE,
+		.print_leakage = true,
 	},
 };
 #endif
