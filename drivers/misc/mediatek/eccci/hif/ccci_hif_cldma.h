@@ -227,6 +227,8 @@ struct md_cd_ctrl {
 	unsigned long traffic_stamp;
 #endif
 
+	unsigned int tx_busy_warn_cnt;
+
 	struct dma_pool *gpd_dmapool;	/* here we assume T/R GPD/BD/SPD have the same size  */
 	struct cldma_ring net_tx_ring[NET_TXQ_NUM];
 	struct cldma_ring net_rx_ring[NET_RXQ_NUM];
