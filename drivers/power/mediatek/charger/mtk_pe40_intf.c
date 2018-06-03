@@ -55,12 +55,13 @@ int mtk_pe40_pd_1st_request(struct charger_manager *pinfo,
 {
 	unsigned int oldmA;
 	int ret;
-	int mivr = 4500;
+	int mivr;
 
 	chr_err("pe40_pd_req:vbus:%d ibus:%d input_current:%d\n",
 		adapter_mv, adapter_ma, ma);
 
-	charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
+	mivr = pinfo->data.min_charger_voltage / 1000;
+	charger_dev_set_mivr(pinfo->chg1_dev, pinfo->data.min_charger_voltage);
 
 	charger_dev_get_input_current(pinfo->chg1_dev, &oldmA);
 	oldmA = oldmA / 1000;
@@ -73,7 +74,7 @@ int mtk_pe40_pd_1st_request(struct charger_manager *pinfo,
 	if (oldmA < ma)
 		charger_dev_set_input_current(pinfo->chg1_dev, ma * 1000);
 
-	if ((adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD) > 4500)
+	if ((adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD) > mivr)
 		mivr = adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD;
 
 	charger_dev_set_mivr(pinfo->chg1_dev, mivr * 1000);
@@ -88,12 +89,13 @@ int mtk_pe40_pd_request(struct charger_manager *pinfo,
 {
 	unsigned int oldmA;
 	int ret;
-	int mivr = 4500;
+	int mivr;
 
 	chr_err("pe40_pd_req:vbus:%d ibus:%d input_current:%d\n",
 		adapter_mv, adapter_ma, ma);
 
-	charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
+	mivr = pinfo->data.min_charger_voltage / 1000;
+	charger_dev_set_mivr(pinfo->chg1_dev, pinfo->data.min_charger_voltage);
 
 	charger_dev_get_input_current(pinfo->chg1_dev, &oldmA);
 	oldmA = oldmA / 1000;
@@ -103,7 +105,7 @@ int mtk_pe40_pd_request(struct charger_manager *pinfo,
 	if (oldmA < ma)
 		charger_dev_set_input_current(pinfo->chg1_dev, ma * 1000);
 
-	if ((adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD) > 4500)
+	if ((adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD) > mivr)
 		mivr = adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD;
 
 	charger_dev_set_mivr(pinfo->chg1_dev, mivr * 1000);
@@ -121,7 +123,7 @@ void mtk_pe40_reset(struct charger_manager *pinfo, bool enable)
 
 	if (pe40->is_connect == true) {
 		tcpm_set_pd_charging_policy(pinfo->tcpc, DPM_CHARGING_POLICY_VSAFE5V, NULL);
-		charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
+		charger_dev_set_mivr(pinfo->chg1_dev, pinfo->data.min_charger_voltage);
 		charger_enable_vbus_ovp(pinfo, true);
 		pinfo->polling_interval = 10;
 		swchgalg->state = CHR_CC;
