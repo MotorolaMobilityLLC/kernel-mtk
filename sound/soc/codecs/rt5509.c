@@ -750,6 +750,48 @@ static void rt5509_param_destroy(struct rt5509_chip *chip)
 	platform_driver_unregister(&rt5509_param_driver);
 }
 
+static int rt5509_codec_probe(struct snd_soc_codec *codec)
+{
+	struct rt5509_chip *chip = snd_soc_codec_get_drvdata(codec);
+	int ret = 0;
+
+	dev_dbg(codec->dev, "%s\n", __func__);
+	/* CHIP Enable */
+	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
+		RT5509_CHIPPD_ENMASK, ~RT5509_CHIPPD_ENMASK);
+	if (ret < 0)
+		goto err_out_probe;
+	ret = rt5509_init_general_setting(codec);
+	if (ret < 0)
+		goto err_out_probe;
+	ret = rt5509_init_adaptive_setting(codec);
+	if (ret < 0)
+		goto err_out_probe;
+	ret = rt5509_init_battmode_setting(codec);
+	if (ret < 0)
+		goto err_out_probe;
+	ret = rt5509_do_tcsense_fix(codec);
+	if (ret < 0)
+		goto err_out_probe;
+	ret = rt5509_init_proprietary_setting(codec);
+	if (ret < 0)
+		goto err_out_probe;
+	ret = rt5509_param_create(chip);
+	if (ret < 0)
+		goto err_out_probe;
+	chip->codec = codec;
+	ret = rt5509_calib_create(chip);
+	if (ret < 0)
+		goto err_out_probe;
+	dev_info(codec->dev, "%s\n", __func__);
+	return rt5509_set_bias_level(codec, SND_SOC_BIAS_OFF);
+err_out_probe:
+	/* Chip Disable */
+	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
+		RT5509_CHIPPD_ENMASK, RT5509_CHIPPD_ENMASK);
+	return ret < 0 ? ret : -EINVAL;
+}
+
 static int rt5509_codec_remove(struct snd_soc_codec *codec)
 {
 	struct rt5509_chip *chip = snd_soc_codec_get_drvdata(codec);
@@ -1630,6 +1672,15 @@ static const struct snd_soc_codec_driver rt5509_codec_drv = {
 	.suspend = rt5509_codec_suspend,
 	.resume = rt5509_codec_resume,
 
+	.component_driver = {
+	.controls = rt5509_controls,
+	.num_controls = ARRAY_SIZE(rt5509_controls),
+	.dapm_widgets = rt5509_dapm_widgets,
+	.num_dapm_widgets = ARRAY_SIZE(rt5509_dapm_widgets),
+	.dapm_routes = rt5509_dapm_routes,
+	.num_dapm_routes = ARRAY_SIZE(rt5509_dapm_routes),
+	},
+
 	.set_bias_level = rt5509_set_bias_level,
 	.idle_bias_off = true,
 	/* codec io */
@@ -2043,62 +2094,6 @@ static inline int rt5509_parse_dt(struct device *dev,
 	return 0;
 }
 #endif /* #ifdef CONFIG_OF */
-
-
-static int rt5509_codec_probe(struct snd_soc_codec *codec)
-{
-	struct rt5509_chip *chip = snd_soc_codec_get_drvdata(codec);
-	struct snd_soc_dapm_context *dapm = snd_soc_codec_get_dapm(codec);
-	int ret = 0;
-
-	dev_dbg(codec->dev, "%s\n", __func__);
-	/* CHIP Enable */
-	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
-		RT5509_CHIPPD_ENMASK, ~RT5509_CHIPPD_ENMASK);
-	if (ret < 0)
-		goto err_out_probe;
-	ret = rt5509_init_general_setting(codec);
-	if (ret < 0)
-		goto err_out_probe;
-	ret = rt5509_init_adaptive_setting(codec);
-	if (ret < 0)
-		goto err_out_probe;
-	ret = rt5509_init_battmode_setting(codec);
-	if (ret < 0)
-		goto err_out_probe;
-	ret = rt5509_do_tcsense_fix(codec);
-	if (ret < 0)
-		goto err_out_probe;
-	ret = rt5509_init_proprietary_setting(codec);
-	if (ret < 0)
-		goto err_out_probe;
-	ret = rt5509_param_create(chip);
-	if (ret < 0)
-		goto err_out_probe;
-	chip->codec = codec;
-	ret = rt5509_calib_create(chip);
-	if (ret < 0)
-		goto err_out_probe;
-	dev_info(codec->dev, "%s\n", __func__);
-
-	snd_soc_dapm_new_controls(dapm, rt5509_dapm_widgets,
-				ARRAY_SIZE(rt5509_dapm_widgets));
-
-	snd_soc_dapm_add_routes(dapm, rt5509_dapm_routes,
-				ARRAY_SIZE(rt5509_dapm_routes));
-
-	snd_soc_add_codec_controls(codec, rt5509_controls,
-			     ARRAY_SIZE(rt5509_controls));
-
-	return rt5509_set_bias_level(codec, SND_SOC_BIAS_OFF);
-err_out_probe:
-	dev_err(codec->dev, "chip io error\n");
-	/* Chip Disable */
-	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
-		RT5509_CHIPPD_ENMASK, RT5509_CHIPPD_ENMASK);
-	return ret < 0 ? ret : -EINVAL;
-}
-
 
 static int rt5509_i2c_probe(struct i2c_client *client,
 			    const struct i2c_device_id *id)

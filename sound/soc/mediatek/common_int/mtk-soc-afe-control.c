@@ -4241,9 +4241,10 @@ get_dlmem_frame_index(struct snd_pcm_substream *substream,
 		return 0;
 	}
 	spin_lock_irqsave(&afe_mem_control->substream_lock, flags);
+#ifdef AFE_CONTROL_DEBUG_LOG
 	pr_debug(" %s u4DMAReadIdx = 0x%x\n", __func__,
 		       Afe_Block->u4DMAReadIdx);
-
+#endif
 	if (GetMemoryPathEnable(mem_block) == true) {
 		switch (mem_block) {
 		case Soc_Aud_Digital_Block_MEM_DL1:
@@ -4616,12 +4617,13 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 					Afe_Block->u4BufferSize,
 					Afe_Block->u4DataRemained);
 			} else {
-
+#ifdef AFE_CONTROL_DEBUG_LOG
 				pr_debug(
 					"memcpy Idx= %p data_w_ptr = %p copy_size = 0x%x\n",
 					Afe_Block->pucVirtBufAddr +
 						Afe_WriteIdx_tmp,
 					data_w_ptr, copy_size);
+#endif
 				if (copy_from_user((Afe_Block->pucVirtBufAddr +
 						    Afe_WriteIdx_tmp),
 						   data_w_ptr, copy_size)) {
@@ -4637,32 +4639,35 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 			mem_blk_spinunlock(mem_blk);
 			data_w_ptr += copy_size;
 			count -= copy_size;
-
+#ifdef AFE_CONTROL_DEBUG_LOG
 			pr_debug("finish1, copy_size:%x, WriteIdx:%x, ReadIdx=%x, Remained:%x, count=%x \r\n",
 				copy_size, Afe_Block->u4WriteIdx,
 				Afe_Block->u4DMAReadIdx,
 				Afe_Block->u4DataRemained, (unsigned int)count);
-
+#endif
 		} else { /* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
 
 			size_1 = word_size_align(
 				(Afe_Block->u4BufferSize - Afe_WriteIdx_tmp));
 			size_2 = word_size_align((copy_size - size_1));
+#ifdef AFE_CONTROL_DEBUG_LOG
 			pr_debug("size_1=0x%x, size_2=0x%x\n", size_1,
 				       size_2);
+#endif
 			if (!access_ok(VERIFY_READ, data_w_ptr, size_1)) {
 				pr_warn("1 w_ptr=%p, size_1=%d bSize=%d,left=%d",
 					data_w_ptr, size_1,
 					Afe_Block->u4BufferSize,
 					Afe_Block->u4DataRemained);
 			} else {
-
+#ifdef AFE_CONTROL_DEBUG_LOG
 				pr_debug(
 					"mcmcpy Idx= %p data_w_ptr = %p size_1 = %x\n",
 					Afe_Block->pucVirtBufAddr +
 						Afe_WriteIdx_tmp,
 					data_w_ptr, size_1);
+#endif
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr +
 						     Afe_WriteIdx_tmp),
 						    data_w_ptr, size_1))) {
@@ -4685,11 +4690,13 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 					Afe_Block->u4DataRemained
 					);
 			} else {
+#ifdef AFE_CONTROL_DEBUG_LOG
 				pr_debug(
 					"mcmcpy Idx= %p data_w_ptr+size_1 = %p size_2 = %x\n",
 					Afe_Block->pucVirtBufAddr +
 						Afe_WriteIdx_tmp,
 					data_w_ptr + size_1, size_2);
+#endif
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr +
 						     Afe_WriteIdx_tmp),
 						    (data_w_ptr + size_1),
@@ -4706,14 +4713,17 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 
 			count -= copy_size;
 			data_w_ptr += copy_size;
-
+#ifdef AFE_CONTROL_DEBUG_LOG
 			pr_debug("finish2, copy size:%x, WriteIdx:%x,ReadIdx=%x DataRemained:%x \r\n",
 				copy_size, Afe_Block->u4WriteIdx,
 				Afe_Block->u4DMAReadIdx,
 				Afe_Block->u4DataRemained);
+#endif
 		}
 	}
+#ifdef AFE_CONTROL_DEBUG_LOG
 	pr_debug("pcm_copy return\n");
+#endif
 	return 0;
 }
 
@@ -4737,9 +4747,10 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream, int channel,
 	char *Read_Data_Ptr = (char *)dst;
 	ssize_t DMA_Read_Ptr = 0, read_size = 0, read_count = 0;
 	struct snd_pcm_runtime *runtime = substream->runtime;
-
+#ifdef AFE_CONTROL_DEBUG_LOG
 	pr_debug("mtk_capture_pcm_copy pos = %lucount = %lu\n ", pos,
 		       count);
+#endif
 	/* get total bytes to copy */
 	count = audio_frame_to_bytes(substream, count);
 
@@ -4782,13 +4793,13 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream, int channel,
 
 	DMA_Read_Ptr = Vul_Block->u4DMAReadIdx;
 	mem_blk_spinunlock(mem_blk);
-
+#ifdef AFE_CONTROL_DEBUG_LOG
 	pr_debug(
 		"%s finish0, read_count:%x, read_size:%x, Remained:%x, ReadIdx:0x%x, WriteIdx:%x \r\n",
 		__func__, (unsigned int)read_count, (unsigned int)read_size,
 		Vul_Block->u4DataRemained, Vul_Block->u4DMAReadIdx,
 		Vul_Block->u4WriteIdx);
-
+#endif
 	if (DMA_Read_Ptr + read_size < Vul_Block->u4BufferSize) {
 		if (DMA_Read_Ptr != Vul_Block->u4DMAReadIdx) {
 			pr_warn("%s 1, read_size:%zu, Remained:%x, Ptr:%zu, DMAReadIdx:%x \r\n",
@@ -4818,12 +4829,13 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream, int channel,
 
 		Read_Data_Ptr += read_size;
 		count -= read_size;
-
+#ifdef AFE_CONTROL_DEBUG_LOG
 		pr_debug(
 			"%s finish1, copy size:%x, ReadIdx:0x%x, WriteIdx:%x, Remained:%x \r\n",
 			__func__, (unsigned int)read_size,
 			Vul_Block->u4DMAReadIdx, Vul_Block->u4WriteIdx,
 			Vul_Block->u4DataRemained);
+#endif
 	}
 
 	else {
@@ -4855,12 +4867,12 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream, int channel,
 		Vul_Block->u4DMAReadIdx %= Vul_Block->u4BufferSize;
 		DMA_Read_Ptr = Vul_Block->u4DMAReadIdx;
 		mem_blk_spinunlock(mem_blk);
-
+#ifdef AFE_CONTROL_DEBUG_LOG
 		pr_debug(
 			"%s finish2, copy size_1:%x, ReadIdx:0x%x, WriteIdx:0x%x, Remained:%x \r\n",
 			__func__, size_1, Vul_Block->u4DMAReadIdx,
 			Vul_Block->u4WriteIdx, Vul_Block->u4DataRemained);
-
+#endif
 		if (DMA_Read_Ptr != Vul_Block->u4DMAReadIdx) {
 
 			pr_warn("%s 3, read_size2:%x, Remained:%x, DMA_Read_Ptr:%zu, DMAReadIdx:%x \r\n",
@@ -4887,11 +4899,12 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream, int channel,
 		mem_blk_spinunlock(mem_blk);
 		count -= read_size;
 		Read_Data_Ptr += read_size;
-
+#ifdef AFE_CONTROL_DEBUG_LOG
 		pr_debug(
 			"%s finish3, copy size_2:%x, u4DMAReadIdx:0x%x, u4WriteIdx:0x%x u4DataRemained:%x \r\n",
 			__func__, size_2, Vul_Block->u4DMAReadIdx,
 			Vul_Block->u4WriteIdx, Vul_Block->u4DataRemained);
+#endif
 	}
 
 	return bytes_to_frames(runtime, read_count);
