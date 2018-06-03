@@ -622,7 +622,7 @@ void mcdi_governor_init(void)
 
 	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
 
-	set_mcdi_enable_status(true);
+	set_mcdi_enable_status(false);
 	set_mcdi_s_state(MCDI_STATE_SODI3);
 }
 
