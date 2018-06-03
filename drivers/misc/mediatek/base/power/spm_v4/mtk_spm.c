@@ -451,7 +451,9 @@ int __init spm_module_init(void)
 	/* get __spmfw_idx */
 	__spm_check_dram_type();
 #endif /* CONFIG_MTK_DRAMC */
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 	is_ext_buck = is_ext_buck_exist();
+#endif
 	pr_info("#@# %s(%d) is_ext_buck_exist() 0x%x\n", __func__, __LINE__, is_ext_buck);
 	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, __spmfw_idx, is_ext_buck);
 
@@ -626,6 +628,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	if (force == 0 && mode == prev_mode)
 		return;
 
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 	switch (mode) {
 	case PMIC_PWR_NORMAL:
 		/* nothing */
@@ -685,6 +688,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	default:
 		pr_debug("spm pmic power mode (%d) is not configured\n", mode);
 	}
+#endif
 
 	prev_mode = mode;
 }
