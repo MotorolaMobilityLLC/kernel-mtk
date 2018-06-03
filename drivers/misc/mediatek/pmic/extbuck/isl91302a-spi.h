@@ -15,6 +15,7 @@
 #define __LINUX_ISL91302A_SPI_H
 
 #include <linux/mutex.h>
+#include <linux/regulator/consumer.h>
 
 struct isl91302a_chip {
 	struct spi_device *spi;
@@ -23,6 +24,7 @@ struct isl91302a_chip {
 #ifdef CONFIG_RT_REGMAP
 	struct rt_regmap_device *regmap_dev;
 #endif /* CONFIG_RT_REGMAP */
+	struct regulator *gpu;
 	int irq;
 };
 

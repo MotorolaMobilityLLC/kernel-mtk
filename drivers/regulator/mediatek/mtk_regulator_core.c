@@ -361,8 +361,13 @@ int mtk_simple_regulator_register(struct mtk_simple_regulator_desc *mreg_desc,
 					mreg_desc->rdesc.name);
 			return -ENODEV;
 		}
+		if (init_data->constraints.name == NULL) {
+			init_data->constraints.name = mreg_desc->rdesc.name;
+			pr_info("%s: (%s) init_data without name, use name from rdesc\n",
+					__func__, init_data->constraints.name);
+		}
 		pr_info("%s: (%s) use default init_data\n", __func__,
-			mreg_desc->rdesc.name);
+				init_data->constraints.name);
 	}
 
 	/* Set default & extended ops */
@@ -378,10 +383,10 @@ int mtk_simple_regulator_register(struct mtk_simple_regulator_desc *mreg_desc,
 	/* Register MTK regulator device */
 	if (rdev) {
 		mreg_desc->mreg_dev = mtk_simple_regulator_device_register(
-			mreg_desc->rdesc.name, dev, mreg_adv_ops);
+			init_data->constraints.name, dev, mreg_adv_ops);
 		if (IS_ERR(mreg_desc->mreg_dev)) {
 			pr_info("%s: (%s) unable to register mreg device\n",
-				__func__, mreg_desc->rdesc.name);
+				__func__, init_data->constraints.name);
 			mreg_desc->mreg_dev = NULL;
 		}
 	}

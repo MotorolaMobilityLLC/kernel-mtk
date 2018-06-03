@@ -478,6 +478,22 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 		return -EINVAL;
 	}
 
+#if 1 /* temp code */
+	chip->gpu = regulator_get(chip->dev, "ext_buck_gpu");
+	if (chip->gpu == NULL) {
+		ISL91302A_ERR("%s get regulator ext_buck_gpu fail\n", __func__);
+		return -EINVAL;
+	}
+
+	regulator_set_voltage(chip->gpu, 850000, 900000);
+	ret = regulator_enable(chip->gpu);
+
+	ret = regulator_get_voltage(chip->gpu);
+	if (ret >= 0)
+		pr_info("%s voltage = %d\n", __func__, ret);
+
+#endif /* temp code */
+
 	pr_info("%s --OK!!--\n", __func__);
 	return 0;
 

@@ -20,7 +20,7 @@
 #include <linux/regulator/mediatek/mtk_regulator.h>
 #include <linux/mutex.h>
 
-#define MTK_SIMPLE_REGULATOR_VERSION "0.0.2_MTK"
+#define MTK_SIMPLE_REGULATOR_VERSION "0.0.3_MTK"
 
 typedef uint8_t mreg_reg_t;
 typedef struct mutex mreg_mutex_t;
@@ -147,3 +147,20 @@ static inline void mtk_simple_regulator_mutex_destroy(mreg_mutex_t *lock)
 }
 
 #endif /* __LINUX_REGULATOR_MTK_REGULATOR_CORE_H_ */
+
+
+/*
+ * Version Info
+ * 0.0.3_MTK
+ * (1) Fix KE problem of mtk_regulator_get
+ * (2) Use constraint->name to register mtk regulator class
+ * (3) Also get adv ops in devm_get and exclusive_get
+ *
+ * 0.0.2_MTK
+ * (1) Modify some variables name
+ * (2) Let user can assign their init config directly
+ *
+ * 0.0.1_MTK
+ * Initial release
+ */
+
