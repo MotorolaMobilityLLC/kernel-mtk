@@ -895,10 +895,11 @@ static inline void dp_ufp_u_send_dp_attention(struct pd_port *pd_port)
 	case DP_UFP_U_OPERATION:
 		svid_data = dpm_get_svdm_svid_data(
 				pd_port, USB_SID_DISPLAYPORT);
-		PD_BUG_ON(svid_data == NULL);
-
-		pd_send_vdm_dp_attention(pd_port, TCPC_TX_SOP,
-			svid_data->active_mode, dp_data->local_status);
+		if (svid_data == NULL)
+			PD_BUG_ON(1);
+		else
+			pd_send_vdm_dp_attention(pd_port, TCPC_TX_SOP,
+				svid_data->active_mode, dp_data->local_status);
 		break;
 
 	default:

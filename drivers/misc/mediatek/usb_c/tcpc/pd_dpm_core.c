@@ -959,7 +959,10 @@ static int dpm_vdm_ufp_response_modes(struct pd_port *pd_port)
 
 	svid_data = dpm_get_svdm_svid_data(pd_port, svid);
 
-	PD_BUG_ON(svid_data == NULL);
+	if (svid_data == NULL) {
+		PD_BUG_ON(1);
+		return -EINVAL;
+	};
 
 	return pd_reply_svdm_request(
 		pd_port, CMDT_RSP_ACK,
