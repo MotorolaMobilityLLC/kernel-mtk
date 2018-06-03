@@ -702,6 +702,60 @@ static void msdc_detect_bad_sd(struct msdc_host *host, u32 condition)
 		msdc_set_bad_card_and_remove(host);
 }
 
+static u32 msdc_max_busy_timeout_ms(struct msdc_host *host)
+{
+	void __iomem *base = host->base;
+	u64 timeout;
+	u32 mode = 0;
+
+	if (host->sclk == 0) {
+		timeout = 0;
+	} else {
+		timeout = 8192 * (1ULL << 20) * 1000;
+		do_div(timeout, host->sclk);
+		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, mode);
+		/* DDR mode timeout will be in half */
+		if (mode >= 2)
+			do_div(timeout, 2);
+	}
+
+	N_MSG(OPS, "max timeout: %dms, mode:%d, clk_freq=%dKHz\n",
+		(u32)timeout, mode, (host->sclk / 1000));
+
+	return (u32)timeout;
+}
+
+static void msdc_set_busy_timeout_ms(struct msdc_host *host, u32 ms)
+{
+	void __iomem *base = host->base;
+	u64 timeout, clk_ns, us;
+	u32 mode = 0;
+
+	us = ms * 1000;
+
+	if (host->sclk == 0) {
+		timeout = 0;
+	} else {
+		clk_ns  = 1000000000ULL;
+		do_div(clk_ns, host->sclk);
+		timeout = us * 1000 + clk_ns - 1;
+		do_div(timeout, clk_ns);
+		/* in 1048576 sclk cycle unit */
+		timeout = (timeout + (1 << 20) - 1) >> 20;
+		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, mode);
+		/*DDR mode will double the clk cycles for data timeout*/
+		timeout = mode >= 2 ? timeout * 2 : timeout;
+		timeout = timeout > 1 ? timeout - 1 : 0;
+		timeout = timeout > 8191 ? 8191 : timeout;
+	}
+	MSDC_SET_FIELD(SDC_CFG, SDC_CFG_WRDTOC, (u32)timeout);
+
+	N_MSG(OPS, "Set CMD%d busy tmo: %dms(%d x1M cycles), freq=%dKHz\n",
+		host->cmd->opcode,
+		(ms > host->max_busy_timeout_ms) ? host->max_busy_timeout_ms : ms,
+		(u32)timeout + 1, (host->sclk / 1000));
+}
+
 static void msdc_set_timeout(struct msdc_host *host, u32 ns, u32 clks)
 {
 	void __iomem *base = host->base;
@@ -725,8 +779,8 @@ static void msdc_set_timeout(struct msdc_host *host, u32 ns, u32 clks)
 	}
 	MSDC_SET_FIELD(SDC_CFG, SDC_CFG_DTOC, timeout);
 
-	N_MSG(OPS, "msdc%d, Set read data timeout: %dns %dclks -> %d x 1048576 cycles, mode:%d, clk_freq=%dKHz\n",
-		host->id, ns, clks, timeout + 1, mode, (host->sclk / 1000));
+	N_MSG(OPS, "Set read data timeout: %dns %dclks(%d x1M cycles), mode:%d, freq=%dKHz\n",
+		ns, clks, timeout + 1, mode, (host->sclk / 1000));
 }
 
 /* msdc_eirq_sdio() will be called when EIRQ(for WIFI) */
@@ -820,6 +874,7 @@ void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 	host->timing = timing;
 
 	/* need because clk changed.*/
+	host->max_busy_timeout_ms = msdc_max_busy_timeout_ms(host);
 	msdc_set_timeout(host, host->timeout_ns, host->timeout_clks);
 	pr_info("msdc%d -> !!! Set<%dKHz> Source<%dKHz> -> sclk<%dKHz> timing<%d> mode<%d> div<%d> hs400_div_dis<%d>\n",
 		host->id, hz/1000, hclk/1000, sclk/1000, (int)timing, mode, div,
@@ -1385,9 +1440,70 @@ void msdc_check_cache_flush_error(struct msdc_host *host,
 /*--------------------------------------------------------------------------*/
 /* mmc_host_ops members                                                     */
 /*--------------------------------------------------------------------------*/
-static u32 wints_cmd = MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO |
-		       MSDC_INT_ACMDRDY | MSDC_INT_ACMDCRCERR |
-		       MSDC_INT_ACMDTMO;
+static u32 wints_cmd = MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO;
+static u32 wints_acmd = MSDC_INT_ACMDRDY | MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO;
+
+static void msdc_set_cmd_intr(struct msdc_host *host,
+	bool check_busy, unsigned long timeout_ms)
+{
+	void __iomem *base = host->base;
+	unsigned long flags;
+
+	init_completion(&host->cmd_done);
+
+	if (check_busy) {
+		msdc_set_busy_timeout_ms(host, timeout_ms);
+		/* set check busy */
+		MSDC_SET_BIT32(MSDC_PATCH_BIT1, MSDC_PB1_BUSY_CHECK_SEL);
+	}
+
+	host->use_cmd_intr = true; /* set flag */
+	host->intsts = 0;
+
+	/* use interrupt way */
+	spin_lock_irqsave(&host->reg_lock, flags);
+	MSDC_SET_BIT32(MSDC_INTEN, wints_cmd);
+	spin_unlock_irqrestore(&host->reg_lock, flags);
+}
+
+static unsigned int msdc_wait_cmd_intr(struct msdc_host *host,
+	bool check_busy, unsigned long timeout_ms)
+{
+	void __iomem *base = host->base;
+	unsigned int ret = 0;
+	unsigned long tmo, flags;
+	int lock;
+
+	/* some case lock is not held */
+	lock = spin_is_locked(&host->lock);
+
+	if (lock)
+		spin_unlock(&host->lock);
+
+	/* wait for msdc_irq */
+	tmo = wait_for_completion_timeout(&host->cmd_done,
+		msecs_to_jiffies(timeout_ms));
+
+	if (lock)
+		spin_lock(&host->lock);
+
+	spin_lock_irqsave(&host->reg_lock, flags);
+	MSDC_CLR_BIT32(MSDC_INTEN, wints_cmd);
+	spin_unlock_irqrestore(&host->reg_lock, flags);
+
+	host->use_cmd_intr = false; /* clear flag */
+
+	if (check_busy)
+		MSDC_CLR_BIT32(MSDC_PATCH_BIT1, MSDC_PB1_BUSY_CHECK_SEL);
+
+	if (!tmo) {
+		host->sw_timeout++;
+		ret = -1;
+	}
+
+	return ret;
+}
+
 static unsigned int msdc_command_start(struct msdc_host   *host,
 	struct mmc_command *cmd,
 	unsigned long       timeout)
@@ -1399,6 +1515,8 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	unsigned long tmo;
 	struct mmc_command *sbc = NULL;
 	char *str;
+	unsigned long flags;
+	bool use_cmd_intr = false;
 
 	if (host->data && host->data->mrq && host->data->mrq->sbc)
 		sbc = host->data->mrq->sbc;
@@ -1451,6 +1569,8 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 			break;
 		case MMC_RSP_R1B:
 			resp = RESP_R1B;
+			/* use interrupt way for r1b */
+			use_cmd_intr = true;
 			break;
 		case MMC_RSP_R2:
 			resp = RESP_R2;
@@ -1598,8 +1718,18 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	host->cmd = cmd;
 	host->cmd_rsp = resp;
 
+	if (use_cmd_intr) {
+		host->busy_timeout_ms = cmd->busy_timeout == 0 ?
+			host->max_busy_timeout_ms : cmd->busy_timeout;
+
+		/* use interrupt way */
+		msdc_set_cmd_intr(host, true, host->busy_timeout_ms);
+	} else {
 	/* use polling way */
-	MSDC_CLR_BIT32(MSDC_INTEN, wints_cmd);
+		spin_lock_irqsave(&host->reg_lock, flags);
+		MSDC_CLR_BIT32(MSDC_INTEN, (wints_cmd | wints_acmd));
+		spin_unlock_irqrestore(&host->reg_lock, flags);
+	}
 
 	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
 
@@ -1624,6 +1754,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 	u32 intsts;
 	u32 resp;
 	unsigned long tmo;
+	bool use_cmd_intr;
 
 	u32 cmdsts = MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO;
 #ifdef MTK_MSDC_USE_CMD23
@@ -1639,6 +1770,26 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 #endif
 
 	resp = host->cmd_rsp;
+	use_cmd_intr = host->use_cmd_intr;
+
+	/* interrupt */
+	if (use_cmd_intr) {
+		/* Add 3 more sec to prevent race condition */
+		if (msdc_wait_cmd_intr(host, true,
+			host->busy_timeout_ms + 3000)) {
+			pr_notice("[%s]: msdc%d CMD<%d> r1b %dms timeout ARG<0x%.8x>\n",
+				__func__, host->id, cmd->opcode,
+				host->busy_timeout_ms,
+				cmd->arg);
+			cmd->error = (unsigned int)-ETIMEDOUT;
+			msdc_dump_info(host->id);
+			msdc_reset_hw(host->id);
+			goto out;
+		}
+
+		intsts = host->intsts;
+		goto skip_cmd_resp_polling;
+	}
 
 	/*polling */
 	tmo = jiffies + timeout;
@@ -1667,6 +1818,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		}
 	}
 
+skip_cmd_resp_polling:
 #ifdef MTK_MSDC_ERROR_TUNE_DEBUG
 	msdc_error_tune_debug1(host, cmd, sbc, &intsts);
 #endif
@@ -1743,6 +1895,15 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 				msdc_clk_stable(host, 3, 1, 0);
 				pr_info("%s: SDIO set freq to 50MHz MSDC_CFG:0x%x\n", __func__, MSDC_READ32(MSDC_CFG));
 			}
+		}
+
+		if (use_cmd_intr && (mmc_resp_type(cmd) == MMC_RSP_R1B)) {
+			pr_notice("[%s]: msdc%d CMD<%d> Arg<0x%.8x> tmo: %dms (max %dms)\n",
+				__func__, host->id, cmd->opcode, cmd->arg,
+				host->busy_timeout_ms, host->max_busy_timeout_ms);
+			/* when r1b hw tmo, use cmd13 instead */
+			cmd->error = 0;
+			goto out;
 		}
 
 		if ((cmd->opcode != 52) && (cmd->opcode != 8)
@@ -1852,6 +2013,8 @@ end:
 }
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#define MSDC_POLLING_TO_INTR
+#define RESP_TO_INTR_TMO_NS (10 * 1000)
 static unsigned int msdc_cmdq_command_start(struct msdc_host *host,
 	struct mmc_command *cmd,
 	unsigned long timeout)
@@ -1860,6 +2023,10 @@ static unsigned int msdc_cmdq_command_start(struct msdc_host *host,
 	unsigned long tmo;
 	u32 wints_cq_cmd = MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR
 		| MSDC_INT_CMDTMO;
+	unsigned long flags;
+#if !defined(MSDC_POLLING_TO_INTR)
+	bool use_cmd_intr = false;
+#endif
 
 	switch (cmd->opcode) {
 	case MMC_SET_QUEUE_CONTEXT:
@@ -1895,9 +2062,18 @@ static unsigned int msdc_cmdq_command_start(struct msdc_host *host,
 	host->cmd = cmd;
 	host->cmd_rsp = RESP_R1;
 
+#if !defined(MSDC_POLLING_TO_INTR)
+	if (use_cmd_intr) {
+		host->busy_timeout_ms = 1000; /* 1000ms */
+		msdc_set_cmd_intr(host, false, host->busy_timeout_ms);
+	} else
+#endif
+	{
 	/* use polling way */
+		spin_lock_irqsave(&host->reg_lock, flags);
 	MSDC_CLR_BIT32(MSDC_INTEN, wints_cq_cmd);
-
+		spin_unlock_irqrestore(&host->reg_lock, flags);
+	}
 	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
 	sdc_send_cmdq_cmd(cmd->opcode, cmd->arg);
 
@@ -1912,12 +2088,37 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 	u32 intsts, resp;
 	unsigned long tmo;
 	u32 cmdsts = MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO;
-
+#if defined(MSDC_POLLING_TO_INTR)
+	u64 rsp_time, now;
+#endif
 	resp = host->cmd_rsp;
+
+#if defined(MSDC_POLLING_TO_INTR)
+cmdq_resp_intr:
+#endif
+	/* interrupt */
+	if (host->use_cmd_intr) {
+		if (msdc_wait_cmd_intr(host, true, host->busy_timeout_ms)) {
+			pr_notice("[%s]: msdc%d CMD<%d> %dms timeout ARG<0x%.8x>\n",
+				__func__, host->id, cmd->opcode,
+				host->busy_timeout_ms,
+				cmd->arg);
+			cmd->error = (unsigned int)-ETIMEDOUT;
+			msdc_dump_info(host->id);
+			goto out;
+		}
+
+		intsts = host->intsts;
+		goto skip_cmdq_resp_polling;
+	}
 
 	/* polling */
 	tmo = jiffies + timeout;
 	spin_unlock(&host->lock);
+
+#if defined(MSDC_POLLING_TO_INTR)
+	rsp_time = sched_clock();
+#endif
 	while (1) {
 		intsts = MSDC_READ32(MSDC_INT);
 		if ((intsts & cmdsts) != 0) {
@@ -1927,6 +2128,16 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 			break;
 		}
 
+#if defined(MSDC_POLLING_TO_INTR)
+		now = sched_clock();
+		if (now - rsp_time > RESP_TO_INTR_TMO_NS) {
+			spin_lock(&host->lock);
+			/* give up CPU */
+			host->busy_timeout_ms = 1000; /* 1000ms */
+			msdc_set_cmd_intr(host, false, host->busy_timeout_ms);
+			goto cmdq_resp_intr;
+		}
+#endif
 		if (time_after(jiffies, tmo) && ((MSDC_READ32(MSDC_INT) & cmdsts) == 0)) {
 			pr_notice("[%s]: msdc%d CMD<%d> polling_for_completion timeout ARG<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
@@ -1938,6 +2149,8 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 		}
 	}
 	spin_lock(&host->lock);
+
+skip_cmdq_resp_polling:
 
 	/* command interrupts */
 	if (intsts & cmdsts) {
@@ -2429,6 +2642,7 @@ static void msdc_dma_start(struct msdc_host *host)
 	void __iomem *base = host->base;
 	u32 wints = MSDC_INT_XFER_COMPL | MSDC_INT_DATTMO
 		| MSDC_INT_DATCRCERR | MSDC_INT_GPDCSERR | MSDC_INT_BDCSERR;
+	unsigned long flags;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	host->mmc->is_data_dma = 1;
@@ -2439,7 +2653,9 @@ static void msdc_dma_start(struct msdc_host *host)
 			| MSDC_INT_ACMDRDY;
 	MSDC_SET_FIELD(MSDC_DMA_CTRL, MSDC_DMA_CTRL_START, 1);
 
+	spin_lock_irqsave(&host->reg_lock, flags);
 	MSDC_SET_BIT32(MSDC_INTEN, wints);
+	spin_unlock_irqrestore(&host->reg_lock, flags);
 
 	N_MSG(DMA, "DMA start");
 	/* Schedule delayed work to check if data0 keeps busy */
@@ -2463,6 +2679,7 @@ static void msdc_dma_stop(struct msdc_host *host)
 	int retry = 500;
 	int count = 1000;
 	u32 wints = MSDC_INT_XFER_COMPL | MSDC_INT_DATTMO | MSDC_INT_DATCRCERR;
+	unsigned long flags;
 
 	/* Clear DMA data busy timeout */
 	if (host->data) {
@@ -2484,7 +2701,9 @@ static void msdc_dma_stop(struct msdc_host *host)
 	if (retry == 0)
 		ERR_MSG("DMA stop retry timeout");
 
+	spin_lock_irqsave(&host->reg_lock, flags);
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
+	spin_unlock_irqrestore(&host->reg_lock, flags);
 
 	host->stop_dma_time = sched_clock();
 	mb(); /* make sure write committed */
@@ -4514,10 +4733,12 @@ static void msdc_check_data_timeout(struct work_struct *work)
 			}
 
 			if (time_after(jiffies, tmo) && (state != R1_STATE_TRAN)) {
-				ERR_MSG("card stuck in %d state, remove such bad card!", state);
 				spin_unlock(&host->lock);
-				if (host->hw->host_function == MSDC_SD)
+				ERR_MSG("card stuck in %d state", state);
+				if (host->hw->host_function == MSDC_SD) {
+					ERR_MSG("remove such bad card!");
 					msdc_set_bad_card_and_remove(host);
+				}
 				spin_lock(&host->lock);
 				break;
 			}
@@ -4562,6 +4783,13 @@ static struct mmc_host_ops mt_msdc_ops = {
 	.prepare_hs400_tuning          = msdc_prepare_hs400_tuning,
 };
 
+static void msdc_irq_cmd_complete(struct msdc_host *host)
+{
+	/* command interrupt completion */
+	if (host->use_cmd_intr)
+		complete(&host->cmd_done);
+}
+
 static void msdc_irq_data_complete(struct msdc_host *host,
 	struct mmc_data *data, int error)
 {
@@ -4578,9 +4806,9 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 				goto skip_non_FDE_ERROR_HANDLING;
 #endif
 
-			msdc_dma_clear(host);
 			msdc_clr_fifo(host->id);
-			msdc_clr_int();
+			msdc_reset(host->id);
+			msdc_dma_clear(host);
 
 #if defined(CONFIG_MTK_HW_FDE) && defined(CONFIG_MTK_HW_FDE_AES)
 skip_non_FDE_ERROR_HANDLING:
@@ -4681,18 +4909,20 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	}
 	intsts = MSDC_READ32(MSDC_INT);
 
+	host->intsts = intsts; /* save int raw status */
+
 	latest_int_status[host->id] = intsts;
 	inten = MSDC_READ32(MSDC_INTEN);
 	if (host->hw->flags & MSDC_SDIO_IRQ)
 		intsts &= inten;
-	else
-		inten &= intsts;
 
 	/* CMD TO/CRC/RDY polling status in msdc_command_resp_polling function
 	 * msdc_irq cannot clear here or cause msdc_command_resp_polling
 	 * function SW timeout.
 	 */
-	intsts &= ~cmdsts;
+	/* don't check cmd status if int not enabled */
+	if (!(inten & cmdsts))
+		intsts &= ~cmdsts;
 
 	MSDC_WRITE32(MSDC_INT, intsts); /* clear interrupts */
 
@@ -4720,6 +4950,13 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 		}
 	}
 
+	if (intsts & cmdsts) {
+		msdc_irq_cmd_complete(host);
+		/* return if no other intr event */
+		if (!(inten & intsts & ~cmdsts))
+			goto out;
+	}
+
 	if (data == NULL)
 		goto skip_data_interrupts;
 
@@ -4734,7 +4971,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 		host->data_timeout_cont = 0;
 		data->bytes_xfered = host->dma.xfersz;
 		msdc_irq_data_complete(host, data, 0);
-		return IRQ_HANDLED;
+		goto out;
 	}
 
 	if (intsts & datsts) {
@@ -4814,6 +5051,7 @@ tune:   /* DMA DATA transfer crc error */
 	if (host->dma_xfer)
 		msdc_irq_data_complete(host, data, 1);
 
+out:
 	return IRQ_HANDLED;
 }
 
@@ -5088,6 +5326,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card);
 
 	spin_lock_init(&host->lock);
+	spin_lock_init(&host->reg_lock);
 	spin_lock_init(&host->clk_gate_lock);
 	spin_lock_init(&host->remove_bad_card);
 	spin_lock_init(&host->cmd_dump_lock);
