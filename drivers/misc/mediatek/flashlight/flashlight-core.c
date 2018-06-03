@@ -753,8 +753,7 @@ static long _flashlight_ioctl(
 					FLASH_IOC_SET_SCENARIO,
 					(unsigned long)&fl_dev_arg);
 			}
-		}
-		else {
+		} else {
 			pr_info("Failed with no flashlight ops\n");
 			return -EFAULT;
 		}
