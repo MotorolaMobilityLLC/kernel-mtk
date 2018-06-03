@@ -1424,6 +1424,11 @@
 		clock-names = "CAM_MDP";
 	};
 
+	touch: touch {
+		compatible = "mediatek,mt6739-touch";
+		/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
+	};
+
 	flashlight_core: flashlight_core {
 		compatible = "mediatek,flashlight_core";
 	};
