@@ -700,7 +700,6 @@ RESTORE_IRQ:
 
 UNLOCK_SPM:
 	spin_unlock_irqrestore(&__spm_lock, flags);
-	lockdep_on();
 
 	/* stop APxGPT timer and enable caore0 local timer */
 	soidle_after_wfi(cpu);
