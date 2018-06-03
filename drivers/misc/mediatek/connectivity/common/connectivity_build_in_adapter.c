@@ -215,12 +215,6 @@ int connectivity_export_mmc_io_rw_direct(struct mmc_card *card,
 }
 EXPORT_SYMBOL(connectivity_export_mmc_io_rw_direct);
 
-void connectivity_inner_flush_dcache_all(void)
-{
-	__inner_flush_dcache_all();
-}
-EXPORT_SYMBOL(connectivity_inner_flush_dcache_all);
-
 void connectivity_arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
 				     struct iommu_ops *iommu, bool coherent)
 {
