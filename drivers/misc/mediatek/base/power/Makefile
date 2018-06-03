@@ -45,6 +45,7 @@ obj-$(CONFIG_MACH_MT6765) += cpuidle_v3/
 obj-$(CONFIG_MACH_MT6758) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6765) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6758) += udi_v1/
+obj-$(CONFIG_MACH_MT6765) += udi_v1/
 obj-$(CONFIG_MACH_MT6758) += mcdi/
 obj-$(CONFIG_MACH_MT6765) += mcdi/
 ifeq ($(CONFIG_MTK_CM_MGR), y)
