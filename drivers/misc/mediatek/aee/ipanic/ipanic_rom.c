@@ -135,6 +135,11 @@ static int ipanic_current_task_info(void *data, unsigned char *buffer, size_t sz
 	return mrdump_task_info(buffer, sz_buf);
 }
 
+static int ipanic_save_modules_info(void *data, unsigned char *buffer, size_t sz_buf)
+{
+	return mrdump_modules_info(buffer, sz_buf);
+}
+
 #ifdef CONFIG_MMPROFILE
 static int ipanic_mmprofile(void *data, unsigned char *buffer, size_t sz_buf)
 {
@@ -188,6 +193,7 @@ const struct ipanic_dt_op ipanic_dt_ops[] = {
 	{"SYS_LAST_LOG", LAST_LOG_LEN, ipanic_klog_buffer},
 	{"SYS_ATF_LOG", ATF_LOG_SIZE, ipanic_atflog_buffer},
 	{"SYS_DISP_LOG", DISP_LOG_SIZE, panic_dump_disp_log},	/* 16 */
+	{"SYS_MODULES_INFO", MODULES_INFO_BUF_SIZE, ipanic_save_modules_info},	/* 17 */
 	{"reserved", 0, NULL},
 	{"reserved", 0, NULL},
 	{"reserved", 0, NULL},
@@ -536,6 +542,7 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	if (errno == -1)
 		aee_nested_printf("$");
 	ipanic_data_to_sd(IPANIC_DT_CURRENT_TSK, 0);
+	ipanic_data_to_sd(IPANIC_DT_MODULES_INFO, NULL);
 	/* kick wdt after save the most critical infos */
 	ipanic_kick_wdt();
 	ipanic_data_to_sd(IPANIC_DT_MAIN_LOG, (void *)1);
@@ -613,6 +620,7 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
 	ipanic_klog_region(&dumper);
 	ipanic_data_to_sd(IPANIC_DT_KERNEL_LOG, &dumper);
+	ipanic_data_to_sd(IPANIC_DT_MODULES_INFO, NULL);
 	errno = ipanic_header_to_sd(0);
 	if (!IS_ERR(ERR_PTR(errno)))
 		mrdump_mini_ipanic_done();
@@ -693,6 +701,7 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	struct kmsg_dumper dumper;
 	struct die_args *dargs = (struct die_args *)ptr;
 
+	print_modules();
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_exp_type(2);
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_DIE);
@@ -727,6 +736,7 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	ipanic_klog_region(&dumper);
 	ipanic_data_to_sd(IPANIC_DT_KERNEL_LOG, &dumper);
 	ipanic_data_to_sd(IPANIC_DT_CURRENT_TSK, dargs->regs);
+	ipanic_data_to_sd(IPANIC_DT_MODULES_INFO, NULL);
 	return NOTIFY_DONE;
 }
 

@@ -610,6 +610,21 @@ int mrdump_task_info(unsigned char *buffer, size_t sz_buf)
 	return sizeof(struct aee_process_info);
 }
 
+int mrdump_modules_info(unsigned char *buffer, size_t sz_buf)
+{
+#ifdef CONFIG_MODULES
+	int sz;
+
+	sz = save_modules(modules_info_buf, MODULES_INFO_BUF_SIZE);
+	if (sz_buf < sz || buffer == NULL)
+		return -1;
+	memcpy(buffer, modules_info_buf, sz);
+	return sz;
+#else
+	return -1;
+#endif
+}
+
 static void mrdump_mini_add_loads(void);
 void mrdump_mini_ke_cpu_regs(struct pt_regs *regs)
 {
@@ -621,6 +636,7 @@ void mrdump_mini_ke_cpu_regs(struct pt_regs *regs)
 		mrdump_mini_save_regs(regs);
 	}
 	cpu = get_HW_cpuid();
+	mrdump_modules_info(NULL, -1);
 	mrdump_mini_cpu_regs(cpu, regs, current, 1);
 	mrdump_mini_add_loads();
 	mrdump_mini_build_task_info(regs);
@@ -662,6 +678,10 @@ static void mrdump_mini_build_elf_misc(void)
 	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 	get_disp_dbg_buffer(&misc.vaddr, &misc.size, &misc.start);
 	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_DISP_DBG_");
+#ifdef CONFIG_MODULES
+	mrdump_mini_add_misc_pa((unsigned long)modules_info_buf, (unsigned long)__pa(modules_info_buf),
+				MODULES_INFO_BUF_SIZE, 0, "SYS_MODULES_INFO");
+#endif
 	for (i = 0; i < 4; i++) {
 		memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 		get_android_log_buffer(&misc.vaddr, &misc.size, &misc.start, i + 1);

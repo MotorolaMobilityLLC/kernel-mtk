@@ -141,6 +141,7 @@ enum IPANIC_DT {
 	IPANIC_DT_LAST_LOG,
 	IPANIC_DT_ATF_LOG,
 	IPANIC_DT_DISP_LOG,
+	IPANIC_DT_MODULES_INFO = 17,
 	IPANIC_DT_RAM_DUMP = 28,
 	IPANIC_DT_SHUTDOWN_LOG = 30,
 	IPANIC_DT_RESERVED31 = 31,
@@ -246,6 +247,7 @@ extern void mrdump_mini_add_misc(unsigned long addr, unsigned long size, unsigne
 				 char *name);
 extern void mrdump_mini_ipanic_done(void);
 extern int mrdump_task_info(unsigned char *buffer, size_t sz_buf);
+extern int mrdump_modules_info(unsigned char *buffer, size_t sz_buf);
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_exp_type(unsigned int type);
 extern unsigned int aee_rr_curr_exp_type(void);
