@@ -515,7 +515,7 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 					musb_writew(mbase, offset, txcsr);
 
 					if (musb_host_db_workaround)
-						wait_tx_done(epnum, 1000000000);
+						wait_tx_done(epnum, 5000000);
 				} else
 					musb_dma_completion(musb,
 						musb_channel->epnum,

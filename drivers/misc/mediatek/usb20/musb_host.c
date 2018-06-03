@@ -396,7 +396,7 @@ static inline void musb_h_tx_start(struct musb_hw_ep *ep)
 		musb_writew(ep->regs, MUSB_TXCSR, txcsr);
 
 		if (musb_host_db_workaround)
-			wait_tx_done(ep->epnum, 1000000000);
+			wait_tx_done(ep->epnum, 5000000);
 	} else {
 		txcsr = MUSB_CSR0_H_DIS_PING
 				| MUSB_CSR0_H_SETUPPKT
