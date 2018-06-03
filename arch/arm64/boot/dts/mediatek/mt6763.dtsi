@@ -9,6 +9,8 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6763-msdc.h>
+/* mt6763-pinfunc.h will be removed after DCT auto gen check-in */
+#include <dt-bindings/pinctrl/mt6763-pinfunc.h>
 
 / {
 	model = "mt6763";
@@ -1332,6 +1334,11 @@
 
 	mtkfb: mtkfb@0 {
 		compatible = "mediatek,mtkfb";
+	};
+
+	touch: touch {
+		compatible = "mediatek,mt6763-touch";
+		/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
 	};
 
 	dispsys: dispsys@14000000 {
