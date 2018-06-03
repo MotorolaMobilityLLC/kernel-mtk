@@ -172,10 +172,10 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 
-		if (err == PSCI_0_2_AFFINITY_LEVEL_OFF) {
-			pr_info("CPU%d killed.\n", cpu);
+		if (err == PSCI_0_2_AFFINITY_LEVEL_OFF) /*{*/
+			/*pr_info("CPU%d killed.\n", cpu);*/
 			return 0;
-		}
+		/*}*/
 
 		msleep(10);
 		pr_info("Retrying again to check for CPU kill\n");
