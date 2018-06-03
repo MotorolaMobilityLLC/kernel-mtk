@@ -1105,17 +1105,14 @@ static int ppm_main_data_init(void)
 #ifdef PPM_TURBO_CORE_SUPPORT
 	/* Check HW has L plus CPU or not */
 	{
-		unsigned int segment = (get_devinfo_with_index(30) & 0x000000E0) >> 5;
+		unsigned int segment_inner = (get_devinfo_with_index(30) & 0xE0) >> 5;
+		unsigned int bining = get_devinfo_with_index(30) & 0x7;
 
-		switch (segment) {
-		case 0x3:
-		case 0x7:
+		if (segment_inner == 7 || bining == 3)
 			ppm_main_info.is_turbo_core = true;
-			break;
-		default:
-			break;
-		}
-		ppm_info("is_turbo_core = %d, segment = 0x%x\n", ppm_main_info.is_turbo_core, segment);
+
+		ppm_info("is_turbo_core = %d, segment_inner = 0x%x, bining = 0x%x\n",
+			ppm_main_info.is_turbo_core, segment_inner, bining);
 	}
 #endif
 
