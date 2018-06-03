@@ -73,7 +73,7 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a73";
 			reg = <0x100>;
-			enable-method = "psci";
+			enable-method = "disabled";
 			clock-frequency = <2340000000>;
 		};
 
