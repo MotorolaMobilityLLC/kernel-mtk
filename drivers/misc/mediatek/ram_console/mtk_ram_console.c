@@ -67,6 +67,10 @@ struct last_reboot_reason {
 	uint8_t hotplug_cb_index;
 	uint64_t hotplug_cb_fp;
 	uint64_t hotplug_cb_times;
+	uint64_t hps_cb_enter_times;
+	uint32_t hps_cb_cpu_bitmask;
+	uint32_t hps_cb_footprint;
+	uint64_t hps_cb_fp_times;
 	uint32_t cpu_caller;
 	uint32_t cpu_callee;
 	uint64_t cpu_up_prepare_ktime;
@@ -477,6 +481,11 @@ static void aee_rr_show_in_log(void)
 				LAST_RRR_VAL(hotplug_cb_index),
 				LAST_RRR_VAL(hotplug_cb_fp),
 				LAST_RRR_VAL(hotplug_cb_times));
+		pr_err("ram_console: CPU HPS footprint: %llu, 0x%x, %d, %llu\n",
+				LAST_RRR_VAL(hps_cb_enter_times),
+				LAST_RRR_VAL(hps_cb_cpu_bitmask),
+				LAST_RRR_VAL(hps_cb_footprint),
+				LAST_RRR_VAL(hps_cb_fp_times));
 		pr_err("ram_console: last init function: 0x%lx\n", LAST_RRR_VAL(last_init_func));
 	}
 }
@@ -829,6 +838,34 @@ void aee_rr_rec_hotplug_cb_times(unsigned long val)
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
 	LAST_RR_SET(hotplug_cb_times, val);
+}
+
+void aee_rr_rec_hps_cb_enter_times(unsigned long long val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(hps_cb_enter_times, val);
+}
+
+void aee_rr_rec_hps_cb_cpu_bitmask(unsigned int val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(hps_cb_cpu_bitmask, val);
+}
+
+void aee_rr_rec_hps_cb_footprint(unsigned int val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(hps_cb_footprint, val);
+}
+
+void aee_rr_rec_hps_cb_fp_times(unsigned long long val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(hps_cb_fp_times, val);
 }
 
 void aee_rr_rec_cpu_caller(u32 val)
@@ -2039,6 +2076,15 @@ void aee_rr_show_hotplug_status(struct seq_file *m)
 		   LAST_RRR_VAL(hotplug_cb_times));
 }
 
+void aee_rr_show_hps_status(struct seq_file *m)
+{
+	seq_printf(m, "CPU HPS footprint: %llu, 0x%x, %d, %llu\n",
+		   LAST_RRR_VAL(hps_cb_enter_times),
+		   LAST_RRR_VAL(hps_cb_cpu_bitmask),
+		   LAST_RRR_VAL(hps_cb_footprint),
+		   LAST_RRR_VAL(hps_cb_fp_times));
+}
+
 void aee_rr_show_hotplug_caller_callee_status(struct seq_file *m)
 {
 	seq_printf(m, "CPU Hotplug: caller CPU%d, callee CPU%d\n",
@@ -2857,6 +2903,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_last_init_func,
 	aee_rr_show_pmic_ext_buck,
 	aee_rr_show_hotplug_status,
+	aee_rr_show_hps_status,
 	aee_rr_show_hotplug_caller_callee_status,
 	aee_rr_show_hotplug_up_prepare_ktime,
 	aee_rr_show_hotplug_starting_ktime,
