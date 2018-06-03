@@ -1442,12 +1442,15 @@ static int __mt6370_set_ichg(struct mt6370_pmu_charger_data *chg_data, u32 uA)
 	int ret = 0;
 	u8 reg_ichg = 0;
 
+	if (chg_data->chip->chip_vid == 0xf0)
+		goto bypass_ichg_workaround;
 	uA = (uA < 500000) ? 500000 : uA;
 
 	ret = mt6370_ichg_workaround(chg_data, uA);
 	if (ret < 0)
 		dev_info(chg_data->dev, "%s: workaround fail\n", __func__);
 
+bypass_ichg_workaround:
 	/* Find corresponding reg value */
 	reg_ichg = mt6370_find_closest_reg_value(
 		MT6370_ICHG_MIN,
@@ -1472,6 +1475,8 @@ static int __mt6370_set_ichg(struct mt6370_pmu_charger_data *chg_data, u32 uA)
 	/* Store Ichg setting */
 	__mt6370_get_ichg(chg_data, &chg_data->ichg);
 
+	if (chg_data->chip->chip_vid == 0xf0)
+		goto bypass_ieoc_workaround;
 	/* Workaround to make IEOC accurate */
 	if (uA < 900000 && !chg_data->ieoc_wkard) { /* 900mA */
 		ret = __mt6370_set_ieoc(chg_data, chg_data->ieoc + 100000);
@@ -1481,6 +1486,7 @@ static int __mt6370_set_ichg(struct mt6370_pmu_charger_data *chg_data, u32 uA)
 		ret = __mt6370_set_ieoc(chg_data, chg_data->ieoc - 100000);
 	}
 
+bypass_ieoc_workaround:
 	return ret;
 }
 
