@@ -19,6 +19,14 @@
 
 #include <linux/rbtree.h>
 
+enum XGF_ERROR {
+	XGF_NOTIFY_OK,
+	XGF_SLPTIME_OK,
+	XGF_DISABLE,
+	XGF_THREAD_NOT_FOUND,
+	XGF_PARAM_ERR
+};
+
 enum {
 	XGF_QUEUE_START = 0,
 	XGF_QUEUE_END,
@@ -51,7 +59,6 @@ struct xgf_proc {
 	struct xgf_tick deque;
 
 	unsigned long long slptime;
-	unsigned long long slptime_ged;
 	unsigned long long quetime;
 	unsigned long long deqtime;
 };
@@ -59,7 +66,7 @@ struct xgf_proc {
 struct xgf_timer {
 	struct hlist_node hlist;
 	struct rb_node rb_node;
-	const struct hrtimer *hrtimer;
+	const void *hrtimer;
 	struct xgf_tick fire;
 	struct xgf_tick expire;
 	union {
@@ -81,9 +88,8 @@ void xgf_reset_render(struct xgf_proc *proc);
 void *xgf_kzalloc(size_t size);
 void xgf_kfree(const void *block);
 
-int fpsgo_fbt2xgf_query_sleep_time(pid_t, unsigned long long*);
 void fpsgo_ctrl2xgf_switch_xgf(int val);
-void fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd);
+int fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd, unsigned long long *sleep_time);
 void fpsgo_fstb2xgf_set_idle(void);
 
 #endif

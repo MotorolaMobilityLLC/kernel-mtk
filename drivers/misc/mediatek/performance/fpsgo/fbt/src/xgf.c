@@ -82,7 +82,7 @@ void xgf_trace(const char *fmt, ...)
 }
 EXPORT_SYMBOL(xgf_trace);
 
-static inline void xgf_timer_systrace(const struct hrtimer * const timer,
+static inline void xgf_timer_systrace(const void * const timer,
 				      int value)
 {
 	xgf_lockprove(__func__);
@@ -164,13 +164,13 @@ static void xgf_update_tick(struct xgf_proc *proc, struct xgf_tick *tick,
 }
 
 static struct xgf_timer *xgf_get_timer_rec(
-		const struct hrtimer * const timer,
+		const void * const timer,
 		struct xgf_proc *proc, int force)
 {
 	struct rb_node **p = &proc->timer_rec.rb_node;
 	struct rb_node *parent = NULL;
 	struct xgf_timer *xt = NULL;
-	const struct hrtimer *ref;
+	const void *ref;
 
 	xgf_lockprove(__func__);
 
@@ -246,7 +246,7 @@ static inline void xgf_blacked_recycle(struct rb_root *root,
 /**
  * is_valid_sleeper
  */
-static int is_valid_sleeper(const struct hrtimer * const timer,
+static int is_valid_sleeper(const void * const timer,
 			    struct xgf_proc *proc,
 			    unsigned long long now_ts)
 {
@@ -287,7 +287,7 @@ static int is_valid_sleeper(const struct hrtimer * const timer,
 /**
  * xgf_timer_fire - called when timer invocation
  */
-static void xgf_timer_fire(const struct hrtimer * const timer,
+static void xgf_timer_fire(const void * const timer,
 			   struct xgf_proc *proc)
 {
 	struct xgf_timer *xt;
@@ -314,7 +314,7 @@ static void xgf_timer_fire(const struct hrtimer * const timer,
 	hlist_add_head(&xt->hlist, &proc->timer_head);
 }
 
-static void xgf_update_timer_rec(const struct hrtimer * const timer,
+static void xgf_update_timer_rec(const void * const timer,
 		struct xgf_proc *proc, unsigned long long now_ts)
 {
 	struct xgf_timer *xt;
@@ -331,7 +331,7 @@ static void xgf_update_timer_rec(const struct hrtimer * const timer,
 /**
  * xgf_timer_expire - called when timer expires
  */
-static void xgf_timer_expire(const struct hrtimer * const timer,
+static void xgf_timer_expire(const void * const timer,
 			     struct xgf_proc *proc)
 {
 	struct xgf_timer *iter;
@@ -357,7 +357,7 @@ static void xgf_timer_expire(const struct hrtimer * const timer,
 	}
 }
 
-static void xgf_timer_remove(const struct hrtimer * const timer,
+static void xgf_timer_remove(const void * const timer,
 			     struct xgf_proc *proc)
 {
 	struct xgf_timer *iter;

@@ -23,8 +23,8 @@
 void fpsgo_ctrl2fbt_dfrc_fps(int fps_limit);
 void fpsgo_ctrl2fbt_cpufreq_cb(int cid, unsigned long freq);
 void fpsgo_ctrl2fbt_vsync(void);
-void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time,
-							unsigned long long self_time, int type, unsigned long long ts);
+void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time, unsigned long long self_time,
+							unsigned long long slptime, int type, unsigned long long ts);
 void fpsgo_comp2fbt_frame_complete(int pid, int type, int render, unsigned long long ts);
 void fpsgo_comp2fbt_bypass_connect(int pid);
 void fpsgo_comp2fbt_bypass_disconnect(int pid);
@@ -45,8 +45,8 @@ void fbt_check_thread_status(void);
 static inline void fpsgo_ctrl2fbt_dfrc_fps(int fps_limit) { }
 static inline void fpsgo_ctrl2fbt_cpufreq_cb(int cid, unsigned long freq) { }
 static inline void fpsgo_ctrl2fbt_vsync(void) { }
-static inline void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time,
-						unsigned long long self_time, int type, unsigned long long ts) { }
+static inline void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time, unsigned long long self_time,
+						unsigned long long slptime, int type, unsigned long long ts) { }
 static inline void fpsgo_comp2fbt_frame_complete(int pid, int type, int render, unsigned long long ts) { }
 static inline void fpsgo_comp2fbt_bypass_connect(int pid) { }
 static inline void fpsgo_comp2fbt_bypass_disconnect(int pid) { }

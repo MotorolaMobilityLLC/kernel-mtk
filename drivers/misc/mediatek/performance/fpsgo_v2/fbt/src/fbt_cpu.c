@@ -1703,12 +1703,12 @@ void fpsgo_ctrl2fbt_vsync(void)
 	spin_unlock_irqrestore(&xgf_slock, flags);
 }
 
-void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time,
-					unsigned long long self_time, int type, unsigned long long ts)
+void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time, unsigned long long self_time,
+		unsigned long long slptime, int type, unsigned long long ts)
 {
 	struct fbt_thread_info *thr;
 	struct fbt_boost_info *boost;
-	unsigned long long slptime = 0U, runtime;
+	unsigned long long runtime;
 	int targettime, targetfps;
 	unsigned int limited_cap;
 	unsigned long flags;
@@ -1731,6 +1731,7 @@ void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time,
 
 	thr->frame_type = type;
 	fpsgo_systrace_c_fbt_gm(pid, type, "frame_type");
+	fpsgo_systrace_c_fbt_gm(pid, slptime, "sleep time");
 
 	if (type == BY_PASS_TYPE) {
 		fbt_list_thread_unlock(&(thr->thr_mlock));
@@ -1738,7 +1739,6 @@ void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time,
 	}
 
 	if (type == NON_VSYNC_ALIGNED_TYPE) {
-		fpsgo_fbt2xgf_query_sleep_time(pid, &slptime);
 		if (q2q_time < slptime) {
 			fbt_list_thread_unlock(&(thr->thr_mlock));
 			return;

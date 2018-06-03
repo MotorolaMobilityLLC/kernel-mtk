@@ -42,6 +42,8 @@
 #define FPSGO_COM_TRACE(...)
 #endif
 
+#define COMP_TAG "FPSGO_COMP"
+
 static struct queue_info queue_info_head;
 static struct connect_api_info connect_api_info_head;
 
@@ -278,6 +280,8 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 {
 	struct queue_info *tmp, *tmp2;
 	int find = 0;
+	int xgf_ret = 0;
+	unsigned long long slptime = 0;
 
 	FPSGO_COM_TRACE("%s pid[%d] bufferID %llu", __func__, pid, bufferID);
 
@@ -314,12 +318,14 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 					"%d_%d-frame_time", pid, tmp->frame_type);
 				fpsgo_systrace_c_fbt_gm(-300, tmp->Q2Q_time,
 					"%d_%d-Q2Q_time", pid, tmp->frame_type);
+				xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_START, &slptime);
+				if (xgf_ret != XGF_SLPTIME_OK)
+					pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
 				fpsgo_comp2fbt_enq_start(pid, enqueue_start_time);
 				fpsgo_comp2fbt_frame_start(pid, tmp->Q2Q_time,
-					tmp->frame_time, NON_VSYNC_ALIGNED_TYPE, enqueue_start_time);
+					tmp->frame_time, slptime, NON_VSYNC_ALIGNED_TYPE, enqueue_start_time);
 				fpsgo_comp2fstb_queue_time_update(pid, tmp->frame_type,
 					tmp->render_method, enqueue_start_time);
-				fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_START);
 				break;
 			case BY_PASS_TYPE:
 				find = 1;
@@ -351,6 +357,7 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 {
 	struct queue_info *tmp, *tmp2;
 	int find = 0;
+	int xgf_ret = 0;
 
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
 
@@ -370,12 +377,14 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 				find = 1;
 				FPSGO_COM_TRACE("pid[%d] type[%d] enqueue_e:%llu enqueue_l:%llu",
 					pid, tmp->frame_type, enqueue_end_time, tmp->enqueue_length);
-				fpsgo_comp2fbt_enq_end(pid, enqueue_end_time);
 				if (tmp->frame_type == NON_VSYNC_ALIGNED_TYPE) {
-					fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_END);
+					xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_END, NULL);
+					if (xgf_ret != XGF_NOTIFY_OK)
+						pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
 					fpsgo_systrace_c_fbt_gm(-300, tmp->enqueue_length,
 					"%d_%d-enqueue_length", pid, tmp->frame_type);
 				}
+				fpsgo_comp2fbt_enq_end(pid, enqueue_end_time);
 				break;
 			case BY_PASS_TYPE:
 				find = 1;
@@ -405,6 +414,7 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 {
 	struct queue_info *tmp, *tmp2;
 	int find = 0;
+	int xgf_ret = 0;
 
 	if (fpsgo_com_check_is_surfaceflinger(pid))
 		return;
@@ -421,9 +431,12 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 				find = 1;
 				FPSGO_COM_TRACE("pid[%d] type[%d] dequeue_s:%llu",
 					pid, tmp->frame_type, dequeue_start_time);
+				if (tmp->frame_type == NON_VSYNC_ALIGNED_TYPE) {
+					xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_DEQUEUE_START, NULL);
+					if (xgf_ret != XGF_NOTIFY_OK)
+						pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+				}
 				fpsgo_comp2fbt_deq_start(pid, dequeue_start_time);
-				if (tmp->frame_type == NON_VSYNC_ALIGNED_TYPE)
-					fpsgo_comp2xgf_qudeq_notify(pid, XGF_DEQUEUE_START);
 				break;
 			case BY_PASS_TYPE:
 				find = 1;
@@ -450,6 +463,7 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 {
 	struct queue_info *tmp, *tmp2;
 	int find = 0;
+	int xgf_ret = 0;
 
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
 
@@ -469,12 +483,14 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 				find = 1;
 				FPSGO_COM_TRACE("pid[%d] type[%d] dequeue_e:%llu dequeue_l:%llu",
 					pid, tmp->frame_type, dequeue_end_time, tmp->dequeue_length);
-				fpsgo_comp2fbt_deq_end(pid, dequeue_end_time, tmp->dequeue_length);
 				if (tmp->frame_type == NON_VSYNC_ALIGNED_TYPE) {
-					fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_END);
+					xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_DEQUEUE_END, NULL);
+					if (xgf_ret != XGF_NOTIFY_OK)
+						pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
 					fpsgo_systrace_c_fbt_gm(-300, tmp->dequeue_length,
 					"%d_%d-dequeue_length", pid, tmp->frame_type);
 				}
+				fpsgo_comp2fbt_deq_end(pid, dequeue_end_time, tmp->dequeue_length);
 				break;
 			case BY_PASS_TYPE:
 				find = 1;
@@ -524,7 +540,7 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid,
 				fpsgo_systrace_c_fbt_gm(-300, tmp->frame_time,
 				"%d_%d-frame_time", tmp->pid, tmp->frame_type);
 				fpsgo_comp2fbt_frame_start(tmp->pid, tmp->frame_time,
-				tmp->frame_time, VSYNC_ALIGNED_TYPE, t_frame_start);
+				tmp->frame_time, 0ULL, VSYNC_ALIGNED_TYPE, t_frame_start);
 			}
 			break;
 		}
