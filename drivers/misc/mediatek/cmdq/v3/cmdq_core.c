@@ -9626,6 +9626,33 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 	}
 }
 
+static void cmdq_core_enable_resource_clk(struct ResourceUnitStruct *resource, bool enable)
+{
+	struct CmdqCBkStruct *group_cb = &gCmdqGroupCallback[CMDQ_GROUP_MDP];
+
+	if (enable) {
+		if (group_cb->clockOn) {
+			/* enable related clock for this engine */
+			CMDQ_PROF_MUTEX_LOCK(gCmdqClockMutex, acquire_resource_clock);
+			group_cb->clockOn(resource->engine);
+			CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, acquire_resource_clock);
+		} else {
+			/* print error to notify share may fail */
+			CMDQ_ERR("Fail to clock on for resource engine:0x%016llx\n", resource->engine);
+		}
+	} else {
+		if (group_cb->clockOff) {
+			/* enable related clock for this engine */
+			CMDQ_PROF_MUTEX_LOCK(gCmdqClockMutex, acquire_resource_clock);
+			group_cb->clockOff(resource->engine);
+			CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, acquire_resource_clock);
+		} else {
+			CMDQ_ERR("Fail to clock off for resource engine:0x%016llx\n", resource->engine);
+		}
+	}
+}
+
+
 bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct ResourceUnitStruct *pResource = NULL;
@@ -9645,6 +9672,7 @@ bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent)
 				cmdqCoreClearEvent(resourceEvent);
 				pResource->acquire = sched_clock();
 				pResource->lend = true;
+				cmdq_core_enable_resource_clk(pResource, true);
 			}
 			mutex_unlock(&gCmdqResourceMutex);
 			break;
@@ -9667,6 +9695,7 @@ void cmdqCoreReleaseResource(enum CMDQ_EVENT_ENUM resourceEvent)
 			/* find matched resource */
 			pResource->release = sched_clock();
 			pResource->lend = false;
+			cmdq_core_enable_resource_clk(pResource, false);
 			mutex_unlock(&gCmdqResourceMutex);
 			break;
 		}
