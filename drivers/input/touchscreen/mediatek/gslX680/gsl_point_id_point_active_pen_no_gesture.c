@@ -533,6 +533,10 @@ static void CoordinateCorrect(void)
 	for (i = 0; i < LINE_SIZE; i++) {
 		px[i+1] = NULL;
 		py[i+1] = NULL;
+		multi_x[i].range = 0;
+		multi_x[i].group = 0;
+		multi_y[i].range = 0;
+		multi_y[i].group = 0;
 	}
 	if (kx == 3 || ky == 3 || kx == 4 || ky == 4) {
 		i = 0;
@@ -814,7 +818,7 @@ static void PointId(void)
 			if (DistanceMin(&distance)) {
 				if (pp[1][0].all != 0 && pp[1][0].other.key != point_now[distance.j].other.key) {
 					DistanceIgnore(&distance);
-					continue;
+					break;/*continue;*/
 				}
 				pp[0][0].all = point_now[distance.j].all;
 			} else
@@ -1339,7 +1343,7 @@ static void PointReport(struct gsl_touch_info *cinfo)
 		return;
 	}
 	for (i = 0; i < POINT_MAX; i++)
-		data[i] = 0;
+		data[i] = dp[i] = 0;
 	num = 0;
 	if (global_flag.other.id_over) {
 		for (i = 0; i < POINT_MAX && num < point_num_max; i++) {
@@ -1747,7 +1751,7 @@ for (i = 0; i < POINT_MAX; i++) {
 	} else if (id_flag.other.first_avg && (point_shake & (0x1<<i)) == 0
 		&& pp[0][i].all && point_delay[i].other.able == 0 && shake_min != 0) {
 		dn = 0;
-		for (j = 1; j < PP_DEEP && j < PS_DEEP; j++) {
+		for (j = 1; j < PP_DEEP/* && j < PS_DEEP*/; j++) {
 			if (pp[j][i].all == 0)
 				break;
 		}
