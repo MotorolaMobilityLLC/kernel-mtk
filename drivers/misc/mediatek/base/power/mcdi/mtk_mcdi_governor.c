@@ -35,9 +35,6 @@
 
 #define CHECK_CLUSTER_RESIDENCY     0
 
-/* TODO: need to enable it */
-/* #define ANY_CORE_DPIDLE_SODI */
-
 int last_core_token = -1;
 static int boot_time_check;
 
@@ -91,6 +88,11 @@ static struct all_cpu_idle all_cpu_idle_data = {
 };
 
 static DEFINE_SPINLOCK(all_cpu_idle_spin_lock);
+
+int __attribute__((weak)) mtk_idle_select(int cpu)
+{
+	return -1;
+}
 
 unsigned int mcdi_get_gov_data_num_mcusys(void)
 {
@@ -332,9 +334,7 @@ bool any_core_deepidle_sodi_residency_check(int cpu)
 int any_core_deepidle_sodi_check(int cpu)
 {
 	int state;
-#ifdef ANY_CORE_DPIDLE_SODI
-	int mtk_idle_state = IDLE_TYPE_RG;
-#endif
+	int mtk_idle_state;
 
 	state = MCDI_STATE_CPU_OFF;
 
@@ -354,20 +354,15 @@ int any_core_deepidle_sodi_check(int cpu)
 	else
 		return state;
 
-	state = MCDI_STATE_CLUSTER_OFF;
-
-#ifdef ANY_CORE_DPIDLE_SODI
 	/* Check other deepidle/SODI criteria */
 	mtk_idle_state = mtk_idle_select(cpu);
 
-	if (mtk_idle_state >= 0 && mtk_idle_state < NR_TYPES)
-		state = mcdi_get_mcdi_idle_state(mtk_idle_state);
+	state = mcdi_get_mcdi_idle_state(mtk_idle_state);
 
 	if (!is_anycore_dpidle_sodi_state(state)) {
 		release_last_core_prot();
 		trace_mtk_idle_select_rcuidle(cpu, mtk_idle_state);
 	}
-#endif
 
 	return state;
 }

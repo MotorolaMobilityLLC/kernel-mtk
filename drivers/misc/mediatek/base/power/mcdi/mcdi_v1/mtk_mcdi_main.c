@@ -449,9 +449,11 @@ void mcdi_heart_beat_log_dump(void)
 
 int wfi_enter(int cpu)
 {
-	mtk_idle_dump_cnt_in_interval();
-	mcdi_heart_beat_log_dump();
+	idle_refcnt_inc();
+
 	__go_to_wfi(cpu);
+
+	idle_refcnt_dec();
 
 	return 0;
 }

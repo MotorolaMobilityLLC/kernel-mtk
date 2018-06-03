@@ -227,7 +227,12 @@ static int mtk_mcidle_enter(struct cpuidle_device *dev,
 
 int mcdi_get_mcdi_idle_state(int idx)
 {
-	return mcdi_idle_state_mapping[idx];
+	int state = MCDI_STATE_CLUSTER_OFF;
+
+	if (idx >= 0 && idx < NR_TYPES)
+		state = mcdi_idle_state_mapping[idx];
+
+	return state;
 }
 
 struct cpuidle_driver *mcdi_state_tbl_get(int cpu)
