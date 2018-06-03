@@ -1138,14 +1138,15 @@ int setConnsysI2SAsrc(bool bIsUseASRC, unsigned int dToSampleRate)
 int setConnsysI2SEnable(bool enable)
 {
 	if (enable) {
-		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON0, ((1 << 6) | (1 << 0)),
-			    ((1 << 6) | (1 << 0)));
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON0,
+			    ((1 << 6) | (1 << 4) | (1 << 0)),
+			    ((1 << 6) | (1 << 4) | (1 << 0)));
 	} else {
 		unsigned int dNeedDisableASM =
 			(Afe_Get_Reg(AFE_ASRC_CONNSYS_CON0) & 0x0030) ? 1 : 0;
 
 		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON0, 0,
-			    (1 << 6 | dNeedDisableASM));
+			    ((1 << 6) | (1 << 4) | dNeedDisableASM));
 	}
 
 	return 0;
