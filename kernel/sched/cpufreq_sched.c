@@ -17,11 +17,12 @@
 #include "sched.h"
 #include "cpufreq_sched.h"
 
-#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-#define THROTTLE_NSEC	2000000 /* 2ms default */
-#else
-#define THROTTLE_NSEC	3000000 /* 3ms default */
-#endif
+/* next throttling period expiry if increasing OPP */
+#define THROTTLE_DOWN_NSEC     2000000 /* 2ms default */
+/* next throttling period expiry if decreasing OPP */
+#define THROTTLE_UP_NSEC       500000  /* 500us default */
+
+#define THROTTLE_NSEC          2000000 /* 2ms default */
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 struct static_key __read_mostly __sched_freq = STATIC_KEY_INIT_TRUE;
@@ -78,8 +79,10 @@ int dbg_id = DEBUG_FREQ_DISABLED;
 
 /**
  * gov_data - per-policy data internal to the governor
- * @throttle: next throttling period expiry. Derived from throttle_nsec
- * @throttle_nsec: throttle period length in nanoseconds
+ * @up_throttle: next throttling period expiry if increasing OPP
+ * @down_throttle: next throttling period expiry if decreasing OPP
+ * @up_throttle_nsec: throttle period length in nanoseconds if increasing OPP
+ * @down_throttle_nsec: throttle period length in nanoseconds if decreasing OPP
  * @task: worker thread for dvfs transition that may block/sleep
  * @irq_work: callback used to wake up worker thread
  * @requested_freq: last frequency requested by the sched governor
@@ -94,6 +97,10 @@ int dbg_id = DEBUG_FREQ_DISABLED;
  */
 struct gov_data {
 	ktime_t throttle;
+	ktime_t up_throttle;
+	ktime_t down_throttle;
+	unsigned int up_throttle_nsec;
+	unsigned int down_throttle_nsec;
 	unsigned int throttle_nsec;
 	struct task_struct *task;
 	struct irq_work irq_work;
@@ -101,6 +108,7 @@ struct gov_data {
 	struct cpufreq_policy *policy;
 	int target_cpu;
 	int cid;
+	enum throttle_type thro_type; /* throttle up or down */
 };
 
 void show_freq_kernel_log(int dbg_id, int cid, unsigned int freq)
@@ -172,14 +180,20 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	for_each_cpu(cpu, &cls_cpus) {
 		per_cpu(freq_scale, cpu) = scale;
 		arch_scale_set_curr_freq(cpu, freq); /* per_cpu(cpu_freq_capacity) */
-#ifdef CONFIG_SCHED_WALT
+		#ifdef CONFIG_SCHED_WALT
 		walt_cpufreq_notifier_trans(cpu, freq);
-#endif
+		#endif
 	}
 
 	mt_cpufreq_set_by_schedule_load_cluster(cid, freq);
 
 	met_tag_oneshot(0, met_dvfs_info[cid], freq);
+
+	/* avoid inteference betwewn increasing/decreasing OPP */
+	if (gd->thro_type == DVFS_THROTTLE_UP)
+		gd->up_throttle = ktime_add_ns(ktime_get(), gd->up_throttle_nsec);
+	else
+		gd->down_throttle = ktime_add_ns(ktime_get(), gd->down_throttle_nsec);
 
 	gd->throttle = ktime_add_ns(ktime_get(), gd->throttle_nsec);
 
@@ -201,7 +215,13 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	__cpufreq_driver_target(policy, freq, CPUFREQ_RELATION_L);
 	printk_dbg("%s: cid=%d cpu=%d max_freq=%u -\n", __func__, cid, policy->cpu, policy->max);
 
+	/* avoid inteference betwewn increasing/decreasing OPP */
+	if (gd->thro_type == DVFS_THROTTLE_UP)
+		gd->up_throttle = ktime_add_ns(ktime_get(), gd->up_throttle_nsec);
+	else
+		gd->down_throttle = ktime_add_ns(ktime_get(), gd->down_throttle_nsec);
 	gd->throttle = ktime_add_ns(ktime_get(), gd->throttle_nsec);
+
 	up_write(&policy->rwsem);
 
 #endif
@@ -300,6 +320,8 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	struct cpumask cls_cpus;
 #endif
 	struct cpufreq_policy *policy = NULL;
+	ktime_t throttle, now;
+	unsigned int cur_freq;
 
 	/*
 	 * Avoid grabbing the policy if possible. A test is still
@@ -313,10 +335,6 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	gd = g_gd[cid];
 
 	if (!mt_cpufreq_get_sched_enable())
-		goto out;
-
-	/* bail early if we are throttled */
-	if (ktime_before(ktime_get(), gd->throttle))
 		goto out;
 
 	arch_get_cluster_cpus(&cls_cpus, cid);
@@ -346,10 +364,6 @@ static void update_fdomain_capacity_request(int cpu, int type)
 
 	gd = policy->governor_data;
 
-	/* bail early if we are throttled */
-	if (ktime_before(ktime_get(), gd->throttle))
-		goto out;
-
 	/* find max capacity requested by cpus in this policy */
 	for_each_cpu(cpu_tmp, policy->cpus) {
 		struct sched_capacity_reqs *scr;
@@ -366,8 +380,21 @@ static void update_fdomain_capacity_request(int cpu, int type)
 
 #endif /* !CONFIG_CPU_FREQ_SCHED_ASSIST */
 
+	now = ktime_get();
+
+	cur_freq =  gd->requested_freq;
+
 	gd->requested_freq = freq_new;
 	gd->target_cpu = cpu;
+
+	throttle = gd->requested_freq < cur_freq ?
+			gd->down_throttle : gd->up_throttle;
+
+	gd->thro_type = gd->requested_freq < cur_freq ?
+			DVFS_THROTTLE_DOWN : DVFS_THROTTLE_UP;
+
+	if (ktime_before(now, throttle))
+		goto out;
 
 	/*
 	 * Throttling is not yet supported on platforms with fast cpufreq
@@ -646,6 +673,8 @@ static int __init cpufreq_sched_init(void)
 			WARN_ON(1);
 			return -ENOMEM;
 		}
+		g_gd[i]->up_throttle_nsec = THROTTLE_UP_NSEC;
+		g_gd[i]->down_throttle_nsec = THROTTLE_DOWN_NSEC;
 		g_gd[i]->throttle_nsec = THROTTLE_NSEC;
 
 		/* keep cid needed */
