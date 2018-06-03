@@ -1192,7 +1192,13 @@ static inline int accdet_setup_eint(struct platform_device *accdet_device)
 	if (node) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		of_property_read_u32_array(node, "interrupts", ints1, ARRAY_SIZE(ints1));
+#if defined(CONFIG_PINCTRL_MTK_COMMON) && defined(CONFIG_MTK_GPIOLIB_STAND)
+		/* for transfer phys. gpio to virt. gpio as the pinctrl arch. */
+		/* which API gpio_set_debounce first param need virt. gpio */
+		g_gpio_pin = hwgpio_to_vgpio(ints[0]);
+#else
 		g_gpio_pin = ints[0];
+#endif
 		g_gpio_headset_deb = ints[1];
 		g_accdet_eint_type = ints1[1];
 		gpio_set_debounce(g_gpio_pin, g_gpio_headset_deb);

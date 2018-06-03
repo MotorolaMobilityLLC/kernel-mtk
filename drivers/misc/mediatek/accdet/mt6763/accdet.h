@@ -73,6 +73,11 @@ extern struct headset_mode_settings *get_cust_headset_settings(void);
 extern struct headset_key_custom *get_headset_key_custom_setting(void);
 extern void accdet_create_attr_func(void);	/* from accdet_drv.c */
 extern const struct of_device_id accdet_of_match[];
+#if defined(CONFIG_PINCTRL_MTK_COMMON) && defined(CONFIG_MTK_GPIOLIB_STAND)
+/* for transfer phys. gpio to virt. gpio as the pinctrl arch. */
+extern int hwgpio_to_vgpio(int gpio);
+#endif
+
 void mt_accdet_remove(void);
 void mt_accdet_suspend(void);
 void mt_accdet_resume(void);
