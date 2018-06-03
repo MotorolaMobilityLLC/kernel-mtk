@@ -680,19 +680,21 @@ int mtk_wdt_dfd_count_en(int value)
 {
 	volatile unsigned int tmp;
 
+	/* dfd_count_en is obsolete, enable dfd_en only here */
+
 	if (value == 1) {
-		/* enable dfd count */
-		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
-		tmp |= (MTK_WDT_DFD_COUNT_EN|MTK_WDT_LATCH_CTL_KEY);
-		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+		/* enable dfd_en */
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL2);
+		tmp |= (MTK_WDT_DFD_EN|MTK_WDT_LATCH_CTL2_KEY);
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 	} else if (value == 0) {
-		/* disable dfd count */
-		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
-		tmp &= (~MTK_WDT_DFD_COUNT_EN);
-		tmp |= MTK_WDT_LATCH_CTL_KEY;
-		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+		/* disable dfd_en */
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL2);
+		tmp &= (~MTK_WDT_DFD_EN);
+		tmp |= MTK_WDT_LATCH_CTL2_KEY;
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 	}
-	pr_debug("mtk_wdt_dfd_count_en:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
+	pr_debug("mtk_wdt_dfd_en:MTK_WDT_LATCH_CTL2(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL2));
 
 	return 0;
 }
@@ -703,17 +705,17 @@ int mtk_wdt_dfd_thermal1_dis(int value)
 
 	if (value == 1) {
 		/* enable dfd count */
-		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
-		tmp |= (MTK_WDT_DFD_THERMAL1_DIS|MTK_WDT_LATCH_CTL_KEY);
-		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL2);
+		tmp |= (MTK_WDT_DFD_THERMAL1_DIS | MTK_WDT_LATCH_CTL2_KEY);
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 	} else if (value == 0) {
 		/* disable dfd count */
-		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL2);
 		tmp &= (~MTK_WDT_DFD_THERMAL1_DIS);
-		tmp |= MTK_WDT_LATCH_CTL_KEY;
-		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+		tmp |= MTK_WDT_LATCH_CTL2_KEY;
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 	}
-	pr_debug("mtk_wdt_dfd_thermal1_dis:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
+	pr_debug("mtk_wdt_dfd_thermal1_dis:MTK_WDT_LATCH_CTL2(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL2));
 
 	return 0;
 }
@@ -724,17 +726,17 @@ int mtk_wdt_dfd_thermal2_dis(int value)
 
 	if (value == 1) {
 		/* enable dfd count */
-		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
-		tmp |= (MTK_WDT_DFD_THERMAL2_DIS|MTK_WDT_LATCH_CTL_KEY);
-		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL2);
+		tmp |= (MTK_WDT_DFD_THERMAL2_DIS|MTK_WDT_LATCH_CTL2_KEY);
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 	} else if (value == 0) {
 		/* disable dfd count */
-		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL2);
 		tmp &= (~MTK_WDT_DFD_THERMAL2_DIS);
-		tmp |= MTK_WDT_LATCH_CTL_KEY;
-		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+		tmp |= MTK_WDT_LATCH_CTL2_KEY;
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 	}
-	pr_debug("mtk_wdt_dfd_thermal2_dis:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
+	pr_debug("mtk_wdt_dfd_thermal2_dis:MTK_WDT_LATCH_CTL2(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL2));
 
 	return 0;
 }
@@ -747,12 +749,12 @@ int mtk_wdt_dfd_timeout(int value)
 	value = value & MTK_WDT_DFD_TIMEOUT_MASK;
 
 	/* enable dfd count */
-	tmp = __raw_readl(MTK_WDT_LATCH_CTL);
+	tmp = __raw_readl(MTK_WDT_LATCH_CTL2);
 	tmp &= (~MTK_WDT_DFD_TIMEOUT_MASK);
-	tmp |= (value|MTK_WDT_LATCH_CTL_KEY);
-	mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+	tmp |= (value|MTK_WDT_LATCH_CTL2_KEY);
+	mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 
-	pr_debug("mtk_wdt_dfd_timeout:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
+	pr_debug("mtk_wdt_dfd_timeout:MTK_WDT_LATCH_CTL2(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL2));
 
 	return 0;
 }
