@@ -78,8 +78,10 @@ struct opp_profile {
 #define BOOT_UP_OPP             OPP_0
 
 /* target OPP when feature enable */
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759)
 #define LATE_INIT_OPP           (NUM_OPP - 2) /* for hwc enabled display temp-fix */
+#elif defined(CONFIG_MACH_MT6758)
+#define LATE_INIT_OPP           (NUM_OPP - 2) /* only use 3 OPP */
 #elif defined(CONFIG_MACH_MT6763)
 #define LATE_INIT_OPP           (NUM_OPP - 1)
 #else
