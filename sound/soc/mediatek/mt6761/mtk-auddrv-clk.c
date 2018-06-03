@@ -245,10 +245,6 @@ int AudDrv_Clk_probe(void *dev)
 		}
 	}
 
-	/* Set APLL1/APLL2 as disable state when boot */
-	apll1_mux_setting(false);
-	apll2_mux_setting(false);
-
 	return ret;
 }
 
