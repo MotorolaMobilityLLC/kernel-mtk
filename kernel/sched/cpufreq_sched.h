@@ -12,5 +12,18 @@
  */
 
 
-/* extern int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq); */
+enum mt_cpu_dvfs_id {
+	MT_CPU_DVFS_LL,
+	MT_CPU_DVFS_L,
+	MT_CPU_DVFS_B,
+	MT_CPU_DVFS_CCI,
+
+	NR_MT_CPU_DVFS,
+};
+
+/*
+ * extern int mt_cpufreq_set_by_schedule_load(unsigned int cpu,
+ *		enum cpu_dvfs_sched_type state, unsigned int freq);
+ */
 extern int  mt_cpufreq_set_by_schedule_load_cluster(int cid, unsigned int freq);
+extern unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx);

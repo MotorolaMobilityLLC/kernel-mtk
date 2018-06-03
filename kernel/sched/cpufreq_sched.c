@@ -41,6 +41,7 @@ DEFINE_PER_CPU(struct sched_capacity_reqs, cpu_sched_capacity_reqs);
 #define MAX_CLUSTER_NR 3
 
 static struct gov_data *g_gd[MAX_CLUSTER_NR] = { NULL };
+static unsigned int max_opp[MAX_CLUSTER_NR] = {1638000};
 
 static void met_cpu_dvfs(int cid, int freq, int flag);
 
@@ -109,7 +110,6 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	met_cpu_dvfs(cid, freq, 0);
 
 	/* SSPM should support??? */
-	/*mt_cpufreq_set_by_schedule_load(target_cpu, type, freq);*/
 	mt_cpufreq_set_by_schedule_load_cluster(cid, freq);
 
 	gd->throttle = ktime_add_ns(ktime_get(), gd->throttle_nsec);
@@ -159,6 +159,7 @@ static bool finish_last_request(struct gov_data *gd)
 	}
 }
 #endif
+
 /*
  * we pass in struct cpufreq_policy. This is safe because changing out the
  * policy requires a call to __cpufreq_governor(policy, CPUFREQ_GOV_STOP),
@@ -220,19 +221,14 @@ static void cpufreq_sched_irq_work(struct irq_work *irq_work)
 
 static void update_fdomain_capacity_request(int cpu, int type)
 {
-	unsigned int freq_new, index_new, cpu_tmp;
-	struct cpufreq_policy *policy = NULL;
+	unsigned int freq_new, cpu_tmp;
 	struct gov_data *gd;
 	unsigned long capacity = 0;
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	int cid = arch_get_cluster_id(cpu);
-	static int early_init = 1;
-
-	/* [FIXME] avoid performance drop in early init */
-	if (early_init && (u64)ktime_to_ms(ktime_get()) <= 20000)
-		return;
-	early_init = 0;
+	struct cpumask cls_cpus;
 #endif
+	struct cpufreq_policy *policy = NULL;
 
 	/*
 	 * Avoid grabbing the policy if possible. A test is still
@@ -242,21 +238,39 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	if (!per_cpu(enabled, cpu))
 		return;
 
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	gd = g_gd[cid];
+
+	/* bail early if we are throttled */
+	if (ktime_before(ktime_get(), gd->throttle))
+		goto out;
+
+	arch_get_cluster_cpus(&cls_cpus, cid);
+
+	/* find max capacity requested by cpus in this policy */
+	for_each_cpu(cpu_tmp, &cls_cpus) {
+		struct sched_capacity_reqs *scr;
+
+		if (!cpu_online(cpu))
+			continue;
+
+		scr = &per_cpu(cpu_sched_capacity_reqs, cpu_tmp);
+		capacity = max(capacity, scr->total);
+	}
+
+	freq_new = capacity * max_opp[cid] >> SCHED_CAPACITY_SHIFT;
+#else
 	if (likely(cpu_online(cpu)))
 		policy = cpufreq_cpu_get(cpu);
 
 	if (IS_ERR_OR_NULL(policy))
 		return;
 
-#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-	 gd = g_gd[cid];
-#else
 	if (policy->governor != &cpufreq_gov_sched ||
 	    !policy->governor_data)
 		goto out;
 
 	gd = policy->governor_data;
-#endif
 
 	/* bail early if we are throttled */
 	if (ktime_before(ktime_get(), gd->throttle))
@@ -270,29 +284,17 @@ static void update_fdomain_capacity_request(int cpu, int type)
 		capacity = max(capacity, scr->total);
 	}
 
-#if 1
 	/* Convert the new maximum capacity request into a cpu frequency */
 	freq_new = capacity * policy->max >> SCHED_CAPACITY_SHIFT;
 
-	index_new = 0;
-#else
-	/* Convert the new maximum capacity request into a cpu frequency */
-	freq_new = capacity * policy->max >> SCHED_CAPACITY_SHIFT;
-	if (cpufreq_frequency_table_target(policy, policy->freq_table,
-					   freq_new, CPUFREQ_RELATION_L,
-					   &index_new))
-		goto out;
-	freq_new = policy->freq_table[index_new].frequency;
-#endif
-
-
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 	if (freq_new == gd->requested_freq)
 		goto out;
-#endif
+
+#endif /* !CONFIG_CPU_FREQ_SCHED_ASSIST */
 
 	gd->requested_freq = freq_new;
 	gd->target_cpu = cpu;
+
 	/*
 	 * Throttling is not yet supported on platforms with fast cpufreq
 	 * drivers.
@@ -303,7 +305,8 @@ static void update_fdomain_capacity_request(int cpu, int type)
 		cpufreq_sched_try_driver_target(cpu, policy, freq_new, type);
 
 out:
-	cpufreq_cpu_put(policy);
+	if (policy)
+		cpufreq_cpu_put(policy);
 }
 
 void update_cpu_capacity_request(int cpu, bool request, int type)
@@ -603,6 +606,8 @@ static int __init cpufreq_sched_init(void)
 
 		/* keep cid needed */
 		g_gd[i]->cid = i;
+
+		max_opp[i] = mt_cpufreq_get_freq_by_idx(i, 0);
 	}
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
@@ -621,5 +626,10 @@ static int __init cpufreq_sched_init(void)
 	return cpufreq_register_governor(&cpufreq_gov_sched);
 }
 
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+/* sched-assist dvfs is NOT a governor. */
+late_initcall(cpufreq_sched_init);
+#else
 /* Try to make this the default governor */
 fs_initcall(cpufreq_sched_init);
+#endif
