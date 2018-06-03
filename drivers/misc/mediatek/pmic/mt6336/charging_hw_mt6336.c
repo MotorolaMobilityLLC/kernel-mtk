@@ -38,6 +38,7 @@ static CHARGER_TYPE g_charger_type = CHARGER_UNKNOWN;
 #endif
 
 unsigned char charging_type_det_done = KAL_TRUE;
+static struct mt6336_ctrl *lowq_ctrl;
 
 /* mt6336 VCV_CON0[7:0], uV */
 const unsigned int VBAT_CV_VTH[] = {
@@ -933,6 +934,11 @@ static int charging_sw_init(void *data)
 
 #endif
 
+	lowq_ctrl = mt6336_ctrl_get("mt6336_charger");
+
+	/* Enable ctrl to lock power, keeping MT6336 in normal mode */
+	mt6336_ctrl_enable(lowq_ctrl);
+
 	/* Enable RG_EN_TERM */
 	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 
@@ -943,6 +949,9 @@ static int charging_sw_init(void *data)
 	/* Enable interrupt */
 	mt6336_enable_interrupt(MT6336_INT_CHR_VBUS_PLUGIN, "PLUGIN");
 	/* mt6336_enable_interrupt(MT6336_INT_CHR_VBUS_PLUGOUT, "PLUGOUT"); */
+
+	/* enter low power mode */
+	mt6336_ctrl_disable(lowq_ctrl);
 
 	return status;
 }
