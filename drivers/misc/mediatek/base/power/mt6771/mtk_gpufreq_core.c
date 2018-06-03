@@ -1411,7 +1411,12 @@ static void __mt_gpufreq_clock_switch(unsigned int freq_new)
  */
 static void __mt_gpufreq_switch_to_clksrc(enum g_clock_source_enum clksrc)
 {
-	clk_prepare_enable(g_clk->clk_mux);
+	int ret;
+
+	ret = clk_prepare_enable(g_clk->clk_mux);
+	if (ret)
+		gpufreq_pr_debug("@%s: enable clk_mux(TOP_MUX_MFG) failed, ret = %d\n", __func__, ret);
+
 	if (clksrc == CLOCK_MAIN) {
 		clk_set_parent(g_clk->clk_mux, g_clk->clk_main_parent);
 		gpufreq_pr_debug("@%s: switch to main clock source done\n", __func__);
@@ -1421,6 +1426,7 @@ static void __mt_gpufreq_switch_to_clksrc(enum g_clock_source_enum clksrc)
 	} else {
 		gpufreq_pr_debug("@%s: clock source index is not valid, clksrc = %d\n", __func__, clksrc);
 	}
+
 	clk_disable_unprepare(g_clk->clk_mux);
 }
 
