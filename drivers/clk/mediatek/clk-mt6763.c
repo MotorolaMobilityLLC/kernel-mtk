@@ -86,6 +86,7 @@ void __iomem *venc_gcon_base;
 #define INFRA_PDN_CLR3		(infracfg_base + 0x00C4)
 #define INFRA_PDN_STA3		(infracfg_base + 0x00C8)
 
+#define AP_PLL_CON2		(apmixed_base + 0x0008)
 #define AP_PLL_CON3		(apmixed_base + 0x000C)
 #define AP_PLL_CON4		(apmixed_base + 0x0010)
 #define AP_PLL_CON8		(apmixed_base + 0x0020)
@@ -1891,8 +1892,20 @@ void mp_enter_suspend(int id, int suspend)
 }
 #endif
 
+void univpll_192m_en(int en)
+{
+	if (en)
+		clk_writel(AP_PLL_CON2, clk_readl(AP_PLL_CON2) | 0xe0000000);/* bit[31:29] */
+	else
+		clk_writel(AP_PLL_CON2, clk_readl(AP_PLL_CON2) & 0x1fffffff);
+}
+
 void pll_if_on(void)
 {
+	if (clk_readl(ARMPLL_LL_CON0) & 0x1)
+		pr_err("suspend warning: ARMPLL_LL is on!!!\n");
+	if (clk_readl(ARMPLL_L_CON0) & 0x1)
+		pr_err("suspend warning: ARMPLL_L is on!!!\n");
 	if (clk_readl(UNIVPLL_CON0) & 0x1)
 		pr_err("suspend warning: UNIVPLL is on!!!\n");
 	if (clk_readl(MFGPLL_CON0) & 0x1)
@@ -1907,6 +1920,20 @@ void pll_if_on(void)
 		pr_err("suspend warning: APLL1 is on!!!\n");
 	if (clk_readl(APLL2_CON0) & 0x1)
 		pr_err("suspend warning: APLL2 is on!!!\n");
+
+#if 0
+	pr_err("%s: AP_PLL_CON3 = 0x%08x\r\n", __func__, clk_readl(AP_PLL_CON3));
+	pr_err("%s: AP_PLL_CON4 = 0x%08x\r\n", __func__, clk_readl(AP_PLL_CON4));
+	pr_err("%s: ARMPLL_LL = %dHZ\r\n", __func__, mt_get_abist_freq(22));
+	pr_err("%s: ARMPLL_L = %dHZ\r\n", __func__, mt_get_abist_freq(20));
+	pr_err("%s: UNIVPLL = %dHZ\r\n", __func__, mt_get_abist_freq(24));
+	pr_err("%s: MFGPLL = %dHZ\r\n", __func__, mt_get_abist_freq(25));
+	pr_err("%s: MMPLL = %dHZ\r\n", __func__, mt_get_abist_freq(27));
+	pr_err("%s: MSDCPLL = %dHZ\r\n", __func__, mt_get_abist_freq(26));
+	pr_err("%s: TVDPLL = %dHZ\r\n", __func__, mt_get_abist_freq(34));
+	pr_err("%s: APLL1 = %dHZ\r\n", __func__, mt_get_abist_freq(28));
+	pr_err("%s: APLL2 = %dHZ\r\n", __func__, mt_get_abist_freq(29));
+#endif
 }
 
 void clock_force_off(void)
