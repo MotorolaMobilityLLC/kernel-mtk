@@ -613,6 +613,7 @@ static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)
 	if (card->ext_csd.rev >= 7) {
 		if ((ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x1) &&
 		    !card->ext_csd.man_bkops_en) {
+			card->ext_csd.auto_bkops = 1;
 			card->ext_csd.auto_bkops_en =
 				!!(ext_csd[EXT_CSD_BKOPS_EN] &
 				EXT_CSD_AUTO_BKOPS_MASK);
@@ -1670,6 +1671,27 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 * Choose the power class with selected bus interface
 	 */
 	mmc_select_powerclass(card);
+
+	/* enable auto BKOPS if eMMC card supports.
+	 * AUTO_BKOPS_EN 163 bit1 of ext-csd, multi programmable
+	 */
+	if (card->ext_csd.auto_bkops && !card->ext_csd.man_bkops_en) {
+		if (!card->ext_csd.auto_bkops_en) {
+			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+				EXT_CSD_BKOPS_EN, EXT_CSD_AUTO_BKOPS_MASK,
+				card->ext_csd.generic_cmd6_time);
+			if (err && err != -EBADMSG)
+				goto free_card;
+			if (err) {
+				pr_notice("%s: Enabling AutoBKOPS failed\n",
+					mmc_hostname(card->host));
+				card->ext_csd.auto_bkops_en = 0;
+				err = 0;
+			} else {
+				card->ext_csd.auto_bkops_en = 1;
+			}
+		}
+	}
 
 	/*
 	 * Enable HPI feature (if supported)
