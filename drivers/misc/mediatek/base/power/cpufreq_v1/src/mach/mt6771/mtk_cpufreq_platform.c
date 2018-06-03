@@ -529,20 +529,20 @@ int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
 
 int mt_cpufreq_regulator_map(struct platform_device *pdev)
 {
-	regulator_proc1 = regulator_get(&pdev->dev, "vproc1");
-	if (GEN_DB_ON(IS_ERR(regulator_proc1), "vproc1 Get Failed"))
+	regulator_proc1 = regulator_get(&pdev->dev, "vproc11");
+	if (GEN_DB_ON(IS_ERR(regulator_proc1), "vproc11 Get Failed"))
 		return -ENODEV;
 
-	regulator_proc2 = regulator_get(&pdev->dev, "vproc2");
-	if (GEN_DB_ON(IS_ERR(regulator_proc1), "vproc2 Get Failed"))
+	regulator_proc2 = regulator_get(&pdev->dev, "vproc12");
+	if (GEN_DB_ON(IS_ERR(regulator_proc1), "vproc12 Get Failed"))
 		return -ENODEV;
 
-	regulator_sram1 = regulator_get(&pdev->dev, "vsram_dvfs1");
-	if (GEN_DB_ON(IS_ERR(regulator_sram1), "Vsram_dvfs1 Get Failed"))
+	regulator_sram1 = regulator_get(&pdev->dev, "vsram_proc11");
+	if (GEN_DB_ON(IS_ERR(regulator_sram1), "vsram_proc11 Get Failed"))
 		return -ENODEV;
 
-	regulator_sram2 = regulator_get(&pdev->dev, "vsram_dvfs2");
-	if (GEN_DB_ON(IS_ERR(regulator_sram2), "Vsram_dvfs2 Get Failed"))
+	regulator_sram2 = regulator_get(&pdev->dev, "vsram_proc12");
+	if (GEN_DB_ON(IS_ERR(regulator_sram2), "vsram_proc12 Get Failed"))
 		return -ENODEV;
 
 	return 0;
