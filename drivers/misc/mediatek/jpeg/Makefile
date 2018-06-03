@@ -14,7 +14,7 @@
 # drivers/image/jpeg/Makefile
 
 # use common driver
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757" "mt6799" "kiboplus" "mt6759" "mt6763"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757" "mt6799" "kiboplus" "mt6759" "mt6763" "mt6758" "mt6739"))
   # new chip use v2 driver
   obj-y += v2/
 endif
