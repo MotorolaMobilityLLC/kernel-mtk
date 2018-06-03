@@ -31,7 +31,9 @@
 #endif
 
 /* #define __FORCE_USB_TYPE__ */
+#ifndef CONFIG_TCPC_CLASS
 #define __SW_CHRDET_IN_PROBE_PHASE__
+#endif
 
 static enum charger_type g_chr_type;
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
@@ -334,34 +336,27 @@ int hw_charging_get_charger_type(void)
 	return CHR_Type_num;
 }
 
-/* Charger Detection */
-void do_charger_detect(void)
+void mtk_pmic_enable_chr_type_det(bool en)
 {
+	mutex_lock(&chrdet_lock);
+
 	if (!mt_usb_is_device()) {
 		g_chr_type = CHARGER_UNKNOWN;
 		pr_info("charger type: UNKNOWN, Now is usb host mode. Skip detection\n");
 		return;
 	}
 
-	if (is_meta_mode()) {
-		/* Skip charger type detection to speed up meta boot */
-		pr_notice("charger type: force Standard USB Host in meta\n");
-		if (pmic_get_register_value(PMIC_RGS_CHRDET)) {
+	if (en) {
+		if (is_meta_mode()) {
+			/* Skip charger type detection to speed up meta boot */
+			pr_notice("charger type: force Standard USB Host in meta\n");
 			g_chr_type = STANDARD_HOST;
 			chrdet_inform_psy_changed(g_chr_type, 1);
 		} else {
-			g_chr_type = CHARGER_UNKNOWN;
-			chrdet_inform_psy_changed(g_chr_type, 0);
+			pr_info("charger type: charger IN\n");
+			g_chr_type = hw_charging_get_charger_type();
+			chrdet_inform_psy_changed(g_chr_type, 1);
 		}
-		return;
-	}
-
-	mutex_lock(&chrdet_lock);
-
-	if (pmic_get_register_value(PMIC_RGS_CHRDET)) {
-		pr_info("charger type: charger IN\n");
-		g_chr_type = hw_charging_get_charger_type();
-		chrdet_inform_psy_changed(g_chr_type, 1);
 	} else {
 		pr_info("charger type: charger OUT\n");
 		g_chr_type = CHARGER_UNKNOWN;
@@ -371,7 +366,14 @@ void do_charger_detect(void)
 	mutex_unlock(&chrdet_lock);
 }
 
-
+/* Charger Detection */
+void do_charger_detect(void)
+{
+	if (pmic_get_register_value(PMIC_RGS_CHRDET))
+		mtk_pmic_enable_chr_type_det(true);
+	else
+		mtk_pmic_enable_chr_type_det(false);
+}
 
 /* PMIC Int Handler */
 void chrdet_int_handler(void)
@@ -424,8 +426,10 @@ static int __init pmic_chrdet_init(void)
 	schedule_work(&chr_work);
 #endif
 
+#ifndef CONFIG_TCPC_CLASS
 	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
 	pmic_enable_interrupt(INT_CHRDET_EDGE, 1, "PMIC");
+#endif
 
 	return 0;
 }
