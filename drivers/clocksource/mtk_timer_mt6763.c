@@ -379,9 +379,25 @@ static void __gpt_start(struct gpt_device *dev)
 	mt_gpt_set_reg(GPT_CON_ENABLE, dev->base_addr + GPT_CON);
 }
 
-static void __gpt_clrcnt_and_start(struct gpt_device *dev)
+static void __gpt_wait_clrcnt(void)
 {
-	mt_gpt_set_reg(GPT_CON_ENABLE | GPT_CON_CLRCNT, dev->base_addr + GPT_CON);
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	#define WAIT_CLR_CNT_TIME_NS 100000
+#else
+	#define WAIT_CLR_CNT_TIME_NS 300
+#endif
+	uint64_t start_time = 0, end_time = 0;
+
+	start_time = sched_clock();
+	end_time = start_time;
+	while ((end_time - start_time) < WAIT_CLR_CNT_TIME_NS)
+		end_time = sched_clock();
+}
+
+static void __gpt_wait_clrcnt_then_start(struct gpt_device *dev)
+{
+	__gpt_wait_clrcnt();
+	__gpt_start(dev);
 }
 
 static void __gpt_stop(struct gpt_device *dev)
@@ -453,14 +469,15 @@ static int mt_gpt_clkevt_next_event(unsigned long cycles,
 		cycles = 3;
 	}
 
-	__gpt_set_cmp(dev, cycles, 0);
-
 	__gpt_ack_irq(dev);
 
 	/* ensure IRQ is enabled before next running */
 	__gpt_enable_irq(dev);
 
-	__gpt_clrcnt_and_start(dev);
+	__gpt_set_cmp(dev, cycles, 0);
+
+	__gpt_wait_clrcnt_then_start(dev);
+
 #if defined(CONFIG_MTK_TIMER_AEE_DUMP)
 	gpt_clkevt_last_setting_time = sched_clock();
 #endif
@@ -489,8 +506,8 @@ static int mt_gpt_clkevt_oneshot(struct clock_event_device *clk)
 
 	__gpt_stop(dev);
 	__gpt_set_mode(dev, GPT_ONE_SHOT);
-	__gpt_enable_irq(dev);
-	__gpt_clrcnt_and_start(dev);
+	/* __gpt_enable_irq(dev); */
+	/* __gpt_clrcnt_and_start(dev); */
 
 	return 0;
 }
@@ -502,7 +519,7 @@ static int mt_gpt_set_periodic(struct clock_event_device *clk)
 	__gpt_stop(dev);
 	__gpt_set_mode(dev, GPT_REPEAT);
 	__gpt_enable_irq(dev);
-	__gpt_clrcnt_and_start(dev);
+	__gpt_wait_clrcnt_then_start(dev);
 
 	return 0;
 }
