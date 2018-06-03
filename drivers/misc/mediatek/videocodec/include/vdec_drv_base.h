@@ -139,6 +139,8 @@ typedef struct __VDEC_HANDLE_T {
 	VAL_UINT32_T            nOmxTids;
 	VDEC_DRV_CALLBACK_T     rCallbackHook;
 	VAL_UINT32_T            u4Scenario;
+	VAL_BOOL_T              bEnableAVTaskGroup;
+	VAL_INT32_T             nInitFatalRetryCount;
 } VDEC_HANDLE_T;
 
 #endif
