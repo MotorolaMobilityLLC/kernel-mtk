@@ -92,7 +92,9 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 			DVFSRC_EN_MASK, DVFSRC_EN_SHIFT);
 	dvfsrc->enabled = dvfsrc_en;
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
+#endif
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 

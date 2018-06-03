@@ -32,8 +32,7 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 	/* SPMFW_LP3_1CH_1866 */
 	{
 		{ DVFSRC_EMI_REQUEST,		0x00240009 },
-		/* ToDo: Check Value - DVFSRC_EMI_REQUEST3 */
-		{ DVFSRC_EMI_REQUEST3,		0x09000009 },
+		{ DVFSRC_EMI_REQUEST3,		0x09000000 },
 		{ DVFSRC_EMI_HRT,		0x00000020 },
 		{ DVFSRC_EMI_QOS0,		0x00000026 },
 		{ DVFSRC_EMI_QOS1,		0x00000033 },
@@ -46,8 +45,6 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 
 		/* ToDo: Check Value - DVFSRC_VCORE_REQUEST */
 		{ DVFSRC_VCORE_REQUEST,		0x000E0000 },
-		/* ToDo: Check Value - DVFSRC_VCORE_REQUEST2 */
-		{ DVFSRC_VCORE_REQUEST2,	0x00000039 },
 		{ DVFSRC_VCORE_HRT,		0x00000020 },
 		{ DVFSRC_VCORE_MD2SPM0,		0x0000003F },
 		{ DVFSRC_VCORE_MD2SPM1,		0x000080C0 },
@@ -56,9 +53,7 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 		{ DVFSRC_VCORE_MD2SPM1_T,	0x000080C0 },
 		{ DVFSRC_VCORE_MD2SPM2_T,	0x00000000 },
 
-		/* ToDo: Check Value - DVFSRC_MD_SW_CONTROL */
-		/* { DVFSRC_MD_SW_CONTROL,		0x20000000 }, */
-		{ DVFSRC_MD_SW_CONTROL,		0x00000000 },
+		{ DVFSRC_MD_SW_CONTROL,		0x20000000 },
 
 		{ DVFSRC_TIMEOUT_NEXTREQ,	0x00000014 },
 
