@@ -39,7 +39,8 @@ void msdc_sd_power_off(void);
 #if !defined(FPGA_PLATFORM)
 int msdc_oc_check(struct msdc_host *host, u32 en);
 int msdc_io_check(struct msdc_host *host);
-void msdc_dump_ldo_sts(struct msdc_host *host);
+void msdc_dump_ldo_sts(char **buff, unsigned long *size,
+	struct seq_file *m, struct msdc_host *host);
 void msdc_HQA_set_voltage(struct msdc_host *host);
 
 #else
@@ -51,7 +52,7 @@ extern void msdc_fpga_power(struct msdc_host *host, u32 on);
 #define msdc_emmc_power                 msdc_fpga_power
 #define msdc_sd_power                   msdc_fpga_power
 #define msdc_sdio_power                 msdc_fpga_power
-#define msdc_dump_ldo_sts(host)
+#define msdc_dump_ldo_sts(buff, size, m, host)
 
 #endif
 
@@ -62,9 +63,8 @@ extern void msdc_fpga_power(struct msdc_host *host, u32 on);
 
 #if defined(FPGA_PLATFORM)
 extern  u32 hclks_msdc[];
-#define msdc_dump_dvfs_reg(host)
-#define msdc_dump_clock_sts(host)
-#define dbg_msdc_dump_clock_sts(m, host)
+#define msdc_dump_dvfs_reg(buff, size, m, host)
+#define msdc_dump_clock_sts(buff, size, m, host)
 #define msdc_get_hclk(host, src)        MSDC_SRC_FPGA
 static inline int msdc_clk_enable(struct msdc_host *host) { return 0; }
 #define msdc_clk_disable(host)
@@ -74,9 +74,10 @@ static inline int msdc_clk_enable(struct msdc_host *host) { return 0; }
 
 #if !defined(FPGA_PLATFORM)
 extern u32 *hclks_msdc_all[];
-extern void msdc_dump_dvfs_reg(struct msdc_host *host);
-void msdc_dump_clock_sts(struct msdc_host *host);
-void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
+extern void msdc_dump_dvfs_reg(char **buff, unsigned long *size,
+	struct seq_file *m, struct msdc_host *host);
+void msdc_dump_clock_sts(char **buff, unsigned long *size,
+	struct seq_file *m, struct msdc_host *host);
 #define msdc_get_hclk(id, src)		hclks_msdc_all[id][src]
 
 #ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
@@ -132,8 +133,9 @@ void msdc_set_tdsel_by_id(u32 id, u32 flag, u32 value);
 void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value);
 void msdc_get_tdsel_by_id(u32 id, u32 *value);
 void msdc_get_rdsel_by_id(u32 id, u32 *value);
-void msdc_dump_vcore(void);
-void msdc_dump_padctl_by_id(u32 id);
+void msdc_dump_vcore(char **buff, unsigned long *size, struct seq_file *m);
+void msdc_dump_padctl_by_id(char **buff, unsigned long *size,
+	struct seq_file *m, u32 id);
 void msdc_pin_config_by_id(u32 id, u32 mode);
 void msdc_set_pin_mode(struct msdc_host *host);
 
@@ -147,8 +149,8 @@ void msdc_set_pin_mode(struct msdc_host *host);
 #define msdc_set_rdsel_by_id(id, flag, value)
 #define msdc_get_tdsel_by_id(id, value)
 #define msdc_get_rdsel_by_id(id, value)
-#define msdc_dump_vcore()
-#define msdc_dump_padctl_by_id(id)
+#define msdc_dump_vcore(buff, size, m)
+#define msdc_dump_padctl_by_id(buff, size, m, id)
 #define msdc_pin_config_by_id(id, mode)
 #define msdc_set_pin_mode(host)
 
@@ -181,8 +183,8 @@ void msdc_set_pin_mode(struct msdc_host *host);
 #define msdc_get_rdsel(host, value) \
 	msdc_get_rdsel_by_id(host->id, value)
 
-#define msdc_dump_padctl(host) \
-	msdc_dump_padctl_by_id(host->id)
+#define msdc_dump_padctl(buff, size, m, host) \
+	msdc_dump_padctl_by_id(buff, size, m, host->id)
 
 #define msdc_pin_config(host, mode) \
 	msdc_pin_config_by_id(host->id, mode)
