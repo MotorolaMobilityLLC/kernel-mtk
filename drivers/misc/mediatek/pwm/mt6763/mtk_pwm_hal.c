@@ -30,14 +30,6 @@
 #define PWM_PERI_ADDR_SHIFT_CTRL0 0x10003430
 #define PWM_OFFSET 0x3
 
-#include <mt-plat/mtk_chip.h>
-#include <linux/device.h>
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_address.h>
-#include <linux/of_irq.h>
-#endif
-
 /**********************************
 * Global  data
 ***********************************/
@@ -56,8 +48,7 @@ enum {
 	PWM_DATA_WIDTH,
 	PWM_THRESH,
 	PWM_SEND_WAVENUM,
-	PWM_VALID,
-	PWM_BUF_BASE_ADDR2
+	PWM_VALID
 } PWM_REG_OFF;
 
 
@@ -76,7 +67,6 @@ int pwm_power_id[] = {
 #endif
 #ifdef CONFIG_OF
 unsigned long PWM_register[PWM_NUM] = {};
-void __iomem *pwm_pericfg_base;
 #else
 unsigned long PWM_register[PWM_NUM] = {
 	(PWM_BASE+0x0010),	   /* PWM1 register base,   15 registers */
@@ -463,23 +453,11 @@ void mt_set_intr_ack_hal(u32 pwm_intr_ack_bit)
 
 void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 {
-	unsigned long reg_buff0_addr, reg_buff0_addr2;
-	unsigned int addr_shift_ctrl = 0;
+	unsigned long reg_buff0_addr;
 
-	reg_buff0_addr = PWM_register[pwm_no] +	4 * PWM_BUF0_BASE_ADDR;
-	reg_buff0_addr2 = PWM_register[pwm_no] + 4 * PWM_BUF_BASE_ADDR2;
-
-	if (addr > 0xFFFFFFFF) {
-
-		addr_shift_ctrl = addr >> 32;
-		CLRREG32(reg_buff0_addr2, 0xF);
-		SETREG32(reg_buff0_addr2, addr_shift_ctrl);
-		OUTREG32_DMA(reg_buff0_addr, (addr & 0xFFFFFFFF));
-	} else {
-		CLRREG32(reg_buff0_addr2, 0xF);
-		OUTREG32_DMA(reg_buff0_addr, addr);
-	}
-
+	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
+	/*OUTREG32(reg_buff0_addr, addr);*/
+	OUTREG32_DMA(reg_buff0_addr, addr);
 }
 
 void mt_set_pwm_buf0_size_hal(u32 pwm_no, uint16_t size)
@@ -592,17 +570,6 @@ void mt_pwm_26M_clk_enable_hal(u32 enable)
 
 void mt_pwm_platform_init(void)
 {
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
-	if (node) {
-		pwm_pericfg_base = of_iomap(node, 0);
-		pr_debug("PWM pwm_pericfg_base=0x%p\n", pwm_pericfg_base);
-		if (!pwm_pericfg_base)
-			pr_err("PWM pwm_pericfg_base error!!\n");
-		} else {
-			pr_err("PWM can't find pericfg node!!\n");
-	}
 }
 
 #if !defined(CONFIG_MTK_CLKMGR)
