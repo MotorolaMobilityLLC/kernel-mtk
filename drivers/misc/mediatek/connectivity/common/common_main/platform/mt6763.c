@@ -98,8 +98,8 @@ static UINT32 consys_emi_set_remapping_reg(VOID);
 static INT32 bt_wifi_share_v33_spin_lock_init(VOID);
 static INT32 consys_clk_get_from_dts(struct platform_device *pdev);
 static INT32 consys_pmic_get_from_dts(struct platform_device *pdev);
-static INT32 consys_read_irq_info_from_dts(INT32 *irq_num, UINT32 *irq_flag);
-static INT32 consys_read_reg_from_dts(VOID);
+static INT32 consys_read_irq_info_from_dts(struct platform_device *pdev, PINT32 irq_num, PUINT32 irq_flag);
+static INT32 consys_read_reg_from_dts(struct platform_device *pdev);
 static UINT32 consys_read_cpupcr(VOID);
 static VOID force_trigger_assert_debug_pin(VOID);
 static INT32 consys_co_clock_type(VOID);
@@ -1038,7 +1038,7 @@ static INT32 bt_wifi_share_v33_spin_lock_init(VOID)
 	return 0;
 }
 
-static INT32 consys_read_irq_info_from_dts(INT32 *irq_num, UINT32 *irq_flag)
+static INT32 consys_read_irq_info_from_dts(struct platform_device *pdev, PINT32 irq_num, PUINT32 irq_flag)
 {
 #ifdef CONFIG_OF		/*use DT */
 	struct device_node *node;
@@ -1046,7 +1046,7 @@ static INT32 consys_read_irq_info_from_dts(INT32 *irq_num, UINT32 *irq_flag)
 
 	INT32 iret = -1;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6580_consys");
+	node = pdev->dev.of_node;
 	if (node) {
 		*irq_num = irq_of_parse_and_map(node, 0);
 		/* get the interrupt line behaviour */
@@ -1065,13 +1065,13 @@ static INT32 consys_read_irq_info_from_dts(INT32 *irq_num, UINT32 *irq_flag)
 	return 0;
 }
 
-static INT32 consys_read_reg_from_dts(VOID)
+static INT32 consys_read_reg_from_dts(struct platform_device *pdev)
 {
 #ifdef CONFIG_OF		/*use DT */
 	INT32 iRet = -1;
 	struct device_node *node = NULL;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6763-consys");
+	node = pdev->dev.of_node;
 	if (node) {
 		/* registers base address */
 		conn_reg.mcu_base = (SIZE_T) of_iomap(node, 0);
