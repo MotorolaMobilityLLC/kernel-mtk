@@ -87,6 +87,7 @@
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
+static BOOLEAN fgResetTriggered = FALSE;
 BOOLEAN fgIsResetting = FALSE;
 UINT_32 g_IsNeedDoChipReset;
 
@@ -97,6 +98,7 @@ UINT_32 g_IsNeedDoChipReset;
 static RESET_STRUCT_T wifi_rst;
 
 static void mtk_wifi_reset(struct work_struct *work);
+static void mtk_wifi_trigger_reset(struct work_struct *work);
 
 /*******************************************************************************
 *                   F U N C T I O N   D E C L A R A T I O N S
@@ -128,7 +130,7 @@ VOID glResetInit(VOID)
 
 	/* 2. Initialize reset work */
 	INIT_WORK(&(wifi_rst.rst_work), mtk_wifi_reset);
-
+	INIT_WORK(&(wifi_rst.rst_trigger_work), mtk_wifi_trigger_reset);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -174,6 +176,7 @@ static void *glResetCallback(ENUM_WMTDRV_TYPE_T eSrcType,
 			case WMTRSTMSG_RESET_START:
 				DBGLOG(INIT, WARN, "Whole chip reset start!\n");
 				fgIsResetting = TRUE;
+				fgResetTriggered = FALSE;
 				wifi_reset_start();
 				break;
 
@@ -251,12 +254,21 @@ BOOLEAN kalIsResetting(VOID)
 	return fgIsResetting;
 }
 
+static void mtk_wifi_trigger_reset(struct work_struct *work)
+{
+	BOOLEAN fgResult = FALSE;
+
+	fgResetTriggered = TRUE;
+	fgResult = mtk_wcn_wmt_do_reset(WMTDRV_TYPE_WIFI);
+	DBGLOG(INIT, INFO, "reset result %d\n", fgResult);
+}
+
 BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 {
 	BOOLEAN fgResult = TRUE;
 
 #if CFG_WMT_RESET_API_SUPPORT
-	if (kalIsResetting()) {
+	if (kalIsResetting() || fgResetTriggered) {
 		DBGLOG(INIT, ERROR,
 		       "Skip triggering whole-chip reset during resetting! Chip[%04X E%u]\n",
 		       MTK_CHIP_REV, wlanGetEcoVersion(prAdapter));
@@ -280,7 +292,7 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 		       (prAdapter->rVerInfo.u2FwPeerVersion >> 8), (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
 
-		fgResult = mtk_wcn_wmt_do_reset(WMTDRV_TYPE_WIFI);
+		schedule_work(&(wifi_rst.rst_trigger_work));
 	}
 #endif
 

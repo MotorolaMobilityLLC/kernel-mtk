@@ -669,9 +669,6 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 
 	ASSERT(prAdapter);
 
-	/* MGMT - unitialization */
-	nicUninitMGMT(prAdapter);
-
 	/* Release all CMD/MGMT/SEC frame in command queue */
 	kalClearCommandQueue(prAdapter->prGlueInfo);
 
@@ -738,6 +735,9 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 	nicRxUninitialize(prAdapter);
 
 	nicTxRelease(prAdapter, FALSE);
+
+	/* MGMT - unitialization */
+	nicUninitMGMT(prAdapter);
 
 	/* System Service Uninitialization */
 	nicUninitSystemService(prAdapter);
