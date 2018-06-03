@@ -3193,8 +3193,6 @@ static inline void cfs_rq_util_change(struct cfs_rq *cfs_rq)
         }
 }
 
-static inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq);
-
 /*
  * Unsigned subtract and clamp on underflow.
  *
