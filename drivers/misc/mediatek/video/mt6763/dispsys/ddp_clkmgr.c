@@ -663,3 +663,68 @@ int ddp_ovl_dcm_reset(void)
 	return 0;
 }
 
+
+static int __ddp_clk_op_by_module(enum DISP_MODULE_ENUM module, int en)
+{
+	int ret = 0;
+	int (*op_func)(enum DDP_CLK_ID id);
+
+	if (en)
+		op_func = ddp_clk_prepare_enable;
+	else
+		op_func = ddp_clk_disable_unprepare;
+
+
+	switch (module) {
+
+	case DISP_MODULE_OVL0:
+		op_func(DISP0_DISP_OVL0);
+		break;
+	case DISP_MODULE_OVL0_2L:
+		op_func(DISP0_DISP_OVL0_2L);
+		break;
+	case DISP_MODULE_OVL1_2L:
+		op_func(DISP0_DISP_OVL1_2L);
+		break;
+	case DISP_MODULE_RDMA0:
+		op_func(DISP0_DISP_RDMA0);
+		break;
+	case DISP_MODULE_RDMA1:
+		op_func(DISP0_DISP_RDMA1);
+		break;
+	case DISP_MODULE_WDMA0:
+		op_func(DISP0_DISP_WDMA0);
+		break;
+	case DISP_MODULE_COLOR0:
+		op_func(DISP0_DISP_COLOR0);
+		break;
+	case DISP_MODULE_CCORR0:
+		op_func(DISP0_DISP_CCORR0);
+		break;
+	case DISP_MODULE_AAL0:
+		op_func(DISP0_DISP_AAL0);
+		break;
+	case DISP_MODULE_GAMMA0:
+		op_func(DISP0_DISP_GAMMA0);
+		break;
+	case DISP_MODULE_DITHER0:
+		op_func(DISP0_DISP_DITHER0);
+		break;
+	default:
+		DDPERR("invalid module id=%d\n", module);
+		ret = -1;
+	}
+	return ret;
+}
+
+int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
+{
+	return __ddp_clk_op_by_module(module, 1);
+}
+
+int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module)
+{
+	return __ddp_clk_op_by_module(module, 0);
+}
+
+

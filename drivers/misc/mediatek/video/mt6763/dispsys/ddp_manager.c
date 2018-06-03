@@ -29,7 +29,7 @@
 #include "ddp_rdma_ex.h"
 #include "ddp_ovl.h"
 #include "ddp_color.h"
-
+#include "ddp_clkmgr.h"
 #include "ddp_log.h"
 #include "disp_drv_platform.h"
 
@@ -77,6 +77,67 @@ struct DDP_MANAGER_CONTEXT {
 	struct ddp_path_handle *module_path_table[DISP_MODULE_NUM];
 	struct ddp_path_handle *handle_pool[DDP_MAX_MANAGER_HANDLE];
 };
+
+static bool ddp_valid_engine[DISP_MODULE_NUM] = {
+	1, /* DISP_MODULE_OVL0,                */
+	0, /* DISP_MODULE_OVL1,                */
+	1, /* DISP_MODULE_OVL0_2L,             */
+	1, /* DISP_MODULE_OVL1_2L,             */
+	0, /* DISP_MODULE_OVL0_VIRTUAL,        */
+	0, /* DISP_MODULE_OVL0_2L_VIRTUAL,     */
+	0, /* DISP_MODULE_OVL1_2L_VIRTUAL,     */
+
+	1, /* DISP_MODULE_RDMA0,               */
+	1, /* DISP_MODULE_RDMA1,               */
+	0, /* DISP_MODULE_RDMA2,               */
+
+	1, /* DISP_MODULE_WDMA0,               */
+	0, /* DISP_MODULE_WDMA1,               */
+	0, /* DISP_MODULE_WDMA_VIRTUAL0,       */
+	0, /* DISP_MODULE_WDMA_VIRTUAL1,       */
+
+	1, /* DISP_MODULE_COLOR0,              */
+	0, /* DISP_MODULE_COLOR1,              */
+	1, /* DISP_MODULE_CCORR0,              */
+	0, /* DISP_MODULE_CCORR1,              */
+	1, /* DISP_MODULE_AAL0,                */
+	0, /* DISP_MODULE_AAL1,                */
+	1, /* DISP_MODULE_GAMMA0,              */
+	0, /* DISP_MODULE_GAMMA1,              */
+	0, /* DISP_MODULE_OD,                  */
+	1, /* DISP_MODULE_DITHER0,             */
+	0, /* DISP_MODULE_DITHER1,             */
+
+	0, /* DISP_MODULE_PATH0,               */
+	0, /* DISP_MODULE_PATH1,               */
+
+	0, /* DISP_MODULE_UFOE,                */
+	0, /* DISP_MODULE_DSC,                 */
+	0, /* DISP_MODULE_DSC_2ND,             */
+	0, /* DISP_MODULE_SPLIT0,              */
+
+	0, /* DISP_MODULE_DPI,                 */
+
+	0, /* DISP_MODULE_DSI0,                */
+	0, /* DISP_MODULE_DSI1,                */
+	0, /* DISP_MODULE_DSIDUAL,             */
+	0, /* DISP_MODULE_PWM0,                */
+	0, /* DISP_MODULE_PWM1,                */
+
+	0, /* DISP_MODULE_CONFIG,              */
+	0, /* DISP_MODULE_MUTEX,               */
+	0, /* DISP_MODULE_SMI_COMMON,          */
+	0, /* DISP_MODULE_SMI_LARB0,           */
+	0, /* DISP_MODULE_SMI_LARB1,           */
+
+	0, /* DISP_MODULE_MIPI0,               */
+	0, /* DISP_MODULE_MIPI1,               */
+	0, /* DISP_MODULE_RSZ0,                */
+	0, /* DISP_MODULE_RSZ1,                */
+
+	0, /* DISP_MODULE_UNKNOWN,             */
+};
+
 
 #define DEFAULT_IRQ_EVENT_SCENARIO (4)
 static struct DDP_IRQ_EVENT_MAPPING ddp_irq_event_list[DEFAULT_IRQ_EVENT_SCENARIO][DISP_PATH_EVENT_NUM] = {
@@ -172,30 +233,43 @@ static struct DDP_MANAGER_CONTEXT *_get_context(void)
 static int path_top_clock_off(void)
 {
 	int i = 0;
-	struct DDP_MANAGER_CONTEXT *context = _get_context();
+	struct DDP_MANAGER_CONTEXT *c = _get_context();
 
-	if (context->power_state) {
-		for (i = 0; i < DDP_MAX_MANAGER_HANDLE; i++) {
-			if (context->handle_pool[i] != NULL
-			    && context->handle_pool[i]->power_state != 0)
-				return 0;
+	if (!c->power_state)
+		return 0;
 
-		}
-		context->power_state = 0;
-		ddp_path_top_clock_off();
+	for (i = 0; i < DDP_MAX_MANAGER_HANDLE; i++) {
+		if (c->handle_pool[i] && c->handle_pool[i]->power_state)
+			return 0;
 	}
+
+	c->power_state = 0;
+	for (i = 0; i < DISP_MODULE_NUM; i++) {
+		if (ddp_valid_engine[i])
+			ddp_clk_disable_by_module(i);
+	}
+
+	ddp_path_top_clock_off();
+
 	return 0;
 }
 
 
 static int path_top_clock_on(void)
 {
-	struct DDP_MANAGER_CONTEXT *context = _get_context();
+	struct DDP_MANAGER_CONTEXT *c = _get_context();
+	int i = 0;
 
-	if (!context->power_state) {
-		context->power_state = 1;
-		ddp_path_top_clock_on();
+	if (c->power_state)
+		return 0;
+
+	c->power_state = 1;
+	ddp_path_top_clock_on();
+	for (i = 0; i < DISP_MODULE_NUM; i++) {
+		if (ddp_valid_engine[i])
+			ddp_clk_enable_by_module(i);
 	}
+
 	return 0;
 }
 
@@ -763,36 +837,34 @@ int dpmgr_path_disconnect(disp_path_handle dp_handle, int encmdq)
 	return 0;
 }
 
-int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
+int dpmgr_path_init_with_cmdq(disp_path_handle dp_handle, struct cmdqRecStruct *cmdq_handle)
 {
 	int i = 0;
 	int module_name;
 	struct ddp_path_handle *handle;
 	int *modules;
 	int module_num;
-	struct cmdqRecStruct *cmdqHandle;
 
 	ASSERT(dp_handle != NULL);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
-	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
 	DDPDBG("path init on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	/* open top clock */
 	path_top_clock_on();
 	/* seting mutex */
-	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdqHandle);
-	ddp_mutex_interrupt_enable(handle->hwmutexid, cmdqHandle);
+	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdq_handle);
+	ddp_mutex_interrupt_enable(handle->hwmutexid, cmdq_handle);
 	/* connect path; */
-	_dpmgr_path_connect(handle->scenario, cmdqHandle);
+	_dpmgr_path_connect(handle->scenario, cmdq_handle);
 
 	/* each module init */
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_get_module_driver(module_name) != 0) {
 			if (ddp_get_module_driver(module_name)->init != 0)
-				ddp_get_module_driver(module_name)->init(module_name, cmdqHandle);
+				ddp_get_module_driver(module_name)->init(module_name, cmdq_handle);
 
 			if (ddp_get_module_driver(module_name)->set_listener != 0)
 				ddp_get_module_driver(module_name)->set_listener(module_name,
@@ -802,6 +874,18 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 	/* after init this path will power on; */
 	handle->power_state = 1;
 	return 0;
+}
+
+int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
+{
+	struct ddp_path_handle *handle;
+	struct cmdqRecStruct *cmdqHandle;
+
+	ASSERT(dp_handle != NULL);
+	handle = (struct ddp_path_handle *)dp_handle;
+	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
+
+	return dpmgr_path_init_with_cmdq(dp_handle, cmdqHandle);
 }
 
 int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
@@ -840,32 +924,42 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 	return 0;
 }
 
-int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
+int dpmgr_path_start_with_cmdq(disp_path_handle dp_handle, struct cmdqRecStruct *cmdq_handle)
 {
 	int i = 0;
 	int module_name;
 	struct ddp_path_handle *handle;
 	int *modules;
 	int module_num;
-	struct cmdqRecStruct *cmdqHandle;
 
 	ASSERT(dp_handle != NULL);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
-	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
 	DISP_LOG_I("path start on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_get_module_driver(module_name) != 0) {
 			if (ddp_get_module_driver(module_name)->start != 0)
-				ddp_get_module_driver(module_name)->start(module_name, cmdqHandle);
+				ddp_get_module_driver(module_name)->start(module_name, cmdq_handle);
 
 		}
 	}
 
 	return 0;
+}
+
+int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
+{
+	struct ddp_path_handle *handle;
+	struct cmdqRecStruct *cmdqHandle;
+
+	ASSERT(dp_handle != NULL);
+	handle = (struct ddp_path_handle *)dp_handle;
+	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
+
+	return dpmgr_path_start_with_cmdq(dp_handle, cmdqHandle);
 }
 
 int dpmgr_path_stop(disp_path_handle dp_handle, int encmdq)

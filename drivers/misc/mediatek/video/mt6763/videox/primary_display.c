@@ -24,6 +24,7 @@
 #include <linux/of_irq.h>
 #include <linux/slab.h>
 #include <linux/switch.h>
+#include <asm/cacheflush.h>
 /* #include "mtk_idle.h" */
 #include "mtk_spm.h"	/* for sodi reg addr define */
 /* #include "mtk_spm_idle.h" */
@@ -196,8 +197,9 @@ unsigned int round_corner_offset_enable;
 unsigned int lcm_corner_en;
 unsigned int top_mva, bottom_mva;
 unsigned int corner_pattern_width, corner_pattern_height;
-static int primary_display_get_round_corner_mva(unsigned int *tp_mva, unsigned int *bt_mva,
-	unsigned int *pitch, unsigned int *height);
+static int get_round_corner_param(unsigned int *tp_mva, unsigned int *bt_mva,
+				phys_addr_t *tp_pa, phys_addr_t *bt_pa,
+				unsigned int *pitch, unsigned int *height);
 #endif
 
 static int smart_ovl_try_switch_mode_nolock(void);
@@ -299,6 +301,18 @@ void *primary_get_dpmgr_handle(void)
 void *primary_get_ovl2mem_handle(void)
 {
 	return pgc->ovl2mem_path_handle;
+}
+
+static void primary_get_path_handles(disp_path_handle *disp_handle,
+				     struct cmdqRecStruct **cmdq_handle)
+{
+	if (primary_display_is_decouple_mode()) {
+		*disp_handle = pgc->ovl2mem_path_handle;
+		*cmdq_handle = pgc->cmdq_handle_ovl1to2_config;
+	} else {
+		*disp_handle = pgc->dpmgr_handle;
+		*cmdq_handle = pgc->cmdq_handle_config;
+	}
 }
 
 int primary_display_is_decouple_mode(void)
@@ -2311,7 +2325,7 @@ static int _DC_switch_to_DL_fast(int block)
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
 	/* wait and get_mutex in the last frame configs */
-	dpmgr_path_deinit(pgc->ovl2mem_path_handle, (unsigned long)(pgc->cmdq_handle_ovl1to2_config));
+	dpmgr_path_deinit(pgc->ovl2mem_path_handle, CMDQ_ENABLE);
 	dpmgr_destroy_path(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
 	/* clear sof token for next dl to dc */
 	cmdqRecClearEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_SOF);
@@ -2577,6 +2591,80 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 
 	return 0;
 }
+
+static int rdma_mode_switch_to_DC(struct cmdqRecStruct *handle, int block)
+{
+	int ret = 0;
+	struct RDMA_CONFIG_STRUCT rdma_config = decouple_rdma_config;
+
+	struct disp_ddp_path_config *data_config_dl = NULL;
+	struct disp_ddp_path_config *data_config_dc = NULL;
+	struct ddp_io_golden_setting_arg gset_arg;
+	static struct cmdqRecStruct *sync_handle;
+
+	/* WARNING: thread0 may has a pending handle of doing DL->RDMA switch.
+	 * we use sync_handle to guarantee memory-path being created AFTER
+	 * DL->RDMA switch done.
+	*/
+	if (!sync_handle) {
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &sync_handle);
+		if (ret) {
+			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+			return -1;
+		}
+	}
+	/* clear wdma0 EOF to block next DC configuration */
+	cmdqCoreClearEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
+
+	cmdqRecReset(sync_handle);
+	cmdqRecSetEventToken(sync_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
+	_cmdq_flush_config_handle_mira(sync_handle, 0);
+
+	/* starting to create ovl2mem path */
+	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
+	cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
+
+	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	pgc->ovl2mem_path_handle =
+		dpmgr_create_path(DDP_SCENARIO_PRIMARY_OVL_MEMOUT, pgc->cmdq_handle_ovl1to2_config);
+	if (!pgc->ovl2mem_path_handle) {
+		DISPERR("dpmgr create path FAIL\n");
+		return -1;
+	}
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0);
+
+	dpmgr_path_set_video_mode(pgc->ovl2mem_path_handle, 0);
+	dpmgr_path_init_with_cmdq(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
+
+	data_config_dc = dpmgr_path_get_last_config(pgc->ovl2mem_path_handle);
+	data_config_dc->dst_w = rdma_config.width;
+	data_config_dc->dst_h = rdma_config.height;
+	data_config_dc->dst_dirty = 1;
+
+	/* move ovl config info from dl to dc */
+	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config, sizeof(data_config_dl->ovl_config));
+	data_config_dc->p_golden_setting_context = data_config_dl->p_golden_setting_context;
+	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc, pgc->cmdq_handle_ovl1to2_config);
+
+	memset(&gset_arg, 0, sizeof(gset_arg));
+	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->ovl2mem_path_handle);
+	gset_arg.is_decouple_mode = 1;
+	dpmgr_path_ioctl(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config,
+			 DDP_OVL_GOLDEN_SETTING, &gset_arg);
+
+	ret = dpmgr_path_start_with_cmdq(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
+	cmdqRecSetEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
+	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, block);
+
+	/* for next dc configuration */
+	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
+	cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 0);
+	return 0;
+}
+
 
 static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 {
@@ -3108,6 +3196,8 @@ int primary_display_change_lcm_resolution(unsigned int width, unsigned int heigh
 	}
 }
 
+static int _ovl_fence_release_callback(unsigned long userdata);
+
 static int _wdma_fence_release_callback(unsigned long userdata)
 {
 	int fence_idx, layer;
@@ -3152,6 +3242,15 @@ static int _Interface_fence_release_callback(unsigned long userdata)
 	return ret;
 }
 
+static int _rdma_update_callback(unsigned long if_fence)
+{
+	int ret = 0;
+
+	ret |= _Interface_fence_release_callback(if_fence);
+	ret |= _ovl_fence_release_callback(pgc->session_mode);
+	return ret;
+}
+
 static int _decouple_update_rdma_config_nolock(void)
 {
 	int interface_fence = 0;
@@ -3166,10 +3265,7 @@ static int _decouple_update_rdma_config_nolock(void)
 		cmdqBackupReadSlot(pgc->cur_config_fence, layer, &interface_fence);
 
 		if (primary_get_state() != DISP_ALIVE) {
-			/* don't trigger rdma */
-			/* release interface fence */
-			_Interface_fence_release_callback(interface_fence > 1 ? interface_fence - 1 : 0);
-
+			_rdma_update_callback(interface_fence > 1 ? interface_fence - 1 : 0);
 			return -1;
 		}
 
@@ -3220,7 +3316,7 @@ static int _decouple_update_rdma_config_nolock(void)
 				dynamic_fps_changed = 0;
 			}
 
-			cmdqRecFlushAsyncCallback(cmdq_handle, (CmdqAsyncFlushCB)_Interface_fence_release_callback,
+			cmdqRecFlushAsyncCallback(cmdq_handle, _rdma_update_callback,
 					interface_fence > 1 ? interface_fence - 1 : 0);
 
 			dprec_mmp_dump_rdma_layer(&tmpConfig, 0);
@@ -3333,11 +3429,12 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 }
 
 /* #define UPDATE_RDMA_CONFIG_USING_CMDQ_CALLBACK */
-static int _ovl_wdma_fence_release_callback(unsigned long userdata)
+static int decouple_trigger_callback(unsigned long userdata)
 {
 	int ret = 0;
 
-	ret = _ovl_fence_release_callback(userdata);
+	/* release wdma fence to let MDP start its job */
+	/* ovl fences are to be released after rdma update */
 	ret |= _wdma_fence_release_callback(userdata);
 
 #ifdef UPDATE_RDMA_CONFIG_USING_CMDQ_CALLBACK
@@ -3390,8 +3487,8 @@ static int decouple_mirror_update_rdma_config_thread(void *data)
 		ret = wait_event_interruptible(decouple_update_rdma_wq,
 					 atomic_read(&decouple_update_rdma_event));
 		if (ret == 0) {
-		atomic_set(&decouple_update_rdma_event, 0);
-		decouple_update_rdma_config();
+			atomic_set(&decouple_update_rdma_event, 0);
+			decouple_update_rdma_config();
 		} else {
 			DISPERR("wait decouple_update_rdma_event interrupted , ret = %d\n", ret);
 		}
@@ -3738,7 +3835,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	lcm_corner_en = primary_display_get_lcm_corner_en();
 	if (lcm_corner_en)
-		primary_display_get_round_corner_mva(&top_mva, &bottom_mva,
+		get_round_corner_param(&top_mva, &bottom_mva, NULL, NULL,
 			&corner_pattern_width, &corner_pattern_height);
 #endif
 
@@ -4948,7 +5045,7 @@ static int trigger_decouple_mirror(void)
 		if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 			_trigger_ovl_to_memory(pgc->ovl2mem_path_handle,
 						      pgc->cmdq_handle_ovl1to2_config,
-						      (CmdqAsyncFlushCB)_ovl_wdma_fence_release_callback,
+						      (CmdqAsyncFlushCB)decouple_trigger_callback,
 						      DISP_SESSION_DECOUPLE_MIRROR_MODE);
 			dprec_logger_trigger(DPREC_LOGGER_PRIMARY_TRIGGER, 0xffffffff, 0);
 		} else {
@@ -5001,7 +5098,7 @@ static int primary_display_trigger_nolock(int blocking, void *callback, int need
 		}
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE) {
 		_trigger_ovl_to_memory(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config,
-				       (CmdqAsyncFlushCB)_ovl_fence_release_callback, DISP_SESSION_DECOUPLE_MODE);
+				       (CmdqAsyncFlushCB)decouple_trigger_callback, DISP_SESSION_DECOUPLE_MODE);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		if (need_merge == 0 || primary_is_sec()) {
 			trigger_decouple_mirror();
@@ -5283,7 +5380,8 @@ static int setup_disp_sec(struct disp_ddp_path_config *data_config, struct cmdqR
 	return 0;
 }
 
-static int can_bypass_ovl(struct disp_ddp_path_config *data_config, int *bypass_layer_id)
+static int can_bypass_ovl(struct disp_ddp_path_config *data_config,
+			  int *bypass_layer_id, int dc_request)
 {
 	int total_layer = 0;
 	int i;
@@ -5294,10 +5392,11 @@ static int can_bypass_ovl(struct disp_ddp_path_config *data_config, int *bypass_
 	return 0;
 #endif
 
-	if (!disp_helper_get_option(DISP_OPT_BYPASS_OVL))
+	if (!disp_helper_get_option(DISP_OPT_BYPASS_OVL) &&
+	    !dc_request)
 		return 0;
 
-	for (i = 0; i < ARRAY_SIZE(data_config->ovl_config); i++) {
+	for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++) {
 		if (data_config->ovl_config[i].layer_en) {
 			total_layer++;
 			*bypass_layer_id = i;
@@ -5312,7 +5411,7 @@ static int can_bypass_ovl(struct disp_ddp_path_config *data_config, int *bypass_
 		return 0;
 
 	/* now we have only 1 layer */
-		/* check background (bg).
+	/* check background (bg).
 	 * If top_bg=0, and left bg!=0, we should not use rdma mode.
 	 */
 	if (data_config->ovl_config[*bypass_layer_id].dst_y == 0 &&
@@ -5327,6 +5426,17 @@ static int can_bypass_ovl(struct disp_ddp_path_config *data_config, int *bypass_
 		return 0;
 	if (w * h <= 512 * 16 / 2)
 		return 0;
+
+	/* if round corner enabled, only full-screen layer can bypass ovl,
+	 * because cpu-draw-round-corner() only support full layer
+	*/
+	#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	if (lcm_corner_en) {
+		if (w != primary_display_get_width() || h != primary_display_get_height() ||
+			ufmt_get_Bpp(data_config->ovl_config[*bypass_layer_id].fmt) != 4)
+			return 0;
+	}
+	#endif
 
 	return 1;
 }
@@ -5373,7 +5483,8 @@ static int evaluate_bandwidth_save(struct disp_ddp_path_config *cfg, int *ori, i
 }
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-static int primary_display_get_round_corner_mva(unsigned int *tp_mva, unsigned int *bt_mva,
+static int get_round_corner_param(unsigned int *tp_mva, unsigned int *bt_mva,
+				phys_addr_t *tp_pa, phys_addr_t *bt_pa,
 				unsigned int *pitch, unsigned int *height)
 {
 	unsigned char ret = -1;
@@ -5383,19 +5494,29 @@ static int primary_display_get_round_corner_mva(unsigned int *tp_mva, unsigned i
 	unsigned int frame_buf_size = DISP_GetFBRamSize();
 	unsigned int vram_buf_size = mtkfb_get_fb_size();
 	unsigned long frame_buf_mva = primary_display_get_frame_buffer_mva_address();
+	ulong tp, bt;
 
 	if (vram_buf_size > dal_buf_size + frame_buf_size) {
 		*height = primary_display_get_corner_pattern_height();
 		*pitch = primary_display_get_width();
 		corner_size = (*pitch) * (*height) * argb4444_bpp;
 
-		*tp_mva = frame_buf_mva + vram_buf_size - 2 * corner_size;
-		*bt_mva = *tp_mva + corner_size;
+		tp = frame_buf_mva + vram_buf_size - 2 * corner_size;
+		bt = tp + corner_size;
+		if (tp_mva)
+			*tp_mva = tp;
+		if (bt_mva)
+			*bt_mva = bt;
+		if (tp_pa)
+			*tp_pa = tp;
+		if (bt_pa)
+			*bt_pa = bt;
 		ret = 0;
 	} else {
+		ret = -1;
 		DISPERR("vram_buf may not contain corner size!\n");
 	}
-	return 0;
+	return ret;
 }
 
 void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, unsigned int h,
@@ -5469,6 +5590,170 @@ void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, u
 	input_ext->ext_sel_layer = 2;
 	input_ext->phy_layer = phy_layer;
 }
+
+#define __ALPHA_BLENDING(val, n, alpha) \
+	((((((val) >> (n)) & 0xff) * (0xf - (alpha))) / 0xf) << n)
+/* warning: Only support fmt
+ * rc:RGBA4444, dst:BPP=4
+ */
+static int draw_rc_rgba4444(void *rc, uint rc_pitch, uint rc_w, uint rc_h,
+			void *dst, uint dst_pitch)
+{
+	uint x, y, rc_a;
+	uint16_t *rc_va = rc;
+	uint32_t *dst_va = dst, val;
+
+	for (y = 0; y < rc_h; y++) {
+		for (x = 0; x < rc_w; x++) {
+			rc_a = rc_va[x] >> 12;
+
+			if (rc_a == 0) {
+				continue;
+			} else if (rc_a == 0xf) {
+				dst_va[x] = 0;
+			} else {
+				val = dst_va[x];
+				val = __ALPHA_BLENDING(val, 0, rc_a) |
+				      __ALPHA_BLENDING(val, 8, rc_a) |
+				      __ALPHA_BLENDING(val, 16, rc_a) |
+				      __ALPHA_BLENDING(val, 24, rc_a);
+				dst_va[x] = val;
+			}
+		}
+		rc_va += rc_pitch;
+		dst_va += dst_pitch;
+	}
+	return 0;
+}
+
+static void *disp_vmap_pa(phys_addr_t pa, uint size, int cached)
+{
+	phys_addr_t pa_align;
+	uint sz_align, npages, i;
+	struct page **pages;
+	pgprot_t pgprot;
+	void *va_align;
+
+	pa_align = round_down(pa, PAGE_SIZE);
+	sz_align = ALIGN(pa + size - pa_align, PAGE_SIZE);
+	npages = sz_align / PAGE_SIZE;
+
+	pages = kmalloc_array(npages, sizeof(struct page *), GFP_KERNEL);
+	if (!pages)
+		return NULL;
+
+	pgprot = cached ? PAGE_KERNEL : pgprot_writecombine(PAGE_KERNEL);
+	for (i = 0; i < npages; i++)
+		pages[i] = phys_to_page(pa_align + i * PAGE_SIZE);
+
+	va_align = vmap(pages, npages, VM_MAP, pgprot);
+	if (!va_align)
+		DISPERR("%s vmap failed vaddr is null.\n", __func__);
+	else
+		return va_align + (pa & (PAGE_SIZE - 1));
+
+	return NULL;
+}
+
+struct rc_buf {
+	/* 4 corner va; left-top ~ right-bottom */
+	void *lt;
+	void *rt;
+	void *lb;
+	void *rb;
+	uint w;
+	uint h;
+	uint pitch;
+	uint bpp;
+};
+static struct rc_buf *get_rc_buf(void)
+{
+	static struct rc_buf rc;
+	uint rc_sz;
+	phys_addr_t lt_pa, lb_pa;
+	int ret = 0;
+
+	if (rc.lt)
+		return &rc;
+
+	ret = get_round_corner_param(NULL, NULL, &lt_pa, &lb_pa, &rc.pitch, &rc.h);
+	if (ret)
+		return NULL;
+
+	rc.bpp = UFMT_GET_Bpp(UFMT_RGBA4444);
+	rc.w = rc.h;
+	rc_sz = rc.pitch * rc.h * rc.bpp;
+
+	rc.lt = disp_vmap_pa(lt_pa, rc_sz, 1);
+	rc.rt = rc.lt + (rc.pitch - rc.w) * rc.bpp;
+	rc.lb = disp_vmap_pa(lb_pa, rc_sz, 1);
+	rc.rb = rc.lb + (rc.pitch - rc.w) * rc.bpp;
+	return &rc;
+}
+
+int __draw_round_corner(void *dst_va, enum UNIFIED_COLOR_FMT dst_fmt,
+			uint dst_w, uint dst_h, uint dst_pitch)
+{
+	uint dst_bpp = ufmt_get_Bpp(dst_fmt);
+	void *dst_lt, *dst_rt, *dst_lb, *dst_rb;
+	struct rc_buf *rc;
+
+	if (WARN(dst_bpp != 4, "%s don't support fmt:0x%x\n", __func__, dst_fmt))
+		return -EINVAL;
+
+	rc = get_rc_buf();
+	if (!rc)
+		return -EINVAL;
+
+	dst_lt = dst_va;
+	dst_rt = dst_lt + (dst_w - rc->w) * dst_bpp;
+	dst_lb = dst_va + (dst_h - rc->h) * dst_pitch * dst_bpp;
+	dst_rb = dst_lb + (dst_w - rc->w) * dst_bpp;
+
+	/* draw 4 round corners: left-top to right-bottom */
+	draw_rc_rgba4444(rc->lt, rc->pitch, rc->w, rc->h, dst_lt, dst_pitch);
+	draw_rc_rgba4444(rc->rt, rc->pitch, rc->w, rc->h, dst_rt, dst_pitch);
+	draw_rc_rgba4444(rc->lb, rc->pitch, rc->w, rc->h, dst_lb, dst_pitch);
+	draw_rc_rgba4444(rc->rb, rc->pitch, rc->w, rc->h, dst_rb, dst_pitch);
+
+	/* do cache sync */
+	__dma_map_area((void *)dst_lt, dst_pitch * rc->h * dst_bpp, DMA_TO_DEVICE);
+	__dma_map_area((void *)dst_lb, dst_pitch * rc->h * dst_bpp, DMA_TO_DEVICE);
+	return 0;
+}
+
+static int draw_round_corner(struct disp_frame_cfg_t *cfg, int layer)
+{
+	int i, ret = 01;
+	uint fence_idx = UINT_MAX, size;
+	struct disp_input_config *input_cfg = NULL;
+	unsigned long mva;
+	void *va = NULL;
+
+	if (!lcm_corner_en)
+		return 0;
+	/* find the layer to draw to */
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		input_cfg = &cfg->input_cfg[i];
+		if (layer != input_cfg->layer_id)
+			continue;
+		fence_idx = input_cfg->next_buff_idx;
+		break;
+	}
+	if (fence_idx == UINT_MAX)
+		return -1;
+
+	mmprofile_log_ex(ddp_mmp_get_events()->draw_rc, MMPROFILE_FLAG_START, 0, 0);
+	___disp_sync_query_buf_info(primary_session_id, layer, fence_idx, &mva, &size, &va, 0);
+	if (!va)
+		goto out;
+
+	ret = __draw_round_corner(va, disp_fmt_to_unified_fmt(input_cfg->src_fmt),
+			input_cfg->tgt_width, input_cfg->tgt_height, input_cfg->src_pitch);
+out:
+	mmprofile_log_ex(ddp_mmp_get_events()->draw_rc, MMPROFILE_FLAG_END, 0, 0);
+	return ret;
+}
 #endif
 
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
@@ -5478,20 +5763,24 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	struct disp_ddp_path_config *data_config = NULL;
 	int max_layer_id_configed = 0;
 	int bypass, bypass_layer_id = 0;
-	int hrt_level;
+	int hrt_level, dc_request, old_mode, new_mode;
 	struct disp_rect total_dirty_roi = {0, 0, 0, 0};
 
 	int j, draw_temp;
 #ifdef DEBUG_OVL_CONFIG_TIME
 	cmdqRecBackupRegisterToSlot(cmdq_handle, pgc->ovl_config_time, 0, 0x10008028);
 #endif
+	dc_request = HRT_GET_DC_FLAG(cfg->overlap_layer_num);
+	if (disp_mgr_has_mem_session())
+		dc_request = 0;
+
 	/*=== create new data_config for ovl input ===*/
 	data_config = dpmgr_path_get_last_config(disp_handle);
 
 	disp_layer_info_statistic(data_config, cfg);
 
 	if (disp_partial_is_support()) {
-		if (primary_display_is_directlink_mode())
+		if (primary_display_is_directlink_mode() && !dc_request)
 			disp_partial_compute_ovl_roi(cfg, data_config, &total_dirty_roi);
 		else
 			assign_full_lcm_roi(&total_dirty_roi);
@@ -5543,6 +5832,78 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		data_config->ovl_layer_dirty |= (1 << i);
 	}
 
+	if (_should_wait_path_idle())
+		dpmgr_wait_event_timeout(disp_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
+
+	if (cmdq_handle) {
+
+		int sess_mode = pgc->session_mode;
+		setup_disp_sec(data_config, cmdq_handle, 1);
+
+		if (sess_mode != pgc->session_mode) {
+			/*the switch mode case: 1)enter svp: DC->DL; 2)leave svp:restore sess_mode, DL->DC */
+			DISPMSG("setup_disp_sec() has switch mode, then update the handle.\n");
+			primary_get_path_handles(&disp_handle, &cmdq_handle);
+			data_config = dpmgr_path_get_last_config(disp_handle);
+		}
+	}
+
+	bypass = can_bypass_ovl(data_config, &bypass_layer_id, dc_request);
+
+	/* try to adjust display-mode according to input info*/
+	new_mode = old_mode = pgc->session_mode;
+	if (old_mode == DISP_SESSION_DIRECT_LINK_MODE) {
+		if (bypass) {
+			new_mode = DISP_SESSION_RDMA_MODE;
+		} else if (dc_request) {
+			DISPWARN("hrt request DC mode without a rdma mode frame !\n");
+			new_mode = DISP_SESSION_DECOUPLE_MODE;
+		}
+
+	} else if (old_mode == DISP_SESSION_RDMA_MODE) {
+		if (!bypass) {
+			if (dc_request)
+				new_mode = DISP_SESSION_DECOUPLE_MODE;
+			else
+				new_mode = DISP_SESSION_DIRECT_LINK_MODE;
+		} else {
+			;/* just keep rdma mode */
+		}
+	} else if (old_mode == DISP_SESSION_DECOUPLE_MODE) {
+		if (!dc_request)
+			new_mode = DISP_SESSION_DIRECT_LINK_MODE;
+	}
+
+	if (new_mode != old_mode) {
+		do_primary_display_switch_mode(new_mode, pgc->session_id, 0,
+					       cmdq_handle, 0);
+		primary_get_path_handles(&disp_handle, &cmdq_handle);
+		data_config = dpmgr_path_get_last_config(disp_handle);
+		assign_full_lcm_roi(&total_dirty_roi);
+		if (new_mode != DISP_SESSION_DIRECT_LINK_MODE)
+			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);
+	}
+
+	if (pgc->session_mode != DISP_SESSION_RDMA_MODE) {
+		data_config->ovl_dirty = 1;
+	} else {
+		ret = ddp_convert_ovl_input_to_rdma(&data_config->rdma_config,
+						    &data_config->ovl_config[bypass_layer_id],
+						    data_config->dst_w, data_config->dst_h);
+		data_config->rdma_dirty = 1;
+
+		/* no need ioctl because of rdma_dirty */
+		set_is_dc(1);
+		if (0)
+		dynamic_debug_msg_print(data_config->rdma_config.address,
+				data_config->rdma_config.width,
+				data_config->rdma_config.height, data_config->rdma_config.pitch,
+				UFMT_GET_Bpp(data_config->rdma_config.inputFormat), 0);
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+		draw_round_corner(cfg, bypass_layer_id);
+#endif
+	}
+
 	hrt_level = HRT_GET_DVFS_LEVEL(cfg->overlap_layer_num);
 	data_config->overlap_layer_num = hrt_level;
 
@@ -5566,7 +5927,6 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	} else {
 		dvfs_last_ovl_req = HRT_LEVEL_ULPM;
 	}
-#endif
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
 		char msg[10];
@@ -5574,66 +5934,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		snprintf(msg, sizeof(msg), "HRT=%d,", hrt_level);
 		screen_logger_add_message("HRT", MESSAGE_REPLACE, msg);
 	}
-
-	if (_should_wait_path_idle())
-		dpmgr_wait_event_timeout(disp_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
-
-	if (cmdq_handle) {
-
-		int sess_mode = pgc->session_mode;
-		setup_disp_sec(data_config, cmdq_handle, 1);
-
-		if (sess_mode != pgc->session_mode) {
-			/*the switch mode case: 1)enter svp: DC->DL; 2)leave svp:restore sess_mode, DL->DC */
-			DISPMSG("setup_disp_sec() has switch mode, then update the handle.\n");
-
-			if (primary_display_is_decouple_mode()) {
-				disp_handle = pgc->ovl2mem_path_handle;
-				cmdq_handle = pgc->cmdq_handle_ovl1to2_config;
-			} else {
-				disp_handle = pgc->dpmgr_handle;
-				cmdq_handle = pgc->cmdq_handle_config;
-			}
-			data_config = dpmgr_path_get_last_config(disp_handle);
-			data_config->overlap_layer_num = hrt_level;
-		}
-	}
-
-	/* check bypass ovl */
-	bypass = can_bypass_ovl(data_config, &bypass_layer_id);
-	if (bypass) {
-		/* switch to rdma mode */
-		if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE) {
-			assign_full_lcm_roi(&total_dirty_roi);
-			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);
-			do_primary_display_switch_mode(DISP_SESSION_RDMA_MODE, pgc->session_id, 0,
-						       cmdq_handle, 0);
-		}
-	} else {
-		if (pgc->session_mode == DISP_SESSION_RDMA_MODE) {
-			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0,
-						       cmdq_handle, 0);
-			assign_full_lcm_roi(&total_dirty_roi);
-		}
-	}
-
-	if (pgc->session_mode != DISP_SESSION_RDMA_MODE) {
-		data_config->ovl_dirty = 1;
-	} else {
-		ret = ddp_convert_ovl_input_to_rdma(&data_config->rdma_config,
-						    &data_config->ovl_config[bypass_layer_id],
-						    data_config->dst_w, data_config->dst_h);
-		data_config->rdma_dirty = 1;
-
-		/* no need ioctl because of rdma_dirty */
-		set_is_dc(1);
-		if (0)
-		dynamic_debug_msg_print(data_config->rdma_config.address,
-				data_config->rdma_config.width,
-				data_config->rdma_config.height, data_config->rdma_config.pitch,
-				UFMT_GET_Bpp(data_config->rdma_config.inputFormat), 0);
-
-	}
+#endif
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK)) {
 		if (bypass) {
@@ -5846,13 +6147,7 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	if (disp_helper_get_option(DISP_OPT_IDLE_MGR))
 		primary_display_idlemgr_kick(__func__, 0);
 
-	if (primary_display_is_decouple_mode()) {
-		disp_handle = pgc->ovl2mem_path_handle;
-		cmdq_handle = pgc->cmdq_handle_ovl1to2_config;
-	} else {
-		disp_handle = pgc->dpmgr_handle;
-		cmdq_handle = pgc->cmdq_handle_config;
-	}
+	primary_get_path_handles(&disp_handle, &cmdq_handle);
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("%s, skip because primary dipslay is slept\n", __func__);
@@ -5880,6 +6175,8 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		primary_show_basic_debug_info(cfg);
 
 	_config_ovl_input(cfg, disp_handle, cmdq_handle);
+	/* disp mode may be changed */
+	primary_get_path_handles(&disp_handle, &cmdq_handle);
 
 	/* set ccorr matrix */
 	if (m_ccorr_config.is_dirty) {
@@ -6167,6 +6464,8 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 			goto done;
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, pgc->session_mode, 0);
 		ret = DL_switch_to_DC_fast(0, 0);
+	} else if (pgc->session_mode == DISP_SESSION_RDMA_MODE && sess_mode == DISP_SESSION_DECOUPLE_MODE) {
+		ret = rdma_mode_switch_to_DC(handle, block);
 	} else {
 		DISPERR("invalid mode switch from %s to %s\n", session_mode_spy(pgc->session_mode),
 			session_mode_spy(sess_mode));

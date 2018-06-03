@@ -26,6 +26,7 @@
 
 #include "mtk_dramc.h"
 #include "layering_rule.h"
+#include "mtk_disp_mgr.h"
 
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;
@@ -237,11 +238,26 @@ void layering_rule_init(void)
 	register_layering_rule_ops(&l_rule_ops, &l_rule_info);
 }
 
+static bool _adaptive_dc_enabled(void)
+{
+#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
+	/* rdma don't support rotation */
+	return false;
+#endif
+
+	if (disp_mgr_has_mem_session() || !disp_helper_get_option(DISP_OPT_DC_BY_HRT) ||
+		is_DAL_Enabled())
+		return false;
+
+	return true;
+}
+
 static struct layering_rule_ops l_rule_ops = {
 	.scenario_decision = layering_rule_senario_decision,
 	.get_bound_table = get_bound_table,
 	.get_hrt_bound = get_hrt_bound,
 	.get_mapping_table = get_mapping_table,
 	.rollback_to_gpu_by_hw_limitation = filter_by_hw_limitation,
+	.adaptive_dc_enabled = _adaptive_dc_enabled,
 };
 

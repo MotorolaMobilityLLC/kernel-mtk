@@ -164,6 +164,11 @@ int _session_inited(struct disp_session_config config)
 	return 0;
 }
 
+int disp_mgr_has_mem_session(void)
+{
+	return has_memory_session;
+}
+
 int disp_create_session(struct disp_session_config *config)
 {
 	int ret = 0;
@@ -1266,7 +1271,7 @@ int set_session_mode(struct disp_session_config *config_info, int force)
 	} else {
 
 		if (has_memory_session)
-			primary_display_switch_mode_blocked(config_info->mode, config_info->session_id, 0);
+			primary_display_switch_mode_blocked(config_info->mode, config_info->session_id, 1);
 		else if (DISP_SESSION_TYPE(config_info->session_id) == DISP_SESSION_PRIMARY)
 			primary_display_switch_mode(config_info->mode, config_info->session_id, 0);
 		else

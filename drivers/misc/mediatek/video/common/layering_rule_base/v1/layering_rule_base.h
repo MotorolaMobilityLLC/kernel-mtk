@@ -138,6 +138,7 @@ struct layering_rule_ops {
 	int (*get_hrt_bound)(int is_larb, int hrt_level);
 	void (*rsz_by_gpu_info_change)(void);
 	bool (*rollback_to_gpu_by_hw_limitation)(struct disp_layer_info *disp_info);
+	bool (*adaptive_dc_enabled)(void);
 };
 
 #define HRT_GET_DVFS_LEVEL(hrt_num) (hrt_num & 0xF)
@@ -146,6 +147,9 @@ struct layering_rule_ops {
 #define HRT_SET_SCALE_SCENARIO(hrt_num, value) (hrt_num = ((hrt_num & ~(0xF0)) | ((value & 0xF) << 4)))
 #define HRT_GET_AEE_FLAG(hrt_num) ((hrt_num & 0x100) >> 8)
 #define HRT_SET_AEE_FLAG(hrt_num, value) (hrt_num = ((hrt_num & ~(0x100)) | ((value & 0x1) << 8)))
+#define HRT_GET_DC_FLAG(hrt_num) ((hrt_num & 0x200) >> 9)
+#define HRT_SET_DC_FLAG(hrt_num, value) (hrt_num = ((hrt_num & ~(0x200)) | (((value) & 0x1) << 9)))
+
 #define HRT_GET_PATH_SCENARIO(hrt_num) ((hrt_num & 0xFFFF0000) >> 16)
 #define HRT_SET_PATH_SCENARIO(hrt_num, value) (hrt_num = ((hrt_num & ~(0xFFFF0000)) | ((value & 0xFFFF) << 16)))
 #define HRT_GET_PATH_RSZ_TYPE(hrt_path) ((hrt_path >> PATH_FMT_RSZ_SHIFT) & 0x3)

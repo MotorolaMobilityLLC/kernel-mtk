@@ -102,4 +102,6 @@ void ddp_clk_force_on(unsigned int on);
 int ddp_clk_check(void);
 int ddp_ovl_dcm_reset(void);
 extern void mipi_26m_en(unsigned int module_idx, int en);
+int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module);
+int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module);
 #endif
