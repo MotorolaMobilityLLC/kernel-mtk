@@ -1696,7 +1696,7 @@ static unsigned int _calculate_vsram_sfchg_rate(bool isRising)
 	if (isRising) {
 		pmic_read_interface(MT6356_LDO_VSRAM_GPU_CFG0, &sfchg_rate_reg,
 		PMIC_RG_LDO_VSRAM_GPU_SFCHG_RRATE_MASK, PMIC_RG_LDO_VSRAM_GPU_SFCHG_RRATE_SHIFT);
-		sfchg_rate_vsram = 3000; /* PMIC HW Bug */
+		sfchg_rate_vsram = 1;
 	} else {
 		pmic_read_interface(MT6356_LDO_VSRAM_GPU_CFG0, &sfchg_rate_reg,
 		PMIC_RG_LDO_VSRAM_GPU_SFCHG_FRATE_MASK, PMIC_RG_LDO_VSRAM_GPU_SFCHG_FRATE_SHIFT);
