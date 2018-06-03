@@ -121,11 +121,11 @@ int ddp_clk_check(void)
 		if (ddp_clks[i].refcnt != 0)
 			ret++;
 
-		pr_warn("ddp_clk_check %s is %s refcnt=%d\n", ddp_clks[i].clk_name,
+		DDPDBG("ddp_clk_check %s is %s refcnt=%d\n", ddp_clks[i].clk_name,
 			ddp_clks[i].refcnt == 0 ? "off" : "on", ddp_clks[i].refcnt);
 	}
 
-	pr_warn("ddp_clk_check mipitx pll clk is %s refcnt=%d\n",
+	DDPDBG("ddp_clk_check mipitx pll clk is %s refcnt=%d\n",
 		apmixed_refcnt == 0 ? "off" : "on", apmixed_refcnt);
 	return ret;
 }

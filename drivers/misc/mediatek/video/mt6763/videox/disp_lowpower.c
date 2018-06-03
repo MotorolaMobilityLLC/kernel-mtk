@@ -701,7 +701,7 @@ void _vdo_mode_enter_idle(void)
 			switch (get_lp_cust_mode()) {
 			case LOW_POWER_MODE: /* 50 */
 			case JUST_MAKE_MODE: /* 55 */
-				set_fps(45);
+				set_fps(50);
 				primary_display_dsi_vfp_change(1);
 				idlemgr_pgc->cur_lp_cust_mode = 1;
 				break;
@@ -716,7 +716,7 @@ void _vdo_mode_enter_idle(void)
 				primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power = get_backup_vfp();
 
 			if (primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power) {
-				set_fps(45);
+				set_fps(50);
 				primary_display_dsi_vfp_change(1);
 				idlemgr_pgc->cur_lp_cust_mode = 1;
 			}

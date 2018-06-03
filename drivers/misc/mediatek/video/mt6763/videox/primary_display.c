@@ -168,7 +168,9 @@ static int od_need_start;
 #endif
 
 /* dvfs */
+#ifdef MTK_FB_MMDVFS_SUPPORT
 static int dvfs_last_ovl_req = HRT_LEVEL_LPM;
+#endif
 
 /* delayed trigger */
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
@@ -5169,11 +5171,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 		data_config->ovl_layer_dirty |= (1 << i);
 	}
-#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-	hrt_level = HRT_LEVEL(cfg->overlap_layer_num);
-#else
-	hrt_level = cfg->overlap_layer_num;
-#endif
+
+	hrt_level = HRT_GET_DVFS_LEVEL(cfg->overlap_layer_num);
 	data_config->overlap_layer_num = hrt_level;
 
 #ifdef MTK_FB_MMDVFS_SUPPORT
@@ -5191,8 +5190,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	} else{
 		dvfs_last_ovl_req = HRT_LEVEL_ULPM;
 	}
+	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE, hrt_level, dvfs_last_ovl_req);
 #endif
-	dvfs_last_ovl_req = HRT_LEVEL_HPM;
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
 		char msg[10];
