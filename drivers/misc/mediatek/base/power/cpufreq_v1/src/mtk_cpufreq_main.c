@@ -1630,6 +1630,10 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	unsigned int cluster_num;
 	int i;
 
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	return 0;
+#endif
+
 	FUNC_ENTER(FUNC_LV_MODULE);
 
 	mt_cpufreq_dts_map();
