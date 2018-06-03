@@ -56,6 +56,10 @@ extern void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power);
 extern unsigned int mt_gpufreq_get_leakage_mw(void);
 extern int mt_gpufreq_get_cur_ceiling_idx(void);
 extern void mt_gpufreq_set_loading(unsigned int gpu_loading); /* legacy */
+extern void mt_gpufreq_enable_CG(void);
+extern void mt_gpufreq_disable_CG(void);
+extern void mt_gpufreq_enable_MTCMOS(void);
+extern void mt_gpufreq_disable_MTCMOS(void);
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_gpu_dvfs_vgpu(u8 val);

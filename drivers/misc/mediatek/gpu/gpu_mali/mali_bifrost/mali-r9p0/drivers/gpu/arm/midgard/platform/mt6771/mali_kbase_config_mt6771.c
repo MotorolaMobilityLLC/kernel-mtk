@@ -71,11 +71,18 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	aee_rr_rec_gpu_dvfs_status(0x1 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
 
-	/* Turn on GPU PMIC Buck */
-	mt_gpufreq_voltage_enable_set(1);
+	/* Turn on GPU MTCMOS */
+	mt_gpufreq_enable_MTCMOS();
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0x2 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
+#endif
+
+	/* enable Clock Gating */
+	mt_gpufreq_enable_CG();
+
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0x3 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
 
 	/* Write 1 into 0x13000130 bit 0 to enable timestamp register (TIMESTAMP).*/
@@ -83,7 +90,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	writel(0x00000001, g_MFG_base + 0x130);
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
-	aee_rr_rec_gpu_dvfs_status(0x3 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
+	aee_rr_rec_gpu_dvfs_status(0x4 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
 
 	/* Resume frequency before power off */
@@ -91,15 +98,11 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	mtk_set_mt_gpufreq_target(g_curFreqID);
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
-	aee_rr_rec_gpu_dvfs_status(0x4 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
+	aee_rr_rec_gpu_dvfs_status(0x5 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
 
 #ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(1);
-#endif
-
-#ifdef MT_GPUFREQ_SRAM_DEBUG
-	aee_rr_rec_gpu_dvfs_status(0x5 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
 
 	mutex_unlock(&g_mfg_lock);
@@ -138,12 +141,47 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	aee_rr_rec_gpu_dvfs_status(0x9 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
 
-	/* Turn off GPU PMIC Buck */
-	mt_gpufreq_voltage_enable_set(0);
+	/* disable Clock Gating */
+	mt_gpufreq_disable_CG();
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0xA | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
 #endif
+
+	/* Turn off GPU MTCMOS */
+	mt_gpufreq_disable_MTCMOS();
+
+	mutex_unlock(&g_mfg_lock);
+}
+
+void pm_callback_power_suspend(struct kbase_device *kbdev)
+{
+	mutex_lock(&g_mfg_lock);
+
+	mali_pr_debug("@%s: power suspend ...\n", __func__);
+
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0xB | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
+#endif
+
+	/* Turn off GPU PMIC Buck */
+	mt_gpufreq_voltage_enable_set(0);
+
+	mutex_unlock(&g_mfg_lock);
+}
+
+void pm_callback_power_resume(struct kbase_device *kbdev)
+{
+	mutex_lock(&g_mfg_lock);
+
+	mali_pr_debug("@%s: power resume ...\n", __func__);
+
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0xC | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
+#endif
+
+	/* Turn on GPU PMIC Buck */
+	mt_gpufreq_voltage_enable_set(1);
 
 	mutex_unlock(&g_mfg_lock);
 }
@@ -151,8 +189,8 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 struct kbase_pm_callback_conf pm_callbacks = {
 	.power_on_callback = pm_callback_power_on,
 	.power_off_callback = pm_callback_power_off,
-	.power_suspend_callback  = NULL,
-	.power_resume_callback = NULL,
+	.power_suspend_callback  = pm_callback_power_suspend,
+	.power_resume_callback = pm_callback_power_resume,
 	.mtk_power_suspend_callback = NULL,
 	.mtk_power_resume_callback = NULL
 };
