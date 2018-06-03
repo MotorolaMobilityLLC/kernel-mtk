@@ -269,6 +269,10 @@ void ccci_md_config(struct ccci_modem *md)
 	md->mem_layout.md1_md3_smem_vir =
 	    ioremap_nocache(md->mem_layout.md1_md3_smem_phy, md->mem_layout.md1_md3_smem_size);
 
+#ifdef CONFIG_MTK_ECCCI_C2K
+	if (md->index == MD_SYS3)
+		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
+#endif
 	/* updae image info */
 	md->img_info[IMG_MD].type = IMG_MD;
 	md->img_info[IMG_MD].address = md->mem_layout.md_region_phy;
