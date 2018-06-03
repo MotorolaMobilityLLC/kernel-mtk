@@ -193,6 +193,9 @@ static void inet6_prefix_notify(int event, struct inet6_dev *idev,
 				struct prefix_info *pinfo);
 static bool ipv6_chk_same_addr(struct net *net, const struct in6_addr *addr,
 			       struct net_device *dev);
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp);
+#endif
 
 static struct ipv6_devconf ipv6_devconf __read_mostly = {
 	.forwarding		= 0,
@@ -3761,6 +3764,10 @@ static void addrconf_rs_timer(unsigned long data)
 				      idev->cnf.rtr_solicit_delay :
 				      idev->rs_interval);
 	} else {
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+		if (idev->if_flags & IF_RS_VZW_SENT)
+			idev->if_flags &= ~IF_RS_VZW_SENT;
+#endif
 		/*
 		 * Note: we do not support deprecated "all on-link"
 		 * assumption any longer.
@@ -4241,6 +4248,47 @@ int ipv6_chk_home_addr(struct net *net, const struct in6_addr *addr)
 }
 #endif
 
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp)
+{
+	struct net_device *dev = ifp->idev->dev;
+
+	/*struct inet6_ifaddr *linklocal_ifp = NULL;*/
+	pr_info("[VzW] inet6_send_rs_vzw:dev name:%s\n", dev->name);
+
+	/*because of using link local address will triger KE
+	 *so this first using global address
+	 */
+	if (ipv6_accept_ra(ifp->idev) &&
+	    ifp->idev->cnf.rtr_solicits > 0 &&
+	    (dev->flags & IFF_LOOPBACK) == 0) {
+		pr_info("[VzW] send rs :dev name:%s\n", dev->name);
+		ndisc_send_rs(ifp->idev->dev, &ifp->addr,
+			      &in6addr_linklocal_allrouters);
+
+		/*disable  softirq */
+		local_bh_disable();
+		/*Kernel3.18 ifp->idev->rs_probes*/
+		/*Kernel3.10 ifp->probes = 1*/
+		ifp->idev->rs_probes = 1;
+		/*ifp->probes = 1; */
+		ifp->idev->if_flags |= IF_RS_SENT;
+		ifp->idev->if_flags |= IF_RS_VZW_SENT;
+
+		if (ifp->idev->if_flags & IF_RA_RCVD) {
+			pr_info("ifp: has IF_RA_RCVD flag, and will clear it\n");
+			ifp->idev->if_flags &= ~IF_RA_RCVD;
+		}
+		/*Kernel3.10 addrconf_mod_timer
+		 *Kernel3.18 addrconf_mod_rs_timer
+		 */
+		addrconf_mod_rs_timer(ifp->idev,
+				      ifp->idev->cnf.rtr_solicit_interval);
+		local_bh_enable();
+	}
+}
+#endif
+
 /*
  *	Periodic address status verification
  */
@@ -4263,7 +4311,20 @@ static void addrconf_verify_rtnl(void)
 restart:
 		hlist_for_each_entry_rcu_bh(ifp, &inet6_addr_lst[i], addr_lst) {
 			unsigned long age;
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+			u32 route_lft, min_lft;
+			struct rt6_info *rt;
 
+			rt = rt6_get_dflt_router_expires(ifp->idev->dev);
+			if (rt && (rt->rt6i_flags & RTF_EXPIRES)) {
+				route_lft = (rt->dst.expires - ifp->tstamp) / HZ;
+				min_lft = min(ifp->prefered_lft, route_lft);
+				pr_info("[mtk_net]RA: min_lft %lld\n",
+					(u64)min_lft);
+			} else {
+				min_lft = ifp->prefered_lft;
+			}
+#endif
 			/* When setting preferred_lft to a value not zero or
 			 * infinity, while valid_lft is infinity
 			 * IFA_F_PERMANENT has a non-infinity life time.
@@ -4283,6 +4344,27 @@ restart:
 				ipv6_del_addr(ifp);
 				goto restart;
 			} else if (ifp->prefered_lft == INFINITY_LIFE_TIME) {
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+				/*Patch for VzW
+				 *prefered_lft is INFINITY scenario
+				 *ccmni interface will send RS when time flow
+				 *reaches 75% of route_lft
+				 */
+				if (strncmp(ifp->idev->dev->name, "cc", 2) != 0) {
+					spin_unlock(&ifp->lock);
+					continue;
+				}
+				if (rt && (rt->rt6i_flags & RTF_EXPIRES)) {
+					if (!(ifp->idev->if_flags & IF_RS_VZW_SENT) &&
+					    age >= (min_lft *  3 / 4))
+						inet6_send_rs_vzw(ifp);
+					pr_info("[mtk_net]RA: min_lft %lld, age %lld\n",
+						(u64)min_lft, (u64)age);
+					if (!(ifp->idev->if_flags & IF_RS_VZW_SENT) &&
+					    time_before(ifp->tstamp + ((min_lft * 3 / 4) * HZ), next))
+						next = ifp->tstamp + ((min_lft * 3 / 4) * HZ);
+				}
+#endif
 				spin_unlock(&ifp->lock);
 				continue;
 			} else if (age >= ifp->prefered_lft) {
@@ -4338,6 +4420,23 @@ restart:
 				/* ifp->prefered_lft <= ifp->valid_lft */
 				if (time_before(ifp->tstamp + ifp->prefered_lft * HZ, next))
 					next = ifp->tstamp + ifp->prefered_lft * HZ;
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+				/*patch for VzW
+				 *prefered_lft is NOT INFINITY scenario
+				 *ccmni interface will send RS when time flow
+				 *reaches 75% of min{prefered_lft, route_lft}
+				 */
+				if (strncmp(ifp->idev->dev->name, "cc", 2) == 0) {
+					if (!(ifp->idev->if_flags & IF_RS_VZW_SENT) &&
+					    age >= (min_lft * 3 / 4))
+						inet6_send_rs_vzw(ifp);
+					pr_info("[mtk_net]RA: min_lft %lld, age %lld\n",
+						(u64)min_lft, (u64)age);
+					if (!(ifp->idev->if_flags & IF_RS_VZW_SENT) &&
+					    time_before(ifp->tstamp + ((min_lft * 3 / 4) * HZ), next))
+						next = ifp->tstamp + ((min_lft * 3 / 4) * HZ);
+				}
+#endif
 				spin_unlock(&ifp->lock);
 			}
 		}
