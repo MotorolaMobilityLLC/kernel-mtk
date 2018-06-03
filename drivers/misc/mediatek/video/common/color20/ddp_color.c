@@ -1098,13 +1098,6 @@ void DpEngine_COLORonInit(enum DISP_MODULE_ENUM module, void *__cmdq)
 	/* Set 10bit->8bit Rounding */
 	_color_reg_mask(cmdq, DISP_COLOR_OUT_SEL + offset, 0x333, 0x00000333);
 #endif
-
-#if defined(CONFIG_MTK_AAL_SUPPORT)
-	/* c-boost ??? */
-	_color_reg_set(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0xFF402280);
-	_color_reg_set(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x00000000);
-#endif
-
 }
 
 void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
