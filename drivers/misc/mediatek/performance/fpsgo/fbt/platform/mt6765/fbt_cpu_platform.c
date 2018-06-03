@@ -16,6 +16,13 @@
 
 #include "eas_ctrl.h"
 #include "fbt_cpu_platform.h"
+#include <fpsgo_common.h>
+
+void fbt_notify_CM_limit(int reach_limit)
+{
+	cm_mgr_perf_set_status(reach_limit);
+	fpsgo_systrace_c_fbt_gm(-100, reach_limit, "notify_cm");
+}
 
 void fbt_set_boost_value(unsigned int base_blc)
 {
@@ -27,6 +34,7 @@ void fbt_set_boost_value(unsigned int base_blc)
 void fbt_clear_boost_value(void)
 {
 	capacity_min_write_for_perf_idx(CGROUP_TA, 0);
+	fbt_notify_CM_limit(0);
 }
 
 int fbt_is_mips_different(void)
