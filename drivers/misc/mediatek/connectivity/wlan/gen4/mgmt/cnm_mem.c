@@ -303,6 +303,12 @@ VOID cnmMemInit(P_ADAPTER_T prAdapter)
 
 }				/* end of cnmMemInit() */
 
+CMD_MEM_TRACE_T arMemTrace[MEM_TRACE_NUM];
+
+VOID cnmResetMemTrace(VOID)
+{
+	kalMemZero(arMemTrace, MEM_TRACE_NUM);
+}
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Allocate MGMT/MSG memory pool.
@@ -315,7 +321,7 @@ VOID cnmMemInit(P_ADAPTER_T prAdapter)
 * \retval NULL     Fail to allocat memory
 */
 /*----------------------------------------------------------------------------*/
-PVOID cnmMemAlloc(IN P_ADAPTER_T prAdapter, IN ENUM_RAM_TYPE_T eRamType, IN UINT_32 u4Length)
+PVOID cnmMemAllocEnh(IN P_ADAPTER_T prAdapter, IN ENUM_RAM_TYPE_T eRamType, IN UINT_32 u4Length, IN PUINT_8 pucFunc)
 {
 	P_BUF_INFO_T prBufInfo;
 	BUF_BITMAP rRequiredBitmap;
@@ -399,8 +405,16 @@ PVOID cnmMemAlloc(IN P_ADAPTER_T prAdapter, IN ENUM_RAM_TYPE_T eRamType, IN UINT
 #if CFG_DBG_MGT_BUF
 	prBufInfo->u4AllocNullCount++;
 
-	if (pvMemory)
+	if (pvMemory) {
 		prAdapter->u4MemAllocDynamicCount++;
+		for (i = 0; i < MEM_TRACE_NUM; i++) {
+			if (arMemTrace[i].u4MemAddr == 0) {
+				arMemTrace[i].u4FuncAddr = (ULONG) pucFunc;
+				arMemTrace[i].u4MemAddr = (ULONG) pvMemory;
+				break;
+			}
+		}
+	}
 #endif
 
 	return pvMemory;
@@ -422,6 +436,7 @@ VOID cnmMemFree(IN P_ADAPTER_T prAdapter, IN PVOID pvMemory)
 	UINT_32 u4BlockIndex;
 	BUF_BITMAP rAllocatedBlocksBitmap;
 	ENUM_RAM_TYPE_T eRamType;
+	UINT_32 i;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -447,16 +462,24 @@ VOID cnmMemFree(IN P_ADAPTER_T prAdapter, IN PVOID pvMemory)
 		ASSERT(u4BlockIndex < MAX_NUM_OF_BUF_BLOCKS);
 		eRamType = RAM_TYPE_BUF;
 	} else {
+#if CFG_DBG_MGT_BUF
+		prAdapter->u4MemFreeDynamicCount++;
+		for (i = 0; i < MEM_TRACE_NUM; i++) {
+			if (arMemTrace[i].u4MemAddr != 0) {
+				if (arMemTrace[i].u4MemAddr == (ULONG) pvMemory) {
+					arMemTrace[i].u4FuncAddr = 0;
+					arMemTrace[i].u4MemAddr = 0;
+					break;
+				}
+			}
+		}
+#endif
 #ifdef LINUX
 		/* For Linux, it is supported because size is not needed */
 		kalMemFree(pvMemory, PHY_MEM_TYPE, 0);
 #else
 		/* For Windows, it is not supported because of no size argument */
 		ASSERT(0);
-#endif
-
-#if CFG_DBG_MGT_BUF
-		prAdapter->u4MemFreeDynamicCount++;
 #endif
 		return;
 	}

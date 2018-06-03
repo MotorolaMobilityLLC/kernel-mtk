@@ -2490,6 +2490,7 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 	} while (FALSE);
 
 	if (i4Status == 0) {
+		cnmResetMemTrace();
 #if CFG_SUPPORT_AGPS_ASSIST
 		kalIndicateAgpsNotify(prAdapter, AGPS_EVENT_WLAN_ON, NULL, 0);
 #endif
