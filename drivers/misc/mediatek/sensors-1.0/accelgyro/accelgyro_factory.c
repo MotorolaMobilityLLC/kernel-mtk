@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-#define pr_fmt(fmt) "<ACCELEROMETER> " fmt
+#define pr_fmt(fmt) "<ACCELGYRO_FAC> " fmt
 
 #include "inc/accelgyro_factory.h"
 

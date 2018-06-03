@@ -24,7 +24,7 @@
  *
  *****************************************************************************/
 
-#define pr_fmt(fmt) "<BAROMETER> " fmt
+#define pr_fmt(fmt) "<BMP280> " fmt
 
 #include <linux/atomic.h>
 #include <linux/delay.h>
