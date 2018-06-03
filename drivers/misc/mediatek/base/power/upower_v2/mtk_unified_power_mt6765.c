@@ -216,35 +216,6 @@ void get_original_table(void)
 
 	idx = mt_cpufreq_get_cpu_level();
 
-#if 0
-#define SEG_EFUSE 30
-#define BIN_EFUSE 52 /* 588 */
-	/* 0x588 bit[2:0] */
-	bin = get_devinfo_with_index(BIN_EFUSE);
-	bin = GET_BITS_VAL(2:0, bin);
-	if (get_devinfo_with_index(SEG_EFUSE) == 0x10)
-		idx = 1; /* MT6763 */
-	else if (get_devinfo_with_index(SEG_EFUSE) == 0x20 ||
-		get_devinfo_with_index(SEG_EFUSE) == 0) {
-		if (bin == 1)
-			idx = 3; /* MT6763T_SB */
-		else
-			idx = 2; /* MT6763T_FY */
-	} else if (get_devinfo_with_index(SEG_EFUSE) == 0x30) {
-		if (is_ext_buck_exist())
-			idx = 0; /* MT6763+ */
-		else {
-			if (bin == 1)
-				idx = 3; /* MT6763T_SB */
-			else
-				idx = 2; /* MT6763T_FY */
-		}
-	}
-
-	upower_debug("bin=%d, idx=%d, is6311=%d, seg=%d\n", bin, idx,
-			is_ext_buck_exist(), get_devinfo_with_index(SEG_EFUSE));
-#endif
-
 	/* get location of reference table */
 	upower_tbl_infos = &upower_tbl_list[idx][0];
 
@@ -256,12 +227,6 @@ void get_original_table(void)
 
 	/* If disable upower, ptr will point to original upower table */
 	p_upower_tbl_infos = upower_tbl_infos;
-
-#if 0
-	upower_debug("upower_tbl_ll_1_FY %p\n", &upower_tbl_ll_1_FY);
-	upower_debug("upower_tbl_ll_1_SB %p\n", &upower_tbl_ll_1_SB);
-	upower_debug("upower_tbl_ll_2_FY %p\n", &upower_tbl_ll_2_FY);
-#endif
 
 	/*
 	 *  Clear volt fields before eem run.
