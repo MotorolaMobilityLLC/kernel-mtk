@@ -603,9 +603,6 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 #endif
 };
 
-static struct snd_soc_dai_link_component mt_soc_extspk_comp;
-static struct snd_soc_codec_conf mt_snd_soc_codec_conf;
-static unsigned int mSmartPaNum;
 
 static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 	{
@@ -613,9 +610,26 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 		.stream_name = MT_SOC_SPEAKER_STREAM_NAME,
 		.cpu_dai_name   = "snd-soc-dummy-dai",
 		.platform_name  = "snd-soc-dummy",
-#if defined(CONFIG_SND_SOC_RT5509)
+#ifdef CONFIG_SND_SOC_MAX98926
+		.codec_dai_name = "max98926-aif1",
+		.codec_name = "MAX98926_MT",
+#elif defined(CONFIG_SND_SOC_RT5509)
+		.codec_dai_name = "rt5509-aif1",
+		.codec_name = "RT5509_MT_0",
 		.ignore_suspend = 1,
 		.ignore_pmdown_time = true,
+#elif defined(CONFIG_SND_SOC_CS35L35)
+		.codec_dai_name = "cs35l35-pcm",
+		.codec_name = "cs35l35.2-0040",
+		.ignore_suspend = 1,
+		.ignore_pmdown_time = true,
+		.dai_fmt = SND_SOC_DAIFMT_I2S |
+			   SND_SOC_DAIFMT_CBS_CFS |
+			   SND_SOC_DAIFMT_NB_NF,
+		.ops = &cs35l35_ops,
+#else
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
 #endif
 	},
 	{
@@ -639,64 +653,6 @@ static struct snd_soc_card mt_snd_soc_card_mt = {
 	.num_links  = ARRAY_SIZE(mt_soc_dai_common),
 };
 
-static int get_smartpa_codec(struct platform_device *pdev)
-{
-	int i, ret = 0;
-	struct snd_soc_dai_link_component *extspk_comp = &mt_soc_extspk_comp;
-	struct snd_soc_codec_conf *mt_codec_conf = &mt_snd_soc_codec_conf;
-	struct snd_soc_card *mt_card = &mt_snd_soc_card_mt;
-
-	if (pdev->dev.of_node) {
-		/* check smartPA number */
-		ret = of_property_read_u32(pdev->dev.of_node,
-					   "mediatek,smartpa_num", &mSmartPaNum);
-		if (ret) {
-#if defined(CONFIG_SND_SOC_RT5509) || defined(CONFIG_SND_SOC_MAX98926)
-			pr_err("%s() property_read error = %d, mSmartPaNum set to 1\n",
-			       __func__, ret);
-			mSmartPaNum = 1;
-			ret = 0;
-#else
-			pr_err("%s() property_read error = %d, mSmartPaNum set to 0\n",
-			       __func__, ret);
-#endif
-		}
-	}
-
-	if (mSmartPaNum > 0) {
-		extspk_comp = kcalloc(mSmartPaNum, sizeof(struct snd_soc_dai_link_component), GFP_KERNEL);
-		mt_codec_conf = kcalloc(mSmartPaNum, sizeof(struct snd_soc_codec_conf), GFP_KERNEL);
-		if (!extspk_comp || !mt_codec_conf) {
-			pr_err("%s(): No memory can allocate.", __func__);
-			return -ENOMEM;
-		}
-
-		for (i = 0; i < mSmartPaNum; i++) {
-#if defined(CONFIG_SND_SOC_RT5509)
-			extspk_comp[i].name = kasprintf(GFP_KERNEL, "RT5509_MT_%d", i);
-			extspk_comp[i].dai_name = "rt5509-aif1";
-			mt_codec_conf[i].dev_name = kasprintf(GFP_KERNEL, "RT5509_MT_%d", i);
-			mt_codec_conf[i].name_prefix = kasprintf(GFP_KERNEL, "Ch%d", i + 1);
-
-#elif defined(CONFIG_SND_SOC_MAX98926)
-			if (i == 0) {
-				extspk_comp[i].name = "MAX98926_MT";
-				extspk_comp[i].dai_name = "snd-soc-dummy-dai";
-			}
-#endif
-		}
-		mt_card->codec_conf = mt_codec_conf;
-		mt_card->num_configs = mSmartPaNum;
-
-	} else {
-		extspk_comp[0].name = "snd-soc-dummy";
-		extspk_comp[0].dai_name = "snd-soc-dummy-dai";
-	}
-	mt_soc_extspk_dai[0].codecs = extspk_comp;
-	mt_soc_extspk_dai[0].num_codecs = mSmartPaNum;
-
-	return ret;
-}
 
 static int mt_soc_snd_init(struct platform_device *pdev)
 {
@@ -704,11 +660,7 @@ static int mt_soc_snd_init(struct platform_device *pdev)
 	int ret;
 	int daiLinkNum = 0;
 
-	if (get_smartpa_codec(pdev) == 0)
-		pr_debug("%s(), get smartpa codec successful.", __func__);
-
-	pr_err("mt_soc_snd_init dai_link = %p, SmartPA number = %d\n",
-	       mt_snd_soc_card_mt.dai_link, mSmartPaNum);
+	pr_debug("mt_soc_snd_init dai_link = %p\n", mt_snd_soc_card_mt.dai_link);
 
 	/* DEAL WITH DAI LINK */
 	memcpy(mt_soc_dai_component, mt_soc_dai_common, sizeof(mt_soc_dai_common));
