@@ -61,6 +61,7 @@ void random_delay(struct ufs_hba *hba)
 }
 void wdt_pmic_full_reset(struct ufs_hba *hba)
 {
+	struct wd_api *my_wd_api = NULL;
 	/*
 	  *   Cmd issue to PMIC on MT6763 will take around 20us ~ 30us, in order to speed up VEMC disable time,
 	  * we disable VEMC first coz PMIC cold reset may take longer to disable VEMC in it's reset flow.
@@ -68,8 +69,11 @@ void wdt_pmic_full_reset(struct ufs_hba *hba)
 	  * Use pmic raw API without nlock instead.
 	  */
 	pmic_set_register_value_nolock(PMIC_RG_LDO_VEMC_EN, 0);
-	/* PMIC cold reset */
-	pmic_set_register_value_nolock(PMIC_RG_CRST, 1);
+	/* Need reset external LDO for VUFS18, UFS needs VEMC&VUFS18 reset at the same time */
+	pmic_set_register_value_nolock(PMIC_RG_STRUP_EXT_PMIC_SEL, 0x1);
+	/* WDT reset */
+	get_wd_api(&my_wd_api);
+	my_wd_api->wd_sw_reset(1);
 }
 #endif
 
