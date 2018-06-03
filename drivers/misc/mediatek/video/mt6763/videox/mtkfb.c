@@ -2128,7 +2128,7 @@ static int fb_early_init_dt_get_chosen(unsigned long node, const char *uname, in
 	return 1;
 }
 
-int __init __parse_tag_videolfb_extra(unsigned long node)
+static int __init __parse_tag_videolfb_extra(unsigned long node)
 {
 	void *prop;
 	unsigned long size = 0;
@@ -2188,7 +2188,7 @@ int __init __parse_tag_videolfb_extra(unsigned long node)
 	return 0;
 }
 
-int __init __parse_tag_videolfb(unsigned long node)
+static int __init __parse_tag_videolfb(unsigned long node)
 {
 	struct tag_videolfb *videolfb_tag = NULL;
 	unsigned long size = 0;
@@ -2215,7 +2215,7 @@ int __init __parse_tag_videolfb(unsigned long node)
 }
 
 
-static int _parse_tag_videolfb(void)
+static int __init _parse_tag_videolfb(void)
 {
 	int ret;
 	unsigned long node = 0;
