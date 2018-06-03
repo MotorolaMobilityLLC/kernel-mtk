@@ -1532,7 +1532,8 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		capture_setting(imgsensor.current_fps, 1);
 
 #endif
-	set_mirror_flip(IMAGE_HV_MIRROR);
+	/* set_mirror_flip(IMAGE_HV_MIRROR); */
+	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/* capture() */
