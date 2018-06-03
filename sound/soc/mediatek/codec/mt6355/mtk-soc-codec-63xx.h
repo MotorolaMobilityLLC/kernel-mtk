@@ -86,5 +86,10 @@ void mtkaif_calibration_set_phase(int mode1);
 
 /* mtk dpd function */
 void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param);
+
+
+/* API for ACCDET to reset input precharge */
+void mtk_audio_reset_input_precharge(void);
+
 #endif
 
