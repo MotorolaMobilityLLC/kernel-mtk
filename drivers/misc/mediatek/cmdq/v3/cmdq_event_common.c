@@ -34,6 +34,7 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_MDP_COLOR_SOF, mdp_color_sof)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_MVW_SOF, mdp_mvw_sof)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_CROP_SOF, mdp_crop_sof)
+	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR0_SOF, mdp_ccorr0_sof)
 
 	/* Display start frame */
 	DECLAR_EVENT(CMDQ_EVENT_DISP_OVL0_SOF, disp_ovl0_sof)
@@ -99,6 +100,7 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_MDP_WROT1_R_EOF, mdp_wrot1_read_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_COLOR_EOF, mdp_color_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_CROP_EOF, mdp_crop_frame_done)
+	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR0_FRAME_DONE, mdp_ccorr0_frame_done)
 
 	/* Display frame done */
 	DECLAR_EVENT(CMDQ_EVENT_DISP_OVL0_EOF, disp_ovl0_frame_done)
@@ -437,6 +439,9 @@ static struct cmdq_event_table cmdq_events[] = {
 	/* 6739 New Event*/
 	DECLAR_EVENT(CMDQ_EVENT_DISP_DBI0_SOF, disp_dbi0_sof)
 	DECLAR_EVENT(CMDQ_EVENT_DISP_DBI0_EOF, disp_dbi0_frame_done)
+
+	/* 3887 New Events */
+	DECLAR_EVENT(CMDQ_EVENT_IMG_DL_RELAY_SOF, img_dl_relay_sof)
 
 	/* Keep this at the end of HW events */
 	DECLAR_EVENT(CMDQ_MAX_HW_EVENT_COUNT, hw_event_conunt)
