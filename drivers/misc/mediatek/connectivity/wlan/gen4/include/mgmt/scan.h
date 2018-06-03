@@ -154,6 +154,9 @@
 
 #define SCAN_NLO_CHECK_SSID_ONLY    0x00000001
 #define SCAN_NLO_DEFAULT_INTERVAL           30000
+/* PNO min period 30s, max period 300s */
+#define SCAN_NLO_MIN_INTERVAL               30
+#define SCAN_NLO_MAX_INTERVAL               300
 
 #define	SCN_CTRL_SCAN_CHANNEL_LISTEN_TIME_ENABLE		BIT(1)
 #define	SCN_CTRL_IGNORE_AIS_FIX_CHANNEL		BIT(1)
@@ -209,6 +212,13 @@ typedef struct _MSG_SCN_FSM_T {
 	MSG_HDR_T rMsgHdr;	/* Must be the first member */
 	UINT_32 u4Dummy;
 } MSG_SCN_FSM_T, *P_MSG_SCN_FSM_T;
+
+typedef enum _ENUM_PSCAN_STATE_T {
+	PSCN_IDLE = 0,
+	PSCN_RESET,
+	PSCN_SCANNING,
+	PSCAN_STATE_T_NUM
+} ENUM_PSCAN_STATE_T;
 
 /*----------------------------------------------------------------------------*/
 /* BSS Descriptors                                                            */
@@ -399,13 +409,8 @@ typedef struct _NLO_PARAM_T {	/* Used by SCAN FSM */
 
 	/* Match SSID */
 	UINT_8 ucMatchSSIDNum;
-	UINT_8 ucMatchSSIDLen[SCN_SSID_MATCH_MAX_NUM];
-	UINT_8 aucMatchSSID[SCN_SSID_MATCH_MAX_NUM][ELEM_MAX_LEN_SSID];
-
-	UINT_8 aucCipherAlgo[SCN_SSID_MATCH_MAX_NUM];
-	UINT_16 au2AuthAlgo[SCN_SSID_MATCH_MAX_NUM];
-	UINT_8 aucChannelHint[SCN_SSID_MATCH_MAX_NUM][SCN_NLO_NETWORK_CHANNEL_NUM];
-
+	struct NLO_NETWORK rNLONetwork;
+	P_BSS_DESC_T aprPendingBssDescToInd[SCN_SSID_MATCH_MAX_NUM];
 } NLO_PARAM_T, *P_NLO_PARAM_T;
 
 typedef struct _SCAN_INFO_T {
@@ -436,6 +441,17 @@ typedef struct _SCAN_INFO_T {
 
 	/* NLO scanning state tracking */
 	BOOLEAN fgNloScanning;
+#if CFG_SUPPORT_SCN_PSCN
+	BOOLEAN fgPscnOngoing;
+	BOOLEAN fgGScnConfigSet;
+	BOOLEAN fgGScnParamSet;
+	BOOLEAN fgGScnAction;
+	P_CMD_SET_PSCAN_PARAM prPscnParam;
+	ENUM_PSCAN_STATE_T eCurrentPSCNState;
+#endif
+#if CFG_SUPPORT_GSCN
+	P_PARAM_WIFI_GSCAN_FULL_RESULT prGscnFullResult;
+#endif
 
 	/*channel idle count # Mike */
 	UINT_8			ucSparseChannelArrayValidNum;
@@ -712,7 +728,8 @@ BOOLEAN scnQuerySparseChannel(IN P_ADAPTER_T prAdapter, P_ENUM_BAND_T prSparseBa
 BOOLEAN
 scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 		       IN UINT_8 ucSsidNum,
-		       IN P_PARAM_SSID_T prSsid, IN UINT_32 u4IeLength, IN PUINT_8 pucIe, IN UINT_16 u2Interval);
+		       IN P_PARAM_SSID_T prSsid, PINT_8 pcRssiThresold, IN UINT_32 u4IeLength, IN PUINT_8 pucIe,
+		       IN UINT_16 u2Interval, UINT_8 ucChnlNum, PUINT_8 pucChannels);
 
 BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter);
 
@@ -722,6 +739,39 @@ P_BSS_DESC_T scanSearchBssDescByBssidAndLatestUpdateTime(IN P_ADAPTER_T prAdapte
 
 #if CFG_SUPPORT_AGPS_ASSIST
 VOID scanReportScanResultToAgps(P_ADAPTER_T prAdapter);
+#endif
+
+#if CFG_SUPPORT_SCN_PSCN
+BOOLEAN scnFsmPSCNAction(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_ACT_T ucPscanAct);
+
+BOOLEAN scnFsmPSCNSetParam(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
+
+BOOLEAN scnFsmGSCNSetHotlist(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
+
+BOOLEAN scnFsmPSCNAddSWCBssId(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_ADD_SWC_BSSID prCmdPscnAddSWCBssId);
+
+BOOLEAN scnFsmPSCNSetMacAddr(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_MAC_ADDR prCmdPscnSetMacAddr);
+
+BOOLEAN scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
+				 IN P_CMD_NLO_REQ prCmdNloReq,
+				 IN P_CMD_BATCH_REQ_T prCmdBatchReq,
+				 IN P_CMD_GSCN_REQ_T prCmdGscnReq,
+				 IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig,
+				 IN BOOLEAN fgRemoveNLOfromPSCN,
+				 IN BOOLEAN fgRemoveBatchSCNfromPSCN, IN BOOLEAN fgRemoveGSCNfromPSCN);
+
+VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState);
+#endif
+
+#if CFG_SUPPORT_GSCN
+BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam);
+
+BOOLEAN scnSetGSCNConfig(IN P_ADAPTER_T prAdapter, IN P_CMD_GSCN_SCN_COFIG_T prCmdGscnScnConfig);
+
+BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter,
+			    IN P_CMD_GET_GSCAN_RESULT_T prGetGscnResultCmd, OUT PUINT_32 pu4SetInfoLen);
+
+BOOLEAN scnFsmGSCNResults(IN P_ADAPTER_T prAdapter, IN P_EVENT_GSCAN_RESULT_T prEventBuffer);
 #endif
 
 VOID scanLogEssResult(P_ADAPTER_T prAdapter);

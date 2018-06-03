@@ -72,6 +72,10 @@
 */
 #include "precomp.h"
 
+#define CURRENT_PSCN_VERSION 1
+#define RSSI_MARGIN_DEFAULT  5
+#define MAX_PERIOD 200000
+
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -845,15 +849,19 @@ VOID scnEventNloDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_NLO_DONE_T prNloDone)
 
 		if (prNloParam->fgStopAfterIndication == TRUE)
 			prScanInfo->fgNloScanning = FALSE;
+
+		kalMemZero(&prNloParam->aprPendingBssDescToInd[0],
+			CFG_SCAN_SSID_MATCH_MAX_NUM * sizeof(P_BSS_DESC_T));
 	} else {
 		DBGLOG(SCN, INFO, "Unexpected NLO-DONE event: SeqNum = %d, Current State = %d\n",
 		       prNloDone->ucSeqNum, prScanInfo->eCurrentState);
 	}
+
 }
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief        OID handler for starting scheduled scan
+* \brief         handler for starting scheduled scan
 *
 * \param[in]
 *
@@ -863,17 +871,19 @@ VOID scnEventNloDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_NLO_DONE_T prNloDone)
 BOOLEAN
 scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 		       IN UINT_8 ucSsidNum,
-		       IN P_PARAM_SSID_T prSsid, IN UINT_32 u4IeLength, IN PUINT_8 pucIe, IN UINT_16 u2Interval)
+		       IN P_PARAM_SSID_T prSsid, PINT_8 pcRssiThresold, IN UINT_32 u4IeLength, IN PUINT_8 pucIe,
+		       IN UINT_16 u2Interval, UINT_8 ucChnlNum, PUINT_8 pucChannels)
 {
 	P_SCAN_INFO_T prScanInfo;
 	P_NLO_PARAM_T prNloParam;
 	P_SCAN_PARAM_T prScanParam;
 	P_CMD_NLO_REQ prCmdNloReq;
-	UINT_32 i, j;
+	UINT_32 i;
+	BOOLEAN ret = TRUE;
+	struct NLO_SSID_MATCH_SETS *prNloSsidMatch = NULL;
+	ENUM_BAND_T ePreferedChnl = BAND_NULL;
 
 	ASSERT(prAdapter);
-
-	DBGLOG(SCN, INFO, "scnFsmSchedScanRequest\n");
 
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prNloParam = &prScanInfo->rNloParam;
@@ -881,8 +891,8 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 
 	/* ASSERT(prScanInfo->fgNloScanning == FALSE); */
 	if (prScanInfo->fgNloScanning) {
-		DBGLOG(SCN, INFO, "prScanInfo->fgNloScanning == FALSE  already scanning\n");
-		return TRUE;
+		DBGLOG(SCN, WARN, "prScanInfo->fgNloScanning == FALSE  already scanning\n");
+		return FALSE;
 	}
 
 	prScanInfo->fgNloScanning = TRUE;
@@ -891,53 +901,67 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 	prScanParam->ucSeqNum++;
 	prScanParam->ucBssIndex = prAdapter->prAisBssInfo->ucBssIndex;
 	prNloParam->fgStopAfterIndication = FALSE;
-	prNloParam->ucFastScanIteration = 0;
+	prNloParam->ucFastScanIteration = 1;
 
 	if (u2Interval < SCAN_NLO_DEFAULT_INTERVAL) {
-		u2Interval = SCAN_NLO_DEFAULT_INTERVAL;
-		DBGLOG(SCN, INFO, "force interval to SCAN_NLO_DEFAULT_INTERVAL\n");
+		u2Interval = SCAN_NLO_DEFAULT_INTERVAL; /* millisecond */
+		DBGLOG(SCN, TRACE, "force interval to SCAN_NLO_DEFAULT_INTERVAL\n");
 	}
 	prAdapter->prAisBssInfo->fgIsPNOEnable = TRUE;
-
+#if !CFG_SUPPORT_SCN_PSCN
 	if (!IS_NET_ACTIVE(prAdapter, prAdapter->prAisBssInfo->ucBssIndex)) {
 		SET_NET_ACTIVE(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
 
-		DBGLOG(SCN, INFO, "ACTIVE AIS from INACTIVE to enable PNO\n");
+		DBGLOG(SCN, INFO, "ACTIVATE AIS from INACTIVE to enable PNO\n");
 		/* sync with firmware */
 		nicActivateNetwork(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
 	}
-	prNloParam->u2FastScanPeriod = u2Interval;
-	prNloParam->u2SlowScanPeriod = u2Interval;
+#endif
+	prNloParam->u2FastScanPeriod = SCAN_NLO_MIN_INTERVAL; /* use second instead of millisecond for UINT_16*/
+	prNloParam->u2SlowScanPeriod = SCAN_NLO_MAX_INTERVAL;
 
-	if (ucSsidNum  > CFG_SCAN_SSID_MAX_NUM)
+	if (prScanParam->ucSSIDNum > CFG_SCAN_SSID_MAX_NUM)
 		prScanParam->ucSSIDNum = CFG_SCAN_SSID_MAX_NUM;
 	else
 		prScanParam->ucSSIDNum = ucSsidNum;
 
-	if (ucSsidNum > CFG_SCAN_SSID_MATCH_MAX_NUM)
+	if (prNloParam->ucMatchSSIDNum > CFG_SCAN_SSID_MATCH_MAX_NUM)
 		prNloParam->ucMatchSSIDNum = CFG_SCAN_SSID_MATCH_MAX_NUM;
 	else
 		prNloParam->ucMatchSSIDNum = ucSsidNum;
 
+	prNloSsidMatch = prNloParam->rNLONetwork.arMatchSets;
+
 	for (i = 0; i < prNloParam->ucMatchSSIDNum; i++) {
-		if (i < CFG_SCAN_SSID_MAX_NUM) {
-			COPY_SSID(prScanParam->aucSpecifiedSSID[i],
-				  prScanParam->ucSpecifiedSSIDLen[i], prSsid[i].aucSsid, (UINT_8) prSsid[i].u4SsidLen);
-		}
+		COPY_SSID(prNloSsidMatch[i].aucSSID, prNloSsidMatch[i].ucSSIDLength,
+			prSsid[i].aucSsid, prSsid[i].u4SsidLen);
+		prNloSsidMatch[i].cRssiThresold = pcRssiThresold[i];
+	}
+	if (ucChnlNum > sizeof(prNloParam->rNLONetwork.aucChannel))
+		ucChnlNum = sizeof(prNloParam->rNLONetwork.aucChannel);
 
-		COPY_SSID(prNloParam->aucMatchSSID[i],
-			  prNloParam->ucMatchSSIDLen[i], prSsid[i].aucSsid, (UINT_8) prSsid[i].u4SsidLen);
-
-		/*  for linux the Ciper,Auth Algo will be zero  */
-		prNloParam->aucCipherAlgo[i] = 0;
-		prNloParam->au2AuthAlgo[i] = 0;
-
-		for (j = 0; j < SCN_NLO_NETWORK_CHANNEL_NUM; j++)
-			prNloParam->aucChannelHint[i][j] = 0;
+	ePreferedChnl = prAdapter->aePreferBand[prAdapter->prAisBssInfo->ucBssIndex];
+	if (ePreferedChnl == BAND_2G4) {
+		prNloParam->rNLONetwork.ucChannelType = NLO_CHANNEL_TYPE_2G4_ONLY;
+		prNloParam->rNLONetwork.ucChnlNum = 0;
+	} else if (ePreferedChnl == BAND_5G) {
+		prNloParam->rNLONetwork.ucChannelType = NLO_CHANNEL_TYPE_5G_ONLY;
+		prNloParam->rNLONetwork.ucChnlNum = 0;
+	} else if (ucChnlNum > 0) {
+		prNloParam->rNLONetwork.ucChannelType = NLO_CHANNEL_TYPE_SPECIFIED;
+		prNloParam->rNLONetwork.ucChnlNum = ucChnlNum;
+		kalMemCopy(prNloParam->rNLONetwork.aucChannel, pucChannels, ucChnlNum);
+	} else {
+		prNloParam->rNLONetwork.ucChnlNum = 0;
+		prNloParam->rNLONetwork.ucChannelType = NLO_CHANNEL_TYPE_DUAL_BAND;
 	}
 
+	DBGLOG(SCN, INFO, "chnlType %d, chnl Num %d, ssidNum %d, Iteration=%d, FastScanPeriod=%d\n",
+		prNloParam->rNLONetwork.ucChannelType,
+		prNloParam->rNLONetwork.ucChnlNum, prNloParam->ucMatchSSIDNum,
+		prNloParam->ucFastScanIteration, prNloParam->u2FastScanPeriod);
 	/* 2. prepare command for sending */
-	prCmdNloReq = (P_CMD_NLO_REQ) cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(CMD_NLO_REQ) + u4IeLength);
+	prCmdNloReq = (P_CMD_NLO_REQ) cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(CMD_NLO_REQ) + prScanParam->u2IELen);
 
 	if (!prCmdNloReq) {
 		ASSERT(0);	/* Can't initiate NLO operation */
@@ -957,54 +981,43 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 
 #ifdef LINUX
 	prCmdNloReq->ucFlag = SCAN_NLO_CHECK_SSID_ONLY;
-	DBGLOG(SCN, INFO, "LINUX only check SSID for PNO SCAN\n");
+	DBGLOG(SCN, TRACE, "LINUX only check SSID for PNO SCAN\n");
 #endif
-	for (i = 0; i < prNloParam->ucMatchSSIDNum; i++) {
-		COPY_SSID(prCmdNloReq->arNetworkList[i].aucSSID,
-			  prCmdNloReq->arNetworkList[i].ucSSIDLength,
-			  prNloParam->aucMatchSSID[i], prNloParam->ucMatchSSIDLen[i]);
+	/* we set this bit to notify firmware that they should using the new NLO network design */
+	prCmdNloReq->ucEntryNum |= BIT(7);
+	kalMemCopy(&prCmdNloReq->rNLONetwork, &prNloParam->rNLONetwork, sizeof(prNloParam->rNLONetwork));
 
-		prCmdNloReq->arNetworkList[i].ucCipherAlgo = prNloParam->aucCipherAlgo[i];
-		prCmdNloReq->arNetworkList[i].u2AuthAlgo = prNloParam->au2AuthAlgo[i];
-		DBGLOG(SCN, INFO, "prCmdNloReq->arNetworkList[i].aucSSID %s\n", prCmdNloReq->arNetworkList[i].aucSSID);
-		DBGLOG(SCN, INFO,
-		       "prCmdNloReq->arNetworkList[i].ucSSIDLength %d\n", prCmdNloReq->arNetworkList[i].ucSSIDLength);
-		DBGLOG(SCN, INFO,
-		       "prCmdNloReq->arNetworkList[i].ucCipherAlgo %d\n", prCmdNloReq->arNetworkList[i].ucCipherAlgo);
-		DBGLOG(SCN, INFO,
-		       "prCmdNloReq->arNetworkList[i].u2AuthAlgo %d\n", prCmdNloReq->arNetworkList[i].u2AuthAlgo);
-
-		for (j = 0; j < SCN_NLO_NETWORK_CHANNEL_NUM; j++)
-			prCmdNloReq->arNetworkList[i].ucNumChannelHint[j] = prNloParam->aucChannelHint[i][j];
-	}
-
-	if (u4IeLength <= MAX_IE_LENGTH)
+	if (prScanParam->u2IELen <= MAX_IE_LENGTH)
 		prCmdNloReq->u2IELen = prScanParam->u2IELen;
 	else
 		prCmdNloReq->u2IELen = MAX_IE_LENGTH;
 
-	if (u4IeLength) {
-		kalMemCopy(prScanParam->aucIE, pucIe, prCmdNloReq->u2IELen);
-		kalMemCopy(prCmdNloReq->aucIE, pucIe, prCmdNloReq->u2IELen);
-	}
+	if (prScanParam->u2IELen)
+		kalMemCopy(prCmdNloReq->aucIE, prScanParam->aucIE, sizeof(UINT_8) * prCmdNloReq->u2IELen);
 
-	wlanSendSetQueryCmd(prAdapter,
-			    CMD_ID_SET_NLO_REQ,
-			    TRUE,
-			    FALSE,
-			    TRUE,
-			    nicCmdEventSetCommon,
-			    nicOidCmdTimeoutCommon,
-			    sizeof(CMD_NLO_REQ) + prCmdNloReq->u2IELen, (PUINT_8) prCmdNloReq, NULL, 0);
-
+#if !CFG_SUPPORT_SCN_PSCN
+	if (wlanSendSetQueryCmd(prAdapter,
+				CMD_ID_SET_NLO_REQ,
+				TRUE,
+				FALSE,
+				FALSE,
+				nicCmdEventSetCommon,
+				nicOidCmdTimeoutCommon,
+				sizeof(CMD_NLO_REQ) + prCmdNloReq->u2IELen,
+				(PUINT_8) prCmdNloReq, NULL, 0) == WLAN_STATUS_FAILURE)
+		ret = FALSE;
+#else
+	scnCombineParamsIntoPSCN(prAdapter, prCmdNloReq, NULL, NULL, NULL, FALSE, FALSE, FALSE);
+	scnPSCNFsm(prAdapter, PSCN_RESET);
+#endif
 	cnmMemFree(prAdapter, (PVOID) prCmdNloReq);
 
-	return TRUE;
+	return ret;
 }
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief        OID handler for stopping scheduled scan
+* \brief         handler for stopping scheduled scan
 *
 * \param[in]
 *
@@ -1017,40 +1030,749 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 	P_NLO_PARAM_T prNloParam;
 	P_SCAN_PARAM_T prScanParam;
 	CMD_NLO_CANCEL rCmdNloCancel;
-	WLAN_STATUS rStatus;
+	BOOLEAN fgRet = TRUE;
 
 	ASSERT(prAdapter);
-	DBGLOG(SCN, INFO, "scnFsmSchedScanStopRequest\n");
 
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prNloParam = &prScanInfo->rNloParam;
 	prScanParam = &prNloParam->rScanParam;
 
+#if 0
 	if (prAdapter->prAisBssInfo->fgIsNetRequestInActive && prAdapter->prAisBssInfo->fgIsPNOEnable) {
 		UNSET_NET_ACTIVE(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
 
-		DBGLOG(SCN, INFO, "INACTIVE  AIS from ACTIVE to DISABLE PNO\n");
+		DBGLOG(SCN, INFO, "DEACTIVATE AIS from ACTIVE to disable PNO\n");
 		/* sync with firmware */
 		nicDeactivateNetwork(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
 	} else {
-		DBGLOG(SCN, INFO,
-		       "fgIsNetRequestInActive %d, fgIsPNOEnable %d\n",
+		DBGLOG(SCN, INFO, "fgIsNetRequestInActive %d, fgIsPNOEnable %d\n",
 		       prAdapter->prAisBssInfo->fgIsNetRequestInActive, prAdapter->prAisBssInfo->fgIsPNOEnable);
 	}
+#endif
 
 	prAdapter->prAisBssInfo->fgIsPNOEnable = FALSE;
-
 	/* send cancel message to firmware domain */
 	rCmdNloCancel.ucSeqNum = prScanParam->ucSeqNum;
 
-	rStatus = wlanSendSetQueryCmd(prAdapter, CMD_ID_SET_NLO_CANCEL, TRUE, FALSE, TRUE, nicCmdEventSetStopSchedScan,
-					  /* nicCmdEventSetCommon, */
-				      nicOidCmdTimeoutCommon,
-				      sizeof(CMD_NLO_CANCEL), (PUINT_8) &rCmdNloCancel, NULL, 0);
+#if !CFG_SUPPORT_SCN_PSCN
+	if (wlanSendSetQueryCmd(prAdapter,
+				CMD_ID_SET_NLO_CANCEL,
+				TRUE,
+				FALSE,
+				FALSE,
+				nicCmdEventSetStopSchedScan,
+				nicOidCmdTimeoutCommon,
+				sizeof(CMD_NLO_CANCEL), (PUINT_8)&rCmdNloCancel, NULL, 0) == WLAN_STATUS_FAILURE)
+		fgRet = FALSE;
+#else
+	scnCombineParamsIntoPSCN(prAdapter, NULL, NULL, NULL, NULL, TRUE, FALSE, FALSE);
+	if (prScanInfo->prPscnParam->fgGScnEnable
+		|| prScanInfo->prPscnParam->fgBatchScnEnable)
+		scnPSCNFsm(prAdapter, PSCN_RESET); /* in case there is any PSCN */
+	else
+		scnPSCNFsm(prAdapter, PSCN_IDLE);
+#endif
 
 	prScanInfo->fgNloScanning = FALSE;
-	if (rStatus != WLAN_STATUS_FAILURE)
-		return TRUE;
-	else
-		return FALSE;
+
+	return fgRet;
 }
+
+#if CFG_SUPPORT_SCN_PSCN
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief         handler for Set PSCN action
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN scnFsmPSCNAction(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_ACT_T ucPscanAct)
+{
+	P_SCAN_INFO_T prScanInfo;
+	CMD_SET_PSCAN_ENABLE rCmdPscnAction;
+
+	DBGLOG(SCN, INFO, "scnFsmPSCNAction Act = %d\n", ucPscanAct);
+
+	kalMemZero(&rCmdPscnAction, sizeof(CMD_SET_PSCAN_ENABLE));
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	if (ucPscanAct == PSCAN_ACT_ENABLE) {
+		prScanInfo->fgPscnOngoing = TRUE;
+		rCmdPscnAction.ucPscanAct = 0;
+	} else {
+		prScanInfo->fgPscnOngoing = FALSE;
+		rCmdPscnAction.ucPscanAct = 1; /* sync to firmware, 1 means disable, 0 means enable */
+	}
+
+	wlanSendSetQueryCmd(prAdapter,
+			    CMD_ID_SET_PSCN_ENABLE,
+			    TRUE,
+			    FALSE,
+			    FALSE,
+			    nicCmdEventSetCommon,
+			    nicOidCmdTimeoutCommon,
+			    sizeof(CMD_SET_PSCAN_ENABLE), (PUINT_8)&rCmdPscnAction, NULL, 0);
+
+	return TRUE;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief        handler for Set PSCN param
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN scnFsmPSCNSetParam(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam)
+{
+	P_SCAN_INFO_T prScanInfo;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+
+	DBGLOG(SCN, INFO, "fgNLOScnEnable=%d %d %d, basePeriod=%d\n",
+		prCmdPscnParam->fgNLOScnEnable, prCmdPscnParam->fgBatchScnEnable,
+		prCmdPscnParam->fgGScnEnable, prCmdPscnParam->u4BasePeriod);
+
+	if (1 /*prScanInfo->fgPscnOnnning == FALSE */) {
+		wlanSendSetQueryCmd(prAdapter,
+				    CMD_ID_SET_PSCAN_PARAM,
+				    TRUE,
+				    FALSE,
+				    FALSE,
+				    nicCmdEventSetCommon,
+				    nicOidCmdTimeoutCommon,
+				    sizeof(CMD_SET_PSCAN_PARAM), (PUINT_8) prCmdPscnParam, NULL, 0);
+
+		return TRUE;
+	}
+	return FALSE;
+
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief        handler for Set hotlist
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN scnFsmPSCNSetHotlist(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_ADD_HOTLIST_BSSID prCmdPscnAddHotlist)
+{
+	CMD_SET_PSCAN_ADD_HOTLIST_BSSID rCmdPscnAddHotlist;
+	P_SCAN_INFO_T prScanInfo;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	memcpy(&rCmdPscnAddHotlist.aucMacAddr, &(prCmdPscnAddHotlist->aucMacAddr), sizeof(MAC_ADDR_LEN));
+
+	/* rCmdPscnAddHotlist.aucMacAddr = prCmdPscnAddHotlist->aucMacAddr; */
+	rCmdPscnAddHotlist.ucFlags = prCmdPscnAddHotlist->ucFlags;
+
+	if (prScanInfo->fgPscnOngoing && prScanInfo->prPscnParam->fgGScnEnable) {
+		wlanSendSetQueryCmd(prAdapter,
+				    CMD_ID_SET_PSCN_ADD_HOTLIST_BSSID,
+				    TRUE,
+				    FALSE,
+				    FALSE,
+				    NULL,
+				    nicOidCmdTimeoutCommon,
+				    sizeof(CMD_SET_PSCAN_ADD_HOTLIST_BSSID), (PUINT_8)&rCmdPscnAddHotlist, NULL, 0);
+		return TRUE;
+	}
+	/* debug msg, No PSCN, Sched SCAN no need to add the hotlist ??? */
+	return FALSE;
+
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief         handler for Set CMD_ID_SET_PSCN_ADD_SW_BSSID
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN scnFsmPSCNAddSWCBssId(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_ADD_SWC_BSSID prCmdPscnAddSWCBssId)
+{
+	CMD_SET_PSCAN_ADD_SWC_BSSID rCmdPscnAddSWCBssId;
+	P_SCAN_INFO_T prScanInfo;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+
+	memcpy(&rCmdPscnAddSWCBssId.aucMacAddr, &(prCmdPscnAddSWCBssId->aucMacAddr), sizeof(MAC_ADDR_LEN));
+
+	/* rCmdPscnAddSWCBssId.aucMacAddr = prCmdPscnAddSWCBssId->aucMacAddr; */
+	rCmdPscnAddSWCBssId.i4RssiHighThreshold = prCmdPscnAddSWCBssId->i4RssiHighThreshold;
+	rCmdPscnAddSWCBssId.i4RssiLowThreshold = prCmdPscnAddSWCBssId->i4RssiLowThreshold;
+
+	if (prScanInfo->fgPscnOngoing && prScanInfo->prPscnParam->fgGScnEnable) {
+		wlanSendSetQueryCmd(prAdapter,
+				    CMD_ID_SET_PSCN_ADD_SW_BSSID,
+				    TRUE,
+				    FALSE,
+				    FALSE,
+				    NULL,
+				    nicOidCmdTimeoutCommon,
+				    sizeof(CMD_SET_PSCAN_ADD_SWC_BSSID), (PUINT_8)&rCmdPscnAddSWCBssId, NULL, 0);
+		return TRUE;
+	}
+	/* debug msg, No PSCN, Sched SCAN no need to add the hotlist ??? */
+	return FALSE;
+
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief         handler for Set CMD_ID_SET_PSCN_MAC_ADDR
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN scnFsmPSCNSetMacAddr(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_MAC_ADDR prCmdPscnSetMacAddr)
+{
+	CMD_SET_PSCAN_MAC_ADDR rCmdPscnSetMacAddr;
+	P_SCAN_INFO_T prScanInfo;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+
+	/* rCmdPscnSetMacAddr.aucMacAddr = prCmdPscnSetMacAddr->aucMacAddr; */
+	memcpy(&rCmdPscnSetMacAddr.aucMacAddr, &(prCmdPscnSetMacAddr->aucMacAddr), sizeof(MAC_ADDR_LEN));
+
+	rCmdPscnSetMacAddr.ucFlags = prCmdPscnSetMacAddr->ucFlags;
+	rCmdPscnSetMacAddr.ucVersion = prCmdPscnSetMacAddr->ucVersion;
+
+	if (1 /* (prScanInfo->fgPscnOnnning == TRUE */) {
+		wlanSendSetQueryCmd(prAdapter,
+				    CMD_ID_SET_PSCN_MAC_ADDR,
+				    TRUE,
+				    FALSE,
+				    FALSE,
+				    NULL,
+				    nicOidCmdTimeoutCommon,
+				    sizeof(CMD_SET_PSCAN_MAC_ADDR), (PUINT_8)&rCmdPscnSetMacAddr, NULL, 0);
+		return TRUE;
+	}
+	/* debug msg, No PSCN, Sched SCAN no need to add the hotlist ??? */
+	return FALSE;
+
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief        handler for Combine PNO Scan params into PSCAN param
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+VOID
+scnSubCombineNLOtoPSCN(IN P_ADAPTER_T prAdapter, IN P_CMD_NLO_REQ prNewCmdNloReq)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_CMD_SET_PSCAN_PARAM prCmdPscnParam;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prCmdPscnParam = (P_CMD_SET_PSCAN_PARAM) prScanInfo->prPscnParam;
+
+	if (prNewCmdNloReq) {
+		prCmdPscnParam->fgNLOScnEnable = TRUE;
+		kalMemCopy(&(prCmdPscnParam->rCmdNloReq), prNewCmdNloReq, sizeof(CMD_NLO_REQ));
+	}
+
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief        handler for Combine Batch Scan params into PSCAN param
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+VOID
+scnSubCombineBatchSCNtoPSCN(IN P_ADAPTER_T prAdapter, IN P_CMD_BATCH_REQ_T prNewCmdBatchReq)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_CMD_SET_PSCAN_PARAM prCmdPscnParam;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prCmdPscnParam = (P_CMD_SET_PSCAN_PARAM) prScanInfo->prPscnParam;
+
+	if (prNewCmdBatchReq) {
+		prCmdPscnParam->fgBatchScnEnable = TRUE;
+		kalMemCopy(&(prCmdPscnParam->rCmdBatchReq), prNewCmdBatchReq, sizeof(CMD_BATCH_REQ_T));
+	}
+
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief        handler for Combine GSCN Scan params into PSCAN param
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+VOID
+scnSubCombineGSCNtoPSCN(IN P_ADAPTER_T prAdapter,
+			IN P_CMD_GSCN_REQ_T prNewCmdGscnReq, IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_CMD_SET_PSCAN_PARAM prCmdPscnParam;
+	UINT_32 ucPeriodMin = MAX_PERIOD;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prCmdPscnParam = (P_CMD_SET_PSCAN_PARAM) prScanInfo->prPscnParam;
+	prCmdPscnParam->fgGScnEnable = FALSE;
+
+	DBGLOG(SCN, TRACE, "scnSubCombineGSCNtoPSCN fgGScnParamSet %d fgGScnConfigSet %d\n",
+		prScanInfo->fgGScnParamSet, prScanInfo->fgGScnConfigSet);
+
+	if (prNewCmdGscnReq) {
+		DBGLOG(SCN, INFO, "setup prNewCmdGscnReq\n");
+		prScanInfo->fgGScnParamSet = TRUE;
+		kalMemCopy(&(prCmdPscnParam->rCmdGscnReq), prNewCmdGscnReq, sizeof(CMD_GSCN_REQ_T));
+		if (prNewCmdGscnReq->u4BasePeriod < ucPeriodMin)
+			prCmdPscnParam->u4BasePeriod = prNewCmdGscnReq->u4BasePeriod;
+	} else if (prScanInfo->fgGScnParamSet) {
+		DBGLOG(SCN, INFO, "no new prNewCmdGscnReq but there is an old one\n");
+	}
+
+	if (prNewCmdGscnConfig) {
+		DBGLOG(SCN, INFO, "setup prNewCmdGscnConfig\n");
+		prScanInfo->fgGScnConfigSet = TRUE;
+		prCmdPscnParam->fgGScnEnable = TRUE;
+		prCmdPscnParam->rCmdGscnReq.u4MaxApPerScan = prNewCmdGscnConfig->ucNumApPerScn;
+		prCmdPscnParam->rCmdGscnReq.u4BufferThreshold = prNewCmdGscnConfig->u4BufferThreshold;
+		prCmdPscnParam->rCmdGscnReq.ucNumScnToCache = (UINT_8) prNewCmdGscnConfig->u4NumScnToCache;
+	} else if (prScanInfo->fgGScnConfigSet) {
+		DBGLOG(SCN, INFO, "no new prNewCmdGscnConfig but there is an old one\n");
+	}
+
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief        handler for Combine   GSCN Scan params into PSCAN param
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+VOID
+scnRemoveFromPSCN(IN P_ADAPTER_T prAdapter,
+		  IN BOOLEAN fgRemoveNLOfromPSCN,
+		  IN BOOLEAN fgRemoveBatchSCNfromPSCN,
+		  IN BOOLEAN fgRemoveGSCNfromPSCN)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_CMD_SET_PSCAN_PARAM prCmdPscnParam;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prCmdPscnParam = (P_CMD_SET_PSCAN_PARAM) prScanInfo->prPscnParam;
+
+	DBGLOG(SCN, INFO, "remove NLO or Batch or GSCN from PSCN--->NLO=%d, BSN=%d, GSN=%d\n",
+		fgRemoveNLOfromPSCN, fgRemoveBatchSCNfromPSCN, fgRemoveGSCNfromPSCN);
+
+	if (fgRemoveNLOfromPSCN) {
+		prCmdPscnParam->fgNLOScnEnable = FALSE;
+		kalMemZero(&prCmdPscnParam->rCmdNloReq, sizeof(CMD_NLO_REQ));
+	}
+	if (fgRemoveBatchSCNfromPSCN) {
+		prCmdPscnParam->fgBatchScnEnable = FALSE;
+		kalMemZero(&prCmdPscnParam->rCmdBatchReq, sizeof(CMD_BATCH_REQ_T));
+	}
+	if (fgRemoveGSCNfromPSCN) {
+		prCmdPscnParam->fgGScnEnable = FALSE;
+		prScanInfo->fgGScnParamSet = FALSE;
+		prScanInfo->fgGScnConfigSet = FALSE;
+		prScanInfo->fgGScnAction = FALSE;
+		kalMemZero(&prCmdPscnParam->rCmdGscnReq, sizeof(CMD_GSCN_REQ_T));
+	}
+
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief        handler for Combine GSCN , Batch, PNO Scan params into PSCAN param
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN
+scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
+			 IN P_CMD_NLO_REQ prNewCmdNloReq,
+			 IN P_CMD_BATCH_REQ_T prNewCmdBatchReq,
+			 IN P_CMD_GSCN_REQ_T prNewCmdGscnReq,
+			 IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig,
+			 IN BOOLEAN fgRemoveNLOfromPSCN,
+			 IN BOOLEAN fgRemoveBatchSCNfromPSCN, IN BOOLEAN fgRemoveGSCNfromPSCN)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_CMD_SET_PSCAN_PARAM prCmdPscnParam;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prCmdPscnParam = (P_CMD_SET_PSCAN_PARAM) prScanInfo->prPscnParam;
+
+	prCmdPscnParam->ucVersion = CURRENT_PSCN_VERSION;
+
+	if (fgRemoveNLOfromPSCN || fgRemoveBatchSCNfromPSCN || fgRemoveGSCNfromPSCN) {
+		scnRemoveFromPSCN(prAdapter,
+				  fgRemoveNLOfromPSCN, fgRemoveBatchSCNfromPSCN, fgRemoveGSCNfromPSCN);
+	} else {
+		DBGLOG(SCN, TRACE, "combine GSCN or Batch or NLO to PSCN --->\n");
+
+		scnSubCombineNLOtoPSCN(prAdapter, prNewCmdNloReq);
+		scnSubCombineBatchSCNtoPSCN(prAdapter, prNewCmdBatchReq);
+		scnSubCombineGSCNtoPSCN(prAdapter, prNewCmdGscnReq, prNewCmdGscnConfig);
+	}
+
+	return TRUE;
+}
+
+VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
+{
+	P_SCAN_INFO_T prScanInfo;
+	BOOLEAN fgTransitionState = FALSE;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+
+	do {
+		fgTransitionState = FALSE;
+
+		DBGLOG(SCN, STATE, "eCurrentPSCNState=%d, eNextPSCNState=%d\n",
+			prScanInfo->eCurrentPSCNState, eNextPSCNState);
+
+		prScanInfo->eCurrentPSCNState = eNextPSCNState;
+
+		switch (prScanInfo->eCurrentPSCNState) {
+		case PSCN_IDLE:
+			DBGLOG(SCN, TRACE, "PSCN_IDLE.... PSCAN_ACT_DISABLE\n");
+			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
+			eNextPSCNState = PSCN_IDLE;
+			break;
+
+		case PSCN_RESET:
+			DBGLOG(SCN, TRACE, "PSCN_RESET.... PSCAN_ACT_DISABLE\n");
+			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
+			scnFsmPSCNSetParam(prAdapter, prScanInfo->prPscnParam);
+
+			if (prScanInfo->prPscnParam->fgNLOScnEnable
+				|| prScanInfo->prPscnParam->fgBatchScnEnable
+				|| (prScanInfo->prPscnParam->fgGScnEnable && prScanInfo->fgGScnAction)) {
+				eNextPSCNState = PSCN_SCANNING; /* keep original operation if there is any PSCN */
+				DBGLOG(SCN, TRACE,
+				       "PSCN_RESET->PSCN_SCANNING....fgNLOScnEnable/fgBatchScnEnable/fgGScnEnable ENABLE\n");
+			} else {
+				/* eNextPSCNState = PSCN_RESET; */
+				DBGLOG(SCN, TRACE,
+				       "PSCN_RESET->PSCN_RESET....fgNLOScnEnable/fgBatchScnEnable/fgGScnEnable DISABLE\n");
+			}
+			break;
+
+		case PSCN_SCANNING:
+			DBGLOG(SCN, TRACE, "PSCN_SCANNING.... PSCAN_ACT_ENABLE\n");
+			if (prScanInfo->fgPscnOngoing)
+				break;
+			if (!IS_NET_ACTIVE(prAdapter, prAdapter->prAisBssInfo->ucBssIndex)) {
+				SET_NET_ACTIVE(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
+
+				DBGLOG(SCN, TRACE, "ACTIVATE AIS from INACTIVE to enable PSCN\n");
+				/* sync with firmware */
+				nicActivateNetwork(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
+				prAdapter->prAisBssInfo->fgIsNetRequestInActive = FALSE;
+			}
+			scnFsmPSCNAction(prAdapter, PSCAN_ACT_ENABLE);
+			prScanInfo->fgPscnOngoing = TRUE;
+			eNextPSCNState = PSCN_SCANNING;
+			break;
+
+		default:
+			DBGLOG(SCN, WARN, "Unexpected state\n");
+			ASSERT(0);
+			break;
+		}
+
+		if (prScanInfo->eCurrentPSCNState != eNextPSCNState)
+			fgTransitionState = TRUE;
+
+	} while (fgTransitionState);
+
+}
+#endif
+
+#if CFG_SUPPORT_GSCN
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief        handler for Set GSCN param
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam)
+{
+	P_CMD_GSCN_REQ_T prCmdGscnReq;
+	UINT_8 i = 0, j = 0; /*ucBucketIndex, ucChIndex*/
+
+	ASSERT(prAdapter);
+	prCmdGscnReq = kalMemAlloc(sizeof(CMD_GSCN_REQ_T), VIR_MEM_TYPE);
+	if (!prCmdGscnReq) {
+		DBGLOG(SCN, ERROR, "alloc prCmdGscnReq fail\n");
+		return FALSE;
+	}
+	kalMemZero(prCmdGscnReq, sizeof(CMD_GSCN_REQ_T));
+	prCmdGscnReq->u4NumBuckets = prCmdGscnParam->num_buckets;
+	prCmdGscnReq->u4BasePeriod = prCmdGscnParam->base_period;
+	DBGLOG(SCN, TRACE, "u4BasePeriod[%d], u4NumBuckets[%d]\n",
+		prCmdGscnReq->u4BasePeriod, prCmdGscnReq->u4NumBuckets);
+
+	for (i = 0; i < prCmdGscnReq->u4NumBuckets; i++) {
+		prCmdGscnReq->arBucket[i].u2BucketIndex =
+		    (UINT_16) prCmdGscnParam->buckets[i].bucket;
+		prCmdGscnReq->arBucket[i].eBand = prCmdGscnParam->buckets[i].band;
+		prCmdGscnReq->arBucket[i].ucBucketFreqMultiple =
+		    (prCmdGscnParam->buckets[i].period / prCmdGscnParam->base_period);
+		prCmdGscnReq->arBucket[i].ucReportFlag = prCmdGscnParam->buckets[i].report_events;
+		prCmdGscnReq->arBucket[i].ucMaxBucketFreqMultiple =
+		    (prCmdGscnParam->buckets[i].max_period / prCmdGscnParam->base_period);
+		prCmdGscnReq->arBucket[i].ucStepCount = (UINT_8)prCmdGscnParam->buckets[i].step_count;
+
+		prCmdGscnReq->arBucket[i].ucNumChannels =
+		    (UINT_8)prCmdGscnParam->buckets[i].num_channels;
+		DBGLOG(SCN, TRACE, "assign %d channels to bucket[%d]\n",
+			prCmdGscnReq->arBucket[i].ucNumChannels,	i);
+		for (j = 0; j < prCmdGscnParam->buckets[i].num_channels; i++) {
+			prCmdGscnReq->arBucket[i].arChannelList[j].ucChannelNumber =
+			    (UINT_8) nicFreq2ChannelNum(prCmdGscnParam->buckets[i].channels[j].channel * 1000);
+			prCmdGscnReq->arBucket[i].arChannelList[j].ucPassive =
+			    (UINT_8) prCmdGscnParam->buckets[i].channels[j].passive;
+			prCmdGscnReq->arBucket[i].arChannelList[j].u4DwellTimeMs =
+			    prCmdGscnParam->buckets[i].channels[j].dwellTimeMs;
+
+			DBGLOG(SCN, TRACE, "[ucChannel %d, ucPassive %d, u4DwellTimeMs %d\n",
+			       prCmdGscnReq->arBucket[i].arChannelList[j].ucChannelNumber,
+			       prCmdGscnReq->arBucket[i].arChannelList[j].ucPassive,
+			       prCmdGscnReq->arBucket[i].arChannelList[j].u4DwellTimeMs);
+
+		}
+
+	}
+
+	scnCombineParamsIntoPSCN(prAdapter, NULL, NULL, prCmdGscnReq, NULL, FALSE, FALSE, FALSE);
+	scnPSCNFsm(prAdapter, PSCN_RESET);
+
+	kalMemFree(prCmdGscnReq, VIR_MEM_TYPE, sizeof(CMD_GSCN_REQ_T));
+	return TRUE;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief         handler for scnSetGSCNConfig
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN scnSetGSCNConfig(IN P_ADAPTER_T prAdapter, IN P_CMD_GSCN_SCN_COFIG_T prCmdGscnScnConfig)
+{
+	ASSERT(prAdapter);
+	ASSERT(prCmdGscnScnConfig);
+
+	scnCombineParamsIntoPSCN(prAdapter, NULL, NULL, NULL, prCmdGscnScnConfig, FALSE, FALSE, FALSE);
+	scnPSCNFsm(prAdapter, PSCN_RESET);
+
+	return TRUE;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief         handler for scnFsmGetGSCNResult
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_T prGetGscnResultCmd,
+			    OUT PUINT_32 pu4SetInfoLen)
+{
+	CMD_GET_GSCAN_RESULT_T rGetGscnResultCmd;
+	P_SCAN_INFO_T prScanInfo;
+	P_PARAM_WIFI_GSCAN_RESULT_REPORT prGscnResult;
+	struct wiphy *wiphy;
+	UINT_32 u4SizeofGScanResults = 0;
+	UINT_8 ucBkt;
+	static UINT_8 scanId, numAp;
+
+	ASSERT(prAdapter);
+	wiphy = priv_to_wiphy(prAdapter->prGlueInfo);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	kalMemCopy(&rGetGscnResultCmd, prGetGscnResultCmd, sizeof(CMD_GET_GSCAN_RESULT_T));
+	DBGLOG(SCN, TRACE, "rGetGscnResultCmd: ucGetNum[%d], fgFlush[%d]\n",
+		rGetGscnResultCmd.u4Num, rGetGscnResultCmd.ucFlush);
+	if ((rGetGscnResultCmd.u4Num == 0) || (rGetGscnResultCmd.u4Num > PSCAN_MAX_AP_CACHE_PER_SCAN))
+		rGetGscnResultCmd.u4Num = PSCAN_MAX_AP_CACHE_PER_SCAN;
+
+#if 0 /* get GScan results from firmware */
+	if (prScanInfo->fgPscnOngoing && prScanInfo->prPscnParam->fgGScnEnable) {
+		wlanSendSetQueryCmd(prAdapter,
+				CMD_ID_GET_GSCN_SCN_RESULT,
+				FALSE,
+				TRUE,
+				FALSE,
+				NULL,
+				nicOidCmdTimeoutCommon,
+				sizeof(CMD_GET_GSCAN_RESULT_T), (PUINT_8)&rGetGscnResultCmd, NULL, *pu4SetInfoLen);
+		return TRUE;
+	}
+#else /* get GScan results from driver */
+	scanId++;
+	u4SizeofGScanResults = sizeof(PARAM_WIFI_GSCAN_RESULT_REPORT)
+			+ sizeof(PARAM_WIFI_GSCAN_RESULT) * (rGetGscnResultCmd.u4Num - 1);
+	prGscnResult = kalMemAlloc(u4SizeofGScanResults, VIR_MEM_TYPE);
+	if (!prGscnResult) {
+		DBGLOG(SCN, ERROR, "Can not alloc memory for PARAM_WIFI_GSCAN_RESULT_REPORT\n");
+		return FALSE;
+	}
+	kalMemZero(prGscnResult, u4SizeofGScanResults);
+
+	prGscnResult->u4ScanId = scanId;
+	prGscnResult->ucScanFlag = 3;
+	for (ucBkt = 0; ucBkt < GSCAN_MAX_BUCKETS; ucBkt++)
+		if (prScanInfo->prPscnParam->rCmdGscnReq.arBucket[ucBkt].ucReportFlag == REPORT_EVENTS_EACH_SCAN
+		|| prScanInfo->prPscnParam->rCmdGscnReq.arBucket[ucBkt].ucReportFlag == REPORT_EVENTS_FULL_RESULTS)
+			prGscnResult->u4BucketMask |= (1 << ucBkt);
+
+	/* copy scan results */
+	{
+		P_PARAM_BSSID_EX_T prScanResults;
+		UINT_8 i = 0, remainAp = 0;
+
+		if (numAp < prAdapter->rWlanInfo.u4ScanResultNum)
+			remainAp = prAdapter->rWlanInfo.u4ScanResultNum - numAp;
+		else {
+			kalMemFree(prGscnResult, VIR_MEM_TYPE, u4SizeofGScanResults);
+			return FALSE;
+		}
+		rGetGscnResultCmd.u4Num =
+			(rGetGscnResultCmd.u4Num <= remainAp) ? rGetGscnResultCmd.u4Num : remainAp;
+
+		DBGLOG(SCN, TRACE, "u4Num=%d, numAp=%d\n", rGetGscnResultCmd.u4Num, numAp);
+
+		for (i = 0; i < rGetGscnResultCmd.u4Num; i++) {
+			prScanResults = &(prAdapter->rWlanInfo.arScanResult[numAp]);
+			prGscnResult->rResult[i].ts = kalGetBootTime();
+			if (prScanResults->rSsid.u4SsidLen <= ELEM_MAX_LEN_SSID)
+				kalMemCopy(prGscnResult->rResult[i].ssid,
+					prScanResults->rSsid.aucSsid,
+					prScanResults->rSsid.u4SsidLen);
+			kalMemCopy(prGscnResult->rResult[i].bssid,
+				prScanResults->arMacAddress, MAC_ADDR_LEN);
+			prGscnResult->rResult[i].channel = prScanResults->rConfiguration.u4DSConfig / 1000;
+			prGscnResult->rResult[i].rssi = prScanResults->rRssi;
+			prGscnResult->rResult[i].rtt = 0;
+			prGscnResult->rResult[i].rtt_sd = 0;
+			prGscnResult->rResult[i].beacon_period = prScanResults->rConfiguration.u4BeaconPeriod;
+			prGscnResult->rResult[i].capability = prScanResults->u2CapInfo;
+			prGscnResult->rResult[i].ie_length = prScanResults->u4IELength;
+			/* if (prScanResults->u4IELength <= CFG_RAW_BUFFER_SIZE)
+			* prGscnResult->rResult[i].ie_data = prAdapter->rWlanInfo.apucScanResultIEs[numAp];
+			*/
+
+			numAp++;
+			DBGLOG(SCN, TRACE, "Report GScan SSID[%s][%d][" MACSTR "] u4IELength=%d u2CapInfo=0x%x\n",
+					prGscnResult->rResult[i].ssid, prGscnResult->rResult[i].channel,
+					MAC2STR(prGscnResult->rResult[i].bssid), prScanResults->u4IELength,
+					prScanResults->u2CapInfo);
+		}
+		if (numAp >= prAdapter->rWlanInfo.u4ScanResultNum)
+			numAp = 0;
+	}
+
+	prGscnResult->u4NumOfResults = rGetGscnResultCmd.u4Num;
+	u4SizeofGScanResults += sizeof(struct nlattr) * 2;
+	DBGLOG(SCN, INFO, "scan_id=%d, scan_flag=0x%x, 0x%x, num=%d %d %d, u4SizeofGScanResults=%d\r\n",
+		prGscnResult->u4ScanId,
+		prGscnResult->ucScanFlag,
+		prGscnResult->u4BucketMask, numAp,
+		prGscnResult->u4NumOfResults, prAdapter->rWlanInfo.u4ScanResultNum,
+		u4SizeofGScanResults);
+
+	if (numAp == rGetGscnResultCmd.u4Num) /* start transfer*/
+		mtk_cfg80211_vendor_gscan_results(wiphy, prAdapter->prGlueInfo->prDevHandler->ieee80211_ptr,
+			prGscnResult, u4SizeofGScanResults, TRUE, FALSE);
+	mtk_cfg80211_vendor_gscan_results(wiphy, prAdapter->prGlueInfo->prDevHandler->ieee80211_ptr,
+		prGscnResult, u4SizeofGScanResults, FALSE, FALSE);
+	if (numAp == 0) /* end transfer */
+		mtk_cfg80211_vendor_gscan_results(wiphy, prAdapter->prGlueInfo->prDevHandler->ieee80211_ptr,
+			prGscnResult, u4SizeofGScanResults, TRUE, TRUE);
+
+	kalMemFree(prGscnResult, VIR_MEM_TYPE, u4SizeofGScanResults - sizeof(struct nlattr) * 2);
+
+#endif /* get GScan results from driver */
+
+	return TRUE;
+}
+
+BOOLEAN scnFsmGSCNResults(IN P_ADAPTER_T prAdapter, IN P_EVENT_GSCAN_RESULT_T prEventBuffer)
+{
+	P_PARAM_WIFI_GSCAN_RESULT_REPORT prGscnResult;
+	struct wiphy *wiphy;
+	UINT_32 u4SizeofGScanResults = 0;
+
+	prGscnResult = kalMemAlloc(sizeof(PARAM_WIFI_GSCAN_RESULT_REPORT), VIR_MEM_TYPE);
+	if (!prGscnResult) {
+		DBGLOG(SCN, ERROR, "Can not alloc memory for PARAM_WIFI_GSCAN_RESULT_REPORT\n");
+		return FALSE;
+	}
+
+	prGscnResult->u4ScanId = (UINT_32)prEventBuffer->u2ScanId;
+	prGscnResult->ucScanFlag = (UINT_8)prEventBuffer->u2ScanFlags;
+	prGscnResult->u4BucketMask = 1;
+	prGscnResult->u4NumOfResults = (UINT_32)prEventBuffer->u2NumOfResults;
+
+	/* PARAM_WIFI_GSCAN_RESULT similar to  WIFI_GSCAN_RESULT_T*/
+	kalMemCopy(prGscnResult->rResult, prEventBuffer->rResult,
+		sizeof(PARAM_WIFI_GSCAN_RESULT) * (prGscnResult->u4NumOfResults));
+
+	u4SizeofGScanResults = sizeof(PARAM_WIFI_GSCAN_RESULT_REPORT) + sizeof(struct nlattr) * 2
+		+ sizeof(PARAM_WIFI_GSCAN_RESULT) * (prGscnResult->u4NumOfResults - 1);
+	DBGLOG(SCN, INFO, "scan_id=%d, scan_flag=0x%x, 0x%x, num=%d, u4SizeofGScanResults=%d\r\n",
+		prGscnResult->u4ScanId,
+		(UINT_32)prGscnResult->ucScanFlag,
+		prGscnResult->u4BucketMask,
+		prGscnResult->u4NumOfResults,
+		u4SizeofGScanResults);
+
+	wiphy = priv_to_wiphy(prAdapter->prGlueInfo);
+	mtk_cfg80211_vendor_gscan_results(wiphy, prAdapter->prGlueInfo->prDevHandler->ieee80211_ptr,
+		prGscnResult, u4SizeofGScanResults, FALSE, FALSE);
+
+	kalMemFree(prGscnResult, VIR_MEM_TYPE, sizeof(PARAM_WIFI_GSCAN_RESULT_REPORT));
+
+	return TRUE;
+}
+#endif
+

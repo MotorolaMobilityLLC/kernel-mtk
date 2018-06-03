@@ -379,9 +379,9 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 
 		prAdapter->u4OsPacketFilter = PARAM_PACKET_FILTER_SUPPORTED;
 
-		DBGLOG(INIT, INFO, "wlanAdapterStart(): Acquiring LP-OWN\n");
+		DBGLOG(INIT, TRACE, "wlanAdapterStart(): Acquiring LP-OWN\n");
 		ACQUIRE_POWER_CONTROL_FROM_PM(prAdapter);
-		DBGLOG(INIT, INFO, "wlanAdapterStart(): Acquiring LP-OWN-end\n");
+		DBGLOG(INIT, TRACE, "wlanAdapterStart(): Acquiring LP-OWN-end\n");
 
 #if !CFG_ENABLE_FULL_PM
 		nicpmSetDriverOwn(prAdapter);
@@ -450,7 +450,7 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 		}
 #endif
 
-		DBGLOG(INIT, INFO, "Waiting for Ready bit..\n");
+		DBGLOG(INIT, TRACE, "Waiting for Ready bit..\n");
 
 		/* 4 <9> check Wi-Fi FW asserts ready bit */
 		u4Status = wlanCheckWifiFunc(prAdapter, TRUE);
@@ -474,7 +474,7 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 #if (CFG_SUPPORT_NIC_CAPABILITY == 1)
 
 			/* 2.9 Workaround for Capability CMD packet lost issue */
-			DBGLOG(INIT, WARN, "Send a Dummy CMD as workaround\n");
+			DBGLOG(INIT, TRACE, "Send a Dummy CMD as workaround\n");
 			wlanSendDummyCmd(prAdapter, TRUE);
 
 			/* 3. query for NIC capability */
@@ -4839,7 +4839,7 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 
 		prEvent = (P_WIFI_EVENT_T) aucBuffer;
 		if (prEvent->ucEID != EVENT_ID_NIC_CAPABILITY) {
-			DBGLOG(INIT, WARN, "%s: skip unexpected event ID[0x%02x]\n", __func__, prEvent->ucEID);
+			DBGLOG(INIT, TRACE, "%s: skip unexpected event ID[0x%02x]\n", __func__, prEvent->ucEID);
 			continue;
 		} else {
 			break;
@@ -5939,13 +5939,13 @@ VOID wlanDumpBssStatistics(IN P_ADAPTER_T prAdapter, UINT_8 ucBssIdx)
 	UINT_8 ucIdx;
 
 	if (ucBssIdx > MAX_BSS_INDEX) {
-		DBGLOG(SW4, INFO, "Invalid BssInfo index[%u], skip dump!\n", ucBssIdx);
+		DBGLOG(SW4, WARN, "Invalid BssInfo index[%u], skip dump!\n", ucBssIdx);
 		return;
 	}
 
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIdx);
 	if (!prBssInfo) {
-		DBGLOG(SW4, INFO, "Invalid BssInfo index[%u], skip dump!\n", ucBssIdx);
+		DBGLOG(SW4, WARN, "Invalid BssInfo index[%u], skip dump!\n", ucBssIdx);
 		return;
 	}
 	/* <1> fill per-BSS statistics */
@@ -5995,7 +5995,7 @@ VOID wlanDumpBssStatistics(IN P_ADAPTER_T prAdapter, UINT_8 ucBssIdx)
 
 	/* <2>Dump BSS statistics */
 	for (eAci = 0; eAci < WMM_AC_INDEX_NUM; eAci++) {
-		DBGLOG(SW4, INFO, "LLS BSS[%u] %s: T[%06u] R[%06u] T_D[%06u] T_F[%06u]\n",
+		DBGLOG(BSS, TRACE, "LLS BSS[%u] %s: T[%06u] R[%06u] T_D[%06u] T_F[%06u]\n",
 		       prBssInfo->ucBssIndex, apucACI2Str[eAci], arLLStats[eAci].u4TxMsdu,
 		       arLLStats[eAci].u4RxMsdu, arLLStats[eAci].u4TxDropMsdu, arLLStats[eAci].u4TxFailMsdu);
 	}
@@ -6609,7 +6609,7 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	prWifiVar->u4DataTxRateCode = wlanCfgGetUint32(prAdapter, "DataTxRateCode", 0x0);
 
 	prWifiVar->ucApWpsMode = (UINT_8) wlanCfgGetUint32(prAdapter, "ApWpsMode", 0);
-	DBGLOG(INIT, INFO, "ucApWpsMode = %u\n", prWifiVar->ucApWpsMode);
+	DBGLOG(INIT, LOUD, "ucApWpsMode = %u\n", prWifiVar->ucApWpsMode);
 
 	prWifiVar->ucThreadScheduling = (UINT_8) wlanCfgGetUint32(prAdapter, "ThreadSched", 0);
 	prWifiVar->ucThreadPriority = (UINT_8) wlanCfgGetUint32(prAdapter, "ThreadPriority", WLAN_THREAD_TASK_PRIORITY);
@@ -8730,7 +8730,7 @@ wlanGetSupportNss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	ENUM_BAND_T eBand = BAND_NULL;
 
 	if (ucBssIndex > MAX_BSS_INDEX) {
-		DBGLOG(SW4, INFO, "Invalid BssInfo index[%u], skip dump!\n", ucBssIndex);
+		DBGLOG(REQ, ERROR, "Invalid BssInfo index[%u], skip dump!\n", ucBssIndex);
 		return ucRetValNss;
 	}
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
@@ -8747,7 +8747,7 @@ wlanGetSupportNss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 		ucRetValNss = 1;
 	else if ((eBand == BAND_5G) && IS_WIFI_5G_SISO(prAdapter))
 		ucRetValNss = 1;
-	DBGLOG(INIT, INFO, "Nss=%d,G=%d,B=%d,Bss=%d\n",
+	DBGLOG(REQ, TRACE, "Nss=%d,G=%d,B=%d,Bss=%d\n",
 				ucRetValNss, prBssInfo->fgIsGranted, eBand, ucBssIndex);
 #endif
 	return ucRetValNss;

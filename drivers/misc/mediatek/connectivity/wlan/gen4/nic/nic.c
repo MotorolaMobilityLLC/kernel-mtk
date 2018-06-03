@@ -133,14 +133,14 @@ ECO_INFO_T g_eco_info = {0xFF};
  */
 #define LOCAL_NIC_ALLOCATE_MEMORY(pucMem, u4Size, eMemType, pucComment) \
 	{ \
-		DBGLOG(INIT, INFO, "Allocating %ld bytes for %s.\n", u4Size, pucComment); \
+		DBGLOG(MEM, TRACE, "Allocating %ld bytes for %s.\n", u4Size, pucComment); \
 		pucMem = (PUINT_8)kalMemAlloc(u4Size, eMemType); \
 		if (pucMem == (PUINT_8)NULL) { \
-			DBGLOG(INIT, ERROR, "Could not allocate %ld bytes for %s.\n", u4Size, pucComment); \
+			DBGLOG(MEM, ERROR, "Could not allocate %ld bytes for %s.\n", u4Size, pucComment); \
 			break; \
 		} \
 		ASSERT(((ULONG)pucMem % 4) == 0); \
-		DBGLOG(INIT, INFO, "Virtual Address = 0x%p for %s.\n", (ULONG)pucMem, pucComment); \
+		DBGLOG(MEM, LOUD, "Virtual Address = 0x%p for %s.\n", (ULONG)pucMem, pucComment); \
 	}
 
 /*******************************************************************************
@@ -447,7 +447,7 @@ WLAN_STATUS nicProcessIST(IN P_ADAPTER_T prAdapter)
 	ASSERT(prAdapter);
 
 	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(REQ, WARN,
+		DBGLOG(NIC, WARN,
 		       "Fail in set nicProcessIST! (Adapter not ready). ACPI=D%d, Radio=%d\n",
 		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_ADAPTER_NOT_READY;
@@ -500,7 +500,7 @@ WLAN_STATUS nicProcessIST_impl(IN P_ADAPTER_T prAdapter, IN UINT_32 u4IntStatus)
 			} else if (apfnEventFuncTable[prIntEventMap->u4Event] != NULL) {
 				apfnEventFuncTable[prIntEventMap->u4Event] (prAdapter);
 			} else {
-				DBGLOG(INTR, WARN,
+				DBGLOG(NIC, WARN,
 				       "Empty INTR handler! ISAR bit#: %ld, event:%lu, func: 0x%x\n",
 				       prIntEventMap->u4Int, prIntEventMap->u4Event,
 				       apfnEventFuncTable[prIntEventMap->u4Event]);
@@ -1294,8 +1294,8 @@ WLAN_STATUS nicActivateNetwork(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	kalMemZero(&rCmdActivateCtrl.ucReserved, sizeof(rCmdActivateCtrl.ucReserved));
 
 #if 1				/* DBG */
-	DBGLOG(RSN, INFO, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 1);
-	DBGLOG(RSN, INFO,
+	DBGLOG(RSN, TRACE, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 1);
+	DBGLOG(RSN, TRACE,
 	       "[wlan index][Network] OwnMac=" MACSTR " BSSID=" MACSTR " BMCIndex = %d NetType=%d\n",
 	       MAC2STR(prBssInfo->aucOwnMacAddr), MAC2STR(prBssInfo->aucBSSID),
 	       prBssInfo->ucBMCWlanIndex, prBssInfo->eNetworkType);
@@ -1336,8 +1336,8 @@ WLAN_STATUS nicDeactivateNetwork(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	rCmdActivateCtrl.ucActive = 0;
 
 #if 1				/* DBG */
-	DBGLOG(RSN, INFO, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 0);
-	DBGLOG(RSN, INFO,
+	DBGLOG(RSN, TRACE, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 0);
+	DBGLOG(RSN, TRACE,
 	       "[wlan index][Network] OwnMac=" MACSTR " BSSID=" MACSTR " BMCIndex = %d\n",
 	       MAC2STR(prBssInfo->aucOwnMacAddr), MAC2STR(prBssInfo->aucBSSID), prBssInfo->ucBMCWlanIndex);
 #endif
@@ -2285,7 +2285,7 @@ VOID
 nicAddScanResult(IN P_ADAPTER_T prAdapter,
 		 IN PARAM_MAC_ADDRESS rMacAddr,
 		 IN P_PARAM_SSID_T prSsid,
-		 IN UINT_32 u4Privacy,
+		 IN UINT_16 u2CapInfo,
 		 IN PARAM_RSSI rRssi,
 		 IN ENUM_PARAM_NETWORK_TYPE_T eNetworkType,
 		 IN P_PARAM_802_11_CONFIG_T prConfiguration,
@@ -2336,7 +2336,8 @@ nicAddScanResult(IN P_ADAPTER_T prAdapter,
 			COPY_SSID(prAdapter->rWlanInfo.arScanResult[i].rSsid.aucSsid,
 				  prAdapter->rWlanInfo.arScanResult[i].rSsid.u4SsidLen,
 				  prSsid->aucSsid, prSsid->u4SsidLen);
-			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u4Privacy;
+			prAdapter->rWlanInfo.arScanResult[i].u2CapInfo = u2CapInfo;
+			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u2CapInfo & CAP_INFO_PRIVACY ? 1 : 0;
 			prAdapter->rWlanInfo.arScanResult[i].rRssi = rRssi;
 			prAdapter->rWlanInfo.arScanResult[i].eNetworkTypeInUse = eNetworkType;
 			kalMemCopy(&(prAdapter->rWlanInfo.arScanResult[i].rConfiguration),
@@ -2387,7 +2388,8 @@ nicAddScanResult(IN P_ADAPTER_T prAdapter,
 			COPY_SSID(prAdapter->rWlanInfo.arScanResult[i].rSsid.aucSsid,
 				  prAdapter->rWlanInfo.arScanResult[i].rSsid.u4SsidLen,
 				  prSsid->aucSsid, prSsid->u4SsidLen);
-			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u4Privacy;
+			prAdapter->rWlanInfo.arScanResult[i].u2CapInfo = u2CapInfo;
+			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u2CapInfo & CAP_INFO_PRIVACY ? 1 : 0;
 			prAdapter->rWlanInfo.arScanResult[i].rRssi = rRssi;
 			prAdapter->rWlanInfo.arScanResult[i].eNetworkTypeInUse = eNetworkType;
 			kalMemCopy(&(prAdapter->rWlanInfo.arScanResult[i].rConfiguration),
@@ -2436,7 +2438,8 @@ nicAddScanResult(IN P_ADAPTER_T prAdapter,
 			COPY_SSID(prAdapter->rWlanInfo.arScanResult[i].rSsid.aucSsid,
 				  prAdapter->rWlanInfo.arScanResult[i].rSsid.u4SsidLen,
 				  prSsid->aucSsid, prSsid->u4SsidLen);
-			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u4Privacy;
+			prAdapter->rWlanInfo.arScanResult[i].u2CapInfo = u2CapInfo;
+			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u2CapInfo & CAP_INFO_PRIVACY ? 1 : 0;
 			prAdapter->rWlanInfo.arScanResult[i].rRssi = rRssi;
 			prAdapter->rWlanInfo.arScanResult[i].eNetworkTypeInUse = eNetworkType;
 			kalMemCopy(&(prAdapter->rWlanInfo.arScanResult[i].rConfiguration),
@@ -3138,12 +3141,12 @@ nicRlmArUpdateParms(IN P_ADAPTER_T prAdapter,
 	ucArPerH = (UINT_8) (((u4ArSysParam1 >> 16) & BITS(0, 7)));
 	ucArPerL = (UINT_8) (((u4ArSysParam1 >> 24) & BITS(0, 7)));
 
-	DBGLOG(INIT, INFO, "ArParam %ld %ld %ld %ld\n", u4ArSysParam0, u4ArSysParam1, u4ArSysParam2, u4ArSysParam3);
-	DBGLOG(INIT, INFO, "ArVer %u AbwVer %u AgiVer %u\n", ucArVer, ucAbwVer, ucAgiVer);
-	DBGLOG(INIT, INFO, "HtMask %x LegacyMask %x\n", u2HtClrMask, u2LegacyClrMask);
-	DBGLOG(INIT, INFO,
-	       "CheckWin %u RateDownPer %u PerH %u PerL %u\n", ucArCheckWindow,
-	       ucArPerForceRateDownPer, ucArPerH, ucArPerL);
+	DBGLOG(NIC, INFO, "ArParam %ld %ld %ld %ld, ArVer %u AbwVer %u AgiVer %u\n",
+		u4ArSysParam0, u4ArSysParam1, u4ArSysParam2, u4ArSysParam3,
+		ucArVer, ucAbwVer, ucAgiVer);
+	DBGLOG(NIC, INFO, "HtMask %x LegacyMask %x, CheckWin %u RateDownPer %u PerH %u PerL %u\n",
+		u2HtClrMask, u2LegacyClrMask, ucArCheckWindow,
+		ucArPerForceRateDownPer, ucArPerH, ucArPerL);
 
 #define SWCR_DATA_ADDR(MOD, ADDR) (0x90000000+(MOD<<8)+(ADDR))
 #define SWCR_DATA_CMD(CATE, WRITE, INDEX, OPT0, OPT1) ((CATE<<24) | (WRITE<<23) | (INDEX<<16) | (OPT0 << 8) | OPT1)

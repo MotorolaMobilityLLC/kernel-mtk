@@ -174,6 +174,7 @@ int CFG80211_Resume(struct wiphy *wiphy)
 	.max_antenna_gain   = 0,                    \
 	.max_power          = 30,                   \
 }
+
 static struct ieee80211_channel mtk_2ghz_channels[] = {
 	CHAN2G(1, 2412, 0),
 	CHAN2G(2, 2417, 0),
@@ -200,6 +201,7 @@ static struct ieee80211_channel mtk_2ghz_channels[] = {
 	.max_antenna_gain   = 0,                        \
 	.max_power          = 30,                       \
 }
+
 static struct ieee80211_channel mtk_5ghz_channels[] = {
 	CHAN5G(34, 0), CHAN5G(36, 0),
 	CHAN5G(38, 0), CHAN5G(40, 0),
@@ -341,7 +343,7 @@ static struct cfg80211_ops mtk_wlan_ops = {
 #ifdef CONFIG_NL80211_TESTMODE
 	.testmode_cmd = mtk_cfg80211_testmode_cmd,
 #endif
-#if 0				/* Remove schedule_scan because we need more verification for NLO */
+#if 0	/* Remove schedule_scan because we need more verification for NLO */
 	.sched_scan_start = mtk_cfg80211_sched_scan_start,
 	.sched_scan_stop = mtk_cfg80211_sched_scan_stop,
 #endif
@@ -367,8 +369,118 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_set_country_code
-	}
-
+	},
+	/* GSCAN */
+#if CFG_SUPPORT_GSCN
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = GSCAN_SUBCMD_GET_CAPABILITIES
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_get_gscan_capabilities
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = GSCAN_SUBCMD_SET_CONFIG
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_set_config
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = GSCAN_SUBCMD_SET_SCAN_CONFIG
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_set_scan_config
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = GSCAN_SUBCMD_ENABLE_GSCAN
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_enable_scan
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = GSCAN_SUBCMD_ENABLE_FULL_SCAN_RESULTS
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_enable_full_scan_results
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = GSCAN_SUBCMD_GET_SCAN_RESULTS
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_get_gscan_result
+	},
+#endif
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = GSCAN_SUBCMD_SET_SIGNIFICANT_CHANGE_CONFIG
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_set_significant_change
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = GSCAN_SUBCMD_SET_HOTLIST
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_set_hotlist
+	},
+	/* RTT */
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = RTT_SUBCMD_GETCAPABILITY
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_get_rtt_capabilities
+	},
+	/* Link Layer Statistics */
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = LSTATS_SUBCMD_GET_INFO
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_llstats_get_info
+	},
+	/* RSSI Monitoring */
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_SET_RSSI_MONITOR
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_set_rssi_monitoring
+	},
+	/* Packet Keep Alive */
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_OFFLOAD_START_MKEEP_ALIVE
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_packet_keep_alive_start
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_OFFLOAD_STOP_MKEEP_ALIVE
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_packet_keep_alive_stop
+	},
 };
 
 static const struct nl80211_vendor_cmd_info mtk_wlan_vendor_events[] = {
@@ -399,6 +511,10 @@ static const struct nl80211_vendor_cmd_info mtk_wlan_vendor_events[] = {
 	{
 		.vendor_id = GOOGLE_OUI,
 		.subcmd = GSCAN_EVENT_HOTLIST_RESULTS_LOST
+	},
+	{
+		.vendor_id = GOOGLE_OUI,
+		.subcmd = WIFI_EVENT_RSSI_MONITOR
 	},
 };
 
@@ -828,7 +944,7 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 		return;
 	}
 
-	DBGLOG(INIT, INFO, "wlanSetMulticastListWorkQueue prDev->flags:0x%x\n", prDev->flags);
+	DBGLOG(INIT, TRACE, "wlanSetMulticastListWorkQueue prDev->flags:0x%x\n", prDev->flags);
 
 	if (prDev->flags & IFF_PROMISC)
 		u4PacketFilter |= PARAM_PACKET_FILTER_PROMISCUOUS;
@@ -926,7 +1042,7 @@ void p2pSetMulticastListWorkQueueWrapper(P_GLUE_INFO_T prGlueInfo)
 	ASSERT(prGlueInfo);
 
 	if (!prGlueInfo) {
-		DBGLOG(INIT, WARN, "abnormal dev or skb: prGlueInfo(0x%p)\n", prGlueInfo);
+		DBGLOG(INIT, ERROR, "abnormal dev or skb: prGlueInfo(0x%p)\n", prGlueInfo);
 		return;
 	}
 #if CFG_ENABLE_WIFI_DIRECT
@@ -1012,23 +1128,10 @@ VOID wlanDebugInit(VOID)
 	for (i = 0; i < DBG_MODULE_NUM; i++)
 		aucDebugModule[i] = DBG_CLASS_MASK;	/* enable all */
 #else
-#ifdef CFG_DEFAULT_DBG_LEVEL
 	for (i = 0; i < DBG_MODULE_NUM; i++)
-		aucDebugModule[i] = CFG_DEFAULT_DBG_LEVEL;
-#else
+		aucDebugModule[i] = DBG_CLASS_ERROR | DBG_CLASS_WARN | DBG_CLASS_STATE | DBG_CLASS_INFO;
 
-	for (i = 0; i < DBG_MODULE_NUM; i++) {
-		aucDebugModule[i] = DBG_CLASS_ERROR |
-			DBG_CLASS_WARN | DBG_CLASS_STATE | DBG_CLASS_EVENT | DBG_CLASS_INFO;
-	}
-	aucDebugModule[DBG_TX_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_INFO);
-	aucDebugModule[DBG_RX_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_INFO);
-	aucDebugModule[DBG_REQ_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_INFO);
-	aucDebugModule[DBG_INTR_IDX] = 0;
-	aucDebugModule[DBG_MEM_IDX] = DBG_CLASS_ERROR | DBG_CLASS_WARN;
-	aucDebugModule[DBG_REQ_IDX] = DBG_CLASS_MASK;
-
-#endif
+	aucDebugModule[DBG_INTR_IDX] = DBG_CLASS_ERROR;
 #endif /* DBG */
 
 	LOG_FUNC("Reset ALL DBG module log level to DEFAULT!");
@@ -1409,6 +1512,9 @@ static void wlanCreateWirelessDevice(void)
 	prWiphy->n_iface_combinations = mtk_iface_combinations_sta_num;
 	prWiphy->max_scan_ssids = 1;	/* FIXME: for combo scan */
 	prWiphy->max_scan_ie_len = 512;
+	prWiphy->max_sched_scan_ssids     = CFG_SCAN_SSID_MAX_NUM;
+	prWiphy->max_match_sets           = CFG_SCAN_SSID_MATCH_MAX_NUM;
+	prWiphy->max_sched_scan_ie_len    = CFG_CFG80211_IE_BUF_LEN;
 	prWiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) | BIT(NL80211_IFTYPE_ADHOC);
 	prWiphy->bands[IEEE80211_BAND_2GHZ] = &mtk_band_2ghz;
 	/* always assign 5Ghz bands here, if the chip is not support 5Ghz,
@@ -1539,13 +1645,10 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData, PVOID pvDriverData)
 		alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), NIC_INF_NAME,
 				NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
 
-	DBGLOG(INIT, INFO, "net_device prDev(0x%p) allocated\n", prGlueInfo->prDevHandler);
-
 	if (!prGlueInfo->prDevHandler) {
 		DBGLOG(INIT, ERROR, "Allocating memory to net_device context failed\n");
 		goto netcreate_err;
 	}
-	DBGLOG(INIT, INFO, "net_device prDev(0x%p) allocated\n", prGlueInfo->prDevHandler);
 
 	/* 4 <3.1.1> Initialize net device varaiables */
 #if 1
@@ -1805,9 +1908,10 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 	rWlanStatus = kalIoctl(prGlueInfo,
 			       wlanoidSetP2pMode,
 			       (PVOID) &rSetP2P, sizeof(PARAM_CUSTOM_P2P_SET_STRUCT_T), FALSE, FALSE, TRUE, &u4BufLen);
-
-	DBGLOG(INIT, INFO, "set_p2p_mode_handler ret = 0x%08lx\n", (UINT_32) rWlanStatus);
-
+	if (rWlanStatus != WLAN_STATUS_SUCCESS) {
+		DBGLOG(INIT, ERROR, "kalIoctl failed: 0x%08lx\n", (UINT_32) rWlanStatus);
+		return -1;
+	}
 
 	/* Need to check fgIsP2PRegistered, in case of whole chip reset.
 	 * in this case, kalIOCTL return success always,
@@ -1929,7 +2033,6 @@ WLAN_STATUS wlanDownloadBufferBin(P_ADAPTER_T prAdapter)
 	WLAN_STATUS retWlanStat = WLAN_STATUS_FAILURE;
 
 	if (prAdapter->fgIsSupportPowerOnSendBufferModeCMD == TRUE) {
-		DBGLOG(INIT, INFO, "Start Efuse Buffer Mode ..\n");
 		DBGLOG(INIT, INFO, "ucEfuseBUfferModeCal is %x\n", prAdapter->rWifiVar.ucEfuseBufferModeCal);
 
 		prChipInfo = prAdapter->chip_info;
@@ -1967,7 +2070,7 @@ WLAN_STATUS wlanDownloadBufferBin(P_ADAPTER_T prAdapter)
 				pucConfigBuf, MAX_EEPROM_BUFFER_SIZE, &u4ContentLen, prGlueInfo->prDev) == 0) {
 				DBGLOG(INIT, INFO, "request file done\n");
 			} else {
-				DBGLOG(INIT, INFO, "can't find file\n");
+				DBGLOG(INIT, ERROR, "can't find file\n");
 				goto label_exit;
 			}
 
@@ -2122,13 +2225,13 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 		prAdapter->rWifiFemCfg.u2WifiPath =
 				(WLAN_FLAG_2G4_WF0 | WLAN_FLAG_5G_WF0 | WLAN_FLAG_2G4_WF1 | WLAN_FLAG_5G_WF1);
 
-		DBGLOG(INIT, INFO, "WifiPath Init=0x%x\n", prAdapter->rWifiFemCfg.u2WifiPath);
+		DBGLOG(INIT, TRACE, "WifiPath Init=0x%x\n", prAdapter->rWifiFemCfg.u2WifiPath);
 
 #if (MTK_WCN_HIF_SDIO && CFG_WMT_WIFI_PATH_SUPPORT)
 		i4RetVal = mtk_wcn_wmt_wifi_fem_cfg_report((PVOID)&prAdapter->rWifiFemCfg);
 
 		if (i4RetVal)
-			DBGLOG(INIT, WARN, "Get WifiPath from WMT drv FAIL\n");
+			DBGLOG(INIT, ERROR, "Get WifiPath from WMT drv FAIL\n");
 		else
 			DBGLOG(INIT, INFO, "Get WifiPath from WMT drv Success WifiPath=0x%x\n",
 					prAdapter->rWifiFemCfg.u2WifiPath);
@@ -2172,7 +2275,6 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 		prGlueInfo->hif_thread = kthread_run(hif_thread, prGlueInfo->prDevHandler, "hif_thread");
 		prGlueInfo->rx_thread = kthread_run(rx_thread, prGlueInfo->prDevHandler, "rx_thread");
 #endif
-
 
 		/* TODO the change schedule API shall be provided by OS glue layer */
 		/* Switch the Wi-Fi task priority to higher priority and change the scheduling method */
@@ -2335,14 +2437,14 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 		/* Calibration Backup Flow */
 		if (!g_fgIsCalDataBackuped) {
 			if (rlmTriggerCalBackup(prGlueInfo->prAdapter, g_fgIsCalDataBackuped) == WLAN_STATUS_FAILURE) {
-				DBGLOG(RFTEST, INFO, "Error : Boot Time Wi-Fi Enable Fail........\n");
+				DBGLOG(RFTEST, ERROR, "Error : Boot Time Wi-Fi Enable Fail........\n");
 				return -1;
 			}
 
 			g_fgIsCalDataBackuped = TRUE;
 		} else {
 			if (rlmTriggerCalBackup(prGlueInfo->prAdapter, g_fgIsCalDataBackuped) == WLAN_STATUS_FAILURE) {
-				DBGLOG(RFTEST, INFO, "Error : Normal Wi-Fi Enable Fail........\n");
+				DBGLOG(RFTEST, ERROR, "Error : Normal Wi-Fi Enable Fail........\n");
 				return -1;
 			}
 		}
@@ -2400,7 +2502,7 @@ static VOID wlanRemove(VOID)
 	/* 4 <0> Sanity check */
 	ASSERT(u4WlanDevNum <= CFG_MAX_WLAN_DEVICES);
 	if (u4WlanDevNum == 0) {
-		DBGLOG(INIT, INFO, "0 == u4WlanDevNum\n");
+		DBGLOG(INIT, ERROR, "0 == u4WlanDevNum\n");
 		return;
 	}
 #if (CFG_ENABLE_WIFI_DIRECT && MTK_WCN_HIF_SDIO && CFG_SUPPORT_MTK_ANDROID_KK)
@@ -2413,7 +2515,7 @@ static VOID wlanRemove(VOID)
 
 	ASSERT(prDev);
 	if (prDev == NULL) {
-		DBGLOG(INIT, INFO, "NULL == prDev\n");
+		DBGLOG(INIT, ERROR, "NULL == prDev\n");
 		return;
 	}
 
@@ -2486,9 +2588,9 @@ static VOID wlanRemove(VOID)
 
 #if CFG_ENABLE_WIFI_DIRECT
 	if (prGlueInfo->prAdapter->fgIsP2PRegistered) {
-		DBGLOG(INIT, INFO, "p2pNetUnregister...\n");
+		DBGLOG(INIT, TRACE, "p2pNetUnregister...\n");
 		p2pNetUnregister(prGlueInfo, FALSE);
-		DBGLOG(INIT, INFO, "p2pRemove...\n");
+		DBGLOG(INIT, TRACE, "p2pRemove...\n");
 		/*p2pRemove must before wlanAdapterStop */
 		p2pRemove(prGlueInfo);
 	}
@@ -2514,10 +2616,10 @@ static VOID wlanRemove(VOID)
 #endif
 
 	wlanAdapterStop(prAdapter);
-	DBGLOG(INIT, INFO, "Number of Stalled Packets = %d\n", GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingFrameNum));
+	DBGLOG(INIT, TRACE, "Number of Stalled Packets = %d\n", GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingFrameNum));
 
 	HAL_LP_OWN_SET(prAdapter, &fgResult);
-	DBGLOG(INIT, INFO, "HAL_LP_OWN_SET(%d)\n", fgResult);
+	DBGLOG(INIT, TRACE, "HAL_LP_OWN_SET(%d)\n", fgResult);
 
 	/* 4 <x> Stopping handling interrupt and free IRQ */
 	glBusFreeIrq(prDev, prGlueInfo);

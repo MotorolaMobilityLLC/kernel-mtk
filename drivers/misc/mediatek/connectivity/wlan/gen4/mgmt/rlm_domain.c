@@ -804,6 +804,55 @@ rlmDomainGetChnlList(P_ADAPTER_T prAdapter,
 
 /*----------------------------------------------------------------------------*/
 /*!
+* \brief Retrieve DFS channels from 5G band
+*
+* \param[in/out] ucMaxChannelNum: max array size
+*                pucNumOfChannel: pointer to returned channel number
+*                paucChannelList: pointer to returned channel list array
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+VOID rlmDomainGetDfsChnls(P_ADAPTER_T prAdapter,
+			  UINT_8 ucMaxChannelNum, PUINT_8 pucNumOfChannel, P_RF_CHANNEL_INFO_T paucChannelList)
+{
+	UINT_8 i, j, ucNum;
+	P_DOMAIN_SUBBAND_INFO prSubband;
+	P_DOMAIN_INFO_ENTRY prDomainInfo;
+
+	ASSERT(prAdapter);
+	ASSERT(paucChannelList);
+	ASSERT(pucNumOfChannel);
+
+	prDomainInfo = rlmDomainGetDomainInfo(prAdapter);
+	ASSERT(prDomainInfo);
+
+	ucNum = 0;
+	for (i = 0; i < MAX_SUBBAND_NUM; i++) {
+		prSubband = &prDomainInfo->rSubBand[i];
+
+		if (prSubband->ucBand == BAND_5G) {
+			if (!prAdapter->fgEnable5GBand)
+				continue;
+
+			if (prSubband->fgDfs == TRUE) {
+				for (j = 0; j < prSubband->ucNumChannels; j++) {
+					if (ucNum >= ucMaxChannelNum)
+						break;
+					paucChannelList[ucNum].eBand = prSubband->ucBand;
+					paucChannelList[ucNum].ucChannelNum =
+					    prSubband->ucFirstChannelNum + j * prSubband->ucChannelSpan;
+					ucNum++;
+				}
+			}
+		}
+	}
+
+	*pucNumOfChannel = ucNum;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
 * @brief
 *
 * @param[in]
