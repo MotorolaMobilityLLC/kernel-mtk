@@ -66,10 +66,12 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				/*1. Turn on ARM PLL*/
 				armpll_control(1, 1);
 				/*2. Non-pause FQHP function*/
+#if 0
 				if (action == CPU_UP_PREPARE_FROZEN)
-					mt_pause_armpll(FH_PLL0, 0, 1);
+					mt_pause_armpll(FH_PLL0, 0);
 				else
-					mt_pause_armpll(FH_PLL0, 0, 0)
+#endif
+					mt_pause_armpll(FH_PLL0, 0);
 
 				/*3. Switch to HW mode*/
 				mp_enter_suspend(0, 1);
@@ -92,10 +94,12 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					hps_power_on_vproc2();
 #endif
 					/*4. Turn on ARM PLL*/
+#if 0
 					if (action == CPU_UP_PREPARE_FROZEN)
-						mt_pause_armpll(FH_PLL1, 0, 1);
+						mt_pause_armpll(FH_PLL1, 0);
 					else
-						mt_pause_armpll(FH_PLL1, 0, 0);
+#endif
+						mt_pause_armpll(FH_PLL1, 0);
 
 					/*5. Non-pause FQHP function*/
 					mt_pause_armpll(FH_PLL1, 0);
@@ -117,10 +121,12 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				armpll_control(3, 1);
 
 				/*2. Non-pause FQHP function*/
+#if 0
 				if (action == CPU_UP_PREPARE_FROZEN)
-					mt_pause_armpll(FH_PLL2, 0, 1);
+					mt_pause_armpll(FH_PLL2, 0);
 				else
-					mt_pause_armpll(FH_PLL2, 0, 0);
+#endif
+					mt_pause_armpll(FH_PLL2, 0);
 #endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0);
 			}
@@ -145,9 +151,9 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 
 				/*2. Pause FQHP function*/
 				if (action == CPU_DEAD_FROZEN)
-					mt_pause_armpll(FH_PLL0, 1, 1);
+					mt_pause_armpll(FH_PLL0, 0x11);
 				else
-					mt_pause_armpll(FH_PLL0, 1, 0);
+					mt_pause_armpll(FH_PLL0, 0x01);
 
 				/*3. Turn off ARM PLL*/
 				armpll_control(1, 0);
@@ -158,9 +164,9 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 
 				/*2. Pause FQHP function*/
 				if (action == CPU_DEAD_FROZEN)
-					mt_pause_armpll(FH_PLL1, 1, 1);
+					mt_pause_armpll(FH_PLL1, 0x11);
 				else
-					mt_pause_armpll(FH_PLL1, 1, 0)
+					mt_pause_armpll(FH_PLL1, 0x01);
 
 				/*3. Turn off ARM PLL*/
 				armpll_control(2, 0);
@@ -177,9 +183,9 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 
 				/*2. Turn off ARM PLL*/
 				if (action == CPU_DEAD_FROZEN)
-					mt_pause_armpll(FH_PLL2, 1, 1);
+					mt_pause_armpll(FH_PLL2, 0x11);
 				else
-					mt_pause_armpll(FH_PLL2, 1, 0);
+					mt_pause_armpll(FH_PLL2, 0x01);
 				break;
 			default:
 				break;
