@@ -346,7 +346,7 @@ static int hps_algo_check_criteria(void)
 
 static int hps_algo_do_cluster_action(unsigned int cluster_id)
 {
-	unsigned int cpu, target_cores, online_cores, cpu_id_min, cpu_id_max;
+	int cpu, target_cores, online_cores, cpu_id_min, cpu_id_max;
 
 	target_cores = hps_sys.cluster_info[cluster_id].target_core_num;
 	online_cores = hps_sys.cluster_info[cluster_id].online_core_num;
