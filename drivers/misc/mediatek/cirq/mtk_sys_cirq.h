@@ -94,7 +94,7 @@ static void cirq_fast_sw_flush(void);
 struct cirq_reg {
 	unsigned int reg_num;
 	unsigned int used;
-	unsigned int mask;
+	unsigned long mask;
 	unsigned int pol;
 	unsigned int sen;
 	unsigned long pending;
