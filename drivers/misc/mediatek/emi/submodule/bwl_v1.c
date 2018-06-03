@@ -34,6 +34,7 @@ static void __iomem *CHN_EMI_BASE[MAX_CH];
 
 #ifdef DECS_ON_SSPM
 static void __iomem *LAST_EMI_BASE;
+static unsigned int init_status;
 #endif
 
 /* reg table and pointer*/
@@ -109,6 +110,14 @@ int bwl_ctrl(unsigned int scn, unsigned int op)
 		return -1;
 
 	down(&bwl_sem);
+#ifdef DECS_ON_SSPM
+	if (init_status) {
+		if (acquire_bwl_ctrl(LAST_EMI_BASE)) {
+			up(&bwl_sem);
+			return -1;
+		}
+	}
+#endif
 
 	if (op == 1)
 		ctrl_table[scn]++;
@@ -134,6 +143,11 @@ int bwl_ctrl(unsigned int scn, unsigned int op)
 		cur_scn = highest;
 	}
 
+#ifdef DECS_ON_SSPM
+	if (init_status)
+		release_bwl_ctrl(LAST_EMI_BASE);
+	init_status = 1;
+#endif
 	up(&bwl_sem);
 
 	return 0;
@@ -191,11 +205,6 @@ static ssize_t scn_store(struct device_driver *driver,
 	int i;
 	char *name;
 
-#ifdef DECS_ON_SSPM
-	if (acquire_bwl_ctrl(LAST_EMI_BASE))
-		return count;
-#endif
-
 	for (i = 0; i < BWL_SCN_MAX; i++) {
 		name = scn_name[i].name;
 
@@ -216,10 +225,6 @@ static ssize_t scn_store(struct device_driver *driver,
 			break;
 		}
 	}
-
-#ifdef DECS_ON_SSPM
-	release_bwl_ctrl(LAST_EMI_BASE);
-#endif
 
 	return count;
 }
