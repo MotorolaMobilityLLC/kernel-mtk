@@ -27,7 +27,7 @@
 
 uint32_t TEECK_Test_Add(KREE_SESSION_HANDLE session, uint32_t a, uint32_t b)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret;
 
@@ -58,7 +58,7 @@ void tz_test(void)
 	struct timespec start, end;
 	long long ns;
 	int i;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t *ptr;
 	int size;
 

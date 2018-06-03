@@ -32,6 +32,5 @@ enum eMTEE_PM_State {
 	MTEE_RESUME,
 	MTEE_RESUME_EARLY,
 };
-typedef enum eMTEE_PM_State MTEE_PM_State;
 
 #endif				/* __TRUSTZONE_TA_PM__ */

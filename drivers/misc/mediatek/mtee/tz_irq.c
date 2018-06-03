@@ -36,7 +36,7 @@ static irqreturn_t KREE_IrqHandler(int virq, void *dev)
 {
 	struct irq_data *data = irq_get_irq_data(virq);
 	uint32_t paramTypes;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	if (!data)
@@ -173,7 +173,7 @@ void kree_irq_init(void)
 
 int kree_set_fiq(int irq, unsigned long irq_flags)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 	unsigned long tz_irq_flags = 0;
 
@@ -201,7 +201,7 @@ int kree_set_fiq(int irq, unsigned long irq_flags)
 
 static void __kree_enable_fiq(int irq, int enable)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	param[0].value.a = irq;
@@ -227,7 +227,7 @@ void kree_disable_fiq(int irq)
 
 void kree_query_fiq(int irq, int *enable, int *pending)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	param[0].value.a = irq;
@@ -246,7 +246,7 @@ void kree_query_fiq(int irq, int *enable, int *pending)
 
 unsigned int kree_fiq_get_intack(void)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	ret = KREE_TeeServiceCall(irq_session, TZCMD_IRQ_GET_INTACK,
@@ -260,7 +260,7 @@ unsigned int kree_fiq_get_intack(void)
 void kree_fiq_eoi(unsigned int iar)
 {
 	TZ_RESULT ret;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 
 	param[0].value.a = iar;
 	ret = KREE_TeeServiceCall(irq_session, TZCMD_IRQ_EOI,
@@ -271,7 +271,7 @@ void kree_fiq_eoi(unsigned int iar)
 
 int kree_raise_softfiq(unsigned int mask, unsigned int irq)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	param[0].value.a = mask;
@@ -285,7 +285,7 @@ int kree_raise_softfiq(unsigned int mask, unsigned int irq)
 
 void kree_irq_mask_all(unsigned int *pmask, unsigned int size)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	param[0].mem.buffer = pmask;
@@ -298,7 +298,7 @@ void kree_irq_mask_all(unsigned int *pmask, unsigned int size)
 
 void kree_irq_mask_restore(unsigned int *pmask, unsigned int size)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	param[0].mem.buffer = pmask;
