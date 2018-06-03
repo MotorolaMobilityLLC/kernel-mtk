@@ -1391,10 +1391,10 @@ static ssize_t show_AUXADC_channel(struct device *dev, struct device_attribute *
 
 	for (i = 0; i < ADC_CHANNEL_MAX; i++) {
 		/* Find correct channel name to show */
-		memset(channel_name, 0, 256);
+		memset(channel_name, 0, 64);
 		for (j = 0; j < ADC_CHANNEL_MAX; j++) {
 			if (i == g_adc_info[j].channel_number) {
-				memcpy(channel_name, g_adc_info[j].channel_name, 256);
+				memcpy(channel_name, g_adc_info[j].channel_name, 64);
 				break;
 			}
 		}
