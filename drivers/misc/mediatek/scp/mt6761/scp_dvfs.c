@@ -77,7 +77,7 @@ enum {
  ****************************/
 
 /* -1:SCP DVFS OFF, 1:SCP DVFS ON */
-static int scp_dvfs_flag = -1;
+static int scp_dvfs_flag = 1;
 
 /*
  * 0: SCP Sleep: OFF,
