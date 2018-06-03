@@ -64,7 +64,7 @@
 #define IDLE_TAG     "Power/swap "
 #define idle_pr_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
 #define idle_pr_warn(fmt, args...)		pr_warn(IDLE_TAG fmt, ##args)
-#define idle_pr_info(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
+#define idle_pr_info(fmt, args...)		pr_info(IDLE_TAG fmt, ##args)
 #define idle_pr_ver(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 #define idle_pr_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 
@@ -271,7 +271,6 @@ static unsigned int     dpidle_run_once;
 static bool             dpidle_force_vcore_lp_mode;
 
 /* SODI3 */
-
 static unsigned int     soidle3_pll_block_mask[NR_PLLS] = {0x0};
 static unsigned int     soidle3_time_criteria = 65000; /* 5ms */
 static unsigned long    soidle3_cnt[NR_CPUS] = {0};
@@ -281,6 +280,7 @@ static bool             soidle3_by_pass_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
 static u32              sodi3_flags = SODI_FLAG_REDUCE_LOG;
+static int              sodi3_by_uptime_count;
 static bool             sodi3_force_vcore_lp_mode;
 
 /* SODI */
@@ -291,6 +291,7 @@ static bool             soidle_by_pass_cg;
 bool                    soidle_by_pass_pg;
 static bool             soidle_by_pass_en;
 static u32              sodi_flags = SODI_FLAG_REDUCE_LOG;
+static int              sodi_by_uptime_count;
 
 /* MCDI */
 static unsigned int     mcidle_time_criteria = 3000; /* 3ms */
@@ -652,6 +653,22 @@ static bool soidle3_can_enter(int cpu, int reason)
 	}
 	#endif
 
+	if (sodi3_by_uptime_count != -1) {
+		struct timespec uptime;
+		unsigned long val;
+
+		get_monotonic_boottime(&uptime);
+		val = (unsigned long)uptime.tv_sec;
+		if (val <= 30) {
+			sodi3_by_uptime_count++;
+			reason = BY_OTH;
+			goto out;
+		} else {
+			idle_pr_info("SODI3: blocking by uptime, count = %d\n", sodi3_by_uptime_count);
+			sodi3_by_uptime_count = -1;
+		}
+	}
+
 	if (!next_timer_criteria_check(soidle3_time_criteria)) {
 		reason = BY_TMR;
 		goto out;
@@ -748,6 +765,22 @@ static bool soidle_can_enter(int cpu, int reason)
 		}
 	}
 	#endif
+
+	if (sodi_by_uptime_count != -1) {
+		struct timespec uptime;
+		unsigned long val;
+
+		get_monotonic_boottime(&uptime);
+		val = (unsigned long)uptime.tv_sec;
+		if (val <= 20) {
+			sodi_by_uptime_count++;
+			reason = BY_OTH;
+			goto out;
+		} else {
+			idle_pr_info("SODI: blocking by uptime, count = %d\n", sodi_by_uptime_count);
+			sodi_by_uptime_count = -1;
+		}
+	}
 
 	if (!next_timer_criteria_check(soidle_time_criteria)) {
 		reason = BY_TMR;
