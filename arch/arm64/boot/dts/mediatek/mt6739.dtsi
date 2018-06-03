@@ -54,6 +54,18 @@
 		#size-cells = <2>;
 		ranges;
 		/*TODO: add reserved memory node here*/
+		pstore-reserved-memory@54410000 {
+			compatible = "mediatek,pstore";
+			reg = <0 0x54410000 0 0xe0000>;
+		};
+		ram_console-reserved-memory@54400000 {
+			compatible = "mediatek,ram_console";
+			reg = <0 0x54400000 0 0x10000>;
+		};
+		minirdump-reserved-memory@544f0000{
+			compatible = "mediatek,minirdump";
+			reg = <0 0x544f0000 0 0x10000>;
+		};
 		atf: atf-reserved-memory@44610000 {
 			compatible = "mediatek,mt6739-atf-reserved-memory";
 			no-map;
