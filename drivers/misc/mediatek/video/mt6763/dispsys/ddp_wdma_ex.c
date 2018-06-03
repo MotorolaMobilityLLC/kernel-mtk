@@ -928,6 +928,7 @@ int wdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 
 	enum CMDQ_ENG_ENUM cmdq_engine;
 	enum CMDQ_EVENT_ENUM cmdq_event;
+	enum CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
 
 	cmdq_engine = wdma_idx == 0 ? CMDQ_ENG_DISP_WDMA0 : CMDQ_ENG_DISP_WDMA1;
 	cmdq_event  = wdma_idx == 0 ? CMDQ_EVENT_DISP_WDMA0_EOF : CMDQ_EVENT_DISP_WDMA1_EOF;
@@ -966,7 +967,6 @@ int wdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 		cmdqRecSecureEnableDAPC(nonsec_switch_handle, (1LL << cmdq_engine));
 		if (handle != NULL) {
 			/*Async Flush method*/
-			enum CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
 			/*cmdq_event_nonsec_end  = module_to_cmdq_event_nonsec_end(module);*/
 			cmdq_event_nonsec_end  = wdma_idx == 0 ? CMDQ_SYNC_DISP_WDMA0_2NONSEC_END
 						: CMDQ_SYNC_DISP_WDMA1_2NONSEC_END;

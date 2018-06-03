@@ -1783,11 +1783,10 @@ int dpmgr_wait_ovl_available(int ovl_num)
 	return ret;
 }
 
-int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const char *caller)
+int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, int module_name, const char *caller)
 {
 
 	int i = 0;
-	int module_name;
 	struct ddp_path_handle *handle;
 	int *modules;
 	int module_num;
@@ -1799,12 +1798,18 @@ int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const 
 	DDPMSG("[SVP] switch module to nonsec on scenario %s, caller=%s\n",
 		ddp_get_scenario_name(handle->scenario), caller);
 
-	for (i = module_num - 1; i >= 0; i--) {
-		module_name = modules[i];
-		if (ddp_get_module_driver(module_name) != 0) {
-			if (ddp_get_module_driver(module_name)->switch_to_nonsec != 0)
-				ddp_get_module_driver(module_name)->switch_to_nonsec(module_name, cmdqhandle);
+	if (module_name == DISP_MODULE_NUM) {
+		for (i = module_num - 1; i >= 0; i--) {
+			module_name = modules[i];
+			if (ddp_get_module_driver(module_name) != 0) {
+				if (ddp_get_module_driver(module_name)->switch_to_nonsec != 0)
+					ddp_get_module_driver(module_name)->switch_to_nonsec(module_name, cmdqhandle);
+			}
 		}
+	} else if (ddp_get_module_driver(module_name) != 0) {
+		if (ddp_get_module_driver(module_name)->switch_to_nonsec != 0)
+			ddp_get_module_driver(module_name)->switch_to_nonsec(module_name, cmdqhandle);
 	}
+
 	return 0;
 }

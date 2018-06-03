@@ -411,7 +411,7 @@ int dpmgr_module_notify(enum DISP_MODULE_ENUM module, enum DISP_PATH_EVENT event
 
 
 int dpmgr_wait_ovl_available(int ovl_num);
-int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const char *caller);
+int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, int module_name, const char *caller);
 
 /* dpmgr_get_input_address for extenal display
 *  get physical address from register
