@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015-2016, Linaro Limited
+ * Copyright (c) 2015-2016, MICROTRUST
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and

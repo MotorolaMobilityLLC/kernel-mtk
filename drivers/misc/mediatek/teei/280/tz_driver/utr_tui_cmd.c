@@ -93,9 +93,13 @@ unsigned long create_tui_buff(int buff_size, unsigned int fdrv_type)
 
 	/* Call the smc_fast_call */
 	/* get_online_cpus(); */
+
+	ut_pm_mutex_lock(&pm_mutex);
 	down(&(smc_lock));
 	invoke_fastcall();
 	down(&(boot_sema));
+	ut_pm_mutex_unlock(&pm_mutex);
+
 	/* put_online_cpus(); */
 
 	Invalidate_Dcache_By_Area((unsigned long)message_buff,

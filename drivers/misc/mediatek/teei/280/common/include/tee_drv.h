@@ -1,15 +1,16 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
- * All Rights Reserved.
+ * Copyright (c) 2015-2016, Linaro Limited
+ * Copyright (c) 2017-2018, MICROTRUST
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation.
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
+ *
  */
 
 #ifndef __TEE_DRV_H
