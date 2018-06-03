@@ -155,7 +155,7 @@
 
 #define DISP_REG_GET(reg32) __raw_readl((unsigned long *)(reg32))
 #define DISP_REG_GET_FIELD(field, reg32) \
-	REG_FLD_VAL_GET(field, __raw_readl((unsigned int *)(reg32)))
+	REG_FLD_VAL_GET(field, __raw_readl((unsigned long *)(reg32)))
 
 /* polling register until masked bit is 1 */
 #define DDP_REG_POLLING(reg32, mask) \

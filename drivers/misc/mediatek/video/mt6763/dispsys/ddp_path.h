@@ -24,6 +24,7 @@ enum DDP_MODE {
 
 enum DDP_SCENARIO_ENUM {
 	DDP_SCENARIO_PRIMARY_DISP = 0, /* main path */
+	DDP_SCENARIO_PRIMARY_BYPASS_PQ_DISP,	/* bypass pq module */
 	DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP, /* by pass ovl */
 	DDP_SCENARIO_PRIMARY_RDMA0_DISP, /* debug */
 	DDP_SCENARIO_PRIMARY_OVL_MEMOUT, /* dc */
@@ -34,7 +35,7 @@ enum DDP_SCENARIO_ENUM {
 	DDP_SCENARIO_SUB_ALL,
 	DDP_SCENARIO_MAX
 };
-#define DDP_ENING_NUM (24)
+#define DDP_ENING_NUM (20)
 
 void ddp_connect_path(enum DDP_SCENARIO_ENUM scenario, void *handle);
 void ddp_disconnect_path(enum DDP_SCENARIO_ENUM scenario, void *handle);

@@ -666,7 +666,7 @@ static int __init disp_probe_1(void)
 	}
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
-#if 1
+#if 0
 		/* check all cg on when early porting and bring up */
 		ASSERT(DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0) == 0);
 		ASSERT((DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1)&0xff) == 0);

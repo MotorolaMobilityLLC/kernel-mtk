@@ -126,6 +126,8 @@ do {\
 
 #define DDPMSG(fmt, args...) DISP_LOG_I(fmt, ##args)
 
+#define DDPWRN(fmt, args...) DISP_LOG_W(fmt, ##args)
+
 #define DDPERR(fmt, args...) DISP_LOG_E(fmt, ##args)
 
 #define DDPDUMP(fmt, ...)						\

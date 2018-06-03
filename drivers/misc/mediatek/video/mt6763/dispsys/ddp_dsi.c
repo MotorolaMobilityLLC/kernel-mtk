@@ -116,7 +116,7 @@ do {	\
 } while (0)
 
 #else
-#define MIPITX_INREGBIT(addr, field) (REG_FLD_VAL((field), __raw_readl((unsigned long *)(addr))))
+#define MIPITX_INREGBIT(addr, field) DISP_REG_GET_FIELD(field, addr)
 
 #define MIPITX_OUTREG32(addr, val) \
 do {\
@@ -333,7 +333,7 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 			DDPDUMP("== DSI_PHY%d REGS ==\n", i);
-				for (k = 0; k < sizeof(struct DSI_PHY_REGS); k += 16) {
+				for (k = 0; k < 0x6A0; k += 16) {
 				DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
 					INREG32((mipi_base_addr + k)),
 					INREG32((mipi_base_addr + k + 0x4)),
@@ -409,7 +409,7 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 		_set_condition_and_wake_up(&(_dsi_context[i].read_wq));
 
 	if (status.CMD_DONE)
-		wake_up_interruptible(&(_dsi_context[i].cmddone_wq.wq));
+		wake_up(&(_dsi_context[i].cmddone_wq.wq));
 
 #if 0
 	if (status.TE_RDY) {
@@ -423,7 +423,7 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 #endif
 
 	if (status.VM_DONE)
-		wake_up_interruptible(&(_dsi_context[i].vm_done_wq.wq));
+		wake_up(&(_dsi_context[i].vm_done_wq.wq));
 
 	if (status.VM_CMD_DONE)
 		_set_condition_and_wake_up(&(_dsi_context[i].vm_cmd_done_wq));
@@ -680,8 +680,7 @@ static void dsi_wait_not_busy(enum DISP_MODULE_ENUM module, struct cmdqRecStruct
 
 	if (!(DSI_REG[i]->DSI_INTSTA.BUSY))
 		return;
-	/* FIXME: workaround for bringup issue */
-	mdelay(1);
+
 	ret = wait_event_timeout(_dsi_context[i].cmddone_wq.wq,
 					       !(DSI_REG[i]->DSI_INTSTA.BUSY), HZ/10);
 	if (ret == 0) {
@@ -1323,7 +1322,7 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 	/* MIPITX lane swap setting */
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		/* step 0 MIPITX lane swap setting */
-		if (unlikely(dsi_params->lane_swap_en)) {
+		if (dsi_params->lane_swap_en) {
 			DISPINFO("MIPITX Lane Swap Enabled for DSI Port %d\n", i);
 			DISPINFO("MIPITX Lane Swap mapping: %d|%d|%d|%d|%d|%d\n",
 				dsi_params->lane_swap[i][MIPITX_PHY_LANE_0],
@@ -1514,12 +1513,6 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 			}
 
 		}
-		/* step 4 */
-		/* PLL EN */
-		mdelay(1);
-		MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_PLL_CON1, FLD_RG_DSI_PLL_EN, 1);
-
-		mdelay(1);
 	}
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -1528,6 +1521,13 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 		} else {
 			MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_PLL_CON2, FLD_RG_DSI_PLL_SDM_SSC_EN, 0);
 		}
+	}
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		/* PLL EN */
+		mdelay(1);
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_PLL_CON1, FLD_RG_DSI_PLL_EN, 1);
+
+		mdelay(1);
 	}
 }
 /* DSI_PHY_clk_switch
@@ -1616,8 +1616,8 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 		ui = 1000 / (dsi_params->PLL_CLOCK * 2) + 0x01;
 		cycle_time = 8000 / (dsi_params->PLL_CLOCK * 2) + 0x01;
 		DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
-			       "[DISP] - kernel - DSI_PHY_TIMCONFIG, Cycle Time = %d(ns), Unit Interval = %d(ns). , lane# = %d\n",
-			       cycle_time, ui, lane_no);
+			"[DISP] - kernel - DSI_PHY_TIMCONFIG, Cycle Time = %d(ns), Unit Interval = %d(ns). , lane# = %d\n",
+			cycle_time, ui, lane_no);
 	} else {
 		DISPERR("[dsi_dsi.c] PLL clock should not be 0!!!\n");
 		ASSERT(0);
@@ -1690,7 +1690,7 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 							 cycle_time) : dsi_params->CLK_HS_POST;
 
 	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
-		       "[DISP] - kernel - DSI_PHY_TIMCONFIG, HS_TRAIL = %d, HS_ZERO = %d, HS_PRPR = %d, LPX = %d, TA_GET = %d, TA_SURE = %d, TA_GO = %d, CLK_TRAIL = %d, CLK_ZERO = %d, CLK_HS_PRPR = %d\n",
+			"[DISP] - kernel - DSI_PHY_TIMCONFIG, HS_TRAIL = %d, HS_ZERO = %d, HS_PRPR = %d, LPX = %d, TA_GET = %d, TA_SURE = %d, TA_GO = %d, CLK_TRAIL = %d, CLK_ZERO = %d, CLK_HS_PRPR = %d\n",
 			timcon0.HS_TRAIL, timcon0.HS_ZERO, timcon0.HS_PRPR, timcon0.LPX,
 			timcon1.TA_GET, timcon1.TA_SURE, timcon1.TA_GO, timcon2.CLK_TRAIL,
 			timcon2.CLK_ZERO, timcon3.CLK_HS_PRPR);
@@ -2992,6 +2992,7 @@ static void _dsi_basic_irq_enable(enum DISP_MODULE_ENUM module, void *cmdq)
 	}
 
 	DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, INP_UNFINISH_INT_EN, 1);
+	DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, BUFFER_UNDERRUN_INT_EN, 1);
 
 }
 
@@ -3517,7 +3518,7 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCT
 	enum DDP_IOCTL_NAME ioctl = (enum DDP_IOCTL_NAME)ioctl_cmd;
 
 	/* DISPFUNC(); */
-	DISPCHECK("[ddp_dsi_ioctl] index = %d\n", ioctl);
+	/* DISPCHECK("[ddp_dsi_ioctl] index = %d\n", ioctl); */
 	switch (ioctl) {
 	case DDP_DSI_SW_INIT:
 		{
@@ -3638,7 +3639,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 #endif
 
 	/* fhd no split setting */
-	DSI_OUTREG32(NULL, DISP_REG_CONFIG_MMSYS_MISC, 0x14);
+	DSI_OUTREG32(cmdq, DISP_REG_CONFIG_MMSYS_MISC, 0x14);
 #if 0
 	/* dsi pattern */
 	DSI_BIST_Pattern_Test(module, NULL, 1, 0x00ffff00);
@@ -3769,7 +3770,7 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	DISPFUNC();
 	/* mipi was alreay initialized: lk(mipi init)->kernel(power on) */
-	if (MIPITX_IsEnabled(module, NULL) == 0x0) {
+	if (MIPITX_IsEnabled(module, NULL)) {
 		ASSERT(not_first_time == 0);
 		not_first_time = 1;
 		DISPCHECK("MIPITX was alreay initialized\n");

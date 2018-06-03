@@ -402,6 +402,9 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & DISP_MUTEX_INT_MSK;
 		reg_val1 = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA_1);
 
+		/* for debug */
+		pr_warn("[DDP/IRQ] mutex_status = 0x%08x\n", DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA));
+
 		DDPIRQ("%s, irq_status = 0x%x, irq_status1 = 0x%x\n",
 				ddp_get_module_name(module), reg_val, reg_val1);
 

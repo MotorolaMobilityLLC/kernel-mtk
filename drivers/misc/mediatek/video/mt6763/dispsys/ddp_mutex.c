@@ -268,7 +268,7 @@ static void ddp_release_mutex(int mutex_id, void *handle)
 
 void ddp_mutex_interrupt_enable(int mutex_id, void *handle)
 {
-
+#if 0
 	DDPDBG("mutex %d interrupt enable\n", mutex_id);
 	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 0x1 << mutex_id, 0x1 << mutex_id); /* sof irq */
 	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 0x1 << (mutex_id + DISP_MUTEX_TOTAL),
@@ -277,7 +277,7 @@ void ddp_mutex_interrupt_enable(int mutex_id, void *handle)
 	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN_1, 0x1 << mutex_id, 0x1 << mutex_id); /* regs update irq */
 	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN_1, 0x1 << (mutex_id + DISP_MUTEX_TOTAL),
 		      0x1 << (mutex_id + DISP_MUTEX_TOTAL)); /* update timeout irq */
-
+#endif
 }
 
 void ddp_mutex_interrupt_disable(int mutex_id, void *handle)
