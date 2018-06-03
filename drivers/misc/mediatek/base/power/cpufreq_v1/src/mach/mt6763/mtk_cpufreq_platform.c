@@ -20,11 +20,6 @@
 #include "mtk_cpufreq_platform.h"
 #include "../../mtk_cpufreq_hybrid.h"
 
-#define FH_PLL0 0
-#define FH_PLL1 0
-#define FH_PLL2 0
-#define FH_PLL4 0
-
 static struct regulator *regulator_proc1;
 static struct regulator *regulator_sram1;
 
@@ -326,10 +321,9 @@ unsigned char get_clkdiv(struct pll_ctrl_t *pll_p)
 	return cur_clkdiv;
 }
 
-
 static void adjust_freq_hopping(struct pll_ctrl_t *pll_p, unsigned int dds)
 {
-	/* mt_dfs_armpll(pll_p->hopping_id, dds); */
+	mt_dfs_armpll(pll_p->hopping_id, dds);
 }
 
 /* Frequency API */
@@ -497,7 +491,7 @@ struct pll_ctrl_t pll_ctrl[NR_MT_PLL] = {
 	[PLL_CCI_CLUSTER] = {
 		.name		= __stringify(PLL_CCI_CLUSTER),
 		.pll_id		= PLL_CCI_CLUSTER,
-		.hopping_id	= FH_PLL4,	/* CCIPLL */
+		.hopping_id	= FH_PLL3,	/* CCIPLL */
 		.pll_ops	= &pll_ops_cci,
 	},
 };
