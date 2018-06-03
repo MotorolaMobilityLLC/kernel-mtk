@@ -195,6 +195,7 @@ static DEFINE_MUTEX(bat_mutex);
 #define Get_META_BAT_SOC _IOW('k', 11, int)
 #define Get_META_BAT_CAR_TUNE_VALUE _IOW('k', 12, int)
 #define Set_META_BAT_CAR_TUNE_VALUE _IOW('k', 13, int)
+#define Set_BAT_DISABLE_NAFG _IOW('k', 14, int)
 /* add for meta tool----------------------------------------- */
 
 static struct class *adc_cali_class;
@@ -1748,7 +1749,12 @@ unsigned int TempToBattVolt(int temp, int update)
 	static int fg_current_temp;
 	static bool fg_current_state;
 	int fg_r_value = fg_cust_data.r_fg_value;
-	int	fg_meter_res_value = fg_cust_data.fg_meter_resistance;
+	int fg_meter_res_value = 0;
+
+	if (NO_BAT_TEMP_COMPENSATE == 0)
+		fg_meter_res_value = fg_cust_data.fg_meter_resistance;
+	else
+		fg_meter_res_value = 0;
 
 #ifdef RBAT_PULL_UP_VOLT_BY_BIF
 	vbif28 = pmic_get_vbif28_volt();
@@ -1856,7 +1862,10 @@ int force_get_tbat_internal(bool update)
 
 		if (bat_temperature_volt != 0) {
 			fg_r_value = fg_cust_data.r_fg_value;
-			fg_meter_res_value = fg_cust_data.fg_meter_resistance;
+			if (NO_BAT_TEMP_COMPENSATE == 0)
+				fg_meter_res_value = fg_cust_data.fg_meter_resistance;
+			else
+				fg_meter_res_value = 0;
 
 
 			gauge_dev_get_current(gauge_dev, &fg_current_state, &fg_current_temp);
@@ -1880,11 +1889,11 @@ int force_get_tbat_internal(bool update)
 #ifdef CONFIG_MTK_BIF_SUPPORT
 		/*	battery_charging_control(CHARGING_CMD_GET_BIF_TBAT, &bat_temperature_val); */
 #endif
-		bm_notice("[force_get_tbat] %d,%d,%d,%d,%d,%d r:%d %d\n",
+		bm_notice("[force_get_tbat] %d,%d,%d,%d,%d,%d r:%d %d %d\n",
 		bat_temperature_volt_temp, bat_temperature_volt,
 		fg_current_state, fg_current_temp,
 		fg_r_value, bat_temperature_val,
-		fg_meter_res_value, fg_r_value);
+		fg_meter_res_value, fg_r_value, NO_BAT_TEMP_COMPENSATE);
 
 		if (pre_bat_temperature_val2 == 0) {
 			pre_bat_temperature_volt_temp = bat_temperature_volt_temp;
@@ -3401,11 +3410,11 @@ void fg_drv_update_hw_status(void)
 	chr_vol = pmic_get_vbus();
 	tmp = force_get_tbat(true);
 
-	bm_err("car[%d,%ld,%ld,%ld,%ld] c:%d %d vbat:%d vbus:%d soc:%d %d gm3:%d %d %d\n",
+	bm_err("car[%d,%ld,%ld,%ld,%ld] c:%d %d vbat:%d vbus:%d soc:%d %d gm3:%d %d %d %d\n",
 		fg_coulomb, coulomb_plus.end, coulomb_minus.end, soc_plus.end, soc_minus.end,
 		fg_current_state, fg_current, bat_vol, chr_vol,
 		battery_get_bat_soc(), battery_get_bat_uisoc(),
-		gDisableGM30, fg_cust_data.disable_nafg, ntc_disable_nafg);
+		gDisableGM30, fg_cust_data.disable_nafg, ntc_disable_nafg, cmd_disable_nafg);
 
 	if (bat_get_debug_level() >= 7) {
 		gauge_coulomb_dump_list();
@@ -4383,6 +4392,32 @@ signed int battery_meter_meta_tool_cali_car_tune(int meta_current)
 	return cali_car_tune;		/* 1000 base */
 }
 
+#if IS_ENABLED(CONFIG_COMPAT)
+static long compat_adc_cali_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	bm_notice("compat_adc_cali_ioctl 32bit IOCTL, cmd=0x%08x\n", cmd);
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		bm_err("compat_adc_cali_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
+
+	switch (cmd) {
+	case Get_META_BAT_VOL:
+	case Get_META_BAT_SOC:
+	case Get_META_BAT_CAR_TUNE_VALUE:
+	case Set_META_BAT_CAR_TUNE_VALUE:
+	case Set_BAT_DISABLE_NAFG: {
+		bm_notice("compat_adc_cali_ioctl send to unlocked_ioctl cmd=0x%08x\n", cmd);
+		return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
+	}
+	default:
+		bm_err("compat_adc_cali_ioctl unknown IOCTL: 0x%08x\n", cmd);
+	}
+
+	return 0;
+}
+#endif
+
 static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int *user_data_addr;
@@ -4392,6 +4427,9 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	int adc_in_data[2] = { 1, 1 };
 	int adc_out_data[2] = { 1, 1 };
 	int temp_car_tune;
+	int isdisNAFG = 0;
+
+	bm_notice("adc_cali_ioctl enter\n");
 
 	mutex_lock(&bat_mutex);
 
@@ -4548,7 +4586,7 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		BMT_status.bat_vol = battery_get_bat_voltage();
 		adc_out_data[0] = BMT_status.bat_vol;
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
-
+		bm_notice("**** unlocked_ioctl :Get_META_BAT_VOL Done!\n");
 		break;
 	case Get_META_BAT_SOC:
 		user_data_addr = (int *)arg;
@@ -4556,20 +4594,19 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		BMT_status.UI_SOC2 = battery_get_bat_uisoc();
 		adc_out_data[0] = BMT_status.UI_SOC2;
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
-
+		bm_notice("**** unlocked_ioctl :Get_META_BAT_SOC Done!\n");
 		break;
 
 	case Get_META_BAT_CAR_TUNE_VALUE:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
 		adc_out_data[0] = fg_cust_data.car_tune_value;
-		bm_notice("Get_BAT_CAR_TUNE_VALUE, res=%d\n", adc_out_data[0]);
+		bm_err("Get_BAT_CAR_TUNE_VALUE, res=%d\n", adc_out_data[0]);
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
-
+		bm_notice("**** unlocked_ioctl :Get_META_BAT_CAR_TUNE_VALUE Done!\n");
 		break;
 
 	case Set_META_BAT_CAR_TUNE_VALUE:
-
 		/* meta tool input: adc_in_data[1] (mA)*/
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
@@ -4581,13 +4618,30 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		fg_cust_data.car_tune_value = temp_car_tune;
 		adc_out_data[0] = temp_car_tune;
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
-		bm_notice("Set_BAT_CAR_TUNE_VALUE[%d], res=%d, ret=%d\n",
+		bm_err("**** unlocked_ioctl Set_BAT_CAR_TUNE_VALUE[%d], result=%d, ret=%d\n",
 			adc_in_data[1], adc_out_data[0], ret);
 
 		break;
+
+	case Set_BAT_DISABLE_NAFG:
+		user_data_addr = (int *)arg;
+		ret = copy_from_user(adc_in_data, user_data_addr, 8);
+		isdisNAFG = adc_in_data[1];
+
+		if (isdisNAFG == 1) {
+			cmd_disable_nafg = true;
+			wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DISABLE_NAFG, 1);
+		} else if (isdisNAFG == 0) {
+			cmd_disable_nafg = false;
+			wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DISABLE_NAFG, 0);
+		}
+		bm_debug("**** unlocked_ioctl Set_BAT_DISABLE_NAFG,isdisNAFG=%d [%d]\n", isdisNAFG, adc_in_data[1]);
+		break;
+
 		/* add bing meta tool------------------------------- */
 
 	default:
+		bm_err("**** unlocked_ioctl unknown IOCTL: 0x%08x\n", cmd);
 		g_ADC_Cali = false;
 		break;
 	}
@@ -4621,6 +4675,9 @@ static int fb_early_init_dt_get_chosen(unsigned long node, const char *uname, in
 static const struct file_operations adc_cali_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = adc_cali_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_adc_cali_ioctl,
+#endif
 	.open = adc_cali_open,
 	.release = adc_cali_release,
 };
