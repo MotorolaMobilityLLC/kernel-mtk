@@ -947,7 +947,7 @@ WLAN_STATUS saaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 			/* update RCPI */
 			ASSERT(prSwRfb->prRxStatusGroup3);
-			prStaRec->ucRCPI = nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb);
+			prStaRec->ucRCPI = nicRxGetRcpiValueFromRxv(RCPI_MODE_MAX, prSwRfb);
 
 			eNextState = AA_STATE_IDLE;
 #if CFG_SUPPORT_RN

@@ -1334,12 +1334,12 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			prBssDesc->eBSSType = eBSSType;
 		} else if (HAL_RX_STATUS_GET_CHNL_NUM(prSwRfb->prRxStatus) !=
 			   prBssDesc->ucChannelNum
-			   && prBssDesc->ucRCPI > nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)) {
+			   && prBssDesc->ucRCPI > nicRxGetRcpiValueFromRxv(RCPI_MODE_MAX, prSwRfb)) {
 
 			/* for signal strength is too much weaker and previous beacon is not stale */
 			ASSERT(prSwRfb->prRxStatusGroup3);
 			if ((prBssDesc->ucRCPI -
-			     nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)) >=
+			     nicRxGetRcpiValueFromRxv(RCPI_MODE_MAX, prSwRfb)) >=
 			    REPLICATED_BEACON_STRENGTH_THRESHOLD
 			    && rCurrentTime - prBssDesc->rUpdateTime <= REPLICATED_BEACON_FRESH_PERIOD) {
 				return prBssDesc;
@@ -1662,7 +1662,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		ucHwChannelNum = HAL_RX_STATUS_GET_CHNL_NUM(prRxStatus);
 
 		ASSERT(prSwRfb->prRxStatusGroup3);
-		ucRxRCPI = nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb);
+		ucRxRCPI = nicRxGetRcpiValueFromRxv(RCPI_MODE_MAX, prSwRfb);
 		if (prBssDesc->eBand == BAND_2G4) {
 
 			/* Update RCPI if in right channel */
@@ -2138,7 +2138,7 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 				ASSERT(prSwRfb->prRxStatusGroup3);
 
 				ibssProcessMatchedBeacon(prAdapter, prAisBssInfo, prBssDesc,
-							 nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb));
+							 nicRxGetRcpiValueFromRxv(RCPI_MODE_MAX, prSwRfb));
 			}
 #endif /* CFG_SUPPORT_ADHOC */
 		}
