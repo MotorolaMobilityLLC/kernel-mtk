@@ -35,6 +35,7 @@
 #include <mtk_spm_pmic_wrap.h>
 #include <mtk_dvfsrc_reg.h>
 #include <mtk_eem.h>
+#include <ext_wd_drv.h>
 
 #ifdef CONFIG_MTK_SMI_EXT
 #include <mmdvfs_mgr.h>
@@ -1215,6 +1216,8 @@ static void dvfsrc_init(void)
 
 	/* enable DVFSRC */
 	spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) | (0x3));
+
+	mtk_rgu_cfg_emi_dcs(1);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
