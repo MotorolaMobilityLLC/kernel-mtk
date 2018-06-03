@@ -189,8 +189,13 @@ short  scp_set_pmic_vcore(unsigned int cur_freq)
 {
 	unsigned short ret_vc, ret_vs;
 	short ret = 0;
+	unsigned int ret_val[2];
 
 #ifdef DVFS_FIRST_VERSION
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON, 0);
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_MODE, 0);
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_ON, 0);
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_MODE, 0);
 	if (cur_freq > CLK_OPP3) {
 		ret_vc = pmic_scp_set_vcore(850000);
 		ret_vs = pmic_scp_set_vsram_vcore(950000);
@@ -208,9 +213,17 @@ short  scp_set_pmic_vcore(unsigned int cur_freq)
 		ret_vs = pmic_scp_set_vsram_vcore(850000);
 		scp_cur_volt = 3;
 	} else {
-		ret_vc = pmic_scp_set_vcore(600000);
-		ret_vs = pmic_scp_set_vsram_vcore(800000);
+		ret_vc = pmic_scp_set_vcore(800000);
+		ret_vs = pmic_scp_set_vsram_vcore(900000);
 	}
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON, 1);
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_MODE, 1);
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_ON, 1);
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_MODE, 1);
+	ret_val[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
+	ret_val[1] = pmic_get_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_VOSEL);
+	scp_dvfs_err("scp_cur_volt %d\n", scp_cur_volt);
+	scp_dvfs_info("vcore vosel, vsram vosel = (0x%x, 0x%x)\n", ret_val[0], ret_val[1]);
 #else
 	if (cur_freq > CLK_OPP3) {
 		ret_vc = pmic_scp_set_vcore(800000);
