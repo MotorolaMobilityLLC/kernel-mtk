@@ -1617,7 +1617,7 @@ int force_get_tbat(bool update)
 
 			if (((dtime.tv_sec <= 20) &&
 				(abs(pre_bat_temperature_val2 - bat_temperature_val) >= 5)) ||
-				(bat_temperature_val >= 58) || (bat_temperature_val <= 0)) {
+				bat_temperature_val >= 58) {
 				pr_err("[force_get_tbat][err] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d\n",
 					bat_temperature_volt_temp, bat_temperature_volt, fg_current_state,
 					fg_current_temp, fg_r_value, bat_temperature_val,
@@ -2803,6 +2803,40 @@ int wakeup_fg_algo(unsigned int flow_state)
 	}
 }
 
+int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1)
+{
+	update_fg_dbg_tool_value();
+
+	if (gDisableGM30) {
+		pr_err("FG daemon is disabled\n");
+		return -1;
+	}
+
+	if (g_fgd_pid != 0) {
+		struct fgd_nl_msg_t *fgd_msg;
+		int size = FGD_NL_MSG_T_HDR_LEN + sizeof(flow_state);
+
+		fgd_msg = vmalloc(size);
+		if (!fgd_msg) {
+			/* bm_err("Error: wakeup_fg_algo() vmalloc fail!!!\n"); */
+			return -1;
+		}
+
+		bm_debug("[wakeup_fg_algo] malloc size=%d pid=%d cmd:%d\n", size, g_fgd_pid, flow_state);
+		memset(fgd_msg, 0, size);
+		fgd_msg->fgd_cmd = FG_DAEMON_CMD_NOTIFY_DAEMON;
+		fgd_msg->fgd_subcmd = cmd;
+		fgd_msg->fgd_subcmd_para1 = para1;
+		memcpy(fgd_msg->fgd_data, &flow_state, sizeof(flow_state));
+		fgd_msg->fgd_data_len += sizeof(flow_state);
+		nl_send_to_user(g_fgd_pid, 0, fgd_msg);
+		vfree(fgd_msg);
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
 int wakeup_fg_algo_atomic(unsigned int flow_state)
 {
 	update_fg_dbg_tool_value();
@@ -3035,7 +3069,7 @@ void fg_drv_update_hw_status(void)
 	plugout_status = plugout_status_new;
 	tmp = tmp_new;
 
-	wakeup_fg_algo(FG_INTR_DUMP_INFO);
+	wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_LOG, 0);
 
 }
 
@@ -3712,7 +3746,7 @@ void exec_BAT_EC(int cmd, int param)
 
 static ssize_t show_FG_daemon_disable(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	bm_trace("[FG] show FG_daemon_log_level : %d\n", gDisableGM30);
+	bm_trace("[FG] show FG disable : %d\n", gDisableGM30);
 	return sprintf(buf, "%d\n", gDisableGM30);
 }
 
@@ -3727,6 +3761,39 @@ static ssize_t store_FG_daemon_disable(struct device *dev, struct device_attribu
 	return size;
 }
 static DEVICE_ATTR(FG_daemon_disable, 0664, show_FG_daemon_disable, store_FG_daemon_disable);
+
+static ssize_t show_FG_nafg_disable(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_trace("[FG] show nafg disable : %d\n", gDisableGM30);
+	return sprintf(buf, "%d\n", gDisableGM30);
+}
+
+static ssize_t store_FG_nafg_disable(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	unsigned long val = 0;
+	int ret;
+
+	bm_err("[store_FG_nafg_disable]\n");
+
+	if (buf != NULL && size != 0) {
+		bm_err("[store_FG_nafg_disable] buf is %s\n", buf);
+		ret = kstrtoul(buf, 10, &val);
+		if (val < 0) {
+			bm_err("[store_FG_nafg_disable] val is %d ??\n", (int)val);
+			val = 0;
+		}
+
+		wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DISABLE_NAFG, val);
+
+		bm_err("[store_FG_nafg_disable] FG_nafg_disable = %d\n", (int)val);
+	}
+
+
+	return size;
+}
+static DEVICE_ATTR(disable_nafg, 0664, show_FG_nafg_disable, store_FG_nafg_disable);
+
 
 static ssize_t show_FG_daemon_log_level(struct device *dev, struct device_attribute *attr,
 					char *buf)
@@ -4346,6 +4413,7 @@ static int battery_probe(struct platform_device *dev)
 	pmic_register_interrupt_callback(FG_RG_INT_EN_BAT2_L, fg_vbat2_l_int_handler);
 
 	/* sysfs node */
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_disable_nafg);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_log_level);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_disable);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
@@ -4468,6 +4536,21 @@ static const struct of_device_id mtk_bat_of_match[] = {
 MODULE_DEVICE_TABLE(of, mtk_bat_of_match);
 #endif
 
+static int battery_suspend(struct platform_device *dev, pm_message_t state)
+{
+	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
+	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
+	return 0;
+}
+
+static int battery_resume(struct platform_device *dev)
+{
+	pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
+	pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
+	return 0;
+}
+
+
 static struct platform_driver battery_dts_driver = {
 	.probe = battery_dts_probe,
 	.remove = NULL,
@@ -4486,8 +4569,8 @@ static struct platform_driver battery_driver = {
 	.probe = battery_probe,
 	.remove = NULL,
 	.shutdown = NULL,
-	.suspend = NULL,
-	.resume = NULL,
+	.suspend = battery_suspend,
+	.resume = battery_resume,
 	.driver = {
 		   .name = "battery",
 	},
