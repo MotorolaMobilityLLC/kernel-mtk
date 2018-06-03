@@ -89,8 +89,10 @@ static int _btif_dma_write(struct _mtk_btif_ *p_btif,
 
 static unsigned int btif_bbs_wr_direct(struct _btif_buf_str_ *p_bbs,
 				unsigned char *p_buf, unsigned int buf_len);
+#if 0
 static unsigned int btif_bbs_read(struct _btif_buf_str_ *p_bbs,
 			   unsigned char *p_buf, unsigned int buf_len);
+#endif
 static unsigned int btif_bbs_write(struct _btif_buf_str_ *p_bbs,
 			    unsigned char *p_buf, unsigned int buf_len);
 static void btif_dump_bbs_str(unsigned char *p_str, struct _btif_buf_str_ *p_bbs);
@@ -619,6 +621,7 @@ static int btif_file_release(struct inode *pinode, struct file *pfile)
 static ssize_t btif_file_read(struct file *pfile,
 			      char __user *buf, size_t count, loff_t *f_ops)
 {
+#if 0
 	int i_ret = 0;
 	int rd_len = 0;
 
@@ -646,11 +649,14 @@ static ssize_t btif_file_read(struct file *pfile,
 	up(&rd_mtx);
 	BTIF_INFO_FUNC("--, i_ret:%d\n", i_ret);
 	return i_ret;
+#endif
+	return 0;
 }
 
 ssize_t btif_file_write(struct file *filp,
 			const char __user *buf, size_t count, loff_t *f_pos)
 {
+#if 0
 	int i_ret = 0;
 	int copy_size = 0;
 
@@ -667,6 +673,8 @@ ssize_t btif_file_write(struct file *filp,
 	BTIF_INFO_FUNC("--, i_ret:%d\n", i_ret);
 
 	return i_ret;
+#endif
+	return 0;
 }
 #ifdef CONFIG_COMPAT
 long btif_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
@@ -2643,6 +2651,7 @@ unsigned int btif_bbs_write(struct _btif_buf_str_ *p_bbs,
 	return wr_len;
 }
 
+#if 0
 unsigned int btif_bbs_read(struct _btif_buf_str_ *p_bbs,
 			   unsigned char *p_buf, unsigned int buf_len)
 {
@@ -2700,6 +2709,7 @@ unsigned int btif_bbs_read(struct _btif_buf_str_ *p_bbs,
 	mb();
 	return rd_len;
 }
+#endif
 
 unsigned int btif_bbs_wr_direct(struct _btif_buf_str_ *p_bbs,
 				unsigned char *p_buf, unsigned int buf_len)
