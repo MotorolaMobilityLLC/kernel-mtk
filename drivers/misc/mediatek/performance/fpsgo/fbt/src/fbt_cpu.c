@@ -856,7 +856,7 @@ void fbt_check_self_control(unsigned long long t_cpu_target)
 	thr = t_cpu_target >> 4;
 
 	if (middle_enable) {
-		if (!fbt_is_self_control(t_cpu_target, thr))
+		if (fbt_is_self_control(t_cpu_target, thr))
 			sf_check = min(sf_bound_min, ++sf_check);
 		else
 			sf_check = 0;
@@ -865,7 +865,7 @@ void fbt_check_self_control(unsigned long long t_cpu_target)
 		fpsgo_systrace_c_fbt_gm(-100, sf_bound_min, "sf_bound");
 
 	} else {
-		if (fbt_is_self_control(t_cpu_target, thr))
+		if (!fbt_is_self_control(t_cpu_target, thr))
 			sf_check = min(sf_bound, ++sf_check);
 		else
 			sf_check = 0;
