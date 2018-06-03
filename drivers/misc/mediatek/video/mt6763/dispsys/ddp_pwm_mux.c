@@ -24,6 +24,34 @@
 #define PWM_MSG(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
 #define PWM_ERR(fmt, arg...) pr_err("[PWM] " fmt "\n", ##arg)
 
+#define BYPASS_CLK_SELECT
+
+/*****************************************************************************
+ *
+ * dummy function
+ *
+*****************************************************************************/
+#ifdef BYPASS_CLK_SELECT
+int disp_pwm_set_pwmmux(unsigned int clk_req)
+{
+	return 0;
+}
+
+int disp_pwm_clksource_enable(int clk_req)
+{
+	return 0;
+}
+
+int disp_pwm_clksource_disable(int clk_req)
+{
+	return 0;
+}
+
+bool disp_pwm_mux_is_osc(void)
+{
+	return false;
+}
+#else
 /*****************************************************************************
  *
  * variable for get clock node fromdts
@@ -533,3 +561,4 @@ void disp_pwm_ulposc_query(char *debug_output)
 			  "current meter value: (0x%08x)\n", current_meter_value);
 	temp_buf += buf_offset;
 }
+#endif		/* BYPASS_CLK_SELECT */
