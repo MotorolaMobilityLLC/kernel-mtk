@@ -58,8 +58,16 @@ void vmd1_pmic_setting_on(void)
 #if defined(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES)
 	/* PMIC special flavor project */
 	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
-		    "mediatek/k39tv1_ctightening", 27) == 0 ||
-	    strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		    "mediatek/k39tv1_ctightening", 27) == 0) {
+		if ((vcore_segment & 0x3) == 0x1 ||
+		    (vcore_segment & 0x3) == 0x2) {
+			/* VCORE 1.11250V: 0x5F */
+			vcore_vosel = 0x5F;
+		} else {
+			/* VCORE 1.15625V: 0x66 */
+			vcore_vosel = 0x66;
+		}
+	} else if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
 		    "mediatek/k39v1_ctightening", 26) == 0) {
 		if ((vcore_segment & 0x3) == 0x1 ||
 		    (vcore_segment & 0x3) == 0x2) {
