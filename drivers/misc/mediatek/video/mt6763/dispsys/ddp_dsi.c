@@ -3295,7 +3295,7 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 
 	if (DSI_REG[i]->DSI_MODE_CTRL.MODE == CMD_MODE) {
-		DISPMSG("dsi stop: command mode\n");
+		DISPDBG("dsi stop: command mode\n");
 		ret = wait_event_timeout(_dsi_context[i].cmddone_wq.wq,
 						   !(DSI_REG[i]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
 		if (ret == 0) {
@@ -3304,7 +3304,7 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 			DSI_Reset(module, NULL);
 		}
 	} else {
-		DISPMSG("dsi stop: brust mode(vdo mode lcm)\n");
+		DISPDBG("dsi stop: brust mode(vdo mode lcm)\n");
 		/* stop vdo mode */
 		DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
 		DSI_SetMode(module, cmdq_handle, CMD_MODE);

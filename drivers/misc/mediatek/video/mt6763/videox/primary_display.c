@@ -1550,7 +1550,7 @@ void _cmdq_start_trigger_loop(void)
 		dprec_event_op(DPREC_EVENT_CMDQ_SET_EVENT_ALLOW);
 	}
 
-	DISPCHECK("primary display START cmdq trigger loop finished\n");
+	DISPDBG("primary display START cmdq trigger loop finished\n");
 
 }
 
@@ -1560,7 +1560,7 @@ void _cmdq_stop_trigger_loop(void)
 
 	/* this should be called only once because trigger loop will nevet stop */
 	ret = cmdqRecStopLoop(pgc->cmdq_handle_trigger);
-	DISPCHECK("primary display STOP cmdq trigger loop finished\n");
+	DISPDBG("primary display STOP cmdq trigger loop finished\n");
 }
 
 static void _cmdq_set_config_handle_dirty(void)
