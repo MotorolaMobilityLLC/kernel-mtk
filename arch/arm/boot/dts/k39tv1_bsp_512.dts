@@ -394,14 +394,14 @@
 
 /* TOUCH start */
 &touch {
-	tpd-resolution = <720 1280>;
+	tpd-resolution = <480 854>;
 	use-tpd-button = <0>;
 	tpd-key-num = <3>;
 	tpd-key-local= <139 172 158 0>;
 	tpd-key-dim-local = <90 883 100 40 230 883 100 40 370 883 100 40 0 0 0 0>;
 	tpd-max-touch-num = <5>;
 	tpd-filter-enable = <1>;
-	tpd-filter-pixel-density = <106>;
+	tpd-filter-pixel-density = <71>;
 	tpd-filter-custom-prameters = <0 0 0 0 0 0 0 0 0 0 0 0>;
 	tpd-filter-custom-speed = <0 0 0>;
 	pinctrl-names = "default", "state_eint_as_int", "state_eint_output0", "state_eint_output1",
