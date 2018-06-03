@@ -62,6 +62,9 @@ ifeq ($(CONFIG_MTK_PLATFORM),"mt8135")
 obj-y	:= hdmitx.o debug.o  hdmitx_test.o
 endif
 
+ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "ITE66121")
+obj-y	+= it66121/
+endif
 
 ifeq ($(CONFIG_MTK_INTERNAL_HDMI_SUPPORT), y)
 obj-y  += hdmitx/$(subst ",,$(CONFIG_MTK_PLATFORM))/
