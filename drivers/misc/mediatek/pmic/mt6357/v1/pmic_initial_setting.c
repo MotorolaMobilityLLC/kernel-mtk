@@ -94,17 +94,38 @@ int PMIC_POWER_HOLD(unsigned int hold)
 	return 0;
 }
 
-unsigned int PMIC_CHIP_VER(void)
+unsigned int PMIC_LP_CHIP_VER(void)
 {
 	unsigned int ret = 0;
 	unsigned short chip_ver = 0;
 
-	/* PMIC E2 project */
-	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k39v1_lp", 8) == 0 ||
-	    strncmp(CONFIG_ARCH_MTK_PROJECT, "k39v1_64_lp", 11) == 0 ||
-	    strncmp(CONFIG_ARCH_MTK_PROJECT, "evb6739_lp", 10) == 0 ||
-	    strncmp(CONFIG_ARCH_MTK_PROJECT, "evb6739_64_lp", 13) == 0)
+#if defined(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES)
+	/* PMIC special flavor project */
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		   "mediatek/evb6739_64_lp", 22) == 0 ||
+	   strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
+		   "mediatek/k39v1_64_lp", 20) == 0)
 		return 2;
+#endif
+#if defined(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES)
+	/* PMIC special flavor project */
+	if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES,
+		   "evb6739_lp", 10) == 0 ||
+	   strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES,
+		   "k39v1_lp", 8) == 0)
+		return 2;
+#endif
+	chip_ver = pmic_get_register_value(PMIC_SWCID);
+
+	ret = ((chip_ver & 0x00F0) >> 4);
+
+	return ret;
+}
+
+unsigned int PMIC_CHIP_VER(void)
+{
+	unsigned int ret = 0;
+	unsigned short chip_ver = 0;
 
 	chip_ver = pmic_get_register_value(PMIC_SWCID);
 
