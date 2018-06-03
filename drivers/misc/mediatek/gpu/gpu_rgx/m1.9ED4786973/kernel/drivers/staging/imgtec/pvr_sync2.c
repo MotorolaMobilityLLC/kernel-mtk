@@ -415,6 +415,7 @@ static LIST_HEAD(sync_fence_put_list);
 static DEFINE_SPINLOCK(sync_fence_put_list_spinlock);
 
 static void pvr_sync_update_all_timelines(void *command_complete_handle);
+static void pvr_sync_free_checkpoint_list_mem(void *mem_ptr);
 
 /* Sync prim helpers */
 static inline void set_sync_prim_value(struct pvr_sync_native_sync_prim *sync,
@@ -2294,6 +2295,12 @@ static struct miscdevice pvr_sync_device = {
 };
 
 static
+void pvr_sync_free_checkpoint_list_mem(void *mem_ptr)
+{
+	kfree(mem_ptr);
+}
+
+static
 void pvr_sync_update_all_timelines(void *command_complete_handle)
 {
 	struct pvr_sync_timeline *timeline, *n;
@@ -2394,7 +2401,8 @@ enum PVRSRV_ERROR pvr_sync_init(void *device_cookie)
 	                                pvr_sync_create_fence,
 	                                pvr_sync_rollback_fence_data,
 	                                pvr_sync_finalise_fence,
-	                                pvr_sync_update_all_timelines);
+	                                pvr_sync_update_all_timelines,
+	                                pvr_sync_free_checkpoint_list_mem);
 
 	pvr_sync_data.defer_free_wq =
 		create_freezable_workqueue("pvr_sync_defer_free_workqueue");

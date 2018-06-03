@@ -83,13 +83,15 @@ typedef PVRSRV_ERROR (*PFN_SYNC_CHECKPOINT_FENCE_CREATE_FN)(const IMG_CHAR *fenc
 typedef PVRSRV_ERROR (*PFN_SYNC_CHECKPOINT_FENCE_ROLLBACK_DATA_FN)(PVRSRV_FENCE fence_to_rollback, void *finalise_data);
 typedef PVRSRV_ERROR (*PFN_SYNC_CHECKPOINT_FENCE_FINALISE_FN)(PVRSRV_FENCE fence_to_finalise, void *finalise_data);
 typedef void (*PFN_SYNC_CHECKPOINT_NOHW_UPDATE_TIMELINES_FN)(void *private_data);
+typedef void (*PFN_SYNC_CHECKPOINT_FREE_CHECKPOINT_LIST_MEM_FN)(void *mem_ptr);
 #endif
 
 PVRSRV_ERROR SyncCheckpointRegisterFunctions(PFN_SYNC_CHECKPOINT_FENCE_RESOLVE_FN pfnFenceResolve,
 	                                         PFN_SYNC_CHECKPOINT_FENCE_CREATE_FN pfnFenceCreate,
                                              PFN_SYNC_CHECKPOINT_FENCE_ROLLBACK_DATA_FN pfnFenceDataRollback,
                                              PFN_SYNC_CHECKPOINT_FENCE_FINALISE_FN pfnFenceFinalise,
-                                             PFN_SYNC_CHECKPOINT_NOHW_UPDATE_TIMELINES_FN pfnNoHWUpdateTimelines);
+                                             PFN_SYNC_CHECKPOINT_NOHW_UPDATE_TIMELINES_FN pfnNoHWUpdateTimelines,
+                                             PFN_SYNC_CHECKPOINT_FREE_CHECKPOINT_LIST_MEM_FN pfnFreeCheckpointListMem);
 
 /*************************************************************************/ /*!
 @Function       SyncCheckpointContextCreate
@@ -428,6 +430,24 @@ SyncCheckpointRollbackFenceData(PVRSRV_FENCE hFence, void *pvFinaliseData);
 /*****************************************************************************/
 PVRSRV_ERROR
 SyncCheckpointFinaliseFence(PVRSRV_FENCE hFence, void *pvFinaliseData);
+
+/*************************************************************************/ /*!
+@Function       SyncCheckpointFreeCheckpointListMem
+
+@Description    Free memory the memory which was allocated by the sync
+                implementation and used to return the list of sync
+                checkpoints when resolving a fence.
+                to the fence being returned to the client.
+                This function in turn calls a free function registered by
+                the sync implementation (if a function has been registered).
+
+@Input          pvCheckpointListMem     Pointer to the memory to be freed
+
+@Return         None
+*/
+/*****************************************************************************/
+void
+SyncCheckpointFreeCheckpointListMem(void *pvCheckpointListMem);
 
 /*************************************************************************/ /*!
 @Function       SyncCheckpointNoHWUpdateTimelines
