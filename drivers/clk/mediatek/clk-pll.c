@@ -35,7 +35,7 @@
 #if defined(CONFIG_MACH_MT6799)
 #define INTEGER_BITS		8
 #elif defined(CONFIG_MACH_MT6759)
-#define MT_CCF_BRINGUP
+/*#define MT_CCF_BRINGUP*/
 #define INTEGER_BITS		8
 #elif defined(CONFIG_MACH_MT6763)
 /*#define MT_CCF_BRINGUP*/
