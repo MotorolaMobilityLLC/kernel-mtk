@@ -1490,7 +1490,16 @@ static bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable LCH Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x1900, 0x1f00);
 		/* Enable HPDET circuit, select DACLP as HPDET input and HPR as HPDET output */
+
+		/* E3 default setting: connect 1.2K Ohm, disconnect it when doing HP impedance */
+		if (use_6355_e3)
+			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0500, 0xffff);
+
 	} else {
+		/* Restore E3 default 1.2K Ohm setting after HP impedance */
+		if (use_6355_e3)
+			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0xffff);
+
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0000, 0x1f00);
 		/* Disable HPDET circuit */
 
@@ -1569,7 +1578,7 @@ static int mtk_calculate_hp_impedance(int dc_init, int dc_input, short pcm_offse
 		r_tmp = DIV_ROUND_CLOSEST(r_tmp * (128 + efuse_current_calibration), 128);
 	}
 
-	pr_aud("%s(), pcm_offset %d dcoffset %d detected resistor is %d\n",
+	pr_aud("%s(), pcm_offset = %d, dcoffset = %d, detected resistor is = %d\n",
 	       __func__, pcm_offset, dc_value, r_tmp);
 
 	return r_tmp;
@@ -1590,6 +1599,7 @@ static int detect_impedance_by_phase(void)
 	setOffsetTrimBufferGain(3); /* HPDET trim. buffer gain : 18db */
 	EnableTrimbuffer(true);
 	setHpGainZero();
+
 	set_lch_dc_compensation_reg(0);
 	set_rch_dc_compensation_reg(0);
 	enable_dc_compensation(true);
@@ -1662,6 +1672,8 @@ static int detect_impedance_by_phase(void)
 			for (counter = 0; counter < kDetectTimes; counter++) {
 				detectsOffset[counter] = audio_get_auxadc_value();
 				detectSum = detectSum + detectsOffset[counter];
+				pr_aud("%s(), phase = %d, detectSum = %d, detectsOffset[%d] = %d\n",
+						__func__, phase_flag, detectSum, counter, detectsOffset[counter]);
 			}
 			detect_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
 								      dcValue, kDetectTimes);
@@ -1675,6 +1687,8 @@ static int detect_impedance_by_phase(void)
 			for (counter = 0; counter < kDetectTimes; counter++) {
 				detectsOffset[counter] = audio_get_auxadc_value();
 				detectSum = detectSum + detectsOffset[counter];
+				pr_aud("%s(), phase = %d, detectSum = %d, detectsOffset[%d] = %d\n",
+						__func__, phase_flag, detectSum, counter, detectsOffset[counter]);
 			}
 			detect_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
 								      dcValue, kDetectTimes);
@@ -1683,7 +1697,7 @@ static int detect_impedance_by_phase(void)
 		usleep_range(1*200, 1*200);
 	}
 
-	pr_debug("%s(), phase %d [dc,detect]Sum %d times = [%d,%d], hp_impedance = %d, pick_impedance = %d\n",
+	pr_debug("%s(), phase %d, [dc, detect]Sum %d times = [%d, %d], hp_impedance = %d, pick_impedance = %d\n",
 		 __func__, phase_flag, kDetectTimes, dcSum, detectSum, detect_impedance, pick_impedance);
 
 	/* Ramp-Down */
