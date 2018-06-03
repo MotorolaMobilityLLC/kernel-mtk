@@ -329,6 +329,22 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		if (tsk->flags & PF_KTHREAD)
 			continue;
 
+		if (task_lmk_waiting(tsk) &&
+		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
+#ifdef CONFIG_MTK_ENG_BUILD
+			static pid_t last_dying_pid;
+
+			if (last_dying_pid != tsk->pid) {
+				lowmem_print(1, "lowmem_shrink return directly, due to  %d (%s) is dying\n",
+					     tsk->pid, tsk->comm);
+				last_dying_pid = tsk->pid;
+			}
+#endif
+			rcu_read_unlock();
+			spin_unlock(&lowmem_shrink_lock);
+			return SHRINK_STOP;
+		}
+
 		p = find_lock_task_mm(tsk);
 		if (!p)
 			continue;
@@ -348,22 +364,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			continue;
 		}
 
-		if (task_lmk_waiting(p) && p->mm &&
-		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
-#ifdef CONFIG_MTK_ENG_BUILD
-			static pid_t last_dying_pid;
-
-			if (last_dying_pid != p->pid) {
-				lowmem_print(1, "lowmem_shrink return directly, due to  %d (%s) is dying\n",
-					     p->pid, p->comm);
-				last_dying_pid = p->pid;
-			}
-#endif
-			task_unlock(p);
-			rcu_read_unlock();
-			spin_unlock(&lowmem_shrink_lock);
-			return SHRINK_STOP;
-		}
 		oom_score_adj = p->signal->oom_score_adj;
 
 		if (output_expect(enable_candidate_log)) {
