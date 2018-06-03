@@ -103,6 +103,7 @@ obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_MTK_BLOCK_TAG) +=blocktag/
+obj-y += pidmap/
 obj-$(CONFIG_MEDIATEK_SOLUTION)  += sched/
 obj-y += cameraisp/
 obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
