@@ -1832,9 +1832,6 @@ static int fgauge_enable_battery_tmp_lt_interrupt(struct gauge_device *gauge_dev
 {
 	int tmp_int_lt = 0;
 
-	/*** temperarily disable temperature interrupt ***/
-	return 0;
-
 	if (en == 0) {
 		pmic_set_register_value(PMIC_RG_INT_EN_BAT_TEMP_L, 0);
 		pmic_set_register_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MAX, 0);
@@ -1865,9 +1862,6 @@ static int fgauge_enable_battery_tmp_lt_interrupt(struct gauge_device *gauge_dev
 static int fgauge_enable_battery_tmp_ht_interrupt(struct gauge_device *gauge_dev, bool en, int threshold)
 {
 	int tmp_int_ht = 0;
-
-	/*** temperarily disable temperature interrupt ***/
-	return 0;
 
 	if (en == 0) {
 		pmic_set_register_value(PMIC_RG_INT_EN_BAT_TEMP_H, 0);
