@@ -35,6 +35,7 @@
 #define EINT_PIN_PLUG_IN        (1)
 #define EINT_PIN_PLUG_OUT       (0)
 #define EINT_PIN_MOISTURE_DETECED (-1)
+#define ANALOG_FASTDISCHARGE_SUPPORT
 
 #ifdef CONFIG_ACCDET_EINT_IRQ
 enum pmic_eint_ID {
@@ -43,7 +44,8 @@ enum pmic_eint_ID {
 	PMIC_EINT1 = 2,
 	PMIC_BIEINT = 3,
 };
-#define HW_MODE_SUPPORT
+/* #define HW_MODE_SUPPORT */
+/* #define DIGITAL_FASTDISCHARGE_SUPPORT */
 #endif
 
 /* accdet_status_str: to record current 'accdet_status' by string,
@@ -136,7 +138,9 @@ static u32 accdet_eint_type = IRQ_TYPE_LEVEL_LOW;
 static u32 button_press_debounce = 0x400;
 static atomic_t accdet_first;
 #ifdef HW_MODE_SUPPORT
+#ifdef DIGITAL_FASTDISCHARGE_SUPPORT
 static bool fast_discharge = true;
+#endif
 #endif
 
 /* accdet Moisture detect */
@@ -234,22 +238,23 @@ static void cat_register(char *buf)
 
 #ifdef CONFIG_ACCDET_EINT_IRQ
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
-	sprintf(buf_temp, "Accdet EINT0 support,MODE_%d regs:\n",
+	sprintf(buf_temp, "[Accdet EINT0 support][MODE_%d]regs:\n",
 		accdet_dts.mic_mode);
 	strncat(buf, buf_temp, strlen(buf_temp));
 #elif defined CONFIG_ACCDET_SUPPORT_EINT1
-	sprintf(buf_temp, "Accdet EINT1 support,MODE_%d regs:\n",
+	sprintf(buf_temp, "[ccdet EINT1 support][MODE_%d]regs:\n",
 		accdet_dts.mic_mode);
 	strncat(buf, buf_temp, strlen(buf_temp));
 #elif defined CONFIG_ACCDET_SUPPORT_BI_EINT
-	sprintf(buf_temp, "Accdet BIEINT support,MODE_%d regs:\n",
+	sprintf(buf_temp, "[Accdet BIEINT support][MODE_%d] regs:\n",
 		accdet_dts.mic_mode);
 	strncat(buf, buf_temp, strlen(buf_temp));
 #else
 	strncat(buf, "ACCDET_EINT_IRQ:NO EINT configed.Error!!\n", 64);
 #endif
 #elif defined CONFIG_ACCDET_EINT
-	sprintf(buf_temp, "Accdet EINT,MODE_%d regs:\n", accdet_dts.mic_mode);
+	sprintf(buf_temp, "[Accdet AP EINT][MODE_%d] regs:\n",
+		accdet_dts.mic_mode);
 	strncat(buf, buf_temp, strlen(buf_temp));
 #else
 	strncat(buf, "ACCDET EINT:No configed.Error!!\n", 64);
@@ -260,32 +265,29 @@ static void cat_register(char *buf)
 		strncat(buf, buf_temp, strlen(buf_temp));
 	}
 
-	sprintf(buf_temp, "(0x%x)=0x%x\n",
+	sprintf(buf_temp, "[0x%x]=0x%x\n",
 		TOP_CKPDN_CON0, pmic_read(TOP_CKPDN_CON0));
 	strncat(buf, buf_temp, strlen(buf_temp));
 
-	sprintf(buf_temp, "(0x%x)=0x%x, (0x%x)=0x%x\n",
-		AUD_TOP_RST_CON0, pmic_read(AUD_TOP_RST_CON0),
-		AUD_TOP_INT_CON0, pmic_read(AUD_TOP_INT_CON0));
+	sprintf(buf_temp, "[0x%x]=0x%x\n",
+		AUD_TOP_RST_CON0, pmic_read(AUD_TOP_RST_CON0));
 	strncat(buf, buf_temp, strlen(buf_temp));
 
-	sprintf(buf_temp, "(0x%x)=0x%x, (0x%x)=0x%x\n",
+	sprintf(buf_temp, "[0x%x]=0x%x, [0x%x]=0x%x, [0x%x]=0x%x\n",
+		AUD_TOP_INT_CON0, pmic_read(AUD_TOP_INT_CON0),
 		AUD_TOP_INT_MASK_CON0, pmic_read(AUD_TOP_INT_MASK_CON0),
 		AUD_TOP_INT_STATUS0, pmic_read(AUD_TOP_INT_STATUS0));
 	strncat(buf, buf_temp, strlen(buf_temp));
 
-	sprintf(buf_temp, "0x%x)=0x%x,(0x%x)=0x%x,(0x%x)=0x%x,(0x%x)=0x%x\n",
+	sprintf(buf_temp, "[0x%x]=0x%x,[0x%x]=0x%x,[0x%x]=0x%x,[0x%x]=0x%x\n",
 		AUDENC_ANA_CON6, pmic_read(AUDENC_ANA_CON6),
 		AUDENC_ANA_CON9, pmic_read(AUDENC_ANA_CON9),
 		AUDENC_ANA_CON10, pmic_read(AUDENC_ANA_CON10),
 		AUDENC_ANA_CON11, pmic_read(AUDENC_ANA_CON11));
 	strncat(buf, buf_temp, strlen(buf_temp));
 
-	sprintf(buf_temp, "(0x%x)=0x%x\n",
-		AUXADC_RQST0, pmic_read(AUXADC_RQST0));
-	strncat(buf, buf_temp, strlen(buf_temp));
-
-	sprintf(buf_temp, "(0x%x)=0x%x,",
+	sprintf(buf_temp, "[0x%x]=0x%x, [0x%x]=0x%x\n",
+		AUXADC_RQST0, pmic_read(AUXADC_RQST0),
 		AUXADC_ACCDET, pmic_read(AUXADC_ACCDET));
 	strncat(buf, buf_temp, strlen(buf_temp));
 
@@ -1087,7 +1089,7 @@ static inline void check_cable_type(void)
 
 	cur_AB = pmic_read(ACCDET_STATE_RG) >> ACCDET_STATE_MEM_IN_OFFSET;
 	cur_AB = cur_AB & ACCDET_STATE_AB_MASK;
-	pr_notice("accdet %s, cur_status:%s current AB = %d\n", __func__,
+	pr_notice("accdet %s(), cur_status:%s current AB = %d\n", __func__,
 		     accdet_status_str[accdet_status], cur_AB);
 
 	pre_status = accdet_status;
@@ -1107,6 +1109,7 @@ static inline void check_cable_type(void)
 			if (eint_accdet_sync_flag) {
 				accdet_status = MIC_BIAS;
 				cable_type = HEADSET_MIC;
+#ifdef HW_MODE_SUPPORT
 #ifdef DIGITAL_FASTDISCHARGE_SUPPORT
 				/* digital fast discharge bug, sw arround (2) :
 				 * ACCDET_CON24[15:14]=00 and then wait xxms
@@ -1114,13 +1117,14 @@ static inline void check_cable_type(void)
 				 *  please remember to find sw arround (1)
 				 */
 				if (!fast_discharge) {
-					pmic_pwrap_write(ACCDET_HW_MODE_DEFF,
+					pmic_write(ACCDET_HW_MODE_DFF,
 						ACCDET_FAST_DISCAHRGE_REVISE);
-					udelay(2000);
-					pmic_write(ACCDET_HW_MODE_DEFF,
+					mdelay(20);
+					pmic_write(ACCDET_HW_MODE_DFF,
 						ACCDET_FAST_DISCAHRGE_EN);
 					fast_discharge = true;
 				}
+#endif
 #endif
 				/* ABC=110 debounce=30ms */
 				accdet_set_debounce(accdet_state110,
@@ -1238,9 +1242,10 @@ static void accdet_work_callback(struct work_struct *work)
 		if (pre_cable_type != cable_type)
 			send_accdet_status_event(cable_type, 1);
 	} else
-		pr_info("%s Headset been plugout don't set state\n", __func__);
+		pr_info("%s() Headset has been plugout. Don't set state\n",
+			__func__);
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
-	pr_info("%s report cable_type done\n", __func__);
+	pr_info("%s() report cable_type done\n", __func__);
 	__pm_relax(accdet_irq_lock);
 }
 
@@ -1607,9 +1612,13 @@ static int accdet_get_dts_data(void)
 	of_property_read_u32(node, "moisture-water-r", &water_r);
 #ifdef CONFIG_MOISTURE_EXT_SUPPORT
 	of_property_read_u32(node, "moisture-external-r", &moisture_ext_r);
+	pr_info("accdet Moisture_EXT support water_r=%d, moisture_ext_r=%d\n",
+	     water_r, moisture_ext_r);
 #endif
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
 	of_property_read_u32(node, "moisture-internal-r", &moisture_int_r);
+	pr_info("accdet Moisture_INT support water_r=%d, moisture_int_r=%d\n",
+	     water_r, moisture_int_r);
 #endif
 #endif
 	of_property_read_u32(node, "accdet-mic-vol", &accdet_dts.mic_vol);
@@ -1619,7 +1628,7 @@ static int accdet_get_dts_data(void)
 	of_property_read_u32(node, "headset-eint-level-pol",
 			&accdet_dts.eint_pol);
 
-	pr_info("accdet mic_vol=%x, plugout_deb=%x mic_mode=%x eint_pol=%x\n",
+	pr_info("accdet mic_vol=%d, plugout_deb=%d mic_mode=%d eint_pol=%d\n",
 	     accdet_dts.mic_vol, accdet_dts.plugout_deb,
 	     accdet_dts.mic_mode, accdet_dts.eint_pol);
 
@@ -1666,9 +1675,12 @@ static int accdet_get_dts_data(void)
 	/* for discharge:0xB00 about 86ms */
 	button_press_debounce = (accdet_dts.pwm_deb.debounce0 >> 1);
 	cust_pwm_deb = &accdet_dts.pwm_deb;
-	pr_info("accdet pwm_width=0x%x, thrsh=0x%x, deb0=0x%x, deb1=0x%x\n",
+	pr_info("accdet pwm_width=0x%x, thresh=0x%x, fall=0x%x, rise=0x%x\n",
 	     cust_pwm_deb->pwm_width, cust_pwm_deb->pwm_thresh,
-	     cust_pwm_deb->debounce0, cust_pwm_deb->debounce1);
+	     cust_pwm_deb->fall_delay, cust_pwm_deb->rise_delay);
+	pr_info("accdet deb0=0x%x, deb1=0x%x, deb3=0x%x, deb4=0x%x\n",
+	     cust_pwm_deb->debounce0, cust_pwm_deb->debounce1,
+	     cust_pwm_deb->debounce3, cust_pwm_deb->debounce4);
 
 	return 0;
 }
@@ -1713,15 +1725,21 @@ static void accdet_init_once(void)
 			pmic_read(AUDENC_ANA_CON9) | RG_AUDMICBIAS1_DCSW1PEN);
 	}
 
-	/* AUXADC enable auto sample */
-	pmic_write(AUXADC_ACCDET,
-		pmic_read(AUXADC_ACCDET) | AUXADC_ACCDET_AUTO_SPL_EN);
+	/* sw trigger auxadc, disable auxadc auto sample */
+	/* pmic_write(AUXADC_ACCDET,
+	 *	pmic_read(AUXADC_ACCDET) | AUXADC_ACCDET_AUTO_SPL_EN);
+	 */
+
+#ifdef ANALOG_FASTDISCHARGE_SUPPORT
+	reg = pmic_read(AUDENC_ANA_CON6) | RG_AUDSPARE_FSTDSCHRG_IMPR_EN |
+		RG_AUDSPARE_FSTDSCHRG_ANALOG_DIR_EN;
+	pmic_write(AUDENC_ANA_CON6, reg);
+#endif
 
 	/* hw mode config , disable accdet */
 #ifdef HW_MODE_SUPPORT
 	pmic_write(ACCDET_CTRL, pmic_read(ACCDET_CTRL)&(~ACCDET_ENABLE_B0));
-	pmic_write(AUDENC_ANA_CON6, pmic_read(AUDENC_ANA_CON6)|
-	RG_AUDSPARE_FSTDSCHRG_ANALOG_DIR_EN | RG_AUDSPARE_FSTDSCHRG_IMPR_EN);
+
 #ifdef CONFIG_ACCDET_EINT_IRQ
 	reg = pmic_read(ACCDET_HW_MODE_DFF);
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
@@ -1737,6 +1755,11 @@ static void accdet_init_once(void)
 #endif
 	pmic_write(ACCDET_HW_MODE_DFF, reg);
 #endif
+#else
+	/* sw mode, */
+	reg = pmic_read(ACCDET_HW_MODE_DFF);
+	pmic_write(ACCDET_HW_MODE_DFF,
+		(reg & (~ACCDET_HWMODE_SEL))|ACCDET_FAST_DISCAHRGE);
 #endif
 
 #ifdef CONFIG_ACCDET_EINT_IRQ
@@ -1832,9 +1855,11 @@ static inline void accdet_init(void)
 	accdet_set_debounce(accdet_auxadc, cust_pwm_deb->debounce4);
 
 #ifdef HW_MODE_SUPPORT
+#ifdef DIGITAL_FASTDISCHARGE_SUPPORT
 	/* workround for HW fast discharge, first disabel fast discharge */
 	pmic_write(ACCDET_HW_MODE_DFF, ACCDET_FAST_DISCAHRGE_DIS);
 	fast_discharge = false;
+#endif
 #endif
 	pr_info("%s() done.\n", __func__);
 }
