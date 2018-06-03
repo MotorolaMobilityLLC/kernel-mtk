@@ -1601,7 +1601,7 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 
 	setting = uart->setting;
 
-	if (!uart || uart->nport >= UART_NR)
+	if (uart->nport >= UART_NR)
 		return;
 
 	if (uart->poweron_count == 0) {
