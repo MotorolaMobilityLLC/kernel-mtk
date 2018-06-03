@@ -423,11 +423,15 @@ struct mag_dev_info_t {
 	int32_t deviceid;
 };
 
-struct SCP_SENSOR_HUB_GET_SENSOR_INFO {
-	CUST_ACTION action;
+struct sensorInfo_t {
 	union {
 		struct mag_dev_info_t mag_dev_info;
 	};
+};
+
+struct scp_sensor_hub_get_sensor_info {
+	CUST_ACTION action;
+	struct sensorInfo_t sensorInfo;
 };
 
 enum {
@@ -440,7 +444,7 @@ typedef struct {
 	uint8_t action;
 	uint8_t reserve[2];
 	union {
-		uint32_t custData[10];
+		uint32_t custData[11];
 		SCP_SENSOR_HUB_CUST cust;
 		SCP_SENSOR_HUB_SET_CUST setCust;
 		SCP_SENSOR_HUB_SET_CALI setCali;
@@ -453,7 +457,7 @@ typedef struct {
 		SCP_SENSOR_HUB_SHOW_ALSLV showAlslv;
 		SCP_SENSOR_HUB_SHOW_ALSVAL showAlsval;
 		SCP_SENSOR_HUB_SET_FACTORY	setFactory;
-		struct SCP_SENSOR_HUB_GET_SENSOR_INFO getInfo;
+		struct scp_sensor_hub_get_sensor_info getInfo;
 	};
 } SCP_SENSOR_HUB_SET_CUST_REQ;
 
@@ -463,9 +467,9 @@ typedef struct {
 	uint8_t errCode;
 	uint8_t reserve[1];
 	union {
-		uint32_t custData[9];
+		uint32_t custData[11];
 		SCP_SENSOR_HUB_GET_RAW_DATA getRawData;
-		struct SCP_SENSOR_HUB_GET_SENSOR_INFO getInfo;
+		struct scp_sensor_hub_get_sensor_info getInfo;
 	};
 } SCP_SENSOR_HUB_SET_CUST_RSP;
 
