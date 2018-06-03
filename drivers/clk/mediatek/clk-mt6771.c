@@ -1042,6 +1042,8 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	/* INFRA2 */
 	GATE_INFRA2(INFRACFG_AO_IRTX_CG, "infra_irtx",
 		"f_f26m_ck", 0),
+	GATE_INFRA2(INFRACFG_AO_USB_CG, "infra_usb",
+		"usb_top_sel", 1),
 	GATE_INFRA2(INFRACFG_AO_DISP_PWM_CG, "infra_disppwm",
 		"axi_sel", 2),
 	GATE_INFRA2(INFRACFG_AO_CLDMA_BCLK_CK, "infra_cldma_bclk",
