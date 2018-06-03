@@ -36,6 +36,11 @@
 #include "vpu_drv.h"
 #include "vpu_cmn.h"
 
+#ifdef CONFIG_COMPAT
+/* 64 bit */
+#include <linux/fs.h>
+#include <linux/compat.h>
+#endif
 
 /*******************************************************************************
 *
@@ -137,9 +142,9 @@ static int vpu_open(struct inode *inode, struct file *flip);
 static int vpu_release(struct inode *inode, struct file *flip);
 
 static int vpu_mmap(struct file *flip, struct vm_area_struct *vma);
-
+#ifdef CONFIG_COMPAT
 static long vpu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long arg);
-
+#endif
 static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg);
 
 static const struct file_operations vpu_fops = {
@@ -147,7 +152,9 @@ static const struct file_operations vpu_fops = {
 	.open = vpu_open,
 	.release = vpu_release,
 	.mmap = vpu_mmap,
+#ifdef CONFIG_COMPAT
 	.compat_ioctl = vpu_compat_ioctl,
+#endif
 	.unlocked_ioctl = vpu_ioctl
 };
 
@@ -534,7 +541,7 @@ static int vpu_open(struct inode *inode, struct file *flip)
 
 	return ret;
 }
-
+#ifdef CONFIG_COMPAT
 static long vpu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	switch (cmd) {
@@ -550,7 +557,7 @@ static long vpu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long 
 		/*void *ptr = compat_ptr(arg);*/
 
 		/*return vpu_ioctl(flip, cmd, (unsigned long) ptr);*/
-		return flip->f_op->unlocked_ioctl(flip, cmd, arg);
+		return flip->f_op->unlocked_ioctl(flip, cmd, (unsigned long)compat_ptr(arg));
 	}
 	case VPU_IOCTL_LOCK:
 	case VPU_IOCTL_UNLOCK:
@@ -559,7 +566,7 @@ static long vpu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long 
 		/*return vpu_ioctl(flip, cmd, arg);*/
 	}
 }
-
+#endif
 static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
