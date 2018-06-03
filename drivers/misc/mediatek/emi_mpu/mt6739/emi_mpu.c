@@ -212,12 +212,14 @@ static int mpu_check_violation(void)
 				str, (int)strlen(str));
 		}
 
+		if ((master_ID & 0x7) != MASTER_MFG) {
 		aee_kernel_exception("EMI MPU",
 "%sEMI_MPUS = 0x%x,EMI_MPUT = 0x%x,EMI_MPUT_2ND = 0x%x,vio_addr = 0x%llx\n%s%s\n",
 		     "EMI MPU violation.\n",
 		     dbg_s, dbg_t, dbg_t_2nd, vio_addr,
 		     "CRDISPATCH_KEY:EMI MPU Violation Issue/",
 		     master_name);
+		}
 	}
 #endif
 
