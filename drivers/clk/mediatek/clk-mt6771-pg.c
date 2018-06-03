@@ -689,9 +689,6 @@ int spm_mtcmos_ctrl_md1(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MD1" */
 		/* TINFO="Set bus protect - step1 : 0" */
@@ -792,9 +789,6 @@ int spm_mtcmos_ctrl_conn(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CONN" */
 		/* TINFO="Set bus protect - step1 : 0" */
@@ -860,9 +854,6 @@ int spm_mtcmos_ctrl_conn(int state)
 int spm_mtcmos_ctrl_dis(int state)
 {
 	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off DIS" */
@@ -968,25 +959,8 @@ int spm_mtcmos_ctrl_mfg(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG" */
-		/* TINFO="Set bus protect - step1 : 0" */
-		spm_write(INFRA_TOPAXI_PROTECTEN_1_SET, MFG_PROT_STEP1_0_MASK);
-#ifndef IGNORE_MTCMOS_CHECK
-		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1) & MFG_PROT_STEP1_0_ACK_MASK) !=
-			MFG_PROT_STEP1_0_ACK_MASK) {
-		}
-#endif
-		/* TINFO="Set bus protect - step2 : 0" */
-		spm_write(INFRA_TOPAXI_PROTECTEN_SET, MFG_PROT_STEP2_0_MASK);
-#ifndef IGNORE_MTCMOS_CHECK
-		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1) & MFG_PROT_STEP2_0_ACK_MASK) !=
-			MFG_PROT_STEP2_0_ACK_MASK) {
-		}
-#endif
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) | MFG_SRAM_PDN);
 #ifndef IGNORE_MTCMOS_CHECK
@@ -1044,16 +1018,6 @@ int spm_mtcmos_ctrl_mfg(int state)
 				/* Need f_fmfg_core_ck for SRAM PDN delay IP. */
 		}
 #endif
-		/* TINFO="Release bus protect - step2 : 0" */
-		spm_write(INFRA_TOPAXI_PROTECTEN_CLR, MFG_PROT_STEP2_0_MASK);
-#ifndef IGNORE_MTCMOS_CHECK
-		/* Note that this protect ack check after releasing protect has been ignored */
-#endif
-		/* TINFO="Release bus protect - step1 : 0" */
-		spm_write(INFRA_TOPAXI_PROTECTEN_1_CLR, MFG_PROT_STEP1_0_MASK);
-#ifndef IGNORE_MTCMOS_CHECK
-		/* Note that this protect ack check after releasing protect has been ignored */
-#endif
 		/* TINFO="Finish to turn on MFG" */
 	}
 	return err;
@@ -1062,9 +1026,6 @@ int spm_mtcmos_ctrl_mfg(int state)
 int spm_mtcmos_ctrl_isp(int state)
 {
 	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off ISP" */
@@ -1178,9 +1139,6 @@ int spm_mtcmos_ctrl_mfg_core0(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_CORE0" */
 		/* TINFO="Set SRAM_PDN = 1" */
@@ -1249,9 +1207,6 @@ int spm_mtcmos_ctrl_mfg_core1(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_CORE1" */
 		/* TINFO="Set SRAM_PDN = 1" */
@@ -1319,9 +1274,6 @@ int spm_mtcmos_ctrl_mfg_core1(int state)
 int spm_mtcmos_ctrl_ven(int state)
 {
 	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VEN" */
@@ -1427,10 +1379,21 @@ int spm_mtcmos_ctrl_mfg_2d(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
+		/* TINFO="Set bus protect - step1 : 0" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_1_SET, MFG_PROT_STEP1_0_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1) & MFG_PROT_STEP1_0_ACK_MASK) !=
+			MFG_PROT_STEP1_0_ACK_MASK) {
+		}
+#endif
+		/* TINFO="Set bus protect - step2 : 0" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_SET, MFG_PROT_STEP2_0_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1) & MFG_PROT_STEP2_0_ACK_MASK) !=
+			MFG_PROT_STEP2_0_ACK_MASK) {
+		}
+#endif
 		/* TINFO="Start to turn off MFG_2D" */
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(MFG_2D_PWR_CON, spm_read(MFG_2D_PWR_CON) | MFG_2D_SRAM_PDN);
@@ -1490,6 +1453,16 @@ int spm_mtcmos_ctrl_mfg_2d(int state)
 		}
 #endif
 		/* TINFO="Finish to turn on MFG_2D" */
+		/* TINFO="Release bus protect - step2 : 0" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_CLR, MFG_PROT_STEP2_0_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		/* Note that this protect ack check after releasing protect has been ignored */
+#endif
+		/* TINFO="Release bus protect - step1 : 0" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_1_CLR, MFG_PROT_STEP1_0_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		/* Note that this protect ack check after releasing protect has been ignored */
+#endif
 	}
 	return err;
 }
@@ -1497,9 +1470,6 @@ int spm_mtcmos_ctrl_mfg_2d(int state)
 int spm_mtcmos_ctrl_mfg_async(int state)
 {
 	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_ASYNC" */
@@ -1554,9 +1524,6 @@ int spm_mtcmos_ctrl_mfg_async(int state)
 int spm_mtcmos_ctrl_audio(int state)
 {
 	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off AUDIO" */
@@ -1649,9 +1616,6 @@ int spm_mtcmos_ctrl_audio(int state)
 int spm_mtcmos_ctrl_cam(int state)
 {
 	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CAM" */
@@ -1777,9 +1741,6 @@ int spm_mtcmos_ctrl_vpu_top(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VPU_TOP" */
 		/* TINFO="Set bus protect - step1 : 0" */
@@ -1895,9 +1856,6 @@ int spm_mtcmos_ctrl_vpu_top(int state)
 int spm_mtcmos_ctrl_vpu_core0_dormant(int state)
 {
 	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VPU_CORE0" */
@@ -2023,9 +1981,6 @@ int spm_mtcmos_ctrl_vpu_core0_shut_down(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VPU_CORE0" */
 		/* TINFO="Set bus protect - step1 : 0" */
@@ -2141,9 +2096,6 @@ int spm_mtcmos_ctrl_vpu_core0_shut_down(int state)
 int spm_mtcmos_ctrl_vpu_core1_dormant(int state)
 {
 	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VPU_CORE1" */
@@ -2269,9 +2221,6 @@ int spm_mtcmos_ctrl_vpu_core1_shut_down(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VPU_CORE1" */
 		/* TINFO="Set bus protect - step1 : 0" */
@@ -2388,9 +2337,6 @@ int spm_mtcmos_ctrl_vpu_core2_dormant(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VPU_CORE2" */
 		/* TINFO="Set SRAM_CKISO = 1" */
@@ -2499,9 +2445,6 @@ int spm_mtcmos_ctrl_vpu_core2_shut_down(int state)
 {
 	int err = 0;
 
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VPU_CORE2" */
 		/* TINFO="Set SRAM_CKISO = 1" */
@@ -2591,9 +2534,6 @@ int spm_mtcmos_ctrl_vpu_core2_shut_down(int state)
 int spm_mtcmos_ctrl_vde(int state)
 {
 	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VDE" */
@@ -3637,8 +3577,9 @@ void subsys_if_on(void)
 #if 1 /*only use for suspend test*/
 void mtcmos_force_off(void)
 {
-	spm_mtcmos_ctrl_mfg_core0(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg_2d(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg_core1(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg_core0(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);
 
