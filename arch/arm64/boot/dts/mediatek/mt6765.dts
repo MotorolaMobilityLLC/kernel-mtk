@@ -486,6 +486,10 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,pmic-accdet";
 	};
 
+	goodix_fp: fingerprint {
+		compatible = "mediatek,goodix-fp";
+	};
+
 	mt6357_gauge {
 		compatible = "mediatek,mt6357_gauge";
 		gauge_name = "gauge";
