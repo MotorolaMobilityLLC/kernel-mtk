@@ -1089,8 +1089,19 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 	FH_MSG("EN: %s", __func__);
 
 	for (i = 0; i < FH_PLL_NUM; ++i) {
-		const unsigned int mon = fh_read32(g_reg_mon[i]);
-		const unsigned int dds = mon & MASK22b;
+		FH_MSG_DEBUG("REG ADDR (%d) : 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx",
+			i, g_reg_mon[i], g_reg_cfg[i], g_reg_updnlmt[i],
+			g_reg_dvfs[i], g_reg_dds[i], g_reg_pll_con0[i], g_reg_pll_con1[i]);
+	}
+
+	for (i = 0; i < FH_PLL_NUM; ++i) {
+		unsigned int mon;
+		unsigned int dds;
+
+		FH_MSG_DEBUG("Dumping PLL %d", i);
+
+		mon = fh_read32(g_reg_mon[i]);
+		dds = mon & MASK22b;
 
 		seq_printf(m, "FHCTL%d CFG, UPDNLMT, DVFS, DDS, MON\r\n", i);
 		seq_printf(m, "0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\r\n",
@@ -1103,19 +1114,29 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 			dds_min[i] = dds;
 	}
 
+	FH_MSG_DEBUG("Dumping flags");
 	seq_printf(m, "\r\nFHCTL_HP_EN:\r\n0x%08x\r\n", fh_read32(REG_FHCTL_HP_EN));
 	seq_printf(m, "\r\nFHCTL_CLK_CON:\r\n0x%08x\r\n", fh_read32(REG_FHCTL_CLK_CON));
 
+	FH_MSG_DEBUG("Dumping CON0");
 	seq_puts(m, "\r\nPLL_CON0 :\r\n");
-	for (i = 0; i < FH_PLL_NUM; ++i)
-		seq_printf(m, "PLL%d;0x%08x ", i, fh_read32(g_reg_pll_con0[i]));
+	for (i = 0; i < FH_PLL_NUM; ++i) {
+		FH_MSG_DEBUG("Dumping PLL %d", i);
+		if (g_reg_pll_con0[i] == REG_PLL_NOT_SUPPORT)
+			seq_printf(m, "PLL%d;not support", i);
+		else
+			seq_printf(m, "PLL%d;0x%08x ", i, fh_read32(g_reg_pll_con0[i]));
+	}
 
-
+	FH_MSG_DEBUG("Dumping CON1");
 	seq_puts(m, "\r\nPLL_CON1 :\r\n");
-	for (i = 0; i < FH_PLL_NUM; ++i)
-		seq_printf(m, "PLL%d;0x%08x ", i, fh_read32(g_reg_pll_con1[i]));
-
-
+	for (i = 0; i < FH_PLL_NUM; ++i) {
+		FH_MSG_DEBUG("Dumping PLL %d", i);
+		if (g_reg_pll_con1[i] == REG_PLL_NOT_SUPPORT)
+			seq_printf(m, "PLL%d;not support", i);
+		else
+			seq_printf(m, "PLL%d;0x%08x ", i, fh_read32(g_reg_pll_con1[i]));
+	}
 
 	seq_puts(m, "\r\nRecorded dds range\r\n");
 
@@ -1210,7 +1231,7 @@ static int __reg_base_addr_init(void)
 	}
 
 	/* Init APMIXED base address */
-	apmixed_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6763-apmixedsys");
+	apmixed_node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 	g_apmixed_base = of_iomap(apmixed_node, 0);
 	if (!g_apmixed_base) {
 		FH_MSG_DEBUG("Error, APMIXED iomap failed");

@@ -88,10 +88,10 @@ enum FH_PLL_ID {
 	FH_PLL8  = 8,       /* MSDCLL */
 	FH_PLL9  = 9,       /* MMPLL */
 	FH_PLL10  = 10,     /* VDECPLL */
-	FH_PLL11  = 11,     /* TVDPLL */
-
-	FH_PLL_NUM,
+	FH_PLL11  = 11      /* TVDPLL */
 };
+
+#define FH_PLL_NUM 12
 
 #define FH_GPU_PLLID FH_PLL4
 #define FH_MEM_PLLID FH_PLL6
