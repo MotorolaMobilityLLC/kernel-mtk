@@ -516,7 +516,9 @@ static void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_MASK,
 		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
 
+#ifdef CONFIG_MACH_MT6799
 	wk_mt6337_set_lp_setting();
+#endif
 #endif
 #endif
 	__spm_sync_pcm_flags(pwrctrl);
@@ -527,8 +529,9 @@ static void spm_sodi3_post_process(void)
 #ifndef CONFIG_MACH_MT6759
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-
+#ifdef CONFIG_MACH_MT6799
 	wk_mt6337_restore_lp_setting();
+#endif
 #endif
 #endif
 }

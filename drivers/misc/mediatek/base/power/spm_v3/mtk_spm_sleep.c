@@ -429,7 +429,9 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
 
 	wk_auxadc_bgd_ctrl(0);
+#ifdef CONFIG_MACH_MT6799
 	wk_mt6337_set_lp_setting();
+#endif
 #endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 
 	if (--mt_power_gs_dump_suspend_count >= 0)
@@ -444,7 +446,9 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	wk_auxadc_bgd_ctrl(1);
+#ifdef CONFIG_MACH_MT6799
 	wk_mt6337_restore_lp_setting();
+#endif
 #endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 #endif
 }
