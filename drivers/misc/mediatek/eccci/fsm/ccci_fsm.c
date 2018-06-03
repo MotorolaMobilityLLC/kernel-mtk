@@ -226,8 +226,8 @@ static void fsm_routine_start(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command 
 	spin_unlock_irqrestore(&ctl->event_lock, flags);
 	/* 3. action and poll event queue */
 	ccci_md_pre_start(ctl->md_id);
-	ret = ccci_md_start(ctl->md_id);
 	fsm_broadcast_state(ctl, BOOT_WAITING_FOR_HS1);
+	ret = ccci_md_start(ctl->md_id);
 	if (ret)
 		goto fail;
 	ctl->boot_count++;
