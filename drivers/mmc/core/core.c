@@ -296,7 +296,7 @@ void mmc_do_check(struct mmc_host *host)
 			msleep(2000);
 			while (mmc_reset_for_cmdq(host)) {
 				pr_notice("[CQ] reinit fail\n");
-				WARN_ON(1);
+				BUG_ON(1);
 			}
 			mmc_clr_dat_list(host);
 			mmc_restore_tasks(host);
@@ -507,7 +507,7 @@ int mmc_run_queue_thread(void *data)
 			|| done_mrq->cmd->error == (unsigned int)-ETIMEDOUT)
 					&& mmc_reset_for_cmdq(host)) {
 						pr_notice("[CQ] reinit fail\n");
-						WARN_ON(1);
+						BUG_ON(1);
 					}
 				}
 
@@ -609,7 +609,7 @@ int mmc_run_queue_thread(void *data)
 					msleep(2000);
 					while (mmc_reset_for_cmdq(host)) {
 						pr_notice("[CQ] reinit fail\n");
-						WARN_ON(1);
+						BUG_ON(1);
 					}
 					mmc_clr_dat_list(host);
 					mmc_restore_tasks(host);
