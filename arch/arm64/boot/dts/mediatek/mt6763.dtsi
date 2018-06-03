@@ -364,9 +364,9 @@
 		};
 	};
 
-	plat_sram_flag@0011dbf0 {
+	plat_sram_flag@0011db00 {
 		compatible = "mediatek,plat_sram_flag";
-		reg = <0 0x0011dbf0 0 0x10>;
+		reg = <0 0x0011db00 0 0x10>;
 	};
 
 	gic: interrupt-controller@40001000 {
