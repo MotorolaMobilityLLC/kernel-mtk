@@ -25,6 +25,17 @@ config ZRAM_LZ4_COMPRESS
 	  This option enables LZ4 compression algorithm support. Compression
 	  algorithm can be changed using `comp_algorithm' device attribute.
 
+config ZRAM_LZ4K_COMPRESS
+	bool "Enable LZ4K algorithm support"
+	depends on ZRAM
+	select LZ4K
+	default n
+	help
+	  This option enables Mediatek's LZ4K compression algorithm support.
+	  Compression algorithm can be changed using `comp_algorithm' device
+	  attribute.
+
+
 config HWZRAM_IMPL
        bool "Hardware version of ZRAM"
        default n
