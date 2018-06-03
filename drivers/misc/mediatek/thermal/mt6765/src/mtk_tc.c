@@ -848,7 +848,12 @@ int get_immediate_ts8_wrap(void)
 
 int get_immediate_tsabb_wrap(void)
 {
-	return -127000;
+	int curr_temp;
+
+	curr_temp = tscpu_ts_temp[TS_ABB];
+	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
+
+	return curr_temp;
 }
 
 int (*get_immediate_tsX[TS_ENUM_MAX])(void) = {
@@ -856,7 +861,8 @@ int (*get_immediate_tsX[TS_ENUM_MAX])(void) = {
 	get_immediate_ts2_wrap,
 	get_immediate_ts3_wrap,
 	get_immediate_ts4_wrap,
-	get_immediate_ts5_wrap
+	get_immediate_ts5_wrap,
+	get_immediate_tsabb_wrap
 };
 
 static void thermal_interrupt_handler(int tc_num)
@@ -1249,6 +1255,8 @@ int tscpu_thermal_ADCValueOfMcu(enum thermal_sensor type)
 		return TEMPADC_MCU4;
 	case TS_MCU5:
 		return TEMPADC_MCU5;
+	case TS_ABB:
+		return TEMPADC_ABB;
 	default:
 		return TEMPADC_MCU1;
 	}

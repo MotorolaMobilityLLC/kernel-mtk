@@ -38,6 +38,7 @@ enum thermal_sensor {
 	TS_MCU3,
 	TS_MCU4,
 	TS_MCU5,
+	TS_ABB, /* TODO: double check if TS_ABB exists. */
 	TS_ENUM_MAX,
 };
 
@@ -92,6 +93,7 @@ enum mtk_thermal_sensor_cpu_id_met {
 	MTK_THERMAL_SENSOR_TS3,
 	MTK_THERMAL_SENSOR_TS4,
 	MTK_THERMAL_SENSOR_TS5,
+	MTK_THERMAL_SENSOR_TSABB,
 
 	ATM_CPU_LIMIT,
 	ATM_GPU_LIMIT,
@@ -122,6 +124,7 @@ extern int get_immediate_ts4_wrap(void);
 
 extern int get_immediate_ts5_wrap(void);
 
+extern int get_immediate_tsabb_wrap(void);
 
 extern int (*get_immediate_tsX[TS_ENUM_MAX])(void);
 
