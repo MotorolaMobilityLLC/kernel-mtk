@@ -24,6 +24,7 @@
 #include <linux/module.h>
 #include "ged_kpi.h"
 #include "ged.h"
+#include "ged_vsync.h"
 
 static unsigned int ged_boost_enable = 1;
 //-----------------------------------------------------------------------------
@@ -179,6 +180,12 @@ int ged_bridge_target_fps(
 	GED_BRIDGE_OUT_TARGET_FPS *out)
 {
 	ged_set_target_fps(in->fps);
+	return 0;
+}
+/* ----------------------------------------------------------------------------- */
+int ged_bridge_wait_hw_vsync(void)
+{
+	ged_wait_hw_vsync();
 	return 0;
 }
 /* ----------------------------------------------------------------------------- */
