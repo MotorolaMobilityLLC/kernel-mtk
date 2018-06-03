@@ -57,4 +57,8 @@ void SetAnalogSuspend(bool bEnable);
 
 int set_codec_ops(struct mtk_codec_ops *ops);
 
+#ifdef CONFIG_MTK_ACCDET
+extern void accdet_late_init(unsigned long a);
+#endif
+
 #endif

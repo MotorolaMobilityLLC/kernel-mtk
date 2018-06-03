@@ -59,6 +59,10 @@
 #include <sound/pcm.h>
 #include <sound/soc.h>
 
+#ifdef CONFIG_MTK_ACCDET
+#include "accdet.h"
+#endif
+
 #ifdef CONFIG_MTK_AUXADC_INTF
 #include <mt-plat/mtk_auxadc_intf.h>
 #endif
@@ -5930,6 +5934,10 @@ static int mt6358_codec_probe(struct snd_soc_codec *codec)
 	mInitCodec = true;
 
 	get_hp_lr_trim_offset();
+
+#ifdef CONFIG_MTK_ACCDET
+	accdet_late_init(get_mic_mode());
+#endif
 
 	return 0;
 }
