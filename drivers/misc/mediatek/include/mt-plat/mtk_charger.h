@@ -105,5 +105,6 @@ extern int charger_manager_get_zcv(
 extern int charger_manager_enable_kpoc_shutdown(
 	struct charger_consumer *consumer,
 	bool en);
+extern int mtk_chr_is_charger_exist(unsigned char *exist);
 
 #endif /* __MTK_CHARGER_H__ */
