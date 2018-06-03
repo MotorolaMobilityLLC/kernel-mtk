@@ -70,8 +70,6 @@ unsigned int DRAM_TYPE;
 unsigned int CH_NUM;
 unsigned int CBT_MODE;
 
-static void __iomem *(*get_emi_base)(void);
-
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
 #define Reg_Readl(addr) readl(IOMEM(addr))
@@ -1138,25 +1136,14 @@ unsigned int get_dram_data_rate(void)
 		else
 			u4DataRate = 0;
 	} else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-		if (channels == 1) {
-			if (u4DataRate == 3718)
-				u4DataRate = 3733;
-			else if (u4DataRate == 3198)
-				u4DataRate = 3200;
-			else if (u4DataRate == 2392)
-				u4DataRate = 2400;
-			else
-				u4DataRate = 0;
-		} else {
-			if (u4DataRate == 3198)
-				u4DataRate = 3200;
-			else if (u4DataRate == 2392)
-				u4DataRate = 2400;
-			else if (u4DataRate == 1599)
-				u4DataRate = 1600;
-			else
-				u4DataRate = 0;
-		}
+		if (u4DataRate == 3198)
+			u4DataRate = 3200;
+		else if (u4DataRate == 2392)
+			u4DataRate = 2400;
+		else if (u4DataRate == 1599)
+			u4DataRate = 1600;
+		else
+			u4DataRate = 0;
 	} else
 		u4DataRate = 0;
 
@@ -1194,43 +1181,7 @@ EXPORT_SYMBOL(get_ddr_type);
 
 int get_emi_ch_num(void)
 {
-	void __iomem *emi_base;
-	unsigned int emi_cona;
-
-	if (CH_NUM)
-		return CH_NUM;
-
-	get_emi_base = (void __iomem *)symbol_get(mt_emi_base_get);
-	if (get_emi_base == NULL) {
-		pr_err("[DRAMC] get_emi_ch_num: mt_emi_base_get is NULL\n");
-		return 0;
-	}
-
-	emi_base = get_emi_base();
-	symbol_put(mt_emi_base_get);
-	get_emi_base = NULL;
-
-	if (!emi_base) {
-		pr_err("[DRAMC] get_emi_ch_num: emi_base is NULL\n");
-		return 0;
-	}
-
-	emi_cona = readl(IOMEM(emi_base+0x000));
-
-	switch ((emi_cona >> 8) & 0x3) {
-	case 0:
-		CH_NUM = 1;
-		break;
-	case 1:
-		CH_NUM = 2;
-		break;
-	case 2:
-		CH_NUM = 4;
-		break;
-	default:
-		pr_err("[DRAMC] invalid channel num (emi_cona = 0x%x)\n", emi_cona);
-	}
-	return CH_NUM;
+	return get_ch_num();
 }
 EXPORT_SYMBOL(get_emi_ch_num);
 
@@ -1244,44 +1195,27 @@ int dram_steps_freq(unsigned int step)
 	switch (step) {
 	case 0:
 		if (DRAM_TYPE == TYPE_LPDDR3)
-			/*freq = get_dram_data_rate();*/	/* DDR1800 or DDR1866 */
 			freq = 1866;
-		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-			if (channels == 1)
-				freq = 3733;
-			else
-				freq = 3200;
-		}
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
+			freq = 3200;
 		break;
 	case 1:
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = 1600;
-		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-			if (channels == 1)
-				freq = 3200;
-			else
-				freq = 3200;
-		}
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
+			freq = 3200;
 		break;
 	case 2:
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = 1600;
-		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-			if (channels == 1)
-				freq = 3200;
-			else
-				freq = 2400;
-		}
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
+			freq = 2400;
 		break;
 	case 3:
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = 1200;
-		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-			if (channels == 1)
-				freq = 2400;
-			else
-				freq = 1600;
-		}
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
+			freq = 1600;
 		break;
 	default:
 		return -1;
@@ -1548,6 +1482,7 @@ void add_zqcs_timer(void)
 
 static int dram_probe(struct platform_device *pdev)
 {
+	int ret = 0;
 	unsigned int i;
 	struct resource *res;
 	void __iomem *base_temp[8];
@@ -1598,8 +1533,21 @@ static int dram_probe(struct platform_device *pdev)
 		return -1;
 	}
 
-	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
-	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
+	DRAM_TYPE = get_dram_type();
+	pr_err("[DRAMC Driver] dram type =%d\n", DRAM_TYPE);
+
+	if (!DRAM_TYPE) {
+		pr_err("[DRAMC Driver] dram type error !!\n");
+		return -1;
+	}
+
+	CH_NUM = get_ch_num();
+	pr_err("[DRAMC Driver] Channel num =%d\n", CH_NUM);
+
+	if (!CH_NUM) {
+		pr_err("[DRAMC Driver] channel number error !!\n");
+		return -1;
+	}
 
 #ifdef MIX_MODE
 	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_01C) & 0xF000) >> 12;
@@ -1641,6 +1589,20 @@ static int dram_probe(struct platform_device *pdev)
 			pr_err("[DRAMC Driver] Error in ZQCS mod_timer\n");
 	}
 
+	ret = driver_create_file(pdev->dev.driver,
+	&driver_attr_emi_clk_mem_test);
+	if (ret) {
+		pr_warn("fail to create the emi_clk_mem_test sysfs files\n");
+		return ret;
+	}
+
+	ret = driver_create_file(pdev->dev.driver,
+	&driver_attr_read_dram_data_rate);
+	if (ret) {
+		pr_warn("fail to create the read dram data rate sysfs files\n");
+		return ret;
+	}
+
 	if (dram_can_support_fh())
 		pr_err("[DRAMC Driver] dram can support DFS\n");
 	else
@@ -1678,25 +1640,9 @@ static int __init dram_test_init(void)
 {
 	int ret = 0;
 
-	DRAM_TYPE = 0;
-
 	ret = platform_driver_register(&dram_test_drv);
 	if (ret) {
 		pr_warn("[DRAMC] init fail, ret 0x%x\n", ret);
-		return ret;
-	}
-
-	ret = driver_create_file(&dram_test_drv.driver,
-	&driver_attr_emi_clk_mem_test);
-	if (ret) {
-		pr_warn("fail to create the emi_clk_mem_test sysfs files\n");
-		return ret;
-	}
-
-	ret = driver_create_file(&dram_test_drv.driver,
-	&driver_attr_read_dram_data_rate);
-	if (ret) {
-		pr_warn("fail to create the read dram data rate sysfs files\n");
 		return ret;
 	}
 
@@ -1720,14 +1666,6 @@ module_exit(dram_test_exit);
 
 void *mt_dramc_chn_base_get(int channel)
 {
-	int channels = get_emi_ch_num();
-
-	if (((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) && channels == 1) {
-		if (channel == 0)
-			return DRAMC_AO_CHB_BASE_ADDR;
-		return NULL;
-	}
-
 	switch (channel) {
 	case 0:
 		return DRAMC_AO_CHA_BASE_ADDR;
@@ -1741,14 +1679,6 @@ EXPORT_SYMBOL(mt_dramc_chn_base_get);
 
 void *mt_dramc_nao_chn_base_get(int channel)
 {
-	int channels = get_emi_ch_num();
-
-	if (((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) && channels == 1) {
-		if (channel == 0)
-			return DRAMC_NAO_CHB_BASE_ADDR;
-		return NULL;
-	}
-
 	switch (channel) {
 	case 0:
 		return DRAMC_NAO_CHA_BASE_ADDR;
@@ -1762,14 +1692,6 @@ EXPORT_SYMBOL(mt_dramc_nao_chn_base_get);
 
 void *mt_ddrphy_chn_base_get(int channel)
 {
-	int channels = get_emi_ch_num();
-
-	if (((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) && channels == 1) {
-		if (channel == 0)
-			return DDRPHY_AO_CHB_BASE_ADDR;
-		return NULL;
-	}
-
 	switch (channel) {
 	case 0:
 		return DDRPHY_AO_CHA_BASE_ADDR;
@@ -1783,13 +1705,6 @@ EXPORT_SYMBOL(mt_ddrphy_chn_base_get);
 
 void *mt_ddrphy_nao_chn_base_get(int channel)
 {
-	int channels = get_emi_ch_num();
-
-	if (((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) && channels == 1) {
-		if (channel == 0)
-			return DDRPHY_NAO_CHB_BASE_ADDR;
-		return NULL;
-	}
 	switch (channel) {
 	case 0:
 		return DDRPHY_NAO_CHA_BASE_ADDR;
