@@ -49,11 +49,11 @@ obj-$(CONFIG_VF_PIT_TIMER)	+= vf_pit_timer.o
 obj-$(CONFIG_CLKSRC_QCOM)	+= qcom-timer.o
 obj-$(CONFIG_MTK_TIMER)		+= mtk_timer.o
 obj-$(CONFIG_MACH_MT6757)	+= mtk_cpuxgpt_mt6757.o mtk_timer_mt6757.o arm_arch_timer_mt6757.o
+obj-$(CONFIG_MACH_MT6799)	+= mtk_timer_mt6799.o arm_arch_timer_mt6799.o
 obj-$(CONFIG_CLKSRC_PISTACHIO)	+= time-pistachio.o
 obj-$(CONFIG_CLKSRC_TI_32K)	+= timer-ti-32k.o
 
-ifneq (,$(filter $(CONFIG_MACH_MT6757), y))
-else
+ifeq (,$(filter $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6799), y))
 obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
 endif
 obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
