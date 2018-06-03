@@ -1000,6 +1000,7 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	data->height = cfg->dst_h;
 	data->fmt = cfg->fmt;
 	data->ext_layer_num = ext_layer_num;
+	data->phy_layer = cfg->phy_layer;
 
 	if (cfg->ext_layer == -1) {
 		set_reg[UPDATE] |= update << (cfg->phy_layer * 4);
@@ -1010,6 +1011,40 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 		set_reg[TRANS_EN] |= trans_en << (16 + cfg->ext_layer * 4);
 		set_reg[CNST_EN] |= cnst_en << (17 + cfg->ext_layer * 4);
 	}
+}
+
+static void check_bch_reg(enum DISP_MODULE_ENUM module, int *phy_reg,
+		int *ext_reg, struct disp_ddp_path_config *pConfig)
+{
+
+	static int phy_bit_dbg[OVL_NUM] = { 0 };
+	static int ext_bit_dbg[OVL_NUM] = { 0 };
+	int phy_value =
+		DISP_REG_GET(ovl_base_addr(module) + DISP_REG_OVL_SBCH);
+	int ext_value =
+		DISP_REG_GET(ovl_base_addr(module) + DISP_REG_OVL_SBCH_EXT);
+
+	if (((phy_value != phy_bit_dbg[module]) ||
+		(ext_value != ext_bit_dbg[module])) &&
+		pConfig->sbch_enable) {
+		DDPWRN("sbch reg set fail phy:%x--%x, ext:%x--%x\n",
+			phy_value, phy_bit_dbg[module],
+			ext_value, ext_bit_dbg[module]);
+		mmprofile_log_ex(ddp_mmp_get_events()->sbch_set_error,
+			MMPROFILE_FLAG_PULSE, phy_value, phy_bit_dbg[module]);
+		/* disp_aee_print("sbch set error ovl%d\n",module); */
+	}
+
+	/* store will set reg value */
+	phy_bit_dbg[module] =
+		(phy_reg[UPDATE]|phy_reg[TRANS_EN]|phy_reg[CNST_EN]);
+	ext_bit_dbg[module] =
+		(ext_reg[UPDATE]|ext_reg[TRANS_EN]|ext_reg[CNST_EN]);
+
+	if (phy_bit_dbg[module] || phy_value)
+		mmprofile_log_ex(ddp_mmp_get_events()->sbch_set,
+			MMPROFILE_FLAG_PULSE, phy_bit_dbg[module], phy_value);
+
 }
 
 static void ext_layer_bch_disable(struct sbch *sbch_data,
@@ -1183,7 +1218,8 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 		 */
 		if (sbch_data[i].pre_addr == ovl_cfg->addr &&
 			sbch_data[i].height == ovl_cfg->dst_h &&
-			sbch_data[i].fmt == ovl_cfg->fmt) {
+			sbch_data[i].fmt == ovl_cfg->fmt &&
+			sbch_data[i].phy_layer == ovl_cfg->phy_layer) {
 			if (ovl_cfg->ext_layer == -1)
 				layer_no_update(sbch_data, phy_bit, ext_bit,
 					pConfig, ovl_cfg, &i);
@@ -1195,9 +1231,8 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 		}
 	}
 
-	DDPDBG("set bch reg phy:%x, ext:%x\n",
-			(phy_bit[UPDATE]|phy_bit[TRANS_EN]|phy_bit[CNST_EN]),
-			(ext_bit[UPDATE]|ext_bit[TRANS_EN]|ext_bit[CNST_EN]));
+	/* for debug: check sbch reg is set or not */
+	check_bch_reg(module, phy_bit, ext_bit, pConfig);
 
 	/* set bch reg*/
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SBCH,
@@ -1238,6 +1273,11 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		static struct sbch sbch_info[OVL_NUM][TOTAL_OVL_LAYER_NUM];
 		int ovl_index = ovl_to_index(module);
 
+		if (!pConfig->sbch_enable) {
+
+			DISPMSG("sbch disable\n");
+			memset(sbch_info, 0, sizeof(sbch_info));
+		}
 		sbch_calc(module, sbch_info[ovl_index], pConfig, handle);
 	} else {
 	/* if don't enable bch feature, set bch reg to default value(0) */

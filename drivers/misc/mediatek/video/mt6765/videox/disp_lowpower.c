@@ -300,10 +300,10 @@ int primary_display_dsi_vfp_change(int state)
 	/* make sure token rdma_sof is clear */
 	cmdqRecClearEventToken(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
 
-	/* wait rdma0_sof: only used for video mode & trigger loop
-	 * need wait and clear rdma0 sof
+	/* for chips later than M17,VFP can be set at anytime
+	 * So don't need to wait-SOF here
 	 */
-	cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
+	/* cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_SOF); */
 
 	params = primary_get_lcm()->params;
 	if (state == 1) {

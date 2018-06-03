@@ -155,6 +155,7 @@ struct sbch {
 	int ext_layer_num;/*ext:-1  phy:0~3*/
 	unsigned long pre_addr;
 	unsigned int height;
+	int phy_layer;
 	enum UNIFIED_COLOR_FMT fmt;
 };
 
@@ -359,6 +360,7 @@ struct disp_ddp_path_config {
 	bool rsz_enable;
 	int hrt_path;
 	int hrt_scale;
+	int sbch_enable;
 };
 
 /* dpmgr_ioctl cmd definition */
