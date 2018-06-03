@@ -120,5 +120,6 @@ extern void governor_autok_manager(void);
 extern bool governor_autok_check(int kicker);
 extern bool governor_autok_lock_check(int kicker, int opp);
 extern int vcorefs_get_hw_opp(void);
+extern int vcorefs_enable_debug_isr(bool enable);
 
 #endif	/* _MTK_VCOREFS_GOVERNOR_H */

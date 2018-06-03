@@ -19,6 +19,7 @@
 
 #include "mtk_vcorefs_manager.h"
 #include "mtk_spm_vcore_dvfs.h"
+#include "mmdvfs_mgr.h"
 
 static DEFINE_MUTEX(vcorefs_mutex);
 
@@ -115,9 +116,12 @@ int vcorefs_each_kicker_request(enum dvfs_kicker kicker)
 int spm_msdc_dvfs_setting(int msdc, bool enable)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
+	struct mmdvfs_prepare_action_event evt_from_vcore = {MMDVFS_EVENT_PREPARE_CALIBRATION_END};
 
-	if (msdc == KIR_AUTOK_SDIO)
-		pwrctrl->autok_finish = enable;
+	if (msdc != KIR_AUTOK_SDIO)
+		return 0;
+
+	pwrctrl->autok_finish = enable;
 
 	vcorefs_crit("[%s] MSDC AUTO FINISH\n", __func__);
 
@@ -125,6 +129,9 @@ int spm_msdc_dvfs_setting(int msdc, bool enable)
 	dcs_full_init();
 	vcorefs_crit("[%s] DCS FULL INIT FINISH\n", __func__);
 #endif /* end of CONFIG_MTK_DCS */
+
+	/* notify MM DVFS for msdc autok end */
+	mmdvfs_notify_prepare_action(&evt_from_vcore);
 
 	return 0;
 }
