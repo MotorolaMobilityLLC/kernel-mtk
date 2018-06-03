@@ -24,11 +24,13 @@ extern
 int mtk_thermal_get_gpu_info(int *nocores, int **gpufreq, int **gpuloading);
 
 extern
-int mtk_thermal_get_batt_info(int *batt_voltage, int *batt_current, int *batt_temp);
+int mtk_thermal_get_batt_info(int *batt_voltage, int *batt_current,
+				int *batt_temp);
 
 extern
 int mtk_thermal_get_extra_info(int *no_extra_attr,
-			       char ***attr_names, int **attr_values, char ***attr_unit);
+				char ***attr_names, int **attr_values,
+				char ***attr_unit);
 
 extern
 int mtk_thermal_force_get_batt_temp(void);
@@ -95,7 +97,7 @@ enum ta_daemon_crtl_cmd_to_kernel {
 }; /*must sync userspace/kernel: TA_DAEMON_CTRL_CMD_FROM_USER*/
 
 #define TAD_NL_MSG_T_HDR_LEN 12
-#define TAD_NL_MSG_MAX_LEN 2048
+#define TAD_NL_MSG_MAX_LEN 512
 
 struct tad_nl_msg_t {
 	unsigned int tad_cmd;
@@ -140,4 +142,4 @@ int ta_get_ttj(void);
 extern int mtk_thermal_get_tpcb_target(void);
 extern int tsatm_thermal_get_catm_type(void);
 
-#endif				/* _MTK_THERMAL_PLATFORM_H */
+#endif/* _MTK_THERMAL_PLATFORM_H */
