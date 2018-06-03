@@ -757,7 +757,7 @@ HPS_END:
 						hps_sys.tlp_avg, hps_sys.rush_cnt);
 
 				snprintf(str2, sizeof(str2),
-	"[%u,%u|%u,%u|%u,%u][%u,%u,%u][%lu,%lu,%lu][ut:%u, dt:%u] %s",
+	"[%u,%u|%u,%u|%u,%u][%u,%u,%u] [%u,%u,%u] [%u,%u,%u] [%lu,%lu,%lu] %s",
 						hps_sys.cluster_info[0].up_threshold,
 						hps_sys.cluster_info[0].down_threshold,
 						hps_sys.cluster_info[1].up_threshold,
@@ -767,10 +767,15 @@ HPS_END:
 						hps_sys.cluster_info[0].loading,
 						hps_sys.cluster_info[1].loading,
 						hps_sys.cluster_info[2].loading,
+						hps_sys.cluster_info[0].rel_load,
+						hps_sys.cluster_info[1].rel_load,
+						hps_sys.cluster_info[2].rel_load,
+						hps_sys.cluster_info[0].abs_load,
+						hps_sys.cluster_info[1].abs_load,
+						hps_sys.cluster_info[2].abs_load,
 						clus_util[0],
 						clus_util[1],
 						clus_util[2],
-						hps_ctxt.up_times, hps_ctxt.down_times,
 						str_target);
 
 				hps_warn("%s%s\n", str1, str2);
