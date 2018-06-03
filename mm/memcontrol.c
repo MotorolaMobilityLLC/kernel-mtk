@@ -5791,6 +5791,11 @@ static int __init mem_cgroup_init(void)
 {
 	int cpu, node;
 
+#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+	cgroup_memory_nokmem = true;
+	cgroup_memory_nosocket = true;
+#endif
+
 #ifndef CONFIG_SLOB
 	/*
 	 * Kmem cache creation is mostly done with the slab_mutex held,
