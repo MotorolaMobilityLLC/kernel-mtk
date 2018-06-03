@@ -572,6 +572,7 @@ static ssize_t acc_read(struct file *fp, char __user *buf,
 	struct acc_dev *dev = fp->private_data;
 	struct usb_request *req;
 	ssize_t r = count;
+	ssize_t data_length;
 	unsigned xfer;
 	int ret = 0;
 
@@ -593,6 +594,10 @@ static ssize_t acc_read(struct file *fp, char __user *buf,
 		goto done;
 	}
 
+	data_length = count;
+	data_length += dev->ep_out->maxpacket - 1;
+	data_length -= data_length % dev->ep_out->maxpacket;
+
 	if (dev->rx_done) {
 		/* last req cancelled. try to get it. */
 		req = dev->rx_req[0];
@@ -602,7 +607,7 @@ static ssize_t acc_read(struct file *fp, char __user *buf,
 requeue_req:
 	/* queue a request */
 	req = dev->rx_req[0];
-	req->length = count;
+	req->length = data_length;
 	dev->rx_done = 0;
 	ret = usb_ep_queue(dev->ep_out, req, GFP_KERNEL);
 	if (ret < 0) {
@@ -979,10 +984,12 @@ __acc_function_bind(struct usb_configuration *c,
 	return 0;
 }
 
+#ifdef CONFIG_USB_G_ANDROID
 static int
 acc_function_bind(struct usb_configuration *c, struct usb_function *f) {
 	return __acc_function_bind(c, f, false);
 }
+#endif
 
 static int
 acc_function_bind_configfs(struct usb_configuration *c,
@@ -1190,6 +1197,7 @@ static void acc_function_disable(struct usb_function *f)
 	VDBG(cdev, "%s disabled\n", dev->function.name);
 }
 
+#ifdef CONFIG_USB_G_ANDROID
 static int acc_bind_config(struct usb_configuration *c)
 {
 	struct acc_dev *dev = _acc_dev;
@@ -1218,6 +1226,7 @@ static int acc_bind_config(struct usb_configuration *c)
 
 	return usb_add_function(c, &dev->function);
 }
+#endif
 
 static int acc_setup(void)
 {
