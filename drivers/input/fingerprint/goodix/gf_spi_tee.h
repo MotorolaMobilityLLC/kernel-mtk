@@ -174,8 +174,6 @@ typedef struct {
 #define GF_IOC_CHIP_INFO	_IOW(GF_IOC_MAGIC, 13, struct gf_ioc_chip_info)
 
 #define GF_IOC_NAV_EVENT	_IOW(GF_IOC_MAGIC, 14, gf_nav_event_t)
-/*goodix SMT*/
-#define GF_IOC_FTM		_IOR(GF_IOC_MAGIC, 14, u8)
 
 /* for SPI REE transfer */
 #define GF_IOC_TRANSFER_CMD		_IOWR(GF_IOC_MAGIC, 15, struct gf_ioc_transfer)
@@ -183,6 +181,9 @@ typedef struct {
 #define GF_IOC_SPI_INIT_CFG_CMD	_IOW(GF_IOC_MAGIC, 17, gf_spi_cfg_t)
 
 #define  GF_IOC_MAXNR    18  /* THIS MACRO IS NOT USED NOW... */
+
+/* SMT backup solution (just to get chip ID) */
+#define GF_IOC_FTM		_IOR(GF_IOC_MAGIC, 20, u8)
 
 struct gf_device {
 	dev_t devno;
