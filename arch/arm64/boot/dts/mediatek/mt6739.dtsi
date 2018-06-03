@@ -1446,8 +1446,12 @@
 		reg = <0 0x14002000 0 0x1000>;
 		larbs = <&smi_larb0>, <&smi_larb1>, <&smi_larb2>;
 		clocks = <&scpsys SCP_SYS_MM0>, <&mmsys_config CLK_MM_GALS_COMM0>,
-			<&mmsys_config CLK_MM_GALS_COMM1>, <&mmsys_config CLK_MM_SMI_COMMON>;
-		clock-names = "mtcmos-mm", "smi-common-gals0", "smi-common-gals1", "smi-common";
+			<&mmsys_config CLK_MM_GALS_COMM1>, <&mmsys_config CLK_MM_SMI_COMMON>,
+			<&topckgen CLK_TOP_MM_SEL>,
+			<&topckgen CLK_TOP_VENCPLL>,
+			<&topckgen CLK_TOP_SYSPLL2_D2>;
+		clock-names = "mtcmos-mm", "smi-common-gals0", "smi-common-gals1", "smi-common",
+			"MMDVFS_CLK_TOP_MMPLL_CK", "mmdvfs_clk_top_vencpll_ck", "mmdvfs_clk_top_syspll2_d2";
 	};
 
 	smi_larb0: smi_larb0@14003000 {

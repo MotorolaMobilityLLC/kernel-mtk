@@ -1207,9 +1207,10 @@ static struct class *pSmiClass;
 /* MMDVFS related clk initialization */
 static int smi_mmdvfs_clks_init(void)
 {
-#if defined(SMI_WHI) || defined(SMI_ALA) || defined(SMI_BIA)
+#if defined(SMI_WHI) || defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_ZIO)
 		int i = 0;
 
+		SMIMSG("start smi_mmdvfs_clks_init\n");
 		/* const int mmdvfs_disable_setting = disable_mmdvfs; */
 		/* init clk mux of each MM clks*/
 		for (i = 0; i < g_mmdvfs_adaptor->mmdvfs_clk_hw_maps_num; i++) {
@@ -1232,7 +1233,7 @@ static int smi_mmdvfs_clks_init(void)
 		/* Enanle the MASK for CLK change */
 		clk_mux_mask = 0xFFFF;
 
-		SMIMSG("Finishe smi_mmdvfs_clks_init\n");
+		SMIMSG("Finish smi_mmdvfs_clks_init\n");
 
 		/* Set default high berfore MMDVFS feature is enabled, */
 		/* Onlye work when force_max_mmsys_clk is enabled */
