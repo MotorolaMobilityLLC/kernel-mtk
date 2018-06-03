@@ -1820,8 +1820,22 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 #endif
 			if (ret) {
 				STPSDIO_ERR_FUNC("get CTDR information Tx error(%d)!\n", ret);
-				if (ret == -EIO)
-					p_info->tx_retry_flag = STP_SDIO_RETRY_CRC_ERROR;
+				if (p_info->retry_enable_flag) {
+					if (ret == -EIO || ret == -EILSEQ || ret == -EBUSY)
+						p_info->tx_retry_flag = STP_SDIO_RETRY_CRC_ERROR;
+					else {
+						osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
+								"retry write data by SDIO report error");
+						p_info->tx_retry_count = 0;
+						p_info->tx_retry_flag = STP_SDIO_RETRY_NONE;
+						stp_sdio_issue_fake_coredump
+							("ABT: <HIF_SDIO> write_readsb retry ERROR");
+					}
+				} else {
+					osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
+							"retry write data by SDIO report error");
+					stp_sdio_issue_fake_coredump("ABT: <HIF_SDIO> write_readsb retry ERROR");
+				}
 			}
 
 			/* clear rd index entry of Tx ring buffer */
@@ -1993,8 +2007,22 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 
 			if (ret) {
 				STPSDIO_ERR_FUNC("get CTDR information Tx error(%d)!\n", ret);
-				if (ret == -EIO)
-					p_info->tx_retry_flag = STP_SDIO_RETRY_CRC_ERROR;
+				if (p_info->retry_enable_flag) {
+					if (ret == -EIO || ret == -EILSEQ || ret == -EBUSY)
+						p_info->tx_retry_flag = STP_SDIO_RETRY_CRC_ERROR;
+					else {
+						osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
+								"retry write data by SDIO report error");
+						p_info->tx_retry_count = 0;
+						p_info->tx_retry_flag = STP_SDIO_RETRY_NONE;
+						stp_sdio_issue_fake_coredump
+							("ABT: <HIF_SDIO> write_readsb retry ERROR");
+					}
+				} else {
+					osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
+							"retry write data by SDIO report error");
+					stp_sdio_issue_fake_coredump("ABT: <HIF_SDIO> write_readsb retry ERROR");
+				}
 			}
 
 			/* clear rd index entry of Tx ring buffer */
@@ -2107,7 +2135,7 @@ static VOID stp_sdio_rx_wkr(struct work_struct *work)
 			(PUINT32)(&(p_info->pkt_buf.rx_buf[0])), bus_rxlen);
 	if (p_info->retry_enable_flag) {
 		if (ret) {
-			if (ret == -EIO) {
+			if (ret == -EIO || ret == -EILSEQ || ret == -EBUSY) {
 				cccr_value = 0;
 				ret_1 = mtk_wcn_hif_sdio_f0_readb(p_info->sdio_cltctx, CCCR_F0, &cccr_value);
 				if (ret_1)
@@ -2130,9 +2158,13 @@ static VOID stp_sdio_rx_wkr(struct work_struct *work)
 					osal_dbg_assert_aee("<HIF_SDIO> sdio_readsb ERROR",
 							"retry read data by SDIO report error");
 					p_info->rx_retry_count = 0;
-					stp_sdio_issue_fake_coredump
-						("ABT: <HIF_SDIO> sdio_readsb retry ERROR");
+					stp_sdio_issue_fake_coredump("ABT: <HIF_SDIO> sdio_readsb retry ERROR");
 				}
+			} else {
+				osal_dbg_assert_aee("<HIF_SDIO> sdio_readsb ERROR",
+						"retry read data by SDIO report error");
+				p_info->rx_retry_count = 0;
+				stp_sdio_issue_fake_coredump("ABT: <HIF_SDIO> sdio_readsb retry ERROR");
 			}
 		} else {
 			cccr_value = 0;
@@ -2155,14 +2187,18 @@ static VOID stp_sdio_rx_wkr(struct work_struct *work)
 
 			p_info->rx_retry_count = 0;
 		}
+	} else {
+		if (ret) {
+			STPSDIO_HINT_FUNC("set to p_info->rx_pkt_len 0\n");
+			osal_dbg_assert_aee("<HIF_SDIO> sdio_readsb ERROR",
+					"retry read data by SDIO report error");
+			stp_sdio_issue_fake_coredump("ABT: <HIF_SDIO> sdio_readsb retry ERROR");
+		}
 	}
 	if (ret) {
 		/* TODO: error handling! */
 		STPSDIO_ERR_FUNC("read CRDR len(%d) rx error!(%d)\n", bus_rxlen, ret);
 		p_info->rx_pkt_len = 0;
-		STPSDIO_HINT_FUNC("set to p_info->rx_pkt_len 0\n");
-		osal_dbg_assert_aee("<HIF_SDIO> sdio_readsb ERROR",
-				    "read data by SDIO report error");
 		return;
 	}
 	p_info->rx_pkt_len = 0;
@@ -2788,8 +2824,8 @@ INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 		if (ret) {
 			STPSDIO_ERR_FUNC("sdio read or write failed, ret:%d\n", ret);
 			/* sdio CRC error read CSR */
-			if (ret == -EIO) {
-				if (type == HIF_TYPE_READ_BUF || type == HIF_TYPE_WRITE_BUF) {
+			if (type == HIF_TYPE_READ_BUF || type == HIF_TYPE_WRITE_BUF) {
+				if (ret == -EIO || ret == -EILSEQ || ret == -EBUSY) {
 					ret_1 = mtk_wcn_hif_sdio_abort(clt_ctx);
 					if (ret_1)
 						STPSDIO_ERR_FUNC("sdio crc error send abort fail, ret_1:%d\n",
@@ -2798,9 +2834,9 @@ INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 						STPSDIO_ERR_FUNC("sdio crc error send abort success, ret_1:%d\n",
 								ret_1);
 					goto exit;
-				} else
-					retry_flag = 1;
-			}
+				}
+			} else
+				retry_flag = 1;
 		} else {
 			STPSDIO_LOUD_FUNC("CR:0x:%x value:0x%x\n", offset, *pData);
 			break;
