@@ -30,7 +30,7 @@
 #endif
 
 
-unsigned int __attribute__((weak)) mt_cpufreq_get_cur_volt(unsigned int id)
+unsigned int __attribute__((weak)) mt_cpufreq_get_cur_volt(enum mt_cpu_dvfs_id id)
 {
 	return 0;
 }

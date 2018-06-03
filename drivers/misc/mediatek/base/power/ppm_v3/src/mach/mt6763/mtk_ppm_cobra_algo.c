@@ -130,7 +130,7 @@ void ppm_cobra_update_limit(void *user_req)
 	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
 
 	/* skip if DVFS is not ready (we cannot get current freq...) */
-	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb || !cobra_tbl)
+	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
 		return;
 
 	if (!user_req)
@@ -441,21 +441,21 @@ void ppm_cobra_init(void)
 				lkg_c = upower_get_power(i/4+NR_PPM_CLUSTERS, j, UPOWER_LKG);
 				cap = upower_get_power(i/4, j, UPOWER_CPU_STATES);
 
-				cobra_tbl->basic_pwr_tbl[i][j].power_idx =
+				cobra_tbl.basic_pwr_tbl[i][j].power_idx =
 					((dyn + lkg) * core + (dyn_c + lkg_c)) / 1000;
-				cobra_tbl->basic_pwr_tbl[i][j].perf_idx = cap * core;
+				cobra_tbl.basic_pwr_tbl[i][j].perf_idx = cap * core;
 
 				ppm_info("[%d][%d] = (%d, %d)\n", i, j,
-					cobra_tbl->basic_pwr_tbl[i][j].power_idx,
-					cobra_tbl->basic_pwr_tbl[i][j].perf_idx);
+					cobra_tbl.basic_pwr_tbl[i][j].power_idx,
+					cobra_tbl.basic_pwr_tbl[i][j].perf_idx);
 			}
 		}
 	}
 #else
 	for (i = 0; i < TOTAL_CORE_NUM; i++) {
 		for (j = 0; j < DVFS_OPP_NUM; j++) {
-			cobra_tbl->basic_pwr_tbl[i][j].power_idx = 0;
-			cobra_tbl->basic_pwr_tbl[i][j].perf_idx = 0;
+			cobra_tbl.basic_pwr_tbl[i][j].power_idx = 0;
+			cobra_tbl.basic_pwr_tbl[i][j].perf_idx = 0;
 		}
 	}
 #endif
