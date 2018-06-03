@@ -7129,7 +7129,8 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 
 		force_trigger_path = 1;
 	}
-
+	/*after dsi_stop, we should enable the DSI_TE.*/
+	dsi_te_irq_enable(DISP_MODULE_DSI0, NULL, 1);
 	dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
 	if (primary_display_is_video_mode()) {
 		/* for video mode, we need to force trigger here */

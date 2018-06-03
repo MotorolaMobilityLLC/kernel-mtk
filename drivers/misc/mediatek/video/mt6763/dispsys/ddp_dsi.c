@@ -3093,6 +3093,15 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 	return 0;
 }
 
+/*Panel_Master_dsi_config_entry will use the api*/
+int dsi_te_irq_enable(enum DISP_MODULE_ENUM module, void *handle, unsigned int enable)
+{
+	if (module == DISP_MODULE_DSI0)
+		DSI_OUTREGBIT(handle, struct DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, TE_RDY, enable);
+
+	return 0;
+}
+
 /*TUI will use the api*/
 int dsi_enable_irq(enum DISP_MODULE_ENUM module, void *handle, unsigned int enable)
 {
@@ -3306,9 +3315,8 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 			DSI_Reset(module, NULL);
 		}
 	}
-
 	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
-
+	DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTEN, 0);
 	DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0);
 
 	return 0;
