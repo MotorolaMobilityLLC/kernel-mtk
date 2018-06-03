@@ -86,7 +86,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.cap = {
 		.pclk = 597000000,
 		.linelength = 6024,
-		.framelength = 4126,
+		.framelength = 4128,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 5344,
@@ -109,7 +109,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.normal_video = {
 		.pclk = 561000000,
 		.linelength = 6024,
-		.framelength = 3120,
+		.framelength = 3104,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 5344,
@@ -119,28 +119,28 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 528000000,
 	},
 	.hs_video = {
-		.pclk = 597000000,
+		.pclk = 600000000,
 		.linelength = 6024,
-		.framelength = 824,
+		.framelength = 830,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1280,
 		.grabwindow_height = 720,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.max_framerate = 1200,
-		.mipi_pixel_rate = 161000000,
+		.mipi_pixel_rate = 158400000,
 	},
 	.slim_video = {
-		.pclk = 201000000,
+		.pclk = 600000000,
 		.linelength = 6024,
-		.framelength = 1112,
+		.framelength = 3320,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 1280,
 		.grabwindow_height = 720,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.max_framerate = 300,
-		.mipi_pixel_rate = 121000000,
+		.mipi_pixel_rate = 158400000,
 	},
 	.margin = 4,		/* sensor framelength & shutter margin */
 	.min_shutter = 1,	/* min shutter */
@@ -227,19 +227,19 @@ static struct imgsensor_struct imgsensor = {
 /* Sensor output window information */
 static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 {5344, 4016, 0, 0, 5344, 4016, 2672, 2008,
-	0000, 0000, 2672, 2008, 0, 0, 2672, 2008},	/* Preview */
+0000, 0000, 2672, 2008, 0, 0, 2672, 2008},		/* Preview */
 
 {5344, 4016, 0, 0, 5344, 4016, 5344, 4016,
 0000, 0000, 5344, 4016, 0, 0, 5344, 4016},		/* capture */
 
-{5344, 4016, 0, 504, 5344, 3006, 5344, 3006,
-0000, 0000, 5344, 3006, 0, 0, 5344, 3004},		/* video */
+{5344, 4016, 0, 0, 5344, 3004, 5344, 3004,
+0000, 0000, 5344, 3004, 0, 0, 5344, 3004},		/* video */
 
-{5344, 4016, 0, 568, 5344, 2880, 1280, 720,
-0000, 0000, 1280, 720, 0, 0, 1280, 720},		/* hight speed video */
+{5344, 4016, 0, 0, 5344, 4016, 1336, 1004,
+0034, 0000, 1280, 720, 0, 0, 1280, 720},		/* hight speed video */
 
-{5344, 4016, 0, 504, 5344, 3006, 1280, 720,
-0000, 0000, 1280, 720, 0, 0, 1280, 720} /* slim video */
+{5344, 4016, 0, 0, 5344, 4016, 1336, 1004,
+0034, 0000, 1280, 720, 0, 0, 1280, 720} /* slim video */
 };
 
  /*VC1 for HDR(DT=0X35) , VC2 for PDAF(DT=0X36), unit : 10bit */
@@ -1088,16 +1088,18 @@ static kal_uint16 imx230_table_write_cmos_sensor(
 		    len == IDX  ||
 		    addr != addr_last) {
 
-			iBurstWriteReg_multi(puSendCmd,
+			if (iBurstWriteReg_multi(puSendCmd,
 				tosend,
 				imgsensor.i2c_write_id,
 				3,
-				imgsensor_info.i2c_speed);
+				imgsensor_info.i2c_speed) != 0)
+				return -1;
 
 			tosend = 0;
 		}
 #else
-		iWriteRegI2C(puSendCmd, 3, imgsensor.i2c_write_id);
+		if (iWriteRegI2C(puSendCmd, 3, imgsensor.i2c_write_id) != 0)
+			return -1;
 		tosend = 0;
 
 #endif
@@ -4002,8 +4004,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			(*feature_para_len) / sizeof(UINT32), feature_data_16);
 		break;
 	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
-		pr_info("SENSOR_FEATURE_SET_PDAF_REG_SETTING %d",
-			(*feature_para_len));
+		/*pr_info("SENSOR_FEATURE_SET_PDAF_REG_SETTING %d",
+		 *	(*feature_para_len));
+		 */
 
 		imx230_set_pdaf_reg_setting(
 			(*feature_para_len) / sizeof(UINT32), feature_data_16);

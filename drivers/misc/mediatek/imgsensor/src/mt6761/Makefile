@@ -17,6 +17,11 @@
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+
+ifneq ($(findstring k61v1_32_bsp_1g, $(ARCH_MTK_PROJECT)),)
+ARCH_MTK_PROJECT = k61v1_32_bsp_1g
+endif
+
 IMGSENSOR_DRIVER_PATH  := $(srctree)/drivers/misc/mediatek/imgsensor/src
 COMMON_VERSION := v1
 

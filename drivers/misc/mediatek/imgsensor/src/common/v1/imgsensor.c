@@ -2477,12 +2477,8 @@ CAMERA_HW_Ioctl_EXIT:
 
 static int imgsensor_open(struct inode *a_pstInode, struct file *a_pstFile)
 {
-	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0) {
+	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0)
 		imgsensor_clk_enable_all(&pgimgsensor->clk);
-#ifdef IMGSENSOR_DFS_CTRL_ENABLE
-		imgsensor_dfs_ctrl(DFS_CTRL_ENABLE, NULL);
-#endif
-	}
 
 	atomic_inc(&pgimgsensor->imgsensor_open_cnt);
 	pr_info(
@@ -2503,7 +2499,7 @@ static int imgsensor_release(struct inode *a_pstInode, struct file *a_pstFile)
 
 		imgsensor_hw_release_all(&pgimgsensor->hw);
 #ifdef IMGSENSOR_DFS_CTRL_ENABLE
-		imgsensor_dfs_ctrl(DFS_CTRL_DISABLE, NULL);
+		imgsensor_dfs_ctrl(DFS_RELEASE, NULL);
 #endif
 	}
 	pr_info(
@@ -2686,6 +2682,10 @@ static int __init imgsensor_init(void)
 
 	schedule_delayed_work(&cam_temperature_wq, HZ);
 #endif
+#ifdef IMGSENSOR_DFS_CTRL_ENABLE
+	imgsensor_dfs_ctrl(DFS_CTRL_ENABLE, NULL);
+#endif
+
 	return 0;
 }
 
@@ -2694,6 +2694,9 @@ static int __init imgsensor_init(void)
  */
 static void __exit imgsensor_exit(void)
 {
+#ifdef IMGSENSOR_DFS_CTRL_ENABLE
+	imgsensor_dfs_ctrl(DFS_CTRL_DISABLE, NULL);
+#endif
 	platform_driver_unregister(&gimgsensor_platform_driver);
 }
 
