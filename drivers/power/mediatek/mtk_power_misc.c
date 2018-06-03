@@ -329,7 +329,7 @@ static int power_misc_routine_thread(void *arg)
 		mutex_lock(&sdd->lock);
 		ret = shutdown_event_handler(sdd);
 		mutex_unlock(&sdd->lock);
-		if (ret != 0)
+		if (ret != 0 && is_fg_disable() == false)
 			fgtimer_start(&sdd->kthread_fgtimer, ret);
 	}
 
