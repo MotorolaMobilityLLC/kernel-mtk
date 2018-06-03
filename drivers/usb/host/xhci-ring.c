@@ -2387,7 +2387,7 @@ static int handle_tx_event(struct xhci_hcd *xhci,
 		break;
 	case COMP_SPLIT_ERR:
 	case COMP_TX_ERR:
-		xhci_dbg(xhci, "Transfer error on endpoint\n");
+		xhci_warn(xhci, "Transfer error on endpoint %d\n", ep_index);
 		status = -EPROTO;
 		break;
 	case COMP_BABBLE:
