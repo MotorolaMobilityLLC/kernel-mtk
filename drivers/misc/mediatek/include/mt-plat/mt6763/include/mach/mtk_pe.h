@@ -28,10 +28,10 @@
 #define PEP20_ICHG_LEAVE_THRESHOLD 1000 /* mA */
 #define PEP_ICHG_LEAVE_THRESHOLD 1000 /* mA */
 
-typedef struct _pep20_profile {
+struct _pep20_profile {
 	unsigned int vbat;
 	unsigned int vchr;
-} pep20_profile_t, *p_pep20_profile_t;
+};
 
 /* For PE+20, default VBUS V.S. VBAT table (generated according to BQ25896) */
 #define VBAT3400_VBUS CHR_VOLT_08_000000_V
