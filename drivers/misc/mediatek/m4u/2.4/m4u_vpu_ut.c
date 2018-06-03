@@ -1,0 +1,500 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
+#include <linux/vmalloc.h>
+#include <linux/slab.h>
+#include <linux/mm.h>
+#include <linux/mman.h>
+#include <linux/module.h>
+#include "m4u_mva.h"
+#include "m4u_priv.h"
+
+void verify_ret(int ret, unsigned int start, unsigned int end)
+{
+	switch (ret) {
+	case -1:
+		M4UMSG("test range [0x%x, 0x%x] config error\n", start, end);
+		break;
+	case 1:
+		M4UMSG("test range [0x%x, 0x%x] is in the vpu region\n", start, end);
+		break;
+	case 0:
+		M4UMSG("test range [0x%x, 0x%x] is out of vpu region\n", start, end);
+		break;
+	default:
+		break;
+	}
+}
+
+#define case_nr 5
+void test_case_check_mva_region(void)
+{
+	int ret = 0;
+	int i = 0, j = 0;
+	unsigned int test_mva_start[case_nr] = {0x40000000, VPU_RESET_VECTOR_FIX_MVA_END,
+						0x50080000, VPU_FIX_MVA_END, 0x500FFFFF};
+	unsigned int test_mva_end[case_nr] = {VPU_RESET_VECTOR_FIX_MVA_START, 0x5FFFFFFF,
+						VPU_FIX_MVA_START, 0xFFFFFFFF, VPU_FIX_MVA_START};
+	unsigned int size, size_aligned;
+	unsigned int nr;
+	unsigned int startIdx;
+	m4u_buf_info_t tmp;
+	m4u_buf_info_t *pMvaInfo = &tmp;
+
+	pMvaInfo->port = M4U_PORT_VPU;/*M4U_PORT_DISP_OVL0, M4U_PORT_VPU*/
+
+	M4UMSG("test_case_check_mva_region========================>\n");
+	/*test case that input range intersects to vpu. should print config error.*/
+	/*4 cases:
+	 *   |--------------|------|---------|------------|----------|
+	 *  0x0           0x500  0x501      0x600        0x800      0xFFF
+	 *case 1:   start   |  end
+	 *case 2:             start|   end
+	 *case 3:                      start |   end
+	 *case 4:                                 start   |  end
+	 */
+	M4UMSG("<*test case that input range intersects to vpu: =>should print config error.*>\n");
+	for (i = 0; i < case_nr; i++) {
+		size = test_mva_end[i] - test_mva_start[i] + 1;
+		size_aligned = GET_RANGE_SIZE(START_ALIGNED(test_mva_start[i]), END_ALIGNED(test_mva_start[i], size));
+		nr = MVA_GRAPH_BLOCK_NR_ALIGNED(size_aligned);
+		startIdx = MVAGRAPH_INDEX(test_mva_start[i]);
+		ret = m4u_check_mva_region(startIdx, nr, pMvaInfo);
+		verify_ret(ret, test_mva_start[i], test_mva_end[i]);
+	}
+
+	/*test case: input range is in the vpu region
+	 *case 1: in and port id is rgiht. should print belongs to vpu.
+	 *case 2: in and port id isn's rgiht. should print config error.
+	 */
+	M4UMSG("<*test case: input range is in the vpu region: =>should print in vpu region & config error*>\n");
+	test_mva_start[0] = VPU_RESET_VECTOR_FIX_MVA_START;
+	test_mva_end[0] = VPU_RESET_VECTOR_FIX_MVA_END;
+	test_mva_start[1] = VPU_FIX_MVA_START;
+	test_mva_end[1] = VPU_FIX_MVA_END;
+	for (i = 0; i < 2; i++) {
+		if (i == 0)
+			pMvaInfo->port = M4U_PORT_VPU;
+		else
+			pMvaInfo->port = M4U_PORT_DISP_OVL0;
+		for (j = 0; j < 2; j++) {
+			size = test_mva_end[j] - test_mva_start[j] + 1;
+			size_aligned = GET_RANGE_SIZE(START_ALIGNED(test_mva_start[j]),
+							END_ALIGNED(test_mva_start[j], size));
+			nr = MVA_GRAPH_BLOCK_NR_ALIGNED(size_aligned);
+			startIdx = MVAGRAPH_INDEX(test_mva_start[j]);
+			ret = m4u_check_mva_region(startIdx, nr, pMvaInfo);
+			verify_ret(ret, test_mva_start[j], test_mva_end[j]);
+		}
+	}
+	/*test case: input range is out of vpu region.*/
+	M4UMSG("<*test case: input range is out of vpu region: =>should print out of vpu region*>\n");
+	test_mva_start[0] = 0x100000;
+	test_mva_end[0] = 0x4FFFFFFF;
+	/*0x50080000 is out of vpu mva region, but in the vpu mvaGraph,
+	 *we think input range intersects to vpu region
+	 */
+	test_mva_start[1] = 0x50100000;
+	test_mva_end[1] = 0x5FFFFFFF;
+	test_mva_start[2] = 0x80000000;
+	test_mva_end[2] = 0x8FFFFFFF;
+	for (i = 0; i < 3; i++) {
+		size = test_mva_end[i] - test_mva_start[i] + 1;
+		size_aligned = GET_RANGE_SIZE(START_ALIGNED(test_mva_start[i]), END_ALIGNED(test_mva_start[i], size));
+		nr = MVA_GRAPH_BLOCK_NR_ALIGNED(size_aligned);
+		startIdx = MVAGRAPH_INDEX(test_mva_start[i]);
+		ret = m4u_check_mva_region(startIdx, nr, pMvaInfo);
+		verify_ret(ret, test_mva_start[i], test_mva_end[i]);
+	}
+}
+
+#define REGION_NR 15
+#define IN_INDEX_START 5
+#define IN_INDEX_END 6
+#define INTERSECT_INDEX_START 0
+#define INTERSECT_INDEX_END 4
+#define OUT_INDEX_START 7
+#define OUT_INDEX_END 9
+#define SUB_INDEX_START 10
+#define SUB_INDEX_END 14
+
+/*0-3: intersect to vpu fix region.
+ *4-5: in vpu fix region
+ *6-8: out of vpu fix region
+ */
+unsigned int gtest_mva_start[REGION_NR] = {0x40000000, 0x5007FFFF, 0x50080000, VPU_FIX_MVA_END, 0x500FFFFF,
+						0x50000000, 0x60000000, 0x40000000, 0x50100000,
+						0x80000000, 0x60000000, 0x60f00000, 0x62100000,
+						0x70100000, 0x7c000000};
+unsigned int gtest_mva_end[REGION_NR] = {0x50000000, 0x5FFFFFFF, 0x60000000, 0xFFFFFFFF, 0x60000000,
+						0x5007FFFF, VPU_FIX_MVA_END, 0x4FFFFFFF, 0x5FFFFFFF,
+						0x8FFFFFFF, 0x60e00000, 0x62000000, 0x62f00000,
+						0x7b000000, VPU_FIX_MVA_END};
+typedef unsigned int (*mva_alloc_from_fix_region)(unsigned long, unsigned int, unsigned int, void *);
+
+static void verify_m4u_do_mva_alloc_fake(unsigned int port_id)
+{
+	int i = 0;
+	unsigned int size, size_aligned;
+	unsigned int nr;
+	unsigned int startIdx;
+	m4u_buf_info_t tmp;
+	m4u_buf_info_t *pMvaInfo = &tmp;
+	unsigned int ret = 0;
+
+	pMvaInfo->port = port_id;/*M4U_PORT_DISP_OVL0, M4U_PORT_VPU*/
+
+	for (; i < REGION_NR; i++) {
+		size = gtest_mva_end[i] - gtest_mva_start[i] + 1;
+		M4UMSG("test %dth region [0x%x, 0x%x].\n",
+				i, gtest_mva_start[i], gtest_mva_end[i]);
+		size_aligned = GET_RANGE_SIZE(START_ALIGNED(gtest_mva_start[i]), END_ALIGNED(gtest_mva_start[i], size));
+		nr = MVA_GRAPH_BLOCK_NR_ALIGNED(size_aligned);
+		startIdx = MVAGRAPH_INDEX(gtest_mva_start[i]);
+		ret = m4u_check_mva_region(startIdx, nr, pMvaInfo);
+		if (ret)
+			M4UMSG("%dth buf port: %d m4u_do_mva_alloc region [0x%x, 0x%x] failed.\n",
+				i, pMvaInfo->port, gtest_mva_start[i], gtest_mva_end[i]);
+		else
+			M4UMSG("%dth buf port: %d m4u_do_mva_alloc region [0x%x, 0x%x] success.\n",
+				i, pMvaInfo->port, gtest_mva_start[i], gtest_mva_end[i]);
+	}
+}
+void test_case_m4u_do_mva_alloc(void)
+{
+	M4UMSG("test_case_m4u_do_mva_alloc========================>\n");
+	/*since we are only care that if input mva region is in or intersects vpu fix region.
+	 *if each of the 2 cases occur, m4u_do_mva_alloc will failed.
+	 *so, it's ok to only test if m4u_check_mva_region return 0.
+	 */
+
+	/*vpu port should not m4u_do_mva_alloc vpu fix region,
+	 *but it can m4u_do_mva_alloc non-vpu fix region.
+	 */
+	M4UMSG("<*test case: if vpu want to alloc vpu fix region,");
+	M4UMSG("it should not use m4u_do_mva_alloc: => 7th&9th buffer should print success*>\n");
+	verify_m4u_do_mva_alloc_fake(M4U_PORT_VPU);
+
+	/*non-vpu port can m4u_do_mva_alloc non-vpu fix region.
+	 *the 7th & 9th buffer should print success. others should print failed
+	 */
+	M4UMSG("<*test case: non-vpu port can m4u_do_mva_alloc non-vpu fix region:");
+	M4UMSG("=>7th&9th buffer should print success*>\n");
+	verify_m4u_do_mva_alloc_fake(M4U_PORT_DISP_OVL0);
+}
+
+/*m4u_do_mva_alloc_fix should notice the following:
+ *(1) vpu fix region is protected by m4u_check_mva_region.
+ *(2) if vpu port alloc vpu fix region by this, it must make sure reserved bit
+ *    mustn't be destroyed.
+ *(3)There is no protection to non-vpu fix region now. if other fix regions are
+ *taken by some ports, only m4u user can check this.
+ *(4)because formal parameter [mva] == fix mva region start, va + size - 1 should be
+ *not more than fix mva region end.
+ */
+static void verify_m4u_do_mva_alloc_fix(unsigned int test_region_start,
+					unsigned int test_region_end,
+					unsigned int port_id,
+					mva_alloc_from_fix_region callback,
+					m4u_buf_info_t *pinfo_array[])
+{
+	unsigned int va_offset = 0xff, actual_mva_start;
+	int i = 0;
+	unsigned int size, size_aligned;
+	unsigned int nr;
+	unsigned int startIdx;
+	unsigned int ret = 0;
+
+	for (i = test_region_start; i <= test_region_end; i++) {
+		pinfo_array[i] = vmalloc(sizeof(m4u_buf_info_t));
+		pinfo_array[i]->port = port_id;/*M4U_PORT_DISP_OVL0, M4U_PORT_VPU*/
+
+		/*because formal parameter of m4u_do_mva_alloc_fix [mva] == fix mva region start,
+		**va + size - 1 should be not more than fix mva region end.
+		*/
+		actual_mva_start = gtest_mva_start[i] + va_offset;
+		size = gtest_mva_end[i] - actual_mva_start + 1;
+		M4UMSG("test region [0x%x, 0x%x].\n",
+			actual_mva_start, gtest_mva_end[i]);
+
+		ret = callback(va_offset, gtest_mva_start[i], size, pinfo_array[i]);
+		if (!ret) {
+			M4UMSG("port: %d m4u_do_mva_alloc_fix region [0x%x, 0x%x] failed.\n",
+				pinfo_array[i]->port, actual_mva_start, gtest_mva_end[i]);
+			vfree(pinfo_array[i]);
+		} else if (ret == actual_mva_start)
+			M4UMSG("port: %d m4u_do_mva_alloc_fix region [0x%x, 0x%x] success.\n",
+				pinfo_array[i]->port, actual_mva_start, gtest_mva_end[i]);
+		else {
+			M4UMSG("port: %d m4u_do_mva_alloc_fix region [0x%x, 0x%x].",
+				pinfo_array[i]->port, actual_mva_start, gtest_mva_end[i]);
+			M4UMSG("returned 0x%x is not equal to expection one(0x%x).\n",
+				ret, actual_mva_start);
+			m4u_do_mva_free(actual_mva_start, size);
+			vfree(pinfo_array[i]);
+		}
+
+		size_aligned = GET_RANGE_SIZE(START_ALIGNED(actual_mva_start),
+						END_ALIGNED(actual_mva_start, size));
+		nr = MVA_GRAPH_BLOCK_NR_ALIGNED(size_aligned);
+		startIdx = MVAGRAPH_INDEX(actual_mva_start);
+		ret = check_reserved_region_integrity(startIdx, nr);
+		if (ret)
+			M4UMSG("check [0x%x - 0x%x] integrity pass\n",
+				startIdx, GET_END_INDEX(startIdx, nr));
+		else
+			M4UMSG("check [0x%x - 0x%x] integrity failed\n",
+				startIdx, GET_END_INDEX(startIdx, nr));
+	}
+}
+
+unsigned int gtest_mva_start_normal[OUT_INDEX_END - OUT_INDEX_START + 1] = {0};
+unsigned int gtest_mva_end_normal[OUT_INDEX_END - OUT_INDEX_START + 1] = {0};
+static void verify_m4u_do_mva_alloc(unsigned int test_region_start,
+					unsigned int test_region_end,
+					unsigned int port_id,
+					m4u_buf_info_t *pinfo_array[])
+{
+	unsigned int va_offset = 0xff, actual_mva_start;
+	unsigned int size;
+	unsigned int i;
+	unsigned int ret = 0;
+
+	for (i = test_region_start; i <= test_region_end; i++) {
+		pinfo_array[i] = vmalloc(sizeof(m4u_buf_info_t));
+		pinfo_array[i]->port = port_id;/*M4U_PORT_DISP_OVL0, M4U_PORT_VPU*/
+
+		size = gtest_mva_end[i] - gtest_mva_start[i] + 1;
+		actual_mva_start = gtest_mva_start[i] | va_offset;
+		ret = m4u_do_mva_alloc(va_offset, size, (void *)pinfo_array[i]);
+		if (!ret) {
+			M4UMSG("port: %d m4u_do_mva_alloc 0x%x bytes failed.\n",
+				pinfo_array[i]->port, size);
+			vfree(pinfo_array[i]);
+		} else {
+			M4UMSG("port: %d m4u_do_mva_alloc  0x%x bytes in [0x%x, 0x%x] success.\n",
+				pinfo_array[i]->port, size, ret, (ret + size - 1));
+			gtest_mva_start_normal[i] = ret;
+			gtest_mva_end_normal[i] = ret + size - 1;
+		}
+	}
+
+}
+
+/*verify_m4u_do_mva_free only free non-vpu region. it doesn't need integrity-checking.*/
+static void verify_m4u_do_mva_free(unsigned int test_region_start,
+						unsigned int test_region_end,
+						m4u_buf_info_t *pinfo_array[])
+{
+	unsigned int size;
+	unsigned int i;
+	unsigned int ret = 0;
+
+	for (i = test_region_start; i <= test_region_end; i++) {
+		M4UMSG("free region [0x%x, 0x%x].\n",
+				gtest_mva_start_normal[i], gtest_mva_end_normal[i]);
+		size = gtest_mva_end_normal[i] - gtest_mva_start_normal[i] + 1;
+		ret = m4u_do_mva_free(gtest_mva_start_normal[i], size);
+		if (ret)
+			M4UMSG("m4u_do_mva_free region [0x%x, 0x%x] failed.\n",
+				gtest_mva_start_normal[i], gtest_mva_end_normal[i]);
+		else
+			M4UMSG("m4u_do_mva_free region [0x%x, 0x%x] success.\n",
+				gtest_mva_start_normal[i], gtest_mva_end_normal[i]);
+		vfree(pinfo_array[i]);
+	}
+}
+
+/*free vpu region. need to check integrity*/
+static void verify_m4u_do_mva_free_fix(unsigned int test_region_start,
+							unsigned int test_region_end,
+							m4u_buf_info_t *pinfo_array[])
+{
+	unsigned int va_offset = 0xff, actual_mva_start;
+	unsigned int size, size_aligned, nr, startIdx;
+	unsigned int i;
+	unsigned int ret = 0;
+
+	for (i = test_region_start; i <= test_region_end; i++) {
+		actual_mva_start = gtest_mva_start[i] + va_offset;
+
+		M4UMSG("free region [0x%x, 0x%x].\n",
+				actual_mva_start, gtest_mva_end[i]);
+
+		size = gtest_mva_end[i] - actual_mva_start + 1;
+		ret = m4u_do_mva_free(actual_mva_start, size);
+		if (ret)
+			M4UMSG("m4u_do_mva_free region [0x%x, 0x%x] failed.\n",
+				actual_mva_start, gtest_mva_end[i]);
+		else
+			M4UMSG("m4u_do_mva_free region [0x%x, 0x%x] success.\n",
+				actual_mva_start, gtest_mva_end[i]);
+		vfree(pinfo_array[i]);
+
+		size_aligned = GET_RANGE_SIZE(START_ALIGNED(actual_mva_start),
+				END_ALIGNED(actual_mva_start, size));
+		nr = MVA_GRAPH_BLOCK_NR_ALIGNED(size_aligned);
+		startIdx = MVAGRAPH_INDEX(actual_mva_start);
+		ret = check_reserved_region_integrity(startIdx, nr);
+		if (ret)
+			M4UMSG("check [0x%x - 0x%x] integrity pass\n",
+				startIdx, GET_END_INDEX(startIdx, nr));
+		else
+			M4UMSG("check [0x%x - 0x%x] integrity failed\n",
+				startIdx, GET_END_INDEX(startIdx, nr));
+	}
+}
+
+/*allocate 5-9 success. free 5-9 success & check integrity pass*/
+void test_case_m4u_do_mva_alloc_fix(void)
+{
+	m4u_buf_info_t **p_info_array0 = vmalloc(sizeof(m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
+	m4u_buf_info_t **p_info_array1 = vmalloc(sizeof(m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
+	m4u_buf_info_t **p_info_array2 = vmalloc(sizeof(m4u_buf_info_t **) * (OUT_INDEX_END - OUT_INDEX_START + 1));
+	m4u_buf_info_t **p_info_array3 = vmalloc(sizeof(m4u_buf_info_t **) *
+						(INTERSECT_INDEX_END - INTERSECT_INDEX_START + 1));
+
+	m4u_mvaGraph_dump();
+	M4UMSG("test_case_m4u_do_mva_alloc_fix========================>\n");
+	M4UMSG("<*test case: CANNOT m4u_do_mva_alloc_fix vpu fix region by non-vpu port:");
+	M4UMSG("=> allocation print failed & integrity must pass*>\n");
+	verify_m4u_do_mva_alloc_fix(IN_INDEX_START, IN_INDEX_END,
+					M4U_PORT_DISP_OVL0, m4u_do_mva_alloc_fix, p_info_array0);
+
+	M4UMSG("<*test case: it's ok to m4u_do_mva_alloc_fix vpu fix region by vpu port:");
+	M4UMSG("=> allocation print success & integrity must pass*>\n");
+	verify_m4u_do_mva_alloc_fix(IN_INDEX_START, IN_INDEX_END, M4U_PORT_VPU,
+					m4u_do_mva_alloc_fix, p_info_array1);
+
+	M4UMSG("<*test case: it's ok to m4u_do_mva_alloc_fix non-vpu fix region by vpu port:");
+	M4UMSG("=> allocation print success & integrity is no requeired*>\n");
+	verify_m4u_do_mva_alloc_fix(OUT_INDEX_START, OUT_INDEX_END, M4U_PORT_VPU,
+					m4u_do_mva_alloc_fix, p_info_array2);
+
+	M4UMSG("<*test case: CANNOT m4u_do_mva_alloc_fix the one intersecting vpu fix region:");
+	M4UMSG("=> allocation print failed & integrity is no requeired*>\n");
+	verify_m4u_do_mva_alloc_fix(INTERSECT_INDEX_START, INTERSECT_INDEX_END,
+					M4U_PORT_VPU, m4u_do_mva_alloc_fix, p_info_array3);
+
+	M4UMSG("free all allocated mva.\n");
+	verify_m4u_do_mva_free_fix(IN_INDEX_START, IN_INDEX_END, p_info_array1);
+	verify_m4u_do_mva_free_fix(OUT_INDEX_START, OUT_INDEX_END, p_info_array2);
+	vfree(p_info_array0);
+	vfree(p_info_array1);
+	vfree(p_info_array2);
+	vfree(p_info_array3);
+	m4u_mvaGraph_dump();
+}
+
+void test_case_m4u_do_mva_alloc_start_from(void)
+{
+	m4u_buf_info_t **p_info_array0 = vmalloc(sizeof(m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
+	m4u_buf_info_t **p_info_array1 = vmalloc(sizeof(m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
+	m4u_buf_info_t **p_info_array2 = vmalloc(sizeof(m4u_buf_info_t **) * (OUT_INDEX_END - OUT_INDEX_START + 1));
+	m4u_buf_info_t **p_info_array3 = vmalloc(sizeof(m4u_buf_info_t **) *
+							(INTERSECT_INDEX_END - INTERSECT_INDEX_START + 1));
+
+	M4UMSG("test_case_m4u_do_mva_alloc_fix========================>\n");
+	M4UMSG("<*test case: CANNOT m4u_do_mva_alloc_fix vpu fix region by non-vpu port:");
+	M4UMSG("=> allocation print failed & integrity must pass*>\n");
+	verify_m4u_do_mva_alloc_fix(IN_INDEX_START, IN_INDEX_END, M4U_PORT_DISP_OVL0,
+					m4u_do_mva_alloc_start_from, p_info_array0);
+
+	M4UMSG("<*test case: it's ok to m4u_do_mva_alloc_fix vpu fix region by vpu port:");
+	M4UMSG("=> allocation print success & integrity must pass*>\n");
+	verify_m4u_do_mva_alloc_fix(IN_INDEX_START, IN_INDEX_END, M4U_PORT_VPU,
+					m4u_do_mva_alloc_start_from, p_info_array1);
+
+	M4UMSG("<*test case: it's ok to m4u_do_mva_alloc_fix non-vpu fix region by vpu port:");
+	M4UMSG("=> allocation print success & integrity is no requeired*>\n");
+	verify_m4u_do_mva_alloc_fix(OUT_INDEX_START, OUT_INDEX_END, M4U_PORT_VPU,
+					m4u_do_mva_alloc_start_from, p_info_array2);
+
+	M4UMSG("<*test case: CANNOT m4u_do_mva_alloc_fix the one intersecting vpu fix region:");
+	M4UMSG("=> allocation print failed & integrity is no requeired*>\n");
+	verify_m4u_do_mva_alloc_fix(INTERSECT_INDEX_START, INTERSECT_INDEX_END,
+					M4U_PORT_VPU, m4u_do_mva_alloc_start_from, p_info_array3);
+
+	M4UMSG("free all allocated mva.\n");
+	verify_m4u_do_mva_free_fix(IN_INDEX_START, IN_INDEX_END, p_info_array1);
+	verify_m4u_do_mva_free_fix(OUT_INDEX_START, OUT_INDEX_END, p_info_array1);
+	vfree(p_info_array0);
+	vfree(p_info_array1);
+	vfree(p_info_array2);
+	vfree(p_info_array3);
+}
+
+
+/*(1)make sure m4u_do_mva_free non-vpu fix region or vpu fix region is passed.
+ *(2)non-vpu port should not free vpu fix region.
+ */
+void test_case_m4u_do_mva_free(void)
+{
+
+	m4u_buf_info_t **p_info_array0 = vmalloc(sizeof(m4u_buf_info_t **) * (OUT_INDEX_START - OUT_INDEX_START + 1));
+	m4u_buf_info_t **p_info_array1 = vmalloc(sizeof(m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
+	m4u_buf_info_t **p_info_array2 = vmalloc(sizeof(m4u_buf_info_t **) * (OUT_INDEX_END - OUT_INDEX_START + 1));
+	m4u_buf_info_t **p_info_array3 = vmalloc(sizeof(m4u_buf_info_t **) * (SUB_INDEX_END - SUB_INDEX_START + 1));
+
+	M4UMSG("test_case_m4u_do_mva_free========================>\n");
+	m4u_mvaGraph_dump();
+	M4UMSG("<*test case: non vpu port m4u_do_mva_alloc non-vpu region => print pass*>\n");
+
+	/*non vpu port m4u_do_mva_alloc non-vpu region*/
+	verify_m4u_do_mva_alloc(OUT_INDEX_START, OUT_INDEX_START, M4U_PORT_DISP_OVL0, p_info_array0);
+	m4u_mvaGraph_dump();
+	/*free non-vpu fix region*/
+	M4UMSG("<*test case: free non-vpu fix region just allocated by verify_m4u_do_mva_alloc => print pass*>\n");
+	verify_m4u_do_mva_free(OUT_INDEX_START, OUT_INDEX_START, p_info_array0);
+	m4u_mvaGraph_dump();
+
+	/*use m4u_do_mva_alloc_start_from to alloc sub range in vpu fix region. and then free.*/
+	M4UMSG("<*test case: non-vpu port verify_m4u_do_mva_alloc_fix non-vpu fix region => print pass*>\n");
+	verify_m4u_do_mva_alloc_fix(SUB_INDEX_START, SUB_INDEX_END, M4U_PORT_VPU,
+					m4u_do_mva_alloc_start_from, p_info_array3);
+	m4u_mvaGraph_dump();
+	/*free sub-vpu fix region*/
+	M4UMSG("<*test case: free non-vpu fix region just allocated by verify_m4u_do_mva_alloc_fix => print pass*>\n");
+	verify_m4u_do_mva_free_fix(SUB_INDEX_START, SUB_INDEX_END, p_info_array3);
+	m4u_mvaGraph_dump();
+
+	vfree(p_info_array0);
+	vfree(p_info_array1);
+	vfree(p_info_array2);
+	vfree(p_info_array3);
+}
+
+void test_dummy(void)
+{
+	int i = 0;
+	unsigned int size;
+	unsigned int nr;
+	m4u_buf_info_t tmp;
+	m4u_buf_info_t *pMvaInfo = &tmp;
+	unsigned int ret = 0;
+	unsigned int startIdx;
+
+	pMvaInfo->port = M4U_PORT_VPU;/*M4U_PORT_DISP_OVL0, M4U_PORT_VPU*/
+	size = gtest_mva_end[0] - gtest_mva_start[0] + 1;
+	M4UMSG("test %dth region [0x%x, 0x%x].\n",
+			i, gtest_mva_start[0], gtest_mva_end[0]);
+	nr = MVA_GRAPH_BLOCK_NR_ALIGNED(size);
+	startIdx = MVAGRAPH_INDEX(gtest_mva_start[0]);
+	ret = m4u_check_mva_region(gtest_mva_start[0], nr, pMvaInfo);
+	if (ret)
+		M4UMSG("%dth buf m4u_do_mva_alloc region [0x%x, 0x%x] failed.\n",
+			0, gtest_mva_start[0], gtest_mva_end[0]);
+	else
+		M4UMSG("%dth buf m4u_do_mva_alloc region [0x%x, 0x%x] success.\n",
+			0, gtest_mva_start[0], gtest_mva_end[0]);
+}
