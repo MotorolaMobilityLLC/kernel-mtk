@@ -91,6 +91,7 @@
 
 struct mag_data_path {
 	int div;
+	int div_o;
 	int (*get_data)(int *x, int *y, int *z, int *status);
 	int (*get_raw_data)(int *x, int *y, int *z);
 
