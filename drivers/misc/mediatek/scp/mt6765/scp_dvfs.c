@@ -63,6 +63,16 @@
 #define DRV_SetReg32(addr, val)	DRV_WriteReg32(addr, DRV_Reg32(addr) | (val))
 #define DRV_ClrReg32(addr, val)	DRV_WriteReg32(addr, DRV_Reg32(addr) & ~(val))
 
+#define PMICW_MODE_DEBUG    1
+
+#if PMICW_MODE_DEBUG
+enum {
+	KEEP_PMICW_IN_NORMAL = 0,
+	FORCE_PMICW_IN_EINT = 1,
+	FORCE_PMICW_IN_POLLING = 2
+};
+#endif
+
 /***************************
  * Operate Point Definition
  ****************************/
@@ -78,9 +88,15 @@ static int scp_dvfs_flag = -1;
  */
 static int scp_sleep_flag = -1;
 
-#if 0
-static int mt_scp_dvfs_debug = -1;
+#if PMICW_MODE_DEBUG
+/*
+ * 0: KEEP_PMICW_IN_NORMAL
+ * 1: FORCE_PMICW_IN_EINT
+ * 2: FORCE_PMICW_IN_POLLING
+ */
+static int pmicw_mode_debug_flag = -1;
 #endif
+
 static int scp_cur_volt = -1;
 static int pre_pll_sel = -1;
 static struct mt_scp_pll_t *mt_scp_pll;
@@ -368,56 +384,6 @@ void scp_pll_ctrl_handler(int id, void *data, unsigned int len)
  * PROC
  */
 
-#if 0
-/***************************
- * show current debug status
- ****************************/
-static int mt_scp_dvfs_debug_proc_show(struct seq_file *m, void *v)
-{
-	if (mt_scp_dvfs_debug == -1)
-		seq_puts(m, "mt_scp_dvfs_debug has not been set\n");
-	else
-		seq_printf(m, "mt_scp_dvfs_debug = %d\n", mt_scp_dvfs_debug);
-
-	return 0;
-}
-
-/***********************
- * enable debug message
- ************************/
-static ssize_t mt_scp_dvfs_debug_proc_write(
-						struct file *file,
-						const char __user *buffer,
-						size_t count,
-						loff_t *data)
-{
-	char desc[64];
-	unsigned int debug = 0;
-	int len = 0;
-
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
-		return 0;
-	desc[len] = '\0';
-
-	if (kstrtouint(desc, 10, &debug) == 0) {
-		if (debug == 0)
-			mt_scp_dvfs_debug = 0;
-		else if (debug == 1)
-			mt_scp_dvfs_debug = 1;
-		else
-			pr_info("bad argument %d\n", debug);
-	} else {
-		pr_info("invalid command!\n");
-	}
-
-	scp_ipi_send(IPI_DVFS_DEBUG, (void *)&mt_scp_dvfs_debug,
-				sizeof(mt_scp_dvfs_debug), 0, SCP_A_ID);
-
-	return count;
-}
-#endif
-
 /****************************
  * show SCP state
  *****************************/
@@ -620,6 +586,72 @@ static ssize_t mt_scp_dvfs_ctrl_proc_write(
 	return count;
 }
 
+#if PMICW_MODE_DEBUG
+/**********************************
+ * show power wakeup suspend debug
+ *********************************/
+static int mt_pmicw_mode_debug_proc_show(struct seq_file *m, void *v)
+{
+	if (pmicw_mode_debug_flag == -1)
+		seq_puts(m, "pmicw_mode_debug_flag is not configured by command yet.\n");
+	else if (pmicw_mode_debug_flag == 0)
+		seq_puts(m, "KEEP_PMICW_IN_NORMAL\n");
+	else if (pmicw_mode_debug_flag == 1)
+		seq_puts(m, "FORCE_PMICW_IN_EINT\n");
+	else if (pmicw_mode_debug_flag == 2)
+		seq_puts(m, "FORCE_PMICW_IN_POLLING\n");
+	else
+		seq_puts(m, "Warning: invalid wakeup debug configure\n");
+
+	return 0;
+}
+
+/************************************
+ * write power wakeup suspend debug
+ ***********************************/
+static ssize_t mt_pmicw_mode_debug_proc_write(
+					struct file *file,
+					const char __user *buffer,
+					size_t count,
+					loff_t *data)
+{
+	char desc[64];
+	unsigned int val = 0;
+	int len = 0;
+	int ret = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+	desc[len] = '\0';
+
+	if (kstrtouint(desc, 10, &val) == 0) {
+		if (val >= 0  && val <= 2) {
+			if (val != pmicw_mode_debug_flag) {
+				pmicw_mode_debug_flag = val;
+				pr_info("pmicw_mode_debug_flag = %d\n",
+						pmicw_mode_debug_flag);
+				ret = scp_ipi_send(
+						IPI_PMICW_MODE_DEBUG,
+						(void *)&pmicw_mode_debug_flag,
+						sizeof(pmicw_mode_debug_flag),
+						0, SCP_A_ID);
+				if (ret != SCP_IPI_DONE)
+					pr_info("%s: SCP send IPI fail - %d\n",
+						__func__, ret);
+			} else
+				pr_info("pmicw_mode_debug_flag is not changed\n");
+		} else {
+			pr_info("Warning: invalid input value %d\n", val);
+		}
+	} else {
+		pr_info("Warning: invalid input command, val=%d\n", val);
+	}
+
+	return count;
+}
+#endif
+
 #define PROC_FOPS_RW(name) \
 static int mt_ ## name ## _proc_open(\
 					struct inode *inode, \
@@ -658,12 +690,12 @@ static const struct file_operations mt_ ## name ## _proc_fops = {\
 
 #define PROC_ENTRY(name)	{__stringify(name), &mt_ ## name ## _proc_fops}
 
-#if 0
-PROC_FOPS_RW(scp_dvfs_debug);
-#endif
 PROC_FOPS_RO(scp_dvfs_state);
 PROC_FOPS_RW(scp_dvfs_sleep);
 PROC_FOPS_RW(scp_dvfs_ctrl);
+#if PMICW_MODE_DEBUG
+PROC_FOPS_RW(pmicw_mode_debug);
+#endif
 
 static int mt_scp_dvfs_create_procfs(void)
 {
@@ -676,12 +708,12 @@ static int mt_scp_dvfs_create_procfs(void)
 	};
 
 	const struct pentry entries[] = {
-#if 0
-		PROC_ENTRY(scp_dvfs_debug),
-#endif
 		PROC_ENTRY(scp_dvfs_state),
 		PROC_ENTRY(scp_dvfs_sleep),
-		PROC_ENTRY(scp_dvfs_ctrl)
+		PROC_ENTRY(scp_dvfs_ctrl),
+#if PMICW_MODE_DEBUG
+		PROC_ENTRY(pmicw_mode_debug)
+#endif
 	};
 
 	dir = proc_mkdir("scp_dvfs", NULL);
