@@ -2247,7 +2247,7 @@ static int elf_core_dump(struct coredump_params *cprm)
 
 	dataoff = offset = roundup(offset, ELF_EXEC_PAGESIZE);
 
-	vma_filesz = kmalloc_array(segs - 1, sizeof(*vma_filesz), GFP_KERNEL);
+	vma_filesz = vmalloc((segs - 1) * sizeof(*vma_filesz));
 	if (!vma_filesz)
 		goto end_coredump;
 
@@ -2335,8 +2335,12 @@ static int elf_core_dump(struct coredump_params *cprm)
 				put_page(page);
 			} else
 				stop = !dump_skip(cprm, PAGE_SIZE);
-			if (stop)
+			if (stop) {
+				pr_info("%s: stop:0x%lx, vm_start:0x%lx, vm_end:0x%lx\n",
+					__func__, addr,
+					vma->vm_start, vma->vm_end);
 				goto end_coredump;
+			}
 		}
 	}
 	dump_truncate(cprm);
@@ -2355,7 +2359,7 @@ end_coredump:
 cleanup:
 	free_note_info(&info);
 	kfree(shdr4extnum);
-	kfree(vma_filesz);
+	vfree(vma_filesz);
 	kfree(phdr4note);
 	kfree(elf);
 out:
