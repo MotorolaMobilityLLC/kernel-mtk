@@ -52,6 +52,10 @@
 #include "disp_session.h"
 #include "ddp_mmp.h"
 #include <linux/trace_events.h>
+#include "ddp_ovl.h"
+#include "ddp_rdma.h"
+#include "ion_drv.h"
+
 
 #if defined(CONFIG_MTK_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 unsigned int gCapturePriLayerEnable;
@@ -194,6 +198,9 @@ static unsigned long long get_current_time_us(void)
 static unsigned char dprec_string_buffer[dprec_string_max_length] = { 0 };
 struct dprec_logger logger[DPREC_LOGGER_NUM] = { { 0 } };
 struct dprec_logger old_logger[DPREC_LOGGER_NUM] = { { 0 } };
+
+struct dprec_logger_fps logger_fps = { 0 };
+struct dprec_logger_fps old_logger_fps = { 0 };
 
 #define dprec_dump_max_length (1024*8*4)
 static unsigned char dprec_string_buffer_analysize[dprec_dump_max_length] = { 0 };
@@ -405,6 +412,153 @@ unsigned long long dprec_logger_get_current_hold_period(unsigned int type_logsrc
 
 	return period;
 }
+
+DECLARE_WAIT_QUEUE_HEAD(fps_update_thread_wq);
+static int debug_layer_update_flag;
+
+/* the thread clean fps value to 0 when idle */
+int _primary_monitor_fps_thread(void *data)
+{
+
+	while (1) {
+		msleep_interruptible(200);
+		if (fps_show_flag == 1) {
+			/* already idle ,should clean fps value*/
+			if (debug_layer_update_flag == 1)
+				debug_layer_update_flag = 0;
+			else {
+				memset(&old_logger_fps, 0, sizeof(old_logger_fps));
+				memset(&logger_fps, 0, sizeof(logger_fps));
+				primary_display_frame_cfg(&debug_cfg);
+				create_thread_flag = 0;
+				break;
+			}
+		}
+
+		/* stop monitor fps */
+		if (fps_show_flag == 0)
+			break;
+	}
+	return 0;
+}
+
+int update_layer[show_layer_fps];
+int old_update_layer[show_layer_fps];
+
+void fps_update_statistic_debug(unsigned long long *time,
+		struct dprec_logger_fps *logger)
+{
+
+	static struct OVL_BASIC_STRUCT old_ovlInfo[TOTAL_OVL_LAYER_NUM];
+	static struct OVL_BASIC_STRUCT ovlInfo[TOTAL_OVL_LAYER_NUM];
+	int layer_idx = -1;
+	int layer_pos = 0;
+	int b_layer_changed = 0;
+	int i, j;
+	int ovl_index, ovl_index_pre = 0;
+	int layer_num, layer_num_pre = 0;
+	unsigned long long trigger_time;
+
+	*time = 500 * 1000 * 1000;
+	trigger_time = get_current_time_us();
+
+	/*Traversal layers and get layer info*/
+	memset(ovlInfo, 0, sizeof(ovlInfo));/*essential for structure comparision*/
+	memset(update_layer, 0, sizeof(update_layer));
+
+	for (i = 0; i < OVL_NUM; i++) {
+		ovl_index = ovl_index_to_mod_for_debug(i);
+		layer_num = ovl_layer_num_for_debug(ovl_index);
+		if (i > 0) {
+			ovl_index_pre = ovl_index_to_mod_for_debug(i - 1);
+			layer_num_pre = ovl_layer_num_for_debug(ovl_index_pre);
+			layer_pos += layer_num_pre;
+		}
+		ovl_get_info(ovl_index, &(ovlInfo[layer_pos]));
+
+		for (j = 0; j < layer_num; j++) {
+			layer_idx++;
+			if (memcmp(&(ovlInfo[layer_idx]), &(old_ovlInfo[layer_idx]),
+					sizeof(struct OVL_BASIC_STRUCT)) == 0)
+				continue;
+
+			if (ovlInfo[layer_idx].layer_en) {
+				logger->layer_fps[layer_idx]++;
+				b_layer_changed = 1;
+				debug_layer_update_flag++;
+				update_layer[layer_idx] = 1;
+			}
+		}
+		/*store old value*/
+		memcpy(&(old_ovlInfo[layer_pos]),
+			&(ovlInfo[layer_pos]), layer_num * sizeof(struct OVL_BASIC_STRUCT));
+	}
+
+	if (b_layer_changed)
+		logger->total_fps++;
+
+	if (logger->total_fps == 1 && b_layer_changed == 1)
+		logger->ts_start_update = trigger_time;
+	if (b_layer_changed == 1)
+		logger->ts_end_update = trigger_time;
+
+
+}
+
+void dprec_logger_start_fps(void)
+{
+	unsigned long flags = 0;
+	struct dprec_logger_fps *l;
+	unsigned long long rec_period = 0;
+	unsigned long long period_time = 0;
+
+	spin_lock_irqsave(&gdprec_logger_spinlock, flags);
+	l = &logger_fps;
+
+	fps_update_statistic_debug(&period_time, l);
+	rec_period = l->ts_end_update - l->ts_start_update;
+	if (rec_period > period_time) {
+		char fps_log[] = "[DISP] FPS OUTPUT ";
+		int i = 0;
+
+		pr_info("%sfps:%2lld.%01lld, L0:%2lld.%01lld, L1:%2lld.%01lld\n",
+		fps_log,
+		fps_info_debug.total_fps_high,
+		fps_info_debug.total_fps_low,
+		fps_info_debug.layer_fps_high[0],
+		fps_info_debug.layer_fps_low[0],
+		fps_info_debug.layer_fps_high[1],
+		fps_info_debug.layer_fps_low[1]);
+		pr_info("%sL2:%2lld.%01lld, L3:%2lld.%01lld, L4:%2lld.%01lld\n",
+		fps_log,
+		fps_info_debug.layer_fps_high[2],
+		fps_info_debug.layer_fps_low[2],
+		fps_info_debug.layer_fps_high[3],
+		fps_info_debug.layer_fps_low[3],
+		fps_info_debug.layer_fps_high[4],
+		fps_info_debug.layer_fps_low[4]);
+		pr_info("%sL5:%2lld.%01lld, L6:%2lld.%01lld, L7:%2lld.%01lld\n",
+		fps_log,
+		fps_info_debug.layer_fps_high[5],
+		fps_info_debug.layer_fps_low[5],
+		fps_info_debug.layer_fps_high[6],
+		fps_info_debug.layer_fps_low[6],
+		fps_info_debug.layer_fps_high[7],
+		fps_info_debug.layer_fps_low[7]);
+
+		for (i = 0; i < show_layer_fps; i++) {
+			if (update_layer[i] == 1)
+				old_update_layer[i] = 1;
+			else
+				old_update_layer[i] = 0;
+		}
+		old_logger_fps = *l;
+		memset(l, 0, sizeof(logger_fps));
+	}
+
+	spin_unlock_irqrestore(&gdprec_logger_spinlock, flags);
+}
+
 
 void dprec_logger_start(unsigned int type_logsrc, unsigned int val1, unsigned int val2)
 {
@@ -872,6 +1026,46 @@ int dprec_logger_get_result_string_all(char *stringbuf, int strlen)
 	return n;
 }
 
+void cal_fps_for_debug(void)
+{
+	unsigned long flags = 0;
+	struct dprec_logger_fps *l = &old_logger_fps;
+	int i;
+	unsigned long long fps_high_tmp = 0;
+	unsigned long fps_low_tmp = 0;
+	unsigned long long total = 0;
+
+	spin_lock_irqsave(&gdprec_logger_spinlock, flags);
+
+	total = l->ts_end_update - l->ts_start_update;
+	if (total == 0)
+		total = 1;
+	if (l->total_fps >= 1)
+		fps_high_tmp = (l->total_fps - 1) * 1000 * 1000 * 1000;
+	else
+		fps_high_tmp = l->total_fps * 1000 * 1000 * 1000;
+	fps_low_tmp = do_div(fps_high_tmp, total);
+	fps_low_tmp *= 10;
+	do_div(fps_low_tmp, total);
+	fps_info_debug.total_fps_high = fps_high_tmp;
+	fps_info_debug.total_fps_low = fps_low_tmp;
+
+	for (i = 0; i < 8; i++) {
+		if (l->layer_fps[i] >= 1 && old_update_layer[i] == 1)
+			fps_high_tmp = (l->layer_fps[i] - 1) * 1000 * 1000 * 1000;
+		else
+			fps_high_tmp = l->layer_fps[i] * 1000 * 1000 * 1000;
+		fps_low_tmp = do_div(fps_high_tmp, total);
+		fps_low_tmp *= 10;
+		do_div(fps_low_tmp, total);
+		fps_info_debug.layer_fps_high[i] = fps_high_tmp;
+		fps_info_debug.layer_fps_low[i] = fps_low_tmp;
+		fps_high_tmp = 0;
+		fps_low_tmp = 0;
+	}
+
+	spin_unlock_irqrestore(&gdprec_logger_spinlock, flags);
+}
 
 int dprec_logger_get_result_value(enum DPREC_LOGGER_ENUM source, struct fpsEx *fps)
 {
@@ -973,6 +1167,8 @@ void dprec_stub_irq(unsigned int irq_bit)
 	if (irq_bit == DDP_IRQ_DSI0_EXT_TE) {
 		dprec_logger_trigger(DPREC_LOGGER_DSI_EXT_TE, irq_bit, 0);
 	} else if (irq_bit == DDP_IRQ_RDMA0_START) {
+		if (fps_show_flag == 1)
+			dprec_logger_start_fps();
 		dprec_logger_start(DPREC_LOGGER_RDMA0_TRANSFER, irq_bit, 0);
 		dprec_logger_start(DPREC_LOGGER_RDMA0_TRANSFER_1SECOND, irq_bit, 0);
 	} else if (irq_bit == DDP_IRQ_RDMA0_DONE) {

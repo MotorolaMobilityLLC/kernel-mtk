@@ -34,6 +34,53 @@ extern int disp_layer_info_statistic(struct disp_ddp_path_config *last_config, s
 
 int get_debug_draw_line(void);
 
+/* show fps */
+#define show_layer_fps (8)
+#define show_total_fps (1)
+extern int layer_show[show_layer_fps + show_total_fps];
+extern int fps_show_flag;
+extern struct fps_debug fps_info_debug;
+
+
+/* show hrt */
+extern int hrt_high, hrt_low;
+extern int hrt_show_flag;
+
+/* show layer_en num*/
+extern int layer_en_num;
+extern int layer_en_num_flag;
+extern int layer_size_high;
+extern int layer_size_low;
+extern int layer_size_flag;
+
+/* path mode */
+extern int path_mode_flag;
+extern int rdma_buffer_flag;
+
+/* dsi mode */
+extern int dsi_mode_flag;
+
+/* show background set */
+extern int layer_offset_debug;
+extern unsigned int font_size;
+extern int fg_clo;
+extern int bg_clo;
+
+/* show layer buffer clean */
+extern int debug_cmd_update_flag;
+extern struct disp_frame_cfg_t debug_cfg;
+
+/* monitor thread */
+extern int create_thread_flag;
+
+/* others */
+extern struct disp_internal_buffer_info *buffer_info_for_fps;
+extern int create_fps_buffer_flag;
+
+
+extern struct task_struct  *primary_fps_monitor_task;
+
+
 #ifdef MTKFB_DBG
 #include "disp_drv_log.h"
 
@@ -126,6 +173,9 @@ void _debug_pattern(unsigned int mva, unsigned int va, unsigned int w, unsigned 
 extern unsigned int mtkfb_fm_auto_test(void);
 extern int pan_display_test(int frame_num, int bpp);
 extern int mtkfb_get_debug_state(char *stringbuf, int buf_len);
+
+int get_show_info_to_screen_flg(void);
+void free_buffer_for_show_screen(void);
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 extern void primary_display_od_bypass(int bypass);

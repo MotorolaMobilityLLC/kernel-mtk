@@ -177,6 +177,11 @@ wait_queue_head_t primary_display_present_fence_wq;
 atomic_t primary_display_present_fence_update_event = ATOMIC_INIT(0);
 static unsigned int _need_lfr_check(void);
 static int primary_display_trigger_nolock(int blocking, void *callback, int need_merge);
+
+struct task_struct  *primary_fps_monitor_task;
+struct disp_internal_buffer_info *buffer_info_for_fps;
+int create_fps_buffer_flag;
+
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 static int od_need_start;
 #endif
@@ -229,6 +234,24 @@ void _primary_path_unlock(const char *caller)
 	pgc->mutex_locker = NULL;
 	disp_sw_mutex_unlock(&(pgc->lock));
 	dprec_logger_done(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
+}
+
+static const char *session_mode_spy_for_align(unsigned int mode)
+{
+	switch (mode) {
+	case DISP_SESSION_DIRECT_LINK_MODE:
+		return "DIRECT_LINK ";
+	case DISP_SESSION_DIRECT_LINK_MIRROR_MODE:
+		return "DL_MIRROR   ";
+	case DISP_SESSION_DECOUPLE_MODE:
+		return "DECOUPLE    ";
+	case DISP_SESSION_DECOUPLE_MIRROR_MODE:
+		return "DC_MIRROR   ";
+	case DISP_SESSION_RDMA_MODE:
+		return "RDMA_MODE   ";
+	default:
+		return "UNKNOWN     ";
+	}
 }
 
 static const char *session_mode_spy(unsigned int mode)
@@ -549,7 +572,8 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 
 	static MFC_HANDLE mfc_handle;
 
-	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
+	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO) ||
+			get_show_info_to_screen_flg()) {
 #ifndef CONFIG_MTK_IOMMU
 		m4u_query_mva_info(mva, layer_size, &real_mva, &real_size);
 		if (ret < 0) {
@@ -566,23 +590,189 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 			pr_debug("warning: layer size > mapped size\n");
 			goto err1;
 		}
-
-		ret = MFC_Open(&mfc_handle,
+		if (get_show_info_to_screen_flg()) {
+			if (rdma_buffer_flag == 1) {
+				kva += 32 * pitch;
+				mapped_size -= 32 * pitch;
+			}
+			ret = MFC_Open(&mfc_handle,
+					(void *)kva,
+					w,
+					h,
+					bytes_per_pix,
+					fg_clo,
+					bg_clo
+					);
+				MFC_SetScale(mfc_handle, font_size);
+		} else {
+			ret = MFC_Open(&mfc_handle,
 			       (void *)kva,
-			       pitch,
+			       w,
 			       h,
 			       bytes_per_pix,
 			       DAL_COLOR_WHITE,
 			       DAL_COLOR_RED);
+		}
 		if (ret != MFC_STATUS_OK)
 			goto err1;
 		screen_logger_print(mfc_handle);
+		if (get_show_info_to_screen_flg()) {
+			if (debug_cmd_update_flag == 1)
+				memset((void *)kva, 0, mapped_size);
+			debug_cmd_update_flag = 0;
+		}
 		MFC_Close(mfc_handle);
 err1:
 		m4u_mva_unmap_kernel(real_mva, real_size, kva);
 	}
 #endif
 	return 0;
+}
+
+static struct disp_internal_buffer_info *allocat_decouple_buffer(int size);
+
+void add_show_fps_layers(struct disp_ddp_path_config *cfg, unsigned int w,
+	unsigned int h, unsigned int pitch, unsigned int dst_y, int ext_layer,
+	int ext_sel_layer, struct disp_internal_buffer_info *buffer_info)
+{
+	struct OVL_CONFIG_STRUCT *input_ext;
+
+	input_ext = &(cfg->ovl_config[TOTAL_OVL_LAYER_NUM - 1]);
+	input_ext->ovl_index = DISP_MODULE_OVL0;
+	input_ext->layer = TOTAL_OVL_LAYER_NUM - 1;
+	input_ext->isDirty = 1;
+	input_ext->buff_idx = -1;
+	input_ext->layer_en = 1;
+	input_ext->fmt = UFMT_RGBA8888;
+	input_ext->addr = (unsigned long)buffer_info->mva;
+	input_ext->const_bld = 0;
+	input_ext->src_x = 0;
+	input_ext->src_y = 0;
+	input_ext->src_w = w;
+	input_ext->src_h = h;
+	input_ext->src_pitch = pitch;
+	input_ext->dst_x = 0;
+	input_ext->dst_y = dst_y + layer_offset_debug;
+	input_ext->dst_w = w;
+	input_ext->dst_h = h;
+	input_ext->aen = 1;
+	input_ext->sur_aen = 0;
+	input_ext->alpha = 255;
+	input_ext->keyEn = 0;
+	input_ext->key = 0;
+	input_ext->src_alpha = 0;
+	input_ext->dst_alpha = 0;
+	input_ext->source = OVL_LAYER_SOURCE_MEM;
+	input_ext->security = 0;
+	input_ext->yuv_range = 0;
+	input_ext->ext_layer = ext_layer;
+	input_ext->ext_sel_layer = ext_sel_layer;
+	input_ext->phy_layer = 1;
+}
+
+static void add_fps_info_for_debug(void)
+{
+	char disp_tmp[100];
+	int i, j = 0;
+	char *p = disp_tmp;
+
+	cal_fps_for_debug();
+	memset(disp_tmp, 0, sizeof(disp_tmp));
+	if (layer_show[show_layer_fps] == 1) {
+		snprintf(p, sizeof(disp_tmp), "fps:%2lld.%01lld ",
+			fps_info_debug.total_fps_high, fps_info_debug.total_fps_low);
+
+		j = strlen(p);
+		p = p + j;
+	}
+	for (i = 0; i < show_layer_fps; i++) {
+		if (layer_show[i] == 1) {
+			snprintf(p, sizeof(disp_tmp), "L%d:%2lld.%01lld ", i,
+			fps_info_debug.layer_fps_high[i], fps_info_debug.layer_fps_low[i]);
+
+			j = strlen(p);
+			p = p + j;
+		}
+	}
+	screen_logger_add_message("fps", MESSAGE_REPLACE, disp_tmp);
+
+}
+
+static void add_layer_info_for_debug(void)
+{
+	char disp_tmp[100];
+	int j = 0;
+	char *p = disp_tmp;
+
+	memset(disp_tmp, 0, sizeof(disp_tmp));
+	if (hrt_show_flag == 1) {
+		snprintf(p, sizeof(disp_tmp), "hrt:%01d.%01d ", hrt_high, hrt_low);
+		j = strlen(p);
+		p = p + j;
+	}
+	if (layer_en_num_flag == 1) {
+		snprintf(p, sizeof(disp_tmp), "Lnum:%d ", layer_en_num);
+		j = strlen(p);
+		p = p + j;
+		layer_en_num = 0;
+	}
+	if (layer_size_flag == 1) {
+		int full_layer_width = primary_display_get_width();
+		int full_layer_height = primary_display_get_height();
+		int full_layer_size = full_layer_width * full_layer_height * 4;
+
+		layer_size_low = do_div(layer_size_high, full_layer_size);
+		layer_size_low *= 10;
+		do_div(layer_size_low, full_layer_size);
+
+		snprintf(p, sizeof(disp_tmp), "Lsize:%01d.%01d ", layer_size_high,
+			layer_size_low);
+		j = strlen(p);
+		p = p + j;
+		layer_size_high = 0;
+	}
+	screen_logger_add_message("layer_info", MESSAGE_REPLACE, disp_tmp);
+}
+
+void primary_show_info_to_screen(struct disp_ddp_path_config *cfg)
+{
+	int buffer_size = 0;
+	unsigned int width = 1080;
+	unsigned int height = 1024;
+	unsigned int pitch = (width * 4);
+
+	if (create_fps_buffer_flag == 0) {
+		buffer_size = pitch * height;
+		buffer_info_for_fps = allocat_decouple_buffer(buffer_size);
+		create_fps_buffer_flag = 1;
+	}
+
+	#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	if (lcm_corner_en)
+		add_show_fps_layers(cfg, width, height, pitch,
+			primary_display_get_corner_pattern_height(), 1, 2,
+				buffer_info_for_fps);
+	else
+	#endif
+		add_show_fps_layers(cfg, width, height, pitch, 32, -1, -1,
+			buffer_info_for_fps);
+
+	add_fps_info_for_debug();
+
+	add_layer_info_for_debug();
+
+	if (path_mode_flag == 1)
+		screen_logger_add_message("sess_mode", MESSAGE_REPLACE,
+			(char *)session_mode_spy_for_align(pgc->session_mode));
+	else
+		/*screen_logger_remove_message("sess_mode");*/
+		screen_logger_add_message("sess_mode", MESSAGE_REPLACE, 0);
+
+	dynamic_debug_msg_print(buffer_info_for_fps->mva,
+				width,
+				height,
+				pitch,
+				4);
 }
 
 static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
@@ -2013,10 +2203,12 @@ static int _DL_switch_to_DC_fast(int block)
 
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config_dl, pgc->cmdq_handle_config);
 
+#if 0
 	screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy(DISP_SESSION_DECOUPLE_MODE));
 	dynamic_debug_msg_print(mva, rdma_config.width, rdma_config.height,
 			rdma_config.pitch / UFMT_GET_Bpp(rdma_config.inputFormat),
 			UFMT_GET_Bpp(rdma_config.inputFormat));
+#endif
 
 	memset(&gset_arg, 0, sizeof(gset_arg));
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
@@ -2035,6 +2227,17 @@ static int _DL_switch_to_DC_fast(int block)
 	/* 6.flush to cmdq */
 	_cmdq_set_config_handle_dirty();
 	_cmdq_flush_config_handle(1, NULL, 0);
+
+	if (path_mode_flag == 1) {
+		rdma_buffer_flag = 1;
+		screen_logger_add_message("sess_mode", MESSAGE_REPLACE,
+			(char *)session_mode_spy_for_align(DISP_SESSION_DECOUPLE_MODE));
+		dynamic_debug_msg_print(mva, rdma_config.width, rdma_config.height,
+				rdma_config.pitch,
+				UFMT_GET_Bpp(rdma_config.inputFormat));
+		rdma_buffer_flag = 0;
+		screen_logger_remove_message("sess_mode");
+	}
 
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 
@@ -3042,6 +3245,9 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp
 		dst->source = OVL_LAYER_SOURCE_MEM;
 	}
 	dst->ext_sel_layer = src->ext_sel_layer;
+
+	if (layer_size_flag == 1)
+		layer_size_high += dst->dst_w * dst->dst_h * Bpp;
 	return ret;
 }
 
@@ -6260,6 +6466,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 		layer = input_cfg->layer_id;
 		ovl_cfg = &(data_config->ovl_config[layer]);
+
+		if (layer_en_num_flag == 1 && ovl_cfg->layer_en == 1 && i < (TOTAL_OVL_LAYER_NUM - 1))
+			layer_en_num++;
+
 		if (cfg->setter != SESSION_USER_AEE) {
 			if (is_DAL_Enabled() && layer == primary_display_get_option("ASSERT_LAYER")) {
 				DISPMSG("skip AEE layer %d\n", layer);
@@ -6382,10 +6592,11 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		/* no need ioctl because of rdma_dirty */
 		set_is_dc(1);
 
-		dynamic_debug_msg_print(data_config->rdma_config.address,
-			data_config->rdma_config.width, data_config->rdma_config.height,
-			data_config->rdma_config.pitch / UFMT_GET_Bpp(data_config->rdma_config.inputFormat),
-			UFMT_GET_Bpp(data_config->rdma_config.inputFormat));
+		if (0)
+			dynamic_debug_msg_print(data_config->rdma_config.address,
+				data_config->rdma_config.width, data_config->rdma_config.height,
+				data_config->rdma_config.pitch / UFMT_GET_Bpp(data_config->rdma_config.inputFormat),
+				UFMT_GET_Bpp(data_config->rdma_config.inputFormat));
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 		draw_round_corner(cfg, bypass_layer_id);
@@ -6503,6 +6714,15 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	}
 #endif
 
+	if (get_show_info_to_screen_flg()) {
+		primary_show_info_to_screen(data_config);
+		if (create_thread_flag == 0 && fps_show_flag == 1) {
+			create_thread_flag = 1;
+			primary_fps_monitor_task = kthread_create(_primary_monitor_fps_thread, NULL, "fps_monitor");
+			wake_up_process(primary_fps_monitor_task);
+		}
+	} else if (fps_show_flag == 0 && create_thread_flag == 1)
+		create_thread_flag = 0;
 	ret = dpmgr_path_config(disp_handle, data_config, cmdq_handle);
 
 #ifdef DEBUG_OVL_CONFIG_TIME
@@ -6702,6 +6922,9 @@ int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 	if (pgc->request_fps && HRT_FPS(cfg->overlap_layer_num) == 120)
 		_display_set_lcm_refresh_rate(pgc->request_fps);
 #endif
+
+	if (get_show_info_to_screen_flg())
+		memcpy(&debug_cfg, cfg, sizeof(struct disp_frame_cfg_t));
 
 	/* set input */
 	dprec_start(input_event, cfg->present_fence_idx, cfg->input_layer_num);
@@ -6922,7 +7145,11 @@ done:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode,
 			 MMPROFILE_FLAG_PULSE, pgc->session_mode, sess_mode);
 
-	screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy(sess_mode));
+	if (path_mode_flag == 1)
+		screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy_for_align(sess_mode));
+	else if (get_show_info_to_screen_flg() && path_mode_flag == 0)
+		/*screen_logger_remove_message("sess_mode");*/
+		screen_logger_add_message("sess_mode", MESSAGE_REPLACE, 0);
 err:
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode,
 			 MMPROFILE_FLAG_END, pgc->session_mode, sess_mode);
@@ -7287,9 +7514,20 @@ int primary_display_get_info(struct disp_session_info *info)
 		if (lcm_param->dsi.mode == CMD_MODE) {
 			dispif_info->displayMode = DISP_IF_MODE_COMMAND;
 			dispif_info->isHwVsyncAvailable = 1;
+			if (dsi_mode_flag == 1)
+				screen_logger_add_message("dsi_mode", MESSAGE_REPLACE,
+							"cmd_mode ");
+			else
+				screen_logger_add_message("dsi_mode", MESSAGE_REPLACE, 0);
+
 		} else {
 			dispif_info->displayMode = DISP_IF_MODE_VIDEO;
 			dispif_info->isHwVsyncAvailable = 1;
+			if (dsi_mode_flag == 1)
+				screen_logger_add_message("dsi_mode", MESSAGE_REPLACE,
+								"vdo_mode ");
+			else
+				screen_logger_add_message("dsi_mode", MESSAGE_REPLACE, 0);
 		}
 
 		break;

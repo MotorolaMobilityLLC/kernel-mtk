@@ -70,6 +70,45 @@ int layer_layout_allow_non_continuous;
 /* Boundary of enter screen idle */
 unsigned idle_check_interval = 50;
 
+/* fps */
+int fps_test;
+int layer_show[show_layer_fps + show_total_fps] = {0};
+int fps_show_flag;
+struct fps_debug fps_info_debug = {0};
+
+/* hrt */
+int hrt_high, hrt_low;
+int hrt_show_flag;
+
+/* layer_en */
+int layer_en_num;
+int layer_en_num_flag;
+int layer_size_high;
+int layer_size_low;
+int layer_size_flag;
+
+/* path mode */
+int path_mode_flag;
+int rdma_buffer_flag;
+
+/* dsi mode */
+int dsi_mode_flag;
+
+/* background set */
+int layer_offset_debug = 1;
+unsigned int font_size = 6;
+int fg_clo = 0x00FF00FF;
+int bg_clo = 0xFF400000;
+
+/* show layer buffer clean */
+int debug_cmd_update_flag;
+struct disp_frame_cfg_t debug_cfg;
+
+/* monitor thread */
+int create_thread_flag;
+
+/* others */
+
 int get_debug_draw_line(void)
 {
 	return debug_draw_line;
@@ -94,6 +133,24 @@ int display_set_wait_idle_time(unsigned int idleMs)
 		idle_check_interval = idleMs;
 
 	return 0;
+}
+
+int get_show_info_to_screen_flg(void)
+{
+	if (((hrt_show_flag == 1) || (path_mode_flag == 1) ||
+			(layer_en_num_flag == 1) || (fps_show_flag == 1) ||
+			(dsi_mode_flag == 1) || (layer_size_flag == 1)) &&
+			(is_DAL_Enabled() == 0))
+		return 1;
+	else
+		return 0;
+}
+
+void free_buffer_for_show_screen(void)
+{
+	ion_free(buffer_info_for_fps->client, buffer_info_for_fps->handle);
+	kfree(buffer_info_for_fps);
+	create_fps_buffer_flag = 0;
 }
 
 static int _is_overlap(unsigned int x1, unsigned int y1, unsigned int w1, unsigned int h1,
@@ -668,6 +725,70 @@ static void process_dbg_opt(const char *opt)
 		disp_helper_set_option_by_name(option, value);
 		helper_opt = disp_helper_name_to_opt(option);
 		update_layering_opt_by_disp_opt(helper_opt, value);
+	} else if ((strncmp(opt, "disp_info:", 10) == 0)) {
+		unsigned int disp_adb_cmd;
+		int i, fps_cnt = 0;
+
+		ret = sscanf(opt, "disp_info:%x\n", &disp_adb_cmd);
+		if (ret != 1) {
+			DDPPR_ERR("%d error to parse cmd %s\n", __LINE__, opt);
+			return;
+		}
+		/* fps info bit0~bit8 */
+		/*memset(layer_show, 0, sizeof(layer_show));*/
+		for (i = 0; i < (show_layer_fps + show_total_fps); i++) {
+			if ((disp_adb_cmd >> i) & 0x01) {
+				layer_show[i] = 1;
+				fps_cnt++;
+			} else
+				layer_show[i] = 0;
+		}
+		if (fps_cnt != 0)
+			fps_show_flag = 1;
+		else
+			fps_show_flag = 0;
+
+		/* hrt bit9 */
+		if ((disp_adb_cmd >> 9) & 0x1)
+			hrt_show_flag = 1;
+		else
+			hrt_show_flag = 0;
+		/* layer_en_num bit10 */
+		if ((disp_adb_cmd >> 10) & 0x1)
+			layer_en_num_flag = 1;
+		else
+			layer_en_num_flag = 0;
+		/* layer_size bit11 */
+		if ((disp_adb_cmd >> 11) & 0x1)
+			layer_size_flag = 1;
+		else
+			layer_size_flag = 0;
+		/* path_mode bit12*/
+		if ((disp_adb_cmd >> 12) & 0x1)
+			path_mode_flag = 1;
+		else
+			path_mode_flag = 0;
+		/* dsi_mode bit13*/
+		if ((disp_adb_cmd >> 13) & 0x1)
+			dsi_mode_flag = 1;
+		else
+			dsi_mode_flag = 0;
+		debug_cmd_update_flag = 1;
+	} else if (strncmp(opt, "bg_set:", 7) == 0) {
+		ret = sscanf(opt, "bg_set:%u,%d\n", &font_size, &layer_offset_debug);
+		if (ret > 2) {
+			DDPPR_ERR("%d error to parse cmd %s\n", __LINE__, opt);
+			return;
+		}
+		debug_cmd_update_flag = 1;
+		if (font_size > 8)
+			font_size = 8;
+		else if (font_size < 1)
+			font_size = 1;
+		if (layer_offset_debug > 500)
+			layer_offset_debug = 500;
+		else if (layer_offset_debug < 1)
+			layer_offset_debug = 1;
 	} else if (strncmp(opt, "repaint:", 8) == 0) {
 		int repaint_type;
 
