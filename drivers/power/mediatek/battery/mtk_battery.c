@@ -5167,9 +5167,11 @@ static int __init battery_probe(struct platform_device *dev)
 		/* init ZCV INT */
 		pmic_register_interrupt_callback(FG_ZCV_NO, fg_zcv_int_handler);
 
-		lbat_user_register(&lowbat_service, "fuel gauge",
-			fg_cust_data.vbat2_det_voltage3 / 10, fg_cust_data.vbat2_det_voltage1 / 10,
-			fg_cust_data.vbat2_det_voltage2 / 10, fg_update_sw_low_battery_check);
+		if (gauge_get_hw_version() < GAUGE_HW_V2000) {
+			lbat_user_register(&lowbat_service, "fuel gauge",
+				fg_cust_data.vbat2_det_voltage3 / 10, fg_cust_data.vbat2_det_voltage1 / 10,
+				fg_cust_data.vbat2_det_voltage2 / 10, fg_update_sw_low_battery_check);
+		}
 	}
 
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
