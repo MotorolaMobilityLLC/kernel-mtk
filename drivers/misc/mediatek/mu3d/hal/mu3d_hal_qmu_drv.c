@@ -553,19 +553,19 @@ void mu3d_hal_resume_qmu(DEV_INT32 q_num, USB_DIR dir)
 	if (dir == USB_TX) {
 		os_writel(USB_QMU_TQCSR(q_num), QMU_Q_RESUME);
 		if (!os_readl(USB_QMU_TQCSR(q_num))) {
-			qmu_printk(K_WARNIN, "[ERROR] %s TQCSR[%d]=%x\n", __func__, q_num,
+			qmu_printk(K_DEBUG, "[ERROR] %s TQCSR[%d]=%x\n", __func__, q_num,
 				   os_readl(USB_QMU_TQCSR(q_num)));
 			os_writel(USB_QMU_TQCSR(q_num), QMU_Q_RESUME);
-			qmu_printk(K_WARNIN, "[ERROR] %s TQCSR[%d]=%x\n", __func__, q_num,
+			qmu_printk(K_DEBUG, "[ERROR] %s TQCSR[%d]=%x\n", __func__, q_num,
 				   os_readl(USB_QMU_TQCSR(q_num)));
 		}
 	} else if (dir == USB_RX) {
 		os_writel(USB_QMU_RQCSR(q_num), QMU_Q_RESUME);
 		if (!os_readl(USB_QMU_RQCSR(q_num))) {
-			qmu_printk(K_WARNIN, "[ERROR] %s RQCSR[%d]=%x\n", __func__, q_num,
+			qmu_printk(K_DEBUG, "[ERROR] %s RQCSR[%d]=%x\n", __func__, q_num,
 				   os_readl(USB_QMU_RQCSR(q_num)));
 			os_writel(USB_QMU_RQCSR(q_num), QMU_Q_RESUME);
-			qmu_printk(K_WARNIN, "[ERROR] %s RQCSR[%d]=%x\n", __func__, q_num,
+			qmu_printk(K_DEBUG, "[ERROR] %s RQCSR[%d]=%x\n", __func__, q_num,
 				   os_readl(USB_QMU_RQCSR(q_num)));
 		}
 	} else {
