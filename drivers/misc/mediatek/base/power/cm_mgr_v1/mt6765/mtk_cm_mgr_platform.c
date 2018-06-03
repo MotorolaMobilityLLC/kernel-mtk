@@ -738,6 +738,8 @@ int cm_mgr_platform_init(void)
 {
 	int r;
 
+	spin_lock_init(&cm_mgr_cpu_mask_lock);
+
 	r = cm_mgr_register_init();
 	if (r) {
 		pr_info("FAILED TO CREATE REGISTER(%d)\n", r);
@@ -751,8 +753,6 @@ int cm_mgr_platform_init(void)
 		pr_info("FAILED TO REGISTER FB CLIENT (%d)\n", r);
 		return r;
 	}
-
-	spin_lock_init(&cm_mgr_cpu_mask_lock);
 
 	cm_mgr_hotplug_cb_init();
 
