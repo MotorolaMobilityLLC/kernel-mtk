@@ -886,6 +886,11 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	int   requeired_mva_status, is_in_vpu_region_flag = 0;
 	int ret = 0;
 
+	/*if nr == 0, it means the mva has been freed, Or mvaGraph is corruptted.*/
+	if (nr == 0) {
+		M4UMSG("%s error: the nr of mva which will be freed is 0.\n", __func__);
+		return -1;
+	}
 	requeired_mva_status = m4u_check_mva_region(startIdx, nr, (void *)mvaInfoGraph[startIdx]);
 	if (requeired_mva_status == -1) {
 		M4UMSG("m4u_check_mva_region[0x%x - 0x%x] error when free mva\n",
