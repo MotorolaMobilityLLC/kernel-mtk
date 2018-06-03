@@ -390,6 +390,15 @@
 
 	};
 
+	dfd@0c530b00 {
+		compatible = "mediatek,dfd";
+		reg = <0 0x0c530b00 0 0x10000>;
+
+		mediatek,enabled = <1>;
+		mediatek,chain_length = <0x61A8>;
+		mediatek,rg_dfd_timeout = <0x2>;
+	};
+
 	clocks {
 		clk_null: clk_null {
 			compatible = "fixed-clock";
