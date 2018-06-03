@@ -1177,7 +1177,7 @@ b_host:
 			musb_g_disconnect(musb);
 			break;
 		default:
-			pr_warn("unhandled DISCONNECT transition (%s)\n",
+			WARNING("unhandled DISCONNECT transition (%s)\n",
 				otg_state_string(musb->xceiv->otg->state));
 			break;
 		}
@@ -1205,7 +1205,7 @@ b_host:
 				DBG(2, "BABBLE devctl: %02x\n"
 							, devctl);
 			else {
-				pr_err("Stopping host session -- babble\n");
+				ERR("Stopping host session -- babble\n");
 				/* musb_writeb(musb->mregs, MUSB_DEVCTL, 0); */
 			}
 		} else {
@@ -1624,7 +1624,7 @@ static int fifo_setup(struct musb *musb, struct musb_hw_ep *hw_ep,
 		hw_ep->ep_in.fifo_mode = cfg->mode;
 		break;
 	case MUSB_FIFO_RX:
-		DBG(1, "[MUSB] Rx ep:%d fifo size:%d fifo address:%x\n"
+		DBG(1, "Rx ep:%d fifo size:%d fifo address:%x\n"
 			, hw_ep->epnum, maxpacket, c_off);
 		/* musb_write_rxfifosz(mbase, c_size); */
 		/* musb_write_rxfifoadd(mbase, c_off); */

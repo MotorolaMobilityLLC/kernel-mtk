@@ -185,7 +185,7 @@ void musbdebugfs_otg_write_fifo(u16 len, u8 *buf, struct musb *mtk_musb)
 {
 	int i;
 
-	pr_debug("musb_otg_write_fifo, len=%d\n", len);
+	DBG(0, "musb_otg_write_fifo, len=%d\n", len);
 	for (i = 0; i < len; i++)
 		musb_writeb(mtk_musb->mregs, 0x20, *(buf + i));
 }
@@ -194,15 +194,15 @@ void musbdebugfs_h_setup(struct usb_ctrlrequest *setup, struct musb *mtk_musb)
 {
 	unsigned short csr0;
 
-	pr_debug("musb_h_setup++\n");
+	DBG(0, "musb_h_setup++\n");
 	musbdebugfs_otg_write_fifo
 		(sizeof(struct usb_ctrlrequest), (u8 *)setup, mtk_musb);
 	csr0 = musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0);
-	pr_debug("musb_h_setup,csr0=0x%x\n", csr0);
+	DBG(0, "musb_h_setup,csr0=0x%x\n", csr0);
 	csr0 |= MUSB_CSR0_H_SETUPPKT | MUSB_CSR0_TXPKTRDY;
 	musb_writew(mtk_musb->mregs, MUSB_OTG_CSR0, csr0);
 
-	pr_debug("musb_h_setup--\n");
+	DBG(0, "musb_h_setup--\n");
 }
 
 static ssize_t musb_test_mode_write(struct file *file,
@@ -245,15 +245,15 @@ static ssize_t musb_test_mode_write(struct file *file,
 	}
 
 	if (!strncmp(buf, "test suspend_resume", 18)) {
-		pr_debug("HS_HOST_PORT_SUSPEND_RESUME\n");
+		DBG(0, "HS_HOST_PORT_SUSPEND_RESUME\n");
 		msleep(5000); /* the host must continue sending SOFs for 15s */
-		pr_debug("please begin to trigger suspend!\n");
+		DBG(0, "please begin to trigger suspend!\n");
 		msleep(10000);
 		power = musb_readb(musb->mregs, MUSB_POWER);
 		power |= MUSB_POWER_SUSPENDM | MUSB_POWER_ENSUSPEND;
 		musb_writeb(musb->mregs, MUSB_POWER, power);
 		msleep(5000);
-		pr_debug("please begin to trigger resume!\n");
+		DBG(0, "please begin to trigger resume!\n");
 		msleep(10000);
 		power &= ~MUSB_POWER_SUSPENDM;
 		power |= MUSB_POWER_RESUME;
@@ -267,7 +267,7 @@ static ssize_t musb_test_mode_write(struct file *file,
 	}
 
 	if (!strncmp(buf, "test get_descripter", 18)) {
-		pr_debug("SINGLE_STEP_GET_DEVICE_DESCRIPTOR\n");
+		DBG(0, "SINGLE_STEP_GET_DEVICE_DESCRIPTOR\n");
 		/* the host issues SOFs for 15s allowing the test engineer
 		 * to raise the scope trigger just above the SOF voltage level.
 		 */
@@ -384,7 +384,7 @@ static unsigned my_strtoul
 
 static int musb_regw_show(struct seq_file *s, void *unused)
 {
-	pr_debug("%s -> Called\n", __func__);
+	DBG(0, "%s -> Called\n", __func__);
 
 	pr_notice("Uage:\n");
 	pr_notice("Mac Write: echo mac:addr:data > regw\n");
@@ -474,7 +474,7 @@ static const struct file_operations musb_regw_fops = {
 
 static int musb_regr_show(struct seq_file *s, void *unused)
 {
-	pr_notice("%s -> Called\n"
+	DBG(0, "%s -> Called\n"
 			"Uage:\n"
 			"Mac Read: echo mac:addr > regr\n"
 			"Phy Read: echo phy:addr > regr\n", __func__);
