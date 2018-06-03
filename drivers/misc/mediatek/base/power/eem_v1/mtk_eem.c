@@ -4661,7 +4661,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 	switch (cmd) {
 	case IPI_EEM_INIT:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT) ret:%d - %d\n", ret, ackData);
 		else if (ackData < 0)
@@ -4670,7 +4670,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 
 	case IPI_EEM_PROBE:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_PROBE) ret:%d - %d\n",
 						ret, ackData);
@@ -4680,7 +4680,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 
 	case IPI_EEM_INIT01:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT01) ret:%d - %d\n",
 						ret, ackData);
@@ -4690,7 +4690,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 
 	case IPI_EEM_INIT02:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_INIT02) ret:%d - %d\n",
 						ret, ackData);
@@ -4702,7 +4702,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 	case IPI_EEM_VCORE_GET_VOLT:
 		eem_data->cmd = cmd;
 		/* defined at sspm_ipi.h, id is difined at elbrus/sspm_ipi_pin.h */
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_VCORE_GET_VOLT) ret:%d - %d\n",
 						ret, ackData);
@@ -4714,7 +4714,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 	#if 0
 	case IPI_EEM_GPU_DVFS_GET_STATUS:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_GPU_DVFS_GET_STATUS) ret:%d - %d\n",
 						ret, ackData);
@@ -4725,7 +4725,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 
 	case IPI_EEM_DEBUG_PROC_WRITE:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_DEBUG_PROC_WRITE) ret:%d - %d\n",
 						ret, ackData);
@@ -4736,7 +4736,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 	#ifdef EEM_LOG_EN
 	case IPI_EEM_LOGEN_PROC_SHOW:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_LOGEN_PROC_SHOW) ret:%d - %d\n",
 						ret, ackData);
@@ -4746,7 +4746,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 
 	case IPI_EEM_LOGEN_PROC_WRITE:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_LOGEN_PROC_WRITE) ret:%d - %d\n",
 						ret, ackData);
@@ -4758,7 +4758,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 	#ifdef EEM_OFFSET
 	case IPI_EEM_OFFSET_PROC_WRITE:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_OFFSET_PROC_WRITE) ret:%d - %d\n",
 						ret, ackData);
@@ -4769,7 +4769,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 
 	case IPI_EEM_VCORE_INIT:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_VCORE_INIT) ret:%d - %d\n",
 						ret, ackData);
@@ -4781,7 +4781,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 		/* ackData will be 0 if set newVolt successfully*/
 		/* ackData will be 1 if newVolt is illegal */
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_VCORE_UPDATE_PROC_WRITE) ret:%d - %d\n",
 						ret, ackData);
@@ -4792,7 +4792,7 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 	#ifdef EEM_CUR_VOLT_PROC_SHOW
 	case IPI_EEM_CUR_VOLT_PROC_SHOW:
 		eem_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_CUR_VOLT_PROC_SHOW) ret:%d - %d\n",
 						ret, ackData);
