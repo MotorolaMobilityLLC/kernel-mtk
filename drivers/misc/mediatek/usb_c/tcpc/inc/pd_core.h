@@ -30,15 +30,6 @@
 #define CONFIG_PD_DISCOVER_CABLE_ID
 #endif /* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
 
-#ifdef CONFIG_USB_PD_ALT_MODE
-#define CONFIG_USB_PD_MODE_OPERATION
-#endif	/* CONFIG_USB_PD_ALT_MODE */
-
-#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
-#undef CONFIG_USB_PD_MODE_OPERATION
-#define CONFIG_USB_PD_MODE_OPERATION
-#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
-
 /*---------------------------------------------------------------------------*/
 
 #define PD_SOP_NR	3
