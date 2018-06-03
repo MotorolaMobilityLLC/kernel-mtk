@@ -72,6 +72,8 @@ static int update;
 static int update_v2f_table = 1;
 static int cm_mgr_opp_enable = 1;
 static int cm_mgr_enable;
+int cm_mgr_disable_fb = 1;
+int cm_mgr_blank_status;
 
 static unsigned int vcore_power_gain_0[][VCORE_ARRAY_SIZE] = {
 	{57, 165},
