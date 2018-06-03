@@ -586,7 +586,7 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode,
 	wait_cond_tmo(((sts = MSDC_READ32(MSDC_INT)) & wints), tmo);
 	if (tmo == 0) {
 		AUTOK_RAWPRINT("[AUTOK]CMD%d wait int tmo\r\n", opcode);
-		ret |= E_RES_CMD_TMO;
+		ret |= E_RES_FATAL_ERR;
 		goto end;
 	}
 
