@@ -382,7 +382,7 @@ int __dcs_enter_perf(enum dcs_kicker kicker)
 {
 	dcs_kicker |= (1 << kicker);
 
-	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, dcs_kicker);
+	pr_info("[%d] dcs_kicker=%08lx\n", __LINE__, dcs_kicker);
 
 	/* wakeup thread */
 	pr_info("wakeup dcs_thread\n");
@@ -579,7 +579,7 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 		ret = __dcs_exit_perf(DCS_KICKER_CAMERA);
 		break;
 	default:
-		pr_alert("unknown sysfs mode: %d\n", mode);
+		pr_info("unknown sysfs mode: %d\n", mode);
 		break;
 	}
 
@@ -683,9 +683,8 @@ static int dcs_thread_entry(void *p)
 		/* perform channel swtich */
 		pr_info("%s waken\n", __func__);
 		err = dcs_dram_channel_switch(DCS_NORMAL);
-		if (err) {
+		if (err)
 			pr_err("[%d] fail: %d\n", __LINE__, err);
-		}
 	} while (1);
 
 	return 0;
@@ -805,22 +804,11 @@ int dcs_full_init(void)
 
 static int __dcs_mpu_protection_enable(void)
 {
-	/*
-	emi_mpu_set_region_protection((unsigned long long)mpu_start,
-			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
-			MPU_ACCESS_PERMISSON_FORBIDDEN);
-			*/
-
 	return 0;
 }
 
 static int __dcs_mpu_protection_disable(void)
 {
-	/*
-	emi_mpu_set_region_protection((unsigned long long)mpu_start,
-			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
-			MPU_ACCESS_PERMISSON_NO_PROTECTION);
-			*/
 	return 0;
 }
 
@@ -941,7 +929,7 @@ static ssize_t mtkdcs_mode_store(struct device *dev,
 			goto apply_mode;
 	}
 
-	pr_alert("[%d] unknown command: %s\n", __LINE__, buf);
+	pr_info("[%d] unknown command: %s\n", __LINE__, buf);
 	return n;
 
 apply_mode:
