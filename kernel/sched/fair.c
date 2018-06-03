@@ -7540,6 +7540,10 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev, struct pin_cookie c
 
 again:
 #ifdef CONFIG_FAIR_GROUP_SCHED
+	/* in case nr_running!=0 but h_nr_running==0 */
+	if (!cfs_rq->h_nr_running)
+		goto idle;
+
 	if (!cfs_rq->nr_running)
 		goto idle;
 
