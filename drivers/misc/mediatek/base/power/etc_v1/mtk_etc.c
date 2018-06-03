@@ -98,6 +98,9 @@
 #define VMAX		(1100000)
 #define VMIN		(800000)
 
+#define MIN_VPROC_MV_1000X (600000)
+#define MAX_VPROC_MV_1000X (1100000)
+
 /* Get time stmp to known the time period */
 static unsigned long long etc_pTime_us, etc_cTime_us, etc_diff_us;
 #ifdef __KERNEL__
@@ -218,7 +221,7 @@ static long long etc_get_current_time_us(void)
 
 static void mtk_etc_lock(unsigned long *flags)
 {
-	/* FIXME: lock with MD32 */
+	/* FIXME: lock with SSPM */
 	/* get_md32_semaphore(SEMAPHORE_ETC); */
 	spin_lock_irqsave(&etc_spinlock, *flags);
 #ifdef __KERNEL__
@@ -233,28 +236,20 @@ void mtk_etc_unlock(unsigned long *flags)
 	ETC_IS_TOO_LONG();
 #endif
 	spin_unlock_irqrestore(&etc_spinlock, *flags);
-	/* FIXME: lock with MD32 */
+	/* FIXME: lock with SSPM */
 	/* release_md32_semaphore(SEMAPHORE_ETC); */
-}
-
-static int mtk_chk_uniPll(void)
-{
-	unsigned int value;
-
-	value = etc_read(uni_pll_base + 0x40) & 0x01;
-
-	return value;
 }
 
 void mtk_etc_init(void)
 {
-	if (mtk_chk_uniPll())
+	if (ctrl_etc_enable == 1) {
 		mt_secure_call_etc(MTK_SIP_KERNEL_ETC_INIT, 0, 0, 0);
+	}
 }
 
 void mtk_etc_voltage_change(unsigned int new_vout)
 {
-	if (mtk_chk_uniPll()) {
+	if (ctrl_etc_enable == 1) {
 		mt_secure_call_etc(MTK_SIP_KERNEL_ETC_VOLT_CHG, new_vout, 0, 0);
 		etc_VOUT = new_vout;
 	}
@@ -315,6 +310,7 @@ static int _mt_etc_cpu_CB(struct notifier_block *nfb,
 				if (etc_log_en)
 					etc_debug("DEAD (%d) BIG_cc(%d)\n", online_cpus, big_cpus);
 				mtk_etc_lock(&flags);
+				mtk_etc_power_off();
 				mtk_etc_unlock(&flags);
 			} else {
 				if (etc_log_en)
@@ -347,7 +343,7 @@ static int _mt_etc_cpu_CB(struct notifier_block *nfb,
  */
 static enum hrtimer_restart etc_timer_log_func(struct hrtimer *timer)
 {
-	etc_error("Timer (%d)\n", ctrl_etc_enable);
+	etc_error("Timer (%d)\n", etc_timer_en);
 
 	hrtimer_forward_now(timer, ns_to_ktime(LOG_INTERVAL));
 	return HRTIMER_RESTART;
@@ -365,7 +361,6 @@ static int etc_enable_proc_show(struct seq_file *m, void *v)
 static ssize_t etc_enable_proc_write(struct file *file,
 					const char __user *buffer, size_t count, loff_t *pos)
 {
-	int ret = -EINVAL;
 	int enable;
 	char *buf = (char *) __get_free_page(GFP_USER);
 
@@ -385,37 +380,24 @@ static ssize_t etc_enable_proc_write(struct file *file,
 		goto out;
 	}
 
-	ret = 0;
-	switch (enable) {
-	case 0:
+	if (enable == 0) {
 		etc_debug("Disable ETC !!\n");
 		mtk_etc_power_off();
 		ctrl_etc_enable = 0;
-		break;
-
-	case 1:
+	} else {
 		etc_debug("Enable ETC !!\n");
+		ctrl_etc_enable = enable;
 		mtk_etc_init();
-		ctrl_etc_enable = 1;
-		break;
-
-	default:
-		if (enable > 1) {
-			etc_debug("Enable ETC !(%d)!\n", enable);
-			ctrl_etc_enable = 1;
-		} else {
-			etc_debug("Disable ETC !(%d)!\n", enable);
-			ctrl_etc_enable = 0;
-		}
 	}
+
 out:
 	free_page((unsigned long)buf);
-	return ret;
+	return count;
 }
 
 static int etc_cur_volt_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%d\n", ctrl_etc_enable);
+	seq_printf(m, "%d\n", etc_VOUT);
 	return 0;
 }
 
@@ -451,27 +433,27 @@ static ssize_t etc_log_en_proc_write(struct file *file,
 	ret = 0;
 	switch (enable) {
 	case 0:
-		etc_debug("Disable ETC !!\n");
+		etc_debug("Disable ETC log !!\n");
 		etc_log_en = 0;
 		break;
 
 	case 1:
-		etc_debug("Enable ETC !!\n");
+		etc_debug("Enable ETC log !!\n");
 		etc_log_en = 1;
 		break;
 
 	default:
 		if (enable > 1) {
-			etc_debug("Enable ETC !(%d)!\n", enable);
+			etc_debug("Enable ETC log !(%d)!\n", enable);
 			etc_log_en = 1;
 		} else {
-			etc_debug("Disable ETC !(%d)!\n", enable);
+			etc_debug("Disable ETC log !(%d)!\n", enable);
 			etc_log_en = 0;
 		}
 	}
 out:
 	free_page((unsigned long)buf);
-	return ret;
+	return count;
 }
 
 static int etc_timer_proc_show(struct seq_file *m, void *v)
@@ -530,8 +512,84 @@ static ssize_t etc_timer_proc_write(struct file *file,
 	}
 out:
 	free_page((unsigned long)buf);
-	return ret;
+	return count;
 }
+
+static int etc_vout_proc_show(struct seq_file *m, void *v)
+{
+	/*
+	* int vout = 0;
+	*
+	* vout = mt_secure_call_etc(MTK_SIP_KERNEL_ETC_REG_READ, 0x1020260C, 0, 0);
+	* vout = 400000 + (vout * 3125);
+	* seq_printf(m, "%d (mV * 1000)\n", vout);
+	*/
+
+	return 0;
+}
+
+static ssize_t etc_vout_proc_write(struct file *file,
+					const char __user *buffer, size_t count, loff_t *pos)
+{
+	int ret = -EINVAL;
+	int vout = 0;
+	char *buf = (char *) __get_free_page(GFP_USER);
+
+	if (!buf)
+		return -ENOMEM;
+
+	if (count >= PAGE_SIZE)
+		goto out;
+
+	if (copy_from_user(buf, buffer, count))
+		goto out;
+
+	buf[count] = '\0';
+
+	if (kstrtoint(buf, 10, &vout)) {
+		etc_debug("bad argument!! Should be \"0\" or \"1\"\n");
+		goto out;
+	}
+
+	if ((vout > MAX_VPROC_MV_1000X) || (vout < MIN_VPROC_MV_1000X)) {
+		etc_debug("bad argument!! should be %d ~ %d\n",
+			  MIN_VPROC_MV_1000X, MAX_VPROC_MV_1000X);
+		goto out;
+	}
+
+	ret = 0;
+
+	mtk_etc_voltage_change(vout);
+
+out:
+	free_page((unsigned long)buf);
+
+	return count;
+}
+
+static int etc_reg_dump_proc_show(struct seq_file *m, void *v)
+{
+	/*
+	* int value = 0;
+	* unsigned int i, addr;
+	*/
+
+	if (ctrl_etc_enable == 0) {
+		seq_puts(m, "etc is not turned on\n");
+		return 0;
+	}
+
+	/*
+	* for (i = 0; i < 0xF0; i += 4) {
+	*	addr = 0x10202600 + i;
+	*	value = mt_secure_call_etc(MTK_SIP_KERNEL_ETC_REG_READ, addr, 0, 0);
+	*	seq_printf(m, "reg %x = 0x%X\n", addr, value);
+	* }
+	*/
+
+	return 0;
+}
+
 
 #define PROC_FOPS_RW(name)					\
 	static int name ## _proc_open(struct inode *inode,	\
@@ -570,6 +628,8 @@ PROC_FOPS_RW(etc_enable);
 PROC_FOPS_RO(etc_cur_volt);
 PROC_FOPS_RW(etc_log_en);
 PROC_FOPS_RW(etc_timer);
+PROC_FOPS_RW(etc_vout);
+PROC_FOPS_RO(etc_reg_dump);
 
 static int create_procfs(void)
 {
@@ -586,6 +646,8 @@ static int create_procfs(void)
 		PROC_ENTRY(etc_cur_volt),
 		PROC_ENTRY(etc_log_en),
 		PROC_ENTRY(etc_timer),
+		PROC_ENTRY(etc_vout),
+		PROC_ENTRY(etc_reg_dump),
 	};
 
 	etc_dir = proc_mkdir("etc", NULL);
@@ -606,6 +668,11 @@ static int create_procfs(void)
 static int etc_probe(struct platform_device *pdev)
 {
 	/* enable etc */
+	if (ctrl_etc_enable == 0) {
+		etc_error("[ETC] default off !!");
+		return 0;
+	}
+
 	mtk_etc_init();
 	register_hotcpu_notifier(&_mt_etc_cpu_notifier);
 	return 0;
@@ -641,18 +708,13 @@ static int __init etc_init(void)
 	int err = 0;
 	struct device_node *node = NULL;
 
-	if (ctrl_etc_enable == 0) {
-		etc_error("[ETC] default off !!");
-		return 0;
-	}
-
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-apmixedsys");
 	if (node) {
 		uni_pll_base = of_iomap(node, 0);
 		etc_debug("[ETC] uni_pll_base = 0x%p\n", uni_pll_base);
 	} else {
 		etc_debug("[ETC] Not get uni_pll_base address !!\n");
-		return 0;
+		return -ENOENT;
 	}
 
 	/* init timer for log / volt */
