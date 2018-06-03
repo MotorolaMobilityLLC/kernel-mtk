@@ -51,7 +51,9 @@
 #include <sspm_timesync.h>
 #endif
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <trace/events/mtk_idle_event.h>
+#endif
 
 /**************************************
  * only for internal debug
@@ -378,11 +380,15 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 	if (sodi3_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3();
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_sodi3_rcuidle(cpu, 1);
+#endif
 
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_sodi3_rcuidle(cpu, 0);
+#endif
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_WFI);
 

@@ -34,8 +34,10 @@
 
 #include <asm/system_misc.h>
 #include <mt-plat/sync_write.h>
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#ifndef CONFIG_MTK_ACAO_SUPPORT)
 #include <mach/mtk_gpt.h>
+#endif
 #endif
 #include <mtk_spm.h>
 #include <mtk_spm_dpidle.h>
@@ -54,7 +56,9 @@
 #include <mtk_spm_misc.h>
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <trace/events/mtk_idle_event.h>
+#endif
 
 #include "ufs-mtk.h"
 
@@ -75,8 +79,9 @@
 	if (dpidle_dump_log & DEEPIDLE_LOG_FULL) \
 		pr_warn(IDLE_TAG fmt, ##args); \
 	}
-
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #define IDLE_GPT GPT4
+#endif
 #define log2buf(p, s, fmt, args...) \
 	(p += scnprintf(p, sizeof(s) - strlen(s), fmt, ##args))
 
@@ -381,6 +386,7 @@ EXPORT_SYMBOL_GPL(mtk_idle_notifier_call_chain);
 /* Workaround of static analysis defect*/
 int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	unsigned int val[2] = {0};
 	int ret = 0;
 
@@ -388,10 +394,14 @@ int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
 	*ptr = val[0];
 
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	unsigned int val[2] = {0};
 	int ret = 0;
 
@@ -399,6 +409,9 @@ int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
 	*ptr = val[0];
 
 	return ret;
+#else
+	return 0;
+#endif
 }
 #endif
 
@@ -426,9 +439,9 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 #else
 static bool next_timer_criteria_check(unsigned int timer_criteria)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	unsigned int timer_left = 0;
 	bool ret = true;
-
 #ifdef CONFIG_SMP
 	timer_left = localtimer_get_counter();
 
@@ -443,13 +456,16 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 	if ((timer_cmp - timer_left) < timer_criteria)
 		ret = false;
 #endif
-
 	return ret;
+#else
+	return true;
+#endif
 }
 #endif
 
 static void timer_setting_before_wfi(bool f26m_off)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifndef USING_STD_TIMER_OPS
 #ifdef CONFIG_SMP
 	unsigned int timer_left = 0;
@@ -473,10 +489,12 @@ static void timer_setting_before_wfi(bool f26m_off)
 	gpt_get_cnt(GPT1, &timer_left);
 #endif
 #endif
+#endif
 }
 
 static void timer_setting_after_wfi(bool f26m_off)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifndef USING_STD_TIMER_OPS
 #ifdef CONFIG_SMP
 	if (gpt_check_and_ack_irq(IDLE_GPT)) {
@@ -503,6 +521,7 @@ static void timer_setting_after_wfi(bool f26m_off)
 		}
 		stop_gpt(IDLE_GPT);
 	}
+#endif
 #endif
 #endif
 }
@@ -1184,11 +1203,15 @@ static noinline void go_to_rgidle(int cpu)
 {
 	rgidle_before_wfi(cpu);
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_rgidle_rcuidle(cpu, 1);
+#endif
 
 	go_to_wfi();
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_rgidle_rcuidle(cpu, 0);
+#endif
 
 	rgidle_after_wfi(cpu);
 }
@@ -2663,6 +2686,7 @@ static int mtk_idle_hotplug_cb_init(void)
 
 void mtk_idle_gpt_init(void)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifndef USING_STD_TIMER_OPS
 	int err = 0;
 
@@ -2671,6 +2695,7 @@ void mtk_idle_gpt_init(void)
 
 	if (err)
 		idle_pr_warn("[%s] fail to request GPT %d\n", __func__, IDLE_GPT + 1);
+#endif
 #endif
 }
 

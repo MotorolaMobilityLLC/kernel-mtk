@@ -515,7 +515,9 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	spm_vcorefs_md_scenario_update(0);
 #endif
 
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) \
+	&& !defined(CONFIG_MACH_MT6758) \
+	&& !defined(CONFIG_MACH_MT6775)
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
