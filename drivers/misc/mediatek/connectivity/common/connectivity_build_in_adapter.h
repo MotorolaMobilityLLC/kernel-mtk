@@ -56,6 +56,8 @@ void connectivity_export_clk_buf_ctrl(/*enum clk_buf_id*/ int id, bool onoff);
 	defined(CONFIG_MACH_MT6757) || \
 	defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6771) || \
+	defined(CONFIG_MACH_MT6775) || \
 	defined(CONFIG_MACH_MT6763)
 #define CONNADP_HAS_PMIC_API
 #define KERNEL_pmic_config_interface connectivity_export_pmic_config_interface
