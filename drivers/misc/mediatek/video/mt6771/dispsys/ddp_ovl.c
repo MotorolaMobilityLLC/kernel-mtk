@@ -81,6 +81,22 @@ unsigned long ovl_base_addr(enum DISP_MODULE_ENUM module)
 	return 0;
 }
 
+unsigned long mmsys_ovl_ultra_offset(enum DISP_MODULE_ENUM module)
+{
+	switch (module) {
+	case DISP_MODULE_OVL0:
+		return FLD_OVL0_ULTRA_SEL;
+	case DISP_MODULE_OVL0_2L:
+		return FLD_OVL0_2L_ULTRA_SEL;
+	case DISP_MODULE_OVL1_2L:
+		return FLD_OVL1_2L_ULTRA_SEL;
+	default:
+		DDPPR_ERR("invalid ovl module=%d\n", module);
+		return -1;
+	}
+	return 0;
+}
+
 static inline unsigned long ovl_layer_num(enum DISP_MODULE_ENUM module)
 {
 	switch (module) {
@@ -2074,11 +2090,11 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	 * OVL0_2l -> RSZ -> OVL0 -> RDMA0 -> DSI
 	 */
 	if (dst_mod_type == DST_MOD_REAL_TIME) {
-		DISP_REG_SET_FIELD(cmdq, FLD_OVL0_ULTRA_SEL, DISP_REG_CONFIG_MMSYS_MISC, 1);
-		DISP_REG_SET_FIELD(cmdq, FLD_OVL0_2L_ULTRA_SEL, DISP_REG_CONFIG_MMSYS_MISC, 1);
+		DISP_REG_SET_FIELD(cmdq, mmsys_ovl_ultra_offset(module),
+			DISP_REG_CONFIG_MMSYS_MISC, 1);
 	} else {
-		DISP_REG_SET_FIELD(cmdq, FLD_OVL0_ULTRA_SEL, DISP_REG_CONFIG_MMSYS_MISC, 0);
-		DISP_REG_SET_FIELD(cmdq, FLD_OVL0_2L_ULTRA_SEL, DISP_REG_CONFIG_MMSYS_MISC, 0);
+		DISP_REG_SET_FIELD(cmdq, mmsys_ovl_ultra_offset(module),
+			DISP_REG_CONFIG_MMSYS_MISC, 0);
 	}
 
 	return 0;
