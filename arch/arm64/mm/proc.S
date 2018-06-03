@@ -23,12 +23,9 @@
 #include <asm/assembler.h>
 #include <asm/asm-offsets.h>
 #include <asm/hwcap.h>
-#include <asm/pgtable-hwdef.h>
 #include <asm/pgtable.h>
 #include <asm/cpufeature.h>
 #include <asm/alternative.h>
-
-#include "proc-macros.S"
 
 #ifdef CONFIG_ARM64_64K_PAGES
 #define TCR_TG_FLAGS	TCR_TG0_64K | TCR_TG1_64K
@@ -152,7 +149,33 @@ alternative_else
 alternative_endif
 ENDPROC(cpu_do_switch_mm)
 
-	.section ".text.init", #alloc, #execinstr
+	.pushsection ".idmap.text", "ax"
+/*
+ * void idmap_cpu_replace_ttbr1(phys_addr_t new_pgd)
+ *
+ * This is the low-level counterpart to cpu_replace_ttbr1, and should not be
+ * called by anything else. It can only be executed from a TTBR0 mapping.
+ */
+ENTRY(idmap_cpu_replace_ttbr1)
+	mrs	x2, daif
+	msr	daifset, #0xf
+
+	adrp	x1, empty_zero_page
+	msr	ttbr1_el1, x1
+	isb
+
+	tlbi	vmalle1
+	dsb	nsh
+	isb
+
+	msr	ttbr1_el1, x0
+	isb
+
+	msr	daif, x2
+
+	ret
+ENDPROC(idmap_cpu_replace_ttbr1)
+	.popsection
 
 /*
  *	__cpu_setup
