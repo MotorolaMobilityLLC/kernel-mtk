@@ -796,4 +796,57 @@ void mtk_btif_read_cpu_sw_rst_debug_exp(void)
 	mtk_btif_read_cpu_sw_rst_debug();
 }
 
+int mtk_btif_exp_rx_has_pending_data(unsigned long u_id)
+{
+	struct _mtk_btif_ *p_btif = NULL;
+	int has_pending_data = 0;
+
+	p_btif = btif_exp_srh_id(u_id);
+	if (p_btif == NULL) {
+		BTIF_ERR_FUNC("parameter invalid\n");
+		return E_BTIF_INVAL_PARAM;
+	}
+
+	/* Lock the data path to ensure that the current data path is
+	 * not processing data
+	 */
+	btif_rx_data_path_lock(p_btif);
+
+	has_pending_data = btif_rx_buf_has_pending_data(p_btif);
+	if (has_pending_data == 0)
+		has_pending_data = btif_rx_dma_has_pending_data(p_btif);
+
+	btif_rx_data_path_unlock(p_btif);
+	return has_pending_data;
+}
+EXPORT_SYMBOL(mtk_btif_exp_rx_has_pending_data);
+
+int mtk_btif_exp_tx_has_pending_data(unsigned long u_id)
+{
+	struct _mtk_btif_ *p_btif = NULL;
+
+	p_btif = btif_exp_srh_id(u_id);
+	if (p_btif == NULL) {
+		BTIF_ERR_FUNC("E_BTIF_INVAL_PARAM\n");
+		return E_BTIF_INVAL_PARAM;
+	}
+
+	return btif_tx_dma_has_pending_data(p_btif);
+}
+EXPORT_SYMBOL(mtk_btif_exp_tx_has_pending_data);
+
+struct task_struct *mtk_btif_exp_rx_thread_get(unsigned long u_id)
+{
+	struct _mtk_btif_ *p_btif = NULL;
+
+	p_btif = btif_exp_srh_id(u_id);
+	if (p_btif == NULL) {
+		BTIF_ERR_FUNC("E_BTIF_INVAL_PARAM\n");
+		return NULL;
+	}
+
+	return btif_rx_thread_get(p_btif);
+}
+EXPORT_SYMBOL(mtk_btif_exp_rx_thread_get);
+
 /************End of Function**********/

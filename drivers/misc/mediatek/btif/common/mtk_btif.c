@@ -140,6 +140,11 @@ static int btif_tx_dma_mode_set(int en);
 
 static int _btif_send_data(struct _mtk_btif_ *p_btif,
 		    const unsigned char *p_buf, unsigned int buf_len);
+static int _btif_rx_thread_lock(struct _mtk_btif_ *p_btif, bool enable);
+#if BTIF_DBG_SUPPORT
+static void btif_rx_test_handler(struct work_struct *work);
+static int btif_block_rx_dma_irq_test(void);
+#endif
 
 /*-----------end of static function declearation----------------*/
 
@@ -192,7 +197,9 @@ struct _mtk_btif_dma_ g_dma[BTIF_PORT_NR][BTIF_DIR_MAX] = {
 #define G_MAX_PKG_LEN (7 * 1024)
 static int g_max_pkg_len = G_MAX_PKG_LEN; /*DMA vFIFO is set to 8 * 1024, we set this to 7/8 * vFIFO size*/
 static int g_max_pding_data_size = BTIF_RX_BUFFER_SIZE * 3 / 4;
-
+#if BTIF_DBG_SUPPORT
+int g_enable_btif_rxd_test;
+#endif
 static int mtk_btif_dbg_lvl = BTIF_LOG_INFO;
 #if BTIF_RXD_BE_BLOCKED_DETECT
 static struct timeval btif_rxd_time_stamp[MAX_BTIF_RXD_TIME_REC];
@@ -779,6 +786,9 @@ static ssize_t driver_flag_set(struct device_driver *drv,
 	int result = 0;
 	char *p_token = NULL;
 	char *p_delimiter = " \t";
+#if BTIF_DBG_SUPPORT
+	struct _mtk_btif_ *p_btif = &g_btif[0];
+#endif
 
 	BTIF_INFO_FUNC("buffer = %s, count = %zd\n", buffer, count);
 	if (len >= sizeof(buf)) {
@@ -882,6 +892,20 @@ static ssize_t driver_flag_set(struct device_driver *drv,
 		BTIF_INFO_FUNC("g_max_pding_data_size is set to %d\n", y);
 		g_max_pding_data_size = y;
 		break;
+#if BTIF_DBG_SUPPORT
+	case 0x12:
+		BTIF_INFO_FUNC("test btif_rxd thread block\n");
+		p_btif->test_case = BTIF_TEST_RX_THREAD_BLOCK;
+		p_btif->delay_sched_time = y;
+		g_enable_btif_rxd_test = 1;
+		break;
+	case 0x13:
+		BTIF_INFO_FUNC("test rx dma irq block\n");
+		p_btif->test_case = BTIF_TEST_RX_IRQ_BLOCK;
+		p_btif->delay_sched_time = y;
+		btif_block_rx_dma_irq_test();
+		break;
+#endif
 	default:
 		mtk_btif_exp_open_test();
 		mtk_btif_exp_write_stress_test(3030, 1);
@@ -1075,8 +1099,13 @@ irqreturn_t btif_rx_dma_irq_handler(int irq, void *data)
 #endif
 
 	_btif_irq_ctrl(p_rx_dma_info->p_irq, true);
-
-	_btif_rx_btm_sched(p_btif);
+#if BTIF_DBG_SUPPORT
+	if (g_enable_btif_rxd_test)
+		schedule_delayed_work(&p_btif->btif_rx_test_work,
+			msecs_to_jiffies(p_btif->delay_sched_time));
+	else
+#endif
+		_btif_rx_btm_sched(p_btif);
 
 	BTIF_DBG_FUNC("--\n");
 
@@ -2280,18 +2309,25 @@ static int btif_rx_thread(void *p_data)
 
 	while (1) {
 		wait_for_completion_interruptible(&p_btif->rx_comp);
+		if (mutex_lock_killable(&(p_btif->rx_thread_mtx))) {
+			BTIF_ERR_FUNC(
+				"mutex lock(rx_thread_mtx) return failed\n");
+			break;
+		}
 
 		if (kthread_should_stop()) {
 			BTIF_WARN_FUNC("btif rx thread stoping ...\n");
+			mutex_unlock(&(p_btif->rx_thread_mtx));
 			break;
 		}
-#ifdef BTIF_RXD_BE_BLOCKED_DETECT
+#if BTIF_RXD_BE_BLOCKED_DETECT
 		do_gettimeofday(&btif_rxd_time_stamp[i]);
 		i++;
 		if (i >= MAX_BTIF_RXD_TIME_REC)
 			i = 0;
 #endif
 		btif_rx_data_consummer(p_btif);
+		mutex_unlock(&(p_btif->rx_thread_mtx));
 	}
 	return 0;
 }
@@ -2465,6 +2501,11 @@ static int _btif_rx_btm_init(struct _mtk_btif_ *p_btif)
 
 	if (p_btif->btm_type == BTIF_THREAD_CTX) {
 		init_completion(&p_btif->rx_comp);
+		mutex_init(&p_btif->rx_thread_mtx);
+#if BTIF_DBG_SUPPORT
+		INIT_DELAYED_WORK(&p_btif->btif_rx_test_work,
+				  btif_rx_test_handler);
+#endif
 
 		/*create kernel thread for later rx data handle*/
 		p_btif->p_task = kthread_create(btif_rx_thread, p_btif, "btif_rxd");
@@ -2569,6 +2610,7 @@ static int _btif_rx_btm_deinit(struct _mtk_btif_ *p_btif)
 			BTIF_INFO_FUNC("signaling btif rx thread to stop ...\n");
 			kthread_stop(p_btif->p_task);
 		}
+		mutex_destroy(&p_btif->rx_thread_mtx);
 	} else if (p_btif->btm_type == BTIF_WQ_CTX) {
 		if (p_btif->p_rx_wq) {
 			cancel_work_sync(&(p_btif->rx_work));
@@ -2989,6 +3031,7 @@ int btif_log_buf_dmp_in(struct _btif_log_queue_t_ *p_log_que,
 	struct timeval *p_timer = NULL;
 	unsigned long flags;
 	bool output_flag = false;
+	struct timespec *p_ts = NULL;
 
 	BTIF_DBG_FUNC("++\n");
 
@@ -3008,9 +3051,11 @@ int btif_log_buf_dmp_in(struct _btif_log_queue_t_ *p_log_que,
 /*get next log buffer for record usage*/
 	p_log_buf = p_log_que->p_queue[0] + p_log_que->in;
 	p_timer = &p_log_buf->timer;
+	p_ts = &p_log_buf->ts;
 
 /*log time stamp*/
 	do_gettimeofday(p_timer);
+	*p_ts = ktime_to_timespec(ktime_get());
 
 /*record data information including length and content*/
 	p_log_buf->len = len;
@@ -3029,8 +3074,9 @@ int btif_log_buf_dmp_in(struct _btif_log_queue_t_ *p_log_que,
 
 /*check if log dynamic output function is enabled or not*/
 	if (output_flag) {
-		pr_debug("BTIF-DBG, dir:%s, %d.%ds len:%d\n",
-		       dir, (int)p_timer->tv_sec, (int)p_timer->tv_usec, len);
+		pr_debug("BTIF-DBG, dir:%s, %d.%ds(%lld.%.9ld) len:%d\n",
+			 dir, (int)p_timer->tv_sec, (int)p_timer->tv_usec,
+			 (long long)p_ts->tv_sec, p_ts->tv_nsec, len);
 /*output buffer content*/
 		btif_dump_data((char *)p_buf, len);
 	}
@@ -3050,6 +3096,7 @@ int btif_log_buf_dmp_out(struct _btif_log_queue_t_ *p_log_que)
 	unsigned int pkt_count = 0;
 	unsigned char *p_dir = NULL;
 	struct timeval *p_timer = NULL;
+	struct timespec *p_ts = NULL;
 	unsigned long flags;
 
 #if 0				/* no matter enable or not, we allowed output */
@@ -3076,14 +3123,17 @@ int btif_log_buf_dmp_out(struct _btif_log_queue_t_ *p_log_que)
 			len = p_log_buf->len;
 			p_buf = p_log_buf->buffer;
 			p_timer = &p_log_buf->timer;
-
+			p_ts = &p_log_buf->ts;
 			len = len > BTIF_LOG_SZ ? BTIF_LOG_SZ : len;
 
-			BTIF_INFO_FUNC("dir:%s, pkt_count:%d, %d.%ds len:%d\n",
+			BTIF_INFO_FUNC(
+			       "dir:%s,pkt_count:%d,%d.%d(%lld.%.9ld)len:%d\n",
 			       p_dir,
 			       pkt_count++,
 			       (int)p_timer->tv_sec,
-			       (int)p_timer->tv_usec, len);
+			       (int)p_timer->tv_usec,
+			       (long long)p_ts->tv_sec,
+			       p_ts->tv_nsec, len);
 /*output buffer content*/
 			btif_dump_data(p_log_buf->buffer, len);
 			out_index++;
@@ -3477,6 +3527,90 @@ void mtk_btif_read_cpu_sw_rst_debug(void)
 	mtk_btif_read_cpu_sw_rst_debug_plat();
 }
 
+static int _btif_rx_thread_lock(struct _mtk_btif_ *p_btif, bool enable)
+{
+	if (enable) {
+		if (mutex_lock_killable(&(p_btif->rx_thread_mtx)))
+			return -1;
+	} else
+		mutex_unlock(&(p_btif->rx_thread_mtx));
+	return 0;
+}
+
+int btif_rx_data_path_lock(struct _mtk_btif_ *p_btif)
+{
+	/* rx_thread_lock takes the mutex, and dma_lock takes the spinlock,
+	 * and we must take the thread_lock before spinlock
+	 */
+	if (_btif_rx_thread_lock(p_btif, true))
+		return E_BTIF_FAIL;
+	hal_rx_dma_lock(true);
+	return 0;
+}
+
+int btif_rx_data_path_unlock(struct _mtk_btif_ *p_btif)
+{
+	hal_rx_dma_lock(false);
+	_btif_rx_thread_lock(p_btif, false);
+	return 0;
+}
+
+int btif_rx_dma_has_pending_data(struct _mtk_btif_ *p_btif)
+{
+	return hal_dma_rx_has_pending(p_btif->p_rx_dma->p_dma_info);
+}
+
+int btif_tx_dma_has_pending_data(struct _mtk_btif_ *p_btif)
+{
+	return hal_dma_tx_has_pending(p_btif->p_tx_dma->p_dma_info);
+}
+
+int btif_rx_buf_has_pending_data(struct _mtk_btif_ *p_btif)
+{
+	struct _btif_buf_str_ *p_bbs;
+
+	p_bbs = &(p_btif->btif_buf);
+	return !BBS_EMPTY(p_bbs);
+}
+
+struct task_struct *btif_rx_thread_get(struct _mtk_btif_ *p_btif)
+{
+	return p_btif->p_task;
+}
+#if BTIF_DBG_SUPPORT
+static void btif_rx_test_handler(struct work_struct *work)
+{
+	struct _mtk_btif_ *p_btif = container_of(to_delayed_work(work),
+						 struct _mtk_btif_,
+						 btif_rx_test_work);
+	struct _mtk_btif_dma_ *p_rx_dma = p_btif->p_rx_dma;
+	struct _MTK_DMA_INFO_STR_ *p_rx_dma_info = p_rx_dma->p_dma_info;
+
+	switch (p_btif->test_case) {
+	case BTIF_TEST_RX_THREAD_BLOCK:
+		BTIF_INFO_FUNC("rx thread block test: release event\n");
+		_btif_rx_btm_sched(p_btif);
+		g_enable_btif_rxd_test = 0;
+		break;
+	case BTIF_TEST_RX_IRQ_BLOCK:
+		BTIF_INFO_FUNC("rx dma irq block test: enable IRQ\n");
+		_btif_irq_ctrl(p_rx_dma_info->p_irq, true);
+		break;
+	};
+}
+
+static int btif_block_rx_dma_irq_test(void)
+{
+	struct _mtk_btif_ *p_btif = &g_btif[0];
+	struct _mtk_btif_dma_ *p_rx_dma = p_btif->p_rx_dma;
+	struct _MTK_DMA_INFO_STR_ *p_rx_dma_info = p_rx_dma->p_dma_info;
+
+	BTIF_INFO_FUNC("rx dma irq block test: disable IRQ\n");
+	_btif_irq_ctrl(p_rx_dma_info->p_irq, false);
+	return schedule_delayed_work(&p_btif->btif_rx_test_work,
+				msecs_to_jiffies(p_btif->delay_sched_time));
+}
+#endif
 /*---------------------------------------------------------------------------*/
 
 module_init(BTIF_init);

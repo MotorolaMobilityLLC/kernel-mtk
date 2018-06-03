@@ -263,6 +263,46 @@ int mtk_wcn_btif_dbg_ctrl(unsigned long u_id, enum _ENUM_BTIF_DBG_ID_ flag);
 bool mtk_wcn_btif_parser_wmt_evt(unsigned long u_id,
 	const char *sub_str, unsigned int str_len);
 
+/*****************************************************************************
+ * FUNCTION
+ *  mtk_btif_exp_rx_has_pending_data
+ * DESCRIPTION
+ *  Check if rx buffer and rx vff have pending data
+ * PARAMETERS
+ *  u_id      [IN] btif index
+ * RETURNS
+ *  positive means has pending data
+ *  zeor means no pending data
+ *  negative means fail
+ *****************************************************************************/
+int mtk_btif_exp_rx_has_pending_data(unsigned long u_id);
+
+/*****************************************************************************
+ * FUNCTION
+ *  mtk_btif_exp_tx_has_pending_data
+ * DESCRIPTION
+ *  Check if tx vff has pending data
+ * PARAMETERS
+ *  u_id      [IN] btif index
+ * RETURNS
+ *  positive means has pending data
+ *  zeor means no pending data
+ *  negative means fail
+ *****************************************************************************/
+int mtk_btif_exp_tx_has_pending_data(unsigned long u_id);
+
+/*****************************************************************************
+ * FUNCTION
+ *  mtk_btif_exp_rx_thread_get
+ * DESCRIPTION
+ *  get btif_rxd thread
+ * PARAMETERS
+ *  u_id      [IN] btif index
+ * RETURNS
+ *  btif_rxd thread task pointer, NULL means fail
+ *****************************************************************************/
+struct task_struct *mtk_btif_exp_rx_thread_get(unsigned long u_id);
+
 int mtk_btif_exp_open_test(void);
 int mtk_btif_exp_close_test(void);
 int mtk_btif_exp_write_test(void);
