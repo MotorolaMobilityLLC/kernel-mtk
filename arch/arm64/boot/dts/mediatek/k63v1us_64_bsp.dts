@@ -292,6 +292,10 @@
 };
 /* Connectivity end */
 
+&mmc0 {
+	status = "okay";
+};
+
 &msdc0 {
 	status = "okay";
 };
