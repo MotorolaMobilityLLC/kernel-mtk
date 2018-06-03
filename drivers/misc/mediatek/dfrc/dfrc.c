@@ -29,7 +29,7 @@
 
 #define DFRC_DEVNAME "mtk_dfrc"
 
-#define DFRC_LOG_LEVEL 5
+#define DFRC_LOG_LEVEL 3
 
 #if (DFRC_LOG_LEVEL > 0)
 #define DFRC_ERR(x, ...) pr_err("[DFRC] " x, ##__VA_ARGS__)
@@ -642,6 +642,13 @@ long dfrc_get_panel_fps(struct DFRC_DRV_REFRESH_RANGE *range)
 
 long dfrc_get_frr_setting(int pid, unsigned long long gl_context_id, int *fps, int *mode)
 {
+	int api;
+
+	return dfrc_get_frr_config(pid, gl_context_id, fps, mode, &api);
+}
+
+long dfrc_get_frr_config(int pid, unsigned long long gl_context_id, int *fps, int *mode, int *api)
+{
 	long res = 0;
 	struct list_head *iter;
 	struct DFRC_DRV_POLICY_NODE *node;
@@ -654,12 +661,17 @@ long dfrc_get_frr_setting(int pid, unsigned long long gl_context_id, int *fps, i
 						DFRC_DRV_API_WHITELIST};
 
 	*fps = DFRC_DRV_FPS_NON_ASSIGN;
+	*api = DFRC_DRV_API_NON_ASSIGN;
 	mutex_lock(&g_mutex_request);
 	*mode = g_request_notified.mode;
-	if (*mode == DFRC_DRV_MODE_DEFAULT)
+	if (*mode == DFRC_DRV_MODE_DEFAULT) {
 		*fps = DFRC_DRV_FPS_NON_ASSIGN;
-	else if (*mode == DFRC_DRV_MODE_ARR)
+		*api = DFRC_DRV_API_NON_ASSIGN;
+	} else if (*mode == DFRC_DRV_MODE_ARR) {
 		*fps = g_request_notified.fps;
+		if (g_request_policy != NULL)
+			*api = g_request_policy->api;
+	}
 	mutex_unlock(&g_mutex_request);
 
 	if (*mode == DFRC_DRV_MODE_FRR) {
@@ -675,8 +687,10 @@ long dfrc_get_frr_setting(int pid, unsigned long long gl_context_id, int *fps, i
 						continue;
 					if (has_upper_bound && *fps > policy->fps) {
 						*fps = policy->fps;
+						*api = policy->api;
 					} else if (!has_upper_bound) {
 						*fps = policy->fps;
+						*api = policy->api;
 						has_upper_bound = true;
 					}
 				}
@@ -694,8 +708,10 @@ long dfrc_get_frr_setting(int pid, unsigned long long gl_context_id, int *fps, i
 						policy->gl_context_id == gl_context_id) {
 					if (has_upper_bound && *fps > policy->fps) {
 						*fps = policy->fps;
+						*api = policy->api;
 					} else {
 						*fps = policy->fps;
+						*api = policy->api;
 						has_upper_bound = true;
 					}
 				}
@@ -710,8 +726,7 @@ long dfrc_get_frr_setting(int pid, unsigned long long gl_context_id, int *fps, i
 	return res;
 }
 
-#if 0
-static long dfrc_find_fg_setting(int pid, int *fps, int *mode)
+static long dfrc_find_pid_setting(int pid, int *fps, int *mode)
 {
 	long res = 0;
 	struct list_head *iter;
@@ -790,7 +805,6 @@ static long dfrc_find_fg_setting(int pid, int *fps, int *mode)
 
 	return res;
 }
-#endif
 
 static long dfrc_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -1332,6 +1346,20 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 	}
 }
 
+static void dfrc_send_fps_info_to_other_module(void)
+{
+	int fps = DFRC_DRV_FPS_NON_ASSIGN;
+	int mode = DFRC_DRV_MODE_ARR;
+	int pid = DFRC_DRV_API_NON_ASSIGN;
+
+	mutex_lock(&g_mutex_data);
+	pid = g_fg_window_info.pid;
+	mutex_unlock(&g_mutex_data);
+
+	dfrc_find_pid_setting(pid, &fps, &mode);
+	/*dfrc_fps_limit_cb(fps);*/
+}
+
 static int dfrc_make_policy_kthread_func(void *data)
 {
 	struct DFRC_DRV_EXPECTED_POLICY expected_policy;
@@ -1358,6 +1386,7 @@ static int dfrc_make_policy_kthread_func(void *data)
 		dfrc_adjust_vsync_locked(&expected_policy);
 		g_processed_count = g_event_count;
 		mutex_unlock(&g_mutex_data);
+		dfrc_send_fps_info_to_other_module();
 	}
 
 	return 0;
