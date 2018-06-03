@@ -108,7 +108,7 @@ static int g_moisture_eint_offset; /* unit is ohm */
 #endif
 
 #ifdef CONFIG_MOISTURE_EXTERNAL_SUPPORT
-static int external_r = 2000000; /* external resistor(2000k ohm),custom define by DTS*/
+static int external_r = 470000; /* external resistor(470k ohm),custom define by DTS*/
 #endif
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
 static int internal_r = 47000; /* internal resistor(47k ohm),custom define by DTB */
@@ -311,14 +311,18 @@ static int accdet_get_dts_data(void)
 	ACCDET_INFO("[accdet_get_dts_data]Start..");
 	node = of_find_matching_node(node, accdet_of_match);
 	if (node) {
+#if defined(CONFIG_MOISTURE_EXTERNAL_SUPPORT) || defined(CONFIG_MOISTURE_INTERNAL_SUPPORT)
+		of_property_read_u32(node, "moisture-water-r", &water_r);
 #ifdef CONFIG_MOISTURE_EXTERNAL_SUPPORT
 		of_property_read_u32(node, "moisture-external-r", &external_r);
+		ACCDET_INFO("[accdet_get_dts_data]MOISTURE_EXTERNAL_SUPPORT moisture-external-r = %d, water_r = %d\n",
+		     external_r, water_r);
 #endif
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
 		of_property_read_u32(node, "moisture-internal-r", &internal_r);
+		ACCDET_INFO("[accdet_get_dts_data]MOISTURE_INTERNAL_SUPPORT moisture-internal-r = %d, water_r = %d\n",
+		     internal_r, water_r);
 #endif
-#if defined(CONFIG_MOISTURE_EXTERNAL_SUPPORT) || defined(CONFIG_MOISTURE_INTERNAL_SUPPORT)
-		of_property_read_u32(node, "moisture-water-r", &water_r);
 #endif
 		of_property_read_u32(node, "accdet-mic-vol", &headset_dts_data.mic_bias_vol);
 		/* for GPIO debounce */
@@ -454,14 +458,14 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	ACCDET_INFO("[moisture_eint_efuse]moisture_eint_offset=%d ohm\n", g_moisture_eint_offset);
 
 	g_moisture_vm = (2800 + g_moisture_vdd_offset) * (water_r + internal_r) / ((water_r + internal_r)
-		+ (8 * g_moisture_eint_offset) + 2250000)
+		+ (8 * g_moisture_eint_offset) + 450000)
 		+ g_moisture_offset / 2;
-	ACCDET_INFO("[moisture_vm]moisture_vm=%d mv\n", g_moisture_vm);
+	ACCDET_INFO("[moisture_vm]MOISTURE_INTERNAL moisture_vm=%d mv\n", g_moisture_vm);
 #endif
 
 #ifdef CONFIG_MOISTURE_EXTERNAL_SUPPORT
 	g_moisture_vm = (2800 + g_moisture_vdd_offset) * water_r / (water_r + external_r) + g_moisture_offset / 2;
-	ACCDET_INFO("[moisture_vm]moisture_vm=%d mv\n", g_moisture_vm);
+	ACCDET_INFO("[moisture_vm]MOISTURE_EXTERNAL moisture_vm=%d mv\n", g_moisture_vm);
 #endif
 }
 
@@ -470,6 +474,7 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int key_check)
 	int vol_val = 0;
 
 	/* use auxadc API */
+
 	vol_val = pmic_get_auxadc_value(AUXADC_LIST_ACCDET);
 	if (key_check) {
 		if (vol_val > g_accdet_auxadc_offset)
@@ -811,6 +816,7 @@ static inline void enable_accdet(u32 state_swctrl)
 	/* enable clock */
 	/* pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_CLK_CLR); */
 	/* Enable PWM */
+
 	pmic_pwrap_write(ACCDET_CON02, pmic_pwrap_read(ACCDET_CON02) | state_swctrl | ACCDET_SWCTRL_ACCDET_EN);
 	/* enable ACCDET unit */
 #ifndef HW_MODE_SUPPORT
@@ -1322,9 +1328,9 @@ static int accdet_irq_handler(void)
 
 #if defined(CONFIG_MOISTURE_INTERNAL_SUPPORT) || defined(CONFIG_MOISTURE_EXTERNAL_SUPPORT)
 	if (g_cur_eint_state == EINT_PIN_PLUG_OUT) {
-		ACCDET_DEBUG("=========[ACCDET]Moisture Enable=============\n\r");
+		ACCDET_INFO("=========[ACCDET]Moisture Enable=============\n\r");
 
-		old_value1 = pmic_pwrap_read(ACCDET_CON0);
+		old_value1 = pmic_pwrap_read(ACCDET_CON00);
 		old_value2 = pmic_pwrap_read(AUDENC_ANA_CON10);
 		old_value3 = pmic_pwrap_read(AUDENC_ANA_CON11);
 
@@ -1342,31 +1348,30 @@ static int accdet_irq_handler(void)
 		/* select VTH for 2v, set 239E bit[10] = 1 */
 		pmic_pwrap_write(AUDENC_ANA_CON11, pmic_pwrap_read(AUDENC_ANA_CON11) | 0x0400);
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
-		/* use internal eint resitance 2M,  set 239E bit[11]=1 [12] = 0*/
-		pmic_pwrap_write(AUDENC_ANA_CON11, pmic_pwrap_read(AUDENC_ANA_CON11) | 0x0800);
-		pmic_pwrap_write(AUDENC_ANA_CON11, pmic_pwrap_read(AUDENC_ANA_CON11) & 0xEFFF);
+		/* use internal eint resitance 500k,  set 239E bit[11]=1 [12] = 1*/
+		pmic_pwrap_write(AUDENC_ANA_CON11, pmic_pwrap_read(AUDENC_ANA_CON11) | 0x1800);
 #endif
 #ifdef CONFIG_MOISTURE_EXTERNAL_SUPPORT
 		/* use external resitance, set 239E bit[11][12] = 0*/
 		pmic_pwrap_write(AUDENC_ANA_CON11, pmic_pwrap_read(AUDENC_ANA_CON11) & 0xE7FF);
 #endif
 
-		dbg_print("Moisture:config done,ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x,CON11:0x%x\n",
-			pmic_pwrap_read(ACCDET_CON0), pmic_pwrap_read(AUDENC_ANA_CON10),
+		ACCDET_INFO("Moisture:config done,ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x,CON11:0x%x\n",
+			pmic_pwrap_read(ACCDET_CON00), pmic_pwrap_read(AUDENC_ANA_CON10),
 			pmic_pwrap_read(AUDENC_ANA_CON11));
 
 		moisture = Accdet_PMIC_IMM_GetOneChannelValue(0);
-		ACCDET_DEBUG("[ACCDET]Moisture Read Auxadc] moisture =  %d\n", moisture);
+		ACCDET_INFO("[ACCDET]Moisture Read Auxadc moisture =  %d\n", moisture);
 
-		dbg_print("Accdet now revert moisture setting-2,write old value\n");
-		pmic_pwrap_write(ACCDET_CON0, old_value1);
+		ACCDET_DEBUG("Accdet now revert moisture setting-2,write old value\n");
+		pmic_pwrap_write(ACCDET_CON00, old_value1);
 		pmic_pwrap_write(AUDENC_ANA_CON10, old_value2);
 		pmic_pwrap_write(AUDENC_ANA_CON11, old_value3);
-		dbg_print("Moisture:revert-2 Done,ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x,CON11:0x%x\n",
-			pmic_pwrap_read(ACCDET_CON0), pmic_pwrap_read(AUDENC_ANA_CON10),
+		ACCDET_INFO("Moisture:revert-2 Done,ACCDET_CON0:0x%x,AUDENC_ANA_CON10:0x%x,CON11:0x%x\n",
+			pmic_pwrap_read(ACCDET_CON00), pmic_pwrap_read(AUDENC_ANA_CON10),
 			pmic_pwrap_read(AUDENC_ANA_CON11));
 	} else if (g_cur_eint_state == EINT_PIN_MOISTURE_DETECED) {
-		ACCDET_DEBUG("ACCDET Moisture plug out detectecd\n");
+		ACCDET_INFO("ACCDET Moisture plug out detectecd\n");
 		if (g_cur_eint_state == EINT_PIN_MOISTURE_DETECED) {/*just for low level trigger*/
 			if (g_accdet_eint_type == IRQ_TYPE_LEVEL_HIGH)
 				pmic_pwrap_write(ACCDET_CON12, reg_val|ACCDET_EINT0_IRQ_POL_B14);
@@ -1390,7 +1395,7 @@ static int accdet_irq_handler(void)
 		return 1;
 	}
 	if (moisture > g_moisture_vm) {
-		ACCDET_DEBUG("ACCDET Moisture plug in detectecd\n");
+		ACCDET_INFO("ACCDET Moisture plug in detectecd\n");
 		if (g_cur_eint_state == EINT_PIN_PLUG_OUT) {/*just for low level trigger*/
 			if (g_accdet_eint_type == IRQ_TYPE_LEVEL_HIGH)
 				pmic_pwrap_write(ACCDET_CON12, reg_val&(~ACCDET_EINT0_IRQ_POL_B14));
