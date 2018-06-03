@@ -323,6 +323,19 @@ static inline int setAFPara(__user stAF_MotorCmd * pstMotorCmd)
 	return 0;
 }
 
+static inline int getOISInfo(__user stAF_MotorOisInfo * pstMotorOisInfo)
+{
+	stAF_MotorOisInfo stMotorOisInfo;
+
+	stMotorOisInfo.i4OISHallPosX = 0;
+	stMotorOisInfo.i4OISHallPosY = 0;
+
+	if (copy_to_user(pstMotorOisInfo, &stMotorOisInfo, sizeof(stAF_MotorOisInfo)))
+		LOG_INF("copy to user failed when getting motor information\n");
+
+	return 0;
+}
+
 /* ////////////////////////////////////////////////////////////// */
 long BU63169AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
@@ -347,6 +360,10 @@ long BU63169AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 
 	case AFIOC_S_SETPARA:
 		i4RetValue = setAFPara((__user stAF_MotorCmd *) (a_u4Param));
+		break;
+
+	case AFIOC_G_MOTOROISINFO:
+		i4RetValue = getOISInfo((__user stAF_MotorOisInfo *) (a_u4Param));
 		break;
 
 	default:
