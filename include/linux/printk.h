@@ -25,7 +25,6 @@ extern int mt_need_uart_console;
 
 #ifdef CONFIG_MTK_AEE_FEATURE
 extern void aee_wdt_zap_locks(void);
-extern void aee_wdt_logbuf_lock(void);
 #endif
 
 #if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_PRINTK_MT_PREFIX)
