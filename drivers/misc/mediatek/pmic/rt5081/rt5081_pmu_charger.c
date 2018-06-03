@@ -903,10 +903,24 @@ static int rt5081_set_aicl_vth(struct rt5081_pmu_charger_data *chg_data,
 static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 	bool en)
 {
-	int ret = 0;
+	int ret = 0, i = 0;
+	const int max_wait_cnt = 200;
+
+	if (en) {
+		/* Workaround for CDP port */
+		for (i = 0; i < max_wait_cnt; i++) {
+			if (is_usb_rdy())
+				break;
+			dev_err(chg_data->dev, "%s: CDP block\n", __func__);
+			msleep(100);
+		}
+		if (i == max_wait_cnt)
+			dev_err(chg_data->dev, "%s: CDP timeout\n", __func__);
+		else
+			dev_info(chg_data->dev, "%s: CDP free\n", __func__);
+	}
 
 	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
-
 	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
 		(chg_data->chip, RT5081_PMU_REG_DEVICETYPE, RT5081_MASK_USBCHGEN);
 
