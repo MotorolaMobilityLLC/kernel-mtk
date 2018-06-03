@@ -565,6 +565,10 @@ struct ufs_hba {
 	u32 dev_quirks;                       /* device quirks */
 	struct device_attribute rpm_info_attr;
 	struct device_attribute spm_info_attr;
+
+
+	int			latency_hist_enabled;
+	struct io_latency_state io_lat_s;
 };
 
 /* Returns true if clocks can be gated. Otherwise false */
