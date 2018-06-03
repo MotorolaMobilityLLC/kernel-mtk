@@ -39,96 +39,69 @@
 /* #define GPU_DVFS_DEBUG */
 #define MTCMOS_READY
 
-#define MTCMOS_ON 1
-#define MTCMOS_OFF 0
+#ifdef GPU_DVFS_DEBUG
+#define MFG_DEBUG(fmt, ...) pr_alert(fmt, ##__VA_ARGS__)
+#else
+#define MFG_DEBUG(...)
+#endif
+
+DEFINE_MUTEX(g_mfg_lock);
 
 struct mtk_config *g_config;
 volatile void *g_MFG_base;
 int g_curFreqID;
-static int g_MTCMOS_flag;
 
-
-#if 0
 /**
  * For GPU idle check
- *
-*/
+ */
 
 static int mtk_check_MFG_idle(void)
 {
 	u32 val;
-
 	val = readl(g_MFG_base + 0xb0);
 	writel(val & ~(0x1), g_MFG_base + 0xb0);
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] 0x130000b0 val = 0x%x\n", readl(g_MFG_base + 0xb0));
-#endif
+	MFG_DEBUG("[MALI] 0x130000b0 val = 0x%x\n", readl(g_MFG_base + 0xb0));
 
 	val = readl(g_MFG_base + 0x10);
 	writel(val | (0x1 << 17), g_MFG_base + 0x10);
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] 0x13000010 val = 0x%x\n", readl(g_MFG_base + 0x10));
-#endif
+	MFG_DEBUG("[MALI] 0x13000010 val = 0x%x\n", readl(g_MFG_base + 0x10));
 
 	val = readl(g_MFG_base + 0x180);
 	writel((val & ~(0xFF)) | 0x3, g_MFG_base + 0x180);
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] 0x13000180 val = 0x%x\n", readl(g_MFG_base + 0x180));
-#endif
+	MFG_DEBUG("[MALI] 0x13000180 val = 0x%x\n", readl(g_MFG_base + 0x180));
 
 	do {
 		val = readl(g_MFG_base + 0x188);
-#ifdef GPU_DVFS_DEBUG
-		pr_alert("[MALI] 0x13000188 val = 0x%x\n", val);
-#endif
+		/* MFG_DEBUG("[MALI] 0x13000188 val = 0x%x\n", val); */
 	} while ((val & 0x4) != 0x4);
 
 	return 0;
 }
-#endif
 
-#if 0
-/**
+/*
  * For GPU suspend/resume
- *
-*/
+ */
 
 static void _mtk_pm_callback_power_suspend(void)
 {
 	struct mtk_config *config = g_config;
 
 	if (!config) {
-		pr_alert("[MALI] power_suspend: mtk_config is NULL\n");
+		pr_alert("[MALI] power_suspend : mtk_config is NULL\n");
 		return;
 	}
 
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] power_suspend: start power off, MTCMOS Status: %d\n", g_MTCMOS_flag);
-#endif /*GPU_DVFS_DEBUG*/
+	mutex_lock(&g_mfg_lock);
 
 	g_curFreqID = mt_gpufreq_get_cur_freq_index();
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
 
-#if 0
-	if (g_MTCMOS_flag == MTCMOS_ON) {
-		mtk_check_MFG_idle();
-
-#ifdef MTCMOS_READY
-		MTKCLK_disable_unprepare(clk_mfg_cg);
-		MTKCLK_disable_unprepare(clk_mfg3);
-		MTKCLK_disable_unprepare(clk_mfg2);
-		MTKCLK_disable_unprepare(clk_mfg1);
-		MTKCLK_disable_unprepare(clk_mfg0);
-#endif
-		g_MTCMOS_flag = MTCMOS_OFF;
-	}
-#endif
-
+	/* Now, turn off pmic power */
 	mt_gpufreq_voltage_enable_set(0);
 
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] power_suspend: power off!\n");
-#endif /*GPU_DVFS_DEBUG*/
+	MFG_DEBUG("[MALI] power suspend");
+
+	mutex_unlock(&g_mfg_lock);
 }
 
 static int _mtk_pm_callback_power_resume(void)
@@ -136,89 +109,58 @@ static int _mtk_pm_callback_power_resume(void)
 	struct mtk_config *config = g_config;
 
 	if (!config) {
-		pr_alert("[MALI] power_resume: mtk_config is NULL\n");
+		pr_alert("[MALI] power_resume : mtk_config is NULL\n");
 		return -1;
 	}
 
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] power_resume: start power on, MTCMOS Status: %d\n", g_MTCMOS_flag);
-#endif /*GPU_DVFS_DEBUG*/
+	mutex_lock(&g_mfg_lock);
 
-	/* Step1: turn gpu pmic power */
+	/* First, turn on pmic power */
 	mt_gpufreq_voltage_enable_set(1);
 
-#if 0
-	if (g_MTCMOS_flag == MTCMOS_OFF) {
-		/* Step2: turn on clocks by sequence */
-		MTKCLK_prepare_enable(clk_mfg0);
-		MTKCLK_prepare_enable(clk_mfg1);
-		MTKCLK_prepare_enable(clk_mfg2);
-		MTKCLK_prepare_enable(clk_mfg3);
-
-		/* Step3: turn on CG */
-		MTKCLK_prepare_enable(clk_mfg_cg);
-		g_MTCMOS_flag = MTCMOS_ON;
-	}
-#endif
-
-	/* set g_vgpu_power_on_flag to MTK_VGPU_POWER_ON */
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
-
-	/* resume frequency before power off */
 	mtk_set_mt_gpufreq_target(g_curFreqID);
 
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] power_resume: power on!\n");
-#endif /*GPU_DVFS_DEBUG*/
+	MFG_DEBUG("[MALI] power resume");
+
+	mutex_unlock(&g_mfg_lock);
 
 	return 1;
 }
-#endif
 
 /**
  * For VGPU Low Power Mode On/Off
- *
 */
+
 static void _mtk_pm_callback_power_off(void)
 {
 	struct mtk_config *config = g_config;
 
 	if (!config) {
-		pr_alert("[MALI] power_off: mtk_config is NULL\n");
+		pr_alert("[MALI] power_off : mtk_config is NULL\n");
 		return;
 	}
 
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] power_off: start lpm on, MTCMOS Status: %d\n", g_MTCMOS_flag);
-#endif /*GPU_DVFS_DEBUG*/
+	mutex_lock(&g_mfg_lock);
 
 	g_curFreqID = mt_gpufreq_get_cur_freq_index();
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
 
-	if (g_MTCMOS_flag == MTCMOS_ON) {
-		mdelay(3);
+	/* Step 1 : turn off clocks by sequence */
+	mtk_check_MFG_idle();
 
-#ifdef MTCMOS_READY
-		MTKCLK_disable_unprepare(clk_mfg_cg);
-		MTKCLK_disable_unprepare(clk_mfg3);
-		MTKCLK_disable_unprepare(clk_mfg2);
-		MTKCLK_disable_unprepare(clk_mfg1);
-		MTKCLK_disable_unprepare(clk_mfg0);
-#endif
-		g_MTCMOS_flag = MTCMOS_OFF;
-	}
+	MTKCLK_disable_unprepare(clk_mfg_cg);
+	MTKCLK_disable_unprepare(clk_mfg3);
+	MTKCLK_disable_unprepare(clk_mfg2);
+	MTKCLK_disable_unprepare(clk_mfg1);
+	MTKCLK_disable_unprepare(clk_mfg0);
 
-	/* mt_gpufreq_voltage_lpm_set(1); */
-	mt_gpufreq_voltage_enable_set(0);
+	/* Step 2 : enter low power mode */
+	mt_gpufreq_voltage_lpm_set(1);
 
-	/* Avoid the current pulse of PMIC IC need 3 ms delay, *
-	 * should follow the mt_gpufreq_voltage_enable_set(0)  *
-	 */
-	mdelay(3);
+	MFG_DEBUG("[MALI] power off");
 
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] power_off: lpm on!\n");
-#endif /*GPU_DVFS_DEBUG*/
+	mutex_unlock(&g_mfg_lock);
 }
 
 static int _mtk_pm_callback_power_on(void)
@@ -226,36 +168,27 @@ static int _mtk_pm_callback_power_on(void)
 	struct mtk_config *config = g_config;
 
 	if (!config) {
-		pr_alert("[MALI] power_on: mtk_config is NULL\n");
+		pr_alert("[MALI] power_on : mtk_config is NULL\n");
 		return -1;
 	}
 
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] power_on: start lpm off, MTCMOS Status: %d\n", g_MTCMOS_flag);
-#endif /*GPU_DVFS_DEBUG*/
+	mutex_lock(&g_mfg_lock);
 
-	/* Step1: turn gpu pmic power */
-	/* mt_gpufreq_voltage_lpm_set(0); */
-	mt_gpufreq_voltage_enable_set(1);
+	/* Step 1 : leave low power mode */
+	mt_gpufreq_voltage_lpm_set(0);
 
-	if (g_MTCMOS_flag == MTCMOS_OFF) {
-		/* Step2: turn on clocks by sequence */
-		MTKCLK_prepare_enable(clk_mfg0);
-		MTKCLK_prepare_enable(clk_mfg1);
-		MTKCLK_prepare_enable(clk_mfg2);
-		MTKCLK_prepare_enable(clk_mfg3);
+	/* Step 2 : turn on clocks by sequence */
+	MTKCLK_prepare_enable(clk_mfg0);
+	MTKCLK_prepare_enable(clk_mfg1);
+	MTKCLK_prepare_enable(clk_mfg2);
+	MTKCLK_prepare_enable(clk_mfg3);
+	MTKCLK_prepare_enable(clk_mfg_cg);
 
-		/* Step3: turn on CG */
-		MTKCLK_prepare_enable(clk_mfg_cg);
-		g_MTCMOS_flag = MTCMOS_ON;
-	}
-
-	/* set g_vgpu_power_on_flag to MTK_VGPU_POWER_ON */
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
 
-#ifdef GPU_DVFS_DEBUG
-	pr_alert("[MALI] power_on: lpm off!\n");
-#endif /*GPU_DVFS_DEBUG*/
+	MFG_DEBUG("[MALI] power on");
+
+	mutex_unlock(&g_mfg_lock);
 
 	return 1;
 }
@@ -263,7 +196,7 @@ static int _mtk_pm_callback_power_on(void)
 /**
  * MTK internal io map function
  *
-*/
+ */
 static void *_mtk_of_ioremap(const char *node_name)
 {
 	struct device_node *node;
@@ -288,8 +221,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	_mtk_pm_callback_power_off();
 }
 
-#if 0
-static void pm_callback_power_suspend(struct kbase_device *kbdev)
+void pm_callback_power_suspend(struct kbase_device *kbdev)
 {
 #if HARD_RESET_AT_POWER_OFF
 		/* Cause a GPU hard reset to test whether we have actually idled the GPU
@@ -305,17 +237,18 @@ static void pm_callback_power_suspend(struct kbase_device *kbdev)
 	_mtk_pm_callback_power_suspend();
 }
 
-static void pm_callback_power_resume(struct kbase_device *kbdev)
+void pm_callback_power_resume(struct kbase_device *kbdev)
 {
 		_mtk_pm_callback_power_resume();
 }
-#endif
 
 struct kbase_pm_callback_conf pm_callbacks = {
 	.power_on_callback = pm_callback_power_on,
 	.power_off_callback = pm_callback_power_off,
 	.power_suspend_callback	 = NULL,
-	.power_resume_callback = NULL
+	.power_resume_callback = NULL,
+	.mtk_power_suspend_callback	= pm_callback_power_suspend,
+	.mtk_power_resume_callback = pm_callback_power_resume
 };
 
 static struct kbase_platform_config versatile_platform_config = {
@@ -391,9 +324,6 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 		pr_alert("cannot get subsys-mfg-cg\n");
 		return PTR_ERR(config->clk_mfg_cg);
 	}
-
-	/* Init MTCMOS flag */
-	g_MTCMOS_flag = MTCMOS_OFF;
 
 	pr_alert("xxxx clk_mfg0:%p\n", config->clk_mfg0);
 	pr_alert("xxxx clk_mfg1:%p\n", config->clk_mfg1);
