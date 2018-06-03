@@ -2029,23 +2029,23 @@
             <count>32</count>
             <i2c_bus0>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus0>
             <i2c_bus1>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus1>
             <i2c_bus2>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus2>
             <i2c_bus3>
                 <speed_kbps>1300</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus3>
             <i2c_bus4>
                 <speed_kbps>400</speed_kbps>
-                <pullPushEn>true</pullPushEn>
+                <pullPushEn>false</pullPushEn>
             </i2c_bus4>
             <i2c_bus5>
                 <speed_kbps>3400</speed_kbps>
