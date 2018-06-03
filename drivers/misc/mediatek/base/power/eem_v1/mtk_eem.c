@@ -348,24 +348,25 @@ static int get_devinfo(void)
 	#if !DVT
 		#if defined(__KERNEL__)
 		/* big */
-		val[0] = get_devinfo_with_index(50);
-		val[1] = get_devinfo_with_index(51);
+		val[0] = get_devinfo_with_index(DEVINFO_IDX_0);
+		val[1] = get_devinfo_with_index(DEVINFO_IDX_1);
 		/* cci */
-		val[2] = get_devinfo_with_index(52);
-		val[3] = get_devinfo_with_index(53);
+		val[2] = get_devinfo_with_index(DEVINFO_IDX_2);
+		val[3] = get_devinfo_with_index(DEVINFO_IDX_3);
 		/* gpu */
-		val[4] = get_devinfo_with_index(54);
-		val[5] = get_devinfo_with_index(55);
+		val[4] = get_devinfo_with_index(DEVINFO_IDX_4);
+		val[5] = get_devinfo_with_index(DEVINFO_IDX_5);
 		/* ll */
-		val[6] = get_devinfo_with_index(56);
-		val[7] = get_devinfo_with_index(57);
+		val[6] = get_devinfo_with_index(DEVINFO_IDX_6);
+		val[7] = get_devinfo_with_index(DEVINFO_IDX_7);
 		/* l */
-		val[8] = get_devinfo_with_index(58);
-		val[9] = get_devinfo_with_index(59);
+		val[8] = get_devinfo_with_index(DEVINFO_IDX_8);
+		val[9] = get_devinfo_with_index(DEVINFO_IDX_9);
 		/* soc */
-		val[10] = get_devinfo_with_index(62);
-		val[11] = get_devinfo_with_index(63);
+		val[10] = get_devinfo_with_index(DEVINFO_IDX_10);
+		val[11] = get_devinfo_with_index(DEVINFO_IDX_11);
 
+		val[12] = get_devinfo_with_index(DEVINFO_IDX_FTPGM);
 		#if EEM_FAKE_EFUSE
 		/* for verification */
 		val[0] = DEVINFO_0;
@@ -380,11 +381,7 @@ static int get_devinfo(void)
 		val[9] = DEVINFO_9;
 		val[10] = DEVINFO_10;
 		val[11] = DEVINFO_11;
-		#endif
-
-		/* get binlevel from efuse */
-		#if (EEM_ENABLE_TINYSYS_SSPM)
-			val[12] = 0;
+		val[12] = 0;
 		#endif
 
 		#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
@@ -414,6 +411,7 @@ static int get_devinfo(void)
 		val[9] = eem_read(0x102A05A4); /* M_HW_RES9 */
 		val[10] = eem_read(0x102A05B0); /* M_HW_RES10 */
 		val[11] = eem_read(0x102A05B4); /* M_HW_RES11 */
+		val[12] = 0;
 		#endif
 	#else
 	/* for DVT */
@@ -429,6 +427,7 @@ static int get_devinfo(void)
 	val[9] = 0x005500C0;
 	val[10] = 0x10BD3C1B;
 	val[11] = 0x005500C0;
+	val[12] = 0;
 	#endif
 	eem_debug("M_HW_RES0 = 0x%08X\n", val[0]);
 	eem_debug("M_HW_RES1 = 0x%08X\n", val[1]);
@@ -969,6 +968,10 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		eem_write(EEMINTEN, 0x00005f01);
 		/* enable EEM INIT measurement */
 		eem_write(EEMEN, 0x00000001);
+#if defined(__MTK_SLT_)
+		mdelay(200);
+#endif
+		udelay(100); /* all banks' phase cannot be set without delay */
 		break;
 
 	case EEM_PHASE_INIT02:
@@ -976,14 +979,17 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		#if EEM_FAKE_EFUSE
 		eem_write(EEM_INIT2VALS,
 			  ((det->AGEVOFFSETIN << 16) & 0xffff0000) |
-			  ((((eem_read(EEM_BASEADDR+0x5E0)>>20) & 0xF) == 0) ?
-						0 : det->DCVOFFSETIN & 0xffff));
+			  ((eem_devinfo.FTPGM_VER == 0) ? 0 : det->DCVOFFSETIN & 0xffff));
 		#else
 		eem_write(EEM_INIT2VALS,
 			  ((det->AGEVOFFSETIN << 16) & 0xffff0000) | (det->DCVOFFSETIN & 0xffff));
 		#endif
 		/* enable EEM INIT measurement */
 		eem_write(EEMEN, 0x00000005);
+#if defined(__MTK_SLT_)
+		mdelay(200);
+#endif
+		udelay(100); /* all banks' phase cannot be set without delay */
 		break;
 
 	case EEM_PHASE_MON:
@@ -996,11 +1002,6 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		WARN_ON(1); /*BUG()*/
 		break;
 	}
-
-	#if defined(__MTK_SLT_)
-		mdelay(200);
-	#endif
-	udelay(100); /* all banks' phase cannot be set without delay */
 	/* mt_ptp_unlock(&flags); */
 
 	FUNC_EXIT(FUNC_LV_HELP);
@@ -5859,6 +5860,27 @@ static int eem_probe(struct platform_device *pdev)
 	for_each_det(det)
 		inherit_base_det(det);
 
+	/* print init2 volt */
+	for_each_det(det) {
+		eem_debug("[%d][%d]init2 volt = 0x%x%x%x%x, 0x%x%x%x%x, 0x%x%x%x%x, 0x%x%x%x%x\n",
+					det->ctrl_id, eem_logs->det_log[det->ctrl_id].num_freq_tbl,
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[15],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[14],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[13],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[12],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[11],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[10],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[9],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[8],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[7],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[6],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[5],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[4],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[3],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[2],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[1],
+					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[0]);
+	}
 	eem_debug("eem_probe ok\n");
 	FUNC_EXIT(FUNC_LV_MODULE);
 

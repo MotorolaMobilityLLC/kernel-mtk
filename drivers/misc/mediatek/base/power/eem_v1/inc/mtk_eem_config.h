@@ -57,21 +57,39 @@
 /* big */
 #define DEVINFO_0 0x10E0660C
 #define DEVINFO_1 0x004E0063
+#define DEVINFO_IDX_0 50
+#define DEVINFO_IDX_1 51
 /* cci */
 #define DEVINFO_2 0x10E077F1
 #define DEVINFO_3 0x004E0063
+#define DEVINFO_IDX_2 52
+#define DEVINFO_IDX_3 53
 /* gpu */
 #define DEVINFO_4 0x10E84E1D
 #define DEVINFO_5 0x00440003
+#define DEVINFO_IDX_4 54
+#define DEVINFO_IDX_5 55
 /* LL */
 #define DEVINFO_6 0x10E097C0
 #define DEVINFO_7 0x004E0063
+#define DEVINFO_IDX_6 56
+#define DEVINFO_IDX_7 57
 /* L */
 #define DEVINFO_8 0x10E081E2
 #define DEVINFO_9 0x004E0063
+#define DEVINFO_IDX_8 58
+#define DEVINFO_IDX_9 59
 /* soc */
 #define DEVINFO_10 0x00000000
 #define DEVINFO_11 0x00000000
+#define DEVINFO_IDX_10 62
+#define DEVINFO_IDX_11 63
+
+/* atever */
+#define DEVINFO_IDX_FTPGM 74
+
+/* segment */
+#define DEVINFO_IDX_SEG 30
 
 /*****************************************
 * eem sw setting

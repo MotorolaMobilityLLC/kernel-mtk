@@ -223,6 +223,12 @@ struct eem_devinfo {
 	unsigned int SOC_LEAKAGE:8;
 	unsigned int SOC_MTDES:8;
 	unsigned int SOC_AGEDELTA:8;
+
+	/* M_HW_RES12 0X11F105E0 */
+	unsigned int OD24_RESERVE:16;
+	unsigned int OD24_PTP3:4;
+	unsigned int FTPGM_VER:4;
+	unsigned int OD24_RESERVE2:8;
 };
 
 /*********************************************
