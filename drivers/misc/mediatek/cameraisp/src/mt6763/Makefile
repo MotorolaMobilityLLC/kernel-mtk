@@ -23,7 +23,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
 obj-y += camera_isp.o
 obj-$(CONFIG_MTK_CAMERA_ISP_TSF_SUPPORT) += camera_tsf.o
-obj-$(CONFIG_MTK_CAMERA_ISP_DPE_SUPPORT) += camera_dpe.o
+#obj-$(CONFIG_MTK_CAMERA_ISP_DPE_SUPPORT) += camera_dpe.o
 obj-$(CONFIG_MTK_CAMERA_ISP_RSC_SUPPORT) += camera_rsc.o
 #obj-$(CONFIG_MTK_CAMERA_ISP_GEPF_SUPPORT) += camera_gepf.o
 #obj-$(CONFIG_MTK_CAMERA_ISP_FD_SUPPORT) += camera_fdvt.o
