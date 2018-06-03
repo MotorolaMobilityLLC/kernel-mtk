@@ -44,7 +44,7 @@ static int tpd_pm_flag;
 static int tpd_tui_flag;
 static int tpd_tui_low_power_skipped;
 DEFINE_MUTEX(tui_lock);
-int tpd_halt = 0;
+int tpd_halt;
 static int tpd_eint_mode = 1;
 static struct task_struct *thread;
 static struct task_struct *update_thread;
@@ -56,8 +56,8 @@ static DECLARE_WAIT_QUEUE_HEAD(pm_waiter);
 static bool gtp_suspend;
 DECLARE_WAIT_QUEUE_HEAD(init_waiter);
 DEFINE_MUTEX(i2c_access);
-unsigned int touch_irq = 0;
-u8 int_type = 0;
+unsigned int touch_irq;
+u8 int_type;
 
 #if (defined(TPD_WARP_START) && defined(TPD_WARP_END))
 static int tpd_wb_start_local[TPD_WARP_CNT] = TPD_WARP_START;
@@ -280,14 +280,14 @@ s32 gt1x_i2c_write(u16 addr, u8 *buffer, s32 len)
 
 #ifdef TPD_REFRESH_RATE
 /*******************************************************
-Function:
-    Write refresh rate
-
-Input:
-    rate: refresh rate N (Duration=5+N ms, N=0~15)
-
-Output:
-    Executive outcomes.0---succeed.
+ * Function:
+ *   Write refresh rate
+ *
+ * Input:
+ *   rate: refresh rate N (Duration=5+N ms, N=0~15)
+ *
+ * Output:
+ *   Executive outcomes.0---succeed.
 *******************************************************/
 static u8 gt1x_set_refresh_rate(u8 rate)
 {
@@ -303,11 +303,11 @@ static u8 gt1x_set_refresh_rate(u8 rate)
 }
 
 /*******************************************************
-Function:
-    Get refresh rate
-
-Output:
-    Refresh rate or error code
+* Function:
+*    Get refresh rate
+*
+* Output:
+*    Refresh rate or error code
 *******************************************************/
 static u8 gt1x_get_refresh_rate(void)
 {
@@ -625,7 +625,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	GTP_INFO("tpd_i2c_probe start.");
 #ifdef CONFIG_MTK_BOOT
-	if (RECOVERY_BOOT == get_boot_mode())
+	if (get_boot_mode() == RECOVERY_BOOT)
 		return 0;
 #endif
 	probe_thread = kthread_run(tpd_registration, (void *)client, "tpd_probe");
@@ -638,16 +638,16 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	wait_event_interruptible_timeout(init_waiter, check_flag == true, 5 * HZ);
 	GTP_INFO("tpd_i2c_probe end.wait_event_interruptible");
 /*
-	do {
-		GTP_INFO("ZH tpd_i2c_probe A count = %d", count);
-		msleep(20);
-		GTP_INFO("ZH tpd_i2c_probe B count = %d", count);
-		count++;
-		if (check_flag == true)
-			break;
-	} while (count < 300);
-	GTP_INFO("tpd_i2c_probe done.count = %d, flag = %d", count, tpd_load_status);
-*/
+ *	do {
+ *		GTP_INFO("ZH tpd_i2c_probe A count = %d", count);
+ *		msleep(20);
+ *		GTP_INFO("ZH tpd_i2c_probe B count = %d", count);
+ *		count++;
+ *		if (check_flag == true)
+ *			break;
+ *	} while (count < 300);
+ *	GTP_INFO("tpd_i2c_probe done.count = %d, flag = %d", count, tpd_load_status);
+ */
 	return 0;
 }
 
@@ -1120,6 +1120,7 @@ static void tpd_suspend(struct device *h)
 static void tpd_resume(struct device *h)
 {
 	s32 ret = -1;
+
 	if (is_resetting || update_info.status)
 		return;
 
