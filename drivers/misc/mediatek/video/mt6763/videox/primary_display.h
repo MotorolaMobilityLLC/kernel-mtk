@@ -377,5 +377,6 @@ int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, disp_p
 		struct cmdqRecStruct *cmdq_handle);
 int primary_display_set_scenario(int scenario);
 enum DISP_MODULE_ENUM _get_dst_module_by_lcm(struct disp_lcm_handle *plcm);
+extern void check_mm0_clk_sts(void);
 
 #endif

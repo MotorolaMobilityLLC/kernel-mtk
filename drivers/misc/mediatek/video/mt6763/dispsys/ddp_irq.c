@@ -31,6 +31,7 @@
 #include "disp_helper.h"
 #include "ddp_dsi.h"
 #include "disp_drv_log.h"
+#include "primary_display.h"
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
@@ -376,6 +377,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 					    DISP_RDMA_INDEX_OFFSET * index));
 			DDPERR("IRQ: RDMA%d underflow! cnt=%d\n", index,
 			       cnt_rdma_underflow[index]++);
+			primary_display_diagnose();
 			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
 				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]++);
 			disp_irq_log_module |= 1 << module;

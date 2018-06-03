@@ -6113,6 +6113,8 @@ int primary_display_diagnose(void)
 	int ret = 0;
 
 	DISPMSG("==== %s ===>\n", __func__);
+	/*confirm mm clk*/
+	check_mm0_clk_sts();
 	dpmgr_check_status(pgc->dpmgr_handle);
 
 	if (primary_display_is_decouple_mode()) {
