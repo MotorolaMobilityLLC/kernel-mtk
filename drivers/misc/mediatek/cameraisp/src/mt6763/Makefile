@@ -28,5 +28,5 @@ obj-$(CONFIG_MTK_CAMERA_ISP_RSC_SUPPORT) += camera_rsc.o
 obj-$(CONFIG_MTK_CAMERA_ISP_GEPF_SUPPORT) += camera_gepf.o
 #obj-$(CONFIG_MTK_CAMERA_ISP_FD_SUPPORT) += camera_fdvt.o
 obj-$(CONFIG_MTK_CAMERA_ISP_WPE_SUPPORT) += camera_wpe.o
-obj-$(CONFIG_MTK_CAMERA_ISP_EAF_SUPPORT) += camera_eaf.o
+#obj-$(CONFIG_MTK_CAMERA_ISP_EAF_SUPPORT) += camera_eaf.o
 
