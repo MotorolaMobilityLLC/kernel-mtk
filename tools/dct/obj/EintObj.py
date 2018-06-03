@@ -244,16 +244,6 @@ class EintObj(ModuleObj):
     def refGpio(self, eint_num, flag):
         gpio_vec= []
 
-        gpio_num = EintData.get_gpioNum(string.atoi(eint_num))
-        if gpio_num >= 0:
-            gpio_vec.append(gpio_num)
-            if flag:
-                item_data = self.__gpio_obj.get_gpioData(gpio_num)
-                mode_idx = item_data.get_defMode()
-                mode_name = EintData.get_modeName(gpio_num, mode_idx)
-                if re.match(r'GPIO[\d]+', mode_name) or re.match(r'EINT[\d]+', mode_name):
-                    return gpio_vec
-
         for key in EintData._builtin_map.keys():
             if string.atoi(eint_num) == string.atoi(key):
                 temp_map = EintData._builtin_map[key]
@@ -270,6 +260,16 @@ class EintObj(ModuleObj):
                             return gpio_vec
 
                 break
+
+        gpio_num = EintData.get_gpioNum(string.atoi(eint_num))
+        if gpio_num >= 0:
+            gpio_vec.append(gpio_num)
+            if flag:
+                item_data = self.__gpio_obj.get_gpioData(gpio_num)
+                mode_idx = item_data.get_defMode()
+                mode_name = EintData.get_modeName(gpio_num, mode_idx)
+                if re.match(r'GPIO[\d]+', mode_name) or re.match(r'EINT[\d]+', mode_name):
+                    return gpio_vec
 
         return gpio_vec
 
@@ -374,15 +374,6 @@ class EintObj_MT6739(EintObj):
     def refGpio_defMode(self, eint_num, flag):
         refGpio_defMode = 0
 
-        gpio_num = EintData.get_gpioNum(string.atoi(eint_num))
-        if gpio_num >= 0:
-            if flag:
-                item_data = self.get_gpioObj().get_gpioData(gpio_num)
-                refGpio_defMode = item_data.get_defMode()
-                mode_name = EintData.get_modeName(gpio_num, refGpio_defMode)
-                if re.match(r'GPIO[\d]+', mode_name) or re.match(r'EINT[\d]+', mode_name):
-                    return refGpio_defMode
-
         for key in EintData._builtin_map.keys():
             if string.atoi(eint_num) == string.atoi(key):
                 temp_map = EintData._builtin_map[key]
@@ -396,5 +387,14 @@ class EintObj_MT6739(EintObj):
                             return refGpio_defMode
 
                 break
+
+        gpio_num = EintData.get_gpioNum(string.atoi(eint_num))
+        if gpio_num >= 0:
+            if flag:
+                item_data = self.get_gpioObj().get_gpioData(gpio_num)
+                refGpio_defMode = item_data.get_defMode()
+                mode_name = EintData.get_modeName(gpio_num, refGpio_defMode)
+                if re.match(r'GPIO[\d]+', mode_name) or re.match(r'EINT[\d]+', mode_name):
+                    return refGpio_defMode
 
         return refGpio_defMode
