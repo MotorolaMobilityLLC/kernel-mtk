@@ -140,7 +140,7 @@ void fgtimer_start(struct fgtimer *timer, int sec)
 	timer->interval = sec;
 	now = timer->stime;
 
-	ft_debug("fgtimer_start dev:%s name:%s %ld %ld %d\n",
+	ft_err("fgtimer_start dev:%s name:%s %ld %ld %d\n",
 	dev_name(timer->dev), timer->name, timer->stime, timer->endtime,
 	timer->interval);
 
@@ -211,7 +211,7 @@ void fg_time_int_handler(void)
 			ptmp = pos;
 			pos = pos->next;
 			list_del_init(ptmp);
-			ft_debug("[fg_time_int_handler] %s %ld %ld %d timeout\n", dev_name(ptr->dev),
+			ft_err("[fg_time_int_handler] %s %ld %ld %d timeout\n", dev_name(ptr->dev),
 			ptr->stime, ptr->endtime, ptr->interval);
 			if (ptr->callback)
 				ptr->callback(ptr);
