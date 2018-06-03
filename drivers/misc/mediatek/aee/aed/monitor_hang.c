@@ -60,6 +60,14 @@ static bool Hang_Detect_first;
 
 
 #define HD_PROC "hang_detect"
+#define	COUNT_SWT_INIT	0
+#define	COUNT_SWT_NORMAL	10
+#define	COUNT_SWT_FIRST		12
+#define	COUNT_ANDROID_REBOOT	11
+#define	COUNT_SWT_CREATE_DB	14
+#define	COUNT_NE_EXCEPION	20
+#define	COUNT_AEE_COREDUMP	40
+#define	COUNT_COREDUMP_DONE	19
 
 /* static DEFINE_SPINLOCK(hd_locked_up); */
 #define HD_INTER 30
@@ -68,20 +76,13 @@ static int hd_detect_enabled;
 static int hd_timeout = 0x7fffffff;
 static int hang_detect_counter = 0x7fffffff;
 static int dump_bt_done;
+#ifdef CONFIG_MTK_ENG_BUILD
+static int hang_aee_warn = 2;
+#endif
+static int system_server_pid;
+static bool watchdog_thread_exist;
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_start_wait);
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_done_wait);
-
-#ifdef CONFIG_MNTL_SUPPORT
-typedef void (*io_hang_detect_dump)(void);
-io_hang_detect_dump mntl_dbg_hang_detect_dump;
-EXPORT_SYMBOL(mntl_dbg_hang_detect_dump);
-#endif
-
-bool __weak mtk_dump_gpu_memory_usage(void)
-{
-	pr_notice("%s:weak function\n", __func__);
-	return false;
-}
 
 /* bleow code is added by QHQ  for hang detect */
 /* For the condition, where kernel is still alive,
@@ -91,6 +92,7 @@ bool __weak mtk_dump_gpu_memory_usage(void)
 static long monitor_hang_ioctl(struct file *file, unsigned int cmd,
 		unsigned long arg);
 #ifdef CONFIG_MTK_ENG_BUILD
+static int monit_hang_flag = 1;
 #define SEQ_printf(m, x...) \
 do {                \
 	if (m)          \
@@ -118,7 +120,32 @@ static int monitor_hang_proc_open(struct inode *inode, struct file *file)
 static ssize_t monitor_hang_proc_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	return 0;
+	char buf[64];
+	long val;
+	int ret;
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+
+	buf[cnt] = 0;
+
+	ret = kstrtoul(buf, 10, (unsigned long *)&val);
+
+	if (ret < 0)
+		return ret;
+
+	if (val == 1) {
+		monit_hang_flag = 1;
+		pr_debug("[hang_detect] enable ke.\n");
+	} else if (val == 0) {
+		monit_hang_flag = 0;
+		pr_debug("[hang_detect] disable ke.\n");
+	}
+
+	return cnt;
 }
 
 static const struct file_operations monitor_hang_fops = {
@@ -332,6 +359,35 @@ static void Log2HangInfo(const char *fmt, ...)
 	Hang_Info_Size += len;
 }
 
+static void Buff2HangInfo(const char *buff, unsigned long size)
+{
+	if (((unsigned long)Hang_Info_Size + size)
+		>= (unsigned long)MaxHangInfoSize) {
+		pr_debug("Buff2HangInfo Buffer overflow len(0x%x), MaxHangInfoSize:0x%lx !!!!!!!\n",
+			 Hang_Info_Size, (long)MaxHangInfoSize);
+		return;
+	}
+	memcpy(&Hang_Info[Hang_Info_Size], buff, size);
+	Hang_Info_Size += size;
+
+}
+
+static void DumpMsdc2HangInfo(void)
+{
+	char *buff_add = NULL;
+	unsigned long buff_size = 0;
+
+	if (get_msdc_aee_buffer) {
+		get_msdc_aee_buffer((unsigned long *)&buff_add, &buff_size);
+		if (buff_size != 0 && buff_add != NULL) {
+			if (buff_size > 30 * 1024) {
+				buff_add = buff_add + buff_size - 30 * 1024;
+				buff_size = 30*1024;
+			}
+			Buff2HangInfo(buff_add, buff_size);
+		}
+	}
+}
 
 static void get_kernel_bt(struct task_struct *tsk)
 {
@@ -350,10 +406,50 @@ static void get_kernel_bt(struct task_struct *tsk)
 				(void *)trace.entries[i]);
 }
 
+static void DumpMemInfo(void)
+{
+	char *buff_add = NULL;
+	int buff_size = 0;
+
+	if (mlog_get_buffer) {
+		mlog_get_buffer(&buff_add, &buff_size);
+		if (buff_size <= 0 || buff_add == NULL) {
+			pr_info("hang_detect: mlog_get_buffer size %d.\n",
+				buff_size);
+			return;
+		}
+
+		if (buff_size > 3*1024) {
+			buff_add = buff_add + buff_size - 3*1024;
+			buff_size = 3*1024;
+		}
+
+		Buff2HangInfo(buff_add, buff_size);
+	}
+}
+
+static long long nsec_high(unsigned long long nsec)
+{
+	if ((long long)nsec < 0) {
+		nsec = -nsec;
+		do_div(nsec, 1000000);
+		return -nsec;
+	}
+	do_div(nsec, 1000000);
+
+	return nsec;
+}
+
+static unsigned long nsec_low(unsigned long long nsec)
+{
+	if ((long long)nsec < 0)
+		nsec = -nsec;
+
+	return do_div(nsec, 1000000);
+}
 
 void sched_show_task_local(struct task_struct *p)
 {
-	unsigned long free = -1;
 	int ppid;
 	unsigned int state;
 	char stat_nam[] = TASK_STATE_TO_CHAR_STR;
@@ -373,22 +469,18 @@ void sched_show_task_local(struct task_struct *p)
 	else
 		LOGV(" %016lx ", thread_saved_pc(p));
 #endif
-#ifdef CONFIG_DEBUG_STACK_USAGE
-	free = stack_not_used(p);
-#endif
 	rcu_read_lock();
 	ppid = task_pid_nr(rcu_dereference(p->real_parent));
 	pid = task_pid_nr(p);
 	rcu_read_unlock();
-	LOGV("%5lu %5d %6d 0x%08lx\n", free,
-	     task_pid_nr(p), ppid, (unsigned long)task_thread_info(p)->flags);
-
 	Log2HangInfo("%-15.15s %c ", p->comm,
-			state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-	Log2HangInfo("%5lu %d %d x%lx\n", free, task_pid_nr(p), ppid,
-		     (unsigned long)task_thread_info(p)->flags);
-	get_kernel_bt(p);	/* Catch kernel-space backtrace */
-
+		state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
+	Log2HangInfo("%lld.%06ld %d %1ld %1ld 0x%lx\n",
+		nsec_high(p->se.sum_exec_runtime),
+		nsec_low(p->se.sum_exec_runtime), task_pid_nr(p),
+		(long long)p->nvcsw, (long long)p->nivcsw,
+		(unsigned long)task_thread_info(p)->flags);
+	get_kernel_bt(p); /* Catch kernel-space backtrace */
 }
 
 static int DumpThreadNativeMaps(pid_t pid)
@@ -400,6 +492,9 @@ static int DumpThreadNativeMaps(pid_t pid)
 	int flags;
 	struct mm_struct *mm;
 	struct pt_regs *user_ret;
+	char tpath[512];
+	char *path_p = NULL;
+	struct path base_path;
 
 	current_task = find_task_by_vpid(pid);	/* get tid task */
 	if (current_task == NULL)
@@ -436,15 +531,15 @@ static int DumpThreadNativeMaps(pid_t pid)
 				/* we only catch code section for reduce
 				 * maps space
 				 */
-				Log2HangInfo("%08lx-%08lx %c%c%c%c %s\n",
-					vma->vm_start,
-					vma->vm_end, flags & VM_READ ?
-						'r' : '-',
+				base_path = file->f_path;
+				path_p = d_path(&base_path, tpath, 512);
+				Log2HangInfo("%08lx-%08lx %c%c%c%c    %s\n",
+					vma->vm_start, vma->vm_end,
+					flags & VM_READ ? 'r' : '-',
 					flags & VM_WRITE ? 'w' : '-',
 					flags & VM_EXEC ? 'x' : '-',
 					flags & VM_MAYSHARE ? 's' : 'p',
-					(unsigned char *)
-					    (file->f_path.dentry->d_iname));
+					path_p);
 			}
 		} else {
 			const char *name = arch_vma_name(vma);
@@ -831,30 +926,26 @@ static void show_bt_by_pid(int task_pid)
 	put_pid(pid);
 }
 
-static void show_state_filter_local(void)
+static void show_state_filter_local(int flag)
 {
 	struct task_struct *g, *p;
 
+	watchdog_thread_exist = false;
+
 	do_each_thread(g, p) {
+		if (strcmp(p->comm, "watchdog") == 0)
+			watchdog_thread_exist = true;
 		/*
 		 * reset the NMI-timeout, listing all files on a slow
 		 * console might take a lot of time:
 		 *discard wdtk-* for it always stay in D state
 		 */
-		if ((Hang_Detect_first || p->state == TASK_RUNNING ||
-			p->state & TASK_UNINTERRUPTIBLE ||
-			(strcmp(p->comm, "watchdog") == 0))
-			&& !strstr(p->comm, "wdtk"))
+		if ((flag == 1 || p->state == TASK_RUNNING ||
+			p->state & TASK_UNINTERRUPTIBLE	||
+			(strcmp(p->comm, "watchdog") == 0)) &&
+			!strstr(p->comm, "wdtk"))
 			sched_show_task_local(p);
 	} while_each_thread(g, p);
-}
-
-static void show_storage_status(void)
-{
-#ifdef CONFIG_MNTL_SUPPORT
-	if (mntl_dbg_hang_detect_dump)
-		mntl_dbg_hang_detect_dump();
-#endif
 }
 
 static void ShowStatus(void)
@@ -864,14 +955,19 @@ static void ShowStatus(void)
 	int dump_count = 0;
 	int i = 0;
 	struct task_struct *task, *system_server_task = NULL;
+	struct task_struct *monkey_task = NULL;
 
 	read_lock(&tasklist_lock);
 	for_each_process(task) {
 		if (dump_count >= DUMP_PROCESS_NUM)
 			break;
 
-		if (strcmp(task->comm, "system_server") == 0)
-			system_server_task = task;
+		if (Hang_Detect_first == false) {
+			if (strcmp(task->comm, "system_server") == 0)
+				system_server_task = task;
+			if (strstr(task->comm, "monkey") != NULL)
+				monkey_task = task;
+		}
 
 		if ((strcmp(task->comm, "surfaceflinger") == 0) ||
 			(strcmp(task->comm, "init") == 0) ||
@@ -886,32 +982,40 @@ static void ShowStatus(void)
 	}
 	read_unlock(&tasklist_lock);
 
-	if (Hang_Detect_first == false)
-		show_state_filter_local();
+	if (Hang_Detect_first == false) {
+		show_state_filter_local(0);
+
+		if (system_server_task != NULL)
+			do_send_sig_info(SIGQUIT, SEND_SIG_FORCED,
+				system_server_task, true);
+		if (monkey_task != NULL)
+			do_send_sig_info(SIGQUIT, SEND_SIG_FORCED,
+				monkey_task, true);
+	} else { /* the last dump */
+		DumpMemInfo();
+		DumpMsdc2HangInfo();
+#ifndef __aarch64__
+		show_state_filter_local(0);
+#endif
+		/* debug_locks = 1; */
+		debug_show_all_locks();
+		show_free_areas(0);
+		if (show_task_mem)
+			show_task_mem();
+#ifdef CONFIG_MTK_ION
+		ion_mm_heap_memory_detail();
+#endif
+#ifdef CONFIG_MTK_GPU_SUPPORT
+		mtk_dump_gpu_memory_usage();
+#endif
+
+	}
 
 	for (i = 0; i < dump_count; i++)
 		show_bt_by_pid(dumppids[i]);
 
 	if (Hang_Detect_first == true)
-		show_state_filter_local();
-
-	if (system_server_task != NULL)
-		do_send_sig_info(SIGQUIT, SEND_SIG_FORCED, system_server_task,
-				true);
-
-	/* debug_locks = 1; */
-	debug_show_all_locks();
-	show_storage_status();
-
-	show_free_areas(0);
-
-#ifdef CONFIG_MTK_ION
-	ion_mm_heap_memory_detail();
-#endif
-#ifdef CONFIG_MTK_GPU_SUPPORT
-	if (mtk_dump_gpu_memory_usage() == false)
-		LOGE("[Hang_Detect] mtk_dump_gpu_memory_usage not support\n");
-#endif
+		show_state_filter_local(1);
 }
 
 void reset_hang_info(void)
@@ -920,9 +1024,40 @@ void reset_hang_info(void)
 	memset(&Hang_Info, 0, MaxHangInfoSize);
 	Hang_Info_Size = 0;
 }
+#ifdef CONFIG_MTK_ENG_BUILD
+static int hang_detect_warn_thread(void *arg)
+{
 
+	/* unsigned long flags; */
+	struct sched_param param = {
+		.sched_priority = 99
+	};
+
+	char string_tmp[30];
+
+	sched_setscheduler(current, SCHED_FIFO, &param);
+	snprintf(string_tmp, 30, "hang_detect:[pid:%d]\n", system_server_pid);
+	sched_setscheduler(current, SCHED_FIFO, &param);
+	pr_notice("hang_detect create warning api: %s.", string_tmp);
+#ifdef __aarch64__
+		aee_kernel_warning_api(__FILE__, __LINE__,
+		DB_OPT_PROCESS_COREDUMP | DB_OPT_AARCH64,
+		"maybe have other hang_detect KE DB, please send together!!\n",
+		string_tmp);
+#else
+		aee_kernel_warning_api(__FILE__, __LINE__,
+		DB_OPT_PROCESS_COREDUMP,
+		"maybe have other hang_detect KE DB, please send together!!\n",
+		string_tmp);
+#endif
+	return 0;
+}
+#endif
 static int hang_detect_dump_thread(void *arg)
 {
+#ifdef CONFIG_MTK_ENG_BUILD
+	struct task_struct *hd_thread;
+#endif
 
 	/* unsigned long flags; */
 	struct sched_param param = {
@@ -934,6 +1069,14 @@ static int hang_detect_dump_thread(void *arg)
 	dump_bt_done = 1;
 	while (1) {
 		wait_event_interruptible(dump_bt_start_wait, dump_bt_done == 0);
+#ifdef CONFIG_MTK_ENG_BUILD
+		if (hang_aee_warn == 1) {
+			hd_thread = kthread_create(hang_detect_warn_thread,
+				NULL, "hang_detect2");
+			if (hd_thread != NULL)
+				wake_up_process(hd_thread);
+		} else
+#endif
 		ShowStatus();
 		dump_bt_done = 1;
 		wake_up_interruptible(&dump_bt_done_wait);
@@ -958,10 +1101,26 @@ static int hang_detect_thread(void *arg)
 		pr_info(
 			"[Hang_Detect] hang_detect thread counts down %d:%d, status %d.\n",
 			hang_detect_counter, hd_timeout, hd_detect_enabled);
-		if ((hd_detect_enabled == 1)
-		    && (FindTaskByName("system_server") != -1)) {
+		system_server_pid = FindTaskByName("system_server");
+
+		if ((hd_detect_enabled == 1) && (system_server_pid != -1)) {
 #ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
+#endif
+#ifdef CONFIG_MTK_ENG_BUILD
+			if (hang_detect_counter == 1 && hang_aee_warn == 2
+				&& hd_timeout != 11) {
+				hang_detect_counter = hd_timeout / 2;
+				dump_bt_done = 0;
+				hang_aee_warn = 1;
+				wake_up_interruptible(&dump_bt_start_wait);
+				if (dump_bt_done != 1)
+					wait_event_interruptible_timeout(
+					dump_bt_done_wait, dump_bt_done == 1,
+					HZ*10);
+				hang_aee_warn = 0;
+
+			}
 #endif
 			if (hang_detect_counter <= 0) {
 				Log2HangInfo(
@@ -978,6 +1137,13 @@ static int hang_detect_thread(void *arg)
 					pr_notice(
 						"[Hang_Detect] aee mode is %d, we should triger KE...\n",
 						aee_mode);
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	if (watchdog_thread_exist == false)
+		aee_rr_rec_hang_detect_timeout_count(COUNT_ANDROID_REBOOT);
+#endif
+#ifdef CONFIG_MTK_ENG_BUILD
+					if (monit_hang_flag == 1)
+#endif
 					BUG();
 				} else
 					Hang_Detect_first = true;

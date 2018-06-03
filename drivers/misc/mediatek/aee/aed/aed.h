@@ -236,4 +236,8 @@ extern int aee_dump_ccci_debug_info(int md_id, void **addr, int *size);
 extern void show_stack(struct task_struct *tsk, unsigned long *sp);
 extern int aee_mode;
 extern void aee_kernel_RT_Monitor_api(int lParam);
+extern void mlog_get_buffer(char **ptr, int *size)__attribute__((weak));
+extern void get_msdc_aee_buffer(unsigned long *buff,
+	unsigned long *size)__attribute__((weak));
+extern void show_task_mem(void)__attribute__((weak));
 #endif
