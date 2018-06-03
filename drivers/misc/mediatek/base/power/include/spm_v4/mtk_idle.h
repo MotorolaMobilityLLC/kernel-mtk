@@ -34,10 +34,15 @@ extern void disable_soidle_by_bit(int id);
 /* return 0: non-active, 1:active */
 extern int dpidle_active_status(void);
 
-#define DPIDLE_START    1
-#define DPIDLE_END      2
-#define SOIDLE_START    3
-#define SOIDLE_END      4
+enum spm_idle_notify_id {
+	NOTIFY_DPIDLE_ENTER = 0,
+	NOTIFY_DPIDLE_LEAVE,
+	NOTIFY_SOIDLE_ENTER,
+	NOTIFY_SOIDLE_LEAVE,
+	NOTIFY_SOIDLE3_ENTER,
+	NOTIFY_SOIDLE3_LEAVE,
+};
+
 extern int mtk_idle_notifier_register(struct notifier_block *n);
 extern void mtk_idle_notifier_unregister(struct notifier_block *n);
 
