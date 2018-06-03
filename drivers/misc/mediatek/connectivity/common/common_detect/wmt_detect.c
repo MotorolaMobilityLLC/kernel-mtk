@@ -264,6 +264,8 @@ int wmt_detect_set_chip_type(int chip_id)
 	case 0x6632:
 		g_chip_type = WMT_CHIP_TYPE_COMBO;
 		break;
+	case -1:
+		break;
 	default:
 		g_chip_type = WMT_CHIP_TYPE_SOC;
 		break;
