@@ -282,12 +282,12 @@ static gpufreq_input_boost_notify g_pGpufreq_input_boost_notify;
 static gpufreq_ptpod_update_notify g_pGpufreq_ptpod_update_notify;
 
 /* Efuse Device ID */
-enum {
+enum chip_ip_table {
 	ID_MT6739 = 0,
 	ID_MT6739TW,
-} chip_ip_table;
+};
 
-static chip_ip_table device_id;
+static enum chip_ip_table device_id;
 
 
 /***************************
