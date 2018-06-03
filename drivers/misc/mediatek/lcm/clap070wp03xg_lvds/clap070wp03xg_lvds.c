@@ -48,14 +48,6 @@
 static struct regulator *lcm_vgp;
 static unsigned int GPIO_LCD_PWR;
 
-void lcm_request_gpio_control(struct device *dev)
-{
-	GPIO_LCD_PWR = of_get_named_gpio(dev->of_node, "gpio_lcd_pwr", 0);
-
-	gpio_request(GPIO_LCD_PWR, "GPIO_LCD_PWR");
-	pr_debug("[KE/LCM] GPIO_LCD_PWR = 0x%x\n", GPIO_LCD_PWR);
-}
-
 /* get LDO supply */
 static int lcm_get_vgp_supply(struct device *dev)
 {
@@ -73,7 +65,6 @@ static int lcm_get_vgp_supply(struct device *dev)
 
 	pr_debug("LCM: lcm get supply ok.\n");
 
-	ret = regulator_enable(lcm_vgp_ldo);
 	/* get current voltage settings */
 	ret = regulator_get_voltage(lcm_vgp_ldo);
 	pr_debug("lcm LDO voltage = %d in LK stage\n", ret);
@@ -104,9 +95,9 @@ int lcm_vgp_supply_enable(void)
 	/* get voltage settings again */
 	volt = regulator_get_voltage(lcm_vgp);
 	if (volt == 1800000)
-		pr_err("LCM: check regulator voltage=1800000 pass!\n");
+		pr_debug("LCM: check regulator voltage=1800000 pass!\n");
 	else
-		pr_err("LCM: check regulator voltage=1800000 fail! (voltage: %d)\n", volt);
+		pr_debug("LCM: check regulator voltage=1800000 fail! (voltage: %d)\n", volt);
 
 	ret = regulator_enable(lcm_vgp);
 	if (ret != 0) {
@@ -128,7 +119,7 @@ int lcm_vgp_supply_disable(void)
 	/* disable regulator */
 	isenable = regulator_is_enabled(lcm_vgp);
 
-	pr_debug("LCM: lcm query regulator enable status[0x%x]\n", isenable);
+	pr_debug("LCM: lcm query regulator enable status[%d]\n", isenable);
 
 	if (isenable) {
 		ret = regulator_disable(lcm_vgp);
@@ -145,36 +136,56 @@ int lcm_vgp_supply_disable(void)
 	return ret;
 }
 
-static int lcm_probe(struct device *dev)
+void lcm_request_gpio_control(struct device *dev)
 {
-	lcm_get_vgp_supply(dev);
+	GPIO_LCD_PWR = of_get_named_gpio(dev->of_node, "gpio_lcd_pwr", 0);
+	gpio_request(GPIO_LCD_PWR, "GPIO_LCD_PWR");
+}
+
+static int lcm_driver_probe(struct device *dev, void const *data)
+{
 	lcm_request_gpio_control(dev);
+	lcm_get_vgp_supply(dev);
 	lcm_vgp_supply_enable();
 
 	return 0;
 }
 
-static const struct of_device_id lcm_of_ids[] = {
-	{.compatible = "mediatek,lcm",},
-	{}
+static const struct of_device_id lcm_platform_of_match[] = {
+	{
+		.compatible = "cpt,clap070wp03xg_lvds",
+		.data = 0,
+	}, {
+		/* sentinel */
+	}
 };
 
+MODULE_DEVICE_TABLE(of, platform_of_match);
+
+static int lcm_platform_probe(struct platform_device *pdev)
+{
+	const struct of_device_id *id;
+
+	id = of_match_node(lcm_platform_of_match, pdev->dev.of_node);
+	if (!id)
+		return -ENODEV;
+
+	return lcm_driver_probe(&pdev->dev, id->data);
+}
+
 static struct platform_driver lcm_driver = {
+	.probe = lcm_platform_probe,
 	.driver = {
-		   .name = "mtk_lcm",
+		   .name = "clap070wp03xg_lvds",
 		   .owner = THIS_MODULE,
-		   .probe = lcm_probe,
-#ifdef CONFIG_OF
-		   .of_match_table = lcm_of_ids,
-#endif
-		   },
+		   .of_match_table = lcm_platform_of_match,
+	},
 };
 
 static int __init lcm_init(void)
 {
-	pr_notice("LCM: Register lcm driver\n");
 	if (platform_driver_register(&lcm_driver)) {
-		pr_err("LCM: failed to register disp driver\n");
+		pr_err("LCM: failed to register this driver!\n");
 		return -ENODEV;
 	}
 
@@ -184,12 +195,12 @@ static int __init lcm_init(void)
 static void __exit lcm_exit(void)
 {
 	platform_driver_unregister(&lcm_driver);
-	pr_notice("LCM: Unregister lcm driver done\n");
 }
+
 late_initcall(lcm_init);
 module_exit(lcm_exit);
 MODULE_AUTHOR("mediatek");
-MODULE_DESCRIPTION("Display subsystem Driver");
+MODULE_DESCRIPTION("LCM display subsystem driver");
 MODULE_LICENSE("GPL");
 #endif
 /* --------------------------------------------------------------------------- */
