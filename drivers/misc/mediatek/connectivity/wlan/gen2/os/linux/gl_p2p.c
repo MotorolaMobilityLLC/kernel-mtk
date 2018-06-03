@@ -597,8 +597,8 @@ BOOLEAN p2pNetRegister(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgIsRtnlLockAcquired)
 	/* register for net device */
 	if (register_netdev(prGlueInfo->prP2PInfo->prDevHandler) < 0) {
 		DBGLOG(P2P, WARN, "unable to register netdevice for p2p\n");
-
-		free_netdev(prGlueInfo->prP2PInfo->prDevHandler);
+		/* free dev in glUnregisterP2P() */
+		/* free_netdev(prGlueInfo->prP2PInfo->prDevHandler); */
 
 		ret = FALSE;
 	} else {
