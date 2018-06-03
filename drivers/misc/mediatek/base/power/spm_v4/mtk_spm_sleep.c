@@ -190,6 +190,9 @@ static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
 	spm_suspend_post_process(pwrctrl);
 }
 
+int sleep_ddr_status;
+int sleep_vcore_status;
+
 static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 {
 	unsigned int wr;
@@ -220,8 +223,9 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 	ddr_status = vcorefs_get_curr_ddr();
 	vcore_status = vcorefs_get_curr_vcore();
 
-	spm_crit2("suspend dormant state = %d, ddr = %d, vcore = %d, spm_sleep_count = %d\n",
-		  spm_dormant_sta, ddr_status, vcore_status, spm_sleep_count);
+	spm_crit2("dormant = %d, s_ddr = %d, s_vcore = %d, ddr = %d, vcore = %d, sleep_count = %d\n",
+		  spm_dormant_sta, sleep_ddr_status, sleep_vcore_status,
+		  ddr_status, vcore_status, spm_sleep_count);
 	if (spm_ap_mdsrc_req_cnt != 0)
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));

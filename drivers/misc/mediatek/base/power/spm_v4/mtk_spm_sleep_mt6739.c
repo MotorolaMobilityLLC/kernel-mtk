@@ -231,6 +231,9 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
+	sleep_ddr_status = vcorefs_get_curr_ddr();
+	sleep_vcore_status = vcorefs_get_curr_vcore();
+
 	if (__spm_get_md_srcclkena_setting())
 		dvfsrc_mdsrclkena_control_nolock(1);
 }
