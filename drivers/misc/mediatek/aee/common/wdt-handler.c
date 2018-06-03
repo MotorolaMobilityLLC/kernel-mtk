@@ -98,7 +98,7 @@ void aee_wdt_dump_info(void)
 
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_WDT_INFO);
 	if (wdt_log_length == 0) {
-		LOGE("\n No log for WDT\n");
+		pr_notice("\n No log for WDT\n");
 		mt_dump_sched_traces();
 #ifdef CONFIG_SCHED_DEBUG
 		/* sysrq_sched_debug_show_at_KE(); */
@@ -107,24 +107,24 @@ void aee_wdt_dump_info(void)
 	}
 
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_WDT_PERCPU);
-	LOGE("==========================================");
+	pr_info("==========================================");
 	for (cpu = 0; cpu < NR_CPUS; cpu++) {
 		if ((wdt_percpu_log_buf[cpu]) && (wdt_percpu_log_length[cpu])) {
-			/* LOGE( "=====> wdt_percpu_log_buf[%d], length=%d ", cpu, wdt_percpu_log_length[cpu]); */
-			LOGE("%s", wdt_percpu_log_buf[cpu]);
-			LOGE("Backtrace : ");
+			/* pr_info( "=====> wdt_percpu_log_buf[%d], length=%d ", cpu, wdt_percpu_log_length[cpu]); */
+			pr_info("%s", wdt_percpu_log_buf[cpu]);
+			pr_info("Backtrace : ");
 			for (i = 0; i < MAX_EXCEPTION_FRAME; i++) {
 				if (wdt_percpu_stackframe[cpu][i] == 0)
 					break;
-				LOGE("%08lx, ", wdt_percpu_stackframe[cpu][i]);
+				pr_info("%08lx, ", wdt_percpu_stackframe[cpu][i]);
 			}
-			LOGE("==========================================");
+			pr_info("==========================================");
 		}
 	}
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_WDT_LOG);
 	/* printk temporary buffer printk_buf[1024]. To avoid char loss, add 4 bytes here */
 	while (wdt_log_length > 0) {
-		LOGE("%s", printk_buf);
+		pr_info("%s", printk_buf);
 		printk_buf += 1020;
 		wdt_log_length -= 1020;
 	}
@@ -136,9 +136,9 @@ void aee_wdt_dump_info(void)
 
 	for_each_process(task) {
 		if (task->state == 0) {
-			LOGE("PID: %d, name: %s\n", task->pid, task->comm);
+			pr_notice("PID: %d, name: %s\n", task->pid, task->comm);
 			show_stack(task, NULL);
-			LOGE("\n");
+			pr_notice("\n");
 		}
 	}
 
@@ -530,10 +530,10 @@ static int __init aee_wdt_init(void)
 	atomic_set(&wdt_enter_fiq, 0);
 	for (i = 0; i < NR_CPUS; i++) {
 		wdt_percpu_log_buf[i] = kzalloc(WDT_PERCPU_LOG_SIZE, GFP_KERNEL);
-		if (wdt_percpu_log_buf[i] == NULL)
-			LOGE("\n aee_common_init : kmalloc fail\n");
 		wdt_percpu_log_length[i] = 0;
 		wdt_percpu_preempt_cnt[i] = 0;
+		if (wdt_percpu_log_buf[i] == NULL)
+			pr_notice("\n aee_common_init : kmalloc fail\n");
 	}
 	memset_io(wdt_log_buf, 0, sizeof(wdt_log_buf));
 	memset_io(regs_buffer_bin, 0, sizeof(regs_buffer_bin));
