@@ -35,7 +35,6 @@
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
 
-static unsigned long long rdma_bw;
 static unsigned int rdma_fps[RDMA_INSTANCES] = { 60, 60 };
 static struct golden_setting_context *rdma_golden_setting;
 
@@ -402,8 +401,6 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 		do_div(consume_rate, 1000);
 	}
 	consume_rate *= 1250;
-	rdma_bw = consume_rate;
-	do_div(rdma_bw, frame_rate * 1000 * 1000);
 	do_div(consume_rate, 16*1000);
 	consume_rate_div_tmp = consume_rate;
 	do_div(consume_rate_div_tmp, 100);
@@ -1017,6 +1014,9 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 	unsigned int height = pConfig->dst_dirty ? pConfig->dst_h : r_config->height;
 	struct golden_setting_context *p_golden_setting = pConfig->p_golden_setting_context;
 	enum UNIFIED_COLOR_FMT inFormat = r_config->inputFormat;
+	enum UNIFIED_COLOR_FMT bwFormat;
+	unsigned int bwBpp;
+	unsigned long long rdma_bw;
 
 	if (pConfig->fps)
 		rdma_fps[rdma_index(module)] = pConfig->fps / 100;
@@ -1041,7 +1041,7 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		__func__, pConfig->rdma_config.bg_ctrl.top, pConfig->rdma_config.bg_ctrl.bottom,
 		pConfig->rdma_config.bg_ctrl.left, pConfig->rdma_config.bg_ctrl.right,
 		r_config->dst_x, r_config->dst_y, r_config->dst_w, r_config->dst_h);
-	DDPDBG("width=%d,height=%d,bw:%llu\n", width, height, rdma_bw);
+	DDPDBG("width=%d,height=%d\n", width, height);
 	/*PARGB,etc need convert ARGB,etc*/
 	ufmt_disable_P(r_config->inputFormat, &inFormat);
 	rdma_config(module,
@@ -1053,7 +1053,16 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		    height,
 		    lcm_param->dsi.ufoe_enable,
 		    r_config->security, r_config->yuv_range,
-		    &(r_config->bg_ctrl), handle, p_golden_setting, pConfig->lcm_bpp);
+			&(r_config->bg_ctrl), handle, p_golden_setting, pConfig->lcm_bpp);
+
+	/* calculate bandwidth */
+	bwFormat = (mode == RDMA_MODE_DIRECT_LINK) ? UFMT_RGB888 : inFormat;
+	bwBpp = ufmt_get_Bpp(bwFormat);
+	rdma_bw = (unsigned long long)width * height * bwBpp;
+	do_div(rdma_bw, 1000);
+	rdma_bw *= 1250;
+	do_div(rdma_bw, 1000 * 1000);
+	DDPMSG("R:width=%u,height=%u,Bpp:%u,bw:%llu\n", width, height, bwBpp, rdma_bw);
 
 	/* bandwidth report */
 	if (module == DISP_MODULE_RDMA0)
