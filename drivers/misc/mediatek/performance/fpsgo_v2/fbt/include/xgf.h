@@ -92,4 +92,6 @@ void fpsgo_ctrl2xgf_switch_xgf(int val);
 int fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd, unsigned long long *sleep_time);
 void fpsgo_fstb2xgf_do_recycle(int fstb_active);
 
+int __init init_xgf(void);
+
 #endif

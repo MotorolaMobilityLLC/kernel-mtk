@@ -1480,6 +1480,8 @@ static int fbt_cpu_dfrc_ntf_cb(unsigned int fps_limit)
 	return 0;
 }
 
+inline void fpsgo_sched_nominate(pid_t *tid, int *util) { }
+
 int switch_fbt_cpuset(int enable)
 {
 	unsigned long flags;

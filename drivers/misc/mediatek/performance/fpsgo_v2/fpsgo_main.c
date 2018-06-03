@@ -26,6 +26,9 @@
 #include "fps_composer.h"
 #include "xgf.h"
 
+#define CREATE_TRACE_POINTS
+#include <trace/events/fpsgo.h>
+
 #ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 #include "dfrc.h"
 #include "dfrc_drv.h"
@@ -640,7 +643,7 @@ int fpsgo_fstb_percentile_frametime(int ratio)
 	return switch_percentile_frametime(ratio);
 }
 
-static void fpsgo_exit(void)
+static void __exit fpsgo_exit(void)
 {
 	fpsgo_notifier_wq_cb_enable(0);
 

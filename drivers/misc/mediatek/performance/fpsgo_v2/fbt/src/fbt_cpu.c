@@ -60,6 +60,7 @@
 #include "fbt_cpu_platform.h"
 #include "../fstb/fstb.h"
 #include "xgf.h"
+#include "mini_top.h"
 #include "fps_composer.h"
 
 #define GED_VSYNC_MISS_QUANTUM_NS 16666666
@@ -2014,8 +2015,10 @@ static ssize_t fbt_thread_info_write(struct file *flip,
 
 FBT_DEBUGFS_ENTRY(thread_info);
 
-void fbt_cpu_exit(void)
+void __exit fbt_cpu_exit(void)
 {
+	minitop_exit();
+
 	kfree(base_opp);
 	kfree(clus_obv);
 	kfree(cpu_dvfs);
@@ -2023,7 +2026,7 @@ void fbt_cpu_exit(void)
 	kfree(cpu_capacity_ratio);
 }
 
-int fbt_cpu_init(void)
+int __init fbt_cpu_init(void)
 {
 	bhr = 5;
 	bhr_opp = 1;
@@ -2090,6 +2093,10 @@ int fbt_cpu_init(void)
 
 	INIT_LIST_HEAD(&loading_list);
 	INIT_LIST_HEAD(&blc_list);
+
+	/* sub-module initialization */
+	init_xgf();
+	minitop_init();
 
 	return 0;
 }

@@ -922,7 +922,7 @@ static ssize_t fspgo_com_connect_api_info_write(struct file *flip,
 
 FPSGO_COM_DEBUGFS_ENTRY(connect_api_info);
 
-void fpsgo_composer_exit(void)
+void __exit fpsgo_composer_exit(void)
 {
 
 }

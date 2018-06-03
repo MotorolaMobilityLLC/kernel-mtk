@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 MediaTek Inc.
+ * Copyright (C) 2018 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -14,26 +14,39 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _FPSGO_V2_COMMON_H_
-#define _FPSGO_V2_COMMON_H_
+#ifndef _FPSGO_MINI_TOP_H_
+#define _FPSGO_MINI_TOP_H_
 
-#include "fpsgo_common.h"
+#include <linux/rbtree.h>
+#include <linux/list.h>
 
-#ifdef CONFIG_MTK_FPSGO
+struct tid_util {
+	pid_t tid;
+	int util;
+};
 
-#define fpsgo_systrace_c_fbt(pid, val, fmt...) \
-	fpsgo_systrace_c(FPSGO_DEBUG_MANDATORY, pid, val, fmt)
+struct minitop_work {
+	pid_t tid[NR_CPUS];
+	int util[NR_CPUS];
+	struct work_struct work;
+	struct list_head link;
+};
 
-void fpsgo_switch_enable(int enable);
-int fpsgo_is_enable(void);
-void fpsgo_sched_nominate(pid_t *, int *);
+struct minitop_rec {
+	pid_t tid;
+	struct rb_node node;
 
-#else
+	u64 init_runtime;
+	u64 init_timestamp;
+	u64 ratio;
+	u32 life;
+	int debnc;
+	int ever;
+};
 
-static inline void fpsgo_switch_enable(int enable) { }
-static inline int fpsgo_is_enable(void) { return 0; }
-static inline void fpsgo_sched_nominate(pid_t *tid, int *util) { }
+int __init minitop_init(void);
+void __exit minitop_exit(void);
 
-#endif
+extern void (*fpsgo_sched_nominate_fp)(pid_t *, int *);
 
 #endif

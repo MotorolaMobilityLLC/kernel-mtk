@@ -61,7 +61,7 @@ TRACE_EVENT(xgf_intvl,
 			__entry->dur)
 );
 
-TRACE_EVENT(xgf_log,
+DECLARE_EVENT_CLASS(fpsgo_log_template,
 
 	TP_PROTO(char *log),
 
@@ -77,6 +77,15 @@ TRACE_EVENT(xgf_log,
 
 	TP_printk("%s", __get_str(msg))
 );
+
+DEFINE_EVENT(fpsgo_log_template, xgf_log,
+	     TP_PROTO(char *log),
+	     TP_ARGS(log));
+
+DEFINE_EVENT(fpsgo_log_template, minitop_log,
+	     TP_PROTO(char *log),
+	     TP_ARGS(log));
+
 #endif /* _TRACE_FPSGO_H */
 
 /* This part must be outside protection */

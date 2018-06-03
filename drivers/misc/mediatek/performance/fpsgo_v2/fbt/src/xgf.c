@@ -28,7 +28,6 @@
 #include "../../../perf_ioctl/perf_ioctl.h"
 #include <mt-plat/fpsgo_common.h>
 
-#define CREATE_TRACE_POINTS
 #include <trace/events/fpsgo.h>
 
 #include "xgf.h"
@@ -791,7 +790,7 @@ static ssize_t fpsgo_black_write(struct file *flip,
 
 FPSGO_DEBUGFS_ENTRY(black);
 
-static int __init init_xgf(void)
+int __init init_xgf(void)
 {
 	if (!fpsgo_debugfs_dir)
 		return -ENODEV;
@@ -809,5 +808,3 @@ static int __init init_xgf(void)
 
 	return 0;
 }
-
-late_initcall(init_xgf);
