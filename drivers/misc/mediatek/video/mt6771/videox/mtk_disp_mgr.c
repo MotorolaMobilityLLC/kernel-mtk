@@ -1389,7 +1389,7 @@ int _ioctl_wait_self_refresh_trigger(unsigned long arg)
 	/*  wait for repaint */
 	ret = wait_event_interruptible(repaint_wq, !list_empty(&repaint_job_queue));
 	if (ret < 0) {
-		DISPERR("[REPAINT] wait_event interrupted unexpectedly, ret: %d\n", ret);
+		DISPMSG("[REPAINT] wait_event interrupted unexpectedly, ret: %d\n", ret);
 		return ret;
 	}
 
