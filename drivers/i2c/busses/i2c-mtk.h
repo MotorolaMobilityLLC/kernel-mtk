@@ -366,8 +366,7 @@ struct mt_i2c {
 	u32 ch_offset;
 	u32 dma_ch_offset_default;
 	u32 dma_ch_offset;
-	bool have_scp;
-	int scp_ch;
+	bool skip_scp_sema;
 	bool have_ccu;
 	u32 ccu_offset;
 	unsigned long main_clk;
