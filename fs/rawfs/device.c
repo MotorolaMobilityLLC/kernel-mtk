@@ -68,13 +68,12 @@ int rawfs_dev_ram_erase_block(struct super_block *sb, int block_no)
 {
 
 	struct rawfs_sb_info *rawfs_sb = RAWFS_SB(sb);
-	char *fake_block = rawfs_sb->fake_block;
+	char *fake_block = rawfs_sb->fake_block[block_no];
 
 	RAWFS_PRINT(RAWFS_DBG_DEVICE, "rawfs_dev_ram_erase_block: %d\n", block_no);
 
 	if (block_no < RAWFS_NAND_BLOCKS(rawfs_sb)) {
-		memset(&fake_block[rawfs_page_addr(sb, block_no, 0)], 0xFF,
-			RAWFS_NAND_BLOCK_SIZE(rawfs_sb));
+		memset(fake_block, 0xFF, RAWFS_NAND_BLOCK_SIZE(rawfs_sb));
 	}
 	return 0;
 }
@@ -84,7 +83,7 @@ int rawfs_dev_ram_read_page_user(struct super_block *sb, int block_no,
 	int block_offset, const struct iovec *iov, unsigned long nr_segs, int size)
 {
 	struct rawfs_sb_info *rawfs_sb = RAWFS_SB(sb);
-	char *fake_block = rawfs_sb->fake_block;
+	char *fake_block = rawfs_sb->fake_block[block_no];
 
 	RAWFS_PRINT(RAWFS_DBG_DEVICE,
 		"rawfs_dev_ram_read_page_user: block %d, addr %d, size %d\n",
@@ -98,7 +97,7 @@ int rawfs_dev_ram_read_page_user(struct super_block *sb, int block_no,
 		RAWFS_PRINT(RAWFS_DBG_DEVICE, "iov_base %08X, ram buffer = %08X\n",
 			(unsigned)iov->iov_base,
 			(unsigned)&fake_block[rawfs_block_addr(
-				sb, block_no, block_offset)]);
+				sb, 0, block_offset)]);
 
 		for (seg = 0; seg < nr_segs && size > 0; seg++) {
 			const struct iovec *iv = &iov[seg];
@@ -109,10 +108,10 @@ int rawfs_dev_ram_read_page_user(struct super_block *sb, int block_no,
 				(unsigned int) iv->iov_base,
 				(unsigned int) ((size > iv->iov_len) ? iv->iov_len : size),
 				(unsigned int) &fake_block[rawfs_block_addr(
-					sb, block_no, block_offset)]);
+					sb, 0, block_offset)]);
 
 			copied = copy_to_user(iv->iov_base,
-				fake_block + rawfs_block_addr(sb, block_no, block_offset),
+				fake_block + rawfs_block_addr(sb, 0, block_offset),
 				(size > iv->iov_len) ? iv->iov_len : size);
 			size -= iv->iov_len;
 		}
@@ -125,13 +124,13 @@ int rawfs_dev_ram_write_page(struct super_block *sb, int block_no, int page_no,
 	void *buffer)
 {
 	struct rawfs_sb_info *rawfs_sb = RAWFS_SB(sb);
-	char *fake_block = rawfs_sb->fake_block;
+	char *fake_block = rawfs_sb->fake_block[block_no];
 
 	RAWFS_PRINT(RAWFS_DBG_DEVICE,
 		"rawfs_dev_ram_write_page: block %d, page %d\n", block_no, page_no);
 	if (block_no < RAWFS_NAND_BLOCKS(rawfs_sb) &&
 		page_no < RAWFS_NAND_PAGES(rawfs_sb)) {
-		memcpy(fake_block + rawfs_page_addr(sb, block_no, page_no), buffer,
+		memcpy(fake_block + rawfs_page_addr(sb, 0, page_no), buffer,
 			RAWFS_NAND_PAGE_SIZE(rawfs_sb));
 	}
 	return 0;
@@ -142,13 +141,13 @@ int rawfs_dev_ram_read_page(struct super_block *sb, int block_no, int page_no,
 	void *buffer)
 {
 	struct rawfs_sb_info *rawfs_sb = RAWFS_SB(sb);
-	char *fake_block = rawfs_sb->fake_block;
+	char *fake_block = rawfs_sb->fake_block[block_no];
 
 	RAWFS_PRINT(RAWFS_DBG_DEVICE,
 		"rawfs_dev_ram_read_page: block %d, page %d\n", block_no, page_no);
 	if (block_no < RAWFS_NAND_BLOCKS(rawfs_sb) &&
 		page_no < RAWFS_NAND_PAGES(rawfs_sb)) {
-		memcpy(buffer, fake_block + rawfs_page_addr(sb, block_no, page_no),
+		memcpy(buffer, fake_block + rawfs_page_addr(sb, 0, page_no),
 			RAWFS_NAND_PAGE_SIZE(rawfs_sb));
 	}
 	return 0;

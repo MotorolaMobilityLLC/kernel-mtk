@@ -69,24 +69,14 @@ int rawfs_readdir(struct file *filp, struct dir_context *ctx)
 
 					/* Matching sub-directory */
 					if (entry->file_info.i_parent_folder_id !=
-						RAWFS_I(dentry->d_inode)->i_id) {
-						RAWFS_PRINT(RAWFS_DBG_DIR,
-							"readdir: skip %s, parent folder id %X, target folder %X\n",
-						   entry->file_info.i_name,
-						   entry->file_info.i_parent_folder_id,
-						   RAWFS_I(dentry->d_inode)->i_id);
+						RAWFS_I(dentry->d_inode)->i_id)
 						continue;
-					}
 
 					total_cnt++;
 
 					/* skip first N + 2 (. & ..) entiries, if cpos doesn't start from zero */
-					if ((total_cnt+2) <= cpos) {
-						RAWFS_PRINT(RAWFS_DBG_DIR,
-						"readdir: cpos=%lld, total cnt=%d, %s\n", cpos, total_cnt,
-						entry->file_info.i_name);
+					if ((total_cnt+2) <= cpos)
 						continue;
-					}
 
 					name_len = strlen(entry->file_info.i_name);
 

@@ -17,7 +17,8 @@
 #include <asm/byteorder.h>
 #include <linux/list.h>
 
-#define RAWFS_BLOCK_LIMIT 2  /* do not modify, design limit */
+#define RAWFS_BLOCK_LIMIT 2 /* do not modify, design limit */
+#define RAWFS_FILE_SIZE_LIMIT 65536  /* do not modify, design limit */
 #define RAWFS_BLOCK_FILE
 
 #define RAWFS_VERSION  0x01
@@ -98,7 +99,9 @@ struct rawfs_sb_info {
 	__u32 sequence_number;
 	__u32 erase_count_max;
 	int flags;
-	char *fake_block;
+#ifdef RAWFS_RAM_DISK
+	char *fake_block[RAWFS_BLOCK_LIMIT];
+#endif
 	struct mutex rawfs_lock;
 	struct nls_table *local_nls;	/* Codepage used on disk */
 	/* File List */
