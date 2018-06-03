@@ -2371,7 +2371,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 	/* struct platform_device *pdev; */
 	long dts_gpio_state = 0;
 
-	pr_debug("mtkfb_probe name [%s]  = [%s][%p]\n", pdev->name, pdev->dev.init_name, (void *)&pdev->dev);
+	DISPMSG("mtkfb_probe name [%s]  = [%s][%p]\n", pdev->name, pdev->dev.init_name, (void *)&pdev->dev);
 
 	_parse_tag_videolfb();
 
@@ -2396,7 +2396,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 	fbdev->dev = &(pdev->dev);
 	dev_set_drvdata(&(pdev->dev), fbdev);
 
-	DISPDBG("mtkfb_probe: fb_pa = %pa\n", &fb_base);
+	DISPMSG("mtkfb_probe: fb_pa = %pa\n", &fb_base);
 
 	disp_hal_allocate_framebuffer(fb_base, (fb_base + vramsize - 1),
 				      (unsigned long *)(&fbdev->fb_va_base), &fb_pa);
@@ -2434,7 +2434,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 		goto cleanup;
 	}
 	init_state++;		/* 4 */
-	DISPDBG("\nmtkfb_fbinfo_init done\n");
+	DISPMSG("\nmtkfb_fbinfo_init done\n");
 
 	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
 		/* dal_init should after mtkfb_fbinfo_init, otherwise layer 3 will show dal background color */
@@ -2446,6 +2446,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 		fbVA += DISP_GetFBRamSize();
 		fbPA += DISP_GetFBRamSize();
 		ret = DAL_Init(fbVA, fbPA);
+		DISPMSG("DAL_Init done\n");
 	}
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
@@ -2457,12 +2458,13 @@ static int mtkfb_probe(struct platform_device *pdev)
 		goto cleanup;
 	}
 	init_state++;		/* 5 */
-
+	DISPMSG("register_framebuffer start...\n");
 	r = register_framebuffer(fbi);
 	if (r != 0) {
 		DISPERR("register_framebuffer failed\n");
 		goto cleanup;
 	}
+	DISPMSG("register_framebuffer done\n");
 #ifdef FPGA_DEBUG_PAN
 	test_task = kthread_create(update_test_kthread, NULL, "update_test_kthread");
 	wake_up_process(test_task);
@@ -2483,7 +2485,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 cleanup:
 	mtkfb_free_resources(fbdev, init_state);
 
-	pr_debug("mtkfb_probe end\n");
+	DISPMSG("mtkfb_probe end\n");
 	return r;
 }
 

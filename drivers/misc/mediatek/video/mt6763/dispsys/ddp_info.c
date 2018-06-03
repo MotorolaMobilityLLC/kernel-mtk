@@ -611,7 +611,6 @@ void ddp_module_irq_disable(enum DISP_MODULE_ENUM module)
 void ddp_set_module_va(enum DISP_MODULE_ENUM module, unsigned long va)
 {
 	if (is_ddp_module_has_reg_info(module)) {
-		DDPDBG("ddp_set_module_va: %d -> 0x%lx\n", module, va);
 		ddp_modules[module].reg_info.reg_va = va;
 		return;
 	}

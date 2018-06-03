@@ -81,7 +81,7 @@ void _dump_lcm_info(struct disp_lcm_handle *plcm)
 	if (!l || !p)
 		return;
 
-	DISPCHECK("[LCM], name: %s\n", l->name);
+	DISPCHECK("[LCM] name: %s\n", l->name);
 	DISPCHECK("[LCM] resolution: %d x %d\n", p->width, p->height);
 	DISPCHECK("[LCM] physical size: %d x %d\n", p->physical_width, p->physical_height);
 	DISPCHECK("[LCM] physical size: %d x %d\n", p->physical_width, p->physical_height);
@@ -147,7 +147,7 @@ void _dump_lcm_info(struct disp_lcm_handle *plcm)
 	}
 
 	if (p->type == LCM_TYPE_DSI) {
-		DISPCHECK("[LCM] LANE_NUM: %d,data_format\n", (int)p->dsi.LANE_NUM);
+		DISPCHECK("[LCM] LANE_NUM: %d\n", (int)p->dsi.LANE_NUM);
 		DISPCHECK("[LCM] vact: %u, vbp: %u, vfp: %u, vact_line: %u, hact: %u, hbp: %u, hfp: %u, hblank: %u\n",
 		     p->dsi.vertical_sync_active, p->dsi.vertical_backporch,
 		     p->dsi.vertical_frontporch, p->dsi.vertical_active_line,

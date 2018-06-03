@@ -585,7 +585,7 @@ static int __init disp_probe_1(void)
 		int status;
 		struct device_node *node = NULL;
 		struct resource res;
-		DDPMSG("disp_probe_1 i=%d\n", i);
+
 		if (!is_ddp_module_has_reg_info(i))
 			continue;
 

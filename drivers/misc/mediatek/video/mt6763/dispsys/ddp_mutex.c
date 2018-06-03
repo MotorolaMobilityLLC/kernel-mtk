@@ -347,6 +347,8 @@ int ddp_mutex_set_sof_wait(int mutex_id, struct cmdqRecStruct *handle, int wait)
 int ddp_mutex_enable(int mutex_id, enum DDP_SCENARIO_ENUM scenario, enum DDP_MODE mode, void *handle)
 {
 	DDPDBG("mutex %d enable\n", mutex_id);
+	/* disable mutex dcm */
+	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_CFG, 0);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_EN(mutex_id), 1);
 	return 0;
 
