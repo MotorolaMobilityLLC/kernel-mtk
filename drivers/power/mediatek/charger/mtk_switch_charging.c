@@ -297,6 +297,7 @@ static int mtk_switch_charging_plug_in(struct charger_manager *info)
 	swchgalg->state = CHR_CC;
 	info->polling_interval = CHARGING_INTERVAL;
 	swchgalg->disable_charging = false;
+	get_monotonic_boottime(&swchgalg->charging_begin_time);
 	charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
 
 	return 0;
@@ -304,6 +305,10 @@ static int mtk_switch_charging_plug_in(struct charger_manager *info)
 
 static int mtk_switch_charging_plug_out(struct charger_manager *info)
 {
+	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+
+	swchgalg->total_charging_time = 0;
+
 	mtk_pe20_set_is_cable_out_occur(info, true);
 	mtk_pe_set_is_cable_out_occur(info, true);
 	mtk_pe30_plugout_reset(info);
@@ -320,6 +325,7 @@ static int mtk_switch_charging_do_charging(struct charger_manager *info, bool en
 	if (en) {
 		swchgalg->disable_charging = false;
 		swchgalg->state = CHR_CC;
+		get_monotonic_boottime(&swchgalg->charging_begin_time);
 		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
 	} else {
 		swchgalg->disable_charging = true;
@@ -332,10 +338,34 @@ static int mtk_switch_charging_do_charging(struct charger_manager *info, bool en
 	return 0;
 }
 
+/* return false if total charging time exceeds max_charging_time */
+static bool mtk_switch_check_charging_time(struct charger_manager *info)
+{
+	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+	struct timespec time_now;
+
+	if (info->enable_sw_safety_timer) {
+		get_monotonic_boottime(&time_now);
+		chr_debug("%s: begin: %ld, now: %ld\n", __func__,
+			swchgalg->charging_begin_time.tv_sec, time_now.tv_sec);
+
+		if (swchgalg->total_charging_time >= info->data.max_charging_time) {
+			chr_err("%s: SW safety timeout: %d sec > %d sec\n",
+				__func__, swchgalg->total_charging_time,
+				info->data.max_charging_time);
+			charger_dev_notify(info->chg1_dev, CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT);
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static int mtk_switch_chr_cc(struct charger_manager *info)
 {
 	bool chg_done = false;
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+	struct timespec time_now, charging_time;
 
 	/* check bif */
 	if (IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
@@ -345,6 +375,11 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 			charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
 		}
 	}
+
+	get_monotonic_boottime(&time_now);
+	charging_time = timespec_sub(time_now, swchgalg->charging_begin_time);
+
+	swchgalg->total_charging_time = charging_time.tv_sec;
 
 	/* turn on LED */
 
@@ -388,8 +423,11 @@ int mtk_switch_chr_err(struct charger_manager *info)
 			(info->sw_jeita.sm != TEMP_BELOW_T0) && (info->sw_jeita.sm != TEMP_ABOVE_T4)) {
 			info->sw_jeita.error_recovery_flag = true;
 			swchgalg->state = CHR_CC;
+			get_monotonic_boottime(&swchgalg->charging_begin_time);
 		}
 	}
+
+	swchgalg->total_charging_time = 0;
 
 	_disable_all_charging(info);
 	return 0;
@@ -399,6 +437,8 @@ int mtk_switch_chr_full(struct charger_manager *info)
 {
 	bool chg_done = false;
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+
+	swchgalg->total_charging_time = 0;
 
 	/* turn off LED */
 
@@ -415,6 +455,7 @@ int mtk_switch_chr_full(struct charger_manager *info)
 		mtk_pe20_set_to_check_chr_type(info, true);
 		mtk_pe_set_to_check_chr_type(info, true);
 		info->enable_dynamic_cv = true;
+		get_monotonic_boottime(&swchgalg->charging_begin_time);
 		chr_err("battery recharging!\n");
 		info->polling_interval = CHARGING_INTERVAL;
 	}
@@ -443,7 +484,8 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 	int ret = 0;
 
-	chr_err("mtk_switch_charging_run [%d]\n", swchgalg->state);
+	chr_err("%s [%d], timer=%d\n", __func__, swchgalg->state,
+		swchgalg->total_charging_time);
 
 	if (mtk_pe30_check_charger(info) == true)
 		swchgalg->state = CHR_PE30;
@@ -471,6 +513,8 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 		break;
 	}
 
+	mtk_switch_check_charging_time(info);
+
 	charger_dev_dump_registers(info->chg1_dev);
 	return 0;
 }
@@ -494,6 +538,10 @@ int charger_dev_event(struct notifier_block *nb, unsigned long event, void *v)
 	case CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT:
 		info->safety_timeout = true;
 		chr_err("%s: safety timer timeout\n", __func__);
+
+		/* If sw safety timer timeout, do not wake up charger thread */
+		if (info->enable_sw_safety_timer)
+			return NOTIFY_DONE;
 		break;
 	case CHARGER_DEV_NOTIFY_VBUS_OVP:
 		info->vbusov_stat = data->vbusov_stat;
