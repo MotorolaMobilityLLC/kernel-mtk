@@ -1990,6 +1990,9 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->PDAF_Support = 0;
 	#endif
 
+	sensor_info->SensorHorFOV = 68;
+	sensor_info->SensorVerFOV = 49;
+
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
