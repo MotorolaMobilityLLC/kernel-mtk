@@ -65,6 +65,7 @@
 
 #include <linux/wakelock.h>
 #include <linux/dma-mapping.h>
+#include <sound/pcm_params.h>
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 #include <audio_task_manager.h>
@@ -109,7 +110,7 @@ static struct audio_resv_dram_t *p_resv_dram;
 static struct SPK_PROTECT_SERVICE spk_protect_service;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 static struct audio_resv_dram_t *p_resv_dram_normal;
-static scp_reserve_mblock_t ScpReserveBuffer;
+static struct scp_reserve_mblock ScpReserveBuffer;
 static struct snd_dma_buffer ScpDramBuffer;
 
 static const int platformBufferOffset;
@@ -437,7 +438,8 @@ static int dl1spk_allocate_feedback_buffer(struct snd_pcm_substream *substream, 
 	if (AllocateAudioSram(&Dl1Spk_runtime_feedback_dma_buf.addr,
 			&Dl1Spk_runtime_feedback_dma_buf.area,
 			Dl1Spk_runtime_feedback_dma_buf.bytes,
-			(void *)&Dl1Spk_feedback_user) == 0) {
+			(void *)&Dl1Spk_feedback_user,
+			params_format(hw_params), false) == 0) {
 		SetHighAddr(mspkiv_meminterface_type, false, Dl1Spk_runtime_feedback_dma_buf.addr);
 	} else {
 		Dl1Spk_runtime_feedback_dma_buf.addr = ScpDramBuffer.addr + Dl1Spk_feedback_buf_offset;
@@ -507,7 +509,8 @@ static int dl1spk_allocate_platformdl_buffer(struct snd_pcm_substream *substream
 
 	SpkDL1Buffer.bytes = buffer_size;
 	if (buffer_size <= GetPLaybackSramFullSize() &&
-	AllocateAudioSram(&SpkDL1Buffer.addr, &SpkDL1Buffer.area, SpkDL1Buffer.bytes, substream) == 0) {
+	AllocateAudioSram(&SpkDL1Buffer.addr, &SpkDL1Buffer.area, SpkDL1Buffer.bytes,
+				substream, params_format(hw_params), false) == 0) {
 		AudDrv_Allocate_DL1_Buffer(mDev, PlatformBuffer.bytes,
 		PlatformBuffer.addr, PlatformBuffer.area);
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false, SpkDL1Buffer.addr);
@@ -863,27 +866,27 @@ static bool spkprotect_service_ipicmd_wait(int id)
 static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s = %d\n", __func__, m_scpspk_pcmdump);
+	pr_debug("%s = %d\n", __func__, scpspk_pcmdump);
 
-	if (m_scpspk_pcmdump == false && ucontrol->value.integer.value[0] == true) {
-		m_scpspk_pcmdump = true;
+	if (scpspk_pcmdump == false && ucontrol->value.integer.value[0] == true) {
+		scpspk_pcmdump = true;
 		spkprotect_open_dump_file();
 		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
 					    AUDIO_IPI_MSG_BYPASS_ACK,
 					    SPK_PROTTCT_PCMDUMP_ON,
 					    p_resv_dram->size,
-					    m_scpspk_pcmdump,
+					    scpspk_pcmdump,
 					    p_resv_dram->phy_addr);
 		spk_protect_service.ipiwait = true;
-	} else if (m_scpspk_pcmdump == true && ucontrol->value.integer.value[0] == false) {
-		m_scpspk_pcmdump = false;
+	} else if (scpspk_pcmdump == true && ucontrol->value.integer.value[0] == false) {
+		scpspk_pcmdump = false;
 		spkprotect_service_ipicmd_wait(SPK_PROTECT_PCMDUMP_OK);
 		spkprotect_close_dump_file();
 		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
 					    AUDIO_IPI_MSG_BYPASS_ACK,
 					    SPK_PROTTCT_PCMDUMP_OFF,
 					    p_resv_dram->size,
-					    m_scpspk_pcmdump,
+					    scpspk_pcmdump,
 					    p_resv_dram->phy_addr);
 	}
 	return 0;
@@ -897,7 +900,7 @@ static int audio_spk_pcm_dump_get(struct snd_kcontrol *kcontrol,
 		pr_debug("return -EINVAL\n");
 		return -EINVAL;
 	}
-	ucontrol->value.integer.value[0] = m_scpspk_pcmdump;
+	ucontrol->value.integer.value[0] = scpspk_pcmdump;
 	return 0;
 }
 

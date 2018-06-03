@@ -57,7 +57,7 @@
 #endif
 
 struct spk_dump_ops {
-	void (*spk_dump_callback)(ipi_msg_t *ipi_msg);
+	void (*spk_dump_callback)(struct ipi_msg_t *ipi_msg);
 };
 
 struct aud_spk_message {
@@ -68,12 +68,13 @@ struct aud_spk_message {
 };
 
 void init_spkscp_reserved_dram(void);
-audio_resv_dram_t *get_reserved_dram_spkprotect(void);
+struct audio_resv_dram_t *get_reserved_dram_spkprotect(void);
 char *get_resv_dram_spkprotect_vir_addr(char *resv_dram_phy_addr);
 void spkproc_service_set_spk_dump_message(struct spk_dump_ops *ops);
-void spkproc_service_ipicmd_received(ipi_msg_t *ipi_msg);
-void spkproc_service_ipicmd_send(audio_ipi_msg_data_t data_type,
-				 audio_ipi_msg_ack_t ack_type,
+void spkproc_service_ipicmd_received(struct ipi_msg_t *ipi_msg);
+void spkproc_service_ipicmd_send(
+				 uint8_t  data_type,  /* see audio_ipi_msg_data_t */
+				 uint8_t  ack_type,   /* see audio_ipi_msg_ack_t */
 				 uint16_t msg_id,
 				 uint32_t param1,
 				 uint32_t param2,

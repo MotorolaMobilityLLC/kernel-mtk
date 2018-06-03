@@ -2655,7 +2655,6 @@ static void get_hp_lr_trim_offset(void)
 	dctrim_calibrated = 2;
 	pr_debug("%s(), End DCtrim Calibrating", __func__);
 }
-
 static int mt63xx_codec_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
@@ -2778,6 +2777,19 @@ static struct snd_soc_dai_driver mtk_6358_dai_codecs[] = {
 		     .rates = SNDRV_PCM_RATE_8000_48000,
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
+	 },
+	 {
+	 .name = MT_SOC_CODEC_SPKSCPTXDAI_NAME,
+	 .ops = &mt6323_aif1_dai_ops,
+	 .playback = {
+		      .stream_name = MT_SOC_DL1SCPSPK_STREAM_NAME,
+		      .channels_min = 1,
+		      .channels_max = 2,
+		      .rate_min = 8000,
+		      .rate_max = 192000,
+		      .rates = SNDRV_PCM_RATE_8000_192000,
+		      .formats = SND_SOC_ADV_MT_FMTS,
+		      }
 	 },
 #ifdef _NON_COMMON_FEATURE_READY
 	{

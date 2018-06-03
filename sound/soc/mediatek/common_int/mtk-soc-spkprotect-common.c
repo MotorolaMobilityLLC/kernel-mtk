@@ -44,6 +44,7 @@
 #include "mtk-auddrv-scp-spkprotect-common.h"
 #include <scp_helper.h>
 #include <scp_ipi.h>
+#include <audio_ipi_platform.h>
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 #include "audio_ipi_client_spkprotect.h"
@@ -67,7 +68,7 @@ void init_spkscp_reserved_dram(void)
 	pr_info("resv_dram: pa %p, va %p, sz 0x%x\n",
 		resv_dram_spkprotect.phy_addr, resv_dram_spkprotect.vir_addr, resv_dram_spkprotect.size);
 
-	if (is_scp_ready(SCP_B_ID)) {
+	if (audio_ipi_check_scp_status()) {
 		AUDIO_ASSERT(resv_dram_spkprotect.phy_addr != NULL);
 		AUDIO_ASSERT(resv_dram_spkprotect.vir_addr != NULL);
 		AUDIO_ASSERT(resv_dram_spkprotect.size > 0);
@@ -75,7 +76,7 @@ void init_spkscp_reserved_dram(void)
 }
 
 
-audio_resv_dram_t *get_reserved_dram_spkprotect(void)
+struct audio_resv_dram_t *get_reserved_dram_spkprotect(void)
 {
 	return &resv_dram_spkprotect;
 }
