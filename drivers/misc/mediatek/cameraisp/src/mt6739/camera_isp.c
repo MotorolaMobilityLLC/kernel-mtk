@@ -2798,14 +2798,20 @@ static signed int ISP_DumpReg(void)
 	RegDump(0x4520, 0x4560);
 	RegDump(0x4600, 0x4610);
 	RegDump(0x4760, 0x47f0);
-	RegDump(0x5000, 0x5020); /*CAMSV_MODULE*/
-	RegDump(0x5800, 0x5820); /*CAMSV2_MODULE*/
+	RegDump(0x5000, 0x503C); /*CAMSV_MODULE*/
+	RegDump(0x5800, 0x583C); /*CAMSV2_MODULE*/
 	RegDump(0x5410, 0x541C); /*CAMSV_TG*/
 	RegDump(0x5C10, 0x5C1C); /*CAMSV_TG2*/
-	LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x5448),
+	LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]",
+		(unsigned int)(ISP_TPIPE_ADDR + 0x5448),
 		(unsigned int)ISP_RD32(ISP_ADDR + 0x5448),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x544C),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x544C),
 		(unsigned int)(ISP_TPIPE_ADDR + 0x5C48),
-		(unsigned int)ISP_RD32(ISP_ADDR + 0x5C48));
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x5C48),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x5C4C),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x5C4C));
+
 	RegDump(0x5208, 0x5254); /*CAMSV_IMGO_SV, CAMSV_IMGO_SV_D*/
 	/* LSC_D */
 	RegDump(0x2530, 0x2550);
@@ -8806,19 +8812,18 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 		IRQ_LOG_KEEPER_PR_ERR(_CAMSV_IRQ, m_CurrentPPB, _LOG_ERR,
 			       CAMSV_TAG "Err IRQ, Type(%d),	Status(0x%x)\n",
 			       ISP_IRQ_TYPE_INT_CAMSV,
-			       IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INT_CAMSV] & IrqStatus_CAMSV);
+			       IrqStatus_CAMSV);
 
-	if (IspInfo.DebugMask & ISP_DBG_INT)
+	if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
 		IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
 			       CAMSV_TAG "Type(%d), IrqStatus(0x%x |	0x%x)\n",
 			       ISP_IRQ_TYPE_INT_CAMSV,
-			       IspInfo.IrqInfo.
-			       Status[ISP_IRQ_USER_ISPDRV][ISP_IRQ_TYPE_INT_CAMSV],
+			       IspInfo.IrqInfo.Status[ISP_IRQ_USER_ISPDRV][ISP_IRQ_TYPE_INT_CAMSV],
 			       IrqStatus_CAMSV);
 
 
 	if (IrqStatus_CAMSV & ISP_IRQ_CAMSV_STATUS_PASS1_DON_ST) {
-		if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL) {
+		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
 				       CAMSV_TAG "DONE_%d_%d(0x%x,0x%x,0x%x,0x%x)\n",
 				       (sof_count[_CAMSV]) ? (sof_count[_CAMSV] -
@@ -8847,7 +8852,10 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 		unsigned long long sec;
 		unsigned long usec;
 		ktime_t time;
-		unsigned int z;
+		unsigned int z, buf_idx;
+
+		buf_idx = (pstRTBuf->ring_buf[_camsv_imgo_].start + 1) %
+			pstRTBuf->ring_buf[_camsv_imgo_].total_count;
 		/* chk this frame have EOF or not */
 		if ((fbc.Bits.FB_NUM - fbc.Bits.FBC_CNT) == 0) {
 			gSof_camsvdone[0] = 1;
@@ -8862,10 +8870,10 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 		if (pstRTBuf->ring_buf[_camsv_imgo_].active) {
 			if (pstRTBuf->ring_buf[_camsv_imgo_].empty_count > 0) {
 				IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
-					CAMSV_TAG "wr2Phy,");
+					CAMSV_TAG "wr2Phy 0x%x,",
+					pstRTBuf->ring_buf[_camsv_imgo_].data[buf_idx].base_pAddr);
 				ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
-					pstRTBuf->ring_buf[_camsv_imgo_].data[pstRTBuf->
-					ring_buf[_camsv_imgo_].start].base_pAddr);
+					pstRTBuf->ring_buf[_camsv_imgo_].data[buf_idx].base_pAddr);
 			}
 		}
 		/* equal case is for clear curidx */
@@ -8989,9 +8997,9 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		IRQ_LOG_KEEPER_PR_ERR(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_ERR,
 			       CAMSV2_TAG "Error IRQ, Type(%d), Status(0x%08x)\n",
 			       ISP_IRQ_TYPE_INT_CAMSV2,
-			       IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INT_CAMSV2] & IrqStatus_CAMSV2);
+			       IrqStatus_CAMSV2);
 
-	if (IspInfo.DebugMask & ISP_DBG_INT)
+	if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
 		IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
 			       CAMSV2_TAG "Type(%d), IrqStatus(0x%x | 0x%08x)\n",
 			       ISP_IRQ_TYPE_INT_CAMSV2,
@@ -9031,7 +9039,10 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		unsigned long long sec;
 		unsigned long usec;
 		ktime_t time;
-		unsigned int z;
+		unsigned int z, buf_idx;
+
+		buf_idx = (pstRTBuf->ring_buf[_camsv2_imgo_].start + 1) %
+			pstRTBuf->ring_buf[_camsv2_imgo_].total_count;
 		/* chk this     frame have EOF or not */
 		if ((fbc.Bits.FB_NUM - fbc.Bits.FBC_CNT) == 0) {
 			gSof_camsvdone[1] = 1;
@@ -9046,10 +9057,10 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		if (pstRTBuf->ring_buf[_camsv2_imgo_].active) {
 			if (pstRTBuf->ring_buf[_camsv2_imgo_].empty_count > 0) {
 				IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
-					 CAMSV_TAG "wr2Phy,");
+					 CAMSV_TAG "wr2Phy, 0x%x",
+					 pstRTBuf->ring_buf[_camsv2_imgo_].data[buf_idx].base_pAddr);
 				ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
-					pstRTBuf->ring_buf[_camsv2_imgo_].data[pstRTBuf->
-					ring_buf[_camsv2_imgo_].start].base_pAddr);
+					pstRTBuf->ring_buf[_camsv2_imgo_].data[buf_idx].base_pAddr);
 			}
 		}
 		/* equal case is for clear curidx */
