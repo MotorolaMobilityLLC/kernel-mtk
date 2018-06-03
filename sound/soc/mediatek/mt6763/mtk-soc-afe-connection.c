@@ -95,7 +95,18 @@ const uint32 mConnectionReg[Soc_Aud_InterConnectionOutput_Num_Output] = {
 	AFE_CONN25, AFE_CONN26, AFE_CONN27, AFE_CONN28, AFE_CONN29,
 	AFE_CONN30, AFE_CONN31, AFE_CONN32, AFE_CONN33, AFE_CONN34,
 	AFE_CONN35, AFE_CONN36, AFE_CONN37, AFE_CONN38, AFE_CONN39
-	};
+};
+
+const uint32 mConnectionReg_1[Soc_Aud_InterConnectionOutput_Num_Output] = {
+	AFE_CONN0_1, AFE_CONN1_1, AFE_CONN2_1, AFE_CONN3_1, AFE_CONN4_1,
+	AFE_CONN5_1, AFE_CONN6_1, AFE_CONN7_1, AFE_CONN8_1, AFE_CONN9_1,
+	AFE_CONN10_1, AFE_CONN11_1, AFE_CONN12_1, AFE_CONN13_1, AFE_CONN14_1,
+	AFE_CONN15_1, AFE_CONN16_1, AFE_CONN17_1, AFE_CONN18_1, AFE_REG_UNDEFINED,
+	AFE_REG_UNDEFINED, AFE_CONN21_1, AFE_CONN22_1, AFE_CONN23_1, AFE_CONN24_1,
+	AFE_CONN25_1, AFE_CONN26_1, AFE_CONN27_1, AFE_CONN28_1, AFE_CONN29_1,
+	AFE_CONN30_1, AFE_CONN31_1, AFE_CONN32_1, AFE_CONN33_1, AFE_CONN34_1,
+	AFE_CONN35_1, AFE_CONN36_1, AFE_CONN37_1, AFE_CONN38_1, AFE_CONN39_1
+};
 
 /**
 * connection state of register
@@ -706,6 +717,10 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 	  * Input = %d Output = %d\n", ConnectionState, Input, Output);
 	  */
 	int connectReg = 0;
+	int set_bit = 0;
+
+	connectReg = (Input < Soc_Aud_InterConnectionInput_I32 ? mConnectionReg[Output] : mConnectionReg_1[Output]);
+	set_bit = Input < Soc_Aud_InterConnectionInput_I32 ? Input : Input - Soc_Aud_InterConnectionInput_I32;
 
 	switch (ConnectionState) {
 	case Soc_Aud_InterCon_DisConnect:
@@ -715,9 +730,8 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 			== Soc_Aud_InterCon_Connection) {
 
 			/* here to disconnect connect bits */
-			connectReg = mConnectionReg[Output];
-			if (CheckBitsandReg(connectReg, Input)) {
-				Afe_Set_Reg(connectReg, 0, 1 << Input);
+			if (CheckBitsandReg(connectReg, set_bit)) {
+				Afe_Set_Reg(connectReg, 0, 1 << set_bit);
 				mConnectionState[Input][Output] &= ~(Soc_Aud_InterCon_Connection);
 			}
 		}
@@ -725,8 +739,8 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 			== Soc_Aud_InterCon_ConnectionShift) {
 
 			/* here to disconnect connect shift bits */
-			if (CheckBitsandReg(AFE_CONN_RS, Input)) {
-				Afe_Set_Reg(AFE_CONN_RS, 0, 1 << Input);
+			if (CheckBitsandReg(AFE_CONN_RS, set_bit)) {
+				Afe_Set_Reg(AFE_CONN_RS, 0, 1 << set_bit);
 				mConnectionState[Input][Output] &= ~(Soc_Aud_InterCon_ConnectionShift);
 			}
 		}
@@ -735,9 +749,8 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 	case Soc_Aud_InterCon_Connection:
 	{
 		/* printk("nConnectionState = %d\n", ConnectionState); */
-		connectReg = mConnectionReg[Output];
-		if (CheckBitsandReg(connectReg, Input)) {
-			Afe_Set_Reg(connectReg, 1 << Input, 1 << Input);
+		if (CheckBitsandReg(connectReg, set_bit)) {
+			Afe_Set_Reg(connectReg, 1 << set_bit, 1 << set_bit);
 			mConnectionState[Input][Output] |= Soc_Aud_InterCon_Connection;
 		}
 		break;
