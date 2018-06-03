@@ -654,6 +654,9 @@ static void SCP_sensorHub_init_sensor_state(void)
 	mSensorState[ID_TILT_DETECTOR].sensorType = ID_TILT_DETECTOR;
 	mSensorState[ID_TILT_DETECTOR].rate = SENSOR_RATE_ONCHANGE;
 
+	mSensorState[ID_IN_POCKET].sensorType = ID_IN_POCKET;
+	mSensorState[ID_IN_POCKET].rate = SENSOR_RATE_ONESHOT;
+
 	mSensorState[ID_ACTIVITY].sensorType = ID_ACTIVITY;
 
 	mSensorState[ID_GLANCE_GESTURE].sensorType = ID_GLANCE_GESTURE;
