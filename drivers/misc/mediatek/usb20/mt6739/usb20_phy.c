@@ -667,6 +667,9 @@ void usb_phy_recover(void)
 	/* RG_USB20_OTG_VBUSCMP_EN, 1'b1 */
 	/* USBPHY_SET32(0x18, (0x1 << 20)); */
 
+	/* RG_USB20_PHY_REV[7:0] = 8'b01000000 */
+	usb_rev6_setting(0x40);
+
 	/* wait 800 usec. */
 	udelay(800);
 
