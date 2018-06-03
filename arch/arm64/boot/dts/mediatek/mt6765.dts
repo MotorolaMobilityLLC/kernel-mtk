@@ -248,12 +248,6 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0 0x544f0000 0 0x10000>;
 		};
 
-		atf-reserved-memory@54600000 {
-			compatible = "mediatek,atf-reserved-memory";
-			no-map;
-			reg = <0 0x54600000 0 0x40000>;
-		};
-
 		reserve-memory-sspm_share {
 			compatible = "mediatek,reserve-memory-sspm_share";
 			no-map;
