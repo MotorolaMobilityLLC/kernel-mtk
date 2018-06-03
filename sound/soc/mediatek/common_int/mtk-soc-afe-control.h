@@ -270,6 +270,9 @@ void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
 const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
 const struct Aud_RegBitsInfo *GetIRQPurposeReg(enum Soc_Aud_IRQ_PURPOSE sIrqPurpose);
 
+const unsigned int GetBufferCtrlReg(enum soc_aud_afe_io_block memif_type,
+				    enum aud_buffer_ctrl_info buffer_ctrl);
+
 bool SetHighAddr(enum soc_aud_digital_block MemBlock, bool usingdram, dma_addr_t addr);
 
 int memif_lpbk_enable(struct memif_lpbk *memif_lpbk);

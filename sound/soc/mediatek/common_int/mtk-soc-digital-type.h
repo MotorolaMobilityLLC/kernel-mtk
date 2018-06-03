@@ -353,6 +353,13 @@ enum Soc_Aud_IRQ_PURPOSE {
 	Soc_Aud_IRQ_PURPOSE_NUM
 };
 
+enum aud_buffer_ctrl_info {
+	aud_buffer_ctrl_base,
+	aud_buffer_ctrl_end,
+	aud_buffer_ctrl_cur,
+	aud_buffer_ctrl_num
+};
+
 struct Aud_RegBitsInfo {
 	unsigned int reg;
 	unsigned int sbit;

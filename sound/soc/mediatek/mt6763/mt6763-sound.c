@@ -336,6 +336,11 @@ const struct Aud_RegBitsInfo mIRQPurposeRegs[Soc_Aud_IRQ_PURPOSE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_DSP */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_CM4 */
 };
+
+static const unsigned int afe_buffer_regs[Soc_Aud_AFE_IO_Block_NUM_OF_IO_BLOCK][aud_buffer_ctrl_num] = {
+	{AFE_DL1_BASE, AFE_DL1_END, AFE_DL1_CUR}, /* DL1 */
+	{AFE_DL2_BASE, AFE_DL2_END, AFE_DL2_CUR}, /* DL2 */
+};
 /*  Above structures may vary with chips!!!! */
 
 /* set address hardware , platform dependent*/
@@ -2226,6 +2231,16 @@ const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
 const struct Aud_RegBitsInfo *GetIRQPurposeReg(enum Soc_Aud_IRQ_PURPOSE irqPurpose)
 {
 	return &mIRQPurposeRegs[irqPurpose];
+}
+
+const unsigned int GetBufferCtrlReg(enum soc_aud_afe_io_block memif_type,
+				    enum aud_buffer_ctrl_info buffer_ctrl)
+{
+	if (!afe_buffer_regs[memif_type][buffer_ctrl])
+		pr_warn("%s, invalid afe_buffer_regs, memif: %d, buffer_ctrl: %d",
+			__func__, memif_type, buffer_ctrl);
+
+	return afe_buffer_regs[memif_type][buffer_ctrl];
 }
 
 /*Irq handler function array*/
