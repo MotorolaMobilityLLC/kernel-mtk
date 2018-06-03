@@ -23,7 +23,7 @@
 #include "include/pmic_api_buck.h"
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_spm_internal.h>
-#include <mtk_dramc.h> /* for lpDram_Register_Read() */
+#include <mtk_dramc.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
@@ -167,30 +167,6 @@ static void spm_register_init(void)
 
 	spm_err("spm_base = %p, spm_irq_0 = %d\n", spm_base, spm_irq_0);
 
-	/* msdc3_wakeup_ps */
-	/*
-	 * node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-mmc");
-	 * if (!node) {
-	 *         spm_err("find msdc3node failed\n");
-	 * } else {
-	 *         edge_trig_irqs[0] = irq_of_parse_and_map(node, 0);
-	 *         if (!edge_trig_irqs[0])
-	 *                 spm_err("get msdc3 failed\n");
-	 * }
-	 */
-
-	/* emi_dfp_tx_irq */
-	/*
-	 * node = of_find_compatible_node(NULL, NULL, "mediatek,emi");
-	 * if (!node) {
-	 *         spm_err("find emi node failed\n");
-	 * } else {
-	 *         edge_trig_irqs[1] = irq_of_parse_and_map(node, 0);
-	 *         if (!edge_trig_irqs[1])
-	 *                 spm_err("get emi failed\n");
-	 * }
-	 */
-
 	/* kp_irq_b */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-keypad");
 	if (!node) {
@@ -200,18 +176,6 @@ static void spm_register_init(void)
 		if (!edge_trig_irqs[2])
 			spm_err("get mt6799-keypad failed\n");
 	}
-
-	/* apb_async_scpsys_fhctl_irq */
-	/*
-	 * node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-scpsys");
-	 * if (!node) {
-	 *         spm_err("find mt6799-scpsys node failed\n");
-	 * } else {
-	 *         edge_trig_irqs[3] = irq_of_parse_and_map(node, 0);
-	 *         if (!edge_trig_irqs[3])
-	 *                 spm_err("get mt6799-scpsys failed\n");
-	 * }
-	 */
 
 	/* c2k_wdt_irq_b */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,ap2c2k_ccif");
@@ -570,11 +534,6 @@ int spm_golden_setting_cmp(bool en)
 		u32 value;
 
 		value = lpDram_Register_Read(ddrphy_setting[i].base, ddrphy_setting[i].offset);
-		/*
-		 * spm_err("addr: 0x%.2x, offset: 0x%.3x, mask: 0x%.8x, val: 0x%x, read: 0x%x\n",
-		 *                 ddrphy_setting[i].base, ddrphy_setting[i].offset,
-		 *                 ddrphy_setting[i].mask, ddrphy_setting[i].value, value);
-		 */
 		if ((value & ddrphy_setting[i].mask) != ddrphy_setting[i].value) {
 			spm_err("dramc setting mismatch addr: 0x%.2x, offset: 0x%.3x, mask: 0x%.8x, val: 0x%x, read: 0x%x\n",
 				ddrphy_setting[i].base, ddrphy_setting[i].offset,
@@ -718,7 +677,6 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	unsigned int ret = 0;
 	/* struct spm_data _spm_d; */
 
-	/* pr_debug("#@# %s(%d) cmd %x\n", __func__, __LINE__, cmd); */
 	switch (cmd) {
 	case SPM_SUSPEND:
 	case SPM_RESUME:
@@ -729,32 +687,22 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	case SPM_LEAVE_SODI:
 	case SPM_LEAVE_SODI3:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_err("#@# %s(%d) sspm_ipi_send_sync_new(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
 			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 	case SPM_VCORE_PWARP_CMD:
-		#if 0
-		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_VCORE_DVFS, IPI_OPT_LOCK_POLLING, spm_d, SPM_VCOREFS_D_LEN, &ack_data);
-		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
-		} else if (ack_data < 0) {
-			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
-		}
-		#endif
 		break;
 	case SPM_SUSPEND_PREPARE:
 	case SPM_POST_SUSPEND:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_err("#@# %s(%d) sspm_ipi_send_sync_new(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
 			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
@@ -763,9 +711,9 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	case SPM_DPIDLE_PREPARE:
 	case SPM_POST_DPIDLE:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_LOCK_POLLING, spm_d, SPM_D_LEN, &ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_err("#@# %s(%d) sspm_ipi_send_sync_new(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
 			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
@@ -774,9 +722,9 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	case SPM_SODI_PREPARE:
 	case SPM_POST_SODI:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_LOCK_POLLING, spm_d, SPM_D_LEN, &ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_err("#@# %s(%d) sspm_ipi_send_sync_new(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
 			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);

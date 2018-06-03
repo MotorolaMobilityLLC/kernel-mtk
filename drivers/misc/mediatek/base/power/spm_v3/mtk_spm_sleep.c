@@ -369,7 +369,6 @@ static struct pwr_ctrl suspend_ctrl = {
 	/* Auto-gen End */
 };
 
-/* please put firmware to vendor/mediatek/proprietary/hardware/spm/mtxxxx/ */
 struct spm_lp_scen __spm_suspend = {
 	.pwrctrl = &suspend_ctrl,
 	.wakestatus = &suspend_info[0],
@@ -384,7 +383,6 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 
 	if (spm_dormant_sta < 0) {
 		spm_crit2("spm_dormant_sta %d", spm_dormant_sta);
-		/* BUG(); */
 	}
 
 	if (is_infra_pdn(pwrctrl->pcm_flags))
@@ -466,7 +464,6 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 	ret = spm_to_sspm_command(SPM_SUSPEND, &spm_d);
 	if (ret < 0) {
 		spm_crit2("ret %d", ret);
-		/* BUG(); */
 	}
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
@@ -496,7 +493,6 @@ static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
 	ret = spm_to_sspm_command(SPM_RESUME, &spm_d);
 	if (ret < 0) {
 		spm_crit2("ret %d", ret);
-		/* BUG(); */
 	}
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
@@ -779,9 +775,6 @@ bool spm_is_conn_sleep(void)
 	return !(spm_read(PCM_REG13_DATA) & R13_CONN_SRCCLKENA);
 }
 
-#define hw_spin_lock_for_ddrdfs()
-#define hw_spin_unlock_for_ddrdfs()
-
 void spm_ap_mdsrc_req(u8 set)
 {
 	unsigned long flags;
@@ -798,9 +791,7 @@ void spm_ap_mdsrc_req(u8 set)
 		} else {
 			spm_ap_mdsrc_req_cnt++;
 
-			hw_spin_lock_for_ddrdfs();
 			mt_secure_call(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ, 1, 0, 0);
-			hw_spin_unlock_for_ddrdfs();
 
 			spin_unlock_irqrestore(&__spm_lock, flags);
 
@@ -832,9 +823,7 @@ void spm_ap_mdsrc_req(u8 set)
 				  spm_ap_mdsrc_req_cnt);
 		} else {
 			if (spm_ap_mdsrc_req_cnt == 0) {
-				hw_spin_lock_for_ddrdfs();
 				mt_secure_call(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ, 0, 0, 0);
-				hw_spin_unlock_for_ddrdfs();
 			}
 		}
 
