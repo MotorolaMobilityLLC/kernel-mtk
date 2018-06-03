@@ -4188,7 +4188,11 @@ void print_worker_info(const char *log_lvl, struct task_struct *task)
 	 */
 	probe_kernel_read(&fn, &worker->current_func, sizeof(fn));
 	probe_kernel_read(&pwq, &worker->current_pwq, sizeof(pwq));
+	if (!pwq)
+		return;
 	probe_kernel_read(&wq, &pwq->wq, sizeof(wq));
+	if (!wq)
+		return;
 	probe_kernel_read(name, wq->name, sizeof(name) - 1);
 
 	/* copy worker description */
