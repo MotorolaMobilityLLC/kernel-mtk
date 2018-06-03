@@ -127,6 +127,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				else
 #endif
 					mt_pause_armpll(FH_PLL2, 0);
+				/*3. Switch to HW mode*/
+				mp_enter_suspend(2, 1);
 #endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0);
 			}
@@ -176,14 +178,16 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				}
 				break;
 			case 2:
-				/*1. Pause FQHP function*/
-				mt_pause_armpll(FH_PLL2, 1);
-
-				/*2. Turn off ARM PLL*/
+				 /*1. Switch to SW mode*/
+				mp_enter_suspend(2, 0);
+				/*2. Pause FQHP function*/
 				if (action == CPU_DEAD_FROZEN)
 					mt_pause_armpll(FH_PLL2, 0x11);
 				else
 					mt_pause_armpll(FH_PLL2, 0x01);
+
+				/*3. Turn off ARM PLL*/
+				armpll_control(3, 0);
 				break;
 			default:
 				break;
