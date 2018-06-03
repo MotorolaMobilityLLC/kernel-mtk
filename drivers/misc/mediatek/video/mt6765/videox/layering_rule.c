@@ -390,36 +390,28 @@ static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
 	unsigned int i = 0;
 	struct layer_config *info;
 	unsigned int disp_idx = 0;
-#if 0
-	/* ovl only support 1 yuv layer */
-	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
+	unsigned int layer_cnt = 0;
+
+	for (disp_idx = 0 ; disp_idx < 2; ++disp_idx) {
+		if (disp_info->layer_num[disp_idx] < 1)
+			continue;
+
+		/* display not support RGBA1010102 & RGBA_FP16 */
 		for (i = 0; i < disp_info->layer_num[disp_idx]; i++) {
 			info = &(disp_info->input_config[disp_idx][i]);
-			if (is_gles_layer(disp_info, disp_idx, i))
+			if (info->src_fmt != DISP_FORMAT_RGBA1010102 &&
+					info->src_fmt != DISP_FORMAT_RGBA_FP16)
 				continue;
-			if (is_yuv(info->src_fmt)) {
-				if (flag) {
-					/* push to GPU */
-					if (disp_info->gles_head[disp_idx] ==
-						-1 ||
-						i <
-						disp_info->gles_head[disp_idx])
-						disp_info->gles_head[disp_idx] =
-						i;
-					if (disp_info->gles_tail[disp_idx] ==
-						-1 ||
-						i >
-						disp_info->gles_tail[disp_idx])
-						disp_info->gles_tail[disp_idx] =
-						i;
-				} else {
-					flag = true;
-				}
-			}
+
+			/* push to GPU */
+			if (disp_info->gles_head[disp_idx] == -1 ||
+					i < disp_info->gles_head[disp_idx])
+				disp_info->gles_head[disp_idx] = i;
+			if (disp_info->gles_tail[disp_idx] == -1 ||
+					i > disp_info->gles_tail[disp_idx])
+				disp_info->gles_tail[disp_idx] = i;
 		}
 	}
-#else
-	unsigned int layer_cnt = 0;
 
 	disp_idx = 1;
 	for (i = 0; i < disp_info->layer_num[disp_idx]; i++) {
@@ -440,7 +432,7 @@ static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
 			flag = false;
 		}
 	}
-#endif
+
 	return flag;
 }
 
