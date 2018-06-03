@@ -108,8 +108,8 @@ void cm_mgr_update_met(void)
 	met_data.cm_mgr_power[6] = cpu_power_down[0];
 	met_data.cm_mgr_power[8] = cpu_power_up[0];
 	met_data.cm_mgr_power[9] = cpu_power_down[0];
-	met_data.cm_mgr_power[10] = vcore_power_up;
-	met_data.cm_mgr_power[11] = vcore_power_down;
+	met_data.cm_mgr_power[10] = (unsigned int)vcore_power_up;
+	met_data.cm_mgr_power[11] = (unsigned int)vcore_power_down;
 	met_data.cm_mgr_power[12] = v2f[0];
 
 	met_data.cm_mgr_count[0] = count[0];
@@ -730,55 +730,3 @@ int cm_mgr_platform_init(void)
 	return r;
 }
 
-#define MT6762M_SEGMENT 1
-#define MT6762_SEGMENT 2
-#define MT6765_SEGMENT 3
-#define MT6765T_SEGMENT 4
-
-#if 0
-/* Manh */
-unsigned int gpu_power_gain[][CM_MGR_GPU_ARRAY_SIZE] = {
-	{4100, 156},
-	{173, 901},
-	{299, 829},
-};
-#else
-/* Texering */
-unsigned int gpu_power_gain[][CM_MGR_GPU_ARRAY_SIZE] = {
-	{5288, 126},
-	{62, 808},
-	{414, 234},
-};
-#endif /* 0 */
-
-int cm_mgr_get_gpu_power(int level, int up)
-{
-	int gpu_opp;
-	int gpu_type;
-	int gpu_status;
-	int gpu_loading;
-
-	if (cm_mgr_gpu_enable == 0)
-		return 0;
-
-	gpu_type = dvfsrc_sram_read(QOS_CM_GPU_ONOFF) >> 16;
-	gpu_status = dvfsrc_sram_read(QOS_CM_GPU_ONOFF) & 0xffff;
-	gpu_opp = dvfsrc_sram_read(QOS_CM_GPU_OPP);
-	gpu_loading = dvfsrc_sram_read(QOS_CM_RESERVE_2);
-
-#ifdef DEBUG_CM_MGR
-	pr_info("#@# gpu %d/%d/%d, level %d, loading %d\n",
-			gpu_type, gpu_status, gpu_opp, level, gpu_loading);
-#endif /* DEBUG_CM_MGR */
-
-	if (gpu_status != 1)
-		return 0;
-
-	if (gpu_type == MT6762M_SEGMENT)
-		gpu_opp = 2;
-
-	if (up == IS_UP)
-		return (gpu_power_gain[gpu_opp][level] * gpu_loading / 100);
-	else
-		return (gpu_power_gain[gpu_opp][level - 1] * gpu_loading / 100);
-}

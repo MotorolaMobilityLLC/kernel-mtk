@@ -61,8 +61,6 @@ int cpu_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};
 int cpu_power_ratio_down[CM_MGR_EMI_OPP] = {100, 100};
 int vcore_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};
 int vcore_power_ratio_down[CM_MGR_EMI_OPP] = {100, 100};
-static int gpu_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};
-static int gpu_power_ratio_down[CM_MGR_EMI_OPP] = {100, 100};
 int debounce_times_up_adb[CM_MGR_EMI_OPP] = {0, 3};
 int debounce_times_down_adb[CM_MGR_EMI_OPP] = {0, 3};
 static int debounce_times_reset_adb;
@@ -75,7 +73,6 @@ int cm_mgr_enable = 1;
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
 int cm_mgr_sspm_enable = 1;
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-int cm_mgr_gpu_enable;
 #ifdef USE_TIMER_CHECK
 int cm_mgr_timer_enable = 1;
 #endif /* USE_TIMER_CHECK */
@@ -86,7 +83,7 @@ int cm_mgr_perf_enable = 1;
 int cm_mgr_perf_timer_enable;
 int cm_mgr_perf_force_enable;
 
-static unsigned int vcore_power_gain_0[][VCORE_ARRAY_SIZE] = {
+static int vcore_power_gain_0[][VCORE_ARRAY_SIZE] = {
 	{64, 165},
 	{518, 545},
 	{488, 653},
@@ -110,7 +107,7 @@ static unsigned int vcore_power_gain_0[][VCORE_ARRAY_SIZE] = {
 	{1003, 1353},
 };
 
-static unsigned int vcore_power_gain_1[][VCORE_ARRAY_SIZE] = {
+static int vcore_power_gain_1[][VCORE_ARRAY_SIZE] = {
 	{36, 176},
 	{109, 460},
 	{123, 548},
@@ -146,7 +143,7 @@ static int vcore_power_array_size(int idx)
 	return 0;
 };
 
-static unsigned int *vcore_power_gain_ptr(int idx)
+static int *vcore_power_gain_ptr(int idx)
 {
 	switch (idx) {
 	case 0:
@@ -159,7 +156,7 @@ static unsigned int *vcore_power_gain_ptr(int idx)
 	return NULL;
 };
 
-static unsigned int *vcore_power_gain = VCORE_POWER_GAIN_PTR(0);
+static int *vcore_power_gain = VCORE_POWER_GAIN_PTR(0);
 #define vcore_power_gain(p, i, j) (*(p + (i) * VCORE_ARRAY_SIZE + (j)))
 
 static unsigned int _v2f_all[][CM_MGR_CPU_CLUSTER] = {
