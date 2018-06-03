@@ -758,7 +758,7 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 		for (i = 0; i < 2; i++) {
 			reg_value = mt_emi_reg_read(EMI_MPU_APC(region, i*8));
 			for (j = 0; j < 8; j++) {
-				ptr += sprintf(ptr, "%s, ", permission[((reg_value >> (j*3)) & 0x7)]);
+				ptr += snprintf(ptr, 16, "%s, ", permission[((reg_value >> (j*3)) & 0x7)]);
 				if ((j == 3) || (j == 7))
 					ptr += sprintf(ptr, "\n");
 			}
@@ -802,7 +802,7 @@ const char *buf, size_t count)
 	if (!command)
 		return count;
 
-	strcpy(command, buf);
+	strncpy(command, buf, (size_t) MAX_EMI_MPU_STORE_CMD_LEN);
 	ptr = (char *)buf;
 
 	if (!strncmp(buf, EN_MPU_STR, strlen(EN_MPU_STR))) {
@@ -1207,7 +1207,7 @@ const char *buf, size_t count)
 	if (!command)
 		return count;
 
-	strcpy(command, buf);
+	strncpy(command, buf, (size_t)MAX_EMI_MPU_STORE_CMD_LEN);
 	ptr = (char *)buf;
 
 	if (!strncmp(buf, EN_WP_STR, strlen(EN_WP_STR))) {

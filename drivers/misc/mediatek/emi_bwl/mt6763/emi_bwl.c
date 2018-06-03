@@ -302,11 +302,11 @@ static ssize_t con_sce_show(struct device_driver *driver, char *buf)
 	if (cur_con_sce >= NR_CON_SCE)
 		ptr += sprintf(ptr, "none\n");
 	else
-		ptr += sprintf(ptr, "current scenario: %s\n",
-		con_sce_str[cur_con_sce]);
+		ptr += snprintf(ptr, 64, "current scenario: %s\n",
+			con_sce_str[cur_con_sce]);
 
 #if 1
-	ptr += sprintf(ptr, "%s\n", con_sce_str[cur_con_sce]);
+	ptr += snprintf(ptr, 32, "%s\n", con_sce_str[cur_con_sce]);
 	ptr += sprintf(ptr, "EMI_ARBA = 0x%x\n",  readl(IOMEM(EMI_ARBA)));
 	ptr += sprintf(ptr, "EMI_ARBB = 0x%x\n",  readl(IOMEM(EMI_ARBB)));
 	ptr += sprintf(ptr, "EMI_ARBC = 0x%x\n",  readl(IOMEM(EMI_ARBC)));
@@ -323,8 +323,8 @@ static ssize_t con_sce_show(struct device_driver *driver, char *buf)
 	ptr += sprintf(ptr, "CHA_EMI_ARB_RFF = 0x%x\n", readl(IOMEM(CHA_EMI_ARB_RFF)));
 	ptr += sprintf(ptr, "CHB_EMI_ARB_RFF = 0x%x\n", readl(IOMEM(CHB_EMI_ARB_RFF)));
 	for (i = 0; i < NR_CON_SCE; i++)
-		ptr += sprintf(ptr, "%s = 0x%x\n", con_sce_str[i],
-			ctrl_tbl[i].ref_cnt);
+		ptr += snprintf(ptr, 64, "%s = 0x%x\n",
+			con_sce_str[i], ctrl_tbl[i].ref_cnt);
 
 	pr_debug("[EMI BWL] EMI_ARBA = 0x%x\n", readl(IOMEM(EMI_ARBA)));
 	pr_debug("[EMI BWL] EMI_ARBB = 0x%x\n", readl(IOMEM(EMI_ARBB)));
