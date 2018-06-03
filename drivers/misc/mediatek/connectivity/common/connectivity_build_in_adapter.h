@@ -52,8 +52,7 @@
 	defined(CONFIG_MACH_ELBRUS)
 #define CONNADP_HAS_CLOCK_BUF_CTRL
 #define KERNEL_clk_buf_ctrl connectivity_export_clk_buf_ctrl
-enum clk_buf_id;
-void connectivity_export_clk_buf_ctrl(enum clk_buf_id id, bool onoff);
+void connectivity_export_clk_buf_ctrl(/*enum clk_buf_id*/ int id, bool onoff);
 #endif
 
 /*******************************************************************************
