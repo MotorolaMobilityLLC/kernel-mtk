@@ -49,8 +49,8 @@
 #define MCSI_SMC_READ(addr)  reg_read(addr)
 #endif
 
-#define REG_DUMP(addr) dcm_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, reg_read(addr))
-#define SECURE_REG_DUMP(addr) dcm_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, mcsi_reg_read(addr##_PHYS & 0xFFFF))
+#define REG_DUMP(addr) dcm_pr_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, reg_read(addr))
+#define SECURE_REG_DUMP(addr) dcm_pr_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, mcsi_reg_read(addr##_PHYS & 0xFFFF))
 
 typedef enum {
 	ARMCORE_DCM_OFF = DCM_OFF,
