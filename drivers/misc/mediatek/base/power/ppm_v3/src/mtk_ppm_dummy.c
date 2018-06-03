@@ -13,7 +13,7 @@
 
 
 #include <linux/cpufreq.h>
-#include "mtk_ppm_api.h"
+#include "mach/mtk_ppm_api.h"
 
 void mt_ppm_set_dvfs_table(unsigned int cpu,
 	struct cpufreq_frequency_table *tbl,

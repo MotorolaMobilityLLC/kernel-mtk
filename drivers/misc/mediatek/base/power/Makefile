@@ -18,6 +18,7 @@ ifeq ($(CONFIG_MTK_UNIFY_POWER), y)
 obj-$(CONFIG_MACH_MT6758) += upower_v2/
 endif
 obj-$(CONFIG_MACH_MT6758) += ppm_v3/
+obj-$(CONFIG_MACH_MT6765) += ppm_v3/
 obj-$(CONFIG_MACH_MT6758) += dcm_v1/
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_MACH_MT6758) += clkbuf_v1/
