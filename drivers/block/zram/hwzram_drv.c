@@ -560,10 +560,19 @@ next:
 	}
 	spin_unlock_irqrestore(&hwzram->slot_free_lock, flags);
 
+retry:
 	/* free this slot */
-	bit_spin_lock(HWZRAM_DRV_ACCESS, &meta->table[free_rq->index].value);
-	hwzram_free_page(hwzram, free_rq->index);
-	bit_spin_unlock(HWZRAM_DRV_ACCESS, &meta->table[free_rq->index].value);
+	local_irq_save(flags);
+
+	if (bit_spin_trylock(HWZRAM_DRV_ACCESS, &meta->table[free_rq->index].value)) {
+		hwzram_free_page(hwzram, free_rq->index);
+		bit_spin_unlock(HWZRAM_DRV_ACCESS, &meta->table[free_rq->index].value);
+	} else {
+		local_irq_restore(flags);
+		goto retry;
+	}
+
+	local_irq_restore(flags);
 
 	/* release this free_rq */
 	kfree(free_rq);
