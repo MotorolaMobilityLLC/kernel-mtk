@@ -76,6 +76,7 @@ obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/
 obj-$(CONFIG_MTK_RAM_CONSOLE) += ram_console/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
 obj-$(CONFIG_MTK_CMDQ) += cmdq/
+obj-$(CONFIG_MTK_CMDQ_TAB) += cmdq/
 obj-$(CONFIG_MTK_LCM) += lcm/
 obj-$(CONFIG_MTK_FB) += video/
 obj-$(CONFIG_MTK_SYNC) += sync/
