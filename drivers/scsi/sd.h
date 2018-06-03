@@ -14,6 +14,8 @@
 /* MTK PATCH: Max SCSI cmd timeout = 1.2s * 32QueueDepth ~= 39s */
 #define SD_TIMEOUT		(39 * HZ)
 #define SD_MOD_TIMEOUT		(75 * HZ)
+#define SD_DISCARD_TIMEOUT	(100 * HZ)
+
 /*
  * Flush timeout is a multiplier over the standard device timeout which is
  * user modifiable via sysfs but initially set to SD_TIMEOUT
