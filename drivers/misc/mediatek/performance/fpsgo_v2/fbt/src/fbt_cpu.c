@@ -1029,7 +1029,7 @@ static unsigned int fbt_get_max_userlimit_freq(void)
 		return 100U;
 
 	for (i = 0; i < cluster_num; i++)
-		clus_max_idx[i] = mt_ppm_userlimit_freq_limit_by_others(cluster_num);
+		clus_max_idx[i] = mt_ppm_userlimit_freq_limit_by_others(i);
 
 	mutex_lock(&fbt_mlock);
 	for (i = 0; i < cluster_num; i++) {
