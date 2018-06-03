@@ -63,7 +63,6 @@ long sec_core_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	int err = 0;
 	int ret = 0;
 	unsigned int rid[4];
-	META_CONTEXT meta_ctx;
 
 	/* ---------------------------------- */
 	/* IOCTL                              */
@@ -117,45 +116,6 @@ long sec_core_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case SEC_BOOT_IS_ENABLED:
 		pr_debug("[%s] CMD - SEC_BOOT_IS_ENABLED\n", MOD);
 		ret = sec_boot_enabled();
-		ret = osal_copy_to_user((void __user *)arg, (void *)&ret, sizeof(int));
-		break;
-
-		/* ---------------------------------- */
-		/* NVRAM HW encryption                */
-		/* ---------------------------------- */
-	case SEC_NVRAM_HW_ENCRYPT:
-		pr_debug("[%s] CMD - SEC_NVRAM_HW_ENCRYPT\n", MOD);
-		if (osal_copy_from_user((void *)&meta_ctx, (void __user *)arg, sizeof(meta_ctx)))
-			return -EFAULT;
-
-		/* TODO : double check if META register is correct ? */
-		masp_hal_sp_hacc_enc((unsigned char *)&(meta_ctx.data), NVRAM_CIPHER_LEN, true,
-				     HACC_USER2, false);
-		meta_ctx.ret = SEC_OK;
-
-		ret = osal_copy_to_user((void __user *)arg, (void *)&meta_ctx, sizeof(meta_ctx));
-		break;
-
-		/* ---------------------------------- */
-		/* NVRAM HW decryption                */
-		/* ---------------------------------- */
-	case SEC_NVRAM_HW_DECRYPT:
-		pr_debug("[%s] CMD - SEC_NVRAM_HW_DECRYPT\n", MOD);
-		if (osal_copy_from_user((void *)&meta_ctx, (void __user *)arg, sizeof(meta_ctx)))
-			return -EFAULT;
-
-		masp_hal_sp_hacc_dec((unsigned char *)&(meta_ctx.data), NVRAM_CIPHER_LEN, true,
-				     HACC_USER2, false);
-		meta_ctx.ret = SEC_OK;
-		ret = osal_copy_to_user((void __user *)arg, (void *)&meta_ctx, sizeof(meta_ctx));
-		break;
-
-		/* ---------------------------------- */
-		/* configure HACC HW (include SW KEY)  */
-		/* ---------------------------------- */
-	case SEC_HACC_CONFIG:
-		pr_debug("[%s] CMD - SEC_HACC_CONFIG\n", MOD);
-		ret = sec_boot_hacc_init();
 		ret = osal_copy_to_user((void __user *)arg, (void *)&ret, sizeof(int));
 		break;
 
