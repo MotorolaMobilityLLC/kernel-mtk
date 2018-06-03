@@ -139,6 +139,7 @@ struct layering_rule_ops {
 	void (*rsz_by_gpu_info_change)(void);
 	bool (*rollback_to_gpu_by_hw_limitation)(struct disp_layer_info *disp_info);
 	bool (*adaptive_dc_enabled)(void);
+	bool (*has_hrt_limit)(struct disp_layer_info *disp_info, int disp_idx);
 };
 
 #define HRT_GET_DVFS_LEVEL(hrt_num) (hrt_num & 0xF)

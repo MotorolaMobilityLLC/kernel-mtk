@@ -71,5 +71,6 @@ enum HRT_PATH_SCENARIO {
 };
 
 void layering_rule_init(void);
+int set_emi_bound_tb(int idx, int num, int *val);
 
 #endif

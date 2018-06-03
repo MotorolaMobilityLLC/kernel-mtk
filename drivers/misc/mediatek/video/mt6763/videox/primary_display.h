@@ -190,11 +190,6 @@ struct disp_frm_seq_info {
 	enum DISP_FRM_SEQ_STATE state;
 };
 
-struct OPT_BACKUP {
-	enum DISP_HELPER_OPT option;
-	int value;
-};
-
 /* AOD */
 enum lcm_power_state {
 	LCM_OFF = 0,
@@ -253,7 +248,7 @@ struct display_primary_path_context {
 	cmdqBackupSlotHandle dsi_vfp_line;
 
 	int is_primary_sec;
-	int primary_display_scenario;
+	int scen;
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	int request_fps;
 #endif
@@ -448,6 +443,7 @@ int display_exit_tui(void);
 int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
 		struct cmdqRecStruct *cmdq_handle);
 int primary_display_set_scenario(int scenario);
+int prim_disp_get_scenario(void);
 enum DISP_MODULE_ENUM _get_dst_module_by_lcm(struct disp_lcm_handle *plcm);
 extern void check_mm0_clk_sts(void);
 int display_freeze_mode(int enable, int need_lock);
