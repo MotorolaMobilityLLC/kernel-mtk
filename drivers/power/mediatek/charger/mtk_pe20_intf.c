@@ -262,18 +262,16 @@ static int pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 
 	return ret;
 }
-#if 0
+
 static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 {
-	int aicr_value;
+	int ret = 0;
 	int vchr1, vchr2, cable_imp;
-	int mivr_state = 0;
+	unsigned int aicr_value;
+	bool mivr_state = false;
 	struct timespec ptime[2], diff;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
-#if 0
-	if (!pe20->is_connect)
-		return;
-#endif
+
 	pr_debug("%s: starts\n", __func__);
 
 	if (pe20->vbat_orig > VBAT_CABLE_IMP_THRESHOLD) {
@@ -304,15 +302,13 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 	diff = timespec_sub(ptime[1], ptime[0]);
 
 	aicr_value = 800000;
-	/* battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &aicr_value); */
 	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
 
 	/* To wait for soft-start */
 	msleep(150);
 
-	/* battery_charging_control(CHARGING_CMD_GET_VINDPM_STATE, &mivr_state); */
-	mivr_state = charger_dev_get_mivr_state(pinfo->chg1_dev);
-	if (mivr_state) {
+	ret = charger_dev_get_mivr_state(pinfo->chg1_dev, &mivr_state);
+	if (ret != -ENOTSUPP && mivr_state) {
 		pe20->aicr_cable_imp = 1000000;
 		goto end;
 	}
@@ -320,7 +316,6 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 	vchr1 = pmic_get_vbus();
 
 	aicr_value = 500000;
-	/* battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &aicr_value); */
 	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
 	msleep(20);
 
@@ -337,9 +332,8 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 
 	/* Recover cable drop compensation */
 	aicr_value = 100000;
-	/* battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &aicr_value); */
 	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
-	msleep(300);
+	msleep(250);
 
 	if (cable_imp < CABLE_IMP_THRESHOLD) {
 		pe20->aicr_cable_imp = 3200000;
@@ -357,7 +351,7 @@ end:
 	pr_err("%s not started: set aicr:%dmA, mivr_state:%d\n",
 		__func__, pe20->aicr_cable_imp / 1000, mivr_state);
 }
-#endif
+
 static int pe20_detect_ta(struct charger_manager *pinfo)
 {
 	int ret;
@@ -426,8 +420,8 @@ int mtk_pe20_set_charging_current(struct charger_manager *pinfo,
 		return -ENOTSUPP;
 
 	pr_err("%s: starts\n", __func__);
-	*aicr = 3200000;
-	/* *aicr = pe20->aicr_cable_imp; */
+	/* *aicr = 3200000; */
+	*aicr = pe20->aicr_cable_imp;
 	*ichg = pinfo->data.ta_ac_charger_current;
 	pr_err("%s: OK, ichg = %dmA, AICR = %dmA\n",
 		__func__, *ichg / 1000, *aicr / 1000);
@@ -505,8 +499,7 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 	if (ret < 0)
 		goto _err;
 
-	/* TODO: check its functionality */
-	/* mtk_pe20_check_cable_impedance(pinfo); */
+	mtk_pe20_check_cable_impedance(pinfo);
 
 	ret = pe20_detect_ta(pinfo);
 	if (ret < 0)
@@ -544,7 +537,6 @@ int mtk_pe20_start_algorithm(struct charger_manager *pinfo)
 	bool current_sign;
 	u32 size;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
-
 
 	if (!pe20->is_enabled) {
 		pr_err("%s: stop, PE+20 is disabled\n",
