@@ -101,6 +101,23 @@ typedef struct _PMKID_ENTRY_T {
 } PMKID_ENTRY_T, *P_PMKID_ENTRY_T;
 #endif
 
+enum ENUM_EAPOL_KEY_TYPE_T {
+	EAPOL_KEY_NOT_KEY = 0,
+	EAPOL_KEY_1_OF_4  = 1,
+	EAPOL_KEY_2_OF_4  = 2,
+	EAPOL_KEY_3_OF_4  = 3,
+	EAPOL_KEY_4_OF_4  = 4,
+	EAPOL_KEY_1_OF_2  = 5,
+	EAPOL_KEY_2_OF_2  = 6,
+};
+
+enum ENUM_KEY_ACTION_TYPE_T {
+	SEC_DROP_KEY_COMMAND  = 0,
+	SEC_QUEUE_KEY_COMMAND = 1,
+	SEC_TX_KEY_COMMAND    = 2,
+	SEC_ACTION_KEY_NUM
+};
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -153,6 +170,13 @@ BOOLEAN secTransmitKeyExist(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prSta);
 BOOLEAN secEnabledInAis(IN P_ADAPTER_T prAdapter);
 
 BOOLEAN secWpaEnabledInAis(IN P_ADAPTER_T prAdapter);
+
+enum ENUM_EAPOL_KEY_TYPE_T secGetEapolKeyType(PUINT_8 pucPacket);
+
+VOID secHandleTxStatus(ADAPTER_T *prAdapter, UINT_8 *pucEvtBuf);
+
+VOID secHandleRxEapolPacket(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prRetSwRfb,
+		IN P_STA_RECORD_T prStaRec);
 
 /*******************************************************************************
 *                              F U N C T I O N S
