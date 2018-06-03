@@ -213,8 +213,8 @@ enum IMGSENSOR_RETURN imgsensor_proc_init(void)
 	proc_create("driver/camsensor3", 0, NULL, &fcamera_proc_fops3);
 	proc_create("driver/pdaf_type", 0, NULL, &fcamera_proc_fops_set_pdaf_type);
 
-    /* Camera information */
-    proc_create(PROC_CAMERA_INFO, 0, NULL, &fcamera_proc_fops1);
+	/* Camera information */
+	proc_create(PROC_CAMERA_INFO, 0, NULL, &fcamera_proc_fops1);
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }

@@ -55,10 +55,11 @@ struct IMGSENSOR_I2C {
 	struct IMGSENSOR_I2C_INST inst[IMGSENSOR_I2C_DEV_MAX_NUM];
 };
 
+enum IMGSENSOR_RETURN imgsensor_i2c_create(void);
+enum IMGSENSOR_RETURN imgsensor_i2c_delete(void);
 enum IMGSENSOR_RETURN imgsensor_i2c_init(
 	struct IMGSENSOR_I2C_CFG *pi2c_cfg,
 	enum IMGSENSOR_I2C_DEV device);
-enum IMGSENSOR_RETURN imgsensor_i2c_delete(struct IMGSENSOR_I2C_CFG *pi2c_cfg);
 enum IMGSENSOR_RETURN imgsensor_i2c_buffer_mode(int enable);
 enum IMGSENSOR_RETURN imgsensor_i2c_read(
 	struct IMGSENSOR_I2C_CFG *pi2c_cfg,

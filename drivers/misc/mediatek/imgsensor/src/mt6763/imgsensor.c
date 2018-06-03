@@ -2085,6 +2085,7 @@ static int imgsensor_probe(struct platform_device *pdev)
 	imgsensor_clk_init(&pgimgsensor->clk);
 #endif
 	imgsensor_hw_init(&pgimgsensor->hw);
+	imgsensor_i2c_create();
 	imgsensor_proc_init();
 
 #ifdef CONFIG_MTK_SMI_EXT
@@ -2096,15 +2097,7 @@ static int imgsensor_probe(struct platform_device *pdev)
 
 static int imgsensor_remove(struct platform_device *pdev)
 {
-	int i;
-	struct IMGSENSOR_SENSOR_INST *psensor_inst;
-
-	for(i = IMGSENSOR_SENSOR_IDX_MAIN; i < IMGSENSOR_SENSOR_IDX_MAX_NUM; i++) {
-		psensor_inst = &pgimgsensor->sensor[i].inst;
-		if(psensor_inst)
-			imgsensor_i2c_delete(&psensor_inst->i2c_cfg);
-	}
-
+	imgsensor_i2c_delete();
 	imgsensor_driver_unregister();
 
 	return 0;
