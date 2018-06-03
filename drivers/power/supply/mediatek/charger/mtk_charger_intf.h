@@ -228,6 +228,8 @@ struct charger_data {
 	int charging_current_limit;
 	int disable_charging_count;
 	int input_current_limit_by_aicl;
+	int junction_temp_min;
+	int junction_temp_max;
 };
 
 struct charger_manager {
