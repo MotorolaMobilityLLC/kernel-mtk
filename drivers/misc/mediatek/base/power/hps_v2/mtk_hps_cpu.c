@@ -137,8 +137,6 @@ int hps_cpu_up(unsigned int cpu)
 	lock_device_hotplug();
 
 	ret = device_online(cpu_dev);
-	if (ret)
-		dev_err(cpu_dev, "HPS: unable to up CPU\n");
 
 	unlock_device_hotplug();
 
@@ -153,8 +151,6 @@ int hps_cpu_down(unsigned int cpu)
 	lock_device_hotplug();
 
 	ret = device_offline(cpu_dev);
-	if (ret)
-		dev_err(cpu_dev, "HPS: unable to down CPU\n");
 
 	unlock_device_hotplug();
 
