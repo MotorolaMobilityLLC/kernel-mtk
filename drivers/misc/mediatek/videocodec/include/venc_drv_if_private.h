@@ -94,6 +94,7 @@ typedef struct __VENC_HYB_ENCSETTING {
 	VAL_UINT32_T    u4ShortHeaderMode;
 	VAL_UINT32_T    u4CodecType;        /* mepg4, h263, h264... */
 	VAL_UINT32_T    u4RotateAngle;
+	VAL_UINT32_T    u4PrependSPSPPSToIDRFrames;
 
 	/* used in QueryFunctions */
 	VENC_DRV_COLOR_FORMAT_T     eVEncFormat;    /* YUV420, I420 ..... */
@@ -118,6 +119,9 @@ typedef struct __VENC_HYB_ENCSETTING {
 	/* hardware dependent function settings */
 	VAL_BOOL_T      fgUseMCI;
 	VAL_UINT32_T    u4VEncThreadNum;
+
+	unsigned char   *pucPrependHeaderStoreBuf;
+	VAL_UINT32_T    u4PrependHeaderStoreSize;
 } VENC_HYBRID_ENCSETTING;
 
 
