@@ -2216,7 +2216,7 @@ bool SetFmI2sConnection(unsigned int ConnectionState)
 bool SetFmAwbConnection(unsigned int ConnectionState)
 {
 	SetIntfConnection(ConnectionState, Soc_Aud_AFE_IO_Block_I2S_CONNSYS,
-			  Soc_Aud_AFE_IO_Block_MEM_AWB);
+			  Soc_Aud_AFE_IO_Block_MEM_VUL2);
 	return true;
 }
 
@@ -2299,6 +2299,8 @@ static void Aud_IRQ2_Handler(void)
 		Auddrv_UL2_Interrupt_Handler();
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI))
 		Auddrv_MOD_DAI_Interrupt_Handler();
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL2))
+		Auddrv_VUL2_Interrupt_Handler();
 }
 
 static void (*Aud_IRQ_Handler_Funcs[Soc_Aud_IRQ_MCU_MODE_NUM])(void) = {
@@ -2371,6 +2373,8 @@ int get_usage_digital_block(enum audio_usage_id id)
 		return Soc_Aud_Digital_Block_MEM_AWB2;
 	case AUDIO_USAGE_DEEPBUFFER_PLAYBACK:
 		return Soc_Aud_Digital_Block_MEM_DL2;
+	case AUDIO_USAGE_FM_CAPTURE:
+		return Soc_Aud_Digital_Block_MEM_VUL2;
 	default:
 		pr_debug("%s(), not defined id %d\n", __func__, id);
 		return -EINVAL;
