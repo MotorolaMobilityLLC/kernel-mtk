@@ -27,6 +27,7 @@
 enum vcorefs_smc_cmd {
 	VCOREFS_SMC_CMD_0,
 	VCOREFS_SMC_CMD_1,
+	VCOREFS_SMC_CMD_2,
 	NUM_VCOREFS_SMC_CMD,
 };
 
@@ -38,5 +39,8 @@ extern char *spm_vcorefs_dump_dvfs_regs(char *p);
 extern u32 spm_vcorefs_get_MD_status(void);
 extern int spm_vcorefs_pwarp_cmd(void);
 extern int spm_vcorefs_get_opp(void);
+extern void spm_request_dvfs_opp(int id, enum dvfs_opp opp);
+extern u32 spm_vcorefs_get_md_srcclkena(void);
+extern void dvfsrc_md_scenario_update(bool);
 
 #endif /* __MTK_SPM_VCORE_DVFS_H__ */

@@ -33,6 +33,7 @@
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
 #include <mtk_dvfsrc_reg.h>
+#include <mtk_sleep_reg_md_reg_mt6763.h>
 #include <mtk_eem.h>
 #include <ext_wd_drv.h>
 #include "mtk_devinfo.h"
@@ -291,6 +292,11 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "PCM_REG_DATA_12~15     : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(PCM_REG12_DATA), spm_read(PCM_REG13_DATA),
 							spm_read(PCM_REG14_DATA), spm_read(PCM_REG15_DATA));
+		p += sprintf(p, "MDPTP_VMODEM_SPM_DVFS_CMD16~19   : 0x%x, 0x%x, 0x%x, 0x%x\n",
+				spm_read(SLEEP_REG_MD_SPM_DVFS_CMD16), spm_read(SLEEP_REG_MD_SPM_DVFS_CMD17),
+				spm_read(SLEEP_REG_MD_SPM_DVFS_CMD18), spm_read(SLEEP_REG_MD_SPM_DVFS_CMD19));
+		p += sprintf(p, "SPM_DVFS_CMD0~1        : 0x%x, 0x%x\n",
+							spm_read(SPM_DVFS_CMD0), spm_read(SPM_DVFS_CMD1));
 		p += sprintf(p, "PCM_IM_PTR             : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 		#endif
 	} else {
@@ -324,6 +330,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* SPM */
 		spm_vcorefs_warn("SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_warn("SPM_SW_RSV_5           : 0x%x\n", spm_read(SPM_SW_RSV_5));
+		spm_vcorefs_warn("SPM_SW_RSV_11          : 0x%x\n", spm_read(SPM_SW_RSV_11));
 		spm_vcorefs_warn("MD2SPM_DVFS_CON        : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
 		spm_vcorefs_warn("SPM_DVFS_EVENT_STA     : 0x%x\n", spm_read(SPM_DVFS_EVENT_STA));
 		spm_vcorefs_warn("SPM_DVFS_LEVEL         : 0x%x\n", spm_read(SPM_DVFS_LEVEL));
@@ -341,6 +348,11 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_warn("PCM_REG_DATA_12~15     : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(PCM_REG12_DATA), spm_read(PCM_REG13_DATA),
 							spm_read(PCM_REG14_DATA), spm_read(PCM_REG15_DATA));
+		spm_vcorefs_warn("MDPTP_VMODEM_SPM_DVFS_CMD16~19   : 0x%x, 0x%x, 0x%x, 0x%x\n",
+				spm_read(SLEEP_REG_MD_SPM_DVFS_CMD16), spm_read(SLEEP_REG_MD_SPM_DVFS_CMD17),
+				spm_read(SLEEP_REG_MD_SPM_DVFS_CMD18), spm_read(SLEEP_REG_MD_SPM_DVFS_CMD19));
+		spm_vcorefs_warn("SPM_DVFS_CMD0~1        : 0x%x, 0x%x\n",
+							spm_read(SPM_DVFS_CMD0), spm_read(SPM_DVFS_CMD1));
 		spm_vcorefs_warn("PCM_IM_PTR             : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 		#endif
 	}
@@ -368,6 +380,11 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 u32 spm_vcorefs_get_MD_status(void)
 {
 	return spm_read(MD2SPM_DVFS_CON);
+}
+
+u32 spm_vcorefs_get_md_srcclkena(void)
+{
+	return spm_read(PCM_REG13_DATA) & (1U << 8);
 }
 
 static void spm_dvfsfw_init(int curr_opp)
@@ -454,6 +471,10 @@ int spm_vcorefs_get_opp(void)
 			level = 12;
 		else if (level == 0x2000)
 			level = 13;
+		else if (level == 0x4000)
+			level = 14;
+		else if (level == 0x8000)
+			level = 15;
 
 		spin_unlock_irqrestore(&__spm_lock, flags);
 	} else {
@@ -475,6 +496,7 @@ static void dvfsrc_hw_policy_mask(bool force)
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 5));
 		spm_write(DVFSRC_VCORE_MD2SPM0, 0x0);
 		spm_write(DVFSRC_MD_REQUEST, 0x0);
+		spm_request_dvfs_opp(0, OPP_3);
 	} else {
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 0));
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 4));
@@ -493,7 +515,7 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 
 	u32 vcore_req[NUM_OPP] = {0x1, 0x0, 0x0, 0x0};
 	u32 emi_req[NUM_OPP] = {0x2, 0x2, 0x1, 0x0};
-	u32 md_req[NUM_OPP] = {0x0, 0x0, 0x0, 0x0};
+	/* u32 md_req[NUM_OPP] = {0x0, 0x0, 0x0, 0x0}; */
 	u32 dvfsrc_level[NUM_OPP] = {0x8, 0x4, 0x2, 0x1};
 
 	if (__spm_get_dram_type() == SPMFW_LP3_1CH) {
@@ -516,7 +538,7 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 #endif
 	spm_write(DVFSRC_VCORE_REQUEST, (spm_read(DVFSRC_VCORE_REQUEST) & ~(0x3 << 20)) | (vcore_req[opp] << 20));
 	spm_write(DVFSRC_EMI_REQUEST, (spm_read(DVFSRC_EMI_REQUEST) & ~(0x3 << 20)) | (emi_req[opp] << 20));
-	spm_write(DVFSRC_MD_REQUEST, (spm_read(DVFSRC_MD_REQUEST) & ~(0x7 << 3)) | (md_req[opp] << 3));
+	/* spm_write(DVFSRC_MD_REQUEST, (spm_read(DVFSRC_MD_REQUEST) & ~(0x7 << 3)) | (md_req[opp] << 3)); */
 
 	vcorefs_crit_mask(log_mask(), kicker, "[%s] fix: %d, opp: %d, vcore: 0x%x, emi: 0x%x, md: 0x%x\n",
 			__func__, fix, opp,
@@ -551,6 +573,35 @@ int spm_dvfs_flag_init(void)
 	return flag;
 }
 
+void dvfsrc_md_scenario_update(bool suspend)
+{
+#if 1
+	if (__spm_get_dram_type() == SPMFW_LP4X_2CH) {
+		/* LP4 2CH */
+		if (suspend) {
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x00000000);
+			spm_write(DVFSRC_EMI_MD2SPM1, 0x800080C0);
+			spm_write(DVFSRC_VCORE_MD2SPM0, 0x800080C0);
+		} else {
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x0000003E);
+			spm_write(DVFSRC_EMI_MD2SPM1, 0x800080C0);
+			spm_write(DVFSRC_VCORE_MD2SPM0, 0x800080C0);
+		}
+	} else {
+		/* LP3 1CH */
+		if (suspend) {
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x000000C0);
+			spm_write(DVFSRC_EMI_MD2SPM1, 0x80008000);
+			spm_write(DVFSRC_VCORE_MD2SPM0, 0x800080C0);
+		} else {
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x0000003E);
+			spm_write(DVFSRC_EMI_MD2SPM1, 0x800080C0);
+			spm_write(DVFSRC_VCORE_MD2SPM0, 0x800080C0);
+		}
+	}
+#endif
+}
+
 static void dvfsrc_init(void)
 {
 	unsigned long flags;
@@ -570,6 +621,9 @@ static void dvfsrc_init(void)
 
 		spm_write(DVFSRC_EMI_HRT, 0x00001C14);
 		spm_write(DVFSRC_VCORE_HRT, 0x00001C1C);
+		spm_write(DVFSRC_EMI_MD2SPM0, 0x0000003E);
+		spm_write(DVFSRC_EMI_MD2SPM1, 0x800080C0);
+		spm_write(DVFSRC_VCORE_MD2SPM0, 0x800080C0);
 	} else {
 		/* LP3 1CH */
 		spm_write(DVFSRC_LEVEL_LABEL_0_1, 0x00100000);
@@ -583,14 +637,13 @@ static void dvfsrc_init(void)
 
 		spm_write(DVFSRC_EMI_HRT, 0x00001810);
 		spm_write(DVFSRC_VCORE_HRT, 0x00001818);
+		spm_write(DVFSRC_EMI_MD2SPM0, 0x0000003E);
+		spm_write(DVFSRC_EMI_MD2SPM1, 0x800080C0);
+		spm_write(DVFSRC_VCORE_MD2SPM0, 0x800080C0);
 	}
 
 	spm_write(DVFSRC_RSRV_1, 0x00000004);
 	spm_write(DVFSRC_TIMEOUT_NEXTREQ, 0x00000011);
-
-	spm_write(DVFSRC_EMI_MD2SPM0, 0x0000003E);
-	spm_write(DVFSRC_EMI_MD2SPM1, 0x8000C0C0);
-	spm_write(DVFSRC_VCORE_MD2SPM0, 0x8000C0C0);
 
 	spm_write(DVFSRC_EMI_REQUEST, 0x00290299);
 	spm_write(DVFSRC_VCORE_REQUEST, 0x00110000);
@@ -683,6 +736,23 @@ void spm_go_to_vcorefs(int spm_flags)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	spm_vcorefs_warn("[%s] done\n", __func__);
+}
+
+void spm_request_dvfs_opp(int id, enum dvfs_opp opp)
+{
+	u32 emi_req[NUM_OPP] = {0x2, 0x2, 0x1, 0x0};
+
+	switch (id) {
+	case 0: /* ZQTX */
+		if (__spm_get_dram_type() != SPMFW_LP4X_2CH)
+			return;
+
+		mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, id, emi_req[opp]);
+		spm_vcorefs_warn("DRAM ZQTX tracking request: %d\n", opp);
+		break;
+	default:
+		break;
+	}
 }
 
 static void plat_info_init(void)
