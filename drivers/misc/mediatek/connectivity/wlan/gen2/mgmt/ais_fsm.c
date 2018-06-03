@@ -2764,7 +2764,9 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 								     sizeof(u2StatusCode));
 
 					eNextState = AIS_STATE_IDLE;
-				} else if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
+				/* Don't send join fail if this join is the driver retry join (rJoinReqTime == 0) */
+				} else if (prAisFsmInfo->rJoinReqTime != 0 &&
+					   prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
 					/*Avoid STA to retry connect AP fenqency and printk too much.*/
 					/*abort connection trial */
 					DBGLOG(AIS, INFO,
