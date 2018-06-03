@@ -26,7 +26,7 @@
 #define DISP_SESSION_DEV(id) ((id)&0xff)
 #define MAKE_DISP_SESSION(type, dev) (unsigned int)((type)<<16 | (dev))
 
-#define RSZ_RES_LIST_NUM 4
+#define RSZ_RES_LIST_NUM 8
 
 /* /============================================================================= */
 /* structure declarations */
@@ -402,12 +402,21 @@ struct disp_caps_info {
 	int is_support_frame_cfg_ioctl;
 	int is_output_rotated;
 	int lcm_degree;
+
 	/* resizer input resolution list
 	 * format:
-	 *   sequence from big resolution to small
-	 *   portrait width first then height
+	 *   sequence from big resolution(LCM resolution) to small
+	 *   portrait {width, height, rsz layer cnt to use}
+	 * ex:
+	 *   { 1440, 2560, 0},
+	 *   { 1080, 1920, 1},
+	 *   ...
 	 */
-	unsigned int rsz_in_res_list[RSZ_RES_LIST_NUM][2];
+	unsigned int rsz_in_res_list[RSZ_RES_LIST_NUM][3];
+	unsigned int rsz_list_length;
+	/* portrait { width, height } */
+	unsigned int rsz_in_max[2];
+
 	/* is_support_three_session:
 	 *  1: support three session at same time
 	 *  0: not support three session at same time
@@ -446,6 +455,8 @@ struct disp_layer_info {
 enum DISP_SCENARIO {
 	DISP_SCENARIO_NORMAL,
 	DISP_SCENARIO_SELF_REFRESH,
+	DISP_SCENARIO_FORCE_DC,
+	DISP_SCENARIO_NUM,
 };
 struct disp_scenario_config_t {
 	unsigned int session_id;
@@ -458,6 +469,15 @@ enum DISP_UT_ERROR {
 	DISP_UT_ERROR_RDMA = 0x00000004,
 	DISP_UT_ERROR_CMDQ_TIMEOUT = 0x00000008,
 };
+
+enum DISP_SELF_REFRESH_TYPE {
+	WAIT_FOR_REFRESH,
+	REFRESH_FOR_ANTI_LATENCY2,
+	REFRESH_FOR_SWITCH_DECOUPLE,
+	REFRESH_FOR_SWITCH_DECOUPLE_MIRROR,
+	REFRESH_TYPE_NUM,
+};
+
 /* IOCTL commands. */
 #define DISP_IOW(num, dtype)     _IOW('O', num, dtype)
 #define DISP_IOR(num, dtype)     _IOR('O', num, dtype)
@@ -491,9 +511,10 @@ enum DISP_UT_ERROR {
 #define	DISP_IOCTL_FRAME_CONFIG					DISP_IOW(221, struct disp_session_output_config)
 #define DISP_IOCTL_QUERY_VALID_LAYER				DISP_IOW(222, struct disp_layer_info)
 #define	DISP_IOCTL_SET_SCENARIO					DISP_IOW(223, struct disp_scenario_config_t)
-#define	DISP_IOCTL_WAIT_ALL_JOBS_DONE				DISP_IOW(224, unsigned int)
-#define	DISP_IOCTL_SCREEN_FREEZE				DISP_IOW(225, unsigned int)
-#define DISP_IOCTL_GET_UT_RESULT			DISP_IOW(226, unsigned int)
+#define	DISP_IOCTL_WAIT_ALL_JOBS_DONE	DISP_IOW(224, unsigned int)
+#define	DISP_IOCTL_SCREEN_FREEZE	DISP_IOW(225, unsigned int)
+#define DISP_IOCTL_GET_UT_RESULT	DISP_IOW(226, unsigned int)
+#define DISP_IOCTL_WAIT_DISP_SELF_REFRESH	DISP_IOW(227, unsigned int)
 #ifdef __KERNEL__
 
 int disp_mgr_get_session_info(struct disp_session_info *info);
