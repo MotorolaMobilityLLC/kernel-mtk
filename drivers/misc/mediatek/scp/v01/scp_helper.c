@@ -119,7 +119,6 @@ static DEFINE_MUTEX(scp_feature_mutex);
 static DEFINE_MUTEX(scp_register_sensor_mutex);
 
 char *core_ids[SCP_CORE_TOTAL] = {"SCP A"};
-DEFINE_SPINLOCK(scp_awake_spinlock);
 /* set flag after driver initial done */
 static bool driver_init_done;
 unsigned char **scp_swap_buf;
@@ -168,22 +167,15 @@ int get_scp_semaphore(int flag)
 	int read_back;
 	int count = 0;
 	int ret = -1;
-	unsigned long spin_flags;
 
 	/* return 1 to prevent from access when driver not ready */
 	if (!driver_init_done)
 		return -1;
 
-	if (scp_awake_lock(SCP_A_ID) == -1) {
-		pr_debug("get_scp_semaphore: awake scp fail\n");
-		return ret;
-	}
-
-	/* spinlock context safe*/
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+	if (is_scp_ready(SCP_A_ID) == 0)
+		return -1;
 
 	flag = (flag * 2) + 1;
-
 	read_back = (readl(SCP_SEMAPHORE) >> flag) & 0x1;
 
 	if (read_back == 0) {
@@ -207,12 +199,6 @@ int get_scp_semaphore(int flag)
 		pr_err("[SCP] already hold scp sema. %d\n", flag);
 	}
 
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
-	if (scp_awake_unlock(SCP_A_ID) == -1)
-		pr_debug("get_scp_semaphore: scp_awake_unlock fail\n");
-
-
 	return ret;
 }
 EXPORT_SYMBOL_GPL(get_scp_semaphore);
@@ -227,18 +213,14 @@ int release_scp_semaphore(int flag)
 {
 	int read_back;
 	int ret = -1;
-	unsigned long spin_flags;
 
 	/* return 1 to prevent from access when driver not ready */
 	if (!driver_init_done)
 		return -1;
 
-	if (scp_awake_lock(SCP_A_ID) == -1) {
-		pr_debug("release_scp_semaphore: awake scp fail\n");
-		return ret;
-	}
-	/* spinlock context safe*/
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+	if (is_scp_ready(SCP_A_ID) == 0)
+		return -1;
+
 	flag = (flag * 2) + 1;
 
 	read_back = (readl(SCP_SEMAPHORE) >> flag) & 0x1;
@@ -254,12 +236,6 @@ int release_scp_semaphore(int flag)
 	} else {
 		pr_err("[SCP] try to release sema. %d not own by me\n", flag);
 	}
-
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
-	if (scp_awake_unlock(SCP_A_ID) == -1)
-		pr_debug("release_scp_semaphore: scp_awake_unlock fail\n");
-
 
 	return ret;
 }
@@ -666,33 +642,6 @@ static ssize_t scp_ee_ctrl(struct device *kobj
 }
 DEVICE_ATTR(scp_ee_enable, 0644, scp_ee_show, scp_ee_ctrl);
 
-static inline ssize_t scp_A_awake_lock_show(struct device *kobj
-			, struct device_attribute *attr, char *buf)
-{
-
-	if (scp_ready[SCP_A_ID]) {
-		scp_awake_lock(SCP_A_ID);
-		return scnprintf(buf, PAGE_SIZE, "SCP A awake lock\n");
-	} else
-		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready\n");
-}
-
-DEVICE_ATTR(scp_A_awake_lock, 0444, scp_A_awake_lock_show, NULL);
-
-static inline ssize_t scp_A_awake_unlock_show(struct device *kobj
-			, struct device_attribute *attr, char *buf)
-{
-
-	if (scp_ready[SCP_A_ID]) {
-		scp_awake_unlock(SCP_A_ID);
-		return scnprintf(buf, PAGE_SIZE, "SCP A awake unlock\n");
-	} else
-		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready\n");
-}
-
-DEVICE_ATTR(scp_A_awake_unlock, 0444, scp_A_awake_unlock_show, NULL);
-
-
 static inline ssize_t scp_ipi_test_show(struct device *kobj
 			, struct device_attribute *attr, char *buf)
 {
@@ -861,18 +810,6 @@ static int create_files(void)
 #ifdef CONFIG_MTK_ENG_BUILD
 	ret = device_create_file(scp_device.this_device
 					, &dev_attr_scp_ee_enable);
-
-	if (unlikely(ret != 0))
-		return ret;
-
-	ret = device_create_file(scp_device.this_device
-					, &dev_attr_scp_A_awake_lock);
-
-	if (unlikely(ret != 0))
-		return ret;
-
-	ret = device_create_file(scp_device.this_device
-					, &dev_attr_scp_A_awake_unlock);
 
 	if (unlikely(ret != 0))
 		return ret;
@@ -1081,13 +1018,6 @@ void scp_register_feature(enum feature_id id)
 	 */
 	mutex_lock(&scp_feature_mutex);
 
-	/*SCP keep awake */
-	if (scp_awake_lock(SCP_A_ID) == -1) {
-		pr_debug("scp_register_feature: awake scp fail\n");
-		mutex_unlock(&scp_feature_mutex);
-		return;
-	}
-
 	for (i = 0; i < NUM_FEATURE_ID; i++) {
 		if (feature_table[i].feature == id)
 			feature_table[i].enable = 1;
@@ -1116,10 +1046,6 @@ void scp_register_feature(enum feature_id id)
 		WARN_ON(1);
 	}
 
-	/*SCP release awake */
-	if (scp_awake_unlock(SCP_A_ID) == -1)
-		pr_debug("scp_register_feature: awake unlock fail\n");
-
 	mutex_unlock(&scp_feature_mutex);
 }
 
@@ -1136,13 +1062,6 @@ void scp_deregister_feature(enum feature_id id)
 	}
 
 	mutex_lock(&scp_feature_mutex);
-
-	/*SCP keep awake */
-	if (scp_awake_lock(SCP_A_ID) == -1) {
-		pr_debug("scp_deregister_feature: awake scp fail\n");
-		mutex_unlock(&scp_feature_mutex);
-		return;
-	}
 
 	for (i = 0; i < NUM_FEATURE_ID; i++) {
 		if (feature_table[i].feature == id)
@@ -1171,10 +1090,6 @@ void scp_deregister_feature(enum feature_id id)
 		pr_err("[SCP]Not send SCP DVFS request because SCP is down\n");
 		WARN_ON(1);
 	}
-
-	/*SCP release awake */
-	if (scp_awake_unlock(SCP_A_ID) == -1)
-		pr_debug("scp_deregister_feature: awake unlock fail\n");
 
 	mutex_unlock(&scp_feature_mutex);
 }
@@ -1397,11 +1312,8 @@ int scp_check_resource(void)
 #ifdef CONFIG_MACH_MT6799
 	unsigned long spin_flags;
 
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 	scp_current_freq = readl(CURRENT_FREQ_REG);
 	scp_expected_freq = readl(EXPECTED_FREQ_REG);
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
 	if (scp_expected_freq == FREQ_416MHZ || scp_current_freq == FREQ_416MHZ)
 		scp_resource_status = 1;
 	else
@@ -1550,9 +1462,6 @@ static int __init scp_init(void)
 		scp_ready[i] = 0;
 	}
 
-	/* scp platform initialise */
-	pr_debug("[SCP] platform init\n");
-	scp_awake_init();
 	scp_workqueue = create_workqueue("SCP_WQ");
 	ret = scp_excep_init();
 	if (ret) {

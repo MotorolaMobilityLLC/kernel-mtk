@@ -108,7 +108,6 @@ static void scp_logger_wakeup_handler(int id, void *data, unsigned int len)
 static size_t scp_A_get_last_log(size_t b_len)
 {
 	size_t ret = 0;
-	int scp_awake_flag;
 	unsigned int log_start_idx;
 	unsigned int log_end_idx;
 	unsigned int update_start_idx;
@@ -123,13 +122,6 @@ static size_t scp_A_get_last_log(size_t b_len)
 		return 0;
 	}
 	mutex_lock(&scp_logger_mutex);
-	/*SCP keep awake */
-	scp_awake_flag = 0;
-	if (scp_awake_lock(SCP_A_ID) == -1) {
-		scp_awake_flag = -1;
-		pr_debug("scp_A_get_last_log: awake scp fail\n");
-	}
-
 
 	log_start_idx = readl((void __iomem *)(SCP_TCM +
 					scp_A_log_start_addr_last));
@@ -169,13 +161,6 @@ static size_t scp_A_get_last_log(size_t b_len)
 	} else {
 		/* no buffer, just skip logs*/
 		update_start_idx = log_end_idx;
-	}
-
-
-	/*SCP release awake */
-	if (scp_awake_flag == 0) {
-		if (scp_awake_unlock(SCP_A_ID) == -1)
-			pr_debug("scp_A_get_last_log: awake unlock fail\n");
 	}
 
 	mutex_unlock(&scp_logger_mutex);
@@ -733,11 +718,6 @@ void scp_crash_log_move_to_buf(enum scp_core_id scp_id)
 
 	/*SCP keep awake */
 	mutex_lock(&scp_logger_mutex);
-	if (scp_awake_lock(scp_id) == -1) {
-		pr_debug("scp_crash_log_move_to_buf: awake scp fail\n");
-		mutex_unlock(&scp_logger_mutex);
-		return;
-	}
 
 	log_start_idx = readl((void __iomem *)(SCP_TCM +
 				scp_log_start_addr_last[scp_id]));
@@ -815,10 +795,6 @@ void scp_crash_log_move_to_buf(enum scp_core_id scp_id)
 		SCP_A_buf_info->w_pos = w_pos;
 
 	}
-
-	/*SCP release awake */
-	if (scp_awake_unlock(scp_id) == -1)
-		pr_debug("scp_crash_log_move_to_buf: awake unlock fail\n");
 
 	mutex_unlock(&scp_logger_mutex);
 	vfree(pre_scp_logger_buf);

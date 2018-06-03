@@ -45,7 +45,6 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 	/* if WDT and IPI triggered on the same time, ignore the IPI */
 	if (reg & SCP_IRQ_WDT) {
 		int retry;
-		unsigned long spin_flags;
 		unsigned long tmp;
 
 		scp_A_wdt_handler();
@@ -59,9 +58,7 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 		 * or SCP may lost INT max wait 5000*40u = 200ms
 		 */
 		for (retry = SCP_AWAKE_TIMEOUT; retry > 0; retry--) {
-			spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 			tmp = readl(SCP_GPR_CM4_A_REBOOT);
-			spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 			if (tmp == CM4_A_READY_TO_REBOOT)
 				break;
 			udelay(40);
