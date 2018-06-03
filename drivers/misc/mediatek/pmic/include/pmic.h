@@ -136,6 +136,7 @@ struct mtk_regulator {
 	PMU_FLAGS_LIST_ENUM qi_en_reg;
 	PMU_FLAGS_LIST_ENUM qi_vol_reg;
 	const void *pvoltages;
+	const void *idxs;
 	bool isUsedable;
 	struct regulator *reg;
 	int vsleep_en_saved;

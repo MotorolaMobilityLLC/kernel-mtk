@@ -20,9 +20,28 @@ int vcore_pmic_set_mode(unsigned char mode);
 void wk_auxadc_bgd_ctrl(unsigned char en);
 void wk_auxadc_bgd_ctrl_dbg(void);
 
+#ifdef LP_GOLDEN_SETTING
+#define LGS
+#endif
+
+#ifdef LP_GOLDEN_SETTING_W_SPM
+#define LGSWS
+#endif
+
+#if defined(LGS) || defined(LGSWS)
+#define PMIC_LP_BUCK_ENTRY(reg) {reg, MT6355_BUCK_##reg##_CON0}
+#define PMIC_LP_LDO_ENTRY(reg) {reg, MT6355_LDO_##reg##_CON0}
+#define PMIC_LP_LDO_VCN33_0_ENTRY(reg) {reg, MT6355_LDO_VCN33_CON0_BT}
+#define PMIC_LP_LDO_VCN33_1_ENTRY(reg) {reg, MT6355_LDO_VCN33_CON0_WIFI}
+#define PMIC_LP_LDO_VLDO28_0_ENTRY(reg) {reg, MT6355_LDO_VLDO28_CON0_TP}
+#define PMIC_LP_LDO_VLDO28_1_ENTRY(reg) {reg, MT6355_LDO_VLDO28_CON0_AF}
+#define PMIC_LP_LDO_VUSB33_0_ENTRY(reg) {reg, MT6355_LDO_VUSB33_CON0_0}
+#define PMIC_LP_LDO_VUSB33_1_ENTRY(reg) {reg, MT6355_LDO_VUSB33_CON0_1}
+#endif
+
 typedef enum {
 	SW,
-	SPM,
+	SPM = SW,
 	SRCLKEN0,
 	SRCLKEN1,
 	SRCLKEN2,
@@ -81,40 +100,23 @@ typedef enum {
 	VIO18,
 	VGP,
 	VGP2,
-	TABLE1_COUNT_END
-} PMU_LP_TABLE1_ENUM;
-
-typedef enum {
-	VCN33,
-	VLDO28,
-	VUSB33,
-	TABLE2_COUNT_END
-} PMU_LP_TABLE2_ENUM;
-
-typedef enum {
+	VCN33_0,
+	VCN33_1,
+	VLDO28_0,
+	VLDO28_1,
+	VUSB33_0,
+	VUSB33_1,
 	VPA,
-	TABLE3_COUNT_END
-} PMU_LP_TABLE3_ENUM;
+	TABLE1_COUNT_END
+} PMU_LP_TABLE_ENUM;
 
 typedef struct {
-	PMU_LP_TABLE1_ENUM flagname;
-	unsigned short op_en;
-	unsigned short op_cfg;
-	unsigned short en_lp;
-} PMU_LP_TABLE1_ENTRY;
+	PMU_LP_TABLE_ENUM flagname;
+#if defined(LGS) || defined(LGSWS)
+	unsigned short en_adr;
+#endif
+} PMU_LP_TABLE_ENTRY;
 
-typedef struct {
-	PMU_LP_TABLE2_ENUM flagname;
-	unsigned short op_en;
-	unsigned short op_cfg;
-	unsigned short en_lp_0;
-	unsigned short en_lp_1;
-} PMU_LP_TABLE2_ENTRY;
-
-typedef struct {
-	PMU_LP_TABLE3_ENUM flagname;
-	unsigned short en_lp;
-} PMU_LP_TABLE3_ENTRY;
 
 extern int pmic_buck_vproc11_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 extern int pmic_buck_vproc12_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
