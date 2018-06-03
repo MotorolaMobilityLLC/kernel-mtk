@@ -18,5 +18,6 @@
 #define _H_MEMORY_LAYOUT_H_
 
 /* dummy header */
+#define DUMMY_MEMORY_LAYOUT
 
 #endif
