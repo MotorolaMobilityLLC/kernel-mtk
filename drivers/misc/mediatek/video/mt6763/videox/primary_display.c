@@ -5468,7 +5468,7 @@ int primary_display_config_input_multiple(struct disp_session_input_config *sess
 	frame_cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
 	if (frame_cfg == NULL)
 		return -ENOMEM;
-	frame_cfg->session_id = session_input->session_id;
+	frame_cfg->session_id = primary_session_id;
 	frame_cfg->setter = session_input->setter;
 	frame_cfg->input_layer_num = session_input->config_layer_num;
 	frame_cfg->overlap_layer_num = HRT_LEVEL_LPM;
