@@ -261,4 +261,15 @@ config SCHED_HMP_PLUS
 	  of first 5 tasks in rq.
 	  3. Enhance down migration rule: Do not migrate task when big core
 	  is idle
+
+config MTK_SCHED_BOOST
+	bool "mtk scheduling boost enhancement"
+	depends on SCHED_HMP && CPUSETS && MTK_USER_SPACE_GLOBAL_CPUSET
+	default n
+	help
+	   Sched Boost type:
+	   0:  cancel sched boost
+	   1:  prefer boost  ALL tasks to big cores
+	   2:  foreground task move to big cores
+
 endmenu

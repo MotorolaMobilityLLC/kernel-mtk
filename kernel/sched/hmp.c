@@ -597,6 +597,9 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 		trace_sched_cfs_runnable_load(cpu, cfs_load(cpu), cfs_length(cpu));
 #endif
 
+	if (sched_boost() && idle_cpu(new_cpu) && hmp_cpu_is_fastest(new_cpu))
+		return new_cpu;
+
 	/* error handling */
 	if (prev_cpu >= num_possible_cpus())
 		return new_cpu;
