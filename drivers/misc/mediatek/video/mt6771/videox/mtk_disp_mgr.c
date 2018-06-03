@@ -1245,7 +1245,9 @@ static long _ioctl_query_valid_layer(unsigned long arg)
 	if (disp_helper_get_option(DISP_OPT_ANTILATENCY))
 		antilatency_config_hrt();
 
+	hrt_table_locked();
 	layering_rule_start(&disp_info_user, 0);
+	hrt_table_unlocked();
 
 	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {
 		DISPPR_ERROR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
