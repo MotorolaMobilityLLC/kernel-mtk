@@ -486,7 +486,7 @@ bool cmdq_driver_support_wait_and_receive_event_in_same_tick(void)
 static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long param)
 {
 	struct cmdqCommandStruct command;
-	struct TaskPrivateStruct desc_private;
+	struct TaskPrivateStruct desc_private = {0};
 	struct cmdqJobStruct job;
 	int count[CMDQ_MAX_ENGINE_COUNT];
 	struct TaskStruct *pTask;
