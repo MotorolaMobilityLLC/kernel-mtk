@@ -41,6 +41,7 @@
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/aee.h>
+#include <trace/events/mtk_events.h>
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include "sspm_ipi.h"
@@ -537,6 +538,39 @@ int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step)
 
 unsigned int counter;
 
+#if 1
+int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
+{
+	struct mt_cpu_dvfs *p;
+	int freq_idx = 0;
+	unsigned int cluster;
+	unsigned int buf;
+
+	p = id_to_cpu_dvfs(id);
+
+	cluster = (id == MT_CPU_DVFS_LL) ? 0 :
+		(id == MT_CPU_DVFS_L) ? 1 : 2;
+
+	cpufreq_ver("sched: cluster = %d, freq = %d\n", cluster, freq);
+
+	counter++;
+	if (counter > 255)
+		counter = 0;
+
+	/* [3:0] freq_idx, [11:4] counter */
+	freq_idx = _search_available_freq_idx(p, freq, 0);
+
+	buf = ((counter << 4) | freq_idx);
+
+	csram_write((OFFS_SCHED_S + (cluster * 4)), buf);
+
+	cpufreq_ver("sched: buf = 0x%x\n", buf);
+
+	trace_sched_update(cluster, csram_read(OFFS_SCHED_S + (cluster * 4)));
+
+	return 0;
+}
+#else
 int cpuhvfs_set_cpu_load_freq(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq)
 {
 	enum mt_cpu_dvfs_id id;
@@ -563,8 +597,18 @@ int cpuhvfs_set_cpu_load_freq(unsigned int cpu, enum cpu_dvfs_sched_type state, 
 
 	/* cpufreq_ver("sched: buf = 0x%x\n", buf); */
 
+	if (id == MT_CPU_DVFS_LL)
+		trace_sched_update(cpu, csram_read(OFFS_SCHED_S), csram_read(OFFS_SCHED_S + 4),
+			csram_read(OFFS_SCHED_S + 8), csram_read(OFFS_SCHED_S + 12));
+	else if (id == MT_CPU_DVFS_L)
+		trace_sched_update(cpu, csram_read(OFFS_SCHED_S + 16), csram_read(OFFS_SCHED_S + 20),
+			csram_read(OFFS_SCHED_S + 24), csram_read(OFFS_SCHED_S + 28));
+	else if (id == MT_CPU_DVFS_B)
+		trace_sched_update(cpu, csram_read(OFFS_SCHED_S + 32), csram_read(OFFS_SCHED_S + 36), 0, 0);
+
 	return 0;
 }
+#endif
 
 /*
 * Module driver
