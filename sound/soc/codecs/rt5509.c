@@ -1947,50 +1947,6 @@ static inline int rt5509_codec_unregister(struct rt5509_chip *chip)
 	return 0;
 }
 
-static const struct snd_soc_codec_driver rt5509_dummy_codec_drv;
-
-static struct snd_soc_dai_driver rt5509_dummy_i2s_dais[] = {
-	{
-		.name = "rt5509-aif1",
-		.playback = {
-			.stream_name = "AIF1 Playback",
-			.channels_min = 1,
-			.channels_max = 2,
-			.rates = RT5509_RATES,
-			.formats = RT5509_FORMATS,
-		},
-		.capture = {
-			.stream_name = "AIF1 Capture",
-			.channels_min = 1,
-			.channels_max = 2,
-			.rates = RT5509_RATES,
-			.formats = RT5509_FORMATS,
-		},
-	},
-	{
-		.name = "rt5509-aif2",
-		.playback = {
-			.stream_name = "AIF2 Playback",
-			.channels_min = 1,
-			.channels_max = 2,
-			.rates = RT5509_RATES,
-			.formats = RT5509_FORMATS,
-		},
-	},
-};
-
-static inline int rt5509_dummy_codec_register(struct device *dev)
-{
-	return snd_soc_register_codec(dev, &rt5509_dummy_codec_drv,
-		rt5509_dummy_i2s_dais, ARRAY_SIZE(rt5509_dummy_i2s_dais));
-}
-
-static inline int rt5509_dummy_codec_unregister(struct device *dev)
-{
-	snd_soc_unregister_codec(dev);
-	return 0;
-}
-
 static int rt5509_handle_pdata(struct rt5509_chip *chip)
 {
 	return 0;
@@ -2090,13 +2046,15 @@ static inline int rt5509_parse_dt(struct device *dev,
 }
 #endif /* #ifdef CONFIG_OF */
 
-static int rt5509_i2c_probe(struct i2c_client *client,
-			    const struct i2c_device_id *id)
+int rt5509_i2c_probe(struct i2c_client *client,
+		     const struct i2c_device_id *id)
 {
 	struct rt5509_pdata *pdata = client->dev.platform_data;
 	struct rt5509_chip *chip;
 	static int dev_cnt;
 	int ret = 0;
+
+	pr_info("+%s\n", __func__);
 
 	if (client->dev.of_node) {
 		pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
@@ -2107,6 +2065,7 @@ static int rt5509_i2c_probe(struct i2c_client *client,
 		ret = rt5509_parse_dt(&client->dev, pdata);
 		if (ret < 0)
 			goto err_parse_dt;
+
 		client->dev.platform_data = pdata;
 	} else {
 		if (!pdata) {
@@ -2222,17 +2181,14 @@ err_parse_dt:
 		devm_kfree(&client->dev, pdata);
 	dev_err(&client->dev, "error %d\n", ret);
 	i2c_set_clientdata(client, NULL);
-	dev_set_name(&client->dev, "%s",
-		     kasprintf(GFP_KERNEL, "RT5509_MT_%d", dev_cnt++));
-	return rt5509_dummy_codec_register(&client->dev);
+	return ret;
 }
+EXPORT_SYMBOL(rt5509_i2c_probe);
 
-static int rt5509_i2c_remove(struct i2c_client *client)
+int rt5509_i2c_remove(struct i2c_client *client)
 {
 	struct rt5509_chip *chip = i2c_get_clientdata(client);
 
-	if (!chip)
-		goto out_remove_dummy;
 	rt5509_codec_unregister(chip);
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(chip->rd);
@@ -2251,11 +2207,10 @@ static int rt5509_i2c_remove(struct i2c_client *client)
 	chip->pdata = client->dev.platform_data = NULL;
 	dev_dbg(&client->dev, "driver removed\n");
 	return 0;
-out_remove_dummy:
-	return rt5509_dummy_codec_unregister(&client->dev);
 }
+EXPORT_SYMBOL(rt5509_i2c_remove);
 
-static void rt5509_i2c_shutdown(struct i2c_client *client)
+void rt5509_i2c_shutdown(struct i2c_client *client)
 {
 	struct rt5509_chip *chip = i2c_get_clientdata(client);
 	struct snd_soc_dapm_context *dapm = NULL;
@@ -2267,82 +2222,22 @@ static void rt5509_i2c_shutdown(struct i2c_client *client)
 		snd_soc_dapm_sync(dapm);
 	}
 }
+EXPORT_SYMBOL(rt5509_i2c_shutdown);
 
-#ifdef CONFIG_PM
-static int rt5509_i2c_suspend(struct device *dev)
+static int __init rt5509_driver_init(void)
 {
+	pr_info("%s\n", __func__);
 	return 0;
 }
+module_init(rt5509_driver_init);
 
-static int rt5509_i2c_resume(struct device *dev)
+static void __exit rt5509_driver_exit(void)
 {
-	return 0;
+	pr_info("%s\n", __func__);
 }
-
-#ifdef CONFIG_PM_RUNTIME
-static int rt5509_i2c_runtime_suspend(struct device *dev)
-{
-	dev_dbg(dev, "%s\n", __func__);
-	return 0;
-}
-
-static int rt5509_i2c_runtime_resume(struct device *dev)
-{
-	dev_dbg(dev, "%s\n", __func__);
-	return 0;
-}
-
-static int rt5509_i2c_runtime_idle(struct device *dev)
-{
-	/* dummy function */
-	return 0;
-}
-#endif /* #ifdef CONFIG_PM_RUNTIME */
-
-static const struct dev_pm_ops rt5509_i2c_pm_ops = {
-	SET_SYSTEM_SLEEP_PM_OPS(rt5509_i2c_suspend, rt5509_i2c_resume)
-#ifdef CONFIG_PM_RUNTIME
-	SET_RUNTIME_PM_OPS(rt5509_i2c_runtime_suspend,
-			   rt5509_i2c_runtime_resume,
-			   rt5509_i2c_runtime_idle)
-#endif /* #ifdef CONFIG_PM_RUNTIME */
-};
-#define prt5509_i2c_pm_ops (&rt5509_i2c_pm_ops)
-#else
-#define prt5509_i2c_pm_ops (NULL)
-#endif /* #ifdef CONFIG_PM */
-
-static const struct i2c_device_id rt5509_i2c_id[] = {
-	{ "speaker_amp", 0},
-	{}
-};
-MODULE_DEVICE_TABLE(i2c, rt5509_i2c_id);
-
-#ifdef CONFIG_OF
-static const struct of_device_id rt5509_match_table[] = {
-	{.compatible = "richtek,rt5509",},
-	{.compatible = "mediatek,speaker_amp",},
-	{},
-};
-MODULE_DEVICE_TABLE(of, rt5509_match_table);
-#endif /* #ifdef CONFIG_OF */
-
-static struct i2c_driver rt5509_i2c_driver = {
-	.driver = {
-		.name = RT5509_DEVICE_NAME,
-		.owner = THIS_MODULE,
-		.of_match_table = of_match_ptr(rt5509_match_table),
-		.pm = prt5509_i2c_pm_ops,
-	},
-	.probe = rt5509_i2c_probe,
-	.remove = rt5509_i2c_remove,
-	.shutdown = rt5509_i2c_shutdown,
-	.id_table = rt5509_i2c_id,
-};
-
-module_i2c_driver(rt5509_i2c_driver);
+module_exit(rt5509_driver_exit);
 
 MODULE_AUTHOR("CY_Huang <cy_huang@richtek.com>");
 MODULE_DESCRIPTION("RT5509 SPKAMP Driver");
 MODULE_LICENSE("GPL");
-MODULE_VERSION(RT5509_DRV_VER);
+MODULE_VERSION("1.0.13_M");
