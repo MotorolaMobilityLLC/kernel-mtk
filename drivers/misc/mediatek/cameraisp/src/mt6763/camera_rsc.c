@@ -1630,6 +1630,7 @@ static signed int RSC_WriteReg(struct RSC_REG_IO_STRUCT *pRegIo)
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
 			current->pid, current->tgid);
 		Ret = -ENOMEM;
+		goto EXIT;
 	}
 	/*  */
 	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
