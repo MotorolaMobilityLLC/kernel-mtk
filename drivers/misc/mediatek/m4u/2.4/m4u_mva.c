@@ -517,8 +517,8 @@ static int __check_ccu_mva_region(unsigned int startIdx, unsigned int nr, void *
 
 #if defined(CONFIG_MACH_MT6771)
 	is_ccu_port = (pMvaInfo->port == M4U_PORT_CCU0) || (pMvaInfo->port == M4U_PORT_CCU1) ||
-			(pMvaInfo->port == M4U_PORT_CAM_CCUI) || (pMvaInfo->port == M4U_PORT_CCUG)
-			|| （pMvaInfo->port == M4U_PORT_CAM_CCUO);
+			(pMvaInfo->port == M4U_PORT_CAM_CCUI) || (pMvaInfo->port == M4U_PORT_CAM_CCUG)
+			|| (pMvaInfo->port == M4U_PORT_CAM_CCUO);
 #else
 	return 0;
 #endif
