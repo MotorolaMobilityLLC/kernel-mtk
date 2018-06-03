@@ -62,21 +62,18 @@
 #include <mtk_cpufreq_api.h>
 
 #define IDLE_TAG     "Power/swap "
-#define idle_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
-#define idle_warn(fmt, args...)		pr_warn(IDLE_TAG fmt, ##args)
-#define idle_info(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
-#define idle_ver(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
-#define idle_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
+#define idle_pr_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
+#define idle_pr_warn(fmt, args...)		pr_warn(IDLE_TAG fmt, ##args)
+#define idle_pr_info(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
+#define idle_pr_ver(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
+#define idle_pr_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 
 #define idle_warn_log(fmt, args...) { \
 	if (dpidle_dump_log & DEEPIDLE_LOG_FULL) \
 		pr_warn(IDLE_TAG fmt, ##args); \
 	}
 
-/* 20170407 Owen fix build error */
-#if 0
 #define IDLE_GPT GPT4
-#endif
 #define log2buf(p, s, fmt, args...) \
 	(p += snprintf(p, sizeof(s) - strlen(s), fmt, ##args))
 
@@ -301,9 +298,6 @@ static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
 static u32              sodi3_flags = SODI_FLAG_REDUCE_LOG;
 static bool             sodi3_force_vcore_lp_mode;
-#ifdef SPM_SODI3_PROFILE_TIME
-unsigned int            soidle3_profile[4];
-#endif
 
 /* SODI */
 static unsigned int     soidle_time_criteria = 26000; /* 2ms */
@@ -313,9 +307,6 @@ static bool             soidle_by_pass_cg;
 bool                    soidle_by_pass_pg;
 static bool             soidle_by_pass_en;
 static u32              sodi_flags = SODI_FLAG_REDUCE_LOG;
-#ifdef SPM_SODI_PROFILE_TIME
-unsigned int            soidle_profile[4];
-#endif
 
 /* MCDI */
 static unsigned int     mcidle_time_criteria = 3000; /* 3ms */
@@ -384,7 +375,6 @@ EXPORT_SYMBOL_GPL(mtk_idle_notifier_call_chain);
 /* Workaround of static analysis defect*/
 int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
 {
-#if 0
 	unsigned int val[2] = {0};
 	int ret = 0;
 
@@ -392,15 +382,10 @@ int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
 	*ptr = val[0];
 
 	return ret;
-#else
-	/* Owen 20170407 Fix Build error */
-	return 0;
-#endif
 }
 
 int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
 {
-#if 0
 	unsigned int val[2] = {0};
 	int ret = 0;
 
@@ -408,10 +393,6 @@ int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
 	*ptr = val[0];
 
 	return ret;
-#else
-	/* Owen 20170407 Fix Build error */
-	return 0;
-#endif
 }
 #endif
 
@@ -438,11 +419,8 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 #else
 	unsigned int timer_cmp = 0;
 
-/* Owen 20170407 Fix Build error */
-#if 0
 	gpt_get_cnt(GPT1, &timer_left);
 	gpt_get_cmp(GPT1, &timer_cmp);
-#endif
 	if ((timer_cmp - timer_left) < timer_criteria)
 		ret = false;
 #endif
@@ -453,8 +431,6 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 
 static void timer_setting_before_wfi(bool f26m_off)
 {
-/* Owen 20170407 Fix Build error */
-#if 0
 #ifndef USING_STD_TIMER_OPS
 #ifdef CONFIG_SMP
 	unsigned int timer_left = 0;
@@ -478,13 +454,10 @@ static void timer_setting_before_wfi(bool f26m_off)
 	gpt_get_cnt(GPT1, &timer_left);
 #endif
 #endif
-#endif
 }
 
 static void timer_setting_after_wfi(bool f26m_off)
 {
-/* Owen 20170407 Fix Build error */
-#if 0
 #ifndef USING_STD_TIMER_OPS
 #ifdef CONFIG_SMP
 	if (gpt_check_and_ack_irq(IDLE_GPT)) {
@@ -498,7 +471,7 @@ static void timer_setting_after_wfi(bool f26m_off)
 		idle_gpt_get_cnt(IDLE_GPT, &cnt);
 		idle_gpt_get_cmp(IDLE_GPT, &cmp);
 		if (unlikely(cmp < cnt)) {
-			idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n",
+			idle_pr_err("[%s]GPT%d: counter = %10u, compare = %10u\n",
 					__func__, IDLE_GPT + 1, cnt, cmp);
 			/* BUG(); */
 		}
@@ -511,7 +484,6 @@ static void timer_setting_after_wfi(bool f26m_off)
 		}
 		stop_gpt(IDLE_GPT);
 	}
-#endif
 #endif
 #endif
 }
@@ -658,13 +630,6 @@ bool mtk_idle_cpu_wfi_criteria(void)
 
 static bool soidle3_can_enter(int cpu, int reason)
 {
-	#ifdef SPM_SODI3_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[0]);
-	#endif
-	#ifdef SPM_SODI_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[0]);
-	#endif
-
 	/* check previous common criterion */
 	if (reason == BY_CLK) {
 		if (soidle3_by_pass_cg == 0) {
@@ -781,10 +746,6 @@ EXPORT_SYMBOL(disable_soidle_by_bit);
 
 static bool soidle_can_enter(int cpu, int reason)
 {
-	#ifdef SPM_SODI_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[0]);
-	#endif
-
 	/* check previous common criterion */
 	if (reason == BY_CLK) {
 		if (soidle_by_pass_cg == 0) {
@@ -1572,7 +1533,7 @@ int dpidle_enter(int cpu)
 		unsigned int current_ts = idle_get_current_time_ms();
 
 		if ((current_ts - dpidle_gs_dump_req_ts) >= dpidle_gs_dump_delay_ms) {
-			idle_warn("dpidle dump LP golden\n");
+			idle_pr_warn("dpidle dump LP golden\n");
 
 			dpidle_gs_dump_req = 0;
 			operation_cond |= DEEPIDLE_OPT_DUMP_LP_GOLDEN;
@@ -1655,17 +1616,8 @@ int soidle3_enter(int cpu)
 
 	if (sodi3_flags & SODI_FLAG_RESIDENCY) {
 		soidle3_residency += idle_get_current_time_ms() - soidle3_time;
-		idle_dbg("SO3: soidle3_residency = %llu\n", soidle3_residency);
+		idle_pr_dbg("SO3: soidle3_residency = %llu\n", soidle3_residency);
 	}
-
-#ifdef SPM_SODI3_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[3]);
-	idle_ver("SODI3: cpu_freq:%u/%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
-			mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1),
-			soidle3_profile[1] - soidle3_profile[0],
-			soidle3_profile[2] - soidle3_profile[1],
-			soidle3_profile[3] - soidle3_profile[2]);
-#endif
 
 	return ret;
 }
@@ -1706,17 +1658,8 @@ int soidle_enter(int cpu)
 
 	if (sodi_flags & SODI_FLAG_RESIDENCY) {
 		soidle_residency += idle_get_current_time_ms() - soidle_time;
-		idle_dbg("SO: soidle_residency = %llu\n", soidle_residency);
+		idle_pr_dbg("SO: soidle_residency = %llu\n", soidle_residency);
 	}
-
-#ifdef SPM_SODI_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[3]);
-	idle_ver("SODI: cpu_freq:%u/%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
-			mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1),
-			soidle_profile[1] - soidle_profile[0],
-			soidle_profile[2] - soidle_profile[1],
-			soidle_profile[3] - soidle_profile[2]);
-#endif
 
 	return ret;
 }
@@ -1870,7 +1813,7 @@ static ssize_t idle_state_write(struct file *filp,
 			mtk_idle_get_twam()->sel = param;
 		} else if (!strcmp(cmd, "spmtwam")) {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-			idle_dbg("spmtwam_event = %d\n", param);
+			idle_pr_dbg("spmtwam_event = %d\n", param);
 			if (param >= 0)
 				mtk_idle_twam_enable((u32)param);
 			else
@@ -2063,7 +2006,7 @@ static ssize_t dpidle_state_write(struct file *filp,
 			dpidle_by_pass_cg = param;
 		else if (!strcmp(cmd, "bypass_pg")) {
 			dpidle_by_pass_pg = param;
-			idle_warn("bypass_pg = %d\n", dpidle_by_pass_pg);
+			idle_pr_dbg("bypass_pg = %d\n", dpidle_by_pass_pg);
 		} else if (!strcmp(cmd, "golden")) {
 			dpidle_gs_dump_req = param;
 
@@ -2188,19 +2131,19 @@ static ssize_t soidle3_state_write(struct file *filp,
 			soidle3_time_criteria = param;
 		else if (!strcmp(cmd, "bypass_pll")) {
 			soidle3_by_pass_pll = param;
-			idle_dbg("bypass_pll = %d\n", soidle3_by_pass_pll);
+			idle_pr_dbg("bypass_pll = %d\n", soidle3_by_pass_pll);
 		} else if (!strcmp(cmd, "bypass")) {
 			soidle3_by_pass_cg = param;
-			idle_dbg("bypass = %d\n", soidle3_by_pass_cg);
+			idle_pr_dbg("bypass = %d\n", soidle3_by_pass_cg);
 		} else if (!strcmp(cmd, "bypass_en")) {
 			soidle3_by_pass_en = param;
-			idle_dbg("bypass_en = %d\n", soidle3_by_pass_en);
+			idle_pr_dbg("bypass_en = %d\n", soidle3_by_pass_en);
 		} else if (!strcmp(cmd, "sodi3_flags")) {
 			sodi3_flags = param;
-			idle_dbg("sodi3_flags = 0x%x\n", sodi3_flags);
+			idle_pr_dbg("sodi3_flags = 0x%x\n", sodi3_flags);
 		} else if (!strcmp(cmd, "sodi3_force_vcore_lp_mode")) {
 			sodi3_force_vcore_lp_mode = param ? true : false;
-			idle_dbg("sodi3_force_vcore_lp_mode = %d\n", sodi3_force_vcore_lp_mode);
+			idle_pr_dbg("sodi3_force_vcore_lp_mode = %d\n", sodi3_force_vcore_lp_mode);
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
@@ -2297,16 +2240,16 @@ static ssize_t soidle_state_write(struct file *filp,
 			soidle_time_criteria = param;
 		else if (!strcmp(cmd, "bypass")) {
 			soidle_by_pass_cg = param;
-			idle_dbg("bypass = %d\n", soidle_by_pass_cg);
+			idle_pr_dbg("bypass = %d\n", soidle_by_pass_cg);
 		} else if (!strcmp(cmd, "bypass_pg")) {
 			soidle_by_pass_pg = param;
-			idle_warn("bypass_pg = %d\n", soidle_by_pass_pg);
+			idle_pr_dbg("bypass_pg = %d\n", soidle_by_pass_pg);
 		} else if (!strcmp(cmd, "bypass_en")) {
 			soidle_by_pass_en = param;
-			idle_dbg("bypass_en = %d\n", soidle_by_pass_en);
+			idle_pr_dbg("bypass_en = %d\n", soidle_by_pass_en);
 		} else if (!strcmp(cmd, "sodi_flags")) {
 			sodi_flags = param;
-			idle_dbg("sodi_flags = 0x%x\n", sodi_flags);
+			idle_pr_dbg("sodi_flags = 0x%x\n", sodi_flags);
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
@@ -2403,13 +2346,13 @@ static ssize_t mcsodi_state_write(struct file *filp,
 			mcsodi_time_criteria = param;
 		else if (!strcmp(cmd, "bypass")) {
 			mcsodi_by_pass_cg = !!param;
-			idle_dbg("bypass = %d\n", mcsodi_by_pass_cg);
+			idle_pr_dbg("bypass = %d\n", mcsodi_by_pass_cg);
 		} else if (!strcmp(cmd, "bypass_pg")) {
 			mcsodi_by_pass_pg = !!param;
-			idle_warn("bypass_pg = %d\n", mcsodi_by_pass_pg);
+			idle_pr_dbg("bypass_pg = %d\n", mcsodi_by_pass_pg);
 		} else if (!strcmp(cmd, "bypass_en")) {
 			mcsodi_by_pass_en = !!param;
-			idle_dbg("bypass_en = %d\n", mcsodi_by_pass_en);
+			idle_pr_dbg("bypass_en = %d\n", mcsodi_by_pass_en);
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
@@ -2552,7 +2495,7 @@ static int mtk_cpuidle_debugfs_init(void)
 	/* Initialize debugfs */
 	root_entry = debugfs_create_dir("cpuidle", NULL);
 	if (!root_entry) {
-		idle_err("Can not create debugfs `dpidle_state`\n");
+		idle_pr_err("Can not create debugfs `dpidle_state`\n");
 		return 1;
 	}
 
@@ -2610,8 +2553,6 @@ static int mtk_idle_hotplug_cb_init(void)
 
 void mtk_idle_gpt_init(void)
 {
-/* 20170407 Owen fix build error */
-#if 0
 #ifndef USING_STD_TIMER_OPS
 	int err = 0;
 
@@ -2619,8 +2560,7 @@ void mtk_idle_gpt_init(void)
 			  0, NULL, GPT_NOAUTOEN);
 
 	if (err)
-		idle_warn("[%s] fail to request GPT %d\n", __func__, IDLE_GPT + 1);
-#endif
+		idle_pr_warn("[%s] fail to request GPT %d\n", __func__, IDLE_GPT + 1);
 #endif
 }
 
@@ -2637,7 +2577,7 @@ static void mtk_idle_profile_init(void)
 
 void mtk_cpuidle_framework_init(void)
 {
-	idle_ver("[%s]entry!!\n", __func__);
+	idle_pr_ver("[%s]entry!!\n", __func__);
 
 	iomap_init();
 	mtk_cpuidle_debugfs_init();

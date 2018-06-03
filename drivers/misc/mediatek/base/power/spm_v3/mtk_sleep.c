@@ -29,17 +29,11 @@
 #include <mtk_spm_idle.h>
 #include <mtk_spm_misc.h>
 #include <mt-plat/mtk_gpio.h>
-/* 20170407 Owen fix build errot */
-#if !defined(CONFIG_MACH_MT6758)
 #include <mtk_hps_internal.h>
-#endif
 #include <mt-plat/mtk_chip.h>
 
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
-/* 20170407 Owen fix build errot */
-#if !defined(CONFIG_MACH_MT6758)
 #include <mtk-soc-afe-control.h>
-#endif
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
 
 /**************************************
