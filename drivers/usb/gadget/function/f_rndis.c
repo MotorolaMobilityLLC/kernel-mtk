@@ -948,6 +948,14 @@ rndis_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl)
 	u16			w_value = le16_to_cpu(ctrl->wValue);
 	u16			w_length = le16_to_cpu(ctrl->wLength);
 
+	spin_lock(&rndis_lock);
+
+	if (!rndis || !rndis->notify) {
+		pr_notice("%s():rndis is NULL.\n", __func__);
+		spin_unlock(&rndis_lock);
+		return -EFAULT;
+	}
+
 	/* composite driver infrastructure handles everything except
 	 * CDC class messages; interface activation uses set_alt().
 	 */
@@ -1026,10 +1034,16 @@ invalid:
 			w_value, w_index, w_length);
 		req->zero = (value < w_length);
 		req->length = value;
+
+		spin_unlock(&rndis_lock);
 		value = usb_ep_queue(cdev->gadget->ep0, req, GFP_ATOMIC);
+		spin_lock(&rndis_lock);
+
 		if (value < 0)
 			ERROR(cdev, "rndis response on err %d\n", value);
 	}
+
+	spin_unlock(&rndis_lock);
 
 	/* device either stalls (value < 0) or reports success */
 	return value;
