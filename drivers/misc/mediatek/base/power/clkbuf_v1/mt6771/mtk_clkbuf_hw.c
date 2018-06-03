@@ -250,6 +250,7 @@ void clk_buf_ctrl_bblpm_hw(short on)
 
 	if (!is_pmic_clkbuf)
 		return;
+
 	if (on) {
 		pmic_config_interface(PMIC_XO_BB_LPM_CEL_ADDR, 0x1,
 				      PMIC_XO_BB_LPM_CEL_MASK,
@@ -351,7 +352,8 @@ u32 clk_buf_bblpm_enter_cond(void)
 	pwr_sta = clkbuf_readl(PWR_STATUS);
 
 	/* if (pwr_sta & PWR_STATUS_MD) */
-	if (!is_clk_buf_under_flightmode())
+	if (!is_clk_buf_under_flightmode() &&
+		(pmic_clk_buf_swctrl[XO_CEL] != CLK_BUF_SW_DISABLE))
 		bblpm_cond |= BBLPM_COND_CEL;
 	if (bblpm_switch != 2) {
 
@@ -1488,7 +1490,11 @@ void clk_buf_post_init(void)
 	if (bblpm_switch == 2) {
 		clk_buf_ctrl_bblpm_mask(CLK_BUF_BB_MD, true);
 		clk_buf_ctrl_bblpm_mask(CLK_BUF_UFS, true);
-		clk_buf_ctrl_bblpm_hw(false);
+		if (CLK_BUF4_STATUS_PMIC == CLOCK_BUFFER_DISABLE) {
+			clk_buf_ctrl_bblpm_mask(CLK_BUF_RF, true);
+			clk_buf_ctrl_bblpm_hw(true);
+		} else
+			clk_buf_ctrl_bblpm_hw(false);
 	}
 #endif
 }
