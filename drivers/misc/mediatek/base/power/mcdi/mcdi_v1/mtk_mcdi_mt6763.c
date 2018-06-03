@@ -28,14 +28,14 @@ static int mcdi_idle_state_mapping[NR_TYPES] = {
 	MCDI_STATE_CLUSTER_OFF	/* IDLE_TYPE_RG */
 };
 
-static const char mcdi_node_name[] = "mediatek,mcdi_v1";
+static const char mcdi_node_name[] = "mediatek,mt6763-mcdi";
 
 int mcdi_get_mcdi_idle_state(int idx)
 {
 	return mcdi_idle_state_mapping[idx];
 }
 
-void mcdi_status_init(int **idle_state)
+void mcdi_status_init(void)
 {
 	set_mcdi_enable_status(true);
 }
