@@ -73,16 +73,12 @@ static void __iomem *pwrap_base;
 /* TODO: marked this after driver is ready */
 /* #define CLKBUF_BRINGUP */
 
-/* #define CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP */
+/* #define CLKBUF_CONN_SUPPORT_CTRL_FROM_I1 */
 
 /* FIXME: Before MP, using suggested driving current to test. */
 /* #define TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP */
 
-#ifndef CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP
-static unsigned int pwrap_dcxo_en_flag = (DCXO_NFC_ENABLE);
-#else
 static unsigned int pwrap_dcxo_en_flag = (DCXO_CONN_ENABLE | DCXO_NFC_ENABLE);
-#endif
 
 static unsigned int CLK_BUF1_STATUS_PMIC = CLOCK_BUFFER_HW_CONTROL,
 		    CLK_BUF2_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL,
@@ -125,7 +121,7 @@ static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
 
 static void pmic_clk_buf_ctrl_wcn(short on)
 {
-#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP
+#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_I1
 	if (on)
 		pmic_config_interface(PMIC_DCXO_CW00_SET_ADDR, 0x1,
 				      PMIC_XO_EXTBUF2_EN_M_MASK,
@@ -273,7 +269,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 	switch (id) {
 	case CLK_BUF_CONN:
 		if (onoff) {
-#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP
+#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_I1
 			pmic_config_interface(PMIC_DCXO_CW00_SET, 0x3,
 					      PMIC_XO_EXTBUF2_MODE_MASK,
 					      PMIC_XO_EXTBUF2_MODE_SHIFT);
@@ -288,15 +284,11 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 			pmic_clk_buf_ctrl_wcn(1);
 			pmic_clk_buf_swctrl[XO_WCN] = 1;
 
-#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP
 			pwrap_dcxo_en_flag |= DCXO_CONN_ENABLE;
 			clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en_flag);
-#endif
 		} else {
-#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP
 			pwrap_dcxo_en_flag &= ~DCXO_CONN_ENABLE;
 			clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en_flag);
-#endif
 
 			pmic_config_interface(PMIC_DCXO_CW00_CLR, 0x3,
 					      PMIC_XO_EXTBUF2_MODE_MASK,
@@ -383,7 +375,6 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 			clk_buf_err("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
-#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP
 		if (!(pwrap_dcxo_en_flag & DCXO_CONN_ENABLE)) {
 			ret = -1;
 			clk_buf_err("%s: id=%d skip due to non co-clock for CONN\n", __func__, id);
@@ -391,9 +382,6 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 			pmic_clk_buf_swctrl[XO_WCN] = 0;
 			break;
 		}
-#else
-		pmic_clk_buf_ctrl_wcn(onoff);
-#endif
 		/* record the status of CONN from caller for checking BBLPM */
 		pmic_clk_buf_swctrl[XO_WCN] = onoff;
 		break;
@@ -872,12 +860,12 @@ void clk_buf_init_pmic_clkbuf(void)
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 
 	/* XO_WCN */
-#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP
+#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_I1
 	pmic_config_interface(PMIC_XO_EXTBUF2_CLKSEL_MAN_ADDR, 0x1,
 			    PMIC_XO_EXTBUF2_CLKSEL_MAN_MASK,
 			    PMIC_XO_EXTBUF2_CLKSEL_MAN_SHIFT);
 #endif
-#ifndef CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP
+#ifndef CLKBUF_CONN_SUPPORT_CTRL_FROM_I1
 	/* XO_WCN: srclken_conn = 0 */
 	pmic_config_interface(PMIC_RG_SRCLKEN_IN3_EN_ADDR, 0,
 			    PMIC_RG_SRCLKEN_IN3_EN_MASK, PMIC_RG_SRCLKEN_IN3_EN_SHIFT);
@@ -893,13 +881,20 @@ void clk_buf_init_pmic_wrap(void)
 {
 #ifndef __KERNEL__
 	/* Setup PMIC_WRAP setting for XO2 & XO3 */
-#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP
+#ifdef CLKBUF_CONN_SUPPORT_CTRL_FROM_I1
 	clkbuf_writel(DCXO_CONN_ADR0, PMIC_DCXO_CW00_CLR_ADDR);
 	clkbuf_writel(DCXO_CONN_WDATA0,
 		      PMIC_XO_EXTBUF2_EN_M_MASK << PMIC_XO_EXTBUF2_EN_M_SHIFT);	/* bit5 = 0 */
 	clkbuf_writel(DCXO_CONN_ADR1, PMIC_DCXO_CW00_SET_ADDR);
 	clkbuf_writel(DCXO_CONN_WDATA1,
 		      PMIC_XO_EXTBUF2_EN_M_MASK << PMIC_XO_EXTBUF2_EN_M_SHIFT);	/* bit5 = 1 */
+#else
+	clkbuf_writel(DCXO_CONN_ADR0, PMIC_RG_SRCLKEN_IN3_EN_ADDR);
+	clkbuf_writel(DCXO_CONN_WDATA0,
+		      0 << PMIC_RG_SRCLKEN_IN3_EN_SHIFT); /* bit0 = 0 */
+	clkbuf_writel(DCXO_CONN_ADR1, PMIC_RG_SRCLKEN_IN3_EN_ADDR);
+	clkbuf_writel(DCXO_CONN_WDATA1,
+		      1 << PMIC_RG_SRCLKEN_IN3_EN_SHIFT); /* bit0 = 1 */
 #endif
 	clkbuf_writel(DCXO_NFC_ADR0, PMIC_DCXO_CW00_CLR_ADDR);
 	clkbuf_writel(DCXO_NFC_WDATA0,
@@ -908,9 +903,6 @@ void clk_buf_init_pmic_wrap(void)
 	clkbuf_writel(DCXO_NFC_WDATA1,
 		      PMIC_XO_EXTBUF3_EN_M_MASK << PMIC_XO_EXTBUF3_EN_M_SHIFT);	/* bit8 = 1 */
 
-#ifndef CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP
-	clkbuf_writel(DCXO_ENABLE, DCXO_NFC_ENABLE);
-#else
 	clkbuf_writel(DCXO_ENABLE, DCXO_CONN_ENABLE | DCXO_NFC_ENABLE);
 
 	clk_buf_warn("%s: DCXO_CONN_ADR0/WDATA0/ADR1/WDATA1=0x%x/%x/%x/%x\n",
@@ -918,7 +910,6 @@ void clk_buf_init_pmic_wrap(void)
 		     clkbuf_readl(DCXO_CONN_WDATA0),
 		     clkbuf_readl(DCXO_CONN_ADR1),
 		     clkbuf_readl(DCXO_CONN_WDATA1));
-#endif
 	clk_buf_warn("%s: DCXO_NFC_ADR0/WDATA0/ADR1/WDATA1/EN=0x%x/%x/%x/%x/%x\n",
 		     __func__, clkbuf_readl(DCXO_NFC_ADR0),
 		     clkbuf_readl(DCXO_NFC_WDATA0),
