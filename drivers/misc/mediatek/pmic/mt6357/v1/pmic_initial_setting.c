@@ -25,6 +25,9 @@
 
 #define LP_INIT_SETTING_VERIFIED 0
 
+/* used for Zion E1/E2 PMIC clear interrupt */
+unsigned int g_pmic_chip_version = 1;
+
 int PMIC_MD_INIT_SETTING_V1(void)
 {
 	/* No need for PMIC MT6357 */
@@ -105,6 +108,7 @@ unsigned int PMIC_CHIP_VER(void)
 
 void PMIC_LP_INIT_SETTING(void)
 {
+	g_pmic_chip_version = PMIC_CHIP_VER();
 #if LP_INIT_SETTING_VERIFIED
 	/*Suspend*/
 	pmic_buck_vproc_lp(SW, 1, SW_OFF);
