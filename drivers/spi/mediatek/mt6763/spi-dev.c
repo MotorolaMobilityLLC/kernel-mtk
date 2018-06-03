@@ -71,8 +71,11 @@ static int spi_setup_xfer(struct device *dev, struct spi_transfer *xfer, u32 len
 	/* xfer->tx_buf = dma_alloc_coherent(dev,  len, &xfer->tx_dma, GFP_KERNEL | GFP_DMA ); */
 	/* xfer->rx_buf = dma_alloc_coherent(dev,  len, &xfer->rx_dma, GFP_KERNEL | GFP_DMA ); */
 
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 	SPIDEV_LOG("Transfer addr:Tx:0x%llx, Rx:0x%llx\n", xfer->tx_dma, xfer->rx_dma);
-
+#else
+	SPIDEV_LOG("Transfer addr:Tx:0x%x, Rx:0x%x\n", xfer->tx_dma, xfer->rx_dma);
+#endif
 	if ((xfer->tx_buf == NULL) || (xfer->rx_buf == NULL))
 		return -1;
 
