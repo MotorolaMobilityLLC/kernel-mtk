@@ -395,4 +395,8 @@ typedef struct _CHANNEL_ENTRY_FIELD_T {
 	UINT_8 aucChannelList[1];	/* Channel List */
 } __KAL_ATTRIB_PACKED__ CHANNEL_ENTRY_FIELD_T, *P_CHANNEL_ENTRY_FIELD_T;
 
+enum p2p_attr_id {
+	P2P_ATTR_STATE = 0,
+};
+
 #endif

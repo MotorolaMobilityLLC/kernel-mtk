@@ -541,18 +541,107 @@ actionToString(INT_32 u4WlanAction)
 	return "UNKNOWN Action Frame";
 }
 
+INT_16 p2pFuncParseP2pIE(PUINT_8 pucPos, UINT_32 ucP2pIeLen, UINT_8 ucAttrStatus)
+{
+	UINT_8 ucID;
+	UINT_16 ucAttrLen;
+	PUINT_8 pucEnd = pucPos + ucP2pIeLen;
+
+	while (pucPos < pucEnd) {
+		if (pucEnd - pucPos < 3) {
+			DBGLOG(P2P, INFO, "P2P: Invalid P2P attribute");
+			return -1;
+		}
+		ucID = *pucPos++;
+		WLAN_GET_FIELD_16(pucPos, &ucAttrLen);
+		pucPos += 2;
+		if (ucAttrLen > pucEnd - pucPos) {
+			DBGLOG(P2P, INFO, "P2P: Attribute underflow(len=%u left=%d)",
+				ucAttrLen, (INT_32) (pucEnd - pucPos));
+			return -1;
+		}
+		if (ucID == ucAttrStatus) {
+			DBGLOG(P2P, INFO, "Negotiation response status:%d", pucPos[0]);
+			return pucPos[0];
+		}
+		pucPos += ucAttrLen;
+	}
+	return -1;
+}
+
+UINT_32 p2pFuncIee80211VendorIEConcat(const UINT_8 *pucIes, UINT_32 ucIesLen,
+					    UINT_32 OuiType, UINT_8 *buf)
+{
+	const UINT_8 *pucEnd, *pucPos, *pucIE;
+	UINT_8 *pucBuf;
+	UINT_32 ucOuiType;
+
+	pucPos = pucIes;
+	pucEnd = pucIes + ucIesLen;
+	pucIE = NULL;
+
+	while (pucPos + 1 < pucEnd) {
+		if (pucPos + 2 + pucPos[1] > pucEnd)
+			return 0;
+		WLAN_GET_FIELD_BE32(&pucPos[2], &ucOuiType);
+		if (pucPos[0] == ELEM_ID_VENDOR && pucPos[1] >= 4 && ucOuiType == OuiType) {
+			pucIE = pucPos;
+			break;
+		}
+		pucPos += 2 + pucPos[1];
+	}
+
+	if (pucIE == NULL)
+		return 0; /* No specified vendor IE found */
+
+	pucBuf = buf;
+	while (pucPos + 1 < pucEnd) {
+		if (pucPos + 2 + pucPos[1] > pucEnd)
+			break;
+		WLAN_GET_FIELD_BE32(&pucPos[2], &ucOuiType);
+		if (pucPos[0] == ELEM_ID_VENDOR && pucPos[1] >= 4 && ucOuiType == OuiType) {
+			memcpy(pucBuf, pucPos + 6, pucPos[1] - 4);
+			pucBuf += pucPos[1] - 4;
+		}
+		pucPos += 2 + pucPos[1];
+	}
+	return pucBuf - buf;
+}
+
 ENUM_P2P_CNN_STATE_T
 p2pFuncTagActionActionP2PFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 			IN P_WLAN_ACTION_FRAME prActFrame,
-			IN UINT_8 ucP2pAction, IN UINT_64 u8Cookie)
+			IN PUINT_8 pucP2pAction, IN UINT_64 u8Cookie)
 {
+	UINT_32 ucP2pIeLen;
+	UINT_32 ucIesLen;
+	INT_16 ucStatus;
+	UINT_8 *pucP2pBuf;
+
 	DBGLOG(P2P, INFO, "Found P2P_%s, SA: %pM - DA: %pM, cookie: 0x%llx, SeqNO: %d\n",
-	       p2pToString(ucP2pAction),
+	       p2pToString(*pucP2pAction),
 	       prActFrame->aucSrcAddr,
 	       prActFrame->aucDestAddr,
 	       u8Cookie,
 	       prMgmtTxMsdu->ucTxSeqNum);
-	return ucP2pAction + 1;
+	if (*pucP2pAction != P2P_GO_NEG_RESP)
+		return *pucP2pAction + 1;
+
+	ucIesLen = prMgmtTxMsdu->u2FrameLength - 32;
+	pucP2pBuf = kzalloc(ucIesLen, GFP_KERNEL);
+	if (!pucP2pBuf)
+		return *pucP2pAction + 1;
+
+	ucP2pIeLen = p2pFuncIee80211VendorIEConcat(pucP2pAction + 2,
+			ucIesLen, P2P_IE_VENDOR_TYPE, pucP2pBuf);
+	if (ucP2pIeLen == 0) {
+		kfree(pucP2pBuf);
+		return *pucP2pAction + 1;
+	}
+
+	ucStatus = p2pFuncParseP2pIE(pucP2pBuf, ucP2pIeLen, P2P_ATTR_STATE);
+	kfree(pucP2pBuf);
+	return ucStatus == 0 ? (*pucP2pAction + 1) : P2P_CNN_NORMAL;
 }
 
 ENUM_P2P_CNN_STATE_T
@@ -580,7 +669,7 @@ p2pFuncTagActionActionFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 		if (*(pucVendor + 3) == 0x09)
 			/* found p2p IE */
 			eCNNState = p2pFuncTagActionActionP2PFrame(prMgmtTxMsdu,
-						prActFrame, *(pucVendor + 4), u8Cookie);
+						prActFrame, pucVendor + 4, u8Cookie);
 		else if (*(pucVendor + 3) == 0x0a)
 			/* found WFD IE */
 			DBGLOG(P2P, INFO, "Found WFD IE, SA: %pM - DA: %pM\n",
