@@ -1092,5 +1092,8 @@ PMRStoreRIHandle(PMR *psPMR,
 				 void *hRIHandle);
 #endif
 
+int  PMRRefCount(const PMR *psPMR);
+void PMRSetPath(PMR *psPMR);
+
 #endif /* #ifdef _SRVSRV_PMR_H_ */
 
