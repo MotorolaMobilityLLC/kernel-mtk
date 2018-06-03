@@ -86,22 +86,17 @@ void __iomem *auxadc_efuse_base;
 #if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
 #else
-/*#include <cust_adc.h>*//* generate by DCT Tool */
 #include <mach/mt_clkmgr.h>
 #endif
 
-typedef unsigned short UINT16;
-
-#define READ_REGISTER_UINT16(reg) (*(volatile UINT16 * const)(reg))
-
-#define INREG16(x)          READ_REGISTER_UINT16((UINT16 *)((void *)(x)))
+#define READ_REGISTER_UINT16(reg) (*(unsigned short * const)(reg))
+#define INREG16(x)          READ_REGISTER_UINT16((unsigned short *)((void *)(x)))
 #define DRV_Reg16(addr)             INREG16(addr)
 #define DRV_Reg(addr)               DRV_Reg16(addr)
 
 #if defined(AUXADC_SPM)
-typedef unsigned int UINT32;
-#define READ_REGISTER_UINT32(reg) (*(volatile UINT32 * const)(reg))
-#define INREG32(x)          READ_REGISTER_UINT32((UINT32 *)((void *)(x)))
+#define READ_REGISTER_UINT32(reg) (*(unsigned int * const)(reg))
+#define INREG32(x)          READ_REGISTER_UINT32((unsigned int *)((void *)(x)))
 #define DRV_Reg32(addr)             INREG32(addr)
 #endif
 
@@ -166,15 +161,15 @@ mt_reg_sync_writel(temp, REG);\
 #define SET_ADC_CALI_Cal    _IOW('k', 3, int)
 #define ADC_CHANNEL_READ    _IOW('k', 4, int)
 
-typedef struct adc_info {
+struct adc_info {
 	char channel_name[64];
 	int channel_number;
 	int reserve1;
 	int reserve2;
 	int reserve3;
-} ADC_INFO;
+};
 
-static ADC_INFO g_adc_info[ADC_CHANNEL_MAX];
+static struct adc_info g_adc_info[ADC_CHANNEL_MAX];
 static int auxadc_cali_slop[ADC_CHANNEL_MAX] = { 0 };
 static int auxadc_cali_offset[ADC_CHANNEL_MAX] = { 0 };
 
@@ -217,7 +212,7 @@ static void mt_auxadc_update_cali(void)
 #if defined(AUXADC_INDEX)
 	cali_reg = get_devinfo_with_index(AUXADC_INDEX);
 #else
-	cali_reg = (*(volatile unsigned int *const)(ADC_CALI_EN_A_REG));
+	cali_reg = (*(unsigned int *const)(ADC_CALI_EN_A_REG));
 #endif
 
 	if (((cali_reg & ADC_CALI_EN_A_MASK) >> ADC_CALI_EN_A_SHIFT) != 0) {
@@ -262,20 +257,20 @@ static void mt_auxadc_disable_penirq(void)
 #else
 static u16 mt_tpd_read_adc(u16 pos)
 {
-	AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_TP_ADDR, pos);
-	AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_TP_CON0, 0x01);
-	while (0x01 & AUXADC_DRV_ReadReg16((volatile u16 *)AUXADC_TP_CON0))
+	AUXADC_DRV_SetBits16((u16 *)AUXADC_TP_ADDR, pos);
+	AUXADC_DRV_SetBits16((u16 *)AUXADC_TP_CON0, 0x01);
+	while (0x01 & AUXADC_DRV_ReadReg16((u16 *)AUXADC_TP_CON0))
 		pr_debug("AUXADC_TP_CON0 waiting.\n");	/* wait for write finish */
-	return AUXADC_DRV_ReadReg16((volatile u16 *)AUXADC_TP_DATA0);
+	return AUXADC_DRV_ReadReg16((u16 *)AUXADC_TP_DATA0);
 }
 
 static void mt_auxadc_disable_penirq(void)
 {
 	if (adc_rtp_set) {
 		adc_rtp_set = 0;
-		AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON_RTP, 1);
+		AUXADC_DRV_SetBits16((u16 *)AUXADC_CON_RTP, 1);
 		/* Turn off PENIRQ detection circuit */
-		AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_TP_CMD, 1);
+		AUXADC_DRV_SetBits16((u16 *)AUXADC_TP_CMD, 1);
 		/* run once touch function */
 		mt_tpd_read_adc(TP_CMD_ADDR_X);
 	}
@@ -318,7 +313,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	if (dwChannel == PAD_AUX_XP || dwChannel == PAD_AUX_YM)
 		mt_auxadc_disable_penirq();
 	/* step1 check con2 if auxadc is busy */
-	while (AUXADC_DRV_ReadReg16((volatile u16 *)AUXADC_CON2) & 0x01) {
+	while (AUXADC_DRV_ReadReg16((u16 *)AUXADC_CON2) & 0x01) {
 		pr_debug("[adc_api]: wait for module idle\n");
 		mdelay(1);
 		idle_count++;
@@ -332,7 +327,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	/* step2 clear bit */
 	if (adc_auto_set == 0) {
 		/* clear bit */
-		AUXADC_DRV_ClearBits16((volatile u16 *)AUXADC_CON1, (1 << dwChannel));
+		AUXADC_DRV_ClearBits16((u16 *)AUXADC_CON1, (1 << dwChannel));
 	}
 
 
@@ -352,7 +347,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 
 	/* step4 set bit  to trigger sample */
 	if (adc_auto_set == 0)
-		AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON1, (1 << dwChannel));
+		AUXADC_DRV_SetBits16((u16 *)AUXADC_CON1, (1 << dwChannel));
 
 	/* step5  read channel and make sure  ready bit ==1 */
 	udelay(25);		/* we must dealay here for hw sample cahnnel data */
@@ -428,7 +423,7 @@ static void mt_auxadc_cal_prepare(void)
 #if defined(CONFIG_AUXADC_NEED_POWER_ON)
 static void mt_auxadc_power_on(void)
 {
-	AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_MISC, 1 << 14);	/* power on ADC */
+	AUXADC_DRV_SetBits16((u16 *)AUXADC_MISC, 1 << 14);	/* power on ADC */
 }
 #else
 static void mt_auxadc_power_on(void)
@@ -549,13 +544,13 @@ static void mt_auxadc_hal_resume(void)
 
 static int mt_auxadc_dump_register(char *buf)
 {
-	pr_debug("[auxadc]: AUXADC_CON0=%x\n", *(volatile u16 *)AUXADC_CON0);
-	pr_debug("[auxadc]: AUXADC_CON1=%x\n", *(volatile u16 *)AUXADC_CON1);
-	pr_debug("[auxadc]: AUXADC_CON2=%x\n", *(volatile u16 *)AUXADC_CON2);
+	pr_debug("[auxadc]: AUXADC_CON0=%x\n", *(u16 *)AUXADC_CON0);
+	pr_debug("[auxadc]: AUXADC_CON1=%x\n", *(u16 *)AUXADC_CON1);
+	pr_debug("[auxadc]: AUXADC_CON2=%x\n", *(u16 *)AUXADC_CON2);
 
 	return sprintf(buf, "AUXADC_CON0:%x\n AUXADC_CON1:%x\n AUXADC_CON2:%x\n",
-		       *(volatile u16 *)AUXADC_CON0, *(volatile u16 *)AUXADC_CON1,
-		       *(volatile u16 *)AUXADC_CON2);
+		       *(u16 *)AUXADC_CON0, *(u16 *)AUXADC_CON1,
+		       *(u16 *)AUXADC_CON2);
 }
 
 /*  */
@@ -1522,8 +1517,9 @@ static ssize_t store_AUXADC_channel(struct device *dev, struct device_attribute 
 	if (strlen(buf) != 1) {
 		pr_debug("[adc_driver]: Invalid values\n");
 		return -EINVAL;
-	} else
-		snprintf(start_flag, sizeof(start_flag), "%s", buf);
+	}
+
+	snprintf(start_flag, sizeof(start_flag), "%s", buf);
 	pr_debug("[adc_driver] start flag =%d\n", start_flag[0]);
 	g_start_debug_thread = start_flag[0];
 	if ('1' == start_flag[0]) {
