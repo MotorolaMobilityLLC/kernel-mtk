@@ -1281,8 +1281,8 @@
 		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>,	/*btif irq*/
 				<GIC_SPI 108 IRQ_TYPE_LEVEL_LOW>,	/*btif tx dma irq*/
 				<GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>;	/*btif rx dma irq*/
-		/* clocks = <&infracfg_ao INFRACFG_AO_BTIF_CG>,*/	/*btif clock*/
-		/*		<&infracfg_ao INFRACFG_AO_AP_DMA_CG>;*/		/*ap dma clock*/
+		clocks = <&infracfg_ao CLK_INFRA_BTIF>,	/*btif clock*/
+				<&infracfg_ao CLK_INFRA_AP_DMA>;		/*ap dma clock*/
 		clock-names = "btifc","apdmac";
 	};
 
@@ -1693,9 +1693,8 @@
 			<0 0x10006000 0 0x1000>;  /*SPM_BASE */
 		interrupts = <GIC_SPI 233 IRQ_TYPE_LEVEL_LOW>, /*BGF_EINT */
 			<GIC_SPI 271 IRQ_TYPE_EDGE_FALLING>; /*WDT_EINT */
-		/*clocks = <&scpsys SCP_SYS_CONN>;
-		 *clock-names = "conn";
-		 */
+		clocks = <&scpsys SCP_SYS_CONN>;
+		clock-names = "conn";
 	};
 };
 
