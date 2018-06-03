@@ -64,13 +64,13 @@ extern unsigned int autok_debug_level;
 #define AUTOK_DBGPRINT(_level, _fmt ...)   \
 ({                                         \
 	if (autok_debug_level >= _level) { \
-		pr_err(_fmt);              \
+		pr_info(_fmt);              \
 	}                                  \
 })
 
 #define AUTOK_RAWPRINT(_fmt ...)           \
 ({                                         \
-	pr_err(_fmt);                      \
+	pr_info(_fmt);                      \
 })
 
 enum ERROR_TYPE {

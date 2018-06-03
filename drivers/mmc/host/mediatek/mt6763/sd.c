@@ -361,7 +361,7 @@ void msdc_dump_info(u32 id)
 	msdc_dump_dvfs_reg(host);
 
 	msdc_dump_register(host);
-	INIT_MSG("latest_INT_status<0x%.8x>", latest_int_status[id]);
+	INFO_MSG("latest_INT_status<0x%.8x>", latest_int_status[id]);
 
 	mdelay(10);
 
@@ -4317,7 +4317,7 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
  end:
 	/* enable msdc register dump */
 	sd_register_zone[host->id] = 1;
-	INIT_MSG("Card insert<%d> Block bad card<%d>, mrq<%p> claimed<%d> pwrcnt<%d>",
+	INFO_MSG("Card insert<%d> Block bad card<%d>, mrq<%p> claimed<%d> pwrcnt<%d>",
 		host->card_inserted,
 		host->block_bad_card,
 		host->mrq, mmc->claimed,
