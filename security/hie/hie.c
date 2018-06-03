@@ -24,9 +24,7 @@
 #include <linux/blk_types.h>
 #include <linux/preempt.h>
 
-#ifdef CONFIG_HIE_DEBUG
 static DEFINE_SPINLOCK(hie_dev_list_lock);
-#endif
 static LIST_HEAD(hie_dev_list);
 static DEFINE_SPINLOCK(hie_fs_list_lock);
 static LIST_HEAD(hie_fs_list);
