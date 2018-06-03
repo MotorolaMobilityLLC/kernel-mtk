@@ -274,6 +274,7 @@ int fence_add_callback(struct fence *fence, struct fence_cb *cb,
 		       fence_func_t func);
 bool fence_remove_callback(struct fence *fence, struct fence_cb *cb);
 void fence_enable_sw_signaling(struct fence *fence);
+void fence_enable_sw_signaling_nolock(struct fence *fence);
 
 /**
  * fence_is_signaled_locked - Return an indication if the fence is signaled yet.

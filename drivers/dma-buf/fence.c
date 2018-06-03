@@ -216,6 +216,28 @@ void fence_enable_sw_signaling(struct fence *fence)
 EXPORT_SYMBOL(fence_enable_sw_signaling);
 
 /**
+ * fence_enable_sw_signaling_nolock - enable signaling on fence without
+ * taking lock
+ * @fence:	[in]	the fence to enable
+ *
+ * WARNING this is only safe to use when you know you have the only reference
+ * to the fence there is no possibility for race conditions as a result of
+ * calling ops->enable_signaling() without lock.  Ie. it is probably only safe
+ * to use from the fence's construction function.
+ */
+void fence_enable_sw_signaling_nolock(struct fence *fence)
+{
+	if (!test_and_set_bit(FENCE_FLAG_ENABLE_SIGNAL_BIT, &fence->flags) &&
+	    !test_bit(FENCE_FLAG_SIGNALED_BIT, &fence->flags)) {
+		trace_fence_enable_signal(fence);
+
+		if (!fence->ops->enable_signaling(fence))
+			fence_signal(fence);
+	}
+}
+EXPORT_SYMBOL(fence_enable_sw_signaling_nolock);
+
+/**
  * fence_add_callback - add a callback to be called when the fence
  * is signaled
  * @fence:	[in]	the fence to wait on
