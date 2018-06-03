@@ -161,17 +161,23 @@ static u32 slp_spm_deepidle_flags = {
 #elif defined(CONFIG_MACH_MT6771)
 /* FIXME: */
 static u32 slp_spm_flags = {
-	SPM_FLAG_DIS_CPU_PDN |
-	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
+	/* SPM_FLAG_DIS_CPU_PDN | */
+	/* SPM_FLAG_DIS_INFRA_PDN | */
+	/* SPM_FLAG_DIS_DDRPHY_PDN | */
+	SPM_FLAG_DIS_VCORE_DVS |
+	SPM_FLAG_DIS_VCORE_DFS |
+	/* SPM_FLAG_DIS_VPROC_VSRAM_DVS | */
 	SPM_FLAG_DIS_ATF_ABORT |
 	SPM_FLAG_SUSPEND_OPTION
 };
 
 static u32 slp_spm_deepidle_flags = {
-	SPM_FLAG_DIS_CPU_PDN |
-	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
+	/* SPM_FLAG_DIS_CPU_PDN | */
+	/* SPM_FLAG_DIS_INFRA_PDN | */
+	/* SPM_FLAG_DIS_DDRPHY_PDN | */
+	SPM_FLAG_DIS_VCORE_DVS |
+	SPM_FLAG_DIS_VCORE_DFS |
+	/* SPM_FLAG_DIS_VPROC_VSRAM_DVS | */
 	SPM_FLAG_DIS_ATF_ABORT |
 	SPM_FLAG_DEEPIDLE_OPTION
 };
@@ -194,10 +200,11 @@ static u32 slp_spm_deepidle_flags1;
 
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
-#if defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6739) \
+	|| defined(CONFIG_MACH_MT6763)
 	return state == PM_SUSPEND_MEM;
-#elif defined(CONFIG_MACH_MT6771)
-	return state == false;
+#else
+	return false;
 #endif
 }
 
