@@ -2035,6 +2035,9 @@ void typec_hanlder(void)
 
 struct typec_hba *get_hba(void)
 {
+	if (!g_hba)
+		g_hba = kzalloc(sizeof(struct typec_hba), GFP_KERNEL);
+
 	return g_hba;
 }
 EXPORT_SYMBOL_GPL(get_hba);
@@ -2113,12 +2116,14 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	}
 
 	/*initialize controller data*/
-	hba = kzalloc(sizeof(struct typec_hba), GFP_KERNEL);
+	if (!g_hba)
+		g_hba = kzalloc(sizeof(struct typec_hba), GFP_KERNEL);
+	hba = g_hba;
 	hba->dev = dev;
 	hba->mmio_base = mmio_base;
 	hba->irq = irq;
 	hba->id = id;
-	g_hba = hba;
+
 
 	dev_set_drvdata(dev, hba);
 
