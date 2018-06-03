@@ -18,6 +18,7 @@
 #include <linux/err.h>
 #include <linux/device.h>
 #include <linux/regulator/mediatek/mtk_regulator.h>
+#include <linux/regulator/mediatek/mtk_regulator_core.h>
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 int mtk_regulator_get(struct device *dev, const char *id,
@@ -99,22 +100,15 @@ int mtk_regulator_get_current_limit(struct mtk_regulator *mreg)
 int mtk_regulator_get(struct device *dev, const char *id,
 	struct mtk_regulator *mreg)
 {
-	struct mtk_simple_regulator_device *mreg_dev = NULL;
-
 	mreg->consumer = regulator_get(dev, id);
 	if (IS_ERR(mreg->consumer))
 		return PTR_ERR(mreg->consumer);
 
-	mreg_dev = mtk_simple_regulator_get_dev_by_name(id);
-	if (!mreg_dev) {
+	mreg->mreg_dev = mtk_simple_regulator_get_dev_by_name(id);
+	if (!mreg->mreg_dev) {
 		pr_info("%s: no mreg device\n", __func__);
 		return -ENODEV;
 	}
-
-	mreg->mreg_adv_ops = (struct mtk_simple_regulator_adv_ops *)
-		dev_get_drvdata(&mreg_dev->dev);
-	if (!mreg->mreg_adv_ops)
-		pr_info("%s: no adv ops\n", __func__);
 
 	return 0;
 }
@@ -122,22 +116,15 @@ int mtk_regulator_get(struct device *dev, const char *id,
 int mtk_regulator_get_exclusive(struct device *dev, const char *id,
 	struct mtk_regulator *mreg)
 {
-	struct mtk_simple_regulator_device *mreg_dev = NULL;
-
 	mreg->consumer = regulator_get_exclusive(dev, id);
 	if (IS_ERR(mreg->consumer))
 		return PTR_ERR(mreg->consumer);
 
-	mreg_dev = mtk_simple_regulator_get_dev_by_name(id);
-	if (!mreg_dev) {
+	mreg->mreg_dev = mtk_simple_regulator_get_dev_by_name(id);
+	if (!mreg->mreg_dev) {
 		pr_info("%s: no mreg device\n", __func__);
 		return -ENODEV;
 	}
-
-	mreg->mreg_adv_ops = (struct mtk_simple_regulator_adv_ops *)
-		dev_get_drvdata(&mreg_dev->dev);
-	if (!mreg->mreg_adv_ops)
-		pr_info("%s: no adv ops\n", __func__);
 
 	return 0;
 }
@@ -156,11 +143,6 @@ int devm_mtk_regulator_get(struct device *dev, const char *id,
 		pr_info("%s: no mreg device\n", __func__);
 		return -ENODEV;
 	}
-
-	mreg->mreg_adv_ops = (struct mtk_simple_regulator_adv_ops *)
-		dev_get_drvdata(&mreg_dev->dev);
-	if (!mreg->mreg_adv_ops)
-		pr_info("%s: no adv ops\n", __func__);
 
 	return 0;
 }
@@ -222,5 +204,55 @@ int mtk_regulator_set_current_limit(struct mtk_regulator *mreg,
 int mtk_regulator_get_current_limit(struct mtk_regulator *mreg)
 {
 	return regulator_get_current_limit(mreg->consumer);
+}
+
+int mtk_regulator_set_property(struct mtk_regulator *mreg,
+	enum mtk_simple_regulator_property prop,
+	union mtk_simple_regulator_propval *val)
+{
+	int ret = 0;
+	struct mtk_simple_regulator_desc *mreg_desc = NULL;
+
+	if (!mreg || !mreg->mreg_dev)
+		return -EINVAL;
+
+	mreg_desc = (struct mtk_simple_regulator_desc *)
+		dev_get_drvdata(&mreg->mreg_dev->dev);
+
+	if (!mreg_desc) {
+		pr_info("%s: no mreg desc\n", __func__);
+		return -EINVAL;
+	}
+
+	if (!mreg_desc->mreg_adv_ops || !mreg_desc->mreg_adv_ops->set_property)
+		pr_info("%s: no adv ops\n", __func__);
+
+	ret = mreg_desc->mreg_adv_ops->set_property(mreg_desc, prop, val);
+	return ret;
+}
+
+int mtk_regulator_get_property(struct mtk_regulator *mreg,
+	enum mtk_simple_regulator_property prop,
+	union mtk_simple_regulator_propval *val)
+{
+	int ret = 0;
+	struct mtk_simple_regulator_desc *mreg_desc = NULL;
+
+	if (!mreg || !mreg->mreg_dev)
+		return -EINVAL;
+
+	mreg_desc = (struct mtk_simple_regulator_desc *)
+		dev_get_drvdata(&mreg->mreg_dev->dev);
+
+	if (!mreg_desc) {
+		pr_info("%s: no mreg desc\n", __func__);
+		return -EINVAL;
+	}
+
+	if (!mreg_desc->mreg_adv_ops || !mreg_desc->mreg_adv_ops->get_property)
+		pr_info("%s: no adv ops\n", __func__);
+
+	ret = mreg_desc->mreg_adv_ops->get_property(mreg_desc, prop, val);
+	return ret;
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
