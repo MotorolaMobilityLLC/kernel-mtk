@@ -221,10 +221,14 @@ static void free_list_memory(void)
 
 static int fbconfig_open(struct inode *inode, struct file *file)
 {
-	struct PM_TOOL_S *pm_params;
+	struct PM_TOOL_S *pm_params = NULL;
 
 	file->private_data = inode->i_private;
 	pm_params = (struct PM_TOOL_S *) pm_get_handle();
+	if (pm_params == NULL) {
+		pr_debug("fbconfig_open=>pm_params is empty!!\n");
+		return -EFAULT;
+	}
 	PanelMaster_set_PM_enable(1);
 	pm_params->pLcm_drv = DISP_GetLcmDrv();
 	pm_params->pLcm_params = DISP_GetLcmPara();
@@ -464,10 +468,10 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			return -EFAULT;
 		}
 
-		if (esd_para.para_num > 100) {
+		if (esd_para.para_num < 0 || esd_para.para_num > 0x30) {
 
-			pr_debug("[LCM_GET_ESD]: para_num overflow! line:%d\n",
-						 __LINE__);
+			pr_debug("[LCM_GET_ESD]: wrong esd_para.para_num= %d! line:%d\n",
+						 esd_para.para_num, __LINE__);
 			return -EFAULT;
 		}
 
