@@ -326,6 +326,9 @@ saaFsmSendEventJoinComplete(IN P_ADAPTER_T prAdapter,
 		if (!prSaaFsmCompMsg)
 			return WLAN_STATUS_RESOURCES;
 
+		if (rJoinStatus == WLAN_STATUS_SUCCESS)
+			prStaRec->u2StatusCode = STATUS_CODE_SUCCESSFUL;
+
 		prSaaFsmCompMsg->rMsgHdr.eMsgId = MID_SAA_AIS_JOIN_COMPLETE;
 		prSaaFsmCompMsg->ucSeqNum = prStaRec->ucAuthAssocReqSeqNum;
 		prSaaFsmCompMsg->rJoinStatus = rJoinStatus;
@@ -344,6 +347,9 @@ saaFsmSendEventJoinComplete(IN P_ADAPTER_T prAdapter,
 		prSaaFsmCompMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_SAA_FSM_COMP_T));
 		if (!prSaaFsmCompMsg)
 			return WLAN_STATUS_RESOURCES;
+
+		if (rJoinStatus == WLAN_STATUS_SUCCESS)
+			prStaRec->u2StatusCode = STATUS_CODE_SUCCESSFUL;
 
 		prSaaFsmCompMsg->rMsgHdr.eMsgId = MID_SAA_P2P_JOIN_COMPLETE;
 		prSaaFsmCompMsg->ucSeqNum = prStaRec->ucAuthAssocReqSeqNum;
@@ -445,7 +451,7 @@ VOID saaFsmRunEventStart(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	}
 	/* 4 <3> Reset Status Code and Time */
 	/* Update Station Record - Status/Reason Code */
-	prStaRec->u2StatusCode = STATUS_CODE_SUCCESSFUL;
+	prStaRec->u2StatusCode = STATUS_CODE_UNSPECIFIED_FAILURE;
 
 	/* Update the record join time. */
 	GET_CURRENT_SYSTIME(&prStaRec->rLastJoinTime);
