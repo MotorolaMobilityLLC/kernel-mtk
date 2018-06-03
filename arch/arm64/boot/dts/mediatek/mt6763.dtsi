@@ -788,7 +788,10 @@
 
 	emi@10219000 {
 		compatible = "mediatek,emi";
-		reg = <0 0x10219000 0 0x1000>;
+		reg = <0 0x10219000 0 0x1000>, /* CEN EMI */
+			<0 0x1022d000 0 0x1000>, /* CHA EMI */
+			<0 0x10235000 0 0x1000>, /* CHB EMI */
+			<0 0x10226000 0 0x1000>; /* EMI MPU */
 		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
 	};
 
@@ -992,11 +995,6 @@
 		reg = <0 0x10225000 0 0x1000>;
 	};
 
-	emi_mpu@10226000 {
-		compatible = "mediatek,emi_mpu";
-		reg = <0 0x10226000 0 0x1000>;
-	};
-
 	dvfsp@10227000 {
 		compatible = "mediatek,dvfsp";
 		reg = <0 0x10227000 0 0x1000>;
@@ -1011,16 +1009,6 @@
 			<0 0x10234000 0 0x1000>, /* DRAMC NAO CHB */
 			<0 0x10228000 0 0x2000>, /* DDRPHY AO CHA */
 			<0 0x10230000 0 0x2000>; /* DDRPHY AO CHB */
-	};
-
-	chn0_emi@1022d000 {
-		compatible = "mediatek,chn0_emi";
-		reg = <0 0x1022d000 0 0x1000>;
-	};
-
-	chn1_emi@10235000 {
-		compatible = "mediatek,chn1_emi";
-		reg = <0 0x10235000 0 0x1000>;
 	};
 
 	fmem_smi@10238000 {
