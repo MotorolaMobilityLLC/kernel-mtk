@@ -87,6 +87,10 @@ struct mtk_phy_drv {
 	struct mtk_phy_instance **phys;
 	int nphys;
 	struct clk *clk;
+	struct clk *ssusb_clk_refpll;
+	struct clk *ssusb_clk_mux;
+	struct clk *ssusb_clk_mux_default;
+	struct clk *ssusb_clk_mux_host;
 	struct regulator *vusb33;
 	struct regulator *vusb10;
 };

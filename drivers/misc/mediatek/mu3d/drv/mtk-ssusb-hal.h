@@ -18,13 +18,15 @@ enum {
 	USB_DPIDLE_ALLOWED = 0,
 	USB_DPIDLE_FORBIDDEN,
 	USB_DPIDLE_SRAM,
-	USB_DPIDLE_TIMER
+	USB_DPIDLE_TIMER,
+	USB_DPIDLE_AUDIO_SRAM,
 };
 
 void usb20_rev6_setting(int value, bool is_update);
 extern void enable_ipsleep_wakeup(void);
 extern void disable_ipsleep_wakeup(void);
 extern void usb_hal_dpidle_request(int mode);
+extern void usb_audio_req(bool on);
 
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
 extern void usb_phy_sib_enable_switch(bool enable);
