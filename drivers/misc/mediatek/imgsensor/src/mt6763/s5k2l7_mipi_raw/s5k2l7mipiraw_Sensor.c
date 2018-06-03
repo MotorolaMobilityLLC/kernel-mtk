@@ -1700,10 +1700,10 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
 }
 static kal_uint32 streaming_control(kal_bool enable)
 {
-	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
-	int timeout = (10000 / imgsensor.current_fps) + 1;
 	int i = 0;
+	int timeout = (10000 / imgsensor.current_fps) + 1;
 
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
 	if (enable) {
 		write_cmos_sensor(0x0100, 0X01);
 		mDELAY(10);

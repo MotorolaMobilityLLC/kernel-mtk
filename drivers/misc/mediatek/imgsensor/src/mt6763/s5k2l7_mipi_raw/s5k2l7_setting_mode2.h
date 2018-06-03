@@ -2169,7 +2169,6 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
 	write_cmos_sensor_twobyte(0X6214, 0X79F0);     \
 	write_cmos_sensor_twobyte(0X6218, 0X79F0);     \
 	sensor_WDR_zhdr();                             \
-
 } while (0)
 
 
@@ -2332,7 +2331,6 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
 	write_cmos_sensor_twobyte(0X6214, 0X79F0);     \
 	write_cmos_sensor_twobyte(0X6218, 0X79F0);     \
 	sensor_WDR_zhdr();                             \
-
 } while (0)
 
 
@@ -2494,7 +2492,6 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
 	write_cmos_sensor_twobyte(0X6028, 0X4000);     \
 	write_cmos_sensor_twobyte(0X6214, 0X79F0);     \
 	write_cmos_sensor_twobyte(0X6218, 0X79F0);     \
-
 } while (0)
 
 /*****************************************************************************
@@ -2655,7 +2652,6 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2[5] =               
 	write_cmos_sensor_twobyte(0X6028, 0X4000);     \
 	write_cmos_sensor_twobyte(0X6214, 0X79F0);     \
 	write_cmos_sensor_twobyte(0X6218, 0X79F0);     \
-
 } while (0)
 
 /*****************************************************************************
