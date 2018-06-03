@@ -102,7 +102,7 @@ unsigned int mt6336_read_byte(unsigned int reg, unsigned char *returnData)
 		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
 		if (ret == -ENXIO) {
-			PMICLOG("skipping non-existent adapter %s\n", new_client->adapter->name);
+			MT6336LOG("skipping non-existent adapter %s\n", new_client->adapter->name);
 			break;
 		}
 	} while (ret != xfers && --retries);
@@ -148,7 +148,7 @@ unsigned int mt6336_read_bytes(unsigned int reg, unsigned char *returnData, unsi
 		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
 		if (ret == -ENXIO) {
-			PMICLOG("skipping non-existent adapter %s\n", new_client->adapter->name);
+			MT6336LOG("skipping non-existent adapter %s\n", new_client->adapter->name);
 			break;
 		}
 	} while (ret != xfers && --retries);
@@ -191,7 +191,7 @@ unsigned int mt6336_write_byte(unsigned int reg, unsigned char writeData)
 		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
 		if (ret == -ENXIO) {
-			PMICLOG("skipping non-existent adapter %s\n", new_client->adapter->name);
+			MT6336LOG("skipping non-existent adapter %s\n", new_client->adapter->name);
 			break;
 		}
 	} while (ret != xfers && --retries);
@@ -219,7 +219,7 @@ unsigned int mt6336_read_interface(unsigned int RegNum, unsigned char *val, unsi
 	mt6336_reg &= (MASK << SHIFT);
 	*val = (mt6336_reg >> SHIFT);
 
-	PMICLOG("[mt6336_read_interface] Reg[0x%x]=0x%x val=0x%x device_id=0x%x\n",
+	MT6336LOG("[mt6336_read_interface] Reg[0x%x]=0x%x val=0x%x device_id=0x%x\n",
 		RegNum, reg_val, *val, RegNum / CODA_ADDR_WIDTH + SLV_BASE_ADDR);
 
 
@@ -240,7 +240,7 @@ unsigned int mt6336_config_interface(unsigned int RegNum, unsigned char val, uns
 	mt6336_reg |= (val << SHIFT);
 
 	ret = mt6336_write_byte(RegNum, mt6336_reg);
-	PMICLOG("[mt6336_config_interface] write Reg[0x%x] from 0x%x to 0x%x device_id=0x%x\n", RegNum,
+	MT6336LOG("[mt6336_config_interface] write Reg[0x%x] from 0x%x to 0x%x device_id=0x%x\n", RegNum,
 		    reg_val, mt6336_reg, RegNum / CODA_ADDR_WIDTH + SLV_BASE_ADDR);
 
 	return ret;
@@ -283,13 +283,13 @@ void mt6336_hw_component_detect(void)
 	else
 		g_mt6336_hw_exist = 1;
 
-	PMICLOG("[mt6336_hw_component_detect] exist=%d, Reg[0x03]=0x%x\n",
+	MT6336LOG("[mt6336_hw_component_detect] exist=%d, Reg[0x03]=0x%x\n",
 		 g_mt6336_hw_exist, val);
 }
 
 int is_mt6336_exist(void)
 {
-	PMICLOG("[is_mt6336_exist] g_mt6336_hw_exist=%d\n", g_mt6336_hw_exist);
+	MT6336LOG("[is_mt6336_exist] g_mt6336_hw_exist=%d\n", g_mt6336_hw_exist);
 
 	return g_mt6336_hw_exist;
 }
@@ -300,7 +300,7 @@ void mt6336_dump_register(void)
 
 void mt6336_hw_init(void)
 {
-	/*PMICLOG("[mt6336_hw_init] After HW init\n");*/
+	/*MT6336LOG("[mt6336_hw_init] After HW init\n");*/
 	mt6336_dump_register();
 }
 
@@ -312,8 +312,8 @@ void mt6336_hw_init(void)
 unsigned char g_reg_value_mt6336;
 static ssize_t show_mt6336_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	PMICLOG("[show_mt6336_access] 0x%x\n", g_reg_value_mt6336);
-	return sprintf(buf, "%u\n", g_reg_value_mt6336);
+	MT6336LOG("[show_mt6336_access] 0x%x\n", g_reg_value_mt6336);
+	return sprintf(buf, "0x%x\n", g_reg_value_mt6336);
 }
 
 static ssize_t store_mt6336_access(struct device *dev, struct device_attribute *attr,
@@ -324,9 +324,9 @@ static ssize_t store_mt6336_access(struct device *dev, struct device_attribute *
 	unsigned int reg_value = 0;
 	unsigned int reg_address = 0;
 
-	PMICLOG("[store_mt6336_access]\n");
+	MT6336LOG("[store_mt6336_access]\n");
 	if (buf != NULL && size != 0) {
-		PMICLOG("[store_mt6336_access] buf is %s , size is %d\n", buf, (int)size);
+		MT6336LOG("[store_mt6336_access] buf is %s , size is %d\n", buf, (int)size);
 		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
 
 		pvalue = (char *)buf;
@@ -342,14 +342,14 @@ static ssize_t store_mt6336_access(struct device *dev, struct device_attribute *
 			val =  strsep(&pvalue, " ");
 			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
 
-			PMICLOG("[store_mt6336_access] write PMU reg 0x%x with value 0x%x !\n",
+			MT6336LOG("[store_mt6336_access] write PMU reg 0x%x with value 0x%x !\n",
 				reg_address, reg_value);
 			ret = mt6336_config_interface(reg_address, reg_value, 0xFF, 0x0);
 		} else {
 			ret = mt6336_read_interface(reg_address, &g_reg_value_mt6336, 0xFF, 0x0);
-			PMICLOG("[store_mt6336_access] read PMU reg 0x%x with value 0x%x !\n",
+			MT6336LOG("[store_mt6336_access] read PMU reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value_mt6336);
-			PMICLOG("[store_mt6336_access] use \"cat pmic_access\" to get value(decimal)\r\n");
+			MT6336LOG("[store_mt6336_access] use \"cat pmic_access\" to get value(decimal)\r\n");
 		}
 	}
 	return size;
@@ -398,12 +398,12 @@ void mt6336_debug_init(void)
 
 	mt6336_dir = proc_mkdir("mt6336", NULL);
 	if (!mt6336_dir) {
-		PMICLOG("fail to mkdir /proc/mt6336\n");
+		MT6336LOG("fail to mkdir /proc/mt6336\n");
 		return;
 	}
 
 	proc_create("dump_mt6336_reg", S_IRUGO | S_IWUSR, mt6336_dir, &mt6336_dump_register_proc_fops);
-	PMICLOG("proc_create pmic_dump_register_proc_fops\n");
+	MT6336LOG("proc_create pmic_dump_register_proc_fops\n");
 }
 
 /*****************************************************************************
@@ -413,12 +413,12 @@ static int mt6336_user_space_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
 
-	PMICLOG("******** mt6336_user_space_probe!! ********\n");
+	MT6336LOG("******** mt6336_user_space_probe!! ********\n");
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_mt6336_access);
-	PMICLOG("[MT6336] device_create_file for EM : done.\n");
+	MT6336LOG("[MT6336] device_create_file for EM : done.\n");
 
 	mt6336_debug_init();
-	PMICLOG("[MT6336] mt6336_debug_init : done.\n");
+	MT6336LOG("[MT6336] mt6336_debug_init : done.\n");
 
 	return 0;
 }
@@ -437,7 +437,7 @@ static struct platform_driver mt6336_user_space_driver = {
 
 static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	PMICLOG("[mt6336_driver_probe]\n");
+	pr_err(MT6336TAG "[mt6336_driver_probe]\n");
 	new_client = client;
 
 	/* --------------------- */
@@ -448,7 +448,7 @@ static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_devic
 
 	/*MT6336 Interrupt Service*/
 	MT6336_EINT_SETTING();
-	PMICLOG("[MT6336_EINT_SETTING] Done\n");
+	MT6336LOG("[MT6336_EINT_SETTING] Done\n");
 
 	/* mt6336_hw_init(); //move to charging_hw_xxx.c */
 	chargin_hw_init_done = true;
@@ -456,7 +456,7 @@ static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_devic
 	/* Hook chr_control_interface with battery's interface */
 	battery_charging_control = chr_control_interface;
 #endif
-	PMICLOG("[mt6336_driver_probe] Done\n");
+	pr_err(MT6336TAG "[mt6336_driver_probe] Done\n");
 	return 0;
 }
 
@@ -497,26 +497,26 @@ static int __init mt6336_init(void)
 
 	/* i2c registeration using DTS instead of boardinfo*/
 #ifdef CONFIG_OF
-	PMICLOG("[mt6336_init] init start with i2c DTS");
+	MT6336LOG("[mt6336_init] init start with i2c DTS");
 #else
-	PMICLOG("[mt6336_init] init start. ch=%d\n", mt6336_BUSNUM);
+	MT6336LOG("[mt6336_init] init start. ch=%d\n", mt6336_BUSNUM);
 	i2c_register_board_info(mt6336_BUSNUM, &i2c_mt6336, 1);
 #endif
 	if (i2c_add_driver(&mt6336_driver) != 0)
-		PMICLOG("[mt6336_init] failed to register mt6336 i2c driver.\n");
+		MT6336LOG("[mt6336_init] failed to register mt6336 i2c driver.\n");
 	else
-		PMICLOG("[mt6336_init] Success to register mt6336 i2c driver.\n");
+		MT6336LOG("[mt6336_init] Success to register mt6336 i2c driver.\n");
 
 	/* mt6336 user space access interface */
 	ret = platform_device_register(&mt6336_user_space_device);
 	if (ret) {
-		PMICLOG("****[mt6336_init] Unable to device register(%d)\n",
+		MT6336LOG("****[mt6336_init] Unable to device register(%d)\n",
 			    ret);
 		return ret;
 	}
 	ret = platform_driver_register(&mt6336_user_space_driver);
 	if (ret) {
-		PMICLOG("****[mt6336_init] Unable to register driver (%d)\n",
+		MT6336LOG("****[mt6336_init] Unable to register driver (%d)\n",
 			    ret);
 		return ret;
 	}

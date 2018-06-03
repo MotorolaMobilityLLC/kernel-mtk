@@ -15,7 +15,7 @@
 #define _MT6337_PMIC_H_
 
 #include "mtk_pmic_common.h"
-#include "mtk_pmic_info.h"	/* Main PMIC */
+#include "pmic_debugfs.h"
 #include "mt6337_upmu_hw.h"
 #include "mt6337_irq.h"
 
@@ -25,6 +25,11 @@
 #define PMIC6337_E3_CID_CODE    0x3730
 
 #define MT6337TAG                "[MT6337] "
+
+#define MT6337LOG(fmt, arg...) do { \
+	if (gPMICDbgLvl >= PMIC_LOG_DBG) \
+		pr_err(MT6337TAG "%s: " fmt, __func__, ##arg); \
+} while (0)
 
 extern const MT6337_PMU_FLAG_TABLE_ENTRY mt6337_pmu_flags_table[];
 
