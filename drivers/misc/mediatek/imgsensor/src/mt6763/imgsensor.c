@@ -148,6 +148,11 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 	struct IMGSENSOR_SENSOR_INST *psensor_inst = &psensor->inst;
 	SENSOR_FUNCTION_STRUCT       *psensor_func =  psensor->pfunc;
 
+#ifdef CONFIG_MTK_CCU
+	struct ccu_sensor_info ccuSensorInfo;
+	enum IMGSENSOR_SENSOR_IDX sensor_idx = psensor->inst.sensor_idx;
+#endif
+
 	IMGSENSOR_FUNCTION_ENTRY();
 
 	if (psensor_func &&
@@ -176,6 +181,12 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 		} else {
 			psensor_inst->state = IMGSENSOR_STATE_OPEN;
 		}
+
+#ifdef CONFIG_MTK_CCU
+		ccuSensorInfo.slave_addr = (psensor_inst->i2c_cfg.pinst->msg->addr << 1);
+		ccuSensorInfo.sensor_name_string = (char *)(psensor_inst->psensor_name);
+		ccu_set_sensor_info(sensor_idx, &ccuSensorInfo);
+#endif
 
 		imgsensor_mutex_unlock(psensor_inst);
 

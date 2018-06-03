@@ -23,7 +23,18 @@
 #include <linux/kthread.h>
 #include <linux/dma-mapping.h>
 #include <linux/spinlock.h>
-#include <m4u.h>
+#include <linux/iommu.h>
+
+#include "mtk_ion.h"
+#include "ion_drv.h"
+#include <linux/iommu.h>
+
+#ifdef CONFIG_MTK_IOMMU
+#include "mtk_iommu.h"
+#include <dt-bindings/memory/mt6763-larb-port.h>
+#else
+#include "m4u.h"
+#endif
 
 #include <linux/io.h> /*for mb();*/
 
@@ -34,13 +45,17 @@
 #include "ccu_kd_mailbox.h"
 #include "ccu_i2c.h"
 
+#include "kd_camera_feature.h"/*for sensorType in ccu_set_sensor_info*/
+
 static uint64_t camsys_base;
 static uint64_t bin_base;
 static uint64_t dmem_base;
 
 static ccu_device_t *ccu_dev;
 static struct task_struct *enque_task;
-static m4u_client_t *m4u_client;
+static struct ion_client *ccu_ion_client;
+static struct ion_handle *handle;
+
 static struct mutex cmd_mutex;
 static wait_queue_head_t cmd_wait;
 static volatile bool cmd_done;
@@ -61,9 +76,9 @@ static uint32_t i2c_buffer_mva;
 
 /*isr work management*/
 struct ap_task_manage_t {
-		struct workqueue_struct *ApTaskWorkQueue;
-		struct mutex ApTaskMutex;
-		struct list_head ApTskWorkList;
+	struct workqueue_struct *ApTaskWorkQueue;
+	struct mutex ApTaskMutex;
+	struct list_head ApTskWorkList;
 };
 
 struct ap_task_manage_t ap_task_manage;
@@ -75,32 +90,152 @@ static unsigned int g_LogBufIdx = 1;
 
 static int _ccu_powerdown(void);
 static int _ccu_allocate_mva(uint32_t *mva, void *va);
-static int _ccu_deallocate_mva(uint32_t *mva);
+static int _ccu_deallocate_mva(struct ion_client **client, struct ion_handle *handle);
 
-static int _ccu_allocate_mva(uint32_t *mva, void *va)
+static int _ccu_config_m4u_port(void)
 {
-	int ret;
+	int ret = 0;
 
-	/*i2c dma buffer is PAGE_SIZE(4096B)*/
-	*mva = 0x10000000;
-	ret = m4u_alloc_mva(m4u_client, CCUG_OF_M4U_PORT, (unsigned long)va, 0,
-			4096, M4U_PROT_READ | M4U_PROT_WRITE,
-			M4U_FLAGS_START_FROM, mva);
+#if defined(CONFIG_MTK_M4U)
+	M4U_PORT_STRUCT port;
 
-	if (ret)
-		LOG_ERR("fail to allocate mva for the pointer to i2c_dma_buf_addr, ret=%d\n", ret);
+	port.ePortID = CCUG_OF_M4U_PORT;
+	port.Virtuality = 1;
+	port.Security = 0;
+	port.domain = 3;
+	port.Distance = 1;
+	port.Direction = 0;
 
+	ret = m4u_config_port(&port);
+#endif
 	return ret;
 }
 
-static int _ccu_deallocate_mva(uint32_t *mva)
+static struct ion_handle *_ccu_ion_alloc(struct ion_client *client,
+		unsigned int heap_id_mask, size_t align, unsigned int size)
 {
-	if (*mva != 0) {
-		m4u_dealloc_mva(m4u_client, CCUG_OF_M4U_PORT, *mva);
-		*mva = 0;
+	struct ion_handle *disp_handle = NULL;
+
+	disp_handle = ion_alloc(client, size, align, heap_id_mask, 0);
+	if (IS_ERR(disp_handle)) {
+		LOG_ERR("disp_ion_alloc 1error %p\n", disp_handle);
+		return NULL;
 	}
 
+	LOG_DBG("disp_ion_alloc 1 %p\n", disp_handle);
+
+	return disp_handle;
+
+}
+
+static int _ccu_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
+		unsigned int *mva, int port)
+{
+	struct ion_mm_data mm_data;
+	unsigned int mva_size;
+
+	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER_EXT;
+	mm_data.config_buffer_param.kernel_handle = handle;
+	mm_data.config_buffer_param.module_id   = port;
+	mm_data.config_buffer_param.security    = 0;
+	mm_data.config_buffer_param.coherent    = 1;
+	mm_data.config_buffer_param.reserve_iova_start  = 0x10000000;
+	mm_data.config_buffer_param.reserve_iova_end    = 0xFFFFFFFF;
+
+	if (ion_kernel_ioctl(client, ION_CMD_MULTIMEDIA, (unsigned long)&mm_data) < 0) {
+		LOG_ERR("disp_ion_get_mva: config buffer failed.%p -%p\n", client, handle);
+
+		ion_free(client, handle);
+		return -1;
+	}
+	*mva = 0;
+	*mva = (port<<24) | ION_FLAG_GET_FIXED_PHYS;
+	mva_size = ION_FLAG_GET_FIXED_PHYS;
+
+
+	ion_phys(client, handle, (ion_phys_addr_t *)mva, (size_t *)&mva_size);
+	LOG_DBG("alloc mmu addr hnd=0x%p,mva=0x%08x\n", handle, (unsigned int)*mva);
 	return 0;
+}
+
+static void _ccu_ion_free_handle(struct ion_client *client, struct ion_handle *handle)
+{
+	if (!client) {
+		LOG_ERR("invalid ion client!\n");
+		return;
+	}
+	if (!handle)
+		return;
+
+	ion_free(client, handle);
+
+	LOG_DBG("free ion handle 0x%p\n", handle);
+}
+
+static void _ccu_ion_destroy(struct ion_client *client)
+{
+	LOG_DBG("X-:%s\n", __func__);
+	if (client && g_ion_device)
+		ion_client_destroy(client);
+}
+
+static int _ccu_deallocate_mva(struct ion_client **client, struct ion_handle *handle)
+{
+	LOG_DBG("X-:%s\n", __func__);
+	_ccu_ion_free_handle(*client, handle);
+	_ccu_ion_destroy(*client);
+	*client = NULL;
+	return 0;
+}
+
+static int _ccu_allocate_mva(uint32_t *mva, void *va)
+{
+	int ret = 0;
+	int buffer_size = 4096;
+
+	if (!ccu_ion_client && g_ion_device)
+		ccu_ion_client = ion_client_create(g_ion_device, "ccu");
+
+	if (!ccu_ion_client) {
+		LOG_ERR("invalid ion client!\n");
+		_ccu_ion_destroy(ccu_ion_client);
+
+		return !ccu_ion_client;
+	}
+
+	LOG_DBG("create ion client 0x%p\n", ccu_ion_client);
+
+	ret = _ccu_config_m4u_port();
+	if (ret) {
+		LOG_ERR("fail to config m4u port!\n");
+		_ccu_ion_destroy(ccu_ion_client);
+		return ret;
+	}
+
+	handle = _ccu_ion_alloc(ccu_ion_client,
+			ION_HEAP_MULTIMEDIA_MAP_MVA_MASK, (unsigned long)va, buffer_size);
+
+	/*i2c dma buffer is PAGE_SIZE(4096B)*/
+
+	if (!(handle)) {
+		LOG_ERR("Fatal Error, ion_alloc for size %d failed\n", 4096);
+		if (ccu_ion_client != NULL)
+			_ccu_deallocate_mva(&ccu_ion_client, handle);
+
+		return !handle;
+	}
+
+	ret = _ccu_ion_get_mva(ccu_ion_client, handle, mva, CCUG_OF_M4U_PORT);
+
+	if (ret) {
+		LOG_ERR("ccu ion_get_mva failed\n");
+
+		if (ccu_ion_client != NULL)
+			_ccu_deallocate_mva(&ccu_ion_client, handle);
+		return !handle;
+	}
+
+	return ret;
 }
 
 static inline unsigned int CCU_MsToJiffies(unsigned int Ms)
@@ -118,7 +253,7 @@ static inline void lock_command(void)
 static inline int wait_command(void)
 {
 	return (wait_event_interruptible_timeout(cmd_wait, cmd_done,
-						    msecs_to_jiffies(1 * 1000)) > 0) ? 0 : -ETIMEDOUT;
+				msecs_to_jiffies(1 * 1000)) > 0) ? 0 : -ETIMEDOUT;
 }
 
 static inline void unlock_command(void)
@@ -141,23 +276,20 @@ static void isr_sp_task(void)
 
 			i2c_transac_len = ccu_read_reg(ccu_base, CCU_STA_REG_I2C_TRANSAC_LEN);
 			i2c_do_dma_en = ccu_read_reg(ccu_base, CCU_STA_REG_I2C_DO_DMA_EN);
-
-			/*LOG_DBG("i2c_transac_len: %d\n", i2c_transac_len);*/
+				/*LOG_DBG("i2c_transac_len: %d\n", i2c_transac_len);*/
 			/*LOG_DBG("i2c_do_dma_en: %d\n", i2c_do_dma_en);*/
-
-			/*Use spinlock to avoid trigger i2c after i2c cg turned off*/
+				/*Use spinlock to avoid trigger i2c after i2c cg turned off*/
 			spin_lock_irqsave(&ccuInfo.SpinLockI2cPower, flags);
 			if (ccuInfo.IsI2cPoweredOn == 1 && ccuInfo.IsI2cPowerDisabling == 0)
 				ccu_trigger_i2c(i2c_transac_len, i2c_do_dma_en);
 			spin_unlock_irqrestore(&ccuInfo.SpinLockI2cPower, flags);
 
 			ccu_write_reg(ccu_base, CCU_STA_REG_SP_ISR_TASK, 0);
-
 			LOG_DBG("isr_sp_task: APISR_SP_TASK_TRIGGER_I2C -----\n");
 			break;
 		}
 
-	case APISR_SP_TASK_RESET_I2C:
+		case APISR_SP_TASK_RESET_I2C:
 		{
 			LOG_DBG("isr_sp_task: APISR_SP_TASK_RESET_I2C +++++\n");
 
@@ -169,7 +301,7 @@ static void isr_sp_task(void)
 			break;
 		}
 
-	default:
+		default:
 		{
 			LOG_DBG("no isr_sp_task: %x\n", sp_task);
 			break;
@@ -179,10 +311,10 @@ static void isr_sp_task(void)
 
 #define CCU_ISR_WORK_BUFFER_SZIE 16
 /*
-* static atomic_t isr_work_idx_front = ATOMIC_INIT(0);
-* static atomic_t isr_work_idx_rear = ATOMIC_INIT(0);
-* static struct work_struct isr_works[CCU_ISR_WORK_BUFFER_SZIE];
-*/
+ * static atomic_t isr_work_idx_front = ATOMIC_INIT(0);
+ * static atomic_t isr_work_idx_rear = ATOMIC_INIT(0);
+ * static struct work_struct isr_works[CCU_ISR_WORK_BUFFER_SZIE];
+ */
 
 #if 0
 static void isr_worker(struct work_struct *isr_work)
@@ -258,16 +390,16 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 		case MSG_TO_APMCU_FLUSH_LOG:
 			{
 				LOG_DBG
-						("got MSG_TO_APMCU_FLUSH_LOG:%d , wakeup ccuInfo.WaitQueueHead\n",
-						receivedCcuCmd.in_data_ptr);
+					("got MSG_TO_APMCU_FLUSH_LOG:%d , wakeup ccuInfo.WaitQueueHead\n",
+					 receivedCcuCmd.in_data_ptr);
 				schedule_isr_worker(receivedCcuCmd.msg_id);
 				break;
 			}
 		case MSG_TO_APMCU_CCU_ASSERT:
 			{
 				LOG_DBG
-						("got MSG_TO_APMCU_CCU_ASSERT:%d, wakeup ccuInfo.WaitQueueHead\n",
-						receivedCcuCmd.in_data_ptr);
+					("got MSG_TO_APMCU_CCU_ASSERT:%d, wakeup ccuInfo.WaitQueueHead\n",
+					 receivedCcuCmd.in_data_ptr);
 				schedule_isr_worker(receivedCcuCmd.msg_id);
 				break;
 			}
@@ -276,8 +408,8 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 			{
 				/*for ccu_waitirq();*/
 				LOG_DBG
-				    ("got MSG_TO_APMCU_FLUSH_LOG:%d , wakeup ccuInfo.WaitQueueHead\n",
-				     receivedCcuCmd.in_data_ptr);
+					("got MSG_TO_APMCU_FLUSH_LOG:%d , wakeup ccuInfo.WaitQueueHead\n",
+					 receivedCcuCmd.in_data_ptr);
 				bWaitCond = true;
 				g_LogBufIdx = receivedCcuCmd.in_data_ptr;
 
@@ -285,14 +417,13 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 				LOG_DBG("wakeup ccuInfo.WaitQueueHead done\n");
 				break;
 			}
-
-		case MSG_TO_APMCU_CCU_ASSERT:
+			case MSG_TO_APMCU_CCU_ASSERT:
 			{
 				LOG_ERR
-				    ("got MSG_TO_APMCU_CCU_ASSERT:%d, wakeup ccuInfo.WaitQueueHead\n",
-				     receivedCcuCmd.in_data_ptr);
+					("got MSG_TO_APMCU_CCU_ASSERT:%d, wakeup ccuInfo.WaitQueueHead\n",
+					 receivedCcuCmd.in_data_ptr);
 				LOG_ERR
-				    ("================== AP_ISR_CCU_ASSERT ===================\n");
+					("================== AP_ISR_CCU_ASSERT ===================\n");
 				bWaitCond = true;
 				g_LogBufIdx = 0xFFFFFFFF;	/* -1*/
 
@@ -300,14 +431,13 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 				LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
 				break;
 			}
-
-		case MSG_TO_APMCU_CCU_WARNING:
+			case MSG_TO_APMCU_CCU_WARNING:
 			{
 				LOG_ERR
-				    ("got MSG_TO_APMCU_CCU_WARNING:%d, wakeup ccuInfo.WaitQueueHead\n",
-				     receivedCcuCmd.in_data_ptr);
+					("got MSG_TO_APMCU_CCU_WARNING:%d, wakeup ccuInfo.WaitQueueHead\n",
+					 receivedCcuCmd.in_data_ptr);
 				LOG_ERR
-				    ("================== AP_ISR_CCU_WARNING ===================\n");
+					("================== AP_ISR_CCU_WARNING ===================\n");
 				bWaitCond = true;
 				g_LogBufIdx = -2;
 
@@ -430,46 +560,32 @@ static int ccu_enque_cmd_loop(void *arg)
 	return 0;
 }
 
-int ccu_config_m4u_port(void)
-{
-
-	M4U_PORT_STRUCT port;
-
-	port.ePortID = CCUG_OF_M4U_PORT;
-	port.Virtuality = 1;
-	port.Security = 0;
-	port.domain = 3;
-	port.Distance = 1;
-	port.Direction = 0;
-
-	return m4u_config_port(&port);
-}
-
 static void ccu_ap_task_mgr_init(void)
 {
 	mutex_init(&ap_task_manage.ApTaskMutex);
 	/*
-	*if (!(ap_task_manage.ApTaskWorkQueue))
-	*{
-	*	LOG_ERR("creating ApTaskWorkQueue !!\n");
-	*	ap_task_manage.ApTaskWorkQueue = create_singlethread_workqueue("CCU_AP_WorkQueue");
-	*}
-	*if (!(ap_task_manage.ApTaskWorkQueue))
-	*{
-	*	LOG_ERR("create ApTaskWorkQueue error!!\n");
-	*}
-	*/
+	 *if (!(ap_task_manage.ApTaskWorkQueue))
+	 *{
+	 *	LOG_ERR("creating ApTaskWorkQueue !!\n");
+	 *	ap_task_manage.ApTaskWorkQueue = create_singlethread_workqueue("CCU_AP_WorkQueue");
+	 *}
+	 *if (!(ap_task_manage.ApTaskWorkQueue))
+	 *{
+	 *	LOG_ERR("create ApTaskWorkQueue error!!\n");
+	 *}
+	 */
 	/*INIT_LIST_HEAD(&ap_task_manage.ApTskWorkList);*/
 
 }
 
 int ccu_init_hw(ccu_device_t *device)
 {
-	int ret, n;
+	int ret = 0, n;
 
 	init_check_sw_ver();
 
-	m4u_client = m4u_create_client();
+
+
 	/* init mutex */
 	mutex_init(&cmd_mutex);
 	/* init waitqueue */
@@ -502,11 +618,6 @@ int ccu_init_hw(ccu_device_t *device)
 
 	LOG_DBG("(0x%llx),(0x%llx),(0x%llx)\n", ccu_base, camsys_base, bin_base);
 
-	ret = ccu_config_m4u_port();
-	if (ret) {
-		LOG_ERR("fail to config m4u port!\n");
-		goto out;
-	}
 
 	if (request_irq(device->irq_num, ccu_isr_handler, IRQF_TRIGGER_NONE, "ccu", NULL)) {
 		LOG_ERR("fail to request ccu irq!\n");
@@ -529,8 +640,8 @@ out:
 
 int ccu_uninit_hw(ccu_device_t *device)
 {
-	if (m4u_client != NULL)
-		m4u_destroy_client(m4u_client);
+	if (ccu_ion_client != NULL)
+		_ccu_deallocate_mva(&ccu_ion_client, handle);
 
 	if (enque_task) {
 		kthread_stop(enque_task);
@@ -554,12 +665,12 @@ int ccu_mmap_hw(struct file *filp, struct vm_area_struct *vma)
 
 	/* map the whole physically contiguous area in one piece */
 	LOG_DBG("Vma->vm_pgoff(0x%lx),Vma->vm_start(0x%lx),Vma->vm_end(0x%lx),length(0x%lx)",
-		vma->vm_pgoff, vma->vm_start, vma->vm_end, length);
+			vma->vm_pgoff, vma->vm_start, vma->vm_end, length);
 
 	/* check length - do not allow larger mappings than the number of pages allocated */
 	if (length > SIZE_1MB) {
 		LOG_ERR("mmap range error! : length(%ld),CCU_RTBUF_REG_RANGE(%d)!", length,
-			SIZE_1MB);
+				SIZE_1MB);
 		return -EIO;
 	}
 	/**/
@@ -579,9 +690,9 @@ int ccu_mmap_hw(struct file *filp, struct vm_area_struct *vma)
 	}
 	/**/
 	ret = remap_pfn_range(vma,
-				vma->vm_start,
-				virt_to_phys((void *)va) >> PAGE_SHIFT,
-				length, vma->vm_page_prot | PAGE_SHARED);
+			vma->vm_start,
+			virt_to_phys((void *)va) >> PAGE_SHIFT,
+			length, vma->vm_page_prot | PAGE_SHARED);
 
 	if (ret < 0) {
 		LOG_ERR("remap_pfn_range fail:\n");
@@ -647,7 +758,7 @@ int ccu_send_command(ccu_cmd_st *pCmd)
 
 	/* 1. push to mailbox_send */
 	LOG_DBG("send command: id(%d), in(%x), out(%x)\n",
-		pCmd->task.msg_id, pCmd->task.in_data_ptr, pCmd->task.out_data_ptr);
+			pCmd->task.msg_id, pCmd->task.in_data_ptr, pCmd->task.out_data_ptr);
 	mailbox_send_cmd(&(pCmd->task));
 
 	/* 2. wait until done */
@@ -665,7 +776,7 @@ int ccu_send_command(ccu_cmd_st *pCmd)
 	ccu_memcpy(&pCmd->task, &CcuAckCmd, sizeof(ccu_msg_t));
 
 	LOG_DBG("got ack command: id(%d), in(%x), out(%x)\n",
-		pCmd->task.msg_id, pCmd->task.in_data_ptr, pCmd->task.out_data_ptr);
+			pCmd->task.msg_id, pCmd->task.in_data_ptr, pCmd->task.out_data_ptr);
 
 out:
 
@@ -771,7 +882,8 @@ int ccu_power(ccu_power_t *power)
 
 		ccuInfo.IsCcuPoweredOn = 0;
 
-		_ccu_deallocate_mva(&i2c_buffer_mva);
+	if (ccu_ion_client != NULL)
+		_ccu_deallocate_mva(&ccu_ion_client, handle);
 	} else if (power->bON == 4) {
 		/*CCU boot fail, just enable CG*/
 
@@ -818,15 +930,15 @@ static int _ccu_powerdown(void)
 		LOG_INF_MUST("ccu reset is up, skip halt checking.\n");
 	} else {
 		while ((ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT) == 0) && timeout > 0) {
-		mdelay(1);
-		LOG_DBG("wait ccu shutdown done\n");
-		LOG_DBG("ccu shutdown stat: %x\n", ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT));
-		timeout = timeout - 1;
-	}
+			mdelay(1);
+			LOG_DBG("wait ccu shutdown done\n");
+			LOG_DBG("ccu shutdown stat: %x\n", ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT));
+			timeout = timeout - 1;
+		}
 
-	if (timeout <= 0) {
-		LOG_ERR("_ccu_powerdown timeout\n");
-		return -ETIMEDOUT;
+		if (timeout <= 0) {
+			LOG_ERR("_ccu_powerdown timeout\n");
+			return -ETIMEDOUT;
 		}
 	}
 
@@ -844,7 +956,8 @@ static int _ccu_powerdown(void)
 	ccuInfo.IsI2cPowerDisabling = 0;
 	ccuInfo.IsCcuPoweredOn = 0;
 
-	_ccu_deallocate_mva(&i2c_buffer_mva);
+	if (ccu_ion_client != NULL)
+		_ccu_deallocate_mva(&ccu_ion_client, handle);
 
 	return 0;
 }
@@ -886,16 +999,16 @@ int ccu_run(void)
 	LOG_DBG("ccu initial debug info01: %x\n", ccu_read_reg(ccu_base, CCU_INFO01));
 
 	/*
-	* 20160930
-	* Due to AHB2GMC HW Bug, mailbox use SRAM
-	* Driver wait CCU main initialize done and query INFO00 & INFO01 as mailbox address
-	*/
+	 * 20160930
+	 * Due to AHB2GMC HW Bug, mailbox use SRAM
+	 * Driver wait CCU main initialize done and query INFO00 & INFO01 as mailbox address
+	 */
 	pMailBox[MAILBOX_SEND] =
-	    (volatile ccu_mailbox_t *)(dmem_base +
-				       ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_CCU));
+		(volatile ccu_mailbox_t *)(dmem_base +
+				ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_CCU));
 	pMailBox[MAILBOX_GET] =
-	    (volatile ccu_mailbox_t *)(dmem_base +
-				       ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_APMCU));
+		(volatile ccu_mailbox_t *)(dmem_base +
+				ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_APMCU));
 
 
 	ccuMbPtr = (ccu_mailbox_t *) pMailBox[MAILBOX_SEND];
@@ -921,7 +1034,7 @@ int ccu_run(void)
 
 	LOG_DBG("ccu log test done\n");
 	LOG_DBG("ccu log test stat: %x\n",
-		ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
+			ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
 	LOG_DBG("ccu log test debug info: %x\n", ccu_read_reg(ccu_base, CCU_INFO29));
 
 	LOG_DBG("-:%s\n", __func__);
@@ -941,9 +1054,9 @@ int ccu_waitirq(CCU_WAIT_IRQ_STRUCT *WaitIrq)
 		/* 2. start to wait signal */
 		LOG_DBG("+:wait_event_interruptible_timeout\n");
 		Timeout = wait_event_interruptible_timeout(ccuInfo.WaitQueueHead,
-							   bWaitCond,
-							   CCU_MsToJiffies(WaitIrq->EventInfo.
-									   Timeout));
+				bWaitCond,
+				CCU_MsToJiffies(WaitIrq->EventInfo.
+					Timeout));
 		bWaitCond = false;
 		LOG_DBG("-:wait_event_interruptible_timeout\n");
 	} else {
@@ -972,7 +1085,7 @@ int ccu_waitirq(CCU_WAIT_IRQ_STRUCT *WaitIrq)
 		/*send to user if not timeout*/
 		WaitIrq->EventInfo.TimeInfo.passedbySigcnt = (int)g_LogBufIdx;
 	}
-/*EXIT:*/
+	/*EXIT:*/
 
 	return ret;
 }
@@ -1027,10 +1140,10 @@ int ccu_read_info_reg(int regNo)
 
 void ccu_set_sensor_info(int32_t sensorType, volatile struct ccu_sensor_info *info)
 {
-	if (sensorType == 0) {
+	if (sensorType == IMGSENSOR_SENSOR_IDX_NONE) {
 		/*Non-sensor*/
 		LOG_ERR("No sensor been detected.\n");
-	} else if (sensorType == 1) {
+	} else if (sensorType == IMGSENSOR_SENSOR_IDX_MAIN) {
 		/*Main*/
 		g_ccu_sensor_info_main.slave_addr  = info->slave_addr;
 		if (info->sensor_name_string != NULL) {
@@ -1039,7 +1152,7 @@ void ccu_set_sensor_info(int32_t sensorType, volatile struct ccu_sensor_info *in
 		}
 		LOG_DBG_MUST("ccu catch Main sensor i2c slave address : 0x%x\n", info->slave_addr);
 		LOG_DBG_MUST("ccu catch Main sensor name : %s\n", g_ccu_sensor_info_main.sensor_name_string);
-	} else if (sensorType == 2) {
+	} else if (sensorType == IMGSENSOR_SENSOR_IDX_SUB) {
 		/*Sub*/
 		g_ccu_sensor_info_sub.slave_addr  = info->slave_addr;
 		if (info->sensor_name_string != NULL) {
@@ -1048,7 +1161,7 @@ void ccu_set_sensor_info(int32_t sensorType, volatile struct ccu_sensor_info *in
 		}
 		LOG_DBG_MUST("ccu catch Sub sensor i2c slave address : 0x%x\n", info->slave_addr);
 		LOG_DBG_MUST("ccu catch Sub sensor name : %s\n", g_ccu_sensor_info_sub.sensor_name_string);
-	} else if (sensorType == 4) {
+	} else if (sensorType == IMGSENSOR_SENSOR_IDX_MAIN2) {
 		/*Main2*/
 		g_ccu_sensor_info_main2.slave_addr  = info->slave_addr;
 		if (info->sensor_name_string != NULL) {
