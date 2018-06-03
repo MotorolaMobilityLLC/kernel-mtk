@@ -16,6 +16,8 @@
 
 #include <linux/kernel.h>
 #include <linux/sched.h>
+#include <linux/mm.h>
+#include <linux/dma-mapping.h>
 
 
 /*******************************************************************************
@@ -168,6 +170,7 @@ extern void mt_ppm_sysboost_set_freq_limit(enum ppm_sysboost_user user,
 					   int min_freq, int max_freq);
 extern bool spm_resource_req(unsigned int user, unsigned int req_mask);
 #endif
+extern void __inner_flush_dcache_all(void);
 
 void connectivity_export_show_stack(struct task_struct *tsk, unsigned long *sp);
 void connectivity_export_tracing_record_cmdline(struct task_struct *tsk);
@@ -187,6 +190,10 @@ void connectivity_export_mt_ppm_sysboost_set_freq_limit(
 bool connectivity_export_spm_resource_req(unsigned int user,
 				unsigned int req_mask);
 #endif
+void __attribute__((weak)) __inner_flush_dcache_all();
+void connectivity_inner_flush_dcache_all(void);
+void connectivity_arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
+				     struct iommu_ops *iommu, bool coherent);
 
 /*********************************************
  * copy from

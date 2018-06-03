@@ -40,7 +40,6 @@
 #endif
 
 /* PMIC */
-#include <upmu_common.h>
 
 /* MMC */
 #include <linux/mmc/card.h>
@@ -168,46 +167,6 @@ void connectivity_export_mt6306_set_gpio_dir(unsigned long pin,
 }
 EXPORT_SYMBOL(connectivity_export_mt6306_set_gpio_dir);
 #endif
-
-/*******************************************************************************
- * PMIC
- ******************************************************************************/
-void connectivity_export_pmic_config_interface(unsigned int RegNum,
-					unsigned int val,
-					unsigned int MASK,
-					unsigned int SHIFT)
-{
-	pmic_config_interface(RegNum, val, MASK, SHIFT);
-}
-EXPORT_SYMBOL(connectivity_export_pmic_config_interface);
-
-void connectivity_export_pmic_read_interface(unsigned int RegNum,
-					unsigned int *val,
-					unsigned int MASK,
-					unsigned int SHIFT)
-{
-	pmic_read_interface(RegNum, val, MASK, SHIFT);
-}
-EXPORT_SYMBOL(connectivity_export_pmic_read_interface);
-
-void connectivity_export_pmic_set_register_value(int flagname, unsigned int val)
-{
-	pmic_set_register_value(flagname, val);
-}
-EXPORT_SYMBOL(connectivity_export_pmic_set_register_value);
-
-unsigned short connectivity_export_pmic_get_register_value(int flagname)
-{
-	return pmic_get_register_value(flagname);
-}
-EXPORT_SYMBOL(connectivity_export_pmic_get_register_value);
-
-void connectivity_export_upmu_set_reg_value(unsigned int reg,
-					unsigned int reg_val)
-{
-	upmu_set_reg_value(reg, reg_val);
-}
-EXPORT_SYMBOL(connectivity_export_upmu_set_reg_value);
 /*******************************************************************************
  * MMC
  ******************************************************************************/
@@ -219,3 +178,15 @@ int connectivity_export_mmc_io_rw_direct(struct mmc_card *card,
 }
 EXPORT_SYMBOL(connectivity_export_mmc_io_rw_direct);
 
+void connectivity_inner_flush_dcache_all(void)
+{
+	__inner_flush_dcache_all();
+}
+EXPORT_SYMBOL(connectivity_inner_flush_dcache_all);
+
+void connectivity_arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
+				     struct iommu_ops *iommu, bool coherent)
+{
+	arch_setup_dma_ops(dev, dma_base, size, iommu, coherent);
+}
+EXPORT_SYMBOL(connectivity_arch_setup_dma_ops);
