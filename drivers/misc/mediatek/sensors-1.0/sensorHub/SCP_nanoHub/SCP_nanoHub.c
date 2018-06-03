@@ -1672,6 +1672,7 @@ int sensor_set_cmd_to_hub(uint8_t sensorType,
 	SCP_SENSOR_HUB_DATA req;
 	int len = 0, err = 0;
 	SCP_SENSOR_HUB_GET_RAW_DATA *pGetRawData;
+	struct mag_dev_info_t *mag_dev_info;
 
 	req.get_data_req.sensorType = sensorType;
 	req.get_data_req.action = SENSOR_HUB_SET_CUST;
@@ -1966,6 +1967,35 @@ int sensor_set_cmd_to_hub(uint8_t sensorType,
 			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
 			    + sizeof(req.set_cust_req.showReg);
 			break;
+		case CUST_ACTION_GET_SENSOR_INFO:
+			req.set_cust_req.getInfo.action =
+				CUST_ACTION_GET_SENSOR_INFO;
+			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
+			    + sizeof(req.set_cust_req.getInfo);
+			err = scp_sensorHub_req_send(&req, &len, 1);
+
+			if (err == 0) {
+				if (sensorType != req.set_cust_rsp.sensorType ||
+					req.set_cust_rsp.action !=
+						SENSOR_HUB_SET_CUST ||
+					req.set_cust_rsp.errCode != 0) {
+					pr_err("scp_sensorHub_req_send failed 1!\n");
+					return -1;
+				}
+				if (req.set_cust_rsp.getInfo.action !=
+					CUST_ACTION_GET_SENSOR_INFO) {
+					pr_err("scp_sensorHub_req_send failed 2!\n");
+					return -1;
+				}
+				mag_dev_info = (struct mag_dev_info_t *)data;
+				memcpy(mag_dev_info,
+					&req.set_cust_rsp.getInfo.mag_dev_info,
+					sizeof(struct mag_dev_info_t));
+			} else {
+				pr_err("scp_sensorHub_req_send failed 3!\n");
+				return -1;
+			}
+			return 0;
 		default:
 			return -1;
 		}

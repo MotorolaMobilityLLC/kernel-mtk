@@ -151,6 +151,7 @@ extern int mag_driver_add(struct mag_init_info *obj);
 extern int mag_data_report(struct mag_data *data);
 extern int mag_bias_report(struct mag_data *data);
 extern int mag_flush_report(void);
+extern int mag_info_record(struct mag_libinfo_t *p_mag_info);
 extern int mag_register_control_path(struct mag_control_path *ctl);
 extern int mag_register_data_path(struct mag_data_path *ctl);
 #endif
