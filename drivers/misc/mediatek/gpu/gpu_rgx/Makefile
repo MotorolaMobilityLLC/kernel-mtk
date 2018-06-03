@@ -15,7 +15,7 @@ MTK_GPU_VERSION = $(subst ",,$(CONFIG_MTK_GPU_VERSION))
 $(info *MTK_GPU_VERSION 2 = $(word 2,$(MTK_GPU_VERSION)))
 
 ifeq ($(word 2,$(MTK_GPU_VERSION)),austin)
-	obj-y += m1.8ED4302432/
+	obj-y += m1.8ED4333936/
 else
 	obj-y += m1.8ED4302432/
 endif

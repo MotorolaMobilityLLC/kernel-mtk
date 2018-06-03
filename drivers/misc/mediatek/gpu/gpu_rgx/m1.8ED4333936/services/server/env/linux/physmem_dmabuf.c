@@ -534,6 +534,9 @@ PhysmemCreateNewDmaBufBackedPMR(PVRSRV_DEVICE_NODE *psDevNode,
 		ui32PageCount += PAGE_ALIGN(pvr_sg_length(sg)) / PAGE_SIZE;
 	}
 
+	/* MTK: since ion will not fill sg table for secbuf */
+	/* check if the page number is 0, then skip mapping.*/
+	if (ui32PageCount != 0) {
 	if (WARN_ON(!ui32PageCount))
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: Number of phys. pages must not be zero",
@@ -611,6 +614,23 @@ PhysmemCreateNewDmaBufBackedPMR(PVRSRV_DEVICE_NODE *psDevNode,
 			      PMR_TYPE_DMABUF,
 			      ppsPMRPtr,
 			      IMG_FALSE);
+	} else {
+		eError = PMRCreatePMR(psDevNode,
+			  psHeap,
+			  psDmaBuf->size,
+			  psDmaBuf->size,
+			  1,
+			  1,
+			  pui32MappingTable,
+			  PAGE_SHIFT,
+			  uiPMRFlags,
+			  "IMPORTED_DMABUF",
+			  &_sPMRDmaBufFuncTab,
+			  psPrivData,
+			  PMR_TYPE_DMABUF,
+			  ppsPMRPtr,
+			  IMG_FALSE);
+	}
 	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: Failed to create PMR (%s)",
