@@ -98,8 +98,8 @@
 #define CALI_CAR_TUNE_AVG_NUM	60
 
 /* Aging Compensation 1*/
-#define AGING_FACTOR_MIN 75
-#define AGING_FACTOR_DIFF 10
+#define AGING_FACTOR_MIN 50
+#define AGING_FACTOR_DIFF 50
 #define DIFFERENCE_VOLTAGE_UPDATE 50
 #define AGING_ONE_EN 1
 #define AGING1_UPDATE_SOC 30
@@ -153,7 +153,7 @@
 
 /* ZCV INTR */
 #define ZCV_SUSPEND_TIME 6
-#define SLEEP_CURRENT_AVG 100 /*0.1mA*/
+#define SLEEP_CURRENT_AVG 200 /*0.1mA*/
 #define ZCV_CAR_GAP_PERCENTAGE 5
 
 /* Additional battery table */
