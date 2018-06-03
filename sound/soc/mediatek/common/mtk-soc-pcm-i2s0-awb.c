@@ -100,10 +100,6 @@ static void StopAudioI2S0AWBHardware(struct snd_pcm_substream *substream)
 	/* stop I2S */
 	Afe_Set_Reg(AFE_I2S_CON, 0x0, 0x1);
 
-	/* here to turn off digital part */
-	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);
-
 	EnableAfe(false);
 }
 
