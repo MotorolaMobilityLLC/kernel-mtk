@@ -1048,7 +1048,8 @@ void kbase_pm_clock_on(struct kbase_device *kbdev, bool is_resume)
 	if (is_resume && kbdev->pm.backend.callback_mtk_power_resume && kbdev->pm.backend.mtk_gpu_suspend) {
 		kbdev->pm.backend.callback_mtk_power_resume(kbdev);
 		kbdev->pm.backend.mtk_gpu_suspend = false;
-	} else if (is_resume && !kbdev->pm.backend.mtk_gpu_suspend) {
+	} else if (is_resume && kbdev->pm.backend.callback_mtk_power_resume
+		&& !kbdev->pm.backend.mtk_gpu_suspend) {
 		pr_alert("[MALI] [chao] double resume!!??\n");
 	}
 
@@ -1115,7 +1116,8 @@ bool kbase_pm_clock_off(struct kbase_device *kbdev, bool is_suspend)
 		if (is_suspend && kbdev->pm.backend.callback_mtk_power_suspend && !kbdev->pm.backend.mtk_gpu_suspend) {
 			kbdev->pm.backend.callback_mtk_power_suspend(kbdev);
 			kbdev->pm.backend.mtk_gpu_suspend = true;
-		} else if (is_suspend && kbdev->pm.backend.mtk_gpu_suspend) {
+		} else if (is_suspend && kbdev->pm.backend.callback_mtk_power_suspend
+			&& kbdev->pm.backend.mtk_gpu_suspend) {
 			pr_alert("[MALI] [chao] double suspend!!??\n");
 		}
 
@@ -1153,7 +1155,8 @@ bool kbase_pm_clock_off(struct kbase_device *kbdev, bool is_suspend)
 	if (is_suspend && kbdev->pm.backend.callback_mtk_power_suspend && !kbdev->pm.backend.mtk_gpu_suspend) {
 		kbdev->pm.backend.callback_mtk_power_suspend(kbdev);
 		kbdev->pm.backend.mtk_gpu_suspend = true;
-	} else if (is_suspend && kbdev->pm.backend.mtk_gpu_suspend) {
+	} else if (is_suspend && kbdev->pm.backend.callback_mtk_power_suspend
+		&& kbdev->pm.backend.mtk_gpu_suspend) {
 		pr_alert("[MALI] [chao] double suspend!!??\n");
 	}
 
