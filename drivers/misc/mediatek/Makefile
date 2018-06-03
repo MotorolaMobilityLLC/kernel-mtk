@@ -80,7 +80,7 @@ ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
 obj-$(CONFIG_TRUSTY) += gcpu/
 endif
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
-ifneq ($(filter y,$(CONFIG_TRUSTONIC_TEE_SUPPORT) $(CONFIG_MTK_TEE_GP_SUPPORT)),)
+ifneq ($(filter y,$(CONFIG_TRUSTONIC_TEE_SUPPORT) $(CONFIG_MICROTRUST_TEE_SUPPORT)),)
 obj-y += secmem/
 endif
 obj-y += sspm/
