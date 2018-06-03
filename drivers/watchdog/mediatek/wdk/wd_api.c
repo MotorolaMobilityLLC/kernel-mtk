@@ -22,6 +22,9 @@
 #include <mt-plat/mtk_rtc.h>
 #include <asm/system_misc.h>
 #include <linux/console.h>
+#ifdef CONFIG_MTK_SECURITY_SW_SUPPORT
+#include <sec_hal.h>
+#endif
 
 static int wd_cpu_hot_plug_on_notify(int cpu);
 static int wd_cpu_hot_plug_off_notify(int cpu);
@@ -647,6 +650,11 @@ void arch_reset(char mode, const char *cmd)
 		rtc_mark_recovery();
 	} else if (cmd && !strcmp(cmd, "bootloader")) {
 		rtc_mark_fast();
+	} else if (cmd && !strcmp(cmd, "dm-verity device corrupted")) {
+#ifdef CONFIG_MTK_SECURITY_SW_SUPPORT
+		res = masp_hal_set_dm_verity_error();
+#endif
+		reboot = WD_SW_RESET_BYPASS_PWR_KEY;
 	} else if (cmd && !strcmp(cmd, "kpoc")) {
 		rtc_mark_kpoc();
 	} else {
