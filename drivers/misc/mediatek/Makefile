@@ -146,7 +146,7 @@ obj-$(CONFIG_RT_FLASHLIGHT)	+= flashlight/richtek/
 obj-$(CONFIG_MTK_VPU_SUPPORT) += vpu/
 obj-$(CONFIG_MTK_CCU)	+= ccu/src/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met/),)
-obj-$(CONFIG_MTK_MET) += met/
+
 endif
 obj-$(CONFIG_MTK_CCCI_DEVICES)	+=  ccci_util/
 obj-$(CONFIG_MTK_NET_CCMNI) +=  ccmni/
