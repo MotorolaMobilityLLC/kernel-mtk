@@ -2542,6 +2542,11 @@ static int musb_init_controller
 	hcd->self.otg_port = 1;
 	musb->xceiv->otg->host = &hcd->self;
 	hcd->power_budget = 2 * (plat->power ? : 250);
+	hcd->self.uses_pio_for_control = 1;
+
+	status = usb_add_hcd(hcd, 0, 0);
+	if (status < 0)
+		goto fail3;
 
 	/* program PHY to use external vBus if required */
 	if (plat->extvbus) {
