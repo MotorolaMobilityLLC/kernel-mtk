@@ -271,7 +271,7 @@ static void mtk_cl_fps_set_fps_limit(void)
 		cl_fps_cur_limit = min_param;
 #ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
 		ret = dfrc_set_kernel_policy(DFRC_DRV_API_THERMAL, ((cl_fps_cur_limit != 60) ? cl_fps_cur_limit : -1),
-			DFRC_DRV_MODE_FRR, 0, 0);
+			DFRC_DRV_MODE_INTERNAL_SW, 0, 0);
 		mtk_cooler_fps_dprintk_always("[DFPS] fps:%d, ret = %d\n", cl_fps_cur_limit, ret);
 #else
 		switch_set_state(&fps_switch_data, cl_fps_cur_limit);
