@@ -290,6 +290,8 @@ static ssize_t store_idle_prefer(struct kobject *kobj,
 	prefer_idle_for_perf_idx(1, en);
 #endif
 
+#ifndef CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT
+	/* consider HMP w/o enhanced idle balance */
 #ifdef CONFIG_MTK_SCHED_BOOST
 	/* trigger HMP */
 	set_sched_boost(en ? SCHED_FORCE_BOOST : SCHED_FORCE_STOP);
@@ -297,8 +299,9 @@ static ssize_t store_idle_prefer(struct kobject *kobj,
 
 	/* trigger WALT */
 	sched_walt_enable(LT_WALT_SCHED, en);
+#endif /* end of MTK_IDLE_BALANCE  */
 
-	/* aggrevie load balancing */
+	/* migration cost to 33us */
 	sysctl_sched_migration_cost = en ? 33000UL : backup_mc; /*500000UL;*/
 
 #if defined(CONFIG_MACH_MT6771)
