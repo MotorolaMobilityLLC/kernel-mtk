@@ -115,7 +115,7 @@ static struct DEVICE_INFO devapc_infra_devices[] = {
 	{"INFRA_AO_ PERICFG",                     true    },
 	{"INFRA_AO_EFUSE_AO_DEBUG",               true    },
 	{"INFRA_AO_GPIO",                         true    },
-	{"INFRA_AO_SLEEP_CONTROLLER",              true    },
+	{"INFRA_AO_SLEEP_CONTROLLER",             true    },
 	{"INFRA_AO_TOPRGU",                       true    },
 	{"INFRA_AO_APXGPT",                       true    },
 	{"INFRA_AO_RESERVE",                      true    },
@@ -562,9 +562,34 @@ static void start_devapc(void)
 }
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
+
+/* violation index corresponds to subsys */
+static const char *index_to_subsys(unsigned int index)
+{
+
+	if (index >= 151 && index <= 154)
+		return "MFGSYS";
+	else if (index == 155 || index == 156 || (index >= 166 && index <= 176))
+		return "MMSYS_DISP";
+	else if (index == 157 || index == 158 || index == 182 || index == 198
+		|| index == 204)
+		return "SMI";
+	else if (index >= 159 && index <= 165)
+		return "MMSYS_MDP";
+	else if (index == 181 || (index >= 183 && index <= 196))
+		return "IMGSYS";
+	else if (index >= 197 && index <= 202)
+		return "VCODECSYS";
+	else if (index == 203 || (index >= 205 && index <= 236))
+		return "CAMSYS";
+	else
+		return devapc_infra_devices[index].device;
+}
+
 static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 {
 	char aee_str[256];
+	char subsys_str[16] = {0};
 	unsigned int domain_id;
 
 	DEVAPC_VIO_MSG("[DEVAPC] Executing AEE Exception...\n");
@@ -583,24 +608,19 @@ static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 		domain_id = (dbg0 & INFRA_VIO_DBG_DMNID)
 			>> INFRA_VIO_DBG_DMNID_START_BIT;
 		if (domain_id == 1) {
-			aee_kernel_exception(aee_str,
-				"%s %s, Vio Addr: 0x%x\n%s%s\n",
-				"[DEVAPC] Violation Slave:",
-				devapc_infra_devices[i].device,
-				dbg1,
-				"CRDISPATCH_KEY:Device APC Violation Issue/",
-				"MD_SI"
-				);
+			strncpy(subsys_str, "MD_SS", sizeof(subsys_str));
 		} else {
-			aee_kernel_exception(aee_str,
-				"%s %s, Vio Addr: 0x%x\n%s%s\n",
-				"[DEVAPC] Violation Slave:",
-				devapc_infra_devices[i].device,
-				dbg1,
-				"CRDISPATCH_KEY:Device APC Violation Issue/",
-				devapc_infra_devices[i].device
-				);
+			strncpy(subsys_str, index_to_subsys(i),
+				sizeof(subsys_str));
 		}
+		aee_kernel_exception(aee_str,
+			"%s %s, Vio Addr: 0x%x\n%s%s\n",
+			"[DEVAPC] Violation Slave:",
+			devapc_infra_devices[i].device,
+			dbg1,
+			"CRDISPATCH_KEY:Device APC Violation Issue/",
+			subsys_str
+			);
 	}
 }
 #ifndef DBG_ENABLE
