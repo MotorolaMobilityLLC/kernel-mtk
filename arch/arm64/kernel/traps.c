@@ -263,7 +263,8 @@ void die(const char *str, struct pt_regs *regs, int err)
 	int ret;
 
 #ifdef CONFIG_MTK_AEE_IPANIC
-	__show_regs(regs);
+	if (regs != NULL)
+		__show_regs(regs);
 	dump_stack();
 #endif
 
