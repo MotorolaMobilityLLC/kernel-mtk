@@ -308,30 +308,45 @@ void mt6356_auxadc_monitor_mts_regs(void)
 	if (mts_adc == 0)
 		return;
 	mts_adc_tmp = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
-	pr_err("[MTS_ADC] OLD = 0x%x, NOW = 0x%x, CNT = %d\n", mts_adc, mts_adc_tmp, mts_count);
+	pr_notice("[MTS_ADC] OLD = 0x%x, NOW = 0x%x, CNT = %d\n", mts_adc, mts_adc_tmp, mts_count);
 
 	if (mts_adc ==  mts_adc_tmp)
 		mts_count++;
 	else
 		mts_count = 0;
 
-	if (mts_count > 10) {
+	if (mts_count >= 8 && mts_count < 10) {
+		pwrap_dump_all_register();
+		/* AUXADC_ADC_RDY_MDRT & AUXADC_ADC_OUT_MDRT */
+		pr_notice("AUXADC_ADC36 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC36));
+		pr_notice("AUXADC_MDRT_0 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_0));
+		pr_notice("AUXADC_MDRT_1 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_1));
+		pr_notice("AUXADC_MDRT_2 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_2));
+		pr_notice("AUXADC_MDRT_3 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_3));
+		pr_notice("AUXADC_MDRT_4 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_4));
+		/*--AUXADC CLK--*/
+		pr_notice("RG_AUXADC_CK_PDN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN));
+		pr_notice("RG_AUXADC_CK_PDN_HWEN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN));
+		/*--AUXADC CH7--*/
+		pr_notice("[MTS_ADC] trigger TSX by AP: %d\n", pmic_get_auxadc_value(AUXADC_LIST_TSX));
+	}
+	if (mts_count > 15) {
 		aee_kernel_warning("PMIC AUXADC:MDRT", "MDRT");
 		pwrap_dump_all_register();
-		pr_err("DEW_READ_TEST = 0x%x\n", pmic_get_register_value(PMIC_DEW_READ_TEST));
+		pr_notice("DEW_READ_TEST = 0x%x\n", pmic_get_register_value(PMIC_DEW_READ_TEST));
 		/*--AUXADC CH7--*/
-		pr_err("AUXADC_LIST_TSX = %d\n", pmic_get_auxadc_value(AUXADC_LIST_TSX));
+		pr_notice("AUXADC_LIST_TSX = %d\n", pmic_get_auxadc_value(AUXADC_LIST_TSX));
 		/*--AUXADC--*/
 		/* AUXADC_ADC_RDY_MDRT & AUXADC_ADC_OUT_MDRT */
-		pr_err("AUXADC_ADC36 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC36));
-		pr_err("AUXADC_MDRT_0 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_0));
-		pr_err("AUXADC_MDRT_1 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_1));
-		pr_err("AUXADC_MDRT_2 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_2));
-		pr_err("AUXADC_MDRT_3 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_3));
-		pr_err("AUXADC_MDRT_4 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_4));
+		pr_notice("AUXADC_ADC36 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC36));
+		pr_notice("AUXADC_MDRT_0 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_0));
+		pr_notice("AUXADC_MDRT_1 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_1));
+		pr_notice("AUXADC_MDRT_2 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_2));
+		pr_notice("AUXADC_MDRT_3 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_3));
+		pr_notice("AUXADC_MDRT_4 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_4));
 		/*--AUXADC CLK--*/
-		pr_err("RG_AUXADC_CK_PDN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN));
-		pr_err("RG_AUXADC_CK_PDN_HWEN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN));
+		pr_notice("RG_AUXADC_CK_PDN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN));
+		pr_notice("RG_AUXADC_CK_PDN_HWEN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN));
 		mts_count = 0;
 	}
 	mts_adc = mts_adc_tmp;
@@ -486,11 +501,7 @@ void mt6356_auxadc_init(void)
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_START_SEL, 1);
 	pmic_set_register_value(PMIC_AUXADC_CK_AON, 0);
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_SEL, 0);
-#if 0 /* disable Ch7 data reuse for debug */
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_EN, 1);
-#else
-	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_EN, 0);
-#endif
 	pmic_set_register_value(PMIC_AUXADC_TRIM_CH0_SEL, 0);
 
 	/* Check VBIF28 OC status */
