@@ -87,9 +87,9 @@
 ********************************************************************************
 */
 /* #define DMA_DEBUG_SUP */
+#define DMA_TAG             "CQDMA> "
 
 #ifdef DMA_DEBUG_SUP
-#define DMA_TAG             "CQDMA> "
 #define DMA_DBG(_fmt, ...)  pr_info(DMA_TAG _fmt, ##__VA_ARGS__)
 #else
 #define DMA_DBG(_fmt, ...)
@@ -409,7 +409,7 @@ static VOID HifCqdmaClockCtrl(IN GL_HIF_INFO_T *HifInfo, IN BOOL fgEnable)
 	if (fgEnable == TRUE) {
 		ret = clk_prepare_enable(HifInfo->clk_wifi_dma);
 		if (ret)
-			DBGLOG(INIT, INFO, "[CCF]clk_prepare_enable ret %d\n", ret);
+			DBGLOG(HAL, WARN, "[CCF]clk_prepare_enable return %d\n", ret);
 	} else
 		clk_disable_unprepare(HifInfo->clk_wifi_dma);
 }
@@ -437,8 +437,8 @@ static VOID HifCqdmaRegDump(IN GL_HIF_INFO_T *HifInfo)
 		RegVal[idx] = HIF_DMAR_READL(HifInfo, RegOffset);
 
 		if (idx++ >= 3) {
-			DBGLOG(INIT, INFO, "CQDMA> DUMP32 ADDRESS: 0x%08x\n", CQ_DMA_HIF_BASE + RegOffset - 12);
-			DBGLOG(INIT, INFO, "\t%08x %08x %08x %08x\n", RegVal[0], RegVal[1], RegVal[2], RegVal[3]);
+			DBGLOG(HAL, INFO, DMA_TAG "DUMP32 ADDRESS: 0x%08x\n", CQ_DMA_HIF_BASE + RegOffset - 12);
+			DBGLOG(HAL, INFO, "\t%08x %08x %08x %08x\n", RegVal[0], RegVal[1], RegVal[2], RegVal[3]);
 			idx = 0;
 		}
 	}
@@ -458,7 +458,7 @@ static VOID HifCqdmaReset(IN GL_HIF_INFO_T *HifInfo)
 	UINT_32 RegVal, LoopCnt;
 
 	/* Do warm reset: DMA will wait for current transaction finished */
-	DBGLOG(INIT, INFO, "CQDMA> do warm reset...\n");
+	DBGLOG(HAL, INFO, DMA_TAG "do warm reset...\n");
 
 	/* Normally, we need to make sure that bit0 of CQ_DMA_HIF_EN is 1 here */
 
@@ -472,7 +472,7 @@ static VOID HifCqdmaReset(IN GL_HIF_INFO_T *HifInfo)
 
 	if (HifCqdmaPollStart(HifInfo)) {
 		/* Do hard reset if warm reset fails */
-		DBGLOG(INIT, INFO, "CQDMA> do hard reset...\n");
+		DBGLOG(HAL, INFO, DMA_TAG "do hard reset...\n");
 		RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_RST);
 		HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_RST, (RegVal | CDH_CR_HARD_RST));
 		HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_RST, (RegVal & ~CDH_CR_HARD_RST));

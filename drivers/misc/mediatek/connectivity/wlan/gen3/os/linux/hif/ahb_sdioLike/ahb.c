@@ -46,14 +46,6 @@
 ********************************************************************************
 */
 /* #define MTK_DMA_BUF_MEMCPY_SUP no virt_to_phys() use */
-/* #define HIF_DEBUG_SUP */
-
-#ifdef HIF_DEBUG_SUP
-#define HIF_TAG             "[WIFI-HIF]"
-#define HIF_DBG(_fmt, ...)  pr_info(HIF_TAG "%s: " _fmt, __func__, ##__VA_ARGS__)
-#else
-#define HIF_DBG(_fmt, ...)
-#endif /* HIF_DEBUG_SUP */
 
 #define NIC_TX_PAGE_SIZE                        128	/* in unit of bytes */
 
@@ -343,7 +335,7 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 		HifInfo->HifTmrLoopbkFn.expires = jiffies + MSEC_TO_SYSTIME(30000);
 		add_timer(&(HifInfo->HifTmrLoopbkFn));
 
-		HIF_DBG("Start loopback test after 10 seconds (jiffies = %u)...\n", jiffies);
+		DBGLOG(HAL, INFO, "Start loopback test after 10 seconds (jiffies = %u)...\n", jiffies);
 	}
 #endif /* CONF_HIF_LOOPBACK_AUTO */
 
@@ -555,8 +547,6 @@ BOOLEAN kalDevRegRead(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, OUT UINT_3
 	/* PIO mode to read HIF controller driver domain register */
 	*pu4Value = HIF_REG_READL(HifInfo, RegOffset);
 
-	HIF_DBG("HDCR 0x%08x = 0x%08x\n", RegOffset, *pu4Value);
-
 	return TRUE;
 }				/* end of kalDevRegRead() */
 
@@ -581,8 +571,6 @@ BOOLEAN kalDevRegWrite(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, IN UINT_3
 
 	/* PIO mode to write HIF controller driver domain register */
 	HIF_REG_WRITEL(HifInfo, RegOffset, RegValue);
-
-	HIF_DBG("HDCR 0x%08x = 0x%08x\n", RegOffset, RegValue);
 
 	return TRUE;
 }				/* end of kalDevRegWrite() */
@@ -618,7 +606,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE)) {
-		DBGLOG(RX, ERROR, "WlanDmaFatalErr: %d, fgIsResetting: %d\n", WlanDmaFatalErr, fgIsResetting);
+		DBGLOG(HAL, ERROR, "WlanDmaFatalErr: %d, fgIsResetting: %d\n", WlanDmaFatalErr, fgIsResetting);
 		return FALSE;
 	}
 
@@ -644,7 +632,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			info.field.count++;
 		count = info.field.count * func->cur_blksize;
 		if (count > MaxBufSize) {
-			DBGLOG(RX, ERROR, "blk mode count(%d->%d), MaxSz(%d)\n", Size, count, MaxBufSize);
+			DBGLOG(HAL, ERROR, "blk mode count(%d->%d), MaxSz(%d)\n", Size, count, MaxBufSize);
 			ASSERT(0);
 		}
 	} else { /* byte mode */
@@ -653,7 +641,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		info.field.block_mode = SDIO_GEN3_BYTE_MODE;
 		info.field.count = count;
 		if (count > MaxBufSize) {
-			DBGLOG(RX, ERROR, "byte mode count(%d->%d), MaxSz(%d)\n", Size, count, MaxBufSize);
+			DBGLOG(HAL, ERROR, "byte mode count(%d->%d), MaxSz(%d)\n", Size, count, MaxBufSize);
 			ASSERT(0);
 		}
 	}
@@ -661,7 +649,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; /* fix mode */
 	info.field.addr = Port;
 
-	DBGLOG(RX, TRACE, "use_dma(%d), count(%d->%d), blk_size(%d), port(0x%x), CMD_SETUP(0x%08x)\n",
+	DBGLOG(HAL, TRACE, "readsb use_dma(%d), count(%d->%d), blk_size(%d), port(0x%x), CMD_SETUP(0x%08x)\n",
 	       func->use_dma, Size, count, func->cur_blksize, Port, info.word);
 
 #if (CONF_MTK_AHB_DMA == 1)
@@ -688,7 +676,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		/* 2.1 config DMA for data transmission */
-		HIF_DBG("DMA prepare to recv data, buf(%p), count(%d)...\n", Buf, count);
 		DmaConf.Count = count;
 		DmaConf.Dir = HIF_DMA_DIR_RX;
 		DmaConf.Src = HifInfo->HifRegPhyBase  + SDIO_GEN3_CMD53_DATA;	/* must be physical addr */
@@ -733,7 +720,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		if (wait_event_interruptible_timeout(HifInfo->HifDmaWaitq, HifInfo->HifDmaFinishFlag != 0, 1000) <= 0) {
 			if (HifInfo->DmaOps->DmaRegDump != NULL)
 				HifInfo->DmaOps->DmaRegDump(HifInfo);
-			DBGLOG(RX, ERROR, "fatal error! reset DMA!\n");
+			DBGLOG(HAL, ERROR, "fatal error! reset DMA!\n");
 			if (HifInfo->DmaOps->DmaReset != NULL)
 				HifInfo->DmaOps->DmaReset(HifInfo);
 			goto DMA_DONE;
@@ -750,7 +737,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			} else {
 
 #if (CONF_HIF_CONNSYS_DBG == 0)
-				DBGLOG(RX, ERROR, "fatal error! reset DMA!\n");
+				DBGLOG(HAL, ERROR, "fatal error! reset DMA!\n");
 				if (HifInfo->DmaOps->DmaReset != NULL)
 					HifInfo->DmaOps->DmaReset(HifInfo);
 				goto DMA_DONE;
@@ -758,11 +745,11 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 				/*
 				 * Never break and just wait for response from HIF
 				 *
-				 * Because when we use ICE on CONNSYS, we will break the CPU and do debug,
-				 * but maybe AP side continues to send packets to HIF, HIF buffer of CONNSYS
-				 * will be full and we will do DMA reset here then CONNSYS CPU will also be reset.
+				 * Because when we use ICE on CONNSYS, we will break CONSYS CPU and do debug,
+				 * but maybe AP side continues to send packets to HIF, to prevent HIF buffer
+				 * from being full and CONNSYS reset, never break here, just stuck in loop.
 				 */
-				DBGLOG(RX, WARN, "DMA timeout 5s... (%lu %lu)\n", jiffies, PollTimeout);
+				DBGLOG(HAL, WARN, "DMA timeout 5s... (%lu %lu)\n", jiffies, PollTimeout);
 
 				if (HifInfo->DmaOps->DmaRegDump != NULL)
 					HifInfo->DmaOps->DmaRegDump(HifInfo);
@@ -797,7 +784,7 @@ DMA_DONE:
 		/* move behind since clk_disable_unprepare can only be called in non-atomic context */
 		HifInfo->DmaOps->DmaClockCtrl(HifInfo, FALSE);
 
-		HIF_DBG("DMA RX OK!\n");
+		DBGLOG(HAL, TRACE, "DMA RX OK!\n");
 	} else
 #endif /* CONF_MTK_AHB_DMA */
 	{
@@ -805,19 +792,16 @@ DMA_DONE:
 		u4DwNum = count >> 2;
 		p = (UINT_32 *) Buf;
 
-		HIF_DBG("PIO prepare to recv data, buf(%p), count(%d)...\n", Buf, count);
-
 		for (idx = 0; idx < u4DwNum; idx++) {
 			*p = readl((volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD53_DATA));
-			DBGLOG(RX, TRACE, "basic readl: port 0x%x, idx = %d, val = 0x%08x\n",
-			       Port, idx, *p);
+			DBGLOG(HAL, LOUD, "idx = %d, val = 0x%08x\n", idx, *p);
 			p++;
 		}
 
 		__enable_irq();
 		my_sdio_enable(HifLock);
 
-		HIF_DBG("PIO RX OK!\n");
+		DBGLOG(HAL, TRACE, "PIO RX OK!\n");
 	}
 
 	return TRUE;
@@ -853,7 +837,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE)) {
-		DBGLOG(TX, ERROR, "WlanDmaFatalErr: %d, fgIsResetting: %d\n", WlanDmaFatalErr, fgIsResetting);
+		DBGLOG(HAL, ERROR, "WlanDmaFatalErr: %d, fgIsResetting: %d\n", WlanDmaFatalErr, fgIsResetting);
 		return FALSE;
 	}
 
@@ -881,7 +865,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			info.field.count++;
 		count = info.field.count * func->cur_blksize;
 		if (count > MaxBufSize) {
-			DBGLOG(TX, ERROR, "blk mode count(%d->%d), MaxSz(%d)\n", Size, count, MaxBufSize);
+			DBGLOG(HAL, ERROR, "blk mode count(%d->%d), MaxSz(%d)\n", Size, count, MaxBufSize);
 			ASSERT(0);
 		}
 	} else { /* byte mode */
@@ -892,7 +876,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; /* fix mode */
 	info.field.addr = Port;
 
-	DBGLOG(TX, TRACE, "use_dma(%d), count(%d->%d), blk_size(%d), port(0x%x), CMD_SETUP(0x%08x)\n",
+	DBGLOG(HAL, TRACE, "writesb use_dma(%d), count(%d->%d), blk_size(%d), port(0x%x), CMD_SETUP(0x%08x)\n",
 	       func->use_dma, Size, count, func->cur_blksize, Port, info.word);
 
 #if (CONF_MTK_AHB_DMA == 1)
@@ -919,7 +903,6 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		/* 2.1 config DMA for data transmission */
-		HIF_DBG("DMA prepare to send data, buf(%p), count(%d)...\n", Buf, count);
 		DmaConf.Count = count;
 		DmaConf.Dir = HIF_DMA_DIR_TX;
 		DmaConf.Dst = HifInfo->HifRegPhyBase  + SDIO_GEN3_CMD53_DATA;	/* must be physical addr */
@@ -951,7 +934,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		if (wait_event_interruptible_timeout(HifInfo->HifDmaWaitq, HifInfo->HifDmaFinishFlag != 0, 1000) <= 0) {
 			if (HifInfo->DmaOps->DmaRegDump != NULL)
 				HifInfo->DmaOps->DmaRegDump(HifInfo);
-			DBGLOG(TX, ERROR, "fatal error! reset DMA!\n");
+			DBGLOG(HAL, ERROR, "fatal error! reset DMA!\n");
 			if (HifInfo->DmaOps->DmaReset != NULL)
 				HifInfo->DmaOps->DmaReset(HifInfo);
 			goto DMA_DONE;
@@ -968,13 +951,13 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			} else {
 
 #if (CONF_HIF_CONNSYS_DBG == 0)
-				DBGLOG(TX, ERROR, "fatal error! reset DMA!\n");
+				DBGLOG(HAL, ERROR, "fatal error! reset DMA!\n");
 				if (HifInfo->DmaOps->DmaReset != NULL)
 					HifInfo->DmaOps->DmaReset(HifInfo);
 				goto DMA_DONE;
 #else
 
-				DBGLOG(TX, WARN, "DMA timeout 5s... (%lu %lu)\n", jiffies, PollTimeout);
+				DBGLOG(HAL, WARN, "DMA timeout 5s... (%lu %lu)\n", jiffies, PollTimeout);
 
 				if (HifInfo->DmaOps->DmaRegDump != NULL)
 					HifInfo->DmaOps->DmaRegDump(HifInfo);
@@ -1006,7 +989,7 @@ DMA_DONE:
 		/* move behind since clk_disable_unprepare can only be called in non-atomic context */
 		HifInfo->DmaOps->DmaClockCtrl(HifInfo, FALSE);
 
-		HIF_DBG("DMA TX OK!\n");
+		DBGLOG(HAL, TRACE, "DMA TX OK!\n");
 	} else
 #endif /* CONF_MTK_AHB_DMA */
 	{
@@ -1014,19 +997,16 @@ DMA_DONE:
 		u4DwNum = count >> 2;
 		p = (UINT_32 *) Buf;
 
-		HIF_DBG("PIO prepare to send data, buf(%p), count(%d)...\n", Buf, count);
-
 		for (idx = 0; idx < u4DwNum; idx++) {
 			writel(*p, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD53_DATA));
-			DBGLOG(TX, TRACE, "basic writel: port 0x%x, idx = %d, val = 0x%08x\n",
-			       Port, idx, *p);
+			DBGLOG(HAL, LOUD, "idx = %d, val = 0x%08x\n", idx, *p);
 			p++;
 		}
 
 		__enable_irq();
 		my_sdio_enable(HifLock);
 
-		HIF_DBG("PIO TX OK!\n");
+		DBGLOG(HAL, TRACE, "PIO TX OK!\n");
 	}
 
 	return TRUE;
@@ -1267,9 +1247,7 @@ static int HifAhbPltmProbe(IN struct platform_device *pDev)
 	wmt_set_jtag_for_gps();
 #endif /* CONF_HIF_PMIC_TEST */
 
-	/* Register WiFi probe/remove functions to WMT */
-	DBGLOG(INIT, INFO, "mtk_wcn_wmt_wlan_reg\n");
-
+	/* Register WIFI probe/remove functions to WMT */
 	rWmtCb.wlan_probe_cb = HifAhbProbe;
 	rWmtCb.wlan_remove_cb = HifAhbRemove;
 	rWmtCb.wlan_bus_cnt_get_cb = HifAhbBusCntGet;
@@ -1345,7 +1323,7 @@ static VOID HifAhbLoopbkAuto(IN unsigned long arg)
 
 	ASSERT(GlueInfo);
 
-	HIF_DBG("Trigger to do loopback test...\n");
+	DBGLOG(HAL, INFO, "Trigger to do loopback test...\n");
 
 	set_bit(GLUE_FLAG_HIF_LOOPBK_AUTO_BIT, &HifInfo->HifLoopbkFlg);
 	wake_up_interruptible(&HifInfo->HifWaitq);
@@ -1353,19 +1331,6 @@ static VOID HifAhbLoopbkAuto(IN unsigned long arg)
 #endif /* CONF_HIF_LOOPBACK_AUTO */
 
 #if defined(MT6797)
-VOID glDumpConnSysCpuInfo(P_GLUE_INFO_T prGlueInfo)
-{
-	/* MT6797 TODO */
-	/* GL_HIF_INFO_T *prHifInfo = &prGlueInfo->rHifInfo; */
-	unsigned short j;
-
-	for (j = 0; j < 512; j++) {
-		/* DBGLOG(INIT, WARN, "0x%08x ", MCU_REG_READL(prHifInfo, CONN_MCU_CPUPCR)); */
-		if ((j + 1) % 16 == 0)
-			DBGLOG(INIT, WARN, "\n");
-	}
-}
-
 PUINT_8 glRemapConnsysAddr(P_GLUE_INFO_T prGlueInfo, UINT_32 consysAddr, UINT_32 remapLength)
 {
 	/* 0x180E0000 is the customized address and can be remaped to any connsys address */
@@ -1375,7 +1340,7 @@ PUINT_8 glRemapConnsysAddr(P_GLUE_INFO_T prGlueInfo, UINT_32 consysAddr, UINT_32
 
 	u4ConfCrValue = readl(hifInfo->confRegBaseAddr);
 	if ((u4ConfCrValue & 0xFFFF0000) != 0x180E0000) {
-		DBGLOG(RX, ERROR, "remap CR is used by others, value is %u\n", u4ConfCrValue);
+		DBGLOG(HAL, ERROR, "remap CR is used by others, value is %u\n", u4ConfCrValue);
 		return NULL;
 	}
 	u4ConfCrValue &= 0xFFFF; /* don't touch low 16 bits, since it is used by others */
@@ -1393,9 +1358,9 @@ VOID glUnmapConnsysAddr(P_GLUE_INFO_T prGlueInfo, PUINT_8 remapAddr, UINT_32 con
 	iounmap(remapAddr);
 	u4ConfCrValue = readl(hifInfo->confRegBaseAddr);
 	if ((u4ConfCrValue & 0xFFFF0000) != consysAddr) {
-		DBGLOG(RX, ERROR,
-			"remap configure CR is changed during we are using! new value is %u\n",
-			u4ConfCrValue);
+		DBGLOG(HAL, ERROR,
+		       "remap configure CR is changed during we are using! new value is %u\n",
+		       u4ConfCrValue);
 		return;
 	}
 	u4ConfCrValue &= 0xFFFF;
