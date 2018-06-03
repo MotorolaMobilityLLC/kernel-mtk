@@ -27,7 +27,7 @@ obj-$(CONFIG_MTK_PMIC)  += pmic_adb_dbg.o
 endif
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-	obj-y += mtk_battery_intf.o
+	obj-$(CONFIG_MTK_SMART_BATTERY) += mtk_battery_intf.o
 	obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT) += mtk_pe30_hal.o
 else
 	obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter_hal.o mtk_bif_intf.o
