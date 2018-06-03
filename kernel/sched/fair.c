@@ -680,6 +680,7 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, struct sched_entity *se)
 
 #ifdef CONFIG_SMP
 static int select_idle_sibling(struct task_struct *p, int cpu);
+static int find_best_idle_cpu(struct task_struct *p, int target);
 static int select_max_spare_capacity_cpu(struct task_struct *p, int target);
 static unsigned long task_h_load(struct task_struct *p);
 
@@ -5919,7 +5920,14 @@ CONSIDER_EAS:
 		}
 		else if (sd_flag & SD_BALANCE_WAKE) { /* XXX always ? */
 			if (true) {
-				new_cpu = select_max_spare_capacity_cpu(p, prev_cpu);
+				int idle_cpu;
+
+				idle_cpu = find_best_idle_cpu(p, prev_cpu);
+				if (idle_cpu < nr_cpu_ids)
+					new_cpu = idle_cpu;
+				else
+					new_cpu = select_max_spare_capacity_cpu(p, prev_cpu);
+
 				policy |= LB_SPARE;
 			} else {
 				new_cpu = select_idle_sibling(p, new_cpu);
@@ -9453,6 +9461,49 @@ void met_cpu_util(int cpu)
 	met_tag_oneshot(0, util_str, cpu_online(cpu) ? _cpu_util:0);
 	met_tag_oneshot(0, boost_str, cpu_online(cpu) ? _boosted_cpu_util:0);
 #endif
+}
+
+/*
+ * @p: the task want to be located at.
+ * @prev_cpu: last cpu p located at.
+ *
+ * Return:
+ *
+ * cpu id or
+ * nr_cpu_ids if target CPU is not found
+ */
+static
+int find_best_idle_cpu(struct task_struct *p, int target)
+{
+	struct cpumask allowed_mask;
+	struct cpumask cls_cpus;
+	int cid = arch_get_cluster_id(target); /* cid of target CPU */
+	int cpu = task_cpu(p);
+
+	/* idle prefer */
+	if (idle_cpu(target))
+		return target;
+
+	/* If the prevous cpu is cache affine and idle, choose it first. */
+	if (cpu != target && cpus_share_cache(cpu, target) && idle_cpu(cpu))
+		return cpu;
+
+	/* then, find a idle CPU in cluster */
+	arch_get_cluster_cpus(&cls_cpus, cid);
+	for_each_cpu_and(cpu, tsk_cpus_allowed(p), &cls_cpus) {
+		if (idle_cpu(cpu))
+			return cpu;
+	}
+
+	/* other, find idle CPU in ALL cpus */
+	cpumask_and(&allowed_mask, cpu_online_mask, tsk_cpus_allowed(p));
+	for_each_cpu(cpu, &allowed_mask) {
+		if (idle_cpu(cpu))
+			return cpu;
+	}
+
+	/* no idle CPU */
+	return nr_cpu_ids;
 }
 
 /* To find a CPU with max spare capacity in the same cluster with target */
