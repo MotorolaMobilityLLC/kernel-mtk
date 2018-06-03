@@ -1861,6 +1861,11 @@
 			"DPI_CK";
 	};
 
+	dsi_te: dsi_te {
+		compatible = "mediatek, dsi_te-eint";
+		status = "disabled";
+	};
+
 	mhl:mhl@0 {
 		compatible = "mediatek,extd_dev";
 	};
