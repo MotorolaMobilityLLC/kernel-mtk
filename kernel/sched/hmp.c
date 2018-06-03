@@ -1049,11 +1049,13 @@ out_unlock:
  */
 static DEFINE_SPINLOCK(hmp_force_migration);
 
+#ifdef CONFIG_SCHED_HMP_PLUS
 /* For debugging purpose, to depart functions of cpu_stop to make call_stack clear. */
 static int hmp_idle_pull_cpu_stop(void *data)
 {
 	return hmp_active_task_migration_cpu_stop(data);
 }
+#endif
 
 static int hmp_force_up_cpu_stop(void *data)
 {
