@@ -2411,6 +2411,8 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
+		vpu_dump_code_segment(core, DEBUG_CODE_SEG_SIZE);
+		vpu_dump_algo_segment(core, algo->id[core], 0x0);
 		vpu_aee("VPU Timeout", "core_%d timeout to do loader, algo_id=%d\n", core,
 			vpu_service_cores[core].current_algo);
 		goto out;
@@ -2505,6 +2507,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
+		vpu_dump_code_segment(core, DEBUG_CODE_SEG_SIZE);
 		vpu_aee("VPU Timeout", "core_%d timeout to do d2d, algo_id=%d\n", core,
 			vpu_service_cores[core].current_algo);
 		goto out;
@@ -2597,6 +2600,8 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 			vpu_dump_mesg(NULL);
 			vpu_dump_register(NULL);
 			vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
+			vpu_dump_code_segment(core, DEBUG_CODE_SEG_SIZE);
+			vpu_dump_algo_segment(core, request->algo_id[core], 0x0);
 			vpu_aee("VPU Timeout", "core_%d timeout to do loader, algo_id=%d\n", core,
 				vpu_service_cores[core].current_algo);
 			goto out;
@@ -2676,6 +2681,8 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
+		vpu_dump_code_segment(core, DEBUG_CODE_SEG_SIZE);
+		vpu_dump_algo_segment(core, request->algo_id[core], 0x0);
 		vpu_aee("VPU Timeout", "core_%d timeout to do d2d, algo_id=%d\n", core,
 			vpu_service_cores[core].current_algo);
 		goto out;
@@ -2741,6 +2748,7 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
+		vpu_dump_code_segment(core, DEBUG_CODE_SEG_SIZE);
 		vpu_aee("VPU Timeout", "core_%d timeout to get algo, algo_id=%d\n", core,
 			vpu_service_cores[core].current_algo);
 		goto out;
@@ -3064,7 +3072,7 @@ void vpu_dump_debug_stack(int core, int size)
 		DEBUG_STACK_BASE_OFFSET, DEBUG_STACK_SIZE);
 	for (i = 0 ; i < (int)size / 4 ; i = i + 4) {
 		#if 1
-		LOG_WRN("%X %X %X %X %X\n", vpu_domain_addr,
+		LOG_WRN("%08X %08X %08X %08X %08X\n", vpu_domain_addr,
 			vpu_read_reg32(vpu_service_cores[core].vpu_base,
 			DEBUG_STACK_BASE_OFFSET + (4 * i)),
 			vpu_read_reg32(vpu_service_cores[core].vpu_base,
@@ -3090,6 +3098,70 @@ void vpu_dump_debug_stack(int core, int size)
 		#endif
 		vpu_domain_addr += (4 * 4);
 	}
+}
+
+void vpu_dump_code_segment(int core, int size)
+{
+	int i = 0;
+	unsigned long addr = 0x0;
+	unsigned int dump_addr = 0x0;
+	unsigned int value_1, value_2, value_3, value_4;
+
+	switch (core) {
+	case 0:
+	default:
+		dump_addr = VPU_MVA_KERNEL_LIB;
+		break;
+	case 1:
+		dump_addr = VPU2_MVA_KERNEL_LIB;
+		break;
+	}
+	addr = (unsigned long)(vpu_service_cores[core].exec_kernel_lib->va);
+	LOG_ERR("==============vpu_dump_code_segment, core_%d==============\n", core);
+	LOG_WRN("==============0x%lx/0x%x/0x%x/0x%x==============\n", addr, dump_addr,
+		size, DEBUG_CODE_SEG_SIZE);
+	for (i = 0 ; i < (int)size / 4 ; i = i + 4) {
+		value_1 = (unsigned int)(*((unsigned long *)((uintptr_t)addr + (4 * i))));
+		value_2 = (unsigned int)(*((unsigned long *)((uintptr_t)addr + (4 * i + 4))));
+		value_3 = (unsigned int)(*((unsigned long *)((uintptr_t)addr + (4 * i + 8))));
+		value_4 = (unsigned int)(*((unsigned long *)((uintptr_t)addr + (4 * i + 12))));
+		LOG_WRN("%08X %08X %08X %08X %08X\n", dump_addr,
+			value_1, value_2, value_3, value_4);
+		dump_addr += (4 * 4);
+	}
+}
+
+void vpu_dump_algo_segment(int core, int algo_id, int size)
+{
+/* we do not mapping out va(bin_ptr is mva) for algo bin file currently */
+#if 0
+	unsigned int addr = 0x0;
+	unsigned int length = 0x0;
+	int i = 0;
+	struct vpu_algo *algo = NULL;
+	int ret = 0;
+
+	LOG_ERR("==============vpu_dump_algo_segment, core_%d, id_%d==============\n",
+		core, algo_id);
+	ret = vpu_find_algo_by_id(core, algo_id, &algo);
+	if (ret) {
+		LOG_ERR("vpu_dump_algo_segment can not find the algo, core=%d, id=%d\n",
+				core, algo_id);
+	} else {
+		addr = (unsigned int)algo->bin_ptr;
+		length = (unsigned int)algo->bin_length;
+
+		LOG_WRN("==============0x%x/0x%x/0x%x==============\n", addr, length, size);
+		for (i = 0 ; i < (int)length / 4 ; i = i + 4) {
+			LOG_WRN("%X %X %X %X %X\n", addr,
+				(unsigned int)(*((unsigned int *)((uintptr_t)addr + (4 * i)))),
+				(unsigned int)(*((unsigned int *)((uintptr_t)addr + (4 * i + 4)))),
+				(unsigned int)(*((unsigned int *)((uintptr_t)addr + (4 * i + 8)))),
+				(unsigned int)(*((unsigned int *)((uintptr_t)addr + (4 * i + 12)))));
+			addr += (4 * 4);
+		}
+	}
+#endif
 }
 
 int vpu_dump_mesg(struct seq_file *s)

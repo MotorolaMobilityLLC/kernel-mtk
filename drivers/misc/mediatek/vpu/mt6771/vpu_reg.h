@@ -19,6 +19,7 @@
 #define CTRL_BASE_OFFSET 0x80000
 #define DEBUG_BASE_OFFSET 0x90000
 #define DEBUG_STACK_SIZE 0x1400
+#define DEBUG_CODE_SEG_SIZE 0x15400
 #define DEBUG_STACK_BASE_OFFSET (0x40000 - DEBUG_STACK_SIZE) /*should sync with Jackie*/
 
 /* common macro definitions */

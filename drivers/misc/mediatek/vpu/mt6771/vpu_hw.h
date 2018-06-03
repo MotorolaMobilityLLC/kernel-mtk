@@ -240,9 +240,20 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp);
 int32_t vpu_thermal_dis_throttle_cb(void);
 
 /**
- * vpu_dump_debug_stack - forvpu timeout debug.
+ * vpu_dump_debug_stack - for vpu timeout debug.
  */
 void vpu_dump_debug_stack(int core, int size);
+
+/**
+ * vpu_dump_code_segment - for vpu timeout debug, dump code segment in algo execution area.
+ */
+void vpu_dump_code_segment(int core, int size);
+
+/**
+ * vpu_dump_algo_segment - for vpu timeout debug, dump source algo segment from bin file.
+ */
+void vpu_dump_algo_segment(int core, int algo_id, int size);
+
 
 /**
  * Working buffer's offset
