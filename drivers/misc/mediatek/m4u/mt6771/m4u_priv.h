@@ -24,8 +24,9 @@
 #include "m4u_reg.h"
 #include "../2.0/m4u_pgtable.h"
 
-#define M4UMSG(string, args...)	pr_info("[M4U] "string, ##args)
-#define M4UINFO(string, args...) pr_debug("[M4U] "string, ##args)
+#define M4UMSG(string, args...)		pr_notice("[M4U][ERR] "string, ##args)
+#define M4UINFO(string, args...)	pr_debug("[M4U] "string, ##args)
+
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 #define M4U_TEE_SERVICE_ENABLE
@@ -37,19 +38,19 @@
 #define M4U_FPGAPORTING
 #endif
 #define M4U_PROFILE
-/*#define M4U_4GBDRAM*/
-/*#define M4U_FPGAPORTING*/
 #define M4U_DVT 0
 
-
 #ifndef M4U_PROFILE
-#define mmprofile_log_ex(...)
-#define mmprofile_enable(...)
-#define mmprofile_start(...)
-#define mmprofile_enable_event(...)
-#define mmp_event unsigned int
+#define MMProfileLogEx(...)
+#define MMProfileEnable(...)
+#define MMProfileStart(...)
+#define MMProfileEnableEvent(...)
+#define MMP_Event unsigned int
 #else
 #include <mmprofile.h>
+
+extern void MMProfileEnable(int enable);
+extern void MMProfileStart(int start);
 #endif
 
 #ifdef CONFIG_PM
@@ -83,6 +84,11 @@ extern void show_pte(struct mm_struct *mm, unsigned long addr);
 #define outer_flush_all(...)
 #endif
 
+#ifndef CONFIG_MTK_CLKMGR
+#define enable_clock(...)
+#define disable_clock(...)
+#endif
+
 #ifdef M4U_FPGAPORTING
 #define smp_inner_dcache_flush_all(...)
 /* #define register_larb_monitor(...) */
@@ -94,7 +100,33 @@ extern void show_pte(struct mm_struct *mm, unsigned long addr);
 extern void smp_inner_dcache_flush_all(void);
 #endif
 
+#ifdef CONFIG_MTK_CLKMGR
+#include <mach/mt_clkmgr.h>
+#else
 #include <linux/clk.h>
+#endif
+
+#if !defined(CONFIG_MTK_CLKMGR)
+#if 0
+enum {
+	SMI_COMMON,
+	SMI_LARB0,
+	SMI_LARB1,
+	SMI_LARB2,
+	SMI_LARB3,
+	SMI_LARB4,
+	SMI_LARB5,
+	SMI_LARB6,
+	SMI_LARB7,
+	MTCMOS_DIS,
+	MTCMOS_VDE,
+	MTCMOS_IMG,
+	MTCMOS_CAM,
+	MTCMOS_VEN,
+	SMI_CLK_NUM,
+};
+#endif
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 struct m4u_device {
 	struct miscdevice dev;
@@ -103,7 +135,10 @@ struct m4u_device {
 	struct dentry *debug_root;
 	unsigned long m4u_base[TOTAL_M4U_NUM];
 	unsigned int irq_num[TOTAL_M4U_NUM];
+
 	struct clk *infra_m4u;
+	/*struct clk *smi_clk[SMI_CLK_NUM];*/
+
 };
 
 struct m4u_domain {
@@ -129,14 +164,14 @@ struct m4u_buf_info {
 	unsigned long mapped_kernel_va_for_debug;
 };
 
-typedef struct _M4U_MAU {
+struct M4U_MAU {
 	M4U_PORT_ID port;
 	bool write;
 	unsigned int mva;
 	unsigned int size;
 	bool enable;
 	bool force;
-} M4U_MAU_STRUCT;
+};
 
 struct M4U_TF {
 	M4U_PORT_ID port;
@@ -188,9 +223,10 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active);
 
 int m4u_dump_main_tlb(int m4u_id, int m4u_slave_id);
 int m4u_dump_pfh_tlb(int m4u_id);
+int m4u_dump_victim_tlb(int m4u_id);
 int m4u_domain_init(struct m4u_device *m4u_dev, void *priv_reserve);
 
-/*int config_mau(M4U_MAU_STRUCT mau);*/
+int config_mau(struct M4U_MAU mau);
 int m4u_enable_tf(unsigned int port, bool fgenable);
 
 
@@ -230,11 +266,12 @@ static inline dma_addr_t get_sg_phys(struct scatterlist *sg)
 
 extern int gM4U_log_level;
 extern int gM4U_log_to_uart;
+
 #define _M4ULOG(level, string, args...) \
 	do {\
 		if (level > gM4U_log_level) {\
 			if (level > gM4U_log_to_uart)\
-				pr_info("[M4U] "string, ##args);\
+				pr_notice(string, ##args);\
 			else\
 				pr_debug("[M4U] "string, ##args);\
 		} \
@@ -246,7 +283,7 @@ extern int gM4U_log_to_uart;
 
 
 #define M4UERR(string, args...) do {\
-	pr_info("[M4U] error:"string, ##args);  \
+	pr_notice("[M4U][ERR]:"string, ##args);  \
 		aee_kernel_exception("M4U", "[M4U] error:"string, ##args);  \
 	} while (0)
 
@@ -255,7 +292,7 @@ extern int gM4U_log_to_uart;
 		snprintf(m4u_name, 100, "[M4U]"string, ##args); \
 	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_MMPROFILE_BUFFER | DB_OPT_DUMP_DISPLAY, \
 		m4u_name, "[M4U] error"string, ##args); \
-	pr_info("[M4U] error:"string, ##args);  \
+	pr_notice("[M4U] error:"string, ##args);  \
 	} while (0)
 /*aee_kernel_warning(m4u_name, "[M4U] error:"string,##args); */
 
@@ -264,7 +301,7 @@ extern int gM4U_log_to_uart;
 		if (seq_file)\
 			seq_printf(seq_file, fmt, ##args);\
 		else\
-			pr_info(fmt, ##args);\
+			pr_debug(fmt, ##args);\
 	} while (0)
 
 /* ======================================= */
@@ -281,8 +318,7 @@ enum M4U_MMP_TYPE {
 	M4U_MMP_TOGGLE_CG,
 	M4U_MMP_MAX,
 };
-extern mmp_event M4U_MMP_Events[M4U_MMP_MAX];
-
+extern MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
 
 struct M4U_MOUDLE {
 	M4U_PORT_ID port;
@@ -338,11 +374,16 @@ struct M4U_DMA {
 #define MTK_M4U_T_REGISTER_BUFFER     _IOW(MTK_M4U_MAGICNO, 22, int)
 #define MTK_M4U_T_CACHE_FLUSH_ALL     _IOW(MTK_M4U_MAGICNO, 23, int)
 #define MTK_M4U_T_CONFIG_PORT_ARRAY   _IOW(MTK_M4U_MAGICNO, 26, int)
-/*#define MTK_M4U_T_CONFIG_MAU	  _IOW(MTK_M4U_MAGICNO, 27, int)*/
+#define MTK_M4U_T_CONFIG_MAU	  _IOW(MTK_M4U_MAGICNO, 27, int)
 #define MTK_M4U_T_CONFIG_TF	   _IOW(MTK_M4U_MAGICNO, 28, int)
 #define MTK_M4U_T_DMA_OP	      _IOW(MTK_M4U_MAGICNO, 29, int)
 
 #define MTK_M4U_T_SEC_INIT	    _IOW(MTK_M4U_MAGICNO, 50, int)
+
+#ifdef CONFIG_MACH_MT6763
+int larb_clock_on(int larb, bool config_mtcmos);
+int larb_clock_off(int larb, bool config_mtcmos);
+#endif
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 int m4u_config_port_tee(M4U_PORT_STRUCT *pM4uPort);
@@ -351,5 +392,7 @@ int m4u_larb_restore_sec(unsigned int larb_idx);
 int m4u_config_port_array_tee(unsigned char *port_array);
 int m4u_sec_init(void);
 #endif
+
+
 
 #endif

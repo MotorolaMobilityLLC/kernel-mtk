@@ -27,7 +27,7 @@
 #include "smi_public.h"
 #endif
 
-static m4u_domain_t gM4uDomain;
+static struct m4u_domain gM4uDomain;
 
 static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
 static unsigned long gLarbBaseAddr[SMI_LARB_NR];
@@ -123,7 +123,7 @@ static void m4u_invalid_tlb_all(int m4u_id)
 	m4u_invalid_tlb(m4u_id, gM4U_L2_enable, 1, 0, 0);
 }
 
-void m4u_invalid_tlb_by_range(m4u_domain_t *m4u_domain, unsigned int mva_start,
+void m4u_invalid_tlb_by_range(struct m4u_domain *m4u_domain, unsigned int mva_start,
 			      unsigned int mva_end)
 {
 	int i;
@@ -1816,7 +1816,7 @@ int m4u_unregister_fault_callback(int port)
 	return 0;
 }
 
-int m4u_enable_tf(int port, bool fgenable)
+int m4u_enable_tf(unsigned int port, bool fgenable)
 {
 	if (port < 0 || port >= M4U_PORT_UNKNOWN) {
 		M4UMSG("%s fail,m port=%d\n", __func__, port);
@@ -2059,12 +2059,12 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-m4u_domain_t *m4u_get_domain_by_port(M4U_PORT_ID port)
+struct m4u_domain *m4u_get_domain_by_port(M4U_PORT_ID port)
 {
 	return &gM4uDomain;
 }
 
-m4u_domain_t *m4u_get_domain_by_id(int id)
+struct m4u_domain *m4u_get_domain_by_id(int id)
 {
 	return &gM4uDomain;
 }
@@ -2074,7 +2074,7 @@ int m4u_get_domain_nr(void)
 	return 1;
 }
 
-int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
+int m4u_reg_init(struct m4u_domain *m4u_domain, unsigned long ProtectPA, int m4u_id)
 {
 	unsigned int regval;
 	int i;
