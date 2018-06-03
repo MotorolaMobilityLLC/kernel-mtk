@@ -56,6 +56,7 @@ obj-y += power/
 obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
 obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
 obj-y += devinfo/
+obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_MTK_BLOCK_TAG) +=blocktag/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met_drv/),)
