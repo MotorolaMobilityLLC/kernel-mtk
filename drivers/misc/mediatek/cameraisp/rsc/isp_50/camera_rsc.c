@@ -60,6 +60,11 @@
 #include <cmdq_record.h>
 #include <smi_public.h>
 #include "../engine_request.h"
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+#include <linux/pm_qos.h>
+#endif
+
 /* Measure the kernel performance
  * #define __RSC_KERNEL_PERFORMANCE_MEASURE__
  */
@@ -382,6 +387,10 @@ struct RSC_INFO_STRUCT {
 
 
 static struct RSC_INFO_STRUCT RSCInfo;
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+struct pm_qos_request rsc_pm_qos_request;
+#endif
 
 enum eLOG_TYPE {
 	_LOG_DBG = 0,/* currently, only used at ipl_buf_ctrl for critical section */
@@ -1217,6 +1226,10 @@ signed int CmdqRSCHW(struct frame *frame)
 #if 1
 	struct cmdqRecStruct *handle;
 	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_RSC);
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	unsigned int w_imgi, h_imgi, w_mvio, h_mvio, w_bvo, h_bvo;
+	unsigned int dma_bandwidth, trig_num;
+#endif
 #endif
 	if (frame == NULL || frame->data == NULL)
 		return -1;
@@ -1238,6 +1251,8 @@ signed int CmdqRSCHW(struct frame *frame)
 	LOG_DBG("RSC_BVO_STRIDE_REG:0x%x!\n", pRscConfig->RSC_BVO_STRIDE);
 	LOG_DBG("RSC_APLI_C_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_APLI_C_BASE_ADDR);
 	LOG_DBG("RSC_APLI_P_BASE_ADDR_REG:0x%x!\n", pRscConfig->RSC_APLI_P_BASE_ADDR);
+
+
 #if 1
 	cmdqRecCreate(CMDQ_SCENARIO_KERNEL_CONFIG_GENERAL, &handle);
 
@@ -1284,6 +1299,22 @@ signed int CmdqRSCHW(struct frame *frame)
 	cmdqRecWait(handle, CMDQ_EVENT_RSC_EOF);
 	cmdqRecWrite(handle, RSC_START_HW, 0x0, CMDQ_REG_MASK);	/* RSC Interrupt read-clear mode */
 
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	trig_num = (pRscConfig->RSC_CTRL & 0x00000F00) >> 8;
+	w_imgi = pRscConfig->RSC_SIZE & 0x000001FF;
+	h_imgi = (pRscConfig->RSC_SIZE & 0x01FF0000) >> 16;
+
+	w_mvio = ((w_imgi + 1) >> 1) - 1;
+	w_mvio = ((w_mvio / 7) << 4) + (((((w_mvio % 7) + 1) * 18) + 7) >> 3);
+	h_mvio = (h_imgi + 1) >> 1;
+
+	w_bvo =  (w_imgi + 1) >> 1;
+	h_bvo =  (h_imgi + 1) >> 1;
+
+	dma_bandwidth = ((w_imgi * h_imgi) * 2 + (w_mvio * h_mvio) * 2 * 16 + (w_bvo * h_bvo))
+								* trig_num * 30 / 1000000;
+	cmdq_task_update_property(handle, &dma_bandwidth, sizeof(unsigned int));
+#endif
 	/* non-blocking API, Please  use cmdqRecFlushAsync() */
 	cmdqRecFlushAsync(handle);
 	cmdqRecReset(handle);	/* if you want to re-use the handle, please reset the handle */
@@ -1438,6 +1469,24 @@ static signed int ConfigRSCHW(struct RSC_Config *pRscConfig)
 	return 0;
 }
 #endif
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+void cmdq_pm_qos_start(struct TaskStruct *task, struct TaskStruct *task_list[], u32 size)
+{
+	unsigned int dma_bandwidth;
+
+	dma_bandwidth = *(unsigned int *) task->prop_addr;
+	pm_qos_update_request(&rsc_pm_qos_request, dma_bandwidth);
+	LOG_INF("+ PMQOS Bandwidth : %d MB/sec\n", dma_bandwidth);
+}
+
+void cmdq_pm_qos_stop(struct TaskStruct *task, struct TaskStruct *task_list[], u32 size)
+{
+	pm_qos_update_request(&rsc_pm_qos_request, 0);
+	LOG_DBG("- PMQOS Bandwidth : %d\n", 0);
+}
+#endif
+
 
 #define RSC_IS_BUSY    0x2
 
@@ -2986,6 +3035,11 @@ static signed int RSC_open(struct inode *pInode, struct file *pFile)
 	set_engine_ops(&rsc_reqs, &rsc_ops);
 #endif
 
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	pm_qos_add_request(&rsc_pm_qos_request, PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+	cmdqCoreRegisterTaskCycleCB(CMDQ_GROUP_RSC, cmdq_pm_qos_start, cmdq_pm_qos_stop);
+#endif
+
 EXIT:
 
 
@@ -3035,6 +3089,10 @@ static signed int RSC_release(struct inode *pInode, struct file *pFile)
 	/*  */
 #ifdef ENGINE
 	unregister_requests(&rsc_reqs);
+#endif
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	pm_qos_remove_request(&rsc_pm_qos_request);
 #endif
 
 EXIT:
@@ -3832,6 +3890,7 @@ int32_t RSC_DumpCallback(uint64_t engineFlag, int level)
 	LOG_DBG("RSC_DumpCallback");
 
 	RSC_DumpReg();
+	request_dump(&rsc_reqs);
 
 	return 0;
 }
