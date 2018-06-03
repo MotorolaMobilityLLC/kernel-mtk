@@ -34,10 +34,10 @@
 /* spinlock : OalHWContextLock */
 VAL_VCODEC_OAL_HW_CONTEXT_T oal_hw_context[VCODEC_MULTIPLE_INSTANCE_NUM];
 /* mutex : NonCacheMemoryListLock */
-VAL_NON_CACHE_MEMORY_LIST_T grNonCacheMemoryList[VCODEC_MULTIPLE_INSTANCE_NUM_x_10];
+struct VAL_NON_CACHE_MEMORY_LIST_T grNonCacheMemoryList[VCODEC_MULTIPLE_INSTANCE_NUM_x_10];
 
 /* For both hybrid and pure HW */
-VAL_VCODEC_HW_LOCK_T grVcodecHWLock;	/* mutex : HWLock */
+struct VAL_VCODEC_HW_LOCK_T grVcodecHWLock;	/* mutex : HWLock */
 
 VAL_UINT32_T gu4LockDecHWCount;	/* spinlock : LockDecHWCountLock */
 VAL_UINT32_T gu4LockEncHWCount;	/* spinlock : LockEncHWCountLock */

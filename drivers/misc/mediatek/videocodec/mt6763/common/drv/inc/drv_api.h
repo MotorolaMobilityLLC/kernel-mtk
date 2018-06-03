@@ -19,20 +19,20 @@
 /* ============================================================= */
 /* For driver */
 
-typedef struct {
+struct VAL_VCODEC_HW_LOCK_T {
 	VAL_VOID_T *pvHandle;	/* HW vcodec handle */
 	VAL_TIME_T rLockedTime;
 	VAL_DRIVER_TYPE_T eDriverType;
-} VAL_VCODEC_HW_LOCK_T;
+};
 
-typedef struct {
+struct VAL_NON_CACHE_MEMORY_LIST_T {
 	VAL_ULONG_T ulKVA;	/* Kernel virtual address */
 	VAL_ULONG_T ulKPA;	/* Kernel physical address */
 	VAL_HANDLE_T pvHandle;	/*  */
 	VAL_UINT32_T u4VCodecThreadNum;	/* Hybrid vcodec thread num */
 	VAL_UINT32_T u4VCodecThreadID[VCODEC_THREAD_MAX_NUM];	/* hybrid vcodec thread ids */
 	VAL_ULONG_T  ulSize;
-} VAL_NON_CACHE_MEMORY_LIST_T;
+};
 
 /* ============================================================== */
 /* For Hybrid HW */
@@ -42,10 +42,10 @@ typedef struct {
 /* spinlock : OalHWContextLock */
 extern VAL_VCODEC_OAL_HW_CONTEXT_T oal_hw_context[VCODEC_MULTIPLE_INSTANCE_NUM];
 /* mutex : NonCacheMemoryListLock */
-extern VAL_NON_CACHE_MEMORY_LIST_T grNonCacheMemoryList[VCODEC_MULTIPLE_INSTANCE_NUM_x_10];
+extern struct VAL_NON_CACHE_MEMORY_LIST_T grNonCacheMemoryList[VCODEC_MULTIPLE_INSTANCE_NUM_x_10];
 
 /* For both hybrid and pure HW */
-extern VAL_VCODEC_HW_LOCK_T grVcodecHWLock;	/* mutex : VdecHWLock*/
+extern struct VAL_VCODEC_HW_LOCK_T grVcodecHWLock;	/* mutex : VdecHWLock*/
 
 extern VAL_UINT32_T gu4LockDecHWCount;	/* spinlock : LockDecHWCountLock */
 extern VAL_UINT32_T gu4LockEncHWCount;	/* spinlock : LockEncHWCountLock */
