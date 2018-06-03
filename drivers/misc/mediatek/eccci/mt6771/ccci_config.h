@@ -45,6 +45,7 @@
 #define IPC_L4C_MSG_ID_LEN   (0x40)
 
 /* feature option, always try using platform info first! */
+#define FEATURE_SCP_CCCI_SUPPORT
 /*#define ENABLE_EMI_PROTECTION*/
 #define ENABLE_32K_CLK_LESS
 /*#define CCCI_LOG_LEVEL     1*/
