@@ -116,12 +116,25 @@ int mtk_smi_larb_get(struct device *larbdev)
 			int i;
 
 			for (i = 0; i < 32; i++)
-				if (BIT(i) & (*larb->mmu))
+				if (BIT(i) & (*larb->mmu)) {
+#ifdef CONFIG_MACH_MT8167
+					/*
+					 * for mt8167, we only config port for disp,
+					 * other larb would call m4u_config_port
+					 * in userspace.
+					 */
+					if (larb->larbid == 0)
+						pseudo_config_port_tee(i);
+#else
 					pseudo_config_port_tee(i + (larb->larbid << 5));
-
+#endif
+				}
 		}
 #else
 	/* Configure the iommu info for this larb */
+#ifdef CONFIG_MACH_MT8167
+	if (larbid == 0)
+#endif
 	writel(*larb->mmu, larb->base + larb->mt_plat->mmu_offset);
 #endif
 	return 0;
