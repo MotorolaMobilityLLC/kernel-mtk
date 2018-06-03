@@ -23,6 +23,7 @@ static int get_vb_volt(int vcore_opp)
 	int ret = 0;
 	int ptpod10 = get_devinfo_with_index(60);
 
+	pr_info("%s: PTPOD10: 0x%x\n", __func__, ptpod10);
 	switch (vcore_opp) {
 	case VCORE_OPP_0:
 		ret = (ptpod10 >> 2) & (ptpod10 >> 6) & (ptpod10 >> 12) & 0x3;
@@ -65,9 +66,13 @@ void dvfsrc_opp_level_mapping(void)
 	vcore_opp_0_uv = 800000 - get_vb_volt(VCORE_OPP_0);
 	vcore_opp_1_uv = 700000 - get_vb_volt(VCORE_OPP_1);
 	vcore_opp_2_uv = 700000 - get_vb_volt(VCORE_OPP_2);
+	pr_info("%s: EFUSE vcore_opp_uv: %d, %d, %d\n", __func__,
+			vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv);
 
 	vcore_opp_1_uv = max(vcore_opp_0_uv - 100000, vcore_opp_1_uv);
 	vcore_opp_1_uv = max(vcore_opp_1_uv, vcore_opp_2_uv);
+	pr_info("%s: DRAM vcore_opp_uv: %d, %d, %d\n", __func__,
+			vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv);
 
 	set_vcore_uv_table(VCORE_OPP_0, vcore_opp_0_uv);
 	set_vcore_uv_table(VCORE_OPP_1, vcore_opp_1_uv);
