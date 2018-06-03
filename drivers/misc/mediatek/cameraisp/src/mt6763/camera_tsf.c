@@ -897,7 +897,8 @@ static signed int TSF_WriteRegToHw(struct TSF_REG_STRUCT *pReg, unsigned int Cou
 				(unsigned int) (pReg[i].Val));
 		}
 
-		if (((ISP_TSF_BASE + pReg[i].Addr) < (ISP_TSF_BASE + TSF_REG_RANGE))) {
+		if (((ISP_TSF_BASE + pReg[i].Addr) < (ISP_TSF_BASE + TSF_REG_RANGE))
+			 && (pReg[i].Addr < TSF_REG_RANGE)) {
 			TSF_WR32(ISP_TSF_BASE + pReg[i].Addr, pReg[i].Val);
 		} else {
 			LOG_ERR("wrong tsf address(0x%lx)\n",
