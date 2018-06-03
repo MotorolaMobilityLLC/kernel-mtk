@@ -39,7 +39,7 @@
 #endif
 
 #ifndef EARLY_PORTING_SPOWER
-#include "mtk_static_power.h"
+#include "mtk_common_static_power.h"
 #endif
 
 #if UPOWER_ENABLE
