@@ -286,8 +286,9 @@ struct nand_ecclayout {
 	struct nand_oobfree oobfree[MTD_MAX_OOBFREE_ENTRIES];
 };
 */
-#define __DEBUG_NAND		1	/* Debug information on/off */
+#define __DEBUG_NAND		0	/* Debug information on/off */
 
+#if __DEBUG_NAND
 /* Debug message event */
 #define DBG_EVT_NONE		0x00000000	/* No event */
 #define DBG_EVT_INIT		0x00000001	/* Initial related event */
@@ -304,7 +305,6 @@ struct nand_ecclayout {
 
 #define DBG_EVT_MASK	(DBG_EVT_INIT|DBG_EVT_POWERCTL)
 
-#if __DEBUG_NAND
 #define MSG(evt, fmt, args...) \
 do {	\
 	if ((DBG_EVT_##evt) & DBG_EVT_MASK) { \

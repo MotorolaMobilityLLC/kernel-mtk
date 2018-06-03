@@ -17,6 +17,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/nand/v1/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/nand/v1/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/arch/arm/include/asm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/wdt/common/wdt_v2
 obj-$(CONFIG_MTK_MTD_NAND) += mtk_nand.o nand_device_list.o toshiba_device_feature.o hynix_device_feature.o
 obj-$(CONFIG_MTK_MTD_NAND) += sandisk_device_feature.o micron_device_feature.o mtk_nand_device_feature.o
 obj-$(CONFIG_MTK_MTD_NAND) += bmt.o mtk_nand_fs.o

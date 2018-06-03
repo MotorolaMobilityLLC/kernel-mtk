@@ -271,6 +271,24 @@ u32 pl_program_time;
 u32 pl_erase_time;
 u32 pl_merge_time;
 
+#ifdef CONFIG_MNTL_SUPPORT
+#define PL_TIME_RAND_PROG(chip, page_addr) do { \
+	if (host->pl.nand_program_wdt_enable == 1 && mvg_current_case_check()) \
+		PL_TIME_RAND(page_addr, pl_program_time, host->pl.last_prog_time); \
+	else \
+		pl_program_time = 0; \
+	} while (0)
+
+#define PL_TIME_RAND_ERASE(chip, page_addr) do { \
+	if (host->pl.nand_erase_wdt_enable == 1 && mvg_current_case_check()) { \
+		PL_TIME_RAND(page_addr, pl_erase_time, host->pl.last_erase_time); \
+		if (pl_erase_time != 0) \
+			pr_info("[MVG_TEST]: Erase reset in %d us\n", pl_erase_time); \
+		} else \
+		pl_erase_time = 0; \
+	} while (0)
+
+#else
 #define PL_TIME_RAND_PROG(chip, page_addr) do { \
 	if (host->pl.nand_program_wdt_enable == 1 && MVG_TRIGGER_HIT()) \
 		PL_TIME_RAND(page_addr, pl_program_time, host->pl.last_prog_time); \
@@ -286,6 +304,7 @@ u32 pl_merge_time;
 		} else \
 		pl_erase_time = 0; \
 	} while (0)
+#endif
 
 #define PL_TIME_PROG(duration)	host->pl.last_prog_time = duration
 #define PL_TIME_ERASE(duration) host->pl.last_erase_time = duration
@@ -8003,7 +8022,6 @@ int mtk_nand_cache_read_page_intr(struct mtd_info *mtd, u32 u4RowAddr, u32 u4Pag
 	u32 u4SecNum = u4PageSize >> host->hw->nand_sec_shift;
 	u32 backup_corrected, backup_failed;
 	bool readReady;
-	int retryCount = 0;
 	u32 tempBitMap, bitMap;
 	struct NFI_TLC_WL_INFO  tlc_wl_info;
 	struct NFI_TLC_WL_INFO  pre_tlc_wl_info;
@@ -8266,7 +8284,6 @@ int mtk_nand_cache_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize
 	u32 u4SecNum = u4PageSize >> host->hw->nand_sec_shift;
 	u32 backup_corrected, backup_failed;
 	bool readReady;
-	int retryCount = 0;
 	u32 tempBitMap, bitMap;
 	struct NFI_TLC_WL_INFO  tlc_wl_info;
 	struct NFI_TLC_WL_INFO  pre_tlc_wl_info;
