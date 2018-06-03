@@ -245,9 +245,8 @@ static int mtk_voice_bt1_prepare(struct snd_pcm_substream *substream)
 	pr_warn("%s(), stream(%d), rate = %d  channels = %d period_size = %lu\n",
 	       __func__, substream->stream, runtimeStream->rate, runtimeStream->channels, runtimeStream->period_size);
 
-	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
 		return 0;
-	}
 
 	/* here start digital part */
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
