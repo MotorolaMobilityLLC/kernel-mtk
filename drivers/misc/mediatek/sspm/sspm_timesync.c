@@ -29,6 +29,7 @@
 #include <linux/ioport.h>
 #include <linux/io.h>
 #include <linux/atomic.h>
+#include <linux/types.h>
 #include <mt-plat/sync_write.h>
 #include "sspm_define.h"
 #include "sspm_helper.h"
@@ -168,7 +169,7 @@ unsigned int __init sspm_timesync_init(phys_addr_t start, phys_addr_t limit)
 
 	last_ofs = 0;
 
-	ts_ctl = (struct timesync_ctrl_s *) start;
+	ts_ctl = (struct timesync_ctrl_s *) (uintptr_t)start;
 	ts_ctl->base = PLT_TIMESYNC_SYNC; /* magic */
 	ts_ctl->size = sizeof(*ts_ctl);
 
