@@ -15,6 +15,8 @@
 #ifndef _MTK_EEM_INTERNAL_AP_H_
 #define _MTK_EEM_INTERNAL_AP_H_
 
+#define NR_PI_SHARED_CTRL	2
+
 struct eem_det;
 struct eem_ctrl;
 
@@ -126,6 +128,9 @@ unsigned int reg_dump_data[ARRAY_SIZE(reg_dump_addr_off)][NR_EEM_PHASE];
 	unsigned char isTempInv;
 	unsigned char low_temp_off;
 	int volt_offset;
+
+	unsigned int pi_efuse[NR_PI_SHARED_CTRL];
+	unsigned int pi_efuse_count;
 
 	unsigned int disabled; /* Disabled by error or sysfs */
 	unsigned char set_volt_to_upower; /* only when init2, set v to UPT */
