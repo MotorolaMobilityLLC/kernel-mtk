@@ -1149,3 +1149,4 @@ CONFIG_DMA_MTK_UART,PROJECT,zh.chen,new config in this commit I39544c033b842ab7f
 CONFIG_TOUCHSCREEN_MTK_FOCALTECH_TS,cassy.cao,new config,,X,X,X,y
 CONFIG_TOUCHSCREEN_MTK_SOLOMON,cassy.cao,new config,,X,X,X,y
 CONFIG_ARM_MODULE_PLTS,,new config,,,,y,x
+CONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH,PROJECT,ilex.lin,new config,X,X,X,y
