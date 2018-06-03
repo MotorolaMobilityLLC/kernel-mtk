@@ -104,7 +104,8 @@ static int mmdvfs_get_current_fine_step(void)
 	return g_mmdvfs_current_step;
 }
 
-static int mmdvfs_determine_fine_step(int scenario, int sensor_size, int feature_flag, int sensor_fps,
+static int mmdvfs_determine_fine_step(struct mmdvfs_adaptor *adaptor,
+	int scenario, int sensor_size, int feature_flag, int sensor_fps,
 	int codec_width, int codec_height) {
 
 	int mmdvfs_fine_step = MMDVFS_FINE_STEP_UNREQUEST;
@@ -112,8 +113,8 @@ static int mmdvfs_determine_fine_step(int scenario, int sensor_size, int feature
 	struct mmdvfs_cam_property cam_setting = {0, 0, 0};
 	struct mmdvfs_video_property codec_setting = {0, 0, 0};
 
-	if (!g_mmdvfs_adaptor) {
-		MMDVFSMSG("mmdvfs_determine_fine_step: g_mmdvfs_adaptor is NULL\n");
+	if (!adaptor) {
+		MMDVFSMSG("mmdvfs_determine_fine_step: adaptor is NULL\n");
 		return MMDVFS_FINE_STEP_UNREQUEST;
 	}
 
@@ -124,11 +125,19 @@ static int mmdvfs_determine_fine_step(int scenario, int sensor_size, int feature
 	codec_setting.width = codec_width;
 	codec_setting.height = codec_height;
 
-	mmdvfs_fine_step = g_mmdvfs_adaptor->determine_mmdvfs_step(g_mmdvfs_adaptor,
+	mmdvfs_fine_step = adaptor->determine_mmdvfs_step(adaptor,
 		scenario, &cam_setting, &codec_setting);
 
 	return mmdvfs_fine_step;
 
+}
+
+static int mmdvfs_determine_fine_step_default(int scenario, int sensor_size,
+	int feature_flag, int sensor_fps, int codec_width, int codec_height) {
+
+	return mmdvfs_determine_fine_step(g_mmdvfs_adaptor,
+		scenario, sensor_size, feature_flag, sensor_fps,
+		codec_width, codec_height);
 }
 
 static int mmdvfs_query(MTK_SMI_BWC_SCEN scenario,
@@ -147,7 +156,7 @@ MTK_MMDVFS_CMD *cmd)
 		sensor_fps = cmd->sensor_fps;
 	}
 
-	return mmdvfs_determine_fine_step(scenario, sensor_size, camera_mode, sensor_fps,
+	return mmdvfs_determine_fine_step_default(scenario, sensor_size, camera_mode, sensor_fps,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1]);
 }
 
@@ -243,18 +252,19 @@ int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step)
 	return mmdvfs_set_corse_step(scenario, step);
 }
 
-
-int mmdvfs_internal_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
+int mmdvfs_internal_set_fine_step(const char *adaptor_name,
+struct mmdvfs_adaptor *adaptor,
+struct mmdvfs_step_util *step_util, MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step,
+int notify_clk_change)
 {
 	int original_step = 0;
 	int final_step = MMDVFS_FINE_STEP_UNREQUEST;
 	int legacy_clk = -1;
 
-	if (!g_mmdvfs_adaptor) {
-		MMDVFSMSG("mmdvfs_internal_set_fine_step: g_mmdvfs_adaptor is NULL\n");
+	if (!adaptor) {
+		MMDVFSMSG("mmdvfs_internal_set_fine_step: adaptor is NULL\n");
 		return -1;
 	}
-
 
 	if ((smi_scenario >= (MTK_SMI_BWC_SCEN)MMDVFS_SCEN_COUNT) || (smi_scenario
 	< SMI_BWC_SCEN_NORMAL)) {
@@ -264,36 +274,37 @@ int mmdvfs_internal_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step
 
 	spin_lock(&g_mmdvfs_mgr->scen_lock);
 	original_step = g_mmdvfs_current_step;
-	final_step = g_mmdvfs_step_util->set_step(g_mmdvfs_step_util, mmdvfs_step, smi_scenario);
+	final_step = step_util->set_step(step_util, mmdvfs_step, smi_scenario);
 	g_mmdvfs_current_step = final_step;
 	spin_unlock(&g_mmdvfs_mgr->scen_lock);
 
 	/* Change HW configuration */
-	g_mmdvfs_adaptor->apply_hw_configurtion_by_step(g_mmdvfs_adaptor, final_step, original_step);
+	adaptor->apply_hw_configurtion_by_step(adaptor, final_step, original_step);
 
-	notify_camsys_clk_change(original_step, final_step);
+	if (notify_clk_change)
+		notify_camsys_clk_change(original_step, final_step);
 
 	legacy_clk = mmdvfs_get_stable_isp_clk();
 
 	if (g_mmdvfs_rt_debug_disable_mask &&
 			((1 << smi_scenario) & (*g_mmdvfs_rt_debug_disable_mask)))
 		MMDVFSDEBUG(3,
-		"Set scen:(%d,0x%x) step:(%d,%d,0x%x,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CLK:%d\n",
-		smi_scenario, g_mmdvfs_concurrency, mmdvfs_step, final_step,
-		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[0],
-		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[1],
-		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[2],
-		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[3],
+		"%s,set scen:(%d,0x%x)step:(%d,%d,0x%x,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CLK:%d\n",
+		adaptor_name, smi_scenario, g_mmdvfs_concurrency, mmdvfs_step, final_step,
+		step_util->mmdvfs_concurrency_of_opps[0],
+		step_util->mmdvfs_concurrency_of_opps[1],
+		step_util->mmdvfs_concurrency_of_opps[2],
+		step_util->mmdvfs_concurrency_of_opps[3],
 		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps,
 		g_mmdvfs_cmd.camera_mode,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1], legacy_clk);
 	else
-		MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,0x%x,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CLK:%d\n",
-		smi_scenario, g_mmdvfs_concurrency, mmdvfs_step, final_step,
-		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[0],
-		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[1],
-		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[2],
-		g_mmdvfs_step_util->mmdvfs_concurrency_of_opps[3],
+		MMDVFSMSG("%s,set scen:(%d,0x%x) step:(%d,%d,0x%x,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CLK:%d\n",
+		adaptor_name, smi_scenario, g_mmdvfs_concurrency, mmdvfs_step, final_step,
+		step_util->mmdvfs_concurrency_of_opps[0],
+		step_util->mmdvfs_concurrency_of_opps[1],
+		step_util->mmdvfs_concurrency_of_opps[2],
+		step_util->mmdvfs_concurrency_of_opps[3],
 		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps,
 		g_mmdvfs_cmd.camera_mode,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1], legacy_clk);
@@ -301,8 +312,20 @@ int mmdvfs_internal_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step
 }
 
 
+int mmdvfs_internal_set_fine_step_default(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
+{
+	return mmdvfs_internal_set_fine_step("Fixed", g_mmdvfs_adaptor, g_mmdvfs_step_util,
+	smi_scenario, mmdvfs_step, 1);
+}
+
+
 void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event *event)
 {
+	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_ALA) {
+		MMDVFSMSG("calibration event is not hanlded in this platform\n");
+		g_mmdvfs_mgr->is_mmdvfs_start = 1;
+		return;
+	}
 	if (event->event_type == MMDVFS_EVENT_PREPARE_CALIBRATION_START) {
 		g_mmdvfs_mgr->is_mmdvfs_start = 0;
 		MMDVFSMSG("mmdvfs service is disabled for vcore calibration\n");
@@ -328,7 +351,7 @@ int mmdvfs_set_fine_step_force(MTK_SMI_BWC_SCEN smi_scenario,
 	/* Update HW runtime option */
 	g_mmdvfs_adaptor->enable_vcore = 1;
 	g_mmdvfs_adaptor->enable_clk_mux = 1;
-	ret = mmdvfs_internal_set_fine_step(smi_scenario, mmdvfs_step);
+	ret = mmdvfs_internal_set_fine_step_default(smi_scenario, mmdvfs_step);
 
 	/* recover the original setting */
 	g_mmdvfs_adaptor->enable_vcore = !is_mmdvfs_disabled();
@@ -355,10 +378,33 @@ int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
 	g_mmdvfs_adaptor->enable_pll_hopping = !is_mmdvfs_freq_hopping_disabled();
 	g_mmdvfs_adaptor->enable_clk_mux = !is_mmdvfs_freq_mux_disabled();
 
-	return mmdvfs_internal_set_fine_step(smi_scenario, mmdvfs_step);
+	return mmdvfs_internal_set_fine_step_default(smi_scenario, mmdvfs_step);
 
 }
 
+
+int mmdvfs_set_fine_step_non_force(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
+{
+	if (is_mmdvfs_disabled() || g_mmdvfs_mgr->is_mmdvfs_start == 0) {
+		MMDVFSMSG("MMDVFS is disable, request denalied; scen:%d, step:%d\n",
+		smi_scenario, mmdvfs_step);
+		return 0;
+	}
+
+	if (!g_mmdvfs_non_force_adaptor) {
+		MMDVFSMSG("mmdvfs_set_fine_step_non_force: g_mmdvfs_non_force_adaptor is disable\n");
+		return -1;
+	}
+
+	/* Update HW runtime option */
+	g_mmdvfs_non_force_adaptor->enable_vcore = !is_mmdvfs_disabled();
+	g_mmdvfs_non_force_adaptor->enable_pll_hopping = 0;
+	g_mmdvfs_non_force_adaptor->enable_clk_mux = 0;
+
+	return mmdvfs_internal_set_fine_step("Auto-Adjust", g_mmdvfs_non_force_adaptor,
+		g_mmdvfs_non_force_step_util, smi_scenario, mmdvfs_step, 0);
+
+}
 
 static int handle_step_mmmclk_set(MTK_MMDVFS_CMD *cmd)
 {
@@ -555,6 +601,10 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 	if (g_mmdvfs_adaptor &&
 		(!((1 << scen) & g_mmdvfs_adaptor->disable_auto_control_mask)))
 		mmdvfs_set_fine_step(scen, MMDVFS_FINE_STEP_UNREQUEST);
+
+	if (g_mmdvfs_non_force_adaptor &&
+		(!((1 << scen) & g_mmdvfs_non_force_adaptor->disable_auto_control_mask)))
+		mmdvfs_set_fine_step_non_force(scen, MMDVFS_FINE_STEP_UNREQUEST);
 	/* reset scenario voltage to default when it exits */
 	/* Also force the system to leave low low mode */
 
@@ -564,7 +614,7 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 {
 	int mmdvfs_fine_step = MMDVFS_FINE_STEP_UNREQUEST;
-
+	int mmdvfs_fine_step_non_force = MMDVFS_FINE_STEP_UNREQUEST;
 
 	if (is_mmdvfs_disabled()) {
 		MMDVFSMSG("MMDVFS is disabled\n");
@@ -583,10 +633,18 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 
 	if (g_mmdvfs_adaptor &&
 		(!((1 << scen) & g_mmdvfs_adaptor->disable_auto_control_mask))) {
-	mmdvfs_fine_step = mmdvfs_determine_fine_step(scen, g_mmdvfs_cmd.sensor_size,
+	mmdvfs_fine_step = mmdvfs_determine_fine_step_default(scen, g_mmdvfs_cmd.sensor_size,
 		g_mmdvfs_cmd.camera_mode, g_mmdvfs_cmd.sensor_fps,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1]);
 	mmdvfs_set_fine_step(scen, mmdvfs_fine_step);
+	}
+
+	if (g_mmdvfs_non_force_adaptor &&
+		(!((1 << scen) & g_mmdvfs_non_force_adaptor->disable_auto_control_mask))) {
+	mmdvfs_fine_step_non_force = mmdvfs_determine_fine_step(g_mmdvfs_non_force_adaptor,
+		scen, g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.camera_mode, g_mmdvfs_cmd.sensor_fps,
+		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1]);
+	mmdvfs_set_fine_step_non_force(scen, mmdvfs_fine_step_non_force);
 	}
 
 	/* Boost for ISP related scenario */
@@ -624,7 +682,7 @@ void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
 /* To be implemented */
 void mmdvfs_mhl_enable(int enable)
 {
-	int mmdvfs_fine_step = mmdvfs_determine_fine_step(MMDVFS_SCEN_MHL, 0, 0, 0,	0, 0);
+	int mmdvfs_fine_step = mmdvfs_determine_fine_step_default(MMDVFS_SCEN_MHL, 0, 0, 0,	0, 0);
 
 	g_mmdvfs_mgr->is_mhl_enable = enable;
 
