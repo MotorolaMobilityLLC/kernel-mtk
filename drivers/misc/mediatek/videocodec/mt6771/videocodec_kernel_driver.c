@@ -65,11 +65,18 @@
 #include "drv_api.h"
 #include "smi_public.h"
 #ifdef CONFIG_MTK_QOS_SUPPORT
+/* #define QOS_DEBUG  pr_debug */
+#define QOS_DEBUG(...)
 #define VCODEC_DVFS_V2
+#else
+#define QOS_DEBUG(...)
 #endif
 #ifdef VCODEC_DVFS_V2
 #include <linux/slab.h>
 #include "dvfs_v2.h"
+#define DVFS_DEBUG pr_debug
+#else
+#define DVFS_DEBUG(...)
 #endif
 
 #include <linux/of.h>
@@ -546,7 +553,7 @@ void vdec_power_on(void)
 #ifdef CONFIG_MTK_QOS_SUPPORT
 #ifndef VCODEC_DVFS_V2
 	mutex_lock(&DecPMQoSLock);
-	pr_debug("[PMQoS] vdec_power_on set to (0,1) %d, freq = %llu", gVDECLevel, g_dec_freq_steps[gVDECLevel]);
+	QOS_DEBUG("[PMQoS] vdec_power_on set to (0,1) %d, freq = %llu", gVDECLevel, g_dec_freq_steps[gVDECLevel]);
 	pm_qos_update_request(&vcodec_qos_request_f, g_dec_freq_steps[gVDECLevel]);
 	mutex_unlock(&DecPMQoSLock);
 #endif
@@ -624,7 +631,7 @@ void vdec_power_off(void)
 	mutex_unlock(&VdecPWRLock);
 	mutex_lock(&DecPMQoSLock);
 #ifdef CONFIG_MTK_QOS_SUPPORT
-	pr_debug("[PMQoS] vdec_power_off reset to 0");
+	QOS_DEBUG("[PMQoS] vdec_power_off reset to 0");
 	pm_qos_update_request(&vcodec_qos_request, 0);
 	gVDECBWRequested = 0;
 #endif
@@ -689,7 +696,7 @@ void venc_power_off(void)
 	mutex_unlock(&VencPWRLock);
 	mutex_lock(&EncPMQoSLock);
 #ifdef CONFIG_MTK_QOS_SUPPORT
-	pr_debug("[PMQoS] venc_power_off reset to 0");
+	QOS_DEBUG("[PMQoS] venc_power_off reset to 0");
 	pm_qos_update_request(&vcodec_qos_request2, 0);
 	gVENCBWRequested = 0;
 #endif
@@ -1063,7 +1070,7 @@ static long vcodec_lockhw(unsigned long arg)
 #ifdef VCODEC_DVFS_V2
 		mutex_lock(&VdecDVFSLock);
 		cur_job = add_job((void *)pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle), &dec_jobs);
-		pr_info("cur_job's handle %p", cur_job->handle);
+		DVFS_DEBUG("cur_job's handle %p", cur_job->handle);
 		mutex_unlock(&VdecDVFSLock);
 #endif
 
@@ -1163,7 +1170,7 @@ static long vcodec_lockhw(unsigned long arg)
 							target_freq_64);
 					}
 				}
-				pr_info("cur_job freq %llu", target_freq_64);
+				DVFS_DEBUG("cur_job freq %llu", target_freq_64);
 				mutex_unlock(&VdecDVFSLock);
 #endif
 #ifdef CONFIG_PM
@@ -1646,39 +1653,39 @@ static long vcodec_set_frame_info(unsigned long arg)
 			case VAL_DRIVER_TYPE_H264_DEC:
 				emi_bw = emi_bw * gVDECFrmTRAVC[frame_type] /
 					(2 * 3 * gVDECFreq[b_freq_idx]);
-				pr_debug("[PMQoS Kernel] AVC frame_type %d, ratio %d, VDec freq %d emi_bw %ld",
+				QOS_DEBUG("[PMQoS Kernel] AVC frame_type %d, ratio %d, VDec freq %d emi_bw %ld",
 				frame_type, gVDECFrmTRAVC[frame_type], gVDECFreq[gVDECLevel], emi_bw);
 				break;
 			case VAL_DRIVER_TYPE_HEVC_DEC:
 				emi_bw = emi_bw * gVDECFrmTRHEVC[frame_type] /
 					(2 * 3 * gVDECFreq[b_freq_idx]);
-				pr_debug("[PMQoS Kernel] HEVC frame_type %d, ratio %d, VDec freq %d emi_bw %ld",
+				QOS_DEBUG("[PMQoS Kernel] HEVC frame_type %d, ratio %d, VDec freq %d emi_bw %ld",
 				frame_type, gVDECFrmTRHEVC[frame_type], gVDECFreq[gVDECLevel], emi_bw);
 				break;
 			case VAL_DRIVER_TYPE_MP4_DEC:
 			case VAL_DRIVER_TYPE_MP1_MP2_DEC:
 				emi_bw = emi_bw * gVDECFrmTRMP2_4[frame_type] /
 					(2 * 3 * gVDECFreq[b_freq_idx]);
-				pr_debug("[PMQoS Kernel] MP2_4 frame_type %d, ratio %d, VDec freq %d emi_bw %ld",
+				QOS_DEBUG("[PMQoS Kernel] MP2_4 frame_type %d, ratio %d, VDec freq %d emi_bw %ld",
 				frame_type, gVDECFrmTRMP2_4[frame_type], gVDECFreq[gVDECLevel], emi_bw);
 				break;
 			default:
-				pr_info("[PMQoS Kernel] Unsupported decoder type");
+				QOS_DEBUG("[PMQoS Kernel] Unsupported decoder type");
 			}
 
 			if (rFrameInfo.is_compressed != 0)
 				emi_bw = emi_bw * 6 / 10;
-			pr_debug("[PMQoS Kernel] UFO %d, emi_bw %ld", rFrameInfo.is_compressed, emi_bw);
+			QOS_DEBUG("[PMQoS Kernel] UFO %d, emi_bw %ld", rFrameInfo.is_compressed, emi_bw);
 
 			/* input size */
 			emi_bw += 8 * rFrameInfo.input_size * 100 * 1920 * 1088
 				/ (rFrameInfo.frame_width * rFrameInfo.frame_height);
 
-			pr_debug("[PMQoS Kernel] input_size %d, width %d, height %d emi_bw %ld",
+			QOS_DEBUG("[PMQoS Kernel] input_size %d, width %d, height %d emi_bw %ld",
 				rFrameInfo.input_size, rFrameInfo.frame_width, rFrameInfo.frame_height, emi_bw);
 
 			emi_bw = emi_bw / (1024*1024) / 8; /* bits/s to mbytes/s */
-			pr_debug("[PMQoS Kernel] mbytes/s emi_bw %ld", emi_bw);
+			QOS_DEBUG("[PMQoS Kernel] mbytes/s emi_bw %ld", emi_bw);
 #ifdef CONFIG_MTK_QOS_SUPPORT
 			pm_qos_update_request(&vcodec_qos_request, (int)emi_bw);
 #endif
@@ -1709,13 +1716,13 @@ static long vcodec_set_frame_info(unsigned long arg)
 			break;
 			}
 		}
-		pr_debug("[PMQoS Kernel] VENC mbytes/s emi_bw %ld", emi_bw);
+		QOS_DEBUG("[PMQoS Kernel] VENC mbytes/s emi_bw %ld", emi_bw);
 #ifdef CONFIG_MTK_QOS_SUPPORT
 		pm_qos_update_request(&vcodec_qos_request2, (int)emi_bw);
 #endif
 		gVENCBWRequested = 1;
 #ifdef VCODEC_DVFS_V2
-		pr_debug("[PMQoS] venc_frame_info set to (0,1) %d", (emi_bw >= 590));
+		QOS_DEBUG("[PMQoS] venc_frame_info set to (0,1) %d", (emi_bw >= 590));
 		pm_qos_update_request(&vcodec_qos_request_f2,
 			(emi_bw >= 590) ? g_enc_freq_steps[0]:g_enc_freq_steps[1]);
 #endif
@@ -3003,6 +3010,7 @@ static int vcodec_probe(struct platform_device *dev)
 	pm_qos_add_request(&vcodec_qos_request_f, PM_QOS_VDEC_FREQ, PM_QOS_DEFAULT_VALUE);
 	pm_qos_add_request(&vcodec_qos_request_f2, PM_QOS_VENC_FREQ, PM_QOS_DEFAULT_VALUE);
 #endif
+
 	dec_step_size = 1;
 	enc_step_size = 1;
 	ret = mmdvfs_qos_get_freq_steps(PM_QOS_VDEC_FREQ, &g_dec_freq_steps[0], &dec_step_size);
@@ -3012,7 +3020,6 @@ static int vcodec_probe(struct platform_device *dev)
 	ret = mmdvfs_qos_get_freq_steps(PM_QOS_VENC_FREQ, &g_enc_freq_steps[0], &enc_step_size);
 	if (ret < 0)
 		pr_debug("Video encoder  get MMDVFS freq steps failed, result: %d\n", ret);
-
 	return 0;
 }
 
