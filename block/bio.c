@@ -594,9 +594,10 @@ void __bio_clone_fast(struct bio *bio, struct bio *bio_src)
 #if defined(CONFIG_MTK_HW_FDE)
 	/*
 	 * MTK PATCH:
-	 * Also clone bi_hw_fde for HW FDE feature.
+	 * Also clone all hw fde related members.
 	 */
 	bio->bi_hw_fde = bio_src->bi_hw_fde;
+	bio->bi_key_idx = bio_src->bi_key_idx;
 #endif
 
 	bio_clone_blkcg_association(bio, bio_src);
@@ -1337,7 +1338,7 @@ struct bio *bio_map_user_iov(struct request_queue *q,
 
 			if (len <= 0)
 				break;
-			
+
 			if (bytes > len)
 				bytes = len;
 
