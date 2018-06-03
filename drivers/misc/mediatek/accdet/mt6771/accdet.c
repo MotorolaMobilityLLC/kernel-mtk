@@ -356,6 +356,7 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	unsigned int efusevalue = 0;
 #ifdef CONFIG_FOUR_KEY_HEADSET
 	unsigned int tmp_val = 0;
+	unsigned int tmp_8bit = 0
 #endif
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
 	unsigned int moisture_eint0;
@@ -364,16 +365,25 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 
 #ifdef CONFIG_FOUR_KEY_HEADSET/* 4-key, 2.7V, internal bias for mt6337*/
 	if (s_4_key_efuse_flag) {
-		/* AD efuse: efuse bit 1776--1783 map to bit0-bit7, 1776/16=111, key-A Voltage:0--AD;
+		/* 4-key efuse:
+		 * bit[9:2] efuse value is loaded, so every read out value need to be shift 2 bit,
+		 * and then compare with voltage get from AUXADC.
+		 * AD efuse: efuse bit 1776--1783 map to bit0-bit7, 1776/16=111, key-A Voltage:0--AD;
 		 * DB efuse: efuse bit 1774--1791 map to bit8-bit15, (1774-8)/16=111, key-D Voltage: AD--DB;
 		 * BC efuse: efuse bit 1792--1799 map to bit0-bit7, (1792)/16=112, key-B Voltage:DB--BC;
 		 * key-C Voltage: BC--600;
 		 */
 		tmp_val = pmic_Read_Efuse_HPOffset(111);
-		headset_dts_data.four_key.mid_key_four = tmp_val & ACCDET_CALI_MASK0;/* AD */
-		headset_dts_data.four_key.voice_key_four = (tmp_val >> 8) & ACCDET_CALI_MASK0;/* DB */
+		tmp_8bit = tmp_val & ACCDET_CALI_MASK0;
+		headset_dts_data.four_key.mid_key_four = tmp_8bit << 2;/* AD */
+
+		tmp_8bit = (tmp_val >> 8) & ACCDET_CALI_MASK0;
+		headset_dts_data.four_key.voice_key_four = tmp_8bit << 2;/* DB */
+
 		tmp_val = pmic_Read_Efuse_HPOffset(112);
-		headset_dts_data.four_key.up_key_four = tmp_val & ACCDET_CALI_MASK0;/* BC */
+		tmp_8bit = tmp_val & ACCDET_CALI_MASK0;
+		headset_dts_data.four_key.up_key_four = tmp_8bit << 2;/* BC */
+
 		headset_dts_data.four_key.down_key_four = 600;
 		ACCDET_INFO("[accdet]key thresh: mid=%d mv,voice=%d mv,up=%d mv,down=%d mv\n",
 			headset_dts_data.four_key.mid_key_four, headset_dts_data.four_key.voice_key_four,
