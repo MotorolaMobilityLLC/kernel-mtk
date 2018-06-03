@@ -905,8 +905,6 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	int step = MMDVFS_FINE_STEP_UNREQUEST;
 
-	mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, scenario, req);
-
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
 		case HRT_LEVEL_UHPM:
@@ -927,6 +925,9 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 		default:
 			break;
 		}
+		/*scenario:MMDVFS_SCEN_DISP(0x17),SMI_BWC_SCEN_UI_IDLE(0xb)*/
+		mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE,
+			scenario, (req << 16) | (step & 0xFFFF));
 		mmdvfs_set_fine_step(scenario, step);
 		atomic_set(&dvfs_ovl_req_status, req);
 	}

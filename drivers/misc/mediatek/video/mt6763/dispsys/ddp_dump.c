@@ -745,7 +745,7 @@ static void mmsys_config_dump_analysis(void)
 		if ((reg & (1 << i)) == 0) {
 			name = ddp_clock_0(i);
 			if (name)
-				strncat(clock_on, name, sizeof(clock_on));
+				strncat(clock_on, name, (sizeof(clock_on) - strlen(clock_on)));
 		}
 	}
 
@@ -754,7 +754,7 @@ static void mmsys_config_dump_analysis(void)
 		if ((reg & (1 << i)) == 0) {
 			name = ddp_clock_1(i);
 			if (name)
-				strncat(clock_on, name, sizeof(clock_on));
+				strncat(clock_on, name, (sizeof(clock_on) - strlen(clock_on)));
 		}
 	}
 	DDPDUMP("clock on modules:%s\n", clock_on);
@@ -824,7 +824,7 @@ static void mmsys_config_dump_analysis(void)
 			name = ddp_greq_name(i);
 			if (!name)
 				continue;
-			strncat(clock_on, name, sizeof(clock_on));
+			strncat(clock_on, name, (sizeof(clock_on) - strlen(clock_on)));
 		}
 	}
 	DDPDUMP("%s\n", clock_on);
