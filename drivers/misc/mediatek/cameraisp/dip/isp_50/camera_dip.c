@@ -3004,6 +3004,7 @@ static signed int DIP_open(
 
 	LOG_DBG("- E. UserCount: %d.\n", IspInfo.UserCount);
 
+	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
 
 	/*  */
 	spin_lock(&(IspInfo.SpinLockIspRef));
@@ -3083,7 +3084,7 @@ static signed int DIP_open(
 	spin_unlock((spinlock_t *)(&SpinLockRegScen));
 	/*  */
 
-	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
+	/* mutex_lock(&gDipMutex); */  /* Protect the Multi Process */
 	g_bIonBufferAllocated = MFALSE;
 
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
@@ -3144,7 +3145,7 @@ static signed int DIP_open(
 	g_CmdqBaseAddrInfo.MemVa = NULL;
 	g_CmdqBaseAddrInfo.MemSizeDiff = 0x0;
 
-	mutex_unlock(&gDipMutex);
+	/* mutex_unlock(&gDipMutex); */
 	/*  */
 	for (i = 0; i < DIP_IRQ_TYPE_AMOUNT; i++) {
 		for (q = 0; q < IRQ_USER_NUM_MAX; q++)
@@ -3170,7 +3171,7 @@ static signed int DIP_open(
 #endif
 	/*  */
 EXIT:
-
+	mutex_unlock(&gDipMutex);
 
 	LOG_INF("- X. Ret: %d. UserCount: %d, G_u4DipEnClkCnt: %d.\n", Ret, IspInfo.UserCount, G_u4DipEnClkCnt);
 	return Ret;
@@ -3199,6 +3200,7 @@ static signed int DIP_release(
 		kfree(pFile->private_data);
 		pFile->private_data = NULL;
 	}
+	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
 	/*      */
 	spin_lock(&(IspInfo.SpinLockIspRef));
 	IspInfo.UserCount--;
@@ -3234,7 +3236,7 @@ static signed int DIP_release(
 		strncpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem", USERKEY_STR_LEN);
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
-	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
+	/* mutex_lock(&gDipMutex); */  /* Protect the Multi Process */
 	if (g_bIonBufferAllocated == MFALSE) {
 		/* Native Exception */
 		if (g_pPhyDIPBuffer != NULL) {
@@ -3290,7 +3292,7 @@ static signed int DIP_release(
 		g_pKWVirDIPBuffer = NULL;
 #endif
 	}
-	mutex_unlock(&gDipMutex);
+	/* mutex_unlock(&gDipMutex); */
 
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
 	if (dip_p2_ion_client != NULL) {
@@ -3314,7 +3316,7 @@ static signed int DIP_release(
 #endif
 	LOG_DBG("dip release G_u4DipEnClkCnt: %d", G_u4DipEnClkCnt);
 EXIT:
-
+	mutex_unlock(&gDipMutex);
 	LOG_INF("- X. UserCount: %d. G_u4DipEnClkCnt: %d", IspInfo.UserCount, G_u4DipEnClkCnt);
 	return 0;
 }
