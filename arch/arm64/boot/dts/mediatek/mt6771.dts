@@ -1679,6 +1679,16 @@
 		interrupt-names = "xhci";
 	};
 
+	btcvsd@10001000 {
+		compatible = "mediatek,audio_bt_cvsd";
+		offset =<0xf00 0x800 0xfd0 0xfd4 0xfd8>;
+		/*INFRA MISC, conn_bt_cvsd_mask, cvsd_mcu_read, write, packet_indicator*/
+		reg=<0 0x10001000 0 0x1000>, /*INFRACFG_AO BASE ADDRESS*/
+		    <0 0x18000000 0 0x1000>, /*PKV_PHYSICAL_BASE*/
+		    <0 0x18080000 0 0x10000>; /*SRAM_BANK2*/
+		interrupts = <GIC_SPI 288 IRQ_TYPE_LEVEL_LOW>;
+	};
+
 	audio: audio@11220000 {
 		compatible = "mediatek,audio", "syscon";
 		reg = <0 0x11220000 0 0x1000>;
@@ -3489,6 +3499,13 @@
 		 compatible = "mediatek,usb3_phy";
 		 clocks = <&infracfg_ao INFRACFG_AO_USB_CG>;
 		 clock-names = "ssusb_clk";
+	};
+
+	mt_soc_btcvsd_rx_pcm {
+		compatible = "mediatek,mt_soc_btcvsd_rx_pcm";
+	};
+	mt_soc_btcvsd_tx_pcm {
+		compatible = "mediatek,mt_soc_btcvsd_tx_pcm";
 	};
 
 	mt_soc_deep_buffer_dl_pcm {
