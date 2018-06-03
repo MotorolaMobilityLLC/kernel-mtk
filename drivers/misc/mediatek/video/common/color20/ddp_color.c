@@ -1795,6 +1795,16 @@ static void ddp_color_cal_split_window(enum DISP_MODULE_ENUM module, unsigned in
 							(g_color0_dst_h - g_split_window_y_end);
 		COLOR_DBG("ddp_color_cal_split_window(), LCM_PHYSICAL_ROTATION_180\n");
 #else
+		split_window_y = (g_split_window_y_end << 16) | g_split_window_y_start;
+#ifdef LCM_PHYSICAL_ROTATION_270
+#if defined(CONFIG_MACH_MT6799)
+#else
+		split_window_x = ((g_split_window_y_end) << 16) | g_split_window_y_start;
+		split_window_y = ((g_color0_dst_h - g_split_window_x_start) << 16) |
+			(g_color0_dst_h - g_split_window_x_end);
+		COLOR_DBG("ddp_color_set_window(), LCM_PHYSICAL_ROTATION_270\n");
+#endif /* #if defined(CONFIG_MACH_MT6799) */
+#else
 #if defined(CONFIG_MACH_MT6799)
 		if (pipeStatus == SINGLE_PIPE) {
 			split_window_x = (g_split_window_x_end << 16) | g_split_window_x_start;
@@ -1809,7 +1819,7 @@ static void ddp_color_cal_split_window(enum DISP_MODULE_ENUM module, unsigned in
 #else
 		split_window_x = (g_split_window_x_end << 16) | g_split_window_x_start;
 #endif /* #if defined(CONFIG_MACH_MT6799) */
-		split_window_y = (g_split_window_y_end << 16) | g_split_window_y_start;
+#endif /* #ifdef LCM_PHYSICAL_ROTATION_270 */
 #endif /* #ifdef LCM_PHYSICAL_ROTATION_180 */
 	}
 
