@@ -14,12 +14,13 @@
 #ifndef __MT_EMI_H__
 #define __MT_EMI_H__
 
-/* submoduce control */
+/* submodule control */
 #define ENABLE_BWL	1
 #define ENABLE_MPU	1
 #define ENABLE_ELM	0
 #define ENABLE_MBW	0
 #define DECS_ON_SSPM
+/* #define ENABLE_MPU_SLVERR */
 
 /* IRQ from device tree */
 #define MPU_IRQ_INDEX	0
@@ -44,6 +45,9 @@
 #define EMI_MPU_APC0		(0x300)
 #define EMI_MPU_APC(region, dgroup) \
 	(EMI_MPU_APC0 + (region*4) + ((dgroup)*0x100))
+
+#define EMI_MPU_CTRL_D0		(0x800)
+#define EMI_MPU_CTRL_D(domain)	(EMI_MPU_CTRL_D0 + (domain*4))
 
 /* macro for ELM */
 #define EMI_CONM	(CEN_EMI_BASE + 0x060)
