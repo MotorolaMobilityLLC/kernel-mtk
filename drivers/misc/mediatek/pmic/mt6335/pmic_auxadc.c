@@ -78,7 +78,7 @@ struct pmic_auxadc_channel mt6335_auxadc_channel[] = {
 
 int mt6335_get_auxadc_value(u8 channel)
 {
-	int count = 0;
+	int count = 0, tdet_tmp = 0;
 	signed int adc_result = 0, reg_val = 0;
 	struct pmic_auxadc_channel *auxadc_channel;
 
@@ -96,6 +96,13 @@ int mt6335_get_auxadc_value(u8 channel)
 		pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 1);
 	if (channel == AUXADC_LIST_MT6335_CHIP_TEMP)
 		pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 0);
+	if (channel == AUXADC_LIST_VBIF) {
+		if (pmic_get_register_value(PMIC_BATON_TDET_EN)) {
+			tdet_tmp = 1;
+			pr_err("pmic auxadc baton_tdet_en should be zero\n");
+			pmic_set_register_value(PMIC_BATON_TDET_EN, 0);
+		}
+	}
 
 	pmic_set_register_value(auxadc_channel->channel_rqst, 1);
 	udelay(10);
@@ -108,6 +115,14 @@ int mt6335_get_auxadc_value(u8 channel)
 		}
 	}
 	reg_val = pmic_get_register_value(auxadc_channel->channel_out);
+
+	if (channel == AUXADC_LIST_VBIF) {
+		if (tdet_tmp) {
+			tdet_tmp = 0;
+			pr_err("pmic auxadc baton_tdet_en restore back\n");
+			pmic_set_register_value(PMIC_BATON_TDET_EN, 1);
+		}
+	}
 
 	mt6335_auxadc_unlock();
 
