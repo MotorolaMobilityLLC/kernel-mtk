@@ -52,6 +52,8 @@
 #include <sspm_timesync.h>
 #endif
 
+#include <mtk_power_gs_api.h>
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -446,7 +448,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 #endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
 
 	if (--mt_power_gs_dump_suspend_count >= 0)
-		mt_power_gs_dump_suspend();
+		mt_power_gs_dump_suspend(GS_PMIC);
 }
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
