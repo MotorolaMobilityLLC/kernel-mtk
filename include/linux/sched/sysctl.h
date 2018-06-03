@@ -37,6 +37,7 @@ extern int sysctl_max_map_count;
 
 extern unsigned int sysctl_sched_latency;
 extern unsigned int sysctl_sched_min_granularity;
+extern unsigned int sysctl_sched_sync_hint_enable;
 extern unsigned int sysctl_sched_wakeup_granularity;
 extern unsigned int sysctl_sched_child_runs_first;
 #ifdef CONFIG_SCHED_WALT
