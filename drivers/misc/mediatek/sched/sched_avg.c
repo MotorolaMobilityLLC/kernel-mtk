@@ -21,9 +21,8 @@
 #include <trace/events/sched.h>
 #include "rq_stats.h"
 
-#define MET_DEBUG_LOG 0
 
-#if MET_DEBUG_LOG
+#if MET_SCHED_DEBUG
 #include <mt-plat/met_drv.h>
 #endif
 
@@ -140,7 +139,7 @@ void sched_max_util_task_tracking(void)
 	gb_task_pid = max_task_pid;
 	gb_task_cpu = max_cpu;
 
-#if MET_DEBUG_LOG
+#if MET_SCHED_DEBUG
 	met_tag_oneshot(0, "sched_max_task_util", max_util);
 	met_tag_oneshot(0, "sched_boost_task_util", boost_util);
 #endif
@@ -631,7 +630,7 @@ void sched_big_task_nr(int *L_nr, int *B_nr)
 			*B_nr = 1;
 	}
 
-#if MET_DEBUG_LOG
+#if MET_SCHED_DEBUG
 	met_tag_oneshot(0, "sched_task_b_nr", b_nr);
 	met_tag_oneshot(0, "sched_task_l_nr", l_nr);
 #endif
