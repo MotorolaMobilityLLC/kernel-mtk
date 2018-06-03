@@ -3331,11 +3331,8 @@
 		pwm_data_invert = <0>;
 	};
 
-	rt-pd-manager {
-		compatible = "mediatek,rt-pd-manager";
-	};
 };
 
 #include "mt6356.dtsi"
-#include "rt5081.dtsi"
+
 #include "cust_mt6763_msdc.dtsi"

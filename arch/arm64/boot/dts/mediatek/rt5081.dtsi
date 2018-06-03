@@ -142,7 +142,7 @@
 				regulator-max-microvolt = <6000000>; /* max == min then apply_uV = 1 */
 				/* regulator-microvolt-offset = < 0>; optional*/
 				/* regulator-boot-on = "yes"; optional, exist = enabled */
-				/* regulator-always-on = "yes"; optional, exist = enabled */
+				regulator-always-on = "yes"; /* optional, exist = enabled */
 				/* regulator-ramp-delay = <100>; optional*/
 			};
 			rt5081_dsvn {
@@ -151,7 +151,7 @@
 				regulator-max-microvolt = <6000000>; /* max == min then apply_uV = 1 */
 				/* regulator-microvolt-offset = < 0>; optional*/
 				/* regulator-boot-on = "yes"; optional, exist = enabled */
-				/* regulator-always-on = "yes"; optional, exist = enabled */
+				regulator-always-on = "yes"; /* optional, exist = enabled */
 				/* regulator-ramp-delay = <100>; optional*/
 			};
 		};
