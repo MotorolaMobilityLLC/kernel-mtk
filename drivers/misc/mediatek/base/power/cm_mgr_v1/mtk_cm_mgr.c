@@ -267,7 +267,7 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		for_each_online_cpu(cpu) {
 			int tmp;
 
-			if (cpu > CM_MGR_CPU_COUNT)
+			if (cpu >= CM_MGR_CPU_COUNT)
 				break;
 
 			tmp = mt_cpufreq_get_cur_phy_freq_no_lock(cpu / 4) / 100000;
@@ -341,7 +341,7 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		for_each_possible_cpu(i) {
 			int avg_load;
 
-			if (cpu > CM_MGR_CPU_COUNT)
+			if (i >= CM_MGR_CPU_COUNT)
 				break;
 
 			if (unlikely(loading_cnt == 0))
