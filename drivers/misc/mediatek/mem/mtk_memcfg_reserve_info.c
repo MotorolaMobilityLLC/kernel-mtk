@@ -51,6 +51,22 @@ static unsigned long long get_memtotal(void)
 struct freed_reserved_memory freed_reserved_memory[MAX_FREE_RESERVED];
 int freed_reserved_memory_count;
 
+void mtk_memcfg_record_freed_reserved(phys_addr_t start, phys_addr_t end)
+{
+	pr_info("free_reserved_memory: 0x%lx ~ 0x%lx\n", (unsigned long)start,
+			(unsigned long)end);
+	if (freed_reserved_memory_count < MAX_FREE_RESERVED) {
+		freed_reserved_memory[freed_reserved_memory_count].start
+			= start;
+		freed_reserved_memory[freed_reserved_memory_count].end
+			= end;
+		freed_reserved_memory_count++;
+	} else {
+		pr_info("freed_reserved_memory_count over limit %d\n",
+				MAX_FREE_RESERVED);
+	}
+}
+
 int reserved_mem_ext_compare(const void *p1, const void *p2)
 {
 	if (((struct reserved_mem_ext *)p1)->base >
