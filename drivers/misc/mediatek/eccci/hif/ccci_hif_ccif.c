@@ -335,11 +335,12 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 		i += 4;
 	}
 
-	if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1)
+	if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
+		md_ctrl->wakeup_count++;
 		CCCI_NOTICE_LOG(md_ctrl->md_id, TAG,
-			"CCIF_MD wakeup source:(SRX_IDX/%d)\n",
-			ccci_h->channel);
-
+			"CCIF_MD wakeup source:(SRX_IDX/%d)(%u)\n",
+			ccci_h->channel, md_ctrl->wakeup_count);
+	}
 	ccci_hdr = *ccci_h;
 	ccci_md_check_rx_seq_num(md_ctrl->md_id,
 		&md_ctrl->traffic_info, &ccci_hdr, 0);
@@ -606,12 +607,13 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 				c2k_mem_dump(data_ptr, pkg_size);
 			}
 		}
-		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1)
+		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
+			md_ctrl->wakeup_count++;
 			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG,
-				"CCIF_MD wakeup source:(%d/%d/%x)\n",
+				"CCIF_MD wakeup source:(%d/%d/%x)(%u)\n",
 				queue->index, ccci_h->channel,
-				ccci_h->reserved);
-
+				ccci_h->reserved, md_ctrl->wakeup_count);
+		}
 		if (ccci_h->channel == CCCI_C2K_LB_DL)
 			atomic_set(&lb_dl_q, queue->index);
 
@@ -959,9 +961,12 @@ static void md_ccif_launch_work(struct md_ccif_ctrl *md_ctrl)
 	if (md_ctrl->channel_id & (1 << AP_MD_CCB_WAKEUP)) {
 		clear_bit(AP_MD_CCB_WAKEUP, &md_ctrl->channel_id);
 		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "CCB wakeup\n");
-		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1)
+		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
+			md_ctrl->wakeup_count++;
 			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG,
-			"CCIF_MD wakeup source:(CCB)\n");
+			"CCIF_MD wakeup source:(CCB)(%u)\n",
+			md_ctrl->wakeup_count);
+		}
 		ccci_port_queue_status_notify(md_ctrl->md_id, CCIF_HIF_ID,
 			AP_MD_CCB_WAKEUP, -1, RX_IRQ);
 	}
