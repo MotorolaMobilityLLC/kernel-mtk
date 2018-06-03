@@ -4039,7 +4039,13 @@
 #ifdef CONFIG_MFD_RT5081_PMU
 #include "rt5081.dtsi"
 #endif
-#ifdef CONFIG_TCPC_CLASS
+#ifdef CONFIG_MFD_MT6370_PMU
+#include "mt6370.dtsi"
+#endif
+#ifdef CONFIG_TCPC_MT6370
+#include "mt6370_pd.dtsi"
+#endif
+#ifdef CONFIG_TCPC_RT5081
 #include "tcpc_config.dtsi"
 #endif
 #ifdef CONFIG_CHARGER_RT9465
