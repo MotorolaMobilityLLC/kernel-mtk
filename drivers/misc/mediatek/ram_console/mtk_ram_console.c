@@ -192,6 +192,7 @@ struct last_reboot_reason {
 	unsigned long last_init_func;
 	uint8_t pmic_ext_buck;
 	uint32_t hang_detect_timeout_count;
+	uint32_t gz_irq;
 
 	void *kparams;
 };
@@ -2122,6 +2123,14 @@ void aee_rr_rec_hang_detect_timeout_count(unsigned int val)
 	LAST_RR_SET(hang_detect_timeout_count, val);
 }
 
+unsigned long *aee_rr_rec_gz_irq_pa(void)
+{
+	if (ram_console_buffer_pa)
+		return (unsigned long *)&RR_LINUX_PA->gz_irq;
+	else
+		return NULL;
+}
+
 void aee_rr_rec_suspend_debug_flag(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -2881,6 +2890,11 @@ void aee_rr_show_hang_detect_timeout_count(struct seq_file *m)
 	seq_printf(m, "hang detect time out: 0x%x\n", LAST_RRR_VAL(hang_detect_timeout_count));
 }
 
+void aee_rr_show_gz_irq(struct seq_file *m)
+{
+	seq_printf(m, "GZ IRQ: 0x%x\n", LAST_RRR_VAL(gz_irq));
+}
+
 void aee_rr_show_isr_el1(struct seq_file *m)
 {
 	seq_printf(m, "isr_el1: %d\n", LAST_RRR_VAL(isr_el1));
@@ -3083,6 +3097,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_scp_pc,
 	aee_rr_show_scp_lr,
 	aee_rr_show_hang_detect_timeout_count,
+	aee_rr_show_gz_irq,
 	aee_rr_show_last_init_func,
 	aee_rr_show_pmic_ext_buck,
 	aee_rr_show_hps_status,
