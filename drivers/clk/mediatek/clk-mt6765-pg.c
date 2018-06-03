@@ -2700,10 +2700,9 @@ void subsys_if_on(void)
 	unsigned int sta_s = spm_read(PWR_STATUS_2ND);
 	int ret = 0;
 
-	if ((sta & (1U << 0)) && (sta_s & (1U << 0))) {
+	if ((sta & (1U << 0)) && (sta_s & (1U << 0)))
 		pr_notice("suspend warning: SYS_MD1 is on!!!\n");
-		ret++;
-	}
+
 	if ((sta & (1U << 1)) && (sta_s & (1U << 1))) {
 		pr_notice("suspend warning: SYS_CONN is on!!!\n");
 		ret++;
