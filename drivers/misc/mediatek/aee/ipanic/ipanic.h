@@ -253,6 +253,7 @@ extern void aee_rr_rec_exp_type(unsigned int type);
 extern unsigned int aee_rr_curr_exp_type(void);
 extern void aee_rr_rec_scp(void);
 extern void aee_rr_rec_fiq_step(u8 step);
+extern void aee_rr_rec_kaslr_offset(u64 value64);
 #else
 __weak unsigned int aee_rr_curr_exp_type(void)
 {
