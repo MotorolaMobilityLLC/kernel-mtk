@@ -104,6 +104,34 @@ enum mt_eem_cpu_id {
 	NR_MT_EEM_CPU,
 };
 
+/* internal use */
+/* EEM detector is disabled by who */
+enum {
+	BY_PROCFS	= BIT(0),
+	BY_INIT_ERROR	= BIT(1),
+	BY_MON_ERROR	= BIT(2),
+	BY_PROCFS_INIT2 = BIT(3),
+};
+
+enum eem_phase {
+	EEM_PHASE_INIT01,
+	EEM_PHASE_INIT02,
+	EEM_PHASE_MON,
+
+	NR_EEM_PHASE,
+};
+
+enum eem_features {
+	FEA_INIT01	= BIT(EEM_PHASE_INIT01),
+	FEA_INIT02	= BIT(EEM_PHASE_INIT02),
+	FEA_MON		= BIT(EEM_PHASE_MON),
+};
+enum {
+	EEM_VOLT_NONE	= 0,
+	EEM_VOLT_UPDATE  = BIT(0),
+	EEM_VOLT_RESTORE = BIT(1),
+};
+
 /*
  *enum mt_cpu_dvfs_id {
  *	MT_CPU_DVFS_LL,
