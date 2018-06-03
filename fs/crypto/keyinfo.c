@@ -312,7 +312,6 @@ got_key:
 		res = crypto_skcipher_setkey(ctfm, raw_key, keysize);
 		if (res)
 			goto out;
-		kzfree(raw_key);
 	} else if (!hie_is_ready()) {
 		pr_info("%s: Hardware inline encryption is not available\n",
 		       __func__);
@@ -326,6 +325,7 @@ out:
 	if (res == -ENOKEY)
 		res = 0;
 	put_crypt_info(crypt_info);
+	kzfree(raw_key);
 	return res;
 }
 EXPORT_SYMBOL(fscrypt_get_encryption_info);
