@@ -279,13 +279,18 @@ static int rt5509_calib_start_process(struct rt5509_chip *chip)
 		dev_err(chip->dev, "BCK loss\n");
 		return -EINVAL;
 	}
+	ret = snd_soc_read(chip->codec, RT5509_REG_CALIB_REQ);
+	if (ret < 0)
+		return ret;
+	chip->pilot_freq = ret & 0xffff;
 	return 0;
 }
 
 static int rt5509_calib_end_process(struct rt5509_chip *chip)
 {
 	dev_info(chip->dev, "%s\n", __func__);
-	return 0;
+	return snd_soc_write(chip->codec, RT5509_REG_CALIB_REQ,
+			chip->pilot_freq);
 }
 
 static int rt5509_calib_trigger_read(struct rt5509_calib_classdev *cdev)
@@ -307,13 +312,6 @@ static int rt5509_calib_trigger_read(struct rt5509_calib_classdev *cdev)
 	}
 	cdev->dcr_offset = ret;
 	dev_dbg(chip->dev, "dcr_offset -> %d\n", cdev->dcr_offset);
-	ret = rt5509_calib_chosen_db(chip, RT5509_CALIB_CTRL_N20DB);
-	if (ret < 0) {
-		cdev->n20db = 0xffffffff;
-		goto out_trigger_read;
-	}
-	cdev->n20db = ret;
-	dev_dbg(chip->dev, "n20db -> 0x%08x\n", cdev->n20db);
 	ret = rt5509_calib_chosen_db(chip, RT5509_CALIB_CTRL_N15DB);
 	if (ret < 0) {
 		cdev->n15db = 0xffffffff;
@@ -321,13 +319,6 @@ static int rt5509_calib_trigger_read(struct rt5509_calib_classdev *cdev)
 	}
 	cdev->n15db = ret;
 	dev_dbg(chip->dev, "n15db -> 0x%08x\n", cdev->n15db);
-	ret = rt5509_calib_chosen_db(chip, RT5509_CALIB_CTRL_N10DB);
-	if (ret < 0) {
-		cdev->n10db = 0xffffffff;
-		goto out_trigger_read;
-	}
-	cdev->n10db = ret;
-	dev_dbg(chip->dev, "n10db -> 0x%08x\n", cdev->n10db);
 	ret = rt5509_calib_rwotp(chip, RT5509_CALIB_CTRL_READOTP);
 	if (ret < 0) {
 		cdev->gsense_otp = 0xffffffff;
@@ -402,48 +393,19 @@ static int64_t rt5509_integer_dcr_calculation(int index, uint32_t n_db)
 static int rt5509_calib_trigger_calculation(struct rt5509_calib_classdev *cdev)
 {
 	struct rt5509_chip *chip = dev_get_drvdata(cdev->dev->parent);
-	int64_t dcr_n20i, dcr_n15i, dcr_n10i, dcr_i;
-	int64_t dcr_high, dcr_low;
+	int64_t dcr_n15i, dcr_i;
 	int64_t alpha_rappi, rappi;
 	int64_t rspki;
 	int64_t rspk_mini, rspk_maxi;
 
 	dev_info(chip->dev, "dcr_offset = 0x%08x\n", cdev->dcr_offset);
-	dev_info(chip->dev, "n20db reg = 0x%08x\n", cdev->n20db);
 	dev_info(chip->dev, "n15db reg = 0x%08x\n", cdev->n15db);
-	dev_info(chip->dev, "n10db reg = 0x%08x\n", cdev->n10db);
 	dev_info(chip->dev, "gsense_otp reg = 0x%08x\n", cdev->gsense_otp);
-	dcr_n20i = rt5509_integer_dcr_calculation(RT5509_CALIB_CTRL_N20DB,
-						  cdev->n20db);
-	if (dcr_n20i < 0)
-		return -EINVAL;
 	dcr_n15i = rt5509_integer_dcr_calculation(RT5509_CALIB_CTRL_N15DB,
 						  cdev->n15db);
 	if (dcr_n15i < 0)
 		return -EINVAL;
-	dcr_n10i = rt5509_integer_dcr_calculation(RT5509_CALIB_CTRL_N10DB,
-						  cdev->n10db);
-	if (dcr_n10i < 0)
-		return -EINVAL;
-	dcr_i = div_s64(dcr_n20i + dcr_n15i + dcr_n10i, 3);
-	dev_info(chip->dev, "dcr_n20i -> %llx\n", dcr_n20i);
-	dev_info(chip->dev, "dcr_n15i -> %llx\n", dcr_n15i);
-	dev_info(chip->dev, "dcr_n10i -> %llx\n", dcr_n10i);
-	dev_info(chip->dev, "dcr_i -> %llx\n", dcr_i);
-	dcr_low = dcr_i - div_s64(dcr_i, 10);
-	dcr_high = dcr_i + div_s64(dcr_i, 10);
-	if (dcr_n20i < dcr_low || dcr_n20i > dcr_high) {
-		dev_err(chip->dev, "dcr_n20i over range\n");
-		return -EINVAL;
-	}
-	if (dcr_n15i < dcr_low || dcr_n15i > dcr_high) {
-		dev_err(chip->dev, "dcr_n15i over range\n");
-		return -EINVAL;
-	}
-	if (dcr_n10i < dcr_low || dcr_n10i > dcr_high) {
-		dev_err(chip->dev, "dcr_n10i over range\n");
-		return -EINVAL;
-	}
+	dcr_i = dcr_n15i;
 	alpha_rappi = cdev->alphaspk;
 	rappi = cdev->rapp;
 	rappi <<= 9;
@@ -487,6 +449,9 @@ int rt5509_calib_create(struct rt5509_chip *chip)
 	ret &= 0xff0000;
 	if (ret == 0xc50000)
 		chip->calibrated = 1;
+	ret = snd_soc_read(chip->codec, RT5509_REG_CALIB_DCR);
+	ret &= 0xffffff;
+	pcalib_dev->rspk = ret;
 	/* default rspk min,max,alphspk */
 	pcalib_dev->rspkmin = 10;
 	pcalib_dev->rspkmax = 160;
