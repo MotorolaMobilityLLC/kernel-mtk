@@ -1796,7 +1796,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 			     m4u_module.MVAStart);
 
 			if (!m4u_module.BufAddr || !m4u_module.BufSize) {
-				M4UERR("MTK_M4U_T_DEALLOC_MVA va is 0x%lx, size is 0x%x",
+				M4UDBG("MTK_M4U_T_DEALLOC_MVA va is 0x%lx, size is 0x%x",
 					m4u_module.BufAddr, m4u_module.BufSize);
 				/* return -EINVAL;*/
 			}
@@ -1808,8 +1808,8 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 			 * mva with the aligned value.
 			 */
 			pMvaInfo = m4u_client_find_buf(client, m4u_module.MVAStart, 1);
-			offset = m4u_va_align(&m4u_module.BufAddr, &m4u_module.BufSize);
-			m4u_module.MVAStart -= offset;
+			offset = m4u_va_align((unsigned long *)&m4u_module.MVAStart, &m4u_module.BufSize);
+			/* m4u_module.MVAStart -= offset; */
 
 			if (m4u_module.MVAStart != 0) {
 				m4u_dealloc_mva(m4u_module.port,
