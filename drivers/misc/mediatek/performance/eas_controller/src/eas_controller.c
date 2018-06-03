@@ -84,8 +84,9 @@ static inline void reduce_stall_wrapper(int boost_value) { }
 int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 {
 	int final_boost_value = 0, final_boost_value_1 = 0, final_boost_value_2 = -101;
+	int first_prio_boost_value = 0;
 	int boost_1[EAS_MAX_KIR], boost_2[EAS_MAX_KIR];
-	int has_set = 0;
+	int has_set = 0, first_prio_set = 0;
 	int i;
 
 	mutex_lock(&boost_eas);
@@ -99,19 +100,26 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	boost_value[cgroup_idx][kicker] = value;
 
 	for (i = 0; i < EAS_MAX_KIR; i++) {
+		if (boost_value[cgroup_idx][i] == 0)
+			continue;
+
+		if (boost_value[cgroup_idx][i] == 1100 ||
+			boost_value[cgroup_idx][i] == 100) { /* first priority */
+			first_prio_boost_value =
+				MAX(boost_value[cgroup_idx][i], first_prio_boost_value);
+			first_prio_set = 1;
+		}
+
 		boost_1[i] = boost_value[cgroup_idx][i] / 1000;
 		boost_2[i] = boost_value[cgroup_idx][i] % 1000;
+		final_boost_value_1 = MAX(boost_1[i], final_boost_value_1);
+		final_boost_value_2 = MAX(boost_2[i], final_boost_value_2);
+		has_set = 1;
 	}
 
-	for (i = 0; i < EAS_MAX_KIR; i++) {
-		if (boost_value[cgroup_idx][i] != 0) {
-			final_boost_value_1 = MAX(boost_1[i], final_boost_value_1);
-			final_boost_value_2 = MAX(boost_2[i], final_boost_value_2);
-			has_set = 1;
-		}
-	}
-
-	if (has_set)
+	if (first_prio_set)
+		final_boost_value = first_prio_boost_value;
+	else if (has_set)
 		final_boost_value = final_boost_value_1 * 1000 + final_boost_value_2;
 	else
 		final_boost_value = 0;
@@ -450,6 +458,56 @@ static const struct file_operations perfmgr_perfserv_ta_boost_fops = {
 };
 
 /*************************************************************************************/
+static ssize_t perfmgr_boot_boost_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *pos)
+{
+	int cgroup, data;
+	char buf[128];
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+
+	if (sscanf(buf, "%d %d", &cgroup, &data) != 2)
+		return -1;
+
+	if (data > 4000)
+		data = 4000;
+	else if (data < -100)
+		data = -100;
+
+	update_eas_boost_value(EAS_KIR_BOOT, cgroup, data);
+
+	return cnt;
+}
+
+static int perfmgr_boot_boost_show(struct seq_file *m, void *v)
+{
+	int i;
+
+	for (i = 0; i < NR_CGROUP; i++)
+		seq_printf(m, "%d\n", boost_value[i][EAS_KIR_BOOT]);
+
+	return 0;
+}
+
+static int perfmgr_boot_boost_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, perfmgr_boot_boost_show, inode->i_private);
+}
+
+static const struct file_operations perfmgr_boot_boost_fops = {
+	.open = perfmgr_boot_boost_open,
+	.write = perfmgr_boot_boost_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+/*************************************************************************************/
 static int perfmgr_current_ta_boost_show(struct seq_file *m, void *v)
 {
 #ifdef CONFIG_SCHED_TUNE
@@ -682,6 +740,8 @@ void perfmgr_eas_boost_init(void)
 	proc_create("perfserv_ta_boost", 0644, boost_dir, &perfmgr_perfserv_ta_boost_fops);
 	proc_create("current_ta_boost", 0644, boost_dir, &perfmgr_current_ta_boost_fops);
 	proc_create("debug_ta_boost", 0644, boost_dir, &perfmgr_debug_ta_boost_fops);
+
+	proc_create("boot_boost", 0644, boost_dir, &perfmgr_boot_boost_fops);
 	/*--ext_launch--*/
 	proc_create("perfserv_ext_launch_mon", 0644, boost_dir, &perfmgr_perfserv_ext_launch_mon_fops);
 
