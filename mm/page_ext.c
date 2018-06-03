@@ -374,8 +374,7 @@ void __init page_ext_init(void)
 		 * page->flags of out of node pages are not initialized.  So we
 		 * scan [start_pfn, the biggest section's pfn < end_pfn) here.
 		 */
-		for (pfn = start_pfn; pfn < end_pfn;
-			pfn = ALIGN(pfn + 1, PAGES_PER_SECTION)) {
+		for (pfn = start_pfn; pfn < end_pfn; pfn++) {
 
 			if (!pfn_valid(pfn))
 				continue;
@@ -389,6 +388,7 @@ void __init page_ext_init(void)
 				continue;
 			if (init_section_page_ext(pfn, nid))
 				goto oom;
+			pfn = ALIGN(pfn, PAGES_PER_SECTION);
 		}
 	}
 	hotplug_memory_notifier(page_ext_callback, 0);
