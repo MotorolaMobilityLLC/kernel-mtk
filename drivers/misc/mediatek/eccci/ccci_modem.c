@@ -28,6 +28,7 @@
 #include "modem_sys.h"
 #include "ccci_hif.h"
 
+#include <mt-plat/mtk_meminfo.h>
 #include <mt-plat/mtk_ccci_common.h>
 #include <mt-plat/mtk_boot_common.h>
 #if defined(ENABLE_32K_CLK_LESS)
@@ -269,6 +270,7 @@ void ccci_md_config(struct ccci_modem *md)
 	phys_addr_t md_resv_mem_addr = 0, md_resv_smem_addr = 0, md1_md3_smem_phy = 0;
 	unsigned int md_resv_mem_size = 0, md_resv_smem_size = 0, md1_md3_smem_size = 0;
 	phys_addr_t base_ap_view_phy;
+	pgprot_t prot;
 	int ret;
 
 	/* setup config */
@@ -291,9 +293,12 @@ void ccci_md_config(struct ccci_modem *md)
 	if (!pfn_valid(__phys_to_pfn(base_ap_view_phy)))
 		md->mem_layout.md_bank0.base_ap_view_vir =
 			ioremap_nocache(md->mem_layout.md_bank0.base_ap_view_phy, MD_IMG_DUMP_SIZE);
-	else
+	else {
+		prot = pgprot_noncached(PAGE_KERNEL);
 		md->mem_layout.md_bank0.base_ap_view_vir =
-			(void __iomem *)phys_to_virt(md->mem_layout.md_bank0.base_ap_view_phy);
+			(void __iomem *)vmap_reserved_mem(md->mem_layout.md_bank0.base_ap_view_phy,
+							MD_IMG_DUMP_SIZE, prot);
+	}
 	/* Share memory */
 	/*
 	 * MD bank4 is remap to nearest 32M aligned address
