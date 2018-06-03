@@ -242,6 +242,7 @@ config UNUSED_SYMBOLS
 config PAGE_OWNER
 	bool "Track page owner"
 	depends on DEBUG_KERNEL && STACKTRACE_SUPPORT
+	depends on !(MTK_ENABLE_AGO && ARM64)
 	select DEBUG_FS
 	select STACKTRACE
 	select PAGE_EXTENSION
@@ -267,6 +268,7 @@ config PAGE_OWNER_DEFAULT_OFF
 config PAGE_OWNER_SLIM
 	bool "slim page owner data structure"
 	depends on PAGE_OWNER
+	depends on !(MTK_ENABLE_AGO && ARM64)
 	help
 	  Page owner track page allocation backtrace in struct page_ext.
 	  This implementation will cost extra memory each page for keeping

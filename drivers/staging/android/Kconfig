@@ -30,6 +30,7 @@ config ANDROID_TIMED_GPIO
 
 config ANDROID_LOW_MEMORY_KILLER
 	bool "Android Low Memory Killer"
+	depends on !MTK_ENABLE_AGO
 	---help---
 	  Registers processes to be killed when low memory conditions, this is useful
 	  as there is no particular swap space on android.
@@ -88,9 +89,34 @@ config SW_SYNC_USER
 config MTK_GMO_RAM_OPTIMIZE
 	bool "MTK ram optimize"
 	default n
+	select MTK_ENABLE_GMO
+	select MTK_ENABLE_AGO
 	help
 	  Provide for phone to use memory efficiently.
 
+config MTK_ENABLE_GMO
+	bool "Enable/Disable GMO related feautre"
+	default n
+	select CC_OPTIMIZE_FOR_SIZE
+	select ZRAM_LZ4K_COMPRESS
+	---help---
+	Enable/Disable GMO related feautre
+	Do not use this options in Kernel directly
+	this is a group kernel setting of GMO
+	must set CONFIG_LOG_BUF_SHIFT=17 manually
+
+config MTK_ENABLE_AGO
+	bool "Enable/Disable A-Go related feautre"
+	default n
+	select SWAP
+	select ZRAM
+	select ZRAM_LZ4_COMPRESS
+	select MEMCG
+	select MEMCG_SWAP
+	---help---
+	Enable/Disable GMO related feautre
+	Do not use this options in Kernel directly
+	this is a group kernel setting of AGO
 
 source "drivers/staging/android/ion/Kconfig"
 
