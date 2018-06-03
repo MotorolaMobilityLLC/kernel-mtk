@@ -106,6 +106,11 @@ env_proc_write(struct file *file, const char __user *buf, size_t size, loff_t *p
 {
 	u8 *buffer = NULL;
 	int ret = 0, i, v_index = 0;
+	if (size > CFG_ENV_DATA_SIZE) {
+		ret = -ERANGE;
+		pr_err("[%s]break for size too large\n", MODULE_NAME);
+		goto fail_malloc;
+	}
 
 	buffer = kzalloc(size+1, GFP_KERNEL);
 	if (!buffer) {
