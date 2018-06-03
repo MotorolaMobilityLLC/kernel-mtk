@@ -155,8 +155,6 @@
 	static unsigned int ITurbo_offset[16];
 	#endif /* ITurbo */
 
-	static int isGPUDCBDETOverflow, is2LDCBDETOverflow;
-	static int isLDCBDETOverflow, isCCIDCBDETOverflow;
 	/* static unsigned int ateVer; */
 	/* for setting pmic pwm mode and auto mode */
 	struct regulator *eem_regulator_proc1;
@@ -371,16 +369,6 @@ static void inherit_base_det_transfer_fops(struct eem_det *det)
 
 static void get_vcore_opp(void)
 {
-#if 0
-	eem_chip_ver = mt_get_chip_sw_ver();
-	/* chip ver = 0 if v1 */
-	if (eem_chip_ver == CHIP_SW_VER_01)
-		vcore_opp = &vcore_opp_1[0];
-	else
-		vcore_opp = &vcore_opp_2[0];
-
-	eem_debug("chip ver=%d\n", eem_chip_ver);
-#else
 	/* default setting */
 	/*
 	 * The opp table selection is depend on DRAM type and
@@ -408,7 +396,8 @@ static void get_vcore_opp(void)
 			__func__, __LINE__, ddr_type, emi_ch_num);
 		WARN_ON(emi_ch_num);
 	}
-#endif
+	eem_debug("@%s():%d, ddr_type = %d, emi_ch_num = %d\n",
+		  __func__, __LINE__, ddr_type, emi_ch_num);
 }
 
 #if !EEM_BANK_SOC
@@ -1151,17 +1140,6 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	#endif
 	/* clear all pending EEM interrupt & config EEMINTEN */
 	eem_write(EEMINTSTS, 0xffffffff);
-
-	#if 0
-	/*fix DCBDET overflow issue */
-	if (((det_to_id(det) == EEM_DET_GPU) && isGPUDCBDETOverflow) ||
-		((det_to_id(det) == EEM_DET_2L) && is2LDCBDETOverflow) ||
-		((det_to_id(det) == EEM_DET_L) && isLDCBDETOverflow) ||
-		((det_to_id(det) == EEM_DET_CCI) && isCCIDCBDETOverflow) ||
-		(ateVer > 5)) {
-		eem_write(EEM_CHKSHIFT, (eem_read(EEM_CHKSHIFT) & ~0x0F) | 0x07); /* 0x07 = DCBDETOFF */
-	}
-	#endif
 
 	eem_error(" %s set phase = %d\n", ((char *)(det->name) + 8), phase);
 	switch (phase) {
@@ -4478,58 +4456,6 @@ unsigned int get_eem_status_for_gpu(void)
 }
 #endif
 
-void eem_efuse_calibration(struct eem_devinfo *devinfo)
-{
-	int temp;
-
-	eem_error("%s\n", __func__);
-
-	if (devinfo->GPU_DCBDET >= 128) {
-		eem_error("GPU_DCBDET = %d which is correct\n", devinfo->GPU_DCBDET);
-	} else {
-		isGPUDCBDETOverflow = 1;
-		temp = devinfo->GPU_DCBDET;
-		eem_error("GPU_DCBDET = 0x%x, (%d), (%d), (%d)\n", devinfo->GPU_DCBDET, temp, temp-256, (temp-256)/2);
-		devinfo->GPU_DCBDET = (unsigned char)((temp - 256) / 2);
-		eem_error("GPU_DCBDET = 0x%x, (%d)\n",
-			devinfo->GPU_DCBDET,
-			devinfo->GPU_DCBDET);
-	}
-
-	if (devinfo->CPU_2L_DCBDET >= 128) {
-		eem_error("CPU_2L_DCBDET = %d which is correct\n", devinfo->CPU_2L_DCBDET);
-	} else {
-		is2LDCBDETOverflow = 1;
-		temp = devinfo->CPU_2L_DCBDET;
-		devinfo->CPU_2L_DCBDET = (unsigned char)((temp - 256) / 2);
-		eem_error("CPU_2L_DCBDET = 0x%x, (%d)\n",
-			devinfo->CPU_2L_DCBDET,
-			devinfo->CPU_2L_DCBDET);
-	}
-
-	if (devinfo->CPU_L_DCBDET >= 128) {
-		eem_error("CPU_L_DCBDET = %d which is correct\n", devinfo->CPU_L_DCBDET);
-	} else {
-		isLDCBDETOverflow = 1;
-		temp = devinfo->CPU_L_DCBDET;
-		devinfo->CPU_L_DCBDET = (unsigned char)((temp - 256) / 2);
-		eem_error("CPU_L_DCBDET = 0x%x, (%d)\n",
-			devinfo->CPU_L_DCBDET,
-			devinfo->CPU_L_DCBDET);
-	}
-
-	if (devinfo->CCI_DCBDET >= 128) {
-		eem_error("CPU_CCI_DCBDET = %d which is correct\n", devinfo->CCI_DCBDET);
-	} else {
-		isCCIDCBDETOverflow = 1;
-		temp = devinfo->CCI_DCBDET;
-		devinfo->CCI_DCBDET = (unsigned char)((temp - 256) / 2);
-		eem_error("CCI_DCBDET = 0x%x, (%d)\n",
-			devinfo->CCI_DCBDET,
-			devinfo->CCI_DCBDET);
-	}
-}
-
 #ifdef __KERNEL__
 #if 0
 static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int depth, void *data)
@@ -4590,16 +4516,6 @@ int __init eem_init(void)
 	eem_debug("[EEM] new_eem_val=%d, ctrl_EEM_Enable=%d\n", new_eem_val, ctrl_EEM_Enable);
 
 	get_devinfo();
-
-	#if 0
-	#ifdef __KERNEL__
-		ateVer = GET_BITS_VAL(7:4, get_devinfo_with_index(61));
-	#else
-		ateVer = GET_BITS_VAL(7:4, eem_read(0x1020698C));
-	#endif
-	if (ateVer <= 5)
-		eem_efuse_calibration(&eem_devinfo);
-	#endif
 
 	#if 0 /* preloader params to control ptp, none use now*/
 	#ifdef __KERNEL__
