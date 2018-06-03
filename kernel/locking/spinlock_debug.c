@@ -160,21 +160,13 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 		return;
 	}
 
-#ifdef CONFIG_PREEMPT_MONITOR
-	MT_trace_spin_lock_start(lock);
-#endif
-
 	t1 = sched_clock();
 	t2 = t1;
 
 	for (;;) {
 		for (i = 0; i < loops; i++) {
-			if (arch_spin_trylock(&lock->raw_lock)) {
-#ifdef CONFIG_PREEMPT_MONITOR
-				MT_trace_spin_lock_end(lock);
-#endif
+			if (arch_spin_trylock(&lock->raw_lock))
 				return;
-			}
 			__delay(1);
 		}
 		t3 = sched_clock();
@@ -251,10 +243,16 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 
 void do_raw_spin_lock(raw_spinlock_t *lock)
 {
+#ifdef CONFIG_MTK_SCHED_MONITOR
+	mt_trace_lock_spinning_start(lock);
+#endif
 	debug_spin_lock_before(lock);
 	if (unlikely(!arch_spin_trylock(&lock->raw_lock)))
 		__spin_lock_debug(lock);
 	debug_spin_lock_after(lock);
+#ifdef CONFIG_MTK_SCHED_MONITOR
+	mt_trace_lock_spinning_end(lock);
+#endif
 }
 
 int do_raw_spin_trylock(raw_spinlock_t *lock)
