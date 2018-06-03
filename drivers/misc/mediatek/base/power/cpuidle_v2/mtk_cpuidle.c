@@ -252,6 +252,7 @@ static void mtk_platform_save_context(int cpu, int idx)
 {
 	mtk_switch_armpll(cpu, 1);
 	mtk_dbg_save_restore(cpu, 1);
+	dpm_mcsi_mtcmos_on_flow(0);
 }
 
 static void mtk_platform_restore_context(int cpu, int idx)
@@ -261,6 +262,7 @@ static void mtk_platform_restore_context(int cpu, int idx)
 
 	mtk_dbg_save_restore(cpu, 0);
 	mtk_switch_armpll(cpu, 0);
+	dpm_mcsi_mtcmos_on_flow(1);
 }
 
 int mtk_enter_idle_state(int idx)
