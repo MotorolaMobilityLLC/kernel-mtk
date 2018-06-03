@@ -44,14 +44,46 @@ static bool usbc_otg_enable;
 static struct mutex tcpc_otg_lock;
 static struct mutex tcpc_otg_pwr_lock;
 bool usb20_host_tcpc_boost_on;
+static int otg_tcp_notifier_call(struct notifier_block *nb,
+		unsigned long event, void *data);
+static struct delayed_work register_otg_work;
+void do_register_otg_work(struct work_struct *data)
+{
+#define REGISTER_OTG_WORK_DELAY 1000
+	static int ret;
+
+	if (!otg_tcpc_dev)
+		otg_tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+
+	if (!otg_tcpc_dev) {
+		DBG(0, "get type_c_port0 fail\n");
+		queue_delayed_work(mtk_musb->st_wq, &register_otg_work,
+				msecs_to_jiffies(REGISTER_OTG_WORK_DELAY));
+		return;
+	}
+
+	otg_nb.notifier_call = otg_tcp_notifier_call;
+	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb);
+	if (ret < 0) {
+		DBG(0, "register OTG fail\n");
+		queue_delayed_work(mtk_musb->st_wq, &register_otg_work,
+				msecs_to_jiffies(REGISTER_OTG_WORK_DELAY));
+		return;
+	}
+
+	DBG(0, "register OTG ok\n");
+}
 #endif
+#endif
+#if CONFIG_MTK_GAUGE_VERSION == 30
+#include <mt-plat/charger_class.h>
+static struct charger_device *primary_charger;
 #endif
 
 #include <mt-plat/mtk_boot_common.h>
 
 struct device_node		*usb_node;
-static unsigned int iddig_pin;
-static int usb_iddig_number;
+static int iddig_eint_num;
 static ktime_t ktime_start, ktime_end;
 
 static struct musb_fifo_cfg fifo_cfg_host[] = {
@@ -80,13 +112,43 @@ module_param(delay_time1, int, 0644);
 u32 iddig_cnt;
 module_param(iddig_cnt, int, 0644);
 
+void vbus_init(void)
+{
+	DBG(0, "+++\n");
+#if CONFIG_MTK_GAUGE_VERSION == 30
+	primary_charger = get_charger_by_name("primary_chg");
+	if (!primary_charger) {
+		pr_err("%s: get primary charger device failed\n", __func__);
+		return;
+	}
+#endif
+	DBG(0, "---\n");
+
+}
+
 void _set_vbus(struct musb *musb, int is_on)
 {
+	static int vbus_inited;
+
+	if (!vbus_inited) {
+		vbus_init();
+		vbus_inited = 1;
+	}
+
 	if (is_on) {
+#if CONFIG_MTK_GAUGE_VERSION == 30
+		charger_dev_enable_otg(primary_charger, true);
+		charger_dev_set_boost_current_limit(primary_charger, 1500000);
+#else
 		set_chr_enable_otg(0x1);
 		set_chr_boost_current_limit(1500);
+#endif
 	} else {
+#if CONFIG_MTK_GAUGE_VERSION == 30
+		charger_dev_enable_otg(primary_charger, false);
+#else
 		set_chr_enable_otg(0x0);
+#endif
 	}
 }
 
@@ -262,8 +324,6 @@ static struct typec_switch_data typec_host_driver = {
 
 static bool musb_is_host(void)
 {
-	u8 devctl = 0;
-	int iddig_state = 1;
 	bool usb_is_host = 0;
 
 	DBG(0, "will mask PMIC charger detection\n");
@@ -273,24 +333,11 @@ static bool musb_is_host(void)
 
 	musb_platform_enable(mtk_musb);
 
-	if (typec_control) {
+	if (typec_control)
 		usb_is_host = typec_req_host;
-		goto decision_done;
-	}
+	else
+		usb_is_host = !mtk_musb->is_host;
 
-#ifndef FPGA_PLATFORM
-	iddig_state = __gpio_get_value(iddig_pin);
-	DBG(0, "iddig_state = %d\n", iddig_state);
-#endif
-
-	if (devctl & MUSB_DEVCTL_BDEVICE || iddig_state) {
-		DBG(0, "will unmask PMIC charger detection\n");
-		usb_is_host = false;
-	} else {
-		usb_is_host = true;
-	}
-
-decision_done:
 #ifndef FPGA_PLATFORM
 	if (usb_is_host == false)
 		pmic_chrdet_int_en(1);
@@ -335,8 +382,8 @@ void switch_int_to_device(struct musb *musb)
 		DBG(1, "directly return\n");
 		return;
 	}
-	irq_set_irq_type(usb_iddig_number, IRQF_TRIGGER_HIGH);
-	enable_irq(usb_iddig_number);
+	irq_set_irq_type(iddig_eint_num, IRQF_TRIGGER_HIGH);
+	enable_irq(iddig_eint_num);
 	DBG(0, "switch_int_to_device is done\n");
 }
 
@@ -346,8 +393,8 @@ void switch_int_to_host(struct musb *musb)
 		DBG(1, "directly return\n");
 		return;
 	}
-	irq_set_irq_type(usb_iddig_number, IRQF_TRIGGER_LOW);
-	enable_irq(usb_iddig_number);
+	irq_set_irq_type(iddig_eint_num, IRQF_TRIGGER_LOW);
+	enable_irq(iddig_eint_num);
 	DBG(0, "switch_int_to_host is done\n");
 }
 
@@ -357,8 +404,8 @@ void switch_int_to_host_and_mask(struct musb *musb)
 		DBG(1, "directly return\n");
 		return;
 	}
-	disable_irq(usb_iddig_number);
-	irq_set_irq_type(usb_iddig_number, IRQF_TRIGGER_LOW);
+	disable_irq(iddig_eint_num);
+	irq_set_irq_type(iddig_eint_num, IRQF_TRIGGER_LOW);
 	DBG(0, "swtich_int_to_host_and_mask is done\n");
 }
 static void do_host_plug_test_work(struct work_struct *data)
@@ -366,7 +413,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 	static ktime_t ktime_begin, ktime_end;
 	static s64 diff_time;
 
-	disable_irq(usb_iddig_number);
+	disable_irq(iddig_eint_num);
 	host_plug_test_triggered = 1;
 	mb();
 	DBG(0, "BEGIN");
@@ -411,7 +458,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 	mb();
 
 	DBG(0, "wait auto begin\n");
-	enable_irq(usb_iddig_number);
+	enable_irq(iddig_eint_num);
 	msleep(1000);	/* wait auto-trigger ip_pin_work done */
 	DBG(0, "wait auto end\n");
 
@@ -476,6 +523,19 @@ static void musb_host_work(struct work_struct *data)
 	switch_set_state((struct switch_dev *)&otg_state, mtk_musb->is_host);
 
 	if (mtk_musb->is_host) {
+
+		/* to make sure all event clear */
+		msleep(32);
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+		if (!usb_on_sram) {
+			int ret;
+
+			ret = gpd_switch_to_sram(mtk_musb->controller);
+			DBG(0, "gpd_switch_to_sram, ret<%d>\n", ret);
+			if (ret == 0)
+				usb_on_sram = 1;
+		}
+#endif
 		/* setup fifo for host mode */
 		ep_config_from_table_for_host(mtk_musb);
 		wake_lock(&mtk_musb->usb_lock);
@@ -543,33 +603,79 @@ static void musb_host_work(struct work_struct *data)
 		mtk_musb->xceiv->otg->state = OTG_STATE_B_IDLE;
 		MUSB_DEV_MODE(mtk_musb);
 		switch_int_to_host(mtk_musb);
+
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+		if (usb_on_sram) {
+			gpd_switch_to_dram(mtk_musb->controller);
+			usb_on_sram = 0;
+		}
+#endif
+		/* to make sure all event clear */
+		msleep(32);
 	}
 out:
 	DBG(0, "work end, is_host=%d\n", mtk_musb->is_host);
 	up(&mtk_musb->musb_lock);
 
 }
+
 static irqreturn_t mt_usb_ext_iddig_int(int irq, void *dev_id)
 {
 	iddig_cnt++;
 
 	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(sw_deboun_time));
 	DBG(0, "id pin interrupt assert\n");
-	disable_irq_nosync(usb_iddig_number);
+	disable_irq_nosync(iddig_eint_num);
 	return IRQ_HANDLED;
 }
 
-static void iddig_int_init(void)
+
+static const struct of_device_id otg_iddig_of_match[] = {
+	{.compatible = "mediatek,usb_iddig_bi_eint"},
+	{},
+};
+
+static int otg_iddig_probe(struct platform_device *pdev)
+{
+	int ret;
+	struct device *dev = &pdev->dev;
+	struct device_node *node = dev->of_node;
+
+	iddig_eint_num = irq_of_parse_and_map(node, 0);
+	DBG(0, "iddig_eint_num<%d>\n", iddig_eint_num);
+	if (iddig_eint_num < 0)
+		return -ENODEV;
+
+	ret = request_irq(iddig_eint_num, mt_usb_ext_iddig_int, IRQF_TRIGGER_LOW, "USB_IDDIG", NULL);
+	if (ret) {
+		DBG(0, "request EINT <%d> fail, ret<%d>\n", iddig_eint_num, ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+static struct platform_driver otg_iddig_driver = {
+	.probe = otg_iddig_probe,
+	/* .remove = otg_iddig_remove, */
+	/* .shutdown = otg_iddig_shutdown, */
+	.driver = {
+		.name = "otg_iddig",
+		.owner = THIS_MODULE,
+		.of_match_table = of_match_ptr(otg_iddig_of_match),
+	},
+};
+
+
+static int iddig_int_init(void)
 {
 	int	ret = 0;
 
-	gpio_set_debounce(iddig_pin, 64000);
-	usb_iddig_number = mt_gpio_to_irq(iddig_pin);
-	ret = request_irq(usb_iddig_number, mt_usb_ext_iddig_int, IRQF_TRIGGER_LOW, "USB_IDDIG", NULL);
-	if (ret > 0)
-		pr_err("USB IDDIG IRQ LINE not available!!\n");
-	else
-		pr_debug("USB IDDIG IRQ LINE available!!\n");
+	ret = platform_driver_register(&otg_iddig_driver);
+	if (ret)
+		DBG(0, "ret:%d\n", ret);
+
+	return 0;
 }
 
 void mt_usb_otg_init(struct musb *musb)
@@ -588,20 +694,10 @@ void mt_usb_otg_init(struct musb *musb)
 	/* test */
 	host_plug_test_wq = create_singlethread_workqueue("host_plug_test_wq");
 	INIT_DELAYED_WORK(&host_plug_test_work, do_host_plug_test_work);
-
-	usb_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6763-usb20");
-	if (usb_node == NULL) {
-		pr_err("USB OTG - get USB0 node failed\n");
-	} else {
-		if (of_property_read_u32_index(usb_node, "iddig_gpio", 0, &iddig_pin)) {
-			pr_err("get dtsi iddig_pin fail\n");
-		}
-	}
-
-	/* init idpin interrupt */
 	ktime_start = ktime_get();
 	INIT_DELAYED_WORK(&musb->host_work, musb_host_work);
 
+	/* CONNECTION MANAGEMENT*/
 #ifdef CONFIG_USB_C_SWITCH
 	DBG(0, "host controlled by TYPEC\n");
 	typec_control = 1;
@@ -612,18 +708,8 @@ void mt_usb_otg_init(struct musb *musb)
 	otg_tcpc_power_workq = create_singlethread_workqueue("tcpc_otg_power_workq");
 	INIT_WORK(&tcpc_otg_power_work, tcpc_otg_power_work_call);
 	INIT_WORK(&tcpc_otg_work, tcpc_otg_work_call);
-	otg_tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
-	if (!otg_tcpc_dev) {
-		pr_err("%s get tcpc device type_c_port0 fail\n", __func__);
-		return -ENODEV;
-	}
-
-	otg_nb.notifier_call = otg_tcp_notifier_call;
-	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb);
-	if (ret < 0) {
-		pr_err("%s register tcpc notifer fail\n", __func__);
-		return -EINVAL;
-	}
+	INIT_DELAYED_WORK(&register_otg_work, do_register_otg_work);
+	queue_delayed_work(mtk_musb->st_wq, &register_otg_work, 0);
 #else
 	typec_host_driver.priv_data = NULL;
 	register_typec_switch_callback(&typec_host_driver);

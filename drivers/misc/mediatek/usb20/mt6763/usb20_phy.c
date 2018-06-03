@@ -181,6 +181,7 @@ bool usb_enable_clock(bool enable)
 	spin_lock_irqsave(&musb_reg_clock_lock, flags);
 
 	if (enable && count == 0) {
+		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 		real_enable++;
 
 #ifdef CONFIG_MTK_CLKMGR
@@ -196,6 +197,7 @@ bool usb_enable_clock(bool enable)
 		res = 0;
 		clk_disable(musb_clk);
 #endif
+		usb_hal_dpidle_request(USB_DPIDLE_ALLOWED);
 	}
 
 	if (enable) {

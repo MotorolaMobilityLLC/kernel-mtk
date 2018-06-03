@@ -53,6 +53,101 @@ struct clk *musb_clk;
 #include "tcpm.h"
 #endif
 
+#include "mtk_spm_resource_req.h"
+static int dpidle_status = USB_DPIDLE_ALLOWED;
+static DEFINE_SPINLOCK(usb_hal_dpidle_lock);
+#define DPIDLE_TIMER_INTERVAL_MS 30
+static void issue_dpidle_timer(void);
+static void dpidle_timer_wakeup_func(unsigned long data)
+{
+	struct timer_list *timer = (struct timer_list *)data;
+
+	{
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
+		static int skip_cnt;
+
+		if (__ratelimit(&ratelimit)) {
+			DBG(0, "dpidle_timer<%p> alive, skip_cnt<%d>\n", timer, skip_cnt);
+			skip_cnt = 0;
+		} else
+			skip_cnt++;
+	}
+	DBG(1, "dpidle_timer<%p> alive...\n", timer);
+	if (dpidle_status == USB_DPIDLE_TIMER)
+		issue_dpidle_timer();
+	kfree(timer);
+}
+static void issue_dpidle_timer(void)
+{
+	struct timer_list *timer;
+
+	timer = kzalloc(sizeof(struct timer_list), GFP_ATOMIC);
+	if (!timer)
+		return;
+
+	DBG(1, "add dpidle_timer<%p>\n", timer);
+	init_timer(timer);
+	timer->function = dpidle_timer_wakeup_func;
+	timer->data = (unsigned long)timer;
+	timer->expires = jiffies + msecs_to_jiffies(DPIDLE_TIMER_INTERVAL_MS);
+	add_timer(timer);
+}
+
+static void usb_6763_dpidle_request(int mode)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&usb_hal_dpidle_lock, flags);
+
+	/* update dpidle_status */
+	dpidle_status = mode;
+
+	switch (mode) {
+	case USB_DPIDLE_ALLOWED:
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_RELEASE);
+		DBG(0, "USB_DPIDLE_ALLOWED\n");
+		break;
+	case USB_DPIDLE_FORBIDDEN:
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_ALL);
+		{
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
+			static int skip_cnt;
+
+			if (__ratelimit(&ratelimit)) {
+				DBG(0, "USB_DPIDLE_FORBIDDEN, skip_cnt<%d>\n", skip_cnt);
+				skip_cnt = 0;
+			} else
+				skip_cnt++;
+		}
+		break;
+	case USB_DPIDLE_SRAM:
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
+				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
+		{
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
+			static int skip_cnt;
+
+			if (__ratelimit(&ratelimit)) {
+				DBG(0, "USB_DPIDLE_SRAM, skip_cnt<%d>\n", skip_cnt);
+				skip_cnt = 0;
+			} else
+				skip_cnt++;
+		}
+		break;
+	case USB_DPIDLE_TIMER:
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
+				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
+		DBG(0, "USB_DPIDLE_TIMER\n");
+		issue_dpidle_timer();
+		break;
+	default:
+		DBG(0, "[ERROR] Are you kidding!?!?\n");
+		break;
+	}
+
+	spin_unlock_irqrestore(&usb_hal_dpidle_lock, flags);
+}
+
 /* default value 0 */
 static int usb_rdy;
 void set_usb_rdy(void)
@@ -298,7 +393,7 @@ bool mt_usb_is_device(void)
 	}
 #endif
 #if defined(CONFIG_USB_MTK_OTG) && defined(CONFIG_TCPC_CLASS)
-	return !tcpc_boost_on;
+	return !usb20_host_tcpc_boost_on;
 #endif
 	return !mtk_musb->is_host;
 }
@@ -608,9 +703,10 @@ static irqreturn_t mt_usb_interrupt(int irq, void *dev_id)
 
 	spin_lock_irqsave(&musb->lock, flags);
 	usb_l1_ints = musb_readl(musb->mregs, USB_L1INTS) & musb_readl(mtk_musb->mregs, USB_L1INTM);
-	DBG(1, "usb interrupt assert %x %x  %x %x %x\n", usb_l1_ints,
+	DBG(1, "usb interrupt assert %x %x  %x %x %x %x %x\n", usb_l1_ints,
 	    musb_readl(mtk_musb->mregs, USB_L1INTM), musb_readb(musb->mregs, MUSB_INTRUSBE),
-	    musb_readw(musb->mregs, MUSB_INTRTX), musb_readw(musb->mregs, MUSB_INTRTXE));
+	    musb_readw(musb->mregs, MUSB_INTRTX), musb_readw(musb->mregs, MUSB_INTRTXE),
+		musb_readw(musb->mregs, MUSB_INTRRX), musb_readw(musb->mregs, MUSB_INTRRXE));
 
 	if ((usb_l1_ints & TX_INT_STATUS) || (usb_l1_ints & RX_INT_STATUS)
 	    || (usb_l1_ints & USBCOM_INT_STATUS)
@@ -1426,6 +1522,17 @@ err0:
 static int mt_usb_dts_probe(struct platform_device *pdev)
 {
 	int retval = 0;
+
+#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+	isoc_ep_start_idx = 8;
+	isoc_ep_gpd_count = 248;
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	/* enable low power mechanism */
+	low_power_timer_mode = 1;
+#endif
+#endif
+
+	register_usb_hal_dpidle_request(usb_6763_dpidle_request);
 
 	/* enable uart log */
 	musb_uart_debug = 1;

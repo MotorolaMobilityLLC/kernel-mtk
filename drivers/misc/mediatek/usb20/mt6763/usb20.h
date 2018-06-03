@@ -14,10 +14,6 @@
 #ifndef __USB20_H__
 #define __USB20_H__
 
-#ifdef CONFIG_USB_MTK_OTG
-extern unsigned int mt_gpio_to_irq(unsigned int gpio);
-#endif
-
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define FPGA_PLATFORM
 #endif
@@ -76,7 +72,7 @@ extern CHARGER_TYPE mt_get_charger_type(void);
 #include <upmu_common.h>
 bool hwPowerOn(MT65XX_POWER powerId, int powerVolt, char *mode_name);
 
-#ifdef CONFIG_TCPC_CLASS
-extern bool usb20_hosttcpc_boost_on;
+#if defined(CONFIG_USB_MTK_OTG) && defined(CONFIG_TCPC_CLASS)
+extern bool usb20_host_tcpc_boost_on;
 #endif
 #endif
