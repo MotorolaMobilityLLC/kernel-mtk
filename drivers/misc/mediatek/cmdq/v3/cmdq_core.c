@@ -3223,7 +3223,7 @@ static void cmdq_core_reorder_task_array(struct ThreadStruct *pThread, int32_t t
 			}
 		}
 
-		if (!pThread->pCurTask[nextID] &&
+		if (pThread->pCurTask[nextID] &&
 			((pThread->pCurTask[nextID]->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
 			CMDQ_IS_END_ADDR(pThread->pCurTask[nextID]->pCMDEnd[-1])) {
 			/* We reached the last task */
