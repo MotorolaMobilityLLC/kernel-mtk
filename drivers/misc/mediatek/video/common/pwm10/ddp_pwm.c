@@ -255,7 +255,6 @@ static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_pa
 			g_pwm_first_config[index] = true;
 		}
 #endif
-		PWM_MSG("disp_pwm_init : PWM config data (%d,%d)", pwm_src, pwm_div);
 	}
 
 	g_pwm_is_change_state[index] = true;
