@@ -43,8 +43,8 @@
 /**************************************
  * only for internal debug
  **************************************/
-
-#define SPM_PCMWDT_EN               1
+#define PCM_SEC_TO_TICK(sec)	(sec * 32768)
+#define SPM_PCMWDT_EN		(0)
 
 #define LOG_BUF_SIZE					(256)
 #define SODI3_LOGOUT_TIMEOUT_CRITERIA	(20)
@@ -183,6 +183,8 @@ static void spm_sodi3_pcm_setup_before_wfi(
 
 	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
 		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+		SPM_PWR_CTRL_SODI3, PWR_WDT_DISABLE, pwrctrl->wdt_disable);
 }
 
 static void spm_sodi3_pcm_setup_after_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
@@ -190,12 +192,44 @@ static void spm_sodi3_pcm_setup_after_wfi(struct pwr_ctrl *pwrctrl, u32 operatio
 	spm_sodi3_post_process();
 }
 
-wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 operation_cond)
+
+static void spm_sodi3_setup_wdt(struct pwr_ctrl *pwrctrl, void **api)
 {
 #if SPM_PCMWDT_EN && defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
-	int wd_ret;
-	struct wd_api *wd_api;
+	struct wd_api *wd_api = NULL;
+
+	if (!get_wd_api(&wd_api)) {
+		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
+		wd_api->wd_suspend_notify();
+		pwrctrl->wdt_disable = 0;
+	} else {
+		spm_crit2("FAILED TO GET WD API\n");
+		api = NULL;
+		pwrctrl->wdt_disable = 1;
+	}
+	*api = wd_api;
+#else
+	pwrctrl->wdt_disable = 1;
 #endif
+}
+
+static void spm_sodi3_resume_wdt(struct pwr_ctrl *pwrctrl, void *api)
+{
+#if SPM_PCMWDT_EN && defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+	struct wd_api *wd_api = (struct wd_api *)api;
+
+	if (!pwrctrl->wdt_disable && wd_api != NULL) {
+		wd_api->wd_resume_notify();
+		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
+	} else {
+		spm_crit2("pwrctrl->wdt_disable %d\n", pwrctrl->wdt_disable);
+	}
+#endif
+}
+
+wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 operation_cond)
+{
+	void *api = NULL;
 	struct wake_status wakesta;
 	unsigned long flags;
 #if defined(CONFIG_MTK_GIC_V3_EXT)
@@ -216,17 +250,9 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 
-	pwrctrl->timer_val = 2 * 32768;	/* 2 sec */
+	pwrctrl->timer_val = PCM_SEC_TO_TICK(2);
 
-#if SPM_PCMWDT_EN && defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
-	wd_ret = get_wd_api(&wd_api);
-	if (!wd_ret) {
-		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
-		wd_api->wd_suspend_notify();
-	} else
-		spm_crit2("FAILED TO GET WD API\n");
-#endif
-
+	spm_sodi3_setup_wdt(pwrctrl, &api);
 	soidle3_before_wfi(cpu);
 
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -320,18 +346,9 @@ RESTORE_IRQ:
 	soidle3_after_wfi(cpu);
 
 	spm_sodi3_notify_sspm_after_wfi_async_wait();
+	spm_sodi3_resume_wdt(pwrctrl, api);
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE);
-
-#if SPM_PCMWDT_EN && defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
-	if (!wd_ret) {
-		if (!pwrctrl->wdt_disable)
-			wd_api->wd_resume_notify();
-		else
-			spm_crit2("pwrctrl->wdt_disable %d\n", pwrctrl->wdt_disable);
-		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
-	}
-#endif
 
 	spm_sodi3_reset_footprint();
 
