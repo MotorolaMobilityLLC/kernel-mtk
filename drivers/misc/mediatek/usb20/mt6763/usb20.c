@@ -49,6 +49,10 @@ struct clk *musb_clk;
 
 #include "mtk-phy-a60810.h"
 
+#ifdef CONFIG_TCPC_CLASS
+#include "tcpm.h"
+#endif
+
 /* default value 0 */
 static int usb_rdy;
 void set_usb_rdy(void)
@@ -291,7 +295,9 @@ bool mt_usb_is_device(void)
 		return false;
 	}
 #endif
-
+#ifdef CONFIG_TCPC_CLASS
+	return !tcpc_boost_on;
+#endif
 	return !mtk_musb->is_host;
 }
 
@@ -652,6 +658,15 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 {
 	unsigned int cmode;
 	long tmp_val;
+#ifdef CONFIG_TCPC_CLASS
+	struct tcpc_device *tcpc;
+
+	tcpc = tcpc_dev_get_by_name("type_c_port0");
+	if (!tcpc) {
+		pr_err("%s get tcpc device type_c_port0 fail\n", __func__);
+		return -ENODEV;
+	}
+#endif
 
 	if (!dev) {
 		DBG(0, "dev is null!!\n");
@@ -705,10 +720,18 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 						    (~MUSB_DEVCTL_SESSION) &
 						    musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
 				}
+#ifdef CONFIG_TCPC_CLASS
+				tcpm_typec_change_role(tcpc, TYPEC_ROLE_SNK);
+#else
 				/* mask ID pin interrupt even if A-cable is not plugged in */
 				switch_int_to_host_and_mask(mtk_musb);
+#endif
 			} else {
+#ifdef CONFIG_TCPC_CLASS
+				tcpm_typec_change_role(tcpc, TYPEC_ROLE_DRP);
+#else
 				switch_int_to_host(mtk_musb);	/* resotre ID pin interrupt */
+#endif
 			}
 #endif
 		}
@@ -1334,7 +1357,7 @@ static const struct musb_platform_ops mt_usb_ops = {
 	.try_idle = mt_usb_try_idle,
 	.enable = mt_usb_enable,
 	.disable = mt_usb_disable,
-	.set_vbus = mt_usb_set_vbus,
+	/* .set_vbus = mt_usb_set_vbus, */
 	.vbus_status = mt_usb_get_vbus_status
 };
 

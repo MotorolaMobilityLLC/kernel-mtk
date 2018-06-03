@@ -31,6 +31,26 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
+#ifdef CONFIG_USB_C_SWITCH
+#include <typec.h>
+#ifdef CONFIG_TCPC_CLASS
+#include "tcpm.h"
+#include <linux/workqueue.h>
+#include <linux/mutex.h>
+static struct notifier_block otg_nb;
+static bool usbc_otg_attached;
+static struct tcpc_device *otg_tcpc_dev;
+static struct workqueue_struct *otg_tcpc_power_workq;
+static struct workqueue_struct *otg_tcpc_workq;
+static struct work_struct tcpc_otg_power_work;
+static struct work_struct tcpc_otg_work;
+static bool usbc_otg_power_enable;
+static bool usbc_otg_enable;
+static struct mutex tcpc_otg_lock;
+static struct mutex tcpc_otg_pwr_lock;
+bool usb20_host_tcpc_boost_on;
+#endif
+#endif
 
 #include <mt-plat/mtk_boot_common.h>
 
@@ -79,62 +99,39 @@ module_param(delay_time1, int, 0644);
 u32 iddig_cnt;
 module_param(iddig_cnt, int, 0644);
 
+void _set_vbus(struct musb *musb, int is_on)
+{
+	if (is_on) {
+		set_chr_enable_otg(0x1);
+		set_chr_boost_current_limit(1500);
+	} else {
+		set_chr_enable_otg(0x0);
+	}
+}
+
 void mt_usb_set_vbus(struct musb *musb, int is_on)
 {
-	DBG(0, "mt65xx_usb20_vbus++,is_on=%d\r\n", is_on);
 #ifndef FPGA_PLATFORM
-	if (is_on) {
-		/* power on VBUS, implement later... */
-	#ifdef CONFIG_MTK_FAN5405_SUPPORT
-		fan5405_set_opa_mode(1);
-		fan5405_set_otg_pl(1);
-		fan5405_set_otg_en(1);
-	#elif defined(CONFIG_MTK_BQ24261_SUPPORT)
-		bq24261_set_en_boost(1);
-	#elif defined(CONFIG_MTK_BQ24296_SUPPORT)
-		bq24296_set_otg_config(0x1); /* OTG */
-		bq24296_set_boostv(0x7); /* boost voltage 4.998V */
-		bq24296_set_boost_lim(0x1); /* 1.5A on VBUS */
-		bq24296_set_en_hiz(0x0);
-	#elif defined(CONFIG_MTK_BQ24196_SUPPORT)
-		bq24196_set_otg_config(0x01);	/* OTG */
-		bq24196_set_boost_lim(0x01);	/* 1.3A on VBUS */
-	#elif defined(CONFIG_MTK_NCP1854_SUPPORT)
-		ncp1854_set_otg_en(0);
-		ncp1854_set_chg_en(0);
-		ncp1854_set_otg_en(1);
-	#else
-		#ifdef CONFIG_OF
-		pr_debug("****%s:%d Drive VBUS HIGH KS!!!!!\n", __func__, __LINE__);
-		pinctrl_select_state(pinctrl, pinctrl_drvvbus_high);
-		#else
-		mt_set_gpio_mode(GPIO_OTG_DRVVBUS_PIN, GPIO_OTG_DRVVBUS_PIN_M_GPIO);
-		mt_set_gpio_out(GPIO_OTG_DRVVBUS_PIN, GPIO_OUT_ONE);
-		#endif
-		#endif
-	} else {
-		/* power off VBUS, implement later... */
-	#ifdef CONFIG_MTK_FAN5405_SUPPORT
-		fan5405_reg_config_interface(0x01, 0x30);
-		fan5405_reg_config_interface(0x02, 0x8e);
-	#elif defined(CONFIG_MTK_BQ24261_SUPPORT)
-		bq24261_set_en_boost(0);
-	#elif defined(CONFIG_MTK_BQ24296_SUPPORT)
-		bq24296_set_otg_config(0);
-	#elif defined(CONFIG_MTK_BQ24196_SUPPORT)
-		bq24196_set_otg_config(0x0);	/* OTG disabled */
-	#elif defined(CONFIG_MTK_NCP1854_SUPPORT)
-		ncp1854_set_otg_en(0x0);
-	#else
-		#ifdef CONFIG_OF
-		pr_debug("****%s:%d Drive VBUS LOW KS!!!!!\n", __func__, __LINE__);
-		pinctrl_select_state(pinctrl, pinctrl_drvvbus_low);
-		#else
-		mt_set_gpio_mode(GPIO_OTG_DRVVBUS_PIN, GPIO_OTG_DRVVBUS_PIN_M_GPIO);
-		mt_set_gpio_out(GPIO_OTG_DRVVBUS_PIN, GPIO_OUT_ZERO);
-		#endif
-	#endif
-	}
+	int control = 0;
+
+#ifdef CONFIG_USB_C_SWITCH
+#ifndef CONFIG_TCPC_CLASS
+#ifdef CONFIG_TYPEC_ONLY
+	control = 1;
+#endif
+#endif
+#else
+	control = 1;
+#endif
+	DBG(0, "is_on<%d>, control<%d>\n", is_on, control);
+
+	if (!control)
+		return;
+
+	if (is_on)
+		_set_vbus(mtk_musb, 1);
+	else
+		_set_vbus(mtk_musb, 0);
 #endif
 }
 
@@ -213,6 +210,111 @@ void musb_typec_host_disconnect(int delay)
 	typec_req_host = false;
 	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(delay));
 }
+#ifdef CONFIG_USB_C_SWITCH
+#ifdef CONFIG_TCPC_CLASS
+int tcpc_otg_enable(void)
+{
+	if (!usbc_otg_attached) {
+		musb_typec_host_connect(0);
+		usbc_otg_attached = true;
+	}
+	return 0;
+}
+
+int tcpc_otg_disable(void)
+{
+	if (usbc_otg_attached) {
+		musb_typec_host_disconnect(0);
+		usbc_otg_attached = false;
+	}
+	return 0;
+}
+
+static void tcpc_otg_work_call(struct work_struct *work)
+{
+	bool enable;
+
+	mutex_lock(&tcpc_otg_lock);
+	enable = usbc_otg_enable;
+	mutex_unlock(&tcpc_otg_lock);
+
+	if (enable)
+		tcpc_otg_enable();
+	else
+		tcpc_otg_disable();
+}
+
+static void tcpc_otg_power_work_call(struct work_struct *work)
+{
+	mutex_lock(&tcpc_otg_pwr_lock);
+	if (usbc_otg_power_enable) {
+		if (!usb20_host_tcpc_boost_on) {
+			_set_vbus(mtk_musb, 1);
+			usb20_host_tcpc_boost_on = true;
+		}
+	} else {
+		if (usb20_host_tcpc_boost_on) {
+			_set_vbus(mtk_musb, 0);
+			usb20_host_tcpc_boost_on = false;
+		}
+	}
+	mutex_unlock(&tcpc_otg_pwr_lock);
+}
+static int otg_tcp_notifier_call(struct notifier_block *nb,
+		unsigned long event, void *data)
+{
+	struct tcp_notify *noti = data;
+
+	switch (event) {
+	case TCP_NOTIFY_SOURCE_VBUS:
+		pr_info("%s source vbus = %dmv\n",
+				__func__, noti->vbus_state.mv);
+		mutex_lock(&tcpc_otg_pwr_lock);
+		usbc_otg_power_enable = (noti->vbus_state.mv) ? true : false;
+		mutex_unlock(&tcpc_otg_pwr_lock);
+		queue_work(otg_tcpc_power_workq, &tcpc_otg_power_work);
+		break;
+	case TCP_NOTIFY_TYPEC_STATE:
+		if (noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
+			pr_info("%s OTG Plug in\n", __func__);
+			mutex_lock(&tcpc_otg_lock);
+			usbc_otg_enable = true;
+			mutex_unlock(&tcpc_otg_lock);
+		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
+				noti->typec_state.new_state == TYPEC_UNATTACHED) {
+			pr_info("%s OTG Plug out\n", __func__);
+			mutex_lock(&tcpc_otg_lock);
+			usbc_otg_enable = false;
+			mutex_unlock(&tcpc_otg_lock);
+		}
+		queue_work(otg_tcpc_workq, &tcpc_otg_work);
+		break;
+	}
+	return NOTIFY_OK;
+}
+#else
+static int typec_otg_enable(void *data)
+{
+	pr_info("typec_otg_enable\n");
+	musb_typec_host_connect(0);
+	return 0;
+}
+
+static int typec_otg_disable(void *data)
+{
+	pr_info("typec_otg_disable\n");
+	musb_typec_host_disconnect(0);
+	return 0;
+}
+
+static struct typec_switch_data typec_host_driver = {
+	.name = "usb20_host",
+	.type = HOST_TYPE,
+	.enable = typec_otg_enable,
+	.disable = typec_otg_disable,
+};
+#endif
+#endif
 
 static bool musb_is_host(void)
 {
@@ -379,7 +481,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 			ktime_begin = ktime_get();
 
 			/* simulate plug out */
-			musb_platform_set_vbus(mtk_musb, 0);
+			mt_usb_set_vbus(mtk_musb, 0);
 			udelay(host_test_vbus_off_time_us);
 
 			queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
@@ -472,7 +574,7 @@ static void musb_host_work(struct work_struct *data)
 		/* setup fifo for host mode */
 		ep_config_from_table_for_host(mtk_musb);
 		wake_lock(&mtk_musb->usb_lock);
-		musb_platform_set_vbus(mtk_musb, 1);
+		mt_usb_set_vbus(mtk_musb, 1);
 
 	/* for no VBUS sensing IP*/
 	#if 1
@@ -520,7 +622,7 @@ static void musb_host_work(struct work_struct *data)
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 		if (wake_lock_active(&mtk_musb->usb_lock))
 			wake_unlock(&mtk_musb->usb_lock);
-		musb_platform_set_vbus(mtk_musb, 0);
+		mt_usb_set_vbus(mtk_musb, 0);
 
 	/* for no VBUS sensing IP */
 	#if 1
@@ -659,15 +761,36 @@ void mt_usb_otg_init(struct musb *musb)
 	ktime_start = ktime_get();
 	INIT_DELAYED_WORK(&musb->host_work, musb_host_work);
 
-	/* FIXME, fill in TYPEC management */
-	if (0) {
-		DBG(0, "host controlled by TYPEC\n");
-		typec_control = 1;
-		/* related resource init & register */
-	} else {
-		DBG(0, "host controlled by IDDIG\n");
-		iddig_int_init();
+#ifdef CONFIG_USB_C_SWITCH
+	DBG(0, "host controlled by TYPEC\n");
+	typec_control = 1;
+#ifdef CONFIG_TCPC_CLASS
+	mutex_init(&tcpc_otg_lock);
+	mutex_init(&tcpc_otg_pwr_lock);
+	otg_tcpc_workq = create_singlethread_workqueue("tcpc_otg_workq");
+	otg_tcpc_power_workq = create_singlethread_workqueue("tcpc_otg_power_workq");
+	INIT_WORK(&tcpc_otg_power_work, tcpc_otg_power_work_call);
+	INIT_WORK(&tcpc_otg_work, tcpc_otg_work_call);
+	otg_tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+	if (!otg_tcpc_dev) {
+		pr_err("%s get tcpc device type_c_port0 fail\n", __func__);
+		return -ENODEV;
 	}
+
+	otg_nb.notifier_call = otg_tcp_notifier_call;
+	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb);
+	if (ret < 0) {
+		pr_err("%s register tcpc notifer fail\n", __func__);
+		return -EINVAL;
+	}
+#else
+	typec_host_driver.priv_data = NULL;
+	register_typec_switch_callback(&typec_host_driver);
+#endif
+#else
+	DBG(0, "host controlled by IDDIG\n");
+	iddig_int_init();
+#endif
 
 	/* EP table */
 	musb->fifo_cfg_host = fifo_cfg_host;

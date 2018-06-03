@@ -33,15 +33,6 @@ extern struct musb *mtk_musb;
 extern unsigned int mt_gpio_to_irq(unsigned int gpio);
 #endif
 
-#if defined(CONFIG_MTK_FAN5405_SUPPORT) \
-|| defined(CONFIG_MTK_BQ24158_SUPPORT) \
-|| defined(CONFIG_MTK_NCP1851_SUPPORT) \
-|| defined(CONFIG_MTK_BQ24196_SUPPORT) \
-|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
-|| defined(CONFIG_MTK_NCP1854_SUPPORT)
-#define SWITCH_CHARGER 1
-#endif
-
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define FPGA_PLATFORM
 #endif
@@ -79,27 +70,6 @@ extern void usb_phy_switch_to_usb(void);
 extern void usb_phy_switch_to_uart(void);
 #endif
 
-/* switch charger API*/
-#ifdef CONFIG_MTK_FAN5405_SUPPORT
-extern void fan5405_set_opa_mode(unsigned int val);
-extern void fan5405_set_otg_pl(unsigned int val);
-extern void fan5405_set_otg_en(unsigned int val);
-extern unsigned int fan5405_reg_config_interface(unsigned char RegNum, unsigned char val);
-#elif defined(CONFIG_MTK_BQ24261_SUPPORT)
-extern void bq24261_set_en_boost(unsigned int val);
-#elif defined(CONFIG_MTK_BQ24296_SUPPORT)
-extern void bq24296_set_otg_config(unsigned int val);
-extern void bq24296_set_boostv(unsigned int val);
-extern void bq24296_set_boost_lim(unsigned int val);
-extern void bq24296_set_en_hiz(unsigned int val);
-#elif defined(CONFIG_MTK_BQ24196_SUPPORT)
-extern void bq24196_set_otg_config(unsigned int val);
-extern void bq24196_set_boost_lim(unsigned int val);
-#elif defined CONFIG_MTK_NCP1854_SUPPORT
-extern void ncp1854_set_chg_en(unsigned int val);
-extern void ncp1854_set_otg_en(unsigned int val);
-#endif
-
 #ifdef FPGA_PLATFORM
 extern void USB_PHY_Write_Register8(UINT8 var, UINT8 addr);
 extern UINT8 USB_PHY_Read_Register8(UINT8 addr);
@@ -115,4 +85,7 @@ extern CHARGER_TYPE mt_get_charger_type(void);
 #include <upmu_common.h>
 bool hwPowerOn(MT65XX_POWER powerId, int powerVolt, char *mode_name);
 
+#ifdef CONFIG_TCPC_CLASS
+extern bool usb20_hosttcpc_boost_on;
+#endif
 #endif
