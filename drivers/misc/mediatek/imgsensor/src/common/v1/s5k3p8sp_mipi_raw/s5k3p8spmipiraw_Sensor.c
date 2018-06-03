@@ -642,7 +642,7 @@ static void check_streamoff(void)
 		else
 			break;
 	}
-	pr_debug(" check_streamoff exit!\n");
+	pr_debug("%s exit!\n", __func__);
 }
 
 static kal_uint32 streaming_control(kal_bool enable)
@@ -846,7 +846,7 @@ const u16 uTnpArray[] = {
 
 static void sensor_init(void)
 {
-	pr_debug("sensor_init() E\n");
+	pr_debug("%s() E\n", __func__);
 	chip_id = read_cmos_sensor_8(0x0002);
 	pr_debug("chip id:%d E\n", chip_id);
 
@@ -901,7 +901,7 @@ static void sensor_init(void)
 
 static void preview_setting(void)
 {
-	pr_debug("preview_setting() E\n");
+	pr_debug("%s() E\n", __func__);
 
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -940,7 +940,7 @@ static void preview_setting(void)
 
 static void capture_setting(kal_uint16 currefps)
 {
-	pr_debug("capture_setting() E! currefps:%d\n", currefps);
+	pr_debug("%s() E! currefps:%d\n", __func__, currefps);
 
 
 
@@ -979,7 +979,7 @@ static void capture_setting(kal_uint16 currefps)
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	pr_debug("normal_video_setting() E! currefps:%d\n", currefps);
+	pr_debug("%s() E! currefps:%d\n", __func__, currefps);
 
 
 	write_cmos_sensor(0x6028, 0x2000);
@@ -1017,7 +1017,7 @@ static void normal_video_setting(kal_uint16 currefps)
 
 static void hs_video_setting(void)
 {
-	pr_debug("hs_video_setting() E\n");
+	pr_debug("%s() E\n", __func__);
 	/* 720p 120fps */
 	if (chip_id == 0xA0) {
 		write_cmos_sensor(0x6028, 0x2000);
@@ -1105,7 +1105,7 @@ static void hs_video_setting(void)
 
 static void slim_video_setting(void)
 {
-	pr_debug("slim_video_setting() E\n");
+	pr_debug("%s() E\n", __func__);
 	/* 1080p 60fps */
 	if (chip_id == 0xA0) {
 		write_cmos_sensor(0x6028, 0x2000);
@@ -1401,7 +1401,7 @@ static kal_uint32 close(void)
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("preview E\n");
+	pr_debug("%s E\n", __func__);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
@@ -1436,7 +1436,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("capture E\n");
+	pr_debug("%s E\n", __func__);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
 	if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {
@@ -1479,7 +1479,7 @@ static kal_uint32 normal_video(
 	MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("normal_video E\n");
+	pr_debug("%s E\n", __func__);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
@@ -1500,7 +1500,7 @@ static kal_uint32 hs_video(
 	MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("hs_video E\n");
+	pr_debug("%s E\n", __func__);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
@@ -1524,7 +1524,7 @@ static kal_uint32 slim_video(
 	MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("slim_video E\n");
+	pr_debug("%s E\n", __func__);
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
@@ -1549,7 +1549,7 @@ static kal_uint32 slim_video(
 static kal_uint32 get_resolution(
 	MSDK_SENSOR_RESOLUTION_INFO_STRUCT * sensor_resolution)
 {
-	pr_debug("get_resolution E\n");
+	pr_debug("%s E\n", __func__);
 	sensor_resolution->SensorFullWidth =
 		imgsensor_info.cap.grabwindow_width;
 	sensor_resolution->SensorFullHeight =
@@ -1583,7 +1583,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 			   MSDK_SENSOR_INFO_STRUCT *sensor_info,
 			   MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("get_info -> scenario_id = %d\n", scenario_id);
+	pr_debug("%s -> scenario_id = %d\n", __func__, scenario_id);
 
 	sensor_info->SensorClockPolarity = SENSOR_CLOCK_POLARITY_LOW;
 

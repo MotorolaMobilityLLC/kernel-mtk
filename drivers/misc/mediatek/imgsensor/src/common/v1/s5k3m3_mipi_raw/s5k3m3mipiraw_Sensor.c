@@ -893,7 +893,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
 
-	pr_debug("set_gain %d\n", gain);
+	pr_debug("%s %d\n", __func__, gain);
 	/* gain = 64 = 1x real gain. */
 
 	if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
@@ -1056,7 +1056,7 @@ static void sensor_init(void)
 	else if (module_id == S5K3M3_MODULE_ID_V2)
 		sensor_init_v2();
 
-	KD_SENSOR_PROFILE("sensor_init");
+	KD_SENSOR_PROFILE("3m3 init");
 }				/*      sensor_init  */
 
 
@@ -1071,7 +1071,7 @@ static void preview_setting(kal_uint16 fps)
 	else if (module_id == S5K3M3_MODULE_ID_V2)
 		preview_setting_v2(fps);
 
-	KD_SENSOR_PROFILE("preview_setting");
+	KD_SENSOR_PROFILE("3m3 preview");
 
 }				/*      preview_setting  */
 
@@ -1087,7 +1087,7 @@ static void capture_setting(kal_uint16 currefps)
 	else if (module_id == S5K3M3_MODULE_ID_V2)
 		capture_setting_v2(currefps);
 
-	KD_SENSOR_PROFILE("capture_setting");
+	KD_SENSOR_PROFILE("3m3 capture");
 }
 
 static void normal_video_setting(kal_uint16 currefps)
@@ -1107,7 +1107,7 @@ static void hs_video_setting(kal_uint16 fps)
 	else if (module_id == S5K3M3_MODULE_ID_V2)
 		hs_video_setting_v2(fps);
 
-	KD_SENSOR_PROFILE("hs_video_setting");
+	KD_SENSOR_PROFILE("3m3 hs video");
 }
 
 static void slim_video_setting(kal_uint16 fps)
@@ -1121,7 +1121,7 @@ static void slim_video_setting(kal_uint16 fps)
 	else if (module_id == S5K3M3_MODULE_ID_V2)
 		slim_video_setting_v2(fps);
 
-	KD_SENSOR_PROFILE("slim_video_setting");
+	KD_SENSOR_PROFILE("3m3 slim video");
 }
 
 
@@ -1136,7 +1136,7 @@ static void custom1_setting(kal_uint16 fps)
 	else if (module_id == S5K3M3_MODULE_ID_V2)
 		custom1_setting_v2(fps);
 
-	KD_SENSOR_PROFILE("custom1_setting");
+	KD_SENSOR_PROFILE("3m3 custom1");
 }
 
 
@@ -1151,7 +1151,7 @@ static void custom2_setting(kal_uint16 fps)
 	else if (module_id == S5K3M3_MODULE_ID_V2)
 		custom2_setting_v2(fps);
 
-	KD_SENSOR_PROFILE("custom2_setting");
+	KD_SENSOR_PROFILE("3m3 custom2");
 }
 
 static kal_uint32 return_sensor_id(void)

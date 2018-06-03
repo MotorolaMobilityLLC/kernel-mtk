@@ -694,7 +694,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 static void sensor_WDR_zhdr(void)
 {
 	if (imgsensor.hdr_mode == 9) {
-		pr_debug("sensor_WDR_zhdr\n");
+		pr_debug("%s\n", __func__);
 		/*it would write 0x216 = 0x1, 0x217=0x00 */
 		/*0x216=1 , Enable WDR */
 		/*0x217=0x00, Use Manual mode to set short /long exp */

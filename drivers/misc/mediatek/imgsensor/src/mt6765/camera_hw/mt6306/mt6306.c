@@ -84,7 +84,7 @@ static enum IMGSENSOR_RETURN mt6306_set(
 
 		list_idx = pin_offset + pin - IMGSENSOR_HW_PIN_PDN;
 	}
-	pr_debug("mt6306_set pin number %d value %d\n", list_idx, pin_state);
+	pr_debug("%s pin number %d value %d\n", __func__, list_idx, pin_state);
 	ppin_list  = &mt6306_pin_list[list_idx];
 	mt6306_set_gpio_dir(*ppin_list, MT6306_GPIO_DIR_OUT);
 

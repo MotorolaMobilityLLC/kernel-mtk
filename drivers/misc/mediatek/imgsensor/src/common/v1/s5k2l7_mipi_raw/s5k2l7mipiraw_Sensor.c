@@ -648,7 +648,7 @@ static void set_shutter(kal_uint16 shutter)
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	pr_debug("set_shutter =%d\n", shutter);
+	pr_debug("%s =%d\n", __func__, shutter);
 	/* OV Recommend Solution */
   /* if shutter bigger than frame_length, should extend frame length first */
 	if (!shutter)
@@ -977,7 +977,7 @@ static void night_mode(kal_bool enable)
 static void sensor_WDR_zhdr(void)
 {
 	if (imgsensor.hdr_mode == 9) {
-		pr_debug("sensor_WDR_zhdr\n");
+		pr_debug("%s\n", __func__);
 		/*it would write 0x21E = 0x1, 0x21F=0x00 */
 		/*0x21E=1 , Enable WDR */
 		/*0x21F=0x00, Use Manual mode to set short /long exp */
@@ -1032,7 +1032,7 @@ static void sensor_init_11_new(void)
 		else
 			_S5K2L7_MODE3_INIT_;
 	}
-	KD_SENSOR_PROFILE("sensor_init_11_new");
+	KD_SENSOR_PROFILE("S5k2L7 sensor init");
 }
 
 static void preview_setting_11_new(void)
@@ -1135,7 +1135,7 @@ static void hs_video_setting_11(void)
 		else
 			_S5K2L7_MODE3_HS_VIDEO_;
 	}
-	KD_SENSOR_PROFILE("hs_video_setting_11");
+	KD_SENSOR_PROFILE("2l7 hs video");
 }
 
 
@@ -1161,7 +1161,7 @@ static void slim_video_setting(void)
 		else
 			_S5K2L7_MODE3_SLIM_VIDEO_;
 	}
-	KD_SENSOR_PROFILE("slim_video_setting");
+	KD_SENSOR_PROFILE("S5k2L7 slim video setting");
 }
 
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
@@ -1209,7 +1209,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 
 	pdaf_sensor_mode = proc_pdaf_sensor_mode;
 
-	pr_debug("get_imgsensor_id pdaf sensor mode %d\n", pdaf_sensor_mode);
+	pr_debug("%s pdaf sensor mode %d\n", __func__, pdaf_sensor_mode);
 
 	if (is_module_v2() != FALSE) {
 		if (pdaf_sensor_mode == 1)
@@ -1437,7 +1437,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 #ifdef USE_OIS
 	/* OIS_on(RUMBA_OIS_PRE_SETTING);    //pangfei OIS */
-	pr_debug("pangfei preview OIS setting\n");
+	pr_debug("%s OIS setting\n", __func__);
 	OIS_write_cmos_sensor(0x0002, 0x05);
 	OIS_write_cmos_sensor(0x0002, 0x00);
 	OIS_write_cmos_sensor(0x0000, 0x01);
@@ -1504,7 +1504,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	/* set_mirror_flip(IMAGE_NORMAL); */
 #ifdef	USE_OIS
 	/* OIS_on(RUMBA_OIS_CAP_SETTING);//pangfei OIS */
-	pr_debug("pangfei capture OIS setting\n");
+	pr_debug("%s OIS setting\n", __func__);
 	OIS_write_cmos_sensor(0x0002, 0x05);
 	OIS_write_cmos_sensor(0x0002, 0x00);
 	OIS_write_cmos_sensor(0x0000, 0x01);
