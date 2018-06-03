@@ -2880,6 +2880,9 @@ static irqreturn_t rt5081_pmu_chg_ieoci_irq_handler(int irq, void *data)
 {
 	int ret = 0;
 	bool ieoc_stat = false;
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
+	bool te_en;
+#endif
 	struct rt5081_pmu_charger_data *chg_data =
 		(struct rt5081_pmu_charger_data *)data;
 
@@ -2892,6 +2895,35 @@ static irqreturn_t rt5081_pmu_chg_ieoci_irq_handler(int irq, void *data)
 	dev_info(chg_data->dev, "%s: stat = %d\n", __func__, ieoc_stat);
 	if (!ieoc_stat)
 		return IRQ_HANDLED;
+
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
+	ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_CHGCTRL2,
+		RT5081_SHIFT_TE_EN, &te_en);
+	if (ret < 0)
+		return IRQ_HANDLED;
+
+	if (!te_en) {
+		dev_info(chg_data->dev, "%s: reset EOC latch\n", __func__);
+		rt5081_enable_hidden_mode(chg_data, true);
+
+		ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_CHGHIDDENCTRL0, 0x80);
+		if (ret < 0) {
+			dev_notice(chg_data->dev, "%s: set failed, ret = %d\n",
+				__func__, ret);
+			return IRQ_HANDLED;
+		}
+
+		udelay(100);
+		ret = rt5081_pmu_reg_clr_bit(chg_data->chip, RT5081_PMU_REG_CHGHIDDENCTRL0, 0x80);
+		if (ret < 0) {
+			dev_notice(chg_data->dev, "%s: clear failed, ret = %d\n",
+				__func__, ret);
+			return IRQ_HANDLED;
+		}
+
+		rt5081_enable_hidden_mode(chg_data, false);
+	}
+#endif
 
 	charger_dev_notify(chg_data->chg_dev, CHARGER_DEV_NOTIFY_EOC);
 
