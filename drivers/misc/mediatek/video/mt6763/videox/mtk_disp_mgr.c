@@ -1112,14 +1112,37 @@ int _ioctl_set_scenario(unsigned long arg)
 int set_session_mode(struct disp_session_config *config_info, int force)
 {
 	int ret = 0;
+	if (disp_helper_get_option(DISP_OPT_SHARE_WDMA0)) {
 
-	if (DISP_SESSION_TYPE(config_info->session_id) == DISP_SESSION_PRIMARY)
-		primary_display_switch_mode(config_info->mode, config_info->session_id, 0);
-	else
-		DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n", config_info->session_id, config_info->mode);
+		if (config_info->mode == DISP_SESSION_DIRECT_LINK_MIRROR_MODE ||
+			config_info->mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
+			/* Ext mode -> DCm, disconnect Ext path first */
+			external_display_switch_mode(config_info->mode, session_config, config_info->session_id);
+			if (DISP_SESSION_TYPE(config_info->session_id) == DISP_SESSION_PRIMARY)
+				primary_display_switch_mode_blocked(config_info->mode, config_info->session_id, 0);
+			else
+				DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n",
+					config_info->session_id, config_info->mode);
+		} else {
 
-	external_display_switch_mode(config_info->mode, session_config, config_info->session_id);
+			if (DISP_SESSION_TYPE(config_info->session_id) == DISP_SESSION_PRIMARY)
+				primary_display_switch_mode_blocked(config_info->mode, config_info->session_id, 0);
+			else
+				DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n",
+					config_info->session_id, config_info->mode);
+			/* DCm -> Ext mode, switch to Directlink first, then create Ext path */
+			external_display_switch_mode(config_info->mode, session_config, config_info->session_id);
+		}
 
+	} else {
+		if (DISP_SESSION_TYPE(config_info->session_id) == DISP_SESSION_PRIMARY)
+			primary_display_switch_mode(config_info->mode, config_info->session_id, 0);
+		else
+			DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n",
+				config_info->session_id, config_info->mode);
+
+		external_display_switch_mode(config_info->mode, session_config, config_info->session_id);
+	}
 	return ret;
 }
 

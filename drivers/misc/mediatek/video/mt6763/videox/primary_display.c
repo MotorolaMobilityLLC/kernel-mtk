@@ -1925,7 +1925,7 @@ static int deinit_sec_buf(void)
 
 	return 0;
 }
-static int _DL_switch_to_DC_fast(void)
+static int _DL_switch_to_DC_fast(int block)
 {
 	int ret = 0;
 	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
@@ -2065,7 +2065,7 @@ static int _DL_switch_to_DC_fast(void)
 	/* cmdqRecDumpCommand(pgc->cmdq_handle_ovl1to2_config); */
 	/* cmdqRecClearEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);*/
 
-	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 0);
+	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, block);
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
 	cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
 
@@ -2096,12 +2096,12 @@ static int _DL_switch_to_DC_fast(void)
 	return ret;
 }
 
-static int DL_switch_to_DC_fast(int sw_only)
+static int DL_switch_to_DC_fast(int sw_only, int block)
 {
 	int ret = 0;
 
 	if (!sw_only)
-		ret = _DL_switch_to_DC_fast();
+		ret = _DL_switch_to_DC_fast(block);
 	else
 		ret = -1; /* not support yet */
 
@@ -2123,7 +2123,7 @@ static int modify_path_power_off_callback(unsigned long userdata)
 	return 0;
 }
 
-static int _DC_switch_to_DL_fast(void)
+static int _DC_switch_to_DL_fast(int block)
 {
 	int ret = 0;
 	int layer = 0;
@@ -2196,7 +2196,7 @@ static int _DC_switch_to_DL_fast(void)
 
 	/* if blocking flush won't cause UX issue, we should simplify this code: remove callback*/
 	 /*else we should move disable_sodi to callback, and change to nonblocking flush */
-	_cmdq_flush_config_handle(0, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
+	_cmdq_flush_config_handle(block, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
 	/* modify_path_power_off_callback((old_scenario << 16) | new_scenario); */
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 1);
@@ -2294,12 +2294,12 @@ static int _DC_switch_to_DL_sw_only(void)
 	return ret;
 }
 
-static int DC_switch_to_DL_fast(int sw_only)
+static int DC_switch_to_DL_fast(int sw_only, int block)
 {
 	int ret = 0;
 
 	if (!sw_only)
-		ret = _DC_switch_to_DL_fast();
+		ret = _DC_switch_to_DL_fast(block);
 	else
 		ret = _DC_switch_to_DL_sw_only();
 
@@ -5682,11 +5682,11 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 	if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
 	    && sess_mode == DISP_SESSION_DECOUPLE_MODE) {
 		/* dl to dc */
-		ret = DL_switch_to_DC_fast(sw_only);
+		ret = DL_switch_to_DC_fast(sw_only, block);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE
 		   && sess_mode == DISP_SESSION_DIRECT_LINK_MODE) {
 		/* dc to dl */
-		ret = DC_switch_to_DL_fast(sw_only);
+		ret = DC_switch_to_DL_fast(sw_only, block);
 		/* primary_display_diagnose(); */
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
 		   && sess_mode == DISP_SESSION_DIRECT_LINK_MIRROR_MODE) {
@@ -5697,11 +5697,11 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
 		   && sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		/* dl to dc mirror  mirror */
-		ret = DL_switch_to_DC_fast(sw_only);
+		ret = DL_switch_to_DC_fast(sw_only, block);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE
 		   && sess_mode == DISP_SESSION_DIRECT_LINK_MODE) {
 		/* dc mirror  to dl */
-		ret = DC_switch_to_DL_fast(sw_only);
+		ret = DC_switch_to_DL_fast(sw_only, block);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE &&
 			sess_mode == DISP_SESSION_DECOUPLE_MODE){
 		/* do nothing */
@@ -5720,7 +5720,7 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 		if (ret)
 			goto done;
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, pgc->session_mode, 0);
-		ret = DL_switch_to_DC_fast(0);
+		ret = DL_switch_to_DC_fast(0, 0);
 	} else {
 		DISPERR("invalid mode switch from %s to %s\n", session_mode_spy(pgc->session_mode),
 			session_mode_spy(sess_mode));
@@ -5772,6 +5772,36 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 	}
 
 	ret = do_primary_display_switch_mode(sess_mode, session, 0, NULL, 0);
+
+done:
+	_primary_path_unlock(__func__);
+
+	return ret;
+}
+
+int primary_display_switch_mode_blocked(int sess_mode, unsigned int session, int force)
+{
+	int ret = 0;
+
+	_primary_path_lock(__func__);
+	primary_display_idlemgr_kick(__func__, 0);
+
+	/*HWC only needs to control mirror or not mirror it doesn't need to control DL/DC */
+	if (!force && primary_display_is_mirror_mode() == _is_mirror_mode(sess_mode))
+		goto done;
+
+
+	if (pgc->session_mode == sess_mode)
+		goto done;
+
+	while (primary_get_state() == DISP_BLANK) {
+		_primary_path_unlock(__func__);
+		DISPMSG("%s wait for leave TUI\n", __func__);
+		primary_display_wait_not_state(DISP_BLANK, MAX_SCHEDULE_TIMEOUT);
+		_primary_path_lock(__func__);
+	}
+
+	ret = do_primary_display_switch_mode(sess_mode, session, 0, NULL, 1);
 
 done:
 	_primary_path_unlock(__func__);
