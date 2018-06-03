@@ -367,6 +367,22 @@ source "drivers/misc/mediatek/pcie_ut/Kconfig"
 
 endmenu  # Peripheral
 
+menu "Performance, Power, and Thermal"
+
+config GATOR
+	tristate "Gator module for ARM's Streamline Performance Analyzer"
+	default m if (ARM || ARM64)
+	depends on PROFILING
+	depends on HIGH_RES_TIMERS
+	depends on LOCAL_TIMERS || !(ARM && SMP)
+	depends on PERF_EVENTS
+	depends on HW_PERF_EVENTS || !(ARM || ARM64)
+	select TRACING
+	help
+	  Gator module for ARM's Streamline Performance Analyzer
+
+endmenu  # PPT
+
 menu "Misc configs"
 
 config MTK_MEM
@@ -435,7 +451,6 @@ source "drivers/misc/mediatek/chip/Kconfig"
 #source "drivers/misc/mediatek/devinfo/Kconfig"
 #source "drivers/misc/mediatek/dynamic_boost/Kconfig"
 source "drivers/misc/mediatek/exm/Kconfig"
-
 source "drivers/misc/mediatek/gud/Kconfig"
 source "drivers/misc/mediatek/ice_debug/Kconfig"
 source "drivers/misc/mediatek/log_store/Kconfig"
