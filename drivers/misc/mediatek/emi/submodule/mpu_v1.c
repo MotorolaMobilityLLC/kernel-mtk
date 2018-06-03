@@ -277,6 +277,7 @@ static ssize_t mpu_store(
 	struct device_driver *driver, const char *buf, size_t count)
 {
 	char *command;
+	char *backup_command;
 	char *ptr;
 	char *token[EMI_MPU_MAX_TOKEN];
 	static struct emi_region_info_t region_info;
@@ -294,6 +295,7 @@ static ssize_t mpu_store(
 	pr_info("[MPU] mpu_store: %s\n", buf);
 
 	command = kmalloc((size_t) EMI_MPU_MAX_CMD_LEN, GFP_KERNEL);
+	backup_command = command;
 	if (!command)
 		return count;
 	strncpy(command, buf, (size_t) EMI_MPU_MAX_CMD_LEN);
@@ -378,7 +380,7 @@ static ssize_t mpu_store(
 		pr_info("[MPU] unknown mpu_store command\n");
 
 mpu_store_end:
-	kfree(command);
+	kfree(backup_command);
 
 	return count;
 }
