@@ -72,6 +72,10 @@ int layer_layout_allow_non_continuous;
 /* Boundary of enter screen idle */
 unsigned long long idle_check_interval = 50;
 
+/* hrt */
+int hrt_high, hrt_low;
+int hrt_show_flag;
+
 struct BMP_FILE_HEADER {
 	UINT16 bfType;
 	UINT32 bfSize;

@@ -666,6 +666,7 @@ void _primary_display_enable_mmsys_clk(void)
 	data_config->dst_dirty = 1;
 	data_config->ovl_dirty = 1;
 	data_config->rdma_dirty = 1;
+	data_config->ovl_dirty = 1;
 	dpmgr_path_config(primary_get_dpmgr_handle(), data_config,
 		NULL);
 

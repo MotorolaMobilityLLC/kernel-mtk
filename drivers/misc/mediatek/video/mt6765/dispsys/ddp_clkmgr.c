@@ -508,6 +508,7 @@ int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
 	default:
 		DDPERR("invalid module id=%d\n", module);
 		ret = -1;
+		break;
 	}
 	return ret;
 }
@@ -556,6 +557,7 @@ int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module)
 	default:
 		DDPERR("invalid module id=%d\n", module);
 		ret = -1;
+		break;
 	}
 	return ret;
 }

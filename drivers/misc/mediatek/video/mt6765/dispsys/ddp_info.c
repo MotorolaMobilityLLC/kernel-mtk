@@ -321,7 +321,7 @@ struct ddp_module ddp_modules[DISP_MODULE_NUM] = {
 	  0}
 	 },
 
-	{DISP_MODULE_RSZ0_VIRTUAL0,
+	{DISP_MODULE_RSZ0_VIRT0,
 	 DISP_T_UNKNOWN,
 	 "rsz0_virtual0",
 	 1,
@@ -329,7 +329,7 @@ struct ddp_module ddp_modules[DISP_MODULE_NUM] = {
 	 {reg_magic,}
 	},
 
-	{DISP_MODULE_RSZ0_VIRTUAL1,
+	{DISP_MODULE_RSZ0_VIRT1,
 	 DISP_T_UNKNOWN,
 	 "rsz0_virtual1",
 	 1,

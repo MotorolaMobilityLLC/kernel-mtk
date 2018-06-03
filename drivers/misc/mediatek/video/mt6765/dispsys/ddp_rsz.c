@@ -22,6 +22,7 @@
 #include "ddp_hal.h"
 #include <linux/delay.h>
 #include "ddp_rsz.h"
+#include "primary_display.h"
 
 #define UNIT 32768
 #define TILE_LOSS 4
@@ -150,7 +151,11 @@ static int rsz_power_off(enum DISP_MODULE_ENUM module, void *qhandle)
 static int rsz_get_in_out_roi(struct disp_ddp_path_config *pconfig,
 			     u32 *in_w, u32 *in_h, u32 *out_w, u32 *out_h)
 {
-	struct OVL_CONFIG_STRUCT *oc = &pconfig->ovl_config[0];
+	struct OVL_CONFIG_STRUCT *oc = NULL;
+
+	oc = &pconfig->ovl_config[0];
+	if (oc->layer_en && oc->source == OVL_LAYER_SOURCE_RESERVED)
+		oc = &pconfig->ovl_config[1];
 
 	if (oc->src_w > oc->dst_w || oc->src_h > oc->dst_h) {
 		DDPERR("%s:L%d:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
@@ -161,17 +166,10 @@ static int rsz_get_in_out_roi(struct disp_ddp_path_config *pconfig,
 	do {
 		if (!oc->layer_en)
 			break;
-		if (oc->src_w < oc->dst_w) {
+		if (oc->src_w < oc->dst_w || oc->src_h < oc->dst_h) {
 			*in_w = oc->src_w;
-			*out_w = oc->dst_w;
-		}
-	} while (0);
-
-	do {
-		if (!oc->layer_en)
-			break;
-		if (oc->src_h < oc->dst_h) {
 			*in_h = oc->src_h;
+			*out_w = oc->dst_w;
 			*out_h = oc->dst_h;
 		}
 	} while (0);
@@ -246,8 +244,22 @@ static int rsz_config(enum DISP_MODULE_ENUM module,
 	rsz_config->frm_out_w = frm_out_w;
 	rsz_config->frm_out_h = frm_out_h;
 
-	if (rsz_check_params(rsz_config))
+	if (rsz_check_params(rsz_config)) {
+		static bool dump;
+		struct OVL_CONFIG_STRUCT *c = &pconfig->ovl_config[0];
+
+		DISPERR("%s:L%d:en%d:(%u,%u,%ux%u)->(%u,%u,%ux%u)\n",
+			__func__, c->layer, c->layer_en,
+			c->src_x, c->src_y, c->src_w, c->src_h,
+			c->dst_x, c->dst_y, c->dst_w, c->dst_h);
+		if (!dump) {
+			dump = true;
+			primary_display_diagnose();
+			disp_aee_print("need rsz but input w(%u) > (%u)\n",
+				       rsz_config->frm_in_w, RSZ_TILE_LENGTH);
+		}
 		return -EINVAL;
+	}
 
 	rsz_calc_tile_params(rsz_config->frm_in_w, rsz_config->frm_out_w,
 			     tile_mode, rsz_config->tw);
