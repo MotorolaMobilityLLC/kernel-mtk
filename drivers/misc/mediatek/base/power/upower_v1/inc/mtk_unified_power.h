@@ -37,6 +37,7 @@ extern "C" {
 
 #define NR_UPOWER_DEGREE 6
 #define DEFAULT_LKG_IDX 0
+#define UPOWER_SEG_IDX 30
 
 /* upower banks */
 enum upower_bank {
@@ -93,7 +94,7 @@ struct upower_tbl_info {
  **************************/
 extern struct upower_tbl *upower_tbl_ref; /* upower table reference to sram*/
 extern int degree_set[NR_UPOWER_DEGREE];
-extern struct upower_tbl_info upower_tbl_infos[NR_UPOWER_BANK]; /* collect all the raw tables */
+extern struct upower_tbl_info *upower_tbl_infos; /* collect all the raw tables */
 extern struct upower_tbl_info *p_upower_tbl_infos; /* points to upower_tbl_infos[] */
 extern unsigned char upower_enable;
 
