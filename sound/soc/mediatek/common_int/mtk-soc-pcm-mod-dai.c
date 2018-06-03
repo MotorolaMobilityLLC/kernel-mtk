@@ -57,7 +57,7 @@
 
 struct afe_mem_control_t  *MOD_DAI_Control_context;
 static struct snd_dma_buffer *Capture_dma_buf;
-static AudioDigtalI2S *mAudioDigitalI2S;
+static struct audio_digital_i2s *mAudioDigitalI2S;
 static bool mModDaiUseSram;
 
 /*
@@ -374,7 +374,7 @@ static int mtk_afe_mod_dai_probe(struct snd_soc_platform *platform)
 	pr_debug("mtk_afe_mod_dai_probe\n");
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_MOD_DAI, MOD_DAI_MAX_BUFFER_SIZE);
 	Capture_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_MOD_DAI);
-	mAudioDigitalI2S =  kzalloc(sizeof(AudioDigtalI2S), GFP_KERNEL);
+	mAudioDigitalI2S =  kzalloc(sizeof(struct audio_digital_i2s), GFP_KERNEL);
 	return 0;
 }
 

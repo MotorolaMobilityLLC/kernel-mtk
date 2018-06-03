@@ -70,7 +70,7 @@
 
 void AudDrv_GPIO_probe(void *dev);
 
-int AudDrv_GPIO_Request(bool _enable, Soc_Aud_Digital_Block _usage);
+int AudDrv_GPIO_Request(bool _enable, enum soc_aud_digital_block _usage);
 
 int AudDrv_GPIO_SMARTPA_Select(int mode);
 int AudDrv_GPIO_TDM_Select(int mode);

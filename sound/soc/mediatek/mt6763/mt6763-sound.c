@@ -743,7 +743,7 @@ void Enable4pin_I2S0_I2S3(uint32 SampleRate, uint32 wLenBit)
 	Afe_Set_Reg(AFE_I2S_CON3, 0x1, 0x1); /* Enable I2S3 */
 }
 
-void SetChipModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribute)
+void SetChipModemPcmConfig(int modem_index, struct audio_digital_pcm p_modem_pcm_attribute)
 {
 	uint32 reg_pcm2_intf_con = 0;
 	uint32 reg_pcm_intf_con1 = 0;
@@ -996,7 +996,7 @@ bool set_chip_afe_enable(bool enable)
 	return true;
 }
 
-bool set_chip_dai_bt_enable(bool enable, AudioDigitalDAIBT *dai_bt, AudioMrgIf *mrg)
+bool set_chip_dai_bt_enable(bool enable, struct audio_digital_dai_bt *dai_bt, struct audio_mrg_if *mrg)
 {
 	if (enable == true) {
 		/* turn on dai bt */
@@ -2174,7 +2174,7 @@ int SetFmI2sInEnable(bool enable)
 	return setConnsysI2SInEnable(enable);
 }
 
-int SetFmI2sIn(AudioDigtalI2S *mDigitalI2S)
+int SetFmI2sIn(struct audio_digital_i2s *mDigitalI2S)
 {
 	return setConnsysI2SIn(mDigitalI2S);
 }
@@ -2263,7 +2263,7 @@ void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
 		pr_aud("%s(), Aud_IRQ%d_Handler is Null", __func__, irqIndex);
 }
 
-enum Soc_Aud_IRQ_MCU_MODE irq_request_number(Soc_Aud_Digital_Block mem_block)
+enum Soc_Aud_IRQ_MCU_MODE irq_request_number(enum soc_aud_digital_block mem_block)
 {
 	switch (mem_block) {
 	case Soc_Aud_Digital_Block_MEM_DL1:
@@ -2289,7 +2289,7 @@ bool IsNeedToSetHighAddr(bool usingdram, dma_addr_t addr)
 	return false;
 }
 
-bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr)
+bool SetHighAddr(enum soc_aud_digital_block MemBlock, bool usingdram, dma_addr_t addr)
 {
 	/* TODO: need check how m17 support 34 bit */
 	return true;

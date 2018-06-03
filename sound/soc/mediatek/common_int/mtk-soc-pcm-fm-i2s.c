@@ -220,7 +220,7 @@ static int mtk_pcm_fm_i2s_close(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_fm_i2s_prepare(struct snd_pcm_substream *substream)
 {
-	AudioDigtalI2S mI2SInAttribute;
+	struct audio_digital_i2s mI2SInAttribute;
 
 	struct snd_pcm_runtime *runtime = substream->runtime;
 

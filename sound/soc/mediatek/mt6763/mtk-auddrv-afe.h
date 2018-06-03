@@ -471,7 +471,7 @@ void *Get_Afe_Powertop_Pointer(void);
 void *Get_AudClk_Pointer(void);
 void *Get_Afe_Infra_Pointer(void);
 
-void SetChipModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribute);
+void SetChipModemPcmConfig(int modem_index, struct audio_digital_pcm p_modem_pcm_attribute);
 bool SetChipModemPcmEnable(int modem_index, bool modem_pcm_on);
 
 bool EnableSideToneFilter(bool stf_on);

@@ -97,7 +97,7 @@ static bool i2s2_adc2_is_started;
 static int mtk_dai_i2s2_adc2_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	AudioDigtalI2S DigtalI2SIn;
+	struct audio_digital_i2s DigtalI2SIn;
 
 	if (!i2s2_adc2_is_started) {
 		pr_warn("%s(), rate = %d, format = %d, channel = %d\n",
