@@ -55,7 +55,6 @@ int g_curFreqID;
 /**
  * For GPU idle check
  */
-
 static int mtk_check_MFG_idle(void)
 {
 	u32 val;
@@ -199,6 +198,11 @@ static int _mtk_pm_callback_power_on(void)
 	val = readl(g_MFG_base + 0x8b0);
 	writel(val & ~(0x1), g_MFG_base + 0x8b0);
 	MFG_DEBUG("[MALI] A: 0x130008b0 val = 0x%x\n", readl(g_MFG_base + 0x8b0));
+
+	/* Write 1 into 0x13000130 bit 0 to enable timestamp register (TIMESTAMP).*/
+	/* TIMESTAMP will be used by clGetEventProfilingInfo.*/
+	val = readl(g_MFG_base + 0x130);
+	writel(val | 0x1, g_MFG_base + 0x130);
 
 	/* Resume frequency before power off */
 	mtk_set_mt_gpufreq_target(g_curFreqID);
