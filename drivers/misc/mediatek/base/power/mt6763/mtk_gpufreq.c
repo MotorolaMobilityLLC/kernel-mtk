@@ -2856,22 +2856,22 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	ext_buck_exist = is_ext_buck_exist();
 
-	if (get_devinfo_with_index(30) == 0x10) {
-		gpufreq_info("@%s: I am 6763 (%x)\n", __func__, get_devinfo_with_index(30));
+	if ((get_devinfo_with_index(30) & 0xf0) == 0x10) {
+		gpufreq_info("@%s: I am 6763 (%x)\n", __func__, get_devinfo_with_index(30) & 0xf0);
 		device_id = C_MT6763;
-	} else if (get_devinfo_with_index(30) == 0x0 || get_devinfo_with_index(30) == 0x20) {
-		gpufreq_info("@%s: I am 6763T (%x)\n", __func__, get_devinfo_with_index(30));
+	} else if ((get_devinfo_with_index(30) & 0xf0) == 0x0 || (get_devinfo_with_index(30) & 0xf0) == 0x20) {
+		gpufreq_info("@%s: I am 6763T (%x)\n", __func__, get_devinfo_with_index(30) & 0xf0);
 		device_id = C_MT6763T;
-	} else if (get_devinfo_with_index(30) == 0x30) {
+	} else if ((get_devinfo_with_index(30) & 0xf0) == 0x30) {
 		if (ext_buck_exist) {
-			gpufreq_info("@%s: I am 6763TT (%x)\n", __func__, get_devinfo_with_index(30));
+			gpufreq_info("@%s: I am 6763TT (%x)\n", __func__, get_devinfo_with_index(30) & 0xf0);
 			device_id = C_MT6763TT;
 		} else {
-			gpufreq_info("@%s: I am 6763T (%x)\n", __func__, get_devinfo_with_index(30));
+			gpufreq_info("@%s: I am 6763T (%x)\n", __func__, get_devinfo_with_index(30) & 0xf0);
 			device_id = C_MT6763T;
 		}
 	} else {
-		gpufreq_err("@%s: Wrong Divice ID (%x)\n", __func__, get_devinfo_with_index(30));
+		gpufreq_err("@%s: Wrong Divice ID (%x)\n", __func__, get_devinfo_with_index(30) & 0xf0);
 	}
 
 	/* alloc PMIC regulator */
