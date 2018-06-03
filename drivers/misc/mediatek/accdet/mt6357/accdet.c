@@ -34,7 +34,7 @@
 /* Used to let accdet know if the pin has been fully plugged-in */
 #define EINT_PIN_PLUG_IN        (1)
 #define EINT_PIN_PLUG_OUT       (0)
-#define EINT_PIN_MOISTURE_DETECED (-1)
+#define EINT_PIN_MOISTURE_DETECED (2)
 #define ANALOG_FASTDISCHARGE_SUPPORT
 
 #ifdef CONFIG_ACCDET_EINT_IRQ
@@ -827,11 +827,11 @@ static inline void clear_accdet_eint(u32 eintid)
 		ACCDET_IRQ_STS, pmic_read(ACCDET_IRQ_STS));
 }
 
-static inline void clear_accdet_eint_check(u32 eint_id)
+static inline void clear_accdet_eint_check(u32 eintid)
 {
 	u64 cur_time = accdet_get_current_time();
 
-	if ((eint_id & PMIC_EINT0) == PMIC_EINT0) {
+	if ((eintid & PMIC_EINT0) == PMIC_EINT0) {
 		while ((pmic_read(ACCDET_IRQ_STS) & ACCDET_EINT0_IRQ_B2)
 			&& (accdet_timeout_ns(cur_time, ACCDET_TIME_OUT)))
 			;
@@ -839,7 +839,7 @@ static inline void clear_accdet_eint_check(u32 eint_id)
 			pmic_read(ACCDET_IRQ_STS)&(~ACCDET_EINT0_IRQ_CLR_B10));
 		pmic_write(AUD_TOP_INT_STATUS0, RG_INT_STATUS_ACCDET_EINT0_B6);
 	}
-	if ((eint_id & PMIC_EINT1) == PMIC_EINT1) {
+	if ((eintid & PMIC_EINT1) == PMIC_EINT1) {
 		while ((pmic_read(ACCDET_IRQ_STS) & ACCDET_EINT1_IRQ_B3)
 			&& (accdet_timeout_ns(cur_time, ACCDET_TIME_OUT)))
 			;
@@ -847,6 +847,13 @@ static inline void clear_accdet_eint_check(u32 eint_id)
 			pmic_read(ACCDET_IRQ_STS)&(~ACCDET_EINT1_IRQ_CLR_B11));
 		pmic_write(AUD_TOP_INT_STATUS0, RG_INT_STATUS_ACCDET_EINT1_B7);
 	}
+
+	pr_info("%s() eint-%s IRQ-STS:[0x%x]=0x%x TOP_INT_STS:[0x%x]:0x%x\n",
+		__func__,
+		(eintid == PMIC_EINT0)?"0":((eintid == PMIC_EINT1)?"1":"BI"),
+		ACCDET_IRQ_STS, pmic_read(ACCDET_IRQ_STS),
+		AUD_TOP_INT_STATUS0, pmic_read(AUD_TOP_INT_STATUS0));
+
 }
 
 static void eint_debounce_set(u32 eint_id, u32 debounce)
@@ -970,6 +977,7 @@ static inline void disable_accdet(void)
 
 static inline void headset_plug_out(void)
 {
+	pr_info("accdet %s\n", __func__);
 	send_accdet_status_event(cable_type, 0);
 	accdet_status = PLUG_OUT;
 	cable_type = NO_DEVICE;
@@ -1364,6 +1372,11 @@ static int pmic_eint_queue_work(int eintID)
 static u32 moisture_detect(void)
 {
 	u32 moisture_vol = 0;
+	u32 tmp_1, tmp_2, tmp_3;
+
+	tmp_1 = pmic_read(ACCDET_RSV);
+	tmp_2 = pmic_read(AUDENC_ANA_CON9);
+	tmp_3 = pmic_read(AUDENC_ANA_CON10);
 
 	/* Disable ACCDET to AUXADC */
 	pmic_write(AUDENC_ANA_CON10, pmic_read(AUDENC_ANA_CON10) & 0x1FFF);
@@ -1378,30 +1391,24 @@ static u32 moisture_detect(void)
 
 #ifdef CONFIG_MOISTURE_INT_SUPPORT
 	/* select VTH to 2v and 500k, use internal resitance,
-	 * 219C bit[10][12] = 1
+	 * 219C bit[10][11][12] = 1
 	 */
-	pmic_write(AUDENC_ANA_CON10, pmic_read(AUDENC_ANA_CON10) | 0x1400);
+	pmic_write(AUDENC_ANA_CON10, pmic_read(AUDENC_ANA_CON10) | 0x1C00);
 #endif
 #ifdef CONFIG_MOISTURE_EXT_SUPPORT
 	/* select VTH to 2v and 500k, use external resitance
-	 * set 219C bit[10] = 1, bit[11] = 0
+	 * set 219C bit[10] = 1, bit[11] [12]= 0
 	 */
-	pmic_write(AUDENC_ANA_CON10, pmic_read(AUDENC_ANA_CON10) & 0xF7FF);
+	pmic_write(AUDENC_ANA_CON10, pmic_read(AUDENC_ANA_CON10) & 0xE7FF);
 	pmic_write(AUDENC_ANA_CON10, pmic_read(AUDENC_ANA_CON10) | 0x0400);
 #endif
 	moisture_vol = accdet_get_auxadc(0);
 	pr_info("%s accdet Moisture Read Auxadc=%d\n", __func__, moisture_vol);
 
 	/* reverse register setting after reading moisture voltage */
-	pmic_write(ACCDET_RSV, pmic_read(ACCDET_RSV) & 0xF7FF);
-	pmic_write(AUDENC_ANA_CON9, pmic_read(AUDENC_ANA_CON9) & 0xDFFF);
-#ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
-	pmic_write(AUDENC_ANA_CON10, pmic_read(AUDENC_ANA_CON10) & 0xEBFF);
-#endif
-#ifdef CONFIG_MOISTURE_EXT_SUPPORT
-	pmic_write(AUDENC_ANA_CON10, pmic_read(AUDENC_ANA_CON10) & 0xFBFF);
-	pmic_write(AUDENC_ANA_CON10, pmic_read(AUDENC_ANA_CON10) | 0x0800);
-#endif
+	pmic_write(ACCDET_RSV, tmp_1);
+	pmic_write(AUDENC_ANA_CON9, tmp_2);
+	pmic_write(AUDENC_ANA_CON10, tmp_3);
 
 	return moisture_vol;
 
@@ -1455,14 +1462,14 @@ static void accdet_irq_handle(void)
 					__func__);
 				return;
 			}
-#endif
-			eint_polarity_reverse(eintID);
-			clear_accdet_eint(eintID);
-			clear_accdet_eint_check(eintID);
-			pmic_eint_queue_work(eintID);
-#if defined(CONFIG_MOISTURE_INT_SUPPORT) || defined(CONFIG_MOISTURE_EXT_SUPPORT)
+			pr_info("%s check moisture done,not water.\n",
+				__func__);
 		}
 #endif
+		eint_polarity_reverse(eintID);
+		clear_accdet_eint(eintID);
+		clear_accdet_eint_check(eintID);
+		pmic_eint_queue_work(eintID);
 #endif
 	} else
 		pr_info("%s no interrupt detected!\n", __func__);
@@ -1477,8 +1484,9 @@ static void accdet_int_handler(void)
 #ifdef CONFIG_ACCDET_EINT_IRQ
 static void accdet_eint_handler(void)
 {
-	pr_debug("%s()\n", __func__);
+	pr_info("%s() enter\n", __func__);
 	accdet_irq_handle();
+	pr_info("%s() exit\n", __func__);
 }
 #endif
 
@@ -1615,7 +1623,7 @@ static int accdet_get_dts_data(void)
 	pr_info("accdet Moisture_EXT support water_r=%d, moisture_ext_r=%d\n",
 	     water_r, moisture_ext_r);
 #endif
-#ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
+#ifdef CONFIG_MOISTURE_INT_SUPPORT
 	of_property_read_u32(node, "moisture-internal-r", &moisture_int_r);
 	pr_info("accdet Moisture_INT support water_r=%d, moisture_int_r=%d\n",
 	     water_r, moisture_int_r);
@@ -1712,15 +1720,15 @@ static void accdet_init_once(void)
 	/* ACC mode*/
 	if (accdet_dts.mic_mode == HEADSET_MODE_1)
 		pmic_write(AUDENC_ANA_CON10,
-		pmic_read(AUDENC_ANA_CON10) | RG_ACCDET_MODE_ANA10_MODE1);
+			reg | RG_ACCDET_MODE_ANA10_MODE1);
 	/* Low cost mode without internal bias*/
 	else if (accdet_dts.mic_mode == HEADSET_MODE_2)
 		pmic_write(AUDENC_ANA_CON10,
-		pmic_read(AUDENC_ANA_CON10)|RG_ACCDET_MODE_ANA10_MODE2);
+			reg | RG_ACCDET_MODE_ANA10_MODE2);
 	/* Low cost mode with internal bias, bit8 = 1 to use internal bias */
 	else if (accdet_dts.mic_mode == HEADSET_MODE_6) {
 		pmic_write(AUDENC_ANA_CON10,
-		pmic_read(AUDENC_ANA_CON10)|RG_ACCDET_MODE_ANA10_MODE2);
+			reg | RG_ACCDET_MODE_ANA10_MODE6);
 		pmic_write(AUDENC_ANA_CON9,
 			pmic_read(AUDENC_ANA_CON9) | RG_AUDMICBIAS1_DCSW1PEN);
 	}
@@ -1750,7 +1758,7 @@ static void accdet_init_once(void)
 	reg |= ACCDET_HWEN_SEL_1 | ACCDET_HWMODE_SEL |
 		ACCDET_EINT_DEB_OUT_DFF | ACCDET_EINIT_REVERSE;
 #elif defined CONFIG_ACCDET_SUPPORT_BI_EINT
-	reg |= ACCDET_HWEN_SEL_0_OR_1 | ACCDET_HWMODE_SEL |
+	reg |= ACCDET_HWEN_SEL_0_AND_1 | ACCDET_HWMODE_SEL |
 		ACCDET_EINT_DEB_OUT_DFF | ACCDET_EINIT_REVERSE;
 #endif
 	pmic_write(ACCDET_HW_MODE_DFF, reg);
