@@ -24,32 +24,30 @@ struct mt_usb_glue {
 };
 
 #if CONFIG_MTK_GAUGE_VERSION == 30
-#define KAL_TRUE	true
-#define KAL_FALSE	false
-typedef bool	kal_bool;
-
 extern unsigned int upmu_get_rgs_chrdet(void);
+extern bool upmu_is_chr_det(void);
+#else
+extern kal_bool upmu_is_chr_det(void);
 #endif
 
 extern CHARGER_TYPE mt_charger_type_detection(void);
-extern kal_bool upmu_is_chr_det(void);
 extern void BATTERY_SetUSBState(int usb_state);
 extern void upmu_interrupt_chrdet_int_en(unsigned int val);
 
 /* specific USB fuctnion */
-typedef enum {
+enum CABLE_MODE {
 	CABLE_MODE_CHRG_ONLY = 0,
 	CABLE_MODE_NORMAL,
 	CABLE_MODE_HOST_ONLY,
 	CABLE_MODE_MAX
-} CABLE_MODE;
+};
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-typedef enum {
+enum PORT_MODE {
 	PORT_MODE_USB = 0,
 	PORT_MODE_UART,
 	PORT_MODE_MAX
-} PORT_MODE;
+};
 
 extern bool usb_phy_check_in_uart_mode(void);
 extern void usb_phy_switch_to_usb(void);

@@ -77,13 +77,13 @@ MODULE_LICENSE("GPL");
 #define OTG_STOP_CMD    0x10
 #define OTG_INIT_MSG    0x20
 
-typedef struct {
+struct otg_message {
 	spinlock_t lock;
 	unsigned int msg;
-} otg_message;
+};
 
-static otg_message g_otg_message;
-int volatile g_exec;
+static struct otg_message g_otg_message;
+static atomic_t g_exec;
 
 unsigned long usb_l1intm_store;
 unsigned short usb_intrrxe_store;
@@ -226,9 +226,9 @@ unsigned int musb_polling_ep0_interrupt(void)
 		DBG(0, "polling ep0 interrupt,csr0=0x%x\n",
 				musb_readb(mtk_musb->mregs, MUSB_OTG_CSR0));
 		wait_for_completion_timeout(&stop_event, 1);
-		if (!g_exec)
+		if (atomic_read(&g_exec) == 0)
 			return TEST_IS_STOP;
-	} while (g_exec);
+	} while (atomic_read(&g_exec) == 1);
 	return 0;
 }
 
@@ -481,11 +481,11 @@ unsigned int musb_polling_bus_interrupt(unsigned int intr)
 		/* delay for the interrupt */
 		if (intr != MUSB_INTR_RESET) {
 			wait_for_completion_timeout(&stop_event, 1);
-			if (!g_exec)
+			if (atomic_read(&g_exec) == 0)
 				break;
 		}
-	} while (g_exec);
-	if (!g_exec) {
+	} while (atomic_read(&g_exec) == 1);
+	if (atomic_read(&g_exec) == 0) {
 		DBG(0, "TEST_IS_STOP\n");
 		return TEST_IS_STOP;
 	}
@@ -748,7 +748,7 @@ TD_4_6:
 	timeout = jiffies + 5 * HZ;
 	musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 	devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
-	while (g_exec && (devctl & 0x18)) {
+	while ((atomic_read(&g_exec) == 1) && (devctl & 0x18)) {
 		DBG(0, "musb::not below session end!\n");
 		msleep(100);
 		if (time_after(jiffies, timeout)) {
@@ -806,7 +806,7 @@ TD_4_6:
 		/* for TD4.8 */
 		musb_h_remote_wakeup();
 		/* maybe need to access the B-OPT, get device descriptor */
-		if (g_exec)
+		if (atomic_read(&g_exec) == 1)
 			wait_for_completion(&stop_event);
 		return TEST_IS_STOP;
 	}
@@ -818,7 +818,7 @@ TD_4_6:
 		if (ret == TEST_IS_STOP)
 			return TEST_IS_STOP;
 		if (ret == DEV_NOT_RESET) {
-			if (g_exec)
+			if (atomic_read(&g_exec) == 1)
 				wait_for_completion(&stop_event);
 			return TEST_IS_STOP;
 		}
@@ -857,8 +857,8 @@ TD_4_6:
 			}
 		} else
 			wait_for_completion_timeout(&stop_event, 1);
-	} while (g_exec);	/* the enum will be repeated for 5 times */
-	if (!g_exec)
+	} while (atomic_read(&g_exec) == 1);	/* the enum will be repeated for 5 times */
+	if (atomic_read(&g_exec) == 0)
 		return TEST_IS_STOP;	/* return form the switch-case */
 	DBG(0, "polling connect form B-OPT,begin\n");
 	ret = musb_polling_bus_interrupt(MUSB_INTR_CONNECT);	/* B-OPT will connect again 100ms after A disconnect */
@@ -958,8 +958,8 @@ TD6_13:
 										 MUSB_INTRUSB));
 			wait_for_completion_timeout(&stop_event, 1);
 		}
-	} while (g_exec);
-	if (!g_exec)
+	} while (atomic_read(&g_exec) == 1);
+	if (atomic_read(&g_exec) == 0)
 		return TEST_IS_STOP;
 	DBG(0, "hnp start\n");
 	if (intrusb & MUSB_INTR_RESUME)
@@ -1008,7 +1008,7 @@ TD6_13:
 			return TEST_IS_STOP;
 	}
 	device_enumed = false;
-	if (g_exec)
+	if (atomic_read(&g_exec) == 1)
 		goto TD6_13;	/* TD5_5 */
 	wait_for_completion(&stop_event);
 }
@@ -1059,7 +1059,7 @@ int musb_otg_exec_cmd(unsigned int cmd)
 	DBG(0, "2:cmd=%d,devctl=0x%x,power=0x%x,intrusb=0x%x\n", cmd, devctl, power, intrusb);
 #endif
 	high_speed = false;
-	g_exec = 1;
+	atomic_set(&g_exec, 1);
 
 	DBG(0, "before exec:cmd=%d\n", cmd);
 
@@ -1069,7 +1069,7 @@ int musb_otg_exec_cmd(unsigned int cmd)
 		DBG(0, "musb::enable VBUS!\n");
 		musb_otg_set_session(true);
 		musb_platform_set_vbus(mtk_musb, 1);
-		while (g_exec)
+		while (atomic_read(&g_exec) == 1)
 			msleep(100);
 		musb_otg_set_session(false);
 		musb_platform_set_vbus(mtk_musb, 0);
@@ -1090,7 +1090,7 @@ int musb_otg_exec_cmd(unsigned int cmd)
 		}
 		musb_writeb(mtk_musb->mregs, 0x7B, 1);
 		musb_otg_set_session(true);
-		while (g_exec)
+		while (atomic_read(&g_exec) == 1)
 			msleep(100);
 		musb_otg_set_session(false);
 		break;
@@ -1098,19 +1098,19 @@ int musb_otg_exec_cmd(unsigned int cmd)
 		/* need as a A-device */
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 		devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
-		while (g_exec && (devctl & 0x18)) {
+		while ((atomic_read(&g_exec) == 1) && (devctl & 0x18)) {
 			DBG(0, "musb::not below session end!\n");
 			msleep(100);
 			devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 		}
-		while (g_exec && (!(devctl & 0x10))) {
+		while ((atomic_read(&g_exec) == 1) && (!(devctl & 0x10))) {
 			DBG(0, "musb::not above session end!\n");
 			msleep(100);
 			devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 		}
 		devctl |= MUSB_DEVCTL_SESSION;
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, devctl);
-		while (g_exec)
+		while (atomic_read(&g_exec) == 1)
 			msleep(100);
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 		break;
@@ -1128,7 +1128,7 @@ int musb_otg_exec_cmd(unsigned int cmd)
 		power = musb_readb(mtk_musb->mregs, MUSB_POWER);
 		power |= MUSB_POWER_SOFTCONN;
 		musb_writeb(mtk_musb->mregs, MUSB_POWER, power);
-		while (g_exec)
+		while (atomic_read(&g_exec) == 1)
 			msleep(100);
 		musb_writeb(mtk_musb->mregs, MUSB_POWER, 0x21);
 		break;
@@ -1160,7 +1160,7 @@ int musb_otg_exec_cmd(unsigned int cmd)
 	case HOST_CMD_GET_DESCRIPTOR:
 	case HOST_CMD_SET_FEATURE:
 		musb_host_test_mode(cmd);
-		while (g_exec)
+		while (atomic_read(&g_exec) == 1)
 			msleep(100);
 		break;
 	}
@@ -1172,7 +1172,7 @@ int musb_otg_exec_cmd(unsigned int cmd)
 void musb_otg_stop_cmd(void)
 {
 	DBG(0, "musb_otg_stop_cmd++\n");
-	g_exec = 0;
+	atomic_set(&g_exec, 0);
 	is_td_59 = false;
 	complete(&stop_event);
 }
