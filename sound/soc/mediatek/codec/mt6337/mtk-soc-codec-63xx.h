@@ -72,5 +72,9 @@ int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff);
 
 void SetAnalogSuspend(bool bEnable);
 void OpenTrimBufferHardware(bool bEnable);
+
+/* mtk audio interface calibration function */
+void mtkaif_calibration_set_loopback(bool enable);
+void mtkaif_calibration_set_phase(int mode1, int mode2);
 #endif
 

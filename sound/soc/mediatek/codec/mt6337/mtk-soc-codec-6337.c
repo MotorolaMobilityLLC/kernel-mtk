@@ -996,6 +996,27 @@ int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 	return (3600000 / pcm_offset * aux_diff + 3916) / 7832;
 }
 
+void mtkaif_calibration_set_loopback(bool enable)
+{
+	if (enable) {
+		audckbufEnable(true);
+		ClsqEnable(true);	/* Turn on 26MHz source clock */
+		Topck_Enable(true);	/* Turn on AUDNCP_CLKDIV engine clock */
+	} else {
+		Topck_Enable(false);
+		ClsqEnable(false);
+		audckbufEnable(false);
+	}
+	/* set data miso and miso2 loopback */
+	Ana_Set_Reg(AUD_TOP_CFG, enable << 7 | enable << 15, 0x8080);
+}
+
+void mtkaif_calibration_set_phase(int mode1, int mode2)
+{
+	/* phase mode is how many delay chain going through */
+	Ana_Set_Reg(AUD_TOP_CFG, mode1 | (mode2 << 8), 0x1f1f);
+}
+
 void setHpGainZero(void)
 {
 	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x000c, 0x003f);
