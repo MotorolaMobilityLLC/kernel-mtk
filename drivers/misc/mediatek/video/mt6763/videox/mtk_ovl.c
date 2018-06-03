@@ -378,12 +378,6 @@ int ovl2mem_init(unsigned int session)
 
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_COMPLETE);
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0)
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-#endif
-
 	pgc->max_layer = 4;
 	pgc->state = 1;
 	pgc->session = session;
@@ -436,12 +430,6 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 				  atomic_read(&g_trigger_ticket));
 
 	cmdqRecReset(pgc->cmdq_handle_config);
-
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0)
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-#endif
 
 	pgc->need_trigger_path = 0;
 	atomic_add(1, &g_trigger_ticket);

@@ -692,17 +692,7 @@ static int ddp_get_mutex_src(enum DISP_MODULE_ENUM dest_module, enum DDP_MODE dd
 		if (ddp_mode == DDP_VIDEO_MODE)
 			DISP_LOG_W("%s: dst_mode=%s, but is video mode !!\n", __func__,
 				   ddp_get_module_name(dest_module));
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-				/* full shadow mode: sof=eof=reserved for cmd mode to delay */
-				/* signal sof until trigger path(mutex_en=1) */
-				*SOF_src = SOF_VAL_MUTEX0_SOF_RESERVED;
-				*EOF_src = SOF_VAL_MUTEX0_EOF_RESERVED;
-			} else {
-				/* force_commit, bypass_shadow should be sof=eof=single */
-				*SOF_src = *EOF_src = SOF_VAL_MUTEX0_SOF_SINGLE_MODE;
-			}
-		}
+
 		return 0;
 	}
 
@@ -723,15 +713,6 @@ static int ddp_get_mutex_src(enum DISP_MODULE_ENUM dest_module, enum DDP_MODE dd
 			*EOF_src = src_from_dst_module;
 		else
 			*EOF_src = SOF_VAL_MUTEX0_EOF_SINGLE_MODE;
-
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-				/* full shadow mode: sof=eof=reserved for cmd mode to delay */
-				/* signal sof until trigger path(mutex_en=1) */
-				*SOF_src = SOF_VAL_MUTEX0_SOF_RESERVED;
-				*EOF_src = SOF_VAL_MUTEX0_EOF_RESERVED;
-			}
-		}
 	} else {
 		*SOF_src = *EOF_src = src_from_dst_module;
 	}
@@ -781,12 +762,6 @@ static int ddp_mutex_set_l(int mutex_id, int *module_list, enum DDP_MODE ddp_mod
 	sof_val = REG_FLD_VAL(SOF_FLD_MUTEX0_SOF, sof_src);
 	sof_val |= REG_FLD_VAL(SOF_FLD_MUTEX0_EOF, eof_src);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_SOF(mutex_id), sof_val);
-
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
-		ddp_mutex_get(mutex_id, handle);
-		ddp_mutex_release(mutex_id, handle);
-	}
 
 	DDPDBG("mutex %d value=0x%x, sof=%s, eof=%s\n", mutex_id,
 	       value0, ddp_get_mutex_sof_name(sof_src), ddp_get_mutex_sof_name(eof_src));

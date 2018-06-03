@@ -184,20 +184,6 @@ int ovl_start(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned long ovl_base = ovl_base_addr(module);
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			/* full shadow mode: read working */
-			DISP_REG_SET_FIELD(handle, EN_FLD_RD_WRK_REG, ovl_base + DISP_REG_OVL_EN, 0x0);
-		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
-			/* force commit: force_commit, read working */
-			DISP_REG_SET_FIELD(handle, EN_FLD_FORCE_COMMIT, ovl_base + DISP_REG_OVL_EN, 0x1);
-			DISP_REG_SET_FIELD(handle, EN_FLD_RD_WRK_REG, ovl_base + DISP_REG_OVL_EN, 0x0);
-		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
-			/* bypass shadow: bypass_shadow, read working */
-			DISP_REG_SET_FIELD(handle, EN_FLD_BYPASS_SHADOW, ovl_base + DISP_REG_OVL_EN, 0x1);
-			DISP_REG_SET_FIELD(handle, EN_FLD_RD_WRK_REG, ovl_base + DISP_REG_OVL_EN, 0x0);
-		}
-	}
 	DISP_REG_SET_FIELD(handle, EN_FLD_OVL_EN,
 			   ovl_base + DISP_REG_OVL_EN, 0x1);
 

@@ -1242,20 +1242,7 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			dpmgr_path_mutex_release(dp_handle, trigger_loop_handle);
-			dpmgr_path_mutex_enable(dp_handle, trigger_loop_handle);
-		} else {
-			dpmgr_path_mutex_enable(dp_handle, trigger_loop_handle);
-			dpmgr_path_mutex_get(dp_handle, trigger_loop_handle);
-			dpmgr_path_mutex_release(dp_handle, trigger_loop_handle);
-		}
-	} else {
-		/*do not support shadow register*/
-		dpmgr_path_mutex_enable(dp_handle, trigger_loop_handle);
-	}
+	dpmgr_path_mutex_enable(dp_handle, trigger_loop_handle);
 
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];

@@ -3630,24 +3630,6 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 
 	DISPFUNC();
 
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-				/* full shadow mode */
-			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
-				/* force commit */
-				DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DBG_REG,
-							  DSI_REG[i]->DSI_SHADOW_DBG, FORCE_COMMIT, 1);
-			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
-				/* bypass shadow */
-				DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DBG_REG,
-							  DSI_REG[i]->DSI_SHADOW_DBG, BYPASS_SHADOW, 1);
-			}
-			/* read shadow */
-			DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DBG_REG, DSI_REG[i]->DSI_SHADOW_DBG, READ_WRK_REG, 0);
-		}
-	}
-
 	if (module == DISP_MODULE_DSIDUAL) {
 		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);

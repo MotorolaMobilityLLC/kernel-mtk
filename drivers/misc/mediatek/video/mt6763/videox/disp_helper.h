@@ -57,7 +57,7 @@ enum DISP_HELPER_OPT {
 	DISP_OPT_PARTIAL_UPDATE,
 	DISP_OPT_CV_BYSUSPEND,
 	DISP_OPT_DELAYED_TRIGGER,
-	/* shadow register options @{*/
+	/* TODO: Will be removed @{*/
 	DISP_OPT_SHADOW_REGISTER,	/* is chip has shadow register? */
 	DISP_OPT_SHADOW_MODE,		/* 0:full; 1:force_commit; 2:bypass shadow */
 	/* @} */

@@ -1699,14 +1699,7 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 	}
 	cmdqRecReset(cmdq_wait_handle);
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, cmdq_handle);
-	} else {
-		/* configure config thread */
-		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
-	}
-
+	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
 
 	dpmgr_path_add_memout(pgc->dpmgr_handle, after_engine, cmdq_handle);
 
@@ -1722,10 +1715,6 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 	ret = dpmgr_path_config(pgc->dpmgr_handle, pconfig, cmdq_handle);
 
 	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0)
-			dpmgr_path_mutex_release(pgc->dpmgr_handle, cmdq_handle);
-	}
 	_cmdq_flush_config_handle_mira(cmdq_handle, 0);
 	DISPDBG("dl_to_dc capture:Flush add memout mva(0x%lx)\n", p_wdma->dstAddress);
 
@@ -1771,18 +1760,8 @@ static int _DL_switch_to_DC_fast(void)
 	_cmdq_reset_config_handle();
 	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		/* release_mutex first for "pgc->cmdq_handle_config", because:
-		 * If someone has get_mutex, then release it first
-		 * If no one has get_mutex, then nothing happens
-		 * TODO: create a new cmdq handle make it more simple
-		 */
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	} else {
-		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
-	}
+	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
+
 	/* 3.modify interface path handle to new scenario(rdma->dsi) */
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP;
@@ -1826,10 +1805,7 @@ static int _DL_switch_to_DC_fast(void)
 	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
 	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
 	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	}
+
 	/* 6 .flush to cmdq */
 	_cmdq_set_config_handle_dirty();
 	_cmdq_flush_config_handle(1, NULL, 0);
@@ -1844,12 +1820,7 @@ static int _DL_switch_to_DC_fast(void)
 	_cmdq_reset_config_handle();
 	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	} else {
-		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
-	}
+	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
 	/* 9. create ovl2mem path handle */
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
@@ -1862,11 +1833,6 @@ static int _DL_switch_to_DC_fast(void)
 	} else {
 		DISPERR("dpmgr create path FAIL\n");
 		return -1;
-	}
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		/* If full shadow mode, get/release_mutex to surround all configs */
-		dpmgr_path_mutex_get(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
 	}
 
 	dpmgr_path_set_video_mode(pgc->ovl2mem_path_handle, 0);
@@ -1893,20 +1859,10 @@ static int _DL_switch_to_DC_fast(void)
 
 	/* cmdqRecDumpCommand(pgc->cmdq_handle_ovl1to2_config); */
 	/* cmdqRecClearEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);*/
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_release(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
-	}
+
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 0);
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		/* If full shadow mode, get/release_mutex to surround all configs*/
-		 /* For the first frame of decouple mode */
-		dpmgr_path_mutex_get(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
-	} else {
-		cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
-	}
+	cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3, 0);
 
@@ -1984,11 +1940,6 @@ static int _DC_switch_to_DL_fast(void)
 	/* clear sof token for next dl to dc */
 	cmdqRecClearEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_SOF);
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_release(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
-	}
-
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
 	pgc->ovl2mem_path_handle = NULL;
@@ -2003,18 +1954,7 @@ static int _DC_switch_to_DL_fast(void)
 	_cmdq_reset_config_handle();
 	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		/* release_mutex first for "pgc->cmdq_handle_config", because:
-		 * If someone has get_mutex, then release it first
-		 * If no one has get_mutex, then nothing happens
-		 * TODO: create a new cmdq handle make it more simple
-		 */
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	} else {
-		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
-	}
+	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
@@ -2048,10 +1988,6 @@ static int _DC_switch_to_DL_fast(void)
 	/* cmdqRecDumpCommand(pgc->cmdq_handle_config); */
 	_cmdq_set_config_handle_dirty();
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	}
 	/* if blocking flush won't cause UX issue, we should simplify this code: remove callback*/
 	 /*else we should move disable_sodi to callback, and change to nonblocking flush */
 	_cmdq_flush_config_handle(0, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
@@ -2062,12 +1998,7 @@ static int _DC_switch_to_DL_fast(void)
 	_cmdq_reset_config_handle();
 	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	} else {
-		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
-	}
+	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
 	/* 9.enable event for new path */
 	if (primary_display_is_video_mode()) {
@@ -2577,11 +2508,6 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 	if (_should_start_path())
 		dpmgr_path_start(pgc->dpmgr_handle, primary_display_cmdq_enabled());
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	}
-
 	if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)
 		&& primary_display_is_video_mode() && ap_fps_changed) {
 		change_dsi_vfp(pgc->cmdq_handle_config, pgc->ap_fps);
@@ -2609,14 +2535,8 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 	if (_should_set_cmdq_dirty())
 		_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		/* next frame started here */
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	} else {
-		if (_should_insert_wait_frame_done_token())
-			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
-	}
+	if (_should_insert_wait_frame_done_token())
+		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
 	if (_need_lfr_check())
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config, CMDQ_DSI_LFR_MODE, 0);
@@ -2657,13 +2577,7 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 
 	cmdqRecFlushAsyncCallback(cmdq_handle, callback, data);
 	cmdqRecReset(cmdq_handle);
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		/* If full shadow mode, get/release_mutex to surround all configs */
-		dpmgr_path_mutex_get(disp_handle, cmdq_handle);
-	} else {
-		cmdqRecWait(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
-	}
+	cmdqRecWait(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_END, 0, data);
 
@@ -3139,12 +3053,7 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 		}
 		cmdqRecReset(cmdq_handle);
 
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-				disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			dpmgr_path_mutex_get(pgc->dpmgr_handle, cmdq_handle);
-		} else {
-			_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
-		}
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
 		/* update output fence */
 		cmdqRecBackupUpdateSlot(cmdq_handle, pgc->cur_config_fence,
 					disp_sync_get_output_timeline_id(), mem_config.buff_idx);
@@ -3152,10 +3061,7 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 		dpmgr_path_remove_memout(pgc->dpmgr_handle, cmdq_handle);
 
 		cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-				disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			dpmgr_path_mutex_release(pgc->dpmgr_handle, cmdq_handle);
-		}
+
 		_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 		cmdqRecFlushAsyncCallback(cmdq_handle, callback, 0);
 		pgc->need_trigger_ovl1to2 = 0;
@@ -3452,11 +3358,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		_cmdq_reset_config_handle();
 		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 	}
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		/* the first frame after reboot */
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	}
+
 	config_display_m4u_port();
 	primary_display_set_max_layer(PRIMARY_SESSION_INPUT_LAYER_COUNT);
 	if (init_decouple_buffer_thread == NULL) {
@@ -3542,24 +3444,11 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	/* path start must after lcm init for video mode, because dsi_start will set mode */
 	dpmgr_path_start(pgc->dpmgr_handle, use_cmdq);
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	}
-
 	if (use_cmdq) {
 		_cmdq_flush_config_handle(1, NULL, 0);
 		_cmdq_reset_config_handle();
+		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 	}
-
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	} else {
-		if (use_cmdq)
-			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
-	}
-
 
 	if (!is_lcm_inited && primary_display_is_video_mode())
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, 0);
@@ -4169,20 +4058,6 @@ int primary_display_suspend(void)
 		/* goto done; */
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 0, 5);
-	/**
-	 * must get/release_mutex to copy configs from shadow into working
-	 */
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			dpmgr_path_mutex_get(pgc->dpmgr_handle, NULL);
-			dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
-			dpmgr_path_mutex_enable(pgc->dpmgr_handle, NULL);
-		} else {
-			dpmgr_path_mutex_enable(pgc->dpmgr_handle, NULL);
-			dpmgr_path_mutex_get(pgc->dpmgr_handle, NULL);
-			dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
-		}
-	}
 
 	if (primary_display_get_power_mode_nolock() == DOZE_SUSPEND) {
 		if (primary_display_get_lcm_power_state_nolock() != LCM_ON_LOW_POWER) {
@@ -4329,11 +4204,6 @@ int primary_display_resume(void)
 		set_enterulps(0);
 
 	DISPCHECK("dpmanager path power on[end]\n");
-
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, NULL);
-	}
 
 	DISPINFO("dpmanager path reset[begin]\n");
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -4485,13 +4355,8 @@ int primary_display_resume(void)
 		if (_should_reset_cmdq_config_handle())
 			_cmdq_reset_config_handle();
 		/* for next frame */
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-				disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-		} else {
-			if (_should_insert_wait_frame_done_token())
-				_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
-		}
+		if (_should_insert_wait_frame_done_token())
+			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_RDMA0_DONE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
@@ -4523,13 +4388,8 @@ int primary_display_resume(void)
 			_cmdq_reset_config_handle();
 
 		/* for next frame */
-		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-				disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-		} else {
-			if (_should_insert_wait_frame_done_token())
-				_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
-		}
+		if (_should_insert_wait_frame_done_token())
+			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DSI0_EXT_TE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);

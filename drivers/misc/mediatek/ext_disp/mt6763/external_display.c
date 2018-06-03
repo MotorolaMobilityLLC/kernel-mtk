@@ -722,19 +722,8 @@ static int _ext_disp_trigger(int blocking, void *callback, unsigned int userdata
 	if (_should_reset_cmdq_config_handle())
 		_cmdq_reset_config_handle();
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		/* next frame started here */
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	} else {
-		if (_should_insert_wait_frame_done_token())
-			_cmdq_insert_wait_frame_done_token(0);
-	}
-#else
 	if (_should_insert_wait_frame_done_token())
 		_cmdq_insert_wait_frame_done_token(0);
-#endif
 
 	return 0;
 }
@@ -766,19 +755,8 @@ static int _ext_disp_trigger_EPD(int blocking, void *callback, unsigned int user
 	if (_should_reset_cmdq_config_handle())
 		_cmdq_reset_config_handle();
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-		/* next frame started here */
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-	} else {
-		if (_should_insert_wait_frame_done_token())
-			_cmdq_insert_wait_frame_done_token(1);
-	}
-#else
 	if (_should_insert_wait_frame_done_token())
 		_cmdq_insert_wait_frame_done_token(0);
-#endif
 
 	return 0;
 }
@@ -890,13 +868,6 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 
 	EXT_DISP_LOG("ext_disp display START cmdq trigger loop finished\n");
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0)
-		/* the first frame after reboot */
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, NULL);
-#endif
-
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, ext_disp_is_video_mode());
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 
@@ -920,24 +891,12 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 	} else
 		EXT_DISP_LOG("allocate buffer failed!!!\n");
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0)
-		dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
-#endif
-
 	/* this will be set to always enable cmdq later */
 	if (ext_disp_is_video_mode())
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DPI_VSYNC);
 
 	if (ext_disp_use_cmdq == CMDQ_ENABLE)
 		_cmdq_reset_config_handle();
-
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
-			disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0)
-		dpmgr_path_mutex_get(pgc->dpmgr_handle, pgc->cmdq_handle_config);
-#endif
 
 	atomic_set(&g_extd_trigger_ticket, 1);
 	atomic_set(&g_extd_release_ticket, 0);
@@ -1044,12 +1003,6 @@ int ext_disp_suspend(unsigned int session)
 	if (ext_disp_use_cmdq == CMDQ_ENABLE && DISP_SESSION_DEV(session) != DEV_EINK + 1)
 		_cmdq_stop_extd_trigger_loop();
 
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER))
-		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0)
-			dpmgr_path_mutex_get(pgc->dpmgr_handle, NULL);
-#endif
-
 	dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle))
@@ -1058,19 +1011,6 @@ int ext_disp_suspend(unsigned int session)
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
 
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
-
-#ifdef EXTD_SHADOW_REGISTER_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
-			dpmgr_path_mutex_enable(pgc->dpmgr_handle, NULL);
-		} else {
-			dpmgr_path_mutex_enable(pgc->dpmgr_handle, NULL);
-			dpmgr_path_mutex_get(pgc->dpmgr_handle, NULL);
-			dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
-		}
-	}
-#endif
 
 	pgc->state = EXTD_SUSPEND;
 

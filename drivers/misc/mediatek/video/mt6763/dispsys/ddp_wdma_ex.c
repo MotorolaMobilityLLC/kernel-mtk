@@ -65,20 +65,6 @@ int wdma_start(enum DISP_MODULE_ENUM module, void *handle)
 
 	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_INTEN, 0x03);
 
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-			/* full shadow mode */
-		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
-			/* force commit */
-			DISP_REG_SET_FIELD(handle, WDMA_EN_FLD_FORCE_COMMIT,
-				idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_EN, 0x1);
-		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
-			/* bypass shadow */
-			DISP_REG_SET_FIELD(handle, WDMA_EN_FLD_BYPASS_SHADOW,
-				idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_EN, 0x1);
-		}
-	}
-
 	DISP_REG_SET_FIELD(handle, WDMA_EN_FLD_ENABLE,
 		idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_EN, 0x1);
 
