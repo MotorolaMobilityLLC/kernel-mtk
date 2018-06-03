@@ -26,6 +26,8 @@ enum CMDQ_STACK_TYPE_ENUM {
 	CMDQ_STACK_TYPE_ELSE = 1,
 	CMDQ_STACK_TYPE_WHILE = 2,
 	CMDQ_STACK_TYPE_BREAK = 3,
+	CMDQ_STACK_TYPE_CONTINUE = 4,
+	CMDQ_STACK_TYPE_DO_WHILE = 5,
 };
 
 #define CMDQ_DATA_BIT				(62)
@@ -870,7 +872,7 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
-	int32_t cmdq_op_continue(struct cmdqRecStruct *handle);
+	s32 cmdq_op_continue(struct cmdqRecStruct *handle);
 
 /**
  * Append break statement command into while loop
@@ -879,7 +881,7 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
-	int32_t cmdq_op_break(struct cmdqRecStruct *handle);
+	s32 cmdq_op_break(struct cmdqRecStruct *handle);
 
 /**
  * Append end while statement command
@@ -888,7 +890,30 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
-	int32_t cmdq_op_end_while(struct cmdqRecStruct *handle);
+	s32 cmdq_op_end_while(struct cmdqRecStruct *handle);
+
+/*
+ * Append do-while statement command
+ * Parameter:
+ *     handle: the command queue recorder handle
+ * Return:
+ *     0 for success; else the error code is returned
+ */
+	s32 cmdq_op_do_while(struct cmdqRecStruct *handle);
+
+/*
+ * Append end do while statement command
+ * Parameter:
+ *     handle: the command queue recorder handle
+ *     arg_b: the value who use to do conditional operation
+ *     arg_condition: conditional operator
+ *     arg_c: the value who use to do conditional operation
+ * Return:
+ *     0 for success; else the error code is returned
+ */
+	s32 cmdq_op_end_do_while(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
+		enum CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c);
+
 
 /**
  * Linux like wait_event_timeout

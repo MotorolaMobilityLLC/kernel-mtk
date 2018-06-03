@@ -3723,6 +3723,65 @@ static void testcase_basic_logic(void)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
+void testcase_do_while_continue(void)
+{
+	struct cmdqRecStruct *handle = NULL;
+	struct TaskStruct *task = NULL;
+	CMDQ_VARIABLE cmdq_result, cmdq_op_counter;
+	cmdqBackupSlotHandle slot_handle;
+	const u32 max_loop_count = 20;
+	u32 test_result = 0, expect_result = 0, op_counter = 0;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_alloc_mem(&slot_handle, 1);
+
+	/* test logic assign */
+	cmdq_task_reset(handle);
+	cmdq_op_init_variable(&cmdq_result);
+	cmdq_op_init_variable(&cmdq_op_counter);
+
+	cmdq_op_assign(handle, &cmdq_result, 1);
+	cmdq_op_assign(handle, &cmdq_op_counter, 0);
+	cmdq_op_do_while(handle);
+		cmdq_op_add(handle, &cmdq_op_counter, cmdq_op_counter, 1);
+		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
+		cmdq_op_if(handle, cmdq_result, CMDQ_GREATER_THAN, 20);
+			cmdq_op_continue(handle);
+		cmdq_op_end_if(handle);
+		cmdq_op_add(handle, &cmdq_result, cmdq_result, 18);
+	cmdq_op_end_do_while(handle, cmdq_op_counter, CMDQ_LESS_THAN, max_loop_count);
+	cmdq_op_backup_CPR(handle, cmdq_result, slot_handle, 0);
+
+	cmdq_op_finalize_command(handle, false);
+	_test_submit_async(handle, &task);
+	cmdq_core_dump_task_mem(task);
+	cmdqCoreWaitAndReleaseTask(task, 500);
+
+	cmdq_cpu_read_mem(slot_handle, 0, &test_result);
+
+	expect_result = 1;
+	op_counter = 0;
+	do {
+		op_counter += 1;
+		expect_result += 1;
+		if (expect_result > 20)
+			continue;
+		expect_result += 18;
+	} while (op_counter < max_loop_count);
+
+	if (test_result != expect_result) {
+		CMDQ_TEST_FAIL("%s test value is 0x%08x, not expect 0x%08x\n",
+			__func__, test_result, expect_result);
+	}
+
+	cmdq_task_destroy(handle);
+	cmdq_free_mem(slot_handle);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
 static void testcase_basic_jump_c(void)
 {
 	struct cmdqRecStruct *handle = NULL;
@@ -3779,7 +3838,6 @@ static void testcase_basic_jump_c(void)
 	expect_result = 1;
 	while (row_in_value < max_rows) {
 		col_in_value = 0;
-
 		expect_result = expect_result + 1;
 
 		while (col_in_value < max_cols) {
@@ -3798,6 +3856,93 @@ static void testcase_basic_jump_c(void)
 
 		row_in_value++;
 	}
+
+	if (test_result != expect_result) {
+		/* test fail */
+		CMDQ_TEST_FAIL("%s value is 0x%08x, not 0x%08x\n",
+			__func__, test_result, expect_result);
+	}
+
+	cmdq_task_destroy(handle);
+	cmdq_free_mem(slot_handle);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
+static void testcase_basic_jump_c_do_while(void)
+{
+	struct cmdqRecStruct *handle = NULL;
+	struct TaskStruct *task = NULL;
+	const u32 max_rows = 10;
+	const u32 max_cols = 12;
+	u32 row_in_value = 0, col_in_value = 0;
+	u32 test_result, expect_result, expect_temp_sum;
+	CMDQ_VARIABLE cmdq_row, cmdq_col, cmdq_temp_sum, cmdq_result;
+	cmdqBackupSlotHandle slot_handle;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_alloc_mem(&slot_handle, 1);
+
+	/* test logic assign */
+	cmdq_task_reset(handle);
+	cmdq_op_init_variable(&cmdq_row);
+	cmdq_op_init_variable(&cmdq_col);
+	cmdq_op_init_variable(&cmdq_temp_sum);
+	cmdq_op_init_variable(&cmdq_result);
+
+	cmdq_op_assign(handle, &cmdq_row, row_in_value);
+	cmdq_op_assign(handle, &cmdq_result, 1);
+	cmdq_op_do_while(handle);
+		cmdq_op_assign(handle, &cmdq_col, 0);
+		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
+		cmdq_op_do_while(handle);
+			cmdq_op_add(handle, &cmdq_col, cmdq_col, 1);
+			cmdq_op_if(handle, cmdq_col, CMDQ_GREATER_THAN_AND_EQUAL, 10);
+				cmdq_op_break(handle);
+			cmdq_op_else_if(handle, 6, CMDQ_EQUAL, cmdq_col);
+				cmdq_op_continue(handle);
+			cmdq_op_else_if(handle, 5, CMDQ_EQUAL, cmdq_col);
+				cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
+			cmdq_op_else(handle);
+				cmdq_op_add(handle, &cmdq_temp_sum, cmdq_row, cmdq_col);
+				cmdq_op_add(handle, &cmdq_result, cmdq_result, cmdq_temp_sum);
+			cmdq_op_end_if(handle);
+		cmdq_op_end_do_while(handle, cmdq_col, CMDQ_LESS_THAN, max_cols);
+		cmdq_op_add(handle, &cmdq_row, cmdq_row, 1);
+	cmdq_op_end_do_while(handle, cmdq_row, CMDQ_LESS_THAN, max_rows);
+	cmdq_op_backup_CPR(handle, cmdq_result, slot_handle, 0);
+
+	cmdq_op_finalize_command(handle, false);
+	_test_submit_async(handle, &task);
+	cmdq_core_dump_task_mem(task);
+	cmdqCoreWaitAndReleaseTask(task, 500);
+
+	cmdq_cpu_read_mem(slot_handle, 0, &test_result);
+
+	/* value check */
+	expect_result = 1;
+	do {
+		col_in_value = 0;
+		expect_result = expect_result + 1;
+
+		do {
+			col_in_value++;
+			if (col_in_value >= 10) {
+				break;
+			} else if (col_in_value == 6) {
+				continue;
+			} else if (col_in_value == 5) {
+				expect_result = expect_result + 1;
+			} else {
+				expect_temp_sum = row_in_value + col_in_value;
+				expect_result = expect_result + expect_temp_sum;
+			}
+		} while (col_in_value < max_cols);
+
+		row_in_value++;
+	} while (row_in_value < max_rows);
 
 	if (test_result != expect_result) {
 		/* test fail */
@@ -5923,7 +6068,9 @@ static void testcase_general_handling(int32_t testID)
 		testcase_basic_delay(100000);
 		break;
 	case 125:
+		testcase_do_while_continue();
 		testcase_basic_jump_c();
+		testcase_basic_jump_c_do_while();
 		testcase_long_jump_c();
 		break;
 	case 124:
