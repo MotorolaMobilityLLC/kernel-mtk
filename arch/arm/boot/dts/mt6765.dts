@@ -2576,7 +2576,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		<&topckgen CLK_TOP_USB20_192M_D4>,
 		<&topckgen CLK_TOP_UNIVPLL2_D8>,
 		<&topckgen CLK_TOP_USB20_192M_D8>,
-		<&topckgen CLK_TOP_CLK26M>,
+		<&clk26m>,
 		<&camsys CLK_CAM_SENINF>,
 		<&apmixed CLK_APMIXED_MIPIC0_26M>,
 		<&apmixed CLK_APMIXED_MIPIC1_26M>,
