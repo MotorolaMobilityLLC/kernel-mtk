@@ -735,6 +735,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 #if SPM_BYPASS_SYSPWREQ
 	.syspwreq_mask = 1,
 #endif
+
 	/* Auto-gen Start */
 
 	/* SPM_CLK_CON */
@@ -752,11 +753,11 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.reg_sysclk1_src_mask_b = 0x20,
 
 	/* SPM_SRC_REQ */
-	.reg_spm_apsrc_req = 1,
-	.reg_spm_f26m_req = 1,
-	.reg_spm_infra_req = 1,
-	.reg_spm_ddren_req = 1,
-	.reg_spm_vrf18_req = 1,
+	.reg_spm_apsrc_req = 0,
+	.reg_spm_f26m_req = 0,
+	.reg_spm_infra_req = 0,
+	.reg_spm_ddren_req = 0,
+	.reg_spm_vrf18_req = 0,
 	.reg_spm_dvfs_level0_req = 0,
 	.reg_spm_dvfs_level1_req = 0,
 	.reg_spm_dvfs_level2_req = 0,
@@ -832,7 +833,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	/* .reg_gce_vrf18_req2_mask_b = 0, */ /* TODO */
 
 	/* SPM_SRC3_MASK */
-	.reg_mpwfi_op = 0,
+	.reg_mpwfi_op = 1,
 	.reg_spm_resource_req_rsv1_4_mask_b = 0,
 	.reg_spm_resource_req_rsv1_3_mask_b = 0,
 	.reg_spm_resource_req_rsv1_2_mask_b = 0,
@@ -932,7 +933,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.mcu17_wfi_en = 0,
 
 	/* SPM_RSV_CON2 */
-	/*.spm_rsv_con2 = 0,*/ /* TODO */
+	/* .spm_rsv_con2 = 0, */ /* TODO */
 
 	/* Auto-gen End */
 };

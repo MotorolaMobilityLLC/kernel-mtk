@@ -1175,18 +1175,33 @@ static u32 slp_spm_SODI_flags = {
 	SPM_FLAG_SODI_OPTION
 };
 
+#if defined(CONFIG_MACH_MT6799)
+
 u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-#ifndef CONFIG_MACH_MT6759
 	SPM_FLAG_DIS_PERI_PDN |
-#endif
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 #endif
 	SPM_FLAG_DEEPIDLE_OPTION
 };
+
+#elif defined(CONFIG_MACH_MT6759)
+
+u32 slp_spm_deepidle_flags = {
+	SPM_FLAG_DIS_INFRA_PDN |
+	SPM_FLAG_DIS_VCORE_DVS |
+	SPM_FLAG_DIS_VCORE_DFS |
+	SPM_FLAG_ENABLE_ATF_ABORT |
+#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
+	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
+#endif
+	SPM_FLAG_DEEPIDLE_OPTION
+};
+
+#endif /* platform difference */
 
 static u32 slp_spm_MCSODI_flags = {
 	SPM_FLAG_RUN_COMMON_SCENARIO |
