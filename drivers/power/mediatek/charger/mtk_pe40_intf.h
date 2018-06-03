@@ -30,8 +30,8 @@ struct pe40_power_cap {
 };
 
 struct pe4_pps_status {
-	unsigned int output_mv;	/* 0xffff means no support */
-	unsigned int output_ma;	/* 0xff means no support */
+	int output_mv;	/* 0xffff means no support */
+	int output_ma;	/* 0xff means no support */
 	uint8_t real_time_flags;
 };
 

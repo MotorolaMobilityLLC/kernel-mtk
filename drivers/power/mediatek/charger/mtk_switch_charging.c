@@ -373,11 +373,11 @@ static int mtk_switch_charging_do_charging(struct charger_manager *info, bool en
 		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
 		mtk_pe40_set_is_enable(info, en);
 	} else {
+		/* disable might change state , so first */
+		_disable_all_charging(info);
 		swchgalg->disable_charging = true;
 		swchgalg->state = CHR_ERROR;
 		charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
-
-		_disable_all_charging(info);
 	}
 
 	return 0;
