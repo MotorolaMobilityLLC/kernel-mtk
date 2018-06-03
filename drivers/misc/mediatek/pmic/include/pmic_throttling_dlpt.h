@@ -53,4 +53,12 @@ extern void fg_cur_l_int_handler(void);
 extern int get_rac(void);
 extern int get_imix(void);
 extern int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur);
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+extern void mt6355_auxadc_dump_setting_regs(void);
+extern void mt6355_auxadc_dump_clk_regs(void);
+extern void mt6355_auxadc_dump_channel_regs(void);
+#endif
+
+
 #endif				/* _PMIC_THROTTLING_DLPT_H_ */

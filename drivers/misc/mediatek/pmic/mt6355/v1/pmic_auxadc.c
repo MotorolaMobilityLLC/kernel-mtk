@@ -250,6 +250,42 @@ EXPORT_SYMBOL(mt6355_auxadc_init);
 		pmic_get_register_value(_reg));			\
 }
 
+void mt6355_auxadc_dump_setting_regs(void)
+{
+	pr_err("Dump Basic RG\n");
+	pr_err("[0x%x] 0x%x\n", MT6355_STRUP_CON6, upmu_get_reg_value(MT6355_STRUP_CON6));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_MDRT_0, upmu_get_reg_value(MT6355_AUXADC_MDRT_0));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_MDRT_2, upmu_get_reg_value(MT6355_AUXADC_MDRT_2));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_CON0, upmu_get_reg_value(MT6355_AUXADC_CON0));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_CON23, upmu_get_reg_value(MT6355_AUXADC_CON23));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_CON11, upmu_get_reg_value(MT6355_AUXADC_CON11));
+	pr_err("Done\n");
+}
+EXPORT_SYMBOL(mt6355_auxadc_dump_setting_regs);
+
+void mt6355_auxadc_dump_clk_regs(void)
+{
+	pr_err("Dump Clk RG\n");
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKPDN_CON0, upmu_get_reg_value(MT6355_TOP_CKPDN_CON0));
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKPDN_CON3, upmu_get_reg_value(MT6355_TOP_CKPDN_CON3));
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKHWEN_CON0, upmu_get_reg_value(MT6355_TOP_CKHWEN_CON0));
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKHWEN_CON1, upmu_get_reg_value(MT6355_TOP_CKHWEN_CON1));
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKTST_CON1, upmu_get_reg_value(MT6355_TOP_CKTST_CON1));
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKDIVSEL_CON0, upmu_get_reg_value(MT6355_TOP_CKDIVSEL_CON0));
+	pr_err("Done\n");
+}
+EXPORT_SYMBOL(mt6355_auxadc_dump_clk_regs);
+
+void mt6355_auxadc_dump_channel_regs(void)
+{
+	u8 list = 0;
+
+	for (list = AUXADC_LIST_MT6355_START; list <= AUXADC_LIST_MT6355_END; list++)
+		pr_err("[auxadc list %d] %d\n", list, mt6355_get_auxadc_value(list));
+}
+EXPORT_SYMBOL(mt6355_auxadc_channel_regs);
+
+
 void mt6355_auxadc_dump_regs(char *buf)
 {
 	int value;
