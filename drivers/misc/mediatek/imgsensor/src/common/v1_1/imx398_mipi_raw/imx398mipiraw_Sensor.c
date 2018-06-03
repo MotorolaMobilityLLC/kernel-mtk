@@ -118,7 +118,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 902,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2216,
+		.grabwindow_width = 1476,
 		.grabwindow_height = 834,
 		.mipi_data_lp2hs_settle_dc = 30,
 		.max_framerate = 1200,
@@ -129,7 +129,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 1444,	/* 1640, */
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2216,
+		.grabwindow_width = 1476,
 		.grabwindow_height = 834,
 		.mipi_data_lp2hs_settle_dc = 30,
 		.max_framerate = 300,
@@ -260,9 +260,9 @@ static struct imgsensor_struct imgsensor = {
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	{4656, 3496, 0000, 0000, 4656, 3496, 2328, 1748, 0000, 0000, 2328, 1748, 0000, 0000, 2328, 1748},/* Preview */
 	{4656, 3496, 0000, 0000, 4656, 3496, 4656, 3496, 0000, 0000, 4656, 3496, 0000, 0000, 4656, 3496},/* capture */
-	{4656, 3496, 0000, 0000, 4656, 3496, 4656, 3496, 0000, 0000, 4656, 3496, 0000, 0000, 4656, 3496},/* video */
-	{4656, 3496, 0000, 648, 4656, 2199, 1922, 722, 0000, 0000, 1922, 722, 0000, 0000, 1920, 720},/* hs video */
-	{4656, 3496, 0000, 492, 4656, 2500, 2216, 834, 0000, 0000, 2216, 834, 0000, 0000, 1476, 834},/* slim video */
+	{4656, 3496, 0000, 0000, 4656, 3496, 4656, 3496, 0000, 0000, 4656, 3496, 0000, 0000, 4656, 2608},/* video */
+	{4656, 3496, 0000, 492, 4656, 2500, 2216, 834, 0000, 0000, 2216, 834, 370, 0000, 1476, 834},/* hs video */
+	{4656, 3496, 0000, 492, 4656, 2500, 2216, 834, 0000, 0000, 2216, 834, 370, 0000, 1476, 834},/* slim video */
 	{4656, 3496, 0000, 0000, 4656, 3496, 2328, 1748, 0000, 0000, 2328, 1748, 0000, 0000, 2328, 1748},/* Custom1 */
 	{4656, 3496, 0000, 0000, 4656, 3496, 2328, 1748, 0000, 0000, 2328, 1748, 0000, 0000, 2328, 1748},/* Custom2 */
 	{4656, 3496, 0000, 0000, 4656, 3496, 2328, 1748, 0000, 0000, 2328, 1748, 0000, 0000, 2328, 1748},/* Custom3 */
@@ -3207,12 +3207,27 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 	sensor_resolution->SensorVideoWidth = imgsensor_info.normal_video.grabwindow_width;
 	sensor_resolution->SensorVideoHeight = imgsensor_info.normal_video.grabwindow_height;
 
-
 	sensor_resolution->SensorHighSpeedVideoWidth = imgsensor_info.hs_video.grabwindow_width;
 	sensor_resolution->SensorHighSpeedVideoHeight = imgsensor_info.hs_video.grabwindow_height;
 
 	sensor_resolution->SensorSlimVideoWidth = imgsensor_info.slim_video.grabwindow_width;
 	sensor_resolution->SensorSlimVideoHeight = imgsensor_info.slim_video.grabwindow_height;
+
+	sensor_resolution->SensorCustom1Width = imgsensor_info.custom1.grabwindow_width;
+	sensor_resolution->SensorCustom1Height = imgsensor_info.custom1.grabwindow_height;
+
+	sensor_resolution->SensorCustom2Width = imgsensor_info.custom2.grabwindow_width;
+	sensor_resolution->SensorCustom2Height = imgsensor_info.custom2.grabwindow_height;
+
+	sensor_resolution->SensorCustom3Width = imgsensor_info.custom3.grabwindow_width;
+	sensor_resolution->SensorCustom3Height = imgsensor_info.custom3.grabwindow_height;
+
+	sensor_resolution->SensorCustom4Width = imgsensor_info.custom4.grabwindow_width;
+	sensor_resolution->SensorCustom4Height = imgsensor_info.custom4.grabwindow_height;
+
+	sensor_resolution->SensorCustom5Width = imgsensor_info.custom5.grabwindow_width;
+	sensor_resolution->SensorCustom5Height = imgsensor_info.custom5.grabwindow_height;
+
 	return ERROR_NONE;
 }				/*    get_resolution    */
 
@@ -3666,6 +3681,31 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[4],
 			       sizeof(SENSOR_WINSIZE_INFO_STRUCT));
 			break;
+
+		case MSDK_SCENARIO_ID_CUSTOM1:
+			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[5],
+			       sizeof(SENSOR_WINSIZE_INFO_STRUCT));
+			break;
+
+		case MSDK_SCENARIO_ID_CUSTOM2:
+			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[6],
+			       sizeof(SENSOR_WINSIZE_INFO_STRUCT));
+			break;
+		case MSDK_SCENARIO_ID_CUSTOM3:
+			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[7],
+			       sizeof(SENSOR_WINSIZE_INFO_STRUCT));
+			break;
+
+		case MSDK_SCENARIO_ID_CUSTOM4:
+			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[8],
+			       sizeof(SENSOR_WINSIZE_INFO_STRUCT));
+			break;
+
+		case MSDK_SCENARIO_ID_CUSTOM5:
+			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[9],
+			       sizeof(SENSOR_WINSIZE_INFO_STRUCT));
+			break;
+
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[0],
