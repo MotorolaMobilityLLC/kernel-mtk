@@ -1117,7 +1117,7 @@ extern u64 part_get_startaddress(u64 byte_address, u32 *idx);
 
 #ifdef CONFIG_MTK_MTD_NAND
 extern int mtk_nand_write_tlc_block(struct mtd_info *mtd, struct nand_chip *chip,
-				uint8_t *buf, u32 page);
+				uint8_t *buf, u32 page, u32 size);
 extern int mtk_nand_read(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf,
 				int page, u32 size);
 extern bool mtk_block_istlc(u64 addr);
