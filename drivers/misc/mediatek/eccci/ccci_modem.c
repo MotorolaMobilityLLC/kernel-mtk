@@ -90,7 +90,7 @@ struct ccci_smem_region md1_6292_noncacheable_fat[] = {
 {SMEM_USER_RAW_FORCE_ASSERT,	62*1024,	1*1024,		0, },
 {SMEM_USER_RAW_DBM,		64*1024-DBM_S,	DBM_S,		0, },
 {SMEM_USER_CCISM_SCP,		64*1024,	32*1024,	0, },
-{SMEM_USER_RAW_CCB_CTRL,	96*1024,	4*1024,		SMF_NCLR_FIRST, },
+/* {SMEM_USER_RAW_CCB_CTRL,	96*1024,	4*1024,		SMF_NCLR_FIRST, }, */
 {SMEM_USER_RAW_NETD,		100*1024,	4*1024,		0, },
 {SMEM_USER_RAW_USB,		104*1024,	4*1024,		0, },
 {SMEM_USER_RAW_AUDIO,		108*1024,	20*1024,	0, },
@@ -106,10 +106,12 @@ struct ccci_smem_region md1_6292_cacheable[] = {
  * CCB users' address, offset and size will be re-calculated during port initialization.
  * and please be aware of that CCB user's size will be aligned to 4KB.
  */
+#if 0
 {SMEM_USER_CCB_DHL,		0*1024*1024,	16*1024*1024,	0, },
 {SMEM_USER_CCB_MD_MONITOR,	0*1024*1024,	16*1024*1024,	0, },
 {SMEM_USER_CCB_META,		0*1024*1024,	16*1024*1024,	0, },
 {SMEM_USER_RAW_DHL,		16*1024*1024,	16*1024*1024,	0, },
+#endif
 {SMEM_USER_RAW_LWA,		32*1024*1024,	0*1024*1024,	0, },
 {SMEM_USER_MAX, },
 };
@@ -695,10 +697,18 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 
 #endif
 
-#if (MD_GENERATION >= 6292)
+#if (MD_GENERATION >= 6293)
 	/* notice: CCB_SHARE_MEMORY should be set to support when at least one CCB region exists */
 	ap_side_md_feature->feature_set[CCB_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 	ap_side_md_feature->feature_set[DHL_RAW_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	ap_side_md_feature->feature_set[LWA_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	ap_side_md_feature->feature_set[DT_NETD_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	ap_side_md_feature->feature_set[DT_USB_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	ap_side_md_feature->feature_set[AUDIO_RAW_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#elif (MD_GENERATION == 6292)
+	/* notice: CCB_SHARE_MEMORY should be set to support when at least one CCB region exists */
+	ap_side_md_feature->feature_set[CCB_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+	ap_side_md_feature->feature_set[DHL_RAW_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 	ap_side_md_feature->feature_set[LWA_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 	ap_side_md_feature->feature_set[DT_NETD_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 	ap_side_md_feature->feature_set[DT_USB_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
@@ -878,13 +888,17 @@ int ccci_md_prepare_runtime_data(unsigned char md_id, unsigned char *data, int l
 				/* notice: we should add up all CCB region size here */
 				/* ctrl control first */
 				region = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_RAW_CCB_CTRL);
-				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
-				rt_f_element.feature[0] = region->base_md_view_phy;
-				rt_f_element.feature[1] = region->size;
+				if (region) {
+					rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+					rt_f_element.feature[0] = region->base_md_view_phy;
+					rt_f_element.feature[1] = region->size;
+				}
 				/* ccb data second */
 				region = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_CCB_START);
-				rt_f_element.feature[2] = region->base_md_view_phy;
-				rt_f_element.feature[3] = 0;
+				if (region) {
+					rt_f_element.feature[2] = region->base_md_view_phy;
+					rt_f_element.feature[3] = 0;
+				}
 				for (j = SMEM_USER_CCB_START; j <= SMEM_USER_CCB_END; j++) {
 					region = ccci_md_get_smem_by_user_id(md_id, j);
 					if (region)
@@ -897,10 +911,12 @@ int ccci_md_prepare_runtime_data(unsigned char md_id, unsigned char *data, int l
 				break;
 			case DHL_RAW_SHARE_MEMORY:
 				region = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_RAW_DHL);
-				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
-				rt_shm.addr = region->base_md_view_phy;
-				rt_shm.size = region->size;
-				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				if (region) {
+					rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
+					rt_shm.addr = region->base_md_view_phy;
+					rt_shm.size = region->size;
+					append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				}
 				break;
 			case LWA_SHARE_MEMORY:
 				region = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_RAW_LWA);
