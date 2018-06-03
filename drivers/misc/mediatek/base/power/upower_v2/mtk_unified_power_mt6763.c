@@ -210,7 +210,8 @@ void get_original_table(void)
 	bin = GET_BITS_VAL(2:0, bin);
 	if (get_devinfo_with_index(SEG_EFUSE) == 0x10)
 		idx = 1; /* MT6763 */
-	else if (get_devinfo_with_index(SEG_EFUSE) == 0x20) {
+	else if (get_devinfo_with_index(SEG_EFUSE) == 0x20 ||
+		get_devinfo_with_index(SEG_EFUSE) == 0) {
 		if (bin == 1)
 			idx = 3; /* MT6763T_SB */
 		else
