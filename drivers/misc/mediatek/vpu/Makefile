@@ -37,9 +37,9 @@ else
 endif
 subdir-ccflags-y += -DMTK_VPU_CORE=$(MTK_VPU_CORE)
 
-#ifneq ($(TARGET_BUILD_VARIANT),user)
+
 subdir-ccflags-y += -DMTK_VPU_DVT
-#endif
+
 
 # FPGA environment
 ifeq ($(CONFIG_MTK_FPGA),y)
