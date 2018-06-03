@@ -288,7 +288,7 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	start = sched_clock();
 
 	/* add time interval to alloc 64k page in low memory status*/
-	if (((start - alloc_large_fail_ts) < 500000000) &&
+	if (((start - alloc_large_fail_ts) < 1000000000) &&
 	    (ion_mm_pool_total(sys_heap, orders[0],
 				ion_buffer_cached(buffer)) < 10))
 		max_order = orders[1];
@@ -760,12 +760,7 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 			continue;
 		bug_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
 		pdbg = &bug_info->dbg_info;
-		if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA) &&
-		    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
-			continue;
-		if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) &&
-		    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))
-			continue;
+
 		ION_PRINT_LOG_OR_SEQ(s,
 				     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %5d(%5d) %16s 0x%x 0x%x 0x%x 0x%x %s\n",
 				     buffer, buffer->size, buffer->kmap_cnt,
@@ -884,8 +879,7 @@ static size_t ion_debug_mm_heap_total(struct ion_client *client,
 		for (n = rb_first(&client->handles); n; n = rb_next(n)) {
 			struct ion_handle
 			*handle = rb_entry(n, struct ion_handle, node);
-			if (handle->buffer->heap->id ==
-			    ION_HEAP_TYPE_MULTIMEDIA)
+			if (handle->buffer->heap->id == id)
 				size += handle->buffer->size;
 		}
 		mutex_unlock(&client->lock);
@@ -896,17 +890,23 @@ static size_t ion_debug_mm_heap_total(struct ion_client *client,
 void ion_mm_heap_memory_detail(void)
 {
 	struct ion_device *dev = g_ion_device;
-	size_t total_size = 0;
+	/* struct ion_heap *heap = NULL; */
+	size_t mm_size = 0;
+	size_t cam_size = 0;
 	size_t total_orphaned_size = 0;
 	struct rb_node *n;
 	bool need_dev_lock = true;
-	char *seq_line = "------------------------------------------------\n";
+	bool has_orphaned = false;
+	struct ion_mm_buffer_info *bug_info;
+	struct ion_mm_buf_debug_info *pdbg;
+	char seq_log[448];
+	char seq_fmt[] = "|0x%p %10zu %5d(%5d) %16s %2d %5u-%-6u %48s |";
+	int seq_log_count = 0;
+	unsigned int heapid;
 
-	/* ion_mm_heap_for_each_pool(write_mm_page_pool); */
-
-	ION_PRINT_LOG_OR_SEQ(NULL, "%16.s(%16.s) %16.s %16.s %s\n",
+	ION_PRINT_LOG_OR_SEQ(NULL, "%16s(%16s) %6s %12s %s\n",
 			     "client", "dbg_name", "pid", "size", "address");
-	ION_PRINT_LOG_OR_SEQ(NULL, " %s", seq_line);
+	ION_PRINT_LOG_OR_SEQ(NULL, "--------------------------------------\n");
 
 	if (!down_read_trylock(&dev->lock)) {
 		ION_PRINT_LOG_OR_SEQ(NULL,
@@ -922,74 +922,124 @@ void ion_mm_heap_memory_detail(void)
 			need_dev_lock = false;
 	}
 
+	memset(seq_log, 0, 448);
 	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
 		struct ion_client
 		*client = rb_entry(n, struct ion_client, node);
 		size_t size =
 		    ion_debug_mm_heap_total(client, ION_HEAP_TYPE_MULTIMEDIA);
 
-		if (!size)
-			continue;
+		heapid = ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA;
+		if (!size) {
+			size = ion_debug_mm_heap_total(client, heapid);
+			if (!size)
+				continue;
+		}
+
+		seq_log_count++;
 		if (client->task) {
 			char task_comm[TASK_COMM_LEN];
 
 			get_task_comm(task_comm, client->task);
-			ION_PRINT_LOG_OR_SEQ(NULL,
-					     "%16.s(%16.s) %16u %16zu 0x%p\n",
-					     task_comm, client->dbg_name,
-					     client->pid, size, client);
+			sprintf(seq_log + strlen(seq_log),
+				"|%16s(%16s) %6u %12zu 0x%p |",
+				task_comm, client->dbg_name,
+				client->pid, size, client);
 		} else {
-			ION_PRINT_LOG_OR_SEQ(NULL,
-					     "%16.s(%16.s) %16u %16zu 0x%p\n",
-					     client->name, "from_kernel",
-					     client->pid, size, client);
+			sprintf(seq_log + strlen(seq_log),
+				"|%16s(%16s) %6u %12zu 0x%p |",
+				client->name, "from_kernel",
+				client->pid, size, client);
+		}
+
+		if ((seq_log_count % 3) == 0) {
+			ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
+			memset(seq_log, 0, 448);
 		}
 	}
+
+	ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
 
 	if (need_dev_lock)
 		up_read(&dev->lock);
 
-	ION_PRINT_LOG_OR_SEQ(NULL, " %s", seq_line);
-	ION_PRINT_LOG_OR_SEQ(NULL,
-			     "orphaned allocations (info is from last known client):\n");
+	ION_PRINT_LOG_OR_SEQ(NULL, "---------ion_mm_heap buffer info------\n");
 
 skip_client_entry:
 
+	ION_PRINT_LOG_OR_SEQ(NULL,
+			     "%s %8s %s %16s %6s %10s %32s\n",
+			     "buffer	", "size",
+			     "pid(alloc_pid)", "comm(client)",
+			     "heapid", "v1-v2", "dbg_name");
+
 	if (mutex_trylock(&dev->buffer_lock)) {
+		seq_log_count = 0;
+
+		memset(seq_log, 0, 448);
 		for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
 			struct ion_buffer
 			*buffer = rb_entry(n, struct ion_buffer, node);
-			unsigned int heap_id = buffer->heap->id;
+			int cam_heap;
 
-			if ((1 << heap_id) & ION_HEAP_MULTIMEDIA_MASK) {
-				/* heap = buffer->heap; */
-				total_size += buffer->size;
+			heapid = buffer->heap->id;
+			cam_heap = ((1 << heapid) & ION_HEAP_CAMERA_MASK);
+			bug_info =
+				(struct ion_mm_buffer_info *)buffer->priv_virt;
+			pdbg = &bug_info->dbg_info;
+
+			if (((1 << heapid) & ION_HEAP_MULTIMEDIA_MASK) ||
+			    ((1 << heapid) & ION_HEAP_CAMERA_MASK)) {
+				if ((1 << heapid) & ION_HEAP_MULTIMEDIA_MASK)
+					mm_size += buffer->size;
+
+				if ((1 << heapid) & ION_HEAP_CAMERA_MASK)
+					cam_size += buffer->size;
+
 				if (!buffer->handle_count) {
-					ION_PRINT_LOG_OR_SEQ(NULL,
-							     "%16.s %16u %16zu %d %d\n",
-							     buffer->task_comm,
-							     buffer->pid,
-							     buffer->size,
-							     buffer->kmap_cnt,
-							     atomic_read
-							     (&buffer->
-							      ref.refcount));
 					total_orphaned_size += buffer->size;
+					has_orphaned = true;
+				}
+
+				if ((strstr(pdbg->dbg_name, "nothing") &&
+				     (cam_heap == 0)) && need_dev_lock)
+					continue;
+
+				seq_log_count++;
+				sprintf(seq_log + strlen(seq_log), seq_fmt,
+					buffer, buffer->size,
+					buffer->pid, bug_info->pid,
+					buffer->task_comm, buffer->heap->id,
+					pdbg->value1, pdbg->value2,
+					pdbg->dbg_name);
+
+				if ((seq_log_count % 3) == 0) {
+					ION_PRINT_LOG_OR_SEQ(NULL, "%s\n",
+							     seq_log);
+					memset(seq_log, 0, 448);
 				}
 			}
 		}
+
+		ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
+
+		if (has_orphaned) {
+			ION_PRINT_LOG_OR_SEQ(NULL, "-orphaned buffer list:\n");
+			ion_dump_all_share_fds(NULL);
+		}
+
 		mutex_unlock(&dev->buffer_lock);
 
-		ION_PRINT_LOG_OR_SEQ(NULL, " %s", seq_line);
-		ION_PRINT_LOG_OR_SEQ(NULL, "%16.s %16zu\n", "total orphaned",
+		ION_PRINT_LOG_OR_SEQ(NULL, "------------------------------\n");
+		ION_PRINT_LOG_OR_SEQ(NULL, "total orphaned: %16zu\n",
 				     total_orphaned_size);
-		ION_PRINT_LOG_OR_SEQ(NULL, "%16.s %16zu\n", "total ",
-				     total_size);
-		ION_PRINT_LOG_OR_SEQ(NULL, "ion mm + cam total: %16zu\n",
+		ION_PRINT_LOG_OR_SEQ(NULL, "mm total: %16zu, cam: %16zu\n",
+				     mm_size, cam_size);
+		ION_PRINT_LOG_OR_SEQ(NULL, "ion heap total memory: %16zu\n",
 				     mm_heap_total_memory);
-		ION_PRINT_LOG_OR_SEQ(NULL, " %s", seq_line);
+		ION_PRINT_LOG_OR_SEQ(NULL, "------------------------------\n");
 	} else {
-		ION_PRINT_LOG_OR_SEQ(NULL, "ion mm heap total memory: %16zu\n",
+		ION_PRINT_LOG_OR_SEQ(NULL, "ion heap total memory: %16zu\n",
 				     mm_heap_total_memory);
 	}
 }

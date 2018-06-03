@@ -322,6 +322,9 @@ static void ion_handle_destroy(struct kref *kref)
 	ion_buffer_remove_from_handle(buffer);
 	ion_buffer_put(buffer);
 
+	handle->buffer = NULL;
+	handle->client = NULL;
+
 	kfree(handle);
 }
 
@@ -670,37 +673,27 @@ void ion_unmap_kernel(struct ion_client *client, struct ion_handle *handle)
 }
 EXPORT_SYMBOL(ion_unmap_kernel);
 
-static struct mutex debugfs_mutex;
-static struct rb_root *ion_root_client;
-static int is_client_alive(struct ion_client *client)
+static int ion_client_validate(struct ion_device *dev,
+			       struct ion_client *client)
 {
-	struct rb_node *node;
-	struct ion_client *tmp;
-	struct ion_device *dev;
+	struct rb_node *n;
 
-	node = ion_root_client->rb_node;
-	dev = container_of(ion_root_client, struct ion_device, clients);
+	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
+		struct ion_client *valid_client = rb_entry(n,
+							   struct ion_client,
+							   node);
 
-	down_read(&dev->lock);
-	while (node) {
-		tmp = rb_entry(node, struct ion_client, node);
-		if (client < tmp) {
-			node = node->rb_left;
-		} else if (client > tmp) {
-			node = node->rb_right;
-		} else {
-			up_read(&dev->lock);
+		if (client == valid_client)
 			return 1;
-		}
 	}
 
-	up_read(&dev->lock);
 	return 0;
 }
 
 static int ion_debug_client_show(struct seq_file *s, void *unused)
 {
 	struct ion_client *client = s->private;
+	struct ion_device *dev = g_ion_device;
 	struct rb_node *n;
 	/*size_t sizes[ION_NUM_HEAP_IDS] = {0};*/
 	/*const char *names[ION_NUM_HEAP_IDS] = {NULL};*/
@@ -717,12 +710,11 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 
 	if (!names)
 		return -ENOMEM;
-	mutex_lock(&debugfs_mutex);
-	if (!is_client_alive(client)) {
-		seq_printf(s, "ion_client 0x%p dead, can't dump its buffers\n",
-			   client);
+
+	down_read(&dev->lock);
+	if (!ion_client_validate(dev, client)) {
 		IONMSG("%s: client is invlaid.\n", __func__);
-		mutex_unlock(&debugfs_mutex);
+		up_read(&dev->lock);
 		kfree(sizes);
 		kfree(names);
 		return 0;
@@ -748,7 +740,7 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 			   buffer->handle_count, handle, buffer);
 	}
 	mutex_unlock(&client->lock);
-	mutex_unlock(&debugfs_mutex);
+
 	seq_puts(s, "----------------------------------------------------\n");
 
 	seq_printf(s, "%16.16s: %16.16s\n", "heap_name", "size_in_bytes");
@@ -757,6 +749,8 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 			continue;
 		seq_printf(s, "%16.16s: %16zu\n", names[i], sizes[i]);
 	}
+
+	up_read(&dev->lock);
 
 	kfree(sizes);
 	kfree(names);
@@ -1391,13 +1385,22 @@ static int ion_open(struct inode *inode, struct file *file)
 	struct ion_device *dev = container_of(miscdev, struct ion_device, dev);
 	struct ion_client *client;
 	char debug_name[64];
+	unsigned long long start, end;
 
 	pr_debug("%s: %d\n", __func__, __LINE__);
 	snprintf(debug_name, 64, "%u", task_pid_nr(current->group_leader));
+	start = sched_clock();
 	client = ion_client_create(dev, debug_name);
-	if (IS_ERR(client))
+	if (IS_ERR(client)) {
+		IONMSG("%s ion client create failed 0x%p.\n", __func__, client);
 		return PTR_ERR(client);
+	}
 	file->private_data = client;
+	end = sched_clock();
+
+	if (end - start > 10000000ULL) {/* unit is ns */
+		IONMSG("warn: ion open time: %lld ns\n", end - start);
+	}
 
 	return 0;
 }
@@ -1415,13 +1418,18 @@ static size_t ion_debug_heap_total(struct ion_client *client,
 {
 	size_t size = 0;
 	struct rb_node *n;
+	unsigned int heapid;
 
 	mutex_lock(&client->lock);
 	for (n = rb_first(&client->handles); n; n = rb_next(n)) {
 		struct ion_handle *handle = rb_entry(n,
 						     struct ion_handle,
 						     node);
-		if (handle->buffer->heap->id == id)
+		heapid = handle->buffer->heap->id;
+		if ((heapid == id) ||
+		    ((id == ION_HEAP_TYPE_MULTIMEDIA) &&
+		     ((heapid == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA) ||
+		      (heapid == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))))
 			size += handle->buffer->size;
 	}
 	mutex_unlock(&client->lock);
@@ -1434,12 +1442,16 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	struct ion_device *dev = heap->dev;
 	struct rb_node *n;
 	size_t total_size = 0;
+	size_t camera_total_size = 0;
+	size_t va2mva_total_size = 0;
 	size_t total_orphaned_size = 0;
+	unsigned int cam_id = ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA;
 
-	seq_printf(s, "%16s %16s %16s\n", "client", "pid", "size");
+	seq_printf(s, "%16.s(%16.s) %16.s %16.s %s\n",
+		   "client", "dbg_name", "pid", "size", "address");
 	seq_puts(s, "----------------------------------------------------\n");
 
-	mutex_lock(&debugfs_mutex);
+	down_read(&dev->lock);
 	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
 		struct ion_client *client = rb_entry(n, struct ion_client,
 						     node);
@@ -1451,14 +1463,16 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 			char task_comm[TASK_COMM_LEN];
 
 			get_task_comm(task_comm, client->task);
-			seq_printf(s, "%16s %16u %16zu\n", task_comm,
-				   client->pid, size);
+			seq_printf(s, "%16.s(%16.s) %16u %16zu 0x%p\n",
+				   task_comm, client->dbg_name,
+				   client->pid, size, client);
 		} else {
-			seq_printf(s, "%16s %16u %16zu\n", client->name,
-				   client->pid, size);
+			seq_printf(s, "%16.s(%16.s) %16u %16zu 0x%p\n",
+				   client->name, "from_kernel",
+				   client->pid, size, client);
 		}
 	}
-	mutex_unlock(&debugfs_mutex);
+	up_read(&dev->lock);
 
 	seq_puts(s, "----------------------------------------------------\n");
 	seq_puts(s, "orphaned allocation (info is from last known client):\n");
@@ -1466,11 +1480,20 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
 		struct ion_buffer *buffer = rb_entry(n, struct ion_buffer,
 						     node);
-		if (buffer->heap->id != heap->id)
-			continue;
+
+		if (buffer->heap->id != heap->id) {
+			if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA) &&
+			    (buffer->heap->id == cam_id))
+				camera_total_size += buffer->size;
+			else if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA) &&
+				 (buffer->heap->id == cam_id))
+				va2mva_total_size += buffer->size;
+			else
+				continue;
+		}
 		total_size += buffer->size;
 		if (!buffer->handle_count) {
-			seq_printf(s, "%16s %16u %16zu %d %d\n",
+			seq_printf(s, "%16.s %16u %16zu %d %d\n",
 				   buffer->task_comm, buffer->pid,
 				   buffer->size, buffer->kmap_cnt,
 				   atomic_read(&buffer->ref.refcount));
@@ -1479,11 +1502,14 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	}
 	mutex_unlock(&dev->buffer_lock);
 	seq_puts(s, "----------------------------------------------------\n");
-	seq_printf(s, "%16s %16zu\n", "total orphaned",
+	seq_printf(s, "%16.s %16zu\n", "total orphaned",
 		   total_orphaned_size);
-	seq_printf(s, "%16s %16zu\n", "total ", total_size);
+	seq_printf(s, "%16.s %16zu\n", "total ", total_size);
+	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA)
+		seq_printf(s, "%16.s %16zu %16zu\n", "cam-va2mva total",
+			   camera_total_size, va2mva_total_size);
 	if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
-		seq_printf(s, "%16s %16zu\n", "deferred free",
+		seq_printf(s, "%16.s %16zu\n", "deferred free",
 			   heap->free_list_size);
 	seq_puts(s, "----------------------------------------------------\n");
 
@@ -1644,8 +1670,6 @@ debugfs_done:
 	init_rwsem(&idev->lock);
 	plist_head_init(&idev->heaps);
 	idev->clients = RB_ROOT;
-	ion_root_client = &idev->clients;
-	mutex_init(&debugfs_mutex);
 	return idev;
 }
 EXPORT_SYMBOL(ion_device_create);
