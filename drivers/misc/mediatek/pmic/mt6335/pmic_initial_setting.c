@@ -72,7 +72,7 @@ int PMIC_MD_INIT_SETTING_V1(void)
 		return ret;
 	}
 
-#if 0	/* modem temp node not ready TBD */
+#if 1	/* modem temp node is ready */
 	modem_temp_base = of_iomap(modem_temp_node, 0);
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base, 0x011f);
