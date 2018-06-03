@@ -2930,7 +2930,7 @@ static signed int OWE_release(struct inode *pInode, struct file *pFile)
 
 	/* Disable clock. */
 	OWE_EnableClock(MFALSE);
-	LOG_DBG("OWE release g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	LOG_INF("OWE release g_u4EnableClockCount: %d", g_u4EnableClockCount);
 
 	/*  */
 EXIT:
