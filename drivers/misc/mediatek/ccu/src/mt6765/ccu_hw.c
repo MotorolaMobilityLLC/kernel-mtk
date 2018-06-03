@@ -24,6 +24,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/spinlock.h>
 #include <linux/iommu.h>
+#include <linux/sched.h>
 
 #include "mtk_ion.h"
 #include "ion_drv.h"
@@ -281,44 +282,8 @@ static inline void unlock_command(void)
 static void isr_sp_task(void)
 {
 	MUINT32 sp_task = ccu_read_reg(ccu_base, CCU_STA_REG_SP_ISR_TASK);
-	MUINT32 i2c_transac_len;
-	MBOOL i2c_do_dma_en;
-	unsigned long flags;
 
 	switch (sp_task) {
-	case APISR_SP_TASK_TRIGGER_I2C:
-	{
-		LOG_DBG("isr_sp_task: APISR_SP_TASK_TRIGGER_I2C +++++\n");
-
-		i2c_transac_len =
-			ccu_read_reg(ccu_base, CCU_STA_REG_I2C_TRANSAC_LEN);
-		i2c_do_dma_en =
-			ccu_read_reg(ccu_base, CCU_STA_REG_I2C_DO_DMA_EN);
-		/*LOG_DBG("i2c_transac_len: %d\n", i2c_transac_len);*/
-		/*LOG_DBG("i2c_do_dma_en: %d\n", i2c_do_dma_en);*/
-		/*Use spinlock to avoid trigger i2c after i2c cg turned off*/
-		spin_lock_irqsave(&ccuInfo.SpinLockI2cPower, flags);
-		if (ccuInfo.IsI2cPoweredOn == 1 &&
-			ccuInfo.IsI2cPowerDisabling == 0)
-			ccu_trigger_i2c(i2c_transac_len, i2c_do_dma_en);
-		spin_unlock_irqrestore(&ccuInfo.SpinLockI2cPower, flags);
-
-		ccu_write_reg(ccu_base, CCU_STA_REG_SP_ISR_TASK, 0);
-		LOG_DBG("isr_sp_task: APISR_SP_TASK_TRIGGER_I2C -----\n");
-		break;
-	}
-
-	case APISR_SP_TASK_RESET_I2C:
-	{
-		LOG_DBG("isr_sp_task: APISR_SP_TASK_RESET_I2C +++++\n");
-
-		ccu_i2c_frame_reset();
-
-		ccu_write_reg(ccu_base, CCU_STA_REG_SP_ISR_TASK, 0);
-
-		LOG_DBG("isr_sp_task: APISR_SP_TASK_RESET_I2C -----\n");
-		break;
-	}
 
 	default:
 	{
@@ -720,6 +685,8 @@ int ccu_init_hw(struct ccu_device_s *device)
 		enque_task = NULL;
 		goto out;
 	}
+
+	set_user_nice(enque_task, -20);
 	wake_up_process(enque_task);
 
 out:

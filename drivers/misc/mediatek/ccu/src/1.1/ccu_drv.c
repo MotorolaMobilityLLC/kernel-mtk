@@ -582,7 +582,9 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 	LOG_DBG("ccu_ioctl+, cmd:%d\n", cmd);
 
-	if ((cmd != CCU_IOCTL_SET_POWER) && (cmd != CCU_IOCTL_FLUSH_LOG)) {
+	if ((cmd != CCU_IOCTL_SET_POWER) &&
+		(cmd != CCU_IOCTL_FLUSH_LOG) &&
+		(cmd != CCU_IOCTL_WAIT_IRQ)) {
 		ret = ccu_query_power_status();
 		if (ret == 0) {
 			LOG_WARN("ccuk: ioctl without powered on\n");
