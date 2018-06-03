@@ -1683,6 +1683,9 @@ int * OSGetBridgeLockOwnerID(void);
 /* MTK internal cahce flush */
 extern void __inner_flush_dcache_all(void);
 
+/* MPU violation debug */
+extern unsigned int _mpu_ged_log;
+
 #if defined(LINUX) && defined(__KERNEL__)
 #define OSWarnOn(a) WARN_ON(a)
 #else

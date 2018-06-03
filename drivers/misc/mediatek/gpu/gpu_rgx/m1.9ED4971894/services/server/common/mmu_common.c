@@ -92,6 +92,7 @@ Let's keep this graph up-to-date:
 #include "dllist.h"
 
 #include "mtk_meminfo.h"
+#include "ged_log.h"
 
 // #define MMU_OBJECT_REFCOUNT_DEBUGING 1
 #if defined (MMU_OBJECT_REFCOUNT_DEBUGING)
@@ -2952,6 +2953,8 @@ MMU_MapPages(MMU_CONTEXT *psMMUContext,
 
 			if ((sDevPAddr.uiAddr < get_phys_offset()) ||
 (sDevPAddr.uiAddr > get_phys_offset() + get_memory_size() - 1)) {
+				ged_log_buf_print2(_mpu_ged_log,
+GED_LOG_ATTR_TIME, "[0]PAddr=0x%llx", sDevPAddr.uiAddr);
 				PVR_DPF((PVR_DBG_ERROR,
 "%s: _SetupPTE out-of-range, sDevPAddr=0x%llx, sDevVAddr=0x%llx", __func__,
 sDevPAddr.uiAddr, sDevVAddr.uiAddr));
@@ -3376,6 +3379,8 @@ MMU_MapPMRFast (MMU_CONTEXT *psMMUContext,
 
 		if ((psDevPAddr[i].uiAddr < get_phys_offset()) ||
 (psDevPAddr[i].uiAddr > get_phys_offset() + get_memory_size() - 1)) {
+			ged_log_buf_print2(_mpu_ged_log,
+GED_LOG_ATTR_TIME, "[1]PAddr=0x%llx", psDevPAddr[i].uiAddr);
 			PVR_DPF((PVR_DBG_ERROR,
 "%s: _SetupPTE out-of-range, psDevPAddr=0x%llx, sDevVAddr=0x%llx", __func__,
 psDevPAddr[i].uiAddr, sDevVAddr.uiAddr));
