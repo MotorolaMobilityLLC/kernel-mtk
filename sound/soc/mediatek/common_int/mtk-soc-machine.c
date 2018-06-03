@@ -200,10 +200,10 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		count = 256;
 
 	if (copy_from_user((InputString), buf, count))
-		pr_warn("copy_from_user mt_soc_debug_write count = %zu temp = %s\n", count, InputString);
+		pr_warn("copy_from_user mt_soc_debug_write count = %zu, temp = %s\n", count, InputString);
 
 	temp = kstrdup(InputString, GFP_KERNEL);
-	pr_debug("copy_from_user mt_soc_debug_write count = %zu temp = %s pointer = %p\n",
+	pr_debug("copy_from_user mt_soc_debug_write count = %zu, temp = %s, pointer = %p\n",
 		count, InputString, InputString);
 	token1 = strsep(&temp, delim);
 	pr_debug("token1\n");
@@ -219,42 +219,61 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 
 	AudDrv_Clk_On();
 	if (strcmp(token1, ParSetkeyAfe) == 0) {
-		pr_debug("strcmp (token1,ParSetkeyAfe)\n");
-		ret = kstrtoul(token3, 16, &regaddr);
-		ret = kstrtoul(token5, 16, &regvalue);
-		pr_debug("%s regaddr = 0x%x regvalue = 0x%x\n", ParSetkeyAfe, (unsigned int)regaddr,
-			(unsigned int)regvalue);
-		Afe_Set_Reg(regaddr,  regvalue, 0xffffffff);
-		regvalue = Afe_Get_Reg(regaddr);
-		pr_debug("%s regaddr = 0x%x regvalue = 0x%x\n", ParSetkeyAfe, (unsigned int)regaddr,
-			(unsigned int)regvalue);
-	}
-	if (strcmp(token1, ParSetkeyAna) == 0) {
-		pr_debug("strcmp (token1,ParSetkeyAna)\n");
-		ret = kstrtoul(token3, 16, &regaddr);
-		ret =  kstrtoul(token5, 16, &regvalue);
-		pr_debug("%s regaddr = 0x%x regvalue = 0x%x\n", ParSetkeyAna, (unsigned int)regaddr,
-			(unsigned int)regvalue);
-		audckbufEnable(true);
-		Ana_Set_Reg(regaddr,  regvalue, 0xffffffff);
-		regvalue = Ana_Get_Reg(regaddr);
-		audckbufEnable(false);
-		pr_debug("%s regaddr = 0x%x regvalue = 0x%x\n", ParSetkeyAna, (unsigned int)regaddr,
-			(unsigned int)regvalue);
-	}
-	if (strcmp(token1, PareGetkeyAfe) == 0) {
-		pr_debug("strcmp (token1,PareGetkeyAfe)\n");
-		ret =  kstrtoul(token3, 16, &regaddr);
-		regvalue = Afe_Get_Reg(regaddr);
-		pr_debug("%s regaddr = 0x%x regvalue = 0x%x\n", PareGetkeyAfe, (unsigned int)regaddr,
-			(unsigned int)regvalue);
+		pr_debug("strcmp(token1, ParSetkeyAfe)\n");
+		if ((token3 != NULL) && (token5 != NULL)) {
+			ret = kstrtoul(token3, 16, &regaddr);
+			ret = kstrtoul(token5, 16, &regvalue);
+			pr_debug("%s, regaddr = 0x%x, regvalue = 0x%x\n", ParSetkeyAfe, (unsigned int)regaddr,
+					(unsigned int)regvalue);
+			Afe_Set_Reg(regaddr, regvalue, 0xffffffff);
+			regvalue = Afe_Get_Reg(regaddr);
+			pr_debug("%s, regaddr = 0x%x, regvalue = 0x%x\n", ParSetkeyAfe, (unsigned int)regaddr,
+					(unsigned int)regvalue);
+		} else {
+			pr_debug("token3 or token5 is NULL!\n");
 		}
+	}
+
+	if (strcmp(token1, ParSetkeyAna) == 0) {
+		pr_debug("strcmp(token1, ParSetkeyAna)\n");
+		if ((token3 != NULL) && (token5 != NULL)) {
+			ret = kstrtoul(token3, 16, &regaddr);
+			ret = kstrtoul(token5, 16, &regvalue);
+			pr_debug("%s, regaddr = 0x%x, regvalue = 0x%x\n", ParSetkeyAna, (unsigned int)regaddr,
+					(unsigned int)regvalue);
+			audckbufEnable(true);
+			Ana_Set_Reg(regaddr, regvalue, 0xffffffff);
+			regvalue = Ana_Get_Reg(regaddr);
+			audckbufEnable(false);
+			pr_debug("%s, regaddr = 0x%x, regvalue = 0x%x\n", ParSetkeyAna, (unsigned int)regaddr,
+					(unsigned int)regvalue);
+		} else {
+			pr_debug("token3 or token5 is NULL!\n");
+		}
+	}
+
+	if (strcmp(token1, PareGetkeyAfe) == 0) {
+		pr_debug("strcmp(token1, PareGetkeyAfe)\n");
+		if (token3 != NULL) {
+			ret = kstrtoul(token3, 16, &regaddr);
+			regvalue = Afe_Get_Reg(regaddr);
+			pr_debug("%s, regaddr = 0x%x, regvalue = 0x%x\n", PareGetkeyAfe, (unsigned int)regaddr,
+					(unsigned int)regvalue);
+		} else {
+			pr_debug("token3 is NULL!\n");
+		}
+	}
+
 	if (strcmp(token1, PareGetkeyAna) == 0) {
-		pr_debug("strcmp (token1,PareGetkeyAna)\n");
-		ret =  kstrtoul(token3, 16, &regaddr);
-		regvalue = Ana_Get_Reg(regaddr);
-		pr_debug("%s regaddr = 0x%x regvalue = 0x%x\n", PareGetkeyAna, (unsigned int)regaddr,
-			(unsigned int)regvalue);
+		pr_debug("strcmp(token1, PareGetkeyAna)\n");
+		if (token3 != NULL) {
+			ret = kstrtoul(token3, 16, &regaddr);
+			regvalue = Ana_Get_Reg(regaddr);
+			pr_debug("%s, regaddr = 0x%x, regvalue = 0x%x\n", PareGetkeyAna, (unsigned int)regaddr,
+					(unsigned int)regvalue);
+		} else {
+			pr_debug("token3 is NULL!\n");
+		}
 	}
 	AudDrv_Clk_Off();
 	return count;
