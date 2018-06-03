@@ -739,6 +739,16 @@ do {						\
 		spm_crit2(fmt, ##args);		\
 } while (0)
 
+void rekick_vcorefs_scenario(void)
+{
+	int flag;
+
+	if (spm_read(PCM_REG15_DATA) == 0x0) {
+		flag = spm_dvfs_flag_init();
+		spm_go_to_vcorefs(flag);
+	}
+}
+
 wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		const struct pcm_desc *pcmdesc, bool suspend, const char *scenario)
 {
@@ -750,6 +760,8 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		/* add size check for vcoredvfs */
 		spm_print(suspend, "PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
 			  wakesta->assert_pc, scenario, wakesta->r13, wakesta->debug_flag);
+
+		aee_kernel_warning("SPM Warning", "SPM F/W ASSERT WARNING");
 
 		return WR_PCM_ASSERT;
 	}
