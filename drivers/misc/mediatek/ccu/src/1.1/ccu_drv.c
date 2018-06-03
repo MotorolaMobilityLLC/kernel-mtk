@@ -743,7 +743,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		{
 			uint32_t addr[4];
 
-			ret = ccu_get_i2c_dma_buf_addr(&addr[0], &addr[1], &addr[2], &addr[4]);
+			ret = ccu_get_i2c_dma_buf_addr(&addr[0], &addr[1], &addr[2], &addr[3]);
 
 			if (ret != 0) {
 				LOG_DBG("ccu_get_i2c_dma_buf_addr fail: %d\n", ret);
