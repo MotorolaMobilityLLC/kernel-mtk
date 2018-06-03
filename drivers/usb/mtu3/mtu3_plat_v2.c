@@ -239,8 +239,6 @@ static int get_ssusb_rscs(struct platform_device *pdev, struct ssusb_mtk *ssusb)
 		}
 	}
 
-	phy_hal_init(ssusb->phys[0]);
-
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "ippc");
 	ssusb->ippc_base = devm_ioremap_resource(dev, res);
 	if (IS_ERR(ssusb->ippc_base)) {
@@ -355,7 +353,7 @@ static int mtu3_probe(struct platform_device *pdev)
 			dev_err(dev, "failed to initialize host\n");
 			goto gadget_exit;
 		}
-
+		phy_hal_init(ssusb->phys[0]);
 		ssusb_otg_switch_init(ssusb);
 
 		break;
@@ -387,12 +385,13 @@ static int mtu3_remove(struct platform_device *pdev)
 		ssusb_gadget_exit(ssusb);
 		break;
 	case USB_DR_MODE_HOST:
-//		ssusb_host_exit(ssusb);
+		ssusb_host_exit(ssusb);
 		break;
 	case USB_DR_MODE_OTG:
-//		ssusb_otg_switch_exit(ssusb);
+		ssusb_otg_switch_exit(ssusb);
+		phy_hal_exit(ssusb->phys[0]);
 		ssusb_gadget_exit(ssusb);
-//		ssusb_host_exit(ssusb);
+		ssusb_host_exit(ssusb);
 		break;
 	default:
 		return -EINVAL;

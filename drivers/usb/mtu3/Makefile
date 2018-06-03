@@ -10,6 +10,7 @@ endif
 
 ifneq ($(CONFIG_USB_MTU3_PLAT_PHONE),)
 	obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+	obj-y += mtu3_debugfs_v2.o
 endif
 
 obj-$(CONFIG_USB_MTU3)	+= mtu3.o

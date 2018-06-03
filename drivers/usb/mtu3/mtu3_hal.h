@@ -48,5 +48,8 @@ extern void usb_wakeup_disable(struct ssusb_mtk *ssusb);
 
 extern void ssusb_dpidle_request(int mode);
 
+extern void ssusb_debugfs_init(struct ssusb_mtk *ssusb);
+extern void ssusb_debugfs_exit(struct ssusb_mtk *ssusb);
+
 #endif
 
