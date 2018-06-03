@@ -68,6 +68,7 @@ static struct smart_det tsmart;
 
 #define CLUSTER_NUM (2)
 
+static int turbo_support;
 static int log_enable;
 static int trace_enable;
 static int uevent_enable;
@@ -581,6 +582,41 @@ static int mt_turbo_util_thresh_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+static ssize_t mt_smart_turbo_support_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	int ret, len = 0;
+	unsigned long arg;
+
+	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
+
+	if (copy_from_user(&buf, ubuf, len))
+		return -EFAULT;
+	buf[cnt] = '\0';
+
+	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+		ret = 0;
+		if (arg == 0)
+			turbo_support = 0;
+		if (arg == 1)
+			turbo_support = 1;
+	} else
+		ret = -EINVAL;
+
+	return (ret < 0) ? ret : cnt;
+
+}
+
+static int mt_smart_turbo_support_show(struct seq_file *m, void *v)
+{
+	if (turbo_support)
+		SEQ_printf(m, "1\n");
+	else
+		SEQ_printf(m, "0\n");
+	return 0;
+}
+
 static ssize_t mt_smart_log_enable_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
@@ -882,6 +918,19 @@ static const struct file_operations mt_turbo_util_thresh_fops = {
 	.release = single_release,
 };
 
+static int mt_smart_turbo_support_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt_smart_turbo_support_show, inode->i_private);
+}
+
+static const struct file_operations mt_smart_turbo_support_fops = {
+	.open = mt_smart_turbo_support_open,
+	.write = mt_smart_turbo_support_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 static int mt_smart_log_enable_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, mt_smart_log_enable_show, inode->i_private);
@@ -923,7 +972,11 @@ static const struct file_operations mt_smart_uevent_enable_fops = {
 
 int smart_enter_turbo_mode(void)
 {
-	return turbo_mode_enable;
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	return (turbo_support && turbo_mode_enable);
+#else
+	return 0;
+#endif /* CONFIG_MTK_ACAO_SUPPORT */
 }
 
 void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsigned int btask, unsigned int htask)
@@ -958,19 +1011,19 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 		prev_enable = turbo_mode_enable;
 		if (htask <= 1 && (ll_util < ll_cap * turbo_util_thresh / 100)) {
 			turbo_mode_enable = 1;
+			if (log_enable)
+				pr_debug(TAG"turbo_mode_enable:%d (htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu)",
+				turbo_mode_enable, htask, ll_util, ll_cap, turbo_util_thresh);
 			if (turbo_mode_enable != prev_enable) {
 				smart_tracer(-1, "turbo_enable", 1);
-				if (log_enable)
-					pr_debug(TAG"turbo enable - htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu",
-					htask, ll_util, ll_cap, turbo_util_thresh);
 			}
 		} else {
 			turbo_mode_enable = 0;
+			if (log_enable)
+				pr_debug(TAG"turbo_mode_enable:%d (htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu)",
+				turbo_mode_enable, htask, ll_util, ll_cap, turbo_util_thresh);
 			if (turbo_mode_enable != prev_enable) {
 				smart_tracer(-1, "turbo_enable", 0);
-				if (log_enable)
-					pr_debug(TAG"turbo disable - htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu",
-					htask, ll_util, ll_cap, turbo_util_thresh);
 			}
 		}
 
@@ -1239,6 +1292,9 @@ int __init init_smart(void)
 	smart_dir = proc_mkdir("perfmgr/smart", NULL);
 
 	pr_debug(TAG"init smart driver start\n");
+	pe = proc_create("smart_turbo_support", 0644, smart_dir, &mt_smart_turbo_support_fops);
+	if (!pe)
+		return -ENOMEM;
 	pe = proc_create("smart_log_enable", 0644, smart_dir, &mt_smart_log_enable_fops);
 	if (!pe)
 		return -ENOMEM;
@@ -1313,6 +1369,7 @@ int __init init_smart(void)
 
 	turbo_util_thresh = 80;   /* util <= 80% */
 
+	turbo_support = 1; /* turbo mode support */
 	log_enable = 0;    /* debug log */
 	trace_enable = 0;  /* debug trace */
 	uevent_enable = 1; /* smart.c will send uevent to user space */
