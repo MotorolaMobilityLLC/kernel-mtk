@@ -21,10 +21,10 @@
 */
 #define FM_NAME_MAX 20
 struct fm_object {
-	fm_s8 name[FM_NAME_MAX + 1];	/* name of fm object */
-	fm_u8 type;		/* type of fm object */
-	fm_u8 flag;		/* flag of fm object */
-	fm_s32 ref;
+	signed char name[FM_NAME_MAX + 1];	/* name of fm object */
+	unsigned char type;		/* type of fm object */
+	unsigned char flag;		/* flag of fm object */
+	signed int ref;
 	void *priv;
 };
 
@@ -33,30 +33,30 @@ struct fm_object {
  */
 struct fm_fifo {
 	struct fm_object obj;
-	fm_s32 size;
-	fm_s32 in;
-	fm_s32 out;
-	fm_s32 len;
-	fm_s32 item_size;
-	fm_s32 (*input)(struct fm_fifo *thiz, void *item);
-	fm_s32 (*output)(struct fm_fifo *thiz, void *item);
-	fm_bool (*is_full)(struct fm_fifo *thiz);
-	fm_bool (*is_empty)(struct fm_fifo *thiz);
-	fm_s32 (*get_total_len)(struct fm_fifo *thiz);
-	fm_s32 (*get_valid_len)(struct fm_fifo *thiz);
-	fm_s32 (*reset)(struct fm_fifo *thiz);
+	signed int size;
+	signed int in;
+	signed int out;
+	signed int len;
+	signed int item_size;
+	signed int (*input)(struct fm_fifo *thiz, void *item);
+	signed int (*output)(struct fm_fifo *thiz, void *item);
+	bool (*is_full)(struct fm_fifo *thiz);
+	bool (*is_empty)(struct fm_fifo *thiz);
+	signed int (*get_total_len)(struct fm_fifo *thiz);
+	signed int (*get_valid_len)(struct fm_fifo *thiz);
+	signed int (*reset)(struct fm_fifo *thiz);
 };
 
-extern struct fm_fifo *fm_fifo_init(struct fm_fifo *fifo, void *buf, const fm_s8 *name,
-				    fm_s32 item_size, fm_s32 item_num);
+extern struct fm_fifo *fm_fifo_init(struct fm_fifo *fifo, void *buf, const signed char *name,
+				    signed int item_size, signed int item_num);
 
-extern struct fm_fifo *fm_fifo_create(const fm_s8 *name, fm_s32 item_size, fm_s32 item_num);
+extern struct fm_fifo *fm_fifo_create(const signed char *name, signed int item_size, signed int item_num);
 
-extern fm_s32 fm_fifo_release(struct fm_fifo *fifo);
+extern signed int fm_fifo_release(struct fm_fifo *fifo);
 
 #define FM_FIFO_INPUT(fifop, item)  \
 ({                                    \
-	fm_s32 __ret = (fm_s32)0;              \
+	signed int __ret = (signed int)0;              \
 	if (fifop && (fifop)->input) {          \
 		__ret = (fifop)->input(fifop, item);    \
 	}                               \
@@ -65,7 +65,7 @@ extern fm_s32 fm_fifo_release(struct fm_fifo *fifo);
 
 #define FM_FIFO_OUTPUT(fifop, item)  \
 ({                                    \
-	fm_s32 __ret = (fm_s32)0;              \
+	signed int __ret = (signed int)0;              \
 	if (fifop && (fifop)->output) {          \
 		__ret = (fifop)->output(fifop, item);    \
 	}                               \
@@ -74,7 +74,7 @@ extern fm_s32 fm_fifo_release(struct fm_fifo *fifo);
 
 #define FM_FIFO_IS_FULL(fifop)  \
 ({                                    \
-	fm_bool __ret = fm_false;              \
+	bool __ret = false;              \
 	if (fifop && (fifop)->is_full) {          \
 		__ret = (fifop)->is_full(fifop);    \
 	}                               \
@@ -83,7 +83,7 @@ extern fm_s32 fm_fifo_release(struct fm_fifo *fifo);
 
 #define FM_FIFO_IS_EMPTY(fifop)  \
 ({                                    \
-	fm_bool __ret = fm_false;              \
+	bool __ret = false;              \
 	if (fifop && (fifop)->is_empty) {          \
 		__ret = (fifop)->is_empty(fifop);    \
 	}                               \
@@ -92,7 +92,7 @@ extern fm_s32 fm_fifo_release(struct fm_fifo *fifo);
 
 #define FM_FIFO_RESET(fifop)  \
 ({                                    \
-	fm_s32 __ret = (fm_s32)0;              \
+	signed int __ret = (signed int)0;              \
 	if (fifop && (fifop)->reset) {          \
 		__ret = (fifop)->reset(fifop);    \
 	}                               \
@@ -101,7 +101,7 @@ extern fm_s32 fm_fifo_release(struct fm_fifo *fifo);
 
 #define FM_FIFO_GET_TOTAL_LEN(fifop)  \
 ({                                    \
-	fm_s32 __ret = (fm_s32)0;              \
+	signed int __ret = (signed int)0;              \
 	if (fifop && (fifop)->get_total_len) {          \
 		__ret = (fifop)->get_total_len(fifop);    \
 	}                               \
@@ -110,7 +110,7 @@ extern fm_s32 fm_fifo_release(struct fm_fifo *fifo);
 
 #define FM_FIFO_GET_VALID_LEN(fifop)  \
 ({                                    \
-	fm_s32 __ret = (fm_s32)0;              \
+	signed int __ret = (signed int)0;              \
 	if (fifop && (fifop)->get_valid_len) {          \
 		__ret = (fifop)->get_valid_len(fifop);    \
 	}                               \
@@ -121,30 +121,30 @@ extern fm_s32 fm_fifo_release(struct fm_fifo *fifo);
  * FM asynchronous information mechanism
  */
 struct fm_flag_event {
-	fm_s32 ref;
-	fm_s8 name[FM_NAME_MAX + 1];
+	signed int ref;
+	signed char name[FM_NAME_MAX + 1];
 	void *priv;
 
-	volatile fm_u32 flag;
+	unsigned int flag;
 
 	/* flag methods */
-	fm_u32 (*send)(struct fm_flag_event *thiz, fm_u32 mask);
-	fm_s32 (*wait)(struct fm_flag_event *thiz, fm_u32 mask);
-	long (*wait_timeout)(struct fm_flag_event *thiz, fm_u32 mask, long timeout);
-	fm_u32 (*clr)(struct fm_flag_event *thiz, fm_u32 mask);
-	fm_u32 (*get)(struct fm_flag_event *thiz);
-	fm_u32 (*rst)(struct fm_flag_event *thiz);
+	unsigned int (*send)(struct fm_flag_event *thiz, unsigned int mask);
+	signed int (*wait)(struct fm_flag_event *thiz, unsigned int mask);
+	long (*wait_timeout)(struct fm_flag_event *thiz, unsigned int mask, long timeout);
+	unsigned int (*clr)(struct fm_flag_event *thiz, unsigned int mask);
+	unsigned int (*get)(struct fm_flag_event *thiz);
+	unsigned int (*rst)(struct fm_flag_event *thiz);
 };
 
-extern struct fm_flag_event *fm_flag_event_create(const fm_s8 *name);
+extern struct fm_flag_event *fm_flag_event_create(const signed char *name);
 
-extern fm_s32 fm_flag_event_get(struct fm_flag_event *thiz);
+extern signed int fm_flag_event_get(struct fm_flag_event *thiz);
 
-extern fm_s32 fm_flag_event_put(struct fm_flag_event *thiz);
+extern signed int fm_flag_event_put(struct fm_flag_event *thiz);
 
 #define FM_EVENT_SEND(eventp, mask)  \
 ({                                    \
-	fm_u32 __ret = (fm_u32)0;              \
+	unsigned int __ret = (unsigned int)0;              \
 	if (eventp && (eventp)->send) {          \
 		__ret = (eventp)->send(eventp, mask);    \
 	}                               \
@@ -153,7 +153,7 @@ extern fm_s32 fm_flag_event_put(struct fm_flag_event *thiz);
 
 #define FM_EVENT_WAIT(eventp, mask)  \
 ({                                    \
-	fm_s32 __ret = (fm_s32)0;              \
+	signed int __ret = (signed int)0;              \
 	if (eventp && (eventp)->wait) {          \
 		__ret = (eventp)->wait(eventp, mask);    \
 	}                               \
@@ -171,7 +171,7 @@ extern fm_s32 fm_flag_event_put(struct fm_flag_event *thiz);
 
 #define FM_EVENT_GET(eventp)  \
 ({                                    \
-	fm_u32 __ret = (fm_u32)0;              \
+	unsigned int __ret = (unsigned int)0;              \
 	if (eventp && (eventp)->get) {          \
 		__ret = (eventp)->get(eventp);    \
 	}                               \
@@ -180,7 +180,7 @@ extern fm_s32 fm_flag_event_put(struct fm_flag_event *thiz);
 
 #define FM_EVENT_RESET(eventp)  \
 ({                                    \
-	fm_u32 __ret = (fm_u32)0;              \
+	unsigned int __ret = (unsigned int)0;              \
 	if (eventp && (eventp)->rst) {          \
 		__ret = (eventp)->rst(eventp);    \
 	}                               \
@@ -189,7 +189,7 @@ extern fm_s32 fm_flag_event_put(struct fm_flag_event *thiz);
 
 #define FM_EVENT_CLR(eventp, mask)  \
 ({                                    \
-	fm_u32 __ret = (fm_u32)0;              \
+	unsigned int __ret = (unsigned int)0;              \
 	if (eventp && (eventp)->clr) {          \
 		__ret = (eventp)->clr(eventp, mask);    \
 	}                               \
@@ -200,31 +200,31 @@ extern fm_s32 fm_flag_event_put(struct fm_flag_event *thiz);
  * FM lock mechanism
  */
 struct fm_lock {
-	fm_s8 name[FM_NAME_MAX + 1];
-	fm_s32 ref;
+	signed char name[FM_NAME_MAX + 1];
+	signed int ref;
 	void *priv;
 
 	/* lock methods */
-	fm_s32 (*lock)(struct fm_lock *thiz);
-	fm_s32 (*trylock)(struct fm_lock *thiz, fm_s32 retryCnt);
-	fm_s32 (*unlock)(struct fm_lock *thiz);
+	signed int (*lock)(struct fm_lock *thiz);
+	signed int (*trylock)(struct fm_lock *thiz, signed int retryCnt);
+	signed int (*unlock)(struct fm_lock *thiz);
 };
 
-extern struct fm_lock *fm_lock_create(const fm_s8 *name);
+extern struct fm_lock *fm_lock_create(const signed char *name);
 
-extern fm_s32 fm_lock_get(struct fm_lock *thiz);
+extern signed int fm_lock_get(struct fm_lock *thiz);
 
-extern fm_s32 fm_lock_put(struct fm_lock *thiz);
+extern signed int fm_lock_put(struct fm_lock *thiz);
 
-extern struct fm_lock *fm_spin_lock_create(const fm_s8 *name);
+extern struct fm_lock *fm_spin_lock_create(const signed char *name);
 
-extern fm_s32 fm_spin_lock_get(struct fm_lock *thiz);
+extern signed int fm_spin_lock_get(struct fm_lock *thiz);
 
-extern fm_s32 fm_spin_lock_put(struct fm_lock *thiz);
+extern signed int fm_spin_lock_put(struct fm_lock *thiz);
 
 #define FM_LOCK(a)         \
 ({                           \
-	fm_s32 __ret = (fm_s32)0; \
+	signed int __ret = (signed int)0; \
 	if (a && (a)->lock) {          \
 		__ret = (a)->lock(a);    \
 	}                       \
@@ -250,72 +250,72 @@ enum fm_timer_ctrl {
 #define FM_TIMER_FLAG_ACTIVATED (1<<0)
 
 struct fm_timer {
-	fm_s32 ref;
-	fm_s8 name[FM_NAME_MAX + 1];
+	signed int ref;
+	signed char name[FM_NAME_MAX + 1];
 	void *priv;		/* platform detail impliment */
 
-	fm_s32 flag;		/* timer active/inactive */
+	signed int flag;		/* timer active/inactive */
 	void (*timeout_func)(unsigned long data);	/* timeout function */
 	unsigned long data;	/* timeout function's parameter */
 	signed long timeout_ms;	/* timeout tick */
 	/* Tx parameters */
-	volatile fm_u32 count;
-	volatile fm_u8 tx_pwr_ctrl_en;
-	volatile fm_u8 tx_rtc_ctrl_en;
-	volatile fm_u8 tx_desense_en;
+	unsigned int count;
+	unsigned char tx_pwr_ctrl_en;
+	unsigned char tx_rtc_ctrl_en;
+	unsigned char tx_desense_en;
 
 	/* timer methods */
-	fm_s32 (*init)(struct fm_timer *thiz, void (*timeout) (unsigned long data),
-		unsigned long data, signed long time, fm_s32 flag);
-	fm_s32 (*start)(struct fm_timer *thiz);
-	fm_s32 (*update)(struct fm_timer *thiz);
-	fm_s32 (*stop)(struct fm_timer *thiz);
-	fm_s32 (*control)(struct fm_timer *thiz, enum fm_timer_ctrl cmd, void *arg);
+	signed int (*init)(struct fm_timer *thiz, void (*timeout) (unsigned long data),
+		unsigned long data, signed long time, signed int flag);
+	signed int (*start)(struct fm_timer *thiz);
+	signed int (*update)(struct fm_timer *thiz);
+	signed int (*stop)(struct fm_timer *thiz);
+	signed int (*control)(struct fm_timer *thiz, enum fm_timer_ctrl cmd, void *arg);
 };
 
-extern struct fm_timer *fm_timer_create(const fm_s8 *name);
+extern struct fm_timer *fm_timer_create(const signed char *name);
 
-extern fm_s32 fm_timer_get(struct fm_timer *thiz);
+extern signed int fm_timer_get(struct fm_timer *thiz);
 
-extern fm_s32 fm_timer_put(struct fm_timer *thiz);
+extern signed int fm_timer_put(struct fm_timer *thiz);
 
 /*
  * FM work thread mechanism
  */
 struct fm_work {
-	fm_s32 ref;
-	fm_s8 name[FM_NAME_MAX + 1];
+	signed int ref;
+	signed char name[FM_NAME_MAX + 1];
 	void *priv;
 
 	void (*work_func)(unsigned long data);
 	unsigned long data;
 	/* work methods */
-	fm_s32 (*init)(struct fm_work *thiz, void (*work_func) (unsigned long data), unsigned long data);
+	signed int (*init)(struct fm_work *thiz, void (*work_func) (unsigned long data), unsigned long data);
 };
 
-extern struct fm_work *fm_work_create(const fm_s8 *name);
+extern struct fm_work *fm_work_create(const signed char *name);
 
-extern fm_s32 fm_work_get(struct fm_work *thiz);
+extern signed int fm_work_get(struct fm_work *thiz);
 
-extern fm_s32 fm_work_put(struct fm_work *thiz);
+extern signed int fm_work_put(struct fm_work *thiz);
 
 struct fm_workthread {
-	fm_s32 ref;
-	fm_s8 name[FM_NAME_MAX + 1];
+	signed int ref;
+	signed char name[FM_NAME_MAX + 1];
 	void *priv;
 
 	/* workthread methods */
-	fm_s32 (*add_work)(struct fm_workthread *thiz, struct fm_work *work);
+	signed int (*add_work)(struct fm_workthread *thiz, struct fm_work *work);
 };
 
-extern struct fm_workthread *fm_workthread_create(const fm_s8 *name);
+extern struct fm_workthread *fm_workthread_create(const signed char *name);
 
-extern fm_s32 fm_workthread_get(struct fm_workthread *thiz);
+extern signed int fm_workthread_get(struct fm_workthread *thiz);
 
-extern fm_s32 fm_workthread_put(struct fm_workthread *thiz);
+extern signed int fm_workthread_put(struct fm_workthread *thiz);
 
-fm_s32 fm_delayms(fm_u32 data);
+signed int fm_delayms(unsigned int data);
 
-fm_s32 fm_delayus(fm_u32 data);
+signed int fm_delayus(unsigned int data);
 
 #endif /* __FM_UTILS_H__ */

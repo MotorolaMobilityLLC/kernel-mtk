@@ -22,9 +22,9 @@ enum {
 	FM_EINT_PIN_MAX_MODE
 };
 
-extern fm_s32 fm_enable_eint(void);
-extern fm_s32 fm_disable_eint(void);
-extern fm_s32 fm_request_eint(void (*parser) (void));
-extern fm_s32 fm_eint_pin_cfg(fm_s32 mode);
+extern signed int fm_enable_eint(void);
+extern signed int fm_disable_eint(void);
+extern signed int fm_request_eint(void (*parser) (void));
+extern signed int fm_eint_pin_cfg(signed int mode);
 
 #endif /* __FM_EINT_H__ */

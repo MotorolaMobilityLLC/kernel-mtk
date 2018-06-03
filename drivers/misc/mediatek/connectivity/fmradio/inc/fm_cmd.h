@@ -19,7 +19,7 @@
 #include "fm_patch.h"
 #include "fm_link.h"
 
-extern fm_u8 *cmd_buf;
+extern unsigned char *cmd_buf;
 extern struct fm_lock *cmd_buf_lock;
 extern struct fm_res_ctx *fm_res;
 
@@ -57,39 +57,45 @@ enum IMG_TYPE {
 #define FM_MODIFY_BASIC_OP_SIZE     (5)
 #define FM_MSLEEP_BASIC_OP_SIZE     (4)
 
-fm_s32 fm_bop_write(fm_u8 addr, fm_u16 value, fm_u8 *buf, fm_s32 size);
-fm_s32 fm_bop_udelay(fm_u32 value, fm_u8 *buf, fm_s32 size);
-fm_s32 fm_bop_rd_until(fm_u8 addr, fm_u16 mask, fm_u16 value, fm_u8 *buf, fm_s32 size);
-fm_s32 fm_bop_modify(fm_u8 addr, fm_u16 mask_and, fm_u16 mask_or, fm_u8 *buf, fm_s32 size);
-fm_s32 fm_bop_top_write(fm_u16 addr, fm_u32 value, fm_u8 *buf, fm_s32 size);
-fm_s32 fm_bop_top_rd_until(fm_u16 addr, fm_u32 mask, fm_u32 value, fm_u8 *buf, fm_s32 size);
-fm_s32 fm_op_seq_combine_cmd(fm_u8 *buf, fm_u8 opcode, fm_s32 pkt_size);
-fm_s32 fm_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr);
-fm_s32 fm_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u16 value);
-fm_s32 fm_patch_download(fm_u8 *buf, fm_s32 buf_size, fm_u8 seg_num, fm_u8 seg_id,
-			 const fm_u8 *src, fm_s32 seg_len);
-fm_s32 fm_coeff_download(fm_u8 *buf, fm_s32 buf_size, fm_u8 seg_num, fm_u8 seg_id,
-			 const fm_u8 *src, fm_s32 seg_len);
-fm_s32 fm_full_cqi_req(fm_u8 *buf, fm_s32 buf_size, fm_u16 *freq, fm_s32 cnt, fm_s32 type);
-fm_s32 fm_top_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u16 addr);
-fm_s32 fm_top_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u16 addr, fm_u32 value);
-fm_s32 fm_host_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u32 addr);
-fm_s32 fm_host_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u32 addr, fm_u32 value);
-fm_s32 fm_set_bits_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u16 bits, fm_u16 mask);
-fm_s32 fm_pmic_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr);
-fm_s32 fm_pmic_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 val);
-fm_s32 fm_pmic_mod_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 mask_and, fm_u32 mask_or);
-fm_s32 fm_get_patch_path(fm_s32 ver, fm_u8 *buff, int buffsize, struct fm_patch_tbl *patch_tbl);
-fm_s32 fm_get_coeff_path(fm_s32 ver, fm_u8 *buff, int buffsize, struct fm_patch_tbl *patch_tbl);
-fm_s32 fm_download_patch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type);
-fm_s32 fm_get_read_result(struct fm_res_ctx *result);
-fm_s32 fm_reg_read(fm_u8 addr, fm_u16 *val);
-fm_s32 fm_reg_write(fm_u8 addr, fm_u16 val);
-fm_s32 fm_set_bits(fm_u8 addr, fm_u16 bits, fm_u16 mask);
-fm_s32 fm_top_reg_read(fm_u16 addr, fm_u32 *val);
-fm_s32 fm_top_reg_write(fm_u16 addr, fm_u32 val);
-fm_s32 fm_host_reg_read(fm_u32 addr, fm_u32 *val);
-fm_s32 fm_host_reg_write(fm_u32 addr, fm_u32 val);
+signed int fm_bop_write(unsigned char addr, unsigned short value, unsigned char *buf, signed int size);
+signed int fm_bop_udelay(unsigned int value, unsigned char *buf, signed int size);
+signed int fm_bop_rd_until(unsigned char addr, unsigned short mask, unsigned short value, unsigned char *buf,
+						signed int size);
+signed int fm_bop_modify(unsigned char addr, unsigned short mask_and, unsigned short mask_or, unsigned char *buf,
+						signed int size);
+signed int fm_bop_top_write(unsigned short addr, unsigned int value, unsigned char *buf, signed int size);
+signed int fm_bop_top_rd_until(unsigned short addr, unsigned int mask, unsigned int value, unsigned char *buf,
+						signed int size);
+signed int fm_op_seq_combine_cmd(unsigned char *buf, unsigned char opcode, signed int pkt_size);
+signed int fm_get_reg(unsigned char *buf, signed int buf_size, unsigned char addr);
+signed int fm_set_reg(unsigned char *buf, signed int buf_size, unsigned char addr, unsigned short value);
+signed int fm_patch_download(unsigned char *buf, signed int buf_size, unsigned char seg_num, unsigned char seg_id,
+						const unsigned char *src, signed int seg_len);
+signed int fm_coeff_download(unsigned char *buf, signed int buf_size, unsigned char seg_num, unsigned char seg_id,
+						const unsigned char *src, signed int seg_len);
+signed int fm_full_cqi_req(unsigned char *buf, signed int buf_size, unsigned short *freq, signed int cnt,
+						signed int type);
+signed int fm_top_get_reg(unsigned char *buf, signed int buf_size, unsigned short addr);
+signed int fm_top_set_reg(unsigned char *buf, signed int buf_size, unsigned short addr, unsigned int value);
+signed int fm_host_get_reg(unsigned char *buf, signed int buf_size, unsigned int addr);
+signed int fm_host_set_reg(unsigned char *buf, signed int buf_size, unsigned int addr, unsigned int value);
+signed int fm_set_bits_reg(unsigned char *buf, signed int buf_size, unsigned char addr, unsigned short bits,
+						unsigned short mask);
+signed int fm_pmic_get_reg(unsigned char *buf, signed int buf_size, unsigned char addr);
+signed int fm_pmic_set_reg(unsigned char *buf, signed int buf_size, unsigned char addr, unsigned int val);
+signed int fm_pmic_mod_reg(unsigned char *buf, signed int buf_size, unsigned char addr, unsigned int mask_and,
+						unsigned int mask_or);
+signed int fm_get_patch_path(signed int ver, unsigned char *buff, int buffsize, struct fm_patch_tbl *patch_tbl);
+signed int fm_get_coeff_path(signed int ver, unsigned char *buff, int buffsize, struct fm_patch_tbl *patch_tbl);
+signed int fm_download_patch(const unsigned char *img, signed int len, enum IMG_TYPE type);
+signed int fm_get_read_result(struct fm_res_ctx *result);
+signed int fm_reg_read(unsigned char addr, unsigned short *val);
+signed int fm_reg_write(unsigned char addr, unsigned short val);
+signed int fm_set_bits(unsigned char addr, unsigned short bits, unsigned short mask);
+signed int fm_top_reg_read(unsigned short addr, unsigned int *val);
+signed int fm_top_reg_write(unsigned short addr, unsigned int val);
+signed int fm_host_reg_read(unsigned int addr, unsigned int *val);
+signed int fm_host_reg_write(unsigned int addr, unsigned int val);
 
 /*
  * fm_get_channel_space - get the spcace of gived channel
@@ -97,6 +103,6 @@ fm_s32 fm_host_reg_write(fm_u32 addr, fm_u32 val);
  *
  * Return 0, if 760~1080; return 1, if 7600 ~ 10800, else err code < 0
  */
-extern fm_s32 fm_get_channel_space(int freq);
+extern signed int fm_get_channel_space(int freq);
 
 #endif
