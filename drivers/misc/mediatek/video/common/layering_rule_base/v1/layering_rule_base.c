@@ -1799,6 +1799,10 @@ int gen_hrt_pattern(void)
 	struct layer_config *layer_info;
 	int i;
 
+	disp_info.gles_head[0] = -1;
+	disp_info.gles_head[1] = -1;
+	disp_info.gles_tail[0] = -1;
+	disp_info.gles_tail[1] = -1;
 	if (!load_hrt_test_data(&disp_info))
 		return 0;
 
