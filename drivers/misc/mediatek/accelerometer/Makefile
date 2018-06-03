@@ -8,4 +8,5 @@ else
 obj-$(CONFIG_MTK_BMA2XX)   +=  bma2xx/
 obj-$(CONFIG_MTK_MC3433)   +=  mc3433/
 obj-$(CONFIG_MTK_LSM6DS3HG)   +=  lsm6ds3hg/
+obj-$(CONFIG_MTK_BMI160_SPI)   +=  bmi160-spi/
 endif
