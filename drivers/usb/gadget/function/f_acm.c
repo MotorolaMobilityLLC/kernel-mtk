@@ -358,9 +358,18 @@ static int acm_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl)
 	 * to them by stalling.  Options include get/set/clear comm features
 	 * (not that useful) and SEND_BREAK.
 	 */
+	{
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+		static int skip_cnt;
 
-	pr_notice("[XLOG_INFO][USB_ACM]%s: ttyGS%d req%02x.%02x v%04x i%04x len=%d\n", __func__,
-			acm->port_num, ctrl->bRequestType, ctrl->bRequest, w_value, w_index, w_length);
+		if (__ratelimit(&ratelimit)) {
+			pr_notice("[USB_ACM]%s: ttyGS%d req%02x.%02x v%04x i%04x len=%d, skip_cnt:%d\n", __func__,
+					acm->port_num, ctrl->bRequestType, ctrl->bRequest,
+					w_value, w_index, w_length, skip_cnt);
+			skip_cnt = 0;
+		} else
+			skip_cnt++;
+	}
 
 	switch ((ctrl->bRequestType << 8) | ctrl->bRequest) {
 
@@ -386,9 +395,19 @@ static int acm_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl)
 				sizeof(struct usb_cdc_line_coding));
 		memcpy(req->buf, &acm->port_line_coding, value);
 
-		pr_notice("[XLOG_INFO][USB_ACM]%s: rate=%d,stop=%d,parity=%d,data=%d\n", __func__,
-				acm->port_line_coding.dwDTERate, acm->port_line_coding.bCharFormat,
-				acm->port_line_coding.bParityType, acm->port_line_coding.bDataBits);
+		{
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+			static int skip_cnt;
+
+			if (__ratelimit(&ratelimit)) {
+				pr_notice("[USB_ACM]%s: rate=%d,stop=%d,parity=%d,data=%d, skip_cnt:%d\n", __func__,
+						acm->port_line_coding.dwDTERate, acm->port_line_coding.bCharFormat,
+						acm->port_line_coding.bParityType, acm->port_line_coding.bDataBits,
+						skip_cnt);
+				skip_cnt = 0;
+			} else
+				skip_cnt++;
+		}
 
 		break;
 
