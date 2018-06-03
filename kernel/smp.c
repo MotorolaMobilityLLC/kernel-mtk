@@ -180,6 +180,30 @@ void generic_smp_call_function_single_interrupt(void)
 	flush_smp_call_function_queue(true);
 }
 
+#ifdef CONFIG_MTPROF
+static unsigned long long mt_record_smp_call_func_start(void)
+{
+	return sched_clock();
+}
+
+static void mt_record_smp_call_func_end(struct call_single_data *csd,
+					unsigned long long start)
+{
+#define WARN_LONG_CALL_FUNC_TIME	3000000
+	unsigned long long duration = sched_clock() - start;
+
+	if (unlikely(duration > WARN_LONG_CALL_FUNC_TIME))
+		pr_warn("func:%pF: too long: %llu ns\n", csd->func, duration);
+}
+#else
+static unsigned long long mt_record_smp_call_func_start(void) { return 0; }
+static void mt_record_smp_call_func_end(struct call_single_data *csd,
+					unsigned long long start)
+{
+
+}
+#endif
+
 /**
  * flush_smp_call_function_queue - Flush pending smp-call-function callbacks
  *
@@ -225,14 +249,19 @@ static void flush_smp_call_function_queue(bool warn_cpu_offline)
 	llist_for_each_entry_safe(csd, csd_next, entry, llist) {
 		smp_call_func_t func = csd->func;
 		void *info = csd->info;
+		unsigned long long start;
 
 		/* Do we wait until *after* callback? */
 		if (csd->flags & CSD_FLAG_SYNCHRONOUS) {
+			start = mt_record_smp_call_func_start();
 			func(info);
+			mt_record_smp_call_func_end(csd, start);
 			csd_unlock(csd);
 		} else {
 			csd_unlock(csd);
+			start = mt_record_smp_call_func_start();
 			func(info);
+			mt_record_smp_call_func_end(csd, start);
 		}
 	}
 
