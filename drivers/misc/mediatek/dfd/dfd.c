@@ -16,7 +16,7 @@
 #include <linux/of.h>
 #include <linux/slab.h>
 
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 #include <mach/wd_api.h>
 #include <mt-plat/mtk_platform_debug.h>
 #include "dfd.h"

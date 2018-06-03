@@ -32,7 +32,7 @@
 #include <linux/atomic.h>
 #include <linux/irq.h>
 #include <linux/syscore_ops.h>
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 
 /*#define ATF_LOGGER_DEBUG*/
 #define ATF_LOG_CTRL_BUF_SIZE 256

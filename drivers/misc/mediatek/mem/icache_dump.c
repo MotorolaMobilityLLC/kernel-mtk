@@ -30,7 +30,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 
 #define ICACHE_DUMP_PROC_ROOT_DIR		"icache_dump"
 #define ICACHE_DUMP_PROC_RAW_FILE		"raw"

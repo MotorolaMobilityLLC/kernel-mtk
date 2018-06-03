@@ -23,7 +23,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 #if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mtk_cirq.h>
 #endif
@@ -111,7 +111,6 @@ static unsigned long mcucfg_phys_base;
 #define	ACINACTM_MP2	(0x11)
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
-#include <mach/mtk_secure_api.h>
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write_phy(addr##_PHYS, val)
 #else
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
