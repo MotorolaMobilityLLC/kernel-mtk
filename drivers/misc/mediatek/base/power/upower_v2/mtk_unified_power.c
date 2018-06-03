@@ -30,7 +30,7 @@
 /* local include */
 #include "mtk_upower.h"
 
-#ifndef EARLY_PORTING_SPOWER
+#ifndef EARLY_PORTING_EEM
 #include "mtk_eem.h"
 #endif
 
