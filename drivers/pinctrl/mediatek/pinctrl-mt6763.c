@@ -38,6 +38,9 @@ static int mtk_pinctrl_set_gpio_pupd_r1r0(struct mtk_pinctrl *pctl, int pin,
 		pupd_r1r0 = 3;
 	else
 		pupd_r1r0 = 0;
+	/* HW value 0 for PU, HW value 1 for PD
+	 * So need to revert input parametet isup before write to HW
+	 */
 	if (!isup)
 		pupd_r1r0 |= 0x4;
 
@@ -74,7 +77,8 @@ static int mtk_pinctrl_get_gpio_pupd_r1r0(struct mtk_pinctrl *pctl, int pin)
 	ret = mtk_pinctrl_get_gpio_value(pctl, pin,
 		pctl->devdata->n_pin_pupd_r1r0, pctl->devdata->pin_pupd_r1r0_grps);
 	if (ret >= 0) {
-		bit_pupd = (ret & 0x4) ? 1 : 0; /* set for PD, clr for PU */
+		/* bit_upd: set for PU, clr for PD, ie, revert HW value */
+		bit_pupd = (ret & 0x4) ? 0 : 1;
 		bit_r0   = (ret & 0x1) ? MTK_PUPD_R1R0_BIT_R0 : 0;
 		bit_r1   = (ret & 0x2) ? MTK_PUPD_R1R0_BIT_R1 : 0;
 		return MTK_PUPD_R1R0_BIT_SUPPORT | bit_r1 | bit_r0 | bit_pupd;
@@ -87,6 +91,7 @@ static int mtk_pinctrl_get_gpio_pupd_r1r0(struct mtk_pinctrl *pctl, int pin)
 	bit_pupd = mtk_pinctrl_get_gpio_value(pctl, pin,
 		pctl->devdata->n_pin_pupd, pctl->devdata->pin_pupd_grps);
 	if (bit_pupd != -EPERM) {
+		/* bit_upd: set for PU, clr for PD, ie, revert HW value */
 		bit_r1 = mtk_pinctrl_get_gpio_value(pctl, pin,
 			pctl->devdata->n_pin_r1, pctl->devdata->pin_r1_grps) ? MTK_PUPD_R1R0_BIT_R1 : 0;
 		bit_r0 = mtk_pinctrl_get_gpio_value(pctl, pin,
@@ -103,7 +108,7 @@ static int mtk_pinctrl_set_gpio_pullsel_pullen(struct mtk_pinctrl *pctl, int pin
 	mtk_pinctrl_update_gpio_value(pctl, pin, isup,
 		pctl->devdata->n_pin_pullsel, pctl->devdata->pin_pullsel_grps);
 	mtk_pinctrl_update_gpio_value(pctl, pin, enable,
-			pctl->devdata->n_pin_pullen, pctl->devdata->pin_pullen_grps);
+		pctl->devdata->n_pin_pullen, pctl->devdata->pin_pullen_grps);
 	return 0;
 }
 
@@ -191,7 +196,7 @@ static int mtk_pinctrl_set_gpio_pull(struct mtk_pinctrl *pctl,
 	pr_warn("mtk_pinctrl_set_gpio_pull, pin = %d, enab = %d, sel = %d, arg = %u\n",
 		pin, enable, isup, arg);
 #endif
-	ret = mtk_pinctrl_set_gpio_pupd_r1r0(pctl, pin, enable, !isup, arg);
+	ret = mtk_pinctrl_set_gpio_pupd_r1r0(pctl, pin, enable, isup, arg);
 	if (ret == 0) {
 #ifdef GPIO_DEBUG
 		pull_val = mtk_pinctrl_get_gpio_pullsel(pctl, pin);
