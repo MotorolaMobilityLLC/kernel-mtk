@@ -82,6 +82,9 @@ struct eem_det {
 	unsigned int eem_26c[NR_EEM_PHASE];
 	unsigned int vop30[NR_EEM_PHASE];
 
+	/* Picachu efuse data */
+	unsigned int pi_efuse;
+
 	struct eem_det_ops *ops;
 	enum eem_ctrl_id ctrl_id;
 

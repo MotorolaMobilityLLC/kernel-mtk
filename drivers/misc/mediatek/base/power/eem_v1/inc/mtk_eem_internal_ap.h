@@ -125,6 +125,8 @@ struct eem_det {
 
 	unsigned int disabled; /* Disabled by error or sysfs */
 	unsigned char set_volt_to_upower; /* only when init2, eem need to set volt to upower */
+
+	unsigned int pi_efuse;
 };
 
 struct eem_devinfo {
