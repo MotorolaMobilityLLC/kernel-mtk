@@ -655,7 +655,6 @@ static void pmic_sp_irq_handler(unsigned int spNo, unsigned int sp_conNo, unsign
 		/* prevent from MT6357 glitch problem */
 		/* Clear interrupt status by CLR enable register */
 		upmu_set_reg_value((sp_interrupts[spNo].enable + 0x6 * sp_conNo) + 0x4, sp_int_status);
-				   + 0x4, sp_int_status);
 		/* delay 3T~4T 32K clock (96us~128us) */
 		udelay(150);
 		/* restore enable register */
