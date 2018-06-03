@@ -99,6 +99,10 @@ UINT_32 g_au4Offset[2][2];
 UINT_32 g_au4IQData[256];
 #endif
 
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+RLM_CAL_RESULT_ALL_V2_T			g_rBackupCalDataAllV2;
+#endif
+
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -559,10 +563,11 @@ static VOID rlmFillHtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU
 		UINT_8 tempRxStbcNss;
 
 		tempRxStbcNss = prAdapter->rWifiVar.ucRxStbcNss;
-		tempRxStbcNss = (tempRxStbcNss > prAdapter->rWifiVar.ucNSS) ?
-			(prAdapter->rWifiVar.ucNSS) : (tempRxStbcNss);
+		tempRxStbcNss = (tempRxStbcNss > wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex)) ?
+			wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex) : (tempRxStbcNss);
 		if (tempRxStbcNss != prAdapter->rWifiVar.ucRxStbcNss) {
-			DBGLOG(RLM, WARN, "Apply Nss:%d as RxStbcNss in HT Cap", prAdapter->rWifiVar.ucNSS);
+			DBGLOG(RLM, WARN, "Apply Nss:%d as RxStbcNss in HT Cap",
+				wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex));
 			DBGLOG(RLM, WARN, " due to set RxStbcNss more than Nss is not appropriate.\n");
 		}
 		if (tempRxStbcNss == 1)
@@ -584,7 +589,7 @@ static VOID rlmFillHtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU
 					  HT_CAP_INFO_SHORT_GI_40M | HT_CAP_INFO_DSSS_CCK_IN_40M);
 
 	/* SM power saving */ /* TH3_Huang */
-	if (prBssInfo->ucNss < prAdapter->rWifiVar.ucNSS)
+	if (prBssInfo->ucNss < wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex))
 		prHtCap->u2HtCapInfo &= ~HT_CAP_INFO_SM_POWER_SAVE;/*Set as static power save */
 
 	prHtCap->ucAmpduParam = AMPDU_PARAM_DEFAULT_VAL;
@@ -592,7 +597,7 @@ static VOID rlmFillHtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU
 	prSupMcsSet = &prHtCap->rSupMcsSet;
 	kalMemZero((PVOID)&prSupMcsSet->aucRxMcsBitmask[0], SUP_MCS_RX_BITMASK_OCTET_NUM);
 
-	for (ucIdx = 0; ucIdx < prAdapter->rWifiVar.ucNSS; ucIdx++)
+	for (ucIdx = 0; ucIdx < wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex); ucIdx++)
 		prSupMcsSet->aucRxMcsBitmask[ucIdx] = BITS(0, 7);
 
 	/* prSupMcsSet->aucRxMcsBitmask[0] = BITS(0, 7); */
@@ -1123,10 +1128,11 @@ static VOID rlmFillVhtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 			DBGLOG(RLM, INFO, "Set RxStbcNss to 1 for 11ac certification.\n");
 		} else {
 			tempRxStbcNss = prAdapter->rWifiVar.ucRxStbcNss;
-			tempRxStbcNss = (tempRxStbcNss > prAdapter->rWifiVar.ucNSS) ?
-				(prAdapter->rWifiVar.ucNSS) : (tempRxStbcNss);
+			tempRxStbcNss = (tempRxStbcNss > wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex)) ?
+				wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex) : (tempRxStbcNss);
 			if (tempRxStbcNss != prAdapter->rWifiVar.ucRxStbcNss) {
-				DBGLOG(RLM, WARN, "Apply Nss:%d as RxStbcNss in VHT Cap", prAdapter->rWifiVar.ucNSS);
+				DBGLOG(RLM, WARN, "Apply Nss:%d as RxStbcNss in VHT Cap",
+					wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex));
 				DBGLOG(RLM, WARN, "due to set RxStbcNss more than Nss is not appropriate.\n");
 			}
 		}
@@ -1144,7 +1150,7 @@ static VOID rlmFillVhtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 		UINT_8 ucOffset = i * 2;
 		UINT_8 ucMcsMap;
 
-		if (i < prAdapter->rWifiVar.ucNSS)
+		if (i < wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex))
 			ucMcsMap = VHT_CAP_INFO_MCS_MAP_MCS9;
 		else
 			ucMcsMap = VHT_CAP_INFO_MCS_NOT_SUPPORTED;
@@ -1154,7 +1160,7 @@ static VOID rlmFillVhtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 	}
 
 #if 0
-	for (i = 0; i < prAdapter->rWifiVar.ucNSS; i++) {
+	for (i = 0; i < wlanGetSupportNss(prAdapter, prBssInfo->ucBssIndex); i++) {
 		UINT_8 ucOffset = i * 2;
 
 		prVhtSupportedMcsSet->u2RxMcsMap &=
@@ -1224,6 +1230,245 @@ VOID rlmFillVhtOpIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU_INFO_T
 
 #endif
 
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+WLAN_STATUS rlmCalBackup(
+	P_ADAPTER_T prAdapter,
+	UINT_8		ucReason,
+	UINT_8		ucAction,
+	UINT_8		ucRomRam
+	)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	PARAM_CAL_BACKUP_STRUCT_V2_T	rCalBackupDataV2;
+	UINT_32 u4BufLen = 0;
+
+	ASSERT(prAdapter);
+	ASSERT(prAdapter->prGlueInfo);
+
+	prGlueInfo = prAdapter->prGlueInfo;
+
+	rCalBackupDataV2.ucReason = ucReason;
+	rCalBackupDataV2.ucAction = ucAction;
+	rCalBackupDataV2.ucNeedResp = 1;
+	rCalBackupDataV2.ucFragNum = 0;
+	rCalBackupDataV2.ucRomRam = ucRomRam;
+	rCalBackupDataV2.u4ThermalValue = 0;
+	rCalBackupDataV2.u4Address = 0;
+	rCalBackupDataV2.u4Length = 0;
+	rCalBackupDataV2.u4RemainLength = 0;
+
+	if (ucReason == 0 && ucAction == 0) {
+		DBGLOG(RFTEST, INFO, "RLM CMD : Get Thermal Temp from FW.\n");
+		/* Step 1 : Get Thermal Temp from FW */
+
+		rStatus = kalIoctl(prGlueInfo,
+					wlanoidQueryCalBackupV2,
+					&rCalBackupDataV2,
+					sizeof(PARAM_CAL_BACKUP_STRUCT_V2_T),
+					TRUE,
+					TRUE,
+					TRUE,
+					&u4BufLen);
+
+		if (rStatus != WLAN_STATUS_SUCCESS) {
+			DBGLOG(RFTEST, INFO,
+				"RLM CMD : Get Thermal Temp from FW Return Fail (0x%08x)!!!!!!!!!!!\n", rStatus);
+			return rStatus;
+		}
+
+		DBGLOG(RFTEST, INFO, "CMD : Get Thermal Temp (%d) from FW. Finish!!!!!!!!!!!\n",
+			rCalBackupDataV2.u4ThermalValue);
+	} else if (ucReason == 1 && ucAction == 2) {
+		DBGLOG(RFTEST, INFO, "RLM CMD : Trigger FW Do All Cal.\n");
+		/* Step 2 : Trigger All Cal Function */
+
+		rStatus = kalIoctl(prGlueInfo,
+					wlanoidSetCalBackup,
+					&rCalBackupDataV2,
+					sizeof(PARAM_CAL_BACKUP_STRUCT_V2_T),
+					FALSE,
+					FALSE,
+					TRUE,
+					&u4BufLen);
+
+		if (rStatus != WLAN_STATUS_SUCCESS) {
+			DBGLOG(RFTEST, INFO,
+				"RLM CMD : Trigger FW Do All Cal Return Fail (0x%08x)!!!!!!!!!!!\n", rStatus);
+			return rStatus;
+		}
+
+		DBGLOG(RFTEST, INFO, "CMD : Trigger FW Do All Cal. Finish!!!!!!!!!!!\n");
+	} else if (ucReason == 0 && ucAction == 1) {
+		DBGLOG(RFTEST, INFO, "RLM CMD : Get Cal Data (%s) Size from FW.\n",
+			ucRomRam == 0 ? "ROM" : "RAM");
+		/* Step 3 : Get Cal Data Size from FW */
+
+		rStatus = kalIoctl(prGlueInfo,
+					wlanoidQueryCalBackupV2,
+					&rCalBackupDataV2,
+					sizeof(PARAM_CAL_BACKUP_STRUCT_V2_T),
+					TRUE,
+					TRUE,
+					TRUE,
+					&u4BufLen);
+
+		if (rStatus != WLAN_STATUS_SUCCESS) {
+			DBGLOG(RFTEST, INFO,
+				"RLM CMD : Get Cal Data (%s) Size from FW Return Fail (0x%08x)!!!!!!!!!!!\n",
+				ucRomRam == 0 ? "ROM" : "RAM", rStatus);
+			return rStatus;
+		}
+
+		DBGLOG(RFTEST, INFO, "CMD : Get Cal Data (%s) Size from FW. Finish!!!!!!!!!!!\n",
+			ucRomRam == 0 ? "ROM" : "RAM");
+	} else if (ucReason == 2 && ucAction == 4) {
+		DBGLOG(RFTEST, INFO, "RLM CMD : Get Cal Data from FW (%s). Start!!!!!!!!!!!!!!!!\n",
+			ucRomRam == 0 ? "ROM" : "RAM");
+		DBGLOG(RFTEST, INFO, "Thermal Temp = %d\n", g_rBackupCalDataAllV2.u4ThermalInfo);
+		/* Step 4 : Get Cal Data from FW */
+
+		rStatus = kalIoctl(prGlueInfo,
+					wlanoidQueryCalBackupV2,
+					&rCalBackupDataV2,
+					sizeof(PARAM_CAL_BACKUP_STRUCT_V2_T),
+					TRUE,
+					TRUE,
+					TRUE,
+					&u4BufLen);
+		if (rStatus != WLAN_STATUS_SUCCESS) {
+			DBGLOG(RFTEST, INFO,
+				"RLM CMD : Get Cal Data (%s) Size from FW Return Fail (0x%08x)!!!!!!!!!!!\n",
+				ucRomRam == 0 ? "ROM" : "RAM", rStatus);
+			return rStatus;
+		}
+
+		DBGLOG(RFTEST, INFO, "CMD : Get Cal Data from FW (%s). Finish!!!!!!!!!!!\n",
+			ucRomRam == 0 ? "ROM" : "RAM");
+
+		if (ucRomRam == 0) {
+			DBGLOG(RFTEST, INFO,
+				"Check some of elements (0x%08x), (0x%08x), (0x%08x), (0x%08x), (0x%08x)\n",
+				g_rBackupCalDataAllV2.au4RomCalData[670], g_rBackupCalDataAllV2.au4RomCalData[671],
+				g_rBackupCalDataAllV2.au4RomCalData[672], g_rBackupCalDataAllV2.au4RomCalData[673],
+				g_rBackupCalDataAllV2.au4RomCalData[674]);
+			DBGLOG(RFTEST, INFO,
+				"Check some of elements (0x%08x), (0x%08x), (0x%08x), (0x%08x), (0x%08x)\n",
+				g_rBackupCalDataAllV2.au4RomCalData[675], g_rBackupCalDataAllV2.au4RomCalData[676],
+				g_rBackupCalDataAllV2.au4RomCalData[677], g_rBackupCalDataAllV2.au4RomCalData[678],
+				g_rBackupCalDataAllV2.au4RomCalData[679]);
+		}
+	} else if (ucReason == 4 && ucAction == 6) {
+		DBGLOG(RFTEST, INFO, "RLM CMD : Print Cal Data in FW (%s).\n",
+			ucRomRam == 0 ? "ROM" : "RAM");
+		/* Debug Use : Print Cal Data in FW */
+
+		rStatus = kalIoctl(prGlueInfo,
+					wlanoidSetCalBackup,
+					&rCalBackupDataV2,
+					sizeof(PARAM_CAL_BACKUP_STRUCT_V2_T),
+					TRUE,
+					TRUE,
+					TRUE,
+					&u4BufLen);
+
+		if (rStatus != WLAN_STATUS_SUCCESS) {
+			DBGLOG(RFTEST, INFO,
+				"RLM CMD : Print Cal Data in FW (%s) Return Fail (0x%08x)!!!!!!!!!!!\n",
+				ucRomRam == 0 ? "ROM" : "RAM", rStatus);
+			return rStatus;
+		}
+
+		DBGLOG(RFTEST, INFO, "CMD : Print Cal Data in FW (%s). Finish!!!!!!!!!!!\n",
+			ucRomRam == 0 ? "ROM" : "RAM");
+	} else if (ucReason == 3 && ucAction == 5) {
+		DBGLOG(RFTEST, INFO, "RLM CMD : Send Cal Data to FW (%s).\n",
+			ucRomRam == 0 ? "ROM" : "RAM");
+		/* Send Cal Data to FW */
+
+		rStatus = kalIoctl(prGlueInfo,
+					wlanoidSetCalBackup,
+					&rCalBackupDataV2,
+					sizeof(PARAM_CAL_BACKUP_STRUCT_V2_T),
+					TRUE,
+					TRUE,
+					TRUE,
+					&u4BufLen);
+
+		if (rStatus != WLAN_STATUS_SUCCESS) {
+			DBGLOG(RFTEST, INFO,
+				"RLM CMD : Send Cal Data to FW (%s) Return Fail (0x%08x)!!!!!!!!!!!\n",
+				ucRomRam == 0 ? "ROM" : "RAM", rStatus);
+			return rStatus;
+		}
+
+		DBGLOG(RFTEST, INFO, "CMD : Send Cal Data to FW (%s). Finish!!!!!!!!!!!\n",
+			ucRomRam == 0 ? "ROM" : "RAM");
+	} else {
+		DBGLOG(RFTEST, INFO, "CMD : Undefined Reason (%d) and Action (%d) for Cal Backup in Host Side!\n",
+			ucReason, ucAction);
+
+		return rStatus;
+	}
+
+	return rStatus;
+}
+
+WLAN_STATUS rlmTriggerCalBackup(
+	P_ADAPTER_T prAdapter,
+	BOOLEAN		fgIsCalDataBackuped
+	)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+
+	if (!fgIsCalDataBackuped) {
+		DBGLOG(RFTEST, INFO, "======== Boot Time Wi-Fi Enable........\n");
+		DBGLOG(RFTEST, INFO, "Step 0 : Reset All Cal Data in Driver.\n");
+		memset(&g_rBackupCalDataAllV2, 1, sizeof(RLM_CAL_RESULT_ALL_V2_T));
+		g_rBackupCalDataAllV2.u4MagicNum1 = 6632;
+		g_rBackupCalDataAllV2.u4MagicNum2 = 6632;
+
+		DBGLOG(RFTEST, INFO, "Step 1 : Get Thermal Temp from FW.\n");
+		if (rlmCalBackup(prAdapter, 0, 0, 0) == WLAN_STATUS_FAILURE) {
+			DBGLOG(RFTEST, INFO, "Step 1 : Return Failure.\n");
+			return WLAN_STATUS_FAILURE;
+		}
+
+		DBGLOG(RFTEST, INFO, "Step 2 : Get Rom Cal Data Size from FW.\n");
+		if (rlmCalBackup(prAdapter, 0, 1, 0) == WLAN_STATUS_FAILURE) {
+			DBGLOG(RFTEST, INFO, "Step 2 : Return Failure.\n");
+			return WLAN_STATUS_FAILURE;
+		}
+
+		DBGLOG(RFTEST, INFO, "Step 3 : Get Ram Cal Data Size from FW.\n");
+		if (rlmCalBackup(prAdapter, 0, 1, 1) == WLAN_STATUS_FAILURE) {
+			DBGLOG(RFTEST, INFO, "Step 3 : Return Failure.\n");
+			return WLAN_STATUS_FAILURE;
+		}
+
+		DBGLOG(RFTEST, INFO, "Step 4 : Trigger FW Do Full Cal.\n");
+		if (rlmCalBackup(prAdapter, 1, 2, 0) == WLAN_STATUS_FAILURE) {
+			DBGLOG(RFTEST, INFO, "Step 4 : Return Failure.\n");
+			return WLAN_STATUS_FAILURE;
+		}
+	} else {
+		DBGLOG(RFTEST, INFO, "======== Normal Wi-Fi Enable........\n");
+		DBGLOG(RFTEST, INFO, "Step 0 : Sent Rom Cal data to FW.\n");
+		if (rlmCalBackup(prAdapter, 3, 5, 0) == WLAN_STATUS_FAILURE) {
+			DBGLOG(RFTEST, INFO, "Step 0 : Return Failure.\n");
+			return WLAN_STATUS_FAILURE;
+		}
+
+		DBGLOG(RFTEST, INFO, "Step 1 : Sent Ram Cal data to FW.\n");
+		if (rlmCalBackup(prAdapter, 3, 5, 1) == WLAN_STATUS_FAILURE) {
+			DBGLOG(RFTEST, INFO, "Step 1 : Return Failure.\n");
+			return WLAN_STATUS_FAILURE;
+		}
+	}
+
+	return rStatus;
+}
+#endif
 
 VOID rlmModifyVhtBwPara(
 	PUINT_8 pucVhtChannelFrequencyS1,

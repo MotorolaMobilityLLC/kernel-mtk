@@ -844,6 +844,13 @@ VOID p2pFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			prP2pBssInfo->eDBDCBand = prMsgChGrant->eDBDCBand;
 #endif
 
+#if CFG_SISO_SW_DEVELOP
+		/* Driver record granted CH in BSS info */
+		prP2pBssInfo->fgIsGranted = TRUE;
+		prP2pBssInfo->eBandGranted = prMsgChGrant->eRfBand;
+		prP2pBssInfo->ucPrimaryChannelGranted = prMsgChGrant->ucPrimaryChannel;
+#endif
+
 		switch (prP2pBssInfo->eCurrentOPMode) {
 		case OP_MODE_P2P_DEVICE:
 			ASSERT(prP2pBssInfo->ucBssIndex == P2P_DEV_BSS_INDEX);

@@ -505,6 +505,10 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_GET_BUG_REPORT = 0x89,	/* 0x89 (Query) */
 	CMD_ID_GET_NIC_CAPABILITY_V2 = 0x8A,/* 0x8A (Query) */
 
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+	CMD_ID_CAL_BACKUP_IN_HOST_V2 = 0xAE,	/* 0xAE (Set / Query) */
+#endif
+
 	CMD_ID_ACCESS_REG = 0xc0,	/* 0xc0 (Set / Query) */
 	CMD_ID_MAC_MCAST_ADDR,	/* 0xc1 (Set / Query) */
 	CMD_ID_802_11_PMKID,	/* 0xc2 (Set / Query) */
@@ -610,6 +614,11 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_TDLS = 0x80,	/* TDLS event_id */
 
 	EVENT_ID_UPDATE_COEX_PHYRATE = 0x90,	/* 0x90 (Unsolicited) */
+
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+	EVENT_ID_CAL_BACKUP_IN_HOST_V2 = 0xAE,	/* 0xAE (Query - CMD_ID_CAL_BACKUP) */
+	EVENT_ID_CAL_ALL_DONE = 0xAF,	/* 0xAF (FW Cal All Done Event) */
+#endif
 
 	EVENT_ID_WLAN_INFO = 0xCD,
 	EVENT_ID_MIB_INFO = 0xCE,
@@ -1214,6 +1223,34 @@ typedef struct _CMD_ACCESS_REG {
 	UINT_32 u4Address;
 	UINT_32 u4Data;
 } CMD_ACCESS_REG, *P_CMD_ACCESS_REG;
+
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+/* CMD_ID_CAL_BACKUP_IN_HOST_V2 & EVENT_ID_CAL_BACKUP_IN_HOST_V2 */
+typedef struct _CMD_CAL_BACKUP_STRUCT_V2_T {
+	UINT_8	ucReason;
+	UINT_8	ucAction;
+	UINT_8	ucNeedResp;
+	UINT_8	ucFragNum;
+	UINT_8	ucRomRam;
+	UINT_32	u4ThermalValue;
+	UINT_32 u4Address;
+	UINT_32	u4Length;
+	UINT_32	u4RemainLength;
+	UINT_32	au4Buffer[PARAM_CAL_DATA_DUMP_MAX_NUM];
+} CMD_CAL_BACKUP_STRUCT_V2_T, *P_CMD_CAL_BACKUP_STRUCT_V2_T;
+
+typedef struct _CMD_CAL_BACKUP_STRUCT_T {
+	UINT_8	ucReason;
+	UINT_8	ucAction;
+	UINT_8	ucNeedResp;
+	UINT_8	ucFragNum;
+	UINT_8	ucRomRam;
+	UINT_32	u4ThermalValue;
+	UINT_32 u4Address;
+	UINT_32	u4Length;
+	UINT_32	u4RemainLength;
+} CMD_CAL_BACKUP_STRUCT_T, *P_CMD_CAL_BACKUP_STRUCT_T;
+#endif
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 typedef struct _CMD_ACCESS_CHN_LOAD {
@@ -2650,6 +2687,10 @@ VOID nicCmdEventGetCalcInitMcs(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdIn
 #endif /* CFG_SUPPORT_MU_MIMO */
 #endif /* CFG_SUPPORT_QA_TOOL */
 
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+VOID nicCmdEventQueryCalBackupV2(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
+#endif
+
 VOID nicEventQueryMemDump(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucEventBuf);
 
 VOID nicCmdEventQueryMemDump(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
@@ -2762,6 +2803,9 @@ VOID nicEventUpdateBwcsStatus(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEven
 VOID nicEventUpdateBcmDebug(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventAddPkeyDone(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventIcapDone(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+VOID nicEventCalAllDone(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
+#endif
 VOID nicEventDebugMsg(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventTdls(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventDumpMem(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);

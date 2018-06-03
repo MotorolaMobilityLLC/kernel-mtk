@@ -185,25 +185,29 @@ do { \
 				ASSERT(prBssInfo); \
 				if (prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE) { \
 					pucMicKey = &(prAdapter->rWifiVar.rAisSpecificBssInfo.aucRxMicKey[0]); \
+					prCurrSwRfb->ucTid = (UINT_8) (HAL_RX_STATUS_GET_TID(prRxStatus)); \
 				} \
 				else { \
 					ASSERT(FALSE); \
 					/* pucMicKey = &prCurrSwRfb->prStaRec->aucRxMicKey[0]; */ \
 				} \
-				/* SW TKIP MIC verify */ \
+				/* SW TKIP MIC verify, adopt new function call for MIC calculation */ \
 				/* TODO:[6630] Need to Check Header Translation Case */ \
 				if (pucMicKey == NULL) { \
 					DBGLOG(RX, ERROR, "Mark NULL the Packet for TKIP Key Error\n"); \
 					fgMicErr = TRUE; \
 				} \
-				else if (tkipMicDecapsulate(prCurrSwRfb, pucMicKey) == FALSE) { \
+				else if (tkipMicDecapsulateInRxHdrTransMode(prCurrSwRfb, pucMicKey) == FALSE) { \
 					fgMicErr = TRUE; \
 				} \
 			} \
 			if (fgMicErr) { \
-				DBGLOG(RX, ERROR, "Mark NULL the Packet for TKIP Mic Error\n"); \
-				RX_INC_CNT(&prAdapter->rRxCtrl, RX_MIC_ERROR_DROP_COUNT); \
-				prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL; \
+				/* bypass tkip frag */ \
+				if (!prCurrSwRfb->fgFragFrame) { \
+					DBGLOG(RX, ERROR, "Mark NULL the Packet for TKIP Mic Error\n"); \
+					RX_INC_CNT(&prAdapter->rRxCtrl, RX_MIC_ERROR_DROP_COUNT); \
+					prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL; \
+				} \
 			} \
 		} \
 		QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T)prCurrSwRfb); \

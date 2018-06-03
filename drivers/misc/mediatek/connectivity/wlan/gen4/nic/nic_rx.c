@@ -169,6 +169,9 @@ static RX_EVENT_HANDLER_T arEventTable[] = {
 #if CFG_ASSERT_DUMP
 	{EVENT_ID_ASSERT_DUMP,				nicEventAssertDump},
 #endif
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+	{EVENT_ID_CAL_ALL_DONE,				nicEventCalAllDone},
+#endif
 	{EVENT_ID_HIF_CTRL,					nicEventHifCtrl},
 	{EVENT_ID_RDD_SEND_PULSE,			nicEventRddSendPulse},
 	{EVENT_ID_UPDATE_COEX_PHYRATE,		nicEventUpdateCoexPhyrate}

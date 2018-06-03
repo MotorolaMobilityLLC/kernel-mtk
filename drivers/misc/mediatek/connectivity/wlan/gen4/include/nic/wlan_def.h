@@ -768,6 +768,12 @@ typedef enum _ENUM_BSS_TYPE_T {
 	BSS_TYPE_NUM
 } ENUM_BSS_TYPE_T, *P_ENUM_BSS_TYPE_T;
 
+typedef enum _ENUM_ANTENNA_NUM {
+	ANTENNA_WF0 = 0,
+	ANTENNA_WF1 = 1,
+	MAX_ANTENNA_NUM
+} ENUM_ANTENNA_NUM, *P_ENUM_ANTENNA_NUM;
+
 /*----------------------------------------------------------------------------*/
 /* RSN structures                                                             */
 /*----------------------------------------------------------------------------*/

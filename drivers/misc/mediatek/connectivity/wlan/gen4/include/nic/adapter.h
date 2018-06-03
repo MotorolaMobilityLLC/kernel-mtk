@@ -479,6 +479,9 @@ struct _BSS_INFO_T {
 	BOOLEAN fgPoorRcpiArea;
 #endif
 
+	BOOLEAN fgIsGranted;
+	ENUM_BAND_T eBandGranted;
+	UINT_8 ucPrimaryChannelGranted;
 };
 
 struct _AIS_SPECIFIC_BSS_INFO_T {
@@ -877,6 +880,14 @@ typedef struct _P2P_FUNCTION_LINKER {
 
 #endif
 
+typedef struct _WIFI_FEM_CFG_T {
+	/* WiFi FEM path */
+	UINT_16 u2WifiPath;
+	UINT_16 u2Reserved;
+	/* Reserved  */
+	UINT_32 au4Reserved[4];
+} WIFI_FEM_CFG_T, *P_WIFI_FEM_CFG_T;
+
 /*
  * Major ADAPTER structure
  * Major data structure for driver operation
@@ -1158,6 +1169,8 @@ struct _ADAPTER_T {
 
 	/* SER related info */
 	UINT_8 ucSerState;
+
+	WIFI_FEM_CFG_T rWifiFemCfg;
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************
@@ -1232,6 +1245,26 @@ struct _ADAPTER_T {
 
 #define IS_SCN_PWR_STATE_IDLE(_prAdapter) \
 		(_prAdapter->rWifiVar.rScanInfo.eScanPwrState == SCAN_PWR_STATE_IDLE)
+
+#define IS_WIFI_2G4_WF0_SUPPORT(_prAdapter) \
+	((_prAdapter)->rWifiFemCfg.u2WifiPath & WLAN_FLAG_2G4_WF0)
+
+#define IS_WIFI_5G_WF0_SUPPORT(_prAdapter) \
+	((_prAdapter)->rWifiFemCfg.u2WifiPath & WLAN_FLAG_5G_WF0)
+
+#define IS_WIFI_2G4_WF1_SUPPORT(_prAdapter) \
+	((_prAdapter)->rWifiFemCfg.u2WifiPath & WLAN_FLAG_2G4_WF1)
+
+#define IS_WIFI_5G_WF1_SUPPORT(_prAdapter) \
+	((_prAdapter)->rWifiFemCfg.u2WifiPath & WLAN_FLAG_5G_WF1)
+
+#define IS_WIFI_2G4_SISO(_prAdapter) \
+	((IS_WIFI_2G4_WF0_SUPPORT(_prAdapter) && !(IS_WIFI_2G4_WF1_SUPPORT(_prAdapter))) || \
+	(IS_WIFI_2G4_WF1_SUPPORT(_prAdapter) && !(IS_WIFI_2G4_WF0_SUPPORT(_prAdapter))))
+
+#define IS_WIFI_5G_SISO(_prAdapter) \
+	((IS_WIFI_5G_WF0_SUPPORT(_prAdapter) && !(IS_WIFI_5G_WF1_SUPPORT(_prAdapter))) || \
+	(IS_WIFI_5G_WF1_SUPPORT(_prAdapter) && !(IS_WIFI_5G_WF0_SUPPORT(_prAdapter))))
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S

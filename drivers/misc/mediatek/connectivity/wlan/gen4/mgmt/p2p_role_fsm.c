@@ -162,7 +162,7 @@ UINT_8 p2pRoleFsmInit(IN P_ADAPTER_T prAdapter, IN UINT_8 ucRoleIdx)
 		prP2pBssInfo->ucPrimaryChannel = P2P_DEFAULT_LISTEN_CHANNEL;
 		prP2pBssInfo->eBand = BAND_2G4;
 		prP2pBssInfo->eBssSCO = CHNL_EXT_SCN;
-		prP2pBssInfo->ucNss = prAdapter->rWifiVar.ucNSS;
+		prP2pBssInfo->ucNss = wlanGetSupportNss(prAdapter, prP2pBssInfo->ucBssIndex);
 		prP2pBssInfo->eDBDCBand = ENUM_BAND_0;
 		prP2pBssInfo->ucWmmQueSet = 0;
 
@@ -862,7 +862,7 @@ VOID p2pRoleFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 			prP2pBssInfo->ucBssIndex,
 			prP2pConnReqInfo->rChannelInfo.eBand,
 			prP2pConnReqInfo->rChannelInfo.ucChannelNum,
-			prAdapter->rWifiVar.ucNSS,
+			wlanGetSupportNss(prAdapter, prP2pBssInfo->ucBssIndex),
 			&rDbdcCap);
 
 		DBGLOG(P2P, INFO,
@@ -1142,7 +1142,7 @@ VOID p2pRoleFsmRunEventConnectionRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_
 				prP2pBssInfo->ucBssIndex,
 				prChnlReqInfo->eBand,
 				prChnlReqInfo->ucReqChnlNum,
-				prAdapter->rWifiVar.ucNSS,
+				wlanGetSupportNss(prAdapter, prP2pBssInfo->ucBssIndex),
 				&rDbdcCap);
 
 			DBGLOG(P2P, INFO,
@@ -1626,7 +1626,7 @@ p2pRoleFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr, IN
 						prP2pRoleFsmInfo->ucBssIndex,
 						prChnlReqInfo->eBand,
 						prChnlReqInfo->ucReqChnlNum,
-						prAdapter->rWifiVar.ucNSS,
+						wlanGetSupportNss(prAdapter, prP2pRoleFsmInfo->ucBssIndex),
 						&rDbdcCap);
 
 					DBGLOG(P2P, INFO,

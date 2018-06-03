@@ -262,6 +262,9 @@ VOID cnmChMngrAbortPrivilege(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 	P_CMD_CH_PRIVILEGE_T prCmdBody;
 	P_CNM_INFO_T prCnmInfo;
 	WLAN_STATUS rStatus;
+#if CFG_SISO_SW_DEVELOP
+	P_BSS_INFO_T prBssInfo;
+#endif
 
 	ASSERT(prAdapter);
 	ASSERT(prMsgHdr);
@@ -317,6 +320,14 @@ VOID cnmChMngrAbortPrivilege(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 	   );
 
 	/* ASSERT(rStatus == WLAN_STATUS_PENDING); */
+
+#if CFG_SISO_SW_DEVELOP
+	prBssInfo = prAdapter->aprBssInfo[prMsgChAbort->ucBssIndex];
+	/* Driver clear granted CH in BSS info */
+	prBssInfo->fgIsGranted = FALSE;
+	prBssInfo->eBandGranted = BAND_NULL;
+	prBssInfo->ucPrimaryChannelGranted = 0;
+#endif
 
 	cnmMemFree(prAdapter, prCmdBody);
 	cnmMemFree(prAdapter, prMsgHdr);
@@ -1071,11 +1082,12 @@ VOID cnmUpdateDbdcSetting(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDbdcEn)
 							ucMaxBw,
 							1);
 			} else {
-				DBGLOG(CNM, INFO, "BSS index[%u] to %uSS\n", ucBssIndex, prAdapter->rWifiVar.ucNSS);
+				DBGLOG(CNM, INFO, "BSS index[%u] to %uSS\n",
+					ucBssIndex, wlanGetSupportNss(prAdapter, ucBssIndex));
 				rlmChangeOperationMode(prAdapter,
 							ucBssIndex,
 							ucMaxBw,
-							prAdapter->rWifiVar.ucNSS);
+							wlanGetSupportNss(prAdapter, ucBssIndex));
 			}
 		}
 	}
@@ -1137,8 +1149,8 @@ VOID cnmGetDbdcCapability(
 	switch (prAdapter->rWifiVar.ucDbdcMode) {
 	case DBDC_MODE_DISABLED:
 		/* DBDC is disabled, all BSS run on band 0 */
-		if (prAdapter->rWifiVar.ucNSS < ucNss)
-			prDbdcCap->ucNss = prAdapter->rWifiVar.ucNSS;
+		if (wlanGetSupportNss(prAdapter, ucBssIndex) < ucNss)
+			prDbdcCap->ucNss = wlanGetSupportNss(prAdapter, ucBssIndex);
 		else
 			prDbdcCap->ucNss = ucNss;
 		prDbdcCap->ucDbdcBandIndex = ENUM_BAND_0;
@@ -1157,7 +1169,7 @@ VOID cnmGetDbdcCapability(
 		if (prAdapter->rWifiVar.fgDbDcModeEn)
 			prDbdcCap->ucNss = 1;
 		else
-			prDbdcCap->ucNss = prAdapter->rWifiVar.ucNSS;
+			prDbdcCap->ucNss = wlanGetSupportNss(prAdapter, ucBssIndex);
 		prDbdcCap->ucDbdcBandIndex = ENUM_BAND_AUTO;
 		break;
 
