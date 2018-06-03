@@ -153,6 +153,7 @@ extern LCM_DRIVER nt35596_fhd_dsi_vdo_yassy_lcm_drv;
 extern LCM_DRIVER nt35596_hd720_dsi_vdo_truly_tps65132_lcm_drv;
 extern LCM_DRIVER nt35590_hd720_dsi_cmd_truly2_lcm_drv;
 extern LCM_DRIVER nt36672_fhdp_dsi_vdo_auo_lcm_drv;
+extern LCM_DRIVER nt36672_fhdp_dsi_vdo_auo_laneswap_lcm_drv;
 extern LCM_DRIVER otm9608_wvga_dsi_cmd_drv;
 extern LCM_DRIVER otm9608_fwvga_dsi_cmd_drv;
 extern LCM_DRIVER otm9608_qhd_dsi_cmd_drv;
