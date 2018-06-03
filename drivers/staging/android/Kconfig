@@ -112,6 +112,7 @@ config MTK_ENABLE_AGO
 	select ZRAM_LZ4_COMPRESS
 	select MEMCG
 	select MEMCG_SWAP
+	select HZ_300
 	---help---
 	Enable/Disable GMO related feautre
 	Do not use this options in Kernel directly
