@@ -73,6 +73,9 @@ struct engine_requests {
 	struct request reqs[MAX_REQUEST_SIZE_PER_ENGINE];
 	const struct engine_ops *ops;
 	struct completion req_handler_done;
+
+	bool req_running;
+	seqlock_t seqlock;
 };
 
 signed int init_ring_ctl(struct ring_ctrl *rctl);
@@ -90,7 +93,7 @@ signed int enque_request(struct engine_requests *eng, unsigned int fcnt, void *r
 signed int deque_request(struct engine_requests *eng, unsigned int *fcnt, void *req);
 
 int update_request(struct engine_requests *eng, pid_t *pid);
+bool request_running(struct engine_requests *eng);
 
 signed int request_dump(struct engine_requests *eng);
-
 #endif

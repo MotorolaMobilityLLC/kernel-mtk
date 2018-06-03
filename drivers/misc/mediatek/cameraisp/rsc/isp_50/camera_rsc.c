@@ -339,7 +339,6 @@ static struct RSC_CONFIG_STRUCT g_RscDequeReq_Struct;
 #ifdef ENGINE
 static struct engine_requests rsc_reqs;
 static struct RSC_Request kRscReq;
-static bool req_delayed;
 #endif
 /*******************************************************************************
 *
@@ -2437,9 +2436,9 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				/* Use a workqueue to set CMDQ to prevent HW CMDQ request
 				*  consuming speed from being faster than SW frame-queue update speed.
 				*/
-				if (req_delayed == false) {
+				if (!request_running(&rsc_reqs)) {
 					LOG_DBG("direct request_handler\n");
-					req_delayed = request_handler(&rsc_reqs,
+					request_handler(&rsc_reqs,
 							&(RSCInfo.SpinLockIrq[RSC_IRQ_TYPE_INT_RSC_ST]));
 				}
 #endif
@@ -2983,7 +2982,6 @@ static signed int RSC_open(struct inode *pInode, struct file *pFile)
 #ifdef ENGINE
 	register_requests(&rsc_reqs, sizeof(struct RSC_Config));
 	set_engine_ops(&rsc_reqs, &rsc_ops);
-	req_delayed = false;
 #endif
 
 EXIT:
@@ -3983,9 +3981,9 @@ void RSC_ScheduleWork(struct work_struct *data)
 
 #ifdef RSC_USE_GCE
 #ifdef ENGINE
-	req_delayed = request_handler(&rsc_reqs, &(RSCInfo.SpinLockIrq[RSC_IRQ_TYPE_INT_RSC_ST]));
-	if (!req_delayed)
-		LOG_DBG("[%s]no more requests(%d)", __func__, req_delayed);
+	request_handler(&rsc_reqs, &(RSCInfo.SpinLockIrq[RSC_IRQ_TYPE_INT_RSC_ST]));
+	if (!request_running(&rsc_reqs))
+		LOG_DBG("[%s]no more requests", __func__);
 #endif
 #else
 	ConfigRSC();
