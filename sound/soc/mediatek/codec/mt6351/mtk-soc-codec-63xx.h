@@ -52,6 +52,15 @@ struct mtk_hpdet_param {
 	int resistance_second_threshold;
 };
 
+/* DPD parameter */
+struct mtk_dpd_param {
+	int efuse_on;
+	int a2_lch;
+	int a3_lch;
+	int a2_rch;
+	int a3_rch;
+};
+
 void audckbufEnable(bool enable);
 void OpenClassAB(void);
 void OpenAnalogHeadphone(bool bEnable);
@@ -74,5 +83,8 @@ void OpenTrimBufferHardware(bool bEnable);
 
 bool hasHpDepopHw(void);
 bool hasHp33Ohm(void);
+
+/* mtk dpd function */
+void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param);
 #endif
 

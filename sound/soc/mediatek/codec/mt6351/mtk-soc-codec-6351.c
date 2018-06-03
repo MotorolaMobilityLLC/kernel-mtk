@@ -643,6 +643,16 @@ void vow_irq_handler(void)
 
 /*extern kal_uint32 upmu_get_reg_value(kal_uint32 reg);*/
 
+void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param)
+{
+	dpd_param->efuse_on = 0;
+	dpd_param->a2_lch = 0;
+	dpd_param->a3_lch = 0;
+	dpd_param->a2_rch = 0;
+	dpd_param->a3_rch = 0;
+	pr_warn("%s, 6351 not support DPD\n", __func__);
+}
+
 void Auddrv_Read_Efuse_HPOffset(void)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
