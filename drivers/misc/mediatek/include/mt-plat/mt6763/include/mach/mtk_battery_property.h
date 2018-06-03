@@ -163,6 +163,53 @@
 #define BATTERY_TMP_TO_ENABLE_NAFG -20
 /* #define GM30_DISABLE_NAFG */
 
+#define UISOC_UPDATE_TYPE 2
+/*
+*	uisoc_update_type:
+*	0: only ui_soc interrupt update ui_soc
+*	1: coulomb/nafg will update ui_soc if delta car > ht/lt_gap /2
+*	2: coulomb/nafg will update ui_soc
+*/
+
+/* using current to limit uisoc in 100% case*/
+/* UI_FULL_LIMIT_ITH0 3000 means 300ma */
+#define UI_FULL_LIMIT_EN 0
+
+#define UI_FULL_LIMIT_SOC0 9700
+#define UI_FULL_LIMIT_ITH0 3000
+
+#define UI_FULL_LIMIT_SOC1 9800
+#define UI_FULL_LIMIT_ITH1 2800
+
+#define UI_FULL_LIMIT_SOC2 9900
+#define UI_FULL_LIMIT_ITH2 2500
+
+#define UI_FULL_LIMIT_SOC3 9940
+#define UI_FULL_LIMIT_ITH3 2200
+
+#define UI_FULL_LIMIT_SOC4 10000
+#define UI_FULL_LIMIT_ITH4 2000
+
+
+/* using voltage to limit uisoc in 1% case */
+/* UI_LOW_LIMIT_VTH0=36000 means 3.6v */
+#define UI_LOW_LIMIT_EN 0
+
+#define UI_LOW_LIMIT_SOC0 500
+#define UI_LOW_LIMIT_VTH0 36000
+
+#define UI_LOW_LIMIT_SOC1 400
+#define UI_LOW_LIMIT_VTH1 35500
+
+#define UI_LOW_LIMIT_SOC2 300
+#define UI_LOW_LIMIT_VTH2 35000
+
+#define UI_LOW_LIMIT_SOC3 200
+#define UI_LOW_LIMIT_VTH3 34500
+
+#define UI_LOW_LIMIT_SOC4 100
+#define UI_LOW_LIMIT_VTH4 34000
+
 /* extern function */
 extern int get_rac(void);
 extern int get_imix(void);
