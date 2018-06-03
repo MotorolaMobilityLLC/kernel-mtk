@@ -104,6 +104,8 @@ struct flashlight_user_arg {
 #define FLASH_IOC_GET_MAX_TORCH_DUTY       _IOWR(FLASHLIGHT_MAGIC, 230, int)
 #define FLASH_IOC_GET_DUTY_CURRENT         _IOWR(FLASHLIGHT_MAGIC, 235, int)
 #define FLASH_IOC_GET_HW_TIMEOUT           _IOWR(FLASHLIGHT_MAGIC, 240, int)
+#define FLASH_IOC_GET_HW_FAULT             _IOR(FLASHLIGHT_MAGIC, 250, int)
+#define FLASH_IOC_GET_HW_FAULT2            _IOR(FLASHLIGHT_MAGIC, 251, int)
 
 #endif /* _FLASHLIGHT_H */
 

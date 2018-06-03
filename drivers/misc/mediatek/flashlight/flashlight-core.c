@@ -1345,6 +1345,56 @@ unlock:
 }
 static DEVICE_ATTR_RW(flashlight_current);
 
+/* flashlight fault sysfs */
+static ssize_t flashlight_fault_show(
+		struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct flashlight_dev *fdev;
+	struct flashlight_dev_arg fl_dev_arg;
+
+	/* flashlight capability */
+	int fault_flag1;
+	int fault_flag2;
+	char fault[FLASHLIGHT_FAULT_BUF_SIZE];
+	char fault_tmp[FLASHLIGHT_FAULT_TMPBUF_SIZE];
+
+	pr_debug("Fault show\n");
+
+	memset(fault, '\0', FLASHLIGHT_FAULT_BUF_SIZE);
+
+	mutex_lock(&fl_mutex);
+	list_for_each_entry(fdev, &flashlight_list, node) {
+		if (!fdev->ops)
+			continue;
+
+		fl_dev_arg.channel = fdev->dev_id.channel;
+
+		fl_dev_arg.arg = -1;
+		fdev->ops->flashlight_ioctl(FLASH_IOC_GET_HW_FAULT,
+				(unsigned long)&fl_dev_arg);
+		fault_flag1 = fl_dev_arg.arg;
+
+		fl_dev_arg.arg = -1;
+		fdev->ops->flashlight_ioctl(FLASH_IOC_GET_HW_FAULT2,
+				(unsigned long)&fl_dev_arg);
+		fault_flag2 = fl_dev_arg.arg;
+
+		snprintf(fault_tmp, FLASHLIGHT_FAULT_TMPBUF_SIZE,
+				"%d %d %d %s %d %d %d %d\n",
+				fdev->dev_id.type, fdev->dev_id.ct,
+				fdev->dev_id.part, fdev->dev_id.name,
+				fdev->dev_id.channel, fdev->dev_id.decouple,
+				fault_flag1, fault_flag2);
+		strncat(fault, fault_tmp,
+				FLASHLIGHT_FAULT_TMPBUF_SIZE);
+	}
+	mutex_unlock(&fl_mutex);
+
+	return scnprintf(buf, PAGE_SIZE,
+			"[TYPE] [CT] [PART] [DEVICE] [CHANNEL] [DECOUPLE] [FAULT FLAG1] [FAULT FLAG2]\n%s\n",
+			fault);
+}
+static DEVICE_ATTR_RO(flashlight_fault);
 
 /******************************************************************************
  * Platform device and driver
@@ -1452,6 +1502,10 @@ static int flashlight_probe(struct platform_device *dev)
 	if (device_create_file(flashlight_device,
 				&dev_attr_flashlight_current)) {
 		pr_err("Failed to create device file(current)\n");
+		goto err_create_current_device_file;
+	}
+	if (device_create_file(flashlight_device, &dev_attr_flashlight_fault)) {
+		pr_info("Failed to create device file(fault)\n");
 		goto err_create_current_device_file;
 	}
 

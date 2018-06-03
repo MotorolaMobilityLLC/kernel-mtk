@@ -56,6 +56,8 @@
 #define LM3642_ENABLE_TORCH (0x02)
 #define LM3642_ENABLE_FLASH (0x03)
 
+#define LM3642_REG_FLAG (0x0B)
+
 /* define level */
 #define LM3642_LEVEL_NUM 18
 #define LM3642_LEVEL_TORCH 4
@@ -199,6 +201,11 @@ static int lm3642_set_level(int level)
 	return lm3642_write_reg(lm3642_i2c_client, reg, val);
 }
 
+static int lm3642_get_flag(void)
+{
+	return lm3642_read_reg(lm3642_i2c_client, LM3642_REG_FLAG);
+}
+
 /* flashlight init */
 int lm3642_init(void)
 {
@@ -314,6 +321,11 @@ static int lm3642_ioctl(unsigned int cmd, unsigned long arg)
 	case FLASH_IOC_GET_HW_TIMEOUT:
 		pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
 		fl_arg->arg = LM3642_HW_TIMEOUT;
+		break;
+
+	case FLASH_IOC_GET_HW_FAULT:
+		pr_debug("FLASH_IOC_GET_HW_FAULT(%d)\n", channel);
+		fl_arg->arg = lm3642_get_flag();
 		break;
 
 	default:
@@ -454,12 +466,10 @@ err_node_put:
 static int lm3642_i2c_probe(
 		struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct lm3642_platform_data *pdata = dev_get_platdata(&client->dev);
 	struct lm3642_chip_data *chip;
 	int err;
-	int i;
 
-	pr_debug("Probe start.\n");
+	pr_debug("i2c probe start.\n");
 
 	/* check i2c */
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
@@ -476,86 +486,30 @@ static int lm3642_i2c_probe(
 	}
 	chip->client = client;
 
-	/* init platform data */
-	if (!pdata) {
-		pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
-		if (!pdata) {
-			err = -ENOMEM;
-			goto err_free;
-		}
-		client->dev.platform_data = pdata;
-		err = lm3642_parse_dt(&client->dev, pdata);
-		if (err)
-			goto err_free;
-	}
-	chip->pdata = pdata;
 	i2c_set_clientdata(client, chip);
 	lm3642_i2c_client = client;
 
 	/* init mutex and spinlock */
 	mutex_init(&chip->lock);
 
-	/* init work queue */
-	INIT_WORK(&lm3642_work, lm3642_work_disable);
-
-	/* init timer */
-	hrtimer_init(&lm3642_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	lm3642_timer.function = lm3642_timer_func;
-	lm3642_timeout_ms = 800;
-
 	/* init chip hw */
 	lm3642_chip_init(chip);
 
-	/* clear usage count */
-	use_count = 0;
-
-	/* register flashlight device */
-	if (pdata->channel_num) {
-		for (i = 0; i < pdata->channel_num; i++)
-			if (flashlight_dev_register_by_device_id(
-						&pdata->dev_id[i],
-						&lm3642_ops)) {
-				err = -EFAULT;
-				goto err_free;
-			}
-	} else {
-		if (flashlight_dev_register(LM3642_NAME, &lm3642_ops)) {
-			err = -EFAULT;
-			goto err_free;
-		}
-	}
-
-	pr_debug("Probe done.\n");
+	pr_debug("i2c probe done.\n");
 
 	return 0;
 
-err_free:
-	i2c_set_clientdata(client, NULL);
-	kfree(chip);
 err_out:
 	return err;
 }
 
 static int lm3642_i2c_remove(struct i2c_client *client)
 {
-	struct lm3642_platform_data *pdata = dev_get_platdata(&client->dev);
 	struct lm3642_chip_data *chip = i2c_get_clientdata(client);
-	int i;
 
 	pr_debug("Remove start.\n");
 
 	client->dev.platform_data = NULL;
-
-	/* unregister flashlight device */
-	if (pdata && pdata->channel_num)
-		for (i = 0; i < pdata->channel_num; i++)
-			flashlight_dev_unregister_by_device_id(
-					&pdata->dev_id[i]);
-	else
-		flashlight_dev_unregister(LM3642_NAME);
-
-	/* flush work queue */
-	flush_work(&lm3642_work);
 
 	/* free resource */
 	kfree(chip);
@@ -591,7 +545,166 @@ static struct i2c_driver lm3642_i2c_driver = {
 	.id_table = lm3642_i2c_id,
 };
 
-module_i2c_driver(lm3642_i2c_driver);
+/******************************************************************************
+ * Platform device and driver
+ *****************************************************************************/
+static int lm3642_probe(struct platform_device *pdev)
+{
+	struct lm3642_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	struct lm3642_chip_data *chip = NULL;
+	int err;
+	int i;
+
+	pr_debug("Probe start.\n");
+
+	if (i2c_add_driver(&lm3642_i2c_driver)) {
+		pr_debug("Failed to add i2c driver.\n");
+		return -1;
+	}
+
+	/* init platform data */
+	if (!pdata) {
+		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+		if (!pdata) {
+			err = -ENOMEM;
+			goto err_free;
+		}
+		pdev->dev.platform_data = pdata;
+		err = lm3642_parse_dt(&pdev->dev, pdata);
+		if (err)
+			goto err_free;
+	}
+
+	/* init work queue */
+	INIT_WORK(&lm3642_work, lm3642_work_disable);
+
+	/* init timer */
+	hrtimer_init(&lm3642_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	lm3642_timer.function = lm3642_timer_func;
+	lm3642_timeout_ms = 800;
+
+	/* clear usage count */
+	use_count = 0;
+
+	/* register flashlight device */
+	if (pdata->channel_num) {
+		for (i = 0; i < pdata->channel_num; i++)
+			if (flashlight_dev_register_by_device_id(
+						&pdata->dev_id[i],
+						&lm3642_ops)) {
+				err = -EFAULT;
+				goto err_free;
+			}
+	} else {
+		if (flashlight_dev_register(LM3642_NAME, &lm3642_ops)) {
+			err = -EFAULT;
+			goto err_free;
+		}
+	}
+
+	pr_debug("Probe done.\n");
+
+	return 0;
+err_free:
+	chip = i2c_get_clientdata(lm3642_i2c_client);
+	i2c_set_clientdata(lm3642_i2c_client, NULL);
+	kfree(chip);
+	return err;
+}
+
+static int lm3642_remove(struct platform_device *pdev)
+{
+	struct lm3642_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	int i;
+
+	pr_debug("Remove start.\n");
+
+	i2c_del_driver(&lm3642_i2c_driver);
+
+	pdev->dev.platform_data = NULL;
+
+	/* unregister flashlight device */
+	if (pdata && pdata->channel_num)
+		for (i = 0; i < pdata->channel_num; i++)
+			flashlight_dev_unregister_by_device_id(
+					&pdata->dev_id[i]);
+	else
+		flashlight_dev_unregister(LM3642_NAME);
+
+	/* flush work queue */
+	flush_work(&lm3642_work);
+
+	pr_debug("Remove done.\n");
+
+	return 0;
+}
+
+#ifdef CONFIG_OF
+static const struct of_device_id lm3642_of_match[] = {
+	{.compatible = LM3642_DTNAME},
+	{},
+};
+MODULE_DEVICE_TABLE(of, lm3642_of_match);
+#else
+static struct platform_device lm3642_platform_device[] = {
+	{
+		.name = LM3642_NAME,
+		.id = 0,
+		.dev = {}
+	},
+	{}
+};
+MODULE_DEVICE_TABLE(platform, lm3642_platform_device);
+#endif
+
+static struct platform_driver lm3642_platform_driver = {
+	.probe = lm3642_probe,
+	.remove = lm3642_remove,
+	.driver = {
+		.name = LM3642_NAME,
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = lm3642_of_match,
+#endif
+	},
+};
+
+static int __init flashlight_lm3642_init(void)
+{
+	int ret;
+
+	pr_debug("Init start.\n");
+
+#ifndef CONFIG_OF
+	ret = platform_device_register(&lm3642_platform_device);
+	if (ret) {
+		pr_info("Failed to register platform device\n");
+		return ret;
+	}
+#endif
+
+	ret = platform_driver_register(&lm3642_platform_driver);
+	if (ret) {
+		pr_info("Failed to register platform driver\n");
+		return ret;
+	}
+
+	pr_debug("Init done.\n");
+
+	return 0;
+}
+
+static void __exit flashlight_lm3642_exit(void)
+{
+	pr_debug("Exit start.\n");
+
+	platform_driver_unregister(&lm3642_platform_driver);
+
+	pr_debug("Exit done.\n");
+}
+
+module_init(flashlight_lm3642_init);
+module_exit(flashlight_lm3642_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Xi Chen <xixi.chen@mediatek.com>");
