@@ -108,6 +108,7 @@ extern void helio_dvfsrc_sspm_ipi_init(int dvfsrc_en);
 extern void get_opp_info(char *p);
 extern void get_dvfsrc_reg(char *p);
 extern void get_spm_reg(char *p);
+extern void spm_dvfs_pwrap_cmd(int pwrap_cmd, int pwrap_vcore);
 
 #endif /* __HELIO_DVFSRC_H */
 

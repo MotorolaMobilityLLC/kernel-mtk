@@ -19,6 +19,8 @@ static struct opp_profile opp_table[VCORE_DVFS_OPP_NUM];
 static int vcore_dvfs_to_vcore_opp[VCORE_DVFS_OPP_NUM];
 static int vcore_dvfs_to_ddr_opp[VCORE_DVFS_OPP_NUM];
 static int vcore_uv_table[VCORE_OPP_NUM];
+static int vcore_opp_to_pwrap_cmd[VCORE_OPP_NUM];
+
 
 /* ToDo: Copy Opp Table to AEE Dump */
 int get_cur_vcore_dvfs_opp(void)
@@ -126,13 +128,25 @@ int get_cur_ddr_khz(void)
 	return opp_table[idx].ddr_khz;
 }
 
-/* ToDo: Send SMC to ATF for PWRAP */
 void set_vcore_uv_table(int vcore_opp, int vcore_uv)
 {
+	spm_dvfs_pwrap_cmd(get_pwrap_cmd(vcore_opp),
+			vcore_uv_to_pmic(vcore_uv));
+
 	vcore_uv_table[vcore_opp] = vcore_uv;
 }
 
 int get_vcore_uv_table(int vcore_opp)
 {
 	return vcore_uv_table[vcore_opp];
+}
+
+void set_pwrap_cmd(int vcore_opp, int pwrap_cmd)
+{
+	vcore_opp_to_pwrap_cmd[vcore_opp] = pwrap_cmd;
+}
+
+int get_pwrap_cmd(int vcore_opp)
+{
+	return vcore_opp_to_pwrap_cmd[vcore_opp];
 }

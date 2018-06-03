@@ -24,6 +24,11 @@ int get_soc_efuse(void)
 /* ToDo: Use efuse to adjust Vcore Voltage */
 void dvfsrc_opp_level_mapping(void)
 {
+	set_pwrap_cmd(VCORE_OPP_0, 0);
+	set_pwrap_cmd(VCORE_OPP_1, 2);
+	set_pwrap_cmd(VCORE_OPP_2, 3);
+	set_pwrap_cmd(VCORE_OPP_3, 4);
+
 	switch (spm_get_spmfw_idx()) {
 	case SPMFW_LP4X_2CH_3200:
 		set_vcore_uv_table(VCORE_OPP_0, 800000);

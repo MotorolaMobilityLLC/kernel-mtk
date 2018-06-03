@@ -49,3 +49,15 @@ void mtk_spmfw_init(void)
 	spm_go_to_vcorefs(spm_dvfs_flag_init());
 }
 
+void spm_dvfs_pwrap_cmd(int pwrap_cmd, int pwrap_vcore)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS,
+			VCOREFS_SMC_CMD_3, pwrap_cmd, pwrap_vcore, 0);
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
+}
+
