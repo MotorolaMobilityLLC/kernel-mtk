@@ -1721,8 +1721,8 @@ int tscpu_is_temp_valid(void)
 	temp_valid_lock(&flags);
 	if (g_is_temp_valid == 0) {
 		check_all_temp_valid();
-		if (g_is_temp_valid == 1)
-			tscpu_warn("Driver is ready to report valid temperatures\n");
+		if (g_is_temp_valid == 0)
+			tscpu_warn("Driver is NOT ready to report valid temperatures\n");
 	}
 
 	is_valid = g_is_temp_valid;

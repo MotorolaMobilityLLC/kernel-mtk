@@ -2598,10 +2598,13 @@ static int atm_loop(void)
 	temp = sprintf(buffer, "%s c %d p %d l %d ", __func__, atm_curr_maxtj, atm_prev_maxtj,
 		adaptive_cpu_power_limit);
 
-	if (atm_curr_maxtj >= 100000 || (atm_curr_maxtj - atm_prev_maxtj >= 15000))
+#if 0
+	if (atm_curr_maxtj >= 100000
+		|| (atm_curr_maxtj - atm_prev_maxtj >= 15000))
 		print_risky_temps(buffer, temp, 1);
 	else
 		print_risky_temps(buffer, temp, 0);
+#endif
 
 #ifdef ENALBE_UART_LIMIT
 #if ENALBE_UART_LIMIT
