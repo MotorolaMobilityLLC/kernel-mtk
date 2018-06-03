@@ -744,26 +744,31 @@ PVOID kalPacketAllocWithHeadroom(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size,
 {
 	struct sk_buff *prSkb = dev_alloc_skb(u4Size);
 
-	/* Daniel 20151117, add for skb headroom setting */
-	if (prSkb)
-		prSkb = skb_realloc_headroom(prSkb, NIC_TX_HEAD_ROOM);
-
-	if (prSkb) {
-		*ppucData = (PUINT_8) (prSkb->data);
-
-		/* DBGLOG(TDLS, INFO, "kalPacketAllocWithHeadroom, skb head[0x%x] data[0x%x] tail[0x%x] end[0x%x]\n",
-		*	prSkb->head, prSkb->data, prSkb->tail, prSkb->end);
-		*/
-
-		kalResetPacket(prGlueInfo, (P_NATIVE_PACKET) prSkb);
-#if DBG
-		{
-			PUINT_32 pu4Head = (PUINT_32) &prSkb->cb[0];
-			*pu4Head = (UINT_32) prSkb->head;
-			DBGLOG(RX, TRACE, "prSkb->head = %#lx, prSkb->cb = %#lx\n", (UINT_32) prSkb->head, *pu4Head);
-		}
-#endif
+	if (!prSkb) {
+		DBGLOG(TX, WARN, "alloc skb failed\n");
+		return NULL;
 	}
+
+	/*
+	 * Reserve NIC_TX_HEAD_ROOM as this skb
+	 * is allocated by driver instead of kernel.
+	 */
+	skb_reserve(prSkb, NIC_TX_HEAD_ROOM);
+
+	*ppucData = (PUINT_8) (prSkb->data);
+
+	/* DBGLOG(TDLS, INFO, "kalPacketAllocWithHeadroom, skb head[0x%x] data[0x%x] tail[0x%x] end[0x%x]\n",
+	 *	prSkb->head, prSkb->data, prSkb->tail, prSkb->end);
+	 */
+
+	kalResetPacket(prGlueInfo, (P_NATIVE_PACKET) prSkb);
+#if DBG
+	{
+		PUINT_32 pu4Head = (PUINT_32) &prSkb->cb[0];
+		*pu4Head = (UINT_32) prSkb->head;
+		DBGLOG(RX, TRACE, "prSkb->head = %#lx, prSkb->cb = %#lx\n", (UINT_32) prSkb->head, *pu4Head);
+	}
+#endif
 	return (PVOID) prSkb;
 }
 
@@ -1427,13 +1432,20 @@ kalHardStartXmit(struct sk_buff *prOrgSkb, IN struct net_device *prDev, P_GLUE_I
 
 	if (prGlueInfo->prAdapter->fgIsEnableLpdvt) {
 		DBGLOG(INIT, INFO, "LPDVT enable, skip this frame\n");
-		dev_kfree_skb(prSkb);
+		dev_kfree_skb(prOrgSkb);
 		return WLAN_STATUS_NOT_ACCEPTED;
 	}
 
 	if (skb_headroom(prOrgSkb) < NIC_TX_HEAD_ROOM) {
+		/*
+		 * Should not happen
+		 * kernel crash may happen as skb shared info
+		 * channged.
+		 * offer an change for lucky anyway
+		 */
 		prSkbNew = skb_realloc_headroom(prOrgSkb, NIC_TX_HEAD_ROOM);
 		ASSERT(prSkbNew);
+		dev_kfree_skb(prOrgSkb);
 		prSkb = prSkbNew;
 	} else
 		prSkb = prOrgSkb;
