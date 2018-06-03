@@ -85,7 +85,10 @@ union teec_parameter {
 
 struct teec_operation {
 	u32			  started;
-	u32			  param_types;
+	union {
+		u32			  param_types;
+		u32			  paramTypes;
+	};
 	union teec_parameter	  params[4];
 	struct teec_operation_imp imp;
 };

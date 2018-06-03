@@ -346,7 +346,7 @@ static inline int nq_set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
 {
 	return set_cpus_allowed_ptr(p, &new_mask);
 }
-#endif /* !TBASE_CORE_SWITCHER */
+#endif /* ! MC_SMC_FASTCALL */
 
 #ifdef MC_FASTCALL_WORKER_THREAD
 static void fastcall_work_func(struct kthread_work *work)

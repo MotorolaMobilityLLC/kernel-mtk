@@ -1317,7 +1317,8 @@ int client_cbuf_free(struct tee_client *client, uintptr_t addr)
 }
 
 bool client_gp_operation_add(struct tee_client *client,
-			     struct client_gp_operation *operation) {
+			     struct client_gp_operation *operation)
+{
 	struct client_gp_operation *op;
 	bool found = false;
 
@@ -1343,7 +1344,8 @@ bool client_gp_operation_add(struct tee_client *client,
 }
 
 void client_gp_operation_remove(struct tee_client *client,
-				struct client_gp_operation *operation) {
+				struct client_gp_operation *operation)
+{
 	mutex_lock(&client->quick_lock);
 	list_del(&operation->list);
 	mutex_unlock(&client->quick_lock);

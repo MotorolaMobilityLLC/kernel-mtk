@@ -18,9 +18,6 @@
 /* Uncomment to override dts SSIQ setting */
 /* #define MC_INTR_SSIQ	280 */
 
-/* Ensure consistency for Fastcall ID between NWd and TEE*/
-#define MC_AARCH32_FC
-
 
 #define TBASE_CORE_SWITCHER
 
