@@ -13,9 +13,9 @@ RGX_TOP := $(srctree)/drivers/misc/mediatek/gpu/gpu_rgx/$(version)
 $(info *RGX_TOP = $(RGX_TOP))
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/ 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/met/$(MTK_PLATFORM)/platform/$(MTK_PLATFORM)/ 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/met/$(MTK_PLATFORM)/platform/$(MTK_PLATFORM)/
 
 
 VER := $(if $(filter eng,$(TARGET_BUILD_VARIANT)),eng,user)
@@ -162,10 +162,15 @@ pvrsrvkm-y += \
  generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
  services/server/common/devicemem_history_server.o
 
-ifeq ($(MTK_PLATFORM),mt6799)
+#ifeq ($(MTK_PLATFORM),mt6799)
 pvrsrvkm-y += \
  services/server/devices/rgx/rgxsignals.o \
  generated/rgxsignals_bridge/server_rgxsignals_bridge.o
+#endif
+
+ifeq ($(MTK_PLATFORM),mt8167)
+pvrsrvkm-y += \
+ services/server/devices/rgx/rgxmipsmmuinit.o
 endif
 
 ifeq ($(MTK_DDK_DEBUG),y)
@@ -236,14 +241,12 @@ ccflags-y += \
  -I$(RGX_TOP)/services/srvinit/include \
  -I$(RGX_TOP)/services/system/include \
  -I$(RGX_TOP)/services/system/rgx_$(MTK_PLATFORM) \
- -I$(RGX_TOP)/generated/devicememhistory_bridge
+ -I$(RGX_TOP)/generated/devicememhistory_bridge \
+ -I$(RGX_TOP)/generated/rgxsignals_bridge
 
 ifeq ($(MTK_PLATFORM),mt6799)
 pvrsrvkm-y += \
  services/system/rgx_$(MTK_PLATFORM)/mtk_mfg_counter.o
-
-ccflags-y += \
- -I$(RGX_TOP)/generated/rgxsignals_bridge
 endif
 
 
