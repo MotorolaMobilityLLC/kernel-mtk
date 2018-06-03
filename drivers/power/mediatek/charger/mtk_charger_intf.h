@@ -28,6 +28,7 @@
 #include <mt-plat/mtk_battery.h>
 
 struct charger_manager;
+#include "mtk_pe_intf.h"
 #include "mtk_pe20_intf.h"
 #include "mtk_pe30_intf.h"
 
@@ -170,6 +171,14 @@ struct charger_custom_data {
 	int min_charge_temperature;
 	int min_charge_temperature_plus_x_degree;
 
+	/* pe */
+	int pe_ichg_level_threshold;	/* ma */
+	int ta_ac_12v_input_current;
+	int ta_ac_9v_input_current;
+	int ta_ac_7v_input_current;
+	bool ta_12v_support;
+	bool ta_9v_support;
+
 	/* pe2.0 */
 	int pe20_ichg_level_threshold;	/* ma */
 	int ta_start_battery_soc;
@@ -292,10 +301,13 @@ struct charger_manager {
 	struct charger_custom_data data;
 
 	bool enable_sw_safety_timer;
-	bool enable_pe_plus;
 
 	/* High voltage charging */
 	bool enable_hv_charging;
+
+	/* pe */
+	bool enable_pe_plus;
+	struct mtk_pe pe;
 
 	/* pe 2.0 */
 	bool enable_pe_2;

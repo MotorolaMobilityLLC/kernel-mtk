@@ -341,6 +341,15 @@ int charger_dev_get_mivr_state(struct charger_device *charger_dev, bool *in_loop
 }
 EXPORT_SYMBOL(charger_dev_get_mivr_state);
 
+int charger_dev_send_ta_current_pattern(struct charger_device *charger_dev, bool is_increase)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->send_ta_current_pattern)
+		return charger_dev->ops->send_ta_current_pattern(charger_dev, is_increase);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_send_ta_current_pattern);
+
 int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, u32 uV)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->send_ta20_current_pattern)
