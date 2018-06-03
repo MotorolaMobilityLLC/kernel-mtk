@@ -314,17 +314,17 @@
 		#size-cells = <2>;
 		ranges;
 
-		pstore-reserved-memory@44410000 {
+		pstore-reserved-memory@54410000 {
 			compatible = "mediatek,pstore";
-			reg = <0 0x44410000 0 0xe0000>;
+			reg = <0 0x54410000 0 0xe0000>;
 		};
-		ram_console-reserved-memory@44400000 {
+		ram_console-reserved-memory@54400000 {
 			compatible = "ram_console-reserve-memory";
-			reg = <0 0x44400000 0 0x10000>;
+			reg = <0 0x54400000 0 0x10000>;
 		};
-		minirdump-reserved-memory@444f0000{
+		minirdump-reserved-memory@544f0000{
 			compatible = "mediatek,minirdump";
-			reg = <0 0x444f0000 0 0x10000>;
+			reg = <0 0x544f0000 0 0x10000>;
 		};
 		spm-reserve-memory@44600000 {
 			compatible = "mediatek,spm-reserve-memory";
