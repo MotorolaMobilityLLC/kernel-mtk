@@ -18,7 +18,7 @@
 int pmic_get_battery_voltage(void)
 {
 	int bat = 0;
-#if defined(CONFIG_POWER_EXT)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	bat = 4201;
 #else
 	bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
@@ -29,7 +29,7 @@ int pmic_get_battery_voltage(void)
 int pmic_get_vbus(void)
 {
 	int vchr = 0;
-#if defined(CONFIG_POWER_EXT) || (CONFIG_MTK_GAUGE_VERSION != 30)
+#if defined(CONFIG_POWER_EXT) || (CONFIG_MTK_GAUGE_VERSION != 30) || defined(CONFIG_FPGA_EARLY_PORTING)
 	vchr = 5001;
 #else
 	vchr = pmic_get_auxadc_value(AUXADC_LIST_VCDT);

@@ -1,1 +1,2 @@
 obj-$(CONFIG_MACH_MT6757) += v1/
+obj-$(CONFIG_MACH_MT6759) += v1/
