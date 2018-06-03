@@ -78,7 +78,7 @@ static int mi2s0_sidegen_control;
 static int hdoutput_control;
 static int extcodec_echoref_control;
 const char * const i2s0_SIDEGEN[] = {
-	"Off", "On48000", "On44100", "On32000", "On16000", "On8000"};
+	"Off", "On8000", "On16000", "On32000", "On44100", "On48000", "On96000", "On192000"};
 const char * const i2s0_HD_output[] = {"Off", "On"};
 const char * const ExtCodec_EchoRef_Routing[] = {"NotSet", "MD1", "MD3", "VoIP"};
 
@@ -155,19 +155,25 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 
 		switch (mi2s0_sidegen_control) {
 		case 1:
-			samplerate = 48000;
+			samplerate = 8000;
 			break;
 		case 2:
-			samplerate = 44100;
+			samplerate = 16000;
 			break;
 		case 3:
 			samplerate = 32000;
 			break;
 		case 4:
-			samplerate = 16000;
+			samplerate = 44100;
 			break;
 		case 5:
-			samplerate = 8000;
+			samplerate = 48000;
+			break;
+		case 6:
+			samplerate = 96000;
+			break;
+		case 7:
+			samplerate = 192000;
 			break;
 		default:
 			pr_err("%s, sidegen_control error, return -EINVAL\n", __func__);
