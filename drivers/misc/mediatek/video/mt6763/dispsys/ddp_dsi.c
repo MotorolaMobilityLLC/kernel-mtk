@@ -3218,6 +3218,32 @@ static int _ddp_dsi_stop_dual(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	return ret;
 }
 
+static int dsi_stop_vdo_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle)
+{
+	/* use cmdq to stop dsi vdo mode */
+	/* set dsi cmd mode */
+	int i = 0;
+
+	if (module == DISP_MODULE_DSI0)
+		i = 0;
+	else if (module == DISP_MODULE_DSI1)
+		i = 1;
+	else if (module == DISP_MODULE_DSIDUAL)
+		return _ddp_dsi_stop_dual(module, cmdq_handle);
+	else
+		return 0;
+
+	DSI_SetMode(module, cmdq_handle, CMD_MODE);
+
+	/* need do reset DSI_DUAL_EN/DSI_START */
+	/* stop vdo mode */
+	DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
+
+	/* polling dsi not busy */
+	dsi_wait_not_busy(module, cmdq_handle);
+	return 0;
+}
+
 /* stop dsi means:
  * 1.wait frame done/command done
  * 2.set to command mode
@@ -3558,7 +3584,7 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCT
 	switch (ioctl) {
 	case DDP_STOP_VIDEO_MODE:
 		{
-			ddp_dsi_stop(module, cmdq_handle);
+			dsi_stop_vdo_mode(module, cmdq_handle);
 			break;
 
 		}
