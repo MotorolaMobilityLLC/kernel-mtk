@@ -23,8 +23,9 @@
 #include <linux/string.h>
 #include <linux/uaccess.h>
 
-#include "eas_ctrl.h"
+#include "boost_ctrl.h"
 #include "eas_ctrl_plat.h"
+#include "eas_ctrl.h"
 
 #include <mt-plat/mtk_sched.h>
 
@@ -703,14 +704,14 @@ static const struct file_operations perfmgr_m_sched_migrate_cost_n_fops = {
 };
 
 /*******************************************/
-void perfmgr_eas_boost_init(void)
+int eas_ctrl_init(struct proc_dir_entry *parent)
 {
 	int i, j;
 	struct proc_dir_entry *boost_dir = NULL;
 
 	mutex_init(&boost_eas);
 
-	boost_dir = proc_mkdir("perfmgr/boost_ctrl/eas_ctrl", NULL);
+	boost_dir = proc_mkdir("eas_ctrl", parent);
 	proc_create("perfserv_fg_boost", 0644, boost_dir,
 					 &perfmgr_perfserv_fg_boost_fops);
 	proc_create("current_fg_boost", 0644, boost_dir,
@@ -745,11 +746,5 @@ void perfmgr_eas_boost_init(void)
 	for (i = 0; i < NR_CGROUP; i++)
 		for (j = 0; j < EAS_MAX_KIR; j++)
 			boost_value[i][j] = 0;
-
+	return 0;
 }
-
-void init_perfmgr_eas_controller(void)
-{
-	perfmgr_eas_boost_init();
-}
-

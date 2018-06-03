@@ -11,15 +11,12 @@
  * GNU General Public License for more details.
  */
 #include "perf_ioctl.h"
-#if 0
+
 #ifdef CONFIG_MTK_FPSGO
-#include "../fbc/fbc.h"
-#else
-#include "../fbc/touch_boost.h"
-#endif
+#include "tchbst.h"
+#include "io_ctrl.h"
 #endif
 
-#include "usrtch.h"
 
 #define TAG "PERF_IOCTL"
 
@@ -133,9 +130,7 @@ static long device_ioctl(struct file *filp,
 					msgKM->bufID, msgKM->connectedAPI);
 		break;
 	case FPSGO_TOUCH:
-#if 1
 		usrtch_ioctl(cmd, msgKM->frame_time);
-#endif
 		break;
 	case FPSGO_ACT_SWITCH:
 		/* FALLTHROUGH */
@@ -189,24 +184,14 @@ static const struct file_operations Fops = {
 };
 
 /*--------------------INIT------------------------*/
-static int __init init_perfctl(void)
+int init_perfctl(struct proc_dir_entry *parent)
 {
 	struct proc_dir_entry *pe;
 	int ret_val = 0;
 
 
 	pr_debug(TAG"Start to init perf_ioctl driver\n");
-#if 0
-#ifdef CONFIG_MTK_FPSGO
-	init_fbc();
-#else
-	init_touch_boost();
-#endif
-#endif
 
-#ifdef CONFIG_MTK_FPSGO
-	init_usrtch();
-#endif
 	ret_val = register_chrdev(DEV_MAJOR, DEV_NAME, &Fops);
 	if (ret_val < 0) {
 		pr_debug(TAG"%s failed with %d\n",
@@ -215,7 +200,7 @@ static int __init init_perfctl(void)
 		goto out_wq;
 	}
 
-	pe = proc_create("perfmgr/perf_ioctl", 0664, NULL, &Fops);
+	pe = proc_create("perf_ioctl", 0664, parent, &Fops);
 	if (!pe) {
 		pr_debug(TAG"%s failed with %d\n",
 				"Creating file node ",
@@ -233,5 +218,4 @@ out_chrdev:
 out_wq:
 	return ret_val;
 }
-late_initcall(init_perfctl);
 

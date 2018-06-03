@@ -10,10 +10,13 @@
 # GNU General Public License for more details.
 #
 
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/performance/tchbst/user/include
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/performance/perf_ioctl
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/performance/perf_ioctl/ \
+		    -I$(srctree)/drivers/misc/mediatek/performance/include/ \
+		    -I$(srctree)/drivers/misc/mediatek/base/power/include/ \
 
-obj-y += perfmgr/
+
+obj-y += perfmgr_main.o
+
 ifeq (,$(findstring mt8,$(CONFIG_MTK_PLATFORM)))
 	obj-$(CONFIG_MTK_BASE_POWER) += boost_ctrl/
 	obj-$(CONFIG_MTK_BASE_POWER) += tchbst/

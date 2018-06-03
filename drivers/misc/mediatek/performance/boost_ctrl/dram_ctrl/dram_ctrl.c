@@ -29,6 +29,7 @@
 #include "mtk_dramc.h"
 #endif
 
+#include "boost_ctrl.h"
 static int ddr_type;
 
 #ifdef MTK_QOS_SUPPORT
@@ -111,7 +112,7 @@ static const struct file_operations mt_ddr_fops = {
 #endif
 /*--------------------INIT------------------------*/
 
-static int __init init_dram(void)
+int dram_ctrl_init(struct proc_dir_entry *parent)
 {
 	struct proc_dir_entry *drams_dir;
 	struct proc_dir_entry *dram_dir;
@@ -120,7 +121,7 @@ static int __init init_dram(void)
 	struct proc_dir_entry *ddr_dir;
 #endif
 	pr_debug("init dram driver start\n");
-	drams_dir = proc_mkdir("perfmgr/boost_ctrl/dram_ctrl", NULL);
+	drams_dir = proc_mkdir("dram_ctrl", parent);
 	if (!drams_dir) {
 		pr_debug("drams_dir not create success\n");
 		return -ENOMEM;
@@ -159,5 +160,3 @@ static int __init init_dram(void)
 
 	return 0;
 }
-late_initcall(init_dram);
-

@@ -14,13 +14,11 @@
 #include <linux/proc_fs.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
-
 #include <linux/platform_device.h>
-#include "perfmgr.h"
 
-/*--------------------prototype--------------------*/
-
-/*--------------------function--------------------*/
+#include "tchbst.h"
+#include "io_ctrl.h"
+#include "boost_ctrl.h"
 
 static int perfmgr_probe(struct platform_device *dev)
 {
@@ -32,21 +30,27 @@ struct platform_device perfmgr_device = {
 	.id        = -1,
 };
 
-int perfmgr_suspend(struct device *dev)
+static int perfmgr_suspend(struct device *dev)
 {
 #ifdef CONFIG_MTK_PERFMGR_TOUCH_BOOST
-	perfmgr_touch_suspend();
+	ktch_suspend();
 #endif
 	return 0;
 }
 
-int perfmgr_resume(struct device *dev)
+static int perfmgr_resume(struct device *dev)
 {
 	return 0;
 }
-
+static int perfmgr_remove(struct platform_device *dev)
+{
+	topo_ctrl_exit();
+	cpu_ctrl_exit();
+	return 0;
+}
 static struct platform_driver perfmgr_driver = {
 	.probe      = perfmgr_probe,
+	.remove     = perfmgr_remove,
 	.driver     = {
 		.name = "perfmgr",
 		.pm = &(const struct dev_pm_ops){
@@ -61,7 +65,7 @@ static struct platform_driver perfmgr_driver = {
 
 static int __init init_perfmgr(void)
 {
-	struct proc_dir_entry *hps_dir = NULL;
+	struct proc_dir_entry *perfmgr_root = NULL;
 	int ret = 0;
 
 	pr_debug("__init init_perfmgr\n");
@@ -74,16 +78,13 @@ static int __init init_perfmgr(void)
 		return ret;
 
 
-	hps_dir = proc_mkdir("perfmgr", NULL);
-#ifdef CONFIG_MTK_PERFMGR_TOUCH_BOOST
+	perfmgr_root = proc_mkdir("perfmgr", NULL);
 	pr_debug("MTK_TOUCH_BOOST function init_perfmgr_touch\n");
-	init_perfmgr_touch();
-#endif
+	init_tchbst(perfmgr_root);
 
-#ifdef CONFIG_MTK_PERFMGR_TOUCH_BOOST
-	init_perfmgr_boost();
-#endif
+	init_perfctl(perfmgr_root);
 
+	init_boostctrl(perfmgr_root);
 
 	return 0;
 }

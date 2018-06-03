@@ -12,6 +12,10 @@
 
 
 obj-y += tchbst_main.o
+
 obj-$(CONFIG_MTK_FPSGO) += user/
 
-/*obj-y += kernel/*/
+ifeq ($(CONFIG_MTK_PERFMGR_TOUCH_BOOST),y)
+obj-y += kernel/
+ccflags-y += -DMTK_TOUCH_BOOST
+endif # CONFIG_MTK_PERFMGR_TOUCH_BOOST

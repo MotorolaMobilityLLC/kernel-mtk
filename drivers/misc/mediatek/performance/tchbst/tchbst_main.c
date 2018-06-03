@@ -12,24 +12,26 @@
  */
 
 #include <linux/proc_fs.h>
-#include <linux/module.h>
-#include <linux/moduleparam.h>
 
-#include <linux/platform_device.h>
+#include "tchbst.h"
 
-static int __init init_tchbst(void)
+int init_tchbst(struct proc_dir_entry *parent)
 {
-	struct proc_dir_entry *tchbst_dir = NULL;
+	struct proc_dir_entry *tchbst_root = NULL;
 
 	pr_debug("__init init_tchbst\n");
 
+	/*create touch root procfs*/
+	tchbst_root = proc_mkdir("tchbst", parent);
 
-	tchbst_dir = proc_mkdir("perfmgr/tchbst", NULL);
-
-
+#ifdef CONFIG_MTK_PERFMGR_TOUCH_BOOST
+	/*initial kernel touch parameter*/
+	init_ktch(tchbst_root);
+#endif
+	/*initial user touch parameter*/
+	init_utch(tchbst_root);
 	return 0;
 }
-device_initcall(init_tchbst);
 
 /*MODULE_LICENSE("GPL");*/
 /*MODULE_AUTHOR("MTK");*/

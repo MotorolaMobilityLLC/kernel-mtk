@@ -23,6 +23,7 @@
 #include <linux/uaccess.h>
 
 #include "cpu_ctrl.h"
+#include "boost_ctrl.h"
 
 #ifdef CONFIG_TRACING
 #include <linux/kallsyms.h>
@@ -396,14 +397,14 @@ static const struct file_operations perfmgr_log_fops = {
 };
 
 /************************************************/
-static int __init perfmgr_legacy_boost_init(void)
+int cpu_ctrl_init(struct proc_dir_entry *parent)
 {
 	struct proc_dir_entry *boost_dir = NULL;
 	int i, j;
 
 	mutex_init(&boost_freq);
 
-	boost_dir = proc_mkdir("perfmgr/boost_ctrl/cpu_ctrl", NULL);
+	boost_dir = proc_mkdir("cpu_ctrl", parent);
 
 	if (!boost_dir)
 		pr_debug("boost_dir null\n ");
@@ -441,7 +442,7 @@ static int __init perfmgr_legacy_boost_init(void)
 
 }
 
-void perfmgr_legacy_boost_exit(void)
+void cpu_ctrl_exit(void)
 {
 	int i;
 
@@ -452,5 +453,3 @@ void perfmgr_legacy_boost_exit(void)
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek LBC");
-module_init(perfmgr_legacy_boost_init);
-module_exit(perfmgr_legacy_boost_exit);
