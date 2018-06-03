@@ -573,8 +573,8 @@ static int gsensor_factory_get_cali(int32_t data[3])
 	}
 	spin_lock(&calibration_lock);
 	data[ACCELHUB_AXIS_X] = obj->static_cali[ACCELHUB_AXIS_X];
-	data[ACCELHUB_AXIS_X] = obj->static_cali[ACCELHUB_AXIS_X];
-	data[ACCELHUB_AXIS_X] = obj->static_cali[ACCELHUB_AXIS_X];
+	data[ACCELHUB_AXIS_Y] = obj->static_cali[ACCELHUB_AXIS_Y];
+	data[ACCELHUB_AXIS_Z] = obj->static_cali[ACCELHUB_AXIS_Z];
 	spin_unlock(&calibration_lock);
 #endif
 	return 0;

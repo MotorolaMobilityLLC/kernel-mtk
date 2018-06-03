@@ -963,15 +963,17 @@ static int SCP_sensorHub_batch(int handle, int flag,
 {
 	struct ConfigCmd cmd;
 	int ret = 0;
+	int64_t rate = 1024000000000ULL;
 
 	if (mSensorState[handle].sensorType ||
 		(handle == ID_ACCELEROMETER &&
 		mSensorState[handle].sensorType == ID_ACCELEROMETER)) {
 		if (samplingPeriodNs > 0 &&
 			mSensorState[handle].rate != SENSOR_RATE_ONCHANGE &&
-			mSensorState[handle].rate != SENSOR_RATE_ONESHOT)
-			mSensorState[handle].rate =
-				1024000000000ULL / samplingPeriodNs;
+			mSensorState[handle].rate != SENSOR_RATE_ONESHOT){
+			do_div(rate, samplingPeriodNs);
+			mSensorState[handle].rate = rate;
+		}
 		mSensorState[handle].latency = maxBatchReportLatencyNs;
 		init_sensor_config_cmd(&cmd, handle);
 		if (atomic_read(&power_status) != SENSOR_POWER_UP)
@@ -1062,7 +1064,8 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 	else {
 		/* timestamp filter, drop which equal to each other at 1 ms */
 		timestamp_ms = (int64_t)(data_t->time_stamp +
-			data_t->time_stamp_gpt) / 1000000;
+			data_t->time_stamp_gpt);
+		do_div(timestamp_ms, 1000000);
 		if (last_timestamp_ms[sensor_type] != timestamp_ms) {
 			last_timestamp_ms[sensor_type] = timestamp_ms;
 			need_send = true;
@@ -2042,7 +2045,8 @@ void sensorHub_power_up_loop(void *data)
 	obj->wp_queue.tail = 0;
 	/* 2. init dram information */
 	WRITE_ONCE(obj->SCP_sensorFIFO,
-		(struct sensorFIFO *)scp_get_reserve_mem_virt(SENS_MEM_ID));
+		(struct sensorFIFO *)
+		(long)scp_get_reserve_mem_virt(SENS_MEM_ID));
 	WARN_ON(obj->SCP_sensorFIFO == NULL);
 	WRITE_ONCE(obj->SCP_sensorFIFO->wp, 0);
 	WRITE_ONCE(obj->SCP_sensorFIFO->rp, 0);
