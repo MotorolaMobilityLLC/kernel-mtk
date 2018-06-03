@@ -2935,7 +2935,7 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 	}
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-	if (msdc_check_otp_ops(cmd->opcode, cmd->arg, data->blocks))
+	if (msdc_check_otp_ops(mrq->cmd->opcode, mrq->cmd->arg, data->blocks))
 		return 1;
 #endif
 
@@ -2945,7 +2945,7 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 		host->autocmd |= MSDC_AUTOCMD12;
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-	if (msdc_check_otp_ops(cmd->opcode, cmd->arg, data->blocks))
+	if (msdc_check_otp_ops(mrq->cmd->opcode, mrq->cmd->arg, data->blocks))
 		return 1;
 #endif
 

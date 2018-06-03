@@ -155,6 +155,6 @@ int multi_rw_compare(struct seq_file *m, int host_num,
 void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg);
 void mmc_cmd_dump(struct mmc_host *mmc);
 #endif
-void msdc_cmdq_status_print(struct msdc_host *host);
+void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m);
 
 #endif
