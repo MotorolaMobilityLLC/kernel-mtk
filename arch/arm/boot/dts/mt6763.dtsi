@@ -591,7 +591,9 @@
 	toprgu@10007000 {
 		compatible = "mediatek,mt6763-toprgu";
 		reg = <0 0x10007000 0 0x1000>;
-		interrupts = <GIC_SPI 139 IRQ_TYPE_NONE>;
+		interrupts =
+			<GIC_SPI 139 IRQ_TYPE_NONE>,       /* AP RGU interrupt */
+			<GIC_SPI 200 IRQ_TYPE_LEVEL_HIGH>; /* SSPM WDT timeout event */
 	};
 
 	rsvd@10009000 {
