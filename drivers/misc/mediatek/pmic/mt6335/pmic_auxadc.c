@@ -43,6 +43,7 @@ static int count_time_out = 100;
 
 static struct wake_lock  mt6335_auxadc_wake_lock;
 static struct mutex mt6335_adc_mutex;
+static DEFINE_MUTEX(auxadc_ch3_mutex);
 
 void wk_auxadc_bgd_ctrl(unsigned char en)
 {
@@ -84,6 +85,16 @@ void mt6335_auxadc_unlock(void)
 {
 	mutex_unlock(&mt6335_adc_mutex);
 	wake_unlock(&mt6335_auxadc_wake_lock);
+}
+
+void lockadcch3(void)
+{
+	mutex_lock(&auxadc_ch3_mutex);
+}
+
+void unlockadcch3(void)
+{
+	mutex_unlock(&auxadc_ch3_mutex);
 }
 
 struct pmic_auxadc_channel mt6335_auxadc_channel[] = {
@@ -133,6 +144,8 @@ int mt6335_get_auxadc_value(u8 channel)
 			pmic_set_register_value(PMIC_BATON_TDET_EN, 0);
 		}
 	}
+	if (channel == AUXADC_LIST_BATTEMP_35)
+		mutex_lock(&auxadc_ch3_mutex);
 
 	pmic_set_register_value(auxadc_channel->channel_rqst, 1);
 	udelay(10);
@@ -153,6 +166,8 @@ int mt6335_get_auxadc_value(u8 channel)
 			pmic_set_register_value(PMIC_BATON_TDET_EN, 1);
 		}
 	}
+	if (channel == AUXADC_LIST_BATTEMP_35)
+		mutex_unlock(&auxadc_ch3_mutex);
 
 	mt6335_auxadc_unlock();
 
