@@ -144,6 +144,8 @@ static void _mtk_pm_callback_power_off(void)
 
 	mutex_lock(&g_mfg_lock);
 
+	MFG_DEBUG("[MALI][+] power off\n");
+
 #ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(0);
 #endif
@@ -163,7 +165,7 @@ static void _mtk_pm_callback_power_off(void)
 	/* Step 2 : enter low power mode */
 	mt_gpufreq_voltage_lpm_set(1);
 
-	MFG_DEBUG("[MALI] power off");
+	MFG_DEBUG("[MALI][-] power off\n");
 
 	mutex_unlock(&g_mfg_lock);
 }
@@ -180,6 +182,8 @@ static int _mtk_pm_callback_power_on(void)
 
 	mutex_lock(&g_mfg_lock);
 
+	MFG_DEBUG("[MALI][+] power on\n");
+
 	/* Step 1 : leave low power mode */
 	mt_gpufreq_voltage_lpm_set(0);
 
@@ -193,7 +197,6 @@ static int _mtk_pm_callback_power_on(void)
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
 
 	val = readl(g_MFG_base + 0x8b0);
-	MFG_DEBUG("[MALI] B: 0x130008b0 val = 0x%x\n", readl(g_MFG_base + 0x8b0));
 	writel(val & ~(0x1), g_MFG_base + 0x8b0);
 	MFG_DEBUG("[MALI] A: 0x130008b0 val = 0x%x\n", readl(g_MFG_base + 0x8b0));
 
@@ -204,7 +207,7 @@ static int _mtk_pm_callback_power_on(void)
 	ged_dvfs_gpu_clock_switch_notify(1);
 #endif
 
-	MFG_DEBUG("[MALI] power on");
+	MFG_DEBUG("[MALI][-] power on\n");
 
 	mutex_unlock(&g_mfg_lock);
 
