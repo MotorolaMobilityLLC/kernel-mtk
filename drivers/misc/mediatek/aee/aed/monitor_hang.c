@@ -491,7 +491,11 @@ static int hang_detect_thread(void *arg)
 
 	while (1) {
 		if ((hd_detect_enabled == 1) && (FindTaskByName("system_server") != -1)) {
-			LOGE("[Hang_Detect] hang_detect thread counts down %d:%d.\n", hang_detect_counter, hd_timeout);
+			LOGE("[Hang_Detect] hang_detect thread counts down %d:%d.\n",
+				hang_detect_counter, hd_timeout);
+			#ifdef CONFIG_MTK_RAM_CONSOLE
+			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
+			#endif
 
 			if (hang_detect_counter == 0) {
 				LOGE("Detect system_server hang, enable uart log for dump debug info.\n");
@@ -504,6 +508,8 @@ static int hang_detect_thread(void *arg)
 				ShowStatus();
 
 			if (hang_detect_counter == 0) {
+				LOGE("[Hang_Detect] hang_detect thread counts down %d:%d.\n",
+					hang_detect_counter, hd_timeout);
 				if (aee_mode < AEE_MODE_CUSTOMER_USER) {
 					LOGE("[Hang_Detect] we should triger Kernel API DB	...\n");
 					aee_kernel_exception_api

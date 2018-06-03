@@ -106,6 +106,10 @@ struct aee_user_thread_maps {
 extern int printk_disable_uart;
 #endif
 
+#ifdef CONFIG_MTK_RAM_CONSOLE
+extern void aee_rr_rec_hang_detect_timeout_count(unsigned int);
+#endif
+
 struct aee_oops {
 	struct list_head list;
 	AE_DEFECT_ATTR attr;
