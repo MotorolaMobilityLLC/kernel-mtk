@@ -96,6 +96,14 @@ enum eem_state {
 	EEM_GPU_IS_SET_VOLT,			/* G */
 };
 
+extern void aee_rr_rec_ptp_devinfo_0(u32 val);
+extern void aee_rr_rec_ptp_devinfo_1(u32 val);
+extern void aee_rr_rec_ptp_devinfo_2(u32 val);
+extern void aee_rr_rec_ptp_devinfo_3(u32 val);
+extern void aee_rr_rec_ptp_devinfo_4(u32 val);
+extern void aee_rr_rec_ptp_devinfo_5(u32 val);
+extern void aee_rr_rec_ptp_devinfo_6(u32 val);
+extern void aee_rr_rec_ptp_devinfo_7(u32 val);
 extern void aee_rr_rec_ptp_e0(u32 val);
 extern void aee_rr_rec_ptp_e1(u32 val);
 extern void aee_rr_rec_ptp_e2(u32 val);
@@ -133,6 +141,14 @@ extern void aee_rr_rec_ptp_temp(u64 val);
 extern void aee_rr_rec_ptp_status(u8 val);
 extern void aee_rr_rec_eem_pi_offset(u8 val);
 
+extern u32 aee_rr_curr_ptp_devinfo_0(void);
+extern u32 aee_rr_curr_ptp_devinfo_1(void);
+extern u32 aee_rr_curr_ptp_devinfo_2(void);
+extern u32 aee_rr_curr_ptp_devinfo_3(void);
+extern u32 aee_rr_curr_ptp_devinfo_4(void);
+extern u32 aee_rr_curr_ptp_devinfo_5(void);
+extern u32 aee_rr_curr_ptp_devinfo_6(void);
+extern u32 aee_rr_curr_ptp_devinfo_7(void);
 extern u32 aee_rr_curr_ptp_e0(void);
 extern u32 aee_rr_curr_ptp_e1(void);
 extern u32 aee_rr_curr_ptp_e2(void);

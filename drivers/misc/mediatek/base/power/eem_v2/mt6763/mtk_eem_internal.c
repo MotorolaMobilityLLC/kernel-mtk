@@ -109,7 +109,11 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.eem_step	= EEM_STEP,
 		.pmic_base	= CPU_PMIC_BASE_6311,
 		.pmic_step	= CPU_PMIC_STEP,
+		#if EEM_FAKE_EFUSE
+		.DETWINDOW	= DETWINDOW_VAL_FAKE,
+		#else
 		.DETWINDOW	= DETWINDOW_VAL,
+		#endif
 		.DTHI		= DTHI_VAL,
 		.DTLO		= DTLO_VAL,
 		.DETMAX		= DETMAX_VAL,
@@ -140,7 +144,11 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.eem_step	= EEM_STEP,
 		.pmic_base	= CPU_PMIC_BASE_6311,
 		.pmic_step	= CPU_PMIC_STEP,
-		.DETWINDOW	= DETWINDOW_VAL,
+		#if EEM_FAKE_EFUSE
+		.DETWINDOW	= DETWINDOW_VAL_FAKE,
+		#else
+		.DETWINDOW      = DETWINDOW_VAL,
+		#endif
 		.DTHI		= DTHI_VAL,
 		.DTLO		= DTLO_VAL,
 		.DETMAX		= DETMAX_VAL,
@@ -171,7 +179,11 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.eem_step	= EEM_STEP,
 		.pmic_base	= CPU_PMIC_BASE_6311,
 		.pmic_step	= CPU_PMIC_STEP,
-		.DETWINDOW	= DETWINDOW_VAL,
+		#if EEM_FAKE_EFUSE
+		.DETWINDOW	= DETWINDOW_VAL_FAKE,
+		#else
+		.DETWINDOW      = DETWINDOW_VAL,
+		#endif
 		.DTHI		= DTHI_VAL,
 		.DTLO		= DTLO_VAL,
 		.DETMAX		= DETMAX_VAL,
@@ -193,8 +205,8 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_GPU,
-		.features	= 0, /* FEA_INIT01 | FEA_INIT02 | FEA_MON, */
-		.max_freq_khz	= 950000,/* 950 MHz */
+		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		.max_freq_khz	= 800000,/* 950 MHz */
 		.VBOOT		= VBOOT_VAL_GPU, /* 10uV */
 		.VMAX		= VMAX_VAL_GPU,
 		.VMIN		= VMIN_VAL,
@@ -202,7 +214,11 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.eem_step	= EEM_STEP,
 		.pmic_base	= GPU_PMIC_BASE,
 		.pmic_step	= GPU_PMIC_STEP,
+		#if EEM_FAKE_EFUSE
+		.DETWINDOW	= DETWINDOW_VAL_FAKE,
+		#else
 		.DETWINDOW	= DETWINDOW_VAL,
+		#endif
 		.DTHI		= DTHI_VAL,
 		.DTLO		= DTLO_VAL,
 		.DETMAX		= DETMAX_VAL,
@@ -237,7 +253,11 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.eem_step	= EEM_STEP,
 		.pmic_base	= VCORE_PMIC_BASE,
 		.pmic_step	= VCORE_PMIC_STEP,
-		.DETWINDOW	= DETWINDOW_VAL,
+		#if EEM_FAKE_EFUSE
+		.DETWINDOW	= DETWINDOW_VAL_FAKE,
+		#else
+		.DETWINDOW      = DETWINDOW_VAL,
+		#endif
 		.DTHI		= DTHI_VAL,
 		.DTLO		= DTLO_VAL,
 		.DETMAX		= DETMAX_VAL,

@@ -332,6 +332,11 @@ static u32 eem_irq_number;
 * common functions for both ap and sspm eem
 *=============================================================
 */
+unsigned int mt_eem_is_enabled(void)
+{
+	return informEEMisReady;
+}
+
 static struct eem_det *id_to_eem_det(enum eem_det_id id)
 {
 	if (likely(id < NR_EEM_DET))
@@ -1124,15 +1129,15 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	}
 
 	eem_write(EEM_FREQPCT30,
-		  ((det->freq_tbl[3 * (NR_FREQ / 8)] << 24) & 0xff000000)	|
-		  ((det->freq_tbl[2 * (NR_FREQ / 8)] << 16) & 0xff0000)	|
-		  ((det->freq_tbl[1 * (NR_FREQ / 8)] << 8) & 0xff00)	|
+		  ((det->freq_tbl[3 * ((det->num_freq_tbl + 7) / 8)] << 24) & 0xff000000) |
+		  ((det->freq_tbl[2 * ((det->num_freq_tbl + 7) / 8)] << 16) & 0xff0000) |
+		  ((det->freq_tbl[1 * ((det->num_freq_tbl + 7) / 8)] << 8) & 0xff00) |
 		  (det->freq_tbl[0] & 0xff));
 	eem_write(EEM_FREQPCT74,
-		  ((det->freq_tbl[7 * (NR_FREQ / 8)] << 24) & 0xff000000)	|
-		  ((det->freq_tbl[6 * (NR_FREQ / 8)] << 16) & 0xff0000)	|
-		  ((det->freq_tbl[5 * (NR_FREQ / 8)] << 8) & 0xff00)	|
-		  ((det->freq_tbl[4 * (NR_FREQ / 8)]) & 0xff));
+		  ((det->freq_tbl[7 * ((det->num_freq_tbl + 7) / 8)] << 24) & 0xff000000)	|
+		  ((det->freq_tbl[6 * ((det->num_freq_tbl + 7) / 8)] << 16) & 0xff0000)	|
+		  ((det->freq_tbl[5 * ((det->num_freq_tbl + 7) / 8)] << 8) & 0xff00)	|
+		  ((det->freq_tbl[4 * ((det->num_freq_tbl + 7) / 8)]) & 0xff));
 
 	eem_write(EEM_LIMITVALS,
 		  ((det->VMAX << 24) & 0xff000000)	|
@@ -1663,6 +1668,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->AGEDELTA	= devinfo->GPU_AGEDELTA;
 		det->MTDES	= devinfo->GPU_MTDES;
 		det->SPEC       = devinfo->GPU_SPEC;
+		if (is_ext_buck_exist())
+			det->features = FEA_INIT01 | FEA_INIT02 | FEA_MON;
+		else
+			det->features = FEA_INIT01 | FEA_INIT02;
 		break;
 
 	 /* for DVT SOC input values are the same as CCI*/
@@ -1685,6 +1694,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 
 	memset(det->volt_tbl, 0, sizeof(det->volt_tbl));
 	memset(det->volt_tbl_pmic, 0, sizeof(det->volt_tbl_pmic));
+	memset(det->freq_tbl, 0, sizeof(det->freq_tbl));
 	memset(record_tbl_locked, 0, sizeof(record_tbl_locked));
 
 	/* get DVFS frequency table */
@@ -2069,25 +2079,25 @@ static void read_volt_from_VOP(struct eem_det *det)
 {
 	int temp, i, j;
 	unsigned int step = NR_FREQ / 8;
-	int ref_idx = ((det->num_freq_tbl + 1) / 2) - 1;
+	int ref_idx = ((det->num_freq_tbl + (step - 1)) / step) - 1;
 
 	temp = eem_read(EEM_VOP30);
 	/* eem_debug("read(EEM_VOP30) = 0x%08X\n", temp); */
 	/* EEM_VOP30=>pmic value */
 	det->volt_tbl[0] = (temp & 0xff);
-	det->volt_tbl[1 * (NR_FREQ / 8)] = (temp >> 8)  & 0xff;
-	det->volt_tbl[2 * (NR_FREQ / 8)] = (temp >> 16) & 0xff;
-	det->volt_tbl[3 * (NR_FREQ / 8)] = (temp >> 24) & 0xff;
+	det->volt_tbl[1 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 8)  & 0xff;
+	det->volt_tbl[2 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 16) & 0xff;
+	det->volt_tbl[3 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 24) & 0xff;
 
 	temp = eem_read(EEM_VOP74);
 	/* eem_debug("read(EEM_VOP74) = 0x%08X\n", temp); */
 	/* EEM_VOP74=>pmic value */
-	det->volt_tbl[4 * (NR_FREQ / 8)] = (temp & 0xff);
-	det->volt_tbl[5 * (NR_FREQ / 8)] = (temp >> 8)  & 0xff;
-	det->volt_tbl[6 * (NR_FREQ / 8)] = (temp >> 16) & 0xff;
-	det->volt_tbl[7 * (NR_FREQ / 8)] = (temp >> 24) & 0xff;
+	det->volt_tbl[4 * ((det->num_freq_tbl + 7) / 8)] = (temp & 0xff);
+	det->volt_tbl[5 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 8)  & 0xff;
+	det->volt_tbl[6 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 16) & 0xff;
+	det->volt_tbl[7 * ((det->num_freq_tbl + 7) / 8)] = (temp >> 24) & 0xff;
 
-	if (NR_FREQ > 8) {
+	if (det->num_freq_tbl > 8) {
 		for (i = 0; i <= ref_idx; i++) { /* i < 8 */
 			for (j = 1; j < step; j++) {
 				if (i < ref_idx) {
@@ -3638,10 +3648,13 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 	else
 		seq_printf(m, "EEM[%s] read current voltage fail\n", det->name);
 
-	if ((det->ctrl_id != EEM_CTRL_GPU) && (det->ctrl_id != EEM_CTRL_SOC)) {
+	if (det->features != 0) {
 		for (i = 0; i < det->num_freq_tbl; i++)
-			seq_printf(m, "EEM_HW, det->volt_tbl[%d] = [%x], det->volt_tbl_pmic[%d] = [%x]\n",
-			i, det->volt_tbl[i], i, det->volt_tbl_pmic[i]);
+			seq_printf(m, "[%d],eem = [%x], pmic = [%x], volt = [%d]\n",
+			i,
+			det->volt_tbl[i],
+			det->volt_tbl_pmic[i],
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
 		#if 0 /* no record table */
 		for (i = 0; i < NR_FREQ; i++) {
 			seq_printf(m, "(iDVFS, 0x%x)(Vs, 0x%x) (Vp, 0x%x, %d) (F_Setting)(%x, %x, %x, %x, %x)\n",
@@ -4461,11 +4474,6 @@ void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 unsigned int get_efuse_status(void)
 {
 	return eem_checkEfuse;
-}
-
-unsigned int mt_eem_is_enabled(void)
-{
-	return informEEMisReady;
 }
 
 #ifdef __KERNEL__
