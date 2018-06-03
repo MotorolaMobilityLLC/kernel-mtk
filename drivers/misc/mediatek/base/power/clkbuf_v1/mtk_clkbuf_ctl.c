@@ -83,6 +83,7 @@ bool is_clk_buf_under_flightmode(void)
 /* for ccci driver to notify this */
 void clk_buf_set_by_flightmode(bool is_flightmode_on)
 {
+	g_is_flightmode_on = is_flightmode_on;
 }
 
 void clk_buf_get_swctrl_status(enum CLK_BUF_SWCTRL_STATUS_T *status)

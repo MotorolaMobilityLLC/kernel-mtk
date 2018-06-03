@@ -75,7 +75,7 @@ static void __iomem *pwrap_base;
 #define PMIC_CW11_INIT_VAL			0xA000
 
 /* TODO: marked this after driver is ready */
-#define CLKBUF_BRINGUP
+/* #define CLKBUF_BRINGUP */
 
 /* #define CLKBUF_CONN_SUPPORT_CTRL_FROM_I1 */
 
@@ -92,6 +92,7 @@ static void __iomem *pwrap_base;
 
 /* TODO: enable BBLPM if its function is ready (set as 1) */
 static unsigned int bblpm_switch;
+static unsigned int clk_buf_cmd_debug;
 
 static unsigned int pwrap_dcxo_en_flag = (DCXO_CONN_ENABLE | DCXO_NFC_ENABLE);
 
@@ -116,8 +117,8 @@ static u8 xo_en_stat[CLKBUF_NUM];
 #ifndef CLKBUF_BRINGUP
 static enum CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE,
-	CLK_BUF_SW_ENABLE,
-	CLK_BUF_SW_ENABLE,
+	CLK_BUF_SW_DISABLE,
+	CLK_BUF_SW_DISABLE,
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_DISABLE,
 	CLK_BUF_SW_DISABLE,
@@ -268,7 +269,8 @@ u32 clk_buf_bblpm_enter_cond(void)
 
 	pwr_sta = clkbuf_readl(PWR_STATUS);
 
-	if (pwr_sta & PWR_STATUS_MD)
+	/* if (pwr_sta & PWR_STATUS_MD) */
+	if (!is_clk_buf_under_flightmode())
 		bblpm_cond |= BBLPM_COND_CEL;
 
 	if ((pmic_clk_buf_swctrl[XO_WCN] == CLK_BUF_SW_ENABLE) ||
@@ -324,7 +326,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 			pwrap_dcxo_en_flag &= ~DCXO_CONN_ENABLE;
 			clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en_flag);
 
-			pmic_config_interface(PMIC_DCXO_CW00_CLR, RG_XO2_MODE,
+			pmic_config_interface(PMIC_DCXO_CW00_CLR, PMIC_XO_EXTBUF2_MODE_MASK,
 					      PMIC_XO_EXTBUF2_MODE_MASK,
 					      PMIC_XO_EXTBUF2_MODE_SHIFT);
 			pmic_clk_buf_ctrl_wcn(0);
@@ -338,10 +340,13 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 	case CLK_BUF_NFC:
 		if (onoff) {
 			CLK_BUF3_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL;
+			pmic_config_interface(PMIC_DCXO_CW00_CLR, PMIC_XO_EXTBUF3_MODE_MASK,
+					      PMIC_XO_EXTBUF3_MODE_MASK,
+					      PMIC_XO_EXTBUF3_MODE_SHIFT);
 			pmic_config_interface(PMIC_DCXO_CW00_SET, RG_XO3_MODE,
 					      PMIC_XO_EXTBUF3_MODE_MASK,
 					      PMIC_XO_EXTBUF3_MODE_SHIFT);
-			pmic_clk_buf_ctrl_nfc(1);
+			/* pmic_clk_buf_ctrl_nfc(1); */
 			pmic_clk_buf_swctrl[XO_NFC] = 1;
 
 			pwrap_dcxo_en_flag |= DCXO_NFC_ENABLE;
@@ -350,10 +355,13 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 			pwrap_dcxo_en_flag &= ~DCXO_NFC_ENABLE;
 			clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en_flag);
 
-			pmic_config_interface(PMIC_DCXO_CW00_CLR, RG_XO3_MODE,
+			pmic_config_interface(PMIC_DCXO_CW00_CLR, PMIC_XO_EXTBUF3_MODE_MASK,
 					      PMIC_XO_EXTBUF3_MODE_MASK,
 					      PMIC_XO_EXTBUF3_MODE_SHIFT);
-			pmic_clk_buf_ctrl_nfc(0);
+			pmic_config_interface(PMIC_DCXO_CW00_SET, RG_XO3_MODE,
+					      PMIC_XO_EXTBUF3_MODE_MASK,
+					      PMIC_XO_EXTBUF3_MODE_SHIFT);
+			/* pmic_clk_buf_ctrl_nfc(0); */
 			pmic_clk_buf_swctrl[XO_NFC] = 0;
 			CLK_BUF3_STATUS_PMIC = CLOCK_BUFFER_DISABLE;
 		}
@@ -370,7 +378,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 			pmic_clk_buf_ctrl_cel(1);
 			pmic_clk_buf_swctrl[XO_CEL] = 1;
 		} else {
-			pmic_config_interface(PMIC_DCXO_CW00_CLR, RG_XO4_MODE,
+			pmic_config_interface(PMIC_DCXO_CW00_CLR, PMIC_XO_EXTBUF4_MODE_MASK,
 					      PMIC_XO_EXTBUF4_MODE_MASK,
 					      PMIC_XO_EXTBUF4_MODE_SHIFT);
 			pmic_clk_buf_ctrl_cel(0);
@@ -382,12 +390,18 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 	case CLK_BUF_UFS:
 		if (onoff) {
 			CLK_BUF7_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL;
-			pmic_config_interface(PMIC_DCXO_CW11_CLR, RG_XO7_MODE,
+			pmic_config_interface(PMIC_DCXO_CW11_CLR, PMIC_XO_EXTBUF7_MODE_MASK,
+					      PMIC_XO_EXTBUF7_MODE_MASK,
+					      PMIC_XO_EXTBUF7_MODE_SHIFT);
+			pmic_config_interface(PMIC_DCXO_CW11_SET, RG_XO7_MODE,
 					      PMIC_XO_EXTBUF7_MODE_MASK,
 					      PMIC_XO_EXTBUF7_MODE_SHIFT);
 			pmic_clk_buf_ctrl_ext(1);
 			pmic_clk_buf_swctrl[XO_EXT] = 1;
 		} else {
+			pmic_config_interface(PMIC_DCXO_CW11_CLR, PMIC_XO_EXTBUF7_MODE_MASK,
+					      PMIC_XO_EXTBUF7_MODE_MASK,
+					      PMIC_XO_EXTBUF7_MODE_SHIFT);
 			pmic_clk_buf_ctrl_ext(0);
 			pmic_clk_buf_swctrl[XO_EXT] = 0;
 			CLK_BUF7_STATUS_PMIC = CLOCK_BUFFER_DISABLE;
@@ -451,6 +465,13 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 			clk_buf_pr_info("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
+		if (clk_buf_cmd_debug) {
+			pmic_config_interface(PMIC_DCXO_CW00_SET, PMIC_XO_EXTBUF3_MODE_MASK,
+					PMIC_XO_EXTBUF3_MODE_MASK,
+					PMIC_XO_EXTBUF3_MODE_SHIFT);
+
+			pmic_clk_buf_ctrl_nfc(onoff);
+		}
 		/* record the status of NFC from caller for checking BBLPM */
 		pmic_clk_buf_swctrl[XO_NFC] = onoff;
 		break;
@@ -460,6 +481,10 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 			clk_buf_pr_info("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
+		if (clk_buf_cmd_debug)
+			pmic_config_interface(PMIC_DCXO_CW00_SET, PMIC_XO_EXTBUF4_MODE_MASK,
+					PMIC_XO_EXTBUF4_MODE_MASK,
+					PMIC_XO_EXTBUF4_MODE_SHIFT);
 		break;
 	case CLK_BUF_AUDIO:
 		if (CLK_BUF6_STATUS_PMIC != CLOCK_BUFFER_SW_CONTROL) {
@@ -491,7 +516,12 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 			clk_buf_pr_info("%s: id=%d isn't controlled by SW\n", __func__, id);
 			break;
 		}
-		pmic_clk_buf_ctrl_ext(onoff);
+		if (clk_buf_cmd_debug) {
+			pmic_config_interface(PMIC_DCXO_CW11_SET, PMIC_XO_EXTBUF7_MODE_MASK,
+					PMIC_XO_EXTBUF7_MODE_MASK,
+					PMIC_XO_EXTBUF7_MODE_SHIFT);
+			pmic_clk_buf_ctrl_ext(onoff);
+		}
 		pmic_clk_buf_swctrl[XO_EXT] = onoff;
 		break;
 	default:
@@ -852,11 +882,13 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	len += snprintf(buf+len, PAGE_SIZE-len, "bblpm_switch=%u, bblpm_cnt=%u, bblpm_cond=0x%x\n",
 			bblpm_switch, bblpm_cnt, clk_buf_bblpm_enter_cond());
 	len += snprintf(buf+len, PAGE_SIZE-len,
-			"MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, SPARE_ACK_MASK=0x%x\n",
+			"MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, \
+			SPARE_ACK_MASK=0x%x, flight mode = %d\n",
 			clkbuf_readl(MD1_PWR_CON),
 			clkbuf_readl(PWR_STATUS),
 			clkbuf_readl(PCM_REG13_DATA),
-			clkbuf_readl(SPARE_ACK_MASK));
+			clkbuf_readl(SPARE_ACK_MASK),
+			is_clk_buf_under_flightmode());
 
 	return len;
 }
@@ -867,6 +899,7 @@ static ssize_t clk_buf_debug_store(struct kobject *kobj, struct kobj_attribute *
 	int debug = 0;
 
 	if (!kstrtoint(buf, 10, &debug)) {
+		clk_buf_cmd_debug = true;
 		if (debug == 0)
 			clkbuf_debug = false;
 		else if (debug == 1)
@@ -911,8 +944,14 @@ static ssize_t clk_buf_debug_store(struct kobject *kobj, struct kobj_attribute *
 			clk_buf_ctrl_internal(CLK_BUF_RF, false);
 		else if (debug == 21)
 			clk_buf_ctrl_internal(CLK_BUF_RF, true);
+		else if (debug == 22)
+			clk_buf_ctrl(CLK_BUF_RF, false);
+		else if (debug == 23)
+			clk_buf_ctrl(CLK_BUF_RF, true);
 		else
 			clk_buf_pr_info("bad argument!! should be 0 or 1 [0: disable, 1: enable]\n");
+
+		clk_buf_cmd_debug = false;
 	} else
 		return -EPERM;
 
