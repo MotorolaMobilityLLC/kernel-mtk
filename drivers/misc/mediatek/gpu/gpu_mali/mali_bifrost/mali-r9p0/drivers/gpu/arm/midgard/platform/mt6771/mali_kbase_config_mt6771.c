@@ -26,6 +26,7 @@
 #include "platform/mtk_platform_common.h"
 #include "ged_dvfs.h"
 #include "mtk_gpufreq.h"
+#include <mtk_gpu_log.h>
 
 #define MALI_TAG						"[GPU/MALI]"
 #define mali_pr_info(fmt, args...)		pr_info(MALI_TAG"[INFO]"fmt, ##args)
@@ -130,6 +131,18 @@ static int pm_callback_power_on_nolock(struct kbase_device *kbdev)
 	/* Write 1 into 0x13000130 bit 0 to enable timestamp register (TIMESTAMP).*/
 	/* TIMESTAMP will be used by clGetEventProfilingInfo.*/
 	writel(0x00000001, g_MFG_base + 0x130);
+
+	/* merge_w off */
+	writel(0x0, g_MFG_base + 0x8b0);
+	/* merge_r off */
+	writel(0x0, g_MFG_base + 0x8a0);
+	/* axi1to2 off */
+	writel(0x0, g_MFG_base + 0x8f4);
+
+	GPULOG("merge_w: 0x%08x merge_r: 0x%08x axi1to2: 0x%08x",
+			readl(g_MFG_base + 0x8b0),
+			readl(g_MFG_base + 0x8a0),
+			readl(g_MFG_base + 0x8f4));
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0x4 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));
