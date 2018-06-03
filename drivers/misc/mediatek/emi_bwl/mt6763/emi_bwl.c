@@ -367,6 +367,12 @@ void __iomem *mt_cen_emi_base_get(void)
 }
 EXPORT_SYMBOL(mt_cen_emi_base_get);
 
+void __iomem *mt_emi_base_get(void)
+{
+	return mt_cen_emi_base_get();
+}
+EXPORT_SYMBOL(mt_emi_base_get);
+
 void __iomem *mt_chn_emi_base_get(int chn)
 {
 	switch (chn) {
@@ -391,3 +397,34 @@ unsigned int mt_emi_mpu_irq_get(void)
 	return mpu_irq;
 }
 
+int disable_drs(void)
+{
+	int count;
+	unsigned int drs_status;
+
+	writel(readl(IOMEM(CHA_EMI_DRS)) & ~0x1, IOMEM(CHA_EMI_DRS));
+	writel(readl(IOMEM(CHB_EMI_DRS)) & ~0x1, IOMEM(CHB_EMI_DRS));
+
+	for (count = 100; count > 0; count--) {
+		drs_status = readl(IOMEM(CHA_EMI_DRS_ST5));
+		if ((drs_status == 0x10) || (drs_status == 0x40))
+			continue;
+
+		drs_status = readl(IOMEM(CHB_EMI_DRS_ST5));
+		if ((drs_status != 0x10) && (drs_status != 0x40))
+			break;
+	}
+
+	if (count == 0) {
+		/* pr_err("[EMI] disable DRS fail\n"); */
+		return -1;
+	}
+
+	return 0;
+}
+
+void enable_drs(void)
+{
+	writel(readl(IOMEM(CHA_EMI_DRS)) | 0x1, IOMEM(CHA_EMI_DRS));
+	writel(readl(IOMEM(CHB_EMI_DRS)) | 0x1, IOMEM(CHB_EMI_DRS));
+}

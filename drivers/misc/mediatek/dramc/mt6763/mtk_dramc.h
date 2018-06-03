@@ -94,7 +94,7 @@ typedef enum {
 #define STORAGE_READ_API_MASK		(0xf)
 #define ERR_PL_UPDATED			(0x4)
 
-void *mt_emi_base_get(void);
+extern void __iomem *mt_emi_base_get(void);
 unsigned int mt_dramc_chn_get(unsigned int emi_cona);
 unsigned int mt_dramc_chp_get(unsigned int emi_cona);
 phys_addr_t mt_dramc_rankbase_get(unsigned int rank);

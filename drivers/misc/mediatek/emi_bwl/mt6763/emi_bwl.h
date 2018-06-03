@@ -28,6 +28,12 @@
 #define EMI_ARBG		(CEN_EMI_BASE + 0x0130)
 #define EMI_ARBH		(CEN_EMI_BASE + 0x0138)
 
+#define CHA_EMI_DRS		(CHA_EMI_BASE + 0x0168)
+#define CHA_EMI_DRS_ST5		(CHA_EMI_BASE + 0x0188)
+
+#define CHB_EMI_DRS		(CHB_EMI_BASE + 0x0168)
+#define CHB_EMI_DRS_ST5		(CHB_EMI_BASE + 0x0188)
+
 /*
  * Define constants.
  */
@@ -70,9 +76,12 @@ struct emi_bwl_ctrl {
 
 extern int mtk_mem_bw_ctrl(int sce, int op);
 extern int get_ddr_type(void);
+extern void __iomem *mt_emi_base_get(void); /* legacy API */
 extern void __iomem *mt_cen_emi_base_get(void);
 extern void __iomem *mt_chn_emi_base_get(int chn);
 extern void __iomem *mt_emi_mpu_base_get(void);
+extern void enable_drs(void);
+extern int disable_drs(void);
 
 #endif  /* !__MT_EMI_BWL_H__ */
 

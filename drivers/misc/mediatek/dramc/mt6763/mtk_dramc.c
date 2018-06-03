@@ -76,17 +76,13 @@ static unsigned int mr18_cur;
 static unsigned int mr19_cur;
 #endif
 
-#define DRAMC_GET_EMI_WORKAROUND /* FIXME, waiting for mt_emi_base_get() porting done */
-
-#ifdef DRAMC_GET_EMI_WORKAROUND
-static void __iomem *EMI_BASE_ADDR; /* not initialise statics to 0 or NULL */
-#endif
-
 static DEFINE_MUTEX(dram_dfs_mutex);
 unsigned char No_DummyRead;
 unsigned int DRAM_TYPE;
 unsigned int CH_NUM;
 unsigned int CBT_MODE;
+
+static void __iomem *(*get_emi_base)(void);
 
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
@@ -1219,10 +1215,7 @@ int get_emi_ch_num(void)
 	if (CH_NUM)
 		return CH_NUM;
 
-#ifdef DRAMC_GET_EMI_WORKAROUND
-	emi_base = EMI_BASE_ADDR;
-#else
-	get_emi_base = (void *)symbol_get(mt_emi_base_get);
+	get_emi_base = (void __iomem *)symbol_get(mt_emi_base_get);
 	if (get_emi_base == NULL) {
 		pr_err("[get_emi_ch_num] mt_emi_base_get is NULL\n");
 		return 0;
@@ -1231,7 +1224,6 @@ int get_emi_ch_num(void)
 	emi_base = get_emi_base();
 	symbol_put(mt_emi_base_get);
 	get_emi_base = NULL;
-#endif
 
 	emi_cona = readl(IOMEM(emi_base+0x000));
 
@@ -2023,33 +2015,6 @@ phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank)
 		return 0;
 	}
 }
-#endif
-
-#ifdef DRAMC_GET_EMI_WORKAROUND
-static int __init dram_emi_init(void)
-{
-	struct device_node *node;
-
-	/* DTS version */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,EMI");
-	if (node) {
-		EMI_BASE_ADDR = of_iomap(node, 0);
-		pr_err("dramc get EMI_BASE_ADDR @ %p\n", EMI_BASE_ADDR);
-	} else {
-		pr_err("can't find compatible node\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-void *mt_emi_base_get(void)
-{
-	return EMI_BASE_ADDR;
-}
-EXPORT_SYMBOL(mt_emi_base_get);
-
-postcore_initcall(dram_emi_init);
 #endif
 
 MODULE_DESCRIPTION("MediaTek DRAMC Driver v0.1");
