@@ -21,3 +21,14 @@ int reduce_stall(int, int, int);
 static inline void update_pwd_tbl(void) { }
 static inline int reduce_stall(int bv, int thres, int flag) { return -1; }
 #endif
+
+
+#ifdef CONFIG_SCHED_WALT
+void ext_launch_notify_init(void);
+void ext_launch_start(void);
+void ext_launch_cond(int cond);
+#else
+static inline void ext_launch_notify_init(void) { }
+static inline void ext_launch_start(void) { }
+static inline void ext_launch_cond(int cond) { }
+#endif
