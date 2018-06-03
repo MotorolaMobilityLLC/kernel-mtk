@@ -1334,6 +1334,7 @@ static unsigned int mt_gpufreq_dds_calc(unsigned int freq_khz, enum post_div_ord
 }
 
 #ifndef MTK_SSPM
+#if 0 /* Need to switch pll in 6763 series */
 static void gpu_dvfs_switch_to_univpll(bool on)
 {
 	clk_prepare_enable(mt_gpufreq_clk->clk_mux);
@@ -1346,6 +1347,7 @@ static void gpu_dvfs_switch_to_univpll(bool on)
 		clk_disable_unprepare(mt_gpufreq_clk->clk_mux);
 	}
 }
+#endif
 
 static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_div_order_enum post_div_order)
 {
@@ -1372,23 +1374,28 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 	gpufreq_dbg("@%s: request GPUPLL_CON1 = 0x%x\n",
 			__func__, DRV_Reg32(GPUPLL_CON1));
 
+#if 0 /* Need to switch pll in 6763 series */
 	if (g_bParking) {
 		gpufreq_dbg("@%s: switch to univ pll\n", __func__);
 		/* Step1. Select to clk26m 26MHz */
 		gpu_dvfs_switch_to_univpll(true);
 	}
+#endif
 
 	/* Step2. Modify gpupll_ck */
 	DRV_WriteReg32(GPUPLL_CON1, (0x80000000) | (post_div_order << POST_DIV_SHIFT) | dds);
 	DRV_WriteReg32(GPUPLL_CON0, 0xFC000181);
 	udelay(20);
 
+#if 0 /* Need to switch pll in 6763 series */
 	if (g_bParking) {
 		gpufreq_dbg("@%s: switch back to gpu pll\n", __func__);
 		/* Step3. Select back to gpupll_ck */
 		gpu_dvfs_switch_to_univpll(false);
 		g_bParking = false;
 	}
+#endif
+
 }
 #endif
 /* static void _mt_gpufreq_set_cur_freq(unsigned int freq_new) */
