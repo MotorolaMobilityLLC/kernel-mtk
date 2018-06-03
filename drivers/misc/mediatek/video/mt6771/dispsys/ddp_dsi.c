@@ -582,7 +582,9 @@ void DSI_exit_ULPS(enum DISP_MODULE_ENUM module)
 	int ret = 0;
 	unsigned int lane_num_bitvalue = 0;
 	/* wake_up_prd * 1024 * cycle time > 1ms */
-	int wake_up_prd = (_dsi_context[i].dsi_params.PLL_CLOCK * 2 * 1000) / (1024 * 8) + 0x1;
+	unsigned int data_rate = _dsi_context[i].dsi_params.data_rate != 0 ? _dsi_context[i].dsi_params.data_rate :
+							_dsi_context[i].dsi_params.PLL_CLOCK * 2;
+	int wake_up_prd = (data_rate * 1000) / (1024 * 8) + 0x1;
 	struct t_condition_wq *waitq;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -1188,7 +1190,7 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 {
 	int i = 0;
 	unsigned int j = 0;
-	unsigned int data_Rate = dsi_params->PLL_CLOCK * 2;
+	unsigned int data_Rate = dsi_params->data_rate != 0 ? dsi_params->data_rate : dsi_params->PLL_CLOCK * 2;
 	unsigned int pcw_ratio = 0;
 	unsigned int pcw = 0;
 	unsigned int posdiv = 0;
@@ -1440,7 +1442,7 @@ static void _dsi_phy_clk_setting_gce(enum DISP_MODULE_ENUM module,
 {
 	int i = 0;
 	unsigned int j = 0;
-	unsigned int data_Rate = dsi_params->PLL_CLOCK * 2;
+	unsigned int data_Rate = dsi_params->data_rate != 0 ? dsi_params->data_rate : dsi_params->PLL_CLOCK * 2;
 	unsigned int pcw_ratio = 0;
 	unsigned int pcw = 0;
 	unsigned int posdiv = 0;
@@ -1817,7 +1819,13 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 	return;
 #endif
 	lane_no = dsi_params->LANE_NUM;
-	if (dsi_params->PLL_CLOCK != 0) {
+	if (dsi_params->data_rate != 0) {
+		ui = 1000 / dsi_params->data_rate + 0x01;
+		cycle_time = 8000 / dsi_params->data_rate + 0x01;
+		DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
+			"[DISP] - kernel - DSI_PHY_TIMCONFIG, Cycle Time = %d(ns), Unit Interval = %d(ns). , lane# = %d\n",
+			cycle_time, ui, lane_no);
+	} else if (dsi_params->PLL_CLOCK != 0) {
 		ui = 1000 / (dsi_params->PLL_CLOCK * 2) + 0x01;
 		cycle_time = 8000 / (dsi_params->PLL_CLOCK * 2) + 0x01;
 		DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
