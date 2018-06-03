@@ -114,6 +114,8 @@ static const char * const DAC_DL_SINEGEN_AMPLITUE[] = {
 
 static bool mEnableSideToneFilter;
 static const char * const ENABLESTF[] = { "Off", "On" };
+static int stf_gain;
+static int stf_positive_gain_db;
 
 static int mAudio_Mode;
 static const char * const ANDROID_AUDIO_MODE[] = {
@@ -455,6 +457,36 @@ static int Audio_STF_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 	return 0;
 }
 
+static int stf_gain_get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = stf_gain;
+	return 0;
+}
+
+static int stf_gain_set(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	stf_gain = ucontrol->value.integer.value[0];
+	set_stf_gain(stf_gain);
+	return 0;
+}
+
+static int stf_positive_gain_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = stf_positive_gain_db;
+	return 0;
+}
+
+static int stf_positive_gain_set(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	stf_positive_gain_db = ucontrol->value.integer.value[0];
+	set_stf_positive_gain_db(stf_positive_gain_db);
+	return 0;
+}
+
 #if 0				/* not used */
 static int Audio_ModemPcm_ASRC_Get(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
@@ -749,6 +781,10 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 		     Audio_SineGen_Amplitude_Get, Audio_SineGen_Amplitude_Set),
 	SOC_ENUM_EXT("Audio_Sidetone_Switch", Audio_Routing_Enum[3],
 		     Audio_STF_Get, Audio_STF_Set),
+	SOC_SINGLE_EXT("Sidetone_Gain", SND_SOC_NOPM, 0, 0x7fff, 0,
+		       stf_gain_get, stf_gain_set),
+	SOC_SINGLE_EXT("Sidetone_Positive_Gain_dB", SND_SOC_NOPM, 0, 100, 0,
+		       stf_positive_gain_get, stf_positive_gain_set),
 	SOC_ENUM_EXT("Audio_Mode_Switch", Audio_Routing_Enum[4],
 		     Audio_Mode_Get, Audio_Mode_Set),
 	SOC_ENUM_EXT("Audio_Dctrim_Flag", Audio_Routing_Enum[9],

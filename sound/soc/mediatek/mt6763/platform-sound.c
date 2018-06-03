@@ -1221,6 +1221,24 @@ bool EnableSideToneFilter(bool stf_on)
 	return true;
 }
 
+void set_stf_gain(int gain)
+{
+	AudDrv_Clk_On();
+	Afe_Set_Reg(AFE_SIDETONE_GAIN, gain, 0xffff);
+	AudDrv_Clk_Off();
+}
+
+void set_stf_positive_gain_db(int gain_db)
+{
+	if (gain_db >= 0 && gain_db <= 24) {
+		AudDrv_Clk_On();
+		Afe_Set_Reg(AFE_SIDETONE_GAIN, (gain_db / 6) << 16, 0x7 << 16);
+		AudDrv_Clk_Off();
+	} else {
+		pr_warn("%s(), gain_db %d invalid\n", __func__, gain_db);
+	}
+}
+
 bool CleanPreDistortion(void)
 {
 	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0, MASK_ALL);
