@@ -96,12 +96,12 @@
 /* Use this qos request to control camera dynamic frequency change */
 #ifdef CONFIG_MTK_QOS_SUPPORT
 struct pm_qos_request isp_qos;
+struct pm_qos_request camsys_qos_request[ISP_IRQ_TYPE_INT_CAM_C_ST+1];
+static struct ISP_PM_QOS_STRUCT G_PM_QOS[ISP_IRQ_TYPE_INT_CAM_C_ST+1];
 #else
 struct mmdvfs_pm_qos_request isp_qos;
 #endif
-struct pm_qos_request camsys_qos_request;
 
-static struct ISP_PM_QOS_STRUCT G_PM_QOS[ISP_IRQ_TYPE_INT_CAM_C_ST+1];
 static u32 target_clk;
 #endif
 
@@ -1620,12 +1620,13 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 }
 
 #ifndef EP_NO_PMQOS
+#ifdef CONFIG_MTK_QOS_SUPPORT
 static int ISP_SetPMQOS(unsigned int cmd, unsigned int module)
 {
 	#define margin (110/100)
 	#define bit 8
 
-	unsigned int i = 0, bw_cal = 0;
+	unsigned int bw_cal = 0;
 	int Ret = 0;
 
 	switch (cmd) {
@@ -1635,10 +1636,7 @@ static int ISP_SetPMQOS(unsigned int cmd, unsigned int module)
 		break;
 	}
 	case 1: {
-		for (i = 0; i <= ISP_IRQ_TYPE_INT_CAM_C_ST; i++) {
-			if (G_PM_QOS[i].bw_sum)
-				bw_cal += (G_PM_QOS[i].bw_sum / 1000000) * G_PM_QOS[i].fps; /* MByte/s */
-		}
+		bw_cal = (G_PM_QOS[module].bw_sum / 1000000) * G_PM_QOS[module].fps; /* MByte/s */
 		bw_cal = bw_cal * margin;/* MByte/s */
 		break;
 	}
@@ -1647,13 +1645,13 @@ static int ISP_SetPMQOS(unsigned int cmd, unsigned int module)
 		Ret = -1;
 		break;
 	}
-
-	pm_qos_update_request(&camsys_qos_request, bw_cal);
+	pm_qos_update_request(&camsys_qos_request[module], bw_cal);
 	LOG_INF("PM_QoS: module[%d], cmd[%d], bw[%d], fps[%d], total bw = %d MB/s\n", module, cmd,
 		G_PM_QOS[module].bw_sum, G_PM_QOS[module].fps, bw_cal);
 
 	return Ret;
 }
+#endif
 #endif
 
 /*******************************************************************************
@@ -2627,6 +2625,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	case ISP_DFS_CTRL:
 	case ISP_DFS_UPDATE:
 	case ISP_GET_CUR_ISP_CLOCK:
+	case ISP_SET_PM_QOS_INFO:
+	case ISP_SET_PM_QOS:
 		break;
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
 
@@ -2773,9 +2773,12 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					Ret = -EFAULT;
 					break;
 				}
-
+				#ifdef CONFIG_MTK_QOS_SUPPORT
 				G_PM_QOS[pm_qos_info.module].bw_sum = pm_qos_info.bw_value;
 				G_PM_QOS[pm_qos_info.module].fps = pm_qos_info.fps/10;
+				#else
+				LOG_NOTICE("ISP_SET_PM_QOS_INFO is not supported\n");
+				#endif
 			} else {
 				LOG_NOTICE("ISP_SET_PM_QOS_INFO copy_from_user failed\n");
 				Ret = -EFAULT;
@@ -2784,27 +2787,30 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_SET_PM_QOS:
 		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int) * 2) == 0) {
-			static int bw_request;
-
+			#ifdef CONFIG_MTK_QOS_SUPPORT
+			static int bw_request[ISP_IRQ_TYPE_INT_CAM_C_ST+1];
 			if (DebugFlag[1] < ISP_IRQ_TYPE_INT_CAM_A_ST ||
 				DebugFlag[1] > ISP_IRQ_TYPE_INT_CAM_C_ST) {
 				LOG_NOTICE("HW_module error:%d", DebugFlag[1]);
 				Ret = -EFAULT;
 				break;
 			}
-
 			if (DebugFlag[0] == 1) {
-				pm_qos_add_request(&camsys_qos_request, PM_QOS_MM_MEMORY_BANDWIDTH,
+				pm_qos_add_request(&camsys_qos_request[DebugFlag[1]], PM_QOS_MM_MEMORY_BANDWIDTH,
 							PM_QOS_DEFAULT_VALUE);
-				bw_request++;
+				Ret = ISP_SetPMQOS(DebugFlag[0], DebugFlag[1]);
+				bw_request[DebugFlag[1]]++;
 			} else {
-				if (bw_request == 0)
+				if (bw_request[DebugFlag[1]] == 0)
 					break;
-				pm_qos_remove_request(&camsys_qos_request);
-				bw_request--;
+				Ret = ISP_SetPMQOS(DebugFlag[0], DebugFlag[1]);
+				pm_qos_remove_request(&camsys_qos_request[DebugFlag[1]]);
+				bw_request[DebugFlag[1]]--;
 			}
-
-			Ret = ISP_SetPMQOS(DebugFlag[0], DebugFlag[1]);
+			#else
+			LOG_NOTICE("ISP_SET_PM_QOS is not supported\n");
+			break;
+			#endif
 		} else {
 			LOG_NOTICE("ISP_SET_PM_QOS copy_from_user failed\n");
 			Ret = -EFAULT;
