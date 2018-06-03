@@ -46,8 +46,8 @@
 
 
 #include "gc2366mipi_Sensor.h"
-#define GC2366_DEFAULT_DUMMY_PIXEL_NUMS   0x2bf	/* HB */
-#define GC2366_DEFAULT_DUMMY_LINE_NUMS    0x10	/* VB */
+/*#define GC2366_DEFAULT_DUMMY_PIXEL_NUMS   0x2bf	HB */
+/*#define GC2366_DEFAULT_DUMMY_LINE_NUMS    0x10	VB */
 
 
 /****************************Modify Following Strings for Debug****************************/
@@ -165,7 +165,7 @@ static struct imgsensor_struct imgsensor = {
 	.gain = 0x40,		/* current gain */
 	.dummy_pixel = 0,	/* current dummypixel */
 	.dummy_line = 0,	/* current dummyline */
-	.current_fps = 300,
+	.current_fps = 300,	/* full size current fps : 24fps for PIP, 30fps for Normal or ZSD */
 	.autoflicker_en = KAL_FALSE,
 	.test_pattern = KAL_FALSE,
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,	/* current scenario id */
@@ -211,23 +211,17 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 
 static void set_dummy(void)
 {
-	kal_uint32 hb = 0;
-	kal_uint32 vb = 0;
+	kal_uint32 vb = 16;
+	kal_uint32 basic_line = 1224;
 
 	LOG_INF("dummyline = %d, dummypixels = %d\n", imgsensor.dummy_line, imgsensor.dummy_pixel);
 
-	hb = imgsensor.dummy_pixel + GC2366_DEFAULT_DUMMY_PIXEL_NUMS;
-	vb = imgsensor.dummy_line + GC2366_DEFAULT_DUMMY_LINE_NUMS;
+	vb = imgsensor.frame_length - basic_line;
+	vb = (vb < 16) ? 16 : vb;
 
-	/* Set VB */
-	/* vb = (vb>>2)<<2; */
 	write_cmos_sensor(0x07, (vb >> 8) & 0x1F);
 	write_cmos_sensor(0x08, vb & 0xFF);
-	/* mdelay(50); */
-	/* end */
 
-
-/* end */
 }				/*    set_dummy  */
 
 static kal_uint32 return_sensor_id(void)
