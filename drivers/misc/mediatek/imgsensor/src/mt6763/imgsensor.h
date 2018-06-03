@@ -24,12 +24,13 @@ struct IMGSENSOR {
 	struct IMGSENSOR_HW     hw;
 	struct IMGSENSOR_CLK    clk;
 	struct IMGSENSOR_SENSOR sensor[IMGSENSOR_SENSOR_IDX_MAX_NUM];
+	atomic_t imgsensor_open_cnt;
 };
 
-MUINT32
+MINT32
 imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor);
 
-MUINT32
+MINT32
 imgsensor_sensor_close(struct IMGSENSOR_SENSOR *psensor);
 
 MUINT32

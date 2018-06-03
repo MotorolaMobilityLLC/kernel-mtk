@@ -34,6 +34,7 @@ struct IMGSENSOR_HW {
 };
 
 enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw);
+enum IMGSENSOR_RETURN imgsensor_hw_release_all(struct IMGSENSOR_HW *phw);
 enum IMGSENSOR_RETURN imgsensor_hw_power(
 	struct IMGSENSOR_HW *phw,
 	struct IMGSENSOR_SENSOR *psensor,

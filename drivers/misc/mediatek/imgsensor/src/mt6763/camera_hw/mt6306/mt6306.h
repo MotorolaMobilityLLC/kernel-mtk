@@ -30,7 +30,7 @@ enum MT6306_PIN {
 };
 
 struct MT6306{
-
+	atomic_t    enable_cnt[MT6306_PIN_MAX_NUM];
 };
 
 enum IMGSENSOR_RETURN imgsensor_hw_mt6306_open(struct IMGSENSOR_HW_DEVICE **pdevice);

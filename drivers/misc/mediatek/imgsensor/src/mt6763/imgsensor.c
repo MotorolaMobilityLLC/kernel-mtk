@@ -151,10 +151,10 @@ static void imgsensor_mutex_unlock(struct IMGSENSOR_SENSOR_INST *psensor_inst)
 #endif
 }
 
-MUINT32
+MINT32
 imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 {
-	MUINT32 ret = ERROR_NONE;
+	MINT32 ret = ERROR_NONE;
 	struct IMGSENSOR_SENSOR_INST *psensor_inst = &psensor->inst;
 	SENSOR_FUNCTION_STRUCT       *psensor_func =  psensor->pfunc;
 
@@ -172,9 +172,13 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 		/* turn on power */
 		IMGSENSOR_PROFILE_INIT(&psensor_inst->profile_time);
 
-		if ((ret = imgsensor_hw_power(&pgimgsensor->hw, psensor, psensor_inst->psensor_name, IMGSENSOR_HW_POWER_STATUS_ON)) != IMGSENSOR_RETURN_SUCCESS) {
+		ret = imgsensor_hw_power(&pgimgsensor->hw,
+						psensor,
+						psensor_inst->psensor_name,
+						IMGSENSOR_HW_POWER_STATUS_ON);
+		if (ret != IMGSENSOR_RETURN_SUCCESS) {
 			PK_PR_ERR("[%s] Power on fail", __func__);
-			return ret;
+			return ret ? -EIO : ret;
 		}
 		/* wait for power stable */
 		mDELAY(5);
@@ -191,14 +195,13 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 			PK_PR_ERR("[%s] Open fail\n", __func__);
 		} else {
 			psensor_inst->state = IMGSENSOR_STATE_OPEN;
-		}
 
 #ifdef CONFIG_MTK_CCU
-		ccuSensorInfo.slave_addr = (psensor_inst->i2c_cfg.pinst->msg->addr << 1);
-		ccuSensorInfo.sensor_name_string = (char *)(psensor_inst->psensor_name);
-		ccu_set_sensor_info(sensor_idx, &ccuSensorInfo);
+			ccuSensorInfo.slave_addr = (psensor_inst->i2c_cfg.pinst->msg->addr << 1);
+			ccuSensorInfo.sensor_name_string = (char *)(psensor_inst->psensor_name);
+			ccu_set_sensor_info(sensor_idx, &ccuSensorInfo);
 #endif
-
+		}
 		imgsensor_mutex_unlock(psensor_inst);
 
 		IMGSENSOR_PROFILE(&psensor_inst->profile_time, "SensorOpen");
@@ -206,7 +209,7 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 
 	IMGSENSOR_FUNCTION_EXIT();
 
-	return ret;
+	return ret ? -EIO : ret;
 }
 
 MUINT32
@@ -347,10 +350,10 @@ imgsensor_sensor_control(
 	return ret;
 }
 
-MUINT32
+MINT32
 imgsensor_sensor_close(struct IMGSENSOR_SENSOR *psensor)
 {
-	MUINT32 ret = ERROR_NONE;
+	MINT32 ret = ERROR_NONE;
 	struct IMGSENSOR_SENSOR_INST *psensor_inst = &psensor->inst;
 	SENSOR_FUNCTION_STRUCT       *psensor_func =  psensor->pfunc;
 
@@ -377,7 +380,7 @@ imgsensor_sensor_close(struct IMGSENSOR_SENSOR *psensor)
 
 	IMGSENSOR_FUNCTION_EXIT();
 
-	return ret;
+	return ret ? -EIO : ret;
 }
 
 /*******************************************************************************
@@ -618,6 +621,12 @@ static void cam_temperature_report_wq_routine(struct work_struct *data)
 	if(ERROR_NONE != ret)
 		PK_PR_ERR("Get Main2 cam temperature error(%d)!\n", ret);
 
+	ret = Get_Camera_Temperature(DUAL_CAMERA_SUB_2_SENSOR, &valid[3], &temp[3]);
+	PK_INFO("senDevId(%d), valid(%d), temperature(%d)\n",
+				DUAL_CAMERA_SUB_2_SENSOR, valid[3], temp[3]);
+
+	if (ret != ERROR_NONE)
+		PK_DBG("Get Sub2 cam temperature error(%d)!\n", ret);
 	schedule_delayed_work(&cam_temperature_wq, HZ);
 
 }
@@ -1074,6 +1083,9 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 	/*in case that some structure are passed from user sapce by ptr */
 	switch (pFeatureCtrl->FeatureId) {
+	case SENSOR_FEATURE_OPEN:
+	case SENSOR_FEATURE_CLOSE:
+		break;
 	case SENSOR_FEATURE_GET_DEFAULT_FRAME_RATE_BY_SCENARIO:
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
 	case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
@@ -1999,15 +2011,22 @@ CAMERA_HW_Ioctl_EXIT:
 
 static int imgsensor_open(struct inode *a_pstInode, struct file *a_pstFile)
 {
-	imgsensor_clk_enable_all(&pgimgsensor->clk);
+	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0)
+		imgsensor_clk_enable_all(&pgimgsensor->clk);
 
+	atomic_inc(&pgimgsensor->imgsensor_open_cnt);
+	PK_DBG("imgsensor_open %d\n", atomic_read(&pgimgsensor->imgsensor_open_cnt));
 	return 0;
 }
 
 static int imgsensor_release(struct inode *a_pstInode, struct file *a_pstFile)
 {
-	imgsensor_clk_disable_all(&pgimgsensor->clk);
-
+	atomic_dec(&pgimgsensor->imgsensor_open_cnt);
+	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0) {
+		imgsensor_clk_disable_all(&pgimgsensor->clk);
+		imgsensor_hw_release_all(&pgimgsensor->hw);
+	}
+	PK_DBG("imgsensor_release %d\n", atomic_read(&pgimgsensor->imgsensor_open_cnt));
 	return 0;
 }
 
@@ -2080,7 +2099,10 @@ inline static void imgsensor_driver_unregister(void)
 #ifdef CONFIG_MTK_SMI_EXT
 int mmsys_clk_change_cb(int ori_clk_mode, int new_clk_mode)
 {
-	PK_DBG("mmsys_clk_change_cb ori: %d, new: %d, current_mmsys_clk %d\n", ori_clk_mode, new_clk_mode, current_mmsys_clk);
+	if ((ori_clk_mode != new_clk_mode) || (current_mmsys_clk != new_clk_mode))
+		PK_DBG("mmsys_clk_change_cb ori: %d, new: %d, current_mmsys_clk %d\n",
+			ori_clk_mode, new_clk_mode, current_mmsys_clk);
+
 	current_mmsys_clk = new_clk_mode;
 	return 1;
 }
@@ -2103,6 +2125,7 @@ static int imgsensor_probe(struct platform_device *pdev)
 	imgsensor_i2c_create();
 	imgsensor_proc_init();
 
+	atomic_set(&pgimgsensor->imgsensor_open_cnt, 0);
 #ifdef CONFIG_MTK_SMI_EXT
 	mmdvfs_register_mmclk_switch_cb(mmsys_clk_change_cb, MMDVFS_CLIENT_ID_ISP);
 #endif

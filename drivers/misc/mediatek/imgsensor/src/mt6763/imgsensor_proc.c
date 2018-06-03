@@ -84,7 +84,12 @@ static ssize_t  CAMERA_HW_DumpReg_To_Proc3(struct file *file, char __user *data,
 {
     return 0;
 }
-
+/*
+*static ssize_t  CAMERA_HW_DumpReg_To_Proc4(struct file *file, char __user *data, size_t len, loff_t *ppos)
+*{
+*	return 0;
+*}
+*/
 /*******************************************************************************
   * CAMERA_HW_Reg_Debug()
   * Used for sensor register read/write by proc file
@@ -165,7 +170,36 @@ static ssize_t  CAMERA_HW_Reg_Debug3(struct file *file, const char *buffer, size
 
     return count;
 }
+#if 0
+static ssize_t  CAMERA_HW_Reg_Debug4(struct file *file, const char *buffer, size_t count,
+									loff_t *data)
+{
+	char regBuf[64] = {'\0'};
+	u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
+	struct IMGSENSOR_SENSOR *psensor = &pgimgsensor->sensor[IMGSENSOR_SENSOR_IDX_SUB2];
 
+	MSDK_SENSOR_REG_INFO_STRUCT sensorReg;
+
+	memset(&sensorReg, 0, sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
+
+	if (psensor == NULL || copy_from_user(regBuf, buffer, u4CopyBufSize))
+		return -EFAULT;
+
+	if (sscanf(regBuf, "%x %x",  &sensorReg.RegAddr, &sensorReg.RegData) == 2) {
+		imgsensor_sensor_feature_control(psensor, SENSOR_FEATURE_SET_REGISTER, (MUINT8 *)&sensorReg,
+						(MUINT32 *)sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
+		imgsensor_sensor_feature_control(psensor, SENSOR_FEATURE_GET_REGISTER, (MUINT8 *)&sensorReg,
+						(MUINT32 *)sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
+		PK_DBG("write addr = 0x%08x, data = 0x%08x\n", sensorReg.RegAddr, sensorReg.RegData);
+	} else if (kstrtouint(regBuf, 0, &sensorReg.RegAddr) == 0) {
+		imgsensor_sensor_feature_control(psensor, SENSOR_FEATURE_GET_REGISTER, (MUINT8 *)&sensorReg,
+						(MUINT32 *)sizeof(MSDK_SENSOR_REG_INFO_STRUCT));
+		PK_DBG("read addr = 0x%08x, data = 0x%08x\n", sensorReg.RegAddr, sensorReg.RegData);
+	}
+
+	return count;
+}
+#endif
 /* Camera information */
 static int subsys_camera_info_read(struct seq_file *m, void *v)
 {
@@ -211,6 +245,9 @@ enum IMGSENSOR_RETURN imgsensor_proc_init(void)
 	proc_create("driver/camsensor", 0, NULL, &fcamera_proc_fops);
 	proc_create("driver/camsensor2", 0, NULL, &fcamera_proc_fops2);
 	proc_create("driver/camsensor3", 0, NULL, &fcamera_proc_fops3);
+/*
+*	proc_create("driver/camsensor4", 0, NULL, &fcamera_proc_fops4);
+*/
 	proc_create("driver/pdaf_type", 0, NULL, &fcamera_proc_fops_set_pdaf_type);
 
 	/* Camera information */

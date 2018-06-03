@@ -22,6 +22,7 @@
 #define IMGSENSOR_SENSOR_IDX_NAME_MAIN  "0"
 #define IMGSENSOR_SENSOR_IDX_NAME_SUB   "1"
 #define IMGSENSOR_SENSOR_IDX_NAME_MAIN2 "2"
+#define IMGSENSOR_SENSOR_IDX_NAME_SUB2 "3"
 
 #define IMGSENSOR_HW_POWER_INFO_MAX	12
 #define IMGSENSOR_HW_SENSOR_MAX_NUM	8
@@ -135,13 +136,13 @@ struct IMGSENSOR_HW_POWER_SEQ {
 struct IMGSENSOR_HW_DEVICE {
 	void              *pinstance;
 	enum IMGSENSOR_RETURN (*init)(void *);
+	enum IMGSENSOR_RETURN (*release)(void *);
 	enum IMGSENSOR_RETURN (*set)(
 		void *,
 		enum IMGSENSOR_SENSOR_IDX,
 		enum IMGSENSOR_HW_PIN,
 		enum IMGSENSOR_HW_PIN_STATE);
 	enum IMGSENSOR_HW_ID    id;
-	atomic_t           pin_en_cnt[IMGSENSOR_HW_PIN_MAX_NUM];
 };
 
 extern struct IMGSENSOR_HW_CFG       imgsensor_custom_config[];

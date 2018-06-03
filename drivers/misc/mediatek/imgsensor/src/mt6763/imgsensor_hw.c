@@ -25,7 +25,19 @@ char *imgsensor_sensor_idx_name[IMGSENSOR_SENSOR_IDX_MAX_NUM] = {
 	IMGSENSOR_SENSOR_IDX_NAME_MAIN,
 	IMGSENSOR_SENSOR_IDX_NAME_SUB,
 	IMGSENSOR_SENSOR_IDX_NAME_MAIN2,
+	IMGSENSOR_SENSOR_IDX_NAME_SUB2,
 };
+
+enum IMGSENSOR_RETURN imgsensor_hw_release_all(struct IMGSENSOR_HW *phw)
+{
+	int i;
+
+	for (i = 0; i < IMGSENSOR_HW_ID_MAX_NUM; i++) {
+		if (phw->pdev[i]->release != NULL)
+			(phw->pdev[i]->release)(phw->pdev[i]->pinstance);
+	}
+	return IMGSENSOR_RETURN_SUCCESS;
+}
 
 enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw)
 {
@@ -40,9 +52,6 @@ enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw)
 
 		if(phw->pdev[i]->init != NULL)
 			(phw->pdev[i]->init)(phw->pdev[i]->pinstance);
-
-		for(j=0; j<IMGSENSOR_HW_PIN_MAX_NUM; j++)
-			atomic_set(&phw->pdev[i]->pin_en_cnt[j], 0);
 	}
 
 	for(i=0; i<IMGSENSOR_SENSOR_IDX_MAX_NUM; i++) {
@@ -103,13 +112,12 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 			PK_DBG("sensor_idx = %d, pin=%d, pin_state_on=%d, hw_id =%d(0:PMIC, 1:GPIO, 2:exGPIO)\n",
 				sensor_idx, ppwr_info->pin, ppwr_info->pin_state_on, psensor_pwr->id[ppwr_info->pin]);
 
-			if(pdev->set != NULL)
+			if (pdev->set != NULL)
 				pdev->set(pdev->pinstance,
 				          sensor_idx,
 				          ppwr_info->pin,
 				          ppwr_info->pin_state_on);
 
-			atomic_inc(&pdev->pin_en_cnt[ppwr_info->pin]);
 		}
 
 		ppwr_info++;
@@ -121,12 +129,11 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 			ppwr_info--;
 			pin_cnt--;
 
-			if(ppwr_info->pin != IMGSENSOR_HW_PIN_UNDEF) {
+			if (ppwr_info->pin != IMGSENSOR_HW_PIN_UNDEF) {
 				pdev = phw->pdev[psensor_pwr->id[ppwr_info->pin]];
 				mdelay(ppwr_info->pin_on_delay);
 
-				if(pdev->set != NULL &&
-				   atomic_dec_and_test(&pdev->pin_en_cnt[ppwr_info->pin]))
+				if (pdev->set != NULL)
 					pdev->set(pdev->pinstance,
 					          sensor_idx,
 					          ppwr_info->pin,
@@ -152,7 +159,8 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 
 #if defined(CONFIG_CUSTOM_KERNEL_MAIN_IMGSENSOR) || \
 	defined(CONFIG_CUSTOM_KERNEL_SUB_IMGSENSOR)  || \
-	defined(CONFIG_CUSTOM_KERNEL_MAIN2_IMGSENSOR)
+	defined(CONFIG_CUSTOM_KERNEL_MAIN2_IMGSENSOR)  || \
+	defined(CONFIG_CUSTOM_KERNEL_SUB2_IMGSENSOR)
 #define TOSTRING(value)           #value
 #define STRINGIZE(stringizedName) TOSTRING(stringizedName)
 
@@ -180,6 +188,14 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	   strncmp(curr_sensor_name,
 	           strstr(psensor_name_config, curr_sensor_name),
 	           strlen(curr_sensor_name)))
+		return IMGSENSOR_RETURN_ERROR;
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_SUB2_IMGSENSOR
+	psensor_name_config = STRINGIZE(CONFIG_CUSTOM_KERNEL_SUB2_IMGSENSOR);
+	if (sensor_idx == IMGSENSOR_SENSOR_IDX_SUB2 &&
+	   strncmp(curr_sensor_name,
+				strstr(psensor_name_config, curr_sensor_name),
+				strlen(curr_sensor_name)))
 		return IMGSENSOR_RETURN_ERROR;
 #endif
 #endif
