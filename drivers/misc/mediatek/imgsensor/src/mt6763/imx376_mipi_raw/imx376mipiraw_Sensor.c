@@ -807,8 +807,6 @@ static void sensor_init(void)
 	write_cmos_sensor_8(0xAAEF, 0x03);
 	write_cmos_sensor_8(0xAAF1, 0x02);
 	write_cmos_sensor_8(0xB6D9, 0x00);
-
-	set_mirror_flip(imgsensor.mirror);
 }	/*	sensor_init  */
 
 
@@ -1470,6 +1468,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	hw_sensor_mode = IMGSENSOR_MODE_PREVIEW;
 #endif
 	preview_setting();
+	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	preview   */
@@ -1533,6 +1532,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		capture_setting(imgsensor.current_fps, 1);
 
 #endif
+	set_mirror_flip(IMAGE_HV_MIRROR);
 
 	return ERROR_NONE;
 }	/* capture() */
@@ -1558,6 +1558,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 #endif
 	normal_video_setting(imgsensor.current_fps);
 	/* preview_setting(); */
+	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	normal_video   */
@@ -1586,6 +1587,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	hw_sensor_mode = IMGSENSOR_MODE_HIGH_SPEED_VIDEO;
 #endif
 	hs_video_setting();
+	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	hs_video   */
@@ -1611,6 +1613,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	hw_sensor_mode = IMGSENSOR_MODE_SLIM_VIDEO;
 #endif
 	slim_video_setting();
+	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
 }	/*	slim_video	 */
