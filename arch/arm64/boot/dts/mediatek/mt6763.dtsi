@@ -798,6 +798,8 @@
 	sys_cirq@10204000 {
 		compatible = "mediatek,sys_cirq";
 		reg = <0 0x10204000 0 0x1000>;
+		mediatek,cirq_num = <208>;
+		mediatek,spi_start_offset = <72>;
 		interrupts = <GIC_SPI 280 IRQ_TYPE_LEVEL_LOW>;
 	};
 
