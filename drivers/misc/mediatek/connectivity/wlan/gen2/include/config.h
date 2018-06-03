@@ -78,8 +78,6 @@
 #define CFG_SUPPORT_CFG_FILE     1
 #endif
 
-#define CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST 0  /* Support FCC/CE Dynamic Tx Power Adjust */
-
 #define CFG_SUPPORT_CE_FCC_TXPWR_LIMIT 0 /* Support CE FCC Tx Power limit */
 
 #define CFG_SUPPORT_802_11D             1	/*
@@ -118,8 +116,6 @@
 #define CFG_SUPPORT_PERSIST_NETDEV		0	/* create NETDEV when system bootup */
 
 #define CFG_FORCE_USE_20BW			1
-
-#define CFG_SUPPORT_RN				1
 /*------------------------------------------------------------------------------
  * SLT Option
  *------------------------------------------------------------------------------

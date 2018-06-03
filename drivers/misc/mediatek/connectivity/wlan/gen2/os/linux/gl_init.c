@@ -2579,6 +2579,7 @@ bailout:
 	if (i4Status == WLAN_STATUS_SUCCESS) {
 		/*Init performance monitor structure */
 		kalPerMonInit(prGlueInfo);
+		kalFbNotifierReg(prGlueInfo);
 		/* probe ok */
 		DBGLOG(INIT, TRACE, "wlanProbe ok\n");
 	} else {
@@ -2640,6 +2641,7 @@ static VOID wlanRemove(VOID)
 		return;
 	}
 
+	kalFbNotifierUnReg();
 	kalPerMonDestroy(prGlueInfo);
 	/* 4 <3> Remove /proc filesystem. */
 #ifdef WLAN_INCLUDE_PROC
@@ -2822,10 +2824,6 @@ static int initWlan(void)
 	/* register set_dbg_level handler to mtk_wmt_wifi */
 	register_set_dbg_level_handler(set_dbg_level_handler);
 
-	/* Register framebuffer notifier client*/
-	if (gprWdev)
-		kalFbNotifierReg((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
-
 	/* Set the initial DEBUG CLASS of each module */
 	return ret;
 }				/* end of initWlan() */
@@ -2843,9 +2841,6 @@ static int initWlan(void)
 static VOID exitWlan(void)
 {
 	DBGLOG(INIT, INFO, "exitWlan\n");
-
-	/* Unregister framebuffer notifier client*/
-	kalFbNotifierUnReg();
 
 	/* unregister set_dbg_level handler to mtk_wmt_wifi */
 	register_set_dbg_level_handler(NULL);

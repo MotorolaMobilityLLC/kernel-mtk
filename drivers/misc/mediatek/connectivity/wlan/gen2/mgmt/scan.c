@@ -2091,9 +2091,6 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 		if (rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum) == FALSE)
 			continue;
 		/* 4 <2.5> Check if this BSS_DESC_T is stale */
-#if CFG_SUPPORT_RN
-	if (prBssInfo->fgDisConnReassoc == FALSE)
-#endif
 		if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime,
 				      SEC_TO_SYSTIME(SCN_BSS_DESC_REMOVE_TIMEOUT_SEC))) {
 

@@ -42,15 +42,6 @@ extern void kalDevLoopbkRxHandle(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prS
 #define CFG_RX_MAX_BA_ENTRY            4
 #define CFG_RX_MAX_BA_TID_NUM          8
 
-#if (CFG_SRAM_SIZE_OPTION == 1)
-/* set default RXBA size to 16, for DIR-635/DIR-655 IOT issue
- * (ALPS02494017 BA size must be power of 2)
- */
-#define IOT_RX_BA_SIZE 16
-#elif (CFG_SRAM_SIZE_OPTION == 0)
-#define IOT_RX_BA_SIZE 8
-#endif
-
 #define RX_STATUS_FLAG_MORE_PACKET    BIT(30)
 #define RX_STATUS_CHKSUM_MASK         BITS(0, 10)
 
