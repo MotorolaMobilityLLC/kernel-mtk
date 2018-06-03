@@ -28,7 +28,9 @@
 #ifdef CONFIG_OF
 #include <linux/of_address.h>
 #endif
+#ifdef CONFIG_MTK_AEE_FEATURE
 #include <mt-plat/aee.h>
+#endif
 
 #define FRA (48)
 #define PARA (28)
@@ -250,8 +252,10 @@ bool usb_prepare_clock(bool enable)
 	DBG(1, "enable(%d), usb prepare_cnt, before(%d), after(%d)\n",
 		enable, before_cnt, atomic_read(&clk_prepare_cnt));
 
+#ifdef CONFIG_MTK_AEE_FEATURE
 	if (atomic_read(&clk_prepare_cnt) < 0)
 		aee_kernel_warning("usb20", "usb clock prepare_cnt error\n");
+#endif
 
 	return 1;
 }

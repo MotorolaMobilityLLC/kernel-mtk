@@ -15,6 +15,9 @@
 #include <linux/list.h>
 #include <linux/module.h>
 #include "musb_qmu.h"
+#ifdef CONFIG_MTK_AEE_FEATURE
+#include <mt-plat/aee.h>
+#endif
 
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 #define USB_AUDIO_DATA_OUT 0
@@ -390,10 +393,8 @@ void gpd_switch_to_dram(struct device *dev)
 				(void *)(uintptr_t)Tx_gpd_Offset[index],
 				(void *)(uintptr_t)Tx_gpd_Offset_dram);
 		QMU_ERR("%s\n", string);
-#ifdef CONFIG_MEDIATEK_SOLUTION
+#ifdef CONFIG_MTK_AEE_FEATURE
 		aee_kernel_warning(string, string);
-#else
-		musb_bug();
 #endif
 	}
 
@@ -1623,7 +1624,8 @@ finished:
 			default:
 				break;
 			}
-#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
+
+#ifdef CONFIG_MTK_AEE_FEATURE
 			if (val && !skip_val)
 				aee_kernel_warning(string, string);
 #endif
@@ -1729,7 +1731,7 @@ finished:
 
 		sprintf(string, "USB20_HOST, TXQ<%d> ERR, CSR:%x", epnum, val);
 		QMU_ERR("%s\n", string);
-#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
+#ifdef CONFIG_MTK_AEE_FEATURE
 		aee_kernel_warning(string, string);
 #endif
 	}
