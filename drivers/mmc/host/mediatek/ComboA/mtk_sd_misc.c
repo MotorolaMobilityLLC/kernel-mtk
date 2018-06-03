@@ -445,7 +445,7 @@ static int simple_sd_ioctl_get_bootpart(struct msdc_ioctl *msdc_ctl)
 	struct mmc_host *mmc;
 	int ret = 0;
 	int bootpart = 0;
-	unsigned int __user user_buffer;
+	unsigned int user_buffer;
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
 	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card) {
