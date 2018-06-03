@@ -1115,11 +1115,11 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					/* for aligning boost_accum_cpu presentation */
 					psKPI->boost_accum_gpu = boost_accum_gpu - 100;
 
-					if (enable_gpu_boost) {
+					if (gx_game_mode == 1 && enable_gpu_boost == 1) {
 						ged_kpi_set_gpu_dvfs_hint((int)(psHead->t_gpu_target/1000)
 												, (int)boost_accum_gpu);
 					} else {
-						ged_kpi_set_gpu_dvfs_hint((int)(psHead->t_gpu_target/1000), 100);
+						ged_kpi_set_gpu_dvfs_hint(((int)vsync_period / 1000), 100);
 					}
 
 					break;
@@ -1550,14 +1550,22 @@ bool ged_kpi_set_cpu_remained_time(long long t_cpu_remained, int QedBuffer_lengt
 /* ----------------------------------------------------------------------------- */
 void (*ged_kpi_set_game_hint_value_fp)(int is_game_mode);
 EXPORT_SYMBOL(ged_kpi_set_game_hint_value_fp);
+void (*ged_kpi_set_game_hint_value_fp_2)(int is_game_mode);
+EXPORT_SYMBOL(ged_kpi_set_game_hint_value_fp_2);
 
 bool ged_kpi_set_game_hint_value(int is_game_mode)
 {
+	bool ret = false;
+
 	if (ged_kpi_set_game_hint_value_fp != NULL) {
 		ged_kpi_set_game_hint_value_fp(is_game_mode);
-		return true;
+		ret = true;
 	}
-	return false;
+	if (ged_kpi_set_game_hint_value_fp_2 != NULL) {
+		ged_kpi_set_game_hint_value_fp_2(is_game_mode);
+		ret = true;
+	}
+	return ret;
 }
 /* ----------------------------------------------------------------------------- */
 void ged_kpi_set_game_hint(int mode)
