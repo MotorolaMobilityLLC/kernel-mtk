@@ -14,6 +14,9 @@
 #include <linux/uaccess.h>
 #include "mtk_smi.h"
 #include "mmdvfs_mgr.h"
+#include "mmdvfs_internal.h"
+
+static mmdvfs_state_change_cb quick_mmdvfs_state_change_cbs[MMDVFS_SCEN_COUNT];
 
 mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 {
@@ -45,3 +48,29 @@ mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 
 	return result;
 }
+
+
+int register_mmdvfs_state_change_cb(int mmdvfs_client_id, mmdvfs_state_change_cb func)
+{
+		if (mmdvfs_client_id >= 0 && mmdvfs_client_id < MMDVFS_SCEN_COUNT) {
+			quick_mmdvfs_state_change_cbs[mmdvfs_client_id] = func;
+		} else {
+			MMDVFSMSG("clk_switch_cb register failed: id=%d\n", mmdvfs_client_id);
+			return 1;
+		}
+	return 0;
+}
+
+
+void mmdvfs_internal_handle_state_change(struct mmdvfs_state_change_event *event)
+{
+		int i = 0;
+
+		for (i = 0; i < MMDVFS_SCEN_COUNT; i++) {
+			mmdvfs_state_change_cb func = quick_mmdvfs_state_change_cbs[i];
+
+			if (func != NULL)
+				func(event);
+		}
+}
+
