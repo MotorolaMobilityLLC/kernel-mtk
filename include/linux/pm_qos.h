@@ -17,6 +17,15 @@ enum {
 	PM_QOS_NETWORK_THROUGHPUT,
 	PM_QOS_MEMORY_BANDWIDTH,
 
+	PM_QOS_CPU_MEMORY_BANDWIDTH,
+	PM_QOS_GPU_MEMORY_BANDWIDTH,
+	PM_QOS_MM_MEMORY_BANDWIDTH,
+	PM_QOS_OTHER_MEMORY_BANDWIDTH,
+
+	PM_QOS_DDR_OPP,
+	PM_QOS_VCORE_OPP,
+	PM_QOS_VCORE_DVFS_FORCE_OPP,
+
 	/* insert new class ID */
 	PM_QOS_NUM_CLASSES,
 };
@@ -34,6 +43,13 @@ enum pm_qos_flags_status {
 #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
 #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
 #define PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE	0
+#define PM_QOS_CPU_MEMORY_BANDWIDTH_DEFAULT_VALUE	0
+#define PM_QOS_GPU_MEMORY_BANDWIDTH_DEFAULT_VALUE	0
+#define PM_QOS_MM_MEMORY_BANDWIDTH_DEFAULT_VALUE	0
+#define PM_QOS_OTHER_MEMORY_BANDWIDTH_DEFAULT_VALUE	0
+#define PM_QOS_DDR_OPP_DEFAULT_VALUE			16
+#define PM_QOS_VCORE_OPP_DEFAULT_VALUE			16
+#define PM_QOS_VCORE_DVFS_FORCE_OPP_DEFAULT_VALUE	16
 #define PM_QOS_RESUME_LATENCY_DEFAULT_VALUE	0
 #define PM_QOS_LATENCY_TOLERANCE_DEFAULT_VALUE	0
 #define PM_QOS_LATENCY_TOLERANCE_NO_CONSTRAINT	(-1)
@@ -43,9 +59,11 @@ enum pm_qos_flags_status {
 #define PM_QOS_FLAG_REMOTE_WAKEUP	(1 << 1)
 
 struct pm_qos_request {
+	struct list_head list_node;
 	struct plist_node node;
 	int pm_qos_class;
 	struct delayed_work work; /* for pm_qos_update_request_timeout */
+	char owner[20];
 };
 
 struct pm_qos_flags_request {
@@ -81,6 +99,7 @@ enum pm_qos_type {
  * types linux supports for 32 bit quantites
  */
 struct pm_qos_constraints {
+	struct list_head req_list;
 	struct plist_head list;
 	s32 target_value;	/* Do not change to 64 bit */
 	s32 default_value;
