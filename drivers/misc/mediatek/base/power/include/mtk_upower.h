@@ -14,16 +14,12 @@
 #ifndef _COMMON_MTK_UPOWER_H
 #define _COMMON_MTK_UPOWER_H
 
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 #include "upower_v2/mtk_unified_power.h"
 #endif
 
 #if defined(CONFIG_MACH_MT6799)
 #include "upower_v1/mtk_unified_power.h"
-#endif
-
-#if defined(CONFIG_MACH_MT6763)
-#include "upower_v2/mtk_unified_power.h"
 #endif
 
 #endif /* _COMMON_MTK_UPOWER_H */
