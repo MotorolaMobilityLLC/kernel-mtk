@@ -505,8 +505,7 @@ pass_t:
 	cpumask_set_cpu(data, &speedchange_cpumask);
 	spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
 
-#if defined(CONFIG_MACH_MT6763) && \
-	defined(CONFIG_MTK_ACAO_SUPPORT)
+#if 0
 	/* Not to wake up speedchange_task if schedule hint enable */
 	if (!mt_cpufreq_get_sched_enable())
 		wake_up_process(speedchange_task);
