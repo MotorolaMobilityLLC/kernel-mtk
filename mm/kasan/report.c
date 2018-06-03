@@ -28,6 +28,8 @@
 
 #include <asm/sections.h>
 
+#include <mt-plat/aee.h>
+
 #include "../../../drivers/misc/mediatek/include/mt-plat/aee.h"
 
 #include "kasan.h"
@@ -291,10 +293,8 @@ static void kasan_report_error(struct kasan_access_info *info)
 	}
 
 	kasan_end_report(&flags);
-	/* trigger KERNEL_API_DUMP DB */
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT,
-				"KASAN_detect_corruption",
-				"KASAN_detect_corruption");
+	/* trigger KE to get the KAsan corruption message */
+	BUG();
 }
 
 void kasan_report(unsigned long addr, size_t size,
