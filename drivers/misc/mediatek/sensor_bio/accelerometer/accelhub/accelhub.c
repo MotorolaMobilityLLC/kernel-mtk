@@ -42,6 +42,8 @@ struct accelhub_ipi_data {
 	struct work_struct init_done_work;
 	atomic_t scp_init_done;
 	atomic_t first_ready_after_boot;
+	bool factory_enable;
+	bool android_enable;
 };
 
 static struct acc_init_info accelhub_init_info;
@@ -388,6 +390,8 @@ static int gsensor_recv_data(struct data_unit_t *event, void *reserved)
 	struct acc_data data;
 	struct accelhub_ipi_data *obj = obj_ipi_data;
 
+	if (READ_ONCE(obj->android_enable) == false)
+		return 0;
 	data.x = event->accelerometer_t.x;
 	data.y = event->accelerometer_t.y;
 	data.z = event->accelerometer_t.z;
@@ -412,7 +416,12 @@ static int gsensor_recv_data(struct data_unit_t *event, void *reserved)
 static int gsensor_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
 {
 	int err = 0;
+	struct accelhub_ipi_data *obj = obj_ipi_data;
 
+	if (enabledisable == true)
+		WRITE_ONCE(obj->factory_enable, true);
+	else
+		WRITE_ONCE(obj->factory_enable, false);
 	if (enabledisable == true) {
 		err = sensor_set_delay_to_hub(ID_ACCELEROMETER, sample_periods_ms);
 		if (err) {
@@ -505,6 +514,11 @@ static int gsensor_enable_nodata(int en)
 {
 	int err = 0;
 	struct accelhub_ipi_data *obj = obj_ipi_data;
+
+	if (en == true)
+		WRITE_ONCE(obj->android_enable, true);
+	else
+		WRITE_ONCE(obj->android_enable, false);
 
 	if (atomic_read(&obj->suspend) == 0) {
 		err = accelhub_SetPowerMode(en);
@@ -631,6 +645,8 @@ static int accelhub_probe(struct platform_device *pdev)
 	atomic_set(&obj->suspend, 0);
 	atomic_set(&obj->scp_init_done, 0);
 	atomic_set(&obj->first_ready_after_boot, 0);
+	WRITE_ONCE(obj->factory_enable, false);
+	WRITE_ONCE(obj->android_enable, false);
 	scp_power_monitor_register(&scp_ready_notifier);
 	err = scp_sensorHub_data_registration(ID_ACCELEROMETER, gsensor_recv_data);
 	if (err < 0) {
