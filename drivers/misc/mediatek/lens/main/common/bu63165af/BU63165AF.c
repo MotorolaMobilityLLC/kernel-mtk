@@ -125,9 +125,9 @@ int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData, u8 *
 	return 0;
 }
 
-static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
+static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
-	stAF_MotorInfo stMotorInfo;
+	struct stAF_MotorInfo stMotorInfo;
 
 	stMotorInfo.u4MacroPosition = g_u4AF_MACRO;
 	stMotorInfo.u4InfPosition = g_u4AF_INF;
@@ -141,7 +141,7 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 	else
 		stMotorInfo.bIsMotorOpen = 0;
 
-	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(stAF_MotorInfo)))
+	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(struct stAF_MotorInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
 	return 0;
@@ -197,9 +197,9 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
-static inline int setAFPara(__user stAF_MotorCmd * pstMotorCmd)
+static inline int setAFPara(__user struct stAF_MotorCmd *pstMotorCmd)
 {
-	stAF_MotorCmd stMotorCmd;
+	struct stAF_MotorCmd stMotorCmd;
 
 	if (copy_from_user(&stMotorCmd , pstMotorCmd, sizeof(stMotorCmd)))
 		LOG_INF("copy to user failed when getting motor command\n");
@@ -224,7 +224,7 @@ long BU63165AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
-		i4RetValue = getAFInfo((__user stAF_MotorInfo *) (a_u4Param));
+		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *) (a_u4Param));
 		break;
 
 	case AFIOC_T_MOVETO:
@@ -240,7 +240,7 @@ long BU63165AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 		break;
 
 	case AFIOC_S_SETPARA:
-		i4RetValue = setAFPara((__user stAF_MotorCmd *) (a_u4Param));
+		i4RetValue = setAFPara((__user struct stAF_MotorCmd *) (a_u4Param));
 		break;
 
 	default:

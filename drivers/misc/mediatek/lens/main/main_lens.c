@@ -24,7 +24,7 @@
 #include <linux/cdev.h>
 #include <linux/uaccess.h>
 #include <linux/fs.h>
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
@@ -71,7 +71,7 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 #define LOG_INF(format, args...)
 #endif
 
-static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl, AK7371AF_Release},
 	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl, BU6424AF_Release},
 	{1, AFDRV_BU6429AF, BU6429AF_SetI2Cclient, BU6429AF_Ioctl, BU6429AF_Release},
@@ -98,7 +98,7 @@ static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_WV511AAF, WV511AAF_SetI2Cclient, WV511AAF_Ioctl, WV511AAF_Release},
 };
 
-static stAF_DrvList *g_pstAF_CurDrv;
+static struct stAF_DrvList *g_pstAF_CurDrv;
 
 static spinlock_t g_AF_SpinLock;
 
@@ -125,13 +125,13 @@ void AF_PowerDown(void)
 	#endif
 }
 
-static long AF_SetMotorName(__user stAF_MotorName * pstMotorName)
+static long AF_SetMotorName(__user struct stAF_MotorName *pstMotorName)
 {
 	long i4RetValue = -1;
 	int i;
-	stAF_MotorName stMotorName;
+	struct stAF_MotorName stMotorName;
 
-	if (copy_from_user(&stMotorName , pstMotorName, sizeof(stAF_MotorName)))
+	if (copy_from_user(&stMotorName, pstMotorName, sizeof(struct stAF_MotorName)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
 	LOG_INF("Set Motor Name : %s\n", stMotorName.uMotorName);
@@ -152,7 +152,7 @@ static long AF_SetMotorName(__user stAF_MotorName * pstMotorName)
 }
 
 #if 0
-static long AF_SetLensMotorName(stAF_MotorName stMotorName)
+static long AF_SetLensMotorName(struct stAF_MotorName stMotorName)
 {
 	long i4RetValue = -1;
 	int i;
@@ -249,7 +249,7 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 
 	switch (a_u4Command) {
 	case AFIOC_S_SETDRVNAME:
-		i4RetValue = AF_SetMotorName((__user stAF_MotorName *)(a_u4Param));
+		i4RetValue = AF_SetMotorName((__user struct stAF_MotorName *)(a_u4Param));
 		break;
 
 	case AFIOC_S_SETPOWERDOWN:
@@ -356,7 +356,7 @@ static inline int Register_AF_CharDrv(void)
 	/* Allocate driver */
 	g_pAF_CharDrv = cdev_alloc();
 
-	if (NULL == g_pAF_CharDrv) {
+	if (g_pAF_CharDrv == NULL) {
 		unregister_chrdev_region(g_AF_devno, 1);
 
 		LOG_INF("Allocate mem for kobject failed\n");

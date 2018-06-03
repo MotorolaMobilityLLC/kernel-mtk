@@ -469,9 +469,9 @@ static unsigned short AF_convert(int position)
 }
 
 
-static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
+static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
-	stAF_MotorInfo stMotorInfo;
+	struct stAF_MotorInfo stMotorInfo;
 
 	stMotorInfo.u4MacroPosition = g_u4AF_MACRO;
 	stMotorInfo.u4InfPosition = g_u4AF_INF;
@@ -485,7 +485,7 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 	else
 		stMotorInfo.bIsMotorOpen = 0;
 
-	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(stAF_MotorInfo)))
+	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(struct stAF_MotorInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
 	return 0;
@@ -540,9 +540,9 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
-static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
+static inline int getAFCalPos(__user struct stAF_MotorCalPos *pstMotorCalPos)
 {
-	stAF_MotorCalPos stMotorCalPos;
+	struct stAF_MotorCalPos stMotorCalPos;
 	u32 u4AF_CalibData_INF;
 	u32 u4AF_CalibData_MACRO;
 	u8 val1;
@@ -643,7 +643,7 @@ long LC898212XDAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsign
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
-		i4RetValue = getAFInfo((__user stAF_MotorInfo *) (a_u4Param));
+		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *) (a_u4Param));
 		break;
 
 	case AFIOC_T_MOVETO:
@@ -659,7 +659,7 @@ long LC898212XDAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsign
 		break;
 
 	case AFIOC_G_MOTORCALPOS:
-		i4RetValue = getAFCalPos((__user stAF_MotorCalPos *) (a_u4Param));
+		i4RetValue = getAFCalPos((__user struct stAF_MotorCalPos *) (a_u4Param));
 		break;
 	default:
 		LOG_INF("No CMD\n");

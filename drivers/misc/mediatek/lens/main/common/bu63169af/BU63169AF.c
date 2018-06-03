@@ -224,9 +224,9 @@ int s4AF_ReadReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData,
 	return 0;
 }
 
-static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
+static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
-	stAF_MotorInfo stMotorInfo;
+	struct stAF_MotorInfo stMotorInfo;
 
 	stMotorInfo.u4MacroPosition = g_u4AF_MACRO;
 	stMotorInfo.u4InfPosition = g_u4AF_INF;
@@ -240,7 +240,7 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 	else
 		stMotorInfo.bIsMotorOpen = 0;
 
-	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(stAF_MotorInfo)))
+	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(struct stAF_MotorInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
 	return 0;
@@ -303,9 +303,9 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
-static inline int setAFPara(__user stAF_MotorCmd * pstMotorCmd)
+static inline int setAFPara(__user struct stAF_MotorCmd *pstMotorCmd)
 {
-	stAF_MotorCmd stMotorCmd;
+	struct stAF_MotorCmd stMotorCmd;
 
 	if (copy_from_user(&stMotorCmd , pstMotorCmd, sizeof(stMotorCmd)))
 		LOG_INF("copy to user failed when getting motor command\n");
@@ -337,9 +337,9 @@ static inline int setAFPara(__user stAF_MotorCmd * pstMotorCmd)
 	return 0;
 }
 
-static inline int getOISInfo(__user stAF_MotorOisInfo * pstMotorOisInfo)
+static inline int getOISInfo(__user struct stAF_MotorOisInfo *pstMotorOisInfo)
 {
-	stAF_MotorOisInfo stMotorOisInfo;
+	struct stAF_MotorOisInfo stMotorOisInfo;
 
 	if (*g_pAF_Opened == 2) {
 		stMotorOisInfo.i4OISHallPosXum = ((short)I2C_OIS_mem__read(0x3F)) * 1000;
@@ -354,7 +354,7 @@ static inline int getOISInfo(__user stAF_MotorOisInfo * pstMotorOisInfo)
 
 	/* LOG_INF("HALL [%d %d]\n", stMotorOisInfo.i4OISHallPosXum, stMotorOisInfo.i4OISHallPosYum); */
 
-	if (copy_to_user(pstMotorOisInfo, &stMotorOisInfo, sizeof(stAF_MotorOisInfo)))
+	if (copy_to_user(pstMotorOisInfo, &stMotorOisInfo, sizeof(struct stAF_MotorOisInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
 	return 0;
@@ -367,7 +367,7 @@ long BU63169AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
-		i4RetValue = getAFInfo((__user stAF_MotorInfo *) (a_u4Param));
+		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *) (a_u4Param));
 		break;
 
 	case AFIOC_T_MOVETO:
@@ -383,11 +383,11 @@ long BU63169AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 		break;
 
 	case AFIOC_S_SETPARA:
-		i4RetValue = setAFPara((__user stAF_MotorCmd *) (a_u4Param));
+		i4RetValue = setAFPara((__user struct stAF_MotorCmd *) (a_u4Param));
 		break;
 
 	case AFIOC_G_MOTOROISINFO:
-		i4RetValue = getOISInfo((__user stAF_MotorOisInfo *) (a_u4Param));
+		i4RetValue = getOISInfo((__user struct stAF_MotorOisInfo *) (a_u4Param));
 		break;
 
 	default:
