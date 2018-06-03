@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2017 MediaTek Inc.
  *
@@ -66,8 +65,6 @@ static struct workqueue_struct *wq;
 static int fstb_fps_klog_on;
 
 static unsigned int fstb_fps_cur_limit;
-static unsigned int tm_input_fps;
-static unsigned int tm_queue_fps;
 static struct dentry *fstb_debugfs_dir;
 
 #define CFG_MAX_FPS_LIMIT	60
@@ -618,10 +615,7 @@ static int fstb_get_queue_fps(struct FSTB_FRAME_INFO *iter, long long interval)
 static int fps_update(struct FSTB_FRAME_INFO *iter)
 {
 	iter->queue_fps = fstb_get_queue_fps(iter, FRAME_TIME_WINDOW_SIZE_US);
-	fpsgo_systrace_c_fstb(iter->pid, tm_queue_fps, "tm_queue_fps");
 
-	/*tm_input_fps = get_display_fps(FRAME_TIME_WINDOW_SIZE_US);*/
-	tm_input_fps = max_fps_limit;
 	return iter->queue_fps;
 }
 
@@ -702,9 +696,6 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 				target_limit = 27;
 			else
 				target_limit = tmp_target_limit;
-
-			if (iter->asfc_flag == 1 && iter->queue_fps >= 32)
-				iter->asfc_flag = 0;
 		} else
 			target_limit = iter->target_fps;
 		/*stable state*/
@@ -1176,11 +1167,8 @@ static int fstb_count_read(struct seq_file *m, void *v)
 
 	disp_mgr_get_session_info(&info);
 
-	seq_printf(m, "%d,%d,%d,%d\n",
-			info.updateFPS / 100, tm_input_fps, fstb_fps_cur_limit,
-			cur_cpu_time);
-
-	mtk_fstb_dprintk("[%s] %d\n", __func__, tm_input_fps);
+	seq_printf(m, "%d,%d,%d\n",
+			info.updateFPS / 100, fstb_fps_cur_limit, cur_cpu_time);
 
 	return 0;
 }
