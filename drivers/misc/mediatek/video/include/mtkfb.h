@@ -319,6 +319,9 @@ void mtkfb_clear_lcm(void);
 #endif /* CONFIG_MACH_MT6735 */
 
 int mtkfb_set_backlight_level(unsigned int level);
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+int mtkfb1_set_backlight_level(unsigned int level);
+#endif
 
 #ifdef __KERNEL__
 
