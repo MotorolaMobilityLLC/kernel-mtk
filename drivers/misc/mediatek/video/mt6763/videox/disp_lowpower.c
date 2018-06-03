@@ -274,6 +274,21 @@ int _blocking_flush(void)
 
 	cmdqRecFlush(handle);
 	cmdqRecDestroy(handle);
+	if (primary_display_is_video_mode()) {
+		struct cmdqRecStruct *handle_vfp = NULL;
+
+		ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_VFP_CHANGE, &handle_vfp);
+		if (ret) {
+			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+			return -1;
+		}
+		cmdqRecReset(handle_vfp);
+		_cmdq_insert_wait_frame_done_token_mira(handle_vfp);
+		cmdqRecFlush(handle_vfp);
+
+		cmdqRecDestroy(handle_vfp);
+	}
+
 	return ret;
 }
 
