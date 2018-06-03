@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _MT_EEM_
-#define _MT_EEM_
+#ifndef _MTK_EEM_
+#define _MTK_EEM_
 
 #ifdef __KERNEL__
 #include <linux/kernel.h>
@@ -64,25 +64,33 @@ typedef struct {
 	unsigned int AGEVOFFSETIN;
 } PTP_INIT_T;
 
-
+/* have 10 banks */
 enum eem_ctrl_id {
 	EEM_CTRL_BIG = 0,
-	EEM_CTRL_CCI = 1,
-	EEM_CTRL_GPU = 2,
-	EEM_CTRL_2L = 3,
-	EEM_CTRL_L = 4,
-	EEM_CTRL_SOC = 5,
+	EEM_CTRL_CCI,
+	EEM_CTRL_GPU,
+	EEM_CTRL_2L,
+	EEM_CTRL_L,
+	EEM_CTRL_BANK5,
+	EEM_CTRL_SOC,
+	EEM_CTRL_BANK7,
+	EEM_CTRL_BANK8,
+	EEM_CTRL_BANK9,
 
 	NR_EEM_CTRL,
 };
 
 enum eem_det_id {
-	EEM_DET_BIG	= EEM_CTRL_BIG,
-	EEM_DET_CCI	= EEM_CTRL_CCI,
-	EEM_DET_GPU	= EEM_CTRL_GPU,
-	EEM_DET_2L	= EEM_CTRL_2L,
-	EEM_DET_L	= EEM_CTRL_L,
+	EEM_DET_BIG	=	EEM_CTRL_BIG,
+	EEM_DET_CCI	=	EEM_CTRL_CCI,
+	EEM_DET_GPU	=	EEM_CTRL_GPU,
+	EEM_DET_2L	=	EEM_CTRL_2L,
+	EEM_DET_L	=	EEM_CTRL_L,
+	EEM_DET_BANK5	=	EEM_CTRL_BANK5,
 	EEM_DET_SOC	= EEM_CTRL_SOC,
+	EEM_DET_BANK7	=	EEM_CTRL_BANK7,
+	EEM_DET_BANK8	=	EEM_CTRL_BANK8,
+	EEM_DET_BANK9	=	EEM_CTRL_BANK9,
 
 	NR_EEM_DET,
 };
@@ -121,10 +129,10 @@ extern unsigned int infoIdvfs;
 #ifdef CONFIG_EEM_AEE_RR_REC
 enum eem_state {
 	EEM_CPU_BIG_IS_SET_VOLT = 0,    /* B */
-	EEM_GPU_IS_SET_VOLT,            /* G */
-	EEM_CPU_LITTLE_IS_SET_VOLT, /* L */
-	EEM_CPU_2_LITTLE_IS_SET_VOLT, /* 2L */
 	EEM_CPU_CCI_IS_SET_VOLT, /* CCI */
+	EEM_GPU_IS_SET_VOLT,            /* G */
+	EEM_CPU_2_LITTLE_IS_SET_VOLT, /* 2L */
+	EEM_CPU_LITTLE_IS_SET_VOLT, /* L */
 };
 
 extern void aee_rr_rec_ptp_60(u32 val);
@@ -203,14 +211,13 @@ extern u8 aee_rr_curr_ptp_status(void);
 
 
 /* EEM Extern Function */
-extern void mt_ptp_lock(unsigned long *flags);
-extern void mt_ptp_unlock(unsigned long *flags);
+/* extern void mt_ptp_lock(unsigned long *flags); */
+/* extern void mt_ptp_unlock(unsigned long *flags); */
 extern int mt_eem_status(enum eem_det_id id);
-extern int is_have_550(void);
 extern unsigned int get_vcore_ptp_volt(unsigned int uv);
-extern void eem_set_pi_offset(enum eem_ctrl_id id, int step);
+/* extern void eem_set_pi_offset(enum eem_ctrl_id id, int step); */
 extern unsigned int get_efuse_status(void);
-extern unsigned int get_eem_status_for_gpu(void);
+/* extern unsigned int get_eem_status_for_gpu(void); */
 extern unsigned int mt_eem_vcorefs_set_volt(void);
 #if defined(__MTK_SLT_)
 /* extern int mt_ptp_idle_can_enter(void); */
