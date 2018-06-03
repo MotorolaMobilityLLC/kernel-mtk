@@ -37,7 +37,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.12_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.13_MTK"
 
 #if defined(CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT)
 #define RT5081_CHARGER_DETECT_SUPPORT
@@ -2238,6 +2238,21 @@ static int rt5081_get_zcv(struct charger_device *chg_dev, u32 *uV)
 	return 0;
 }
 
+static int rt5081_do_event(struct charger_device *chg_dev, u32 event, u32 args)
+{
+	switch (event) {
+	case EVENT_EOC:
+		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_EOC);
+		break;
+	case EVENT_RECHARGE:
+		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_RECHG);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
 #ifdef RT5081_APPLE_SAMSUNG_TA_SUPPORT
 static int rt5081_detect_apple_samsung_ta(
 	struct rt5081_pmu_charger_data *chg_data)
@@ -2463,9 +2478,9 @@ static irqreturn_t rt5081_pmu_chg_vbusov_irq_handler(int irq, void *data)
 {
 	int ret = 0;
 	bool vbusov_stat = false;
-	struct chgdev_notify noti;
 	struct rt5081_pmu_charger_data *chg_data =
 		(struct rt5081_pmu_charger_data *)data;
+	struct chgdev_notify *noti = &(chg_data->chg_dev->noti);
 
 	dev_err(chg_data->dev, "%s\n", __func__);
 	ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_CHGSTAT2,
@@ -2473,11 +2488,10 @@ static irqreturn_t rt5081_pmu_chg_vbusov_irq_handler(int irq, void *data)
 	if (ret < 0)
 		return IRQ_HANDLED;
 
-	noti.vbusov_stat = vbusov_stat;
+	noti->vbusov_stat = vbusov_stat;
 	dev_info(chg_data->dev, "%s: stat = %d\n", __func__, vbusov_stat);
 
-	srcu_notifier_call_chain(&chg_data->chg_dev->evt_nh,
-		CHARGER_DEV_NOTIFY_VBUS_OVP, &noti);
+	charger_dev_notify(chg_data->chg_dev, CHARGER_DEV_NOTIFY_VBUS_OVP);
 
 	return IRQ_HANDLED;
 }
@@ -2535,8 +2549,8 @@ static irqreturn_t rt5081_pmu_chg_tmri_irq_handler(int irq, void *data)
 	if (!tmr_stat)
 		return IRQ_HANDLED;
 
-	srcu_notifier_call_chain(&chg_data->chg_dev->evt_nh,
-		CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT, NULL);
+	charger_dev_notify(chg_data->chg_dev,
+		CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT);
 
 	return IRQ_HANDLED;
 }
@@ -2638,8 +2652,7 @@ static irqreturn_t rt5081_pmu_chg_rechgi_irq_handler(int irq, void *data)
 		(struct rt5081_pmu_charger_data *)data;
 
 	dev_err(chg_data->dev, "%s\n", __func__);
-	srcu_notifier_call_chain(&chg_data->chg_dev->evt_nh,
-		CHARGER_DEV_NOTIFY_RECHG, NULL);
+	charger_dev_notify(chg_data->chg_dev, CHARGER_DEV_NOTIFY_RECHG);
 	return IRQ_HANDLED;
 }
 
@@ -2669,8 +2682,7 @@ static irqreturn_t rt5081_pmu_chg_ieoci_irq_handler(int irq, void *data)
 	if (!ieoc_stat)
 		return IRQ_HANDLED;
 
-	srcu_notifier_call_chain(&chg_data->chg_dev->evt_nh,
-		CHARGER_DEV_NOTIFY_EOC, NULL);
+	charger_dev_notify(chg_data->chg_dev, CHARGER_DEV_NOTIFY_EOC);
 
 	return IRQ_HANDLED;
 }
@@ -3258,6 +3270,9 @@ static struct charger_ops rt5081_chg_ops = {
 	/* ADC */
 	.get_tchg_adc = rt5081_get_tchg,
 	.get_ibus_adc = rt5081_get_ibus,
+
+	/* Event */
+	.event = rt5081_do_event,
 };
 
 
@@ -3448,6 +3463,10 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.13_MTK
+ * (1) Add polling mode for EOC/Rechg
+ * (2) Use charger_dev_notify instead of srcu_notifier_call_chain
+ *
  * 1.1.12_MTK
  * (1) Enable charger before sending PE+/PE+20 pattern
  * (2) Select to use reg AICR as input limit -> disable HW limit
