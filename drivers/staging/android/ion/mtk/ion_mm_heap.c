@@ -122,7 +122,6 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
 				      unsigned long order)
 {
 	bool cached = ion_buffer_cached(buffer);
-	bool split_pages = ion_buffer_fault_user_mappings(buffer);
 	struct ion_page_pool *pool;
 	struct page *page;
 
@@ -139,9 +138,6 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
 		alloc_large_fail_ts = sched_clock();
 		return NULL;
 	}
-
-	if (split_pages)
-		split_page(page, order);
 
 	return page;
 }
@@ -248,6 +244,12 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 		if (size % PAGE_SIZE != 0)
 			IONMSG("%s va(0x%lx)size(%ld) not align page.\n",
 			       __func__, user_va, size);
+		if (IS_ERR_OR_NULL(table)) {
+			IONMSG("%s create table error 0x%p!!\n",
+			       __func__, table);
+			return -ENOMEM;
+		}
+
 		goto map_mva_exit;
 	}
 
