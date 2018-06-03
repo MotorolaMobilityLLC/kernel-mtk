@@ -1360,6 +1360,10 @@
 		#clock-cells = <1>;
 	};
 
+	gps {
+		compatible = "mediatek,gps";
+	};
+
 	mtkfb: mtkfb@0 {
 		compatible = "mediatek,mtkfb";
 	};
