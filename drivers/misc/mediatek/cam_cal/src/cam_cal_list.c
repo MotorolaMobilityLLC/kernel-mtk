@@ -70,6 +70,13 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX377_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{IMX214_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{IMX214_MONO_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{IMX486_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},
+	{OV12A10_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},
+	{OV13855_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{S5K3L8_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{HI556_SENSOR_ID, 0x51, CMD_AUTO, cam_cal_check_mtk_cid},
+	{S5K5E8YX_SENSOR_ID, 0x5a, CMD_AUTO, cam_cal_check_mtk_cid},
+	{S5K5E8YXREAR2_SENSOR_ID, 0x5a, CMD_AUTO, cam_cal_check_mtk_cid},
 	/*  ADD before this line */
 	{0, 0, CMD_NONE, 0}	/*end of list */
 };
