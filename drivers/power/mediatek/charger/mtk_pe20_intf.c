@@ -252,9 +252,9 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 
 	pr_debug("%s: starts\n", __func__);
 
-	if (pe20->vbat_orig > VBAT_CABLE_IMP_THRESHOLD) {
+	if (pe20->vbat_orig > pinfo->data.vbat_cable_imp_threshold) {
 		pr_err("VBAT > %dmV, directly set aicr to %dmA\n",
-			VBAT_CABLE_IMP_THRESHOLD,
+			pinfo->data.vbat_cable_imp_threshold,
 			pinfo->data.ac_charger_input_current);
 		pe20->aicr_cable_imp = pinfo->data.ac_charger_input_current;
 		goto end;
@@ -313,7 +313,7 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
 	msleep(250);
 
-	if (cable_imp < CABLE_IMP_THRESHOLD) {
+	if (cable_imp < pinfo->data.cable_imp_threshold) {
 		pe20->aicr_cable_imp = 3200000;
 		pr_err("Normal cable\n");
 	} else {
