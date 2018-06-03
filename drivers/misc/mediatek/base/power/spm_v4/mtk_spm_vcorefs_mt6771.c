@@ -45,6 +45,7 @@
 #include <mtk_eem.h>
 #include <ext_wd_drv.h>
 #include "mtk_devinfo.h"
+#include <mt_emi_api.h>
 
 #ifdef CONFIG_MTK_SMI_EXT
 #include <mmdvfs_mgr.h>
@@ -115,6 +116,9 @@ static inline void spm_vcorefs_footprint(enum spm_vcorefs_step step)
 
 char *spm_vcorefs_dump_dvfs_regs(char *p)
 {
+	u32 bwst0_val = get_emi_bwst(0);
+	u32 bwvl0_val = get_emi_bwvl(0);
+
 	if (p) {
 		#if 1
 		/* DVFSRC */
@@ -183,6 +187,10 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 
 		/* BW Info */
 		p += sprintf(p, "BW_TOTAL: %d (AVG: %d)\n", dvfsrc_get_bw(QOS_TOTAL), dvfsrc_get_bw(QOS_TOTAL_AVE));
+
+		/* EMI Monitor */
+		p += sprintf(p, "TOTAL_EMI(level 1/2): %d/%d (bwst: 0x%x, bwvl: 0x%x)\n",
+					(bwst0_val & 1), ((bwst0_val >> 1) & 1), bwst0_val, bwvl0_val);
 		#endif
 	} else {
 		#if 1
@@ -248,6 +256,10 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_warn("SPM_DVFS_CMD0~1        : 0x%x, 0x%x\n",
 							spm_read(SPM_DVFS_CMD0), spm_read(SPM_DVFS_CMD1));
 		spm_vcorefs_warn("PCM_IM_PTR             :: 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
+
+		/* EMI Monitor */
+		spm_vcorefs_warn("TOTAL_EMI(level 1/2): %d/%d (bwst: 0x%x, bwvl: 0x%x)\n",
+					(bwst0_val & 1), ((bwst0_val >> 1) & 1), bwst0_val, bwvl0_val);
 		#endif
 	}
 
@@ -938,6 +950,9 @@ char *met_src_name[SRC_MAX] = {
 	"QOS_EMI_LEVEL",
 	"QOS_VCORE_LEVEL",
 	"CM_MGR_LEVEL",
+	"TOTAL_EMI_LEVEL_1",
+	"TOTAL_EMI_LEVEL_2",
+	"TOTAL_EMI_MON_BW",
 	"QOS_BW_LEVEL1",
 	"QOS_BW_LEVEL2",
 	"SCP_VCORE_LEVEL",
@@ -988,6 +1003,8 @@ unsigned int *vcorefs_get_src_req(void)
 			   spm_read(DVFSRC_SW_BW_2) +
 			   spm_read(DVFSRC_SW_BW_3) +
 			   spm_read(DVFSRC_SW_BW_4);
+	u32 total_bw_status = get_emi_bwst(0);
+	u32 total_bw_last = (get_emi_bwvl(0) & 0x7F) * 813;
 
 	u32 qos0_thres = spm_read(DVFSRC_EMI_QOS0);
 	u32 qos1_thres = spm_read(DVFSRC_EMI_QOS1);
@@ -996,6 +1013,9 @@ unsigned int *vcorefs_get_src_req(void)
 	met_vcorefs_src[SRC_QOS_VCORE_LEVEL_IDX] = (spm_read(DVFSRC_VCORE_REQUEST2) >> 24) & 0x3;
 
 	met_vcorefs_src[SRC_CM_MGR_LEVEL_IDX] = spm_read(DVFSRC_SW_REQ2) & 0x3;
+	met_vcorefs_src[SRC_TOTAL_EMI_LEVEL_1_IDX] = total_bw_status & 0x1;
+	met_vcorefs_src[SRC_TOTAL_EMI_LEVEL_2_IDX] = (total_bw_status >> 1) & 0x1;
+	met_vcorefs_src[SRC_TOTAL_EMI_MON_BW_IDX] = total_bw_last;
 	met_vcorefs_src[SRC_QOS_BW_LEVEL1_IDX] = (qos_total_bw >= qos0_thres) ? 1 : 0;
 	met_vcorefs_src[SRC_QOS_BW_LEVEL2_IDX] = (qos_total_bw >= qos1_thres) ? 1 : 0;
 
