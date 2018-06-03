@@ -208,7 +208,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	DDPIRQ("disp_irq_handler, irq=%d, module=%s\n",
 	       irq, ddp_get_module_name(disp_irq_module(irq)));
 
-	if (irq == dispsys_irq[DISP_REG_DSI0] || irq == dispsys_irq[DISP_REG_DSI1]) {
+	if (irq == dispsys_irq[DISP_REG_DSI0]) {
 		index = (irq == dispsys_irq[DISP_REG_DSI0]) ? 0 : 1;
 		module = (irq == dispsys_irq[DISP_REG_DSI0]) ? DISP_MODULE_DSI0 : DISP_MODULE_DSI1;
 		reg_val = (DISP_REG_GET(dsi_reg_va[index] + 0xC) & 0xff);
@@ -229,7 +229,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			reg_val, DISP_REG_GET(dsi_reg_va[index] + 0x4));
 		DDPIRQ("DSI irq=%d, regval=0x%x\n", irq, reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
-		   irq == dispsys_irq[DISP_REG_OVL1] ||
 		   irq == dispsys_irq[DISP_REG_OVL0_2L] || irq == dispsys_irq[DISP_REG_OVL1_2L]) {
 
 		module = disp_irq_module(irq);
@@ -291,7 +290,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			mmprofile_log_ex(ddp_mmp_get_events()->ddp_abnormal_irq, MMPROFILE_FLAG_PULSE,
 				       (index << 16) | reg_val, module);
 
-	} else if (irq == dispsys_irq[DISP_REG_WDMA0] || irq == dispsys_irq[DISP_REG_WDMA1]) {
+	} else if (irq == dispsys_irq[DISP_REG_WDMA0]) {
 		index = (irq == dispsys_irq[DISP_REG_WDMA0]) ? 0 : 1;
 		module =
 		    (irq == dispsys_irq[DISP_REG_WDMA0]) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;

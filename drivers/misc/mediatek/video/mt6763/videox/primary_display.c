@@ -2285,14 +2285,6 @@ static int config_display_m4u_port(void)
 		return -1;
 	}
 
-	sPort.ePortID = M4U_PORT_DISP_2L_OVL0_LARB4;
-	ret = m4u_config_port(&sPort);
-	if (ret) {
-		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
-			  ddp_get_module_name(DISP_MODULE_OVL0_2L), m4u_usage, ret);
-		return -1;
-	}
-
 	sPort.ePortID = M4U_PORT_DISP_2L_OVL0_LARB0;
 	ret = m4u_config_port(&sPort);
 	if (ret) {
@@ -2301,11 +2293,11 @@ static int config_display_m4u_port(void)
 		return -1;
 	}
 
-	sPort.ePortID = M4U_PORT_DISP_2L_OVL1;
+	sPort.ePortID = M4U_PORT_DISP_2L_OVL1_LARB0;
 	ret = m4u_config_port(&sPort);
 	if (ret) {
 		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
-			  ddp_get_module_name(DISP_MODULE_OVL0_2L), m4u_usage, ret);
+			  ddp_get_module_name(DISP_MODULE_OVL1_2L), m4u_usage, ret);
 		return -1;
 	}
 

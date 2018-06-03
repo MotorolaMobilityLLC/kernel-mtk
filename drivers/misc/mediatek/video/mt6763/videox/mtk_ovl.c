@@ -342,24 +342,7 @@ int ovl2mem_init(unsigned int session)
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
 	/* dpmgr_path_set_dst_module(pgc->dpmgr_handle,DISP_MODULE_ENUM dst_module) */
 
-	sPort.ePortID = M4U_PORT_DISP_OVL1;
-	sPort.Virtuality = ovl2mem_use_m4u;
-	sPort.Security = 0;
-	sPort.Distance = 1;
-	sPort.Direction = 0;
-	ret = m4u_config_port(&sPort);
-	if (ret == 0) {
-		DISPDBG("config M4U Port %s to %s SUCCESS\n",
-			  ddp_get_module_name(DISP_MODULE_OVL1),
-			  ovl2mem_use_m4u ? "virtual" : "physical");
-	} else {
-		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
-			  ddp_get_module_name(DISP_MODULE_OVL1),
-			  ovl2mem_use_m4u ? "virtual" : "physical", ret);
-		goto Exit;
-	}
-
-	sPort.ePortID = M4U_PORT_DISP_2L_OVL1;
+	sPort.ePortID = M4U_PORT_DISP_2L_OVL1_LARB0;
 	sPort.Virtuality = ovl2mem_use_m4u;
 	sPort.Security = 0;
 	sPort.Distance = 1;
@@ -376,7 +359,7 @@ int ovl2mem_init(unsigned int session)
 		goto Exit;
 	}
 
-	sPort.ePortID = M4U_PORT_DISP_WDMA1;
+	sPort.ePortID = M4U_PORT_DISP_WDMA0;
 	sPort.Virtuality = ovl2mem_use_m4u;
 	sPort.Security = 0;
 	sPort.Distance = 1;
@@ -384,11 +367,11 @@ int ovl2mem_init(unsigned int session)
 	ret = m4u_config_port(&sPort);
 	if (ret == 0) {
 		DISPDBG("config M4U Port %s to %s SUCCESS\n",
-			  ddp_get_module_name(DISP_MODULE_WDMA1),
+			  ddp_get_module_name(DISP_MODULE_WDMA0),
 			  ovl2mem_use_m4u ? "virtual" : "physical");
 	} else {
 		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
-			  ddp_get_module_name(DISP_MODULE_WDMA1),
+			  ddp_get_module_name(DISP_MODULE_WDMA0),
 			  ovl2mem_use_m4u ? "virtual" : "physical", ret);
 		goto Exit;
 	}

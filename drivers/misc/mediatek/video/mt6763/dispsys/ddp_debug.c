@@ -66,7 +66,7 @@ static int debug_init;
 unsigned char pq_debug_flag;
 unsigned char aal_debug_flag;
 
-static unsigned int dbg_log_level;
+static unsigned int dbg_log_level = 1;
 static unsigned int irq_log_level;
 static unsigned int dump_to_buffer;
 
@@ -401,7 +401,7 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "ccorr_test:", 11) == 0) {
 		/*ccorr_test(opt + 11, buf);*/
 	} else if (strncmp(opt, "od_test:", 8) == 0) {
-		od_test(opt + 8, buf);
+		/*od_test(opt + 8, buf);*/
 	} else if (strncmp(opt, "dump_reg:", 9) == 0) {
 		char *p = (char *)opt + 9;
 		unsigned int module;

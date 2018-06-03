@@ -965,8 +965,9 @@ struct DSI_REGS {
 	UINT32 rsv_009C;	/* 009c */
 	struct DSI_TIME_CON0_REG DSI_TIME_CON0;	/* 00A0 */
 	struct DSI_TIME_CON1_REG DSI_TIME_CON1;	/* 00A4 */
+	struct DSI_TIME_CON1_REG DSI_TIME_CON2;	/* 00A8 */
 
-	UINT32 rsv_00A8[22];	/* 0A8..0FC */
+	UINT32 rsv_00A8[21];	/* 0A8..0FC */
 	UINT32 DSI_PHY_PCPAT;	/* 00100 */
 
 	struct DSI_PHY_LCCON_REG DSI_PHY_LCCON;	/* 0104 */
@@ -1092,39 +1093,39 @@ extern unsigned long dsi_reg_va[2];
 /* #define DISP_INDEX_OFFSET 0x1000 */
 
 #define DISP_RDMA_INDEX_OFFSET  (dispsys_reg[DISP_REG_RDMA1] - dispsys_reg[DISP_REG_RDMA0])
-#define DISP_WDMA_INDEX_OFFSET  (dispsys_reg[DISP_REG_WDMA1] - dispsys_reg[DISP_REG_WDMA0])
+#define DISP_WDMA_INDEX_OFFSET  0
 
 #define DDP_REG_BASE_MMSYS_CONFIG  dispsys_reg[DISP_REG_CONFIG]
 #define DDP_REG_BASE_DISP_OVL0     dispsys_reg[DISP_REG_OVL0]
-#define DDP_REG_BASE_DISP_OVL1     dispsys_reg[DISP_REG_OVL1]
+#define DDP_REG_BASE_DISP_OVL1     0
 #define DDP_REG_BASE_DISP_OVL0_2L  dispsys_reg[DISP_REG_OVL0_2L]
 #define DDP_REG_BASE_DISP_OVL1_2L  dispsys_reg[DISP_REG_OVL1_2L]
 #define DDP_REG_BASE_DISP_RDMA0    dispsys_reg[DISP_REG_RDMA0]
 #define DDP_REG_BASE_DISP_RDMA1    dispsys_reg[DISP_REG_RDMA1]
-#define DDP_REG_BASE_DISP_RDMA2    dispsys_reg[DISP_REG_RDMA2]
+#define DDP_REG_BASE_DISP_RDMA2    0
 #define DDP_REG_BASE_DISP_WDMA0    dispsys_reg[DISP_REG_WDMA0]
-#define DDP_REG_BASE_DISP_WDMA1    dispsys_reg[DISP_REG_WDMA1]
+#define DDP_REG_BASE_DISP_WDMA1    0
 #define DDP_REG_BASE_DISP_COLOR0   dispsys_reg[DISP_REG_COLOR0]
-#define DDP_REG_BASE_DISP_COLOR1   dispsys_reg[DISP_REG_COLOR1]
+#define DDP_REG_BASE_DISP_COLOR1   0
 #define DDP_REG_BASE_DISP_CCORR0   dispsys_reg[DISP_REG_CCORR0]
-#define DDP_REG_BASE_DISP_CCORR1   dispsys_reg[DISP_REG_CCORR1]
+#define DDP_REG_BASE_DISP_CCORR1   0
 #define DDP_REG_BASE_DISP_AAL0     dispsys_reg[DISP_REG_AAL0]
-#define DDP_REG_BASE_DISP_AAL1     dispsys_reg[DISP_REG_AAL1]
+#define DDP_REG_BASE_DISP_AAL1     0
 #define DDP_REG_BASE_DISP_GAMMA0   dispsys_reg[DISP_REG_GAMMA0]
-#define DDP_REG_BASE_DISP_GAMMA1   dispsys_reg[DISP_REG_GAMMA1]
-#define DDP_REG_BASE_DISP_OD       dispsys_reg[DISP_REG_OD]
+#define DDP_REG_BASE_DISP_GAMMA1   0
+#define DDP_REG_BASE_DISP_OD       0
 #define DDP_REG_BASE_DISP_DITHER0  dispsys_reg[DISP_REG_DITHER0]
-#define DDP_REG_BASE_DISP_DITHER1  dispsys_reg[DISP_REG_DITHER1]
-#define DDP_REG_BASE_DISP_UFOE     dispsys_reg[DISP_REG_UFOE]
-#define DDP_REG_BASE_DISP_DSC      dispsys_reg[DISP_REG_DSC]
-#define DDP_REG_BASE_DISP_SPLIT0   dispsys_reg[DISP_REG_SPLIT0]
+#define DDP_REG_BASE_DISP_DITHER1  0
+#define DDP_REG_BASE_DISP_UFOE     0
+#define DDP_REG_BASE_DISP_DSC      0
+#define DDP_REG_BASE_DISP_SPLIT0   0
 #define DDP_REG_BASE_DSI0          dispsys_reg[DISP_REG_DSI0]
-#define DDP_REG_BASE_DSI1          dispsys_reg[DISP_REG_DSI1]
+#define DDP_REG_BASE_DSI1          0
 #define DDP_REG_BASE_DPI           dispsys_reg[DISP_REG_DPI0]
 #define DDP_REG_BASE_DISP_PWM0     dispsys_reg[DISP_REG_PWM]
 #define DDP_REG_BASE_MM_MUTEX      dispsys_reg[DISP_REG_MUTEX]
 #define DDP_REG_BASE_SMI_LARB0     dispsys_reg[DISP_REG_SMI_LARB0]
-#define DDP_REG_BASE_SMI_LARB4     dispsys_reg[DISP_REG_SMI_LARB4]
+#define DDP_REG_BASE_SMI_LARB4     0
 #define DDP_REG_BASE_SMI_COMMON    dispsys_reg[DISP_REG_SMI_COMMON]
 
 #define MIPI_TX0_REG_BASE			(mipi_tx0_reg)
@@ -1339,10 +1340,10 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 
 #define DISP_PWM_EN_OFF                         (0x00)
-#define DISP_PWM_COMMIT_OFF                     (0x08)
-#define DISP_PWM_CON_0_OFF                      (0x10)
-#define DISP_PWM_CON_1_OFF                      (0x14)
-#define DISP_PWM_DEBUG                          (0x20)
+#define DISP_PWM_COMMIT_OFF                     (0x0c)
+#define DISP_PWM_CON_0_OFF                      (0x18)
+#define DISP_PWM_CON_1_OFF                      (0x1c)
+
 
 /* field definition */
 /* ------------------------------------------------------------- */
@@ -1416,7 +1417,8 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define DISP_COLOR_START                (DISPSYS_COLOR0_BASE+0xC00)
 #define DISP_COLOR_INTEN                (DISPSYS_COLOR0_BASE+0xC04)
-#define DISP_COLOR_OUT_SEL              (DISPSYS_COLOR0_BASE+0xC08)
+#define DISP_COLOR_INTSTA              (DISPSYS_COLOR0_BASE+0xC08)
+#define DISP_COLOR_OUT_SEL              (DISPSYS_COLOR0_BASE+0xC0C)
 #define DISP_COLOR_FRAME_DONE_DEL       (DISPSYS_COLOR0_BASE+0xC10)
 #define DISP_COLOR_CRC                  (DISPSYS_COLOR0_BASE+0xC14)
 #define DISP_COLOR_SW_SCRATCH           (DISPSYS_COLOR0_BASE+0xC18)
@@ -1729,15 +1731,15 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_CONFIG_MUTEX_INTSTA				(DISPSYS_MUTEX_BASE + 0x004)
 #define DISP_REG_CONFIG_MUTEX_CFG					(DISPSYS_MUTEX_BASE + 0x008)
 	#define CFG_FLD_HW_CG								REG_FLD(1, 0)
-
+/*
 #define DISP_REG_CONFIG_MUTEX_REG_UPD_TIMEOUT		(DISPSYS_MUTEX_BASE + 0x00C)
-	#define UPD_FLD_UPD_TIMEOUT							REG_FLD(8, 0)
+#define UPD_FLD_UPD_TIMEOUT							REG_FLD(8, 0)
 
 #define DISP_REG_CONFIG_MUTEX_REG_COMMIT0			(DISPSYS_MUTEX_BASE + 0x010)
 #define DISP_REG_CONFIG_MUTEX_REG_COMMIT1			(DISPSYS_MUTEX_BASE + 0x014)
 #define DISP_REG_CONFIG_MUTEX_INTEN_1				(DISPSYS_MUTEX_BASE + 0x018)
 #define DISP_REG_CONFIG_MUTEX_INTSTA_1				(DISPSYS_MUTEX_BASE + 0x01C)
-
+*/
 /* mutex0 */
 #define DISP_REG_CONFIG_MUTEX0_EN					(DISPSYS_MUTEX_BASE + 0x020)
 	#define EN_FLD_MUTEX0_EN							REG_FLD(1, 0)
@@ -1769,7 +1771,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define SOF_VAL_MUTEX0_EOF_RESERVED						(5)
 
 #define DISP_REG_CONFIG_MUTEX0_MOD0					(DISPSYS_MUTEX_BASE + 0x030)
-#define DISP_REG_CONFIG_MUTEX0_MOD1					(DISPSYS_MUTEX_BASE + 0x034)
+#define DISP_REG_CONFIG_MUTEX0_MOD1					(DISPSYS_MUTEX_BASE + 0x030)
 
 #define DISP_REG_CONFIG_MUTEX1_EN					(DISPSYS_MUTEX_BASE + 0x040)
 #define DISP_REG_CONFIG_MUTEX1_GET					(DISPSYS_MUTEX_BASE + 0x044)
@@ -1821,7 +1823,6 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_OD_INTEN        (DISPSYS_OD_BASE+0x008)
 #define DISP_REG_OD_INTSTA       (DISPSYS_OD_BASE+0x00C)
 #define DISP_REG_OD_STATUS       (DISPSYS_OD_BASE+0x010)
-#define DISP_REG_OD_SHADOW_CTRL  (DISPSYS_OD_BASE+0x014)
 #define DISP_REG_OD_CFG          (DISPSYS_OD_BASE+0x020)
 #define DISP_REG_OD_INPUT_COUNT	 (DISPSYS_OD_BASE+0x024)
 #define DISP_REG_OD_OUTPUT_COUNT (DISPSYS_OD_BASE+0x028)
@@ -1845,8 +1846,6 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_OD_DITHER_15	   (DISPSYS_OD_BASE+0x13C)
 #define DISP_REG_OD_DITHER_16	   (DISPSYS_OD_BASE+0x140)
 #define DISP_REG_OD_DITHER_17    (DISPSYS_OD_BASE+0x144)
-#define DISP_REG_OD_DMA_ADDR_0   (DISPSYS_OD_BASE+0x210)
-#define DISP_REG_OD_DMA_ADDR_1   (DISPSYS_OD_BASE+0x214)
 
 /* ------------------------------------------------------------- */
 /* RDMA */
@@ -1907,7 +1906,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define DISP_REG_RDMA_SRAM_SEL					(DISPSYS_RDMA0_BASE+0x0b0)
 #define DISP_REG_RDMA_STALL_CG_CON				(DISPSYS_RDMA0_BASE+0x0b4)
-#define DISP_REG_RDMA_SHADOW_UPDATE				(DISPSYS_RDMA0_BASE+0x0b8)
+#define DISP_REG_RDMA_SHADOW_UPDATE				(DISPSYS_RDMA0_BASE+0x0bc)
 #define DISP_REG_RDMA_DRAM_CON					(DISPSYS_RDMA0_BASE+0x0c0)
 #define DISP_REG_RDMA_DVFS_SETTING_PRE			(DISPSYS_RDMA0_BASE+0x0d0)
 #define DISP_REG_RDMA_DVFS_SETTING_ULTRA		(DISPSYS_RDMA0_BASE+0x0d4)

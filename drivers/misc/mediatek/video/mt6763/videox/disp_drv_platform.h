@@ -70,6 +70,6 @@ enum DISP_SESSION_ENUM {
 
 /* Other platform-dependent features */
 #define DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
-#define DISP_PLATFORM_HAS_SHADOW_REG
+/*#define DISP_PLATFORM_HAS_SHADOW_REG*/
 
 #endif				/* __DISP_DRV_PLATFORM_H__ */

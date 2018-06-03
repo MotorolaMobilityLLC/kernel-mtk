@@ -19,7 +19,8 @@
 #include <disp_drv_platform.h>
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6763)
 #include <disp_helper.h>
 #endif
 
@@ -27,7 +28,8 @@
 #include <mach/mt_clkmgr.h>
 #elif defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6763)
 #include "ddp_clkmgr.h"
 #endif
 
@@ -46,7 +48,7 @@
 #endif
 
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
 #define COLOR_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -2287,7 +2289,8 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 	case SWREG_COLOR_BASE_ADDRESS:
 		{
 #if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795) || defined(CONFIG_MACH_ELBRUS) \
-	|| defined(CONFIG_MACH_MT6757)  || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799)
+	|| defined(CONFIG_MACH_MT6757)  || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799) \
+	|| defined(CONFIG_MACH_MT6763)
 			ret = ddp_reg_pa_base[DISP_REG_COLOR0];
 #elif defined(CONFIG_MACH_MT6759)
 			ret = ddp_get_module_pa(DISP_MODULE_COLOR0);
@@ -2299,7 +2302,8 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 
 	case SWREG_GAMMA_BASE_ADDRESS:
 		{
-#if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_MT6799) \
+	|| defined(CONFIG_MACH_MT6763)
 			ret = ddp_reg_pa_base[DISP_REG_GAMMA0];
 #elif defined(CONFIG_MACH_MT6759)
 			ret = ddp_get_module_pa(DISP_MODULE_GAMMA);
@@ -2312,7 +2316,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 	case SWREG_AAL_BASE_ADDRESS:
 		{
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
 			ret = ddp_reg_pa_base[DISP_REG_AAL0];
 #elif defined(CONFIG_MACH_MT6759)
 			ret = ddp_get_module_pa(DISP_MODULE_AAL);
@@ -2326,7 +2330,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 	case SWREG_CCORR_BASE_ADDRESS:
 		{
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
 			ret = ddp_reg_pa_base[DISP_REG_CCORR0];
 #elif defined(CONFIG_MACH_MT6759)
 			ret = ddp_get_module_pa(DISP_MODULE_CCORR);
@@ -3315,7 +3319,8 @@ static int _color_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_ha
 	/* only get COLOR HIST on primary display */
 	if ((module == DISP_MODULE_COLOR0) && (state == CMDQ_AFTER_STREAM_EOF)) {
 #if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795) || defined(CONFIG_MACH_ELBRUS) \
-	|| defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799)
+	|| defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799) \
+	|| defined(CONFIG_MACH_MT6763)
 		ret =
 		    cmdqRecReadToDataRegister(cmdq_trigger_handle,
 					      ddp_reg_pa_base[DISP_REG_COLOR0] +

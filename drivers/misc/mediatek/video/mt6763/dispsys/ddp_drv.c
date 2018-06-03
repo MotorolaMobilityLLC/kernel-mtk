@@ -112,34 +112,19 @@ unsigned long ddp_reg_pa_base[DISP_REG_NUM];
 const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"DISP0_SMI_COMMON",
 	"DISP0_SMI_LARB0",
-	"DISP0_SMI_LARB4",
 	"DISP0_DISP_OVL0",
-	"DISP0_DISP_OVL1",
 	"DISP0_DISP_OVL0_2L",
 	"DISP0_DISP_OVL1_2L",
 	"DISP0_DISP_RDMA0",
 	"DISP0_DISP_RDMA1",
-	"DISP0_DISP_RDMA2",
 	"DISP0_DISP_WDMA0",
-	"DISP0_DISP_WDMA1",
 	"DISP0_DISP_COLOR",
-	"DISP0_DISP_COLOR1",
 	"DISP0_DISP_CCORR",
-	"DISP0_DISP_CCORR1",
 	"DISP0_DISP_AAL",
-	"DISP0_DISP_AAL1",
 	"DISP0_DISP_GAMMA",
-	"DISP0_DISP_GAMMA1",
-	"DISP0_DISP_OD",
 	"DISP0_DISP_DITHER",
-	"DISP0_DISP_DITHER1",
-	"DISP0_DISP_UFOE",
-	"DISP0_DISP_DSC",
-	"DISP0_DISP_SPLIT",
 	"DISP1_DSI0_MM_CLOCK",
 	"DISP1_DSI0_INTERFACE_CLOCK",
-	"DISP1_DSI1_MM_CLOCK",
-	"DISP1_DSI1_INTERFACE_CLOCK",
 	"DISP1_DPI_MM_CLOCK",
 	"DISP1_DPI_INTERFACE_CLOCK",
 	"DISP1_DISP_OVL0_MOUT",
@@ -184,21 +169,18 @@ static int disp_is_intr_enable(enum DISP_REG_ENUM module)
 {
 	switch (module) {
 	case DISP_REG_OVL0:
-	case DISP_REG_OVL1:
 	case DISP_REG_OVL0_2L:
 	case DISP_REG_OVL1_2L:
 	case DISP_REG_RDMA0:
 	case DISP_REG_RDMA1:
-	/*case DISP_REG_WDMA0:*/
-	case DISP_REG_WDMA1:
 	case DISP_REG_MUTEX:
 	case DISP_REG_DSI0:
 	case DISP_REG_DPI0:
 	case DISP_REG_AAL0:
-	case DISP_REG_CCORR0:
 		return 1;
 
 	case DISP_REG_COLOR0:
+	case DISP_REG_CCORR0:
 	case DISP_REG_GAMMA0:
 	case DISP_REG_DITHER0:
 	case DISP_REG_PWM:
@@ -206,7 +188,6 @@ static int disp_is_intr_enable(enum DISP_REG_ENUM module)
 	case DISP_REG_SMI_LARB0:
 	case DISP_REG_SMI_COMMON:
 	case DISP_REG_MIPI0:
-	case DISP_REG_MIPI1:
 		return 0;
 
 	case DISP_REG_WDMA0:
@@ -235,20 +216,13 @@ m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 	case M4U_PORT_DISP_WDMA0:
 		module = DISP_MODULE_WDMA0;
 		break;
-	case M4U_PORT_DISP_OVL1:
-		module = DISP_MODULE_OVL1;
-		break;
 	case M4U_PORT_DISP_RDMA1:
 		module = DISP_MODULE_RDMA1;
 		break;
-	case M4U_PORT_DISP_WDMA1:
-		module = DISP_MODULE_WDMA1;
-		break;
 	case M4U_PORT_DISP_2L_OVL0_LARB0:
-	case M4U_PORT_DISP_2L_OVL0_LARB4:
 		module = DISP_MODULE_OVL0_2L;
 		break;
-	case M4U_PORT_DISP_2L_OVL1:
+	case M4U_PORT_DISP_2L_OVL1_LARB0:
 		module = DISP_MODULE_OVL1_2L;
 		break;
 	default:
@@ -310,7 +284,6 @@ static int disp_probe(struct platform_device *pdev)
 
 					case DISP0_SMI_COMMON:
 					case DISP0_SMI_LARB0:
-					case DISP0_SMI_LARB4:
 						ddp_clk_prepare_enable(i);
 						break;
 
@@ -376,9 +349,7 @@ static int __init disp_probe_1(void)
 	}
 	/* mipi tx reg map here */
 	dsi_reg_va[0] = dispsys_reg[DISP_REG_DSI0];
-	dsi_reg_va[1] = dispsys_reg[DISP_REG_DSI1];
 	mipi_tx0_reg = dispsys_reg[DISP_REG_MIPI0];
-	mipi_tx1_reg = dispsys_reg[DISP_REG_MIPI1];
 #ifndef DISP_NO_DPI
 	DPI_REG = (struct DPI_REGS *)dispsys_reg[DISP_REG_DPI0];
 #endif
@@ -412,17 +383,14 @@ static int __init disp_probe_1(void)
 
 	/* init M4U callback */
 	DDPMSG("register m4u callback\n");
-	m4u_register_fault_callback(M4U_PORT_DISP_OVL0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_RDMA0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_WDMA0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_OVL1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_RDMA1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_WDMA1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL0_LARB4, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL0_LARB0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-
-
+	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
+		m4u_register_fault_callback(M4U_PORT_DISP_OVL0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
+		m4u_register_fault_callback(M4U_PORT_DISP_RDMA0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
+		m4u_register_fault_callback(M4U_PORT_DISP_WDMA0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
+		m4u_register_fault_callback(M4U_PORT_DISP_RDMA1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
+		m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL0_LARB0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
+		m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL1_LARB0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
+	}
 	DDPMSG("dispsys probe done.\n");
 	/* NOT_REFERENCED(class_dev); */
 	return 0;

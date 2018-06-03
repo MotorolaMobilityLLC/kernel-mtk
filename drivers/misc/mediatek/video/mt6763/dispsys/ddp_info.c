@@ -27,8 +27,8 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 		return "ovl0_2l ";
 	case DISP_MODULE_OVL1_2L:
 		return "ovl1_2l ";
-	case DISP_MODULE_OVL0_VIRTUAL:
-		return "ovl0_virt ";
+	case DISP_MODULE_WDMA0_VIRTUAL:
+		return "wdma0_virt ";
 	case DISP_MODULE_RDMA0:
 		return "rdma0 ";
 	case DISP_MODULE_RDMA1:
@@ -108,8 +108,9 @@ enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module)
 		return DISP_MODULE_CONFIG;
 	case DISP_REG_OVL0:
 		return DISP_MODULE_OVL0;
-	case DISP_REG_OVL1:
+/*	case DISP_REG_OVL1:
 		return DISP_MODULE_OVL1;
+*/
 	case DISP_REG_OVL0_2L:
 		return DISP_MODULE_OVL0_2L;
 	case DISP_REG_OVL1_2L:
@@ -118,33 +119,39 @@ enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module)
 		return DISP_MODULE_RDMA0;
 	case DISP_REG_RDMA1:
 		return DISP_MODULE_RDMA1;
-	case DISP_REG_RDMA2:
+/*	case DISP_REG_RDMA2:
 		return DISP_MODULE_RDMA2;
+*/
 	case DISP_REG_WDMA0:
 		return DISP_MODULE_WDMA0;
-	case DISP_REG_WDMA1:
+/*	case DISP_REG_WDMA1:
 		return DISP_MODULE_WDMA1;
+*/
 	case DISP_REG_COLOR0:
 		return DISP_MODULE_COLOR0;
-	case DISP_REG_COLOR1:
+/*	case DISP_REG_COLOR1:
 		return DISP_MODULE_COLOR1;
+*/
 	case DISP_REG_CCORR0:
 		return DISP_MODULE_CCORR0;
-	case DISP_REG_CCORR1:
+/*	case DISP_REG_CCORR1:
 		return DISP_MODULE_CCORR1;
+*/
 	case DISP_REG_AAL0:
 		return DISP_MODULE_AAL0;
-	case DISP_REG_AAL1:
+/*	case DISP_REG_AAL1:
 		return DISP_MODULE_AAL1;
+*/
 	case DISP_REG_GAMMA0:
 		return DISP_MODULE_GAMMA0;
-	case DISP_REG_GAMMA1:
+/*	case DISP_REG_GAMMA1:
 		return DISP_MODULE_GAMMA1;
 	case DISP_REG_OD:
 		return DISP_MODULE_OD;
+*/
 	case DISP_REG_DITHER0:
 		return DISP_MODULE_DITHER0;
-	case DISP_REG_DITHER1:
+/*	case DISP_REG_DITHER1:
 		return DISP_MODULE_DITHER1;
 	case DISP_REG_UFOE:
 		return DISP_MODULE_UFOE;
@@ -152,10 +159,12 @@ enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module)
 		return DISP_MODULE_DSC;
 	case DISP_REG_SPLIT0:
 		return DISP_MODULE_SPLIT0;
+*/
 	case DISP_REG_DSI0:
 		return DISP_MODULE_DSI0;
-	case DISP_REG_DSI1:
+/*	case DISP_REG_DSI1:
 		return DISP_MODULE_DSI1;
+*/
 	case DISP_REG_DPI0:
 		return DISP_MODULE_DPI;
 	case DISP_REG_PWM:
@@ -164,14 +173,16 @@ enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module)
 		return DISP_MODULE_MUTEX;
 	case DISP_REG_SMI_LARB0:
 		return DISP_MODULE_SMI_LARB0;
-	case DISP_REG_SMI_LARB4:
+/*	case DISP_REG_SMI_LARB4:
 		return DISP_MODULE_SMI_LARB4;
+*/
 	case DISP_REG_SMI_COMMON:
 		return DISP_MODULE_SMI_COMMON;
 	case DISP_REG_MIPI0:
 		return DISP_MODULE_MIPI0;
-	case DISP_REG_MIPI1:
+/*	case DISP_REG_MIPI1:
 		return DISP_MODULE_MIPI1;
+*/
 	default:
 		DDPERR("%s: invalid reg module id=%d\n", __func__, reg_module);
 		return DISP_MODULE_UNKNOWN;
@@ -288,16 +299,16 @@ unsigned int ddp_module_to_idx(int module)
 /*#define DISP_NO_DPI*/ /* FIXME: tmp define */
 struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	&ddp_driver_ovl,		/* DISP_MODULE_OVL0 = 0, */
-	&ddp_driver_ovl,		/* DISP_MODULE_OVL1  , */
+	NULL,		/* DISP_MODULE_OVL1  , */
 	&ddp_driver_ovl,		/* DISP_MODULE_OVL0_2L  , */
 	&ddp_driver_ovl,		/* DISP_MODULE_OVL1_2L  , */
-	0,					/* DISP_MODULE_OVL0_VIRTUAL */
+	NULL,					/* DISP_MODULE_WDMA0_VIRTUAL */
 
 	&ddp_driver_rdma,	/* DISP_MODULE_RDMA0 , */
 	&ddp_driver_rdma,	/* DISP_MODULE_RDMA1 , */
-	&ddp_driver_rdma,	/* DISP_MODULE_RDMA2 , */
+	NULL,	/* DISP_MODULE_RDMA2 , */
 	&ddp_driver_wdma,	/* DISP_MODULE_WDMA0 , */
-	&ddp_driver_wdma,	/* DISP_MODULE_WDMA1 , */
+	NULL,	/* DISP_MODULE_WDMA1 , */
 
 	&ddp_driver_color,	/* DISP_MODULE_COLOR0, */
 	NULL,	/* DISP_MODULE_COLOR1, */
@@ -308,24 +319,24 @@ struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	NULL,		/* DISP_MODULE_AAL   , */
 	&ddp_driver_gamma,	/* DISP_MODULE_GAMMA0 , */
 	NULL,	/* DISP_MODULE_GAMMA1 , */
-	&ddp_driver_od,		/* DISP_MODULE_OD , */
+	NULL,		/* DISP_MODULE_OD , */
 	&ddp_driver_dither,	/* DISP_MODULE_DITHER0, */
 
 	NULL,	/* DISP_MODULE_DITHER1, */
 	0,					/* DISP_PATH0 */
 	0,					/* DISP_PATH1 */
-	&ddp_driver_ufoe,	/* DISP_MODULE_UFOE  */
+	0,	/* DISP_MODULE_UFOE  */
 	0,					/* DISP_MODULE_DSC */
 
-	&ddp_driver_split,	/* DISP_MODULE_SPLIT0, */
+	NULL,	/* DISP_MODULE_SPLIT0, */
 #ifndef DISP_NO_DPI
 	&ddp_driver_dpi,		/* DISP_MODULE_DPI   , */
 #else
 	0,
 #endif
 	&ddp_driver_dsi0,	/* DISP_MODULE_DSI0  , */
-	&ddp_driver_dsi1,	/* DISP_MODULE_DSI1  , */
-	&ddp_driver_dsidual,	/* DISP_MODULE_DSIDUAL, */
+	NULL,	/* DISP_MODULE_DSI1  , */
+	NULL,	/* DISP_MODULE_DSIDUAL, */
 
 	&ddp_driver_pwm,		/* DISP_MODULE_PWM0   , */
 	0,					/* DISP_MODULE_CONFIG, */
@@ -337,4 +348,5 @@ struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	0,					/* DISP_MODULE_MIPI0 */
 	0,					/* DISP_MODULE_MIPI1 */
 	0,					/* DISP_MODULE_UNKNOWN, */
+	0,                                /* DISP_MODULE_WDMA_VIRTUAL0 */
 };

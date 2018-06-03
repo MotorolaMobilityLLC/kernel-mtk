@@ -86,7 +86,7 @@ static inline unsigned long ovl_layer_num(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_OVL0:
 		return 4;
 	case DISP_MODULE_OVL1:
-		return 2; /* Olympus only */
+		return 0; /* Olympus only */
 	case DISP_MODULE_OVL0_2L:
 		return 2;
 	case DISP_MODULE_OVL1_2L:
@@ -105,11 +105,11 @@ static inline unsigned long ovl_to_m4u_port(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_OVL0:
 		return M4U_PORT_DISP_OVL0;
 	case DISP_MODULE_OVL1:
-		return M4U_PORT_DISP_OVL1;
+		return DISP_MODULE_UNKNOWN;
 	case DISP_MODULE_OVL0_2L:
-		return M4U_PORT_DISP_2L_OVL0_LARB4;
+		return M4U_PORT_DISP_2L_OVL0_LARB0;
 	case DISP_MODULE_OVL1_2L:
-		return M4U_PORT_DISP_2L_OVL1;
+		return M4U_PORT_DISP_2L_OVL1_LARB0;
 	default:
 		DDPERR("invalid ovl module=%d, get m4u port fail\n", module);
 		ASSERT(0);
@@ -404,6 +404,8 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 			regval |= REG_FLD_VAL(OVL_L_CLIP_FLD_RIGHT, 1);
 		}
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLIP + layer_offset, regval);
+	} else {
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLIP + layer_offset, 0);
 	}
 
 	switch (cfg->yuv_range) {
@@ -557,11 +559,13 @@ int ovl_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 #endif
 		break;
 	case DISP_MODULE_OVL1:
+/*
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_OVL1, ddp_get_module_name(module));
 #else
 		ddp_clk_enable(DISP0_DISP_OVL1);
 #endif
+*/
 		break;
 	case DISP_MODULE_OVL0_2L:
 #ifdef CONFIG_MTK_CLKMGR
@@ -599,11 +603,13 @@ int ovl_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 #endif
 		break;
 	case DISP_MODULE_OVL1:
+/*
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_OVL1, ddp_get_module_name(module));
 #else
 		ddp_clk_disable(DISP0_DISP_OVL1);
 #endif
+*/
 		break;
 	case DISP_MODULE_OVL0_2L:
 #ifdef CONFIG_MTK_CLKMGR
@@ -741,15 +747,9 @@ extern int m4u_query_mva_info(unsigned int mva, unsigned int size,
 				  unsigned int *real_size);
 static int ovl_check_input_param(struct OVL_CONFIG_STRUCT *config)
 {
-	unsigned int mva, size = 0;
-	int ret = 0;
-
-	if (config->addr != 0)
-		ret = m4u_query_mva_info(config->addr, config->src_pitch * config->dst_h, &mva, &size);
-	if ((config->addr == 0 && config->source == 0) || config->dst_w == 0 || config->dst_h == 0 ||
-			(config->addr != 0 && size == 0 && config->security == DISP_NORMAL_BUFFER)) {
-		DDPERR("ovl parameter invalidate, addr=%lu, w=%d, h=%d, size=%d\n",
-		       config->addr, config->dst_w, config->dst_h, size);
+	if ((config->addr == 0 && config->source == 0) || config->dst_w == 0 || config->dst_h == 0) {
+		DDPERR("ovl parameter invalidate, addr=%lu, w=%d, h=%d\n",
+		       config->addr, config->dst_w, config->dst_h);
 		ASSERT(0);
 		return -1;
 	}

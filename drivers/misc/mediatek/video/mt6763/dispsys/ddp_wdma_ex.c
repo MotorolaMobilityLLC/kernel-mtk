@@ -134,7 +134,7 @@ static int wdma_config_yuv420(enum DISP_MODULE_ENUM module,
 	} else {
 		int m4u_port;
 
-		m4u_port = idx == 0 ? M4U_PORT_DISP_WDMA0 : M4U_PORT_DISP_WDMA1;
+		m4u_port = idx == 0 ? M4U_PORT_DISP_WDMA0 : M4U_PORT_UNKNOWN;
 
 		cmdqRecWriteSecure(handle, disp_addr_convert(idx_offst + DISP_REG_WDMA_DST_ADDR1),
 				   CMDQ_SAM_H_2_MVA, dstAddress, u_off, u_size, m4u_port);
@@ -199,7 +199,7 @@ static int wdma_config(enum DISP_MODULE_ENUM module,
 	} else {
 		int m4u_port;
 
-		m4u_port = idx == 0 ? M4U_PORT_DISP_WDMA0 : M4U_PORT_DISP_WDMA1;
+		m4u_port = idx == 0 ? M4U_PORT_DISP_WDMA0 : M4U_PORT_UNKNOWN;
 
 		/* for sec layer, addr variable stores sec handle */
 		/* we need to pass this handle and offset to cmdq driver */
@@ -223,13 +223,15 @@ static int wdma_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 	if (idx == 0)
 		enable_clock(MT_CG_DISP0_DISP_WDMA0, "WDMA0");
-	else
+/*	else
 		enable_clock(MT_CG_DISP0_DISP_WDMA1, "WDMA1");
+*/
 #else
 	if (idx == 0)
 		ddp_clk_enable(DISP0_DISP_WDMA0);
-	else
+/*	else
 		ddp_clk_enable(DISP0_DISP_WDMA1);
+*/
 #endif
 #endif
 	/* enable WDMA DCM */
@@ -245,13 +247,15 @@ static int wdma_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 	if (idx == 0)
 		disable_clock(MT_CG_DISP0_DISP_WDMA0, "WDMA0");
-	else
+/*	else
 		disable_clock(MT_CG_DISP0_DISP_WDMA1, "WDMA1");
+*/
 #else
 	if (idx == 0)
 		ddp_clk_disable(DISP0_DISP_WDMA0);
-	else
+/*	else
 		ddp_clk_disable(DISP0_DISP_WDMA1);
+*/
 #endif
 
 #endif
