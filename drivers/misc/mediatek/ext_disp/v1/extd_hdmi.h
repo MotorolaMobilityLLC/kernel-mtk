@@ -14,7 +14,9 @@
 /* --------------------------------------------------------------------------- */
 #ifndef HDMITX_H
 #define     HDMITX_H
-
+#ifdef CONFIG_MTK_INTERNAL_HDMI_SUPPORT
+#include "hdmi_debug.h"
+#endif
 /* /#include "mtkfb.h" */
 
 #define MHL_UART_SHARE_PIN
