@@ -690,6 +690,8 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	/* 0x590 bit3 */
 	turbo_flag = get_devinfo_with_index(TURBO_EFUSE);
 	turbo_flag = _GET_BITS_VAL_(3:3, turbo_flag);
+	if (lv == CPU_LEVEL_0)
+		turbo_flag = 0;
 	tag_pr_info("(%d, %d, %d)\n", lv, bin, turbo_flag);
 
 	return lv;
