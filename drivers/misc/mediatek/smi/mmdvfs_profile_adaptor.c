@@ -1435,14 +1435,14 @@ void mmdvfs_qos_update(struct mmdvfs_step_util *step_util, int new_step)
 
 	i = ARRAY_SIZE(qos_apply_profiles) - 1;
 	if (qos_apply_profiles[i].smi_scenario_id == QOS_ALL_SCENARIO) {
-		MMDVFSMSG("force update qos step: %d\n", new_step);
+		MMDVFSDEBUG(5, "force update qos step: %d\n", new_step);
 		mmdvfs_qos_force_step(get_qos_step(new_step));
 		return;
 	}
 	for (i = 0; i < MMDVFS_OPP_NUM_LIMITATION; i++) {
 		if (mask_concur[i] & concur[i]) {
 			/* scenario matched, check */
-			MMDVFSMSG("qos match,S(%d,%d,0x%0x,0x%0x)\n",
+			MMDVFSDEBUG(5, "qos match,S(%d,%d,0x%0x,0x%0x)\n",
 				new_step, i, mask_concur[i],
 				step_util->mmdvfs_concurrency_of_opps[i]);
 			mmdvfs_qos_force_step(get_qos_step(i));

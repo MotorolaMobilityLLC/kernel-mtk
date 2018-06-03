@@ -211,7 +211,6 @@ static void update_step(void)
 	}
 
 	if (current_max_step == old_max_step) {
-		pr_debug("max step is not changed.\n");
 		return;
 	}
 
@@ -481,7 +480,6 @@ int mmdvfs_qos_force_step(int step)
 		pr_notice("force set step invalid: %d\n", step);
 		return -EINVAL;
 	}
-	pr_notice("force set step: %d\n", step);
 	force_step = step;
 	update_step();
 	return 0;
