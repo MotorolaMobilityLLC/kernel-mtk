@@ -411,7 +411,11 @@ void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
 	PMICLOG("[general_oc_int_handler] int name=%s\n", int_name);
 	switch (intNo) {
 	case INT_VCAMA1_OC:
+	case INT_VCAMA2_OC:
+	case INT_VCAMAF_OC:
 	case INT_VCAMD1_OC:
+	case INT_VCAMD2_OC:
+	case INT_VCAMIO_OC:
 		/* keep OC interrupt and keep tracking */
 		pr_err(PMICTAG "[PMIC_INT] Just logging PMIC OC: %s\n", int_name);
 		pmic_enable_interrupt(intNo, 0, "PMIC");
