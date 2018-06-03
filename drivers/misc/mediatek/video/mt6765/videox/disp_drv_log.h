@@ -60,7 +60,7 @@
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_FENCE, string, ##args);	\
 		if (g_mobilelog)					\
-			pr_debug("fence/"string, ##args);		\
+			pr_info("fence/"string, ##args);		\
 	} while (0)
 
 #define DISPDBG(string, args...)					\
@@ -74,7 +74,7 @@
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, "func|%s\n", __func__); \
 		if (g_mobilelog)					\
-			pr_debug("[DISP]func|%s\n", __func__);		\
+			pr_info("[DISP]func|%s\n", __func__);		\
 	} while (0)
 
 #define DISPDBGFUNC() DISPFUNC()
