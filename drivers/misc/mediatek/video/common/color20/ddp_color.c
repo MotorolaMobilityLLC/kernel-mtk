@@ -2957,14 +2957,14 @@ static int color_ioctl(enum DISP_MODULE_ENUM module, void *handle,
 }
 #endif
 
-static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+static int _color_io(enum DISP_MODULE_ENUM module, unsigned int msg, unsigned long arg, void *cmdq)
 {
 	/* legacy chip use driver .cmd to call _color_io */
 	/* After mt6763 directly call ioctl_function from ddp_manager */
 	return disp_color_ioctl(module, msg, arg, cmdq);
 }
 
-int disp_color_ioctl(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+int disp_color_ioctl(enum DISP_MODULE_ENUM module, unsigned int msg, unsigned long arg, void *cmdq)
 {
 
 	int ret = 0;

@@ -281,7 +281,7 @@ static int gamma_ioctl(enum DISP_MODULE_ENUM module, void *handle,
 }
 #endif
 
-static int disp_gamma_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+static int disp_gamma_io(enum DISP_MODULE_ENUM module, unsigned int msg, unsigned long arg, void *cmdq)
 {
 	switch (msg) {
 	case DISP_IOCTL_SET_GAMMALUT:
@@ -926,7 +926,7 @@ static int ccorr_ioctl(enum DISP_MODULE_ENUM module, void *handle,
 }
 #endif
 
-static int disp_ccorr_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+static int disp_ccorr_io(enum DISP_MODULE_ENUM module, unsigned int msg, unsigned long arg, void *cmdq)
 {
 	switch (msg) {
 	case DISP_IOCTL_SET_CCORR:
