@@ -282,7 +282,7 @@ int primary_display_dsi_vfp_change(int state)
 	int ret = 0;
 	struct cmdqRecStruct *handle = NULL;
 
-	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	cmdqRecCreate(CMDQ_SCENARIO_DISP_VFP_CHANGE, &handle);
 	cmdqRecReset(handle);
 
 	/* make sure token rdma_sof is clear */
