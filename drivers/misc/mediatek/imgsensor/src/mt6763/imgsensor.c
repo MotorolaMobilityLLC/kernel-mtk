@@ -1737,7 +1737,7 @@ static long imgsensor_compat_ioctl(struct file *filp, unsigned int cmd, unsigned
 		if (err)
 			return err;
 
-		ret = filp->f_op->unlocked_ioctl(filp, KDIMGSENSORIOC_X_GETINFO, (unsigned long)data);
+		ret = filp->f_op->unlocked_ioctl(filp, KDIMGSENSORIOC_X_GET_CONFIG_INFO, (unsigned long)data);
 		err = compat_put_acdk_sensor_getinfo_struct(data32, data);
 
 		if (err != 0)
@@ -1855,8 +1855,8 @@ static long imgsensor_ioctl(
 		}
 	}
 
-    switch (a_u4Command) {
-    case KDIMGSENSORIOC_X_GETINFO:
+	switch (a_u4Command) {
+	case KDIMGSENSORIOC_X_GET_CONFIG_INFO:
         i4RetValue = adopt_CAMERA_HW_GetInfo(pBuff);
         break;
     case KDIMGSENSORIOC_X_GETINFO2:
