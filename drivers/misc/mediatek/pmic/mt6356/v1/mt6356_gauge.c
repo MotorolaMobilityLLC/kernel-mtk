@@ -47,8 +47,8 @@ struct mt6356_gauge {
 
 enum {
 	FROM_SW_OCV = 1,
-	FROM_6335_PLUG_IN,
-	FROM_6335_PON_ON,
+	FROM_6356_PLUG_IN,
+	FROM_6356_PON_ON,
 	FROM_6336_CHR_IN
 };
 
@@ -898,7 +898,7 @@ static bool is_charger_exist(void)
 		return true;
 }
 
-static int read_hw_ocv_6335_plug_in(void)
+static int read_hw_ocv_6356_plug_in(void)
 {
 	signed int adc_rdy = 0;
 	signed int adc_result_reg = 0;
@@ -908,13 +908,13 @@ static int read_hw_ocv_6335_plug_in(void)
 	adc_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_BAT_PLUGIN_SWCHR);
 	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_BAT_PLUGIN_SWCHR);
 	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_debug("[oam] read_hw_ocv_6335_plug_in (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+	bm_debug("[oam] read_hw_ocv_6356_plug_in (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
 		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL), adc_rdy);
 #else
 	adc_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_BAT_PLUGIN_PCHR);
 	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_BAT_PLUGIN_PCHR);
 	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_debug("[oam] read_hw_ocv_6335_plug_in (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+	bm_debug("[oam] read_hw_ocv_6356_plug_in (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
 		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL), adc_rdy);
 #endif
 
@@ -929,7 +929,7 @@ static int read_hw_ocv_6335_plug_in(void)
 }
 
 
-static int read_hw_ocv_6335_power_on(void)
+static int read_hw_ocv_6356_power_on(void)
 {
 	signed int adc_result_rdy = 0;
 	signed int adc_result_reg = 0;
@@ -939,7 +939,7 @@ static int read_hw_ocv_6335_power_on(void)
 	adc_result_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_SWCHR);
 	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_PWRON_SWCHR);
 	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_debug("[oam] read_hw_ocv_6335_power_on (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+	bm_debug("[oam] read_hw_ocv_6356_power_on (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
 		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL), adc_result_rdy);
 
 	if (adc_result_rdy == 1) {
@@ -951,7 +951,7 @@ static int read_hw_ocv_6335_power_on(void)
 	adc_result_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_PCHR);
 	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_PWRON_PCHR);
 	adc_result = REG_to_MV_value(adc_result_reg);
-	bm_debug("[oam] read_hw_ocv_6335_power_on (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
+	bm_debug("[oam] read_hw_ocv_6356_power_on (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d, rdy=%d\n",
 		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL), adc_result_rdy);
 
 	if (adc_result_rdy == 1) {
@@ -1024,23 +1024,23 @@ int read_hw_ocv_6336_charger_in(void)
 #else
 int read_hw_ocv_6336_charger_in2(void)
 {
-	int hw_ocv_35 = read_hw_ocv_6335_power_on();
+	int hw_ocv_35 = read_hw_ocv_6356_power_on();
 
 	return hw_ocv_35;
 }
 #endif
 
-static int read_hw_ocv_6335_power_on_rdy(void)
+static int read_hw_ocv_6356_power_on_rdy(void)
 {
-	signed int pon_rdy = 0;
-	int hw_id = pmic_get_register_value(PMIC_HWCID);
+	int pon_rdy = 0;
 
-	if (hw_id == 0x3510)
-		pon_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_PCHR);
-	else
+#if defined(SWCHR_POWER_PATH) || defined(CONFIG_MTK_SWCHR_SUPPORT)
+		pon_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_SWCHR);
+		bm_err("[read_hw_ocv_6356_power_on_rdy] pwron_SWCHR_rdy %d\n", pon_rdy);
+#else
 		pon_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_PCHR);
-
-	bm_err("[read_hw_ocv_6335_power_on_rdy] 0x%x pon_rdy %d\n", hw_id, pon_rdy);
+		bm_err("[read_hw_ocv_6356_power_on_rdy] pwron_PCHR_rdy %d\n", pon_rdy);
+#endif
 
 	return pon_rdy;
 }
@@ -1078,9 +1078,9 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 	int now_temp;
 	int now_thr;
 
-	_hw_ocv_35_pon_rdy = read_hw_ocv_6335_power_on_rdy();
-	_hw_ocv_35_pon = read_hw_ocv_6335_power_on();
-	_hw_ocv_35_plugin = read_hw_ocv_6335_plug_in();
+	_hw_ocv_35_pon_rdy = read_hw_ocv_6356_power_on_rdy();
+	_hw_ocv_35_pon = read_hw_ocv_6356_power_on();
+	_hw_ocv_35_plugin = read_hw_ocv_6356_plug_in();
 	_hw_ocv_chgin = battery_get_charger_zcv() / 100;
 	now_temp = fg_get_battery_temperature_for_zcv();
 
@@ -1097,9 +1097,9 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 	g_fg_is_charger_exist = is_charger_exist();
 	_hw_ocv = _hw_ocv_35_pon;
 	_sw_ocv = get_sw_ocv();
-	_hw_ocv_src = FROM_6335_PON_ON;
+	_hw_ocv_src = FROM_6356_PON_ON;
 	_prev_hw_ocv = _hw_ocv;
-	_prev_hw_ocv_src = FROM_6335_PON_ON;
+	_prev_hw_ocv_src = FROM_6356_PON_ON;
 	_flag_unreliable = 0;
 
 	if (g_fg_is_charger_exist) {
@@ -1110,7 +1110,7 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 				_hw_ocv_src = FROM_6336_CHR_IN;
 			} else {
 				_hw_ocv = _hw_ocv_35_pon;
-				_hw_ocv_src = FROM_6335_PON_ON;
+				_hw_ocv_src = FROM_6356_PON_ON;
 			}
 
 			if (abs(_hw_ocv - _sw_ocv) > now_thr) {
@@ -1124,7 +1124,7 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 		} else {
 			/* fixme: swocv is workaround */
 			/*_hw_ocv = _hw_ocv_35_plugin;*/
-			/*_hw_ocv_src = FROM_6335_PLUG_IN;*/
+			/*_hw_ocv_src = FROM_6356_PLUG_IN;*/
 			_hw_ocv = _sw_ocv;
 			_hw_ocv_src = FROM_SW_OCV;
 			if (_hw_ocv_chgin_rdy != 1) {
