@@ -239,7 +239,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 		return 0;
 	case ALSPS_IOCTL_ALS_GET_CALI:
 		if (alsps_factory.fops != NULL &&
-			alsps_factory.fops->ps_get_cali != NULL) {
+			alsps_factory.fops->als_get_cali != NULL) {
 			err = alsps_factory.fops->als_get_cali(&data);
 			if (err < 0) {
 				pr_err("ALSPS_IOCTL_ALS_GET_CALI FAIL!\n");

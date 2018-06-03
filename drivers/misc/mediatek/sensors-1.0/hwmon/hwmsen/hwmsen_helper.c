@@ -95,13 +95,11 @@ int hwmsen_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 	int err;
 	struct i2c_msg msgs[2] = {
 		{
-			.addr = client->addr,
 			.flags = 0,
 			.len = 1,
 			.buf = &beg
 		},
 		{
-			.addr = client->addr,
 			.flags = I2C_M_RD,
 			.len = 1,
 			.buf = data,
@@ -110,6 +108,9 @@ int hwmsen_read_byte(struct i2c_client *client, u8 addr, u8 *data)
 
 	if (!client)
 		return -EINVAL;
+
+	msgs[0].addr = client->addr;
+	msgs[1].addr = client->addr;
 
 	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
 	if (err != 2) {
