@@ -366,10 +366,20 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 		}
 		if (reg_val & (1 << 4)) {
+			unsigned int in_p_cnt, in_l_cnt, out_p_cnt, out_l_cnt;
+
+			in_p_cnt = DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT +
+					    DISP_RDMA_INDEX_OFFSET * index);
+			in_l_cnt = DISP_REG_GET(DISP_REG_RDMA_IN_LINE_CNT +
+					    DISP_RDMA_INDEX_OFFSET * index);
+			out_p_cnt = DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT +
+					    DISP_RDMA_INDEX_OFFSET * index);
+			out_l_cnt = DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT +
+					    DISP_RDMA_INDEX_OFFSET * index);
 
 			mmprofile_log_ex(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMPROFILE_FLAG_PULSE,
 				       reg_val, 1);
-
+#if 0
 			DDPMSG("rdma%d, pix(%d,%d,%d,%d)\n",
 			       index,
 			       DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT +
@@ -380,8 +390,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 					    DISP_RDMA_INDEX_OFFSET * index),
 			       DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT +
 					    DISP_RDMA_INDEX_OFFSET * index));
-			DDPPR_ERR("IRQ: RDMA%d underflow! cnt=%d\n", index,
-			       cnt_rdma_underflow[index]++);
+#endif
+			DDPPR_ERR("IRQ: RDMA%d underflow! cnt=%d, pix(%d,%d,%d,%d)\n", index,
+				cnt_rdma_underflow[index]++, in_p_cnt, in_l_cnt,
+				out_p_cnt, out_l_cnt);
 			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
 				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]++);
 			disp_irq_log_module |= 1 << module;
