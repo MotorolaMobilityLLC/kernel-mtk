@@ -1369,6 +1369,11 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "disp_ovl_recovery", 17) == 0) {
 		DISPMSG("disp_ovl_recovery\n");
 		primary_display_recovery(DISP_MODULE_OVL0);
+	} else if (strncmp(opt, "check_smi_busy", 14) == 0) {
+		bool smi_status = ddp_path_check_smi_busy();
+
+		DISPMSG("check_smi_busy: %s\n",
+			smi_status ? "busy" : "not-busy");
 	}
 }
 

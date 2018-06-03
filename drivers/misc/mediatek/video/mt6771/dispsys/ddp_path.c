@@ -913,6 +913,32 @@ int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg,
 	return 0;
 }
 
+bool ddp_path_check_smi_busy(void)
+{
+	int i;
+	unsigned char common_cnt = 0;
+	unsigned char larb_cnt = 0;
+	unsigned int reg_val;
+
+	for (i = 0 ; i < 5 ; ++i) {
+		/* check smi common busy count */
+		reg_val = DISP_REG_GET_FIELD(REG_FLD(1, 0),
+			DISPSYS_SMI_COMMON_BASE + 0x440);
+		if (reg_val == 0)
+			common_cnt++;
+
+		/* check smi larb0 busy count */
+		reg_val = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x0);
+		if (reg_val != 0)
+			larb_cnt++;
+	}
+
+	if (common_cnt == 5 && larb_cnt == 5)
+		return true;
+	else
+		return false;
+}
+
 bool ddp_path_need_mmsys_sw_reset(enum DISP_MODULE_ENUM module)
 {
 	if (module == DISP_MODULE_RDMA0) {
