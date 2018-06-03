@@ -151,7 +151,7 @@ void __iomem *venc_gcon_base;
 #define IMG_CG	0x3FFF
 #define MFG_CG	0x1
 #define MM_CG0	0xFFFFFFFF /* un-gating in preloader */
-#define MM_CG1  0x0003FFFF /* un-gating in preloader */
+#define MM_CG1  0x000003FF /* un-gating in preloader */
 #define VENC_CG 0x001111 /* inverse */
 #else
 /*add normal cg init setting*/
@@ -1490,6 +1490,8 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	apmixed_base = base;
 	/*clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xee2b8ae2);*//* ARMPLL4, MPLL, CCIPLL, EMIPLL, MAINPLL */
 	/*clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xee2b8ae2);*/
+	clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0x007d5550);/* MPLL, CCIPLL, MAINPLL, TDCLKSQ, CLKSQ1 */
+	clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0x7f5);
 #if 0
 /*MFGPLL*/
 	clk_clrl(MFGPLL_CON0, PLL_EN);
@@ -1786,28 +1788,33 @@ unsigned int mt_get_abist_freq(unsigned int ID, unsigned int DIV)
 	return (output * (DIV + 1));
 }
 
-#if 0
+#if 1
 void mp_enter_suspend(int id, int suspend)
 {
 	/* mp0*/
 	if (id == 0) {
 		if (suspend) {
-			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xfdff7fdf);
-			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xfdff7fdf);
+			/* mp0 enter suspend */
+			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xff87ffff);
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xffffdfff);
 		} else {
-			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) | 0x02008020);
-			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) | 0x02008020);
+			/* mp0 leave suspend */
+			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) | 0x780000);/* bit[22:19]*/
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) | 0x2000);/* bit[13] */
 		}
 	} else if (id == 1) { /* mp1 */
 		if (suspend) {
-			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xfbfeffbf);
-			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xfbfeffbf);
+			/* mp1 enter suspend */
+			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xfffeeeef);
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xfffffffe);
 		} else {
-			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) | 0x04010040);
-			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) | 0x04010040);
+			/* mp1 leave suspend */
+			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) | 0x00011110);/* bit[16][12][8][4] */
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) | 0x00000001);/* bit[0]*/
 		}
 	}
 }
+#endif
 
 void pll_if_on(void)
 {
@@ -1909,7 +1916,7 @@ void armpll_control(int id, int on)
 		}
 	}
 }
-#endif
+
 static int __init clk_mt6763_init(void)
 {
 	/*timer_ready = true;*/
