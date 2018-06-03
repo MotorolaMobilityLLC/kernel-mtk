@@ -6792,6 +6792,11 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_ION_FREE_BY_HWMODULE:
 		if (copy_from_user(&module, (void *)Param, sizeof(MUINT32)) == 0) {
+			if (module >= ISP_DEV_NODE_NUM) {
+				LOG_ERR("[ISP_ION_FREE_BY_HWMODULE]module should be smaller than ISP_DEV_NODE_NUM");
+				Ret = -EFAULT;
+				break;
+			}
 			if (gION_TBL[module].node != module) {
 				LOG_ERR("module error(%d)\n", module);
 				Ret = -EFAULT;
@@ -8620,12 +8625,13 @@ static MINT32 ISP_resume(struct platform_device *pDev)
 
 	LOG_INF("%s_resume: E.\n", moduleName);
 
-	#ifndef CONFIG_MTK_CLKMGR
-	Prepare_Enable_cg_clock();
-	#endif
-
 	if (SuspnedRecord[module]) {
 		SuspnedRecord[module] = 0;
+
+		#ifndef CONFIG_MTK_CLKMGR
+		Prepare_Enable_cg_clock();
+		#endif
+
 		/*cmos*/
 		regVal = ISP_RD32(CAM_REG_TG_SEN_MODE(module));
 		ISP_WR32(CAM_REG_TG_SEN_MODE(module), (regVal | 0x01));
