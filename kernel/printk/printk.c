@@ -65,75 +65,6 @@
 static bool overflow_info_flag;
 static u64 overflow_gap;
 
-/* console duration detect */
-#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-struct __conwrite_stat_struct {
-	struct console *con; /* current console */
-	u64 time_before_conwrite; /* the last record before write */
-	u64 time_after_conwrite; /* the last record after write */
-	char con_write_statbuf[256]; /* con write status buf*/
-};
-u64 time_con_write_ttyMT, time_con_write_pstore;
-u64 len_con_write_ttyMT, len_con_write_pstore;
-static struct __conwrite_stat_struct conwrite_stat_struct = {
-	.con = NULL,
-	.time_before_conwrite = 0,
-	.time_after_conwrite = 0
-};
-unsigned long rem_nsec_con_write_ttyMT, rem_nsec_con_write_pstore;
-bool console_status_detected;
-#endif
-
-int printk_too_much_enable;
-
-#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
-static int detect_count = CONFIG_LOG_TOO_MUCH_DETECT_COUNT; /*Default max lines per second*/
-static bool detect_count_change; /* detect_count change flag*/
-#define DETECT_COUNT_MIN 100
-
-#define DETECT_TIME 1000000000ULL /* 1s = 1000000000ns */
-#define DELAY_TIME	(CONFIG_LOG_TOO_MUCH_DETECT_GAP*DETECT_TIME*60)
-
-static u64 delta_time;
-static u64 delta_count;
-static bool flag_toomuch;
-
-static char *log_much;
-static int log_count;
-#define LOG_MUCH_PLUS_LEN	(1 << 15)
-
-static int parse_log_file(void);
-
-inline void set_detect_count(int count)
-{
-	if (count >= detect_count)
-		detect_count = count;
-	else {
-		if (count < DETECT_COUNT_MIN)
-			detect_count = DETECT_COUNT_MIN;
-		else
-			detect_count = count;
-		detect_count_change = true;
-	}
-	pr_info("Printk too much criteria: %d  delay_flag: %d\n", detect_count, detect_count_change);
-}
-
-inline int get_detect_count(void)
-{
-	return detect_count;
-}
-
-inline void set_logtoomuch_enable(int value)
-{
-	printk_too_much_enable = value;
-}
-
-inline int get_logtoomuch_enable(void)
-{
-	return printk_too_much_enable;
-}
-#endif
-
 /*
  * 0: uart printk enable
  * 1: uart printk disable
@@ -419,6 +350,78 @@ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
 static char *log_buf = __log_buf;
 static u32 log_buf_len = __LOG_BUF_LEN;
 
+/* console duration detect */
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+struct __conwrite_stat_struct {
+	struct console *con; /* current console */
+	u64 time_before_conwrite; /* the last record before write */
+	u64 time_after_conwrite; /* the last record after write */
+	char con_write_statbuf[256]; /* con write status buf*/
+};
+u64 time_con_write_ttyMT, time_con_write_pstore;
+u64 len_con_write_ttyMT, len_con_write_pstore;
+static struct __conwrite_stat_struct conwrite_stat_struct = {
+	.con = NULL,
+	.time_before_conwrite = 0,
+	.time_after_conwrite = 0
+};
+unsigned long rem_nsec_con_write_ttyMT, rem_nsec_con_write_pstore;
+bool console_status_detected;
+#endif
+
+int printk_too_much_enable;
+
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+static int detect_count = CONFIG_LOG_TOO_MUCH_DETECT_COUNT; /*Default max lines per second*/
+static bool detect_count_change; /* detect_count change flag*/
+#define DETECT_COUNT_MIN 100
+
+#define DETECT_TIME 1000000000ULL /* 1s = 1000000000ns */
+#define DELAY_TIME	(CONFIG_LOG_TOO_MUCH_DETECT_GAP*DETECT_TIME*60)
+
+static u64 delta_time;
+static u64 delta_count;
+static u64 t_base;
+static bool flag_toomuch;
+
+static char *log_much;
+static int log_count;
+static u32 start_idx;
+static u64 start_seq;
+#define LOG_MUCH_PLUS_LEN	(1 << 17)
+
+static void log_much_do_check_and_delay(struct printk_log *msg);
+
+inline void set_detect_count(int count)
+{
+	if (count >= detect_count)
+		detect_count = count;
+	else {
+		if (count < DETECT_COUNT_MIN)
+			detect_count = DETECT_COUNT_MIN;
+		else
+			detect_count = count;
+		detect_count_change = true;
+	}
+	pr_info("Printk too much criteria: %d  delay_flag: %d\n", detect_count, detect_count_change);
+}
+
+inline int get_detect_count(void)
+{
+	return detect_count;
+}
+
+inline void set_logtoomuch_enable(int value)
+{
+	printk_too_much_enable = value;
+}
+
+inline int get_logtoomuch_enable(void)
+{
+	return printk_too_much_enable;
+}
+#endif
+
 /* Return log buffer address */
 char *log_buf_addr_get(void)
 {
@@ -573,9 +576,8 @@ static int log_store(int facility, int level,
 #endif
 
 #if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
-	struct printk_log *first_msg;
-	static u64 t_base;
-
+	static u64 start_ts_nsec;
+	static bool initialized;
 #endif
 
 #ifdef CONFIG_PRINTK_MT_PREFIX
@@ -659,20 +661,30 @@ static int log_store(int facility, int level,
 			t_base = msg->ts_nsec + DETECT_TIME*15;
 		}
 		if (flag_toomuch == false && t_base < msg->ts_nsec) {
-			first_msg = (struct printk_log *)(log_buf + log_first_idx);
-			delta_time = msg->ts_nsec - first_msg->ts_nsec;
-			delta_count = log_next_seq - log_first_seq;
-			if (delta_count * DETECT_TIME >  detect_count * delta_time) {
-				if (parse_log_file() == 0) {
-					t_base = msg->ts_nsec + DELAY_TIME;
-					flag_toomuch = true;
+			if (!initialized) {
+				start_ts_nsec = msg->ts_nsec;
+				start_idx = log_next_idx - msg->len;
+				start_seq = log_next_seq - 1;
+				initialized = true;
+			}
+			if (start_seq < log_first_seq) { /* old messages were dropped */
+				initialized = false;
+				start_seq = log_first_seq;
+				start_idx = log_first_idx;
+				delta_time = msg->ts_nsec - log_from_idx(start_idx)->ts_nsec;
+				delta_count = log_next_seq - start_seq;
+				log_much_do_check_and_delay(msg);
+			} else {
+				delta_time = msg->ts_nsec - start_ts_nsec;
+				delta_count = log_next_seq - start_seq;
+				if (delta_time > DETECT_TIME * 5) { /* check every 5 seconds */
+					initialized = false;
+					log_much_do_check_and_delay(msg);
 				}
 			}
 		}
-
 	}
 #endif
-
 
 	return msg->text_len;
 }
@@ -2323,33 +2335,40 @@ asmlinkage __visible void early_printk(const char *fmt, ...)
 static int parse_log_file(void)
 {
 	char buff[LOG_LINE_MAX + PREFIX_MAX];
-	u32 log_index;
-	u64 log_seq;
+	u32 log_index = start_idx;
+	u64 log_seq = start_seq;
 	size_t count = 0;
 	struct printk_log *msg;
 	enum log_flags prev = 0;
 
 	if (log_much == NULL)
-		return 1;
+		return -ENOMEM;
 
 	log_count = 0;
-	log_index = log_first_idx;
-	log_seq = log_first_seq;
 	while (log_seq < log_next_seq) {
 		msg = log_from_idx(log_index);
 		count = msg_print_text(msg, prev, true, buff, sizeof(buff));
 		prev = msg->flags;
 
 		if (log_count + count > log_buf_len + LOG_MUCH_PLUS_LEN)
-			return 0;
+			break;
 		memcpy(log_much + log_count, buff, count);
 		log_count += count;
 
 		log_index = log_next(log_index);
 		log_seq++;
 	}
-
 	return 0;
+}
+
+static void log_much_do_check_and_delay(struct printk_log *msg)
+{
+	if (delta_count * DETECT_TIME >  detect_count * delta_time) {
+		if (!parse_log_file()) {
+			t_base = msg->ts_nsec + DELAY_TIME;
+			flag_toomuch = true;
+		}
+	}
 }
 
 static int log_much_show(struct seq_file *m, void *v)

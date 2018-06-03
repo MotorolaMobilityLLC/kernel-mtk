@@ -34,7 +34,7 @@ config LOG_TOO_MUCH_DETECT_COUNT
 
 config LOG_TOO_MUCH_DETECT_GAP
 	hex "detect log too much delay time"
-	default 10
+	default 1
 	depends on LOG_TOO_MUCH_WARNING
 
 config CONSOLE_LOCK_DURATION_DETECT

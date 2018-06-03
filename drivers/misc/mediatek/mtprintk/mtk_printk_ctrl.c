@@ -36,6 +36,7 @@ static int mt_printk_ctrl_show(struct seq_file *m, void *v)
 	SEQ_printf(m, "3:   printk too much enable\n");
 	SEQ_printf(m, "xxx: printk too much detect count(xxx represents for a integer > 100)\n");
 	SEQ_printf(m, "=== mt printk controller ===\n\n");
+	SEQ_printf(m, "kernel log buffer len: %dKB\n", log_buf_len_get()/1024);
 	SEQ_printf(m, "printk uart enable: %d\n", mt_get_uartlog_status());
 	SEQ_printf(m, "printk too much enable: %d\n", get_logtoomuch_enable());
 	SEQ_printf(m, "printk too much detect count: %d\n", get_detect_count());
