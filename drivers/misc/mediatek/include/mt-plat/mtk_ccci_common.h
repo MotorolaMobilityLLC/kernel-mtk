@@ -573,10 +573,8 @@ void ccci_md_mem_reserve(void);
 unsigned int get_modem_is_enabled(int md_id);
 unsigned int ccci_get_modem_nr(void);
 int ccci_init_security(void);
-#if 0
 int ccci_sysfs_add_modem(int md_id, void *kobj, void *ktype, get_status_func_t,
 	boot_md_func_t);
-#endif
 int get_modem_support_cap(int md_id); /* Export by ccci util */
 int set_modem_support_cap(int md_id, int new_val);
 char *ccci_get_md_info_str(int md_id);
