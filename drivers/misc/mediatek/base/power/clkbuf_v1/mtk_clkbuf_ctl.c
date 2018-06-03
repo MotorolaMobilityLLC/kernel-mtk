@@ -121,8 +121,6 @@ static void __iomem *pwrap_base;
 
 /* TODO: marked this after driver is ready */
 /* #define CLKBUF_BRINGUP */
-/* NOTE: CLKBUF_INIT_BY_PL is used in kernel if CLKBUF is enabled in LK */
-#define CLKBUF_INIT_BY_PL
 
 /* Debug only */
 /* #define CLKBUF_TWAM_DEBUG */
@@ -1010,7 +1008,7 @@ static void clk_buf_pmic_wrap_init(void)
 	clk_buf_warn("%s DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x\n",
 		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14, pmic_cw16);
 
-#ifndef CLKBUF_INIT_BY_PL
+#ifndef __KERNEL__
 	/* Setup initial PMIC clock buffer setting */
 	pmic_config_interface(MT6335_DCXO_CW02, 0,
 			    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
@@ -1038,7 +1036,9 @@ static void clk_buf_pmic_wrap_init(void)
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	clk_buf_warn("%s DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x\n",
 		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14, pmic_cw16);
+#endif /* #ifndef __KERNEL__ */
 
+#ifdef __KERNEL__
 	/* Setup PMIC_WRAP setting for XO2 & XO3 */
 	clkbuf_writel(DCXO_CONN_ADR0, PMIC_DCXO_CW00_CLR_ADDR);
 	clkbuf_writel(DCXO_CONN_WDATA0,
@@ -1054,8 +1054,6 @@ static void clk_buf_pmic_wrap_init(void)
 		      PMIC_XO_EXTBUF3_EN_M_MASK << PMIC_XO_EXTBUF3_EN_M_SHIFT);	/* bit8 = 1 */
 
 	clkbuf_writel(DCXO_ENABLE, DCXO_CONN_ENABLE | DCXO_NFC_ENABLE);
-#endif
-	clk_buf_calc_drv_curr_auxout();
 
 	clk_buf_warn("%s: DCXO_CONN_ADR0/WDATA0/ADR1/WDATA1/EN=0x%x/%x/%x/%x/%x\n",
 		     __func__, clkbuf_readl(DCXO_CONN_ADR0),
@@ -1068,6 +1066,9 @@ static void clk_buf_pmic_wrap_init(void)
 		     clkbuf_readl(DCXO_NFC_WDATA0),
 		     clkbuf_readl(DCXO_NFC_ADR1),
 		     clkbuf_readl(DCXO_NFC_WDATA1));
+#endif /* #ifdef __KERNEL__ */
+
+	clk_buf_calc_drv_curr_auxout();
 
 #ifdef CLKBUF_TWAM_DEBUG
 	spm_write(SPM_TWAM_WINDOW_LEN, 0x5690);
