@@ -213,10 +213,7 @@ static int can_dvfsrc_enable(void)
 
 	pr_info("%s: PTPOD0: 0x%x\n", __func__, ptpod0);
 
-	if (spm_get_spmfw_idx() == SPMFW_LP4X_2CH_3200) {
-		enable = 0;
-		pr_info("VCORE DVFS disable for LP4[TEMP]\n");
-	} else if (is_efuse_bypass_flavor()) {
+	if (is_efuse_bypass_flavor()) {
 		enable = 1;
 		pr_info("VCORE DVFS enable for special flavor\n");
 	} else if (ptpod0 == 0x0000FF00 || ptpod0 == 0x0) {
