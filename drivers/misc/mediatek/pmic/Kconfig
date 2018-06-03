@@ -105,10 +105,21 @@ config REGULATOR_ISL91302A
 	select RT_REGMAP
 	default n
 	---help---
-	 Intersil SPI Interface
-	 External Buck for
-	 GPU, PROC1, PROC2
-	 Regulator Driver
+	  Intersil SPI Interface
+	  External Buck for
+	  GPU, PROC1, PROC2
+	  Regulator Driver
+
+config REGULATOR_RT5734
+	bool "Richtek Spi Ext Buck rt5734"
+	depends on MTK_EXTBUCK
+	select RT_REGMAP
+	default n
+	---help---
+	  Richtek SPI Interface External Buck for GPU, PROC1, PROC2
+	  Regulator Driver
+	  Say Y to enable it.
+	  Say N to disable it.
 
 config REGULATOR_RT5738
 	bool "Richtek Ext Buck RT5738"
