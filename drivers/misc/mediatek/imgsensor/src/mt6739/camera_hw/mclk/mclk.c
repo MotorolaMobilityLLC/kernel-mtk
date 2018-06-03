@@ -20,7 +20,19 @@ struct MCLK_PINCTRL_NAMES mclk_pinctrl_list[IMGSENSOR_SENSOR_IDX_MAX_NUM][MCLK_S
 
 
 static struct mclk mclk_instance;
+static enum IMGSENSOR_RETURN mclk_release(void *pinstance)
+{
+	int i;
+	struct mclk *pinst = (struct mclk *)pinstance;
 
+	for (i = IMGSENSOR_SENSOR_IDX_MIN_NUM; i < IMGSENSOR_SENSOR_IDX_MAX_NUM; i++) {
+		if (pinst->ppinctrl_state[i][MCLK_STATE_DISABLE] != NULL &&
+			!IS_ERR(pinst->ppinctrl_state[i][MCLK_STATE_DISABLE]))
+			pinctrl_select_state(pinst->ppinctrl, pinst->ppinctrl_state[i][MCLK_STATE_DISABLE]);
+	}
+	return IMGSENSOR_RETURN_SUCCESS;
+
+}
 static enum IMGSENSOR_RETURN mclk_init(void *pinstance)
 {
 	struct mclk *pinst = (struct mclk *)pinstance;
@@ -80,8 +92,9 @@ static enum IMGSENSOR_RETURN mclk_set(
 	struct pinctrl_state *ppinctrl_state;
 	enum   IMGSENSOR_RETURN ret = IMGSENSOR_RETURN_SUCCESS;
 
-	PK_DBG("%s : sensor_idx %d mclk_set pinctrl, PinIdx %d, Val %d\n",
-		__func__, sensor_idx, pin, pin_state);
+	/*PK_DBG("%s : sensor_idx %d mclk_set pinctrl, PinIdx %d, Val %d\n",
+		*__func__, sensor_idx, pin, pin_state);
+		*/
 
 	if (pin_state < IMGSENSOR_HW_PIN_STATE_LEVEL_0 ||
 	   pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH) {
@@ -103,6 +116,7 @@ static struct IMGSENSOR_HW_DEVICE device = {
 	.pinstance = (void *)&mclk_instance,
 	.init      = mclk_init,
 	.set       = mclk_set,
+	.release   = mclk_release,
 	.id        = IMGSENSOR_HW_ID_MCLK
 };
 

@@ -56,7 +56,6 @@ enum {
 static inline void imgsensor_clk_check(struct IMGSENSOR_CLK *pclk)
 {
 	int i;
-
 	for (i = 0; i < IMGSENSOR_CCF_MAX_NUM; i++)
 		WARN_ON(IS_ERR(pclk->imgsensor_ccf[i]));
 }
@@ -145,6 +144,7 @@ void imgsensor_clk_disable_all(struct IMGSENSOR_CLK *pclk)
 {
 	int i;
 
+	PK_DBG("imgsensor_clk_disable_all\n");
 	for (i = 0; i < IMGSENSOR_CCF_MAX_NUM; i++) {
 		for (; atomic_read(&pclk->enable_cnt[i]) > 0; ) {
 			clk_disable_unprepare(pclk->imgsensor_ccf[i]);
@@ -153,3 +153,17 @@ void imgsensor_clk_disable_all(struct IMGSENSOR_CLK *pclk)
 	}
 }
 
+int imgsensor_clk_ioctrl_handler(void *pbuff)
+{
+	unsigned int id = *(unsigned int *)pbuff;
+
+	if (id == 3 || id == 8 || id == 35 || id == 41)
+		*(unsigned int *)pbuff = mt_get_ckgen_freq(id);
+	else
+		*(unsigned int *)pbuff = 0;
+	PK_DBG("hf_fmm_ck = %u\n", mt_get_ckgen_freq(3));
+	PK_DBG("f_fcamtg_ck = %u\n", mt_get_ckgen_freq(8));
+	PK_DBG("f_fseninf_ck = %u\n", mt_get_ckgen_freq(35));
+	PK_DBG("f_fcamtg2_ck = %u\n", mt_get_ckgen_freq(41));
+	return 0;
+}

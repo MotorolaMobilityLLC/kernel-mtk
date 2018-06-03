@@ -175,7 +175,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{PDN, Vol_Low, 0},
 			{RST, Vol_Low, 1},
 			{DOVDD, Vol_1800, 0},
-			{AVDD, Vol_2800, 0},
+			{AVDD, Vol_2900, 0},
 			{DVDD, Vol_1200, 2},
 			{AFVDD, Vol_2800, 0},
 			{PDN, Vol_High, 0},
@@ -597,6 +597,49 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{RST, Vol_High, 5}
 		},
 	},
+#endif
+#if defined(OV20880_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_OV20880_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 0},
+			{RST, Vol_Low, 1},
+			{AVDD, Vol_2800, 1},
+			{DOVDD, Vol_1800, 1},
+			{DVDD, Vol_1100, 1},
+			{RST, Vol_High, 5}
+		},
+	},
+#endif
+#if defined(GC2365_MIPI_RAW)
+		{
+			SENSOR_DRVNAME_GC2365_MIPI_RAW,
+			{
+				{SensorMCLK, Vol_High, 0},
+				{PDN, Vol_High, 1},
+				{RST, Vol_Low, 10},
+				{DOVDD, Vol_1800, 5},
+				{DVDD, Vol_1200, 5},
+				{AVDD, Vol_2800, 5},
+				{PDN, Vol_Low, 5},
+				{RST, Vol_High, 5}
+			},
+		},
+#endif
+#if defined(GC2366_MIPI_RAW)
+		{
+			SENSOR_DRVNAME_GC2366_MIPI_RAW,
+			{
+				{SensorMCLK, Vol_High, 0},
+				{PDN, Vol_High, 1},
+				{RST, Vol_Low, 10},
+				{DOVDD, Vol_1800, 5},
+				{DVDD, Vol_1200, 5},
+				{AVDD, Vol_2800, 5},
+				{PDN, Vol_Low, 5},
+				{RST, Vol_High, 5}
+			},
+		},
 #endif
 	/* add new sensor before this line */
 	{NULL,},

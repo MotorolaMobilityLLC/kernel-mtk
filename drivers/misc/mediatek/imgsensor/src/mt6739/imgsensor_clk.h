@@ -46,10 +46,12 @@ struct IMGSENSOR_CLK {
 	atomic_t    enable_cnt[IMGSENSOR_CCF_MAX_NUM];
 };
 
+extern unsigned int mt_get_ckgen_freq(int ID);
 enum IMGSENSOR_RETURN imgsensor_clk_init(struct IMGSENSOR_CLK *pclk);
 int  imgsensor_clk_set(struct IMGSENSOR_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk);
 void imgsensor_clk_enable_all(struct IMGSENSOR_CLK *pclk);
 void imgsensor_clk_disable_all(struct IMGSENSOR_CLK *pclk);
+int imgsensor_clk_ioctrl_handler(void *pbuff);
 extern struct platform_device *gpimgsensor_hw_platform_device;
 
 #endif

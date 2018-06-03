@@ -45,6 +45,15 @@ struct GPIO_PINCTRL gpio_pinctrl_list[GPIO_CTRL_STATE_MAX_NUM] = {
 	{NULL},
 	{"cam_ldo_main2_vcamd_1"},
 	{"cam_ldo_main2_vcamd_0"},
+	/* Sub2 */
+	{"cam3_pnd1"},
+	{"cam3_pnd0"},
+	{"cam3_rst1"},
+	{"cam3_rst0"},
+	{NULL},
+	{NULL},
+	{"cam_ldo_sub2_vcamd_1"},
+	{"cam_ldo_sub2_vcamd_0"},
 
 #ifdef MIPI_SWITCH
 	{"cam_mipi_switch_en_1"},
@@ -56,6 +65,21 @@ struct GPIO_PINCTRL gpio_pinctrl_list[GPIO_CTRL_STATE_MAX_NUM] = {
 
 static struct GPIO gpio_instance;
 
+/*
+* reset all state of gpio to default value
+*/
+static enum IMGSENSOR_RETURN gpio_release(void *pinstance)
+{
+	int i;
+	struct GPIO *pgpio = (struct GPIO *)pinstance;
+
+	for (i = GPIO_CTRL_STATE_CAM0_PDN_L; i < GPIO_CTRL_STATE_MAX_NUM; i += 2) {
+		if (pgpio->ppinctrl_state[i] != NULL && !IS_ERR(pgpio->ppinctrl_state[i]))
+			pinctrl_select_state(pgpio->ppinctrl, pgpio->ppinctrl_state[i]);
+	}
+
+	return IMGSENSOR_RETURN_SUCCESS;
+}
 static enum IMGSENSOR_RETURN gpio_init(void *pinstance)
 {
 	int    i;
@@ -135,6 +159,7 @@ static struct IMGSENSOR_HW_DEVICE device = {
 	.pinstance = (void *)&gpio_instance,
 	.init      = gpio_init,
 	.set       = gpio_set,
+	.release   = gpio_release,
 	.id        = IMGSENSOR_HW_ID_GPIO
 };
 
