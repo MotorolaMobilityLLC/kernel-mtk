@@ -134,6 +134,7 @@ static int mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved_
 						&reserved_mem[reserved_count];
 
 					reserved_count += 1;
+					*reserved_mem_count = reserved_count;
 
 					if (reserved_count > MAX_RESERVED_REGIONS)
 						return -1;
@@ -158,7 +159,6 @@ static int mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved_
 			end = start_pfn + page_count;
 		}
 	}
-	*reserved_mem_count = reserved_count;
 	return 0;
 }
 
@@ -282,7 +282,7 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 	ret = mtk_memcfg_pares_reserved_memory(m, reserved_mem, &reserved_mem_count);
 
 	if (ret) {
-		seq_printf(m, "reserved_mem_cout(%d) over limits after parsing!\n",
+		seq_printf(m, "reserved_mem_cout(%d) over limit after parsing!\n",
 				reserved_mem_count);
 		kfree(reserved_mem);
 		goto debug_info;
