@@ -784,10 +784,8 @@ void mt_usb_otg_init(struct musb *musb)
 {
 	/* BYPASS OTG function in special mode */
 	if (get_boot_mode() == META_BOOT
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 			|| get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
 			|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT
-#endif
 	   ) {
 		DBG(0, "in special mode %d\n", get_boot_mode());
 		return;
