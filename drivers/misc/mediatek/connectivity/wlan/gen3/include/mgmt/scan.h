@@ -378,7 +378,9 @@ typedef struct _SCAN_PARAM_T {	/* Used by SCAN FSM */
 } SCAN_PARAM_T, *P_SCAN_PARAM_T;
 
 typedef struct _NLO_PARAM_T {	/* Used by SCAN FSM */
-	SCAN_PARAM_T rScanParam;
+	UINT_8 ucSeqNum;
+	/* Network Type */
+	UINT_8 ucBssIndex;
 
 	/* NLO */
 	BOOLEAN fgStopAfterIndication;
@@ -386,7 +388,10 @@ typedef struct _NLO_PARAM_T {	/* Used by SCAN FSM */
 	UINT_16 u2FastScanPeriod;
 	UINT_16 u2SlowScanPeriod;
 
-	/* Match SSID */
+	/* Hidden SSID, Match Set SSID */
+#if CFG_SUPPORT_SCHED_SCN_SSID_SETS
+	UINT_8 ucSSIDNum;
+#endif
 	UINT_8 ucMatchSSIDNum;
 	struct NLO_NETWORK rNLONetwork;
 	P_BSS_DESC_T aprPendingBssDescToInd[SCN_SSID_MATCH_MAX_NUM];
@@ -705,9 +710,7 @@ BOOLEAN scnQuerySparseChannel(IN P_ADAPTER_T prAdapter, P_ENUM_BAND_T prSparseBa
 /*----------------------------------------------------------------------------*/
 BOOLEAN
 scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
-		       IN UINT_8 ucSsidNum,
-		       IN P_PARAM_SSID_T prSsid, PINT_8 pcRssiThresold, IN UINT_32 u4IeLength, IN PUINT_8 pucIe,
-		       IN UINT_16 u2Interval, UINT_8 ucChnlNum, PUINT_8 pucChannels);
+		       IN P_PARAM_SCHED_SCAN_REQUEST prSchedScanRequest);
 
 BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter);
 
