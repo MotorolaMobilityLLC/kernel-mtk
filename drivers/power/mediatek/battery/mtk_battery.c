@@ -82,60 +82,59 @@ static struct hrtimer fg_drv_thread_hrtimer;
 static DECLARE_WAIT_QUEUE_HEAD(fg_update_wq);
 struct PMU_ChargerStruct BMT_status;
 struct gauge_hw_status FG_status;
-struct BAT_EC_Struct Bat_EC_ctrl;
+static struct BAT_EC_Struct Bat_EC_ctrl;
 
-unsigned int fg_update_flag;
+static unsigned int fg_update_flag;
 static struct sock *daemo_nl_sk;
 static u_int g_fgd_pid;
 static unsigned int g_fgd_version = -1;
 static bool init_flag;
-signed int g_I_SENSE_offset;	/* Todo: This variable is export by upmu_common.h or upmu_sw.h, change it? */
-int BAT_EC_cmd;
-int BAT_EC_param;
-int g_platform_boot_mode;
+static int BAT_EC_cmd;
+static int BAT_EC_param;
 
-int fg_bat_int1_gap;
-int fg_bat_int1_ht = 0xffff;
-int fg_bat_int1_lt = 0xffff;
+static int fg_bat_int1_gap;
+static int fg_bat_int1_ht = 0xffff;
+static int fg_bat_int1_lt = 0xffff;
 
-int fg_bat_int2_ht = 0xffff;
-int fg_bat_int2_lt = 0xffff;
-int fg_bat_int2_ht_en = 0xffff;
-int fg_bat_int2_lt_en = 0xffff;
+static int fg_bat_int2_ht = 0xffff;
+static int fg_bat_int2_lt = 0xffff;
+static int fg_bat_int2_ht_en = 0xffff;
+static int fg_bat_int2_lt_en = 0xffff;
 
-int fg_bat_tmp_int_gap;
-int fg_bat_tmp_c_int_gap;
-int fg_bat_tmp_ht = 0xffff;
-int fg_bat_tmp_lt = 0xffff;
-int fg_bat_tmp_c_ht = 0xffff;
-int fg_bat_tmp_c_lt = 0xffff;
-int fg_bat_tmp_int_ht = 0xffff;
-int fg_bat_tmp_int_lt = 0xffff;
+static int fg_bat_tmp_int_gap;
+static int fg_bat_tmp_c_int_gap;
+static int fg_bat_tmp_ht = 0xffff;
+static int fg_bat_tmp_lt = 0xffff;
+static int fg_bat_tmp_c_ht = 0xffff;
+static int fg_bat_tmp_c_lt = 0xffff;
+static int fg_bat_tmp_int_ht = 0xffff;
+static int fg_bat_tmp_int_lt = 0xffff;
 
-int bat_cycle_thr;
+static int bat_cycle_thr;
 
-signed int ptim_lk_v;
-signed int ptim_lk_i;
-int pl_bat_vol;
-int pl_shutdown_time;
-u32 pl_two_sec_reboot;
+static signed int ptim_lk_v;
+static signed int ptim_lk_i;
+static int pl_bat_vol;
+static int pl_shutdown_time;
+static u32 pl_two_sec_reboot;
 
-struct timespec fg_time;
-struct timespec now_time;
-bool fg_time_en;
 
-struct gtimer tracking_timer;
+static struct gtimer tracking_timer;
 
-struct gauge_consumer coulomb_plus;
-struct gauge_consumer coulomb_minus;
-struct gauge_consumer soc_plus;
-struct gauge_consumer soc_minus;
+static struct gauge_consumer coulomb_plus;
+static struct gauge_consumer coulomb_minus;
+static struct gauge_consumer soc_plus;
+static struct gauge_consumer soc_minus;
+
+struct timespec sw_iavg_time;
+int sw_iavg_car;
+int sw_iavg;
 
 #ifdef GAUGE_COULOMB_INTERRUPT_TEST
-struct gauge_consumer coulomb_test1;
-struct gauge_consumer coulomb_test2;
-struct gauge_consumer coulomb_test3;
-struct gauge_consumer coulomb_test4;
+static struct gauge_consumer coulomb_test1;
+static struct gauge_consumer coulomb_test2;
+static struct gauge_consumer coulomb_test3;
+static struct gauge_consumer coulomb_test4;
 
 int coulomb_test1_handler(struct gauge_consumer *consumer)
 {
@@ -146,13 +145,13 @@ int coulomb_test1_handler(struct gauge_consumer *consumer)
 #endif
 
 #ifdef GAUGE_TIMER_INTERRUPT_TEST
-struct gtimer g1, g2, g3, g4, g5;
+static struct gtimer g1, g2, g3, g4, g5;
 #endif
 
 static bool gDisableGM30;
 static bool ntc_disable_nafg;
 
-struct gauge_device *gauge_dev;
+static struct gauge_device *gauge_dev;
 
 bool is_fg_disable(void)
 {
@@ -160,10 +159,9 @@ bool is_fg_disable(void)
 }
 
 
-int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
-int reset_fg_bat_int;
+static int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
 
-bool is_init_done;
+static bool is_init_done;
 
 static bool is_reset_battery_cycle;
 static int fixed_bat_tmp = 0xffff;
@@ -191,14 +189,14 @@ static int adc_cali_major;
 static dev_t adc_cali_devno;
 static struct cdev *adc_cali_cdev;
 
-int adc_cali_slop[14] = {
+static int adc_cali_slop[14] = {
 	1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000
 };
-int adc_cali_offset[14] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-int adc_cali_cal[1] = { 0 };
-int battery_in_data[1] = { 0 };
-int battery_out_data[1] = { 0 };
-bool g_ADC_Cali;
+static int adc_cali_offset[14] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static int adc_cali_cal[1] = { 0 };
+static int battery_in_data[1] = { 0 };
+static int battery_out_data[1] = { 0 };
+static bool g_ADC_Cali;
 
 static signed int gFG_daemon_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 
@@ -287,6 +285,8 @@ int gauge_reset_hw(void)
 	gauge_coulomb_before_reset();
 	gauge_dev_reset_hw(gauge_dev);
 	gauge_coulomb_after_reset();
+	get_monotonic_boottime(&sw_iavg_time);
+	sw_iavg_car = gauge_get_coulomb();
 #endif
 	return 0;
 }
@@ -596,6 +596,7 @@ static void battery_update(struct battery_data *bat_data)
 {
 	struct power_supply *bat_psy = bat_data->psy;
 
+	battery_update_psd(&battery_main);
 	bat_data->BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION;
 	bat_data->BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD;
 	bat_data->BAT_PRESENT = 1;
@@ -739,6 +740,7 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 	seq_puts(m, "1: dump v-mode table\n");
 	seq_puts(m, "2: dump gauge hw register\n");
 	seq_puts(m, "3: kernel table\n");
+	seq_puts(m, "4: send CHR FULL\n");
 	seq_printf(m, "current command:%d\n", proc_cmd_id);
 
 	switch (proc_cmd_id) {
@@ -761,6 +763,9 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 		break;
 	case 3:
 		dump_kernel_table(m);
+		break;
+	case 4:
+		wakeup_fg_algo(FG_INTR_CHR_FULL);
 		break;
 	default:
 		seq_printf(m, "do not support command:%d\n", proc_cmd_id);
@@ -2272,7 +2277,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	case FG_DAEMON_CMD_ENABLE_FG_BAT_INT2_LT:
 	{
 		memcpy(&fg_bat_int2_lt_en, &msg->fgd_data[0], sizeof(fg_bat_int2_lt_en));
-		if (fg_bat_int2_ht_en == 0)
+		if (fg_bat_int2_lt_en == 0)
 			gauge_coulomb_stop(&soc_minus);
 
 		bm_debug("[fg_res][fg_bat_int2] FG_DAEMON_CMD_ENABLE_FG_BAT_INT2_LT = %d\n", fg_bat_int2_lt_en);
@@ -3213,6 +3218,24 @@ void fg_bat_temp_int_sw_check(void)
 		fg_bat_sw_temp_int_l_handler();
 }
 
+void fg_update_iavg(void)
+{
+	struct timespec now_time, diff;
+	int fg_coulomb;
+
+	get_monotonic_boottime(&now_time);
+	bm_debug("[fg_update_iavg]time:%ld\n", diff.tv_sec);
+	diff = timespec_sub(now_time, sw_iavg_time);
+	if (diff.tv_sec >= 60) {
+		fg_coulomb = gauge_get_coulomb();
+		bm_debug("[fg_update_iavg]time:%ld car:%d %d\n",
+			diff.tv_sec, fg_coulomb, sw_iavg_car);
+		sw_iavg = (fg_coulomb - sw_iavg_car) * 60;
+		sw_iavg_time = now_time;
+		sw_iavg_car = fg_coulomb;
+	}
+}
+
 void fg_drv_update_hw_status(void)
 {
 	static bool fg_current_state;
@@ -3228,7 +3251,7 @@ void fg_drv_update_hw_status(void)
 		if (list_empty(&coulomb_test2.list) == true)
 			gauge_coulomb_start(&coulomb_test2, -10);
 #endif
-
+	fg_update_iavg();
 
 	gauge_dev_get_boot_battery_plug_out_status(gauge_dev, &plugout_status, &bat_plugout_time);
 
@@ -3250,10 +3273,10 @@ void fg_drv_update_hw_status(void)
 		gtimer_dump_list();
 	}
 
-	bm_err("tmp:%d %d %d hcar2:%d lcar2:%d time:%d\n",
+	bm_err("tmp:%d %d %d hcar2:%d lcar2:%d time:%d sw_iavg:%d\n",
 		tmp, fg_bat_tmp_int_ht, fg_bat_tmp_int_lt,
 		fg_bat_int2_ht, fg_bat_int2_lt,
-		fg_get_system_sec());
+		fg_get_system_sec(), sw_iavg);
 
 
 	wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_REGULAR_LOG, 0);
@@ -3312,7 +3335,6 @@ int fg_bat_int1_h_handler(struct gauge_consumer *consumer)
 		fg_coulomb, fg_bat_int1_ht, fg_bat_int1_lt, fg_bat_int1_gap);
 
 	wakeup_fg_algo(FG_INTR_BAT_INT1_HT);
-	battery_update_psd(&battery_main);
 
 	fg_bat_temp_int_sw_check();
 	return 0;
@@ -3333,8 +3355,6 @@ int fg_bat_int1_l_handler(struct gauge_consumer *consumer)
 	bm_err("[fg_bat_int1_l_handler] car:%d ht:%d lt:%d gap:%d\n",
 		fg_coulomb, fg_bat_int1_ht, fg_bat_int1_lt, fg_bat_int1_gap);
 	wakeup_fg_algo(FG_INTR_BAT_INT1_LT);
-
-	battery_update_psd(&battery_main);
 
 	fg_bat_temp_int_sw_check();
 	return 0;
@@ -4661,6 +4681,9 @@ static int __init battery_probe(struct platform_device *dev)
 #endif
 	is_init_done = true;
 
+	get_monotonic_boottime(&sw_iavg_time);
+	sw_iavg_car = gauge_get_coulomb();
+
 	return 0;
 }
 
@@ -4709,6 +4732,7 @@ static int battery_resume(struct platform_device *dev)
 	bm_err("******** battery_resume!! ********\n");
 	pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
 	pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
+	fg_update_iavg();
 	return 0;
 }
 
