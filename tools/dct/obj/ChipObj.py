@@ -220,6 +220,7 @@ class Olympus(ChipObj):
     def init_objs(self):
         ChipObj.init_objs(self)
         ChipObj.replace_obj(self, 'clk', ClkObj_Olympus())
+        ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
 
     def parse(self):
         return ChipObj.parse(self)
@@ -236,6 +237,7 @@ class MT6757_P25(ChipObj):
     def init_objs(self):
         ChipObj.init_objs(self)
         ChipObj.replace_obj(self, 'clk', ClkObj_Olympus())
+        ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
 
     def parse(self):
         return ChipObj.parse(self)
@@ -266,6 +268,7 @@ class Whitney(ChipObj):
     def init_objs(self):
         ChipObj.init_objs(self)
         ChipObj.replace_obj(self, 'gpio', GpioObj_whitney())
+        ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
         ChipObj.refresh_eintGpioMap(self)
 
     def parse(self):
