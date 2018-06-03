@@ -712,10 +712,14 @@ void _mt_cpufreq_dvfs_request_wrapper(struct mt_cpu_dvfs *p, int new_opp_idx,
 	/* action switch */
 	switch (action) {
 	case MT_CPU_DVFS_NORMAL:
+#ifdef CONFIG_HYBRID_CPU_DVFS
+		_mt_cpufreq_set(p->mt_policy, p, new_opp_idx, action);
+#else
 		if (new_opp_idx != p->idx_opp_tbl) {
 			/* cpufreq_ver("DVFS - %s, MT_CPU_DVFS_NORMAL to %d\n", cpu_dvfs_get_name(p), new_opp_idx); */
 			_mt_cpufreq_set(p->mt_policy, p, new_opp_idx, action);
 		}
+#endif
 		break;
 	case MT_CPU_DVFS_PPM:
 		cpufreq_ver("DVFS - MT_CPU_DVFS_PPM\n");
