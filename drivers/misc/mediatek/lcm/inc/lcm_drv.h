@@ -95,13 +95,12 @@ typedef enum {
 } LCM_IOCTL;
 
 /* DBI related enumerations */
-
 typedef enum {
-	LCM_DBI_CLOCK_FREQ_104M = 0,
+	LCM_DBI_CLOCK_FREQ_125M = 0,
+	LCM_DBI_CLOCK_FREQ_104M,
+	LCM_DBI_CLOCK_FREQ_78M,
 	LCM_DBI_CLOCK_FREQ_52M,
-	LCM_DBI_CLOCK_FREQ_26M,
-	LCM_DBI_CLOCK_FREQ_13M,
-	LCM_DBI_CLOCK_FREQ_7M
+	LCM_DBI_CLOCK_FREQ_26M
 } LCM_DBI_CLOCK_FREQ;
 
 
@@ -167,9 +166,9 @@ typedef enum {
 } LCM_DPI_FORMAT;
 
 typedef enum {
-	LCM_SERIAL_CLOCK_FREQ_104M = 0,
-	LCM_SERIAL_CLOCK_FREQ_26M,
-	LCM_SERIAL_CLOCK_FREQ_52M
+	LCM_SERIAL_CLOCK_FREQ_125M = 0,
+	LCM_SERIAL_CLOCK_FREQ_78M,
+	LCM_SERIAL_CLOCK_FREQ_104M
 } LCM_SERIAL_CLOCK_FREQ;
 
 typedef enum {
@@ -298,6 +297,15 @@ typedef struct {
 	LCM_DBI_DATA_WIDTH width;
 } LCM_DBI_DATA_FORMAT;
 
+typedef enum {
+	LCM_DBI_C_3WIRE = 1,
+	LCM_DBI_C_4WIRE = 2,
+} LCM_DBI_C_WIRE_NUM;
+
+typedef enum {
+	LCM_DBI_C_1DATA_PIN = 1,
+	LCM_DBI_C_2DATA_PIN = 2,
+} LCM_DBI_C_DATA_PIN_NUM;
 
 typedef struct {
 	LCM_POLARITY cs_polarity;
@@ -322,6 +330,9 @@ typedef struct {
 	unsigned int sif_div2;
 	unsigned int sif_hw_cs;
 /* ////////////////////////////////// */
+
+	LCM_DBI_C_WIRE_NUM wire_num;
+	LCM_DBI_C_DATA_PIN_NUM datapin_num;
 } LCM_DBI_SERIAL_PARAMS;
 
 
@@ -392,6 +403,7 @@ typedef struct {
 
 
 typedef struct {
+	LCM_CTRL ctrl;
 	/* common parameters for serial & parallel interface */
 	unsigned int port;
 	LCM_DBI_CLOCK_FREQ clock_freq;

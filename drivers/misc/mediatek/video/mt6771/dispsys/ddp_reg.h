@@ -106,6 +106,7 @@
 #define DISPSYS_DSI0_BASE		    ddp_get_module_va(DISP_MODULE_DSI0)
 #define DISPSYS_DSI1_BASE		    ddp_get_module_va(DISP_MODULE_DSI1)
 #define DISPSYS_DPI_BASE		    ddp_get_module_va(DISP_MODULE_DPI)
+#define DISPSYS_DBI_BASE			ddp_get_module_va(DISP_MODULE_DBI)
 #define DISPSYS_PWM0_BASE		    ddp_get_module_va(DISP_MODULE_PWM0)
 #define DISPSYS_MUTEX_BASE			ddp_get_module_va(DISP_MODULE_MUTEX)
 #define DISPSYS_SMI_LARB0_BASE		ddp_get_module_va(DISP_MODULE_SMI_LARB0)
@@ -257,5 +258,6 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #include "ddp_reg_dsi.h"
 #include "ddp_reg_mipi.h"
 #include "ddp_reg_dpi.h"
+#include "ddp_reg_dbi.h"
 
 #endif /* _DDP_REG_H_ */

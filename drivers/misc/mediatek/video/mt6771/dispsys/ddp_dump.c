@@ -23,6 +23,7 @@
 #include "ddp_rdma_ex.h"
 #include "ddp_dsi.h"
 #include "ddp_dpi.h"
+#include "ddp_dbi.h"
 
 
 static char *ddp_signal_0(int bit)
@@ -226,6 +227,8 @@ static char *ddp_get_mutex_module0_name(unsigned int bit)
 	case 18: return "PWM0";
 	case 19: return "DSI";
 	case 20: return "DPI";
+	case 22: return "RSZ";
+	case 25: return "DBI";
 	default: return "mutex-unknown";
 	}
 }
@@ -356,6 +359,12 @@ static char *ddp_clock_1(int bit)
 		return "dpi_interface, ";
 	case 7:
 		return "26M, ";
+	case 9:
+		return "rsz, ";
+	case 12:
+		return "dbi_mm(cg), ";
+	case 13:
+		return "dbi_interface, ";
 	default:
 		return NULL;
 	}
@@ -1536,6 +1545,9 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_DPI:
 		dpi_dump_reg(module);
 		break;
+	case DISP_MODULE_DBI:
+		ddp_dbi_dump_reg(module);
+		break;
 	case DISP_MODULE_DSI0:
 	case DISP_MODULE_DSI1:
 	case DISP_MODULE_DSIDUAL:
@@ -1590,6 +1602,9 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_DSI1:
 	case DISP_MODULE_DSIDUAL:
 		dsi_analysis(module);
+		break;
+	case DISP_MODULE_DBI:
+		dbi_analysis(module);
 		break;
 	case DISP_MODULE_CCORR0:
 		ccorr_dump_analyze(module);
