@@ -109,7 +109,7 @@ static s64 gCmdqTestConfig[CMDQ_MONITOR_EVENT_MAX];
 static bool gCmdqTestSecure;
 static struct cmdqMonitorEventStruct gEventMonitor;
 static struct cmdqMonitorPollStruct gPollMonitor;
-#ifdef _CMDQ_TEST_PROC_
+#ifdef CMDQ_TEST_PROC
 static struct proc_dir_entry *gCmdqTestProcEntry;
 #endif
 
@@ -7405,7 +7405,7 @@ static const struct file_operations cmdq_fops = {
 
 static int __init cmdq_test_init(void)
 {
-#ifdef _CMDQ_TEST_PROC_
+#ifdef CMDQ_TEST_PROC
 	CMDQ_MSG("cmdq_test_init\n");
 	/* Initial value */
 	gCmdqTestSecure = false;
@@ -7426,7 +7426,7 @@ static int __init cmdq_test_init(void)
 
 static void __exit cmdq_test_exit(void)
 {
-#ifdef _CMDQ_TEST_PROC_
+#ifdef CMDQ_TEST_PROC
 	CMDQ_MSG("cmdq_test_exit\n");
 	if (gCmdqTestProcEntry != NULL) {
 		proc_remove(gCmdqTestProcEntry);

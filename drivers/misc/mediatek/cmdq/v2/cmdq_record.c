@@ -29,7 +29,7 @@
 #include "cmdq_sec_iwc_common.h"
 #endif
 
-#ifdef _MTK_USER_
+#ifndef _CMDQ_DEBUG_
 #define DISABLE_LOOP_IRQ
 #endif
 
