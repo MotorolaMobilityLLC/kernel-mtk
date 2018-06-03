@@ -903,19 +903,23 @@ struct kbase_pm_device_data {
 
 /**
  * struct kbase_mem_pool - Page based memory pool for kctx/kbdev
- * @kbdev:     Kbase device where memory is used
- * @cur_size:  Number of free pages currently in the pool (may exceed @max_size
- *             in some corner cases)
- * @max_size:  Maximum number of free pages in the pool
- * @order:     order = 0 refers to a pool of 4 KB pages
- *             order = 9 refers to a pool of 2 MB pages (2^9 * 4KB = 2 MB)
- * @pool_lock: Lock protecting the pool - must be held when modifying @cur_size
- *             and @page_list
- * @page_list: List of free pages in the pool
- * @reclaim:   Shrinker for kernel reclaim of free pages
- * @next_pool: Pointer to next pool where pages can be allocated when this pool
- *             is empty. Pages will spill over to the next pool when this pool
- *             is full. Can be NULL if there is no next pool.
+ * @kbdev:        Kbase device where memory is used
+ * @cur_size:     Number of free pages currently in the pool (may exceed
+ *                @max_size in some corner cases)
+ * @max_size:     Maximum number of free pages in the pool
+ * @order:        order = 0 refers to a pool of 4 KB pages
+ *                order = 9 refers to a pool of 2 MB pages (2^9 * 4KB = 2 MB)
+ * @pool_lock:    Lock protecting the pool - must be held when modifying
+ *                @cur_size and @page_list
+ * @page_list:    List of free pages in the pool
+ * @reclaim:      Shrinker for kernel reclaim of free pages
+ * @next_pool:    Pointer to next pool where pages can be allocated when this
+ *                pool is empty. Pages will spill over to the next pool when
+ *                this pool is full. Can be NULL if there is no next pool.
+ * @dying:        true if the pool is being terminated, and any ongoing
+ *                operations should be abandoned
+ * @dont_reclaim: true if the shrinker is forbidden from reclaiming memory from
+ *                this pool, eg during a grow operation
  */
 struct kbase_mem_pool {
 	struct kbase_device *kbdev;
@@ -927,6 +931,9 @@ struct kbase_mem_pool {
 	struct shrinker     reclaim;
 
 	struct kbase_mem_pool *next_pool;
+
+	bool dying;
+	bool dont_reclaim;
 };
 
 /**
