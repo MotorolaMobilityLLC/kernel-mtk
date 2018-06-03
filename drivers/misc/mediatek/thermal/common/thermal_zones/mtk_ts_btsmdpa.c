@@ -125,22 +125,11 @@ typedef struct {
 	__s32 TemperatureR;
 } BTSMDPA_TEMPERATURE;
 
-#define AUX_IN1_NTC (1)		/* NTC6302 */
-
-
-#if 1
-static int g_RAP_pull_up_R = 390000;	/* 390K,pull up resister */
-static int g_TAP_over_critical_low = 4251000;	/* base on 100K NTC temp default value -40 deg */
-static int g_RAP_pull_up_voltage = 1800;	/* 1.8V ,pull up voltage */
-static int g_RAP_ntc_table = 7;	/* default is NCP15WF104F03RC(100K) */
-static int g_RAP_ADC_channel = AUX_IN1_NTC;	/* default is 0 */
-#else
-static int g_RAP_pull_up_R = 39000;	/* 39K,pull up resister */
-static int g_TAP_over_critical_low = 188500;	/* base on 10K NTC temp default value -40 deg */
-static int g_RAP_pull_up_voltage = 1800;	/* 1.8V ,pull up voltage */
-static int g_RAP_ntc_table = 4;	/* default is AP_NTC_10 */
-static int g_RAP_ADC_channel = AUX_IN1_NTC;	/* default is 0 */
-#endif
+static int g_RAP_pull_up_R = BTSMDPA_RAP_PULL_UP_R;
+static int g_TAP_over_critical_low = BTSMDPA_TAP_OVER_CRITICAL_LOW;
+static int g_RAP_pull_up_voltage = BTSMDPA_RAP_PULL_UP_VOLTAGE;
+static int g_RAP_ntc_table = BTSMDPA_RAP_NTC_TABLE;
+static int g_RAP_ADC_channel = BTSMDPA_RAP_ADC_CHANNEL;
 
 static int g_btsmdpa_TemperatureR;
 /* BTSMDPA_TEMPERATURE BTSMDPA_Temperature_Table[] = {0}; */
