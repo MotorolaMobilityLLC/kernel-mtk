@@ -206,6 +206,7 @@ struct ext4_io_submit {
 	struct bio		*io_bio;
 	ext4_io_end_t		*io_end;
 	sector_t		io_next_block;
+	struct inode		*io_crypt_inode;
 };
 
 /*
@@ -3197,6 +3198,12 @@ extern int ext4_bio_write_page(struct ext4_io_submit *io,
 			       int len,
 			       struct writeback_control *wbc,
 			       bool keep_towrite);
+extern int ext4_bio_write_page_crypt(struct ext4_io_submit *io,
+			struct page *page,
+			int len,
+			struct writeback_control *wbc,
+			bool keep_towrite,
+			struct inode *inode);
 
 /* mmp.c */
 extern int ext4_multi_mount_protect(struct super_block *, ext4_fsblk_t);

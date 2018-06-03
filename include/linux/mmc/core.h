@@ -148,18 +148,13 @@ struct mmc_request {
 	struct list_head	hlist;
 #endif
 
-#ifdef CONFIG_MTK_HW_FDE
-	unsigned int            bi_hw_fde;
-	unsigned int            bi_key_idx;
+#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
+	struct request          *req;
+	bool			is_mmc_req; /* request is from mmc layer */
 #endif
 
 	/* Allow other commands during this ongoing data transfer or busy wait */
 	bool			cap_cmd_during_tfr;
-
-#ifdef CONFIG_MTK_HW_FDE
-	unsigned int            bi_hw_fde;
-	unsigned int            bi_key_idx;
-#endif
 
 	ktime_t			io_start;
 #ifdef CONFIG_BLOCK

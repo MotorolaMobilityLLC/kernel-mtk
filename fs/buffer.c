@@ -44,11 +44,12 @@
 #include <linux/mpage.h>
 #include <linux/bit_spinlock.h>
 #include <trace/events/block.h>
+#include <linux/hie.h>
 
 static int fsync_buffers_list(spinlock_t *lock, struct list_head *list);
-static int submit_bh_wbc(int op, int op_flags, struct buffer_head *bh,
-			 unsigned long bio_flags,
-			 struct writeback_control *wbc);
+static int submit_bh_wbc_crypt(struct inode *inode, int op, int op_flags,
+	struct buffer_head *bh, unsigned long bio_flags,
+	struct writeback_control *wbc);
 
 #define BH_ENTRY(list) list_entry((list), struct buffer_head, b_assoc_buffers)
 
@@ -1790,7 +1791,8 @@ int __block_write_full_page(struct inode *inode, struct page *page,
 	do {
 		struct buffer_head *next = bh->b_this_page;
 		if (buffer_async_write(bh)) {
-			submit_bh_wbc(REQ_OP_WRITE, write_flags, bh, 0, wbc);
+			submit_bh_wbc_crypt(inode, REQ_OP_WRITE, write_flags,
+				bh, 0, wbc);
 			nr_underway++;
 		}
 		bh = next;
@@ -1844,7 +1846,8 @@ recover:
 		struct buffer_head *next = bh->b_this_page;
 		if (buffer_async_write(bh)) {
 			clear_buffer_dirty(bh);
-			submit_bh_wbc(REQ_OP_WRITE, write_flags, bh, 0, wbc);
+			submit_bh_wbc_crypt(inode, REQ_OP_WRITE, write_flags,
+				bh, 0, wbc);
 			nr_underway++;
 		}
 		bh = next;
@@ -3055,8 +3058,9 @@ void guard_bio_eod(int op, struct bio *bio)
 	}
 }
 
-static int submit_bh_wbc(int op, int op_flags, struct buffer_head *bh,
-			 unsigned long bio_flags, struct writeback_control *wbc)
+static int submit_bh_wbc_crypt(struct inode *inode, int op, int op_flags,
+	struct buffer_head *bh, unsigned long bio_flags,
+	struct writeback_control *wbc)
 {
 	struct bio *bio;
 
@@ -3085,13 +3089,19 @@ static int submit_bh_wbc(int op, int op_flags, struct buffer_head *bh,
 
 	bio->bi_iter.bi_sector = bh->b_blocknr * (bh->b_size >> 9);
 	bio->bi_bdev = bh->b_bdev;
+	bio->bi_io_vec[0].bv_page = bh->b_page;
+	bio->bi_io_vec[0].bv_len = bh->b_size;
+	bio->bi_io_vec[0].bv_offset = bh_offset(bh);
 
-	bio_add_page(bio, bh->b_page, bh->b_size, bh_offset(bh));
-	BUG_ON(bio->bi_iter.bi_size != bh->b_size);
+	bio->bi_vcnt = 1;
+	bio->bi_iter.bi_size = bh->b_size;
 
 	bio->bi_end_io = end_bio_bh_io_sync;
 	bio->bi_private = bh;
 	bio->bi_flags |= bio_flags;
+
+	if (inode)
+		hie_set_bio_crypt_context(inode, bio);
 
 	/* Take care of bh's that straddle the end of the device */
 	guard_bio_eod(op, bio);
@@ -3102,20 +3112,29 @@ static int submit_bh_wbc(int op, int op_flags, struct buffer_head *bh,
 		op_flags |= REQ_PRIO;
 	bio_set_op_attrs(bio, op, op_flags);
 
+	bio_get(bio);
 	submit_bio(bio);
+	bio_put(bio);
 	return 0;
 }
 
 int _submit_bh(int op, int op_flags, struct buffer_head *bh,
 	       unsigned long bio_flags)
 {
-	return submit_bh_wbc(op, op_flags, bh, bio_flags, NULL);
+	return submit_bh_wbc_crypt(NULL, op, op_flags, bh, bio_flags, NULL);
 }
 EXPORT_SYMBOL_GPL(_submit_bh);
 
+int submit_bh_crypt(struct inode *inode, int op, int op_flags,
+	struct buffer_head *bh)
+{
+	return submit_bh_wbc_crypt(inode, op, op_flags, bh, 0, NULL);
+}
+EXPORT_SYMBOL(submit_bh_crypt);
+
 int submit_bh(int op, int op_flags,  struct buffer_head *bh)
 {
-	return submit_bh_wbc(op, op_flags, bh, 0, NULL);
+	return submit_bh_wbc_crypt(NULL, op, op_flags, bh, 0, NULL);
 }
 EXPORT_SYMBOL(submit_bh);
 
@@ -3145,7 +3164,8 @@ EXPORT_SYMBOL(submit_bh);
  * All of the buffers must be for the same device, and must also be a
  * multiple of the current approved size for the device.
  */
-void ll_rw_block(int op, int op_flags,  int nr, struct buffer_head *bhs[])
+void ll_rw_block_crypt(struct inode *inode, int op, int op_flags, int nr,
+	struct buffer_head *bhs[])
 {
 	int i;
 
@@ -3165,12 +3185,18 @@ void ll_rw_block(int op, int op_flags,  int nr, struct buffer_head *bhs[])
 			if (!buffer_uptodate(bh)) {
 				bh->b_end_io = end_buffer_read_sync;
 				get_bh(bh);
-				submit_bh(op, op_flags, bh);
+				submit_bh_crypt(inode, op, op_flags, bh);
 				continue;
 			}
 		}
 		unlock_buffer(bh);
 	}
+}
+EXPORT_SYMBOL(ll_rw_block_crypt);
+
+void ll_rw_block(int op, int op_flags, int nr, struct buffer_head *bhs[])
+{
+	ll_rw_block_crypt(NULL, op, op_flags, nr, bhs);
 }
 EXPORT_SYMBOL(ll_rw_block);
 

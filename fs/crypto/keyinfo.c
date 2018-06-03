@@ -11,6 +11,7 @@
 #include <keys/user-type.h>
 #include <linux/scatterlist.h>
 #include <linux/fscrypto.h>
+#include <linux/hie.h>
 
 static void derive_crypt_complete(struct crypto_async_request *req, int rc)
 {
@@ -99,6 +100,7 @@ static int validate_user_key(struct fscrypt_info *crypt_info,
 	kfree(full_key_descriptor);
 	if (IS_ERR(keyring_key))
 		return PTR_ERR(keyring_key);
+	crypt_info->ci_keyring_key = keyring_key;
 	down_read(&keyring_key->sem);
 
 	if (keyring_key->type != &key_type_logon) {
@@ -142,6 +144,10 @@ static int determine_cipher_type(struct fscrypt_info *ci, struct inode *inode,
 			*cipher_str_ret = "xts(aes)";
 			*keysize_ret = FS_AES_256_XTS_KEY_SIZE;
 			return 0;
+		} else if (ci->ci_data_mode == FS_ENCRYPTION_MODE_PRIVATE) {
+			*cipher_str_ret = "bugon";
+			*keysize_ret = FS_PRIVATE_KEY_SIZE;
+			return 0;
 		}
 		pr_warn_once("fscrypto: unsupported contents encryption mode "
 			     "%d for inode %lu\n",
@@ -175,15 +181,29 @@ static void put_crypt_info(struct fscrypt_info *ci)
 	kmem_cache_free(fscrypt_info_cachep, ci);
 }
 
+int fscrypt_default_data_encryption_mode(void)
+{
+	return hie_is_ready() ? FS_ENCRYPTION_MODE_PRIVATE :
+		FS_ENCRYPTION_MODE_AES_256_XTS;
+}
+
 int fscrypt_get_encryption_info(struct inode *inode)
 {
 	struct fscrypt_info *crypt_info;
 	struct fscrypt_context ctx;
 	struct crypto_skcipher *ctfm;
 	const char *cipher_str;
+	int for_fname = 0;
 	int keysize;
 	u8 *raw_key = NULL;
 	int res;
+
+#ifdef CONFIG_HIE_DEBUG
+	int dbg = 0;
+
+	if (hie_debug_ino(inode->i_ino))
+		dbg = 1;
+#endif
 
 	if (inode->i_crypt_info)
 		return 0;
@@ -196,14 +216,30 @@ int fscrypt_get_encryption_info(struct inode *inode)
 		return -EOPNOTSUPP;
 
 	res = inode->i_sb->s_cop->get_context(inode, &ctx, sizeof(ctx));
+
+#ifdef CONFIG_HIE_DEBUG
+	if (hie_debug(HIE_DBG_FS))
+		pr_info(
+	"HIE: %s: inode: %p, %ld, get_context: %d, default_mode: %d\n",
+			__func__, inode, inode->i_ino,
+			res, fscrypt_default_data_encryption_mode());
+#endif
+
 	if (res < 0) {
 		if (!fscrypt_dummy_context_enabled(inode))
 			return res;
 		ctx.format = FS_ENCRYPTION_CONTEXT_FORMAT_V1;
-		ctx.contents_encryption_mode = FS_ENCRYPTION_MODE_AES_256_XTS;
+		ctx.contents_encryption_mode =
+			fscrypt_default_data_encryption_mode();
 		ctx.filenames_encryption_mode = FS_ENCRYPTION_MODE_AES_256_CTS;
 		ctx.flags = 0;
 	} else if (res != sizeof(ctx)) {
+#ifdef CONFIG_HIE_DEBUG
+		if (dbg)
+			pr_info(
+		"HIE: %s: res %d != sizeof(ctx) %ld: ino=%ld, %d\n",
+		__func__, res, sizeof(ctx), inode->i_ino, -EINVAL);
+#endif
 		return -EINVAL;
 	}
 
@@ -260,20 +296,29 @@ int fscrypt_get_encryption_info(struct inode *inode)
 		goto out;
 	}
 got_key:
-	ctfm = crypto_alloc_skcipher(cipher_str, 0, 0);
-	if (!ctfm || IS_ERR(ctfm)) {
-		res = ctfm ? PTR_ERR(ctfm) : -ENOMEM;
-		printk(KERN_DEBUG
-		       "%s: error %d (inode %u) allocating crypto tfm\n",
-		       __func__, res, (unsigned) inode->i_ino);
+	if (S_ISDIR(inode->i_mode) || S_ISLNK(inode->i_mode)
+		|| (crypt_info->ci_data_mode != FS_ENCRYPTION_MODE_PRIVATE)) {
+		ctfm = crypto_alloc_skcipher(cipher_str, 0, 0);
+		if (!ctfm || IS_ERR(ctfm)) {
+			res = ctfm ? PTR_ERR(ctfm) : -ENOMEM;
+			pr_debug(
+			"%s: error %d (inode %u) allocating crypto tfm\n",
+			__func__, res, (unsigned int) inode->i_ino);
+			goto out;
+		}
+		crypt_info->ci_ctfm = ctfm;
+		crypto_skcipher_clear_flags(ctfm, ~0);
+		crypto_skcipher_set_flags(ctfm, CRYPTO_TFM_REQ_WEAK_KEY);
+		res = crypto_skcipher_setkey(ctfm, raw_key, keysize);
+		if (res)
+			goto out;
+		kzfree(raw_key);
+	} else if (!hie_is_ready()) {
+		pr_info("%s: Hardware inline encryption is not available\n",
+		       __func__);
+		res = -EINVAL;
 		goto out;
 	}
-	crypt_info->ci_ctfm = ctfm;
-	crypto_skcipher_clear_flags(ctfm, ~0);
-	crypto_skcipher_set_flags(ctfm, CRYPTO_TFM_REQ_WEAK_KEY);
-	res = crypto_skcipher_setkey(ctfm, raw_key, keysize);
-	if (res)
-		goto out;
 
 	if (cmpxchg(&inode->i_crypt_info, NULL, crypt_info) == NULL)
 		crypt_info = NULL;
@@ -281,7 +326,6 @@ out:
 	if (res == -ENOKEY)
 		res = 0;
 	put_crypt_info(crypt_info);
-	kzfree(raw_key);
 	return res;
 }
 EXPORT_SYMBOL(fscrypt_get_encryption_info);
@@ -302,3 +346,48 @@ void fscrypt_put_encryption_info(struct inode *inode, struct fscrypt_info *ci)
 	put_crypt_info(ci);
 }
 EXPORT_SYMBOL(fscrypt_put_encryption_info);
+
+int fscrypt_set_bio_crypt_context(struct inode *inode, struct bio *bio)
+{
+	struct fscrypt_info *ci = NULL;
+	int ret = -ENOENT;
+
+	ci = inode->i_crypt_info;
+	if (S_ISREG(inode->i_mode) && ci &&
+	    (ci->ci_data_mode == FS_ENCRYPTION_MODE_PRIVATE)) {
+		WARN_ON(!hie_is_ready());
+		bio->bi_crypt_ctx.bc_flags |= (BC_CRYPT | BC_AES_256_XTS);
+		bio->bi_crypt_ctx.bc_key_size = FS_AES_256_XTS_KEY_SIZE;
+		bio->bi_crypt_ctx.bc_keyring_key = ci->ci_keyring_key;
+
+#ifdef CONFIG_HIE_DEBUG
+		if (hie_debug(HIE_DBG_FS))
+			pr_info("HIE: %s: ino: %ld, bio: %p\n", __func__,
+				inode->i_ino, bio);
+#endif
+		ret = 0;
+	} else
+		bio->bi_crypt_ctx.bc_flags &= ~BC_CRYPT;
+
+	return ret;
+}
+EXPORT_SYMBOL(fscrypt_set_bio_crypt_context);
+
+int fscrypt_key_payload(struct bio_crypt_ctx *ctx, const char *data,
+	const unsigned char **key)
+{
+	struct fscrypt_key *master_key;
+
+	master_key = (struct fscrypt_key *)data;
+
+	if (!master_key) {
+		pr_info("%s: master key was not exist\n", __func__);
+		return -ENOKEY;
+	}
+
+	if (key)
+		*key = &master_key->raw[0];
+
+	return master_key->size;
+}
+EXPORT_SYMBOL(fscrypt_key_payload);

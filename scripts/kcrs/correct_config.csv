@@ -225,6 +225,7 @@ CONFIG_HID_TOPSEED,COMMON,,,y,y,y,y,y,y,y,y
 CONFIG_HID_TWINHAN,COMMON,,,y,y,y,y,y,y,y,y
 CONFIG_HID_ZEROPLUS,COMMON,,,y,y,y,y,y,y,y,y
 CONFIG_HIDRAW,COMMON,,,y,y,y,y,y,y,y,y
+CONFIG_HIE,PROJECT,shi.ma,new config in this commit 3f52a8f44216b30e8bd18d989d70ff40f1bef6b3,X,X,X,X,X,X,X,X
 CONFIG_HIGH_RES_TIMERS,COMMON,,,y,y,y,y,y,y,y,y
 CONFIG_HIGHMEM,PLATFORM,,,y,X,X,X,X,y,y,X
 CONFIG_HIGHPTE,PLATFORM,miles.chen,,N,X,X,X,X,N,N,X

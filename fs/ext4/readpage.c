@@ -274,6 +274,9 @@ int ext4_mpage_readpages(struct address_space *mapping,
 		 */
 		if (bio && (last_block_in_bio != blocks[0] - 1)) {
 		submit_and_realloc:
+#ifdef CONFIG_EXT4_FS_ENCRYPTION
+			fscrypt_set_bio_crypt_context(inode, bio);
+#endif
 			ext4_submit_bio_read(bio);
 			bio = NULL;
 		}
@@ -307,6 +310,9 @@ int ext4_mpage_readpages(struct address_space *mapping,
 		if (((map.m_flags & EXT4_MAP_BOUNDARY) &&
 		     (relative_block == map.m_len)) ||
 		    (first_hole != blocks_per_page)) {
+#ifdef CONFIG_EXT4_FS_ENCRYPTION
+			fscrypt_set_bio_crypt_context(inode, bio);
+#endif
 			ext4_submit_bio_read(bio);
 			bio = NULL;
 		} else
@@ -314,6 +320,9 @@ int ext4_mpage_readpages(struct address_space *mapping,
 		goto next_page;
 	confused:
 		if (bio) {
+#ifdef CONFIG_EXT4_FS_ENCRYPTION
+			fscrypt_set_bio_crypt_context(inode, bio);
+#endif
 			ext4_submit_bio_read(bio);
 			bio = NULL;
 		}
@@ -326,7 +335,11 @@ int ext4_mpage_readpages(struct address_space *mapping,
 			put_page(page);
 	}
 	BUG_ON(pages && !list_empty(pages));
-	if (bio)
+	if (bio) {
+#ifdef CONFIG_EXT4_FS_ENCRYPTION
+		fscrypt_set_bio_crypt_context(inode, bio);
+#endif
 		ext4_submit_bio_read(bio);
+	}
 	return 0;
 }

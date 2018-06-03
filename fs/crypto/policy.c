@@ -12,6 +12,7 @@
 #include <linux/string.h>
 #include <linux/fscrypto.h>
 #include <linux/mount.h>
+#include <linux/hie.h>
 
 static int inode_has_encryption_context(struct inode *inode)
 {
@@ -37,11 +38,14 @@ static int is_encryption_context_consistent_with_policy(struct inode *inode,
 	if (res != sizeof(ctx))
 		return 0;
 
+	if ((ctx.contents_encryption_mode != policy->contents_encryption_mode)
+		&& !(hie_is_ready() && (ctx.contents_encryption_mode
+		== FS_ENCRYPTION_MODE_PRIVATE)))
+		return 0;
+
 	return (memcmp(ctx.master_key_descriptor, policy->master_key_descriptor,
 			FS_KEY_DESCRIPTOR_SIZE) == 0 &&
 			(ctx.flags == policy->flags) &&
-			(ctx.contents_encryption_mode ==
-			 policy->contents_encryption_mode) &&
 			(ctx.filenames_encryption_mode ==
 			 policy->filenames_encryption_mode));
 }
@@ -84,7 +88,7 @@ static int create_encryption_context_from_policy(struct inode *inode,
 	if (policy->flags & ~FS_POLICY_FLAGS_VALID)
 		return -EINVAL;
 
-	ctx.contents_encryption_mode = policy->contents_encryption_mode;
+	ctx.contents_encryption_mode = fscrypt_default_data_encryption_mode();
 	ctx.filenames_encryption_mode = policy->filenames_encryption_mode;
 	ctx.flags = policy->flags;
 	BUILD_BUG_ON(sizeof(ctx.nonce) != FS_KEY_DERIVATION_NONCE_SIZE);
