@@ -323,7 +323,7 @@ void ion_mm_heap_free_buffer_info(struct ion_buffer *buffer)
 		if ((buffer_info->module_id != -1) && (buffer_info->MVA))
 			m4u_dealloc_mva_sg(buffer_info->module_id, table, buffer->size, buffer_info->MVA);
 		if ((buffer_info->module_id != -1) && (buffer_info->FIXED_MVA)) {
-			IONMSG("[ion_mm_heap] free fix mva 0x%x\n", buffer_info->FIXED_MVA);
+			IONDBG("[ion_mm_heap] free fix mva 0x%x\n", buffer_info->FIXED_MVA);
 			m4u_dealloc_mva_sg(buffer_info->module_id, table, buffer->size, buffer_info->FIXED_MVA);
 		}
 
@@ -461,7 +461,7 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	}
 
 	if (port_info.flags > 0)
-		IONMSG("[ion_mm_heap_phys]Port %d, in_len 0x%x, MVA(0x%x-%zu) (region 0x%x--0x%x) (VA 0x%lx-%d)\n",
+		IONDBG("[ion_mm_heap_phys]Port %d, in_len 0x%x, MVA(0x%x-%zu) (region 0x%x--0x%x) (VA 0x%lx-%d)\n",
 		       port_info.eModuleID, *(unsigned int *)len, *(unsigned int *)addr, buffer->size,
 		       buffer_info->iova_start, buffer_info->iova_end, (unsigned long)buffer_info->VA,
 		       non_vmalloc_request);
