@@ -30,9 +30,7 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/irqchip/mtk-eic.h>
 #include <linux/suspend.h>
-#ifdef CONFIG_MTK_SPM_IN_ATF
 #include <mt-plat/mtk_secure_api.h>
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 #ifdef CONFIG_MTK_WD_KICKER
 #include <mach/wd_api.h>
 #endif
@@ -46,20 +44,9 @@
 int spm_for_gps_flag;
 static struct dentry *spm_dir;
 static struct dentry *spm_file;
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-static int dyna_load_pcm_done __nosavedata;
-static char *dyna_load_pcm_path[] = {
-	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
-	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
-};
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-
 struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
 
 void __iomem *spm_base;
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-void __iomem *spm_mcucfg;
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 u32 spm_irq_0;
 
 #define NF_EDGE_TRIG_IRQS	7
@@ -131,13 +118,7 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 	}
 
 	/* clean ISR status */
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	spm_write(SPM_IRQ_MASK, spm_read(SPM_IRQ_MASK) | ISRM_ALL_EXC_TWAM);
-	spm_write(SPM_IRQ_STA, isr);
-	spm_write(SPM_SWINT_CLR, PCM_SW_INT0);
-#else
 	mt_secure_call(MTK_SIP_KERNEL_SPM_IRQ0_HANDLER, isr, 0, 0);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	if ((isr & ISRS_TWAM) && spm_twam_handler)
@@ -171,9 +152,6 @@ static int spm_irq_register(void)
 
 static void spm_register_init(void)
 {
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	unsigned long flags;
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	struct device_node *node;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
@@ -186,16 +164,6 @@ static void spm_register_init(void)
 	spm_irq_0 = irq_of_parse_and_map(node, 0);
 	if (!spm_irq_0)
 		spm_err("get spm_irq_0 failed\n");
-
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	/* mcucfg */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
-	if (!node)
-		spm_err("[MCUCFG] find node failed\n");
-	spm_mcucfg = of_iomap(node, 0);
-	if (!spm_mcucfg)
-		spm_err("[MCUCFG] base failed\n");
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 	spm_err("spm_base = %p, spm_irq_0 = %d\n", spm_base, spm_irq_0);
 
@@ -284,239 +252,9 @@ static void spm_register_init(void)
 		 edge_trig_irqs[5],
 		 edge_trig_irqs[6]);
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	/* enable register control */
-	spm_write(POWERON_CONFIG_EN, SPM_REGWR_CFG_KEY | BCLK_CG_EN_LSB);
-
-	/* init power control register */
-	/* dram will set this register */
-	/* spm_write(SPM_POWER_ON_VAL0, 0); */
-	spm_write(SPM_POWER_ON_VAL1, POWER_ON_VAL1_DEF);
-	spm_write(PCM_PWR_IO_EN, 0);
-
-	/* reset PCM */
-	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | PCM_SW_RESET_LSB);
-	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB);
-	WARN_ON((spm_read(PCM_FSM_STA) & 0x7fffff) != PCM_FSM_STA_DEF);	/* PCM reset failed */
-
-	/* init PCM control register */
-	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | RG_EN_IM_SLEEP_DVS_LSB);
-	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | REG_EVENT_LOCK_EN_LSB |
-		  REG_SPM_SRAM_ISOINT_B_LSB | RG_AHBMIF_APBEN_LSB);
-	spm_write(PCM_IM_PTR, 0);
-	spm_write(PCM_IM_LEN, 0);
-
-	spm_write(SPM_CLK_CON, spm_read(SPM_CLK_CON) | (0x3 << 2) |
-			REG_SPM_LOCK_INFRA_DCM_LSB | (1 << 6) |
-			REG_CLKSQ1_SEL_CTRL_LSB | REG_SRCCLKEN0_EN_LSB |
-			(0x20 << 23));
-
-	/* clean wakeup event raw status */
-	spm_write(SPM_WAKEUP_EVENT_MASK, SPM_WAKEUP_EVENT_MASK_DEF);
-
-	/* clean ISR status */
-	spm_write(SPM_IRQ_MASK, ISRM_ALL);
-	spm_write(SPM_IRQ_STA, ISRC_ALL);
-	spm_write(SPM_SWINT_CLR, PCM_SW_INT_ALL);
-
-	/* init r7 with POWER_ON_VAL1 */
-	spm_write(PCM_REG_DATA_INI, spm_read(SPM_POWER_ON_VAL1));
-	spm_write(PCM_PWR_IO_EN, PCM_RF_SYNC_R7);
-	spm_write(PCM_PWR_IO_EN, 0);
-
-	spm_write(DDR_EN_DBC_LEN, 0x82 | (0x82 << 10) | (0x82 << 20));
-	spm_write(SRCCLKENI2PWRAP_MASK_B, 0x11);
-	spm_write(SPM_PC_TRACE_CON, 0x8 | (1 << 31));
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-
 	spm_set_dummy_read_addr(true);
 }
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-static char *local_buf;
-static dma_addr_t local_buf_dma;
-static unsigned int local_buf_size;
-
-/*Reserved memory by device tree!*/
-int reserve_memory_spm_fn(struct reserved_mem *rmem)
-{
-	pr_info(" name: %s, base: 0x%llx, size: 0x%llx\n", rmem->name,
-			   (unsigned long long)rmem->base, (unsigned long long)rmem->size);
-
-	local_buf_dma = rmem->base;
-	local_buf_size = (unsigned int)rmem->size;
-	return 0;
-}
-RESERVEDMEM_OF_DECLARE(reserve_memory_test, "mediatek,spm-reserve-memory", reserve_memory_spm_fn);
-
-#define SPM_FW_MAGIC    0x53504D32
-
-#pragma pack(push)
-#pragma pack(2)
-struct spm_fw_header {
-	unsigned int magic;
-	unsigned int size;
-	char name[58];
-};
-#pragma pack(pop)
-
-char *spm_load_firmware(char *name)
-{
-	struct spm_fw_header *header;
-	char *addr;
-
-	addr = 0;
-	header = (struct spm_fw_header *) local_buf;
-
-	while (header->magic == SPM_FW_MAGIC) {
-		char fw_name[58];
-
-		memcpy_toio(fw_name, header->name, sizeof(fw_name));
-		if (!strcmp(fw_name, name))
-			break;
-
-		header = (struct spm_fw_header *) (((char *) header) + sizeof(*header) + header->size);
-	}
-
-	if (header->magic == SPM_FW_MAGIC) {
-		addr = (((char *) header) + sizeof(*header));
-		return addr;
-	}
-
-	return NULL;
-}
-
-int spm_load_pcm_firmware(void)
-{
-	int err = 0;
-	int i;
-	int offset = 0;
-	int spm_fw_count = 0;
-
-	if (dyna_load_pcm_done)
-		return err;
-
-	if (local_buf == NULL) {
-		local_buf = (char *)ioremap_nocache(local_buf_dma, local_buf_size);
-		if (!local_buf) {
-			pr_err("Failed to dma_alloc_coherent(), %d.\n", err);
-			return -ENOMEM;
-		}
-	}
-
-	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++) {
-		u16 firmware_size = 0;
-		int copy_size = 0;
-		struct pcm_desc *pdesc = &(dyna_load_pcm[i].desc);
-		char *ptr;
-
-		ptr = spm_load_firmware(dyna_load_pcm_path[i]);
-		if (ptr == NULL) {
-			pr_err("Failed to load %s, err = %d.\n", dyna_load_pcm_path[i], err);
-			err = -1;
-			continue;
-		}
-
-		/* Do whatever it takes to load firmware into device. */
-		/* start of binary size */
-		offset = 0;
-		copy_size = 2;
-		memcpy_toio(&firmware_size, ptr + offset, copy_size);
-
-		/* start of binary */
-		offset += copy_size;
-		copy_size = firmware_size * 4;
-		dyna_load_pcm[i].buf = ptr + offset;
-		dyna_load_pcm[i].buf_dma = local_buf_dma + (u32)(ptr + offset - local_buf);
-
-		/* start of pcm_desc without pointer */
-		offset += copy_size;
-		copy_size = sizeof(struct pcm_desc) - offsetof(struct pcm_desc, size);
-		memcpy_toio((void *)&(dyna_load_pcm[i].desc.size), ptr + offset, copy_size);
-
-		/* start of pcm_desc version */
-		offset += copy_size;
-		snprintf(dyna_load_pcm[i].version, PCM_FIRMWARE_VERSION_SIZE - 1,
-				"%s", ptr + offset);
-		pdesc->version = dyna_load_pcm[i].version;
-		pdesc->base = (u32 *) dyna_load_pcm[i].buf;
-		pdesc->base_dma = dyna_load_pcm[i].buf_dma;
-
-		pr_info("#@# %s(%d) use spmfw partition for %s - %s\n", __func__, __LINE__,
-				dyna_load_pcm_path[i], pdesc->version);
-
-		dyna_load_pcm[i].ready = 1;
-		spm_fw_count++;
-	}
-
-	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
-		spm_vcorefs_init();
-		dyna_load_pcm_done = 1;
-	}
-
-	return err;
-}
-
-int spm_load_firmware_status(void)
-{
-	return dyna_load_pcm_done;
-}
-
-static int spm_dbg_show_firmware(struct seq_file *s, void *unused)
-{
-	int i;
-	struct pcm_desc *pdesc = NULL;
-
-	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++) {
-		pdesc = &(dyna_load_pcm[i].desc);
-		seq_printf(s, "#@# %s\n", dyna_load_pcm_path[i]);
-
-		if (pdesc->version) {
-			seq_printf(s, "#@#  version = %s\n", pdesc->version);
-			seq_printf(s, "#@#  base = 0x%p\n", pdesc->base);
-			seq_printf(s, "#@#  size = %u\n", pdesc->size);
-			seq_printf(s, "#@#  sess = %u\n", pdesc->sess);
-			seq_printf(s, "#@#  replace = %u\n", pdesc->replace);
-			seq_printf(s, "#@#  addr_2nd = %u\n", pdesc->addr_2nd);
-			seq_printf(s, "#@#  vec0 = 0x%x\n", pdesc->vec0);
-			seq_printf(s, "#@#  vec1 = 0x%x\n", pdesc->vec1);
-			seq_printf(s, "#@#  vec2 = 0x%x\n", pdesc->vec2);
-			seq_printf(s, "#@#  vec3 = 0x%x\n", pdesc->vec3);
-			seq_printf(s, "#@#  vec4 = 0x%x\n", pdesc->vec4);
-			seq_printf(s, "#@#  vec5 = 0x%x\n", pdesc->vec5);
-			seq_printf(s, "#@#  vec6 = 0x%x\n", pdesc->vec6);
-			seq_printf(s, "#@#  vec7 = 0x%x\n", pdesc->vec7);
-			seq_printf(s, "#@#  vec8 = 0x%x\n", pdesc->vec8);
-			seq_printf(s, "#@#  vec9 = 0x%x\n", pdesc->vec9);
-			seq_printf(s, "#@#  vec10 = 0x%x\n", pdesc->vec10);
-			seq_printf(s, "#@#  vec11 = 0x%x\n", pdesc->vec11);
-			seq_printf(s, "#@#  vec12 = 0x%x\n", pdesc->vec12);
-			seq_printf(s, "#@#  vec13 = 0x%x\n", pdesc->vec13);
-			seq_printf(s, "#@#  vec14 = 0x%x\n", pdesc->vec14);
-			seq_printf(s, "#@#  vec15 = 0x%x\n", pdesc->vec15);
-		}
-	}
-	seq_puts(s, "\n\n");
-
-	return 0;
-}
-
-static int spm_dbg_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, spm_dbg_show_firmware, &inode->i_private);
-}
-
-static const struct file_operations spm_debug_fops = {
-	.open = spm_dbg_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-#else
 static int local_spm_load_firmware_status = -1;
 int spm_load_firmware_status(void)
 {
@@ -525,7 +263,6 @@ int spm_load_firmware_status(void)
 			mt_secure_call(MTK_SIP_KERNEL_SPM_FIRMWARE_STATUS, 0, 0, 0);
 	return local_spm_load_firmware_status;
 }
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 static int spm_sleep_count_open(struct inode *inode, struct file *file)
 {
@@ -641,9 +378,6 @@ int __init spm_module_init(void)
 {
 	int r = 0;
 	int ret = -1;
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	int i;
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 	spm_register_init();
 	if (spm_irq_register() != 0)
@@ -681,13 +415,6 @@ int __init spm_module_init(void)
 		return -EINVAL;
 	}
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	spm_file = debugfs_create_file("firmware", S_IRUGO, spm_dir, NULL, &spm_debug_fops);
-
-	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
-		dyna_load_pcm[i].ready = 0;
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-
 	spm_file = debugfs_create_file("spm_sleep_count", S_IRUGO, spm_dir, NULL, &spm_sleep_count_fops);
 	spm_resource_req_debugfs_init(spm_dir);
 
@@ -701,11 +428,7 @@ int __init spm_module_init(void)
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	spm_load_pcm_firmware();
-#else
 	spm_vcorefs_init();
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 	return 0;
 }
@@ -865,7 +588,7 @@ int spm_golden_setting_cmp(bool en)
 }
 #endif /* CONFIG_MTK_DRAMC */
 
-#if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
+#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 void spm_pmic_power_mode(int mode, int force, int lock)
 {
 	static int prev_mode = -1;
@@ -907,7 +630,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 
 	prev_mode = mode;
 }
-#endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
+#endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 
 void *mt_spm_base_get(void)
 {
@@ -925,24 +648,7 @@ EXPORT_SYMBOL(mt_spm_for_gps_only);
 void mt_spm_dcs_s1_setting(int enable, int flags)
 {
 	flags &= 0xf;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 	mt_secure_call(MTK_SIP_KERNEL_SPM_DCS_S1, enable, flags, 0);
-#else
-#if 0
-	spm_write(DRAMC_DPY_CLK_SW_CON5, spm_read(DRAMC_DPY_CLK_SW_CON5) | flags);
-	while ((spm_read(DRAMC_DPY_CLK_SW_CON5) & (0xf << 4)) != (flags << 4))
-		;
-
-	if (!!enable)
-		spm_write(SPM_SPARE_CON_SET, flags << 24);
-	else
-		spm_write(SPM_SPARE_CON_CLR, flags << 24);
-
-	spm_write(DRAMC_DPY_CLK_SW_CON5, spm_read(DRAMC_DPY_CLK_SW_CON5) & ~flags);
-	while ((spm_read(DRAMC_DPY_CLK_SW_CON5) & (0xf << 4)) != 0)
-		;
-#endif
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 }
 EXPORT_SYMBOL(mt_spm_dcs_s1_setting);
 

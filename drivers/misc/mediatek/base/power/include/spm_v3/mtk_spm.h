@@ -19,9 +19,6 @@
 #include <mach/upmu_hw.h> /* for PMIC power settings */
 
 extern void __iomem *spm_base;
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-extern void __iomem *spm_mcucfg;
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 extern u32 spm_irq_0;
 extern int spm_for_gps_flag;
 
@@ -88,7 +85,7 @@ extern int spm_go_to_ddrdfs(u32 spm_flags, u32 spm_data);
 /* for Vcore DVFS in MET */
 extern void spm_vcorefs_register_handler(vcorefs_handler_t handler, vcorefs_start_handler_t start_handler);
 
-#if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
+#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 /* for PMIC power settings */
 enum {
 	PMIC_PWR_NORMAL = 0,
@@ -99,7 +96,7 @@ enum {
 	PMIC_PWR_NUM,
 };
 void spm_pmic_power_mode(int mode, int force, int lock);
-#endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
+#endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 struct spm_data;

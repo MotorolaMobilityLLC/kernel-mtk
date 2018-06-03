@@ -1151,13 +1151,11 @@ int mt_idle_select(int cpu)
 	dump_idle_cnt_in_interval(cpu);
 
 	#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	/* check if firmware loaded or not */
 	if (!spm_load_firmware_status()) {
 		reason = BY_FRM;
 		goto get_idle_idx;
 	}
-	#endif
 	#endif
 
 	#if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -1245,13 +1243,11 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 		return menu_select_state;
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	/* check if firmware loaded or not */
 	if (!spm_load_firmware_status()) {
 		reason = BY_FRM;
 		goto get_idle_idx_2;
 	}
-#endif
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)

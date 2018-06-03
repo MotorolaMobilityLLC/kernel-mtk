@@ -377,19 +377,6 @@ struct spm_lp_scen __spm_suspend = {
 
 static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 {
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
-		spm_dormant_sta = mtk_enter_idle_state(MTK_SUSPEND_MODE);
-		if (spm_dormant_sta < 0) {
-			spm_crit2("spm_dormant_sta %d", spm_dormant_sta);
-			/* BUG(); */
-		}
-	} else {
-		spm_dormant_sta = mt_secure_call(MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
-		if (spm_dormant_sta < 0)
-			spm_crit2("dpidle(legacy) SMC ret(%d) >>\n", spm_dormant_sta);
-	}
-#else
 	if (is_cpu_pdn(pwrctrl->pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_SUSPEND_MODE);
 	else
@@ -399,7 +386,6 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 		spm_crit2("spm_dormant_sta %d", spm_dormant_sta);
 		/* BUG(); */
 	}
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 	if (is_infra_pdn(pwrctrl->pcm_flags))
 		mtk_uart_restore();
@@ -410,9 +396,6 @@ static void spm_set_sysclk_settle(void)
 	u32 settle;
 
 	/* SYSCLK settle = MD SYSCLK settle but set it again for MD PDN */
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	spm_write(SPM_CLK_SETTLE, SPM_SYSCLK_SETTLE);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	settle = spm_read(SPM_CLK_SETTLE);
 
 	/* md_settle is keyword for suspend status */
@@ -422,7 +405,7 @@ static void spm_set_sysclk_settle(void)
 static int mt_power_gs_dump_suspend_count = 2;
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
-#if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
+#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
 			IDX_ALL_VCORE_SUSPEND,
@@ -445,7 +428,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	wk_auxadc_bgd_ctrl(0);
 	wk_mt6337_set_lp_setting();
-#endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
+#endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 
 	if (--mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
@@ -453,12 +436,12 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
-#if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
+#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	wk_auxadc_bgd_ctrl(1);
 	wk_mt6337_restore_lp_setting();
-#endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
+#endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 }
 
 static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
@@ -491,28 +474,10 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 
 	spm_set_sysclk_settle();
 	__spm_sync_pcm_flags(pwrctrl);
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	__spm_set_cpu_status(cpu);
-	__spm_reset_and_init_pcm(pcmdesc);
-	__spm_kick_im_to_fetch(pcmdesc);
-	__spm_init_pcm_register();
-	__spm_init_event_vector(pcmdesc);
-	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
-	__spm_set_power_control(pwrctrl);
-	__spm_set_wakeup_event(pwrctrl);
-
-#if SPM_PCMWDT_EN
-	if (!pwrctrl->wdt_disable)
-		__spm_set_pcm_wdt(1);
-#endif
-
-	__spm_kick_pcm_to_run(pwrctrl);
-#else
 	pwrctrl->timer_val = __spm_get_pcm_timer_val(pwrctrl);
 
 	mt_secure_call(MTK_SIP_KERNEL_SPM_SUSPEND_ARGS, pwrctrl->pcm_flags, pwrctrl->pcm_flags1, pwrctrl->timer_val);
 	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS, SPM_PWR_CTRL_SUSPEND, PWR_OPP_LEVEL, pwrctrl->opp_level);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 }
 
 static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
@@ -536,15 +501,6 @@ static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	spm_suspend_post_process(pwrctrl);
-
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-#if SPM_PCMWDT_EN
-	if (!pwrctrl->wdt_disable)
-		__spm_set_pcm_wdt(0);
-#endif
-
-	__spm_clean_after_wakeup();
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 }
 
 static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc)
@@ -671,11 +627,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	static wake_reason_t last_wr = WR_NONE;
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl;
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	u32 cpu = smp_processor_id();
-#else
 	u32 cpu = 0;
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	int ch;
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER);
@@ -688,19 +640,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 #endif
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready) {
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
-	} else {
-		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d", dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
-		return last_wr;
-	}
-	spm_crit2("Online CPU is %d, suspend FW ver. is %s\n", cpu, pcmdesc->version);
-#else
-	pcmdesc = __spm_suspend.pcmdesc;
-#endif
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	pwrctrl = __spm_suspend.pwrctrl;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
@@ -860,11 +799,7 @@ void spm_ap_mdsrc_req(u8 set)
 			spm_ap_mdsrc_req_cnt++;
 
 			hw_spin_lock_for_ddrdfs();
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-			spm_write(AP_MDSRC_REQ, spm_read(AP_MDSRC_REQ) | AP_MD1SRC_REQ_LSB);
-#else
 			mt_secure_call(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ, 1, 0, 0);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 			hw_spin_unlock_for_ddrdfs();
 
 			spin_unlock_irqrestore(&__spm_lock, flags);
@@ -898,11 +833,7 @@ void spm_ap_mdsrc_req(u8 set)
 		} else {
 			if (spm_ap_mdsrc_req_cnt == 0) {
 				hw_spin_lock_for_ddrdfs();
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-				spm_write(AP_MDSRC_REQ, spm_read(AP_MDSRC_REQ) & ~AP_MD1SRC_REQ_LSB);
-#else
 				mt_secure_call(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ, 0, 0, 0);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 				hw_spin_unlock_for_ddrdfs();
 			}
 		}

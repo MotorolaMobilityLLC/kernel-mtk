@@ -17,9 +17,7 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/of_fdt.h>
-#ifdef CONFIG_MTK_SPM_IN_ATF
 #include <mt-plat/mtk_secure_api.h>
-#endif
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -922,28 +920,12 @@ static void spm_dvfsfw_init(void)
 {
 	unsigned long flags;
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	u32 dvfs_level[NUM_OPP] = { 0x8810, 0x4408, 0x2202, 0x1101};
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	if (plat_channel_num == 2)
-		dvfs_level[OPP_1] = 0x4408;
-	else if (plat_channel_num == 4)
-		dvfs_level[OPP_1] = 0x2404;
-
-	spm_write(DVFS_LEVEL, dvfs_level[BOOT_UP_OPP]);
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-
-#else
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, BOOT_UP_OPP, plat_channel_num);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-#endif
 	spm_vcorefs_warn("DVFS_LEVEL: 0x%x, BOOT_UP_OPP: %u\n", spm_read(DVFS_LEVEL), BOOT_UP_OPP);
 }
 
@@ -1294,49 +1276,6 @@ void spm_go_to_vcorefs(int spm_flags)
 {
 	unsigned long flags;
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	struct pcm_desc *pcmdesc;
-	struct pwr_ctrl *pwrctrl;
-
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready) {
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
-	} else {
-		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d", dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
-		/* BUG(); */
-	}
-#else
-	pcmdesc = __spm_vcorefs.pcmdesc;
-#endif
-	pwrctrl = __spm_vcorefs.pwrctrl;
-
-	spm_vcorefs_warn("pcm_flag: 0x%x\n", spm_flags);
-
-	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* need be called after set_pwrctrl_pcm_flags1() */
-	/* spm_set_dummy_read_addr(false); */
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	__spm_reset_and_init_pcm(pcmdesc);
-
-	__spm_kick_im_to_fetch(pcmdesc);
-
-	__spm_init_pcm_register();
-
-	__spm_init_event_vector(pcmdesc);
-
-	__spm_set_power_control(pwrctrl);
-
-	__spm_set_wakeup_event(pwrctrl);
-
-	__spm_sync_pcm_flags(pwrctrl);
-
-	__spm_kick_pcm_to_run(pwrctrl);
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-
-#else
 	spm_vcorefs_warn("pcm_flag: 0x%x\n", spm_flags);
 
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -1344,7 +1283,7 @@ void spm_go_to_vcorefs(int spm_flags)
 	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_1, spm_flags, 0);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
-#endif
+
 	spm_vcorefs_warn("[%s] done\n", __func__);
 }
 
@@ -1375,6 +1314,11 @@ void spm_vcorefs_init(void)
 	dvfsrc_register_init();
 	vcorefs_module_init();
 	plat_info_init();
+
+	if (!spm_load_firmware_status()) {
+		spm_vcorefs_warn("[%s] SPM FIRMWARE IS NOT READY\n", __func__);
+		return;
+	}
 
 	if (is_vcorefs_feature_enable()) {
 		flag = spm_dvfs_flag_init();

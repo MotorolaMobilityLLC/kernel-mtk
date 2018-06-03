@@ -16,9 +16,7 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
 #include <linux/string.h>
-#ifdef CONFIG_MTK_SPM_IN_ATF
 #include <mt-plat/mtk_secure_api.h>
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 #include <mtk_spm_internal.h>
 #include <mtk_sleep.h>
@@ -422,928 +420,620 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 
 	if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS])) {
 		pwrctrl->pcm_flags = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS_CUST])) {
 		pwrctrl->pcm_flags_cust = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS_CUST_SET])) {
 		pwrctrl->pcm_flags_cust_set = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST_SET, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS_CUST_CLR])) {
 		pwrctrl->pcm_flags_cust_clr = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST_CLR, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1])) {
 		pwrctrl->pcm_flags1 = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1_CUST])) {
 		pwrctrl->pcm_flags1_cust = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1_CUST, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1_CUST_SET])) {
 		pwrctrl->pcm_flags1_cust_set = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1_CUST_SET, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1_CUST_CLR])) {
 		pwrctrl->pcm_flags1_cust_clr = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1_CUST_CLR, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_TIMER_VAL])) {
 		pwrctrl->timer_val = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_TIMER_VAL_CUST])) {
 		pwrctrl->timer_val_cust = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL_CUST, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_TIMER_VAL_RAMP_EN])) {
 		pwrctrl->timer_val_ramp_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL_RAMP_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_TIMER_VAL_RAMP_EN_SEC])) {
 		pwrctrl->timer_val_ramp_en_sec = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL_RAMP_EN_SEC, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_WAKE_SRC])) {
 		pwrctrl->wake_src = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_WAKE_SRC, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_WAKE_SRC_CUST])) {
 		pwrctrl->wake_src_cust = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_WAKE_SRC_CUST, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_OPP_LEVEL])) {
 		pwrctrl->opp_level = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_OPP_LEVEL, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_WDT_DISABLE])) {
 		pwrctrl->wdt_disable = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_WDT_DISABLE, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_SYSPWREQ_MASK])) {
 		pwrctrl->syspwreq_mask = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_SYSPWREQ_MASK, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKEN0_CTL])) {
 		pwrctrl->reg_srcclken0_ctl = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKEN0_CTL, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKEN1_CTL])) {
 		pwrctrl->reg_srcclken1_ctl = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKEN1_CTL, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_LOCK_INFRA_DCM])) {
 		pwrctrl->reg_spm_lock_infra_dcm = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_LOCK_INFRA_DCM, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKEN_MASK])) {
 		pwrctrl->reg_srcclken_mask = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKEN_MASK, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD1_C32RM_EN])) {
 		pwrctrl->reg_md1_c32rm_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD1_C32RM_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD2_C32RM_EN])) {
 		pwrctrl->reg_md2_c32rm_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD2_C32RM_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CLKSQ0_SEL_CTRL])) {
 		pwrctrl->reg_clksq0_sel_ctrl = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CLKSQ0_SEL_CTRL, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CLKSQ1_SEL_CTRL])) {
 		pwrctrl->reg_clksq1_sel_ctrl = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CLKSQ1_SEL_CTRL, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKEN0_EN])) {
 		pwrctrl->reg_srcclken0_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKEN0_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKEN1_EN])) {
 		pwrctrl->reg_srcclken1_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKEN1_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SYSCLK0_SRC_MASK_B])) {
 		pwrctrl->reg_sysclk0_src_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SYSCLK0_SRC_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SYSCLK1_SRC_MASK_B])) {
 		pwrctrl->reg_sysclk1_src_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SYSCLK1_SRC_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_APSRC_REQ])) {
 		pwrctrl->reg_spm_apsrc_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_APSRC_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_F26M_REQ])) {
 		pwrctrl->reg_spm_f26m_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_F26M_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_INFRA_REQ])) {
 		pwrctrl->reg_spm_infra_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_INFRA_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_DDREN_REQ])) {
 		pwrctrl->reg_spm_ddren_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_DDREN_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_VRF18_REQ])) {
 		pwrctrl->reg_spm_vrf18_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_VRF18_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_DVFS_LEVEL0_REQ])) {
 		pwrctrl->reg_spm_dvfs_level0_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_DVFS_LEVEL0_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_DVFS_LEVEL1_REQ])) {
 		pwrctrl->reg_spm_dvfs_level1_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_DVFS_LEVEL1_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_DVFS_LEVEL2_REQ])) {
 		pwrctrl->reg_spm_dvfs_level2_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_DVFS_LEVEL2_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_DVFS_LEVEL3_REQ])) {
 		pwrctrl->reg_spm_dvfs_level3_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_DVFS_LEVEL3_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_DVFS_LEVEL4_REQ])) {
 		pwrctrl->reg_spm_dvfs_level4_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_DVFS_LEVEL4_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_SSPM_MAILBOX_REQ])) {
 		pwrctrl->reg_spm_sspm_mailbox_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_SSPM_MAILBOX_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_SW_MAILBOX_REQ])) {
 		pwrctrl->reg_spm_sw_mailbox_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_SW_MAILBOX_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_CKSEL2_REQ])) {
 		pwrctrl->reg_spm_cksel2_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_CKSEL2_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_CKSEL3_REQ])) {
 		pwrctrl->reg_spm_cksel3_req = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_CKSEL3_REQ, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CSYSPWREQ_MASK])) {
 		pwrctrl->reg_csyspwreq_mask = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CSYSPWREQ_MASK, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_SRCCLKENA_0_INFRA_MASK_B])) {
 		pwrctrl->reg_md_srcclkena_0_infra_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_SRCCLKENA_0_INFRA_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_SRCCLKENA_1_INFRA_MASK_B])) {
 		pwrctrl->reg_md_srcclkena_1_infra_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_SRCCLKENA_1_INFRA_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_APSRC_REQ_0_INFRA_MASK_B])) {
 		pwrctrl->reg_md_apsrc_req_0_infra_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_APSRC_REQ_0_INFRA_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_APSRC_REQ_1_INFRA_MASK_B])) {
 		pwrctrl->reg_md_apsrc_req_1_infra_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_APSRC_REQ_1_INFRA_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CONN_SRCCLKENA_INFRA_MASK_B])) {
 		pwrctrl->reg_conn_srcclkena_infra_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CONN_SRCCLKENA_INFRA_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CONN_INFRA_REQ_MASK_B])) {
 		pwrctrl->reg_conn_infra_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CONN_INFRA_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SSPM_SRCCLKENA_INFRA_MASK_B])) {
 		pwrctrl->reg_sspm_srcclkena_infra_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SSPM_SRCCLKENA_INFRA_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SSPM_INFRA_REQ_MASK_B])) {
 		pwrctrl->reg_sspm_infra_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SSPM_INFRA_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SCP_SRCCLKENA_INFRA_MASK_B])) {
 		pwrctrl->reg_scp_srcclkena_infra_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SCP_SRCCLKENA_INFRA_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SCP_INFRA_REQ_MASK_B])) {
 		pwrctrl->reg_scp_infra_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SCP_INFRA_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI0_INFRA_MASK_B])) {
 		pwrctrl->reg_srcclkeni0_infra_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI0_INFRA_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI1_INFRA_MASK_B])) {
 		pwrctrl->reg_srcclkeni1_infra_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI1_INFRA_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI2_INFRA_MASK_B])) {
 		pwrctrl->reg_srcclkeni2_infra_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI2_INFRA_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CCIF0_MD_EVENT_MASK_B])) {
 		pwrctrl->reg_ccif0_md_event_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CCIF0_MD_EVENT_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CCIF0_AP_EVENT_MASK_B])) {
 		pwrctrl->reg_ccif0_ap_event_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CCIF0_AP_EVENT_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CCIF1_MD_EVENT_MASK_B])) {
 		pwrctrl->reg_ccif1_md_event_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CCIF1_MD_EVENT_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CCIF1_AP_EVENT_MASK_B])) {
 		pwrctrl->reg_ccif1_ap_event_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CCIF1_AP_EVENT_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CCIF2_MD_EVENT_MASK_B])) {
 		pwrctrl->reg_ccif2_md_event_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CCIF2_MD_EVENT_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CCIF2_AP_EVENT_MASK_B])) {
 		pwrctrl->reg_ccif2_ap_event_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CCIF2_AP_EVENT_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CCIF3_MD_EVENT_MASK_B])) {
 		pwrctrl->reg_ccif3_md_event_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CCIF3_MD_EVENT_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CCIF3_AP_EVENT_MASK_B])) {
 		pwrctrl->reg_ccif3_ap_event_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CCIF3_AP_EVENT_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CCIFMD_MD1_EVENT_MASK_B])) {
 		pwrctrl->reg_ccifmd_md1_event_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CCIFMD_MD1_EVENT_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CCIFMD_MD2_EVENT_MASK_B])) {
 		pwrctrl->reg_ccifmd_md2_event_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CCIFMD_MD2_EVENT_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_C2K_PS_RCCIF_WAKE_MASK_B])) {
 		pwrctrl->reg_c2k_ps_rccif_wake_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_C2K_PS_RCCIF_WAKE_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_C2K_L1_RCCIF_WAKE_MASK_B])) {
 		pwrctrl->reg_c2k_l1_rccif_wake_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_C2K_L1_RCCIF_WAKE_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_PS_C2K_RCCIF_WAKE_MASK_B])) {
 		pwrctrl->reg_ps_c2k_rccif_wake_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_PS_C2K_RCCIF_WAKE_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_L1_C2K_RCCIF_WAKE_MASK_B])) {
 		pwrctrl->reg_l1_c2k_rccif_wake_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_L1_C2K_RCCIF_WAKE_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_DISP2_REQ_MASK_B])) {
 		pwrctrl->reg_disp2_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_DISP2_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_DDR_EN_0_MASK_B])) {
 		pwrctrl->reg_md_ddr_en_0_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_DDR_EN_0_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_DDR_EN_1_MASK_B])) {
 		pwrctrl->reg_md_ddr_en_1_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_DDR_EN_1_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CONN_DDR_EN_MASK_B])) {
 		pwrctrl->reg_conn_ddr_en_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CONN_DDR_EN_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_DISP0_REQ_MASK_B])) {
 		pwrctrl->reg_disp0_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_DISP0_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_DISP1_REQ_MASK_B])) {
 		pwrctrl->reg_disp1_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_DISP1_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_DISP_OD_REQ_MASK_B])) {
 		pwrctrl->reg_disp_od_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_DISP_OD_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MFG_REQ_MASK_B])) {
 		pwrctrl->reg_mfg_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MFG_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_VDEC0_REQ_MASK_B])) {
 		pwrctrl->reg_vdec0_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_VDEC0_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_GCE_REQ_MASK_B])) {
 		pwrctrl->reg_gce_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_GCE_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_GCE_VRF18_REQ_MASK_B])) {
 		pwrctrl->reg_gce_vrf18_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_GCE_VRF18_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_LPDMA_REQ_MASK_B])) {
 		pwrctrl->reg_lpdma_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_LPDMA_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CONN_SRCCLKENA_CKSEL2_MASK_B])) {
 		pwrctrl->reg_conn_srcclkena_cksel2_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CONN_SRCCLKENA_CKSEL2_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SSPM_APSRC_REQ_DDREN_MASK_B])) {
 		pwrctrl->reg_sspm_apsrc_req_ddren_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SSPM_APSRC_REQ_DDREN_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SCP_APSRC_REQ_DDREN_MASK_B])) {
 		pwrctrl->reg_scp_apsrc_req_ddren_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SCP_APSRC_REQ_DDREN_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_VRF18_REQ_0_MASK_B])) {
 		pwrctrl->reg_md_vrf18_req_0_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_VRF18_REQ_0_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_VRF18_REQ_1_MASK_B])) {
 		pwrctrl->reg_md_vrf18_req_1_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_VRF18_REQ_1_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_NEXT_DVFS_LEVEL0_MASK_B])) {
 		pwrctrl->reg_next_dvfs_level0_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_NEXT_DVFS_LEVEL0_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_NEXT_DVFS_LEVEL1_MASK_B])) {
 		pwrctrl->reg_next_dvfs_level1_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_NEXT_DVFS_LEVEL1_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_NEXT_DVFS_LEVEL2_MASK_B])) {
 		pwrctrl->reg_next_dvfs_level2_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_NEXT_DVFS_LEVEL2_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_NEXT_DVFS_LEVEL3_MASK_B])) {
 		pwrctrl->reg_next_dvfs_level3_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_NEXT_DVFS_LEVEL3_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_NEXT_DVFS_LEVEL4_MASK_B])) {
 		pwrctrl->reg_next_dvfs_level4_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_NEXT_DVFS_LEVEL4_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SW2SPM_INT0_MASK_B])) {
 		pwrctrl->reg_sw2spm_int0_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SW2SPM_INT0_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SW2SPM_INT1_MASK_B])) {
 		pwrctrl->reg_sw2spm_int1_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SW2SPM_INT1_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SW2SPM_INT2_MASK_B])) {
 		pwrctrl->reg_sw2spm_int2_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SW2SPM_INT2_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SW2SPM_INT3_MASK_B])) {
 		pwrctrl->reg_sw2spm_int3_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SW2SPM_INT3_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SSPM2SPM_INT0_MASK_B])) {
 		pwrctrl->reg_sspm2spm_int0_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SSPM2SPM_INT0_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SSPM2SPM_INT1_MASK_B])) {
 		pwrctrl->reg_sspm2spm_int1_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SSPM2SPM_INT1_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SSPM2SPM_INT2_MASK_B])) {
 		pwrctrl->reg_sspm2spm_int2_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SSPM2SPM_INT2_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SSPM2SPM_INT3_MASK_B])) {
 		pwrctrl->reg_sspm2spm_int3_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SSPM2SPM_INT3_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_DQSSOC_REQ_MASK_B])) {
 		pwrctrl->reg_dqssoc_req_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_DQSSOC_REQ_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MPWFI_OP])) {
 		pwrctrl->reg_mpwfi_op = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MPWFI_OP, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_RESOURCE_REQ_RSV1_4_MASK_B])) {
 		pwrctrl->reg_spm_resource_req_rsv1_4_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_RESOURCE_REQ_RSV1_4_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_RESOURCE_REQ_RSV1_3_MASK_B])) {
 		pwrctrl->reg_spm_resource_req_rsv1_3_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_RESOURCE_REQ_RSV1_3_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_RESOURCE_REQ_RSV1_2_MASK_B])) {
 		pwrctrl->reg_spm_resource_req_rsv1_2_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_RESOURCE_REQ_RSV1_2_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_RESOURCE_REQ_RSV1_1_MASK_B])) {
 		pwrctrl->reg_spm_resource_req_rsv1_1_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_RESOURCE_REQ_RSV1_1_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_RESOURCE_REQ_RSV1_0_MASK_B])) {
 		pwrctrl->reg_spm_resource_req_rsv1_0_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_RESOURCE_REQ_RSV1_0_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_RESOURCE_REQ_RSV0_4_MASK_B])) {
 		pwrctrl->reg_spm_resource_req_rsv0_4_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_RESOURCE_REQ_RSV0_4_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_RESOURCE_REQ_RSV0_3_MASK_B])) {
 		pwrctrl->reg_spm_resource_req_rsv0_3_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_RESOURCE_REQ_RSV0_3_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_RESOURCE_REQ_RSV0_2_MASK_B])) {
 		pwrctrl->reg_spm_resource_req_rsv0_2_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_RESOURCE_REQ_RSV0_2_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_RESOURCE_REQ_RSV0_1_MASK_B])) {
 		pwrctrl->reg_spm_resource_req_rsv0_1_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_RESOURCE_REQ_RSV0_1_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SPM_RESOURCE_REQ_RSV0_0_MASK_B])) {
 		pwrctrl->reg_spm_resource_req_rsv0_0_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SPM_RESOURCE_REQ_RSV0_0_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI2_CKSEL3_MASK_B])) {
 		pwrctrl->reg_srcclkeni2_cksel3_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI2_CKSEL3_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI2_CKSEL2_MASK_B])) {
 		pwrctrl->reg_srcclkeni2_cksel2_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI2_CKSEL2_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI1_CKSEL3_MASK_B])) {
 		pwrctrl->reg_srcclkeni1_cksel3_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI1_CKSEL3_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI1_CKSEL2_MASK_B])) {
 		pwrctrl->reg_srcclkeni1_cksel2_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI1_CKSEL2_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI0_CKSEL3_MASK_B])) {
 		pwrctrl->reg_srcclkeni0_cksel3_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI0_CKSEL3_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI0_CKSEL2_MASK_B])) {
 		pwrctrl->reg_srcclkeni0_cksel2_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI0_CKSEL2_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_DDR_EN_0_DBC_EN])) {
 		pwrctrl->reg_md_ddr_en_0_dbc_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_DDR_EN_0_DBC_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_DDR_EN_1_DBC_EN])) {
 		pwrctrl->reg_md_ddr_en_1_dbc_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_DDR_EN_1_DBC_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CONN_DDR_EN_DBC_EN])) {
 		pwrctrl->reg_conn_ddr_en_dbc_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CONN_DDR_EN_DBC_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SSPM_MASK_B])) {
 		pwrctrl->reg_sspm_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SSPM_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_0_MASK_B])) {
 		pwrctrl->reg_md_0_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_0_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_1_MASK_B])) {
 		pwrctrl->reg_md_1_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_1_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SCP_MASK_B])) {
 		pwrctrl->reg_scp_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SCP_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI0_MASK_B])) {
 		pwrctrl->reg_srcclkeni0_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI0_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI1_MASK_B])) {
 		pwrctrl->reg_srcclkeni1_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI1_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_SRCCLKENI2_MASK_B])) {
 		pwrctrl->reg_srcclkeni2_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_SRCCLKENI2_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_APSRC_1_SEL])) {
 		pwrctrl->reg_md_apsrc_1_sel = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_APSRC_1_SEL, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_APSRC_0_SEL])) {
 		pwrctrl->reg_md_apsrc_0_sel = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_APSRC_0_SEL, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CONN_MASK_B])) {
 		pwrctrl->reg_conn_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CONN_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_CONN_APSRC_SEL])) {
 		pwrctrl->reg_conn_apsrc_sel = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_CONN_APSRC_SEL, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_MD_SRCCLKENA_0_VRF18_MASK_B])) {
 		pwrctrl->reg_md_srcclkena_0_vrf18_mask_b = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_MD_SRCCLKENA_0_VRF18_MASK_B, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_WAKEUP_EVENT_MASK])) {
 		pwrctrl->reg_wakeup_event_mask = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_WAKEUP_EVENT_MASK, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_REG_EXT_WAKEUP_EVENT_MASK])) {
 		pwrctrl->reg_ext_wakeup_event_mask = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_REG_EXT_WAKEUP_EVENT_MASK, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU0_WFI_EN])) {
 		pwrctrl->mcu0_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU0_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU1_WFI_EN])) {
 		pwrctrl->mcu1_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU1_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU2_WFI_EN])) {
 		pwrctrl->mcu2_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU2_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU3_WFI_EN])) {
 		pwrctrl->mcu3_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU3_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU4_WFI_EN])) {
 		pwrctrl->mcu4_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU4_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU5_WFI_EN])) {
 		pwrctrl->mcu5_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU5_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU6_WFI_EN])) {
 		pwrctrl->mcu6_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU6_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU7_WFI_EN])) {
 		pwrctrl->mcu7_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU7_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU8_WFI_EN])) {
 		pwrctrl->mcu8_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU8_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU9_WFI_EN])) {
 		pwrctrl->mcu9_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU9_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU10_WFI_EN])) {
 		pwrctrl->mcu10_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU10_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU11_WFI_EN])) {
 		pwrctrl->mcu11_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU11_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU12_WFI_EN])) {
 		pwrctrl->mcu12_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU12_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU13_WFI_EN])) {
 		pwrctrl->mcu13_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU13_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU14_WFI_EN])) {
 		pwrctrl->mcu14_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU14_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU15_WFI_EN])) {
 		pwrctrl->mcu15_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU15_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU16_WFI_EN])) {
 		pwrctrl->mcu16_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU16_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU17_WFI_EN])) {
 		pwrctrl->mcu17_wfi_en = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU17_WFI_EN, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else {
 		return -EINVAL;
 	}
