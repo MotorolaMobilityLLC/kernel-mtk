@@ -21,10 +21,6 @@
 #include <linux/init.h>
 #include <linux/types.h>
 
-#ifdef CONFIG_MTK_SMI_EXT
-#include "mmdvfs_mgr.h"
-#endif
-
 #ifdef CONFIG_OF
 /* device tree */
 #include <linux/of.h>
@@ -53,10 +49,6 @@
 #include "imgsensor_proc.h"
 #include "imgsensor_oc.h"
 #include "imgsensor.h"
-
-#ifdef CONFIG_MTK_SMI_EXT
-static int current_mmsys_clk = MMSYS_CLK_MEDIUM;
-#endif
 
 static DEFINE_MUTEX(gimgsensor_mutex);
 
@@ -1526,18 +1518,6 @@ static const struct file_operations gimgsensor_file_operations = {
 #endif
 };
 
-#ifdef CONFIG_MTK_SMI_EXT
-int mmsys_clk_change_cb(int ori_clk_mode, int new_clk_mode)
-{
-	PK_DBG("mmsys_clk_change_cb ori: %d, new: %d, current_mmsys_clk %d\n",
-	       ori_clk_mode, new_clk_mode, current_mmsys_clk);
-
-	current_mmsys_clk = new_clk_mode;
-
-	return 1;
-}
-#endif
-
 static int imgsensor_probe(struct platform_device *pplatform_device)
 {
 	struct IMGSENSOR *pimgsensor = &gimgsensor;
@@ -1592,10 +1572,6 @@ static int imgsensor_probe(struct platform_device *pplatform_device)
 	imgsensor_proc_init();
 	imgsensor_init_sensor_list();
 	imgsensor_oc_init();
-
-#ifdef CONFIG_MTK_SMI_EXT
-	mmdvfs_register_mmclk_switch_cb(mmsys_clk_change_cb, MMDVFS_CLIENT_ID_ISP);
-#endif
 
 	return 0;
 }
