@@ -52,6 +52,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_drv.h"
 #include "pvrmodule.h"
 #include "sysinfo.h"
+#include "mtk_mfgsys.h"
 
 static struct drm_driver pvr_drm_platform_driver;
 
@@ -235,8 +236,13 @@ static int __init pvr_init(void)
 	err = platform_driver_register(&pvr_platform_driver);
 	if (err)
 		return err;
+	err = pvr_devices_register();
+  
+#if defined(CONFIG_MACH_MT8167)
+	MTKCommonDisablePowerDomain();
+#endif
 
-	return pvr_devices_register();
+	return err;
 }
 
 static void __exit pvr_exit(void)

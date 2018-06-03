@@ -123,7 +123,7 @@ typedef enum _MMU_MOD_
 typedef struct _MMU_CTX_CLEANUP_DATA_
 {
 	/*! Refcount to know when this structure can be destroyed */
-	IMG_UINT32 uiRef;
+	ATOMIC_T iRef;
 	/*! Protect items in this structure, especially the refcount */
 	POS_LOCK hCleanupLock;
 	/*! List of all cleanup items currently in flight */
@@ -286,7 +286,7 @@ struct _MMU_CONTEXT_
 	 * reading and using its content
 	 */
 	POS_LOCK hLock;
-	
+
 	/*! Base level info structure. Must be last member in structure */
 	MMU_Levelx_INFO sBaseLevelInfo;
 	/* NO OTHER MEMBERS AFTER THIS STRUCTURE ! */
@@ -423,12 +423,9 @@ e0:
 	 * destroyed. */
 	if (eError == PVRSRV_OK)
 	{
-		IMG_UINT32 uiRef;
-
-		uiRef = --psMMUCtxCleanupData->uiRef;
 		OSLockRelease(psMMUCtxCleanupData->hCleanupLock);
 
-		if (uiRef == 0)
+		if (OSAtomicDecrement(&psMMUCtxCleanupData->iRef) == 0)
 		{
 			OSLockDestroy(psMMUCtxCleanupData->hCleanupLock);
 			OSFreeMem(psMMUCtxCleanupData);
@@ -495,9 +492,7 @@ _SetupCleanup_FreeMMUMapping(PVRSRV_DEVICE_NODE *psDevNode,
 	psCleanupItem->psDevNode = psDevNode;
 	psCleanupItem->psMMUCtxCleanupData = psCleanupData;
 
-	OSLockAcquire(psCleanupData->hCleanupLock);
-
-	psCleanupData->uiRef++;
+	OSAtomicIncrement(&psCleanupData->iRef);
 
 	/* Move the page tables to free to the cleanup item */
 	dllist_replace_head(&psPhysMemCtx->sTmpMMUMappingHead,
@@ -506,8 +501,6 @@ _SetupCleanup_FreeMMUMapping(PVRSRV_DEVICE_NODE *psDevNode,
 	/* Add the cleanup item itself to the context list */
 	dllist_add_to_tail(&psCleanupData->sMMUCtxCleanupItemsHead,
 	                   &psCleanupItem->sMMUCtxCleanupItem);
-
-	OSLockRelease(psCleanupData->hCleanupLock);
 
 	/* Setup the cleanup thread data and add the work item */
 	psCleanupItem->sCleanupThreadFn.pfnFree = _CleanupThread_FreeMMUMapping;
@@ -1292,7 +1285,7 @@ static PVRSRV_ERROR _SetupPxE(MMU_CONTEXT *psMMUContext,
 		case 8:
 		{
 			IMG_UINT64 *pui64Px = psMemDesc->pvCpuVAddr; /* Give the virtual base address of Px */
-			
+
 			pui64Px[uiIndex] = psDevPAddr->uiAddr             /* Calculate the offset to that base */
 								>> psConfig->uiAddrLog2Align  /* Shift away the unnecessary bits of the address */
 								<< psConfig->uiAddrShift      /* Shift back to fit address in the Px entry */
@@ -1336,7 +1329,7 @@ static PVRSRV_ERROR _SetupPxE(MMU_CONTEXT *psMMUContext,
 	psDevNode->pfnMMUCacheInvalidate(psDevNode, psMMUContext->hDevData,
 									 eMMULevel,
 									 (uiProtFlags & MMU_PROTFLAGS_INVALID)?IMG_TRUE:IMG_FALSE);
-	
+
 	return PVRSRV_OK;
 }
 
@@ -1899,7 +1892,7 @@ static void _MMU_GetLevelData(MMU_CONTEXT *psMMUContext,
 														ppsMMUDevVAddrConfig,
 														phPriv);
 	PVR_ASSERT(eError == PVRSRV_OK);
-	
+
 	psDevVAddrConfig = *ppsMMUDevVAddrConfig;
 
 	if (psDevVAddrConfig->uiPCIndexMask != 0)
@@ -2285,7 +2278,7 @@ MMU_ContextCreate(PVRSRV_DEVICE_NODE *psDevNode,
 	}
 
 	/* Allocate the MMU context with the Level 1 Px info's */
-	ui32Size = sizeof(MMU_CONTEXT) + 
+	ui32Size = sizeof(MMU_CONTEXT) +
 						((ui32BaseObjects - 1) * sizeof(MMU_Levelx_INFO *));
 
 	psMMUContext = OSAllocZMem(ui32Size);
@@ -2370,7 +2363,7 @@ MMU_ContextCreate(PVRSRV_DEVICE_NODE *psDevNode,
 	OSLockCreate(&psCtx->psCleanupData->hCleanupLock, LOCK_TYPE_PASSIVE);
 	psCtx->psCleanupData->bMMUContextExists = IMG_TRUE;
 	dllist_init(&psCtx->psCleanupData->sMMUCtxCleanupItemsHead);
-	psCtx->psCleanupData->uiRef = 1;
+	OSAtomicWrite(&psCtx->psCleanupData->iRef, 1);
 
 	/* allocate the base level object */
 	/*
@@ -2436,7 +2429,6 @@ MMU_ContextDestroy (MMU_CONTEXT *psMMUContext)
 
 	PVRSRV_DEVICE_NODE *psDevNode = (PVRSRV_DEVICE_NODE *) psMMUContext->psDevNode;
 	MMU_CTX_CLEANUP_DATA *psCleanupData = psMMUContext->psPhysMemCtx->psCleanupData;
-	IMG_UINT32 uiRef;
 
 	PVR_DPF ((PVR_DBG_MESSAGE, "MMU_ContextDestroy: Enter"));
 
@@ -2447,6 +2439,7 @@ MMU_ContextDestroy (MMU_CONTEXT *psMMUContext)
 		PVR_ASSERT(psMMUContext->sBaseLevelInfo.ui32RefCount == 0);
 	}
 
+	OSLockAcquire(psCleanupData->hCleanupLock);
 	OSLockAcquire(psMMUContext->hLock);
 
 	/* Free the top level MMU object - will be put on defer free list.
@@ -2459,8 +2452,6 @@ MMU_ContextDestroy (MMU_CONTEXT *psMMUContext)
 	/* Empty the temporary defer-free list of Px */
 	_FreeMMUMapping(psDevNode, &psMMUContext->psPhysMemCtx->sTmpMMUMappingHead);
 	PVR_ASSERT(dllist_is_empty(&psMMUContext->psPhysMemCtx->sTmpMMUMappingHead));
-
-	OSLockAcquire(psCleanupData->hCleanupLock);
 
 	/* Empty the defer free list so the cleanup thread will
 	 * not have to access any MMU context related structures anymore */
@@ -2479,11 +2470,10 @@ MMU_ContextDestroy (MMU_CONTEXT *psMMUContext)
 	PVR_ASSERT(dllist_is_empty(&psCleanupData->sMMUCtxCleanupItemsHead));
 
 	psCleanupData->bMMUContextExists = IMG_FALSE;
-	uiRef = --psCleanupData->uiRef;
 
 	OSLockRelease(psCleanupData->hCleanupLock);
 
-	if (uiRef == 0)
+	if (OSAtomicDecrement(&psCleanupData->iRef) == 0)
 	{
 		OSLockDestroy(psCleanupData->hCleanupLock);
 		OSFreeMem(psCleanupData);
@@ -2534,7 +2524,7 @@ MMU_Alloc (MMU_CONTEXT *psMMUContext,
 
 	MMU_DEVICEATTRIBS *psDevAttrs;
 	IMG_HANDLE hPriv;
-	
+
 #if !defined (DEBUG)
 	PVR_UNREFERENCED_PARAMETER(uDevVAddrAlignment);
 #endif
@@ -2611,6 +2601,12 @@ MMU_Free (MMU_CONTEXT *psMMUContext,
 	sDevVAddrEnd = sDevVAddr;
 	sDevVAddrEnd.uiAddr += uiSize;
 
+	/* The Cleanup lock has to be taken before the MMUContext hLock to
+	 * prevent deadlock scenarios. It is necessary only for parts of
+	 * _SetupCleanup_FreeMMUMapping though.
+	 */
+	OSLockAcquire(psMMUContext->psPhysMemCtx->psCleanupData->hCleanupLock);
+
 	OSLockAcquire(psMMUContext->hLock);
 
 	_FreePageTables(psMMUContext,
@@ -2622,6 +2618,8 @@ MMU_Free (MMU_CONTEXT *psMMUContext,
 	                             psMMUContext->psPhysMemCtx);
 
 	OSLockRelease(psMMUContext->hLock);
+
+	OSLockRelease(psMMUContext->psPhysMemCtx->psCleanupData->hCleanupLock);
 
 	return;
 
@@ -3027,7 +3025,6 @@ MMU_UnmapPages (MMU_CONTEXT *psMMUContext,
 		uiProtFlags = psMMUContext->psDevAttrs->pfnDerivePTEProt8(uiMMUProtFlags , uiLog2PageSize);
 	}
 
-
 	OSLockAcquire(psMMUContext->hLock);
 
 	/* Unmap page by page */
@@ -3319,7 +3316,6 @@ MMU_MapPMRFast (MMU_CONTEXT *psMMUContext,
 	}
 
 	OSLockRelease(psMMUContext->hLock);
-
 
 	_MMU_PutPTConfig(psMMUContext, hPriv);
 
@@ -3786,7 +3782,7 @@ void MMU_CheckFaultAddress(MMU_CONTEXT *psMMUContext,
 			uiIndex = uiIndex >> psDevAttrs->psTopLevelDevVAddrConfig->uiPCIndexShift;
 			ui32PCIndex = (IMG_UINT32) uiIndex;
 			PVR_ASSERT(uiIndex == ((IMG_UINT64) ui32PCIndex));
-			
+
 			if (ui32PCIndex >= psLevel->ui32NumOfEntries)
 			{
 				PVR_DUMPDEBUG_LOG("PC index (%d) out of bounds (%d)", ui32PCIndex, psLevel->ui32NumOfEntries);

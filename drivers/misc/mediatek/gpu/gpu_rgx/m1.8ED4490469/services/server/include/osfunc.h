@@ -540,7 +540,7 @@ void OSInvalidateCPUCacheRangeKM(PVRSRV_DEVICE_NODE *psDevNode,
 
 /**************************************************************************/ /*!
 @Function       OSCPUCacheOpAddressType
-@Description    Returns the address type (i.e. virtual/physical/both) that is 
+@Description    Returns the address type (i.e. virtual/physical/both) that is
                 used to perform cache maintenance on the CPU. This is used
 				to infer whether the virtual or physical address supplied to
 				the OSxxxCPUCacheRangeKM functions can be omitted when called.
@@ -708,7 +708,7 @@ void OSPhyContigPagesUnmap(PVRSRV_DEVICE_NODE *psDevNode, PG_HANDLE *psMemHandle
                 uncached this can be implemented as nop.
 @Input          psDevNode     device on which the allocation was made
 @Input          psMemHandle   the handle of the allocation to be flushed
-@Input          uiOffset      the offset in bytes from the start of the 
+@Input          uiOffset      the offset in bytes from the start of the
                               allocation from where to start flushing
 @Input          uiLength      the amount to flush from the offset in bytes
 @Return         PVRSRV_OK on success, a failure code otherwise.
@@ -1565,7 +1565,7 @@ void OSReleaseBridgeLock(void);
  *  Functions for providing support for PID statistics.
  */
 typedef void (OS_STATS_PRINTF_FUNC)(void *pvFilePtr, const IMG_CHAR *pszFormat, ...);
- 
+
 typedef void (OS_STATS_PRINT_FUNC)(void *pvFilePtr,
 								   void *pvStatPtr,
 								   OS_STATS_PRINTF_FUNC* pfnOSGetStatsPrintf);
@@ -1610,6 +1610,35 @@ void *OSCreateStatisticEntry(IMG_CHAR* pszName, void *pvFolder,
                          OSCreateStatisticEntry().
 */ /**************************************************************************/
 void OSRemoveStatisticEntry(void *pvEntry);
+
+#if defined(PVRSRV_ENABLE_MEMTRACK_STATS_FILE)
+/*************************************************************************/ /*!
+@Function       OSCreateRawStatisticEntry
+@Description    Create a raw statistic entry in the specified folder.
+                Where operating systems do not support a debugfs
+                file system this function may be implemented as a stub.
+@Input          pszFileName    String containing the name for the entry.
+@Input          pvParentDir    Reference from OSCreateStatisticFolder() of the
+                               folder to create the entry in, or NULL for the
+                               root.
+@Input          pfnStatsPrint  Pointer to function that can be used to print the
+                               values of all the statistics.
+@Return	        Pointer void reference to the entry created, which can be
+                passed to OSRemoveRawStatisticEntry() to remove the entry.
+*/ /**************************************************************************/
+void *OSCreateRawStatisticEntry(const IMG_CHAR *pszFileName, void *pvParentDir,
+                                OS_STATS_PRINT_FUNC *pfStatsPrint);
+
+/*************************************************************************/ /*!
+@Function       OSRemoveRawStatisticEntry
+@Description    Removes a raw statistic entry.
+                Where operating systems do not support a debugfs
+                file system this function may be implemented as a stub.
+@Input          pvEntry  Pointer void reference to the entry created by
+                         OSCreateRawStatisticEntry().
+*/ /**************************************************************************/
+void OSRemoveRawStatisticEntry(void *pvEntry);
+#endif
 
 /*************************************************************************/ /*!
 @Function       OSCreateStatisticFolder
@@ -1657,6 +1686,9 @@ void OSUserModeAccessToPerfCountersEn(void);
 @Returns        PVRSRV_ERROR
 */ /**************************************************************************/
 PVRSRV_ERROR OSDebugSignalPID(IMG_UINT32 ui32PID);
+
+/* MTK internal cahce flush */
+extern void __inner_flush_dcache_all(void);
 
 #if defined(CONFIG_L4)
 #include <asm/api-l4env/api.h>

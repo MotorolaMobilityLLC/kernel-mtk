@@ -47,7 +47,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/mm.h>
 #include <linux/kernel.h>
 #include <linux/pagemap.h>
-#include <linux/hugetlb.h> 
+#include <linux/hugetlb.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <linux/delay.h>
@@ -106,6 +106,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif /* EMULATOR */
 #endif
 
+#include "ged_log.h"
+
 /*
  * Main driver lock, used to ensure driver code is single threaded. There are
  * some places where this lock must not be taken, such as in the mmap related
@@ -119,6 +121,7 @@ static atomic_t g_DriverSuspended;
 struct task_struct *BridgeLockGetOwner(void);
 IMG_BOOL BridgeLockIsLocked(void);
 
+unsigned int _ged_log_owner;
 
 PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,
 							PG_HANDLE *psMemHandle, IMG_DEV_PHYADDR *psDevPAddr)
@@ -386,6 +389,8 @@ PVRSRV_ERROR OSInitEnvData(void)
 
 	LinuxInitPhysmem();
 
+	_ged_log_owner = ged_log_buf_alloc(128, 128 * 32, GED_LOG_BUF_TYPE_RINGBUFFER, "OwnerLog", "oL");
+
 	return PVRSRV_OK;
 }
 
@@ -449,8 +454,8 @@ static inline IMG_UINT64 Clockns64(void)
 {
 	IMG_UINT64 timenow;
 
-	/* Kernel thread preempt protection. Some architecture implementations 
-	 * (ARM) of sched_clock are not preempt safe when the kernel is configured 
+	/* Kernel thread preempt protection. Some architecture implementations
+	 * (ARM) of sched_clock are not preempt safe when the kernel is configured
 	 * as such e.g. CONFIG_PREEMPT and others.
 	 */
 	preempt_disable();
@@ -467,7 +472,7 @@ static inline IMG_UINT64 Clockns64(void)
 
 IMG_UINT64 OSClockns64(void)
 {
-	return Clockns64();	
+	return Clockns64();
 }
 
 IMG_UINT64 OSClockus64(void)
@@ -995,7 +1000,7 @@ PVRSRV_ERROR OSSetThreadPriority(IMG_HANDLE hThread,
 	PVR_UNREFERENCED_PARAMETER(nThreadPriority);
 	PVR_UNREFERENCED_PARAMETER(nThreadWeight);
  	/* Default priorities used on this platform */
-	
+
 	return PVRSRV_OK;
 }
 
@@ -1579,13 +1584,15 @@ void OSAcquireBridgeLock(void)
 {
 	mutex_lock(&gPVRSRVLock);
 	gsOwner = current;
-	
+
 	g_pid[0] = gsOwner->pid;
 	g_pid[1] = gsOwner->tgid;
+	ged_log_buf_print2(_ged_log_owner, GED_LOG_ATTR_TIME, "%d / %d [+]", gsOwner->pid, gsOwner->tgid);
 }
 
 void OSReleaseBridgeLock(void)
 {
+	ged_log_buf_print2(_ged_log_owner, GED_LOG_ATTR_TIME, "%d / %d [-]", gsOwner->pid, gsOwner->tgid);
 	gsOwner = NULL;
 	g_pid[0] = -1;
 	g_pid[1] = -1;
@@ -1651,6 +1658,19 @@ void OSRemoveStatisticEntry(void *pvEntry)
 	PVRDebugFSRemoveStatisticEntry((PVR_DEBUGFS_DRIVER_STAT *)pvEntry);
 } /* OSRemoveStatisticEntry */
 
+#if defined(PVRSRV_ENABLE_MEMTRACK_STATS_FILE)
+void *OSCreateRawStatisticEntry(const IMG_CHAR *pszFileName, void *pvParentDir,
+                                OS_STATS_PRINT_FUNC *pfStatsPrint)
+{
+	return (void *) PVRDebugFSCreateRawStatisticEntry(pszFileName, pvParentDir,
+	                                                  pfStatsPrint);
+}
+
+void OSRemoveRawStatisticEntry(void *pvEntry)
+{
+	PVRDebugFSRemoveRawStatisticEntry(pvEntry);
+}
+#endif
 
 /*************************************************************************/ /*!
 @Function		OSCreateStatisticFolder
@@ -1734,7 +1754,7 @@ PVRSRV_ERROR OSChangeSparseMemCPUAddrMap(void **psPageArray,
 	down_write(&psMM->mmap_sem);
 
 	psMapping = psVMA->vm_file->f_mapping;
-	
+
 	/* Set the page offset to the correct value as this is disturbed in MMAP_PMR func */
 	psVMA->vm_pgoff = (psVMA->vm_start >>  PAGE_SHIFT);
 

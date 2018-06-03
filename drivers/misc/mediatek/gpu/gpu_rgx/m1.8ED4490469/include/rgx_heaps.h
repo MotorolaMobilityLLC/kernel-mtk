@@ -54,21 +54,22 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RGX_GENERAL_SVM_HEAP_ID					0				/*!< RGX General SVM (shared virtual memory) Heap ID */
 #define RGX_GENERAL_HEAP_ID						1				/*!< RGX General Heap ID */
 #define RGX_GENERAL_NON4K_HEAP_ID				2				/*!< RGX General none-4K Heap ID */
-#define RGX_PDSCODEDATA_HEAP_ID					3				/*!< RGX PDS Code/Data Heap ID */
-#define RGX_USCCODE_HEAP_ID						4				/*!< RGX USC Code Heap ID */
-#define RGX_FIRMWARE_HEAP_ID					5				/*!< RGX Firmware Heap ID */
-#define RGX_TQ3DPARAMETERS_HEAP_ID				6				/*!< RGX Firmware Heap ID */
-#define RGX_BIF_TILING_HEAP_1_ID				7				/*!< RGX BIF Tiling Heap 1 ID */
-#define RGX_BIF_TILING_HEAP_2_ID				8				/*!< RGX BIF Tiling Heap 2 ID */
-#define RGX_BIF_TILING_HEAP_3_ID				9				/*!< RGX BIF Tiling Heap 3 ID */
-#define RGX_BIF_TILING_HEAP_4_ID				10				/*!< RGX BIF Tiling Heap 4 ID */
-#define RGX_HWBRN37200_HEAP_ID					11				/*!< RGX HWBRN37200 */
-#define RGX_DOPPLER_HEAP_ID						12				/*!< Doppler Heap ID */
-#define RGX_DOPPLER_OVERFLOW_HEAP_ID			13				/*!< Doppler Overflow Heap ID */
-#define RGX_SERVICES_SIGNALS_HEAP_ID			14				/*!< Services Signals Heap ID */
-#define RGX_SIGNALS_HEAP_ID						15				/*!< Signals Heap ID */
-#define RGX_TDM_TPU_YUV_COEFFS_HEAP_ID          16
-#define RGX_GUEST_FIRMWARE_HEAP_ID				17				/*!< Additional OSIDs Firmware */
+#define RGX_RGNHDR_BRN_63142__ID				3				/*!< RGX General Heap ID */
+#define RGX_PDSCODEDATA_HEAP_ID					4				/*!< RGX PDS Code/Data Heap ID */
+#define RGX_USCCODE_HEAP_ID						5				/*!< RGX USC Code Heap ID */
+#define RGX_FIRMWARE_HEAP_ID					6				/*!< RGX Firmware Heap ID */
+#define RGX_TQ3DPARAMETERS_HEAP_ID				7				/*!< RGX Firmware Heap ID */
+#define RGX_BIF_TILING_HEAP_1_ID				8				/*!< RGX BIF Tiling Heap 1 ID */
+#define RGX_BIF_TILING_HEAP_2_ID				9				/*!< RGX BIF Tiling Heap 2 ID */
+#define RGX_BIF_TILING_HEAP_3_ID				10				/*!< RGX BIF Tiling Heap 3 ID */
+#define RGX_BIF_TILING_HEAP_4_ID				11				/*!< RGX BIF Tiling Heap 4 ID */
+#define RGX_HWBRN37200_HEAP_ID					12				/*!< RGX HWBRN37200 */
+#define RGX_DOPPLER_HEAP_ID						13				/*!< Doppler Heap ID */
+#define RGX_DOPPLER_OVERFLOW_HEAP_ID			14				/*!< Doppler Overflow Heap ID */
+#define RGX_SERVICES_SIGNALS_HEAP_ID			15				/*!< Services Signals Heap ID */
+#define RGX_SIGNALS_HEAP_ID						16				/*!< Signals Heap ID */
+#define RGX_TDM_TPU_YUV_COEFFS_HEAP_ID          17
+#define RGX_GUEST_FIRMWARE_HEAP_ID				18				/*!< Additional OSIDs Firmware */
 #define RGX_MAX_HEAP_ID     	(RGX_GUEST_FIRMWARE_HEAP_ID + RGXFW_NUM_OS)	/*!< Max Valid Heap ID */
 
 /*
@@ -77,6 +78,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RGX_GENERAL_SVM_HEAP_IDENT		"General SVM"			/*!< RGX General SVM (shared virtual memory) Heap Identifier */
 #define RGX_GENERAL_HEAP_IDENT 			"General"               /*!< RGX General Heap Identifier */
 #define RGX_GENERAL_NON4K_HEAP_IDENT	"General NON-4K"        /*!< RGX General non-4K Heap Identifier */
+#define RGX_RGNHDR_BRN_63142_HEAP_IDENT "RgnHdr BRN63142"       /*!< RGX RgnHdr BRN63142 Heap Identifier */
 #define RGX_PDSCODEDATA_HEAP_IDENT 		"PDS Code and Data"     /*!< RGX PDS Code/Data Heap Identifier */
 #define RGX_USCCODE_HEAP_IDENT			"USC Code"              /*!< RGX USC Code Heap Identifier */
 #define RGX_TQ3DPARAMETERS_HEAP_IDENT	"TQ3DParameters"        /*!< RGX TQ 3D Parameters Heap Identifier */

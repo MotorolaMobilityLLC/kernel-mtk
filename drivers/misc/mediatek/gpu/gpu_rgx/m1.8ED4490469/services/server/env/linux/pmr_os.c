@@ -351,7 +351,7 @@ OSMMapPMRGeneric(PMR *psPMR, PMR_MMAP_DATA pOSMMapData)
 		((ps_vma->vm_flags & VM_SHARED) == 0))
 	{
 		eError = PVRSRV_ERROR_INVALID_PARAMS;
-		goto e0;
+		goto e1;
 	}
 
 	sPageProt = vm_get_page_prot(ps_vma->vm_flags);
@@ -381,7 +381,7 @@ OSMMapPMRGeneric(PMR *psPMR, PMR_MMAP_DATA pOSMMapData)
 
 		default:
 				eError = PVRSRV_ERROR_INVALID_PARAMS;
-				goto e0;
+				goto e1;
 	}
 	ps_vma->vm_page_prot = sPageProt;
 
@@ -558,7 +558,6 @@ OSMMapPMRGeneric(PMR *psPMR, PMR_MMAP_DATA pOSMMapData)
 		OSFreeMem(pbValid);
 	}
  e1:
-	PVR_DPF((PVR_DBG_ERROR, "don't know how to handle this error.  Abort!"));
 	PMRUnlockSysPhysAddresses(psPMR);
  e0:
 	return eError;

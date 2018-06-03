@@ -5,7 +5,7 @@ OPTIM = -Os
 ifeq ($(MTK_PLATFORM),mt6799)
 	version := m1.8ED4490469/
 else
-	version := m1.8ED4302432/
+	version := m1.8ED4490469/
 endif
 
 RGX_TOP := $(srctree)/drivers/misc/mediatek/gpu/gpu_rgx/$(version)
@@ -60,7 +60,6 @@ pvrsrvkm-y += \
  services/server/env/linux/pvr_debug.o \
  services/server/env/linux/handle_idr.o \
  services/server/env/linux/pvr_gputrace.o \
- services/server/env/linux/osfunc_arm64.o \
  services/server/env/linux/trace_events.o \
  services/server/common/devicemem_heapcfg.o \
  services/server/common/devicemem_server.o \
@@ -169,6 +168,13 @@ pvrsrvkm-y += \
  generated/rgxsignals_bridge/server_rgxsignals_bridge.o
 endif
 
+ifeq ($(MTK_PLATFORM),mt8167)
+pvrsrvkm-y += \
+ generated/rgxsignals_bridge/server_rgxsignals_bridge.o \
+ services/server/devices/rgx/rgxsignals.o \
+ services/server/devices/rgx/rgxmipsmmuinit.o
+endif
+
 ifeq ($(MTK_DDK_DEBUG),y)
 pvrsrvkm-y += \
  #services/server/common/ri_server.o \
@@ -237,7 +243,8 @@ ccflags-y += \
  -I$(RGX_TOP)/services/srvinit/include \
  -I$(RGX_TOP)/services/system/include \
  -I$(RGX_TOP)/services/system/rgx_$(MTK_PLATFORM) \
- -I$(RGX_TOP)/generated/devicememhistory_bridge
+ -I$(RGX_TOP)/generated/devicememhistory_bridge \
+ -I$(RGX_TOP)/generated/rgxsignals_bridge
 
 ifeq ($(MTK_PLATFORM),mt6799)
 pvrsrvkm-y += \
