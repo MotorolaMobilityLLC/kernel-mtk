@@ -410,8 +410,13 @@ unsigned int enable_vimvo_lp_mode(unsigned lp)
 {
 	if (lp != 1 && lp != 0)
 		return lp;
-
-	pmic_set_register_value(PMIC_RG_BUCK_VIMVO_LP, lp);
+	if (lp == 1) {
+		pmic_set_register_value(PMIC_RG_BUCK_VMD1_DVS_TRANS_CTRL, 0);
+		pmic_set_register_value(PMIC_RG_BUCK_VIMVO_LP, lp);
+	} else {
+		pmic_set_register_value(PMIC_RG_BUCK_VIMVO_LP, lp);
+		pmic_set_register_value(PMIC_RG_BUCK_VMD1_DVS_TRANS_CTRL, 1);
+	}
 	if (pmic_get_register_value(PMIC_RG_BUCK_VIMVO_LP) == lp) {
 		pr_err("[PMIC][%s] VIMVO enter %s mode success\n", __func__, (lp == 1)?"sleep":"normal");
 		return 0;
