@@ -89,6 +89,14 @@ config MACH_MT6757
 	  significant multitasking and multimedia improvements thanks to its new
 	  LPDDR4X memory support.
 
+config MACH_MT6759
+	bool "MediaTek MT6759"
+	help
+	  This enables support for MediaTek MT6759
+	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
+	  thin-design smartphones. MT6759 also offers significant multitasking and
+	  multimedia improvements.
+
 config MACH_KIBOPLUS
 	bool "MediaTek KIBOPLUS"
 	select GENERIC_TIME
