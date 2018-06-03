@@ -15,17 +15,19 @@
  * @brief   Driver for UDI interface define
  *
  */
-#ifndef _MT_UDI_H
-#define _MT_UDI_H
+#ifndef __MTK_UDI_INTERNAL_H__
+#define __MTK_UDI_INTERNAL_H__
+
+#include <mtk_udi.h>
 
 #ifdef __KERNEL__
-#ifdef __MT_UDI_C__
+#ifdef __MTK_UDI_C__
 #include <mt-plat/mtk_secure_api.h>
 #endif
 #endif
 
 #ifdef __KERNEL__
-#ifdef __MT_UDI_C__
+#ifdef __MTK_UDI_C__
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 #define mt_secure_call_udi	mt_secure_call
 #else
@@ -151,4 +153,4 @@ static noinline int mt_secure_call_udi(u64 function_id, u64 arg0, u64 arg1, u64 
 /* #define UDI_FIFOSIZE 16384  */
 #define UDI_FIFOSIZE 256
 
-#endif /* _MT_UDI_H */
+#endif /* __MTK_UDI_INTERNAL_H__ */
