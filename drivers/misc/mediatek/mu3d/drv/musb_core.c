@@ -1676,6 +1676,10 @@ static int __init musb_core_init(u16 musb_type, struct musb *musb)
 	_ex_mu3d_hal_init_qmu();
 
 	musb_save_context(musb);
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+	dma_set_mask_and_coherent(musb->controller, DMA_BIT_MASK(36));
+	dma_set_coherent_mask(musb->controller, DMA_BIT_MASK(36));
+#endif
 #endif
 
 	return 0;
@@ -1925,6 +1929,7 @@ musb_srp_store(struct device *dev, struct device_attribute *attr, const char *bu
 
 static DEVICE_ATTR(srp, 0644, NULL, musb_srp_store);
 DEVICE_ATTR(cmode, 0664, musb_cmode_show, musb_cmode_store);
+DEVICE_ATTR(saving, 0664, musb_saving_mode_show, musb_saving_mode_store);
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 DEVICE_ATTR(portmode, 0664, musb_portmode_show, musb_portmode_store);
@@ -1942,6 +1947,7 @@ static struct attribute *musb_attributes[] = {
 	&dev_attr_vbus.attr,
 	&dev_attr_srp.attr,
 	&dev_attr_cmode.attr,
+	&dev_attr_saving.attr,
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	&dev_attr_portmode.attr,
 	&dev_attr_tx.attr,

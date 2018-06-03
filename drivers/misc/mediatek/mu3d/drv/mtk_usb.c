@@ -598,6 +598,43 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 	return count;
 }
 
+static bool saving_mode;
+
+ssize_t musb_saving_mode_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	if (!dev) {
+		pr_info("dev is null!!\n");
+		return 0;
+	}
+	return scnprintf(buf, PAGE_SIZE, "%d\n", saving_mode);
+}
+
+ssize_t musb_saving_mode_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	int saving;
+	long tmp_val;
+
+	if (!dev) {
+		pr_info("dev is null!!\n");
+		return count;
+	/* } else if (1 == sscanf(buf, "%d", &saving)) { */
+	} else if (kstrtol(buf, 10, (long *)&tmp_val) == 0) {
+		saving = tmp_val;
+		pr_info("old=%d new=%d\n", saving, saving_mode);
+		if (saving_mode == (!saving))
+			saving_mode = !saving_mode;
+	}
+	return count;
+}
+
+bool is_saving_mode(void)
+{
+	pr_info("saving_mode : %d\n", saving_mode);
+	return saving_mode;
+}
+
+
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 ssize_t musb_portmode_show(struct device *dev, struct device_attribute *attr, char *buf)
 {

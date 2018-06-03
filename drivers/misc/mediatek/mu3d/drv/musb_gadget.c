@@ -37,6 +37,7 @@
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
+#include <linux/usb/composite.h>
 
 #include "musb_core.h"
 #include "mu3d_hal_osal.h"
@@ -580,6 +581,71 @@ void musb_g_rx(struct musb *musb, u8 epnum)
 
 /* ------------------------------------------------------------ */
 
+static int is_db_ok(struct musb *musb, struct musb_ep *musb_ep)
+{
+	struct usb_composite_dev *cdev = (musb->g).ep0->driver_data;
+	struct usb_configuration *c = cdev->config;
+	struct usb_gadget *gadget = &(musb->g);
+	int tmp;
+	int ret = 1;
+
+	for (tmp = 0; tmp < MAX_CONFIG_INTERFACES; tmp++) {
+		struct usb_function *f = c->interface[tmp];
+		struct usb_descriptor_header **descriptors;
+
+		if (!f)
+			break;
+
+		os_printk(K_INFO, "Ifc name=%s\n", f->name);
+
+		switch (gadget->speed) {
+		case USB_SPEED_SUPER:
+			descriptors = f->ss_descriptors;
+			break;
+		case USB_SPEED_HIGH:
+			descriptors = f->hs_descriptors;
+			break;
+		default:
+			descriptors = f->fs_descriptors;
+		}
+
+		for (; *descriptors; ++descriptors) {
+			struct usb_endpoint_descriptor *ep;
+			int is_in;
+			int epnum;
+
+			if ((*descriptors)->bDescriptorType != USB_DT_ENDPOINT)
+				continue;
+
+			ep = (struct usb_endpoint_descriptor *)*descriptors;
+
+			is_in = (ep->bEndpointAddress & 0x80) >> 7;
+			epnum = (ep->bEndpointAddress & 0x0f);
+
+			/*
+			 * Under saving mode, some kinds of EPs have to be set as Single Buffer
+			 * ACM OUT-BULK - Signle
+			 * ACM IN-BULK - Double
+			 * ADB OUT-BULK - Signle
+			 * ADB IN-BULK - Single
+			 */
+
+			/* ep must be matched */
+			if (ep->bEndpointAddress == (musb_ep->end_point).address) {
+
+			if (gadget->speed == USB_SPEED_SUPER) {
+				if (!strcmp(f->name, "Function FS Gadget"))
+					ret = 0;
+			}
+				goto end;
+			}
+		}
+	}
+end:
+	return ret;
+}
+
+
 static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descriptor *desc)
 {
 	unsigned long flags;
@@ -714,7 +780,19 @@ static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descr
 	 * So at FPGA stage and PIO, just use _ONE_ slot.
 	 */
 #ifdef USE_SSUSB_QMU
-	_ex_mu3d_hal_ep_enable(epnum, dir, type, maxp, 0, MAX_SLOT, 0, 0);
+	if (is_saving_mode()) {
+		if (is_db_ok(musb, musb_ep)) {
+			os_printk(K_INFO, "Saving mode, but EP%d supports DBBUF\n",
+				musb_ep->current_epnum);
+			_ex_mu3d_hal_ep_enable(epnum, dir, type, maxp, 0, MAX_SLOT, 0, 0);
+		} else {
+			os_printk(K_INFO, "EP%d supports single buffer\n", musb_ep->current_epnum);
+			_ex_mu3d_hal_ep_enable(epnum, dir, type, maxp, 0, 0, 0, 0);
+		}
+	} else {
+		os_printk(K_INFO, "EP%d supports DBBUF\n", musb_ep->current_epnum);
+		_ex_mu3d_hal_ep_enable(epnum, dir, type, maxp, 0, MAX_SLOT, 0, 0);
+	}
 #else
 	/*TODO: Check support mulitslots on real ship */
 	_ex_mu3d_hal_ep_enable(epnum, dir, type, maxp, 0, 0, 0, 0);
@@ -998,17 +1076,6 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 				u32 val = 0;
 
 				qmu_printk(K_DEBUG, "[TX] Send ZLP\n");
-				if (wait_for_value_us
-					(USB_QMU_TQCSR(request->epnum), TXQ_EPQ_STATE,
-					0, 1, utime) == RET_SUCCESS) {
-					qmu_printk(K_WARNIN, "Q_TX1[%d] %p 0x%x\n", request->epnum,
-					 USB_QMU_TQCSR(request->epnum),
-						os_readl(USB_QMU_TQCSR(request->epnum)));
-				} else {
-					qmu_printk(K_WARNIN, "Q_TX2[%d] %p 0x%x\n", request->epnum,
-					 USB_QMU_TQCSR(request->epnum),
-						os_readl(USB_QMU_TQCSR(request->epnum)));
-				}
 				if (wait_for_value_us
 				    (USB_END_OFFSET(request->epnum, U3D_TX1CSR0), TX_FIFOEMPTY,
 				     TX_FIFOEMPTY, 1, utime) == RET_SUCCESS) {
