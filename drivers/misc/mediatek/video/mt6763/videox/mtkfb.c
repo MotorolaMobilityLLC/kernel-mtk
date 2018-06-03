@@ -1712,7 +1712,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 				pr_err("COMPAT_MTKFB_GET_DISPLAY_IF_INFORMATION failed\n");
 				return -EFAULT;
 			}
-			if (displayid > MTKFB_MAX_DISPLAY_COUNT) {
+			if (displayid >= MTKFB_MAX_DISPLAY_COUNT) {
 				pr_err("[FB]: invalid display id:%d\n", displayid);
 				return -EFAULT;
 			}
