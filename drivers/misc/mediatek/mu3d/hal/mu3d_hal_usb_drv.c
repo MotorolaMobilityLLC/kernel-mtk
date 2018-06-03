@@ -365,8 +365,10 @@ void mu3d_hal_clear_intr(void)
 	/* Clear U2 USB common interrupt status */
 	os_writel(U3D_COMMON_USB_INTR, 0xFFFFFFFF);
 
+#ifdef SUPPORT_U3
 	/* Clear U3 LTSSM interrupt status */
 	os_writel(U3D_LTSSM_INTR, 0xFFFFFFFF);
+#endif
 }
 
 /**
@@ -376,7 +378,9 @@ void mu3d_hal_clear_intr(void)
 void mu3d_hal_system_intr_en(void)
 {
 	DEV_UINT16 int_en;
+#ifdef SUPPORT_U3
 	DEV_UINT32 ltssm_int_en;
+#endif
 
 	os_printk(K_ERR, "%s\n", __func__);
 
@@ -441,7 +445,9 @@ void mu3d_hal_system_intr_en(void)
 void _ex_mu3d_hal_system_intr_en(void)
 {
 	DEV_UINT16 int_en;
+#ifdef SUPPORT_U3
 	DEV_UINT32 ltssm_int_en;
+#endif
 
 	os_printk(K_DEBUG, "%s\n", __func__);
 
@@ -480,6 +486,7 @@ void _ex_mu3d_hal_system_intr_en(void)
 	os_writel(U3D_LTSSM_INTR_ENABLE, ltssm_int_en);
 #endif
 
+#if 0
 #ifdef SUPPORT_OTG
 	/* os_writel(U3D_SSUSB_OTG_INT_EN, 0x0); */
 	os_printk(K_ERR, "U3D_SSUSB_OTG_STS: %x\n", os_readl(U3D_SSUSB_OTG_STS));
@@ -488,6 +495,7 @@ void _ex_mu3d_hal_system_intr_en(void)
 		  os_readl(U3D_SSUSB_OTG_INT_EN) | SSUSB_VBUS_CHG_INT_B_EN |
 		  SSUSB_CHG_B_ROLE_B_INT_EN | SSUSB_CHG_A_ROLE_B_INT_EN |
 		  SSUSB_ATTACH_B_ROLE_INT_EN);
+#endif
 #endif
 
 #ifdef USE_SSUSB_QMU
@@ -693,11 +701,13 @@ void mu3d_hal_u3dev_en(void)
  */
 void mu3d_hal_u3dev_dis(void)
 {
+#ifdef SUPPORT_U3
 	/*
 	 * If usb3_en =0 => LTSSM will go to SS.Disable state.
 	 */
 	os_writel(U3D_USB3_CONFIG, 0);
 	os_printk(K_INFO, "USB3_EN = 0\n");
+#endif
 }
 
 /**

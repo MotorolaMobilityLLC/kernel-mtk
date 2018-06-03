@@ -83,7 +83,11 @@ extern CHARGER_TYPE mt_get_charger_type(void);
 
 /* #define U3_COMPLIANCE */
 
+#ifdef SUPPORT_U3
 #define USB_GADGET_SUPERSPEED
+#else
+#define USB_GADGET_DUALSPEED
+#endif
 #define EP_PROFILING
 
 #define MUSB_DRIVER_NAME "musb-hdrc"
