@@ -14,6 +14,9 @@
 #ifndef _MT_PMIC_UPMU_HW_H_
 #define _MT_PMIC_UPMU_HW_H_
 
+#define PMU_FLAG_TABLE_ENTRY struct pmu_flag_table_entry_t
+#define PMU_FLAGS_LIST_ENUM enum PMU_FLAGS_LIST
+
 #define MT6356_PMIC_REG_BASE (0x0)
 
 #define MT6356_TOP0_ID                          ((unsigned int)(MT6356_PMIC_REG_BASE+0x0))
@@ -18714,7 +18717,7 @@
 #define PMIC_RG_ACCDET_BC_MASK                                      0xFF
 #define PMIC_RG_ACCDET_BC_SHIFT                                     0
 
-typedef enum {
+enum PMU_FLAGS_LIST {
 	PMIC_TOP0_ANA_ID,
 	PMIC_TOP0_DIG_ID,
 	PMIC_TOP0_ANA_MINOR_REV,
@@ -24313,13 +24316,13 @@ typedef enum {
 	PMIC_RG_ACCDET_DB,
 	PMIC_RG_ACCDET_BC,
 	PMU_COMMAND_MAX
-} PMU_FLAGS_LIST_ENUM;
+};
 
-typedef struct {
+struct pmu_flag_table_entry_t {
 	PMU_FLAGS_LIST_ENUM flagname;
 	unsigned short offset;
 	unsigned short mask;
 	unsigned char shift;
-} PMU_FLAG_TABLE_ENTRY;
+};
 
 #endif				/* _MT_PMIC_UPMU_HW_H_ */

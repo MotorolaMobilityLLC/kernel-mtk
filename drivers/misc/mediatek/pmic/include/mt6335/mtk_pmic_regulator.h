@@ -14,7 +14,7 @@
 #ifndef _MT_PMIC_REGULATOR_H_
 #define _MT_PMIC_REGULATOR_H_
 
-typedef enum {
+enum BUCK_TYPE {
 	VCORE,
 	VDRAM,
 	VMODEM,
@@ -28,7 +28,7 @@ typedef enum {
 	VSRAM_VGPU,
 	VSRAM_VCORE,
 	VSRAM_VMD,
-} BUCK_TYPE;
+};
 
 struct mtk_bucks_t {
 	const char *name;

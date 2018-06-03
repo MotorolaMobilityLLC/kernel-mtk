@@ -43,11 +43,11 @@ extern int pmic_regulator_matches_size;
 /*---extern variable---*/
 extern struct mtk_bucks_t mtk_bucks_class[];
 /*---extern function---*/
-extern int buck_is_enabled(BUCK_TYPE type);
-extern int buck_enable(BUCK_TYPE type, unsigned char en);
-extern int buck_set_mode(BUCK_TYPE type, unsigned char pmode);
-extern int buck_set_voltage(BUCK_TYPE type, unsigned int voltage);
-extern unsigned int buck_get_voltage(BUCK_TYPE type);
+extern int buck_is_enabled(enum BUCK_TYPE type);
+extern int buck_enable(enum BUCK_TYPE type, unsigned char en);
+extern int buck_set_mode(enum BUCK_TYPE type, unsigned char pmode);
+extern int buck_set_voltage(enum BUCK_TYPE type, unsigned int voltage);
+extern unsigned int buck_get_voltage(enum BUCK_TYPE type);
 #endif /*--COMMON API after MT6335--*/
 #endif /*--COMMON API after MT6353--*/
 
