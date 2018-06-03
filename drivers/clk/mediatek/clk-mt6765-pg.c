@@ -121,11 +121,13 @@ static void __iomem *infracfg_base;/*infracfg_ao*/
 static void __iomem *spm_base;
 static void __iomem *infra_base;/*infra*/
 static void __iomem *smi_common_base;/*smi_common*/
+static void __iomem *conn_base;/* connsys */
 
 #define INFRACFG_REG(offset)		(infracfg_base + offset)
 #define SPM_REG(offset)			(spm_base + offset)
 #define INFRA_REG(offset)		(infra_base + offset)
 #define SMI_COMMON_REG(offset)	(smi_common_base + offset)
+#define CONN_HIF_REG(offset)	(conn_base + offset)
 
 /* Define MTCMOS power control */
 #define PWR_RST_B			(0x1 << 0)
@@ -172,6 +174,8 @@ static void __iomem *smi_common_base;/*smi_common*/
 #define INFRA_TOPAXI_PROTECTEN_STA0	INFRACFG_REG(0x0224)
 //#define INFRASYS_QAXI_CTRL		INFRACFG_REG(0x0F28)
 
+#define INFRA_TOPAXI_PROTECTEN_1	INFRACFG_REG(0x0250)
+
 #define INFRA_TOPAXI_PROTECTEN_SET	INFRACFG_REG(0x02A0)
 #define INFRA_TOPAXI_PROTECTEN_STA1	INFRACFG_REG(0x0228)
 #define INFRA_TOPAXI_PROTECTEN_CLR	INFRACFG_REG(0x02A4)
@@ -188,6 +192,10 @@ static void __iomem *smi_common_base;/*smi_common*/
 #define SMI_COMMON_SMI_CLAMP		SMI_COMMON_REG(0x03C0)
 #define SMI_COMMON_SMI_CLAMP_SET	SMI_COMMON_REG(0x03C4)
 #define SMI_COMMON_SMI_CLAMP_CLR	SMI_COMMON_REG(0x03C8)
+
+/* CONN HIF */
+#define CONN_HIF_TOP_MISC		CONN_HIF_REG(0x0104)
+#define CONN_HIF_BUSY_STATUS		CONN_HIF_REG(0x0138)
 
 /* Define MTCMOS Bus Protect Mask */
 #define MD1_PROT_STEP1_0_MASK		((0x1 << 7))
@@ -486,18 +494,6 @@ void dis_mtcmos_patch(int on)
 	}
 }
 #endif
-/* sync from mtcmos_ctrl.c  */
-#ifdef CONFIG_MTK_RAM_CONSOLE
-#if 0 /*add after early porting*/
-static void aee_clk_data_rest(void)
-{
-	aee_rr_rec_clk(0, 0);
-	aee_rr_rec_clk(1, 0);
-	aee_rr_rec_clk(2, 0);
-	aee_rr_rec_clk(3, 0);
-}
-#endif
-#endif
 
 #define DBG_ID_MD1 1
 #define DBG_ID_CONN 2
@@ -530,15 +526,25 @@ static int DBG_STEP;
  */
 static void ram_console_update(void)
 {
-	unsigned long data1 = 0;
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	unsigned long data[8] = {0};
+	unsigned int i = 0, j = 0;
 
-	#ifdef CONFIG_MTK_RAM_CONSOLE
-	data1 = ((DBG_ID << 24) & ID_MADK)
+	data[i] = ((DBG_ID << 24) & ID_MADK)
 		| ((DBG_STA << 20) & STA_MASK)
 		| (DBG_STEP & STEP_MASK);
-	aee_rr_rec_clk(0, data1);
+
+	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_1);
+	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1);
+	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1_1);
+	if (DBG_ID == DBG_ID_CONN) {
+		data[++i] = clk_readl(CONN_HIF_TOP_MISC);
+		data[++i] = clk_readl(CONN_HIF_BUSY_STATUS);
+	}
+	for (j = 0; j <= i; j++)
+		aee_rr_rec_clk(j, data[j]);
 	/*todo: add each domain's debug register to ram console*/
-	#endif
+#endif
 }
 
 /* auto-gen begin*/
@@ -2637,8 +2643,10 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_base = get_reg(node, 1);
 	smi_common_base = get_reg(node, 2);
 	infra_base = get_reg(node, 3);
+	conn_base = get_reg(node, 4);
 
-	if (!infracfg_base || !spm_base || !smi_common_base || !infra_base) {
+	if (!infracfg_base || !spm_base || !smi_common_base || !infra_base ||
+		!conn_base) {
 		pr_debug("clk-pg-mt6758: missing reg\n");
 		return;
 	}
@@ -2701,14 +2709,14 @@ void subsys_if_on(void)
 	int ret = 0;
 
 	if ((sta & (1U << 0)) && (sta_s & (1U << 0)))
-		pr_notice("suspend warning: SYS_MD1 is on!!!\n");
+		pr_debug("suspend warning: SYS_MD1 is on!!!\n");
 
 	if ((sta & (1U << 1)) && (sta_s & (1U << 1))) {
 		pr_notice("suspend warning: SYS_CONN is on!!!\n");
 		ret++;
 	}
 	if ((sta & (1U << 2)) && (sta_s & (1U << 2)))
-		pr_notice("suspend warning: SYS_DPY is on!!!\n");
+		pr_debug("suspend warning: SYS_DPY is on!!!\n");
 
 	if ((sta & (1U << 3)) && (sta_s & (1U << 3))) {
 		pr_notice("suspend warning: SYS_DIS is on!!!\n");
@@ -2723,7 +2731,7 @@ void subsys_if_on(void)
 		ret++;
 	}
 	if ((sta & (1U << 6)) && (sta_s & (1U << 6)))
-		pr_notice("suspend warning: SYS_IFR is on!!!\n");
+		pr_debug("suspend warning: SYS_IFR is on!!!\n");
 
 	if ((sta & (1U << 7)) && (sta_s & (1U << 7))) {
 		pr_notice("suspend warning: SYS_MFG_CORE0 is on!!!\n");
