@@ -1202,12 +1202,12 @@ static int charger_routine_thread(void *arg)
 		charger_update_data(info);
 		charger_check_status(info);
 		kpoc_power_off_check(info);
-
+#ifndef CONFIG_POWER_EXT
 		if (is_charger_on == true) {
 			if (info->do_algorithm)
 				info->do_algorithm(info);
 		}
-
+#endif
 		if (info->charger_thread_polling == true)
 			mtk_charger_start_timer(info);
 
