@@ -27,6 +27,7 @@
 extern "C" {
 #endif
 
+#define UPOWER_NOT_READY (1)
 #define UPOWER_ENABLE (1)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT

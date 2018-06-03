@@ -65,7 +65,7 @@ static void print_tbl(void)
 {
 	int i, j;
 /* --------------------print static orig table -------------------------*/
-	#if 0
+#if 0
 	struct upower_tbl *tbl;
 
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
@@ -83,7 +83,7 @@ static void print_tbl(void)
 		upower_debug(" lkg_idx, num_row: %d, %d\n", tbl->lkg_idx, tbl->row_num);
 		upower_debug("-----------------------------------------------------------------\n");
 	}
-	#else
+#else
 /* --------------------print sram table -------------------------*/
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		/* table size must be 512 bytes */
@@ -99,7 +99,7 @@ static void print_tbl(void)
 					upower_tbl_ref[i].lkg_idx, upower_tbl_ref[i].row_num);
 		upower_debug("-------------------------------------------------\n");
 	}
-	#endif
+#endif
 }
 #endif
 
@@ -117,10 +117,10 @@ void upower_ut(void)
 	/* get ptr which points to upower_tbl_infos[] */
 	ptr_tbl_info = *addr_ptr_tbl_info;
 	upower_debug("get upower tbl location = %p\n", ptr_tbl_info[0].p_upower_tbl);
-	#if 0
+#if 0
 	upower_debug("ptr_tbl_info --> %p --> tbl %p (p_upower_tbl_infos --> %p)\n",
 				ptr_tbl_info, ptr_tbl_info[0].p_upower_tbl, p_upower_tbl_infos);
-	#endif
+#endif
 
 	/* print all the tables that record in upower_tbl_infos[]*/
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
@@ -213,7 +213,7 @@ static void upower_update_lkg_pwr(void)
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		tbl = upower_tbl_infos[i].p_upower_tbl;
 
-		#ifdef EARLY_PORTING_SPOWER
+#ifdef EARLY_PORTING_SPOWER
 		/* get p-state lkg */
 		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			for (k = 0; k < NR_UPOWER_DEGREE; k++)
@@ -225,14 +225,14 @@ static void upower_update_lkg_pwr(void)
 			for (k = 0; k < NR_UPOWER_CSTATES; k++)
 				upower_tbl_ref[i].idle_states[j][k].power = tbl->idle_states[j][k].power;
 		}
-		#else
+#else
 		spower_bank_id = upower_bank_to_spower_bank(i);
 
-		#if 0
+#if 0
 		upower_debug("upower bank, spower bank= %d, %d\n", i, spower_bank_id);
 		upower_debug("deg = %d, %d, %d, %d, %d, %d\n", degree_set[0], degree_set[1],
 							degree_set[2], degree_set[3], degree_set[4], degree_set[5]);
-		#endif
+#endif
 
 		/* wrong bank */
 		if (spower_bank_id == -1)
@@ -246,12 +246,12 @@ static void upower_update_lkg_pwr(void)
 				/* get leakage from spower driver and transfer mw to uw */
 				temp = mt_spower_get_leakage(spower_bank_id, (volt/100), degree);
 				upower_tbl_ref[i].row[j].lkg_pwr[k] = temp * 1000;
-				#if 0
+#if 0
 				upower_debug("deg[%d] temp[%u] lkg_pwr[%u]\n", degree, temp,
 							upower_tbl_ref[i].row[j].lkg_pwr[k]);
-				#endif
+#endif
 			}
-			#if 0
+#if 0
 			upower_debug("volt[%u] lkg_pwr[%u, %u, %u, %u, %u, %u]\n", volt,
 							upower_tbl_ref[i].row[j].lkg_pwr[0],
 							upower_tbl_ref[i].row[j].lkg_pwr[1],
@@ -259,7 +259,7 @@ static void upower_update_lkg_pwr(void)
 							upower_tbl_ref[i].row[j].lkg_pwr[3],
 							upower_tbl_ref[i].row[j].lkg_pwr[4],
 							upower_tbl_ref[i].row[j].lkg_pwr[5]);
-			#endif
+#endif
 		}
 
 		/* get c-state lkg */
@@ -361,9 +361,9 @@ static int upower_update_tbl_ref(void)
 		return 0;
 	}
 
-	#ifdef UPOWER_PROFILE_API_TIME
+#ifdef UPOWER_PROFILE_API_TIME
 	upower_get_start_time_us(UPDATE_TBL_PTR);
-	#endif
+#endif
 
 	new_p_tbl_infos = kzalloc(sizeof(*new_p_tbl_infos) * NR_UPOWER_BANK, GFP_KERNEL);
 	if (!new_p_tbl_infos) {
@@ -378,23 +378,26 @@ static int upower_update_tbl_ref(void)
 		/* upower_debug("new_p_tbl_infos[%d].name = %s\n", i, new_p_tbl_infos[i].name);*/
 	}
 
-	#ifdef UPOWER_RCU_LOCK
+#ifdef UPOWER_RCU_LOCK
 	rcu_assign_pointer(p_upower_tbl_infos, new_p_tbl_infos);
 	/* synchronize_rcu();*/
-	#else
+#else
 	p_upower_tbl_infos = new_p_tbl_infos;
-	#endif
+#endif
 
-	#ifdef UPOWER_PROFILE_API_TIME
+#ifdef UPOWER_PROFILE_API_TIME
 	upower_get_diff_time_us(UPDATE_TBL_PTR);
 	print_diff_results(UPDATE_TBL_PTR);
-	#endif
+#endif
 
 	return ret;
 }
 
 static int __init upower_get_tbl_ref(void)
 {
+#ifdef UPOWER_NOT_READY
+	return 0;
+#endif
 	/* get raw upower table and target upower table location */
 	get_original_table();
 
@@ -548,6 +551,9 @@ static int create_procfs(void)
 
 static int __init upower_init(void)
 {
+#ifdef UPOWER_NOT_READY
+	return 0;
+#endif
 
 	/* PTP has no efuse, so volt will be set to orig data */
 	/* before upower_init_volt(), PTP has called upower_update_volt_by_eem() */
@@ -557,10 +563,10 @@ static int __init upower_init(void)
 					upower_tbl_infos, upower_tbl_infos[0].p_upower_tbl);
 #endif
 
-	#ifdef UPOWER_UT
+#ifdef UPOWER_UT
 	upower_debug("--------- (UT)before tbl ready--------------\n");
 	upower_ut();
-	#endif
+#endif
 
 	/* init rownum to UPOWER_OPP_NUM*/
 	upower_init_rownum();
@@ -584,14 +590,14 @@ static int __init upower_init(void)
 #endif
 	upower_update_tbl_ref();
 
-	#ifdef UPOWER_UT
+#ifdef UPOWER_UT
 	upower_debug("--------- (UT)tbl ready--------------\n");
 	upower_ut();
-	#endif
+#endif
 
-	#ifdef UPOWER_PROFILE_API_TIME
+#ifdef UPOWER_PROFILE_API_TIME
 	profile_api();
-	#endif
+#endif
 
 	create_procfs();
 
