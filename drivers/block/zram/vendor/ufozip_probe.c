@@ -513,8 +513,12 @@ static int ufozip_entry(void *p)
 			curr_freq = set_freq;
 
 no_action:
-		/* Schedule me */
-		if (requested_low_count) {
+		/*
+		 * Schedule me - two cases for periodic checking
+		 * 1. extra time for LOW_FREQ request
+		 * 2. "curr_freq == HIGH_FREQ" to catch missed request of LOW_FREQ
+		 */
+		if (requested_low_count || (curr_freq == HIGH_FREQ)) {
 			schedule_timeout_interruptible(TIME_AFTER);
 		} else {
 			set_current_state(TASK_INTERRUPTIBLE);
