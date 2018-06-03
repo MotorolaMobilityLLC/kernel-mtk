@@ -101,4 +101,5 @@ enum DDP_CLK_ID ddp_get_module_clk_id(enum DISP_MODULE_ENUM module_id);
 void ddp_clk_force_on(unsigned int on);
 int ddp_clk_check(void);
 int ddp_ovl_dcm_reset(void);
+extern void mipi_26m_en(unsigned int module_idx, int en);
 #endif
