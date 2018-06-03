@@ -27,8 +27,14 @@
 /* Header file for DRAMC PASR configuration */
 #include <mtk_dramc.h>
 
+/* Header file for VCORE DVFS control */
 #ifdef MTK_PASR_VCORE_DVFS_CONTROL
+#ifdef CONFIG_MTK_QOS_SUPPORT
+#include <linux/pm_qos.h>
+#include <helio-dvfsrc-opp.h>
+#else /* CONFIG_MTK_QOS_SUPPORT */
 #include <mtk_vcorefs_manager.h>
+#endif
 #endif
 
 #ifdef CONFIG_MTK_DCS
@@ -45,6 +51,13 @@ static unsigned int max_channel_num;
 static struct pasrvec *mtkpasr_vec;
 static int dcs_acquired;
 static enum dcs_status dcs_status = DCS_BUSY;
+#endif
+
+#ifdef MTK_PASR_VCORE_DVFS_CONTROL
+#ifdef CONFIG_MTK_QOS_SUPPORT
+static struct pm_qos_request mtkpasr_qos_vcore_request;
+static struct pm_qos_request mtkpasr_qos_emi_request;
+#endif
 #endif
 
 /* Internal control parameters */
@@ -231,6 +244,30 @@ static void disable_dcs_pasr(void)
 }
 #endif
 
+static void boost_vcore_dvfs(void)
+{
+#ifdef MTK_PASR_VCORE_DVFS_CONTROL
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	pm_qos_update_request(&mtkpasr_qos_vcore_request, VCORE_OPP_0);
+	pm_qos_update_request(&mtkpasr_qos_emi_request, DDR_OPP_0);
+#else /* CONFIG_MTK_QOS_SUPPORT */
+	vcorefs_request_dvfs_opp(KIR_PASR, OPP_0);
+#endif
+#endif
+}
+
+static void release_vcore_dvfs(void)
+{
+#ifdef MTK_PASR_VCORE_DVFS_CONTROL
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	pm_qos_update_request(&mtkpasr_qos_vcore_request, VCORE_OPP_UNREQ);
+	pm_qos_update_request(&mtkpasr_qos_emi_request, DDR_OPP_UNREQ);
+#else /* CONFIG_MTK_QOS_SUPPORT */
+	vcorefs_request_dvfs_opp(KIR_PASR, OPP_UNREQ);
+#endif
+#endif
+}
+
 /*
  * config - Identify banks/ranks, trigger APMCU flow
  * (Suppose mtkpasr_banks[].start_pfn <= mtkpasr_banks[].end_pfn)
@@ -270,9 +307,7 @@ static int mtkpasr_config(int times, get_range_t func)
 		if (mtkpasr_banks[i].free == (mtkpasr_banks[i].end_pfn - mtkpasr_banks[i].start_pfn))
 			mtkpasr_on |= (1 << mtkpasr_banks[i].segment);
 
-#ifdef MTK_PASR_VCORE_DVFS_CONTROL
-	vcorefs_request_dvfs_opp(KIR_PASR, OPP_0);
-#endif
+	boost_vcore_dvfs();
 
 #ifndef CONFIG_MTK_DCS
 retry_pasr:
@@ -288,9 +323,7 @@ retry_pasr:
 	enable_dcs_pasr();
 #endif
 
-#ifdef MTK_PASR_VCORE_DVFS_CONTROL
-	vcorefs_request_dvfs_opp(KIR_PASR, OPP_UNREQ);
-#endif
+	release_vcore_dvfs();
 
 	++mtkpasr_triggered;
 
@@ -314,9 +347,7 @@ static int mtkpasr_restore(void)
 
 	MTKPASR_PRINT("%s:+\n", __func__);
 
-#ifdef MTK_PASR_VCORE_DVFS_CONTROL
-	vcorefs_request_dvfs_opp(KIR_PASR, OPP_0);
-#endif
+	boost_vcore_dvfs();
 
 #ifndef CONFIG_MTK_DCS
 	restore_pasr();
@@ -324,9 +355,7 @@ static int mtkpasr_restore(void)
 	disable_dcs_pasr();
 #endif
 
-#ifdef MTK_PASR_VCORE_DVFS_CONTROL
-	vcorefs_request_dvfs_opp(KIR_PASR, OPP_UNREQ);
-#endif
+	release_vcore_dvfs();
 
 	MTKPASR_PRINT("%s:-\n", __func__);
 
@@ -564,6 +593,25 @@ static int __init mtkpasr_init(void)
 
 	/* Register feature operations */
 	register_memory_lowpower_operation(&mtkpasr_handler);
+
+#ifdef MTK_PASR_VCORE_DVFS_CONTROL
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	if (!pm_qos_request_active(&mtkpasr_qos_vcore_request)) {
+		pr_info("%s: vcore pm_qos_add_request\n", __func__);
+		pm_qos_add_request(&mtkpasr_qos_vcore_request, PM_QOS_VCORE_OPP, PM_QOS_VCORE_OPP_DEFAULT_VALUE);
+	} else {
+		pr_info("%s: vcore pm_qos already request\n", __func__);
+	}
+
+	if (!pm_qos_request_active(&mtkpasr_qos_emi_request)) {
+		pr_info("%s: emi pm_qos_add_request\n", __func__);
+		pm_qos_add_request(&mtkpasr_qos_emi_request, PM_QOS_EMI_OPP, PM_QOS_EMI_OPP_DEFAULT_VALUE);
+	} else {
+		pr_info("%s: emi pm_qos already request\n", __func__);
+	}
+#endif
+#endif
+
 out:
 	MTKPASR_PRINT("%s --\n", __func__);
 	return 0;
@@ -571,6 +619,11 @@ out:
 
 static void __exit mtkpasr_exit(void)
 {
+#ifdef MTK_PASR_VCORE_DVFS_CONTROL
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	/* TODO: pm_qos_remove_request */
+#endif
+#endif
 	unregister_memory_lowpower_operation(&mtkpasr_handler);
 
 	/* Release mtkpasr_banks */
