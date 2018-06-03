@@ -71,11 +71,6 @@ static int __init sspm_reserve_mem_of_init(struct reserved_mem *rmem)
 							accumlate_memory_size;
 		accumlate_memory_size += sspm_reserve_mblock[id].size;
 
-		if (accumlate_memory_size > sspm_mem_size) {
-			sspm_reserve_mblock[id].start_phys = 0;
-			break;
-		}
-
 		pr_debug("[SSPM][reserve_mem:%d]: ", id);
 		pr_debug("phys:0x%llx - 0x%llx (0x%llx)\n",
 			sspm_reserve_mblock[id].start_phys,
@@ -141,9 +136,6 @@ int sspm_reserve_memory_init(void)
 				(unsigned long long)sspm_mem_size,
 			(unsigned long long)sspm_mem_size);
 	for (id = 0; id < NUMS_MEM_ID; id++) {
-		if (sspm_reserve_mblock[id].start_phys == 0)
-			break;
-
 		sspm_reserve_mblock[id].start_virt = sspm_mem_base_virt +
 							accumlate_memory_size;
 		accumlate_memory_size += sspm_reserve_mblock[id].size;
