@@ -55,7 +55,7 @@
 /*
  * Message data between secure memory CA & TA
  */
-typedef struct {
+struct secmem_msg_t {
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
 	uint64_t    alignment;  /* IN */
 	uint64_t    size;       /* IN */
@@ -70,7 +70,7 @@ typedef struct {
 	/* Debugging */
 	uint8_t  name[MAX_NAME_SZ];
 	uint32_t id;
-} secmem_msg_t;
+};
 
 
 #endif /* TLSECMEM_API_GP_H_ */

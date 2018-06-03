@@ -34,16 +34,16 @@ typedef uint32_t tciReturnCode_t;
 /**
  * TCI command header.
  */
-typedef struct{
+struct tciCommandHeader_t {
 	tciCommandId_t commandId; /**< Command ID */
-} tciCommandHeader_t;
+};
 
 /**
  * TCI response header.
  */
-typedef struct{
+struct tciResponseHeader_t {
 	tciResponseId_t     responseId; /**< Response ID (must be command ID | RSP_ID_MASK )*/
 	tciReturnCode_t     returnCode; /**< Return code of command */
-} tciResponseHeader_t;
+};
 
 #endif /* TCI_H_ */
