@@ -2615,6 +2615,11 @@ static int m4u_probe(struct platform_device *pdev)
 	M4UINFO("m4u_probe 2, of_iomap: 0x%lx, irq_num: %d, pDev: %p\n",
 		gM4uDev->m4u_base[pdev->id], gM4uDev->irq_num[pdev->id], gM4uDev->pDev[pdev->id]);
 
+	if (pdev->id >= TOTAL_M4U_NUM) {
+		M4UMSG("m4u_probe id(%d) is error...\n", pdev->id);
+		return 0;
+	}
+
 	if (pdev->id == 0) {
 		m4u_domain_init(gM4uDev, &gMvaNode_unknown);
 

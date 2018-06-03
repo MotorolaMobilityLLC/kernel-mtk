@@ -2489,6 +2489,11 @@ static int m4u_probe(struct platform_device *pdev)
 	}
 	M4UINFO("m4u_probe 1, pdev id = %d name = %s\n", pdev->id, pdev->name);
 
+	if (pdev->id >= TOTAL_M4U_NUM) {
+		M4UMSG("m4u_probe id(%d) is error...\n", pdev->id);
+		return 0;
+	}
+
 	gM4uDev->pDev[pdev->id] = &pdev->dev;
 	gM4uDev->m4u_base[pdev->id] = (unsigned long)of_iomap(node, 0);
 	gM4uDev->irq_num[pdev->id] = irq_of_parse_and_map(node, 0);

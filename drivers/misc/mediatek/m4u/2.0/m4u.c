@@ -2766,7 +2766,7 @@ static int m4u_probe(struct platform_device *pdev)
 	}
 	M4UINFO("m4u_probe 1, pdev id = %d name = %s\n", pdev->id, pdev->name);
 
-	if (pdev->id > TOTAL_M4U_NUM) {
+	if (pdev->id >= TOTAL_M4U_NUM) {
 		M4UMSG("m4u_probe id(%d) is error...\n", pdev->id);
 		return 0;
 	}
