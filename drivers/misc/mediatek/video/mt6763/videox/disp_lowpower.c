@@ -904,7 +904,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 
 	msleep(16000);
 	while (1) {
-		msleep_interruptible(100); /* 100ms */
+		msleep_interruptible(1000 / primary_display_get_lcm_refresh_rate());
 		ret = wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue, atomic_read(&idlemgr_task_wakeup));
 
 		primary_display_manual_lock();
@@ -926,8 +926,8 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			continue;
 		}
 #endif
-		if (((local_clock() - idlemgr_pgc->idlemgr_last_kick_time) / 1000) < 100 * 1000) {
-			/* kicked in 500ms, it's not idle */
+		if ((local_clock() - idlemgr_pgc->idlemgr_last_kick_time) < idle_check_interval * 1000 * 1000) {
+			/* kicked in 100ms, it's not idle */
 			primary_display_manual_unlock();
 			continue;
 		}

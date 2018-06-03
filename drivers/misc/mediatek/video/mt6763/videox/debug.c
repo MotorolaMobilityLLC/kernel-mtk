@@ -63,6 +63,8 @@ unsigned int g_mobilelog;
 int bypass_blank;
 int lcm_mode_status;
 int layer_layout_allow_non_continuous;
+/* Boundary of enter screen idle */
+unsigned idle_check_interval = 50;
 
 /*********************** layer information statistic *********************/
 #define STATISTIC_MAX_LAYERS 20
@@ -1029,6 +1031,15 @@ static void process_dbg_opt(const char *opt)
 			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
+	}
+	if (strncmp(opt, "idle_wait:", 10) == 0) {
+		ret = sscanf(opt, "idle_wait:%d\n", &idle_check_interval);
+		if (ret != 1) {
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
+			return;
+		}
+		idle_check_interval = idle_check_interval < 17 ? 17 : idle_check_interval;
+		DISPMSG("change idle interval to %dms\n", idle_check_interval);
 	}
 
 	if (strncmp(opt, "layer_statistic:", 16) == 0) {

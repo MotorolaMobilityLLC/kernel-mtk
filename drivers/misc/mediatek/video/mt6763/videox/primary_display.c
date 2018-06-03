@@ -680,9 +680,10 @@ struct fps_ctx_t {
 struct fps_ext_ctx_t {
 	unsigned long long last_trig;
 	unsigned long long total;
-	unsigned long long interval;	/* ns */
+	unsigned long long interval;	/* us */
 	unsigned int fps;
 	unsigned int stable;
+	unsigned int frequency;
 	struct mutex lock;
 	int is_inited;
 } primary_fps_ext_ctx;
@@ -902,13 +903,18 @@ static int fps_ext_ctx_init(struct fps_ext_ctx_t *fps_ctx, unsigned int ms)
 		DISPERR("%s:%d, interval is too big:%d ms, max:%d ms\n", __func__, __LINE__, ms, INTERVAL_MS);
 		return -1;
 	}
+	if (ms == 0) {
+		DISPERR("%s:%d, interval is equal to zero\n", __func__, __LINE__);
+		return -1;
+	}
 
 	if (fps_ctx->is_inited)
 		return 0;
 
 	memset(fps_ctx, 0, sizeof(*fps_ctx));
 	mutex_init(&fps_ctx->lock);
-	fps_ctx->interval = (unsigned long long)ms * 1000000;	/* ms to ns */
+	fps_ctx->interval = (unsigned long long)ms * 1000;	/* ms to us */
+	fps_ctx->frequency = INTERVAL_MS / ms;	/* ms to frequency */
 
 	fps_ctx->is_inited = 1;
 
@@ -918,7 +924,7 @@ static int fps_ext_ctx_init(struct fps_ext_ctx_t *fps_ctx, unsigned int ms)
 static int fps_ext_ctx_update(struct fps_ext_ctx_t *fps_ctx)
 {
 	unsigned long long ns = sched_clock();
-	unsigned long long delta;
+	unsigned long long delta_us;	/* us */
 	unsigned long long fps;
 
 	if (disp_helper_get_option(DISP_OPT_FPS_EXT) == 0)
@@ -932,11 +938,13 @@ static int fps_ext_ctx_update(struct fps_ext_ctx_t *fps_ctx)
 	mutex_lock(&fps_ctx->lock);
 	fps_ctx->total++;
 
-	delta = ns - fps_ctx->last_trig;
-	if (delta > fps_ctx->interval) {
+	delta_us = ns - fps_ctx->last_trig;
+	do_div(delta_us, 1000);
+	if (delta_us > fps_ctx->interval) {
 		/* calculate fps */
-		fps = fps_ctx->interval * fps_ctx->total;
-		do_div(fps, delta);
+		fps = fps_ctx->interval * fps_ctx->total * fps_ctx->frequency;
+		do_div(fps, delta_us);
+		do_div(fps, INTERVAL_MS / 1000);
 		fps_ctx->fps = (unsigned int)fps;
 		fps_ctx->last_trig = ns;
 
@@ -993,11 +1001,16 @@ static int fps_ext_ctx_set_interval(struct fps_ext_ctx_t *fps_ctx, unsigned int 
 		DISPERR("%s:%d, interval is too big:%d ms, max:%d ms\n", __func__, __LINE__, ms, INTERVAL_MS);
 		return -1;
 	}
+	if (ms == 0) {
+		DISPERR("%s:%d, interval is equal to zero\n", __func__, __LINE__);
+		return -1;
+	}
 
 	mutex_lock(&fps_ctx->lock);
 
 	fps_ctx->total = 0;
-	fps_ctx->interval = (unsigned long long)ms * 1000000;	/* ms to ns */
+	fps_ctx->interval = (unsigned long long)ms * 1000;	/* ms to us */
+	fps_ctx->frequency = INTERVAL_MS / ms;	/* ms to frequency */
 
 	mutex_unlock(&fps_ctx->lock);
 	return 0;
