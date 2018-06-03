@@ -40,6 +40,7 @@
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
+#include <linux/ctype.h>
 #if WMT_CREATE_NODE_DYNAMIC
 #include <linux/device.h>
 #endif
@@ -1210,7 +1211,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 				if (pBuf[i] == '/') {
 					k = 0;
 					j++;
-				} else {
+				} else if (isascii(pBuf[i])) {
 					Buffer[j][k] = pBuf[i];
 					k++;
 				}
