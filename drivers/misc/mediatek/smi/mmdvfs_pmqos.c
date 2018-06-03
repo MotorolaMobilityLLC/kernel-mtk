@@ -462,6 +462,10 @@ static int mmdvfs_probe(struct platform_device *pdev)
 		pm_qos_add_notifier(mm_freq->pm_qos_class, &mm_freq->nb);
 	}
 
+#ifdef MMDVFS_FORCE_STEP0
+	mmdvfs_qos_force_step(0);
+	pr_notice("force set step0 when probe\n");
+#endif
 	return 0;
 
 }
