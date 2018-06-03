@@ -115,6 +115,7 @@ static int __init ccci_init(void)
 int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned int len)
 {
 	int ret = 0;
+	int tmp_data;
 
 	if (!get_modem_is_enabled(md_id)) {
 		CCCI_ERROR_LOG(md_id, CORE, "wrong MD ID from %ps for %d\n", __builtin_return_address(0), id);
@@ -195,6 +196,11 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		break;
 	case ID_LWA_CONTROL_MSG:
 		ret = ccci_port_send_msg_to_md(md_id, CCCI_SYSTEM_TX, LWA_CONTROL_MSG, *((int *)buf), 1);
+		break;
+	case MD_DISPLAY_DYNAMIC_MIPI:
+		tmp_data = 0;
+		memcpy((void *)&tmp_data, buf, len);
+		ret = ccci_port_send_msg_to_md(md_id, CCCI_SYSTEM_TX, id, tmp_data, 0);
 		break;
 	default:
 		ret = -CCCI_ERR_FUNC_ID_ERROR;
