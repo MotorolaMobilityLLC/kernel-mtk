@@ -1338,6 +1338,9 @@ static void TurnOnDacPower(int device)
 	pr_warn("TurnOnDacPower\n");
 	audckbufEnable(true);
 
+	/* gpio mosi mode */
+	Ana_Set_Reg(GPIO_MODE2, 0x249, 0xffff);
+
 	/* Enable HP main CMFB Switch */
 	Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
 	/* Pull-down HPL/R, HS, LO to AVSS28_AUD */
@@ -1725,17 +1728,198 @@ static int Audio_AmpR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 static int PMIC_REG_CLEAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_warn("%s()\n", __func__);
-#if 0
-	Ana_Set_Reg(ABB_AFE_CON2, 0, 0xffff);
-	Ana_Set_Reg(ABB_AFE_CON4, 0, 0xffff);
-	Ana_Set_Reg(ABB_AFE_CON5, 0x28, 0xffff);
-	Ana_Set_Reg(ABB_AFE_CON6, 0x218, 0xffff);
-	Ana_Set_Reg(ABB_AFE_CON7, 0x204, 0xffff);
-	Ana_Set_Reg(ABB_AFE_CON8, 0x0, 0xffff);
-	Ana_Set_Reg(ABB_AFE_CON9, 0x0, 0xffff);
-	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x18, 0xffff);
-	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG3, 0xf872, 0xffff);
-#endif
+
+	/* receiver downlink */
+
+	/* dcxo */
+	Ana_Set_Reg(DCXO_CW14, 0x1 << 13, 0x1 << 13);
+
+	/* gpio mosi mode */
+	Ana_Set_Reg(GPIO_MODE2, 0x249, 0xffff);
+
+	/* Enable HP main CMFB Switch */
+	Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
+	/* Pull-down HPL/R, HS, LO to AVSS28_AUD */
+	Ana_Set_Reg(AUDDEC_ANA_CON10, 0x00a8, 0xffff);
+	/* Release HS CMFB pull down */
+	Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0088, 0xffff);
+	/* Enable AUDGLB */
+	Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0000, 0xffff);
+	/* Pull-down HPL/R to AVSS28_AUD */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0xffff);
+	/* Turn on 26MHz source clock */
+	Ana_Set_Reg(TOP_CLKSQ, 0x0001, 0x0001);
+	Ana_Set_Reg(TOP_CLKSQ_SET, 0x0001, 0x0001);
+	/* Turn on AUDNCP_CLKDIV engine clock */
+	Ana_Set_Reg(AUD_TOP_CKPDN_CON0, 0x0, 0x66);
+
+	udelay(250);
+
+	/* power on clock */
+	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xBfff);
+
+	udelay(250);
+
+	/* enable aud_pad RX fifos */
+	Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x0031, 0x00ff);
+
+	/* Audio system digital clock power down release */
+	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0006, 0xffff);
+	/* sdm audio fifo clock power on */
+	Ana_Set_Reg(AFUNC_AUD_CON0, 0xCBA1, 0xffff);
+	/* scrambler clock on enable */
+	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0003, 0xffff);
+	/* sdm power on */
+	Ana_Set_Reg(AFUNC_AUD_CON2, 0x000B, 0xffff);
+	/* sdm fifo enable */
+
+	/* afe enable */
+	Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
+
+	setDlMtkifSrc(true);
+
+	/* Disable headphone short-circuit protection */
+	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
+	/* Disable handset short-circuit protection */
+	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0010, 0xffff);
+	/* Disable linout short-circuit protection */
+	Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0010, 0xffff);
+	/* Reduce ESD resistance of AU_REFN */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc000, 0xffff);
+	/* Set HS gain as minimum (~ -40dB) */
+	Ana_Set_Reg(ZCD_CON2, 0x001F, 0xffff);
+
+	/* Turn on DA_600K_NCP_VA18 */
+	Ana_Set_Reg(AUDNCP_CLKDIV_CON1, 0x0001, 0xffff);
+	/* Set NCP clock as 604kHz // 26MHz/43 = 604KHz */
+	Ana_Set_Reg(AUDNCP_CLKDIV_CON2, 0x002c, 0xffff);
+	/* Toggle RG_DIVCKS_CHG */
+	Ana_Set_Reg(AUDNCP_CLKDIV_CON0, 0x0001, 0xffff);
+	/* Set NCP soft start mode as default mode: 100us */
+	Ana_Set_Reg(AUDNCP_CLKDIV_CON4, 0x0003, 0xffff);
+	/* Enable NCP */
+	Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x0000, 0xffff);
+	udelay(250);
+
+	/* Enable cap-less LDOs (1.5V) */
+	Ana_Set_Reg(AUDDEC_ANA_CON14, 0x1055, 0x1055);
+	/* Enable NV regulator (-1.2V) */
+	Ana_Set_Reg(AUDDEC_ANA_CON15, 0x0001, 0xffff);
+	udelay(100);
+
+	/* Disable AUD_ZCD */
+	Hp_Zcd_Enable(false);
+
+	/* Enable IBIST */
+	Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
+	/* Set HP DR bias current optimization, 010: 6uA */
+	Ana_Set_Reg(AUDDEC_ANA_CON11, 0x4900, 0xffff);
+	/* Set HP & ZCD bias current optimization */
+	/* 01: ZCD: 4uA, HP/HS/LO: 5uA */
+	Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
+
+	/* Set HS STB enhance circuits */
+	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0090, 0xffff);
+	/* Enable HS driver bias circuits */
+	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0092, 0xffff);
+	/* Enable HS driver core circuits */
+	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0093, 0xffff);
+	/* Set HS gain to 0dB */
+	Ana_Set_Reg(ZCD_CON3, 0x0000, 0xffff);
+	/* Enable AUD_CLK */
+	Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1, 0x1);
+	/* Enable Audio DAC  */
+	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3009, 0xffff);
+	/* Enable low-noise mode of DAC */
+	Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0201, 0xffff);
+	/* Switch HS MUX to audio DAC */
+	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x009b, 0xffff);
+
+	/* phone mic dcc */
+
+	/* set gpio miso mode */
+	Ana_Set_Reg(GPIO_MODE3_CLR, 0xffff, 0xffff);
+	Ana_Set_Reg(GPIO_MODE3_SET, 0x0249, 0xffff);
+	Ana_Set_Reg(GPIO_MODE3, 0x0249, 0xffff);
+	/* gpio miso driving set to default 6mA, 0xcccc */
+	Ana_Set_Reg(DRV_CON3, 0xcccc, 0xffff);
+
+	/* Enable audio ADC CLKGEN  */
+	Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1 << 5, 0x1 << 5);
+	/* ADC CLK from CLKGEN (13MHz) */
+	Ana_Set_Reg(AUDENC_ANA_CON3, 0x0000, 0xffff);
+	/* Enable  LCLDO_ENC 1P8V */
+	Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0100, 0x2500);
+	/* LCLDO_ENC remote sense */
+	Ana_Set_Reg(AUDDEC_ANA_CON14, 0x2500, 0x2500);
+
+	/* DCC 50k CLK (from 26M) */
+	Ana_Set_Reg(TOP_CLKSQ_SET, 0x3, 0x3);
+
+	Ana_Set_Reg(AFE_DCCLK_CFG0, 0x2062, 0xffff);
+	Ana_Set_Reg(AFE_DCCLK_CFG0, 0x2062, 0xffff);
+	Ana_Set_Reg(AFE_DCCLK_CFG0, 0x2060, 0xffff);
+	Ana_Set_Reg(AFE_DCCLK_CFG0, 0x2061, 0xffff);
+	Ana_Set_Reg(AFE_DCCLK_CFG1, 0x1105, 0xffff);
+
+	/* phone mic bias */
+	/* Enable MICBIAS0, MISBIAS0 = 1P9V */
+	Ana_Set_Reg(AUDENC_ANA_CON9, 0x0021, 0xffff);
+
+	Ana_Set_Reg(AUDENC_ANA_CON0, 0x4 << 8, 0x0700);
+	Ana_Set_Reg(AUDENC_ANA_CON1, 0x4 << 8, 0x0700);
+
+	/* Audio L preamplifier DCC precharge */
+	Ana_Set_Reg(AUDENC_ANA_CON0, 0x0004, 0xffff);
+	/* "ADC1", main_mic */
+	/* Audio L preamplifier input sel : AIN0. Enable audio L PGA */
+	Ana_Set_Reg(AUDENC_ANA_CON0, 0x0041, 0xf0ff);
+	/* Audio L preamplifier DCCEN */
+	Ana_Set_Reg(AUDENC_ANA_CON0, 0x1 << 1, 0x1 << 1);
+	/* Audio L ADC input sel : L PGA. Enable audio L ADC */
+	Ana_Set_Reg(AUDENC_ANA_CON0, 0x5041, 0xf000);
+
+	/* Audio R preamplifier DCC precharge */
+	Ana_Set_Reg(AUDENC_ANA_CON1, 0x0004, 0xffff);
+	/* ref mic */
+	/* Audio R preamplifier input sel : AIN2. Enable audio R PGA */
+	Ana_Set_Reg(AUDENC_ANA_CON1, 0x00c1, 0xf0ff);
+	/* Audio R preamplifier DCCEN */
+	Ana_Set_Reg(AUDENC_ANA_CON1, 0x1 << 1, 0x1 << 1);
+	/* Audio R ADC input sel : R PGA. Enable audio R ADC */
+	Ana_Set_Reg(AUDENC_ANA_CON1, 0x50c1, 0xf000);
+
+	/* Short body to VCM in PGA */
+	Ana_Set_Reg(AUDENC_ANA_CON7, 0x0400, 0xffff);
+	usleep_range(100, 150);
+
+	/* Audio R preamplifier DCC precharge off */
+	Ana_Set_Reg(AUDENC_ANA_CON1, 0x0, 0x1 << 2);
+	/* Audio L preamplifier DCC precharge off */
+	Ana_Set_Reg(AUDENC_ANA_CON0, 0x0, 0x1 << 2);
+
+	/* here to set digital part */
+	/* power on clock */
+	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xffff);
+
+	/* configure ADC setting */
+	Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
+
+	/* [0] afe enable */
+	Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
+
+	/* MTKAIF TX format setting */
+	Ana_Set_Reg(AFE_ADDA_MTKAIF_CFG0, 0x0000, 0xffff);
+
+	/* enable aud_pad TX fifos */
+	Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x3100, 0xff00);
+
+	/* UL dmic setting */
+	Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x0000, 0xffff);
+
+	/* UL turn on */
+	Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);
+
 	return 0;
 }
 
@@ -3760,253 +3944,6 @@ static int SineTable_UL2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 static int32 Pmic_Loopback_Type;
 
-#define PMIC_AUDIO_REG_COUNT 100
-#define PMIC_REG_BASE          (0x0)
-#define PMIC_AUD_TOP_ID                    ((UINT32)(PMIC_REG_BASE + 0x1540))
-#define PMIC_AUD_TOP_REV0                  ((UINT32)(PMIC_REG_BASE + 0x1542))
-#define PMIC_AUD_TOP_REV1                  ((UINT32)(PMIC_REG_BASE + 0x1544))
-#define PMIC_AUD_TOP_CKPDN_PM0             ((UINT32)(PMIC_REG_BASE + 0x1546))
-#define PMIC_AUD_TOP_CKPDN_PM1             ((UINT32)(PMIC_REG_BASE + 0x1548))
-#define PMIC_AUD_TOP_CKPDN_CON0            ((UINT32)(PMIC_REG_BASE + 0x154a))
-#define PMIC_AUD_TOP_CKSEL_CON0            ((UINT32)(PMIC_REG_BASE + 0x154c))
-#define PMIC_AUD_TOP_CKTST_CON0            ((UINT32)(PMIC_REG_BASE + 0x154e))
-#define PMIC_AUD_TOP_RST_CON0              ((UINT32)(PMIC_REG_BASE + 0x1550))
-#define PMIC_AUD_TOP_RST_BANK_CON0         ((UINT32)(PMIC_REG_BASE + 0x1552))
-#define PMIC_AUD_TOP_INT_CON0              ((UINT32)(PMIC_REG_BASE + 0x1554))
-#define PMIC_AUD_TOP_INT_CON0_SET          ((UINT32)(PMIC_REG_BASE + 0x1556))
-#define PMIC_AUD_TOP_INT_CON0_CLR          ((UINT32)(PMIC_REG_BASE + 0x1558))
-#define PMIC_AUD_TOP_INT_MASK_CON0         ((UINT32)(PMIC_REG_BASE + 0x155a))
-#define PMIC_AUD_TOP_INT_MASK_CON0_SET     ((UINT32)(PMIC_REG_BASE + 0x155c))
-#define PMIC_AUD_TOP_INT_MASK_CON0_CLR     ((UINT32)(PMIC_REG_BASE + 0x155e))
-#define PMIC_AUD_TOP_INT_STATUS0           ((UINT32)(PMIC_REG_BASE + 0x1560))
-#define PMIC_AUD_TOP_INT_RAW_STATUS0       ((UINT32)(PMIC_REG_BASE + 0x1562))
-#define PMIC_AUD_TOP_INT_MISC_CON0         ((UINT32)(PMIC_REG_BASE + 0x1564))
-#define PMIC_AUDNCP_CLKDIV_CON0            ((UINT32)(PMIC_REG_BASE + 0x1566))
-#define PMIC_AUDNCP_CLKDIV_CON1            ((UINT32)(PMIC_REG_BASE + 0x1568))
-#define PMIC_AUDNCP_CLKDIV_CON2            ((UINT32)(PMIC_REG_BASE + 0x156a))
-#define PMIC_AUDNCP_CLKDIV_CON3            ((UINT32)(PMIC_REG_BASE + 0x156c))
-#define PMIC_AUDNCP_CLKDIV_CON4            ((UINT32)(PMIC_REG_BASE + 0x156e))
-#define PMIC_AUD_TOP_MON_CON0              ((UINT32)(PMIC_REG_BASE + 0x1570))
-#define PMIC_AUDIO_DIG_ID                  ((UINT32)(PMIC_REG_BASE + 0x1580))
-#define PMIC_AUDIO_DIG_REV0                ((UINT32)(PMIC_REG_BASE + 0x1582))
-#define PMIC_AUDIO_DIG_REV1                ((UINT32)(PMIC_REG_BASE + 0x1584))
-#define PMIC_AFE_UL_DL_CON0                ((UINT32)(PMIC_REG_BASE + 0x1586))
-#define PMIC_AFE_DL_SRC2_CON0_L            ((UINT32)(PMIC_REG_BASE + 0x1588))
-#define PMIC_AFE_UL_SRC_CON0_H             ((UINT32)(PMIC_REG_BASE + 0x158a))
-#define PMIC_AFE_UL_SRC_CON0_L             ((UINT32)(PMIC_REG_BASE + 0x158c))
-#define PMIC_AFE_TOP_CON0                  ((UINT32)(PMIC_REG_BASE + 0x158e))
-#define PMIC_AUDIO_TOP_CON0                ((UINT32)(PMIC_REG_BASE + 0x1590))
-#define PMIC_AFE_MON_DEBUG0                ((UINT32)(PMIC_REG_BASE + 0x1592))
-#define PMIC_AFUNC_AUD_CON0                ((UINT32)(PMIC_REG_BASE + 0x1594))
-#define PMIC_AFUNC_AUD_CON1                ((UINT32)(PMIC_REG_BASE + 0x1596))
-#define PMIC_AFUNC_AUD_CON2                ((UINT32)(PMIC_REG_BASE + 0x1598))
-#define PMIC_AFUNC_AUD_CON3                ((UINT32)(PMIC_REG_BASE + 0x159a))
-#define PMIC_AFUNC_AUD_CON4                ((UINT32)(PMIC_REG_BASE + 0x159c))
-#define PMIC_AFUNC_AUD_MON0                ((UINT32)(PMIC_REG_BASE + 0x159e))
-#define PMIC_AUDRC_TUNE_MON0               ((UINT32)(PMIC_REG_BASE + 0x15a0))
-#define PMIC_AFE_ADDA_MTKAIF_FIFO_CFG0     ((UINT32)(PMIC_REG_BASE + 0x15a2))
-#define PMIC_AFE_ADDA_MTKAIF_FIFO_LOG_MON1 ((UINT32)(PMIC_REG_BASE + 0x15a4))
-#define PMIC_AFE_ADDA_MTKAIF_MON0          ((UINT32)(PMIC_REG_BASE + 0x15a6))
-#define PMIC_AFE_ADDA_MTKAIF_MON1          ((UINT32)(PMIC_REG_BASE + 0x15a8))
-#define PMIC_AFE_ADDA_MTKAIF_MON2          ((UINT32)(PMIC_REG_BASE + 0x15aa))
-#define PMIC_AFE_ADDA_MTKAIF_MON3          ((UINT32)(PMIC_REG_BASE + 0x15ac))
-#define PMIC_AFE_ADDA_MTKAIF_CFG0          ((UINT32)(PMIC_REG_BASE + 0x15ae))
-#define PMIC_AFE_ADDA_MTKAIF_RX_CFG0       ((UINT32)(PMIC_REG_BASE + 0x15b0))
-#define PMIC_AFE_ADDA_MTKAIF_RX_CFG1       ((UINT32)(PMIC_REG_BASE + 0x15b2))
-#define PMIC_AFE_ADDA_MTKAIF_RX_CFG2       ((UINT32)(PMIC_REG_BASE + 0x15b4))
-#define PMIC_AFE_ADDA_MTKAIF_RX_CFG3       ((UINT32)(PMIC_REG_BASE + 0x15b6))
-#define PMIC_AFE_ADDA_MTKAIF_TX_CFG1       ((UINT32)(PMIC_REG_BASE + 0x15b8))
-#define PMIC_AFE_SGEN_CFG0                 ((UINT32)(PMIC_REG_BASE + 0x15ba))
-#define PMIC_AFE_SGEN_CFG1                 ((UINT32)(PMIC_REG_BASE + 0x15bc))
-#define PMIC_AFE_ADC_ASYNC_FIFO_CFG        ((UINT32)(PMIC_REG_BASE + 0x15be))
-#define PMIC_AFE_DCCLK_CFG0                ((UINT32)(PMIC_REG_BASE + 0x15c0))
-#define PMIC_AFE_DCCLK_CFG1                ((UINT32)(PMIC_REG_BASE + 0x15c2))
-#define PMIC_AUDIO_DIG_CFG                 ((UINT32)(PMIC_REG_BASE + 0x15c4))
-#define PMIC_AFE_AUD_PAD_TOP               ((UINT32)(PMIC_REG_BASE + 0x15c6))
-#define PMIC_AFE_AUD_PAD_TOP_MON           ((UINT32)(PMIC_REG_BASE + 0x15c8))
-#define PMIC_AFE_AUD_PAD_TOP_MON1          ((UINT32)(PMIC_REG_BASE + 0x15ca))
-#define PMIC_AUDENC_DSN_ID                 ((UINT32)(PMIC_REG_BASE + 0x1600))
-#define PMIC_AUDENC_DSN_REV0               ((UINT32)(PMIC_REG_BASE + 0x1602))
-#define PMIC_AUDENC_DSN_REV1               ((UINT32)(PMIC_REG_BASE + 0x1604))
-#define PMIC_AUDENC_ANA_CON0               ((UINT32)(PMIC_REG_BASE + 0x1606))
-#define PMIC_AUDENC_ANA_CON1               ((UINT32)(PMIC_REG_BASE + 0x1608))
-#define PMIC_AUDENC_ANA_CON2               ((UINT32)(PMIC_REG_BASE + 0x160a))
-#define PMIC_AUDENC_ANA_CON3               ((UINT32)(PMIC_REG_BASE + 0x160c))
-#define PMIC_AUDENC_ANA_CON4               ((UINT32)(PMIC_REG_BASE + 0x160e))
-#define PMIC_AUDENC_ANA_CON5               ((UINT32)(PMIC_REG_BASE + 0x1610))
-#define PMIC_AUDENC_ANA_CON6               ((UINT32)(PMIC_REG_BASE + 0x1612))
-#define PMIC_AUDENC_ANA_CON7               ((UINT32)(PMIC_REG_BASE + 0x1614))
-#define PMIC_AUDENC_ANA_CON8               ((UINT32)(PMIC_REG_BASE + 0x1616))
-#define PMIC_AUDENC_ANA_CON9               ((UINT32)(PMIC_REG_BASE + 0x1618))
-#define PMIC_AUDENC_ANA_CON10              ((UINT32)(PMIC_REG_BASE + 0x161a))
-#define PMIC_AUDENC_ANA_CON11              ((UINT32)(PMIC_REG_BASE + 0x161c))
-#define PMIC_AUDENC_ANA_CON12              ((UINT32)(PMIC_REG_BASE + 0x161e))
-#define PMIC_AUDDEC_DSN_ID                 ((UINT32)(PMIC_REG_BASE + 0x1640))
-#define PMIC_AUDDEC_DSN_REV0               ((UINT32)(PMIC_REG_BASE + 0x1642))
-#define PMIC_AUDDEC_DSN_REV1               ((UINT32)(PMIC_REG_BASE + 0x1644))
-#define PMIC_AUDDEC_ANA_CON0               ((UINT32)(PMIC_REG_BASE + 0x1646))
-#define PMIC_AUDDEC_ANA_CON1               ((UINT32)(PMIC_REG_BASE + 0x1648))
-#define PMIC_AUDDEC_ANA_CON2               ((UINT32)(PMIC_REG_BASE + 0x164a))
-#define PMIC_AUDDEC_ANA_CON3               ((UINT32)(PMIC_REG_BASE + 0x164c))
-#define PMIC_AUDDEC_ANA_CON4               ((UINT32)(PMIC_REG_BASE + 0x164e))
-#define PMIC_AUDDEC_ANA_CON5               ((UINT32)(PMIC_REG_BASE + 0x1650))
-#define PMIC_AUDDEC_ANA_CON6               ((UINT32)(PMIC_REG_BASE + 0x1652))
-#define PMIC_AUDDEC_ANA_CON7               ((UINT32)(PMIC_REG_BASE + 0x1654))
-#define PMIC_AUDDEC_ANA_CON8               ((UINT32)(PMIC_REG_BASE + 0x1656))
-#define PMIC_AUDDEC_ANA_CON9               ((UINT32)(PMIC_REG_BASE + 0x1658))
-#define PMIC_AUDDEC_ANA_CON10              ((UINT32)(PMIC_REG_BASE + 0x165a))
-#define PMIC_AUDDEC_ANA_CON11              ((UINT32)(PMIC_REG_BASE + 0x165c))
-#define PMIC_AUDDEC_ANA_CON12              ((UINT32)(PMIC_REG_BASE + 0x165e))
-#define PMIC_AUDDEC_ANA_CON13              ((UINT32)(PMIC_REG_BASE + 0x1660))
-#define PMIC_AUDDEC_ANA_CON14              ((UINT32)(PMIC_REG_BASE + 0x1662))
-#define PMIC_AUDDEC_ANA_CON15              ((UINT32)(PMIC_REG_BASE + 0x1664))
-#define PMIC_AUDDEC_ELR_NUM                ((UINT32)(PMIC_REG_BASE + 0x1666))
-#define PMIC_AUDDEC_ELR_0                  ((UINT32)(PMIC_REG_BASE + 0x1668))
-
-#define PMIC_TOP_CLKSQ_SET (0x134)
-
-#define GPIO_DOUT0 0x64
-#define SMT_CON0 0x2c
-#define SMT_CON1 0x2e
-#define FILTER_CON0 0x3c
-
-typedef struct {
-	unsigned int offset;
-	unsigned int readMask;
-	unsigned int writeMask;
-	unsigned int defaultvalue;
-	unsigned int regid;
-	char *name;
-} mem_rw_table_struct;
-
-const mem_rw_table_struct u4PMICAudioRegTable[PMIC_AUDIO_REG_COUNT] = {
-	{0x1540, 0xffff, 0x0000, 0xc900, PMIC_AUD_TOP_ID, "PMIC_AUD_TOP_ID"},
-	{0x1542, 0xffff, 0x0000, 0x1000, PMIC_AUD_TOP_REV0, "PMIC_AUD_TOP_REV0"},
-	{0x1544, 0xffff, 0x0000, 0x0010, PMIC_AUD_TOP_REV1, "PMIC_AUD_TOP_REV1"},
-	{0x1546, 0xffff, 0x0000, 0x100a, PMIC_AUD_TOP_CKPDN_PM0, "PMIC_AUD_TOP_CKPDN_PM0"},
-	{0x1548, 0xffff, 0x0000, 0x0814, PMIC_AUD_TOP_CKPDN_PM1, "PMIC_AUD_TOP_CKPDN_PM1"},
-	{0x154a, 0x0067, 0x0067, 0x0000, PMIC_AUD_TOP_CKPDN_CON0, "PMIC_AUD_TOP_CKPDN_CON0"},
-	{0x154c, 0x000c, 0x000c, 0x0000, PMIC_AUD_TOP_CKSEL_CON0, "PMIC_AUD_TOP_CKSEL_CON0"},
-	{0x154e, 0x001d, 0x001d, 0x0000, PMIC_AUD_TOP_CKTST_CON0, "PMIC_AUD_TOP_CKTST_CON0"},
-	{0x1554, 0x00e1, 0x00e1, 0x0000, PMIC_AUD_TOP_INT_CON0, "PMIC_AUD_TOP_INT_CON0"},
-	{0x1556, 0x0000, 0xffff, 0x0000, PMIC_AUD_TOP_INT_CON0_SET, "PMIC_AUD_TOP_INT_CON0_SET"},
-	{0x1558, 0x0000, 0xffff, 0x0000, PMIC_AUD_TOP_INT_CON0_CLR, "PMIC_AUD_TOP_INT_CON0_CLR"},
-	{0x155a, 0x00e1, 0x00e1, 0x0000, PMIC_AUD_TOP_INT_MASK_CON0, "PMIC_AUD_TOP_INT_MASK_CON0"},
-	{0x155c, 0x0000, 0xffff, 0x0000, PMIC_AUD_TOP_INT_MASK_CON0_SET, "PMIC_AUD_TOP_INT_MASK_CON0_SET"},
-	{0x155e, 0x0000, 0xffff, 0x0000, PMIC_AUD_TOP_INT_MASK_CON0_CLR, "PMIC_AUD_TOP_INT_MASK_CON0_CLR"},
-	{0x1560, 0x00e1, 0x0000, 0x0000, PMIC_AUD_TOP_INT_STATUS0, "PMIC_AUD_TOP_INT_STATUS0"},
-	{0x1562, 0x00e1, 0x0000, 0x0000, PMIC_AUD_TOP_INT_RAW_STATUS0, "PMIC_AUD_TOP_INT_RAW_STATUS0"},
-	{0x1564, 0x0001, 0x0001, 0x0000, PMIC_AUD_TOP_INT_MISC_CON0, "PMIC_AUD_TOP_INT_MISC_CON0"},
-	{0x1566, 0x0001, 0x0001, 0x0000, PMIC_AUDNCP_CLKDIV_CON0, "PMIC_AUDNCP_CLKDIV_CON0"},
-	{0x1568, 0x0001, 0x0001, 0x0000, PMIC_AUDNCP_CLKDIV_CON1, "PMIC_AUDNCP_CLKDIV_CON1"},
-	{0x156a, 0x01ff, 0x01ff, 0x002c, PMIC_AUDNCP_CLKDIV_CON2, "PMIC_AUDNCP_CLKDIV_CON2"},
-	{0x156c, 0x0001, 0x0001, 0x0001, PMIC_AUDNCP_CLKDIV_CON3, "PMIC_AUDNCP_CLKDIV_CON3"},
-	{0x156e, 0x0003, 0x0003, 0x0002, PMIC_AUDNCP_CLKDIV_CON4, "PMIC_AUDNCP_CLKDIV_CON4"},
-	{0x1570, 0x0fff, 0x0fff, 0x0000, PMIC_AUD_TOP_MON_CON0, "PMIC_AUD_TOP_MON_CON0"},
-	{0x1580, 0xffff, 0x0000, 0xc900, PMIC_AUDIO_DIG_ID, "PMIC_AUDIO_DIG_ID"},
-	{0x1582, 0xffff, 0x0000, 0x1000, PMIC_AUDIO_DIG_REV0, "PMIC_AUDIO_DIG_REV0"},
-	{0x1584, 0xffff, 0x0000, 0x0010, PMIC_AUDIO_DIG_REV1, "PMIC_AUDIO_DIG_REV1"},
-	{0x1586, 0xc001, 0xc001, 0x0000, PMIC_AFE_UL_DL_CON0, "PMIC_AFE_UL_DL_CON0"},
-	{0x1588, 0x0001, 0x0001, 0x0000, PMIC_AFE_DL_SRC2_CON0_L, "PMIC_AFE_DL_SRC2_CON0_L"},
-	{0x158a, 0x3f80, 0x3f80, 0x0000, PMIC_AFE_UL_SRC_CON0_H, "PMIC_AFE_UL_SRC_CON0_H"},
-	{0x158c, 0xc027, 0xc027, 0x0000, PMIC_AFE_UL_SRC_CON0_L, "PMIC_AFE_UL_SRC_CON0_L"},
-	{0x158e, 0x0003, 0x0003, 0x0000, PMIC_AFE_TOP_CON0, "PMIC_AFE_TOP_CON0"},
-	{0x1590, 0xffff, 0xffff, 0xc000, PMIC_AUDIO_TOP_CON0, "PMIC_AUDIO_TOP_CON0"},
-	{0x1592, 0xdfff, 0xdfff, 0x0000, PMIC_AFE_MON_DEBUG0, "PMIC_AFE_MON_DEBUG0"},
-	{0x1594, 0xffff, 0xffff, 0xd821, PMIC_AFUNC_AUD_CON0, "PMIC_AFUNC_AUD_CON0"},
-	{0x1596, 0xffff, 0xffff, 0x0000, PMIC_AFUNC_AUD_CON1, "PMIC_AFUNC_AUD_CON1"},
-	{0x1598, 0x00df, 0x00df, 0x0000, PMIC_AFUNC_AUD_CON2, "PMIC_AFUNC_AUD_CON2"},
-	{0x159a, 0xf771, 0xf771, 0x0000, PMIC_AFUNC_AUD_CON3, "PMIC_AFUNC_AUD_CON3"},
-	{0x159c, 0x017f, 0x017f, 0x0000, PMIC_AFUNC_AUD_CON4, "PMIC_AFUNC_AUD_CON4"},
-	{0x159e, 0xffff, 0x0000, 0x0000, PMIC_AFUNC_AUD_MON0, "PMIC_AFUNC_AUD_MON0"},
-	{0x15a0, 0x9f1f, 0x0000, 0x0000, PMIC_AUDRC_TUNE_MON0, "PMIC_AUDRC_TUNE_MON0"},
-	{0x15a2, 0xffff, 0xffff, 0x0001, PMIC_AFE_ADDA_MTKAIF_FIFO_CFG0, "PMIC_AFE_ADDA_MTKAIF_FIFO_CFG0"},
-	{0x15a4, 0x0003, 0x0000, 0x0000, PMIC_AFE_ADDA_MTKAIF_FIFO_LOG_MON1, "PMIC_AFE_ADDA_MTKAIF_FIFO_LOG_MON1"},
-	{0x15a6, 0x7fff, 0x0000, 0x0000, PMIC_AFE_ADDA_MTKAIF_MON0, "PMIC_AFE_ADDA_MTKAIF_MON0"},
-	{0x15a8, 0x79ff, 0x0000, 0x0000, PMIC_AFE_ADDA_MTKAIF_MON1, "PMIC_AFE_ADDA_MTKAIF_MON1"},
-	{0x15aa, 0xffff, 0x0000, 0x0000, PMIC_AFE_ADDA_MTKAIF_MON2, "PMIC_AFE_ADDA_MTKAIF_MON2"},
-	{0x15ac, 0xffff, 0x0000, 0x0000, PMIC_AFE_ADDA_MTKAIF_MON3, "PMIC_AFE_ADDA_MTKAIF_MON3"},
-	{0x15ae, 0x8117, 0x8117, 0x0000, PMIC_AFE_ADDA_MTKAIF_CFG0, "PMIC_AFE_ADDA_MTKAIF_CFG0"},
-	{0x15b0, 0xf779, 0xf779, 0x0730, PMIC_AFE_ADDA_MTKAIF_RX_CFG0, "PMIC_AFE_ADDA_MTKAIF_RX_CFG0"},
-	{0x15b2, 0xffff, 0xffff, 0x4330, PMIC_AFE_ADDA_MTKAIF_RX_CFG1, "PMIC_AFE_ADDA_MTKAIF_RX_CFG1"},
-	{0x15b4, 0x1fff, 0x1fff, 0x0003, PMIC_AFE_ADDA_MTKAIF_RX_CFG2, "PMIC_AFE_ADDA_MTKAIF_RX_CFG2"},
-	{0x15b6, 0xf178, 0xf178, 0x0030, PMIC_AFE_ADDA_MTKAIF_RX_CFG3, "PMIC_AFE_ADDA_MTKAIF_RX_CFG3"},
-	{0x15b8, 0x0077, 0x0077, 0x0063, PMIC_AFE_ADDA_MTKAIF_TX_CFG1, "PMIC_AFE_ADDA_MTKAIF_TX_CFG1"},
-	{0x15ba, 0xf0c0, 0xf0c0, 0x0000, PMIC_AFE_SGEN_CFG0, "PMIC_AFE_SGEN_CFG0"},
-	{0x15bc, 0xc01f, 0xc01f, 0x0001, PMIC_AFE_SGEN_CFG1, "PMIC_AFE_SGEN_CFG1"},
-	{0x15be, 0x0032, 0x0032, 0x0010, PMIC_AFE_ADC_ASYNC_FIFO_CFG, "PMIC_AFE_ADC_ASYNC_FIFO_CFG"},
-	{0x15c0, 0xffff, 0xffff, 0x0fe2, PMIC_AFE_DCCLK_CFG0, "PMIC_AFE_DCCLK_CFG0"},
-	{0x15c2, 0x1fff, 0x1fff, 0x1105, PMIC_AFE_DCCLK_CFG1, "PMIC_AFE_DCCLK_CFG1"},
-	{0x15c4, 0xffff, 0xffff, 0x0000, PMIC_AUDIO_DIG_CFG, "PMIC_AUDIO_DIG_CFG"},
-	{0x15c6, 0xffff, 0xffff, 0x0000, PMIC_AFE_AUD_PAD_TOP, "PMIC_AFE_AUD_PAD_TOP"},
-	{0x15c8, 0xffff, 0x0000, 0x0000, PMIC_AFE_AUD_PAD_TOP_MON, "PMIC_AFE_AUD_PAD_TOP_MON"},
-	{0x15ca, 0xffff, 0x0000, 0x0000, PMIC_AFE_AUD_PAD_TOP_MON1, "PMIC_AFE_AUD_PAD_TOP_MON1"},
-	{0x1600, 0xffff, 0x0000, 0xa084, PMIC_AUDENC_DSN_ID, "PMIC_AUDENC_DSN_ID"},
-	{0x1602, 0xffff, 0x0000, 0x1010, PMIC_AUDENC_DSN_REV0, "PMIC_AUDENC_DSN_REV0"},
-	{0x1604, 0xffff, 0x0000, 0x0010, PMIC_AUDENC_DSN_REV1, "PMIC_AUDENC_DSN_REV1"},
-	{0x1606, 0x77ff, 0x77ff, 0x0000, PMIC_AUDENC_ANA_CON0, "PMIC_AUDENC_ANA_CON0"},
-	{0x1608, 0x77ff, 0x77ff, 0x0000, PMIC_AUDENC_ANA_CON1, "PMIC_AUDENC_ANA_CON1"},
-	{0x160a, 0xffff, 0xffff, 0x0000, PMIC_AUDENC_ANA_CON2, "PMIC_AUDENC_ANA_CON2"},
-	{0x160c, 0x0f0f, 0x0f0f, 0x0000, PMIC_AUDENC_ANA_CON3, "PMIC_AUDENC_ANA_CON3"},
-	{0x160e, 0x3fff, 0x3fff, 0x0800, PMIC_AUDENC_ANA_CON4, "PMIC_AUDENC_ANA_CON4"},
-	{0x1610, 0xffff, 0xffff, 0x0000, PMIC_AUDENC_ANA_CON5, "PMIC_AUDENC_ANA_CON5"},
-	{0x1612, 0x3f3f, 0x3f3f, 0x1515, PMIC_AUDENC_ANA_CON6, "PMIC_AUDENC_ANA_CON6"},
-	{0x1614, 0xffff, 0xffff, 0x0000, PMIC_AUDENC_ANA_CON7, "PMIC_AUDENC_ANA_CON7"},
-	{0x1616, 0xffff, 0xffff, 0x0004, PMIC_AUDENC_ANA_CON8, "PMIC_AUDENC_ANA_CON8"},
-	{0x1618, 0x7777, 0x7777, 0x0000, PMIC_AUDENC_ANA_CON9, "PMIC_AUDENC_ANA_CON9"},
-	{0x161a, 0x1377, 0x1377, 0x0000, PMIC_AUDENC_ANA_CON10, "PMIC_AUDENC_ANA_CON10"},
-	{0x161c, 0xfff7, 0xfff7, 0x0000, PMIC_AUDENC_ANA_CON11, "PMIC_AUDENC_ANA_CON11"},
-	{0x161e, 0x1f1f, 0x0000, 0x0000, PMIC_AUDENC_ANA_CON12, "PMIC_AUDENC_ANA_CON12"},
-	{0x1640, 0xffff, 0x0000, 0xa080, PMIC_AUDDEC_DSN_ID, "PMIC_AUDDEC_DSN_ID"},
-	{0x1642, 0xffff, 0x0000, 0x1010, PMIC_AUDDEC_DSN_REV0, "PMIC_AUDDEC_DSN_REV0"},
-	{0x1644, 0xffff, 0x0000, 0x2610, PMIC_AUDDEC_DSN_REV1, "PMIC_AUDDEC_DSN_REV1"},
-	{0x1646, 0xffff, 0xffff, 0x0000, PMIC_AUDDEC_ANA_CON0, "PMIC_AUDDEC_ANA_CON0"},
-	{0x1648, 0x3fff, 0x3fff, 0x0000, PMIC_AUDDEC_ANA_CON1, "PMIC_AUDDEC_ANA_CON1"},
-	{0x164a, 0xe077, 0xe077, 0x0000, PMIC_AUDDEC_ANA_CON2, "PMIC_AUDDEC_ANA_CON2"},
-	{0x164c, 0xe000, 0xe000, 0x0000, PMIC_AUDDEC_ANA_CON3, "PMIC_AUDDEC_ANA_CON3"},
-	{0x164e, 0xb777, 0xb777, 0x0000, PMIC_AUDDEC_ANA_CON4, "PMIC_AUDDEC_ANA_CON4"},
-	{0x1650, 0x0077, 0x0077, 0x0000, PMIC_AUDDEC_ANA_CON5, "PMIC_AUDDEC_ANA_CON5"},
-	{0x1652, 0x0fff, 0x0fff, 0x0000, PMIC_AUDDEC_ANA_CON6, "PMIC_AUDDEC_ANA_CON6"},
-	{0x1654, 0x0fff, 0x0fff, 0x0000, PMIC_AUDDEC_ANA_CON7, "PMIC_AUDDEC_ANA_CON7"},
-	{0x1656, 0x1f7f, 0x1f7f, 0x0000, PMIC_AUDDEC_ANA_CON8, "PMIC_AUDDEC_ANA_CON8"},
-	{0x1658, 0xffff, 0xffff, 0x0000, PMIC_AUDDEC_ANA_CON9, "PMIC_AUDDEC_ANA_CON9"},
-	{0x165a, 0xffff, 0xffff, 0x0000, PMIC_AUDDEC_ANA_CON10, "PMIC_AUDDEC_ANA_CON10"},
-	{0x165c, 0xff8f, 0xff8f, 0x4900, PMIC_AUDDEC_ANA_CON11, "PMIC_AUDDEC_ANA_CON11"},
-	{0x165e, 0x01ff, 0x01ff, 0x0155, PMIC_AUDDEC_ANA_CON12, "PMIC_AUDDEC_ANA_CON12"},
-	{0x1660, 0x0077, 0x0077, 0x0010, PMIC_AUDDEC_ANA_CON13, "PMIC_AUDDEC_ANA_CON13"},
-	{0x1662, 0xf777, 0xf777, 0x0000, PMIC_AUDDEC_ANA_CON14, "PMIC_AUDDEC_ANA_CON14"},
-	{0x1664, 0xfff3, 0xfff3, 0x0000, PMIC_AUDDEC_ANA_CON15, "PMIC_AUDDEC_ANA_CON15"},
-	{0x1666, 0x00ff, 0x0000, 0x0002, PMIC_AUDDEC_ELR_NUM, "PMIC_AUDDEC_ELR_NUM"},
-	{0x1668, 0x1fff, 0x1fff, 0x0000, PMIC_AUDDEC_ELR_0, "PMIC_AUDDEC_ELR_0"},
-
-	{0x1552, 0x0007, 0x0007, 0x0000, PMIC_AUD_TOP_RST_BANK_CON0, "PMIC_AUD_TOP_RST_BANK_CON0"},
-	{0x1550, 0x000f, 0x000f, 0x0000, PMIC_AUD_TOP_RST_CON0, "PMIC_AUD_TOP_RST_CON0"},
-};
-
-void vDumpPmicRegs(void)
-{
-	unsigned int addr;
-	int i;
-
-	pr_warn("Dump PMIC MT6328 AUDIO_SYS_TOP Registers\n\n");
-	/* dump all pmic regs */
-
-	/* Init MT6328 PMIC Audio Registers */
-	for (i = 0; i < PMIC_AUDIO_REG_COUNT; i++) {
-		addr = u4PMICAudioRegTable[i].regid;
-		pr_warn("[0x%x] = 0x%x\n", addr, Ana_Get_Reg(addr));
-	}
-
-	pr_warn("GPIO_MODE2 [0x%x] = 0x%x\n", GPIO_MODE2, Ana_Get_Reg(GPIO_MODE2));
-	pr_warn("GPIO_MODE3 [0x%x] = 0x%x\n", GPIO_MODE3, Ana_Get_Reg(GPIO_MODE3));
-	pr_warn("[0x%x] = 0x%x\n", 0x0, Ana_Get_Reg(0x0));
-	pr_warn("DRV_CON3 [0x%x] = 0x%x\n", DRV_CON3, Ana_Get_Reg(DRV_CON3));
-	pr_warn("[0x%x] = 0x%x\n", 0xc, Ana_Get_Reg(0xc));
-	pr_warn("SMT_CON0 [0x%x] = 0x%x\n", SMT_CON0, Ana_Get_Reg(SMT_CON0));
-	pr_warn("SMT_CON1 [0x%x] = 0x%x\n", SMT_CON1, Ana_Get_Reg(SMT_CON1));
-	pr_warn("FILTER_CON0 [0x%x] = 0x%x\n", FILTER_CON0, Ana_Get_Reg(FILTER_CON0));
-}
-
 static int Pmic_Loopback_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_warn("%s()\n", __func__);
@@ -4051,8 +3988,6 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0x0002);       /* configure ADC setting */
 		Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0xffff);   /* turn on afe */
 	}
-
-	vDumpPmicRegs();
 
 	/* remember to set, AP side 0xe00 [1] = 1, for new lpbk2 */
 
@@ -4313,8 +4248,6 @@ static void mt6356_codec_init_reg(struct snd_soc_codec *codec)
 	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x1 << 4, 0x1 << 4);
 	/* disable LO buffer left short circuit protection */
 	Ana_Set_Reg(AUDDEC_ANA_CON7, 0x1 << 4, 0x1 << 4);
-	/* disable LO buffer left short circuit protection */
-	Ana_Set_Reg(DRV_CON3, 0xcccc, 0xffff);
 	/* gpio miso driving set to default 6mA, 0xcccc */
 	Ana_Set_Reg(DRV_CON3, 0xcccc, 0xffff);
 	/* gpio mosi mode */

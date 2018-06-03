@@ -628,8 +628,6 @@ void SetChipModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribut
 
 bool SetChipModemPcmEnable(int modem_index, bool modem_pcm_on)
 {
-	uint32 mPcm1AsyncFifo;
-
 	pr_debug("+%s(), modem_index = %d, modem_pcm_on = %d\n", __func__, modem_index,
 		 modem_pcm_on);
 
@@ -638,10 +636,7 @@ bool SetChipModemPcmEnable(int modem_index, bool modem_pcm_on)
 		Afe_Set_Reg(PCM2_INTF_CON, modem_pcm_on, 0x1);
 	} else if (modem_index == MODEM_2 || modem_index == MODEM_EXTERNAL) {
 		/* MODEM_2 use PCM_INTF_CON1 (0x530) !!! */
-		if (modem_pcm_on == true) {	/* turn on ASRC before Modem PCM on */
-			Afe_Set_Reg(PCM_INTF_CON2, (modem_index - 1) << 8, 0x100);
-			/* selects internal MD2/MD3 PCM interface (0x538[8]) */
-			mPcm1AsyncFifo = (Afe_Get_Reg(PCM_INTF_CON1) & 0x0040) >> 6;
+		if (modem_pcm_on == true) {
 			Afe_Set_Reg(PCM_INTF_CON1, 0x1, 0x1);
 		} else if (modem_pcm_on == false) {	/* turn off ASRC after Modem PCM off */
 			Afe_Set_Reg(PCM_INTF_CON1, 0x0, 0x1);
