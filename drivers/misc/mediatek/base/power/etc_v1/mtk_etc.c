@@ -584,7 +584,7 @@ static ssize_t etc_reg_proc_write(struct file *file,
 
 	buf[count] = '\0';
 
-	if (kstrtoint(buf, 0, &etc_reg)) {
+	if (kstrtoint(buf, 16, &etc_reg)) {
 		etc_error("bad argument!! Should be a number.\n");
 		goto out;
 	}
