@@ -234,14 +234,16 @@ void cmdq_mdp_dump_mmsys_config(void)
 int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 {
 	long MMSYS_SW0_RST_B_REG = MMSYS_CONFIG_BASE + (0x140);
+	long MMSYS_SW1_RST_B_REG = MMSYS_CONFIG_BASE + (0x144);
 #ifdef CMDQ_MDP_COLOR
 	int mdpColorResetBit = CMDQ_ENG_MDP_COLOR0;
 #else
 	int mdpColorResetBit = -1;
 #endif
 	int i = 0;
-	uint32_t reset_bits = 0L;
-	int engineResetBit[32] = {
+	uint32_t reset_bits0 = 0L;
+	uint32_t reset_bits1 = 0L;
+	int engineResetBit0[32] = {
 		-1,		/* bit  0 : SMI COMMON */
 		-1,		/* bit  1 : SMI LARB0 */
 		-1,		/* bit  2 : SMI LARB1 */
@@ -264,19 +266,57 @@ int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 		mdpColorResetBit,	/* bit  19 : COLOR0 */
 		[20 ... 31] = -1
 	};
+
+	int engineResetBit1[32] = {
+		-1,		                /* bit  0 : DISP_MUTEX */
+		-1,		                /* bit  1 : GALS_COMM0 */
+		-1,		                /* bit  2 : GALS_COMM1 */
+		-1,                     /* bit  3 : GALS_VDEC2MM */
+		-1,                     /* bit  4 : GALS_CAM2MM */
+		-1,                     /* bit  5 : GALS_VENC2MM */
+		-1,                     /* bit  6 : GALS_IMG2MM */
+		-1,                     /* bit  7 : GALS_IPU02MM */
+		-1,                     /* bit  8 : MMSYS_R2Y */
+		-1,                     /* bit  9 : MDP_COLOR_MOUT */
+		CMDQ_ENG_MDP_CAMIN,     /* bit  10 : CAM_MDP */
+		CMDQ_ENG_MDP_CAMIN2,    /* bit  11 : CAM2_MDP */
+		-1,                     /* bit  12 : MDP_COLOR_MOUT */
+		-1,                     /* bit  13 : MDP_COLOR_MOUT */
+		-1,                     /* bit  14 : MDP_COLOR_MOUT */
+		CMDQ_ENG_MDP_AAL0,      /* bit  15 : MDP_AAL */
+		CMDQ_ENG_MDP_CCORR0,    /* bit  16 : MDP_CCORR */
+		[17 ... 31] = -1
+	};
+
 	for (i = 0; i < 32; ++i) {
-		if (engineResetBit[i] < 0)
+		if (engineResetBit0[i] < 0)
 			continue;
-		if (engineToResetAgain & (1LL << engineResetBit[i]))
-			reset_bits |= (1 << i);
+		if (engineToResetAgain & (1LL << engineResetBit0[i]))
+			reset_bits0 |= (1 << i);
 	}
-	if (reset_bits != 0) {
+	if (reset_bits0 != 0) {
 		/* 0: reset */
 		/* 1: not reset */
 		/* so we need to reverse the bits */
-		reset_bits = ~reset_bits;
-		CMDQ_REG_SET32(MMSYS_SW0_RST_B_REG, reset_bits);
+		reset_bits0 = ~reset_bits0;
+		CMDQ_REG_SET32(MMSYS_SW0_RST_B_REG, reset_bits0);
 		CMDQ_REG_SET32(MMSYS_SW0_RST_B_REG, ~0);
+		/* This takes effect immediately, no need to poll state */
+	}
+
+	for (i = 0; i < 32; ++i) {
+		if (engineResetBit1[i] < 0)
+			continue;
+		if (engineToResetAgain & (1LL << engineResetBit1[i]))
+			reset_bits1 |= (1 << i);
+	}
+	if (reset_bits1 != 0) {
+		/* 0: reset */
+		/* 1: not reset */
+		/* so we need to reverse the bits */
+		reset_bits1 = ~reset_bits1;
+		CMDQ_REG_SET32(MMSYS_SW1_RST_B_REG, reset_bits1);
+		CMDQ_REG_SET32(MMSYS_SW1_RST_B_REG, ~0);
 		/* This takes effect immediately, no need to poll state */
 	}
 	return 0;
@@ -591,6 +631,8 @@ int32_t cmdqMdpClockOn(uint64_t engineFlag)
 #endif
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_WROT0);
 	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_WDMA);
+	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_AAL0);
+	cmdq_mdp_enable(engineFlag, CMDQ_ENG_MDP_CCORR0);
 #else
 	CMDQ_MSG("Force MDP clock all on\n");
 	/* enable all bits in MMSYS_CG_CLR0 and MMSYS_CG_CLR1 */
