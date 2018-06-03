@@ -1,5 +1,6 @@
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6336
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 
 
