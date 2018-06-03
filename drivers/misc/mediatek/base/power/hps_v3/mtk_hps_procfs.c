@@ -163,6 +163,8 @@ PROC_FOPS_RO_UINT(state, hps_ctxt.state);
  *     - cur_dump_enabled
  *     - stats_dump_enabled
  *     - heavy_task_enabled
+ *     - big_task_enabled
+ *     - idle_det_enabled
  */
 PROC_FOPS_RW_UINT(enabled, hps_ctxt.enabled, hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(eas_enabled, hps_ctxt.eas_enabled, hps_proc_uint_write_with_lock_reset);
@@ -170,6 +172,7 @@ PROC_FOPS_RW_UINT(heavy_task_enabled, hps_ctxt.heavy_task_enabled,
 		  hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(big_task_enabled, hps_ctxt.big_task_enabled,
 		hps_proc_uint_write_with_lock_reset);
+PROC_FOPS_RW_UINT(idle_det_enabled, hps_ctxt.idle_det_enabled, hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(suspend_enabled, hps_ctxt.suspend_enabled, hps_proc_uint_write_with_lock);
 PROC_FOPS_RW_UINT(cur_dump_enabled, hps_ctxt.cur_dump_enabled, hps_proc_uint_write_with_lock);
 PROC_FOPS_RW_UINT(stats_dump_enabled, hps_ctxt.stats_dump_enabled, hps_proc_uint_write_with_lock);
@@ -186,6 +189,7 @@ PROC_FOPS_RW_UINT(stats_dump_enabled, hps_ctxt.stats_dump_enabled, hps_proc_uint
  *     - rush_boost_threshold
  *     - rush_boost_times
  *     - tlp_times
+ *     - idle_threshold
  */
 PROC_FOPS_RW_UINT(up_threshold, hps_ctxt.up_threshold, hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(up_times, hps_ctxt.up_times, hps_proc_uint_write_with_lock_reset);
@@ -199,6 +203,7 @@ PROC_FOPS_RW_UINT(rush_boost_threshold,
 PROC_FOPS_RW_UINT(rush_boost_times, hps_ctxt.rush_boost_times, hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(tlp_times, hps_ctxt.tlp_times, hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(power_mode, hps_ctxt.power_mode, hps_proc_uint_write_with_lock_reset);
+PROC_FOPS_RW_UINT(idle_threshold, hps_ctxt.idle_threshold, hps_proc_uint_write_with_lock_reset);
 
 /*
  * procfs callback - algo bound series
@@ -746,6 +751,8 @@ int hps_procfs_init(void)
 		PROC_ENTRY(eas_enabled),
 		PROC_ENTRY(heavy_task_enabled),
 		PROC_ENTRY(big_task_enabled),
+		PROC_ENTRY(idle_det_enabled),
+		PROC_ENTRY(idle_threshold),
 		PROC_ENTRY(suspend_enabled),
 		PROC_ENTRY(cur_dump_enabled),
 		PROC_ENTRY(stats_dump_enabled),
