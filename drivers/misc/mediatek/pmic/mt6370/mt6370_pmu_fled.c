@@ -22,7 +22,7 @@
 #include "inc/mt6370_pmu.h"
 #include "inc/mt6370_pmu_fled.h"
 
-#define MT6370_PMU_FLED_DRV_VERSION	"1.0.0_MTK"
+#define MT6370_PMU_FLED_DRV_VERSION	"1.0.2_MTK"
 
 static u8 mt6370_fled_inited;
 static u8 mt6370_global_mode = FLASHLIGHT_MODE_OFF;
@@ -718,3 +718,15 @@ module_platform_driver(mt6370_pmu_fled);
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MediaTek MT6370 PMU Fled");
 MODULE_VERSION(MT6370_PMU_FLED_DRV_VERSION);
+
+/*
+ * Version Note
+ * 1.0.2_MTK
+ * (1) Add delay for strobe on/off
+ *
+ * 1.0.1_MTK
+ * (1) Remove typedef
+ *
+ * 1.0.0_MTK
+ * (1) Initial Release
+ */
