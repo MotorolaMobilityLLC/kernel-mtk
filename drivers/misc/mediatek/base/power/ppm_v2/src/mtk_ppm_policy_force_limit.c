@@ -114,6 +114,87 @@ static void ppm_forcelimit_mode_change_cb(enum ppm_mode mode)
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
 
+unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_forcelimit_data *data)
+{
+	int i = 0;
+	int min_core, max_core;
+	bool is_limit = false;
+
+	/* Error check */
+	if (cluster_num > NR_PPM_CLUSTERS) {
+		ppm_err("@%s: Invalid cluster num = %d\n", __func__, cluster_num);
+		return -1;
+	}
+
+	if (!data) {
+		ppm_err("@%s: limit data is NULL!\n", __func__);
+		return -1;
+	}
+
+	for (i = 0; i < cluster_num; i++) {
+		min_core = data[i].min_core;
+		max_core = data[i].max_core;
+
+		/* invalid input check */
+		if (min_core != -1 && min_core < (int)get_cluster_min_cpu_core(i)) {
+			ppm_err("@%s: Invalid input! min_core for cluster %d = %d\n", __func__, i, min_core);
+			return -1;
+		}
+		if (max_core != -1 && max_core > (int)get_cluster_max_cpu_core(i)) {
+			ppm_err("@%s: Invalid input! max_core for cluster %d = %d\n", __func__, i, max_core);
+			return -1;
+		}
+
+#ifdef PPM_IC_SEGMENT_CHECK
+		if (!max_core) {
+			if ((i == 0 && ppm_main_info.fix_state_by_segment == PPM_POWER_STATE_LL_ONLY)
+				|| (i == 1 && ppm_main_info.fix_state_by_segment == PPM_POWER_STATE_L_ONLY)) {
+				ppm_err("@%s: Cannot disable cluster %d due to fix_state_by_segment is %s\n",
+					__func__, i, ppm_get_power_state_name(ppm_main_info.fix_state_by_segment));
+				return -1;
+			}
+		}
+#endif
+
+		/* check is all limit clear or not */
+		if (min_core != -1 || max_core != -1)
+			is_limit = true;
+
+		/* sync to max_core if min > max */
+		if (min_core != -1 && max_core != -1 && min_core > max_core)
+			data[i].min_core = data[i].max_core;
+	}
+
+	ppm_lock(&forcelimit_policy.lock);
+	if (!forcelimit_policy.is_enabled) {
+		ppm_warn("@%s: forcelimit policy is not enabled!\n", __func__);
+		ppm_unlock(&forcelimit_policy.lock);
+		return -1;
+	}
+
+	/* update policy data */
+	for (i = 0; i < cluster_num; i++) {
+		min_core = data[i].min_core;
+		max_core = data[i].max_core;
+
+		if (min_core != forcelimit_data.limit[i].min_core_num ||
+			max_core != forcelimit_data.limit[i].max_core_num) {
+			forcelimit_data.limit[i].min_core_num = min_core;
+			forcelimit_data.limit[i].max_core_num = max_core;
+			ppm_info("update forcelimit min/max core for cluster %d = %d/%d\n",
+				i, min_core, max_core);
+		}
+	}
+
+	forcelimit_data.is_core_limited_by_user = is_limit;
+	forcelimit_policy.is_activated = ppm_forcelimit_is_policy_active();
+
+	ppm_unlock(&forcelimit_policy.lock);
+	mt_ppm_main();
+
+	return 0;
+}
+
 static int ppm_forcelimit_cpu_core_proc_show(struct seq_file *m, void *v)
 {
 	int i;
@@ -129,21 +210,14 @@ static int ppm_forcelimit_cpu_core_proc_show(struct seq_file *m, void *v)
 static ssize_t ppm_forcelimit_cpu_core_proc_write(struct file *file, const char __user *buffer,
 					size_t count,	loff_t *pos)
 {
-	int i = 0;
-	int *core_limit, *min_core, *max_core;
-	bool is_limit = false;
-	unsigned int cluster_num = forcelimit_policy.req.cluster_num;
-	unsigned int arg_num = cluster_num * 2; /* for min and max */
+	int i = 0, data;
+	struct ppm_forcelimit_data core_limit[NR_PPM_CLUSTERS];
+	unsigned int arg_num = NR_PPM_CLUSTERS * 2; /* for min and max */
 	char *tok;
-
 	char *buf = ppm_copy_from_user_for_proc(buffer, count);
 
 	if (!buf)
 		return -EINVAL;
-
-	core_limit = kcalloc(arg_num, sizeof(*core_limit), GFP_KERNEL);
-	if (!core_limit)
-		goto no_mem;
 
 	while ((tok = strsep(&buf, " ")) != NULL) {
 		if (i == arg_num) {
@@ -151,84 +225,25 @@ static ssize_t ppm_forcelimit_cpu_core_proc_write(struct file *file, const char 
 			goto out;
 		}
 
-		if (kstrtoint(tok, 10, &core_limit[i])) {
+		if (kstrtoint(tok, 10, &data)) {
 			ppm_err("@%s: Invalid input: %s\n", __func__, tok);
 			goto out;
-		} else
+		} else {
+			if (i % 2) /* max */
+				core_limit[i/2].max_core = data;
+			else /* min */
+				core_limit[i/2].min_core = data;
+
 			i++;
+		}
 	}
 
-	if (i < arg_num) {
+	if (i < arg_num)
 		ppm_err("@%s: number of arguments < %d!\n", __func__, arg_num);
-		goto out;
-	}
-
-	/* Error check */
-	/* core_limit[i*2]: min core, core_limit[i*2+1]: max core for cluster i */
-	for (i = 0; i < cluster_num; i++) {
-		min_core = &core_limit[i*2];
-		max_core = &core_limit[i*2+1];
-
-		/* invalid input check */
-		if (*min_core != -1 && *min_core < (int)get_cluster_min_cpu_core(i)) {
-			ppm_err("@%s: Invalid input! min_core for cluster %d = %d\n", __func__, i, *min_core);
-			goto out;
-		}
-		if (*max_core != -1 && *max_core > (int)get_cluster_max_cpu_core(i)) {
-			ppm_err("@%s: Invalid input! max_core for cluster %d = %d\n", __func__, i, *max_core);
-			goto out;
-		}
-
-#ifdef PPM_IC_SEGMENT_CHECK
-		if (!*max_core) {
-			if ((i == 0 && ppm_main_info.fix_state_by_segment == PPM_POWER_STATE_LL_ONLY)
-				|| (i == 1 && ppm_main_info.fix_state_by_segment == PPM_POWER_STATE_L_ONLY)) {
-				ppm_err("@%s: Cannot disable cluster %d due to fix_state_by_segment is %s\n",
-					__func__, i, ppm_get_power_state_name(ppm_main_info.fix_state_by_segment));
-				goto out;
-			}
-		}
-#endif
-
-		/* check is all limit clear or not */
-		if (*min_core != -1 || *max_core != -1)
-			is_limit = true;
-
-		/* sync to max_core if min > max */
-		if (*min_core != -1 && *max_core != -1 && *min_core > *max_core)
-			*min_core = *max_core;
-	}
-
-	ppm_lock(&forcelimit_policy.lock);
-	if (!forcelimit_policy.is_enabled) {
-		ppm_warn("@%s: forcelimit policy is not enabled!\n", __func__);
-		ppm_unlock(&forcelimit_policy.lock);
-		goto out;
-	}
-
-	/* update policy data */
-	for (i = 0; i < cluster_num; i++) {
-		min_core = &core_limit[i*2];
-		max_core = &core_limit[i*2+1];
-
-		if (*min_core != forcelimit_data.limit[i].min_core_num ||
-			*max_core != forcelimit_data.limit[i].max_core_num) {
-			forcelimit_data.limit[i].min_core_num = *min_core;
-			forcelimit_data.limit[i].max_core_num = *max_core;
-			ppm_info("update forcelimit min/max core for cluster %d = %d/%d\n",
-				i, *min_core, *max_core);
-		}
-	}
-
-	forcelimit_data.is_core_limited_by_user = is_limit;
-	forcelimit_policy.is_activated = ppm_forcelimit_is_policy_active();
-
-	ppm_unlock(&forcelimit_policy.lock);
-	mt_ppm_main();
+	else
+		mt_ppm_forcelimit_cpu_core(NR_PPM_CLUSTERS, core_limit);
 
 out:
-	kfree(core_limit);
-no_mem:
 	free_page((unsigned long)buf);
 	return count;
 }
