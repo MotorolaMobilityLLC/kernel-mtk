@@ -82,11 +82,11 @@ static enum IMGSENSOR_RETURN regulator_set(
 	struct REGULATOR     *preg = (struct REGULATOR *)pinstance;
 	enum   REGULATOR_TYPE reg_type_offset;
 
-
-	if(pin > IMGSENSOR_HW_PIN_AFVDD   ||
-	   pin < IMGSENSOR_HW_PIN_AVDD    ||
-	   pin_state < IMGSENSOR_HW_PIN_STATE_LEVEL_0 ||
-	   pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_2800)
+	if ((sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN && pin > IMGSENSOR_HW_PIN_AFVDD) ||
+	    pin > IMGSENSOR_HW_PIN_DOVDD   ||
+	    pin < IMGSENSOR_HW_PIN_AVDD    ||
+	    pin_state < IMGSENSOR_HW_PIN_STATE_LEVEL_0 ||
+	    pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_2800)
 		return IMGSENSOR_RETURN_ERROR;
 
 	reg_type_offset = (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN) ? REGULATOR_TYPE_MAIN_VCAMA :

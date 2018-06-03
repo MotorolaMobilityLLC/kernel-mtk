@@ -467,7 +467,10 @@ inline static int adopt_CAMERA_HW_GetInfo(void *pBuf)
 	pInfo = kmalloc(sizeof(MSDK_SENSOR_INFO_STRUCT), GFP_KERNEL);
 	pConfig = kmalloc(sizeof(MSDK_SENSOR_CONFIG_STRUCT), GFP_KERNEL);
 
-	if (pInfo == NULL || pConfig == NULL){
+	if (pInfo == NULL || pConfig == NULL) {
+		kfree(pInfo);
+		kfree(pConfig);
+
 		PK_ERR(" ioctl allocate mem failed\n");
 		return -ENOMEM;
 	}
@@ -511,8 +514,8 @@ inline static int adopt_CAMERA_HW_GetInfo(void *pBuf)
         return -EFAULT;
     }
 
-	if (pInfo != NULL) kfree(pInfo);
-	if (pConfig != NULL) kfree(pConfig);
+	kfree(pInfo);
+	kfree(pConfig);
 	pInfo = NULL;
 	pConfig = NULL;
 
@@ -829,7 +832,9 @@ inline static int adopt_CAMERA_HW_Control(void *pBuf)
 	memset(&imageWindow, 0, sizeof(ACDK_SENSOR_EXPOSURE_WINDOW_STRUCT));
 	memset(&sensorConfigData, 0, sizeof(ACDK_SENSOR_CONFIG_STRUCT));
 
-	if (pSensorCtrl == NULL || pSensorCtrl->pImageWindow == NULL || pSensorCtrl->pSensorConfigData == NULL) {
+	if (pSensorCtrl == NULL ||
+	    pSensorCtrl->pImageWindow == NULL ||
+	    pSensorCtrl->pSensorConfigData == NULL) {
     	PK_DBG("[CAMERA_HW] NULL arg.\n");
     	return -EFAULT;
 	}
@@ -1860,13 +1865,16 @@ static long imgsensor_ioctl(
 		}
 
 		if (_IOC_WRITE & _IOC_DIR(a_u4Command)) {
-		    if (copy_from_user(pBuff , (void *) a_u4Param, _IOC_SIZE(a_u4Command))) {
-		    kfree(pBuff);
-		    PK_DBG("[CAMERA SENSOR] ioctl copy from user failed\n");
-		    i4RetValue =  -EFAULT;
-		    goto CAMERA_HW_Ioctl_EXIT;
-		    }
+			if (copy_from_user(pBuff, (void *)a_u4Param, _IOC_SIZE(a_u4Command))) {
+				kfree(pBuff);
+				PK_DBG("[CAMERA SENSOR] ioctl copy from user failed\n");
+				i4RetValue =  -EFAULT;
+				goto CAMERA_HW_Ioctl_EXIT;
+			}
 		}
+	} else {
+		i4RetValue =  -EFAULT;
+		goto CAMERA_HW_Ioctl_EXIT;
 	}
 
 	switch (a_u4Command) {

@@ -63,12 +63,13 @@ int imgsensor_clk_set(struct IMGSENSOR_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk
 {
 	int ret = 0;
 
-	if (pmclk->TG > IMGSENSOR_MCLK_TOP_CAMTG2_SEL ||
-		pmclk->TG < IMGSENSOR_MCLK_TOP_CAMTG_SEL ||
-		pmclk->freq > IMGSENSOR_MCLK_MAX_NUM ||
-		pmclk->freq < IMGSENSOR_MCLK_TOP_CLK26M) {
+	if (pmclk->TG >= IMGSENSOR_MCLK_TG_MAX_NUM ||
+		pmclk->TG < IMGSENSOR_MCLK_TG_MIN_NUM ||
+		pmclk->freq >= IMGSENSOR_MCLK_FREQ_MAX_NUM ||
+		pmclk->freq < IMGSENSOR_MCLK_FREQ_MIN_NUM) {
 		PK_ERR("[CAMERA SENSOR]kdSetSensorMclk out of range, tg=%d, freq= %d\n",
 			pmclk->TG, pmclk->freq);
+		return -EFAULT;
 	}
 
 	PK_DBG("[CAMERA SENSOR] CCF kdSetSensorMclk on= %d, freq= %d, TG= %d\n",
