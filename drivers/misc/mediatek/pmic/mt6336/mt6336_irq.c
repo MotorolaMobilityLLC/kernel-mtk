@@ -342,7 +342,7 @@ static void mt6336_int_handler(void)
 
 	ret = mt6336_read_bytes(mt6336_interrupts[0].address, int_status_vals, mt6336_interrupts_size);
 	for (i = 0; i < ARRAY_SIZE(mt6336_interrupts); i++) {
-		if (int_status_vals[i]) {
+		if (i != cc_pd_i && int_status_vals[i]) {
 			pr_err(MT6336TAG "[CHR_INT] %d status[0x%x]=0x%x\n",
 				i, mt6336_interrupts[i].address, int_status_vals[i]);
 		}
