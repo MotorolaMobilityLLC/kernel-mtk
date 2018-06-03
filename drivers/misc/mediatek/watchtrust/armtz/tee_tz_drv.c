@@ -1453,6 +1453,8 @@ static int tz_tee_probe(struct platform_device *pdev)
 		log_paddr = 0x70100000;
 	} else if (of_machine_is_compatible("mediatek,MT6765")) {
 		log_paddr = 0x70100000;
+	} else if (of_machine_is_compatible("mediatek,MT6761")) {
+		log_paddr = 0x70100000;
 	} else {
 		pr_err("map TEE log share buff err: unknown Soc type\n");
 		goto bail3;
