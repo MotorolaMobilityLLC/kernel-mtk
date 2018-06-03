@@ -228,7 +228,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList,
 					   unsigned int number,
 					   unsigned int level)
 {
-	unsigned int i;
+	int i;
 	unsigned int max_value_in_last_element;
 
 	if (pList[0] < pList[1])
@@ -387,6 +387,22 @@ static int mt6336_disable_charging(struct charger_device *chg_dev)
 	return 0;
 }
 
+static int mt6336_enable_powerpath(struct charger_device *chg_dev)
+{
+	pr_debug("%s\n", __func__);
+	mt6336_set_flag_register_value(MT6336_RG_EN_BUCK, 1);
+
+	return 0;
+}
+
+static int mt6336_disable_powerpath(struct charger_device *chg_dev)
+{
+	pr_debug("%s\n", __func__);
+	mt6336_set_flag_register_value(MT6336_RG_EN_BUCK, 0);
+
+	return 0;
+}
+
 static int mt6336_get_ichg(struct charger_device *chg_dev)
 {
 	unsigned int array_size;
@@ -532,7 +548,7 @@ static int mt6336_send_ta20_current_pattern(struct charger_device *chg_dev, int 
 	/* Enable clock */
 	mt6336_set_flag_register_value(MT6336_CLK_REG_6M_W1C_CK_PDN, 0x0);
 
-	if (uv == INT_MAX)
+	if (uv == 25000000)
 		pep_value = 31;
 	else
 		pep_value = (uv - 5500000) / 500000;
@@ -582,6 +598,14 @@ static int mt6336_get_mivr(struct charger_device *chg_dev)
 	val = mt6336_get_flag_register_value(MT6336_RG_VPAM);
 
 	return charging_value_to_parameter(MIVR_REG, array_size, val);
+}
+
+static int mt6336_get_mivr_state(struct charger_device *chg_dev)
+{
+	unsigned short val;
+
+	val = mt6336_get_flag_register_value(MT6336_AD_QI_PAM_MODE);
+	return 0;
 }
 
 void mt6336_vbat_ovp_callback(void)
@@ -652,6 +676,8 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.plug_out = NULL,
 	.enable = mt6336_enable_charging,
 	.disable = mt6336_disable_charging,
+	.enable_powerpath = mt6336_enable_powerpath,
+	.disable_powerpath = mt6336_disable_powerpath,
 	.get_charging_current = mt6336_get_ichg,
 	.set_charging_current = mt6336_set_ichg,
 	.set_constant_voltage = mt6336_set_cv,
@@ -663,6 +689,7 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.send_ta20_current_pattern = mt6336_send_ta20_current_pattern,
 	.set_ta20_reset = mt6336_set_ta20_reset,
 	.set_mivr = mt6336_set_mivr,
+	.get_mivr_state = mt6336_get_mivr_state,
 };
 
 static int mt6336_charger_probe(struct platform_device *pdev)
