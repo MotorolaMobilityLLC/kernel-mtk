@@ -20,8 +20,6 @@
 #include "cmdq_core.h"
 #include "cmdq_device.h"
 
-#define MMSYS_CONFIG_BASE	cmdq_dev_get_module_base_VA_MMSYS_CONFIG()
-
 #define GCE_BASE_PA			cmdq_dev_get_module_base_PA_GCE()
 #define GCE_BASE_VA			cmdq_dev_get_module_base_VA_GCE()
 
