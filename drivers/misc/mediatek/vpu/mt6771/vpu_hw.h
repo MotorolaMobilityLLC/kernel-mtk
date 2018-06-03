@@ -220,6 +220,14 @@ int vpu_hw_enable_jtag(bool enabled);
 int vpu_hw_enque_request(int core, struct vpu_request *req);
 
 /**
+ * vpu_hw_processing_request - do whole processing for enque request, including check algo, load algo, run d2d.
+ * @core:	core index of device
+ * @req:        the pointer to request
+ */
+int vpu_hw_processing_request(int core, struct vpu_request *req);
+
+
+/**
  * vpu_thermal_en_throttle_cb - for thermal callback, do vcore or freq control.
  * @vcore_opp:	upper bound for vcore opp
  * @vpu_opp:		upper bound for dsp freq
