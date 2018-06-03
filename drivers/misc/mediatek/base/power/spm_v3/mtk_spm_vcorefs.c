@@ -1227,6 +1227,9 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_MD_MAP_BW_14, 0xf000f);
 	spm_write(DVFSRC_MD_MAP_BW_15, 0xff00ff);
 
+	spm_write(DVFSRC_MD_LEVEL_CTRL, 0x1);
+	spm_write(DVFSRC_MD_LEVEL_CTRL_2, 0x1);
+
 	spm_write(DVFSRC_CPU_LEVEL_MASK, (spm_read(DVFSRC_CPU_LEVEL_MASK) & ~(0xf)) | dvfs_mask[BOOT_UP_OPP]);
 
 	/* enable DVFSRC */
