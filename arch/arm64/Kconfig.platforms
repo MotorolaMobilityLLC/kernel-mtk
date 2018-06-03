@@ -117,6 +117,7 @@ config MACH_MT6759
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_WATCHPOINT
 	select MTK_BOUNCING_CHECK
+	select MTK_USB2JTAG_SUPPORT
 	help
 	  This enables support for MediaTek MT6759
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
