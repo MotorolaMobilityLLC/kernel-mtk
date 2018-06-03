@@ -233,17 +233,13 @@ VOID bssDetermineApBssInfoPhyTypeSet(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgIsPu
 	}
 
 	/* Set HT/VHT capability from Feature Option */
-	if (IS_FEATURE_DISABLED(ucHtOption))
-		prBssInfo->ucPhyTypeSet &= ~PHY_TYPE_BIT_HT;
-	else if (IS_FEATURE_ENABLED(ucHtOption))
+
+	if (IS_FEATURE_ENABLED(ucHtOption))
 		prBssInfo->ucPhyTypeSet |= PHY_TYPE_BIT_HT;
 
-	if (IS_FEATURE_DISABLED(ucVhtOption)) {
-		prBssInfo->ucPhyTypeSet &= ~PHY_TYPE_BIT_VHT;
-	} else if (IS_FEATURE_FORCE_ENABLED(ucVhtOption) ||
-		   (IS_FEATURE_ENABLED(ucVhtOption) && (prBssInfo->eBand == BAND_5G))) {
-
-		/* Enable HT capability if VHT is enabled */
+	if (IS_FEATURE_FORCE_ENABLED(ucVhtOption) ||
+		(IS_FEATURE_ENABLED(ucVhtOption) && (prBssInfo->eBand == BAND_5G))) {
+		/* Enable VHT capability if VHT is enabled */
 		prBssInfo->ucPhyTypeSet |= PHY_TYPE_BIT_VHT;
 	}
 
@@ -996,58 +992,53 @@ bssComposeBeaconProbeRespFrameHeaderAndFF(IN PUINT_8 pucBuffer,
 WLAN_STATUS bssUpdateBeaconContent(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 {
 	P_BSS_INFO_T prBssInfo;
-	P_MSDU_INFO_T prMsduInfo;
+	P_MSDU_INFO_T prBcnMsduInfo;
 	P_WLAN_BEACON_FRAME_T prBcnFrame;
 	UINT_32 i;
-
-	DEBUGFUNC("bssUpdateBeaconContent");
-	DBGLOG(INIT, LOUD, "\n");
 
 	ASSERT(ucBssIndex <= MAX_BSS_INDEX);
 
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
 
-	/* 4 <1> Allocate a PKT_INFO_T for Beacon Frame */
-	/* Allocate a MSDU_INFO_T */
-	/* For Beacon */
-	prMsduInfo = prBssInfo->prBeacon;
+	/* 4 <1> Retrieve MSDU_INFO_T for Beacon Frame */
+	prBcnMsduInfo = prBssInfo->prBeacon;
 
-	/* beacon prMsduInfo will be NULLify once BSS deactivated, so skip if it is */
-	if (prMsduInfo == NULL)
+	/* prBcnMsduInfo will be NULL if once BSS deactivated, skip it */
+	if (prBcnMsduInfo == NULL)
 		return WLAN_STATUS_SUCCESS;
 
+	prBcnFrame = (P_WLAN_BEACON_FRAME_T)((ULONG) (prBcnMsduInfo->prPacket) + MAC_TX_RESERVED_FIELD);
 	/* 4 <2> Compose header */
-	bssComposeBeaconProbeRespFrameHeaderAndFF((PUINT_8)
-						  ((ULONG) (prMsduInfo->prPacket) +
-						   MAC_TX_RESERVED_FIELD), NULL,
+	bssComposeBeaconProbeRespFrameHeaderAndFF((PUINT_8)prBcnFrame,
+						  NULL,
 						  prBssInfo->aucOwnMacAddr, prBssInfo->aucBSSID,
 						  prBssInfo->u2BeaconInterval, prBssInfo->u2CapInfo);
 
-	prMsduInfo->u2FrameLength = (WLAN_MAC_MGMT_HEADER_LEN +
+	prBcnMsduInfo->u2FrameLength = (WLAN_MAC_MGMT_HEADER_LEN +
 				     (TIMESTAMP_FIELD_LEN + BEACON_INTERVAL_FIELD_LEN + CAP_INFO_FIELD_LEN));
 
-	prMsduInfo->ucBssIndex = ucBssIndex;
+	prBcnMsduInfo->ucBssIndex = ucBssIndex;
 
-	/* 4 <3> Compose the frame body's Common IEs of the Beacon frame. */
-	bssBuildBeaconProbeRespFrameCommonIEs(prMsduInfo, prBssInfo, NULL);
+	/* 4 <3> Compose Beacon body's common IEs */
+	bssBuildBeaconProbeRespFrameCommonIEs(prBcnMsduInfo, prBssInfo, NULL);
 
-	/* 4 <4> Compose IEs in MSDU_INFO_T */
+	/* 4 <4> Append IEs for Beacon */
 
 	/* Append IE for Beacon */
 	for (i = 0; i < sizeof(txBcnIETable) / sizeof(APPEND_VAR_IE_ENTRY_T); i++) {
 		if (txBcnIETable[i].pfnAppendIE)
-			txBcnIETable[i].pfnAppendIE(prAdapter, prMsduInfo);
+			txBcnIETable[i].pfnAppendIE(prAdapter, prBcnMsduInfo);
 
 	}
 
-	prBcnFrame = (P_WLAN_BEACON_FRAME_T) prMsduInfo->prPacket;
+	prBcnFrame = (P_WLAN_BEACON_FRAME_T) prBcnMsduInfo->prPacket;
 
 	return nicUpdateBeaconIETemplate(prAdapter,
 					 IE_UPD_METHOD_UPDATE_ALL,
 					 ucBssIndex,
-					 prBssInfo->u2CapInfo,
+					 prBcnFrame->u2CapInfo,
 					 (PUINT_8) prBcnFrame->aucInfoElem,
-					 prMsduInfo->u2FrameLength - OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem));
+					 prBcnMsduInfo->u2FrameLength - OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem));
 
 }				/* end of bssUpdateBeaconContent() */
 
@@ -2143,18 +2134,9 @@ VOID bssInitForAP(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN BOOLEA
 	UINT_8 auAifs[WMM_AC_INDEX_NUM] = { 3, 7, 1, 1 };
 	UINT_8 auTxop[WMM_AC_INDEX_NUM] = { 0, 0, 94, 47 };	/* If the AP is OFDM */
 
-	DEBUGFUNC("bssInitForAP");
-	DBGLOG(BSS, LOUD, "\n");
-
 	ASSERT(prBssInfo);
 	ASSERT((prBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)
 	       || (prBssInfo->eCurrentOPMode == OP_MODE_BOW));
-
-#if 0
-	prAdapter->rWifiVar.rConnSettings.fgRxShortGIDisabled = TRUE;
-	prAdapter->rWifiVar.rConnSettings.uc2G4BandwidthMode = CONFIG_BW_20M;
-	prAdapter->rWifiVar.rConnSettings.uc5GBandwidthMode = CONFIG_BW_20M;
-#endif
 
 	/* 4 <1> Setup PHY Attributes and Basic Rate Set/Operational Rate Set */
 	prBssInfo->ucNonHTBasicPhyType = (UINT_8)
@@ -2179,7 +2161,8 @@ VOID bssInitForAP(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN BOOLEA
 	/* 4 <2> Setup BSSID */
 	COPY_MAC_ADDR(prBssInfo->aucBSSID, prBssInfo->aucOwnMacAddr);
 
-	/* 4 <3> Setup Capability - Short Preamble */
+	/* 4 <3> Compose Capability */
+	/* 4 <3.1> Setup Capability - Short Preamble */
 	if (rNonHTPhyAttributes[prBssInfo->ucNonHTBasicPhyType].fgIsShortPreambleOptionImplemented &&
 	    /* Short Preamble Option Enable is TRUE */
 	    ((prAdapter->rWifiVar.ePreambleType == PREAMBLE_TYPE_SHORT) ||
@@ -2192,10 +2175,9 @@ VOID bssInitForAP(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN BOOLEA
 		prBssInfo->fgUseShortPreamble = FALSE;
 	}
 
-	/* 4 <4> Setup Capability - Short Slot Time */
+	/* 4 <3.2> Setup Capability - Short Slot Time */
 	prBssInfo->fgUseShortSlotTime = TRUE;
 
-	/* 4 <5> Compoase Capability */
 	prBssInfo->u2CapInfo = CAP_INFO_ESS;
 
 	if (prBssInfo->fgIsProtection)
@@ -2207,10 +2189,10 @@ VOID bssInitForAP(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN BOOLEA
 	if (prBssInfo->fgUseShortSlotTime)
 		prBssInfo->u2CapInfo |= CAP_INFO_SHORT_SLOT_TIME;
 
-	/* 4 <6> Find Lowest Basic Rate Index for default TX Rate of MMPDU */
+	/* 4 <4> Use Lowest Basic Rate for default TX rate of MMPDU */
 	nicTxUpdateBssDefaultRate(prBssInfo);
 
-	/* 4 <7> Fill the EDCA */
+	/* 4 <5> Fill the EDCA */
 
 	prACQueParms = prBssInfo->arACQueParmsForBcast;
 
