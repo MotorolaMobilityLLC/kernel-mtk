@@ -75,7 +75,7 @@ int degree_set[NR_UPOWER_DEGREE] = {
 /* collect all the raw tables */
 #define INIT_UPOWER_TBL_INFOS(name, tbl) {__stringify(name), &tbl}
 struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK] = {
-	/* MT6763+ */
+	/* MT6763 */
 	[0] = {
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_1_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_1_FY),
@@ -83,7 +83,7 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_FY),
 	},
-	/* MT6763 */
+	/* MT6763T_FY */
 	[1] = {
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_2_FY),
@@ -91,16 +91,23 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_2_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_2_FY),
 	},
-	/* MT6763T_FY */
+	/* MT6763T_SB */
 	[2] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_2_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_2_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_2_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_2_SB),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_2_SB),
+	},
+	/* MT6763TT */
+	[3] = {
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_3_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_3_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_3_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_3_FY),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_3_FY),
 	},
-	/* MT6763T_SB */
-	[3] = {
+	[4] = {
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_3_SB),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_3_SB),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_3_SB),
@@ -202,28 +209,31 @@ static void upower_scale_l_cap(void)
 void get_original_table(void)
 {
 	unsigned int bin = 0;
-	unsigned short idx = 2; /* default use MT6763T_FY */
+	unsigned short idx = 1; /* default use MT6763T_FY */
 	unsigned int i, j;
 
 	/* 0x588 bit[2:0] */
 	bin = get_devinfo_with_index(BIN_EFUSE);
 	bin = GET_BITS_VAL(2:0, bin);
 	if (get_devinfo_with_index(SEG_EFUSE) == 0x10)
-		idx = 1; /* MT6763 */
+		idx = 0; /* MT6763 */
 	else if (get_devinfo_with_index(SEG_EFUSE) == 0x20 ||
 		get_devinfo_with_index(SEG_EFUSE) == 0) {
 		if (bin == 1)
-			idx = 3; /* MT6763T_SB */
+			idx = 2; /* MT6763T_SB */
 		else
-			idx = 2; /* MT6763T_FY */
+			idx = 1; /* MT6763T_FY */
 	} else if (get_devinfo_with_index(SEG_EFUSE) == 0x30) {
-		if (is_ext_buck_exist())
-			idx = 0; /* MT6763+ */
-		else {
+		if (is_ext_buck_exist()) {
 			if (bin == 1)
-				idx = 3; /* MT6763T_SB */
+				idx = 4; /* MT6763TT_SB */
 			else
-				idx = 2; /* MT6763T_FY */
+				idx = 3; /* MT6763TT_FY */
+		} else {
+			if (bin == 1)
+				idx = 2; /* MT6763T_SB */
+			else
+				idx = 1; /* MT6763T_FY */
 		}
 	}
 
