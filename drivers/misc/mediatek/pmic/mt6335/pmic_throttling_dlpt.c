@@ -601,9 +601,14 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
 	/*set issue interrupt */
 	/*pmic_set_register_value(PMIC_RG_INT_EN_AUXADC_IMP,1); */
 
-#if defined(SWCHR_POWER_PATH)
+#if 0
+	#if defined(SWCHR_POWER_PATH)
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 1);
+	#else
+	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 0);
+	#endif
 #else
+	/* For 35 */
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 0);
 #endif
 	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 1);
@@ -717,7 +722,6 @@ void enable_dummy_load(unsigned int en)
 		pmic_set_register_value(PMIC_ISINK_CH4_EN, 0x1);
 		/*PMICLOG("[enable dummy load]\n"); */
 	} else {
-		/*upmu_set_reg_value(0x828,0x0cc0); */
 		pmic_set_register_value(PMIC_ISINK_CH7_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH6_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH5_EN, 0);
@@ -836,10 +840,15 @@ int get_dlpt_iavg(int is_use_zcv)
 	if (is_use_zcv == 1)
 		zcv_val = fgauge_read_v_by_d(100 - bat_cap_val);
 	else {
-#if defined(SWCHR_POWER_PATH)
+#if 0
+	#if defined(SWCHR_POWER_PATH)
 		zcv_val = PMIC_IMM_GetOneChannelValue(MT6351_PMIC_AUX_ISENSE_AP, 5, 1);
-#else
+	#else
 		zcv_val = PMIC_IMM_GetOneChannelValue(MT6351_PMIC_AUX_BATSNS_AP, 5, 1);
+	#endif
+#else
+		/* For 35 */
+		zcv_val = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 #endif
 	}
 	rbat_val = fgauge_read_r_bat_by_v(zcv_val);
@@ -1146,12 +1155,15 @@ int get_dlpt_imix_charging(void)
 	int zcv_val = 0;
 	int vsys_min_1_val = POWER_INT2_VOLT;
 	int imix_val = 0;
-#if defined(SWCHR_POWER_PATH)
-	/*zcv_val = PMIC_IMM_GetOneChannelValue(PMIC_AUX_ISENSE_AP, 5, 1);*/
-	zcv_val = pmic_get_auxadc_value(PMIC_AUX_ISENSE_AP);
+#if 0
+	#if defined(SWCHR_POWER_PATH)
+	zcv_val = PMIC_IMM_GetOneChannelValue(PMIC_AUX_ISENSE_AP, 5, 1);
+	#else
+	zcv_val = PMIC_IMM_GetOneChannelValue(PMIC_AUX_BATSNS_AP, 5, 1);
+	#endif
 #else
-	/*zcv_val = PMIC_IMM_GetOneChannelValue(PMIC_AUX_BATSNS_AP, 5, 1);*/
-	zcv_val = pmic_get_auxadc_value(PMIC_AUX_BATSNS_AP);
+	/* For 35 */
+	zcv_val = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 #endif
 
 	imix_val = (zcv_val - vsys_min_1_val) * 1000 / ptim_rac_val_avg * 9 / 10;
