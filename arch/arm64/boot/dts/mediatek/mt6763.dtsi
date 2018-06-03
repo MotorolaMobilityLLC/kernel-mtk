@@ -179,7 +179,6 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2340000000>;
 		};
-
 		cpu-map {
 			cluster0 {
 				core0 {
@@ -349,7 +348,7 @@
 		atf-reserved-memory@44610000 {
 			compatible = "mediatek,mt6799-atf-reserved-memory";
 			no-map;
-			reg = <0 0x44610000 0 0x20000>;
+			reg = <0 0x44610000 0 0x40000>;
 		};
 		reserve-memory-sspm_share {
 			compatible = "mediatek,reserve-memory-sspm_share";
