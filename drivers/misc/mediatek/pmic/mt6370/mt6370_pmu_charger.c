@@ -802,7 +802,7 @@ static int mt6370_bc12_workaround(struct mt6370_pmu_charger_data *chg_data)
 
 	dev_info(chg_data->dev, "%s\n", __func__);
 
-	rt_mutex_lock(&chg_data->chip->io_lock);
+	mutex_lock(&chg_data->chip->io_lock);
 
 	ret = mt6370_toggle_chgdet_flow(chg_data);
 	if (ret < 0)
@@ -818,7 +818,7 @@ static int mt6370_bc12_workaround(struct mt6370_pmu_charger_data *chg_data)
 err:
 	dev_err(chg_data->dev, "%s: fail\n", __func__);
 out:
-	rt_mutex_unlock(&chg_data->chip->io_lock);
+	mutex_unlock(&chg_data->chip->io_lock);
 	return ret;
 }
 
@@ -2776,7 +2776,7 @@ static int mt6370_toggle_cfo(struct mt6370_pmu_charger_data *chg_data)
 	int ret = 0;
 	u8 data = 0;
 
-	rt_mutex_lock(&chg_data->chip->io_lock);
+	mutex_lock(&chg_data->chip->io_lock);
 
 	/* check if strobe mode */
 	ret = i2c_smbus_read_i2c_block_data(chg_data->chip->i2c,
@@ -2815,7 +2815,7 @@ static int mt6370_toggle_cfo(struct mt6370_pmu_charger_data *chg_data)
 		dev_err(chg_data->dev, "%s: cfo on fail\n", __func__);
 
 out:
-	rt_mutex_unlock(&chg_data->chip->io_lock);
+	mutex_unlock(&chg_data->chip->io_lock);
 	return ret;
 }
 

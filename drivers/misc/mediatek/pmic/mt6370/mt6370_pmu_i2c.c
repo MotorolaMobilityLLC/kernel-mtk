@@ -47,18 +47,18 @@ int mt6370_pmu_reg_read(struct mt6370_pmu_chip *chip, u8 addr)
 	int ret = 0;
 
 	mt_dbg(chip->dev, "%s: reg %02x\n", __func__, addr);
-	rt_mutex_lock(&chip->io_lock);
+	mutex_lock(&chip->io_lock);
 	ret = rt_regmap_reg_read(chip->rd, &rrd, addr);
-	rt_mutex_unlock(&chip->io_lock);
+	mutex_unlock(&chip->io_lock);
 	return (ret < 0 ? ret : rrd.rt_data.data_u32);
 #else
 	u8 data = 0;
 	int ret = 0;
 
 	mt_dbg(chip->dev, "%s: reg %02x\n", __func__, addr);
-	rt_mutex_lock(&chip->io_lock);
+	mutex_lock(&chip->io_lock);
 	ret = mt6370_pmu_read_device(chip->i2c, addr, 1, &data);
-	rt_mutex_unlock(&chip->io_lock);
+	mutex_unlock(&chip->io_lock);
 	return (ret < 0 ? ret : data);
 #endif /* #ifdef CONFIG_RT_REGMAP */
 }
@@ -72,18 +72,18 @@ int mt6370_pmu_reg_write(struct mt6370_pmu_chip *chip, u8 addr, u8 data)
 
 	mt_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__,
 		addr, data);
-	rt_mutex_lock(&chip->io_lock);
+	mutex_lock(&chip->io_lock);
 	ret = rt_regmap_reg_write(chip->rd, &rrd, addr, data);
-	rt_mutex_unlock(&chip->io_lock);
+	mutex_unlock(&chip->io_lock);
 	return ret;
 #else
 	int ret = 0;
 
 	mt_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__,
 		addr, data);
-	rt_mutex_lock(&chip->io_lock);
+	mutex_lock(&chip->io_lock);
 	ret = mt6370_pmu_write_device(chip->i2c, addr, 1, &data);
-	rt_mutex_unlock(&chip->io_lock);
+	mutex_unlock(&chip->io_lock);
 	return (ret < 0 ? ret : data);
 #endif /* #ifdef CONFIG_RT_REGMAP */
 }
@@ -99,9 +99,9 @@ int mt6370_pmu_reg_update_bits(struct mt6370_pmu_chip *chip, u8 addr,
 	mt_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__,
 		addr, data);
 	mt_dbg(chip->dev, "%s: mask %02x\n", __func__, mask);
-	rt_mutex_lock(&chip->io_lock);
+	mutex_lock(&chip->io_lock);
 	ret = rt_regmap_update_bits(chip->rd, &rrd, addr, mask, data);
-	rt_mutex_unlock(&chip->io_lock);
+	mutex_unlock(&chip->io_lock);
 	return ret;
 #else
 	u8 orig = 0;
@@ -110,7 +110,7 @@ int mt6370_pmu_reg_update_bits(struct mt6370_pmu_chip *chip, u8 addr,
 	mt_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__,
 		addr, data);
 	mt_dbg(chip->dev, "%s: mask %02x\n", __func__, mask);
-	rt_mutex_lock(&chip->io_lock);
+	mutex_lock(&chip->io_lock);
 	ret = mt6370_pmu_read_device(chip->i2c, addr, 1, &orig);
 	if (ret < 0)
 		goto out_update_bits;
@@ -118,7 +118,7 @@ int mt6370_pmu_reg_update_bits(struct mt6370_pmu_chip *chip, u8 addr,
 	orig |= (data & mask);
 	ret = mt6370_pmu_write_device(chip->i2c, addr, 1, &orig);
 out_update_bits:
-	rt_mutex_unlock(&chip->io_lock);
+	mutex_unlock(&chip->io_lock);
 	return ret;
 #endif /* #ifdef CONFIG_RT_REGMAP */
 }
@@ -132,18 +132,18 @@ int mt6370_pmu_reg_block_read(struct mt6370_pmu_chip *chip, u8 addr,
 
 	mt_dbg(chip->dev, "%s: reg %02x size %d\n", __func__,
 		addr, len);
-	rt_mutex_lock(&chip->io_lock);
+	mutex_lock(&chip->io_lock);
 	ret = rt_regmap_block_read(chip->rd, addr, len, dest);
-	rt_mutex_unlock(&chip->io_lock);
+	mutex_unlock(&chip->io_lock);
 	return ret;
 #else
 	int ret = 0;
 
 	mt_dbg(chip->dev, "%s: reg %02x size %d\n", __func__,
 		addr, len);
-	rt_mutex_lock(&chip->io_lock);
+	mutex_lock(&chip->io_lock);
 	ret = mt6370_pmu_read_device(chip->i2c, addr, len, dest);
-	rt_mutex_unlock(&chip->io_lock);
+	mutex_unlock(&chip->io_lock);
 	return ret;
 #endif /* #ifdef CONFIG_RT_REGMAP */
 }
@@ -157,18 +157,18 @@ int mt6370_pmu_reg_block_write(struct mt6370_pmu_chip *chip, u8 addr,
 
 	mt_dbg(chip->dev, "%s: reg %02x size %d\n", __func__, addr,
 		len);
-	rt_mutex_lock(&chip->io_lock);
+	mutex_lock(&chip->io_lock);
 	ret = rt_regmap_block_write(chip->rd, addr, len, src);
-	rt_mutex_unlock(&chip->io_lock);
+	mutex_unlock(&chip->io_lock);
 	return ret;
 #else
 	int ret = 0;
 
 	mt_dbg(chip->dev, "%s: reg %02x size %d\n", __func__, addr,
 		len);
-	rt_mutex_lock(&chip->io_lock);
+	mutex_lock(&chip->io_lock);
 	ret = mt6370_pmu_write_device(chip->i2c, addr, len, src);
-	rt_mutex_unlock(&chip->io_lock);
+	mutex_unlock(&chip->io_lock);
 	return ret;
 #endif /* #ifdef CONFIG_RT_REGMAP */
 }
@@ -278,7 +278,7 @@ static int mt6370_pmu_probe(struct i2c_client *i2c,
 	chip->dev = &i2c->dev;
 	chip->chip_rev = chip_id & 0x0f;
 	chip->chip_vid = chip_id & 0xf0;
-	rt_mutex_init(&chip->io_lock);
+	mutex_init(&chip->io_lock);
 	i2c_set_clientdata(i2c, chip);
 
 	pm_runtime_set_active(&i2c->dev);
