@@ -19,7 +19,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/extbuck/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335
 
-obj-y += mtk_hotplug_cb.o
 obj-y += mtk_hps_main.o
 obj-y += mtk_hps_core.o
 obj-y += mtk_hps_procfs.o
