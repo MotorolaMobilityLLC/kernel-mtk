@@ -14,11 +14,7 @@
 #ifndef _COMMON_MTK_STATIC_POWER_H
 #define _COMMON_MTK_STATIC_POWER_H
 
-#if defined(CONFIG_MACH_MT6759)
-#include "leakage_table_v2/mtk_static_power.h"
-#endif
-
-#if defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 #include "leakage_table_v2/mtk_static_power.h"
 #endif
 
