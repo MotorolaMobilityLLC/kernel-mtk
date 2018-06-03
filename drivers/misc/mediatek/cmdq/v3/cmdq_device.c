@@ -487,9 +487,9 @@ void cmdq_dev_init(struct platform_device *pDevice)
 		gCmdqDev.clk_gce_timer = devm_clk_get(&pDevice->dev, "GCE_TIMER");
 
 		CMDQ_LOG
-		    ("[CMDQ] platform_dev: dev: %p, PA: %pa, VA: %lx, irqId: %d, irqSecId: %d\n",
+		    ("[CMDQ] platform_dev dev:%p PA:%pa VA:%lx irqId:%d irqSecId:%d clk gce:0x%p timer:0x%p\n",
 		     gCmdqDev.pDev, &gCmdqDev.regBasePA, gCmdqDev.regBaseVA, gCmdqDev.irqId,
-		     gCmdqDev.irqSecId);
+		     gCmdqDev.irqSecId, gCmdqDev.clk_gce, gCmdqDev.clk_gce_timer);
 	} while (0);
 
 	if (!enable_4G()) {

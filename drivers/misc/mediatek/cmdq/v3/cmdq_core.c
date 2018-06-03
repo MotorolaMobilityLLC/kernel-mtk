@@ -391,38 +391,48 @@ static s32 cmdq_copy_delay_to_sram(void)
 
 static s32 cmdq_delay_thread_init(void)
 {
+	static u32 sram_task_size;
+	static bool use_sram = true;
+
 	void *p_delay_thread_buffer = NULL;
 	void *p_va = NULL;
 	dma_addr_t pa = 0;
 	u32 buffer_size = 0;
 	u32 cpr_offset = 0;
-	u32 free_sram_size = (g_dts_setting.cpr_size -
-		cmdq_dev_get_thread_count() * CMDQ_THR_FREE_CPR_MAX) * sizeof(u32);
+	u32 free_sram_size = cmdq_core_get_free_sram_size();
 
 	memset(&(g_delay_thread_cmd), 0x0, sizeof(g_delay_thread_cmd));
 
-	if (free_sram_size >= CMDQ_DELAY_THD_SIZE) {
-		if (cmdq_task_create_delay_thread_sram(&p_delay_thread_buffer, &buffer_size, &cpr_offset) < 0) {
-			CMDQ_ERR("DELAY_INIT: create delay thread in sram failed, free:%u\n", free_sram_size);
-			return -EFAULT;
+	if (!sram_task_size) {
+		if (cmdq_task_create_delay_thread_sram(&p_delay_thread_buffer, &sram_task_size, &cpr_offset) < 0) {
+			CMDQ_ERR("[DelayThread]create delay thread in sram failed, free:%u sram size:%u\n",
+				free_sram_size, sram_task_size);
+			use_sram = false;
+		} else {
+			CMDQ_LOG("[DelayThread]sram task size:%u free:%u\n",
+				sram_task_size, free_sram_size);
+			if (sram_task_size > free_sram_size)
+				use_sram = false;
+			else
+				buffer_size = sram_task_size;
 		}
+	}
 
-		CMDQ_LOG("DELAY_INIT: create delay thread in sram size:%u free:%u\n",
-			buffer_size, free_sram_size);
-	} else {
+	if (!use_sram) {
 		if (cmdq_task_create_delay_thread_dram(&p_delay_thread_buffer, &buffer_size) < 0) {
-			CMDQ_ERR("DELAY_INIT: create delay thread in dram failed!\n");
-			return -EFAULT;
+			CMDQ_ERR("[DelayThread]create delay thread in dram failed!\n");
+			return -EINVAL;
 		}
-
-		CMDQ_LOG("DELAY_INIT: create delay thread in dram size:%u sram size:%u\n",
-			buffer_size, free_sram_size);
+	} else if (!p_delay_thread_buffer) {
+		if (cmdq_task_create_delay_thread_sram(&p_delay_thread_buffer, &buffer_size, &cpr_offset) < 0) {
+			CMDQ_ERR("[DelayThread]create delay thread in sram failed, free:%u sram size:%u\n",
+				free_sram_size, sram_task_size);
+			return -EINVAL;
+		}
 	}
 
-	if (!buffer_size) {
-		CMDQ_ERR("DELAY_INIT: delay thread create failed\n");
-		return -EFAULT;
-	}
+	CMDQ_LOG("[DelayThread]create delay thread task in %s task size:%u sram size:%u\n",
+		use_sram ? "SRAM" : "DRAM", buffer_size, free_sram_size);
 
 	p_va = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), buffer_size, &pa, GFP_KERNEL);
 
@@ -6084,6 +6094,11 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask,
 
 	cmdq_core_dump_thread(thread, "ERR");
 
+	if (CMDQ_REG_GET32(CMDQ_TPR_MASK)) {
+		cmdq_core_dump_thread(CMDQ_DELAY_THREAD_ID, "ERR");
+		cmdq_core_dump_thread_pc(CMDQ_DELAY_THREAD_ID);
+	}
+
 	/* Begin is not first, save NG task but print pTask as well */
 	if (pNGTask != NULL && pNGTask != pTask) {
 		CMDQ_ERR("== [CMDQ] We have NG task, so engine dumps may more than you think ==\n");
@@ -6942,6 +6957,8 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(
 					CMDQ_REG_GET32(CMDQ_THR_SPR1(CMDQ_DELAY_THREAD_ID)),
 					CMDQ_REG_GET32(CMDQ_THR_SPR2(CMDQ_DELAY_THREAD_ID)),
 					CMDQ_REG_GET32(CMDQ_THR_SPR3(CMDQ_DELAY_THREAD_ID)));
+			} else {
+				CMDQ_LOG("delay id:%d tpr mask:0x%08x\n", delay_id, tpr_mask);
 			}
 		} else {
 			/* dump simple status only */
