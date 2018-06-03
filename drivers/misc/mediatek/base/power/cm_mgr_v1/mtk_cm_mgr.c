@@ -742,6 +742,8 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 		cm_mgr_opp_enable = val_1;
 	} else if (!strcmp(cmd, "cm_mgr_enable")) {
 		cm_mgr_enable = val_1;
+		if (!cm_mgr_enable)
+			dvfsrc_set_power_model_ddr_request(0);
 	} else if (!strcmp(cmd, "light_load_cps")) {
 		light_load_cps = val_1;
 	} else if (!strcmp(cmd, "total_bw_value")) {
