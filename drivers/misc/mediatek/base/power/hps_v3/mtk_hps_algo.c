@@ -338,9 +338,8 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 				hps_warn("[CPUHP] up CPU%d: hps_algo_check_criteria\n", cpu);
 				return 1;
 			}
-			if (!cpu_online(cpu)) {	/* For CPU offline */
-				if (cpu_up(cpu))
-					hps_warn("[Info]CPU %d ++!\n", cpu);
+			if (!cpu_online(cpu)) {
+				cpu_up(cpu);
 				++online_cores;
 			}
 			if (target_cores == online_cores)
@@ -358,8 +357,7 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 				return 1;
 			}
 			if (cpu_online(cpu)) {
-				if (cpu_down(cpu))
-					hps_warn("[Info]CPU %d --!\n", cpu);
+				cpu_down(cpu);
 				--online_cores;
 			}
 			if (target_cores == online_cores)
@@ -655,7 +653,9 @@ HPS_ALGO_END:
 						     (((iccs_online_power_state_bitmask >> i) & 1) << 1) |
 						     (((iccs_target_power_state_bitmask >> i) & 1) << 0);
 
-		/* pr_err("[%s] cluster: 0x%x iccs_state: 0x%x\n", __func__, i, hps_sys.cluster_info[i].iccs_state); */
+		/*
+		 * pr_err("[%s] cluster: 0x%x iccs_state: 0x%x\n", __func__, i, hps_sys.cluster_info[i].iccs_state);
+		 */
 
 		if (hps_get_iccs_pwr_status(i) == 0x1)
 			iccs_cluster_on_off(i, 1);
@@ -857,7 +857,7 @@ HPS_END:
 		}
 	}
 #if HPS_HRT_BT_EN
-	if (hrtbt_dbg && (!action_print)) {
+	if (hrtbt_dbg) {
 		hps_set_funct_ctrl();
 		hps_warn("(0x%X)%s HRT_BT_DBG (%u)(%u)(%u) %s %s %s %s%s (%u)(%u)(%u)(%u) %s\n",
 			 ((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
