@@ -86,11 +86,6 @@ static ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
 };
 
 static void __iomem *ddp_apmixed_base;
-#ifndef AP_PLL_CON0
-#define AP_PLL_CON0 (ddp_apmixed_base + 0x00)
-#endif
-
-
 unsigned int parsed_apmixed;
 
 const char *ddp_get_clk_name(unsigned int n)
@@ -201,25 +196,13 @@ int ddp_clk_set_parent(enum DDP_CLK_ID id, enum DDP_CLK_ID parent)
 
 static int __ddp_set_mipi26m(int idx, int en)
 {
-	unsigned int mask = 0;
-
-	if (idx == 0) {
-		mask = 1 << 14; /* 14: from apmix code */
-	} else if (idx == 1) {
-		mask = 1 << 13; /* 13: from apmix code */
-	} else {
-		pr_err("set mipi26m error:idx=%d\n", idx);
-		return -1;
-	}
-
 	if (en)
-		clk_setl(AP_PLL_CON0, mask);
+		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPID26M_EN, APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON8, 1);
 	else
-		clk_clrl(AP_PLL_CON0, mask);
+		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPID26M_EN, APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON8, 0);
 
 	return 0;
 }
-
 
 int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en)
 {
@@ -237,7 +220,7 @@ int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en)
 	if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL)
 		__ddp_set_mipi26m(1, en);
 
-	DDPMSG("%s en=%d, val=0x%x\n", __func__, en, clk_readl(AP_PLL_CON0));
+	DDPMSG("%s en=%d, val=0x%x\n", __func__, en, clk_readl(APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON8));
 
 	return ret;
 }
@@ -292,15 +275,8 @@ int ddp_main_modules_clk_on(void)
 	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
 	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
 	ddp_clk_prepare_enable(DISP0_SMI_LARB1);
-
 	ddp_clk_prepare_enable(CLK_MM_GALS_COMM0);
 	ddp_clk_prepare_enable(CLK_MM_GALS_COMM1);
-	ddp_clk_prepare_enable(CLK_MM_GALS_VENC2MM);
-	ddp_clk_prepare_enable(CLK_MM_GALS_VDEC2MM);
-	ddp_clk_prepare_enable(CLK_MM_GALS_IMG2MM);
-	ddp_clk_prepare_enable(CLK_MM_GALS_CAM2MM);
-	ddp_clk_prepare_enable(CLK_MM_GALS_IPU2MM);
-
 	ddp_clk_prepare_enable(DISP0_DISP_26M);
 
 	/* --MODULE CLK-- */
@@ -347,15 +323,8 @@ int ddp_ext_modules_clk_on(void)
 	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
 	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
 	ddp_clk_prepare_enable(DISP0_SMI_LARB1);
-
 	ddp_clk_prepare_enable(CLK_MM_GALS_COMM0);
 	ddp_clk_prepare_enable(CLK_MM_GALS_COMM1);
-	ddp_clk_prepare_enable(CLK_MM_GALS_VENC2MM);
-	ddp_clk_prepare_enable(CLK_MM_GALS_VDEC2MM);
-	ddp_clk_prepare_enable(CLK_MM_GALS_IMG2MM);
-	ddp_clk_prepare_enable(CLK_MM_GALS_CAM2MM);
-	ddp_clk_prepare_enable(CLK_MM_GALS_IPU2MM);
-
 	ddp_clk_prepare_enable(DISP0_DISP_26M);
 
 	/* --MODULE CLK-- */
@@ -426,12 +395,6 @@ int ddp_main_modules_clk_off(void)
 
 	/* --TOP CLK-- */
 	ddp_clk_disable_unprepare(DISP0_DISP_26M);
-
-	ddp_clk_disable_unprepare(CLK_MM_GALS_IPU2MM);
-	ddp_clk_disable_unprepare(CLK_MM_GALS_CAM2MM);
-	ddp_clk_disable_unprepare(CLK_MM_GALS_IMG2MM);
-	ddp_clk_disable_unprepare(CLK_MM_GALS_VDEC2MM);
-	ddp_clk_disable_unprepare(CLK_MM_GALS_VENC2MM);
 	ddp_clk_disable_unprepare(CLK_MM_GALS_COMM1);
 	ddp_clk_disable_unprepare(CLK_MM_GALS_COMM0);
 
@@ -474,15 +437,8 @@ int ddp_ext_modules_clk_off(void)
 
 	/* --TOP CLK-- */
 	ddp_clk_disable_unprepare(DISP0_DISP_26M);
-
-	ddp_clk_disable_unprepare(CLK_MM_GALS_IPU2MM);
-	ddp_clk_disable_unprepare(CLK_MM_GALS_CAM2MM);
-	ddp_clk_disable_unprepare(CLK_MM_GALS_IMG2MM);
-	ddp_clk_disable_unprepare(CLK_MM_GALS_VDEC2MM);
-	ddp_clk_disable_unprepare(CLK_MM_GALS_VENC2MM);
 	ddp_clk_disable_unprepare(CLK_MM_GALS_COMM1);
 	ddp_clk_disable_unprepare(CLK_MM_GALS_COMM0);
-
 	ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
 	ddp_clk_disable_unprepare(DISP0_SMI_LARB1);
 	ddp_clk_disable_unprepare(DISP0_SMI_COMMON);

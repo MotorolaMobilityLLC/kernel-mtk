@@ -285,7 +285,7 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			unsigned int DSI_DBG8_Status;
 			unsigned int DSI_DBG9_Status;
-			unsigned long dsi_base_addr = (unsigned long)DSI_REG[i];
+			unsigned long dsi_base_addr = (unsigned long)DISPSYS_DSI0_BASE;
 
 			if (DSI_REG[0]->DSI_MODE_CTRL.MODE == CMD_MODE) {
 				unsigned int DSI_DBG6_Status = (INREG32(dsi_base_addr + 0x160)) & 0xffff;
@@ -308,9 +308,9 @@ enum DSI_STATUS DSI_DumpRegisters(enum DISP_MODULE_ENUM module, int level)
 	}
 	if (level >= 1) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			unsigned long dsi_base_addr = (unsigned long)DSI_REG[i];
+			unsigned long dsi_base_addr = (unsigned long)DISPSYS_DSI0_BASE;
 #ifndef CONFIG_FPGA_EARLY_PORTING
-			unsigned long mipi_base_addr = (unsigned long)DSI_PHY_REG[i];
+			unsigned long mipi_base_addr = (unsigned long)DISPSYS_MIPITX0_BASE;
 #endif
 
 			DDPDUMP("== DSI%d REGS ==\n", i);
@@ -3897,6 +3897,7 @@ void dsi_analysis(enum DISP_MODULE_ENUM module)
 
 	DDPDUMP("== DISP DSI ANALYSIS ==\n");
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		DSI_REG[i] = (struct DSI_REGS *)DISPSYS_DSI0_BASE;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 		DDPDUMP("MIPITX Clock: %d\n", dsi_phy_get_clk(module));
 #endif
