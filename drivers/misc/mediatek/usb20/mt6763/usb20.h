@@ -14,22 +14,7 @@
 #ifndef __USB20_H__
 #define __USB20_H__
 
-#define ID_PIN_USE_EX_EINT 1
-
 #ifdef CONFIG_USB_MTK_OTG
-#ifdef ID_PIN_USE_EX_EINT
-#define IDDIG_EINT_PIN (GPIO_OTG_IDDIG_EINT_PIN & ~(0x80000000))
-/* #define IDDIG_EINT_PIN 0 */
-#else
-#ifdef CONFIG_OF
-extern struct musb *mtk_musb;
-#define U2PHYDTM1  (((unsigned long)mtk_musb->xceiv->io_priv)+0x800 + 0x6c)
-#else
-#define U2PHYDTM1  (USB_SIF_BASE+0x800 + 0x6c)
-#endif
-#define ID_PULL_UP 0x0101
-#define ID_PHY_RESET 0x3d11
-#endif
 extern unsigned int mt_gpio_to_irq(unsigned int gpio);
 #endif
 
@@ -42,8 +27,6 @@ struct mt_usb_glue {
 	struct platform_device *musb;
 };
 
-extern int first_connect;
-extern int check_delay_done;
 extern void wake_up_bat(void);
 extern CHARGER_TYPE mt_charger_type_detection(void);
 extern kal_bool upmu_is_chr_det(void);

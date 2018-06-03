@@ -19,18 +19,13 @@
 #include <linux/list.h>
 #include <linux/gpio.h>
 #include <linux/io.h>
-#ifndef CONFIG_OF
-#include <mach/irqs.h>
-#endif
 #include "musb_core.h"
 #include <linux/platform_device.h>
 #include "musbhsdma.h"
 #include <linux/switch.h>
 #include "usb20.h"
-#ifdef CONFIG_OF
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#endif
 #ifdef CONFIG_USB_C_SWITCH
 #include <typec.h>
 #ifdef CONFIG_TCPC_CLASS
@@ -54,22 +49,8 @@ bool usb20_host_tcpc_boost_on;
 
 #include <mt-plat/mtk_boot_common.h>
 
-#ifdef CONFIG_OF
 struct device_node		*usb_node;
 static unsigned int iddig_pin;
-static unsigned int iddig_pin_mode;
-static unsigned int iddig_if_config = 1;
-static unsigned int drvvbus_pin;
-static unsigned int drvvbus_pin_mode;
-static unsigned int drvvbus_if_config = 1;
-#endif
-
-struct pinctrl *pinctrl;
-struct pinctrl_state *pinctrl_iddig;
-struct pinctrl_state *pinctrl_drvvbus;
-struct pinctrl_state *pinctrl_drvvbus_low;
-struct pinctrl_state *pinctrl_drvvbus_high;
-
 static int usb_iddig_number;
 static ktime_t ktime_start, ktime_end;
 
@@ -148,43 +129,6 @@ int mt_usb_get_vbus_status(struct musb *musb)
 		DBG(0, "VBUS error, devctl=%x, power=%d\n", musb_readb(musb->mregs, MUSB_DEVCTL), musb->power);
 	pr_debug("vbus ready = %d\n", ret);
 	return ret;
-#endif
-}
-
-void mt_usb_init_drvvbus(void)
-{
-#if !(defined(SWITCH_CHARGER) || defined(FPGA_PLATFORM))
-	#ifdef CONFIG_OF
-	int ret = 0;
-
-	pr_debug("****%s:%d before Init Drive VBUS KS!!!!!\n", __func__, __LINE__);
-
-	pinctrl_drvvbus = pinctrl_lookup_state(pinctrl, "drvvbus_init");
-	if (IS_ERR(pinctrl_drvvbus)) {
-		ret = PTR_ERR(pinctrl_drvvbus);
-		dev_err(mtk_musb->controller, "Cannot find usb pinctrl drvvbus\n");
-	}
-
-	pinctrl_drvvbus_low = pinctrl_lookup_state(pinctrl, "drvvbus_low");
-	if (IS_ERR(pinctrl_drvvbus_low)) {
-		ret = PTR_ERR(pinctrl_drvvbus_low);
-		dev_err(mtk_musb->controller, "Cannot find usb pinctrl drvvbus_low\n");
-	}
-
-	pinctrl_drvvbus_high = pinctrl_lookup_state(pinctrl, "drvvbus_high");
-	if (IS_ERR(pinctrl_drvvbus_high)) {
-		ret = PTR_ERR(pinctrl_drvvbus_high);
-		dev_err(mtk_musb->controller, "Cannot find usb pinctrl drvvbus_high\n");
-	}
-
-	pinctrl_select_state(pinctrl, pinctrl_drvvbus);
-	pr_debug("****%s:%d end Init Drive VBUS KS!!!!!\n", __func__, __LINE__);
-	#else
-	mt_set_gpio_mode(GPIO_OTG_DRVVBUS_PIN, GPIO_OTG_DRVVBUS_PIN_M_GPIO); /* should set GPIO2 as gpio mode. */
-	mt_set_gpio_dir(GPIO_OTG_DRVVBUS_PIN, GPIO_DIR_OUT);
-	mt_get_gpio_pull_enable(GPIO_OTG_DRVVBUS_PIN);
-	mt_set_gpio_pull_select(GPIO_OTG_DRVVBUS_PIN, GPIO_PULL_UP);
-#endif
 #endif
 }
 
@@ -334,31 +278,9 @@ static bool musb_is_host(void)
 		goto decision_done;
 	}
 
-#ifdef ID_PIN_USE_EX_EINT
 #ifndef FPGA_PLATFORM
-	#ifdef CONFIG_OF
 	iddig_state = __gpio_get_value(iddig_pin);
-	#else
-	iddig_state = mt_get_gpio_in(GPIO_OTG_IDDIG_EINT_PIN);
-	#endif
 	DBG(0, "iddig_state = %d\n", iddig_state);
-#endif
-#else
-	iddig_state = 0;
-	devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
-	DBG(0, "devctl = %x before end session\n", devctl);
-	devctl &= ~MUSB_DEVCTL_SESSION;	/* this will cause A-device change back to B-device after A-cable plug out */
-	musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, devctl);
-	msleep(delay_time);
-
-	devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
-	DBG(0, "devctl = %x before set session\n", devctl);
-
-	devctl |= MUSB_DEVCTL_SESSION;
-	musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, devctl);
-	msleep(delay_time1);
-	devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
-	DBG(0, "devclt = %x\n", devctl);
 #endif
 
 	if (devctl & MUSB_DEVCTL_BDEVICE || iddig_state) {
@@ -413,14 +335,9 @@ void switch_int_to_device(struct musb *musb)
 		DBG(1, "directly return\n");
 		return;
 	}
-#ifdef ID_PIN_USE_EX_EINT
 	irq_set_irq_type(usb_iddig_number, IRQF_TRIGGER_HIGH);
 	enable_irq(usb_iddig_number);
-#else
-	 musb_writel(musb->mregs, USB_L1INTP, 0);
-	 musb_writel(musb->mregs, USB_L1INTM, IDDIG_INT_STATUS|musb_readl(musb->mregs, USB_L1INTM));
-#endif
-	 DBG(0, "switch_int_to_device is done\n");
+	DBG(0, "switch_int_to_device is done\n");
 }
 
 void switch_int_to_host(struct musb *musb)
@@ -429,15 +346,9 @@ void switch_int_to_host(struct musb *musb)
 		DBG(1, "directly return\n");
 		return;
 	}
-#ifdef ID_PIN_USE_EX_EINT
 	irq_set_irq_type(usb_iddig_number, IRQF_TRIGGER_LOW);
 	enable_irq(usb_iddig_number);
-#else
-	musb_writel(musb->mregs, USB_L1INTP, IDDIG_INT_STATUS);
-	musb_writel(musb->mregs, USB_L1INTM, IDDIG_INT_STATUS|musb_readl(musb->mregs, USB_L1INTM));
-#endif
 	DBG(0, "switch_int_to_host is done\n");
-
 }
 
 void switch_int_to_host_and_mask(struct musb *musb)
@@ -446,14 +357,8 @@ void switch_int_to_host_and_mask(struct musb *musb)
 		DBG(1, "directly return\n");
 		return;
 	}
-#ifdef ID_PIN_USE_EX_EINT
 	disable_irq(usb_iddig_number);
 	irq_set_irq_type(usb_iddig_number, IRQF_TRIGGER_LOW);
-#else
-	musb_writel(musb->mregs, USB_L1INTM, (~IDDIG_INT_STATUS)&musb_readl(musb->mregs, USB_L1INTM));
-	mb();
-	musb_writel(musb->mregs, USB_L1INTP, IDDIG_INT_STATUS);
-#endif
 	DBG(0, "swtich_int_to_host_and_mask is done\n");
 }
 static void do_host_plug_test_work(struct work_struct *data)
@@ -654,48 +559,10 @@ static irqreturn_t mt_usb_ext_iddig_int(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-void mt_usb_iddig_int(struct musb *musb)
-{
-	u32 usb_l1_ploy = musb_readl(musb->mregs, USB_L1INTP);
-
-	DBG(0, "id pin interrupt assert,polarity=0x%x\n", usb_l1_ploy);
-	if (usb_l1_ploy & IDDIG_INT_STATUS)
-		usb_l1_ploy &= (~IDDIG_INT_STATUS);
-	else
-		usb_l1_ploy |= IDDIG_INT_STATUS;
-
-	musb_writel(musb->mregs, USB_L1INTP, usb_l1_ploy);
-	musb_writel(musb->mregs, USB_L1INTM, (~IDDIG_INT_STATUS)&musb_readl(musb->mregs, USB_L1INTM));
-
-	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(sw_deboun_time));
-	DBG(0, "id pin interrupt assert\n");
-}
-
 static void iddig_int_init(void)
 {
-#ifdef ID_PIN_USE_EX_EINT
 	int	ret = 0;
-#ifndef CONFIG_MTK_FPGA
-	#ifdef CONFIG_OF
-	pr_debug("****%s:%d before Init IDDIG KS!!!!!\n", __func__, __LINE__);
 
-	pinctrl_iddig = pinctrl_lookup_state(pinctrl, "iddig_irq_init");
-	if (IS_ERR(pinctrl_iddig)) {
-		ret = PTR_ERR(pinctrl_iddig);
-		dev_err(mtk_musb->controller, "Cannot find usb pinctrl iddig_irq_init\n");
-	}
-
-	pinctrl_select_state(pinctrl, pinctrl_iddig);
-
-	pr_debug("****%s:%d end Init IDDIG KS!!!!!\n", __func__, __LINE__);
-	#else
-	mt_set_gpio_mode(GPIO_OTG_IDDIG_EINT_PIN, GPIO_OTG_IDDIG_EINT_PIN_M_IDDIG);
-	mt_set_gpio_dir(GPIO_OTG_IDDIG_EINT_PIN, GPIO_DIR_IN);
-	mt_set_gpio_pull_enable(GPIO_OTG_IDDIG_EINT_PIN, GPIO_PULL_ENABLE);
-	mt_set_gpio_pull_select(GPIO_OTG_IDDIG_EINT_PIN, GPIO_PULL_UP);
-	#endif
-#endif
-	/*gpio_request(iddig_pin, "USB_IDDIG");*/
 	gpio_set_debounce(iddig_pin, 64000);
 	usb_iddig_number = mt_gpio_to_irq(iddig_pin);
 	ret = request_irq(usb_iddig_number, mt_usb_ext_iddig_int, IRQF_TRIGGER_LOW, "USB_IDDIG", NULL);
@@ -703,15 +570,6 @@ static void iddig_int_init(void)
 		pr_err("USB IDDIG IRQ LINE not available!!\n");
 	else
 		pr_debug("USB IDDIG IRQ LINE available!!\n");
-#else
-	u32 phy_id_pull = 0;
-
-	phy_id_pull = __raw_readl(U2PHYDTM1);
-	phy_id_pull |= ID_PULL_UP;
-	__raw_writel(phy_id_pull, U2PHYDTM1);
-
-	musb_writel(mtk_musb->mregs, USB_L1INTM, IDDIG_INT_STATUS|musb_readl(mtk_musb->mregs, USB_L1INTM));
-#endif
 }
 
 void mt_usb_otg_init(struct musb *musb)
@@ -731,31 +589,14 @@ void mt_usb_otg_init(struct musb *musb)
 	host_plug_test_wq = create_singlethread_workqueue("host_plug_test_wq");
 	INIT_DELAYED_WORK(&host_plug_test_work, do_host_plug_test_work);
 
-#ifdef CONFIG_OF
-	usb_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-usb20");
+	usb_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6763-usb20");
 	if (usb_node == NULL) {
 		pr_err("USB OTG - get USB0 node failed\n");
 	} else {
 		if (of_property_read_u32_index(usb_node, "iddig_gpio", 0, &iddig_pin)) {
-			iddig_if_config = 0;
 			pr_err("get dtsi iddig_pin fail\n");
 		}
-		if (of_property_read_u32_index(usb_node, "iddig_gpio", 1, &iddig_pin_mode))
-			pr_err("get dtsi iddig_pin_mode fail\n");
-		if (of_property_read_u32_index(usb_node, "drvvbus_gpio", 0, &drvvbus_pin)) {
-			drvvbus_if_config = 0;
-			pr_err("get dtsi drvvbus_pin fail\n");
-		}
-		if (of_property_read_u32_index(usb_node, "drvvbus_gpio", 1, &drvvbus_pin_mode))
-			pr_err("get dtsi drvvbus_pin_mode fail\n");
 	}
-
-	pinctrl = devm_pinctrl_get(mtk_musb->controller);
-	if (IS_ERR(pinctrl))
-		dev_err(mtk_musb->controller, "Cannot find usb pinctrl!\n");
-#endif
-	/*init drrvbus*/
-	mt_usb_init_drvvbus();
 
 	/* init idpin interrupt */
 	ktime_start = ktime_get();
@@ -858,10 +699,8 @@ module_param_cb(option, &option_param_ops, &option, 0644);
 #include "musb_core.h"
 /* for not define CONFIG_USB_MTK_OTG */
 void mt_usb_otg_init(struct musb *musb) {}
-void mt_usb_init_drvvbus(void){}
 void mt_usb_set_vbus(struct musb *musb, int is_on) {}
 int mt_usb_get_vbus_status(struct musb *musb) {return 1; }
-void mt_usb_iddig_int(struct musb *musb) {}
 void switch_int_to_device(struct musb *musb) {}
 void switch_int_to_host(struct musb *musb) {}
 void switch_int_to_host_and_mask(struct musb *musb) {}

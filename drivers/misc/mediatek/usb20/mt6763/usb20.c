@@ -632,13 +632,6 @@ static irqreturn_t mt_usb_interrupt(int irq, void *dev_id)
 	}
 #endif
 
-#ifdef	CONFIG_USB_MTK_OTG
-	if (usb_l1_ints & IDDIG_INT_STATUS) {
-		mt_usb_iddig_int(musb);
-		status = IRQ_HANDLED;
-	}
-#endif
-
 	return status;
 
 }
@@ -1515,10 +1508,7 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 
 	/* enable uart log */
 	musb_uart_debug = 1;
-
-	DBG(0, "first_connect, check_delay_done to 0\n");
-	first_connect = 0;
-	check_delay_done = 0;
+	DBG(0, "enable uart debug\n");
 
 	DBG(0, "init connection_work\n");
 	INIT_DELAYED_WORK(&connection_work, do_connection_work);
