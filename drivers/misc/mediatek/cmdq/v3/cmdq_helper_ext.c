@@ -2626,10 +2626,8 @@ static void *cmdq_core_get_pc_va(dma_addr_t pc,
 {
 	struct cmdq_pkt_buffer *buf;
 
-	if (!pc) {
-		CMDQ_ERR("%s invalid param\n", __func__);
+	if (!pc)
 		return NULL;
-	}
 
 	list_for_each_entry(buf, &handle->pkt->buf, list_entry) {
 		if (!(pc >= buf->pa_base &&
@@ -2707,18 +2705,16 @@ static void cmdq_core_parse_handle_error(const struct cmdqRecStruct *handle,
 	u32 addr = 0;
 	const char *module = NULL;
 	int isSMIHang = 0;
-	dma_addr_t curr_pc = 0;
+	dma_addr_t curr_pc;
 	u32 tmp_instr[2] = { 0 };
-	struct cmdq_timeout_info *timeout_info = NULL;
-	struct cmdq_thread_task_info *timeout_task = NULL;
+	struct cmdq_client *client;
 
-	if (unlikely(!handle) || !handle->timeout_info) {
+	if (unlikely(!handle)) {
 		CMDQ_ERR("No handle to parse error\n");
 		return;
 	}
 
-	timeout_info = handle->timeout_info;
-	timeout_task = handle->timeout_info->timeout_task;
+	client = cmdq_clients[handle->thread];
 
 	do {
 		/* confirm if SMI is hang */
@@ -2736,7 +2732,7 @@ static void cmdq_core_parse_handle_error(const struct cmdqRecStruct *handle,
 		if (!insts || !size)
 			break;
 
-		curr_pc = timeout_info->curr_pc;
+		cmdq_task_get_thread_pc(client->chan, &curr_pc);
 		if (cmdq_pkt_get_cmd_by_pc(handle, curr_pc, tmp_instr, 2) <
 			0) {
 			CMDQ_ERR("%s get handle cmd fail\n", __func__);
@@ -2781,7 +2777,7 @@ static void cmdq_core_parse_handle_error(const struct cmdqRecStruct *handle,
 
 	/* fill output parameter */
 	*moduleName = module ? module : "CMDQ";
-	*flag = timeout_info->irq;
+	cmdq_task_get_thread_irq(client->chan, flag);
 	if (pc_va)
 		*pc_va = cmdq_core_get_pc_va(curr_pc, handle);
 }
@@ -2876,18 +2872,18 @@ static void cmdq_core_dump_handle_summary(const struct cmdqRecStruct *handle,
 	s32 irqFlag = 0;
 	u32 insts[2] = { 0 };
 	u32 *pcVA = NULL;
-	struct cmdq_timeout_info *timeout_info = NULL;
+	dma_addr_t curr_pc;
+	struct cmdq_client *client;
 
 	if (!handle || !handle->pkt || list_empty(&handle->pkt->buf) ||
-		!handle->timeout_info || thread == CMDQ_INVALID_THREAD) {
+		thread == CMDQ_INVALID_THREAD) {
 		CMDQ_ERR(
-			"%s invalid param handle:0x%p pkt:0x%p thread:%d timeout_info:0x%p\n",
-			__func__, handle, handle ? handle->pkt : NULL,
-			thread, handle ? handle->timeout_info : NULL);
+			"%s invalid param handle:0x%p pkt:0x%p thread:%d\n",
+			__func__, handle, handle ? handle->pkt : NULL, thread);
 		return;
 	}
 
-	timeout_info = handle->timeout_info;
+	client = cmdq_clients[handle->thread];
 
 	/* Do summary ! */
 	cmdq_core_parse_handle_error(handle, thread, &module, &irqFlag,
@@ -2896,8 +2892,10 @@ static void cmdq_core_dump_handle_summary(const struct cmdqRecStruct *handle,
 
 	CMDQ_ERR(
 		"** [Error Info] Refer to instruction and check engine dump for debug**\n");
+
+	cmdq_task_get_thread_pc(client->chan, &curr_pc);
 	cmdq_core_dump_handle_error_instruction(pcVA,
-		(long)timeout_info->curr_pc, insts, thread, __LINE__);
+		(long)curr_pc, insts, thread, __LINE__);
 
 	cmdq_core_dump_trigger_loop_thread("ERR");
 
@@ -2916,6 +2914,18 @@ static void cmdq_core_dump_task_in_thread_by_handle(const s32 thread,
 	const bool fullTatskDump, const bool dumpCookie,
 	const bool dumpCmd, const struct cmdqRecStruct *handle)
 {
+#if 0
+	struct cmdq_client *client;
+
+	if (thread == CMDQ_INVALID_THREAD || !handle)
+		return;
+
+	CMDQ_ERR("========= [CMDQ] All Task in Error Thread %d =========\n",
+			thread);
+
+	client = cmdq_clients[handle->thread];
+#endif
+#if 0
 	struct cmdq_timeout_info *timeout_info = NULL;
 	struct cmdq_thread_task_info *task_info = NULL;
 	u32 index = 0;
@@ -2956,6 +2966,7 @@ static void cmdq_core_dump_task_in_thread_by_handle(const s32 thread,
 		}
 		index++;
 	}
+#endif
 }
 
 static void cmdq_core_dump_handle_with_engine_flag(
@@ -2993,11 +3004,15 @@ static void cmdq_core_dump_status(
 	s32 coreExecThread = CMDQ_INVALID_THREAD;
 	u32 value[6] = { 0 };
 	u32 irq;
+	struct cmdq_client *client;
 
 	if (handle && handle->timeout_info)
 		irq = handle->timeout_info->irq;
 	else
 		irq = CMDQ_REG_GET32(CMDQ_CURR_IRQ_STATUS);
+
+	client = cmdq_clients[handle->thread];
+	cmdq_task_get_thread_irq(client->chan, &irq);
 
 	value[0] = CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR);
 	value[1] = CMDQ_REG_GET32(CMDQ_THR_EXEC_CYCLES);
@@ -3068,6 +3083,7 @@ u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
 	char parsedInstruction[128] = { 0 };
 	dma_addr_t curr_pc;
 	u32 tmp_insts[2] = { 0 };
+	struct cmdq_client *client;
 
 	if (!handle)
 		return NULL;
@@ -3077,6 +3093,9 @@ u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
 	else
 		curr_pc = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(
 			CMDQ_THR_CURR_ADDR(thread)));
+
+	client = cmdq_clients[handle->thread];
+	cmdq_task_get_thread_pc(client->chan, &curr_pc);
 
 	pcVA = cmdq_core_get_pc_va(curr_pc, handle);
 
@@ -3443,6 +3462,7 @@ static void cmdq_core_attach_error_handle_detail(
 
 	CMDQ_ERR("=========== [CMDQ] End of Full Error %d ==========\n",
 		error_num);
+
 	mutex_unlock(&cmdq_err_mutex);
 
 	cmdq_core_release_nghandleinfo(&nginfo);
@@ -4618,6 +4638,16 @@ void cmdq_pkt_release_handle(struct cmdqRecStruct *handle)
 	mutex_unlock(&cmdq_handle_list_mutex);
 }
 
+static s32 cmdq_pkt_handle_timeout(struct cmdqRecStruct *handle)
+{
+	if (!handle)
+		return -EINVAL;
+
+	cmdq_core_attach_error_handle(handle, handle->thread);
+
+	return 0;
+}
+
 static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 {
 	struct cmdqRecStruct *handle = (struct cmdqRecStruct *)data.data;
@@ -4660,59 +4690,20 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 
 	client = cmdq_clients[handle->thread];
 
-	do {
-		if (data.err != -ETIMEDOUT)
-			break;
-
-		handle->timeout_info = kzalloc(sizeof(*handle->timeout_info),
-			GFP_ATOMIC);
-		if (!handle->timeout_info)
-			break;
-
-		INIT_LIST_HEAD(&handle->timeout_info->task_list);
-
-		cmdq_task_get_task_info_from_thread_unlock(client->chan,
-			&handle->timeout_info->task_list,
-			&handle->timeout_info->task_num);
-
-		/* after irq handle, the first task in thread is timeout task */
-		handle->timeout_info->timeout_task =
-		list_first_entry_or_null(&handle->timeout_info->task_list,
-			struct cmdq_thread_task_info, list_entry);
-
-		cmdq_task_get_thread_pc(client->chan,
-			&handle->timeout_info->curr_pc);
-		cmdq_task_get_thread_irq(client->chan,
-			&handle->timeout_info->irq);
-		cmdq_task_get_thread_irq_en(client->chan,
-			&handle->timeout_info->irq_en);
-		cmdq_task_get_thread_end_addr(client->chan,
-			&handle->timeout_info->end_addr);
-
-	} while (0);
-
-	if (data.err == -ETIMEDOUT)
+	if (data.err == -ETIMEDOUT) {
+		cmdq_pkt_handle_timeout(handle);
 		handle->state = TASK_STATE_TIMEOUT;
-	else if (data.err == -ECONNABORTED)
+	} else if (data.err == -ECONNABORTED) {
 		handle->state = TASK_STATE_KILLED;
-	else if (data.err < 0)
+	} else if (data.err < 0) {
 		/* IRQ with error, dump commands */
 		handle->state = TASK_STATE_ERR_IRQ;
-	else
+	} else {
 		/* success done */
 		handle->state = TASK_STATE_DONE;
+	}
 
 	wake_up(&cmdq_wait_queue[handle->thread]);
-}
-
-static s32 cmdq_pkt_handle_timeout(struct cmdqRecStruct *handle)
-{
-	if (!handle || handle->state != TASK_STATE_TIMEOUT)
-		return -EINVAL;
-
-	cmdq_core_attach_error_handle(handle, handle->thread);
-
-	return 0;
 }
 
 s32 cmdq_pkt_dump_command(struct cmdqRecStruct *handle)
@@ -4813,7 +4804,6 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 	/* set to timeout if state change to */
 	if (handle->state == TASK_STATE_TIMEOUT) {
 		status = -ETIMEDOUT;
-		cmdq_pkt_handle_timeout(handle);
 	} else if (handle->state == TASK_STATE_ERR_IRQ) {
 		status = -EINVAL;
 		cmdq_pkt_dump_command(handle);
