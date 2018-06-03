@@ -1337,6 +1337,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			<GIC_SPI 105 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
 		clock-frequency = <26000000>;
 		clock-div = <1>;
+		clocks = <&infracfg_ao CLK_IFR_UART0>,
+			<&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "uart0-main", "uart-apdma";
 	};
 
@@ -1351,7 +1353,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			<GIC_SPI 107 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
 		clock-frequency = <26000000>;
 		clock-div = <1>;
-		/*clocks = <&pericfg CLK_PERICFG_RG_UART1>;*/
+		clocks = <&infracfg_ao CLK_IFR_UART1>;
 		clock-names = "uart1-main";
 	};
 	i2c_common: i2c_common {
