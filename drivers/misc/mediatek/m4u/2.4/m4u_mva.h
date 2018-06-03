@@ -60,7 +60,7 @@
 #define VPU_RESET_VECTOR_BLOCK_NR        MVA_GRAPH_BLOCK_NR_ALIGNED(VPU_RESET_VECTOR_FIX_SIZE)
 
 #define VPU_FIX_MVA_START                0x60000000
-#define VPU_FIX_MVA_END                  0x7DFFFFFF /* fake, requeired 0x7FFFFFFF*/
+#define VPU_FIX_MVA_END                  0x7CDFFFFF
 #define VPU_FIX_MVA_SIZE                 (VPU_FIX_MVA_END - VPU_FIX_MVA_START + 1)
 #define VPU_FIX_BLOCK_NR                 MVA_GRAPH_BLOCK_NR_ALIGNED(VPU_FIX_MVA_SIZE)
 
