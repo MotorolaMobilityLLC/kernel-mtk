@@ -62,8 +62,10 @@ static struct notifier_block mobicore_cpu_notifer = {
 
 static inline long smc(union fc_generic *fc)
 {
-	/* If we request sleep yields must be filtered out as they
-	 * make no sense */
+	/*
+	 * If we request sleep yields must be filtered out as they
+	 * make no sense
+	 */
 	if (ctx->mcp)
 		if (ctx->mcp->flags.sleep_mode.sleep_req) {
 			if (fc->as_in.cmd == MC_SMC_N_YIELD)
@@ -109,8 +111,8 @@ bool mc_fastcall(void *data)
 int mc_fastcall_init(struct mc_context *context)
 {
 	int ret = 0;
-	ctx = context;
 
+	ctx = context;
 	fastcall_thread = kthread_create(kthread_worker_fn, &fastcall_worker,
 					 "mc_fastcall");
 	if (IS_ERR(fastcall_thread)) {
@@ -193,6 +195,7 @@ static void fastcall_work_func(struct work_struct *work)
 	if (cpu_swap) {
 		if (fc_generic->as_out.ret == 0) {
 			cpumask_t cpu;
+
 			active_cpu = new_cpu;
 			MCDRV_DBG(mcd, "CoreSwap ok %d -> %d\n",
 				  raw_smp_processor_id(), active_cpu);
@@ -297,7 +300,7 @@ void mc_cpu_offfline(int cpu)
 				MCDRV_DBG(mcd, "Skipping CPU %d\n", cpu);
 				continue;
 			}
-			MCDRV_DBG(mcd, "CPU %d is dying, switching to %d\n",
+			dev_info(mcd, "CPU %d is dying, switching to %d\n",
 				  cpu, i);
 			mc_switch_core(i);
 			break;
@@ -315,12 +318,12 @@ static int mobicore_cpu_callback(struct notifier_block *nfb,
 	switch (action) {
 	case CPU_DOWN_PREPARE:
 	case CPU_DOWN_PREPARE_FROZEN:
-		dev_info(mcd, "Cpu %u is going to die\n", cpu);
+		MCDRV_DBG(mcd, "Cpu %u is going to die\n", cpu);
 		mc_cpu_offfline(cpu);
 		break;
 	case CPU_DEAD:
 	case CPU_DEAD_FROZEN:
-		dev_info(mcd, "Cpu %u is dead\n", cpu);
+		MCDRV_DBG(mcd, "Cpu %u is dead\n", cpu);
 		break;
 	}
 	return NOTIFY_OK;
@@ -347,6 +350,7 @@ int mc_nsiq(void)
 {
 	int ret = 0;
 	union fc_generic nsiq;
+
 	MCDRV_DBG_VERBOSE(mcd, "enter");
 	memset(&nsiq, 0, sizeof(nsiq));
 	nsiq.as_in.cmd = MC_SMC_N_SIQ;
@@ -360,6 +364,7 @@ int _nsiq(void)
 {
 	int ret = 0;
 	union fc_generic nsiq;
+
 	MCDRV_DBG_VERBOSE(mcd, "enter");
 	memset(&nsiq, 0, sizeof(nsiq));
 	nsiq.as_in.cmd = MC_SMC_N_SIQ;

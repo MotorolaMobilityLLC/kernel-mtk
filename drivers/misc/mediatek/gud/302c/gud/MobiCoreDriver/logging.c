@@ -37,9 +37,6 @@
 
 static uint32_t log_size = LOG_BUF_SIZE;
 
-module_param(log_size, uint, 0);
-MODULE_PARM_DESC(log_size, "Size of the MobiCore log ringbuffer(256KB def)");
-
 /* Definitions for log version 2 */
 #define LOG_TYPE_MASK			(0x0007)
 #define LOG_TYPE_CHAR			0
@@ -66,9 +63,6 @@ static char *log_line;			/* Log Line buffer */
 static uint32_t log_line_len;		/* Log Line buffer current length */
 static int thread_err;
 
-#ifdef CONFIG_MTK_TRUSTONIC_TEE_DEBUGFS
-extern uint8_t trustonic_swd_debug;
-#endif
 static void log_eol(uint16_t source)
 {
 	if (!strnlen(log_line, LOG_LINE_SIZE)) {
@@ -76,18 +70,12 @@ static void log_eol(uint16_t source)
 		log_line_len = 0;
 		return;
 	}
-#ifdef CONFIG_MTK_TRUSTONIC_TEE_DEBUGFS
-	if (trustonic_swd_debug) {
-#endif
 	/* MobiCore Userspace */
 	if (prev_source)
-		pr_debug("%03x|%s\n", prev_source, log_line);
+		dev_info(mcd, "%03x|%s\n", prev_source, log_line);
 	/* MobiCore kernel */
 	else
-		pr_debug("%s\n", log_line);
-#ifdef CONFIG_MTK_TRUSTONIC_TEE_DEBUGFS
-	}
-#endif
+		dev_info(mcd, "%s\n", log_line);
 
 	log_line_len = 0;
 	log_line[0] = 0;
@@ -140,6 +128,7 @@ static void dbg_raw_nro(uint32_t format, uint32_t value, uint16_t source)
 
 	if (width > digits) {
 		char ch = (base == 10) ? ' ' : '0';
+
 		while (width > digits) {
 			log_char(ch, source);
 			width--;
@@ -151,6 +140,7 @@ static void dbg_raw_nro(uint32_t format, uint32_t value, uint16_t source)
 
 	while (digits-- > 0) {
 		uint32_t d = value / digit_base;
+
 		log_char(HEX2ASCII[d], source);
 		value = value - d * digit_base;
 		digit_base /= base;
@@ -162,6 +152,7 @@ static void log_msg(struct logmsg_struct *msg)
 	switch (msg->ctrl & LOG_TYPE_MASK) {
 	case LOG_TYPE_CHAR: {
 		uint32_t ch;
+
 		ch = msg->log_data;
 		while (ch != 0) {
 			log_char(ch & 0xFF, msg->source);
@@ -217,6 +208,7 @@ static void log_exit(void)
 static int log_worker(void *p)
 {
 	int ret = 0;
+
 	if (log_buf == NULL) {
 		ret = -EFAULT;
 		goto err_kthread;
@@ -244,9 +236,11 @@ static int log_worker(void *p)
 err_kthread:
 	MCDRV_DBG(mcd, "Logging thread stopped!");
 	thread_err = ret;
-	/* Wait until the next kthread_stop() is called, if it was already
+	/*
+	 * Wait until the next kthread_stop() is called, if it was already
 	 * called we just slip through, if there is an error signal it and
-	 * wait to get the signal */
+	 * wait to get the signal
+	 */
 	set_current_state(TASK_INTERRUPTIBLE);
 	while (!kthread_should_stop()) {
 		schedule();
@@ -269,8 +263,10 @@ void mobicore_log_read(void)
 	if (log_thread == NULL || IS_ERR(log_thread))
 		return;
 
-	/* The thread itself is in some error condition so just get
-	 * rid of it */
+	/*
+	 * The thread itself is in some error condition so just get
+	 * rid of it
+	 */
 	if (thread_err != 0) {
 		kthread_stop(log_thread);
 		log_thread = NULL;
@@ -289,8 +285,8 @@ long mobicore_log_setup(void)
 	phys_addr_t phys_log_buf;
 	union fc_generic fc_log;
 	struct sched_param param = { .sched_priority = 1 };
-
 	long ret;
+
 	log_pos = 0;
 	log_buf = NULL;
 	log_thread = NULL;
@@ -302,8 +298,8 @@ long mobicore_log_setup(void)
 	/* Sanity check for the log size */
 	if (log_size < PAGE_SIZE)
 		return -EFAULT;
-	else
-		log_size = PAGE_ALIGN(log_size);
+
+	log_size = PAGE_ALIGN(log_size);
 
 	log_line = kzalloc(LOG_LINE_SIZE, GFP_KERNEL);
 	if (IS_ERR(log_line)) {

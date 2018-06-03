@@ -154,11 +154,13 @@ static inline long _smc(void *data)
 		register u64 reg2 __asm__("x2") = fc_generic->as_in.param[1];
 		register u64 reg3 __asm__("x3") = fc_generic->as_in.param[2];
 
-		/* According to AARCH64 SMC Calling Convention (ARM DEN 0028A),
-		section 3.1 : registers x4-x17 are unpredictable/scratch
-		registers. So we have to make sure that the compiler does not
-		allocate any of those registers by letting him know that the
-		asm code might clobber them */
+		/*
+		 * According to AARCH64 SMC Calling Convention (ARM DEN 0028A),
+		 * section 3.1 : registers x4-x17 are unpredictable/scratch
+		 * registers. So we have to make sure that the compiler does not
+		 * allocate any of those registers by letting him know that the
+		 * asm code might clobber them
+		 */
 		__asm__ volatile (
 			"smc #0\n"
 			: "+r"(reg0), "+r"(reg1), "+r"(reg2), "+r"(reg3) : :
@@ -201,7 +203,8 @@ static inline long _smc(void *data)
 		__asm__ volatile (
 #ifdef MC_ARCH_EXTENSION_SEC
 			/* This pseudo op is supported and required from
-			 * binutils 2.21 on */
+			 * binutils 2.21 on
+			 */
 			".arch_extension sec\n"
 #endif
 			"smc #0\n"
@@ -212,7 +215,8 @@ static inline long _smc(void *data)
 #if defined(__ARM_VE_A9X4_QEMU__) || defined(__ARM_GOLDFISH_QEMU__)
 		/* Qemu does not return to the address following the SMC
 		 * instruction so we have to insert several nop instructions to
-		 * workaround this Qemu bug. */
+		 * workaround this Qemu bug.
+		 */
 		__asm__ volatile (
 			"nop\n"
 			"nop\n"
