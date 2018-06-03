@@ -207,8 +207,8 @@ bool is_recovery_mode(void)
 
 	bm_debug("mtk_battery boot mode =%d\n", boot_mode);
 	if (boot_mode == RECOVERY_BOOT) {
-		gm.log_level = 7;
-		gm.d_log_level = 7;
+		gm.log_level = BMLOG_DEBUG_LEVEL;
+		fg_cust_data.daemon_log_level = BMLOG_DEBUG_LEVEL;
 		return true;
 	}
 
@@ -2425,6 +2425,14 @@ void exec_BAT_EC(int cmd, int param)
 				cmd, param);
 		}
 		break;
+	case 776:
+		{
+			fg_cust_data.sleep_current_avg = param;
+			bm_err(
+				"exe_BAT_EC cmd %d, fg_cust_data.sleep_current_avg=%d\n",
+				cmd, param);
+		}
+		break;
 
 	default:
 		bm_err(
@@ -2601,9 +2609,9 @@ static ssize_t show_FG_daemon_log_level(
 	if (loglevel_count % 5 == 0)
 		bm_err(
 		"[FG] show FG_daemon_log_level : %d\n",
-		gm.d_log_level);
+		fg_cust_data.daemon_log_level);
 
-	return sprintf(buf, "%d\n", gm.d_log_level);
+	return sprintf(buf, "%d\n", fg_cust_data.daemon_log_level);
 }
 
 static ssize_t store_FG_daemon_log_level(
@@ -2624,8 +2632,17 @@ static ssize_t store_FG_daemon_log_level(
 				(int)val);
 			val = 0;
 		}
-		gm.d_log_level = val;
-		gm.log_level = val;
+
+		if (val < 10 && val >= 0) {
+			fg_cust_data.daemon_log_level = val;
+			wakeup_fg_algo_cmd(
+				FG_INTR_KERNEL_CMD,
+				FG_KERNEL_CMD_CHANG_LOGLEVEL,
+				val
+			);
+
+			gm.log_level = val;
+		}
 		if (val >= 7) {
 			gtimer_set_log_level(3);
 			gauge_coulomb_set_log_level(3);
@@ -2633,9 +2650,10 @@ static ssize_t store_FG_daemon_log_level(
 			gtimer_set_log_level(0);
 			gauge_coulomb_set_log_level(0);
 		}
+
 		bm_err(
-			"[FG_daemon_log_level] gm.d_log_level=%d\n",
-			gm.d_log_level);
+			"[FG_daemon_log_level]fg_cust_data.daemon_log_level=%d\n",
+			fg_cust_data.daemon_log_level);
 	}
 	return size;
 }

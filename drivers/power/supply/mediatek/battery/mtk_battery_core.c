@@ -348,6 +348,7 @@ void fg_custom_init_from_header(void)
 			gm.hw_status.pl_charger_status;
 	}
 
+	fg_cust_data.daemon_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 	fg_cust_data.q_max_L_current = Q_MAX_L_CURRENT;
 	fg_cust_data.q_max_H_current = Q_MAX_H_CURRENT;
 	fg_cust_data.q_max_sys_voltage =
@@ -1609,10 +1610,11 @@ void fg_zcv_int_handler(void)
 	fg_coulomb = gauge_get_coulomb();
 	gauge_get_zcv_current(&zcv_intr_curr);
 	gauge_get_zcv(&zcv);
-	bm_err("[fg_zcv_int_handler] car:%d zcv_curr:%d zcv:%d\n",
-		fg_coulomb, zcv_intr_curr, zcv);
+	bm_err("[fg_zcv_int_handler] car:%d zcv_curr:%d zcv:%d, slp_cur_avg:%d\n",
+		fg_coulomb, zcv_intr_curr, zcv,
+		fg_cust_data.sleep_current_avg);
 
-	if (abs(zcv_intr_curr) < SLEEP_CURRENT_AVG) {
+	if (abs(zcv_intr_curr) < fg_cust_data.sleep_current_avg) {
 		wakeup_fg_algo(FG_INTR_FG_ZCV);
 		zcv_intr_en = 0;
 		gauge_set_zcv_interrupt_en(zcv_intr_en);
@@ -3529,7 +3531,6 @@ void mtk_battery_init(struct platform_device *dev)
 {
 	gm.ui_soc = -1;
 	gm.log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
-	gm.d_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 
 	gm.fixed_uisoc = 0xffff;
 
