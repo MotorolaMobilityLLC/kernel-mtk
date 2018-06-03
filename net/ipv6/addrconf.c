@@ -192,7 +192,7 @@ static void ipv6_ifa_notify(int event, struct inet6_ifaddr *ifa);
 static void inet6_no_ra_notify(int event, struct inet6_dev *idev);
 static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
 			   u32 portid, u32 seq, int event, unsigned int flags);
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp);
 #endif
 static void inet6_prefix_notify(int event, struct inet6_dev *idev,
@@ -3557,7 +3557,7 @@ static void addrconf_rs_timer(unsigned long data)
 				      idev->rs_interval);
 	} else {
 		inet6_no_ra_notify(RTM_NORA, idev);
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 		/*add for VzW feature : remove IF_RS_VZW_SENT flag*/
 		if (idev->if_flags & IF_RS_VZW_SENT)
 			idev->if_flags &= ~IF_RS_VZW_SENT;
@@ -3820,7 +3820,7 @@ static void addrconf_dad_completed(struct inet6_ifaddr *ifp)
 	}
 }
 
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 /*VzW : RA refresh*/
 static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp)
 {
@@ -4070,7 +4070,7 @@ static void addrconf_verify_rtnl(void)
 restart:
 		hlist_for_each_entry_rcu_bh(ifp, &inet6_addr_lst[i], addr_lst) {
 			unsigned long age;
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 			u32 route_lft, minimum_lft;
 			struct rt6_info *rt;
 
@@ -4104,7 +4104,7 @@ restart:
 				ipv6_del_addr(ifp);
 				goto restart;
 			} else if (ifp->prefered_lft == INFINITY_LIFE_TIME) {
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 				/*mtk10127 change for VzW
 				 *prefered_lft is INFINITY scenario
 				 *ccmni interface will send RS when time flow
@@ -4179,7 +4179,7 @@ restart:
 				/* ifp->prefered_lft <= ifp->valid_lft */
 				if (time_before(ifp->tstamp + ifp->prefered_lft * HZ, next))
 					next = ifp->tstamp + ifp->prefered_lft * HZ;
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 				/*mtk10127 change for VzW
 				 *prefered_lft is NOT INFINITY scenario
 				 *ccmni interface will send RS when time flow
@@ -5413,7 +5413,7 @@ static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
 	hdr->__ifi_pad = 0;
 	hdr->ifi_type = dev->type;
 	hdr->ifi_index = dev->ifindex;
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 	/*This ifi_flags refers to the dev flag in kernel, but here, I use it as a valid flag
 	*When ifi_flags is zero , it means RA refesh Fail, And When ifi_flags is  1, it means
 	*RA init Fail!@MTK07384
