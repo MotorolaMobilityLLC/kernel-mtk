@@ -990,6 +990,7 @@ clk_on:
 	ENABLE_VPU_MTCMOS(mtcmos_vpu_core0_shutdown);
 	ENABLE_VPU_MTCMOS(mtcmos_vpu_core1_shutdown);
 	vpu_trace_end();
+	udelay(500);
 
 	vpu_trace_begin("clock:enable");
 	ENABLE_VPU_CLK(clk_mmsys_gals_ipu2mm);
