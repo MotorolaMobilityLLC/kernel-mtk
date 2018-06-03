@@ -30,11 +30,9 @@
 #include "autok.h"
 #include "autok_dvfs.h"
 
-#if 0
 #ifdef CONFIG_MTK_HW_FDE_AES
 #include <fde_aes.h>
 #include <fde_aes_dbg.h>
-#endif
 #endif
 
 /* MSDC_SWITCH_MODE_WHEN_ERROR */
