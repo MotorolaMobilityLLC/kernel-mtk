@@ -186,13 +186,21 @@ static ssize_t st21nfc_dev_read(struct file *filp, char __user *buf,
 						       struct st21nfc_dev,
 						       st21nfc_device);
 	char tmp[MAX_BUFFER_SIZE];
-	int ret;
+	int ret, pinlev;
 
 	if (count > MAX_BUFFER_SIZE)
 		count = MAX_BUFFER_SIZE;
 
 	if (enable_debug_log)
 		pr_debug("%s : reading %zu bytes.\n", __func__, count);
+
+	pinlev = gpio_get_value(st21nfc_dev->platform_data.irq_gpio);
+	if (((pinlev > 0) && (st21nfc_dev->platform_data.active_polarity == 0))
+	    || ((pinlev == 0)
+		&& (st21nfc_dev->platform_data.active_polarity == 1))) {
+		pr_info("%s : read called but no IRQ.\n", __func__);
+		return -EIO;
+	}
 
 	mutex_lock(&st21nfc_dev->platform_data.read_mutex);
 
