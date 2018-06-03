@@ -109,15 +109,9 @@ static AudioDigitalPCM  Voice2IntPcm = {
 	.mModemPcmOn = false,
 };
 
-
-/* Conventional and unconventional sample rate supported */
-static unsigned int supported_sample_rates[] = {
-	8000,  16000, 32000,
-};
-
 static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
-	.count = ARRAY_SIZE(supported_sample_rates),
-	.list = supported_sample_rates,
+	.count = ARRAY_SIZE(soc_voice_supported_sample_rates),
+	.list = soc_voice_supported_sample_rates,
 	.mask = 0,
 };
 
