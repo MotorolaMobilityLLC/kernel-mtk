@@ -202,7 +202,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	if (is_sspm_ipi_lock_spm()) {
-		slp_error("[SLP] CANNOT SLEEP DUE TO SSPM IPI\n");
+		pr_info("[SLP] CANNOT SLEEP DUE TO SSPM IPI\n");
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
