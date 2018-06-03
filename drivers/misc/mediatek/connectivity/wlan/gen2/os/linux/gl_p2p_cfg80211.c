@@ -688,12 +688,12 @@ int mtk_p2p_cfg80211_change_beacon(struct wiphy *wiphy, struct net_device *dev, 
 			prP2pBcnUpdateMsg->pucBcnBody = NULL;
 		}
 #if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
-		if (info->proberesp_ies) {
-			prP2pBcnUpdateMsg->pucProbeRsp = kalMemAlloc(info->proberesp_ies_len, VIR_MEM_TYPE);
+		if (beacon->proberesp_ies) {
+			prP2pBcnUpdateMsg->pucProbeRsp = kalMemAlloc(beacon->proberesp_ies_len, VIR_MEM_TYPE);
 			if (!prP2pBcnUpdateMsg->pucProbeRsp)
 				return -ENOMEM;
-			prP2pBcnUpdateMsg->u4ProbeRsp_len = info->proberesp_ies_len;
-			kalMemCopy(prP2pBcnUpdateMsg->pucProbeRsp, info->proberesp_ies, info->proberesp_ies_len);
+			prP2pBcnUpdateMsg->u4ProbeRsp_len = beacon->proberesp_ies_len;
+			kalMemCopy(prP2pBcnUpdateMsg->pucProbeRsp, beacon->proberesp_ies, beacon->proberesp_ies_len);
 		}
 #endif
 		mboxSendMsg(prGlueInfo->prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prP2pBcnUpdateMsg, MSG_SEND_METHOD_BUF);
