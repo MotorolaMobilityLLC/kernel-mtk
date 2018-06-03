@@ -292,7 +292,6 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif
 #endif
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if SLP_SLEEP_DPIDLE_EN
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 	int fm_radio_is_playing = 0;
@@ -303,7 +302,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		fm_radio_is_playing = 1;
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
 #endif
-#endif /* CONFIG_FPGA_EARLY_PORTING */
+
 
 	/* legacy log */
 	/* slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_enter\t@@@@@@@@@@@@@@@@@@@@\n"); */
@@ -353,7 +352,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	mcdi_task_pause(true);
 #endif
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+
 #if SLP_SLEEP_DPIDLE_EN
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 	if (slp_ck26m_on | fm_radio_is_playing)
@@ -363,7 +362,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		slp_wake_reason = spm_go_to_sleep_dpidle(slp_spm_deepidle_flags, slp_spm_deepidle_flags1);
 	else
 #endif
-#endif /* CONFIG_FPGA_EARLY_PORTING */
+
 		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_flags1);
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	mcdi_task_pause(false);
