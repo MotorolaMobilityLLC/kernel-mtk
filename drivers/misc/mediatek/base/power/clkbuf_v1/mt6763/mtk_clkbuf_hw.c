@@ -78,9 +78,6 @@ static void __iomem *pwrap_base;
 
 /* #define CLKBUF_CONN_SUPPORT_CTRL_FROM_I1 */
 
-/* FIXME: Before MP, using suggested driving current to test. */
-/* #define TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP */
-
 /* TODO: enable BBLPM if its function is ready (set as 1) */
 static unsigned int bblpm_switch = 1;
 
@@ -101,7 +98,8 @@ static int PMIC_CLK_BUF1_DRIVING_CURR = CLK_BUF_DRIVING_CURR_AUTO_K,
 	   PMIC_CLK_BUF6_DRIVING_CURR = CLK_BUF_DRIVING_CURR_AUTO_K,
 	   PMIC_CLK_BUF7_DRIVING_CURR = CLK_BUF_DRIVING_CURR_AUTO_K;
 
-static int8_t clkbuf_drv_curr_auxout[CLKBUF_NUM];
+static u8 clkbuf_drv_curr_auxout[CLKBUF_NUM];
+static u8 xo_en_stat[CLKBUF_NUM];
 
 #ifndef CLKBUF_BRINGUP
 static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
@@ -289,7 +287,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 			pmic_config_interface(PMIC_DCXO_CW00_CLR, 0x3,
 					      PMIC_XO_EXTBUF2_MODE_MASK,
 					      PMIC_XO_EXTBUF2_MODE_SHIFT);
-			pmic_config_interface(PMIC_DCXO_CW00_SET, 0x10,
+			pmic_config_interface(PMIC_DCXO_CW00_SET, 0x2,
 					      PMIC_XO_EXTBUF2_MODE_MASK,
 					      PMIC_XO_EXTBUF2_MODE_SHIFT);
 #endif
@@ -505,51 +503,48 @@ void clk_buf_dump_clkbuf_log(void)
 		     pmic_cw16, top_spi_con1);
 }
 
-static void clk_buf_calc_drv_curr_auxout(void)
+static u32 dcxo_dbg_read_auxout(u16 sel)
 {
-	u32 pmic_cw19 = 0;
+	u32 rg_auxout = 0;
 
-	pmic_config_interface(PMIC_DCXO_CW18, 42,
+	pmic_config_interface(PMIC_DCXO_CW18, sel,
 			      PMIC_XO_STATIC_AUXOUT_SEL_MASK,
 			      PMIC_XO_STATIC_AUXOUT_SEL_SHIFT);
-	pmic_read_interface(PMIC_DCXO_CW19, &pmic_cw19,
+	pmic_read_interface(PMIC_DCXO_CW19, &rg_auxout,
 			    PMIC_XO_STATIC_AUXOUT_MASK,
 			    PMIC_XO_STATIC_AUXOUT_SHIFT);
-	clk_buf_dbg("%s: pmic_cw19=0x%x, flag_swbufldok=%u\n", __func__,
-		    pmic_cw19, ((pmic_cw19 & (0x3 << 2)) >> 2));
-	if (((pmic_cw19 & (0x3 << 2)) >> 2) != 3)
-		return;
+	clk_buf_dbg("%s: sel=%d, rg_auxout=0x%x\n", __func__, sel, rg_auxout);
 
-	pmic_config_interface(PMIC_DCXO_CW18, 5,
-			      PMIC_XO_STATIC_AUXOUT_SEL_MASK,
-			      PMIC_XO_STATIC_AUXOUT_SEL_SHIFT);
-	pmic_read_interface(PMIC_DCXO_CW19, &pmic_cw19,
-			    PMIC_XO_STATIC_AUXOUT_MASK,
-			    PMIC_XO_STATIC_AUXOUT_SHIFT);
-	clk_buf_dbg("%s: sel io_dbg4: pmic_cw19=0x%x\n", __func__, pmic_cw19);
-	clkbuf_drv_curr_auxout[XO_SOC] = (pmic_cw19 & (0x3 << 1)) >> 1;
-	clkbuf_drv_curr_auxout[XO_WCN] = (pmic_cw19 & (0x3 << 7)) >> 7;
+	return rg_auxout;
+}
 
-	pmic_config_interface(PMIC_DCXO_CW18, 6,
-			      PMIC_XO_STATIC_AUXOUT_SEL_MASK,
-			      PMIC_XO_STATIC_AUXOUT_SEL_SHIFT);
-	pmic_read_interface(PMIC_DCXO_CW19, &pmic_cw19,
-			    PMIC_XO_STATIC_AUXOUT_MASK,
-			    PMIC_XO_STATIC_AUXOUT_SHIFT);
-	clk_buf_dbg("%s: sel io_dbg5: pmic_cw19=0x%x\n", __func__, pmic_cw19);
-	clkbuf_drv_curr_auxout[XO_NFC] = (pmic_cw19 & (0x3 << 1)) >> 1;
-	clkbuf_drv_curr_auxout[XO_CEL] = (pmic_cw19 & (0x3 << 7)) >> 7;
+static bool clk_buf_is_auto_calc_ready(void)
+{
+	if (((dcxo_dbg_read_auxout(42) & (0x3 << 2)) >> 2) == 3)
+		return true;
+	else
+		return false;
+}
 
-	pmic_config_interface(PMIC_DCXO_CW18, 7,
-			      PMIC_XO_STATIC_AUXOUT_SEL_MASK,
-			      PMIC_XO_STATIC_AUXOUT_SEL_SHIFT);
-	pmic_read_interface(PMIC_DCXO_CW19, &pmic_cw19,
-			    PMIC_XO_STATIC_AUXOUT_MASK,
-			    PMIC_XO_STATIC_AUXOUT_SHIFT);
-	clk_buf_dbg("%s: sel io_dbg6: pmic_cw19=0x%x\n", __func__, pmic_cw19);
-	clkbuf_drv_curr_auxout[XO_AUD] = (pmic_cw19 & (0x3 << 1)) >> 1;
-	clkbuf_drv_curr_auxout[XO_PD] = (pmic_cw19 & (0x3 << 7)) >> 7;
-	clkbuf_drv_curr_auxout[XO_EXT] = (pmic_cw19 & (0x3 << 12)) >> 12;
+static void clk_buf_get_drv_curr(void)
+{
+	u32 rg_auxout = 0;
+
+	rg_auxout = dcxo_dbg_read_auxout(5);
+	clk_buf_dbg("%s: sel io_dbg4: rg_auxout=0x%x\n", __func__, rg_auxout);
+	clkbuf_drv_curr_auxout[XO_SOC] = (rg_auxout & (0x3 << 1)) >> 1;
+	clkbuf_drv_curr_auxout[XO_WCN] = (rg_auxout & (0x3 << 7)) >> 7;
+
+	rg_auxout = dcxo_dbg_read_auxout(6);
+	clk_buf_dbg("%s: sel io_dbg5: rg_auxout=0x%x\n", __func__, rg_auxout);
+	clkbuf_drv_curr_auxout[XO_NFC] = (rg_auxout & (0x3 << 1)) >> 1;
+	clkbuf_drv_curr_auxout[XO_CEL] = (rg_auxout & (0x3 << 7)) >> 7;
+
+	rg_auxout = dcxo_dbg_read_auxout(7);
+	clk_buf_dbg("%s: sel io_dbg6: rg_auxout=0x%x\n", __func__, rg_auxout);
+	clkbuf_drv_curr_auxout[XO_AUD] = (rg_auxout & (0x3 << 1)) >> 1;
+	clkbuf_drv_curr_auxout[XO_PD] = (rg_auxout & (0x3 << 7)) >> 7;
+	clkbuf_drv_curr_auxout[XO_EXT] = (rg_auxout & (0x3 << 12)) >> 12;
 
 	clk_buf_warn("%s: PMIC_CLK_BUF?_DRV_CURR_AUXOUT=%d %d %d %d %d %d %d\n", __func__,
 		     clkbuf_drv_curr_auxout[XO_SOC],
@@ -559,6 +554,90 @@ static void clk_buf_calc_drv_curr_auxout(void)
 		     clkbuf_drv_curr_auxout[XO_AUD],
 		     clkbuf_drv_curr_auxout[XO_PD],
 		     clkbuf_drv_curr_auxout[XO_EXT]);
+}
+
+static bool clk_buf_is_auto_calc_enabled(void)
+{
+	u32 autok = 0;
+
+	pmic_read_interface(PMIC_XO_BUFLDOK_EN_ADDR, &autok,
+			    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
+	if (autok)
+		return true;
+	else
+		return false;
+}
+
+static void clk_buf_set_auto_calc(u8 onoff)
+{
+	if (onoff) {
+		pmic_config_interface(PMIC_XO_BUFLDOK_EN_ADDR, 0,
+				    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
+		udelay(100);
+		pmic_config_interface(PMIC_XO_BUFLDOK_EN_ADDR, 1,
+				    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
+		mdelay(1);
+	} else
+		pmic_config_interface(PMIC_XO_BUFLDOK_EN_ADDR, 0,
+				    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
+}
+
+static void clk_buf_set_manual_drv_curr(u32 *drv_curr_vals)
+{
+	u32 drv_curr_val = 0, drv_curr_mask = 0, drv_curr_shift = 0;
+
+	drv_curr_val =
+		(drv_curr_vals[XO_SOC] << PMIC_XO_EXTBUF1_ISET_M_SHIFT) |
+		(drv_curr_vals[XO_WCN] << PMIC_XO_EXTBUF2_ISET_M_SHIFT) |
+		(drv_curr_vals[XO_NFC] << PMIC_XO_EXTBUF3_ISET_M_SHIFT) |
+		(drv_curr_vals[XO_CEL] << PMIC_XO_EXTBUF4_ISET_M_SHIFT) |
+		/* (drv_curr_vals[XO_AUD] << PMIC_XO_EXTBUF5_ISET_M_SHIFT) | */
+		(drv_curr_vals[XO_PD] << PMIC_XO_EXTBUF6_ISET_M_SHIFT) |
+		(drv_curr_vals[XO_EXT] << PMIC_XO_EXTBUF7_ISET_M_SHIFT);
+	drv_curr_mask =
+		(PMIC_XO_EXTBUF1_ISET_M_MASK << PMIC_XO_EXTBUF1_ISET_M_SHIFT) |
+		(PMIC_XO_EXTBUF2_ISET_M_MASK << PMIC_XO_EXTBUF2_ISET_M_SHIFT) |
+		(PMIC_XO_EXTBUF3_ISET_M_MASK << PMIC_XO_EXTBUF3_ISET_M_SHIFT) |
+		(PMIC_XO_EXTBUF4_ISET_M_MASK << PMIC_XO_EXTBUF4_ISET_M_SHIFT) |
+		/* (PMIC_XO_EXTBUF5_ISET_M_MASK << PMIC_XO_EXTBUF5_ISET_M_SHIFT) | */
+		(PMIC_XO_EXTBUF6_ISET_M_MASK << PMIC_XO_EXTBUF6_ISET_M_SHIFT) |
+		(PMIC_XO_EXTBUF7_ISET_M_MASK << PMIC_XO_EXTBUF7_ISET_M_SHIFT);
+	drv_curr_shift = PMIC_XO_EXTBUF1_ISET_M_SHIFT;
+
+	pmic_config_interface(PMIC_XO_EXTBUF1_ISET_M_ADDR, drv_curr_val,
+			      drv_curr_mask, drv_curr_shift);
+	clk_buf_warn("%s: drv_curr_val/mask/shift=0x%x %x %x\n", __func__,
+		     drv_curr_val, drv_curr_mask, drv_curr_shift);
+}
+
+static void clk_buf_get_xo_en(void)
+{
+	u32 rg_auxout = 0;
+
+	rg_auxout = dcxo_dbg_read_auxout(5);
+	clk_buf_dbg("%s: sel io_dbg4: rg_auxout=0x%x\n", __func__, rg_auxout);
+	xo_en_stat[XO_SOC] = (rg_auxout & (0x1 << 0)) >> 0;
+	xo_en_stat[XO_WCN] = (rg_auxout & (0x1 << 6)) >> 6;
+
+	rg_auxout = dcxo_dbg_read_auxout(6);
+	clk_buf_dbg("%s: sel io_dbg5: rg_auxout=0x%x\n", __func__, rg_auxout);
+	xo_en_stat[XO_NFC] = (rg_auxout & (0x1 << 0)) >> 0;
+	xo_en_stat[XO_CEL] = (rg_auxout & (0x1 << 6)) >> 6;
+	xo_en_stat[XO_EXT] = (rg_auxout & (0x1 << 12)) >> 12;
+
+	rg_auxout = dcxo_dbg_read_auxout(7);
+	clk_buf_dbg("%s: sel io_dbg6: rg_auxout=0x%x\n", __func__, rg_auxout);
+	/* xo_en_stat[XO_AUD] = (rg_auxout & (0x1 << 0)) >> 0; */
+	xo_en_stat[XO_PD] = (rg_auxout & (0x1 << 6)) >> 6;
+
+	clk_buf_warn("%s: PMIC_CLK_BUF?_EN_STAT=%d %d %d %d %d %d %d\n", __func__,
+		     xo_en_stat[XO_SOC],
+		     xo_en_stat[XO_WCN],
+		     xo_en_stat[XO_NFC],
+		     xo_en_stat[XO_CEL],
+		     xo_en_stat[XO_AUD],
+		     xo_en_stat[XO_PD],
+		     xo_en_stat[XO_EXT]);
 }
 
 #ifdef CONFIG_PM
@@ -588,9 +667,7 @@ static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 		mutex_unlock(&clk_buf_ctrl_lock);
 
 		return count;
-	}
-
-	if (!strcmp(cmd, "pwrap")) {
+	} else if (!strcmp(cmd, "pwrap")) {
 		if (!is_pmic_clkbuf)
 			return -EINVAL;
 
@@ -617,9 +694,22 @@ static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 		mutex_unlock(&clk_buf_ctrl_lock);
 
 		return count;
-	}
+	} else if (!strcmp(cmd, "drvcurr")) {
+		if (!is_pmic_clkbuf)
+			return -EINVAL;
 
-	return -EINVAL;
+		mutex_lock(&clk_buf_ctrl_lock);
+
+		if (clk_buf_is_auto_calc_enabled())
+			clk_buf_set_auto_calc(0);
+		clk_buf_set_manual_drv_curr(clk_buf_en);
+
+		mutex_unlock(&clk_buf_ctrl_lock);
+
+		return count;
+	} else {
+		return -EINVAL;
+	}
 }
 
 static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr,
@@ -629,36 +719,39 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw14 = 0,
 	    pmic_cw16 = 0;
 
-	clk_buf_calc_drv_curr_auxout();
+	clk_buf_get_drv_curr();
+	clk_buf_get_xo_en();
 
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"********** PMIC clock buffer state (%s) **********\n",
 			(is_pmic_clkbuf ? "on" : "off"));
 	len += snprintf(buf+len, PAGE_SIZE-len,
-			"XO_SOC   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-			CLK_BUF1_STATUS_PMIC, pmic_clk_buf_swctrl[XO_SOC]);
+			"XO_SOC   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d, RS: %u\n",
+			CLK_BUF1_STATUS_PMIC, pmic_clk_buf_swctrl[XO_SOC], xo_en_stat[XO_SOC]);
 	len += snprintf(buf+len, PAGE_SIZE-len,
-			"XO_WCN   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-			CLK_BUF2_STATUS_PMIC, pmic_clk_buf_swctrl[XO_WCN]);
+			"XO_WCN   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d, RS: %u\n",
+			CLK_BUF2_STATUS_PMIC, pmic_clk_buf_swctrl[XO_WCN], xo_en_stat[XO_WCN]);
 	len += snprintf(buf+len, PAGE_SIZE-len,
-			"XO_NFC   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-			CLK_BUF3_STATUS_PMIC, pmic_clk_buf_swctrl[XO_NFC]);
+			"XO_NFC   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d, RS: %u\n",
+			CLK_BUF3_STATUS_PMIC, pmic_clk_buf_swctrl[XO_NFC], xo_en_stat[XO_NFC]);
 	len += snprintf(buf+len, PAGE_SIZE-len,
-			"XO_CEL   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-			CLK_BUF4_STATUS_PMIC, pmic_clk_buf_swctrl[XO_CEL]);
+			"XO_CEL   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d, RS: %u\n",
+			CLK_BUF4_STATUS_PMIC, pmic_clk_buf_swctrl[XO_CEL], xo_en_stat[XO_CEL]);
 	len += snprintf(buf+len, PAGE_SIZE-len,
-			"XO_AUD   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-			CLK_BUF5_STATUS_PMIC, pmic_clk_buf_swctrl[XO_AUD]);
+			"XO_AUD   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d, RS: %u\n",
+			CLK_BUF5_STATUS_PMIC, pmic_clk_buf_swctrl[XO_AUD], xo_en_stat[XO_AUD]);
 	len += snprintf(buf+len, PAGE_SIZE-len,
-			"XO_PD    SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-			CLK_BUF6_STATUS_PMIC, pmic_clk_buf_swctrl[XO_PD]);
+			"XO_PD    SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d, RS: %u\n",
+			CLK_BUF6_STATUS_PMIC, pmic_clk_buf_swctrl[XO_PD], xo_en_stat[XO_PD]);
 	len += snprintf(buf+len, PAGE_SIZE-len,
-			"XO_EXT   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-			CLK_BUF7_STATUS_PMIC, pmic_clk_buf_swctrl[XO_EXT]);
+			"XO_EXT   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d, RS: %u\n",
+			CLK_BUF7_STATUS_PMIC, pmic_clk_buf_swctrl[XO_EXT], xo_en_stat[XO_EXT]);
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"\n********** clock buffer command help **********\n");
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"PMIC switch on/off: echo pmic en1 en2 en3 en4 en5 en6 en7 > /sys/power/clk_buf/clk_buf_ctrl\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"Set drv curr(0~3): echo drvcurr v1 v2 v3 v4 v5 v6 v7 > /sys/power/clk_buf/clk_buf_ctrl\n");
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"\n********** clock buffer debug info **********\n");
 	len += snprintf(buf+len, PAGE_SIZE-len, "pmic_drv_curr_vals=%d %d %d %d %d %d %d\n",
@@ -874,12 +967,7 @@ void clk_buf_init_pmic_clkbuf(void)
 #ifndef __KERNEL__
 	/* Setup initial PMIC clock buffer setting */
 	/* auto mode of driving current */
-	pmic_config_interface(PMIC_XO_BUFLDOK_EN_ADDR, 0,
-			    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
-	udelay(100);
-	pmic_config_interface(PMIC_XO_BUFLDOK_EN_ADDR, 1,
-			    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
-	mdelay(1);
+	clk_buf_set_auto_calc(1);
 
 	pmic_config_interface(PMIC_XO_EXTBUF1_MODE_ADDR, PMIC_CW00_INIT_VAL,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
@@ -901,7 +989,9 @@ void clk_buf_init_pmic_clkbuf(void)
 	/* Check if the setting is ok */
 	clk_buf_dump_clkbuf_log();
 #endif /* #ifndef __KERNEL__ */
-	clk_buf_calc_drv_curr_auxout();
+
+	if (clk_buf_is_auto_calc_ready())
+		clk_buf_get_drv_curr();
 }
 
 void clk_buf_init_pmic_wrap(void)
