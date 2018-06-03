@@ -26,15 +26,9 @@
 /*
 *	Request HPM in Low temperature condition
 */
-#define THERMAL_LT_SET_HPM (1)
-
-#if THERMAL_LT_SET_HPM
-extern int enter_hpm_temp;
-extern int leave_hpm_temp;
-extern int enable_hpm_temp;
-#endif
+#define THERMAL_LT_SET_OPP
 
 /*In src/mtk_tc.c*/
-extern int get_immediate_ts4_wrap(void);
+extern int tscpu_min_temperature(void);
 
 #endif				/* _MTK_TS_SETTING_H */

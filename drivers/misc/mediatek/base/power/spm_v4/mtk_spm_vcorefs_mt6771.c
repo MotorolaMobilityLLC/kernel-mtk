@@ -54,6 +54,10 @@
 #include <helio-dvfsrc-opp.h>
 #include <helio-dvfsrc.h>
 
+#include <mt-plat/mtk_devinfo.h>
+#include <mtk_ts_setting.h>
+#include <tscpu_settings.h>
+
 #define is_dvfs_in_progress()    (spm_read(DVFSRC_LEVEL) & 0xFFFF)
 #define get_dvfs_level()         (spm_read(DVFSRC_LEVEL) >> 16)
 
@@ -97,6 +101,17 @@ static struct pwr_ctrl vcorefs_ctrl;
 struct spm_lp_scen __spm_vcorefs = {
 	.pwrctrl = &vcorefs_ctrl,
 };
+
+/* lt_opp config */
+static int lt_opp_feature_en = 1;
+static int enter_lt_opp_temp;
+static int leave_lt_opp_temp = 10000;
+
+static int lt_opp_enable;
+static int adj_vcore_uv = 12500;
+static int last_temp;
+struct pm_qos_request temp_emi_req;
+struct pm_qos_request temp_vcore_req;
 
 int spm_get_vcore_opp(unsigned int opp)
 {
@@ -194,6 +209,9 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* EMI Monitor */
 		p += sprintf(p, "TOTAL_EMI(level 1/2): %d/%d (bwst: 0x%x, bwvl: 0x%x)\n",
 					(bwst0_val & 1), ((bwst0_val >> 1) & 1), bwst0_val, bwvl0_val);
+
+		p += sprintf(p, "lt_opp: feature_en=%d, enable=%d, enter_temp=%d, leave_temp=%d (last_temp=%d)\n",
+				 lt_opp_feature_en, lt_opp_enable, enter_lt_opp_temp, leave_lt_opp_temp, last_temp);
 		#endif
 	} else {
 		#if 1
@@ -263,9 +281,15 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 							spm_read(SPM_DVFS_CMD0), spm_read(SPM_DVFS_CMD1));
 		spm_vcorefs_warn("PCM_IM_PTR             :: 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 
+		/* BW Info */
+		spm_vcorefs_warn("BW_TOTAL: %d (AVG: %d)\n", dvfsrc_get_bw(QOS_TOTAL), dvfsrc_get_bw(QOS_TOTAL_AVE));
+
 		/* EMI Monitor */
 		spm_vcorefs_warn("TOTAL_EMI(level 1/2): %d/%d (bwst: 0x%x, bwvl: 0x%x)\n",
 					(bwst0_val & 1), ((bwst0_val >> 1) & 1), bwst0_val, bwvl0_val);
+
+		spm_vcorefs_warn("lt_opp: feature_en=%d enable=%d, enter_temp=%d, leave_temp=%d (last_temp=%d)\n",
+				 lt_opp_feature_en, lt_opp_enable, enter_lt_opp_temp, leave_lt_opp_temp, last_temp);
 		#endif
 	}
 
@@ -814,6 +838,11 @@ void spm_request_dvfs_opp(int id, enum dvfs_opp opp)
 
 static void plat_info_init(void)
 {
+	int hw_reserve = get_devinfo_with_index(120);
+
+	if ((hw_reserve >> 1) & 0x1)
+		lt_opp_feature_en = 0;
+	spm_vcorefs_warn("[%s] hw_rsv=0x%x, lt_opp_feautre_en=%d\n", __func__, hw_reserve, lt_opp_feature_en);
 }
 
 #if 0
@@ -898,18 +927,136 @@ static void dvfsrc_init_qos_opp(void)
 }
 #endif
 
+
+
+void vcorefs_set_lt_opp_feature(int en)
+{
+	lt_opp_feature_en = en;
+}
+
+void vcorefs_set_lt_opp_enter_temp(int val)
+{
+	enter_lt_opp_temp = val;
+}
+
+void vcorefs_set_lt_opp_leave_temp(int val)
+{
+	leave_lt_opp_temp = val;
+}
+
+void vcorefs_temp_opp_init(void)
+{
+	int init_temp = tscpu_min_temperature();
+	int spmfw_dram_type = __spm_get_dram_type();
+	int vcore_val;
+
+	if (!lt_opp_feature_en)
+		return;
+
+	if (init_temp == CLEAR_TEMP)
+		return;
+
+	spm_vcorefs_warn("[%s] init temp: %d (enter_lt: %d, leave_lt: %d\n)",
+			__func__, init_temp, enter_lt_opp_temp, leave_lt_opp_temp);
+	pm_qos_add_request(&temp_emi_req, PM_QOS_EMI_OPP, PM_QOS_EMI_OPP_DEFAULT_VALUE);
+	pm_qos_add_request(&temp_vcore_req, PM_QOS_VCORE_OPP, PM_QOS_VCORE_OPP_DEFAULT_VALUE);
+
+	if (init_temp < enter_lt_opp_temp) {
+		lt_opp_enable = 1;
+		vcore_val = get_vcore_opp_volt(VCORE_DVFS_OPP_0) + adj_vcore_uv;
+
+		update_vcore_opp_uv(VCORE_DVFS_OPP_0, vcore_val);
+		if (spmfw_dram_type != SPMFW_LP4X_2CH_3200)
+			update_vcore_opp_uv(VCORE_DVFS_OPP_1, vcore_val);
+	}
+}
+
+void vcorefs_temp_opp_config(int temp)
+{
+	int vcore_val;
+	int pre_vcore, pre_ddr;
+
+	if (!lt_opp_feature_en)
+		return;
+
+	if (is_vcorefs_can_work() != 1)
+		return;
+
+	if (temp == CLEAR_TEMP)
+		return;
+
+	if ((temp > leave_lt_opp_temp) && (lt_opp_enable == 1)) {
+		lt_opp_enable = 0;
+		vcore_val = get_vcore_opp_volt(VCORE_DVFS_OPP_0) - adj_vcore_uv;
+
+		/* update dvfs cmd table */
+		update_vcore_opp_uv(VCORE_DVFS_OPP_0, vcore_val);
+		if (__spm_get_dram_type() != SPMFW_LP4X_2CH_3200)
+			update_vcore_opp_uv(VCORE_DVFS_OPP_1, vcore_val);
+
+		/* appy adjust vcore */
+		if (get_cur_vcore_opp() == VCORE_OPP_0) {
+			pre_vcore = vcorefs_get_curr_vcore();
+			pre_ddr = vcorefs_get_curr_ddr();
+			pm_qos_update_request(&temp_vcore_req, VCORE_OPP_0);
+			pm_qos_update_request(&temp_emi_req, DDR_OPP_0);
+
+			pmic_set_register_value_nolock(PMIC_RG_BUCK_VCORE_VOSEL,
+					vcore_uv_to_pmic(vcore_val));
+			spm_vcorefs_warn("lt_opp change!! from (%d, %d) to (%d, %d)\n",
+				pre_vcore, pre_ddr, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
+			pm_qos_update_request(&temp_emi_req, PM_QOS_EMI_OPP_DEFAULT_VALUE);
+			pm_qos_update_request(&temp_vcore_req, PM_QOS_VCORE_OPP_DEFAULT_VALUE);
+		}
+
+		spm_vcorefs_warn("leave lt_opp vcore_table[%d, %d, %d, %d] temp: %d > %d (%d, %d)\n",
+				get_vcore_opp_volt(0), get_vcore_opp_volt(1),
+				get_vcore_opp_volt(2), get_vcore_opp_volt(3),
+				temp, leave_lt_opp_temp,
+				vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
+	} else if ((temp < enter_lt_opp_temp) && (lt_opp_enable == 0)) {
+		lt_opp_enable = 1;
+		vcore_val = get_vcore_opp_volt(VCORE_DVFS_OPP_0) + adj_vcore_uv;
+
+		/* update dvfs cmd table */
+		update_vcore_opp_uv(VCORE_DVFS_OPP_0, vcore_val);
+		if (__spm_get_dram_type() != SPMFW_LP4X_2CH_3200)
+			update_vcore_opp_uv(VCORE_DVFS_OPP_1, vcore_val);
+
+
+		/* appy adjust vcore */
+		if (get_cur_vcore_opp() == VCORE_OPP_0) {
+			pre_vcore = vcorefs_get_curr_vcore();
+			pre_ddr = vcorefs_get_curr_ddr();
+			pm_qos_update_request(&temp_vcore_req, VCORE_OPP_0);
+			pm_qos_update_request(&temp_emi_req, DDR_OPP_0);
+			pmic_set_register_value_nolock(PMIC_RG_BUCK_VCORE_VOSEL,
+					vcore_uv_to_pmic(vcore_val));
+			spm_vcorefs_warn("lt_opp change! from (%d, %d) to (%d, %d)\n",
+				pre_vcore, pre_ddr, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
+			pm_qos_update_request(&temp_emi_req, PM_QOS_EMI_OPP_DEFAULT_VALUE);
+			pm_qos_update_request(&temp_vcore_req, PM_QOS_VCORE_OPP_DEFAULT_VALUE);
+		}
+		spm_vcorefs_warn("enter lt_opp vcore_table[%d, %d, %d, %d] temp: %d < %d (%d, %d)\n",
+			get_vcore_opp_volt(0), get_vcore_opp_volt(1),
+			get_vcore_opp_volt(2), get_vcore_opp_volt(3),
+			temp, leave_lt_opp_temp,
+			vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
+	}
+	last_temp = temp;
+}
+
+
 void spm_vcorefs_init(void)
 {
 	int flag;
 	int r;
-
 #if 0
 	if (vcorefs_is_lp_flavor()) {
 		vcorefs_set_vcore_dvs_en(true);
 		vcorefs_set_ddr_dfs_en(true);
 	}
 #endif
-
 	dvfsrc_register_init();
 	vcorefs_module_init();
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
@@ -917,6 +1064,10 @@ void spm_vcorefs_init(void)
 #endif
 	plat_info_init();
 	vcore_opp_init();
+
+	if (lt_opp_feature_en)
+		vcorefs_temp_opp_init();
+
 	vcorefs_init_opp_table();
 
 	r = fb_register_client(&spm_vcorefs_fb_notif);

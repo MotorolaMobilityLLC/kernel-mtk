@@ -98,6 +98,10 @@ extern int spm_vcorefs_get_dvfs_opp(void);
 extern void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv);
 extern void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz);
 extern void dvfsrc_update_sspm_qos_enable(int dvfs_en, unsigned int dram_type);
+extern void vcorefs_temp_opp_config(int temp);
+extern void vcorefs_set_lt_opp_feature(int en);
+extern void vcorefs_set_lt_opp_enter_temp(int val);
+extern void vcorefs_set_lt_opp_leave_temp(int val);
 
 /* met profile function */
 extern int vcorefs_get_opp_info_num(void);

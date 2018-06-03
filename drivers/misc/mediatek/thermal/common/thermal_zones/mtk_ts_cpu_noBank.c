@@ -31,6 +31,7 @@
 #include <linux/ktime.h>
 #include "mach/mtk_thermal.h"
 #include "mtk_thermal_timer.h"
+#include <mtk_ts_setting.h>
 
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mtk_clkmgr.h>
@@ -38,6 +39,7 @@
 #include <linux/clk.h>
 #endif
 
+#include <mtk_spm_vcore_dvfs.h>
 
 /* #include <mach/mt_wtd.h> */
 #include <mach/wd_api.h>
@@ -343,6 +345,27 @@ int tscpu_max_temperature(void)
 	return max;
 }
 
+int tscpu_min_temperature(void)
+{
+	int i, j, min = 0;
+
+	tscpu_dprintk("tscpu_get_temp(min) %s, %d\n", __func__, __LINE__);
+
+	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++) {
+		for (j = 0; j < tscpu_g_tc[i].ts_number; j++) {
+			if (i == 0 && j == 0) {
+				min = tscpu_ts_temp[tscpu_g_tc[i].ts[j]];
+			} else {
+				if (min > tscpu_ts_temp[tscpu_g_tc[i].ts[j]])
+					min = tscpu_ts_temp[
+							tscpu_g_tc[i].ts[j]];
+			}
+		}
+	}
+
+	return min;
+}
+
 void set_taklking_flag(bool flag)
 {
 	talking_flag = flag;
@@ -510,6 +533,9 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, int *t)
 	int temp_temp;
 	static int last_cpu_real_temp;
 #endif
+#ifdef THERMAL_LT_SET_OPP
+	int ts_temp;
+#endif
 
 #ifdef FAST_RESPONSE_ATM
 	curr_temp = tscpu_get_curr_max_ts_temp();
@@ -544,6 +570,11 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, int *t)
 
 	last_cpu_real_temp = curr_temp;
 	curr_temp = temp_temp;
+#endif
+
+#ifdef THERMAL_LT_SET_OPP
+		ts_temp = tscpu_min_temperature();
+		vcorefs_temp_opp_config(ts_temp);
 #endif
 
 	*t = (unsigned long)curr_temp;

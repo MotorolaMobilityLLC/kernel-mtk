@@ -109,7 +109,7 @@ unsigned int get_vcore_opp_volt(unsigned int opp)
 	return vcore_opp_table[opp];
 }
 
-static unsigned int update_vcore_opp_uv(unsigned int opp, unsigned int vcore_uv)
+unsigned int update_vcore_opp_uv(unsigned int opp, unsigned int vcore_uv)
 {
 	unsigned int ret = 0;
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT

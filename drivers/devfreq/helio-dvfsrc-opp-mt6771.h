@@ -20,6 +20,7 @@ extern unsigned int get_cur_vcore_opp(void);
 extern unsigned int get_cur_ddr_opp(void);
 extern unsigned int get_min_opp_for_vcore(int vcore_opp);
 extern unsigned int get_min_opp_for_ddr(int ddr_opp);
+extern unsigned int update_vcore_opp_uv(unsigned int opp, unsigned int vcore_uv);
 
 enum ddr_opp {
 	DDR_OPP_0 = 0,			/* 3200 MHz */
