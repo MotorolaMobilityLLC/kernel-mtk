@@ -173,6 +173,8 @@ void get_original_table(void)
 	upower_debug("idx %d dest:%p, src:%p\n",
 			(idx+1) % NR_UPOWER_TBL_LIST, upower_tbl_ref, upower_tbl_infos);
 
+	/* If disable upower, ptr will point to original upower table */
+	p_upower_tbl_infos = upower_tbl_infos;
 	/*
 	*  Clear volt fields before eem run.                                  *
 	*  If eem is enabled, it will apply volt into it. If eem is disabled, *

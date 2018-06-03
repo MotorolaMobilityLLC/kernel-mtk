@@ -275,7 +275,9 @@ void get_original_table(void)
 
 	upower_debug("idx %d dest:%p, src:%p\n",
 					(idx+1)%NR_UPOWER_TBL_LIST, upower_tbl_ref, upower_tbl_infos);
-	/* p_upower_tbl_infos = upower_tbl_infos; */
+
+	/* If disable upower, ptr will point to original upower table */
+	p_upower_tbl_infos = upower_tbl_infos;
 
 #if 0
 	upower_debug("upower_tbl_ll_1_FY %p\n", &upower_tbl_ll_1_FY);
