@@ -375,13 +375,15 @@ void mcdi_avail_cpu_cluster_update(void)
 
 	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
 
-	pr_info("online = %d, avail_cnt_mcusys = %d, avail_cnt_cluster[0] = %d, [1] = %d, avail_cpu_mask = %04x\n",
+#if 0
+	pr_warn("online = %d, avail_cnt_mcusys = %d, avail_cnt_cluster[0] = %d, [1] = %d, avail_cpu_mask = %04x\n",
 		num_online_cpus(),
 		mcdi_gov_data.avail_cnt_mcusys,
 		mcdi_gov_data.avail_cnt_cluster[0],
 		mcdi_gov_data.avail_cnt_cluster[1],
 		mcdi_gov_data.avail_cpu_mask
 	);
+#endif
 }
 
 void mcdi_governor_init(void)
