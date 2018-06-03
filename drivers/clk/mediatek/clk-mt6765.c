@@ -428,6 +428,7 @@ void __iomem *venc_gcon_base;
 #define MFG_DISABLE_CG		0x0000000f /* need to confirm */
 #define MM_DISABLE_CG		0x3fffffff /* un-gating in preloader */
 #define VENC_DISABLE_CG		0x00001111 /* inverse */
+#define MIPI_CSI_DISABLE_CG	0x2
 
 #define CLK_CFG_0 0x40
 #define CLK_CFG_0_SET 0x44
@@ -1579,10 +1580,10 @@ static const struct mtk_gate mm_clks[] __initconst = {
 	GATE_MM(CLK_MM_DISP_DITHER0, "mm_disp_dither0", "mm_ck", 16),
 	GATE_MM(CLK_MM_DSI0, "mm_dsi0", "mm_ck", 17),
 	GATE_MM(CLK_MM_FAKE_ENG, "mm_fake_eng", "mm_ck", 18),
-	GATE_MM_DUMMY(CLK_MM_SMI_COMMON, "mm_smi_common", "mm_ck", 19),
-	GATE_MM_DUMMY(CLK_MM_SMI_LARB0, "mm_smi_larb0", "mm_ck", 20),
-	GATE_MM_DUMMY(CLK_MM_SMI_COMM0, "mm_smi_comm0", "mm_ck", 21),
-	GATE_MM_DUMMY(CLK_MM_SMI_COMM1, "mm_smi_comm1", "mm_ck", 22),
+	GATE_MM(CLK_MM_SMI_COMMON, "mm_smi_common", "mm_ck", 19),
+	GATE_MM(CLK_MM_SMI_LARB0, "mm_smi_larb0", "mm_ck", 20),
+	GATE_MM(CLK_MM_SMI_COMM0, "mm_smi_comm0", "mm_ck", 21),
+	GATE_MM(CLK_MM_SMI_COMM1, "mm_smi_comm1", "mm_ck", 22),
 	GATE_MM(CLK_MM_CAM_MDP, "mm_cam_mdp_ck", "mm_ck", 23),
 	GATE_MM(CLK_MM_SMI_IMG, "mm_smi_img_ck", "mm_ck", 24),
 	GATE_MM(CLK_MM_SMI_CAM, "mm_smi_cam_ck", "mm_ck", 25),
@@ -2133,7 +2134,7 @@ static void __init mtk_audio_init(struct device_node *node)
 			__func__, r);
 	audio_base = base;
 
-#if MT_CCF_BRINGUP
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
 	clk_writel(AUDIO_TOP_CON0,
 		clk_readl(AUDIO_TOP_CON0) & ~AUDIO_DISABLE_CG0);
 	clk_writel(AUDIO_TOP_CON1,
@@ -2165,7 +2166,7 @@ static void __init mtk_camsys_init(struct device_node *node)
 			__func__, r);
 	cam_base = base;
 /* FIX ME */
-#if MT_CCF_BRINGUP
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
 	clk_writel(CAMSYS_CG_CLR, CAMSYS_DISABLE_CG);
 #endif
 }
@@ -2193,7 +2194,7 @@ static void __init mtk_imgsys_init(struct device_node *node)
 			__func__, r);
 	img_base = base;
 /* FIX ME */
-#if MT_CCF_BRINGUP
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
 	clk_writel(IMG_CG_CLR, IMG_DISABLE_CG);
 #endif
 }
@@ -2221,7 +2222,7 @@ static void __init mtk_gce_init(struct device_node *node)
 			__func__, r);
 	gce_base = base;
 
-#if MT_CCF_BRINGUP
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
 	clk_writel(GCE_CTL_INT0, clk_readl(GCE_CTL_INT0) & ~GCE_DISABLE_CG);
 #endif
 
@@ -2249,7 +2250,7 @@ static void __init mtk_mmsys_config_init(struct device_node *node)
 		pr_notice("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	mmsys_config_base = base;
-#if MT_CCF_BRINGUP
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
 	clk_writel(MMSYS_CG_CLR0, MM_DISABLE_CG);
 #endif
 }
@@ -2279,7 +2280,7 @@ static void __init mtk_mfgcfg_init(struct device_node *node)
 			__func__, r);
 	mfgcfg_base = base;
 	/* mfg register would cause hang */
-#if MT_CCF_BRINGUP
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
 	clk_writel(MFG_CG_CLR, MFG_DISABLE_CG);
 #endif
 }
@@ -2309,12 +2310,198 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 			__func__, r);
 	venc_gcon_base = base;
 
-#if MT_CCF_BRINGUP
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
 	clk_writel(VENC_CG_SET, VENC_DISABLE_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_venc_global_con, "mediatek,venc_gcon",
 		mtk_venc_global_con_init);
+
+static void __init mtk_mipi0a_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_notice("%s(): ioremap failed\n", __func__);
+		return;
+	}
+	clk_data = mtk_alloc_clk_data(CLK_MIPI0A_NR_CLK);
+
+	mtk_clk_register_gates(node, mipi0a_clks,
+		ARRAY_SIZE(mipi0a_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_notice("%s(): could not register clock provider: %d\n",
+			__func__, r);
+	mipi_rx_ana_csi0a_base = base;
+
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
+	clk_writel(MIPI_RX_WRAPPER80_CSI0A,
+		clk_readl(MIPI_RX_WRAPPER80_CSI0A) | MIPI_CSI_DISABLE_CG);
+#endif
+}
+CLK_OF_DECLARE_DRIVER(mtk_mipi0a, "mediatek,mipi_rx_ana_csi0a",
+		mtk_mipi0a_init);
+
+static void __init mtk_mipi0b_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_notice("%s(): ioremap failed\n", __func__);
+		return;
+	}
+	clk_data = mtk_alloc_clk_data(CLK_MIPI0B_NR_CLK);
+
+	mtk_clk_register_gates(node, mipi0b_clks,
+		ARRAY_SIZE(mipi0b_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_notice("%s(): could not register clock provider: %d\n",
+			__func__, r);
+	mipi_rx_ana_csi0b_base = base;
+
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
+	clk_writel(MIPI_RX_WRAPPER80_CSI0B,
+		clk_readl(MIPI_RX_WRAPPER80_CSI0B) | MIPI_CSI_DISABLE_CG);
+#endif
+}
+CLK_OF_DECLARE_DRIVER(mtk_mipi0b, "mediatek,mipi_rx_ana_csi0b",
+		mtk_mipi0b_init);
+
+static void __init mtk_mipi1a_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_notice("%s(): ioremap failed\n", __func__);
+		return;
+	}
+	clk_data = mtk_alloc_clk_data(CLK_MIPI1A_NR_CLK);
+
+	mtk_clk_register_gates(node, mipi1a_clks,
+		ARRAY_SIZE(mipi1a_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_notice("%s(): could not register clock provider: %d\n",
+			__func__, r);
+	mipi_rx_ana_csi1a_base = base;
+
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
+	clk_writel(MIPI_RX_WRAPPER80_CSI1A,
+		clk_readl(MIPI_RX_WRAPPER80_CSI1A) | MIPI_CSI_DISABLE_CG);
+#endif
+}
+CLK_OF_DECLARE_DRIVER(mtk_mipi1a, "mediatek,mipi_rx_ana_csi1a",
+		mtk_mipi1a_init);
+
+static void __init mtk_mipi1b_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_notice("%s(): ioremap failed\n", __func__);
+		return;
+	}
+	clk_data = mtk_alloc_clk_data(CLK_MIPI1B_NR_CLK);
+
+	mtk_clk_register_gates(node, mipi1b_clks,
+		ARRAY_SIZE(mipi1b_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_notice("%s(): could not register clock provider: %d\n",
+			__func__, r);
+	mipi_rx_ana_csi1b_base = base;
+
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
+	clk_writel(MIPI_RX_WRAPPER80_CSI1B,
+		clk_readl(MIPI_RX_WRAPPER80_CSI1B) | MIPI_CSI_DISABLE_CG);
+#endif
+}
+CLK_OF_DECLARE_DRIVER(mtk_mipi1b, "mediatek,mipi_rx_ana_csi1b",
+		mtk_mipi1b_init);
+
+static void __init mtk_mipi2a_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_notice("%s(): ioremap failed\n", __func__);
+		return;
+	}
+	clk_data = mtk_alloc_clk_data(CLK_MIPI2A_NR_CLK);
+
+	mtk_clk_register_gates(node, mipi2a_clks,
+		ARRAY_SIZE(mipi2a_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_notice("%s(): could not register clock provider: %d\n",
+			__func__, r);
+	mipi_rx_ana_csi2a_base = base;
+
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
+	clk_writel(MIPI_RX_WRAPPER80_CSI2A,
+		clk_readl(MIPI_RX_WRAPPER80_CSI2A) | MIPI_CSI_DISABLE_CG);
+#endif
+}
+CLK_OF_DECLARE_DRIVER(mtk_mipi2a, "mediatek,mipi_rx_ana_csi2a",
+		mtk_mipi2a_init);
+
+static void __init mtk_mipi2b_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_notice("%s(): ioremap failed\n", __func__);
+		return;
+	}
+	clk_data = mtk_alloc_clk_data(CLK_MIPI2B_NR_CLK);
+
+	mtk_clk_register_gates(node, mipi2b_clks,
+		ARRAY_SIZE(mipi2b_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_notice("%s(): could not register clock provider: %d\n",
+			__func__, r);
+	mipi_rx_ana_csi2b_base = base;
+
+#if (MT_CCF_BRINGUP && !MT_CG_ENABLE)
+	clk_writel(MIPI_RX_WRAPPER80_CSI2B,
+		clk_readl(MIPI_RX_WRAPPER80_CSI2B) | MIPI_CSI_DISABLE_CG);
+#endif
+}
+CLK_OF_DECLARE_DRIVER(mtk_mipi2b, "mediatek,mipi_rx_ana_csi2b",
+		mtk_mipi2b_init);
 
 unsigned int mt_get_ckgen_freq(unsigned int ID)
 {
