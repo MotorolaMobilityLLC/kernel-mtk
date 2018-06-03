@@ -26,7 +26,7 @@
 #define K_DEBUG	(1<<0)
 
 /*Set the debug level for xhci driver*/
-extern u32 xhci_debug_level;
+extern int xhci_debug_level;
 
 extern struct xhci_hcd *mtk_xhci;
 

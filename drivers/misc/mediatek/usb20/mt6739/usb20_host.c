@@ -105,11 +105,11 @@ static struct musb_fifo_cfg fifo_cfg_host[] = {
 { .hw_ep_num =	8, .style = MUSB_FIFO_RX,   .maxpacket = 64,  .mode = MUSB_BUF_SINGLE},
 };
 
-u32 delay_time = 15;
+int delay_time = 15;
 module_param(delay_time, int, 0400);
-u32 delay_time1 = 55;
+int delay_time1 = 55;
 module_param(delay_time1, int, 0400);
-u32 iddig_cnt;
+int iddig_cnt;
 module_param(iddig_cnt, int, 0400);
 
 void vbus_init(void)
@@ -201,14 +201,14 @@ int mt_usb_get_vbus_status(struct musb *musb)
 }
 
 #if defined(CONFIG_USBIF_COMPLIANCE)
-u32 sw_deboun_time = 1;
+int sw_deboun_time = 1;
 #else
-u32 sw_deboun_time = 400;
+int sw_deboun_time = 400;
 #endif
 module_param(sw_deboun_time, int, 0400);
 struct switch_dev otg_state;
 
-u32 typec_control;
+int typec_control;
 module_param(typec_control, int, 0400);
 static bool typec_req_host;
 static bool iddig_req_host;
