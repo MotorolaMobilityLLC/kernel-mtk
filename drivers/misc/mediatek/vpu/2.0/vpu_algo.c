@@ -78,7 +78,7 @@ int vpu_init_algo(struct vpu_device *vpu_device)
 
 int vpu_add_algo_to_pool(int core, struct vpu_algo *algo)
 {
-	LOG_INF("[vpu] vpu_add_algo_to_pool +\n");
+	LOG_DBG("[vpu] vpu_add_algo_to_pool +\n");
 	list_add_tail(vlist_link(algo, struct vpu_algo), &vpu_algo_pool[core]);
 	return 0;
 }
@@ -120,7 +120,7 @@ int vpu_find_algo_by_name(int core, char *name, struct vpu_algo **ralgo, bool ne
 	struct vpu_algo *algo;
 	struct list_head *head;
 
-	LOG_INF("[vpu] vpu_find_algo_by_name +\n");
+	LOG_DBG("[vpu] vpu_find_algo_by_name +\n");
 
 	if (name == NULL)
 		goto err;
@@ -155,12 +155,12 @@ int vpu_get_algo_id_by_name(int core, char *name)
 	if (name == NULL)
 		goto out;
 
-	LOG_INF("vpu_get_algo_id_by_name core:%d\n", core);
+	LOG_DBG("vpu_get_algo_id_by_name core:%d\n", core);
 	ret = vpu_find_algo_by_name(core, name, &algo, false);
 	LOG_INF("ret:%d\n", ret);
 	CHECK_RET("vpu_find_algo_by_name fail, name=%s\n", name);
 	algo_id = algo->id[core];
-	LOG_INF("vpu_get_algo_id_by_name algo_id:%d\n", algo_id);
+	LOG_INF("vpu(%d)_get algo_id:%d\n", core, algo_id);
 	return algo_id;
 
 out:
@@ -214,7 +214,7 @@ int vpu_create_algo(int core, char *name, struct vpu_algo **ralgo, bool needload
 	unsigned int mva;
 	struct vpu_algo *algo = NULL;
 
-	LOG_INF("[vpu] vpu_create_algo + (%d)\n", needload);
+	LOG_DBG("[vpu] vpu_create_algo + (%d)\n", needload);
 
 	ret = vpu_get_entry_of_algo(core, name, &id, &mva, &length);
 	CHECK_RET("algo(%s) is not existed in image files!\n", name);
@@ -226,23 +226,23 @@ int vpu_create_algo(int core, char *name, struct vpu_algo **ralgo, bool needload
 	algo->id[core] = id;
 	algo->bin_ptr = mva;
 	algo->bin_length = length;
-	LOG_INF("[vpu] vpu_hw_load_algo done, (%d/0x%lx/0x%x)\n", id, (unsigned long)mva, length);
-	LOG_INF("[vpu] vpu_hw_load_algo done, (%d/0x%lx/0x%x)\n",
+	LOG_DBG("[vpu] vpu_hw_load_algo done, (%d/0x%lx/0x%x)\n", id, (unsigned long)mva, length);
+	LOG_DBG("[vpu] vpu_hw_load_algo done, (%d/0x%lx/0x%x)\n",
 		algo->id[core], (unsigned long)(algo->bin_ptr), algo->bin_length);
 
 	if (needload) {
 		ret = vpu_hw_load_algo(core, algo);
 		CHECK_RET("vpu_hw_load_algo failed!\n");
-		LOG_INF("[vpu] vpu_hw_load_algo done\n");
+		LOG_DBG("[vpu] vpu_hw_load_algo done\n");
 		ret = vpu_hw_get_algo_info(core, algo);
 		CHECK_RET("vpu_hw_get_algo_info failed!\n");
-		LOG_INF("[vpu] vpu_hw_get_algo_info done\n");
+		LOG_DBG("[vpu] vpu_hw_get_algo_info done\n");
 		ret = vpu_calc_prop_offset(algo->info_descs, algo->info_desc_count, &algo->info_length);
 		CHECK_RET("vpu_calc_prop_offset[info] failed!\n");
-		LOG_INF("[vpu] vpu_calc_prop_offset done,algo->info_length(0x%x)\n", algo->info_length);
+		LOG_DBG("[vpu] vpu_calc_prop_offset done,algo->info_length(0x%x)\n", algo->info_length);
 		ret = vpu_calc_prop_offset(algo->sett_descs, algo->sett_desc_count, &algo->sett_length);
 		CHECK_RET("vpu_calc_prop_offset[sett] failed!\n");
-		LOG_INF("[vpu] vpu_calc_prop_offset done,algo->sett_length(0x%x)\n", algo->sett_length);
+		LOG_DBG("[vpu] vpu_calc_prop_offset done,algo->sett_length(0x%x)\n", algo->sett_length);
 	}
 	*ralgo = algo;
 	return 0;
@@ -258,7 +258,7 @@ int vpu_alloc_algo(struct vpu_algo **ralgo)
 {
 	struct vpu_algo *algo;
 
-	LOG_INF("[vpu] vpu_alloc_algo +\n");
+	LOG_DBG("[vpu] vpu_alloc_algo +\n");
 	algo = kzalloc(sizeof(vlist_type(struct vpu_algo)) + prop_info_data_length, GFP_KERNEL);
 	if (algo == NULL) {
 		LOG_ERR("vpu_alloc_algo(), algo=0x%p\n", algo);

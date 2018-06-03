@@ -464,7 +464,7 @@ static void vpu_unprepare_regulator_and_clock(void)
 
 irqreturn_t vpu0_isr_handler(int irq, void *dev_id)
 {
-	LOG_INF("vpu 0 received a interrupt\n");
+	LOG_DBG("vpu 0 received a interrupt\n");
 	vpu_service_cores[0].is_cmd_done = true;
 	wake_up_interruptible(&cmd_wait);
 	vpu_write_field(0, FLD_APMCU_INT, 1);                   /* clear int */
@@ -473,7 +473,7 @@ irqreturn_t vpu0_isr_handler(int irq, void *dev_id)
 }
 irqreturn_t vpu1_isr_handler(int irq, void *dev_id)
 {
-	LOG_INF("vpu 1 received a interrupt\n");
+	LOG_DBG("vpu 1 received a interrupt\n");
 	vpu_service_cores[1].is_cmd_done = true;
 	wake_up_interruptible(&cmd_wait);
 	vpu_write_field(1, FLD_APMCU_INT, 1);                   /* clear int */
@@ -538,10 +538,10 @@ static int vpu_service_routine(void *arg)
 			req = vlist_node_of(vpu_dev->servicepool_list[service_core].next, struct vpu_request);
 			list_del_init(vlist_link(req, struct vpu_request));
 			vpu_dev->servicepool_list_size[service_core] -= 1;
-			LOG_INF("[vpu] flag - : selfpool(%d)_size(%d)\n", service_core,
+			LOG_DBG("[vpu] flag - : selfpool(%d)_size(%d)\n", service_core,
 				vpu_dev->servicepool_list_size[service_core]);
 			mutex_unlock(&vpu_dev->servicepool_mutex[service_core]);
-			LOG_INF("[vpu] flag - 2: get selfpool\n");
+			LOG_DBG("[vpu] flag - 2: get selfpool\n");
 		} else {
 			mutex_unlock(&vpu_dev->servicepool_mutex[service_core]);
 
@@ -550,21 +550,22 @@ static int vpu_service_routine(void *arg)
 				req = vlist_node_of(vpu_dev->commonpool_list.next, struct vpu_request);
 				list_del_init(vlist_link(req, struct vpu_request));
 				vpu_dev->commonpool_list_size -= 1;
-				LOG_INF("[vpu] flag - : common pool_size(%d)\n", vpu_dev->commonpool_list_size);
-				LOG_INF("[vpu] flag - 3: get common pool\n");
+				LOG_DBG("[vpu] flag - : common pool_size(%d)\n", vpu_dev->commonpool_list_size);
+				LOG_DBG("[vpu] flag - 3: get common pool\n");
 			}
 			mutex_unlock(&vpu_dev->commonpool_mutex);
 		}
 		/* suppose that req is null would not happen */
 		/* due to we check service_pool_is_empty and common_pool_is_empty */
 		if (req != NULL) {
-			LOG_INF("[vpu] service core index...: %d/%d", service_core, (*d));
+			LOG_DBG("[vpu] service core index...: %d/%d", service_core, (*d));
 			user = (struct vpu_user *)req->user_id;
-			LOG_INF("[vpu] user...0x%lx/0x%lx/0x%lx/0x%lx\n", (unsigned long)user, (unsigned long)&user,
+			LOG_DBG("[vpu] user...0x%lx/0x%lx/0x%lx/0x%lx\n", (unsigned long)user, (unsigned long)&user,
 				(unsigned long)req->user_id, (unsigned long)&(req->user_id));
 			mutex_lock(&vpu_dev->user_mutex);
 			user->running = true; /* for flush request from queue, DL usage */
-			LOG_INF("[vpu] running\n");
+			LOG_INF("[vpu_%d] run, algo_id(%d/%d)\n", service_core,
+				(int)(req->algo_id[service_core]), vpu_service_cores[service_core].current_algo);
 			/* unlock for avoiding long time locking */
 			mutex_unlock(&vpu_dev->user_mutex);
 			if (req->algo_id[service_core] != vpu_service_cores[service_core].current_algo) {
@@ -579,9 +580,9 @@ static int vpu_service_routine(void *arg)
 					goto out;
 				}
 			}
-			LOG_INF("[vpu] flag - 4: hw_enque_request\n");
+			LOG_DBG("[vpu] flag - 4: hw_enque_request\n");
 			vpu_hw_enque_request(service_core, req);
-			LOG_INF("[vpu] flag - 5: hw enque_request done\n");
+			LOG_DBG("[vpu] flag - 5: hw enque_request done\n");
 		} else {
 			/* consider that only one req in common pool and all services get pass through */
 			/* do nothing if the service do not get the request */
@@ -590,12 +591,12 @@ static int vpu_service_routine(void *arg)
 out:
 		/* if req is null, we should not do anything of following codes */
 		mutex_lock(&vpu_dev->user_mutex);
-		LOG_INF("[vpu] flag - 5.5 : ....\n");
+		LOG_DBG("[vpu] flag - 5.5 : ....\n");
 		mutex_lock(&user->data_mutex);
-		LOG_INF("[vpu] flag - 6: add to deque list\n");
+		LOG_DBG("[vpu] flag - 6: add to deque list\n");
 		req->occupied_core = (0x1 << service_core);
 		list_add_tail(vlist_link(req, struct vpu_request), &user->deque_list);
-		LOG_INF("[vpu] flag - 7: add to deque list done, occupied core(0x%x)\n", req->occupied_core);
+		LOG_INF("[vpu_0x%x] add to deque list done\n", req->occupied_core);
 		user->running = false;
 		mutex_unlock(&user->data_mutex);
 		mutex_unlock(&vpu_dev->user_mutex);
@@ -749,12 +750,12 @@ static int vpu_get_power(int core)
 {
 	int ret = 0;
 
-	LOG_INF("[vpu_%d] vpu_get_power +\n", core);
+	LOG_DBG("[vpu_%d] vpu_get_power +\n", core);
 	mutex_lock(&power_counter_mutex);
 	power_counter++;
 	ret = vpu_boot_up(core);
 	mutex_unlock(&power_counter_mutex);
-	LOG_INF("[vpu_%d] vpu_get_power -\n", core);
+	LOG_DBG("[vpu_%d] vpu_get_power -\n", core);
 	return ret;
 }
 
@@ -1013,7 +1014,7 @@ static int vpu_check_postcond(int core)
 {
 	uint32_t status = vpu_read_field(core, FLD_XTENSA_INFO00);
 
-	LOG_INF("vpu_check_postcond (0x%x)", status);
+	LOG_DBG("vpu_check_postcond (0x%x)", status);
 
 	switch (status) {
 	case VPU_STATE_READY:
@@ -1065,11 +1066,11 @@ int vpu_hw_boot_sequence(int core)
 	unsigned int reg_value = 0;
 
 	vpu_trace_begin("vpu_hw_boot_sequence");
-	LOG_INF("boot-up core(%d)", core);
-	LOG_INF("CTRL(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x110));
-	LOG_INF("XTENSA_INT(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x114));
-	LOG_INF("CTL_XTENSA_INT(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x118));
-	LOG_INF("CTL_XTENSA_INT_CLR(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x11C));
+	LOG_DBG("boot-up core(%d)", core);
+	LOG_DBG("CTRL(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x110));
+	LOG_DBG("XTENSA_INT(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x114));
+	LOG_DBG("CTL_XTENSA_INT(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x118));
+	LOG_DBG("CTL_XTENSA_INT_CLR(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x11C));
 
 	lock_command(core);
 	ptr_ctrl = vpu_service_cores[core].vpu_base + g_vpu_reg_descs[REG_CTRL].offset;
@@ -1080,7 +1081,7 @@ int vpu_hw_boot_sequence(int core)
 	/* 1. write register */
 	/* set specific address for reset vector in external boot */
 	reg_value = vpu_read_field(core, FLD_CORE_XTENSA_ALTRESETVEC);
-	LOG_INF("vpu before FLD_CORE_XTENSA_ALTRESETVEC (0x%x), VPU_MVA_RESET_VECTOR(0x%x)\n",
+	LOG_DBG("vpu before FLD_CORE_XTENSA_ALTRESETVEC (0x%x), VPU_MVA_RESET_VECTOR(0x%x)\n",
 		reg_value, VPU_MVA_RESET_VECTOR);
 	switch (core) {
 	case 0:
@@ -1095,7 +1096,7 @@ int vpu_hw_boot_sequence(int core)
 		break;
 	}
 	reg_value = vpu_read_field(core, FLD_CORE_XTENSA_ALTRESETVEC);
-	LOG_INF("vpu after FLD_CORE_XTENSA_ALTRESETVEC (0x%x), VPU_MVA_RESET_VECTOR(0x%x)\n",
+	LOG_DBG("vpu after FLD_CORE_XTENSA_ALTRESETVEC (0x%x), VPU_MVA_RESET_VECTOR(0x%x)\n",
 		reg_value, VPU_MVA_RESET_VECTOR);
 
 	VPU_SET_BIT(ptr_ctrl, 31);      /* csr_p_debug_enable */
@@ -1133,11 +1134,11 @@ int vpu_hw_boot_sequence(int core)
 	VPU_SET_BIT(ptr_axi_1, 4);       /* AXI Request via M4U */
 	VPU_SET_BIT(ptr_axi_1, 9);
 #endif
-	LOG_INF("REG_AXI_DEFAULT0(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x13C));
-	LOG_INF("REG_AXI_DEFAULT1(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x140));
+	LOG_DBG("REG_AXI_DEFAULT0(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x13C));
+	LOG_DBG("REG_AXI_DEFAULT1(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x140));
 
 	/* 2. trigger to run */
-	LOG_INF("vpu dsp:running (%d/0x%x)", core, vpu_read_field(core, FLD_SRAM_CONFIGURE));
+	LOG_DBG("vpu dsp:running (%d/0x%x)", core, vpu_read_field(core, FLD_SRAM_CONFIGURE));
 	vpu_trace_begin("dsp:running");
 
 	VPU_CLR_BIT(ptr_ctrl, 23);      /* RUN_STALL pull down */
@@ -1158,7 +1159,7 @@ int vpu_hw_boot_sequence(int core)
 out:
 	unlock_command(core);
 	vpu_trace_end();
-	LOG_INF("vpu_hw_boot_sequence -");
+	LOG_DBG("vpu_hw_boot_sequence -");
 	return ret;
 }
 
@@ -1167,7 +1168,7 @@ int vpu_hw_set_debug(int core)
 	int ret;
 	struct timespec now;
 
-	LOG_INF("vpu_hw_set_debug (%d)+", core);
+	LOG_DBG("vpu_hw_set_debug (%d)+", core);
 	vpu_trace_begin("vpu_hw_set_debug");
 
 	lock_command(core);
@@ -1179,14 +1180,14 @@ int vpu_hw_set_debug(int core)
 	vpu_write_field(core, FLD_XTENSA_INFO21, vpu_service_cores[core].work_buf->pa + VPU_OFFSET_LOG);
 	vpu_write_field(core, FLD_XTENSA_INFO22, VPU_SIZE_LOG_BUF);
 	vpu_write_field(core, FLD_XTENSA_INFO23, now.tv_sec * 1000000 + now.tv_nsec / 1000);
-	LOG_INF("work_buf->pa + VPU_OFFSET_LOG (0x%lx)",
+	LOG_DBG("work_buf->pa + VPU_OFFSET_LOG (0x%lx)",
 		(unsigned long)(vpu_service_cores[core].work_buf->pa + VPU_OFFSET_LOG));
-	LOG_INF("vpu_set ok, running");
+	LOG_DBG("vpu_set ok, running");
 
 	/* 2. trigger interrupt */
 	vpu_trace_begin("dsp:running");
 	vpu_write_field(core, FLD_CTL_INT, 1);
-	LOG_INF("debug timestamp: %.2lu:%.2lu:%.2lu:%.6lu\n", (now.tv_sec / 3600) % (24),
+	LOG_DBG("debug timestamp: %.2lu:%.2lu:%.2lu:%.6lu\n", (now.tv_sec / 3600) % (24),
 			(now.tv_sec / 60) % (60), now.tv_sec % 60, now.tv_nsec / 1000);
 	/* 3. wait until done */
 	ret = wait_command(core);
@@ -1200,7 +1201,7 @@ int vpu_hw_set_debug(int core)
 out:
 	unlock_command(core);
 	vpu_trace_end();
-	LOG_INF("vpu_hw_set_debug -");
+	LOG_DBG("vpu_hw_set_debug -");
 	return ret;
 }
 
@@ -1234,7 +1235,7 @@ int vpu_get_entry_of_algo(int core, char *name, int *id, unsigned int *mva, int 
 	struct vpu_algo_info *algo_info;
 	struct vpu_image_header *header;
 
-	LOG_INF("[vpu] vpu_get_entry_of_algo +\n");
+	LOG_DBG("[vpu] vpu_get_entry_of_algo +\n");
 	/* coreMagicNum = ( 0x60 | (0x01 << core) ); */
 	/* ignore vpu version */
 	coreMagicNum = (0x01 << core);
@@ -1243,16 +1244,17 @@ int vpu_get_entry_of_algo(int core, char *name, int *id, unsigned int *mva, int 
 	for (i = 0; i < VPU_NUMS_IMAGE_HEADER; i++) {
 		for (j = 0; j < header[i].algo_info_count; j++) {
 			algo_info = &header[i].algo_infos[j];
-			LOG_INF("debug, algo name: %s, core info:0x%x, input core:%d, magicNum: 0x%x, 0x%x\n",
-				algo_info->name, (unsigned int)(algo_info->vpu_core), core, (unsigned int)coreMagicNum,
+			LOG_INF("debug, algo name: %s/%s, core info:0x%x, input core:%d, magicNum: 0x%x, 0x%x\n",
+				name, algo_info->name, (unsigned int)(algo_info->vpu_core),
+				core, (unsigned int)coreMagicNum,
 				algo_info->vpu_core & coreMagicNum);
 			/* CHRISTODO */
 			if ((strcmp(name, algo_info->name) == 0) &&
 				(algo_info->vpu_core & coreMagicNum)) {
-				LOG_INF("algo_info->offset(0x%x)/0x%x",
+				LOG_DBG("algo_info->offset(0x%x)/0x%x",
 					algo_info->offset, (unsigned int)(vpu_service_cores[core].algo_data_mva));
 				*mva = algo_info->offset - VPU_OFFSET_ALGO_AREA + vpu_service_cores[core].algo_data_mva;
-				LOG_INF("*mva(0x%x/0x%lx), s(%d)", *mva, (unsigned long)(*mva), s);
+				LOG_DBG("*mva(0x%x/0x%lx), s(%d)", *mva, (unsigned long)(*mva), s);
 				*length = algo_info->length;
 				*id = s;
 				return 0;
@@ -1292,7 +1294,7 @@ int vpu_boot_up(int core)
 {
 	int ret;
 
-	LOG_INF("[vpu_%d] vpu_boot_up +\n", core);
+	LOG_DBG("[vpu_%d] vpu_boot_up +\n", core);
 	mutex_lock(&power_mutex);
 	if (vpu_service_cores[core].is_running) {
 		mutex_unlock(&power_mutex);
@@ -1306,11 +1308,11 @@ int vpu_boot_up(int core)
 
 	ret = vpu_hw_boot_sequence(core);
 	CHECK_RET("fail to do boot sequence\n");
-	LOG_INF("[vpu_%d] vpu_hw_boot_sequence done\n", core);
+	LOG_DBG("[vpu_%d] vpu_hw_boot_sequence done\n", core);
 
 	ret = vpu_hw_set_debug(core);
 	CHECK_RET("fail to set debug\n");
-	LOG_INF("[vpu_%d] vpu_hw_set_debug done\n", core);
+	LOG_DBG("[vpu_%d] vpu_hw_set_debug done\n", core);
 
 	vpu_service_cores[core].is_running = true;
 
@@ -1404,7 +1406,7 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 {
 	int ret;
 
-	LOG_INF("[vpu_%d] vpu_hw_load_algo +\n", core);
+	LOG_DBG("[vpu_%d] vpu_hw_load_algo +\n", core);
 	/* no need to reload algo if have same loaded algo*/
 	if (vpu_service_cores[core].current_algo == algo->id[core])
 		return 0;
@@ -1412,16 +1414,16 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 	vpu_trace_begin("vpu_hw_load_algo(%d)", algo->id[core]);
 	ret = vpu_get_power(core);
 	CHECK_RET("fail to get power!\n");
-	LOG_INF("[vpu_%d] vpu_get_power done\n", core);
+	LOG_DBG("[vpu_%d] vpu_get_power done\n", core);
 
 	lock_command(core);
 	LOG_DBG("start to load algo\n");
 
 	ret = vpu_check_precond(core);
 	CHECK_RET("have wrong status before do loader!\n");
-	LOG_INF("[vpu_%d] vpu_check_precond done\n", core);
+	LOG_DBG("[vpu_%d] vpu_check_precond done\n", core);
 
-	LOG_INF("[vpu_%d] algo ptr/length (0x%lx/0x%x)\n", core,
+	LOG_DBG("[vpu_%d] algo ptr/length (0x%lx/0x%x)\n", core,
 		(unsigned long)algo->bin_ptr, algo->bin_length);
 	/* 1. write register */
 	vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_DO_LOADER);           /* command: d2d */
@@ -1432,7 +1434,7 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 
 	/* 2. trigger interrupt */
 	vpu_trace_begin("dsp:running");
-	LOG_INF("[vpu_%d] dsp:running\n", core);
+	LOG_DBG("[vpu_%d] dsp:running\n", core);
 	vpu_write_field(core, FLD_CTL_INT, 1);
 
 	/* 3. wait until done */
@@ -1452,7 +1454,7 @@ out:
 	unlock_command(core);
 	vpu_put_power();
 	vpu_trace_end();
-	LOG_INF("[vpu] vpu_hw_load_algo -\n");
+	LOG_DBG("[vpu] vpu_hw_load_algo -\n");
 	return ret;
 }
 
@@ -1460,7 +1462,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 {
 	int ret;
 
-	LOG_INF("[vpu] vpu_hw_enque_request + ");
+	LOG_DBG("[vpu] vpu_hw_enque_request + ");
 	vpu_trace_begin("vpu_hw_enque_request(%d)", request->algo_id[core]);
 	ret = vpu_get_power(core);
 	CHECK_RET("fail to get power!\n");
@@ -1480,7 +1482,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 
 	if (g_vpu_log_level > 4)
 		vpu_dump_buffer_mva(request);
-	LOG_INF("[vpu] vpu_hw_enque_request check_precond done ");
+	LOG_DBG("[vpu] vpu_hw_enque_request check_precond done ");
 	/* 1. write register */
 	/* command: d2d */
 	vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_DO_D2D);
@@ -1495,7 +1497,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 
 	/* 2. trigger interrupt */
 	vpu_trace_begin("dsp:running");
-	LOG_INF("[vpu] vpu_hw_enque_request running... ");
+	LOG_DBG("[vpu] vpu_hw_enque_request running... ");
 	vpu_write_field(core, FLD_CTL_INT, 1);
 
 	/* 3. wait until done */
@@ -1516,7 +1518,7 @@ out:
 	unlock_command(core);
 	vpu_put_power();
 	vpu_trace_end();
-	LOG_INF("[vpu] vpu_hw_enque_request - (%d)", request->status);
+	LOG_DBG("[vpu] vpu_hw_enque_request - (%d)", request->status);
 	return ret;
 
 }
@@ -1544,7 +1546,7 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 	ofs_info = sizeof(((struct vpu_algo *)0)->ports);
 	ofs_info_descs = ofs_info + algo->info_length;
 	ofs_sett_descs = ofs_info_descs + sizeof(((struct vpu_algo *)0)->info_descs);
-	LOG_INF("[vpu] vpu_hw_get_algo_info check precond done\n");
+	LOG_DBG("[vpu] vpu_hw_get_algo_info check precond done\n");
 
 	/* 1. write register */
 	vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_GET_ALGO);   /* command: get algo */
@@ -1556,7 +1558,7 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 
 	/* 2. trigger interrupt */
 	vpu_trace_begin("dsp:running");
-	LOG_INF("[vpu] vpu_hw_get_algo_info running...\n");
+	LOG_DBG("[vpu] vpu_hw_get_algo_info running...\n");
 	vpu_write_field(core, FLD_CTL_INT, 1);
 
 	/* 3. wait until done */
@@ -1577,7 +1579,7 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 	algo->info_desc_count = info_desc_count;
 	algo->sett_desc_count = sett_desc_count;
 
-	LOG_INF("end of get algo, port_count=%d, info_desc_count=%d, sett_desc_count=%d\n",
+	LOG_DBG("end of get algo, port_count=%d, info_desc_count=%d, sett_desc_count=%d\n",
 		port_count, info_desc_count, sett_desc_count);
 
 	/* 5. write back data from working buffer */
@@ -1585,7 +1587,7 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 			sizeof(struct vpu_port) * port_count);
 
 	for (i = 0 ; i < algo->port_count ; i++) {
-		LOG_INF("port %d.. id=%d, name=%s, dir=%d, usage=%d\n",
+		LOG_DBG("port %d.. id=%d, name=%s, dir=%d, usage=%d\n",
 			i, algo->ports[i].id, algo->ports[i].name, algo->ports[i].dir, algo->ports[i].usage);
 	}
 
@@ -1596,14 +1598,14 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 	memcpy((void *) algo->sett_descs, (void *) (vpu_service_cores[core].work_buf->va + ofs_sett_descs),
 			sizeof(struct vpu_prop_desc) * sett_desc_count);
 
-	LOG_INF("end of get algo 2, port_count=%d, info_desc_count=%d, sett_desc_count=%d\n",
+	LOG_DBG("end of get algo 2, port_count=%d, info_desc_count=%d, sett_desc_count=%d\n",
 		algo->port_count, algo->info_desc_count, algo->sett_desc_count);
 
 out:
 	unlock_command(core);
 	vpu_put_power();
 	vpu_trace_end();
-	LOG_INF("[vpu] vpu_hw_get_algo_info -\n");
+	LOG_DBG("[vpu] vpu_hw_get_algo_info -\n");
 	return ret;
 }
 
