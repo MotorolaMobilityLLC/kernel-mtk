@@ -46,7 +46,7 @@ void mtk_ipi_scp_isr_sim(int got_size)
 
 	while (retry--) { /* add retry to avoid SCP busy timeout */
 		ret = scp_ipi_send(IPI_CHREX, &token, sizeof(token), 0, SCP_A_ID);
-		if (ret != BUSY)
+		if (ret != SCP_IPI_BUSY)
 			break;
 		usleep_range(100, 200);
 	}
@@ -167,7 +167,7 @@ int nanohub_ipi_probe(struct platform_device *pdev)
 {
 	struct nanohub_ipi_data *ipi_data;
 	struct iio_dev *iio_dev;
-	ipi_status status;
+	enum scp_ipi_status status;
 
 	iio_dev = iio_device_alloc(sizeof(struct nanohub_ipi_data));
 	if (!iio_dev)

@@ -42,7 +42,7 @@ static void scp_A_wdt_handler(void)
  */
 irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 {
-	unsigned int reg = SCP_A_TO_HOST_REG;
+	unsigned int reg = readl(SCP_A_TO_HOST_REG);
 #ifdef CFG_RECOVERY_SUPPORT
 	/* if WDT and IPI triggered on the same time, ignore the IPI */
 	if (reg & SCP_IRQ_WDT) {
@@ -64,11 +64,11 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 		if (retry == 0)
 			pr_debug("[SCP] SCP_A wakeup timeout\n");
 		udelay(10);
-		SCP_A_TO_HOST_REG = SCP_IRQ_WDT;
+		writel(SCP_IRQ_WDT, SCP_A_TO_HOST_REG);
 	} else if (reg & SCP_IRQ_SCP2HOST) {
 		/* if WDT and IPI triggered on the same time, ignore the IPI */
 		scp_A_ipi_handler();
-		SCP_A_TO_HOST_REG = SCP_IRQ_SCP2HOST;
+		writel(SCP_IRQ_SCP2HOST, SCP_A_TO_HOST_REG);
 	}
 #else
 	scp_excep_id reset_type;
@@ -88,7 +88,7 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 		reg &= SCP_IRQ_SCP2HOST;
 	}
 
-	SCP_A_TO_HOST_REG = reg;
+	writel(reg, SCP_A_TO_HOST_REG);
 
 	if (reboot)
 		scp_aed_reset(reset_type, SCP_A_ID);
@@ -101,5 +101,5 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
  */
 void scp_A_irq_init(void)
 {
-	SCP_A_TO_HOST_REG = 1;  /* clear scp irq */
+	writel(SCP_IRQ_SCP2HOST, SCP_A_TO_HOST_REG); /* clear scp irq */
 }
