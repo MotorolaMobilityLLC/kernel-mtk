@@ -79,6 +79,11 @@ static void write_timeout_handler(struct pt_regs *regs, void *priv)
 			       readl(IOMEM(BUS_DBG_AW_TRACK_H(i))),
 			       readl(IOMEM(BUS_DBG_AW_TRANS_TID(i))));
 		}
+
+		pr_notice("W_TRACK_DATA6:0x%x, W_TRACK_DATA7:0x%x, W_TRACK_DATA_VALID:0x%x!\n",
+			       readl(IOMEM(BUS_DBG_W_TRACK_DATA6)),
+			       readl(IOMEM(BUS_DBG_W_TRACK_DATA7)),
+			       readl(IOMEM(BUS_DBG_W_TRACK_DATA_VALID)));
 	}
 }
 
@@ -112,7 +117,7 @@ int systracker_handler(unsigned long addr,
 	int i;
 
 #ifdef SYSTRACKER_TEST_SUIT
-	writel(readl(p1) & ~(0x1 << 18), p1);
+	writel(readl(p1) & ~(0x1 << 6), p1);
 #endif
 
 	aee_dump_backtrace(regs, NULL);
@@ -138,13 +143,18 @@ int systracker_handler(unsigned long addr,
 			       readl(IOMEM(BUS_DBG_AW_TRACK_H(i))),
 			       readl(IOMEM(BUS_DBG_AW_TRANS_TID(i))));
 		}
+
+		pr_notice("W_TRACK_DATA6:0x%x, W_TRACK_DATA7:0x%x, W_TRACK_DATA_VALID:0x%x!\n",
+			       readl(IOMEM(BUS_DBG_W_TRACK_DATA6)),
+			       readl(IOMEM(BUS_DBG_W_TRACK_DATA7)),
+			       readl(IOMEM(BUS_DBG_W_TRACK_DATA_VALID)));
 	}
 
 	return -1;
 }
 
 /* ARM32 version */
-static int systracker_platform_hook_fault(void)
+static int __init systracker_platform_hook_fault(void)
 {
 
 #ifdef CONFIG_ARM_LPAE
@@ -180,7 +190,7 @@ void __iomem *mm_area1;
 
 static int systracker_platform_test_init(void)
 {
-	p1 = ioremap(0x10000220, 0x4);
+	p1 = ioremap(0x10001220, 0x4);
 
 	/* use mmsys reg base for our test */
 	mm_area1 = ioremap(0x14000000, 0x4);
@@ -190,7 +200,7 @@ static int systracker_platform_test_init(void)
 
 static void systracker_platform_test_cleanup(void)
 {
-	writel(readl(p1) & ~(0x1 << 18), p1);
+	writel(readl(p1) & ~(0x1 << 6), p1);
 }
 
 static void systracker_platform_wp_test(void)
@@ -214,23 +224,23 @@ static void systracker_platform_read_timeout_test(void)
 	 * systracker_enable();
 	 */
 
-	writel(readl(p1) | (0x1 << 18), p1);
+	writel(readl(p1) | (0x1 << 6), p1);
 	readl(mm_area1);
-	writel(readl(p1) & ~(0x1 << 18), p1);
+	writel(readl(p1) & ~(0x1 << 6), p1);
 }
 
 static void systracker_platform_write_timeout_test(void)
 {
-	writel(readl(p1) | (0x1 << 18), p1);
+	writel(readl(p1) | (0x1 << 6), p1);
 	writel(0x0, mm_area1);
-	writel(readl(p1) & ~(0x1 << 18), p1);
+	writel(readl(p1) & ~(0x1 << 6), p1);
 }
 
 static void systracker_platform_withrecord_test(void)
 {
 	writel(readl(IOMEM(BUS_DBG_CON)) |
 	       BUS_DBG_CON_HALT_ON_EN, IOMEM(BUS_DBG_CON));
-	writel(readl(p1) | (0x1 << 18), p1);
+	writel(readl(p1) | (0x1 << 6), p1);
 	readl(mm_area1);
 #if 0
 	/* FIXME: related function not ready on FPGA */
@@ -240,7 +250,7 @@ static void systracker_platform_withrecord_test(void)
 
 static void systracker_platform_notimeout_test(void)
 {
-	writel(readl(p1) | (0x1 << 18), p1);
+	writel(readl(p1) | (0x1 << 6), p1);
 	/* disable timeout */
 	writel(readl(IOMEM(BUS_DBG_CON_INFRA)) &
 		~(BUS_DBG_CON_TIMEOUT_EN), IOMEM(BUS_DBG_CON_INFRA));
