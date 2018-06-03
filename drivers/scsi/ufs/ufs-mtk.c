@@ -26,7 +26,7 @@
 #include <scsi/ufs/ufs-mtk-ioctl.h>
 
 #include <mt-plat/mtk_partition.h>
-#include "mtk_secure_api.h"
+#include <mt-plat/mtk_secure_api.h>
 #include "ufs-dbg.h"
 
 /* Query request retries */
