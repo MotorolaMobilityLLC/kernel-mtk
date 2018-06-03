@@ -696,6 +696,7 @@ unsigned long g_Flash_SpinLock;
 
 
 static unsigned int G_u4EnableClockCount;
+static bool suspend_clockoff;
 
 int pr_detect_count;
 
@@ -5852,24 +5853,30 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			Ret = -EFAULT;
 		} else {
 			if (wakelock_ctrl == 1) {       /* Enable     wakelock */
-				if (g_bWaitLock == 0) {
+				if (g_bWaitLock) {
+					g_bWaitLock++;
+					LOG_DBG("add wakelock cnt(%d)\n", g_bWaitLock);
+				} else {
 #ifdef CONFIG_PM_WAKELOCKS
 					__pm_stay_awake(&isp_wake_lock);
 #else
 					wake_lock(&isp_wake_lock);
 #endif
-					g_bWaitLock = 1;
-					LOG_DBG("wakelock enable!!\n");
+					g_bWaitLock++;
+					LOG_DBG("wakelock enable!! cnt(%d)\n", g_bWaitLock);
 				}
 			} else {        /* Disable wakelock */
-				if (g_bWaitLock == 1) {
+				if (g_bWaitLock) {
+					g_bWaitLock--;
+					LOG_DBG("subtract wakelock cnt(%d)\n", g_bWaitLock);
+				}
+				if (g_bWaitLock == 0) {
 #ifdef CONFIG_PM_WAKELOCKS
 					__pm_relax(&isp_wake_lock);
 #else
 					wake_unlock(&isp_wake_lock);
 #endif
-					g_bWaitLock = 0;
-					LOG_DBG("wakelock disable!!\n");
+					LOG_DBG("wakelock disable!! cnt(%d)\n", g_bWaitLock);
 				}
 			}
 		}
@@ -7815,7 +7822,7 @@ static int ISP_release(
 	/* why i add this wake_unlock here, because     the     Ap is not expected to be dead. */
 	/* The driver must releae the wakelock, otherwise the system will not enter     */
 	/* the power-saving mode */
-	if (g_bWaitLock == 1) {
+	if (g_bWaitLock) {
 #ifdef CONFIG_PM_WAKELOCKS
 		__pm_relax(&isp_wake_lock);
 #else
@@ -8584,6 +8591,15 @@ static int ISP_suspend(
 		#endif
 	} else
 		SuspnedRecord[module] = 0;
+
+	spin_lock(&(IspInfo.SpinLockClock));
+	if (G_u4EnableClockCount)
+		suspend_clockoff = MTRUE;
+	spin_unlock(&(IspInfo.SpinLockClock));
+
+	if (suspend_clockoff)
+		ISP_EnableClock(MFALSE);
+
 #else
 	unsigned int regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
 	unsigned int regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
@@ -8634,6 +8650,11 @@ static int ISP_resume(struct platform_device *pDev)
 	ret = 0;
 	module = -1;
 	strncpy(moduleName, pDev->dev.of_node->name, 127);
+
+	if (suspend_clockoff) {
+		ISP_EnableClock(MTRUE);
+		suspend_clockoff = MFALSE;
+	}
 
 	if (IspInfo.UserCount == 0) {
 		/* Only print cama log */
@@ -11808,7 +11829,7 @@ irqreturn_t ISP_Irq_CAM_A(int Irq, void *DeviceId)
 
 	#if defined(ISP_MET_READY)
 	/*MET:ISP EOF*/
-	if (IrqStatus & SW_PASS1_DON_ST) {
+	if (IrqStatus & HW_PASS1_DON_ST) {
 		if (met_mmsys_event_isp_pass1_end)
 			met_mmsys_event_isp_pass1_end(0);
 		MET_Events_Trace(0, reg_module);
@@ -12300,7 +12321,7 @@ irqreturn_t ISP_Irq_CAM_B(int  Irq, void *DeviceId)
 
 	#if defined(ISP_MET_READY)
 	/*CLS:Test*/
-	if (IrqStatus & SW_PASS1_DON_ST) {
+	if (IrqStatus & HW_PASS1_DON_ST) {
 		if (met_mmsys_event_isp_pass1_end)
 			met_mmsys_event_isp_pass1_end(1);
 		MET_Events_Trace(0, reg_module);
