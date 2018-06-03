@@ -692,6 +692,8 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 
 	if (!strcmp(cmd, "cm_mgr_opp_enable")) {
 		cm_mgr_opp_enable = val_1;
+		if (!cm_mgr_opp_enable)
+			dvfsrc_set_power_model_ddr_request(0);
 	} else if (!strcmp(cmd, "cm_mgr_enable")) {
 		cm_mgr_enable = val_1;
 		if (!cm_mgr_enable)
