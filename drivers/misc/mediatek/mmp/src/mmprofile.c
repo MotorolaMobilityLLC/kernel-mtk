@@ -1251,7 +1251,7 @@ static ssize_t mmprofile_dbgfs_start_read(struct file *file, char __user *buf, s
 static ssize_t mmprofile_dbgfs_start_write(struct file *file, const char __user *buf, size_t size,
 					   loff_t *ppos)
 {
-	unsigned int str;
+	unsigned int str = 0;
 	int start;
 	ssize_t ret;
 
@@ -1279,7 +1279,7 @@ static ssize_t mmprofile_dbgfs_enable_read(struct file *file, char __user *buf, 
 static ssize_t mmprofile_dbgfs_enable_write(struct file *file, const char __user *buf, size_t size,
 					    loff_t *ppos)
 {
-	unsigned int str;
+	unsigned int str = 0;
 	int enable;
 	ssize_t ret;
 
@@ -1577,8 +1577,26 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 			mmp_metadata_t __user *p_meta_data_user;
 
 			retn = copy_from_user(&meta_log, p_meta_log_user, sizeof(mmprofile_metalog_t));
+			if (retn) {
+				pr_debug("[MMPROFILE]: copy_from_user failed! line:%d\n",
+				 __LINE__);
+				return -EFAULT;
+			}
 			p_meta_data_user = (mmp_metadata_t __user *)&(p_meta_log_user->meta_data);
 			retn = copy_from_user(&meta_data, p_meta_data_user, sizeof(mmp_metadata_t));
+
+			if (retn) {
+				pr_debug("[MMPROFILE]: copy_from_user failed! line:%d\n",
+				 __LINE__);
+				return -EFAULT;
+			}
+
+			if (meta_data.size == 0 || meta_data.size > 0x3000000) {
+				pr_debug("[MMPROFILE]: meta_data.size Invalid! line:%d\n",
+				 __LINE__);
+				return -EFAULT;
+			}
+
 			mmprofile_log_meta_int(meta_log.id, meta_log.type, &meta_data, 1);
 		}
 		break;
@@ -1822,16 +1840,24 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 
 			p_compat_meta_log_user = compat_ptr(arg);
 
-			retn = copy_from_user(&compat_meta_log, p_compat_meta_log_user,
-				sizeof(struct compat_mmprofile_metalog_t));
-			{
-				meta_log.id = compat_meta_log.id;
-				meta_log.type = compat_meta_log.type;
-				meta_log.meta_data.data1 = compat_meta_log.meta_data.data1;
-				meta_log.meta_data.data2 = compat_meta_log.meta_data.data2;
-				meta_log.meta_data.data_type = compat_meta_log.meta_data.data_type;
-				meta_log.meta_data.size = compat_meta_log.meta_data.size;
-				meta_log.meta_data.p_data = compat_ptr(compat_meta_log.meta_data.p_data);
+			if (copy_from_user(&compat_meta_log, p_compat_meta_log_user,
+				sizeof(struct compat_mmprofile_metalog_t))) {
+				pr_debug("[MMPROFILE]: copy_from_user failed! line:%d\n",
+				 __LINE__);
+				return -EFAULT;
+			}
+			meta_log.id = compat_meta_log.id;
+			meta_log.type = compat_meta_log.type;
+			meta_log.meta_data.data1 = compat_meta_log.meta_data.data1;
+			meta_log.meta_data.data2 = compat_meta_log.meta_data.data2;
+			meta_log.meta_data.data_type = compat_meta_log.meta_data.data_type;
+			meta_log.meta_data.size = compat_meta_log.meta_data.size;
+			meta_log.meta_data.p_data = compat_ptr(compat_meta_log.meta_data.p_data);
+
+			if (meta_log.meta_data.size == 0 || meta_log.meta_data.size > 0x3000000) {
+				pr_debug("[MMPROFILE]: meta_log.meta_data.size Invalid! line:%d\n",
+				 __LINE__);
+				return -EFAULT;
 			}
 			mmprofile_log_meta_int(meta_log.id, meta_log.type, &(meta_log.meta_data), 1);
 		}
