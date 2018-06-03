@@ -2413,7 +2413,7 @@ static int mtk_uart_probe(struct platform_device *pdev)
 		err = PTR_ERR(ppinctrl);
 		pr_info("[UART%d][PinC]cannot find pinctrl. ptr_err:%ld\n",
 			pdev->id, PTR_ERR(ppinctrl));
-		return err;
+		/*return err;*/
 	}
 	set_uart_pinctrl(pdev->id, ppinctrl);
 	pr_debug("[UART%d][PinC]set idx:%d, ppinctrl:%p\n",
