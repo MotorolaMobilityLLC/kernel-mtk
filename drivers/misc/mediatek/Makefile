@@ -78,6 +78,7 @@ obj-$(CONFIG_MTK_CMDQ) += cmdq/
 obj-$(CONFIG_MTK_LCM) += lcm/
 obj-$(CONFIG_MTK_FB) += video/
 obj-$(CONFIG_MTK_SYNC) += sync/
+obj-$(CONFIG_MTK_LENS)   += lens/
 obj-$(CONFIG_RT_FLASHLIGHT)     += flashlight/richtek/
 obj-$(CONFIG_RT_REGMAP) += rt-regmap/
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += videocodec/
