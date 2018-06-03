@@ -42,6 +42,7 @@
 #endif
 
 #include <mt-plat/mtk_pwm.h>
+#include <mach/mtk_pwm_prv.h>
 #include <mt-plat/mtk_pwm_hal_pub.h>
 #include <mach/mtk_pwm_hal.h>
 
@@ -52,7 +53,6 @@
 
 #ifdef CONFIG_OF
 void __iomem *pwm_base;
-void __iomem *pwm_pericfg_base;
 #endif
 
 struct pwm_device {
@@ -1726,23 +1726,30 @@ static ssize_t pwm_debug_show(struct device *dev, struct device_attribute *attr,
 
 static DEVICE_ATTR(pwm_debug, 0644, pwm_debug_show, pwm_debug_store);
 
+
+static irqreturn_t mt_pwm_irq(int irq, void *dev_id)
+{
+	int i;
+	u32 sts;
+
+	for (i = 0; i < PWM_MAX*2; i++) {
+		sts = mt_get_intr_status(i);
+		if (sts) {
+			mt_set_intr_ack(i);
+			pr_err("PWM int!!ch=%x\n", i/2);
+			break;
+		}
+	}
+
+	return IRQ_HANDLED;
+}
+
 static int mt_pwm_probe(struct platform_device *pdev)
 {
-	int ret;
+	int ret, pwm_irqnr;
 
 #ifdef CONFIG_OF
-		struct device_node *node;
-
-		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-pericfg");
-		if (node) {
-			pwm_pericfg_base = of_iomap(node, 0);
-			pr_debug("PWM pwm_pericfg_base=0x%p\n", pwm_pericfg_base);
-			if (!pwm_pericfg_base)
-				pr_err("PWM pwm_pericfg_base error!!\n");
-		} else {
-			pr_err("PWM can't find pericfg node!!\n");
-		}
-
+		mt_pwm_platform_init();
 
 		pwm_base = of_iomap(pdev->dev.of_node, 0);
 		if (!pwm_base) {
@@ -1750,7 +1757,7 @@ static int mt_pwm_probe(struct platform_device *pdev)
 			return -ENODEV;
 		};
 
-#if 0
+#if 1
 		pwm_irqnr = irq_of_parse_and_map(pdev->dev.of_node, 0);
 		if (!pwm_irqnr) {
 			PWMDBG("PWM get irqnr failed\n");
@@ -1775,7 +1782,7 @@ PWMDBG("pwm base: 0x%p\n", pwm_base);
 		PWMDBG("error creating sysfs files: pwm_debug\n");
 
 #ifdef CONFIG_OF
-/* r = request_irq(pwm_irqnr, mt_pwm_irq, IRQF_TRIGGER_LOW, PWM_DEVICE, NULL); */
+	ret = request_irq(pwm_irqnr, mt_pwm_irq, IRQF_TRIGGER_LOW, PWM_DEVICE, NULL);
 #else
 /* request_irq(69, mt_pwm_irq, IRQF_TRIGGER_LOW, "mt6589_pwm", NULL); */
 #endif
