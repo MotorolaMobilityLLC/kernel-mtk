@@ -92,6 +92,7 @@ struct bmi160_acc_data {
 	atomic_t	filter;
 	s16			cali_sw[BMI160_ACC_AXES_NUM+1];
 	struct mutex lock;
+	struct mutex spi_lock;
 	/* +1: for 4-byte alignment */
 	s8		offset[BMI160_ACC_AXES_NUM+1];
 	s16		data[BMI160_ACC_AXES_NUM+1];
@@ -122,7 +123,6 @@ struct bmi160_acc_data {
 	u8 std;
 
 	struct spi_device *spi;
-	spinlock_t spi_lock;
 	u8 *spi_buffer;  /* only used for SPI transfer internal */
 	struct mt_chip_conf spi_mcc;
 };
@@ -278,6 +278,7 @@ int BMP160_spi_read_bytes(struct spi_device *spi, u16 addr, u8 *rx_buf, u32 data
 		return -ENOMEM;
 	}
 
+	mutex_lock(&obj_data->spi_lock);
 	tmp_buf = obj_data->spi_buffer;
 
 	/* switch to DMA mode if transfer length larger than 32 bytes */
@@ -295,64 +296,11 @@ int BMP160_spi_read_bytes(struct spi_device *spi, u16 addr, u8 *rx_buf, u32 data
 	spi_message_add_tail(&xfer[0], &msg);
 	spi_sync(obj_data->spi, &msg);
 	memcpy(rx_buf, tmp_buf + 1, data_len);
-#if 0
-	spi_message_init(&msg);
-	/* memset((tmp_buf + 4), 0x00, data_len + 1); */
-	/* 4 bytes align */
-	*(tmp_buf + 4) = 0xF1;
-	xfer[1].tx_buf = tmp_buf + 4;
-	xfer[1].rx_buf = tmp_buf + 4;
 
-	if (retry)
-		xfer[1].len = package * 1024;
-	else
-		xfer[1].len = data_len + 1;
-
-	xfer[1].delay_usecs = 5;
-	spi_message_add_tail(&xfer[1], &msg);
-	spi_sync(obj->spi, &msg);
-
-	/* copy received data */
-	if (retry)
-		memcpy(rx_buf, (tmp_buf + 5), (package * 1024 - 1));
-	else
-		memcpy(rx_buf, (tmp_buf + 5), data_len);
-
-	/* send reminder SPI data */
-	if (retry) {
-		addr = addr + package * 1024 - 2;
-		spi_message_init(&msg);
-
-		*tmp_buf = 0xF0;
-		*(tmp_buf + 1) = (u8)((addr >> 8) & 0xFF);
-		*(tmp_buf + 2) = (u8)(addr & 0xFF);
-		xfer[2].tx_buf = tmp_buf;
-		xfer[2].len = 3;
-		xfer[2].delay_usecs = 5;
-		spi_message_add_tail(&xfer[2], &msg);
-		spi_sync(obj->spi, &msg);
-
-		spi_message_init(&msg);
-		*(tmp_buf + 4) = 0xF1;
-		xfer[3].tx_buf = tmp_buf + 4;
-		xfer[3].rx_buf = tmp_buf + 4;
-		xfer[3].len = reminder + 1;
-		xfer[3].delay_usecs = 5;
-		spi_message_add_tail(&xfer[3], &msg);
-		spi_sync(obj->spi, &msg);
-
-		memcpy((rx_buf + package * 1024 - 1), (tmp_buf + 6), (reminder - 1));
-	}
-
-	/* restore to FIFO mode if has used DMA */
-	if ((data_len + 1) > 32) {
-		obj->spi_mcc.com_mod = FIFO_TRANSFER;
-		spi_setup(obj->spi);
-	}
-#endif
 	kfree(xfer);
 	if (xfer != NULL)
 		xfer = NULL;
+	mutex_unlock(&obj_data->spi_lock);
 
 	return 0;
 }
@@ -385,6 +333,8 @@ int BMP160_spi_write_bytes(struct spi_device *spi, u16 addr, u8 *tx_buf, u32 dat
 		obj_data->spi_mcc.com_mod = DMA_TRANSFER;
 		spi_setup(obj_data->spi);
 	}
+
+	mutex_lock(&obj_data->spi_lock);
 	spi_message_init(&msg);
 	*tmp_buf = (u8)(addr & 0xFF);
 	if (retry) {
@@ -419,6 +369,7 @@ int BMP160_spi_write_bytes(struct spi_device *spi, u16 addr, u8 *tx_buf, u32 dat
 	kfree(xfer);
 	if (xfer != NULL)
 		xfer = NULL;
+	mutex_unlock(&obj_data->spi_lock);
 
 	return 0;
 }
@@ -2133,7 +2084,7 @@ static long bmi160_acc_compat_ioctl(struct file *file, unsigned int cmd,
 
 	void __user *arg32 = compat_ptr(arg);
 
-	GSE_ERR("bmi160_acc_compat_ioctl cmd:0x%x\n", cmd);
+	/* GSE_ERR("bmi160_acc_compat_ioctl cmd:0x%x\n", cmd); */
 
 	if (!file->f_op || !file->f_op->unlocked_ioctl)
 		return -ENOTTY;
@@ -3438,7 +3389,6 @@ static int bmi160_acc_spi_probe(struct spi_device *spi)
 		goto exit;
 	}
 
-	spin_lock_init(&obj->spi_lock);
 	/* Initialize the driver data */
 	obj->spi = spi;
 
@@ -3468,6 +3418,7 @@ static int bmi160_acc_spi_probe(struct spi_device *spi)
 	atomic_set(&obj->trace, 0);
 	atomic_set(&obj->suspend, 0);
 	mutex_init(&obj->lock);
+	mutex_init(&obj->spi_lock);
 
 	err = bmi160_acc_init_client(obj, 1);
 	if(err) {
@@ -3602,10 +3553,8 @@ static int bmi160_acc_spi_remove(struct spi_device *spi)
 		obj->spi_buffer = NULL;
 	}
 	spi_clk_enable(obj, 0);
-	spin_lock_irq(&obj->spi_lock);
 	spi_set_drvdata(spi, NULL);
 	obj->spi = NULL;
-	spin_unlock_irq(&obj->spi_lock);
 
 	misc_deregister(&bmi160_acc_device);
 
