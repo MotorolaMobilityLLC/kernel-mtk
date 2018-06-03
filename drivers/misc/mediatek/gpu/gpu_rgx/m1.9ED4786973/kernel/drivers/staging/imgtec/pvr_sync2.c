@@ -1197,12 +1197,13 @@ static void pvr_sync_foreign_sync_pt_signaled(struct sync_fence *fence,
 	}
 }
 
-static struct pvr_sync_kernel_pair *
+static PSYNC_CHECKPOINT
 pvr_sync_create_waiter_for_foreign_sync(int fd, PSYNC_CHECKPOINT_CONTEXT psSyncCheckpointContext)
 {
 	struct pvr_sync_kernel_pair *kernel = NULL;
 	struct pvr_sync_fence_waiter *waiter;
 	struct pvr_sync_fence *sync_fence;
+	PSYNC_CHECKPOINT checkpoint;
 	struct sync_fence *fence;
 	enum PVRSRV_ERROR error;
 	int err;
@@ -1241,12 +1242,13 @@ pvr_sync_create_waiter_for_foreign_sync(int fd, PSYNC_CHECKPOINT_CONTEXT psSyncC
 	//pr_err("pvr_sync2: %s:              pvr_sync_data.global_sync_checkpoint_context=<%p>\n",__func__, (void*)pvr_sync_data.global_sync_checkpoint_context);
 	error = SyncCheckpointAlloc(pvr_sync_data.global_sync_checkpoint_context, (PVRSRV_TIMELINE)-1,
 								fence->name,
-								&kernel->fence_sync->client_sync_checkpoint);
+								&checkpoint);
 	if (error != PVRSRV_OK) {
 		pr_err("pvr_sync2: %s: Failed to allocate sync checkpoint (%s)\n",
 		       __func__, PVRSRVGetErrorStringKM(error));
 		goto err_free_fence_sync;
 	}
+	kernel->fence_sync->client_sync_checkpoint = checkpoint;
 	//pr_err("pvr_sync2: %s:   ...done, kernel->fence_sync->client_sync_checkpoint=<%p>\n",__func__, (void*)kernel->fence_sync->client_sync_checkpoint);
 
 	//pr_err("pvr_sync2: %s:   filling-in fence_sync vAddr(0x%x)\n",__func__, SyncCheckpointGetFirmwareAddr(kernel->fence_sync->client_sync_checkpoint));
@@ -1281,6 +1283,13 @@ pvr_sync_create_waiter_for_foreign_sync(int fd, PSYNC_CHECKPOINT_CONTEXT psSyncC
 	waiter->kernel = kernel;
 	waiter->sync_fence = sync_fence;
 
+	/* Take an extra ref on the checkpoint for the reference handed over to
+	 * the firmware.
+	 * This must be done before the waiter_init, as the waiter can be called
+	 * and it's reference dropped at _any time_
+	 */
+	SyncCheckpointTakeRef(checkpoint);
+
 	//pr_err("pvr_sync2: %s:   initialising-fence waiter\n",__func__);
 	sync_fence_waiter_init(&waiter->waiter,
 			       pvr_sync_foreign_sync_pt_signaled);
@@ -1303,21 +1312,22 @@ pvr_sync_create_waiter_for_foreign_sync(int fd, PSYNC_CHECKPOINT_CONTEXT psSyncC
 		 * signalled. In either case, roll back what we've done and
 		 * skip using this sync_pt for synchronization.
 		 */
-		goto err_free_waiter;
+		goto err_put_checkpoint_ref;
 	}
 
 	//pr_err("pvr_sync2: %s: ...done (ok)\n",__func__);
 err_out:
-	return kernel;
-err_free_waiter:
+	return checkpoint;
+err_put_checkpoint_ref:
+	SyncCheckpointDropRef(checkpoint);
 	kfree(waiter);
 err_free_cleanup_sync:
 #if defined(PVR_SYNC_CHECKPOINTS_NEED_CLEANUP_SYNC)
 	sync_pool_put(kernel->cleanup_sync);
 err_free_checkpoint:
 #endif
-	SyncCheckpointFree(kernel->fence_sync->client_sync_checkpoint);
-	kernel->fence_sync->client_sync_checkpoint = NULL;
+	SyncCheckpointFree(checkpoint);
+	checkpoint = NULL;
 err_free_fence_sync:
 	kfree(kernel->fence_sync);
 	kernel->fence_sync = NULL;
@@ -1824,7 +1834,7 @@ enum PVRSRV_ERROR pvr_sync_resolve_fence(PSYNC_CHECKPOINT_CONTEXT psSyncCheckpoi
 		struct sync_pt *sync_pt;
 		struct pvr_sync_kernel_pair *sync_kernel;
 		u32 points_on_fence = 0;
-		struct pvr_sync_kernel_pair *foreign_sync_kernel = NULL;
+		PSYNC_CHECKPOINT foreign_checkpoint = NULL;
 		PSYNC_CHECKPOINT *next_checkpoint;
 		int j;
 
@@ -1861,7 +1871,8 @@ enum PVRSRV_ERROR pvr_sync_resolve_fence(PSYNC_CHECKPOINT_CONTEXT psSyncCheckpoi
 				//pr_err("pvr_sync2: %s:   sync_pt=<%p> is not from a pvr timeline\n",__func__, (void*)sync_pt);
 				is_foreign_sync_pt = true;
 				//pr_err("pvr_sync2: %s:   sync_pt=<%p> is foreign - creating waiter...\n",__func__, (void*)sync_pt);
-				foreign_sync_kernel = pvr_sync_create_waiter_for_foreign_sync(fence_to_resolve, psSyncCheckpointContext);
+				foreign_checkpoint = pvr_sync_create_waiter_for_foreign_sync(fence_to_resolve,
+					psSyncCheckpointContext);
 				add_foreign_sync = true;
 				//pr_err("pvr_sync2: %s:   ...done, foreign_sync_kernel=<%p>\n",__func__, (void*)foreign_sync_kernel);
 			}
@@ -1902,13 +1913,19 @@ enum PVRSRV_ERROR pvr_sync_resolve_fence(PSYNC_CHECKPOINT_CONTEXT psSyncCheckpoi
 			}
 			else {
 				//pr_err("pvr_sync2: %s: skipping rest of loop as a foreign sync pt\n",__func__);
-				if (foreign_sync_kernel && add_foreign_sync) {
+				if (foreign_checkpoint && add_foreign_sync) {
 					//pr_err("pvr_sync2: %s: ...next_checkpoint (fs) = <%p>\n",__func__, (void*)foreign_sync_kernel->fence_sync->client_sync_checkpoint);//next_checkpoint);
 					/* Take ref on sync_checkpoint - this will be dropped by the caller
 					 * (see comment for the other call to SyncCheckpointTakeRef, above).
 					 */
-					SyncCheckpointTakeRef(foreign_sync_kernel->fence_sync->client_sync_checkpoint);
-					*next_checkpoint = foreign_sync_kernel->fence_sync->client_sync_checkpoint;
+					/* For foreign points, an extra
+					 * checkpoint reference was taken at
+					 * creation time to ensure it wasn't
+					 * completed and free'd before we got
+					 * here, so ownership of that reference
+					 * is effectively passed to the fimware
+					 */
+					*next_checkpoint = foreign_checkpoint;
 					next_checkpoint++;
 					points_on_fence++;
 				}
