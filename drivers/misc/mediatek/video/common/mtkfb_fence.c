@@ -682,7 +682,7 @@ bool mtkfb_update_buf_info(unsigned int session_id, unsigned int layer_id, unsig
 			buf->mva_offset = mva_offset;
 			buf->seq = seq;
 			ret = true;
-			MMProfileLogEx(ddp_mmp_get_events()->primary_seq_insert, MMProfileFlagPulse,
+			mmprofile_log_ex(ddp_mmp_get_events()->primary_seq_insert, MMPROFILE_FLAG_PULSE,
 					buf->mva + buf->mva_offset, buf->seq);
 			break;
 		}
