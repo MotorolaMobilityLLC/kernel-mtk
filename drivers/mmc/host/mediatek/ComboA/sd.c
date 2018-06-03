@@ -1523,6 +1523,14 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	case MMC_CMDQ_TASK_MGMT:
 		break;
 #endif
+	case MMC_GEN_CMD:
+		if (cmd->data->flags & MMC_DATA_WRITE)
+			rawcmd |= (1 << 13);
+		if (cmd->data->blocks > 1)
+			rawcmd |= (2 << 11);
+		else
+			rawcmd |= (1 << 11);
+		break;
 	case SD_IO_RW_EXTENDED:
 		if (cmd->data->flags & MMC_DATA_WRITE)
 			rawcmd |= (1 << 13);
@@ -4437,8 +4445,7 @@ static void msdc_check_data_timeout(struct work_struct *work)
 		return;
 	}
 
-	if (msdc_use_async_dma(data->host_cookie)
-	 && (host->need_tune == TUNE_NONE)) {
+	if (msdc_use_async_dma(data->host_cookie)) {
 		msdc_dma_stop(host);
 		msdc_dma_clear(host);
 		msdc_reset_hw(host->id);
@@ -4489,6 +4496,8 @@ static void msdc_check_data_timeout(struct work_struct *work)
 		msdc_gate_clock(host, 1);
 		host->error |= REQ_DAT_ERR;
 	} else {
+		pr_info("[%s]: Warn! should not go here %d\n",
+			__func__, __LINE__);
 		/* do nothing, since legacy mode or async tuning
 		 * have it own timeout.
 		 */
