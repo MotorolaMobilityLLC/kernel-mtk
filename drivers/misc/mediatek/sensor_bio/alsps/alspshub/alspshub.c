@@ -45,8 +45,10 @@ struct alspshub_ipi_data {
 	atomic_t	ps_thd_val;
 	ulong		enable;				/*enable mask */
 	ulong		pending_intr;		/*pending interrupt */
-	bool factory_enable;
-	bool android_enable;
+	bool als_factory_enable;
+	bool ps_factory_enable;
+	bool als_android_enable;
+	bool ps_android_enable;
 };
 
 static struct alspshub_ipi_data *obj_ipi_data;
@@ -290,7 +292,7 @@ static int ps_recv_data(struct data_unit_t *event, void *reserved)
 {
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 
-	if (READ_ONCE(obj->android_enable) == false)
+	if (READ_ONCE(obj->ps_android_enable) == false)
 		return 0;
 
 	if (!obj)
@@ -306,7 +308,7 @@ static int als_recv_data(struct data_unit_t *event, void *reserved)
 {
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 
-	if (READ_ONCE(obj->android_enable) == false)
+	if (READ_ONCE(obj->als_android_enable) == false)
 		return 0;
 
 	if (event->flush_action == FLUSH_ACTION)
@@ -342,9 +344,9 @@ static int alshub_factory_enable_sensor(bool enable_disable, int64_t sample_peri
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 
 	if (enable_disable == true)
-		WRITE_ONCE(obj->factory_enable, true);
+		WRITE_ONCE(obj->als_factory_enable, true);
 	else
-		WRITE_ONCE(obj->factory_enable, false);
+		WRITE_ONCE(obj->als_factory_enable, false);
 
 	if (enable_disable == true) {
 		err = sensor_set_delay_to_hub(ID_LIGHT, sample_periods_ms);
@@ -547,9 +549,9 @@ static int als_enable_nodata(int en)
 	APS_LOG("obj_ipi_data als enable value = %d\n", en);
 
 	if (en == true)
-		WRITE_ONCE(obj->android_enable, true);
+		WRITE_ONCE(obj->als_android_enable, true);
 	else
-		WRITE_ONCE(obj->android_enable, false);
+		WRITE_ONCE(obj->als_android_enable, false);
 
 	res = sensor_enable_to_hub(ID_LIGHT, en);
 	if (res < 0) {
@@ -633,9 +635,9 @@ static int ps_enable_nodata(int en)
 
 	APS_LOG("obj_ipi_data als enable value = %d\n", en);
 	if (en == true)
-		WRITE_ONCE(obj->android_enable, true);
+		WRITE_ONCE(obj->ps_android_enable, true);
 	else
-		WRITE_ONCE(obj->android_enable, false);
+		WRITE_ONCE(obj->ps_android_enable, false);
 
 	res = sensor_enable_to_hub(ID_PROXIMITY, en);
 	if (res < 0) {
@@ -768,9 +770,10 @@ static int alspshub_probe(struct platform_device *pdev)
 	obj->ps_cali = 0;
 	atomic_set(&obj->ps_thd_val_low, 21);
 	atomic_set(&obj->ps_thd_val_high, 28);
-	WRITE_ONCE(obj->factory_enable, false);
-	WRITE_ONCE(obj->android_enable, false);
-
+	WRITE_ONCE(obj->als_factory_enable, false);
+	WRITE_ONCE(obj->als_android_enable, false);
+	WRITE_ONCE(obj->ps_factory_enable, false);
+	WRITE_ONCE(obj->ps_android_enable, false);
 
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);
