@@ -832,7 +832,7 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 		return;
 
 	if (log_enable)
-		pr_crit(TAG"get_sysinfo benchmark:%d, native:%d, cur_load:%d, cur_tlp:%d, btask:%d, htask:%d\n",
+		pr_debug(TAG"get_sysinfo benchmark:%d, native:%d, cur_load:%d, cur_tlp:%d, btask:%d, htask:%d\n",
 		app_is_benchmark, native_is_running, cur_loads, cur_tlp, btask, htask);
 
 	if (app_is_benchmark == 1) { /* foreground app is JAVA benchmark */
@@ -844,7 +844,7 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 				app_up_count = 0;
 
 			if (app_up_count >= app_up_times) {
-				pr_crit(TAG"get_sysinfo benchmark is running!!!\n");
+				pr_debug(TAG"get_sysinfo benchmark is running!!!\n");
 				app_is_running = 1;
 				if (smart_context_obj) {
 					ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
@@ -862,7 +862,7 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 				app_down_count = 0;
 
 			if (app_down_count >= app_down_times) {
-				pr_crit(TAG"get_sysinfo benchmark is not running!!!\n");
+				pr_debug(TAG"get_sysinfo benchmark is not running!!!\n");
 				app_is_running = 0;
 				if (smart_context_obj) {
 					ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
@@ -879,7 +879,7 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 			native_down_count = 0;
 
 		if (native_down_count >= native_down_times) {
-			pr_crit(TAG"get_sysinfo EXIT!!!!!\n");
+			pr_debug(TAG"get_sysinfo EXIT!!!!!\n");
 			native_is_running = 0;
 			native_down_count = 0; /* reset */
 			if (smart_context_obj) { /* native is stop */
@@ -894,7 +894,7 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 			native_up_count++;
 			java_up_count = 0;
 			if (native_up_count >= native_up_times) { /* native */
-				pr_crit(TAG"get_sysinfo native MATCH!!!!!\n");
+				pr_debug(TAG"get_sysinfo native MATCH!!!!!\n");
 				native_is_running = 1;
 				native_up_count = 0; /* reset */
 				sched_max_util_task(NULL, &pid, NULL, NULL);	/* the heavist task */
@@ -1027,7 +1027,7 @@ static int tsmart_thread(void *ptr)
 		event = tsmart.smart_event;
 		spin_unlock_irqrestore(&tsmart.smart_lock, flags);
 
-		/*pr_crit(TAG"tsmart_thread event:%d\n", event); */
+		/*pr_debug(TAG"tsmart_thread event:%d\n", event); */
 
 		smart_get_sysinfo(&cur_loads, &cur_tlp, &btask, &htask);
 		mt_smart_update_sysinfo(cur_loads, cur_tlp, btask, htask);
