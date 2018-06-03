@@ -269,6 +269,8 @@ struct charger_manager {
 	/* dynamic_cv */
 	bool enable_dynamic_cv;
 
+	bool cmd_discharging;
+
 	/* battery warning */
 	unsigned int notify_code;
 	unsigned int notify_test_mode;
