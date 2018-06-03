@@ -866,6 +866,7 @@ EXPORT_SYMBOL(sd_autok);
 
 int sdio_autok(void)
 {
+#ifdef CONFIG_MTK_COMBO_COMM
 	struct msdc_host *host = mtk_msdc_host[2];
 	int timeout = 0;
 
@@ -896,6 +897,10 @@ int sdio_autok(void)
 	}
 
 	pr_err("sdio autok done!");
+#endif
+
+#else
+	spm_msdc_dvfs_setting(KIR_AUTOK_SDIO, 1);
 #endif
 
 	return 0;
