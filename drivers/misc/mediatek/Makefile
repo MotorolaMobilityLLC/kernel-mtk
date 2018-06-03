@@ -190,6 +190,7 @@ obj-$(CONFIG_MTK_ICCS_SUPPORT)+= iccs/
 obj-$(CONFIG_MACH_MT8167) += xo/
 obj-$(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)	+= pkt_track/
 obj-$(CONFIG_MTK_GZ_KREE)  += geniezone/
+obj-$(CONFIG_MTK_ES_REG) += es_reg/
 
 #timer
 obj-y += timer/

@@ -527,6 +527,7 @@ source "drivers/misc/mediatek/fiq_cache/Kconfig"
 source "drivers/misc/mediatek/base/power/mcdi/Kconfig"
 source "drivers/misc/mediatek/geniezone/Kconfig"
 source "drivers/misc/mediatek/timer/Kconfig"
+source "drivers/misc/mediatek/es_reg/Kconfig"
 
 config MTK_DM_VERITY_OFF
 	bool "Disable dm-verity"
