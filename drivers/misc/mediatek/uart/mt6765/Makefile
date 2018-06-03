@@ -11,16 +11,8 @@
 # GNU General Public License for more details.
 #
 
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 
-obj-$(CONFIG_ARCH_MT6570) += 2.0/
-obj-$(CONFIG_ARCH_MT6580) += 2.0/
-obj-$(CONFIG_ARCH_MT6735) += 2.0/
-obj-$(CONFIG_ARCH_MT6735M) += 2.0/
-obj-$(CONFIG_ARCH_MT6753) += 2.0/
-obj-$(CONFIG_ARCH_MT6755) += 2.0/
-obj-$(CONFIG_ARCH_MT6797) += 2.0/
-obj-$(CONFIG_ARCH_MT6757) += 2.0/
-obj-$(CONFIG_MACH_MT6758) += 2.4/
-obj-$(CONFIG_ARCH_ELBRUS) += 2.0/
-obj-$(CONFIG_MACH_MT6765) += 2.0/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/uart
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)
+
+obj-$(CONFIG_MTK_SERIAL) := platform_uart.o
