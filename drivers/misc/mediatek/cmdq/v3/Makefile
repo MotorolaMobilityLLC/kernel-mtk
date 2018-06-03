@@ -13,10 +13,17 @@
 
 # common driver code for CMDQ
 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM) \
-             -I$(srctree)/drivers/misc/mediatek/smi/ \
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/ \
              -I$(srctree)/drivers/misc/mediatek/mmp/ \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include
+
+MDP_PLATFORM_DIR=$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)
+platformdir_exists=$(shell if [ -d ${MDP_PLATFORM_DIR} ]; then echo "y"; else echo "n"; fi;)
+ifeq ($(platformdir_exists), y)
+ccflags-y += -I$(MDP_PLATFORM_DIR)/
+else
+ccflags-y += -DCMDQ_COMMON_ENG_SUPPORT
+endif
 
 # Enable AEE
 ccflags-y += -DCMDQ_AEE_READY
@@ -69,4 +76,6 @@ obj-y += cmdq_prof.o
 obj-y += cmdq_test.o
 obj-y += cmdq_sec.o
 
+ifeq ($(platformdir_exists), y)
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+endif

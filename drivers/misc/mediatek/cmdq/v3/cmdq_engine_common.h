@@ -81,11 +81,13 @@ enum CMDQ_ENG_ENUM {
 
 	/* DPE */
 	CMDQ_ENG_DPE,			/* 54 */
+	CMDQ_ENG_RSC,			/* 55 */
+	CMDQ_ENG_GEPF,			/* 56 */
 
 	/* temp: CMDQ internal usage */
-	CMDQ_ENG_CMDQ,			/* 55 */
-	CMDQ_ENG_DISP_MUTEX,		/* 56 */
-	CMDQ_ENG_MMSYS_CONFIG,		/* 57 */
+	CMDQ_ENG_CMDQ,			/* 57 */
+	CMDQ_ENG_DISP_MUTEX,		/* 58 */
+	CMDQ_ENG_MMSYS_CONFIG,		/* 59 */
 
 	CMDQ_MAX_ENGINE_COUNT		/* ALWAYS keep at the end */
 };
