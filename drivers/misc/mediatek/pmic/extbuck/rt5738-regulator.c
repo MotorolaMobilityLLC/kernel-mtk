@@ -489,14 +489,14 @@ static int rt5738_i2c_remove(struct i2c_client *i2c)
 	return 0;
 }
 
+/* Must reserve one empty object at the end */
 static const struct of_device_id rt_match_table[] = {
 	{ .compatible = RT5738_CMPT_STR_0, },
 	{ .compatible = RT5738_CMPT_STR_1, },
 #if defined(RT5738_NAME_2)
 	{ .compatible = RT5738_CMPT_STR_2, },
-#else
-	{ },
 #endif
+	{ },
 };
 
 static const struct i2c_device_id rt_dev_id[] = {
