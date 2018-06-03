@@ -88,6 +88,7 @@ bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool setDmicPath(bool _enable);
 
 void SetULSrcEnable(bool bEnable);
+void SetDLSrcEnable(bool bEnable);
 void SetADDAEnable(bool bEnable);
 bool set_chip_adda_enable(bool bEnable);
 bool set_chip_ul_src_enable(bool enable);

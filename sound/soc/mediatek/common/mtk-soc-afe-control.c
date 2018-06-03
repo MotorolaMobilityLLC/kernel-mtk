@@ -1095,16 +1095,16 @@ bool SetI2SAdcEnable(bool bEnable)
 		* ADDA UL SRC (AFE_ADDA_UL_SRC_CON0)
 		*/
 		EnableAfe(true);
-		SetADDAEnable(bEnable);
-		SetULSrcEnable(bEnable);
+		SetADDAEnable(true);
+		SetULSrcEnable(true);
 	} else {
 		/* Disable UL SRC order: (reverse)
 		* ADDA UL SRC (AFE_ADDA_UL_SRC_CON0) ->
 		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
 		* AFE (AFE_DAC_CON0) -> UL clock (AUDIO_TOP_CON0)
 		*/
-		SetULSrcEnable(bEnable);
-		SetADDAEnable(bEnable);
+		SetULSrcEnable(false);
+		SetADDAEnable(false);
 		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000) {
 			/* power on adc hires */
 			AudDrv_ADC_Hires_Clk_Off();
