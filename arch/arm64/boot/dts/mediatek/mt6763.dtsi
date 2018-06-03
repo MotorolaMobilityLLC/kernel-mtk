@@ -804,7 +804,7 @@
 	};
 
 	bus_dbg@10208000 {
-		compatible = "mediatek,bus_dbg";
+		compatible = "mediatek,bus_dbg-v2";
 		reg = <0 0x10208000 0 0x1000>;
 		interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_LOW>;
 	};
