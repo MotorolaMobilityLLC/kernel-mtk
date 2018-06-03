@@ -21,7 +21,7 @@
 #include <linux/proc_fs.h>
 #include <linux/module.h>
 #include <linux/version.h>
-#include "mt_sched_drv.h"
+#include "mtk_sched_drv.h"
 
 #define SCHED_DEV_NAME "sched"
 
