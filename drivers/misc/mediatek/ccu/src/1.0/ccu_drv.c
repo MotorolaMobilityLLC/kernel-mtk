@@ -334,10 +334,17 @@ int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd)
 					       msecs_to_jiffies(3 * 1000));
 
 	/* ret == 0, if timeout; ret == -ERESTARTSYS, if signal interrupt */
-	if (ret < 1) {
+	if (ret == 0) {
 		LOG_ERR("timeout: pop a command! ret=%d\n", ret);
 		*rcmd = NULL;
 		return -1;
+	} else if (ret < 0) {
+		LOG_ERR("interrupted by system signal: %d\n", ret);
+
+		if (ret == -ERESTARTSYS)
+			LOG_ERR("interrupted as -ERESTARTSYS\n");
+
+		return ret;
 	}
 	/*mutex_lock(&user->data_mutex);*/
 	/* This part should not be happened */

@@ -295,6 +295,7 @@ typedef enum ccu_eng_status_e {
 	CCU_ENG_STATUS_INVALID,
 	CCU_ENG_STATUS_FLUSH,
 	CCU_ENG_STATUS_FAILURE,
+	CCU_ENG_STATUS_ERESTARTSYS,
 } ccu_eng_status_t;
 
 /*---------------------------------------------------------------------------*/

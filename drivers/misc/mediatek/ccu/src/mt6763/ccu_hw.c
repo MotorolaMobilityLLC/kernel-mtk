@@ -252,8 +252,8 @@ static inline void lock_command(void)
 
 static inline int wait_command(void)
 {
-	return (wait_event_interruptible_timeout(cmd_wait, cmd_done,
-				msecs_to_jiffies(1 * 1000)) > 0) ? 0 : -ETIMEDOUT;
+	return wait_event_interruptible_timeout(cmd_wait, cmd_done,
+				msecs_to_jiffies(1 * 1000));
 }
 
 static inline void unlock_command(void)
@@ -764,9 +764,17 @@ int ccu_send_command(ccu_cmd_st *pCmd)
 	/* 2. wait until done */
 	LOG_DBG("wait ack command...\n");
 	ret = wait_command();
-	if (ret) {
+	if (ret == 0) {
 		pCmd->status = CCU_ENG_STATUS_TIMEOUT;
-		LOG_ERR("timeout to wait ack command\n");
+		LOG_ERR("timeout to wait ack command: %d\n", pCmd->task.msg_id);
+		goto out;
+	} else if (ret < 0) {
+		LOG_ERR("interrupted by system signal: %d/%d\n", pCmd->task.msg_id, ret);
+
+		if (ret == -ERESTARTSYS)
+			LOG_ERR("interrupted as -ERESTARTSYS\n");
+
+		pCmd->status = ret;
 		goto out;
 	}
 
