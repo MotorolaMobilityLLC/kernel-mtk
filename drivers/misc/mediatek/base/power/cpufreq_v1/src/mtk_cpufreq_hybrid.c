@@ -215,7 +215,7 @@ int Ripi_cpu_dvfs_thread(void *data)
 
 			/* Avoid memory issue */
 			if (p->mt_policy && p->mt_policy->governor &&
-				p->mt_policy->governor_enabled &&
+				/* p->mt_policy->governor_enabled && */
 				(p->mt_policy->cpu < 10) &&
 				(p->mt_policy->cpu >= 0)) {
 				int cid;
