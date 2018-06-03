@@ -37,8 +37,9 @@
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_spm_pmic_wrap.h>
+#if defined(CONFIG_MACH_MT6799)
 #include <mt6337_api.h>
-
+#endif
 #include <mtk_power_gs_api.h>
 
 #ifdef CONFIG_MTK_ICCS_SUPPORT
@@ -352,7 +353,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.reg_sspm2spm_int2_mask_b = 1,
 	.reg_sspm2spm_int3_mask_b = 1,
 	.reg_dqssoc_req_mask_b = 0,
-	/* .reg_gce_vrf18_req2_mask_b = 0, */
+	.reg_gce_vrf18_req2_mask_b = 0,
 
 	/* SPM_SRC3_MASK */
 	.reg_mpwfi_op = 1,
@@ -389,10 +390,10 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
 
 	/* SPM_SRC4_MASK */
-	/* .reg_ccif4_ap_event_mask_b = 1, */
-	/* .reg_ccif4_md_event_mask_b = 1, */
-	/* .reg_ccif5_ap_event_mask_b = 1, */
-	/* .reg_ccif5_md_event_mask_b = 1, */
+	.reg_ccif4_ap_event_mask_b = 1,
+	.reg_ccif4_md_event_mask_b = 1,
+	.reg_ccif5_ap_event_mask_b = 1,
+	.reg_ccif5_md_event_mask_b = 1,
 
 	/* SPM_WAKEUP_EVENT_MASK */
 	.reg_wakeup_event_mask = 0xF1282208,
@@ -455,7 +456,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.mcu17_wfi_en = 0,
 
 	/* SPM_RSV_CON2 */
-	/* .spm_rsv_con2 = 0, */ /* TODO */
+	.spm_rsv_con2 = 0,
 
 	/* Auto-gen End */
 #endif
@@ -469,10 +470,9 @@ static bool gSpm_sodi3_en = true;
 
 static void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
-#ifndef CONFIG_MACH_MT6759
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef CONFIG_MACH_MT6799
 	unsigned int value = 0;
-	unsigned int vcore_lp_mode = 0;
 
 	/* Set PMIC wrap table for Vproc/Vsram voltage decreased */
 	/* VSRAM_DVFS1 */
@@ -498,41 +498,22 @@ static void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
 								IDX_ALL_VCORE_SUSPEND,
 								pwrctrl->vcore_volt_pmic_val);
-
+	wk_mt6337_set_lp_setting();
+#endif
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	spm_pmic_power_mode(PMIC_PWR_SODI3, 0, 0);
-
-	vcore_lp_mode = !!(operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE);
-
-	pmic_config_interface_nolock(
-		PMIC_RG_BUCK_VCORE_HW0_OP_EN_ADDR,
-		vcore_lp_mode,
-		PMIC_RG_BUCK_VCORE_HW0_OP_EN_MASK,
-		PMIC_RG_BUCK_VCORE_HW0_OP_EN_SHIFT);
-
-	pmic_config_interface_nolock(
-		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_ADDR,
-		vcore_lp_mode,
-		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_MASK,
-		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
-
-#ifdef CONFIG_MACH_MT6799
-	wk_mt6337_set_lp_setting();
-#endif
-#endif
+	spm_pmic_vcore_setting((operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE)?1:0);
 #endif
 	__spm_sync_pcm_flags(pwrctrl);
 }
 
 static void spm_sodi3_post_process(void)
 {
-#ifndef CONFIG_MACH_MT6759
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #ifdef CONFIG_MACH_MT6799
 	wk_mt6337_restore_lp_setting();
-#endif
 #endif
 #endif
 }
@@ -639,6 +620,8 @@ static void spm_sodi3_pcm_setup_before_wfi(
 		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
 	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 		SPM_PWR_CTRL_SODI, PWR_OPP_LEVEL, pwrctrl->opp_level);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+		SPM_PWR_CTRL_SODI, PWR_WDT_DISABLE, pwrctrl->wdt_disable);
 }
 
 static void spm_sodi3_pcm_setup_after_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)

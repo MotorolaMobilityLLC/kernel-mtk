@@ -324,7 +324,7 @@ static unsigned long    slidle_block_cnt[NR_REASONS] = {0};
 static unsigned long    rgidle_cnt[NR_CPUS] = {0};
 
 /* idle_notifier */
-static ATOMIC_NOTIFIER_HEAD(mtk_idle_notifier);
+static RAW_NOTIFIER_HEAD(mtk_idle_notifier);
 
 int mtk_idle_notifier_register(struct notifier_block *n)
 {
@@ -348,7 +348,7 @@ int mtk_idle_notifier_register(struct notifier_block *n)
 			index++, (unsigned long)n->notifier_call);
 #endif
 
-	ret = atomic_notifier_chain_register(&mtk_idle_notifier, n);
+	ret = raw_notifier_chain_register(&mtk_idle_notifier, n);
 
 	return ret;
 }
@@ -356,13 +356,13 @@ EXPORT_SYMBOL_GPL(mtk_idle_notifier_register);
 
 void mtk_idle_notifier_unregister(struct notifier_block *n)
 {
-	atomic_notifier_chain_unregister(&mtk_idle_notifier, n);
+	raw_notifier_chain_unregister(&mtk_idle_notifier, n);
 }
 EXPORT_SYMBOL_GPL(mtk_idle_notifier_unregister);
 
 void mtk_idle_notifier_call_chain(unsigned long val)
 {
-	atomic_notifier_call_chain(&mtk_idle_notifier, val, NULL);
+	raw_notifier_call_chain(&mtk_idle_notifier, val, NULL);
 }
 EXPORT_SYMBOL_GPL(mtk_idle_notifier_call_chain);
 
@@ -1154,6 +1154,7 @@ static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_VCORE_DFS |
 #ifndef CONFIG_MACH_MT6759
 	SPM_FLAG_DIS_PERI_PDN |
+	SPM_FLAG_ENABLE_ATF_ABORT |
 #endif
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
@@ -1168,6 +1169,7 @@ static u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_VCORE_DFS |
 #ifndef CONFIG_MACH_MT6759
 	SPM_FLAG_DIS_PERI_PDN |
+	SPM_FLAG_ENABLE_ATF_ABORT |
 #endif
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |

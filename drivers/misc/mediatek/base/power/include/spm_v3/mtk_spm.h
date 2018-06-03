@@ -96,6 +96,7 @@ enum {
 	PMIC_PWR_NUM,
 };
 void spm_pmic_power_mode(int mode, int force, int lock);
+void spm_pmic_vcore_setting(int lp_mode);
 #endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT

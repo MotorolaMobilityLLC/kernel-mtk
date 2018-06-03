@@ -171,6 +171,10 @@ u32 __attribute__((weak)) aee_rr_curr_sodi_val(void)
 }
 #endif
 
+void __attribute__((weak)) mt_power_gs_dump_sodi3(void)
+{
+}
+
 static inline void spm_sodi_footprint(enum spm_sodi_step step)
 {
 #if SPM_AEE_RR_REC
