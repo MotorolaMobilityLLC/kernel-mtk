@@ -23,7 +23,7 @@
 #include "sspm_helper.h"
 #include "sspm_sysfs.h"
 
-#if defined(SSPM_COREDUMP_SUPPORT) && defined(DEBUG)
+#if SSPM_COREDUMP_SUPPORT
 struct coredump_ctrl_s {
 	unsigned int base;
 	unsigned int size;
@@ -34,12 +34,12 @@ struct coredump_ctrl_s {
 };
 #endif
 
-#if defined(SSPM_COREDUMP_SUPPORT) && defined(DEBUG)
+#if SSPM_COREDUMP_SUPPORT
 struct coredump_ctrl_s *sspm_cd_ctl;
 static unsigned int sspm_cd_exists;
 #endif
 
-#if defined(SSPM_COREDUMP_SUPPORT) && defined(DEBUG)
+#if SSPM_COREDUMP_SUPPORT
 void sspm_log_coredump_recv(unsigned int exists)
 {
 	sspm_cd_exists = exists;
@@ -89,7 +89,7 @@ void sspm_aed(enum sspm_excep_id type)
 
 unsigned int __init sspm_coredump_init(phys_addr_t start, phys_addr_t limit)
 {
-#if defined(SSPM_COREDUMP_SUPPORT) && defined(DEBUG)
+#if SSPM_COREDUMP_SUPPORT
 	unsigned int last_ofs;
 
 	sspm_cd_ctl = (struct coredump_ctrl_s *) start;
@@ -114,7 +114,7 @@ unsigned int __init sspm_coredump_init(phys_addr_t start, phys_addr_t limit)
 
 int __init sspm_coredump_init_done(void)
 {
-#if defined(SSPM_COREDUMP_SUPPORT) && defined(DEBUG)
+#if SSPM_COREDUMP_SUPPORT
 	int ret;
 
 	if (sspm_cd_ctl) {

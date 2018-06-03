@@ -156,7 +156,7 @@ int sspm_reserve_memory_init(void)
 
 void sspm_lock_emi_mpu(void)
 {
-#ifdef SSPM_EMI_PROTECTION_SUPPORT
+#if SSPM_EMI_PROTECTION_SUPPORT
 	if (sspm_mem_size > 0)
 		sspm_set_emi_mpu(sspm_mem_base_phys, sspm_mem_size);
 #endif
