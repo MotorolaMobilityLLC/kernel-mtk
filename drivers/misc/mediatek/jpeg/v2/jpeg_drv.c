@@ -864,12 +864,20 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 	#ifdef CONFIG_MTK_QOS_SUPPORT
 		/* BW = encode width x height x bpp x 1.6(assume compress ratio is 0.6) */
 		if (cfgEnc.encFormat == 0x0 || cfgEnc.encFormat == 0x1)
-			emi_bw = ((cfgEnc.encWidth * cfgEnc.encHeight * 2) * 8/5);
+			emi_bw = (((cfgEnc.encWidth * cfgEnc.encHeight * 2) * 8/5) / 1000000) + 1;
 		else
-			emi_bw = ((cfgEnc.encWidth * cfgEnc.encHeight * 3/2) * 8/5);
+			emi_bw = (((cfgEnc.encWidth * cfgEnc.encHeight * 3/2) * 8/5 / 1000000) + 1);
+
+		/* considering FPS, 16MP = 20 FPS, 21MP = 15 FPS, 26MP = 10 FPS */
+		if (emi_bw >= 22)
+			emi_bw *= 10;
+		else if (emi_bw >= 17)
+			emi_bw *= 15;
+		else
+			emi_bw *= 20;
 
 		/* update BW request before trigger HW */
-		pm_qos_update_request(&jpgenc_qos_request, ((emi_bw / 1000000) + 1));
+		pm_qos_update_request(&jpgenc_qos_request, emi_bw);
 	#endif
 		/* 1. set src config */
 		JPEG_MSG("[JPEGDRV]SRC_IMG: %x %x, DU:%x, fmt:%x, BW:%d!!\n", cfgEnc.encWidth,
@@ -1743,6 +1751,6 @@ static void __exit jpeg_exit(void)
 }
 module_init(jpeg_init);
 module_exit(jpeg_exit);
-MODULE_AUTHOR("Hao-Ting Huang <otis.huang@mediatek.com>");
-MODULE_DESCRIPTION("MT6582 JPEG Codec Driver");
+MODULE_AUTHOR("Chrono Wu <chrono.wu@mediatek.com>");
+MODULE_DESCRIPTION("JPEG Codec Driver V2");
 MODULE_LICENSE("GPL");
