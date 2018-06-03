@@ -2427,6 +2427,9 @@
 		compatible = "mediatek,dpe";
 		reg = <0 0x15028000 0 0x1000>;
 		interrupts = <GIC_SPI 270 IRQ_TYPE_LEVEL_LOW>;
+
+		clocks = <&imgsys IMG_DPE>;
+		clock-names = "DPE_CG_IMG_DPE";
 	};
 
 	dpe_dma@15028000 {
@@ -2466,6 +2469,9 @@
 		compatible = "mediatek,fdvt";
 		reg = <0 0x1502b000 0 0x1000>;
 		interrupts = <GIC_SPI 269 IRQ_TYPE_LEVEL_LOW>;
+
+		clocks = <&imgsys IMG_FDVT>;
+		clock-names = "FD_CLK_IMG_FDVT";
 	};
 
 	fdvt_dma@1502b000 {
@@ -2477,6 +2483,18 @@
 		compatible = "mediatek,mfb";
 		reg = <0 0x1502e000 0 0x1000>;
 		interrupts = <GIC_SPI 276 IRQ_TYPE_LEVEL_LOW>;
+
+		clocks = <&imgsys IMG_MFB>;
+		clock-names = "MFB_CLK_IMG_MFB";
+	};
+
+	tsf@1a0b1c00 {
+		compatible = "mediatek,tsf";
+		reg = <0 0x1a0b1c00 0 0x1000>;
+		interrupts = <GIC_SPI 265 IRQ_TYPE_LEVEL_LOW>;
+
+		clocks = <&camsys CAMSYS_CCU_CGPDN>;
+		clock-names = "TSF_CAMSYS_TSF_CGPDN";
 	};
 
 	owe@1502c000 {
@@ -2526,36 +2544,105 @@
 				"CAMSYS_CAMSV2_CGPDN";
 	};
 
-	ipu_conn: ipu_sys_cfg@19000000 {
-		compatible = "mediatek,ipu_sys_cfg", "syscon";
+	ipu_conn: ipu_conn@19000000 {
+		compatible = "mediatek,ipu_conn", "syscon";
 		reg = <0 0x19000000 0 0x1000>;
 		#clock-cells = <1>;
 	};
-
-	ipu_adl: ipu_adl_ctrl@19010000 {
-		compatible = "mediatek,ipu_adl_ctrl", "syscon";
+	ipu_adl: ipu_adl@19010000 {
+		compatible = "mediatek,ipu_adl", "syscon";
 		reg = <0 0x19010000 0 0x1000>;
 		#clock-cells = <1>;
 	};
-
-	ipu_vcore: ipu_vcore_cfg@19020000 {
-		compatible = "mediatek,ipu_vcore_cfg", "syscon";
-		reg = <0 0x19020000 0 0x1000>;
-		#clock-cells = <1>;
-	};
-
-	ipu0: ipu1@19100000 {
-		compatible = "mediatek,ipu1", "syscon";
-		reg = <0 0x19100000 0 0x94000>;
+	ipu0: ipu0@19180000 {
+		compatible = "mediatek,ipu0", "syscon";
+		reg = <0 0x19180000 0 0x1000>;
 		interrupts = <GIC_SPI 292 IRQ_TYPE_LEVEL_LOW>;
 		#clock-cells = <1>;
 	};
-
-	ipu1: ipu2@19280000 {
-		compatible = "mediatek,ipu2", "syscon";
-		reg = <0 0x19200000 0 0x94000>;
+	ipu1: ipu1@19280000 {
+		compatible = "mediatek,ipu1", "syscon";
+		reg = <0 0x19280000 0 0x1000>;
 		interrupts = <GIC_SPI 293 IRQ_TYPE_LEVEL_LOW>;
 		#clock-cells = <1>;
+	};
+
+	vpu_core0@0x19100000  {
+		compatible = "mediatek,vpu_core0";
+		reg = <0 0x19100000 0 0x94000>;
+		interrupts = <GIC_SPI 292 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&ipu0 IPU_CORE0_JTAG_CG>,
+			<&ipu0 IPU_CORE0_AXI_M_CG>,
+			<&ipu0 IPU_CORE0_IPU_CG>,
+			<&ipu1 IPU_CORE1_JTAG_CG>,
+			<&ipu1 IPU_CORE1_AXI_M_CG>,
+			<&ipu1 IPU_CORE1_IPU_CG>,
+			<&ipu_conn IPU_ADL_CABGEN>,
+			<&ipu_conn IPU_CONN_DAP_RX_CG>,
+			<&ipu_conn IPU_CONN_APB2AXI_CG>,
+			<&ipu_conn IPU_CONN_APB2AHB_CG>,
+			<&ipu_conn IPU_CONN_IPU_CAB1TO2>,
+			<&ipu_conn IPU_CONN_IPU1_CAB1TO2>,
+			<&ipu_conn IPU_CONN_IPU2_CAB1TO2>,
+			<&ipu_conn IPU_CONN_CAB3TO3>,
+			<&ipu_conn IPU_CONN_CAB2TO1>,
+			<&ipu_conn IPU_CONN_CAB3TO1_SLICE>,
+			<&ipu_conn IPU_CONN_IPU_CG>,
+			<&ipu_conn IPU_CONN_AHB_CG>,
+			<&ipu_conn IPU_CONN_AXI_CG>,
+			<&ipu_conn IPU_CONN_ISP_CG>,
+			<&ipu_conn IPU_CONN_CAM_ADL_CG>,
+			<&ipu_conn IPU_CONN_IMG_ADL_CG>,
+			<&mmsys_config MMSYS_GALS_IPU2MM>,
+			<&mmsys_config MMSYS_GALS_IPU12MM>,
+			<&mmsys_config MMSYS_GALS_COMM1>,
+			<&mmsys_config MMSYS_GALS_COMM0>,
+			<&mmsys_config MMSYS_SMI_COMMON>,
+			<&scpsys SCP_SYS_DIS>,
+			<&scpsys SCP_SYS_VPU_TOP>,
+			<&scpsys SCP_SYS_VPU_CORE0_DORMANT>,
+			<&scpsys SCP_SYS_VPU_CORE0_SHUTDOWN>,
+			<&scpsys SCP_SYS_VPU_CORE1_DORMANT>,
+			<&scpsys SCP_SYS_VPU_CORE1_SHUTDOWN>;
+		clock-names = "clk_ipu_core0_jtag_cg",
+			"clk_ipu_core0_axi_m_cg",
+			"clk_ipu_core0_ipu_cg",
+			"clk_ipu_core1_jtag_cg",
+			"clk_ipu_core1_axi_m_cg",
+			"clk_ipu_core1_ipu_cg",
+			"clk_ipu_adl_cabgen",
+			"clk_ipu_conn_dap_rx_cg",
+			"clk_ipu_conn_apb2axi_cg",
+			"clk_ipu_conn_apb2ahb_cg",
+			"clk_ipu_conn_ipu_cab1to2",
+			"clk_ipu_conn_ipu1_cab1to2",
+			"clk_ipu_conn_ipu2_cab1to2",
+			"clk_ipu_conn_cab3to3",
+			"clk_ipu_conn_cab2to1",
+			"clk_ipu_conn_cab3to1_slice",
+			"clk_ipu_conn_ipu_cg",
+			"clk_ipu_conn_ahb_cg",
+			"clk_ipu_conn_axi_cg",
+			"clk_ipu_conn_isp_cg",
+			"clk_ipu_conn_cam_adl_cg",
+			"clk_ipu_conn_img_adl_cg",
+			"clk_mmsys_gals_ipu2mm",
+			"clk_mmsys_gals_ipu12mm",
+			"clk_mmsys_gals_comm1",
+			"clk_mmsys_gals_comm0",
+			"clk_mmsys_smi_common",
+			"mtcmos_dis",
+			"mtcmos_vpu_top",
+			"mtcmos_vpu_core0_dormant",
+			"mtcmos_vpu_core0_shutdown",
+			"mtcmos_vpu_core1_dormant",
+			"mtcmos_vpu_core1_shutdown";
+	};
+
+	vpu_core1@0x19200000  {
+		compatible = "mediatek,vpu_core1";
+		reg = <0 0x19200000 0 0x94000>;
+		interrupts = <GIC_SPI 293 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	smi_larb3: smi_larb3@1a002000 {
