@@ -2175,7 +2175,9 @@ enum {
 #ifdef MT_GPUFREQ_OC_PROTECT
 static unsigned int mt_gpufreq_oc_level;
 
-#define MT_GPUFREQ_OC_LIMIT_FREQ_1	 GPU_DVFS_FREQ14	/* 485 MHz */
+#define MT_GPUFREQ_OC_LIMIT_FREQ_1		GPU_DVFS_FREQ14		/* < 485 MHz */
+#define MT_GPUFREQ_OC_LIMIT_FREQ_1_6763T	GPU_DVFS_FREQ1_6763T	/* 530 MHz */
+#define MT_GPUFREQ_OC_LIMIT_FREQ_1_6763		GPU_DVFS_FREQ1_6763	/* 530 MHz */
 static unsigned int mt_gpufreq_oc_limited_index_0;	/* unlimit frequency, index = 0. */
 static unsigned int mt_gpufreq_oc_limited_index_1;
 static unsigned int mt_gpufreq_oc_limited_index;	/* Limited frequency index for oc */
@@ -2193,8 +2195,10 @@ static unsigned int mt_gpufreq_low_batt_volume_limited_index;	/* Limited frequen
 #ifdef MT_GPUFREQ_LOW_BATT_VOLT_PROTECT
 static unsigned int mt_gpufreq_low_battery_level;
 
-#define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_1	 GPU_DVFS_FREQ0	/* no need to throttle when LV1 */
-#define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2	 GPU_DVFS_FREQ14	/* 485 MHz */
+#define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_1		GPU_DVFS_FREQ0	/* no need to throttle when LV1 */
+#define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2		GPU_DVFS_FREQ14	/* 485 MHz */
+#define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2_6763T	GPU_DVFS_FREQ1_6763T	/* 530 MHz */
+#define MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2_6763	GPU_DVFS_FREQ1_6763	/* 530 MHz */
 static unsigned int mt_gpufreq_low_bat_volt_limited_index_0;	/* unlimit frequency, index = 0. */
 static unsigned int mt_gpufreq_low_bat_volt_limited_index_1;
 static unsigned int mt_gpufreq_low_bat_volt_limited_index_2;
@@ -2872,6 +2876,8 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	struct device_node *apmixed_node;
 	int ret;
 	int i = 0;
+	int mt_gpufreq_low_bat_volt_limit_freq_2;
+	int mt_gpufreq_oc_limit_freq_1;
 #ifdef MT_GPUFREQ_INPUT_BOOST
 	int rc;
 	struct sched_param param = {.sched_priority = MAX_RT_PRIO - 1 };
@@ -3100,8 +3106,19 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		}
 	}
 
+	if (get_devinfo() == C_MT6763TT) {
+		mt_gpufreq_low_bat_volt_limit_freq_2 =
+			MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2;
+	} else if (get_devinfo() == C_MT6763T) {
+		mt_gpufreq_low_bat_volt_limit_freq_2 =
+			MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2_6763T;
+	} else {
+		mt_gpufreq_low_bat_volt_limit_freq_2 =
+			MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2_6763;
+	}
+
 	for (i = 0; i < mt_gpufreqs_num; i++) {
-		if (mt_gpufreqs[i].gpufreq_khz == MT_GPUFREQ_LOW_BATT_VOLT_LIMIT_FREQ_2) {
+		if (mt_gpufreqs[i].gpufreq_khz == mt_gpufreq_low_bat_volt_limit_freq_2) {
 			mt_gpufreq_low_bat_volt_limited_index_2 = i;
 			break;
 		}
@@ -3123,8 +3140,16 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 
 #ifdef MT_GPUFREQ_OC_PROTECT
+	if (get_devinfo() == C_MT6763TT) {
+		mt_gpufreq_oc_limit_freq_1 = MT_GPUFREQ_OC_LIMIT_FREQ_1;
+	} else if (get_devinfo() == C_MT6763T) {
+		mt_gpufreq_oc_limit_freq_1 = MT_GPUFREQ_OC_LIMIT_FREQ_1_6763T;
+	} else {
+		mt_gpufreq_oc_limit_freq_1 = MT_GPUFREQ_OC_LIMIT_FREQ_1_6763;
+	}
+
 	for (i = 0; i < mt_gpufreqs_num; i++) {
-		if (mt_gpufreqs[i].gpufreq_khz == MT_GPUFREQ_OC_LIMIT_FREQ_1) {
+		if (mt_gpufreqs[i].gpufreq_khz == mt_gpufreq_oc_limit_freq_1) {
 			mt_gpufreq_oc_limited_index_1 = i;
 			break;
 		}
