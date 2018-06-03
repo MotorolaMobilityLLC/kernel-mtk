@@ -1106,6 +1106,7 @@ static void ccmni_queue_state_callback(int md_id, int ccmni_idx, HIF_STATE state
 #ifdef ENABLE_WQ_GRO
 	case RX_FLUSH:
 		spin_lock_bh(ccmni->spinlock);
+		ccmni->rx_gro_cnt++;
 		napi_gro_flush(ccmni->napi, false);
 		spin_unlock_bh(ccmni->spinlock);
 		break;
@@ -1200,6 +1201,7 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state)
 			ccmni->flags[i] &= ~CCMNI_TX_PRINT_F;
 		}
 		ccmni->rx_seq_num = 0;
+		ccmni->rx_gro_cnt = 0;
 		break;
 
 	case EXCEPTION:
@@ -1244,9 +1246,9 @@ static void ccmni_dump(int md_id, int ccmni_idx, unsigned int flag)
 		/* stats.rx_dropped is dropped in ccmni, dev->rx_dropped is dropped in net device layer */
 		/* stats.tx_packets is count by ccmni, bstats.packets is count by qdisc in net device layer */
 		CCMNI_INF_MSG(md_id,
-			      "%s(%d,%d), irat_MD%d, rx=(%ld,%ld), tx=(%ld,%d,%d), txq_len=(%d,%d), tx_drop=(%ld,%d,%d), rx_drop=(%ld,%ld), tx_busy=(%ld,%ld), sta=(0x%lx,0x%x,0x%lx,0x%lx)\n",
+			      "%s(%d,%d), irat_MD%d, rx=(%ld,%ld,%d), tx=(%ld,%d,%d), txq_len=(%d,%d), tx_drop=(%ld,%d,%d), rx_drop=(%ld,%ld), tx_busy=(%ld,%ld), sta=(0x%lx,0x%x,0x%lx,0x%lx)\n",
 			      dev->name, atomic_read(&ccmni->usage), atomic_read(&ccmni_tmp->usage), (ccmni->md_id + 1),
-			      dev->stats.rx_packets, dev->stats.rx_bytes,
+			      dev->stats.rx_packets, dev->stats.rx_bytes, ccmni->rx_gro_cnt,
 			      dev->stats.tx_packets, qdisc->bstats.packets, ack_qdisc->bstats.packets,
 			      qdisc->q.qlen, ack_qdisc->q.qlen,
 			      dev->stats.tx_dropped, qdisc->qstats.drops, ack_qdisc->qstats.drops,
@@ -1255,9 +1257,10 @@ static void ccmni_dump(int md_id, int ccmni_idx, unsigned int flag)
 			      dev->state, dev->flags, dev_queue->state, ack_queue->state);
 	} else
 		CCMNI_INF_MSG(md_id,
-			      "%s(%d,%d), irat_MD%d, rx=(%ld,%ld), tx=(%ld,%ld), txq_len=%d, tx_drop=(%ld,%d), rx_drop=(%ld,%ld), tx_busy=(%ld,%ld), sta=(0x%lx,0x%x,0x%lx)\n",
+			      "%s(%d,%d), irat_MD%d, rx=(%ld,%ld,%d), tx=(%ld,%ld), txq_len=%d, tx_drop=(%ld,%d), rx_drop=(%ld,%ld), tx_busy=(%ld,%ld), sta=(0x%lx,0x%x,0x%lx)\n",
 			      dev->name, atomic_read(&ccmni->usage), atomic_read(&ccmni_tmp->usage), (ccmni->md_id + 1),
-			      dev->stats.rx_packets, dev->stats.rx_bytes, dev->stats.tx_packets, dev->stats.tx_bytes,
+			      dev->stats.rx_packets, dev->stats.rx_bytes, ccmni->rx_gro_cnt,
+			      dev->stats.tx_packets, dev->stats.tx_bytes,
 			      dev->qdisc->q.qlen, dev->stats.tx_dropped, dev->qdisc->qstats.drops,
 			      dev->stats.rx_dropped, atomic_long_read(&dev->rx_dropped), ccmni->tx_busy_cnt[0],
 			      ccmni->tx_busy_cnt[1], dev->state, dev->flags, dev_queue->state);
