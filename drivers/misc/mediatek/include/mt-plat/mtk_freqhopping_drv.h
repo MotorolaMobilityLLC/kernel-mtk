@@ -37,7 +37,10 @@ struct mt_fh_hal_proc_func {
 };
 
 struct mt_fh_hal_driver {
-
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	void (*fh_pll_set)(int, int, int);
+	int (*fh_pll_get)(int, int);
+#endif
 	fh_pll_t *fh_pll;
 	struct freqhopping_ssc *fh_usrdef;
 	unsigned int mempll;
@@ -86,6 +89,16 @@ enum FH_DEVCTL_CMD_ID {
 	FH_DCTL_CMD_SSC_ENABLE = 0x1004,
 	FH_DCTL_CMD_SSC_DISABLE = 0x1005,
 	FH_DCTL_CMD_GENERAL_DFS = 0x1006,
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	FH_DCTL_CMD_ARM_DFS = 0x1007,
+	FH_DCTL_CMD_MM_DFS = 0x1008,
+	FH_DCTL_CMD_FH_CONFIG = 0x1009,
+	FH_DCTL_CMD_SSC_TBL_CONFIG = 0x100A,
+	FH_DCTL_CMD_GET_PLL_STRUCT = 0x100B,
+	FH_DCTL_CMD_SET_PLL_STRUCT = 0x100C,
+	FH_DCTL_CMD_GET_INIT_STATUS = 0x100D,
+	FH_DCTL_CMD_PLL_PAUSE = 0x100E,
+#endif
 	FH_DCTL_CMD_MAX
 };
 
@@ -98,5 +111,11 @@ typedef struct {
 } FH_IO_PROC_READ_T;
 
 struct mt_fh_hal_driver *mt_get_fh_hal_drv(void);
+
+#define FH_BUG_ON(x) \
+do {    \
+	if ((x)) \
+		pr_err("BUGON %s:%d %s:%d\n", __func__, __LINE__, current->comm, current->pid); \
+} while (0)
 
 #endif
