@@ -1795,7 +1795,7 @@ static const struct mtk_gate_regs ipu_adl_cg_regs = {
 	}
 
 static const struct mtk_gate ipu_adl_clks[] __initconst = {
-	GATE_CAM(IPU_ADL_CABGEN, "ipu_adl_cabgen", "dsp_sel", 24),
+	GATE_IPU_ADL(IPU_ADL_CABGEN, "ipu_adl_cabgen", "dsp_sel", 24),
 };
 
 static const struct mtk_gate_regs ipu_core0_cg_regs = {
@@ -1814,9 +1814,9 @@ static const struct mtk_gate_regs ipu_core0_cg_regs = {
 	}
 
 static const struct mtk_gate ipu_core0_clks[] __initconst = {
-	GATE_CAM(IPU_CORE0_JTAG_CG, "ipu_core0_jtag", "dsp_sel", 0),
-	GATE_CAM(IPU_CORE0_AXI_M_CG, "ipu_core0_axi", "dsp_sel", 1),
-	GATE_CAM(IPU_CORE0_IPU_CG, "ipu_core0_ipu", "dsp_sel", 2),
+	GATE_IPU_CORE0(IPU_CORE0_JTAG_CG, "ipu_core0_jtag", "dsp_sel", 0),
+	GATE_IPU_CORE0(IPU_CORE0_AXI_M_CG, "ipu_core0_axi", "dsp_sel", 1),
+	GATE_IPU_CORE0(IPU_CORE0_IPU_CG, "ipu_core0_ipu", "dsp_sel", 2),
 };
 
 static const struct mtk_gate_regs ipu_core1_cg_regs = {
@@ -1835,9 +1835,9 @@ static const struct mtk_gate_regs ipu_core1_cg_regs = {
 	}
 
 static const struct mtk_gate ipu_core1_clks[] __initconst = {
-	GATE_CAM(IPU_CORE1_JTAG_CG, "ipu_core1_jtag", "dsp_sel", 0),
-	GATE_CAM(IPU_CORE1_AXI_M_CG, "ipu_core1_axi", "dsp_sel", 1),
-	GATE_CAM(IPU_CORE1_IPU_CG, "ipu_core1_ipu", "dsp_sel", 2),
+	GATE_IPU_CORE1(IPU_CORE1_JTAG_CG, "ipu_core1_jtag", "dsp_sel", 0),
+	GATE_IPU_CORE1(IPU_CORE1_AXI_M_CG, "ipu_core1_axi", "dsp_sel", 1),
+	GATE_IPU_CORE1(IPU_CORE1_IPU_CG, "ipu_core1_ipu", "dsp_sel", 2),
 };
 
 static void __init mtk_topckgen_init(struct device_node *node)
