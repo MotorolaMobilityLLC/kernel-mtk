@@ -175,6 +175,7 @@ typedef enum {
 	BATTERY_METER_CMD_GET_FG_CURRENT_IAVG_VALID,
 	BATTERY_METER_CMD_GET_RTC_UI_SOC,
 	BATTERY_METER_CMD_SET_RTC_UI_SOC,
+	BATTERY_METER_CMD_GET_RTC_INVALID,
 
 	BATTERY_METER_CMD_NUMBER
 } BATTERY_METER_CTRL_CMD;
@@ -206,7 +207,7 @@ typedef enum {
 	FG_INTR_DLPT_SD = 0x200000,
 	FG_INTR_BAT_TMP_C_HT = 0x400000,
 	FG_INTR_BAT_TMP_C_LT = 0x800000,
-
+	FG_INTR_BAT_INT1_CHECK = 0x1000000,
 
 } FG_INTERRUPT_FLAG;
 
@@ -290,6 +291,8 @@ typedef enum {
 	FG_DAEMON_CMD_SET_RTC_UI_SOC,
 	FG_DAEMON_CMD_SET_FG_BAT_TMP_C_GAP,
 	FG_DAEMON_CMD_IS_BATTERY_CYCLE_RESET,
+	FG_DAEMON_CMD_GET_RTC_TWO_SEC_REBOOT,
+	FG_DAEMON_CMD_GET_RTC_INVALID,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -553,6 +556,7 @@ struct fuel_gauge_custom_data {
 	int tnew_told_pon_diff2;/* degree */
 	int pmic_shutdown_time;	/* sec */
 	int bat_plug_out_time;	/* min */
+	int swocv_oldocv_diff_emb;	/* mv */
 
 	/* fgc & fgv threshold */
 	int difference_fgc_fgv_th1;

@@ -2712,6 +2712,17 @@ static signed int fg_set_rtc_ui_soc(void *data)
 	return STATUS_OK;
 }
 
+static signed int fg_get_rtc_invalid(void *data)
+{
+	/* DON'T get spare3_reg_valid here */
+	/* because it has been reset by fg_set_fg_reset_rtc_status() */
+
+	*(signed int *) (data) = rtc_invalid;
+	bm_notice("[fg_get_rtc_invalid] rtc_invalid %d\n", rtc_invalid);
+
+	return STATUS_OK;
+}
+
 static void fgauge_read_RTC_boot_status(void)
 {
 	int hw_id = upmu_get_reg_value(PMIC_HWCID);
@@ -3194,6 +3205,7 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_GET_FG_CURRENT_IAVG_VALID] = fg_get_current_iavg_valid;
 		bm_func[BATTERY_METER_CMD_GET_RTC_UI_SOC] = fg_get_rtc_ui_soc;
 		bm_func[BATTERY_METER_CMD_SET_RTC_UI_SOC] = fg_set_rtc_ui_soc;
+		bm_func[BATTERY_METER_CMD_GET_RTC_INVALID] = fg_get_rtc_invalid;
 	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {

@@ -115,6 +115,7 @@ signed int ptim_lk_v;
 signed int ptim_lk_i;
 int pl_bat_vol;
 int pl_shutdown_time;
+int pl_two_sec_reboot;
 
 struct timespec fg_time;
 struct timespec now_time;
@@ -814,6 +815,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.hwocv_swocv_diff = HWOCV_SWOCV_DIFF;
 	fg_cust_data.swocv_oldocv_diff = SWOCV_OLDOCV_DIFF;
 	fg_cust_data.vbat_oldocv_diff = VBAT_OLDOCV_DIFF;
+	fg_cust_data.swocv_oldocv_diff_emb = SWOCV_OLDOCV_DIFF_EMB;
 
 	fg_cust_data.pmic_shutdown_time = UNIT_TRANS_60 * PMIC_SHUTDOWN_TIME;
 	fg_cust_data.tnew_told_pon_diff = TNEW_TOLD_PON_DIFF;
@@ -2546,6 +2548,28 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	}
 	break;
 
+	case FG_DAEMON_CMD_GET_RTC_TWO_SEC_REBOOT:
+	{
+		int two_sec_reboot_flag;
+
+		two_sec_reboot_flag = pl_two_sec_reboot;
+		ret_msg->fgd_data_len += sizeof(two_sec_reboot_flag);
+		memcpy(ret_msg->fgd_data, &two_sec_reboot_flag, sizeof(two_sec_reboot_flag));
+		bm_debug("[fg_res] FG_DAEMON_CMD_GET_RTC_TWO_SEC_REBOOT = %d\n", two_sec_reboot_flag);
+	}
+	break;
+
+	case FG_DAEMON_CMD_GET_RTC_INVALID:
+	{
+		int rtc_invalid;
+
+		battery_meter_ctrl(BATTERY_METER_CMD_GET_RTC_INVALID, &rtc_invalid);
+
+		ret_msg->fgd_data_len += sizeof(rtc_invalid);
+		memcpy(ret_msg->fgd_data, &rtc_invalid, sizeof(rtc_invalid));
+		bm_debug("[fg_res] FG_DAEMON_CMD_GET_RTC_INVALID = %d\n", rtc_invalid);
+	}
+	break;
 
 	default:
 		bm_err("bad FG_DAEMON_CTRL_CMD_FROM_USER 0x%x\n", msg->fgd_cmd);
@@ -4052,6 +4076,9 @@ static int battery_probe(struct platform_device *dev)
 	const char *boot_voltage = NULL;
 	char boot_voltage_tmp[10];
 	int boot_voltage_len = 0;
+	const char *two_sec_reboot = NULL;
+	char two_sec_reboot_tmp[10];
+	int two_sec_reboot_len = 0;
 
 /********* adc_cdev **********/
 	ret = alloc_chrdev_region(&adc_cali_devno, 0, 1, ADC_CALI_DEVNAME);
@@ -4209,6 +4236,18 @@ static int battery_probe(struct platform_device *dev)
 
 		bm_err(" boot_voltage = %s len %d boot_voltage_tmp %s pl_bat_vol[%d]\n",
 			boot_voltage, boot_voltage_len, boot_voltage_tmp, pl_bat_vol);
+	}
+
+	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
+		two_sec_reboot = of_get_flat_dt_prop(bat_node, "atag,two_sec_reboot", &two_sec_reboot_len);
+	if (two_sec_reboot == NULL) {
+		bm_err(" two_sec_reboot == NULL len = %d\n", two_sec_reboot_len);
+	} else {
+		snprintf(two_sec_reboot_tmp, (two_sec_reboot_len + 1), "%s", two_sec_reboot);
+		ret = kstrtoint(two_sec_reboot_tmp, 10, &pl_two_sec_reboot);
+
+		bm_err(" two_sec_reboot = %s len %d two_sec_reboot_tmp %s pl_two_sec_reboot[%d]\n",
+			two_sec_reboot, two_sec_reboot_len, two_sec_reboot_tmp, pl_two_sec_reboot);
 	}
 	wake_unlock(&battery_lock);
 
