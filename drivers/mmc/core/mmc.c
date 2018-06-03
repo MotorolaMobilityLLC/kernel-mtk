@@ -415,12 +415,8 @@ static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)
 		card->ext_csd.part_config = ext_csd[EXT_CSD_PART_CONFIG];
 
 		/* EXT_CSD value is in units of 10ms, but we store in ms */
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		/* For vendor eMMC divice problem, remove when vendor fix timeout problem */
+		/* Add extra 4 times for some timeout cases */
 		card->ext_csd.part_time = 40 * ext_csd[EXT_CSD_PART_SWITCH_TIME];
-#else
-		card->ext_csd.part_time = 10 * ext_csd[EXT_CSD_PART_SWITCH_TIME];
-#endif
 
 		/* Some eMMC set the value too low so set a minimum */
 		if (card->ext_csd.part_time &&
