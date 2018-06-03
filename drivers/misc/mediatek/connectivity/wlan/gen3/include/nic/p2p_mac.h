@@ -180,6 +180,8 @@
 #define WLAN_ACTION_SELF_PROTECTED 15
 #define WLAN_ACTION_WMM 17 /* WMM Specification 1.1 */
 #define WLAN_ACTION_VENDOR_SPECIFIC 127
+#define P2P_IE_VENDOR_TYPE 0x506f9a09
+#define WFD_IE_VENDOR_TYPE 0x506f9a0a
 
 /* Public action codes */
 #define WLAN_PA_20_40_BSS_COEX 0

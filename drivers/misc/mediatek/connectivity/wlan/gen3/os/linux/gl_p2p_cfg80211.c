@@ -1085,7 +1085,6 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T) NULL;
 	P_GL_P2P_INFO_T prGlueP2pInfo = (P_GL_P2P_INFO_T) NULL;
 	INT_32 i4Rslt = -EINVAL;
-	struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T *prMsgExtListenReq = NULL;
 	P_MSG_P2P_MGMT_TX_REQUEST_T prMsgTxReq = (P_MSG_P2P_MGMT_TX_REQUEST_T) NULL;
 	P_MSDU_INFO_T prMgmtFrame = (P_MSDU_INFO_T) NULL;
 	PUINT_8 pucFrameBuf = (PUINT_8) NULL;
@@ -1134,16 +1133,6 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 						&prMsgTxReq->rChannelInfo, &prMsgTxReq->eChnlExt);
 		} else {
 			prMsgTxReq->fgIsOffChannel = FALSE;
-		}
-		/* Here need to extend the listen interval */
-		prMsgExtListenReq = cnmMemAlloc(prGlueInfo->prAdapter, RAM_TYPE_MSG,
-			sizeof(struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T));
-		if (prMsgExtListenReq) {
-			prMsgExtListenReq->rMsgHdr.eMsgId = MID_MNY_P2P_EXTEND_LISTEN_INTERVAL;
-			prMsgExtListenReq->wait = params->wait;
-			DBGLOG(P2P, TRACE, "ext listen, wait: %d\n", prMsgExtListenReq->wait);
-			mboxSendMsg(prGlueInfo->prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgExtListenReq,
-				MSG_SEND_METHOD_BUF);
 		}
 
 		if (params->no_cck)

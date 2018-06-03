@@ -2171,6 +2171,23 @@ typedef struct _WLAN_ACTION_FRAME {
 	UINT_8 ucActionDetails[1];	/* Action details */
 } __KAL_ATTRIB_PACKED__ WLAN_ACTION_FRAME, *P_WLAN_ACTION_FRAME;
 
+/* public Action frame format */
+typedef struct _WLAN_PUBLIC_VENDOR_ACTION_FRAME {
+	/* Action MAC header */
+	UINT_16 u2FrameCtrl;	/* Frame Control */
+	UINT_16 u2DurationID;	/* Duration */
+	UINT_8 aucDestAddr[MAC_ADDR_LEN];	/* DA */
+	UINT_8 aucSrcAddr[MAC_ADDR_LEN];	/* SA */
+	UINT_8 aucBSSID[MAC_ADDR_LEN];	/* BSSID */
+	UINT_16 u2SeqCtrl;	/* Sequence Control */
+	/* Action frame body */
+	UINT_8 ucCategory;	/* Category: should be 0x4 */
+	UINT_8 ucAction;	/* Action Value: should be 0x9 */
+	UINT_8 ucOUI[3];
+	UINT_8 ucSubType;
+	UINT_8 ucPubSubType;
+} __KAL_ATTRIB_PACKED__ WLAN_PUBLIC_VENDOR_ACTION_FRAME, *P_WLAN_PUBLIC_VENDOR_ACTION_FRAME;
+
 /* 7.4.1.1 Spectrum Measurement Request frame format */
 typedef struct _ACTION_SM_REQ_FRAME {
 	/* ADDTS Request MAC header */
