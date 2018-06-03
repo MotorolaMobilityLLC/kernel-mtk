@@ -350,12 +350,12 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 	vproc_p->buck_ops->set_cur_volt(vproc_p, volt);
 
 	delay_us =
-		_calc_pmic_settle_time(p, old_vproc, old_vsram, cur_vproc, cur_vsram);
+		_calc_pmic_settle_time(p, old_vproc, old_vsram, volt, cur_vsram);
 	udelay(delay_us);
 
 	cpufreq_ver
-		("@%s(): UP --> old_vsram=%d, cur_vsram=%d, old_vproc=%d, cur_vproc=%d, delay=%d\n",
-		__func__, old_vsram, cur_vsram, old_vproc, cur_vproc, delay_us);
+		("@%s(): UP --> old_vsram=%d, cur_vsram=%d, old_vproc=%d, target_vproc=%d, delay=%d\n",
+		__func__, old_vsram, cur_vsram, old_vproc, volt, delay_us);
 
 	cur_vsram = get_cur_volt_wrapper(p, vsram_p);
 	cur_vproc = get_cur_volt_wrapper(p, vproc_p);

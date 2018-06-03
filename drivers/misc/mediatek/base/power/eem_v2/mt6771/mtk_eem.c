@@ -1446,7 +1446,8 @@ static inline void handle_init02_isr(struct eem_det *det)
 #endif
 	}
 
-	eem_set_eem_volt(det);
+	/* Fix me */
+	/* eem_set_eem_volt(det); */
 
 	/*
 	 * Set EEMEN.EEMINITEN/EEMEN.EEMINIT2EN = 0x0 &
@@ -1901,6 +1902,8 @@ static int eem_buck_get(struct platform_device *pdev)
 
 static void eem_buck_set_mode(unsigned int mode)
 {
+	return;
+#if 0
 	/* set pwm mode for each buck */
 	eem_debug("pmic set mode (%d)\n", mode);
 	if (mode) {
@@ -1910,6 +1913,7 @@ static void eem_buck_set_mode(unsigned int mode)
 		regulator_set_mode(eem_regulator_vproc1, REGULATOR_MODE_NORMAL);
 		regulator_set_mode(eem_regulator_vproc2, REGULATOR_MODE_NORMAL);
 	}
+#endif
 }
 
 void eem_init01(void)
@@ -1957,7 +1961,8 @@ void eem_init01(void)
 
 	/* CPU/GPU post-process */
 	eem_buck_set_mode(0);
-#ifdef CONFIG_MTK_GPU_SUPPORT
+/* #ifdef CONFIG_MTK_GPU_SUPPORT */
+#if 0
 	mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
 #endif
 	mt_ppm_ptpod_policy_deactivate();
@@ -2040,12 +2045,15 @@ static int eem_probe(struct platform_device *pdev)
 
 	/* CPU/GPU pre-process */
 	mt_ppm_ptpod_policy_activate();
-#ifdef CONFIG_MTK_GPU_SUPPORT
+/* #ifdef CONFIG_MTK_GPU_SUPPORT */
+#if 0
 	mt_gpufreq_disable_by_ptpod();
 #endif
+
 	ret = eem_buck_get(pdev);
 	if (ret != 0)
 		eem_error("eem_buck_get failed\n");
+
 	eem_buck_set_mode(1);
 
 	/* for slow idle */
@@ -2059,7 +2067,6 @@ static int eem_probe(struct platform_device *pdev)
 		if (det->ops->get_orig_volt_table)
 			det->ops->get_orig_volt_table(det);
 	}
-
 	eem_init01();
 	ptp_data[0] = 0;
 
@@ -2257,8 +2264,13 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
-	for (i = 0; i < sizeof(struct eem_devinfo) / sizeof(unsigned int); i++)
-		seq_printf(m, "M_HW_RES%d\t= 0x%08X\n", i, val[i]);
+	for (i = 0; i < sizeof(struct eem_devinfo) / sizeof(unsigned int); i++) {
+		/* Depend on EFUSE location */
+		if (i < 10)
+			seq_printf(m, "M_HW_RES%d\t= 0x%08X\n", i, val[i]);
+		else
+			seq_printf(m, "M_HW_RES%d\t= 0x%08X\n", i + 6, val[i]);
+	}
 
 	for_each_det(det) {
 		for (i = EEM_PHASE_INIT01; i < NR_EEM_PHASE; i++) {

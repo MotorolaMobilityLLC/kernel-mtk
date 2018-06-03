@@ -193,7 +193,8 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.volt_offset	= 0,
 #endif
 		.ctrl_id	= EEM_CTRL_GPU,
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		/* .features	= FEA_INIT01 | FEA_INIT02 | FEA_MON, */
+		.features	= 0,
 		.max_freq_khz	= 800000,/* MHz */
 		.VBOOT		= VBOOT_VAL_GPU, /* 10uV */
 		.VMAX		= VMAX_VAL_GPU,
@@ -223,7 +224,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 };
 
 #if DUMP_DATA_TO_DE
-const unsigned int reg_dump_addr_off[100] = {
+const unsigned int reg_dump_addr_off[105] = {
 	0x0000,
 	0x0004,
 	0x0008,
@@ -277,6 +278,10 @@ const unsigned int reg_dump_addr_off[100] = {
 	0x00F4,
 	0x00F8,
 	0x00FC,
+	0x00FC, /* dump this for gpu thermal */
+	0x00FC, /* dump this for gpu thermal */
+	0x00FC, /* dump this for gpu thermal */
+	0x00FC, /* dump this for gpu thermal */
 	0x0C00,
 	0x0C04,
 	0x0C08,
@@ -311,6 +316,7 @@ const unsigned int reg_dump_addr_off[100] = {
 	0x0C7C,
 	0x0C80,
 	0x0C84,
+	0x0C88, /* dump thermal sensor */
 	0x0F00,
 	0x0F04,
 	0x0F08,

@@ -313,6 +313,7 @@ static unsigned int eem_is_enabled(void)
 
 static void upower_wait_for_eem_volt_done(void)
 {
+#ifndef EEM_NOT_SET_VOLT
 	unsigned char eem_volt_not_ready = 0;
 	int i;
 
@@ -328,6 +329,7 @@ static void upower_wait_for_eem_volt_done(void)
 		/* if eem volt not ready, wait 100us */
 		udelay(100);
 	}
+#endif
 }
 
 static void upower_init_lkgidx(void)

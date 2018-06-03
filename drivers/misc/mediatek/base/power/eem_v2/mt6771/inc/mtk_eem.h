@@ -76,7 +76,7 @@ enum {
 };
 
 extern u32 get_devinfo_with_index(u32 index);
-extern const unsigned int reg_dump_addr_off[100];
+extern const unsigned int reg_dump_addr_off[105];
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #define CONFIG_EEM_AEE_RR_REC 1

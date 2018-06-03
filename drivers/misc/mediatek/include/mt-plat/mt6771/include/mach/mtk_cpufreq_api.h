@@ -68,6 +68,9 @@ extern unsigned int mt_cpufreq_get_cur_phy_freq(unsigned int cluster_id);
 extern unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(unsigned int cluster_id);
 extern void mt_cpufreq_setvolt_ocp_registerCB(cpuVoltsampler_func pCB);
 
+/* Upower */
+extern unsigned int mt_cpufreq_get_cpu_level(void);
+
 /* CPUFREQ */
 extern void aee_record_cpufreq_cb(unsigned int step);
 #endif

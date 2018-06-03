@@ -30,7 +30,7 @@
 #endif
 
 
-unsigned int __attribute__((weak)) mt_cpufreq_get_cur_volt(enum mt_cpu_dvfs_id id)
+unsigned int __attribute__((weak)) mt_cpufreq_get_cur_volt(unsigned int id)
 {
 	return 0;
 }
@@ -134,11 +134,11 @@ static unsigned int ppm_get_cpu_temp(enum ppm_cluster cluster)
 	unsigned int temp = 85;
 
 	switch (cluster) {
-	case PPM_CLUSTER_LL:
-		temp = get_immediate_cpuLL_wrap() / 1000;
-		break;
 	case PPM_CLUSTER_L:
 		temp = get_immediate_cpuL_wrap() / 1000;
+		break;
+	case PPM_CLUSTER_B:
+		temp = get_immediate_cpuB_wrap() / 1000;
 		break;
 	default:
 		ppm_err("@%s: invalid cluster id = %d\n", __func__, cluster);
@@ -151,14 +151,15 @@ static unsigned int ppm_get_cpu_temp(enum ppm_cluster cluster)
 
 static int ppm_get_spower_devid(enum ppm_cluster cluster)
 {
+#if 0
 	int devid = -1;
 
 	switch (cluster) {
-	case PPM_CLUSTER_LL:
-		devid = MTK_SPOWER_CPULL;
-		break;
 	case PPM_CLUSTER_L:
 		devid = MTK_SPOWER_CPUL;
+		break;
+	case PPM_CLUSTER_B:
+		devid = MTK_SPOWER_CPUB;
 		break;
 	default:
 		ppm_err("@%s: invalid cluster id = %d\n", __func__, cluster);
@@ -166,6 +167,9 @@ static int ppm_get_spower_devid(enum ppm_cluster cluster)
 	}
 
 	return devid;
+#else
+	return 0;
+#endif
 }
 
 
@@ -205,7 +209,7 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 #ifdef CONFIG_MTK_UNIFY_POWER
 		if (core > 0 && opp >= 0 && opp < DVFS_OPP_NUM) {
 #if 1
-			pwr_idx += cobra_tbl.basic_pwr_tbl[4*i+core-1][opp].power_idx;
+			pwr_idx += cobra_tbl->basic_pwr_tbl[4*i+core-1][opp].power_idx;
 #else
 			pwr_idx += ((upower_get_power(i, opp, UPOWER_DYN) +
 				upower_get_power(i, opp, UPOWER_LKG)) * core +
@@ -320,7 +324,7 @@ unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 #else
 			temp = 85;
 #endif
-			volt = mt_cpufreq_get_cur_volt((enum mt_cpu_dvfs_id)i) / 100;
+			volt = mt_cpufreq_get_cur_volt(i) / 100;
 			dev_id = ppm_get_spower_devid((enum ppm_cluster)i);
 			if (dev_id < 0)
 				return 0;
@@ -333,7 +337,7 @@ unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 #else
 		temp = 85;
 #endif
-		volt = mt_cpufreq_get_cur_volt((enum mt_cpu_dvfs_id)cluster) / 100;
+		volt = mt_cpufreq_get_cur_volt(cluster) / 100;
 		dev_id = ppm_get_spower_devid((enum ppm_cluster)cluster);
 		if (dev_id < 0)
 			return 0;
