@@ -462,7 +462,8 @@ void ANX7625_config(void)
 
 BYTE ANX7625_Chip_Located(void)
 {
-	BYTE c1, c2;
+	BYTE c1 = 0;
+	BYTE c2 = 0;
 
 	MI2_power_on();
 	Read_Reg(TCPC_INTERFACE, PRODUCT_ID_L, &c1);
