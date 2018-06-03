@@ -216,6 +216,12 @@
 		reg = <0 0x10005000 0 0x1000>;
 	};
 
+	dvfsp@10940000 {
+		compatible = "mediatek,mt6763-dvfsp";
+		reg = <0 0x10940000 0 0x10000>,
+		      <0 0x0011bc00 0 0x1400>;
+	};
+
 	sleep@10006000 {
 		compatible = "mediatek,sleep";
 		reg = <0 0x10006000 0 0x1000>;

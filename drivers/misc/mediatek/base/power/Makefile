@@ -20,6 +20,7 @@ obj-$(CONFIG_MACH_MT6759) += ocp_v1/
 obj-$(CONFIG_MACH_MT6799) += leakage_table_v1/
 #obj-$(CONFIG_MACH_MT6759) += leakage_table_v1/
 obj-$(CONFIG_MACH_MT6799) += cpufreq_v1/
+#obj-$(CONFIG_MACH_MT6763) += cpufreq_v1/
 #obj-$(CONFIG_MACH_MT6759) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6799) += eem_v1/
 obj-$(CONFIG_MACH_MT6759) += eem_v2/
