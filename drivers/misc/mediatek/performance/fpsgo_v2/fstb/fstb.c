@@ -67,7 +67,6 @@ static struct workqueue_struct *wq;
 
 static int fstb_fps_klog_on;
 
-static unsigned int fstb_fps_cur_limit;
 static struct dentry *fstb_debugfs_dir;
 
 #define CFG_MAX_FPS_LIMIT	60
@@ -642,6 +641,8 @@ void fpsgo_comp2fstb_queue_time_update(int pid,
 		new_frame_info->queue_time_end = 0;
 		new_frame_info->weighted_cpu_time_begin = 0;
 		new_frame_info->weighted_cpu_time_end = 0;
+		new_frame_info->weighted_gpu_time_begin = 0;
+		new_frame_info->weighted_gpu_time_end = 0;
 		new_frame_info->new_info = 1;
 		iter = new_frame_info;
 		hlist_add_head(&iter->hlist, &fstb_frame_infos);
@@ -1291,44 +1292,6 @@ static const struct file_operations fstb_fps_fops = {
 	.release = single_release,
 };
 
-static ssize_t fstb_count_write(struct file *filp, const char __user *buf, size_t len, loff_t *data)
-{
-	char tmp[32] = {0};
-
-	len = (len < (sizeof(tmp) - 1)) ? len : (sizeof(tmp) - 1);
-	return len;
-}
-
-static int fstb_count_read(struct seq_file *m, void *v)
-{
-	struct disp_session_info info;
-
-
-	memset(&info, 0, sizeof(info));
-	info.session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
-
-	disp_mgr_get_session_info(&info);
-
-	seq_printf(m, "%d,%d\n",
-			info.updateFPS / 100, fstb_fps_cur_limit);
-
-	return 0;
-}
-
-static int fstb_count_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, fstb_count_read, NULL);
-}
-
-static const struct file_operations tm_fps_fops = {
-	.owner = THIS_MODULE,
-	.open = fstb_count_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.write = fstb_count_write,
-	.release = single_release,
-};
-
 static ssize_t fpsgo_status_write(struct file *filp, const char __user *buf, size_t len, loff_t *data)
 {
 	char tmp[32] = {0};
@@ -1457,12 +1420,6 @@ int mtk_fstb_init(void)
 			fstb_debugfs_dir,
 			NULL,
 			&fpsgo_status_fops);
-
-	debugfs_create_file("fps_count",
-			S_IRUGO | S_IWUSR | S_IWGRP,
-			fstb_debugfs_dir,
-			NULL,
-			&tm_fps_fops);
 
 	debugfs_create_file("fstb_debug",
 			S_IRUGO | S_IWUSR | S_IWGRP,
