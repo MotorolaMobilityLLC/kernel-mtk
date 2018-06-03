@@ -1032,6 +1032,8 @@ s32 cmdq_task_reset(struct cmdqRecStruct *handle)
 	handle->durAlloc = 0;
 	handle->durReclaim = 0;
 	handle->durRelease = 0;
+	handle->prepare = cmdq_task_prepare;
+	handle->unprepare = cmdq_task_unprepare;
 
 	/* store caller info for debug */
 	if (current) {
@@ -1694,6 +1696,20 @@ s32 cmdq_rec_setup_profile_marker_data(
 		pDesc->profileMarker.tag[i] = handle->profileMarker.tag[i];
 
 	return 0;
+}
+
+void cmdq_task_prepare(struct cmdqRecStruct *handle)
+{
+	/* enable resource clock for display task */
+	if (handle->res_flag_acquire)
+		cmdq_mdp_enable_res(handle->res_flag_acquire, true);
+}
+
+void cmdq_task_unprepare(struct cmdqRecStruct *handle)
+{
+	/* disable resource clock for display task */
+	if (handle->res_flag_release)
+		cmdq_mdp_enable_res(handle->res_flag_release, false);
 }
 
 s32 cmdq_task_flush(struct cmdqRecStruct *handle)

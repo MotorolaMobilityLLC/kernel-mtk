@@ -92,6 +92,7 @@ struct cmdq_thread {
 	u32			idx;
 	struct work_struct	timeout_work;
 	bool			dirty;
+	u64			exec_time;
 };
 
 struct cmdq_task {
@@ -480,12 +481,15 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 	task->thread = thread;
 	task->pkt = pkt;
 
+	thread->exec_time = sched_clock();
+
 	if (list_empty(&thread->task_busy_list)) {
 		WARN_ON(cmdq_clk_enable(cmdq) < 0);
 		WARN_ON(cmdq_thread_reset(cmdq, thread) < 0);
 
-		cmdq_log("task %pa size:%zu thread->base=0x%p",
-			&task->pa_base, pkt->cmd_buf_size, thread->base);
+		cmdq_log("task %pa size:%zu thread->base=0x%p thread:%u",
+			&task->pa_base, pkt->cmd_buf_size, thread->base,
+			thread->idx);
 
 		writel(task->pa_base, thread->base + CMDQ_THR_CURR_ADDR);
 #ifdef CMDQ_MEMORY_JUMP
@@ -513,8 +517,9 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		curr_pa = readl(thread->base + CMDQ_THR_CURR_ADDR);
 		end_pa = readl(thread->base + CMDQ_THR_END_ADDR);
 
-		cmdq_log("curr task %p~%p, thread->base=%p",
-			(void *)curr_pa, (void *)end_pa, thread->base);
+		cmdq_log("curr task %p~%p, thread->base=%p thread:%u",
+			(void *)curr_pa, (void *)end_pa, thread->base,
+			thread->idx);
 
 		/*
 		 * Atomic execution should remove the following wfe, i.e. only
@@ -969,6 +974,25 @@ static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 	if (list_empty(&thread->task_busy_list)) {
 		spin_unlock_irqrestore(&thread->chan->lock, flags);
 		return;
+	}
+
+	/* If only 1 task in list and time small than timeout value,
+	 * it is last task timeout. Skip it.
+	 */
+	task = list_first_entry(&thread->task_busy_list,
+		typeof(*task), list_entry);
+	tmp = list_last_entry(&thread->task_busy_list,
+			typeof(*task), list_entry);
+	if (task == tmp) {
+		u64 remain_time = sched_clock() - thread->exec_time;
+
+		remain_time = div_s64(remain_time, 1000000);
+		if (remain_time < task->pkt->timeout) {
+			mod_timer(&thread->timeout, jiffies +
+				msecs_to_jiffies(remain_time));
+			spin_unlock_irqrestore(&thread->chan->lock, flags);
+			return;
+		}
 	}
 
 	cmdq_err("timeout for thread:0x%p chan:0x%p idx:%u usage:%d",
