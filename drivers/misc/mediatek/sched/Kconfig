@@ -1,5 +1,5 @@
 menu "MTK runqueue statistic calculation and CPU affinity"
-config MT_CPU_AFFINITY
+config MTK_CPU_AFFINITY
 	bool "Enhance CPU affinity in hotplug"
 	depends on HOTPLUG_CPU
 	help
@@ -18,7 +18,7 @@ config MT_SCHED_INTEROP
 	   that is, one CPU has more than 2 tasks, however, one CPU is IDLE
 	   We make RT & CFS to check each other and make load more balance.
 
-config MT_SCHED_TRACE
+config MTK_SCHED_TRACE
 	bool "mt scheduling trace, output mtk schedule trace into FTRACE"
 	default n
 	help
@@ -28,9 +28,9 @@ config MT_SCHED_TRACE
 	   including select_task_rq, check_preempt, find_lowest_rq.
 	   Say no if not sure.
 
-config MT_SCHED_DEBUG
+config MTK_SCHED_DEBUG
 	bool "mt scheduling log, also output the scheduling log into Kernel log"
-	depends on MT_SCHED_TRACE
+	depends on MTK_SCHED_TRACE
 	default n
 	help
 	   MTK scheduling log, add scheduling log into Kernel log.
@@ -38,7 +38,7 @@ config MT_SCHED_DEBUG
 	   information at kernel log.
 	   Say no if not sure.
 
-config MT_DEBUG_PREEMPT
+config MTK_DEBUG_PREEMPT
 	bool "debug preempt, output the preempt enable/disable to FTRACE"
 	default n
 	help
@@ -47,11 +47,11 @@ config MT_DEBUG_PREEMPT
 	   Dump preempt count in kernel log.
 	   Say no if not sure.
 
-config MT_RT_THROTTLE_MON
+config MTK_RT_THROTTLE_MON
 	bool "mt rt throttle monitor"
 	default n
 	help
-	  MT_RT_THROTTLE_MON is used to monitor rt throttle. When rt throttle activated
+	  MTK_RT_THROTTLE_MON is used to monitor rt throttle. When rt throttle activated
 	  print 5 longest execusion time rt tasks. Say Y here to enable rt throttle
 	  monitor. If you are not sure about whether to enable it or not, please set n.
 
