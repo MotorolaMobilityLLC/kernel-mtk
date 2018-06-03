@@ -39,9 +39,9 @@ static unsigned int gM4UTagCount[] = { 64 };
 
 /* static M4U_RANGE_DES_T gM4u1_seq[M4U1_SEQ_NR] = {{0}}; */
 static M4U_RANGE_DES_T *gM4USeq[] = { NULL, NULL };
-static M4U_MAU_STATUS_T gM4u0_mau[M4U0_MAU_NR] = { {0} };
+/*static M4U_MAU_STATUS_T gM4u0_mau[M4U0_MAU_NR] = { {0} };*/
 
-static unsigned int gMAU_candidate_id = M4U0_MAU_NR - 1;
+/*static int gMAU_candidate_id = M4U0_MAU_NR - 1;*/
 
 static DEFINE_MUTEX(gM4u_seq_mutex);
 
@@ -251,6 +251,7 @@ int mau_start_monitor(int m4u_id, int m4u_slave_id, int mau_set,
 
 int config_mau(M4U_MAU_STRUCT mau)
 {
+#if 0
 	int i;
 	int free_id = -1;
 	int m4u_id = m4u_port_2_m4u_id(mau.port);
@@ -297,6 +298,8 @@ int config_mau(M4U_MAU_STRUCT mau)
 	mau_start_monitor(m4u_id, larb_2_m4u_slave_id(larb), free_id, (int)mau.write,
 			1, 0, 0, MVAStart, MVAEnd, 1 << m4u_port_2_larb_port(mau.port), 1 << larb);
 	return free_id;
+#endif
+	return 0;
 }
 
 /* notes: you must fill cfg->m4u_id/m4u_slave_id/mau_set before call this func. */
