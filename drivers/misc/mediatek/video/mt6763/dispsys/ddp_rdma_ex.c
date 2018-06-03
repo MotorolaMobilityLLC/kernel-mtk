@@ -197,7 +197,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 {
 
 	/* rdma golden setting variables */
-	unsigned int mmsysclk = 315;
+	unsigned int mmsysclk = 300;
 	unsigned int is_wrot_sram = 0;
 	unsigned int fifo_mode = 1;
 
@@ -209,7 +209,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, struct g
 	unsigned long long fill_rate = 0;
 	unsigned long long consume_rate = 0;
 
-	unsigned int fifo_valid_size = 640;
+	unsigned int fifo_valid_size = 320;
 
 	/* working variables */
 	unsigned int ultra_low;
