@@ -931,7 +931,8 @@ static long vcodec_lockhw(unsigned long arg)
 
 					bLockedHW = VAL_TRUE;
 					if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
-						rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
+						rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
+						rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
 #ifndef KS_POWER_WORKAROUND
 						venc_power_on();
 #endif
@@ -1108,7 +1109,8 @@ static long vcodec_unlockhw(unsigned long arg)
 			grVcodecHWLock.pvHandle = 0;
 			grVcodecHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
 			if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
-				rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
+				rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
+				rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
 				disable_irq(VENC_IRQ_ID);
 
 				/* bianco VCODEC_SEL reset */
