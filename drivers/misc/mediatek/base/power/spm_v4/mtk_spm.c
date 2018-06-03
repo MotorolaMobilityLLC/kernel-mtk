@@ -19,14 +19,18 @@
 #include <linux/delay.h>
 #include <linux/atomic.h>
 #include <mtk_spm_idle.h>
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
+#endif
 #include <mtk_pmic_api_buck.h>
 #include <upmu_sw.h>
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <mtk_spm_vcore_dvfs.h>
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 #include <mtk_spm_internal.h>
+#ifdef CONFIG_MTK_DRAMC
 #include <mtk_dramc.h>
+#endif /* CONFIG_MTK_DRAMC */
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
@@ -37,12 +41,14 @@
 #ifdef CONFIG_MTK_WD_KICKER
 #include <mach/wd_api.h>
 #endif
+#include <linux/wakelock.h>
 
 #include <linux/platform_device.h>
 #include <linux/seq_file.h>
 #include <linux/debugfs.h>
 #include <mtk_spm_misc.h>
 #include <mtk_spm_resource_req_internal.h>
+#include <mt-plat/mtk_cirq.h>
 
 #include <trace/events/mtk_events.h>
 
@@ -55,8 +61,11 @@ void __iomem *spm_base;
 void __iomem *sleep_reg_md_base;
 u32 spm_irq_0;
 
-/* FIXME: */
+#if defined(CONFIG_MACH_MT6763)
 #define NF_EDGE_TRIG_IRQS	7
+#elif defined(CONFIG_MACH_MT6739)
+#define NF_EDGE_TRIG_IRQS	3
+#endif
 static u32 edge_trig_irqs[NF_EDGE_TRIG_IRQS];
 
 /**************************************
@@ -75,32 +84,37 @@ static twam_handler_t spm_twam_handler;
 
 void __attribute__((weak)) spm_sodi3_init(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) spm_sodi_init(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) spm_deepidle_init(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) spm_vcorefs_init(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) mt_power_gs_dump_suspend(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
+}
+
+void __attribute__((weak)) set_wakeup_sources(u32 *list, u32 num_events)
+{
+	spm_crit2("NO %s !!!\n", __func__);
 }
 
 int __attribute__((weak)) spm_fs_init(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
 	return 0;
 }
 
@@ -128,17 +142,19 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 	mt_secure_call(MTK_SIP_KERNEL_SPM_IRQ0_HANDLER, isr, 0, 0);
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
+	if (isr & (ISRS_SW_INT1)) {
+		spm_err("IRQ0 (ISRS_SW_INT1) HANDLER SHOULD NOT BE EXECUTED (0x%x)\n", isr);
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+		spm_vcorefs_dump_dvfs_regs(NULL);
+#endif
+		return IRQ_HANDLED;
+	}
+
 	if ((isr & ISRS_TWAM) && spm_twam_handler)
 		spm_twam_handler(&twamsig);
 
 	if (isr & (ISRS_SW_INT0 | ISRS_PCM_RETURN))
 		spm_err("IRQ0 HANDLER SHOULD NOT BE EXECUTED (0x%x)\n", isr);
-
-	if (isr & (ISRS_SW_INT1)) {
-		spm_err("IRQ0 (ISRS_SW_INT1) HANDLER SHOULD NOT BE EXECUTED (0x%x)\n", isr);
-		spm_vcorefs_dump_dvfs_regs(NULL);
-		return IRQ_HANDLED;
-	}
 
 	return IRQ_HANDLED;
 }
@@ -187,6 +203,7 @@ static void spm_register_init(void)
 
 	spm_err("spm_base = %p, sleep_reg_md_base = %p, spm_irq_0 = %d\n", spm_base, sleep_reg_md_base, spm_irq_0);
 
+#if defined(CONFIG_MACH_MT6763)
 	/* mipi_apb_tx_irq */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 	if (!node) {
@@ -239,7 +256,39 @@ static void spm_register_init(void)
 			spm_err("get auxadc failed\n");
 	}
 #endif
+#elif defined(CONFIG_MACH_MT6739)
+	/* kp_irq_b */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,kp");
+	if (!node) {
+		spm_err("find kp node failed\n");
+	} else {
+		edge_trig_irqs[0] = irq_of_parse_and_map(node, 0);
+		if (!edge_trig_irqs[0])
+			spm_err("get kp failed\n");
+	}
 
+	/* md_wdt_irq_b */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdcldma");
+	if (!node) {
+		spm_err("find mdcldma node failed\n");
+	} else {
+		edge_trig_irqs[1] = irq_of_parse_and_map(node, 3);
+		if (!edge_trig_irqs[1])
+			spm_err("get mdcldma failed\n");
+	}
+
+	/* conn_wdt_irq_b */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6739-consys");
+	if (!node) {
+		spm_err("find mt6739-consys node failed\n");
+	} else {
+		edge_trig_irqs[2] = irq_of_parse_and_map(node, 1);
+		if (!edge_trig_irqs[2])
+			spm_err("get mt6739-consys failed\n");
+	}
+#endif
+
+#if defined(CONFIG_MACH_MT6763)
 	spm_err("edge trigger irqs: %d, %d, %d, %d, %d, %d, %d\n",
 		 edge_trig_irqs[0],
 		 edge_trig_irqs[1],
@@ -248,9 +297,16 @@ static void spm_register_init(void)
 		 edge_trig_irqs[4],
 		 edge_trig_irqs[5],
 		 edge_trig_irqs[6]);
+#elif defined(CONFIG_MACH_MT6739)
+	spm_err("edge trigger irqs: %d, %d, %d\n",
+		 edge_trig_irqs[0],
+		 edge_trig_irqs[1],
+		 edge_trig_irqs[2]);
+#endif
 
-	/* FIXME: */
-	/* spm_set_dummy_read_addr(true); */
+#if defined(CONFIG_MACH_MT6739)
+	spm_set_dummy_read_addr(true);
+#endif /* CONFIG_MACH_MT6739 */
 }
 
 static int local_spm_load_firmware_status = -1;
@@ -383,7 +439,15 @@ static struct platform_driver spm_dev_drv = {
 
 static struct platform_device *pspmdev;
 
+struct wake_lock spm_wakelock;
+
+void spm_pm_stay_awake(int sec)
+{
+	wake_lock_timeout(&spm_wakelock, HZ * sec);
+};
+
 #ifdef CONFIG_MTK_DRAMC
+#if defined(CONFIG_MACH_MT6763)
 static void __spm_check_dram_type(void)
 {
 	int ddr_type = get_ddr_type();
@@ -397,6 +461,17 @@ static void __spm_check_dram_type(void)
 		__spmfw_idx = SPMFW_LP3_1CH;
 	pr_info("#@# %s(%d) __spmfw_idx 0x%x\n", __func__, __LINE__, __spmfw_idx);
 };
+#elif defined(CONFIG_MACH_MT6739)
+static void __spm_check_dram_type(void)
+{
+	__spmfw_idx = 0;
+}
+#endif /* CONFIG_MTK_DRAMC */
+#else
+static void __spm_check_dram_type(void)
+{
+	__spmfw_idx = 0;
+}
 #endif /* CONFIG_MTK_DRAMC */
 
 int __spm_get_dram_type(void)
@@ -412,6 +487,8 @@ int __init spm_module_init(void)
 	int ret = -1;
 	int is_ext_buck = 0;
 
+	wake_lock_init(&spm_wakelock, WAKE_LOCK_SUSPEND, "spm");
+
 	spm_register_init();
 	if (spm_irq_register() != 0)
 		r = -EPERM;
@@ -419,6 +496,11 @@ int __init spm_module_init(void)
 	if (spm_fs_init() != 0)
 		r = -EPERM;
 #endif
+
+#ifdef CONFIG_FAST_CIRQ_CLONE_FLUSH
+	set_wakeup_sources(edge_trig_irqs, NF_EDGE_TRIG_IRQS);
+#endif
+
 	spm_sodi3_init();
 	spm_sodi_init();
 	spm_deepidle_init();
@@ -468,7 +550,9 @@ int __init spm_module_init(void)
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
+#if defined(CONFIG_MACH_MT6763)
 	is_ext_buck = is_ext_buck_exist();
+#endif
 #endif
 	pr_info("#@# %s(%d) is_ext_buck_exist() 0x%x\n", __func__, __LINE__, is_ext_buck);
 	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, __spm_get_dram_type(), is_ext_buck);
@@ -588,6 +672,7 @@ struct ddrphy_golden_cfg {
 	u32 value;
 };
 
+#if defined(CONFIG_MACH_MT6763)
 static struct ddrphy_golden_cfg ddrphy_setting_lp4_2ch[] = {
 	{DRAMC_AO_CHA, 0x038, 0xc0000027, 0xc0000007},
 	{DRAMC_AO_CHB, 0x038, 0xc0000027, 0xc0000007},
@@ -656,6 +741,14 @@ static struct ddrphy_golden_cfg ddrphy_setting_lp3_1ch[] = {
 	/* {PHY_AO_CHB, 0xc00, 0x0001000f, 0x0001000f}, */
 	/* {PHY_AO_CHB, 0xc80, 0x0001000f, 0x0001000f}, */
 };
+#elif defined(CONFIG_MACH_MT6739)
+static struct ddrphy_golden_cfg _ddrphy_setting[] = {
+	{PHY_AO_CHA, 0x5c0, 0xffffffff, 0x063C0000},
+	{PHY_AO_CHA, 0x5c4, 0xffffffff, 0x00000000},
+	{PHY_AO_CHA, 0x5c8, 0xffffffff, 0x0000FC10},
+	{PHY_AO_CHA, 0x5cc, 0xffffffff, 0x40101000},
+};
+#endif
 
 int spm_golden_setting_cmp(bool en)
 {
@@ -665,6 +758,7 @@ int spm_golden_setting_cmp(bool en)
 	if (!en)
 		return r;
 
+#if defined(CONFIG_MACH_MT6763)
 	switch (__spm_get_dram_type()) {
 	case SPMFW_LP4X_2CH:
 		ddrphy_setting = ddrphy_setting_lp4_2ch;
@@ -682,6 +776,10 @@ int spm_golden_setting_cmp(bool en)
 		return r;
 	}
 	/*Compare Dramc Goldeing Setting */
+#elif defined(CONFIG_MACH_MT6739)
+	ddrphy_setting = _ddrphy_setting;
+	ddrphy_num = ARRAY_SIZE(_ddrphy_setting);
+#endif
 
 	for (i = 0; i < ddrphy_num; i++) {
 		u32 value;
@@ -719,20 +817,35 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_DEEPIDLE:
+#if defined(CONFIG_MACH_MT6763)
 		/* nothing */
+#elif defined(CONFIG_MACH_MT6739)
+		pmic_ldo_vldo28_lp(SRCLKEN2, 1, HW_LP);
+#endif
 		break;
 	case PMIC_PWR_SODI3:
+#if defined(CONFIG_MACH_MT6763)
 		pmic_ldo_vsram_proc_lp(SRCLKEN0, 1, HW_LP);
 		pmic_ldo_vldo28_lp(SRCLKEN0, 0, HW_LP);
 		pmic_ldo_vldo28_lp(SW, 1, SW_ON);
+#elif defined(CONFIG_MACH_MT6739)
+#endif
 		break;
 	case PMIC_PWR_SODI:
+#if defined(CONFIG_MACH_MT6763)
 		/* nothing */
+#elif defined(CONFIG_MACH_MT6739)
+		pmic_ldo_vldo28_lp(SRCLKEN2, 0, HW_LP);
+		pmic_ldo_vldo28_lp(SW, 1, SW_ON);
+#endif
 		break;
 	case PMIC_PWR_SUSPEND:
+#if defined(CONFIG_MACH_MT6763)
 		pmic_ldo_vsram_proc_lp(SRCLKEN0, 0, HW_LP);
 		pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);
 		pmic_ldo_vldo28_lp(SRCLKEN0, 1, HW_LP);
+#elif defined(CONFIG_MACH_MT6739)
+#endif
 		break;
 	default:
 		pr_debug("spm pmic power mode (%d) is not configured\n", mode);

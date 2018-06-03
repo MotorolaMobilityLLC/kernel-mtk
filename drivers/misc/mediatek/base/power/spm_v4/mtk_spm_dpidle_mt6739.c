@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -28,26 +28,36 @@
 void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctrl)
 {
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	/* set PMIC WRAP table for deepidle power control */
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-
 	/* setup PMIC low power mode */
 	spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0);
 #endif
 
-	__spm_sync_pcm_flags(pwrctrl);
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	/* vs1 normal voltage voter (AP and CONN) */
+	if (spm_read(PWR_STATUS) & PWR_STATUS_CONN)
+		pmic_set_register_value(PMIC_RG_BUCK_VS1_VOTER_EN_SET, 0x01 << 1);
+	else
+		pmic_set_register_value(PMIC_RG_BUCK_VS1_VOTER_EN_CLR, 0x01 << 1);
 
-	dvfsrc_md_scenario_update(1);
+	pmic_set_register_value(PMIC_RG_BUCK_VS1_VOTER_EN_CLR, 0x01 << 0);
+#endif
+
+	if (__spm_get_md_srcclkena_setting())
+		dvfsrc_mdsrclkena_control_nolock(0);
+
+	__spm_sync_pcm_flags(pwrctrl);
 }
 
 void spm_dpidle_post_process(void)
 {
-	dvfsrc_md_scenario_update(0);
-
-#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	/* set PMIC WRAP table for normal power control */
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	/* vs1 normal voltage voter (AP and CONN) */
+	pmic_set_register_value(PMIC_RG_BUCK_VS1_VOTER_EN_SET, 0x01 << 0);
+	pmic_set_register_value(PMIC_RG_BUCK_VS1_VOTER_EN_SET, 0x01 << 1);
 #endif
+
+	if (__spm_get_md_srcclkena_setting())
+		dvfsrc_mdsrclkena_control_nolock(1);
 }
 
 void spm_deepidle_chip_init(void)

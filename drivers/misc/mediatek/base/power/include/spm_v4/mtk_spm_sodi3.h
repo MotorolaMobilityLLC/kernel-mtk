@@ -23,10 +23,6 @@
 #include "mtk_spm_internal.h"
 #include "mtk_spm_sodi.h"
 
-#ifdef SPM_SODI3_PROFILE_TIME
-extern unsigned int	soidle3_profile[4];
-#endif
-
 enum spm_sodi3_step {
 	SPM_SODI3_ENTER = 0,
 	SPM_SODI3_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI,
@@ -54,7 +50,6 @@ u32 __attribute__((weak)) aee_rr_curr_sodi3_val(void)
 {
 	return 0;
 }
-
 #endif
 
 static inline void spm_sodi3_footprint(enum spm_sodi3_step step)
@@ -80,9 +75,8 @@ static inline void spm_sodi3_aee_init(void)
 
 #define spm_sodi3_reset_footprint() spm_sodi3_aee_init()
 
-
-extern void spm_enable_mmu_smi_async(void);
-extern void spm_disable_mmu_smi_async(void);
+extern void spm_sodi3_post_process(void);
+extern void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond);
 
 #endif /* __MTK_SPM_SODI3_H__ */
 

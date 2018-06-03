@@ -104,5 +104,8 @@ unsigned int spm_sodi_output_log(
 	struct wake_status *wakesta, struct pcm_desc *pcmdesc,
 	u32 sodi_flags, u32 operation_cond);
 
+extern void spm_sodi_post_process(void);
+extern void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond);
+
 #endif /* __MTK_SPM_SODI_H__ */
 

@@ -25,27 +25,34 @@
 #include <linux/of_address.h>
 #endif
 
-/* #include <mach/irqs.h> */
-#include <mach/mtk_gpt.h>
-
+#include <mtk_gpt.h>
 #include <mt-plat/mtk_boot.h>
 #if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mtk_cirq.h>
 #endif
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
+#endif
+
+#if defined(CONFIG_MACH_MT6739)
+#include <mtk_clkbuf_ctl.h>
+#include <mtk_pmic_api_buck.h>
+#include <mt-plat/mtk_rtc.h>
+#endif
+
 #include <mt-plat/mtk_io.h>
 
 #include <mtk_spm_sodi.h>
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_spm_pmic_wrap.h>
-#include <mtk_spm_vcore_dvfs.h>
 
 #include <mtk_power_gs_api.h>
 
 #include <trace/events/mtk_idle_event.h>
 
 #include <mtk_idle_internal.h>
+#include <mtk_idle_profile.h>
 
 /**************************************
  * only for internal debug
@@ -64,7 +71,6 @@ enum spm_sodi_logout_reason {
 
 #define LOG_BUF_SIZE					(256)
 #define SODI_LOGOUT_TIMEOUT_CRITERIA	(20)
-#define SODI_LOGOUT_MAXTIME_CRITERIA	(2500)
 #define SODI_LOGOUT_INTERVAL_CRITERIA	(5000U)	/* unit:ms */
 
 static struct pwr_ctrl sodi_ctrl;
@@ -77,30 +83,6 @@ struct spm_lp_scen __spm_sodi = {
 static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
 static bool gSpm_lcm_vdo_mode;
-
-static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
-{
-#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-
-	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
-#endif
-
-#if defined(CONFIG_MACH_MT6763)
-	dvfsrc_md_scenario_update(1);
-#endif
-}
-
-static void spm_sodi_post_process(void)
-{
-#if defined(CONFIG_MACH_MT6763)
-	dvfsrc_md_scenario_update(0);
-#endif
-
-#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-#endif
-}
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
@@ -164,6 +146,15 @@ static void spm_sodi_notify_sspm_after_wfi_async_wait(void)
 #else /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
+#if defined(CONFIG_MACH_MT6739)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	wk_auxadc_bgd_ctrl(0);
+	rtc_clock_enable(0);
+
+	if (operation_cond & DEEPIDLE_OPT_CLKBUF_BBLPM)
+		clk_buf_control_bblpm(1);
+#endif
+#endif
 }
 
 static void spm_sodi_notify_sspm_before_wfi_async_wait(void)
@@ -172,6 +163,15 @@ static void spm_sodi_notify_sspm_before_wfi_async_wait(void)
 
 static void spm_sodi_notify_sspm_after_wfi(u32 operation_cond)
 {
+#if defined(CONFIG_MACH_MT6739)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	if (operation_cond & DEEPIDLE_OPT_CLKBUF_BBLPM)
+		clk_buf_control_bblpm(0);
+
+	rtc_clock_enable(1);
+	wk_auxadc_bgd_ctrl(1);
+#endif
+#endif
 }
 
 static void spm_sodi_notify_sspm_after_wfi_async_wait(void)
@@ -247,8 +247,7 @@ static bool spm_sodi_is_not_gpt_event(
 
 static inline bool spm_sodi_abnormal_residency(struct wake_status *wakesta)
 {
-	return (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) ||
-			(wakesta->timer_out >= SODI_LOGOUT_MAXTIME_CRITERIA);
+	return (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA);
 }
 
 static inline bool spm_sodi_change_emi_state(struct wake_status *wakesta, int pre_emi_cnt)
@@ -285,6 +284,12 @@ static bool spm_sodi_mem_mode_change(void)
 	return logout;
 }
 
+static void spm_sodi_append_log(char *buf, const char *local_ptr)
+{
+	if ((strlen(buf) + strlen(local_ptr)) < LOG_BUF_SIZE)
+		strncat(buf, local_ptr, strlen(local_ptr));
+}
+
 unsigned int spm_sodi_output_log(struct wake_status *wakesta,
 	struct pcm_desc *pcmdesc, u32 flags, u32 operation_cond)
 {
@@ -297,9 +302,8 @@ unsigned int spm_sodi_output_log(struct wake_status *wakesta,
 	unsigned long int sodi_logout_curr_time = 0;
 	int need_log_out = 0;
 
-	#if defined(SPM_SODI_PROFILE_TIME) || defined(SPM_SODI3_PROFILE_TIME)
-	return wr;
-	#endif
+	if (mtk_idle_latency_profile_is_on())
+		return wr;
 
 	if (!(flags & SODI_FLAG_REDUCE_LOG) || (flags & SODI_FLAG_RESIDENCY)) {
 
@@ -357,18 +361,18 @@ unsigned int spm_sodi_output_log(struct wake_status *wakesta,
 
 				if (wakesta->r12 & WAKE_SRC_R12_PCM_TIMER) {
 					if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER)
-						strcat(buf, " PCM_TIMER");
+						spm_sodi_append_log(buf, " PCM_TIMER");
 
 					if (wakesta->wake_misc & WAKE_MISC_TWAM)
-						strcat(buf, " TWAM");
+						spm_sodi_append_log(buf, " TWAM");
 
 					if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE)
-						strcat(buf, " CPU");
+						spm_sodi_append_log(buf, " CPU");
 				}
 
-				for (i = 1; i < 32 ; i++) {
+				for (i = 1; i < 32; i++) {
 					if (wakesta->r12 & (1U << i)) {
-						strcat(buf, wakesrc_str[i]);
+						spm_sodi_append_log(buf, wakesrc_str[i]);
 						wr = WR_WAKE_SRC;
 					}
 				}
@@ -459,10 +463,10 @@ unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 			goto RESTORE_IRQ;
 		}
 	}
-#endif
 
 	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3(GS_ALL);
+#endif
 
 	spm_sodi_footprint_val((1 << SPM_SODI_ENTER_WFI) |
 		(1 << SPM_SODI_B4) | (1 << SPM_SODI_B5) | (1 << SPM_SODI_B6));

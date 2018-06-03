@@ -12,7 +12,7 @@
  */
 #include <linux/kernel.h>
 #include <linux/math64.h>
-#include <mach/mtk_gpt.h>
+#include <mtk_gpt.h>
 #include <mtk_cpufreq_api.h>
 #include "mtk_cpuidle.h"
 #include "mtk_idle_internal.h"
@@ -106,8 +106,6 @@ static struct mtk_idle_prof idle_prof[NR_TYPES] = {
 	[IDLE_TYPE_DP]  = DEFINE_ATTR("DP", "dpidle", 30000),
 	[IDLE_TYPE_SO3] = DEFINE_ATTR("SODI3", "soidle3", 30000),
 	[IDLE_TYPE_SO]  = DEFINE_ATTR("SODI", "soidle", 30000),
-	[IDLE_TYPE_MC]  = DEFINE_ATTR("MC", "mcidle", ~0),
-	[IDLE_TYPE_SL]  = DEFINE_ATTR("SL", "slidle", ~0),
 	[IDLE_TYPE_RG]  = DEFINE_ATTR("RG", "rgidle", ~0)
 };
 
@@ -190,7 +188,7 @@ void mtk_idle_ratio_calc_start(int type, int cpu)
 	if (idle_ratio_en && type >= 0 && type < NR_TYPES)
 		idle_prof[type].ratio.start = idle_get_current_time_ms();
 
-	if (type < IDLE_TYPE_MC) {
+	if (type < IDLE_TYPE_RG) {
 		spin_lock_irqsave(&recent_idle_ratio_spin_lock, flags);
 
 		recent_ratio.start_ts = idle_get_current_time_ms();
@@ -199,7 +197,7 @@ void mtk_idle_ratio_calc_start(int type, int cpu)
 	}
 
 #if SPM_MET_TAGGING
-	if (type < IDLE_TYPE_MC)
+	if (type < IDLE_TYPE_RG)
 		idle_get_current_time_us(idle_met_timestamp[type]);
 #endif
 }
@@ -209,7 +207,7 @@ void mtk_idle_ratio_calc_stop(int type, int cpu)
 	if (idle_ratio_en && type >= 0 && type < NR_TYPES)
 		idle_prof[type].ratio.value += idle_get_current_time_ms() - idle_prof[type].ratio.start;
 
-	if (type < IDLE_TYPE_MC) {
+	if (type < IDLE_TYPE_RG) {
 		struct mtk_idle_recent_ratio *ratio = NULL;
 		unsigned long flags;
 		unsigned long long interval = 0;
@@ -277,7 +275,7 @@ void mtk_idle_ratio_calc_stop(int type, int cpu)
 	}
 
 #if SPM_MET_TAGGING
-	if (type < IDLE_TYPE_MC) {
+	if (type < IDLE_TYPE_RG) {
 		unsigned long long idle_met_curr;
 
 		idle_get_current_time_us(idle_met_curr);
@@ -564,8 +562,6 @@ static char *dpidle_profile_tags[NB_DPIDLE_PROFILE - 1] = {
 	"DPIDLE_LEAVE",
 };
 
-#define SPM_DEEPIDLE_PROFILE_APXGPT GPT2
-
 void dpidle_set_profile_sampling(unsigned int time)
 {
 	int i;
@@ -580,13 +576,8 @@ void dpidle_set_profile_sampling(unsigned int time)
 
 void dpidle_profile_time(int idx)
 {
-	if (dpidle_profile_cnt) {
-#ifdef IDLE_PROF_USING_STD_TIMER
-		dpidle_profile[idx] = lower_32_bits(mtk_timer_get_cnt(2));
-#else
-		gpt_get_cnt(SPM_DEEPIDLE_PROFILE_APXGPT, &dpidle_profile[idx]);
-#endif
-	}
+	if (dpidle_profile_cnt)
+		dpidle_profile[idx] = lower_32_bits(sched_clock());
 }
 
 void dpidle_show_profile_time(void)
@@ -607,15 +598,21 @@ void dpidle_show_profile_time(void)
 					(abs(dpidle_profile[i] - dpidle_profile[i - 1]));
 		}
 
+#if defined(CONFIG_MACH_MT6763)
 		idle_buf_append(latency_profile_log, "cpu_freq:%u/%u\n",
 			mt_cpufreq_get_cur_freq(0),
 			mt_cpufreq_get_cur_freq(1));
+#elif defined(CONFIG_MACH_MT6739)
+		idle_buf_append(latency_profile_log, "cpu_freq:%u\n",
+			mt_cpufreq_get_cur_freq(0));
+#endif
 
 		idle_prof_crit("%s", get_idle_buf(latency_profile_log));
 	}
 }
 
-#define IDLE_PROFILE_GPT_TIMER_UNIT 13
+/* sched_clock ns to us */
+#define IDLE_PROFILE_SCHED_CLOCK_UNIT 1000
 
 void dpidle_show_profile_result(void)
 {
@@ -627,9 +624,90 @@ void dpidle_show_profile_result(void)
 
 		for (i = 0; i < (NB_DPIDLE_PROFILE - 1); i++)
 			latency_prof_crit("%s,%u\n", dpidle_profile_tags[i],
-				(dpidle_profile_seg[i] / sample / IDLE_PROFILE_GPT_TIMER_UNIT));
+				(dpidle_profile_seg[i] / sample / IDLE_PROFILE_SCHED_CLOCK_UNIT));
 	}
 }
+
+
+
+static bool profile_latency_enabled;
+void mtk_idle_latency_profile_enable(bool enable)
+{
+	profile_latency_enabled = enable;
+}
+
+bool mtk_idle_latency_profile_is_on(void)
+{
+	return profile_latency_enabled;
+}
+
+static unsigned int idle_profile[NR_TYPES][NR_PIDX*2];
+void mtk_idle_latency_profile(unsigned int idle_type, int idx)
+{
+	unsigned int cur_count = 0;
+	unsigned int *data;
+
+	data = &idle_profile[idle_type][0];
+
+	cur_count = lower_32_bits(sched_clock());
+
+	if (idx % 2 == 0)
+		data[idx/2] = cur_count;
+	else
+		data[idx/2] = cur_count > data[idx/2] ?
+			(cur_count - data[idx/2]) : (data[idx/2] - cur_count);
+}
+
+static char plog[256] = { 0 };
+#define log(fmt, args...) \
+		(p += scnprintf(p, sizeof(plog) - strlen(plog), fmt, ##args))
+
+#define PROFILE_LATENCY_NUMBER	(200)
+struct idle_profile_data {
+	unsigned long total[3];
+	unsigned int count;
+};
+
+static struct idle_profile_data g_pdata[NR_TYPES];
+
+void mtk_idle_latency_profile_result(unsigned int idle_type)
+{
+	unsigned int i;
+	char *p = plog;
+	unsigned int *data;
+	struct idle_profile_data *pdata;
+
+	data = &idle_profile[idle_type][0];
+	pdata  = &g_pdata[idle_type];
+
+#if defined(CONFIG_MACH_MT6763)
+	log("%s (%u/%u),", mtk_get_idle_name(idle_type),
+		mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1));
+#else
+	log("%s (%u),", mtk_get_idle_name(idle_type),
+		mt_cpufreq_get_cur_freq(0));
+#endif
+
+	for (i = 0; i < NR_PIDX; i++)
+		log("%u%s", data[i], (i == NR_PIDX - 1) ? "":",");
+
+	if (pdata->count < PROFILE_LATENCY_NUMBER) {
+		pdata->total[0] += (data[0]);
+		pdata->total[1] += (data[1]);
+		pdata->total[2] += (data[2]);
+		pdata->count++;
+	} else {
+		latency_prof_crit("avg %s: %u, %u, %u\n", mtk_get_idle_name(idle_type),
+			(unsigned int)pdata->total[0]/PROFILE_LATENCY_NUMBER,
+			(unsigned int)pdata->total[1]/PROFILE_LATENCY_NUMBER,
+			(unsigned int)pdata->total[2]/PROFILE_LATENCY_NUMBER);
+		pdata->count = 0;
+		pdata->total[0] = pdata->total[1] = pdata->total[2] = 0;
+	}
+
+	latency_prof_crit("%s\n", plog);
+}
+
 
 #if 0
 void idle_profile_delay(unsigned int us_time)

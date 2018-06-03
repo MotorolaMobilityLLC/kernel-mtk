@@ -132,6 +132,7 @@ struct pcm_desc {
 	u32 vec15;		/* event vector 15 config */
 };
 
+#if defined(CONFIG_MACH_MT6763)
 struct pwr_ctrl {
 	/* for SPM */
 	u32 pcm_flags;
@@ -148,6 +149,7 @@ struct pwr_ctrl {
 	u32 timer_val_ramp_en_sec;	/* stress for suspend */
 	u32 wake_src;
 	u32 wake_src_cust;	/* can override wake_src */
+	u32 wakelock_timer_val;
 	u8 wdt_disable;		/* disable wdt in suspend */
 
 	/* Auto-gen Start */
@@ -310,6 +312,7 @@ enum pwr_ctrl_enum {
 	PWR_TIMER_VAL_RAMP_EN_SEC,
 	PWR_WAKE_SRC,
 	PWR_WAKE_SRC_CUST,
+	PWR_WAKELOCK_TIMER_VAL,
 	PWR_WDT_DISABLE,
 	PWR_WFI_OP,
 	PWR_MP0_CPUTOP_IDLE_MASK,
@@ -423,6 +426,288 @@ enum pwr_ctrl_enum {
 	PWR_MAX_COUNT,
 };
 
+#elif defined(CONFIG_MACH_MT6739)
+
+struct pwr_ctrl {
+	/* for SPM */
+	u32 pcm_flags;
+	u32 pcm_flags_cust;	/* can override pcm_flags */
+	u32 pcm_flags_cust_set;	/* set bit of pcm_flags, after pcm_flags_cust */
+	u32 pcm_flags_cust_clr;	/* clr bit of pcm_flags, after pcm_flags_cust */
+	u32 pcm_flags1;
+	u32 pcm_flags1_cust;	/* can override pcm_flags1 */
+	u32 pcm_flags1_cust_set;	/* set bit of pcm_flags1, after pcm_flags1_cust */
+	u32 pcm_flags1_cust_clr;	/* clr bit of pcm_flags1, after pcm_flags1_cust */
+	u32 timer_val;		/* @ 1T 32K */
+	u32 timer_val_cust;	/* @ 1T 32K, can override timer_val */
+	u32 timer_val_ramp_en;		/* stress for dpidle */
+	u32 timer_val_ramp_en_sec;	/* stress for suspend */
+	u32 wake_src;
+	u32 wake_src_cust;	/* can override wake_src */
+	u32 wakelock_timer_val;
+	u8 wdt_disable;		/* disable wdt in suspend */
+
+	/* Auto-gen Start */
+
+	/* SPM_AP_STANDBY_CON */
+	u8 wfi_op;
+	u8 mp0_cputop_idle_mask;
+	u8 mcusys_idle_mask;
+	u8 mcu_ddren_req_dbc_en;
+	u8 mcu_apsrc_sel;
+	u8 mm_mask_b;
+	u8 md_ddr_en_0_dbc_en;
+	u8 md_ddr_en_1_dbc_en;
+	u8 md_mask_b;
+	u8 lte_mask_b;
+	u8 srcclkeni_mask_b;
+	u8 md_apsrc_1_sel;
+	u8 md_apsrc_0_sel;
+	u8 conn_ddr_en_dbc_en;
+	u8 conn_mask_b;
+	u8 conn_apsrc_sel;
+	u8 conn_srcclkena_sel_mask;
+
+	/* SPM_SRC_REQ */
+	u8 spm_apsrc_req;
+	u8 spm_f26m_req;
+	u8 spm_lte_req;
+	u8 spm_infra_req;
+	u8 spm_vrf18_req;
+	u8 spm_dvfs_req;
+	u8 spm_dvfs_force_down;
+	u8 spm_ddren_req;
+	u8 spm_rsv_src_req;
+	u8 spm_ddren_2_req;
+	u8 cpu_md_dvfs_sop_force_on;
+
+	/* SPM_SRC_MASK */
+	u8 csyspwreq_mask;
+	u8 ccif0_md_event_mask_b;
+	u8 ccif0_ap_event_mask_b;
+	u8 ccif1_md_event_mask_b;
+	u8 ccif1_ap_event_mask_b;
+	u8 ccifmd_md1_event_mask_b;
+	u8 ccifmd_md2_event_mask_b;
+	u8 dsi0_vsync_mask_b;
+	u8 dsi1_vsync_mask_b;
+	u8 dpi_vsync_mask_b;
+	u8 isp0_vsync_mask_b;
+	u8 isp1_vsync_mask_b;
+	u8 md_srcclkena_0_infra_mask_b;
+	u8 md_srcclkena_1_infra_mask_b;
+	u8 conn_srcclkena_infra_mask_b;
+	u8 sspm_srcclkena_infra_mask_b;
+	u8 srcclkeni_infra_mask_b;
+	u8 md_apsrc_req_0_infra_mask_b;
+	u8 md_apsrc_req_1_infra_mask_b;
+	u8 conn_apsrcreq_infra_mask_b;
+	u8 mcu_apsrcreq_infra_mask_b;
+	u8 md_ddr_en_0_mask_b;
+	u8 md_ddr_en_1_mask_b;
+	u8 md_vrf18_req_0_mask_b;
+	u8 md_vrf18_req_1_mask_b;
+	u8 md1_dvfs_req_mask;
+	u8 cpu_dvfs_req_mask;
+	u8 emi_bw_dvfs_req_mask;
+	u8 md_srcclkena_0_dvfs_req_mask_b;
+	u8 md_srcclkena_1_dvfs_req_mask_b;
+	u8 conn_srcclkena_dvfs_req_mask_b;
+
+	/* SPM_SRC2_MASK */
+	u8 dvfs_halt_mask_b;
+	u8 vdec_req_mask_b;
+	u8 gce_req_mask_b;
+	u8 cpu_md_dvfs_req_merge_mask_b;
+	u8 md_ddr_en_dvfs_halt_mask_b;
+	u8 dsi0_vsync_dvfs_halt_mask_b;
+	u8 dsi1_vsync_dvfs_halt_mask_b;
+	u8 dpi_vsync_dvfs_halt_mask_b;
+	u8 isp0_vsync_dvfs_halt_mask_b;
+	u8 isp1_vsync_dvfs_halt_mask_b;
+	u8 conn_ddr_en_mask_b;
+	u8 disp_req_mask_b;
+	u8 disp1_req_mask_b;
+	u8 mfg_req_mask_b;
+	u8 mcu_ddren_req_mask_b;
+	u8 mcu_apsrc_req_mask_b;
+	u8 ps_c2k_rccif_wake_mask_b;
+	u8 l1_c2k_rccif_wake_mask_b;
+	u8 sdio_on_dvfs_req_mask_b;
+	u8 emi_boost_dvfs_req_mask_b;
+	u8 cpu_md_emi_dvfs_req_prot_dis;
+	u8 dramc_spcmd_apsrc_req_mask_b;
+	u8 emi_boost_dvfs_req_2_mask_b;
+	u8 emi_bw_dvfs_req_2_mask;
+	u8 gce_vrf18_req_mask_b;
+
+	/* SPM_WAKEUP_EVENT_MASK */
+	u32 spm_wakeup_event_mask;
+
+	/* SPM_WAKEUP_EVENT_EXT_MASK */
+	u32 spm_wakeup_event_ext_mask;
+
+	/* SPM_SRC3_MASK */
+	u8 md_ddr_en_2_0_mask_b;
+	u8 md_ddr_en_2_1_mask_b;
+	u8 conn_ddr_en_2_mask_b;
+	u8 dramc_spcmd_apsrc_req_2_mask_b;
+	u8 spare1_ddren_2_mask_b;
+	u8 spare2_ddren_2_mask_b;
+	u8 ddren_emi_self_refresh_ch0_mask_b;
+	u8 ddren_emi_self_refresh_ch1_mask_b;
+	u8 ddren_mm_state_mask_b;
+	u8 ddren_sspm_apsrc_req_mask_b;
+	u8 ddren_dqssoc_req_mask_b;
+	u8 ddren2_emi_self_refresh_ch0_mask_b;
+	u8 ddren2_emi_self_refresh_ch1_mask_b;
+	u8 ddren2_mm_state_mask_b;
+	u8 ddren2_sspm_apsrc_req_mask_b;
+	u8 ddren2_dqssoc_req_mask_b;
+
+	/* MP0_CPU0_WFI_EN */
+	u8 mp0_cpu0_wfi_en;
+
+	/* MP0_CPU1_WFI_EN */
+	u8 mp0_cpu1_wfi_en;
+
+	/* MP0_CPU2_WFI_EN */
+	u8 mp0_cpu2_wfi_en;
+
+	/* MP0_CPU3_WFI_EN */
+	u8 mp0_cpu3_wfi_en;
+
+	/* Auto-gen End */
+};
+
+/* code gen by spm_pwr_ctrl_atf.pl, need struct pwr_ctrl */
+enum pwr_ctrl_enum {
+	PWR_PCM_FLAGS,
+	PWR_PCM_FLAGS_CUST,
+	PWR_PCM_FLAGS_CUST_SET,
+	PWR_PCM_FLAGS_CUST_CLR,
+	PWR_PCM_FLAGS1,
+	PWR_PCM_FLAGS1_CUST,
+	PWR_PCM_FLAGS1_CUST_SET,
+	PWR_PCM_FLAGS1_CUST_CLR,
+	PWR_TIMER_VAL,
+	PWR_TIMER_VAL_CUST,
+	PWR_TIMER_VAL_RAMP_EN,
+	PWR_TIMER_VAL_RAMP_EN_SEC,
+	PWR_WAKE_SRC,
+	PWR_WAKE_SRC_CUST,
+	PWR_WAKELOCK_TIMER_VAL,
+	PWR_WDT_DISABLE,
+	PWR_WFI_OP,
+	PWR_MP0_CPUTOP_IDLE_MASK,
+	PWR_MCUSYS_IDLE_MASK,
+	PWR_MCU_DDREN_REQ_DBC_EN,
+	PWR_MCU_APSRC_SEL,
+	PWR_MM_MASK_B,
+	PWR_MD_DDR_EN_0_DBC_EN,
+	PWR_MD_DDR_EN_1_DBC_EN,
+	PWR_MD_MASK_B,
+	PWR_LTE_MASK_B,
+	PWR_SRCCLKENI_MASK_B,
+	PWR_MD_APSRC_1_SEL,
+	PWR_MD_APSRC_0_SEL,
+	PWR_CONN_DDR_EN_DBC_EN,
+	PWR_CONN_MASK_B,
+	PWR_CONN_APSRC_SEL,
+	PWR_CONN_SRCCLKENA_SEL_MASK,
+	PWR_SPM_APSRC_REQ,
+	PWR_SPM_F26M_REQ,
+	PWR_SPM_LTE_REQ,
+	PWR_SPM_INFRA_REQ,
+	PWR_SPM_VRF18_REQ,
+	PWR_SPM_DVFS_REQ,
+	PWR_SPM_DVFS_FORCE_DOWN,
+	PWR_SPM_DDREN_REQ,
+	PWR_SPM_RSV_SRC_REQ,
+	PWR_SPM_DDREN_2_REQ,
+	PWR_CPU_MD_DVFS_SOP_FORCE_ON,
+	PWR_CSYSPWREQ_MASK,
+	PWR_CCIF0_MD_EVENT_MASK_B,
+	PWR_CCIF0_AP_EVENT_MASK_B,
+	PWR_CCIF1_MD_EVENT_MASK_B,
+	PWR_CCIF1_AP_EVENT_MASK_B,
+	PWR_CCIFMD_MD1_EVENT_MASK_B,
+	PWR_CCIFMD_MD2_EVENT_MASK_B,
+	PWR_DSI0_VSYNC_MASK_B,
+	PWR_DSI1_VSYNC_MASK_B,
+	PWR_DPI_VSYNC_MASK_B,
+	PWR_ISP0_VSYNC_MASK_B,
+	PWR_ISP1_VSYNC_MASK_B,
+	PWR_MD_SRCCLKENA_0_INFRA_MASK_B,
+	PWR_MD_SRCCLKENA_1_INFRA_MASK_B,
+	PWR_CONN_SRCCLKENA_INFRA_MASK_B,
+	PWR_SSPM_SRCCLKENA_INFRA_MASK_B,
+	PWR_SRCCLKENI_INFRA_MASK_B,
+	PWR_MD_APSRC_REQ_0_INFRA_MASK_B,
+	PWR_MD_APSRC_REQ_1_INFRA_MASK_B,
+	PWR_CONN_APSRCREQ_INFRA_MASK_B,
+	PWR_MCU_APSRCREQ_INFRA_MASK_B,
+	PWR_MD_DDR_EN_0_MASK_B,
+	PWR_MD_DDR_EN_1_MASK_B,
+	PWR_MD_VRF18_REQ_0_MASK_B,
+	PWR_MD_VRF18_REQ_1_MASK_B,
+	PWR_MD1_DVFS_REQ_MASK,
+	PWR_CPU_DVFS_REQ_MASK,
+	PWR_EMI_BW_DVFS_REQ_MASK,
+	PWR_MD_SRCCLKENA_0_DVFS_REQ_MASK_B,
+	PWR_MD_SRCCLKENA_1_DVFS_REQ_MASK_B,
+	PWR_CONN_SRCCLKENA_DVFS_REQ_MASK_B,
+	PWR_DVFS_HALT_MASK_B,
+	PWR_VDEC_REQ_MASK_B,
+	PWR_GCE_REQ_MASK_B,
+	PWR_CPU_MD_DVFS_REQ_MERGE_MASK_B,
+	PWR_MD_DDR_EN_DVFS_HALT_MASK_B,
+	PWR_DSI0_VSYNC_DVFS_HALT_MASK_B,
+	PWR_DSI1_VSYNC_DVFS_HALT_MASK_B,
+	PWR_DPI_VSYNC_DVFS_HALT_MASK_B,
+	PWR_ISP0_VSYNC_DVFS_HALT_MASK_B,
+	PWR_ISP1_VSYNC_DVFS_HALT_MASK_B,
+	PWR_CONN_DDR_EN_MASK_B,
+	PWR_DISP_REQ_MASK_B,
+	PWR_DISP1_REQ_MASK_B,
+	PWR_MFG_REQ_MASK_B,
+	PWR_MCU_DDREN_REQ_MASK_B,
+	PWR_MCU_APSRC_REQ_MASK_B,
+	PWR_PS_C2K_RCCIF_WAKE_MASK_B,
+	PWR_L1_C2K_RCCIF_WAKE_MASK_B,
+	PWR_SDIO_ON_DVFS_REQ_MASK_B,
+	PWR_EMI_BOOST_DVFS_REQ_MASK_B,
+	PWR_CPU_MD_EMI_DVFS_REQ_PROT_DIS,
+	PWR_DRAMC_SPCMD_APSRC_REQ_MASK_B,
+	PWR_EMI_BOOST_DVFS_REQ_2_MASK_B,
+	PWR_EMI_BW_DVFS_REQ_2_MASK,
+	PWR_GCE_VRF18_REQ_MASK_B,
+	PWR_SPM_WAKEUP_EVENT_MASK,
+	PWR_SPM_WAKEUP_EVENT_EXT_MASK,
+	PWR_MD_DDR_EN_2_0_MASK_B,
+	PWR_MD_DDR_EN_2_1_MASK_B,
+	PWR_CONN_DDR_EN_2_MASK_B,
+	PWR_DRAMC_SPCMD_APSRC_REQ_2_MASK_B,
+	PWR_SPARE1_DDREN_2_MASK_B,
+	PWR_SPARE2_DDREN_2_MASK_B,
+	PWR_DDREN_EMI_SELF_REFRESH_CH0_MASK_B,
+	PWR_DDREN_EMI_SELF_REFRESH_CH1_MASK_B,
+	PWR_DDREN_MM_STATE_MASK_B,
+	PWR_DDREN_SSPM_APSRC_REQ_MASK_B,
+	PWR_DDREN_DQSSOC_REQ_MASK_B,
+	PWR_DDREN2_EMI_SELF_REFRESH_CH0_MASK_B,
+	PWR_DDREN2_EMI_SELF_REFRESH_CH1_MASK_B,
+	PWR_DDREN2_MM_STATE_MASK_B,
+	PWR_DDREN2_SSPM_APSRC_REQ_MASK_B,
+	PWR_DDREN2_DQSSOC_REQ_MASK_B,
+	PWR_MP0_CPU0_WFI_EN,
+	PWR_MP0_CPU1_WFI_EN,
+	PWR_MP0_CPU2_WFI_EN,
+	PWR_MP0_CPU3_WFI_EN,
+	PWR_MAX_COUNT,
+};
+#endif
+
 enum {
 	SPM_SUSPEND,
 	SPM_RESUME,
@@ -522,6 +807,7 @@ extern struct spm_lp_scen __spm_sodi3;
 extern struct spm_lp_scen __spm_sodi;
 extern struct spm_lp_scen __spm_vcorefs;
 
+extern int __spm_get_md_srcclkena_setting(void);
 extern int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl);
 extern void __spm_sync_pcm_flags(struct pwr_ctrl *pwrctrl);
 

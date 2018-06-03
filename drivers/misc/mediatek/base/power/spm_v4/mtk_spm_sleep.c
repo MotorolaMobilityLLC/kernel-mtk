@@ -32,10 +32,14 @@
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
+#endif
 #include <mtk_spm_misc.h>
 #include <mtk_spm_sleep.h>
+#ifdef CONFIG_MTK_DRAMC
 #include <mtk_dramc.h>
+#endif /* CONFIG_MTK_DRAMC */
 
 #include <mtk_spm_internal.h>
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -314,9 +318,11 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	struct pwr_ctrl *pwrctrl;
 	u32 cpu = 0;
 
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	mcdi_task_pause(true);
 #endif
+#endif /* CONFIG_MACH_MT6763 */
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER);
 
@@ -356,7 +362,9 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
+#if defined(CONFIG_MACH_MT6763)
 	unmask_edge_trig_irqs_for_cirq();
+#endif
 #endif
 
 #if defined(CONFIG_MTK_SYS_CIRQ)
@@ -428,12 +436,19 @@ RESTORE_IRQ:
 #endif
 	spm_suspend_footprint(0);
 
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	mcdi_task_pause(false);
 #endif
+#endif /* CONFIG_MACH_MT6763 */
 
 	if (last_wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();
+
+	if (pwrctrl->wakelock_timer_val) {
+		spm_crit2("#@# %s(%d) calling spm_pm_stay_awake()\n", __func__, __LINE__);
+		spm_pm_stay_awake(pwrctrl->wakelock_timer_val);
+	}
 
 	return last_wr;
 }
