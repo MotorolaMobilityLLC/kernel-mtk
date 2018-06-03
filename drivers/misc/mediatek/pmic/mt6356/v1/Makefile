@@ -26,8 +26,10 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6356)	+= pmic.o pmic_common.o \
 
 
 # Charger Type Detection
-ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-	obj-$(CONFIG_MTK_PMIC_CHIP_MT6356) += pmic_chr_type_det_v2.o
-else
-	obj-$(CONFIG_MTK_PMIC_CHIP_MT6356) += pmic_chr_type_det.o
+ifndef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
+	ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+		obj-$(CONFIG_MTK_PMIC_CHIP_MT6356) += pmic_chr_type_det_v2.o
+	else
+		obj-$(CONFIG_MTK_PMIC_CHIP_MT6356) += pmic_chr_type_det.o
+	endif
 endif
