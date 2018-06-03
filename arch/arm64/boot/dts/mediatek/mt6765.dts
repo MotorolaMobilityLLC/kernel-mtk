@@ -392,13 +392,13 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	scp@10500000 {
 		compatible = "mediatek,scp";
-		do_addr_A = <0 0>;
-		reg =	<0 0x10500000 0 0x40000>, /* sram */
-				<0 0x105c0000 0 0x1000>,  /* cfgreg */
-				<0 0x105c4000 0 0x1000>;  /* clkctrl */
+		status = "disabled";
+		reg =	<0 0x10500000 0 0x40000>,
+				<0 0x105c0000 0 0x1000>,
+				<0 0x105c4000 0 0x1000>;
 		interrupts = <GIC_SPI 192 IRQ_TYPE_LEVEL_HIGH>;
 		core_1 = "enable";
-		scp_sramSize = <0x00040000>;      /* scp_A_sram_size */
+		scp_sramSize = <0x00040000>;
 	};
 
 	sleep_reg_md@1000f000 {
