@@ -246,6 +246,8 @@ int musb_hub_control(struct usb_hcd *hcd,
 	}
 	#endif
 
+	musb_platform_prepare_clk(musb);
+
 	spin_lock_irqsave(&musb->lock, flags);
 
 	if (unlikely(!HCD_HW_ACCESSIBLE(hcd))) {
@@ -433,6 +435,9 @@ error:
 		retval = -EPIPE;
 	}
 	spin_unlock_irqrestore(&musb->lock, flags);
+
+	musb_platform_unprepare_clk(musb);
+
 	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
 	if (!usb_active)
 		musb_platform_disable(musb);

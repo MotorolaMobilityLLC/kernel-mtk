@@ -1450,7 +1450,7 @@ static const struct musb_platform_ops mt_usb_ops = {
 	/* .set_vbus = mt_usb_set_vbus, */
 	.vbus_status = mt_usb_get_vbus_status,
 	.enable_clk =  mt_usb_enable_clk,
-	.enable_clk =  mt_usb_disable_clk,
+	.disable_clk =  mt_usb_disable_clk,
 	.prepare_clk = mt_usb_prepare_clk,
 	.unprepare_clk = mt_usb_unprepare_clk,
 };

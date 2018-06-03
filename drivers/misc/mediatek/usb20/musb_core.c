@@ -1420,6 +1420,8 @@ static void musb_shutdown(struct platform_device *pdev)
 	pr_err("%s, start to shut down\n", __func__);
 	pm_runtime_get_sync(musb->controller);
 
+	musb_platform_prepare_clk(musb);
+
 	/* musb_gadget_cleanup(musb); */
 
 	#ifndef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
@@ -1438,6 +1440,8 @@ static void musb_shutdown(struct platform_device *pdev)
 	}
 	musb_writeb(musb->mregs, MUSB_DEVCTL, 0);
 	musb_platform_exit(musb);
+
+	musb_platform_unprepare_clk(musb);
 
 	pm_runtime_put(musb->controller);
 	/* FIXME power down */
@@ -2277,6 +2281,8 @@ static int musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl
 	 * isp1504, non-OTG, etc) mostly hooking up through ULPI.
 	 */
 
+	musb_platform_prepare_clk(musb);
+
 	/* resolve CR ALPS01823375 */
 	/* u8 u8_busperf3 = 0; */
 	u8_busperf3 = musb_readb(musb->mregs, 0x74);
@@ -2327,7 +2333,6 @@ static int musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl
 
 	/* be sure interrupts are disabled before connecting ISR */
 	musb_generic_disable(musb);
-	musb_platform_disable(musb);
 
 	/* setup musb parts of the core (especially endpoints) */
 	status = musb_core_init(plat->config->multipoint
@@ -2398,6 +2403,7 @@ static int musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl
 
 	/*initial done, turn off usb */
 	musb_platform_disable(musb);
+	musb_platform_unprepare_clk(musb);
 
 	if (status < 0)
 		goto fail3;
@@ -2618,13 +2624,15 @@ static int musb_suspend_noirq(struct device *dev)
 	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
 	mt_usb_clock_prepare();
 	#endif
-	usb_enable_clock(true);
+	musb_platform_prepare_clk(musb);
+	musb_platform_enable_clk(musb);
 
 	musb_save_context(musb);
 	usb_phy_context_save();
 
 	/*Turn off USB clock, after finishing reading regs */
-	usb_enable_clock(false);
+	musb_platform_disable_clk(musb);
+	musb_platform_unprepare_clk(musb);
 	mtk_usb_power = false;
 	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
 	mt_usb_clock_unprepare();
@@ -2643,12 +2651,14 @@ static int musb_resume_noirq(struct device *dev)
 	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
 	mt_usb_clock_prepare();
 	#endif
-	usb_enable_clock(true);
+	musb_platform_prepare_clk(musb);
+	musb_platform_enable_clk(musb);
 
 	musb_restore_context(musb);
 	usb_phy_context_restore();
 	/*Turn off USB clock, after finishing writing regs */
-	usb_enable_clock(false);
+	musb_platform_disable_clk(musb);
+	musb_platform_unprepare_clk(musb);
 	mtk_usb_power = false;
 	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
 	mt_usb_clock_unprepare();

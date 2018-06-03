@@ -1441,6 +1441,16 @@ static int mt_usb_exit(struct musb *musb)
 	return 0;
 }
 
+static void mt_usb_enable_clk(struct musb *musb)
+{
+	usb_enable_clock(true);
+}
+
+static void mt_usb_disable_clk(struct musb *musb)
+{
+	usb_enable_clock(false);
+}
+
 static const struct musb_platform_ops mt_usb_ops = {
 	.init = mt_usb_init,
 	.exit = mt_usb_exit,
@@ -1449,7 +1459,9 @@ static const struct musb_platform_ops mt_usb_ops = {
 	.enable = mt_usb_enable,
 	.disable = mt_usb_disable,
 	/* .set_vbus = mt_usb_set_vbus, */
-	.vbus_status = mt_usb_get_vbus_status
+	.vbus_status = mt_usb_get_vbus_status,
+	.enable_clk =  mt_usb_enable_clk,
+	.disable_clk =  mt_usb_disable_clk
 };
 
 #ifdef CONFIG_MTK_MUSB_DRV_36BIT

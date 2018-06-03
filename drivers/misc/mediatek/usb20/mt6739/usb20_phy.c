@@ -187,7 +187,7 @@ bool usb_prepare_clock(bool enable)
 
 	mutex_unlock(&prepare_lock);
 
-	DBG(0, "enable(%d), usb prepare_cnt, before(%d), after(%d)\n",
+	DBG(1, "enable(%d), usb prepare_cnt, before(%d), after(%d)\n",
 		enable, before_cnt, atomic_read(&clk_prepare_cnt));
 
 	if (atomic_read(&clk_prepare_cnt) < 0)
