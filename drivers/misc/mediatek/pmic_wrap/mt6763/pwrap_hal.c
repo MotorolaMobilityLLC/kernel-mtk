@@ -1321,7 +1321,18 @@ static inline void pwrap_dump_ap_register(void)
 
 void pwrap_dump_all_register(void)
 {
-	pwrap_dump_ap_register();
+	unsigned int tsx_0 = 0, tsx_1 = 0, dcxo_0 = 0, dcxo_1 = 0;
+
+	/* add tsx/dcxo temperture log support */
+	tsx_0 = WRAP_RD32(PMIC_WRAP_MD_ADCINF_0_STA_0);
+	PWRAPERR("tsx dump reg_addr:0x1000d280 = 0x%x\n", tsx_0);
+	tsx_1 = WRAP_RD32(PMIC_WRAP_MD_ADCINF_0_STA_1);
+	PWRAPERR("tsx dump reg_addr:0x1000d284 = 0x%x\n", tsx_1);
+	dcxo_0 = WRAP_RD32(PMIC_WRAP_MD_ADCINF_1_STA_0);
+	PWRAPERR("tsx dump reg_addr:0x1000d288 = 0x%x\n", dcxo_0);
+	dcxo_1 = WRAP_RD32(PMIC_WRAP_MD_ADCINF_1_STA_1);
+	PWRAPERR("tsx dump reg_addr:0x1000d28c = 0x%x\n", dcxo_1);
+/*	pwrap_dump_ap_register(); */
 }
 
 static int is_pwrap_init_done(void)
