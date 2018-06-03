@@ -954,6 +954,8 @@ static inline void sched_ttwu_pending(void) { }
 
 #endif /* CONFIG_SMP */
 
+extern unsigned int hmp_cpu_is_slowest(int cpu);
+
 #ifdef CONFIG_SCHED_HMP
 extern struct cpumask hmp_fast_cpu_mask;
 extern struct cpumask hmp_slow_cpu_mask;
@@ -964,7 +966,6 @@ static LIST_HEAD(hmp_domains);
 DECLARE_PER_CPU(struct hmp_domain *, hmp_cpu_domain);
 
 #define hmp_cpu_domain(cpu)     (per_cpu(hmp_cpu_domain, (cpu)))
-
 #endif
 
 #include "stats.h"
