@@ -24,6 +24,12 @@ enum FPSGO_COM_ERROR {
 	FPSGO_COM_IS_SF,
 };
 
+struct ui_pid_info {
+	struct rb_node rb_node;
+	struct list_head render_list;
+	int ui_pid;
+};
+
 struct connect_api_info {
 	struct rb_node rb_node;
 	struct list_head render_list;
@@ -50,6 +56,8 @@ void fpsgo_fbt2comp_destroy_frame_info(int pid);
 void fpsgo_ctrl2comp_connect_api(int pid, unsigned long long bufferID, int api);
 void fpsgo_ctrl2comp_disconnect_api(int pid, unsigned long long bufferID, int api);
 void fpsgo_fstb2comp_check_connect_api(void);
+void fpsgo_base2com_delete_ui_pid_info(int ui_pid);
+void fpsgo_base2com_clear_ui_pid_info(void);
 
 #endif
 

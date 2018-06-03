@@ -28,6 +28,7 @@
 #include "fpsgo_v2_common.h"
 #include "fpsgo_usedext.h"
 #include "fbt_cpu.h"
+#include "fps_composer.h"
 
 #include <linux/preempt.h>
 #include <linux/trace_events.h>
@@ -38,7 +39,6 @@
 #define TIME_1S  1000000000ULL
 
 static struct rb_root render_pid_tree;
-static struct rb_root render_ui_pid_tree;
 
 static DEFINE_MUTEX(fpsgo_render_lock);
 
@@ -222,6 +222,7 @@ struct render_info *fpsgo_search_and_add_render_info(int pid, int force)
 
 	mutex_init(&tmp->thr_mlock);
 	INIT_LIST_HEAD(&(tmp->bufferid_list));
+	INIT_LIST_HEAD(&(tmp->ui_list));
 	tmp->pid = pid;
 	tmp->tgid = tgid;
 	fpsgo_base2fbt_node_init(tmp);
@@ -246,8 +247,8 @@ void fpsgo_delete_render_info(int pid)
 
 	fpsgo_thread_lock(&data->thr_mlock);
 	rb_erase(&data->pid_node, &render_pid_tree);
-	rb_erase(&data->ui_pid_node, &render_ui_pid_tree);
 	list_del(&(data->bufferid_list));
+	list_del(&(data->ui_list));
 	fpsgo_base2fbt_item_del(data->pLoading, data->p_blc);
 
 	if (data->boost_info.proc.jerks[0].jerking == 0
@@ -261,50 +262,6 @@ void fpsgo_delete_render_info(int pid)
 
 	if (delete == 1)
 		kfree(data);
-}
-
-struct render_info *fpsgo_search_render_info_by_ui_pid(int ui_pid)
-{
-	struct rb_node *node = render_ui_pid_tree.rb_node;
-
-	fpsgo_lockprove(__func__);
-
-	while (node) {
-		struct render_info *data = container_of(node, struct render_info, ui_pid_node);
-
-		if (ui_pid < data->ui_pid)
-			node = node->rb_left;
-		else if (ui_pid > data->ui_pid)
-			node = node->rb_right;
-		else
-			return data;
-	}
-	return NULL;
-}
-
-int fpsgo_add_render_info_by_ui_pid(struct render_info *data)
-{
-	struct rb_node **new = &render_ui_pid_tree.rb_node;
-	struct rb_node *parent = NULL;
-
-	fpsgo_lockprove(__func__);
-
-	while (*new) {
-		struct render_info *this = container_of(*new, struct render_info, ui_pid_node);
-
-		parent = *new;
-		if (data->ui_pid < this->ui_pid)
-			new = &((*new)->rb_left);
-		else if (data->ui_pid > this->ui_pid)
-			new = &((*new)->rb_right);
-		else
-			return 0;
-	}
-
-	rb_link_node(&data->ui_pid_node, parent, new);
-	rb_insert_color(&data->ui_pid_node, &render_ui_pid_tree);
-
-	return 1;
 }
 
 int fpsgo_has_bypass(void)
@@ -359,8 +316,9 @@ void fpsgo_check_thread_status(void)
 				check_max_blc = 1;
 
 			rb_erase(&iter->pid_node, &render_pid_tree);
-			rb_erase(&iter->ui_pid_node, &render_ui_pid_tree);
+			list_del(&(iter->ui_list));
 			list_del(&(iter->bufferid_list));
+			fpsgo_base2com_delete_ui_pid_info(iter->ui_pid);
 			fpsgo_base2fbt_item_del(iter->pLoading, iter->p_blc);
 			n = rb_first(&render_pid_tree);
 
@@ -387,6 +345,8 @@ void fpsgo_check_thread_status(void)
 
 	fpsgo_render_tree_unlock(__func__);
 
+	fpsgo_fstb2comp_check_connect_api();
+
 	if (check_max_blc)
 		fpsgo_base2fbt_check_max_blc();
 	if (RB_EMPTY_ROOT(&render_pid_tree))
@@ -410,8 +370,8 @@ void fpsgo_clear(void)
 		fpsgo_thread_lock(&iter->thr_mlock);
 
 		rb_erase(&iter->pid_node, &render_pid_tree);
-		rb_erase(&iter->ui_pid_node, &render_ui_pid_tree);
 		list_del(&(iter->bufferid_list));
+		list_del(&(iter->ui_list));
 		fpsgo_base2fbt_item_del(iter->pLoading, iter->p_blc);
 		n = rb_first(&render_pid_tree);
 
@@ -428,6 +388,8 @@ void fpsgo_clear(void)
 		if (delete == 1)
 			kfree(iter);
 	}
+
+	fpsgo_base2com_clear_ui_pid_info();
 
 	fpsgo_render_tree_unlock(__func__);
 }
@@ -512,8 +474,8 @@ static int fpsgo_render_info_show(struct seq_file *m, void *unused)
 				iter->t_enqueue_start, iter->t_enqueue_end,
 				iter->dequeue_length, iter->t_dequeue_start,
 				iter->t_dequeue_end);
+			put_task_struct(tsk);
 		}
-		put_task_struct(tsk);
 	}
 
 	rcu_read_unlock();
@@ -581,7 +543,6 @@ FPSGO_DEBUGFS_ENTRY(force_onoff);
 int init_fpsgo_common(void)
 {
 	render_pid_tree = RB_ROOT;
-	render_ui_pid_tree = RB_ROOT;
 
 	fpsgo_debugfs_dir = debugfs_create_dir("fpsgo", NULL);
 	if (!fpsgo_debugfs_dir)
