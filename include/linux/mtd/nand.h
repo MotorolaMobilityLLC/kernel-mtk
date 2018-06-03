@@ -1121,6 +1121,7 @@ extern int mtk_nand_read(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf,
 				int page, u32 size);
 extern bool mtk_block_istlc(u64 addr);
 extern bool mtk_is_normal_tlc_nand(void);
+extern bool mtk_is_tlc_nand(void);
 extern u64 mtk_nand_device_size(void);
 extern int mtk_nand_init_size(struct mtd_info *mtd, struct nand_chip *this, u8 *id_data);
 #endif
