@@ -1107,6 +1107,80 @@ EXPORT_SYMBOL(ISP_Halt_Mask);
 /*******************************************************************************
 *
 ********************************************************************************/
+static void ISP_ConfigDMAControl(void)
+{
+	enum ISP_DEV_NODE_ENUM module = ISP_CAM_A_IDX;
+
+	ISP_WR32(CAM_UNI_REG_RAWI_CON(ISP_UNI_A_IDX), 0x80a0a0a0);
+	ISP_WR32(CAM_UNI_REG_RAWI_CON2(ISP_UNI_A_IDX), 0x00a0a000);
+	ISP_WR32(CAM_UNI_REG_RAWI_CON3(ISP_UNI_A_IDX), 0x00a0a000);
+
+	for (; module < ISP_CAMSV0_IDX; (u32)module++) {
+		ISP_WR32(CAM_REG_IMGO_CON(module), 0x80000180);
+		ISP_WR32(CAM_REG_IMGO_CON2(module), 0x00C000C0);
+		ISP_WR32(CAM_REG_IMGO_CON3(module), 0x00800080);
+
+		ISP_WR32(CAM_REG_RRZO_CON(module), 0x80000180);
+		ISP_WR32(CAM_REG_RRZO_CON2(module), 0x00C000C0);
+		ISP_WR32(CAM_REG_RRZO_CON3(module), 0x00800080);
+
+		ISP_WR32(CAM_REG_AAO_CON(module), 0x80000080);
+		ISP_WR32(CAM_REG_AAO_CON2(module), 0x00400040);
+		ISP_WR32(CAM_REG_AAO_CON3(module), 0x002A002A);
+
+		ISP_WR32(CAM_REG_AFO_CON(module), 0x80000100);
+		ISP_WR32(CAM_REG_AFO_CON2(module), 0x00800080);
+		ISP_WR32(CAM_REG_AFO_CON3(module), 0x00550055);
+
+		ISP_WR32(CAM_REG_LCSO_CON(module), 0x80000020);
+		ISP_WR32(CAM_REG_LCSO_CON2(module), 0x00100010);
+		ISP_WR32(CAM_REG_LCSO_CON3(module), 0x000A000A);
+
+		ISP_WR32(CAM_REG_UFEO_CON(module), 0x80000040);
+		ISP_WR32(CAM_REG_UFEO_CON2(module), 0x00200020);
+		ISP_WR32(CAM_REG_UFEO_CON3(module), 0x00150015);
+
+		ISP_WR32(CAM_REG_PDO_CON(module), 0x80000100);
+		ISP_WR32(CAM_REG_PDO_CON2(module), 0x00800080);
+		ISP_WR32(CAM_REG_PDO_CON3(module), 0x00550055);
+
+		ISP_WR32(CAM_REG_PSO_CON(module), 0x80000080);
+		ISP_WR32(CAM_REG_PSO_CON2(module), 0x00400040);
+		ISP_WR32(CAM_REG_PSO_CON3(module), 0x002A002A);
+
+		ISP_WR32(CAM_REG_LMVO_CON(module), 0x80000020);
+		ISP_WR32(CAM_REG_LMVO_CON2(module), 0x00100010);
+		ISP_WR32(CAM_REG_LMVO_CON3(module), 0x000A000A);
+
+		ISP_WR32(CAM_REG_FLKO_CON(module), 0x80000020);
+		ISP_WR32(CAM_REG_FLKO_CON2(module), 0x00100010);
+		ISP_WR32(CAM_REG_FLKO_CON3(module), 0x000A000A);
+
+		ISP_WR32(CAM_REG_RSSO_CON(module), 0x80000040);
+		ISP_WR32(CAM_REG_RSSO_CON2(module), 0x00200020);
+		ISP_WR32(CAM_REG_RSSO_CON3(module), 0x00150015);
+
+		ISP_WR32(CAM_REG_UFGO_CON(module), 0x80000040);
+		ISP_WR32(CAM_REG_UFGO_CON2(module), 0x00200020);
+		ISP_WR32(CAM_REG_UFGO_CON3(module), 0x00150015);
+
+		ISP_WR32(CAM_REG_BPCI_CON(module), 0x80000020);
+		ISP_WR32(CAM_REG_BPCI_CON2(module), 0x00100010);
+		ISP_WR32(CAM_REG_BPCI_CON3(module), 0x000A000A);
+
+		ISP_WR32(CAM_REG_LSCI_CON(module), 0x80000040);
+		ISP_WR32(CAM_REG_LSCI_CON2(module), 0x00200020);
+		ISP_WR32(CAM_REG_LSCI_CON3(module), 0x00150015);
+
+		ISP_WR32(CAM_REG_PDI_CON(module), 0x80000020);
+		ISP_WR32(CAM_REG_PDI_CON2(module), 0x00100010);
+		ISP_WR32(CAM_REG_PDI_CON3(module), 0x000A000A);
+	}
+}
+
+/*******************************************************************************
+*
+********************************************************************************/
 static void ISP_EnableClock(bool En)
 {
 	if (En) {
@@ -3587,6 +3661,9 @@ EXIT:
 	} else {
 		/* Enable clock */
 		ISP_EnableClock(MTRUE);
+
+		if (IspInfo.UserCount == 1)
+			ISP_ConfigDMAControl();
 
 		LOG_DBG("isp open G_u4EnableClockCount: %d\n", G_u4EnableClockCount);
 	}
