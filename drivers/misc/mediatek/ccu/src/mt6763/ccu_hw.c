@@ -253,7 +253,7 @@ static inline void lock_command(void)
 static inline int wait_command(void)
 {
 	return wait_event_interruptible_timeout(cmd_wait, cmd_done,
-				msecs_to_jiffies(1 * 1000));
+				msecs_to_jiffies(15));
 }
 
 static inline void unlock_command(void)
