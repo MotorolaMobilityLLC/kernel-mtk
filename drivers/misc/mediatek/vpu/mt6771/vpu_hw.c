@@ -3065,17 +3065,17 @@ int vpu_dump_buffer_mva(struct vpu_request *request)
 	struct vpu_plane *plane;
 	int i, j;
 
-	LOG_DBG("dump request - setting: 0x%x, length: %d\n",
+	LOG_INF("dump request - setting: 0x%x, length: %d\n",
 			(uint32_t) request->sett_ptr, request->sett_length);
 
 	for (i = 0; i < request->buffer_count; i++) {
 		buf = &request->buffers[i];
-		LOG_DBG("  buffer[%d] - port: %d, size: %dx%d, format: %d\n",
+		LOG_INF("  buffer[%d] - port: %d, size: %dx%d, format: %d\n",
 				i, buf->port_id, buf->width, buf->height, buf->format);
 
 		for (j = 0; j < buf->plane_count; j++) {
 			plane = &buf->planes[j];
-			LOG_DBG("	 plane[%d] - ptr: 0x%x, length: %d, stride: %d\n",
+			LOG_INF("	 plane[%d] - ptr: 0x%x, length: %d, stride: %d\n",
 					j, (uint32_t) plane->ptr, plane->length, plane->stride);
 		}
 	}
