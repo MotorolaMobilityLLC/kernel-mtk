@@ -54,6 +54,40 @@ static int tmem_release(struct inode *inode, struct file *file)
 	return TMEM_OK;
 }
 
+static u32 g_common_mem_handle[TRUSTED_MEM_MAX];
+static void
+trusted_mem_device_common_chunk_alloc(enum TRUSTED_MEM_TYPE mem_type)
+{
+	int ret = TMEM_OK;
+	u32 alignment = 0, ref_count;
+	u32 min_chunk_sz = tmem_core_get_min_chunk_size(mem_type);
+
+	if (IS_ZERO(g_common_mem_handle[mem_type]))
+		ret = tmem_core_alloc_chunk(
+			mem_type, alignment, min_chunk_sz, &ref_count,
+			&g_common_mem_handle[mem_type], NULL, 0, 0);
+	else
+		pr_info("%d chunk is already allocated, handle:0x%x\n",
+			mem_type, g_common_mem_handle[mem_type]);
+
+	if (ret)
+		pr_err("%d alloc chunk failed:%d\n", mem_type, ret);
+}
+
+static void trusted_mem_device_common_chunk_free(enum TRUSTED_MEM_TYPE mem_type)
+{
+	int ret = TMEM_OK;
+
+	if (!IS_ZERO(g_common_mem_handle[mem_type]))
+		ret = tmem_core_unref_chunk(
+			mem_type, g_common_mem_handle[mem_type], NULL, 0);
+
+	if (ret)
+		pr_err("%d free chunk failed:%d\n", mem_type, ret);
+	else
+		g_common_mem_handle[mem_type] = 0;
+}
+
 static void trusted_mem_device_common_operations(u64 cmd, u64 param1,
 						 u64 param2, u64 param3)
 {
@@ -90,6 +124,14 @@ static void trusted_mem_device_common_operations(u64 cmd, u64 param1,
 	case TMEM_DEVICE_COMMON_OPERATION_REGION_OFF:
 		pr_info("TMEM_DEVICE_COMMON_OPERATION_REGION_OFF\n");
 		tmem_core_regmgr_offline(device_mem_type);
+		break;
+	case TMEM_DEVICE_COMMON_OPERATION_CHUNK_ALLOC:
+		pr_info("TMEM_DEVICE_COMMON_OPERATION_CHUNK_ALLOC\n");
+		trusted_mem_device_common_chunk_alloc(device_mem_type);
+		break;
+	case TMEM_DEVICE_COMMON_OPERATION_CHUNK_FREE:
+		pr_info("TMEM_DEVICE_COMMON_OPERATION_CHUNK_FREE\n");
+		trusted_mem_device_common_chunk_free(device_mem_type);
 		break;
 	default:
 		pr_err("unsupported device cmd: %d, mem type: %d (user cmd:%lld)\n",
@@ -145,6 +187,18 @@ static void trusted_mem_manual_cmd_invoke(u64 cmd, u64 param1, u64 param2,
 		pr_info("TMEM_SECMEM_WFD_DUMP_INFO\n");
 #if defined(CONFIG_MTK_WFD_SMEM_SUPPORT)
 		wfd_smem_dump_info();
+#endif
+		break;
+	case TMEM_SECMEM_DYNAMIC_DEBUG_ENABLE:
+		pr_info("TMEM_SECMEM_DYNAMIC_DEBUG_ENABLE\n");
+#if defined(CONFIG_MTK_SECURE_MEM_SUPPORT)
+		secmem_dynamic_debug_control(true);
+#endif
+		break;
+	case TMEM_SECMEM_DYNAMIC_DEBUG_DISABLE:
+		pr_info("TMEM_SECMEM_DYNAMIC_DEBUG_DISABLE\n");
+#if defined(CONFIG_MTK_SECURE_MEM_SUPPORT)
+		secmem_dynamic_debug_control(false);
 #endif
 		break;
 	default:

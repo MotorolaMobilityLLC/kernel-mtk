@@ -32,6 +32,15 @@ int secmem_svp_dump_info(void)
 	return tmem_core_invoke_command(TRUSTED_MEM_SVP, &cmd_params);
 }
 
+int secmem_dynamic_debug_control(bool enable_dbg)
+{
+	struct trusted_driver_cmd_params cmd_params = {0};
+
+	cmd_params.cmd = CMD_SEC_MEM_DYNAMIC_DEBUG_CONFIG;
+	cmd_params.param2 = enable_dbg;
+	return tmem_core_invoke_command(TRUSTED_MEM_SVP, &cmd_params);
+}
+
 static enum TRUSTED_MEM_TYPE
 get_device_mem_type(enum SECMEM_VIRT_SHARE_REGION region)
 {
