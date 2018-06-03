@@ -43,7 +43,9 @@ obj-$(CONFIG_MACH_MT6761) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
 obj-$(CONFIG_MACH_MT6758) += pbm_v2/
 obj-$(CONFIG_MACH_MT6765) += pbm_v4/
+obj-$(CONFIG_MACH_MT6761) += pbm_v4/
 obj-$(CONFIG_MACH_MT6765) += mdpm_v1/
+obj-$(CONFIG_MACH_MT6761) += mdpm_v1/
 obj-$(CONFIG_MACH_MT6758) += hps_v3/
 obj-$(CONFIG_MACH_MT6765) += hps_v3/
 obj-$(CONFIG_MACH_MT6758) += cpuidle_v3/
