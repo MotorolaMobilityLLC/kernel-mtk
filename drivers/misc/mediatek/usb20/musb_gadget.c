@@ -2060,17 +2060,6 @@ static void musb_pullup(struct musb *musb, int is_on, bool usb_in)
 		else
 			power &= ~MUSB_POWER_SOFTCONN;
 		musb_writeb(musb->mregs, MUSB_POWER, power);
-	} else if (musb_connect_legacy) {
-		if (!usb_in && is_on)
-			DBG(0, "no USB cable, don't need to turn on USB\n");
-		else if (musb->is_host)
-			DBG(0, "USB is host, don't need to control USB\n");
-		else if (musb->in_ipo_off)
-			DBG(0, "USB is charging mdoe, don't need to control USB\n");
-		else if (is_on)
-			musb_start(musb);
-		else
-			musb_stop(musb);
 	}
 	DBG(0, "MUSB: gadget pull up %d end\n", is_on);
 }
@@ -2106,9 +2095,6 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	unsigned long        flags;
 	bool usb_in = false;
 
-	if (musb_connect_legacy)
-		flags = 0;
-
 	DBG(0, "is_on=%d, softconnect=%d ++\n", is_on, musb->softconnect);
 
 	is_on = !!is_on;
@@ -2126,17 +2112,12 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	/* be aware this could not be used in non-sleep context */
 	usb_in = usb_cable_connected();
 
-	/* Remove spin_lock to prevent dead lock for musb_connect_legacy = 1*/
-	if (!musb_connect_legacy)
-		spin_lock_irqsave(&musb->lock, flags);
-
+	spin_lock_irqsave(&musb->lock, flags);
 	if (is_on != musb->softconnect) {
 		musb->softconnect = is_on;
 		musb_pullup(musb, is_on, usb_in);
 	}
-
-	if (!musb_connect_legacy)
-		spin_unlock_irqrestore(&musb->lock, flags);
+	spin_unlock_irqrestore(&musb->lock, flags);
 
 	pm_runtime_put(musb->controller);
 
