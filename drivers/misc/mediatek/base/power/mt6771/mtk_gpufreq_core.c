@@ -456,10 +456,10 @@ void mt_gpufreq_enable_by_ptpod(void)
 	g_DVFS_is_paused_by_ptpod = false;
 
 	/* Turn off GPU MTCMOS */
-	mt_gpufreq_disable_MTCMOS();
+	/* mt_gpufreq_disable_MTCMOS(); */
 
 	/* Turn off GPU PMIC Buck */
-	mt_gpufreq_voltage_enable_set(0);
+	/* mt_gpufreq_voltage_enable_set(0); */
 
 	gpufreq_pr_debug("@%s: DVFS is enabled by ptpod\n", __func__);
 }
