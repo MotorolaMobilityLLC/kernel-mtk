@@ -381,7 +381,7 @@ struct pwr_ctrl {
 #if defined(CONFIG_MACH_MT6759) \
 	|| defined(CONFIG_MACH_MT6758) \
 	|| defined(CONFIG_MACH_MT6775)
-	u8 spm_rsv_con2;
+	u32 spm_rsv_con2;
 #endif
 	/* Auto-gen End */
 };
