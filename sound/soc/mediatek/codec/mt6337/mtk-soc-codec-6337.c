@@ -732,14 +732,14 @@ void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param)
 	int a4_lch = 0, a5_lch = 0, a4_rch = 0, a5_rch = 0;
 
 	if (impedance < 24) {
-		a2_lch = dpd_offset_table[0][dpd_lch[DPD_16K][DPD_HD2]] + 1;
+		a2_lch = dpd_offset_table[0][dpd_lch[DPD_16K][DPD_HD2]] - 1;
 		a3_lch = dpd_offset_table[1][dpd_lch[DPD_16K][DPD_HD3]];
-		a2_rch = dpd_offset_table[2][dpd_rch[DPD_16K][DPD_HD2]] + 1;
+		a2_rch = dpd_offset_table[2][dpd_rch[DPD_16K][DPD_HD2]] - 1;
 		a3_rch = dpd_offset_table[3][dpd_rch[DPD_16K][DPD_HD3]];
 	} else if (impedance < 100) {
-		a2_lch = dpd_offset_table[4][dpd_lch[DPD_32K][DPD_HD2]];
+		a2_lch = dpd_offset_table[4][dpd_lch[DPD_32K][DPD_HD2]] - 1;
 		a3_lch = dpd_offset_table[5][dpd_lch[DPD_32K][DPD_HD3]] - 1;
-		a2_rch = dpd_offset_table[6][dpd_rch[DPD_32K][DPD_HD2]];
+		a2_rch = dpd_offset_table[6][dpd_rch[DPD_32K][DPD_HD2]] - 1;
 		a3_rch = dpd_offset_table[7][dpd_rch[DPD_32K][DPD_HD3]] - 1;
 	} else if (impedance < 1000) {
 		a2_lch = dpd_offset_table[8][dpd_lch[DPD_560K][DPD_HD2]];
