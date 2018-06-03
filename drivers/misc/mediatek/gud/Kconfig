@@ -11,7 +11,7 @@ config TRUSTONIC_TEE_VERSION
 	string "TRUSTONIC TEE Version"
 	depends on TRUSTONIC_TEE_SUPPORT
 	default "302c" if (MACH_MT6757)
-	default "311b" if (MACH_MT6763 || MACH_MT6799)
+	default "311c" if (MACH_MT6763 || MACH_MT6799)
 
 config MTK_TRUSTONIC_TEE_DEBUGFS
 	bool "Enable Trustonic TEE debugfs"
@@ -22,7 +22,7 @@ config MTK_TRUSTONIC_TEE_DEBUGFS
 
 config TRUSTONIC_TEE_DEBUG
 	bool "Trustonic TEE driver debug mode"
-	depends on (TRUSTONIC_TEE_SUPPORT) && (TRUSTONIC_TEE_VERSION="311b")
+	depends on (TRUSTONIC_TEE_SUPPORT) && (TRUSTONIC_TEE_VERSION="311c")
 	default n
 	---help---
 	  Enable the debug mode in the Trustonic TEE Driver.
