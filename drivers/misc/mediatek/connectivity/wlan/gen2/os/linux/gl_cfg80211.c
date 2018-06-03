@@ -408,12 +408,14 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 			sinfo->signal = i4Rssi;	/* dBm */
 			prGlueInfo->i4RssiCache = i4Rssi;
 		}
-		sinfo->rx_packets = prGlueInfo->rNetDevStats.rx_packets;
 
 		/* 4. Fill Tx OK and Tx Bad */
 
 		sinfo->filled |= BIT(NL80211_STA_INFO_TX_PACKETS);
 		sinfo->filled |= BIT(NL80211_STA_INFO_TX_FAILED);
+		sinfo->filled |= BIT(NL80211_STA_INFO_TX_BYTES64);
+		sinfo->filled |= BIT(NL80211_STA_INFO_RX_PACKETS);
+		sinfo->filled |= BIT(NL80211_STA_INFO_RX_BYTES64);
 		{
 			WLAN_STATUS rStatus;
 
@@ -427,6 +429,9 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 				DBGLOG(REQ, WARN, "unable to retrieive statistic\n");
 				sinfo->tx_packets = prGlueInfo->rNetDevStats.tx_packets;
 				sinfo->tx_failed = prGlueInfo->rNetDevStats.tx_errors;
+				sinfo->tx_bytes = prGlueInfo->rNetDevStats.tx_bytes;
+				sinfo->rx_packets = prGlueInfo->rNetDevStats.rx_packets;
+				sinfo->rx_bytes = prGlueInfo->rNetDevStats.rx_bytes;
 				return -EBUSY;
 			} else {
 				INT_32 i4RssiThreshold = -85;	/* set rssi threshold -85dBm */
@@ -456,15 +461,20 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 				}
 				/* report counters */
 				prGlueInfo->rNetDevStats.tx_errors = prGlueInfo->u8TotalFailCnt;
-				sinfo->tx_packets = rStatistics.rTransmittedFragmentCount.QuadPart;
+				sinfo->tx_packets = prGlueInfo->rNetDevStats.tx_packets;
 				sinfo->tx_failed = prGlueInfo->rNetDevStats.tx_errors;
+				sinfo->tx_bytes = prGlueInfo->rNetDevStats.tx_bytes;
+				sinfo->rx_packets = prGlueInfo->rNetDevStats.rx_packets;
+				sinfo->rx_bytes = prGlueInfo->rNetDevStats.rx_bytes;
 				/* Good Fail Bad Difference retry difference Linkspeed Rate Weighted */
 				DBGLOG(REQ, TRACE,
-					"Poorlink State TxOK(%d) TxFail(%d) Bad(%d) Retry(%d)",
-					sinfo->tx_packets,
+				"Poorlink State TxOK:%lld %u RxOK:%u TxFail:%d Bad:%d Retry:%d TxBytes:%llu Rx:%llu",
+					rStatistics.rTransmittedFragmentCount.QuadPart,
+					sinfo->tx_packets, sinfo->rx_packets,
 					sinfo->tx_failed,
 					(int)u8diffTxBad,
-					(int)u8diffRetry);
+					(int)u8diffRetry,
+					sinfo->tx_bytes, sinfo->rx_bytes);
 				DBGLOG(REQ, TRACE,
 					"Rate(%d) Signal(%d) Weight(%d) QuadPart(%d)\n",
 					sinfo->txrate.legacy,

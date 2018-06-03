@@ -2523,6 +2523,9 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 				aisUpdateBssInfoForRoamingAP(prAdapter, prStaRec, prAssocRspSwRfb);
 #endif /* CFG_SUPPORT_ROAMING */
 			} else {
+				kalMemZero(&prAdapter->prGlueInfo->rNetDevStats,
+					sizeof(prAdapter->prGlueInfo->rNetDevStats));
+
 				/* 4 <1.1> Change FW's Media State immediately. */
 				aisChangeMediaState(prAdapter, PARAM_MEDIA_STATE_CONNECTED);
 

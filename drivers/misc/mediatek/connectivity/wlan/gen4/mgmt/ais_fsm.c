@@ -2232,6 +2232,8 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 				aisUpdateBssInfoForRoamingAP(prAdapter, prStaRec, prAssocRspSwRfb);
 #endif /* CFG_SUPPORT_ROAMING */
 			} else {
+				kalResetStats(prAdapter->prGlueInfo->prDevHandler);
+
 				/* 4 <1.1> Change FW's Media State immediately. */
 				aisChangeMediaState(prAdapter, PARAM_MEDIA_STATE_CONNECTED);
 
