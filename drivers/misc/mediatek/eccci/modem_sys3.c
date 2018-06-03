@@ -350,9 +350,24 @@ static int md_ccif_op_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 
 }
 
+static inline void clear_md1_md3_smem(struct ccci_modem *md)
+{
+	struct ccci_smem_region *region;
+
+	CCCI_NORMAL_LOG(md->index, TAG, "clear_md1_md3_smem start\n");
+	region = ccci_md_get_smem_by_user_id(md->index, SMEM_USER_RAW_MD2MD);
+
+	if (!region) {
+		CCCI_NORMAL_LOG(md->index, TAG, "clear_md1_md3_smem error\n");
+		return;
+	}
+	memset_io(region->base_ap_view_vir, 0, region->size);
+}
+
 static int md_ccif_op_reset_pccif(struct ccci_modem *md)
 {
 	reset_md1_md3_pccif(md);
+	clear_md1_md3_smem(md);
 	return 0;
 }
 
