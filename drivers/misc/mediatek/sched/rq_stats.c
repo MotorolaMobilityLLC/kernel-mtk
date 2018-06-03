@@ -28,6 +28,7 @@
 #include <linux/tick.h>
 #include <linux/suspend.h>
 #include <linux/version.h>
+#include <linux/math64.h>
 #include <asm/smp_plat.h>
 #include <mt-plat/met_drv.h>
 
@@ -38,6 +39,7 @@
 #define DEFAULT_RQ_POLL_JIFFIES 1
 #define DEFAULT_DEF_TIMER_JIFFIES 5
 #define HEAVY_TASK_ENABLE 1
+#define MCPS_UPDATE_TIME 1000000 /* 1 sec */
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 struct rq_data rq_info;
@@ -64,6 +66,12 @@ struct cpu_load_data {
 	cputime64_t prev_cpu_idle;
 	cputime64_t prev_cpu_wall;
 	cputime64_t prev_cpu_iowait;
+	cputime64_t mcps_base_time;
+	u64 cpu_cycles;
+	u64 inc_time;
+	u64 inc_mcps;
+	unsigned int last_mcps;
+	unsigned int hw_max_freq;
 	unsigned int avg_load_maxfreq_rel;
 	unsigned int avg_load_maxfreq_abs;
 	unsigned int samples;
@@ -154,6 +162,8 @@ update_average_load(enum AVG_LOAD_ID id, unsigned int freq, unsigned int cpu)
 	unsigned int cur_load, prev_avg_load_rel, prev_avg_load_abs;
 	unsigned int load_at_max_freq_rel, load_at_max_freq_abs;
 	cputime64_t prev_wall_time, prev_cpu_idle, prev_cpu_iowait;
+	cputime64_t delta_time;
+	u64 cpu_cycles;
 
 #ifdef CONFIG_CPU_FREQ
 	cur_idle_time = get_cpu_idle_time(cpu, &cur_wall_time, 0);
@@ -178,8 +188,36 @@ update_average_load(enum AVG_LOAD_ID id, unsigned int freq, unsigned int cpu)
 	if (idle_time >= iowait_time)
 		idle_time -= iowait_time;
 
-	if (unlikely(!wall_time || wall_time < idle_time))
+	delta_time = cur_wall_time - pcpu->mcps_base_time;
+	if (unlikely(!wall_time || wall_time < idle_time)) {
+		/* Correct MCPS Computing */
+		if (delta_time >= MCPS_UPDATE_TIME) {
+			pcpu->last_mcps = (unsigned int)
+				div64_u64(pcpu->cpu_cycles, delta_time);
+			pcpu->inc_time = cur_wall_time; /*us*/
+			pcpu->inc_mcps += pcpu->last_mcps;
+			pcpu->mcps_base_time = cur_wall_time;
+			pcpu->cpu_cycles = 0;
+		}
 		return 0;
+	}
+
+	/* Compute MCPS */
+	if (pcpu->mcps_base_time) {
+		cpu_cycles = ((wall_time - idle_time) * (freq/1000));
+		pcpu->cpu_cycles += cpu_cycles;
+	}
+	if (delta_time >= MCPS_UPDATE_TIME) {
+		pcpu->last_mcps = (unsigned int)
+			div64_u64(pcpu->cpu_cycles, delta_time);
+		pcpu->inc_time = cur_wall_time; /*us*/
+		pcpu->inc_mcps += pcpu->last_mcps;
+		pcpu->mcps_base_time = 0;
+	}
+	if (!pcpu->mcps_base_time) {
+		pcpu->mcps_base_time = cur_wall_time;
+		pcpu->cpu_cycles = 0;
+	}
 
 	if (id == AVG_LOAD_IGNORE)
 		cur_load = 0;
@@ -455,6 +493,24 @@ unsigned int sched_get_percpu_load(int cpu, bool reset, bool use_maxfreq)
 }
 EXPORT_SYMBOL(sched_get_percpu_load);
 #endif
+
+/* New interface to export CPU MCPS. default: 1 Sec / Sample */
+void sched_get_mcps(int cpu, unsigned int *hw_max_freq,
+	unsigned int *last_mcps, u64 *inc_mcps, u64 *inc_time)
+{
+	struct cpu_load_data *pcpu;
+	unsigned long flags;
+
+	pcpu = &per_cpu(cpuload, cpu);
+	spin_lock_irqsave(&pcpu->cpu_load_lock, flags);
+	*hw_max_freq = pcpu->hw_max_freq;
+	*last_mcps = pcpu->last_mcps;
+	*inc_mcps = pcpu->inc_mcps;
+	*inc_time = pcpu->inc_time;
+	spin_unlock_irqrestore(&pcpu->cpu_load_lock, flags);
+
+}
+EXPORT_SYMBOL(sched_get_mcps);
 
 /* #define DETECT_HTASK_HEAT */
 
@@ -970,6 +1026,29 @@ static ssize_t cpu_normalized_load_show(struct kobject *kobj,
 static struct kobj_attribute cpu_normalized_load_attr =
 			__ATTR_RO(cpu_normalized_load);
 
+static ssize_t cpu_mcps_data_show(struct kobject *kobj,
+				struct kobj_attribute *attr, char *buf)
+{
+	int cpu;
+	unsigned int len = 0;
+	unsigned int hw_max_freq = 0;
+	unsigned int last_mcps = 0;
+	u64 inc_mcps = 0;
+	u64 inc_time = 0;
+	unsigned int max_len = 4096;
+
+	for_each_possible_cpu(cpu) {
+		sched_get_mcps(cpu, &hw_max_freq,
+			&last_mcps, &inc_mcps, &inc_time);
+		len += snprintf(buf+len, max_len-len,
+		"cpu(%d)[max_freq:%u]: mcps(cur_mcps/inc_mcps/update) = %u/%llu/%llu\n"
+		, cpu, hw_max_freq, last_mcps, inc_mcps, inc_time);
+	}
+	return len;
+}
+
+static struct kobj_attribute cpu_mcps_attr = __ATTR_RO(cpu_mcps_data);
+
 /* For htasks statistics */
 static ssize_t show_heavy_tasks(struct kobject *kobj,
 					struct kobj_attribute *attr, char *buf)
@@ -1157,6 +1236,7 @@ __ATTR(big_task, 0400 /* S_IRUSR */, show_big_task,
 		NULL);
 
 static struct attribute *rq_attrs[] = {
+	&cpu_mcps_attr.attr,
 	&cpu_normalized_load_attr.attr,
 	&def_timer_ms_attr.attr,
 	&run_queue_avg_attr.attr,
@@ -1241,10 +1321,11 @@ static int __init rq_stats_init(void)
 		struct cpu_load_data *pcpu = &per_cpu(cpuload, i);
 
 		spin_lock_init(&pcpu->cpu_load_lock);
-		pcpu->cur_freq = pcpu->policy_max = 1;
+		pcpu->cur_freq = pcpu->policy_max = pcpu->hw_max_freq = 1;
 #ifdef CONFIG_CPU_FREQ
 		if (!cpufreq_get_policy(cpu_policy, i)) {
 			pcpu->policy_max = cpu_policy->cpuinfo.max_freq;
+			pcpu->hw_max_freq = cpu_policy->cpuinfo.max_freq / 1000;
 			if (cpu_online(i))
 				pcpu->cur_freq = cpufreq_quick_get(i);
 			cpumask_copy(pcpu->related_cpus, cpu_policy->cpus);
