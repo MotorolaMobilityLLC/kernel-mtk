@@ -51,6 +51,11 @@ enum {
 	UFS_MTK_RESREQ_MPHY_NON_H8  /* request resource for mphy not in H8, e.g., main PLL, 26 mhz clock */
 };
 
+enum {
+	UFS_H8                      = 0x0,
+	UFS_H8_SUSPEND              = 0x1,
+};
+
 struct ufs_cmd_str_struct {
 	char str[32];
 	char cmd;
