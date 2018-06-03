@@ -40,6 +40,7 @@
 #include "../pinconf.h"
 #include "../pinctrl-utils.h"
 #include "pinctrl-mtk-common.h"
+#include <mt-plat/mtk_gpio.h>
 
 #define MAX_GPIO_MODE_PER_REG 5
 #define GPIO_MODE_BITS        3
@@ -326,6 +327,7 @@ static int mtk_pconf_set_pull_select(struct mtk_pinctrl *pctl,
 	unsigned int bit;
 	unsigned int reg_pullen, reg_pullsel;
 	int ret;
+	unsigned long enable_arg;
 
 	/* Some pins' pull setting are very different,
 	 * they have separate pull up/down bit, R0 and R1
@@ -334,10 +336,22 @@ static int mtk_pconf_set_pull_select(struct mtk_pinctrl *pctl,
 
 	if (pctl->devdata->mt_set_gpio_pull_enable) {
 		/* Used by smartphone projects */
-		if (enable)
-			pctl->devdata->mt_set_gpio_pull_enable(pin | 0x80000000, 1);
-		else {
-			pctl->devdata->mt_set_gpio_pull_enable(pin | 0x80000000, 0);
+		if (enable) {
+			if (pctl->devdata->mt_set_gpio_pull_resistor) {
+				pctl->devdata->mt_set_gpio_pull_enable(pin | 0x80000000, GPIO_PULL_ENABLE);
+			} else {
+				if (arg == MTK_PUPD_SET_R1R0_01)
+					enable_arg = GPIO_PULL_ENABLE_R0;
+				else if (arg == MTK_PUPD_SET_R1R0_10)
+					enable_arg = GPIO_PULL_ENABLE_R1;
+				else if (arg == MTK_PUPD_SET_R1R0_11)
+					enable_arg = GPIO_PULL_ENABLE_R0R1;
+				else
+					return -EINVAL;
+				pctl->devdata->mt_set_gpio_pull_enable(pin | 0x80000000, enable_arg);
+			}
+		} else {
+			pctl->devdata->mt_set_gpio_pull_enable(pin | 0x80000000, GPIO_PULL_DISABLE);
 			return 0;
 		}
 	}
@@ -345,9 +359,9 @@ static int mtk_pconf_set_pull_select(struct mtk_pinctrl *pctl,
 	if (pctl->devdata->mt_set_gpio_pull_select) {
 		/* Used by smartphone projects */
 		if (isup)
-			pctl->devdata->mt_set_gpio_pull_select(pin | 0x80000000, 1);
+			pctl->devdata->mt_set_gpio_pull_select(pin | 0x80000000, GPIO_PULL_UP);
 		else
-			pctl->devdata->mt_set_gpio_pull_select(pin | 0x80000000, 0);
+			pctl->devdata->mt_set_gpio_pull_select(pin | 0x80000000, GPIO_PULL_DOWN);
 
 		if (pctl->devdata->mt_set_gpio_pull_resistor) {
 			switch (arg) {
