@@ -121,7 +121,7 @@ VOID nicpmSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 	}
 
 	prAdapter->fgIsFwOwn = TRUE;
-	DBGLOG(NIC, INFO, "FW OWN\n");
+	DBGLOG(NIC, TRACE, "FW OWN\n");
 }
 
 VOID nicpmCheckAndTriggerDriverOwn(IN P_ADAPTER_T prAdapter)
@@ -181,7 +181,7 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 	if (prAdapter->fgIsFwOwn == FALSE)
 		return fgStatus;
 
-	DBGLOG(INIT, INFO, "DRIVER OWN\n");
+	DBGLOG(INIT, TRACE, "DRIVER OWN\n");
 
 	u4CurrTick = kalGetTimeTick();
 	i = 0;
