@@ -29,7 +29,7 @@
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP  0
+#define MT_CCF_BRINGUP  1
 #define CONTROL_LIMIT 0
 #endif
 
@@ -1746,8 +1746,6 @@ static int enable_subsys(enum subsys_id id)
 	case SYS_MD1:
 		spm_mtcmos_ctrl_md1(STA_POWER_ON);
 		break;
-	case SYS_C2K:
-		break;
 	case SYS_CONN:
 		spm_mtcmos_ctrl_conn(STA_POWER_ON);
 		break;
@@ -1803,8 +1801,6 @@ static int disable_subsys(enum subsys_id id)
 	switch (id) {
 	case SYS_MD1:
 		spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
-		break;
-	case SYS_C2K:
 		break;
 	case SYS_CONN:
 		spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
@@ -1974,13 +1970,10 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define pg_dis         "pg_dis"
 #define pg_mfg         "pg_mfg"
 #define pg_isp         "pg_isp"
-#define pg_vde         "pg_vde"
 #define pg_ven         "pg_ven"
 #define pg_mfg_async   "pg_mfg_async"
 #define pg_audio       "pg_audio"
 #define pg_cam   "pg_cam"
-#define pg_c2k         "pg_c2k"
-#define pg_mdsys_intf_infra   "pg_mdsys_intf_infra"
 #define pg_mfg_core1   "pg_mfg_core1"
 #define pg_mfg_core0   "pg_mfg_core0"
 
@@ -2130,7 +2123,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 
 
-	if (!infracfg_reg || !spm_reg || !ckgen_reg || !smi_larb2_reg || !smi_common_reg) {
+	if (!infracfg_reg || !spm_reg || !infra_reg  || !ckgen_reg || !smi_larb2_reg || !smi_common_reg) {
 		pr_err("clk-pg-mt6763: missing reg\n");
 		return;
 	}
@@ -2165,7 +2158,8 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_ven(STA_POWER_ON);
 	spm_mtcmos_ctrl_isp(STA_POWER_ON);
 
-	spm_mtcmos_ctrl_md1(STA_POWER_ON);
+	/*spm_mtcmos_ctrl_md1(STA_POWER_ON);*/
+	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
 
 	spm_mtcmos_ctrl_audio(STA_POWER_ON);
 #endif

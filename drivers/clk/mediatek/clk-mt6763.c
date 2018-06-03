@@ -50,160 +50,25 @@ while (0)
 #define PLL_PWR_ON  (0x1 << 0)
 #define PLL_ISO_EN  (0x1 << 1)
 
-const char *ckgen_array[] = {
-"hf_faxi_ck",
-"hf_fmem_ck",
-"hf_fddrphycfg_ck",
-"hf_fmm_ck",
-"hf_fsflash_ck",
-"f_fpwm_ck",
-"f_fdisppwm_ck",
-"hf_fvdec_ck",
-"hf_fvenc_ck",
-"hf_fmfg_ck",
-"f_fcamtg_ck",
-"f_fi2c_ck",
-"f_fuart_ck",
-"hf_fspi_ck",
-"hf_faxi_peri_ck",
-"f_fusb20_ck",
-"f_fusb30_p0_ck",
-"hf_fmsdc50_0_hclk_ck",
-"hf_fmsdc50_0_ck",
-"hf_fmsdc30_1_ck",
-"f_fi3c_ck",
-"hf_fmsdc30_3_ck",
-"hf_fmsdc50_3_hclk_ck",
-"hf_fsmi0_2x_ck",
-"hf_faudio_ck",
-"hf_faud_intbus_ck",
-"hf_fpmicspi_ck",
-"hf_fscp_ck",
-"hf_fatb_ck",
-"hf_fmjc_ck",
-"hf_fdpi0_ck",
-"hf_fdsp_ck",
-"hf_faud_1_ck",
-"hf_faud_2_ck",
-"hf_faud_engen1_ck",
-"hf_faud_engen2_ck",
-"hf_fdfp_mfg_ck",
-"hf_fcam_ck",
-"hf_fipu_if_ck",
-"hf_fsmi1_2x_ck",
-"hf_faxi_mfg_in_as_ck",
-"hf_fimg_ck",
-"hf_fufo_enc_ck",
-"hf_fufo_dec_ck",
-"hf_fpcie_mac_ck",
-"hf_femi_ck",
-"hf_faes_ufsfde_ck",
-"hf_faes_fde_ck",
-"hf_faudio_h_ck",
-"hf_fsspm_ck",
-"hf_fancmd32_ck",
-"hf_fslow_mfg_ck",
-"hf_fufs_card_ck",
-"hf_fbsi_spi_ck",
-"hf_fdxcc_ck",
-"f_fseninf_ck",
-"hf_fdfp_ck",
-"hf_fsmi1_2x_ck",
-"hf_faes_fde_ck",
-"hf_faudio_h_ck",
-"hf_fsspm_ck",
-"f_frtc_ck",
-"f_f26m_ck"
-};
-
-const char *abist_array[] = {
-"AD_MDPLL_FS26M_CK",
-"AD_MDPLL_FS208M_CK",
-"AD_OSC_CK",
-"AD_CSI0A_CDPHY_DELAYCAL_CK",
-"AD_CSI0B_CDPHY_DELAYCAL_CK",
-"AD_CSI1A_CDPHY_DELAYCAL_CK",
-"AD_CSI1B_CDPHY_DELAYCAL_CK",
-"AD_CSI2A_CDPHY_DELAYCAL_CK",
-"AD_CSI2B_CDPHY_DELAYCAL_CK",
-"AD_DSI0_CKG_DSICLK",
-"AD_DSI0_TEST_CK",
-"AD_DSI1_CKG_DSICLK",
-"AD_DSI1_TEST_CK",
-"AD_CCIPLL_CK_VCORE",
-"AD_MAINPLL_CK",
-"AD_UNIVPLL_CK",
-"AD_MSDCPLL_CK",
-"AD_EMIPLL_CK",
-"AD_GPUPLL_CK",
-"AD_TVDPLL_CK",
-"AD_MMPLL_CK",
-"AD_VCODECPLL_CK",
-"AD_APLL1_CK",
-"AD_APLL2_CK",
-"AD_MDMCUPLL_CK",
-"AD_MDINFRAPLL_CK",
-"AD_BRPPLL_CK",
-"AD_EQPLL_CK",
-"AD_IMCPLL_CK",
-"AD_ICCPLL_CK",
-"AD_MPCPLL_CK",
-"AD_DFEPLL_CK",
-"AD_MD2GPLL_CK",
-"AD_INTFPLL_CK",
-"AD_C2KCPPLL_CK",
-"AD_FSMIPLL_CK",
-"AD_LTXBPLL_CK",
-"AD_USB20_192M_CK",
-"AD_MPLL_CK",
-"AD_ARMPLL2_CK",
-"AD_ARMPLL3_CK",
-"AD_CCIPLL_CK",
-"AD_RAKEPLL_CK",
-"AD_CSPLL_CK",
-"AD_TVDPLL_DIV4_CK",
-"AD_PLLGP_TSTDIV2_CK",
-"AD_MP_PLL_CK_ABIST_OUT",
-"AD_MP_RX0_TSTCK_DIV2",
-"mp_tx_mon_div2_ck",
-"mp_rx20_mon_div2_ck",
-"AD_ARMPLL_L_CK_VCORE",
-"AD_ARMPLL_M_CK_VCORE",
-"AD_ARMPLL_B_CK_VCORE",
-"AD_ARMPLL_ML_CK_VCORE",
-"AD_OSC_SYNC_CK",
-"AD_OSC_SYNC_CK_2",
-"msdc_01_in_ck",
-"msdc_02_in_ck",
-"msdc_11_in_ck",
-"msdc_12_in_ck",
-"msdc_31_in_ck",
-"msdc_31_in_ck",
-"AD_OSC_CK_2",
-};
-
 static DEFINE_SPINLOCK(mt6763_clk_lock);
 
-/* Total 13 subsys */
+/* Total 10 subsys */
 void __iomem *cksys_base;
 void __iomem *infracfg_base;
 void __iomem *apmixed_base;
 void __iomem *audio_base;
 void __iomem *cam_base;
 void __iomem *img_base;
-void __iomem *ipu_base;
 void __iomem *mfgcfg_base;
 void __iomem *mmsys_config_base;
 void __iomem *pericfg_base;
-void __iomem *mjc_base;
-void __iomem *vdec_gcon_base;
 void __iomem *venc_gcon_base;
 
 /* CKSYS */
-#define TST_SEL_1		(cksys_base + 0x024)
-#define CLK_CFG_0		(cksys_base + 0x100)
-#define CLK_CFG_1		(cksys_base + 0x110)
-#define CLK_CFG_2		(cksys_base + 0x120)
+#if 0
+#define CLK_CFG_0		(cksys_base + 0x040)
+#define CLK_CFG_1		(cksys_base + 0x050)
+#define CLK_CFG_2		(cksys_base + 0x060)
 #define CLK_CFG_5		(cksys_base + 0x150)
 #define CLK_CFG_7		(cksys_base + 0x170)
 #define CLK_CFG_9		(cksys_base + 0x190)
@@ -217,47 +82,51 @@ void __iomem *venc_gcon_base;
 #define TOP_CLK2		(cksys_base + 0x0120)
 #define CLK_SCP_CFG_0		(cksys_base + 0x0400)
 #define CLK_SCP_CFG_1		(cksys_base + 0x0404)
-
+#endif
 /* CG */
 #define INFRA_PDN_SET0		(infracfg_base + 0x0080)
+#define INFRA_PDN_CLR0		(infracfg_base + 0x0084)
+#define INFRA_PDN_STA0		(infracfg_base + 0x0090)
 #define INFRA_PDN_SET1		(infracfg_base + 0x0088)
+#define INFRA_PDN_CLR1		(infracfg_base + 0x008C)
+#define INFRA_PDN_STA1		(infracfg_base + 0x0094)
 #define INFRA_PDN_SET2		(infracfg_base + 0x00A4)
-#define INFRA_PDN_SET3		(infracfg_base + 0x00B0)
-#define INFRA_PDN_SET4		(infracfg_base + 0x00BC)
+#define INFRA_PDN_CLR2		(infracfg_base + 0x00A8)
+#define INFRA_PDN_STA2		(infracfg_base + 0x00AC)
+#define INFRA_PDN_SET3		(infracfg_base + 0x00C0)
+#define INFRA_PDN_CLR3		(infracfg_base + 0x00C4)
+#define INFRA_PDN_STA3		(infracfg_base + 0x00C8)
 
 #define AP_PLL_CON3		(apmixed_base + 0x000C)
 #define AP_PLL_CON4		(apmixed_base + 0x0010)
-#define FSMIPLL_CON0		(apmixed_base + 0x0200)
-#define FSMIPLL_PWR_CON0	(apmixed_base + 0x020C)
-#define GPUPLL_CON0		(apmixed_base + 0x0210)
-#define GPUPLL_PWR_CON0		(apmixed_base + 0x021C)
-#define UNIVPLL_CON0		(apmixed_base + 0x0240)
-#define UNIVPLL_PWR_CON0	(apmixed_base + 0x024C)
+#define ARMPLL_LL_CON0		(apmixed_base + 0x0200)
+#define ARMPLL_LL_CON1		(apmixed_base + 0x0204)
+#define ARMPLL_LL_PWR_CON0	(apmixed_base + 0x020C)
+#define ARMPLL_L_CON0		(apmixed_base + 0x0210)
+#define ARMPLL_L_CON1		(apmixed_base + 0x0214)
+#define ARMPLL_L_PWR_CON0	(apmixed_base + 0x021C)
+#define MAINPLL_CON0		(apmixed_base + 0x0220)
+#define MAINPLL_PWR_CON0	(apmixed_base + 0x022C)
+#define UNIVPLL_CON0		(apmixed_base + 0x0230)
+#define UNIVPLL_PWR_CON0	(apmixed_base + 0x023C)
+#define MFGPLL_CON0		(apmixed_base + 0x0240)
+#define MFGPLL_PWR_CON0		(apmixed_base + 0x024C)
 #define MSDCPLL_CON0		(apmixed_base + 0x0250)
 #define MSDCPLL_PWR_CON0	(apmixed_base + 0x025C)
-#define MMPLL_CON0		(apmixed_base + 0x0260)
-#define MMPLL_PWR_CON0		(apmixed_base + 0x026C)
-#define VCODECPLL_CON0		(apmixed_base + 0x0270)
-#define VCODECPLL_CON1		(apmixed_base + 0x0274)
-#define VCODECPLL_CON2		(apmixed_base + 0x0278)
-#define VCODECPLL_PWR_CON0	(apmixed_base + 0x027C)
-#define TVDPLL_CON0		(apmixed_base + 0x0280)
-#define TVDPLL_PWR_CON0		(apmixed_base + 0x028C)
-#define EMIPLL_CON0		(apmixed_base + 0x0290)
+#define TVDPLL_CON0		(apmixed_base + 0x0260)
+#define TVDPLL_PWR_CON0		(apmixed_base + 0x026C)
+#define MMPLL_CON0		(apmixed_base + 0x0270)
+#define MMPLL_PWR_CON0		(apmixed_base + 0x027C)
+#define CCIPLL_CON0		(apmixed_base + 0x0290)
+#define CCIPLL_PWR_CON0		(apmixed_base + 0x029C)
 #define APLL1_CON0		(apmixed_base + 0x02A0)
-#define APLL1_PWR_CON0		(apmixed_base + 0x02B8)
-#define APLL2_CON0		(apmixed_base + 0x02C0)
-#define APLL2_PWR_CON0		(apmixed_base + 0x02D8)
-
-#define ARMPLL1_CON0		(apmixed_base + 0x0310)
-#define ARMPLL1_CON1		(apmixed_base + 0x0314)
-#define ARMPLL1_PWR_CON0	(apmixed_base + 0x031C)
-#define ARMPLL2_CON0		(apmixed_base + 0x0320)
-#define ARMPLL2_CON1		(apmixed_base + 0x0324)
-#define ARMPLL2_PWR_CON0	(apmixed_base + 0x032C)
-#define ARMPLL3_CON0		(apmixed_base + 0x0330)
-#define ARMPLL3_CON1		(apmixed_base + 0x0334)
-#define ARMPLL3_PWR_CON0	(apmixed_base + 0x033C)
+#define APLL1_CON1		(apmixed_base + 0x02A4)
+#define APLL1_CON2		(apmixed_base + 0x02A8)
+#define APLL1_PWR_CON0		(apmixed_base + 0x02B0)
+#define APLL2_CON0		(apmixed_base + 0x02B4)
+#define APLL2_CON1		(apmixed_base + 0x02B8)
+#define APLL2_CON2		(apmixed_base + 0x02BC)
+#define APLL2_PWR_CON0		(apmixed_base + 0x02C4)
 
 #define AUDIO_TOP_CON0		(audio_base + 0x0000)
 #define AUDIO_TOP_CON1		(audio_base + 0x0004)
@@ -270,10 +139,6 @@ void __iomem *venc_gcon_base;
 #define IMG_CG_SET		(img_base + 0x0004)
 #define IMG_CG_CLR		(img_base + 0x0008)
 
-#define IPU_CG_CON              (ipu_base + 0x0000)
-#define IPU_CG_SET              (ipu_base + 0x0004)
-#define IPU_CG_CLR              (ipu_base + 0x0008)
-
 #define MFG_CG_CON              (mfgcfg_base + 0x0000)
 #define MFG_CG_SET              (mfgcfg_base + 0x0004)
 #define MFG_CG_CLR              (mfgcfg_base + 0x0008)
@@ -284,133 +149,61 @@ void __iomem *venc_gcon_base;
 #define MM_CG_CON1            (mmsys_config_base + 0x110)
 #define MM_CG_SET1            (mmsys_config_base + 0x114)
 #define MM_CG_CLR1            (mmsys_config_base + 0x118)
-#define MM_CG_CON2            (mmsys_config_base + 0x140)
-#define MM_CG_SET2            (mmsys_config_base + 0x144)
-#define MM_CG_CLR2            (mmsys_config_base + 0x148)
-
-#define PERI_CG_SET0             (pericfg_base + 0x0270)
-#define PERI_CG_CLR0             (pericfg_base + 0x0274)
-#define PERI_CG_STA0             (pericfg_base + 0x0278)
-#define PERI_CG_SET1             (pericfg_base + 0x0280)
-#define PERI_CG_CLR1             (pericfg_base + 0x0284)
-#define PERI_CG_STA1             (pericfg_base + 0x0288)
-#define PERI_CG_SET2             (pericfg_base + 0x0290)
-#define PERI_CG_CLR2             (pericfg_base + 0x0294)
-#define PERI_CG_STA2             (pericfg_base + 0x0298)
-#define PERI_CG_SET3             (pericfg_base + 0x02A0)
-#define PERI_CG_CLR3             (pericfg_base + 0x02A4)
-#define PERI_CG_STA3             (pericfg_base + 0x02A8)
-#define PERI_CG_SET4             (pericfg_base + 0x02B0)
-#define PERI_CG_CLR4             (pericfg_base + 0x02B4)
-#define PERI_CG_STA4             (pericfg_base + 0x02B8)
-#define PERI_CG_SET5             (pericfg_base + 0x02C0)
-#define PERI_CG_CLR5             (pericfg_base + 0x02C4)
-#define PERI_CG_STA5             (pericfg_base + 0x02C8)
-
-#define MJC_CG_CON              (mjc_base + 0x0000)
-#define MJC_CG_SET              (mjc_base + 0x0004)
-#define MJC_CG_CLR              (mjc_base + 0x0008)
-
-#define VDEC_CKEN_SET           (vdec_gcon_base + 0x0000)
-#define VDEC_CKEN_CLR           (vdec_gcon_base + 0x0004)
-#define LARB1_CKEN_SET          (vdec_gcon_base + 0x0008)
-#define LARB1_CKEN_CLR          (vdec_gcon_base + 0x000C)
-
 
 #define VENC_CG_CON		(venc_gcon_base + 0x0000)
 #define VENC_CG_SET		(venc_gcon_base + 0x0004)
 #define VENC_CG_CLR		(venc_gcon_base + 0x0008)
 
+#if MT_CCF_BRINGUP
+#define INFRA_CG0 0xFFFFFFFF
+#define INFRA_CG1 0xFFFFFFFF
+#define INFRA_CG2 0xFFFFFFFF
+#define INFRA_CG3 0xFFFFFFFF
+#define CAMSYS_CG	0x1FFF
+#define IMG_CG	0x3FFF
+#define MFG_CG	0x1
+#define MM_CG0	0xFFFFFFFF /* un-gating in preloader */
+#define MM_CG1  0x0003FFFF /* un-gating in preloader */
+#define VENC_CG 0x001111 /* inverse */
+#else
+/*add normal cg init setting*/
+#endif
 
-#define AUDIO_DISABLE_CG0 0x00004000 /* [14]APB3_SEL = 1 */
-#define AUDIO_DISABLE_CG1 0x00000000 /* default: all power on */
-#define CAMSYS_DISABLE_CG	0x1FFF
-#define IMG_DISABLE_CG	0xFFF
-#define IPU_DISABLE_CG	0x3FF
-#define MFG_DISABLE_CG	0xF
-#define MM_DISABLE_CG0	0xFFFFFFFF /* un-gating in preloader */
-#define MM_DISABLE_CG1  0xFFFFFFFF /* un-gating in preloader */
-#define MM_DISABLE_CG2  0xFFFFFFFF /* un-gating in preloader */
-#define PERI_DISABLE_CG0 0xFFFFFFFF /* un-gating in preloader */
-#define PERI_DISABLE_CG1 0xFFFFFFFF /* un-gating in preloader */
-#define PERI_DISABLE_CG2 0xFFFFFFFF /* un-gating in preloader */
-#define PERI_DISABLE_CG3 0xFFFFFFFF /* un-gating in preloader */
-#define PERI_DISABLE_CG4 0xFFFFFFFF /* un-gating in preloader */
-#define PERI_DISABLE_CG5 0xFFFFFFFF /* un-gating in preloader */
-#define MJC_DISABLE_CG 0x7F
-#define VDEC_DISABLE_CG	0x111      /* inverse */
-#define LARB_DISABLE_CG	0x1	  /* inverse */
-#define VENC_DISABLE_CG 0x111111 /* inverse */
 
-#define INFRA_CG0 0x00080000/*aes_top1[19], fhctl[30] cannot gate, suspend fail*/
-#define INFRA_CG1 0x40400e00/*trng[9], cpum[11], smi_l2c[22], auxadc[10], anc_md32[30]*/
 
-#define PERI_CG0 0x03ff00ff/*pwm0-7[7:0], i2c0-9[25:16]*/
-/*uart0-7[7:0], spi0-10[26:16]*/
-/*#define PERI_CG1 0x07ff00ff*/
-#define PERI_CG1 0x07ff00fc
-#define PERI_CG2 0x00010000/*flashif[16]*/
-#define PERI_CG3 0x00000172/*usb_p1[1], mpcie[8][6:4]*/
-#define PERI_CG4 0x11070053/*mbist_mem_off_dly[8] cannot gate, suspend fail*/
-
-#define CAM_CG 0x00001fc7/*[12:6][2:0]*/
-#define IMG_CG	0xFFF/**/
-#define MFG_CG	0xF/*[3:0]*/
-#define VDE_CG	0x1
-#define LARB1_CG 0x1
-#define VEN_CG 0x111111/*[20][16][12][8][4][0]*/
-#define MJC_CG 0x7f/*[6:0]*/
-#define IPU_CG 0x3ff/*[9:0]*/
-
-#define MM_CG0	0x000007fe/*mdp series[10][8:5][3:2]*/
-#define MM_CG1	0x00040040/*ipu[6], mdp2[18]*/
-#define MM_CG2	0x0000c180/*pmeter[8:7], 32k,img2[15:14]*/
-
-#define CK_CFG_0 0x100
-#define CK_CFG_0_SET 0x104
-#define CK_CFG_0_CLR 0x108
-#define CK_CFG_1 0x110
-#define CK_CFG_1_SET 0x114
-#define CK_CFG_1_CLR 0x118
-#define CK_CFG_2 0x120
-#define CK_CFG_2_SET 0x124
-#define CK_CFG_2_CLR 0x128
-#define CK_CFG_3 0x130
-#define CK_CFG_3_SET 0x134
-#define CK_CFG_3_CLR 0x138
-#define CK_CFG_4 0x140
-#define CK_CFG_4_SET 0x144
-#define CK_CFG_4_CLR 0x148
-#define CK_CFG_5 0x150
-#define CK_CFG_5_SET 0x154
-#define CK_CFG_5_CLR 0x158
-#define CK_CFG_6 0x160
-#define CK_CFG_6_SET 0x164
-#define CK_CFG_6_CLR 0x168
-#define CK_CFG_7 0x170
-#define CK_CFG_7_SET 0x174
-#define CK_CFG_7_CLR 0x178
-#define CK_CFG_8 0x180
-#define CK_CFG_8_SET 0x184
-#define CK_CFG_8_CLR 0x188
-#define CK_CFG_9 0x190
-#define CK_CFG_9_SET 0x194
-#define CK_CFG_9_CLR 0x198
-#define CK_CFG_10 0x1a0
-#define CK_CFG_10_SET 0x1a4
-#define CK_CFG_10_CLR 0x1a8
-#define CK_CFG_11 0x1b0
-#define CK_CFG_11_SET 0x1b4
-#define CK_CFG_11_CLR 0x1b8
-#define CK_CFG_12 0x1c0
-#define CK_CFG_12_SET 0x1c4
-#define CK_CFG_12_CLR 0x1c8
-#define CK_CFG_13 0x1d0
-#define CK_CFG_13_SET 0x1d4
-#define CK_CFG_13_CLR 0x1d8
-#define CK_CFG_14 0x1e0
-#define CK_CFG_14_SET 0x1e4
-#define CK_CFG_14_CLR 0x1e8
+#define CK_CFG_0 0x40
+#define CK_CFG_0_SET 0x44
+#define CK_CFG_0_CLR 0x48
+#define CK_CFG_1 0x50
+#define CK_CFG_1_SET 0x54
+#define CK_CFG_1_CLR 0x58
+#define CK_CFG_2 0x60
+#define CK_CFG_2_SET 0x64
+#define CK_CFG_2_CLR 0x68
+#define CK_CFG_3 0x70
+#define CK_CFG_3_SET 0x74
+#define CK_CFG_3_CLR 0x78
+#define CK_CFG_4 0x80
+#define CK_CFG_4_SET 0x84
+#define CK_CFG_4_CLR 0x88
+#define CK_CFG_5 0x90
+#define CK_CFG_5_SET 0x94
+#define CK_CFG_5_CLR 0x98
+#define CK_CFG_6 0xa0
+#define CK_CFG_6_SET 0xa4
+#define CK_CFG_6_CLR 0xa8
+#define CK_CFG_7 0xb0
+#define CK_CFG_7_SET 0xb4
+#define CK_CFG_7_CLR 0xb8
+#define CK_CFG_8 0xc0
+#define CK_CFG_8_SET 0xc4
+#define CK_CFG_8_CLR 0xc8
+#define CK_CFG_9 0xd0
+#define CK_CFG_9_SET 0xd4
+#define CK_CFG_9_CLR 0xd8
+#define CK_CFG_10 0xe0
+#define CK_CFG_10_SET 0xe4
+#define CK_CFG_10_CLR 0xe8
 #define CLK_CFG_UPDATE 0x004
 #define CLK_CFG_UPDATE1 0x008
 
@@ -543,7 +336,7 @@ static const char * const axi_parents[] __initconst = {
 	"clk26m",
 	"syspll1_d4",
 	"syspll_d7",
-	"ulposcpll_d8"
+	"osc_d8"
 };
 
 static const char * const mm_parents[] __initconst = {
@@ -660,9 +453,9 @@ static const char * const aud_intbus_parents[] __initconst = {
 
 static const char * const fpwrap_ulposc_parents[] __initconst = {
 	"clk26m",
-	"ulposcpll_d16",
-	"ulposcpll_d4",
-	"ulposcpll_d8"
+	"osc_d16",
+	"osc_d4",
+	"osc_d8"
 };
 
 static const char * const scp_parents[] __initconst = {
@@ -709,8 +502,8 @@ static const char * const aud_2_parents[] __initconst = {
 static const char * const disppwm_parents[] __initconst = {
 	"clk26m",
 	"univpll2_d4",
-	"ulposcpll_d4",
-	"ulposcpll_d8"
+	"osc_d4",
+	"osc_d8"
 };
 
 static const char * const ssusb_top_sys_parents[] __initconst = {
@@ -807,7 +600,93 @@ static const char * const fufs_parents[] __initconst = {
 #define INVALID_MUX_GATE -1
 
 static const struct mtk_mux_clr_set_upd top_muxes[] __initconst = {
-
+#if MT_CCF_BRINGUP
+	/* CLK_CFG_0 */
+	MUX_CLR_SET_UPD(TOP_MUX_AXI, "axi_sel", axi_parents, CK_CFG_0,
+		CK_CFG_0_SET, CK_CFG_0_CLR, 0, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_MM, "mm_sel", mm_parents, CK_CFG_0,
+		CK_CFG_0_SET, CK_CFG_0_CLR, 24, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	/* CLK_CFG_1 */
+	MUX_CLR_SET_UPD(TOP_MUX_PWM, "pwm_sel", pwm_parents, CK_CFG_1,
+		CK_CFG_1_SET, CK_CFG_1_CLR, 0, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_CAM, "cam_sel", cam_parents, CK_CFG_1,
+		CK_CFG_1_SET, CK_CFG_1_CLR, 8, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_MFG, "mfg_sel", mfg_parents, CK_CFG_1,
+		CK_CFG_1_SET, CK_CFG_1_CLR, 24, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	/* CLK_CFG_2 */
+	MUX_CLR_SET_UPD(TOP_MUX_CAMTG, "camtg_sel", camtg_parents, CK_CFG_2,
+		CK_CFG_2_SET, CK_CFG_2_CLR, 0, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_UART, "uart_sel", uart_parents, CK_CFG_2,
+		CK_CFG_2_SET, CK_CFG_2_CLR, 8, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_SPI, "spi_sel", spi_parents, CK_CFG_2,
+		CK_CFG_2_SET, CK_CFG_2_CLR, 16, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	/* CLK_CFG_3 */
+	MUX_CLR_SET_UPD(TOP_MUX_MSDC50_0_HCLK, "msdc50_hclk_sel", msdc50_hclk_parents, CK_CFG_3,
+		CK_CFG_3_SET, CK_CFG_3_CLR, 8, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_MSDC50_0, "msdc50_0_sel", msdc50_0_parents, CK_CFG_3,
+		CK_CFG_3_SET, CK_CFG_3_CLR, 16, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_MSDC30_1, "msdc30_1_sel", msdc30_1_parents, CK_CFG_3,
+		CK_CFG_3_SET, CK_CFG_3_CLR, 24, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	/* CLK_CFG_4 */
+	MUX_CLR_SET_UPD(TOP_MUX_MSDC30_2, "msdc30_2_sel", msdc30_2_parents, CK_CFG_4,
+		CK_CFG_4_SET, CK_CFG_4_CLR, 0, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_MSDC30_3, "msdc30_3_sel", msdc30_3_parents, CK_CFG_4,
+		CK_CFG_4_SET, CK_CFG_4_CLR, 8, 4, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_AUDIO, "audio_sel", audio_parents, CK_CFG_4,
+		CK_CFG_4_SET, CK_CFG_4_CLR, 16, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_AUD_INTBUS, "aud_intbus_sel", aud_intbus_parents, CK_CFG_4,
+		CK_CFG_4_SET, CK_CFG_4_CLR, 24, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	/* CLK_CFG_5 */
+	MUX_CLR_SET_UPD(TOP_MUX_FPWRAP_ULPOSC, "fpwrap_ulposc_sel", fpwrap_ulposc_parents, CK_CFG_5,
+		CK_CFG_5_SET, CK_CFG_5_CLR, 0, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_SCP, "scp_sel", scp_parents, CK_CFG_5,
+		CK_CFG_5_SET, CK_CFG_5_CLR, 8, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_ATB, "atb_sel", atb_parents, CK_CFG_5,
+		CK_CFG_5_SET, CK_CFG_5_CLR, 16, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_SSPM, "sspm_sel", sspm_parents, CK_CFG_5,
+		CK_CFG_5_SET, CK_CFG_5_CLR, 24, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	/* CLK_CFG_6 */
+	MUX_CLR_SET_UPD(TOP_MUX_DPI0, "dpi0_sel", dpi0_parents, CK_CFG_6,
+		CK_CFG_6_SET, CK_CFG_6_CLR, 0, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_SCAM, "scam_sel", scam_parents, CK_CFG_6,
+		CK_CFG_6_SET, CK_CFG_6_CLR, 8, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_AUD_1, "aud_1_sel", aud_1_parents, CK_CFG_6,
+		CK_CFG_6_SET, CK_CFG_6_CLR, 16, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_AUD_2, "aud_2_sel", aud_2_parents, CK_CFG_6,
+		CK_CFG_6_SET, CK_CFG_6_CLR, 24, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	/* CLK_CFG_7 */
+	MUX_CLR_SET_UPD(TOP_MUX_DISP_PWM, "disppwm_sel", disppwm_parents, CK_CFG_7,
+		CK_CFG_7_SET, CK_CFG_7_CLR, 0, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_SSUSB_TOP_SYS, "ssusb_top_sys_sel", ssusb_top_sys_parents, CK_CFG_7,
+		CK_CFG_7_SET, CK_CFG_7_CLR, 8, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_SSUSB_TOP_XHCI, "ssusb_top_xhci_sel", ssusb_top_xhci_parents, CK_CFG_7,
+		CK_CFG_7_SET, CK_CFG_7_CLR, 16, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_USB_TOP, "usb_top_sel", usb_top_parents, CK_CFG_7,
+		CK_CFG_7_SET, CK_CFG_7_CLR, 24, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	/* CLK_CFG_8 */
+	MUX_CLR_SET_UPD(TOP_MUX_SPM, "spm_sel", spm_parents, CK_CFG_8,
+		CK_CFG_8_SET, CK_CFG_8_CLR, 0, 1, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_I2C, "i2c_sel", i2c_parents, CK_CFG_8,
+		CK_CFG_8_SET, CK_CFG_8_CLR, 16, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	/* CLK_CFG_9 */
+	MUX_CLR_SET_UPD(TOP_MUX_F52M_MFG, "f52m_mfg_sel", f52m_mfg_parents, CK_CFG_9,
+		CK_CFG_9_SET, CK_CFG_9_CLR, 0, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_SENINF, "seninf_sel", seninf_parents, CK_CFG_9,
+		CK_CFG_9_SET, CK_CFG_9_CLR, 8, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_DXCC, "dxcc_sel", dxcc_parents, CK_CFG_9,
+		CK_CFG_9_SET, CK_CFG_9_CLR, 16, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_CAMTG2, "camtg2_sel", camtg2_parents, CK_CFG_9,
+		CK_CFG_9_SET, CK_CFG_9_CLR, 24, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	/* CLK_CFG_10 */
+	MUX_CLR_SET_UPD(TOP_MUX_AUD_ENG1, "aud_eng1_sel", aud_engen1_parents, CK_CFG_10,
+		CK_CFG_10_SET, CK_CFG_10_CLR, 0, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_AUD_ENG2, "aud_eng2_sel", aud_engen2_parents, CK_CFG_10,
+		CK_CFG_10_SET, CK_CFG_10_CLR, 8, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_FAES_UFSFDE, "faes_ufsfde_sel", faes_ufsfde_parents, CK_CFG_10,
+		CK_CFG_10_SET, CK_CFG_10_CLR, 16, 3, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+	MUX_CLR_SET_UPD(TOP_MUX_FUFS, "fufs_sel", fufs_parents, CK_CFG_10,
+		CK_CFG_10_SET, CK_CFG_10_CLR, 24, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
+#else
 	/* CLK_CFG_0 */
 	MUX_CLR_SET_UPD(TOP_MUX_AXI, "axi_sel", axi_parents, CK_CFG_0,
 		CK_CFG_0_SET, CK_CFG_0_CLR, 0, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG, INVALID_UPDATE_SHIFT),
@@ -893,6 +772,7 @@ static const struct mtk_mux_clr_set_upd top_muxes[] __initconst = {
 		CK_CFG_10_SET, CK_CFG_10_CLR, 16, 3, 23, CLK_CFG_UPDATE1, 7),
 	MUX_CLR_SET_UPD(TOP_MUX_FUFS, "fufs_sel", fufs_parents, CK_CFG_10,
 		CK_CFG_10_SET, CK_CFG_10_CLR, 24, 2, 31, CLK_CFG_UPDATE1, 8),
+#endif
 };
 
 /* TODO: remove audio clocks after audio driver ready */
@@ -1364,12 +1244,6 @@ static const struct mtk_gate_regs mm1_cg_regs = {
 	.sta_ofs = 0x110,
 };
 
-static const struct mtk_gate_regs mm2_cg_regs = {
-	.set_ofs = 0x144,
-	.clr_ofs = 0x148,
-	.sta_ofs = 0x140,
-};
-
 #define GATE_MM0(_id, _name, _parent, _shift) {	\
 		.id = _id,			\
 		.name = _name,			\
@@ -1503,38 +1377,6 @@ static void __init mtk_topckgen_init(struct device_node *node)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	cksys_base = base;
-	/*clk_writel(CLK_SCP_CFG_0, clk_readl(CLK_SCP_CFG_0) | 0x3EF);*/
-	/*clk_writel(CLK_SCP_CFG_1, clk_readl(CLK_SCP_CFG_1) | 0x15);*/
-	/*mtk_clk_enable_critical();*/
-#if 0
-	/* USB20 MUX PDN */
-	clk_writel(cksys_base + CK_CFG_3_CLR, 0x80000000);
-	clk_writel(cksys_base + CK_CFG_3_SET, 0x80000000);
-	/* I2C MUX PDN */
-	clk_writel(cksys_base + CK_CFG_2_CLR, 0x80000000);
-	clk_writel(cksys_base + CK_CFG_2_SET, 0x80000000);
-	/* MSDC50_HCLK MUX PDN */
-	clk_writel(cksys_base + CK_CFG_4_CLR, 0x00008000);
-	clk_writel(cksys_base + CK_CFG_4_SET, 0x00008000);
-	/* MSDC53_HCLK MUX PDN */
-	clk_writel(cksys_base + CK_CFG_5_CLR, 0x00800000);
-	clk_writel(cksys_base + CK_CFG_5_SET, 0x00800000);
-	/* ufo_dec mux pdn - OK */
-	clk_writel(cksys_base + CK_CFG_10_CLR, 0x80000000);
-	clk_writel(cksys_base + CK_CFG_10_SET, 0x80000000);
-	/* seninf/ipu_if mux pdn */
-	clk_writel(cksys_base + CK_CFG_9_CLR, 0x80800000);
-	clk_writel(cksys_base + CK_CFG_9_SET, 0x80800000);
-	/* pcie_mac mux pdn */
-	clk_writel(cksys_base + CK_CFG_11_CLR, 0x00000080);
-	clk_writel(cksys_base + CK_CFG_11_SET, 0x00000080);
-	/* ufs_card mux pdn */
-	clk_writel(cksys_base + CK_CFG_13_CLR, 0x00000080);
-	clk_writel(cksys_base + CK_CFG_13_SET, 0x00000080);
-	/* andmd32/audio_h mux pdn */
-	clk_writel(cksys_base + CK_CFG_12_CLR, 0x00800080);
-	clk_writel(cksys_base + CK_CFG_12_SET, 0x00800080);
-#endif
 }
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,topckgen", mtk_topckgen_init);
 
@@ -1564,6 +1406,7 @@ static void __init mtk_infracfg_ao_init(struct device_node *node)
 #if MT_CCF_BRINGUP
 	/*clk_writel(INFRA_PDN_SET0, INFRA_CG0);*/
 	/*clk_writel(INFRA_PDN_SET1, INFRA_CG1);*/
+#else
 #endif
 }
 CLK_OF_DECLARE(mtk_infracfg_ao, "mediatek,infracfg_ao",
@@ -1603,20 +1446,6 @@ CLK_OF_DECLARE(mtk_infracfg_ao, "mediatek,infracfg_ao",
 
 static const struct mtk_pll_data plls[] = {
 	/* FIXME: need to fix flags/div_table/tuner_reg/table */
-#if 0
-	PLL(CLK_APMIXED_ARMPLL1, "armpll1", 0x0310, 0x031C, 0xfc0001c1, 0,
-		22, 0x0314, 28, 0x0, 0x0314, 0),
-	PLL(CLK_APMIXED_ARMPLL2, "armpll2", 0x0320, 0x032C, 0xfc0001c1, 0,
-		22, 0x0324, 28, 0x0, 0x0324, 0),
-	PLL(CLK_APMIXED_ARMPLL3, "armpll3", 0x0330, 0x033C, 0xfc0001c1, 0,
-		22, 0x0334, 28, 0x0, 0x0334, 0),
-	PLL(CLK_APMIXED_ARMPLL4, "armpll4", 0x0340, 0x034C, 0xfc0001c1, 0,
-		22, 0x0344, 28, 0x0, 0x0344, 0),
-	PLL(CLK_APMIXED_CCIPLL, "ccipll", 0x0350, 0x035C, 0xfc0001c1, 0,
-		22, 0x0354, 28, 0x0, 0x0354, 0),
-	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x0230, 0x023C, 0xfc0001c1, 0,
-		22, 0x0234, 28, 0x0, 0x0234, 0),
-#endif
 	PLL(APMIXED_UNIVPLL, "univpll", 0x0230, 0x023C, 0x00000001, 0,
 		22, 0x0234, 24, 0x0, 0x0234, 0),
 
@@ -1664,34 +1493,22 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	/*clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xee2b8ae2);*//* ARMPLL4, MPLL, CCIPLL, EMIPLL, MAINPLL */
 	/*clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xee2b8ae2);*/
 #if 0
-/*GPUPLL*/
-	clk_clrl(GPUPLL_CON0, PLL_EN);
-	clk_setl(GPUPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(GPUPLL_PWR_CON0, PLL_PWR_ON);
-/*FSMIPLL*/
-	clk_clrl(FSMIPLL_CON0, PLL_EN);
-	clk_setl(FSMIPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(FSMIPLL_PWR_CON0, PLL_PWR_ON);
+/*MFGPLL*/
+	clk_clrl(MFGPLL_CON0, PLL_EN);
+	clk_setl(MFGPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(MFGPLL_PWR_CON0, PLL_PWR_ON);
 /*UNIVPLL*/
-#if 0
 	clk_clrl(UNIVPLL_CON0, PLL_EN);
 	clk_setl(UNIVPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(UNIVPLL_PWR_CON0, PLL_PWR_ON);
-#endif
 /*MSDCPLL*/
-#if 1
 	clk_clrl(MSDCPLL_CON0, PLL_EN);
 	clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
-#endif
 /*MMPLL*/
 	clk_clrl(MMPLL_CON0, PLL_EN);
 	clk_setl(MMPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(MMPLL_PWR_CON0, PLL_PWR_ON);
-/*VCODECPLL*/
-	clk_clrl(VCODECPLL_CON0, PLL_EN);
-	clk_setl(VCODECPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(VCODECPLL_PWR_CON0, PLL_PWR_ON);
 /*TVDPLL*/
 	clk_clrl(TVDPLL_CON0, PLL_EN);
 	clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
@@ -1733,9 +1550,9 @@ static void __init mtk_audio_init(struct device_node *node)
 			__func__, r);
 	audio_base = base;
 
-#if 0/*MT_CCF_BRINGUP*/
-	clk_writel(AUDIO_TOP_CON0, AUDIO_DISABLE_CG0);
-	clk_writel(AUDIO_TOP_CON1, AUDIO_DISABLE_CG1);
+#if MT_CCF_BRINGUP
+	/*clk_writel(AUDIO_TOP_CON0, AUDIO_DISABLE_CG0);*/
+	/*clk_writel(AUDIO_TOP_CON1, AUDIO_DISABLE_CG1);*/
 #endif
 
 }
@@ -1763,9 +1580,10 @@ static void __init mtk_camsys_init(struct device_node *node)
 			__func__, r);
 	cam_base = base;
 
-#if 0/*MT_CCF_BRINGUP*/
-	/*clk_writel(CAMSYS_CG_CLR, CAMSYS_DISABLE_CG);*/
-	clk_writel(CAMSYS_CG_SET, CAM_CG);
+#if MT_CCF_BRINGUP
+	clk_writel(CAMSYS_CG_CLR, CAMSYS_CG);
+#else
+	clk_writel(CAMSYS_CG_SET, CAMSYS_CG);
 #endif
 }
 CLK_OF_DECLARE(mtk_camsys, "mediatek,camsys", mtk_camsys_init);
@@ -1792,8 +1610,9 @@ static void __init mtk_imgsys_init(struct device_node *node)
 			__func__, r);
 	img_base = base;
 
-#if 0/*MT_CCF_BRINGUP*/
-	/*clk_writel(IMG_CG_CLR, IMG_DISABLE_CG);*/
+#if MT_CCF_BRINGUP
+	clk_writel(IMG_CG_CLR, IMG_CG);
+#else
 	clk_writel(IMG_CG_SET, IMG_CG);
 #endif
 }
@@ -1822,8 +1641,9 @@ static void __init mtk_mfg_cfg_init(struct device_node *node)
 			__func__, r);
 	mfgcfg_base = base;
 
-#if 0/*MT_CCF_BRINGUP*/
-	/*clk_writel(MFG_CG_CLR, MFG_DISABLE_CG);*/
+#if MT_CCF_BRINGUP
+	clk_writel(MFG_CG_CLR, MFG_CG);
+#else
 	clk_writel(MFG_CG_SET, MFG_CG);
 #endif
 
@@ -1851,10 +1671,12 @@ static void __init mtk_mmsys_config_init(struct device_node *node)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	mmsys_config_base = base;
-#if 0/*MT_CCF_BRINGUP*/
+#if MT_CCF_BRINGUP
+	clk_writel(MM_CG_CLR0, MM_CG0);
+	clk_writel(MM_CG_CLR1, MM_CG1);
+#else
 	clk_writel(MM_CG_SET0, MM_CG0);
 	clk_writel(MM_CG_SET1, MM_CG1);
-	clk_writel(MM_CG_SET2, MM_CG2);
 #endif
 }
 CLK_OF_DECLARE(mtk_mmsys_config, "mediatek,mmsys_config",
@@ -1882,9 +1704,10 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 			__func__, r);
 	venc_gcon_base = base;
 
-#if 0/*MT_CCF_BRINGUP*/
-	/*clk_writel(VENC_CG_SET, VENC_DISABLE_CG);*/
-	clk_writel(VENC_CG_CLR, VEN_CG);
+#if MT_CCF_BRINGUP
+	clk_writel(VENC_CG_SET, VENC_CG);
+#else
+	clk_writel(VENC_CG_CLR, VENC_CG);
 #endif
 }
 CLK_OF_DECLARE(mtk_venc_global_con, "mediatek,venc_gcon",
@@ -1967,51 +1790,6 @@ unsigned int mt_get_abist_freq(unsigned int ID)
 	return output;
 }
 
-unsigned int mt_get_abist2_freq(unsigned int ID)
-{
-	int output = 0, i = 0;
-	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_1, clk26cali_1;
-
-	clk_dbg_cfg = clk_readl(CLK_CFG_20);
-	clk_writel(CLK_CFG_20, (clk_dbg_cfg & 0xFFFF80FF)|(ID << 8)|(0x01 << 31)|(0x01 << 14));
-
-	clk_misc_cfg_1 = clk_readl(CLK_MISC_CFG_1);
-	clk_writel(CLK_MISC_CFG_1, 0x00000000);
-
-	clk26cali_1 = clk_readl(CLK26CALI_1);
-	clk26cali_0 = clk_readl(CLK26CALI_0);
-
-	clk_writel(CLK26CALI_0, 0x80);
-	clk_writel(CLK26CALI_0, 0x81);
-
-	/* wait frequency meter finish */
-	while (clk_readl(CLK26CALI_0) & 0x01) {
-		mdelay(10);
-		i++;
-		if (i > 10)
-		break;
-	}
-
-	temp = clk_readl(CLK26CALI_1) & 0xFFFF;
-
-	output = (temp * 26000) / 1024;
-
-	clk_writel(CLK_CFG_20, clk_dbg_cfg);
-	clk_writel(CLK_MISC_CFG_1, clk_misc_cfg_1);
-	clk_writel(CLK26CALI_0, clk26cali_0);
-	clk_writel(CLK26CALI_1, clk26cali_1);
-
-	/*pr_debug("%s = %d Khz\n", abist_array[ID-1], output);*/
-	return output;
-}
-
-void switch_mfg_clk(int src)
-{
-	if (src == 0)
-		clk_writel(TOP_CLK2, clk_readl(TOP_CLK2)&0xfffffcff);
-	else
-		clk_writel(TOP_CLK2, (clk_readl(TOP_CLK2)&0xfffffcff)|(0x01<<8));
-}
 
 void mp_enter_suspend(int id, int suspend)
 {
@@ -2039,16 +1817,12 @@ void pll_if_on(void)
 {
 	if (clk_readl(UNIVPLL_CON0) & 0x1)
 		pr_err("suspend warning: UNIVPLL is on!!!\n");
-	if (clk_readl(GPUPLL_CON0) & 0x1)
-		pr_err("suspend warning: GPUPLL is on!!!\n");
+	if (clk_readl(MFGPLL_CON0) & 0x1)
+		pr_err("suspend warning: MFGPLL is on!!!\n");
 	if (clk_readl(MMPLL_CON0) & 0x1)
 		pr_err("suspend warning: MMPLL is on!!!\n");
 	if (clk_readl(MSDCPLL_CON0) & 0x1)
 		pr_err("suspend warning: MSDCPLL is on!!!\n");
-	if (clk_readl(FSMIPLL_CON0) & 0x1)
-		pr_err("suspend warning: FSMIPLL is on!!!\n");
-	if (clk_readl(VCODECPLL_CON0) & 0x1)
-		pr_err("suspend warning: VCODECPLL is on!!!\n");
 	if (clk_readl(TVDPLL_CON0) & 0x1)
 		pr_err("suspend warning: TVDPLL is on!!!\n");
 	if (clk_readl(APLL1_CON0) & 0x1)
@@ -2057,101 +1831,30 @@ void pll_if_on(void)
 		pr_err("suspend warning: APLL2 is on!!!\n");
 }
 
-#define AUDIO_ENABLE_CG0 0x0F0C0304 /* [14]APB3_SEL = 1 */
-#define AUDIO_ENABLE_CG1 0x0F330000 /* default: all power on */
-
-#define INFRA_ENABLE_CG0 0xFFFFFFFF
-#define INFRA_ENABLE_CG1 0xFFFFFFFF
-#define INFRA_ENABLE_CG2 0xFFFFFFFF
-#define INFRA_ENABLE_CG3 0xFFFFFFFF
-#define INFRA_ENABLE_CG4 0xFFFFFFFF
-
-#define CAMSYS_ENABLE_CG	0x1FFF
-#define IMG_ENABLE_CG	0xFFF
-#define IPU_ENABLE_CG	0x3FF
-#define MFG_ENABLE_CG	0xF
-#define MM_ENABLE_CG0	0xFFFFFFFF /* un-gating in preloader */
-#define MM_ENABLE_CG1  0xFFFFFFFF /* un-gating in preloader */
-#define MM_ENABLE_CG2  0xFFFFFFFF /* un-gating in preloader */
-#define PERI_ENABLE_CG0 0xFFFFFFFF /* un-gating in preloader */
-#define PERI_ENABLE_CG1 0xFFFFFFFF /* un-gating in preloader */
-#define PERI_ENABLE_CG2 0xFFFFFFFF /* un-gating in preloader */
-#define PERI_ENABLE_CG3 0xFFFFFFFF /* un-gating in preloader */
-#define PERI_ENABLE_CG4 0xFFFFFFFF /* un-gating in preloader */
-#define PERI_ENABLE_CG5 0xFFFFFFFF /* un-gating in preloader */
-#define MJC_ENABLE_CG 0x7F
-#define VDEC_ENABLE_CG	0x111      /* inverse */
-#define LARB_ENABLE_CG	0x1	  /* inverse */
-#define VENC_ENABLE_CG 0x111111 /* inverse */
-
 void clock_force_off(void)
 {
-	#if 0
-	/*INFRA_AO CG*/
-	clk_writel(INFRA_PDN_SET0, INFRA_ENABLE_CG0);
-	clk_writel(INFRA_PDN_SET1, INFRA_ENABLE_CG1);
-	clk_writel(INFRA_PDN_SET2, INFRA_ENABLE_CG2);
-	clk_writel(INFRA_PDN_SET3, INFRA_ENABLE_CG3);
-	clk_writel(INFRA_PDN_SET4, INFRA_ENABLE_CG4);
-	/*PERI CG*/
-	clk_writel(PERI_CG_SET0, PERI_ENABLE_CG0);
-	clk_writel(PERI_CG_SET1, PERI_ENABLE_CG1);
-	clk_writel(PERI_CG_SET2, PERI_ENABLE_CG2);
-	clk_writel(PERI_CG_SET3, PERI_ENABLE_CG3);
-	clk_writel(PERI_CG_SET4, PERI_ENABLE_CG4);
-	clk_writel(PERI_CG_SET5, PERI_ENABLE_CG5);
-	#endif
 	/*DISP CG*/
-	clk_writel(MM_CG_SET0, MM_ENABLE_CG0);
-	clk_writel(MM_CG_SET1, MM_ENABLE_CG1);
-	clk_writel(MM_CG_SET2, MM_ENABLE_CG2);
+	clk_writel(MM_CG_SET0, MM_CG0);
+	clk_writel(MM_CG_SET1, MM_CG1);
 	/*AUDIO*/
-	clk_writel(AUDIO_TOP_CON0, AUDIO_ENABLE_CG0);
-	clk_writel(AUDIO_TOP_CON1, AUDIO_ENABLE_CG1);
+	/*clk_writel(AUDIO_TOP_CON0, AUDIO_CG0);*/
+	/*clk_writel(AUDIO_TOP_CON1, AUDIO_CG1);*/
 	/*MFG*/
-	clk_writel(MFG_CG_SET, MFG_ENABLE_CG);
+	clk_writel(MFG_CG_SET, MFG_CG);
 	/*ISP*/
-	clk_writel(IMG_CG_SET, IMG_ENABLE_CG);
-	/*VDE not inverse*/
-	clk_writel(VDEC_CKEN_CLR, VDEC_ENABLE_CG);
-	clk_writel(LARB1_CKEN_CLR, LARB_ENABLE_CG);
-	/*VENC not inverse*/
-	clk_writel(VENC_CG_CLR, VENC_ENABLE_CG);
-	/*MJC*/
-	clk_writel(MJC_CG_SET, MJC_ENABLE_CG);
+	clk_writel(IMG_CG_SET, IMG_CG);
+	/*VENC inverse*/
+	clk_writel(VENC_CG_CLR, VENC_CG);
 	/*CAM*/
-	clk_writel(CAMSYS_CG_SET, CAMSYS_ENABLE_CG);
-	/*IPU*/
-	clk_writel(IPU_CG_SET, IPU_ENABLE_CG);
-}
-
-void mmsys_cg_check(void)
-{
-	pr_err("[MM_CG_CON0]=0x%08x\n", clk_readl(MM_CG_CON0));
-	pr_err("[MM_CG_CON1]=0x%08x\n", clk_readl(MM_CG_CON1));
-	pr_err("[MM_CG_CON2]=0x%08x\n", clk_readl(MM_CG_CON2));
-}
-
-void mfgsys_cg_sts(void)
-{
-	pr_err("[CLK_CFG_2]=0x%08x\n", clk_readl(CLK_CFG_2));
-}
-
-unsigned int mfgsys_cg_check(void)
-{
-	return clk_readl(MFG_CG_CON);
+	clk_writel(CAMSYS_CG_SET, CAMSYS_CG);
 }
 
 void pll_force_off(void)
 {
-/*GPUPLL*/
-	clk_clrl(GPUPLL_CON0, PLL_EN);
-	clk_setl(GPUPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(GPUPLL_PWR_CON0, PLL_PWR_ON);
-/*FSMIPLL*/
-	clk_clrl(FSMIPLL_CON0, PLL_EN);
-	clk_setl(FSMIPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(FSMIPLL_PWR_CON0, PLL_PWR_ON);
+/*MFGPLL*/
+	clk_clrl(MFGPLL_CON0, PLL_EN);
+	clk_setl(MFGPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(MFGPLL_PWR_CON0, PLL_PWR_ON);
 /*UNIVPLL*/
 	clk_clrl(UNIVPLL_CON0, PLL_EN);
 	clk_setl(UNIVPLL_PWR_CON0, PLL_ISO_EN);
@@ -2164,10 +1867,6 @@ void pll_force_off(void)
 	clk_clrl(MMPLL_CON0, PLL_EN);
 	clk_setl(MMPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(MMPLL_PWR_CON0, PLL_PWR_ON);
-/*VCODECPLL*/
-	clk_clrl(VCODECPLL_CON0, PLL_EN);
-	clk_setl(VCODECPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(VCODECPLL_PWR_CON0, PLL_PWR_ON);
 /*TVDPLL*/
 	clk_clrl(TVDPLL_CON0, PLL_EN);
 	clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
@@ -2186,45 +1885,31 @@ void armpll_control(int id, int on)
 {
 	if (id == 1) {
 		if (on) {
-			mt_reg_sync_writel((clk_readl(ARMPLL1_PWR_CON0) | 0x01), ARMPLL1_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_LL_PWR_CON0) | 0x01), ARMPLL_LL_PWR_CON0);
 			udelay(100);
-			mt_reg_sync_writel((clk_readl(ARMPLL1_PWR_CON0) & 0xfffffffd), ARMPLL1_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_LL_PWR_CON0) & 0xfffffffd), ARMPLL_LL_PWR_CON0);
 			udelay(10);
-			mt_reg_sync_writel((clk_readl(ARMPLL1_CON1) | 0x80000000), ARMPLL1_CON1);
-			mt_reg_sync_writel((clk_readl(ARMPLL1_CON0) | 0x01), ARMPLL1_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_LL_CON1) | 0x80000000), ARMPLL_LL_CON1);
+			mt_reg_sync_writel((clk_readl(ARMPLL_LL_CON0) | 0x01), ARMPLL_LL_CON0);
 			udelay(100);
 		} else {
-			mt_reg_sync_writel((clk_readl(ARMPLL1_CON0) & 0xfffffffe), ARMPLL1_CON0);
-			mt_reg_sync_writel((clk_readl(ARMPLL1_PWR_CON0) | 0x00000002), ARMPLL1_PWR_CON0);
-			mt_reg_sync_writel((clk_readl(ARMPLL1_PWR_CON0) & 0xfffffffe), ARMPLL1_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_LL_CON0) & 0xfffffffe), ARMPLL_LL_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_LL_PWR_CON0) | 0x00000002), ARMPLL_LL_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_LL_PWR_CON0) & 0xfffffffe), ARMPLL_LL_PWR_CON0);
 		}
 	} else if (id == 2) {
 		if (on) {
-			mt_reg_sync_writel((clk_readl(ARMPLL2_PWR_CON0) | 0x01), ARMPLL2_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_L_PWR_CON0) | 0x01), ARMPLL_L_PWR_CON0);
 			udelay(100);
-			mt_reg_sync_writel((clk_readl(ARMPLL2_PWR_CON0) & 0xfffffffd), ARMPLL2_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_L_PWR_CON0) & 0xfffffffd), ARMPLL_L_PWR_CON0);
 			udelay(10);
-			mt_reg_sync_writel((clk_readl(ARMPLL2_CON1) | 0x80000000), ARMPLL2_CON1);
-			mt_reg_sync_writel((clk_readl(ARMPLL2_CON0) | 0x01), ARMPLL2_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_L_CON1) | 0x80000000), ARMPLL_L_CON1);
+			mt_reg_sync_writel((clk_readl(ARMPLL_L_CON0) | 0x01), ARMPLL_L_CON0);
 			udelay(100);
 		} else {
-			mt_reg_sync_writel((clk_readl(ARMPLL2_CON0) & 0xfffffffe), ARMPLL2_CON0);
-			mt_reg_sync_writel((clk_readl(ARMPLL2_PWR_CON0) | 0x00000002), ARMPLL2_PWR_CON0);
-			mt_reg_sync_writel((clk_readl(ARMPLL2_PWR_CON0) & 0xfffffffe), ARMPLL2_PWR_CON0);
-		}
-	} else if (id == 3) {
-		if (on) {
-			mt_reg_sync_writel((clk_readl(ARMPLL3_PWR_CON0) | 0x01), ARMPLL3_PWR_CON0);
-			udelay(100);
-			mt_reg_sync_writel((clk_readl(ARMPLL3_PWR_CON0) & 0xfffffffd), ARMPLL3_PWR_CON0);
-			udelay(10);
-			mt_reg_sync_writel((clk_readl(ARMPLL3_CON1) | 0x80000000), ARMPLL3_CON1);
-			mt_reg_sync_writel((clk_readl(ARMPLL3_CON0) | 0x01), ARMPLL3_CON0);
-			udelay(100);
-		} else {
-			mt_reg_sync_writel((clk_readl(ARMPLL3_CON0) & 0xfffffffe), ARMPLL3_CON0);
-			mt_reg_sync_writel((clk_readl(ARMPLL3_PWR_CON0) | 0x00000002), ARMPLL3_PWR_CON0);
-			mt_reg_sync_writel((clk_readl(ARMPLL3_PWR_CON0) & 0xfffffffe), ARMPLL3_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_L_CON0) & 0xfffffffe), ARMPLL_L_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_L_PWR_CON0) | 0x00000002), ARMPLL_L_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL_L_PWR_CON0) & 0xfffffffe), ARMPLL_L_PWR_CON0);
 		}
 	}
 }
