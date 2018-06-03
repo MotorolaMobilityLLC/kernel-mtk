@@ -40,6 +40,8 @@
 #include <mali_kbase_hwaccess_time.h>
 #include <mali_kbase_tlstream.h>
 
+#include "platform/mtk_platform_common.h"
+
 /* This function finds out which RB tree the given GPU VA region belongs to
  * based on the region zone */
 static struct rb_root *kbase_reg_flags_to_rbtree(struct kbase_context *kctx,
@@ -747,6 +749,11 @@ int kbase_mem_init(struct kbase_device *kbdev)
 	/* Initialize memory usage */
 	atomic_set(&memdev->used_pages, 0);
 
+#ifdef ENABLE_MTK_MEMINFO
+	atomic_set(&g_mtk_gpu_total_memory_usage_in_pages, 0);
+	atomic_set(&g_mtk_gpu_peak_memory_usage_in_pages, 0);
+#endif /* ENABLE_MTK_MEMINFO */
+
 	return kbase_mem_pool_init(&kbdev->mem_pool,
 			KBASE_MEM_POOL_MAX_SIZE_KBDEV, kbdev, NULL);
 }
@@ -1387,6 +1394,11 @@ int kbase_alloc_phy_pages_helper(
 			nr_pages_requested, &alloc->imported.kctx->used_pages);
 	kbase_atomic_add_pages(nr_pages_requested, &alloc->imported.kctx->kbdev->memdev.used_pages);
 
+#ifdef ENABLE_MTK_MEMINFO
+	kbase_atomic_add_pages(nr_pages_requested, &g_mtk_gpu_total_memory_usage_in_pages);
+	mtk_kbase_set_gpu_memory_peak();
+#endif /* ENABLE_MTK_MEMINFO */
+
 	/* Increase mm counters before we allocate pages so that this
 	 * allocation is visible to the OOM killer */
 	kbase_process_page_usage_inc(alloc->imported.kctx, nr_pages_requested);
@@ -1416,6 +1428,10 @@ no_alloc:
 	kbase_process_page_usage_dec(alloc->imported.kctx, nr_pages_requested);
 	kbase_atomic_sub_pages(nr_pages_requested, &alloc->imported.kctx->used_pages);
 	kbase_atomic_sub_pages(nr_pages_requested, &alloc->imported.kctx->kbdev->memdev.used_pages);
+
+#ifdef ENABLE_MTK_MEMINFO
+	kbase_atomic_sub_pages(nr_pages_requested, &g_mtk_gpu_total_memory_usage_in_pages);
+#endif /* ENABLE_MTK_MEMINFO */
 
 	return -ENOMEM;
 }
@@ -1468,6 +1484,10 @@ int kbase_free_phy_pages_helper(
 							&kctx->used_pages);
 		kbase_atomic_sub_pages(nr_pages_to_free,
 				       &kctx->kbdev->memdev.used_pages);
+
+#ifdef ENABLE_MTK_MEMINFO
+		kbase_atomic_sub_pages(nr_pages_to_free, &g_mtk_gpu_total_memory_usage_in_pages);
+#endif /* ENABLE_MTK_MEMINFO */
 
 		KBASE_TLSTREAM_AUX_PAGESALLOC(
 				(u32)kctx->id,
