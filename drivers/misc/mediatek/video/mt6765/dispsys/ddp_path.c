@@ -811,8 +811,10 @@ int ddp_path_top_clock_on(void)
 	ddp_clk_prepare_enable(CLK_MM_26M);
 #ifdef CONFIG_MTK_IOMMU_V2
 	iommu_dev = disp_get_iommu_dev();
-	if (!iommu_dev)
-		DISPCHECK("ddp_path_top_clock_on iommu is null\n");
+	if (!iommu_dev) {
+		DISPERR("ddp_path_top_clock_on iommu is null\n");
+		return 0;
+	}
 	for (larb_idx = 0; larb_idx < DISP_LARB_COUNT; larb_idx++)
 		mtk_smi_larb_get(&iommu_dev->larb_pdev[larb_idx]->dev);
 #endif

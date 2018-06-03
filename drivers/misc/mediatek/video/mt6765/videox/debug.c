@@ -514,7 +514,7 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 		goto out;
 	}
 	disp_ion_get_mva(ion_display_client, ion_display_handle,
-		(unsigned int *)&mva, DISP_M4U_PORT_DISP_WDMA0);
+		(unsigned long *)&mva, DISP_M4U_PORT_DISP_WDMA0);
 
 out:
 #endif

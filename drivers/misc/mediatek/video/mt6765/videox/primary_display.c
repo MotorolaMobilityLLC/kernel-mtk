@@ -7905,7 +7905,8 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 		goto out;
 	}
 
-	disp_ion_get_mva(ion_display_client, ion_display_handle, &mva,
+	disp_ion_get_mva(ion_display_client, ion_display_handle,
+		(unsigned long *)&mva,
 		DISP_M4U_PORT_DISP_WDMA0);
 	disp_ion_cache_flush(ion_display_client, ion_display_handle,
 		ION_CACHE_FLUSH_ALL);

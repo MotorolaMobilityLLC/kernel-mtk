@@ -2584,7 +2584,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 	disp_ion_get_mva(ion_display_client,
 		ion_display_handle,
-		(unsigned int *) &fb_pa,
+		&fb_pa,
 		DISP_M4U_PORT_DISP_OVL0);
 #else
 	disp_hal_allocate_framebuffer(fb_base, (fb_base + vramsize - 1),
