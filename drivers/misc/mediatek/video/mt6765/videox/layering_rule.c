@@ -40,8 +40,12 @@ static struct layering_rule_info_t l_rule_info;
 int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
 	{500, 600, 700, 700},
+	/* HRT_BOUND_TYPE_LP4_PLUS */
+	{400, 500, 600, 600},
 	/* HRT_BOUND_TYPE_LP3 */
 	{350, 350, 350, 350},
+	/* HRT_BOUND_TYPE_LP3_PLUS */
+	{250, 250, 250, 250},
 	/* HRT_BOUND_TYPE_LP4_1CH */
 	{350, 350, 350, 350},
 	/* HRT_BOUND_TYPE_LP4_HYBRID */
@@ -50,12 +54,20 @@ int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	{750, 750, 750, 750},
 	/* HRT_BOUND_TYPE_LP4_HD */
 	{1100, 1350, 1550, 1550},
+	/* HRT_BOUND_TYPE_LP3_HD_PLUS */
+	{550, 550, 550, 550},
+	/* HRT_BOUND_TYPE_LP4_HD_PLUS */
+	{900, 1100, 1350, 1350},
 };
 
 int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
 	{1200, 1200, 1200, 1200},
+	/* HRT_BOUND_TYPE_LP4_PLUS */
+	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP3 */
+	{1200, 1200, 1200, 1200},
+	/* HRT_BOUND_TYPE_LP3_PLUS */
 	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP4_1CH */
 	{1200, 1200, 1200, 1200},
@@ -64,6 +76,10 @@ int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP3_HD */
 	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP4_HD */
+	{1200, 1200, 1200, 1200},
+	/* HRT_BOUND_TYPE_LP3_HD_PLUS */
+	{1200, 1200, 1200, 1200},
+	/* HRT_BOUND_TYPE_LP4_HD_PLUS */
 	{1200, 1200, 1200, 1200},
 };
 
@@ -303,28 +319,63 @@ static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 #if defined(CONFIG_MTK_DRAMC)
 	if (get_ddr_type() == TYPE_LPDDR3) {
 		if (primary_display_get_width() < 800) {
-			/* HD or HD+ */
-			l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP3_HD;
+			if (primary_display_get_height() < 1500)
+				/* LP3 HD & HD+(<=18:9) */
+				l_rule_info.bound_tb_idx =
+					HRT_BOUND_TYPE_LP3_HD;
+			else
+				/* LP3 HD+(>18:9) */
+				l_rule_info.bound_tb_idx =
+					HRT_BOUND_TYPE_LP3_HD_PLUS;
 		} else {
-			l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP3;
+			if (primary_display_get_height() < 2200)
+				/* LP3 FHD & FHD+(<=18:9) */
+				l_rule_info.bound_tb_idx =
+					HRT_BOUND_TYPE_LP3;
+			else
+				/* LP3 FHD+(>18:9) */
+				l_rule_info.bound_tb_idx =
+					HRT_BOUND_TYPE_LP3_PLUS;
 		}
 
 	} else {
 		/* LPDDR4, LPDDR4X */
 		if (primary_display_get_width() < 800) {
-			if (get_emi_ch_num() == 2)
-				l_rule_info.bound_tb_idx =
-					HRT_BOUND_TYPE_LP4_HD;
-			else
-				l_rule_info.bound_tb_idx =
-					HRT_BOUND_TYPE_LP3_HD;
+			if (primary_display_get_height() < 1500) {
+				/* LP4 HD & HD+(<=18:9) */
+				if (get_emi_ch_num() == 2)
+					l_rule_info.bound_tb_idx =
+						HRT_BOUND_TYPE_LP4_HD;
+				else
+					l_rule_info.bound_tb_idx =
+						HRT_BOUND_TYPE_LP3_HD;
+			} else {
+				/* LP4 HD+(>18:9) */
+				if (get_emi_ch_num() == 2)
+					l_rule_info.bound_tb_idx =
+						HRT_BOUND_TYPE_LP4_HD_PLUS;
+				else
+					l_rule_info.bound_tb_idx =
+						HRT_BOUND_TYPE_LP3_HD_PLUS;
+			}
 		} else {
-			if (get_emi_ch_num() == 2)
-				l_rule_info.bound_tb_idx =
-					HRT_BOUND_TYPE_LP4;
-			else
-				l_rule_info.bound_tb_idx =
-					HRT_BOUND_TYPE_LP4_1CH;
+			if (primary_display_get_height() < 2200) {
+				/* LP4 FHD & FHD+(<=18:9) */
+				if (get_emi_ch_num() == 2)
+					l_rule_info.bound_tb_idx =
+						HRT_BOUND_TYPE_LP4;
+				else
+					l_rule_info.bound_tb_idx =
+						HRT_BOUND_TYPE_LP4_1CH;
+			} else {
+				/* LP4 FHD+(>18:9) */
+				if (get_emi_ch_num() == 2)
+					l_rule_info.bound_tb_idx =
+						HRT_BOUND_TYPE_LP4_PLUS;
+				else
+					l_rule_info.bound_tb_idx =
+						HRT_BOUND_TYPE_LP3_PLUS;
+			}
 		}
 	}
 #endif
