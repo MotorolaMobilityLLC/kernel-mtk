@@ -1189,7 +1189,7 @@ void cmdq_core_free_hw_buffer(struct device *dev, size_t size, void *cpu_addr,
 void cmdq_core_create_buffer_pool(void)
 {
 	if (unlikely(g_task_buffer_pool)) {
-		CMDQ_ERR("Buffer pool already create pool:%p count:%d\n",
+		CMDQ_LOG("Buffer pool already create pool:%p count:%d\n",
 			g_task_buffer_pool, (s32)atomic_read(&g_pool_buffer_count));
 		return;
 	}
@@ -1207,7 +1207,7 @@ void cmdq_core_destroy_buffer_pool(void)
 {
 	if (unlikely((atomic_read(&g_pool_buffer_count)))) {
 		/* should not happen, print counts before reset */
-		CMDQ_ERR("Task buffer still use:%d\n", (s32)atomic_read(&g_pool_buffer_count));
+		CMDQ_LOG("Task buffer still use:%d\n", (s32)atomic_read(&g_pool_buffer_count));
 		return;
 	}
 
@@ -3960,7 +3960,9 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 
 	/* CMDQ(GCE) clock */
 	if (enable) {
-		if (atomic_inc_return(&gCmdqThreadUsage) == 1) {
+		s32 clock_count = atomic_inc_return(&gCmdqThreadUsage);
+
+		if (clock_count == 1) {
 			/* CMDQ init flow: */
 			/* 1. clock-on */
 			/* 2. reset all events */
@@ -3977,29 +3979,49 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			}
 			/* Restore event */
 			cmdq_get_func()->eventRestore();
+		} else if (clock_count == 0) {
+			CMDQ_ERR("enable clock %s error usage:%d smi use:%d\n",
+				__func__, clock_count, (s32)atomic_read(&gSMIThreadUsage));
 		}
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
-		if (likely(g_delay_thread_inited) && !cmdq_get_func()->isDispScenario(scenario)) {
-			if (atomic_inc_return(&gSMIThreadUsage) == 1) {
-				CMDQ_VERBOSE("[CLOCK] SMI clock enable %d\n", scenario);
+		if (!cmdq_get_func()->isDispScenario(scenario) &&
+			likely(scenario != CMDQ_SCENARIO_MOVE && scenario != CMDQ_SCENARIO_TIMER_LOOP)) {
+			s32 smi_count = atomic_inc_return(&gSMIThreadUsage);
+
+			if (smi_count == 1) {
+				CMDQ_MSG("[CLOCK] SMI clock enable %d\n", smi_count);
 				cmdq_get_func()->enableCommonClockLocked(enable);
+			} else if (smi_count == 0) {
+				CMDQ_ERR("enable smi common %s error usage:%d smi use:%d\n",
+					__func__, clock_count, smi_count);
 			}
 		}
 
 	} else {
-		if (atomic_dec_return(&gCmdqThreadUsage) == 0) {
+		s32 clock_count = atomic_dec_return(&gCmdqThreadUsage);
+
+		if (clock_count == 0) {
 			/* Backup event */
 			cmdq_get_func()->eventBackup();
 			/* clock-off */
 			cmdq_get_func()->enableGCEClockLocked(enable);
+		} else if (clock_count < 0) {
+			CMDQ_ERR("enable clock %s error usage:%d smi use:%d\n",
+				__func__, clock_count, (s32)atomic_read(&gSMIThreadUsage));
 		}
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
-		if (likely(g_delay_thread_inited) && !cmdq_get_func()->isDispScenario(scenario)) {
-			if (atomic_dec_return(&gSMIThreadUsage) == 0) {
-				CMDQ_VERBOSE("[CLOCK] SMI clock disable %d\n", scenario);
+		if (!cmdq_get_func()->isDispScenario(scenario) &&
+			likely(scenario != CMDQ_SCENARIO_MOVE && scenario != CMDQ_SCENARIO_TIMER_LOOP)) {
+			s32 smi_count = atomic_dec_return(&gSMIThreadUsage);
+
+			if (smi_count == 0) {
+				CMDQ_MSG("[CLOCK] SMI clock disable %d\n", smi_count);
 				cmdq_get_func()->enableCommonClockLocked(enable);
+			} else if (smi_count < 0) {
+				CMDQ_ERR("disable smi common %s error usage:%d smi use:%d\n",
+					__func__, clock_count, smi_count);
 			}
 		}
 	}
