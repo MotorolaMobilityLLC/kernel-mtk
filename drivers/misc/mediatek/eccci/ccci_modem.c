@@ -19,6 +19,7 @@
 #include <linux/kdev_t.h>
 #include <linux/slab.h>
 #include <linux/kobject.h>
+#include <linux/atomic.h>
 
 #include "ccci_config.h"
 #include "ccci_platform.h"
@@ -36,6 +37,12 @@
 #define TAG "md"
 
 struct ccci_modem *modem_sys[MAX_MD_NUM];
+
+/* flag for MD1_MD3_SMEM clear.
+ * if it is been cleared by md1 bootup flow, set it to 1.
+ * then it will not be cleared by md1 bootup flow
+ */
+static atomic_t md1_md3_smem_clear = ATOMIC_INIT(0);
 
 #define DBM_S (CCCI_SMEM_SIZE_DBM + CCCI_SMEM_SIZE_DBM_GUARD * 2)
 
@@ -188,8 +195,14 @@ static void clear_smem_region(struct ccci_smem_region *regions, int first_boot)
 		if (!regions || regions[i].id == SMEM_USER_MAX)
 			break;
 		if (first_boot) {
-			if (!(regions[i].flag & SMF_NCLR_FIRST))
-				memset_io(regions[i].base_ap_view_vir, 0, regions[i].size);
+			if (!(regions[i].flag & SMF_NCLR_FIRST)) {
+				if (regions[i].id == SMEM_USER_RAW_MD2MD) {
+					if (atomic_add_unless(&md1_md3_smem_clear, 1, 1))
+						memset_io(regions[i].base_ap_view_vir, 0, regions[i].size);
+				} else {
+					memset_io(regions[i].base_ap_view_vir, 0, regions[i].size);
+				}
+			}
 		} else {
 			if (regions[i].flag & SMF_CLR_RESET)
 				memset_io(regions[i].base_ap_view_vir, 0, regions[i].size);
