@@ -67,6 +67,7 @@ battery_get_bat_temperature(void)
 /* ************************************ */
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
+static DEFINE_SEMAPHORE(sem_mutex);
 
 #if TZBATT_SET_INIT_CFG == 1
 static unsigned int interval = TZBATT_INITCFG_INTERVAL;
@@ -141,6 +142,8 @@ do {                                    \
 	}                                   \
 } while (0)
 
+#define mtktsbattery_printk(fmt, args...)   \
+pr_debug("[Thermal/TZ/BATTERY]" fmt, ##args)
 /*
  * kernel fopen/fclose
  */
@@ -533,6 +536,7 @@ static ssize_t mtktsbattery_write(struct file *file, const char __user *buffer, 
 		&ptr_mtktsbattery_data->trip[8], &ptr_mtktsbattery_data->t_type[8], ptr_mtktsbattery_data->bind8,
 		&ptr_mtktsbattery_data->trip[9], &ptr_mtktsbattery_data->t_type[9], ptr_mtktsbattery_data->bind9,
 		&ptr_mtktsbattery_data->time_msec) == 32) {
+		down(&sem_mutex);
 		mtktsbattery_dprintk("[mtktsbattery_write] mtktsbattery_unregister_thermal\n");
 		mtktsbattery_unregister_thermal();
 
@@ -543,6 +547,7 @@ static ssize_t mtktsbattery_write(struct file *file, const char __user *buffer, 
 			#endif
 			mtktsbattery_dprintk("[mtktsbattery_write] bad argument\n");
 			kfree(ptr_mtktsbattery_data);
+			up(&sem_mutex);
 			return -EINVAL;
 		}
 
@@ -593,6 +598,7 @@ static ssize_t mtktsbattery_write(struct file *file, const char __user *buffer, 
 
 		mtktsbattery_dprintk("[mtktsbattery_write] mtktsbattery_register_thermal\n");
 		mtktsbattery_register_thermal();
+		up(&sem_mutex);
 
 		kfree(ptr_mtktsbattery_data);
 		/* battery_write_flag=1; */
