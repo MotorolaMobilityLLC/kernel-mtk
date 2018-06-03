@@ -99,12 +99,17 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					pr_info("1],[2,");
 #endif
 					/*2. Set the stttle time to 3000us*/
+					dsb(sy);
 					mdelay(3);
+					dsb(sy);
 #if BUCK_CTRL_DBLOG
 					pr_info("2],[3,");
 #endif
 					/*3. Power ON Vproc2*/
 					hps_power_on_vproc2();
+					dsb(sy);
+					mdelay(1);
+					dsb(sy);
 #if BUCK_CTRL_DBLOG
 					pr_info("3],[4,");
 #endif
