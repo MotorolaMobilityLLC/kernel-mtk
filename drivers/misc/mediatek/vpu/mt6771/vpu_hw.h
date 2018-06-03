@@ -220,6 +220,18 @@ int vpu_hw_enable_jtag(bool enabled);
 int vpu_hw_enque_request(int core, struct vpu_request *req);
 
 /**
+ * vpu_thermal_en_throttle_cb - for thermal callback, do vcore or freq control.
+ * @core:	core index of device
+ * @req:        the pointer to request
+ */
+int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t freq_upper);
+
+/**
+ * vpu_thermal_dis_throttle_cb - for thermal callback, disable throttle.
+ */
+int32_t vpu_thermal_dis_throttle_cb(void);
+
+/**
  * Working buffer's offset
  *
  *  [offset]

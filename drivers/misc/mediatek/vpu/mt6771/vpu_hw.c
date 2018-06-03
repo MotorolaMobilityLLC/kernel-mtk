@@ -167,6 +167,8 @@ static bool force_change_vcore_opp[MTK_VPU_CORE];
 static bool force_change_dsp_freq[MTK_VPU_CORE];
 static wait_queue_head_t waitq_change_vcore;
 static wait_queue_head_t waitq_do_core_executing;
+static uint8_t max_vcore_opp;
+static uint8_t max_dsp_freq;
 
 
 /* dvfs */
@@ -320,14 +322,77 @@ static void vpu_opp_check(int core, uint8_t vcore_value, uint8_t freq_value)
 {
 	int i = 0;
 	bool freq_check = false;
+	int log_freq = 0, log_max_freq = 0;
+
+	switch (freq_value) {
+	case 0:
+	default:
+		log_freq = 525;
+		break;
+	case 1:
+		log_freq = 450;
+		break;
+	case 2:
+		log_freq = 416;
+		break;
+	case 3:
+		log_freq = 364;
+		break;
+	case 4:
+		log_freq = 312;
+		break;
+	case 5:
+		log_freq = 273;
+		break;
+	case 6:
+		log_freq = 208;
+		break;
+	case 7:
+		log_freq = 182;
+		break;
+	}
 
 	LOG_DBG("opp_check + (%d/%d/%d), ori vcore(%d)", core, vcore_value, freq_value, opps.vcore.index);
 
 	mutex_lock(&opp_mutex);
+
+	switch (max_dsp_freq) {
+	case 0:
+	default:
+		log_max_freq = 525;
+		break;
+	case 1:
+		log_max_freq = 450;
+		break;
+	case 2:
+		log_max_freq = 416;
+		break;
+	case 3:
+		log_max_freq = 364;
+		break;
+	case 4:
+		log_max_freq = 312;
+		break;
+	case 5:
+		log_max_freq = 273;
+		break;
+	case 6:
+		log_max_freq = 208;
+		break;
+	case 7:
+		log_max_freq = 182;
+		break;
+	}
+
 	/* vcore opp */
 	if (vcore_value == 0xFF) {
 		LOG_DBG("no request, vcore opp(%d)", vcore_value);
 	} else {
+		if (vcore_value < max_vcore_opp) {
+			LOG_INF("vpu bound vcore opp(%d) to %d", vcore_value, max_vcore_opp);
+			vcore_value = max_vcore_opp;
+		}
+
 		if (vcore_value >= opps.count) {
 			LOG_ERR("wrong vcore opp(%d), max(%d)", vcore_value, opps.count - 1);
 		} else if (vcore_value != opps.vcore.index) {
@@ -341,24 +406,31 @@ static void vpu_opp_check(int core, uint8_t vcore_value, uint8_t freq_value)
 	/* dsp freq opp */
 	if (freq_value == 0xFF) {
 		LOG_DBG("no request, freq opp(%d)", freq_value);
-	} else if ((opps.dspcore[core].index != freq_value) || (freq_check)) {
-		opps.dspcore[core].index = freq_value;
-		if (opps.vcore.index > 0) {
-			/* adjust 0~3 to 4~7 for real table*/
-			opps.dspcore[core].index = opps.dspcore[core].index + 4;
+	} else {
+		if (freq_value < max_dsp_freq) {
+			LOG_INF("vpu bound dsp freq(%dMHz) to %dMHz", log_freq, log_max_freq);
+			freq_value = max_dsp_freq;
 		}
-		opps.dsp.index = 7;
-		opps.ipu_if.index = 7;
-		for (i = 0 ; i < MTK_VPU_CORE ; i++) {
-			LOG_DBG("opp_check opps.dspcore[%d].index(%d -> %d)", core,
-				opps.dspcore[core].index, opps.dsp.index);
-			/* interface should be the max freq of vpu cores */
-			if (opps.dspcore[i].index < opps.dsp.index) {
-				opps.dsp.index = opps.dspcore[i].index;
-				opps.ipu_if.index = opps.dspcore[i].index;
+
+		if ((opps.dspcore[core].index != freq_value) || (freq_check)) {
+			opps.dspcore[core].index = freq_value;
+			if (opps.vcore.index > 0) {
+				/* adjust 0~3 to 4~7 for real table*/
+				opps.dspcore[core].index = opps.dspcore[core].index + 4;
 			}
+			opps.dsp.index = 7;
+			opps.ipu_if.index = 7;
+			for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+				LOG_DBG("opp_check opps.dspcore[%d].index(%d -> %d)", core,
+					opps.dspcore[core].index, opps.dsp.index);
+				/* interface should be the max freq of vpu cores */
+				if (opps.dspcore[i].index < opps.dsp.index) {
+					opps.dsp.index = opps.dspcore[i].index;
+					opps.ipu_if.index = opps.dspcore[i].index;
+				}
+			}
+			force_change_dsp_freq[core] = true;
 		}
-		force_change_dsp_freq[core] = true;
 	}
 	LOG_INF("opp_check - [vcore(%d) %d.%d.%d.%d), freq_check(%d)", opps.vcore.index, opps.dsp.index,
 					opps.dspcore[0].index, opps.dspcore[1].index, opps.ipu_if.index, freq_check);
@@ -408,7 +480,72 @@ out:
 	return true;
 }
 
+int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t freq_upper)
+{
+	int i = 0;
+	int ret = 0;
 
+	for (i = 0 ; i < MTK_VPU_CORE ; i++)
+		vpu_opp_check(i, vcore_opp, freq_upper);
+
+	mutex_lock(&opp_mutex);
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		if (force_change_dsp_freq[i]) {
+			/* force change freq while running */
+			switch (freq_upper) {
+			case 0:
+			default:
+				LOG_INF("thermal force change dsp freq to 525MHz");
+				break;
+			case 1:
+				LOG_INF("thermal force change dsp freq to 450MHz");
+				break;
+			case 2:
+				LOG_INF("thermal force change dsp freq to 416MHz");
+				break;
+			case 3:
+				LOG_INF("thermal force change dsp freq to 364MHz");
+				break;
+			case 4:
+				LOG_INF("thermal force change dsp freq to 312MHz");
+				break;
+			case 5:
+				LOG_INF("thermal force change dsp freq to 273MHz");
+				break;
+			case 6:
+				LOG_INF("thermal force change dsp freq to 208MHz");
+				break;
+			case 7:
+				LOG_INF("thermal force change dsp freq to 182MHz");
+				break;
+			}
+			max_dsp_freq = freq_upper;
+			vpu_change_opp(i, OPPTYPE_DSPFREQ);
+		} else if (force_change_vcore_opp[i]) {
+			/* vcore change should wait */
+			LOG_INF("thermal force change vcore opp to %d", vcore_opp);
+			max_vcore_opp = vcore_opp;
+			/* vcore only need to change one time from thermal request*/
+			if (i == 0)
+				vpu_change_opp(i, OPPTYPE_VCORE);
+		}
+	}
+	mutex_unlock(&opp_mutex);
+
+	return ret;
+}
+
+int32_t vpu_thermal_dis_throttle_cb(void)
+{
+	int ret = 0;
+
+	mutex_lock(&opp_mutex);
+	max_vcore_opp = 0;
+	max_dsp_freq = 0;
+	mutex_unlock(&opp_mutex);
+
+	return ret;
+}
 
 #ifdef MTK_VPU_FPGA_PORTING
 #define vpu_prepare_regulator_and_clock(...)   0
@@ -1050,13 +1187,16 @@ static int vpu_get_power(int core)
 	mutex_unlock(&power_counter_mutex[core]);
 
 	mutex_lock(&opp_mutex);
-	if (force_change_dsp_freq[core] && ret == POWER_ON_MAGIC) {
-		/* force change freq while running */
-		LOG_INF("vpu_%d force change dsp freq", core);
-		vpu_change_opp(core, OPPTYPE_DSPFREQ);
-	} else if (force_change_vcore_opp[core]) {
-		/* vcore change should wait */
-		LOG_INF("vpu_%d force change vcore opp", core);
+	if (ret == POWER_ON_MAGIC) {
+		if (force_change_dsp_freq[core]) {
+			/* force change freq while running */
+			LOG_INF("vpu_%d force change dsp freq", core);
+			vpu_change_opp(core, OPPTYPE_DSPFREQ);
+		} else if (force_change_vcore_opp[core]) {
+			/* vcore change should wait */
+			LOG_INF("vpu_%d force change vcore opp", core);
+			vpu_change_opp(core, OPPTYPE_VCORE);
+		}
 	}
 	mutex_unlock(&opp_mutex);
 	LOG_DBG("[vpu_%d/%d] gp -\n", core, power_counter[core]);
@@ -1145,6 +1285,8 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		init_waitqueue_head(&waitq_change_vcore);
 		init_waitqueue_head(&waitq_do_core_executing);
 		mutex_init(&pmqos_mutex);
+		max_vcore_opp = 0;
+		max_dsp_freq = 0;
 		vpu_dev = device;
 
 		for (i = 0 ; i < MTK_VPU_CORE ; i++) {
