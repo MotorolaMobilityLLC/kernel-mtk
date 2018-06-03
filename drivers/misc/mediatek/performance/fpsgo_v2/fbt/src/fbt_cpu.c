@@ -202,7 +202,6 @@ static DEFINE_SPINLOCK(freq_slock);
 static DEFINE_MUTEX(fbt_mlock);
 static DEFINE_SPINLOCK(loading_slock);
 static DEFINE_MUTEX(fbt_actlist_lock);
-static DEFINE_MUTEX(fbt_inactlist_lock);
 static DEFINE_MUTEX(bypasslist_lock);
 
 int cluster_freq_bound[MAX_FREQ_BOUND_NUM] = {0};
@@ -210,7 +209,6 @@ int cluster_rescue_bound[MAX_FREQ_BOUND_NUM] = {0};
 int cluster_num;
 
 static struct list_head active_list;
-static struct list_head inactive_list;
 static struct list_head loading_list;
 static struct list_head bypass_list;
 
@@ -638,8 +636,14 @@ static void fbt_list_clear(void)
 	struct fbt_thread_info *pos, *next;
 	struct fbt_thread_bypass *pos2, *next2;
 
+	struct fbt_thread_bypass *pos3, *next3;
+	struct list_head comp_delete_list;
+	struct fbt_thread_bypass *obj;
+
 	unsigned long flags;
 	int delete = 0;
+
+	INIT_LIST_HEAD(&comp_delete_list);
 
 	fbt_list_main_lock();
 	list_for_each_entry_safe(pos, next, &active_list, entry) {
@@ -654,11 +658,15 @@ static void fbt_list_clear(void)
 			else {
 				delete = 0;
 				pos->linger = 1;
-				mutex_lock(&fbt_inactlist_lock);
-				list_add_tail(&pos->entry, &inactive_list);
-				mutex_unlock(&fbt_inactlist_lock);
 			}
 			fbt_list_thread_unlock(&pos->thr_mlock);
+
+			obj = kzalloc(sizeof(struct fbt_thread_bypass), GFP_KERNEL);
+			if (obj) {
+				INIT_LIST_HEAD(&obj->entry);
+				obj->pid = pos->pid;
+				list_add_tail(&obj->entry, &comp_delete_list);
+			}
 
 			if (delete)
 				kfree(pos);
@@ -680,6 +688,14 @@ static void fbt_list_clear(void)
 	}
 	INIT_LIST_HEAD(&bypass_list);
 	mutex_unlock(&bypasslist_lock);
+
+	if (!list_empty(&comp_delete_list)) {
+		list_for_each_entry_safe(pos3, next3, &comp_delete_list, entry) {
+			list_del(&pos3->entry);
+			fpsgo_fbt2comp_destroy_frame_info(pos3->pid);
+			kfree(pos3);
+		}
+	}
 }
 
 void fbt_check_thread_status(void)
@@ -698,8 +714,6 @@ void fbt_check_thread_status(void)
 	struct fbt_thread_bypass *obj;
 	struct fbt_thread_bypass *pos2, *next2;
 
-	FPSGO_LOGI("check %llu\n", ts);
-
 	if (ts < TIME_1S)
 		return;
 
@@ -712,7 +726,6 @@ void fbt_check_thread_status(void)
 	list_for_each_entry_safe(pos, next, &active_list, entry) {
 		fbt_list_thread_lock(&pos->thr_mlock);
 		if (pos->last_qustr_time < expire_ts) {
-			FPSGO_LOGI("delete %d linger %d\n", pos->pid, pos->linger);
 			delete_pid = pos->pid;
 
 			if (delete_pid == max_blc_pid)
@@ -727,9 +740,6 @@ void fbt_check_thread_status(void)
 			else {
 				delete = 0;
 				pos->linger = 1;
-				mutex_lock(&fbt_inactlist_lock);
-				list_add_tail(&pos->entry, &inactive_list);
-				mutex_unlock(&fbt_inactlist_lock);
 			}
 
 			fbt_list_thread_unlock(&pos->thr_mlock);
@@ -739,13 +749,10 @@ void fbt_check_thread_status(void)
 				INIT_LIST_HEAD(&obj->entry);
 				obj->pid = delete_pid;
 				list_add_tail(&obj->entry, &comp_delete_list);
-				FPSGO_LOGI("comp add %d\n", delete_pid);
 			}
 
-			if (delete == 1) {
-				FPSGO_LOGI("free %d now\n", pos->pid);
+			if (delete == 1)
 				kfree(pos);
-			}
 		} else
 			fbt_list_thread_unlock(&pos->thr_mlock);
 	}
@@ -769,20 +776,8 @@ void fbt_check_thread_status(void)
 
 	fbt_list_main_unlock();
 
-	mutex_lock(&fbt_inactlist_lock);
-	list_for_each_entry_safe(pos, next, &inactive_list, entry) {
-		if (pos->linger > 3) {
-			FPSGO_LOGI("free %d linger %d\n", pos->pid, pos->linger);
-			list_del(&pos->entry);
-			kfree(pos);
-		} else
-			pos->linger++;
-	}
-	mutex_unlock(&fbt_inactlist_lock);
-
 	if (!list_empty(&comp_delete_list)) {
 		list_for_each_entry_safe(pos2, next2, &comp_delete_list, entry) {
-			FPSGO_LOGI("comp delete %d\n", pos2->pid);
 			list_del(&pos2->entry);
 			fpsgo_fbt2comp_destroy_frame_info(pos2->pid);
 			kfree(pos2);
@@ -880,6 +875,7 @@ static void fbt_do_jerk(struct work_struct *work)
 	struct fbt_boost_info *boost;
 	struct fbt_thread_info *thr;
 	int cluster;
+	int tofree = 0;
 
 	jerk = container_of(work, struct fbt_jerk, work);
 	if (!jerk || (jerk->id != 0 && jerk->id != 1)) {
@@ -905,6 +901,7 @@ static void fbt_do_jerk(struct work_struct *work)
 		return;
 	}
 
+	fbt_list_main_lock();
 	fbt_list_thread_lock(&(thr->thr_mlock));
 
 	if (jerk->id == proc->active_jerk_id && thr->boosting && thr->linger == 0) {
@@ -928,7 +925,17 @@ static void fbt_do_jerk(struct work_struct *work)
 
 	jerk->jerking = 0;
 
+	if (thr->boost_info.proc.jerks[0].jerking == 0 &&
+		thr->boost_info.proc.jerks[1].jerking == 0 &&
+		thr->linger > 0)
+		tofree = 1;
+
 	fbt_list_thread_unlock(&(thr->thr_mlock));
+
+	if (tofree)
+		kfree(thr);
+
+	fbt_list_main_unlock();
 }
 
 static enum hrtimer_restart fbt_jerk_tfn(struct hrtimer *timer)
@@ -2413,16 +2420,6 @@ static int fbt_thread_info_show(struct seq_file *m, void *unused)
 
 	fbt_list_main_unlock();
 
-
-	SEQ_printf(m, "\ninactive list\npid\tlinger\n");
-
-	mutex_lock(&fbt_inactlist_lock);
-	list_for_each_entry_safe(pos, next, &inactive_list, entry) {
-		SEQ_printf(m, "%03d\t", pos->pid);
-		SEQ_printf(m, "%d\n", pos->linger);
-	}
-	mutex_unlock(&fbt_inactlist_lock);
-
 	SEQ_printf(m, "\nbypass list\n");
 	mutex_lock(&bypasslist_lock);
 	list_for_each_entry_safe(pos2, next2, &bypass_list, entry)
@@ -2527,7 +2524,6 @@ int fbt_cpu_init(void)
 	}
 
 	INIT_LIST_HEAD(&active_list);
-	INIT_LIST_HEAD(&inactive_list);
 	INIT_LIST_HEAD(&loading_list);
 	INIT_LIST_HEAD(&bypass_list);
 
