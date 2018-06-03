@@ -46,7 +46,7 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 
 #if 0
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
-		pr_crit(TAG"cluster %d, core_limit_min %d core_limit_max %d\n",
+		pr_debug(TAG"cluster %d, core_limit_min %d core_limit_max %d\n",
 			 i, core_limit[i].min, core_limit[i].max);
 	}
 #endif
@@ -54,8 +54,8 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		core_set[kicker][i].min = core_limit[i].min >= -1 ? core_limit[i].min : -1;
 		core_set[kicker][i].max = core_limit[i].max >= -1 ? core_limit[i].max : -1;
-#if 0
-		pr_crit(TAG"kicker %d cluster %d, core_set_min %d core_set_max %d\n",
+#if 1
+		pr_debug(TAG"kicker %d cluster %d, core_set_min %d core_set_max %d\n",
 			 kicker, i, core_set[kicker][i].min, core_set[kicker][i].max);
 #endif
 	}
@@ -72,8 +72,8 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		current_core[i].min = final_core[i].min;
 		current_core[i].max = final_core[i].max;
-#if 0
-		pr_crit(TAG"cluster %d, current_core_min %d current_core_max %d\n",
+#if 1
+		pr_debug(TAG"cluster %d, current_core_min %d current_core_max %d\n",
 			 i, current_core[i].min, current_core[i].max);
 #endif
 	}
@@ -93,8 +93,12 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 	int i, j;
 
 	mutex_lock(&boost_freq);
-	if (num_cluster != NR_PPM_CLUSTERS)
+	if (num_cluster != NR_PPM_CLUSTERS) {
+		pr_crit(TAG"num_cluster : %d NR_PPM_CLUSTERS: %d, doesn't match",
+			 num_cluster, NR_PPM_CLUSTERS);
+		mutex_unlock(&boost_core);
 		return -1;
+	}
 
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		final_freq[i].min = -1;
@@ -112,8 +116,8 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		freq_set[kicker][i].min = freq_limit[i].min >= -1 ? freq_limit[i].min : -1;
 		freq_set[kicker][i].max = freq_limit[i].max >= -1 ? freq_limit[i].max : -1;
-#if 0
-		pr_crit(TAG"kicker %d cluster %d, freq_set_min %d freq_set_max %d\n",
+#if 1
+		pr_debug(TAG"kicker %d cluster %d, freq_set_min %d freq_set_max %d\n",
 			 kicker, i, freq_set[kicker][i].min, freq_set[kicker][i].max);
 #endif
 	}
@@ -130,13 +134,13 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 	for (i = 0; i < NR_PPM_CLUSTERS; i++) {
 		current_freq[i].min = final_freq[i].min;
 		current_freq[i].max = final_freq[i].max;
-#if 0
-		pr_crit(TAG"cluster %d, freq_min %d freq_max %d\n", i, current_freq[i].min, current_freq[i].max);
+#if 1
+		pr_debug(TAG"cluster %d, freq_min %d freq_max %d\n", i, current_freq[i].min, current_freq[i].max);
 #endif
 	}
 
 	mt_ppm_userlimit_cpu_freq(NR_PPM_CLUSTERS, final_freq);
-	/*spin_unlock_irqrestore(&tlock, flags);*/
+
 	mutex_unlock(&boost_freq);
 
 	return 0;
