@@ -111,7 +111,6 @@ static AudioDigtalI2S *m2ndI2S;	/* input */
 static AudioDigtalI2S *m2ndI2Sout;	/* output */
 static bool mFMEnable;
 static bool mOffloadEnable;
-static bool mOffloadSWMode;
 
 static AudioHdmi *mHDMIOutput;
 static AudioMrgIf *mAudioMrg;
@@ -191,7 +190,6 @@ static void AfeGlobalVarInit(void)
 	m2ndI2Sout = NULL;	/* output */
 	mFMEnable = false;
 	mOffloadEnable = false;
-	mOffloadSWMode = false;
 	mHDMIOutput = NULL;
 	mAudioMrg = NULL;
 	AudioDaiBt = NULL;
@@ -285,15 +283,11 @@ void SetOffloadEnableFlag(bool bEnable)
 	mOffloadEnable = bEnable;
 }
 
-void SetOffloadSWMode(bool bEnable)
+bool GetOffloadEnableFlag(void)
 {
-	mOffloadSWMode = bEnable;
+	return mOffloadEnable;
 }
 
-bool GetOffloadSWMode(void)
-{
-	return mOffloadSWMode;
-}
 
 bool ConditionEnterSuspend(void)
 {
