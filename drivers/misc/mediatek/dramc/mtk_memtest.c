@@ -22,6 +22,8 @@
 #include <linux/memblock.h>
 #include <linux/sched.h>
 #include <linux/delay.h>
+#include <linux/list.h>
+#include <linux/slab.h>
 #include <asm/cacheflush.h>
 /* #include <mach/mtk_clkmgr.h> */
 #include <linux/of.h>
@@ -49,11 +51,26 @@
 #endif
 
 #ifdef DRAMC_MEMTEST_DEBUG_SUPPORT
+#define MAX_TEST_CLIENT	20
+
+enum {
+	FAIL_REGION_RANK0,
+	FAIL_REGION_RANK1,
+	FAIL_REGION_VIRT,
+	FAIL_REGION_NUM,
+};
 
 enum {
 	TEST_RESULT_INIT,
 	TEST_RESULT_ONGOING,
 	TEST_RESULT_FAILED,
+	TEST_RESULT_PASS,
+};
+
+struct memtest_client {
+	struct list_head node;
+	pid_t pid;
+	unsigned int rank;
 };
 
 static void __iomem *(*get_emi_base)(void);
@@ -63,6 +80,7 @@ static int result;
 static DEFINE_MUTEX(test_result_mutex);
 static DEFINE_MUTEX(test_mem0_mutex);
 static DEFINE_MUTEX(test_mem1_mutex);
+static DEFINE_MUTEX(test_client_mutex);
 
 static struct dentry *memtest_dir;
 static struct dentry *read_mr4, *read_dram_addr;
@@ -70,6 +88,10 @@ static struct dentry *memtest_result, *memtest_v2p, *memtest_mem0, *memtest_mem1
 
 static phys_addr_t memtest_rank0_addr, memtest_rank1_addr;
 static unsigned int memtest_rank0_size, memtest_rank1_size;
+
+static LIST_HEAD(test_client);
+static unsigned int test_client_num;
+static unsigned int test_fail_region[FAIL_REGION_NUM];
 
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
 #define Reg_Readl(addr) readl(IOMEM(addr))
@@ -362,21 +384,37 @@ static const struct file_operations read_dram_addr_fops = {
 
 static ssize_t test_result_read(struct file *file, char __user *user_buf, size_t len, loff_t *offset)
 {
-	char buf[32];
-	int ret, sz;
+	char const *str[] = { "initial", "on-going", "fail", "pass" };
+	char buf[64];
+	int ret, sz, sz2, i;
 
 	ret = result;
 
-	sz = snprintf(buf, sizeof(buf), "%s\n", (ret == TEST_RESULT_INIT) ? "initial" :
-			((ret == TEST_RESULT_FAILED) ? "fail" : "on-going"));
+	sz = snprintf(buf, sizeof(buf), "%s\n", str[ret]);
+
+	if (!*offset && ret == TEST_RESULT_FAILED) {
+		sz2 = sz;
+		sz2 += snprintf(buf + sz2, sizeof(buf) - sz2, "Fail region: ");
+		for (i = 0; i < FAIL_REGION_VIRT; i++) {
+			if (test_fail_region[i])
+				sz2 += snprintf(buf + sz2, sizeof(buf) - sz2, "rank %d, ", i);
+		}
+
+		if (test_fail_region[FAIL_REGION_VIRT])
+			sz2 += snprintf(buf + sz2, sizeof(buf) - sz2, "virtual\n");
+
+		aee_kernel_warning("DRAM_MEMTEST", buf);
+	}
 
 	return simple_read_from_buffer(user_buf, len, offset, buf, sz);
 }
 
 static ssize_t test_result_write(struct file *file, const char __user *user_buf, size_t len, loff_t *offset)
 {
+	struct memtest_client *client;
+	struct list_head *p;
 	char buf[32];
-	int ret, sz;
+	int ret, sz, region;
 
 	sz =  simple_write_to_buffer(buf, sizeof(buf), offset, user_buf, len);
 
@@ -390,15 +428,31 @@ static ssize_t test_result_write(struct file *file, const char __user *user_buf,
 
 	if (!strncmp(buf, "fail", 4))
 		ret = TEST_RESULT_FAILED;
+	else if (!strncmp(buf, "pass", 4))
+		ret = TEST_RESULT_PASS;
 	else
 		ret = TEST_RESULT_ONGOING;
 
 	mutex_lock(&test_result_mutex);
 
-	if (result != TEST_RESULT_FAILED)
+	if (result != TEST_RESULT_FAILED && result != TEST_RESULT_PASS)
 		result = ret;
 
 	mutex_unlock(&test_result_mutex);
+
+	region = FAIL_REGION_VIRT;
+
+	mutex_lock(&test_client_mutex);
+	list_for_each(p, &test_client) {
+		client = list_entry(p, struct memtest_client, node);
+		if (client->pid == current->pid) {
+			region = client->rank;
+			break;
+		}
+	}
+	mutex_unlock(&test_client_mutex);
+
+	test_fail_region[region] = 1;
 
 	return sz;
 }
@@ -490,14 +544,43 @@ static int test_mem_open(struct inode *inode, struct file *file)
 
 static void mmap_mem_open(struct vm_area_struct *vma)
 {
+	unsigned long rank = (unsigned long) vma->vm_file->private_data;
+	struct memtest_client *client;
 
+	mutex_lock(&test_client_mutex);
+	if (test_client_num <= MAX_TEST_CLIENT) {
+		client = kmalloc(sizeof(*client), GFP_KERNEL);
+
+		if (client) {
+			client->pid = current->pid;
+			client->rank = rank;
+			list_add_tail(&client->node, &test_client);
+			test_client_num++;
+		}
+	}
+	mutex_unlock(&test_client_mutex);
 }
 
 static void mmap_mem_close(struct vm_area_struct *vma)
 {
 	/*size_t size = vma->vm_end - vma->vm_start;*/
+	struct memtest_client *client;
+	struct list_head *p;
 
 	/*pr_info("%s(): 0x%lx~0x%lx pgoff=0x%lx %x\n", __func__, vma->vm_start, vma->vm_end, vma->vm_pgoff, size);*/
+
+	mutex_lock(&test_client_mutex);
+	list_for_each(p, &test_client) {
+		client = list_entry(p, struct memtest_client, node);
+		if (client->pid == current->pid) {
+			list_del(&client->node);
+			test_client_num--;
+
+			kfree(client);
+			break;
+		}
+	}
+	mutex_unlock(&test_client_mutex);
 }
 
 static const struct vm_operations_struct mmap_mem_ops = {
@@ -537,6 +620,7 @@ static int test_mem_mmap(struct file *file, struct vm_area_struct *vma)
 	phys_addr_t *addr;
 	struct mutex *lock;
 	unsigned int *sz;
+	struct memtest_client *client;
 	int ret = 0;
 
 	if (rank == 0) {
@@ -593,6 +677,21 @@ static int test_mem_mmap(struct file *file, struct vm_area_struct *vma)
 
 end:
 	mutex_unlock(lock);
+
+	if (!ret) {
+		mutex_lock(&test_client_mutex);
+		if (test_client_num <= MAX_TEST_CLIENT) {
+			client = kmalloc(sizeof(*client), GFP_KERNEL);
+
+			if (client) {
+				client->pid = current->pid;
+				client->rank = rank;
+				list_add_tail(&client->node, &test_client);
+				test_client_num++;
+			}
+		}
+		mutex_unlock(&test_client_mutex);
+	}
 
 	return ret;
 }
