@@ -301,10 +301,15 @@ static void spm_sodi_notify_sspm_before_wfi(void)
 {
 	int ret;
 	struct spm_data spm_d;
+	unsigned int spm_opt = 0;
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
-	spm_d.u.sodi.univpll_status = univpll_is_used();
-	spm_d.u.sodi.gps_status = spm_for_gps_flag;
+
+	spm_opt |= univpll_is_used() ? SPM_OPT_UNIVPLL_STAT : 0;
+	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
+
+	spm_d.u.suspend.spm_opt = spm_opt;
+
 	ret = spm_to_sspm_command(SPM_ENTER_SODI, &spm_d);
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
