@@ -24,6 +24,7 @@
 
 void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctrl)
 {
+#if 0
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	unsigned int value = 0;
 	unsigned int vcore_lp_mode = 0;
@@ -69,15 +70,18 @@ void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctr
 #endif
 
 	__spm_sync_pcm_flags(pwrctrl);
+#endif
 }
 
 void spm_dpidle_post_process(void)
 {
+#if 0
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	wk_auxadc_bgd_ctrl(1);
+#endif
 #endif
 }
 

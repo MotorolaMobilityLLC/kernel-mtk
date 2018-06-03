@@ -31,6 +31,9 @@ extern void disable_soidle3_by_bit(int id);
 extern void enable_soidle_by_bit(int id);
 extern void disable_soidle_by_bit(int id);
 
+/* return 0: non-active, 1:active */
+extern int dpidle_active_status(void);
+
 #define DPIDLE_START    1
 #define DPIDLE_END      2
 #define SOIDLE_START    3

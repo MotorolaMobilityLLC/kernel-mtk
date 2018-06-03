@@ -53,8 +53,8 @@ obj-y += mtk_idle_profile.o
 obj-y += mtk_sleep.o
 obj-y += mtk_spm_init.o
 obj-y += mtk_spm.o
-# obj-y += mtk_spm_dpidle.o
-# obj-y += mtk_spm_dpidle_mt6763.o
+obj-y += mtk_spm_dpidle.o
+obj-y += mtk_spm_dpidle_mt6763.o
 obj-y += mtk_spm_fs.o
 obj-y += mtk_spm_internal.o
 ifneq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
