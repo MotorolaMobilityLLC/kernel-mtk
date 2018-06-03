@@ -20,12 +20,12 @@
 #define MAX_VCO_VALUE	4000000
 #define MIN_VCO_VALUE	2000000
 
-#define DIV4_MAX_FREQ	988000
-#define DIV4_MIN_FREQ	507000
-#define DIV8_MAX_FREQ   494000
-#define DIV8_MIN_FREQ   273000
-#define DIV16_MAX_FREQ  247000
-#define DIV16_MIN_FREQ  169000
+#define DIV4_MAX_FREQ	950000
+#define DIV4_MIN_FREQ	375000
+#define DIV8_MAX_FREQ   475000
+#define DIV8_MIN_FREQ   187500
+#define DIV16_MAX_FREQ  237500
+#define DIV16_MIN_FREQ  125000
 
 #define TO_MHz_HEAD 100
 #define TO_MHz_TAIL 10
@@ -66,8 +66,8 @@ struct mt_gpufreq_clk_t {
 };
 
 struct mt_gpufreq_pmic_t {
-	struct regulator *reg_vgpu;		/* vgpu regulator */
-	struct regulator *reg_vsram;	/* vgpu sram regulator */
+	struct regulator *reg_vproc;		/* vproc regulator */
+	struct regulator *reg_vsram;	/* vproc sram regulator */
 };
 
 /*****************

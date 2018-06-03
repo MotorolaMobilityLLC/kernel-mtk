@@ -30,7 +30,7 @@ endif
 
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
-obj-$(CONFIG_MACH_MT6763) += mtk_clkmgr.o
+#obj-$(CONFIG_MACH_MT6763) += mtk_clkmgr.o
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 
@@ -45,17 +45,17 @@ obj-$(CONFIG_MACH_MT6763) += mtk_gpufreq.o
 #obj-$(CONFIG_MACH_MT6763M) += mt_spm_sodi.o
 #obj-y += mt_spm_mtcmos.o
 #obj-y += mt_pbm.o
-obj-y += mtk_picachu.o
-obj-y += mtk_cpufreq.o
-obj-y += mtk_cpufreq_hybrid.o
-obj-y += mtk_udi.o
+#obj-y += mtk_picachu.o
+#obj-y += mtk_cpufreq.o
+#obj-y += mtk_cpufreq_hybrid.o
+#obj-y += mtk_udi.o
 #obj-y += mt_gpufreq.o
 #obj-$(CONFIG_MACH_MT6753) += mt_gpufreq.o
-obj-y += mtk_eem.o
-obj-y += mtk_eem_turbo.o
-obj-y += mtk_lowpower.o
+#obj-y += mtk_eem.o
+#obj-y += mtk_eem_turbo.o
+#obj-y += mtk_lowpower.o
 #obj-y += mtk_vcorefs_manager.o
 #obj-y += mtk_vcorefs_governor.o
-obj-y += mtk_static_power.o
+#obj-y += mtk_static_power.o
 
 endif
