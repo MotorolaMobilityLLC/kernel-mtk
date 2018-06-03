@@ -9885,7 +9885,7 @@ wlanoidSetCountryCode(IN P_ADAPTER_T prAdapter,
 
 	/* Force to re-search country code in country domains */
 	prAdapter->prDomainInfo = NULL;
-	rlmDomainSendCmd(prAdapter, TRUE);
+	rlmDomainSendCmd(prAdapter, FALSE);
 
 	/* Update supported channel list in channel table based on current country domain */
 	wlanUpdateChannelTable(prAdapter->prGlueInfo);
@@ -11002,7 +11002,7 @@ batchSetCmd(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBuff
 		return -EINVAL;
 	}
 
-	wlanSendSetQueryCmd(prAdapter,
+	rStatus = wlanSendSetQueryCmd(prAdapter,
 			    CMD_ID_SET_BATCH_REQ,
 			    TRUE, FALSE, TRUE, NULL, NULL, sizeof(CMD_BATCH_REQ_T), (PUINT_8) &rCmdBatchReq, NULL, 0);
 
