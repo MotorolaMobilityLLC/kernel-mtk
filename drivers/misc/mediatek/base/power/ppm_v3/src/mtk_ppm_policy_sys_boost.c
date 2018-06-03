@@ -479,8 +479,57 @@ static ssize_t ppm_sysboost_cluster_freq_limit_proc_write(struct file *file,
 	return count;
 }
 
+static int ppm_sysboost_cluster_freqidx_limit_proc_show(struct seq_file *m, void *v)
+{
+	struct ppm_sysboost_data *data;
+	int i;
+
+	/* update user freq setting */
+	list_for_each_entry_reverse(data, &sysboost_user_list, link) {
+		seq_printf(m, "[%d] %s: %d\t", data->user, data->user_name, data->min_freq);
+		for_each_ppm_clusters(i)
+			seq_printf(m, "(%d)(%d)", data->limit[i].min_freq_idx, data->limit[i].max_freq_idx);
+		seq_puts(m, "\n");
+	}
+
+	ppm_sysboost_dump_final_limit(m);
+
+	return 0;
+}
+
+static ssize_t ppm_sysboost_cluster_freqidx_limit_proc_write(struct file *file,
+				const char __user *buffer, size_t count, loff_t *pos)
+{
+	int user, min_freq_idx, max_freq_idx, cluster;
+
+	char *buf = ppm_copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (sscanf(buf, "%d %d %d %d", &user, &cluster, &min_freq_idx, &max_freq_idx) == 4) {
+		int min_freq, max_freq;
+
+		if (cluster < 0 || cluster >= NR_PPM_CLUSTERS)
+			goto end;
+
+		min_freq = (min_freq_idx < 0 || min_freq_idx >= DVFS_OPP_NUM)
+			? -1 : ppm_main_info.cluster_info[cluster].dvfs_tbl[min_freq_idx].frequency;
+		max_freq = (max_freq_idx < 0 || max_freq_idx >= DVFS_OPP_NUM)
+			? -1 : ppm_main_info.cluster_info[cluster].dvfs_tbl[max_freq_idx].frequency;
+
+		mt_ppm_sysboost_set_freq_limit((enum ppm_sysboost_user)user, cluster, min_freq, max_freq);
+	} else
+		ppm_err("@%s: Invalid input!\n", __func__);
+
+end:
+	free_page((unsigned long)buf);
+	return count;
+}
+
 PROC_FOPS_RW(sysboost_freq);
 PROC_FOPS_RW(sysboost_cluster_freq_limit);
+PROC_FOPS_RW(sysboost_cluster_freqidx_limit);
 
 static int __init ppm_sysboost_policy_init(void)
 {
@@ -494,6 +543,7 @@ static int __init ppm_sysboost_policy_init(void)
 	const struct pentry entries[] = {
 		PROC_ENTRY(sysboost_freq),
 		PROC_ENTRY(sysboost_cluster_freq_limit),
+		PROC_ENTRY(sysboost_cluster_freqidx_limit),
 	};
 
 	FUNC_ENTER(FUNC_LV_POLICY);
@@ -544,6 +594,9 @@ static int __init ppm_sysboost_policy_init(void)
 			break;
 		case BOOST_BY_DEBUGD_64:
 			sysboost_data[i].user_name = "DEBUGD_64";
+			break;
+		case BOOST_BY_BOOT_TIME_OPT:
+			sysboost_data[i].user_name = "BOOT_TIME_OPT";
 			break;
 		case BOOST_BY_UT:
 		default:

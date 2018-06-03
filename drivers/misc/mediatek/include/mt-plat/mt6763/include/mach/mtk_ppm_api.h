@@ -49,6 +49,7 @@ enum ppm_sysboost_user {
 	/* dedicate ID for debugd to avoid over-writing other kernel users */
 	BOOST_BY_DEBUGD = 5,
 	BOOST_BY_DEBUGD_64,
+	BOOST_BY_BOOT_TIME_OPT,
 
 	NR_PPM_SYSBOOST_USER,
 };
