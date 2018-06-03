@@ -28,7 +28,11 @@
 #include <linux/cpufreq.h>
 #include <linux/irq_work.h>
 #ifdef CONFIG_TRUSTY
+#ifdef CONFIG_TRUSTY_INTERRUPT_MAP
+#include <linux/trusty/trusty.h>
+#else
 #include <linux/irqdomain.h>
+#endif
 #endif
 
 #include <linux/atomic.h>
@@ -89,7 +93,9 @@ enum ipi_msg_type {
 };
 
 #ifdef CONFIG_TRUSTY
+#ifndef CONFIG_TRUSTY_INTERRUPT_MAP
 struct irq_domain *ipi_custom_irq_domain;
+#endif
 #endif
 
 static DECLARE_COMPLETION(cpu_running);
@@ -752,7 +758,11 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 	default:
 #ifdef CONFIG_TRUSTY
 		if (ipinr >= IPI_CUSTOM_FIRST && ipinr <= IPI_CUSTOM_LAST)
+#ifndef CONFIG_TRUSTY_INTERRUPT_MAP
 			handle_domain_irq(ipi_custom_irq_domain, ipinr, regs);
+#else
+			handle_trusty_ipi(ipinr);
+#endif
 		else
 #endif
 		pr_crit("CPU%u: Unknown IPI message 0x%x\n",
@@ -766,6 +776,7 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 }
 
 #ifdef CONFIG_TRUSTY
+#ifndef CONFIG_TRUSTY_INTERRUPT_MAP
 static void custom_ipi_enable(struct irq_data *data)
 {
 	/*
@@ -828,6 +839,7 @@ static int __init smp_custom_ipi_init(void)
 	return 0;
 }
 core_initcall(smp_custom_ipi_init);
+#endif
 #endif
 
 void smp_send_reschedule(int cpu)
