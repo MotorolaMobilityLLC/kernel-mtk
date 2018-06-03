@@ -72,7 +72,7 @@ static struct cpuidle_driver mt67xx_acao_cpuidle_driver_set_0 = {
 	.states[1] = {
 		.enter			= mtk_mcidle_enter,
 		.exit_latency		= 300,
-		.target_residency	= 1000,
+		.target_residency	= 4500,
 #ifdef USING_TICK_BROADCAST
 		.flags			= CPUIDLE_FLAG_TIMER_STOP,
 #endif
@@ -96,7 +96,7 @@ static struct cpuidle_driver mt67xx_acao_cpuidle_driver_set_1 = {
 	.states[1] = {
 		.enter			= mtk_mcidle_enter,
 		.exit_latency		= 300,
-		.target_residency	= 1000,
+		.target_residency	= 1500,
 #ifdef USING_TICK_BROADCAST
 		.flags			= CPUIDLE_FLAG_TIMER_STOP,
 #endif
@@ -120,7 +120,7 @@ static struct cpuidle_driver mt67xx_acao_cpuidle_driver_set_2 = {
 	.states[1] = {
 		.enter			= mtk_mcidle_enter,
 		.exit_latency		= 300,
-		.target_residency	= 1000,
+		.target_residency	= 850,
 #ifdef USING_TICK_BROADCAST
 		.flags			= CPUIDLE_FLAG_TIMER_STOP,
 #endif
