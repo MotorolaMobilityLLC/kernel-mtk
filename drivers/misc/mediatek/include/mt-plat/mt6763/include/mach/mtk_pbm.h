@@ -76,7 +76,7 @@ enum pbm_kicker {
 	KR_FLASH		/* 5 */
 };
 
-#define MD_POWER_METER_ENABLE 0
+#define MD_POWER_METER_ENABLE 1
 /*#define TEST_MD_POWER*/
 
 #define SECTION_LEN	0xFFFFFFFF	/* total 4 byte, 6 section =  11 11111 11111 11111 11111 11111 11111 */
