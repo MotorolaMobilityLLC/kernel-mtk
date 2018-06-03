@@ -77,6 +77,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/devfreq/
 obj-y += mtk_idle.o
 obj-y += mtk_idle_mt6775.o
 obj-y += mtk_idle_profile.o

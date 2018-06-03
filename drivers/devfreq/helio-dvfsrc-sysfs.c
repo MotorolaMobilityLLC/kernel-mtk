@@ -16,15 +16,15 @@
 
 #include <helio-dvfsrc.h>
 #include <mtk_dramc.h>
-#include <mtk_eem.h>
 
 #include <mt-plat/upmu_common.h>
 #include "mtk_dvfsrc_reg.h"
 
 #include <linux/pm_qos.h>
+#include <helio-dvfsrc-opp.h>
 
 __weak unsigned int get_dram_data_rate(void) { return 0; }
-__weak unsigned int get_vcore_ptp_volt(unsigned int seg) { return 0; }
+__weak unsigned int get_vcore_opp_volt(unsigned int seg) { return 0; }
 __weak int dram_steps_freq(unsigned int step) { return 0; }
 
 static struct pm_qos_request dvfsrc_emi_request;
@@ -49,7 +49,7 @@ int vcorefs_get_curr_ddr(void)
 
 int dvfsrc_get_vcore_by_steps(u32 opp)
 {
-	return vcore_pmic_to_uv(get_vcore_ptp_volt(opp));
+	return vcore_pmic_to_uv(get_vcore_opp_volt(opp));
 }
 
 int dvfsrc_get_ddr_by_steps(u32 opp)
