@@ -35,7 +35,9 @@
 #include "smi_debug.h"
 #include "disp_lowpower.h"
 #include "layering_rule.h"
-
+#ifdef MTK_FB_MMDVFS_SUPPORT
+#include "mmdvfs_mgr.h"
+#endif
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
