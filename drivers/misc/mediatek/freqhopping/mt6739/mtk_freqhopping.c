@@ -98,7 +98,7 @@ static const int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL1 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL2 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL3 */
-	FH_SSC_DEF_DISABLE,	/* FHCTL PLL4 */
+	FH_SSC_DEF_DYNAMIC_SSC,	/* FHCTL PLL4 */
 	FH_SSC_DEF_DISABLE	/* FHCTL PLL5 */
 };
 
@@ -132,7 +132,7 @@ static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	/* FH PLL4 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 8, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
 	 },
 
 	/* FH PLL5 */
@@ -193,6 +193,8 @@ static void mt_fh_hal_default_conf(void)
 			FH_MSG("[Default ENABLE SSC] PLL_ID:%d", id);
 			g_fh_pll[id].fh_status = FH_FH_ENABLE_SSC;
 			freqhopping_config(id, PLL_SETTING_IDX__DEF, true);	/* MAINPLL */
+		} else if (g_pll_ssc_init_tbl[id] == FH_SSC_DEF_DYNAMIC_SSC) {
+			g_fh_pll[id].fh_status = FH_FH_ENABLE_SSC;
 		} else {
 			g_fh_pll[id].fh_status = FH_FH_DISABLE;
 		}
@@ -1279,7 +1281,6 @@ static void __ioctl(unsigned int ctlid, void *arg)
 			fh_ioctl_dvfs_ssc(ctlid, arg);
 		}
 		break;
-
 	default:
 		FH_MSG("Unrecognized ctlid %d", ctlid);
 		break;
