@@ -1442,7 +1442,10 @@ void zqcs_timer_callback(unsigned long data)
 #ifdef DVFS_READY
 	if (mt_spm_base_get()) {
 		if (spm_vcorefs_get_md_srcclkena()) {
-			spm_request_dvfs_opp(0, OPP_1);
+			if (lp4_highfreq_3600)
+				spm_request_dvfs_opp(0, OPP_2);
+			else
+				spm_request_dvfs_opp(0, OPP_1);
 			for (timeout = 100; timeout; timeout--) {
 				if (get_dram_data_rate() >= 3200)
 					break;
