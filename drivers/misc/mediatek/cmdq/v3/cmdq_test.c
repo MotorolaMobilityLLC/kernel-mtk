@@ -861,7 +861,7 @@ static void testcase_trigger_thread(void)
 		cmdq_task_create(CMDQ_SCENARIO_JPEG_DEC, &hConfig);
 
 
-		hConfig->priority = CMDQ_THR_PRIO_NORMAL;
+		hConfig->priority = 1;
 		cmdq_task_reset(hConfig);
 		/* insert tons of instructions */
 		for (index = 0; index < 10; ++index)
@@ -870,7 +870,7 @@ static void testcase_trigger_thread(void)
 		ret = cmdq_task_flush(hConfig);
 		CMDQ_MSG("flush 0\n");
 
-		hConfig->priority = CMDQ_THR_PRIO_DISPLAY_CONFIG;
+		hConfig->priority = 3;
 		cmdq_task_reset(hConfig);
 		/* insert tons of instructions */
 		for (index = 0; index < 10; ++index)
@@ -2727,7 +2727,7 @@ static void testcase_append_task_verify(void)
 static void testcase_manual_suspend_resume_test(void)
 {
 	struct cmdqRecStruct *handle = NULL;
-	struct TaskStruct *pTask, *pTask2;
+	struct TaskStruct *pTask;
 
 	CMDQ_MSG("%s\n", __func__);
 
@@ -2738,18 +2738,48 @@ static void testcase_manual_suspend_resume_test(void)
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, false);
 	cmdq_op_wait(handle, CMDQ_SYNC_TOKEN_USER_0);
-	cmdq_op_finalize_command(handle, false);
-
-	_test_submit_async(handle, &pTask);
+	cmdq_task_flush_async(handle);
 
 	/* Manual suspend and resume */
 	cmdqCoreSuspend();
 	cmdqCoreResumedNotifier();
 
-	_test_submit_async(handle, &pTask2);
+	_test_submit_async(handle, &pTask);
 	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
 	/* Call wait to release second task */
-	cmdqCoreWaitAndReleaseTask(pTask2, 500);
+	cmdqCoreWaitAndReleaseTask(pTask, 500);
+	cmdq_task_destroy(handle);
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+static void testcase_delay_for_suspend_resume_test(void)
+{
+	struct cmdqRecStruct *handle = NULL;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* clear token */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+	cmdq_task_set_secure(handle, false);
+	handle->engineFlag = (1LL << CMDQ_ENG_CMDQ);
+	cmdq_op_delay_us(handle, 10000);
+
+	cmdq_task_flush_async(handle);
+
+	/* Manual suspend and resume */
+	cmdqCoreSuspend();
+
+	cmdq_task_flush_async(handle);
+	cmdq_task_flush_async(handle);
+	cmdq_task_flush_async(handle);
+
+	cmdqCoreResumedNotifier();
+
+	cmdq_task_flush_async(handle);
 	cmdq_task_destroy(handle);
 
 	CMDQ_MSG("%s END\n", __func__);
@@ -6314,6 +6344,9 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 300:
 		testcase_stress_basic();
+		break;
+	case 153:
+		testcase_delay_for_suspend_resume_test();
 		break;
 	case 152:
 		testcase_end_addr_conflict();

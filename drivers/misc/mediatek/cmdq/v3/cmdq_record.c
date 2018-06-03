@@ -346,7 +346,7 @@ int32_t cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct 
 	handle->pBuffer = NULL;
 	handle->bufferSize = 0;
 	handle->engineFlag = cmdq_get_func()->flagFromScenario(scenario);
-	handle->priority = CMDQ_THR_PRIO_NORMAL;
+	handle->priority = CMDQ_REC_DEFAULT_PRIORITY;
 	handle->pRunningTask = NULL;
 
 	cmdq_task_reset(handle);
@@ -1684,6 +1684,7 @@ s32 cmdq_task_copy_to_sram(dma_addr_t pa_src, u32 sram_dest, size_t size)
 	cmdq_op_init_variable(&pa_cpr);
 	cmdq_task_create(CMDQ_SCENARIO_MOVE, &handle);
 	cmdq_task_reset(handle);
+	handle->priority = CMDQ_REC_MAX_PRIORITY;
 
 	for (i = 0; i < size / sizeof(u32); i++) {
 		cmdq_op_assign(handle, &pa_cpr, (u32)pa_src + i * sizeof(u32));
@@ -1691,7 +1692,6 @@ s32 cmdq_task_copy_to_sram(dma_addr_t pa_src, u32 sram_dest, size_t size)
 		cmdq_append_command(handle, CMDQ_CODE_READ_S,
 			(u32)sram_cpr, (u32)pa_cpr, 1, 1);
 	}
-	/* cmdq_task_dump_command(handle); */
 
 	duration = sched_clock();
 	status = cmdq_task_flush(handle);
