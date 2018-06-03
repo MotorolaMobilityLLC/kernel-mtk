@@ -44,8 +44,10 @@ void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctr
 	pmic_set_register_value(PMIC_RG_BUCK_VS1_VOTER_EN_CLR, 0x01 << 0);
 #endif
 
+#if 0	/* md no need to pull high vcore request at display off scenario */
 	if (__spm_get_md_srcclkena_setting())
 		dvfsrc_mdsrclkena_control_nolock(0);
+#endif
 
 	__spm_sync_pcm_flags(pwrctrl);
 }
@@ -58,8 +60,10 @@ void spm_dpidle_post_process(void)
 	pmic_set_register_value(PMIC_RG_BUCK_VS1_VOTER_EN_SET, 0x01 << 1);
 #endif
 
+#if 0	/* md no need to pull high vcore request at display off scenario */
 	if (__spm_get_md_srcclkena_setting())
 		dvfsrc_mdsrclkena_control_nolock(1);
+#endif
 }
 
 void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct pcm_desc *pcmdesc,

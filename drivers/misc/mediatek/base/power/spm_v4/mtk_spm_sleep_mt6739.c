@@ -167,8 +167,10 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
+#if 0	/* md no need to pull high vcore request at display off scenario */
 	if (__spm_get_md_srcclkena_setting())
 		dvfsrc_mdsrclkena_control_nolock(0);
+#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
@@ -234,8 +236,10 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	sleep_ddr_status = vcorefs_get_curr_ddr();
 	sleep_vcore_status = vcorefs_get_curr_vcore();
 
+#if 0	/* md no need to pull high vcore request at display off scenario */
 	if (__spm_get_md_srcclkena_setting())
 		dvfsrc_mdsrclkena_control_nolock(1);
+#endif
 }
 
 bool spm_is_md_sleep(void)
