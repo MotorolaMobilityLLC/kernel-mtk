@@ -179,6 +179,14 @@ int vcore_pmic_set_mode(unsigned char mode)
 	return (ret == mode) ? (0) : (-1);
 }
 
+void pmic_enable_smart_reset(unsigned char smart_en,
+	unsigned char smart_sdn_en)
+{
+	pmic_set_register_value(PMIC_RG_SMART_RST_MODE, smart_en);
+	pr_info("[%s] smart_en:%d, smart_sdn_en not support\n",
+		__func__, smart_en);
+}
+
 int vproc_pmic_set_mode(unsigned char mode)
 {
 	unsigned char ret = 0;
