@@ -784,6 +784,7 @@ static void set_shutter(kal_uint16 shutter)
 	write_cmos_sensor(0x0202, (shutter >> 8) & 0xFF);
 	write_cmos_sensor(0x0203, shutter & 0xFF);
 	write_cmos_sensor(0x0104, 0x00);
+	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
 	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
 }				/*    set_shutter */
