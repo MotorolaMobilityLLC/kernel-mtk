@@ -1017,7 +1017,7 @@ static void rpc_msg_handler(struct port_t *port, struct sk_buff *skb)
 {
 	int md_id = port->md_id;
 	struct rpc_buffer *rpc_buf = (struct rpc_buffer *)skb->data;
-	int i, data_len = 0, AlignLength, ret;
+	int i, data_len, AlignLength, ret;
 	struct rpc_pkt pkt[RPC_MAX_ARG_NUM];
 	char *ptr, *ptr_base;
 	/* unsigned int tmp_data[128]; */	/* size of tmp_data should be >= any RPC output result */
@@ -1028,6 +1028,10 @@ static void rpc_msg_handler(struct port_t *port, struct sk_buff *skb)
 		goto err_out;
 	}
 	/* sanity check */
+	if (skb->len > RPC_MAX_BUF_SIZE) {
+		CCCI_ERROR_LOG(md_id, RPC, "invalid RPC buffer size 0x%x/0x%x\n", skb->len, RPC_MAX_BUF_SIZE);
+		goto err_out;
+	}
 	if (rpc_buf->header.reserved < 0 || rpc_buf->header.reserved > RPC_REQ_BUFFER_NUM ||
 	    rpc_buf->para_num < 0 || rpc_buf->para_num > RPC_MAX_ARG_NUM) {
 		CCCI_ERROR_LOG(md_id, RPC, "invalid RPC index %d/%d\n", rpc_buf->header.reserved,
@@ -1036,11 +1040,23 @@ static void rpc_msg_handler(struct port_t *port, struct sk_buff *skb)
 	}
 	/* parse buffer */
 	ptr_base = ptr = rpc_buf->buffer;
+	data_len = sizeof(rpc_buf->op_id) + sizeof(rpc_buf->para_num);
 	for (i = 0; i < rpc_buf->para_num; i++) {
 		pkt[i].len = *((unsigned int *)ptr);
+		if (pkt[i].len >= skb->len) {
+			CCCI_ERROR_LOG(md_id, RPC, "invalid packet length in parse %u\n", pkt[i].len);
+			goto err_out;
+		}
+		if ((data_len + sizeof(pkt[i].len) + pkt[i].len) > RPC_MAX_BUF_SIZE) {
+			CCCI_ERROR_LOG(md_id, RPC, "RPC buffer overflow in parse %zu\n",
+					data_len + sizeof(pkt[i].len) + pkt[i].len);
+			goto err_out;
+		}
 		ptr += sizeof(pkt[i].len);
 		pkt[i].buf = ptr;
-		ptr += ((pkt[i].len + 3) >> 2) << 2;	/* 4byte align */
+		AlignLength = ((pkt[i].len + 3) >> 2) << 2;
+		ptr += AlignLength;	/* 4byte align */
+		data_len += (sizeof(pkt[i].len) + AlignLength);
 	}
 	if ((ptr - ptr_base) > RPC_MAX_BUF_SIZE) {
 		CCCI_ERROR_LOG(md_id, RPC, "RPC overflow in parse 0x%p\n", (void *)(ptr - ptr_base));
@@ -1051,7 +1067,7 @@ static void rpc_msg_handler(struct port_t *port, struct sk_buff *skb)
 	/* write back to modem */
 	/* update message */
 	rpc_buf->op_id |= RPC_API_RESP_ID;
-	data_len += (sizeof(rpc_buf->op_id) + sizeof(rpc_buf->para_num));
+	data_len = (sizeof(rpc_buf->op_id) + sizeof(rpc_buf->para_num));
 	ptr = rpc_buf->buffer;
 	for (i = 0; i < rpc_buf->para_num; i++) {
 		if ((data_len + sizeof(pkt[i].len) + pkt[i].len) > RPC_MAX_BUF_SIZE) {
