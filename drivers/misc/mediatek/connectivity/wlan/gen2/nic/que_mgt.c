@@ -3756,7 +3756,7 @@ VOID mqmProcessAssocRsp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN PUIN
 	}
 
 	/* Parse AC parameters and write to HW CRs */
-	if ((prStaRec->fgIsQoS) && (prStaRec->eStaType == STA_TYPE_LEGACY_AP)) {
+	if (prStaRec->fgIsQoS) {
 		mqmParseEdcaParameters(prAdapter, prSwRfb, pucIEStart, u2IELength, TRUE);
 #if ARP_MONITER_ENABLE
 		qmResetArpDetect();

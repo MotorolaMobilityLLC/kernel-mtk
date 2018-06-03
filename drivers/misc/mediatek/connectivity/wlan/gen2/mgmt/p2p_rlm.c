@@ -84,17 +84,18 @@ VOID rlmBssInitForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 	prBssInfo->fgAssoc40mBwAllowed = FALSE;
 	prBssInfo->eBssSCO = CHNL_EXT_SCN;
 
-	if (RLM_NET_IS_11N(prBssInfo) && RLM_AP_IS_BW_40_ALLOWED(prAdapter, prBssInfo)) {
+	if ((prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N) &&
+		RLM_AP_IS_BW_40_ALLOWED(prAdapter, prBssInfo)) {
 		/* In this case, the first BSS's SCO is 40MHz and known, so GO can
 		 * apply 40MHz bandwidth, but the first BSS's SCO may be changed
 		 * later if its Beacon lost timeout occurs.
 		 */
+
 		if (cnmPreferredChannel(prAdapter, &eBand, &ucChannel, &eSCO) &&
 		    eSCO != CHNL_EXT_SCN && ucChannel == prBssInfo->ucPrimaryChannel && eBand == prBssInfo->eBand) {
 			prBssInfo->eBssSCO = eSCO;
-		} else if (cnmBss40mBwPermitted(prAdapter, prBssInfo->ucNetTypeIndex)) {
+		} else
 			prBssInfo->eBssSCO = rlmDecideScoForAP(prAdapter, prBssInfo);
-		}
 
 		if (prBssInfo->eBssSCO != CHNL_EXT_SCN) {
 			prBssInfo->fg40mBwAllowed = TRUE;
