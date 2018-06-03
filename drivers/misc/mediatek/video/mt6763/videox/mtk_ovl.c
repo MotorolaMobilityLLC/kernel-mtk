@@ -47,12 +47,14 @@
 #include "mtk_ovl.h"
 
 #include "mtkfb_fence.h"
+#include <linux/wakelock.h>
 
 #include <linux/atomic.h>
 
 #include "extd_platform.h"
 
 
+struct wake_lock mem_wk_lock;
 static int is_context_inited;
 static int ovl2mem_layer_num;
 static int ovl2mem_use_m4u = 1;
@@ -83,6 +85,7 @@ static struct ovl2mem_path_context *_get_context_l(void)
 	if (!is_context_inited) {
 		memset((void *)&g_context, 0, sizeof(struct ovl2mem_path_context));
 		is_context_inited = 1;
+		wake_lock_init(&mem_wk_lock, WAKE_LOCK_SUSPEND, "mem_disp_wakelock");
 	}
 
 	return &g_context;
@@ -393,6 +396,7 @@ int ovl2mem_init(unsigned int session)
 	pgcl->session = session;
 	atomic_set(&g_trigger_ticket, 1);
 	atomic_set(&g_release_ticket, 0);
+	wake_lock(&mem_wk_lock);
 
 Exit:
 	_ovl2mem_path_unlock(__func__);
@@ -690,6 +694,7 @@ int ovl2mem_deinit(void)
 	pgcl->need_trigger_path = 0;
 	atomic_set(&g_trigger_ticket, 1);
 	atomic_set(&g_release_ticket, 0);
+	wake_unlock(&mem_wk_lock);
 
 Exit:
 	_ovl2mem_path_unlock(__func__);
