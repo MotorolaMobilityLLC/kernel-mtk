@@ -30,7 +30,7 @@
 static struct regulator *mtk_regulator_vproc2;
 #endif
 
-#if defined(CONFIG_MACH_MT6771)
+#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 struct regulator *cpu_vproc11_id;
 struct regulator *cpu_vsram11_id;
 #endif
@@ -431,13 +431,17 @@ static int hps_probe(struct platform_device *pdev)
 #endif
 
 	hps_warn("hps_probe\n");
-#if defined(CONFIG_MACH_MT6771)
+#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 	cpu_vproc11_id = regulator_get(&pdev->dev, "vproc11");
 	if (!cpu_vproc11_id)
 		pr_debug("cpu_vproc11_id regulator_get failed\n");
 	else
 		pr_info("cpu_vproc11_id regulator_get success\n");
+#ifdef CONFIG_MACH_MT6771
 	cpu_vsram11_id = regulator_get(&pdev->dev, "vsram_proc11");
+#else
+	cpu_vsram11_id = regulator_get(&pdev->dev, "vsram_gpu");
+#endif
 	if (!cpu_vsram11_id)
 		pr_debug("cpu_vsram_id regulator_get failed\n");
 	else
