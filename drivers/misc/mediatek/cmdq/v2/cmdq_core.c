@@ -2673,7 +2673,7 @@ static void cmdq_core_reorder_task_array(struct ThreadStruct *pThread, int32_t t
 		}
 
 		if (((pThread->pCurTask[nextID]->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
-			pThread->pCurTask[nextID]->pCMDEnd[-1] == CMDQ_GCE_END_ADDR_PA_JUMP) {
+			CMDQ_IS_END_ADDR(pThread->pCurTask[nextID]->pCMDEnd[-1])) {
 			/* We reached the last task */
 			CMDQ_LOG("Break in last task loop: %d nextID: %d searchLoop: %d searchID: %d\n",
 			loop, nextID, searchLoop, searchID);
@@ -2883,7 +2883,7 @@ bool cmdq_core_task_finalize_end(struct TaskStruct *pTask)
 		 * JUMP to next instruction case.
 		 * Set new JUMP to GCE end address
 		 */
-		pa = CMDQ_GCE_END_ADDR_PA_JUMP;
+		pa = CMDQ_GCE_END_ADDR_PA;
 		pTask->pCMDEnd[-1] = CMDQ_PHYS_TO_AREG(pa);
 		pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 0x1);
 
@@ -4510,7 +4510,7 @@ void cmdq_core_dump_error_instruction(const uint32_t *pcVA, const long pcPA,
 	char parsedInstruction[128] = { 0 };
 	const uint32_t op = (insts[3] & 0xFF000000) >> 24;
 
-	if (pcPA == CMDQ_GCE_END_ADDR_PA) {
+	if (CMDQ_IS_END_ADDR(pcPA)) {
 		/* in end address case instruction may not correct */
 		CMDQ_ERR("PC stay at GCE end address, line: %u\n", lineNum);
 		return;
@@ -4583,7 +4583,7 @@ static void cmdq_core_dump_summary(const struct TaskStruct *pTask, int thread,
 
 	/* check if pc stay at fix end address */
 	currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
-	if (currPC != CMDQ_GCE_END_ADDR_PA) {
+	if (CMDQ_IS_END_ADDR(currPC) == false) {
 		/* Find correct task */
 		pThread = &(gCmdqContext.thread[thread]);
 		pcVA = cmdq_core_get_pc(pTask, thread, insts);
@@ -5727,7 +5727,7 @@ static int32_t cmdq_core_force_remove_task_from_thread(struct TaskStruct *pTask,
 				continue;
 
 			is_last_end = (((pExecTask->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP) &&
-				(pExecTask->pCMDEnd[-1] == CMDQ_GCE_END_ADDR_PA_JUMP);
+				(CMDQ_IS_END_ADDR(pExecTask->pCMDEnd[-1]));
 
 			if (is_last_end) {
 				/* We reached the last task */
@@ -6138,7 +6138,7 @@ void cmdq_thread_check_status_resume(int32_t thread)
 		 */
 		CMDQ_ERR("Check thread index: %d status: 0x%08x try to resume!\n", thread, thread_status);
 		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread),
-			CMDQ_PHYS_TO_AREG(CMDQ_GCE_END_ADDR_PA));
+			CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread)));
 	}
 }
 
@@ -6924,6 +6924,12 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 	pTask->irqFlag = 0;
 	pTask->taskState = TASK_STATE_BUSY;
 
+	/* update task end address by with thread */
+	if (CMDQ_IS_END_ADDR(pTask->pCMDEnd[-1])) {
+		pTask->pCMDEnd[-1] = CMDQ_THR_FIX_END_ADDR(thread);
+		smp_mb();
+	}
+
 	if (pThread->taskCount <= 0) {
 		bool enablePrefetch;
 
@@ -6946,7 +6952,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 		threadPrio = cmdq_get_func()->priority(pTask->scenario);
 		MVABase = cmdq_core_task_get_first_pa(pTask);
 		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(MVABase));
-		EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_GCE_END_ADDR_PA);
+		EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread));
 		CMDQ_MSG("EXEC: set HW thread(%d) pc: 0x%pa, qos: %d set end addr: 0x%08x\n",
 			 thread, &MVABase, threadPrio, EndAddr);
 		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
@@ -7045,7 +7051,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 			/* set to pTask directly */
 			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread),
 				CMDQ_PHYS_TO_AREG(MVABase));
-			EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_GCE_END_ADDR_PA);
+			EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread));
 			CMDQ_MSG("EXEC: set end addr: 0x%08x for task: 0x%p\n", EndAddr, pTask);
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
 
