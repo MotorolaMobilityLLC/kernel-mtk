@@ -33,7 +33,7 @@
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = OV13870_SENSOR_ID,	/* record sensor id defined in kd_imgsensor.h */
 
-	.checksum_value = 0x7405d789,
+	.checksum_value = 0x962c56c1,
 
 	.pre = {
 		.pclk = 180036000,	/* record different mode's pclk */

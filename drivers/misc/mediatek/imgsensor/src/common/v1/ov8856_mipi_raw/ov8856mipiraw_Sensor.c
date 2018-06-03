@@ -54,7 +54,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = OV8856_SENSOR_ID,		/*record sensor id defined in Kd_imgsensor.h*/
-	.checksum_value = 0xfd319d8f,		/*checksum value for Camera Auto Test*/
+	.checksum_value = 0xb1893b4f,		/*checksum value for Camera Auto Test*/
 	.pre = {
 		.pclk = 144000000,				/*record different mode's pclk*/
 		.linelength  = 1932,				/*record different mode's linelength*/
