@@ -1274,9 +1274,9 @@ int m4u_port_array_add(struct m4u_port_array *port_array, int port, int m4u_en, 
 
 int m4u_config_port_array(struct m4u_port_array *port_array)
 {
-	int port, larb, larb_port;
+	unsigned int port, larb, larb_port;
 	int ret = 0;
-	int m4u_index;
+	unsigned int m4u_index;
 
 	unsigned int config_larb[SMI_LARB_NR] = { 0 };
 	unsigned int regNew[SMI_LARB_NR][32] = { {0} };
@@ -1290,6 +1290,9 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
+			if (larb >= SMI_LARB_NR || larb_port >= 32)
+				return -1;
+
 			config_larb[larb] |= (1 << larb_port);
 			regNew[larb][larb_port] = value =
 				(!!(port_array->ports[port] && M4U_PORT_ATTR_VIRTUAL));
@@ -1334,7 +1337,7 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
-			if (larb >= SMI_LARB_NR) {
+			if (larb >= SMI_LARB_NR || larb_port >= 32) {
 				M4UMSG("larb %d is overflow\n", larb);
 				return -1;
 			}
@@ -1365,7 +1368,7 @@ void m4u_get_perf_counter(int m4u_index, int m4u_slave_id, struct M4U_PERF_COUNT
 {
 	unsigned long m4u_base;
 
-	if (!m4u_index)
+	if (m4u_index != 0)
 		return;
 	m4u_base = gM4UBaseAddr[m4u_index];
 
