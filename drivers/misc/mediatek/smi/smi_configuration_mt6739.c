@@ -143,6 +143,10 @@ unsigned long *smi_larb_debug_offset[SMI_LARB_NUM] = {
 	smi_larb0_debug_offset, smi_larb1_debug_offset, smi_larb2_debug_offset
 };
 
+/* wfd */
+struct SMI_SETTING_VALUE smi_profile_setting_larb0_wfd[SMI_LARB0_PORT_NUM] = {
+	{0x200, 0x1}, {0x204, 0x1f}, {0x208, 0x1f}, {0x20c, 0x2}, {0x210, 0x1}, {0x214, 0x1}, {0x218, 0x5}
+};
 
 /* init (UI) */
 #define SMI_PROFILE_SETTING_COMMON_INIT_NUM (SMI_COMMON_PORT_NUM + 1)
@@ -235,13 +239,13 @@ struct SMI_SETTING vr_slow_setting_config = {
 struct SMI_SETTING vpwfd_setting_config = {
 	SMI_PROFILE_SETTING_COMMON_INIT_NUM, smi_profile_setting_common_init,
 	{SMI_LARB0_PORT_NUM, SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM},
-	{smi_profile_setting_larb0_init, smi_profile_setting_larb1_init, smi_profile_setting_larb2_init}
+	{smi_profile_setting_larb0_wfd, smi_profile_setting_larb1_init, smi_profile_setting_larb2_init}
 };
 
 struct SMI_SETTING venc_setting_config = {
-	SMI_PROFILE_SETTING_COMMON_ICFP_NUM, smi_profile_setting_common_icfp,
+	SMI_PROFILE_SETTING_COMMON_INIT_NUM, smi_profile_setting_common_init,
 	{SMI_LARB0_PORT_NUM, SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM},
-	{smi_profile_setting_larb0_icfp, smi_profile_setting_larb1_icfp, smi_profile_setting_larb2_icfp}
+	{smi_profile_setting_larb0_init, smi_profile_setting_larb1_init, smi_profile_setting_larb2_init}
 };
 
 struct SMI_SETTING vss_setting_config = {
