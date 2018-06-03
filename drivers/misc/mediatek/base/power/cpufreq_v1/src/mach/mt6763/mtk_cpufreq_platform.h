@@ -18,7 +18,8 @@
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #define CONFIG_HYBRID_CPU_DVFS	1
-#define CPU_DVFS_NOT_READY	1	/* FIXME */
+#define ENABLE_TURBO_MODE_AP	1
+#define CPU_DVFS_NOT_READY	1
 #endif
 
 /* buck ctrl configs */
@@ -43,8 +44,6 @@
 #define DVFS_LOG_NUM		150
 #define ENTRY_EACH_LOG		5
 
-#define MT_CPU_DVFS_B	MT_CPU_DVFS_L
-
 extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];
 extern struct buck_ctrl_t buck_ctrl[NR_MT_BUCK];
 extern struct pll_ctrl_t pll_ctrl[NR_MT_PLL];
@@ -57,6 +56,13 @@ extern unsigned int _cpu_dds_calc(unsigned int khz);
 extern unsigned int get_cur_phy_freq(struct pll_ctrl_t *pll_p);
 extern unsigned char get_clkdiv(struct pll_ctrl_t *pll_p);
 extern unsigned char get_posdiv(struct pll_ctrl_t *pll_p);
+
+#ifdef ENABLE_TURBO_MODE_AP
+extern void mt_cpufreq_turbo_action(unsigned long action,
+	unsigned int *cpus, enum mt_cpu_dvfs_id cluster_id);
+extern int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
+	unsigned int turbo_f, unsigned int turbo_v);
+#endif
 
 extern int mt_cpufreq_regulator_map(struct platform_device *pdev);
 extern int mt_cpufreq_dts_map(void);

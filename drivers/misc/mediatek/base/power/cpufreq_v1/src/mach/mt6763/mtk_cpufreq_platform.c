@@ -215,17 +215,13 @@ struct buck_ctrl_t buck_ctrl[NR_MT_BUCK] = {
 /* PMIC Part */
 void prepare_pmic_config(struct mt_cpu_dvfs *p)
 {
-#ifdef CONFIG_MTK_PMIC_NEW_ARCH
 	if (is_ext_buck_exist()) {
-#endif
 		struct buck_ctrl_t *vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
 
 		vproc_p->name = __stringify(BUCK_MT6311_VPROC);
 
 		vproc_p->buck_ops = &buck_ops_mt6311_vproc1;
-#ifdef CONFIG_MTK_PMIC_NEW_ARCH
 	}
-#endif
 }
 
 int __attribute__((weak)) sync_dcm_set_mp0_freq(unsigned int mhz)
@@ -537,17 +533,61 @@ struct hp_action_tbl cpu_dvfs_hp_action[] = {
 
 unsigned int nr_hp_action = ARRAY_SIZE(cpu_dvfs_hp_action);
 
+#ifdef ENABLE_TURBO_MODE_AP
+static int can_turbo;
+void mt_cpufreq_turbo_action(unsigned long action,
+	unsigned int *cpus, enum mt_cpu_dvfs_id cluster_id)
+{
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	if (cpus[MT_CPU_DVFS_L] == 1 && cluster_id == MT_CPU_DVFS_L) {
+		switch (action & ~CPU_TASKS_FROZEN) {
+		case CPU_UP_PREPARE:
+		case CPU_DOWN_PREPARE:
+			can_turbo = 0;
+			cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
+			break;
+		case CPU_ONLINE:
+		case CPU_DEAD:
+			can_turbo = 1;
+			cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
+			break;
+		default:
+			break;
+		}
+	}
+#else
+	can_turbo = 0;
+#endif
+}
+#endif
+
+int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
+	unsigned int turbo_f, unsigned int turbo_v)
+{
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	if (id == MT_CPU_DVFS_L) {
+		cpuhvfs_set_turbo_scale(2457 * 1000, turbo_v);
+		return 1;
+	} else
+		return 0;
+#else
+	return 1;
+#endif
+}
+
 int mt_cpufreq_regulator_map(struct platform_device *pdev)
 {
 	int r;
 
-	regulator_proc1 = regulator_get(&pdev->dev, "vproc");
-	if (GEN_DB_ON(IS_ERR(regulator_proc1), "vproc Get Failed"))
-		return -ENODEV;
-
-	r = regulator_enable(regulator_proc1);
-	if (GEN_DB_ON(r, "vproc Enable Failed"))
-		return -EPERM;
+	if (is_ext_buck_exist()) {
+		regulator_proc1 = regulator_get(&pdev->dev, "ext_buck_proc");
+		if (GEN_DB_ON(IS_ERR(regulator_proc1), "ext_buck_proc Get Failed"))
+			return -ENODEV;
+	} else {
+		regulator_proc1 = regulator_get(&pdev->dev, "vproc");
+		if (GEN_DB_ON(IS_ERR(regulator_proc1), "vproc Get Failed"))
+			return -ENODEV;
+	}
 
 	/* already on, no need to wait for settle */
 
@@ -591,16 +631,11 @@ int mt_cpufreq_dts_map(void)
 
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
-	unsigned int lv = CPU_LEVEL_0;
+	unsigned int lv = CPU_LEVEL_1;
 
 #if 0
 	turbo_flag = mt_eem_get_turbo();
 	cpufreq_info("turbo_flag = %d\n", turbo_flag);
-#endif
-
-#ifdef CONFIG_MTK_PMIC_NEW_ARCH
-	if (is_ext_buck_exist())
-		lv = CPU_LEVEL_2;
 #endif
 
 	return lv;
