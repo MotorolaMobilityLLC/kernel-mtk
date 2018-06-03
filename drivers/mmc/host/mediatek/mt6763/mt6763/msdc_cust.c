@@ -146,6 +146,7 @@ void msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 
 void msdc_dump_ldo_sts(struct msdc_host *host)
 {
+#ifdef MSDC_BRING_UP
 	u32 ldo_en = 0, ldo_vol = 0, ldo_cal = 0;
 	u32 id = host->id;
 
@@ -182,6 +183,7 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 	default:
 		break;
 	}
+#endif
 }
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on)
@@ -206,6 +208,7 @@ void msdc_sdio_power(struct msdc_host *host, u32 on)
 
 void msdc_power_calibration_init(struct msdc_host *host)
 {
+#ifdef MSDC_BRING_UP
 	if (host->hw->host_function == MSDC_EMMC) {
 		pmic_config_interface(REG_VEMC_VOSEL_CAL,
 			VEMC_VOSEL_CAL_mV(EMMC_VOL_ACTUAL - VOL_3000),
@@ -219,10 +222,12 @@ void msdc_power_calibration_init(struct msdc_host *host)
 			VMC_VOSEL_CAL_mV(SD_VOL_ACTUAL - VOL_3000),
 			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
 	}
+#endif
 }
 
 int msdc_oc_check(struct msdc_host *host, u32 en)
 {
+#ifdef MSDC_BRING_UP
 	u32 val = 0;
 	int ret = 0;
 
@@ -253,6 +258,9 @@ int msdc_oc_check(struct msdc_host *host, u32 en)
 	}
 
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 void msdc_emmc_power(struct msdc_host *host, u32 on)

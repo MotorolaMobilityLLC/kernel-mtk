@@ -42,6 +42,7 @@
 
 #include <mt-plat/upmu_common.h>
 
+#ifdef MSDC_BRING_UP
 #define REG_VEMC_VOSEL_CAL      PMIC_RG_VEMC_CAL_ADDR
 #define REG_VEMC_VOSEL          PMIC_RG_VEMC_VOSEL_ADDR
 #define REG_VEMC_EN             PMIC_RG_VEMC_SW_EN_ADDR
@@ -99,6 +100,7 @@
 #define MASK_VMCH_OC_STATUS     PMIC_RG_INT_STATUS_VMCH_OC_MASK
 #define SHIFT_VMCH_OC_STATUS    PMIC_RG_INT_STATUS_VMCH_OC_SHIFT
 #define FIELD_VMCH_OC_STATUS    (MASK_VMCH_OC_STATUS << SHIFT_VMCH_OC_STATUS)
+#endif
 
 #define VEMC_VOSEL_CAL_mV(cal)  ((cal <= 0) ? ((0-(cal))/20) : (32-(cal)/20))
 #define VEMC_VOSEL_2V9          (1)
@@ -163,10 +165,15 @@
 
 #define MSDC_SRC_FPGA           12000000
 
+#ifdef MSDC_BRING_UP
 #define MSDC0_CG_NAME           MTK_CG_PERI2_RG_MSDC0_CK_PDN_AP_NORM_STA
 #define MSDC1_CG_NAME           MTK_CG_PERI2_RG_MSDC1_CK_PDN_STA
 #define MSDC3_CG_NAME           MTK_CG_PERI2_RG_MSDC3_CK_PDN_STA
-
+#else
+#define MSDC0_CG_NAME           0
+#define MSDC1_CG_NAME           0
+#define MSDC3_CG_NAME           0
+#endif
 
 /**************************************************************/
 /* Section 4: GPIO and Pad                                    */
