@@ -42,7 +42,6 @@ static int get_delta_pwr(unsigned int core, unsigned int opp)
 		|| opp > get_cluster_min_cpufreq_idx(PPM_CLUSTER_LL)) {
 		ppm_err("%s: Invalid input: core=%d, opp=%d\n", __func__, core, opp);
 		WARN_ON(1);
-
 		return 0;
 	}
 
@@ -66,14 +65,12 @@ void ppm_cobra_update_core_limit(unsigned int cluster, int limit)
 	if (cluster >= NR_PPM_CLUSTERS) {
 		ppm_err("%s: Invalid cluster id = %d\n", __func__, cluster);
 		WARN_ON(1);
-
 		return;
 	}
 
 	if (limit < 0 || limit > get_cluster_max_cpu_core(cluster)) {
 		ppm_err("%s: Invalid core limit for cluster%d = %d\n", __func__, cluster, limit);
 		WARN_ON(1);
-
 		return;
 	}
 

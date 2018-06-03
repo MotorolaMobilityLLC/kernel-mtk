@@ -39,6 +39,7 @@ static unsigned int get_idx_in_pwr_tbl(enum ppm_cluster cluster)
 	if (cluster >= NR_PPM_CLUSTERS) {
 		ppm_err("%s: Invalid input: cluster=%d\n", __func__, cluster);
 		WARN_ON(1);
+		return 0;
 	}
 
 	while (cluster)
@@ -62,6 +63,7 @@ static int get_delta_pwr_LxLL(unsigned int L_core, unsigned int LL_core, unsigne
 		ppm_err("%s: Invalid input: L_core=%d, LL_core=%d, opp=%d\n",
 			__func__, L_core, LL_core, opp);
 		WARN_ON(1);
+		return 0;
 	}
 
 #if PPM_COBRA_RUNTIME_CALC_DELTA
@@ -97,11 +99,13 @@ void ppm_cobra_update_core_limit(unsigned int cluster, int limit)
 	if (cluster >= NR_PPM_CLUSTERS) {
 		ppm_err("%s: Invalid cluster id = %d\n", __func__, cluster);
 		WARN_ON(1);
+		return;
 	}
 
 	if (limit < 0 || limit > get_cluster_max_cpu_core(cluster)) {
 		ppm_err("%s: Invalid core limit for cluster%d = %d\n", __func__, cluster, limit);
 		WARN_ON(1);
+		return;
 	}
 
 	Core_limit[cluster] = limit;

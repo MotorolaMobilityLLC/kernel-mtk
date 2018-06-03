@@ -175,6 +175,7 @@ int ppm_platform_init(void)
 	if (!online_core) {
 		ppm_err("remap online_core failed!\n");
 		WARN_ON(1);
+		return -1;
 	}
 #endif
 #ifdef CONFIG_CPU_FREQ
