@@ -29,7 +29,6 @@
 #include <linux/uaccess.h>
 #include <linux/version.h>
 
-
 #ifdef CONFIG_MTK_GPU_SUPPORT
 #define COLLECT_GPU_MEMINFO
 #endif
@@ -116,8 +115,13 @@
 #define MLOG_TRIGGER_LMK    1
 #define MLOG_TRIGGER_LTK    2
 
+#define VMSTAT_EVENTALL_STOP			0
+#define VMSTAT_EVENTALL_START			1
+#define VMSTAT_EVENTALL_START_NO_SUCCEED	2
+
 static uint meminfo_filter = M_FILTER_ALL;
 static uint vmstat_filter = V_FILTER_ALL;
+static uint vmstat_eventall = VMSTAT_EVENTALL_STOP;
 static uint proc_filter = P_FILTER_ALL;
 static uint buddyinfo_filter = B_FILTER_ALL;
 
@@ -206,17 +210,23 @@ static void mlog_reset_format(void)
 	len = 4;		/* id, type, sec, nanosec */
 
 	len += hweight32(meminfo_filter);
-	len += hweight32(vmstat_filter);
 
-	/* buddyinfo */
-	len += (2 * MAX_ORDER);
+	if (vmstat_eventall == VMSTAT_EVENTALL_STOP)
+		len += hweight32(vmstat_filter);
+	else
+		len += NR_VM_EVENT_ITEMS;
 
-	if (proc_filter) {
-		len++;		/* PID */
+	if (vmstat_eventall != VMSTAT_EVENTALL_START_NO_SUCCEED) {
+		/* buddyinfo */
+		len += (2 * MAX_ORDER);
+
+		if (proc_filter) {
+			len++;		/* PID */
 #ifdef PRINT_PROCESS_NAME_DEBUG
-		len++;		/* Process name */
+			len++;		/* Process name */
 #endif
-		len += hweight32(proc_filter);
+			len += hweight32(proc_filter);
+		}
 	}
 
 	if (!strfmt_list || strfmt_len != len) {
@@ -244,40 +254,55 @@ static void mlog_reset_format(void)
 			strfmt_list[len++] = mem_size_str;
 	}
 
-	if (vmstat_filter) {
-		int i;
+	if (vmstat_eventall <= VMSTAT_EVENTALL_START) {
+		if (vmstat_filter && vmstat_eventall == VMSTAT_EVENTALL_STOP) {
+			int i;
 
-		for (i = 0; i < hweight32(vmstat_filter); ++i)
-			strfmt_list[len++] = acc_count_str;
-	}
+			for (i = 0; i < hweight32(vmstat_filter); ++i)
+				strfmt_list[len++] = acc_count_str;
+		} else {
+			int i;
 
-	if (buddyinfo_filter) {
-		int i, j;
-
-		/* normal and high zone */
-		for (i = 0; i < 2; ++i) {
-			strfmt_list[len++] = order_start_str;
-			for (j = 0; j < MAX_ORDER - 2; ++j)
-				strfmt_list[len++] = order_middle_str;
-
-			strfmt_list[len++] = order_end_str;
+			for (i = 0; i < NR_VM_EVENT_ITEMS; i++)
+				strfmt_list[len++] = acc_count_str;
 		}
-	}
 
-	if (proc_filter) {
+		if (buddyinfo_filter) {
+			int i, j;
+
+			/* normal and high zone */
+			for (i = 0; i < 2; ++i) {
+				strfmt_list[len++] = order_start_str;
+				for (j = 0; j < MAX_ORDER - 2; ++j)
+					strfmt_list[len++] = order_middle_str;
+
+				strfmt_list[len++] = order_end_str;
+			}
+		}
+
+		if (proc_filter) {
+			int i;
+
+			strfmt_proc = len;
+			strfmt_list[len++] = pid_str;	/* PID */
+#ifdef PRINT_PROCESS_NAME_DEBUG
+			strfmt_list[len++] = pname_str;	/* Process name */
+#endif
+			strfmt_list[len++] = adj_str;	/* ADJ */
+			i = 0;
+			for (; i < hweight32(proc_filter & (P_FMT_SIZE)); ++i)
+				strfmt_list[len++] = mem_size_str;
+			i = 0;
+			for (; i < hweight32(proc_filter & (P_FMT_COUNT)); ++i)
+				strfmt_list[len++] = acc_count_str;
+		}
+	} else {
 		int i;
 
-		strfmt_proc = len;
-		strfmt_list[len++] = pid_str;	/* PID */
-#ifdef PRINT_PROCESS_NAME_DEBUG
-		strfmt_list[len++] = pname_str;	/* Process name */
-#endif
-		strfmt_list[len++] = adj_str;	/* ADJ */
-		for (i = 0; i < hweight32(proc_filter & (P_FMT_SIZE)); ++i)
-			strfmt_list[len++] = mem_size_str;
-		for (i = 0; i < hweight32(proc_filter & (P_FMT_COUNT)); ++i)
+		for (i = 0; i < NR_VM_EVENT_ITEMS; i++)
 			strfmt_list[len++] = acc_count_str;
 	}
+
 	strfmt_idx = 0;
 
 	spin_unlock_bh(&mlogbuf_lock);
@@ -324,46 +349,68 @@ int mlog_snprint_fmt(char *buf, size_t len)
 	if (meminfo_filter & M_ION)
 		ret += snprintf(buf + ret, len - ret, ",  ion");
 
-	if (vmstat_filter & V_PSWPIN)
-		ret += snprintf(buf + ret, len - ret, ",  swpin");
-	if (vmstat_filter & V_PSWPOUT)
-		ret += snprintf(buf + ret, len - ret, ", swpout");
-	if (vmstat_filter & V_PGFMFAULT)
-		ret += snprintf(buf + ret, len - ret, ",  fmflt");
+	if (vmstat_eventall == VMSTAT_EVENTALL_STOP) {
+		if (vmstat_filter & V_PSWPIN)
+			ret += snprintf(buf + ret, len - ret, ",  swpin");
+		if (vmstat_filter & V_PSWPOUT)
+			ret += snprintf(buf + ret, len - ret, ", swpout");
+		if (vmstat_filter & V_PGFMFAULT)
+			ret += snprintf(buf + ret, len - ret, ",  fmflt");
+	} else {
+		int vm_event_offset = NR_VM_ZONE_STAT_ITEMS +
+				      NR_VM_NODE_STAT_ITEMS +
+				      2;/* NR_VM_WRITEBACK_STAT_ITEMS */
+		int vm_event_size = vm_event_offset + NR_VM_EVENT_ITEMS;
 
-	if (buddyinfo_filter) {
-		int order;
-
-		ret += snprintf(buf + ret, len - ret, ",  [normal: 0");
-		for (order = 1; order < MAX_ORDER; ++order)
-			ret += snprintf(buf + ret, len - ret, ", %d", order);
-
-		ret += snprintf(buf + ret, len - ret,	"]");
-		ret += snprintf(buf + ret, len - ret, ",  [high: 0");
-
-		for (order = 1; order < MAX_ORDER; ++order)
-			ret += snprintf(buf + ret, len - ret, ", %d", order);
-
-		ret += snprintf(buf + ret, len - ret,	"]");
+		for (; vm_event_offset < vm_event_size; vm_event_offset++)
+			ret += snprintf(buf + ret,
+					len - ret,
+					",%s", vmstat_text[vm_event_offset]);
 	}
 
-	if (proc_filter) {
-		ret += snprintf(buf + ret, len - ret, ", [pid]");
+	if (vmstat_eventall != VMSTAT_EVENTALL_START_NO_SUCCEED) {
+		if (buddyinfo_filter) {
+			int order;
+
+			ret += snprintf(buf + ret, len - ret, ",  [normal: 0");
+			for (order = 1; order < MAX_ORDER; ++order)
+				ret += snprintf(buf + ret,
+						len - ret,
+						", %d", order);
+
+			ret += snprintf(buf + ret, len - ret,	"]");
+			ret += snprintf(buf + ret, len - ret, ",  [high: 0");
+
+			for (order = 1; order < MAX_ORDER; ++order)
+				ret += snprintf(buf + ret,
+						len - ret,
+						", %d", order);
+
+			ret += snprintf(buf + ret, len - ret,	"]");
+		}
+
+		if (proc_filter) {
+			ret += snprintf(buf + ret, len - ret, ", [pid]");
 #ifdef PRINT_PROCESS_NAME_DEBUG
-		ret += snprintf(buf + ret, len - ret, ", name");
+			ret += snprintf(buf + ret, len - ret, ", name");
 #endif
-		if (proc_filter & P_ADJ)
-			ret += snprintf(buf + ret, len - ret, ", score_adj");
-		if (proc_filter & P_RSS)
-			ret += snprintf(buf + ret, len - ret, ", rss");
-		if (proc_filter & P_RSWAP)
-			ret += snprintf(buf + ret, len - ret, ", rswp");
-		if (proc_filter & P_SWPIN)
-			ret += snprintf(buf + ret, len - ret, ", pswpin");
-		if (proc_filter & P_SWPOUT)
-			ret += snprintf(buf + ret, len - ret, ", pswpout");
-		if (proc_filter & P_FMFAULT)
-			ret += snprintf(buf + ret, len - ret, ", pfmflt");
+			if (proc_filter & P_ADJ)
+				ret += snprintf(buf + ret, len - ret,
+						", score_adj");
+			if (proc_filter & P_RSS)
+				ret += snprintf(buf + ret, len - ret, ", rss");
+			if (proc_filter & P_RSWAP)
+				ret += snprintf(buf + ret, len - ret, ", rswp");
+			if (proc_filter & P_SWPIN)
+				ret += snprintf(buf + ret, len - ret,
+						", pswpin");
+			if (proc_filter & P_SWPOUT)
+				ret += snprintf(buf + ret, len - ret,
+						", pswpout");
+			if (proc_filter & P_FMFAULT)
+				ret += snprintf(buf + ret, len - ret,
+						", pfmflt");
+		}
 	}
 	return ret;
 }
@@ -412,47 +459,60 @@ int mlog_print_fmt(struct seq_file *m)
 	if (meminfo_filter & M_ION)
 		seq_puts(m, ",  ion");
 
-	if (vmstat_filter & V_PSWPIN)
-		seq_puts(m, ",  swpin");
-	if (vmstat_filter & V_PSWPOUT)
-		seq_puts(m, ", swpout");
-	if (vmstat_filter & V_PGFMFAULT)
-		seq_puts(m, ",  fmflt");
+	if (vmstat_eventall == VMSTAT_EVENTALL_STOP) {
+		if (vmstat_filter & V_PSWPIN)
+			seq_puts(m, ",  swpin");
+		if (vmstat_filter & V_PSWPOUT)
+			seq_puts(m, ", swpout");
+		if (vmstat_filter & V_PGFMFAULT)
+			seq_puts(m, ",  fmflt");
+	} else {
+		int vm_event_offset = NR_VM_ZONE_STAT_ITEMS +
+				      NR_VM_NODE_STAT_ITEMS +
+				      2;/* NR_VM_WRITEBACK_STAT_ITEMS */
+		int vm_event_size = vm_event_offset + NR_VM_EVENT_ITEMS;
 
-	if (buddyinfo_filter) {
-		int order;
-
-		seq_puts(m, ",  [normal: 0");
-		for (order = 1; order < MAX_ORDER; ++order)
-			seq_printf(m,	", %d", order);
-
-		seq_puts(m,	"]");
-		seq_puts(m, ",  [high: 0");
-
-		for (order = 1; order < MAX_ORDER; ++order)
-			seq_printf(m,	", %d", order);
-
-		seq_puts(m,	"]");
+		for (; vm_event_offset < vm_event_size; vm_event_offset++)
+			seq_printf(m, ",%s", vmstat_text[vm_event_offset]);
 	}
 
-	if (proc_filter) {
-		seq_puts(m, ", [pid]");
+	if (vmstat_eventall != VMSTAT_EVENTALL_START_NO_SUCCEED) {
+		if (buddyinfo_filter) {
+			int order;
+
+			seq_puts(m, ",  [normal: 0");
+			for (order = 1; order < MAX_ORDER; ++order)
+				seq_printf(m,	", %d", order);
+
+			seq_puts(m,	"]");
+			seq_puts(m, ",  [high: 0");
+
+			for (order = 1; order < MAX_ORDER; ++order)
+				seq_printf(m,	", %d", order);
+
+			seq_puts(m,	"]");
+		}
+
+		if (proc_filter) {
+			seq_puts(m, ", [pid]");
 #ifdef PRINT_PROCESS_NAME_DEBUG
-		seq_puts(m, ", name");
+			seq_puts(m, ", name");
 #endif
-		if (proc_filter & P_ADJ)
-			seq_puts(m, ", score_adj");
-		if (proc_filter & P_RSS)
-			seq_puts(m, ", rss");
-		if (proc_filter & P_RSWAP)
-			seq_puts(m, ", rswp");
-		if (proc_filter & P_SWPIN)
-			seq_puts(m, ", pswpin");
-		if (proc_filter & P_SWPOUT)
-			seq_puts(m, ", pswpout");
-		if (proc_filter & P_FMFAULT)
-			seq_puts(m, ", pfmflt");
+			if (proc_filter & P_ADJ)
+				seq_puts(m, ", score_adj");
+			if (proc_filter & P_RSS)
+				seq_puts(m, ", rss");
+			if (proc_filter & P_RSWAP)
+				seq_puts(m, ", rswp");
+			if (proc_filter & P_SWPIN)
+				seq_puts(m, ", pswpin");
+			if (proc_filter & P_SWPOUT)
+				seq_puts(m, ", pswpout");
+			if (proc_filter & P_FMFAULT)
+				seq_puts(m, ", pfmflt");
+		}
 	}
+
 	seq_puts(m, "\n");
 	return 0;
 }
@@ -568,7 +628,28 @@ static void mlog_vmstat(void)
 	mlog_emit_32(v[PSWPIN]);
 	mlog_emit_32(v[PSWPOUT]);
 	mlog_emit_32(v[PGFMFAULT]);
+	spin_unlock_bh(&mlogbuf_lock);
+}
 
+static void mlog_vmstat_eventall(void)
+{
+	int cpu, i;
+	unsigned long v[NR_VM_EVENT_ITEMS];
+
+	memset(v, 0, NR_VM_EVENT_ITEMS * sizeof(unsigned long));
+
+	for_each_online_cpu(cpu) {
+		struct vm_event_state *this = &per_cpu(vm_event_states, cpu);
+
+		for (i = 0; i < NR_VM_EVENT_ITEMS; i++)
+			v[i] += this->event[i];
+	}
+	v[PGPGIN] /= 2;		/* sectors -> kbytes */
+	v[PGPGOUT] /= 2;
+
+	spin_lock_bh(&mlogbuf_lock);
+	for (i = 0; i < NR_VM_EVENT_ITEMS; i++)
+		mlog_emit_32(v[i]);
 	spin_unlock_bh(&mlogbuf_lock);
 }
 
@@ -788,14 +869,21 @@ void mlog(int type)
 	/* memory log */
 	if (meminfo_filter)
 		mlog_meminfo();
-	if (vmstat_filter)
-		mlog_vmstat();
 
-	if (buddyinfo_filter)
-		mlog_buddyinfo();
+	if (vmstat_eventall <= VMSTAT_EVENTALL_START) {
+		if (vmstat_filter && vmstat_eventall == VMSTAT_EVENTALL_STOP)
+			mlog_vmstat();
+		else
+			mlog_vmstat_eventall();
 
-	if (proc_filter)
-		mlog_procinfo();
+		if (buddyinfo_filter)
+			mlog_buddyinfo();
+
+		if (proc_filter)
+			mlog_procinfo();
+	} else {
+		mlog_vmstat_eventall();
+	}
 
 	/*
 	 * mlog buffer have something to dump
@@ -906,6 +994,9 @@ int dmlog_open(struct inode *inode, struct file *file)
 	struct mlog_session *session;
 	struct mlog_header *header;
 	int fmt_buf_len = 512;
+
+	if (vmstat_eventall != VMSTAT_EVENTALL_STOP)
+		fmt_buf_len += 1024;
 
 	session = kzalloc(sizeof(struct mlog_session), GFP_KERNEL);
 	session->start = mlog_start;
@@ -1107,6 +1198,11 @@ param_check_uint(vmstat_filter, &vmstat_filter);
 module_param_cb(vmstat_filter, &param_ops_change_filter,
 		&vmstat_filter, 0644);
 __MODULE_PARM_TYPE(vmstat_filter, uint);
+
+param_check_uint(vmstat_eventall, &vmstat_eventall);
+module_param_cb(vmstat_eventall, &param_ops_change_filter,
+		&vmstat_eventall, 0644);
+__MODULE_PARM_TYPE(vmstat_eventall, uint);
 
 param_check_uint(proc_filter, &proc_filter);
 module_param_cb(proc_filter, &param_ops_change_filter, &proc_filter, 0644);
