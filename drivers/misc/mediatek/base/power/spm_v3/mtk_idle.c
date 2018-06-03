@@ -1542,6 +1542,9 @@ int dpidle_enter(int cpu)
 	int ret = CPUIDLE_STATE_DP;
 	u32 operation_cond = 0;
 
+	/* don't check lock dependency */
+	lockdep_off();
+
 	mtk_idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
 
 	operation_cond |= dpidle_pre_process(cpu);
@@ -1570,6 +1573,8 @@ int dpidle_enter(int cpu)
 	if (dpidle_run_once)
 		idle_switch[IDLE_TYPE_DP] = 0;
 
+	lockdep_on();
+
 	return ret;
 }
 EXPORT_SYMBOL(dpidle_enter);
@@ -1580,6 +1585,9 @@ int soidle3_enter(int cpu)
 	u32 operation_cond = 0;
 	unsigned long long soidle3_time = 0;
 	static unsigned long long soidle3_residency;
+
+	/* don't check lock dependency */
+	lockdep_off();
 
 	if (sodi3_flags & SODI_FLAG_RESIDENCY)
 		soidle3_time = idle_get_current_time_ms();
@@ -1636,6 +1644,8 @@ int soidle3_enter(int cpu)
 		idle_pr_dbg("SO3: soidle3_residency = %llu\n", soidle3_residency);
 	}
 
+	lockdep_on();
+
 	return ret;
 }
 EXPORT_SYMBOL(soidle3_enter);
@@ -1646,6 +1656,9 @@ int soidle_enter(int cpu)
 	u32 operation_cond = 0;
 	unsigned long long soidle_time = 0;
 	static unsigned long long soidle_residency;
+
+	/* don't check lock dependency */
+	lockdep_off();
 
 	if (sodi_flags & SODI_FLAG_RESIDENCY)
 		soidle_time = idle_get_current_time_ms();
@@ -1677,6 +1690,8 @@ int soidle_enter(int cpu)
 		soidle_residency += idle_get_current_time_ms() - soidle_time;
 		idle_pr_dbg("SO: soidle_residency = %llu\n", soidle_residency);
 	}
+
+	lockdep_on();
 
 	return ret;
 }
