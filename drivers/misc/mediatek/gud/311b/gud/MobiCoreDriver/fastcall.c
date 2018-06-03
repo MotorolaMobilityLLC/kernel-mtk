@@ -205,7 +205,6 @@ static inline int _smc(union mc_fc_generic *mc_fc_generic)
 
 #ifdef TBASE_CORE_SWITCHER
 static int active_cpu;
-int curr_active_cpu(void) { return active_cpu; }
 
 #ifdef MC_FASTCALL_WORKER_THREAD
 static void mc_cpu_offline(int cpu)

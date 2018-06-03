@@ -70,6 +70,11 @@
 		reg = <0 0x11e10000 0 0x1000>;
 	};
 
+	mobicore {
+		compatible = "trustonic,mobicore";
+		interrupts = <GIC_SPI 292 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	psci {
 		compatible = "arm,psci-0.2";
 		method = "smc";
