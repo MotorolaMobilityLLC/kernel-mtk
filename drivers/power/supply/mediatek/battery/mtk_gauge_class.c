@@ -23,8 +23,8 @@
 #include <mt-plat/mtk_rtc.h>
 #include <linux/proc_fs.h>
 
-#include "include/mtk_gauge_class.h"
-
+#include "mtk_gauge_class.h"
+#include "mtk_battery_internal.h"
 
 static struct class *gauge_class;
 
@@ -52,7 +52,7 @@ static ssize_t gauge_show_name(struct device *dev,
 static int gauge_suspend(struct device *dev, pm_message_t state)
 {
 	struct gauge_device *gauge_dev = to_gauge_device(dev);
-	int ret = 0;
+	int ret = -ENOTSUPP;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev->ops->suspend)
@@ -65,7 +65,7 @@ static int gauge_suspend(struct device *dev, pm_message_t state)
 static int gauge_resume(struct device *dev)
 {
 	struct gauge_device *gauge_dev = to_gauge_device(dev);
-	int ret = 0;
+	int ret = -ENOTSUPP;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev->ops->resume)

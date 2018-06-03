@@ -17,11 +17,8 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
 
-
+#include "mtk_gauge_class.h"
 #include <mtk_battery_internal.h>
-
-#include "include/mtk_gauge_class.h"
-
 
 static struct list_head coulomb_head_plus = LIST_HEAD_INIT(coulomb_head_plus);
 static struct list_head coulomb_head_minus = LIST_HEAD_INIT(coulomb_head_minus);
@@ -97,7 +94,7 @@ void wake_up_gauge_coulomb(void)
 		return;
 	}
 
-	if (is_fg_disable()) {
+	if (is_fg_disabled()) {
 		gauge_set_coulomb_interrupt1_ht(0);
 		gauge_set_coulomb_interrupt1_lt(0);
 		return;
@@ -262,7 +259,7 @@ void gauge_coulomb_start(struct gauge_consumer *coulomb, int car)
 		return;
 	}
 
-	if (is_fg_disable()) {
+	if (is_fg_disabled()) {
 		gauge_set_coulomb_interrupt1_ht(0);
 		gauge_set_coulomb_interrupt1_lt(0);
 		return;
@@ -348,7 +345,7 @@ void gauge_coulomb_stop(struct gauge_consumer *coulomb)
 		return;
 	}
 
-	if (is_fg_disable()) {
+	if (is_fg_disabled()) {
 		gauge_set_coulomb_interrupt1_ht(0);
 		gauge_set_coulomb_interrupt1_lt(0);
 		return;

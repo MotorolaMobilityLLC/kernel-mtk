@@ -1241,7 +1241,7 @@ int get_dlpt_imix(void)
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	PMICLOG("[get_dlpt_imix] %d,%d,%d,%d,%d,%d,%d\n"
 		, volt_avg, curr_avg, g_lbatInt1
-		, ptim_rac_val_avg, imix, BMT_status.SOC
+		, ptim_rac_val_avg, imix, battery_get_soc()
 		, bat_get_ui_percentage());
 #endif
 

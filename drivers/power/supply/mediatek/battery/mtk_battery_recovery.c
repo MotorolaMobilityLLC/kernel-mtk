@@ -2032,5 +2032,5 @@ void battery_recovery_init(void)
 			fg_table_cust_data.fg_profile_t0_size);
 	}
 	bm_err("[battery_recovery] is_evb:%d,%d is_bat_exist %d\n",
-		is_evb_load(), fg_interrupt_check(), is_bat_exist);
+		is_fg_disabled(), fg_interrupt_check(), is_bat_exist);
 }

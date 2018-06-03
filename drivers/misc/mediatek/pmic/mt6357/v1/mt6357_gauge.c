@@ -32,7 +32,8 @@
 #include <linux/proc_fs.h>
 #include <linux/math64.h>
 
-#include "include/mtk_gauge_class.h"
+#include <mtk_gauge_class.h>
+
 #include <mtk_battery_internal.h>
 
 
@@ -235,7 +236,7 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 		bat_flag, is_charger_exist,
 		upmu_get_reg_value(PMIC_RG_SYSTEM_INFO_CON0_ADDR));
 
-	gauge_dev->fg_hw_info.pl_charger_status = is_charger_exist;
+	get_mtk_battery()->hw_status.pl_charger_status = is_charger_exist;
 
 	if (is_charger_exist == 1) {
 		is_bat_plugout = 1;
@@ -718,7 +719,7 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 		g_fg_is_charger_exist = 0;
 
 	_hw_ocv = _hw_ocv_35_pon;
-	_sw_ocv = get_sw_ocv();
+	_sw_ocv = get_mtk_battery()->hw_status.sw_ocv;
 	_hw_ocv_src = FROM_6357_PON_ON;
 	_prev_hw_ocv = _hw_ocv;
 	_prev_hw_ocv_src = FROM_6357_PON_ON;

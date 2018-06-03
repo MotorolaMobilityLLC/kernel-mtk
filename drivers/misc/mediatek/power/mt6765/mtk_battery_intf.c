@@ -94,7 +94,7 @@ signed int battery_get_bat_current_mA(void)
 
 signed int battery_get_soc(void)
 {
-	return FG_status.soc;
+	return get_mtk_battery()->soc;
 }
 
 signed int battery_get_uisoc(void)
@@ -107,7 +107,7 @@ signed int battery_get_uisoc(void)
 		(boot_mode == ATE_FACTORY_BOOT))
 		return 75;
 
-	return FG_status.ui_soc;
+	return get_mtk_battery()->ui_soc;
 }
 
 signed int battery_get_bat_temperature(void)

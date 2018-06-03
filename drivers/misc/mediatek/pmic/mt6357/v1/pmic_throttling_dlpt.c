@@ -28,7 +28,7 @@
 #include "include/pmic.h"
 #include "include/pmic_throttling_dlpt.h"
 #include "include/pmic_auxadc.h"
-#include "include/pmic_lbat_service.h"
+#include <pmic_lbat_service.h>
 #include <mtk_idle.h>
 #include <mach/mtk_charger_init.h> /* for defined(SWCHR_POWER_PATH) */
 
@@ -1008,7 +1008,7 @@ int get_dlpt_imix(void)
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 	pr_info("[get_dlpt_imix] %d,%d,%d,%d,%d,%d,%d\n",
 		volt_avg, curr_avg, g_lbatInt1, ptim_rac_val_avg, imix,
-		BMT_status.SOC, battery_get_uisoc());
+		battery_get_soc(), battery_get_uisoc());
 #else
 	pr_info("[get_dlpt_imix] %d,%d,%d,%d,%d,NA,NA\n",
 		volt_avg, curr_avg, g_lbatInt1, ptim_rac_val_avg, imix);

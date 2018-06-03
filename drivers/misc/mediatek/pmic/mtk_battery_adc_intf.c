@@ -20,7 +20,7 @@
 #include <mach/mtk_pmic.h>
 
 #include <mtk_battery_internal.h>
-#include <mtk_charger_init.h>
+#include <mach/mtk_charger_init.h>
 #include <mtk_charger.h>
 
 int pmic_get_battery_voltage(void)

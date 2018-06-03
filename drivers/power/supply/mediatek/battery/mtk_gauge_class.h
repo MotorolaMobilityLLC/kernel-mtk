@@ -73,19 +73,39 @@ struct gauge_properties {
 	const char *alias_name;
 };
 
+/* exchange data between hal and driver */
 struct gauge_hw_status {
+
+	/* hwocv related */
 	int hw_ocv;
 	int sw_ocv;
-	int soc;
-	int ui_soc;
-	int nafg_vbat;
 	bool flag_hw_ocv_unreliable;
-	int is_bat_charging;
+
+	/* nafg info */
 	signed int sw_car_nafg_cnt;
 	signed int sw_car_nafg_dltv;
 	signed int sw_car_nafg_c_dltv;
+
+	/* ivag intr en/disable for hal */
 	int iavg_intr_flag;
+	int iavg_lt;
+	int iavg_ht;
+
+	/* boot status */
+	int pl_charger_status; /* for GM2.5 */
 };
+
+/* for gauge hal only */
+struct gauge_hw_info_data {
+	int current_1;
+	int current_2;
+	int current_avg;
+	int current_avg_sign;
+	int car;
+	int ncar;
+	int time;
+};
+
 
 struct gauge_ops {
 	int (*suspend)(struct gauge_device *, pm_message_t);
@@ -187,21 +207,6 @@ struct gauge_ops {
 		struct gauge_device *gauge_dev,
 		enum gauge_info ginfo, int *value);
 
-};
-
-struct gauge_hw_info_data {
-	int current_1;
-	int current_2;
-	int current_avg;
-	int current_avg_sign;
-	int car;
-	int ncar;
-	int time;
-	int iavg_lt;
-	int iavg_ht;
-
-	/* boot status */
-	int pl_charger_status; /* for GM2.5 */
 };
 
 struct gauge_device {

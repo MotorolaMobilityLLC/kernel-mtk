@@ -24,9 +24,9 @@ ifneq (,$(findstring evb,$(CONFIG_ARCH_MTK_PROJECT)))
 	subdir-ccflags-y += -DMTK_EVB_PLATFORM
 endif
 
-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery
-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
-
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-	obj-y += mtk_gauge_class.o mtk_gauge_coulomb_service.o mtk_battery_adc_intf.o
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
+obj-y += mtk_battery_adc_intf.o
 endif
