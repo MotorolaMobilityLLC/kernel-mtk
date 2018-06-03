@@ -785,6 +785,7 @@ int spm_mtcmos_ctrl_dis(int state)
 int spm_mtcmos_ctrl_mfg(int state)
 {
 	int err = 0;
+	int retry = 0;
 
 	/* TINFO="enable SPM register control" */
 	/*spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));*/
@@ -816,8 +817,9 @@ int spm_mtcmos_ctrl_mfg(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1) & MFG_PROT_BIT_ACK_2ND_MASK)
 			!= MFG_PROT_BIT_ACK_2ND_MASK) {
-				/*  */
-				/*  */
+			retry++;
+			if (retry > 100) /*check mfg idle status[20:19]*/
+				pr_err("%s:%08x\n", __func__, spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
 		}
 #endif
 		/* TINFO="Set SRAM_PDN = 1" */
