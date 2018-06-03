@@ -15,7 +15,7 @@
 
 #include <mtk_idle_mcdi.h>
 
-#include <mtk_mcdi_mt6758.h>
+#include <mcdi_v1/mtk_mcdi_mt6763.h>
 #include <mtk_mcdi_state.h>
 #include <mtk_mcdi_governor.h>
 
