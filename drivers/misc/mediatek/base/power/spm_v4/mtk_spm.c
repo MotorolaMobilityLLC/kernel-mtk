@@ -548,9 +548,11 @@ int __init spm_module_init(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_DRAMC
 	if (spm_golden_setting_cmp(1) != 0)
-		aee_kernel_warning("SPM Warring", "dram golden setting mismach");
+		aee_kernel_warning("SPM Warning", "dram golden setting mismach");
 #endif /* CONFIG_MTK_DRAMC */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
+
+	spm_phypll_mode_check();
 
 	ret = platform_driver_register(&spm_dev_drv);
 	if (ret) {
@@ -832,6 +834,22 @@ int spm_golden_setting_cmp(bool en)
 
 }
 #endif /* CONFIG_MTK_DRAMC */
+
+void spm_phypll_mode_check(void)
+{
+#if defined(CONFIG_MACH_MT6771)
+	unsigned int val = spm_read(SPM_POWER_ON_VAL0);
+
+	if ((val & (R0_SC_PHYPLL_MODE_SW_PCM | R0_SC_PHYPLL2_MODE_SW_PCM))
+			!= 0x1) {
+
+		aee_kernel_warning(
+			"SPM Warning",
+			"Invalid SPM_POWER_ON_VAL0: 0x%08x\n",
+			val);
+	}
+#endif
+}
 
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 void spm_pmic_power_mode(int mode, int force, int lock)
