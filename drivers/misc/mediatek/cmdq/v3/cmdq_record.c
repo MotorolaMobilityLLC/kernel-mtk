@@ -1010,6 +1010,7 @@ s32 cmdq_task_reset(struct cmdqRecStruct *handle)
 	cmdq_reset_v3_struct(handle);
 
 	handle->ctrl = cmdq_core_get_controller();
+	handle->state = TASK_STATE_IDLE;
 	handle->cmd_end = NULL;
 	handle->jump_replace = true;
 	handle->finalized = false;
@@ -1017,11 +1018,20 @@ s32 cmdq_task_reset(struct cmdqRecStruct *handle)
 	handle->use_sram_buffer = false;
 	handle->sram_owner_name = NULL;
 	handle->sram_base = 0;
-	handle->error_pass = false;
 	handle->node_private = NULL;
 	handle->engine_clk = 0;
 	handle->res_flag_acquire = 0;
 	handle->res_flag_release = 0;
+	handle->dumpAllocTime = 0;
+	handle->reorder = 0;
+	handle->submit = 0;
+	handle->trigger = 0;
+	handle->beginWait = 0;
+	handle->gotIRQ = 0;
+	handle->wakedUp = 0;
+	handle->durAlloc = 0;
+	handle->durReclaim = 0;
+	handle->durRelease = 0;
 
 	/* store caller info for debug */
 	if (current) {
@@ -1988,6 +1998,10 @@ s32 cmdq_task_destroy(struct cmdqRecStruct *handle)
 		dump_stack();
 		return -EINVAL;
 	}
+
+	CMDQ_MSG("release handle:0x%p state:%d exec:%d irq:%llu\n",
+		handle, handle->state, (s32)atomic_read(&handle->exec),
+		handle->gotIRQ);
 
 	if (handle->running_task)
 		cmdq_task_stop_loop(handle);

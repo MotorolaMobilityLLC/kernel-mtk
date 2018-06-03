@@ -115,6 +115,7 @@ struct cmdq_pkt {
 	u32			hw_priority;
 	struct cmdq_task_cb	cb;
 	u32			timeout;
+	struct cmdq_task_cb	err_cb;
 };
 
 extern int mtk_cmdq_log;

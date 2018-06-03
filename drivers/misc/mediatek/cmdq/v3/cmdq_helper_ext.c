@@ -692,6 +692,16 @@ bool cmdq_core_should_full_error(void)
 	return logLevel;
 }
 
+bool cmdq_core_aee_enable(void)
+{
+	return cmdq_ctx.aee;
+}
+
+void cmdq_core_set_aee(bool enable)
+{
+	cmdq_ctx.aee = enable;
+}
+
 s32 cmdq_core_profile_enabled(void)
 {
 	return cmdq_ctx.enableProfile;
@@ -3220,8 +3230,6 @@ static void cmdq_core_attach_cmdq_error(
 	CMDQ_ERR("============== [CMDQ] End of Error %d =============\n",
 		 cmdq_ctx.errNum);
 	cmdq_ctx.errNum++;
-
-	CMDQ_LOG("%s leave handle:0x%p thread:%d\n", __func__, handle, thread);
 }
 
 static void cmdq_core_release_nghandleinfo(struct cmdq_ng_handle_info *nginfo)
@@ -3826,8 +3834,6 @@ static void cmdq_core_replace_overwrite_instr(struct cmdqRecStruct *handle,
 	u32 *p_cmd_assign = (u32 *)cmdq_pkt_get_va_by_offset(handle->pkt,
 		(index - 1) * CMDQ_INST_SIZE);
 
-	CMDQ_LOG("enter %s, replace assign:0x%08x 0x%08x\n",
-		__func__, p_cmd_assign[0], p_cmd_assign[1]);
 	if ((p_cmd_assign[1] >> 24) == CMDQ_CODE_LOGIC &&
 		((p_cmd_assign[1] >> 23) & 1) == 1 &&
 		cmdq_core_get_subsys_id(p_cmd_assign[1]) ==
@@ -4634,8 +4640,8 @@ void cmdq_pkt_release_handle(struct cmdqRecStruct *handle)
 		handle->res_flag_release);
 
 	ref = atomic_dec_return(&handle->exec);
-	if (ref < 0) {
-		CMDQ_ERR("handle in idle:0x%p ref:%d thread:%d\n",
+	if (ref != 0) {
+		CMDQ_ERR("handle state not right:0x%p ref:%d thread:%d\n",
 			handle, ref, handle->thread);
 		mutex_lock(&cmdq_handle_list_mutex);
 		list_del_init(&handle->list_entry);
@@ -4662,6 +4668,28 @@ void cmdq_pkt_release_handle(struct cmdqRecStruct *handle)
 	mutex_unlock(&cmdq_handle_list_mutex);
 }
 
+static void cmdq_pkt_err_dump_handler(struct cmdq_cb_data data)
+{
+	struct cmdqRecStruct *handle = (struct cmdqRecStruct *)data.data;
+
+	if (!handle)
+		return;
+
+	if (!handle->loop && handle->gotIRQ) {
+		CMDQ_ERR(
+			"%s handle:0x%p irq already processed:%llu scene:%d thread:%d\n",
+			__func__, handle, handle->gotIRQ, handle->scenario,
+			handle->thread);
+		return;
+	}
+
+	if (data.err == -ETIMEDOUT) {
+		atomic_inc(&handle->exec);
+		cmdq_core_attach_error_handle(handle, TASK_STATE_TIMEOUT);
+		atomic_dec(&handle->exec);
+	}
+}
+
 static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 {
 	struct cmdqRecStruct *handle = (struct cmdqRecStruct *)data.data;
@@ -4669,6 +4697,21 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 
 	if (!handle)
 		return;
+
+	if (!handle->loop && handle->gotIRQ) {
+		CMDQ_ERR(
+			"%s handle:0x%p irq already processed:%llu scene:%d thread:%d\n",
+			__func__, handle, handle->gotIRQ, handle->scenario,
+			handle->thread);
+		return;
+	}
+
+	if (atomic_read(&handle->exec) > 1) {
+		CMDQ_ERR("irq during error dump:%d err:%d\n",
+			atomic_read(&handle->exec), data.err);
+		dump_stack();
+		return;
+	}
 
 	handle->gotIRQ = sched_clock();
 
@@ -4705,9 +4748,10 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 	client = cmdq_clients[handle->thread];
 
 	if (data.err == -ETIMEDOUT) {
-		cmdq_core_attach_error_handle(handle, TASK_STATE_TIMEOUT);
+		/* error dump may processed on error handler */
 		handle->state = TASK_STATE_TIMEOUT;
 	} else if (data.err == -ECONNABORTED) {
+		/* task killed */
 		handle->state = TASK_STATE_KILLED;
 	} else if (data.err < 0) {
 		/* IRQ with error, dump commands */
@@ -4798,8 +4842,9 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 
 		/* pre-dump */
 		CMDQ_LOG(
-			"===== SW timeout Pre-dump %d handle:0x%p pkt:0x%p thread:%d =====\n",
-			count, handle, handle->pkt, handle->thread);
+			"===== SW timeout Pre-dump %d handle:0x%p pkt:0x%p thread:%d state:%d =====\n",
+			count, handle, handle->pkt, handle->thread,
+			handle->state);
 		cmdq_core_dump_status(handle, "INFO");
 		cmdq_core_dump_pc(handle, handle->thread, "INFO");
 		cmdq_core_dump_thread(handle, handle->thread, "INFO");
@@ -4853,7 +4898,8 @@ static void cmdq_pkt_auto_release_work(struct work_struct *work)
 s32 cmdq_pkt_auto_release_task(struct cmdqRecStruct *handle)
 {
 	if (handle->thread == CMDQ_INVALID_THREAD) {
-		CMDQ_ERR("handle:0x%p pkt:0x%p invalid thread:%d scenario:%d\n",
+		CMDQ_ERR(
+			"handle:0x%p pkt:0x%p invalid thread:%d scenario:%d\n",
 			handle, handle->pkt, handle->thread, handle->scenario);
 		return -EINVAL;
 	}
@@ -4886,6 +4932,8 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 	/* assign user async flush callback */
 	handle->async_callback = cb;
 	handle->async_user_data = user_data;
+	handle->pkt->err_cb.cb = cmdq_pkt_err_dump_handler;
+	handle->pkt->err_cb.data = (void *)handle;
 
 	CMDQ_MSG("%s handle:0x%p client:0x%p pkt:0x%p thread:%d timeout:%d\n",
 		__func__, handle, client, handle->pkt, handle->thread,
@@ -4958,8 +5006,11 @@ s32 cmdq_pkt_flush_ex(struct cmdqRecStruct *handle)
 	s32 err;
 
 	err = cmdq_pkt_flush_async_ex_impl(handle, NULL, 0);
-	if (err < 0)
+	if (err < 0) {
+		CMDQ_ERR("handle:0x%p start flush failed err:%d\n",
+			handle, err);
 		return err;
+	}
 
 	err = cmdq_pkt_wait_flush_ex_result(handle);
 	if (err < 0)
@@ -5110,6 +5161,7 @@ void cmdq_core_initialize(void)
 
 	/* Reset overall context */
 	memset(&cmdq_ctx, 0x0, sizeof(cmdq_ctx));
+	cmdq_ctx.aee = true;
 
 	/* mark available threads */
 	for (index = 0; index < CMDQ_MAX_SCENARIO_COUNT; index++) {

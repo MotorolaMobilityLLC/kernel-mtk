@@ -5676,6 +5676,7 @@ struct random_data {
 	struct work_struct release_work;
 	struct thread_param *thread;
 	struct cmdqRecStruct *handle;
+	enum CMDQ_SCENARIO_ENUM scenario;
 	atomic_t *ref_count;
 	cmdqBackupSlotHandle slot;
 	u32 round;
@@ -5817,10 +5818,11 @@ static bool _append_op_poll(struct cmdqRecStruct *handle,
 	cmdq_op_poll(handle, dummy_poll_pa, poll_bit, poll_bit);
 
 	CMDQ_LOG(
-		"%s round:%u poll:0x%08x count:%u block size:%zu op size:%zu\n",
+		"%s round:%u poll:0x%08x count:%u block size:%zu op size:%zu scenario:%d\n",
 		__func__, data->round, poll_bit, data->poll_count,
 		handle->pkt->cmd_buf_size,
-		handle->pkt->cmd_buf_size - size_before);
+		handle->pkt->cmd_buf_size - size_before,
+		handle->scenario);
 
 	return true;
 }
@@ -6247,13 +6249,14 @@ static void _dump_stress_task_result(s32 status,
 			random_context->thread->multi_task,
 			random_context->thread->policy.engines_policy);
 		cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
-			" condition:%d conditions:%u status:%d poll:%d reg:0x%08x count:%u\n",
+			" condition:%d conditions:%u status:%d poll:%d reg:0x%08x count:%u exec:%d\n",
 			random_context->thread->policy.condition_policy,
 			random_context->condition_count,
 			status,
 			random_context->thread->policy.poll_policy,
 			poll_value,
-			random_context->poll_count);
+			random_context->poll_count,
+			atomic_read(&random_context->handle->exec));
 		CMDQ_TEST_FAIL("%s", long_msg);
 
 		/* wait other threads stop print messages */
@@ -6315,8 +6318,11 @@ void _testcase_on_exec_suspend(struct cmdqRecStruct *task, s32 thread)
 }
 
 #define MAX_RELEASE_QUEUE 4
-static u32 stress_engines[] = {CMDQ_ENG_MDP_CAMIN, CMDQ_ENG_MDP_RDMA0,
+static const u32 stress_engines[] = {CMDQ_ENG_MDP_CAMIN, CMDQ_ENG_MDP_RDMA0,
 	CMDQ_ENG_MDP_RDMA1, CMDQ_ENG_MDP_WROT0, CMDQ_ENG_MDP_WROT1};
+static const enum CMDQ_SCENARIO_ENUM stress_scene[] = {
+	CMDQ_SCENARIO_DEBUG_MDP, CMDQ_SCENARIO_DEBUG,
+	CMDQ_SCENARIO_PRIMARY_DISP, CMDQ_SCENARIO_SUB_DISP};
 
 static s32 _testcase_gen_task_thread_each(void *data, u32 task_count,
 	atomic_t *task_ref_count, u32 engine_sel, bool ignore_timeout,
@@ -6352,6 +6358,8 @@ static s32 _testcase_gen_task_thread_each(void *data, u32 task_count,
 	random_context->slot_count = max_slot_count;
 	random_context->slot_expect_values = kzalloc(total_slot *
 		sizeof(*random_context->slot_expect_values), GFP_KERNEL);
+	random_context->scenario =
+		stress_scene[get_random_int() % ARRAY_SIZE(stress_scene)];
 	cmdq_alloc_mem(&random_context->slot, total_slot);
 	for (i = 0; i < reserve_slot_count; i++) {
 		/*
@@ -6366,13 +6374,15 @@ static s32 _testcase_gen_task_thread_each(void *data, u32 task_count,
 		random_context->slot_expect_values[i] = i;
 	}
 
-	cmdq_task_create(CMDQ_SCENARIO_DEBUG_MDP, &handle);
+	/* if final result is 0xff000000, this task never run */
+	cmdq_cpu_write_mem(random_context->slot, 0, 0xff000000);
+
+	cmdq_task_create(random_context->scenario, &handle);
 	cmdq_task_reset(handle);
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	cmdq_task_set_secure(handle, is_secure);
 #endif
 	cmdq_task_set_timeout(handle, thread_data->task_timeout);
-	handle->error_pass = ignore_timeout;
 	random_context->handle = handle;
 
 	/* variable for final result */
@@ -6503,12 +6513,13 @@ static s32 _testcase_gen_task_thread_each(void *data, u32 task_count,
 		atomic_inc(task_ref_count);
 
 		CMDQ_LOG(
-			"Round:%u handle:0x%p pkt:0x%p thread:%d size:%zu ref:%u start async\n",
+			"Round:%u handle:0x%p pkt:0x%p thread:%d size:%zu ref:%u scenario:%d start async\n",
 			task_count, random_context->handle,
 			random_context->handle->pkt,
 			random_context->handle->thread,
 			random_context->handle->pkt->cmd_buf_size,
-			(u32)atomic_read(task_ref_count));
+			(u32)atomic_read(task_ref_count),
+			random_context->handle->scenario);
 	} else {
 		/* sync flush case, will blocking worker */
 		INIT_WORK(&random_context->release_work,
@@ -6516,10 +6527,11 @@ static s32 _testcase_gen_task_thread_each(void *data, u32 task_count,
 		atomic_inc(task_ref_count);
 
 		CMDQ_LOG(
-			"Round:%u handle:0x%p pkt:0x%p size:%zu ref:%u start sync\n",
+			"Round:%u handle:0x%p pkt:0x%p size:%zu ref:%u scenario:%d start sync\n",
 			task_count, handle, handle->pkt,
 			handle->pkt->cmd_buf_size,
-			(u32)atomic_read(task_ref_count));
+			(u32)atomic_read(task_ref_count),
+			handle->scenario);
 	}
 
 	queue_work(release_queues[get_random_int() % MAX_RELEASE_QUEUE],
@@ -6686,6 +6698,7 @@ static void testcase_gen_random_case(bool multi_task,
 
 	/* remove smi dump */
 	virtual_func->dumpSMI = dummy_dump_smi;
+	cmdq_core_set_aee(!_stress_is_ignore_timeout(&policy));
 
 	random_thread.multi_task = multi_task;
 	random_thread.policy = policy;
@@ -6733,6 +6746,7 @@ static void testcase_gen_random_case(bool multi_task,
 
 	/* restore smi dump */
 	virtual_func->dumpSMI = dump_smi_func;
+	cmdq_core_set_aee(true);
 
 	CMDQ_LOG("%s END\n", __func__);
 }
@@ -6857,8 +6871,7 @@ enum CMDQ_TESTCASE_ENUM {
 static void testcase_general_handling(s32 testID)
 {
 	u32 i = 0;
-	/* Turn on GCE clock to make sure GPR is always alive */
-	cmdq_dev_enable_gce_clock(true);
+
 	switch (testID) {
 	case 304:
 		testcase_stress_reorder();
@@ -7180,8 +7193,6 @@ static void testcase_general_handling(s32 testID)
 			 gCmdqTestSecure, gCmdqTestConfig[0]);
 		break;
 	}
-	/* Turn off GCE clock */
-	cmdq_dev_enable_gce_clock(false);
 }
 
 ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
@@ -7203,6 +7214,9 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 
 	/* trigger test case here */
 	CMDQ_MSG("//\n//\n//\ncmdq_test_proc\n");
+
+	/* Turn on GCE clock to make sure GPR is always alive */
+	cmdq_dev_enable_gce_clock(true);
 
 	cmdq_get_func()->testSetup();
 
@@ -7240,6 +7254,9 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 	}
 
 	cmdq_get_func()->testCleanup();
+
+	/* Turn off GCE clock */
+	cmdq_dev_enable_gce_clock(false);
 
 	CMDQ_MSG("cmdq_test_proc ended\n");
 	return 0;

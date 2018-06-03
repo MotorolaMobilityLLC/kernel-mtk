@@ -91,6 +91,7 @@ struct cmdq_thread {
 	bool			atomic_exec;
 	u32			idx;
 	struct work_struct	timeout_work;
+	bool			dirty;
 };
 
 struct cmdq_task {
@@ -370,6 +371,17 @@ static void cmdq_task_callback(struct cmdq_pkt *pkt, s32 err)
 	}
 }
 
+static void cmdq_task_err_callback(struct cmdq_pkt *pkt, s32 err)
+{
+	struct cmdq_cb_data cmdq_cb_data;
+
+	if (pkt->err_cb.cb) {
+		cmdq_cb_data.err = err;
+		cmdq_cb_data.data = pkt->cb.data;
+		pkt->err_cb.cb(cmdq_cb_data);
+	}
+}
+
 #ifdef CMDQ_MEMORY_JUMP
 void cmdq_task_unmap_dma(struct device *dev, struct cmdq_pkt *pkt)
 {
@@ -556,7 +568,14 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		writel(last_task->pa_base + last_task->pkt->cmd_buf_size,
 		       thread->base + CMDQ_THR_END_ADDR);
 #endif
-		cmdq_thread_resume(thread);
+
+		if (thread->dirty) {
+			cmdq_err("new task during error on thread:%u",
+				thread->idx);
+		} else {
+			/* safe to go */
+			cmdq_thread_resume(thread);
+		}
 	}
 }
 
@@ -851,6 +870,12 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 		return;
 	}
 
+	if (thread->dirty) {
+		cmdq_log("task in error dump thread:%u pkt:0x%p",
+			thread->idx, task->pkt);
+		return;
+	}
+
 	list_for_each_entry_safe(task, tmp, &thread->task_busy_list,
 				 list_entry) {
 #ifdef CMDQ_MEMORY_JUMP
@@ -869,6 +894,10 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 #endif
 
 		if (!curr_task || curr_pa == task_end_pa - CMDQ_INST_SIZE) {
+			if (curr_task && (curr_pa != task_end_pa)) {
+				cmdq_err("remove task that not ending pkt:0x%p 0x%08x:0x%08x",
+					curr_task->pkt, curr_pa, task_end_pa);
+			}
 			cmdq_task_exec_done(task, 0);
 			kfree(task);
 		} else if (err) {
@@ -963,11 +992,10 @@ static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 		return;
 	}
 
-	cmdq_err("timeout");
 	pa_curr = readl(thread->base + CMDQ_THR_CURR_ADDR);
 
 	list_for_each_entry_safe(task, tmp, &thread->task_busy_list,
-				 list_entry) {
+		list_entry) {
 #ifdef CMDQ_MEMORY_JUMP
 		bool curr_task = cmdq_task_is_current_run(pa_curr, task->pkt);
 #else
@@ -985,31 +1013,29 @@ static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 			break;
 		}
 
+		cmdq_msg("ending not curr in timeout pkt:0x%p curr_pa:0x%08x",
+			task->pkt, pa_curr);
 		cmdq_task_exec_done(task, 0);
 		kfree(task);
-
-		if (curr_task && !cmdq->suspended)
-			break;
 	}
 
 	if (timeout_task) {
+		thread->dirty = true;
 		spin_unlock_irqrestore(&thread->chan->lock, flags);
 
-		/* timeout task handling */
-		cmdq_task_callback(timeout_task->pkt, -ETIMEDOUT);
-#ifdef CMDQ_MEMORY_JUMP
-		cmdq_task_unmap_dma(timeout_task->cmdq->mbox.dev,
-			timeout_task->pkt);
-#else
-		dma_unmap_single(timeout_task->cmdq->mbox.dev,
-			timeout_task->pa_base,
-			timeout_task->pkt->cmd_buf_size, DMA_TO_DEVICE);
-#endif
+		cmdq_task_err_callback(timeout_task->pkt, -ETIMEDOUT);
 
 		spin_lock_irqsave(&thread->chan->lock, flags);
+		thread->dirty = false;
 
-		list_del(&timeout_task->list_entry);
-		kfree(timeout_task);
+		task = list_first_entry_or_null(&thread->task_busy_list,
+			struct cmdq_task, list_entry);
+		if (timeout_task == task) {
+			cmdq_task_exec_done(task, -ETIMEDOUT);
+			kfree(task);
+		} else {
+			cmdq_err("task list changed");
+		}
 	}
 
 	task = list_first_entry_or_null(&thread->task_busy_list,
@@ -1032,8 +1058,8 @@ static void cmdq_thread_handle_timeout(unsigned long data)
 	struct cmdq_thread *thread = (struct cmdq_thread *)data;
 	struct cmdq *cmdq = container_of(thread->chan->mbox, struct cmdq, mbox);
 
-	INIT_WORK(&thread->timeout_work, cmdq_thread_handle_timeout_work);
-	queue_work(cmdq->timeout_wq, &thread->timeout_work);
+	if (!work_pending(&thread->timeout_work))
+		queue_work(cmdq->timeout_wq, &thread->timeout_work);
 }
 
 void cmdq_thread_remove_task(struct mbox_chan *chan,
@@ -1073,7 +1099,6 @@ void cmdq_thread_remove_task(struct mbox_chan *chan,
 		return;
 	}
 
-	cmdq_err("timeout");
 	pa_curr = readl(thread->base + CMDQ_THR_CURR_ADDR);
 
 	list_for_each_entry_safe(task, tmp, &thread->task_busy_list,
@@ -1084,6 +1109,14 @@ void cmdq_thread_remove_task(struct mbox_chan *chan,
 		curr_task = cmdq_task_is_current_run(pa_curr, task->pkt);
 		if (list_is_last(&task->list_entry, &thread->task_busy_list))
 			last_task = true;
+
+		if (task == list_first_entry(&thread->task_busy_list,
+			typeof(*task), list_entry) &&
+			thread->dirty) {
+			/* task during error handling, skip */
+			spin_unlock_irqrestore(&thread->chan->lock, flags);
+			return;
+		}
 
 		cmdq_task_exec_done(task, curr_task ? -ECONNABORTED : 0);
 		kfree(task);
@@ -1313,6 +1346,8 @@ static int cmdq_probe(struct platform_device *pdev)
 		cmdq->thread[i].timeout.data = (unsigned long)&cmdq->thread[i];
 		cmdq->thread[i].idx = i;
 		cmdq->mbox.chans[i].con_priv = &cmdq->thread[i];
+		INIT_WORK(&cmdq->thread[i].timeout_work,
+			cmdq_thread_handle_timeout_work);
 	}
 
 	err = mbox_controller_register(&cmdq->mbox);
