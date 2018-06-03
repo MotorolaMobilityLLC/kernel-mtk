@@ -533,7 +533,7 @@ static int __maybe_unused compare_dsi_checksum(unsigned long unused)
 	}
 
 	if (cksum_golden != cksum)
-		pr_err("%s fail, cksum=0x%08x, golden=0x%08x\n", __func__, cksum, cksum_golden);
+		DISPERR("%s fail, cksum=0x%08x, golden=0x%08x\n", __func__, cksum, cksum_golden);
 
 	return 0;
 }
@@ -674,7 +674,7 @@ static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 		check_dsi_checksum();
 
 		if (unlikely(basic_test_cancel)) {
-			pr_err("%s stop because fatal signal\n", __func__);
+			DISPERR("%s stop because fatal signal\n", __func__);
 			break;
 		}
 	}
@@ -748,7 +748,7 @@ static void process_dbg_opt(const char *opt)
 		tmp += i + 1;
 		ret = sscanf(tmp, "%d\n", &value);
 		if (ret != 1) {
-			pr_err("error to parse cmd %s: %s %s ret=%d\n", opt, option, tmp, ret);
+			DISPERR("error to parse cmd %s: %s %s ret=%d\n", opt, option, tmp, ret);
 			return;
 		}
 
@@ -760,7 +760,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = sscanf(opt, "switch_mode:%d\n", &sess_mode);
 		if (ret != 1) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 
@@ -780,7 +780,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &clk);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		DISPCHECK("clk_change:%d\n", clk);
@@ -791,7 +791,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &pattern);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 
@@ -816,7 +816,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &blank);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		if (blank)
@@ -830,7 +830,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = sscanf(opt, "force_fps:%d,%d\n", &keep, &skip);
 		if (ret != 2) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 
@@ -891,7 +891,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = sscanf(opt, "lfr_setting:%d,%d\n", &enable, &mode);
 		if (ret != 2) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		DDPMSG("--------------enable/disable lfr--------------\n");
@@ -910,7 +910,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &method);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		primary_display_vsync_switch(method);
@@ -921,7 +921,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &clk);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 	} else if (strncmp(opt, "dst_switch:", 11) == 0) {
@@ -930,7 +930,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &mode);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		primary_display_switch_dst_mode(mode % 2);
@@ -941,7 +941,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &mode);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, mode % 2);
@@ -956,7 +956,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &option);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		dprec_handle_option(option);
@@ -966,7 +966,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &maxlayer);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 
@@ -982,7 +982,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &enable);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		primary_display_esd_check_enable(enable);
@@ -994,7 +994,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &mode);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		set_esd_check_mode(mode);
@@ -1032,7 +1032,7 @@ static void process_dbg_opt(const char *opt)
 			ret = sscanf(opt, "dump_layer:on,%d,%d,%d\n",
 				     &gCapturePriLayerDownX, &gCapturePriLayerDownY, &gCapturePriLayerNum);
 			if (ret != 3) {
-				pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+				DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 				return;
 			}
 
@@ -1057,7 +1057,7 @@ static void process_dbg_opt(const char *opt)
 			ret = sscanf(opt, "dump_wdma_layer:on,%d,%d\n",
 				     &gCapturePriLayerDownX, &gCapturePriLayerDownY);
 			if (ret != 2) {
-				pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+				DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 				return;
 			}
 
@@ -1079,7 +1079,7 @@ static void process_dbg_opt(const char *opt)
 			ret = sscanf(opt, "dump_rdma_layer:on,%d,%d\n",
 				     &gCapturePriLayerDownX, &gCapturePriLayerDownY);
 			if (ret != 2) {
-				pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+				DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 				return;
 			}
 
@@ -1102,7 +1102,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = kstrtouint(p, 0, &flg);
 		if (ret) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		enable_idlemgr(flg);
@@ -1120,7 +1120,7 @@ static void process_dbg_opt(const char *opt)
 		ret = kstrtoul(p, 10, &disp_mode);
 		gTriggerDispMode = (int)disp_mode;
 		if (ret)
-			pr_err("DISP/%s: errno %d\n", __func__, ret);
+			DISPERR("DISP/%s: errno %d\n", __func__, ret);
 
 		DISPMSG("DDP: gTriggerDispMode=%d\n", gTriggerDispMode);
 	} else if (strncmp(opt, "disp_force_idle:", 16) == 0) {
@@ -1178,7 +1178,7 @@ static void process_dbg_opt(const char *opt)
 			     &layer_num, &layer_en_mask, &w, &h, &fmt, &frame_num, &vsync_num,
 			     &x, &y, &r, &g, &b, &a, &mode, &cksum);
 		if (ret != 15 && ret != 1) {
-			pr_err("error to parse cmd %s, ret=%d\n", opt, ret);
+			DISPERR("error to parse cmd %s, ret=%d\n", opt, ret);
 			return;
 		}
 		if (ret == 1 && layer_num == 0) {
@@ -1205,7 +1205,7 @@ static void process_dbg_opt(const char *opt)
 
 		ret = sscanf(opt, "pan_disp_test:%d,%d\n", &frame_num, &bpp);
 		if (ret != 2) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 
@@ -1231,14 +1231,14 @@ static void process_dbg_opt(const char *opt)
 
 		ret = sscanf(opt, "scenario:%d\n", &scen);
 		if (ret != 1) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		primary_display_set_scenario(scen);
 	} else if (strncmp(opt, "layout_noncontinous:", 20) == 0) {
 		ret = sscanf(opt, "layout_noncontinuous:%d\n", &layer_layout_allow_non_continuous);
 		if (ret != 1) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 	} else if (strncmp(opt, "idle_wait:", 10) == 0) {
@@ -1252,7 +1252,7 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "layer_statistic:", 16) == 0) {
 		ret = sscanf(opt, "layer_statistic:%d\n", &layer_statistic_enable);
 		if (ret != 1) {
-			pr_err("%d error to parse cmd %s\n", __LINE__, opt);
+			DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
 		if (!layer_statistic_enable)
@@ -1298,7 +1298,31 @@ static void process_dbg_opt(const char *opt)
 			save_bmp("/sdcard/dump_output.bmp", composed_buf, width, height);
 		} else
 			DISPERR("error to parse cmd %s\n", opt);
+	} else if (strncmp(opt, "debugger", 8) == 0) {
+		if (strncmp(opt, "debugger_size:", 14) == 0) {
+			ret = sscanf(opt, "debugger_size:%d\n", &debugger_buffer_size);
+			if (ret != 1) {
+				DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
+				return;
+			}
+		} else if (strncmp(opt, "debugger_time:", 14) == 0) {
+			ret = sscanf(opt, "debugger_time:%d\n", &debugger_sleep_ms);
+			if (ret != 1) {
+				DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
+				return;
+			}
+		} else if (strncmp(opt, "debugger_run:", 13) == 0) {
+			ret = sscanf(opt, "debugger_run:%d\n", &debugger_running);
+			if (ret != 1) {
+				DISPERR("%d error to parse cmd %s\n", __LINE__, opt);
+				return;
+			}
+			if (debugger_running)
+				wake_up_interruptible(&debugger_running_wq);
+		}
 	}
+
+
 }
 
 
