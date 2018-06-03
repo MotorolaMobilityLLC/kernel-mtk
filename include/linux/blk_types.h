@@ -87,6 +87,19 @@ struct bio {
 
 	unsigned short		bi_vcnt;	/* how many bio_vec's */
 
+#ifdef CONFIG_MTK_HW_FDE
+	/*
+	 * MTK PATH:
+	 *
+	 * Indicating this bio request needs encryption or decryption by
+	 * HW FDE (Full Disk Encryption) engine.
+	 *
+	 * Set by DM Crypt.
+	 * Quried by HW FDE engine driver, e.g., eMMC/UFS.
+	 */
+	unsigned int		bi_hw_fde;
+#endif
+
 	/*
 	 * Everything starting with bi_max_vecs will be preserved by bio_reset()
 	 */
