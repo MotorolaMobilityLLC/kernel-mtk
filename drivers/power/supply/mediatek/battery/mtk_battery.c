@@ -604,27 +604,32 @@ static int _get_ptim_rac_val(void)
 
 static void disable_fg(void)
 {
-	pmic_enable_interrupt(FG_BAT1_INT_L_NO, 0, "GM30");
-	pmic_enable_interrupt(FG_BAT1_INT_H_NO, 0, "GM30");
+	if (gauge_get_hw_version() >= GAUGE_HW_V1000) {
+		pmic_enable_interrupt(FG_RG_INT_EN_NAG_C_DLTV, 0, "GM30");
+		pmic_enable_interrupt(FG_ZCV_NO, 0, "GM30");
+	}
 
-	pmic_enable_interrupt(FG_BAT0_INT_L_NO, 0, "GM30");
-	pmic_enable_interrupt(FG_BAT0_INT_H_NO, 0, "GM30");
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
+		pmic_enable_interrupt(FG_BAT1_INT_L_NO, 0, "GM30");
+		pmic_enable_interrupt(FG_BAT1_INT_H_NO, 0, "GM30");
 
-	pmic_enable_interrupt(FG_N_CHARGE_L_NO, 0, "GM30");
+		pmic_enable_interrupt(FG_BAT0_INT_L_NO, 0, "GM30");
+		pmic_enable_interrupt(FG_BAT0_INT_H_NO, 0, "GM30");
 
-	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
-	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
+		pmic_enable_interrupt(FG_N_CHARGE_L_NO, 0, "GM30");
 
-	pmic_enable_interrupt(FG_ZCV_NO, 0, "GM30");
+		pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
+		pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
 
-	pmic_enable_interrupt(FG_BAT_PLUGOUT_NO, 0, "GM30");
-	pmic_enable_interrupt(FG_RG_INT_EN_NAG_C_DLTV, 0, "GM30");
+		pmic_enable_interrupt(FG_BAT_PLUGOUT_NO, 0, "GM30");
 
-	pmic_enable_interrupt(FG_RG_INT_EN_BAT_TEMP_H, 0, "GM30");
-	pmic_enable_interrupt(FG_RG_INT_EN_BAT_TEMP_L, 0, "GM30");
+		pmic_enable_interrupt(FG_RG_INT_EN_BAT_TEMP_H, 0, "GM30");
+		pmic_enable_interrupt(FG_RG_INT_EN_BAT_TEMP_L, 0, "GM30");
 
-	pmic_enable_interrupt(FG_RG_INT_EN_BAT2_H, 0, "GM30");
-	pmic_enable_interrupt(FG_RG_INT_EN_BAT2_L, 0, "GM30");
+		pmic_enable_interrupt(FG_RG_INT_EN_BAT2_H, 0, "GM30");
+		pmic_enable_interrupt(FG_RG_INT_EN_BAT2_L, 0, "GM30");
+	}
+
 	gDisableGM30 = 1;
 	FG_status.ui_soc = 50;
 }
