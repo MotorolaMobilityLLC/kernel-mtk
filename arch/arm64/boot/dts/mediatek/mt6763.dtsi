@@ -1009,9 +1009,8 @@
 		reg = <0 0x11007000 0 0x1000>,
 			<0 0x11000100 0 0x80>;
 		interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C0>, <&infrasys INFRA_AP_DMA>;
-		 *clock-names = "main", "dma";
-		 */
+		clocks = <&infracfg_ao INFRACFG_AO_I2C0_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
+		clock-names = "main", "dma";
 		clock-div = <5>;
 	};
 
@@ -1021,10 +1020,9 @@
 		reg = <0 0x11014000 0 0x1000>,
 			<0 0x11000380 0 0x80>;
 		interrupts = <GIC_SPI 131 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C1_IMM>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C1_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&infracfg_ao INFRACFG_AO_I2C1_IMM_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>,
+					<&infracfg_ao INFRACFG_AO_I2C1_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
 	};
 
@@ -1034,47 +1032,43 @@
 		reg = <0 0x11015000 0 0x1000>,
 			<0 0x11000400 0 0x80>;
 		interrupts = <GIC_SPI 132 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C2_IMM>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C2_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&infracfg_ao INFRACFG_AO_I2C2_IMM_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>,
+					<&infracfg_ao INFRACFG_AO_I2C2_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
 	};
 
-	i2c3: i2c@1100f000 {
+	i2c5: i2c@1100f000 {
 		compatible = "mediatek,mt6763-i2c";
-		id = <3>;
+		id = <5>;
 		reg = <0 0x1100f000 0 0x1000>,
 			<0 0x11000280 0 0x80>;
 		interrupts = <GIC_SPI 87 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C3>, <&infrasys INFRA_AP_DMA>;
-		 *clock-names = "main", "dma";
-		 */
+		clocks = <&infracfg_ao INFRACFG_AO_I2C3_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
+		clock-names = "main", "dma";
 		clock-div = <5>;
 	};
 
-	i2c4: i2c@11011000 {
+	i2c3: i2c@11011000 {
 		compatible = "mediatek,mt6763-i2c";
-		id = <4>;
+		id = <3>;
 		reg = <0 0x11011000 0 0x1000>,
 			<0 0x11000300 0 0x80>;
 		interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C5_IMM>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C5_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&infracfg_ao INFRACFG_AO_I2C4_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
+		clock-names = "main", "dma";
 		clock-div = <5>;
 	};
 
-	i2c5: i2c@11017000 {
+	i2c4: i2c@11017000 {
 		compatible = "mediatek,mt6763-i2c";
-		id = <5>;
+		id = <4>;
 		reg = <0 0x11017000 0 0x1000>,
 			<0 0x11000500 0 0x80>;
 		interrupts = <GIC_SPI 133 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C_APPM>, <&infrasys INFRA_AP_DMA>;
-		 *clock-names = "main", "dma";
-		 */
+		clocks = <&infracfg_ao INFRACFG_AO_I2C5_IMM_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>,
+					<&infracfg_ao INFRACFG_AO_I2C5_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
 	};
 
@@ -1084,12 +1078,9 @@
 		reg = <0 0x11005000 0 0x1000>,
 			<0 0x11000580 0 0x80>;
 		interrupts = <GIC_SPI 89 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C1>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C1_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&infracfg_ao INFRACFG_AO_I2C6_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
+		clock-names = "main", "dma";
 		clock-div = <5>;
-		mediatek,appm_used;
 	};
 
 	i2c7: i2c@11008000 {
@@ -1098,10 +1089,9 @@
 		reg = <0 0x11008000 0 0x1000>,
 			<0 0x11000180 0 0x80>;
 		interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C2>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C2_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&infracfg_ao INFRACFG_AO_I2C1_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>,
+					<&infracfg_ao INFRACFG_AO_I2C1_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
 		mediatek,buffermode_used;
 	};
@@ -1112,10 +1102,8 @@
 		reg = <0 0x11009000 0 0x1000>,
 			<0 0x11000200 0 0x80>;
 		interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C5>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C5_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&infracfg_ao INFRACFG_AO_I2C2_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>,
+					<&infracfg_ao INFRACFG_AO_I2C2_ARBITER_CG>;
 		clock-div = <5>;
 		mediatek,buffermode_used;
 	};
@@ -1126,10 +1114,9 @@
 		reg = <0 0x11016000 0 0x1000>,
 			<0 0x11000480 0 0x80>;
 		interrupts = <GIC_SPI 130 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C5>, <&infrasys INFRA_AP_DMA>,
-		 *			<&infrasys INFRA_I2C5_ARB>;
-		 *clock-names = "main", "dma", "arb";
-		 */
+		clocks = <&infracfg_ao INFRACFG_AO_I2C5_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>,
+					<&infracfg_ao INFRACFG_AO_I2C5_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
 		mediatek,buffermode_used;
 	};
