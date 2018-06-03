@@ -16,6 +16,7 @@
 
 #include "kd_camera_feature.h"
 #include "kd_imgsensor_define.h"
+#define MIPI_SWITCH
 
 /******************************************************************************
  * Debug configuration

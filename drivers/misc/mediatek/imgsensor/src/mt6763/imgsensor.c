@@ -41,6 +41,16 @@
 #include "ccu_inc.h"
 #endif
 
+/***/
+#include <mt-plat/sync_write.h>
+#include <linux/of_platform.h>  /* for device tree */
+#include <linux/of_irq.h>       /* for device tree */
+#include <linux/of_address.h>   /* for device tree */
+#define ISP_WR32(addr, data)    mt_reg_sync_writel(data, addr)
+#define ISP_RD32(addr)                  ioread32((void *)addr)
+void __iomem *hw_trapping_resolve;
+/***/
+
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
@@ -2143,6 +2153,23 @@ static struct platform_driver gimgsensor_platform_driver = {
   *=======================================================================*/
 static int __init imgsensor_init(void)
 {
+	/***/
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,gpio"); /* 10005000 */
+	if (!node) {
+		PK_ERR("find mediatek,seninf1 node failed!!!\n");
+		return -ENODEV;
+	}
+	hw_trapping_resolve = of_iomap(node, 0);
+	if (!hw_trapping_resolve) {
+		PK_ERR("unable to map ISP_SENINF0_BASE registers!!!\n");
+		return -ENODEV;
+	}
+	ISP_WR32((hw_trapping_resolve+0x06b0), 0x83); /* 0x100056B0[7:0]=  8'h83 */
+	PK_DBG("hw_trapping_resolve:(0x%x)\n", ISP_RD32(hw_trapping_resolve+0x06b0));
+	/***/
+
 	PK_DBG("[camerahw_probe] start\n");
 
 	if (platform_driver_register(&gimgsensor_platform_driver)) {

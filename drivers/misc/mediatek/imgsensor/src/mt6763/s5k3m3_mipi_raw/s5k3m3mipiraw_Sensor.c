@@ -19,7 +19,7 @@
  *
  * Project:
  * --------
- *	 ALPS MT6735
+ *	 ALPS MT6763
  *
  * Description:
  * ------------
@@ -733,8 +733,7 @@ static void check_stremoff(kal_uint16 fps)
 		framecnt = read_cmos_sensor_byte(0x0005);
 		if (framecnt == 0xFF)
 			return;
-		else
-			mdelay(1);
+		mdelay(1);
 	}
 	LOG_INF(" Stream Off Fail1!\n");
 }

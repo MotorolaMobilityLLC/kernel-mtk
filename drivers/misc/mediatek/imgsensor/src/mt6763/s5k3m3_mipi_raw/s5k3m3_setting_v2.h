@@ -397,9 +397,6 @@ static void preview_setting_v2(kal_uint16 fps)
 	write_cmos_sensor(0X30E2, 0X0000);
 	write_cmos_sensor(0X317A, 0X0007);
 #endif
-	write_cmos_sensor(0x30D4, 0x0300);
-	write_cmos_sensor(0x30D2, 0x0004);
-	write_cmos_sensor(0x30D6, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x2F34);
 	write_cmos_sensor(0x6F12, 0x0100);
@@ -481,9 +478,6 @@ static void capture_setting_v2(kal_uint16 currefps)
 	write_cmos_sensor(0X30E2, 0X0000);
 	write_cmos_sensor(0X317A, 0X0007);
 #endif
-	write_cmos_sensor(0x30D4, 0x0300);
-	write_cmos_sensor(0x30D2, 0x0004);
-	write_cmos_sensor(0x30D6, 0x0100);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x2F34);
 	write_cmos_sensor(0x6F12, 0x0000);
@@ -550,9 +544,6 @@ static void hs_video_setting_v2(kal_uint16 fps)
 	write_cmos_sensor(0x6028, 0x4000);
 	write_cmos_sensor(0x30E2, 0x0000);
 	write_cmos_sensor(0x317A, 0x0007);
-	write_cmos_sensor(0x30D4, 0x0300);
-	write_cmos_sensor(0x30D2, 0x0004);
-	write_cmos_sensor(0x30D6, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x2F34);
 	write_cmos_sensor(0x6F12, 0x0100);
@@ -620,9 +611,6 @@ static void slim_video_setting_v2(kal_uint16 fps)
 	write_cmos_sensor(0x6028, 0x4000);
 	write_cmos_sensor(0x30E2, 0x0000);
 	write_cmos_sensor(0x317A, 0x0007);
-	write_cmos_sensor(0x30D4, 0x0300);
-	write_cmos_sensor(0x30D2, 0x0004);
-	write_cmos_sensor(0x30D6, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x2F34);
 	write_cmos_sensor(0x6F12, 0x0100);
@@ -703,9 +691,6 @@ static void custom1_setting_v2(kal_uint16 fps)
 	write_cmos_sensor(0X30E2, 0X0000);
 	write_cmos_sensor(0X317A, 0X0007);
 #endif
-	write_cmos_sensor(0x30D4, 0x0300);
-	write_cmos_sensor(0x30D2, 0x0004);
-	write_cmos_sensor(0x30D6, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x2F34);
 	write_cmos_sensor(0x6F12, 0x0000);
@@ -786,9 +771,6 @@ static void custom2_setting_v2(kal_uint16 fps)
 	write_cmos_sensor(0X30E2, 0X0000);
 	write_cmos_sensor(0X317A, 0X0007);
 #endif
-	write_cmos_sensor(0x30D4, 0x0300);
-	write_cmos_sensor(0x30D2, 0x0004);
-	write_cmos_sensor(0x30D6, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x2F34);
 	write_cmos_sensor(0x6F12, 0x0100);

@@ -108,19 +108,19 @@ static enum IMGSENSOR_RETURN gpio_set(
 
 #ifdef  MIPI_SWITCH
 	if(pin == IMGSENSOR_HW_PIN_MIPI_SWITCH_EN)
-		ppinctrl_state = &pgpio->ppinctrl_state[GPIO_CTRL_STATE_MIPI_SWITCH_EN_H] + gpio_state;
+		ppinctrl_state = pgpio->ppinctrl_state[GPIO_CTRL_STATE_MIPI_SWITCH_EN_H + gpio_state];
 	else if(pin == IMGSENSOR_HW_PIN_MIPI_SWITCH_SEL)
-		ppinctrl_state = &pgpio->ppinctrl_state[GPIO_CTRL_STATE_MIPI_SWITCH_SEL_H] + gpio_state;
+		ppinctrl_state = pgpio->ppinctrl_state[GPIO_CTRL_STATE_MIPI_SWITCH_SEL_H + gpio_state];
 	else
 #endif
-
-	ctrl_state_offset = (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN) ? GPIO_CTRL_STATE_CAM0_PDN_H :
+	{
+		ctrl_state_offset = (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN) ? GPIO_CTRL_STATE_CAM0_PDN_H :
 						(sensor_idx == IMGSENSOR_SENSOR_IDX_SUB)  ? GPIO_CTRL_STATE_CAM1_PDN_H :
 																	GPIO_CTRL_STATE_CAM2_PDN_H;
 
-	ppinctrl_state = pgpio->ppinctrl_state[ctrl_state_offset +
+		ppinctrl_state = pgpio->ppinctrl_state[ctrl_state_offset +
 					((pin - IMGSENSOR_HW_PIN_PDN) << 1) + gpio_state];
-
+	}
 	if (!IS_ERR(ppinctrl_state))
 		pinctrl_select_state(pgpio->ppinctrl, ppinctrl_state);
 	else
