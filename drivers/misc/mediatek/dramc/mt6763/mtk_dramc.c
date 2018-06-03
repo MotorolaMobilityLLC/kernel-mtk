@@ -1139,6 +1139,7 @@ unsigned int get_dram_data_rate(void)
 
 	return u4DataRate;
 }
+EXPORT_SYMBOL(get_dram_data_rate);
 
 unsigned int read_dram_temperature(unsigned char channel)
 {
