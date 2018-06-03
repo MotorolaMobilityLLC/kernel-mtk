@@ -757,6 +757,8 @@ void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info)
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_CER)
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
+	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_MER)
+		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 #if IS_ENABLED(CONFIG_MTK_SMI_EXT)
 	mmdvfs_clks_init();
 #endif
@@ -1073,6 +1075,8 @@ int mmdvfs_get_mmdvfs_profile(void)
 	mmdvfs_profile_id = MMDVFS_PROFILE_VIN;
 #elif defined(SMI_CER)
 	mmdvfs_profile_id = MMDVFS_PROFILE_CER;
+#elif defined(SMI_MER)
+	mmdvfs_profile_id = MMDVFS_PROFILE_MER;
 #endif
 
 	MMDVFSDEBUG(4, "Segment_code=%d,mmdvfs_profile_id=%d\n", segment_code,
