@@ -1206,6 +1206,297 @@ static int mtk_charger_pe30_thread_handler(void *arg)
 	return 0;
 }
 
+int mtk_pe30_parse_dt(struct charger_manager *info, struct device *dev)
+{
+	struct device_node *np = dev->of_node;
+	u32 val;
+
+	pr_err("%s: starts\n", __func__);
+
+	if (!np) {
+		pr_err("%s: no device node\n", __func__);
+		return -EINVAL;
+	}
+
+	/* PE 3.0 */
+	if (of_property_read_u32(np, "cv_limit", &val) >= 0) {
+		info->data.cv_limit = val;
+	} else {
+		pr_err(
+			"use default CV_LIMIT:%d\n",
+			CV_LIMIT);
+		info->data.cv_limit = CV_LIMIT;
+	}
+
+	if (of_property_read_u32(np, "bat_upper_bound", &val) >= 0) {
+		info->data.bat_upper_bound = val;
+	} else {
+		pr_err(
+			"use default BAT_UPPER_BOUND:%d\n",
+			BAT_UPPER_BOUND);
+		info->data.bat_upper_bound = BAT_UPPER_BOUND;
+	}
+
+	if (of_property_read_u32(np, "bat_lower_bound", &val) >= 0) {
+		info->data.bat_lower_bound = val;
+	} else {
+		pr_err(
+			"use default BAT_LOWER_BOUND:%d\n",
+			BAT_LOWER_BOUND);
+		info->data.bat_lower_bound = BAT_LOWER_BOUND;
+	}
+
+	if (of_property_read_u32(np, "cc_ss_init", &val) >= 0) {
+		info->data.cc_ss_init = val;
+	} else {
+		pr_err(
+			"use default CC_SS_INIT:%d\n",
+			CC_SS_INIT);
+		info->data.cc_ss_init = CC_SS_INIT;
+	}
+
+	if (of_property_read_u32(np, "cc_init", &val) >= 0) {
+		info->data.cc_init = val;
+	} else {
+		pr_err(
+			"use default CC_INIT:%d\n",
+			CC_INIT);
+		info->data.cc_init = CC_INIT;
+	}
+
+	if (of_property_read_u32(np, "cc_init_bad_cable1", &val) >= 0) {
+		info->data.cc_init_bad_cable1 = val;
+	} else {
+		pr_err(
+			"use default CC_INIT_BAD_CABLE1:%d\n",
+			CC_INIT_BAD_CABLE1);
+		info->data.cc_init_bad_cable1 = CC_INIT_BAD_CABLE1;
+	}
+
+	if (of_property_read_u32(np, "cc_init_bad_cable2", &val) >= 0) {
+		info->data.cc_init_bad_cable2 = val;
+	} else {
+		pr_err(
+			"use default CC_INIT_BAD_CABLE2:%d\n",
+			CC_INIT_BAD_CABLE2);
+		info->data.cc_init_bad_cable2 = CC_INIT_BAD_CABLE2;
+	}
+
+	if (of_property_read_u32(np, "cc_init_r", &val) >= 0) {
+		info->data.cc_init_r = val;
+	} else {
+		pr_err(
+			"use default CC_INIT_R:%d\n",
+			CC_INIT_R);
+		info->data.cc_init_r = CC_INIT_R;
+	}
+
+	if (of_property_read_u32(np, "cc_init_bad_cable1_r", &val) >= 0) {
+		info->data.cc_init_bad_cable1_r = val;
+	} else {
+		pr_err(
+			"use default CC_INIT_BAD_CABLE1_R:%d\n",
+			CC_INIT_BAD_CABLE1_R);
+		info->data.cc_init_bad_cable1_r = CC_INIT_BAD_CABLE1_R;
+	}
+
+	if (of_property_read_u32(np, "cc_init_bad_cable2_r", &val) >= 0) {
+		info->data.cc_init_bad_cable2_r = val;
+	} else {
+		pr_err(
+			"use default CC_INIT_BAD_CABLE2_R:%d\n",
+			CC_INIT_BAD_CABLE2_R);
+		info->data.cc_init_bad_cable2_r = CC_INIT_BAD_CABLE2_R;
+	}
+
+	if (of_property_read_u32(np, "cc_normal", &val) >= 0) {
+		info->data.cc_normal = val;
+	} else {
+		pr_err(
+			"use default CC_NORMAL:%d\n",
+			CC_NORMAL);
+		info->data.cc_normal = CC_NORMAL;
+	}
+
+	if (of_property_read_u32(np, "cc_max", &val) >= 0) {
+		info->data.cc_max = val;
+	} else {
+		pr_err(
+			"use default CC_MAX:%d\n",
+			CC_MAX);
+		info->data.cc_max = CC_MAX;
+	}
+
+	if (of_property_read_u32(np, "cc_end", &val) >= 0) {
+		info->data.cc_end = val;
+	} else {
+		pr_err(
+			"use default CC_END:%d\n",
+			CC_END);
+		info->data.cc_end = CC_END;
+	}
+
+	if (of_property_read_u32(np, "cc_step", &val) >= 0) {
+		info->data.cc_step = val;
+	} else {
+		pr_err(
+			"use default CC_STEP:%d\n",
+			CC_STEP);
+		info->data.cc_step = CC_STEP;
+	}
+
+	if (of_property_read_u32(np, "cc_ss_step", &val) >= 0) {
+		info->data.cc_ss_step = val;
+	} else {
+		pr_err(
+			"use default CC_SS_STEP:%d\n",
+			CC_SS_STEP);
+		info->data.cc_ss_step = CC_SS_STEP;
+	}
+
+	if (of_property_read_u32(np, "cc_ss_step2", &val) >= 0) {
+		info->data.cc_ss_step2 = val;
+	} else {
+		pr_err(
+			"use default CC_SS_STEP2:%d\n",
+			CC_SS_STEP2);
+		info->data.cc_ss_step2 = CC_SS_STEP2;
+	}
+
+	if (of_property_read_u32(np, "cc_ss_step3", &val) >= 0) {
+		info->data.cc_ss_step3 = val;
+	} else {
+		pr_err(
+			"use default CC_SS_STEP3:%d\n",
+			CC_SS_STEP3);
+		info->data.cc_ss_step3 = CC_SS_STEP3;
+	}
+
+	if (of_property_read_u32(np, "cv_ss_step2", &val) >= 0) {
+		info->data.cv_ss_step2 = val;
+	} else {
+		pr_err(
+			"use default CV_SS_STEP2:%d\n",
+			CV_SS_STEP2);
+		info->data.cv_ss_step2 = CV_SS_STEP2;
+	}
+
+	if (of_property_read_u32(np, "cv_ss_step3", &val) >= 0) {
+		info->data.cv_ss_step3 = val;
+	} else {
+		pr_err(
+			"use default CV_SS_STEP3:%d\n",
+			CV_SS_STEP3);
+		info->data.cv_ss_step3 = CV_SS_STEP3;
+	}
+
+	if (of_property_read_u32(np, "cc_ss_blanking", &val) >= 0) {
+		info->data.cc_ss_blanking = val;
+	} else {
+		pr_err(
+			"use default CC_SS_BLANKING:%d\n",
+			CC_SS_BLANKING);
+		info->data.cc_ss_blanking = CC_SS_BLANKING;
+	}
+
+	if (of_property_read_u32(np, "cc_blanking", &val) >= 0) {
+		info->data.cc_blanking = val;
+	} else {
+		pr_err(
+			"use default CC_BLANKING:%d\n",
+			CC_BLANKING);
+		info->data.cc_blanking = CC_BLANKING;
+	}
+
+	if (of_property_read_u32(np, "charger_temp_max", &val) >= 0) {
+		info->data.charger_temp_max = val;
+	} else {
+		pr_err(
+			"use default CHARGER_TEMP_MAX:%d\n",
+			CHARGER_TEMP_MAX);
+		info->data.charger_temp_max = CHARGER_TEMP_MAX;
+	}
+
+	if (of_property_read_u32(np, "ta_temp_max", &val) >= 0) {
+		info->data.ta_temp_max = val;
+	} else {
+		pr_err(
+			"use default TA_TEMP_MAX:%d\n",
+			TA_TEMP_MAX);
+		info->data.ta_temp_max = TA_TEMP_MAX;
+	}
+
+	if (of_property_read_u32(np, "vbus_ov_gap", &val) >= 0) {
+		info->data.vbus_ov_gap = val;
+	} else {
+		pr_err(
+			"use default VBUS_OV_GAP:%d\n",
+			VBUS_OV_GAP);
+		info->data.vbus_ov_gap = VBUS_OV_GAP;
+	}
+
+	if (of_property_read_u32(np, "fod_current", &val) >= 0) {
+		info->data.fod_current = val;
+	} else {
+		pr_err(
+			"use default FOD_CURRENT:%d\n",
+			FOD_CURRENT);
+		info->data.fod_current = FOD_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "r_vbat_min", &val) >= 0) {
+		info->data.r_vbat_min = val;
+	} else {
+		pr_err(
+			"use default R_VBAT_MIN:%d\n",
+			R_VBAT_MIN);
+		info->data.r_vbat_min = R_VBAT_MIN;
+	}
+
+	if (of_property_read_u32(np, "r_sw_min", &val) >= 0) {
+		info->data.r_sw_min = val;
+	} else {
+		pr_err(
+			"use default R_SW_MIN:%d\n",
+			R_SW_MIN);
+		info->data.r_sw_min = R_SW_MIN;
+	}
+
+	if (of_property_read_u32(np, "pe30_max_charging_time", &val) >= 0) {
+		info->data.pe30_max_charging_time = val;
+	} else {
+		pr_err(
+			"use default PE30_MAX_CHARGING_TIME:%d\n",
+			PE30_MAX_CHARGING_TIME);
+		info->data.pe30_max_charging_time = PE30_MAX_CHARGING_TIME;
+	}
+
+	if (info->enable_sw_jeita == false) {
+		if (of_property_read_u32(np, "battery_temp_min", &val) >= 0) {
+			info->data.battery_temp_min = val;
+		} else {
+			pr_err(
+				"use default BATTERY_TEMP_MIN:%d\n",
+				BATTERY_TEMP_MIN);
+			info->data.battery_temp_min = BATTERY_TEMP_MIN;
+		}
+
+		if (of_property_read_u32(np, "battery_temp_max", &val) >= 0) {
+			info->data.battery_temp_max = val;
+		} else {
+			pr_err(
+				"use default BATTERY_TEMP_MAX:%d\n",
+				BATTERY_TEMP_MAX);
+			info->data.battery_temp_max = BATTERY_TEMP_MAX;
+		}
+	} else {
+		info->data.battery_temp_min = info->data.temp_t2_threshold;
+		info->data.battery_temp_max = info->data.temp_t3_threshold;
+	}
+
+	return 0;
+}
+
 bool mtk_pe30_init(struct charger_manager *info)
 {
 	ktime_t ktime;
@@ -1213,6 +1504,8 @@ bool mtk_pe30_init(struct charger_manager *info)
 
 	mutex_init(&pe3->pe30_mutex);
 	init_waitqueue_head(&pe3->mtk_charger_pe30_thread_waiter);
+
+	mtk_pe30_parse_dt(info, &info->pdev->dev);
 
 	pe3->pe30_charging_state = DC_STOP;
 	pe3->batteryTemperature = -1000;
