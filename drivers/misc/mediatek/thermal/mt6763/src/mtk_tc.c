@@ -197,7 +197,7 @@ __u32 lvts_golden_temp3;
  * Local function declartation
  *=============================================================
  */
-static __s32 temperature_to_raw_room(__u32 ret, ts_e ts_name);
+static __s32 temperature_to_raw_room(__u32 ret, enum thermal_sensor ts_name);
 static void set_tc_trigger_hw_protect(int temperature, int temperature2, int tc_num);
 
 /*=============================================================
@@ -557,7 +557,7 @@ void tscpu_thermal_cal_prepare_2(__u32 ret)
 }
 
 #if THERMAL_CONTROLLER_HW_TP
-static __s32 temperature_to_raw_room(__u32 ret, ts_e ts_name)
+static __s32 temperature_to_raw_room(__u32 ret, enum thermal_sensor ts_name)
 {
 	/* Ycurr = [(Tcurr - DEGC_cali/2)*(1528+O_slope*10)/10*(18/15)*(1/10000)+X_roomtabb]*Gain*4096 + OE */
 
@@ -589,7 +589,7 @@ static __s32 temperature_to_raw_room(__u32 ret, ts_e ts_name)
 }
 #endif
 
-static __s32 raw_to_temperature_roomt(__u32 ret, ts_e ts_name)
+static __s32 raw_to_temperature_roomt(__u32 ret, enum thermal_sensor ts_name)
 {
 	__s32 t_current = 0;
 	__s32 y_curr = ret;
@@ -913,7 +913,7 @@ static void set_tc_trigger_hw_protect(int temperature, int temperature2, int tc_
 {
 	int temp = 0;
 	int raw_high;
-	ts_e ts_name;
+	enum thermal_sensor ts_name;
 	__u32 offset;
 
 	offset = tscpu_g_tc[tc_num].tc_offset;
@@ -937,7 +937,7 @@ static void set_tc_trigger_hw_protect(int temperature, int temperature2, int tc_
 	mt_reg_sync_writel(temp | 0x80000000, offset + TEMPMONINT);	/* enable trigger Hot SPM interrupt */
 }
 
-static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, ts_e ts_name)
+static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, enum thermal_sensor ts_name)
 {
 	int temp = 0, raw = 0;
 
@@ -953,7 +953,7 @@ static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, ts_e ts_name)
 	return temp * 100;
 }
 
-void tscpu_thermal_read_tc_temp(int tc_num, ts_e type, int order)
+void tscpu_thermal_read_tc_temp(int tc_num, enum thermal_sensor type, int order)
 {
 	__u32 offset;
 
@@ -1074,7 +1074,7 @@ int tscpu_thermal_fast_init(int tc_num)
 	return 0;
 }
 
-int tscpu_thermal_ADCValueOfMcu(enum thermal_sensor_enum type)
+int tscpu_thermal_ADCValueOfMcu(enum thermal_sensor type)
 {
 	switch (type) {
 	case TS_MCU1:

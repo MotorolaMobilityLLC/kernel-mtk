@@ -233,7 +233,7 @@ struct thermal_controller_speed {
 };
 
 struct thermal_controller {
-	ts_e ts[TS_ENUM_MAX];
+	enum thermal_sensor ts[TS_ENUM_MAX];
 	int ts_number;
 	int tc_offset;
 	struct thermal_controller_speed tc_speed;
@@ -375,7 +375,7 @@ extern int get_io_reg_base(void);
 extern void tscpu_config_all_tc_hw_protect(int temperature, int temperature2);
 extern void tscpu_reset_thermal(void);
 extern void tscpu_thermal_initial_all_tc(void);
-extern void tscpu_thermal_read_tc_temp(int tc_num, ts_e type, int order);
+extern void tscpu_thermal_read_tc_temp(int tc_num, enum thermal_sensor type, int order);
 extern void tscpu_thermal_cal_prepare(void);
 extern void tscpu_thermal_cal_prepare_2(U32 ret);
 extern irqreturn_t tscpu_thermal_all_tc_interrupt_handler(int irq, void *dev_id);
