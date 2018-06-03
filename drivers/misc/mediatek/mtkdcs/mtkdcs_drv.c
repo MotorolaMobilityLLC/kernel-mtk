@@ -35,6 +35,8 @@ static struct rw_semaphore dcs_rwsem;
 static DEFINE_MUTEX(dcs_kicker_lock);
 static unsigned long dcs_kicker;
 static struct task_struct *dcs_thread;
+static u64 lbw_start = ULONG_MAX, lbw_end;
+static DEFINE_MUTEX(dcs_lbw_lock);
 #define DCS_PROFILE
 
 #ifdef DCS_PROFILE
@@ -102,6 +104,37 @@ char * const dcs_status_name(enum dcs_status status)
 #include "sspm_ipi.h"
 static unsigned int dcs_recv_data[4];
 
+/*
+ * __dcs_set_lbw_region_ipi
+ *
+ * set lbw region, caller must hold dcs_lbw_lock
+ * @start: 64-bit start physical address
+ * @end: 64-bit end physical address
+ *
+ * return 0 on success or error code
+ */
+static int __dcs_set_lbw_region_ipi(u64 start, u64 end)
+{
+	int ipi_data_ret = 0, err;
+	unsigned int ipi_buf[32];
+
+	ipi_buf[0] = IPI_DCS_SET_MD_REGION;
+	ipi_buf[1] = start;
+	ipi_buf[2] = start >> 32;
+	ipi_buf[3] = end;
+	ipi_buf[4] = end >> 32;
+
+	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+
+	if (err) {
+		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
+		return -EBUSY;
+	}
+
+	return 0;
+}
+
+
 static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
 {
 	int ipi_data_ret = 0, err;
@@ -128,6 +161,24 @@ static int dcs_migration_ipi(enum migrate_dir dir)
 
 	ipi_buf[0] = IPI_DCS_MIGRATION;
 	ipi_buf[1] = dir;
+
+	/*
+	 * setup lbw region, caller holds dcs_rwsem and
+	 * lbw cannot be updated after initialization, so
+	 * it's safe to not taking dcs_lbw_lock
+	 */
+	if (dir == NORMAL) {
+		/* switch to normal */
+		err = __dcs_set_lbw_region_ipi(lbw_end, lbw_start);
+	} else {
+		/* switch to lowpower */
+		err = __dcs_set_lbw_region_ipi(lbw_start, lbw_end);
+	}
+
+	if (err) {
+		pr_err("[%d] fail: %d\n", __LINE__, err);
+		return err;
+	}
 
 	pr_info("dcs migration start\n");
 	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
@@ -313,7 +364,7 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 {
 	int ret = 0;
 
-	if (!dcs_core_initialized)
+	if (!dcs_core_initialized || !dcs_full_initialized)
 		return -ENODEV;
 
 	down_write(&dcs_rwsem);
@@ -348,6 +399,45 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 	up_write(&dcs_rwsem);
 
 	return ret;
+}
+
+/*
+ * dcs_set_lbw_region
+ *
+ * set low bandwidth region for DCS
+ * Some performance-critical memory areas need high
+ * bandwidth. DCS can use low bandwidth in the areas in
+ * interesting.
+ *
+ * Ths setting must finish before DCS driver's initialization
+ *
+ * H/W only support one area so the API may be called multiple
+ * times and calculate one area to cover all areas.
+ * @start: 64-bit start physical address
+ * @end: 64-bit end physical address
+ *
+ * return 0 on success or error code
+ */
+int dcs_set_lbw_region(u64 start, u64 end)
+{
+	/* do not change lbw setting after initialization */
+	if (dcs_core_initialized)
+		return 0;
+
+	/* sanity check */
+	if ((start > lbw_start) && (end < lbw_end))
+		goto out;
+
+	mutex_lock(&dcs_lbw_lock);
+	/* update lbw_[start|end] */
+	if (start < lbw_start)
+		lbw_start = start;
+	if (end > lbw_end)
+		lbw_end = end;
+	mutex_unlock(&dcs_lbw_lock);
+
+out:
+	return 0;
 }
 
 /*
@@ -594,10 +684,12 @@ static ssize_t mtkdcs_status_show(struct device *dev,
 		 * we're holding the rw_sem, so it's safe to use
 		 * dcs_sysfs_mode
 		 */
-		n = sprintf(buf, "dcs_status=%s, channel=%d, dcs_sysfs_mode=%s\n",
+		n += sprintf(buf, "dcs_status=%s, channel=%d, dcs_sysfs_mode=%s\n",
 				dcs_status_name(dcs_status),
 				ch,
 				dcs_sysfs_mode_name[dcs_sysfs_mode]);
+		n += sprintf(buf + n, "dcs lbw_start=%llx, lbw_end=%llx\n",
+				lbw_start, lbw_end);
 		dcs_get_dcs_status_unlock();
 	}
 
