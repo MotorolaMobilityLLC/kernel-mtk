@@ -3720,23 +3720,20 @@ static inline void ISP_StopHW(int module)
 	unsigned long long  timeoutMs = 500000000;/*500ms*/
 	char moduleName[128];
 
-	if (module == ISP_CAM_A_IDX)
-		strncpy(moduleName, "CAMA", 5);
-	else
-		strncpy(moduleName, "CAMB", 5);
-
 	/* wait TG idle*/
 	loopCnt = 3;
 	switch (module) {
 	case ISP_CAM_A_IDX:
+	    strncpy(moduleName, "CAMA", 5);
 	    waitirq.Type = ISP_IRQ_TYPE_INT_CAM_A_ST;
 	    break;
 	case ISP_CAM_B_IDX:
+	    strncpy(moduleName, "CAMB", 5);
 	    waitirq.Type = ISP_IRQ_TYPE_INT_CAM_B_ST;
 	    break;
-	case ISP_CAM_C_IDX:
 	default:
-	    waitirq.Type = ISP_IRQ_TYPE_INT_CAM_C_ST;
+	    strncpy(moduleName, "CAMC", 5);
+	    goto RESET;
 	    break;
 	}
 	waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_WAIT;
@@ -3778,35 +3775,162 @@ static inline void ISP_StopHW(int module)
 			LOG_INF("%s: wait idle timeout(%lld)\n", moduleName, (sec - m_sec));
 	}
 
-	if (-EFAULT == ret || regTGSt != 1) {
-		LOG_INF("%s: reset\n", moduleName);
+RESET:
+	LOG_INF("%s: reset\n", moduleName);
+	/* timer*/
+	time = ktime_get();
+	m_sec = time.tv64;
+
+	/* Reset*/
+	ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x0);
+	ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x1);
+	while (ISP_RD32(CAM_REG_CTL_SW_CTL(module)) != 0x2) {
+		/*LOG_DBG("%s resetting...\n", moduleName);*/
+		/*timer*/
+		time = ktime_get();
+		sec = time.tv64;
+		/* wait time>timeoutMs, break */
+		if ((sec  - m_sec) > timeoutMs) {
+			LOG_INF("%s: wait SW idle timeout\n", moduleName);
+			break;
+		}
+	}
+	ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x4);
+	ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x0);
+	regTGSt = (ISP_RD32(CAM_REG_TG_INTER_ST(module)) & 0x00003F00) >> 8;
+	LOG_DBG("%s_TG_ST(%d)_SW_ST(0x%x)\n", moduleName, regTGSt,
+		ISP_RD32(CAM_REG_CTL_SW_CTL(module)));
+
+	ISP_WR32(CAM_UNI_REG_TOP_SW_CTL(ISP_UNI_A_IDX), 0x1001);
+
+	time = ktime_get();
+	m_sec = time.tv64;
+	while ((ISP_RD32(CAM_UNI_REG_TOP_SW_CTL(ISP_UNI_A_IDX)) & 0x00000002) != 0x2) {
+		time = ktime_get();
+		sec = time.tv64;
+		/* wait time>timeoutMs, break */
+		if ((sec  - m_sec) > (timeoutMs/50000)) {
+			LOG_INF("%s: wait SW RST ST 50000 timeout\n", moduleName);
+			break;
+		}
+	}
+
+	ISP_WR32(CAM_UNI_REG_TOP_SW_CTL(ISP_UNI_A_IDX), 0x4);
+	ISP_WR32(CAM_UNI_REG_TOP_SW_CTL(ISP_UNI_A_IDX), 0x0);
+	/*disable CMOS*/
+	ISP_WR32(CAM_REG_TG_SEN_MODE(module),
+		(ISP_RD32(CAM_REG_TG_SEN_MODE(module))&0xfffffffe));
+
+}
+
+/*******************************************************************************
+*
+********************************************************************************/
+static inline void ISP_StopSVHW(int module)
+{
+	unsigned int regTGSt, loopCnt;
+	int ret = 0;
+	struct ISP_WAIT_IRQ_STRUCT waitirq;
+	ktime_t             time;
+	unsigned long long  sec = 0, m_sec = 0;
+	unsigned long long  timeoutMs = 500000000;/*500ms*/
+	char moduleName[128];
+
+	/* wait TG idle*/
+	loopCnt = 3;
+	switch (module) {
+	case ISP_CAMSV0_IDX:
+		strncpy(moduleName, "CAMSV0", 7);
+		waitirq.Type = ISP_IRQ_TYPE_INT_CAMSV_0_ST;
+		break;
+	case ISP_CAMSV1_IDX:
+		strncpy(moduleName, "CAMSV1", 7);
+		waitirq.Type = ISP_IRQ_TYPE_INT_CAMSV_1_ST;
+		break;
+	case ISP_CAMSV2_IDX:
+		strncpy(moduleName, "CAMSV2", 7);
+		waitirq.Type = ISP_IRQ_TYPE_INT_CAMSV_2_ST;
+		break;
+	case ISP_CAMSV3_IDX:
+		strncpy(moduleName, "CAMSV3", 7);
+		waitirq.Type = ISP_IRQ_TYPE_INT_CAMSV_3_ST;
+		break;
+	case ISP_CAMSV4_IDX:
+		strncpy(moduleName, "CAMSV4", 7);
+		waitirq.Type = ISP_IRQ_TYPE_INT_CAMSV_4_ST;
+		break;
+	default:
+		strncpy(moduleName, "CAMSV5", 7);
+		waitirq.Type = ISP_IRQ_TYPE_INT_CAMSV_5_ST;
+		break;
+	}
+	waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_WAIT;
+	waitirq.EventInfo.Status = VS_INT_ST;
+	waitirq.EventInfo.St_type = SIGNAL_INT;
+	waitirq.EventInfo.Timeout = 0x100;
+	waitirq.EventInfo.UserKey = 0x0;
+	waitirq.bDumpReg = 0;
+
+	do {
+		regTGSt = (ISP_RD32(CAMSV_REG_TG_INTER_ST(module)) & 0x00003F00) >> 8;
+		if (regTGSt == 1)
+			break;
+
+		LOG_INF("%s: wait 1VD (%d)\n", moduleName, loopCnt);
+		ret = ISP_WaitIrq(&waitirq);
+		/* first wait is clear wait, others are non-clear wait */
+		waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_NONE;
+	} while (--loopCnt);
+
+	if (-ERESTARTSYS == ret) {
+		LOG_INF("%s: interrupt by system signal, wait idle\n", moduleName);
 		/* timer*/
 		time = ktime_get();
 		m_sec = time.tv64;
 
-		/* Reset*/
-		ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x1);
-		while (ISP_RD32(CAM_REG_CTL_SW_CTL(module)) != 0x2) {
-			/*LOG_DBG("%s resetting...\n", moduleName);*/
+		while (regTGSt != 1) {
+			regTGSt = (ISP_RD32(CAMSV_REG_TG_INTER_ST(module)) & 0x00003F00) >> 8;
 			/*timer*/
 			time = ktime_get();
 			sec = time.tv64;
 			/* wait time>timeoutMs, break */
-			if ((sec  - m_sec) > timeoutMs) {
-				LOG_INF("%s: wait SW idle timeout\n", moduleName);
+			if ((sec - m_sec) > timeoutMs)
 				break;
-			}
 		}
-		ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x4);
-		ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x0);
-		regTGSt = (ISP_RD32(CAM_REG_TG_INTER_ST(module)) & 0x00003F00) >> 8;
-		LOG_DBG("%s_TG_ST(%d)_SW_ST(0x%x)\n", moduleName, regTGSt,
-			ISP_RD32(CAM_REG_CTL_SW_CTL(module)));
+		if (regTGSt == 1)
+			LOG_INF("%s: wait idle done\n", moduleName);
+		else
+			LOG_INF("%s: wait idle timeout(%lld)\n", moduleName, (sec - m_sec));
 	}
 
+	LOG_INF("%s: reset\n", moduleName);
+	/* timer*/
+	time = ktime_get();
+	m_sec = time.tv64;
+
+	/* Reset*/
+	ISP_WR32(CAMSV_REG_SW_CTL(module), 0x4);
+	ISP_WR32(CAMSV_REG_SW_CTL(module), 0x0);
+	ISP_WR32(CAMSV_REG_SW_CTL(module), 0x1);
+	while (ISP_RD32(CAMSV_REG_SW_CTL(module)) != 0x3) {
+		/*LOG_DBG("%s resetting...\n", moduleName);*/
+		/*timer*/
+		time = ktime_get();
+		sec = time.tv64;
+		/* wait time>timeoutMs, break */
+		if ((sec  - m_sec) > timeoutMs) {
+			LOG_INF("%s: wait SW idle timeout\n", moduleName);
+			break;
+		}
+	}
+	ISP_WR32(CAMSV_REG_SW_CTL(module), 0x0);
+	regTGSt = (ISP_RD32(CAMSV_REG_TG_INTER_ST(module)) & 0x00003F00) >> 8;
+	LOG_DBG("%s_TG_ST(%d)_SW_ST(0x%x)\n", moduleName, regTGSt,
+		ISP_RD32(CAMSV_REG_SW_CTL(module)));
+
 	/*disable CMOS*/
-	ISP_WR32(CAM_REG_TG_SEN_MODE(module),
-		(ISP_RD32(CAM_REG_TG_SEN_MODE(module))&0xfffffffe));
+	ISP_WR32(CAMSV_REG_TG_SEN_MODE(module),
+		(ISP_RD32(CAMSV_REG_TG_SEN_MODE(module))&0xfffffffe));
 
 }
 
@@ -3875,9 +3999,9 @@ static int ISP_release(
 	}
 
 	for (i = ISP_CAMSV0_IDX; i <= ISP_CAMSV5_IDX; i++) {
-		Reg = ISP_RD32(CAM_REG_TG_VF_CON(i));
+		Reg = ISP_RD32(CAMSV_REG_TG_VF_CON(i));
 		Reg &= 0xfffffffE;/* close Vfinder */
-		ISP_WR32(CAM_REG_TG_VF_CON(i), Reg);
+		ISP_WR32(CAMSV_REG_TG_VF_CON(i), Reg);
 	}
 
 	/* why i add this wake_unlock here, because     the     Ap is not expected to be dead. */
@@ -3911,8 +4035,12 @@ static int ISP_release(
 
 	/*  */
 #ifdef ENABLE_KEEP_ION_HANDLE
+	for (i = ISP_CAMSV0_IDX; i < ISP_CAMSV4_IDX; i++)
+		ISP_StopSVHW(i);
+
 	ISP_StopHW(ISP_CAM_A_IDX);
 	ISP_StopHW(ISP_CAM_B_IDX);
+	ISP_StopHW(ISP_CAM_C_IDX);
 
 	/* free keep ion handles, then destroy ion client*/
 	for (i = 0; i < ISP_DEV_NODE_NUM; i++) {
