@@ -22,7 +22,7 @@
 #include "inc/rt5081_pmu.h"
 #include "inc/rt5081_pmu_fled.h"
 
-#define RT5081_PMU_FLED_DRV_VERSION	"1.0.0_MTK"
+#define RT5081_PMU_FLED_DRV_VERSION	"1.0.1_MTK"
 
 static u8 rt5081_fled_inited;
 static u8 rt5081_global_mode = FLASHLIGHT_MODE_OFF;
@@ -719,3 +719,12 @@ MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("jeff_chang <jeff_chang@richtek.com>");
 MODULE_DESCRIPTION("Richtek RT5081 PMU Fled");
 MODULE_VERSION(RT5081_PMU_FLED_DRV_VERSION);
+
+/*
+ * Version Note
+ * 1.0.1_MTK
+ * (1) Remove typedef
+ *
+ * 1.0.0_MTK
+ * (1) Initial Release
+ */

@@ -568,4 +568,13 @@ module_platform_driver(mt6370_pmu_bled);
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MediaTek MT6370 PMU Bled");
-MODULE_VERSION("1.0.0_G");
+MODULE_VERSION("1.0.1_MTK");
+
+/*
+ * Version Note
+ * 1.0.1_MTK
+ * (1) Remove typedef
+ *
+ * 1.0.0_MTK
+ * (1) Initial Release
+ */
