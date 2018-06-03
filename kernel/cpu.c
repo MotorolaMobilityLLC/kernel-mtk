@@ -222,8 +222,12 @@ int register_cpu_notifier(struct notifier_block *nb)
 	int index = 0;
 #ifdef CONFIG_KALLSYMS
 	char namebuf[128] = {0};
-	const char *symname;
-
+	const char *symname = NULL;
+#endif
+#endif /* CONFIG_MTK_CPU_HOTPLUG_DEBUG_0 */
+	cpu_maps_update_begin();
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_0
+#ifdef CONFIG_KALLSYMS
 	symname = kallsyms_lookup((unsigned long)nb->notifier_call,
 			NULL, NULL, NULL, namebuf);
 	if (symname)
@@ -237,7 +241,7 @@ int register_cpu_notifier(struct notifier_block *nb)
 		index++, (unsigned long)nb->notifier_call);
 #endif
 #endif /* CONFIG_MTK_CPU_HOTPLUG_DEBUG_0 */
-	cpu_maps_update_begin();
+
 	ret = raw_notifier_chain_register(&cpu_chain, nb);
 	cpu_maps_update_done();
 	return ret;
