@@ -480,7 +480,6 @@ static int mtk_voice_usb_close(struct snd_pcm_substream *substream)
 	}
 
 	EnableAfe(false);
-	AudDrv_ADC_Clk_Off();
 	AudDrv_Clk_Off();
 
 	return 0;
@@ -493,7 +492,6 @@ static int mtk_voice_usb_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	AudDrv_Clk_On();
-	AudDrv_ADC_Clk_On();
 
 	pr_warn("%s()\n", __func__);
 
