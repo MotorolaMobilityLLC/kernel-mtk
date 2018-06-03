@@ -48,7 +48,7 @@ static int __init rtc_hctosys(void)
 	}
 
 	tv64.tv_sec = rtc_tm_to_time64(&tm);
-
+	tv64.tv_nsec = tm.tm_cnt * (1000000000 / 32768);
 	err = do_settimeofday64(&tv64);
 
 	dev_info(rtc->dev.parent,
