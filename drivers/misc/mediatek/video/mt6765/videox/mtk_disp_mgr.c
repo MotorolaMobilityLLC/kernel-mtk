@@ -1032,8 +1032,6 @@ long _frame_config(unsigned long arg)
 		DISP_SESSION_MEMORY)
 		ovl2mem_frame_cfg(frame_cfg);
 
-	return 0;
-
 	kfree(frame_cfg);
 
 	return 0;
