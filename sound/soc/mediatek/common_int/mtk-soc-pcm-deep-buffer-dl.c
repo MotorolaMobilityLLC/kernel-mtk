@@ -122,9 +122,50 @@ static int deep_buffer_dl_hdoutput_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int Audio_Irqcnt_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	const struct Aud_RegBitsInfo *irqCntReg;
+
+	AudDrv_Clk_On();
+	irqCntReg = &GetIRQCtrlReg(Soc_Aud_IRQ_MCU_MODE_IRQ6_MCU_MODE)->cnt;
+	ucontrol->value.integer.value[0] = Afe_Get_Reg(irqCntReg->reg);
+	AudDrv_Clk_Off();
+
+	return 0;
+}
+
+static int Audio_Irqcnt_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), irq_user_id = %p, irq_cnt = %d, value = %ld\n",
+		__func__,
+		irq_user_id,
+		irq6_cnt,
+		ucontrol->value.integer.value[0]);
+
+	if (irq6_cnt == ucontrol->value.integer.value[0])
+		return 0;
+
+	irq6_cnt = ucontrol->value.integer.value[0];
+
+	AudDrv_Clk_On();
+	if (irq_user_id && irq6_cnt)
+		irq_update_user(irq_user_id,
+				Soc_Aud_IRQ_MCU_MODE_IRQ6_MCU_MODE,
+				0,
+				irq6_cnt);
+	else
+		pr_debug("cannot update irq counter, user_id = %p, irq_cnt = %d\n",
+			 irq_user_id, irq6_cnt);
+
+	AudDrv_Clk_Off();
+	return 0;
+}
+
 static const struct snd_kcontrol_new deep_buffer_dl_controls[] = {
 	SOC_ENUM_EXT("deep_buffer_dl_hd_Switch", deep_buffer_dl_Enum[0],
 		     deep_buffer_dl_hdoutput_get, deep_buffer_dl_hdoutput_set),
+	SOC_SINGLE_EXT("deep_buffer_irq_cnt", SND_SOC_NOPM, 0, IRQ_MAX_RATE, 0,
+		       Audio_Irqcnt_Get, Audio_Irqcnt_Set),
 };
 
 static struct snd_pcm_hardware mtk_deep_buffer_dl_hardware = {
