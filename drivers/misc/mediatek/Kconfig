@@ -236,6 +236,7 @@ menu "Other Peripherals"
 
 source "drivers/misc/mediatek/accdet/Kconfig"
 source "drivers/misc/mediatek/ice_debug/Kconfig"
+source "drivers/misc/mediatek/log_store/Kconfig"
 source "drivers/misc/mediatek/udi/Kconfig"
 source "drivers/misc/mediatek/auxadc/Kconfig"
 source "drivers/misc/mediatek/devapc/Kconfig"
@@ -297,6 +298,7 @@ config MTK_MEMCFG
 	  fragmentation test tools. The features
 	  cost additional memory.
 
+source "drivers/misc/mediatek/mtprintk/Kconfig"
 source "drivers/misc/mediatek/mtprof/Kconfig"
 source "drivers/misc/mediatek/mlog/Kconfig"
 
