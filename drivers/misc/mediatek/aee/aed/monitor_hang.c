@@ -80,6 +80,7 @@ DECLARE_WAIT_QUEUE_HEAD(dump_bt_done_wait);
 
 static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 #ifdef CONFIG_MTK_ENG_BUILD
+static int monit_hang_flag = 1;
 #define SEQ_printf(m, x...) \
 do {                \
 	if (m)          \
@@ -105,7 +106,32 @@ static int monitor_hang_proc_open(struct inode *inode, struct file *file)
 
 static ssize_t monitor_hang_proc_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
 {
-	return 0;
+	char buf[64];
+	long val;
+	int ret;
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+
+	buf[cnt] = 0;
+
+	ret = kstrtoul(buf, 10, (unsigned long *)&val);
+
+	if (ret < 0)
+		return ret;
+
+	if (val == 1) {
+		monit_hang_flag = 1;
+		pr_debug("[hang_detect] enable ke.\n");
+	} else if (val == 0) {
+		monit_hang_flag = 0;
+		pr_debug("[hang_detect] disable ke.\n");
+	}
+
+	return cnt;
 }
 
 static const struct file_operations monitor_hang_fops = {
@@ -328,11 +354,15 @@ static void DumpMsdc2HangInfo(void)
 
 	if (get_msdc_aee_buffer) {
 		get_msdc_aee_buffer((unsigned long *)&buff_add, &buff_size);
-		if (buff_size != 0 && buff_size <= 30 * 1024)
+		if (buff_size != 0 && buff_add != NULL) {
+			if (buff_size > 30 * 1024) {
+				buff_add = buff_add + buff_size - 30 * 1024;
+				buff_size = 30*1024;
+			}
 			Buff2HangInfo(buff_add, buff_size);
+		}
 	}
 }
-
 
 static void get_kernel_bt(struct task_struct *tsk)
 {
@@ -358,13 +388,15 @@ static void DumpMemInfo(void)
 
 	if (mlog_get_buffer) {
 		mlog_get_buffer(&buff_add, &buff_size);
-		if (buff_size <= 0) {
+		if (buff_size <= 0 || buff_add == NULL) {
 			pr_info("hang_detect: mlog_get_buffer size %d.\n", buff_size);
 			return;
 		}
 
-		if (buff_size > 3*1024)
+		if (buff_size > 3*1024) {
+			buff_add = buff_add + buff_size - 3*1024;
 			buff_size = 3*1024;
+		}
 
 		Buff2HangInfo(buff_add, buff_size);
 	}
@@ -804,7 +836,7 @@ static void show_bt_by_pid(int task_pid)
 	put_pid(pid);
 }
 
-static void show_state_filter_local(void)
+static void show_state_filter_local(int flag)
 {
 	struct task_struct *g, *p;
 
@@ -814,7 +846,7 @@ static void show_state_filter_local(void)
 		 * console might take a lot of time:
 		 *discard wdtk-* for it always stay in D state
 		 */
-		if ((Hang_Detect_first || p->state == TASK_RUNNING || p->state & TASK_UNINTERRUPTIBLE
+		if ((flag == 1 || p->state == TASK_RUNNING || p->state & TASK_UNINTERRUPTIBLE
 			|| (strcmp(p->comm, "watchdog") == 0)) && !strstr(p->comm, "wdtk"))
 			sched_show_task_local(p);
 	} while_each_thread(g, p);
@@ -826,15 +858,19 @@ static void ShowStatus(void)
 	int dumppids[DUMP_PROCESS_NUM];
 	int dump_count = 0;
 	int i = 0;
-	struct task_struct *task, *system_server_task = NULL;
+	struct task_struct *task, *system_server_task = NULL, *monkey_task = NULL;
 
 	read_lock(&tasklist_lock);
 	for_each_process(task) {
 		if (dump_count >= DUMP_PROCESS_NUM)
 			break;
 
-		if (strcmp(task->comm, "system_server") == 0)
-			system_server_task = task;
+		if (Hang_Detect_first == false) {
+			if (strcmp(task->comm, "system_server") == 0)
+				system_server_task = task;
+			if (strstr(task->comm, "monkey") != NULL)
+				monkey_task = task;
+		}
 
 		if ((strcmp(task->comm, "surfaceflinger") == 0) || (strcmp(task->comm, "init") == 0) ||
 			(strcmp(task->comm, "system_server") == 0) || (strcmp(task->comm, "mmcqd/0") == 0) ||
@@ -847,36 +883,37 @@ static void ShowStatus(void)
 	read_unlock(&tasklist_lock);
 
 	if (Hang_Detect_first == false) {
+		show_state_filter_local(0);
+
+		if (system_server_task != NULL)
+			do_send_sig_info(SIGQUIT, SEND_SIG_FORCED, system_server_task, true);
+		if (monkey_task != NULL)
+			do_send_sig_info(SIGQUIT, SEND_SIG_FORCED, monkey_task, true);
+	} else { /* the last dump */
 		DumpMemInfo();
-		show_state_filter_local();
-	} else {
-#ifndef __aarch64__
-		show_state_filter_local();
-#endif
 		DumpMsdc2HangInfo();
+#ifndef __aarch64__
+		show_state_filter_local(0);
+#endif
+		/* debug_locks = 1; */
+		debug_show_all_locks();
+		show_free_areas(0);
+		if (show_task_mem)
+			show_task_mem();
+#ifdef CONFIG_MTK_ION
+		ion_mm_heap_memory_detail();
+#endif
+#ifdef CONFIG_MTK_GPU_SUPPORT
+		mtk_dump_gpu_memory_usage();
+#endif
+
 	}
 
 	for (i = 0; i < dump_count; i++)
 		show_bt_by_pid(dumppids[i]);
 
 	if (Hang_Detect_first == true)
-		show_state_filter_local();
-
-	if (system_server_task != NULL)
-		do_send_sig_info(SIGQUIT, SEND_SIG_FORCED, system_server_task, true);
-
-	/* debug_locks = 1; */
-	debug_show_all_locks();
-
-	show_free_areas(0);
-
-#ifdef CONFIG_MTK_ION
-	ion_mm_heap_memory_detail();
-#endif
-#ifdef CONFIG_MTK_GPU_SUPPORT
-	if (mtk_dump_gpu_memory_usage() == false)
-		LOGE("[Hang_Detect] mtk_dump_gpu_memory_usage not support\n");
-#endif
+		show_state_filter_local(1);
 }
 
 void reset_hang_info(void)
@@ -984,6 +1021,9 @@ static int hang_detect_thread(void *arg)
 
 				if (Hang_Detect_first == true) {
 					pr_err("[Hang_Detect] aee mode is %d, we should triger KE...\n", aee_mode);
+#ifdef CONFIG_MTK_ENG_BUILD
+					if (monit_hang_flag == 1)
+#endif
 					BUG();
 				} else
 					Hang_Detect_first = true;
