@@ -327,4 +327,16 @@ config CLKSRC_ST_LPC
 	  Enable this option to use the Low Power controller timer
 	  as clocksource.
 
+config ARM64_ERRATUM_858921
+	bool "Cortex-A73: 858921: arch timer counter read can return a wrong value"
+	default n
+	depends on ARM_ARCH_TIMER && ARM64
+	help
+	  This option enables a workaround applicable to Cortex-A73
+	  (all versions), whose counter may return incorrect values.
+	  The workaround will be dynamically enabled when an affected
+	  core is detected.
+
+	  If unsure, say Y.
+
 endmenu

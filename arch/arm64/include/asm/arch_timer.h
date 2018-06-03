@@ -114,6 +114,16 @@ static inline u64 arch_counter_get_cntpct(void)
 	return 0;
 }
 
+#ifdef CONFIG_ARM64_ERRATUM_858921
+static inline u64 arch_counter_get_cntvct(void)
+{
+	u64 old, new;
+
+	asm volatile("mrs %0, cntvct_el0" : "=r" (old));
+	asm volatile("mrs %0, cntvct_el0" : "=r" (new));
+	return (((old ^ new) >> 32) & 1) ? old : new;
+}
+#else
 static inline u64 arch_counter_get_cntvct(void)
 {
 	u64 cval;
@@ -123,6 +133,7 @@ static inline u64 arch_counter_get_cntvct(void)
 
 	return cval;
 }
+#endif
 
 static inline int arch_timer_arch_init(void)
 {
