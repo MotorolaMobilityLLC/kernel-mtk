@@ -1399,12 +1399,14 @@ static int tscpu_thermal_suspend
 		/* disable periodic temp measurement on sensor 0~2 */
 		thermal_disable_all_periodoc_temp_sensing(); /* TEMPMONCTL0 */
 #endif
-		/* tscpu_thermal_clock_off(); */
 
 		/*TSCON1[5:4]=2'b11, Buffer off */
 		/* turn off the sensor buffer to save power */
 		mt_reg_sync_writel(readl(TS_CONFIGURE) | TS_TURN_OFF,
 								TS_CONFIGURE);
+#if defined(THERMAL_EBABLE_TC_CG)
+		tscpu_thermal_clock_off();
+#endif
 	}
 #if THERMAL_PERFORMANCE_PROFILE
 	do_gettimeofday(&end);
@@ -1431,7 +1433,9 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 #if (CONFIG_THERMAL_AEE_RR_REC == 1)
 		aee_rr_rec_thermal_status(TSCPU_RESUME);
 #endif
-
+#if defined(THERMAL_EBABLE_TC_CG)
+		tscpu_thermal_clock_on();
+#endif
 		tscpu_reset_thermal();
 		/*
 		 *  TS_CON1 default is 0x30, this is buffer off

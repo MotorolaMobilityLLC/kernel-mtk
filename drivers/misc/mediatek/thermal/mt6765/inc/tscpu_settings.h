@@ -56,6 +56,9 @@
  * CONFIG (SW related)
  *=============================================================
  */
+/*Enable thermal controller CG*/
+#define THERMAL_EBABLE_TC_CG
+
 #define ENALBE_UART_LIMIT						(0)
 #define TEMP_EN_UART							(80000)
 #define TEMP_DIS_UART							(85000)
@@ -66,6 +69,7 @@
 
 #define THERMAL_GET_AHB_BUS_CLOCK				(0)
 #define THERMAL_PERFORMANCE_PROFILE				(0)
+
 
 /* 1: turn on GPIO toggle monitor; 0: turn off */
 #define THERMAL_GPIO_OUT_TOGGLE					(0)
