@@ -1942,7 +1942,9 @@ static int smi_probe(struct platform_device *pdev)
 		/* Map registers */
 		for (i = 0; i < SMI_REG_REGION_MAX; i++) {
 			SMIMSG("Save region: %d\n", i);
-			smi_dev->regs[i] = (void *)of_iomap(pdev->dev.of_node, i);
+			/* dts index start from common */
+			smi_dev->regs[i] = (void *)of_iomap(pdev->dev.of_node,
+				(i + 1) % SMI_REG_REGION_MAX);
 
 			if (!smi_dev->regs[i]) {
 				SMIERR("Unable to ioremap registers, of_iomap fail, i=%d\n", i);
