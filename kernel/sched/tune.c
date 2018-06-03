@@ -843,17 +843,29 @@ int linear_real_boost(int linear_boost)
 {
 	int target_cpu, usage;
 	int boost;
+	int ta_org_cap;
 
 	sched_max_util_task(&target_cpu, NULL, &usage, NULL);
 
-	/* margin = (usage*linear_boost)/100; */
-	/* (original_cap - usage)*boost/100 = margin; */
-	boost = (usage*linear_boost)/(capacity_orig_of(target_cpu) - usage);
+	ta_org_cap = capacity_orig_of(target_cpu);
 
-#if 0
-	printk_deferred("Michael: (%d->%d) target_cpu=%d orig_cap=%ld usage=%ld\n",
-			linear_boost, boost, target_cpu, capacity_orig_of(target_cpu), usage);
-#endif
+	if (usage >= SCHED_CAPACITY_SCALE)
+		usage = SCHED_CAPACITY_SCALE;
+
+	/*
+	 * Conversion Formula of Linear Boost:
+	 *
+	 *   margin = (usage * linear_boost)/100;
+	 *   margin = (original_cap - usage) * boost/100;
+	 *   so
+	 *   boost = (usage * linear_boost) / (original_cap - usage)
+	 */
+	if (ta_org_cap <= usage) {
+		/* If target cpu is saturated, consider bigger one */
+		boost = (SCHED_CAPACITY_SCALE - usage) ?
+			(usage * linear_boost)/(SCHED_CAPACITY_SCALE - usage) : 0;
+	} else
+		boost = (usage * linear_boost)/(ta_org_cap - usage);
 
 	return boost;
 }
