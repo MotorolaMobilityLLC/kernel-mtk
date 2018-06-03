@@ -3210,7 +3210,8 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVVzDeviceCreate(PVRSRV_DEVICE_NODE *psDeviceNode)
 		/* Now we construct RA to manage FW heap */
 		uBase = sDevPAddr.uiAddr;
 		uSize = (RA_LENGTH_T) ui64Size;
-PVR_ASSERT(sCpuPAddr.uiAddr & uSize == ui64Size & RGX_FIRMWARE_TOTAL_HEAP_SIZE);
+		PVR_ASSERT((sCpuPAddr.uiAddr & uSize) ==
+			(ui64Size & RGX_FIRMWARE_TOTAL_HEAP_SIZE));
 		if (eHeapType != PHYS_HEAP_TYPE_LMA)
 		{
 			/* On some LMA config, fw base starts at zero */
