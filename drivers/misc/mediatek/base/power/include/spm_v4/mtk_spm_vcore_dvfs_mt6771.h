@@ -51,7 +51,7 @@ extern void send_swpm_init_ipi(unsigned int addr, unsigned int size,
 	unsigned int ch_num);
 extern void dvfsrc_hw_policy_mask(bool mask);
 extern int spm_get_vcore_opp(unsigned int opp);
-
+extern int spm_vcorefs_get_dvfs_opp(void);
 extern void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv);
 extern void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz);
 

@@ -38,6 +38,14 @@ static unsigned int vcore_opp_L3_1CH[VCORE_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
 	{ 725000, 700000 }
 };
 
+int vcore_dvfs_to_vcore_opp[] = {
+	VCORE_OPP_0, VCORE_OPP_1, VCORE_OPP_1, VCORE_OPP_1
+};
+
+int vcore_dvfs_to_ddr_opp[]   = {
+	DDR_OPP_0, DDR_OPP_0, DDR_OPP_1, DDR_OPP_2
+};
+
 /* ptr that points to v1 or v2 opp table */
 unsigned int (*vcore_opp)[VCORE_OPP_EFUSE_NUM];
 
@@ -46,6 +54,16 @@ unsigned int vcore_opp_table[VCORE_OPP_NUM];
 
 /* record index for vcore opp table from efuse */
 unsigned int vcore_opp_efuse_idx[VCORE_OPP_NUM] = { 0 };
+
+unsigned int get_cur_vcore_opp(void)
+{
+	return vcore_dvfs_to_vcore_opp[spm_vcorefs_get_dvfs_opp()];
+}
+
+unsigned int get_cur_ddr_opp(void)
+{
+	return vcore_dvfs_to_ddr_opp[spm_vcorefs_get_dvfs_opp()];
+}
 
 unsigned int get_vcore_opp_volt(unsigned int opp)
 {
@@ -136,10 +154,7 @@ static ssize_t vcore_opp_proc_write(struct file *file,
 {
 	s32 opp, vcore_uv;
 
-	if (kstrtos32(buffer, 0, &opp))
-		return -EINVAL;
-
-	if (kstrtos32(buffer, 0, &vcore_uv))
+	if (sscanf(buffer, "%d %d", &opp, &vcore_uv) != 2)
 		return -EINVAL;
 
 	if (opp < 0 || opp >= VCORE_OPP_NUM || vcore_uv < 0)

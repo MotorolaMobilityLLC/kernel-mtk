@@ -423,7 +423,7 @@ static void set_vcorefs_en(void)
 	flag = spm_dvfs_flag_init();
 	spm_go_to_vcorefs(flag);
 	mutex_unlock(&governor_mutex);
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6771)
 	vcorefs_late_init_dvfs();
 #endif
 }
@@ -613,7 +613,7 @@ void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
 #endif
 #endif
 
-#if defined(CONFIG_MACH_MT6775)
+#if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
 int dvfsrc_get_bw(int type)
 {
 	int ret = 0;
@@ -646,7 +646,9 @@ int dvfsrc_get_bw(int type)
 
 	return ret;
 }
+#endif
 
+#if defined(CONFIG_MACH_MT6775)
 int get_cur_vcore_dvfs_opp(void)
 {
 	int dvfsrc_level_bit = readl(DVFSRC_LEVEL) >> 16;
