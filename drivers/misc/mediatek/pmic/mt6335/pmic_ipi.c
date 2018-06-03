@@ -43,28 +43,49 @@
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
 
-static DEFINE_MUTEX(pmic_ipi_mutex);
 static DEFINE_SPINLOCK(pmic_ipi_spinlock);
+
+static DEFINE_SPINLOCK(extbuck_ipi_spinlock);
+
+int extbuck_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
+{
+	int ret_val = 0;
+	int ipi_ret = 0;
+	unsigned long flags;
+
+	spin_lock_irqsave(&extbuck_ipi_spinlock, flags);
+	ret_val =
+		sspm_ipi_send_sync_ex(IPI_ID_EXT_BUCK, IPI_OPT_LOCK_POLLING,
+				buffer, 1, retbuf, 1);
+	spin_unlock_irqrestore(&extbuck_ipi_spinlock, flags);
+
+	ipi_ret = ((struct pmic_ipi_ret_datas *)retbuf)->data[0];
+
+	if (ret_val)
+		pr_err("%s ap_ret = %d ipi_ret =%d\n", __func__, ret_val, ipi_ret);
+	else {
+		if (ipi_ret != 0 && ipi_ret != 1)
+			pr_err("%s ap_ret = %d ipi_ret =%d\n", __func__,
+					ret_val, ipi_ret);
+	}
+	ret_val = ipi_ret;
+
+	pr_err("%s end\n", __func__);
+	return ret_val;
+}
 
 unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 {
 	int ret_val = 0;
 	int ipi_ret = 0;
 	unsigned int cmd = ((struct pmic_ipi_cmds *)buffer)->cmd[0];
+	unsigned long flags;
 
-	if (lock) {
-		mutex_lock(&pmic_ipi_mutex);
-		ret_val =
-			sspm_ipi_send_sync_ex(IPI_ID_PMIC, IPI_OPT_DEFAUT, buffer,
-					  PMIC_IPI_SEND_SLOT_SIZE, retbuf, PMIC_IPI_ACK_SLOT_SIZE);
-		mutex_unlock(&pmic_ipi_mutex);
-	} else {
-		spin_lock(&pmic_ipi_spinlock);
-		ret_val =
-			sspm_ipi_send_sync_ex(IPI_ID_PMIC, IPI_OPT_LOCK_POLLING, buffer,
-					  PMIC_IPI_SEND_SLOT_SIZE, retbuf, PMIC_IPI_ACK_SLOT_SIZE);
-		spin_unlock(&pmic_ipi_spinlock);
-	}
+	spin_lock_irqsave(&pmic_ipi_spinlock, flags);
+	ret_val =
+		sspm_ipi_send_sync_ex(IPI_ID_PMIC, IPI_OPT_LOCK_POLLING, buffer,
+				PMIC_IPI_SEND_SLOT_SIZE, retbuf, PMIC_IPI_ACK_SLOT_SIZE);
+	spin_unlock_irqrestore(&pmic_ipi_spinlock, flags);
 	ipi_ret = ((struct pmic_ipi_ret_datas *)retbuf)->data[0];
 
 	switch (cmd) {
@@ -125,22 +146,6 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 		break;
 
 	case SUB_PMIC_CTRL:
-		if (ret_val) {
-			if (ret_val == IPI_BUSY || ret_val == IPI_TIMEOUT_ACK) {
-				if (ipi_ret != 0 && ipi_ret != 1)
-					pr_err("%s ap_ret_sub = %d ipi_ret_sub =%d\n", __func__,
-						ret_val, ipi_ret);
-			} else
-				/* Real PMIC service execution result, by each PMIC service */
-				pr_err("%s ap_ret_sub = %d ipi_ret_sub =%d\n", __func__,
-					ret_val, ipi_ret);
-		} else {
-			if (ipi_ret != 0 && ipi_ret != 1)
-				pr_err("%s ap_ret_sub = %d ipi_ret_sub =%d\n", __func__,
-					ret_val, ipi_ret);
-		}
-		ret_val = ipi_ret;
-
 		break;
 
 	default:
@@ -157,13 +162,10 @@ int extbuck_ipi_enable(unsigned char buck_id, unsigned char en)
 	struct pmic_ipi_cmds send = { {0} };
 	struct pmic_ipi_ret_datas recv = { {0} };
 
-	send.cmd[0] = SUB_PMIC_CTRL;
-	send.cmd[1] = buck_id;
-	send.cmd[2] = en;
+	pr_err("%s en = %d\n", __func__, en);
+	send.cmd[0] = en;
 
-	if (preempt_count() > 0 || irqs_disabled() || system_state != SYSTEM_RUNNING || oops_in_progress)
-		return pmic_ipi_to_sspm(&send, &recv, 0);
-	return pmic_ipi_to_sspm(&send, &recv, 1);
+	return extbuck_ipi_to_sspm(&send, &recv, 0);
 }
 #endif /* CONFIG_MTK_EXTBUCK */
 

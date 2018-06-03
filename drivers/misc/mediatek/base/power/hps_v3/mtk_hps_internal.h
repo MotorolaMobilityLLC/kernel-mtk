@@ -25,7 +25,7 @@
 /*
  * CONFIG - compile time
  */
-#define CPU_BUCK_CTRL   (0)
+#define CPU_BUCK_CTRL   (1)
 
 #define HPS_TASK_RT_PRIORITY		(MAX_RT_PRIO - 3)
 #define HPS_TASK_NORMAL_PRIORITY	(MIN_NICE)
