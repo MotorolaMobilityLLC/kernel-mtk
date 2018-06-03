@@ -11,33 +11,21 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/init.h>
 #include <linux/types.h>
-#include <linux/wait.h>
-#include <linux/slab.h>
-#include <linux/fs.h>
-#include <linux/sched.h>
-#include <linux/poll.h>
+#include <linux/init.h>
+#include <linux/module.h>
 #include <linux/device.h>
-#include <linux/interrupt.h>
-#include <linux/delay.h>
 #include <linux/platform_device.h>
-#include <linux/cdev.h>
-#include <linux/err.h>
-#include <linux/errno.h>
-#include <linux/time.h>
-#include <linux/io.h>
-#include <linux/uaccess.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
-#include <linux/version.h>
+#include <linux/workqueue.h>
 #include <linux/mutex.h>
-#include <linux/i2c.h>
-#include <linux/leds.h>
+#include <linux/of.h>
+#include <linux/list.h>
+#include <linux/delay.h>
+#include <linux/pinctrl/consumer.h>
 
-#include "flashlight.h"
+#include "flashlight-core.h"
 #include "flashlight-dt.h"
 
 /* define device tree */
@@ -69,6 +57,12 @@ static struct pinctrl_state *dummy_xxx_low;
 
 /* define usage count */
 static int use_count;
+
+/* platform data */
+struct dummy_platform_data {
+	int channel_num;
+	struct flashlight_device_id *dev_id;
+};
 
 
 /******************************************************************************
@@ -249,50 +243,51 @@ static int dummy_ioctl(unsigned int cmd, unsigned long arg)
 	return 0;
 }
 
-static int dummy_open(void *pArg)
+static int dummy_open(void)
 {
-	/* Actual behavior move to set driver function since power saving issue */
+	/* Move to set driver for saving power */
 	return 0;
 }
 
-static int dummy_release(void *pArg)
+static int dummy_release(void)
 {
-	/* uninit chip and clear usage count */
-	mutex_lock(&dummy_mutex);
-	use_count--;
-	if (!use_count)
-		dummy_uninit();
-	if (use_count < 0)
-		use_count = 0;
-	mutex_unlock(&dummy_mutex);
-
-	fl_pr_debug("Release: %d\n", use_count);
-
+	/* Move to set driver for saving power */
 	return 0;
 }
 
-static int dummy_set_driver(void)
+static int dummy_set_driver(int set)
 {
-	/* init chip and set usage count */
+	int ret = 0;
+
+	/* set chip and usage count */
 	mutex_lock(&dummy_mutex);
-	if (!use_count)
-		dummy_init();
-	use_count++;
+	if (set) {
+		if (!use_count)
+			ret = dummy_init();
+		use_count++;
+		fl_pr_debug("Set driver: %d\n", use_count);
+	} else {
+		use_count--;
+		if (!use_count)
+			ret = dummy_uninit();
+		if (use_count < 0)
+			use_count = 0;
+		fl_pr_debug("Unset driver: %d\n", use_count);
+	}
 	mutex_unlock(&dummy_mutex);
 
-	fl_pr_debug("Set driver: %d\n", use_count);
-
-	return 0;
+	return ret;
 }
 
 static ssize_t dummy_strobe_store(struct flashlight_arg arg)
 {
-	dummy_set_driver();
+	dummy_set_driver(1);
 	dummy_set_level(arg.level);
+	dummy_timeout_ms = 0;
 	dummy_enable();
 	msleep(arg.dur);
 	dummy_disable();
-	dummy_release(NULL);
+	dummy_set_driver(0);
 
 	return 0;
 }
@@ -318,17 +313,85 @@ static int dummy_chip_init(void)
 	return 0;
 }
 
-static int dummy_probe(struct platform_device *dev)
+static int dummy_parse_dt(struct device *dev,
+		struct dummy_platform_data *pdata)
 {
+	struct device_node *np, *cnp;
+	u32 decouple = 0;
+	int i = 0;
+
+	if (!dev || !dev->of_node || !pdata)
+		return -ENODEV;
+
+	np = dev->of_node;
+
+	pdata->channel_num = of_get_child_count(np);
+	if (!pdata->channel_num) {
+		fl_pr_info("Parse no dt, node.\n");
+		return 0;
+	}
+	fl_pr_info("Channel number(%d).\n", pdata->channel_num);
+
+	if (of_property_read_u32(np, "decouple", &decouple))
+		fl_pr_info("Parse no dt, decouple.\n");
+
+	pdata->dev_id = devm_kzalloc(dev,
+			pdata->channel_num * sizeof(struct flashlight_device_id),
+			GFP_KERNEL);
+	if (!pdata->dev_id)
+		return -ENOMEM;
+
+	for_each_child_of_node(np, cnp) {
+		if (of_property_read_u32(cnp, "type", &pdata->dev_id[i].type))
+			goto err_node_put;
+		if (of_property_read_u32(cnp, "ct", &pdata->dev_id[i].ct))
+			goto err_node_put;
+		if (of_property_read_u32(cnp, "part", &pdata->dev_id[i].part))
+			goto err_node_put;
+		snprintf(pdata->dev_id[i].name, FLASHLIGHT_NAME_SIZE, DUMMY_NAME);
+		pdata->dev_id[i].channel = i;
+		pdata->dev_id[i].decouple = decouple;
+
+		fl_pr_info("Parse dt (type,ct,part,name,channel,decouple)=(%d,%d,%d,%s,%d,%d).\n",
+				pdata->dev_id[i].type, pdata->dev_id[i].ct,
+				pdata->dev_id[i].part, pdata->dev_id[i].name,
+				pdata->dev_id[i].channel, pdata->dev_id[i].decouple);
+		i++;
+	}
+
+	return 0;
+
+err_node_put:
+	of_node_put(cnp);
+	return -EINVAL;
+}
+
+static int dummy_probe(struct platform_device *pdev)
+{
+	struct dummy_platform_data *pdata = dev_get_platdata(&pdev->dev);
 	int err;
+	int i;
 
 	fl_pr_debug("Probe start.\n");
 
 	/* init pinctrl */
-	if (dummy_pinctrl_init(dev)) {
+	if (dummy_pinctrl_init(pdev)) {
 		fl_pr_debug("Failed to init pinctrl.\n");
 		err = -EFAULT;
 		goto err;
+	}
+
+	/* init platform data */
+	if (!pdata) {
+		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+		if (!pdata) {
+			err = -ENOMEM;
+			goto err;
+		}
+		pdev->dev.platform_data = pdata;
+		err = dummy_parse_dt(&pdev->dev, pdata);
+		if (err)
+			goto err;
 	}
 
 	/* init work queue */
@@ -342,14 +405,22 @@ static int dummy_probe(struct platform_device *dev)
 	/* init chip hw */
 	dummy_chip_init();
 
-	/* register flashlight operations */
-	if (flashlight_dev_register(DUMMY_NAME, &dummy_ops)) {
-		err = -EFAULT;
-		goto err;
-	}
-
 	/* clear usage count */
 	use_count = 0;
+
+	/* register flashlight device */
+	if (pdata->channel_num) {
+		for (i = 0; i < pdata->channel_num; i++)
+			if (flashlight_dev_register_by_device_id(&pdata->dev_id[i], &dummy_ops)) {
+				err = -EFAULT;
+				goto err;
+			}
+	} else {
+		if (flashlight_dev_register(DUMMY_NAME, &dummy_ops)) {
+			err = -EFAULT;
+			goto err;
+		}
+	}
 
 	fl_pr_debug("Probe done.\n");
 
@@ -358,15 +429,24 @@ err:
 	return err;
 }
 
-static int dummy_remove(struct platform_device *dev)
+static int dummy_remove(struct platform_device *pdev)
 {
+	struct dummy_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	int i;
+
 	fl_pr_debug("Remove start.\n");
+
+	pdev->dev.platform_data = NULL;
+
+	/* unregister flashlight device */
+	if (pdata && pdata->channel_num)
+		for (i = 0; i < pdata->channel_num; i++)
+			flashlight_dev_unregister_by_device_id(&pdata->dev_id[i]);
+	else
+		flashlight_dev_unregister(DUMMY_NAME);
 
 	/* flush work queue */
 	flush_work(&dummy_work);
-
-	/* unregister flashlight operations */
-	flashlight_dev_unregister(DUMMY_NAME);
 
 	fl_pr_debug("Remove done.\n");
 

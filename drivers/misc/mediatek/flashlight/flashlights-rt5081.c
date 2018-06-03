@@ -11,36 +11,23 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/init.h>
 #include <linux/types.h>
-#include <linux/wait.h>
-#include <linux/slab.h>
-#include <linux/fs.h>
-#include <linux/sched.h>
-#include <linux/poll.h>
+#include <linux/init.h>
+#include <linux/module.h>
 #include <linux/device.h>
-#include <linux/interrupt.h>
-#include <linux/delay.h>
 #include <linux/platform_device.h>
-#include <linux/cdev.h>
-#include <linux/err.h>
-#include <linux/errno.h>
-#include <linux/time.h>
-#include <linux/io.h>
-#include <linux/uaccess.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
-#include <linux/version.h>
+#include <linux/workqueue.h>
 #include <linux/mutex.h>
-#include <linux/i2c.h>
-#include <linux/leds.h>
+#include <linux/of.h>
+#include <linux/list.h>
+#include <linux/delay.h>
 
 #include "richtek/rt-flashlight.h"
 #include "mtk_charger.h"
 
-#include "flashlight.h"
+#include "flashlight-core.h"
 #include "flashlight-dt.h"
 
 /* device tree should be defined in flashlight-dt.h */
@@ -65,11 +52,10 @@
 #define RT5081_LEVEL_TORCH 16
 #define RT5081_LEVEL_FLASH RT5081_LEVEL_NUM
 #define RT5081_WDT_TIMEOUT 1248 /* ms */
+#define RT5081_HW_TIMEOUT 400 /* ms */
 
 /* define mutex, work queue and timer */
 static DEFINE_MUTEX(rt5081_mutex);
-static DEFINE_MUTEX(rt5081_enable_mutex);
-static DEFINE_MUTEX(rt5081_disable_mutex);
 static struct work_struct rt5081_work_ch1;
 static struct work_struct rt5081_work_ch2;
 static struct hrtimer rt5081_timer_ch1;
@@ -92,9 +78,23 @@ static struct charger_consumer *flashlight_charger_consumer;
 /* is decrease voltage */
 static int is_decrease_voltage;
 
+/* platform data */
+struct rt5081_platform_data {
+	int channel_num;
+	struct flashlight_device_id *dev_id;
+};
+
+
 /******************************************************************************
  * rt5081 operations
  *****************************************************************************/
+static const int rt5081_current[RT5081_LEVEL_NUM] = {
+	  25,   50,  75, 100, 125, 150, 175,  200,  225,  250,
+	 275,  300, 325, 350, 375, 400, 450,  500,  550,  600,
+	 650,  700, 750, 800, 850, 900, 950, 1000, 1050, 1100,
+	1150, 1200
+};
+
 static const unsigned char rt5081_torch_level[RT5081_LEVEL_TORCH] = {
 	0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0x10, 0x12,
 	0x14, 0x16, 0x18, 0x1A, 0x1C, 0x1E
@@ -491,6 +491,28 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 		fl_arg->arg = rt5081_is_charger_ready();
 		break;
 
+	case FLASH_IOC_GET_DUTY_NUMBER:
+		fl_pr_debug("FLASH_IOC_GET_DUTY_NUMBER(%d)\n", channel);
+		fl_arg->arg = RT5081_LEVEL_NUM;
+		break;
+
+	case FLASH_IOC_GET_MAX_TORCH_DUTY:
+		fl_pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
+		fl_arg->arg = RT5081_LEVEL_TORCH - 1;
+		break;
+
+	case FLASH_IOC_GET_DUTY_CURRENT:
+		fl_arg->arg = rt5081_verify_level(fl_arg->arg);
+		fl_pr_debug("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
+				channel, (int)fl_arg->arg);
+		fl_arg->arg = rt5081_current[fl_arg->arg];
+		break;
+
+	case FLASH_IOC_GET_HW_TIMEOUT:
+		fl_pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
+		fl_arg->arg = RT5081_HW_TIMEOUT;
+		break;
+
 	default:
 		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
@@ -500,50 +522,49 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 	return 0;
 }
 
-static int rt5081_open(void *pArg)
+static int rt5081_open(void)
 {
-	/* Actual behavior move to set driver function since power saving issue */
+	/* Move to set driver for saving power */
 	return 0;
 }
 
-static int rt5081_release(void *pArg)
+static int rt5081_release(void)
 {
-	/* uninit chip and clear usage count */
-	mutex_lock(&rt5081_mutex);
-	use_count--;
-	if (!use_count)
-		rt5081_uninit();
-	if (use_count < 0)
-		use_count = 0;
-	mutex_unlock(&rt5081_mutex);
-
-	fl_pr_debug("Release: %d\n", use_count);
-
+	/* Move to set driver for saving power */
 	return 0;
 }
 
-static int rt5081_set_driver(void)
+static int rt5081_set_driver(int set)
 {
 	int ret = 0;
 
-	/* init chip and set usage count */
+	/* set chip and usage count */
 	mutex_lock(&rt5081_mutex);
-	if (!use_count)
-		ret = rt5081_init();
-	use_count++;
+	if (set) {
+		if (!use_count)
+			ret = rt5081_init();
+		use_count++;
+		fl_pr_debug("Set driver: %d\n", use_count);
+	} else {
+		use_count--;
+		if (!use_count)
+			ret = rt5081_uninit();
+		if (use_count < 0)
+			use_count = 0;
+		fl_pr_debug("Unset driver: %d\n", use_count);
+	}
 	mutex_unlock(&rt5081_mutex);
-
-	fl_pr_debug("Set driver: %d\n", use_count);
 
 	return ret;
 }
 
 static ssize_t rt5081_strobe_store(struct flashlight_arg arg)
 {
-	rt5081_set_driver();
+	rt5081_set_driver(1);
 	rt5081_set_scenario(
 			FLASHLIGHT_SCENARIO_CAMERA | FLASHLIGHT_SCENARIO_COUPLE);
 	rt5081_set_level(arg.channel, arg.level);
+	rt5081_timeout_ms[arg.channel] = 0;
 
 	if (arg.level < 0)
 		rt5081_operate(arg.channel, RT5081_DISABLE);
@@ -554,7 +575,7 @@ static ssize_t rt5081_strobe_store(struct flashlight_arg arg)
 	rt5081_set_scenario(
 			FLASHLIGHT_SCENARIO_FLASHLIGHT | FLASHLIGHT_SCENARIO_COUPLE);
 	rt5081_operate(arg.channel, RT5081_DISABLE);
-	rt5081_release(NULL);
+	rt5081_set_driver(0);
 
 	return 0;
 }
@@ -571,9 +592,77 @@ static struct flashlight_operations rt5081_ops = {
 /******************************************************************************
  * Platform device and driver
  *****************************************************************************/
+static int rt5081_parse_dt(struct device *dev,
+		struct rt5081_platform_data *pdata)
+{
+	struct device_node *np, *cnp;
+	u32 decouple = 0;
+	int i = 0;
+
+	if (!dev || !dev->of_node || !pdata)
+		return -ENODEV;
+
+	np = dev->of_node;
+
+	pdata->channel_num = of_get_child_count(np);
+	if (!pdata->channel_num) {
+		fl_pr_info("Parse no dt, node.\n");
+		return 0;
+	}
+	fl_pr_info("Channel number(%d).\n", pdata->channel_num);
+
+	if (of_property_read_u32(np, "decouple", &decouple))
+		fl_pr_info("Parse no dt, decouple.\n");
+
+	pdata->dev_id = devm_kzalloc(dev,
+			pdata->channel_num * sizeof(struct flashlight_device_id),
+			GFP_KERNEL);
+	if (!pdata->dev_id)
+		return -ENOMEM;
+
+	for_each_child_of_node(np, cnp) {
+		if (of_property_read_u32(cnp, "type", &pdata->dev_id[i].type))
+			goto err_node_put;
+		if (of_property_read_u32(cnp, "ct", &pdata->dev_id[i].ct))
+			goto err_node_put;
+		if (of_property_read_u32(cnp, "part", &pdata->dev_id[i].part))
+			goto err_node_put;
+		snprintf(pdata->dev_id[i].name, FLASHLIGHT_NAME_SIZE, RT5081_NAME);
+		pdata->dev_id[i].channel = i;
+		pdata->dev_id[i].decouple = decouple;
+
+		fl_pr_info("Parse dt (type,ct,part,name,channel,decouple)=(%d,%d,%d,%s,%d,%d).\n",
+				pdata->dev_id[i].type, pdata->dev_id[i].ct,
+				pdata->dev_id[i].part, pdata->dev_id[i].name,
+				pdata->dev_id[i].channel, pdata->dev_id[i].decouple);
+		i++;
+	}
+
+	return 0;
+
+err_node_put:
+	of_node_put(cnp);
+	return -EINVAL;
+}
+
 static int rt5081_probe(struct platform_device *pdev)
 {
+	struct rt5081_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	int ret;
+	int i;
+
 	fl_pr_debug("Probe start.\n");
+
+	/* parse dt */
+	if (!pdata) {
+		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+		if (!pdata)
+			return -ENOMEM;
+		pdev->dev.platform_data = pdata;
+		ret = rt5081_parse_dt(&pdev->dev, pdata);
+		if (ret)
+			return ret;
+	}
 
 	/* init work queue */
 	INIT_WORK(&rt5081_work_ch1, rt5081_work_disable_ch1);
@@ -586,10 +675,6 @@ static int rt5081_probe(struct platform_device *pdev)
 	rt5081_timer_ch2.function = rt5081_timer_func_ch2;
 	rt5081_timeout_ms[RT5081_CHANNEL_CH1] = 600;
 	rt5081_timeout_ms[RT5081_CHANNEL_CH2] = 600;
-
-	/* register flashlight operations */
-	if (flashlight_dev_register(RT5081_NAME, &rt5081_ops))
-		return -EFAULT;
 
 	/* clear attributes */
 	use_count = 0;
@@ -608,7 +693,8 @@ static int rt5081_probe(struct platform_device *pdev)
 	}
 
 	/* setup strobe mode timeout */
-	if (flashlight_set_strobe_timeout(flashlight_dev_ch1, 400, 600) < 0)
+	if (flashlight_set_strobe_timeout(flashlight_dev_ch1,
+				RT5081_HW_TIMEOUT, RT5081_HW_TIMEOUT + 200) < 0)
 		fl_pr_err("Failed to set strobe timeout.\n");
 
 	/* get charger consumer manager */
@@ -618,6 +704,16 @@ static int rt5081_probe(struct platform_device *pdev)
 		return -EFAULT;
 	}
 
+	/* register flashlight device */
+	if (pdata->channel_num) {
+		for (i = 0; i < pdata->channel_num; i++)
+			if (flashlight_dev_register_by_device_id(&pdata->dev_id[i], &rt5081_ops))
+				return -EFAULT;
+	} else {
+		if (flashlight_dev_register(RT5081_NAME, &rt5081_ops))
+			return -EFAULT;
+	}
+
 	fl_pr_debug("Probe done.\n");
 
 	return 0;
@@ -625,14 +721,23 @@ static int rt5081_probe(struct platform_device *pdev)
 
 static int rt5081_remove(struct platform_device *pdev)
 {
+	struct rt5081_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	int i;
+
 	fl_pr_debug("Remove start.\n");
+
+	pdev->dev.platform_data = NULL;
+
+	/* unregister flashlight device */
+	if (pdata && pdata->channel_num)
+		for (i = 0; i < pdata->channel_num; i++)
+			flashlight_dev_unregister_by_device_id(&pdata->dev_id[i]);
+	else
+		flashlight_dev_unregister(RT5081_NAME);
 
 	/* flush work queue */
 	flush_work(&rt5081_work_ch1);
 	flush_work(&rt5081_work_ch2);
-
-	/* unregister flashlight operations */
-	flashlight_dev_unregister(RT5081_NAME);
 
 	/* clear RTK flashlight device */
 	flashlight_dev_ch1 = NULL;

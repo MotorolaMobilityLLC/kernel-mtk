@@ -11,33 +11,22 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/init.h>
 #include <linux/types.h>
-#include <linux/wait.h>
-#include <linux/slab.h>
-#include <linux/fs.h>
-#include <linux/sched.h>
-#include <linux/poll.h>
+#include <linux/init.h>
+#include <linux/module.h>
 #include <linux/device.h>
-#include <linux/interrupt.h>
-#include <linux/delay.h>
 #include <linux/platform_device.h>
-#include <linux/cdev.h>
-#include <linux/err.h>
-#include <linux/errno.h>
-#include <linux/time.h>
-#include <linux/io.h>
-#include <linux/uaccess.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
-#include <linux/version.h>
+#include <linux/workqueue.h>
 #include <linux/mutex.h>
+#include <linux/of.h>
+#include <linux/list.h>
+#include <linux/delay.h>
 #include <linux/i2c.h>
-#include <linux/leds.h>
+#include <linux/slab.h>
 
-#include "flashlight.h"
+#include "flashlight-core.h"
 #include "flashlight-dt.h"
 
 /* define device tree */
@@ -64,6 +53,7 @@
 /* define level */
 #define RT4505_LEVEL_NUM 18
 #define RT4505_LEVEL_TORCH 4
+#define RT4505_HW_TIMEOUT 800 /* ms */
 
 /* define mutex and work queue */
 static DEFINE_MUTEX(rt4505_mutex);
@@ -77,11 +67,8 @@ static struct i2c_client *rt4505_i2c_client;
 
 /* platform data */
 struct rt4505_platform_data {
-	u8 torch_pin_enable;         /* 1: TX1/TORCH pin isa hardware TORCH enable */
-	u8 pam_sync_pin_enable;      /* 1: TX2 Mode The ENVM/TX2 is a PAM Sync. on input */
-	u8 thermal_comp_mode_enable; /* 1: LEDI/NTC pin in Thermal Comparator Mode */
-	u8 strobe_pin_disable;       /* 1: STROBE Input disabled */
-	u8 vout_mode_enable;         /* 1: Voltage Out Mode enable */
+	int channel_num;
+	struct flashlight_device_id *dev_id;
 };
 
 /* rt4505 chip data */
@@ -89,23 +76,21 @@ struct rt4505_chip_data {
 	struct i2c_client *client;
 	struct rt4505_platform_data *pdata;
 	struct mutex lock;
-	u8 last_flag;
-	u8 no_pdata;
 };
 
 
 /******************************************************************************
  * rt4505 operations
  *****************************************************************************/
+static const int rt4505_current[RT4505_LEVEL_NUM] = {
+	 49,  93,  140,  187,  281,  375,  468,  562, 656, 750,
+	843, 937, 1031, 1125, 1218, 1312, 1406, 1500
+};
 
-/*
- * flashlight current (mA)
- * {49.6 , 93.74, 140.63 , 187.5, 281.25 , 375   , 468.75 , 562.5, 656.25, 750,
- * 843.75, 937.5, 1031.25, 1125 , 1218.75, 1312.5, 1406.25, 1500}
- */
 static const unsigned char rt4505_flash_level[RT4505_LEVEL_NUM] = {
 	0x00, 0x20, 0x40, 0x60, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
+};
 
 static int rt4505_level = -1;
 
@@ -271,6 +256,29 @@ static int rt4505_ioctl(unsigned int cmd, unsigned long arg)
 			hrtimer_cancel(&rt4505_timer);
 		}
 		break;
+
+	case FLASH_IOC_GET_DUTY_NUMBER:
+		fl_pr_debug("FLASH_IOC_GET_DUTY_NUMBER(%d)\n", channel);
+		fl_arg->arg = RT4505_LEVEL_NUM;
+		break;
+
+	case FLASH_IOC_GET_MAX_TORCH_DUTY:
+		fl_pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
+		fl_arg->arg = RT4505_LEVEL_TORCH - 1;
+		break;
+
+	case FLASH_IOC_GET_DUTY_CURRENT:
+		fl_arg->arg = rt4505_verify_level(fl_arg->arg);
+		fl_pr_debug("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
+				channel, (int)fl_arg->arg);
+		fl_arg->arg = rt4505_current[fl_arg->arg];
+		break;
+
+	case FLASH_IOC_GET_HW_TIMEOUT:
+		fl_pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
+		fl_arg->arg = RT4505_HW_TIMEOUT;
+		break;
+
 	default:
 		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
@@ -280,50 +288,51 @@ static int rt4505_ioctl(unsigned int cmd, unsigned long arg)
 	return 0;
 }
 
-static int rt4505_open(void *pArg)
+static int rt4505_open(void)
 {
-	/* Actual behavior move to set driver function since power saving issue */
+	/* Move to set driver for saving power */
 	return 0;
 }
 
-static int rt4505_release(void *pArg)
+static int rt4505_release(void)
 {
-	/* uninit chip and clear usage count */
-	mutex_lock(&rt4505_mutex);
-	use_count--;
-	if (!use_count)
-		rt4505_uninit();
-	if (use_count < 0)
-		use_count = 0;
-	mutex_unlock(&rt4505_mutex);
-
-	fl_pr_debug("Release: %d\n", use_count);
-
+	/* Move to set driver for saving power */
 	return 0;
 }
 
-static int rt4505_set_driver(void)
+static int rt4505_set_driver(int set)
 {
-	/* init chip and set usage count */
+	int ret = 0;
+
+	/* set chip and usage count */
 	mutex_lock(&rt4505_mutex);
-	if (!use_count)
-		rt4505_init();
-	use_count++;
+	if (set) {
+		if (!use_count)
+			ret = rt4505_init();
+		use_count++;
+		fl_pr_debug("Set driver: %d\n", use_count);
+	} else {
+		use_count--;
+		if (!use_count)
+			ret = rt4505_uninit();
+		if (use_count < 0)
+			use_count = 0;
+		fl_pr_debug("Unset driver: %d\n", use_count);
+	}
 	mutex_unlock(&rt4505_mutex);
 
-	fl_pr_debug("Set driver: %d\n", use_count);
-
-	return 0;
+	return ret;
 }
 
 static ssize_t rt4505_strobe_store(struct flashlight_arg arg)
 {
-	rt4505_set_driver();
+	rt4505_set_driver(1);
 	rt4505_set_level(arg.level);
+	rt4505_timeout_ms = 0;
 	rt4505_enable();
 	msleep(arg.dur);
 	rt4505_disable();
-	rt4505_release(NULL);
+	rt4505_set_driver(0);
 
 	return 0;
 }
@@ -349,11 +358,65 @@ static int rt4505_chip_init(struct rt4505_chip_data *chip)
 	return 0;
 }
 
+static int rt4505_parse_dt(struct device *dev,
+		struct rt4505_platform_data *pdata)
+{
+	struct device_node *np, *cnp;
+	u32 decouple = 0;
+	int i = 0;
+
+	if (!dev || !dev->of_node || !pdata)
+		return -ENODEV;
+
+	np = dev->of_node;
+
+	pdata->channel_num = of_get_child_count(np);
+	if (!pdata->channel_num) {
+		fl_pr_info("Parse no dt, node.\n");
+		return 0;
+	}
+	fl_pr_info("Channel number(%d).\n", pdata->channel_num);
+
+	if (of_property_read_u32(np, "decouple", &decouple))
+		fl_pr_info("Parse no dt, decouple.\n");
+
+	pdata->dev_id = devm_kzalloc(dev,
+			pdata->channel_num * sizeof(struct flashlight_device_id),
+			GFP_KERNEL);
+	if (!pdata->dev_id)
+		return -ENOMEM;
+
+	for_each_child_of_node(np, cnp) {
+		if (of_property_read_u32(cnp, "type", &pdata->dev_id[i].type))
+			goto err_node_put;
+		if (of_property_read_u32(cnp, "ct", &pdata->dev_id[i].ct))
+			goto err_node_put;
+		if (of_property_read_u32(cnp, "part", &pdata->dev_id[i].part))
+			goto err_node_put;
+		snprintf(pdata->dev_id[i].name, FLASHLIGHT_NAME_SIZE, RT4505_NAME);
+		pdata->dev_id[i].channel = i;
+		pdata->dev_id[i].decouple = decouple;
+
+		fl_pr_info("Parse dt (type,ct,part,name,channel,decouple)=(%d,%d,%d,%s,%d,%d).\n",
+				pdata->dev_id[i].type, pdata->dev_id[i].ct,
+				pdata->dev_id[i].part, pdata->dev_id[i].name,
+				pdata->dev_id[i].channel, pdata->dev_id[i].decouple);
+		i++;
+	}
+
+	return 0;
+
+err_node_put:
+	of_node_put(cnp);
+	return -EINVAL;
+}
+
 static int rt4505_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
+	struct rt4505_platform_data *pdata = dev_get_platdata(&client->dev);
 	struct rt4505_chip_data *chip;
-	struct rt4505_platform_data *pdata = client->dev.platform_data;
 	int err;
+	int i;
 
 	fl_pr_debug("Probe start.\n");
 
@@ -374,13 +437,15 @@ static int rt4505_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 	/* init platform data */
 	if (!pdata) {
-		fl_pr_debug("Platform data does not exist\n");
-		pdata = kzalloc(sizeof(struct rt4505_platform_data), GFP_KERNEL);
+		pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
 		if (!pdata) {
 			err = -ENOMEM;
-			goto err_init_pdata;
+			goto err_free;
 		}
-		chip->no_pdata = 1;
+		client->dev.platform_data = pdata;
+		err = rt4505_parse_dt(&client->dev, pdata);
+		if (err)
+			goto err_free;
 	}
 	chip->pdata = pdata;
 	i2c_set_clientdata(client, chip);
@@ -395,27 +460,33 @@ static int rt4505_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	/* init timer */
 	hrtimer_init(&rt4505_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	rt4505_timer.function = rt4505_timer_func;
-	rt4505_timeout_ms = 100;
+	rt4505_timeout_ms = 400;
 
 	/* init chip hw */
 	rt4505_chip_init(chip);
 
-	/* register flashlight operations */
-	if (flashlight_dev_register(RT4505_NAME, &rt4505_ops)) {
-		err = -EFAULT;
-		goto err_free;
-	}
-
 	/* clear usage count */
 	use_count = 0;
+
+	/* register flashlight device */
+	if (pdata->channel_num) {
+		for (i = 0; i < pdata->channel_num; i++)
+			if (flashlight_dev_register_by_device_id(&pdata->dev_id[i], &rt4505_ops)) {
+				err = -EFAULT;
+				goto err_free;
+			}
+	} else {
+		if (flashlight_dev_register(RT4505_NAME, &rt4505_ops)) {
+			err = -EFAULT;
+			goto err_free;
+		}
+	}
 
 	fl_pr_debug("Probe done.\n");
 
 	return 0;
 
 err_free:
-	kfree(chip->pdata);
-err_init_pdata:
 	i2c_set_clientdata(client, NULL);
 	kfree(chip);
 err_out:
@@ -424,19 +495,25 @@ err_out:
 
 static int rt4505_i2c_remove(struct i2c_client *client)
 {
+	struct rt4505_platform_data *pdata = dev_get_platdata(&client->dev);
 	struct rt4505_chip_data *chip = i2c_get_clientdata(client);
+	int i;
 
 	fl_pr_debug("Remove start.\n");
+
+	client->dev.platform_data = NULL;
+
+	/* unregister flashlight device */
+	if (pdata && pdata->channel_num)
+		for (i = 0; i < pdata->channel_num; i++)
+			flashlight_dev_unregister_by_device_id(&pdata->dev_id[i]);
+	else
+		flashlight_dev_unregister(RT4505_NAME);
 
 	/* flush work queue */
 	flush_work(&rt4505_work);
 
-	/* unregister flashlight operations */
-	flashlight_dev_unregister(RT4505_NAME);
-
 	/* free resource */
-	if (chip->no_pdata)
-		kfree(chip->pdata);
 	kfree(chip);
 
 	fl_pr_debug("Remove done.\n");
@@ -460,11 +537,11 @@ MODULE_DEVICE_TABLE(of, rt4505_i2c_of_match);
 
 static struct i2c_driver rt4505_i2c_driver = {
 	.driver = {
-		   .name = RT4505_NAME,
+		.name = RT4505_NAME,
 #ifdef CONFIG_OF
-		   .of_match_table = rt4505_i2c_of_match,
+		.of_match_table = rt4505_i2c_of_match,
 #endif
-		   },
+	},
 	.probe = rt4505_i2c_probe,
 	.remove = rt4505_i2c_remove,
 	.id_table = rt4505_i2c_id,
