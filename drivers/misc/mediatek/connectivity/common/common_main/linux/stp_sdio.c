@@ -497,10 +497,12 @@ static _osal_inline_ INT32 stp_sdio_do_own_set(MTK_WCN_STP_SDIO_HIF_INFO *p_info
 		else {
 			if (!(value & C_FW_COM_DRV_OWN)) {
 				STPSDIO_DBG_FUNC("set firmware own! (sleeping) ok\n");
-				osal_ftrace_print("set F own okay\n");
+				osal_ftrace_print("set F own okay, sleep_flag(%d), wakeup_flag(%d), awake_falg(%d)",
+						p_info->sleep_flag, p_info->wakeup_flag, p_info->awake_flag);
 				p_info->awake_flag = 0;
 				p_info->sleep_flag = 0;
 				osal_raise_signal(&p_info->isr_check_complete);
+				osal_ftrace_print("set F own okay and raise signal done");
 			} else {
 				STPSDIO_WARN_FUNC("set firmware own fail!, set CLR BACK\n");
 				osal_ftrace_print("set F own fail, set CLR BACK\n");
@@ -665,6 +667,8 @@ INT32 stp_sdio_own_ctrl(SDIO_PS_OP op)
 		gp_info->sleep_flag = 1;
 		osal_trigger_event(&gp_info->tx_rx_event);
 		STPSDIO_LOUD_FUNC("before op(%d)\n", op);
+		osal_ftrace_print("own set start, wakeup_flag(%d), sleep_flag(%d), wait signal",
+				gp_info->wakeup_flag, gp_info->sleep_flag);
 		osal_wait_for_signal(pOsalSignal);
 		STPSDIO_LOUD_FUNC("after op(%d)\n", op);
 		ret = 0;
@@ -675,6 +679,8 @@ INT32 stp_sdio_own_ctrl(SDIO_PS_OP op)
 		gp_info->sleep_flag = 0;
 		gp_info->wakeup_flag = 1;
 		osal_trigger_event(&gp_info->tx_rx_event);
+		osal_ftrace_print("own clear start, wakeup_flag(%d), sleep_flag(%d), wait signal",
+				gp_info->wakeup_flag, gp_info->sleep_flag);
 		STPSDIO_LOUD_FUNC("before op(%d)\n", op);
 		osal_wait_for_signal(pOsalSignal);
 		STPSDIO_LOUD_FUNC("after op(%d)\n", op);
@@ -690,6 +696,8 @@ INT32 stp_sdio_own_ctrl(SDIO_PS_OP op)
 		ret = -1;
 		break;
 	}
+	osal_ftrace_print("own control end, wakeup_flag(%d), sleep_flag(%d), signal done",
+			gp_info->wakeup_flag, gp_info->sleep_flag);
 	osal_signal_deinit(pOsalSignal);
 	return ret;
 }
@@ -762,7 +770,8 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 			if (stp_sdio_do_own_clr(0) == 0) {
 				STPSDIO_DBG_FUNC("set OWN to driver side ok!\n");
 				pInfo->awake_flag = 1;
-				osal_ftrace_print("set OWN D ok!\n");
+				osal_ftrace_print("set OWN D ok!, sleep_flag(%d), wakeup_flag(%d), awake_falg(%d)",
+						pInfo->sleep_flag, pInfo->wakeup_flag, pInfo->awake_flag);
 				own_fail_counter = 0;
 			} else {
 				if ((pInfo->sleep_flag != 0) || (pInfo->wakeup_flag != 0)) {
@@ -782,7 +791,8 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 			}
 		} else {
 			STPSDIO_DBG_FUNC("OWN on driver side!\n");
-			osal_ftrace_print("OWN D!\n");
+			osal_ftrace_print("OWN D , sleep_flag(%d), wakeup_flag(%d), awake_falg(%d)",
+						pInfo->sleep_flag, pInfo->wakeup_flag, pInfo->awake_flag);
 		}
 
 		if ((pInfo->wakeup_flag != 0) && (pInfo->awake_flag != 0)) {
@@ -974,7 +984,8 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 				while_loop_counter = 0;
 				osal_ftrace_print("|S|set F own\n");
 				stp_sdio_do_own_set(pInfo);
-				osal_ftrace_print("|E|set F own\n");
+				osal_ftrace_print("|E|set F own, sleep_flag(%d), wakeup_flag(%d), awake_falg(%d)",
+						pInfo->sleep_flag, pInfo->wakeup_flag, pInfo->awake_flag);
 			} else {
 #if 0
 				/* debug code */
@@ -1009,6 +1020,8 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 			pInfo->irq_pending = 1;
 
 			if ((pInfo->sleep_flag != 0) || (pInfo->wakeup_flag != 0)) {
+				osal_ftrace_print("loop_count > 1000, sleep_flag(%d), wakeup_flag(%d), awake_flag(%d)",
+							pInfo->sleep_flag, pInfo->wakeup_flag, pInfo->awake_flag);
 				/*clear wakeup/sleep pending flag, wakeup wmtd thread */
 				pInfo->wakeup_flag = 0;
 				pInfo->sleep_flag = 0;
@@ -1028,6 +1041,8 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 	}
 	/*make sure thread who is waiting for STP-SDIO's sleep/wakeup completion event */
 	if ((pInfo->sleep_flag != 0) || (pInfo->wakeup_flag != 0)) {
+		osal_ftrace_print("wait for sleep/wakeup event, sleep_flag(%d), wakeup_flag(%d), awake_falg(%d)",
+				pInfo->sleep_flag, pInfo->wakeup_flag, pInfo->awake_flag);
 		pInfo->wakeup_flag = 0;
 		pInfo->sleep_flag = 0;
 		STPSDIO_WARN_FUNC("someone is wait for sleep/wakeup event, signal it to return\n");
