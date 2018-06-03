@@ -155,20 +155,13 @@ static int clNR_status_open(struct inode *inode, struct file *file)
 	return single_open(file, clNR_status_read, NULL);
 }
 
-static int clNR_status_close(struct inode *inode, struct file *file)
-{
-	clNR_dprintk("%s %d\n", __func__, __LINE__);
-
-	return 0;
-}
-
 static const struct file_operations clNR_status_fops = {
 	.owner = THIS_MODULE,
 	.open = clNR_status_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.write = clNR_status_write,
-	.release = clNR_status_close,
+	.release = single_release,
 	.mmap = clNR_status_mmap,
 };
 
