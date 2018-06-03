@@ -46,6 +46,12 @@ extern unsigned int	soidle_profile[4];
 			pr_debug(SODI_TAG fmt, ##args);		\
 	} while (0)
 
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
+#define SUPPORT_SW_SET_SPM_MEMEPLL_MODE
+#else
+#undef SUPPORT_SW_SET_SPM_MEMEPLL_MODE
+#endif
+
 enum spm_sodi_step {
 	SPM_SODI_ENTER = 0,
 	SPM_SODI_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI,

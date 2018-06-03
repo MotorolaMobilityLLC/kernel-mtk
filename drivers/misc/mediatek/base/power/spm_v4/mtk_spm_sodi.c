@@ -398,10 +398,12 @@ unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	operation_cond |= soidle_pre_handler();
 	profile_so_end(PIDX_PRE_HANDLER);
 
+#ifdef SUPPORT_SW_SET_SPM_MEMEPLL_MODE
 	if (spm_get_sodi_mempll() == 1)
 		spm_flags |= SPM_FLAG_SODI_CG_MODE; /* CG mode */
 	else
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE; /* PDN mode */
+#endif
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
