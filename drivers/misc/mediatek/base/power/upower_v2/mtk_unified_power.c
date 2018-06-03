@@ -325,8 +325,8 @@ static void upower_wait_for_eem_volt_done(void)
 		}
 		if (!eem_volt_not_ready)
 			break;
-		else
-			udelay(100);
+		/* if eem volt not ready, wait 100us */
+		udelay(100);
 	}
 }
 
