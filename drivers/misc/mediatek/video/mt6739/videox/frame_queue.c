@@ -308,7 +308,6 @@ struct frame_queue_t *frame_queue_node_create(void)
 
 void frame_queue_node_destroy(struct frame_queue_t *framequeue)
 {
-	disp_input_free_dirty_roi(&framequeue->frame_cfg);
 	mutex_lock(&framequeue_pool_lock);
 	list_add_tail(&framequeue->link, &framequeue_pool_head);
 	mutex_unlock(&framequeue_pool_lock);
@@ -347,8 +346,9 @@ static int fence_wait_worker_func(void *data)
 		mutex_lock(&head->lock);
 		list_del(list);
 		mutex_unlock(&head->lock);
-
+		disp_input_free_dirty_roi(&node->frame_cfg);
 		frame_queue_node_destroy(node);
+
 
 next:
 		/* wake up HWC thread, if it's being blocked */

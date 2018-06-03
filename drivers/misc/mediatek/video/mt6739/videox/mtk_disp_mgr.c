@@ -940,7 +940,8 @@ static int _ioctl_frame_config(unsigned long arg)
 	frame_node = frame_queue_node_create();
 	if (IS_ERR_OR_NULL(frame_node)) {
 		ret_val = ERR_PTR(-ENOMEM);
-		goto Error;
+		DISPERR("[FB Driver]: frame queue node create failed! line:%d\n", __LINE__);
+		return PTR_ERR(ret_val);
 	}
 
 	frame_cfg = &frame_node->frame_cfg;	/* this is initialized correctly when get node from framequeue list */
