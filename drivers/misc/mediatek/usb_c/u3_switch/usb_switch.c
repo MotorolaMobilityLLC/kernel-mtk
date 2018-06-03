@@ -23,8 +23,8 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/platform_device.h>
-
 #include <linux/gpio.h>
+#include "tcpm.h"
 
 
 #define K_EMERG	(1<<7)
@@ -39,7 +39,7 @@
 
 #define usbc_pinctrl_printk(level, fmt, args...) do { \
 		if (debug_level & level) { \
-			pr_err("[USB_SWITCH]" fmt, ## args); \
+			pr_info("[USB_SWITCH]" fmt, ## args); \
 		} \
 	} while (0)
 
@@ -345,6 +345,32 @@ static int usb_switch_set(void *data, u64 val)
 }
 DEFINE_SIMPLE_ATTRIBUTE(usb_debugfs_fops, NULL, usb_switch_set, "%llu\n");
 
+
+static int usb_check_cc_smt_status(void *data, u64 *val)
+{
+	struct tcpc_device *tcpc_dev;
+	uint8_t cc1, cc2;
+
+	tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+	if (!tcpc_dev) {
+		pr_err("[TYPEC]%s get tcpc device type_c_port0 fail\n", __func__);
+		return 0;
+	}
+
+	tcpm_inquire_remote_cc(tcpc_dev, &cc1, &cc2, false);
+	pr_info("[TYPEC]%s cc1=%d, cc2=%d\n", __func__, cc1, cc2);
+
+	if (cc1 == TYPEC_CC_VOLT_OPEN || cc1 == TYPEC_CC_DRP_TOGGLING)
+		*val = 0;
+	else if (cc2 == TYPEC_CC_VOLT_OPEN || cc2 == TYPEC_CC_DRP_TOGGLING)
+		*val = 0;
+	else
+		*val = 1;
+
+	return 0;
+}
+DEFINE_SIMPLE_ATTRIBUTE(usb_cc_smt_fops, usb_check_cc_smt_status, NULL, "%llu\n");
+
 int usb_typec_init_debugfs(struct usbtypc *typec)
 {
 	struct dentry *root;
@@ -357,10 +383,12 @@ int usb_typec_init_debugfs(struct usbtypc *typec)
 		goto err0;
 	}
 
-	file = debugfs_create_file("gpio", S_IRUGO|S_IWUSR, root, typec, &usb_gpio_debugfs_fops);
-
+	file = debugfs_create_file("gpio", S_IRUGO|S_IWUSR, root, typec,
+					&usb_gpio_debugfs_fops);
 	file = debugfs_create_file("smt", S_IWUSR, root, typec,
-						&usb_debugfs_fops);
+					&usb_debugfs_fops);
+	file = debugfs_create_file("smt_u2_cc_mode", S_IRUGO, root, typec,
+					&usb_cc_smt_fops);
 
 	if (!file) {
 		ret = -ENOMEM;
@@ -409,8 +437,8 @@ void usb3_switch_ctrl_en(bool en)
 static int usbc_pinctrl_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	struct usbtypc *typec;
 	struct device_node *np;
+	struct usbtypc *typec;
 
 	typec = get_usbtypec();
 
@@ -582,8 +610,6 @@ static int usbc_pinctrl_probe(struct platform_device *pdev)
 	usb_redriver_init(typec);
 	usb3_switch_init(typec);
 
-	usb_typec_init_debugfs(typec);
-
 	return ret;
 }
 
@@ -606,6 +632,10 @@ static struct platform_driver usb_switch_pinctrl_driver = {
 int __init usbc_pinctrl_init(void)
 {
 	int ret = 0;
+	struct usbtypc *typec;
+
+	typec = get_usbtypec();
+	usb_typec_init_debugfs(typec);
 
 	if (!platform_driver_register(&usb_switch_pinctrl_driver))
 		usbc_pinctrl_printk(K_DEBUG, "register usbc pinctrl succeed!!\n");
