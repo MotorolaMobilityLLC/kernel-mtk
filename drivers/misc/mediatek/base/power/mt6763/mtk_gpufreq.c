@@ -233,7 +233,7 @@ static void __iomem *g_apmixed_base;
 #define UNIVPLL_FREQ	(416000) /* KHz */
 
 /* MT6763T Use VCORE DVFS and need on/off VCORE & frequency control only */
-#define GPU_DVFS_FREQ0_6763T	 (800000)	/* KHz */
+#define GPU_DVFS_FREQ0_6763T	 (770000)	/* KHz */
 #define GPU_DVFS_FREQ1_6763T	 (530000)	/* KHz */
 #define GPUFREQ_LAST_FREQ_LEVEL_6763T	(GPU_DVFS_FREQ1_6763T)
 
