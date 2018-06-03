@@ -264,17 +264,31 @@ struct spm_lp_scen __spm_sodi3 = {
 
 static bool gSpm_sodi3_en = true;
 
-static void spm_sodi3_pre_process(void)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
+static void spm_sodi3_pmic_before_wfi(void)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	u32 val;
+}
 
-	spm_disable_mmu_smi_async();
-	spm_bypass_boost_gpio_set();
+static void spm_sodi3_pmic_after_wfi(void)
+{
+}
+
+#elif defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+static void spm_sodi3_pmic_before_wfi(void)
+{
+}
+
+static void spm_sodi3_pmic_after_wfi(void)
+{
+}
+
+#else
+static void spm_sodi3_pmic_before_wfi(void)
+{
+	u32 val;
 
 	__spm_pmic_pg_force_on();
 	spm_pmic_power_mode(PMIC_PWR_SODI3, 0, 0);
-
 
 #if defined(CONFIG_ARCH_MT6755)
 
@@ -332,6 +346,29 @@ static void spm_sodi3_pre_process(void)
 					IDX_DI_SRCCLKEN_IN2_SLEEP,
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
 
+	if (is_md_c2k_conn_power_off())
+		__spm_backup_pmic_ck_pdn();
+}
+
+static void spm_sodi3_pmic_after_wfi(void)
+{
+	if (is_md_c2k_conn_power_off())
+		__spm_restore_pmic_ck_pdn();
+
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	__spm_pmic_low_iq_mode(0);
+#endif
+
+	__spm_pmic_pg_force_off();
+}
+#endif
+
+static void spm_sodi3_pre_process(void)
+{
+	spm_disable_mmu_smi_async();
+	spm_bypass_boost_gpio_set();
+	spm_sodi3_pmic_before_wfi();
+
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
 
@@ -339,28 +376,16 @@ static void spm_sodi3_pre_process(void)
 	clk_buf_write_afcdac();
 
 	/* Do more low power setting when MD1/C2K/CONN off */
-	if (is_md_c2k_conn_power_off()) {
+	if (is_md_c2k_conn_power_off())
 		__spm_bsi_top_init_setting();
-		__spm_backup_pmic_ck_pdn();
-	}
-#endif
 }
 
 static void spm_sodi3_post_process(void)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (is_md_c2k_conn_power_off())
-		__spm_restore_pmic_ck_pdn();
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
-	__spm_pmic_low_iq_mode(0);
-#endif
-
+	spm_sodi3_pmic_after_wfi();
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
-	__spm_pmic_pg_force_off();
-
 	spm_enable_mmu_smi_async();
-#endif
 }
 
 static __always_inline void spm_sodi3_enable_pcm_wdt(void)
