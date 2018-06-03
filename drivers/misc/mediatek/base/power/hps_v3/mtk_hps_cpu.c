@@ -202,7 +202,7 @@ int hps_cpu_init(void)
 		hps_sys.cluster_info[2].pwr_seq = 1;
 	}
 #endif
-
+#if 0
 	/*
 	 * For EAS evaluation
 	 */
@@ -218,6 +218,7 @@ int hps_cpu_init(void)
 		hps_sys.cluster_info[2].up_threshold = DEF_EAS_UP_THRESHOLD_2;
 		hps_sys.cluster_info[2].down_threshold = DEF_EAS_DOWN_THRESHOLD_2;
 	}
+#endif
 	hps_ops_init();
 
 	return r;
