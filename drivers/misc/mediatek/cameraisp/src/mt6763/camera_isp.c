@@ -9559,11 +9559,23 @@ int32_t ISP_EndGCECallback(uint32_t taskID, uint32_t regCount, uint32_t *regValu
 	LOG_DBG("kk:tpipePA(0x%x), ctlStart(0x%x)", tpipePA, ctlStart);
 
 	if ((tpipePA)) {
+#ifdef AEE_DUMP_BY_USING_ION_MEMORY
 		tpipePA = tpipePA&0xfffff000;
-		map_va = 0;
-		m4u_mva_map_kernel(tpipePA, TPIPE_DUMP_SIZE, &map_va, &map_size);
-		pMapVa = (int *)map_va;
-		LOG_DBG("map_size(0x%x)", map_size);
+		struct isp_imem_memory isp_p2GCEdump_imem_buf;
+
+		struct ion_client *isp_p2GCEdump_ion_client;
+
+		isp_p2GCEdump_imem_buf.handle = NULL;
+		isp_p2GCEdump_imem_buf.ion_fd = 0;
+		isp_p2GCEdump_imem_buf.va = 0;
+		isp_p2GCEdump_imem_buf.pa = 0;
+		isp_p2GCEdump_imem_buf.length = TPIPE_DUMP_SIZE;
+		if ((isp_p2_ion_client == NULL) && (g_ion_device))
+			isp_p2_ion_client = ion_client_create(g_ion_device, "isp_p2");
+		if (isp_p2_ion_client == NULL)
+			LOG_ERR("invalid isp_p2_ion_client client!\n");
+		if (isp_allocbuf(&isp_p2GCEdump_imem_buf) >= 0) {
+			pMapVa = (int *)isp_p2GCEdump_imem_buf.va;
 		LOG_DBG("ctlStart(0x%x),tpipePA(0x%x)", ctlStart, tpipePA);
 
 		if (pMapVa) {
@@ -9573,7 +9585,13 @@ int32_t ISP_EndGCECallback(uint32_t taskID, uint32_t regCount, uint32_t *regValu
 					pMapVa[i+5], pMapVa[i+6], pMapVa[i+7], pMapVa[i+8], pMapVa[i+9]);
 			}
 		}
-		m4u_mva_unmap_kernel(tpipePA, map_size, map_va);
+			isp_freebuf(&isp_p2GCEdump_imem_buf);
+			isp_p2GCEdump_imem_buf.handle = NULL;
+			isp_p2GCEdump_imem_buf.ion_fd = 0;
+			isp_p2GCEdump_imem_buf.va = 0;
+			isp_p2GCEdump_imem_buf.pa = 0;
+		}
+#endif
 	}
 #endif
 
