@@ -762,40 +762,93 @@ static int larb_clock_unprepare(int larb_id, int enable_mtcmos)
 #endif
 	return 0;
 }
-int smi_bus_enable(enum SMI_LARB_ID larb_id, char *user_name)
+
+/*
+ * prepare and enable CG/MTCMOS of specific LARB and COMMON
+ * larb_id: used for select specific larb
+ * user_name: caller's module name, used for debug
+ */
+int smi_bus_enable(enum SMI_MASTER_ID master_id, char *user_name)
 {
-	smi_clk_prepare(larb_id, user_name, 1);
-	smi_clk_enable(larb_id, user_name, 1);
+	smi_clk_prepare(master_id, user_name, 1);
+	smi_clk_enable(master_id, user_name, 1);
 	return 0;
 }
-int smi_bus_disable(enum SMI_LARB_ID larb_id, char *user_name)
+
+/*
+ * disable and unprepare CG/MTCMOS of specific LARB and COMMON
+ * larb_id: used for select specific larb
+ * user_name: caller's module name, used for debug
+ */
+int smi_bus_disable(enum SMI_MASTER_ID master_id, char *user_name)
 {
-	smi_clk_disable(larb_id, user_name, 1);
-	smi_clk_unprepare(larb_id, user_name, 1);
+	smi_clk_disable(master_id, user_name, 1);
+	smi_clk_unprepare(master_id, user_name, 1);
 	return 0;
 }
-int smi_clk_prepare(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
+
+/*
+ * prepare CG/MTCMOS of specific LARB and COMMON
+ * larb_id: used for select specific larb
+ * user_name: caller's module name, used for debug
+ * enable_mtcmos: wish to manipulate mtcmos = 1, else = 0
+ */
+int smi_clk_prepare(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos)
 {
-	SMIDBG(1, "%s is calling smi_clk_prepare", user_name);
-	return larb_clock_prepare(larb_id, enable_mtcmos);
+	SMIDBG(1, "%s is calling smi_clk_prepare\n", user_name);
+	if (master_id == SMI_COMMON)
+		smi_common_clk_operation(SMI_PREPARE_CLK);
+	else
+		larb_clock_prepare(master_id, enable_mtcmos);
+	return 0;
 }
 
-int smi_clk_enable(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
+/*
+ * enable CG/MTCMOS of specific LARB and COMMON
+ * larb_id: used for select specific larb
+ * user_name: caller's module name, used for debug
+ * enable_mtcmos: wish to manipulate mtcmos = 1, else = 0
+ */
+int smi_clk_enable(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos)
 {
-	SMIDBG(1, "%s is calling smi_clk_enable", user_name);
-	return larb_clock_enable(larb_id, enable_mtcmos);
+	SMIDBG(1, "%s is calling smi_clk_enable\n", user_name);
+	if (master_id == SMI_COMMON)
+		smi_common_clk_operation(SMI_ENABLE_CLK);
+	else
+		larb_clock_enable(master_id, enable_mtcmos);
+	return 0;
 }
 
-int smi_clk_unprepare(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
+/*
+ * unprepare CG/MTCMOS of specific LARB and COMMON
+ * larb_id: used for select specific larb
+ * user_name: caller's module name, used for debug
+ * enable_mtcmos: wish to manipulate mtcmos = 1, else = 0
+ */
+int smi_clk_unprepare(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos)
 {
-	SMIDBG(1, "%s is calling smi_clk_unprepare", user_name);
-	return larb_clock_unprepare(larb_id, enable_mtcmos);
+	SMIDBG(1, "%s is calling smi_clk_unprepare\n", user_name);
+	if (master_id == SMI_COMMON)
+		smi_common_clk_operation(SMI_UNPREPARE_CLK);
+	else
+		larb_clock_unprepare(master_id, enable_mtcmos);
+	return 0;
 }
 
-int smi_clk_disable(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
+/*
+ * disable CG/MTCMOS of specific LARB and COMMON
+ * master_id: used for select specific larb
+ * user_name: caller's module name, used for debug
+ * enable_mtcmos: wish to manipulate mtcmos = 1, else = 0
+ */
+int smi_clk_disable(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos)
 {
-	SMIDBG(1, "%s is calling smi_clk_disable", user_name);
-	return larb_clock_disable(larb_id, enable_mtcmos);
+	SMIDBG(1, "%s is calling smi_clk_disable\n", user_name);
+	if (master_id == SMI_COMMON)
+		smi_common_clk_operation(SMI_DISABLE_CLK);
+	else
+		larb_clock_disable(master_id, enable_mtcmos);
+	return 0;
 }
 
 int larb_reg_restore(int larb)
