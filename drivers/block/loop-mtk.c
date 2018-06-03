@@ -227,13 +227,29 @@ lo_do_transfer(struct loop_device *lo, int cmd,
 static int __do_lo_send_write(struct file *file,
 		u8 *buf, const int len, loff_t pos)
 {
-	ssize_t bw;
-	mm_segment_t old_fs = get_fs();
+	ssize_t bw = 0;
+	mm_segment_t old_fs;
+	struct kvec kvec = {.iov_base = buf, .iov_len = len};
+	struct iov_iter from;
 
 	file_start_write(file);
-	set_fs(get_ds());
-	bw = file->f_op->write(file, buf, len, &pos);
-	set_fs(old_fs);
+
+	/* MTK PATCH: Add write_iter support */
+
+	if (file->f_op->write_iter) {
+
+		iov_iter_kvec(&from, ITER_KVEC | WRITE, &kvec, 1, len);
+		bw = vfs_iter_write(file, &from, &pos);
+
+	} else if (file->f_op->write) {
+
+		old_fs = get_fs();
+
+		set_fs(get_ds());
+		bw = file->f_op->write(file, buf, len, &pos);
+		set_fs(old_fs);
+	}
+
 	file_end_write(file);
 	if (likely(bw == len))
 		return 0;
@@ -888,8 +904,10 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
 	if (!S_ISREG(inode->i_mode) && !S_ISBLK(inode->i_mode))
 		goto out_putf;
 
+	/* MTK PATCH: Add write_iter support */
+
 	if (!(file->f_mode & FMODE_WRITE) || !(mode & FMODE_WRITE) ||
-	    !file->f_op->write)
+	    (!file->f_op->write && !file->f_op->write_iter))
 		lo_flags |= LO_FLAGS_READ_ONLY;
 
 	lo_blocksize = S_ISBLK(inode->i_mode) ?
