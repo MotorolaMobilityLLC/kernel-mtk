@@ -88,14 +88,14 @@ void mt_power_gs_dpidle_compare(unsigned int dump_flag)
 
 	if (dump_flag & GS_CG) {
 		mt_power_gs_compare("DPIdle ", "CG  ",
-				AP_CG_Golden_Setting_tcl_gs_mp3_play,
-				AP_CG_Golden_Setting_tcl_gs_mp3_play_len);
+				AP_CG_Golden_Setting_tcl_gs_dpidle,
+				AP_CG_Golden_Setting_tcl_gs_dpidle_len);
 	}
 
 	if (dump_flag & GS_DCM) {
 		mt_power_gs_compare("DPIdle ", "DCM ",
-				AP_DCM_Golden_Setting_tcl_gs_mp3_play,
-				AP_DCM_Golden_Setting_tcl_gs_mp3_play_len);
+				AP_DCM_Golden_Setting_tcl_gs_dpidle,
+				AP_DCM_Golden_Setting_tcl_gs_dpidle_len);
 	}
 
 	mt_power_gs_sp_dump();
