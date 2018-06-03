@@ -16,6 +16,14 @@
 
 #include <asm/arch_timer.h>
 
+#if defined(CONFIG_MACH_MT6757)
+#include "mtk_cpuidle_mt6757.h"
+#endif
+
+#if defined(CONFIG_MACH_MT6799)
+#include "mtk_cpuidle_mt6799.h"
+#endif
+
 enum mtk_cpuidle_mode {
 	MTK_LEGACY_MCDI_MODE = 1,
 	MTK_LEGACY_SODI_MODE,
@@ -72,5 +80,9 @@ void write_cntpctl(int cntpctl);
 int read_cntpctl(void);
 extern unsigned long *aee_rr_rec_mtk_cpuidle_footprint_va(void);
 extern unsigned long *aee_rr_rec_mtk_cpuidle_footprint_pa(void);
+
+unsigned long * __weak mt_save_dbg_regs(unsigned long *p, unsigned int cpuid) { return 0; }
+void __weak mt_restore_dbg_regs(unsigned long *p, unsigned int cpuid) { }
+void __weak mt_copy_dbg_regs(int to, int from) { }
 
 #endif
