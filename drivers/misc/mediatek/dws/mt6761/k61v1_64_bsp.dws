@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.16.2018.09:33:00"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.20.2018.15:34:38"-->
 <dct_cfg>
     <general chip="MT6761">
         <proj>Merlot_Phone</proj>
@@ -181,7 +181,7 @@
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_ALS_EINT_PIN</varName0>
