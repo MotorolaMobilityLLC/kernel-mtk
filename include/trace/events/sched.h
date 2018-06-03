@@ -288,6 +288,65 @@ TRACE_EVENT(sched_process_fork,
 		__entry->child_comm, __entry->child_pid)
 );
 
+
+/*
+ * Tracepoint for HMP (CONFIG_SCHED_HMP) task migrations.
+ */
+TRACE_EVENT(sched_hmp_migrate,
+
+	TP_PROTO(struct task_struct *tsk, int dest, int force),
+
+	TP_ARGS(tsk, dest, force),
+
+	TP_STRUCT__entry(
+		__array(char, comm, TASK_COMM_LEN)
+		__field(pid_t, pid)
+		__field(int,  dest)
+		__field(int,  force)
+		),
+
+	TP_fast_assign(
+		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+		__entry->pid   = tsk->pid;
+		__entry->dest  = dest;
+		__entry->force = force;
+		),
+
+	TP_printk("comm=%s pid=%d dest=%d force=%d",
+		__entry->comm, __entry->pid,
+		__entry->dest, __entry->force)
+);
+/*
+ * Tracepoint for showing the result of task runqueue selection
+ */
+TRACE_EVENT(sched_select_task_rq,
+
+	TP_PROTO(struct task_struct *tsk,
+		int policy, int prev_cpu, int target_cpu),
+
+	TP_ARGS(tsk, policy, prev_cpu, target_cpu),
+
+	TP_STRUCT__entry(
+		__field(pid_t, pid)
+		__field(int, policy)
+		__field(int, prev_cpu)
+		__field(int, target_cpu)
+		),
+
+	TP_fast_assign(
+		__entry->pid              = tsk->pid;
+		__entry->policy           = policy;
+		__entry->prev_cpu         = prev_cpu;
+		__entry->target_cpu       = target_cpu;
+		),
+
+	TP_printk("pid=%4d policy=0x%08x pre-cpu=%d target=%d",
+		__entry->pid,
+		__entry->policy,
+		__entry->prev_cpu,
+		__entry->target_cpu)
+);
+
 /*
  * Tracepoint for fork time:
  */
