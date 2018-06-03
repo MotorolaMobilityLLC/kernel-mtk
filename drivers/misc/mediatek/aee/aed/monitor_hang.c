@@ -131,17 +131,11 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		aee_kernel_RT_Monitor_api((int)arg);
 		return ret;
 	}
-	/* LOGE("AEEIOCTL_RT_MON_Kick unknown cmd :(%d)( %d)\n",(int)cmd, (int)arg); */
-	/* LOGE("AEEIOCTL_RT_MON_Kick known cmd :(%d)( %d)\n",
-	 * (int)AEEIOCTL_WDT_KICK_POWERKEY,
-	 * (int)AEEIOCTL_RT_MON_Kick);
-	 */
 	/* QHQ RT Monitor end */
 
 	if (cmd == AEEIOCTL_SET_SF_STATE) {
 		if (copy_from_user(&monitor_status, (void __user *)arg, sizeof(long long)))
 			ret = -1;
-		/* LOGE("AEE_MONITOR_SET[status]: 0x%llx", monitor_status); */
 		return ret;
 	} else if (cmd == AEEIOCTL_GET_SF_STATE) {
 		if (copy_to_user((void __user *)arg, &monitor_status, sizeof(long long)))
@@ -491,7 +485,7 @@ static int hang_detect_thread(void *arg)
 
 	while (1) {
 		if ((hd_detect_enabled == 1) && (FindTaskByName("system_server") != -1)) {
-			LOGE("[Hang_Detect] hang_detect thread counts down %d:%d.\n",
+			LOGD("[Hang_Detect] hang_detect thread counts down %d:%d.\n",
 				hang_detect_counter, hd_timeout);
 			#ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
@@ -569,72 +563,6 @@ void aee_kernel_RT_Monitor_api(int lParam)
 	}
 }
 
-#if 0
-static int hd_proc_cmd_read(char *buf,
-		char **start,
-		off_t offset,
-		int count,
-		int *eof,
-		void *data) {
-
-	/* with a read of the /proc/hang_detect, we reset the counter. */
-	int len = 0;
-
-	LOGE("[Hang_Detect] read proc	%d\n", count);
-
-	len =
-		sprintf(buf, "%d:%d\n",
-				hang_detect_counter,
-				hd_timeout);
-
-	hang_detect_counter = hd_timeout;
-
-	return len;
-}
-
-static int hd_proc_cmd_write(struct file
-		*file,
-		const char
-		*buf,
-		unsigned long
-		count,
-		void *data) {
-
-	/* with a write function , we set the time out, in seconds. */
-	/* with a '0' argument, we set it to max int */
-	/* with negative number, we will triger a timeout, or for extension functions (future use) */
-
-	int counter = 0;
-	int retval = 0;
-
-	retval = sscanf(buf, "%d ", &counter);
-	if (retval == 0)
-		LOGE("can not identify counter!\n");
-
-	LOGE("[Hang_Detect] write	proc %d, original %d: %d\n", counter, hang_detect_counter, hd_timeout);
-
-	if (counter > 0) {
-		if (counter % HD_INTER != 0)
-			hd_timeout = 1;
-		else
-			hd_timeout = 0;
-
-		counter =
-			counter / HD_INTER;
-		hd_timeout += counter;
-	} else if (counter == 0)
-		hd_timeout = 0x7fffffff;
-	else if (counter == -1)
-		hd_test();
-	else
-		return count;
-
-	hang_detect_counter = hd_timeout;
-
-	return count;
-}
-#endif
-
 int hang_detect_init(void)
 {
 
@@ -680,11 +608,6 @@ void aee_kernel_wdt_kick_Powkey_api(const
 	spin_lock(&pwk_hang_lock);
 	wdt_kick_status |= msg;
 	spin_unlock(&pwk_hang_lock);
-	/*  //reduce kernel log
-	 *if (pwk_start_monitor)
-	 *	LOGE("powerkey_kick:%s:%x,%x\r", module, msg, wdt_kick_status);
-	 */
-
 }
 EXPORT_SYMBOL
 (aee_kernel_wdt_kick_Powkey_api);
@@ -719,42 +642,14 @@ int aee_kernel_wdt_kick_api(int kinterval)
 				get_boot_mode(), wdt_kick_status, hwt_kick_times, kinterval, sched_clock());
 		hwt_kick_times++;
 		if ((kinterval * hwt_kick_times > 180)) {	/* only monitor 3 min */
-			pwk_start_monitor =
-				0;
-			/* check all modules is ok~~~ */
-			if ((wdt_kick_status & (WDT_SETBY_Display | WDT_SETBY_SF))
-					!= (WDT_SETBY_Display | WDT_SETBY_SF)) {
-				if (aee_mode != AEE_MODE_CUSTOMER_USER)	{	/* disable for display not ready */
-					/* ShowStatus();  catch task kernel bt */
-						/* LOGE("[WDK] Powerkey Tick fail,kick_status 0x%08x,RT[%lld]\n ", */
-						/* wdt_kick_status, sched_clock()); */
-						/* aee_kernel_warning_api(__FILE__, __LINE__,
-						 * DB_OPT_NE_JBT_TRACES|DB_OPT_DISPLAY_HANG_DUMP,
-						 * "\nCRDISPATCH_KEY:UI Hang(Powerkey)\n",
-						 * "Powerkey Monitor");
-						 */
-						/* msleep(30 * 1000); */
-				} else {
-					/* ShowStatus(); catch task kernel bt */
-						/* LOGE("[WDK] Powerkey Tick fail,kick_status 0x%08x,RT[%lld]\n ", */
-						/* wdt_kick_status, sched_clock()); */
-						/* aee_kernel_exception_api(__FILE__, __LINE__,
-						 * DB_OPT_NE_JBT_TRACES|DB_OPT_DISPLAY_HANG_DUMP,
-						 * "\nCRDISPATCH_KEY:UI Hang(Powerkey)\n",
-						 * "Powerkey Monitor");
-						 */
-						/* msleep(30 * 1000); */
-						/* ret = WDT_PWK_HANG_FORCE_HWT; trigger HWT */
-				}
-			}
+			pwk_start_monitor = 0;
 		}
 		if ((wdt_kick_status &
 					(WDT_SETBY_Display |
 					 WDT_SETBY_SF)) ==
 				(WDT_SETBY_Display |
 				 WDT_SETBY_SF)) {
-			pwk_start_monitor =
-				0;
+			pwk_start_monitor = 0;
 			LOGE("[WDK] Powerkey Tick ok,kick_status 0x%08x,RT[%lld]\n ", wdt_kick_status, sched_clock());
 		}
 	}
