@@ -53,13 +53,6 @@ __weak int get_spm_sleep_count(struct seq_file *s, void *unused)
 {
 	return 0;
 }
-__weak void mt_spm_pmic_wrap_set_cmd(enum pmic_wrap_phase_id phase, int idx, unsigned int cmd_wdata)
-{
-}
-
-__weak void mt_spm_pmic_wrap_set_phase(enum pmic_wrap_phase_id phase)
-{
-}
 
 int spm_for_gps_flag;
 static struct dentry *spm_dir;
