@@ -29,6 +29,7 @@
 #include "ipanic.h"
 #include <asm/system_misc.h>
 #include <mmprofile.h>
+#include "../mrdump/mrdump_private.h"
 
 static u32 ipanic_iv = 0xaabbccdd;
 static spinlock_t ipanic_lock;
