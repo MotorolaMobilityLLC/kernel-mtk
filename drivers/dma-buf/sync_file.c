@@ -142,21 +142,17 @@ static int sync_file_set_fence(struct sync_file *sync_file,
 	 * we already own a new reference to the fence. For num_fence > 1
 	 * we own the reference of the fence_array creation.
 	 */
-#if 0
 	if (num_fences == 1) {
 		sync_file->fence = fences[0];
 		kfree(fences);
 	} else {
-#endif
 		array = fence_array_create(num_fences, fences,
 					   fence_context_alloc(1), 1, false);
 		if (!array)
 			return -ENOMEM;
 
 		sync_file->fence = &array->base;
-#if 0
 	}
-#endif
 
 	return 0;
 }
