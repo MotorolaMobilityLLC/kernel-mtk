@@ -129,8 +129,8 @@ void dump_cg_regs(struct mt_i2c *i2c)
 		clk_sta_val & (1 << cg_bit) ? "off":"on");
 }
 
-void __iomem *infra_base;
-void __iomem *peri_base;
+void __iomem *infra_base_i2c;
+void __iomem *peri_base_i2c;
 
 static s32 map_bus_regs(struct mt_i2c *i2c, u8 type)
 {
@@ -139,15 +139,15 @@ static s32 map_bus_regs(struct mt_i2c *i2c, u8 type)
 	if (type == I2C_DUMP_INFRA_DBG) {
 		struct device_node *infra_node;
 
-		if (!infra_base && i2c->dev_comp->infracfg_compatible[0]) {
+		if (!infra_base_i2c && i2c->dev_comp->infracfg_compatible[0]) {
 			infra_node = of_find_compatible_node(NULL, NULL,
 				i2c->dev_comp->infracfg_compatible);
 			if (!infra_node) {
 				dev_info(i2c->dev, "Cannot find infra_node\n");
 				return -ENODEV;
 			}
-			infra_base = of_iomap(infra_node, 0);
-			if (!infra_base) {
+			infra_base_i2c = of_iomap(infra_node, 0);
+			if (!infra_base_i2c) {
 				dev_info(i2c->dev, "infra_base iomap failed\n");
 				return -ENOMEM;
 			}
@@ -156,15 +156,15 @@ static s32 map_bus_regs(struct mt_i2c *i2c, u8 type)
 	} else if (type == I2C_DUMP_PERI_DBG) {
 		struct device_node *peri_node;
 
-		if (!peri_base && i2c->dev_comp->pericfg_compatible[0]) {
+		if (!peri_base_i2c && i2c->dev_comp->pericfg_compatible[0]) {
 			peri_node = of_find_compatible_node(NULL, NULL,
 				i2c->dev_comp->pericfg_compatible);
 			if (!peri_node) {
 				dev_info(i2c->dev, "Cannot find peri_node\n");
 				return -ENODEV;
 			}
-			peri_base = of_iomap(peri_node, 0);
-			if (!peri_base) {
+			peri_base_i2c = of_iomap(peri_node, 0);
+			if (!peri_base_i2c) {
 				dev_info(i2c->dev, "peri_base iomap failed\n");
 				return -ENOMEM;
 			}
@@ -180,9 +180,9 @@ static void dump_bus_regs(struct mt_i2c *i2c, u8 type)
 	u32 bus_mon_offs, bus_mon_lens, i;
 
 	if (type == I2C_DUMP_INFRA_DBG) {
-		if (!infra_base || i2c->id >= I2C_MAX_CHANNEL) {
+		if (!infra_base_i2c || i2c->id >= I2C_MAX_CHANNEL) {
 			dev_info(i2c->dev, "infra_base %p, i2c id = %d\n",
-				infra_base, i2c->id);
+				infra_base_i2c, i2c->id);
 			return;
 		}
 		bus_mon_offs = i2c->dev_comp->infra_dbg_offset;
@@ -191,12 +191,12 @@ static void dump_bus_regs(struct mt_i2c *i2c, u8 type)
 
 		for (i = bus_mon_offs;
 		     i < bus_mon_offs + bus_mon_lens + 4; i += 4)
-			pr_info_ratelimited("%p:%08x\n", infra_base + i,
-					    readl(infra_base + i));
+			pr_info_ratelimited("%p:%08x\n", infra_base_i2c + i,
+					    readl(infra_base_i2c + i));
 	} else if (type == I2C_DUMP_PERI_DBG) {
-		if (!peri_base || i2c->id >= I2C_MAX_CHANNEL) {
+		if (!peri_base_i2c || i2c->id >= I2C_MAX_CHANNEL) {
 			dev_info(i2c->dev, "peri_base %p, i2c id = %d\n",
-				peri_base, i2c->id);
+				peri_base_i2c, i2c->id);
 			return;
 		}
 		bus_mon_offs = i2c->dev_comp->peri_dbg_offset;
@@ -205,8 +205,8 @@ static void dump_bus_regs(struct mt_i2c *i2c, u8 type)
 
 		for (i = bus_mon_offs;
 		     i < bus_mon_offs + bus_mon_lens + 4; i += 4)
-			pr_info_ratelimited("%p:%08x\n", peri_base + i,
-					    readl(peri_base + i));
+			pr_info_ratelimited("%p:%08x\n", peri_base_i2c + i,
+					    readl(peri_base_i2c + i));
 	}
 }
 
