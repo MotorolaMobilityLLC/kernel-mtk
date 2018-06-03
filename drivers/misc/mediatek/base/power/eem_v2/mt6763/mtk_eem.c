@@ -1678,7 +1678,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	#if DVT
 		det->VBOOT = 0x30;
 		det->VMAX = 0xFE;
-		det->VMIN = 0x10;
+		det->VMIN = 0x20;
 	#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);

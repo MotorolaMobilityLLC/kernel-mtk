@@ -550,6 +550,15 @@ int base_ops_pmic_2_volt(struct eem_det *det, int pmic_val)
 
 int base_ops_eem_2_pmic(struct eem_det *det, int eem_val)
 {
+	#if 0
+	eem_debug("[%s][%s] eem_val = 0x%x, base = %d, pmic = %x\n",
+		__func__,
+		((char *)(det->name) + 8),
+		eem_val,
+		det->pmic_base,
+		((((eem_val) * det->eem_step) + det->eem_v_base - det->pmic_base + det->pmic_step - 1) / det->pmic_step)
+		);
+	#endif
 	return ((((eem_val) * det->eem_step) + det->eem_v_base -
 			det->pmic_base + det->pmic_step - 1) / det->pmic_step);
 }

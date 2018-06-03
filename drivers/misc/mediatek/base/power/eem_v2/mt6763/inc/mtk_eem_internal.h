@@ -44,7 +44,7 @@
  * LOG
  */
 #ifdef __KERNEL__
-#define EEM_TAG	 "[EEM] "
+#define EEM_TAG	 "[xxxxEEM] "
 #ifdef USING_XLOG
 	#include <linux/xlog.h>
 	#define eem_emerg(fmt, args...)	 pr_err(ANDROID_LOG_ERROR, EEM_TAG, fmt, ##args)

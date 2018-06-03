@@ -18,7 +18,7 @@
 #define CONFIG_EEM_SHOWLOG	(0)
 #define EN_ISR_LOG		(1)
 	#define DVT			(1) /* only use at DVT, disable it at MP */
-	#define EEM_BANK_SOC		(0) /* use voltage bin, so disable it */
+	#define EEM_BANK_SOC		(1) /* use voltage bin, so disable it */
 #define EARLY_PORTING		(0) /* for detecting real vboot in eem_init01 */
 #define DUMP_DATA_TO_DE		(1)
 	#define EEM_ENABLE		(0) /* enable; after pass HPT mini-SQC */
