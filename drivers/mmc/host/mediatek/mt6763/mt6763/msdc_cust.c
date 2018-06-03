@@ -83,6 +83,8 @@ u8 msdc_clock_src[HOST_MAX_NUM] = {
 	0
 };
 
+int dma_force[HOST_MAX_NUM];
+
 /* use for SPM spm_resource_req */
 unsigned int msdc_cg_lock_init, msdc_cg_cnt;
 spinlock_t msdc_cg_lock;

@@ -1642,10 +1642,10 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 				__func__, host->id, cmd->opcode, cmd->arg);
 		if ((cmd->opcode == 52) && (cmd->arg != 0x00000c00) && (cmd->arg != 0x80000c08)) {
 			msdc_dump_info(host->id);
-			/* Set clock to 50Hz */
+			/* Set clock to 50MHz */
 			if (host->hw->flags & MSDC_SDIO_DDR208) {
 				msdc_clk_stable(host, 3, 1, 0);
-				pr_err("%s: SDIO set freq to 50Hz MSDC_CFG:0x%x\n", __func__, MSDC_READ32(MSDC_CFG));
+				pr_err("%s: SDIO set freq to 50MHz MSDC_CFG:0x%x\n", __func__, MSDC_READ32(MSDC_CFG));
 			}
 		}
 
@@ -1659,10 +1659,10 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			mmc_cmd_dump(host->mmc);
 #endif
 			msdc_dump_info(host->id);
-			/* Set clock to 50Hz */
+			/* Set clock to 50MHz */
 			if (host->hw->flags & MSDC_SDIO_DDR208) {
 				msdc_clk_stable(host, 3, 1, 0);
-				pr_err("%s: SDIO set freq to 50Hz MSDC_CFG:0x%x\n", __func__, MSDC_READ32(MSDC_CFG));
+				pr_err("%s: SDIO set freq to 50MHz MSDC_CFG:0x%x\n", __func__, MSDC_READ32(MSDC_CFG));
 			}
 		}
 		if (cmd->opcode == MMC_STOP_TRANSMISSION) {
@@ -4040,7 +4040,7 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 
 static void msdc_unreq_vcore(struct work_struct *work)
 {
-	vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
+	(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
 }
 
 static void msdc_set_vcore_performance(struct msdc_host *host, u32 enable)
@@ -4048,7 +4048,7 @@ static void msdc_set_vcore_performance(struct msdc_host *host, u32 enable)
 	if (enable) {
 		/* true if dwork was pending, false otherwise */
 		if (cancel_delayed_work_sync(&(host->set_vcore_workq)) == 0)
-			vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
+			(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
 	} else {
 		schedule_delayed_work(&(host->set_vcore_workq), MSDC_DVFS_TIMEOUT);
 	}

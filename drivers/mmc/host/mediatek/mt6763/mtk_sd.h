@@ -593,6 +593,7 @@ extern unsigned int sd_debug_zone[];
 extern u32 drv_mode[];
 extern u32 dma_size[];
 extern unsigned char msdc_clock_src[];
+extern int dma_force[];
 
 extern u32 sdio_pro_enable;
 

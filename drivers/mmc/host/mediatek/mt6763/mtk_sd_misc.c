@@ -56,13 +56,6 @@
 #define FORCE_IN_PIO            (0x10)
 #define FORCE_NOTHING           (0x0)
 
-static int dma_force[HOST_MAX_NUM] =    /* used for sd ioctrol */
-{
-	FORCE_NOTHING,
-	FORCE_NOTHING,
-	FORCE_NOTHING
-};
-
 static u32 *sg_msdc_multi_buffer;
 
 static int simple_sd_open(struct inode *inode, struct file *file)

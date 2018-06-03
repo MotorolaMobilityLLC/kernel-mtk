@@ -311,8 +311,13 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 
 	do {
 		if (host->hw->flags & MSDC_SDIO_DDR208) {
-			/* Set HS400 clock mode and DIV = 0 */
-			msdc_clk_stable(host, 3, 0, 1);
+			if (host->saved_para.msdc_cfg == 0x2300199) {
+				/* CMD timeout error happened and et clock to 50MHz */
+				msdc_clk_stable(host, 3, 1, 0);
+			} else {
+				/* Set HS400 clock mode and DIV = 0 */
+				msdc_clk_stable(host, 3, 0, 1);
+			}
 		} else {
 			msdc_set_mclk(host, host->saved_para.timing,
 				host->saved_para.hz);
@@ -325,7 +330,8 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			MSDC_READ32(MSDC_CFG),
 			host->saved_para.msdc_cfg, host->mclk,
 			host->saved_para.hz);
-	} while (retry--);
+		retry--;
+	} while (retry);
 
 	/* try to clear fifo if clock still not stable */
 	if (retry == 0) {
