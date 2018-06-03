@@ -163,6 +163,16 @@
 		interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_LOW>;
 	};
 
+	msdc0_top@11f50000 {
+		compatible = "mediatek,msdc0_top";
+		reg = <0 0x11f50000 0 0x1000>;
+	};
+
+	msdc1_top@11e10000 {
+		compatible = "mediatek,msdc1_top";
+		reg = <0 0x11e10000 0 0x1000>;
+	};
+
 	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;

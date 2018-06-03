@@ -32,6 +32,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc);
 /* Section 2: Power                                           */
 /**************************************************************/
 void msdc_sd_power_switch(struct msdc_host *host, u32 on);
+void msdc_sd_power_off(void);
 void msdc_set_host_power_control(struct msdc_host *host);
 void msdc_clksrc_onoff(struct msdc_host *host, u32 on);
 void msdc_clk_pre_enable(struct msdc_host *host);
@@ -41,7 +42,6 @@ void msdc_clk_post_disble(struct msdc_host *host);
 void msdc_pmic_force_vcore_pwm(bool enable);
 int msdc_oc_check(struct msdc_host *host, u32 en);
 int msdc_io_check(struct msdc_host *host);
-void msdc_sd_power_off(void);
 void msdc_dump_ldo_sts(struct msdc_host *host);
 void msdc_HQA_set_voltage(struct msdc_host *host);
 
@@ -57,7 +57,6 @@ extern void msdc_fpga_power(struct msdc_host *host, u32 on);
 #define msdc_emmc_power                 msdc_fpga_power
 #define msdc_sd_power                   msdc_fpga_power
 #define msdc_sdio_power                 msdc_fpga_power
-#define msdc_sd_power_off()
 #define msdc_dump_ldo_sts(host)
 
 #endif
