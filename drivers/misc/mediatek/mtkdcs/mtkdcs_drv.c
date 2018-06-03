@@ -797,11 +797,6 @@ static int __dcs_mpu_protection_enable(void)
 			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
 			MPU_ACCESS_PERMISSON_FORBIDDEN);
 
-	pr_debug("enable MPU\n");
-
-	/* wait for EMI to consume all transactions in the proection range */
-	mdelay(1);
-
 	return 0;
 }
 
@@ -810,12 +805,6 @@ static int __dcs_mpu_protection_disable(void)
 	emi_mpu_set_region_protection((unsigned long long)mpu_start,
 			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
 			MPU_ACCESS_PERMISSON_NO_PROTECTION);
-
-	pr_debug("disable MPU\n");
-
-	/* wait for EMI to consume all transactions in the proection range */
-	mdelay(1);
-
 	return 0;
 }
 
