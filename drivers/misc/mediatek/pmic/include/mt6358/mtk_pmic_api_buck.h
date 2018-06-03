@@ -35,8 +35,8 @@ void wk_auxadc_bgd_ctrl_dbg(void);
 #define PMIC_LP_LDO_VCN33_1_ENTRY(reg) {reg, MT6358_LDO_VCN33_CON0_1}
 #define PMIC_LP_LDO_VLDO28_0_ENTRY(reg) {reg, MT6358_LDO_VLDO28_CON0_0}
 #define PMIC_LP_LDO_VLDO28_1_ENTRY(reg) {reg, MT6358_LDO_VLDO28_CON0_1}
-#define PMIC_LP_LDO_VUSB33_0_ENTRY(reg) {reg, MT6358_LDO_VUSB_CON0_0}
-#define PMIC_LP_LDO_VUSB33_1_ENTRY(reg) {reg, MT6358_LDO_VUSB_CON0_1}
+#define PMIC_LP_LDO_VUSB_0_ENTRY(reg) {reg, MT6358_LDO_VUSB_CON0_0}
+#define PMIC_LP_LDO_VUSB_1_ENTRY(reg) {reg, MT6358_LDO_VUSB_CON0_1}
 #endif
 
 enum BUCK_LDO_EN_USER {
