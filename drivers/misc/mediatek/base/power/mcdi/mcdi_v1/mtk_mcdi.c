@@ -36,7 +36,7 @@
 /* #define USING_TICK_BROADCAST */
 
 #define MCDI_CPU_OFF        1
-#define MCDI_CLUSTER_OFF    0
+#define MCDI_CLUSTER_OFF    1
 
 #define NF_CMD_BUF          128
 
