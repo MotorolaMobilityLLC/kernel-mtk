@@ -655,11 +655,15 @@ static void mt_eem_disable_mtcmos(void)
 	#endif /* EARLY_PORTING */
 #else
 	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
+	int ret;
 	clk_disable_unprepare(clk_cg_scp_sys_mfg1);
 	clk_disable_unprepare(clk_cg_scp_sys_mfg0);
 
 	/* clk_prepare_enable(clk_top_mfg); */
-	clk_set_parent(clk_top_mfg, clk_top_mfg_off);
+	ret = clk_set_parent(clk_top_mfg, clk_top_mfg_off);
+	if (ret)
+		eem_error("clk_unprepare_disable failed when set_parent clk_top_mfg, clk_top_mfg_off\n");
+
 	clk_disable_unprepare(clk_top_mfg);
 	#endif /* EARLY_PORTING */
 #endif
