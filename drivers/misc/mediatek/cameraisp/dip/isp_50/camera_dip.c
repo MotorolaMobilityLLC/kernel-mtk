@@ -255,7 +255,6 @@ static struct IspWorkqueTable dip_workque[DIP_IRQ_TYPE_AMOUNT] = {
 #include <linux/clk.h>
 struct DIP_CLK_STRUCT {
 	struct clk *DIP_IMG_LARB5;
-	struct clk *DIP_IMG_LARB2;
 	struct clk *DIP_IMG_DIP;
 };
 struct DIP_CLK_STRUCT dip_clk;
@@ -1085,10 +1084,6 @@ static inline void Prepare_Enable_ccf_clock(void)
 	if (ret)
 		LOG_ERR("cannot prepare and enable DIP_IMG_LARB5 clock\n");
 
-	ret = clk_prepare_enable(dip_clk.DIP_IMG_LARB2);
-	if (ret)
-		LOG_ERR("cannot prepare and enable DIP_IMG_LARB2 clock\n");
-
 	ret = clk_prepare_enable(dip_clk.DIP_IMG_DIP);
 	if (ret)
 		LOG_ERR("cannot prepare and enable DIP_IMG_DIP clock\n");
@@ -1099,7 +1094,6 @@ static inline void Disable_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: DIP clk -> CG_SCP_SYS_DIP/CAM -> CG_DDIP0_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable_unprepare(dip_clk.DIP_IMG_DIP);
-	clk_disable_unprepare(dip_clk.DIP_IMG_LARB2);
 	clk_disable_unprepare(dip_clk.DIP_IMG_LARB5);
 	smi_bus_disable(SMI_LARB_IMGSYS1, DIP_DEV_NAME);
 }
