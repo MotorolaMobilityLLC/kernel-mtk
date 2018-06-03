@@ -9,6 +9,7 @@
 #include <mt-plat/mtk_blocktag.h>
 
 #include <trace/events/block.h>
+#include <mt-plat/mtk_blocktag.h> /* MTK PATCH */
 
 #include "blk.h"
 
@@ -672,6 +673,7 @@ static void blk_account_io_merge(struct request *req)
 	}
 }
 
+/* MTK PATCH */
 static bool crypto_not_mergeable(const struct bio *bio, const struct bio *nxt)
 {
 	/* If neither is encrypted, no veto from us. */
@@ -722,6 +724,7 @@ static int attempt_merge(struct request_queue *q, struct request *req,
 	    !blk_write_same_mergeable(req->bio, next->bio))
 		return 0;
 
+	/* MTK PATCH */
 	if (crypto_not_mergeable(req->bio, next->bio))
 		return 0;
 
@@ -835,6 +838,7 @@ bool blk_rq_merge_ok(struct request *rq, struct bio *bio)
 	    !blk_write_same_mergeable(rq->bio, bio))
 		return false;
 
+	/* MTK PATCH */
 	if (crypto_not_mergeable(rq->bio, bio))
 		return false;
 

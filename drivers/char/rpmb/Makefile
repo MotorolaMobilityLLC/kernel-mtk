@@ -23,8 +23,10 @@ endif
 
 #
 # Attention:
-# Enabling/using CFG_RPMB_KEY_PROGRAMED_IN_KERNEL means accepting the risk of revealing key in
-# Linux Kernel. Mediatek won¡¦t take the responsibility for loss incurred by the key revealing.
+# Enabling/using CFG_RPMB_KEY_PROGRAMED_IN_KERNEL means accepting the
+# risk of revealing key in
+# Linux Kernel. Mediatek won't take the responsibility for loss incurred
+# by the key revealing.
 #
 #ccflags-y += -DCFG_RPMB_KEY_PROGRAMED_IN_KERNEL
 

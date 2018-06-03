@@ -519,6 +519,38 @@ struct request_queue {
 				 (1 << QUEUE_FLAG_SAME_COMP)	|	\
 				 (1 << QUEUE_FLAG_POLL))
 
+/* MTK PATCH */
+/* Block r/w size profiling */
+#ifdef CONFIG_MTK_BLK_RW_PROFILING
+#define BLKRNUM    _IO(0x12, 10) /* get block device read number */
+#define BLKWNUM    _IO(0x12, 11) /* get block device write number */
+#define BLKRWNUM   _IO(0x12, 12) /* get block device read write number */
+#define BLKRWCLR   _IO(0x12, 13) /* clear block device read write number */
+
+#define CHECK_SIZE_LIMIT (512*1024)
+#define FS_RW_UNIT (0x1000)
+#define RW_ARRAY_SIZE (256)
+
+struct block_rw_profiling {
+	__u32 buf_byte;
+	/*
+	 * placeholder for the start address of the data buffer where kernel
+	 * will copy the data.
+	 */
+	__u8 *buf_ptr;
+};
+
+enum block_rw_enum {
+	blockread = 0,
+	blockwrite = 1,
+	blockrw = 2,
+};
+
+void mtk_trace_block_rq_get_rw_counter(u32 *temp_buf,
+	enum block_rw_enum operation);
+int mtk_trace_block_rq_get_rw_counter_clr(void);
+#endif
+
 static inline void queue_lockdep_assert_held(struct request_queue *q)
 {
 	if (q->queue_lock)

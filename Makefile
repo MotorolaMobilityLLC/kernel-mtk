@@ -386,6 +386,7 @@ LINUXINCLUDE    := \
 		-I$(objtree)/arch/$(hdr-arch)/include/generated/uapi \
 		-I$(objtree)/arch/$(hdr-arch)/include/generated \
 		$(if $(KBUILD_SRC), -I$(srctree)/include) \
+		-I$(srctree)/drivers/misc/mediatek/include \
 		-I$(objtree)/include \
 		-I$(srctree)/drivers/misc/mediatek/include
 
