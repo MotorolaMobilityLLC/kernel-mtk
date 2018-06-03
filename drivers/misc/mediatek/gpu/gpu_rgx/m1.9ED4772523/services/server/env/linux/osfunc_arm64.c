@@ -143,7 +143,9 @@ e0:
 
 	spin_unlock_irqrestore(&spinlock, irqflags);
 #else
-	flush_cache_all();
+	/* Use MTK internal cahce flush */
+	/* flush_cache_all(); */
+	__inner_flush_dcache_all();
 #endif
 	PVR_UNREFERENCED_PARAMETER(arg);
 }

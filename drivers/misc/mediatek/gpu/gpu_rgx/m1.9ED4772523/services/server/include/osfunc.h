@@ -1643,6 +1643,9 @@ void OSUserModeAccessToPerfCountersEn(void);
 */ /**************************************************************************/
 PVRSRV_ERROR OSDebugSignalPID(IMG_UINT32 ui32PID);
 
+/* MTK internal cahce flush */
+extern void __inner_flush_dcache_all(void);
+
 #if defined(LINUX) && defined(__KERNEL__)
 #define OSWarnOn(a) WARN_ON(a)
 #else
