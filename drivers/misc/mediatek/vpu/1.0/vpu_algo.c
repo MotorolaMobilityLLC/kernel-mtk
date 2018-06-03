@@ -149,7 +149,7 @@ int vpu_create_algo(char *name, struct vpu_algo **ralgo)
 	struct vpu_algo *algo = NULL;
 
 	ret = vpu_get_entry_of_algo(name, &id, &mva, &length);
-	CHECK_RET("algo is not existed in emmc, name=%s\n", name);
+	CHECK_RET("algo(%s) is not existed in image files!\n", name);
 
 	ret = vpu_alloc_algo(&algo);
 	CHECK_RET("vpu_alloc_algo failed!\n");
