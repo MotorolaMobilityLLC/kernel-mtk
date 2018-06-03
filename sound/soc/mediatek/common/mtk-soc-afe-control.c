@@ -1747,7 +1747,22 @@ bool SetMemIfFetchFormatPerSample(uint32 InterfaceType, uint32 eFetchFormat)
 
 bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output)
 {
-	Afe_Set_Reg(AFE_CONN_24BIT, (ConnectionFormat << Output), (1 << Output));
+	if (Output >= Soc_Aud_InterConnectionOutput_O32) {
+#ifdef AFE_CONN_24BIT_1
+		unsigned int shift = Output - Soc_Aud_InterConnectionOutput_O32;
+
+		Afe_Set_Reg(AFE_CONN_24BIT_1,
+			    ConnectionFormat << shift,
+			    1 << shift);
+#else
+		pr_err("%s(), not support Output %u\n", __func__, Output);
+#endif
+	} else {
+		Afe_Set_Reg(AFE_CONN_24BIT,
+			    ConnectionFormat << Output,
+			    1 << Output);
+	}
+
 	return true;
 }
 

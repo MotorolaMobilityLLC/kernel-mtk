@@ -47,13 +47,11 @@
 #include "mtk-soc-pcm-common.h"
 #include "mtk-auddrv-def.h"
 #include "mtk-auddrv-afe.h"
-#include "mtk-auddrv-ana.h"
 #include "mtk-auddrv-clk.h"
 #include "mtk-auddrv-kernel.h"
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-platform.h"
 #include "mtk-soc-digital-type.h"
-#include "mtk-soc-analog-type.h"
 #include "mtk-soc-codec-63xx.h"
 
 #include <linux/kernel.h>
@@ -109,59 +107,47 @@ static const uint16_t kSideToneCoefficientTable32k[] = {
 	0x0e96
 };
 
-/* Following structures may vary with chips!!!! */
-typedef enum {
-	AUDIO_APLL1_DIV0 = 0,
-	AUDIO_APLL2_DIV0 = 1,
-	AUDIO_APLL12_DIV0 = 2,
-	AUDIO_APLL12_DIV1 = 3,
-	AUDIO_APLL12_DIV2 = 4,
-	AUDIO_APLL12_DIV3 = 5,
-	AUDIO_APLL12_DIV4 = 6,
-	AUDIO_APLL12_DIVB = 7,
-	AUDIO_APLL_DIV_NUM
-} AUDIO_APLL_DIVIDER_GROUP;
-
-static const uint32 mMemIfSampleRate[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
+/* mt6763 use awb2 as VUL_DATA2 */
+static const uint32 mMemIfSampleRate[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = { /* reg, bit position, bit mask */
 	{AFE_DAC_CON1, 0, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL1 */
 	{AFE_DAC_CON1, 4, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL2 */
 	{AFE_DAC_CON1, 16, 0xf}, /* Soc_Aud_Digital_Block_MEM_VUL */
 	{AFE_DAC_CON0, 24, 0x3}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_DAC_CON0, 12, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL3 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* mt6763 has no DL3 */
 	{AFE_DAC_CON1, 12, 0xf}, /* Soc_Aud_Digital_Block_MEM_AWB */
 	{AFE_DAC_CON1, 30, 0x3}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_DAC_CON0, 16, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_DAC_CON0, 20, 0xf}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* mt6763 has no DL1_DATA2 */
+	{AFE_DAC_CON2, 16, 0xf}, /* mt6763 use awb2 as VUL_DATA2 */
 	{AFE_DAC_CON1, 8, 0xf}, /* Soc_Aud_Digital_Block_MEM_I2S */
 };
 
-static const uint32 mMemIfChannels[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
+static const uint32 mMemIfChannels[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = { /* reg, bit position, bit mask */
 	{AFE_DAC_CON1, 21, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL1 */
 	{AFE_DAC_CON1, 22, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL2 */
 	{AFE_DAC_CON1, 27, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_DAC_CON1, 23, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL3 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* mt6763 has no DL3 */
 	{AFE_DAC_CON1, 24, 0x1}, /* Soc_Aud_Digital_Block_MEM_AWB */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_DAC_CON0, 10, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* mt6763 has no DL1_DATA2 */
+	{AFE_DAC_CON2, 20, 0x1}, /* mt6763 use awb2 as VUL_DATA2 */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
 };
 
-static const uint32 mMemIfMonoChSelect[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
+static const uint32 mMemIfMonoChSelect[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = { /* reg, bit position, bit mask */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1 */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL2 */
 	{AFE_DAC_CON1, 28, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL3 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* mt6763 has no MEM_DL3 */
 	{AFE_DAC_CON1, 25, 0x1}, /* Soc_Aud_Digital_Block_MEM_AWB */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_DAC_CON0, 11, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* mt6763 has no MEM_DL1_DATA2 */
+	{AFE_DAC_CON2, 21, 0x1}, /* mt6763 use awb2 as VUL_DATA2 */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
 };
 
-static const uint32 mMemDuplicateWrite[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
+static const uint32 mMemDuplicateWrite[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = { /* reg, bit position, bit mask */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1 */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL2 */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_VUL */
@@ -179,176 +165,174 @@ static const uint32 mMemAudioBlockEnableReg[][MEM_BLOCK_ENABLE_REG_INDEX_NUM] = 
 	{Soc_Aud_Digital_Block_MEM_DL2, AFE_DAC_CON0, 2},
 	{Soc_Aud_Digital_Block_MEM_VUL, AFE_DAC_CON0, 3},
 	{Soc_Aud_Digital_Block_MEM_DAI, AFE_DAC_CON0, 4},
-	{Soc_Aud_Digital_Block_MEM_DL3, AFE_DAC_CON0, 5},
+	/*{Soc_Aud_Digital_Block_MEM_DL3, AFE_DAC_CON0, 5},*/
 	{Soc_Aud_Digital_Block_MEM_AWB, AFE_DAC_CON0, 6},
 	{Soc_Aud_Digital_Block_MEM_MOD_DAI, AFE_DAC_CON0, 7},
-	{Soc_Aud_Digital_Block_MEM_DL1_DATA2, AFE_DAC_CON0, 8},
-	{Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_DAC_CON0, 9},
+	/*{Soc_Aud_Digital_Block_MEM_DL1_DATA2, AFE_DAC_CON0, 8},*/
+	{Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_DAC_CON0, 29},
 };
 
 const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 	{	/*IRQ0*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
-		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
-	},
-	{	/*IRQ1*/
-		{AFE_IRQ_MCU_CON, 0, 0x1}, /* irq on */
-		{AFE_IRQ_MCU_CON, 4, 0xf}, /* irq mode */
-		{AFE_IRQ_MCU_CNT1, 0, 0x3ffff}, /* irq count */
+		{AFE_IRQ_MCU_CON0, 0, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON1, 0, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT0, 0, 0x3ffff}, /* irq count */
 		{AFE_IRQ_MCU_CLR, 0, 0x1}, /* irq clear */
-		{AFE_IRQ_MCU_CLR, 8, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_CLR, 16, 0x1}, /* irq miss clear */
 		{AFE_IRQ_MCU_STATUS, 0, 0x1}, /* irq status */
 		{AFE_IRQ_MCU_EN, 0, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
-	{	/*IRQ2*/
-		{AFE_IRQ_MCU_CON, 1, 0x1}, /* irq on */
-		{AFE_IRQ_MCU_CON, 8, 0xf}, /* irq mode */
-		{AFE_IRQ_MCU_CNT2, 0, 0x3ffff}, /* irq count */
+	{	/*IRQ1*/
+		{AFE_IRQ_MCU_CON0, 1, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON1, 4, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT1, 0, 0x3ffff}, /* irq count */
 		{AFE_IRQ_MCU_CLR, 1, 0x1}, /* irq clear */
-		{AFE_IRQ_MCU_CLR, 9, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_CLR, 17, 0x1}, /* irq miss clear */
 		{AFE_IRQ_MCU_STATUS, 1, 0x1}, /* irq status */
 		{AFE_IRQ_MCU_EN, 1, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
+	{	/*IRQ2*/
+		{AFE_IRQ_MCU_CON0, 2, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON1, 8, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT2, 0, 0x3ffff}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 2, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 18, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 2, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 2, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
 	{	/*IRQ3*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		{AFE_IRQ_MCU_CON0, 3, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON1, 12, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT3, 0, 0x3ffff}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 3, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 19, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 3, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 3, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 	{	/*IRQ4*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		{AFE_IRQ_MCU_CON0, 4, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON1, 16, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT4, 0, 0x3ffff}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 4, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 20, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 4, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 4, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 	{	/*IRQ5*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		{AFE_IRQ_MCU_CON0, 5, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON1, 20, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT5, 0, 0x3ffff}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 5, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 21, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 5, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 5, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 	{	/*IRQ6*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
-		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
-	},
-	{	/*IRQ7*/
-		{AFE_IRQ_MCU_CON, 14, 0x1}, /* irq on */
-		{AFE_IRQ_MCU_CON, 24, 0xf}, /* irq mode */
-		{AFE_IRQ_MCU_CNT7, 0, 0x3ffff}, /* irq count */
+		{AFE_IRQ_MCU_CON0, 6, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON1, 24, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT6, 0, 0x3ffff}, /* irq count */
 		{AFE_IRQ_MCU_CLR, 6, 0x1}, /* irq clear */
-		{AFE_IRQ_MCU_CLR, 14, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_CLR, 22, 0x1}, /* irq miss clear */
 		{AFE_IRQ_MCU_STATUS, 6, 0x1}, /* irq status */
 		{AFE_IRQ_MCU_EN, 6, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
+	{	/*IRQ7*/
+		{AFE_IRQ_MCU_CON0, 7, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON1, 28, 0xf}, /* irq mode */
+		{AFE_IRQ_MCU_CNT7, 0, 0x3ffff}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 7, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 23, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 7, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 7, 0x1}, /* irq enable */
+		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+	},
 	{	/*IRQ8*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		{AFE_IRQ_MCU_CON0, 8, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0x0}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x0}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 8, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 24, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 8, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 8, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 	{	/*IRQ9*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		{AFE_IRQ_MCU_CON0, 9, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0x0}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x0}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 9, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 25, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 9, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 9, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 	{	/*IRQ10*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		{AFE_IRQ_MCU_CON0, 10, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 0, 0x0}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x0}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 10, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 26, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 10, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 10, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 	{	/*IRQ11*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		{AFE_IRQ_MCU_CON0, 11, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON2, 0, 0x0}, /* irq mode */
+		{AFE_IRQ_MCU_CNT11, 0, 0x0}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 11, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 27, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 11, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 11, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 	{	/*IRQ12*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		{AFE_IRQ_MCU_CON0, 12, 0x1}, /* irq on */
+		{AFE_IRQ_MCU_CON2, 4, 0x0}, /* irq mode */
+		{AFE_IRQ_MCU_CNT12, 0, 0x0}, /* irq count */
+		{AFE_IRQ_MCU_CLR, 12, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 28, 0x1}, /* irq miss clear */
+		{AFE_IRQ_MCU_STATUS, 12, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 12, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 	{	/*IRQ_ACC1*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		{AFE_REG_UNDEFINED, 13, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 8, 0x0}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x0}, /* irq count */
+		{AFE_REG_UNDEFINED, 13, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 29, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 13, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 13, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 	{	/*IRQ_ACC2*/
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq on */
-		{AFE_REG_UNDEFINED, 0, 0xf}, /* irq mode */
-		{AFE_REG_UNDEFINED, 0, 0x3ffff}, /* irq count */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq miss clear */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq status */
-		{AFE_REG_UNDEFINED, 0, 0x1}, /* irq enable */
+		{AFE_REG_UNDEFINED, 14, 0x1}, /* irq on */
+		{AFE_REG_UNDEFINED, 12, 0x0}, /* irq mode */
+		{AFE_REG_UNDEFINED, 0, 0x0}, /* irq count */
+		{AFE_REG_UNDEFINED, 14, 0x1}, /* irq clear */
+		{AFE_REG_UNDEFINED, 30, 0x1}, /* irq miss clear */
+		{AFE_REG_UNDEFINED, 14, 0x1}, /* irq status */
+		{AFE_REG_UNDEFINED, 14, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 };
 
 const struct Aud_RegBitsInfo mIRQPurposeRegs[Soc_Aud_IRQ_PURPOSE_NUM] = {
-	{AFE_IRQ_MCU_EN, 0, 0x7f}, /* Soc_Aud_IRQ_MCU */
-	{AFE_IRQ_MCU_EN, 8, 0x3f}, /* Soc_Aud_IRQ_MD32 */
-	{AFE_IRQ_MCU_EN, 16, 0x3f}, /* Soc_Aud_IRQ_MD32_H */
+	{AFE_IRQ_MCU_EN, 0, 0xffff}, /* Soc_Aud_IRQ_MCU */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_MD32 */
+	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_MD32_H */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_DSP */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_CM4 */
 };
-
 /*  Above structures may vary with chips!!!! */
-
 
 /* set address hardware , platform dependent*/
 static int set_mem_blk_addr(int mem_blk, dma_addr_t addr, size_t size)
@@ -376,8 +360,8 @@ static int set_mem_blk_addr(int mem_blk, dma_addr_t addr, size_t size)
 		Afe_Set_Reg(AFE_MOD_DAI_END, addr + (size - 1), 0xffffffff);
 		break;
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
-		Afe_Set_Reg(AFE_VUL_D2_BASE, addr, 0xffffffff);
-		Afe_Set_Reg(AFE_VUL_D2_END, addr + (size - 1), 0xffffffff);
+		Afe_Set_Reg(AFE_AWB2_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_AWB2_END, addr + (size - 1), 0xffffffff);
 		break;
 	case Soc_Aud_Digital_Block_MEM_AWB:
 		Afe_Set_Reg(AFE_AWB_BASE, addr, 0xffffffff);
@@ -395,148 +379,6 @@ static int set_mem_blk_addr(int mem_blk, dma_addr_t addr, size_t size)
 static struct mtk_mem_blk_ops mem_blk_ops = {
 	.set_chip_memif_addr = set_mem_blk_addr,
 };
-
-bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable)
-{
-	pr_debug("+%s(): connection = %d, direction = %d, Enable = %d\n", __func__, connection,
-		 direction, Enable);
-
-	if (Enable && direction) {
-		switch (connection) {
-		case Soc_Aud_InterConnectionInput_I00:
-		case Soc_Aud_InterConnectionInput_I01:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x048C2762, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I02:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x146C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I03:
-		case Soc_Aud_InterConnectionInput_I04:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x24862862, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I05:
-		case Soc_Aud_InterConnectionInput_I06:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x348C28C2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I07:
-		case Soc_Aud_InterConnectionInput_I08:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x446C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I09:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x546C2662, 0xffffffff);
-		case Soc_Aud_InterConnectionInput_I10:
-		case Soc_Aud_InterConnectionInput_I11:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x646C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I12:
-		case Soc_Aud_InterConnectionInput_I13:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x746C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I14:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x846C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I15:
-		case Soc_Aud_InterConnectionInput_I16:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x946C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I17:
-		case Soc_Aud_InterConnectionInput_I18:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xa46C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I25:
-		case Soc_Aud_InterConnectionInput_I26:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xc46C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionInput_I23:
-		case Soc_Aud_InterConnectionInput_I24:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xe4a62a62, 0xffffffff);
-			break;
-		default:
-			break;
-		}
-	} else if (Enable) {
-		switch (connection) {
-		case Soc_Aud_InterConnectionOutput_O00:
-		case Soc_Aud_InterConnectionOutput_O01:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x0c7c27c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O02:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x1c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O03:
-		case Soc_Aud_InterConnectionOutput_O04:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x2c8c28c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O05:
-		case Soc_Aud_InterConnectionOutput_O06:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x3c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O07:
-		case Soc_Aud_InterConnectionOutput_O08:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x4c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O09:
-		case Soc_Aud_InterConnectionOutput_O10:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x5c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O11:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x6c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O12:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x7c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O13:
-		case Soc_Aud_InterConnectionOutput_O14:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x8c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O15:
-		case Soc_Aud_InterConnectionOutput_O16:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0x9c6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O17:
-		case Soc_Aud_InterConnectionOutput_O18:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xac6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O19:
-		case Soc_Aud_InterConnectionOutput_O20:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xbc6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O21:
-		case Soc_Aud_InterConnectionOutput_O22:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xcc6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O23:
-		case Soc_Aud_InterConnectionOutput_O24:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xdc6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O25:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xec6c26c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O32:
-		case Soc_Aud_InterConnectionOutput_O33:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xfc9c29c2, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O30:
-		case Soc_Aud_InterConnectionOutput_O31:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xb46C2662, 0xffffffff);
-			break;
-		case Soc_Aud_InterConnectionOutput_O28:
-		case Soc_Aud_InterConnectionOutput_O29:
-			Afe_Set_Reg(AFE_SGEN_CON0, 0xd46C2662, 0xffffffff);
-			break;
-		default:
-			break;
-		}
-	} else {
-		/* don't set [31:28] as 0 when disable sinetone HW,
-		  * because it will repalce i00/i01 input with sine gen output.
-		  */
-		/* Set 0xf is correct way to disconnect sinetone HW to any I/O. */
-		Afe_Set_Reg(AFE_SGEN_CON0, 0xf0000000, 0xffffffff);
-	}
-
-	return true;
-}
 
 static const int MEM_BLOCK_ENABLE_REG_NUM = ARRAY_SIZE(mMemAudioBlockEnableReg);
 
@@ -592,13 +434,18 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_ADDA_DL_SRC2_CON1 = 0x%x\n", Afe_Get_Reg(AFE_ADDA_DL_SRC2_CON1));
 	pr_debug("AFE_ADDA_UL_SRC_CON0  = 0x%x\n", Afe_Get_Reg(AFE_ADDA_UL_SRC_CON0));
 	pr_debug("AFE_ADDA_UL_SRC_CON1  = 0x%x\n", Afe_Get_Reg(AFE_ADDA_UL_SRC_CON1));
+	pr_debug("AFE_ADDA_MTKAIF_CFG0  = 0x%x\n", Afe_Get_Reg(AFE_ADDA_MTKAIF_CFG0));
+	pr_debug("AFE_ADDA_MTKAIF_RX_CFG1  = 0x%x\n", Afe_Get_Reg(AFE_ADDA_MTKAIF_RX_CFG1));
+	pr_debug("AFE_ADDA_MTKAIF_RX_CFG0  = 0x%x\n", Afe_Get_Reg(AFE_ADDA_MTKAIF_RX_CFG0));
+	pr_debug("AFE_ADDA_MTKAIF_RX_CFG2  = 0x%x\n", Afe_Get_Reg(AFE_ADDA_MTKAIF_RX_CFG2));
+	pr_debug("AFE_ADDA_MTKAIF_MON0  = 0x%x\n", Afe_Get_Reg(AFE_ADDA_MTKAIF_MON0));
+	pr_debug("AFE_ADDA_MTKAIF_MON1  = 0x%x\n", Afe_Get_Reg(AFE_ADDA_MTKAIF_MON1));
+	pr_debug("AFE_AUD_PAD_TOP_CFG  = 0x%x\n", Afe_Get_Reg(AFE_AUD_PAD_TOP_CFG));
 	pr_debug("AFE_ADDA_TOP_CON0 = 0x%x\n", Afe_Get_Reg(AFE_ADDA_TOP_CON0));
 	pr_debug("AFE_ADDA_UL_DL_CON0 = 0x%x\n", Afe_Get_Reg(AFE_ADDA_UL_DL_CON0));
 	pr_debug("AFE_ADDA_SRC_DEBUG = 0x%x\n", Afe_Get_Reg(AFE_ADDA_SRC_DEBUG));
 	pr_debug("AFE_ADDA_SRC_DEBUG_MON0= 0x%x\n", Afe_Get_Reg(AFE_ADDA_SRC_DEBUG_MON0));
 	pr_debug("AFE_ADDA_SRC_DEBUG_MON1= 0x%x\n", Afe_Get_Reg(AFE_ADDA_SRC_DEBUG_MON1));
-	pr_debug("AFE_ADDA_NEWIF_CFG0 = 0x%x\n", Afe_Get_Reg(AFE_ADDA_NEWIF_CFG0));
-	pr_debug("AFE_ADDA_NEWIF_CFG1 = 0x%x\n", Afe_Get_Reg(AFE_ADDA_NEWIF_CFG1));
 	pr_debug("AFE_SIDETONE_DEBUG = 0x%x\n", Afe_Get_Reg(AFE_SIDETONE_DEBUG));
 	pr_debug("AFE_SIDETONE_MON = 0x%x\n", Afe_Get_Reg(AFE_SIDETONE_MON));
 	pr_debug("AFE_SIDETONE_CON0 = 0x%x\n", Afe_Get_Reg(AFE_SIDETONE_CON0));
@@ -608,7 +455,6 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_SGEN_CON0 = 0x%x\n", Afe_Get_Reg(AFE_SGEN_CON0));
 	pr_debug("AFE_TOP_CON0 = 0x%x\n", Afe_Get_Reg(AFE_TOP_CON0));
 	pr_debug("AFE_BUS_CFG = 0x%x\n", Afe_Get_Reg(AFE_BUS_CFG));
-	pr_debug("AFE_BUS_MON = 0x%x\n", Afe_Get_Reg(AFE_BUS_MON));
 	pr_debug("AFE_ADDA_PREDIS_CON0 = 0x%x\n", Afe_Get_Reg(AFE_ADDA_PREDIS_CON0));
 	pr_debug("AFE_ADDA_PREDIS_CON1 = 0x%x\n", Afe_Get_Reg(AFE_ADDA_PREDIS_CON1));
 	pr_debug("AFE_MRGIF_MON0 = 0x%x\n", Afe_Get_Reg(AFE_MRGIF_MON0));
@@ -621,10 +467,7 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_MOD_DAI_BASE = 0x%x\n", Afe_Get_Reg(AFE_MOD_DAI_BASE));
 	pr_debug("AFE_MOD_DAI_END = 0x%x\n", Afe_Get_Reg(AFE_MOD_DAI_END));
 	pr_debug("AFE_MOD_DAI_CUR = 0x%x\n", Afe_Get_Reg(AFE_MOD_DAI_CUR));
-	pr_debug("AFE_VUL12_BASE = 0x%x\n", Afe_Get_Reg(AFE_VUL12_BASE));
-	pr_debug("AFE_VUL12_END = 0x%x\n", Afe_Get_Reg(AFE_VUL12_END));
-	pr_debug("AFE_VUL12_CUR = 0x%x\n", Afe_Get_Reg(AFE_VUL12_CUR));
-	pr_debug("AFE_IRQ_MCU_CON = 0x%x\n", Afe_Get_Reg(AFE_IRQ_MCU_CON));
+	pr_debug("AFE_IRQ_MCU_CON0 = 0x%x\n", Afe_Get_Reg(AFE_IRQ_MCU_CON0));
 	pr_debug("AFE_IRQ_MCU_STATUS = 0x%x\n", Afe_Get_Reg(AFE_IRQ_MCU_STATUS));
 	pr_debug("AFE_IRQ_MCU_CLR = 0x%x\n", Afe_Get_Reg(AFE_IRQ_MCU_CLR));
 	pr_debug("AFE_IRQ_MCU_CNT1 = 0x%x\n", Afe_Get_Reg(AFE_IRQ_MCU_CNT1));
@@ -662,8 +505,6 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_CONN16 = 0x%x\n", Afe_Get_Reg(AFE_CONN16));
 	pr_debug("AFE_CONN17 = 0x%x\n", Afe_Get_Reg(AFE_CONN17));
 	pr_debug("AFE_CONN18 = 0x%x\n", Afe_Get_Reg(AFE_CONN18));
-	pr_debug("AFE_CONN19 = 0x%x\n", Afe_Get_Reg(AFE_CONN19));
-	pr_debug("AFE_CONN20 = 0x%x\n", Afe_Get_Reg(AFE_CONN20));
 	pr_debug("AFE_CONN21 = 0x%x\n", Afe_Get_Reg(AFE_CONN21));
 	pr_debug("AFE_CONN22 = 0x%x\n", Afe_Get_Reg(AFE_CONN22));
 	pr_debug("AFE_CONN23 = 0x%x\n", Afe_Get_Reg(AFE_CONN23));
@@ -678,70 +519,18 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_CONN30 = 0x%x\n", Afe_Get_Reg(AFE_CONN30));
 	pr_debug("AFE_CONN31 = 0x%x\n", Afe_Get_Reg(AFE_CONN31));
 	pr_debug("AFE_CONN32 = 0x%x\n", Afe_Get_Reg(AFE_CONN32));
-	pr_debug("AFE_ASRC_CON0 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON0));
-	pr_debug("AFE_ASRC_CON1 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON1));
-	pr_debug("AFE_ASRC_CON2 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON2));
-	pr_debug("AFE_ASRC_CON3 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON3));
-	pr_debug("AFE_ASRC_CON4 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON4));
-	pr_debug("AFE_ASRC_CON5 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON5));
-	pr_debug("AFE_ASRC_CON6 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON6));
-	pr_debug("AFE_ASRC_CON7 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON7));
-	pr_debug("AFE_ASRC_CON8 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON8));
-	pr_debug("AFE_ASRC_CON9 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON9));
-	pr_debug("AFE_ASRC_CON10 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON10));
-	pr_debug("AFE_ASRC_CON11 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON11));
 	pr_debug("PCM_INTF_CON  = 0x%x\n", Afe_Get_Reg(PCM_INTF_CON1));
 	pr_debug("PCM_INTF_CON2 = 0x%x\n", Afe_Get_Reg(PCM_INTF_CON2));
 	pr_debug("PCM2_INTF_CON = 0x%x\n", Afe_Get_Reg(PCM2_INTF_CON));
-	pr_debug("AFE_ASRC_CON13 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON13));
-	pr_debug("AFE_ASRC_CON14 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON14));
-	pr_debug("AFE_ASRC_CON15 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON15));
-	pr_debug("AFE_ASRC_CON16 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON16));
-	pr_debug("AFE_ASRC_CON17 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON17));
-	pr_debug("AFE_ASRC_CON18 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON18));
-	pr_debug("AFE_ASRC_CON19 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON19));
-	pr_debug("AFE_ASRC_CON20 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON20));
-	pr_debug("AFE_ASRC_CON21 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CON21));
-	pr_debug("CLK_AUDDIV_0 = 0x%x\n", Afe_Get_Reg(CLK_AUDDIV_0));
-	pr_debug("CLK_AUDDIV_1 = 0x%x\n", Afe_Get_Reg(CLK_AUDDIV_1));
-	pr_debug("CLK_AUDDIV_2 = 0x%x\n", Afe_Get_Reg(CLK_AUDDIV_2));
-	pr_debug("CLK_AUDDIV_3 = 0x%x\n", Afe_Get_Reg(CLK_AUDDIV_3));
 	pr_debug("FPGA_CFG0 = 0x%x\n", Afe_Get_Reg(FPGA_CFG0));
 	pr_debug("FPGA_CFG1 = 0x%x\n", Afe_Get_Reg(FPGA_CFG1));
 	pr_debug("FPGA_CFG2 = 0x%x\n", Afe_Get_Reg(FPGA_CFG2));
 	pr_debug("FPGA_CFG3 = 0x%x\n", Afe_Get_Reg(FPGA_CFG3));
-	pr_debug("AFE_ASRC4_CON0 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON0));
-	pr_debug("AFE_ASRC4_CON1 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON1));
-	pr_debug("AFE_ASRC4_CON2 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON2));
-	pr_debug("AFE_ASRC4_CON3 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON3));
-	pr_debug("AFE_ASRC4_CON4 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON4));
-	pr_debug("AFE_ASRC4_CON5 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON5));
-	pr_debug("AFE_ASRC4_CON6 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON6));
-	pr_debug("AFE_ASRC4_CON7 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON7));
-	pr_debug("AFE_ASRC4_CON8 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON8));
-	pr_debug("AFE_ASRC4_CON9 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON9));
-	pr_debug("AFE_ASRC4_CON10 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON10));
-	pr_debug("AFE_ASRC4_CON11 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON11));
-	pr_debug("AFE_ASRC4_CON12 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON12));
-	pr_debug("AFE_ASRC4_CON13 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON13));
-	pr_debug("AFE_ASRC4_CON14 = 0x%x\n", Afe_Get_Reg(AFE_ASRC4_CON14));
-	pr_debug("AFE_CONN_RS1 = 0x%x\n", Afe_Get_Reg(AFE_CONN_RS1));
-	pr_debug("AFE_CONN_DI1 = 0x%x\n", Afe_Get_Reg(AFE_CONN_DI1));
 	pr_debug("AFE_CONN_24BIT_1 = 0x%x\n", Afe_Get_Reg(AFE_CONN_24BIT_1));
 	pr_debug("AFE_CONN_REG = 0x%x\n", Afe_Get_Reg(AFE_CONN_REG));
 	pr_debug("AFE_CONNSYS_I2S_CON = 0x%x\n", Afe_Get_Reg(AFE_CONNSYS_I2S_CON));
 	pr_debug("AFE_ASRC_CONNSYS_CON0 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON0));
-	pr_debug("AFE_ASRC_CONNSYS_CON1 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON1));
-	pr_debug("AFE_ASRC_CONNSYS_CON2 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON2));
-	pr_debug("AFE_ASRC_CONNSYS_CON3 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON3));
-	pr_debug("AFE_ASRC_CONNSYS_CON4 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON4));
-	pr_debug("AFE_ASRC_CONNSYS_CON5 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON5));
-	pr_debug("AFE_ASRC_CONNSYS_CON6 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON6));
-	pr_debug("AFE_ASRC_CONNSYS_CON7 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON7));
-	pr_debug("AFE_ASRC_CONNSYS_CON8 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON8));
-	pr_debug("AFE_ASRC_CONNSYS_CON9 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON9));
-	pr_debug("AFE_ASRC_CONNSYS_CON10 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON10));
-	pr_debug("AFE_ASRC_CONNSYS_CON11 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON11));
+	pr_debug("AFE_ASRC_2CH_CON1 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_2CH_CON1));
 	pr_debug("AFE_ASRC_CONNSYS_CON13 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON13));
 	pr_debug("AFE_ASRC_CONNSYS_CON14 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON14));
 	pr_debug("AFE_ASRC_CONNSYS_CON15 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON15));
@@ -751,8 +540,6 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_ASRC_CONNSYS_CON19 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON19));
 	pr_debug("AFE_ASRC_CONNSYS_CON20 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON20));
 	pr_debug("AFE_ASRC_CONNSYS_CON21 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON21));
-	pr_debug("AFE_ASRC_CONNSYS_CON23 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON23));
-	pr_debug("AFE_ASRC_CONNSYS_CON24 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON24));
 	pr_debug("AP_PLL_CON5 = 0x%x\n", GetApmixedCfg(AP_PLL_CON5));
 	AudDrv_Clk_Off();
 	pr_debug("-AudDrv Afe_Log_Print\n");
@@ -821,49 +608,6 @@ void SetChipModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribut
 		Afe_Set_Reg(PCM2_INTF_CON, reg_pcm2_intf_con, MASK_ALL);
 	} else if (modem_index == MODEM_2 || modem_index == MODEM_EXTERNAL) {
 		/* MODEM_2 use PCM_INTF_CON1 (0x530) !!! */
-		if (p_modem_pcm_attribute.mPcmModeWidebandSel == Soc_Aud_PCM_MODE_PCM_MODE_8K) {
-			Afe_Set_Reg(AFE_ASRC_CON1, 0x00065900, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON2, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON3, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON4, 0x00065900, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON6, 0x007F188F, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON7, 0x00032C80, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON1, 0x00065900, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON2, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON3, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON4, 0x00065900, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON6, 0x007F188F, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON7, 0x00032C80, 0xffffffff);
-		} else if (p_modem_pcm_attribute.mPcmModeWidebandSel ==
-			   Soc_Aud_PCM_MODE_PCM_MODE_16K) {
-			Afe_Set_Reg(AFE_ASRC_CON1, 0x00032C80, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON2, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON3, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON4, 0x00032C80, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON6, 0x007F188F, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON7, 0x00019640, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON1, 0x00032C80, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON2, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON3, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON4, 0x00032C80, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON6, 0x007F188F, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON7, 0x00019640, 0xffffffff);
-		} else if (p_modem_pcm_attribute.mPcmModeWidebandSel ==
-			   Soc_Aud_PCM_MODE_PCM_MODE_32K) {
-			Afe_Set_Reg(AFE_ASRC_CON1, 0x00019640, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON2, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON3, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON4, 0x00019640, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON6, 0x007F188F, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC_CON7, 0x0000CB20, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON1, 0x00019640, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON2, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON3, 0x00400000, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON4, 0x00019640, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON6, 0x007F188F, 0xffffffff);
-			Afe_Set_Reg(AFE_ASRC4_CON7, 0x0000CB20, 0xffffffff);
-		}
-
 		reg_pcm_intf_con1 |= (p_modem_pcm_attribute.mBclkOutInv & 0x01) << 22;
 		reg_pcm_intf_con1 |= (p_modem_pcm_attribute.mTxLchRepeatSel & 0x01) << 19;
 		reg_pcm_intf_con1 |= (p_modem_pcm_attribute.mVbt16kModeSel & 0x01) << 18;
@@ -883,7 +627,7 @@ void SetChipModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribut
 
 bool SetChipModemPcmEnable(int modem_index, bool modem_pcm_on)
 {
-	uint32 dNeedDisableASM = 0, mPcm1AsyncFifo;
+	uint32 mPcm1AsyncFifo;
 
 	pr_debug("+%s(), modem_index = %d, modem_pcm_on = %d\n", __func__, modem_index,
 		 modem_pcm_on);
@@ -897,28 +641,178 @@ bool SetChipModemPcmEnable(int modem_index, bool modem_pcm_on)
 			Afe_Set_Reg(PCM_INTF_CON2, (modem_index - 1) << 8, 0x100);
 			/* selects internal MD2/MD3 PCM interface (0x538[8]) */
 			mPcm1AsyncFifo = (Afe_Get_Reg(PCM_INTF_CON1) & 0x0040) >> 6;
-			if (mPcm1AsyncFifo == 0) {
-				/* Afe_Set_Reg(AFE_ASRC_CON6, 0x005f188f, MASK_ALL);   // denali marked */
-				Afe_Set_Reg(AFE_ASRC_CON0, 0x86083031, MASK_ALL);
-				/* Afe_Set_Reg(AFE_ASRC4_CON6, 0x005f188f, MASK_ALL);   // denali marked */
-				Afe_Set_Reg(AFE_ASRC4_CON0, 0x06003031, MASK_ALL);
-			}
 			Afe_Set_Reg(PCM_INTF_CON1, 0x1, 0x1);
 		} else if (modem_pcm_on == false) {	/* turn off ASRC after Modem PCM off */
 			Afe_Set_Reg(PCM_INTF_CON1, 0x0, 0x1);
-			Afe_Set_Reg(AFE_ASRC_CON6, 0x00000000, MASK_ALL);
-			dNeedDisableASM = (Afe_Get_Reg(AFE_ASRC_CON0) & 0x1) ? 1 : 0;
-			Afe_Set_Reg(AFE_ASRC_CON0, 0, (1 << 4 | 1 << 5 | dNeedDisableASM));
-			Afe_Set_Reg(AFE_ASRC_CON0, 0x0, 0x1);
-			Afe_Set_Reg(AFE_ASRC4_CON6, 0x00000000, MASK_ALL);
-			Afe_Set_Reg(AFE_ASRC4_CON0, 0, (1 << 4 | 1 << 5));
-			Afe_Set_Reg(AFE_ASRC4_CON0, 0x0, 0x1);
 		}
 	} else {
 		pr_err("%s(), no such modem_index: %d!!", __func__, modem_index);
 		return false;
 	}
 
+	return true;
+}
+
+bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable)
+{
+	pr_debug("+%s(), connection = %d, direction = %d, Enable= %d\n", __func__, connection,
+		 direction, Enable);
+
+	if (Enable && direction) {
+		Afe_Set_Reg(AFE_SGEN_CON0, 0x04AC2AC1, 0xffffffff);
+		switch (connection) {
+		case Soc_Aud_InterConnectionInput_I00:
+		case Soc_Aud_InterConnectionInput_I01:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x0, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I02:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x1, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I03:
+		case Soc_Aud_InterConnectionInput_I04:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x2, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I05:
+		case Soc_Aud_InterConnectionInput_I06:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x3, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I07:
+		case Soc_Aud_InterConnectionInput_I08:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x4, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I09:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x5, 0x3f);
+		case Soc_Aud_InterConnectionInput_I10:
+		case Soc_Aud_InterConnectionInput_I11:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x6, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I12:
+		case Soc_Aud_InterConnectionInput_I13:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x7, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I14:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x8, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I15:
+		case Soc_Aud_InterConnectionInput_I16:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x9, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I17:
+		case Soc_Aud_InterConnectionInput_I18:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0xa, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I19:
+		case Soc_Aud_InterConnectionInput_I20:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0xb, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I21:
+		case Soc_Aud_InterConnectionInput_I22:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0xc, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I23:
+		case Soc_Aud_InterConnectionInput_I24:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0xd, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I25:
+		case Soc_Aud_InterConnectionInput_I26:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0xe, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I27:
+		case Soc_Aud_InterConnectionInput_I28:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0xf, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionInput_I34:
+		case Soc_Aud_InterConnectionInput_I35:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x13, 0x3f);
+			break;
+		default:
+			break;
+		}
+	} else if (Enable) {
+		Afe_Set_Reg(AFE_SGEN_CON0, 0x04AC2AC1, 0xffffffff);
+		switch (connection) {
+		case Soc_Aud_InterConnectionOutput_O00:
+		case Soc_Aud_InterConnectionOutput_O01:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x20, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O02:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x21, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O03:
+		case Soc_Aud_InterConnectionOutput_O04:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x22, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O05:
+		case Soc_Aud_InterConnectionOutput_O06:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x23, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O07:
+		case Soc_Aud_InterConnectionOutput_O08:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x24, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O09:
+		case Soc_Aud_InterConnectionOutput_O10:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x25, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O11:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x26, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O12:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x27, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O13:
+		case Soc_Aud_InterConnectionOutput_O14:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x28, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O15:
+		case Soc_Aud_InterConnectionOutput_O16:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x29, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O17:
+		case Soc_Aud_InterConnectionOutput_O18:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x2a, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O19:
+		case Soc_Aud_InterConnectionOutput_O20:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x2b, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O21:
+		case Soc_Aud_InterConnectionOutput_O22:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x2c, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O23:
+		case Soc_Aud_InterConnectionOutput_O24:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x2d, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O25:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x2e, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O28:
+		case Soc_Aud_InterConnectionOutput_O29:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x2f, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O30:
+		case Soc_Aud_InterConnectionOutput_O31:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x30, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O34:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x31, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O36:
+		case Soc_Aud_InterConnectionOutput_O37:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x34, 0x3f);
+			break;
+		case Soc_Aud_InterConnectionOutput_O38:
+		case Soc_Aud_InterConnectionOutput_O39:
+			Afe_Set_Reg(AFE_SGEN_CON2, 0x35, 0x3f);
+			break;
+		default:
+			break;
+		}
+	} else {
+		Afe_Set_Reg(AFE_SGEN_CON0, 0x0, 0xffffffff);
+		Afe_Set_Reg(AFE_SGEN_CON2, 0x3f, 0x3f);
+	}
 	return true;
 }
 
@@ -1104,50 +998,6 @@ bool set_i2s_dac_out_source(uint32 aud_block)
 	return true;
 }
 
-bool SetI2SASRCConfig(bool bIsUseASRC, unsigned int dToSampleRate)
-{
-	pr_debug("+%s() bIsUseASRC [%d] dToSampleRate [%d]\n", __func__, bIsUseASRC, dToSampleRate);
-
-	if (true == bIsUseASRC) {
-		AUDIO_ASSERT(!(dToSampleRate == 44100 || dToSampleRate == 48000));
-		Afe_Set_Reg(AFE_CONN4, 0, 1 << 30);
-		SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S, dToSampleRate);	/* To target sample rate */
-
-		if (dToSampleRate == 44100)
-			Afe_Set_Reg(AFE_ASRC_CON14, 0x001B9000, AFE_MASK_ALL);
-		 else
-			Afe_Set_Reg(AFE_ASRC_CON14, 0x001E0000, AFE_MASK_ALL);
-
-		Afe_Set_Reg(AFE_ASRC_CON15, 0x00140000, AFE_MASK_ALL);
-		Afe_Set_Reg(AFE_ASRC_CON16, 0x00FF5987, AFE_MASK_ALL);
-		Afe_Set_Reg(AFE_ASRC_CON17, 0x00007EF4, AFE_MASK_ALL);
-		Afe_Set_Reg(AFE_ASRC_CON16, 0x00FF5986, AFE_MASK_ALL);
-		Afe_Set_Reg(AFE_ASRC_CON16, 0x00FF5987, AFE_MASK_ALL);
-
-		Afe_Set_Reg(AFE_ASRC_CON13, 0, 1 << 16);	/* 0:Stereo 1:Mono */
-
-		Afe_Set_Reg(AFE_ASRC_CON20, 0x00036000, AFE_MASK_ALL);	/* Calibration setting */
-		Afe_Set_Reg(AFE_ASRC_CON21, 0x0002FC00, AFE_MASK_ALL);
-	} else {
-		Afe_Set_Reg(AFE_CONN4, 1 << 30, 1 << 30);
-	}
-
-	return true;
-}
-
-bool SetI2SASRCEnable(bool bEnable)
-{
-	if (true == bEnable) {
-		Afe_Set_Reg(AFE_ASRC_CON0, ((1 << 6) | (1 << 0)), ((1 << 6) | (1 << 0)));
-	} else {
-		uint32 dNeedDisableASM = (Afe_Get_Reg(AFE_ASRC_CON0) & 0x0030) ? 1 : 0;
-
-		Afe_Set_Reg(AFE_ASRC_CON0, 0, (1 << 6 | dNeedDisableASM));
-	}
-
-	return true;
-}
-
 bool EnableSideToneFilter(bool stf_on)
 {
 	/* MD support 16K/32K sampling rate */
@@ -1170,7 +1020,10 @@ bool EnableSideToneFilter(bool stf_on)
 	if (stf_on == false) {
 		/* bypass STF result & disable */
 		const bool bypass_stf_on = true;
-		uint32_t reg_value = (bypass_stf_on << 31) | (bypass_stf_on << 30) | (stf_on << 8);
+		uint32_t reg_value = (bypass_stf_on << 31) |
+				     (bypass_stf_on << 30) |
+				     (bypass_stf_on << 29) |
+				     (stf_on << 8);
 
 		Afe_Set_Reg(AFE_SIDETONE_CON1, reg_value, MASK_ALL);
 		pr_debug("%s(), AFE_SIDETONE_CON1[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON1,
@@ -1181,8 +1034,11 @@ bool EnableSideToneFilter(bool stf_on)
 	} else {
 		const bool bypass_stf_on = false;
 		/* using STF result & enable & set half tap num */
-		uint32_t write_reg_value =
-		    (bypass_stf_on << 31) | (bypass_stf_on << 30) | (stf_on << 8) | kSideToneHalfTapNum;
+		uint32_t write_reg_value = (bypass_stf_on << 31) |
+					   (bypass_stf_on << 30) |
+					   (bypass_stf_on << 29) |
+					   (stf_on << 8) |
+					   kSideToneHalfTapNum;
 		/* set side tone coefficient */
 		const bool enable_read_write = true;	/* enable read/write side tone coefficient */
 		const bool read_write_sel = true;	/* for write case */
@@ -1242,42 +1098,20 @@ bool EnableSideToneFilter(bool stf_on)
 
 bool CleanPreDistortion(void)
 {
-	/* printk("%s\n", __FUNCTION__); */
-	/* MT6763+ Enable/Disable pre-distortion in DPD
-	* Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0, MASK_ALL);
-	* Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0, MASK_ALL);
-	*/
-	pr_aud("%s(), MT6763+ Enable/Disable pre-distortion in DPD", __func__);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0, MASK_ALL);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0, MASK_ALL);
+
 	return false;
 }
 
 /* Follow 6755 */
-bool SetDLSrc2(uint32 SampleRate)
+bool SetDLSrc2(uint32 rate)
 {
 	uint32 AfeAddaDLSrc2Con0, AfeAddaDLSrc2Con1;
 
-	if (SampleRate == 8000)
-		AfeAddaDLSrc2Con0 = 0;
-	else if (SampleRate == 11025)
-		AfeAddaDLSrc2Con0 = 1;
-	else if (SampleRate == 12000)
-		AfeAddaDLSrc2Con0 = 2;
-	else if (SampleRate == 16000)
-		AfeAddaDLSrc2Con0 = 3;
-	else if (SampleRate == 22050)
-		AfeAddaDLSrc2Con0 = 4;
-	else if (SampleRate == 24000)
-		AfeAddaDLSrc2Con0 = 5;
-	else if (SampleRate == 32000)
-		AfeAddaDLSrc2Con0 = 6;
-	else if (SampleRate == 44100)
-		AfeAddaDLSrc2Con0 = 7;
-	else if (SampleRate == 48000)
-		AfeAddaDLSrc2Con0 = 8;
-	else
-		AfeAddaDLSrc2Con0 = 7;	/* Default 44100 */
+	AfeAddaDLSrc2Con0 = SampleRateTransform(rate,
+						Soc_Aud_Digital_Block_ADDA_DL);
 
-	/* ASSERT(0); */
 	if (AfeAddaDLSrc2Con0 == 0 || AfeAddaDLSrc2Con0 == 3) {
 		/* 8k or 16k voice mode */
 		AfeAddaDLSrc2Con0 =
@@ -1286,8 +1120,9 @@ bool SetDLSrc2(uint32 SampleRate)
 		AfeAddaDLSrc2Con0 = (AfeAddaDLSrc2Con0 << 28) | (0x03 << 24) | (0x03 << 11);
 	}
 
-		/* SA suggest apply -0.3db to audio/speech path */
-	AfeAddaDLSrc2Con0 = AfeAddaDLSrc2Con0 | (0x01 << 1);	/* 2013.02.22 for voice mode degrade 0.3 db */
+	/* SA suggest apply -0.3db to audio/speech path */
+	/* 2013.02.22 for voice mode degrade 0.3 db */
+	AfeAddaDLSrc2Con0 = AfeAddaDLSrc2Con0 | (0x01 << 1);
 	AfeAddaDLSrc2Con1 = 0xf74f0000;
 	Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, AfeAddaDLSrc2Con0, MASK_ALL);
 	Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON1, AfeAddaDLSrc2Con1, MASK_ALL);
@@ -1335,24 +1170,23 @@ uint32 SampleRateTransformI2s(uint32 SampleRate)
 
 bool set_chip_adc_in(unsigned int rate)
 {
-	uint32 eSamplingRate = SampleRateTransformI2s(rate);
 	uint32 dVoiceModeSelect = 0;
+	uint32 afeAddaUlSrcCon0 = 0;	/* default value */
+
+	dVoiceModeSelect =
+	    SampleRateTransform(rate, Soc_Aud_Digital_Block_ADDA_UL);
 
 	Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1); /* Using Internal ADC */
-	if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_8K)
-		dVoiceModeSelect = 0;
-	else if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_16K)
-		dVoiceModeSelect = 1;
-	else if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_32K)
-		dVoiceModeSelect = 2;
-	else if (eSamplingRate == Soc_Aud_I2S_SAMPLERATE_I2S_48K)
-		dVoiceModeSelect = 3;
 
-	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0,
-			(dVoiceModeSelect << 19) | (dVoiceModeSelect << 17), 0x001E0000);
-	Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x03F87201, 0xFFFFFFFF);	/* up8x txif sat on */
-	Afe_Set_Reg(AFE_ADDA_NEWIF_CFG1, ((dVoiceModeSelect < 3) ? 1 : 3) << 10,
-			0x00000C00);
+	afeAddaUlSrcCon0 |= (dVoiceModeSelect << 17) & (0x7 << 17);
+
+	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, dVoiceModeSelect << 17, 0x7 << 17);
+
+	/* enable aud_pad_top fifo, need set after GPIO enable, pmic miso clk on */
+	Afe_Set_Reg(AFE_AUD_PAD_TOP_CFG, 0x31, MASK_ALL);
+
+	/* reset MTKAIF_CFG0, no lpbk, protocol 1 */
+	Afe_Set_Reg(AFE_ADDA_MTKAIF_CFG0, 0x0, MASK_ALL);
 
 	return true;
 }
@@ -1477,69 +1311,64 @@ uint32 GetEnableAudioBlockRegOffset(uint32 Aud_block)
 
 bool SetMemIfFormatReg(uint32 InterfaceType, uint32 eFetchFormat)
 {
+	uint32 isAlign = eFetchFormat == AFE_WLEN_32_BIT_ALIGN_24BIT_DATA_8BIT_0 ? 1 : 0;
+	uint32 isHD = eFetchFormat == AFE_WLEN_16_BIT ? 0 : 1;
+	/*
+	  *   pr_debug("+%s(), InterfaceType = %d, eFetchFormat = %d,
+	  *   mAudioMEMIF[InterfaceType].mFetchFormatPerSample = %d\n", __FUNCTION__
+	  *   , InterfaceType, eFetchFormat, mAudioMEMIF[InterfaceType]->mFetchFormatPerSample);
+	  */
+
+	/* force all memif use normal mode */	/* TODO: KC: change to better place, handle when 16bit or dram */
+	Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x7fff << 16, 0x7fff << 16);
+	/* force cpu use normal mode when access sram data */
+	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 29, 0 << 29);	/* TODO: KC: force cpu only use normal mode */
+	/* force cpu use 8_24 format when writing 32bit data */
+	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 28, 0 << 28);	/* TODO: KC: force use 8_24 format */
+
 	switch (InterfaceType) {
-	case Soc_Aud_Digital_Block_MEM_DL1:{
-			Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE,
-				    eFetchFormat << 16,
-				    0x00030000);
+	case Soc_Aud_Digital_Block_MEM_DL1:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 0, 1 << 0);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 0, 3 << 0);
 			break;
-		}
-	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:{
-			Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE,
-				    eFetchFormat << 12,
-				    0x00003000);
+	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 1, 1 << 1);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 2, 3 << 2);
 			break;
-		}
-	case Soc_Aud_Digital_Block_MEM_DL2:{
-			Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE,
-				    eFetchFormat << 18,
-				    0x000c0000);
+	case Soc_Aud_Digital_Block_MEM_DL2:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 2, 1 << 2);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 4, 3 << 4);
 			break;
-		}
-	case Soc_Aud_Digital_Block_MEM_I2S:{
-			/* Afe_Set_Reg(AFE_DAC_CON1, mAudioMEMIF[InterfaceType].mSampleRate << 8 , 0x00000f00); */
-			pr_warn("Unsupport MEM_I2S");
+	case Soc_Aud_Digital_Block_MEM_DL3:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 3, 1 << 3);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 6, 3 << 6);
 			break;
-		}
-	case Soc_Aud_Digital_Block_MEM_AWB:{
-			Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE,
-					eFetchFormat << 20,
-				    0x00300000);
+	case Soc_Aud_Digital_Block_MEM_AWB:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 4, 1 << 4);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 8, 3 << 8);
 			break;
-		}
-	case Soc_Aud_Digital_Block_MEM_VUL:{
-			Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE,
-				    eFetchFormat << 22,
-				    0x00C00000);
+	case Soc_Aud_Digital_Block_MEM_VUL:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 5, 1 << 5);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 10, 3 << 10);
 			break;
-		}
-	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:{
-			Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE,
-				    eFetchFormat << 14,
-				    0x0000C000);
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 14, 1 << 14);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 28, 3 << 28);
 			break;
-		}
-	case Soc_Aud_Digital_Block_MEM_DAI:{
-			Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE,
-				    eFetchFormat << 24,
-				    0x03000000);
+	case Soc_Aud_Digital_Block_MEM_DAI:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 8, 1 << 8);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 16, 3 << 16);
 			break;
-		}
-
-	case Soc_Aud_Digital_Block_MEM_MOD_DAI:{
-			Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE,
-				    eFetchFormat << 26,
-				    0x0C000000);
+	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 9, 1 << 9);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 18, 3 << 18);
 			break;
-		}
-
-	case Soc_Aud_Digital_Block_MEM_HDMI:{
-			Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE,
-				    eFetchFormat << 28,
-				    0x30000000);
+	case Soc_Aud_Digital_Block_MEM_HDMI:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 10, 1 << 10);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 20, 3 << 20);
 			break;
-		}
 	default:
+	pr_warn("%s(), InterfaceType %u not supported\n", __func__, InterfaceType);
 		return false;
 	}
 
@@ -1647,6 +1476,20 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(AFE_ADDA_UL_SRC_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_UL_SRC_CON1   = 0x%x\n",
 			Afe_Get_Reg(AFE_ADDA_UL_SRC_CON1));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_MTKAIF_CFG0   = 0x%x\n",
+			Afe_Get_Reg(AFE_ADDA_MTKAIF_CFG0));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_MTKAIF_RX_CFG1   = 0x%x\n",
+			Afe_Get_Reg(AFE_ADDA_MTKAIF_RX_CFG1));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_MTKAIF_RX_CFG0   = 0x%x\n",
+			Afe_Get_Reg(AFE_ADDA_MTKAIF_RX_CFG0));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_MTKAIF_RX_CFG2   = 0x%x\n",
+			Afe_Get_Reg(AFE_ADDA_MTKAIF_RX_CFG2));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_MTKAIF_MON0   = 0x%x\n",
+			Afe_Get_Reg(AFE_ADDA_MTKAIF_MON0));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_MTKAIF_MON1   = 0x%x\n",
+			Afe_Get_Reg(AFE_ADDA_MTKAIF_MON1));
+	n += scnprintf(buffer + n, size - n, "AFE_AUD_PAD_TOP_CFG   = 0x%x\n",
+			Afe_Get_Reg(AFE_AUD_PAD_TOP_CFG));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_TOP_CON0	   = 0x%x\n",
 			Afe_Get_Reg(AFE_ADDA_TOP_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_UL_DL_CON0    = 0x%x\n",
@@ -1657,10 +1500,6 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(AFE_ADDA_SRC_DEBUG_MON0));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_SRC_DEBUG_MON1= 0x%x\n",
 			Afe_Get_Reg(AFE_ADDA_SRC_DEBUG_MON1));
-	n += scnprintf(buffer + n, size - n, "AFE_ADDA_NEWIF_CFG0    = 0x%x\n",
-			Afe_Get_Reg(AFE_ADDA_NEWIF_CFG0));
-	n += scnprintf(buffer + n, size - n, "AFE_ADDA_NEWIF_CFG1    = 0x%x\n",
-			Afe_Get_Reg(AFE_ADDA_NEWIF_CFG1));
 	n += scnprintf(buffer + n, size - n, "AFE_SIDETONE_DEBUG	   = 0x%x\n",
 			Afe_Get_Reg(AFE_SIDETONE_DEBUG));
 	n += scnprintf(buffer + n, size - n, "AFE_SIDETONE_MON	   = 0x%x\n",
@@ -1679,8 +1518,6 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(AFE_TOP_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_BUS_CFG		   = 0x%x\n",
 			Afe_Get_Reg(AFE_BUS_CFG));
-	n += scnprintf(buffer + n, size - n, "AFE_BUS_MON		   = 0x%x\n",
-			Afe_Get_Reg(AFE_BUS_MON));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_PREDIS_CON0   = 0x%x\n",
 			Afe_Get_Reg(AFE_ADDA_PREDIS_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_ADDA_PREDIS_CON1   = 0x%x\n",
@@ -1705,14 +1542,8 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(AFE_MOD_DAI_END));
 	n += scnprintf(buffer + n, size - n, "AFE_MOD_DAI_CUR	   = 0x%x\n",
 			Afe_Get_Reg(AFE_MOD_DAI_CUR));
-	n += scnprintf(buffer + n, size - n, "AFE_VUL12_BASE	   = 0x%x\n",
-			Afe_Get_Reg(AFE_VUL12_BASE));
-	n += scnprintf(buffer + n, size - n, "AFE_VUL12_END	   = 0x%x\n",
-			Afe_Get_Reg(AFE_VUL12_END));
-	n += scnprintf(buffer + n, size - n, "AFE_VUL12_CUR	   = 0x%x\n",
-			Afe_Get_Reg(AFE_VUL12_CUR));
-	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CON	   = 0x%x\n",
-			Afe_Get_Reg(AFE_IRQ_MCU_CON));
+	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CON0	   = 0x%x\n",
+			Afe_Get_Reg(AFE_IRQ_MCU_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_STATUS	   = 0x%x\n",
 			Afe_Get_Reg(AFE_IRQ_MCU_STATUS));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CLR	   = 0x%x\n",
@@ -1787,10 +1618,6 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(AFE_CONN17));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN18		   = 0x%x\n",
 			Afe_Get_Reg(AFE_CONN18));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN19			   = 0x%x\n",
-			Afe_Get_Reg(AFE_CONN19));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN20		   = 0x%x\n",
-			Afe_Get_Reg(AFE_CONN20));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN21		   = 0x%x\n",
 			Afe_Get_Reg(AFE_CONN21));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN22		   = 0x%x\n",
@@ -1819,62 +1646,12 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(AFE_CONN31));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN32		   = 0x%x\n",
 			Afe_Get_Reg(AFE_CONN32));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON0		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON0));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON1		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON1));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON2		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON2));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON3		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON3));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON4		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON4));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON5		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON5));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON6		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON6));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON7		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON7));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON8		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON8));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON9		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON9));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON10		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON10));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON11		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON11));
 	n += scnprintf(buffer + n, size - n, "PCM_INTF_CON1		   = 0x%x\n",
 			Afe_Get_Reg(PCM_INTF_CON1));
 	n += scnprintf(buffer + n, size - n, "PCM_INTF_CON2		   = 0x%x\n",
 			Afe_Get_Reg(PCM_INTF_CON2));
 	n += scnprintf(buffer + n, size - n, "PCM2_INTF_CON		   = 0x%x\n",
 			Afe_Get_Reg(PCM2_INTF_CON));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON13		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON13));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON14		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON14));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON15		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON15));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON16		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON16));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON17		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON17));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON18		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON18));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON19		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON19));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON20		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON20));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON21		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CON21));
-	n += scnprintf(buffer + n, size - n, "CLK_AUDDIV_0		   = 0x%x\n",
-			Afe_Get_Reg(CLK_AUDDIV_0));
-	n += scnprintf(buffer + n, size - n, "CLK_AUDDIV_1		   = 0x%x\n",
-			Afe_Get_Reg(CLK_AUDDIV_1));
-	n += scnprintf(buffer + n, size - n, "CLK_AUDDIV_2		   = 0x%x\n",
-			Afe_Get_Reg(CLK_AUDDIV_2));
-	n += scnprintf(buffer + n, size - n, "CLK_AUDDIV_3		   = 0x%x\n",
-			Afe_Get_Reg(CLK_AUDDIV_3));
 	n += scnprintf(buffer + n, size - n, "FPGA_CFG0		   = 0x%x\n",
 			Afe_Get_Reg(FPGA_CFG0));
 	n += scnprintf(buffer + n, size - n, "FPGA_CFG1		   = 0x%x\n",
@@ -1883,40 +1660,6 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(FPGA_CFG2));
 	n += scnprintf(buffer + n, size - n, "FPGA_CFG3		   = 0x%x\n",
 			Afe_Get_Reg(FPGA_CFG3));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON0		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON0));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON1		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON1));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON2		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON2));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON3		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON3));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON4		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON4));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON5		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON5));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON6		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON6));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON7		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON7));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON8		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON8));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON9		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON9));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON10		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON10));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON11		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON11));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON12		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON12));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON13		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON13));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC4_CON14		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC4_CON14));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN_RS1		   = 0x%x\n",
-			Afe_Get_Reg(AFE_CONN_RS1));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN_DI1		   = 0x%x\n",
-			Afe_Get_Reg(AFE_CONN_DI1));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN_24BIT_1		   = 0x%x\n",
 			Afe_Get_Reg(AFE_CONN_24BIT_1));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN_REG		   = 0x%x\n",
@@ -1925,28 +1668,8 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(AFE_CONNSYS_I2S_CON));
 	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON0		   = 0x%x\n",
 			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON0));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON1		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON1));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON2		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON2));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON3		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON3));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON4		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON4));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON5		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON5));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON6		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON6));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON7		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON7));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON8		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON8));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON9		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON9));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON10		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON10));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON11		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON11));
+	n += scnprintf(buffer + n, size - n, "AFE_ASRC_2CH_CON1		   = 0x%x\n",
+			Afe_Get_Reg(AFE_ASRC_2CH_CON1));
 	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON13		   = 0x%x\n",
 			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON13));
 	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON14		   = 0x%x\n",
@@ -1965,10 +1688,6 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON20));
 	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON21		   = 0x%x\n",
 			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON21));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON23		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON23));
-	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CONNSYS_CON24		   = 0x%x\n",
-			Afe_Get_Reg(AFE_ASRC_CONNSYS_CON24));
 	n += scnprintf(buffer + n, size - n, "0x1f8  = 0x%x\n",
 			Afe_Get_Reg(AFE_BASE + 0x1f8));
 	n += scnprintf(buffer + n, size - n, "AP_PLL_CON5                      = 0x%x\n",
@@ -2036,7 +1755,8 @@ bool SetAncRecordReg(uint32 value, uint32 mask)
 	return false;
 }
 
-int get_trim_buffer_diff(int channels)
+#ifndef CONFIG_FPGA_EARLY_PORTING
+static int get_trim_buffer_diff(int channels)
 {
 	int diffValue = 0, onValue = 0, offValue = 0;
 
@@ -2086,6 +1806,46 @@ int get_trim_buffer_diff(int channels)
 	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
 
 	return diffValue;
+}
+#endif
+
+int get_audio_trim_offset(int channel)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	const int kTrimTimes = 20;
+	int counter = 0, averageOffset = 0;
+	int trimOffset[kTrimTimes];
+
+	if (channel != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channel != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support channel(%d)\n", __func__, channel);
+		return 0;
+	}
+
+	pr_warn("%s channels = %d\n", __func__, channel);
+
+	/* open headphone and digital part */
+	AudDrv_Clk_On();
+	AudDrv_Emi_Clk_On();
+	OpenAfeDigitaldl1(true);
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		trimOffset[counter] = get_trim_buffer_diff(channel);
+
+	OpenAfeDigitaldl1(false);
+	AudDrv_Emi_Clk_Off();
+	AudDrv_Clk_Off();
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		averageOffset = averageOffset + trimOffset[counter];
+
+	averageOffset = (averageOffset + (kTrimTimes / 2)) / kTrimTimes;
+	pr_warn("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
+
+	return averageOffset;
+#else
+	return 0;
+#endif
 }
 
 const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
@@ -2158,7 +1918,7 @@ bool IsNeedToSetHighAddr(bool usingdram, dma_addr_t addr)
 	if (!enable_4G())
 		return (0 < (addr >> 32));
 	/*
-	* enable_4G() usually returns false after mt6763, using 6G DRAM.
+	* enable_4G() usually returns false after mt6757, using 6G DRAM.
 	* Set EMI high address when the allocated address in high area
 	*/
 
@@ -2170,6 +1930,7 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr
 {
 	bool highBitEnable = IsNeedToSetHighAddr(usingdram, addr);
 
+/* TODO: need check how m17 support 34 bit */
 	switch (MemBlock) {
 	case Soc_Aud_Digital_Block_MEM_DL1:
 		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 0, 0x1 << 0);
@@ -2201,37 +1962,8 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr
 	return true;
 }
 
-/* plaform dependent ops should implement here*/
-static bool platform_set_dpd_module(bool enable, int impedance)
-{
-	struct mtk_dpd_param dpd_param;
-
-	mtk_read_dpd_parameter(impedance, &dpd_param);
-
-	pr_warn("%s, efuse_on = %d, enable = %d, impedance= %d\n", __func__,
-			dpd_param.efuse_on, enable, impedance);
-	pr_warn("%s, a2_lch, a3_lch = 0x%x, 0x%x; a2_rch, a3_rch = 0x%x, 0x%x\n", __func__,
-			dpd_param.a2_lch, dpd_param.a3_lch, dpd_param.a2_rch, dpd_param.a3_rch);
-
-	if (!dpd_param.efuse_on || !enable) {
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0x0 << 31, 0x80000000);
-		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0x0 << 31, 0x80000000);
-		return true;
-	}
-
-	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a2_lch << 16, 0x0FFF0000);
-	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, dpd_param.a3_lch, 0x00000FFF);
-	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a2_rch << 16, 0x0FFF0000);
-	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, dpd_param.a3_rch, 0x00000FFF);
-
-	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0x1 << 31, 0x80000000);
-	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0x1 << 31, 0x80000000);
-	return true;
-}
-
 static struct mtk_afe_platform_ops afe_platform_ops = {
 	.set_sinegen = set_chip_sine_gen_enable,
-	.set_dpd_module = platform_set_dpd_module,
 };
 
 void init_afe_ops(void)
@@ -2241,4 +1973,3 @@ void init_afe_ops(void)
 	set_mem_blk_ops(&mem_blk_ops);
 	set_afe_platform_ops(&afe_platform_ops);
 }
-

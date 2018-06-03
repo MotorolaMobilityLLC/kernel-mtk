@@ -17,4 +17,4 @@ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 # AP object
 obj-y += mtk-auddrv-clk.o
 obj-y += mtk-soc-afe-connection.o
-obj-y += mt6763-sound.o
+obj-y += platform-sound.o

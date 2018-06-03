@@ -23,7 +23,7 @@
  *
  * Project:
  * --------
- *   MT6763  Audio Driver clock control implement
+ *   MT6757  Audio Driver clock control implement
  *
  * Description:
  * ------------
@@ -86,7 +86,7 @@ int Aud_ADC_Clk_cntr;
 int Aud_ADC2_Clk_cntr;
 int Aud_ADC3_Clk_cntr;
 int Aud_ANA_Clk_cntr;
-#ifdef MT6763_READY
+#ifdef MT6757_READY
 int Aud_HDMI_Clk_cntr;
 #endif
 int Aud_APLL22M_Clk_cntr;
@@ -276,7 +276,7 @@ void AudDrv_Clk_Power_On(void)
 	volatile uint32 val_tmp;
 
 	pr_warn("%s\n", __func__);
-#ifdef MT6763_READY
+#ifdef MT6757_READY
 	val_tmp = 0x3330000d;
 #endif
 	val_tmp = 0xd;
@@ -614,9 +614,9 @@ void AudDrv_Clk_Off(void)
 		if (aud_clks[CLOCK_AFE].clk_prepare)
 			clk_disable(aud_clks[CLOCK_AFE].clock);
 
-		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
+		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare)
 			clk_disable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
-		}
+
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
 			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
 
@@ -840,12 +840,10 @@ void AudDrv_ADC3_Clk_Off(void)
 
 void AudDrv_ADC_Hires_Clk_On(void)
 {
-	/* No Hires Clk in mt6763 */
 }
 
 void AudDrv_ADC_Hires_Clk_Off(void)
 {
-	/* No Hires Clk in mt6763 */
 }
 
 /*****************************************************************************
@@ -859,12 +857,10 @@ void AudDrv_ADC_Hires_Clk_Off(void)
 
 void AudDrv_ADC2_Hires_Clk_On(void)
 {
-	/* No Hires Clk in mt6763 */
 }
 
 void AudDrv_ADC2_Hires_Clk_Off(void)
 {
-	/* No Hires Clk in mt6763 */
 }
 
 /*****************************************************************************
@@ -1188,18 +1184,15 @@ EXPORT_SYMBOL(AudDrv_I2S_Clk_Off);
   *****************************************************************************/
 void aud_top_con_pdn_tdm_ck(bool _pdn)
 {
-	/* mt6763 no TDM */
 }
 
 void AudDrv_TDM_Clk_On(void)
 {
-	/* mt6763 no TDM */
 }
 EXPORT_SYMBOL(AudDrv_TDM_Clk_On);
 
 void AudDrv_TDM_Clk_Off(void)
 {
-	/* mt6763 no TDM */
 }
 EXPORT_SYMBOL(AudDrv_TDM_Clk_Off);
 
@@ -1878,7 +1871,6 @@ uint32 GetApllbySampleRate(uint32 SampleRate)
 
 void SetckSel(uint32 I2snum, uint32 SampleRate)
 {
-	/* always from APLL1 */
 	uint32 ApllSource;
 
 	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1)
@@ -1887,19 +1879,22 @@ void SetckSel(uint32 I2snum, uint32 SampleRate)
 		ApllSource = 1;
 
 	switch (I2snum) {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	case Soc_Aud_I2S0:
-		Afe_Set_Reg(CLK_AUDDIV_0, ApllSource << 8, 1 << 8);
+		clksys_set_reg(CLK_AUDDIV_0, ApllSource << 8, 1 << 8);
 		break;
 	case Soc_Aud_I2S1:
-		Afe_Set_Reg(CLK_AUDDIV_0, ApllSource << 9, 1 << 9);
+		clksys_set_reg(CLK_AUDDIV_0, ApllSource << 9, 1 << 9);
 		break;
 	case Soc_Aud_I2S2:
-		Afe_Set_Reg(CLK_AUDDIV_0, ApllSource << 10, 1 << 10);
+		clksys_set_reg(CLK_AUDDIV_0, ApllSource << 10, 1 << 10);
 		break;
 	case Soc_Aud_I2S3:
-		Afe_Set_Reg(CLK_AUDDIV_0, ApllSource << 11, 1 << 11);
+		clksys_set_reg(CLK_AUDDIV_0, ApllSource << 11, 1 << 11);
 		break;
+#endif
 	case Soc_Aud_I2SConnSys:
+	default:
 		/* TODO: It may need to be implemented */
 		break;
 	}
@@ -1988,11 +1983,14 @@ void DisableALLbySampleRate(uint32 SampleRate)
 
 void EnableI2SDivPower(uint32 Diveder_name, bool bEnable)
 {
-	pr_warn("%s bEnable = %d", __func__, bEnable);
+	pr_warn("%s, bEnable = %d, Diveder_name %u\n",
+		__func__, bEnable, Diveder_name);
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (bEnable)
-		Afe_Set_Reg(CLK_AUDDIV_0, 0 << Diveder_name, 1 << Diveder_name);
+		clksys_set_reg(CLK_AUDDIV_0, 0 << Diveder_name, 1 << Diveder_name);
 	else
-		Afe_Set_Reg(CLK_AUDDIV_0, 1 << Diveder_name, 1 << Diveder_name);
+		clksys_set_reg(CLK_AUDDIV_0, 1 << Diveder_name, 1 << Diveder_name);
+#endif
 }
 
 void EnableI2SCLKDiv(uint32 I2snum, bool bEnable)
@@ -2004,25 +2002,25 @@ void EnableI2SCLKDiv(uint32 I2snum, bool bEnable)
 void EnableApll1(bool bEnable)
 {
 	pr_warn("%s bEnable = %d\n", __func__, bEnable);
-
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
 			/* apll1_div0_pdn power down */
-			Afe_Set_Reg(CLK_AUDDIV_0, 1 << 0, 1 << 0);
+			clksys_set_reg(CLK_AUDDIV_0, 1 << 0, 1 << 0);
 
 			/* apll2_div0_pdn power down */
-/* TODO: KC: this should be unnecessary // Afe_Set_Reg(CLK_AUDDIV_0, 1 << 1, 1 << 1); */
+/* TODO: KC: this should be unnecessary // clksys_set_reg(CLK_AUDDIV_0, 1 << 1, 1 << 1); */
 
 			/* set appl1_ck_div0 = 7,  f_faud_engen1_ck = clock source / 8*/
 			/* 180.6336 / 8 = 22.5792MHz */
-			Afe_Set_Reg(CLK_AUDDIV_0, 7 << 24, 0xf << 24);
+			clksys_set_reg(CLK_AUDDIV_0, 7 << 24, 0xf << 24);
 
 			AudDrv_APLL22M_Clk_On();
 			/* apll1_div0_pdn power up */
-			Afe_Set_Reg(CLK_AUDDIV_0, 0 << 0, 1 << 0);
+			clksys_set_reg(CLK_AUDDIV_0, 0 << 0, 1 << 0);
 
 			/* apll2_div0_pdn power up. */
-/* TODO: KC: this should be unnecessary // Afe_Set_Reg(CLK_AUDDIV_0, 0x0, 0x2); */
+/* TODO: KC: this should be unnecessary // clksys_set_reg(CLK_AUDDIV_0, 0x0, 0x2); */
 		}
 		Aud_APLL_DIV_APLL1_cntr++;
 	} else {
@@ -2030,31 +2028,32 @@ void EnableApll1(bool bEnable)
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
 			AudDrv_APLL22M_Clk_Off();
 			/* apll1_div0_pdn power down */
-			Afe_Set_Reg(CLK_AUDDIV_0, 1 << 0, 1 << 0);
+			clksys_set_reg(CLK_AUDDIV_0, 1 << 0, 1 << 0);
 		}
 	}
+#endif
 }
 
 void EnableApll2(bool bEnable)
 {
 	pr_warn("%s bEnable = %d\n", __func__, bEnable);
-
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
 			/* apll2_div0_pdn power down */
-			Afe_Set_Reg(CLK_AUDDIV_0, 1 << 1, 1 << 1);
+			clksys_set_reg(CLK_AUDDIV_0, 1 << 1, 1 << 1);
 
 			/* apll2_div0_pdn power down */
-/* TODO: KC: this should be unnecessary // Afe_Set_Reg(CLK_AUDDIV_0, 1 << 1, 1 << 1); */
+/* TODO: KC: this should be unnecessary // clksys_set_reg(CLK_AUDDIV_0, 1 << 1, 1 << 1); */
 
 			/* set appl2_ck_div0 = 7,  f_faud_engen2_ck = clock source / 8 */
 			/* 196.608 / 8 = 24.576MHz */
-			Afe_Set_Reg(CLK_AUDDIV_0, 7 << 28, 0xf << 28);
+			clksys_set_reg(CLK_AUDDIV_0, 7 << 28, 0xf << 28);
 
 			AudDrv_APLL24M_Clk_On();
 
 			/* apll2_div0_pdn power up */
-			Afe_Set_Reg(CLK_AUDDIV_0, 0 << 1, 1 << 1);
+			clksys_set_reg(CLK_AUDDIV_0, 0 << 1, 1 << 1);
 		}
 		Aud_APLL_DIV_APLL2_cntr++;
 	} else {
@@ -2062,13 +2061,15 @@ void EnableApll2(bool bEnable)
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
 			AudDrv_APLL24M_Clk_Off();
 			/* apll2_div0_pdn power down */
-			Afe_Set_Reg(CLK_AUDDIV_0, 1 << 1, 1 << 1);
+			clksys_set_reg(CLK_AUDDIV_0, 1 << 1, 1 << 1);
 		}
 	}
+#endif
 }
 
 uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	uint32 I2S_APll = 0;
 	uint32 I2s_ck_div = 0;
 
@@ -2082,19 +2083,19 @@ uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
 	switch (I2snum) {
 	case Soc_Aud_I2S0:
 		I2s_ck_div = (I2S_APll / MCLKFS / SampleRate) - 1;
-		Afe_Set_Reg(CLK_AUDDIV_1, I2s_ck_div << 0, 0xff << 0);
+		clksys_set_reg(CLK_AUDDIV_1, I2s_ck_div << 0, 0xff << 0);
 		break;
 	case Soc_Aud_I2S1:
 		I2s_ck_div = (I2S_APll / MCLKFS / SampleRate) - 1;
-		Afe_Set_Reg(CLK_AUDDIV_1, I2s_ck_div << 8, 0xff << 8);
+		clksys_set_reg(CLK_AUDDIV_1, I2s_ck_div << 8, 0xff << 8);
 		break;
 	case Soc_Aud_I2S2:
 		I2s_ck_div = (I2S_APll / MCLKFS / SampleRate) - 1;
-		Afe_Set_Reg(CLK_AUDDIV_1, I2s_ck_div << 16, 0xff << 16);
+		clksys_set_reg(CLK_AUDDIV_1, I2s_ck_div << 16, 0xff << 16);
 		break;
 	case Soc_Aud_I2S3:
 		I2s_ck_div = (I2S_APll / MCLKFS / SampleRate) - 1;
-		Afe_Set_Reg(CLK_AUDDIV_1, I2s_ck_div << 24, 0xff << 24);
+		clksys_set_reg(CLK_AUDDIV_1, I2s_ck_div << 24, 0xff << 24);
 		break;
 	case Soc_Aud_I2SConnSys:
 		/* TODO: It may need to be implemented */
@@ -2109,6 +2110,9 @@ uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
 		I2S_APll);
 
 	return I2s_ck_div;
+#else
+	return 0;
+#endif
 }
 
 void SetCLkBclk(uint32 MckDiv, uint32 SampleRate, uint32 Channels, uint32 Wlength)
@@ -2138,7 +2142,7 @@ void SetCLkBclk(uint32 MckDiv, uint32 SampleRate, uint32 Channels, uint32 Wlengt
 
 	/*
 	  * Follow MT6755: No TDM
-	  * Afe_Set_Reg(CLK_AUDDIV_2, I2s_Bck_div << 8, 0x0000ff00);
+	  * clksys_set_reg(CLK_AUDDIV_2, I2s_Bck_div << 8, 0x0000ff00);
 	  */
 
 }
