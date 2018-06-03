@@ -519,6 +519,9 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 	MUINT8 *pMIPIDataLowPwr2HSSettleDelay = &info.MIPIDataLowPwr2HSSettleDelayM0;
 	MUINT8 *pDPCMType = &info.IMGSENSOR_DPCM_TYPE_PRE;
 
+	memset(&info, 0, sizeof(ACDK_SENSOR_INFO_STRUCT));
+	memset(&sensor_resolution, 0, sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT));
+
 	pSensorGetInfo = (IMAGESENSOR_GETINFO_STRUCT *) pBuf;
 	if (pSensorGetInfo == NULL ||
 	    pSensorGetInfo->pInfo == NULL || pSensorGetInfo->pSensorResolution == NULL) {
