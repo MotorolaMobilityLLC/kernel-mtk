@@ -465,8 +465,6 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 
 		/* Update CPU boost */
 		schedtune_boostgroup_update(ct->idx, ct->boost);
-		printk_deferred("success: GED task boost=%d, pid=%d, idx=%d\n", ct->boost, pid, ct->idx);
-		pr_cont_cgroup_name(ct->css.cgroup);
 	} else {
 		printk_deferred("error: GED task no exist: pid=%d, boost=%d\n", pid, boost_value);
 		rcu_read_unlock();
@@ -526,8 +524,6 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 		schedtune_boostgroup_update(ct->idx, ct->boost);
 		rcu_read_unlock();
 
-		printk_deferred("success: GED task boost=%d, idx=%d\n", ct->boost, ct->idx);
-		pr_cont_cgroup_name(ct->css.cgroup);
 	} else {
 		printk_deferred("error: GED boost for stune group no exist: idx=%d\n", group_idx);
 		return -EINVAL;
