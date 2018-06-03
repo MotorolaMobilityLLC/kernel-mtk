@@ -769,6 +769,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "DVFSRC_ENABLE          : 0x%x\n", spm_read(DVFSRC_ENABLE));
 		p += sprintf(p, "DVFSRC_SIGNAL_CTRL     : 0x%x\n", spm_read(DVFSRC_SIGNAL_CTRL));
 		p += sprintf(p, "DVFSRC_CPU_LEVEL_MASK  : 0x%x\n", spm_read(DVFSRC_CPU_LEVEL_MASK));
+		p += sprintf(p, "DVFSRC_MD_LEVEL_MASK   : 0x%x\n", spm_read(DVFSRC_MD_LEVEL_MASK));
 		p += sprintf(p, "DVFSRC_CHANNEL_MASK    : 0x%x\n", spm_read(DVFSRC_CHANNEL_MASK));
 		p += sprintf(p, "DVFSRC_OVL_LEVEL_MASK  : 0x%x\n", spm_read(DVFSRC_OVL_LEVEL_MASK));
 		p += sprintf(p, "DVFSRC_LEVEL_JMP_METHOD: 0x%x\n", spm_read(DVFSRC_LEVEL_JMP_METHOD));
@@ -812,6 +813,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_warn("DVFSRC_ENABLE          : 0x%x\n", spm_read(DVFSRC_ENABLE));
 		spm_vcorefs_warn("DVFSRC_SIGNAL_CTRL     : 0x%x\n", spm_read(DVFSRC_SIGNAL_CTRL));
 		spm_vcorefs_warn("DVFSRC_CPU_LEVEL_MASK  : 0x%x\n", spm_read(DVFSRC_CPU_LEVEL_MASK));
+		spm_vcorefs_warn("DVFSRC_MD_LEVEL_MASK   : 0x%x\n", spm_read(DVFSRC_MD_LEVEL_MASK));
 		spm_vcorefs_warn("DVFSRC_CHANNEL_MASK    : 0x%x\n", spm_read(DVFSRC_CHANNEL_MASK));
 		spm_vcorefs_warn("DVFSRC_OVL_LEVEL_MASK  : 0x%x\n", spm_read(DVFSRC_OVL_LEVEL_MASK));
 		spm_vcorefs_warn("DVFSRC_LEVEL_JMP_METHOD: 0x%x\n", spm_read(DVFSRC_LEVEL_JMP_METHOD));
@@ -885,9 +887,9 @@ static void spm_dvfsfw_init(void)
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	if (ch == DVFSRC_CHANNEL_2)
+	if (ch == 2)
 		dvfs_level[OPP_1] = 0x4408;
-	else if (ch == DVFSRC_CHANNEL_4)
+	else if (ch == 4)
 		dvfs_level[OPP_1] = 0x2404;
 
 	spm_write(DVFS_LEVEL, dvfs_level[BOOT_UP_OPP]);
@@ -970,9 +972,9 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 
 	dcs_get_channel_unlock();
 
-	if (ch == DVFSRC_CHANNEL_2)
+	if (ch == 2)
 		dvfs_level[OPP_1] = 0x8;
-	else if (ch == DVFSRC_CHANNEL_4)
+	else if (ch == 4)
 		dvfs_level[OPP_1] = 0x4;
 
 #if 1
@@ -1013,14 +1015,55 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 	case DVFSRC_CHANNEL_2:
 		spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) & ~(1U << 0)); /* DVFS mapping table by channel*/
 		spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) & ~(1U << 2)); /* BW by channel */
+
+		/* FIXME E1 C+G jump level */
+		spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
+		/* FIXME E2 C+G jump level */
+		/* spm_write(DVFSRC_SIGNAL_CTRL, 0x808aaa); */
+
+		/* FIXME E1 HRT WQHD/FHD */
+		spm_write(DVFSRC_M3733, 0xa60b4); /* >5.3G to opp0 */
+		spm_write(DVFSRC_M3200, 0x64087); /* >3.2G to opp1 */
+		spm_write(DVFSRC_M1600, 0x3205a); /* >1.6G to opp2 */
+
+		/* FIXME E2 HRT WQHD */
+		/* spm_write(DVFSRC_M3733, 0xc80b4); >6.4G to opp0 */
+		/* spm_write(DVFSRC_M3200, 0xa6087); >5.3G to opp1 */
+		/* spm_write(DVFSRC_M1600, 0x5305a); >2.7G to opp2 */
+
+		/* FIXME E2 HRT FHD */
+		/* spm_write(DVFSRC_M3733, 0xa60b4); >6.4G to opp0 */
+		/* spm_write(DVFSRC_M3200, 0xa6087); >5.3G to opp1 */
+		/* spm_write(DVFSRC_M1600, 0x3205a); >1.6G to opp2 */
+
 		break;
 	case DVFSRC_CHANNEL_4:
 		spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) | (1U << 0));
 		spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) | (1U << 2));
+
+		/* FIXME E1 C+G jump level*/
+		spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
+		/* FIXME E2 C+G jump level */
+		/* spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa); */
+
+		/* FIXME E1 HRT WQHD/FHD */
+		spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
+		spm_write(DVFSRC_M3200, 0x64087); /* >6.4G to opp1 */
+		spm_write(DVFSRC_M1600, 0x3205a); /* >3.2G to opp2 */
+
+		/* FIXME E2 HRT WQHD */
+		/* spm_write(DVFSRC_M3733, 0xa60b4); >10.7G to opp0 */
+		/* spm_write(DVFSRC_M3200, 0xa6087); >10.7G to opp0 */
+		/* spm_write(DVFSRC_M1600, 0x5305a); >5.3G to opp2 */
+
+		/* FIXME E2 HRT FHD */
+		/* spm_write(DVFSRC_M3733, 0xa60b4); >10.7G to opp0 */
+		/* spm_write(DVFSRC_M3200, 0xa6087); >10.7G to opp0 */
+		/* spm_write(DVFSRC_M1600, 0x3205a); >3.2G to opp2 */
+
 		break;
 	default:
-		spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) & ~(1U << 0));
-		spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) & ~(1U << 2));
+		spm_vcorefs_err("WRONG channel number: %d\n", channel);
 	}
 }
 
@@ -1068,9 +1111,9 @@ static void dvfsrc_init_by_channel(void)
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	if (ch == DVFSRC_CHANNEL_2)
+	if (ch == 2)
 		spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_2);
-	else if (ch == DVFSRC_CHANNEL_4)
+	else if (ch == 4)
 		spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_4);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
@@ -1087,16 +1130,34 @@ static void dvfsrc_init(void)
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	spm_write(DVFSRC_DEBUG_EN, 0x49);
-	spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
 	spm_write(DVFSRC_CHANNEL_MASK, 0x1fffff);
-	spm_write(DVFSRC_LEVEL_JMP_METHOD, (spm_read(DVFSRC_LEVEL_JMP_METHOD) & ~(0xffff << 16)) | (0x32c8 << 16));
-	spm_write(DVFSRC_BANDWIDTH_CONST1, (spm_read(DVFSRC_BANDWIDTH_CONST1) & ~(0xfff << 20)) | (0x41 << 20));
-	spm_write(DVFSRC_BANDWIDTH_CONST2, (spm_read(DVFSRC_BANDWIDTH_CONST2) & ~(0x3ffff << 14)) | (0x1041 << 14));
+	spm_write(DVFSRC_LEVEL_JMP_METHOD, 0x32C80130);
+	spm_write(DVFSRC_BANDWIDTH_CONST1, 0x04100000);
+	spm_write(DVFSRC_BANDWIDTH_CONST2, 0x04104000);
 
-	spm_write(DVFSRC_M3733, 0xa50b4);
-	spm_write(DVFSRC_M3200, 0x67087);
-	spm_write(DVFSRC_M1600, 0x3305a);
+	/* FIXME E1 */
+	spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0003);
+	/* FIXME E2 */
+	/* spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001); */
 
+	spm_write(DVFSRC_MD_MAP_BW_0, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_1, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_2, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_3, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_4, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_5, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_6, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_7, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_8, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_9, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_10, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_11, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_12, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_13, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_14, 0x0);
+	spm_write(DVFSRC_MD_MAP_BW_15, 0x0);
+
+	/* enable DVFSRC */
 	spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) | (0x3));
 
 	spin_unlock_irqrestore(&__spm_lock, flags);

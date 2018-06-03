@@ -42,7 +42,7 @@ enum dvfs_kicker {
 	KIR_UFS,
 	KIR_PERF,
 	KIR_ANC_MD32,
-	KIR_DXCC,
+	KIR_EFUSE,
 	KIR_SYSFS,
 	KIR_SYSFSX,
 	NUM_KICKER,
@@ -70,7 +70,7 @@ struct opp_profile {
 };
 
 /* boot up opp for SPM init */
-#define BOOT_UP_OPP             OPP_2
+#define BOOT_UP_OPP             (NUM_OPP - 1)
 
 /* target OPP when feature enable */
 #define LATE_INIT_OPP           (NUM_OPP - 1)
