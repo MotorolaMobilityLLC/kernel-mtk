@@ -181,8 +181,7 @@ static int md1_scenario_pwr[SCENARIO_NUM] = {	PW_STANDBY,
 						PW_3G_4G_C2K_PAGING,
 						PW_3G_C2K_DATALINK,
 						PW_4G_DL_1CC,
-						PW_4G_DL_2CC,
-						PW_4G_POSITIONING
+						PW_4G_DL_2CC
 						};
 #elif defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6763)
 static int md1_scenario_pwr[SCENARIO_NUM] = {	PW_STANDBY,
@@ -493,34 +492,9 @@ static int is_scenario_hit(u32 share_reg, int scenario)
 
 	switch (scenario) {
 #if defined(CONFIG_MACH_MT6771)
-	case S_4G_POSITIONING:
-		/* if bit 15 is asserted */
-		if ((share_reg & _BIT_(15)) != 0)
-			hit = 1;
-		break;
-	case S_4G_DL_2CC:
-		/* if bit 6 or bit 7 is asserted */
-		if ((share_reg & _BITMASK_(7:6)) != 0)
-			hit = 1;
-		break;
-	case S_4G_DL_1CC:
-		/* if bit 5 is asserted */
-		if ((share_reg & _BIT_(5)) != 0)
-			hit = 1;
-		break;
-	case S_3G_C2K_DATALINK:
-		/* if bit 4 are not asserted */
-		if ((share_reg & _BIT_(4)) == 0)
-			hit = 1;
-		break;
-	case S_3G_4G_C2K_PAGING:
-		/* if bit 3 is asserted */
-		if ((share_reg & _BIT_(3)) != 0)
-			hit = 1;
-		break;
-	case S_3G_C2K_TALKING:
-		/* if bit 2 is asserted */
-		if ((share_reg & _BIT_(2)) != 0)
+	case S_STANDBY:
+		/* if bit 15 and bit 1 to 7 are not asserted */
+		if ((share_reg & _BITMASK_(7:1)) == 0)
 			hit = 1;
 		break;
 	case S_2G_CONNECT:
@@ -528,10 +502,29 @@ static int is_scenario_hit(u32 share_reg, int scenario)
 		if ((share_reg & _BIT_(1)) != 0)
 			hit = 1;
 		break;
-	case S_STANDBY:
-		/* if bit 15 and bit 1 to 7 are not asserted */
-		if (((share_reg & _BITMASK_(7:1)) == 0)
-			&& ((share_reg & _BIT_(15)) == 0))
+	case S_3G_C2K_TALKING:
+		/* if bit 2 is asserted */
+		if ((share_reg & _BIT_(2)) != 0)
+			hit = 1;
+		break;
+	case S_3G_4G_C2K_PAGING:
+		/* if bit 3 is asserted */
+		if ((share_reg & _BIT_(3)) != 0)
+			hit = 1;
+		break;
+	case S_3G_C2K_DATALINK:
+		/* if bit 4 are not asserted */
+		if ((share_reg & _BIT_(4)) != 0)
+			hit = 1;
+		break;
+	case S_4G_DL_1CC:
+		/* if bit 5 is asserted */
+		if ((share_reg & _BIT_(5)) != 0)
+			hit = 1;
+		break;
+	case S_4G_DL_2CC:
+		/* if bit 6 or bit 7 is asserted */
+		if ((share_reg & _BITMASK_(7:6)) != 0)
 			hit = 1;
 		break;
 #elif defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6763)
@@ -611,10 +604,6 @@ static u32 set_fake_share_reg(int scenario)
 	case S_4G_DL_2CC:
 		/* if bit 4 is asserted */
 		fShareReg = _BITMASK_(7:6);
-		break;
-	case S_4G_POSITIONING:
-		/* if bit 15 is asserted */
-		fShareReg = _BIT_(15);
 		break;
 #elif defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6763)
 	case S_STANDBY:
@@ -923,7 +912,6 @@ static int get_md1_dBm_power(int scenario)
 		dbm_power = get_md1_3g_dbm_power(share_mem);
 		dbm_power_max = get_md1_c2k_dbm_power(share_mem);
 		dbm_power_max = MAX(dbm_power, dbm_power_max);
-
 	} else if (scenario == S_3G_4G_C2K_PAGING) {
 		dbm_power = get_md1_3g_dbm_power(share_mem);
 		dbm_power_max = get_md1_c2k_dbm_power(share_mem);
@@ -932,8 +920,8 @@ static int get_md1_dBm_power(int scenario)
 		dbm_power += get_md1_4g_upL2_dbm_power(share_mem);
 		dbm_power_max = MAX(dbm_power, dbm_power_max);
 	} else if (scenario == S_4G_DL_1CC || scenario == S_4G_DL_2CC) {
-		dbm_power = get_md1_4g_upL1_dbm_power(share_mem);
-		dbm_power += get_md1_4g_upL2_dbm_power(share_mem);
+		dbm_power_max = get_md1_4g_upL1_dbm_power(share_mem);
+		dbm_power_max += get_md1_4g_upL2_dbm_power(share_mem);
 	} else {
 		dbm_power_max = 0;
 	}
@@ -980,7 +968,7 @@ void init_md_section_level(enum pbm_kicker kicker)
 #ifdef TEST_MD_POWER
 static void test_md_dbm_power(void)
 {
-	u32 i, j, y, z = 1, dbm_power, dbm_power_max, section[1] = {0};
+	u32 i, j, y, z = 1, dbm_power, section[1] = {0};
 
 	/* get MD1 2G dBm raw data */
 	for (i = 1; i <= SECTION_NUM; i++) {
@@ -997,9 +985,7 @@ static void test_md_dbm_power(void)
 			/* re-assign the value from y to section table */
 			section[DBM_2G_TABLE] |= y;
 			dbm_power = get_md1_2g_dbm_power(section);
-			dbm_power_max = get_md1_c2k_dbm_power(section);
-			dbm_power_max = MAX(dbm_power, dbm_power_max);
-			pbm_debug("2G section=%d dbm_power_max=%d\n", i, dbm_power_max);
+			pbm_debug("2G section=%d dbm_power=%d\n", i, dbm_power);
 		}
 	}
 
@@ -1017,9 +1003,7 @@ static void test_md_dbm_power(void)
 			/* re-assign the value from y to section table */
 			section[DBM_3G_TABLE] |= y;
 			dbm_power = get_md1_3g_dbm_power(section);
-			dbm_power_max = get_md1_c2k_dbm_power(section);
-			dbm_power_max = MAX(dbm_power, dbm_power_max);
-			pbm_debug("3G section=%d dbm_power_max=%d\n", i, dbm_power_max);
+			pbm_debug("3G section=%d dbm_power=%d\n", i, dbm_power);
 		}
 	}
 
@@ -1037,12 +1021,7 @@ static void test_md_dbm_power(void)
 			/* re-assign the value from y to section table */
 			section[DBM_4G_TABLE] |= y;
 			dbm_power = get_md1_4g_upL1_dbm_power(section);
-#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6771)
-			dbm_power += get_md1_4g_upL2_dbm_power(section);
-#endif
-			dbm_power_max = get_md1_c2k_dbm_power(section);
-			dbm_power_max = MAX(dbm_power, dbm_power_max);
-			pbm_debug("4G section=%d dbm_power_max=%d\n", i, dbm_power_max);
+			pbm_debug("4G section=%d dbm_power=%d\n", i, dbm_power);
 		}
 	}
 
@@ -1059,13 +1038,8 @@ static void test_md_dbm_power(void)
 
 			/* re-assign the value from y to section table */
 			section[DBM_4G_1_TABLE] |= y;
-			dbm_power = get_md1_4g_upL1_dbm_power(section);
-#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6771)
-			dbm_power += get_md1_4g_upL2_dbm_power(section);
-#endif
-			dbm_power_max = get_md1_c2k_dbm_power(section);
-			dbm_power_max = MAX(dbm_power, dbm_power_max);
-			pbm_debug("4G section=%d dbm_power_max=%d\n", i, dbm_power_max);
+			dbm_power = get_md1_4g_upL2_dbm_power(section);
+			pbm_debug("4G section=%d dbm_power=%d\n", i, dbm_power);
 
 
 		}
@@ -1084,10 +1058,8 @@ static void test_md_dbm_power(void)
 
 			/* re-assign the value from y to section table */
 			section[DBM_C2K_1_TABLE] |= y;
-			dbm_power = get_md1_2g_dbm_power(section);
-			dbm_power_max = get_md1_c2k_dbm_power(section);
-			dbm_power_max = MAX(dbm_power, dbm_power_max);
-			pbm_debug("C2K section=%d dbm_power_max=%d\n", i, dbm_power_max);
+			dbm_power = get_md1_c2k_dbm_power(section);
+			pbm_debug("C2K section=%d dbm_power=%d\n", i, dbm_power);
 		}
 	}
 }
