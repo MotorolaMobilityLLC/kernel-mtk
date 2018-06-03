@@ -3173,6 +3173,9 @@ void fg_drv_update_hw_status(void)
 
 	gauge_dev_get_time(gauge_dev, &time);
 
+	if (bat_get_debug_level() >= 7)
+		gauge_coulomb_dump_list();
+
 #ifdef GAUGE_COULOMB_INTERRUPT_TEST
 	if (list_empty(&coulomb_test1.list) == true)
 		gauge_coulomb_start(&coulomb_test1, 30);
@@ -3591,7 +3594,7 @@ int battery_update_routine(void *x)
 		if (bat_get_debug_level() >= BMLOG_DEBUG_LEVEL)
 			ktime = ktime_set(10, 0);
 		else
-			ktime = ktime_set(10, 0);
+			ktime = ktime_set(60, 0);
 
 		hrtimer_start(&fg_drv_thread_hrtimer, ktime, HRTIMER_MODE_REL);
 	}
@@ -4001,6 +4004,13 @@ static ssize_t store_FG_daemon_log_level(struct device *dev, struct device_attri
 		}
 		gFG_daemon_log_level = val;
 		Enable_BATDRV_LOG = val;
+		if (val >= 7) {
+			gtimer_set_log_level(3);
+			gauge_coulomb_set_log_level(3);
+		} else {
+			gtimer_set_log_level(0);
+			gauge_coulomb_set_log_level(0);
+		}
 		bm_err("[FG_daemon_log_level] gFG_daemon_log_level=%d\n", gFG_daemon_log_level);
 	}
 	return size;

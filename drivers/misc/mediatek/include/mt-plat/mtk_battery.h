@@ -54,6 +54,7 @@ extern void gauge_coulomb_stop(struct gauge_consumer *coulomb);
 extern void gauge_coulomb_dump_list(void);
 extern void gauge_coulomb_before_reset(void);
 extern void gauge_coulomb_after_reset(void);
+extern void gauge_coulomb_set_log_level(int x);
 /* coulomb sub system end */
 
 struct gtimer {
@@ -70,6 +71,7 @@ extern void gtimer_init(struct gtimer *timer, struct device *dev, char *name);
 extern void gtimer_start(struct gtimer *timer, int sec);
 extern void gtimer_stop(struct gtimer *timer);
 extern void gtimer_dump_list(void);
+extern void gtimer_set_log_level(int x);
 /* time service end */
 
 

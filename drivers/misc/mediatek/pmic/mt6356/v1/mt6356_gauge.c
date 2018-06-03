@@ -1401,9 +1401,9 @@ int fgauge_set_coulomb_interrupt1_lt(struct gauge_device *gauge_dev, int car_val
 	pmic_enable_interrupt(FG_BAT1_INT_L_NO, 1, "GM30");
 
 	bm_trace(
-		"[fgauge_set_coulomb_interrupt1_lt] low:[0xcae]=0x%x 0x%x \r\n",
+		"[fgauge_set_coulomb_interrupt1_lt] low:[0xcae]=0x%x 0x%x lcar:%d\r\n",
 		pmic_get_register_value(PMIC_FG_BAT1_LTH_15_14),
-		pmic_get_register_value(PMIC_FG_BAT1_LTH_31_16));
+		pmic_get_register_value(PMIC_FG_BAT1_LTH_31_16), lowbound);
 
 	return 0;
 }
