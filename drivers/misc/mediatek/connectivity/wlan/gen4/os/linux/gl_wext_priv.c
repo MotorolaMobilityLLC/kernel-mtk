@@ -93,7 +93,9 @@
 *                              C O N S T A N T S
 ********************************************************************************
 */
-#define NUM_SUPPORTED_OIDS      (sizeof(arWlanOidReqTable) / sizeof(WLAN_REQ_ENTRY))
+#define	NUM_SUPPORTED_OIDS      (sizeof(arWlanOidReqTable) / sizeof(WLAN_REQ_ENTRY))
+#define	CMD_OID_BUF_LENGTH	4096
+
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
@@ -136,7 +138,7 @@ reqExtSetAcpiDevicePowerState(IN P_GLUE_INFO_T prGlueInfo,
 *                       P R I V A T E   D A T A
 ********************************************************************************
 */
-static UINT_8 aucOidBuf[4096] = { 0 };
+static UINT_8 aucOidBuf[CMD_OID_BUF_LENGTH] = { 0 };
 
 /* OID processing table */
 /* Order is important here because the OIDs should be in order of
@@ -1121,8 +1123,10 @@ int
 priv_set_ints(IN struct net_device *prNetDev,
 	      IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
 {
-	UINT_32 u4SubCmd, u4BufLen;
+	UINT_16 i = 0;
+	UINT_32 u4SubCmd, u4BufLen, u4CmdLen;
 	P_GLUE_INFO_T prGlueInfo;
+	INT_32  setting[4] = {0};
 	int status = 0;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 	P_SET_TXPWR_CTRL_T prTxpwr;
@@ -1137,12 +1141,15 @@ priv_set_ints(IN struct net_device *prNetDev,
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
 	u4SubCmd = (UINT_32) prIwReqData->data.flags;
+	u4CmdLen = (UINT_32) prIwReqData->data.length;
 
 	switch (u4SubCmd) {
 	case PRIV_CMD_SET_TX_POWER:
 		{
-			INT_32 *setting = prIwReqData->data.pointer;
-			UINT_16 i;
+			if (u4CmdLen > 4)
+				return -EINVAL;
+			if (copy_from_user(setting, prIwReqData->data.pointer, u4CmdLen))
+				return -EFAULT;
 
 #if 0
 			DBGLOG(INIT, INFO, "Tx power num = %d\n", prIwReqData->data.length);
@@ -1292,7 +1299,6 @@ priv_set_struct(IN struct net_device *prNetDev,
 	/* WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS; */
 	UINT_32 u4CmdLen = 0;
 	P_NDIS_TRANSPORT_STRUCT prNdisReq;
-	PUINT_32 pu4IntBuf = NULL;
 
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	UINT_32 u4BufLen = 0;
@@ -1376,13 +1382,20 @@ priv_set_struct(IN struct net_device *prNetDev,
 	case PRIV_CMD_WSC_PROBE_REQ:
 		{
 			/* retrieve IE for Probe Request */
+			u4CmdLen = prIwReqData->data.length;
+			if (u4CmdLen > GLUE_INFO_WSCIE_LENGTH) {
+				DBGLOG(REQ, ERROR, "Input data length is invalid %u\n", u4CmdLen);
+				return -EINVAL;
+			}
+
 			if (prIwReqData->data.length > 0) {
-				if (copy_from_user(prGlueInfo->aucWSCIE, prIwReqData->data.pointer,
-						   prIwReqData->data.length)) {
+				if (copy_from_user(prGlueInfo->aucWSCIE,
+						   prIwReqData->data.pointer,
+						   u4CmdLen)) {
 					status = -EFAULT;
 					break;
 				}
-				prGlueInfo->u2WSCIELen = prIwReqData->data.length;
+				prGlueInfo->u2WSCIELen = u4CmdLen;
 			} else {
 				prGlueInfo->u2WSCIELen = 0;
 			}
@@ -1390,11 +1403,16 @@ priv_set_struct(IN struct net_device *prNetDev,
 		break;
 #endif
 	case PRIV_CMD_OID:
-		if (copy_from_user(&aucOidBuf[0], prIwReqData->data.pointer, prIwReqData->data.length)) {
+		u4CmdLen = prIwReqData->data.length;
+		if (u4CmdLen > CMD_OID_BUF_LENGTH) {
+			DBGLOG(REQ, ERROR, "Input data length is invalid %u\n", u4CmdLen);
+			return -EINVAL;
+		}
+		if (copy_from_user(&aucOidBuf[0], prIwReqData->data.pointer, u4CmdLen)) {
 			status = -EFAULT;
 			break;
 		}
-		if (!kalMemCmp(&aucOidBuf[0], pcExtra, prIwReqData->data.length)) {
+		if (!kalMemCmp(&aucOidBuf[0], pcExtra, u4CmdLen)) {
 			/* ToDo:: DBGLOG */
 			DBGLOG(REQ, INFO, "pcExtra buffer is valid\n");
 		} else {
@@ -1414,12 +1432,16 @@ priv_set_struct(IN struct net_device *prNetDev,
 		break;
 
 	case PRIV_CMD_SW_CTRL:
-		pu4IntBuf = (PUINT_32) prIwReqData->data.pointer;
+		u4CmdLen = prIwReqData->data.length;
 		prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
 
-		/* kalMemCopy(&prNdisReq->ndisOidContent[0], prIwReqData->data.pointer, 8); */
+		if (u4CmdLen > sizeof(prNdisReq->ndisOidContent)) {
+			DBGLOG(REQ, ERROR, "Input data length is invalid %u\n", u4CmdLen);
+			return -EINVAL;
+		}
+
 		if (copy_from_user(&prNdisReq->ndisOidContent[0],
-			prIwReqData->data.pointer, prIwReqData->data.length)) {
+			prIwReqData->data.pointer, u4CmdLen)) {
 			status = -EFAULT;
 			break;
 		}
