@@ -272,6 +272,7 @@ int __attribute__((weak)) univpll_is_used(void)
 	return 1;
 }
 
+void __attribute__((weak)) mtk_idle_cg_monitor(int cgmon_sel) {}
 #endif
 
 static bool idle_by_pass_secure_cg;
@@ -1968,6 +1969,7 @@ static ssize_t idle_state_read(struct file *filp,
 	mt_idle_log("switch on/off: echo switch mask > /sys/kernel/debug/cpuidle/idle_state\n");
 	mt_idle_log("idle ratio profile: echo ratio 1/0 > /sys/kernel/debug/cpuidle/idle_state\n");
 	mt_idle_log("idle latency profile: echo latency 1/0 > /sys/kernel/debug/cpuidle/idle_state\n");
+	mt_idle_log("idle cg monitor off/dp/so3/so: echo cgmon 0/1/2/3 > /sys/kernel/debug/cpuidle/idle_state\n");
 
 	mt_idle_log("soidle3 help:  cat /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
@@ -2006,6 +2008,11 @@ static ssize_t idle_state_write(struct file *filp,
 				mtk_idle_disable_ratio_calc();
 		} else if (!strcmp(cmd, "latency")) {
 			mtk_idle_latency_profile_enable(param ? true : false);
+		} else if (!strcmp(cmd, "cgmon")) {
+			mtk_idle_cg_monitor(
+				param == 1 ? IDLE_TYPE_DP :
+				param == 2 ? IDLE_TYPE_SO3 :
+				param == 3 ? IDLE_TYPE_SO : -1);
 		} else if (!strcmp(cmd, "spmtwam_clk")) {
 			mtk_idle_get_twam()->speed_mode = param;
 		} else if (!strcmp(cmd, "spmtwam_sel")) {
@@ -2127,7 +2134,7 @@ static int dpidle_state_open(struct inode *inode, struct file *filp)
 
 static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t count, loff_t *f_pos)
 {
-	int i, k, len = 0;
+	int i, len = 0;
 	char *p = dbg_buf;
 
 	p[0] = '\0';
@@ -2145,11 +2152,6 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	}
 
 	mt_idle_log("dpidle pg_stat=0x%08x\n", idle_block_mask[IDLE_TYPE_DP][NR_GRPS + 1]);
-
-	for (i = 0; i < NR_GRPS; i++)
-		for (k = 0; k < 32; k++)
-			dpidle_blocking_stat[i][k] = 0;
-
 	mt_idle_log("dpidle_clkmux_cond = %d\n", clkmux_cond[IDLE_TYPE_DP]);
 	for (i = 0; i < NF_CLK_CFG; i++)
 		mt_idle_log("[%02d]block_cond(0x%08x)=0x%08x\n",

@@ -73,7 +73,6 @@ enum {
 
 #define idle_readl(addr)	    __raw_readl(addr)
 
-extern unsigned int dpidle_blocking_stat[NR_GRPS][32];
 extern int idle_switch[NR_TYPES];
 
 extern unsigned int idle_condition_mask[NR_TYPES][NR_GRPS];
