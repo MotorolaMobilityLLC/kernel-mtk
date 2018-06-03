@@ -77,7 +77,7 @@ do { \
 #define STP_DBG_TRC_FUNC(f) \
 do { \
 	if (gStpDbgDbgLevel >= STP_DBG_LOG_DBG) \
-		pr_debug(PFX_STP_DBG "<%s> <%d>\n", __func__, __LINE__); \
+		pr_warn(PFX_STP_DBG "<%s> <%d>\n", __func__, __LINE__); \
 } while (0)
 
 typedef enum {
