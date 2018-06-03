@@ -35,6 +35,7 @@
 #include "ddp_wdma_ex.h"
 #include "ddp_hal.h"
 #include "ddp_path.h"
+#include "ddp_color.h"
 #include "ddp_aal.h"
 #include "ddp_pwm.h"
 #include <ddp_od.h>
@@ -340,7 +341,7 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		sprintf(buf, "aal_dbg_en = 0x%x\n", aal_dbg_en);
-#if 0 /* FIXME: tmp comment */
+#if 1 /* FIXME: tmp comment */
 	} else if (strncmp(opt, "color_dbg:", 10) == 0) {
 		char *p = (char *)opt + 10;
 		unsigned int debug_level;

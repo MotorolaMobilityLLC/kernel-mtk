@@ -190,7 +190,7 @@ static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
 	 {"mediatek,disp_ccorr0",
 	  0x1400e000,
 	  237,
-	  0,
+	  1,
 	  0,
 	  0}
 	},
@@ -651,9 +651,9 @@ unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr)
 	unsigned int i = 0;
 
 	for (i = 0; i < DISP_MODULE_NUM; i++) {
-		if ((isVa == 1) && (addr > ddp_get_module_va(i)) && (addr < ddp_get_module_va(i) + 0x1000))
+		if ((isVa == 1) && (addr >= ddp_get_module_va(i)) && (addr < ddp_get_module_va(i) + 0x1000))
 			break;
-		if ((isVa == 0) && (addr > ddp_get_module_pa(i)) && (addr < ddp_get_module_pa(i) + 0x1000))
+		if ((isVa == 0) && (addr >= ddp_get_module_pa(i)) && (addr < ddp_get_module_pa(i) + 0x1000))
 			break;
 	}
 
