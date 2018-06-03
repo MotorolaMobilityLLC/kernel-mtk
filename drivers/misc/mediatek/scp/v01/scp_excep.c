@@ -426,8 +426,7 @@ static void scp_prepare_aed_dump(char *aed_str,
 			memory_dump_size);
 		memory_dump_size = 0;
 	} else {
-		pr_debug("[SCP AEE]scp A dump ptr:0x%llx\n",
-			(unsigned long long)scp_dump_ptr);
+		pr_debug("[SCP AEE]scp A dump ptr:%p\n", scp_dump_ptr);
 		pMemoryDump = (struct MemoryDump *) scp_dump_ptr;
 		memset(pMemoryDump, 0x0, sizeof(*pMemoryDump));
 		memory_dump_size = scp_crash_dump(pMemoryDump, SCP_A_ID);
