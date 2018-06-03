@@ -375,7 +375,7 @@ int host_plug_test_enable; /* default disable */
 module_param(host_plug_test_enable, int, 0644);
 int host_plug_in_test_period_ms = 5000;
 module_param(host_plug_in_test_period_ms, int, 0644);
-int host_plug_out_test_period_ms = 5000;	/* give AEE 13 seconds */
+int host_plug_out_test_period_ms = 5000;
 module_param(host_plug_out_test_period_ms, int, 0644);
 int host_test_vbus_off_time_us = 3000;
 module_param(host_test_vbus_off_time_us, int, 0644);
@@ -456,12 +456,12 @@ void musb_enable_host(struct musb *musb)
 	switch_int_to_host(mtk_musb);	/* resotre ID pin interrupt */
 #endif
 }
-static struct wake_lock host_test_wakelock;
 static void do_host_plug_test_work(struct work_struct *data)
 {
 	static ktime_t ktime_begin, ktime_end;
 	static s64 diff_time;
 	static int host_on;
+	static struct wake_lock host_test_wakelock;
 	static int wake_lock_inited;
 
 	if (!wake_lock_inited) {
