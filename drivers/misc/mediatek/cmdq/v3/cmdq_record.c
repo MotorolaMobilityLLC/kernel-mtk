@@ -2304,6 +2304,7 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer,
 		spr_min_delay = CMDQ_TASK_TEMP_CPR_VAR + 2,
 		spr_debug = CMDQ_TASK_TEMP_CPR_VAR + 3;
 	struct cmdq_pkt_buffer *buf;
+	u32 free_size = cmdq_core_get_free_sram_size();
 
 	if (!pp_delay_thread_buffer || !buffer_size || !cpr_offset)
 		return -EINVAL;
@@ -2379,12 +2380,19 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer,
 
 	cmdq_op_finalize_command(handle, true);
 
+	*buffer_size = handle->pkt->cmd_buf_size;
 	if (handle->pkt->cmd_buf_size <= 0 || list_empty(&handle->pkt->buf) ||
 		handle->pkt->cmd_buf_size > CMDQ_CMD_BUFFER_SIZE) {
 		CMDQ_ERR("REC: create delay thread fail block_size:%zu\n",
 			handle->pkt->cmd_buf_size);
 		cmdq_task_destroy(handle);
 		return -EINVAL;
+	}
+
+	if (handle->pkt->cmd_buf_size > free_size) {
+		CMDQ_LOG("REC: not enough SRAM:%u to create delay:%zu\n",
+			free_size, handle->pkt->cmd_buf_size);
+		return -ENOMEM;
 	}
 
 	if (cmdq_core_alloc_sram_buffer(handle->pkt->cmd_buf_size,
@@ -2425,7 +2433,6 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer,
 	if (*pp_delay_thread_buffer != NULL)
 		kfree(*pp_delay_thread_buffer);
 	*pp_delay_thread_buffer = p_new_buffer;
-	*buffer_size = handle->pkt->cmd_buf_size;
 
 	cmdq_task_destroy(handle);
 	return 0;
