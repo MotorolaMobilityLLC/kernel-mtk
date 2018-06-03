@@ -723,6 +723,7 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 {
 	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T) NULL;
 	P_GL_P2P_INFO_T prP2pGlueInfo = (P_GL_P2P_INFO_T) NULL;
+	P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo = (P_P2P_ROLE_FSM_INFO_T) NULL;
 	P_GL_P2P_DEV_INFO_T prP2pGlueDevInfo = (P_GL_P2P_DEV_INFO_T) NULL;
 	P_MSG_P2P_SCAN_REQUEST_T prMsgScanRequest = (P_MSG_P2P_SCAN_REQUEST_T) NULL;
 	UINT_32 u4MsgSize = 0, u4Idx = 0;
@@ -732,6 +733,7 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 	struct ieee80211_channel *prChannel = NULL;
 	struct cfg80211_ssid *prSsid = NULL;
 	UINT_8 ucBssIdx = 0;
+	UINT_8 ucRoleBssIdx = 0;
 	BOOLEAN fgIsFullChanScan = FALSE;
 
 	/* [---------Channel---------] [---------SSID---------][---------IE---------] */
@@ -756,6 +758,18 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 			/* There have been a scan request on-going processing. */
 			DBGLOG(P2P, TRACE, "There have been a scan request on-going processing.\n");
 			break;
+		}
+
+		if (mtk_Netdev_To_RoleIdx(prGlueInfo, request->wdev->netdev, &ucRoleBssIdx) < 0)
+			DBGLOG(P2P, INFO, "Unable get role bssIdx from scan request\n");
+
+		prP2pRoleFsmInfo = P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prGlueInfo->prAdapter, ucRoleBssIdx);
+
+		/* Stop ROLE interface scan when DEV interface scan start */
+		if (prP2pRoleFsmInfo->eCurrentState == P2P_ROLE_STATE_SCAN) {
+			DBGLOG(P2P, INFO, "stop p2p role interface scan: %d\n",
+			       prP2pRoleFsmInfo->rConnReqInfo.eConnRequest);
+			prP2pRoleFsmInfo->rConnReqInfo.eConnRequest = P2P_CONNECTION_TYPE_IDLE;
 		}
 
 		prP2pGlueDevInfo->prScanRequest = request;
