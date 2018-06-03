@@ -1735,20 +1735,45 @@ static void cmdq_core_task_ctor(void *param)
 	pTask->thread = CMDQ_INVALID_THREAD;
 }
 
-void cmdq_task_free_task_command_buffer(struct TaskStruct *pTask)
+void cmdq_task_free_buffer_impl(struct list_head *cmd_buffer_list)
 {
-	CMDQ_TIME startTime;
 	struct list_head *p, *n = NULL;
 	struct CmdBufferStruct *cmd_buffer = NULL;
 
-	startTime = sched_clock();
-
-	list_for_each_safe(p, n, &pTask->cmd_buffer_list) {
+	list_for_each_safe(p, n, cmd_buffer_list) {
 		cmd_buffer = list_entry(p, struct CmdBufferStruct, listEntry);
 		list_del(&cmd_buffer->listEntry);
 		cmdq_core_free_hw_buffer(cmdq_dev_get(), CMDQ_CMD_BUFFER_SIZE,
 			cmd_buffer->pVABase, cmd_buffer->MVABase);
 		kfree(cmd_buffer);
+	}
+}
+
+void cmdq_task_free_buffer_work(struct work_struct *work_item)
+{
+	struct CmdFreeWorkStruct *free_work;
+
+	free_work = container_of(work_item, struct CmdFreeWorkStruct, free_buffer_work);
+	cmdq_task_free_buffer_impl(&free_work->cmd_buffer_list);
+	kfree(free_work);
+}
+
+void cmdq_task_free_task_command_buffer(struct TaskStruct *pTask)
+{
+	CMDQ_TIME startTime;
+	struct CmdFreeWorkStruct *free_work_item;
+
+	startTime = sched_clock();
+
+	free_work_item = kzalloc(sizeof(struct CmdFreeWorkStruct), GFP_KERNEL);
+	if (likely(free_work_item)) {
+		list_replace_init(&pTask->cmd_buffer_list, &free_work_item->cmd_buffer_list);
+		INIT_WORK(&free_work_item->free_buffer_work, cmdq_task_free_buffer_work);
+		queue_work(gCmdqContext.taskAutoReleaseWQ, &free_work_item->free_buffer_work);
+	} else {
+		CMDQ_ERR("Unable to start free buffer work, free directly, task: 0x%p\n", pTask);
+		cmdq_task_free_buffer_impl(&pTask->cmd_buffer_list);
+		INIT_LIST_HEAD(&pTask->cmd_buffer_list);
 	}
 
 	CMDQ_INC_TIME_IN_US(startTime, sched_clock(), pTask->durRelease);
@@ -2130,9 +2155,9 @@ static void cmdq_core_release_task(struct TaskStruct *pTask)
 	pTask->secStatus = NULL;
 #endif
 
-	cmdq_core_release_buffer(pTask);
-
 	mutex_lock(&gCmdqTaskMutex);
+
+	cmdq_core_release_buffer(pTask);
 
 	/* remove from active/waiting list */
 	list_del_init(&(pTask->listEntry));
