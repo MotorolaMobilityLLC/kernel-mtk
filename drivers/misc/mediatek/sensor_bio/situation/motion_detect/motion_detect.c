@@ -25,7 +25,6 @@
 #include <linux/atomic.h>
 
 #include <hwmsensor.h>
-#include <hwmsen_dev.h>
 #include <sensors_io.h>
 #include "situation.h"
 #include "motion_detect.h"

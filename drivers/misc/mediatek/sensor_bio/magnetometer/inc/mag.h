@@ -35,7 +35,6 @@
 #include <sensors_io.h>
 #include <hwmsen_helper.h>
 #include <hwmsensor.h>
-#include <hwmsen_dev.h>
 #include "mag_factory.h"
 #include "sensor_event.h"
 #include "sensor_attr.h"

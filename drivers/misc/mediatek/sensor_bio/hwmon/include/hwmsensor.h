@@ -453,4 +453,20 @@ struct compat_batch_trans_data {
 #define COMPAT_BATCH_IO_GET_SENSORS_DATA	_IOWR(BATCH_IOC_MAGIC, 0x01, struct compat_batch_trans_data)
 #endif
 
+/*define sensor operator type---------------------------------------------------*/
+#define SENSOR_DELAY	0X01
+#define	SENSOR_ENABLE	0X02
+#define	SENSOR_GET_DATA	0X04
+
+/**
+ * status of each sensor
+ */
+
+#define SENSOR_STATUS_UNRELIABLE        0
+#define SENSOR_STATUS_ACCURACY_LOW      1
+#define SENSOR_STATUS_ACCURACY_MEDIUM   2
+#define SENSOR_STATUS_ACCURACY_HIGH     3
+
+#define GRAVITY_EARTH_1000           9807	/* about (9.80665f)*1000 */
+
 #endif				/* __HWMSENSOR_H__ */

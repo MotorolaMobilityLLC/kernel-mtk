@@ -34,7 +34,6 @@
 #include <linux/poll.h>
 #include <sensors_io.h>
 #include <hwmsensor.h>
-#include <hwmsen_dev.h>
 #include "humidity_factory.h"
 #include "sensor_attr.h"
 #include "sensor_event.h"
