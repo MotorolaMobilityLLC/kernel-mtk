@@ -203,11 +203,11 @@ extern int setVCMPos(unsigned short DAC_Val);
 
 extern void setOISMode(int Disable);
 
-extern int s4EEPROM_ReadReg_BU63165AF(u16 addr, u16 *data);
+extern int s4EEPROM_ReadReg_BU63169AF(u16 addr, u16 *data);
 
-extern int s4AF_WriteReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData);
+extern int s4AF_WriteReg_BU63169AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData);
 
-extern int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData,
+extern int s4AF_ReadReg_BU63169AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData,
 				   u8 *a_pRecvData, u16 a_sizeRecvData);
 
 /* #define      DEBUG_FADJ */
