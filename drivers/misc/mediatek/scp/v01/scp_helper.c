@@ -73,8 +73,8 @@ static struct workqueue_struct *scp_workqueue;
 static unsigned int scp_ready;
 static struct timer_list scp_ready_timer;
 static struct scp_work_struct scp_notify_work;
-static struct mutex scp_notify_mutex;
-static struct mutex scp_feature_mutex;
+static DEFINE_MUTEX(scp_notify_mutex);
+static DEFINE_MUTEX(scp_feature_mutex);
 unsigned char **scp_swap_buf;
 static struct wake_lock scp_suspend_lock;
 typedef struct {
@@ -761,8 +761,6 @@ static int __init scp_init(void)
 	/* static initialise */
 	scp_ready = 0;
 
-	mutex_init(&scp_notify_mutex);
-	mutex_init(&scp_feature_mutex);
 	wake_lock_init(&scp_suspend_lock, WAKE_LOCK_SUSPEND, "scp wakelock");
 
 	scp_workqueue = create_workqueue("SCP_WQ");
