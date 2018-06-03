@@ -1197,7 +1197,7 @@ static ssize_t rndis_wceis_store(struct device *dev,
 	int value;
 
 
-	if (kstrtoint(buf, 0, &value) == 1) {
+	if (kstrtoint(buf, 0, &value) == 0) {
 		config->wceis = value;
 		return size;
 	}
