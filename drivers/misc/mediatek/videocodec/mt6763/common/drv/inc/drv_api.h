@@ -45,8 +45,7 @@ extern VAL_VCODEC_OAL_HW_CONTEXT_T oal_hw_context[VCODEC_MULTIPLE_INSTANCE_NUM];
 extern VAL_NON_CACHE_MEMORY_LIST_T grNonCacheMemoryList[VCODEC_MULTIPLE_INSTANCE_NUM_x_10];
 
 /* For both hybrid and pure HW */
-extern VAL_VCODEC_HW_LOCK_T grVcodecDecHWLock;	/* mutex : VdecHWLock */
-extern VAL_VCODEC_HW_LOCK_T grVcodecEncHWLock;	/* mutex : VencHWLock */
+extern VAL_VCODEC_HW_LOCK_T grVcodecHWLock;	/* mutex : VdecHWLock*/
 
 extern VAL_UINT32_T gu4LockDecHWCount;	/* spinlock : LockDecHWCountLock */
 extern VAL_UINT32_T gu4LockEncHWCount;	/* spinlock : LockEncHWCountLock */
