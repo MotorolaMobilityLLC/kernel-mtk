@@ -69,6 +69,10 @@ typedef const char*(*CmdqDispatchModule) (uint64_t engineFlag);
 
 typedef void (*CmdqTrackTask) (const struct TaskStruct *pTask);
 
+typedef const char *(*CmdqPraseErrorModByEngFlag) (const struct TaskStruct *task);
+
+typedef u64 (*CmdqMdpGetEngineGroupBits) (u32 engine_group);
+
 struct cmdqMDPFuncStruct {
 	CmdqDumpMMSYSConfig dumpMMSYSConfig;
 	CmdqVEncDumpInfo vEncDumpInfo;
@@ -90,6 +94,8 @@ struct cmdqMDPFuncStruct {
 	CmdqTestcaseClkmgrMdp testcaseClkmgrMdp;
 	CmdqDispatchModule dispatchModule;
 	CmdqTrackTask trackTask;
+	CmdqPraseErrorModByEngFlag parseErrModByEngFlag;
+	CmdqMdpGetEngineGroupBits getEngineGroupBits;
 };
 
 /* track MDP task */
@@ -134,6 +140,7 @@ extern "C" {
 	void cmdq_mdp_dump_wdma(const unsigned long base, const char *label);
 
 	void cmdq_mdp_check_TF_address(unsigned int mva, char *module);
+	const char *cmdq_mdp_parse_error_module_by_hwflag(const struct TaskStruct *task);
 
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/
