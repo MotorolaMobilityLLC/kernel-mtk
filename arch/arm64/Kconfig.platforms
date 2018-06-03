@@ -89,6 +89,39 @@ config MACH_MT6757
 	  significant multitasking and multimedia improvements thanks to its new
 	  LPDDR4X memory support.
 
+config MACH_MT6758
+	bool "MediaTek MT6758"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select MTK_SYS_CIRQ
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select PINCTRL
+	select PINCTRL_MT6758
+	select MFD_SYSCON
+	select MTK_BASE_POWER
+	select MTK_GIC_V3_EXT
+	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
+	select MTK_BOUNCING_CHECK
+	select MTK_PLAT_SRAM_FLAG
+	select MTK_WATCHPOINT
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
+	help
+	  This enables support for MediaTek MT6758
+	  Support for aarch64 Architecture
+	  Support for fpga6758_64_emmc related projects
+	  Support for fpga6758_64_ufs related projects
+
 config MACH_MT6759
 	bool "MediaTek MT6759"
 	select MTK_BASE_POWER
