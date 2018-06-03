@@ -106,7 +106,6 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
 #endif
 
-	spm_opt |= univpll_is_used() ? SPM_OPT_UNIVPLL_STAT : 0;
 	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
