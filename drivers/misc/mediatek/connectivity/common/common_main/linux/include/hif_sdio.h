@@ -47,6 +47,8 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/sdio_func.h>
 #include <linux/mmc/sdio_ids.h>
+#include <linux/mmc/sdio.h>
+#include <sdio_ops.h>
 
 #include <linux/mm.h>
 #include <linux/firmware.h>
@@ -290,6 +292,10 @@ do { if (gHifSdioDbgLvl >= HIF_SDIO_LOG_ERR)	\
 #define HIF_SDIO_ASSERT(expr)    do {} while (0)
 #endif
 
+/* define function 0 CR */
+#define CCCR_06		(0x06)
+#define CCCR_F0		(0xF0)
+
 /*******************************************************************************
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -322,6 +328,9 @@ extern INT32 mtk_wcn_hif_sdio_read_buf(MTK_WCN_HIF_SDIO_CLTCTX ctx,
 
 extern INT32 mtk_wcn_hif_sdio_write_buf(MTK_WCN_HIF_SDIO_CLTCTX ctx,
 					UINT32 offset, PUINT32 pbuf, UINT32 len);
+
+extern INT32 mtk_wcn_hif_sdio_abort(MTK_WCN_HIF_SDIO_CLTCTX ctx);
+
 extern INT32 mtk_wcn_hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx);
 
 extern VOID mtk_wcn_hif_sdio_set_drvdata(MTK_WCN_HIF_SDIO_CLTCTX ctx, PVOID private_data_p);

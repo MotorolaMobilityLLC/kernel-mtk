@@ -30,6 +30,7 @@
 
 UINT32 gStpDbgLvl = STP_LOG_INFO;
 unsigned int chip_reset_only;
+INT32 wmt_dbg_sdio_retry_ctrl = 1;
 
 #define REMOVE_USELESS_LOG 1
 
@@ -3564,7 +3565,27 @@ INT32 mtk_wcn_stp_coredump_timeout_handle(VOID)
 		STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
 	return 0;
 }
+
 VOID mtk_wcn_stp_dbg_pkt_log(INT32 type, INT32 dir)
 {
 	stp_dbg_pkt_log(type, 0, 0, 0, dir, NULL, 0);
+}
+
+VOID mtk_stp_sdio_retry_flag_ctrl(INT32 flag)
+{
+	if (flag) {
+		if (flag != wmt_dbg_sdio_retry_ctrl)
+			flag = wmt_dbg_sdio_retry_ctrl;
+	}
+	stp_sdio_retry_flag_ctrl(flag == 0 ? 0 : 1);
+}
+
+VOID mtk_stp_dbg_sdio_retry_flag_ctrl(INT32 flag)
+{
+	wmt_dbg_sdio_retry_ctrl = flag == 0 ? 0 : 1;
+}
+
+INT32 mtk_stp_sdio_retry_flag_get(VOID)
+{
+	return stp_sdio_retry_flag_get();
 }

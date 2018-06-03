@@ -96,6 +96,7 @@ static INT32 wmt_dbg_ftrace_dbg_log_ctrl(INT32 par1, INT32 par2, INT32 par3);
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 static INT32 wmt_dbg_deep_sleep_ctrl(INT32 par1, INT32 par2, INT32 par3);
 #endif
+static INT32 wmt_dbg_sdio_retry_ctrl(INT32 par1, INT32 par2, INT32 par3);
 
 static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 	[0x0] = wmt_dbg_psm_ctrl,
@@ -137,6 +138,7 @@ static const WMT_DEV_DBG_FUNC wmt_dev_dbg_func[] = {
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 	[0x1f] = wmt_dbg_deep_sleep_ctrl,
 #endif
+	[0x20] = wmt_dbg_sdio_retry_ctrl,
 };
 
 static VOID wmt_dbg_fwinfor_print_buff(UINT32 len)
@@ -618,6 +620,7 @@ static INT32 wmt_dbg_ftrace_dbg_log_ctrl(INT32 par1, INT32 par2, INT32 par3)
 	return osal_ftrace_print_ctrl(par2 == 0 ? 0 : 1);
 }
 #endif
+
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 static INT32 wmt_dbg_deep_sleep_ctrl(INT32 par1, INT32 par2, INT32 par3)
 {
@@ -625,6 +628,16 @@ static INT32 wmt_dbg_deep_sleep_ctrl(INT32 par1, INT32 par2, INT32 par3)
 	return wmt_lib_deep_sleep_ctrl(par2);
 }
 #endif
+
+static INT32 wmt_dbg_sdio_retry_ctrl(INT32 par1, INT32 par2, INT32 par3)
+{
+	WMT_INFO_FUNC("%s sdio retry!!\n", par2 == 0 ? "disable" : "enable");
+
+	mtk_stp_dbg_sdio_retry_flag_ctrl(par2 == 0 ? 0 : 1);
+
+	return 0;
+}
+
 INT32 wmt_dbg_coex_test(INT32 par1, INT32 par2, INT32 par3)
 {
 	WMT_INFO_FUNC("coexistance test cmd!!\n");
