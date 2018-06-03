@@ -117,16 +117,12 @@ int get_volt_cpu(struct eem_det *det)
 #ifndef EARLY_PORTING_CPU
 	/* unit mv * 100 = 10uv */  /* I-Chang */
 	switch (det_to_id(det)) {
-	case EEM_DET_BIG:
-		value = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_B);
+	case EEM_DET_2L:
+		value = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL);
 		break;
 
 	case EEM_DET_L:
 		value = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L);
-		break;
-
-	case EEM_DET_2L:
-		value = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL);
 		break;
 
 	case EEM_DET_CCI:
@@ -160,16 +156,12 @@ int set_volt_cpu(struct eem_det *det)
 		record_tbl_locked[value] = det->volt_tbl_pmic[value];
 
 	switch (det_to_id(det)) {
-	case EEM_DET_BIG:
-		value = mt_cpufreq_update_volt(MT_CPU_DVFS_B, record_tbl_locked, det->num_freq_tbl);
+	case EEM_DET_2L:
+		value = mt_cpufreq_update_volt(MT_CPU_DVFS_LL, record_tbl_locked, det->num_freq_tbl);
 		break;
 
 	case EEM_DET_L:
 		value = mt_cpufreq_update_volt(MT_CPU_DVFS_L, record_tbl_locked, det->num_freq_tbl);
-		break;
-
-	case EEM_DET_2L:
-		value = mt_cpufreq_update_volt(MT_CPU_DVFS_LL, record_tbl_locked, det->num_freq_tbl);
 		break;
 
 	case EEM_DET_CCI:
@@ -197,16 +189,12 @@ void restore_default_volt_cpu(struct eem_det *det)
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	switch (det_to_id(det)) {
-	case EEM_DET_BIG:
-		value = mt_cpufreq_update_volt(MT_CPU_DVFS_B, det->volt_tbl_orig, det->num_freq_tbl);
+	case EEM_DET_2L:
+		value = mt_cpufreq_update_volt(MT_CPU_DVFS_LL, det->volt_tbl_orig, det->num_freq_tbl);
 		break;
 
 	case EEM_DET_L:
 		value = mt_cpufreq_update_volt(MT_CPU_DVFS_L, det->volt_tbl_orig, det->num_freq_tbl);
-		break;
-
-	case EEM_DET_2L:
-		value = mt_cpufreq_update_volt(MT_CPU_DVFS_LL, det->volt_tbl_orig, det->num_freq_tbl);
 		break;
 
 	case EEM_DET_CCI:
@@ -237,8 +225,7 @@ void get_freq_table_cpu(struct eem_det *det)
 			break;
 	}
 	#else
-	cpu_id = (det_id == EEM_DET_BIG) ? MT_CPU_DVFS_B :
-			(det_id == EEM_DET_CCI) ? MT_CPU_DVFS_CCI :
+	cpu_id = (det_id == EEM_DET_CCI) ? MT_CPU_DVFS_CCI :
 			(det_id == EEM_DET_2L) ? MT_CPU_DVFS_LL :
 			MT_CPU_DVFS_L;
 
@@ -275,8 +262,7 @@ void get_orig_volt_table_cpu(struct eem_det *det)
 
 	for (i = 0; i < det->num_freq_tbl; i++) {
 		det->volt_tbl_orig[i] =
-			((det_id == EEM_DET_BIG) ? mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_B, i) :
-			(det_id == EEM_DET_2L) ? mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_LL, i) :
+			((det_id == EEM_DET_2L) ? mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_LL, i) :
 			(det_id == EEM_DET_L) ?  mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_L, i) :
 			mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_CCI, i));
 		/* eem_debug("volt_tbl_orig[%d] = %d\n", i, det->volt_tbl_orig[i]); */

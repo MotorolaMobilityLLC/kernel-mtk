@@ -131,118 +131,105 @@ struct eem_det {
 
 struct eem_devinfo {
 	/* M_HW_RES0 */
-	unsigned int BIG_BDES:8;
-	unsigned int BIG_MDES:8;
-	unsigned int BIG_DCBDET:8;
-	unsigned int BIG_DCMDET:8;
+	unsigned int BODYBIAS:1;
+	unsigned int PTPOD_T:1;
+	unsigned int EPS:1;
+	unsigned int ANALOG:1;
+	unsigned int FT_PGM:4;
+	unsigned int RSV1:2;
+	unsigned int REV:2;
+	unsigned int PACKAGE:2;
+	unsigned int FABCODE:2;
+	unsigned int RSV2:16;
 
 	/* M_HW_RES1 */
-	unsigned int BIG_INITEN:1;
-	unsigned int BIG_MONEN:1;
-	unsigned int BIG_DVFS_LOW:2;
-	unsigned int BIG_RSV:1;
-	unsigned int BIG_SPEC:3;
-	unsigned int CCI_INITEN:1;
-	unsigned int CCI_MONEN:1;
-	unsigned int CCI_DVFS_LOW:2;
-	unsigned int CCI_RSV:1;
-	unsigned int CCI_SPEC:3;
-	unsigned int BIG_MTDES:8;
-	unsigned int BIG_AGEDELTA:8;
-
-	/* M_HW_RES2 */
-	unsigned int CCI_BDES:8;
-	unsigned int CCI_MDES:8;
-	unsigned int CCI_DCBDET:8;
-	unsigned int CCI_DCMDET:8;
-
-	/* M_HW_RES3 */
-	unsigned int GPU_MTDES:8;
-	unsigned int GPU_AGEDELTA:8;
-	unsigned int CCI_MTDES:8;
-	unsigned int CCI_AGEDELTA:8;
-
-	/* M_HW_RES4 */
-	unsigned int GPU_BDES:8;
-	unsigned int GPU_MDES:8;
-	unsigned int GPU_DCBDET:8;
-	unsigned int GPU_DCMDET:8;
-
-	/* M_HW_RES5 */
-	unsigned int CPU_2L_INITEN:1;
-	unsigned int CPU_2L_MONEN:1;
-	unsigned int CPU_2L_DVFS_LOW:2;
-	unsigned int CPU_2L_RSV:1;
-	unsigned int CPU_2L_SPEC:3;
-	unsigned int CPU_L_INITEN:1;
-	unsigned int CPU_L_MONEN:1;
-	unsigned int CPU_L_DVFS_LOW:2;
-	unsigned int CPU_L_RSV:1;
-	unsigned int CPU_L_SPEC:3;
-	unsigned int OD5_RSV1:8;
-	unsigned int GPU_INITEN:1;
-	unsigned int GPU_MONEN:1;
-	unsigned int GPU_DVFS_LOW:2;
-	unsigned int GPU_RSV:1;
-	unsigned int GPU_SPEC:3;
-
-	/* M_HW_RES6 */
 	unsigned int CPU_2L_BDES:8;
 	unsigned int CPU_2L_MDES:8;
 	unsigned int CPU_2L_DCBDET:8;
 	unsigned int CPU_2L_DCMDET:8;
 
-	/* M_HW_RES7 */
-	unsigned int CPU_L_MTDES:8;
-	unsigned int CPU_L_AGEDELTA:8;
+	/* M_HW_RES2 */
+	unsigned int CPU_2L_SPEC:3;
+	unsigned int CPU_2L_TURBO:1;
+	unsigned int CPU_2L_DVFS_LOW:2;
+	unsigned int CPU_2L_INITEN:1;
+	unsigned int CPU_2L_MONEN:1;
+	unsigned int CPU_2L_LEAKAGE:8;
 	unsigned int CPU_2L_MTDES:8;
 	unsigned int CPU_2L_AGEDELTA:8;
 
-	/* M_HW_RES8 */
+	/* M_HW_RES3 */
 	unsigned int CPU_L_BDES:8;
 	unsigned int CPU_L_MDES:8;
 	unsigned int CPU_L_DCBDET:8;
 	unsigned int CPU_L_DCMDET:8;
 
-	/* M_HW_RES9 */
-	unsigned int OD9_RSV1:32;
+	/* M_HW_RES4 */
+	unsigned int CPU_L_SPEC:3;
+	unsigned int CPU_L_TURBO:1;
+	unsigned int CPU_L_DVFS_LOW:2;
+	unsigned int CPU_L_INITEN:1;
+	unsigned int CPU_L_MONEN:1;
+	unsigned int CPU_L_LEAKAGE:8;
+	unsigned int CPU_L_MTDES:8;
+	unsigned int CPU_L_AGEDELTA:8;
+
+	/* M_HW_RES5 */
+	unsigned int CCI_BDES:8;
+	unsigned int CCI_MDES:8;
+	unsigned int CCI_DCBDET:8;
+	unsigned int CCI_DCMDET:8;
+
+	/* M_HW_RES6 */
+	unsigned int CCI_SPEC:3;
+	unsigned int CCI_TURBO:1;
+	unsigned int CCI_DVFS_LOW:2;
+	unsigned int CCI_INITEN:1;
+	unsigned int CCI_MONEN:1;
+	unsigned int CCI_LEAKAGE:8;
+	unsigned int CCI_MTDES:8;
+	unsigned int CCI_AGEDELTA:8;
+
+	/* M_HW_RES7 */
+	unsigned int GPU_BDES:8;
+	unsigned int GPU_MDES:8;
+	unsigned int GPU_DCBDET:8;
+	unsigned int GPU_DCMDET:8;
+
+	/* M_HW_RES8 */
+	unsigned int GPU_SPEC:3;
+	unsigned int GPU_TURBO:1;
+	unsigned int GPU_DVFS_LOW:2;
+	unsigned int GPU_INITEN:1;
+	unsigned int GPU_MONEN:1;
+	unsigned int GPU_LEAKAGE:8;
+	unsigned int GPU_MTDES:8;
+	unsigned int GPU_AGEDELTA:8;
 
 #if EEM_BANK_SOC
-	/* M_HW_RES12 */
+	/* M_HW_RES9 */
 	unsigned int SOC_BDES:8;
 	unsigned int SOC_MDES:8;
 	unsigned int SOC_DCBDET:8;
 	unsigned int SOC_DCMDET:8;
 
-	/* M_HW_RES13 */
+	/* M_HW_RES10 */
+	unsigned int SOC_SPEC:3;
+	unsigned int SOC_TURBO:1;
+	unsigned int SOC_DVFS_LOW:2;
 	unsigned int SOC_INITEN:1;
 	unsigned int SOC_MONEN:1;
-	unsigned int SOC_DVFS_LOW:2;
-	unsigned int SOC_TURBO:1;
-	unsigned int SOC_SPEC:3;
 	unsigned int SOC_LEAKAGE:8;
 	unsigned int SOC_MTDES:8;
 	unsigned int SOC_AGEDELTA:8;
 #else
-	/* M_HW_RES12 */
+	/* M_HW_RES9_10 */
 	unsigned int SOC_OPP3:2;
 	unsigned int SOC_OPP2:2;
 	unsigned int SOC_OPP1:2;
 	unsigned int SOC_OPP0:2;
 	unsigned int SOC_RSV:24;
 #endif
-
-	/* M_HW_RES18 */
-	unsigned int OD18_RSV1:16;
-	unsigned int PTP3:4;
-	unsigned int FTPGM_VER:4;
-	unsigned int FABCODE:2;
-	unsigned int OD18_RSV2:1;
-	unsigned int TURBO:1;
-	unsigned int OD24_RSV3:4;
-
-	/* M_HW_RES19 */
-	unsigned int OD19_RSV1:32;
 };
 
 /*********************************************

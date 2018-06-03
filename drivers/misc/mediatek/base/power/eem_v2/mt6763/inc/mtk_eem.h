@@ -21,67 +21,22 @@
 
 #define EN_EEM (1) /* enable/disable EEM (SW) */
 
-/* Thermal Register Definition */
-
-/* EEM Structure */
-typedef struct {
-	unsigned int ADC_CALI_EN;
-	unsigned int PTPINITEN;
-	unsigned int PTPMONEN;
-
-	unsigned int MDES;
-	unsigned int BDES;
-	unsigned int DCCONFIG;
-	unsigned int DCMDET;
-	unsigned int DCBDET;
-	unsigned int AGECONFIG;
-	unsigned int AGEM;
-	unsigned int AGEDELTA;
-	unsigned int DVTFIXED;
-	unsigned int VCO;
-	unsigned int MTDES;
-	unsigned int MTS;
-	unsigned int BTS;
-
-	unsigned char FREQPCT0;
-	unsigned char FREQPCT1;
-	unsigned char FREQPCT2;
-	unsigned char FREQPCT3;
-	unsigned char FREQPCT4;
-	unsigned char FREQPCT5;
-	unsigned char FREQPCT6;
-	unsigned char FREQPCT7;
-
-	unsigned int DETWINDOW;
-	unsigned int VMAX;
-	unsigned int VMIN;
-	unsigned int DTHI;
-	unsigned int DTLO;
-	unsigned int VBOOT;
-	unsigned int DETMAX;
-
-	unsigned int DCVOFFSETIN;
-	unsigned int AGEVOFFSETIN;
-} PTP_INIT_T;
-
-/* have 10 banks */
+/* have 5 banks */
 enum eem_ctrl_id {
-	EEM_CTRL_BIG = 0,
+	EEM_CTRL_2L = 0,
+	EEM_CTRL_L,
 	EEM_CTRL_CCI,
 	EEM_CTRL_GPU,
-	EEM_CTRL_2L,
-	EEM_CTRL_L,
 	EEM_CTRL_SOC,
 
 	NR_EEM_CTRL,
 };
 
 enum eem_det_id {
-	EEM_DET_BIG	=	EEM_CTRL_BIG,
-	EEM_DET_CCI	=	EEM_CTRL_CCI,
-	EEM_DET_GPU	=	EEM_CTRL_GPU,
 	EEM_DET_2L	=	EEM_CTRL_2L,
 	EEM_DET_L	=	EEM_CTRL_L,
+	EEM_DET_CCI	=	EEM_CTRL_CCI,
+	EEM_DET_GPU	=	EEM_CTRL_GPU,
 	EEM_DET_SOC	=	EEM_CTRL_SOC,
 
 	NR_EEM_DET,
@@ -90,7 +45,6 @@ enum eem_det_id {
 enum mt_eem_cpu_id {
 	MT_EEM_CPU_LL,
 	MT_EEM_CPU_L,
-	MT_EEM_CPU_B,
 	MT_EEM_CPU_CCI,
 
 	NR_MT_EEM_CPU,
@@ -124,24 +78,10 @@ enum {
 	EEM_VOLT_RESTORE = BIT(1),
 };
 
-/*
- *enum mt_cpu_dvfs_id {
- *	MT_CPU_DVFS_LL,
- *	MT_CPU_DVFS_L,
- *	MT_CPU_DVFS_B,
- *	MT_CPU_DVFS_CCI,
- *
- *	NR_MT_CPU_DVFS,
- *};
-*/
-
 /* Global variable for SW EFUSE*/
 /* TODO: FIXME #include "devinfo.h" */
 extern u32 get_devinfo_with_index(u32 index);
 extern const unsigned int reg_dump_addr_off[100];
-
-/* Global variabel for Idvfs */
-extern unsigned int infoIdvfs;
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	#define CONFIG_EEM_AEE_RR_REC 1
@@ -149,11 +89,10 @@ extern unsigned int infoIdvfs;
 
 #ifdef CONFIG_EEM_AEE_RR_REC
 enum eem_state {
-	EEM_CPU_BIG_IS_SET_VOLT = 0,	/* B */
-	EEM_CPU_CCI_IS_SET_VOLT, /* CCI */
+	EEM_CPU_2_LITTLE_IS_SET_VOLT = 0,	/* 2L */
+	EEM_CPU_LITTLE_IS_SET_VOLT,		/* L */
+	EEM_CPU_CCI_IS_SET_VOLT,		/* CCI */
 	EEM_GPU_IS_SET_VOLT,			/* G */
-	EEM_CPU_2_LITTLE_IS_SET_VOLT, /* 2L */
-	EEM_CPU_LITTLE_IS_SET_VOLT, /* L */
 };
 
 extern void aee_rr_rec_ptp_e0(u32 val);

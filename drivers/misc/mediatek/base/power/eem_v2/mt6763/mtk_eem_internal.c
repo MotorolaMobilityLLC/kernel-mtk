@@ -34,9 +34,14 @@
  * EEM controllers
  */
 struct eem_ctrl eem_ctrls[NR_EEM_CTRL] = {
-	[EEM_CTRL_BIG] = {
-		.name = __stringify(EEM_CTRL_BIG),
-		.det_id = EEM_DET_BIG,
+	[EEM_CTRL_2L] = {
+		.name = __stringify(EEM_CTRL_2L),
+		.det_id = EEM_DET_2L,
+	},
+
+	[EEM_CTRL_L] = {
+		.name = __stringify(EEM_CTRL_L),
+		.det_id = EEM_DET_L,
 	},
 
 	[EEM_CTRL_CCI] = {
@@ -47,16 +52,6 @@ struct eem_ctrl eem_ctrls[NR_EEM_CTRL] = {
 	[EEM_CTRL_GPU] = {
 		.name = __stringify(EEM_CTRL_GPU),
 		.det_id = EEM_DET_GPU,
-	},
-
-	[EEM_CTRL_2L] = {
-		.name = __stringify(EEM_CTRL_2L),
-		.det_id = EEM_DET_2L,
-	},
-
-	[EEM_CTRL_L] = {
-		.name = __stringify(EEM_CTRL_L),
-		.det_id = EEM_DET_L,
 	},
 
 	[EEM_CTRL_SOC] = {
@@ -98,20 +93,43 @@ struct eem_det_ops eem_det_base_ops = {
 };
 
 struct eem_det eem_detectors[NR_EEM_DET] = {
-	[EEM_DET_BIG] = {
-		.name		= __stringify(EEM_DET_BIG),
-		.ops		= &big_det_ops,
+	[EEM_DET_2L] = {
+		.name		= __stringify(EEM_DET_2L),
+		.ops		= &dual_little_det_ops,
 		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
 		.volt_offset	= 0,
 		#endif
-		.ctrl_id	= EEM_CTRL_BIG,
-		#ifdef CONFIG_BIG_OFF
-		.features	= 0,
-		#else
+		.ctrl_id	= EEM_CTRL_2L,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		.max_freq_khz	= 1638000,/* 1599 MHz */
+		.VBOOT		= VBOOT_VAL, /* 10uV */
+		.VMAX		= VMAX_VAL,
+		.VMIN		= VMIN_VAL,
+		.eem_v_base	= EEM_V_BASE,
+		.eem_step   = EEM_STEP,
+		.pmic_base	= CPU_PMIC_BASE,
+		.pmic_step	= CPU_PMIC_STEP,
+		.DETWINDOW	= DETWINDOW_VAL,
+		.DTHI		= DTHI_VAL,
+		.DTLO		= DTLO_VAL,
+		.DETMAX		= DETMAX_VAL,
+		.AGECONFIG	= AGECONFIG_VAL,
+		.AGEM		= AGEM_VAL,
+		.DVTFIXED	= DVTFIXED_VAL,
+		.VCO		= VCO_VAL,
+		.DCCONFIG	= DCCONFIG_VAL,
+	},
+
+	[EEM_DET_L] = {
+		.name		= __stringify(EEM_DET_L),
+		.ops		= &little_det_ops,
+		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
+		.volt_offset	= 0,
 		#endif
-		.max_freq_khz	= 2548000,/* 2496Mhz */
-		.VBOOT		= VBOOT_VAL,
+		.ctrl_id	= EEM_CTRL_L,
+		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		.max_freq_khz	= 2340000,/* 2249 MHz */
+		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
@@ -182,60 +200,6 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.VCO		= VCO_VAL,
 		.DCCONFIG	= DCCONFIG_VAL,
 
-	},
-
-	[EEM_DET_2L] = {
-		.name		= __stringify(EEM_DET_2L),
-		.ops		= &dual_little_det_ops,
-		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
-		.volt_offset	= 0,
-		#endif
-		.ctrl_id	= EEM_CTRL_2L,
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1638000,/* 1599 MHz */
-		.VBOOT		= VBOOT_VAL, /* 10uV */
-		.VMAX		= VMAX_VAL,
-		.VMIN		= VMIN_VAL,
-		.eem_v_base	= EEM_V_BASE,
-		.eem_step   = EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE,
-		.pmic_step	= CPU_PMIC_STEP,
-		.DETWINDOW	= DETWINDOW_VAL,
-		.DTHI		= DTHI_VAL,
-		.DTLO		= DTLO_VAL,
-		.DETMAX		= DETMAX_VAL,
-		.AGECONFIG	= AGECONFIG_VAL,
-		.AGEM		= AGEM_VAL,
-		.DVTFIXED	= DVTFIXED_VAL,
-		.VCO		= VCO_VAL,
-		.DCCONFIG	= DCCONFIG_VAL,
-	},
-
-	[EEM_DET_L] = {
-		.name		= __stringify(EEM_DET_L),
-		.ops		= &little_det_ops,
-		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
-		.volt_offset	= 0,
-		#endif
-		.ctrl_id	= EEM_CTRL_L,
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 2340000,/* 2249 MHz */
-		.VBOOT		= VBOOT_VAL, /* 10uV */
-		.VMAX		= VMAX_VAL,
-		.VMIN		= VMIN_VAL,
-		.eem_v_base	= EEM_V_BASE,
-		.eem_step   = EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE,
-		.pmic_step	= CPU_PMIC_STEP,
-		.DETWINDOW	= DETWINDOW_VAL,
-		.DTHI		= DTHI_VAL,
-		.DTLO		= DTLO_VAL,
-		.DETMAX		= DETMAX_VAL,
-		.AGECONFIG	= AGECONFIG_VAL,
-		.AGEM		= AGEM_VAL,
-		.DVTFIXED	= DVTFIXED_VAL,
-		.VCO		= VCO_VAL,
-		.DCCONFIG	= DCCONFIG_VAL,
 	},
 
 	[EEM_DET_SOC] = {
