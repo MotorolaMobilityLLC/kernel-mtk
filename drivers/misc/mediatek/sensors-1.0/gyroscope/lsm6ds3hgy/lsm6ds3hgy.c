@@ -284,36 +284,31 @@ static int LSM6DS3H_gyro_WriteCalibration(struct i2c_client *client,
 					  int dat[LSM6DS3H_GYRO_AXES_NUM])
 {
 	struct lsm6ds3h_gyro_i2c_data *obj = i2c_get_clientdata(client);
-	int err = 0;
 	int cali[LSM6DS3H_GYRO_AXES_NUM];
-
 
 	GYRO_FUN();
 	if (!obj || !dat) {
 		GYRO_PR_ERR("null ptr!!\n");
 		return -EINVAL;
 	}
-		cali[obj->cvt.map[LSM6DS3H_AXIS_X]] =
-		    obj->cvt.sign[LSM6DS3H_AXIS_X] * obj->cali_sw[LSM6DS3H_AXIS_X];
-		cali[obj->cvt.map[LSM6DS3H_AXIS_Y]] =
-		    obj->cvt.sign[LSM6DS3H_AXIS_Y] * obj->cali_sw[LSM6DS3H_AXIS_Y];
-		cali[obj->cvt.map[LSM6DS3H_AXIS_Z]] =
-		    obj->cvt.sign[LSM6DS3H_AXIS_Z] * obj->cali_sw[LSM6DS3H_AXIS_Z];
-		cali[LSM6DS3H_AXIS_X] += dat[LSM6DS3H_AXIS_X];
-		cali[LSM6DS3H_AXIS_Y] += dat[LSM6DS3H_AXIS_Y];
-		cali[LSM6DS3H_AXIS_Z] += dat[LSM6DS3H_AXIS_Z];
+	cali[obj->cvt.map[LSM6DS3H_AXIS_X]] =
+		obj->cvt.sign[LSM6DS3H_AXIS_X] * obj->cali_sw[LSM6DS3H_AXIS_X];
+	cali[obj->cvt.map[LSM6DS3H_AXIS_Y]] =
+		obj->cvt.sign[LSM6DS3H_AXIS_Y] * obj->cali_sw[LSM6DS3H_AXIS_Y];
+	cali[obj->cvt.map[LSM6DS3H_AXIS_Z]] =
+		obj->cvt.sign[LSM6DS3H_AXIS_Z] * obj->cali_sw[LSM6DS3H_AXIS_Z];
+	cali[LSM6DS3H_AXIS_X] += dat[LSM6DS3H_AXIS_X];
+	cali[LSM6DS3H_AXIS_Y] += dat[LSM6DS3H_AXIS_Y];
+	cali[LSM6DS3H_AXIS_Z] += dat[LSM6DS3H_AXIS_Z];
 #if DEBUG
-		if (atomic_read(&obj->trace) & GYRO_TRC_CALI) {
-			GYRO_LOG("write gyro calibration data  (%5d, %5d, %5d)-->(%5d, %5d, %5d)\n",
-				 dat[LSM6DS3H_AXIS_X], dat[LSM6DS3H_AXIS_Y], dat[LSM6DS3H_AXIS_Z],
-				 cali[LSM6DS3H_AXIS_X], cali[LSM6DS3H_AXIS_Y],
-				 cali[LSM6DS3H_AXIS_Z]);
-		}
+	if (atomic_read(&obj->trace) & GYRO_TRC_CALI) {
+		GYRO_LOG("write gyro calibration data  (%5d, %5d, %5d)-->(%5d, %5d, %5d)\n",
+			 dat[LSM6DS3H_AXIS_X], dat[LSM6DS3H_AXIS_Y], dat[LSM6DS3H_AXIS_Z],
+			 cali[LSM6DS3H_AXIS_X], cali[LSM6DS3H_AXIS_Y],
+			 cali[LSM6DS3H_AXIS_Z]);
+	}
 #endif
-		return LSM6DS3H_gyro_write_rel_calibration(obj, cali);
-
-
-	return err;
+	return LSM6DS3H_gyro_write_rel_calibration(obj, cali);
 }
 
 /*----------------------------------------------------------------------------*/
