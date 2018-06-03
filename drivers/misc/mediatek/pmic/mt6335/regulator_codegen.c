@@ -2675,9 +2675,12 @@ static int pmic_ldo_vcama1_enable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	PMICLOG("ldo vcama1 enable\n");
-	if (mreg->en_cb != NULL)
+	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
-	else {
+		mdelay(1);
+		/* this OC interrupt needs to delay 1ms after enable power */
+		pmic_enable_interrupt(INT_VCAMA1_OC, 1, "PMIC");
+	} else {
 		pr_err("ldo vcama1 don't have en_cb\n");
 		ret = -1;
 	}
@@ -2699,9 +2702,11 @@ static int pmic_ldo_vcama1_disable(struct regulator_dev *rdev)
 		PMICLOG("ldo vcama1 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
+		if (mreg->en_cb != NULL) {
 			ret = (mreg->en_cb)(0);
-		else {
+			/* after disable power, this OC interrupt should be disabled as well */
+			pmic_enable_interrupt(INT_VCAMA1_OC, 0, "PMIC");
+		} else {
 			pr_err("ldo vcama1 don't have enable callback\n");
 			ret = -1;
 		}
@@ -3624,9 +3629,12 @@ static int pmic_ldo_vcama2_enable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	PMICLOG("ldo vcama2 enable\n");
-	if (mreg->en_cb != NULL)
+	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
-	else {
+		mdelay(1);
+		/* this OC interrupt needs to delay 1ms after enable power */
+		pmic_enable_interrupt(INT_VCAMA2_OC, 1, "PMIC");
+	} else {
 		pr_err("ldo vcama2 don't have en_cb\n");
 		ret = -1;
 	}
@@ -3648,9 +3656,11 @@ static int pmic_ldo_vcama2_disable(struct regulator_dev *rdev)
 		PMICLOG("ldo vcama2 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
+		if (mreg->en_cb != NULL) {
 			ret = (mreg->en_cb)(0);
-		else {
+			/* after disable power, this OC interrupt should be disabled as well */
+			pmic_enable_interrupt(INT_VCAMA2_OC, 0, "PMIC");
+		} else {
 			pr_err("ldo vcama2 don't have enable callback\n");
 			ret = -1;
 		}
