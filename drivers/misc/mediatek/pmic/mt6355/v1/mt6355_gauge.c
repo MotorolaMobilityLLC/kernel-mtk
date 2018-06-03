@@ -89,9 +89,21 @@ static signed int REG_to_MV_value(signed int _reg)
 
 static signed int MV_to_REG_value(signed int _mv)
 {
-	int ret = (_mv * ADC_PRECISE) / (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3);
+	int ret;
+	long long _reg64 = _mv;
+#if defined(__LP64__) || defined(_LP64)
+	_reg64 = (_reg64 * ADC_PRECISE) / (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3);
+#else
+	_reg64 = div_s64((_reg64 * ADC_PRECISE), (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3));
+#endif
+	ret = _reg64;
 
-	bm_trace("[MV_to_REG_value] %d => %d\n", _mv, ret);
+	if (ret <= 0) {
+		bm_err("[fg_bat_nafg][MV_to_REG_value] mv=%d,%lld => %d,\n", _mv, _reg64, ret);
+		return ret;
+	}
+
+	bm_trace("[MV_to_REG_value] mv=%d,%lld => %d,\n", _mv, _reg64, ret);
 	return ret;
 }
 
@@ -2408,7 +2420,8 @@ static int fgauge_enable_car_tune_value_calibration(struct gauge_device *gauge_d
 		bm_err("[444]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
 			sum_all, temp_sum, avg_cnt, current_from_ADC);
 
-		do_div(temp_sum, avg_cnt);
+		if (avg_cnt != 0)
+			do_div(temp_sum, avg_cnt);
 		current_from_ADC = temp_sum;
 
 		bm_err("[555]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
@@ -2436,17 +2449,18 @@ static int fgauge_enable_car_tune_value_calibration(struct gauge_device *gauge_d
 
 		/* Move 100 from denominator to cali_car_tune's numerator */
 		/*cali_car_tune = meta_input_cali_current * 1000 / dvalue;*/
-		cali_car_tune = meta_input_cali_current * 1000 * 100 / dvalue;
+		if (dvalue != 0) {
+			cali_car_tune = meta_input_cali_current * 1000 * 100 / dvalue;
 
-		bm_err("[777]dvalue %d fg_cust_data.r_fg_value %d cali_car_tune %d\n",
-			dvalue, gauge_dev->fg_cust_data->r_fg_value, cali_car_tune);
-		*car_tune_value = cali_car_tune;
+			bm_err("[777]dvalue %d fg_cust_data.r_fg_value %d cali_car_tune %d\n",
+				dvalue, gauge_dev->fg_cust_data->r_fg_value, cali_car_tune);
+			*car_tune_value = cali_car_tune;
 
-		bm_err(
-			"[fgauge_meta_cali_car_tune_value][%d] meta:%d, adc:%lld, UNI_FGCUR:%d, r_fg_value:%d\n",
-			cali_car_tune, meta_input_cali_current, current_from_ADC,
-			UNIT_FGCURRENT, gauge_dev->fg_cust_data->r_fg_value);
-
+			bm_err(
+				"[fgauge_meta_cali_car_tune_value][%d] meta:%d, adc:%lld, UNI_FGCUR:%d, r_fg_value:%d\n",
+				cali_car_tune, meta_input_cali_current, current_from_ADC,
+				UNIT_FGCURRENT, gauge_dev->fg_cust_data->r_fg_value);
+		}
 		return 0;
 	}
 
