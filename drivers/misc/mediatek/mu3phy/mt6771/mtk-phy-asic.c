@@ -129,8 +129,8 @@ void usb_hal_dpidle_request(int mode)
 	unsigned long flags;
 
 #ifdef U3_COMPLIANCE
-	os_printk(K_INFO, "%s, U3_COMPLIANCE, directly return\n", __func__);
-	return;
+	os_printk(K_INFO, "%s, U3_COMPLIANCE, fake to USB_DPIDLE_FORBIDDEN\n", __func__);
+	mode = USB_DPIDLE_FORBIDDEN;
 #endif
 
 	spin_lock_irqsave(&usb_hal_dpidle_lock, flags);
@@ -1198,7 +1198,12 @@ void Charger_Detect_Init(void)
 {
 	os_printk(K_INFO, "%s+\n", __func__);
 
-	if (mu3d_force_on) {
+#ifdef U3_COMPLIANCE
+	os_printk(K_INFO, "%s, U3_COMPLIANCE, SKIP\n", __func__);
+	return;
+#endif
+
+	if (mu3d_force_on || !_mu3d_musb) {
 		os_printk(K_INFO, "%s-, SKIP\n", __func__);
 		return;
 	}
@@ -1235,7 +1240,12 @@ void Charger_Detect_Release(void)
 {
 	os_printk(K_INFO, "%s+\n", __func__);
 
-	if (mu3d_force_on) {
+#ifdef U3_COMPLIANCE
+	os_printk(K_INFO, "%s, U3_COMPLIANCE, SKIP\n", __func__);
+	return;
+#endif
+
+	if (mu3d_force_on || !_mu3d_musb) {
 		os_printk(K_INFO, "%s-, SKIP\n", __func__);
 		return;
 	}
