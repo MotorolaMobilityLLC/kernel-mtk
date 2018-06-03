@@ -37,11 +37,10 @@
 
 #define MRDUMP_ENABLE_COOKIE 0x590d2ba3
 
-#define MRDUMP_GO_DUMP "MRDUMP05"
+#define MRDUMP_GO_DUMP "MRDUMP06"
 
 #define KSYM_32        1
 #define KSYM_64        2
-#define KSYM_64_COMPAT 3
 
 typedef uint32_t arm32_gregset_t[18];
 typedef uint64_t aarch64_gregset_t[34];
@@ -81,6 +80,8 @@ struct mrdump_machdesc {
 
 	uint64_t page_offset;
 	uint64_t high_memory;
+
+	uint64_t kimage_vaddr;
 
 	uint64_t vmalloc_start;
 	uint64_t vmalloc_end;
