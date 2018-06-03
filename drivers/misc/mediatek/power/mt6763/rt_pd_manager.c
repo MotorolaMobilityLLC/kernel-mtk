@@ -330,7 +330,8 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		}
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
-		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
+		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
+			noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC) {
 			mutex_lock(&tcpc_usb_connect_lock);
 			tcpc_usb_connected = true;
 			mutex_unlock(&tcpc_usb_connect_lock);
@@ -348,7 +349,8 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			pr_err("TCP_NOTIFY_SINK_VBUS=> plug in");
 #endif
 #endif
-		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
+		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
+			noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC) &&
 			noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			mutex_lock(&tcpc_usb_connect_lock);
 			tcpc_usb_connected = false;
