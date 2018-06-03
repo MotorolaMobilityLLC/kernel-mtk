@@ -317,6 +317,7 @@ void history_record_destroy(struct history_record *history_record)
 				break;
 			}
 		}
+		spin_unlock(&history_record->lock);
 	} while (busy);
 	/* we have history_record->lock locked here */
 
