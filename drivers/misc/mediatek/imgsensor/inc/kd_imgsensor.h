@@ -113,6 +113,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 ********************************************************************************/
 /* SENSOR CHIP VERSION */
 /*IMX*/
+#define IMX398_SENSOR_ID                        0x0398
 #define IMX268_SENSOR_ID                        0x0268
 #define IMX386_SENSOR_ID                        0x0386
 #define IMX362_SENSOR_ID                        0x0362
@@ -292,6 +293,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
 /*IMX*/
+#define SENSOR_DRVNAME_IMX398_MIPI_RAW          "imx398mipiraw"
 #define SENSOR_DRVNAME_IMX268_MIPI_RAW          "imx268mipiraw"
 #define SENSOR_DRVNAME_IMX386_MIPI_RAW          "imx386mipiraw"
 #define SENSOR_DRVNAME_IMX362_MIPI_RAW          "imx362mipiraw"
