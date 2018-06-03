@@ -68,6 +68,12 @@ static void __init check_and_fix_base(struct reserved_mem *rmem, phys_addr_t tot
 {
 	phys_addr_t new_zmc_base, return_size;
 
+	/* Not default value. Extend zmc_max_zone_dma_phys if needed */
+	if (rmem->base > zmc_max_zone_dma_phys) {
+		zmc_max_zone_dma_phys = min(rmem->base, (phys_addr_t)(1ULL << 32));
+		return;
+	}
+
 	pr_info("%s: total phys size: %pa\n", __func__, &total_phys_size);
 
 	/* No need to fix if the size of DRAM is less or equal to 4GB */
