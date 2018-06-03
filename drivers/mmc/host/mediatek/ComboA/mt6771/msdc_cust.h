@@ -451,6 +451,8 @@
 #include <mt-plat/mtk_chip.h>
 #endif
 
-extern unsigned int mt_get_chip_hw_ver(void) __attribute__((weak));
-
+unsigned int __attribute__((weak)) mt_get_chip_hw_ver(void)
+{
+	return 0;
+}
 #endif /* _MSDC_CUST_MT6771_H_ */
