@@ -49,7 +49,9 @@
 #include <linux/usb/composite.h>
 
 #include "musb_core.h"
+#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 #include "musb_qmu.h"
+#endif
 
 #define FIFO_START_ADDR 512
 

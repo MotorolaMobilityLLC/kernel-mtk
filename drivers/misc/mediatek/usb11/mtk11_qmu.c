@@ -621,7 +621,7 @@ void mtk11_flush_ep_csr(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 		/* write 2x to allow double buffering */
 		/* CC: see if some check is necessary */
 		musbfsh_writew(epio, MUSBFSH_RXCSR, csr);
-		musbfsh_writew(epio, MUSBFSH_RXCSR, csr | MUSBFSH_RXCSR_CLRDATATOG);
+		/*musbfsh_writew(epio, MUSBFSH_RXCSR, csr | MUSBFSH_RXCSR_CLRDATATOG);*/
 	} else {
 		csr = musbfsh_readw(epio, MUSBFSH_TXCSR);
 		if (csr & MUSBFSH_TXCSR_TXPKTRDY) {
@@ -631,7 +631,7 @@ void mtk11_flush_ep_csr(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 
 		csr |= MUSBFSH_TXCSR_FLUSHFIFO & ~MUSBFSH_TXCSR_TXPKTRDY;
 		musbfsh_writew(epio, MUSBFSH_TXCSR, csr);
-		musbfsh_writew(epio, MUSBFSH_TXCSR, csr | MUSBFSH_TXCSR_CLRDATATOG);
+		/*musbfsh_writew(epio, MUSBFSH_TXCSR, csr | MUSBFSH_TXCSR_CLRDATATOG);*/
 		/* CC: why is this special? */
 		musbfsh_writew(mbase, MUSBFSH_INTRTX, 1 << ep_num);
 	}
@@ -661,55 +661,32 @@ void mtk11_disable_q(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 	}
 }
 
-void mtk11_qmu_host_rx_err(struct musbfsh *musbfsh, u8 epnum)
+void mtk11_qmu_host_iso_rx_err_info(struct musbfsh *musbfsh, u8 epnum)
 {
-	u16 rx_csr, val;
+	u16 rx_csr;
 	struct musbfsh_hw_ep *hw_ep = musbfsh->endpoints + epnum;
 	void __iomem *epio = hw_ep->regs;
-	u32 status = 0;
 	void __iomem *mbase = musbfsh->mregs;
 
 	musbfsh_ep_select(mbase, epnum);
 	rx_csr = musbfsh_readw(epio, MUSBFSH_RXCSR);
-	val = rx_csr;
 
-	status = 0;
+	WARNING("<== hw %d rxcsr %04x\n", epnum, rx_csr);
 
-	QMU_ERR("<== hw %d rxcsr %04x\n", epnum, rx_csr);
-
-	/* check for errors, concurrent stall & unlink is not really */
-	/* handled yet! */
+	/* check for errors, concurrent stall & unlink is not really handled yet! */
 	if (rx_csr & MUSBFSH_RXCSR_H_RXSTALL) {
-		QMU_ERR("RX end %d STALL\n", epnum);
-
-		/* handle stall in MAC */
-		rx_csr &= ~MUSBFSH_RXCSR_H_RXSTALL;
-		musbfsh_writew(epio, MUSBFSH_RXCSR, rx_csr);
-
-		/* stall; record URB status */
-		status = -EPIPE;
+		WARNING("RX end %d STALL\n", epnum);
 	} else if (rx_csr & MUSBFSH_RXCSR_H_ERROR) {
-		QMU_ERR("end %d RX proto error,rxtoggle=0x%x\n", epnum,
+		WARNING("end %d RX proto error,rxtoggle=0x%x\n", epnum,
 		    musbfsh_readl(mbase, MUSBFSH_RXTOG));
-
-		status = -EPROTO;
-		musbfsh_writeb(epio, MUSBFSH_RXINTERVAL, 0);
-	} else if (rx_csr & MUSBFSH_RXCSR_DATAERROR)
-		QMU_ERR("RX end %d ISO data error\n", epnum);
-	else if (rx_csr & MUSBFSH_RXCSR_INCOMPRX) {
-		QMU_ERR("end %d high bandwidth incomplete ISO packet RX\n", epnum);
-		status = -EPROTO;
+	} else if (rx_csr & MUSBFSH_RXCSR_DATAERROR) {
+		WARNING("RX end %d ISO data error\n", epnum);
+	} else if (rx_csr & MUSBFSH_RXCSR_INCOMPRX) {
+		WARNING("end %d high bandwidth incomplete ISO packet RX\n", epnum);
 	}
-
-	/* faults abort the transfer */
-	if (status) {
-		musbfsh_h_flush_rxfifo(hw_ep, 0);
-		musbfsh_writeb(epio, MUSBFSH_RXINTERVAL, 0);
-	}
-	QMU_ERR("done\n");
 }
 
-void mtk11_qmu_host_tx_err(struct musbfsh *musbfsh, u8 epnum)
+void mtk11_qmu_host_iso_tx_err_info(struct musbfsh *musbfsh, u8 epnum)
 {
 	u16 tx_csr;
 	struct musbfsh_hw_ep *hw_ep = musbfsh->endpoints + epnum;
@@ -718,31 +695,266 @@ void mtk11_qmu_host_tx_err(struct musbfsh *musbfsh, u8 epnum)
 
 	musbfsh_ep_select(mbase, epnum);
 	tx_csr = musbfsh_readw(epio, MUSBFSH_TXCSR);
+	WARNING("OUT/TX%d end, csr %04x\n", epnum, tx_csr);
+	/* check for errors */
+	if (tx_csr & MUSBFSH_TXCSR_H_RXSTALL) {
+		/* dma was disabled, fifo flushed */
+		WARNING("TX end %d stall\n", epnum);
+	} else if (tx_csr & MUSBFSH_TXCSR_H_ERROR) {
+		/* (NON-ISO) dma was disabled, fifo flushed */
+		WARNING("TX 3strikes on ep=%d\n", epnum);
+	} else if (tx_csr & MUSBFSH_TXCSR_H_NAKTIMEOUT) {
+		WARNING("TX end=%d device not responding\n", epnum);
+	}
+}
 
-	QMU_ERR("OUT/TX%d end, csr %04x\n", epnum, tx_csr);
-
-	tx_csr &= ~(MUSBFSH_TXCSR_AUTOSET
-		    | MUSBFSH_TXCSR_DMAENAB
-		    | MUSBFSH_TXCSR_H_ERROR | MUSBFSH_TXCSR_H_RXSTALL | MUSBFSH_TXCSR_H_NAKTIMEOUT);
+void mtk11_qmu_host_rx_err(struct musbfsh *musbfsh, u8 epnum)
+{
+	struct urb *urb;
+	u16 rx_csr, val;
+	struct musbfsh_hw_ep *hw_ep = musbfsh->endpoints + epnum;
+	void __iomem *epio = hw_ep->regs;
+	struct musbfsh_qh *qh = hw_ep->in_qh;
+	bool done = false;
+	u32 status = 0;
+	void __iomem *mbase = musbfsh->mregs;
 
 	musbfsh_ep_select(mbase, epnum);
-	musbfsh_writew(epio, MUSBFSH_TXCSR, tx_csr);
-	/* REVISIT may need to clear FLUSHFIFO ... */
-	musbfsh_writew(epio, MUSBFSH_TXCSR, tx_csr);
-	musbfsh_writeb(epio, MUSBFSH_TXINTERVAL, 0);
-	QMU_ERR("done\n");
+	rx_csr = musbfsh_readw(epio, MUSBFSH_RXCSR);
+	val = rx_csr;
+
+	if (!qh) {
+		WARNING("!QH for ep %d\n", epnum);
+		goto finished;
+	}
+
+	urb = next_urb(qh);
+	status = 0;
+
+	if (unlikely(!urb)) {
+		/* REVISIT -- THIS SHOULD NEVER HAPPEN ... but, at least
+		 * usbtest #11 (unlinks) triggers it regularly, sometimes
+		 * with fifo full.  (Only with DMA??)
+		 */
+		WARNING("BOGUS RX%d ready, csr %04x, count %d\n", epnum, val,
+		    musbfsh_readw(epio, MUSBFSH_RXCOUNT));
+		musbfsh_h_flush_rxfifo(hw_ep, 0);
+		goto finished;
+	}
+
+	WARNING("<== hw %d rxcsr %04x, urb actual %d\n",
+	    epnum, rx_csr, urb->actual_length);
+
+	/* check for errors, concurrent stall & unlink is not really handled yet! */
+	if (rx_csr & MUSBFSH_RXCSR_H_RXSTALL) {
+		WARNING("RX end %d STALL\n", epnum);
+
+		/* handle stall in MAC */
+		rx_csr &= ~MUSBFSH_RXCSR_H_RXSTALL;
+		musbfsh_writew(epio, MUSBFSH_RXCSR, rx_csr);
+
+		/* stall; record URB status */
+		status = -EPIPE;
+
+	} else if (rx_csr & MUSBFSH_RXCSR_H_ERROR) {
+		WARNING("end %d RX proto error,rxtoggle=0x%x\n", epnum,
+		    musbfsh_readl(mbase, MUSBFSH_RXTOG));
+
+		status = -EPROTO;
+		musbfsh_writeb(epio, MUSBFSH_RXINTERVAL, 0);
+
+	} else if (rx_csr & MUSBFSH_RXCSR_DATAERROR) {
+
+		WARNING("RX end %d ISO data error\n", epnum);
+	} else if (rx_csr & MUSBFSH_RXCSR_INCOMPRX) {
+		WARNING("end %d high bandwidth incomplete ISO packet RX\n", epnum);
+		status = -EPROTO;
+	}
+
+	/* faults abort the transfer */
+	if (status) {
+		musbfsh_h_flush_rxfifo(hw_ep, 0);
+		musbfsh_writeb(epio, MUSBFSH_RXINTERVAL, 0);
+		done = true;
+	}
+
+	if (done) {
+		if (urb->status == -EINPROGRESS)
+			urb->status = status;
+		musbfsh_advance_schedule(musbfsh, urb, hw_ep, USB_DIR_IN);
+	}
+
+finished:
+	{
+		/* must use static string for AEE usage */
+		static char string[100];
+
+		sprintf(string, "USB11_HOST, RXQ<%d> ERR, CSR:%x", epnum, val);
+		QMU_ERR("%s\n", string);
+	}
+}
+
+void mtk11_qmu_host_tx_err(struct musbfsh *musbfsh, u8 epnum)
+{
+	struct urb *urb;
+	u16 tx_csr, val;
+	struct musbfsh_hw_ep *hw_ep = musbfsh->endpoints + epnum;
+	void __iomem *epio = hw_ep->regs;
+	struct musbfsh_qh *qh = hw_ep->out_qh;
+	bool done = false;
+	u32 status = 0;
+	void __iomem *mbase = musbfsh->mregs;
+
+	musbfsh_ep_select(mbase, epnum);
+	tx_csr = musbfsh_readw(epio, MUSBFSH_TXCSR);
+	val = tx_csr;
+
+	if (!qh) {
+		WARNING("!QH for ep %d\n", epnum);
+		goto finished;
+	}
+
+	urb = next_urb(qh);
+	/* with CPPI, DMA sometimes triggers "extra" irqs */
+	if (!urb) {
+		WARNING("extra TX%d ready, csr %04x\n", epnum, tx_csr);
+		goto finished;
+	}
+
+	WARNING("OUT/TX%d end, csr %04x\n", epnum, tx_csr);
+
+	/* check for errors */
+	if (tx_csr & MUSBFSH_TXCSR_H_RXSTALL) {
+		/* dma was disabled, fifo flushed */
+		WARNING("TX end %d stall\n", epnum);
+
+		/* stall; record URB status */
+		status = -EPIPE;
+
+	} else if (tx_csr & MUSBFSH_TXCSR_H_ERROR) {
+		/* (NON-ISO) dma was disabled, fifo flushed */
+		WARNING("TX 3strikes on ep=%d\n", epnum);
+
+		status = -ETIMEDOUT;
+	} else if (tx_csr & MUSBFSH_TXCSR_H_NAKTIMEOUT) {
+		WARNING("TX end=%d device not responding\n", epnum);
+
+		/* NOTE:  this code path would be a good place to PAUSE a
+		 * transfer, if there's some other (nonperiodic) tx urb
+		 * that could use this fifo.  (dma complicates it...)
+		 * That's already done for bulk RX transfers.
+		 *
+		 * if (bulk && qh->ring.next != &musb->out_bulk), then
+		 * we have a candidate... NAKing is *NOT* an error
+		 */
+		musbfsh_ep_select(mbase, epnum);
+		musbfsh_writew(epio, MUSBFSH_TXCSR, MUSBFSH_TXCSR_H_WZC_BITS | MUSBFSH_TXCSR_TXPKTRDY);
+		return;
+	}
+
+/* done: */
+	if (status) {
+		tx_csr &= ~(MUSBFSH_TXCSR_AUTOSET
+			    | MUSBFSH_TXCSR_DMAENAB
+			    | MUSBFSH_TXCSR_H_ERROR | MUSBFSH_TXCSR_H_RXSTALL | MUSBFSH_TXCSR_H_NAKTIMEOUT);
+
+		musbfsh_ep_select(mbase, epnum);
+		musbfsh_writew(epio, MUSBFSH_TXCSR, tx_csr);
+		/* REVISIT may need to clear FLUSHFIFO ... */
+		musbfsh_writew(epio, MUSBFSH_TXCSR, tx_csr);
+		musbfsh_writeb(epio, MUSBFSH_TXINTERVAL, 0);
+
+		done = true;
+	}
+
+	/* urb->status != -EINPROGRESS means request has been faulted,
+	 * so we must abort this transfer after cleanup
+	 */
+	if (urb->status != -EINPROGRESS) {
+		done = true;
+		if (status == 0)
+			status = urb->status;
+	}
+
+	if (done) {
+		/* set status */
+		urb->status = status;
+		urb->actual_length = qh->offset;
+		musbfsh_advance_schedule(musbfsh, urb, hw_ep, USB_DIR_OUT);
+	}
+
+finished:
+	{
+		/* must use static string for AEE usage */
+		static char string[100];
+
+		sprintf(string, "USB11_HOST, TXQ<%d> ERR, CSR:%x", epnum, val);
+		QMU_ERR("%s\n", string);
+#ifdef CONFIG_MEDIATEK_SOLUTION
+		aee_kernel_warning(string, string);
+#endif
+	}
+
+}
+
+static void mtk11_flush_urb_status(struct musbfsh_qh	*qh, struct urb *urb)
+{
+	urb->actual_length = 0;
+	urb->status = -EINPROGRESS;
+	if (qh->type == USB_ENDPOINT_XFER_ISOC) {
+		struct usb_iso_packet_descriptor	*d;
+		int index;
+
+		for (index = 0; index < urb->number_of_packets; index++) {
+			d = urb->iso_frame_desc + qh->iso_idx;
+			d->actual_length = 0;
+			d->status = -EXDEV;
+		}
+	}
 }
 
 void mtk11_qmu_err_recover(struct musbfsh *musbfsh, u8 ep_num, u8 isRx, bool is_len_err)
 {
-	/*most case caused by device disconnect*/
-	QMU_ERR("DO QMU ERR RECOVER\n");
-	if (isRx)
-		mtk11_qmu_host_rx_err(musbfsh, ep_num);
-	else
-		mtk11_qmu_host_tx_err(musbfsh, ep_num);
+	struct urb *urb;
+	struct musbfsh_hw_ep *hw_ep = musbfsh->endpoints + ep_num;
+	struct musbfsh_qh			*qh;
+	struct usb_host_endpoint	*hep;
 
-	return;
+	if (isRx)
+		qh = hw_ep->in_qh;
+	else
+		qh = hw_ep->out_qh;
+
+	hep = qh->hep;
+	/* same action as musb_flush_qmu */
+	mtk11_qmu_stop(ep_num, isRx);
+	mtk11_qmu_reset_gpd_pool(ep_num, isRx);
+
+	urb = next_urb(qh);
+	if (unlikely(!urb)) {
+		pr_warn("No URB.\n");
+		return;
+	}
+
+	if (usb_pipeisoc(urb->pipe)) {
+		if (isRx)
+			mtk11_qmu_host_iso_rx_err_info(musbfsh, ep_num);
+		else
+			mtk11_qmu_host_iso_tx_err_info(musbfsh, ep_num);
+		mtk11_flush_ep_csr(musbfsh, ep_num, isRx);
+		mtk11_qmu_enable(musbfsh, ep_num, isRx);
+		list_for_each_entry(urb, &hep->urb_list, urb_list) {
+			QMU_WARN("%s qh:0x%p flush and kick urb:0x%p\n", __func__, qh, urb);
+			mtk11_flush_urb_status(qh, urb);
+			mtk11_kick_CmdQ(musbfsh, isRx, qh, urb);
+		}
+	} else {
+		mtk11_flush_ep_csr(musbfsh, ep_num, isRx);
+		if (isRx)
+			mtk11_qmu_host_rx_err(musbfsh, ep_num);
+		else
+			mtk11_qmu_host_tx_err(musbfsh, ep_num);
+	}
 }
 
 void mtk11_qmu_irq_err(struct musbfsh *musbfsh, u32 qisar)

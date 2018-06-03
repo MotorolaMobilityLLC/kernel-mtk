@@ -107,7 +107,7 @@ int musbfsh_host_alloc_ep_fifo(struct musbfsh *musbfsh, struct musbfsh_qh *qh, u
 {
 	void __iomem *mbase = musbfsh->mregs;
 	int epnum = qh->hw_ep->epnum;
-	u16 maxpacket = qh->maxpacket;
+	u16 maxpacket;
 	u16 request_fifo_sz, fifo_unit_nr;
 	u16 idx_start = 0;
 	u8 index, i;
@@ -116,14 +116,29 @@ int musbfsh_host_alloc_ep_fifo(struct musbfsh *musbfsh, struct musbfsh_qh *qh, u
 	u16 free_uint = 0;
 	u8 found = 0;
 
+	maxpacket = qh->maxpacket * qh->hb_mult;
 	if (maxpacket <= 512) {
 		request_fifo_sz = 512;
 		fifo_unit_nr = 1;
 		c_size = 6;
-	} else {
+	} else if (maxpacket <= 1024) {
 		request_fifo_sz = 1024;
 		fifo_unit_nr = 2;
 		c_size = 7;
+	} else if (maxpacket <= 2048) {
+		request_fifo_sz = 2048;
+		fifo_unit_nr = 4;
+		c_size = 8;
+	} else if (maxpacket <= 4096) {
+		request_fifo_sz = 4096;
+		fifo_unit_nr = 8;
+		c_size = 9;
+	} else {
+		ERR("should not be here qh maxp:%d maxp:%d\n", qh->maxpacket, maxpacket);
+		request_fifo_sz = 0;
+		fifo_unit_nr = 0;
+		musbfsh_bug();
+		return -ENOSPC;
 	}
 
 	for (i = 0; i < dynamic_fifo_total_slot; i++) {
@@ -139,7 +154,7 @@ int musbfsh_host_alloc_ep_fifo(struct musbfsh *musbfsh, struct musbfsh_qh *qh, u
 	}
 
 	if (found == 0) {
-		WARNING("!enough, dynamic_fifo_usage_msk:0x%x,maxp:%d,req_len:%d,ep%d-%s\n",
+		ERR("!enough, dynamic_fifo_usage_msk:0x%x,maxp:%d,req_len:%d,ep%d-%s\n",
 				musbfsh_host_dynamic_fifo_usage_msk, maxpacket,
 				request_fifo_sz, epnum, is_in ? "in":"out");
 		return -1;
@@ -180,12 +195,24 @@ void musbfsh_host_free_ep_fifo(struct musbfsh *musbfsh, struct musbfsh_qh *qh, u
 	u8 index, i;
 	u16 c_off = 0;
 
+	maxpacket = qh->maxpacket * qh->hb_mult;
 	if (maxpacket <= 512) {
 		request_fifo_sz = 512;
 		fifo_unit_nr = 1;
-	} else {
+	} else if (maxpacket <= 1024) {
 		request_fifo_sz = 1024;
 		fifo_unit_nr = 2;
+	} else if (maxpacket <= 2048) {
+		request_fifo_sz = 2048;
+		fifo_unit_nr = 4;
+	} else if (maxpacket <= 4096) {
+		request_fifo_sz = 4096;
+		fifo_unit_nr = 8;
+	} else {
+		ERR("should not be here qh maxp:%d maxp:%d\n", qh->maxpacket, maxpacket);
+		request_fifo_sz = 0;
+		fifo_unit_nr = 0;
+		musbfsh_bug();
 	}
 
 	index = musbfsh_readb(mbase, MUSBFSH_INDEX);
@@ -591,8 +618,8 @@ void musbfsh_advance_schedule(struct musbfsh *musbfsh, struct urb *urb,
 			musbfsh_host_free_ep_fifo(musbfsh, qh, is_in);
 
 #ifdef CONFIG_MTK_MUSBFSH_QMU_SUPPORT
-		/*if (qh->is_use_qmu) */
-			/*mtk11_disable_q(musbfsh, hw_ep->epnum, is_in);*/
+		if (qh->is_use_qmu)
+			mtk11_disable_q(musbfsh, hw_ep->epnum, is_in);
 #endif
 
 		switch (qh->type) {
@@ -1995,7 +2022,7 @@ static int musbfsh_schedule(struct musbfsh *musbfsh, struct musbfsh_qh *qh,
 		goto success;
 	}
 
-#if defined(CONFIG_MTK_MUSBFSH_QMU_SUPPORT) && defined(MUSBFSH_QMU_LIMIT_SUPPORT)
+#ifdef MUSBFSH_QMU_LIMIT_SUPPORT
 	if (mtk11_isoc_ep_gpd_count
 		&& qh->is_use_qmu) {
 		for (epnum = 1, hw_ep = musbfsh->endpoints + 1;
@@ -2016,7 +2043,6 @@ static int musbfsh_schedule(struct musbfsh *musbfsh, struct musbfsh_qh *qh,
 			goto success;
 		}
 	}
-
 	qh->is_use_qmu = 0;
 	for (epnum = (MAX_QMU_EP + 1), hw_ep = musbfsh->endpoints + (MAX_QMU_EP + 1);
 		epnum < musbfsh->nr_endpoints; epnum++, hw_ep++) {
@@ -2110,9 +2136,9 @@ static int musbfsh_schedule(struct musbfsh *musbfsh, struct musbfsh_qh *qh,
 
 #ifdef CONFIG_MTK_MUSBFSH_QMU_SUPPORT
 	/* grab isoc ep if no other ep is available */
-	if (mtk11_isoc_ep_gpd_count
-			&& !hw_end
-			&& qh->type != USB_ENDPOINT_XFER_ISOC) {
+	if (mtk11_isoc_ep_gpd_count &&
+		!hw_end &&
+		qh->type != USB_ENDPOINT_XFER_ISOC) {
 		for (epnum = mtk11_isoc_ep_start_idx, hw_ep = musbfsh->endpoints + mtk11_isoc_ep_start_idx;
 				epnum < musbfsh->nr_endpoints; epnum++, hw_ep++) {
 			/* int	diff; */
@@ -2165,24 +2191,25 @@ success:
 /* downgrade to non-qmu if no specific ep grabbed whenmtk11_ isoc_ep_gpd_count is set*/
 #ifdef CONFIG_MTK_MUSBFSH_QMU_SUPPORT
 #ifdef MUSBFSH_QMU_LIMIT_SUPPORT
-			if (mtk11_isoc_ep_gpd_count &&
-				qh->is_use_qmu &&
-				hw_end <= MAX_QMU_EP)
-				qh->is_use_qmu = 1;
+		if (mtk11_isoc_ep_gpd_count &&
+			qh->is_use_qmu &&
+			hw_end <= MAX_QMU_EP)
+			qh->is_use_qmu = 1;
 #else
-			if (mtk11_isoc_ep_gpd_count &&
-				qh->type == USB_ENDPOINT_XFER_ISOC &&
-				hw_end < mtk11_isoc_ep_start_idx)
-				qh->is_use_qmu = 0;
+		if (mtk11_isoc_ep_gpd_count &&
+			qh->type == USB_ENDPOINT_XFER_ISOC &&
+			hw_end < mtk11_isoc_ep_start_idx)
+			qh->is_use_qmu = 0;
 #endif
-			if (qh->is_use_qmu) {
-				musbfsh_ep_set_qh(hw_ep, is_in, qh);
-				mtk11_kick_CmdQ(musbfsh, is_in ? 1:0, qh, next_urb(qh));
-			} else
-				musbfsh_start_urb(musbfsh, is_in, qh);
-#else
+		if (qh->is_use_qmu) {
+			musbfsh_ep_set_qh(hw_ep, is_in, qh);
+			mtk11_kick_CmdQ(musbfsh, is_in ? 1:0, qh, next_urb(qh));
+		} else
 			musbfsh_start_urb(musbfsh, is_in, qh);
+#else
+		musbfsh_start_urb(musbfsh, is_in, qh);
 #endif
+
 	}
 	return 0;
 }
@@ -2261,7 +2288,24 @@ static int musbfsh_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
 	qh->maxpacket = le16_to_cpu(epd->wMaxPacketSize);
 	qh->type = usb_endpoint_type(epd);
 	INFO("desc type=%d\r\n", qh->type);
+	/* Bits 11 & 12 of wMaxPacketSize encode high bandwidth multiplier.
+	 * Some musb cores don't support high bandwidth ISO transfers; and
+	 * we don't (yet!) support high bandwidth interrupt transfers.
+	 */
+	qh->hb_mult = 1 + ((qh->maxpacket >> 11) & 0x03);
+	if (qh->hb_mult > 1) {
+		int ok = (qh->type == USB_ENDPOINT_XFER_ISOC);
 
+		if (ok)
+			ok = (usb_pipein(urb->pipe) && musbfsh->hb_iso_rx)
+				|| (usb_pipeout(urb->pipe) && musbfsh->hb_iso_tx);
+
+		if (!ok) {
+			ret = -EMSGSIZE;
+			goto done;
+		}
+		qh->maxpacket &= 0x7ff;
+	}
 	qh->epnum = usb_endpoint_num(epd);
 	INFO("desc epnum=%d\r\n", qh->epnum);
 
@@ -2372,7 +2416,7 @@ static int musbfsh_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
 		 */
 	}
 	spin_unlock_irqrestore(&musbfsh->lock, flags);
-
+done:
 	if (ret != 0) {
 		spin_lock_irqsave(&musbfsh->lock, flags);
 		usb_hcd_unlink_urb_from_ep(hcd, urb);
