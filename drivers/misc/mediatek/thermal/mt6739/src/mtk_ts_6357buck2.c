@@ -418,7 +418,9 @@ static void mt6357tsbuck2_start_thermal_timer(void)
 	/* pr_debug("mtkts_pmic_start_thermal_timer\n"); */
 	/* resume thermal framework polling when leaving deep idle */
 	if (thz_dev != NULL && interval != 0 && !doing_tz_unregister)
-		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
+		mod_delayed_work(system_freezable_power_efficient_wq,
+		&(thz_dev->poll_queue),
+		round_jiffies(msecs_to_jiffies(1000)));
 }
 
 static int mt6357tsbuck2_register_cooler(void)
