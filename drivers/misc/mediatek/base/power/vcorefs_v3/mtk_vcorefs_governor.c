@@ -65,14 +65,38 @@ __weak int sdio_autok(void)
 
 __weak unsigned int get_vcore_ptp_volt(unsigned int seg)
 {
+#if defined(CONFIG_MACH_MT6758)
+	int value;
+
+	if (seg == 0)
+		value = vcore_uv_to_pmic(800000);
+	else
+		value = vcore_uv_to_pmic(700000);
+
+	vcorefs_crit("VCORE TEMP SETTING\n");
+	return value;
+#else
 	vcorefs_crit("NOT SUPPORT VOLTAG BIN\n");
 	return 0;
+#endif
 }
 
 __weak unsigned int mt_eem_vcorefs_set_volt(void)
 {
+#if defined(CONFIG_MACH_MT6758)
+	int ret = 0;
+
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	ret = spm_vcorefs_pwarp_cmd();
+	vcorefs_crit("TEMP: set vcorefs pwrap command\n");
+#else
+	vcorefs_crit("NOT SUPPORT EEM\n");
+#endif
+	return ret;
+#else
 	vcorefs_crit("NOT SUPPORT EEM\n");
 	return 0;
+#endif
 }
 
 __weak void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_action_event *event)
