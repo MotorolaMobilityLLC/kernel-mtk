@@ -41,7 +41,7 @@ struct mt_fh_hal_driver {
 	void (*fh_pll_set)(int, int, int);
 	int (*fh_pll_get)(int, int);
 #endif
-	fh_pll_t *fh_pll;
+	struct fh_pll_t *fh_pll;
 	struct freqhopping_ssc *fh_usrdef;
 	unsigned int mempll;
 	unsigned int lvdspll;
@@ -107,7 +107,7 @@ enum FH_DEVCTL_CMD_ID {
 typedef struct {
 	struct seq_file *m;
 	void *v;
-	fh_pll_t *pll;
+	struct fh_pll_t *pll;
 } FH_IO_PROC_READ_T;
 
 struct mt_fh_hal_driver *mt_get_fh_hal_drv(void);

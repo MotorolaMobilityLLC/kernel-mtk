@@ -69,7 +69,7 @@ static void __iomem *g_apmixed_base;
 /*********************************/
 /* Track the status of all FHCTL PLL */
 /*********************************/
-static fh_pll_t g_fh_pll[FH_PLL_NUM] = { };	/* fake_pll_status. */
+static struct fh_pll_t g_fh_pll[FH_PLL_NUM] = { };	/* fake_pll_status. */
 unsigned int g_is_suspend;
 
 /*********************************/
@@ -415,7 +415,7 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 	unsigned int ssc_setting_id = 0;
 	int retVal = 1;
 	struct fhctl_ipi_data ipi_data;
-	fh_pll_t fh_pll;
+	struct fh_pll_t fh_pll;
 
 	FH_MSG("%s for pll %d", __func__, fh_ctl->pll_id);
 
@@ -866,7 +866,7 @@ static int mt_fh_hal_is_support_DFS_mode(void)
 /* TODO: module_exit(cpufreq_exit); */
 
 /* Engineer mode will use the proc msg to create UI!!! */
-static int __fh_debug_proc_read(struct seq_file *m, void *v, fh_pll_t *pll)
+static int __fh_debug_proc_read(struct seq_file *m, void *v, struct fh_pll_t *pll)
 {
 	int id;
 
