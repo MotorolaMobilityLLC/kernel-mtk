@@ -236,14 +236,14 @@ static inline int wait_command(int core)
 	ret = wait_event_interruptible_timeout(
 			cmd_wait, vpu_service_cores[core].is_cmd_done, msecs_to_jiffies(CMD_WAIT_TIME_MS));
 	/* ret == -ERESTARTSYS, if signal interrupt */
-	if (ret < 0 || !vpu_service_cores[core].is_cmd_done) {
+	if ((ret != 0) && (!vpu_service_cores[core].is_cmd_done)) {
 		LOG_WRN("[vpu_%d] interrupt by signal, done(%d), ret=%d, wait cmd again\n", core,
 			vpu_service_cores[core].is_cmd_done, ret);
 		ret = wait_event_interruptible_timeout(
 			cmd_wait, vpu_service_cores[core].is_cmd_done, msecs_to_jiffies(CMD_WAIT_TIME_MS));
 	}
 
-	if (ret < 0 || !vpu_service_cores[core].is_cmd_done) {
+	if ((ret != 0) && (!vpu_service_cores[core].is_cmd_done)) {
 		/* ret == -ERESTARTSYS, if signal interrupt */
 		LOG_ERR("[vpu_%d] interrupt by signal again, done(%d), ret=%d\n", core,
 			vpu_service_cores[core].is_cmd_done, ret);
