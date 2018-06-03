@@ -1133,7 +1133,7 @@ static struct DFRC_DRV_POLICY_NODE *dfrc_find_min_fps(struct DFRC_DRV_POLICY_STA
 		node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list_statistics);
 		if (min == NULL)
 			min = node;
-		else if (min->policy.fps > node->policy.fps)
+		else if ((node->policy.fps != -1) && (min->policy.fps > node->policy.fps))
 			min = node;
 	}
 	return min;
