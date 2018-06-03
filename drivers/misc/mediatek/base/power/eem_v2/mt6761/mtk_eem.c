@@ -181,16 +181,14 @@ static int get_devinfo(void)
 	val[1] = get_devinfo_with_index(DEVINFO_IDX_1);
 	val[2] = get_devinfo_with_index(DEVINFO_IDX_2);
 	val[3] = get_devinfo_with_index(DEVINFO_IDX_3);
-	val[4] = get_devinfo_with_index(DEVINFO_IDX_4);
-	val[5] = get_devinfo_with_index(DEVINFO_IDX_5);
-	val[6] = get_devinfo_with_index(DEVINFO_IDX_6);
-	val[7] = get_devinfo_with_index(DEVINFO_IDX_7);
-	val[8] = get_devinfo_with_index(DEVINFO_IDX_8);
-//	val[9] = get_devinfo_with_index(DEVINFO_IDX_9);
-//	val[10] = get_devinfo_with_index(DEVINFO_IDX_10);
-//	val[11] = get_devinfo_with_index(DEVINFO_IDX_11);
+	val[4] = get_devinfo_with_index(DEVINFO_IDX_7);
+	val[5] = get_devinfo_with_index(DEVINFO_IDX_8);
 
+#if ENABLE_LOO
 	for (i = 1; i < NR_HW_RES_FOR_BANK; i++) {
+#else
+	for (i = 4; i < NR_HW_RES_FOR_BANK; i++) {
+#endif
 		if (val[i] == 0) {
 			ret = 1;
 			eem_checkEfuse = 0;
@@ -207,11 +205,8 @@ static int get_devinfo(void)
 		val[1] = DEVINFO_1;
 		val[2] = DEVINFO_2;
 		val[3] = DEVINFO_3;
-		val[4] = DEVINFO_4;
-		val[5] = DEVINFO_5;
-		val[6] = DEVINFO_6;
-		val[7] = DEVINFO_7;
-		val[8] = DEVINFO_8;
+		val[4] = DEVINFO_7;
+		val[5] = DEVINFO_8;
 	}
 #endif
 #if EEM_FAKE_EFUSE
@@ -220,11 +215,8 @@ static int get_devinfo(void)
 	val[1] = DEVINFO_1;
 	val[2] = DEVINFO_2;
 	val[3] = DEVINFO_3;
-	val[4] = DEVINFO_4;
-	val[5] = DEVINFO_5;
-	val[6] = DEVINFO_6;
-	val[7] = DEVINFO_7;
-	val[8] = DEVINFO_8;
+	val[4] = DEVINFO_7;
+	val[5] = DEVINFO_8;
 #endif
 
 #ifdef CONFIG_EEM_AEE_RR_REC
@@ -234,35 +226,27 @@ static int get_devinfo(void)
 	aee_rr_rec_ptp_e2((unsigned int)val[3]);
 	aee_rr_rec_ptp_e3((unsigned int)val[4]);
 	aee_rr_rec_ptp_e4((unsigned int)val[5]);
-	aee_rr_rec_ptp_e5((unsigned int)val[6]);
-	aee_rr_rec_ptp_e6((unsigned int)val[7]);
-	aee_rr_rec_ptp_e7((unsigned int)val[8]);
-//	aee_rr_rec_ptp_e8((unsigned int)val[9]);
-//	aee_rr_rec_ptp_e9((unsigned int)val[10]);
-//	aee_rr_rec_ptp_e10((unsigned int)val[11]);
-
 #endif
 #if 1
-
 	eem_debug("M_HW_RES0 = 0x%08X\n", val[0]);
 	eem_debug("M_HW_RES1 = 0x%08X\n", val[1]);
 	eem_debug("M_HW_RES2 = 0x%08X\n", val[2]);
 	eem_debug("M_HW_RES3 = 0x%08X\n", val[3]);
 	eem_debug("M_HW_RES4 = 0x%08X\n", val[4]);
 	eem_debug("M_HW_RES5 = 0x%08X\n", val[5]);
-	eem_debug("M_HW_RES6 = 0x%08X\n", val[6]);
-	eem_debug("M_HW_RES7 = 0x%08X\n", val[7]);
-	eem_debug("M_HW_RES8 = 0x%08X\n", val[8]);
 #endif
 	FUNC_ENTER(FUNC_LV_HELP);
 
-	/* NR_HW_RES_FOR_BANK =  10 for 5 banks efuse */
+#if ENABLE_LOO
 	for (i = 1; i < NR_HW_RES_FOR_BANK; i++) {
+#else
+	for (i = 4; i < NR_HW_RES_FOR_BANK; i++) {
+#endif
 		if (val[i] == 0) {
 			ret = 1;
 			eem_checkEfuse = 0;
 			eem_error
-("No EEM EFUSE available, will turn off EEM (val[%d]) !!\n", i);
+		("No EEM EFUSE available, will turn off EEM (val[%d]) !!\n", i);
 			for_each_det(det)
 				det->disabled = 1;
 			break;
@@ -2884,10 +2868,10 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 	for (i = 0; i < sizeof(struct eem_devinfo) / sizeof(unsigned int);
 		i++) {
 		/* Depend on EFUSE location */
-		if (i < 9)
+		if (i < 4)
 			seq_printf(m, "M_HW_RES%d\t= 0x%08X\n", i, val[i]);
 		else
-			seq_printf(m, "M_HW_RES%d\t= 0x%08X\n", i + 2, val[i]);
+			seq_printf(m, "M_HW_RES%d\t= 0x%08X\n", i+3, val[i]);
 	}
 
 	for_each_det(det) {

@@ -52,7 +52,7 @@
  * eem sw setting
  ******************************************
  */
-#define NR_HW_RES_FOR_BANK	(9) /* real eem banks for efuse */
+#define NR_HW_RES_FOR_BANK	(6) /* real eem banks for efuse */
 #define EEM_INIT01_FLAG (0x1) /* [0]:LL */
 #if ENABLE_LOO
 #define EEM_L_INIT02_FLAG (0x9) /* should be 0x0F=> [3]:L_HI, [0]:L */
