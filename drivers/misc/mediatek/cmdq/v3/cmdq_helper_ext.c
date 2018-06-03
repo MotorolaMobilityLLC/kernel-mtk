@@ -3136,7 +3136,7 @@ void cmdq_core_dump_thread_with_handle(const struct cmdqRecStruct *handle,
 	CMDQ_LOG("[%s]== [CMDQ] Error Thread Status index:%d enabled:%d ==\n",
 		tag, thread, value[8]);
 	/* normal thread */
-	value[0] = (u32)timeout_task->pa_base;
+	value[0] = (u32)timeout_info->curr_pc;
 	value[1] = (u32)timeout_info->end_addr;
 	value[2] = CMDQ_REG_GET32(CMDQ_THR_WAIT_TOKEN(thread));
 	value[3] = cmdq_core_thread_exec_counter(thread);

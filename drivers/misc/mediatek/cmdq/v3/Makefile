@@ -26,7 +26,7 @@ ccflags-y += -DCMDQ_COMMON_ENG_SUPPORT
 endif
 
 # Enable AEE
-# ccflags-y += -DCMDQ_AEE_READY
+ccflags-y += -DCMDQ_AEE_READY
 
 ifneq ($(TARGET_BUILD_VARIANT),eng)
 ccflags-y += -D_MTK_USER_
