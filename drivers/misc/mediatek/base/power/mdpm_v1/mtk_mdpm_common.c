@@ -73,9 +73,8 @@ int get_md1_power(unsigned int power_category, bool need_update)
 	return 0;
 #endif
 
-	if (need_update == false) {
+	if (need_update == false)
 		return g_scenario_power[MAX_POWER] + g_dbm_power[MAX_POWER];
-	}
 
 	if (power_category >= POWER_CATEGORY_NUM ||
 		power_category < 0) {
