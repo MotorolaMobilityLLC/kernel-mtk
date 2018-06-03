@@ -1586,9 +1586,22 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	unsigned long ovl_base = ovl_base_addr(module);
 	unsigned int regval;
 	int i, layer_num;
+	int is_large_resolution = 0;
 	unsigned int layer_greq_num;
+	unsigned int dst_w, dst_h;
 
 	layer_num = ovl_layer_num(module);
+
+	dst_w = primary_display_get_width();
+	dst_h = primary_display_get_height();
+
+	if (dst_w > 1260 && dst_h > 2240) {
+		/* WQHD */
+		is_large_resolution = 1;
+	} else {
+		/* FHD */
+		is_large_resolution = 0;
+	}
 
 	/* DISP_REG_OVL_RDMA0_MEM_GMC_SETTING */
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_ULTRA_THRESHOLD, 0x3ff);
