@@ -222,8 +222,8 @@ int32_t cmdq_reset_v3_struct(struct cmdqRecStruct *handle)
 
 	/* reset local variable setting */
 	handle->local_var_num = CMDQ_THR_SPR_START;
-	handle->arg_source = CMDQ_TASK_CPR_INITIAL_VALUE;
 	handle->arg_value = CMDQ_TASK_CPR_INITIAL_VALUE;
+	handle->arg_source = CMDQ_TASK_CPR_INITIAL_VALUE;
 	handle->arg_timeout = CMDQ_TASK_CPR_INITIAL_VALUE;
 
 	do {
@@ -1199,135 +1199,77 @@ int32_t cmdq_free_mem(cmdqBackupSlotHandle h_backup_slot)
  *  AFTER cmdq_task_flush() returns, or INSIDE the callback of cmdq_task_flush_async_callback().
  *
  */
-int32_t cmdq_op_read_reg_to_mem(struct cmdqRecStruct *handle,
-			    cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index, uint32_t addr)
+s32 cmdq_op_read_reg_to_mem(struct cmdqRecStruct *handle,
+	cmdqBackupSlotHandle h_backup_slot, u32 slot_index, u32 addr)
 {
-#ifdef CMDQ_GPR_SUPPORT
-	const enum CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
-	const enum CMDQ_DATA_REGISTER_ENUM destRegId = CMDQ_DATA_REG_DEBUG_DST;
-	const enum CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
-	const dma_addr_t dramAddr = h_backup_slot + slot_index * sizeof(uint32_t);
-	uint32_t highAddr = 0;
+	const dma_addr_t dram_addr = h_backup_slot + slot_index * sizeof(u32);
+	CMDQ_VARIABLE var_mem_addr = CMDQ_TASK_TEMP_CPR_VAR;
+	s32 status;
 
-	/* lock GPR because we may access it in multiple CMDQ HW threads */
-	cmdq_op_wait(handle, regAccessToken);
+	do {
+		status = cmdq_op_read_reg(handle, addr,
+			&handle->arg_value, ~0);
+		CMDQ_CHECK_AND_BREAK_STATUS(status);
 
-	if (cmdq_core_subsys_from_phys_addr(addr) != CMDQ_SPECIAL_SUBSYS_ADDR) {
-		/* Load into 32-bit GPR (R0-R15) */
-		cmdq_append_command(handle, CMDQ_CODE_READ, addr, valueRegId, 0, 1);
-	} else {
-		/*
-		 * for special sw subsys addr,
-		 * we don't read directly due to append command will acquire
-		 * CMDQ_SYNC_TOKEN_GPR_SET_4 event again.
-		 */
+		status = cmdq_op_assign(handle, &var_mem_addr, (u32)dram_addr);
+		CMDQ_CHECK_AND_BREAK_STATUS(status);
 
-		/* set GPR to address */
-		cmdq_append_command(handle, CMDQ_CODE_MOVE,
-				((valueRegId & 0x1f) << 16) | (4 << 21), addr, 0, 0);
+		status = cmdq_append_command(handle, CMDQ_CODE_WRITE_S,
+			(u32)(var_mem_addr & 0xFFFF),
+			(u32)(handle->arg_value & 0xFFFF),
+			1, 1);
+	} while (0);
 
-		/* read data from address in GPR to GPR */
-		cmdq_append_command(handle, CMDQ_CODE_READ, valueRegId, valueRegId, 1, 1);
-	}
-
-	/* Note that <MOVE> arg_b is 48-bit */
-	/* so writeAddress is split into 2 parts */
-	/* and we store address in 64-bit GPR (P0-P7) */
-	CMDQ_GET_HIGH_ADDR(dramAddr, highAddr);
-	cmdq_append_command(handle, CMDQ_CODE_MOVE,
-			    highAddr |
-			    ((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) dramAddr, 0, 0);
-
-	/* write value in GPR to memory pointed by GPR */
-	cmdq_append_command(handle, CMDQ_CODE_WRITE, destRegId, valueRegId, 1, 1);
-	/* release the GPR lock */
-	cmdq_op_set_event(handle, regAccessToken);
-
-	return 0;
-
-#else
-	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
-	return -EFAULT;
-#endif				/* CMDQ_GPR_SUPPORT */
+	return status;
 }
 
-int32_t cmdq_op_read_mem_to_reg(struct cmdqRecStruct *handle,
-			    cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index, uint32_t addr)
+s32 cmdq_op_read_mem_to_reg(struct cmdqRecStruct *handle,
+	cmdqBackupSlotHandle h_backup_slot, u32 slot_index, u32 addr)
 {
-#ifdef CMDQ_GPR_SUPPORT
-	const enum CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
-	const enum CMDQ_DATA_REGISTER_ENUM addrRegId = CMDQ_DATA_REG_DEBUG_DST;
-	const enum CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
-	const dma_addr_t dramAddr = h_backup_slot + slot_index * sizeof(uint32_t);
-	uint32_t highAddr = 0;
+	const dma_addr_t dram_addr = h_backup_slot + slot_index * sizeof(u32);
+	CMDQ_VARIABLE var_mem_addr = CMDQ_TASK_TEMP_CPR_VAR;
+	s32 status;
 
-	/* lock GPR because we may access it in multiple CMDQ HW threads */
-	cmdq_op_wait(handle, regAccessToken);
+	do {
+		status = cmdq_create_variable_if_need(handle,
+			&handle->arg_value);
+		CMDQ_CHECK_AND_BREAK_STATUS(status);
 
-	/* 1. MOVE slot address to addr GPR */
+		status = cmdq_op_assign(handle, &var_mem_addr, (u32)dram_addr);
+		CMDQ_CHECK_AND_BREAK_STATUS(status);
 
-	/* Note that <MOVE> arg_b is 48-bit */
-	/* so writeAddress is split into 2 parts */
-	/* and we store address in 64-bit GPR (P0-P7) */
-	CMDQ_GET_HIGH_ADDR(dramAddr, highAddr);
-	cmdq_append_command(handle, CMDQ_CODE_MOVE,
-			    highAddr |
-			    ((addrRegId & 0x1f) << 16) | (4 << 21), (uint32_t) dramAddr, 0, 0);	/* arg_a is GPR */
+		/* read dram to temp var */
+		status = cmdq_append_command(handle, CMDQ_CODE_READ_S,
+			(u32)(handle->arg_value & 0xFFFF),
+			(u32)(var_mem_addr & 0xFFFF), 1, 1);
+		CMDQ_CHECK_AND_BREAK_STATUS(status);
 
-	/* 2. read value from src address, which is stroed in GPR, to valueRegId */
-	cmdq_append_command(handle, CMDQ_CODE_READ, addrRegId, valueRegId, 1, 1);
+		status = cmdq_op_write_reg(handle, addr,
+			handle->arg_value, ~0);
+	} while (0);
 
-	/* 3. write from data register */
-	cmdq_op_write_from_data_register(handle, valueRegId, addr);
-
-	/* release the GPR lock */
-	cmdq_op_set_event(handle, regAccessToken);
-
-	return 0;
-#else
-	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
-	return -EFAULT;
-#endif				/* CMDQ_GPR_SUPPORT */
+	return status;
 }
 
-int32_t cmdq_op_write_mem(struct cmdqRecStruct *handle, cmdqBackupSlotHandle h_backup_slot,
-			    uint32_t slot_index, uint32_t value)
+s32 cmdq_op_write_mem(struct cmdqRecStruct *handle,
+	cmdqBackupSlotHandle h_backup_slot, u32 slot_index, u32 value)
 {
-#ifdef CMDQ_GPR_SUPPORT
-	const enum CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
-	const enum CMDQ_DATA_REGISTER_ENUM destRegId = CMDQ_DATA_REG_DEBUG_DST;
-	const enum CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
-	const dma_addr_t dramAddr = h_backup_slot + slot_index * sizeof(uint32_t);
-	uint32_t arg_a;
-	uint32_t highAddr = 0;
+	const dma_addr_t dram_addr = h_backup_slot + slot_index * sizeof(u32);
+	CMDQ_VARIABLE var_mem_addr = CMDQ_TASK_TEMP_CPR_VAR;
+	s32 status;
 
-	/* lock GPR because we may access it in multiple CMDQ HW threads */
-	cmdq_op_wait(handle, regAccessToken);
+	do {
+		status = cmdq_op_assign(handle, &handle->arg_value, value);
+		CMDQ_CHECK_AND_BREAK_STATUS(status);
 
-	/* Assign 32-bit GRP with value */
-	arg_a = (CMDQ_CODE_MOVE << 24) | (valueRegId << 16) | (4 << 21);	/* arg_a is GPR */
-	cmdq_append_command(handle, CMDQ_CODE_RAW, arg_a, value, 0, 0);
+		status = cmdq_op_assign(handle, &var_mem_addr, (u32)dram_addr);
+		CMDQ_CHECK_AND_BREAK_STATUS(status);
 
-	/* Note that <MOVE> arg_b is 48-bit */
-	/* so writeAddress is split into 2 parts */
-	/* and we store address in 64-bit GPR (P0-P7) */
-	CMDQ_GET_HIGH_ADDR(dramAddr, highAddr);
-	cmdq_append_command(handle, CMDQ_CODE_MOVE,
-			    highAddr |
-			    ((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) dramAddr, 0, 0);
+		status = cmdq_append_command(handle, CMDQ_CODE_WRITE_S,
+			var_mem_addr, handle->arg_value, 1, 1);
+	} while (0);
 
-	/* write value in GPR to memory pointed by GPR */
-	cmdq_append_command(handle, CMDQ_CODE_WRITE, destRegId, valueRegId, 1, 1);
-
-	/* release the GPR lock */
-	cmdq_op_set_event(handle, regAccessToken);
-
-	return 0;
-
-#else
-	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
-	return -EFAULT;
-#endif				/* CMDQ_GPR_SUPPORT */
+	return status;
 }
 
 int32_t cmdq_op_finalize_command(struct cmdqRecStruct *handle, bool loop)
