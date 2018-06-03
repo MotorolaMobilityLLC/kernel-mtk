@@ -78,6 +78,8 @@
 #define WDT_REQ_MODE_KEY 0x33000000
 #define WDT_REQ_IRQ_EN 0x34
 #define WDT_REQ_IRQ_KEY 0x44000000
+#define WDT_REQ_MODE_DEBUG_EN 0x80000
+
 
 #define DRV_NAME		"mtk-wdt"
 #define DRV_VERSION		"2.0"
@@ -394,6 +396,9 @@ static int mtk_wdt_probe(struct platform_device *pdev)
 
 	dev_info(&pdev->dev, "Watchdog enabled (timeout=%d sec, nowayout=%d)\n",
 			mtk_wdt->wdt_dev.timeout, nowayout);
+
+	writel(WDT_REQ_MODE_KEY | (__raw_readl(mtk_wdt->wdt_base + WDT_REQ_MODE) &
+		(~WDT_REQ_MODE_DEBUG_EN)), mtk_wdt->wdt_base + WDT_REQ_MODE);
 
 	toprgu_register_reset_controller(pdev, WDT_SWSYSRST);
 
