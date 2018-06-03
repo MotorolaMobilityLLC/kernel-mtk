@@ -19,6 +19,7 @@ obj-$(CONFIG_MACH_MT6759) += udi_v1/
 obj-$(CONFIG_MACH_MT6759) += ocp_v1/
 obj-$(CONFIG_MACH_MT6799) += leakage_table_v1/
 obj-$(CONFIG_MACH_MT6799) += cpufreq_v1/
+#obj-$(CONFIG_MACH_MT6759) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6799) += eem_v1/
 obj-$(CONFIG_MACH_MT6759) += eem_v2/
 obj-$(CONFIG_MACH_MT6799) += upower_v1/
