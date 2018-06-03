@@ -91,5 +91,7 @@ extern void mtk8250_restore_dev(void);
 extern int spm_ap_mdsrc_req_cnt;
 extern struct wake_status spm_wakesta;
 extern unsigned int spm_sleep_count;
+extern bool slp_dump_golden_setting;
+extern int slp_dump_golden_setting_type;
 
 #endif /* __MTK_SPM_SUSPEND_INTERNAL_H__ */
