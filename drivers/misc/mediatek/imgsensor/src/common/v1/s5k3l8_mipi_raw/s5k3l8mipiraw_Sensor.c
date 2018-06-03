@@ -26,7 +26,8 @@
 
 #include "s5k3l8mipiraw_Sensor.h"
 
-
+#undef NONCONTINUEMODE
+#undef FANPENGTAO
 
 /**************************** Modify end *****************************/
 
@@ -305,7 +306,7 @@ static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
 	kal_uint16 get_byte = 0;
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
 // Add this func to set i2c speed by each sensor
-	kdSetI2CSpeed(imgsensor_info.i2c_speed);
+	//kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iReadRegI2C(pu_send_cmd, 2, (u8 *)&get_byte, 1, imgsensor.i2c_write_id);
 
 	return get_byte;
@@ -316,7 +317,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	kal_uint16 get_byte = 0;
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
 // Add this func to set i2c speed by each sensor
-	kdSetI2CSpeed(imgsensor_info.i2c_speed);
+	//kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iReadRegI2C(pu_send_cmd, 2, (u8 *)&get_byte, 1, imgsensor.i2c_write_id);
 	return get_byte;
 }
@@ -326,7 +327,7 @@ static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para)
 	char pu_send_cmd[3] = {(char)(addr >> 8),
 		(char)(addr & 0xFF), (char)(para & 0xFF)};
 // Add this func to set i2c speed by each sensor
-	kdSetI2CSpeed(imgsensor_info.i2c_speed);
+	//kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
 
@@ -335,7 +336,7 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 	char pusendcmd[4] = {(char)(addr >> 8), (char)(addr & 0xFF),
 				(char)(para >> 8), (char)(para & 0xFF)};
 
-	kdSetI2CSpeed(imgsensor_info.i2c_speed);
+	//kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iWriteRegI2C(pusendcmd, 4, imgsensor.i2c_write_id);
 }
 
