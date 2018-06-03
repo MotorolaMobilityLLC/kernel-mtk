@@ -3115,8 +3115,10 @@ static BOOLEAN scanSanityCheckBssDesc(P_ADAPTER_T prAdapter,
 			prBssDesc->ucPhyTypeSet);
 		return FALSE;
 	}
-	if (prBssDesc->fgIsUnknownBssBasicRate)
+	if (prBssDesc->fgIsUnknownBssBasicRate) {
+		DBGLOG(SCN, WARN, "fgIsUnknownBssBasicRate\n");
 		return FALSE;
+	}
 	if (fgIsFixedChannel &&
 		(eBand != prBssDesc->eBand || ucChannel != prBssDesc->ucChannelNum)) {
 		DBGLOG(SCN, INFO, "Fix channel required band %d, channel %d\n", eBand, ucChannel);
@@ -3131,8 +3133,10 @@ static BOOLEAN scanSanityCheckBssDesc(P_ADAPTER_T prAdapter,
 	if (prAdapter->prAisBssInfo->fgDisConnReassoc == FALSE)
 #endif
 		if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), prBssDesc->rUpdateTime,
-					SEC_TO_SYSTIME(SCN_BSS_DESC_STALE_SEC)))
+					SEC_TO_SYSTIME(SCN_BSS_DESC_STALE_SEC))) {
+			DBGLOG(SCN, WARN, "rUpdateTime=%d timeout\n", prBssDesc->rUpdateTime);
 			return FALSE;
+		}
 #if CFG_SUPPORT_WAPI
 	if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
 		if (!wapiPerformPolicySelection(prAdapter, prBssDesc))

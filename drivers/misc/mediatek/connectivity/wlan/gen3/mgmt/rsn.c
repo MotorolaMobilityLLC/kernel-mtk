@@ -710,7 +710,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	if (fgIsWpsActive &&
 	    (prAdapter->rWifiVar.rConnSettings.eAuthMode < AUTH_MODE_WPA) &&
 	    (prAdapter->rWifiVar.rConnSettings.eOPMode == NET_TYPE_INFRA)) {
-		DBGLOG(RSN, TRACE, "-- Skip the Protected BSS check\n");
+		DBGLOG(RSN, WARN, "-- Skip the Protected BSS check\n");
 		return TRUE;
 	}
 #endif
@@ -721,7 +721,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		if (secEnabledInAis(prAdapter) == FALSE) {
 			DBGLOG(RSN, TRACE, "-- No Protected BSS\n");
 		} else {
-			DBGLOG(RSN, TRACE, "-- Protected BSS\n");
+			DBGLOG(RSN, WARN, "-- Protected BSS\n");
 			return FALSE;
 		}
 		return TRUE;
@@ -730,7 +730,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	/* Protection is required in this BSS. */
 	if ((prBss->u2CapInfo & CAP_INFO_PRIVACY) != 0) {
 		if (secEnabledInAis(prAdapter) == FALSE) {
-			DBGLOG(RSN, TRACE, "-- Protected BSS\n");
+			DBGLOG(RSN, WARN, "-- Protected BSS\n");
 			return FALSE;
 		}
 	}
@@ -742,7 +742,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		if (prBss->fgIEWPA) {
 			prBssRsnInfo = &prBss->rWPAInfo;
 		} else {
-			DBGLOG(RSN, TRACE, "WPA Information Element does not exist.\n");
+			DBGLOG(RSN, WARN, "WPA Information Element does not exist.\n");
 			return FALSE;
 		}
 	} else if (prAdapter->rWifiVar.rConnSettings.eAuthMode == AUTH_MODE_WPA2 ||
@@ -751,12 +751,12 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		if (prBss->fgIERSN) {
 			prBssRsnInfo = &prBss->rRSNInfo;
 		} else {
-			DBGLOG(RSN, TRACE, "RSN Information Element does not exist.\n");
+			DBGLOG(RSN, WARN, "RSN Information Element does not exist.\n");
 			return FALSE;
 		}
 	} else if (prAdapter->rWifiVar.rConnSettings.eEncStatus != ENUM_ENCRYPTION1_ENABLED) {
 		/* If the driver is configured to use WEP only, ignore this BSS. */
-		DBGLOG(RSN, TRACE, "-- Not WEP-only legacy BSS\n");
+		DBGLOG(RSN, WARN, "-- Not WEP-only legacy BSS\n");
 		return FALSE;
 	} else if (prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION1_ENABLED) {
 		/* If the driver is configured to use WEP only, use this BSS. */
@@ -765,7 +765,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	}
 
 	if (!rsnIsSuitableBSS(prAdapter, prBssRsnInfo)) {
-		DBGLOG(RSN, TRACE, "RSN info check no matched\n");
+		DBGLOG(RSN, WARN, "RSN info check no matched\n");
 		return FALSE;
 	}
 
@@ -870,7 +870,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	 * BSS, do not check the supported AKM suites.
 	 */
 	if (u4PairwiseCipher == 0 || u4GroupCipher == 0) {
-		DBGLOG(RSN, TRACE, "Failed to select pairwise/group cipher (0x%08lx/0x%08lx)\n",
+		DBGLOG(RSN, WARN, "Failed to select pairwise/group cipher (0x%08lx/0x%08lx)\n",
 				    u4PairwiseCipher, u4GroupCipher);
 		return FALSE;
 	}
@@ -879,7 +879,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	    (GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex)->eNetworkType == NETWORK_TYPE_P2P)) {
 		if (u4PairwiseCipher != RSN_CIPHER_SUITE_CCMP ||
 		    u4GroupCipher != RSN_CIPHER_SUITE_CCMP || u4AkmSuite != RSN_AKM_SUITE_PSK) {
-			DBGLOG(RSN, TRACE,
+			DBGLOG(RSN, WARN,
 			       "Failed to select pairwise/group cipher for P2P network (0x%08lx/0x%08lx)\n",
 				u4PairwiseCipher, u4GroupCipher);
 			return FALSE;
@@ -893,7 +893,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		    u4GroupCipher != RSN_CIPHER_SUITE_CCMP || u4AkmSuite != RSN_AKM_SUITE_PSK) {
 			/* Todo:: Nothing */
 		}
-		DBGLOG(RSN, TRACE,
+		DBGLOG(RSN, WARN,
 		       "Failed to select pairwise/group cipher for BT over Wi-Fi network (0x%08lx/0x%08lx)\n",
 			u4PairwiseCipher, u4GroupCipher);
 		return FALSE;
@@ -908,7 +908,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		fgSuiteSupported = rsnSearchSupportedCipher(prAdapter, u4GroupCipher, &i);
 
 	if (!fgSuiteSupported) {
-		DBGLOG(RSN, TRACE,
+		DBGLOG(RSN, WARN,
 		       "Failed to support selected pairwise/group cipher (0x%08lx/0x%08lx)\n",
 			u4PairwiseCipher, u4GroupCipher);
 		return FALSE;
@@ -933,7 +933,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	}
 
 	if (u4AkmSuite == 0) {
-		DBGLOG(RSN, TRACE, "Cannot support any AKM suites\n");
+		DBGLOG(RSN, WARN, "Cannot support any AKM suites\n");
 		return FALSE;
 	}
 
@@ -956,10 +956,10 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 
 	if (kalGetMfpSetting(prAdapter->prGlueInfo) == RSN_AUTH_MFP_REQUIRED) {
 		if (!prBssRsnInfo->fgRsnCapPresent) {
-			DBGLOG(RSN, TRACE, "[MFP] Skip RSN IE, No MFP Required Capability.\n");
+			DBGLOG(RSN, WARN, "[MFP] Skip RSN IE, No MFP Required Capability.\n");
 			return FALSE;
 		} else if (!(prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPC)) {
-			DBGLOG(RSN, TRACE, "[MFP] Skip RSN IE, No MFP Required\n");
+			DBGLOG(RSN, WARN, "[MFP] Skip RSN IE, No MFP Required\n");
 			return FALSE;
 		}
 		prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE;
@@ -987,7 +987,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		}
 		if (prBssRsnInfo->fgRsnCapPresent && (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR)) {
 			if (prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection == FALSE) {
-				DBGLOG(RSN, INFO, "[MFP] Skip RSN IE, No MFP Required Capability\n");
+				DBGLOG(RSN, WARN, "[MFP] Skip RSN IE, No MFP Required Capability\n");
 				return FALSE;
 			}
 		}
