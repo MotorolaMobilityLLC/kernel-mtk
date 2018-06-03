@@ -44,6 +44,10 @@ extern unsigned int FB_LAYER;	/* default LCD layer */
 #define DISP_DEFAULT_UI_LAYER_ID (DDP_OVL_LAYER_MUN-1)
 #define DISP_CHANGED_UI_LAYER_ID (DDP_OVL_LAYER_MUN-2)
 
+extern unsigned int ap_fps_changed;
+extern unsigned int arr_fps_backup;
+extern unsigned int arr_fps_enable;
+
 struct DISP_LAYER_INFO {
 	unsigned int id;
 	unsigned int curr_en;
@@ -295,7 +299,8 @@ void primary_display_reset(void);
 void primary_display_esd_check_enable(int enable);
 int primary_display_config_input_multiple(struct disp_session_input_config *session_input);
 int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg);
-int primary_display_force_set_vsync_fps(unsigned int fps);
+unsigned int primary_display_force_get_vsync_fps(void);
+int primary_display_force_set_vsync_fps(unsigned int fps, unsigned int scenario);
 unsigned int primary_display_get_fps(void);
 unsigned int primary_display_get_fps_nolock(void);
 int primary_display_get_original_width(void);

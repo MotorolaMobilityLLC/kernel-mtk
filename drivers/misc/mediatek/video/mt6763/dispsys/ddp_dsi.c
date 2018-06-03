@@ -874,7 +874,7 @@ static void DSI_Get_Porch_Addr(enum DISP_MODULE_ENUM module, unsigned long *pAdd
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (porch_type == DSI_VFP) {
 			porch_addr = (unsigned long)(&DSI_REG[i]->DSI_VFP_NL);
-			DISPINFO("get dsi%d vfp addr_va:%ld\n", i, porch_addr);
+			DISPMSG("DSI_Get_Porch_Addr get dsi%d vfp addr_va:%ld\n", i, porch_addr);
 		}
 
 		if (porch_addr)
@@ -3622,17 +3622,22 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCT
 		}
 	case DDP_DSI_PORCH_CHANGE:
 		{
-			unsigned int *pvfp = params;
+			unsigned int *p = (unsigned int *)params;
+			unsigned int vfp = p[0];
 
-			ddp_dsi_porch_setting(module,
-			cmdq_handle, DSI_VFP, *pvfp);
+			DDPMSG("[ddp_dsi_ioctl] DDP_DSI_PORCH_CHANGE vfp=%d\n", vfp);
+			ddp_dsi_porch_setting(module, cmdq_handle, DSI_VFP, vfp);
 			break;
 		}
 	case DDP_DSI_PORCH_ADDR:
 		{
-			if (params)
-				DSI_Get_Porch_Addr(module, params);
+			unsigned int *p = (unsigned int *)params;
+			unsigned int addr = p[0];
 
+			if (params) {
+				DDPMSG("[ddp_dsi_ioctl] DDP_DSI_PORCH_ADDR addr=0x%x\n", addr);
+				DSI_Get_Porch_Addr(module, params);
+			}
 			break;
 		}
 	case DDP_PHY_CLK_CHANGE:

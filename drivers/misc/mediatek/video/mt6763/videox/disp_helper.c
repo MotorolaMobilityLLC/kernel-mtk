@@ -111,7 +111,7 @@ static struct {
 	{DISP_OPT_OVL_EXT_LAYER, 0, "DISP_OPT_OVL_EXT_LAYER"},
 	{DISP_OPT_REG_PARSER_RAW_DUMP, 0, "DISP_OPT_REG_PARSER_RAW_DUMP"},
 	{DISP_OPT_AOD, 0, "DISP_OPT_AOD"},
-	{DISP_OPT_ARR_PHASE_1, 0, "DISP_OPT_ARR_PHASE_1"},
+	{DISP_OPT_ARR_PHASE_1, 1, "DISP_OPT_ARR_PHASE_1"},
 	{DISP_OPT_RSZ, 0, "DISP_OPT_RSZ"},
 	{DISP_OPT_DUAL_PIPE, 0, "DISP_OPT_DUAL_PIPE"},
 	{DISP_OPT_SHARE_WDMA0, 0, "DISP_OPT_SHARE_WDMA0"},
@@ -376,7 +376,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_AOD, 0);
 
 	/* ARR phase 1 option*/
-	disp_helper_set_option(DISP_OPT_ARR_PHASE_1, 0);
+	disp_helper_set_option(DISP_OPT_ARR_PHASE_1, 1);
 	/* HW does not support this */
 	disp_helper_set_option(DISP_OPT_RSZ, 0);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 0);

@@ -15,6 +15,9 @@
 #define _DISP_LOWPOWER_H_
 
 #define LINE_ACCURACY 1000
+
+extern unsigned int idle_test_enable;
+
 unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module);
 void primary_display_idlemgr_enter_idle_nolock(void);
 

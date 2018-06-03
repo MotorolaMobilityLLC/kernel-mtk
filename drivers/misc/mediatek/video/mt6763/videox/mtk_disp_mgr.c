@@ -1106,18 +1106,34 @@ int _ioctl_wait_vsync(unsigned long arg)
 	return ret;
 }
 
+int _ioctl_get_vsync(unsigned long arg)
+{
+	int ret = 0;
+	void __user *argp = (void __user *)arg;
+	unsigned int fps = 0;
+
+	fps = primary_display_force_get_vsync_fps();
+	DISPMSG("ioctl_get_vsync, fps=%d\n", fps);
+	if (copy_to_user(argp, &fps, sizeof(int))) {
+		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+		ret = -EFAULT;
+	}
+
+	return ret;
+}
+
 int _ioctl_set_vsync(unsigned long arg)
 {
 	int ret = 0;
-	/*void __user *argp = (void __user *)arg;*/
 	unsigned int fps = (unsigned int)arg;
 
-/*	if (copy_from_user(&fps, argp, sizeof(unsigned int))) {
-		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
-		return -EFAULT;
+	if ((fps < 50) || (fps > 60)) {
+		DISPERR("_ioctl_set_vsync fps setting is out of range, fps=%d\n", fps);
+		return  -EFAULT;
 	}
-*/
-	ret = primary_display_force_set_vsync_fps(fps);
+	DISPMSG("_ioctl_set_vsync fps setting is %d\n", fps);
+	ret = primary_display_force_set_vsync_fps(fps, 1); /* second parameter means APP set FPS */
+
 	return ret;
 }
 
@@ -1330,6 +1346,10 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		{
 			return _ioctl_get_display_caps(arg);
 		}
+	case DISP_IOCTL_GET_VSYNC_FPS:
+		{
+			return _ioctl_get_vsync(arg);
+		}
 	case DISP_IOCTL_SET_VSYNC_FPS:
 		{
 			return _ioctl_set_vsync(arg);
@@ -1492,9 +1512,9 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 			return _compat_ioctl_set_input_buffer(file, arg);
 		}
 	case COMPAT_DISP_IOCTL_FRAME_CONFIG:
-	{
+		{
 		return _compat_ioctl_frame_config(file, arg);
-	}
+		}
 	case COMPAT_DISP_IOCTL_WAIT_FOR_VSYNC:
 		{
 			return _compat_ioctl_wait_vsync(file, arg);
@@ -1506,6 +1526,10 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 	case COMPAT_DISP_IOCTL_GET_DISPLAY_CAPS:
 		{
 			return _compat_ioctl_get_display_caps(file, arg);
+		}
+	case COMPAT_DISP_IOCTL_GET_VSYNC_FPS:
+		{
+			return _compat_ioctl_get_vsync(file, arg);
 		}
 	case COMPAT_DISP_IOCTL_SET_VSYNC_FPS:
 		{

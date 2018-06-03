@@ -942,12 +942,38 @@ static void process_dbg_opt(const char *opt)
 			pr_err("DISP/%s: errno %d\n", __func__, ret);
 
 		DISPMSG("DDP: gTriggerDispMode=%d\n", gTriggerDispMode);
-	} else if (strncmp(opt, "disp_fps:", 9) == 0) {
-		char *p = (char *)opt + 9;
+	} else if (strncmp(opt, "disp_force_idle:", 16) == 0) {
+		char *p = (char *)opt + 16;
+		unsigned int disp_idle = 0;
+
+		ret = kstrtouint(p, 0, &disp_idle);
+		DDPMSG("Display debug command: disp_force_idle start, input disp_idle=%d, idle_test_enable=%d\n",
+			disp_idle, idle_test_enable);
+		idle_test_enable = disp_idle;
+		DDPMSG("Display debug command: disp_force_idle done, input disp_idle=%d, idle_test_enable=%d\n",
+			disp_idle, idle_test_enable);
+	} else if (strncmp(opt, "disp_set_fps:", 13) == 0) {
+		char *p = (char *)opt + 13;
 		unsigned int disp_fps = 0;
 
 		ret = kstrtouint(p, 0, &disp_fps);
-		primary_display_force_set_vsync_fps(disp_fps);
+		DDPMSG("Display debug command: disp_set_fps start\n");
+		primary_display_force_set_vsync_fps(disp_fps, 0);
+		DDPMSG("Display debug command: disp_set_fps done\n");
+	} else if (strncmp(opt, "disp_enter_idle_fps", 19) == 0) {
+		DDPMSG("Display debug command: disp_enter_idle_fps start\n");
+		primary_display_force_set_vsync_fps(50, 1);
+		DDPMSG("Display debug command: disp_enter_idle_fps done\n");
+	} else if (strncmp(opt, "disp_leave_idle_fps", 19) == 0) {
+		DDPMSG("Display debug command: disp_leave_idle_fps start\n");
+		primary_display_force_set_vsync_fps(60, 2);
+		DDPMSG("Display debug command: disp_leave_idle_fps done\n");
+	} else if (strncmp(opt, "disp_get_fps", 12) == 0) {
+		unsigned int disp_fps = 0;
+
+		DDPMSG("Display debug command: disp_get_fps start\n");
+		disp_fps = primary_display_force_get_vsync_fps();
+		DDPMSG("Display debug command: disp_get_fps done, disp_fps=%d\n", disp_fps);
 	}
 
 	if (strncmp(opt, "primary_basic_test:", 19) == 0) {

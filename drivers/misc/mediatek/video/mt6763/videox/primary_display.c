@@ -114,7 +114,6 @@ static unsigned int gPresentFenceIndex;
 unsigned int gTriggerDispMode; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 static unsigned int g_keep;
 static unsigned int g_skip;
-static unsigned int ap_fps_changed;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 static struct switch_dev disp_switch_data;
 #endif
@@ -155,6 +154,9 @@ int primary_display_cur_dst_mode;
 unsigned long long last_primary_trigger_time;
 bool is_switched_dst_mode;
 int primary_trigger_cnt;
+unsigned int dynamic_fps_changed;
+unsigned int arr_fps_enable;
+unsigned int arr_fps_backup;
 atomic_t decouple_update_rdma_event = ATOMIC_INIT(0);
 DECLARE_WAIT_QUEUE_HEAD(decouple_update_rdma_wq);
 atomic_t decouple_trigger_event = ATOMIC_INIT(0);
@@ -179,7 +181,7 @@ static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 struct display_primary_path_context {
 	enum DISP_POWER_STATE state;
 	unsigned int lcm_fps;
-	unsigned int ap_fps;
+	unsigned int dynamic_fps;
 	int lcm_refresh_rate;
 	int max_layer;
 	int need_trigger_overlay;
@@ -1360,7 +1362,7 @@ int _init_vsync_fake_monitor(int fps)
 	return 0;
 }
 
-static void change_dsi_vfp(struct cmdqRecStruct *handle, unsigned int ap_fps)
+static void change_dsi_vfp(struct cmdqRecStruct *handle, unsigned int fps)
 {
 	unsigned int VFP_PORTCH = pgc->plcm->params->dsi.vertical_frontporch;
 	unsigned int line_num = (pgc->plcm->params->dsi.vertical_frontporch +
@@ -1368,8 +1370,8 @@ static void change_dsi_vfp(struct cmdqRecStruct *handle, unsigned int ap_fps)
 					pgc->plcm->params->dsi.vertical_backporch +
 					pgc->plcm->params->dsi.vertical_active_line);
 
-	if (ap_fps < 60)
-		VFP_PORTCH = (line_num*60)/ap_fps - line_num + pgc->plcm->params->dsi.vertical_frontporch;
+	if (fps < 60)
+		VFP_PORTCH = (line_num*60)/fps - line_num + pgc->plcm->params->dsi.vertical_frontporch;
 
 	cmdqRecBackupUpdateSlot(handle, pgc->dsi_vfp_line, 0, VFP_PORTCH);
 }
@@ -1381,7 +1383,7 @@ static void _cmdq_build_trigger_loop(void)
 
 	if (primary_display_is_video_mode() && disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
 		int VFP_PORTCH = pgc->plcm->params->dsi.vertical_frontporch;
-		unsigned int gsync_fps = (pgc->ap_fps ? pgc->ap_fps : 60);
+		unsigned int gsync_fps = (pgc->dynamic_fps ? pgc->dynamic_fps : 60);
 
 		int line_num = (pgc->plcm->params->dsi.vertical_frontporch +
 					pgc->plcm->params->dsi.vertical_sync_active +
@@ -1396,7 +1398,7 @@ static void _cmdq_build_trigger_loop(void)
 
 	if (pgc->cmdq_handle_trigger == NULL) {
 		cmdqRecCreate(CMDQ_SCENARIO_TRIGGER_LOOP, &(pgc->cmdq_handle_trigger));
-		DISPINFO("primary path trigger thread cmd handle=%p\n", pgc->cmdq_handle_trigger);
+		DISPMSG("primary path trigger thread cmd handle=%p\n", pgc->cmdq_handle_trigger);
 	}
 	cmdqRecReset(pgc->cmdq_handle_trigger);
 
@@ -2651,10 +2653,10 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 	if (_should_start_path())
 		dpmgr_path_start(pgc->dpmgr_handle, primary_display_cmdq_enabled());
 
-	if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)
-		&& primary_display_is_video_mode() && ap_fps_changed) {
-		change_dsi_vfp(pgc->cmdq_handle_config, pgc->ap_fps);
-		ap_fps_changed = 0;
+	/*if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1) &&*/
+	if (primary_display_is_video_mode() && dynamic_fps_changed) {
+		change_dsi_vfp(pgc->cmdq_handle_config, pgc->dynamic_fps);
+		dynamic_fps_changed = 0;
 	}
 
 	if (_should_trigger_path()) {
@@ -3010,10 +3012,10 @@ static int _decouple_update_rdma_config_nolock(void)
 			_config_rdma_input_data(&tmpConfig, pgc->dpmgr_handle, cmdq_handle);
 			_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 
-			if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)
-				&& primary_display_is_video_mode() && ap_fps_changed) {
-				change_dsi_vfp(cmdq_handle, pgc->ap_fps);
-				ap_fps_changed = 0;
+			/*if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1) &&*/
+			if (primary_display_is_video_mode() && dynamic_fps_changed) {
+				change_dsi_vfp(cmdq_handle, pgc->dynamic_fps);
+				dynamic_fps_changed = 0;
 			}
 
 			cmdqRecFlushAsyncCallback(cmdq_handle, (CmdqAsyncFlushCB)_Interface_fence_release_callback,
@@ -3564,8 +3566,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	}
 
 	if (use_cmdq) {
-		if (primary_display_is_video_mode() && pgc->ap_fps == 0)
-			pgc->ap_fps = 60;
+		if (primary_display_is_video_mode() && pgc->dynamic_fps == 0)
+			pgc->dynamic_fps = 60;
 
 		_cmdq_build_trigger_loop();
 		_cmdq_start_trigger_loop();
@@ -6187,29 +6189,94 @@ int primary_display_force_set_fps(unsigned int keep, unsigned int skip)
 	return ret;
 }
 
-int primary_display_force_set_vsync_fps(unsigned int fps)
+unsigned int primary_display_force_get_vsync_fps(void)
+{
+	if (primary_display_is_idle()) {
+		DISPMSG("primary_display_force_get_vsync_fps=50, currently it is idle\n");
+		return 50; /* idle fps is 50 */
+	} else if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+		DISPMSG("primary_display_force_get_vsync_fps=%d, not idle and support ARR\n", pgc->dynamic_fps);
+		return pgc->dynamic_fps;
+	}
+
+	DISPMSG("primary_display_force_get_vsync_fps=%d, not idle and not support ARR\n", 60);
+	return 60;
+}
+
+int primary_display_force_set_vsync_fps(unsigned int fps, unsigned int scenario)
 {
 	int ret = 0;
 
-	DISPMSG("force set fps to %d\n", fps);
-	_primary_path_lock(__func__);
-	if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1) &&
-		primary_display_is_video_mode() && pgc->ap_fps != fps) {
-		pgc->ap_fps = fps;
-		ap_fps_changed = 1;
+	if (!primary_display_is_video_mode()) {
+		DISPERR("currently display is not video mode. fps changing fail\n");
+		return -1;
 	}
-/*
-	if (fps == pgc->lcm_fps) {
-		pgc->vsync_drop = 0;
-		ret = 0;
-	} else if (fps == 30) {
-		pgc->vsync_drop = 1;
-		ret = 0;
+
+	DISPMSG("primary_display_force_set_vsync_fps scenario=%d, fps=%d\n", scenario, fps);
+
+	/* scenario is APP, and support ARR change fps */
+	if ((scenario == 0) && disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
+		_primary_path_lock(__func__);
+		/* record dynamic fps */
+		pgc->dynamic_fps = fps;
+
+		/* backup ARR fps */
+		arr_fps_backup = fps;
+
+		/* mark arr fps enable or disable */
+		if ((fps < 60) && (fps >  50)) {
+			DISPMSG("mark ARR fps enable\n");
+			arr_fps_enable = 1;
+		} else if (fps == 60) {
+			DISPMSG("mark ARR fps disable\n");
+			arr_fps_enable = 0;
+		}
+
+		/* if need to change ARR fps? */
+		/* idle status, no need to change ARR fps, because idle fps is lowest. */
+		/* after leave idle, dynamic_fps_changed will be set 1 to backup ARR fps. */
+		if (primary_display_is_idle()) {
+			DISPMSG("it is idle, won't change dynamic fps\n");
+			dynamic_fps_changed = 0;
+		} else {
+			DISPMSG("it is not idle, will change dynamic fps=%d\n", pgc->dynamic_fps);
+			dynamic_fps_changed = 1;
+		}
+		_primary_path_unlock(__func__);
+	}
+
+	/* scenario is "enter idle", change fps to be input idle fps */
+	if (scenario == 1) {
+		/* record dynamic fps */
+		pgc->dynamic_fps = fps;
+		dynamic_fps_changed = 1;
+		DISPMSG("enter idle, change dynamic fps to be %d of idle status\n", pgc->dynamic_fps);
+	}
+
+	/* scenario is "leave idle", change fps to be ARR fps */
+	if (scenario == 2) {
+		if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1) && (arr_fps_enable == 1)) {
+			pgc->dynamic_fps = arr_fps_backup; /* support ARR, leave idle will change to ARR_fps_backup */
+			DISPMSG("leave idle and support ARR, change dynamic fps=%d\n", pgc->dynamic_fps);
+		} else {
+			pgc->dynamic_fps = fps; /* not support ARR, leave idle will change fps to be 60 */
+			DISPMSG("leave idle and does not support ARR, change dynamic fps=%d\n", pgc->dynamic_fps);
+		}
+		dynamic_fps_changed = 1;
+		/* DISPMSG("Currently leave idle, change dynamic fps to be %d\n", pgc->dynamic_fps); */
+	}
+
+#if 0
+	if (fps == 60) {
+		DISPMSG("primary_display_force_set_vsync_fps arr_fps_enabled=0\n");
+		arr_fps_enabled = 0;
 	} else {
-		ret = -1;
+		DISPMSG("primary_display_force_set_vsync_fps arr_fps_enabled=1\n");
+		arr_fps_enabled = 1;
 	}
-*/
-	_primary_path_unlock(__func__);
+#endif
+
+	DISPMSG("primary_display_force_set_vsync_fps done\n");
 
 	return ret;
 }
