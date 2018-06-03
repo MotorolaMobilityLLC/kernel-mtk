@@ -131,3 +131,6 @@ extern unsigned int hmp_cpu_is_slowest(int cpu);
 static inline unsigned int hmp_cpu_is_slowest(int cpu) { return false; }
 #endif /* CONFIG_SCHED_HMP */
 
+extern void
+get_task_util(struct task_struct *p, unsigned long *util, unsigned long *boost);
+

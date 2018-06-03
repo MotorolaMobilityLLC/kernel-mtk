@@ -18,6 +18,9 @@ obj-y += cputopo.o
 
 # For RT monitor
 obj-$(CONFIG_MTK_RT_THROTTLE_MON) += rt_monitor.o
+
+ccflags-y += -DMET_USER_EVENT_SUPPORT
+
 #
 # RQ stats for TLP estimation
 #
