@@ -54,11 +54,13 @@
 	#include <mt-plat/mtk_chip.h>
 	#include <mt-plat/mtk_gpio.h>
 	#include "mtk_drcc.h"
+	#include "mtk_eem_api.h"
 	#include <mt-plat/mtk_devinfo.h>
 #endif
 
 #ifdef CONFIG_OF
 	#include <linux/cpu.h>
+	#include <linux/cpu_pm.h>
 	#include <linux/of.h>
 	#include <linux/of_irq.h>
 	#include <linux/of_address.h>
@@ -138,6 +140,25 @@ static unsigned long long drcc_pTime_us, drcc_cTime_us, drcc_diff_us;
 	drcc_write(addr, (drcc_read(addr) & ~BITMASK(range)) | BITS(range, val))
 
 /************************************************
+ * call back registeration
+************************************************/
+/* CPU callback */
+static int _mt_drcc_cpu_CB(struct notifier_block *nfb,
+	unsigned long action, void *hcpu);
+
+static struct notifier_block __refdata _mt_drcc_cpu_notifier = {
+	.notifier_call = _mt_drcc_cpu_CB,
+};
+
+/* CPU pm callback */
+static int drcc_cpu_pm_notifier(struct notifier_block *self,
+	unsigned long cmd, void *v);
+
+static struct notifier_block drcc_cpu_pm_notifier_block = {
+	.notifier_call = drcc_cpu_pm_notifier,
+};
+
+/************************************************
  * static Variable
 ************************************************/
 static struct hrtimer drcc_timer_log;
@@ -182,6 +203,78 @@ static void mtk_drcc_unlock(unsigned long *flags)
 #endif
 }
 
+static int _mt_drcc_cpu_CB(struct notifier_block *nfb,
+	unsigned long action, void *hcpu)
+{
+	unsigned long flags;
+	unsigned int cpu = (unsigned long)hcpu;
+	struct device *dev;
+
+	/* CPU mask - Get on-line cpus per-cluster */
+	struct cpumask drcc_cpumask;
+	struct cpumask cpu_online_cpumask;
+	unsigned int big_cpus;
+
+	/* drcc_debug("(%d) cpu activate\n", cpu); */
+	dev = get_cpu_device(cpu);
+	if (dev) {
+		switch (action) {
+		/* case CPU_STARTING: */
+		case CPU_ONLINE:
+			arch_get_cluster_cpus(&drcc_cpumask,
+				MT_DRCC_CPU_B);
+
+			cpumask_and(&cpu_online_cpumask,
+				&drcc_cpumask,
+				cpu_online_mask);
+
+			big_cpus = cpumask_weight(&cpu_online_cpumask);
+
+			/* drcc_debug("B_Cs = %d\n",big_cpus); */
+			mtk_drcc_lock(&flags);
+			if (big_cpus == 1) {
+				if (mtk_drcc_calibration_result() == 0) {
+					/* Log into SRAM debug. */
+					drcc_fail_composite();
+					drcc_debug("K fail !!\n");
+				}
+				/* drcc_debug("K done !!\n"); */
+			}
+			mtk_drcc_unlock(&flags);
+			break;
+		}
+	}
+	return NOTIFY_OK;
+}
+
+static int drcc_cpu_pm_notifier(struct notifier_block *self,
+				  unsigned long cmd, void *v)
+{
+	unsigned long flags;
+	int cpu = smp_processor_id();
+
+	switch (cmd) {
+	case CPU_PM_EXIT:
+		if (cpu > 3) {
+			mtk_drcc_lock(&flags);
+			if (mtk_drcc_calibration_result() == 0) {
+				/* Log into SRAM debug. */
+				drcc_debug("[%s] xxxx_drcc K fail !!!\n",
+					__func__);
+				drcc_fail_composite();
+			}
+			/* drcc_debug("[%s] DRCC K check done !!!\n", __func__); */
+			mtk_drcc_unlock(&flags);
+		}
+		break;
+	default:
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_OK;
+}
+
+
+
 void mtk_drcc_log2RamConsole(void)
 {
 	unsigned int i, value[4];
@@ -211,21 +304,18 @@ int mtk_drcc_feature_enabled_check(void)
 
 int mtk_drcc_calibration_result(void)
 {
-	unsigned long flags;
 	unsigned int value, result;
 
 	/* check the calibration result */
-	mtk_drcc_lock(&flags);
-	value = mt_secure_call_drcc(MTK_SIP_KERNEL_DRCC_READ,
-		DRCC_CONF3, 0, 0);
-	/* drcc_debug("DRCC calibration result = (0x%x) !!\n", value); */
-	if ((((value >> 12) & 0x03) != 0x01) &&
-		(value != 0xDEADBEEF)) {
+	value = mt_secure_call_drcc(MTK_SIP_KERNEL_DRCC_K_RST,
+		0, 0, 0);
+	/* drcc_debug("K rst = (0x%x) !!\n", value); */
+	if (value == 0xF) {
+		drcc_debug("K fail !! rst = (0x%x) !!\n", value);
 		mtk_drcc_enable(0);
 		result = 0;
 	} else
 		result = 1;
-	mtk_drcc_unlock(&flags);
 
 	return result;
 }
@@ -828,6 +918,9 @@ static int drcc_reg_dump_proc_show(struct seq_file *m, void *v)
 			i, 0, 0);
 		seq_printf(m, "reg %x = 0x%X\n", i, value);
 	}
+	value = mt_secure_call_drcc(MTK_SIP_KERNEL_DRCC_K_RST,
+		0, 0, 0);
+	seq_printf(m, "calib stored = 0x%X\n", value);
 
 	return 0;
 }
@@ -928,6 +1021,8 @@ static int drcc_probe(struct platform_device *pdev)
 	#if 0 /* def CONFIG_MTK_RAM_CONSOLE */
 	_mt_drcc_aee_init();
 	#endif
+	drcc_debug("drcc probe ok!!\n");
+
 	return 0;
 }
 
@@ -958,6 +1053,12 @@ static int __init drcc_init(void)
 	/* init timer for log */
 	hrtimer_init(&drcc_timer_log, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	drcc_timer_log.function = drcc_timer_log_func;
+
+	register_hotcpu_notifier(&_mt_drcc_cpu_notifier);
+	drcc_debug("register HPS_CB\n");
+
+	cpu_pm_register_notifier(&drcc_cpu_pm_notifier_block);
+	drcc_debug("register CPU_PM_CB\n");
 
 	create_procfs();
 

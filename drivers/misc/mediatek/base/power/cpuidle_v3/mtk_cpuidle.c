@@ -30,14 +30,6 @@
 
 #include "mtk_cpuidle_private.h"
 
-#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
-#define MTK_DRCC_SUPPORT
-#ifdef MTK_DRCC_SUPPORT
-#include "mtk_drcc.h"
-/* Use include: extern void drcc_fail_composite(void); */
-#endif
-#endif
-
 static ulong dbg_data[40];
 static int mtk_cpuidle_initialized;
 static struct spm_wakeup_source spm_wakeup_src[MAX_SPM_WAKEUP_SRC];
@@ -310,13 +302,6 @@ static void mtk_platform_restore(int cpu)
 int mtk_enter_idle_state(int mode)
 {
 	int cpu, ret;
-#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
-	#ifdef MTK_DRCC_SUPPORT
-	struct cpumask cpuhp_cpumask;
-	struct cpumask cpu_online_cpumask;
-	unsigned int cpus_L;
-	#endif
-#endif
 
 	if (!mtk_cpuidle_initialized)
 		return -EOPNOTSUPP;
@@ -340,32 +325,6 @@ int mtk_enter_idle_state(int mode)
 		 */
 
 		ret = arm_cpuidle_suspend(mode);
-
-	#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
-		#ifdef MTK_DRCC_SUPPORT
-		arch_get_cluster_cpus(&cpuhp_cpumask, 1);
-		cpumask_and(&cpu_online_cpumask,
-			&cpuhp_cpumask,
-			cpu_online_mask);
-		cpus_L = cpumask_weight(&cpu_online_cpumask);
-		/* Calibration Fail */
-		#if 0
-		pr_notice("[xxxx_drcc %s] c=%d, L_cs=%d\n ",
-			__func__, cpu, cpus_L);
-		#endif
-		#if 0
-		if ((cpus_L == 1) &&
-			(mtk_drcc_calibration_result() == 0)) {
-			/* Log into SRAM debug. */
-			/* DRCC_debug_info(1,3,123456);*/
-			pr_notice("[%s] DRCC calibration fail !!!\n",
-				__func__);
-			/* drcc_fail_composite(); */
-		}
-		#endif
-		/* pr_notice("[%s] DRCC calibration done !!!\n", __func__); */
-		#endif
-	#endif
 
 		cpuidle_fp(cpu, CPUIDLE_FP_AFTER_ATF);
 		cpuidle_ts(cpu, CPUIDLE_TS_AFTER_ATF);
