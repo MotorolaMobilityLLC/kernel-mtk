@@ -1444,7 +1444,7 @@ const struct file_operations m4u_debug_monitor_fops = {
 
 int m4u_debug_register_show(struct seq_file *s, void *unused)
 {
-	m4u_dump_reg(0, 0);
+	m4u_dump_reg(0, 0, 400);
 	return 0;
 }
 
