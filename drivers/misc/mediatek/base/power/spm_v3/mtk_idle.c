@@ -254,23 +254,7 @@ static unsigned int idle_block_mask[NR_TYPES][NF_CG_STA_RECORD];
 
 static bool clkmux_cond[NR_TYPES];
 static unsigned int clkmux_block_mask[NR_TYPES][NF_CLK_CFG];
-static unsigned int clkmux_addr[NF_CLK_CFG] = {
-	0x10210100,
-	0x10210110,
-	0x10210120,
-	0x10210130,
-	0x10210140,
-	0x10210150,
-	0x10210160,
-	0x10210170,
-	0x10210180,
-	0x10210190,
-	0x102101A0,
-	0x102101B0,
-	0x102101C0,
-	0x102101D0,
-	0x102101E0
-};
+static unsigned int clkmux_addr[NF_CLK_CFG];
 
 /* DeepIdle */
 static unsigned int     dpidle_time_criteria = 26000; /* 2ms */
@@ -2575,6 +2559,16 @@ static void mtk_idle_profile_init(void)
 	mtk_idle_block_setting(IDLE_TYPE_RG, rgidle_cnt, NULL, NULL);
 }
 
+void mtk_idle_set_clkmux_addr(void)
+{
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+	unsigned int i;
+
+	for (i = 0; i < NF_CLK_CFG; i++)
+		clkmux_addr[i] = 0x10210100 + i * 0x10;
+#endif
+}
+
 void mtk_cpuidle_framework_init(void)
 {
 	idle_pr_ver("[%s]entry!!\n", __func__);
@@ -2592,6 +2586,7 @@ void mtk_cpuidle_framework_init(void)
 	dpidle_by_pass_pg = true;
 #endif
 
+	mtk_idle_set_clkmux_addr();
 	mtk_idle_profile_init();
 }
 EXPORT_SYMBOL(mtk_cpuidle_framework_init);
