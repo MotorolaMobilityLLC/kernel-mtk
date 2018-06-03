@@ -1660,7 +1660,7 @@ static irqreturn_t mtk_uart_irq(int irq, void *dev_id)
 
 #ifdef ENABLE_DEBUG
 	{
-		UART_IIR_REG *iir = (UART_IIR_REG *) &intrs;
+		struct uart_iir_reg *iir = (struct uart_iir_reg *) &intrs;
 
 		if (iir->NINT)
 			MSG(INT, "No interrupt (%s)\n", fifo[iir->FIFOE]);
