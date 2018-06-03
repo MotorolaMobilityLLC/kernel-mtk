@@ -697,7 +697,7 @@ static inline void TSF_Prepare_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> TSF clk */
-	smi_clk_prepare(SMI_LARB_CAMSYS1, "cam-tsf", 1);
+	smi_clk_prepare(SMI_LARB_CAMSYS0, "cam-tsf", 1);
 
 	ret = clk_prepare(TSF_clk.CG_CAMSYS_CCU);
 	if (ret)
@@ -709,7 +709,7 @@ static inline void TSF_Enable_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> TSF  clk */
-	smi_clk_enable(SMI_LARB_CAMSYS1, "cam-tsf", 1);
+	smi_clk_enable(SMI_LARB_CAMSYS0, "cam-tsf", 1);
 
 	ret = clk_enable(TSF_clk.CG_CAMSYS_CCU);
 	if (ret)
@@ -721,7 +721,7 @@ static inline void TSF_Prepare_Enable_ccf_clock(void)
 {
 	int ret;
 	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> TSF clk */
-	smi_bus_enable(SMI_LARB_CAMSYS1, "cam-tsf");
+	smi_bus_enable(SMI_LARB_CAMSYS0, "cam-tsf");
 
 	ret = clk_prepare_enable(TSF_clk.CG_CAMSYS_CCU);
 	if (ret)
@@ -733,7 +733,7 @@ static inline void TSF_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: TSF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_unprepare(TSF_clk.CG_CAMSYS_CCU);
-	smi_clk_unprepare(SMI_LARB_CAMSYS1, "cam-tsf", 1);
+	smi_clk_unprepare(SMI_LARB_CAMSYS0, "cam-tsf", 1);
 
 }
 
@@ -741,7 +741,7 @@ static inline void TSF_Disable_ccf_clock(void)
 {
 	/* must keep this clk close order: TSF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable(TSF_clk.CG_CAMSYS_CCU);
-	smi_clk_disable(SMI_LARB_CAMSYS1, "cam-tsf", 1);
+	smi_clk_disable(SMI_LARB_CAMSYS0, "cam-tsf", 1);
 
 }
 
@@ -749,7 +749,7 @@ static inline void TSF_Disable_Unprepare_ccf_clock(void)
 {
 	/* must keep this clk close order: TSF clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
 	clk_disable_unprepare(TSF_clk.CG_CAMSYS_CCU);
-	smi_bus_disable(SMI_LARB_CAMSYS1, "cam-tsf");
+	smi_bus_disable(SMI_LARB_CAMSYS0, "cam-tsf");
 
 }
 #endif
