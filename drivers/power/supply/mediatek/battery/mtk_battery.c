@@ -541,25 +541,37 @@ static void proc_dump_log(struct seq_file *m)
 static void proc_dump_dtsi(struct seq_file *m)
 {
 	seq_puts(m, "********** dump DTSI **********\n");
-	seq_printf(m, "g_FG_PSEUDO100_T0 = %d\n", fg_cust_data.pseudo100_t0);
-	seq_printf(m, "g_FG_PSEUDO100_T1 = %d\n", fg_cust_data.pseudo100_t1);
-	seq_printf(m, "g_FG_PSEUDO100_T2 = %d\n", fg_cust_data.pseudo100_t2);
-	seq_printf(m, "g_FG_PSEUDO100_T3 = %d\n", fg_cust_data.pseudo100_t3);
-	seq_printf(m, "g_FG_PSEUDO100_T4 = %d\n", fg_cust_data.pseudo100_t4);
-
+	seq_printf(m, "g_FG_PSEUDO100_T0 = %d\n",
+		fg_table_cust_data.fg_profile[0].pseudo100);
+	seq_printf(m, "g_FG_PSEUDO100_T1 = %d\n",
+		fg_table_cust_data.fg_profile[1].pseudo100);
+	seq_printf(m, "g_FG_PSEUDO100_T2 = %d\n",
+		fg_table_cust_data.fg_profile[2].pseudo100);
+	seq_printf(m, "g_FG_PSEUDO100_T3 = %d\n",
+		fg_table_cust_data.fg_profile[3].pseudo100);
+	seq_printf(m, "g_FG_PSEUDO100_T4 = %d\n",
+		fg_table_cust_data.fg_profile[4].pseudo100);
 	seq_printf(m, "DIFFERENCE_FULLOCV_ITH = %d\n",
 		fg_cust_data.difference_fullocv_ith);
 	seq_printf(m, "Q_MAX_SYS_VOLTAGE_BAT = %d\n",
 		fg_cust_data.q_max_sys_voltage);
 
-	seq_printf(m, "SHUTDOWN_1_TIME = %d\n", fg_cust_data.shutdown_1_time);
-	seq_printf(m, "KEEP_100_PERCENT = %d\n", fg_cust_data.keep_100_percent);
-	seq_printf(m, "R_FG_VALUE = %d\n", fg_cust_data.r_fg_value);
-	seq_printf(m, "TEMPERATURE_T0 = %d\n", fg_cust_data.temperature_t0);
-	seq_printf(m, "TEMPERATURE_T1 = %d\n", fg_cust_data.temperature_t1);
-	seq_printf(m, "TEMPERATURE_T2 = %d\n", fg_cust_data.temperature_t2);
-	seq_printf(m, "TEMPERATURE_T3 = %d\n", fg_cust_data.temperature_t3);
-	seq_printf(m, "TEMPERATURE_T4 = %d\n", fg_cust_data.temperature_t4);
+	seq_printf(m, "SHUTDOWN_1_TIME = %d\n",
+		fg_cust_data.shutdown_1_time);
+	seq_printf(m, "KEEP_100_PERCENT = %d\n",
+		fg_cust_data.keep_100_percent);
+	seq_printf(m, "R_FG_VALUE = %d\n",
+		fg_cust_data.r_fg_value);
+	seq_printf(m, "TEMPERATURE_T0 = %d\n",
+		fg_table_cust_data.fg_profile[0].temperature);
+	seq_printf(m, "TEMPERATURE_T1 = %d\n",
+		fg_table_cust_data.fg_profile[1].temperature);
+	seq_printf(m, "TEMPERATURE_T2 = %d\n",
+		fg_table_cust_data.fg_profile[2].temperature);
+	seq_printf(m, "TEMPERATURE_T3 = %d\n",
+		fg_table_cust_data.fg_profile[3].temperature);
+	seq_printf(m, "TEMPERATURE_T4 = %d\n",
+		fg_table_cust_data.fg_profile[4].temperature);
 
 	seq_printf(m, "EMBEDDED_SEL = %d\n", fg_cust_data.embedded_sel);
 	seq_printf(m, "PMIC_SHUTDOWN_CURRENT = %d\n",
@@ -580,11 +592,8 @@ static void proc_dump_dtsi(struct seq_file *m)
 	seq_puts(m, "SHUTDOWN_CONDITION_LOW_BAT_VOLT = 0\n");
 #endif
 
-#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
-	seq_puts(m, "CONFIG_MTK_ADDITIONAL_BATTERY_TABLE is defined(5 bat table)\n");
-#else
-	seq_puts(m, "CONFIG_MTK_ADDITIONAL_BATTERY_TABLE NO defined(4 bat table)\n");
-#endif
+	seq_printf(m, "active table :%d\n",
+	fg_table_cust_data.active_table_number);
 
 	seq_printf(m, "hw_version = %d\n", gauge_get_hw_version());
 
@@ -592,18 +601,80 @@ static void proc_dump_dtsi(struct seq_file *m)
 
 static void dump_kernel_table(struct seq_file *m)
 {
-	int i;
+	int i, j;
+	struct FUELGAUGE_PROFILE_STRUCT *ptr;
+	struct fuel_gauge_table_custom_data *ptable1;
+	struct fuel_gauge_table_custom_data *ptable2;
 
-	seq_printf(m, "table size:%d\n", fg_table_cust_data.fg_profile_t0_size);
+	ptable1 = &fg_table_cust_data;
+	ptable2 = &gm.fg_data.fg_table_cust_data;
+
+
+	seq_printf(m, "tables no:%d table size:%d\n",
+		fg_table_cust_data.active_table_number,
+		fg_table_cust_data.fg_profile[0].size);
+
+	for (j = 0; j < fg_table_cust_data.active_table_number; j++) {
+		seq_printf(m, "table idx:%d size:%d\n",
+			j,
+			fg_table_cust_data.fg_profile[j].size);
+		ptr = &ptable1->fg_profile[j].fg_profile[0];
+		seq_puts(m, "idx: maH, voltage, R, percentage\n");
+		for (i = 0; i < 100; i++) {
+			seq_printf(m, "%d: %d %d %d %d\n",
+				i,
+				ptr[i].mah,
+				ptr[i].voltage,
+				ptr[i].resistance,
+				ptr[i].percentage);
+		}
+	}
+
+	seq_puts(m, "\n");
+	for (j = 0; j < 10; j++) {
+		seq_printf(m, "daemon table idx:%d size:%d\n",
+			j,
+			gm.fg_data.fg_table_cust_data.fg_profile[j].size);
+		seq_puts(m, "idx: maH, voltage, R, percentage\n");
+		ptr = &ptable2->fg_profile[j].fg_profile[0];
+		for (i = 0; i < 100; i++) {
+			seq_printf(m, "%d: %d %d %d %d\n",
+				i,
+				ptr[i].mah,
+				ptr[i].voltage,
+				ptr[i].resistance,
+				ptr[i].percentage);
+		}
+	}
+
+	seq_printf(m, "\ndaemon table idx:tmp0 size:%d\n",
+		gm.fg_data.fg_table_cust_data.fg_profile_temperature_0_size);
 	seq_puts(m, "idx: maH, voltage, R, percentage\n");
+	ptr = &gm.fg_data.fg_table_cust_data.fg_profile_temperature_0[0];
 	for (i = 0; i < 100; i++) {
 		seq_printf(m, "%d: %d %d %d %d\n",
 			i,
-			fg_table_cust_data.fg_profile_t0[i].mah,
-			fg_table_cust_data.fg_profile_t0[i].voltage,
-			fg_table_cust_data.fg_profile_t0[i].resistance,
-			fg_table_cust_data.fg_profile_t0[i].percentage);
+			ptr[i].mah,
+			ptr[i].voltage,
+			ptr[i].resistance,
+			ptr[i].percentage);
+
 	}
+
+	seq_printf(m, "\ndaemon table idx:tmp1 size:%d\n",
+		gm.fg_data.fg_table_cust_data.fg_profile_temperature_1_size);
+	seq_puts(m, "idx: maH, voltage, R, percentage\n");
+	ptr = &gm.fg_data.fg_table_cust_data.fg_profile_temperature_1[0];
+	for (i = 0; i < 100; i++) {
+		seq_printf(m, "%d: %d %d %d %d\n",
+			i,
+			ptr[i].mah,
+			ptr[i].voltage,
+			ptr[i].resistance,
+			ptr[i].percentage);
+	}
+
+
 }
 
 
@@ -1731,7 +1802,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 717:
 		{
-			fg_cust_data.additional_battery_table_en = param;
+			fg_table_cust_data.active_table_number = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, param %d, additional_battery_table_en\n",
 				cmd, param);
@@ -1769,7 +1840,8 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 724:
 		{
-			fg_cust_data.pseudo100_t0 = UNIT_TRANS_100 * param;
+			fg_table_cust_data.fg_profile[0].pseudo100 =
+				UNIT_TRANS_100 * param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pseudo100_t0=%d\n",
 				cmd, param);
@@ -1777,7 +1849,8 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 725:
 		{
-			fg_cust_data.pseudo100_t1 = UNIT_TRANS_100 * param;
+			fg_table_cust_data.fg_profile[1].pseudo100 =
+				UNIT_TRANS_100 * param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pseudo100_t1=%d\n",
 				cmd, param);
@@ -1785,7 +1858,8 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 726:
 		{
-			fg_cust_data.pseudo100_t2 = UNIT_TRANS_100 * param;
+			fg_table_cust_data.fg_profile[2].pseudo100 =
+				UNIT_TRANS_100 * param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pseudo100_t2=%d\n",
 				cmd, param);
@@ -1793,7 +1867,8 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 727:
 		{
-			fg_cust_data.pseudo100_t3 = UNIT_TRANS_100 * param;
+			fg_table_cust_data.fg_profile[3].pseudo100 =
+				UNIT_TRANS_100 * param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pseudo100_t3=%d\n",
 				cmd, param);
@@ -1801,7 +1876,8 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 728:
 		{
-			fg_cust_data.pseudo100_t4 = UNIT_TRANS_100 * param;
+			fg_table_cust_data.fg_profile[4].pseudo100 =
+				UNIT_TRANS_100 * param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pseudo100_t4=%d\n",
 				cmd, param);
