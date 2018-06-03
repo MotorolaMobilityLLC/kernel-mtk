@@ -115,11 +115,12 @@ static unsigned int dcs_recv_data[4];
 static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
 {
 	int ipi_data_ret = 0, err;
-	unsigned int ipi_buf[32];
+	unsigned int ipi_buf[6];
 
 	ipi_buf[0] = IPI_DCS_GET_MODE;
 
-	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_WAIT, (void *)ipi_buf, 6,
+			&ipi_data_ret, 1);
 
 	if (err) {
 		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
@@ -134,13 +135,14 @@ static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
 static int dcs_migration_ipi(enum migrate_dir dir)
 {
 	int ipi_data_ret = 0, err;
-	unsigned int ipi_buf[32];
+	unsigned int ipi_buf[6];
 
 	ipi_buf[0] = IPI_DCS_MIGRATION;
 	ipi_buf[1] = dir;
 
 	pr_info("dcs migration start\n");
-	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_WAIT, (void *)ipi_buf, 6,
+			&ipi_data_ret, 1);
 	pr_info("dcs migration end\n");
 
 	if (err) {
@@ -154,7 +156,7 @@ static int dcs_migration_ipi(enum migrate_dir dir)
 static int dcs_set_dummy_write_ipi(void)
 {
 	int ipi_data_ret = 0, err;
-	unsigned int ipi_buf[32];
+	unsigned int ipi_buf[6];
 
 	ipi_buf[0] = IPI_DCS_SET_DUMMY_WRITE;
 	ipi_buf[1] = 0;
@@ -163,7 +165,8 @@ static int dcs_set_dummy_write_ipi(void)
 	ipi_buf[4] = 0x300000;
 	ipi_buf[5] = 0x000000;
 
-	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_WAIT, (void *)ipi_buf, 6,
+			&ipi_data_ret, 1);
 
 	if (err) {
 		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
@@ -176,11 +179,12 @@ static int dcs_set_dummy_write_ipi(void)
 static int dcs_dump_reg_ipi(void)
 {
 	int ipi_data_ret = 0, err;
-	unsigned int ipi_buf[32];
+	unsigned int ipi_buf[6];
 
 	ipi_buf[0] = IPI_DCS_DUMP_REG;
 
-	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_WAIT, (void *)ipi_buf, 6,
+			&ipi_data_ret, 1);
 
 	if (err) {
 		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
@@ -219,12 +223,13 @@ static int dcs_ipi_register(void)
 static int dcs_froce_acc_low_ipi(int enable)
 {
 	int ipi_data_ret = 0, err;
-	unsigned int ipi_buf[32];
+	unsigned int ipi_buf[6];
 
 	ipi_buf[0] = IPI_DCS_FORCE_ACC_LOW;
 	ipi_buf[1] = enable;
 
-	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_WAIT, (void *)ipi_buf, 6,
+			&ipi_data_ret, 1);
 
 	if (err) {
 		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
