@@ -45,8 +45,10 @@ extern int tcpc_typec_change_role(
 #ifdef CONFIG_USB_POWER_DELIVERY
 extern int tcpc_typec_advertise_explicit_contract(struct tcpc_device *tcpc_dev);
 extern int tcpc_typec_handle_pe_pr_swap(struct tcpc_device *tcpc_dev);
-#else
-extern int tcpc_typec_swap_role(struct tcpc_device *tcpc_dev);
 #endif /* CONFIG_USB_POWER_DELIVERY */
+
+#ifdef CONFIG_TYPEC_CAP_ROLE_SWAP
+extern int tcpc_typec_swap_role(struct tcpc_device *tcpc_dev);
+#endif /* CONFIG_TYPEC_CAP_ROLE_SWAP */
 
 #endif /* #ifndef __LINUX_TCPCI_TYPEC_H */

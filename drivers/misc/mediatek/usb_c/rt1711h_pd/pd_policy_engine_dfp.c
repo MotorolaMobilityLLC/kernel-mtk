@@ -66,8 +66,9 @@ void pe_dfp_cbl_vdm_identity_acked_entry(
 		~(DPM_FLAGS_CHECK_CABLE_ID | DPM_FLAGS_CHECK_CABLE_ID_DFP);
 
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
-	pd_dpm_dfp_inform_cable_vdo(pd_port, pd_event);
+	pd_dpm_inform_cable_id(pd_port, pd_event);
 
+	vdm_put_dpm_notified_event(pd_port);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
@@ -75,8 +76,8 @@ void pe_dfp_cbl_vdm_identity_naked_entry(
 				pd_port_t *pd_port, pd_event_t *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
-	pd_dpm_dfp_inform_cable_vdo(pd_port, pd_event);
 
+	vdm_put_dpm_notified_event(pd_port);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
@@ -260,4 +261,5 @@ void pe_dfp_uvdm_naked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_dpm_dfp_inform_uvdm(pd_port, pd_event, false);
 	pd_free_pd_event(pd_port, pd_event);
 }
+
 #endif      /* CONFIG_USB_PD_UVDM */

@@ -24,6 +24,7 @@
 
 #include "inc/mtk_direct_charge_vdm.h"
 #include "inc/tcpm.h"
+#include "inc/tcpm_legacy.h"
 
 #define MTK_VDM_COUNT	(20)
 #define MTK_VDM_DELAY	(10)
@@ -125,6 +126,69 @@ int mtk_get_ta_id(struct tcpc_device *tcpc)
 	pr_err("%s Time out\n", __func__);
 	return MTK_VDM_FAIL;
 }
+
+static int _mtk_clr_ta_pincheck_fault(struct tcpc_device *tcpc)
+{
+	int count = MTK_VDM_COUNT;
+	uint32_t data[7] = {0};
+	int status = MTK_VDM_FAIL;
+
+	if (!vdm_inited) {
+		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
+		return -EINVAL;
+	}
+
+	data[0] = RT7207_VDM_HDR | 0x201a;
+	data[1] = 0x10;
+
+	mtk_vdm_lock();
+	atomic_inc(&vdm_event_flag); /* set flag = 1 */
+	tcpm_send_uvdm(tcpc, 2, data, true);
+	while (count) {
+		if (atomic_read(&vdm_event_flag) == 0) {
+			mutex_lock(&vdm_par_lock);
+			if (vdm_success) {
+				pr_err("%s Success\n", __func__);
+				status = MTK_VDM_SUCCESS;
+			} else {
+				pr_err("%s Failed\n", __func__);
+				status = MTK_VDM_FAIL;
+			}
+			mutex_unlock(&vdm_par_lock);
+			mtk_vdm_unlock();
+			return status;
+		}
+		count--;
+		mdelay(MTK_VDM_DELAY);
+	}
+	atomic_dec(&vdm_event_flag);
+	mtk_vdm_unlock();
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
+
+}
+
+#if CONFIG_MTK_GAUGE_VERSION == 30
+int mtk_clr_ta_pingcheck_fault(void *tcpc)
+{
+	struct tcpc_device *tcpc_dev = (struct tcpc_device *)tcpc;
+
+	return _mtk_clr_ta_pincheck_fault(tcpc_dev);
+}
+#else
+int mtk_clr_ta_pingcheck_fault(struct tcpc_device *tcpc)
+{
+	return _mtk_clr_ta_pincheck_fault(tcpc);
+}
+#endif
 
 int mtk_get_ta_charger_status(struct tcpc_device *tcpc, struct pd_ta_stat *ta)
 {
@@ -387,7 +451,7 @@ int mtk_enable_ta_dplus_dect(struct tcpc_device *tcpc, bool en, int time)
 	data[0] = RT7207_VDM_HDR | 0x2020;
 	if (en) {
 		if (stat.dc_en) {
-			data[1] = 0x29CF | (0x3c << 16) | (0x5c << 24);
+			data[1] = 0x29CF | (0x3c << 16) | (0x5a << 24);
 			data[2] = time;
 		} else {
 			pr_err("%s DC should enabled\n", __func__);
@@ -912,24 +976,26 @@ static ssize_t de_write(struct file *file,
 		if (yo == 1)
 			mtk_get_ta_id(tcpc);
 		else if (yo == 2)
-			mtk_get_ta_charger_status(tcpc, &stat);
+			mtk_enable_direct_charge(tcpc, true);
 		else if (yo == 3)
-			mtk_get_ta_current_cap(tcpc, &cap);
+			mtk_get_ta_charger_status(tcpc, &stat);
 		else if (yo == 4)
-			mtk_get_ta_temperature(tcpc, &ret);
+			mtk_get_ta_current_cap(tcpc, &cap);
 		else if (yo == 5)
-			tcpm_set_direct_charge_en(tcpc, true);
+			mtk_get_ta_temperature(tcpc, &ret);
 		else if (yo == 6)
+			tcpm_set_direct_charge_en(tcpc, true);
+		else if (yo == 7)
 			tcpm_set_direct_charge_en(tcpc, false);
-		else if (yo == 7) {
+		else if (yo == 8) {
 			cap.cur = 3000;
 			cap.vol = 5000;
 			mtk_set_ta_boundary_cap(tcpc, &cap);
-		} else if (yo == 8) {
+		} else if (yo == 9) {
 			cap.cur = 1200;
 			cap.vol = 3800;
 			mtk_set_ta_cap(tcpc, &cap);
-		} else if (yo == 9)
+		} else if (yo == 10)
 			mtk_set_ta_uvlo(tcpc, 3000);
 		break;
 	default:

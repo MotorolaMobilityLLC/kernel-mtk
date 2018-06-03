@@ -85,8 +85,7 @@ static inline bool dc_dfp_send_en_unlock(pd_port_t *pd_port,
 	pd_port->uvdm_data[1] = data0;
 	pd_port->uvdm_data[2] = data1;
 
-	return vdm_put_dpm_vdm_request_event(
-			pd_port, PD_DPM_VDM_REQUEST_UVDM);
+	return pd_put_tcp_vdm_event(pd_port, TCP_DPM_EVT_UVDM);
 }
 
 enum pd_dc_dfp_state {
@@ -157,13 +156,14 @@ static const char * const dc_dfp_state_name[] = {
 
 void dc_dfp_set_state(pd_port_t *pd_port, uint8_t state)
 {
-
 	pd_port->dc_dfp_state = state;
 
 	if (pd_port->dc_dfp_state < DC_DFP_STATE_NR)
 		DC_DBG("%s\r\n", dc_dfp_state_name[state]);
-	else
+	else {
 		DC_DBG("dc_dfp_stop (%d)\r\n", state);
+		pd_dpm_notify_svdm_done(pd_port);
+	}
 }
 
 bool dc_dfp_notify_pe_startup(
@@ -186,8 +186,7 @@ int dc_dfp_notify_pe_ready(pd_port_t *pd_port,
 {
 #ifdef RTDC_TA_EMULATE
 	if (pd_port->data_role == PD_ROLE_DFP && svid_data->exist) {
-		pd_put_dpm_pd_request_event(pd_port,
-				PD_DPM_PD_REQUEST_DR_SWAP);
+		pd_put_tcp_pd_event(pd_port, TCP_DPM_EVT_DR_SWAP_AS_UFP);
 		return 1;
 	} else {
 		return 0;
@@ -203,16 +202,14 @@ int dc_dfp_notify_pe_ready(pd_port_t *pd_port,
 		return 0;
 	}
 
-	if (PD_VDO_CABLE_CURR(pd_port->cable_vdos[VDO_INDEX_CABLE])
-			!= CABLE_CURR_5A) {
+	if (pd_get_cable_curr_lvl(pd_port) != CABLE_CURR_5A) {
 		dc_dfp_set_state(pd_port, DC_DFP_ERR_DISCOVER_CABLE);
 		return 0;
 	}
-#endif
+#endif	/* CONFIG_USB_PD_RTDC_CHECK_CABLE */
 
 	pd_port->mode_svid = USB_SID_DIRECTCHARGE;
-	vdm_put_dpm_vdm_request_event(
-			pd_port, PD_DPM_VDM_REQUEST_DISCOVER_MODES);
+	pd_put_tcp_vdm_event(pd_port, TCP_DPM_EVT_DISCOVER_MODES);
 	return 1;
 }
 
@@ -287,8 +284,7 @@ bool dc_dfp_notify_discover_modes(
 
 	pd_port->mode_obj_pos = 1;
 	dc_dfp_set_state(pd_port, DC_DFP_ENTER_MODE);
-	vdm_put_dpm_vdm_request_event(
-			pd_port, PD_DPM_VDM_REQUEST_ENTRY_MODE);
+	pd_put_tcp_vdm_event(pd_port, TCP_DPM_EVT_ENTER_MODE);
 	return true;
 }
 
@@ -406,7 +402,9 @@ static inline bool dc_dfp_notify_en_unlock2(pd_port_t *pd_port,
 	}
 
 	dc_dfp_set_state(pd_port, DC_DFP_OPERATION);
+	pd_dpm_notify_svdm_done(pd_port);
 	tcpci_dc_notify_en_unlock(pd_port->tcpc_dev);
+
 	return true;
 }
 

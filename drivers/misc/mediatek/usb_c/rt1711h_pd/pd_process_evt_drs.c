@@ -99,6 +99,7 @@ static inline bool pd_process_ctrl_msg(
 
 	case PD_CTRL_WAIT:
 	case PD_CTRL_REJECT:
+		pd_port->dpm_flags &= ~DPM_FLAGS_CHECK_DR_ROLE;
 		return PE_MAKE_STATE_TRANSIT_VIRT(PD_CTRL_MSG_REJECT_WAIT);
 
 	default:
