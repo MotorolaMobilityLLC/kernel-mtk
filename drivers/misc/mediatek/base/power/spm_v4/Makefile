@@ -51,7 +51,7 @@ obj-y += mtk_spm.o
 #obj-y += mtk_spm_fs.o
 obj-y += mtk_spm_internal.o
 obj-y += mtk_spm_resource_req.o
-#obj-y += mtk_spm_sleep.o
+obj-y += mtk_spm_sleep.o
 #obj-y += mtk_spm_sodi.o
 #obj-y += mtk_spm_sodi3p0.o
 #obj-y += mtk_spm_vcorefs.o
@@ -96,6 +96,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/cpuidle_v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/cpufreq_v2/src/mach/$(MTK_PLATFORM)/
 #obj-y += mtk_idle_mt6771.o
 #obj-y += mtk_spm_dpidle_mt6771.o
-#obj-y += mtk_spm_sleep_mt6771.o
+obj-y += mtk_spm_sleep_mt6771.o
 #obj-y += mtk_spm_sodi_mt6771.o
 endif

@@ -37,7 +37,7 @@
 #endif
 #include <mtk_spm_misc.h>
 #include <mtk_spm_sleep.h>
-#include <mtk_dramc.h>
+/* #include <mtk_dramc.h> */
 
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
@@ -110,7 +110,11 @@ static void spm_dump_pmic_reg(void)
 }
 #endif
 
+/* FIXME */
+#if 0
 static int mt_power_gs_dump_suspend_count = 2;
+#endif
+
 void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -133,6 +137,9 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
 #else
+
+/* FIXME */
+#if 0
 	/* VCORE */
 	pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x8,
 			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,
@@ -150,10 +157,15 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
+#endif
+
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
+/* FIXME */
+#if 0
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(slp_dump_golden_setting_type);
+#endif
 
 	/* dvfsrc_md_scenario_update(1); */
 
@@ -191,6 +203,8 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	spm_dump_pmic_reg();
 #endif /* SPM_PMIC_DEBUG */
 
+#if 0
+
 	/* VCORE */
 	pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x20,
 			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,
@@ -205,6 +219,9 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x4,
 			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
 			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
+
+#endif
+
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 }
 
