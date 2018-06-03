@@ -327,6 +327,7 @@ EXPORT_SYMBOL(wait_sdio_autok_ready);
 
 void sdio_autok_wait_dvfs_ready(void)
 {
+#if !defined(FPGA_PLATFORM)
 	int dvfs;
 
 	dvfs = is_vcorefs_can_work();
@@ -343,6 +344,7 @@ void sdio_autok_wait_dvfs_ready(void)
 
 	if (dvfs == 1)
 		pr_err("DVFS ready\n");
+#endif
 }
 
 int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
@@ -391,6 +393,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 
 void sdio_execute_dvfs_autok(struct msdc_host *host)
 {
+#if !defined(FPGA_PLATFORM)
 	int sdio_res_exist = 0;
 	void __iomem *base = mtk_msdc_host[0]->base;
 
@@ -472,6 +475,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	sdio_autok_busy = 0;
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
+#endif
 }
 
 int emmc_autok(void)

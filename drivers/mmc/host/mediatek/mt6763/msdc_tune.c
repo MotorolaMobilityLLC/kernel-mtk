@@ -309,13 +309,14 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.inten_sdio_irq);
 
 		autok_init_sdr104(host);
+#if !defined(FPGA_PLATFORM)
 		if (vcorefs_get_hw_opp() == OPPI_PERF)
 			autok_tuning_parameter_init(host,
 				host->autok_res[AUTOK_VCORE_HIGH]);
 		else
 			autok_tuning_parameter_init(host,
 				host->autok_res[AUTOK_VCORE_LOW]);
-
+#endif
 		sdio_dvfs_reg_restore(host);
 
 		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;

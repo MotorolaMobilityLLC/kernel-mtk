@@ -656,20 +656,23 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD_HS400, hs400_div_dis);
 		msdc_clk_stable(host, mode, div, hs400_div_dis);
 
+#if !defined(FPGA_PLATFORM)
 		/* Enable DVFS handshake need check restore done */
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
 			if ((host->use_hw_dvfs == 1) && (MSDC_READ32(MSDC_CFG) >> 28 == 0x5))
 				spm_msdc_dvfs_setting(MSDC2_DVFS, 1);
 		}
+#endif
 	} else if ((!on) && (host->core_clkon == 1) &&
 		 (!((host->hw->flags & MSDC_SDIO_IRQ) && src_clk_control))) {
 
+#if !defined(FPGA_PLATFORM)
 		/* Disable DVFS handshake */
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
 			if ((host->use_hw_dvfs == 1) && (MSDC_READ32(MSDC_CFG) >> 28 == 0x5))
 				spm_msdc_dvfs_setting(MSDC2_DVFS, 0);
 		}
-
+#endif
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
 
 		msdc_clk_disable(host);
@@ -847,6 +850,16 @@ void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 
 	/* need because clk changed.*/
 	msdc_set_timeout(host, host->timeout_ns, host->timeout_clks);
+
+#if defined(FPGA_PLATFORM)
+	/*FPGA temp workaround begin*/
+	{
+		host->hw->rdata_edge = 1;
+		host->hw->cmd_edge = 1;
+	}
+	/*FPGA temp workaround end*/
+	msdc_set_smpl_all(host, mode);
+#endif
 
 	pr_err("msdc%d -> !!! Set<%dKHz> Source<%dKHz> -> sclk<%dKHz> timing<%d> mode<%d> div<%d> hs400_div_dis<%d>",
 		host->id, hz/1000, hclk/1000, sclk/1000, (int)timing, mode, div,
