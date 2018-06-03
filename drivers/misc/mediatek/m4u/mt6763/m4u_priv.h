@@ -380,6 +380,11 @@ typedef struct _M4U_DMA {
 
 #define MTK_M4U_T_SEC_INIT	    _IOW(MTK_M4U_MAGICNO, 50, int)
 
+#ifdef CONFIG_MACH_MT6763
+int larb_clock_on(int larb, bool config_mtcmos);
+int larb_clock_off(int larb, bool config_mtcmos);
+#endif
+
 #ifdef M4U_TEE_SERVICE_ENABLE
 int m4u_config_port_tee(M4U_PORT_STRUCT *pM4uPort);
 int m4u_larb_backup_sec(unsigned int larb_idx);
