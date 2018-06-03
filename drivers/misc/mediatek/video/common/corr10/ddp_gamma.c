@@ -581,6 +581,8 @@ static DEFINE_SPINLOCK(g_pq_bl_change_lock);
 static int g_pq_backlight;
 static int g_pq_backlight_db;
 
+static atomic_t g_ccorr_is_init_valid = ATOMIC_INIT(0);
+
 static void disp_ccorr_set_interrupt(int enabled)
 {
 	if (atomic_read(&g_ccorr_is_clock_on[index_of_ccorr(CCORR0_MODULE_NAMING)]) != 1) {
@@ -602,6 +604,25 @@ static void disp_ccorr_set_interrupt(int enabled)
 		DISP_CPU_REG_SET(DISP_REG_CCORR_INTEN, 0x0);
 		CCORR_DBG("Interrupt disabled");
 	}
+}
+
+static void disp_ccorr_clear_irq_only(void)
+{
+	unsigned int intsta;
+	unsigned long flags;
+
+	intsta = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
+
+	CCORR_DBG("disp_ccorr_clear_irq_only: intsta: 0x%x", intsta);
+	if (intsta & 0x2) { /* End of frame */
+		if (spin_trylock_irqsave(&g_ccorr_get_irq_lock, flags)) {
+			DISP_CPU_REG_SET(DISP_REG_CCORR_INTSTA, (intsta & ~0x3));
+
+			spin_unlock_irqrestore(&g_ccorr_get_irq_lock, flags);
+		}
+	}
+
+	disp_ccorr_set_interrupt(0);
 }
 
 static int disp_ccorr_wait_irq(unsigned long timeout)
@@ -666,6 +687,9 @@ void disp_pq_notify_backlight_changed(int bl_1024)
 	old_bl = g_pq_backlight;
 	g_pq_backlight = bl_1024;
 	spin_unlock_irqrestore(&g_pq_bl_change_lock, flags);
+
+	if (atomic_read(&g_ccorr_is_init_valid) != 1)
+		return;
 
 	CCORR_DBG("disp_pq_notify_backlight_changed %d", bl_1024);
 
@@ -781,6 +805,7 @@ static int disp_ccorr_io(enum DISP_MODULE_ENUM module, int msg, unsigned long ar
 		break;
 	case DISP_IOCTL_CCORR_GET_IRQ:
 		{
+			atomic_set(&g_ccorr_is_init_valid, 1);
 			disp_ccorr_wait_irq(60);
 			if (disp_pq_copy_backlight_to_user((int *) arg) < 0) {
 				CCORR_ERR("DISP_IOCTL_CCORR_GET_IRQ: copy_to_user() failed");
@@ -883,6 +908,9 @@ static int disp_ccorr_power_off(enum DISP_MODULE_ENUM module, void *handle)
 #endif		/* ENABLE_CLK_MGR */
 #endif
 
+#ifdef CCORR_TRANSITION
+	disp_ccorr_clear_irq_only();
+#endif
 	atomic_set(&g_ccorr_is_clock_on[index_of_ccorr(module)], 0);
 
 	return 0;
