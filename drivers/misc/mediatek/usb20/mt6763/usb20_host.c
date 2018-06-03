@@ -205,15 +205,18 @@ struct switch_dev otg_state;
 u32 typec_control;
 module_param(typec_control, int, 0644);
 static bool typec_req_host;
+static bool iddig_req_host;
 
 void musb_typec_host_connect(int delay)
 {
 	typec_req_host = true;
+	DBG(0, "%s\n", typec_req_host ? "connect" : "disconnect");
 	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(delay));
 }
 void musb_typec_host_disconnect(int delay)
 {
 	typec_req_host = false;
+	DBG(0, "%s\n", typec_req_host ? "connect" : "disconnect");
 	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(delay));
 }
 #ifdef CONFIG_USB_C_SWITCH
@@ -324,27 +327,14 @@ static struct typec_switch_data typec_host_driver = {
 
 static bool musb_is_host(void)
 {
-	bool usb_is_host = 0;
-
-	DBG(0, "will mask PMIC charger detection\n");
-#ifndef FPGA_PLATFORM
-	pmic_chrdet_int_en(0);
-#endif
-
-	musb_platform_enable(mtk_musb);
+	bool host_mode = 0;
 
 	if (typec_control)
-		usb_is_host = typec_req_host;
+		host_mode = typec_req_host;
 	else
-		usb_is_host = !mtk_musb->is_host;
+		host_mode = iddig_req_host;
 
-#ifndef FPGA_PLATFORM
-	if (usb_is_host == false)
-		pmic_chrdet_int_en(1);
-#endif
-
-	DBG(0, "usb_is_host = %d\n", usb_is_host);
-	return usb_is_host;
+	return host_mode;
 }
 
 void musb_session_restart(struct musb *musb)
@@ -365,7 +355,6 @@ void musb_session_restart(struct musb *musb)
 	DBG(0, "[MUSB] restart session\n");
 }
 
-static struct workqueue_struct *host_plug_test_wq;
 static struct delayed_work host_plug_test_work;
 int host_plug_test_enable; /* default disable */
 module_param(host_plug_test_enable, int, 0644);
@@ -380,10 +369,6 @@ module_param(host_test_vbus_only, int, 0644);
 static int host_plug_test_triggered;
 void switch_int_to_device(struct musb *musb)
 {
-	if (typec_control || host_plug_test_triggered) {
-		DBG(1, "directly return\n");
-		return;
-	}
 	irq_set_irq_type(iddig_eint_num, IRQF_TRIGGER_HIGH);
 	enable_irq(iddig_eint_num);
 	DBG(0, "switch_int_to_device is done\n");
@@ -391,24 +376,46 @@ void switch_int_to_device(struct musb *musb)
 
 void switch_int_to_host(struct musb *musb)
 {
-	if (typec_control || host_plug_test_triggered) {
-		DBG(1, "directly return\n");
-		return;
-	}
 	irq_set_irq_type(iddig_eint_num, IRQF_TRIGGER_LOW);
 	enable_irq(iddig_eint_num);
 	DBG(0, "switch_int_to_host is done\n");
 }
 
-void switch_int_to_host_and_mask(struct musb *musb)
+void musb_disable_host(struct musb *musb)
 {
-	if (typec_control || host_plug_test_triggered) {
-		DBG(1, "directly return\n");
-		return;
+	if (musb && musb->is_host) {	/* shut down USB host for IPO */
+		if (wake_lock_active(&musb->usb_lock))
+			wake_unlock(&musb->usb_lock);
+		mt_usb_set_vbus(mtk_musb, 0);
+		/* add sleep time to ensure vbus off and disconnect irq processed. */
+		msleep(50);
+		musb_stop(musb);
+		MUSB_DEV_MODE(musb);
+		/* Think about IPO shutdown with A-cable, then switch to B-cable and IPO bootup.
+		 * We need a point to clear session bit
+		 */
+		musb_writeb(musb->mregs, MUSB_DEVCTL,
+				(~MUSB_DEVCTL_SESSION) &
+				musb_readb(musb->mregs, MUSB_DEVCTL));
 	}
+
+#ifdef CONFIG_TCPC_CLASS
+	tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_SNK);
+#else
+	/* MASK IDDIG EVENT */
 	disable_irq(iddig_eint_num);
-	irq_set_irq_type(iddig_eint_num, IRQF_TRIGGER_LOW);
-	DBG(0, "swtich_int_to_host_and_mask is done\n");
+#endif
+
+	DBG(0, "disable host done\n");
+}
+void musb_enable_host(struct musb *musb)
+{
+#ifdef CONFIG_TCPC_CLASS
+	tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_DRP);
+#else
+	iddig_req_host = 0;
+	switch_int_to_host(mtk_musb);	/* resotre ID pin interrupt */
+#endif
 }
 static void do_host_plug_test_work(struct work_struct *data)
 {
@@ -423,11 +430,10 @@ static void do_host_plug_test_work(struct work_struct *data)
 
 	host_on  = 1;
 	while (1) {
-		if (!host_plug_test_enable && host_on) {
-			DBG(0, "EXIT");
+		if (!musb_is_host() && host_on) {
+			DBG(0, "about to exit");
 			break;
 		}
-
 		msleep(50);
 
 		ktime_end = ktime_get();
@@ -443,7 +449,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 			udelay(host_test_vbus_off_time_us);
 
 			if (!host_test_vbus_only)
-				queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
+				schedule_delayed_work(&mtk_musb->host_work, 0);
 		} else if (!host_on && diff_time >= host_plug_out_test_period_ms) {
 			host_on = 1;
 			DBG(0, "ON\n");
@@ -453,10 +459,12 @@ static void do_host_plug_test_work(struct work_struct *data)
 
 			ktime_begin = ktime_get();
 			if (!host_test_vbus_only)
-				queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, 0);
+				schedule_delayed_work(&mtk_musb->host_work, 0);
 		}
 	}
 
+	/* wait host_work done */
+	msleep(1000);
 	host_plug_test_triggered = 0;
 	DBG(0, "END\n");
 }
@@ -470,6 +478,7 @@ static void musb_host_work(struct work_struct *data)
 	static int inited, timeout; /* default to 0 */
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
 	static s64 diff_time;
+	int host_mode;
 
 	/* kernel_init_done should be set in early-init stage through init.$platform.usb.rc */
 	if (!inited && !kernel_init_done && !mtk_musb->is_ready && !timeout) {
@@ -507,18 +516,25 @@ static void musb_host_work(struct work_struct *data)
 		goto out;
 	}
 
-	if (host_plug_test_triggered) {
-		/* flip */
-		if (mtk_musb->is_host)
-			mtk_musb->is_host = false;
-		else
-			mtk_musb->is_host = true;
-	} else
-		mtk_musb->is_host = musb_is_host();
-	DBG(0, "musb is as %s\n", mtk_musb->is_host?"host":"device");
-	switch_set_state((struct switch_dev *)&otg_state, mtk_musb->is_host);
+	/* flip */
+	if (host_plug_test_triggered)
+		host_mode = !mtk_musb->is_host;
+	else
+		host_mode = musb_is_host();
 
-	if (mtk_musb->is_host) {
+	/* this make PHY operation workable */
+	musb_platform_enable(mtk_musb);
+
+	DBG(0, "musb is as %s\n", host_mode?"host":"device");
+	switch_set_state((struct switch_dev *)&otg_state, host_mode);
+
+	if (host_mode) {
+		MUSB_HST_MODE(mtk_musb);
+
+#ifndef FPGA_PLATFORM
+		DBG(0, "will mask PMIC charger detection\n");
+		pmic_chrdet_int_en(0);
+#endif
 
 		/* to make sure all event clear */
 		msleep(32);
@@ -564,11 +580,11 @@ static void musb_host_work(struct work_struct *data)
 	#endif
 
 		musb_start(mtk_musb);
-		MUSB_HST_MODE(mtk_musb);
-		switch_int_to_device(mtk_musb);
+		if (!typec_control && !host_plug_test_triggered)
+			switch_int_to_device(mtk_musb);
 
 		if (host_plug_test_enable && !host_plug_test_triggered)
-			queue_delayed_work(host_plug_test_wq, &host_plug_test_work, 0);
+			queue_delayed_work(mtk_musb->st_wq, &host_plug_test_work, 0);
 	} else {
 		/* for device no disconnect interrupt */
 		spin_lock_irqsave(&mtk_musb->lock, flags);
@@ -595,12 +611,10 @@ static void musb_host_work(struct work_struct *data)
 		DBG(0, "force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
 	#endif
 
-		/* make musb_stop aware about host mode */
-		MUSB_HST_MODE(mtk_musb);
 		musb_stop(mtk_musb);
-		mtk_musb->xceiv->otg->state = OTG_STATE_B_IDLE;
-		MUSB_DEV_MODE(mtk_musb);
-		switch_int_to_host(mtk_musb);
+
+		if (!typec_control && !host_plug_test_triggered)
+			switch_int_to_host(mtk_musb);
 
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 		if (usb_on_sram) {
@@ -610,6 +624,13 @@ static void musb_host_work(struct work_struct *data)
 #endif
 		/* to make sure all event clear */
 		msleep(32);
+
+#ifndef FPGA_PLATFORM
+		DBG(0, "will unmask PMIC charger detection\n");
+		pmic_chrdet_int_en(1);
+#endif
+		mtk_musb->xceiv->otg->state = OTG_STATE_B_IDLE;
+		MUSB_DEV_MODE(mtk_musb);
 	}
 out:
 	DBG(0, "work end, is_host=%d\n", mtk_musb->is_host);
@@ -621,8 +642,9 @@ static irqreturn_t mt_usb_ext_iddig_int(int irq, void *dev_id)
 {
 	iddig_cnt++;
 
+	iddig_req_host = !iddig_req_host;
+	DBG(0, "id pin assert, %s\n", iddig_req_host ? "connect" : "disconnect");
 	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->host_work, msecs_to_jiffies(sw_deboun_time));
-	DBG(0, "id pin interrupt assert\n");
 	disable_irq_nosync(iddig_eint_num);
 	return IRQ_HANDLED;
 }
@@ -690,7 +712,6 @@ void mt_usb_otg_init(struct musb *musb)
 	}
 
 	/* test */
-	host_plug_test_wq = create_singlethread_workqueue("host_plug_test_wq");
 	INIT_DELAYED_WORK(&host_plug_test_work, do_host_plug_test_work);
 	ktime_start = ktime_get();
 	INIT_DELAYED_WORK(&musb->host_work, musb_host_work);
@@ -889,6 +910,7 @@ void mt_usb_set_vbus(struct musb *musb, int is_on) {}
 int mt_usb_get_vbus_status(struct musb *musb) {return 1; }
 void switch_int_to_device(struct musb *musb) {}
 void switch_int_to_host(struct musb *musb) {}
-void switch_int_to_host_and_mask(struct musb *musb) {}
+void musb_disable_host(struct musb *musb) {}
+void musb_enable_host(struct musb *musb) {}
 void musb_session_restart(struct musb *musb) {}
 #endif

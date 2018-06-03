@@ -49,10 +49,6 @@ struct clk *musb_clk;
 
 #include "mtk-phy-a60810.h"
 
-#ifdef CONFIG_TCPC_CLASS
-#include "tcpm.h"
-#endif
-
 #include "mtk_spm_resource_req.h"
 static int dpidle_status = USB_DPIDLE_ALLOWED;
 static DEFINE_SPINLOCK(usb_hal_dpidle_lock);
@@ -710,15 +706,6 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 {
 	unsigned int cmode;
 	long tmp_val;
-#ifdef CONFIG_TCPC_CLASS
-	struct tcpc_device *tcpc;
-
-	tcpc = tcpc_dev_get_by_name("type_c_port0");
-	if (!tcpc) {
-		pr_err("%s get tcpc device type_c_port0 fail\n", __func__);
-		return -ENODEV;
-	}
-#endif
 
 	if (!dev) {
 		DBG(0, "dev is null!!\n");
@@ -756,35 +743,10 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 			msleep(50);
 
 #ifdef CONFIG_USB_MTK_OTG
-			if (cmode == CABLE_MODE_CHRG_ONLY) {
-				if (mtk_musb && mtk_musb->is_host) {	/* shut down USB host for IPO */
-					if (wake_lock_active(&mtk_musb->usb_lock))
-						wake_unlock(&mtk_musb->usb_lock);
-					musb_platform_set_vbus(mtk_musb, 0);
-					/* add sleep time to ensure vbus off and disconnect irq processed. */
-					msleep(50);
-					musb_stop(mtk_musb);
-					MUSB_DEV_MODE(mtk_musb);
-					/* Think about IPO shutdown with A-cable, then switch to B-cable and IPO bootup.
-					 * We need a point to clear session bit
-					 */
-					musb_writeb(mtk_musb->mregs, MUSB_DEVCTL,
-						    (~MUSB_DEVCTL_SESSION) &
-						    musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
-				}
-#ifdef CONFIG_TCPC_CLASS
-				tcpm_typec_change_role(tcpc, TYPEC_ROLE_SNK);
-#else
-				/* mask ID pin interrupt even if A-cable is not plugged in */
-				switch_int_to_host_and_mask(mtk_musb);
-#endif
-			} else {
-#ifdef CONFIG_TCPC_CLASS
-				tcpm_typec_change_role(tcpc, TYPEC_ROLE_DRP);
-#else
-				switch_int_to_host(mtk_musb);	/* resotre ID pin interrupt */
-#endif
-			}
+			if (cmode == CABLE_MODE_CHRG_ONLY)
+				musb_disable_host(mtk_musb);
+			else
+				musb_enable_host(mtk_musb);
 #endif
 		}
 		if (mtk_musb)
