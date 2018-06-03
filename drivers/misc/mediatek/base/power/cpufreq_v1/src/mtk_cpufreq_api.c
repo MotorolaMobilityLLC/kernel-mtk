@@ -252,3 +252,11 @@ int mt_cpufreq_get_sched_enable(void)
 {
 	return sched_dvfs_enable;
 }
+
+unsigned int mt_cpufreq_get_cpu_level(void)
+{
+	unsigned int lv = _mt_cpufreq_get_cpu_level();
+
+	return lv;
+}
+EXPORT_SYMBOL(mt_cpufreq_get_cpu_level);
