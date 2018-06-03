@@ -110,18 +110,18 @@ static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 
 static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
 {
-	unsigned int disp_idx = 0;
-	unsigned int i = 0;
 	bool flag = false;
-	struct layer_config *player_info;
-
+	unsigned int i = 0;
+	struct layer_config *info;
+	unsigned int disp_idx = 0;
+#if 0
 	/* ovl only support 1 yuv layer */
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
 		for (i = 0; i < disp_info->layer_num[disp_idx]; i++) {
-			player_info = &(disp_info->input_config[disp_idx][i]);
+			info = &(disp_info->input_config[disp_idx][i]);
 			if (is_gles_layer(disp_info, disp_idx, i))
 				continue;
-			if (is_yuv(player_info->src_fmt)) {
+			if (is_yuv(info->src_fmt)) {
 				if (flag) {
 					/* push to GPU */
 					if (disp_info->gles_head[disp_idx] == -1 || i < disp_info->gles_head[disp_idx])
@@ -134,7 +134,27 @@ static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
 			}
 		}
 	}
+#else
+	unsigned int layer_cnt = 0;
 
+	disp_idx = 1;
+	for (i = 0; i < disp_info->layer_num[disp_idx]; i++) {
+		info = &(disp_info->input_config[disp_idx][i]);
+		if (is_gles_layer(disp_info, disp_idx, i))
+			continue;
+
+		layer_cnt++;
+		if (layer_cnt > SECONDARY_OVL_LAYER_NUM) {
+			/* push to GPU */
+			if (disp_info->gles_head[disp_idx] == -1 || i < disp_info->gles_head[disp_idx])
+				disp_info->gles_head[disp_idx] = i;
+			if (disp_info->gles_tail[disp_idx] == -1 || i > disp_info->gles_tail[disp_idx])
+				disp_info->gles_tail[disp_idx] = i;
+
+			flag = false;
+		}
+	}
+#endif
 	return flag;
 }
 
