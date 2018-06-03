@@ -307,5 +307,4 @@ int tcpc_dual_role_phy_init(
 	tcpc->dual_role_vconn = DUAL_ROLE_PROP_VCONN_SUPPLY_NO;
 	return 0;
 }
-EXPORT_SYMBOL(tcpc_dual_role_phy_init);
 #endif /* CONFIG_DUAL_ROLE_USB_INTF */

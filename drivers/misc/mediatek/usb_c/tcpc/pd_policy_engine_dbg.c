@@ -21,7 +21,7 @@
 
 #ifdef CONFIG_USB_PD_CUSTOM_DBGACC
 
-void pe_dbg_ready_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_dbg_ready_entry(struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	uint8_t state;
 
@@ -41,7 +41,7 @@ void pe_dbg_ready_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 		pd_set_rx_enable(pd_port, PD_RX_CAP_PE_READY_DFP);
 	}
 
-	pd_reset_protocol_layer(pd_port);
+	pd_reset_protocol_layer(pd_port, false);
 	pd_update_connect_state(pd_port, state);
 }
 

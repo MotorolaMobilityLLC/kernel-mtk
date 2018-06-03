@@ -164,8 +164,8 @@ enum tcpm_v10_command {
  * TCPC_V10_REG_MSG_HDR_INFO		(0x2e)
  */
 
-#define TCPC_V10_REG_MSG_HDR_INFO_SET(drole, prole) \
-		((drole) << 3 | (PD_REV20 << 1) | (prole))
+#define TCPC_V10_REG_MSG_HDR_INFO_SET(drole, prole, pd_rev) \
+		((drole) << 3 | (pd_rev << 1) | (prole))
 #define TCPC_V10_REG_MSG_HDR_INFO_DROLE(reg) (((reg) & 0x8) >> 3)
 #define TCPC_V10_REG_MSG_HDR_INFO_PROLE(reg) ((reg) & 0x1)
 

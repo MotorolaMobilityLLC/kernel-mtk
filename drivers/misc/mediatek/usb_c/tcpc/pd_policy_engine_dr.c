@@ -28,35 +28,43 @@
  * Figure 8-56 Dual-Role (Sink) Give Source Capabilities State Diagram
  */
 
-void pe_dr_src_get_source_cap_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_dr_src_get_source_cap_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
+	pd_port->pd_wait_sender_response = true;
+
 	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_GET_SOURCE_CAP);
 }
 
-void pe_dr_src_get_source_cap_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_dr_src_get_source_cap_exit(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	pd_disable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
 	pd_dpm_dr_inform_source_cap(pd_port, pd_event);
 }
 
-void pe_dr_src_give_sink_cap_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_dr_src_give_sink_cap_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	pd_dpm_send_sink_caps(pd_port);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_dr_snk_get_sink_cap_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_dr_snk_get_sink_cap_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
+	pd_port->pd_wait_sender_response = true;
+
 	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_GET_SINK_CAP);
 }
 
-void pe_dr_snk_get_sink_cap_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_dr_snk_get_sink_cap_exit(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	pd_disable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
 	pd_dpm_dr_inform_sink_cap(pd_port, pd_event);
 }
 
-void pe_dr_snk_give_source_cap_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_dr_snk_give_source_cap_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	pd_dpm_send_source_caps(pd_port);
 	pd_free_pd_event(pd_port, pd_event);

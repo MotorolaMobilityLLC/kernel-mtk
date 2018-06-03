@@ -71,6 +71,8 @@
 #define CONFIG_TYPEC_SNK_CURR_LIMIT		0
 
 #define CONFIG_TCPC_SOURCE_VCONN
+#define CONFIG_TCPC_VCONN_SUPPLY_MODE
+
 /* #define CONFIG_TCPC_FORCE_DISCHARGE_IC */
 #define CONFIG_TCPC_FORCE_DISCHARGE_EXT
 
@@ -104,13 +106,22 @@
 #define CONFIG_USB_PD_PE_SINK
 #define CONFIG_USB_PD_PE_SOURCE
 
+#define CONFIG_USB_PD_TCPM_CB_2ND
+#define CONFIG_USB_PD_BLOCK_TCPM
 #define CONFIG_USB_PD_LEGACY_TCPM
 
 /* #define CONFIG_USB_PD_RICHTEK_UVDM */
 
+/**********************************************************
+ * Mode Operation
+ **********************************************************/
+
 #define CONFIG_USB_PD_MODE_OPERATION
 
 #ifdef CONFIG_USB_PD_MODE_OPERATION
+
+#define CONFIG_USB_PD_ATTEMP_ENTER_MODE
+
 #define CONFIG_USB_PD_ALT_MODE
 #define CONFIG_USB_PD_ALT_MODE_DFP
 
@@ -120,10 +131,36 @@
 /* #define CONFIG_USB_PD_RTDC_CHECK_CABLE */
 #endif /* CONFIG_USB_PD_MODE_OPERATION */
 
+/**********************************************************
+ * PD revision 3.0 feature
+ **********************************************************/
+
+/* #define CONFIG_USB_PD_REV30 */
+
+#ifdef CONFIG_USB_PD_REV30
+#define CONFIG_USB_PD_PPS_RETRY_MAX	3
+#define CONFIG_USB_PD_REV30_PPS_SINK
+/* #define CONFIG_USB_PD_REV30_PPS_SOURCE */
+#endif	/* CONFIG_USB_PD_REV30 */
+
+/**********************************************************
+ * PD direct charge support
+ **********************************************************/
+
+#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+#define CONFIG_USB_PD_DIRECT_CHARGE
+#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+
+#ifdef CONFIG_USB_PD_REV30_PPS_SINK
+#undef CONFIG_USB_PD_DIRECT_CHARGE
+#define CONFIG_USB_PD_DIRECT_CHARGE
+#endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+
 #define CONFIG_USB_PD_KEEP_PARTNER_ID
 #define CONFIG_USB_PD_KEEP_SVIDS
 #define CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
 #define CONFIG_USB_PD_DFP_READY_DISCOVER_ID
+#define CONFIG_USB_PD_RESET_CABLE
 
 #define CONFIG_USB_PD_RANDOM_FLOW_DELAY
 
@@ -143,6 +180,7 @@
 
 /* #define CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY */
 
+/* #define CONFIG_USB_PD_SVDM */
 #define CONFIG_USB_PD_UVDM
 /* #define CONFIG_USB_PD_CUSTOM_DBGACC */
 
@@ -200,5 +238,6 @@
 /* debug config */
 /* #define CONFIG_USB_PD_DBG_ALERT_STATUS */
 /* #define CONFIG_USB_PD_DBG_SKIP_ALERT_HANDLER */
+#define CONFIG_USB_PD_DBG_DP_DFP_D_AUTO_UPDATE
 
 #endif /* __LINUX_TCPC_CONFIG_H */

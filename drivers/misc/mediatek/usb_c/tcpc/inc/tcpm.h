@@ -58,6 +58,26 @@ enum pd_connect_result {
 #endif	/* CONFIG_USB_PD_CUSTOM_DBGACC */
 };
 
+#ifdef CONFIG_TCPC_VCONN_SUPPLY_MODE
+
+enum tcpc_vconn_supply_mode {
+	/* Never provide vconn even in TYPE-C state (reject swap to On) */
+	TCPC_VCONN_SUPPLY_NEVER = 0,
+
+	/* Always provide vconn */
+	TCPC_VCONN_SUPPLY_ALWAYS,
+
+	/* Always provide vconn only if we detect Ra, otherwise startup only */
+	TCPC_VCONN_SUPPLY_EMARK_ONLY,
+
+	/* Only provide vconn during DPM initial */
+	TCPC_VCONN_SUPPLY_STARTUP,
+
+	TCPC_VCONN_SUPPLY_NR,
+};
+
+#endif	/* CONFIG_TCPC_VCONN_SUPPLY_MODE */
+
 /* Power role */
 #define PD_ROLE_SINK   0
 #define PD_ROLE_SOURCE 1
@@ -104,6 +124,13 @@ enum {
 #endif	/* CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SRC */
 
 	TCP_NOTIFY_EXT_DISCHARGE,
+
+#ifdef CONFIG_USB_PD_REV30
+	TCP_NOTIFY_ALERT,
+	TCP_NOTIFY_STATUS,
+	TCP_NOTIFY_PPS_STATUS,
+	TCP_NOTIFY_PPS_READY,
+#endif	/* CONFIG_USB_PD_REV30 */
 };
 
 struct tcp_ny_pd_state {
@@ -198,8 +225,8 @@ struct tcp_ny_ama_dp_attention {
 };
 
 struct tcp_ny_ama_dp_hpd_state {
-	bool irq : 1;
-	bool state : 1;
+	bool irq:1;
+	bool state:1;
 };
 
 struct tcp_ny_uvdm {
@@ -248,6 +275,9 @@ enum tcpm_error_list {
 	TCPM_ERROR_NOT_DRP_ROLE = -11,
 	TCPM_ERROR_DURING_ROLE_SWAP = -12,
 	TCPM_ERROR_NO_EXPLICIT_CONTRACT = -13,
+	TCPM_ERROR_ERROR_RECOVERY = -14,
+	TCPM_ERROR_NOT_FOUND = -15,
+	TCPM_ERROR_CHARGING_POLICY = -16,
 };
 
 #define TCPM_PDO_MAX_SIZE	7
@@ -276,9 +306,9 @@ enum tcpc_cc_voltage_status {
 
 enum tcpm_vbus_level {
 #ifdef CONFIG_TCPC_VSAFE0V_DETECT
-	TCPC_VBUS_SAFE0V = 0,
-	TCPC_VBUS_INVALID,
-	TCPC_VBUS_VALID,
+	TCPC_VBUS_SAFE0V = 0,		/* < 0.8V */
+	TCPC_VBUS_INVALID,		/* > 0.8V */
+	TCPC_VBUS_VALID,		/* > 4.5V */
 #else
 	TCPC_VBUS_INVALID = 0,
 	TCPC_VBUS_VALID,
@@ -440,6 +470,9 @@ extern uint8_t tcpm_inquire_pd_power_role(
 extern uint8_t tcpm_inquire_pd_vconn_role(
 	struct tcpc_device *tcpc_dev);
 
+extern uint8_t tcpm_inquire_pd_pe_ready(
+	struct tcpc_device *tcpc_dev);
+
 extern uint8_t tcpm_inquire_cable_current(
 	struct tcpc_device *tcpc_dev);
 
@@ -486,6 +519,10 @@ enum {
 	TCP_DPM_RET_DROP_ERROR_REOCVERY,
 	TCP_DPM_RET_DROP_SEND_BIST,
 
+	TCP_DPM_RET_WAIT,
+	TCP_DPM_RET_REJECT,
+	TCP_DPM_RET_TIMEOUT,
+
 	TCP_DPM_RET_VDM_NAK,
 
 	TCP_DPM_RET_BK_TIMEOUT,
@@ -505,6 +542,7 @@ enum {
 	TCP_DPM_EVT_GOTOMIN,
 
 	TCP_DPM_EVT_SOFTRESET,
+	TCP_DPM_EVT_CABLE_SOFTRESET,
 
 	TCP_DPM_EVT_GET_SOURCE_CAP,
 	TCP_DPM_EVT_GET_SINK_CAP,
@@ -513,6 +551,14 @@ enum {
 	TCP_DPM_EVT_REQUEST_EX,
 	TCP_DPM_EVT_REQUEST_AGAIN,
 	TCP_DPM_EVT_BIST_CM2,
+
+#ifdef CONFIG_USB_PD_REV30
+	TCP_DPM_EVT_GET_SOURCE_CAP_EXT,
+	TCP_DPM_EVT_GET_STATUS,
+	TCP_DPM_EVT_FR_SWAP_AS_SINK,
+	TCP_DPM_EVT_FR_SWAP_AS_SOURCE,
+	TCP_DPM_EVT_GET_PPS_STATUS,
+#endif	/* CONFIG_USB_PD_REV30 */
 
 	TCP_DPM_EVT_VDM_COMMAND,
 	TCP_DPM_EVT_DISCOVER_CABLE = TCP_DPM_EVT_VDM_COMMAND,
@@ -570,6 +616,11 @@ struct tcp_dpm_pd_request_ex {
 	};
 };
 
+struct tcp_dpm_svdm_data {
+	uint16_t svid;
+	uint8_t ops;
+};
+
 #ifdef CONFIG_USB_PD_ALT_MODE
 struct tcp_dpm_dp_data {
 	uint32_t val;
@@ -600,6 +651,8 @@ struct tcp_dpm_event {
 #ifdef CONFIG_USB_PD_UVDM
 		struct tcp_dpm_uvdm_data uvdm_data;
 #endif	/* CONFIG_USB_PD_UVDM */
+
+		struct tcp_dpm_svdm_data svdm_data;
 	} tcp_dpm_data;
 };
 
@@ -621,23 +674,35 @@ extern int tcpm_inquire_pd_sink_cap(
 
 enum tcpm_power_cap_val_type {
 	TCPM_POWER_CAP_VAL_TYPE_FIXED = 0,
-	TCPM_POWER_CAP_VAL_TYPE_VARIABLE = 1,
-	TCPM_POWER_CAP_VAL_TYPE_BATTERY = 2,
+	TCPM_POWER_CAP_VAL_TYPE_BATTERY = 1,
+	TCPM_POWER_CAP_VAL_TYPE_VARIABLE = 2,
+	TCPM_POWER_CAP_VAL_TYPE_AUGMENT = 3,
+
 	TCPM_POWER_CAP_VAL_TYPE_UNKNOWN = 0xff,
+};
+
+#define TCPM_APDO_TYPE_MASK	(0x0f)
+
+enum tcpm_power_cap_apdo_type {
+	TCPM_POWER_CAP_APDO_TYPE_PPS = 1 << 0,
+
+	TCPM_POWER_CAP_APDO_TYPE_PPS_CF = (1 << 7),
 };
 
 struct tcpm_power_cap_val {
 	uint8_t type;
+#ifdef CONFIG_USB_PD_REV30
+	uint8_t apdo_type;
+#endif /* CONFIG_USB_PD_REV30 */
 	int max_mv;
 	int min_mv;
-
 	union {
 		int uw;
 		int ma;
 	};
 };
 
-extern void tcpm_extract_power_cap_val(
+extern bool tcpm_extract_power_cap_val(
 	uint32_t pdo, struct tcpm_power_cap_val *cap);
 
 /* Request TCPM to send PD Request */
@@ -663,6 +728,57 @@ extern int tcpm_dpm_pd_request_ex(struct tcpc_device *tcpc,
 extern int tcpm_dpm_pd_bist_cm2(
 	struct tcpc_device *tcpc, tcp_dpm_event_cb event_cb);
 
+#ifdef CONFIG_USB_PD_REV30
+
+#define TCPM_PPS_GET_OUTPUT_MV(raw)		(raw*20)
+#define TCPM_PPS_GET_OUTPUT_MA(raw)		(raw*50)
+
+#define TCPM_PPS_SET_OUTPUT_MV(mv)		(((mv) / 20) & 0xFFFF)
+#define TCPM_PPS_SET_OUTPUT_MA(ma)		(((ma) / 50) & 0xFF)
+
+#define TCPM_PPS_FLAGS_CFF	(1 << 3)
+#define TCPM_PPS_FLGAS_PTF(raw)	((raw & 0x06) >> 1)
+
+#define TCPM_PPS_FLAGS_SET_PTF(flags)	((flags & 0x03) << 1)
+
+enum tcpm_pps_present_temp_flag {
+	TCPM_PPS_PTF_NO_SUPPORT = 0,
+	TCPM_PPS_PTF_NORMAL,
+	TCPM_PPS_PTF_WARNING,
+	TCPM_PPS_PTF_OVER_TEMP,
+};
+
+struct tcpm_pps_status {
+	uint16_t output_mv;	/* 0xffff means no support */
+	uint8_t output_ma;	/* 0xff means no support */
+	uint8_t real_time_flags;
+};
+
+#define TCPM_STASUS_EVENT_OCP	(1<<1)
+#define TCPM_STATUS_EVENT_OTP	(1<<2)
+#define TCPM_STATUS_EVENT_OVP	(1<<3)
+
+#define TCPM_STATUS_TEMP_PTF(raw)	((raw & 0x03) >> 1)
+#define TCPM_STATUS_TEMP_SET_PTF(val)		((val & 0x03) << 1)
+
+struct tcpm_status_data {
+	uint8_t internal_temp;	/* 0 means no support */
+	uint8_t present_input;	/* bit filed */
+	uint8_t present_battey_input; /* bit filed */
+	uint8_t event_flags;	/* bit filed */
+	uint8_t temperature;	/* bit filed */
+};
+
+extern int tcpm_dpm_pd_get_source_cap_ext(
+		struct tcpc_device *tcpc, tcp_dpm_event_cb event_cb);
+extern int tcpm_dpm_pd_fast_swap(
+	struct tcpc_device *tcpc, uint8_t role, tcp_dpm_event_cb event_cb);
+extern int tcpm_dpm_pd_get_status(
+		struct tcpc_device *tcpc, tcp_dpm_event_cb event_cb);
+extern int tcpm_dpm_pd_get_pps_status(
+		struct tcpc_device *tcpc, tcp_dpm_event_cb event_cb);
+#endif	/* CONFIG_USB_PD_REV30 */
+
 extern int tcpm_dpm_pd_hard_reset(struct tcpc_device *tcpc);
 extern int tcpm_dpm_pd_error_recovery(struct tcpc_device *tcpc);
 
@@ -672,6 +788,14 @@ extern int tcpm_dpm_vdm_discover_cable(
 	struct tcpc_device *tcpc, tcp_dpm_event_cb event_cb);
 extern int tcpm_dpm_vdm_discover_id(
 	struct tcpc_device *tcpc, tcp_dpm_event_cb event_cb);
+extern int tcpm_dpm_vdm_discover_svid(
+	struct tcpc_device *tcpc, tcp_dpm_event_cb event_cb);
+extern int tcpm_dpm_vdm_discover_mode(
+	struct tcpc_device *tcpc, uint16_t svid, tcp_dpm_event_cb event_cb);
+extern int tcpm_dpm_vdm_enter_mode(struct tcpc_device *tcpc,
+	uint16_t svid, uint8_t ops, tcp_dpm_event_cb event_cb);
+extern int tcpm_dpm_vdm_exit_mode(struct tcpc_device *tcpc,
+	uint16_t svid, uint8_t ops, tcp_dpm_event_cb event_cb);
 
 /* Request TCPM to send PD-DP Request */
 
@@ -814,18 +938,29 @@ extern void chrdet_int_handler(void);
 
 /* Charging Policy: Select PDO */
 
+#define DPM_CHARGING_POLICY_MASK	(0x0f)
+
 enum dpm_charging_policy {
 	/* VSafe5V only */
 	DPM_CHARGING_POLICY_VSAFE5V = 0,
 
-	/* Direct charge <Variable PDO only> */
-	DPM_CHARGING_POLICY_DIRECT_CHARGE = 1,
+	/* Max Power */
+	DPM_CHARGING_POLICY_MAX_POWER = 1,
 
 	/* Custom defined Policy */
 	DPM_CHARGING_POLICY_CUSTOM = 2,
 
-	/* Max Power */
-	DPM_CHARGING_POLICY_MAX_POWER = 3,
+	/*  Runtime Policy, restore to default after plug-out or hard-reset */
+	DPM_CHARGING_POLICY_RUNTIME = 3,
+
+	/* Direct charge <Variable PDO only> */
+	DPM_CHARGING_POLICY_DIRECT_CHARGE = 3,
+
+	/* PPS <Augmented PDO only> */
+	DPM_CHARGING_POLICY_PPS = 4,
+
+	/* Default Charging Policy <from DTS>*/
+	DPM_CHARGING_POLICY_DEFAULT = 0xff,
 
 	DPM_CHARGING_POLICY_IGNORE_MISMATCH_CURR = 1 << 4,
 	DPM_CHARGING_POLICY_PREFER_LOW_VOLTAGE = 1 << 5,
@@ -851,9 +986,32 @@ extern int tcpm_set_pd_charging_policy(
 
 extern uint8_t tcpm_inquire_pd_charging_policy(struct tcpc_device *tcpc);
 
-#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+#ifdef CONFIG_USB_PD_DIRECT_CHARGE
 extern bool tcpm_inquire_during_direct_charge(struct tcpc_device *tcpc);
-#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+#endif	/* CONFIG_USB_PD_DIRECT_CHARGE */
+
+
+#ifdef CONFIG_TCPC_VCONN_SUPPLY_MODE
+extern int tcpm_dpm_set_vconn_supply_mode(
+	struct tcpc_device *tcpc, uint8_t mode);
+#endif	/* CONFIG_TCPC_VCONN_SUPPLY_MODE */
+
+
+#ifdef CONFIG_USB_PD_REV30_PPS_SINK
+
+#define TCPM_PD_SDB_SIZE	5
+#define TCPM_PD_PPSDB_SIZE	4
+
+extern int tcpm_set_apdo_charging_policy(
+	struct tcpc_device *tcpc, uint8_t policy, int mv, int ma);
+
+extern int tcpm_inquire_pd_apdo_boundary(
+	struct tcpc_device *tcpc, struct tcpm_power_cap_val *cap_val);
+
+extern int tcpm_inquire_pd_source_apdo(struct tcpc_device *tcpc,
+	uint8_t apdo_type, uint8_t *cap_i, struct tcpm_power_cap_val *cap);
+
+#endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
 
 extern int tcpm_get_remote_power_cap(struct tcpc_device *tcpc_dev,
 					struct tcpm_remote_power_cap *cap);

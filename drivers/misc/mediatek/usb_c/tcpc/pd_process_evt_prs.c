@@ -119,17 +119,12 @@ DECL_PE_STATE_REACTION(PD_TIMER_PS_SOURCE_OFF);
  */
 
 static inline bool pd_process_ctrl_msg_good_crc(
-	struct __pd_port *pd_port, struct __pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_port->pe_state_curr) {
 	case PE_PRS_SRC_SNK_WAIT_SOURCE_ON:
 		pd_enable_timer(pd_port, PD_TIMER_PS_SOURCE_ON);
 		pd_unlock_msg_output(pd_port);	/* for tSRCTransition */
-		return false;
-
-	case PE_PRS_SRC_SNK_SEND_SWAP:
-	case PE_PRS_SNK_SRC_SEND_SWAP:
-		pd_enable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
 		return false;
 
 	default:
@@ -138,7 +133,7 @@ static inline bool pd_process_ctrl_msg_good_crc(
 }
 
 static inline bool pd_process_ctrl_msg(
-	struct __pd_port *pd_port, struct __pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_event->msg) {
 	case PD_CTRL_GOOD_CRC:
@@ -166,7 +161,7 @@ static inline bool pd_process_ctrl_msg(
  */
 
 static inline bool pd_process_dpm_msg(
-	struct __pd_port *pd_port, struct __pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	bool ret = false;
 
@@ -187,7 +182,7 @@ static inline bool pd_process_dpm_msg(
  */
 
 static inline bool pd_process_hw_msg_vbus_present(
-	struct __pd_port *pd_port, struct __pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	if (pd_port->pe_state_curr == PE_PRS_SNK_SRC_SOURCE_ON)
 		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_PS_RDY);
@@ -196,7 +191,7 @@ static inline bool pd_process_hw_msg_vbus_present(
 }
 
 static inline bool pd_process_hw_msg(
-	struct __pd_port *pd_port, struct __pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_event->msg) {
 
@@ -219,7 +214,7 @@ static inline bool pd_process_hw_msg(
  */
 
 static inline bool pd_process_timer_msg(
-	struct __pd_port *pd_port, struct __pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_event->msg) {
 	case PD_TIMER_SENDER_RESPONSE:
@@ -244,7 +239,7 @@ static inline bool pd_process_timer_msg(
  * [BLOCK] Process Policy Engine's PRS Message
  */
 
-bool pd_process_event_prs(struct __pd_port *pd_port, struct __pd_event *pd_event)
+bool pd_process_event_prs(struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_event->event_type) {
 	case PD_EVT_CTRL_MSG:
