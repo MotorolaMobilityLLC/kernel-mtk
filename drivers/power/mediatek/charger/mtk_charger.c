@@ -705,13 +705,14 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_batt_temp, &val);
 		if (!ret) {
 			tmp = val.intval / 10;
-			if (info->battery_temperature != tmp && mt_get_charger_type() != CHARGER_UNKNOWN)
+			if (info->battery_temperature != tmp && mt_get_charger_type() != CHARGER_UNKNOWN) {
 				_wake_up_charger(info);
+				pr_err("charger_psy_event %ld %s tmp:%d %d chr:%d\n", event, psy->desc->name, tmp,
+					info->battery_temperature, mt_get_charger_type());
+			}
 		}
 	}
 
-	pr_err("charger_psy_event %ld %s tmp:%d %d chr:%d\n", event, psy->desc->name, tmp,
-		info->battery_temperature, mt_get_charger_type());
 
 	return NOTIFY_DONE;
 }
