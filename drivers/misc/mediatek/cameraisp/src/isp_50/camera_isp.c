@@ -1136,7 +1136,7 @@ static void ISP_EnableClock(bool En)
 			* 1. CAMSYS_CG_SET (0x1A000004) = 0xffffffff;
 			* 2. IMG_CG_SET (0x15000004) = 0xffffffff;
 			*/
-			ISP_WR32(CAMSYS_REG_CG_SET, 0xFFFFFFFF);
+			ISP_WR32(CAMSYS_REG_CG_SET, 0xFFFFFEBF);
 			break;
 		default:
 			break;
