@@ -1446,7 +1446,7 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 		}
 
 		/* for Assert_layer config special case, do it specially */
-		if (is_DAL_Enabled() && module == DISP_MODULE_OVL0_2L &&
+		if (is_DAL_Enabled() && module == DISP_MODULE_OVL0 &&
 			i == primary_display_get_option("ASSERT_LAYER"))
 			continue;
 
