@@ -138,16 +138,20 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "DVFSRC_RECORD_MD_4~7   : 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
 							spm_read(DVFSRC_RECORD_MD_4), spm_read(DVFSRC_RECORD_MD_5),
 							spm_read(DVFSRC_RECORD_MD_6), spm_read(DVFSRC_RECORD_MD_7));
+		p += sprintf(p, "DVFSRC_BASIC_CONTROL   : 0x%x\n", spm_read(DVFSRC_BASIC_CONTROL));
 		p += sprintf(p, "DVFSRC_LEVEL           : 0x%x\n", spm_read(DVFSRC_LEVEL));
 		p += sprintf(p, "DVFSRC_VCORE_REQUEST   : 0x%x\n", spm_read(DVFSRC_VCORE_REQUEST));
 		p += sprintf(p, "DVFSRC_VCORE_REQUEST2  : 0x%x\n", spm_read(DVFSRC_VCORE_REQUEST2));
 		p += sprintf(p, "DVFSRC_EMI_REQUEST     : 0x%x\n", spm_read(DVFSRC_EMI_REQUEST));
+		p += sprintf(p, "DVFSRC_EMI_REQUEST2    : 0x%x\n", spm_read(DVFSRC_EMI_REQUEST2));
+		p += sprintf(p, "DVFSRC_EMI_REQUEST3    : 0x%x\n", spm_read(DVFSRC_EMI_REQUEST3));
 		p += sprintf(p, "DVFSRC_MD_REQUEST      : 0x%x\n", spm_read(DVFSRC_MD_REQUEST));
 		p += sprintf(p, "DVFSRC_RSRV_0          : 0x%x\n", spm_read(DVFSRC_RSRV_0));
 		p += sprintf(p, "DVFSRC_SW_REQ          : 0x%x\n", spm_read(DVFSRC_SW_REQ));
 		p += sprintf(p, "DVFSRC_SW_REQ2         : 0x%x\n", spm_read(DVFSRC_SW_REQ2));
 		p += sprintf(p, "DVFSRC_SEC_SW_REQ      : 0x%x\n", spm_read(DVFSRC_SEC_SW_REQ));
 		p += sprintf(p, "DVFSRC_INT             : 0x%x\n", spm_read(DVFSRC_INT));
+		p += sprintf(p, "DVFSRC_FORCE           : 0x%x\n", spm_read(DVFSRC_FORCE));
 		/* SPM */
 		p += sprintf(p, "SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		p += sprintf(p, "SPM_SW_RSV_5           : 0x%x\n", spm_read(SPM_SW_RSV_5));
@@ -204,10 +208,13 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_warn("DVFSRC_RECORD_MD_4~7   : 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
 							spm_read(DVFSRC_RECORD_MD_4), spm_read(DVFSRC_RECORD_MD_5),
 							spm_read(DVFSRC_RECORD_MD_6), spm_read(DVFSRC_RECORD_MD_7));
+		spm_vcorefs_warn("DVFSRC_BASIC_CONTROL   : 0x%x\n", spm_read(DVFSRC_BASIC_CONTROL));
 		spm_vcorefs_warn("DVFSRC_LEVEL           : 0x%x\n", spm_read(DVFSRC_LEVEL));
 		spm_vcorefs_warn("DVFSRC_VCORE_REQUEST   : 0x%x\n", spm_read(DVFSRC_VCORE_REQUEST));
 		spm_vcorefs_warn("DVFSRC_VCORE_REQUEST2  : 0x%x\n", spm_read(DVFSRC_VCORE_REQUEST2));
 		spm_vcorefs_warn("DVFSRC_EMI_REQUEST     : 0x%x\n", spm_read(DVFSRC_EMI_REQUEST));
+		spm_vcorefs_warn("DVFSRC_EMI_REQUEST2    : 0x%x\n", spm_read(DVFSRC_EMI_REQUEST2));
+		spm_vcorefs_warn("DVFSRC_EMI_REQUEST3    : 0x%x\n", spm_read(DVFSRC_EMI_REQUEST3));
 		spm_vcorefs_warn("DVFSRC_MD_REQUEST      : 0x%x\n", spm_read(DVFSRC_MD_REQUEST));
 		spm_vcorefs_warn("DVFSRC_RSRV_0          : 0x%x\n", spm_read(DVFSRC_RSRV_0));
 		spm_vcorefs_warn("DVFSRC_SW_REQ          : 0x%x\n", spm_read(DVFSRC_SW_REQ));
@@ -424,13 +431,13 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 {
 	int r = 0;
 
-	u32 vcore_req[NUM_OPP] = {0x1, 0x0, 0x0, 0x0};
-	u32 emi_req[NUM_OPP] = {0x2, 0x2, 0x1, 0x0};
+	u32 vcore_req[NUM_OPP] = {0x1, 0x1, 0x0, 0x0};
+	u32 emi_req[NUM_OPP] = {0x2, 0x1, 0x1, 0x0};
 	u32 force_req[NUM_OPP] = {0x8, 0x4, 0x2, 0x1};
 
-	if (__spm_get_dram_type() == SPMFW_LP3_1CH_1866) {
-		vcore_req[1] = 0x1;
-		emi_req[1] = 0x1;
+	if (__spm_get_dram_type() == SPMFW_LP4X_2CH_3200) {
+		vcore_req[1] = 0x0;
+		emi_req[1] = 0x2;
 	}
 
 	/* check DVFS idle */
@@ -444,7 +451,7 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 
 	if (fix) {
 		if (opp < 0) {
-			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) & ~(1 << 15 | 1 << 8));
+			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) & ~(1 << 15 | 1 << 14 | 1 << 8));
 			spm_write(DVFSRC_FORCE, 0);
 			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) | (1 << 8));
 		} else {
@@ -475,8 +482,10 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	}
 
 	if (fix) {
-		if (!(opp < 0))
+		if (!(opp < 0)) {
+			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) | (1 << 14));
 			spm_write(DVFSRC_FORCE, 0);
+		}
 	}
 
 	vcorefs_crit_mask(log_mask(), kicker,
