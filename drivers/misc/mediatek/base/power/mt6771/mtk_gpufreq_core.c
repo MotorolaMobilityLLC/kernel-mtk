@@ -347,10 +347,18 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 /*
  * enable Clock Gating
  */
-void mt_gpufreq_enable_CG(void)
+void __mt_gpufreq_enable_CG(void)
 {
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0xB0 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
+
 	if (clk_prepare_enable(g_clk->subsys_mfg_cg))
 		gpufreq_pr_err("@%s: failed when enable subsys-mfg-cg\n", __func__);
+
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0xC0 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
 
 	gpufreq_pr_debug("@%s: enable CG done\n", __func__);
 }
@@ -358,9 +366,17 @@ void mt_gpufreq_enable_CG(void)
 /*
  * disable Clock Gating
  */
-void mt_gpufreq_disable_CG(void)
+void __mt_gpufreq_disable_CG(void)
 {
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0xD0 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
+
 	clk_disable_unprepare(g_clk->subsys_mfg_cg);
+
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0xE0 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
 
 	gpufreq_pr_debug("@%s: disable CG done\n", __func__);
 }
@@ -368,8 +384,12 @@ void mt_gpufreq_disable_CG(void)
 /*
  * enable MTCMOS
  */
-void mt_gpufreq_enable_MTCMOS(void)
+void __mt_gpufreq_enable_MTCMOS(void)
 {
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0x70 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
+
 	if (clk_prepare_enable(g_clk->mtcmos_mfg_async))
 		gpufreq_pr_err("@%s: failed when enable mtcmos_mfg_async\n", __func__);
 
@@ -385,20 +405,30 @@ void mt_gpufreq_enable_MTCMOS(void)
 	if (clk_prepare_enable(g_clk->mtcmos_mfg_core2))
 		gpufreq_pr_err("@%s: failed when enable mtcmos_mfg_core2\n", __func__);
 
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0x80 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
 	gpufreq_pr_debug("@%s: enable MTCMOS done\n", __func__);
 }
 
 /*
  * disable MTCMOS
  */
-void mt_gpufreq_disable_MTCMOS(void)
+void __mt_gpufreq_disable_MTCMOS(void)
 {
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0x90 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
+
 	clk_disable_unprepare(g_clk->mtcmos_mfg_core2);
 	clk_disable_unprepare(g_clk->mtcmos_mfg_core1);
 	clk_disable_unprepare(g_clk->mtcmos_mfg_core0);
 	clk_disable_unprepare(g_clk->mtcmos_mfg);
 	clk_disable_unprepare(g_clk->mtcmos_mfg_async);
 
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0xA0 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
 	gpufreq_pr_debug("@%s: disable MTCMOS done\n", __func__);
 }
 
@@ -421,19 +451,29 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	}
 
 	if (enable == 1) {
+		/* Turn on GPU Bucks */
 		__mt_gpufreq_bucks_enable();
-		g_volt_enable_state = true;
 		/* [MT6358] srclken high : 1ms, srclken low : 1T of 32K */
 		/* ensure time interval of buck_on -> buck_off is at least 1ms */
 		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
+		/* Turn on GPU MTCMOS */
+		__mt_gpufreq_enable_MTCMOS();
+		/* enable Clock Gating */
+		__mt_gpufreq_enable_CG();
+		g_volt_enable_state = true;
 		__mt_gpufreq_kick_pbm(1);
 		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is on\n", __func__);
 	} else if (enable == 0)  {
+		/* disable Clock Gating */
+		__mt_gpufreq_disable_CG();
+		/* Turn off GPU MTCMOS */
+		__mt_gpufreq_disable_MTCMOS();
+		/* Turn off GPU Bucks */
 		__mt_gpufreq_bucks_disable();
-		g_volt_enable_state = false;
 		/* [MT6358] srclken high : 1ms, srclken low : 1T of 32K */
 		/* ensure time interval of buck_off -> buck_on is at least 1ms */
 		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
+		g_volt_enable_state = false;
 		__mt_gpufreq_kick_pbm(0);
 		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is off\n", __func__);
 	}
@@ -457,9 +497,6 @@ void mt_gpufreq_enable_by_ptpod(void)
 	/* Freerun GPU DVFS */
 	g_DVFS_is_paused_by_ptpod = false;
 
-	/* Turn off GPU MTCMOS */
-	mt_gpufreq_disable_MTCMOS();
-
 	/* Turn off GPU PMIC Buck */
 	mt_gpufreq_voltage_enable_set(0);
 
@@ -476,9 +513,6 @@ void mt_gpufreq_disable_by_ptpod(void)
 
 	/* Turn on GPU PMIC Buck */
 	mt_gpufreq_voltage_enable_set(1);
-
-	/* Turn on GPU MTCMOS */
-	mt_gpufreq_enable_MTCMOS();
 
 	/* Pause GPU DVFS */
 	g_DVFS_is_paused_by_ptpod = true;
@@ -1507,6 +1541,10 @@ static void __mt_gpufreq_bucks_enable(void)
 {
 	int ret;
 
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0x10 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
+
 	if (regulator_is_enabled(g_pmic->reg_vsram_gpu) == 0) {
 		ret = regulator_enable(g_pmic->reg_vsram_gpu);
 		if (ret) {
@@ -1514,6 +1552,11 @@ static void __mt_gpufreq_bucks_enable(void)
 			return;
 		}
 	}
+
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0x20 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
+
 	if (regulator_is_enabled(g_pmic->reg_vgpu) == 0) {
 		ret = regulator_enable(g_pmic->reg_vgpu);
 		if (ret) {
@@ -1521,6 +1564,11 @@ static void __mt_gpufreq_bucks_enable(void)
 			return;
 		}
 	}
+
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0x30 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
+
 	gpufreq_pr_debug("@%s: bucks is enabled\n", __func__);
 }
 
@@ -1531,6 +1579,10 @@ static void __mt_gpufreq_bucks_disable(void)
 {
 	int ret;
 
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0x40 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
+
 	if (regulator_is_enabled(g_pmic->reg_vgpu) > 0) {
 		ret = regulator_disable(g_pmic->reg_vgpu);
 		if (ret) {
@@ -1538,6 +1590,11 @@ static void __mt_gpufreq_bucks_disable(void)
 			return;
 		}
 	}
+
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0x50 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
+
 	if (regulator_is_enabled(g_pmic->reg_vsram_gpu) > 0) {
 		ret = regulator_disable(g_pmic->reg_vsram_gpu);
 		if (ret) {
@@ -1545,6 +1602,11 @@ static void __mt_gpufreq_bucks_disable(void)
 			return;
 		}
 	}
+
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_status(0x60 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
+#endif
+
 	gpufreq_pr_debug("@%s: bucks is disabled\n", __func__);
 }
 
@@ -2406,6 +2468,11 @@ static int __init __mt_gpufreq_init(void)
 		gpufreq_pr_err("@%s: fail to register gpufreq driver\n", __func__);
 
 out:
+#ifdef MT_GPUFREQ_SRAM_DEBUG
+	aee_rr_rec_gpu_dvfs_vgpu(0x0);
+	aee_rr_rec_gpu_dvfs_oppidx(0x0);
+	aee_rr_rec_gpu_dvfs_status(0x0);
+#endif
 	return ret;
 }
 

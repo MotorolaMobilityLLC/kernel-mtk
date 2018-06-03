@@ -25,6 +25,13 @@ struct mt_gpufreq_power_table_info {
 
 typedef void (*gpufreq_power_limit_notify)(unsigned int); /* legacy */
 
+/**************************************************
+ * Condition Setting
+ **************************************************/
+#ifdef CONFIG_MTK_RAM_CONSOLE
+#define MT_GPUFREQ_SRAM_DEBUG
+#endif
+
 /****************************
  * MTK GPUFREQ API
  ****************************/
@@ -48,10 +55,13 @@ extern unsigned int mt_gpufreq_get_thermal_limit_freq(void);
 extern void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power);
 extern unsigned int mt_gpufreq_get_leakage_mw(void);
 extern int mt_gpufreq_get_cur_ceiling_idx(void);
-extern void mt_gpufreq_enable_CG(void);
-extern void mt_gpufreq_disable_CG(void);
-extern void mt_gpufreq_enable_MTCMOS(void);
-extern void mt_gpufreq_disable_MTCMOS(void);
 extern void mt_gpufreq_set_loading(unsigned int gpu_loading); /* legacy */
+
+#ifdef CONFIG_MTK_RAM_CONSOLE
+extern void aee_rr_rec_gpu_dvfs_vgpu(u8 val);
+extern void aee_rr_rec_gpu_dvfs_oppidx(u8 val);
+extern void aee_rr_rec_gpu_dvfs_status(u8 val);
+extern u8 aee_rr_curr_gpu_dvfs_status(void);
+#endif /* CONFIG_MTK_RAM_CONSOLE */
 
 #endif /* _MT_GPUFREQ_H_ */
