@@ -1595,6 +1595,7 @@ static int cpufreq_policy_callback(struct notifier_block *nb,
 	for_each_cpu(i, policy->cpus) {
 		arch_scale_set_curr_freq(i, policy->cur);
 		arch_scale_set_max_freq(i, policy->max);
+		arch_scale_set_min_freq(i, policy->min);
 	}
 
 	return NOTIFY_OK;

@@ -392,6 +392,7 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 		per_cpu(freq_scale, cpu) = scale;
 		#endif
 		arch_scale_set_max_freq(cpu, policy->max);
+		arch_scale_set_min_freq(cpu, policy->min);
 	}
 
 #else
@@ -401,6 +402,7 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 		per_cpu(freq_scale, cpu) = scale;
 		#endif
 		arch_scale_set_max_freq(cpu, policy->max);
+		arch_scale_set_min_freq(cpu, policy->min);
 	}
 
 	if (freqs)

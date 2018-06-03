@@ -121,7 +121,9 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	unsigned long scale;
 	struct cpumask cls_cpus;
 	int cpu = target_cpu;
+	unsigned int max, min;
 #endif
+
 	cid = arch_get_cluster_id(target_cpu);
 
 	if (cid >= MAX_CLUSTER_NR || cid < 0) {
@@ -133,14 +135,20 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	gd = g_gd[cid];
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-	/* SSPM should support??? */
+	/* SSPM should support! */
 	if (dbg_id  < DEBUG_FREQ_DISABLED)
 		show_freq_kernel_log(dbg_id, cid, freq);
 
 	/* Carefully! platform related */
 	freq = mt_cpufreq_find_close_freq(cid, freq);
 
-	scale = (freq << SCHED_CAPACITY_SHIFT) / arch_scale_get_max_freq(target_cpu);
+	/* clamp frequency for governor limit */
+	max = arch_scale_get_max_freq(target_cpu);
+	min = arch_scale_get_min_freq(target_cpu);
+
+	freq = clamp(freq, min, max);
+
+	scale = (freq << SCHED_CAPACITY_SHIFT) / max;
 
 	arch_get_cluster_cpus(&cls_cpus, cid);
 
