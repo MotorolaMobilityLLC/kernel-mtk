@@ -18,7 +18,7 @@
 #define RT5738_NAME_0		"ext_buck_lp4"
 #define	RT5738_NAME_1		"ext_buck_lp4x"
 #define	RT5738_NAME_2		"ext_buck_vgpu"
-#define RT5738_IS_EXIST_NAME	RT5738_NAME_2
+/*#define RT5738_IS_EXIST_NAME	RT5738_NAME_2 */
 
 
 /* RT5738 operation register */

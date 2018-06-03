@@ -40,6 +40,11 @@ int is_ext_buck_exist(void)
 	if ((is_mt6313_exist() == 1))
 		return 1;
 	#endif /* CONFIG_MTK_PMIC_CHIP_MT6313 */
+	#ifdef CONFIG_REGULATOR_RT5738
+	if ((is_rt5738_exist() == 1))
+		return 1;
+
+	#endif /* CONFIG_REGULATOR_RT5738 */
 #endif /* if not CONFIG_MTK_EXTBUCK */
 	return 0;
 }
