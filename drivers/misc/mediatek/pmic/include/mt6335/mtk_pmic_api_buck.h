@@ -19,23 +19,41 @@ void vmd1_pmic_setting_off(void);
 void wk_auxadc_bgd_ctrl(unsigned char en);
 void wk_auxadc_bgd_ctrl_dbg(void);
 
+#ifdef LP_GOLDEN_SETTING
+#define LGS
+#endif
+
+#ifdef LP_GOLDEN_SETTING_W_SPM
+#define LGSWS
+#endif
+
+#if defined(LGS) || defined(LGSWS)
+
+#define PMIC_LP_BUCK_ENTRY(reg) {reg, MT6335_BUCK_##reg##_CON0}
+#define PMIC_LP_LDO_ENTRY(reg) {reg, MT6335_LDO_##reg##_CON0}
+#define PMIC_LP_LDO_VCN33_0_ENTRY(reg) {reg, MT6335_LDO_VCN33_CON0_BT}
+#define PMIC_LP_LDO_VCN33_1_ENTRY(reg) {reg, MT6335_LDO_VCN33_CON0_WIFI}
+#define PMIC_LP_LDO_VCN18_0_ENTRY(reg) {reg, MT6335_LDO_VCN33_CON0_BT}
+#define PMIC_LP_LDO_VCN18_1_ENTRY(reg) {reg, MT6335_LDO_VCN33_CON0_WIFI}
+#endif
+
 typedef enum {
 	SW,
-	SPM,
+	SPM = SW,
 	SRCLKEN0,
 	SRCLKEN1,
 	SRCLKEN2,
 	SRCLKEN3,
 } BUCK_LDO_EN_USER;
 
-#define HW_OFF	0
-#define HW_LP	1
-#define SW_OFF	0
-#define SW_ON	1
-#define SW_LP	3
-#define SPM_OFF	0
-#define SPM_ON	1
-#define SPM_LP	3
+#define HW_OFF   0
+#define HW_LP   1
+#define SW_OFF  0
+#define SW_ON   1
+#define SW_LP   3
+#define SPM_OFF 0
+#define SPM_ON  1
+#define SPM_LP  3
 
 typedef enum {
 	VCORE,
@@ -78,43 +96,22 @@ typedef enum {
 	VIBR,
 	VXO22,
 	VFE28,
-	TABLE1_COUNT_END
-} PMU_LP_TABLE1_ENUM;
-
-typedef enum {
-	VCN33,
-	VCN18,
-	TABLE2_COUNT_END
-} PMU_LP_TABLE2_ENUM;
-
-typedef enum {
+	VCN33_0,
+	VCN33_1,
+	VCN18_0,
+	VCN18_1,
 	VPA1,
 	VCAMA1,
 	VCAMA2,
-	TABLE3_COUNT_END
-} PMU_LP_TABLE3_ENUM;
+	TABLE_COUNT_END
+} PMU_LP_TABLE_ENUM;
 
 typedef struct {
-	PMU_LP_TABLE1_ENUM flagname;
-	unsigned short op_en;
-	unsigned short op_cfg;
-	unsigned short en_lp;
-} PMU_LP_TABLE1_ENTRY;
-
-typedef struct {
-	PMU_LP_TABLE2_ENUM flagname;
-	unsigned short op_en_0;
-	unsigned short op_cfg_0;
-	unsigned short en_lp_0;
-	unsigned short op_en_1;
-	unsigned short op_cfg_1;
-	unsigned short en_lp_1;
-} PMU_LP_TABLE2_ENTRY;
-
-typedef struct {
-	PMU_LP_TABLE3_ENUM flagname;
-	unsigned short en_lp;
-} PMU_LP_TABLE3_ENTRY;
+	PMU_LP_TABLE_ENUM flagname;
+#if defined(LGS) || defined(LGSWS)
+	unsigned short en_adr;
+#endif
+} PMU_LP_TABLE_ENTRY;
 
 extern int pmic_buck_vcore_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 extern int pmic_buck_vdram_lp(BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
