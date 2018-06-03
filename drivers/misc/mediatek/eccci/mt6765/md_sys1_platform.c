@@ -56,6 +56,8 @@ static struct ccci_clk_node clk_table[] = {
 static struct pinctrl *mdcldma_pinctrl;
 #endif
 
+unsigned int devapc_check_flag = 1;
+
 static void __iomem *md_sram_pd_psmcusys_base;
 static void __iomem *md_cldma_misc_base;
 
@@ -289,8 +291,11 @@ void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 				CCCI_ERROR_LOG(md->index, TAG,
 					"%s: on=%d,ret=%d\n",
 					__func__, on, ret);
-		} else
+			devapc_check_flag = 1;
+		} else {
 			clk_disable_unprepare(clk_table[idx].clk_ref);
+			devapc_check_flag = 0;
+		}
 	}
 }
 
