@@ -129,10 +129,10 @@ int conn_md_add_user(uint32 u_id, struct conn_md_bridge_ops *p_ops)
 	memcpy(&p_user->ops, p_ops, sizeof(struct conn_md_bridge_ops));
 
 	p_user->state = USER_ENABLED;
-	/*unlock user_list lock */
-	mutex_unlock(&p_user_list->lock);
 
 	CONN_MD_WARN_FUNC("uid (0x%08x) is added to user list successfully\n", p_user->u_id);
+	/*unlock user_list lock */
+	mutex_unlock(&p_user_list->lock);
 
 	return 0;
 }
