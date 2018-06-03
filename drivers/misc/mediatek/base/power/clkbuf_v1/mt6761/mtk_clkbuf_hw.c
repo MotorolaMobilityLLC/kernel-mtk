@@ -258,7 +258,7 @@ u32 clk_buf_bblpm_enter_cond(void)
 		return bblpm_cond;
 	}
 
-#ifdef CLKBUF_BRINGUP
+#ifndef CLKBUF_BRINGUP
 	pwr_sta = clkbuf_readl(PWR_STATUS);
 #else
 	pwr_sta = 0;
@@ -698,12 +698,14 @@ void clk_buf_dump_clkbuf_log(void)
 				__func__, bblpm_switch, bblpm_cnt,
 				clk_buf_bblpm_enter_cond());
 
+#ifndef CLKBUF_BRINGUP /* FIXME: bringup */
 		pr_info("%s MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, SPARE_ACK_MASK=0x%x\n",
 				__func__,
 				clkbuf_readl(MD1_PWR_CON),
 				clkbuf_readl(PWR_STATUS),
 				clkbuf_readl(PCM_REG13_DATA),
 				clkbuf_readl(SPARE_ACK_MASK));
+#endif
 	}
 }
 
@@ -916,7 +918,7 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj,
 		"bblpm_switch=%u, bblpm_cnt=%u, bblpm_cond=0x%x\n",
 		bblpm_switch, bblpm_cnt, clk_buf_bblpm_enter_cond());
 
-#ifdef CLKBUF_BRINGUP /* FIXME: bringup */
+#ifndef CLKBUF_BRINGUP /* FIXME: bringup */
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, SPARE_ACK_MASK=0x%x\n",
 			clkbuf_readl(MD1_PWR_CON),
