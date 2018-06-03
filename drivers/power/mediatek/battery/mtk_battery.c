@@ -1946,8 +1946,15 @@ int force_get_tbat(bool update)
 	return 25;
 #else
 	int bat_temperature_val = 0;
+	int counts = 0;
 
 	bat_temperature_val = force_get_tbat_internal(update);
+
+	while (counts < 5 && bat_temperature_val >= 60) {
+		bm_err("[force_get_tbat]over60 count=%d, bat_temp=%d\n", counts, bat_temperature_val);
+		bat_temperature_val = force_get_tbat_internal(true);
+		counts++;
+	}
 
 	if (bat_temperature_val <= BATTERY_TMP_TO_DISABLE_GM30 && gDisableGM30 == false) {
 		bm_err("battery temperature is too low %d and disable GM3.0\n", bat_temperature_val);
