@@ -1182,9 +1182,11 @@
 		cell-index = <0>;
 		compatible = "mediatek,mtk-uart";
 		reg = <0 0x11002000 0 0x1000>, /* UART0 base. */
-			<0 0x11000600 0 0x80>, /* DMA Tx base. */
-			<0 0x11000680 0 0x80>; /* DMA Rx base. */
-		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>;
+			<0 0x11000400 0 0x80>, /* DMA Tx base. */
+			<0 0x11000480 0 0x80>; /* DMA Rx base. */
+		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx */
+				<GIC_SPI 105 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx */
 		clock-frequency = <26000000>;
 		clock-div = <1>;
 		clocks = <&infracfg_ao CLK_INFRA_UART0>, <&infracfg_ao CLK_INFRA_AP_DMA>;
@@ -1195,9 +1197,11 @@
 		cell-index = <1>;
 		compatible = "mediatek,mtk-uart";
 		reg = <0 0x11003000 0 0x1000>, /* UART1 base. */
-			<0 0x11000700 0 0x80>, /* DMA Tx base. */
-			<0 0x11000780 0 0x80>; /* DMA Rx base. */
-		interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>;
+			<0 0x11000500 0 0x80>, /* DMA Tx base. */
+			<0 0x11000580 0 0x80>; /* DMA Rx base. */
+		interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx */
+				<GIC_SPI 107 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx */
 		clock-frequency = <26000000>;
 		clock-div = <1>;
 		clocks = <&infracfg_ao CLK_INFRA_UART1>;
