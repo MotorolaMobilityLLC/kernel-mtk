@@ -278,14 +278,17 @@ void notify_fbc_enable_eas(int enable)
 
 	fbc_render_aware_pre = fbc_render_aware = 1;
 
+	if (fbc_ux_state_pre == 0 && fbc_ux_state == 1) {
+		has_frame = 0;
+		fbc_tracer(-3, "has_frame", has_frame);
+	}
+
 	if (enable) {
 		for (i = 0; i < MAX_THREAD; i++) {
 			frame_info[i][0] = -1;
 			frame_info[i][1] = -2;
 		}
 
-		has_frame = 0;
-		fbc_tracer(-3, "has_frame", has_frame);
 		chase = 0;
 		first_frame = 1;
 		first_vsync = 0;
