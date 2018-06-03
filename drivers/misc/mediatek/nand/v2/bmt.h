@@ -41,7 +41,11 @@ typedef enum {
 	UPDATE_ERASE_FAIL,
 	UPDATE_WRITE_FAIL,
 	UPDATE_UNMAPPED_BLOCK,
+	UPDATE_REMOVE_ENTRY,
+	UPDATE_INIT_WRITE,
 	UPDATE_REASON_COUNT,
+	INIT_BAD_BLK,
+	FTL_MARK_BAD = 64,
 } update_reason_t;
 
 typedef struct {
@@ -54,13 +58,15 @@ typedef struct {
 #endif
 } bmt_struct;
 
+extern bool is_raw_part;
+
 /***************************************************************
 *                                                              *
 * Interface BMT need to use                                    *
 *                                                              *
 ***************************************************************/
 /* extern bool mtk_nand_exec_read_page(struct mtd_info *mtd, u32 row, u32 page_size, u8 * dat, u8 * oob); */
-extern bool mtk_nand_exec_read_sector_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAddr, u32 u4PageSize,
+extern int mtk_nand_exec_read_sector_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAddr, u32 u4PageSize,
 				   u8 *pPageBuf, u8 *pFDMBuf, int subpageno);
 extern int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 				   u8 *pPageBuf, u8 *pFDMBuf);

@@ -16,11 +16,15 @@
 
 #include <partition_define.h>
 #include <linux/mtd/partitions.h>
+#include <linux/mtd/mtd.h>
+#include <linux/mtd/nand.h>
 
 /*******************************************************************************
  * NFI Register Definition
  *******************************************************************************/
 #ifdef CONFIG_OF
+extern void __iomem *mtk_nfi_base;
+extern void __iomem *mtk_nfiecc_base;
 #define NFI_BASE	mtk_nfi_base
 #define NFIECC_BASE mtk_nfiecc_base
 #endif
@@ -107,12 +111,15 @@
 #define NFI_FIFODATA2_REG32 ((volatile unsigned int *)(NFI_BASE+0x0198))
 #define NFI_FIFODATA3_REG32 ((volatile unsigned int *)(NFI_BASE+0x019C))
 #define NFI_DEBUG_CON1_REG16 ((volatile unsigned short *)(NFI_BASE+0x0220))
+
+#define NFI_DEBUG_ECCPLL_SHIFT     (11)
+
 #define NFI_MASTERSTA_REG16 ((volatile unsigned short *)(NFI_BASE+0x0224))
 #define NFI_MASTERRST_REG32 ((volatile unsigned short *)(NFI_BASE+0x0228))
 #define NFI_RANDOM_CNFG_REG32 ((volatile unsigned int *)(NFI_BASE+0x0238))
 #define NFI_ENMPTY_THRESH_REG32 ((volatile unsigned int *)(NFI_BASE+0x023C))
 #define NFI_NAND_TYPE_CNFG_REG32 ((volatile unsigned int *)(NFI_BASE+0x0240))
-#define NFI_ACCCON1_REG3    ((volatile unsigned int *)(NFI_BASE+0x0244))
+#define NFI_ACCCON1_REG32    ((unsigned int *)(NFI_BASE+0x0244))
 #define NFI_DLYCTRL_REG32    ((volatile unsigned int *)(NFI_BASE+0x0248))
 
 #define NFI_RANDOM_ENSEED01_TS_REG32 ((volatile unsigned int *)(NFI_BASE+0x024C))
@@ -524,6 +531,11 @@
 /* ECC_DECFSM */
 #define ECC_DECFSM_IDLE_V1         (0x01010101)
 #define ECC_DECFSM_IDLE_V2         (0x01011101)
+
+#define ERR_RTN_SUCCESS   1
+#define ERR_RTN_FAIL	  0
+#define ERR_RTN_BCH_FAIL -1
+
 /*******************************************************************************
  * Data Structure Definition
  *******************************************************************************/
@@ -571,10 +583,31 @@ struct mtk_nand_host_hw {
 };
 #endif
 
+/*time unit is us*/
+struct read_sleep_para {
+	int sample_count;
+	int t_sector_ahb;
+	int t_schedule;
+	int t_sleep_range;
+	int t_threshold;
+};
+
+struct rd_err {
+	bool en_print;
+	u32 max_num;
+};
+
+struct mtk_nand_debug {
+	struct rd_err err;
+};
+
 struct mtk_nand_host {
 	struct nand_chip nand_chip;
 	struct mtd_info mtd;
 	struct mtk_nand_host_hw *hw;
+	struct read_sleep_para rd_para;
+	bool pre_wb_cmd;
+	u16 wb_cmd;
 #ifdef CONFIG_PM
 	struct nfi_saved_para saved_para;
 #endif
@@ -582,6 +615,7 @@ struct mtk_nand_host {
 	struct mtk_nand_pl_test pl;
 #endif
 	struct mtd_erase_region_info erase_region[20];
+	struct mtk_nand_debug debug;
 };
 
 struct NAND_CMD {
@@ -617,6 +651,60 @@ struct nand_ecclayout {
 #ifndef CONFIG_MTK_LEGACY
 extern u32 get_devinfo_with_index(u32 index);
 #endif
+
+#ifndef FALSE
+#define FALSE (0)
+#endif
+
+#ifndef TRUE
+#define TRUE  (1)
+#endif
+
+#ifndef NULL
+#define NULL  (0)
+#endif
+
+#define READ_REGISTER_UINT8(reg) \
+	(*(volatile unsigned char * const)(reg))
+
+#define READ_REGISTER_UINT16(reg) \
+	(*(volatile unsigned short * const)(reg))
+
+#define READ_REGISTER_UINT32(reg) \
+	(*(volatile unsigned int * const)(reg))
+
+
+#define INREG8(x)			READ_REGISTER_UINT8((unsigned char *)((void *)(x)))
+#define INREG16(x)			READ_REGISTER_UINT16((unsigned short *)((void *)(x)))
+#define INREG32(x)			READ_REGISTER_UINT32((unsigned int *)((void *)(x)))
+#define DRV_Reg8(addr)				INREG8(addr)
+#define DRV_Reg16(addr)				INREG16(addr)
+#define DRV_Reg32(addr)				INREG32(addr)
+#define DRV_Reg(addr)				DRV_Reg16(addr)
+
+#define WRITE_REGISTER_UINT8(reg, val) \
+	((*(volatile unsigned char * const)(reg)) = (val))
+#define WRITE_REGISTER_UINT16(reg, val) \
+	((*(volatile unsigned short * const)(reg)) = (val))
+#define WRITE_REGISTER_UINT32(reg, val) \
+	((*(volatile unsigned int * const)(reg)) = (val))
+
+
+#define OUTREG8(x, y)		WRITE_REGISTER_UINT8((unsigned char *)((void *)(x)), (unsigned char)(y))
+#define OUTREG16(x, y)		WRITE_REGISTER_UINT16((unsigned short *)((void *)(x)), (unsigned short)(y))
+#define OUTREG32(x, y)		WRITE_REGISTER_UINT32((unsigned int *)((void *)(x)), (unsigned int)(y))
+#define DRV_WriteReg8(addr, data)	OUTREG8(addr, data)
+#define DRV_WriteReg16(addr, data)	OUTREG16(addr, data)
+#define DRV_WriteReg32(addr, data)	OUTREG32(addr, data)
+#define DRV_WriteReg(addr, data)	DRV_WriteReg16(addr, data)
+
+#define CFG_PERFLOG_DEBUG (0)	/* for performance log */
+extern void __iomem *mtk_gpio_base;
+#define GPIO_BASE	mtk_gpio_base
+
+extern int g_i4Interrupt;
+extern unsigned int nfi_irq;
+#define MT_NFI_IRQ_ID nfi_irq
 
 void show_stack(struct task_struct *tsk, unsigned long *sp);
 extern struct mtd_partition g_pasStatic_Partition[PART_MAX_COUNT];

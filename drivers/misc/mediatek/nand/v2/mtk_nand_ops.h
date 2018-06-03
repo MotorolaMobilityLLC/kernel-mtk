@@ -39,27 +39,13 @@
 #include "nand_device_define.h"
 #include "mtk_nand_chip.h"
 
-/* #define MTK_FORCE_SYNC_OPS */
 /* #define MTK_FORCE_READ_FULL_PAGE */
-
-#define MTK_NAND_OPS_BG_CTRL
-
-/* UNIT TEST RELATED */
-/* #define MTK_NAND_CHIP_TEST */
-/* #define MTK_NAND_CHIP_DUMP_DATA_TEST */
-#define MTK_NAND_CHIP_MULTI_PLANE_TEST
-/* #define MTK_NAND_READ_COMPARE */
-#define MTK_NAND_PERFORMANCE_TEST
 
 extern flashdev_info_t devinfo;
 extern bool tlc_snd_phyplane;
 extern enum NFI_TLC_PG_CYCLE tlc_program_cycle;
 extern bool tlc_lg_left_plane;
 extern struct mtk_nand_host *host;
-#if 0
-extern u32 Nand_ErrBitLoc[][96];
-extern u32 Nand_ErrNUM[];
-#endif
 extern void dump_nfi(void);
 
 #define NAND_DEBUG_DISABLE	1
@@ -67,15 +53,15 @@ extern void dump_nfi(void);
 #if NAND_DEBUG_DISABLE
 #define nand_debug(fmt, ...) do {} while (0)
 #else
-#define nand_debug(fmt, ...) pr_debug("NAND: " fmt "\n", ##__VA_ARGS__)
+#define nand_debug(fmt, ...) pr_info("NAND: " fmt "\n", ##__VA_ARGS__)
 #endif
 
 /* nand error messages */
-#define nand_info(fmt, ...) pr_debug("NAND:%s %d info: " fmt "\n",      \
+#define nand_info(fmt, ...) pr_info("NAND INFO:%s %d info: " fmt "\n",      \
 	__func__, __LINE__,  ##__VA_ARGS__)
 
 /* nand error messages */
-#define nand_err(fmt, ...) pr_debug("NAND:%s %d failed: " fmt "\n",      \
+#define nand_pr_err(fmt, ...) pr_err("NAND ERROR:%s %d failed: " fmt "\n",      \
 	__func__, __LINE__,  ##__VA_ARGS__)
 
 #ifndef FALSE
@@ -163,26 +149,50 @@ struct nand_work {
 	struct mtk_nand_chip_operation ops;
 };
 
-typedef struct list_node *(*is_data_ready)(
-		struct mtk_nand_chip_info *info,
-		struct list_node *head,
-		struct list_node *cur, unsigned int *count);
+enum worklist_type {
+	LIST_ERASE = 0,
+	LIST_SLC_WRITE,
+	LIST_NS_WRITE, /* none slc write list: mlc or tlc */
+};
 
 struct worklist_ctrl;
 
-typedef struct list_node *(*process_list_data)(
-			struct mtk_nand_chip_info *info,
-			struct worklist_ctrl *list_ctrl,
-			struct list_node *start_node,
-			int count);
+typedef unsigned int (*get_ready_count)(struct mtk_nand_chip_info *info,
+		struct worklist_ctrl *list_ctrl, int total);
+
+typedef unsigned int (*process_list_data)(struct mtk_nand_chip_info *info,
+		struct worklist_ctrl *list_ctrl, int count);
 
 struct worklist_ctrl {
 	struct mutex sync_lock;
 	spinlock_t list_lock;
+	enum worklist_type type;
 	struct list_node head;
 	int total_num;
-	is_data_ready is_ready_func;
+	int *ewrite;/* last write error block list, the num is plane_num*/
+	get_ready_count get_ready_count_func;
 	process_list_data process_data_func;
+};
+
+struct err_para {
+	int rate;
+	int count;/*max count*/
+	int block;
+	int page;
+};
+struct sim_err {
+	struct err_para erase_fail;
+	struct err_para write_fail;
+	struct err_para read_fail;
+	struct err_para bitflip_fail;
+	struct err_para bad_block;
+};
+
+struct open_block {
+	spinlock_t lock;
+	int max;
+	int *array;
+	struct wakeup_source *ws;
 };
 
 struct mtk_nand_data_info {
@@ -192,25 +202,44 @@ struct mtk_nand_data_info {
 	struct nand_ftl_partition_info partition_info;
 
 	struct worklist_ctrl elist_ctrl;
+	struct worklist_ctrl swlist_ctrl;
 	struct worklist_ctrl wlist_ctrl;
-#ifdef MTK_NAND_OPS_BG_CTRL
 	struct completion ops_ctrl;
-#endif
 	struct task_struct *nand_bgt;
 
 	struct mtd_info *mtd;
+	struct sim_err err;
+	struct task_struct *blk_thread;
+	struct open_block open;
 };
 
+enum TLC_MULTI_PROG_MODE {
+	MULTI_BLOCK = 0,
+	BLOCK0_ONLY,
+	BLOCK1_ONLY,
+};
+
+extern struct mtk_nand_data_info *data_info;
+
 extern int mtk_nand_ops_init(struct mtd_info *mtd, struct nand_chip *chip);
+
 extern int mtk_nand_data_info_init(void);
+
 extern int get_data_partition_info(struct nand_ftl_partition_info *info);
 
-extern bool mtk_nand_exec_read_sector(struct mtd_info *mtd,
+extern int mtk_nand_exec_read_sector(struct mtd_info *mtd,
 			u32 u4RowAddr, u32 u4ColAddr, u32 u4PageSize,
 			u8 *pPageBuf, u8 *pFDMBuf, int subpageno);
 extern int mtk_nand_exec_write_page_hw(struct mtd_info *mtd,
 			u32 u4RowAddr, u32 u4PageSize,
 			u8 *pPageBuf, u8 *pFDMBuf);
 extern int mtk_chip_erase_blocks(struct mtd_info *mtd, int page, int page1);
+
+u32 get_ftl_row_addr(struct mtk_nand_chip_info *info,
+							unsigned int block, unsigned int page);
+
+int mtk_nand_multi_plane_read(struct mtd_info *mtd,
+			struct mtk_nand_chip_info *info, int page_num,
+			struct mtk_nand_chip_read_param *param);
 
 #endif
