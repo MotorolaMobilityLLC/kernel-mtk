@@ -1210,9 +1210,6 @@ void mtk_uart_reset_dma(struct mtk_uart_dma *dma)
 	struct mtk_uart *uart = dma->uart;
 	void *base;
 
-	if (!dma)
-		return;
-
 	if (dma->mode == UART_RX_VFIFO_DMA || dma->mode == UART_TX_VFIFO_DMA) {
 		if (!dma->vfifo) {
 			MSG(ERR, "null\n");
