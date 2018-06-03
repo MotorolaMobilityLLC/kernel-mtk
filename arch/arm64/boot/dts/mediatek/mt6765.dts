@@ -16,6 +16,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/mt6765-pinfunc.h>
+#include <dt-bindings/memory/mt6765-larb-port.h>
 #include <dt-bindings/mmc/mt6765-msdc.h>
 #include <dt-bindings/clock/mt6765-clk.h>
 #include <generated/autoconf.h>
@@ -766,16 +767,13 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	mcucfg_mp0_counter@10200000 {
-		compatible = "mediatek,mcucfg_mp0_counter";
-		reg = <0 0x10200000 0 0x4000>;
-	};
-
-	m4u@10205000 {
+	iommu: m4u@10205000 {
 		cell-index = <0>;
-		compatible = "mediatek,m4u";
+		compatible = "mediatek,iommu_v0";
 		reg = <0 0x10205000 0 0x1000>;
+		mediatek,larbs = <&smi_larb0 &smi_larb1 &smi_larb2 &smi_larb3>;
 		interrupts = <GIC_SPI 158 IRQ_TYPE_LEVEL_LOW>;
+		#iommu-cells = <1>;
 	};
 
 	devapc@10207000 {
@@ -2224,7 +2222,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	dispsys {
 		compatible = "mediatek,dispsys";
-
+		mediatek,larb = <&smi_larb0>;
 		clocks = <&scpsys SCP_SYS_DIS>,
 			<&mmsys_config CLK_MM_SMI_COMMON>,
 			<&mmsys_config CLK_MM_SMI_LARB0>,
@@ -3051,6 +3049,44 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	md1_sim1_hot_plug_eint:md1_sim1_hot_plug_eint{};
 	md1_sim2_hot_plug_eint:md1_sim2_hot_plug_eint{};
 
+	pseudo_m4u {
+		compatible = "mediatek,mt-pseudo_m4u";
+		iommus = <&iommu M4U_PORT_DISP_RDMA0>;
+	};
+
+	pseudo_m4u-larb0 {
+		compatible = "mediatek,mt-pseudo_m4u-port";
+		mediatek,larbid = <0>;
+		iommus = <&iommu M4U_PORT_DISP_OVL0>,
+			 <&iommu M4U_PORT_DISP_2L_OVL0_LARB0>,
+			 <&iommu M4U_PORT_DISP_RDMA0>,
+			 <&iommu M4U_PORT_DISP_WDMA0>,
+			 <&iommu M4U_PORT_MDP_RDMA0>,
+			 <&iommu M4U_PORT_MDP_WDMA0>,
+			 <&iommu M4U_PORT_MDP_WROT0>,
+			 <&iommu M4U_PORT_DISP_FAKE0>;
+	};
+
+	pseudo_m4u-larb1 {
+		compatible = "mediatek,mt-pseudo_m4u-port";
+		mediatek,larbid = <1>;
+		iommus = <&iommu M4U_PORT_VENC_RCPU>,
+			 <&iommu M4U_PORT_VENC_REC>;
+	};
+
+	pseudo_m4u-larb2 {
+		compatible = "mediatek,mt-pseudo_m4u-port";
+		mediatek,larbid = <2>;
+		iommus = <&iommu M4U_PORT_CAM_IMGI>,
+			 <&iommu M4U_PORT_CAM_IMG2O>;
+	};
+
+	pseudo_m4u-larb3 {
+		compatible = "mediatek,mt-pseudo_m4u-port";
+		mediatek,larbid = <3>;
+		iommus = <&iommu M4U_PORT_CAM_IMGO>,
+			 <&iommu M4U_PORT_CAM_RRZO>;
+	};
 };
 
 #include "cust_mt6765_msdc.dtsi"

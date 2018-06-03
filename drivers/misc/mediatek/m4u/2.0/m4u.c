@@ -2886,6 +2886,7 @@ static int m4u_pm_restore_noirq(struct device *device)
 /*---------------------------------------------------------------------------*/
 static const struct of_device_id iommu_of_ids[] = {
 	{.compatible = "mediatek,m4u",},
+	{.compatible = "mediatek,iommu_v0",},
 	{.compatible = "mediatek,perisys_iommu",},
 	{}
 };

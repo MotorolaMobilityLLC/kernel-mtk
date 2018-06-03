@@ -27,10 +27,14 @@
 #include <linux/pm_wakeup.h>
 
 #include "disp_drv_platform.h"
+#ifdef MTK_FB_ION_SUPPORT
 #include "mtk_ion.h"
 #include "ion_drv.h"
+#endif
+#ifdef CONFIG_MTK_M4U
 #include "m4u.h"
 #include "m4u_priv.h"
+#endif
 #include "ddp_m4u.h"
 #include "debug.h"
 #include "disp_drv_log.h"
@@ -61,7 +65,6 @@
 #include "ddp_reg.h"
 #include "mtk_disp_mgr.h"
 #include "ddp_dsi.h"
-#include "m4u.h"
 #include "mtkfb_console.h"
 #if defined(CONFIG_MTK_LEGACY)
 #include <mach/mtk_gpio.h>
@@ -133,7 +136,9 @@ static ktime_t cmd_mode_update_timer_period;
 static int is_fake_timer_inited;
 
 static struct task_struct *primary_display_switch_dst_mode_task;
+#ifdef MTK_FB_ION_SUPPORT
 static struct task_struct *present_fence_release_worker_task;
+#endif
 static struct task_struct *primary_path_aal_task;
 static struct task_struct *primary_delay_trigger_task;
 static struct task_struct *primary_od_trigger_task;
@@ -558,7 +563,8 @@ long primary_display_wait_not_state(enum DISP_POWER_STATE state, long timeout)
 int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch,
 	int bytes_per_pix)
 {
-	int ret = 0;
+#ifdef CONFIG_MTK_M4U
+	int ret = -1;
 	unsigned int layer_size = pitch * h;
 	unsigned int real_mva = 0;
 	unsigned long kva = 0;
@@ -567,13 +573,11 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch,
 	static MFC_HANDLE mfc_handle;
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
-#ifndef CONFIG_MTK_IOMMU
 		m4u_query_mva_info(mva, layer_size, &real_mva, &real_size);
 		if (ret < 0) {
 			pr_debug("m4u_query_mva_info error\n");
 			return -1;
 		}
-#endif
 		ret = m4u_mva_map_kernel(real_mva, real_size,
 			&kva, &mapped_size);
 		if (ret < 0) {
@@ -599,6 +603,7 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch,
 err1:
 		m4u_mva_unmap_kernel(real_mva, real_size, kva);
 	}
+#endif
 	return 0;
 }
 
@@ -1818,12 +1823,15 @@ void disp_enable_emi_force_on(unsigned int enable, void *cmdq_handle)
 {
 }
 
+#ifdef MTK_FB_ION_SUPPORT
 static struct ion_client *ion_client;
 static struct ion_handle *sec_ion_handle;
+#endif
 static u32 sec_mva;
 
 static int sec_buf_ion_alloc(int buf_size)
 {
+#ifdef MTK_FB_ION_SUPPORT
 	size_t mva_size = 0;
 	unsigned long int sec_hnd = 0;
 	/* ion_phys_addr_t sec_hnd = 0; */
@@ -1854,7 +1862,7 @@ static int sec_buf_ion_alloc(int buf_size)
 	/* 1. config buffer param for ion debug */
 	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER;
 	mm_data.config_buffer_param.kernel_handle = sec_ion_handle;
-	mm_data.config_buffer_param.module_id = M4U_PORT_DISP_WDMA0;
+	mm_data.config_buffer_param.module_id = DISP_M4U_PORT_DISP_WDMA0;
 	mm_data.config_buffer_param.security = 1;
 	mm_data.config_buffer_param.coherent = 0;
 
@@ -1884,15 +1892,16 @@ static int sec_buf_ion_alloc(int buf_size)
 	}
 	sec_mva = sec_hnd;
 	/* DISPMSG("create ion sec_mva 0x%x\n", sec_mva); */
-
+#endif
 	return 0;
 }
 
 static int sec_buf_ion_free(void)
 {
+#ifdef MTK_FB_ION_SUPPORT
 	ion_free(ion_client, sec_ion_handle);
 	ion_client_destroy(ion_client);
-
+#endif
 	return 0;
 }
 
@@ -2465,6 +2474,7 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 {
 	struct disp_internal_buffer_info *buf_info = NULL;
+#ifdef MTK_FB_ION_SUPPORT
 	void *buffer_va = NULL;
 	size_t mva_size = 0;
 	ion_phys_addr_t buffer_mva = 0;
@@ -2527,6 +2537,7 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 		kfree(buf_info);
 		return NULL;
 	}
+#endif
 	return buf_info;
 }
 
@@ -3436,6 +3447,7 @@ static int primary_display_frame_update_kthread(void *data)
 	return 0;
 }
 
+#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 static int _present_fence_release_worker_thread(void *data)
 {
 	struct sched_param param = {.sched_priority = 87 };
@@ -3502,6 +3514,7 @@ static int _present_fence_release_worker_thread(void *data)
 
 	return 0;
 }
+#endif
 
 int primary_display_set_frame_buffer_address(unsigned long va,
 	unsigned long mva, unsigned long pa)
@@ -3580,6 +3593,7 @@ static int update_primary_intferface_module(void)
 
 static void replace_fb_addr_to_mva(void)
 {
+#ifdef CONFIG_MTK_M4U
 	struct ddp_fb_info fb_info;
 
 	fb_info.fb_mva = pgc->framebuffer_mva;
@@ -3589,6 +3603,7 @@ static void replace_fb_addr_to_mva(void)
 		DDP_OVL_MVA_REPLACEMENT, &fb_info);
 	DISP_REG_SET_FIELD(pgc->cmdq_handle_config, REG_FLD(1, 0),
 		DISPSYS_SMI_LARB0_BASE + 0x380, 0x1);
+#endif
 }
 
 int primary_display_init(char *lcm_name, unsigned int lcm_fps,
@@ -3845,7 +3860,9 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 		_cmdq_reset_config_handle();
 	}
 
+#ifdef CONFIG_MTK_M4U
 	config_display_m4u_port();
+#endif
 
 
 	if (use_cmdq)
@@ -3905,6 +3922,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 		wake_up_process(primary_od_trigger_task);
 	}
 
+#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
 	if (disp_helper_get_option(DISP_OPT_PRESENT_FENCE)) {
 		init_waitqueue_head(&primary_display_present_fence_wq);
 		present_fence_release_worker_task =
@@ -3912,6 +3930,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 				NULL, "present_fence_worker");
 		wake_up_process(present_fence_release_worker_task);
 	}
+#endif
 
 	if (disp_helper_get_option(DISP_OPT_PERFORMANCE_DEBUG)) {
 		if (primary_display_frame_update_task == NULL) {
@@ -7767,7 +7786,7 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt,
 	return 0;
 }
 
-#ifdef CONFIG_MTK_IOMMU
+#ifdef CONFIG_MTK_IOMMU_V2
 int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 	enum UNIFIED_COLOR_FMT ufmt)
 {
@@ -7843,6 +7862,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 	enum UNIFIED_COLOR_FMT ufmt)
 {
 	int ret = 0;
+#ifdef CONFIG_MTK_M4U
 	unsigned int w_xres = primary_display_get_width();
 	unsigned int h_yres = primary_display_get_height();
 	unsigned int pixel_byte = primary_display_get_bpp() / 8;
@@ -7851,11 +7871,12 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 	int tmp;
 	m4u_client_t *m4uClient = NULL;
 	unsigned int mva = 0;
-
+#endif
 	DISPMSG("primary capture: begin\n");
 
 	disp_sw_mutex_lock(&(pgc->capture_lock));
 
+#ifdef CONFIG_MTK_M4U
 	if (primary_display_is_sleepd()) {
 		memset((void *)pbuf, 0, buffer_size);
 		DISPMSG("primary capture: Fail black End\n");
@@ -7903,7 +7924,7 @@ out:
 
 	if (m4uClient != 0)
 		m4u_destroy_client(m4uClient);
-
+#endif
 	disp_sw_mutex_unlock(&(pgc->capture_lock));
 	DISPMSG("primary capture: end\n");
 	return ret;

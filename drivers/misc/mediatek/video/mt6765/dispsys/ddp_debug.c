@@ -24,8 +24,6 @@
 #include <linux/interrupt.h>
 #include <linux/time.h>
 
-#include "m4u.h"
-
 #include "disp_drv_ddp.h"
 
 #include "ddp_debug.h"

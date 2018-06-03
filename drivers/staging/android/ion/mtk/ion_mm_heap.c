@@ -520,7 +520,11 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	port_info.eModuleID = buffer_info->module_id;
 	port_info.cache_coherent = buffer_info->coherent;
 	port_info.security = buffer_info->security;
+#if defined(CONFIG_MTK_M4U)
 	port_info.BufSize = buffer->size;
+#else
+	port_info.bufsize = buffer->size;
+#endif
 
 	if (((*(unsigned int *)addr & 0xffff) == ION_FLAG_GET_FIXED_PHYS) &&
 	    ((*(unsigned int *)len) == ION_FLAG_GET_FIXED_PHYS)) {
@@ -596,7 +600,8 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 		       buffer_info->iova_start, buffer_info->iova_end,
 		       (unsigned long)buffer_info->VA, non_vmalloc_request);
 	}
-	*len = port_info.BufSize;
+
+	*len = buffer->size;
 
 	return 0;
 }

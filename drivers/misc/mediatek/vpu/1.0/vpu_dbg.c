@@ -22,11 +22,14 @@
 #include <linux/kthread.h>
 #include <linux/uaccess.h>
 
-#include <m4u.h>
-
 #include "vpu_dbg.h"
 #include "vpu_drv.h"
 #include "vpu_cmn.h"
+#ifdef CONFIG_MTK_M4U
+#include <m4u.h>
+#else
+#include "mach/mt_iommu.h"
+#endif
 
 #define ALGO_OF_MAX_POWER  (3)
 
