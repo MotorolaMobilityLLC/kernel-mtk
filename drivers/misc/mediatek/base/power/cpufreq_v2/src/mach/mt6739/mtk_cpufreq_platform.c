@@ -493,6 +493,9 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	if ((seg_code == 0x80 || seg_code == 0x88 || seg_code == 0x0
 		|| seg_code == 0x08 || seg_code == 0x90) && turbo_code == 0x3)
 		lv = CPU_LEVEL_1;
+	else if ((seg_code == 0x48 || seg_code == 0x40 || seg_code == 0xC8
+		|| seg_code == 0xC0 || seg_code == 0xD0) && turbo_code == 0x3)
+		lv = CPU_LEVEL_1;
 	else
 		lv = CPU_LEVEL_0;
 
