@@ -5004,11 +5004,20 @@ VOID kalWowProcess(IN P_GLUE_INFO_T prGlueInfo, UINT_8 enable)
 
 VOID kalFreeTxMsduWorker(struct work_struct *work)
 {
-	P_GLUE_INFO_T prGlueInfo = ENTRY_OF(work, GLUE_INFO_T, rTxMsduFreeWork);
-	P_ADAPTER_T prAdapter = prGlueInfo->prAdapter;
+	P_GLUE_INFO_T prGlueInfo;
+	P_ADAPTER_T prAdapter;
 	QUE_T rTmpQue;
 	P_QUE_T prTmpQue = &rTmpQue;
 	P_MSDU_INFO_T prMsduInfo;
+
+	if (g_u4HaltFlag)
+		return;
+
+	prGlueInfo = ENTRY_OF(work, GLUE_INFO_T, rTxMsduFreeWork);
+	prAdapter = prGlueInfo->prAdapter;
+
+	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT)
+		return;
 
 	KAL_ACQUIRE_MUTEX(prAdapter, MUTEX_TX_DATA_DONE_QUE);
 	QUEUE_MOVE_ALL(prTmpQue, &prAdapter->rTxDataDoneQueue);
