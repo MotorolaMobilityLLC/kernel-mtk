@@ -132,7 +132,6 @@ ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
 #obj-$(CONFIG_TRUSTY) += gcpu/
 endif
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
-obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secmem/
 obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/
 obj-$(CONFIG_WATCHDATA_TEE_SUPPORT) += watchtrust/
 obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += mtee/
@@ -191,6 +190,7 @@ obj-$(CONFIG_MTK_ICCS_SUPPORT)+= iccs/
 obj-$(CONFIG_MACH_MT8167) += xo/
 obj-$(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)	+= pkt_track/
 obj-$(CONFIG_MTK_GZ_KREE)  += geniezone/
+obj-$(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM) += trusted_mem/
 obj-$(CONFIG_MTK_ES_REG) += es_reg/
 
 #timer
