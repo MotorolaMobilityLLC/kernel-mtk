@@ -2353,9 +2353,9 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 		{
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_GAMMA0];
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#elif defined(CONFIG_MACH_MT6759)
 			ret = ddp_get_module_pa(DISP_MODULE_GAMMA);
-#elif defined(CONFIG_MACH_MT6763)
+#elif defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 			ret = ddp_get_module_pa(DISP_MODULE_GAMMA0);
 
 #else
@@ -2369,11 +2369,10 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_AAL0];
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#elif defined(CONFIG_MACH_MT6759)
 			ret = ddp_get_module_pa(DISP_MODULE_AAL);
-#elif defined(CONFIG_MACH_MT6763)
+#elif defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6763)
 			ret = ddp_get_module_pa(DISP_MODULE_AAL0);
-
 #else
 			ret = ddp_reg_pa_base[DISP_REG_AAL];
 #endif
@@ -2386,9 +2385,9 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_CCORR0];
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#elif defined(CONFIG_MACH_MT6759)
 			ret = ddp_get_module_pa(DISP_MODULE_CCORR);
-#elif defined(CONFIG_MACH_MT6763)
+#elif defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 			ret = ddp_get_module_pa(DISP_MODULE_CCORR0);
 
 #else
@@ -2636,7 +2635,7 @@ static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759)
 	_color_clock_on(module, cmq_handle);
 #endif
 
@@ -2676,7 +2675,7 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_deinit(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759)
 	_color_clock_off(module, cmq_handle);
 #endif
 	return 0;
