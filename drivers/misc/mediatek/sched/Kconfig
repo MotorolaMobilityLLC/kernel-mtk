@@ -116,4 +116,9 @@ config MTK_SCHED_BOOST
 	   1:  prefer boost  ALL tasks to big cores
 	   2:  foreground task move to big cores
 
+config MTK_RT_ENHANCEMENT
+	bool "mt RT scheduling enhancement for big.LITTLE"
+	depends on SCHED_HMP && MTK_SCHED_BOOST
+	default y
+
 endmenu

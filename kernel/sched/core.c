@@ -3626,6 +3626,9 @@ static void __sched notrace __schedule(bool preempt)
 		raw_spin_unlock_irq(&rq->lock);
 	}
 
+	if (sched_rt_boost())
+		mt_post_schedule(rq);
+
 #ifdef CONFIG_PREEMPT_MONITOR
 	per_cpu(MT_trace_in_sched, cpu) = 0;
 #endif
