@@ -133,6 +133,7 @@ static int g_cond_remake;
 static int g_run_rrc_fps;
 static int g_allow_rrc_policy = DFRC_ALLOW_VIDEO | DFRC_ALLOW_TOUCH;
 static int g_init_done;
+static int g_forbid_vsync;
 static struct DFRC_DRV_PANEL_INFO_LIST g_fps_info;
 static struct DFRC_DRV_WINDOW_STATE g_window_state;
 static struct DFRC_DRV_FOREGROUND_WINDOW_INFO g_fg_window_info;
@@ -788,6 +789,14 @@ static long dfrc_find_pid_setting(int pid, int *fps, int *mode)
 	return res;
 }
 
+void dfrc_forbid_adjusting_vsync(int forbid)
+{
+	mutex_lock(&g_mutex_data);
+	g_forbid_vsync = forbid;
+	dfrc_remake_policy_locked();
+	mutex_unlock(&g_mutex_data);
+}
+
 static long dfrc_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct DFRC_DRV_POLICY policy;
@@ -800,6 +809,7 @@ static long dfrc_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct DFRC_DRV_WINDOW_STATE window_state;
 	struct DFRC_DRV_FOREGROUND_WINDOW_INFO fg_window_info;
 	struct DFRC_DRC_REQUEST_SET request_set;
+	int32_t forbid_vsync;
 	long res = 0L;
 
 	switch (cmd) {
@@ -910,6 +920,14 @@ static long dfrc_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		dfrc_set_fg_window(&fg_window_info);
 		break;
 
+	case DFRC_IOCTL_CMD_FORBID_ADJUSTING_VSYNC:
+		if (copy_from_user(&forbid_vsync, (void *)arg, sizeof(forbid_vsync))) {
+			DFRC_WRN("forbid_adjusting_vsync : failed to copy data from user\n");
+			return -EFAULT;
+		}
+		dfrc_forbid_adjusting_vsync(forbid_vsync);
+		break;
+
 	default:
 		return -ENODATA;
 	}
@@ -991,6 +1009,7 @@ static void dfrc_dump_info(void)
 	dfrc_idump("Force window pid[%d]\n", g_input_window_info.pid);
 	dfrc_idump("Foreground window pid[%d]\n", g_fg_window_info.pid);
 	dfrc_idump("Window state[%08x]\n", g_window_state);
+	dfrc_idump("Forbid adjusting VSync[%d]\n", g_forbid_vsync);
 	dfrc_idump("Allow RRC policy[0x%x]\n", g_allow_rrc_policy);
 	dfrc_idump("Support panel refresh rate: %d\n", g_fps_info.num);
 	for (i = 0; i < g_fps_info.num; i++) {
@@ -1234,6 +1253,7 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 	int i;
 
 	memset(&new_request, 0, sizeof(new_request));
+	new_request.forbid_vsync = g_forbid_vsync;
 	if (expected_policy->mode == DFRC_DRV_MODE_DEFAULT) {
 		dfrc_rdump("use default mode\n");
 		fps = -1;
@@ -1262,6 +1282,17 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY) * size);
 		dfrc_pack_choosed_frr_policy(size, new_policy, expected_policy->frr_statistics);
+	} else if (expected_policy->mode == DFRC_DRV_MODE_ARR && g_forbid_vsync) {
+		dfrc_rdump("use default mode, because forbid adjusting vsync\n");
+		fps = -1;
+		sw_mode = DFRC_DRV_SW_MODE_CALIBRATED_SW;
+		hw_mode = DFRC_DRV_HW_MODE_DEFAULT;
+		new_request.fps = -1;
+		new_request.mode = DFRC_DRV_MODE_DEFAULT;
+		new_request.sw_mode = DFRC_DRV_SW_MODE_CALIBRATED_SW;
+		new_request.valid_info = false;
+		new_request.transient_state = false;
+		new_request.num_policy = 0;
 	} else if (expected_policy->mode == DFRC_DRV_MODE_ARR) {
 		dfrc_rdump("use arr mode\n");
 		fps = expected_policy->arr_policy->fps;
@@ -1277,8 +1308,10 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 		if (g_input_window_info.pid != g_fg_window_info.pid &&
 				(expected_policy->arr_policy->api != DFRC_DRV_API_THERMAL &&
 				expected_policy->arr_policy->api != DFRC_DRV_API_LOADING)) {
+			dfrc_rdump("input window is not foreground, so ignore arr setting\n");
 			new_request.fps = 60;
 			new_request.transient_state = true;
+			fps = -1;
 		}
 
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY));
@@ -1310,13 +1343,14 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 		g_cond_request = 1;
 		wake_up_interruptible(&g_wq_vsync_request);
 		mutex_unlock(&g_mutex_request);
-	} else {
+	} else if (new_policy) {
 		vfree(new_policy);
 	}
 
 #ifdef PLATFORM_SUPPORT_ARR
 	if (fps != g_current_fps || hw_mode != g_current_hw_mode) {
-		primary_display_arr20_set_refresh_rate(fps);
+		/* wait ARR fix formula */
+		/*primary_display_arr20_set_refresh_rate(fps);*/
 	}
 #endif
 
