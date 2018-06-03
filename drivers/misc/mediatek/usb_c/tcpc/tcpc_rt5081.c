@@ -63,6 +63,8 @@ struct rt5081_chip {
 	atomic_t poll_count;
 	struct delayed_work	poll_work;
 
+	struct wake_lock intr_wake_lock;
+
 	int irq_gpio;
 	int irq;
 	int chip_id;
@@ -525,10 +527,13 @@ static void rt5081_poll_work(struct work_struct *work)
 		cpu_idle_poll_ctrl(false);
 }
 
+
 static irqreturn_t rt5081_intr_handler(int irq, void *data)
 {
 	struct rt5081_chip *chip = data;
 
+	/* wakelock 500ms when handler interrupt */
+	wake_lock_timeout(&chip->intr_wake_lock, HZ/2);
 #ifdef DEBUG_GPIO
 	gpio_set_value(DEBUG_GPIO, 0);
 #endif
@@ -1497,6 +1502,9 @@ static int rt5081_i2c_probe(struct i2c_client *client,
 
 	chip->chip_id = chip_id;
 	pr_info("rt5081_chipID = 0x%0x\n", chip_id);
+
+	wake_lock_init(&chip->intr_wake_lock, WAKE_LOCK_SUSPEND,
+			"intr_wake_lock");
 
 	ret = rt5081_regmap_init(chip);
 	if (ret < 0) {
