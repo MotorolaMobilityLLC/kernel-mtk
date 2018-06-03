@@ -70,6 +70,7 @@ struct mt_gpufreq_clk_t {
 struct mt_gpufreq_pmic_t {
 	struct regulator *reg_vproc;		/* vproc regulator */
 	struct regulator *reg_vsram;	/* vproc sram regulator */
+	struct regulator *reg_vcore;	/* vproc sram regulator */
 };
 
 /*****************
@@ -83,6 +84,7 @@ extern unsigned int mt_gpufreq_get_cur_volt(void);
 extern unsigned int mt_gpufreq_get_dvfs_table_num(void);
 extern unsigned int mt_gpufreq_target(unsigned int idx);
 extern unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable);
+extern unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm);
 extern unsigned int mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array_size);
 extern unsigned int mt_gpufreq_get_freq_by_idx(unsigned int idx);
 extern unsigned int mt_gpufreq_get_volt_by_idx(unsigned int idx);
