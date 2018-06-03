@@ -308,7 +308,7 @@ static struct task_struct *select_bad_process(struct oom_control *oc,
 	struct task_struct *chosen = NULL;
 	unsigned long chosen_points = 0;
 
-	rcu_read_lock();
+	read_lock(&tasklist_lock);
 	for_each_process_thread(g, p) {
 		unsigned int points;
 
@@ -320,7 +320,7 @@ static struct task_struct *select_bad_process(struct oom_control *oc,
 		case OOM_SCAN_CONTINUE:
 			continue;
 		case OOM_SCAN_ABORT:
-			rcu_read_unlock();
+			read_unlock(&tasklist_lock);
 			return (struct task_struct *)(-1UL);
 		case OOM_SCAN_OK:
 			break;
@@ -337,7 +337,7 @@ static struct task_struct *select_bad_process(struct oom_control *oc,
 	}
 	if (chosen)
 		get_task_struct(chosen);
-	rcu_read_unlock();
+	read_unlock(&tasklist_lock);
 
 	*ppoints = chosen_points * 1000 / totalpages;
 	return chosen;
