@@ -21,6 +21,10 @@
 #include <mt6336/mt6336.h>
 #include <mtk_clkbuf_ctl.h>
 
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+#include <mt-plat/mtk_boot_common.h>
+#endif
+
 #ifdef CONFIG_USB_PD_DUAL_ROLE
 #define DUAL_ROLE_IF_ELSE(hba, sink_clause, src_clause) \
 	(hba->power_role == PD_ROLE_SINK ? (sink_clause) : (src_clause))
@@ -112,6 +116,7 @@ static struct state_mapping {
 	{PD_STATE_DISCOVERY_SOP_P, "DISCOVERY_SOP_P"},
 	{PD_STATE_SRC_DISABLED, "SRC_DISABLED"},
 	{PD_STATE_SNK_HARD_RESET_NOVSAFE5V, "SNK_HARD_RESET_NOVSAFE5V"},
+	{PD_STATE_SNK_KPOC_DELAY_RX_ON, "SNK_KPOC_DELAY_RX_ON"},
 	{PD_STATE_NO_TIMEOUT, "NO_TIMEOUT"},
 };
 
@@ -1034,7 +1039,7 @@ void pd_send_request_msg(struct typec_hba *hba, int always_send_request)
 		set_state(hba, PD_STATE_SOFT_RESET);
 	/* If fail send request, do nothing, let source re-send source cap */
 
-	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2) {
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2 && !ret) {
 		dev_err(hba->dev, "Req [%d] %dmV %dmA", RDO_POS(rdo), supply_voltage, curr_limit);
 		if (rdo & RDO_CAP_MISMATCH)
 			dev_err(hba->dev, " Mismatch");
@@ -2449,6 +2454,9 @@ int pd_task(void *data)
 			break;
 
 		case PD_STATE_SNK_ATTACH:
+			if (!state_changed(hba))
+				break;
+
 			/*Enable 26MHz clock XO_PD*/
 			clk_buf_ctrl(CLK_BUF_CHG, true);
 
@@ -2470,11 +2478,15 @@ int pd_task(void *data)
 			typec_set_input_current_limit(
 				port, typec_curr, TYPE_C_VOLTAGE);
 #endif
-			pd_rx_enable(hba, 1);
 
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+			if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
+				&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
+				pd_rx_enable(hba, 1);
+			}
+#endif
 			/*Improve RX signal quality from analog to digital part.*/
-			if (state_changed(hba))
-				pd_rx_phya_setting(hba);
+			pd_rx_phya_setting(hba);
 
 			/*
 			 * fake set data role swapped flag so we send
@@ -2483,8 +2495,21 @@ int pd_task(void *data)
 			hba->flags |= (PD_FLAGS_CHECK_PR_ROLE | PD_FLAGS_DATA_SWAPPED);
 			hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
 			hard_reset_count = 0;
+
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+			if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
+				|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
+				timeout = 1000;
+				set_state_timeout(hba, hba->kpoc_delay, PD_STATE_SNK_KPOC_DELAY_RX_ON);
+			} else {
+				timeout = 10;
+				set_state(hba, PD_STATE_SNK_DISCOVERY);
+			}
+#else
 			timeout = 10;
 			set_state(hba, PD_STATE_SNK_DISCOVERY);
+#endif
+
 			break;
 
 		case PD_STATE_SNK_DISCOVERY:
@@ -3026,6 +3051,14 @@ int pd_task(void *data)
 			}
 			break;
 #endif
+
+		case PD_STATE_SNK_KPOC_DELAY_RX_ON:
+			if (state_changed(hba)) {
+				pd_rx_enable(hba, 1);
+				timeout = 0;
+				set_state(hba, PD_STATE_SNK_DISCOVERY);
+			}
+			break;
 
 		default:
 			break;

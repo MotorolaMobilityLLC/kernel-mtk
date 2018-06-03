@@ -418,6 +418,7 @@ struct typec_hba {
 
 	unsigned int vbus_on_polling;
 	unsigned int vbus_off_polling;
+	unsigned int kpoc_delay;
 	int hr_auto_sent;
 	uint32_t cable_flags;
 	struct cable_info sop_p;
