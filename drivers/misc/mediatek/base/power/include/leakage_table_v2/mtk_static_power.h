@@ -33,6 +33,10 @@
 #include "mtk_static_power_mt6739.h"
 #endif
 
+#if defined(CONFIG_MACH_MT6765)
+#include "mtk_static_power_mt6765.h"
+#endif
+
 extern u32 get_devinfo_with_index(u32 index);
 
 /*
