@@ -75,7 +75,6 @@ static int barohub_get_pressure(char *buf, int bufsize)
 	struct barohub_ipi_data *obj = obj_ipi_data;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 	int pressure;
 	int err = 0;
 
@@ -91,11 +90,10 @@ static int barohub_get_pressure(char *buf, int bufsize)
 	}
 
 	time_stamp		= data.time_stamp;
-	time_stamp_gpt	= data.time_stamp_gpt;
 	pressure		= data.pressure_t.pressure;
 #if 0
-	BAR_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, pressure: %d!\n",
-	time_stamp, time_stamp_gpt, pressure);
+	BAR_LOG("recv ipi: timestamp: %lld, pressure: %d!\n",
+	time_stamp, pressure);
 #endif
 	sprintf(buf, "%08x", pressure);
 	if (atomic_read(&obj->trace) & BAR_TRC_IOCTL)
@@ -209,7 +207,7 @@ static int baro_recv_data(struct data_unit_t *event, void *reserved)
 		err = baro_flush_report();
 	else if (event->flush_action == DATA_ACTION)
 		err = baro_data_report(event->pressure_t.pressure, 2,
-			(int64_t)(event->time_stamp + event->time_stamp_gpt));
+			(int64_t)event->time_stamp);
 	return err;
 }
 static int barohub_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)

@@ -30,7 +30,6 @@ static int gamerotvec_get_data(int *x, int *y, int *z, int *scalar, int *status)
 	int err = 0;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 
 	err = sensor_get_data_from_hub(ID_GAME_ROTATION_VECTOR, &data);
 	if (err < 0) {
@@ -38,14 +37,13 @@ static int gamerotvec_get_data(int *x, int *y, int *z, int *scalar, int *status)
 		return -1;
 	}
 	time_stamp		= data.time_stamp;
-	time_stamp_gpt	= data.time_stamp_gpt;
 	*x				= data.orientation_t.azimuth;
 	*y				= data.orientation_t.pitch;
 	*z				= data.orientation_t.roll;
 	*scalar				= data.orientation_t.scalar;
 	*status			= data.orientation_t.status;
-	GROTVEC_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n",
-		time_stamp, time_stamp_gpt, *x, *y, *z);
+	GROTVEC_LOG("recv ipi: timestamp: %lld, x: %d, y: %d, z: %d!\n",
+		time_stamp, *x, *y, *z);
 	return 0;
 }
 static int gamerotvec_open_report_data(int open)
@@ -89,7 +87,7 @@ static int gamerotvec_recv_data(struct data_unit_t *event, void *reserved)
 	if (event->flush_action == DATA_ACTION)
 		err = grv_data_report(event->orientation_t.azimuth, event->orientation_t.pitch,
 			event->orientation_t.roll, event->orientation_t.scalar,
-			event->orientation_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));
+			event->orientation_t.status, (int64_t)event->time_stamp);
 	else if (event->flush_action == FLUSH_ACTION)
 		err = grv_flush_report();
 

@@ -51,7 +51,6 @@ static int glance_gesture_get_data(int *probability, int *status)
 	int err = 0;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 
 	err = sensor_get_data_from_hub(ID_GLANCE_GESTURE, &data);
 	if (err < 0) {
@@ -59,9 +58,8 @@ static int glance_gesture_get_data(int *probability, int *status)
 		return -1;
 	}
 	time_stamp		= data.time_stamp;
-	time_stamp_gpt	= data.time_stamp_gpt;
 	*probability	= data.gesture_data_t.probability;
-	GLGHUB_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, probability: %d!\n", time_stamp, time_stamp_gpt,
+	GLGHUB_LOG("recv ipi: timestamp: %lld, probability: %d!\n", time_stamp,
 		*probability);
 	return 0;
 }

@@ -84,7 +84,6 @@ static int hmdyhub_get_humidity(char *buf, int bufsize)
 	struct hmdyhub_ipi_data *obj = obj_ipi_data;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 	int humidity;
 	int err = 0;
 
@@ -103,11 +102,10 @@ static int hmdyhub_get_humidity(char *buf, int bufsize)
 		return err;
 	}
 	time_stamp = data.time_stamp;
-	time_stamp_gpt = data.time_stamp_gpt;
 	humidity = data.relative_humidity_t.relative_humidity;
 #if 0
-	HMDYHUB_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, humidity: %d!\n",
-		time_stamp, time_stamp_gpt, humidity);
+	HMDYHUB_LOG("recv ipi: timestamp: %lld, humidity: %d!\n",
+		time_stamp, humidity);
 #endif
 	sprintf(buf, "%08x", humidity);
 	if (atomic_read(&obj->trace) & HMDY_TRC_IOCTL)
