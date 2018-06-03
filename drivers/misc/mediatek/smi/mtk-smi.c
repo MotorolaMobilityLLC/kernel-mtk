@@ -1172,7 +1172,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	smi_bus_optimization_clock_control(bus_optimization_sync, SMI_ENABLE_CLK);
 	smi_bus_optimization(bus_optimization_sync, eFinalScen);
 	smi_bus_optimization_clock_control(bus_optimization_sync, SMI_DISABLE_CLK);
-	SMIMSG("[SMI_PROFILE]: %s\n", smi_get_scenario_name(eFinalScen));
+	SMIMSG("[SMI_PROFILE]=%s\n", smi_get_scenario_name(eFinalScen));
 
 
 	spin_unlock(&g_SMIInfo.SMI_lock);
