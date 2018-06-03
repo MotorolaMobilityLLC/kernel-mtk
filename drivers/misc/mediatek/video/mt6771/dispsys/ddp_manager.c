@@ -811,38 +811,36 @@ int dpmgr_path_disconnect(disp_path_handle dp_handle, int encmdq)
 	return 0;
 }
 
-int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
+int dpmgr_path_init_with_cmdq(disp_path_handle dp_handle, struct cmdqRecStruct *cmdq_handle)
 {
 	int i = 0;
 	int module_name;
 	struct ddp_path_handle *handle;
 	int *modules;
 	int module_num;
-	struct cmdqRecStruct *cmdqHandle;
 	struct DDP_MANAGER_CONTEXT *c = _get_context();
 
 	ASSERT(dp_handle != NULL);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
-	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
 	DDPDBG("path init on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	mutex_lock(&c->mutex_lock);
 	/* open top clock */
 	path_top_clock_on();
 	/* seting mutex */
-	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdqHandle);
-	ddp_mutex_interrupt_enable(handle->hwmutexid, cmdqHandle);
+	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdq_handle);
+	ddp_mutex_interrupt_enable(handle->hwmutexid, cmdq_handle);
 	/* connect path; */
-	_dpmgr_path_connect(handle->scenario, cmdqHandle);
+	_dpmgr_path_connect(handle->scenario, cmdq_handle);
 
 	/* each module init */
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_get_module_driver(module_name) != 0) {
 			if (ddp_get_module_driver(module_name)->init != 0)
-				ddp_get_module_driver(module_name)->init(module_name, cmdqHandle);
+				ddp_get_module_driver(module_name)->init(module_name, cmdq_handle);
 
 			if (ddp_get_module_driver(module_name)->set_listener != 0)
 				ddp_get_module_driver(module_name)->set_listener(module_name,
@@ -853,6 +851,30 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 	handle->power_state = 1;
 	mutex_unlock(&c->mutex_lock);
 	return 0;
+}
+
+int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
+{
+	struct ddp_path_handle *handle;
+	struct cmdqRecStruct *cmdqHandle;
+
+	ASSERT(dp_handle != NULL);
+	handle = (struct ddp_path_handle *)dp_handle;
+	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
+
+	return dpmgr_path_start_with_cmdq(dp_handle, cmdqHandle);
+}
+
+int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
+{
+	struct ddp_path_handle *handle;
+	struct cmdqRecStruct *cmdqHandle;
+
+	ASSERT(dp_handle != NULL);
+	handle = (struct ddp_path_handle *)dp_handle;
+	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
+
+	return dpmgr_path_init_with_cmdq(dp_handle, cmdqHandle);
 }
 
 int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
@@ -893,27 +915,25 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 	return 0;
 }
 
-int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
+int dpmgr_path_start_with_cmdq(disp_path_handle dp_handle, struct cmdqRecStruct *cmdq_handle)
 {
 	int i = 0;
 	int module_name;
 	struct ddp_path_handle *handle;
 	int *modules;
 	int module_num;
-	struct cmdqRecStruct *cmdqHandle;
 
 	ASSERT(dp_handle != NULL);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
-	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
 	DISP_LOG_I("path start on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_get_module_driver(module_name) != 0) {
 			if (ddp_get_module_driver(module_name)->start != 0)
-				ddp_get_module_driver(module_name)->start(module_name, cmdqHandle);
+				ddp_get_module_driver(module_name)->start(module_name, cmdq_handle);
 		}
 	}
 
@@ -1197,6 +1217,49 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 	module_num = ddp_get_module_num(handle->scenario);
 
 	ddp_mutex_enable(handle->hwmutexid, handle->scenario, handle->mode, trigger_loop_handle);
+	for (i = 0; i < module_num; i++) {
+		module_name = modules[i];
+		if (ddp_get_module_driver(module_name) != 0) {
+			if (ddp_get_module_driver(module_name)->trigger != 0) {
+				ddp_get_module_driver(module_name)->trigger(module_name,
+									 trigger_loop_handle);
+			}
+		}
+	}
+	return 0;
+}
+
+int dpmgr_path_mutex_sof(disp_path_handle dp_handle, void *trigger_loop_handle, int encmdq)
+{
+	struct ddp_path_handle *handle;
+	int *modules;
+	int module_num;
+
+	ASSERT(dp_handle != NULL);
+	handle = (struct ddp_path_handle *)dp_handle;
+	DISP_LOG_I("dpmgr_path_mutex_sof scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	modules = ddp_get_scenario_list(handle->scenario);
+	module_num = ddp_get_module_num(handle->scenario);
+
+	ddp_mutex_enable(handle->hwmutexid, handle->scenario, handle->mode, trigger_loop_handle);
+
+	return 0;
+}
+
+int dpmgr_path_trigger_no_mutex(disp_path_handle dp_handle, void *trigger_loop_handle, int encmdq)
+{
+	struct ddp_path_handle *handle;
+	int *modules;
+	int module_num;
+	int i;
+	int module_name;
+
+	ASSERT(dp_handle != NULL);
+	handle = (struct ddp_path_handle *)dp_handle;
+	DISP_LOG_I("dpmgr_path_trigger on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	modules = ddp_get_scenario_list(handle->scenario);
+	module_num = ddp_get_module_num(handle->scenario);
+
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_get_module_driver(module_name) != 0) {

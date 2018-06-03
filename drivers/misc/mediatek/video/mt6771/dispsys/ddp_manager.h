@@ -166,7 +166,7 @@ int dpmgr_path_set_video_mode(disp_path_handle dp_handle, int is_vdo_mode);
  * encmdq: 1 use command queue, 0 not.
 */
 int dpmgr_path_init(disp_path_handle dp_handle, int encmdq);
-
+int dpmgr_path_init_with_cmdq(disp_path_handle dp_handle, struct cmdqRecStruct *cmdq_handle);
 
 /*connect path , it will set mutex according to modules on this path and sof sorce.
  * and it will connect path , then initialize modules on this path.
@@ -199,6 +199,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq);
  * encmdq: 1 use command queue, 0 not.
 */
 int dpmgr_path_start(disp_path_handle dp_handle, int encmdq);
+int dpmgr_path_start_with_cmdq(disp_path_handle dp_handle, struct cmdqRecStruct *cmdq_handle);
 
 
 /* start path , it will stop this path by calling each drviers stop function.
@@ -275,6 +276,8 @@ int dpmgr_path_build_cmdq(disp_path_handle dp_handle, void *trigger_loop_handle,
  * trigger_loop_handle : trigger thread.
 */
 int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, int encmdq);
+int dpmgr_path_mutex_sof(disp_path_handle dp_handle, void *trigger_loop_handle, int encmdq);
+int dpmgr_path_trigger_no_mutex(disp_path_handle dp_handle, void *trigger_loop_handle, int encmdq);
 
 
 /* set signal to event. this if not irq signal, but user send event

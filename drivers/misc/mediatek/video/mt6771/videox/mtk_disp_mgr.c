@@ -171,6 +171,11 @@ int _session_inited(struct disp_session_config config)
 	return 0;
 }
 
+int disp_mgr_has_mem_session(void)
+{
+	return has_memory_session;
+}
+
 int disp_create_session(struct disp_session_config *config)
 {
 	int ret = 0;

@@ -1332,9 +1332,9 @@ unsigned int disp_sync_buf_cache_sync(unsigned int session_id, unsigned int time
 }
 
 
-static unsigned int __disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
+unsigned int ___disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
 				      unsigned int idx, unsigned long *mva, unsigned int *size,
-				      int need_sync)
+				      void **va, int need_sync)
 {
 	struct mtkfb_fence_buf_info *buf = NULL;
 	unsigned long dst_mva = 0;
@@ -1354,6 +1354,21 @@ static unsigned int __disp_sync_query_buf_info(unsigned int session_id, unsigned
 			/* use local variable here to avoid polluted pointer */
 			dst_mva = buf->mva;
 			dst_size = buf->size;
+
+			if (va) {
+				if (buf->va)
+					*va = (void *)buf->va;
+				else {
+					void *tmp_va;
+
+					tmp_va = ion_map_kernel(ion_client, buf->hnd);
+					if (!IS_ERR_OR_NULL(tmp_va)) {
+						*va = tmp_va;
+						buf->va = (unsigned long)tmp_va;
+					}
+				}
+			}
+
 			break;
 		}
 	}
@@ -1384,6 +1399,14 @@ static unsigned int __disp_sync_query_buf_info(unsigned int session_id, unsigned
 
 	return 0;
 }
+
+static unsigned int __disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
+				      unsigned int idx, unsigned long *mva, unsigned int *size,
+				      int need_sync)
+{
+	return ___disp_sync_query_buf_info(session_id, timeline_id, idx, mva, size, NULL, need_sync);
+}
+
 
 unsigned int disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
 				      unsigned int idx, unsigned long *mva, unsigned int *size)
