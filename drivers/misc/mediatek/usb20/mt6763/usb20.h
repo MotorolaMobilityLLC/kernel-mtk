@@ -55,8 +55,8 @@ extern void usb_phy_switch_to_uart(void);
 #endif
 
 #ifdef FPGA_PLATFORM
-extern void USB_PHY_Write_Register8(UINT8 var, UINT8 addr);
-extern UINT8 USB_PHY_Read_Register8(UINT8 addr);
+extern void USB_PHY_Write_Register8(u8 var, u8 addr);
+extern u8 USB_PHY_Read_Register8(u8 addr);
 #endif
 
 extern struct clk *musb_clk;

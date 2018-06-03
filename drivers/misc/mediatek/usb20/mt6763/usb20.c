@@ -906,7 +906,7 @@ DEVICE_ATTR(portmode, 0664, mt_usb_show_portmode, mt_usb_store_portmode);
 
 static ssize_t mt_usb_show_uart_path(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	UINT32 var;
+	u32 var;
 
 	if (!dev) {
 		DBG(0, "dev is null!!\n");
@@ -926,7 +926,7 @@ DEVICE_ATTR(uartpath, 0444, mt_usb_show_uart_path, NULL);
 static struct i2c_client *usb_i2c_client;
 static const struct i2c_device_id usb_i2c_id[] = { {"mtk-usb", 0}, {} };
 
-void USB_PHY_Write_Register8(UINT8 var, UINT8 addr)
+void USB_PHY_Write_Register8(u8 var, u8 addr)
 {
 	char buffer[2];
 
@@ -935,9 +935,9 @@ void USB_PHY_Write_Register8(UINT8 var, UINT8 addr)
 	i2c_master_send(usb_i2c_client, buffer, 2);
 }
 
-UINT8 USB_PHY_Read_Register8(UINT8 addr)
+u8 USB_PHY_Read_Register8(u8 addr)
 {
-	UINT8 var;
+	u8 var;
 
 	i2c_master_send(usb_i2c_client, &addr, 1);
 	i2c_master_recv(usb_i2c_client, &var, 1);
@@ -946,29 +946,29 @@ UINT8 USB_PHY_Read_Register8(UINT8 addr)
 
 #define U3_PHY_PAGE 0xff
 
-void _u3_write_bank(UINT32 value)
+void _u3_write_bank(u32 value)
 {
-	USB_PHY_Write_Register8((UINT8)value, (UINT8)U3_PHY_PAGE);
+	USB_PHY_Write_Register8((u8)value, (u8)U3_PHY_PAGE);
 }
 
-UINT32 _u3_read_reg(UINT32 address)
+u32 _u3_read_reg(u32 address)
 {
-	UINT8 databuffer = 0;
+	u8 databuffer = 0;
 
-	databuffer = USB_PHY_Read_Register8((UINT8)address);
+	databuffer = USB_PHY_Read_Register8((u8)address);
 	return databuffer;
 }
 
-void _u3_write_reg(UINT32 address, UINT32 value)
+void _u3_write_reg(u32 address, u32 value)
 {
-	USB_PHY_Write_Register8((UINT8)value, (UINT8)address);
+	USB_PHY_Write_Register8((u8)value, (u8)address);
 }
 
-UINT32 u3_phy_read_reg32(UINT32 addr)
+u32 u3_phy_read_reg32(u32 addr)
 {
-	UINT32 bank;
-	UINT32 addr8;
-	UINT32 data;
+	u32 bank;
+	u32 addr8;
+	u32 data;
 
 	bank = (addr >> 16) & 0xff;
 	addr8 = addr & 0xff;
@@ -981,11 +981,11 @@ UINT32 u3_phy_read_reg32(UINT32 addr)
 	return data;
 }
 
-UINT32 u3_phy_write_reg32(UINT32 addr, UINT32 data)
+u32 u3_phy_write_reg32(u32 addr, u32 data)
 {
-	UINT32 bank;
-	UINT32 addr8;
-	UINT32 data_0, data_1, data_2, data_3;
+	u32 bank;
+	u32 addr8;
+	u32 data_0, data_1, data_2, data_3;
 
 	bank = (addr >> 16) & 0xff;
 	addr8 = addr & 0xff;
@@ -1005,8 +1005,8 @@ UINT32 u3_phy_write_reg32(UINT32 addr, UINT32 data)
 
 void u3_phy_write_field32(int addr, int offset, int mask, int value)
 {
-	UINT32 cur_value;
-	UINT32 new_value;
+	u32 cur_value;
+	u32 new_value;
 
 	cur_value = u3_phy_read_reg32(addr);
 	new_value = (cur_value & (~mask)) | ((value << offset) & mask);
@@ -1014,10 +1014,10 @@ void u3_phy_write_field32(int addr, int offset, int mask, int value)
 	u3_phy_write_reg32(addr, new_value);
 }
 
-UINT32 u3_phy_write_reg8(UINT32 addr, UINT8 data)
+u32 u3_phy_write_reg8(u32 addr, u8 data)
 {
-	UINT32 bank;
-	UINT32 addr8;
+	u32 bank;
+	u32 addr8;
 
 	bank = (addr >> 16) & 0xff;
 	addr8 = addr & 0xff;

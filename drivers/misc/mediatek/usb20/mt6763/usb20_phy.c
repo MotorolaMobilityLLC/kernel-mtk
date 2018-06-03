@@ -238,7 +238,7 @@ static void hs_slew_rate_cal(void)
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 bool usb_phy_check_in_uart_mode(void)
 {
-	UINT32 usb_port_mode;
+	u32 usb_port_mode;
 
 	usb_enable_clock(true);
 	udelay(50);
