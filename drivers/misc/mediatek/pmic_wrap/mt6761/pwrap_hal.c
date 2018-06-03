@@ -595,6 +595,14 @@ static void __pwrap_spi_clk_set(void)
 	/* turn off clock */
 	WRAP_WR32(MODULE_SW_CG_2_SET, 0x00000100);
 
+	/* Select ULPOSC/16 Clock as SYS, TMR and SPI Clocks */
+	/* in SODI-3.0 and Suspend Modes */
+#if !defined(CONFIG_MTK_FPGA)
+	WRAP_WR32(CLK_CFG_7_CLR, 0x00000097);
+	WRAP_WR32(CLK_CFG_7_SET, 0x00000003);
+	WRAP_WR32(CLK_CFG_UPDATE, (0x1 << 28));
+#endif
+
 	/* Disable Clock Source Control By SPM */
 	pr_info("=====PMICW_CLOCK_CTRL===== (Write before): %x\n",
 		 WRAP_RD32(PMICW_CLOCK_CTRL));
