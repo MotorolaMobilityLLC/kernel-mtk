@@ -32,6 +32,7 @@
 #include "ddp_dsi.h"
 #include "ddp_dbi.h"
 #include "disp_drv_log.h"
+#include "smi_debug.h"
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
@@ -283,6 +284,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				       (index << 16) | reg_val, module);
 
 	} else if (irq == ddp_get_module_irq(DISP_MODULE_WDMA0)) {
+		static unsigned char wdma_diagnosed;
 		index = 0;
 		module = DISP_MODULE_WDMA0;
 
@@ -298,6 +300,11 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 1)) {
 			DDPPR_ERR("IRQ: WDMA%d underrun! cnt=%d\n", index,
 			       cnt_wdma_underflow[index]++);
+			if (!wdma_diagnosed) {
+				smi_debug_bus_hanging_detect_ext2(SMI_DBG_DISPSYS | SMI_DBG_VDEC | SMI_DBG_IMGSYS |
+					SMI_DBG_VENC | SMI_DBG_MJC, 1, 0, 1);
+				wdma_diagnosed = 1;
+			}
 			disp_irq_log_module |= 1 << module;
 			set_display_ut_status(DISP_UT_ERROR_WDMA);
 		}
