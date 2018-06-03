@@ -540,17 +540,15 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	gd->target_cpu = cpu;
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	/* type.II */
-	cur_freq = mt_cpufreq_get_cur_freq(cid);
+	/* type.II:
+	 *
+	 * Freq from SSPM is not in time.
+	 * mt_cpufreq_get_cur_freq(cid);
+	 */
+	cur_freq =  gd->requested_freq;
 #else
 	/* type.III */
 	cur_freq = policy->cur;
-#endif
-
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
-	/* No change in frequency? Bail and return current capacity. */
-	if (freq_new == cur_freq)
-		goto out;
 #endif
 
 	/* get throttling type */
@@ -559,6 +557,16 @@ static void update_fdomain_capacity_request(int cpu, int type)
 
 	gd->thro_type = freq_new <= cur_freq ?
 			DVFS_THROTTLE_DOWN : DVFS_THROTTLE_UP;
+
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
+	/*
+	 * W/O co-working governor:
+	 * if no change in frequency, bail and return current capacity.
+	 * to decrease overhead of freq swtich.
+	 */
+	if (freq_new == cur_freq)
+		goto out;
+#endif
 
 	/* No throttling in time? Bail and return. */
 	if (ktime_before(now, throttle))
@@ -1004,7 +1012,7 @@ static int __init cpufreq_sched_init(void)
 	return cpufreq_register_governor(&cpufreq_gov_sched);
 }
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 static int cpufreq_callback(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
