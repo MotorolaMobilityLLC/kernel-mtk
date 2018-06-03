@@ -612,6 +612,52 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 	while (pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS) == 0) {
 		if ((count_adc_imp++) > count_time_out_adc_imp) {
 			pr_err("do_ptim over %d times/ms\n", count_adc_imp);
+			pr_notice("AUXADC_IMPEDANCE_MODE=0x%x\n",
+				pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_MODE));
+			pr_notice("AUXADC_CLR_IMP_CNT_STOP=0x%x\n",
+				pmic_get_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP));
+			pr_notice("AUXADC_IMPEDANCE_IRQ_STATUS=0x%x\n",
+				pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS));
+			pr_notice("AUXADC_IMPEDANCE_IRQ_CLR=0x%x\n",
+				pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR));
+			pr_notice("AUXADC_IMPEDANCE_CHSEL=0x%x\n",
+				pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL));
+			pr_notice("AUXADC_IMPEDANCE_CNT=0x%x\n",
+				pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_CNT));
+			pr_notice("AUXADC_IMP_AUTORPT_EN=0x%x\n",
+				pmic_get_register_value(PMIC_AUXADC_IMP_AUTORPT_EN));
+			pr_notice("AUXADC_IMP_AUTORPT_PRD=0x%x\n",
+				pmic_get_register_value(PMIC_AUXADC_IMP_AUTORPT_PRD));
+			pr_notice("RG_AUXADC_AO_1M_CK_PDN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_AO_1M_CK_PDN));
+			pr_notice("RG_AUXADC_1M_CK_PDN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_1M_CK_PDN));
+			pr_notice("RG_AUXADC_CK_PDN_HWEN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN));
+			pr_notice("RG_AUXADC_CK_PDN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN));
+			pr_notice("RG_AUXADC_RNG_CK_PDN_HWEN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_RNG_CK_PDN_HWEN));
+			pr_notice("RG_AUXADC_RNG_CK_PDN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_RNG_CK_PDN));
+			pr_notice("RG_AUXADC_32K_CK_PDN_HWEN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_32K_CK_PDN_HWEN));
+			pr_notice("RG_AUXADC_32K_CK_PDN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_32K_CK_PDN));
+			pr_notice("RG_AUXADC_1K_CK_PDN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_1K_CK_PDN));
+			pr_notice("RG_AUXADC_INTRP_CK_PDN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_INTRP_CK_PDN));
+			pr_notice("AUXADC_CK_AON=0x%x\n",
+				pmic_get_register_value(PMIC_AUXADC_CK_AON));
+			pr_notice("RG_AUXADC_IMP_CK_SW_MODE=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_IMP_CK_SW_MODE));
+			pr_notice("RG_AUXADC_IMP_CK_SW_EN=0x%x\n",
+				pmic_get_register_value(PMIC_RG_AUXADC_IMP_CK_SW_EN));
+			pr_notice("RG_STRUP_AUXADC_RSTB_SEL=0x%x\n",
+				pmic_get_register_value(PMIC_RG_STRUP_AUXADC_RSTB_SEL));
+			pr_notice("RG_STRUP_AUXADC_RSTB_SW=0x%x\n",
+				pmic_get_register_value(PMIC_RG_STRUP_AUXADC_RSTB_SW));
 			ret = 1;
 			break;
 		}
