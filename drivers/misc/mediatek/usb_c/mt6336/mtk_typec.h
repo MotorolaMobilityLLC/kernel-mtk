@@ -309,8 +309,9 @@ struct typec_hba {
 	int id;
 
 #if !COMPLIANCE
-	bool is_lowq;
+	atomic_t lowq_cnt;
 	struct mt6336_ctrl *core_ctrl;
+	struct mutex lowq_lock;
 #endif
 
 	struct mutex ioctl_lock;
@@ -543,8 +544,8 @@ extern void typec_select_rp(struct typec_hba *hba, enum enum_typec_rp rp_val);
 extern int typec_enable(struct typec_hba *hba, int enable);
 extern int typec_set_mode(struct typec_hba *hba, enum enum_typec_role role, int param1, int param2);
 extern void typec_set_vsafe5v(struct typec_hba *hba, int val);
-extern void typec_enable_lowq(struct typec_hba *hba);
-extern void typec_disable_lowq(struct typec_hba *hba);
+extern void typec_enable_lowq(struct typec_hba *hba, char *str);
+extern void typec_disable_lowq(struct typec_hba *hba, char *str);
 
 extern struct typec_hba *get_hba(void);
 
