@@ -45,16 +45,22 @@
 /* # echo corr_dbg:1 > /sys/kernel/debug/dispsys */
 int corr_dbg_en;
 int ccorr_scenario;
-#define GAMMA_ERR(fmt, arg...) pr_notice("[GAMMA] " fmt "\n", ##arg)
+#define GAMMA_ERR(fmt, arg...) \
+	pr_notice("[GAMMA] %s: " fmt "\n", __func__, ##arg)
 #define GAMMA_NOTICE(fmt, arg...) \
-	do { if (corr_dbg_en) pr_debug("[GAMMA] " fmt "\n", ##arg); } while (0)
+	do { if (corr_dbg_en) \
+		pr_debug("[GAMMA] %s: " fmt "\n", __func__, ##arg); } while (0)
 #define GAMMA_DBG(fmt, arg...) \
-	do { if (corr_dbg_en) pr_debug("[GAMMA] " fmt "\n", ##arg); } while (0)
-#define CCORR_ERR(fmt, arg...) pr_notice("[CCORR] " fmt "\n", ##arg)
+	do { if (corr_dbg_en) \
+		pr_debug("[GAMMA] %s: " fmt "\n", __func__, ##arg); } while (0)
+#define CCORR_ERR(fmt, arg...) \
+	pr_notice("[CCORR] %s: " fmt "\n", __func__, ##arg)
 #define CCORR_NOTICE(fmt, arg...) \
-	do { if (corr_dbg_en) pr_debug("[CCORR] " fmt "\n", ##arg); } while (0)
+	do { if (corr_dbg_en) \
+		pr_debug("[CCORR] %s: " fmt "\n", __func__, ##arg); } while (0)
 #define CCORR_DBG(fmt, arg...) \
-	do { if (corr_dbg_en) pr_debug("[CCORR] " fmt "\n", ##arg); } while (0)
+	do { if (corr_dbg_en) \
+		pr_debug("[CCORR] %s: " fmt "\n", __func__, ##arg); } while (0)
 
 static DEFINE_MUTEX(g_gamma_global_lock);
 
@@ -185,8 +191,7 @@ static int disp_gamma_write_lut_reg(struct cmdqRecStruct *cmdq,
 
 	if (module < GAMMA0_MODULE_NAMING ||
 		module >= GAMMA0_MODULE_NAMING + GAMMA_TOTAL_MODULE_NUM) {
-		GAMMA_ERR("disp_gamma_write_lut_reg: invalid module = %d\n",
-			module);
+		GAMMA_ERR("invalid module = %d\n", module);
 		return -EFAULT;
 	}
 
@@ -195,9 +200,7 @@ static int disp_gamma_write_lut_reg(struct cmdqRecStruct *cmdq,
 
 	gamma_lut = g_disp_gamma_lut[id];
 	if (gamma_lut == NULL) {
-		GAMMA_ERR(
-		       "disp_gamma_write_lut_reg: table [%d] not initialized\n",
-		       id);
+		GAMMA_ERR("table [%d] not initialized\n", id);
 		ret = -EFAULT;
 		goto gamma_write_lut_unlock;
 	}
@@ -245,11 +248,11 @@ static int disp_gamma_set_lut
 	enum disp_gamma_id_t id;
 	struct DISP_GAMMA_LUT_T *gamma_lut, *old_lut;
 
-	GAMMA_DBG("disp_gamma_set_lut(cmdq = %d)", (cmdq != NULL ? 1 : 0));
+	GAMMA_DBG("(cmdq = %d)", (cmdq != NULL ? 1 : 0));
 
 	gamma_lut = kmalloc(sizeof(struct DISP_GAMMA_LUT_T), GFP_KERNEL);
 	if (gamma_lut == NULL) {
-		GAMMA_ERR("disp_gamma_set_lut: no memory\n");
+		GAMMA_ERR("no memory\n");
 		return -EFAULT;
 	}
 
@@ -275,7 +278,7 @@ static int disp_gamma_set_lut
 
 			disp_gamma_trigger_refresh(id);
 		} else {
-			GAMMA_ERR("disp_gamma_set_lut: invalid ID = %d\n", id);
+			GAMMA_ERR("invalid ID = %d\n", id);
 			ret = -EFAULT;
 		}
 	}
@@ -348,8 +351,7 @@ static int disp_gamma_bypass(enum DISP_MODULE_ENUM module, int bypass)
 	DISP_REG_MASK(NULL, DISP_REG_GAMMA_CFG + gamma_get_offset(module),
 		relay, 0x1);
 
-	GAMMA_DBG("Module(%d) disp_gamma_bypass(bypass = %d)\n",
-		module, bypass);
+	GAMMA_DBG("Module(%d) (bypass = %d)\n", module, bypass);
 
 	return 0;
 }
@@ -659,8 +661,7 @@ static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq,
 
 	if (module < CCORR0_MODULE_NAMING ||
 		module >= CCORR0_MODULE_NAMING + CCORR_TOTAL_MODULE_NUM) {
-		CCORR_ERR("disp_ccorr_write_coef_reg: invalid module = %d\n",
-			module);
+		CCORR_ERR("invalid module = %d\n", module);
 		return -EFAULT;
 	}
 
@@ -669,8 +670,7 @@ static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq,
 
 	ccorr = g_disp_ccorr_coef[id];
 	if (ccorr == NULL) {
-		CCORR_DBG("disp_ccorr_write_coef_reg: [%d] not initialized\n",
-			id);
+		CCORR_DBG("[%d] not initialized\n", id);
 		ret = -EFAULT;
 		goto ccorr_write_coef_unlock;
 	}
@@ -698,7 +698,7 @@ static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq,
 		     ((ccorr->coef[2][0] << 16) | (ccorr->coef[2][1])));
 	DISP_REG_SET(cmdq, CCORR_REG(ccorr_base, 4), (ccorr->coef[2][2] << 16));
 
-	CCORR_DBG("disp_ccorr_write_coef_reg");
+	CCORR_DBG("write coef register finish");
 ccorr_write_coef_unlock:
 
 	if (lock)
@@ -721,7 +721,7 @@ void disp_ccorr_on_end_of_frame(void)
 
 	intsta = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
 
-	CCORR_DBG("disp_ccorr_on_end_of_frame: intsta: 0x%x", intsta);
+	CCORR_DBG("intsta: 0x%x", intsta);
 	if (intsta & 0x2) {	/* End of frame */
 		if (spin_trylock_irqsave(&g_ccorr_get_irq_lock, flags)) {
 			DISP_CPU_REG_SET(DISP_REG_CCORR_INTSTA,
@@ -748,7 +748,7 @@ static void disp_ccorr_set_interrupt(int enabled)
 	unsigned int index = index_of_ccorr(CCORR0_MODULE_NAMING);
 
 	if (atomic_read(&g_ccorr_is_clock_on[index]) != 1) {
-		CCORR_DBG("disp_ccorr_set_interrupt: clock is off");
+		CCORR_DBG("clock is off");
 		return;
 	}
 
@@ -775,7 +775,7 @@ static void disp_ccorr_clear_irq_only(void)
 
 	intsta = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
 
-	CCORR_DBG("disp_ccorr_clear_irq_only: intsta: 0x%x", intsta);
+	CCORR_DBG("intsta: 0x%x", intsta);
 	if (intsta & 0x2) { /* End of frame */
 		if (spin_trylock_irqsave(&g_ccorr_get_irq_lock, flags)) {
 			DISP_CPU_REG_SET(DISP_REG_CCORR_INTSTA,
@@ -796,12 +796,12 @@ static int disp_ccorr_wait_irq(unsigned long timeout)
 	if (atomic_read(&g_ccorr_get_irq) == 0) {
 		ret = wait_event_interruptible(g_ccorr_get_irq_wq,
 			atomic_read(&g_ccorr_get_irq) == 1);
-		CCORR_DBG("disp_ccorr_wait_irq: get_irq = 1, waken up");
-		CCORR_DBG("disp_ccorr_wait_irq: get_irq = 1, ret = %d", ret);
+		CCORR_DBG("get_irq = 1, waken up");
+		CCORR_DBG("get_irq = 1, ret = %d", ret);
 	} else {
 		/* If g_ccorr_get_irq is already set, */
 		/* means PQService was delayed */
-		CCORR_DBG("disp_ccorr_wait_irq: get_irq = 0");
+		CCORR_DBG("get_irq = 0");
 	}
 
 	spin_lock_irqsave(&g_ccorr_get_irq_lock, flags);
@@ -837,7 +837,7 @@ static int disp_pq_copy_backlight_to_user(int __user *backlight)
 	if (copy_to_user(backlight, &g_pq_backlight_db, sizeof(int)) == 0)
 		ret = 0;
 
-	CCORR_DBG("disp_pq_copy_backlight_to_user: %d", ret);
+	CCORR_DBG("%d", ret);
 
 	return ret;
 }
@@ -857,7 +857,7 @@ void disp_pq_notify_backlight_changed(int bl_1024)
 	if (atomic_read(&g_ccorr_is_init_valid) != 1)
 		return;
 
-	CCORR_DBG("disp_pq_notify_backlight_changed %d", bl_1024);
+	CCORR_DBG("%d", bl_1024);
 
 	if (old_bl == 0 || bl_1024 == 0) {
 		disp_ccorr_set_interrupt(1);
@@ -877,7 +877,7 @@ static int disp_ccorr_set_coef
 
 	ccorr = kmalloc(sizeof(struct DISP_CCORR_COEF_T), GFP_KERNEL);
 	if (ccorr == NULL) {
-		CCORR_ERR("disp_ccorr_set_coef: no memory\n");
+		CCORR_ERR("no memory\n");
 		return -EFAULT;
 	}
 
@@ -903,7 +903,7 @@ static int disp_ccorr_set_coef
 
 			disp_ccorr_trigger_refresh(id);
 		} else {
-			CCORR_ERR("disp_ccorr_set_coef: invalid ID = %d\n", id);
+			CCORR_ERR("invalid ID = %d\n", id);
 			ret = -EFAULT;
 			kfree(ccorr);
 		}
@@ -929,7 +929,7 @@ int disp_ccorr_set_color_matrix(void *cmdq, int32_t matrix[16], int32_t hint)
 	bool need_refresh = false;
 
 	if (cmdq == NULL) {
-		CCORR_ERR("%s: cmdq can not be NULL\n", __func__);
+		CCORR_ERR("cmdq can not be NULL\n");
 		return -EFAULT;
 	}
 
@@ -1077,7 +1077,7 @@ static int disp_ccorr_bypass(enum DISP_MODULE_ENUM module, int bypass)
 
 	DISP_REG_MASK(NULL, DISP_REG_CCORR_CFG + base_offset, 1, 1);
 
-	CCORR_DBG("Module(%d) disp_ccorr_bypass(bypass = %d)", module, bypass);
+	CCORR_DBG("Module(%d) (bypass = %d)", module, bypass);
 
 	return 0;
 }
@@ -1346,7 +1346,7 @@ void ccorr_test(const char *cmd, char *debug_output)
 		config_module_num = CCORR_TOTAL_MODULE_NUM;
 #endif
 
-	CCORR_DBG("ccorr_test(%s)", cmd);
+	CCORR_DBG("(%s)", cmd);
 
 	debug_output[0] = '\0';
 
