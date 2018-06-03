@@ -82,7 +82,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x00040802,	/* INFRA0 */
 		0x03AFB800,	/* INFRA1 */
 		0x000000C1,	/* INFRA2 */
-		0x000FFFE0,	/* MMSYS0 */
+		0x000DFFE0,	/* MMSYS0 */
 		0x00000170,	/* MMSYS1 */
 		0x00000312,	/* IMAGE,  use SPM MTCMOS off as condition */
 		0x00000312,	/* MFG,    use SPM MTCMOS off as condition */
