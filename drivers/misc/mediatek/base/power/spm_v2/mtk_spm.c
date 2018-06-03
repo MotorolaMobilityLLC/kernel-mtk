@@ -915,7 +915,7 @@ static char *local_buf;
 static dma_addr_t local_buf_dma;
 static const struct firmware *spm_fw[DYNA_LOAD_PCM_MAX];
 
-int spm_fw_count = DYNA_LOAD_PCM_MAX;
+int spm_fw_count;
 
 /*Reserved memory by device tree!*/
 int reserve_memory_spm_fn(struct reserved_mem *rmem)
@@ -936,7 +936,6 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 	int i;
 	int offset = 0;
 	int addr_2nd = 0;
-	int spm_fw_count = 0;
 
 	if (!pdev)
 		return err;
@@ -1047,7 +1046,10 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 
 int spm_load_pcm_firmware_nodev(void)
 {
-	spm_load_pcm_firmware(pspmdev);
+	if (spm_fw_count == 0)
+		spm_load_pcm_firmware(pspmdev);
+	else
+		spm_crit("spm_fw_count = %d\n", spm_fw_count);
 	return 0;
 }
 
