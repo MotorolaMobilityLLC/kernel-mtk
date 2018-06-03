@@ -16,61 +16,6 @@
 #include "typec-ioctl.h"
 #include "typec_reg.h"
 
-#ifdef INMEM_LOG
-
-#define INMEM_LOGGER_BUF_SIZE (1*1024*1024)
-static char *inmem_logger_buf;
-static int write_idx;
-static int read_idx;
-static DEFINE_SPINLOCK(logger_lock);
-#define MAX_SINGLE_LINE_SIZE 128
-
-void _inmem_log(const int len, const char *str)
-{
-	unsigned long flags;
-	unsigned long long curtime;
-	unsigned long rem_nsec;
-	char time_str[256] = {0};
-
-	/*Disable the Storage Logger. Do nothing and just return*/
-	if (!inmem_logger_buf)
-		return;
-
-	/* Get current system clock */
-	curtime = local_clock();
-
-	rem_nsec = do_div(curtime, 1000*1000*1000);
-
-	spin_lock_irqsave(&logger_lock, flags);
-
-	sprintf(time_str, "[%5lu.%06lu]%s", (unsigned long)curtime, rem_nsec / 1000, str);
-
-	/* Buffer is overflow!!!=>Reset writeindex = 0; */
-	if ((strlen(time_str) + write_idx) >= INMEM_LOGGER_BUF_SIZE) {
-		write_idx = 0;
-		read_idx = 0;
-	}
-
-	memcpy(inmem_logger_buf + write_idx, time_str, strlen(time_str));
-	write_idx += strlen(time_str);
-
-	spin_unlock_irqrestore(&logger_lock, flags);
-}
-
-void inmem_log(const char *fmt, ...)
-{
-	char buf[256] = {0};
-	int len = 0;
-
-	va_list args;
-
-	va_start(args, fmt);
-	len = vsprintf(buf, fmt, args);
-	_inmem_log(len, buf);
-	va_end(args);
-}
-#endif
-
 #if FPGA_PLATFORM
 static int cdev_open(struct inode *inode, struct file *file)
 {
@@ -446,6 +391,10 @@ static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 
 	sprintf(buf + strlen(buf), "power_role=%s\n", ((hba->power_role == PD_ROLE_SINK)?"SNK":"SRC"));
 	sprintf(buf + strlen(buf), "data_role=%s\n", ((hba->data_role == PD_ROLE_UFP)?"UFP":"DFP"));
+
+	if (hba->power_role == PD_ROLE_SINK)
+		sprintf(buf + strlen(buf), "Rp=%s\n", SRC_CUR(hba->src_rp));
+
 	sprintf(buf + strlen(buf), "flags=0x%x\n", hba->flags);
 
 	sprintf(buf + strlen(buf), "task_state=%d\n", hba->task_state);
@@ -461,46 +410,6 @@ static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 
 	return strlen(buf);
 }
-
-#ifdef INMEM_LOG
-#define FILE_PATH "/storage/emulated/0/typec_log"
-
-static ssize_t log_show(struct device *pdev, struct device_attribute *attr,
-			   char *buf)
-{
-	struct file *fp;
-	mm_segment_t old_fs;
-	char *temp_buf_ptr = inmem_logger_buf;
-	unsigned int log_size = INMEM_LOGGER_BUF_SIZE;
-
-	/*Disable the Storage Logger. Do nothing and just return*/
-	if (!inmem_logger_buf)
-		return sprintf(buf, "No enough buffer\n");
-
-	fp = filp_open(FILE_PATH, O_WRONLY|O_CREAT|O_TRUNC, 0);
-
-	if (!IS_ERR(fp)) {
-		ssize_t ret;
-
-		old_fs = get_fs();
-		set_fs(KERNEL_DS);
-		while (log_size > 0) {
-			ret = do_sync_write(fp, inmem_logger_buf, log_size, &fp->f_pos);
-			if (ret <= 0)
-				break;
-
-			log_size -= ret;
-			temp_buf_ptr += ret;
-		}
-		set_fs(old_fs);
-		ret = filp_close(fp, NULL);
-	} else {
-		dev_err(pdev, "Can not open %s\n", FILE_PATH);
-	}
-
-	return sprintf(buf, "%s\n", FILE_PATH);
-}
-#endif
 
 #if SUPPORT_PD
 static ssize_t pd_store(struct device *pdev, struct device_attribute *attr,
@@ -828,10 +737,6 @@ static DEVICE_ATTR(dbg_lvl, S_IRUGO | S_IWUSR, dbg_lvl_show, dbg_lvl_store);
 static DEVICE_ATTR(stat, S_IRUGO, stat_show, NULL);
 static DEVICE_ATTR(vbus, S_IRUGO | S_IWUSR, vbus_show, vbus_store);
 
-#ifdef INMEM_LOG
-static DEVICE_ATTR(log, S_IRUGO, log_show, NULL);
-#endif
-
 #if SUPPORT_PD
 static DEVICE_ATTR(pd, S_IWUSR, NULL, pd_store);
 static DEVICE_ATTR(vconn, S_IRUGO | S_IWUSR, vconn_show, vconn_store);
@@ -849,9 +754,6 @@ static struct device_attribute *mt_typec_attributes[] = {
 	&dev_attr_write,
 	&dev_attr_dbg_lvl,
 	&dev_attr_stat,
-#ifdef INMEM_LOG
-	&dev_attr_log,
-#endif
 #if SUPPORT_PD
 	&dev_attr_pd,
 	&dev_attr_vconn,

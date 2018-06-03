@@ -85,6 +85,19 @@
 #define DIV_AND_RND_UP(dividend, divider) (((dividend) + (divider) - 1) / (divider))
 #define ZERO_INDEXED_DIV_AND_RND_UP(dividdend, divider) (ZERO_INDEXED_VAL(DIV_AND_RND_UP((dividdend), (divider))))
 
+#define SRC_CUR(x) ({ char *tmp; \
+	if (x == 0) \
+		tmp = "IDLE"; \
+	else if (x == 1) \
+		tmp = "DEFAULT"; \
+	else if (x == 2) \
+		tmp = "1.5A"; \
+	else if (x == 3) \
+		tmp = "3.0A"; \
+	else \
+		tmp = "UNKNOWN"; \
+	tmp; })
+
 /* TYPEC configurations */
 
 /*when set, signals vbus off when VSAFE_0V is 1*/
@@ -236,6 +249,10 @@ enum enum_typec_dbg_lvl {
 #define TYPE_C_INTR_ACC_TOGGLE (REG_TYPE_C_CC_ENT_UNATTACH_SNK_INTR_EN | \
 		REG_TYPE_C_CC_ENT_UNATTACH_ACC_INTR_EN)
 
+#define TYPE_C_INTR_SRC_ADVERTISE (REG_TYPE_C_CC_ENT_SNK_PWR_30_INTR_EN | \
+		REG_TYPE_C_CC_ENT_SNK_PWR_15_INTR_EN | \
+		REG_TYPE_C_CC_ENT_SNK_PWR_DEFAULT_INTR_EN)
+
 #define TYPEC_TERM_CC (REG_TYPE_C_SW_FORCE_MODE_EN_DA_CC_RCC1 | \
 		REG_TYPE_C_SW_FORCE_MODE_EN_DA_CC_RCC2)
 
@@ -362,6 +379,8 @@ struct typec_hba {
 	enum enum_typec_dbg_lvl dbg_lvl;
 
 	uint8_t cc; /*0:no cc, 1;cc1 2;cc2*/
+	uint8_t src_rp;
+	bool ra;
 	uint8_t vbus_en;
 	uint8_t vbus_det_en;
 	uint8_t vbus_present;
