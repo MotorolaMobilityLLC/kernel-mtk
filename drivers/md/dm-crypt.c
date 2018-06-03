@@ -1249,7 +1249,7 @@ static int crypt_is_hw_fde(const char *path)
 		return 1;
 	#else
 	/* eMMC device use HW FDE only. SD card cannot use HW FDE */
-	if (major == MMC_BLOCK_MAJOR && minor < CONFIG_MMC_BLOCK_MINORS * 4)
+	if (major == BLOCK_EXT_MAJOR && minor < CONFIG_MMC_BLOCK_MINORS * 4)
 		return 1;
 	#endif
 #endif
@@ -1302,8 +1302,8 @@ static int crypt_dev_id(const char *path)
 		return 0;
 	#else
 	/* eMMC device use HW FDE only. SD card cannot use HW FDE */
-	if (major == MMC_BLOCK_MAJOR && minor < CONFIG_MMC_BLOCK_MINORS * 4)
-		return 1;
+	if (major == BLOCK_EXT_MAJOR && minor < CONFIG_MMC_BLOCK_MINORS * 4)
+		return 0;
 	#endif
 #endif
 
