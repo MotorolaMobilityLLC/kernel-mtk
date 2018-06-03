@@ -1488,7 +1488,9 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	unsigned int i, verr = 0;
 #ifdef CONFIG_THERMAL
 	unsigned long long temp_long;
+#ifdef CONFIG_EEM_AEE_RR_REC
 	unsigned long long temp_cur = (unsigned long long)aee_rr_curr_ptp_temp();
+#endif
 #endif
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
