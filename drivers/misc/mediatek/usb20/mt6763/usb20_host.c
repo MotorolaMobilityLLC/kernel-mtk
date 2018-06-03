@@ -788,43 +788,6 @@ void mt_usb_otg_exit(struct musb *musb)
 	mt_usb_set_vbus(mtk_musb, 0);
 }
 
-#include "hub.h"
-static struct delayed_work ep0_stress_work;
-struct usb_device *udev;
-static void do_ep0_stress_work(struct work_struct *data)
-{
-	int ret;
-	u16 status;
-
-	ret = usb_get_status(udev, USB_RECIP_DEVICE, 0, &status);
-	DBG_LIMIT(30, "usb_get_status, ret<%d>", ret);
-
-	if (ret == 0)
-		schedule_delayed_work(&ep0_stress_work, 0);
-	else {
-		DBG(0, "usb_get_status, ret<%d>\n", ret);
-		usb_autosuspend_device(udev);
-	}
-}
-static void trigger_ep0_stress_work(void)
-{
-	int ret;
-	struct usb_hcd *hcd = musb_to_hcd(mtk_musb);
-	struct usb_device *rhdev = hcd->self.root_hub;
-	struct usb_hub *hub = usb_hub_to_struct_hub(rhdev);
-	struct usb_port *port_dev = hub->ports[0];
-
-	udev = port_dev->child;
-	ret = usb_autoresume_device(udev);
-	DBG(0, "usb_autoresume_device, ret<%d>\n", ret);
-	if (ret)
-		return;
-
-	INIT_DELAYED_WORK(&ep0_stress_work, do_ep0_stress_work);
-	schedule_delayed_work(&ep0_stress_work, 0);
-
-}
-
 enum {
 	DO_IT = 0,
 	REVERT,
@@ -917,29 +880,25 @@ static int set_option(const char *val, const struct kernel_param *kp)
 		break;
 	case 5:
 		DBG(0, "case %d\n", local_option);
-		trigger_ep0_stress_work();
+		disc_threshold_to_max(DO_IT);
 		break;
 	case 6:
 		DBG(0, "case %d\n", local_option);
-		disc_threshold_to_max(DO_IT);
+		disc_threshold_to_max(REVERT);
 		break;
 	case 7:
 		DBG(0, "case %d\n", local_option);
-		disc_threshold_to_max(REVERT);
+		bypass_disc_circuit(DO_IT);
 		break;
 	case 8:
 		DBG(0, "case %d\n", local_option);
-		bypass_disc_circuit(DO_IT);
+		bypass_disc_circuit(REVERT);
 		break;
 	case 9:
 		DBG(0, "case %d\n", local_option);
-		bypass_disc_circuit(REVERT);
-		break;
-	case 10:
-		DBG(0, "case %d\n", local_option);
 		_set_vbus(mtk_musb, 1);
 		break;
-	case 11:
+	case 10:
 		DBG(0, "case %d\n", local_option);
 		_set_vbus(mtk_musb, 0);
 		break;
