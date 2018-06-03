@@ -593,13 +593,11 @@ BOOLEAN wextSrchOkcAndPMKID(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT P
 			*okc = pucIEStart[5];
 			ucDone |= 1;
 		} else if (pucIEStart[0] == ELEM_ID_RSN) {
-
 			/*
 			 * RSN IE:
 			 * EID(1), Len(1), Version(2), GrpCipher(4), PairCipherCnt(2), PairCipherList(PairCipherCnt * 4)
 			 * AKMCnt(2), AkmList(4*AkmCnt), RSNCap(2), PMKIDCnt(2), PMKIDList(16*PMKIDCnt), GrpMgtCipher(4)
 			 */
-
 			UINT_16 u2CipherCnt = 0;
 			UINT_16 u2AkmCnt = 0;
 			INT_32 i4LenToCheck = 8;
@@ -616,12 +614,10 @@ BOOLEAN wextSrchOkcAndPMKID(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT P
 			u2AkmCnt = *(PUINT_16)&pucIEStart[i4LenToCheck];
 			i4LenToCheck += 2; /* include length of AKM Count */
 			i4LenToCheck += u2AkmCnt * 4 + 2; /* include akm list field */
-
 			/*
 			 * if IE length is 10 + u2CipherCnt * 4 + 2 + u2AkmCnt * 4 + 2 + 6,
 			 * means PMKID count field is zero, and Group Mgmt Cipher may be exist
 			 */
-
 			if (i4InfoElemLen <= i4LenToCheck + 6)
 				goto check_next;
 			*ppucPMKID = pucIEStart + i4LenToCheck; /* return PMKID field and started at PMKID count */
