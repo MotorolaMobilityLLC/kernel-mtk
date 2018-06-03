@@ -2208,9 +2208,12 @@ static int ufshcd_dme_link_startup(struct ufs_hba *hba)
 	uic_cmd.command = UIC_CMD_DME_LINK_STARTUP;
 
 	ret = ufshcd_send_uic_cmd(hba, &uic_cmd);
-	if (ret)
+	if (ret) {
+		/* MTK Patch: dump ufs debug Info like XO_UFS/VEMC/VUFS18 */
+		ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(hba);
 		dev_err(hba->dev,
 			"dme-link-startup: error code %d\n", ret);
+	}
 	return ret;
 }
 
@@ -2925,8 +2928,13 @@ static int ufshcd_link_startup(struct ufs_hba *hba)
 
 	ret = ufshcd_make_hba_operational(hba);
 out:
-	if (ret)
+	if (ret) {
 		dev_err(hba->dev, "link startup failed %d\n", ret);
+		/*
+		* MTK PATCH: Reboot system if link-retry fail to avoid system hang.
+		*/
+		BUG_ON(1);
+	}
 	return ret;
 }
 
@@ -3807,6 +3815,7 @@ static void ufshcd_update_uic_error(struct ufs_hba *hba)
 	reg_l = reg;
 
 	if (reg_l) {
+		/* MTK Patch: dump ufs debug Info like XO_UFS/VEMC/VUFS18 */
 		ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(hba);
 		dev_err(hba->dev,
 			"Host UIC Error Code Data Link Layer: %08x\n", reg);
@@ -3897,6 +3906,7 @@ static void ufshcd_check_errors(struct ufs_hba *hba)
 		hba->uic_error = 0;
 		ufshcd_update_uic_error(hba);
 		if (hba->uic_error) {
+			/* MTK Patch: dump ufs debug Info like XO_UFS/VEMC/VUFS18 */
 			ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(hba);
 			queue_eh_work = true;
 		}
