@@ -238,6 +238,7 @@ static int _pwrap_timeout_ns(unsigned long long start_time_ns, unsigned long lon
 		/* timeout */
 		PWRAPLOG("@@@@Timeout: elapse time%lld,start%lld setting timer%lld\n",
 			 elapse_time, start_time_ns, timeout_time_ns);
+		aee_kernel_warning("WRAPPER:ERR DUMP", "WRAP");
 		return 1;
 	}
 	return 0;
@@ -1354,7 +1355,6 @@ static inline void pwrap_dump_ap_register(void)
 #endif
 		PWRAPLOG("addr:0x%p = 0x%x\n", reg_addr, val);
 	}
-	aee_kernel_warning("WRAPPER:ERR DUMP", "WRAP");
 }
 
 static inline void pwrap_dump_pmic_register(void)
