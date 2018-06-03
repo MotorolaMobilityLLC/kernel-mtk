@@ -14,7 +14,8 @@
 # drivers/cmdq
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3 \
-             -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)
+             -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
+             -I$(srctree)/drivers/iommu
 
 ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"MDP")
 ccflags-y += -DCMDQ_MDP_COLOR
