@@ -1467,12 +1467,11 @@ static INT32 mt6620_patch_dwn(UINT32 index)
 	/* remove patch header:
 	 * |<-patch body: X Bytes (X=patchSize)--->|
 	 */
-	patchSize -= sizeof(WMT_PATCH);
-	if (patchSize < 0) {
+	if (patchSize < sizeof(WMT_PATCH)) {
 		WMT_ERR_FUNC("error patch size\n");
 		return -1;
 	}
-
+	patchSize -= sizeof(WMT_PATCH);
 	pbuf += sizeof(WMT_PATCH);
 
 	if (index == 0) {
@@ -1750,12 +1749,11 @@ static INT32 mt6620_patch_dwn(VOID)
 	/* remove patch header:
 	 * |<-patch body: X Bytes (X=patchSize)--->|
 	 */
-	patchSize -= sizeof(WMT_PATCH);
-	if (patchSize < 0) {
+	if (patchSize < sizeof(WMT_PATCH)) {
 		WMT_ERR_FUNC("error patch size\n");
 		return -1;
 	}
-
+	patchSize -= sizeof(WMT_PATCH);
 	pbuf += sizeof(WMT_PATCH);
 	WMT_INFO_FUNC("===========================================\n");
 	WMT_INFO_FUNC("[Combo Patch] Built Time = %s\n", cDataTime);
