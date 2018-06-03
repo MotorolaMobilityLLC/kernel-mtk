@@ -48,6 +48,15 @@ void __attribute__((weak)) mtk_idle_cond_update_mask(
 int __attribute__((weak)) mtk_idle_cond_append_info(
 	bool short_log, int idle_type, char *logptr, unsigned int logsize);
 
+void mtk_sodi_disable(void)
+{
+	sodi_feature_enable = 0;
+}
+
+void mtk_sodi3_disable(void)
+{
+	sodi3_feature_enable = 0;
+}
 
 bool mtk_sodi_enabled(void)
 {
