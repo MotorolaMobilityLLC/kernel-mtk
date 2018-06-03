@@ -279,9 +279,16 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	}
 	case SET_DSI_ID:
 	{
-		if (arg > PM_DSI_DUAL)
+		uint32_t set_dsi_id = 0;
+
+		if (copy_from_user(&set_dsi_id, (void __user *)arg, sizeof(set_dsi_id))) {
+			pr_debug("[SET_DSI_ID]: copy_from_user failed! line:%d\n", __LINE__);
+			return -EFAULT;
+		}
+
+		if (set_dsi_id > PM_DSI_DUAL)
 			return -EINVAL;
-		pm->dsi_id = arg;
+		pm->dsi_id = set_dsi_id;
 		pr_debug("fbconfig=>SET_DSI_ID:%d\n", dsi_id);
 
 		return 0;
@@ -339,8 +346,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 				 __LINE__);
 			return -EFAULT;
 		}
-
-		PanelMaster_set_CC(dsi_id, enable);
+		if ((enable == 0) || (enable == 1))
+			PanelMaster_set_CC(dsi_id, enable);
 		return 0;
 	}
 	case LCM_GET_DSI_CONTINU:
@@ -361,7 +368,13 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 
 		pr_debug("LCM_GET_DSI_CLK=>dsi:%d\n", clk);
-		Panel_Master_dsi_config_entry("PM_CLK", &clk);
+
+		if ((clk >= 5) && (clk <= 625)) {
+			Panel_Master_dsi_config_entry("PM_CLK", &clk);
+		} else {
+			pr_debug("MIPI_SET_CLK=>dsi:%d is wrong, the value should be 25~625!line:%d\n", clk, __LINE__);
+			return -EFAULT;
+		}
 		return 0;
 	}
 	case LCM_GET_DSI_CLK:
@@ -373,7 +386,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	}
 	case MIPI_SET_SSC:
 	{
-		struct DSI_RET dsi_ssc;
+		/*struct DSI_RET dsi_ssc;*/
+		uint32_t dsi_ssc;
 
 		if (copy_from_user(&dsi_ssc, (void __user *)argp, sizeof(dsi_ssc))) {
 			pr_debug("[MIPI_SET_SSC]: copy_from_user failed! line:%d\n",
@@ -382,7 +396,13 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 
 		pr_debug("Pmaster:set mipi ssc line:%d\n", __LINE__);
-		Panel_Master_dsi_config_entry("PM_SSC", &dsi_ssc);
+		if ((dsi_ssc >= 1) && (dsi_ssc <= 8)) {
+			Panel_Master_dsi_config_entry("PM_SSC", &dsi_ssc);
+		} else {
+			pr_debug("MIPI_SET_SSC=>dsi_ssc:%d is wrong, the value should be 1~8!line:%d\n",
+				dsi_ssc, __LINE__);
+			return -EFAULT;
+		}
 		return 0;
 	}
 	case LCM_GET_DSI_SSC:
