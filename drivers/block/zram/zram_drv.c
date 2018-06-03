@@ -1129,11 +1129,16 @@ static ssize_t disksize_store(struct device *dev,
 
 	disksize = memparse(buf, NULL);
 	if (!disksize) {
+#define DEFAULT_MAX_DISKSIZE 0x40000000	/* 1GB */
 		/* Give it a default disksize: half totalram_pages */
 		disksize = totalram_pages << (PAGE_SHIFT - 1);
 		/* Promote the default disksize if totalram_pages is smaller */
 		if (totalram_pages < SUPPOSED_TOTALRAM)
 			disksize += (disksize >> 1);
+
+		if (disksize > DEFAULT_MAX_DISKSIZE)
+			disksize = DEFAULT_MAX_DISKSIZE;
+#undef DEFAULT_MAX_DISKSIZE
 	}
 
 	disksize = PAGE_ALIGN(disksize);

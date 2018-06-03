@@ -76,6 +76,8 @@ static DEFINE_SPINLOCK(lowmem_shrink_lock);
 #define CREATE_TRACE_POINTS
 #include "trace/lowmemorykiller.h"
 
+#include "internal.h"
+
 static u32 lowmem_debug_level = 1;
 static short lowmem_adj[9] = {
 	0,
@@ -170,6 +172,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	static unsigned long lowmem_print_extra_info_timeout;
 	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
 	int d_state_is_found = 0;
+	int unreclaimable_zones = 0;
 #if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	int to_be_aggressive = 0;
 	unsigned long swap_pages = 0;
@@ -232,6 +235,10 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 					zone_page_state(z, NR_ACTIVE_ANON) +
 					zone_page_state(z, NR_INACTIVE_ANON) +
 					new_other_free;
+
+				/* Check whether there is any unreclaimable memory zone */
+				if (populated_zone(z) && !zone_reclaimable(z))
+					unreclaimable_zones++;
 			}
 		}
 
@@ -297,6 +304,10 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		}
 	}
 
+	/* Promote its priority */
+	if (unreclaimable_zones > 0)
+		min_score_adj = lowmem_adj[0];
+
 	lowmem_print(3, "lowmem_scan %lu, %x, ofree %d %d, ma %hd\n",
 			sc->nr_to_scan, sc->gfp_mask, other_free,
 			other_file, min_score_adj);
@@ -357,6 +368,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			continue;
 		}
 #endif
+		/* Bypass D-state process */
 		if (p->state & TASK_UNINTERRUPTIBLE) {
 			lowmem_print(2, "lowmem_scan filter D state process: %d (%s) state:0x%lx\n",
 				     p->pid, p->comm, p->state);
@@ -566,12 +578,8 @@ static struct shrinker lowmem_shrinker = {
 
 static int __init lowmem_init(void)
 {
-#ifdef CONFIG_ZRAM
-#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+#if defined(CONFIG_ZRAM) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	vm_swappiness = 150;
-#else
-	vm_swappiness = 100;
-#endif
 #endif
 	task_free_register(&task_nb);
 	register_shrinker(&lowmem_shrinker);
