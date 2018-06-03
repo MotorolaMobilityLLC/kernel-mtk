@@ -523,7 +523,7 @@ static int maghub_probe(struct platform_device *pdev)
 	err = maghub_create_attr(&(maghub_init_info.platform_diver_addr->driver));
 	if (err) {
 		MAGN_PR_ERR("create attribute err = %d\n", err);
-		goto create_attr_failed;
+		goto exit_misc_device_register_failed;
 	}
 	ctl.is_use_common_factory = false;
 	ctl.enable = maghub_enable;
