@@ -650,7 +650,7 @@ again:
 		L2RISAR0 = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0);
 #if MD_GENERATION == (6293)
 		L2RISAR0 = cldma_reg_bit_gather(L2RISAR0);
-		l2qe_s_offset = CLDMA_RX_QE_OFFSET << 8;
+		l2qe_s_offset = CLDMA_RX_QE_OFFSET * 8;
 #endif
 		if ((L2RISAR0 & CLDMA_RX_INT_DONE & (1 << queue->index)))
 			retry = 1;
