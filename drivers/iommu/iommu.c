@@ -1432,7 +1432,15 @@ size_t default_iommu_map_sg(struct iommu_domain *domain, unsigned long iova,
 	min_pagesz = 1 << __ffs(domain->ops->pgsize_bitmap);
 
 	for_each_sg(sg, s, nents, i) {
-		phys_addr_t phys = page_to_phys(sg_page(s)) + s->offset;
+		phys_addr_t phys;
+
+		if (!IS_ERR(sg_page(s))) {
+			phys = page_to_phys(sg_page(s)) + s->offset;
+		} else {
+			/* this is for which sg do not have page struct */
+			phys = sg_dma_address(s);
+			s->length = sg_dma_len(s);
+		}
 
 		/*
 		 * We are mapping on IOMMU page boundaries, so offset within
