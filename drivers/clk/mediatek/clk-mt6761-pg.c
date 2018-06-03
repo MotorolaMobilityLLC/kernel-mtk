@@ -218,8 +218,10 @@ static void __iomem *conn_base;/* connsys */
 #define CONN_PROT_STEP1_0_ACK_MASK			((0x1 << 13))
 #define CONN_PROT_STEP1_1_MASK			((0x1 << 18))
 #define CONN_PROT_STEP1_1_ACK_MASK			((0x1 << 18))
-#define CONN_PROT_STEP2_0_MASK			((0x1 << 14))
-#define CONN_PROT_STEP2_0_ACK_MASK			((0x1 << 14))
+#define CONN_PROT_STEP2_0_MASK		((0x1 << 14))
+#define CONN_PROT_STEP2_0_ACK_MASK	((0x1 << 14))
+#define CONN_PROT_STEP2_1_MASK			((0x1 << 21))
+#define CONN_PROT_STEP2_1_ACK_MASK		((0x1 << 21))
 #define DPY_PROT_STEP1_0_MASK			((0x1 << 0)	\
 							|(0x1 << 23)	\
 							|(0x1 << 26))
@@ -729,10 +731,29 @@ int spm_mtcmos_ctrl_conn_bus_prot(int state)
 
 		INCREASE_STEPS;
 #endif
+		/* TINFO="Set bus protect - step2 : 1" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_1_SET,
+			CONN_PROT_STEP2_1_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1)
+			& CONN_PROT_STEP2_1_ACK_MASK)
+			!= CONN_PROT_STEP2_1_ACK_MASK)
+			ram_console_update();
+
+		INCREASE_STEPS;
+#endif
 		/* TINFO="Finish to set CONN bus protect" */
 	} else {    /* STA_RELEASE_BUS */
 		/* TINFO="Release bus protect - step2 : 0" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_CLR, CONN_PROT_STEP2_0_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		/* Note that this protect ack check after
+		 * releasing protect has been ignored
+		 */
+#endif
+		/* TINFO="Release bus protect - step2 : 1" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_1_CLR,
+			CONN_PROT_STEP2_1_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		/* Note that this protect ack check after
 		 * releasing protect has been ignored
