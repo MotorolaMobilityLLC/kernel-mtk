@@ -73,7 +73,7 @@ struct musb_dma_controller;
 struct musb_dma_channel {
 	struct dma_channel channel;
 	struct musb_dma_controller *controller;
-	u32 start_addr;
+	dma_addr_t start_addr;
 	u32 len;
 	u16 max_packet_sz;
 	u8 idx;
