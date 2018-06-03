@@ -27,6 +27,7 @@
 #include "ddp_rdma.h"
 #include "ddp_rdma_ex.h"
 #include "ddp_ovl.h"
+#include "ddp_color.h"
 
 #include "ddp_log.h"
 
@@ -1298,7 +1299,6 @@ static int is_module_in_path(enum DISP_MODULE_ENUM module, struct ddp_path_handl
 int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, void *cmdqhandle)
 {
 	int ret = -1;
-	enum DISP_MODULE_ENUM dst = DISP_MODULE_UNKNOWN;
 	struct ddp_path_handle *handle = NULL;
 
 	ASSERT(dp_handle != NULL);
@@ -1360,17 +1360,8 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 	case DISP_IOCTL_PQ_GET_MDP_TDSHP_REG:
 	case DISP_IOCTL_WRITE_SW_REG:
 	case DISP_IOCTL_READ_SW_REG:
-		if (is_module_in_path(DISP_MODULE_COLOR0, handle))
-			dst = DISP_MODULE_COLOR0;
-		else
-			DISP_LOG_W("dpmgr_path_user_cmd color is not on this path\n");
-
-		if (dst != DISP_MODULE_UNKNOWN) {
-
-			if (ddp_get_module_driver(dst)->cmd != NULL)
-				ret = ddp_get_module_driver(dst)->cmd(dst, msg, arg, cmdqhandle);
-
-		}
+		/* use function in COLOR module to do ioctl */
+		ret = disp_color_ioctl(DISP_MODULE_COLOR0, msg, arg, cmdqhandle);
 		break;
 	default:
 		DISP_LOG_W("dpmgr_path_user_cmd io not supported\n");

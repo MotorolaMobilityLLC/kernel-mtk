@@ -296,4 +296,6 @@ void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
 			   unsigned int hue_upper, unsigned int hue_lower);
 void disp_color_dbg_log_level(unsigned int debug_level);
 bool disp_color_reg_get(enum DISP_MODULE_ENUM module, unsigned long addr, unsigned int *value);
+extern int disp_color_ioctl(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq);
+
 #endif
