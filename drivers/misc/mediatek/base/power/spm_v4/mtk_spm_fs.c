@@ -872,313 +872,313 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 {
 	char *p = buf;
 
-	p += sprintf(p, "pcm_flags = 0x%x\n",
+	p += sprintf(p, "pcm_flags = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS, 0));
-	p += sprintf(p, "pcm_flags_cust = 0x%x\n",
+	p += sprintf(p, "pcm_flags_cust = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST, 0));
-	p += sprintf(p, "pcm_flags_cust_set = 0x%x\n",
+	p += sprintf(p, "pcm_flags_cust_set = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST_SET, 0));
-	p += sprintf(p, "pcm_flags_cust_clr = 0x%x\n",
+	p += sprintf(p, "pcm_flags_cust_clr = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST_CLR, 0));
-	p += sprintf(p, "pcm_flags1 = 0x%x\n",
+	p += sprintf(p, "pcm_flags1 = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1, 0));
-	p += sprintf(p, "pcm_flags1_cust = 0x%x\n",
+	p += sprintf(p, "pcm_flags1_cust = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1_CUST, 0));
-	p += sprintf(p, "pcm_flags1_cust_set = 0x%x\n",
+	p += sprintf(p, "pcm_flags1_cust_set = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1_CUST_SET, 0));
-	p += sprintf(p, "pcm_flags1_cust_clr = 0x%x\n",
+	p += sprintf(p, "pcm_flags1_cust_clr = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS1_CUST_CLR, 0));
-	p += sprintf(p, "timer_val = 0x%x\n",
+	p += sprintf(p, "timer_val = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL, 0));
-	p += sprintf(p, "timer_val_cust = 0x%x\n",
+	p += sprintf(p, "timer_val_cust = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL_CUST, 0));
-	p += sprintf(p, "timer_val_ramp_en = 0x%x\n",
+	p += sprintf(p, "timer_val_ramp_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL_RAMP_EN, 0));
-	p += sprintf(p, "timer_val_ramp_en_sec = 0x%x\n",
+	p += sprintf(p, "timer_val_ramp_en_sec = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL_RAMP_EN_SEC, 0));
-	p += sprintf(p, "wake_src = 0x%x\n",
+	p += sprintf(p, "wake_src = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WAKE_SRC, 0));
-	p += sprintf(p, "wake_src_cust = 0x%x\n",
+	p += sprintf(p, "wake_src_cust = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WAKE_SRC_CUST, 0));
-	p += sprintf(p, "wakelock_timer_val = 0x%x\n",
+	p += sprintf(p, "wakelock_timer_val = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WAKELOCK_TIMER_VAL, 0));
-	p += sprintf(p, "wdt_disable = 0x%x\n",
+	p += sprintf(p, "wdt_disable = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WDT_DISABLE, 0));
 	/* SPM_AP_STANDBY_CON */
-	p += sprintf(p, "wfi_op = 0x%x\n",
+	p += sprintf(p, "wfi_op = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WFI_OP, 0));
-	p += sprintf(p, "mp0_cputop_idle_mask = 0x%x\n",
+	p += sprintf(p, "mp0_cputop_idle_mask = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MP0_CPUTOP_IDLE_MASK, 0));
-	p += sprintf(p, "mp1_cputop_idle_mask = 0x%x\n",
+	p += sprintf(p, "mp1_cputop_idle_mask = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MP1_CPUTOP_IDLE_MASK, 0));
-	p += sprintf(p, "mcusys_idle_mask = 0x%x\n",
+	p += sprintf(p, "mcusys_idle_mask = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MCUSYS_IDLE_MASK, 0));
-	p += sprintf(p, "mm_mask_b = 0x%x\n",
+	p += sprintf(p, "mm_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MM_MASK_B, 0));
-	p += sprintf(p, "md_ddr_en_0_dbc_en = 0x%x\n",
+	p += sprintf(p, "md_ddr_en_0_dbc_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_DDR_EN_0_DBC_EN, 0));
-	p += sprintf(p, "md_ddr_en_1_dbc_en = 0x%x\n",
+	p += sprintf(p, "md_ddr_en_1_dbc_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_DDR_EN_1_DBC_EN, 0));
-	p += sprintf(p, "md_mask_b = 0x%x\n",
+	p += sprintf(p, "md_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_MASK_B, 0));
-	p += sprintf(p, "sspm_mask_b = 0x%x\n",
+	p += sprintf(p, "sspm_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SSPM_MASK_B, 0));
-	p += sprintf(p, "scp_mask_b = 0x%x\n",
+	p += sprintf(p, "scp_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SCP_MASK_B, 0));
-	p += sprintf(p, "srcclkeni_mask_b = 0x%x\n",
+	p += sprintf(p, "srcclkeni_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SRCCLKENI_MASK_B, 0));
-	p += sprintf(p, "md_apsrc_1_sel = 0x%x\n",
+	p += sprintf(p, "md_apsrc_1_sel = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_APSRC_1_SEL, 0));
-	p += sprintf(p, "md_apsrc_0_sel = 0x%x\n",
+	p += sprintf(p, "md_apsrc_0_sel = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_APSRC_0_SEL, 0));
-	p += sprintf(p, "conn_ddr_en_dbc_en = 0x%x\n",
+	p += sprintf(p, "conn_ddr_en_dbc_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CONN_DDR_EN_DBC_EN, 0));
-	p += sprintf(p, "conn_mask_b = 0x%x\n",
+	p += sprintf(p, "conn_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CONN_MASK_B, 0));
-	p += sprintf(p, "conn_apsrc_sel = 0x%x\n",
+	p += sprintf(p, "conn_apsrc_sel = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CONN_APSRC_SEL, 0));
 	/* SPM_SRC_REQ */
-	p += sprintf(p, "spm_apsrc_req = 0x%x\n",
+	p += sprintf(p, "spm_apsrc_req = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SPM_APSRC_REQ, 0));
-	p += sprintf(p, "spm_f26m_req = 0x%x\n",
+	p += sprintf(p, "spm_f26m_req = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SPM_F26M_REQ, 0));
-	p += sprintf(p, "spm_infra_req = 0x%x\n",
+	p += sprintf(p, "spm_infra_req = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SPM_INFRA_REQ, 0));
-	p += sprintf(p, "spm_vrf18_req = 0x%x\n",
+	p += sprintf(p, "spm_vrf18_req = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SPM_VRF18_REQ, 0));
-	p += sprintf(p, "spm_ddren_req = 0x%x\n",
+	p += sprintf(p, "spm_ddren_req = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SPM_DDREN_REQ, 0));
-	p += sprintf(p, "spm_rsv_src_req= 0x%x\n",
+	p += sprintf(p, "spm_rsv_src_req= 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SPM_RSV_SRC_REQ, 0));
-	p += sprintf(p, "spm_ddren_2_req= 0x%x\n",
+	p += sprintf(p, "spm_ddren_2_req= 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SPM_DDREN_2_REQ, 0));
-	p += sprintf(p, "cpu_md_dvfs_sop_force_on= 0x%x\n",
+	p += sprintf(p, "cpu_md_dvfs_sop_force_on= 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CPU_MD_DVFS_SOP_FORCE_ON, 0));
 	/* SPM_SRC_MASK */
-	p += sprintf(p, "csyspwreq_mask = 0x%x\n",
+	p += sprintf(p, "csyspwreq_mask = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CSYSPWREQ_MASK, 0));
-	p += sprintf(p, "ccif0_md_event_mask_b = 0x%x\n",
+	p += sprintf(p, "ccif0_md_event_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CCIF0_MD_EVENT_MASK_B, 0));
-	p += sprintf(p, "ccif0_ap_event_mask_b = 0x%x\n",
+	p += sprintf(p, "ccif0_ap_event_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CCIF0_AP_EVENT_MASK_B, 0));
-	p += sprintf(p, "ccif1_md_event_mask_b = 0x%x\n",
+	p += sprintf(p, "ccif1_md_event_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CCIF1_MD_EVENT_MASK_B, 0));
-	p += sprintf(p, "ccif1_ap_event_mask_b = 0x%x\n",
+	p += sprintf(p, "ccif1_ap_event_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CCIF1_AP_EVENT_MASK_B, 0));
-	p += sprintf(p, "ccif2_md_event_mask_b = 0x%x\n",
+	p += sprintf(p, "ccif2_md_event_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CCIF2_MD_EVENT_MASK_B, 0));
-	p += sprintf(p, "ccif2_ap_event_mask_b = 0x%x\n",
+	p += sprintf(p, "ccif2_ap_event_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CCIF2_AP_EVENT_MASK_B, 0));
-	p += sprintf(p, "ccif3_md_event_mask_b = 0x%x\n",
+	p += sprintf(p, "ccif3_md_event_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CCIF3_MD_EVENT_MASK_B, 0));
-	p += sprintf(p, "ccif3_ap_event_mask_b = 0x%x\n",
+	p += sprintf(p, "ccif3_ap_event_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CCIF3_AP_EVENT_MASK_B, 0));
-	p += sprintf(p, "md_srcclkena_0_infra_mask_b = 0x%x\n",
+	p += sprintf(p, "md_srcclkena_0_infra_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_SRCCLKENA_0_INFRA_MASK_B, 0));
-	p += sprintf(p, "md_srcclkena_1_infra_mask_b = 0x%x\n",
+	p += sprintf(p, "md_srcclkena_1_infra_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_SRCCLKENA_1_INFRA_MASK_B, 0));
-	p += sprintf(p, "conn_srcclkena_infra_mask_b = 0x%x\n",
+	p += sprintf(p, "conn_srcclkena_infra_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CONN_SRCCLKENA_INFRA_MASK_B, 0));
-	p += sprintf(p, "ufs_infra_req_mask_b = 0x%x\n",
+	p += sprintf(p, "ufs_infra_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_UFS_SRCCLKENA_MASK_B, 0));
-	p += sprintf(p, "srcclkeni_infra_mask_b = 0x%x\n",
+	p += sprintf(p, "srcclkeni_infra_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SRCCLKENI_INFRA_MASK_B, 0));
-	p += sprintf(p, "md_apsrc_req_0_infra_mask_b = 0x%x\n",
+	p += sprintf(p, "md_apsrc_req_0_infra_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_APSRC_REQ_0_INFRA_MASK_B, 0));
-	p += sprintf(p, "md_apsrc_req_1_infra_mask_b = 0x%x\n",
+	p += sprintf(p, "md_apsrc_req_1_infra_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_APSRC_REQ_1_INFRA_MASK_B, 0));
-	p += sprintf(p, "conn_apsrcreq_infra_mask_b = 0x%x\n",
+	p += sprintf(p, "conn_apsrcreq_infra_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CONN_APSRCREQ_INFRA_MASK_B, 0));
-	p += sprintf(p, "ufs_srcclkena_mask_b = 0x%x\n",
+	p += sprintf(p, "ufs_srcclkena_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_UFS_SRCCLKENA_MASK_B, 0));
-	p += sprintf(p, "md_vrf18_req_0_mask_b = 0x%x\n",
+	p += sprintf(p, "md_vrf18_req_0_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_VRF18_REQ_0_MASK_B, 0));
-	p += sprintf(p, "md_vrf18_req_1_mask_b = 0x%x\n",
+	p += sprintf(p, "md_vrf18_req_1_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_VRF18_REQ_1_MASK_B, 0));
-	p += sprintf(p, "ufs_vrf18_req_mask_b = 0x%x\n",
+	p += sprintf(p, "ufs_vrf18_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_UFS_VRF18_REQ_MASK_B, 0));
-	p += sprintf(p, "gce_vrf18_req_mask_b = 0x%x\n",
+	p += sprintf(p, "gce_vrf18_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_GCE_VRF18_REQ_MASK_B, 0));
-	p += sprintf(p, "conn_infra_req_mask_b = 0x%x\n",
+	p += sprintf(p, "conn_infra_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CONN_INFRA_REQ_MASK_B, 0));
-	p += sprintf(p, "gce_apsrc_req_mask_b = 0x%x\n",
+	p += sprintf(p, "gce_apsrc_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_GCE_APSRC_REQ_MASK_B, 0));
-	p += sprintf(p, "disp0_apsrc_req_mask_b = 0x%x\n",
+	p += sprintf(p, "disp0_apsrc_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DISP0_APSRC_REQ_MASK_B, 0));
-	p += sprintf(p, "disp1_apsrc_req_mask_b = 0x%x\n",
+	p += sprintf(p, "disp1_apsrc_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DISP1_APSRC_REQ_MASK_B, 0));
-	p += sprintf(p, "mfg_req_mask_b = 0x%x\n",
+	p += sprintf(p, "mfg_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MFG_REQ_MASK_B, 0));
-	p += sprintf(p, "vdec_req_mask_b = 0x%x\n",
+	p += sprintf(p, "vdec_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_VDEC_REQ_MASK_B, 0));
 	/* SPM_SRC2_MASK */
-	p += sprintf(p, "md_ddr_en_0_mask_b = 0x%x\n",
+	p += sprintf(p, "md_ddr_en_0_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_DDR_EN_0_MASK_B, 0));
-	p += sprintf(p, "md_ddr_en_1_mask_b = 0x%x\n",
+	p += sprintf(p, "md_ddr_en_1_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_DDR_EN_1_MASK_B, 0));
-	p += sprintf(p, "conn_ddr_en_mask_b = 0x%x\n",
+	p += sprintf(p, "conn_ddr_en_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CONN_DDR_EN_MASK_B, 0));
-	p += sprintf(p, "ddren_sspm_apsrc_req_mask_b = 0x%x\n",
+	p += sprintf(p, "ddren_sspm_apsrc_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DDREN_SSPM_APSRC_REQ_MASK_B, 0));
-	p += sprintf(p, "ddren_scp_apsrc_req_mask_b = 0x%x\n",
+	p += sprintf(p, "ddren_scp_apsrc_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DDREN_SCP_APSRC_REQ_MASK_B, 0));
-	p += sprintf(p, "disp0_ddren_mask_b = 0x%x\n",
+	p += sprintf(p, "disp0_ddren_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DISP0_DDREN_MASK_B, 0));
-	p += sprintf(p, "disp1_ddren_mask_b = 0x%x\n",
+	p += sprintf(p, "disp1_ddren_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DISP1_DDREN_MASK_B, 0));
-	p += sprintf(p, "gce_ddren_mask_b = 0x%x\n",
+	p += sprintf(p, "gce_ddren_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_GCE_DDREN_MASK_B, 0));
-	p += sprintf(p, "ddren_emi_self_refresh_ch0_mask_b = 0x%x\n",
+	p += sprintf(p, "ddren_emi_self_refresh_ch0_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DDREN_EMI_SELF_REFRESH_CH0_MASK_B, 0));
-	p += sprintf(p, "ddren_emi_self_refresh_ch1_mask_b = 0x%x\n",
+	p += sprintf(p, "ddren_emi_self_refresh_ch1_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DDREN_EMI_SELF_REFRESH_CH1_MASK_B, 0));
 	/* SPM_WAKEUP_EVENT_MASK */
-	p += sprintf(p, "spm_wakeup_event_mask = 0x%x\n",
+	p += sprintf(p, "spm_wakeup_event_mask = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 					id, PWR_SPM_WAKEUP_EVENT_MASK, 0));
 	/* SPM_WAKEUP_EVENT_EXT_MASK */
-	p += sprintf(p, "spm_wakeup_event_ext_mask = 0x%x\n",
+	p += sprintf(p, "spm_wakeup_event_ext_mask = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 					id, PWR_SPM_WAKEUP_EVENT_EXT_MASK, 0));
 	/* SPM_SRC3_MASK */
-	p += sprintf(p, "md_ddr_en_2_0_mask_b = 0x%x\n",
+	p += sprintf(p, "md_ddr_en_2_0_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_DDR_EN_2_0_MASK_B, 0));
-	p += sprintf(p, "md_ddr_en_2_1_mask_b = 0x%x\n",
+	p += sprintf(p, "md_ddr_en_2_1_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_DDR_EN_2_1_MASK_B, 0));
-	p += sprintf(p, "conn_ddr_en_2_mask_b = 0x%x\n",
+	p += sprintf(p, "conn_ddr_en_2_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_CONN_DDR_EN_2_MASK_B, 0));
-	p += sprintf(p, "ddren2_sspm_apsrc_req_mask_b = 0x%x\n",
+	p += sprintf(p, "ddren2_sspm_apsrc_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DDREN2_SSPM_APSRC_REQ_MASK_B, 0));
-	p += sprintf(p, "ddren2_scp_apsrc_req_mask_b = 0x%x\n",
+	p += sprintf(p, "ddren2_scp_apsrc_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DDREN2_SCP_APSRC_REQ_MASK_B, 0));
-	p += sprintf(p, "disp0_ddren2_mask_b = 0x%x\n",
+	p += sprintf(p, "disp0_ddren2_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DISP0_DDREN2_MASK_B, 0));
-	p += sprintf(p, "disp1_ddren2_mask_b = 0x%x\n",
+	p += sprintf(p, "disp1_ddren2_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DISP1_DDREN2_MASK_B, 0));
-	p += sprintf(p, "gce_ddren2_mask_b = 0x%x\n",
+	p += sprintf(p, "gce_ddren2_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_GCE_DDREN2_MASK_B, 0));
-	p += sprintf(p, "ddren2_emi_self_refresh_ch0_mask_b = 0x%x\n",
+	p += sprintf(p, "ddren2_emi_self_refresh_ch0_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DDREN2_EMI_SELF_REFRESH_CH0_MASK_B, 0));
-	p += sprintf(p, "ddren2_emi_self_refresh_ch1_mask_b = 0x%x\n",
+	p += sprintf(p, "ddren2_emi_self_refresh_ch1_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_DDREN2_EMI_SELF_REFRESH_CH1_MASK_B, 0));
 	/* MP0_CPU0_WFI_EN */
-	p += sprintf(p, "mp0_cpu0_wfi_en = 0x%x\n",
+	p += sprintf(p, "mp0_cpu0_wfi_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MP0_CPU1_WFI_EN, 0));
 	/* MP0_CPU1_WFI_EN */
-	p += sprintf(p, "mp0_cpu1_wfi_en = 0x%x\n",
+	p += sprintf(p, "mp0_cpu1_wfi_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MP0_CPU1_WFI_EN, 0));
 	/* MP0_CPU2_WFI_EN */
-	p += sprintf(p, "mp0_cpu2_wfi_en = 0x%x\n",
+	p += sprintf(p, "mp0_cpu2_wfi_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MP0_CPU2_WFI_EN, 0));
 	/* MP0_CPU3_WFI_EN */
-	p += sprintf(p, "mp0_cpu3_wfi_en = 0x%x\n",
+	p += sprintf(p, "mp0_cpu3_wfi_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MP0_CPU3_WFI_EN, 0));
 	/* MP1_CPU0_WFI_EN */
-	p += sprintf(p, "mp1_cpu0_wfi_en = 0x%x\n",
+	p += sprintf(p, "mp1_cpu0_wfi_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MP0_CPU1_WFI_EN, 0));
 	/* MP1_CPU1_WFI_EN */
-	p += sprintf(p, "mp1_cpu1_wfi_en = 0x%x\n",
+	p += sprintf(p, "mp1_cpu1_wfi_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MP1_CPU1_WFI_EN, 0));
 	/* MP1_CPU2_WFI_EN */
-	p += sprintf(p, "mp1_cpu2_wfi_en = 0x%x\n",
+	p += sprintf(p, "mp1_cpu2_wfi_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MP1_CPU2_WFI_EN, 0));
 	/* MP0_CPU3_WFI_EN */
-	p += sprintf(p, "mp1_cpu3_wfi_en = 0x%x\n",
+	p += sprintf(p, "mp1_cpu3_wfi_en = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MP1_CPU3_WFI_EN, 0));
 
