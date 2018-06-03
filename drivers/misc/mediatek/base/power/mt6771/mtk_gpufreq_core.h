@@ -179,15 +179,12 @@
 /**************************************************
  * PMIC Setting
  **************************************************/
-#define SEG1_PMIC_MAX_VSRAM				(SEG1_GPU_DVFS_VSRAM0)
-#define SEG1_PMIC_MAX_VPROC				(SEG1_GPU_DVFS_VOLT0)
-#define SEG2_PMIC_MAX_VSRAM				(SEG2_GPU_DVFS_VSRAM0)
-#define SEG2_PMIC_MAX_VPROC				(SEG2_GPU_DVFS_VOLT0)
-#define SEG3_PMIC_MAX_VSRAM				(SEG3_GPU_DVFS_VSRAM0)
-#define SEG3_PMIC_MAX_VPROC				(SEG3_GPU_DVFS_VOLT0)
-
+#define VGPU_MAX_VOLT					(SEG1_GPU_DVFS_VOLT0)
+#define VSRAM_GPU_MAX_VOLT				(SEG1_GPU_DVFS_VSRAM0)
 #define DELAY_FACTOR					(625)
 #define PMIC_SRCLKEN_HIGH_TIME_US		(1000)		/* spec is 1(ms) */
+#define BUCK_VARIATION_MAX				(25000)		/* mV x 100 */
+#define BUCK_VARIATION_MIN				(10000)		/* mV x 100 */
 
 /**************************************************
  * efuse Setting
@@ -339,6 +336,10 @@ enum g_limited_idx_enum {
 	IDX_BATT_OC_LIMITED,
 	IDX_PBM_LIMITED,
 	NUMBER_OF_LIMITED_IDX,
+};
+enum g_volt_switch_enum {
+	VOLT_FALLING = 0,
+	VOLT_RISING,
 };
 
 /**************************************************
