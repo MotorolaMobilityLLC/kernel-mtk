@@ -41,6 +41,10 @@
 #include <mtk_pmic_api_buck.h>
 #include <mt6337_api.h>
 
+#if defined(CONFIG_MACH_MT6799)
+#include <mtk_spm_vcore_dvfs.h>
+#endif
+
 #include <mt-plat/mtk_ccci_common.h>
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
@@ -434,6 +438,10 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 #endif
 #endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
 
+#if defined(CONFIG_MACH_MT6799)
+	dvfsrc_md_scenario_update(1);
+#endif
+
 	if (--mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
 #endif
@@ -441,6 +449,11 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
+
+#if defined(CONFIG_MACH_MT6799)
+	dvfsrc_md_scenario_update(0);
+#endif
+
 #ifndef CONFIG_MACH_MT6759
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
