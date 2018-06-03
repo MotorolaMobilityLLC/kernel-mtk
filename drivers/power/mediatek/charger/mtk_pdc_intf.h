@@ -49,6 +49,9 @@ extern int mtk_pdc_get_setting(struct charger_manager *info, int *vbus, int *cur
 extern void mtk_pdc_init_table(struct charger_manager *info);
 extern bool mtk_pdc_init(struct charger_manager *info);
 extern int mtk_pdc_setup(struct charger_manager *info, int idx);
+extern void mtk_pdc_plugout(struct charger_manager *info);
+extern void mtk_pdc_check_cable_impedance(struct charger_manager *pinfo);
+
 
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT
 
