@@ -169,4 +169,5 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 		struct mmc_host *mmc, u32 latest_cnt);
 void msdc_dump_host_state(char **buff, unsigned long *size,
 		struct seq_file *m, struct msdc_host *host);
+void msdc_proc_dump(struct seq_file *m, u32 id);
 #endif
