@@ -1546,8 +1546,8 @@ UINT_32 TsfRawData2IqFmt(P_EVENT_DUMP_MEM_T prEventDumpMem)
 #endif
 		ptr = (PUINT_32)(&prEventDumpMem->aucBuffer[0] + u4SrcOffset);
 		sprintf(pucDataRAWWF0, "%08x%08x%08x\n", *(ptr + 2), *(ptr + 1), *ptr);
-		kalWriteToFile(aucPathRAWWF0, fgAppend, pucDataRAWWF0, strlen(pucDataRAWWF0));
-		kalWriteToFile(aucPathRAWWF1, fgAppend, pucDataRAWWF1, strlen(pucDataRAWWF1));
+		/* kalWriteToFile(aucPathRAWWF0, fgAppend, pucDataRAWWF0, strlen(pucDataRAWWF0)); */
+		/* kalWriteToFile(aucPathRAWWF1, fgAppend, pucDataRAWWF1, strlen(pucDataRAWWF1)); */
 
 		u4IQDataIndex += 1;
 		u4RemainByte -= u4CpyLen;
@@ -1632,10 +1632,14 @@ VOID nicEventQueryMemDump(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucEventBuf)
 				u4CurTimeTick,
 				prEventDumpMem->u4Address, prEventDumpMem->u4Length + prEventDumpMem->u4RemainLength);
 #endif
-		/* kalWriteToFile(aucPath, FALSE, &prEventDumpMem->aucBuffer[0], prEventDumpMem->u4Length); */
+#ifndef CFG_SUPPORT_QA_TOOL
+		kalWriteToFile(aucPath, FALSE, &prEventDumpMem->aucBuffer[0], prEventDumpMem->u4Length);
+#endif
 	} else {
 		/* Append current memory dump to the hex file */
-		/* kalWriteToFile(aucPath, TRUE, &prEventDumpMem->aucBuffer[0], prEventDumpMem->u4Length); */
+#ifndef CFG_SUPPORT_QA_TOOL
+		kalWriteToFile(aucPath, TRUE, &prEventDumpMem->aucBuffer[0], prEventDumpMem->u4Length);
+#endif
 	}
 #if CFG_SUPPORT_QA_TOOL
 	TsfRawData2IqFmt(prEventDumpMem);
@@ -1737,10 +1741,14 @@ VOID nicCmdEventQueryMemDump(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 					prEventDumpMem->u4Length + prEventDumpMem->u4RemainLength);
 			/* strcpy(aucPath, "dump.hex"); */
 #endif
-			/* kalWriteToFile(aucPath, FALSE, &prEventDumpMem->aucBuffer[0], prEventDumpMem->u4Length); */
+#ifndef CFG_SUPPORT_QA_TOOL
+			kalWriteToFile(aucPath, FALSE, &prEventDumpMem->aucBuffer[0], prEventDumpMem->u4Length);
+#endif
 		} else {
 			/* Append current memory dump to the hex file */
-			/* kalWriteToFile(aucPath, TRUE, &prEventDumpMem->aucBuffer[0], prEventDumpMem->u4Length); */
+#ifndef CFG_SUPPORT_QA_TOOL
+			kalWriteToFile(aucPath, TRUE, &prEventDumpMem->aucBuffer[0], prEventDumpMem->u4Length);
+#endif
 		}
 
 #if CFG_SUPPORT_QA_TOOL
