@@ -352,6 +352,8 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 	LOGBT("%s BT uControl =0x%x, BT uPacketType=%d\n", __func__, uControl, uPacketType);
 
 	if (((uControl >> 31) & 1) == 0) {
+		pr_warn("%s(), ((uControl >> 31) & 1) == 0, uControl = 0x%x\n",
+			__func__, uControl);
 		*bt_hw_REG_CONTROL &= ~BT_CVSD_CLEAR;
 		goto AudDrv_BTCVSD_IRQ_handler_exit;
 	}
@@ -616,7 +618,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 					((void __user *)(Read_Data_Ptr + size_1),
 					(void *)((kal_uint8 *)btsco.pRX->PacketBuf),
 					size_2)) {
-				LOGBT("%s Fail 3 copy to user Ptr:%p,PacketBuf:%p,ReadIdx_tmp:0x%xz,read_size:%zd",
+				LOGBT("%s Fail 3 copy to user Ptr:%p,PacketBuf:%p,ReadIdx_tmp:%zd,read_size:%zd",
 					__func__, Read_Data_Ptr, btsco.pRX->PacketBuf,
 					BTSCORX_ReadIdx_tmp, read_size);
 				if (read_count == 0)
