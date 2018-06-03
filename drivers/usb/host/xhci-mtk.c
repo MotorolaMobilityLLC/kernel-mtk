@@ -32,6 +32,10 @@
 #include "xhci.h"
 #include "xhci-mtk.h"
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+#include "mtk-phy.h"
+#endif
+
 /* ip_pw_ctrl0 register */
 #define CTRL0_IP_SW_RST	BIT(0)
 
@@ -877,6 +881,7 @@ static int xhci_mtk_remove(struct platform_device *dev)
 /* USB Audio Power Saving */
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 #define MIN_SLEEP_MS 10
+
 static struct xhci_mtk_sram_block xhci_sram[XHCI_SRAM_BLOCK_NUM] = {
 	[XHCI_EVENTRING] = {0, NULL, TRB_SEGMENT_SIZE, STATE_UNINIT},
 	[XHCI_EPTX] = {0, NULL, TRB_SEGMENT_SIZE, STATE_UNINIT},
@@ -893,18 +898,21 @@ static struct xhci_mtk_sram_block usb_audio_sram[USB_AUDIO_DATA_BLOCK_NUM] = {
 	[USB_AUDIO_DATA_SYNC_EP] = {0, NULL, 0, STATE_UNINIT}
 };
 
-/* static atomic_t sleep = ATOMIC_INIT(0); */
+static atomic_t power_status = ATOMIC_INIT(USB_DPIDLE_FORBIDDEN);
 
-static int enable_power_saving_mode(bool enable)
+static int xhci_mtk_set_power_mode(int mode)
 {
 	/* TODO */
+	if (atomic_read(&power_status) != mode) {
+		usb_hal_dpidle_request(mode);
+		atomic_set(&power_status, mode);
+	}
 	return 0;
 }
 
 static void xhci_mtk_wakeup_timer_func(unsigned long data)
 {
-    /* pr_info("my_timer_callback called (%ld).\n", jiffies ); */
-	enable_power_saving_mode(false);
+	xhci_mtk_set_power_mode(USB_DPIDLE_FORBIDDEN);
 }
 
 static DEFINE_TIMER(xhci_wakeup_timer, xhci_mtk_wakeup_timer_func,
@@ -931,16 +939,19 @@ void xhci_mtk_allow_sleep(unsigned int sleep_ms)
 			data_sram = true;
 	}
 
-	if (likely(data_sram) /*&& !atomic_read(&sleep)*/) {
-		/* pr_info("mtk_xhci_allow_sleep (%d) ms\n", sleep_ms); */
+	if (likely(data_sram)) {
+		static DEFINE_RATELIMIT_STATE(ratelimit, 2 * HZ, 1);
+
+		if (__ratelimit(&ratelimit))
+			pr_info("mtk_xhci_allow_sleep (%d) ms\n", sleep_ms);
 		mod_timer(&xhci_wakeup_timer,
 				  jiffies + msecs_to_jiffies(sleep_ms));
-		enable_power_saving_mode(true);
+		xhci_mtk_set_power_mode(USB_DPIDLE_SRAM);
 	}
 	return;
 
 not_sleep:
-	enable_power_saving_mode(false);
+	xhci_mtk_set_power_mode(USB_DPIDLE_FORBIDDEN);
 }
 
 int xhci_mtk_init_sram(struct xhci_hcd *xhci)
@@ -1074,8 +1085,12 @@ static int __maybe_unused xhci_mtk_runtime_suspend(struct device *dev)
 
 	xhci_info(xhci, "%s:\n", __func__);
 
-	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci"))
+	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
 		xhci_mtk_host_disable(mtk);
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+		xhci_mtk_set_power_mode(USB_DPIDLE_SRAM);
+#endif
+	}
 
 	return 0;
 }
@@ -1089,8 +1104,12 @@ static int __maybe_unused xhci_mtk_runtime_resume(struct device *dev)
 
 	xhci_info(xhci, "%s:\n", __func__);
 
-	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci"))
+	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+		xhci_mtk_set_power_mode(USB_DPIDLE_FORBIDDEN);
+#endif
 		xhci_mtk_host_enable(mtk);
+	}
 
 	return 0;
 }
