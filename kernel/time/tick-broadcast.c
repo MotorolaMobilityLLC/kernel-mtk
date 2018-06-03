@@ -581,6 +581,11 @@ void tick_broadcast_mtk_aee_dump(void)
 	aee_sram_fiq_log(tick_broadcast_mtk_aee_dump_buf);
 
 	for_each_possible_cpu(i) {
+
+		/* to avoid unexpected overrun */
+		if (i >= ARRAY_SIZE(tick_broadcast_history))
+			break;
+
 		memset(tick_broadcast_mtk_aee_dump_buf, 0,
 			sizeof(tick_broadcast_mtk_aee_dump_buf));
 		snprintf(tick_broadcast_mtk_aee_dump_buf,
@@ -944,11 +949,14 @@ int __tick_broadcast_oneshot_control(enum tick_broadcast_state state)
 out:
 
 #ifdef _MTK_TICK_BROADCAST_AEE_DUMP
-	if (state == TICK_BROADCAST_ENTER) {
-		tick_broadcast_history[cpu].time_enter = now_sched_clock;
-		tick_broadcast_history[cpu].ret_enter = ret;
-	} else
-		tick_broadcast_history[cpu].time_exit = now_sched_clock;
+
+	if (cpu < ARRAY_SIZE(tick_broadcast_history)) {
+		if (state == TICK_BROADCAST_ENTER) {
+			tick_broadcast_history[cpu].time_enter = now_sched_clock;
+			tick_broadcast_history[cpu].ret_enter = ret;
+		} else
+			tick_broadcast_history[cpu].time_exit = now_sched_clock;
+	}
 #endif
 
 	raw_spin_unlock(&tick_broadcast_lock);
