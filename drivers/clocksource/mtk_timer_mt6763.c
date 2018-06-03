@@ -33,6 +33,8 @@
 #include <mach/mtk_gpt.h>
 #include <mt-plat/sync_write.h>
 
+#define CONFIG_MTK_TICK_BC_IRQ_FORCE_AFFINITY
+
 #define GPT_CLKEVT_ID				(GPT1)
 #define GPT_CLKSRC_ID       (GPT2)
 
@@ -166,7 +168,11 @@ static struct clock_event_device gpt_clockevent = {
 	 *                        dynamically in broadcast mode.
 	 * CLOCK_EVT_FEAT_ONESHOT: Use one-shot mode for tick broadcast.
 	 */
+#ifdef CONFIG_MTK_TICK_BC_IRQ_FORCE_AFFINITY
+	.features = CLOCK_EVT_FEAT_ONESHOT,
+#else
 	.features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_DYNIRQ,
+#endif
 	.shift          = 32,
 	.rating         = 300,
 	.set_next_event = mt_gpt_set_next_event,
@@ -579,6 +585,10 @@ static void __init mt_gpt_init(struct device_node *node)
 		__gpt_reset(&gpt_devs[i]);
 
 	setup_clksrc(freq[0]);
+
+#ifdef CONFIG_MTK_TICK_BC_IRQ_FORCE_AFFINITY
+	irq_force_affinity(xgpt_timers.tmr_irq, cpumask_of(0));
+#endif
 
 	setup_irq(xgpt_timers.tmr_irq, &gpt_irq);
 
