@@ -178,9 +178,9 @@ void __iomem *ipu_core1_base;
 #define IPU_CORE1_CG_CLR              (ipu_core1_base + 0x0008)
 
 #if MT_CCF_BRINGUP
-#define INFRA_CG0 0x020f8100/*[25][19:15][8]*/
-#define INFRA_CG1 0x08000800/*[27][11]*/
-#define INFRA_CG2 0x00000805/*[11][2][0]*/
+#define INFRA_CG0 0x03afb900/*[25:23][21][19:15][13:11][8]*/
+#define INFRA_CG1 0x0a040802/*[27][25][18][11][1]*/
+#define INFRA_CG2 0x00000885/*[11][7:6adb_reboot][4atf][2][0]*/
 #define INFRA_CG3 0x000000c7/*[2:0], [7:6]*/
 #define CAMSYS_CG	0x1FFF
 #define IMG_CG	0x3FF
