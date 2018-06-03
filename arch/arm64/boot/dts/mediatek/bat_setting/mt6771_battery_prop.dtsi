@@ -18,7 +18,7 @@ bat_gm30: bat_gm30{
 	R_FG_VALUE = <(5)>;	/*	R_sense resistance.*/
 	EMBEDDED_SEL = <(0)>;	/*	Configures whether using embedded battery or not.*/
 	PMIC_SHUTDOWN_CURRENT = <(20)>;	/*	System shutdown current.*/
-	FG_METER_RESISTANCE = <(200)>;	/*	The resistance of PCB*/
+	FG_METER_RESISTANCE = <(75)>;	/*	The resistance of PCB*/
 	CAR_TUNE_VALUE = <(100)>;	/*	Tune value for current measurement.*/
 	PMIC_MIN_VOL = <(34000)>;	/*	vboot voltage for gauge 0%.*/
 	POWERON_SYSTEM_IBOOT = <(500)>;	/*	power on system iboot*/
