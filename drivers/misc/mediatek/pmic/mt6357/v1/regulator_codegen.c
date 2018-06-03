@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/delay.h>
 #include <mt-plat/upmu_common.h>
 #include "include/pmic.h"
 #include "include/pmic_api.h"
@@ -1647,9 +1648,14 @@ static int pmic_ldo_vldo28_enable(struct regulator_dev *rdev)
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	RGLTRLOG("ldo vldo28 enable\n");
-	if (mreg->en_cb != NULL)
+	if (mreg->en_cb != NULL) {
 		ret = (mreg->en_cb)(1);
-	else {
+		/* this OC interrupt needs to delay 1ms after enable power */
+		dsb(sy);
+		mdelay(1);
+		dsb(sy);
+		pmic_enable_interrupt(INT_VLDO28_OC, 1, "PMIC");
+	} else {
 		RGLTRLOG("ldo vldo28 don't have en_cb\n");
 		ret = -1;
 	}
@@ -1671,9 +1677,13 @@ static int pmic_ldo_vldo28_disable(struct regulator_dev *rdev)
 		RGLTRLOG("ldo vldo28 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
+		if (mreg->en_cb != NULL) {
 			ret = (mreg->en_cb)(0);
-		else {
+			/* After disable power, this OC interrupt should be
+			 * disabled as well
+			 */
+			pmic_enable_interrupt(INT_VLDO28_OC, 0, "PMIC");
+		} else {
 			RGLTRLOG("ldo vldo28 don't have enable callback\n");
 			ret = -1;
 		}

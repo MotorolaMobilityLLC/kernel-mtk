@@ -58,13 +58,6 @@ unsigned int g_cust_eint_mt_pmic_type = 4;
 unsigned int g_cust_eint_mt_pmic_debounce_en = 1;
 
 /* PMIC extern variable */
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-static bool long_pwrkey_press;
-static unsigned long timer_pre;
-static unsigned long timer_pos;
-#define LONG_PWRKEY_PRESS_TIME_UNIT     500     /*500ms */
-#define LONG_PWRKEY_PRESS_TIME_US       1000000 /*500ms */
-#endif
 
 #define IRQ_HANDLER_READY 1
 
@@ -292,10 +285,6 @@ void pwrkey_int_handler(void)
 {
 	IRQLOG("[pwrkey_int_handler] Press pwrkey %d\n",
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT)
-		timer_pre = sched_clock();
-#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_KPD_PWRKEY_USE_PMIC)
 	kpd_pwrkey_pmic_handler(0x1);
@@ -306,21 +295,6 @@ void pwrkey_int_handler_r(void)
 {
 	IRQLOG("[pwrkey_int_handler_r] Release pwrkey %d\n",
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT && timer_pre != 0) {
-		timer_pos = sched_clock();
-		if (timer_pos - timer_pre >= LONG_PWRKEY_PRESS_TIME_UNIT * LONG_PWRKEY_PRESS_TIME_US)
-			long_pwrkey_press = true;
-		IRQLOG("timer_pos = %ld, timer_pre = %ld, timer_pos-timer_pre = %ld, long_pwrkey_press = %d\r\n",
-			timer_pos, timer_pre, timer_pos - timer_pre, long_pwrkey_press);
-		if (long_pwrkey_press) {	/*500ms */
-			IRQLOG("Power Key Pressed during kernel power off charging, reboot OS\r\n");
-#ifdef CONFIG_MTK_WATCHDOG
-			arch_reset(0, NULL);
-#endif
-		}
-	}
-#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_KPD_PWRKEY_USE_PMIC)
 	kpd_pwrkey_pmic_handler(0x0);
@@ -504,12 +478,11 @@ void pmic_enable_interrupt(enum PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 	unsigned int enable_reg;
 
 	if (pmic_check_intNo(intNo, &spNo, &sp_conNo, &sp_irqNo)) {
-		if (intNo == INT_ENUM_MAX) {
+		if (intNo > INT_ENUM_MAX)
+			pr_notice(PMICTAG "[%s] fail intNo=%d\n", __func__, intNo);
+		else
 			pr_info(PMICTAG "[%s] disable intNo=%d\n", __func__,
 				intNo);
-			return;
-		}
-		pr_err(PMICTAG "[%s] fail intNo=%d\n", __func__, intNo);
 		return;
 	}
 	enable_reg = sp_interrupts[spNo].enable + 0x6 * sp_conNo;
@@ -606,10 +579,6 @@ void register_all_oc_interrupts(void)
 
 	/* BUCK OC */
 	for (oc_interrupt = INT_VPROC_OC; oc_interrupt <= INT_VPA_OC; oc_interrupt++) {
-		if (oc_interrupt == INT_VPA_OC) {
-			IRQLOG("[PMIC_INT] non-enabled OC: %d\n", oc_interrupt);
-			continue;
-		}
 		pmic_register_oc_interrupt_callback(oc_interrupt);
 		pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
 	}
@@ -648,12 +617,11 @@ static void pmic_sp_irq_handler(unsigned int spNo, unsigned int sp_conNo, unsign
 	if (sp_int_status == 0)
 		return; /* this subpack control has no interrupt triggered */
 
-	pr_notice(PMICTAG "[PMIC_INT] Reg[0x%x]=0x%x\n",
-		(sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
+	pr_notice(PMICTAG "[PMIC_INT] Reg[0x%x]=0x%x\n", (sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
 
 	if (g_pmic_chip_version == 1) {
 		/* prevent from MT6357 glitch problem */
-		/* Clear interrupt status by CLR enable register */
+		/* clear interrupt status by CLR enable register */
 		upmu_set_reg_value((sp_interrupts[spNo].enable + 0x6 * sp_conNo) + 0x4, sp_int_status);
 		/* delay 3T~4T 32K clock (96us~128us) */
 		udelay(150);
