@@ -42,5 +42,6 @@ struct mtk_mcdi_buf {
 unsigned int mcdi_mbox_read(int id);
 void mcdi_mbox_write(int id, unsigned int val);
 int mcdi_fw_is_ready(void);
+unsigned long long idle_get_current_time_us(void);
 
 #endif /* __MTK_MCDI_UTIL_H__ */

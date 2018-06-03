@@ -24,7 +24,6 @@
 #include <linux/uaccess.h>
 
 #include <mtk_cpuidle.h>
-#include <mtk_idle.h>
 #include <mtk_idle_profile.h>
 
 #include <mtk_mcdi.h>
