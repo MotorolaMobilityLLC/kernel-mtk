@@ -2534,7 +2534,15 @@ int build_segment_manager(struct f2fs_sb_info *sbi)
 
 	INIT_LIST_HEAD(&sm_info->sit_entry_set);
 
-	if (test_opt(sbi, FLUSH_MERGE) && !f2fs_readonly(sbi->sb)) {
+	/*
+	 * MTK: KE will trigger when disable the f2fs's option "FLUSH_MERGE".
+	 * the reason is when disable "FLUSH_MERGE" doesn't
+	 * create flush_cmd_control, and then the pointer "fcc" is NULL
+	 * in f2fs_issue_flush().
+	 * solution: sync kernel-4.4, do create flush_cmd_control
+	 * whatever had "FLUSH_MERGE".
+	 */
+	if (!f2fs_readonly(sbi->sb)) {
 		err = create_flush_cmd_control(sbi);
 		if (err)
 			return err;
