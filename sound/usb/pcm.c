@@ -837,6 +837,18 @@ static int snd_usb_pcm_prepare(struct snd_pcm_substream *substream)
 	subs->last_frame_number = 0;
 	runtime->delay = 0;
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	/* pick a high stop threshold when enable uac lp mode */
+	if (subs->direction == SNDRV_PCM_STREAM_PLAYBACK &&
+			subs->data_endpoint &&
+			subs->buffer_periods != 4) {
+		runtime->stop_threshold *= 10;
+		pr_info("adjust stop_threshold to %ld",
+				runtime->stop_threshold);
+
+	}
+#endif
+
 	/* for playback, submit the URBs now; otherwise, the first hwptr_done
 	 * updates for all URBs would happen at the same time when starting */
 	if (subs->direction == SNDRV_PCM_STREAM_PLAYBACK)
