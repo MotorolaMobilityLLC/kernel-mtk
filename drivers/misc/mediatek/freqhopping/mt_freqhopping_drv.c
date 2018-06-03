@@ -545,6 +545,8 @@ static int mt_freqhopping_init(void)
 {
 	int ret;
 
+	pr_info("[FH]: init\n");
+
 	g_p_fh_hal_drv = mt_get_fh_hal_drv();
 	if (g_p_fh_hal_drv == NULL) {
 		pr_info("[FH]No fh driver is found\n");
@@ -564,6 +566,8 @@ static int mt_freqhopping_init(void)
 	ret = freqhopping_debug_proc_init();
 	if (ret != 0)
 		return ret;
+
+	pr_info("[FH]: init success\n");
 
 	return 0;
 }
