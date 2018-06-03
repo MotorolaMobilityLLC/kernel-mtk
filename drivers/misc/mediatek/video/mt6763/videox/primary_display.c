@@ -2387,7 +2387,7 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 {
 	void *buffer_va = NULL;
 	unsigned int buffer_mva = 0;
-	unsigned int mva_size = 0;
+	size_t mva_size = 0;
 	ion_phys_addr_t phy_addr;
 
 	struct ion_mm_data mm_data;
@@ -2440,7 +2440,7 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 		buf_info->client = client;
 		buf_info->handle = handle;
 		buf_info->mva = buffer_mva;
-		buf_info->size = mva_size;
+		buf_info->size = (unsigned int)mva_size;
 		buf_info->va = buffer_va;
 	} else {
 		DISPERR("Fatal error, kzalloc internal buffer info failed!!\n");
