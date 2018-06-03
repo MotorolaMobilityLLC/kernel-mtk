@@ -1316,7 +1316,10 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				if (psTimeStamp->i32GPUloading) { /* not fallback mode */
 					time_spent =
 						(int)(cur_3D_done - last_3D_done) / 100 * psTimeStamp->i32GPUloading;
-					psKPI->t_gpu = time_spent;
+					if (time_spent > psKPI->t_gpu)
+						psKPI->t_gpu = psHead->t_gpu_latest = time_spent;
+					else
+						time_spent = psKPI->t_gpu;
 				} else {
 					time_spent = 0;
 				}
@@ -1326,7 +1329,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					g_force_gpu_dvfs_fallback = 0;
 				else
 					g_force_gpu_dvfs_fallback = 1;
-				gpu_freq_pre = ged_kpi_gpu_dvfs(
+				if (main_head == psHead)
+					gpu_freq_pre = ged_kpi_gpu_dvfs(
 						time_spent, psKPI->t_gpu_target
 						, g_force_gpu_dvfs_fallback);
 
