@@ -30,6 +30,7 @@
 #include <linux/uaccess.h>
 #include <linux/sched.h>
 #include <linux/dma-mapping.h>
+#include <linux/dmapool.h>
 #include <linux/errno.h>
 #include <linux/spinlock.h>
 #include <linux/mutex.h>
@@ -196,6 +197,9 @@ static struct ContextStruct gCmdqContext;
 static struct CmdqCBkStruct gCmdqGroupCallback[CMDQ_MAX_GROUP_COUNT];
 static struct CmdqDebugCBkStruct gCmdqDebugCallback;
 static struct cmdq_dts_setting g_dts_setting;
+
+static struct dma_pool *g_task_buffer_pool;
+static atomic_t g_pool_buffer_count;
 
 #ifdef CMDQ_DUMP_FIRSTERROR
 struct DumpFirstErrorStruct gCmdqFirstError;
@@ -1117,7 +1121,7 @@ void cmdq_core_monitor_record_free(size_t size)
 }
 
 void *cmdq_core_alloc_hw_buffer(struct device *dev, size_t size, dma_addr_t *dma_handle,
-				const gfp_t flag)
+	const gfp_t flag)
 {
 	void *pVA;
 	dma_addr_t PA;
@@ -1160,9 +1164,11 @@ void *cmdq_core_alloc_hw_buffer(struct device *dev, size_t size, dma_addr_t *dma
 }
 
 void cmdq_core_free_hw_buffer(struct device *dev, size_t size, void *cpu_addr,
-			      dma_addr_t dma_handle)
+	dma_addr_t dma_handle)
 {
 	CMDQ_TIME free_cost = 0;
+
+	CMDQ_VERBOSE("%s, pVA:0x%p, PA:0x%pa\n", __func__, cpu_addr, &dma_handle);
 
 	free_cost = sched_clock();
 	dma_free_coherent(dev, size, cpu_addr, dma_handle);
@@ -1180,6 +1186,120 @@ void cmdq_core_free_hw_buffer(struct device *dev, size_t size, void *cpu_addr,
 #endif
 	}
 
+}
+
+void cmdq_core_create_buffer_pool(void)
+{
+	if (unlikely(g_task_buffer_pool)) {
+		CMDQ_ERR("Buffer pool already create pool:%p count:%d\n",
+			g_task_buffer_pool, (s32)atomic_read(&g_pool_buffer_count));
+		return;
+	}
+
+	g_task_buffer_pool = dma_pool_create("cmdq", cmdq_dev_get(), PAGE_SIZE, 0, 0);
+	if (!g_task_buffer_pool) {
+		/* CMDQ still work even fail, only show log */
+		CMDQ_ERR("Fail to create task buffer pool.\n");
+	}
+
+	CMDQ_MSG("DMA pool alloate:%p\n", g_task_buffer_pool);
+}
+
+void cmdq_core_destroy_buffer_pool(void)
+{
+	if (unlikely((atomic_read(&g_pool_buffer_count)))) {
+		/* should not happen, print counts before reset */
+		CMDQ_ERR("Task buffer still use:%d\n", (s32)atomic_read(&g_pool_buffer_count));
+	}
+
+	CMDQ_MSG("DMA pool destroy:%p\n", g_task_buffer_pool);
+
+	dma_pool_destroy(g_task_buffer_pool);
+	g_task_buffer_pool = NULL;
+	atomic_set(&g_pool_buffer_count, 0);
+}
+
+void *cmdq_core_alloc_hw_buffer_pool(const gfp_t flag, dma_addr_t *dma_handle_out)
+{
+	void *va = NULL;
+	dma_addr_t pa = 0;
+
+	if (unlikely(!g_task_buffer_pool))
+		return NULL;
+
+	if (atomic_inc_return(&g_pool_buffer_count) > CMDQ_DMA_POOL_COUNT) {
+		/* not use pool, decrease to value before call */
+		atomic_dec(&g_pool_buffer_count);
+		return NULL;
+	}
+
+	CMDQ_PROF_START(current->pid, __func__);
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_buffer, MMPROFILE_FLAG_START, current->pid,
+		CMDQ_CMD_BUFFER_SIZE);
+
+	va = dma_pool_alloc(g_task_buffer_pool, flag, &pa);
+
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_buffer, MMPROFILE_FLAG_END, current->pid, 0);
+	CMDQ_PROF_END(current->pid, __func__);
+
+	if (!va) {
+		CMDQ_ERR("Alloc buffer from pool fail va:%p pa:%pa flag:%u pool:%p count:%d\n",
+			va, &pa, (u32)flag, g_task_buffer_pool, (s32)atomic_read(&g_pool_buffer_count));
+		atomic_dec(&g_pool_buffer_count);
+	}
+
+	*dma_handle_out = pa;
+
+	CMDQ_VERBOSE("%s count:%d allocate:%p pool:%p\n",
+		__func__, (s32)atomic_read(&g_pool_buffer_count), va, g_task_buffer_pool);
+
+	return va;
+}
+
+void cmdq_core_free_hw_buffer_pool(void *va, dma_addr_t dma_handle)
+{
+	if (unlikely(atomic_read(&g_pool_buffer_count) <= 0 || !g_task_buffer_pool))
+		return;
+
+	CMDQ_VERBOSE("%s count:%d free:%p pool:%p\n",
+		__func__, (s32)atomic_read(&g_pool_buffer_count), va, g_task_buffer_pool);
+
+	dma_pool_free(g_task_buffer_pool, va, dma_handle);
+	if (atomic_read(&g_cmdq_mem_monitor.monitor_mem_enable) != 0)
+		cmdq_core_monitor_record_free(CMDQ_CMD_BUFFER_SIZE);
+
+	atomic_dec(&g_pool_buffer_count);
+}
+
+void cmdq_core_free_reg_buffer(struct TaskStruct *task)
+{
+	CMDQ_VERBOSE("COMMAND: free result buf VA:0x%p PA:%pa\n",
+		task->regResults, &task->regResultsMVA);
+
+	cmdq_core_free_hw_buffer(cmdq_dev_get(),
+		task->regCount * sizeof(task->regResults[0]),
+		task->regResults,
+		task->regResultsMVA);
+
+	task->regResults = NULL;
+	task->regResultsMVA = 0;
+	task->regCount = 0;
+}
+
+void cmdq_core_alloc_reg_buffer(struct TaskStruct *task)
+{
+	if (task->regResults) {
+		CMDQ_AEE("CMDQ", "Result is not empty, addr:0x%p task:0x%p\n", task->regResults, task);
+		cmdq_core_free_reg_buffer(task);
+	}
+
+	task->regResults = cmdq_core_alloc_hw_buffer(cmdq_dev_get(),
+		task->regCount * sizeof(task->regResults[0]),
+		&task->regResultsMVA,
+		GFP_KERNEL);
+
+	CMDQ_VERBOSE("COMMAND: allocate result buf VA:0x%p PA:%pa\n",
+		task->regResults, &task->regResultsMVA);
 }
 
 s32 cmdq_core_alloc_sram_buffer(size_t size, const char *owner_name, u32 *out_cpr_offset)
@@ -2182,8 +2302,12 @@ void cmdq_task_free_buffer_impl(struct list_head *cmd_buffer_list)
 	list_for_each_safe(p, n, cmd_buffer_list) {
 		cmd_buffer = list_entry(p, struct CmdBufferStruct, listEntry);
 		list_del(&cmd_buffer->listEntry);
-		cmdq_core_free_hw_buffer(cmdq_dev_get(), CMDQ_CMD_BUFFER_SIZE,
-			cmd_buffer->pVABase, cmd_buffer->MVABase);
+
+		if (cmd_buffer->use_pool)
+			cmdq_core_free_hw_buffer_pool(cmd_buffer->pVABase, cmd_buffer->MVABase);
+		else
+			cmdq_core_free_hw_buffer(cmdq_dev_get(), CMDQ_CMD_BUFFER_SIZE,
+				cmd_buffer->pVABase, cmd_buffer->MVABase);
 		kfree(cmd_buffer);
 	}
 }
@@ -2237,15 +2361,22 @@ static int32_t cmdq_core_task_alloc_single_buffer_list(struct TaskStruct *pTask,
 	int32_t status = 0;
 	struct CmdBufferStruct *buffer_entry = NULL;
 
-	buffer_entry = kzalloc(sizeof(struct CmdBufferStruct), GFP_KERNEL);
+	buffer_entry = kzalloc(sizeof(*buffer_entry), GFP_KERNEL);
 	if (!buffer_entry) {
-		CMDQ_ERR("allocate buffer record failed\n");
+		CMDQ_ERR("allocate buffer record failed task:%p\n", pTask);
 		return -ENOMEM;
 	}
 
-	buffer_entry->pVABase = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), CMDQ_CMD_BUFFER_SIZE,
+	/* try allocate from pool first */
+	buffer_entry->pVABase = cmdq_core_alloc_hw_buffer_pool(GFP_KERNEL, &buffer_entry->MVABase);
+	buffer_entry->use_pool = (bool)buffer_entry->pVABase;
+
+	if (!buffer_entry->pVABase) {
+		buffer_entry->pVABase = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), CMDQ_CMD_BUFFER_SIZE,
 			&buffer_entry->MVABase, GFP_KERNEL);
-	if (buffer_entry->pVABase == NULL) {
+	}
+
+	if (!buffer_entry->pVABase) {
 		CMDQ_ERR("allocate cmd buffer of size %u failed\n", (uint32_t)CMDQ_CMD_BUFFER_SIZE);
 		kfree(buffer_entry);
 		return -ENOMEM;
@@ -2561,13 +2692,8 @@ bool cmdqIsValidTaskPtr(void *pTask)
 static void cmdq_core_release_buffer(struct TaskStruct *pTask)
 {
 	CMDQ_MSG("cmdq_core_release_buffer start\n");
-	if (pTask->regResults) {
-		CMDQ_MSG("COMMAND: Free result buf VA:0x%p, PA:%pa\n", pTask->regResults,
-			 &pTask->regResultsMVA);
-		cmdq_core_free_hw_buffer(cmdq_dev_get(),
-					 pTask->regCount * sizeof(pTask->regResults[0]),
-					 pTask->regResults, pTask->regResultsMVA);
-	}
+	if (pTask->regResults)
+		cmdq_core_free_reg_buffer(pTask);
 
 	if (pTask->secData.addrMetadatas != (cmdqU32Ptr_t) (unsigned long)NULL) {
 		kfree(CMDQ_U32_PTR(pTask->secData.addrMetadatas));
@@ -2578,10 +2704,6 @@ static void cmdq_core_release_buffer(struct TaskStruct *pTask)
 		kfree(pTask->userDebugStr);
 		pTask->userDebugStr = NULL;
 	}
-
-	pTask->regResults = NULL;
-	pTask->regResultsMVA = 0;
-	pTask->regCount = 0;
 
 	/* Release buffer created by v3 */
 	cmdq_core_release_v3_struct(pTask);
@@ -3502,20 +3624,12 @@ static int32_t cmdq_core_insert_read_reg_command(struct TaskStruct *pTask,
 		return 0;
 	}
 
-	/**
-	 * Backup end and append cmd
-	 */
+	/* Backup end and append cmd */
 	if (pTask->regCount) {
 		CMDQ_VERBOSE("COMMAND: allocate register output section\n");
+
 		/* allocate register output section */
-		if (pTask->regResults)
-			CMDQ_AEE("CMDQ", "Result is not empty, addr:0x%p task:0x%p\n", pTask->regResults, pTask);
-		pTask->regResults = cmdq_core_alloc_hw_buffer(cmdq_dev_get(),
-							      pTask->regCount * sizeof(pTask->regResults[0]),
-							      &pTask->regResultsMVA,
-							      GFP_KERNEL);
-		CMDQ_MSG("COMMAND: result buf VA: 0x%p, PA: %pa\n", pTask->regResults,
-			 &pTask->regResultsMVA);
+		cmdq_core_alloc_reg_buffer(pTask);
 
 		/* allocate GPR resource */
 		cmdq_get_func()->getRegID(pTask->engineFlag, &valueRegId, &destRegId,
@@ -8059,6 +8173,10 @@ int32_t cmdqCoreSuspend(void)
 	gCmdqSuspended = true;
 	CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, suspend);
 
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, suspend_pool);
+	cmdq_core_destroy_buffer_pool();
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, suspend_pool);
+
 	CMDQ_MSG("CMDQ is suspended\n");
 	g_delay_thread_inited = false;
 	/* ALWAYS allow suspend */
@@ -8079,6 +8197,10 @@ int32_t cmdq_core_resume_impl(const char *tag)
 	gCmdqSuspended = false;
 
 	CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, resume);
+
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, resume_pool);
+	cmdq_core_create_buffer_pool();
+	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, resume_pool);
 
 	if (!g_delay_thread_inited) {
 		cmdq_copy_delay_to_sram();
@@ -9063,6 +9185,8 @@ int32_t cmdqCoreInitialize(void)
 
 	g_delay_thread_inited = false;
 
+	cmdq_core_create_buffer_pool();
+
 	return 0;
 }
 
@@ -9141,6 +9265,8 @@ void cmdqCoreDeInitialize(void)
 
 	/* Deinitialize secure path context */
 	cmdqSecDeInitialize();
+
+	cmdq_core_destroy_buffer_pool();
 
 	kfree(g_dts_setting.prefetch_size);
 	g_dts_setting.prefetch_size = NULL;

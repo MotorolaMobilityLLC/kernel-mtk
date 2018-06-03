@@ -435,6 +435,7 @@ struct CmdBufferStruct {
 	struct list_head listEntry;
 	uint32_t *pVABase;	/* virtual address of command buffer */
 	dma_addr_t MVABase;	/* physical address of command buffer */
+	bool use_pool;
 };
 
 struct CmdFreeWorkStruct {
