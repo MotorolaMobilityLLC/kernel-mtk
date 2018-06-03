@@ -114,6 +114,8 @@
 #define AP_UART0_COMPATIBLE_NAME "mediatek,gpio"
 #endif
 
+#define AP_PLL_CON0_COMPATIBLE_NAME "mediatek,apmixed"
+
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
@@ -174,6 +176,7 @@ void __iomem *u3_base;
 void __iomem *u3_sif_base;
 void __iomem *u3_sif2_base;
 void __iomem *ap_uart0_base;
+void __iomem *ap_pll_con0;
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 void __iomem *i2c_base;
@@ -2412,6 +2415,7 @@ static int __init musb_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	int irq = 0;
 	int status = 0;
+	struct device_node *ap_pll_con0_node = NULL;
 
 	os_printk(K_INFO, "[MU3D]musb_probe\n");
 
@@ -2446,6 +2450,17 @@ static int __init musb_probe(struct platform_device *pdev)
 		ap_uart0_base = of_iomap(ap_uart0_node, 0);
 	}
 #endif
+
+	ap_pll_con0_node = of_find_compatible_node(NULL, NULL, AP_PLL_CON0_COMPATIBLE_NAME);
+
+	if (ap_pll_con0_node == NULL) {
+		os_printk(K_ERR, "USB get ap_pll_con0_node failed\n");
+		if (ap_pll_con0)
+			iounmap(ap_pll_con0);
+		ap_pll_con0 = 0;
+	} else {
+		ap_pll_con0 = of_iomap(ap_pll_con0_node, 0);
+	}
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	if (!i2c_physical_base) {
