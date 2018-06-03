@@ -91,6 +91,9 @@ __weak void get_disp_dump_buffer(unsigned long *addr, unsigned long *size, unsig
 {
 }
 
+__weak void aee_rr_get_desc_info(unsigned long *addr, unsigned long *size, unsigned long *start)
+{
+}
 __weak void get_hang_detect_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
 }
@@ -664,6 +667,9 @@ static void mrdump_mini_build_elf_misc(void)
 	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 	get_kernel_log_buffer(&misc.vaddr, &misc.size, &misc.start);
 	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_KERNEL_LOG_");
+	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
+	aee_rr_get_desc_info(&misc.vaddr, &misc.size, &misc.start);
+	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_RR_DESC_");
 	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
 	get_hang_detect_buffer(&misc.vaddr, &misc.size, &misc.start);
 	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_HANG_DETECT_");
