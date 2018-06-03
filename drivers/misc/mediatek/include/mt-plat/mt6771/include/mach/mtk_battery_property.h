@@ -198,25 +198,29 @@
 #define UI_FULL_LIMIT_SOC4 9900
 #define UI_FULL_LIMIT_ITH4 2200
 
+#define UI_FULL_LIMIT_TIME 99999
+
 
 /* using voltage to limit uisoc in 1% case */
 /* UI_LOW_LIMIT_VTH0=36000 means 3.6v */
 #define UI_LOW_LIMIT_EN 0
 
 #define UI_LOW_LIMIT_SOC0 500
-#define UI_LOW_LIMIT_VTH0 36000
+#define UI_LOW_LIMIT_VTH0 35000
 
 #define UI_LOW_LIMIT_SOC1 400
-#define UI_LOW_LIMIT_VTH1 35500
+#define UI_LOW_LIMIT_VTH1 34600
 
 #define UI_LOW_LIMIT_SOC2 300
-#define UI_LOW_LIMIT_VTH2 35000
+#define UI_LOW_LIMIT_VTH2 34500
 
 #define UI_LOW_LIMIT_SOC3 200
-#define UI_LOW_LIMIT_VTH3 34500
+#define UI_LOW_LIMIT_VTH3 34200
 
 #define UI_LOW_LIMIT_SOC4 100
 #define UI_LOW_LIMIT_VTH4 34000
+
+#define UI_LOW_LIMIT_TIME 99999
 
 /* extern function */
 extern int get_rac(void);

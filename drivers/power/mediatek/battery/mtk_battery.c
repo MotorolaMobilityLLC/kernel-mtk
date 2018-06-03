@@ -1369,6 +1369,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.ui_full_limit_ith3 = UI_FULL_LIMIT_ITH3;
 	fg_cust_data.ui_full_limit_soc4 = UI_FULL_LIMIT_SOC4;
 	fg_cust_data.ui_full_limit_ith4 = UI_FULL_LIMIT_ITH4;
+	fg_cust_data.ui_full_limit_time = UI_FULL_LIMIT_TIME;
 
 	/* voltage limit for uisoc 1% */
 	fg_cust_data.ui_low_limit_en = UI_LOW_LIMIT_EN;
@@ -1382,6 +1383,8 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.ui_low_limit_vth3 = UI_LOW_LIMIT_VTH3;
 	fg_cust_data.ui_low_limit_soc4 = UI_LOW_LIMIT_SOC4;
 	fg_cust_data.ui_low_limit_vth4 = UI_LOW_LIMIT_VTH4;
+	fg_cust_data.ui_low_limit_time = UI_LOW_LIMIT_TIME;
+
 
 #if defined(GM30_DISABLE_NAFG)
 		fg_cust_data.disable_nafg = 1;
@@ -4070,8 +4073,8 @@ void fg_bat_plugout_int_handler(void)
 		for (i = 0 ; i < 20 ; i++)
 			gauge_dev_dump(gauge_dev, NULL);
 
-		/* TODO debug purpose, remove it!!!!!! */
-		aee_kernel_warning("GAUGE", "BAT_PLUGOUT error!\n");
+		/* TODO debug */
+		/* aee_kernel_warning("GAUGE", "BAT_PLUGOUT error!\n"); */
 
 		if (g_plug_miss_count >= 3) {
 			pmic_enable_interrupt(FG_BAT_PLUGOUT_NO, 0, "GM30");
@@ -4565,7 +4568,204 @@ void exec_BAT_EC(int cmd, int param)
 			bm_err("[FG_IT] exe_BAT_EC cmd %d", cmd);
 		}
 		break;
-
+	case 724:
+		{
+			fg_cust_data.pseudo100_t0 = UNIT_TRANS_100 * param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pseudo100_t0=%d\n", cmd, param);
+		}
+		break;
+	case 725:
+		{
+			fg_cust_data.pseudo100_t1 = UNIT_TRANS_100 * param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pseudo100_t1=%d\n", cmd, param);
+		}
+		break;
+	case 726:
+		{
+			fg_cust_data.pseudo100_t2 = UNIT_TRANS_100 * param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pseudo100_t2=%d\n", cmd, param);
+		}
+		break;
+	case 727:
+		{
+			fg_cust_data.pseudo100_t3 = UNIT_TRANS_100 * param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pseudo100_t3=%d\n", cmd, param);
+		}
+		break;
+	case 728:
+		{
+			fg_cust_data.pseudo100_t4 = UNIT_TRANS_100 * param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pseudo100_t4=%d\n", cmd, param);
+		}
+		break;
+	case 729:
+		{
+			fg_cust_data.keep_100_percent = UNIT_TRANS_100 * param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.keep_100_percent=%d\n", cmd, param);
+		}
+		break;
+	case 730:
+		{
+			fg_cust_data.ui_full_limit_en = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_en=%d\n", cmd, param);
+		}
+		break;
+	case 731:
+		{
+			fg_cust_data.ui_full_limit_soc0 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_soc0=%d\n", cmd, param);
+		}
+		break;
+	case 732:
+		{
+			fg_cust_data.ui_full_limit_ith0 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_ith0=%d\n", cmd, param);
+		}
+		break;
+	case 733:
+		{
+			fg_cust_data.ui_full_limit_soc1 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_soc1=%d\n", cmd, param);
+		}
+		break;
+	case 734:
+		{
+			fg_cust_data.ui_full_limit_ith1 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_ith1=%d\n", cmd, param);
+		}
+		break;
+	case 735:
+		{
+			fg_cust_data.ui_full_limit_soc2 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_soc2=%d\n", cmd, param);
+		}
+		break;
+	case 736:
+		{
+			fg_cust_data.ui_full_limit_ith2 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_ith2=%d\n", cmd, param);
+		}
+		break;
+	case 737:
+		{
+			fg_cust_data.ui_full_limit_soc3 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_soc3=%d\n", cmd, param);
+		}
+		break;
+	case 738:
+		{
+			fg_cust_data.ui_full_limit_ith3 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_ith3=%d\n", cmd, param);
+		}
+		break;
+	case 739:
+		{
+			fg_cust_data.ui_full_limit_soc4 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_soc4=%d\n", cmd, param);
+		}
+		break;
+	case 740:
+		{
+			fg_cust_data.ui_full_limit_ith4 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_ith4=%d\n", cmd, param);
+		}
+		break;
+	case 741:
+		{
+			fg_cust_data.ui_full_limit_time = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.ui_full_limit_time=%d\n", cmd, param);
+		}
+		break;
+	case 743:
+		{
+			fg_cust_data.pmic_min_vol_t0 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pmic_min_vol_t0=%d\n", cmd, param);
+		}
+		break;
+	case 744:
+		{
+			fg_cust_data.pmic_min_vol_t1 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pmic_min_vol_t1=%d\n", cmd, param);
+		}
+		break;
+	case 745:
+		{
+			fg_cust_data.pmic_min_vol_t2 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pmic_min_vol_t2=%d\n", cmd, param);
+		}
+		break;
+	case 746:
+		{
+			fg_cust_data.pmic_min_vol_t3 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pmic_min_vol_t3=%d\n", cmd, param);
+		}
+		break;
+	case 747:
+		{
+			fg_cust_data.pmic_min_vol_t4 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pmic_min_vol_t4=%d\n", cmd, param);
+		}
+		break;
+	case 748:
+		{
+			fg_cust_data.pon_iboot_t0 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pon_iboot_t0=%d\n", cmd, param);
+		}
+		break;
+	case 749:
+		{
+			fg_cust_data.pon_iboot_t1 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pon_iboot_t1=%d\n", cmd, param);
+		}
+		break;
+	case 750:
+		{
+			fg_cust_data.pon_iboot_t2 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pon_iboot_t2=%d\n", cmd, param);
+		}
+		break;
+	case 751:
+		{
+			fg_cust_data.pon_iboot_t3 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pon_iboot_t3=%d\n", cmd, param);
+		}
+		break;
+	case 752:
+		{
+			fg_cust_data.pon_iboot_t4 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.pon_iboot_t4=%d\n", cmd, param);
+		}
+		break;
+	case 753:
+		{
+			fg_cust_data.qmax_sys_vol_t0 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t0=%d\n", cmd, param);
+		}
+		break;
+	case 754:
+		{
+			fg_cust_data.qmax_sys_vol_t1 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t1=%d\n", cmd, param);
+		}
+		break;
+	case 755:
+		{
+			fg_cust_data.qmax_sys_vol_t2 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t2=%d\n", cmd, param);
+		}
+		break;
+	case 756:
+		{
+			fg_cust_data.qmax_sys_vol_t3 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t3=%d\n", cmd, param);
+		}
+		break;
+	case 757:
+		{
+			fg_cust_data.qmax_sys_vol_t4 = param;
+			bm_err("[FG_IT] exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t4=%d\n", cmd, param);
+		}
+		break;
 	default:
 		bm_err("[FG_IT] exe_BAT_EC cmd %d, param %d, default\n", cmd, param);
 		break;
