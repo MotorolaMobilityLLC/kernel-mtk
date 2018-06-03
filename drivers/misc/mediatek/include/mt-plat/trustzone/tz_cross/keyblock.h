@@ -18,20 +18,20 @@
 extern "C" {
 #endif
 
-	typedef enum {
-		WIDEVINE_ID = 0,
-		MARLIN_ID,
-		HDCP_1X_TX_ID,
-		HDCP_2X_V1_TX_ID,
-		HDCP_2X_V1_RX_ID,
-		HDCP_2X_V2_TX_ID,
-		HDCP_2X_V2_RX_ID,
-		PLAYREADY_BGROUPCERT_ID,
-		PLAYREADY_ZGPRIV_ID,
-		PLAYREADY_KEYFILE_ID,
-		DRM_KEY_MAX,
-		DRM_SP_EKKB = 0xFFFF
-	} DRMKeyID;
+enum DRMKeyID {
+	WIDEVINE_ID = 0,
+	MARLIN_ID,
+	HDCP_1X_TX_ID,
+	HDCP_2X_V1_TX_ID,
+	HDCP_2X_V1_RX_ID,
+	HDCP_2X_V2_TX_ID,
+	HDCP_2X_V2_RX_ID,
+	PLAYREADY_BGROUPCERT_ID,
+	PLAYREADY_ZGPRIV_ID,
+	PLAYREADY_KEYFILE_ID,
+	DRM_KEY_MAX,
+	DRM_SP_EKKB = 0xFFFF
+};
 
 #define SZ_DRMKEY_ID 4
 #define SZ_DRMKEY_TYPE 4
@@ -47,15 +47,15 @@ extern "C" {
 /* begin of uree using */
 
 /*
- * [in]  keyID			  Enum DRMKeyID
+ * [in]  keyID  Enum DRMKeyID
  * [out] oneDrmkeyBlock  encrypt DRMBlock
- * [out] blockLeng	  encrypt DRMBlockLength
+ * [out] blockLeng  encrypt DRMBlockLength
 
- * return	 0: OK,  others: FAIL
+ * return 0: OK,  others: FAIL
 */
 int get_encrypt_drmkey(unsigned int keyID,
-			unsigned char **oneDrmkeyBlock,
-			unsigned int *blockLeng);
+	unsigned char **oneDrmkeyBlock,
+	unsigned int *blockLeng);
 
 int get_clearDrmkey_size(unsigned int keyID, unsigned int *leng);
 
@@ -73,10 +73,10 @@ int query_drmkey(unsigned int *count, unsigned int *keytype);
 
 /* begin for tee using */
 int encrypt_drmkey(DRMKeyID id, unsigned char *clearKey, unsigned int inLength,
-			   unsigned char **encKey, unsigned int *outLength);
+	unsigned char **encKey, unsigned int *outLength);
 
 int decrypt_drmkey(unsigned char *encDrmKeyBlock, unsigned int inLength,
-		   unsigned char **DrmKey, unsigned int *outLength);
+	unsigned char **DrmKey, unsigned int *outLength);
 
 int free_drmkey(unsigned char *drmkey);
 
@@ -87,4 +87,4 @@ int free_drmkey_safe(unsigned char *drmkey, int size);
 #ifdef __cplusplus
 }
 #endif
-#endif	/* __KEY_BLOCK_H__ */
+#endif  /* __KEY_BLOCK_H__ */

@@ -19,12 +19,11 @@
 /* Data Structure for HDCP2 tx TA
  * You should define data structure used both in REE/TEE here
  */
-typedef enum HDCP2_TX_KEY_SRC {
-
+enum E_HDCP2_TX_KEY_SRC {
 	CODED_FACSMILE_KEY = 0,
 	CODED_LICENSE_KEY,
 	DRM_KEY
-} E_HDCP2_TX_KEY_SRC;
+};
 
 /* Command for HDCP2_TX TA */
 #define TZCMD_HDCP2_TX_SET_ENCKEY               0
@@ -45,4 +44,4 @@ typedef enum HDCP2_TX_KEY_SRC {
 #define TZCMD_HDCP2_TX_COMPUTE_2_12_V          15
 #define TZCMD_HDCP2_TX_COMPUTE_M               16
 
-#endif	/* __TRUSTZONE_TA_HDCP2_TX__ */
+#endif /* __TRUSTZONE_TA_HDCP2_TX__ */
