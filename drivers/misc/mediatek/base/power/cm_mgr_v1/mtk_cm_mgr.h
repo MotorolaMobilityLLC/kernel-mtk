@@ -34,6 +34,7 @@ extern int vcore_power_ratio_up[CM_MGR_EMI_OPP];
 extern int vcore_power_ratio_down[CM_MGR_EMI_OPP];
 extern int cm_mgr_enable;
 
+extern void check_cm_mgr_status_internal(void);
 extern void check_cm_mgr_status(unsigned int cluster, unsigned int freq);
 
 enum mt_cpu_dvfs_id;
@@ -41,5 +42,8 @@ enum mt_cpu_dvfs_id;
 extern unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(enum mt_cpu_dvfs_id id);
 
 extern void sched_get_percpu_load2(int cpu, bool reset, unsigned int *rel_load, unsigned int *abs_load);
+
+__attribute__((weak))
+void dvfsrc_set_power_model_ddr_request(unsigned int level) {};
 
 #endif	/* __MTK_CM_MGR_H__ */
