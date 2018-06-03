@@ -71,7 +71,7 @@ static int debounce_times_reset_adb;
 static int update;
 static int update_v2f_table = 1;
 static int cm_mgr_opp_enable = 1;
-static int cm_mgr_enable = 1;
+static int cm_mgr_enable;
 static int is_lp3;
 
 static unsigned int vcore_power_gain_lp4[][VCORE_ARRAY_SIZE] = {

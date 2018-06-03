@@ -231,8 +231,10 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 #ifdef PER_CPU_STALL_RATIO
 		int cpu_ratio_idx[CM_MGR_CPU_COUNT];
 #endif
+#ifdef CONFIG_MTK_SCHED_RQAVG_US
 		unsigned int cpu;
 		unsigned int rel_load, abs_load;
+#endif /* CONFIG_MTK_SCHED_RQAVG_US */
 		int i;
 		int cpu_power_total;
 
@@ -249,6 +251,7 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		cm_mgr_abs_load = 0;
 		cm_mgr_rel_load = 0;
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_US
 		for_each_online_cpu(cpu) {
 			int tmp;
 
@@ -265,6 +268,7 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			spin_unlock(&cm_mgr_lock);
 			return;
 		}
+#endif /* CONFIG_MTK_SCHED_RQAVG_US */
 		cps_valid = 1;
 #endif
 
@@ -528,8 +532,13 @@ cm_mgr_opp_end:
 
 static int dbg_cm_mgr_status_proc_show(struct seq_file *m, void *v)
 {
+#ifdef CONFIG_ARM64
 	seq_printf(m, "diff/cnt/max/avg = %llu/%llu/%d/%llu\n",
 			test_diff, cnt, test_max, test_diff / cnt);
+#else
+	seq_printf(m, "diff/cnt/max/avg = %llu/%llu/%d/%u\n",
+			test_diff, cnt, test_max, do_div(test_diff, cnt));
+#endif
 	seq_printf(m, "< 50us    = %d\n", time_cnt_data[0]);
 	seq_printf(m, "50~99us   = %d\n", time_cnt_data[1]);
 	seq_printf(m, "100~199us = %d\n", time_cnt_data[2]);

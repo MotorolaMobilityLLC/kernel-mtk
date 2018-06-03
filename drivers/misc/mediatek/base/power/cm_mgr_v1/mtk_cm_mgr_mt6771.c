@@ -177,8 +177,14 @@ int cm_mgr_check_stall_ratio(int mp0, int mp2)
 			continue;
 		}
 
+#ifdef CONFIG_ARM64
 		pstall_all->ratio[i] = pstall_all->stall_val_diff[i] * 100000 /
 			pstall_all->time_ns_diff[i] / pstall_all->clustor[clustor];
+#else
+		pstall_all->ratio[i] = pstall_all->stall_val_diff[i] * 100000;
+		do_div(pstall_all->ratio[i], pstall_all->time_ns_diff[i]);
+		do_div(pstall_all->ratio[i], pstall_all->clustor[clustor]);
+#endif
 		if (pstall_all->ratio[i] > 100) {
 #ifdef USE_DEBUG_LOG
 			pr_debug("%s: WARN!!! cpu:%d ratio > 100\n", __func__, i);
