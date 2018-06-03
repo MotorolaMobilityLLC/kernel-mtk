@@ -378,7 +378,7 @@ ACAO_HPS_START:
 			pr_info("CPU %d ==>0\n", i);
 	}
 
-	if (hps_ctxt.online_core) {
+	if (!cpumask_empty(hps_ctxt.online_core)) {
 		aee_rr_rec_hps_cb_footprint(3);
 		aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 		first_cpu = cpumask_first(hps_ctxt.online_core);
