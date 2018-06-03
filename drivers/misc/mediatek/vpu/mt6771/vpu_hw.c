@@ -383,49 +383,49 @@ static int vpu_set_clock_source(struct clk *clk, uint8_t step)
 	return clk_set_parent(clk, clk_src);
 }
 
-static void vpu_opp_check(int core, uint8_t vcore_value, uint8_t freq_value)
+static void vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
 {
 	int i = 0;
 	bool freq_check = false;
 	int log_freq = 0, log_max_freq = 0;
 
-	log_freq = Map_DSP_Freq_Table(freq_value);
-	LOG_DBG("opp_check + (%d/%d/%d), ori vcore(%d)", core, vcore_value, freq_value, opps.vcore.index);
+	log_freq = Map_DSP_Freq_Table(freq_index);
+	LOG_DBG("opp_check + (%d/%d/%d), ori vcore(%d)", core, vcore_index, freq_index, opps.vcore.index);
 
 	mutex_lock(&opp_mutex);
 	log_max_freq = Map_DSP_Freq_Table(max_dsp_freq);
 	/* vcore opp */
-	if (vcore_value == 0xFF) {
-		LOG_DBG("no request, vcore opp(%d)", vcore_value);
+	if (vcore_index == 0xFF) {
+		LOG_DBG("no request, vcore opp(%d)", vcore_index);
 	} else {
-		if (vcore_value < max_vcore_opp) {
-			LOG_INF("vpu bound vcore opp(%d) to %d", vcore_value, max_vcore_opp);
-			vcore_value = max_vcore_opp;
+		if (vcore_index < max_vcore_opp) {
+			LOG_INF("vpu bound vcore opp(%d) to %d", vcore_index, max_vcore_opp);
+			vcore_index = max_vcore_opp;
 		}
 
-		if (vcore_value >= opps.count) {
-			LOG_ERR("wrong vcore opp(%d), max(%d)", vcore_value, opps.count - 1);
-		} else if (vcore_value != opps.vcore.index) {
-			opps.vcore.index = vcore_value;
-			opps.index = vcore_value;
+		if (vcore_index >= opps.count) {
+			LOG_ERR("wrong vcore opp(%d), max(%d)", vcore_index, opps.count - 1);
+		} else if (vcore_index != opps.vcore.index) {
+			opps.vcore.index = vcore_index;
+			/*opps.index = vcore_index;*/
 			force_change_vcore_opp[core] = true;
 			freq_check = true;
 		}
 	}
 
 	/* dsp freq opp */
-	if (freq_value == 0xFF) {
-		LOG_DBG("no request, freq opp(%d)", freq_value);
+	if (freq_index == 0xFF) {
+		LOG_DBG("no request, freq opp(%d)", freq_index);
 	} else {
-		if (freq_value < max_dsp_freq) {
+		if (freq_index < max_dsp_freq) {
 			LOG_INF("vpu bound dsp freq(%dMHz) to %dMHz", log_freq, log_max_freq);
-			freq_value = max_dsp_freq;
+			freq_index = max_dsp_freq;
 		}
 
-		if ((opps.dspcore[core].index != freq_value) || (freq_check)) {
-			opps.dspcore[core].index = freq_value;
-			if (opps.vcore.index > 0) {
-				/* adjust 0~3 to 4~7 for real table*/
+		if ((opps.dspcore[core].index != freq_index) || (freq_check)) {
+			opps.dspcore[core].index = freq_index;
+			if (opps.vcore.index > 0 && opps.dspcore[core].index < 4) {
+				/* adjust 0~3 to 4~7 for real table if needed*/
 				opps.dspcore[core].index = opps.dspcore[core].index + 4;
 			}
 			opps.dsp.index = 7;
@@ -647,14 +647,15 @@ static int vpu_enable_regulator_and_clock(int core)
 	LOG_DBG("[vpu_%d] en_rc wait for changing vcore opp", core);
 	wait_to_do_change_vcore_opp();
 	LOG_DBG("[vpu_%d] en_rc to do vcore opp change", core);
-
+#if 1
 	vpu_trace_begin("vcore:request");
 	ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, opps.vcore.index);
 	vpu_trace_end();
 	CHECK_RET("fail to request vcore, step=%d\n", opps.vcore.index);
 	LOG_INF("[vpu_%d] result vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 	LOG_DBG("[vpu_%d] en_rc setmmdvfs(%d) done\n", core, opps.vcore.index);
-
+#endif
+	LOG_INF("[vpu_%d] result vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 #define ENABLE_VPU_MTCMOS(clk) \
 	{ \
 		if (clk != NULL) { \
@@ -941,6 +942,8 @@ static int vpu_service_routine(void *arg)
 	struct vpu_user *user = NULL;
 	struct vpu_request *req = NULL;
 	struct vpu_algo *algo = NULL;
+	uint8_t vcore_opp_index = 0xFF;
+	uint8_t dsp_freq_index = 0xFF;
 	struct vpu_user *user_in_list = NULL;
 	struct list_head *head = NULL;
 	int *d = (int *)arg;
@@ -1021,9 +1024,21 @@ static int vpu_service_routine(void *arg)
 			user->running = true; /* for flush request from queue, DL usage */
 			/* unlock for avoiding long time locking */
 			mutex_unlock(&vpu_dev->user_mutex);
-			LOG_DBG("[vpu_%d] run, opp(%d/%d)\n", service_core, req->power_param.opp_step,
-				req->power_param.freq_step);
-			vpu_opp_check(service_core, req->power_param.opp_step, req->power_param.freq_step);
+			#if 0
+			if (req->power_param.opp_step == 0xFF) {
+				vcore_opp_index = 0xFF;
+				dsp_freq_index = 0xFF;
+			} else {
+				vcore_opp_index = opps.vcore.opp_map[req->power_param.opp_step];
+				dsp_freq_index = opps.dspcore[service_core].opp_map[req->power_param.opp_step];
+			}
+			#else
+			vcore_opp_index = req->power_param.opp_step;
+			dsp_freq_index = req->power_param.freq_step;
+			#endif
+			LOG_DBG("[vpu_%d] run, opp(%d/%d/%d)\n", service_core, req->power_param.opp_step,
+				vcore_opp_index, dsp_freq_index);
+			vpu_opp_check(service_core, vcore_opp_index, dsp_freq_index);
 			LOG_INF("[vpu_%d] run, algo_id(%d/%d), opp(%d->%d, %d->%d)\n", service_core,
 				(int)(req->algo_id[service_core]), vpu_service_cores[service_core].current_algo,
 				req->power_param.opp_step, opps.vcore.index,
@@ -1446,11 +1461,17 @@ int vpu_init_hw(int core, struct vpu_device *device)
 
 		/* default freq */
 		DEFINE_VPU_OPP(0, 0, 0, 0, 0, 0);
-		DEFINE_VPU_OPP(1, 1, 4, 4, 4, 4);
+		DEFINE_VPU_OPP(1, 0, 1, 1, 1, 1);
+		DEFINE_VPU_OPP(2, 0, 2, 2, 2, 2);
+		DEFINE_VPU_OPP(3, 0, 3, 3, 3, 3);
+		DEFINE_VPU_OPP(4, 1, 4, 4, 4, 4);
+		DEFINE_VPU_OPP(5, 1, 5, 5, 5, 5);
+		DEFINE_VPU_OPP(6, 1, 6, 6, 6, 6);
+		DEFINE_VPU_OPP(7, 1, 7, 7, 7, 7);
 
 		/* default low opp */
-		opps.count = 2;
-		opps.index = 1; /* should be aligned with vcore.index in this */
+		opps.count = 8;
+		opps.index = 4; /* user space usage*/
 		opps.vcore.index = 1;
 		opps.dsp.index = 4;
 		opps.dspcore[0].index = 4;
@@ -1875,8 +1896,9 @@ out:
 
 int vpu_shut_down(int core)
 {
-	int ret = 0;
-	int i = 0;
+	int ret;
+	/*int i = 0;*/
+	/*bool shut_down = true;*/
 
 	LOG_DBG("[vpu_%d] shutdown +\n", core);
 	mutex_lock(&power_mutex[core]);
@@ -1885,6 +1907,7 @@ int vpu_shut_down(int core)
 		return 0;
 	}
 
+	#if 0
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 		mutex_lock(&(vpu_service_cores[i].state_mutex));
 		switch (vpu_service_cores[i].state) {
@@ -1902,6 +1925,23 @@ int vpu_shut_down(int core)
 		}
 		mutex_unlock(&(vpu_service_cores[i].state_mutex));
 	}
+	#else
+	mutex_lock(&(vpu_service_cores[core].state_mutex));
+	switch (vpu_service_cores[core].state) {
+	case VCT_SHUTDOWN:
+	case VCT_IDLE:
+	case VCT_NONE:
+		vpu_service_cores[core].current_algo = 0;
+		vpu_service_cores[core].state = VCT_SHUTDOWN;
+		mutex_unlock(&(vpu_service_cores[core].state_mutex));
+		break;
+	case VCT_BOOTUP:
+	case VCT_EXECUTING:
+		mutex_unlock(&(vpu_service_cores[core].state_mutex));
+		goto out;
+		/*break;*/
+	}
+	#endif
 
 	vpu_trace_begin("vpu_shut_down");
 	ret = vpu_disable_regulator_and_clock(core);
@@ -2300,45 +2340,49 @@ int vpu_dump_register(struct seq_file *s)
 	struct vpu_reg_field_desc *field;
 	int TEMP_CORE = 0;
 
-#define LINE_BAR "  +---------------+------+---+---+-------------------------+----------+\n"
-	vpu_print_seq(s, LINE_BAR);
-	vpu_print_seq(s, "  |%-15s|%-6s|%-3s|%-3s|%-25s|%-10s|\n",
-				  "Register", "Offset", "MSB", "LSB", "Field", "Value");
-	vpu_print_seq(s, LINE_BAR);
+#define LINE_BAR "  +---------------+-------+---+---+-------------------------+----------+\n"
 
-
-	for (i = 0; i < VPU_NUM_REGS; i++) {
-		reg = &g_vpu_reg_descs[i];
-#ifndef MTK_VPU_DVT
-		if (reg->reg < REG_DEBUG_INFO00)
-			continue;
-#endif
-		first_row_of_field = true;
-
-		for (j = 0; j < VPU_NUM_REG_FIELDS; j++) {
-			field = &g_vpu_reg_field_descs[j];
-			if (reg->reg != field->reg)
-				continue;
-
-			if (first_row_of_field) {
-				first_row_of_field = false;
-				vpu_print_seq(s, "  |%-15s|0x%-4.4x|%-3d|%-3d|%-25s|0x%-8.8x|\n",
-							  reg->name,
-							  reg->offset,
-							  field->msb,
-							  field->lsb,
-							  field->name,
-							  vpu_read_field(TEMP_CORE, (enum vpu_reg_field) j));
-			} else {
-				vpu_print_seq(s, "  |%-15s|%-6s|%-3d|%-3d|%-25s|0x%-8.8x|\n",
-							  "", "",
-							  field->msb,
-							  field->lsb,
-							  field->name,
-							  vpu_read_field(TEMP_CORE, (enum vpu_reg_field) j));
-			}
-		}
+	for (TEMP_CORE = 0; TEMP_CORE < MTK_VPU_CORE; TEMP_CORE++) {
+		vpu_print_seq(s, "  |Core: %-62d|\n", TEMP_CORE);
 		vpu_print_seq(s, LINE_BAR);
+		vpu_print_seq(s, "  |%-15s|%-7s|%-3s|%-3s|%-25s|%-10s|\n",
+					  "Register", "Offset", "MSB", "LSB", "Field", "Value");
+		vpu_print_seq(s, LINE_BAR);
+
+
+		for (i = 0; i < VPU_NUM_REGS; i++) {
+			reg = &g_vpu_reg_descs[i];
+#ifndef MTK_VPU_DVT
+			if (reg->reg < REG_DEBUG_INFO00)
+				continue;
+#endif
+			first_row_of_field = true;
+
+			for (j = 0; j < VPU_NUM_REG_FIELDS; j++) {
+				field = &g_vpu_reg_field_descs[j];
+				if (reg->reg != field->reg)
+					continue;
+
+				if (first_row_of_field) {
+					first_row_of_field = false;
+					vpu_print_seq(s, "  |%-15s|0x%-5.5x|%-3d|%-3d|%-25s|0x%-8.8x|\n",
+								  reg->name,
+								  reg->offset,
+								  field->msb,
+								  field->lsb,
+								  field->name,
+								  vpu_read_field(TEMP_CORE, (enum vpu_reg_field) j));
+				} else {
+					vpu_print_seq(s, "  |%-15s|%-7s|%-3d|%-3d|%-25s|0x%-8.8x|\n",
+								  "", "",
+								  field->msb,
+								  field->lsb,
+								  field->name,
+								  vpu_read_field(TEMP_CORE, (enum vpu_reg_field) j));
+				}
+			}
+			vpu_print_seq(s, LINE_BAR);
+		}
 	}
 #undef LINE_BAR
 
@@ -2352,10 +2396,10 @@ int vpu_dump_image_file(struct seq_file *s)
 	struct vpu_image_header *header;
 	int core = 0;
 
-#define LINE_BAR "  +------+-----+--------------------------------+-----------+----------+\n"
+#define LINE_BAR "  +------+-----+--------------------------------+--------+-----------+----------+\n"
 	vpu_print_seq(s, LINE_BAR);
-	vpu_print_seq(s, "  |%-6s|%-5s|%-32s|%-11s|%-10s|\n",
-				  "Header", "Id", "Name", "MVA", "Length");
+	vpu_print_seq(s, "  |%-6s|%-5s|%-32s|%-8s|%-11s|%-10s|\n",
+				  "Header", "Id", "Name", "MagicNum", "MVA", "Length");
 	vpu_print_seq(s, LINE_BAR);
 
 	header = (struct vpu_image_header *) ((uintptr_t)vpu_service_cores[core].bin_base + (VPU_OFFSET_IMAGE_HEADERS));
@@ -2367,10 +2411,11 @@ int vpu_dump_image_file(struct seq_file *s)
 		for (j = 0; j < header[i].algo_info_count; j++) {
 			algo_info = &header[i].algo_infos[j];
 
-			vpu_print_seq(s, "  |%-6d|%-5d|%-32s|0x%-9lx|0x%-8x|\n",
+			vpu_print_seq(s, "  |%-6d|%-5d|%-32s|0x%-6lx|0x%-9lx|0x%-8x|\n",
 						  (i + 1),
 						  id,
 						  algo_info->name,
+						  (unsigned long)(algo_info->vpu_core),
 						  algo_info->offset - VPU_OFFSET_ALGO_AREA +
 						  (uintptr_t)vpu_service_cores[core].algo_data_mva,
 						  algo_info->length);
@@ -2381,7 +2426,7 @@ int vpu_dump_image_file(struct seq_file *s)
 	vpu_print_seq(s, LINE_BAR);
 #undef LINE_BAR
 
-/*#ifdef MTK_VPU_DUMP_BINARY*/
+/* #ifdef MTK_VPU_DUMP_BINARY */
 #if 0
 	{
 		uint32_t dump_1k_size = (0x00000400);
@@ -2451,6 +2496,7 @@ int vpu_dump_mesg(struct seq_file *s)
 	ptr += VPU_SIZE_LOG_HEADER;
 	log_head = strchr(ptr, '\0') + 1;
 
+		vpu_print_seq(s, "=== VPU_%d Log Buffer ===\n", core_index);
 	vpu_print_seq(s, "vpu: print dsp log\n%s%s", log_head, ptr);
 	}
 	return 0;
@@ -2460,18 +2506,20 @@ int vpu_dump_opp_table(struct seq_file *s)
 {
 	int i;
 
-#define LINE_BAR "  +-----+------------+------------+------------+\n"
+#define LINE_BAR "  +-----+----------+----------+------------+-----------+-----------+\n"
 	vpu_print_seq(s, LINE_BAR);
-	vpu_print_seq(s, "  |%-5s|%-12s|%-12s|%-12s|\n",
-				  "OPP", "VCORE(uV)", "DSP(KHz)", "IPU_IF(KHz)");
+	vpu_print_seq(s, "  |%-5s|%-10s|%-10s|%-12s|%-11s|%-11s|\n",
+				  "OPP", "VCORE(uV)", "DSP(KHz)", "IPU_IF(KHz)", "DSP1(KHz)", "DSP2(KHz)");
 	vpu_print_seq(s, LINE_BAR);
 
 	for (i = 0; i < opps.count; i++) {
-		vpu_print_seq(s, "  |%-5d|[%d]%-9d|[%d]%-9d|[%d]%-9d|\n",
+		vpu_print_seq(s, "  |%-5d|[%d]%-7d|[%d]%-7d|[%d]%-9d|[%d]%-8d|[%d]%-8d|\n",
 				i,
 				opps.vcore.opp_map[i],  opps.vcore.values[opps.vcore.opp_map[i]],
 				opps.dsp.opp_map[i],    opps.dsp.values[opps.dsp.opp_map[i]],
-				opps.ipu_if.opp_map[i], opps.ipu_if.values[opps.ipu_if.opp_map[i]]);
+				opps.ipu_if.opp_map[i], opps.ipu_if.values[opps.ipu_if.opp_map[i]],
+				opps.dspcore[0].opp_map[i], opps.dspcore[0].values[opps.dspcore[0].opp_map[i]],
+				opps.dspcore[1].opp_map[i], opps.dspcore[1].values[opps.dspcore[1].opp_map[i]]);
 	}
 
 	vpu_print_seq(s, LINE_BAR);
@@ -2482,20 +2530,42 @@ int vpu_dump_opp_table(struct seq_file *s)
 
 int vpu_dump_power(struct seq_file *s)
 {
-	/* CHRISTODO */
-	int TEMP_CORE = 0;
-
-	vpu_print_seq(s, "dynamic(rw): %d\n",
-			is_power_dynamic);
-
-	vpu_print_seq(s, "dvfs_debug(rw): %d %d %d\n",
+	vpu_print_seq(s, "dvfs_debug(rw): vore_%d, dsp_%d, ipu_if_%d, dsp1_%d, dsp2_%d\n",
 			opps.vcore.index,
 			opps.dsp.index,
-			opps.ipu_if.index);
+			opps.ipu_if.index,
+			opps.dspcore[0].index,
+			opps.dspcore[1].index);
 
-	vpu_print_seq(s, "jtag(rw): %d\n", is_jtag_enabled);
-	vpu_print_seq(s, "state(r): %d\n", vpu_service_cores[TEMP_CORE].state);
-	vpu_print_seq(s, "lock(rw): %d\n", is_power_debug_lock);
+	return 0;
+}
+
+int vpu_dump_vpu(struct seq_file *s)
+{
+	int core;
+
+#define LINE_BAR "  +-------------+------+-------+-------+-------+-------+\n"
+	vpu_print_seq(s, LINE_BAR);
+	vpu_print_seq(s, "  |%-12s|%-34s|\n",
+			"Queue#", "Waiting");
+	vpu_print_seq(s, LINE_BAR);
+
+	mutex_lock(&vpu_dev->commonpool_mutex);
+	vpu_print_seq(s, "  |%-12s|%-34d|\n",
+			      "Common",
+			      vpu_dev->commonpool_list_size);
+	mutex_unlock(&vpu_dev->commonpool_mutex);
+
+	for (core = 0 ; core < MTK_VPU_CORE; core++) {
+		mutex_lock(&vpu_dev->servicepool_mutex[core]);
+		vpu_print_seq(s, "  |Core %-7d|%-34d|\n",
+				      core,
+				      vpu_dev->servicepool_list_size[core]);
+		mutex_unlock(&vpu_dev->servicepool_mutex[core]);
+	}
+	vpu_print_seq(s, "\n");
+
+#undef LINE_BAR
 
 	return 0;
 }

@@ -221,8 +221,8 @@ int vpu_hw_enque_request(int core, struct vpu_request *req);
 
 /**
  * vpu_thermal_en_throttle_cb - for thermal callback, do vcore or freq control.
- * @core:	core index of device
- * @req:        the pointer to request
+ * @vcore_opp:	upper bound for vcore opp
+ * @freq_upper:	upper bound for dsp freq
  */
 int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t freq_upper);
 

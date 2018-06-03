@@ -282,6 +282,12 @@ int vpu_dump_opp_table(struct seq_file *s);
 int vpu_dump_power(struct seq_file *s);
 
 /**
+ * vpu_dump_vpu - dump the vpu status
+ * @s:          the pointer to seq_file.
+ */
+int vpu_dump_vpu(struct seq_file *s);
+
+/**
  * vpu_set_power_parameter - set the specific power parameter
  * @param:      the sepcific parameter to update
  * @argc:       the number of arguments
