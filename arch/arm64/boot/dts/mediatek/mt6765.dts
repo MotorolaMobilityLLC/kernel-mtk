@@ -1809,6 +1809,41 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x14002000 0 0x1000>;
 	};
 
+	imgsys: imgsys@15020000 {
+		compatible = "mediatek,imgsys", "syscon";
+		reg = <0 0x15020000 0 0x1000>;
+		#clock-cells = <1>;
+		/* Camera CCF */
+		clocks = <&scpsys SCP_SYS_DIS>,
+			<&scpsys SCP_SYS_ISP>,
+			<&scpsys SCP_SYS_CAM>,
+			<&imgsys CLK_IMG_DIP>,
+			<&imgsys CLK_IMG_RSC>,
+			<&camsys CLK_CAM>,
+			<&camsys CLK_CAMTG>,
+			<&camsys CLK_CAM_SENINF>,
+			<&camsys CLK_CAMSV0>,
+			<&camsys CLK_CAMSV1>,
+			<&camsys CLK_CAMSV2>;
+		clock-names = "ISP_SCP_SYS_DIS",
+			"ISP_SCP_SYS_ISP",
+			"ISP_SCP_SYS_CAM",
+			"ISP_CLK_IMG_DIP",
+			"ISP_CLK_IMG_RSC",
+			"ISP_CLK_CAM",
+			"ISP_CLK_CAMTG",
+			"ISP_CLK_CAM_SENINF",
+			"ISP_CLK_CAMSV0",
+			"ISP_CLK_CAMSV1",
+			"ISP_CLK_CAMSV2";
+	};
+
+	dip1@15022000 {
+		compatible = "mediatek,dip1";
+		reg = <0 0x15022000 0 0x3000>;
+		interrupts = <GIC_SPI 255 IRQ_TYPE_LEVEL_LOW>;
+	};
+
 	smi_larb0@14003000 {
 		compatible = "mediatek,smi_larb0";
 		reg = <0 0x14003000 0 0x1000>;
@@ -1976,12 +2011,6 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	dsi_te: dsi_te {
 		compatible = "mediatek, DSI_TE-eint";
 		status = "disabled";
-	};
-
-	imgsys: imgsys@15020000 {
-		compatible = "mediatek,imgsys", "syscon";
-		reg = <0 0x15020000 0 0x1000>;
-		#clock-cells = <1>;
 	};
 
 	smi_larb2@15021000 {
