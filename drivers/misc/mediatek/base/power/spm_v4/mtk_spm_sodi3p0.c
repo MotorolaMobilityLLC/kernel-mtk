@@ -251,6 +251,7 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
+	__sync_big_buck_ctrl_pcm_flag(&spm_flags1);
 	set_pwrctrl_pcm_flags1(pwrctrl, spm_flags1);
 
 	pwrctrl->timer_val = PCM_SEC_TO_TICK(2);
