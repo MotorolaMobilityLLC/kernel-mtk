@@ -98,7 +98,7 @@ static void sspm_log_timeout(unsigned long data)
 ssize_t sspm_log_read(char __user *data, size_t len)
 {
 	unsigned long w_pos, r_pos, datalen;
-	char *buf;
+	char *buf, *tmp_buf;
 
 	if (!sspm_logger_inited)
 		return 0;
@@ -122,15 +122,19 @@ ssize_t sspm_log_read(char __user *data, size_t len)
 		datalen = len;
 
 	buf = ((char *) log_ctl) + log_ctl->buff_ofs + r_pos;
-
+	tmp_buf = kmalloc((size_t)len, GFP_KERNEL);
 	len = datalen;
 
-#if 0	/* TODO: memcpy ?*/
-	while (len-- > 0)
-		*(data++) = *(buf++);
-#endif
+	if (tmp_buf) {
+		memcpy_fromio(tmp_buf, buf, len);
+		if (copy_to_user(data, tmp_buf, len))
+			pr_debug("sspm logger: copy data failed !!!\n");
 
-	memcpy_fromio(data, buf, len);
+		kfree(tmp_buf);
+	} else {
+		pr_debug("sspm logger: create log buffer failed !!!\n");
+		goto error;
+	}
 
 	r_pos += datalen;
 	if (r_pos >= BUF_LEN)
