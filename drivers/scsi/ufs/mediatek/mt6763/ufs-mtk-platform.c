@@ -73,6 +73,15 @@ void ufs_mtk_pltfrm_deepidle_resource_req(struct ufs_hba *hba, unsigned int reso
 {
 }
 
+/**
+ * ufs_mtk_pltfrm_deepidle_lock - Deepidle & SODI lock.
+ * @hba: per-adapter instance
+ * @lock: lock or unlock deepidle & SODI entrance.
+ */
+void ufs_mtk_pltfrm_deepidle_lock(struct ufs_hba *hba, bool lock)
+{
+}
+
 int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
 {
 	u32 reg;

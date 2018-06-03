@@ -296,19 +296,30 @@ struct ufs_hba_variant_ops {
 	int     (*suspend)(struct ufs_hba *, enum ufs_pm_op);
 	int     (*resume)(struct ufs_hba *, enum ufs_pm_op);
 	void	(*dbg_register_dump)(struct ufs_hba *hba);
-/*
-	 * MTK PATCH:
-	 * Auto-hibern8 vops
+
+	/*
+	 * MTK PATCH: Control AH8
+	 *   1: Enable AH8
+	 *   0: Disable AH8.
 	 */
 	void    (*auto_hibern8)(struct ufs_hba *, bool);
+
 	/*
-	 * MTK PATCH:
-	 * DeepIdle and SODI resource request vops
+	 * MTK PATCH: Request deepidle or SODI resource
 	 */
 	void	(*deepidle_resource_req)(struct ufs_hba *,
 					unsigned int resource);
 
-	/* SCSI device slave alloc/configure/destroy vops */
+	/*
+	 * MTK PATCH: Lock for deepidle or SODI.
+	 *   1: Lock. Deepidle or SODI is NOT allowed after locked.
+	 *   0: Unlock. Deepidle or SODI is allowed after unlocked.
+	 */
+	void	(*deepidle_lock)(struct ufs_hba *, bool);
+
+	/*
+	 * MTK PATCH: SCSI device slave alloc/configure/destroy.
+	 */
 	int     (*scsi_dev_cfg)(struct scsi_device *, enum ufs_scsi_dev_cfg);
 };
 
@@ -646,6 +657,12 @@ static inline void ufshcd_vops_deepidle_resource_req(struct ufs_hba *hba, unsign
 {
 	if (hba->vops && hba->vops->deepidle_resource_req)
 		hba->vops->deepidle_resource_req(hba, resource);
+}
+
+static inline void ufshcd_vops_deepidle_lock(struct ufs_hba *hba, bool lock)
+{
+	if (hba->vops && hba->vops->deepidle_lock)
+		hba->vops->deepidle_lock(hba, lock);
 }
 
 static inline void ufshcd_vops_scsi_dev_cfg(struct scsi_device *sdev, enum ufs_scsi_dev_cfg op)
