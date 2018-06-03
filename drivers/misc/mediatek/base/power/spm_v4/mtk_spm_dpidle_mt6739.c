@@ -62,7 +62,7 @@ void spm_dpidle_post_process(void)
 		dvfsrc_mdsrclkena_control_nolock(1);
 }
 
-static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct pcm_desc *pcmdesc,
+void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct pcm_desc *pcmdesc,
 		struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 	unsigned int resource_usage = 0;
