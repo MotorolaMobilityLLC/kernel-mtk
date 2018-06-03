@@ -202,11 +202,15 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 		int opp = cluster_status[i].freq_idx;
 
 #ifdef CONFIG_MTK_UNIFY_POWER
-		if (core != 0 && opp >= 0 && opp < DVFS_OPP_NUM) {
+		if (core > 0 && opp >= 0 && opp < DVFS_OPP_NUM) {
+#if 1
+			pwr_idx += cobra_tbl.basic_pwr_tbl[4*i+core-1][opp].power_idx;
+#else
 			pwr_idx += ((upower_get_power(i, opp, UPOWER_DYN) +
 				upower_get_power(i, opp, UPOWER_LKG)) * core +
 				(upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_DYN) +
 				upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_LKG))) / 1000;
+#endif
 		}
 #else
 		pwr_idx += 100;
