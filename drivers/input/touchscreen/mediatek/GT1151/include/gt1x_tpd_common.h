@@ -426,4 +426,9 @@ extern struct tpd_filter_t tpd_filter;
 extern wait_queue_head_t init_waiter;
 extern u8 is_resetting;
 
+/* AF power is connected to Touch power */
+#ifdef CONFIG_MTK_LENS
+extern void AF_PowerDown(void);
+#endif
+
 #endif /* GT1X_TPD_COMMON_H__ */
