@@ -162,6 +162,8 @@ struct gauge_hw_info_data {
 	int car;
 	int ncar;
 	int time;
+	int iavg_lt;
+	int iavg_ht;
 };
 
 struct gauge_device {
