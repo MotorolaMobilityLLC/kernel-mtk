@@ -410,7 +410,7 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 		vcore_req[1] = 0x1;
 		emi_req[1] = 0x1;
 	}
-#if 1
+
 	/* check DVFS idle */
 	r = wait_spm_complete_by_condition(is_dvfs_in_progress() == 0, SPM_DVFS_TIMEOUT);
 	if (r < 0) {
@@ -418,21 +418,21 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 		/* aee_kernel_warning("SPM Warring", "Vcore DVFS timeout warning"); */
 		return -1;
 	}
-#endif
+
 	if (fix) {
 		if (opp < 0) {
-			spm_write(DVFSRC_FORCE, spm_read(DVFSRC_BASIC_CONTROL) & ~0xFFFF);
+			spm_write(DVFSRC_FORCE, ~0xFFFF);
 			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) & ~(1 << 15 | 1 << 8));
 			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) | (1 << 8));
 		} else {
-			spm_write(DVFSRC_FORCE, (spm_read(DVFSRC_BASIC_CONTROL) & ~0xFFFF) | (force_req[opp] << 8));
+			spm_write(DVFSRC_FORCE, (~0xFFFF) | (force_req[opp] << 8));
 			spm_write(DVFSRC_BASIC_CONTROL, spm_read(DVFSRC_BASIC_CONTROL) | (1 << 15));
 		}
 	} else {
 	spm_write(DVFSRC_SW_REQ, (spm_read(DVFSRC_SW_REQ) & ~(0x3 << 2)) | (vcore_req[opp] << 2));
 	spm_write(DVFSRC_SW_REQ, (spm_read(DVFSRC_SW_REQ) & ~(0x3)) | (emi_req[opp]));
 	}
-#if 1
+
 	/* check DVFS timer */
 	if (fix)
 		r = wait_spm_complete_by_condition(spm_vcorefs_get_dvfs_opp() == opp, SPM_DVFS_TIMEOUT);
@@ -444,10 +444,10 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 		/* aee_kernel_warning("SPM Warring", "Vcore DVFS timeout warning"); */
 		return -1;
 	}
-#endif
+
 	if (fix) {
 		if (!(opp < 0))
-			spm_write(DVFSRC_FORCE, spm_read(DVFSRC_BASIC_CONTROL) & ~0xFFFF);
+			spm_write(DVFSRC_FORCE, ~0xFFFF);
 	}
 
 	vcorefs_crit_mask(log_mask(), kicker,
@@ -709,6 +709,9 @@ void spm_vcorefs_init(void)
 
 	dvfsrc_register_init();
 	vcorefs_module_init();
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
+	helio_dvfsrc_sspm_ipi_init();
+#endif
 	plat_info_init();
 	vcore_opp_init();
 	vcorefs_init_opp_table();

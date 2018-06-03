@@ -16,6 +16,12 @@
 #include "mtk_spm_vcore_dvfs_ipi.h"
 #include "sspm_ipi.h"
 
+#ifdef CONFIG_MTK_QOS_SUPPORT
+#include <helio-dvfsrc.h>
+#else
+#include <mtk_vcorefs_governor.h>
+#endif
+
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 static int qos_recv_thread(void *arg)
 {
@@ -47,13 +53,12 @@ static int qos_recv_thread(void *arg)
 
 void helio_dvfsrc_sspm_ipi_init(void)
 {
-	unsigned int ret = 0;
 	struct qos_data qos_d;
 	struct task_struct *qos_task;
 
 	qos_d.cmd = QOS_IPI_QOS_ENABLE;
 	qos_d.u.qos_init.enable = 1;
-	ret = sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 2);
+	qos_ipi_to_sspm_command(&qos_d, 2);
 
 	qos_task = kthread_run(qos_recv_thread, NULL, "qos_recv");
 }
@@ -67,7 +72,7 @@ void send_swpm_init_ipi(unsigned int addr, unsigned int size,
 	qos_d.u.swpm_init.dram_addr = addr;
 	qos_d.u.swpm_init.dram_size = size;
 	qos_d.u.swpm_init.dram_ch_num = ch_num;
-	sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 4);
+	qos_ipi_to_sspm_command(&qos_d, 4);
 }
 #endif
 

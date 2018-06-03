@@ -587,8 +587,31 @@ int vcorefs_late_init_dvfs(void)
 	return 0;
 }
 
+#if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
+void dvfsrc_force_opp(int opp)
+{
+	int level;
+
+	if (opp >= VCORE_DVFS_OPP_NUM || opp < 0) {
+		writel(readl(DVFSRC_BASIC_CONTROL) & ~(1 << 15), DVFSRC_BASIC_CONTROL);
+		writel(readl(DVFSRC_FORCE) & 0xFFFF0000, DVFSRC_FORCE);
+	} else {
+		level = 1 << (VCORE_DVFS_OPP_NUM - opp - 1);
+		writel((readl(DVFSRC_FORCE) & 0xFFFF0000) | level, DVFSRC_FORCE);
+		writel(readl(DVFSRC_BASIC_CONTROL) | (1 << 15), DVFSRC_BASIC_CONTROL);
+	}
+}
+#endif
+
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
+int qos_ipi_to_sspm_command(void *buffer, int slot)
+{
+	int ack_data;
+
+	return sspm_ipi_send_sync(IPI_ID_QOS, IPI_OPT_DEFAUT, buffer, slot, &ack_data, 1);
+}
+
 void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv)
 {
 	struct qos_data qos_d;
@@ -597,7 +620,7 @@ void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv)
 	qos_d.u.vcore_opp.opp = opp;
 	qos_d.u.vcore_opp.vcore_uv = vcore_uv;
 
-	sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 3);
+	qos_ipi_to_sspm_command(&qos_d, 3);
 }
 
 void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
@@ -608,7 +631,7 @@ void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
 	qos_d.u.ddr_opp.opp = opp;
 	qos_d.u.ddr_opp.ddr_khz = ddr_khz;
 
-	sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 3);
+	qos_ipi_to_sspm_command(&qos_d, 3);
 }
 #endif
 #endif
