@@ -550,25 +550,13 @@ noinline DEV_UINT8 mu3d_hal_cal_checksum(DEV_UINT8 *data, DEV_INT32 len)
  */
 void mu3d_hal_resume_qmu(DEV_INT32 q_num, USB_DIR dir)
 {
-	if (dir == USB_TX) {
+	mb();
+
+	if (dir == USB_TX)
 		os_writel(USB_QMU_TQCSR(q_num), QMU_Q_RESUME);
-		if (!os_readl(USB_QMU_TQCSR(q_num))) {
-			qmu_printk(K_DEBUG, "[ERROR] %s TQCSR[%d]=%x\n", __func__, q_num,
-				   os_readl(USB_QMU_TQCSR(q_num)));
-			os_writel(USB_QMU_TQCSR(q_num), QMU_Q_RESUME);
-			qmu_printk(K_DEBUG, "[ERROR] %s TQCSR[%d]=%x\n", __func__, q_num,
-				   os_readl(USB_QMU_TQCSR(q_num)));
-		}
-	} else if (dir == USB_RX) {
+	else if (dir == USB_RX)
 		os_writel(USB_QMU_RQCSR(q_num), QMU_Q_RESUME);
-		if (!os_readl(USB_QMU_RQCSR(q_num))) {
-			qmu_printk(K_DEBUG, "[ERROR] %s RQCSR[%d]=%x\n", __func__, q_num,
-				   os_readl(USB_QMU_RQCSR(q_num)));
-			os_writel(USB_QMU_RQCSR(q_num), QMU_Q_RESUME);
-			qmu_printk(K_DEBUG, "[ERROR] %s RQCSR[%d]=%x\n", __func__, q_num,
-				   os_readl(USB_QMU_RQCSR(q_num)));
-		}
-	} else {
+	else {
 		qmu_printk(K_ERR, "%s wrong direction!!!\n", __func__);
 		WARN_ON(1);
 	}
