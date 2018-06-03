@@ -2122,6 +2122,29 @@ static unsigned int mt_gpufreq_prev_thermal_limited_freq;	/* thermal limited fre
 static unsigned int mt_gpufreq_power_limited_index_array[NR_IDX_POWER_LIMITED] = { 0 };
 bool mt_gpufreq_power_limited_ignore[NR_IDX_POWER_LIMITED] = { false };
 
+int mt_gpufreq_get_cur_ceiling_idx(void)
+{
+	int limited_id = 0;
+	int i;
+
+	for (i = 0; i < NR_IDX_POWER_LIMITED; i++) {
+		limited_id = mt_gpufreq_power_limited_index_array[i];
+
+		if (limited_id > g_limited_max_id) {
+			if (mt_gpufreq_power_limited_ignore[i] == false)
+				g_limited_max_id = limited_id;
+		}
+	}
+
+	limited_id = g_limited_max_id;
+#ifndef DISABLE_PBM_FEATURE
+	if (mt_gpufreq_pbm_limited_index > limited_id)
+		limited_id = mt_gpufreq_pbm_limited_index;
+#endif
+	return limited_id;
+}
+
+
 /************************************************
  * frequency adjust interface for thermal protect
  *************************************************/
