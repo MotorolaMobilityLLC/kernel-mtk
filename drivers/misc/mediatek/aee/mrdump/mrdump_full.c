@@ -277,13 +277,16 @@ void mrdump_save_per_cpu_reg(int cpu, struct pt_regs *regs)
 {
 	struct mrdump_crash_record *crash_record;
 
-	if (regs)
+	if (regs) {
 		crash_save_cpu(regs, cpu);
 
-	if (mrdump_cblock) {
-		crash_record = &mrdump_cblock->crash_record;
-		elf_core_copy_kernel_regs(
-			(elf_gregset_t *)&crash_record->cpu_regs[cpu], regs);
+		if (mrdump_cblock) {
+			crash_record = &mrdump_cblock->crash_record;
+			elf_core_copy_kernel_regs(
+				(elf_gregset_t *)&crash_record->cpu_regs[cpu],
+				regs
+			);
+		}
 	}
 }
 
