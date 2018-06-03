@@ -140,10 +140,13 @@ static enum IMGSENSOR_RETURN gpio_set(
 		ppinctrl_state = pgpio->ppinctrl_state[ctrl_state_offset +
 						((pin - IMGSENSOR_HW_PIN_PDN) << 1) + gpio_state];
 	}
+
+	mutex_lock(&pinctrl_mutex);
 	if (ppinctrl_state != NULL && !IS_ERR(ppinctrl_state))
 		pinctrl_select_state(pgpio->ppinctrl, ppinctrl_state);
 	else
 		PK_PR_ERR("%s : pinctrl err, PinIdx %d, Val %d\n", __func__, pin, pin_state);
+	mutex_unlock(&pinctrl_mutex);
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }

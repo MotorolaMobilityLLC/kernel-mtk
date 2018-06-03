@@ -76,6 +76,7 @@ static struct cdev *gpimgsensor_cdev;
 static struct class *gpimgsensor_class;
 
 static DEFINE_MUTEX(gimgsensor_mutex);
+DEFINE_MUTEX(pinctrl_mutex);
 
 struct IMGSENSOR  gimgsensor;
 struct IMGSENSOR *pgimgsensor = &gimgsensor;
