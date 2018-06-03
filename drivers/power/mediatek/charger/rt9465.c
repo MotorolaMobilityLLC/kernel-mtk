@@ -703,8 +703,8 @@ static int rt9465_set_ieoc(struct rt9465_info *info, u32 ieoc)
 	u8 reg_ieoc = 0;
 
 	/* Workaround for E1, IEOC must >= 700mA */
-	if (ieoc < 700 && info->device_id == RT9465_VERSION_E1)
-		ieoc = 700;
+	if (ieoc < 700000 && info->device_id == RT9465_VERSION_E1)
+		ieoc = 700000;
 
 	/* Find corresponding reg value */
 	reg_ieoc = rt9465_find_closest_reg_value(RT9465_IEOC_MIN,
