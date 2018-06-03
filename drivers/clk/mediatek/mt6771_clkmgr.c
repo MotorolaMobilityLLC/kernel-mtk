@@ -346,19 +346,19 @@ static ssize_t gpupll_fsel_write(struct file *file, const char __user *buffer,
 
 static int mm_clk_speed_dump_read(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%d\n", mt_get_abist_freq(12));
+	seq_printf(m, "%d\n", mt_get_abist_freq(27));
 	return 0;
 }
 
 static int gpupll_speed_dump_read(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%d\n", mt_get_abist_freq(56));
+	seq_printf(m, "%d\n", mt_get_abist_freq(25));
 	return 0;
 }
 
 static int univpll_speed_dump_read(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%d\n", mt_get_abist_freq(60));
+	seq_printf(m, "%d\n", mt_get_abist_freq(24));
 	return 0;
 }
 

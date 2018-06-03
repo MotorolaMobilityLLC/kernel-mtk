@@ -3571,9 +3571,21 @@ void subsys_if_on(void)
 		check_img_clk_sts();
 		ret++;
 	}
+	if ((sta & (1U << 7)) && (sta_s & (1U << 7))) {
+		pr_notice("suspend warning: SYS_MFG_CORE0 is on!!!\n");
+		ret++;
+	}
+	if ((sta & (1U << 20)) && (sta_s & (1U << 20))) {
+		pr_notice("suspend warning: SYS_MFG_CORE1 is on!!!\n");
+		ret++;
+	}
 	if ((sta & (1U << 21)) && (sta_s & (1U << 21))) {
 		pr_notice("suspend warning: SYS_VEN is on!!!\n");
 		check_ven_clk_sts();
+		ret++;
+	}
+	if ((sta & (1U << 22)) && (sta_s & (1U << 22))) {
+		pr_notice("suspend warning: SYS_MFG_2D is on!!!\n");
 		ret++;
 	}
 	if ((sta & (1U << 23)) && (sta_s & (1U << 23))) {
@@ -3582,17 +3594,25 @@ void subsys_if_on(void)
 	}
 	if ((sta & (1U << 24)) && (sta_s & (1U << 24)))
 		pr_notice("suspend warning: SYS_AUDIO is on!!!\n");
-	if ((sta & (1U << 27)) && (sta_s & (1U << 27))) {
+	if ((sta & (1U << 25)) && (sta_s & (1U << 25))) {
 		pr_notice("suspend warning: SYS_CAM is on!!!\n");
-		/*check_cam_clk_sts();*/
+		check_cam_clk_sts();
 		ret++;
 	}
-	if ((sta & (1U << 30)) && (sta_s & (1U << 30))) {
-		pr_notice("suspend warning: SYS_MFG_CORE1 is on!!!\n");
+	if ((sta & (1U << 26)) && (sta_s & (1U << 26))) {
+		pr_notice("suspend warning: SYS_VPU_TOP is on!!!\n");
+		ret++;
+	}
+	if ((sta & (1U << 27)) && (sta_s & (1U << 27))) {
+		pr_notice("suspend warning: SYS_VPU_CORE0 is on!!!\n");
+		ret++;
+	}
+	if ((sta & (1U << 28)) && (sta_s & (1U << 28))) {
+		pr_notice("suspend warning: SYS_VPU_CORE1 is on!!!\n");
 		ret++;
 	}
 	if ((sta & (1U << 31)) && (sta_s & (1U << 31))) {
-		pr_notice("suspend warning: SYS_MFG_CORE0 is on!!!\n");
+		pr_notice("suspend warning: SYS_VDE is on!!!\n");
 		ret++;
 	}
 	if (ret > 0)
