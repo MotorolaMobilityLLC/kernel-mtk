@@ -720,9 +720,9 @@ int mali_get_gpu_pmu_deinit(void)
 	binited = 0;
 	mfg_is_power_on = 0;
 
-	return PMU_OK;
-
 	mutex_unlock(&counter_info_lock);
+
+	return PMU_OK;
 }
 
 void mtk_mfg_counter_init(void)
