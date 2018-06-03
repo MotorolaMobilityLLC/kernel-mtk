@@ -236,11 +236,13 @@ static ssize_t pmic_dbg_level_write(struct file *file,
 
 	memset(info, 0, 10);
 
-	size = simple_write_to_buffer(info, sizeof(info), ppos, buf, size);
+	ret = simple_write_to_buffer(info, sizeof(info) - 1, ppos, buf, size);
+	if (ret < 0)
+		return ret;
 
 	ret = kstrtou32(info, 16, (unsigned int *)&value);
 	if (ret)
-		return size;
+		return ret;
 
 	pr_info("[%s] value=0x%x\n", __func__, value);
 	if (value != 0xFFFF) {
