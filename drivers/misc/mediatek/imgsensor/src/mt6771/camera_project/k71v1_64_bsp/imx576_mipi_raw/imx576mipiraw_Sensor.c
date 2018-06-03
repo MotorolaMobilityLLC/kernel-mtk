@@ -977,10 +977,15 @@ static void preview_setting(void)
 		read_cmos_sensor_8(0xe286),
 		read_cmos_sensor_8(0xe2A6),
 		read_cmos_sensor_8(0xe2C6));
+
+	write_cmos_sensor_8(0x0B00, 0x01); /*lsc enable*/
+
 	/*enable STATS data*/
 	write_cmos_sensor_8(0x323A, 0x01);
 	write_cmos_sensor_8(0x323B, 0x01);
 	write_cmos_sensor_8(0x323C, 0x01);
+
+	write_cmos_sensor_8(0x7343, 0x00);
 
 	/* AEHIST_AREA size */
 	write_cmos_sensor_8(0x37E4, 0x0B);
@@ -991,15 +996,18 @@ static void preview_setting(void)
 			read_cmos_sensor_8(0x37E4), read_cmos_sensor_8(0x37E5),
 			read_cmos_sensor_8(0x37E6), read_cmos_sensor_8(0x37E7));
 
-	/* AEHIST_LINER_AUTO_THRESH */
+	/* AEHIST_LINER_AUTO_THRESH 0:manual 1:auto */
 	write_cmos_sensor_8(0xB734, 0x01);
 	/* AEHIST_LOG_AUTO_THRESH 0:manual 1:auto */
 	write_cmos_sensor_8(0xB73A, 0x00);
-	/* AEHIST_LOG_UPPER_TH */
-	write_cmos_sensor_8(0x37EE, 0x03);
-	write_cmos_sensor_8(0x37EF, 0xFF);
-	LOG_INF("AEHIST_LOG 0xB73A:0x%x, 0x37EE:0x%x, 0x37EF:0x%x\n",
+	write_cmos_sensor_8(0x37EC, 0x00); /*AEHIST_LOG_LOWER_TH*/
+	write_cmos_sensor_8(0x37ED, 0x00); /*AEHIST_LOG_LOWER_TH*/
+	write_cmos_sensor_8(0x37EE, 0x03); /*AEHIST_LOG_UPPER_TH*/
+	write_cmos_sensor_8(0x37EF, 0xFF); /*AEHIST_LOG_UPPER_TH*/
+	LOG_INF("AEHIST_LOG 0xB73A:0x%x 0x37EC:0x%x 0x37ED:0x%x 0x37EE:0x%x 0x37EF:0x%x\n",
 		read_cmos_sensor_8(0xB73A),
+		read_cmos_sensor_8(0x37EC),
+		read_cmos_sensor_8(0x37ED),
 		read_cmos_sensor_8(0x37EE),
 		read_cmos_sensor_8(0x37EF));
 
@@ -2027,40 +2035,62 @@ static void hdr_write_tri_gain(kal_uint16 lg, kal_uint16 mg, kal_uint16 sg)
 
 }
 
-static void imx576_set_lsc_reg_setting(kal_uint16 *regDa, kal_uint16 *regDa2, MUINT32 regNum)
+static void imx576_set_lsc_reg_setting(kal_uint8 index, kal_uint16 *regDa, MUINT32 regNum)
 {
 	int i;
-	int GR_startAddr = 0x9BD8; /*0x9BD8-0x9CAF*/
-	int GB_startAddr = 0x9CB0; /*0x9BD8-0x9CAF*/
+	int startAddr[4] = {0x9D88, 0x9CB0, 0x9BD8, 0x9B00}; /*0:B,1:Gb,2:Gr,3:R*/
 
+#if 0
+	int R_startAddr  = 0x9B00; /*0x9B00-0x9BD7*/
+	int GR_startAddr = 0x9BD8; /*0x9BD8-0x9CAF*/
+	int GB_startAddr = 0x9CB0; /*0x9CB0-0x9D87*/
+	int B_startAddr  = 0x9D88; /*0x9D88-0x9E5F*/
+#endif
+	LOG_INF("E! index:%d, regNum:%d\n", index, regNum);
+
+	write_cmos_sensor_8(0x0B00, 0x01); /*lsc enable*/
 	/*define Knot point, 2'b01:u3.7*/
 	write_cmos_sensor_8(0x9750, 0x01);
 	write_cmos_sensor_8(0x9751, 0x01);
 	write_cmos_sensor_8(0x9752, 0x01);
 	write_cmos_sensor_8(0x9753, 0x01);
 
-	for (i = 0; i < regNum; i++) {
-		write_cmos_sensor_8(GR_startAddr + i, regDa[i]);
-		LOG_INF("i:%d Addr:%x Value:%x", i, GR_startAddr + i, regDa[i]);
-	}
-	for (i = 0; i < regNum; i++) {
-		write_cmos_sensor_8(GB_startAddr + i, regDa2[i]);
-		LOG_INF("i:%d Addr:%x Value:%x", i, GB_startAddr + i, regDa2[i]);
-	}
+	for (i = 0; i < regNum; i++)
+		write_cmos_sensor(startAddr[index] + 2*i, regDa[i]);
 
+	for (i = 0; i < regNum; i++) {
+		LOG_INF("l Addr:0x%x Value:0x%x %x Table:0x%x\n",
+			(startAddr[index] + 2*i),
+			read_cmos_sensor_8(startAddr[index] + 2*i),
+			read_cmos_sensor_8(startAddr[index] + 2*i + 1),
+			regDa[i]);
+	}
+	write_cmos_sensor_8(0x0B00, 0x00); /*lsc disable*/
 }
 
-static void set_imx576_ATR(kal_uint16 LimitGain, kal_uint16 LtcRate)
+static void set_imx576_ATR(kal_uint16 LimitGain, kal_uint16 LtcRate, kal_uint16 PostGain)
 {
-#if 0
-	/*Max gain (Can do tuning. But have limitation, later we will release)*/
-	write_cmos_sensor_8(0x317a, (LimitGain >> 8) & 0xFF);
-	write_cmos_sensor_8(0x317b, LimitGain & 0xFF);
-	/*LTC Ratio (Can do tuning),0x3178 [ex]0x10(50%) 0x20(100%) */
-	write_cmos_sensor_8(0x3178, (grgain_32 >> 8) & 0xFF);
-#endif
+	LOG_INF("Limit Gain:0x%x LTC Rate:0x%x Post Gain:0x%x\n", LimitGain, LtcRate, PostGain);
 
-	LOG_INF("Limit Gain:0x%x, LTC Rate:0x%x\n", LimitGain, LtcRate);
+	write_cmos_sensor_8(0x7F77, PostGain); /*RG_TC_VE_POST_GAIN*/
+
+	write_cmos_sensor_8(0x3C00, LtcRate & 0xFF); /*TC_LTC_RATIO_1*/
+	write_cmos_sensor_8(0x3C01, LtcRate & 0xFF); /*TC_LTC_RATIO_2*/
+	write_cmos_sensor_8(0x3C02, LtcRate & 0xFF); /*TC_LTC_RATIO_3*/
+	write_cmos_sensor_8(0x3C03, LtcRate & 0xFF); /*TC_LTC_RATIO_4*/
+	write_cmos_sensor_8(0x3C04, LtcRate & 0xFF); /*TC_LTC_RATIO_5*/
+
+	write_cmos_sensor_8(0xA141, LimitGain & 0xFF); /*TC_LIMIT_GAIN_1*/
+	write_cmos_sensor_8(0xA140, (LimitGain >> 8) & 0xFF);
+	write_cmos_sensor_8(0xA147, LimitGain & 0xFF); /*TC_LIMIT_GAIN_2*/
+	write_cmos_sensor_8(0xA146, (LimitGain >> 8) & 0xFF);
+	write_cmos_sensor_8(0xA14D, LimitGain & 0xFF); /*TC_LIMIT_GAIN_3*/
+	write_cmos_sensor_8(0xA14C, (LimitGain >> 8) & 0xFF);
+	write_cmos_sensor_8(0xA153, LimitGain & 0xFF); /*TC_LIMIT_GAIN_4*/
+	write_cmos_sensor_8(0xA152, (LimitGain >> 8) & 0xFF);
+	write_cmos_sensor_8(0xA159, LimitGain & 0xFF); /*TC_LIMIT_GAIN_5*/
+	write_cmos_sensor_8(0xA158, (LimitGain >> 8) & 0xFF);
+
 }
 
 static kal_uint32 imx576_awb_gain(SET_SENSOR_AWB_GAIN *pSetSensorAWB)
@@ -2068,10 +2098,11 @@ static kal_uint32 imx576_awb_gain(SET_SENSOR_AWB_GAIN *pSetSensorAWB)
 	UINT32 rgain_32, grgain_32, gbgain_32, bgain_32;
 
 	LOG_INF("imx576_awb_gain\n");
-	grgain_32 = (pSetSensorAWB->ABS_GAIN_GR << 8) >> 9;
-	rgain_32 = (pSetSensorAWB->ABS_GAIN_R << 8) >> 9;
-	bgain_32 = (pSetSensorAWB->ABS_GAIN_B << 8) >> 9;
-	gbgain_32 = (pSetSensorAWB->ABS_GAIN_GB << 8) >> 9;
+
+	grgain_32 = (pSetSensorAWB->ABS_GAIN_GR + 1) >> 1;
+	rgain_32 = (pSetSensorAWB->ABS_GAIN_R + 1) >> 1;
+	bgain_32 = (pSetSensorAWB->ABS_GAIN_B + 1) >> 1;
+	gbgain_32 = (pSetSensorAWB->ABS_GAIN_GB + 1) >> 1;
 
 	LOG_INF("[imx576_awb_gain] ABS_GAIN_GR:%d, grgain_32:%d\n",
 		pSetSensorAWB->ABS_GAIN_GR,	grgain_32);
@@ -2230,9 +2261,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 	/*HDR CMD */
 	case SENSOR_FEATURE_SET_HDR_ATR:
-		LOG_INF("SENSOR_FEATURE_SET_HDR_ATR Limit Gain=%d, LTC Rate=%d\n",
-				(UINT16) *feature_data, (UINT16) *(feature_data + 1));
-		set_imx576_ATR((UINT16) *feature_data, (UINT16) *(feature_data + 1));
+		LOG_INF("SENSOR_FEATURE_SET_HDR_ATR Limit_Gain=%d, LTC Rate=%d, Post_Gain=%d\n",
+				(UINT16)*feature_data,
+				(UINT16)*(feature_data + 1),
+				(UINT16)*(feature_data + 2));
+		set_imx576_ATR((UINT16)*feature_data,
+					(UINT16)*(feature_data + 1),
+					(UINT16)*(feature_data + 2));
 		break;
 	case SENSOR_FEATURE_SET_HDR:
 		LOG_INF("hdr enable :%d\n", *feature_data_32);
@@ -2286,8 +2321,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		imx576_awb_gain(pSetSensorAWB);
 		break;
 	case SENSOR_FEATURE_SET_LSC_TBL:
-		LOG_INF("SENSOR_FEATURE_SET_LSC_TBL %d", (*feature_para_len));
-		imx576_set_lsc_reg_setting(feature_data_16, feature_data_16, (*feature_para_len) / sizeof(UINT32));
+		{
+			kal_uint8 index = *(((kal_uint8 *)feature_para) + (*feature_para_len));
+
+			imx576_set_lsc_reg_setting(index, feature_data_16, (*feature_para_len)/sizeof(UINT16));
+		}
 		break;
 	case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
 		/*
