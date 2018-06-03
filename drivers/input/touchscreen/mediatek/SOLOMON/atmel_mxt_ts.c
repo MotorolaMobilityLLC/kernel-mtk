@@ -4145,6 +4145,10 @@ unsigned int read_raw_data(struct mxt_data *data, u8 mode)
             continue;
 		data->raw_data_16[i] = lsb | (msb << 8);
 		i++;
+	if (i >= RAW_DATA_SIZE) {
+	pr_debug("oversize problem\n");
+	break;
+	}
     }
 
 	goto out;
