@@ -1101,12 +1101,6 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 #endif
 	}
 
-#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
-	/* Is PE connect */
-	if (is_ta_connect == KAL_TRUE)
-		is_ta_detected = 1;
-#endif
-
 	pr_debug("%s: detected = %d\n", __func__, is_ta_detected);
 
 	return sprintf(buf, "%u\n", is_ta_detected);
