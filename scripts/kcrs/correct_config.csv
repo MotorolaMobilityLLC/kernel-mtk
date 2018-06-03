@@ -81,7 +81,7 @@ CONFIG_CPU_FREQ_GOV_ONDEMAND,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CPU_FREQ_GOV_PERFORMANCE,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CPU_FREQ_GOV_POWERSAVE,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CPU_FREQ_GOV_SCHED,PLATFORM,rita.chan,,X,,,,,y,y,,y,
-CONFIG_CPU_FREQ_GOV_SCHEDPLUS,PLATFORM,michael.jiang,,X,y,y,y,y,,,y,,y
+CONFIG_CPU_FREQ_GOV_SCHEDPLUS,PLATFORM,michael.jiang,,X,y,y,y,y,X,y,y,y,y
 CONFIG_CPU_FREQ_GOV_USERSPACE,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_CPU_FREQ_SCHED_ASSIST,PLATFORM,michael.jiang,,X,X,y,y,y,y,y,X,y,y
 CONFIG_CPU_FREQ_STAT_DETAILS,COMMON,,,y,y,y,y,y,y,y,y,y,y
@@ -293,7 +293,7 @@ CONFIG_IPV6_ROUTE_INFO,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_IPV6_ROUTER_PREF,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_IPV6_SIT_6RD,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_IPV6_SUBTREES,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_IPV6_TUNNEL,COMMON,,,y,y,y,y,y,y,y,y,y,y
+CONFIG_IPV6_TUNNEL,COMMON,Zhen.Jiang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_ISO9660_FS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_JOLIET,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_KASAN,USER;PROJECT,walter-zh.wu,,X,X,X,O,O,O,O,O,O,O
@@ -422,7 +422,7 @@ CONFIG_MTK_CAMERA_ISP_WPE_SUPPORT,PLATFORM,MH.hsiao,,X,X,y,X,X,X,X,y,X,y
 CONFIG_MTK_CAMERA_ISP_OWE_SUPPORT,PLATFORM,johnson-ch.chiu,,X,X,y,X,y,,,y,,y
 CONFIG_MTK_CAMERA_ISP_MFB_SUPPORT,PLATFORM,johnson-ch.chiu,,X,X,X,X,X,,,y,,y
 CONFIG_MTK_CCCI_DEVICES,COMMON,yanbin.ren,new config in this commit 9715b038cd89c33b3acb9a75a29652347cccc65c,X,X,X,X,X,X,X,X,X,X
-CONFIG_MTK_CHIP,COMMON,,,y,y,y,y,y,y,y,y,y,y
+CONFIG_MTK_CHIP,COMMON,Nora.Chang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_CLKMGR,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_CM_MGR,PLATFORM,morven-cf.yeh,,X,X,X,X,X,X,y,y,y,y
 CONFIG_MTK_CM36558,PROJECT,hongxu.zhao,new config in this commit 063ebd2dfda85d1c6ea1c0120c87fa93fc2570e8,,,,,,,,,,
@@ -655,7 +655,7 @@ CONFIG_MTK_SMART_BATTERY,COMMON,Henry.Chen,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_SMI_EXT,COMMON,kendrick.hsu,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_SND_SOC_NEW_ARCH,PLATFORM,Chien-Wei.hsu,new config in this commit Id1263ee35209bb47f72e3e37cc57fa82d52c036f,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_SPEAKER,PROJECT,georgecy.lin,,X,X,X,,,,,,,
-CONFIG_MTK_SPI,platform,Freddy.Hsin,,y,y,y,y,X,X,X,X,X,X
+CONFIG_MTK_SPI,PLATFORM,Freddy.Hsin,,y,y,y,y,X,X,X,X,X,X
 CONFIG_MTK_SPKGPIO_REWORK,PROJECT,georgecy.lin,new config in this commit 378eb5b131260db917d022555fa920fa118ab3a1,X,X,X,,,,,,,
 CONFIG_MTK_STATHUB,PROJECT,qiangming.xia,new config in this commit e5afb39d5bc749c04142bb69e4f89131015320a6,,,,,,,,,,
 CONFIG_MTK_STEPSIGNHUB,PROJECT,hongxu.zhao,new config in this commit 5d3fd154d89af1a6fdf1dcf1963d1595834933de,,,,,,,,,,
@@ -797,8 +797,8 @@ CONFIG_PSTORE_MEM_SIZE,COMMON,,,0xe0000,0xe0000,0xe0000,0xe0000,0xe0000,0xe0000,
 CONFIG_PSTORE_PMSG,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_PSTORE_PMSG_SIZE,COMMON,,,0x10000,0x10000,0x10000,0x10000,0x10000,0x10000,0x10000,0x10000,0x10000,0x10000
 CONFIG_PSTORE_RAM,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_QFMT_V2,COMMON,Unused,,X,X,X,X,X,X,X,X,X,X
-CONFIG_QUOTA,COMMON,Unused,,X,X,X,X,X,X,X,X,X,X
+CONFIG_QFMT_V2,COMMON,Light.Hsieh,File System,X,X,X,X,X,X,X,X,X,X
+CONFIG_QUOTA,COMMON,Light.Hsieh,File System,X,X,X,X,X,X,X,X,X,X
 CONFIG_RAWFS_FS,PROJECT,perry.hsu,,,,,,,,,,,
 CONFIG_RCU_CPU_STALL_TIMEOUT,COMMON,,,60,60,60,60,60,60,60,60,60,60
 CONFIG_RCU_FANOUT,PLATFORM,,,X,32,32,32,32,X,X,32,X,32
@@ -825,6 +825,7 @@ CONFIG_SCHED_HMP_PLUS,PLATFORM,yt.chang,new config in this commit 1d29c1469e7c1f
 CONFIG_SCHED_HMP_PRIO_FILTER,PLATFORM,yt.chang,new config in this commit 0e2cffeb01092130458a18da72a2d8f205d0e278,y,y,y,y,y,y,y,y,y,y
 CONFIG_SCHED_MC,PLATFORM,yt.chang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SCHED_TUNE,PLATFORM,jing-ting.wu,,X,X,y,y,y,y,y,y,y,y
+CONFIG_SCHED_WALT,PLATFORM,michael.jiang,support from p40 and later chip,X,X,X,X,X,X,y,y,y,y
 CONFIG_SCHEDSTATS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SCSI,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SCSI_LOWLEVEL,PROJECT,chun-hung.wu,,N,N,O,,,,,,,
@@ -877,8 +878,8 @@ CONFIG_TCPC_CLASS,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95
 CONFIG_TCPC_RT1711H,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,O,O,O,,,,,,,
 CONFIG_TCPC_RT5081,PROJECT,vend_gene_chen001,,O,O,X,O,O,O,O,O,O,O
 CONFIG_TCPC_MT6370,PROJECT,arvin.wang,,O,O,X,O,O,,,O,,O
-CONFIG_THERMAL,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_THERMAL_DEFAULT_GOV_BACKWARD_COMPATIBLE,COMMON,,,y,y,y,y,y,y,y,y,y,y
+CONFIG_THERMAL,COMMON,Josh.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_THERMAL_DEFAULT_GOV_BACKWARD_COMPATIBLE,COMMON,Josh.Hsiao,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TMPFS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TOI_CORE,PROJECT,Calvin.Hung,new config a372ef1d80a0d446e63feb21e84729437a7d1861,,,,,,,,,,
 CONFIG_TOI_DEFAULT_WAIT,PROJECT,Calvin.Hung,new config a372ef1d80a0d446e63feb21e84729437a7d1861,,,,,,,,,,
@@ -1050,7 +1051,7 @@ CONFIG_SYSTEM_TRUSTED_KEYS,PROJECT,pangyen.chen,,,,,,,,,,,
 CONFIG_DM_ANDROID_VERITY,PROJECT,pangyen.chen,,,,,,,,,,,
 CONFIG_MTK_AKM09911,PROJECT,jy.lan,,,,,,,,,,,
 CONFIG_MTK_SENSORS_1_0,PROJECT,jy.lan,,,,,,,,,,,
-CONFIG_QUOTA_NETLINK_INTERFACE,COMMON,,,y,y,y,y,y,,,y,,y
+CONFIG_QUOTA_NETLINK_INTERFACE,COMMON,Light.Hsieh,File System,y,y,y,y,y,,,y,,y
 CONFIG_IP_NF_ARPFILTER,COMMON,,,y,y,y,y,y,,,y,,y
 CONFIG_IP_NF_ARP_MANGLE,COMMON,,,y,y,y,y,y,,,y,,y
 CONFIG_IP_NF_MATCH_AH,COMMON,,,y,y,y,y,y,,,y,,y
