@@ -1325,8 +1325,8 @@ void fpsgo_ctrl2fbt_cpufreq_cb(int cid, unsigned long freq)
 	spin_lock_irqsave(&freq_slock, flags);
 
 	if (clus_obv[cid] != curr_obv) {
-		xgf_trace("ts %llu, curr_obv[%d] %d", new_ts, cid, curr_obv);
 		clus_obv[cid] = curr_obv;
+		fpsgo_systrace_c_fbt_gm(-100, curr_obv, "curr_obv[%d]", cid);
 	}
 
 	if ((cid != last_cid && curr_obv <= last_obv) ||
@@ -1352,6 +1352,7 @@ void fpsgo_ctrl2fbt_cpufreq_cb(int cid, unsigned long freq)
 		}
 		atomic_set(&pos->last_cb_ts, new_ts);
 		fpsgo_systrace_c_fbt_gm(pos->pid, atomic_read(&pos->loading), "loading");
+		fpsgo_systrace_c_fbt_gm(pos->pid, atomic_read(&pos->last_cb_ts), "last_cb_ts");
 	}
 	spin_unlock_irqrestore(&loading_slock, flags2);
 
