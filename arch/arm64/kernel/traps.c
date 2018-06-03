@@ -262,12 +262,6 @@ void die(const char *str, struct pt_regs *regs, int err)
 	struct thread_info *thread = current_thread_info();
 	int ret;
 
-#ifdef CONFIG_MTK_AEE_IPANIC
-	if (regs != NULL)
-		__show_regs(regs);
-	dump_stack();
-#endif
-
 	if (ESR_ELx_EC(err) == ESR_ELx_EC_DABT_CUR)
 		thread->cpu_excp++;
 
