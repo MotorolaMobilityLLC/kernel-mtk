@@ -39,7 +39,7 @@ static int charger_suspend(struct device *dev, pm_message_t state)
 	if (chg_dev->ops->suspend)
 		return chg_dev->ops->suspend(chg_dev, state);
 
-	return -ENOTSUPP;
+	return 0;
 }
 
 static int charger_resume(struct device *dev)
@@ -49,7 +49,7 @@ static int charger_resume(struct device *dev)
 	if (chg_dev->ops->resume)
 		return chg_dev->ops->resume(chg_dev);
 
-	return -ENOTSUPP;
+	return 0;
 }
 
 static void charger_device_release(struct device *dev)
