@@ -42,6 +42,8 @@
 #include <mt-plat/met_drv.h>
 #endif
 
+int STUNE_TASK_THRESHOLD = 80;
+
 /*
  * Targeted preemption latency for CPU-bound tasks:
  * (default: 6ms * (1 + ilog(ncpus)), units: nanoseconds)
@@ -5157,7 +5159,7 @@ static inline bool cpu_in_sg(struct sched_group *sg, int cpu)
 #ifdef CONFIG_SCHED_TUNE
 
 static unsigned long
-schedtune_margin(unsigned long signal, unsigned long boost)
+schedtune_margin(int cpu, unsigned long signal, unsigned long boost)
 {
 	unsigned long long margin = 0;
 
@@ -5169,7 +5171,10 @@ schedtune_margin(unsigned long signal, unsigned long boost)
 	 *   M = B * (SCHED_LOAD_SCALE - S)
 	 * The obtained M could be used by the caller to "boost" S.
 	 */
-	margin  = SCHED_LOAD_SCALE - signal;
+	if (cpu == -1)
+		margin  = SCHED_LOAD_SCALE - signal;
+	else
+		margin  = capacity_orig_of(cpu) - signal;
 	margin *= boost;
 
 	/*
@@ -5190,6 +5195,7 @@ schedtune_margin(unsigned long signal, unsigned long boost)
 	return margin;
 }
 
+
 static inline unsigned int
 schedtune_cpu_margin(unsigned long util, int cpu)
 {
@@ -5203,7 +5209,7 @@ schedtune_cpu_margin(unsigned long util, int cpu)
 	if (boost == 0)
 		return 0;
 
-	return schedtune_margin(util, boost);
+	return schedtune_margin(cpu, util, boost);
 }
 
 static inline unsigned long
@@ -5222,7 +5228,7 @@ schedtune_task_margin(struct task_struct *task)
 		return 0;
 
 	util = task_util(task);
-	margin = schedtune_margin(util, boost);
+	margin = schedtune_margin(-1, util, boost);
 
 	return margin;
 }
@@ -5262,7 +5268,11 @@ boosted_task_util(struct task_struct *task)
 
 	trace_sched_boost_task(task, util, margin);
 
-	return util + margin;
+	/* only boosted for heavy task */
+	if (util >= STUNE_TASK_THRESHOLD)
+		return util + margin;
+	else
+		return util;
 }
 
 #ifdef CONFIG_SCHED_TUNE

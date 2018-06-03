@@ -531,6 +531,35 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 	return len;
 }
 
+/* To identify min capacity for stune to boost */
+static ssize_t store_stune_task_thresh_knob(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int val = 0;
+
+	if (sscanf(buf, "%iu", &val) != 0) {
+		if (val < 1024 || val >= 0)
+			STUNE_TASK_THRESHOLD = val;
+	}
+
+	return count;
+}
+
+static ssize_t show_stune_task_thresh_knob(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len += snprintf(buf, max_len, "stune_task_thresh=%d\n", STUNE_TASK_THRESHOLD);
+
+	return len;
+}
+
+static struct kobj_attribute eas_stune_task_thresh_attr =
+__ATTR(stune_task_thresh, S_IWUSR | S_IRUSR, show_stune_task_thresh_knob,
+		store_stune_task_thresh_knob);
+
 static struct kobj_attribute eas_info_attr =
 __ATTR(info, S_IRUSR, show_eas_info_attr, NULL);
 
@@ -539,6 +568,7 @@ static struct attribute *eas_attrs[] = {
 	&eas_knob_attr.attr,
 	&eas_watershed_attr.attr,
 	&eas_turning_point_attr.attr,
+	&eas_stune_task_thresh_attr.attr,
 	NULL,
 };
 
