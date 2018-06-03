@@ -1366,7 +1366,7 @@ static int ext_layer_grouping(struct disp_layer_info *disp_info)
 	int cont_ext_layer_cnt = 0, ext_idx = 0;
 	int is_ext_layer, disp_idx, i;
 	struct layer_config *src_info, *dst_info;
-	int available_layers = 0;
+	int available_layers = 0, phy_layer_cnt = 0;
 
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
 
@@ -1381,6 +1381,15 @@ static int ext_layer_grouping(struct disp_layer_info *disp_info)
 		if (disp_idx == HRT_SECONDARY)
 			continue;
 #endif
+
+		/* If the physical layer > input layer, */
+		/* then skip using extended layer. */
+		phy_layer_cnt = get_phy_layer_limit(
+		l_rule_ops->get_mapping_table(
+			DISP_HW_LAYER_TB, MAX_PHY_OVL_CNT - 1),
+			disp_idx);
+		if (phy_layer_cnt > disp_info->layer_num[disp_idx])
+			continue;
 
 		for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
 
@@ -1796,10 +1805,10 @@ int layering_rule_start(struct disp_layer_info *disp_info_user,
 		l_rule_info->scale_rate = HRT_SCALE_NONE;
 	}
 
-	/* Layer Grouping */
-	ret = ext_layer_grouping(&layering_info);
 	/* Initial HRT conditions */
 	l_rule_ops->scenario_decision(&layering_info);
+	/* Layer Grouping */
+	ret = ext_layer_grouping(&layering_info);
 	/* GLES adjustment and ext layer checking */
 	ret = filter_by_ovl_cnt(&layering_info);
 
