@@ -38,6 +38,7 @@
 #include <asm/system_misc.h>
 #include <asm/opcodes.h>
 #include <mt-plat/aee.h>
+#include <sched.h>
 
 
 static const char *handler[]= {
@@ -219,6 +220,10 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 		fp = frame_pointer(regs);
 		mode = processor_mode(regs);
 	} else if (tsk != current) {
+		if (tsk == task_rq(tsk)->curr) {
+			pr_cont("Do not dump other cpus' running task\n");
+			return;
+		}
 		fp = thread_saved_fp(tsk);
 		mode = 0x10;
 	} else {

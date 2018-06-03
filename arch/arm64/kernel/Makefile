@@ -13,6 +13,7 @@ CFLAGS_REMOVE_return_address.o = -pg
 CFLAGS_setup.o = -DUTS_MACHINE='"$(UTS_MACHINE)"'
 ccflags-y += -Idrivers/misc/mediatek/include/
 ccflags-y += -Idrivers/misc/mediatek/mtprof/
+ccflags-y += -Ikernel/sched/
 
 # Object file lists.
 arm64-obj-y		:= debug-monitors.o entry.o irq.o fpsimd.o		\
