@@ -195,3 +195,6 @@ obj-$(CONFIG_MTK_ES_REG) += es_reg/
 #timer
 obj-y += timer/
 
+#io boost
+obj-y += io_boost/
+
