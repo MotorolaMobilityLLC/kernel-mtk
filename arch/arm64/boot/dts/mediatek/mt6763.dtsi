@@ -1345,6 +1345,7 @@
 		clocks = <&infracfg_ao INFRACFG_AO_I2C0_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
+		mediatek,have-dcm;
 	};
 
 	i2c1: i2c@11014000 {
@@ -1357,6 +1358,7 @@
 					<&infracfg_ao INFRACFG_AO_I2C1_ARBITER_CG>;
 		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
+		mediatek,have-dcm;
 	};
 
 	i2c2: i2c@11015000 {
@@ -1369,6 +1371,7 @@
 					<&infracfg_ao INFRACFG_AO_I2C2_ARBITER_CG>;
 		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
+		mediatek,have-dcm;
 	};
 
 	i2c5: i2c@1100f000 {
@@ -1380,6 +1383,7 @@
 		clocks = <&infracfg_ao INFRACFG_AO_I2C3_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
+		mediatek,have-dcm;
 	};
 
 	i2c3: i2c@11011000 {
@@ -1391,6 +1395,7 @@
 		clocks = <&infracfg_ao INFRACFG_AO_I2C4_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
+		mediatek,have-dcm;
 	};
 
 	i2c4: i2c@11017000 {
@@ -1403,6 +1408,7 @@
 					<&infracfg_ao INFRACFG_AO_I2C5_ARBITER_CG>;
 		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
+		mediatek,have-dcm;
 	};
 
 	i2c6: i2c@11005000 {
@@ -1414,6 +1420,7 @@
 		clocks = <&infracfg_ao INFRACFG_AO_I2C6_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
+		mediatek,have-dcm;
 		mediatek,hs_only;
 	};
 
@@ -1427,6 +1434,7 @@
 					<&infracfg_ao INFRACFG_AO_I2C1_ARBITER_CG>;
 		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
+		mediatek,have-dcm;
 		mediatek,buffermode_used;
 	};
 
@@ -1440,6 +1448,7 @@
 					<&infracfg_ao INFRACFG_AO_I2C2_ARBITER_CG>;
 		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
+		mediatek,have-dcm;
 		mediatek,buffermode_used;
 	};
 
@@ -1453,6 +1462,7 @@
 					<&infracfg_ao INFRACFG_AO_I2C5_ARBITER_CG>;
 		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
+		mediatek,have-dcm;
 		mediatek,buffermode_used;
 	};
 
