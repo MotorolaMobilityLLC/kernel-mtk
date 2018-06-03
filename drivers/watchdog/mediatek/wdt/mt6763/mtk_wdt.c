@@ -302,6 +302,7 @@ void wdt_dump_reg(void)
 	pr_alert("MTK_WDT_DEBUG_CTL:0x%x\n", __raw_readl(MTK_WDT_DEBUG_CTL));
 	pr_alert("MTK_WDT_LATCH_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL));
 	pr_alert("MTK_WDT_DEBUG_CTL2:0x%x\n", __raw_readl(MTK_WDT_DEBUG_CTL2));
+	pr_alert("MTK_WDT_COUNTER:0x%x\n", __raw_readl(MTK_WDT_COUNTER));
 	pr_alert("****************dump wdt reg end*************\n");
 
 }
@@ -369,13 +370,14 @@ void wdt_arch_reset(char mode)
 	wdt_mode_val &= (~MTK_WDT_MODE_AUTO_RESTART);
 
 	/* make sure WDT mode is hw reboot mode, can not config isr mode  */
-	wdt_mode_val &= (~(MTK_WDT_MODE_IRQ|MTK_WDT_MODE_ENABLE | MTK_WDT_MODE_DUAL_MODE));
+	wdt_mode_val &= (~(MTK_WDT_MODE_IRQ | MTK_WDT_MODE_IRQ_LEVEL_EN |
+						MTK_WDT_MODE_ENABLE | MTK_WDT_MODE_DUAL_MODE));
 
 	if (mode)
 		/* mode != 0 means by pass power key reboot, We using auto_restart bit as by pass power key flag */
-		wdt_mode_val = wdt_mode_val | (MTK_WDT_MODE_KEY|MTK_WDT_MODE_EXTEN|MTK_WDT_MODE_AUTO_RESTART);
+		wdt_mode_val = wdt_mode_val | (MTK_WDT_MODE_KEY | MTK_WDT_MODE_EXTEN | MTK_WDT_MODE_AUTO_RESTART);
 	else
-		wdt_mode_val = wdt_mode_val | (MTK_WDT_MODE_KEY|MTK_WDT_MODE_EXTEN);
+		wdt_mode_val = wdt_mode_val | (MTK_WDT_MODE_KEY | MTK_WDT_MODE_EXTEN);
 
 	/*set latch register to 0 for SW reset*/
 	/* mt_reg_sync_writel((MTK_WDT_LENGTH_CTL_KEY | 0x0), MTK_WDT_LATCH_CTL); */
@@ -390,13 +392,22 @@ void wdt_arch_reset(char mode)
 
 	__inner_flush_dcache_all();
 
+	/* dump RGU registers */
+	wdt_dump_reg();
+
+	/* delay awhile to make above dump as complete as possible */
+	udelay(100);
+
+	/* trigger SW reset */
 	mt_reg_sync_writel(MTK_WDT_SWRST_KEY, MTK_WDT_SWRST);
 
 	spin_unlock(&rgu_reg_operation_spinlock);
 
 	while (1) {
-		/* wdt_dump_reg(); */
-		/* pr_err("wdt_arch_reset dump\n"); */
+		/* check if system is alive for debugging */
+		mdelay(100);
+		pr_debug("wdt_arch_reset: still alive\n");
+		wdt_dump_reg();
 		cpu_relax();
 	}
 
@@ -872,6 +883,8 @@ static irqreturn_t mtk_wdt_sspm_isr(int irq, void *dev_id)
 	 *   1. Set SSPM flag in non-reset register (use NONRST_REG2).
 	 *   2. Trigger AP RGU SW reset.
 	 */
+
+	pr_alert("[RGU] %s: SSPM reset!\n", __func__);
 
 	reg = __raw_readl(MTK_WDT_NONRST_REG2);
 	reg |= MTK_WDT_NONRST2_SSPM_RESET;
