@@ -494,7 +494,7 @@ void mt_gpufreq_enable_by_ptpod(void)
 	mt_gpufreq_disable_MTCMOS();
 
 	/* Turn off GPU PMIC Buck */
-	/* mt_gpufreq_voltage_enable_set(0); */
+	mt_gpufreq_voltage_enable_set(0);
 
 	gpufreq_pr_debug("@%s: DVFS is enabled by ptpod\n", __func__);
 }
@@ -522,7 +522,6 @@ void mt_gpufreq_disable_by_ptpod(void)
 	g_DVFS_is_paused_by_ptpod = true;
 
 	/* Fix GPU @ 0.8V */
-	/* check efuse factor ? */
 	for (i = 0; i < g_opp_idx_num; i++) {
 		if (g_opp_table_default[i].gpufreq_volt <= GPU_DVFS_PTPOD_DISABLE_VOLT) {
 			target_idx = i;
