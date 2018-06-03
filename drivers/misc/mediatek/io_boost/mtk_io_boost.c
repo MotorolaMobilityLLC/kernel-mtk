@@ -17,10 +17,13 @@
 
 #include <linux/fs.h>
 #include <linux/kernel.h>
+#include <linux/mutex.h>
 #include <linux/types.h>
 #include <linux/sched_clock.h>
 #include <linux/time.h>
 #include <linux/uaccess.h>
+
+static DEFINE_MUTEX(boost_mutex);
 
 #define BOOST_FILE_TASKS                   "/dev/stune/io/tasks"
 #define BOOST_PRINT_PREFIX                 "[io-boost]"
@@ -108,6 +111,8 @@ int mtk_io_boost_add_tid(int tid)
 {
 	int ret = 0;
 
+	mutex_lock(&boost_mutex);
+
 	ret = open_boost_task_file();
 
 	if (ret < 0)
@@ -118,6 +123,8 @@ int mtk_io_boost_add_tid(int tid)
 	close_boost_task_file();
 
 out:
+
+	mutex_unlock(&boost_mutex);
 
 	if (ret != -EAGAIN)
 		boost_print("add tid %d, ret=%d\n", tid, ret);
