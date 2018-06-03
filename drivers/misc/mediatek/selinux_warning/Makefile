@@ -11,5 +11,5 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_SECURITY_SELINUX) += selinux_warning.o
-obj-$(CONFIG_MTK_ROOT_TRACE) += root_trace.o
+obj-$(CONFIG_MTK_SELINUX_AEE_WARNING) += mtk_selinux_warning.o
+obj-$(CONFIG_MTK_ROOT_TRACE) += mtk_root_trace.o
