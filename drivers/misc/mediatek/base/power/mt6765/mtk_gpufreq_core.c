@@ -1420,8 +1420,6 @@ static void __mt_gpufreq_clock_switch(unsigned int freq_new)
 	gpufreq_pr_debug("@%s: begin, freq = %d, GPUPLL_CON1 = 0x%x\n",
 		__func__, freq_new, DRV_Reg32(GPUPLL_CON1));
 
-	/* To-Do: FHCTL not checked-in, Force parking */
-	g_parking = true;
 	if (g_parking) {
 		/* mfgpll_ck to clk26m */
 		__mt_gpufreq_switch_to_clksrc(CLOCK_SUB);
@@ -2303,11 +2301,13 @@ static void __mt_gpufreq_set_initial(void)
 	mutex_lock(&mt_gpufreq_lock);
 
 	/* default OPP index */
-	g_cur_opp_cond_idx = 0;
+	g_cur_opp_cond_idx = mt_gpufreq_get_dvfs_table_num() - 1;
 
 	/* set POST_DIVIDER initial value */
 	g_cur_post_divider_power = POST_DIV4;
-	g_parking = false;
+
+	/* To-Do: FHCTL not checked-in, Force parking */
+	g_parking = true;
 
 	gpufreq_pr_debug("@%s: initial opp index = %d\n",
 		__func__, g_cur_opp_cond_idx);
