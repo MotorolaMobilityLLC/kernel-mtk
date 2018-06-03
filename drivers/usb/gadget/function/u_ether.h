@@ -20,7 +20,7 @@
 #include <linux/usb/cdc.h>
 #include <linux/netdevice.h>
 
-#define QMULT_DEFAULT 5
+#define QMULT_DEFAULT 10
 
 /*
  * dev_addr: initial value
@@ -33,11 +33,11 @@
 	MODULE_PARM_DESC(qmult, "queue length multiplier at high/super speed");\
 									\
 	static char *dev_addr;						\
-	module_param(dev_addr, charp, S_IRUGO);				\
+	module_param(dev_addr, charp, S_IRUGO|S_IWUSR);				\
 	MODULE_PARM_DESC(dev_addr, "Device Ethernet Address");		\
 									\
 	static char *host_addr;						\
-	module_param(host_addr, charp, S_IRUGO);			\
+	module_param(host_addr, charp, S_IRUGO|S_IWUSR);			\
 	MODULE_PARM_DESC(host_addr, "Host Ethernet Address")
 
 struct eth_dev;
@@ -75,6 +75,7 @@ struct gether {
 	u32				fixed_in_len;
 	unsigned		ul_max_pkts_per_xfer;
 	unsigned		dl_max_pkts_per_xfer;
+	unsigned		dl_max_transfer_len;
 	bool				multi_pkt_xfer;
 	bool				supports_multi_frame;
 	struct sk_buff			*(*wrap)(struct gether *port,
@@ -86,6 +87,7 @@ struct gether {
 	/* called on network open/close */
 	void				(*open)(struct gether *);
 	void				(*close)(struct gether *);
+	struct rndis_packet_msg_type	*header;
 };
 
 #define	DEFAULT_FILTER	(USB_CDC_PACKET_TYPE_BROADCAST \
@@ -256,6 +258,7 @@ void gether_cleanup(struct eth_dev *dev);
 /* connect/disconnect is handled by individual functions */
 struct net_device *gether_connect(struct gether *);
 void gether_disconnect(struct gether *);
+void gether_update_dl_max_xfer_size(struct gether *link, uint32_t s);
 
 /* Some controllers can't support CDC Ethernet (ECM) ... */
 static inline bool can_support_ecm(struct usb_gadget *gadget)
@@ -269,5 +272,22 @@ static inline bool can_support_ecm(struct usb_gadget *gadget)
 	 */
 	return true;
 }
+
+extern unsigned int rndis_test_last_resp_id;
+extern unsigned int rndis_test_last_msg_id;
+
+extern unsigned long rndis_test_reset_msg_cnt;
+
+extern unsigned long rndis_test_rx_usb_in;
+extern unsigned long rndis_test_rx_net_out;
+extern unsigned long rndis_test_rx_nomem;
+extern unsigned long rndis_test_rx_error;
+
+extern unsigned long rndis_test_tx_net_in;
+extern unsigned long rndis_test_tx_busy;
+extern unsigned long rndis_test_tx_stop;
+
+extern unsigned long rndis_test_tx_usb_out;
+extern unsigned long rndis_test_tx_complete;
 
 #endif /* __U_ETHER_H */

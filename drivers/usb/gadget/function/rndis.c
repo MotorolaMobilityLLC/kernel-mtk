@@ -60,7 +60,7 @@ MODULE_PARM_DESC(rndis_ul_max_xfer_size_rcvd,
  * and will be happier if you provide the host_addr module parameter.
  */
 
-#if 0
+#if 1
 static int rndis_debug = 0;
 module_param (rndis_debug, int, 0);
 MODULE_PARM_DESC (rndis_debug, "enable debugging");
@@ -178,6 +178,7 @@ static const u32 oid_supported_list[] =
 #endif	/* RNDIS_PM */
 };
 
+#define RNDIS_DBG(fmt, args...) pr_debug("RNDIS,%s, " fmt, __func__, ## args)
 
 /* NDIS Functions */
 static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
@@ -214,6 +215,9 @@ static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
 
 	net = params->dev;
 	stats = dev_get_stats(net, &temp);
+
+	if (rndis_debug)
+		RNDIS_DBG("OID is 0x%x\n", OID);
 
 	switch (OID) {
 
@@ -274,6 +278,17 @@ static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
 			*outbuf = cpu_to_le32(0);
 		else
 			*outbuf = cpu_to_le32(params->speed);
+	if (rndis_debug)
+		RNDIS_DBG("OID_GEN_LINK_SPEED, speed %d, data: rx_in %lu\n"
+					"rx_out %lu, rx_nomem %lu, rx_error %lu, tx_in %lu\n"
+					"tx_out %lu, tx_busy %lu, tx_complete %lu, last_msg_id: 0x%x\n"
+					"last_resp_id: 0x%x, RNDIS reset cnt: %lu, queue stopped? %d\n",
+					params->speed, rndis_test_rx_usb_in,
+					rndis_test_rx_net_out, rndis_test_rx_nomem, rndis_test_rx_error,
+					rndis_test_tx_net_in, rndis_test_tx_usb_out, rndis_test_tx_busy,
+					rndis_test_tx_complete, rndis_test_last_msg_id,
+					rndis_test_last_resp_id, rndis_test_reset_msg_cnt,
+					netif_queue_stopped(params->dev));
 		retval = 0;
 		break;
 
@@ -340,6 +355,9 @@ static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
 		if (rndis_debug > 1)
 			pr_debug("%s: RNDIS_OID_GEN_MEDIA_CONNECT_STATUS\n", __func__);
 		*outbuf = cpu_to_le32(params->media_state);
+	if (rndis_debug)
+		RNDIS_DBG("OID_GEN_MEDIA_CONNECT_STATUS, media_state %d\n",
+					params->media_state);
 		retval = 0;
 		break;
 
@@ -391,6 +409,8 @@ static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
 			pr_debug("%s: RNDIS_OID_GEN_XMIT_ERROR\n", __func__);
 		if (stats) {
 			*outbuf = cpu_to_le32(stats->tx_errors);
+		if (rndis_debug)
+			RNDIS_DBG("OID_GEN_XMIT_ERROR, stats->tx_errors %llu\n", stats->tx_errors);
 			retval = 0;
 		}
 		break;
@@ -401,6 +421,8 @@ static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
 			pr_debug("%s: RNDIS_OID_GEN_RCV_ERROR\n", __func__);
 		if (stats) {
 			*outbuf = cpu_to_le32(stats->rx_errors);
+		if (rndis_debug)
+			RNDIS_DBG("OID_GEN_RCV_ERROR, stats->rx_errors %llu\n", stats->rx_errors);
 			retval = 0;
 		}
 		break;
@@ -410,6 +432,8 @@ static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
 		pr_debug("%s: RNDIS_OID_GEN_RCV_NO_BUFFER\n", __func__);
 		if (stats) {
 			*outbuf = cpu_to_le32(stats->rx_dropped);
+		if (rndis_debug)
+			RNDIS_DBG("OID_GEN_RCV_NO_BUFFER, stats->rx_dropped %llu\n", stats->rx_dropped);
 			retval = 0;
 		}
 		break;
@@ -423,6 +447,9 @@ static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
 			length = ETH_ALEN;
 			memcpy(outbuf, params->host_mac, length);
 			retval = 0;
+		if (rndis_debug)
+			RNDIS_DBG("OID_802_3_PERMANENT_ADDRESS, host_mac is %x %x  ....\n",
+						params->host_mac[0], params->host_mac[1]);
 		}
 		break;
 
@@ -433,6 +460,9 @@ static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
 			length = ETH_ALEN;
 			memcpy(outbuf, params->host_mac, length);
 			retval = 0;
+		if (rndis_debug)
+			RNDIS_DBG("OID_802_3_CURRENT_ADDRESS, host_mac is %x %x  ....\n",
+						params->host_mac[0], params->host_mac[1]);
 		}
 		break;
 
@@ -464,6 +494,9 @@ static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
 	case RNDIS_OID_802_3_RCV_ERROR_ALIGNMENT:
 		pr_debug("%s: RNDIS_OID_802_3_RCV_ERROR_ALIGNMENT\n", __func__);
 		if (stats) {
+			if (rndis_debug)
+				RNDIS_DBG("OID_802_3_RCV_ERROR_ALIGNMENT, stats->rx_frame_errors is %llu\n",
+						stats->rx_frame_errors);
 			*outbuf = cpu_to_le32(stats->rx_frame_errors);
 			retval = 0;
 		}
@@ -487,8 +520,10 @@ static int gen_ndis_query_resp(struct rndis_params *params, u32 OID, u8 *buf,
 		pr_warning("%s: query unknown OID 0x%08X\n",
 			 __func__, OID);
 	}
-	if (retval < 0)
+	if (retval < 0) {
 		length = 0;
+		RNDIS_DBG("bad gen_ndis_query_resp, retval is %d\n", retval);
+	}
 
 	resp->InformationBufferLength = cpu_to_le32(length);
 	r->length = length + sizeof(*resp);
@@ -518,6 +553,9 @@ static int gen_ndis_set_resp(struct rndis_params *params, u32 OID,
 				get_unaligned_le32(&buf[i + 12]));
 		}
 	}
+
+	if (rndis_debug)
+		RNDIS_DBG("OID is 0x%x\n", OID);
 
 	switch (OID) {
 	case RNDIS_OID_GEN_CURRENT_PACKET_FILTER:
@@ -559,6 +597,9 @@ static int gen_ndis_set_resp(struct rndis_params *params, u32 OID,
 		pr_warning("%s: set unknown OID 0x%08X, size %d\n",
 			 __func__, OID, buf_len);
 	}
+
+	if (retval)
+		RNDIS_DBG("retval is %d\n", retval);
 
 	return retval;
 }
@@ -621,8 +662,10 @@ static int rndis_query_response(struct rndis_params *params,
 	 */
 	r = rndis_add_response(params,
 		sizeof(oid_supported_list) + sizeof(rndis_query_cmplt_type));
-	if (!r)
+	if (!r) {
+		RNDIS_DBG("rndis_add_response return NULL\n");
 		return -ENOMEM;
+	}
 	resp = (rndis_query_cmplt_type *)r->buf;
 
 	resp->MessageType = cpu_to_le32(RNDIS_MSG_QUERY_C);
@@ -653,8 +696,10 @@ static int rndis_set_response(struct rndis_params *params,
 	rndis_resp_t *r;
 
 	r = rndis_add_response(params, sizeof(rndis_set_cmplt_type));
-	if (!r)
+	if (!r) {
+		RNDIS_DBG("rndis_add_response return NULL\n");
 		return -ENOMEM;
+	}
 	resp = (rndis_set_cmplt_type *)r->buf;
 
 	BufLength = le32_to_cpu(buf->InformationBufferLength);
@@ -694,9 +739,12 @@ static int rndis_reset_response(struct rndis_params *params,
 	u32 length;
 	u8 *xbuf;
 
+	RNDIS_DBG("reset, clean old response\n");
 	/* drain the response queue */
 	while ((xbuf = rndis_get_next_response(params, &length)))
 		rndis_free_response(params, xbuf);
+
+	rndis_test_reset_msg_cnt++;
 
 	r = rndis_add_response(params, sizeof(rndis_reset_cmplt_type));
 	if (!r)
@@ -722,8 +770,10 @@ static int rndis_keepalive_response(struct rndis_params *params,
 	/* host "should" check only in RNDIS_DATA_INITIALIZED state */
 
 	r = rndis_add_response(params, sizeof(rndis_keepalive_cmplt_type));
-	if (!r)
+	if (!r) {
+		RNDIS_DBG("rndis_add_response return NULL\n");
 		return -ENOMEM;
+	}
 	resp = (rndis_keepalive_cmplt_type *)r->buf;
 
 	resp->MessageType = cpu_to_le32(RNDIS_MSG_KEEPALIVE_C);
@@ -732,6 +782,18 @@ static int rndis_keepalive_response(struct rndis_params *params,
 	resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
 
 	params->resp_avail(params->v);
+
+
+	if (rndis_debug)
+		RNDIS_DBG("data: rx_in %lu\n"
+				"rx_out %lu, rx_nomem %lu, rx_error %lu, tx_in %lu\n"
+				"tx_out %lu, tx_busy %lu, tx_complete %lu, last_msg_id: 0x%x\n"
+				"last_resp_id: 0x%x, RNDIS reset cnt: %lu, queue stopped? %d\n",
+				rndis_test_rx_usb_in, rndis_test_rx_net_out, rndis_test_rx_nomem, rndis_test_rx_error,
+				rndis_test_tx_net_in, rndis_test_tx_usb_out, rndis_test_tx_busy,
+				rndis_test_tx_complete, rndis_test_last_msg_id,
+				rndis_test_last_resp_id,
+				rndis_test_reset_msg_cnt, netif_queue_stopped(params->dev));
 	return 0;
 }
 
@@ -802,7 +864,7 @@ EXPORT_SYMBOL_GPL(rndis_set_host_mac);
  */
 int rndis_msg_parser(struct rndis_params *params, u8 *buf)
 {
-	u32 MsgType, MsgLength;
+	u32 MsgType, MsgLength, MsgID;
 	__le32 *tmp;
 
 	if (!buf)
@@ -811,6 +873,10 @@ int rndis_msg_parser(struct rndis_params *params, u8 *buf)
 	tmp = (__le32 *)buf;
 	MsgType   = get_unaligned_le32(tmp++);
 	MsgLength = get_unaligned_le32(tmp++);
+	MsgID = get_unaligned_le32(tmp++);
+	if (rndis_debug)
+		RNDIS_DBG("MsgType is %d, RequestID is 0x%x\n", MsgType, MsgID);
+	rndis_test_last_msg_id = MsgID;
 
 	if (!params)
 		return -ENOTSUPP;
@@ -867,8 +933,28 @@ int rndis_msg_parser(struct rndis_params *params, u8 *buf)
 		 */
 		pr_warning("%s: unknown RNDIS message 0x%08X len %d\n",
 			__func__, MsgType, MsgLength);
-		print_hex_dump_bytes(__func__, DUMP_PREFIX_OFFSET,
-				     buf, MsgLength);
+		{
+			unsigned i;
+
+			for (i = 0; i < MsgLength; i += 16) {
+				pr_debug("%03d\n"
+						"%02x %02x %02x %02x\n"
+						"%02x %02x %02x %02x\n"
+						"%02x %02x %02x %02x\n"
+						"%02x %02x %02x %02x\n",
+						i, buf[i], buf[i+1],
+						buf[i+2], buf[i+3],
+						buf[i+4], buf[i+5],
+						buf[i+6], buf[i+7],
+						buf[i+8], buf[i+9],
+						buf[i+10], buf[i+11],
+						buf[i+12], buf[i+13],
+						buf[i+14], buf[i+15]);
+			}
+		}
+		/* print_hex_dump_bytes(__func__, DUMP_PREFIX_OFFSET,
+		 *		     buf, MsgLength);
+		 */
 		break;
 	}
 
@@ -931,6 +1017,7 @@ struct rndis_params *rndis_register(void (*resp_avail)(void *v), void *v)
 	params->media_state = RNDIS_MEDIA_STATE_DISCONNECTED;
 	params->resp_avail = resp_avail;
 	params->v = v;
+	params->max_pkt_per_xfer = 1;
 	INIT_LIST_HEAD(&(params->resp_queue));
 	pr_debug("%s: configNr = %d\n", __func__, i);
 
@@ -1037,6 +1124,9 @@ void rndis_free_response(struct rndis_params *params, u8 *buf)
 
 	list_for_each_safe(act, tmp, &(params->resp_queue))
 	{
+		if (!act)
+			continue;
+
 		r = list_entry(act, rndis_resp_t, list);
 		if (r && r->buf == buf) {
 			list_del(&r->list);
@@ -1174,7 +1264,9 @@ static int rndis_proc_show(struct seq_file *m, void *v)
 			 "speed     : %d\n"
 			 "cable     : %s\n"
 			 "vendor ID : 0x%08X\n"
-			 "vendor    : %s\n",
+			 "vendor    : %s\n"
+			 "ul-max-xfer-size:%d max-xfer-size-rcvd: %d\n"
+			 "ul-max-pkts-per-xfer:%d max-pkts-per-xfer-rcvd:%d\n",
 			 param->confignr, (param->used) ? "y" : "n",
 			 ({ char *s = "?";
 			 switch (param->state) {
@@ -1188,7 +1280,13 @@ static int rndis_proc_show(struct seq_file *m, void *v)
 			 param->medium,
 			 (param->media_state) ? 0 : param->speed*100,
 			 (param->media_state) ? "disconnected" : "connected",
-			 param->vendorID, param->vendorDescr);
+			 param->vendorID, param->vendorDescr,
+			 param->max_pkt_per_xfer *
+				 (param->dev->mtu + sizeof(struct ethhdr) +
+				  sizeof(struct rndis_packet_msg_type) + 22),
+			 rndis_ul_max_xfer_size_rcvd,
+			 param->max_pkt_per_xfer,
+			 rndis_ul_max_pkt_per_xfer_rcvd);
 	return 0;
 }
 
@@ -1251,6 +1349,62 @@ static const struct file_operations rndis_proc_fops = {
 	.write		= rndis_proc_write,
 };
 
-#define	NAME_TEMPLATE "driver/rndis-%03d"
+define	NAME_TEMPLATE "driver/rndis-%03d"
+
+static struct proc_dir_entry *rndis_connect_state[RNDIS_MAX_CONFIGS];
 
 #endif /* CONFIG_USB_GADGET_DEBUG_FILES */
+#if 0
+static int rndis_test_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m,
+			"[RNDIS] rx_in %lu\n"
+		    "rx_out %lu\n"
+			"rx_nomem %lu\n"
+			"rx_error %lu\n"
+			"tx_in %lu\n"
+			"tx_out %lu\n"
+			"tx_busy %lu\n"
+			"tx_complete %lu\n"
+			"last_msg_id: 0x%x\n"
+			"last_resp_id: 0x%x\n"
+		    "RNDIS reset cnt: %lu\n",
+			rndis_test_rx_usb_in, rndis_test_rx_net_out,
+			rndis_test_rx_nomem, rndis_test_rx_error,
+			rndis_test_tx_net_in, rndis_test_tx_usb_out,
+			rndis_test_tx_busy, rndis_test_tx_complete,
+			rndis_test_last_msg_id, rndis_test_last_resp_id,
+			rndis_test_reset_msg_cnt);
+
+	return 0;
+}
+
+static int rndis_test_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, rndis_test_proc_show, inode->i_private);
+}
+
+static ssize_t rndis_test_proc_write(struct file *file, const char __user *buf, size_t length, loff_t *ppos)
+{
+	char msg[32];
+
+	if (length >= sizeof(msg))
+		return -EINVAL;
+	if (copy_from_user(msg, buf, length))
+		return -EFAULT;
+
+	msg[length] = 0;
+
+	return length;
+}
+static const struct file_operations rndis_test_proc_fops = {
+	.owner		= THIS_MODULE,
+	.open		= rndis_test_proc_open,
+	.write = rndis_test_proc_write,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+
+};
+static struct proc_dir_entry *rndis_test_proc;
+#endif
+
