@@ -212,7 +212,7 @@ void preloader_init(void)
 	efuse_cal = pmic_get_register_value(PMIC_RG_FGADC_GAINERROR_CAL);
 	pmic_set_register_value(PMIC_FG_GAIN, efuse_cal);
 
-	hw_id = upmu_get_reg_value(0x0200);
+	hw_id = upmu_get_reg_value(PMIC_HWCID);
 	sw_id = upmu_get_reg_value(0x0202);
 
 
@@ -1884,7 +1884,7 @@ static signed int fg_is_battery_exist(void *data)
 #else
 	int temp;
 	int is_bat_exist;
-	int hw_id = upmu_get_reg_value(0x0200);
+	int hw_id = upmu_get_reg_value(PMIC_HWCID);
 
 	temp = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
 
@@ -2388,7 +2388,7 @@ int read_hw_ocv_6335_power_on(void)
 	signed int adc_rdy = 0;
 	signed int adc_result_reg = 0;
 	signed int adc_result = 0;
-	int hw_id = upmu_get_reg_value(0x0200);
+	int hw_id = upmu_get_reg_value(PMIC_HWCID);
 
 #if defined(SWCHR_POWER_PATH)
 	if (hw_id == 0x3510) {
@@ -2513,7 +2513,7 @@ int read_hw_ocv_6335_power_on_rdy(void)
 	bm_debug("[read_hw_ocv_6335_power_on_rdy] POWER_EXT\n");
 #else
 	signed int pon_rdy = 0;
-	int hw_id = upmu_get_reg_value(0x0200);
+	int hw_id = upmu_get_reg_value(PMIC_HWCID);
 
 	if (hw_id == 0x3510)
 		pon_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_PCHR);
@@ -2714,7 +2714,7 @@ static signed int fg_set_rtc_ui_soc(void *data)
 
 static void fgauge_read_RTC_boot_status(void)
 {
-	int hw_id = upmu_get_reg_value(0x0200);
+	int hw_id = upmu_get_reg_value(PMIC_HWCID);
 	int spare0_reg, spare0_reg_b13;
 	int spare3_reg;
 	int spare3_reg_valid;
@@ -2748,7 +2748,7 @@ static void fgauge_read_RTC_boot_status(void)
 
 static signed int fg_set_fg_reset_rtc_status(void *data)
 {
-	int hw_id = upmu_get_reg_value(0x0200);
+	int hw_id = upmu_get_reg_value(PMIC_HWCID);
 	int temp_value;
 	int spare0_reg, after_rst_spare0_reg;
 	int spare3_reg, after_rst_spare3_reg;
@@ -2966,7 +2966,7 @@ static signed int fg_set_vbat2_h_th(void *data)
 
 static signed int fg_get_hw_ver(void *data)
 {
-	int hw_id = upmu_get_reg_value(0x0200);
+	int hw_id = upmu_get_reg_value(PMIC_HWCID);
 
 	*(signed int *) (data) = hw_id;
 	return STATUS_OK;
