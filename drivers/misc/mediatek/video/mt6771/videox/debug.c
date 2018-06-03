@@ -65,6 +65,7 @@ unsigned int g_mobilelog;
 static unsigned int debug_draw_line;
 int bypass_blank;
 int lcm_mode_status;
+enum UNIFIED_COLOR_FMT force_dc_buf_fmt;
 int layer_layout_allow_non_continuous;
 /* Boundary of enter screen idle */
 unsigned idle_check_interval = 50;
@@ -629,6 +630,8 @@ static void process_dbg_opt(const char *opt)
 {
 	int ret;
 
+	DISPMSG("display debug cmd %s\n", opt);
+
 	if (strncmp(opt, "helper", 6) == 0) {
 		/*ex: echo helper:DISP_OPT_BYPASS_OVL,0 > /d/mtkfb */
 		char option[100] = "";
@@ -1076,6 +1079,15 @@ static void process_dbg_opt(const char *opt)
 
 		ret = sscanf(opt, "enable_display_ut:%d\n", &index);
 		enable_display_ut(index);
+	} else if (strncmp(opt, "force_dc_buf_fmt:", 17) == 0) {
+		if (strncmp(opt + 17, "888", 3) == 0)
+			force_dc_buf_fmt = UFMT_RGB888;
+		else if (strncmp(opt + 17, "yuv", 3) == 0)
+			force_dc_buf_fmt = UFMT_YUYV;
+		else if (strncmp(opt + 17, "565", 3) == 0)
+			force_dc_buf_fmt = UFMT_RGB565;
+		else if (strncmp(opt + 17, "off", 3) == 0)
+			force_dc_buf_fmt = 0;
 	} else if (strncmp(opt, "primary_basic_test:", 19) == 0) {
 		unsigned int layer_num, w, h, fmt, frame_num, vsync_num, x, y, r, g, b, a;
 		unsigned int layer_en_mask, cksum;
