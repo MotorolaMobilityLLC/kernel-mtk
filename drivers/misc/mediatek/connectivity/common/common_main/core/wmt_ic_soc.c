@@ -1276,6 +1276,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		iRet = wmt_core_rx(evtbuf, sizeof(WMT_GET_SOC_ADIE_CHIPID_EVT), &u4Res);
 		if (iRet || (u4Res != sizeof(WMT_GET_SOC_ADIE_CHIPID_EVT))) {
 			WMT_ERR_FUNC("wmt_core:read A die chipid EVT fail(%d),size(%d)\n", iRet, u4Res);
+			mtk_wcn_stp_dbg_dump_package();
 			return -17;
 		}
 
@@ -1290,9 +1291,10 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 				WMT_ERR_FUNC("wmt_core:read A die efuse CMD fail(%d),size(%d)\n", iRet, u4Res);
 			osal_memset(evtbuf, 0, sizeof(evtbuf));
 			iRet = wmt_core_rx(evtbuf, sizeof(WMT_GET_SOC_6625_L_EVT), &u4Res);
-			if (iRet || (u4Res != sizeof(WMT_GET_SOC_6625_L_EVT)))
+			if (iRet || (u4Res != sizeof(WMT_GET_SOC_6625_L_EVT))) {
 				WMT_ERR_FUNC("wmt_core:read A die efuse EVT fail(%d),size(%d)\n", iRet, u4Res);
-
+				mtk_wcn_stp_dbg_dump_package();
+			}
 			WMT_INFO_FUNC("read SOC Adie Efuse(0x120) value:0x%2x,0x%2x,0x%2x,0x%2x -> %s\n",
 				      evtbuf[u4Res - 4], evtbuf[u4Res - 3], evtbuf[u4Res - 2], evtbuf[u4Res - 1],
 				      evtbuf[u4Res - 2] == 0x31 ? "MT6625L" : "MT6625");
@@ -2198,6 +2200,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	iRet = wmt_core_rx(addressevtBuf, sizeof(WMT_PATCH_ADDRESS_EVT), &u4Res);
 	if (iRet || (u4Res != sizeof(WMT_PATCH_ADDRESS_EVT))) {
 		WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d)\n", iRet, u4Res);
+		mtk_wcn_stp_dbg_dump_package();
 		iRet -= 1;
 		goto done;
 	}
@@ -2226,6 +2229,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	iRet = wmt_core_rx(addressevtBuf, sizeof(WMT_PATCH_P_ADDRESS_EVT), &u4Res);
 	if (iRet || (u4Res != sizeof(WMT_PATCH_P_ADDRESS_EVT))) {
 		WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d),index(%d)\n", iRet, u4Res, index);
+		mtk_wcn_stp_dbg_dump_package();
 		iRet -= 1;
 		goto done;
 	}
@@ -2278,6 +2282,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 		if (iRet || (u4Res != sizeof(WMT_PATCH_EVT))) {
 			WMT_ERR_FUNC("wmt_core: read WMT_PATCH_EVT length(%d, %d) fail(%d)\n", sizeof(WMT_PATCH_EVT),
 				     u4Res, iRet);
+			mtk_wcn_stp_dbg_dump_package();
 			iRet -= 1;
 			break;
 		}
@@ -2469,6 +2474,7 @@ static INT32 mtk_wcn_soc_patch_dwn(VOID)
 		if (iRet || (u4Res != sizeof(WMT_PATCH_EVT))) {
 			WMT_ERR_FUNC("wmt_core: read WMT_PATCH_EVT length(%d, %d) fail(%d)\n", sizeof(WMT_PATCH_EVT),
 				     u4Res, iRet);
+			mtk_wcn_stp_dbg_dump_package();
 			iRet -= 1;
 			break;
 		}
