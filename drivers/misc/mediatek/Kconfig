@@ -112,6 +112,17 @@ config MTK_SENSOR_SUPPORT
 
 source "drivers/misc/mediatek/alsps/Kconfig"
 
+config MTK_SENSORS_1_0
+	bool "MTK SENSORs driver 1.0 SUPPORT"
+	help
+	  This is an option for MTK SENSOR 1.0 driver.
+	  we use BIO architecture instead of linux input
+	  architecture, BIO means boost io transfer data
+	  between kernel space and user space.
+	  And we support loadble drivers
+
+source "drivers/misc/mediatek/sensors-1.0/Kconfig"
+
 endmenu  # Sensors
 
 menu "Modem & Connectivity related configs"
