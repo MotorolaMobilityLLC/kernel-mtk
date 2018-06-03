@@ -539,14 +539,15 @@ struct hp_action_tbl cpu_dvfs_hp_action[] = {
 };
 
 unsigned int nr_hp_action = ARRAY_SIZE(cpu_dvfs_hp_action);
-
+#define L_PLUS_CORE_ID 7
 #ifdef ENABLE_TURBO_MODE_AP
 static int can_turbo;
 void mt_cpufreq_turbo_action(unsigned long action,
 	unsigned int *cpus, enum mt_cpu_dvfs_id cluster_id)
 {
 #ifdef CONFIG_HYBRID_CPU_DVFS
-	if (cpus[MT_CPU_DVFS_L] == 1 && cluster_id == MT_CPU_DVFS_L) {
+	if (cpus[MT_CPU_DVFS_L] == 1 && cpu_online(L_PLUS_CORE_ID)
+		&& cluster_id == MT_CPU_DVFS_L) {
 		switch (action & ~CPU_TASKS_FROZEN) {
 		case CPU_UP_PREPARE:
 		case CPU_DOWN_PREPARE:
