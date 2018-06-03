@@ -32,8 +32,8 @@ extern "C" {
 #define UPOWER_ENABLE (1)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	#define UPOWER_ENABLE_TINYSYS_SSPM (1)
-	#define UPOWER_USE_QOS_IPI		   (1)
+	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
+	#define UPOWER_USE_QOS_IPI		   (0)
 #else
 	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
 	#define UPOWER_USE_QOS_IPI		   (0)
