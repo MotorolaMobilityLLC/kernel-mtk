@@ -2940,7 +2940,7 @@ static ssize_t __cgroup_procs_write(struct kernfs_open_file *of, char *buf,
 		ret = cgroup_attach_task(cgrp, tsk, threadgroup);
 #if defined(CONFIG_CPUSETS) && !defined(CONFIG_MTK_ACAO)
 		if (cgrp->id != SS_TOP_GROUP_ID && cgrp->child_subsys_mask == CSS_CPUSET_MASK
-		&& excl_task_count > 0 && tsk) {
+		&& excl_task_count > 0) {
 			remove_set_exclusive_task(tsk->pid, 0);
 		}
 #endif
