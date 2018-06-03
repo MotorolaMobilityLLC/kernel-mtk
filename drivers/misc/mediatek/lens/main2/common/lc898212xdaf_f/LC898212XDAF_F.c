@@ -171,7 +171,7 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F63, &val1);
 		HallCheck = val1;
 
-		if ((HallCheck == 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
+		if ((HallCheck == 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
 		    (HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 			s4EEPROM_ReadReg_LC898212XDAF_F(0x0F63, &val1);
@@ -319,7 +319,7 @@ static void LC898212XD_init(void)
 		}
 	}
 
-	if (!(0 <= Hall_Max && Hall_Max <= 0x7FFF)) {
+	if (!(Hall_Max >= 0 && Hall_Max <= 0x7FFF)) {
 		signed short Temp;
 
 		Temp = Hall_Min;

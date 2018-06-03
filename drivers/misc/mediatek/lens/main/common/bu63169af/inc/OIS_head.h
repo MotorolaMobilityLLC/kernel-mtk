@@ -105,21 +105,10 @@ typedef unsigned char OIS_UBYTE;
 
 typedef unsigned short int OIS_UWORD;
 
-typedef unsigned long int OIS_ULONG;
 
-typedef volatile char OIS_vBYTE;
 
-typedef volatile short int OIS_vWORD;
 
-typedef volatile long int OIS_vLONG;
-
-typedef volatile unsigned char OIS_vUBYTE;
-
-typedef volatile unsigned short int OIS_vUWORD;
-
-typedef volatile unsigned long int OIS_vULONG;
-
-typedef struct tagBmpGetPos {
+struct _BMP_GET_POS {
 	OIS_WORD x;		/* x start position for clipping */
 	OIS_WORD y;		/* y start position for clipping */
 	OIS_WORD width;		/* clipping width */
@@ -127,18 +116,18 @@ typedef struct tagBmpGetPos {
 	OIS_UBYTE slice_level;	/* slice level of bitmap binalization */
 	OIS_UBYTE filter;	/* median filter enable */
 	char *direction;	/* direction of detection */
-} _BMP_GET_POS;
+};
 
-typedef struct tagPos {
+struct _POS {
 	float x;
 	float y;
-} _POS;
+};
 
-typedef struct tagApproxResult {
+struct _APPROXRESULT {
 	double a;		/* position x */
 	double b;		/* position y */
 	double r;		/* Radius */
-} _APPROXRESULT;
+};
 
 #include	"OIS_defi.h"
 /* #include	"windef.h" */
@@ -151,13 +140,13 @@ void func_COEF_DOWNLOAD(OIS_UWORD u16_coef_type);
 void download(OIS_UWORD u16_type, OIS_UWORD u16_coef_type);
 
 ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-			     OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param);
+			     OIS_UBYTE filter, OIS_UBYTE range, const struct _FACT_ADJ *param);
 
-void SET_FADJ_PARAM(const _FACT_ADJ *param);
+void SET_FADJ_PARAM(const struct _FACT_ADJ *param);
 
 ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 					     OIS_UBYTE filter, OIS_UBYTE range,
-					     const _FACT_ADJ *param);
+					     const struct _FACT_ADJ *param);
 
 void HalfShutterOn(void);
 
@@ -187,11 +176,11 @@ void WR_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat);
 
 OIS_UWORD RD_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat);
 
-void store_FADJ_MEM_to_non_volatile_memory(_FACT_ADJ param);
+void store_FADJ_MEM_to_non_volatile_memory(struct _FACT_ADJ param);
 
-_FACT_ADJ get_FADJ_MEM_from_non_volatile_memory(void);
+struct _FACT_ADJ get_FADJ_MEM_from_non_volatile_memory(void);
 
-void Wait_usec(OIS_ULONG time);
+void Wait_usec(unsigned long int time);
 
 extern void Main_OIS(void);
 

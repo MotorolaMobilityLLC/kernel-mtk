@@ -14,9 +14,6 @@
 #include	"AfInit.h"
 #include	"AfData.h"
 
-/*-----------------------------
-	Definations
-------------------------------*/
 #define		REG_ADDR_START		0x80	/* REG Start address */
 
 

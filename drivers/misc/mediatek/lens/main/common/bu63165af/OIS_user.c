@@ -143,7 +143,7 @@ OIS_UWORD RD_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat)
 /* non-volatile memory. */
 /*  */
 /* <Input> */
-/* _FACT_ADJ       Factory Adjusted data */
+/* struct _FACT_ADJ       Factory Adjusted data */
 /*  */
 /* <Output> */
 /* none */
@@ -152,7 +152,7 @@ OIS_UWORD RD_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat)
 /* You have to port your own system. */
 /*  */
 /* ********************************************************* */
-void store_FADJ_MEM_to_non_volatile_memory(_FACT_ADJ param)
+void store_FADJ_MEM_to_non_volatile_memory(struct _FACT_ADJ param)
 {
 
 	    /*      Write to the non-vollatile memory such as EEPROM or internal of the CMOS sensor... */
@@ -170,13 +170,13 @@ void store_FADJ_MEM_to_non_volatile_memory(_FACT_ADJ param)
 /* none */
 /*  */
 /* <Output> */
-/* _FACT_ADJ       Factory Adjusted data */
+/* struct _FACT_ADJ       Factory Adjusted data */
 /*  */
 /* <Description> */
 /* You have to port your own system. */
 /*  */
 /* ********************************************************* */
-_FACT_ADJ get_FADJ_MEM_from_non_volatile_memory(void)
+struct _FACT_ADJ get_FADJ_MEM_from_non_volatile_memory(void)
 {
 	u16 ReadData;
 
@@ -246,7 +246,7 @@ _FACT_ADJ get_FADJ_MEM_from_non_volatile_memory(void)
 /* <Function> */
 /*  */
 /* <Input> */
-/* OIS_ULONG       time    on the micro second time scale */
+/* unsigned long int       time    on the micro second time scale */
 /*  */
 /* <Output> */
 /* none */
@@ -254,7 +254,7 @@ _FACT_ADJ get_FADJ_MEM_from_non_volatile_memory(void)
 /* <Description> */
 /*  */
 /* ********************************************************* */
-void Wait_usec(OIS_ULONG time)
+void Wait_usec(unsigned long int time)
 {
 	/* Please write your source code here. */
 }

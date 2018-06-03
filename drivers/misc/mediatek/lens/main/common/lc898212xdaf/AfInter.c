@@ -1,11 +1,11 @@
 /* ******************************************************************************* */
-//
+/*                                                                                 */
 /*              LC89821x Interface module                                          */
-//
+/*                                                                                 */
 /*          Program Name        : AfInter.c                                        */
 /*          Design              : Rex.Tang                                         */
 /*          History             : First edition           2013.07.13 Rex.Tang      */
-//
+/*                                                                                 */
 /*          Description         : User needs to complete the interface functions   */
 /* ******************************************************************************* */
 

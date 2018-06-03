@@ -141,7 +141,7 @@ static int convertAF_DAC(short ReadData)
 
 static void LC898212XD_init(void)
 {
-	stSmvPar StSmvPar;
+	struct stSmvPar StSmvPar;
 	u8 val1 = 0, val2 = 0;
 
 	int Hall_Off = 0x80;	/* Please Read Offset from EEPROM or OTP */

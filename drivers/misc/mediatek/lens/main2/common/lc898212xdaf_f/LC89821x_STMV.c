@@ -74,9 +74,9 @@ static void WaitTime(unsigned short msec)
 
 #define		REG_ADDR_START		0x80	/* REG Start address */
 
-static stSmvPar StSmvPar;
+static struct stSmvPar StSmvPar;
 
-static void StmvSet(stSmvPar StSetSmv)
+static void StmvSet(struct stSmvPar StSetSmv)
 {
 	unsigned char UcSetEnb;
 	unsigned char UcSetSwt;
@@ -185,7 +185,7 @@ static void ServoOn(void)
 
 void LC898212XDAF_F_MONO_init(unsigned char Hall_Off, unsigned char Hall_Bias)
 {
-	stSmvPar StSmvPar;
+	struct stSmvPar StSmvPar;
 
 	AfInit(Hall_Off, Hall_Bias);	/* Initialize driver IC */
 

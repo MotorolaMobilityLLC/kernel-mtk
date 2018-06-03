@@ -134,7 +134,7 @@ void download(OIS_UWORD u16_type, OIS_UWORD u16_coef_type)
 }
 
 
-void SET_FADJ_PARAM(const _FACT_ADJ *param)
+void SET_FADJ_PARAM(const struct _FACT_ADJ *param)
 {
 	/* ********************* */
 	/* HALL ADJUST */
@@ -190,7 +190,7 @@ void SET_FADJ_PARAM(const _FACT_ADJ *param)
 #define	G_SENSE		131	/* [LSB/dps] */
 
 ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-			     OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param)
+			     OIS_UBYTE filter, OIS_UBYTE range, const struct _FACT_ADJ *param)
 {
 	OIS_UWORD u16_i;
 	OIS_UWORD u16_dat;
@@ -351,7 +351,7 @@ ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 
 ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 					     OIS_UBYTE filter, OIS_UBYTE range,
-					     const _FACT_ADJ *param)
+					     const struct _FACT_ADJ *param)
 {
 	OIS_UWORD u16_i;
 	OIS_UWORD u16_dat;

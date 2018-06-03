@@ -42,13 +42,13 @@
 /* Define According To Usage */
 
 /****************************** Define説明 ******************************/
-/*	USE_3WIRE_DGYRO		Digital Gyro I/F 3線Mode使用					*/
-/*	USE_INVENSENSE		Invensense Digital Gyro使用						*/
-/*		USE_IDG2020		Inv IDG-2020使用								*/
-/*	STANDBY_MODE		Standby制御使用(未確認)							*/
-/*	GAIN_CONT			:Gain control機能使用							*/
-/*	(disable)	DSC	:三脚Mode使用			*/
-/*	HALLADJ_HW			Hall Calibration LSI機能使用					*/
+/*	USE_3WIRE_DGYRO		Digital Gyro I/F 3線Mode用		*/
+/*	USE_INVENSENSE		Invensense Digital Gyro使用		*/
+/*	USE_IDG2020		Inv IDG-2020使用				*/
+/*	STANDBY_MODE		Standby制御使用(未確認)		*/
+/*	GAIN_CONT			:Gain control機			*/
+/*	(disable)	DSC	:三脚Mode使用		*/
+/*	HALLADJ_HW			Hall Calibration LSI機		*/
 /************************************************************************/
 
 /**************** Select Gyro Sensor **************/
@@ -308,13 +308,13 @@ struct STFILRAM {
 struct STCMDTBL {
 	unsigned short Cmd;
 	unsigned int UiCmdStf;
-	void (*UcCmdPtr) (void);
+	void (*UcCmdPtr)(void);
 };
 
 /*** caution [little-endian] ***/
 
 /* Word Data Union */
-union WRDVAL {
+union UnWrdVal {
 	unsigned short UsWrdVal;
 	unsigned char UcWrkVal[2];
 	struct {
@@ -323,9 +323,7 @@ union WRDVAL {
 	} StWrdVal;
 };
 
-typedef union WRDVAL UnWrdVal;
-
-union DWDVAL {
+union UnDwdVal {
 	unsigned long UlDwdVal;
 	unsigned short UsDwdVal[2];
 	struct {
@@ -340,10 +338,8 @@ union DWDVAL {
 	} StCdwVal;
 };
 
-typedef union DWDVAL UnDwdVal;
-
 /* Float Data Union */
-union FLTVAL {
+union UnFltVal {
 	float SfFltVal;
 	unsigned long UlLngVal;
 	unsigned short UsDwdVal[2];
@@ -353,10 +349,8 @@ union FLTVAL {
 	} StFltVal;
 };
 
-typedef union FLTVAL UnFltVal;
 
-
-typedef struct STADJPAR {
+struct stAdjPar {
 	struct {
 		unsigned char UcAdjPhs;	/* Hall Adjust Phase */
 
@@ -397,9 +391,9 @@ typedef struct STADJPAR {
 
 	unsigned char UcOscVal;	/* OSC value */
 
-} stAdjPar;
+};
 
-OISCMD__ stAdjPar StAdjPar;	/* Execute Command Parameter */
+OISCMD__ struct stAdjPar StAdjPar;	/* Execute Command Parameter */
 
 OISCMD__ unsigned char UcOscAdjFlg;	/* For Measure trigger */
 #define	MEASSTR		0x01
@@ -490,7 +484,7 @@ OISCMD__ unsigned long TnePtp(unsigned char, unsigned char);	/* Get Hall Peak to
 #ifdef	MN_3BSD05P1
 #define		HALL_H_VAL	0x3F800000	/* 1.0 */
 #endif
-OISCMD__ unsigned char TneCen(unsigned char, UnDwdVal);	/* Tuning Hall Center */
+OISCMD__ unsigned char TneCen(unsigned char, union UnDwdVal);	/* Tuning Hall Center */
 #define		PTP_BEFORE		0
 #define		PTP_AFTER		1
 #endif
@@ -521,4 +515,57 @@ void RamWrite32A_LC898122AF(unsigned short RamAddr, unsigned long RamData);
 void RamRead32A_LC898122AF(unsigned short RamAddr, void *ReadData);
 void WitTim_LC898122AF(unsigned short UsWitTim);
 void LC898prtvalue(unsigned short value);
+
+/* ************************** */
+/* Local Function Prottype */
+/* ************************** */
+extern void IniClk(void);		/* Clock Setting */
+extern void IniIop(void);		/* I/O Port Initial Setting */
+extern void IniMon(void);		/* Monitor & Other Initial Setting */
+extern void IniSrv(void);		/* Servo Register Initial Setting */
+extern void IniGyr(void);		/* Gyro Filter Register Initial Setting */
+extern void IniFil(void);		/* Gyro Filter Initial Parameter Setting */
+extern void IniAdj(void);		/* Adjust Fix Value Setting */
+extern void IniCmd(void);		/* Command Execute Process Initial */
+extern void IniDgy(void);		/* Digital Gyro Initial Setting */
+extern void IniAf(void);		/* Open AF Initial Setting */
+extern void IniPtAve(void);		/* Average setting */
+
+
+/* ************************** */
+/* Local Function Prottype */
+/* ************************** */
+extern void MesFil(unsigned char);	/* Measure Filter Setting */
+#ifdef	MODULE_CALIBRATION
+#ifndef	HALLADJ_HW
+extern void LopIni(unsigned char);	/* Loop Gain Initialize */
+#endif
+extern void LopPar(unsigned char);	/* Loop Gain Parameter initialize */
+#ifndef	HALLADJ_HW
+extern void LopSin(unsigned char, unsigned char);	/* Loop Gain Sin Wave Output */
+extern unsigned char LopAdj(unsigned char);	/* Loop Gain Adjust */
+extern void LopMes(void);		/* Loop Gain Measure */
+#endif
+#endif
+#ifndef	HALLADJ_HW
+extern unsigned long GinMes(unsigned char);	/* Measure Result Getting */
+#endif
+extern  void GyrCon(unsigned char);	/* Gyro Filter Control */
+extern short GenMes(unsigned short, unsigned char);	/* General Measure */
+#ifndef	HALLADJ_HW
+/* unsigned long        TnePtp( unsigned char, unsigned char ) ;        // Get Hall Peak to Peak Values */
+/* unsigned char        TneCen( unsigned char, union UnDwdVal ) ;       // Tuning Hall Center */
+extern unsigned long TneOff(union UnDwdVal, unsigned char);	/* Hall Offset Tuning */
+extern unsigned long TneBia(union UnDwdVal, unsigned char);	/* Hall Bias Tuning */
+#endif
+
+extern void StbOnn(void);		/* Servo ON Slope mode */
+
+extern void SetSineWave(unsigned char, unsigned char);
+extern void StartSineWave(void);
+extern void StopSineWave(void);
+
+extern void SetMeasFil(unsigned char);
+extern void ClrMeasFil(void);
+
 										/* Read Fw Version Function */

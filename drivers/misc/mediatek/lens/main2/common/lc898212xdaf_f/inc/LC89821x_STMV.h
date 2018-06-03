@@ -199,10 +199,6 @@
 #define	MSNUMR_211		0xA3
 #define ANA2_211		0xA4
 
-
-/*----------------------------------------------------------
-		Initial data table
------------------------------------------------------------*/
 struct INIDATA {
 	unsigned short addr;
 	unsigned short data;
@@ -279,11 +275,11 @@ const struct INIDATA Init_Table_F[] = {
 };
 
 
-typedef struct STMVPAR {
+struct stSmvPar {
 	unsigned short UsSmvSiz;
 	unsigned char UcSmvItv;
 	unsigned char UcSmvEnb;
-} stSmvPar;
+};
 
 extern int s4AF_WriteReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int s4AF_ReadReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
