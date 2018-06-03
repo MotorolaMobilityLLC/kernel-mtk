@@ -12,13 +12,10 @@
 #
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/power_gs_v1/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/power_gs_v1/$(MTK_PLATFORM)/
 
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6757) += mtk_power_gs.o
-obj-$(CONFIG_MACH_MT6757) += mtk_power_gs_api.o
-obj-$(CONFIG_MACH_MT6799) += mtk_power_gs.o
-obj-$(CONFIG_MACH_MT6799) += mtk_power_gs_api.o
-obj-$(CONFIG_MACH_MT6759) += mtk_power_gs.o
-obj-$(CONFIG_MACH_MT6759) += mtk_power_gs_api.o
-obj-$(CONFIG_MACH_MT6763) += mtk_power_gs.o
-obj-$(CONFIG_MACH_MT6763) += mtk_power_gs_api.o
+obj-y += mtk_power_gs_6356_array.o
+obj-y += mtk_cg_array.o
+obj-y += mtk_dcm_array.o
+obj-y += mtk_power_gs_sp.o
+obj-y += mtk_power_gs_compare.o
