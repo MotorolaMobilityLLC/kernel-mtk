@@ -1049,6 +1049,14 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT36380_WQHD_VDO_OK)
 	&nt36380_wqhd_vdo_lcm_drv,
 #endif
+
+#if defined(NT35695B_FHD_DSI_CMD_AUO_NT50358)
+	&nt35695B_fhd_dsi_cmd_auo_nt50358_lcm_drv,
+#endif
+
+#if defined(NT35695B_FHD_DSI_VDO_AUO_NT50358)
+	&nt35695B_fhd_dsi_vdo_auo_nt50358_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
