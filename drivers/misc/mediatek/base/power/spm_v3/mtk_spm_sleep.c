@@ -42,7 +42,7 @@
 #include <mt-plat/mtk_ccci_common.h>
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
-#include <mt-plat/mt_usb2jtag.h>
+#include <mt-plat/mtk_usb2jtag.h>
 #endif
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
