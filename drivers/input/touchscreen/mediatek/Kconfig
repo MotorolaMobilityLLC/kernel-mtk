@@ -72,4 +72,18 @@ config TOUCHSCREEN_MTK_GSLX680
 	  Say Y here if you have gslX680 touch panel.
 
 	  If unsure, say N.
+
+config TOUCHSCREEN_MTK_NT36xxx
+	bool "NT36xxx for Mediatek package"
+	default n
+	help
+	  Say Y here if you have NT36xxx touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/NT36xxx/Kconfig"
+
 endif
