@@ -179,8 +179,8 @@ static struct snd_pcm_hardware mtk_deep_buffer_dl_hardware = {
 	.rate_max =     SOC_HIGH_USE_RATE_MAX,
 	.channels_min =     SOC_NORMAL_USE_CHANNELS_MIN,
 	.channels_max =     SOC_NORMAL_USE_CHANNELS_MAX,
-	.buffer_bytes_max = SOC_HIFI_BUFFER_SIZE,
-	.period_bytes_max = SOC_HIFI_BUFFER_SIZE,
+	.buffer_bytes_max = SOC_HIFI_DEEP_BUFFER_SIZE,
+	.period_bytes_max = SOC_HIFI_DEEP_BUFFER_SIZE,
 	.periods_min =      SOC_NORMAL_USE_PERIODS_MIN,
 	.periods_max =     SOC_NORMAL_USE_PERIODS_MAX,
 	.fifo_size =        0,
@@ -486,13 +486,13 @@ static int mtk_deep_buffer_dl_platform_probe(struct snd_soc_platform *platform)
 				      ARRAY_SIZE(deep_buffer_dl_controls));
 	/* allocate dram */
 	deep_buffer_dl_dma_buf.area = dma_alloc_coherent(platform->dev,
-						SOC_HIFI_BUFFER_SIZE,
+						SOC_HIFI_DEEP_BUFFER_SIZE,
 						&deep_buffer_dl_dma_buf.addr,
 						GFP_KERNEL | GFP_DMA);
 	if (!deep_buffer_dl_dma_buf.area)
 		return -ENOMEM;
 
-	deep_buffer_dl_dma_buf.bytes = SOC_HIFI_BUFFER_SIZE;
+	deep_buffer_dl_dma_buf.bytes = SOC_HIFI_DEEP_BUFFER_SIZE;
 	pr_debug("area = %p\n", deep_buffer_dl_dma_buf.area);
 
 	return 0;
