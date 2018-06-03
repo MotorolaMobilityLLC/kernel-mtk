@@ -56,6 +56,7 @@
 #define MMPROFILE_DEFAULT_BUFFER_SIZE 0x18000
 #ifdef CONFIG_MTK_ENG_BUILD
 #define MMPROFILE_DEFAULT_META_BUFFER_SIZE 0x800000
+static unsigned int mmprofile_meta_datacookie = 1;
 #else
 #define MMPROFILE_DEFAULT_META_BUFFER_SIZE 0x0
 #endif
@@ -99,7 +100,6 @@ struct mmprofile_meta_datablock_t {
 };
 
 static int bmmprofile_init_buffer;
-static unsigned int mmprofile_meta_datacookie = 1;
 static DEFINE_MUTEX(mmprofile_buffer_init_mutex);
 static DEFINE_MUTEX(mmprofile_regtable_mutex);
 static DEFINE_MUTEX(mmprofile_meta_buffer_mutex);
@@ -413,6 +413,8 @@ static void mmprofile_init_buffer(void)
 
 static void mmprofile_reset_buffer(void)
 {
+#ifdef CONFIG_MTK_ENG_BUILD
+
 	if (!mmprofile_globals.enable)
 		return;
 	if (bmmprofile_init_buffer) {
@@ -421,7 +423,7 @@ static void mmprofile_reset_buffer(void)
 		memset((void *)(p_mmprofile_ring_buffer), 0,
 			mmprofile_globals.buffer_size_bytes);
 		mmprofile_globals.write_pointer = 0;
-#ifdef CONFIG_MTK_ENG_BUILD
+
 		mutex_lock(&mmprofile_meta_buffer_mutex);
 		mmprofile_meta_datacookie = 1;
 		memset((void *)(p_mmprofile_meta_buffer), 0,
@@ -435,8 +437,9 @@ static void mmprofile_reset_buffer(void)
 		list_add_tail(&(p_block->list), &mmprofile_meta_buffer_list);
 
 		mutex_unlock(&mmprofile_meta_buffer_mutex);
-#endif
+
 	}
+#endif
 }
 
 static void mmprofile_force_start(int start)
@@ -840,12 +843,12 @@ static void mmprofile_log_int(mmp_event event, enum mmp_log_type type,
 static long mmprofile_log_meta_int(mmp_event event, enum mmp_log_type type,
 	struct mmp_metadata_t *p_meta_data, long b_from_user)
 {
+#ifdef CONFIG_MTK_ENG_BUILD
 	unsigned long retn;
 	void __user *p_data;
 	struct mmprofile_meta_datablock_t *p_node = NULL;
 	unsigned long block_size;
 
-#ifdef CONFIG_MTK_ENG_BUILD
 	if (!mmprofile_globals.enable)
 		return 0;
 	if ((event >= MMPROFILE_MAX_EVENT_COUNT) ||
