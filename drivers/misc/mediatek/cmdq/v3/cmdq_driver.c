@@ -982,20 +982,10 @@ static int cmdq_create_debug_entries(void)
 	return 0;
 }
 
-#ifdef CONFIG_PM
-static struct dev_pm_domain cmdq_pm_domain = {
-	.ops = {
-		SET_RUNTIME_PM_OPS(cmdq_core_runtime_suspend,
-				cmdq_core_runtime_resume,
-				NULL)
-		}
-};
-#endif
-
 static int cmdq_probe(struct platform_device *pDevice)
 {
 	int status;
-	struct device *cmdq_dev = &pDevice->dev;
+	struct device *cmdq_dev = NULL;
 
 	CMDQ_MSG("CMDQ driver probe begin\n");
 
@@ -1027,10 +1017,6 @@ static int cmdq_probe(struct platform_device *pDevice)
 	gCMDQClass = class_create(THIS_MODULE, CMDQ_DRIVER_DEVICE_NAME);
 	cmdq_dev = device_create(gCMDQClass, NULL, gCmdqDevNo, NULL, CMDQ_DRIVER_DEVICE_NAME);
 
-#ifdef CONFIG_PM
-	cmdq_dev->pm_domain = &cmdq_pm_domain;
-	pm_runtime_enable(cmdq_dev);
-#endif
 	status =
 	    request_irq(cmdq_dev_get_irq_id(), cmdq_irq_handler,
 			IRQF_TRIGGER_LOW | IRQF_SHARED, CMDQ_DRIVER_DEVICE_NAME, gCmdqCDev);
