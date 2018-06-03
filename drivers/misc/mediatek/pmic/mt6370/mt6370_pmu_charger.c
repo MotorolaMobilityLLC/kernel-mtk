@@ -36,7 +36,7 @@
 #include "inc/mt6370_pmu_charger.h"
 #include "inc/mt6370_pmu.h"
 
-#define MT6370_PMU_CHARGER_DRV_VERSION	"1.1.23_MTK"
+#define MT6370_PMU_CHARGER_DRV_VERSION	"1.1.24_MTK"
 
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, 0644);
@@ -493,6 +493,18 @@ out:
 	return ret;
 }
 
+static void diff(struct mt6370_pmu_charger_data *chg_data, int index,
+	struct timespec start, struct timespec end) {
+	struct timespec temp;
+
+	temp = timespec_sub(end, start);
+	if (temp.tv_sec > 0) {
+		//BUG_ON(1);
+		dev_info(chg_data->dev, "%s: duration[%d] %d %ld\n", __func__,
+			index, (int)temp.tv_sec, temp.tv_nsec);
+	}
+}
+
 static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 	enum mt6370_adc_sel adc_sel, int *adc_val)
 {
@@ -502,8 +514,17 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 	u32 aicr = 0, ichg = 0;
 	s64 adc_result = 0;
 	const int max_wait_times = 6;
+	struct timespec time0, time1, time2;
 
+	time0.tv_sec = 0; time0.tv_nsec = 0;
+	time1.tv_sec = 0; time1.tv_nsec = 0;
+	time2.tv_sec = 0; time2.tv_nsec = 0;
+
+	get_monotonic_boottime(&time0);
 	mutex_lock(&chg_data->adc_access_lock);
+	get_monotonic_boottime(&time1);
+	diff(chg_data, 1, time0, time1);
+
 	mt6370_enable_hidden_mode(chg_data, true);
 
 	/* Select ADC to desired channel */
@@ -513,6 +534,9 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 		MT6370_MASK_ADC_IN_SEL,
 		adc_sel << MT6370_SHIFT_ADC_IN_SEL
 	);
+
+	get_monotonic_boottime(&time2);
+	diff(chg_data, 2, time1, time2);
 
 	if (ret < 0) {
 		dev_err(chg_data->dev, "%s: select ch to %d failed, ret = %d\n",
@@ -539,6 +563,9 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 		}
 	}
 
+	get_monotonic_boottime(&time1);
+	diff(chg_data, 3, time2, time1);
+
 	/* Start ADC conversation */
 	ret = mt6370_pmu_reg_set_bit(chg_data->chip, MT6370_PMU_REG_CHGADC,
 		MT6370_MASK_ADC_START);
@@ -549,6 +576,9 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 		goto out_unlock_all;
 	}
 
+	get_monotonic_boottime(&time2);
+	diff(chg_data, 4, time1, time2);
+
 	for (i = 0; i < max_wait_times; i++) {
 		msleep(35);
 		ret = mt6370_pmu_reg_test_bit(chg_data->chip,
@@ -557,6 +587,10 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 		if (!adc_start && ret >= 0)
 			break;
 	}
+
+	get_monotonic_boottime(&time1);
+	diff(chg_data, 5, time2, time1);
+
 	if (i == max_wait_times) {
 		dev_err(chg_data->dev,
 			"%s: wait conversation failed, sel = %d, ret = %d\n",
@@ -571,7 +605,6 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 					"%s: reg[0x%02X] = 0x%02X\n",
 					__func__, mt6370_chg_reg_addr[i], ret);
 			}
-
 
 			chg_data->adc_hang = true;
 		}
@@ -601,6 +634,9 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 
 	mdelay(1);
 
+	get_monotonic_boottime(&time2);
+	diff(chg_data, 6, time1, time2);
+
 	/* Read ADC data */
 	ret = mt6370_pmu_reg_block_read(chg_data->chip, MT6370_PMU_REG_ADCDATAH,
 		6, adc_data);
@@ -609,6 +645,9 @@ static int mt6370_get_adc(struct mt6370_pmu_charger_data *chg_data,
 			"%s: read ADC data failed, ret = %d\n", __func__, ret);
 		goto out_unlock_all;
 	}
+
+	get_monotonic_boottime(&time1);
+	diff(chg_data, 7, time2, time1);
 
 	mt_dbg(chg_data->dev,
 		"%s: adc_sel = %d, adc_h = 0x%02X, adc_l = 0x%02X\n",
@@ -654,6 +693,10 @@ out:
 	*adc_val = adc_result;
 	mt6370_enable_hidden_mode(chg_data, false);
 	mutex_unlock(&chg_data->adc_access_lock);
+
+	get_monotonic_boottime(&time2);
+	diff(chg_data, 8, time0, time2);
+
 	return ret;
 }
 
@@ -3966,6 +4009,9 @@ MODULE_VERSION(MT6370_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.24_MTK
+ * (1) Add debug information for ADC
+ *
  * 1.1.23_MTK
  * (1) Use bc12_access_lock instead of chgdet_lock
  * (2) Add junction ADC workaround
