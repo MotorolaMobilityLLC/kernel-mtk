@@ -104,7 +104,9 @@ static char dal_print_buffer[1024];
 
 bool dal_shown;
 unsigned int isAEEEnabled;
-
+unsigned int dump_output;
+unsigned int dump_output_comp;
+void *composed_buf;
 /* ------------------------------------------------------------------------- */
 
 
@@ -326,6 +328,96 @@ EXPORT_SYMBOL(DAL_Printf);
 enum DAL_STATUS DAL_OnDispPowerOn(void)
 {
 	return DAL_STATUS_OK;
+}
+
+void *show_layers_va;
+MFC_HANDLE show_mfc_handle;
+enum DAL_COLOR color_wdma[24] = {
+	DAL_COLOR_PINK,
+	DAL_COLOR_GREEN,
+	DAL_COLOR_BLUE,
+	DAL_COLOR_RED,
+	DAL_COLOR_MAROON,
+	DAL_COLOR_STEEL_BLUE,
+	DAL_COLOR_DARK_CYAN,
+	DAL_COLOR_OLIVE_GREEN,
+	DAL_COLOR_CORNSILK,
+	DAL_COLOR_TURQUOISE,
+	DAL_COLOR_YELLOW,
+	DAL_COLOR_BLACK,
+	};
+
+static const char *digit[24] = {
+	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+};
+
+int show_layers_draw_wdma(struct Layer_draw_info *info)
+{
+	int i, j, k;
+	int layer_num;
+	int width_x, height_y;
+	void *buf_pos;
+
+	if (show_layers_va == NULL || show_mfc_handle == NULL)
+		return -1;
+
+	layer_num = info->layer_num;
+	for (i = layer_num - 1; i >= 0; i--) {
+		width_x = info->bot_r_x - info->top_l_x;
+		height_y = info->bot_r_y - info->top_l_y;
+		for (j = info->top_l_y[i];
+		j < info->top_l_y[i] + info->frame_width[i]; j++) {
+			buf_pos = show_layers_va + j * DAL_WIDTH * 3;
+			for (k = info->top_l_x[i]; k <= info->bot_r_x[i]; k++) {
+				*(char *)(buf_pos + 3 * k + 2) =
+					(color_wdma[i] & 0xff0000) >> 16;
+				*(char *)(buf_pos + 3 * k + 1) =
+					(color_wdma[i] & 0x00ff00) >> 8;
+				*(char *)(buf_pos + 3 * k) =
+					color_wdma[i] & 0x0000ff;
+			}
+		}
+		for (j = info->bot_r_y[i] - info->frame_width[i] + 1;
+		j < info->bot_r_y[i] + 1; j++) {
+			buf_pos = (void *)(show_layers_va + j * DAL_WIDTH * 3);
+			for (k = info->top_l_x[i]; k <= info->bot_r_x[i]; k++) {
+				*(char *)(buf_pos + 3 * k + 2) =
+					(color_wdma[i] & 0xff0000) >> 16;
+				*(char *)(buf_pos + 3 * k + 1) =
+					(color_wdma[i] & 0x00ff00) >> 8;
+				*(char *)(buf_pos + 3 * k) =
+					color_wdma[i] & 0x0000ff;
+			}
+		}
+		for (j = info->top_l_y[i]; j < info->bot_r_y[i]; j++) {
+			buf_pos = show_layers_va + j * DAL_WIDTH * 3;
+			for (k = info->top_l_x[i];
+			k < info->top_l_x[i] + info->frame_width[i]; k++) {
+				*(char *)(buf_pos + 3 * k + 2) =
+					(color_wdma[i] & 0xff0000) >> 16;
+				*(char *)(buf_pos + 3 * k + 1) =
+					(color_wdma[i] & 0x00ff00) >> 8;
+				*(char *)(buf_pos + 3 * k) =
+					color_wdma[i] & 0x0000ff;
+			}
+			for (k = info->bot_r_x[i] - info->frame_width[i] + 1;
+			k < info->bot_r_x[i] + 1; k++) {
+				*(char *)(buf_pos + 3 * k + 2) =
+					(color_wdma[i] & 0xff0000) >> 16;
+				*(char *)(buf_pos + 3 * k + 1) =
+					(color_wdma[i] & 0x00ff00) >> 8;
+				*(char *)(buf_pos + 3 * k) =
+					color_wdma[i] & 0x0000ff;
+			}
+		}
+	}
+	for (i = 0; i < layer_num; i++) {
+		MFC_SetCursor(show_mfc_handle, info->dx[i]/8,
+			info->dy[i]/16);
+		MFC_SetColor(show_mfc_handle, color_wdma[i], DAL_COLOR_WHITE);
+		MFC_Print(show_mfc_handle, digit[i]);
+	}
+	return 0;
 }
 
 /* ########################################################################## */

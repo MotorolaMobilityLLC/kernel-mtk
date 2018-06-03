@@ -42,6 +42,9 @@ static char dbg_buf[DBG_BUF_SIZE];
 static spinlock_t dbg_spinlock = SPIN_LOCK_UNLOCKED;
 extern char *debug_buffer;
 extern bool is_buffer_init;
+extern unsigned int dump_output;
+extern unsigned int dump_output_comp;
+extern void *composed_buf;
 
 static inline void dbg_print(int level, const char *fmt, ...)
 {

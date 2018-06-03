@@ -34,7 +34,7 @@
 #define MFC_FONT_HEIGHT     (MFC_FONT.height)
 #define MFC_FONT_DATA       (MFC_FONT.data)
 
-#define MFC_ROW_SIZE        (MFC_FONT_HEIGHT * MFC_PITCH * ctxt->scale)
+#define MFC_ROW_SIZE        (MFC_FONT_HEIGHT * MFC_PITCH)
 #define MFC_ROW_FIRST       ((BYTE *)(ctxt->fb_addr))
 #define MFC_ROW_SECOND      (MFC_ROW_FIRST + MFC_ROW_SIZE)
 #define MFC_ROW_LAST        (MFC_ROW_FIRST + MFC_SIZE - MFC_ROW_SIZE)
@@ -51,31 +51,7 @@ UINT32 MFC_Get_Cursor_Offset(MFC_HANDLE handle)
 	UINT32 offset = ctxt->cursor_col * MFC_FONT_WIDTH * MFC_BPP +
 			ctxt->cursor_row * MFC_FONT_HEIGHT * MFC_PITCH;
 
-	offset *= ctxt->scale;
 	return offset;
-}
-
-static void _MFC_DrawRow(struct MFC_CONTEXT *ctxt, BYTE *dest,
-	BYTE raw_color)
-{
-	UINT32 pixel_row, i;
-	uint16_t color;
-	int cols, index;
-
-	for (pixel_row = 0 ; pixel_row < ctxt->scale ; pixel_row++) {
-		for (cols = 7 ; cols >= 0 ; cols--) {
-			if (raw_color >> cols & 1)
-				color = MFC_FG_COLOR;
-			else
-				color = MFC_BG_COLOR;
-
-			for (i = 0 ; i < ctxt->scale ; i++) {
-				index = i + (7 - cols) * ctxt->scale;
-				((uint16_t *)dest)[index] = color;
-			}
-		}
-		dest += MFC_PITCH;
-	}
 }
 
 static void _MFC_DrawChar(struct MFC_CONTEXT *ctxt, UINT32 x,
@@ -85,20 +61,20 @@ static void _MFC_DrawChar(struct MFC_CONTEXT *ctxt, UINT32 x,
 	const BYTE *cdat;
 	BYTE *dest;
 	INT32 rows, cols, offset;
+	INT32 cols_mul, rows_mul;
 
 	int font_draw_table16[4];
 
-	if (x > (MFC_WIDTH - MFC_FONT_WIDTH)) {
+	if (x > (MFC_WIDTH - MFC_FONT_WIDTH*ctxt->font_scale)) {
 		pr_info("draw width too large,x=%d\n", x);
 		return;
 	}
-	if (y > (MFC_HEIGHT - MFC_FONT_HEIGHT)) {
+	if (y > (MFC_HEIGHT - MFC_FONT_HEIGHT*ctxt->font_scale)) {
 		pr_info("draw hight too large,y=%d\n", y);
 		return;
 	}
 
 	offset = y * MFC_PITCH + x * MFC_BPP;
-	offset *= ctxt->scale;
 	dest = (MFC_ROW_FIRST + offset);
 
 	switch (MFC_BPP) {
@@ -114,55 +90,82 @@ static void _MFC_DrawChar(struct MFC_CONTEXT *ctxt, UINT32 x,
 
 		cdat = (const BYTE *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
 
-		for (rows = MFC_FONT_HEIGHT; rows--;) {
+		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
 			BYTE bits = *cdat++;
 
-			if (ctxt->scale >= 2) {
-				_MFC_DrawRow(ctxt, dest, bits);
-				dest += (MFC_PITCH * ctxt->scale);
-			} else {
-				((UINT32 *)dest)[0] =
-					font_draw_table16[bits >> 6];
-				((UINT32 *)dest)[1] =
-					font_draw_table16[bits >> 4 & 3];
-				((UINT32 *)dest)[2] =
-					font_draw_table16[bits >> 2 & 3];
-				((UINT32 *)dest)[3] =
-					font_draw_table16[bits & 3];
-				dest += MFC_PITCH;
-			}
+			((UINT32 *)dest)[0] =
+				font_draw_table16[bits >> 6];
+			((UINT32 *)dest)[1] =
+				font_draw_table16[bits >> 4 & 3];
+			((UINT32 *)dest)[2] =
+				font_draw_table16[bits >> 2 & 3];
+			((UINT32 *)dest)[3] =
+				font_draw_table16[bits & 3];
 		}
 		break;
 	case 3:
 		cdat = (const BYTE *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
-		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
+		for (rows = MFC_FONT_HEIGHT; rows--;
+			dest += MFC_PITCH*ctxt->font_scale) {
 			BYTE bits = *cdat++;
-			BYTE *tmp = dest;
+			BYTE *temp_row = dest;
 
-			for (cols = 0; cols < 8; ++cols) {
-				UINT32 color = ((bits >> (7 - cols)) & 0x1)
+			for (rows_mul = 0;
+				rows_mul < ctxt->font_scale; rows_mul++) {
+				BYTE *tmp = temp_row;
+
+				for (cols = 0; cols < 8; ++cols) {
+					UINT32 color =
+					((bits >> (7 - cols)) & 0x1)
 					? MFC_FG_COLOR : MFC_BG_COLOR;
-				((BYTE *)tmp)[0] = color & 0xff;
-				((BYTE *)tmp)[1] = (color >> 8) & 0xff;
-				((BYTE *)tmp)[2] = (color >> 16) & 0xff;
-				tmp += 3;
+
+					for (cols_mul = 0;
+					cols_mul < ctxt->font_scale;
+					cols_mul++) {
+						((BYTE *)tmp)[0] =
+							color & 0xff;
+						((BYTE *)tmp)[1] =
+							(color >> 8) & 0xff;
+						((BYTE *)tmp)[2] =
+							(color >> 16) & 0xff;
+						tmp += 3;
+					}
+				}
+				temp_row += MFC_PITCH;
 			}
 		}
 		break;
 	case 4:
 		cdat = (const BYTE *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
-		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
+		for (rows = MFC_FONT_HEIGHT; rows--;
+			dest += MFC_PITCH*ctxt->font_scale) {
 			BYTE bits = *cdat++;
-			BYTE *tmp = dest;
+			BYTE *temp_row = dest;
 
-			for (cols = 0; cols < 8; ++cols) {
-				UINT32 color = ((bits >> (7 - cols)) & 0x1)
-					? MFC_FG_COLOR : MFC_BG_COLOR;
-				((BYTE *)tmp)[1] = color & 0xff;
-				((BYTE *)tmp)[2] = (color >> 8) & 0xff;
-				((BYTE *)tmp)[3] = (color >> 16) & 0xff;
-				((BYTE *)tmp)[0] = (color >> 16) & 0xff;
-				tmp += 4;
+			for (rows_mul = 0;
+				rows_mul < ctxt->font_scale; rows_mul++) {
+				BYTE *tmp = temp_row;
+
+				for (cols = 0; cols < 8; ++cols) {
+					UINT32 color =
+						((bits >> (7 - cols)) & 0x1)
+						? MFC_FG_COLOR : MFC_BG_COLOR;
+
+					for (cols_mul = 0;
+					cols_mul < ctxt->font_scale;
+					cols_mul++) {
+						((BYTE *)tmp)[1] =
+							color & 0xff;
+						((BYTE *)tmp)[2] =
+							(color >> 8) & 0xff;
+						((BYTE *)tmp)[3] =
+							(color >> 16) & 0xff;
+						((BYTE *)tmp)[0] =
+							(color >> 24) & 0xff;
+						tmp += 4;
+					}
+				}
+				temp_row += MFC_PITCH;
 			}
 		}
 		break;
@@ -241,14 +244,6 @@ static void _MFC_Putc(struct MFC_CONTEXT *ctxt, const char c)
 	}
 }
 
-static int MFC_GetScale(unsigned int fb_width, unsigned int fb_height,
-	unsigned int fb_bpp)
-{
-	if (fb_bpp == 2 && fb_width * fb_height >= 1080 * 1920)
-		return 2;
-	else
-		return 1;
-}
 /* ------------------------------------------------------------------------- */
 
 enum MFC_STATUS MFC_Open(MFC_HANDLE *handle, void *fb_addr,
@@ -268,9 +263,6 @@ enum MFC_STATUS MFC_Open(MFC_HANDLE *handle, void *fb_addr,
 	if (!ctxt)
 		return MFC_STATUS_OUT_OF_MEMORY;
 
-	ctxt->scale = MFC_GetScale(fb_width, fb_height, fb_bpp);
-	if (ctxt->scale == 0)
-		ctxt->scale = 1;
 	sema_init(&ctxt->sem, 1);
 	ctxt->fb_addr = fb_addr;
 	ctxt->fb_width = fb_width;
@@ -278,10 +270,11 @@ enum MFC_STATUS MFC_Open(MFC_HANDLE *handle, void *fb_addr,
 	ctxt->fb_bpp = fb_bpp;
 	ctxt->fg_color = fg_color;
 	ctxt->bg_color = bg_color;
-	ctxt->rows = fb_height / (MFC_FONT_HEIGHT * ctxt->scale);
-	ctxt->cols = fb_width / (MFC_FONT_WIDTH * ctxt->scale);
+	ctxt->rows = fb_height / MFC_FONT_HEIGHT;
+	ctxt->cols = fb_width / MFC_FONT_WIDTH;
 	ctxt->font_width = MFC_FONT_WIDTH;
 	ctxt->font_height = MFC_FONT_HEIGHT;
+	ctxt->font_scale = 1;
 
 	*handle = ctxt;
 
@@ -306,9 +299,6 @@ enum MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle, void *fb_addr,
 	if (!ctxt)
 		return MFC_STATUS_OUT_OF_MEMORY;
 
-	ctxt->scale = MFC_GetScale(fb_width, fb_height, fb_bpp);
-	if (ctxt->scale == 0)
-		ctxt->scale = 1;
 	sema_init(&ctxt->sem, 1);
 	ctxt->fb_addr = fb_addr;
 	ctxt->fb_width = fb_pitch;
@@ -316,8 +306,8 @@ enum MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle, void *fb_addr,
 	ctxt->fb_bpp = fb_bpp;
 	ctxt->fg_color = fg_color;
 	ctxt->bg_color = bg_color;
-	ctxt->rows = fb_height / (MFC_FONT_HEIGHT * ctxt->scale);
-	ctxt->cols = fb_width / (MFC_FONT_WIDTH * ctxt->scale);
+	ctxt->rows = fb_height / MFC_FONT_HEIGHT;
+	ctxt->cols = fb_width / MFC_FONT_WIDTH;
 	ctxt->font_width = MFC_FONT_WIDTH;
 	ctxt->font_height = MFC_FONT_HEIGHT;
 
@@ -333,6 +323,24 @@ enum MFC_STATUS MFC_Close(MFC_HANDLE handle)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	kfree(handle);
+
+	return MFC_STATUS_OK;
+}
+
+enum MFC_STATUS MFC_SetScale(MFC_HANDLE handle, unsigned int scale)
+{
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
+
+	if (!ctxt)
+		return MFC_STATUS_INVALID_ARGUMENT;
+
+	if (down_interruptible(&ctxt->sem)) {
+		pr_info("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
+		return MFC_STATUS_LOCK_FAIL;
+	}
+
+	ctxt->font_scale = scale;
+	up(&ctxt->sem);
 
 	return MFC_STATUS_OK;
 }
@@ -372,6 +380,27 @@ enum MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
 	}
 
 	ctxt->cursor_row = ctxt->cursor_col = 0;
+	up(&ctxt->sem);
+
+	return MFC_STATUS_OK;
+}
+
+enum MFC_STATUS MFC_SetCursor(MFC_HANDLE handle,
+	unsigned int x, unsigned int y)
+{
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
+
+	if (!ctxt)
+		return MFC_STATUS_INVALID_ARGUMENT;
+
+	if (down_interruptible(&ctxt->sem)) {
+		pr_info("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
+		WARN_ON(1);
+		return MFC_STATUS_LOCK_FAIL;
+	}
+
+	ctxt->cursor_row = y;
+	ctxt->cursor_col = x;
 	up(&ctxt->sem);
 
 	return MFC_STATUS_OK;
