@@ -1074,7 +1074,6 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		if (psHead) {
 #ifdef GED_KPI_DFRC
 			int d_target_fps, mode, client;
-			unsigned long long ctx_id;
 #endif
 			struct list_head *psListEntry, *psListEntryTemp;
 			struct list_head *psList = &psHead->sList;
@@ -1102,30 +1101,21 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 
 			/* section to query fps from FPS policy */
 #ifdef GED_KPI_DFRC
-			if (ged_frr_fence2context_table_get_cid(psKPI->pid,
-				psTimeStamp->fence_addr,
-				(uint64_t *)&ctx_id) == GED_OK) {
+			if (dfrc_get_frr_config(psKPI->pid, 0,
+				&d_target_fps, &mode, &client) == 0) {
 
-				if (dfrc_get_frr_config(psKPI->pid, ctx_id,
-					&d_target_fps, &mode, &client) == 0) {
+				if (d_target_fps == 0)
+					d_target_fps = GED_KPI_MAX_FPS;
 
-					if (d_target_fps == 0)
-						d_target_fps = GED_KPI_MAX_FPS;
-
-					ged_kpi_update_target_time_and_target_fps(psHead,
-							d_target_fps, mode, client);
-#ifdef GED_KPI_DEBUG
-					GED_LOGE("[GED_KPI] psHead: %p, fps: %d, mode: %d, client: %d\n",
-							psHead, d_target_fps, mode, client);
-#endif
-				}
-			} else {
-#ifdef GED_KPI_DEBUG
-				GED_LOGE("[GED_KPI][Exception] failed to get ctx_id by fence_addr: %p\n",
-						psTimeStamp->fence_addr);
-#endif
 				ged_kpi_update_target_time_and_target_fps(psHead,
-									GED_KPI_MAX_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
+						d_target_fps, mode, client);
+#ifdef GED_KPI_DEBUG
+				GED_LOGE("[GED_KPI] psHead: %p, fps: %d, mode: %d, client: %d\n",
+						psHead, d_target_fps, mode, client);
+#endif
+			} else {
+				ged_kpi_update_target_time_and_target_fps(psHead,
+						GED_KPI_MAX_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
 			}
 #endif /* GED_KPI_DFRC */
 
