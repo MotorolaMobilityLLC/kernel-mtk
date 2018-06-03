@@ -274,6 +274,11 @@ PLAT_OBJS := $(PLAT_DIR)plat_priv.o
 $(MODULE_NAME)-objs  += $(PLAT_OBJS)
 endif
 
+ifeq ($(CONFIG_MACH_MT6763), y)
+PLAT_OBJS := $(PLAT_DIR)plat_priv.o
+$(MODULE_NAME)-objs  += $(PLAT_OBJS)
+endif
+
 # ---------------------------------------------------
 # FW customization
 # ---------------------------------------------------
