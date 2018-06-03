@@ -939,9 +939,10 @@
 #define EMMC52_AES_DECRYPT_1                    (0x1 << 12)
 #define EMMC52_AES_DATA_UINT_SIZE_1             (0x1FFF << 16)
 
-/* EMMC52_AES_SWST */
+/* EMMC52_AES_SWST mask*/
 #define EMMC52_AES_SWITCH_START_ENC             (0x1 << 0)
 #define EMMC52_AES_SWITCH_START_DEC             (0x1 << 1)
+#define EMMC52_AES_BYPASS                       (0x1 << 2)
 
 /* SDIO_TUNE_WIND mask*/
 #define MSDC_SDIO_TUNE_WIND                     (0x1F << 0)

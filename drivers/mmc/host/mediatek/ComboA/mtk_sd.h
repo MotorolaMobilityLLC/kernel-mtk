@@ -385,6 +385,7 @@ struct msdc_host {
 	u32                     power_flash;
 
 	struct clk              *clk_ctl;
+	struct clk              *aes_clk_ctl;
 	struct clk              *hclk_ctl;
 	struct delayed_work	work_init; /* for init mmc_host */
 	struct delayed_work	work_sdio; /* for DVFS kickoff */

@@ -20,6 +20,9 @@ ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6763
 else ifeq ($(CONFIG_MTK_PLATFORM), "mt6771")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6771
+else ifeq ($(CONFIG_MTK_PLATFORM), "mt6775")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6775
 else
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)/$(MTK_PLATFORM)
@@ -35,7 +38,7 @@ endif
 #
 # Attention:
 # Enabling/using CFG_RPMB_KEY_PROGRAMED_IN_KERNEL means accepting the risk of revealing key in
-# Linux Kernel. Mediatek won¡¦t take the responsibility for loss incurred by the key revealing.
+# Linux Kernel. Mediatek wonÂ¡Â¦t take the responsibility for loss incurred by the key revealing.
 #
 #ccflags-y += -DCFG_RPMB_KEY_PROGRAMED_IN_KERNEL
 

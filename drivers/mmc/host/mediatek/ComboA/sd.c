@@ -684,6 +684,69 @@ void msdc_ungate_clock(struct msdc_host *host)
 	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
 }
 
+/* count of bad sd detecter (or bad sd condition kinds),
+ * we can add it here if has other condition
+ */
+#define BAD_SD_DETECTER_COUNT 1
+
+/* we take it as bad sd when the bad sd condition occurs
+ * out of tolerance
+ */
+static u32 bad_sd_tolerance[BAD_SD_DETECTER_COUNT] = {10};
+
+/* bad sd condition occur times
+ */
+static u32 bad_sd_detecter[BAD_SD_DETECTER_COUNT] = {0};
+
+/* bad sd condition occur times will reset to zero by self
+ * when reach the forget time (when set to 0, means not
+ * reset to 0 by self), unit:s
+ */
+static u32 bad_sd_forget[BAD_SD_DETECTER_COUNT] = {3};
+
+/* the latest occur time of the bad sd condition,
+ * unit: clock
+ */
+static unsigned long bad_sd_timer[BAD_SD_DETECTER_COUNT] = {0};
+
+static void msdc_reset_bad_sd_detecter(struct msdc_host *host)
+{
+	u32 i = 0;
+
+	if (host == NULL) {
+		pr_notice("WARN: host is NULL at %s\n", __func__);
+		return;
+	}
+
+	host->block_bad_card = 0;
+	for (i = 0; i < BAD_SD_DETECTER_COUNT; i++)
+		bad_sd_detecter[i] = 0;
+}
+
+static void msdc_detect_bad_sd(struct msdc_host *host, u32 condition)
+{
+	unsigned long time_current = jiffies;
+
+	if (host == NULL) {
+		pr_notice("WARN: host is NULL at %s\n", __func__);
+		return;
+	}
+
+	if (condition >= BAD_SD_DETECTER_COUNT) {
+		pr_notice("msdc1: BAD_SD_DETECTER_COUNT is %d, need check it's definition at %s\n",
+			BAD_SD_DETECTER_COUNT, __func__);
+		return;
+	}
+
+	if (bad_sd_forget[condition]
+	&& time_after(time_current, (bad_sd_timer[condition] + bad_sd_forget[condition] * HZ)))
+		bad_sd_detecter[condition] = 0;
+	bad_sd_timer[condition] = time_current;
+
+	if (++(bad_sd_detecter[condition]) >= bad_sd_tolerance[condition])
+		msdc_set_bad_card_and_remove(host);
+}
+
 static void msdc_set_timeout(struct msdc_host *host, u32 ns, u32 clks)
 {
 	void __iomem *base = host->base;
@@ -803,7 +866,6 @@ void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 
 	/* need because clk changed.*/
 	msdc_set_timeout(host, host->timeout_ns, host->timeout_clks);
-
 	pr_info("msdc%d -> !!! Set<%dKHz> Source<%dKHz> -> sclk<%dKHz> timing<%d> mode<%d> div<%d> hs400_div_dis<%d>\n",
 		host->id, hz/1000, hclk/1000, sclk/1000, (int)timing, mode, div,
 		hs400_div_dis);
@@ -1752,6 +1814,8 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		} else {
 			msdc_reset_hw(host->id);
 		}
+		if ((cmd->opcode == 11) && (host->hw->host_function == MSDC_SD))
+			msdc_detect_bad_sd(host, 0);
 	}
 #ifdef MTK_MSDC_USE_CMD23
 	if ((sbc != NULL) && (host->autocmd & MSDC_AUTOCMD23)) {
@@ -4250,6 +4314,8 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 	host->cmd13_timeout_cont = 0;
 #endif
 	host->data_timeout_cont = 0;
+	msdc_reset_bad_sd_detecter(host);
+
 	host->is_autok_done = 0;
 	msdc_ops_get_cd(mmc);
 	/* when detect card, timeout log log is not needed */
@@ -4791,7 +4857,8 @@ static void msdc_timer_pm(unsigned long data)
 			mod_timer(&host->timer, jiffies + CLK_TIMEOUT);
 		} else {
 			msdc_clksrc_onoff(host, 0);
-			N_MSG(CLK, "gate msdc%d clock", host->id);
+			N_MSG(CLK, "gate msdc%d clock, clk_gate_count=%d", host->id,
+				host->clk_gate_count);
 		}
 	}
 
@@ -4819,6 +4886,7 @@ int msdc_drv_pm_restore_noirq(struct device *device)
 #endif
 		}
 		host->block_bad_card = 0;
+		msdc_reset_bad_sd_detecter(host);
 	}
 
 	return 0;
@@ -4948,7 +5016,11 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #ifndef FPGA_PLATFORM
 	/* FIX ME, consider to move it into msdc_io.c */
 	if (msdc_get_ccf_clk_pointer(pdev, host))
+#ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
 		return 1;
+#else
+		pr_notice("[MSDC]msdc_get_ccf_clk_pointer fail.\n");
+#endif
 #endif
 
 	msdc_set_host_power_control(host);
@@ -5174,7 +5246,7 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 					host->error = 0;
 				}
 			}
-			ERR_MSG("msdc suspend save_cfg=%x, cur_hz=%d",
+			ERR_MSG("msdc suspend, save_cfg=%x, cur_hz=%d",
 				host->saved_para.msdc_cfg, host->mclk);
 		}
 	}
