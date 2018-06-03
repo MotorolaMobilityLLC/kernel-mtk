@@ -97,9 +97,6 @@ static struct workqueue_struct *binder_deferred_workqueue;
  * v0.2   - transaction timeout log
  * v0.2.1 - buffer allocation debug
  */
-#ifdef CONFIG_MTK_ENG_BUILD
-#define BINDER_MONITOR          "v0.2.1"    /* BINDER_MONITOR only turn on for eng build */
-#endif
 
 #ifdef BINDER_MONITOR
 #define MAX_SERVICE_NAME_LEN		32
@@ -2342,25 +2339,9 @@ static void parse_service_name(struct binder_transaction_data *tr,
 {
 	unsigned int i, len = 0;
 	char *tmp;
-	struct binder_buffer *buffer_data;
-
-	/* initialize name to '\0' */
-	name[0] = '\0';
 
 	if (tr->target.handle == 0) {
-		buffer_data = kzalloc(sizeof(*buffer_data), GFP_KERNEL);
-		if (buffer_data == NULL)
-			return;
-		buffer_data->data_size = tr->data_size;
-		if (copy_from_user(buffer_data->data, (const void __user *)(uintptr_t)
-		tr->data.ptr.buffer, tr->data_size)) {
-			binder_user_error("%d got transaction with invalid data ptr\n",
-			proc->pid);
-			kfree(buffer_data);
-			return;
-		}
-
-		for (i = 0; (2 * i) < buffer_data->data_size; i++) {
+		for (i = 0; (2 * i) < tr->data_size; i++) {
 			/* hack into addService() payload:
 			* service name string is located at MAGIC_SERVICE_NAME_OFFSET,
 			* and interleaved with character '\0'.
@@ -2371,11 +2352,18 @@ static void parse_service_name(struct binder_transaction_data *tr,
 			/* prevent array index overflow */
 			if (len >= (MAX_SERVICE_NAME_LEN - 1))
 				break;
-			tmp = (char *)(uintptr_t)(buffer_data->data + (2 * i));
+			tmp = (char *)(uintptr_t)(tr->data.ptr.buffer + (2 * i));
 			len += sprintf(name + len, "%c", *tmp);
 		}
 		name[len] = '\0';
-		kfree(buffer_data);
+	} else {
+		name[0] = '\0';
+	}
+	/* via addService of activity service, identify
+	* system_server's process id.
+	*/
+	if (!strcmp(name, "activity")) {
+		system_server_pid = proc->pid;
 	}
 }
 #endif
@@ -2737,12 +2725,6 @@ static void binder_transaction(struct binder_proc *proc,
 				node->accept_fds = !!(fp->flags & FLAT_BINDER_FLAG_ACCEPTS_FDS);
 #ifdef BINDER_MONITOR
 				parse_service_name(tr, proc, node->name);
-				/* via addService of activity service, identify
-				* system_server's process id.
-				*/
-				if (!strcmp(node->name, "activity")) {
-					system_server_pid = proc->pid;
-				}
 #endif
 			}
 			if (fp->cookie != node->cookie) {
