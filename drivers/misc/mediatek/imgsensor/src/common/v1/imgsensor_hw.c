@@ -156,48 +156,37 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 {
 	enum IMGSENSOR_SENSOR_IDX sensor_idx = psensor->inst.sensor_idx;
 
-#if defined(CONFIG_CUSTOM_KERNEL_MAIN_IMGSENSOR) || \
-	defined(CONFIG_CUSTOM_KERNEL_SUB_IMGSENSOR)  || \
-	defined(CONFIG_CUSTOM_KERNEL_MAIN2_IMGSENSOR)  || \
-	defined(CONFIG_CUSTOM_KERNEL_SUB2_IMGSENSOR)
-#define TOSTRING(value)           #value
-#define STRINGIZE(stringizedName) TOSTRING(stringizedName)
+#if defined(CONFIG_IMGSENSOR_MAIN)  || \
+		defined(CONFIG_IMGSENSOR_SUB)   || \
+		defined(CONFIG_IMGSENSOR_MAIN2) || \
+		defined(CONFIG_IMGSENSOR_SUB2)
 
-	char *psensor_name_config;
+#define IMGSENSOR_TOSTRING(value)           #value
+#define IMGSENSOR_STRINGIZE(stringizedName) IMGSENSOR_TOSTRING(stringizedName)
 
-#ifdef CONFIG_CUSTOM_KERNEL_MAIN_IMGSENSOR
-	psensor_name_config = STRINGIZE(CONFIG_CUSTOM_KERNEL_MAIN_IMGSENSOR);
-	if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN &&
-	   strncmp(curr_sensor_name,
-				strstr(psensor_name_config, curr_sensor_name),
-				strlen(curr_sensor_name)))
-		return IMGSENSOR_RETURN_ERROR;
-#endif
-#ifdef CONFIG_CUSTOM_KERNEL_SUB_IMGSENSOR
-	psensor_name_config = STRINGIZE(CONFIG_CUSTOM_KERNEL_SUB_IMGSENSOR);
-	if (sensor_idx == IMGSENSOR_SENSOR_IDX_SUB &&
-	   strncmp(curr_sensor_name,
-				strstr(psensor_name_config, curr_sensor_name),
-				strlen(curr_sensor_name)))
-		return IMGSENSOR_RETURN_ERROR;
-#endif
 
-#ifdef CONFIG_CUSTOM_KERNEL_MAIN2_IMGSENSOR
-	psensor_name_config = STRINGIZE(CONFIG_CUSTOM_KERNEL_MAIN2_IMGSENSOR);
-	if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2 &&
-	   strncmp(curr_sensor_name,
-				strstr(psensor_name_config, curr_sensor_name),
-				strlen(curr_sensor_name)))
+	char *psensor_name_config  = NULL;
+
+	switch (sensor_idx) {
+	case IMGSENSOR_SENSOR_IDX_MAIN:
+		psensor_name_config = IMGSENSOR_STRINGIZE(CONFIG_IMGSENSOR_MAIN);
+		break;
+	case IMGSENSOR_SENSOR_IDX_SUB:
+		psensor_name_config = IMGSENSOR_STRINGIZE(CONFIG_IMGSENSOR_SUB);
+		break;
+	case IMGSENSOR_SENSOR_IDX_MAIN2:
+		psensor_name_config = IMGSENSOR_STRINGIZE(CONFIG_IMGSENSOR_MAIN2);
+		break;
+	case IMGSENSOR_SENSOR_IDX_SUB2:
+		psensor_name_config = IMGSENSOR_STRINGIZE(CONFIG_IMGSENSOR_SUB2);
+		break;
+	default:
+		break;
+	}
+
+	if (strlen(psensor_name_config) > 2 && !strstr(psensor_name_config, curr_sensor_name))
 		return IMGSENSOR_RETURN_ERROR;
-#endif
-#ifdef CONFIG_CUSTOM_KERNEL_SUB2_IMGSENSOR
-	psensor_name_config = STRINGIZE(CONFIG_CUSTOM_KERNEL_SUB2_IMGSENSOR);
-	if (sensor_idx == IMGSENSOR_SENSOR_IDX_SUB2 &&
-	   strncmp(curr_sensor_name,
-				strstr(psensor_name_config, curr_sensor_name),
-				strlen(curr_sensor_name)))
-		return IMGSENSOR_RETURN_ERROR;
-#endif
+
 
 #endif
 	PK_DBG("sensor_idx %d, power %d curr_sensor_name %s\n", sensor_idx, pwr_status, curr_sensor_name);

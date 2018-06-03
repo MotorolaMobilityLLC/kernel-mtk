@@ -14,7 +14,7 @@
  *
  * Filename:
  * ---------
- *     GC2365mipi_Sensor.c
+ *     GC2366mipi_Sensor.c
  *
  * Project:
  * --------
@@ -375,7 +375,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 		temp = iReg;
 		write_cmos_sensor(0xb1, temp >> 6);
 		write_cmos_sensor(0xb2, (temp << 2) & 0xfc);
-		LOG_INF("GC2365MIPI analogic gain 1x, GC2365MIPI add pregain = %d\n", temp);
+		LOG_INF("GC2366MIPI analogic gain 1x, GC2366MIPI add pregain = %d\n", temp);
 	} else if ((iReg >= ANALOG_GAIN_2) && (iReg < ANALOG_GAIN_3)) {
 		write_cmos_sensor(0xfe, 0x00);
 		/* analog gain */
@@ -384,7 +384,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 		temp = 64 * iReg / ANALOG_GAIN_2;
 		write_cmos_sensor(0xb1, temp >> 6);
 		write_cmos_sensor(0xb2, (temp << 2) & 0xfc);
-		LOG_INF("GC2365MIPI analogic gain 1.375x , GC2365MIPI add pregain = %d\n", temp);
+		LOG_INF("GC2366MIPI analogic gain 1.375x , GC2366MIPI add pregain = %d\n", temp);
 	} else if ((iReg >= ANALOG_GAIN_3) && (iReg < ANALOG_GAIN_4)) {
 		write_cmos_sensor(0xfe, 0x00);
 		/* analog gain */
@@ -393,7 +393,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 		temp = 64 * iReg / ANALOG_GAIN_3;
 		write_cmos_sensor(0xb1, temp >> 6);
 		write_cmos_sensor(0xb2, (temp << 2) & 0xfc);
-		LOG_INF("GC2365MIPI analogic gain 1.891x , GC2365MIPI add pregain = %d\n", temp);
+		LOG_INF("GC2366MIPI analogic gain 1.891x , GC2366MIPI add pregain = %d\n", temp);
 	} else if ((iReg >= ANALOG_GAIN_4) && (iReg < ANALOG_GAIN_5)) {
 		write_cmos_sensor(0xfe, 0x00);
 		/* analog gain */
@@ -402,7 +402,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 		temp = 64 * iReg / ANALOG_GAIN_4;
 		write_cmos_sensor(0xb1, temp >> 6);
 		write_cmos_sensor(0xb2, (temp << 2) & 0xfc);
-		LOG_INF("GC2365MIPI analogic gain 2.625x , GC2365MIPI add pregain = %d\n", temp);
+		LOG_INF("GC2366MIPI analogic gain 2.625x , GC2366MIPI add pregain = %d\n", temp);
 	} else if ((iReg >= ANALOG_GAIN_5) && (iReg < ANALOG_GAIN_6)) {
 		write_cmos_sensor(0xfe, 0x00);
 		/* analog gain */
@@ -411,7 +411,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 		temp = 64 * iReg / ANALOG_GAIN_5;
 		write_cmos_sensor(0xb1, temp >> 6);
 		write_cmos_sensor(0xb2, (temp << 2) & 0xfc);
-		LOG_INF("GC2365MIPI analogic gain 3.734x , GC2365MIPI add pregain = %d\n", temp);
+		LOG_INF("GC2366MIPI analogic gain 3.734x , GC2366MIPI add pregain = %d\n", temp);
 	} else if ((iReg >= ANALOG_GAIN_6) && (iReg < ANALOG_GAIN_7)) {
 		write_cmos_sensor(0xfe, 0x00);
 		/* analog gain */
@@ -420,7 +420,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 		temp = 64 * iReg / ANALOG_GAIN_6;
 		write_cmos_sensor(0xb1, temp >> 6);
 		write_cmos_sensor(0xb2, (temp << 2) & 0xfc);
-		LOG_INF("GC2365MIPI analogic gain 5.250x , GC2365MIPI add pregain = %d\n", temp);
+		LOG_INF("GC2366MIPI analogic gain 5.250x , GC2366MIPI add pregain = %d\n", temp);
 	} else {
 		write_cmos_sensor(0xfe, 0x00);
 		/* analog gain */
@@ -429,7 +429,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 		temp = 64 * iReg / ANALOG_GAIN_7;
 		write_cmos_sensor(0xb1, temp >> 6);
 		write_cmos_sensor(0xb2, (temp << 2) & 0xfc);
-		LOG_INF("GC2365MIPI analogic gain 7.516x , GC2365MIPI add pregain = %d\n", temp);
+		LOG_INF("GC2366MIPI analogic gain 7.516x , GC2366MIPI add pregain = %d\n", temp);
 	}
 	return gain;
 
@@ -841,7 +841,7 @@ static kal_uint32 open(void)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			sensor_id = return_sensor_id();
+			sensor_id = return_sensor_id() + 1;
 			if (sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, sensor_id);
@@ -1535,4 +1535,4 @@ UINT32 GC2366_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 	if (pfFunc != NULL)
 		*pfFunc = &sensor_func;
 	return ERROR_NONE;
-}				/*    GC2365MIPI_RAW_SensorInit    */
+}				/*    GC2366MIPI_RAW_SensorInit    */
