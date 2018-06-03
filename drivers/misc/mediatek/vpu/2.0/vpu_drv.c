@@ -1062,6 +1062,7 @@ static int vpu_probe(struct platform_device *pdev)
 	struct device_node *node;
 	unsigned int irq_info[3];	/* Record interrupts info from device tree */
 	struct device_node *smi_node = NULL;
+	struct device_node *ipu_conn_node = NULL;
 
 #ifdef MTK_VPU_FPGA_PORTING
 	core = vpu_num_devs - 3;
@@ -1124,7 +1125,11 @@ static int vpu_probe(struct platform_device *pdev)
 			smi_node = of_find_compatible_node(NULL, NULL, "mediatek,smi_common");
 			vpu_device->smi_common_base = (unsigned long) of_iomap(smi_node, 0);
 			#endif
-			LOG_INF("probe, smi_common_base: 0x%lx\n", vpu_device->smi_common_base);
+
+			ipu_conn_node = of_find_compatible_node(NULL, NULL, "mediatek,ipu_conn");
+			vpu_device->vpu_syscfg_base = (unsigned long) of_iomap(ipu_conn_node, 0);
+			LOG_INF("probe, smi_common_base: 0x%lx, ipu_conn:0x%lx\n",
+				vpu_device->smi_common_base, vpu_device->vpu_syscfg_base);
 		}
 		break;
 	}

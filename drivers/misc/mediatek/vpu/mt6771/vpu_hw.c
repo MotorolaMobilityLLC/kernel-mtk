@@ -2756,6 +2756,7 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 			(unsigned long)algo->bin_ptr, vpu_service_cores[core].is_cmd_done, ret);
 		vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 		vpu_trace_end();
+
 		if (ret) {
 			LOG_ERR("[vpu_%d] pr_load_algo timeout , status(%d/%d), ret(%d)\n", core,
 				vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done,
@@ -3109,6 +3110,7 @@ int vpu_dump_register(struct seq_file *s)
 	struct vpu_reg_desc *reg;
 	struct vpu_reg_field_desc *field;
 	int TEMP_CORE = 0;
+	unsigned int vpu_dump_addr = 0x0;
 
 #define LINE_BAR "  +---------------+-------+---+---+-------------------------+----------+\n"
 
@@ -3154,6 +3156,57 @@ int vpu_dump_register(struct seq_file *s)
 			vpu_print_seq(s, LINE_BAR);
 		}
 	}
+
+	vpu_print_seq(s, LINE_BAR);
+	vpu_print_seq(s, LINE_BAR);
+
+	/* ipu_conn */
+	/* 19000000: 0x0 ~ 0x30*/
+	vpu_dump_addr = 0x19000000;
+	for (i = 0 ; i < (int)(0x3C) / 4 ; i = i + 4) {
+		LOG_WRN("%08X %08X %08X %08X %08X\n", vpu_dump_addr,
+			vpu_read_reg32(vpu_dev->vpu_syscfg_base, (4 * i)),
+			vpu_read_reg32(vpu_dev->vpu_syscfg_base, (4 * i + 4)),
+			vpu_read_reg32(vpu_dev->vpu_syscfg_base, (4 * i + 8)),
+			vpu_read_reg32(vpu_dev->vpu_syscfg_base, (4 * i + 12)));
+		vpu_dump_addr += (4 * 4);
+	}
+	/* 19000800~1900080c */
+	vpu_dump_addr = 0x19000800;
+	LOG_WRN("%08X %08X %08X %08X %08X\n", vpu_dump_addr,
+		vpu_read_reg32(vpu_dev->vpu_syscfg_base, 0x800),
+		vpu_read_reg32(vpu_dev->vpu_syscfg_base, 0x804),
+		vpu_read_reg32(vpu_dev->vpu_syscfg_base, 0x808),
+		vpu_read_reg32(vpu_dev->vpu_syscfg_base, 0x80C));
+	/* 19000C00*/
+	vpu_dump_addr = 0x19000C00;
+	LOG_WRN("%08X %08X\n", vpu_dump_addr,
+		vpu_read_reg32(vpu_dev->vpu_syscfg_base, 0xC00));
+
+	vpu_print_seq(s, LINE_BAR);
+
+	for (TEMP_CORE = 0; TEMP_CORE < MTK_VPU_CORE; TEMP_CORE++) {
+		vpu_print_seq(s, LINE_BAR);
+		/* ipu_cores */
+		if (TEMP_CORE == 0)
+			vpu_dump_addr = 0x19180000;
+		else
+			vpu_dump_addr = 0x19280000;
+
+		for (i = 0 ; i < (int)(0x20C) / 4 ; i = i + 4) {
+			LOG_WRN("%08X %08X %08X %08X %08X\n", vpu_dump_addr,
+				vpu_read_reg32(vpu_service_cores[TEMP_CORE].vpu_base,
+					CTRL_BASE_OFFSET + (4 * i)),
+				vpu_read_reg32(vpu_service_cores[TEMP_CORE].vpu_base,
+					CTRL_BASE_OFFSET + (4 * i + 4)),
+				vpu_read_reg32(vpu_service_cores[TEMP_CORE].vpu_base,
+					CTRL_BASE_OFFSET + (4 * i + 8)),
+				vpu_read_reg32(vpu_service_cores[TEMP_CORE].vpu_base,
+					CTRL_BASE_OFFSET + (4 * i + 12)));
+			vpu_dump_addr += (4 * 4);
+		}
+	}
+
 #undef LINE_BAR
 
 	return 0;
