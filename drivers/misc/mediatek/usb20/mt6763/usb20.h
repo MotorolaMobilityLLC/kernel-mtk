@@ -82,4 +82,10 @@ bool hwPowerOn(MT65XX_POWER powerId, int powerVolt, char *mode_name);
 #if defined(CONFIG_USB_MTK_OTG) && defined(CONFIG_TCPC_CLASS)
 extern bool usb20_host_tcpc_boost_on;
 #endif
+
+#define PHY_IDLE_MODE       0
+#define PHY_DEV_ACTIVE      1
+#define PHY_HOST_ACTIVE     2
+void set_usb_phy_mode(int);
+
 #endif

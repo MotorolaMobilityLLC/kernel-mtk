@@ -587,31 +587,21 @@ static void musb_host_work(struct work_struct *data)
 		/* this make PHY operation workable */
 		musb_platform_enable(mtk_musb);
 
-	/* for no VBUS sensing IP*/
-	#if 1
+		/* for no VBUS sensing IP*/
+		#if 1
 		/* wait VBUS ready */
 		msleep(100);
 		/* clear session*/
 		devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, (devctl&(~MUSB_DEVCTL_SESSION)));
-		/* USB MAC OFF*/
-		/* VBUSVALID=0, AVALID=0, BVALID=0, SESSEND=1, IDDIG=X, IDPULLUP=1 */
-		USBPHY_SET32(0x6c, (0x11<<0));
-		USBPHY_CLR32(0x6c, (0x2e<<0));
-		USBPHY_SET32(0x6c, (0x3f<<8));
-		DBG(1, "force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
+		set_usb_phy_mode(PHY_IDLE_MODE);
 		/* wait */
 		mdelay(5);
 		/* restart session */
 		devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, (devctl | MUSB_DEVCTL_SESSION));
-		/* USB MAC ONand Host Mode*/
-		/* VBUSVALID=1, AVALID=1, BVALID=1, SESSEND=0, IDDIG=0, IDPULLUP=1 */
-		USBPHY_CLR32(0x6c, (0x10<<0));
-		USBPHY_SET32(0x6c, (0x2d<<0));
-		USBPHY_SET32(0x6c, (0x3f<<8));
-		DBG(1, "force PHY to host mode, 0x6c=%x\n", USBPHY_READ32(0x6c));
-	#endif
+		set_usb_phy_mode(PHY_HOST_ACTIVE);
+		#endif
 
 		musb_start(mtk_musb);
 		if (!typec_control && !host_plug_test_triggered)
@@ -635,15 +625,10 @@ static void musb_host_work(struct work_struct *data)
 			wake_unlock(&mtk_musb->usb_lock);
 		mt_usb_set_vbus(mtk_musb, 0);
 
-	/* for no VBUS sensing IP */
-	#if 1
-	/* USB MAC OFF*/
-		/* VBUSVALID=0, AVALID=0, BVALID=0, SESSEND=1, IDDIG=X, IDPULLUP=1 */
-		USBPHY_SET32(0x6c, (0x11<<0));
-		USBPHY_CLR32(0x6c, (0x2e<<0));
-		USBPHY_SET32(0x6c, (0x3f<<8));
-		DBG(1, "force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
-	#endif
+		/* for no VBUS sensing IP */
+		#if 1
+		set_usb_phy_mode(PHY_IDLE_MODE);
+		#endif
 
 		musb_stop(mtk_musb);
 
