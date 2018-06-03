@@ -2473,10 +2473,14 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	jpgenc@17030000 {
-		compatible = "mediatek,jpgenc";
+	venc_jpg@17030000 {
+		compatible = "mediatek,venc_jpg";
 		reg = <0 0x17030000 0 0x10000>;
 		interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_LOW>;
+		clocks =
+			<&venc_gcon CLK_VENC_SET2_JPGENC>;
+		clock-names =
+			"MT_CG_VENC_JPGENC";
 	};
 
 	vdec@17040000 {
