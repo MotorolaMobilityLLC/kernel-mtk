@@ -131,9 +131,6 @@ extern spinlock_t fp_lock;
 
 #define MDT_TAG_PATTERN     0x46464646
 
-/* Timing define */
-#define TRACK_TABLE_TIMEOUT_JIFFIES 100
-
 struct interface {
 	int type;
 	int ready;
@@ -176,29 +173,29 @@ struct fp_cb {
 #endif
 	u_int32_t xfrm_dst_ptr;
 	u_int32_t ipmac_ptr;
-	u_int8_t index;
 };
 
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
-#define MAX_TRACK_NUM 32
+#define MAX_TRACK_NUM 512
+#define MAX_TRACK_TABLE_LIST 16
+#define TABLE_BUFFER_NUM 3000
 struct fp_track_table_t {
 	struct fp_cb cb;
-	unsigned int valid;
 	unsigned int ref_count;
 	void *tracked_address;
-	unsigned int timestamp;
 	unsigned long jiffies;
+	struct fp_track_table_t *next_track_table;
 };
-struct fp_track_t {
+
+struct fp_track_table_list_t {
 	struct fp_track_table_t *table;
-	unsigned int g_timestamp;
 #ifdef CONFIG_PREEMPT_RT_FULL
 	raw_spinlock_t lock;
 #else
 	spinlock_t lock;
 #endif
-	unsigned int tracked_number;
 };
+
 void del_all_track_table(void);
 #endif
 
@@ -224,10 +221,6 @@ struct fp_tag_packet_t {
 	unsigned int			guard_pattern;
 	struct fp_tag_info_t	info;
 };
-
-#ifdef FASTPATH_NO_KERNEL_SUPPORT
-extern struct fp_track_t fp_track;
-#endif
 
 int fastpath_brctl(int bridge, char *dev_name);
 
