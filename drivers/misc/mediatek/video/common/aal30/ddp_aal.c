@@ -158,6 +158,8 @@ static atomic_t g_aal_dirty_frame_retrieved[AAL_TOTAL_MODULE_NUM] = {
 static atomic_t g_aal_is_clock_on[AAL_TOTAL_MODULE_NUM] = {ATOMIC_INIT(0)};
 #endif
 
+static atomic_t g_aal_force_relay = ATOMIC_INIT(0);
+
 static DEFINE_SPINLOCK(g_aal0_hist_lock);
 static DEFINE_SPINLOCK(g_aal1_hist_lock);
 
@@ -360,10 +362,15 @@ static int disp_aal_init(enum DISP_MODULE_ENUM module, int width, int height,
 {
 	const int index = index_of_aal(module);
 
-	if (disp_aal_is_support() == true) {
+	if (disp_aal_is_support() == true &&
+		atomic_read(&g_aal_force_relay) != 1) {
 		/* Enable AAL histogram, engine */
 		DISP_REG_MASK(cmdq, DISP_AAL_CFG + aal_get_offset(module),
 		    0x3 << 1, (0x3 << 1) | 0x1);
+	} else {
+		/* Disable AAL histogram, engine */
+		DISP_REG_MASK(cmdq, DISP_AAL_CFG + aal_get_offset(module),
+		    0x0 << 1, (0x3 << 1) | 0x1);
 	}
 
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
@@ -406,7 +413,9 @@ static void disp_aal_set_interrupt_by_module(enum DISP_MODULE_ENUM module,
 		return;
 	}
 
-	if (enabled && disp_aal_is_support() == true) {
+	if (enabled &&
+		disp_aal_is_support() == true &&
+		atomic_read(&g_aal_force_relay) != 1) {
 		if (DISP_REG_GET(DISP_AAL_EN + offset) == 0)
 			AAL_DBG("[WARNING] module(%d) DISP_AAL_EN not enabled!",
 				module);
@@ -1323,6 +1332,11 @@ void disp_aal_on_end_of_frame_by_module(enum disp_aal_id_t id)
 	if (id < DISP_AAL0 || id >= DISP_AAL0 + AAL_TOTAL_MODULE_NUM)
 		return;
 
+	if (atomic_read(&g_aal_force_relay) == 1) {
+		disp_aal_clear_irq_only(module, true, false);
+		return;
+	}
+
 #ifdef CONFIG_MTK_DRE30_SUPPORT
 	disp_aal_dre3_irq_handle(module, update_method);
 #else
@@ -1441,7 +1455,8 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 		/* we have to let AALService can turn on backlight */
 		/* on phone resumption */
 		service_flags = AAL_SERVICE_FORCE_UPDATE;
-	} else if (atomic_read(&g_aal_is_init_regs_valid) == 0) {
+	} else if (atomic_read(&g_aal_is_init_regs_valid) == 0 ||
+		atomic_read(&g_aal_force_relay) == 1) {
 		/* AAL Service is not running */
 		if (atomic_read(&g_led_mode) == MT65XX_LED_MODE_CUST_LCM)
 			backlight_brightness_set_with_lock(bl_1024);
@@ -1920,8 +1935,13 @@ static int aal_config(enum DISP_MODULE_ENUM module,
 		DISP_REG_SET(cmdq, DISP_AAL_SIZE + offset,
 			(width << 16) | height);
 
-	/* Disable relay mode */
-		DISP_REG_MASK(cmdq, DISP_AAL_CFG + offset, 0x0, 0x1);
+		if (atomic_read(&g_aal_force_relay) == 1) {
+			/* Set relay mode */
+			DISP_REG_MASK(cmdq, DISP_AAL_CFG + offset, 1, 0x1);
+		} else {
+			/* Disable relay mode */
+			DISP_REG_MASK(cmdq, DISP_AAL_CFG + offset, 0, 0x1);
+		}
 
 		disp_aal_init(module, width, height, cmdq);
 
@@ -2807,10 +2827,18 @@ void aal_test(const char *cmd, char *debug_output)
 	} else if (strncmp(cmd, "bypass:", 7) == 0) {
 		int bypass = (cmd[7] == '1');
 
+		atomic_set(&g_aal_force_relay, bypass);
+#if 0
 		for (i = 0; i < config_module_num; i++) {
 			module += i;
 			aal_bypass(module, bypass);
 		}
+#else
+		disp_aal_trigger_refresh(AAL_REFRESH_17MS);
+#endif
+	} else if (strncmp(cmd, "getBypass:", 10) == 0) {
+		sprintf(debug_output, "AAL HW Relay: %d\n",
+			atomic_read(&g_aal_force_relay));
 	} else if (strncmp(cmd, "ut:", 3) == 0) { /* debug command for UT */
 		aal_ut_cmd(cmd + 3);
 	} else if (strncmp(cmd, "dre", 3) == 0) {
