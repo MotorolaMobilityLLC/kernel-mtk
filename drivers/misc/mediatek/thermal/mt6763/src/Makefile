@@ -18,6 +18,9 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/gpu/hal/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v2/mt6763/inc/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/pmic/include/
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/common/inc/
 
 obj-$(CONFIG_THERMAL) += mtk_tc.o
 obj-$(CONFIG_THERMAL) += mtk_pmic_efuse.o
+obj-$(CONFIG_THERMAL) += mtk_ts_6356buck1.o
+obj-$(CONFIG_THERMAL) += mtk_ts_6356buck2.o
