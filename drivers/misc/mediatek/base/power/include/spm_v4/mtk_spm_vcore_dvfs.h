@@ -22,10 +22,17 @@
 #define SPM_VCORE_DVS_EN       1
 #define SPM_DDR_DFS_EN         1
 #define SPM_MM_CLK_EN          0
+#define VMODEM_VCORE_COBUCK    1
+#elif defined(CONFIG_MACH_MT6771)
+#define SPM_VCORE_DVS_EN       0 /* SB disabled */
+#define SPM_DDR_DFS_EN         0 /* SB disabled */
+#define SPM_MM_CLK_EN          0
+#define VMODEM_VCORE_COBUCK    0 /* SB disabled */
 #else
 #define SPM_VCORE_DVS_EN       1
 #define SPM_DDR_DFS_EN         1
 #define SPM_MM_CLK_EN          0
+#define VMODEM_VCORE_COBUCK    1
 #endif
 
 #if defined(CONFIG_MACH_MT6739)

@@ -155,16 +155,33 @@ static u32 slp_spm_deepidle_flags = {
 };
 #endif
 #endif
+#elif defined(CONFIG_MACH_MT6771)
+/* FIXME: */
+static u32 slp_spm_flags = {
+	SPM_FLAG_DIS_CPU_PDN |
+	SPM_FLAG_DIS_INFRA_PDN |
+	SPM_FLAG_DIS_DDRPHY_PDN |
+	SPM_FLAG_DIS_ATF_ABORT |
+	SPM_FLAG_SUSPEND_OPTION
+};
+
+static u32 slp_spm_deepidle_flags = {
+	SPM_FLAG_DIS_CPU_PDN |
+	SPM_FLAG_DIS_INFRA_PDN |
+	SPM_FLAG_DIS_DDRPHY_PDN |
+	SPM_FLAG_DIS_ATF_ABORT |
+	SPM_FLAG_SUSPEND_OPTION
+};
 #endif /* CONFIG_MACH_MT6739 */
 u32 slp_spm_data;
 
 
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
-#if defined(CONFIG_MACH_MT6739)
+#if defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6763)
 	return state == PM_SUSPEND_MEM;
-#else
-	return state == PM_SUSPEND_MEM;
+#elif defined(CONFIG_MACH_MT6771)
+	return state == false;
 #endif
 }
 
@@ -224,6 +241,30 @@ void __attribute__((weak)) subsys_if_on(void)
 void __attribute__((weak)) pll_if_on(void)
 {
 	pr_err("NO %s !!!\n", __func__);
+}
+
+void __attribute__((weak))
+spm_output_sleep_option(void)
+{
+
+}
+
+int __attribute__((weak))
+spm_set_sleep_wakesrc(u32 wakesrc, bool enable, bool replace)
+{
+	return 0;
+}
+
+unsigned int __attribute__((weak))
+spm_go_to_sleep(u32 spm_flags, u32 spm_data)
+{
+	return 0;
+}
+
+void __attribute__((weak))
+gpio_dump_regs(void)
+{
+
 }
 
 static int slp_suspend_ops_enter(suspend_state_t state)

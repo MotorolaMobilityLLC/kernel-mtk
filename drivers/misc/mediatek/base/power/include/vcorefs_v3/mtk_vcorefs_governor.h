@@ -126,6 +126,8 @@ struct opp_profile {
 #define VCORE_BASE_UV           518750
 #elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)       /* PMIC MT6355 */
 #define VCORE_BASE_UV           406250
+#elif defined(CONFIG_MACH_MT6771)        /* PMIC MT6358 */
+#define VCORE_BASE_UV           500000
 #else
 #error "Not set pmic config properly!"
 #endif

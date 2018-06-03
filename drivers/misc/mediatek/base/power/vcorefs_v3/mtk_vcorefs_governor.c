@@ -28,7 +28,7 @@
 #include <mtk_vcorefs_manager.h>
 
 #include <mtk_spm_vcore_dvfs.h>
-#if !defined(CONFIG_MACH_MT6758) /* TODO: 6758 EP */
+#if defined(CONFIG_MTK_DRAMC)
 #include <mtk_dramc.h>
 #endif
 #include <mtk_eem.h>
@@ -260,10 +260,10 @@ int vcorefs_enable_debug_isr(bool enable)
 	gvrctrl->isr_debug = enable;
 
 	flag = spm_dvfs_flag_init();
-
+#if !defined(CONFIG_MACH_MT6771)
 	if (enable)
 		flag |= SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS;
-
+#endif
 	spm_go_to_vcorefs(flag);
 
 	mutex_unlock(&governor_mutex);

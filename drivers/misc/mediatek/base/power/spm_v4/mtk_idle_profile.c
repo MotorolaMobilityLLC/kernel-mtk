@@ -13,11 +13,14 @@
 #include <linux/kernel.h>
 #include <linux/math64.h>
 #include <mtk_gpt.h>
-#include <mtk_cpufreq_api.h>
 #include "mtk_cpuidle.h"
 #include "mtk_idle_internal.h"
 #include "mtk_idle_profile.h"
 #include "mtk_spm_resource_req_internal.h"
+
+#if defined(CONFIG_CPU_FREQ)
+#include <mtk_cpufreq_api.h>
+#endif
 
 #if SPM_MET_TAGGING
 #include <core/met_drv.h>
@@ -133,6 +136,13 @@ static const char *idle_met_label[NR_TYPES] = {
 	[IDLE_TYPE_SO3] = "SODI3 residency",
 	[IDLE_TYPE_SO] = "SODI residency",
 };
+#endif
+
+#if 0
+unsigned int __attribute__((weak)) mt_cpufreq_get_cur_freq(unsigned int id)
+{
+	return 0;
+}
 #endif
 
 u64 idle_get_current_time_ms(void)
@@ -606,6 +616,7 @@ void dpidle_show_profile_time(void)
 					(abs(dpidle_profile[i] - dpidle_profile[i - 1]));
 		}
 
+#if defined(CONFIG_CPU_FREQ)
 #if defined(CONFIG_MACH_MT6763)
 		idle_buf_append(latency_profile_log, "cpu_freq:%u/%u\n",
 			mt_cpufreq_get_cur_freq(0),
@@ -613,6 +624,7 @@ void dpidle_show_profile_time(void)
 #elif defined(CONFIG_MACH_MT6739)
 		idle_buf_append(latency_profile_log, "cpu_freq:%u\n",
 			mt_cpufreq_get_cur_freq(0));
+#endif
 #endif
 
 		idle_prof_crit("%s", get_idle_buf(latency_profile_log));
@@ -688,12 +700,14 @@ void mtk_idle_latency_profile_result(unsigned int idle_type)
 	data = &idle_profile[idle_type][0];
 	pdata  = &g_pdata[idle_type];
 
+#if defined(CONFIG_CPU_FREQ)
 #if defined(CONFIG_MACH_MT6763)
 	log("%s (%u/%u),", mtk_get_idle_name(idle_type),
 		mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1));
 #else
 	log("%s (%u),", mtk_get_idle_name(idle_type),
 		mt_cpufreq_get_cur_freq(0));
+#endif
 #endif
 
 	for (i = 0; i < NR_PIDX; i++)

@@ -65,6 +65,8 @@ u32 spm_irq_0;
 #define NF_EDGE_TRIG_IRQS	7
 #elif defined(CONFIG_MACH_MT6739)
 #define NF_EDGE_TRIG_IRQS	3
+#elif defined(CONFIG_MACH_MT6771)
+#define NF_EDGE_TRIG_IRQS	2		/* TODO: confirm & modify */
 #endif
 static u32 edge_trig_irqs[NF_EDGE_TRIG_IRQS];
 
@@ -115,6 +117,23 @@ void __attribute__((weak)) set_wakeup_sources(u32 *list, u32 num_events)
 int __attribute__((weak)) spm_fs_init(void)
 {
 	spm_crit2("NO %s !!!\n", __func__);
+	return 0;
+}
+
+char *__attribute__((weak)) spm_vcorefs_dump_dvfs_regs(char *p)
+{
+	return NULL;
+}
+
+int __attribute__((weak))
+get_spm_last_wakeup_src(struct seq_file *s, void *unused)
+{
+	return 0;
+}
+
+int __attribute__((weak))
+get_spm_sleep_count(struct seq_file *s, void *unused)
+{
 	return 0;
 }
 
