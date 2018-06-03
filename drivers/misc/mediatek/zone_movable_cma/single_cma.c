@@ -180,9 +180,9 @@ static bool system_mem_status_ok(unsigned long minus)
 	unsigned long free = 0, file = 0;
 	unsigned long min_wmark = 0, low_wmark = 0, high_wmark = 0;
 
-	/* Go through all zones below ZONE_MOVABLE */
+	/* Go through all zones below OPT_ZONE_MOVABLE_CMA */
 	for_each_online_pgdat(pgdat) {
-		for (zoneidx = 0; zoneidx < ZONE_MOVABLE; zoneidx++) {
+		for (zoneidx = 0; zoneidx < OPT_ZONE_MOVABLE_CMA; zoneidx++) {
 			z = pgdat->node_zones + zoneidx;
 			free += zone_page_state(z, NR_FREE_PAGES);
 			file += (zone_page_state(z, NR_FILE_PAGES) - zone_page_state(z, NR_SHMEM));
@@ -212,9 +212,9 @@ static bool zmc_check_mem_status_ok(unsigned long count)
 	struct zone *z;
 	unsigned long available = 0, minus = 0;
 
-	/* Check ZONE_MOVABLE first */
+	/* Check OPT_ZONE_MOVABLE_CMA first */
 	for_each_online_pgdat(pgdat) {
-		z = pgdat->node_zones + ZONE_MOVABLE;
+		z = pgdat->node_zones + OPT_ZONE_MOVABLE_CMA;
 		available += zone_page_state(z, NR_FREE_PAGES);
 		available += zone_page_state(z, NR_INACTIVE_FILE) + zone_page_state(z, NR_ACTIVE_FILE);
 		minus += zone_page_state(z, NR_INACTIVE_ANON) + zone_page_state(z, NR_ACTIVE_ANON);
