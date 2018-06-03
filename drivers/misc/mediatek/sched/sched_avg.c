@@ -855,7 +855,7 @@ static int init_heavy_tlb(void)
 		}
 
 
-		init_timer(&tracker_timer);
+		init_timer_deferrable(&tracker_timer);
 		tracker_timer.function = tracker_isr;
 		tracker_timer.expires = jiffies + HZ/100; /*10ms*/
 		add_timer(&tracker_timer);
