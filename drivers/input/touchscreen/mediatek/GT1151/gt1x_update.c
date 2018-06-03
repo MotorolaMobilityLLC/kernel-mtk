@@ -255,8 +255,11 @@ int gt1x_update_prepare(char *filename)
 		GTP_INFO("firmware size: 0x%x\n", (unsigned int)fw_entry->size);
 
 		update_info.fw_data = (u8 *)devm_kzalloc(&gt1x_i2c_client->dev, fw_entry->size, GFP_KERNEL);
-		if (!update_info.fw_data)
+		if (!update_info.fw_data) {
 			GTP_ERROR("Alloca memory fail\n");
+			release_firmware(fw_entry);
+			return ERROR_MEM;
+		}
 		memcpy(update_info.fw_data, fw_entry->data, fw_entry->size);
 		update_info.fw_length = fw_entry->size;
 		release_firmware(fw_entry);
