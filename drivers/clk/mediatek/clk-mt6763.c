@@ -85,6 +85,7 @@ void __iomem *venc_gcon_base;
 #define INFRA_PDN_SET3		(infracfg_base + 0x00C0)
 #define INFRA_PDN_CLR3		(infracfg_base + 0x00C4)
 #define INFRA_PDN_STA3		(infracfg_base + 0x00C8)
+#define INFRA_TOPAXI_SI0_CTL		(infracfg_base + 0x0200)
 
 #define AP_PLL_CON2		(apmixed_base + 0x0008)
 #define AP_PLL_CON3		(apmixed_base + 0x000C)
@@ -1447,6 +1448,9 @@ static void __init mtk_infracfg_ao_init(struct device_node *node)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	infracfg_base = base;
+	clk_writel(INFRA_TOPAXI_SI0_CTL, clk_readl(INFRA_TOPAXI_SI0_CTL) | 0x2);
+	pr_err("%s: infra mfg debug: %08x\n",
+			__func__, clk_readl(INFRA_TOPAXI_SI0_CTL));
 	/*mtk_clk_enable_critical();*/
 #if MT_CCF_BRINGUP
 	clk_writel(INFRA_PDN_SET0, INFRA_CG0);
