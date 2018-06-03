@@ -38,101 +38,11 @@
 #endif
 
 #include "lcm_drv.h"
-
+static void lcm_set_gpio_output(unsigned int GPIO, unsigned int output);
 #ifndef BUILD_LK
-static struct regulator *lcm_vgp;
 static unsigned int LCD_RST_PIN;
 static unsigned int LCD_PWR_EN_PIN;
 static unsigned int LCD_PWR_BIAS_ENP_PIN;
-
-/* get LDO supply */
-static int lcm_get_vgp_supply(struct device *dev)
-{
-	int ret;
-	struct regulator *lcm_vgp_ldo;
-
-	pr_debug("LCM: lcm_get_vgp_supply is going\n");
-
-	lcm_vgp_ldo = devm_regulator_get(dev, "reg-lcm");
-	if (IS_ERR(lcm_vgp_ldo)) {
-		ret = PTR_ERR(lcm_vgp_ldo);
-		pr_debug("failed to get reg-lcm LDO\n");
-		return ret;
-	}
-
-	pr_debug("LCM: lcm get supply ok.\n");
-
-	/* get current voltage settings */
-	ret = regulator_get_voltage(lcm_vgp_ldo);
-	pr_debug("lcm LDO voltage = %d in LK stage\n", ret);
-
-	lcm_vgp = lcm_vgp_ldo;
-
-	return ret;
-}
-
-int lcm_vgp_supply_enable(void)
-{
-	int ret;
-	unsigned int volt;
-
-	pr_debug("LCM: lcm_vgp_supply_enable\n");
-
-	if (lcm_vgp == NULL)
-		return 0;
-
-	pr_debug("LCM: set regulator voltage lcm_vgp voltage to 1.8V\n");
-	/* set voltage to 1.8V */
-	ret = regulator_set_voltage(lcm_vgp, 1800000, 1800000);
-	if (ret != 0) {
-		pr_debug("LCM: lcm failed to set lcm_vgp voltage\n");
-		return ret;
-	}
-
-	/* get voltage settings again */
-	volt = regulator_get_voltage(lcm_vgp);
-	if (volt == 1800000)
-		pr_debug("LCM: check regulator voltage=1800000 pass!\n");
-	else
-		pr_debug("LCM: check regulator voltage=1800000 fail! (voltage: %d)\n", volt);
-
-	ret = regulator_enable(lcm_vgp);
-	if (ret != 0) {
-		pr_debug("LCM: Failed to enable lcm_vgp\n");
-		return ret;
-	}
-
-	return ret;
-}
-
-int lcm_vgp_supply_disable(void)
-{
-	int ret = 0;
-	unsigned int isenable;
-
-	if (lcm_vgp == NULL)
-		return 0;
-
-	/* disable regulator */
-	isenable = regulator_is_enabled(lcm_vgp);
-
-	pr_debug("LCM: lcm query regulator enable status[%d]\n", isenable);
-
-	if (isenable) {
-		ret = regulator_disable(lcm_vgp);
-		if (ret != 0) {
-			pr_debug("LCM: lcm failed to disable lcm_vgp\n");
-			return ret;
-		}
-		/* verify */
-		isenable = regulator_is_enabled(lcm_vgp);
-		if (!isenable)
-			pr_debug("LCM: lcm regulator disable pass\n");
-	}
-
-	return ret;
-}
-
 void lcm_request_gpio_control(struct device *dev)
 {
 	LCD_RST_PIN = of_get_named_gpio(dev->of_node, "lcd_rst_pin", 0);
@@ -148,8 +58,8 @@ void lcm_request_gpio_control(struct device *dev)
 static int lcm_driver_probe(struct device *dev, void const *data)
 {
 	lcm_request_gpio_control(dev);
-	lcm_get_vgp_supply(dev);
-	lcm_vgp_supply_enable();
+	lcm_set_gpio_output(LCD_PWR_EN_PIN, 1);
+	lcm_set_gpio_output(LCD_PWR_BIAS_ENP_PIN, 1);
 
 	return 0;
 }
@@ -187,8 +97,9 @@ static struct platform_driver lcm_driver = {
 
 static int __init lcm_init(void)
 {
+	pr_debug("LCM: register lcm init driver done\n");
 	if (platform_driver_register(&lcm_driver)) {
-		pr_debug("LCM: failed to register this driver!\n");
+		pr_notice("LCM: failed to register this driver!\n");
 		return -ENODEV;
 	}
 
@@ -550,7 +461,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0xE6, 1, {0x02} },
 
 	{0x11, 0, {} },
-	{REGFLAG_DELAY, 120, {} },
+	{REGFLAG_DELAY, 20, {} },
 	{0x29, 0, {} },
 	{REGFLAG_DELAY, 5, {} },
 
@@ -710,14 +621,19 @@ static void lcm_init_lcm(void)
 
 	init_lcm_registers();
 #else
-	pr_debug("[Kernel/LCM] lcm_init() enter\n");
+	pr_notice("[Kernel/LCM] lcm_init() enter\n");
+
+	lcm_set_gpio_output(LCD_PWR_EN_PIN, GPIO_OUT_ONE);
+	MDELAY(20);
+
+	lcm_set_gpio_output(LCD_PWR_BIAS_ENP_PIN, GPIO_OUT_ONE);
 #endif
 }
 
 void lcm_suspend(void)
 {
 #ifndef BUILD_LK
-	pr_debug("[Kernel/LCM] lcm_suspend() enter\n");
+	pr_notice("[Kernel/LCM] lcm_suspend() enter\n");
 
 	lcm_set_gpio_output(LCD_RST_PIN, GPIO_OUT_ZERO);
 	MDELAY(5);
@@ -735,11 +651,13 @@ void lcm_suspend(void)
 void lcm_resume(void)
 {
 #ifndef BUILD_LK
+	pr_notice("[Kernel/LCM] lcm_resume() enter\n");
+
 	lcm_set_gpio_output(LCD_PWR_EN_PIN, GPIO_OUT_ONE);
-	MDELAY(20);
+	MDELAY(5);
 
 	lcm_set_gpio_output(LCD_PWR_BIAS_ENP_PIN, GPIO_OUT_ONE);
-	MDELAY(20);
+	MDELAY(5);
 
 	lcm_set_gpio_output(LCD_RST_PIN, GPIO_OUT_ZERO);
 	MDELAY(10);
@@ -748,7 +666,7 @@ void lcm_resume(void)
 	MDELAY(10);
 
 	lcm_set_gpio_output(LCD_RST_PIN, GPIO_OUT_ZERO);
-	MDELAY(120);
+	MDELAY(10);
 
 	init_lcm_registers();
 #endif
