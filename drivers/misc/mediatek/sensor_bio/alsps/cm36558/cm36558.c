@@ -56,7 +56,6 @@ static unsigned long long int_top_time;
 /* Maintain alsps cust info here */
 struct alsps_hw alsps_cust;
 static struct alsps_hw *hw = &alsps_cust;
-struct platform_device *alspsPltFmDev;
 /* For alsp driver get cust info */
 struct alsps_hw *get_cust_alsps(void)
 {
@@ -973,9 +972,8 @@ int CM36558_setup_eint(struct i2c_client *client)
 	struct pinctrl_state *pins_cfg;
 	u32 ints[2] = {0, 0};
 
-	alspsPltFmDev = get_alsps_platformdev();
 /* gpio setting */
-	pinctrl = devm_pinctrl_get(&alspsPltFmDev->dev);
+	pinctrl = devm_pinctrl_get(&client->dev);
 	if (IS_ERR(pinctrl)) {
 		ret = PTR_ERR(pinctrl);
 		APS_ERR("Cannot find alsps pinctrl!\n");
@@ -1278,12 +1276,26 @@ static long CM36558_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
  err_out:
 	return err;
 }
+
+static long compat_CM36558_unlocked_ioctl(struct file *filp, unsigned int cmd,
+				unsigned long arg)
+{
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		APS_ERR("compat_ioctl f_op has no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
+	return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
+}
+
 /*------------------------------misc device related operation functions------------------------------------*/
 static const struct file_operations CM36558_fops = {
 	.owner = THIS_MODULE,
 	.open = CM36558_open,
 	.release = CM36558_release,
 	.unlocked_ioctl = CM36558_unlocked_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_CM36558_unlocked_ioctl,
+#endif
 };
 
 static struct miscdevice CM36558_device = {
@@ -1431,6 +1443,16 @@ static int als_set_delay(u64 ns)
 	return 0;
 }
 
+static int als_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+{
+	return als_set_delay(samplingPeriodNs);
+}
+
+static int als_flush(void)
+{
+	return 0;
+}
+
 static int als_get_data(int *value, int *status)
 {
 	int err = 0;
@@ -1518,6 +1540,14 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	struct ps_data_path ps_data = { 0 };
 
 	APS_FUN();
+	/* get customization and power on */
+	hw = get_alsps_dts_func(client->dev.of_node, hw);
+	if (!hw) {
+		APS_ERR("get customization info from dts failed\n");
+		return -EFAULT;
+	}
+	CM36558_power(hw, 1);
+
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
@@ -1550,7 +1580,7 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	atomic_set(&obj->als_thd_val_high, obj->hw->als_threshold_high);
 	atomic_set(&obj->als_thd_val_low, obj->hw->als_threshold_low);
 	atomic_set(&obj->init_done, 0);
-	obj->irq_node = of_find_compatible_node(NULL, NULL, "mediatek,als_ps");
+	obj->irq_node = client->dev.of_node;
 
 	obj->enable = 0;
 	obj->pending_intr = 0;
@@ -1591,6 +1621,8 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	als_ctl.open_report_data = als_open_report_data;
 	als_ctl.enable_nodata = als_enable_nodata;
 	als_ctl.set_delay = als_set_delay;
+	als_ctl.batch = als_batch;
+	als_ctl.flush = als_flush;
 	als_ctl.is_report_input_direct = false;
 
 	als_ctl.is_support_batch = false;
@@ -1663,6 +1695,8 @@ static int CM36558_i2c_remove(struct i2c_client *client)
 {
 	int err = 0;
 
+	CM36558_power(hw, 0);
+
 	/*------------------------CM36558 attribute file for debug--------------------------------------*/
 	err = CM36558_delete_attr(&(CM36558_init_info.platform_diver_addr->driver));
 	if (err)
@@ -1730,9 +1764,6 @@ static int CM36558_i2c_resume(struct device *dev)
 /*----------------------------------------------------------------------------*/
 static int CM36558_remove(void)
 {
-
-	CM36558_power(hw, 0);
-
 	i2c_del_driver(&CM36558_i2c_driver);
 	return 0;
 }
@@ -1741,8 +1772,6 @@ static int CM36558_remove(void)
 
 static int CM36558_local_init(void)
 {
-
-	CM36558_power(hw, 1);
 	if (i2c_add_driver(&CM36558_i2c_driver)) {
 		APS_ERR("add driver error\n");
 		return -1;
@@ -1755,13 +1784,6 @@ static int CM36558_local_init(void)
 /*----------------------------------------------------------------------------*/
 static int __init CM36558_init(void)
 {
-	const char *name = "mediatek,cm36558";
-
-	hw =   get_alsps_dts_func(name, hw);
-	if (!hw) {
-		APS_ERR("get dts info fail\n");
-		return 0;
-	}
 	alsps_driver_add(&CM36558_init_info);
 	return 0;
 }
