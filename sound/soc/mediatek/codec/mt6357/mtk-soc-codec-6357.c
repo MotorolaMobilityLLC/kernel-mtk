@@ -1101,11 +1101,7 @@ static int SetDcCompenSation(bool enable)
 	abs_lch = sign_lch * diff_lch;
 	abs_rch = sign_rch * diff_rch;
 	times = abs_lch > abs_rch ? (abs_lch / ramp_step) : (abs_rch / ramp_step);
-	pr_aud("%s(), enable = %d, index_gain = %d, times = %d, lch_value = %d -> %d,
-	       rch_value = %d -> %d, ramp_step %d\n",
-	       __func__, enable, index_lgain, times,
-	       last_lch_comp_value, lch_value,
-	       last_rch_comp_value, rch_value, ramp_step);
+	pr_aud("%s(), enable = %d, index_gain = %d, times = %d\n", __func__, enable, index_lgain, times);
 	if (enable) {
 		enable_dc_compensation(true);
 		for (i = 1; i <= times; i++) {
