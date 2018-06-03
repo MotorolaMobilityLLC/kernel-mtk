@@ -600,7 +600,7 @@ static int audio_dpd_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 {
 	int enable = ucontrol->value.integer.value[0];
 
-	pr_aud("%s() , enable = %d, mhp_impedance = %d\n", __func__, enable, mhp_impedance);
+	pr_warn("%s() enable = %d, mhp_impedance = %d\n", __func__, enable, mhp_impedance);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(switch_function)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
