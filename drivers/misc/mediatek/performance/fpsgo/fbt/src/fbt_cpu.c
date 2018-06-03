@@ -50,7 +50,7 @@
 #include <trace/events/fpsgo.h>
 
 #include "eas_controller.h"
-#include "legacy_controller.h"
+#include "cpu_ctrl.h"
 
 #include "fpsgo_base.h"
 #include "fbt_usedext.h"
