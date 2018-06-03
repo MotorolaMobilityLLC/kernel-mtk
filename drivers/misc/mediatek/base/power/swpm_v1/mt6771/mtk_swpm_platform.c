@@ -239,7 +239,8 @@ int swpm_platform_init(struct platform_device *pdev)
 		sizeof(dram_def_pwr_conf));
 
 	swpm_info("copy pwr data (size: aphy/dram = %ld/%ld) done!\n",
-		sizeof(aphy_def_pwr_tbl), sizeof(dram_def_pwr_conf));
+		(unsigned long)sizeof(aphy_def_pwr_tbl),
+		(unsigned long)sizeof(dram_def_pwr_conf));
 
 	return ret;
 }

@@ -293,7 +293,7 @@ static void get_rec_addr(void)
 		(unsigned long long)rec_virt_addr,
 		rec_size);
 
-	swpm_info_ref = (struct swpm_rec_data *)rec_virt_addr;
+	swpm_info_ref = (struct swpm_rec_data *)(uintptr_t)rec_virt_addr;
 #endif
 }
 
