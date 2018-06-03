@@ -19,23 +19,23 @@
 #include <linux/compat.h>
 #endif
 
-typedef struct{
+struct stCAM_CAL_INFO_STRUCT {
 	u32 u4Offset;
 	u32 u4Length;
 	u32 sensorID;
 	u32 deviceID;/* MAIN = 0x01, SUB  = 0x02, MAIN_2 = 0x04, SUB_2 = 0x08 */
 	u8 *pu1Params;
-} stCAM_CAL_INFO_STRUCT, *stPCAM_CAL_INFO_STRUCT;
+};
 
 #ifdef CONFIG_COMPAT
 
-typedef struct{
+struct COMPAT_stCAM_CAL_INFO_STRUCT {
 	u32 u4Offset;
 	u32 u4Length;
 	u32 sensorID;
 	u32 deviceID;
 	compat_uptr_t pu1Params;
-} COMPAT_stCAM_CAL_INFO_STRUCT;
+};
 #endif
 
 #endif/*_CAM_CAL_DATA_H*/
