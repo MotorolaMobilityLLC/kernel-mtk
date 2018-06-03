@@ -2747,9 +2747,15 @@ static void _RGXMipsDumpDebugDecode(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf, v
 
 static inline void _RGXMipsDumpTLBEntry(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
                                         void *pvDumpDebugFile,
-                                        const RGX_MIPS_TLB_ENTRY *psEntry,
+					const RGX_MIPS_TLB_ENTRY *psTLBEntry,
+					const RGX_MIPS_REMAP_ENTRY *psRemapEntry0,
+					const RGX_MIPS_REMAP_ENTRY *psRemapEntry1,
                                         IMG_UINT32 ui32Index)
 {
+	IMG_BOOL bDumpRemapEntries = (psRemapEntry0 != NULL && psRemapEntry1 != NULL) ? IMG_TRUE : IMG_FALSE;
+	IMG_UINT32 ui32TLBEntryPA0 = RGXMIPSFW_TLB_GET_PA(psTLBEntry->ui32TLBLo0),
+		   ui32TLBEntryPA1 = RGXMIPSFW_TLB_GET_PA(psTLBEntry->ui32TLBLo1);
+
 	static const IMG_CHAR * const apszPermissionInhibit[4] =
 	{
 		"",
@@ -2758,7 +2764,7 @@ static inline void _RGXMipsDumpTLBEntry(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrint
 		"RIXI"
 	};
 
-	static const IMG_CHAR * const apszCoherencyTBL[8] =
+	static const IMG_CHAR * const apszCoherencyTLB[8] =
 	{
 		"C",
 		"C",
@@ -2782,18 +2788,47 @@ static inline void _RGXMipsDumpTLBEntry(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrint
 		"DVG"
 	};
 
+	if(bDumpRemapEntries)
+	{
+		/* If TLB and remap entries match, then merge them
+		*  else, print them separately
+		*/
+		if(ui32TLBEntryPA0 == psRemapEntry0->ui32RemapAddrIn
+		&& ui32TLBEntryPA1 == psRemapEntry1->ui32RemapAddrIn)
+		{
+			ui32TLBEntryPA0 = psRemapEntry0->ui32RemapAddrOut;
+			ui32TLBEntryPA1 = psRemapEntry1->ui32RemapAddrOut;
+			bDumpRemapEntries = IMG_FALSE;
+		}
+	}
+
 	PVR_DUMPDEBUG_LOG("%2u) VA 0x%08X (%3uk) -> PA0 0x%08X %s%s%s, PA1 0x%08X %s%s%s",
 	                  ui32Index,
-	                  psEntry->ui32TLBHi,
-	                  RGXMIPSFW_TLB_GET_PAGE_SIZE(psEntry->ui32TLBPageMask),
-	                  RGXMIPSFW_TLB_GET_PA(psEntry->ui32TLBLo0),
-	                  apszPermissionInhibit[RGXMIPSFW_TLB_GET_INHIBIT(psEntry->ui32TLBLo0)],
-	                  apszDirtyGlobalValid[RGXMIPSFW_TLB_GET_DGV(psEntry->ui32TLBLo0)],
-	                  apszCoherencyTBL[RGXMIPSFW_TLB_GET_COHERENCY(psEntry->ui32TLBLo0)],
-	                  RGXMIPSFW_TLB_GET_PA(psEntry->ui32TLBLo1),
-	                  apszPermissionInhibit[RGXMIPSFW_TLB_GET_INHIBIT(psEntry->ui32TLBLo1)],
-	                  apszDirtyGlobalValid[RGXMIPSFW_TLB_GET_DGV(psEntry->ui32TLBLo1)],
-	                  apszCoherencyTBL[RGXMIPSFW_TLB_GET_COHERENCY(psEntry->ui32TLBLo1)]);
+			  psTLBEntry->ui32TLBHi,
+			  RGXMIPSFW_TLB_GET_PAGE_SIZE(psTLBEntry->ui32TLBPageMask),
+			  ui32TLBEntryPA0,
+			  apszPermissionInhibit[RGXMIPSFW_TLB_GET_INHIBIT(psTLBEntry->ui32TLBLo0)],
+			  apszDirtyGlobalValid[RGXMIPSFW_TLB_GET_DGV(psTLBEntry->ui32TLBLo0)],
+			  apszCoherencyTLB[RGXMIPSFW_TLB_GET_COHERENCY(psTLBEntry->ui32TLBLo0)],
+			  ui32TLBEntryPA1,
+			  apszPermissionInhibit[RGXMIPSFW_TLB_GET_INHIBIT(psTLBEntry->ui32TLBLo1)],
+			  apszDirtyGlobalValid[RGXMIPSFW_TLB_GET_DGV(psTLBEntry->ui32TLBLo1)],
+			  apszCoherencyTLB[RGXMIPSFW_TLB_GET_COHERENCY(psTLBEntry->ui32TLBLo1)]);
+
+	if(bDumpRemapEntries)
+	{
+		PVR_DUMPDEBUG_LOG("    Remap %2u : IN 0x%08X (%3uk) => OUT 0x%08X",
+				  ui32Index,
+				  psRemapEntry0->ui32RemapAddrIn,
+				  RGXMIPSFW_REMAP_GET_REGION_SIZE(psRemapEntry0->ui32RemapRegionSize),
+				  psRemapEntry0->ui32RemapAddrOut );
+
+		PVR_DUMPDEBUG_LOG("    Remap %2u : IN 0x%08X (%3uk) => OUT 0x%08X",
+				  (ui32Index+16),
+				  psRemapEntry1->ui32RemapAddrIn,
+				  RGXMIPSFW_REMAP_GET_REGION_SIZE(psRemapEntry1->ui32RemapRegionSize),
+				  psRemapEntry1->ui32RemapAddrOut );
+	}
 }
 
 #endif /* defined(RGX_FEATURE_MIPS) && !defined(NO_HARDWARE) */
@@ -4035,27 +4070,37 @@ void RGXDebugRequestProcess(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 
 							PVR_DUMPDEBUG_LOG("TLB                     :");
 							for (ui32Idx = 0;
-								 ui32Idx < IMG_ARR_NUM_ELEMS(sMIPSState.asTLB);
-								 ++ui32Idx)
+									ui32Idx < IMG_ARR_NUM_ELEMS(sMIPSState.asTLB);
+									++ui32Idx)
 							{
-								_RGXMipsDumpTLBEntry(pfnDumpDebugPrintf,
-											 pvDumpDebugFile,
-											 &sMIPSState.asTLB[ui32Idx],
-											 ui32Idx);
+								RGX_MIPS_REMAP_ENTRY *psRemapEntry0 = NULL;
+								RGX_MIPS_REMAP_ENTRY *psRemapEntry1 = NULL;
 
-								if (bCheckBRN63553WA)
+#if (RGX_FEATURE_PHYS_BUS_WIDTH > 32)
 								{
-									const RGX_MIPS_TLB_ENTRY *psTLBEntry = &sMIPSState.asTLB[ui32Idx];
-
-									#define BRN63553_TLB_IS_NUL(X)  (((X) & RGXMIPSFW_TLB_VALID) && (RGXMIPSFW_TLB_GET_PA(X) == 0x0))
-
-									if (BRN63553_TLB_IS_NUL(psTLBEntry->ui32TLBLo0) || BRN63553_TLB_IS_NUL(psTLBEntry->ui32TLBLo1))
-									{
-										PVR_DUMPDEBUG_LOG("BRN63553 WA present with a valid TLB entry mapping address 0x0.");
-									}
+									psRemapEntry0 = &sMIPSState.asRemap[ui32Idx];
+									psRemapEntry1 = &sMIPSState.asRemap[ui32Idx+16];
 								}
+#endif
+
+								_RGXMipsDumpTLBEntry(pfnDumpDebugPrintf,
+										     pvDumpDebugFile,
+										     &sMIPSState.asTLB[ui32Idx],
+										     psRemapEntry0,
+										     psRemapEntry1,
+										     ui32Idx);
 							}
 
+#if (RGX_FEATURE_PHYS_BUS_WIDTH > 32)
+							{
+								/* Dump unmapped address if it was dumped in FW, otherwise it will be 0 */
+								if(sMIPSState.ui32UnmappedAddress)
+								{
+									PVR_DUMPDEBUG_LOG("Remap unmapped address => 0x%08X",
+											  sMIPSState.ui32UnmappedAddress );
+								}
+							}
+#endif
 						}
 					}
 					PVR_DUMPDEBUG_LOG("--------------------------------");

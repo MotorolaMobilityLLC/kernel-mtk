@@ -69,6 +69,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RGXMIPSFW_CACHED_POLICY                  (RGXMIPSFW_WRITEBACK_CACHE_POLICY)
 /* Cached policy used by MIPS in case of physical bus on more than 32 bit */
 #define RGXMIPSFW_CACHED_POLICY_ABOVE_32BIT      (RGXMIPSFW_WRITETHROUGH_CACHE_POLICY)
+/* Total number of Remap entries */
+#define RGXMIPSFW_NUMBER_OF_REMAP_ENTRIES        (2 * RGXMIPSFW_NUMBER_OF_TLB_ENTRIES)
 
 
 /*
@@ -264,7 +266,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* Base address of the shared data within the bootloader/NMI data page */
 #define RGXMIPSFW_NMI_SHARED_DATA_BASE                        (0x100)
 /* Size used by Debug dump data */
-#define RGXMIPSFW_NMI_SHARED_SIZE                             (0x128)
+#define RGXMIPSFW_NMI_SHARED_SIZE                             (0x2AC)
 /* Offsets in the NMI shared area in 32-bit words */
 #define RGXMIPSFW_NMI_SYNC_FLAG_OFFSET                        (0x0)
 #define RGXMIPSFW_NMI_STATE_OFFSET                            (0x1)
@@ -273,7 +275,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * MIPS fault data
  */
 /* Base address of the fault data within the bootloader/NMI data page */
-#define RGXMIPSFW_FAULT_DATA_BASE                             (0x280)
+#define RGXMIPSFW_FAULT_DATA_BASE                             (0x404)
 
 /* The things that follow are excluded when compiling assembly sources*/
 #if !defined (RGXMIPSFW_ASSEMBLY_CODE)
@@ -425,12 +427,20 @@ typedef struct
 #define RGXMIPSFW_TLB_XI                        (1U << 30)
 #define RGXMIPSFW_TLB_RI                        (1U << 31)
 
+#define RGXMIPSFW_REMAP_GET_REGION_SIZE(REGION_SIZE_ENCODING) (1 << ((REGION_SIZE_ENCODING + 1) << 1))
+
 typedef struct {
 	IMG_UINT32 ui32TLBPageMask;
 	IMG_UINT32 ui32TLBHi;
 	IMG_UINT32 ui32TLBLo0;
 	IMG_UINT32 ui32TLBLo1;
 } RGX_MIPS_TLB_ENTRY;
+
+typedef struct {
+	IMG_UINT32 ui32RemapAddrIn;
+	IMG_UINT32 ui32RemapAddrOut;
+	IMG_UINT32 ui32RemapRegionSize;
+} RGX_MIPS_REMAP_ENTRY;
 
 typedef struct {
 	IMG_UINT32 ui32ErrorEPC;
@@ -442,7 +452,9 @@ typedef struct {
 	IMG_UINT32 ui32Debug;
 	IMG_UINT32 ui32DEPC;
 	IMG_UINT32 ui32BadInstr;
+	IMG_UINT32 ui32UnmappedAddress;
 	RGX_MIPS_TLB_ENTRY asTLB[RGXMIPSFW_NUMBER_OF_TLB_ENTRIES];
+	RGX_MIPS_REMAP_ENTRY asRemap[RGXMIPSFW_NUMBER_OF_REMAP_ENTRIES];
 } RGX_MIPS_STATE;
 
 typedef struct {
