@@ -1411,7 +1411,7 @@ int fgauge_set_coulomb_interrupt1_lt(struct gauge_device *gauge_dev, int car_val
 	car = div_s64((car * 1000), gauge_dev->fg_cust_data->car_tune_value);
 #endif
 
-	lowbound = value32_CAR >> CAR_TO_REG_SHIFT;
+	lowbound = value32_CAR;
 
 	bm_trace("[fgauge_set_coulomb_interrupt1_lt]low=0x%x:%d  diff_car=0x%llx:%lld\r\n",
 		 lowbound, lowbound, car, car);
