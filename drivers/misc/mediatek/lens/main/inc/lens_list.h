@@ -33,6 +33,11 @@ extern int BU6424AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t 
 extern long BU6424AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int BU6424AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 
+extern int bu64748af_SetI2Cclient_Main(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long bu64748af_Ioctl_Main(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int bu64748af_Release_Main(struct inode *a_pstInode, struct file *a_pstFile);
+extern int bu64748af_PowerDown_Main(void);
+
 #define BU6429AF_SetI2Cclient BU6429AF_SetI2Cclient_Main
 #define BU6429AF_Ioctl BU6429AF_Ioctl_Main
 #define BU6429AF_Release BU6429AF_Release_Main

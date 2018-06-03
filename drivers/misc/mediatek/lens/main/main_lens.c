@@ -75,6 +75,7 @@ static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl, AK7371AF_Release},
 	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl, BU6424AF_Release},
 	{1, AFDRV_BU6429AF, BU6429AF_SetI2Cclient, BU6429AF_Ioctl, BU6429AF_Release},
+	{1, AFDRV_BU64748AF, bu64748af_SetI2Cclient_Main, bu64748af_Ioctl_Main, bu64748af_Release_Main},
 	{1,
 		#ifdef CONFIG_MTK_LENS_BU63165AF_SUPPORT
 		AFDRV_BU63165AF, BU63165AF_SetI2Cclient, BU63165AF_Ioctl, BU63165AF_Release
@@ -123,7 +124,7 @@ void AF_PowerDown(void)
 	if (g_pstAF_I2Cclient != NULL) {
 		LOG_INF("CONFIG_MTK_PLATFORM : %s\n", CONFIG_MTK_PLATFORM);
 
-		#ifdef CONFIG_MACH_MT6739
+		#if defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 		LC898217AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
 		LC898217AF_PowerDown();
 		#endif
@@ -133,13 +134,13 @@ void AF_PowerDown(void)
 		AK7371AF_PowerDown();
 		#endif
 
-		if (strcmp(CONFIG_MTK_PLATFORM, "mt6758") == 0) {
-			AK7371AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
-			AK7371AF_PowerDown();
+		#ifdef CONFIG_MACH_MT6758
+		AK7371AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+		AK7371AF_PowerDown();
 
-			BU63169AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
-			BU63169AF_PowerDown();
-		}
+		BU63169AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+		BU63169AF_PowerDown();
+		#endif
 	}
 	MAIN2AF_PowerDown();
 }
