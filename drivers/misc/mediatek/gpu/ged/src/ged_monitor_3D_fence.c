@@ -122,6 +122,7 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 	int err;
 	unsigned long long t;
 	GED_MONITOR_3D_FENCE* psMonitor;
+	struct fence *psDebugAddress;
 
 	if (ged_monitor_3D_fence_disable)
 		return GED_OK;
@@ -148,10 +149,13 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 
 	INIT_WORK(&psMonitor->sWork, ged_monitor_3D_fence_work_cb);
 
+	psDebugAddress = psMonitor->psSyncFence;
+
 	err = fence_add_callback(psMonitor->psSyncFence,
 		&psMonitor->sSyncWaiter, ged_sync_cb);
 
-	ged_log_buf_print(ghLogBuf_DVFS, "[+] ged_monitor_3D_fence_add (ts=%llu) %p", t, psMonitor->psSyncFence);
+	ged_log_buf_print(ghLogBuf_DVFS,
+		"[+] %s (ts=%llu) %p", __func__, t, psDebugAddress);
 
 
 #ifdef GED_DEBUG_MONITOR_3D_FENCE
