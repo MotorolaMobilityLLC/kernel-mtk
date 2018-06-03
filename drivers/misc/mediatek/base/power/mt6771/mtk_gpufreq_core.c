@@ -1191,7 +1191,6 @@ static ssize_t mt_gpufreq_opp_freq_proc_write(struct file *file,
 					g_keep_opp_freq_idx = i;
 					g_keep_opp_freq_state = true;
 					g_keep_opp_freq = value;
-					mt_gpufreq_voltage_enable_set(1);
 					mt_gpufreq_target(i);
 					break;
 				}
@@ -1636,7 +1635,6 @@ static void __mt_gpufreq_set_fixed_freq(int fixed_freq)
 			__func__, g_fixed_freq, g_fixed_volt);
 	g_fixed_freq = fixed_freq;
 	g_fixed_volt = g_cur_opp_volt;
-	mt_gpufreq_voltage_enable_set(1);
 	gpufreq_pr_debug("@%s: now, g_fixed_freq = %d, g_fixed_volt = %d\n",
 			__func__, g_fixed_freq, g_fixed_volt);
 	__mt_gpufreq_clock_switch(g_fixed_freq);
@@ -1652,7 +1650,6 @@ static void __mt_gpufreq_set_fixed_volt(int fixed_volt)
 			__func__, g_fixed_freq, g_fixed_volt);
 	g_fixed_freq = g_cur_opp_freq;
 	g_fixed_volt = fixed_volt;
-	mt_gpufreq_voltage_enable_set(1);
 	gpufreq_pr_debug("@%s: now, g_fixed_freq = %d, g_fixed_volt = %d\n",
 			__func__, g_fixed_freq, g_fixed_volt);
 	__mt_gpufreq_volt_switch_without_vsram_volt(g_cur_opp_volt, g_fixed_volt);
