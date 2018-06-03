@@ -262,6 +262,65 @@ static ssize_t show_sched_info(struct kobject *kobj,
 	return len;
 }
 
+static ssize_t store_idle_prefer(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+	static unsigned int backup_mc;
+	static int is_dirty;
+	int en;
+
+	if (sscanf(buf, "%iu", &val) != 0)
+		idle_prefer_mode = val;
+
+	en = (idle_prefer_mode > 0) ? 1 : 0;
+
+	/* backup system settings */
+	if (!is_dirty)
+		backup_mc = sysctl_sched_migration_cost;
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+	/*
+	 * perf-driven dvfs control
+	 * throttle down: 20ms
+	 */
+	temporary_dvfs_down_throttle_change(en, 40000000); /* 40ms */
+#endif
+
+#ifdef CONFIG_SCHED_TUNE
+	/*
+	 * set top-app prefer idle cpu via stune
+	 * 1: fg
+	 * 2: bg
+	 * 3: top-app
+	 */
+	prefer_idle_for_perf_idx(3, en);
+	prefer_idle_for_perf_idx(1, en);
+#endif
+
+	/* trigger WALT */
+	sched_walt_enable(LT_WALT_SCHED, en);
+
+	/* aggrevie load balancing */
+	sysctl_sched_migration_cost = en ? 33000UL : backup_mc; /*500000UL;*/
+
+	is_dirty = en;
+
+	return count;
+}
+
+static ssize_t show_idle_prefer(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len +=  snprintf(buf, max_len, "idle prefer = %d\n", idle_prefer_mode);
+	len +=  snprintf(buf+len, max_len - len, "idle needed = %d\n", idle_prefer_need());
+
+	return len;
+}
+
 static struct kobj_attribute sched_enable_attr =
 __ATTR(hint_enable, S_IWUSR, NULL, store_sched_enable);
 
@@ -270,6 +329,9 @@ __ATTR(hint_load_thresh, S_IWUSR, NULL, store_sched_load_thresh);
 
 static struct kobj_attribute sched_info_attr =
 __ATTR(hint_info, S_IRUSR, show_sched_info, NULL);
+
+static struct kobj_attribute sched_idle_prefer_attr =
+__ATTR(idle_prefer, S_IWUSR | S_IRUSR, show_idle_prefer, store_idle_prefer);
 
 static struct attribute *sched_attrs[] = {
 	&sched_info_attr.attr,
@@ -281,6 +343,7 @@ static struct attribute *sched_attrs[] = {
 #ifdef CONFIG_MTK_SCHED_BOOST
 	&sched_boost_attr.attr,
 #endif
+	&sched_idle_prefer_attr.attr,
 	NULL,
 };
 

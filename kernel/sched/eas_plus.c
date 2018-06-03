@@ -97,8 +97,15 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 		return task_cpu(p);
 }
 
+bool idle_prefer_need(void)
+{
+	if (idle_prefer_mode)
+		return true;
+	else
+		return false;
+}
 
-	static
+static
 int select_prefer_idle_cpu(struct task_struct *p)
 {
 	unsigned long min_util = boosted_task_util(p);
@@ -112,6 +119,10 @@ int select_prefer_idle_cpu(struct task_struct *p)
 	int fallback = -1;
 	unsigned long new_util;
 	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
+
+	/* force boosted if idle prefer mode is on */
+	if (idle_prefer_need())
+		boosted = (boosted) ? boosted : 1;
 
 	for (iter_cpu = 0; iter_cpu < nr_cpu_ids; iter_cpu++) {
 		/*

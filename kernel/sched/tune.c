@@ -907,7 +907,12 @@ int schedtune_prefer_idle(struct task_struct *p)
 	/* Get prefer_idle value */
 	rcu_read_lock();
 	st = task_schedtune(p);
-	prefer_idle = st->prefer_idle;
+
+	/* idle prefer mode: for ta & fg */
+	if (st->idx == 3 || st->idx == 1)
+		prefer_idle = (idle_prefer_mode > 0) ? (idle_prefer_need()) : st->prefer_idle;
+	else
+		prefer_idle = st->prefer_idle;
 	rcu_read_unlock();
 
 	return prefer_idle;
@@ -929,6 +934,11 @@ int prefer_idle_for_perf_idx(int idx, int prefer_idle)
 		return -EINVAL;
 
 	rcu_read_lock();
+
+	/* idle prefer mode: for ta & fg */
+	if (idle_prefer_mode && (idx == 3 || idx == 1))
+		prefer_idle = 1;
+
 	ct->prefer_idle = prefer_idle;
 	rcu_read_unlock();
 
@@ -940,6 +950,10 @@ prefer_idle_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	    u64 prefer_idle)
 {
 	struct schedtune *st = css_st(css);
+
+	/* idle prefer mode: for ta & fg */
+	if (idle_prefer_mode && (st->idx == 3 || st->idx == 1))
+		prefer_idle = 1;
 
 	st->prefer_idle = prefer_idle;
 
