@@ -560,12 +560,16 @@ static int create_procfs(void)
 
 static void get_original_table(void)
 {
-	/*binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(UPOWER_SEG_IDX));*/
-	binLevel = 0;
-	if (binLevel == 0)
+	binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(UPOWER_FUNC_CODE_EFUSE_INDEX));
+
+	if (binLevel == 0) /* 1.6G */
 		upower_tbl_infos = &upower_tbl_infos_FY[0];
-	else
+	else if (binLevel == 1) /* 2G */
 		upower_tbl_infos = &upower_tbl_infos_SB[0];
+	else if (binLevel == 2) /* 2.2 G */
+		upower_tbl_infos = &upower_tbl_infos_FY[0]; /* should be FYA */
+	else /* 1.6G */
+		upower_tbl_infos = &upower_tbl_infos_FY[0];
 
 	upower_error("binLevel=%d\n", binLevel);
 }
