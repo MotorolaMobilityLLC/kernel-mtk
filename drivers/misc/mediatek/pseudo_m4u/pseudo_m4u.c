@@ -1395,8 +1395,8 @@ struct sg_table *pseudo_get_sg(int portid, unsigned long va, int size)
 
 
 		if (!pPhys[i] && i < page_num - 1) {
-			M4UMSG("%s get pa failed, pa is 0. va is 0x%lx, page_num is %d, i %d\n",
-				__func__, va, page_num, i);
+			M4UMSG("%s get pa failed, pa is 0. va is 0x%lx, page_num is %d, i %d, module is %s\n",
+				__func__, va, page_num, i, m4u_get_port_name(portid));
 			goto err_free;
 		}
 
@@ -1784,6 +1784,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		{
 			int offset;
 			m4u_buf_info_t *pMvaInfo;
+			unsigned long align_mva;
 
 			ret = copy_from_user(&m4u_module, (void *)arg, sizeof(M4U_MOUDLE_STRUCT));
 			if (ret) {
@@ -1809,7 +1810,11 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 			 * mva with the aligned value.
 			 */
 			pMvaInfo = m4u_client_find_buf(client, m4u_module.MVAStart, 1);
-			offset = m4u_va_align((unsigned long *)&m4u_module.MVAStart, &m4u_module.BufSize);
+
+			/* to pass the code defect check */
+			align_mva = m4u_module.MVAStart;
+			offset = m4u_va_align(&align_mva, &m4u_module.BufSize);
+			m4u_module.MVAStart = align_mva & 0xffffffff;
 			/* m4u_module.MVAStart -= offset; */
 
 			if (m4u_module.MVAStart != 0) {
