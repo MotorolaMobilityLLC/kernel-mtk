@@ -28,9 +28,6 @@
 #include <linux/of_address.h>
 #include <linux/of_fdt.h>
 #include <asm/setup.h>
-#include <mt-plat/upmu_common.h>
-#include <mach/upmu_sw.h>
-#include <mach/upmu_hw.h>
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/dma.h>
 #include <mt-plat/sync_write.h>
