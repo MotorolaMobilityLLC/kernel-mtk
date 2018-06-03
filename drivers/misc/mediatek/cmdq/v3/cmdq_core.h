@@ -373,12 +373,13 @@ enum CMDQ_CODE_ENUM {
 	CMDQ_CODE_JUMP_C_RELATIVE = 0xb1,	/* conditional jump (related) */
 };
 
+#define subsys_lsb_bit (16)
 enum CMDQ_CONDITION_ENUM {
 	CMDQ_CONDITION_ERROR = -1,
 
 	/* these are actual HW op code */
 	CMDQ_EQUAL = 0,
-	CMDQ_CONDITION_NOT_EQUAL = 1,
+	CMDQ_NOT_EQUAL = 1,
 	CMDQ_GREATER_THAN_AND_EQUAL = 2,
 	CMDQ_LESS_THAN_AND_EQUAL = 3,
 	CMDQ_GREATER_THAN = 4,
@@ -765,6 +766,9 @@ struct ContextStruct {
 	struct list_head sram_allocated_list;	/* all allocated SRAM chunk */
 	size_t allocated_sram_count;
 
+	/* Delay set CPR start information */
+	u32 delay_cpr_start;
+
 #ifdef CMDQ_INSTRUCTION_COUNT
 	/* GCE instructions count information */
 	int32_t instructionCountLevel;
@@ -921,9 +925,7 @@ extern "C" {
 	uint32_t cmdqCoreGetEvent(enum CMDQ_EVENT_ENUM event);
 
 	int32_t cmdqCoreInitialize(void);
-#ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t cmdqCoreLateInitialize(void);
-#endif
 	void cmdqCoreDeInitialize(void);
 
 /**
@@ -943,6 +945,10 @@ extern "C" {
 	void cmdq_core_free_sram_buffer(u32 sram_addr, size_t size);
 	size_t cmdq_core_get_free_sram_size(void);
 	void cmdq_core_dump_sram(void);
+
+/* Delay control */
+	u32 cmdq_core_get_delay_start_cpr(void);
+	s32 cmdq_get_delay_id_by_scenario(enum CMDQ_SCENARIO_ENUM scenario);
 
 /*
  * GCE capability
@@ -992,6 +998,7 @@ extern "C" {
 					  uint32_t **regAddress);
 	int32_t cmdqCoreDebugRegDumpEnd(uint32_t taskID, uint32_t regCount, uint32_t *regValues);
 	int32_t cmdqCoreDebugDumpCommand(struct TaskStruct *pTask);
+	s32 cmdqCoreDebugDumpSRAM(u32 sram_base, u32 command_size);
 	void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize);
 	void cmdq_delay_dump_thread(void);
 	int32_t cmdqCoreQueryUsage(int32_t *pCount);
