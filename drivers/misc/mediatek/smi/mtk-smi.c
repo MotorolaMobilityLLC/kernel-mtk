@@ -35,10 +35,6 @@
 #include <linux/compat.h>
 #endif
 
-#if defined(SMI_WHI) || defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_VIN) || defined(SMI_ZIO)
-#define MMDVFS_HOOK
-#endif
-
 /* Define SMI_INTERNAL_CCF_SUPPORT when CCF needs to be enabled */
 #if !defined(CONFIG_MTK_CLKMGR) && !defined(SMI_DUMMY) && !defined(CONFIG_FPGA_EARLY_PORTING)
 #define SMI_INTERNAL_CCF_SUPPORT
@@ -1262,7 +1258,7 @@ static struct class *pSmiClass;
 /* MMDVFS related clk initialization */
 static int smi_mmdvfs_clks_init(void)
 {
-#if defined(SMI_WHI) || defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_ZIO)
+#ifdef MMDVFS_HOOK
 		int i = 0;
 
 		SMIMSG("start smi_mmdvfs_clks_init\n");
