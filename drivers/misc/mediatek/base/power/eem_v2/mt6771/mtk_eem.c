@@ -2706,6 +2706,7 @@ void eem_init01(void)
 	}
 
 	mt_ppm_ptpod_policy_deactivate();
+	cpu_down(4);
 
 	/* This patch is waiting for whole bank finish the init01 then go
 	 * next. Due to LL/L use same bulk PMIC, LL voltage table change
@@ -2793,6 +2794,7 @@ static int eem_probe(struct platform_device *pdev)
 		eem_init_ctrl(ctrl);
 
 	/* CPU/GPU pre-process */
+	cpu_up(4);
 	mt_ppm_ptpod_policy_activate();
 
 	if (setup_max_cpus > 4 && !cpu_online(4)) {
