@@ -224,6 +224,7 @@ snd-soc-wm-hubs-objs := wm_hubs.o
 snd-soc-rt5509-objs := rt5509.o rt5509-regmap.o rt5509-calib.o
 
 # Amp
+snd-soc-mt6660-objs := mt6660.o mt6660-regmap.o mt6660-param.o
 snd-soc-max9877-objs := max9877.o
 snd-soc-max98504-objs := max98504.o
 snd-soc-tpa6130a2-objs := tpa6130a2.o
@@ -451,6 +452,8 @@ obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o
 obj-$(CONFIG_SND_SOC_MAX98504)	+= snd-soc-max98504.o
 obj-$(CONFIG_SND_SOC_TPA6130A2)	+= snd-soc-tpa6130a2.o
 obj-$(CONFIG_SND_SOC_RT5509)	+= snd-soc-rt5509.o
+obj-$(CONFIG_SND_SOC_MT6660)	+= snd-soc-mt6660.o
+
 ifeq ($(CONFIG_SND_SOC_MT6358),y)
   # MTK Platform Support
   MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
