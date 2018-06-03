@@ -174,12 +174,12 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 			} else {
 				ppm_hica_algo_data.new_state = cur_state;
 #ifdef PPM_HICA_2P0
-				ppm_dbg(HICA, "[%s(%d)]hold in %s state, capacity_hold_cnt = %d, hvytsk_hold_cnt = %d, freq_hold_cnt = %d\n",
+				ppm_dbg(HICA, "[%s(%d)]hold in %s state, capacity_hold_cnt = %d, bigtsk_hold_cnt = %d, freq_hold_cnt = %d\n",
 					(i == 0) ? "PERF" : "PWR",
 					j,
 					ppm_get_power_state_name(cur_state),
 					data->transition_data[j].capacity_hold_cnt,
-					data->transition_data[j].hvytsk_hold_cnt,
+					data->transition_data[j].bigtsk_hold_cnt,
 					data->transition_data[j].freq_hold_cnt
 					);
 #else
@@ -425,7 +425,7 @@ static void ppm_hica_reset_data_for_state(enum ppm_power_state state)
 		for (j = 0; j < data->size; j++) {
 #ifdef PPM_HICA_2P0
 			data->transition_data[j].capacity_hold_cnt = 0;
-			data->transition_data[j].hvytsk_hold_cnt = 0;
+			data->transition_data[j].bigtsk_hold_cnt = 0;
 			data->transition_data[j].freq_hold_cnt = 0;
 #else
 			data->transition_data[j].freq_hold_cnt = 0;
@@ -634,10 +634,10 @@ PROC_FOPS_RW_HICA_SETTINGS(mode_mask, p->mode_mask);
 PROC_FOPS_RW_HICA_SETTINGS(capacity_hold_time, p->capacity_hold_time);
 PROC_FOPS_RO_HICA_SETTINGS(capacity_hold_cnt, p->capacity_hold_cnt);
 PROC_FOPS_RW_HICA_SETTINGS(capacity_bond, p->capacity_bond);
-PROC_FOPS_RW_HICA_SETTINGS(hvytsk_hold_time, p->hvytsk_hold_time);
-PROC_FOPS_RO_HICA_SETTINGS(hvytsk_hold_cnt, p->hvytsk_hold_cnt);
-PROC_FOPS_RW_HICA_SETTINGS(hvytsk_l_bond, p->hvytsk_l_bond);
-PROC_FOPS_RW_HICA_SETTINGS(hvytsk_h_bond, p->hvytsk_h_bond);
+PROC_FOPS_RW_HICA_SETTINGS(bigtsk_hold_time, p->bigtsk_hold_time);
+PROC_FOPS_RO_HICA_SETTINGS(bigtsk_hold_cnt, p->bigtsk_hold_cnt);
+PROC_FOPS_RW_HICA_SETTINGS(bigtsk_l_bond, p->bigtsk_l_bond);
+PROC_FOPS_RW_HICA_SETTINGS(bigtsk_h_bond, p->bigtsk_h_bond);
 PROC_FOPS_RW_HICA_SETTINGS(freq_hold_time, p->freq_hold_time);
 PROC_FOPS_RO_HICA_SETTINGS(freq_hold_cnt, p->freq_hold_cnt);
 #else /* 1p0, 1p5, 1p75 */
@@ -686,10 +686,10 @@ static int __init ppm_hica_policy_init(void)
 		PROC_ENTRY(capacity_hold_time),
 		PROC_ENTRY(capacity_hold_cnt),
 		PROC_ENTRY(capacity_bond),
-		PROC_ENTRY(hvytsk_hold_time),
-		PROC_ENTRY(hvytsk_hold_cnt),
-		PROC_ENTRY(hvytsk_l_bond),
-		PROC_ENTRY(hvytsk_h_bond),
+		PROC_ENTRY(bigtsk_hold_time),
+		PROC_ENTRY(bigtsk_hold_cnt),
+		PROC_ENTRY(bigtsk_l_bond),
+		PROC_ENTRY(bigtsk_h_bond),
 		PROC_ENTRY(freq_hold_time),
 		PROC_ENTRY(freq_hold_cnt),
 	};
