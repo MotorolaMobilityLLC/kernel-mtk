@@ -2445,7 +2445,7 @@ EXPORT_SYMBOL(mtk_wcn_stp_parser_data);
 *****************************************************************************/
 INT32 mtk_wcn_stp_enable(INT32 value)
 {
-	STP_INFO_FUNC("%s: set the current enable = (%d)\n", __func__, value);
+	STP_DBG_FUNC("%s: set the current enable = (%d)\n", __func__, value);
 
 	stp_rest_ctx_state();
 	STP_SET_ENABLE(stp_core_ctx, value);
@@ -2493,7 +2493,7 @@ INT32 mtk_wcn_stp_dbg_dump_package(VOID)
 *****************************************************************************/
 INT32 mtk_wcn_stp_ready(INT32 value)
 {
-	STP_INFO_FUNC("set ready (%d)\n", value);
+	STP_DBG_FUNC("set ready (%d)\n", value);
 
 	STP_SET_READY(stp_core_ctx, value);
 	/*if whole chip reset, reset the debuggine mode */
@@ -3466,7 +3466,7 @@ INT32 mtk_wcn_stp_notify_sleep_for_thermal(VOID)
 
 VOID mtk_wcn_stp_set_wmt_evt_err_trg_assert(UINT32 value)
 {
-	STP_INFO_FUNC("set evt err tigger assert flag to %d\n", value);
+	STP_DBG_FUNC("set evt err tigger assert flag to %d\n", value);
 	STP_SET_EVT_ERR_ASSERT(stp_core_ctx, value);
 }
 

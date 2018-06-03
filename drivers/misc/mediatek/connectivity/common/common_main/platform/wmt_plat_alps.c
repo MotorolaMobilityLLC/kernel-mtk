@@ -688,7 +688,7 @@ INT32 wmt_plat_eirq_ctrl(ENUM_PIN_ID id, ENUM_PIN_STATE state)
 				/* de-init: nothing to do in ALPS, such as un-registration... */
 			}
 		} else
-			WMT_INFO_FUNC("WMT-PLAT:ALL EINT not defined\n");
+			WMT_DBG_FUNC("WMT-PLAT:ALL EINT not defined\n");
 
 		iret = 0;
 		break;

@@ -1399,7 +1399,7 @@ static _osal_inline_ INT32 hif_sdio_clt_probe_func(MTK_WCN_HIF_SDIO_REGISTINFO *
 	    registinfo_p->sdio_cltinfo->hif_clt_probe(CLTCTX(card_id, func_num, blk_sz, probe_idx),
 						      registinfo_p->func_info);
 
-	HIF_SDIO_INFO_FUNC
+	HIF_SDIO_DBG_FUNC
 	    ("clt_probe_func card_id(%x) func_num(%x) blk_sz(%d) prob_idx(%x) ret(%d) %s\n",
 	     card_id, func_num, blk_sz, probe_idx, ret, (ret) ? "fail" : "ok");
 
@@ -1981,7 +1981,7 @@ static VOID hif_sdio_remove(struct sdio_func *func)
 
 	/* 4 <6> mark this function as removed */
 
-	HIF_SDIO_INFO_FUNC("sdio func(0x%p) is removed successfully!\n", func);
+	HIF_SDIO_DBG_FUNC("sdio func(0x%p) is removed successfully!\n", func);
 }
 
 /*!
@@ -2380,7 +2380,7 @@ stp_off_exist:
 		if (ret)
 			HIF_SDIO_WARN_FUNC("clt_remove for stp fail(%d)\n", ret);
 		else
-			HIF_SDIO_INFO_FUNC("hif_sdio_stp_off, ok!\n");
+			HIF_SDIO_DBG_FUNC("hif_sdio_stp_off, ok!\n");
 
 		/*set deep sleep information to global data struct */
 		func_info = g_hif_sdio_clt_drv_list[clt_index].func_info;
@@ -2725,7 +2725,7 @@ VOID mtk_wcn_hif_sdio_enable_irq(MTK_WCN_HIF_SDIO_CLTCTX ctx, MTK_WCN_BOOL enabl
 	/* store client driver's private data to dev driver */
 	g_hif_sdio_probed_func_list[probed_idx].sdio_irq_enabled = enable;
 	smp_wmb();
-	HIF_SDIO_INFO_FUNC("ctx(0x%x) sdio irq enable(%d)\n",
+	HIF_SDIO_DBG_FUNC("ctx(0x%x) sdio irq enable(%d)\n",
 			   ctx, (enable == MTK_WCN_BOOL_FALSE) ? 0 : 1);
 
 

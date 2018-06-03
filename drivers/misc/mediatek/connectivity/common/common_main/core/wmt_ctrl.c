@@ -416,7 +416,7 @@ INT32 wmt_ctrl_ul_cmd(P_DEV_WMT pWmtDev, const PUINT8 pCmdStr)
 		return -2;
 	}
 
-	WMT_INFO_FUNC("str(%s) result(%d)\n", pCmdStr, pWmtDev->cmdResult);
+	WMT_DBG_FUNC("str(%s) result(%d)\n", pCmdStr, pWmtDev->cmdResult);
 
 	return pWmtDev->cmdResult;
 }
