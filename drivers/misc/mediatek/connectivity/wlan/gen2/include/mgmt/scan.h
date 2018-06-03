@@ -226,6 +226,10 @@ struct _BSS_DESC_T {
 	BOOLEAN fgIEWPA;
 	BOOLEAN fgIEOsen;
 
+#if CFG_SUPPORT_DETECT_ATHEROS_AP
+	BOOLEAN fgIsAtherosAP;
+#endif
+
 	/*! \brief RSN parameters selected for connection */
 	/*
 	 * ! \brief The Select score for final AP selection,
@@ -280,6 +284,9 @@ struct _BSS_DESC_T {
 	BOOLEAN fgIsRoamFail;
 #endif
 	INT_8 cPowerLimit;
+#if CFG_SUPPORT_RSN_SCORE
+	BOOLEAN fgIsRSNSuitableBss;
+#endif
 };
 
 struct _ROAM_BSS_DESC_T {
@@ -633,6 +640,9 @@ struct RM_BEACON_REPORT_PARAMS {
 
 struct RM_MEASURE_REPORT_ENTRY {
 	LINK_ENTRY_T rLinkEntry;
+	/* should greater than sizeof(struct RM_BCN_REPORT) +
+	** sizeof(IE_MEASUREMENT_REPORT_T) + RM_BCN_REPORT_SUB_ELEM_MAX_LENGTH
+	*/
 	UINT_8 aucMeasReport[260];
 };
 /*******************************************************************************

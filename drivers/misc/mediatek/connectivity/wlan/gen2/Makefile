@@ -287,7 +287,18 @@ ifeq ($(FW_CUSTOMIZATION), y)
     ccflags-y += -DENABLED_IN_ENGUSERDEBUG
 endif
 # ---------------------------------------------------
-
+# WLAN Parse BUILD VARINAT
+# ---------------------------------------------------
+ifeq ($(TARGET_BUILD_VARIANT), eng)
+    ccflags-y += -DWLAN_ENG_LOAD
+endif
+ifeq ($(TARGET_BUILD_VARIANT), userdebug)
+    ccflags-y += -DWLAN_USERDEBUG_LOAD
+endif
+ifeq ($(TARGET_BUILD_VARIANT), user)
+    ccflags-y += -DWLAN_USER_LOAD
+endif
+# ---------------------------------------------------
 
 $(MODULE_NAME)-objs  += $(COMMON_OBJS)
 $(MODULE_NAME)-objs  += $(NIC_OBJS)

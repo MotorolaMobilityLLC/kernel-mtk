@@ -920,10 +920,7 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 		}
 
 	} while (FALSE);
-#if 0
-	/*start dump pkt info*/
-	wlanPktDebugDumpInfo(prAdapter);
-#endif
+
 	return;
 
 }				/* p2pFuncDisconnect */

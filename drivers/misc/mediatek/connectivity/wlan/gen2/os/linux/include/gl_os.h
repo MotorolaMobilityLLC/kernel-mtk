@@ -632,6 +632,7 @@ struct _GLUE_INFO_T {
 	struct cfg80211_ft_event_params rFtEventParam;
 	UINT_32 i4Priority;
 
+	enum ENUM_BUILD_VARIANT_E rBuildVarint;
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);

@@ -569,17 +569,16 @@ BOOLEAN rsnIsSuitableBSS(IN P_ADAPTER_T prAdapter, IN P_RSN_INFO_T prBssRsnInfo)
 	DEBUGFUNC("rsnIsSuitableBSS");
 
 	do {
-
 		if ((prAdapter->rWifiVar.rConnSettings.rRsnInfo.u4GroupKeyCipherSuite & 0x000000FF) !=
 		    GET_SELECTOR_TYPE(prBssRsnInfo->u4GroupKeyCipherSuite)) {
-			DBGLOG(RSN, TRACE, "Break by GroupKeyCipherSuite\n");
+			DBGLOG(RSN, WARN, "Break by GroupKeyCipherSuite\n");
 			break;
 		}
 		for (i = 0; i < prBssRsnInfo->u4PairwiseKeyCipherSuiteCount; i++) {
 			if (((prAdapter->rWifiVar.rConnSettings.rRsnInfo.au4PairwiseKeyCipherSuite[0] & 0x000000FF) !=
 			     GET_SELECTOR_TYPE(prBssRsnInfo->au4PairwiseKeyCipherSuite[i]))
 			    && (i == prBssRsnInfo->u4PairwiseKeyCipherSuiteCount - 1)) {
-				DBGLOG(RSN, TRACE, "Break by PairwiseKeyCipherSuite\n");
+				DBGLOG(RSN, WARN, "Break by PairwiseKeyCipherSuite\n");
 				break;
 			}
 		}
@@ -587,7 +586,7 @@ BOOLEAN rsnIsSuitableBSS(IN P_ADAPTER_T prAdapter, IN P_RSN_INFO_T prBssRsnInfo)
 			if (((prAdapter->rWifiVar.rConnSettings.rRsnInfo.au4AuthKeyMgtSuite[0] & 0x000000FF) !=
 			     GET_SELECTOR_TYPE(prBssRsnInfo->au4AuthKeyMgtSuite[i]))
 			    && (i == prBssRsnInfo->u4AuthKeyMgtSuiteCount - 1)) {
-				DBGLOG(RSN, TRACE, "Break by AuthKeyMgtSuite\n");
+				DBGLOG(RSN, WARN, "Break by AuthKeyMgtSuite\n");
 				break;
 			}
 		}
@@ -754,10 +753,15 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	}
 
 	if (!rsnIsSuitableBSS(prAdapter, prBssRsnInfo)) {
-		DBGLOG(RSN, WARN, "RSN info check no matched\n");
+		DBGLOG(RSN, WARN, "RSN info check no matched, RSN Score support[%d]\n", CFG_SUPPORT_RSN_SCORE);
+#if CFG_SUPPORT_RSN_SCORE
+		prBss->fgIsRSNSuitableBss = FALSE;
+	} else
+		prBss->fgIsRSNSuitableBss = TRUE;
+#else
 		return FALSE;
 	}
-
+#endif
 	if (prBssRsnInfo->u4PairwiseKeyCipherSuiteCount == 1 &&
 	    GET_SELECTOR_TYPE(prBssRsnInfo->au4PairwiseKeyCipherSuite[0]) == CIPHER_SUITE_NONE) {
 		/*
