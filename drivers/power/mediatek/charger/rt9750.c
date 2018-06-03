@@ -265,11 +265,11 @@ static int rt9750_register_rt_regmap(struct rt9750_info *info)
 
 	prop->name = info->desc->regmap_name;
 	prop->aliases = info->desc->regmap_name;
-	prop->register_num = ARRAY_SIZE(rt9750_regmap_map),
-	prop->rm = rt9750_regmap_map,
+	prop->register_num = ARRAY_SIZE(rt9750_regmap_map);
+	prop->rm = rt9750_regmap_map;
 	prop->rt_regmap_mode = RT_SINGLE_BYTE | RT_CACHE_DISABLE |
-		RT_IO_PASS_THROUGH,
-	prop->io_log_en = 0,
+		RT_IO_PASS_THROUGH;
+	prop->io_log_en = 0;
 
 	info->regmap_prop = prop;
 	info->regmap_dev = rt_regmap_device_register_ex(
