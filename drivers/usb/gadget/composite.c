@@ -1490,8 +1490,10 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	struct usb_function		*f = NULL;
 	u8				endp;
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
+#if 0
 #ifdef CONFIG_USBIF_COMPLIANCE
 	struct usb_otg_descriptor *otg_desc = req->buf;
+#endif
 #endif
 	if (!(ctrl->bRequest == USB_REQ_GET_STATUS
 			|| ctrl->bRequest == USB_REQ_CLEAR_FEATURE
@@ -1522,6 +1524,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		if (ctrl->bRequestType != USB_DIR_IN)
 			goto unknown;
 		switch (w_value >> 8) {
+#if 0
 #ifdef CONFIG_USBIF_COMPLIANCE
 		case USB_DT_OTG:
 			otg_desc->bLength = sizeof(*otg_desc);
@@ -1530,6 +1533,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			otg_desc->bcdOTG = cpu_to_le16(0x0200);
 			value = min_t(int, w_length, sizeof(struct usb_otg_descriptor));
 			break;
+#endif
 #endif
 		case USB_DT_DEVICE:
 			cdev->desc.bNumConfigurations =
@@ -1692,8 +1696,23 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	 * interface of the function
 	 */
 	case USB_REQ_GET_STATUS:
-		if (__ratelimit(&ratelimit))
-			INFO(cdev, "[COM]USB_REQ_GET_STATUS\n");
+		if (gadget_is_otg(gadget) && gadget->hnp_polling_support &&
+						(w_index == OTG_STS_SELECTOR)) {
+			if (ctrl->bRequestType != (USB_DIR_IN |
+							USB_RECIP_DEVICE))
+				goto unknown;
+			*((u8 *)req->buf) = gadget->host_request_flag;
+			value = 1;
+			break;
+		}
+
+		/*
+		 * USB 3.0 additions:
+		 * Function driver should handle get_status request. If such cb
+		 * wasn't supplied we respond with default value = 0
+		 * Note: function driver should supply such cb only for the
+		 * first interface of the function
+		 */
 		if (!gadget_is_superspeed(gadget))
 			goto unknown;
 		if (ctrl->bRequestType != (USB_DIR_IN | USB_RECIP_INTERFACE))
