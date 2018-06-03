@@ -1065,6 +1065,15 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695B_FHD_DSI_CMD_AUO_NT50358_QHD)
 	&nt35695B_fhd_dsi_cmd_auo_nt50358_qhd_lcm_drv,
 #endif
+
+#if defined(ILI9881C_HDP_DSI_VDO_ILITEK_RT5081)
+	&ili9881c_hdp_dsi_vdo_ilitek_rt5081_lcm_drv,
+#endif
+
+#if defined(OPPO_TIANMA_TD4310_FHDP_DSI_VDO_RT5081)
+	&oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_lcm_drv,
+#endif
+
 };
 
 unsigned char lcm_name_list[][128] = {
