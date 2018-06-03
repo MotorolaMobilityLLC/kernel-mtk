@@ -1298,6 +1298,12 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 				err = -EINVAL;
 				break;
 			}
+			if (atomic_read(&obj->gyro_deb_on) == 1) {
+				unsigned long endt = atomic_read(&obj->gyro_deb_end);
+
+				if (time_before_eq(jiffies, endt))
+					mdelay(55);	/* 55ms */
+			}
 
 			bmg_read_sensor_data(client, strbuf, BMG_BUFSIZE);
 			if (copy_to_user(data, strbuf, strlen(strbuf) + 1)) {
