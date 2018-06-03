@@ -181,9 +181,7 @@ struct ion_client *disp_ion_create(const char *name)
 		return NULL;
 	}
 
-	DISPERR("create ion client 0x%p\n", disp_ion_client);
-	DISPERR("create ion client 0x%p\n", disp_ion_client);
-	DISPERR("create ion client 0x%p\n", disp_ion_client);
+	DDPDBG("create ion client 0x%p\n", disp_ion_client);
 	return disp_ion_client;
 }
 
@@ -197,16 +195,10 @@ struct ion_handle *disp_ion_alloc(struct ion_client *client,
 	disp_handle = ion_alloc(client, size, align, heap_id_mask, 0);
 	if (IS_ERR(disp_handle)) {
 		DISPERR("disp_ion_alloc 1error %p\n", disp_handle);
-		DISPERR("disp_ion_alloc 2error %p\n", disp_handle);
-		DISPERR("disp_ion_alloc 3error %p\n", disp_handle);
-		DISPERR("disp_ion_alloc 4error %p\n", disp_handle);
 		return NULL;
 		}
 
-	DISPERR("disp_ion_alloc 1 %p\n", disp_handle);
-	DISPERR("disp_ion_alloc 2 %p\n", disp_handle);
-	DISPERR("disp_ion_alloc 3 %p\n", disp_handle);
-	DISPERR("disp_ion_alloc 4 %p\n", disp_handle);
+	DDPDBG("disp_ion_alloc 1 %p\n", disp_handle);
 	return disp_handle;
 
 }
@@ -215,7 +207,7 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 				      unsigned int *mva, int port)
 {
 	struct ion_mm_data mm_data;
-	unsigned int mva_size;
+	size_t mva_size;
 	ion_phys_addr_t phy_addr;
 
 	memset((void *)&mm_data, 0, sizeof(struct ion_mm_data));
@@ -224,16 +216,13 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER;
 	if (ion_kernel_ioctl(client, ION_CMD_MULTIMEDIA, (unsigned long)&mm_data) < 0) {
 		DISPERR("disp_ion_get_mva: config buffer failed.%p -%p\n", client, handle);
-		DISPERR("disp_ion_get_mva: config buffer failed.%p -%p\n", client, handle);
-		DISPERR("disp_ion_get_mva: config buffer failed.%p -%p\n", client, handle);
-		DISPERR("disp_ion_get_mva: config buffer failed.%p -%p\n", client, handle);
 		ion_free(client, handle);
 		return -1;
 	}
 
 	ion_phys(client, handle, &phy_addr, (size_t *)&mva_size);
 	*mva = (unsigned int)phy_addr;
-	DDPERR("alloc mmu addr hnd=0x%p,mva=0x%08x\n", handle, (unsigned int)*mva);
+	DDPDBG("alloc mmu addr hnd=0x%p,mva=0x%08x, phy_addr=0x%lx!\n", handle, (unsigned int)*mva, phy_addr);
 	return 0;
 }
 
@@ -266,7 +255,7 @@ struct ion_handle *disp_ion_import_handle(struct ion_client *client, int fd)
 	if (ion_kernel_ioctl(client, ION_CMD_MULTIMEDIA, (unsigned long)&mm_data))
 		DDPERR("configure ion buffer failed!\n");
 
-	DDPERR("import ion handle fd=%d,hnd=0x%p\n", fd, handle);
+	DDPDBG("import ion handle fd=%d,hnd=0x%p\n", fd, handle);
 
 	return handle;
 }
@@ -282,7 +271,7 @@ void disp_ion_free_handle(struct ion_client *client, struct ion_handle *handle)
 
 	ion_free(client, handle);
 
-	DDPERR("free ion handle 0x%p\n", handle);
+	DDPDBG("free ion handle 0x%p\n", handle);
 }
 
 void disp_ion_destroy(struct ion_client *client)

@@ -636,7 +636,7 @@ int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg)
 	}
 
 	for (i = 0; i < cfg->input_layer_num; i++)
-		if (disp_validate_input_params(&cfg->input_cfg[i], cfg->input_layer_num) != 0)
+		if (disp_validate_input_params(&cfg->input_cfg[i], _get_max_layer(cfg->session_id)) != 0)
 			return -1;
 
 	if (cfg->output_en && disp_validate_output_params(&cfg->output_cfg) != 0)

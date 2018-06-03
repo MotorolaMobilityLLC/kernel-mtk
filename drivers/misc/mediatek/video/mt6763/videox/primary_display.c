@@ -6719,7 +6719,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 	/* flush remove memory to cmdq */
-	_cmdq_flush_config_handle_mira(cmdq_handle, 1);
+	cmdqRecFlushAsyncCallback(cmdq_handle, _remove_memout_callback, 0);
 	DISPMSG("primary capture: Flush remove memout\n");
 
 	dpmgr_path_memout_clock(pgc->dpmgr_handle, 0);
@@ -6782,7 +6782,6 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, enu
 	return 0;
 }
 
-#ifdef CONFIG_MTK_IOMMU
 int primary_display_capture_framebuffer_ovl(unsigned long pbuf, enum UNIFIED_COLOR_FMT ufmt)
 {
 	int ret = 0;
@@ -6845,74 +6844,7 @@ out:
 	DISPMSG("primary capture: end\n");
 	return ret;
 }
-#else
-int primary_display_capture_framebuffer_ovl(unsigned long pbuf, enum UNIFIED_COLOR_FMT ufmt)
-{
-	int ret = 0;
-	m4u_client_t *m4uClient = NULL;
-	unsigned int mva = 0;
-	unsigned int w_xres = primary_display_get_width();
-	unsigned int h_yres = primary_display_get_height();
-	unsigned int pixel_byte = primary_display_get_bpp() / 8;
-	int buffer_size = h_yres * w_xres * pixel_byte;
-	enum DISP_MODULE_ENUM after_eng = DISP_MODULE_OVL0;
-	int tmp;
 
-	DISPMSG("primary capture: begin\n");
-
-	disp_sw_mutex_lock(&(pgc->capture_lock));
-
-	if (primary_display_is_sleepd()) {
-		memset((void *)pbuf, 0, buffer_size);
-		DISPMSG("primary capture: Fail black End\n");
-		goto out;
-	}
-
-	m4uClient = m4u_create_client();
-	if (m4uClient == NULL) {
-		DISPERR("primary capture:Fail to alloc  m4uClient\n");
-		ret = -1;
-		goto out;
-	}
-
-	ret = m4u_alloc_mva(m4uClient, DISP_M4U_PORT_DISP_WDMA0, pbuf, NULL, buffer_size,
-			  M4U_PROT_READ | M4U_PROT_WRITE, 0, &mva);
-	if (ret != 0) {
-		DISPERR("primary capture:Fail to allocate mva\n");
-		ret = -1;
-		goto out;
-	}
-
-	ret = m4u_cache_sync(m4uClient, DISP_M4U_PORT_DISP_WDMA0, pbuf, buffer_size, mva,
-			   M4U_CACHE_FLUSH_ALL);
-	if (ret != 0) {
-		DISPERR("primary capture:Fail to cach sync\n");
-		ret = -1;
-		goto out;
-	}
-	tmp = disp_helper_get_option(DISP_OPT_SCREEN_CAP_FROM_DITHER);
-	if (tmp == 0)
-		after_eng = DISP_MODULE_OVL0;
-
-	if (primary_display_cmdq_enabled())
-		_screen_cap_by_cmdq(mva, ufmt, after_eng);
-	else
-		_screen_cap_by_cpu(mva, ufmt, after_eng);
-
-	ret = m4u_cache_sync(m4uClient, DISP_M4U_PORT_DISP_WDMA0, pbuf, buffer_size, mva,
-			   M4U_CACHE_INVALID_BY_RANGE);
-out:
-	if (mva > 0)
-		m4u_dealloc_mva(m4uClient, DISP_M4U_PORT_DISP_WDMA0, mva);
-
-	if (m4uClient != 0)
-		m4u_destroy_client(m4uClient);
-
-	disp_sw_mutex_unlock(&(pgc->capture_lock));
-	DISPMSG("primary capture: end\n");
-	return ret;
-}
-#endif
 int primary_display_capture_framebuffer(unsigned long pbuf)
 {
 	unsigned int fb_layer_id = primary_display_get_option("FB_LAYER");
