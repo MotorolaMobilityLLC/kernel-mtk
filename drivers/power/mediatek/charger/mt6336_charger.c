@@ -918,6 +918,9 @@ void mt6336_safety_timeout_callback(void)
 		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT);
 	else
 		pr_err("do not call chain\n");
+
+	mt6336_set_flag_register_value(MT6336_RG_CHR_SAFETMR_CLEAR, 1);
+	mt6336_set_flag_register_value(MT6336_RG_CHR_SAFETMR_CLEAR, 0);
 }
 
 int mt6336_event(struct charger_device *chg_dev, u32 event, u32 args)

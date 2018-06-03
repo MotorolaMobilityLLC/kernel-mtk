@@ -759,8 +759,8 @@ static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_ty
 	info->chr_type = chr_type;
 	info->charger_thread_polling = true;
 
-
 	info->can_charging = true;
+	info->safety_timeout = false;
 	info->chg1_data.thermal_charging_current_limit = -1;
 	info->chg1_data.thermal_input_current_limit = -1;
 
@@ -864,15 +864,30 @@ static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 
 static void mtk_battery_notify_UI_test(struct charger_manager *info)
 {
-	if (info->notify_test_mode == 0x0001) {
+	switch (info->notify_test_mode) {
+	case 1:
 		info->notify_code = 0x0001;
-		pr_debug("[BATTERY_TestMode] BATTERY_NOTIFY_CASE_0001_VCHARGER\n");
-	} else if (info->notify_test_mode == 0x0002) {
+		pr_debug("[%s] CASE_0001_VCHARGER\n", __func__);
+		break;
+	case 2:
 		info->notify_code = 0x0002;
-		pr_debug("[BATTERY_TestMode] BATTERY_NOTIFY_CASE_0002_VBATTEMP\n");
-	} else {
-		pr_debug("[BATTERY] Unknown BN_TestMode Code : %x\n",
-			info->notify_test_mode);
+		pr_debug("[%s] CASE_0002_VBATTEMP\n", __func__);
+		break;
+	case 3:
+		info->notify_code = 0x0004;
+		pr_debug("[%s] CASE_0003_ICHARGING\n", __func__);
+		break;
+	case 4:
+		info->notify_code = 0x0008;
+		pr_debug("[%s] CASE_0004_VBAT\n", __func__);
+		break;
+	case 5:
+		info->notify_code = 0x0010;
+		pr_debug("[%s] CASE_0005_TOTAL_CHARGINGTIME\n", __func__);
+		break;
+	default:
+		pr_debug("[%s] Unknown BN_TestMode Code: %x\n",
+			__func__, info->notify_test_mode);
 	}
 }
 
@@ -947,6 +962,8 @@ static void charger_check_status(struct charger_manager *info)
 	}
 
 	if (info->cmd_discharging)
+		charging = false;
+	if (info->safety_timeout)
 		charging = false;
 
 stop_charging:
