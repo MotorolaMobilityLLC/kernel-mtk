@@ -324,7 +324,7 @@ static bool GetDLStatus(void)
 static bool mAnaSuspend;
 void SetAnalogSuspend(bool bEnable)
 {
-	pr_warn("%s bEnable ==%d mAnaSuspend = %d\n", __func__, bEnable, mAnaSuspend);
+	pr_debug("%s(), bEnable == %d, mAnaSuspend = %d\n", __func__, bEnable, mAnaSuspend);
 	if ((bEnable == true) && (mAnaSuspend == false)) {
 		/*Ana_Log_Print();*/
 		SavePowerState();
@@ -394,11 +394,11 @@ void audckbufEnable(bool enable)
 #if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(_GIT318_READY)
 			if (mClkBufferfromPMIC) {
 				Ana_Set_Reg(DCXO_CW01, 0x8000, 0x8000);
-				pr_warn("-PMIC DCXO XO_AUDIO_EN_M enable, DCXO_CW01 = 0x%x\n",
+				pr_aud("-PMIC DCXO XO_AUDIO_EN_M enable, DCXO_CW01 = 0x%x\n",
 						Ana_Get_Reg(DCXO_CW01));
 			} else {
 				clk_buf_ctrl(CLK_BUF_AUDIO, true);
-				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
+				pr_aud("-RF clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
 			}
 #endif
 		}
@@ -409,11 +409,11 @@ void audckbufEnable(bool enable)
 #if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(_GIT318_READY)
 			if (mClkBufferfromPMIC) {
 				Ana_Set_Reg(DCXO_CW01, 0x0000, 0x8000);
-				pr_warn("-PMIC DCXO XO_AUDIO_EN_M disable, DCXO_CW01 = 0x%x\n",
+				pr_aud("-PMIC DCXO XO_AUDIO_EN_M disable, DCXO_CW01 = 0x%x\n",
 						Ana_Get_Reg(DCXO_CW01));
 			} else {
 				clk_buf_ctrl(CLK_BUF_AUDIO, false);
-				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
+				pr_aud("-RF clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
 			}
 #endif
 		}
@@ -921,7 +921,7 @@ static int get_hp_trim_offset(int channel)
 		return 0;
 	}
 
-	pr_warn("%s channels = %d\n", __func__, channel);
+	pr_aud("%s channels = %d\n", __func__, channel);
 
 	for (counter = 0; counter < kTrimTimes; counter++)
 		trimOffset[counter] = get_trim_buffer_diff(channel);
@@ -930,7 +930,7 @@ static int get_hp_trim_offset(int channel)
 		averageOffset = averageOffset + trimOffset[counter];
 
 	averageOffset = (averageOffset + (kTrimTimes / 2)) / kTrimTimes;
-	pr_warn("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
+	pr_aud("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
 
 	return averageOffset;
 }
@@ -953,7 +953,7 @@ static int pmic_dc_offset_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 
 static int pmic_dctrim_control_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s(), dctrim_calibrated = %d\n", __func__, dctrim_calibrated);
+	pr_aud("%s(), dctrim_calibrated = %d\n", __func__, dctrim_calibrated);
 	ucontrol->value.integer.value[0] = dctrim_calibrated;
 	return 0;
 }
@@ -966,11 +966,11 @@ static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl
 	}
 
 	if (ucontrol->value.integer.value[0] == 1) {
-		pr_debug("%s(), Start DCtrim Calibrating", __func__);
+		pr_aud("%s(), Start DCtrim Calibrating", __func__);
 		hpl_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
 		hpr_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
 		dctrim_calibrated = 2;
-		pr_debug("%s(), End DCtrim Calibrating", __func__);
+		pr_aud("%s(), End DCtrim Calibrating", __func__);
 	} else {
 		dctrim_calibrated = ucontrol->value.integer.value[0];
 	}
@@ -1361,7 +1361,7 @@ static void SetHprOffset(int OffsetTrimming)
 	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	pr_debug("%s(), DCoffsetValue = %d, RegValue = 0x%x\n",
+	pr_aud("%s(), DCoffsetValue = %d, RegValue = 0x%x\n",
 			__func__, DCoffsetValue, RegValue);
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, RegValue, 0xffff);
 }
@@ -1376,7 +1376,7 @@ static void SetHplOffset(int OffsetTrimming)
 	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	pr_debug("%s(), DCoffsetValue = %d, RegValue = 0x%x\n",
+	pr_aud("%s(), DCoffsetValue = %d, RegValue = 0x%x\n",
 			__func__, DCoffsetValue, RegValue);
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, RegValue, 0xffff);
 }
@@ -1421,7 +1421,7 @@ static void SetDcCompenSation(void)
 
 static void SetDCcoupleNP(int MicBias, int mode)
 {
-	pr_aud("%s MicBias= %d mode = %d\n", __func__, MicBias, mode);
+	pr_aud("%s(), MicBias = %d, mode = %d\n", __func__, MicBias, mode);
 	switch (mode) {
 	case AUDIO_ANALOGUL_MODE_ACC:
 	case AUDIO_ANALOGUL_MODE_DCC:
@@ -2045,7 +2045,7 @@ static void HeadsetVoloumeSet(void)
 	index = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	oldindex = 8;
 	if (index > oldindex) {
-		pr_aud("index = %d oldindex = %d\n", index, oldindex);
+		pr_aud("index = %d, oldindex = %d\n", index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
 			reg_idx = oldindex + count;
@@ -2059,7 +2059,7 @@ static void HeadsetVoloumeSet(void)
 			udelay(200);
 		}
 	} else {
-		pr_aud("index = %d oldindex = %d\n", index, oldindex);
+		pr_aud("index = %d, oldindex = %d\n", index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
 			reg_idx = oldindex - count;
@@ -2097,7 +2097,7 @@ static void Hp_Zcd_Enable(bool _enable)
 
 static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 {
-	pr_warn("%s(), enable %d, ANC %d, HSL %d, HSR %d, is_anc %d\n",
+	pr_debug("%s(), enable = %d, ANC = %d, HSL = %d, HSR = %d, is_anc = %d\n",
 		__func__,
 		enable,
 		ANC_enabled,
@@ -2119,7 +2119,7 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false &&
 		    !ANC_enabled) {
-			pr_warn("%s\n", __func__);
+			pr_aud("%s()\n", __func__);
 
 			/* switch to ground to de pop-noise */
 			HP_Switch_to_Ground();
@@ -2191,7 +2191,7 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false &&
 		    !ANC_enabled) {
-			pr_warn("Audio_Amp_Change off amp\n");
+			pr_aud("Audio_Amp_Change off amp\n");
 
 			/* Disable AUD_ZCD */
 			Hp_Zcd_Enable(false);
@@ -2548,7 +2548,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	if (enable) {
-		pr_debug("Ext_Speaker_Amp_Change ON+\n");
+		pr_aud("Ext_Speaker_Amp_Change ON+\n");
 #ifndef CONFIG_MTK_SPEAKER
 
 #ifndef MT6755_AW8736_REWORK
@@ -2586,9 +2586,9 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif				/*CONFIG_MTK_LEGACY */
 		msleep(SPK_WARM_UP_TIME);
 #endif
-		pr_debug("Ext_Speaker_Amp_Change ON-\n");
+		pr_aud("Ext_Speaker_Amp_Change ON-\n");
 	} else {
-		pr_debug("Ext_Speaker_Amp_Change OFF+\n");
+		pr_aud("Ext_Speaker_Amp_Change OFF+\n");
 #ifndef CONFIG_MTK_SPEAKER
 
 #ifndef MT6755_AW8736_REWORK
@@ -2601,7 +2601,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif
 		udelay(500);
 #endif
-		pr_debug("Ext_Speaker_Amp_Change OFF-\n");
+		pr_aud("Ext_Speaker_Amp_Change OFF-\n");
 	}
 #endif
 }
@@ -2744,7 +2744,7 @@ static void Receiver_Speaker_Switch_Change(bool enable)
 static int Receiver_Speaker_Switch_Get(struct snd_kcontrol *kcontrol,
 				       struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s() : %d\n", __func__,
+	pr_debug("%s(): %d\n", __func__,
 		 mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH];
