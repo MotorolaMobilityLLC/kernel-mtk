@@ -211,6 +211,10 @@ static void _mtk_pm_callback_power_off(void)
 	/* mt_gpufreq_voltage_lpm_set(1); */
 	mt_gpufreq_voltage_enable_set(0);
 
+	/* Avoid the current pulse of PMIC IC need 3 ms delay, *
+	 * should follow the mt_gpufreq_voltage_enable_set(0)  *
+	 */
+	mdelay(3);
 
 #ifdef GPU_DVFS_DEBUG
 	pr_alert("[MALI] power_off: lpm on!\n");
