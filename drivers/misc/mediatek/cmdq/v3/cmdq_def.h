@@ -16,6 +16,8 @@
 
 #include <linux/kernel.h>
 
+#include "cmdq_event_common.h"
+
 #define CMDQ_DRIVER_DEVICE_NAME         "mtk_cmdq"
 
 /* #define CMDQ_COMMON_ENG_SUPPORT */
@@ -261,14 +263,6 @@ enum CMDQ_MDP_PA_BASE_ENUM {
 	CMDQ_MDP_PA_BASE_MM_MUTEX,
 	CMDQ_MAX_MDP_PA_BASE_COUNT,		/* ALWAYS keep at the end */
 };
-
-/* CMDQ Events */
-#undef DECLARE_CMDQ_EVENT
-#define DECLARE_CMDQ_EVENT(name_struct, val, dts_name) name_struct = val,
-enum CMDQ_EVENT_ENUM {
-#include "cmdq_event_common.h"
-};
-#undef DECLARE_CMDQ_EVENT
 
 /* CMDQ subsys */
 #undef DECLARE_CMDQ_SUBSYS

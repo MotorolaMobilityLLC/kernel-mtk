@@ -23,6 +23,7 @@
 #include <linux/printk.h>
 #include <linux/sched.h>
 #include "cmdq_def.h"
+#include "cmdq_event_common.h"
 
 /*  */
 /* address conversion for 4GB ram support: */
@@ -740,6 +741,12 @@ struct StressContextStruct {
 	cmdqStressCallback exec_suspend;
 };
 
+struct cmdq_event_table {
+	u16 event;	/* cmdq event enum value */
+	char event_name[45];
+	char dts_name[40];
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1084,6 +1091,9 @@ extern "C" {
 	struct StressContextStruct *cmdq_core_get_stress_context(void);
 	void cmdq_core_clean_stress_context(void);
 	bool cmdq_core_is_clock_enabled(void);
+
+	struct cmdq_event_table *cmdq_event_get_table(void);
+	u32 cmdq_event_get_table_size(void);
 #ifdef __cplusplus
 }
 #endif

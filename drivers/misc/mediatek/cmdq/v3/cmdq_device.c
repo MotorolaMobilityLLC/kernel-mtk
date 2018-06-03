@@ -15,6 +15,7 @@
 #include "cmdq_core.h"
 #include "cmdq_virtual.h"
 #include "smi_public.h"
+#include "cmdq_event_common.h"
 
 /* device tree */
 #include <linux/of.h>
@@ -301,8 +302,8 @@ void cmdq_dev_init_subsys(struct device_node *node)
 
 void cmdq_dev_get_event_value_by_name(struct device_node *node, enum CMDQ_EVENT_ENUM event, const char *dts_name)
 {
-	int status;
-	uint32_t event_value;
+	s32 status;
+	s32 event_value = -1;
 
 	do {
 		if (event < 0 || event >= CMDQ_MAX_HW_EVENT_COUNT)
@@ -328,24 +329,25 @@ void cmdq_dev_test_event_correctness_impl(enum CMDQ_EVENT_ENUM event, const char
 
 void cmdq_dev_init_event_table(struct device_node *node)
 {
-#undef DECLARE_CMDQ_EVENT
-#define DECLARE_CMDQ_EVENT(name, val, dts_name) \
-{	\
-	cmdq_dev_get_event_value_by_name(node, val, #dts_name);	\
-}
-#include "cmdq_event_common.h"
-#undef DECLARE_CMDQ_EVENT
+	struct cmdq_event_table *events = cmdq_event_get_table();
+	u32 table_size = cmdq_event_get_table_size();
+	u32 i = 0;
+
+	for (i = 0; i < table_size; i++) {
+		if (events[i].event == CMDQ_MAX_HW_EVENT_COUNT)
+			break;
+		cmdq_dev_get_event_value_by_name(node, events[i].event, events[i].dts_name);
+	}
 }
 
 void cmdq_dev_test_dts_correctness(void)
 {
-#undef DECLARE_CMDQ_EVENT
-#define DECLARE_CMDQ_EVENT(name, val, dts_name) \
-{	\
-		cmdq_dev_test_event_correctness_impl(val, #name);	\
-}
-#include "cmdq_event_common.h"
-#undef DECLARE_CMDQ_EVENT
+	struct cmdq_event_table *events = cmdq_event_get_table();
+	u32 table_size = cmdq_event_get_table_size();
+	u32 i = 0;
+
+	for (i = 0; i < table_size; i++)
+		cmdq_dev_test_event_correctness_impl(events[i].event, events[i].dts_name);
 
 #undef DECLARE_CMDQ_SUBSYS
 #define DECLARE_CMDQ_SUBSYS(name, val, grp, dts_name) \
