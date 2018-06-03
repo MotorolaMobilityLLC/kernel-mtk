@@ -35,6 +35,7 @@
 #include <linux/io.h>
 
 #include <scp_helper.h>
+#include <scp_ipi.h>
 
 #include "audio_log.h"
 #include "audio_assert.h"
@@ -315,7 +316,7 @@ static int __init audio_ipi_driver_init(void)
 	int ret = 0;
 
 #if 0 /* TODO: this will cause KE/HWT ...... */
-	if (is_scp_B_ready() == 0) {
+	if (is_scp_ready(SCP_B_ID)) {
 		AUD_LOG_E("[SCP] scp not ready\n");
 		return -EACCES;
 	}
