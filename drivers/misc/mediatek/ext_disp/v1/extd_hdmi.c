@@ -1370,7 +1370,7 @@ int hdmi_get_capability(void *info)
 int hdmi_get_edid(void *edid_info)
 {
 	int ret = 0;
-	HDMI_EDID_T pv_get_info;
+	struct HDMI_EDID_INFO_T pv_get_info;
 
 	memset(&pv_get_info, 0, sizeof(pv_get_info));
 

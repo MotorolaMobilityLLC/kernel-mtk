@@ -16,7 +16,6 @@
 #define     HDMITX_H
 
 /* /#include "mtkfb.h" */
-#include "disp_session.h"
 
 #define MHL_UART_SHARE_PIN
 
@@ -85,53 +84,6 @@ struct hdmi_hdcp_drmkey {
 struct send_slt_data {
 	unsigned char u1sendsltdata[15];
 };
-
-typedef struct _HDMI_EDID_T {
-	unsigned int ui4_ntsc_resolution;	/* use EDID_VIDEO_RES_T, there are many resolution */
-	unsigned int ui4_pal_resolution;	/* use EDID_VIDEO_RES_T */
-	/* use EDID_VIDEO_RES_T, only one NTSC resolution, Zero means none native NTSC resolution is available */
-	unsigned int ui4_sink_native_ntsc_resolution;
-	/* use EDID_VIDEO_RES_T, only one resolution, Zero means none native PAL resolution is available */
-	unsigned int ui4_sink_native_pal_resolution;
-	unsigned int ui4_sink_cea_ntsc_resolution;	/* use EDID_VIDEO_RES_T */
-	unsigned int ui4_sink_cea_pal_resolution;	/* use EDID_VIDEO_RES_T */
-	unsigned int ui4_sink_dtd_ntsc_resolution;	/* use EDID_VIDEO_RES_T */
-	unsigned int ui4_sink_dtd_pal_resolution;	/* use EDID_VIDEO_RES_T */
-	unsigned int ui4_sink_1st_dtd_ntsc_resolution;	/* use EDID_VIDEO_RES_T */
-	unsigned int ui4_sink_1st_dtd_pal_resolution;	/* use EDID_VIDEO_RES_T */
-	unsigned short ui2_sink_colorimetry;	/* use EDID_VIDEO_COLORIMETRY_T */
-	unsigned char ui1_sink_rgb_color_bit;	/* color bit for RGB */
-	unsigned char ui1_sink_ycbcr_color_bit;	/* color bit for YCbCr */
-	unsigned short ui2_sink_aud_dec;	/* use EDID_AUDIO_DECODER_T */
-	unsigned char ui1_sink_is_plug_in;	/* 1: Plug in 0:Plug Out */
-	unsigned int ui4_hdmi_pcm_ch_type;	/* use EDID_A_FMT_CH_TYPE */
-	unsigned int ui4_hdmi_pcm_ch3ch4ch5ch7_type;	/* use EDID_A_FMT_CH_TYPE1 */
-	unsigned int ui4_dac_pcm_ch_type;	/* use EDID_A_FMT_CH_TYPE */
-	unsigned char ui1_sink_i_latency_present;
-	unsigned char ui1_sink_p_audio_latency;
-	unsigned char ui1_sink_p_video_latency;
-	unsigned char ui1_sink_i_audio_latency;
-	unsigned char ui1_sink_i_video_latency;
-	unsigned char ui1ExtEdid_Revision;
-	unsigned char ui1Edid_Version;
-	unsigned char ui1Edid_Revision;
-	unsigned char ui1_Display_Horizontal_Size;
-	unsigned char ui1_Display_Vertical_Size;
-	unsigned int ui4_ID_Serial_Number;
-	unsigned int ui4_sink_cea_3D_resolution;
-	unsigned char ui1_sink_support_ai;	/* 0: not support AI, 1:support AI */
-	unsigned short ui2_sink_cec_address;
-	unsigned short ui1_sink_max_tmds_clock;
-	unsigned short ui2_sink_3D_structure;
-	unsigned int ui4_sink_cea_FP_SUP_3D_resolution;
-	unsigned int ui4_sink_cea_TOB_SUP_3D_resolution;
-	unsigned int ui4_sink_cea_SBS_SUP_3D_resolution;
-	unsigned short ui2_sink_ID_manufacturer_name;	/* (08H~09H) */
-	unsigned short ui2_sink_ID_product_code;	/* (0aH~0bH) */
-	unsigned int ui4_sink_ID_serial_number;	/* (0cH~0fH) */
-	unsigned char ui1_sink_week_of_manufacture;	/* (10H) */
-	unsigned char ui1_sink_year_of_manufacture;	/* (11H)  base on year 1990 */
-} HDMI_EDID_T;
 
 struct MHL_3D_SUPP_T {
 	unsigned int ui4_sink_FP_SUP_3D_resolution;
