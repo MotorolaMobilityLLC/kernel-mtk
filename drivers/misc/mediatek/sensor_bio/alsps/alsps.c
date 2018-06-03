@@ -443,6 +443,7 @@ static ssize_t als_show_devnum(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
 
+#ifndef CONFIG_NANOHUB
 static int ps_enable_and_batch(void)
 {
 	struct alsps_context *cxt = alsps_context_obj;
@@ -531,7 +532,7 @@ static int ps_enable_and_batch(void)
 
 	return 0;
 }
-
+#endif
 static ssize_t ps_store_active(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
@@ -550,7 +551,11 @@ static ssize_t ps_store_active(struct device *dev, struct device_attribute *attr
 		err = -1;
 		goto err_out;
 	}
+#ifdef CONFIG_NANOHUB
+	err = cxt->ps_ctl.enable_nodata(cxt->ps_enable);
+#else
 	err = ps_enable_and_batch();
+#endif
 err_out:
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG(" ps_store_active done\n");
@@ -582,7 +587,14 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 		ALSPS_ERR("ps_store_batch param error: err = %d\n", err);
 
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
+#ifdef CONFIG_NANOHUB
+	if (cxt->ps_ctl.is_support_batch)
+		err = cxt->ps_ctl.batch(0, cxt->ps_delay_ns, cxt->ps_latency_ns);
+	else
+		err = cxt->ps_ctl.batch(0, cxt->ps_delay_ns, 0);
+#else
 	err = ps_enable_and_batch();
+#endif
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG("ps_store_batch done: %d\n", cxt->is_ps_batch_enable);
 	return err;
