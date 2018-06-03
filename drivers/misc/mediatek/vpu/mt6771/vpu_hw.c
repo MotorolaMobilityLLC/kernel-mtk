@@ -70,7 +70,7 @@ struct VPU_OPP_INFO vpu_power_table[VPU_OPP_NUM] = {
 
 
 #define CMD_WAIT_TIME_MS    (3 * 1000)
-#define OPP_WAIT_TIME_MS    (30)
+#define OPP_WAIT_TIME_MS    (300)
 #define PWR_KEEP_TIME_MS    (500)
 #define IOMMU_VA_START      (0x7DA00000)
 #define IOMMU_VA_END        (0x82600000)
@@ -185,7 +185,6 @@ static struct my_struct_t power_counter_work[MTK_VPU_CORE];
 static struct mutex power_mutex[MTK_VPU_CORE];
 static bool is_power_on[MTK_VPU_CORE];
 static bool is_power_debug_lock;
-static bool is_power_dynamic = true;
 static struct mutex power_counter_mutex[MTK_VPU_CORE];
 static int power_counter[MTK_VPU_CORE];
 static struct mutex opp_mutex;
@@ -305,37 +304,72 @@ void MET_Events_Trace(bool enter, int core, int algo_id)
 }
 #endif
 
-static inline bool vpu_core_idle_check(void)
+static inline bool vpu_other_core_idle_check(int core)
 {
 	int i = 0;
 	bool idle = true;
 
+	LOG_DBG("vpu vpu_other_core_idle_check+\n");
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
-		mutex_lock(&(vpu_service_cores[i].state_mutex));
-		switch (vpu_service_cores[i].state) {
-		case VCT_SHUTDOWN:
-		case VCT_IDLE:
-			break;
-		case VCT_BOOTUP:
-		case VCT_EXECUTING:
-		case VCT_NONE:
-			idle = false;
+		if (i == core) {
+			continue;
+		} else {
+			LOG_DBG("vpu test %d/%d/%d\n", core, i, vpu_service_cores[i].state);
+			mutex_lock(&(vpu_service_cores[i].state_mutex));
+			switch (vpu_service_cores[i].state) {
+			case VCT_SHUTDOWN:
+			case VCT_IDLE:
+				break;
+			case VCT_BOOTUP:
+			case VCT_EXECUTING:
+			case VCT_NONE:
+				idle = false;
+				mutex_unlock(&(vpu_service_cores[i].state_mutex));
+				goto out;
+				/*break;*/
+			}
 			mutex_unlock(&(vpu_service_cores[i].state_mutex));
-			goto out;
-			/*break;*/
 		}
-		mutex_unlock(&(vpu_service_cores[i].state_mutex));
 	}
-	LOG_DBG("core_idle_check %d, %d/%d\n", idle, vpu_service_cores[0].state, vpu_service_cores[1].state);
+	LOG_DBG("vpu core_idle_check %d, %d/%d\n", idle, vpu_service_cores[0].state, vpu_service_cores[1].state);
 out:
 	return idle;
 }
 
-static inline int wait_to_do_change_vcore_opp(void)
+static inline int wait_to_do_change_vcore_opp(int core)
 {
+	int ret = 0;
+	int retry = 0;
+
+#if 0
 	return (wait_event_interruptible_timeout(
-				waitq_change_vcore, vpu_core_idle_check(), msecs_to_jiffies(OPP_WAIT_TIME_MS)) > 0)
+			waitq_change_vcore, vpu_other_core_idle_check(core), msecs_to_jiffies(OPP_WAIT_TIME_MS)) > 0)
 			? 0 : -ETIMEDOUT;
+#else
+	do {
+		ret = wait_event_interruptible_timeout(waitq_change_vcore,
+			vpu_other_core_idle_check(core), msecs_to_jiffies(OPP_WAIT_TIME_MS));
+
+		/* ret == -ERESTARTSYS, if signal interrupt */
+		if (ret < 0) {
+			retry += 1;
+			ret = -EINTR;
+			LOG_ERR("[vpu_%d/%d] interrupt by signal, while wait to change vcore, ret=%d\n",
+				core, retry, ret);
+		} else {
+			/* normal case */
+			if (ret > 0) {
+				ret = 0;
+			} else {
+				ret = -ETIMEDOUT;
+				LOG_ERR("[vpu_%d] wait_to_do_change_vcore_opp timeout, ret=%d\n", core, ret);
+			}
+			break;
+		}
+	} while (retry < 3);
+
+	return ret;
+#endif
 }
 
 static inline bool vpu_opp_change_idle_check(void)
@@ -355,12 +389,40 @@ static inline bool vpu_opp_change_idle_check(void)
 	return idle;
 }
 
-static inline int wait_to_do_vpu_running(void)
+static inline int wait_to_do_vpu_running(int core)
 {
+	int ret = 0;
+	int retry = 0;
+#if 0
 	return (wait_event_interruptible_timeout(
 				waitq_do_core_executing, vpu_opp_change_idle_check(),
 				msecs_to_jiffies(OPP_WAIT_TIME_MS)) > 0)
 			? 0 : -ETIMEDOUT;
+#else
+	do {
+		ret = wait_event_interruptible_timeout(waitq_do_core_executing,
+			vpu_opp_change_idle_check(), msecs_to_jiffies(OPP_WAIT_TIME_MS));
+
+		/* ret == -ERESTARTSYS, if signal interrupt */
+		if (ret < 0) {
+			retry += 1;
+			ret = -EINTR;
+			LOG_ERR("[vpu_%d/%d] interrupt by signal, while wait to do vpu running, ret=%d\n",
+				core, retry, ret);
+		} else {
+			/* normal case */
+			if (ret > 0) {
+				ret = 0;
+			} else {
+				ret = -ETIMEDOUT;
+				LOG_ERR("[vpu_%d] wait_to_do_vpu_running timeout, ret=%d\n", core, ret);
+			}
+			break;
+		}
+	} while (retry < 3);
+
+	return ret;
+#endif
 }
 
 static int vpu_set_clock_source(struct clk *clk, uint8_t step)
@@ -402,11 +464,36 @@ static int vpu_set_clock_source(struct clk *clk, uint8_t step)
 	return clk_set_parent(clk, clk_src);
 }
 
+static int vpu_get_hw_vcore_opp(int core)
+{
+	int opp_value = 0;
+	int get_vcore_value = 0;
+
+	get_vcore_value = (int)vcorefs_get_curr_vcore();
+	if (get_vcore_value >= 800000)
+		opp_value = 0;
+	else
+		opp_value = 1;
+
+	LOG_DBG("[vpu_%d] vcore(%d -> %d)\n", core, get_vcore_value, opp_value);
+
+	return opp_value;
+}
+
+
+
 static void vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
 {
 	int i = 0;
 	bool freq_check = false;
 	int log_freq = 0, log_max_freq = 0;
+	int get_vcore_opp = 0;
+
+	if (is_power_debug_lock) {
+		force_change_vcore_opp[core] = false;
+		force_change_dsp_freq[core] = false;
+		goto out;
+	}
 
 	log_freq = Map_DSP_Freq_Table(freq_index);
 	LOG_DBG("opp_check + (%d/%d/%d), ori vcore(%d)", core, vcore_index, freq_index, opps.vcore.index);
@@ -414,8 +501,9 @@ static void vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
 	mutex_lock(&opp_mutex);
 	log_max_freq = Map_DSP_Freq_Table(max_dsp_freq);
 	/* vcore opp */
-	if (vcore_index == 0xFF) {
-		LOG_DBG("no request, vcore opp(%d)", vcore_index);
+	get_vcore_opp = vpu_get_hw_vcore_opp(core);
+	if ((vcore_index == 0xFF) || (vcore_index == get_vcore_opp)) {
+		LOG_DBG("no need, vcore opp(%d), hw vore opp(%d)\n", vcore_index, get_vcore_opp);
 	} else {
 		if (vcore_index < max_vcore_opp) {
 			LOG_INF("vpu bound vcore opp(%d) to %d", vcore_index, max_vcore_opp);
@@ -461,9 +549,12 @@ static void vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
 			force_change_dsp_freq[core] = true;
 		}
 	}
-	LOG_INF("opp_check - [vcore(%d) %d.%d.%d.%d), freq_check(%d)", opps.vcore.index, opps.dsp.index,
-					opps.dspcore[0].index, opps.dspcore[1].index, opps.ipu_if.index, freq_check);
 	mutex_unlock(&opp_mutex);
+out:
+	LOG_INF("opp_check - debug_locked(%d), [vcore(%d) %d.%d.%d.%d), freq_check(%d)",
+		is_power_debug_lock,
+		opps.vcore.index, opps.dsp.index, opps.dspcore[0].index,
+		opps.dspcore[1].index, opps.ipu_if.index, freq_check);
 }
 
 static bool vpu_change_opp(int core, int type)
@@ -474,8 +565,9 @@ static bool vpu_change_opp(int core, int type)
 	/* vcore opp */
 	case OPPTYPE_VCORE:
 		LOG_INF("[vpu_%d] wait for changing vcore opp", core);
-		wait_to_do_change_vcore_opp();
-		LOG_INF("[vpu_%d] to do vcore opp change", core);
+		ret = wait_to_do_change_vcore_opp(core);
+		CHECK_RET("[vpu_%d]fail to wait_to_do_change_vcore_opp, ret=%d\n", core, ret);
+		LOG_DBG("[vpu_%d] to do vcore opp change", core);
 		vpu_trace_begin("vcore:request");
 		#ifdef ENABLE_PMQOS
 		switch (opps.vcore.index) {
@@ -491,7 +583,7 @@ static bool vpu_change_opp(int core, int type)
 		ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, opps.vcore.index);
 		#endif
 		vpu_trace_end();
-		CHECK_RET("fail to request vcore, step=%d\n", opps.vcore.index);
+		CHECK_RET("[vpu_%d]fail to request vcore, step=%d\n", core, opps.vcore.index);
 		LOG_INF("[vpu_%d] cgopp vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 		force_change_vcore_opp[core] = false;
 		wake_up_interruptible(&waitq_do_core_executing);
@@ -502,13 +594,14 @@ static bool vpu_change_opp(int core, int type)
 			opps.dspcore[0].index, opps.dspcore[1].index, opps.ipu_if.index);
 
 		ret = vpu_set_clock_source(clk_top_dsp_sel, opps.dsp.index);
-		CHECK_RET("fail to set dsp freq, step=%d, ret=%d\n", opps.dsp.index, ret);
+		CHECK_RET("[vpu_%d]fail to set dsp freq, step=%d, ret=%d\n", core, opps.dsp.index, ret);
 
 		ret = vpu_set_clock_source(clk_top_dsp1_sel, opps.dspcore[core].index);
-		CHECK_RET("fail to set dsp_%d freq, step=%d, ret=%d\n", core, opps.dspcore[core].index, ret);
+		CHECK_RET("[vpu_%d]fail to set dsp_%d freq, step=%d, ret=%d\n",
+			core, core, opps.dspcore[core].index, ret);
 
 		ret = vpu_set_clock_source(clk_top_ipu_if_sel, opps.ipu_if.index);
-		CHECK_RET("fail to set ipu_if freq, step=%d, ret=%d\n", opps.ipu_if.index, ret);
+		CHECK_RET("[vpu_%d]fail to set ipu_if freq, step=%d, ret=%d\n", core, opps.ipu_if.index, ret);
 
 		force_change_dsp_freq[core] = false;
 		break;
@@ -681,30 +774,40 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 static int vpu_enable_regulator_and_clock(int core)
 {
 	int ret = 0;
+	int get_vcore_opp = 0;
+	bool adjust_vcore = false;
 
 	LOG_INF("[vpu_%d] en_rc +\n", core);
 	vpu_trace_begin("vpu_enable_regulator_and_clock");
 
-	LOG_DBG("[vpu_%d] en_rc wait for changing vcore opp", core);
-	wait_to_do_change_vcore_opp();
-	LOG_DBG("[vpu_%d] en_rc to do vcore opp change", core);
+	get_vcore_opp = vpu_get_hw_vcore_opp(core);
+	if (opps.vcore.index != get_vcore_opp)
+		adjust_vcore = true;
+
 	vpu_trace_begin("vcore:request");
+	if (adjust_vcore) {
+		LOG_DBG("[vpu_%d] en_rc wait for changing vcore opp", core);
+		ret = wait_to_do_change_vcore_opp(core);
+		CHECK_RET("[vpu_%d]fail to wait_to_do_change_vcore_opp, ret=%d\n", core, ret);
+		LOG_DBG("[vpu_%d] en_rc to do vcore opp change", core);
 #ifdef ENABLE_PMQOS
-	switch (opps.vcore.index) {
-	case 0:
-		pm_qos_update_request(&vpu_qos_vcore_request, VCORE_OPP_0);
-		break;
-	case 1:
-	default:
-		pm_qos_update_request(&vpu_qos_vcore_request, VCORE_OPP_1);
-		break;
-	}
+		switch (opps.vcore.index) {
+		case 0:
+			pm_qos_update_request(&vpu_qos_vcore_request, VCORE_OPP_0);
+			break;
+		case 1:
+		default:
+			pm_qos_update_request(&vpu_qos_vcore_request, VCORE_OPP_1);
+			break;
+		}
 #else
-	ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, opps.vcore.index);
+		ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, opps.vcore.index);
 #endif
+	}
 	vpu_trace_end();
-	CHECK_RET("fail to request vcore, step=%d\n", opps.vcore.index);
-	LOG_INF("[vpu_%d] result vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
+	CHECK_RET("[vpu_%d]fail to request vcore, step=%d\n", core, opps.vcore.index);
+	LOG_INF("[vpu_%d] adjust(%d,%d) result vcore=%d, ddr=%d\n", core,
+		adjust_vcore, opps.vcore.index, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 	LOG_DBG("[vpu_%d] en_rc setmmdvfs(%d) done\n", core, opps.vcore.index);
 
 #define ENABLE_VPU_MTCMOS(clk) \
@@ -785,16 +888,16 @@ static int vpu_enable_regulator_and_clock(int core)
 		opps.dspcore[0].index, opps.dspcore[1].index, opps.ipu_if.index);
 
 	ret = vpu_set_clock_source(clk_top_dsp_sel, opps.dsp.index);
-	CHECK_RET("fail to set dsp freq, step=%d, ret=%d\n", opps.dsp.index, ret);
+	CHECK_RET("[vpu_%d]fail to set dsp freq, step=%d, ret=%d\n", core, opps.dsp.index, ret);
 
 	ret = vpu_set_clock_source(clk_top_dsp1_sel, opps.dspcore[0].index);
-	CHECK_RET("fail to set dsp0 freq, step=%d, ret=%d\n", opps.dspcore[0].index, ret);
+	CHECK_RET("[vpu_%d]fail to set dsp0 freq, step=%d, ret=%d\n", core, opps.dspcore[0].index, ret);
 
 	ret = vpu_set_clock_source(clk_top_dsp2_sel, opps.dspcore[1].index);
-	CHECK_RET("fail to set dsp1 freq, step=%d, ret=%d\n", opps.dspcore[1].index, ret);
+	CHECK_RET("[vpu_%d]fail to set dsp1 freq, step=%d, ret=%d\n", core, opps.dspcore[1].index, ret);
 
 	ret = vpu_set_clock_source(clk_top_ipu_if_sel, opps.ipu_if.index);
-	CHECK_RET("fail to set ipu_if freq, step=%d, ret=%d\n", opps.ipu_if.index, ret);
+	CHECK_RET("[vpu_%d]fail to set ipu_if freq, step=%d, ret=%d\n", core, opps.ipu_if.index, ret);
 
 out:
 #endif
@@ -884,7 +987,7 @@ static int vpu_disable_regulator_and_clock(int core)
 #else
 	ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, MMDVFS_FINE_STEP_UNREQUEST);
 #endif
-	CHECK_RET("fail to unrequest vcore!\n");
+	CHECK_RET("[vpu_%d]fail to unrequest vcore!\n", core);
 	LOG_DBG("[vpu_%d] disable result vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 out:
 	is_power_on[core] = false;
@@ -1213,7 +1316,7 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 	/* 1. map reset vector */
 	sg = &(vpu_service_cores[core].sg_reset_vector);
 	ret = sg_alloc_table(sg, 1, GFP_KERNEL);
-	CHECK_RET("fail to allocate sg table[reset]!\n");
+	CHECK_RET("[vpu_%d]fail to allocate sg table[reset]!\n", core);
 	LOG_DBG("vpu...sg_alloc_table ok\n");
 
 	sg_dma_address(sg->sgl) = binpa_reset_vector;
@@ -1225,13 +1328,13 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 			VPU_SIZE_RESET_VECTOR,
 			M4U_PROT_READ | M4U_PROT_WRITE,
 			M4U_FLAGS_START_FROM/*M4U_FLAGS_FIX_MVA*/, &mva_reset_vector);
-	CHECK_RET("fail to allocate mva of reset vecter!\n");
+	CHECK_RET("[vpu_%d]fail to allocate mva of reset vecter!\n", core);
 	LOG_DBG("vpu...m4u_alloc_mva ok\n");
 
 	/* 2. map main program */
 	sg = &(vpu_service_cores[core].sg_main_program);
 	ret = sg_alloc_table(sg, 1, GFP_KERNEL);
-	CHECK_RET("fail to allocate sg table[main]!\n");
+	CHECK_RET("[vpu_%d]fail to allocate sg table[main]!\n", core);
 	LOG_DBG("vpu...sg_alloc_table main_program ok\n");
 
 	sg_dma_address(sg->sgl) = binpa_main_program;
@@ -1254,7 +1357,7 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 	if (core == 0) {
 		sg = &(vpu_service_cores[core].sg_algo_binary_data);
 		ret = sg_alloc_table(sg, 1, GFP_KERNEL);
-		CHECK_RET("fail to allocate sg table[reset]!\n");
+		CHECK_RET("[vpu_%d]fail to allocate sg table[reset]!\n", core);
 		LOG_DBG("vpu...sg_alloc_table algo_data ok, mva_algo_binary_data = 0x%x\n",
 			mva_algo_binary_data);
 
@@ -1265,7 +1368,7 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 				size_algos,
 				M4U_PROT_READ | M4U_PROT_WRITE,
 				M4U_FLAGS_SG_READY, &mva_algo_binary_data);
-		CHECK_RET("fail to allocate mva of reset vecter!\n");
+		CHECK_RET("[vpu_%d]fail to allocate mva of reset vecter!\n", core);
 		vpu_service_cores[core].algo_data_mva = mva_algo_binary_data;
 		LOG_DBG("a vpu va_algo_data pa: 0x%x\n", (unsigned int)(bin_pa + VPU_OFFSET_ALGO_AREA));
 		LOG_DBG("a vpu va_algo_data: 0x%x/0x%x, size: 0x%x\n", mva_algo_binary_data,
@@ -1278,7 +1381,7 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 	/* no need reserved mva, use SG_READY*/
 	sg = &(vpu_service_cores[core].sg_iram_data);
 	ret = sg_alloc_table(sg, 1, GFP_KERNEL);
-	CHECK_RET("fail to allocate sg table[reset]!\n");
+	CHECK_RET("[vpu_%d]fail to allocate sg table[reset]!\n", core);
 	LOG_DBG("vpu...sg_alloc_table iram_data ok, mva_iram_data = 0x%x\n", mva_iram_data);
 	LOG_DBG("a vpu iram pa: 0x%lx\n", (unsigned long)(binpa_iram_data));
 	sg_dma_address(sg->sgl) = binpa_iram_data;
@@ -1288,7 +1391,7 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 			VPU_SIZE_MAIN_PROGRAM_IMEM,
 			M4U_PROT_READ | M4U_PROT_WRITE,
 			M4U_FLAGS_SG_READY, &mva_iram_data);
-	CHECK_RET("fail to allocate mva of iram data!\n");
+	CHECK_RET("[vpu_%d]fail to allocate mva of iram data!\n", core);
 	vpu_service_cores[core].iram_data_mva = (uint64_t)(mva_iram_data);
 	LOG_DBG("a vpu va_iram_data: 0x%x, iram_data_mva: 0x%lx\n",
 		mva_iram_data, (unsigned long)(vpu_service_cores[core].iram_data_mva));
@@ -1313,11 +1416,11 @@ static int vpu_get_power(int core)
 	if (ret == POWER_ON_MAGIC) {
 		if (force_change_dsp_freq[core]) {
 			/* force change freq while running */
-			LOG_INF("vpu_%d force change dsp freq", core);
+			LOG_DBG("vpu_%d force change dsp freq", core);
 			vpu_change_opp(core, OPPTYPE_DSPFREQ);
 		} else if (force_change_vcore_opp[core]) {
 			/* vcore change should wait */
-			LOG_INF("vpu_%d force change vcore opp", core);
+			LOG_DBG("vpu_%d force change vcore opp", core);
 			vpu_change_opp(core, OPPTYPE_VCORE);
 		}
 	}
@@ -1375,11 +1478,11 @@ int vpu_init_hw(int core, struct vpu_device *device)
 	ion_client = ion_client_create(g_ion_device, "vpu");
 
 	ret = vpu_map_mva_of_bin(core, device->bin_pa);
-	CHECK_RET("fail to map binary data!\n");
+	CHECK_RET("[vpu_%d]fail to map binary data!\n", core);
 
 	ret = request_irq(device->irq_num[core], (irq_handler_t)VPU_ISR_CB_TBL[core].isr_fp,
 		device->irq_trig_level, (const char *)VPU_ISR_CB_TBL[core].device_name, NULL);
-	CHECK_RET("fail to request vpu irq!\n");
+	CHECK_RET("[vpu_%d]fail to request vpu irq!\n", core);
 #endif
 
 
@@ -1393,6 +1496,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		max_vcore_opp = 0;
 		max_dsp_freq = 0;
 		vpu_dev = device;
+		is_power_debug_lock = false;
 
 		for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 			mutex_init(&(power_mutex[i]));
@@ -1443,7 +1547,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 			LOG_INF("core(%d):work_buf va (0x%lx),pa(0x%x)",
 				i, (unsigned long)(vpu_service_cores[i].work_buf->va),
 				vpu_service_cores[i].work_buf->pa);
-			CHECK_RET("fail to allocate working buffer!\n");
+			CHECK_RET("core(%d):fail to allocate working buffer!\n", i);
 
 			/* execution kernel library */
 			/* need in reserved region, set end as the end of reserved address, m4u use start-from */
@@ -1464,7 +1568,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 			LOG_INF("core(%d):kernel_lib va (0x%lx),pa(0x%x)",
 				i, (unsigned long)(vpu_service_cores[i].exec_kernel_lib->va),
 				vpu_service_cores[i].exec_kernel_lib->pa);
-			CHECK_RET("fail to allocate kernel_lib buffer!\n");
+			CHECK_RET("core(%d):fail to allocate kernel_lib buffer!\n", i);
 
 		}
 		/* multi-core shared  */
@@ -1537,7 +1641,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 #undef DEFINE_VPU_STEP
 
 		ret = vpu_prepare_regulator_and_clock(vpu_dev->dev[core]);
-		CHECK_RET("fail to prepare regulator or clock!\n");
+		CHECK_RET("[vpu_%d]fail to prepare regulator or clock!\n", core);
 
 		/* pmqos  */
 		#ifdef ENABLE_PMQOS
@@ -1777,7 +1881,7 @@ int vpu_hw_boot_sequence(int core)
 
 	/* 4. check the result of boot sequence */
 	ret = vpu_check_postcond(core);
-	CHECK_RET("fail to boot vpu!\n");
+	CHECK_RET("[vpu_%d]fail to boot vpu!\n", core);
 
 out:
 	unlock_command(core);
@@ -1816,12 +1920,12 @@ int vpu_hw_set_debug(int core)
 	/* 3. wait until done */
 	ret = wait_command(core);
 	vpu_trace_end();
-	CHECK_RET("timeout of set debug\n");
+	CHECK_RET("[vpu_%d]timeout of set debug\n", core);
 	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 
 	/* 4. check the result */
 	ret = vpu_check_postcond(core);
-	CHECK_RET("fail to set debug!\n");
+	CHECK_RET("[vpu_%d]fail to set debug!\n", core);
 
 out:
 	unlock_command(core);
@@ -1931,14 +2035,14 @@ int vpu_boot_up(int core)
 	vpu_trace_begin("vpu_boot_up");
 
 	ret = vpu_enable_regulator_and_clock(core);
-	CHECK_RET("fail to enable regulator or clock\n");
+	CHECK_RET("[vpu_%d]fail to enable regulator or clock\n", core);
 
 	ret = vpu_hw_boot_sequence(core);
-	CHECK_RET("fail to do boot sequence\n");
+	CHECK_RET("[vpu_%d]fail to do boot sequence\n", core);
 	LOG_DBG("[vpu_%d] vpu_hw_boot_sequence done\n", core);
 
 	ret = vpu_hw_set_debug(core);
-	CHECK_RET("fail to set debug\n");
+	CHECK_RET("[vpu_%d]fail to set debug\n", core);
 	LOG_DBG("[vpu_%d] vpu_hw_set_debug done\n", core);
 
 	vpu_service_cores[core].state = VCT_BOOTUP;
@@ -1947,7 +2051,7 @@ out:
 
 	if (ret) {
 		ret = vpu_disable_regulator_and_clock(core);
-		CHECK_RET("fail to disable regulator and clock\n");
+		CHECK_RET("[vpu_%d]fail to disable regulator and clock\n", core);
 	}
 
 	vpu_trace_end();
@@ -2006,7 +2110,7 @@ int vpu_shut_down(int core)
 
 	vpu_trace_begin("vpu_shut_down");
 	ret = vpu_disable_regulator_and_clock(core);
-	CHECK_RET("fail to disable regulator and clock\n");
+	CHECK_RET("[vpu_%d]fail to disable regulator and clock\n", core);
 out:
 	vpu_trace_end();
 	mutex_unlock(&power_mutex[core]);
@@ -2023,21 +2127,19 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 	if (vpu_service_cores[core].current_algo == algo->id[core])
 		return 0;
 
-	wait_to_do_vpu_running();
-	/*mutex_lock(&(vpu_service_cores[core].state_mutex));*/
-	/*vpu_service_cores[core].state = VCT_EXECUTING;*/
-	/*mutex_unlock(&(vpu_service_cores[core].state_mutex));*/
-
 	vpu_trace_begin("vpu_hw_load_algo(%d)", algo->id[core]);
 	ret = vpu_get_power(core);
-	CHECK_RET("fail to get power!\n");
+	CHECK_RET("[vpu_%d]fail to get power!\n", core);
 	LOG_DBG("[vpu_%d] vpu_get_power done\n", core);
+
+	ret = wait_to_do_vpu_running(core);
+	CHECK_RET("[vpu_%d]fail to wait_to_do_vpu_running!, ret = %d\n", core, ret);
 
 	lock_command(core);
 	LOG_DBG("start to load algo\n");
 
 	ret = vpu_check_precond(core);
-	CHECK_RET("have wrong status before do loader!\n");
+	CHECK_RET("[vpu_%d]have wrong status before do loader!\n", core);
 	LOG_DBG("[vpu_%d] vpu_check_precond done\n", core);
 
 	LOG_DBG("[vpu_%d] algo ptr/length (0x%lx/0x%x)\n", core,
@@ -2083,10 +2185,13 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	int ret;
 
 	LOG_DBG("[vpu_%d/%d] eq + ", core, request->algo_id[core]);
-	wait_to_do_vpu_running();
+
 	vpu_trace_begin("vpu_hw_enque_request(%d)", request->algo_id[core]);
 	ret = vpu_get_power(core);
-	CHECK_RET("fail to get power!\n");
+	CHECK_RET("[vpu_%d]fail to get power!\n", core);
+
+	ret = wait_to_do_vpu_running(core);
+	CHECK_RET("[vpu_%d] fail to wait_to_do_vpu_running!, ret = %d\n", core, ret);
 
 	lock_command(core);
 	LOG_DBG("start to enque request\n");
@@ -2103,7 +2208,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 
 	if (g_vpu_log_level > 4)
 		vpu_dump_buffer_mva(request);
-	LOG_DBG("[vpu] vpu_hw_enque_request check_precond done ");
+	LOG_DBG("[vpu_%d] start d2d\n", core);
 	/* 1. write register */
 	/* command: d2d */
 	vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_DO_D2D);
@@ -2172,13 +2277,13 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 
 	vpu_trace_begin("vpu_hw_get_algo_info(%d)", algo->id[core]);
 	ret = vpu_get_power(core);
-	CHECK_RET("fail to get power!\n");
+	CHECK_RET("[vpu_%d]fail to get power!\n", core);
 
 	lock_command(core);
 	LOG_DBG("start to get algo, algo_id=%d\n", algo->id[core]);
 
 	ret = vpu_check_precond(core);
-	CHECK_RET("have wrong status before get algo!\n");
+	CHECK_RET("[vpu_%d]have wrong status before get algo!\n", core);
 
 	ofs_ports = 0;
 	ofs_info = sizeof(((struct vpu_algo *)0)->ports);
@@ -2591,12 +2696,22 @@ int vpu_dump_opp_table(struct seq_file *s)
 
 int vpu_dump_power(struct seq_file *s)
 {
-	vpu_print_seq(s, "dvfs_debug(rw): vore_%d, dsp_%d, ipu_if_%d, dsp1_%d, dsp2_%d\n",
+	int hw_vcore = 0, vcore_opp = 0;
+
+	hw_vcore = vcorefs_get_curr_vcore();
+	if (hw_vcore >= 800000)
+		vcore_opp = 0;
+	else
+		vcore_opp = 1;
+
+	vpu_print_seq(s, "dvfs_debug(rw): vore[%d/%d], dsp[%d], ipu_if[%d], dsp1[%d], dsp2[%d]\n",
 			opps.vcore.index,
+			vcore_opp,
 			opps.dsp.index,
 			opps.ipu_if.index,
 			opps.dspcore[0].index,
 			opps.dspcore[1].index);
+	vpu_print_seq(s, "is_power_debug_lock(rw): %d\n", is_power_debug_lock);
 
 	return 0;
 }
@@ -2634,41 +2749,39 @@ int vpu_dump_vpu(struct seq_file *s)
 int vpu_set_power_parameter(uint8_t param, int argc, int *args)
 {
 	int ret = 0;
-	/* CHRISTODO */
-	int TEMP_CORE = 0;
 
 	switch (param) {
-	case VPU_POWER_PARAM_DYNAMIC:
-		LOG_ERR("do not support VPU_POWER_PARAM_DYNAMIC in 2.0\n");
+	case VPU_POWER_PARAM_FIX_OPP:
+		ret = (argc == 1) ? 0 : -EINVAL;
+		CHECK_RET("invalid argument, expected:1, received:%d\n", argc);
+
+		switch (args[0]) {
+		case 0:
+			is_power_debug_lock = false;
+			break;
+		case 1:
+			is_power_debug_lock = true;
+			break;
+		default:
+			CHECK_RET("invalid argument, received:%d\n", (int)(args[0]));
+			ret = -EINVAL;
+			goto out;
+		}
 		break;
 	case VPU_POWER_PARAM_DVFS_DEBUG:
-		ret = (argc == 3) ? 0 : -EINVAL;
-		CHECK_RET("invalid argument, expected:3, received:%d\n", argc);
+		ret = (argc == 1) ? 0 : -EINVAL;
+		CHECK_RET("invalid argument, expected:1, received:%d\n", argc);
 
-		/* step of vcore regulator */
-		ret = args[0] >= opps.vcore.count;
-		CHECK_RET("vcore's step is out-of-bound, count:%d\n", opps.vcore.count);
+		ret = args[0] >= opps.count;
+		CHECK_RET("opp step(%d) is out-of-bound, count:%d\n", (int)(args[0]), opps.count);
 
-		/* step of dsp clock */
-		ret = args[1] >= opps.dsp.count;
-		CHECK_RET("dsp's stpe is out-of-bound, count:%d\n", opps.dsp.count);
-
-		/* step of ipu if */
-		ret = args[2] >= opps.ipu_if.count;
-		CHECK_RET("ipu_if's step is out-of-bound, count:%d\n", opps.ipu_if.count);
-
-		opps.vcore.index = args[0];
-		opps.dsp.index = args[1];
-		opps.ipu_if.index = args[2];
+		opps.vcore.index = opps.vcore.opp_map[args[0]];
+		opps.dsp.index = opps.dsp.opp_map[args[0]];
+		opps.ipu_if.index = opps.ipu_if.opp_map[args[0]];
+		opps.dspcore[0].index = opps.dspcore[0].opp_map[args[0]];
+		opps.dspcore[1].index = opps.dspcore[1].opp_map[args[0]];
 
 		is_power_debug_lock = true;
-
-		if (is_power_dynamic)
-			break;
-
-		/* force to set the frequency and voltage */
-		vpu_shut_down(TEMP_CORE);
-		vpu_boot_up(TEMP_CORE);
 
 		break;
 	case VPU_POWER_PARAM_JTAG:

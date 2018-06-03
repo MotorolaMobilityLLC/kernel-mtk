@@ -157,7 +157,7 @@ int vpu_get_algo_id_by_name(int core, char *name)
 
 	LOG_DBG("vpu_get_algo_id_by_name core:%d\n", core);
 	ret = vpu_find_algo_by_name(core, name, &algo, false);
-	LOG_INF("ret:%d\n", ret);
+	LOG_DBG("ret:%d\n", ret);
 	CHECK_RET("vpu_find_algo_by_name fail, name=%s\n", name);
 	algo_id = algo->id[core];
 	LOG_INF("vpu(%d)_get algo_id:%d\n", core, algo_id);

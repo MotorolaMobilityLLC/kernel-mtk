@@ -616,8 +616,8 @@ static ssize_t vpu_debug_power_write(struct file *flip, const char __user *buffe
 
 	/* parse a command */
 	token = strsep(&cursor, " ");
-	if (strcmp(token, "dynamic") == 0)
-		param = VPU_POWER_PARAM_DYNAMIC;
+	if (strcmp(token, "fix_opp") == 0)
+		param = VPU_POWER_PARAM_FIX_OPP;
 	else if (strcmp(token, "dvfs_debug") == 0)
 		param = VPU_POWER_PARAM_DVFS_DEBUG;
 	else if (strcmp(token, "jtag") == 0)
