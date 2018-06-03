@@ -2733,7 +2733,7 @@ void aud_intbus_mux_sel(unsigned int aud_idx)
 {
 	clk_writel(CLK_CFG_5_CLR, 0x00000300);
 	clk_writel(CLK_CFG_5_SET, aud_idx << 8);
-	pr_notice("CLK_CFG_5 = 0x%08x\r\n", clk_readl(CLK_CFG_5));
+	/* pr_notice("CLK_CFG_5 = 0x%08x\r\n", clk_readl(CLK_CFG_5)); */
 }
 
 static int __init clk_mt6771_init(void)
