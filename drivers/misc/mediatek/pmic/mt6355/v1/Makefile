@@ -9,6 +9,9 @@ endif
 ifeq ($(CONFIG_MACH_MT6759), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 endif
+ifeq ($(CONFIG_MACH_MT6758), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+endif
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
