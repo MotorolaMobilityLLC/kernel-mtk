@@ -392,10 +392,10 @@ void mt_biolog_cmdq_check(void)
 		mt_bio_print_trace(ctx);
 		ctx->period_start_t = end_time;
 		ctx->period_end_t = 0;
-		ctx->period_busy = 0;
-		ctx->period_end_since_start_t = 0;
-		ctx->period_end_in_window_t = 0;
-		ctx->period_start_in_window_t = 0;
+		ctx->wl.period_busy = 0;
+		ctx->wl.period_left_window_end_t = 0;
+		ctx->wl.period_right_window_end_t = 0;
+		ctx->wl.period_right_window_start_t = 0;
 		memset(&ctx->throughput, 0, sizeof(struct mtk_btag_throughput));
 		memset(&ctx->workload, 0, sizeof(struct mtk_btag_workload));
 	}
@@ -435,15 +435,29 @@ static void mt_bio_ctx_count_usage(struct mt_bio_context *ctx,
 	__u64 start, __u64 end)
 {
 	if (start <= ctx->period_start_t) {
-		ctx->period_end_since_start_t = end;
-		ctx->period_start_in_window_t =
-		ctx->period_end_in_window_t =
-		ctx->period_busy = 0;
+		/*
+		 * if 'start' is located in previous period,
+		 * reset right window and period_busy,
+		 * and finally only left window will be existed.
+		 */
+		ctx->wl.period_left_window_end_t = end;
+		ctx->wl.period_right_window_start_t =
+		ctx->wl.period_right_window_end_t =
+		ctx->wl.period_busy = 0;
 	} else {
-		if (ctx->period_end_since_start_t) {
-			if (start < ctx->period_end_since_start_t)
-				ctx->period_end_since_start_t = end;
-			else
+		/* if left window is existed */
+		if (ctx->wl.period_left_window_end_t) {
+			if (start < ctx->wl.period_left_window_end_t) {
+				/*
+				 * if 'start' is located inside left window,
+				 * reset right window and period_busy,
+				 * and finally only left window will be existed.
+				 */
+				ctx->wl.period_left_window_end_t = end;
+				ctx->wl.period_right_window_start_t =
+				ctx->wl.period_right_window_end_t =
+				ctx->wl.period_busy = 0;
+			} else
 				goto new_window;
 		} else
 			goto new_window;
@@ -453,16 +467,17 @@ static void mt_bio_ctx_count_usage(struct mt_bio_context *ctx,
 
 new_window:
 
-	if (ctx->period_start_in_window_t) {
-		if (start > ctx->period_end_in_window_t) {
-			ctx->period_busy +=
-		(ctx->period_end_in_window_t - ctx->period_start_in_window_t);
-			ctx->period_start_in_window_t = start;
+	if (ctx->wl.period_right_window_start_t) {
+		if (start > ctx->wl.period_right_window_end_t) {
+			ctx->wl.period_busy +=
+			(ctx->wl.period_right_window_end_t -
+			ctx->wl.period_right_window_start_t);
+			ctx->wl.period_right_window_start_t = start;
 		}
-		ctx->period_end_in_window_t = end;
+		ctx->wl.period_right_window_end_t = end;
 	} else {
-		ctx->period_start_in_window_t = start;
-		ctx->period_end_in_window_t = end;
+		ctx->wl.period_right_window_start_t = start;
+		ctx->wl.period_right_window_end_t = end;
 	}
 
 out:
@@ -473,16 +488,18 @@ static uint64_t mt_bio_get_period_busy(struct mt_bio_context *ctx)
 {
 	uint64_t busy;
 
-	busy = ctx->period_busy;
+	busy = ctx->wl.period_busy;
 
-	if (ctx->period_end_since_start_t) {
+	if (ctx->wl.period_left_window_end_t) {
 		busy +=
-			(ctx->period_end_since_start_t - ctx->period_start_t);
+			(ctx->wl.period_left_window_end_t -
+			ctx->period_start_t);
 	}
 
-	if (ctx->period_start_in_window_t) {
+	if (ctx->wl.period_right_window_start_t) {
 		busy +=
-		(ctx->period_end_in_window_t - ctx->period_start_in_window_t);
+		(ctx->wl.period_right_window_end_t -
+		ctx->wl.period_right_window_start_t);
 	}
 
 	return busy;
@@ -609,10 +626,10 @@ void mt_biolog_mmcqd_req_check(void)
 		mt_bio_print_trace(ctx);
 		ctx->period_start_t = end_time;
 		ctx->period_end_t = 0;
-		ctx->period_busy = 0;
-		ctx->period_end_since_start_t = 0;
-		ctx->period_end_in_window_t = 0;
-		ctx->period_start_in_window_t = 0;
+		ctx->wl.period_busy = 0;
+		ctx->wl.period_left_window_end_t = 0;
+		ctx->wl.period_right_window_end_t = 0;
+		ctx->wl.period_right_window_start_t = 0;
 		memset(&ctx->throughput, 0, sizeof(struct mtk_btag_throughput));
 		memset(&ctx->workload, 0, sizeof(struct mtk_btag_workload));
 	}
