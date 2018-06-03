@@ -230,7 +230,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 /*zhaozhengtao 2016/02/19,modify for different module*/
 #define MODULE_ID_OFFSET 0x0000
 
-#define EEPROM_READ_ID  0xA0
+#define EEPROM_READ_ID  0xA2
 #define EEPROM_WRITE_ID   0xA1
 #if 0
 static kal_uint16 is_RWB_sensor(void)
@@ -1947,6 +1947,26 @@ static kal_uint32 streaming_control(kal_bool enable)
 	return ERROR_NONE;
 }
 
+#define FOUR_CELL_SIZE 560
+static void read_4cell_from_eeprom(char *data)
+{
+	int i = 0;
+	int addr = 0x1400;/*Start of 4 cell data*/
+	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
+
+	data[0] = (FOUR_CELL_SIZE & 0xff);/*Low*/
+	data[1] = ((FOUR_CELL_SIZE >> 8) & 0xff);/*High*/
+
+	for (i = 2; i < (FOUR_CELL_SIZE + 2); i++) {
+		pu_send_cmd[0] = (char)(addr >> 8);
+		pu_send_cmd[1] = (char)(addr & 0xFF);
+		iReadRegI2C(pu_send_cmd, 2, &data[i], 1, EEPROM_READ_ID);
+		addr++;
+	}
+}
+
+
+
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 							 UINT8 *feature_para, UINT32 *feature_para_len)
 {
@@ -2022,6 +2042,22 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			 *(kal_uint32)(*(feature_data+2)));
 			 */
 			break;
+		case SENSOR_FEATURE_GET_4CELL_DATA:/*get 4 cell data from eeprom*/
+		{
+			int type = (kal_uint16)(*feature_data);
+			char *data = (char *)(uintptr_t)(*(feature_data+1));
+
+			memset(data, 0, FOUR_CELL_SIZE);
+
+			if (type == FOUR_CELL_CAL_TYPE_GAIN_TBL) {
+				read_4cell_from_eeprom(data);
+				LOG_INF("read Cross Talk = %02x %02x %02x %02x %02x %02x\n",
+					(UINT16)data[0], (UINT16)data[1],
+					(UINT16)data[2], (UINT16)data[3],
+					(UINT16)data[4], (UINT16)data[5]);
+			}
+			break;
+		}
 
 		case SENSOR_FEATURE_SET_TEST_PATTERN:
 	    set_test_pattern_mode((BOOL)*feature_data);
