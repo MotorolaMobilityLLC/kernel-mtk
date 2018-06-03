@@ -901,7 +901,7 @@
 		cell-index = <0>;
 		compatible = "mediatek,m4u";
 		reg = <0 0x10205000 0 0x1000>;
-		interrupts = <GIC_SPI 158 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 166 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	devapc@10207000 {
