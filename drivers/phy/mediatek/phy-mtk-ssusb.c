@@ -361,9 +361,8 @@ static int usb_phy_init_soc(struct mtk_phy_instance *instance)
 	}
 
 /* EFUSE related sequence */
-	if (of_device_is_compatible(of_node, "mediatek,mt6758-phy")) {
-		;
-	} else if (of_device_is_compatible(of_node, "mediatek,mt6799-phy")) {
+	if (of_device_is_compatible(of_node, "mediatek,mt6758-phy") ||
+		of_device_is_compatible(of_node, "mediatek,mt6799-phy")) {
 		u32 evalue;
 
 		evalue = (get_devinfo_with_index(108) & (0x1f<<0)) >> 0;
