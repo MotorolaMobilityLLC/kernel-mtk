@@ -15,6 +15,7 @@
 
 #include <linux/types.h>
 #include <linux/of.h>
+#include <linux/of_fdt.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/printk.h>
 #include <linux/cma.h>
@@ -34,12 +35,6 @@
 #include <asm/tlbflush.h>
 #include "sh_svp.h"
 
-static int is_pre_reserve_memory;
-
-#define _SSVP_MBSIZE_ (CONFIG_MTK_SVP_RAM_SIZE + CONFIG_MTK_TUI_RAM_SIZE)
-#define SVP_MBSIZE CONFIG_MTK_SVP_RAM_SIZE
-#define TUI_MBSIZE CONFIG_MTK_TUI_RAM_SIZE
-
 #define COUNT_DOWN_MS 10000
 #define	COUNT_DOWN_INTERVAL 500
 #define	COUNT_DOWN_LIMIT (COUNT_DOWN_MS / COUNT_DOWN_INTERVAL)
@@ -48,13 +43,12 @@ static atomic_t svp_online_count_down;
 /* 64 MB alignment */
 #define SSVP_CMA_ALIGN_PAGE_ORDER 14
 #define SSVP_ALIGN_SHIFT (SSVP_CMA_ALIGN_PAGE_ORDER + PAGE_SHIFT)
-#if _SSVP_MBSIZE_
-#define SSVP_ALIGN (1 << SSVP_ALIGN_SHIFT)
-#else
 #define SSVP_ALIGN (1 << (PAGE_SHIFT + (MAX_ORDER - 1)))
-#endif
 
 static u64 ssvp_upper_limit = UPPER_LIMIT64;
+
+/* Flag indicates if all SSVP features use reserved memory as source */
+static int is_pre_reserve_memory;
 
 #include <mt-plat/aee.h>
 #include "mt-plat/mtk_meminfo.h"
@@ -118,7 +112,111 @@ struct debug_dummy_alloc dummy_alloc = {
 /*
  * Use for zone-movable-cma callback
  */
-void zmc_ssvp_init(struct cma *zmc_cma)
+
+#define SSVP_FEATURES_DT_UNAME "memory-ssvp-features"
+
+#define SSVP_FEATURES_DT_SVP_SIZE "svp-size"
+#define SSVP_FEATURES_DT_IRIS_RECOGNITION_SIZE "iris-recognition-size"
+#define SSVP_FEATURES_DT_TUI_SIZE "tui-size"
+
+static u64 svp_size = (CONFIG_MTK_SVP_RAM_SIZE * SZ_1M);
+static u64 tui_size = (CONFIG_MTK_TUI_RAM_SIZE * SZ_1M);
+static u64 secmem_usable_size;
+
+/* Iris recognition only supports configured by DT node, no kernel CONFIG */
+static u64 iris_recognition_size;
+
+static void __init get_feature_size_by_dt_prop(unsigned long node, const char *feature_name, u64 *fsize)
+{
+	const __be32 *reg;
+	int l;
+
+	reg = of_get_flat_dt_prop(node, feature_name, &l);
+	if (reg) {
+		/*
+		 * Only override the size if we can found its associated property
+		 * in DTS node, otherwise, keep the previous settings.
+		 */
+		*fsize = dt_mem_next_cell(dt_root_addr_cells, &reg);
+	}
+}
+
+/*
+ * If target DT node is found, try to parse each feature required size.
+ */
+static int __init dt_scan_for_ssvp_features(unsigned long node, const char *uname,
+				int depth, void *data)
+{
+	if (strncmp(uname, SSVP_FEATURES_DT_UNAME, strlen(SSVP_FEATURES_DT_UNAME)) == 0) {
+		get_feature_size_by_dt_prop(node, SSVP_FEATURES_DT_SVP_SIZE, &svp_size);
+		get_feature_size_by_dt_prop(node, SSVP_FEATURES_DT_IRIS_RECOGNITION_SIZE, &iris_recognition_size);
+		get_feature_size_by_dt_prop(node, SSVP_FEATURES_DT_TUI_SIZE, &tui_size);
+
+		return 1;
+	}
+
+	return 0;
+}
+
+/*
+ * There are multiple features will go through secmem module.
+ * But we only care the maximum required size among those features.
+ */
+static void __init setup_secmem_usable_size(void)
+{
+	secmem_usable_size = max(svp_size, iris_recognition_size);
+}
+
+static void __init finalize_ssvp_features_size(struct reserved_mem *rmem)
+{
+	if (of_scan_flat_dt(dt_scan_for_ssvp_features, NULL) == 0)
+		pr_info("%s, can't find DT node, %s\n", __func__, SSVP_FEATURES_DT_UNAME);
+
+	pr_info("%s, rmem->size: %pa, svp-size: %pa, iris-recognition-size: %pa, tui-size: %pa\n",
+		__func__, &rmem->size, &svp_size, &iris_recognition_size, &tui_size);
+
+	setup_secmem_usable_size();
+}
+
+/*
+ * The "memory_ssvp_registration" is __initdata, and will be reclaimed after init.
+ * We need to perserve this structure for zmc_cam_alloc() API (will access "prio" field).
+ */
+static struct single_cma_registration saved_memory_ssvp_registration = {
+	.align = SSVP_ALIGN,
+	.name = "memory-ssvp",
+	.prio = ZMC_SSVP,
+};
+
+/*
+ * Parse all feature size requirements from DTS and
+ * check if reserved memory can meet the requirement.
+ */
+static int __init ssvp_preinit(struct reserved_mem *rmem)
+{
+	int rc = 1;
+	u64 total_target_size = 0;
+
+	finalize_ssvp_features_size(rmem);
+
+	total_target_size = secmem_usable_size + tui_size;
+	pr_info("%s, total target size: %pa\n", __func__, &total_target_size);
+
+	memory_ssvp_registration.size = saved_memory_ssvp_registration.size = total_target_size;
+
+	if (total_target_size == 0) {
+		pr_info("%s, SSVP initialization: skipped, no SSVP requirements\n", __func__);
+	} else if (total_target_size > 0 && total_target_size <= rmem->size) {
+		memory_ssvp_registration.align = saved_memory_ssvp_registration.align = (1 << SSVP_ALIGN_SHIFT);
+		pr_info("%s, SSVP initialization: continue\n", __func__);
+		rc = 0;
+	} else
+		pr_info("%s, SSVP initialization: skipped, rmem->size can't meet target size\n", __func__);
+
+	return rc;
+}
+
+static void __init zmc_ssvp_init(struct cma *zmc_cma)
 {
 	phys_addr_t base = cma_get_base(zmc_cma), size = cma_get_size(zmc_cma);
 
@@ -126,21 +224,18 @@ void zmc_ssvp_init(struct cma *zmc_cma)
 	pr_info("%s, base: %pa, size: %pa\n", __func__, &base, &size);
 }
 
-struct single_cma_registration memory_ssvp_registration = {
+/* size will be always reset in ssvp_preinit, only provide default value here */
+struct single_cma_registration __initdata memory_ssvp_registration = {
 	.align = SSVP_ALIGN,
-#if _SSVP_MBSIZE_
-	.size = (_SSVP_MBSIZE_ * SZ_1M),
-#else
-	/* Memory of SVP and TUI are both from reserved memory */
 	.size = SSVP_ALIGN,
-#endif
 	.name = "memory-ssvp",
+	.preinit = ssvp_preinit,
 	.init = zmc_ssvp_init,
 	.prio = ZMC_SSVP,
 };
 
 /*
- * This is only used for all SSVP users wants dedicated reserved memory
+ * This is only used for all SSVP users want dedicated reserved memory
  */
 static int __init memory_ssvp_init(struct reserved_mem *rmem)
 {
@@ -149,6 +244,9 @@ static int __init memory_ssvp_init(struct reserved_mem *rmem)
 	pr_info("%s, name: %s, base: 0x%pa, size: 0x%pa\n",
 		 __func__, rmem->name,
 		 &rmem->base, &rmem->size);
+
+	if (ssvp_preinit(rmem))
+		return 1;
 
 	/* init cma area */
 	ret = cma_init_reserved_mem(rmem->base, rmem->size, 0, &cma);
@@ -175,6 +273,9 @@ static int __init dedicate_tui_memory(struct reserved_mem *rmem)
 		 __func__, rmem->name,
 		 &rmem->base, &rmem->size);
 
+	if (ssvp_preinit(rmem))
+		return 1;
+
 	region->use_cache_memory = true;
 	region->is_unmapping = true;
 	region->count = rmem->size / PAGE_SIZE;
@@ -195,6 +296,9 @@ static int __init dedicate_svp_memory(struct reserved_mem *rmem)
 		 __func__, rmem->name,
 		 &rmem->base, &rmem->size);
 
+	if (ssvp_preinit(rmem))
+		return 1;
+
 	region->use_cache_memory = true;
 	region->is_unmapping = true;
 	region->count = rmem->size / PAGE_SIZE;
@@ -208,31 +312,11 @@ RESERVEDMEM_OF_DECLARE(svp_memory, "mediatek,memory-svp",
 /*
  * Check whether memory_ssvp is initialized
  */
-static inline bool memory_ssvp_inited(void)
+bool memory_ssvp_inited(void)
 {
-	return (cma != NULL);
-}
-
-/*
- * memory_ssvp_cma_base - query the cma's base
- */
-phys_addr_t memory_ssvp_cma_base(void)
-{
-	if (cma == NULL)
-		return 0;
-
-	return cma_get_base(cma);
-}
-
-/*
- * memory_ssvp_cma_size - query the cma's size
- */
-phys_addr_t memory_ssvp_cma_size(void)
-{
-	if (cma == NULL)
-		return 0;
-
-	return cma_get_size(cma);
+	return (_svpregs[SSVP_SVP].use_cache_memory ||
+		_svpregs[SSVP_TUI].use_cache_memory ||
+		cma != NULL);
 }
 
 #ifdef CONFIG_ARM64
@@ -351,7 +435,7 @@ void ssvp_debug_occupy_region(void)
 
 	while (dummy_alloc.nr_keeper < ARRAY_SIZE(dummy_alloc.chunk_keeper)) {
 		page = zmc_cma_alloc(cma, dummy_alloc.chunk_size,
-				SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
+				SSVP_CMA_ALIGN_PAGE_ORDER, &saved_memory_ssvp_registration);
 
 		if (page) {
 			page_phys = page_to_phys(page);
@@ -396,6 +480,7 @@ static int memory_region_offline(struct SSVP_Region *region,
 		page_phys = page_to_phys(region->cache_page);
 	else
 		page_phys = 0;
+
 	pr_info("%s[%d]: upper_limit: %llx, region{ count: %lu, is_unmapping: %c, use_cache_memory: %c, cache_page: %pa}\n",
 			__func__, __LINE__, upper_limit,
 			region->count, region->is_unmapping ? 'Y' : 'N',
@@ -414,7 +499,7 @@ static int memory_region_offline(struct SSVP_Region *region,
 	do {
 		pr_info("[SSVP-ALLOCATION]: retry: %d\n", offline_retry);
 		page = zmc_cma_alloc(cma, region->count,
-				SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
+				SSVP_CMA_ALIGN_PAGE_ORDER, &saved_memory_ssvp_registration);
 
 		offline_retry++;
 		msleep(100);
@@ -849,11 +934,17 @@ static const struct file_operations memory_ssvp_fops = {
 	.release	= single_release,
 };
 
-static int ssvp_sanity(void)
+static int __init ssvp_sanity(void)
 {
 	phys_addr_t start;
 	unsigned long size;
+	u64 total_target_size = secmem_usable_size + tui_size;
 	char *err_msg = NULL;
+
+	if (_svpregs[SSVP_SVP].use_cache_memory || _svpregs[SSVP_TUI].use_cache_memory) {
+		pr_info("%s, dedicate reserved memory as source\n", __func__);
+		return 0;
+	}
 
 	if (!cma) {
 		pr_err("[INIT FAIL]: cma is not inited\n");
@@ -865,9 +956,9 @@ static int ssvp_sanity(void)
 	start = cma_get_base(cma);
 	size = cma_get_size(cma);
 
-	if (start + (_SSVP_MBSIZE_ * SZ_1M) > ssvp_upper_limit) {
+	if (start + total_target_size > ssvp_upper_limit) {
 		pr_err("[INVALID REGION]: CMA PA over 32 bit\n");
-		pr_info("MBSIZE: %d, cma start: %pa, size:0x%lx\n", _SSVP_MBSIZE_, &start, size);
+		pr_info("Total target size: %pa, cma start: %pa, size: %pa\n", &total_target_size, &start, &size);
 		err_msg = "SVP sanity: invalid CMA region due to over 32bit\nCRDISPATCH_KEY:SVP_SS1";
 		goto out;
 	}
@@ -884,7 +975,7 @@ out:
 }
 
 
-int memory_ssvp_init_region(char *name, unsigned long size, struct SSVP_Region *region,
+static int __init memory_ssvp_init_region(char *name, u64 size, struct SSVP_Region *region,
 		const struct file_operations *entry_fops)
 {
 	struct proc_dir_entry *procfs_entry;
@@ -906,11 +997,11 @@ int memory_ssvp_init_region(char *name, unsigned long size, struct SSVP_Region *
 
 	if (has_dedicate_memory) {
 		pr_info("[%s]:Use dedicate memory as cached memory\n", name);
-		size = (region->count * PAGE_SIZE) / SZ_1M;
+		size = ((u64) region->count) * PAGE_SIZE;
 		goto region_init_done;
 	}
 
-	region->count = (size * SZ_1M) >> PAGE_SHIFT;
+	region->count = (unsigned long)(size >> PAGE_SHIFT);
 
 	if (is_pre_reserve_memory) {
 		int ret_map;
@@ -947,8 +1038,8 @@ int memory_ssvp_init_region(char *name, unsigned long size, struct SSVP_Region *
 
 region_init_done:
 	region->state = SVP_STATE_ON;
-	pr_info("%s %d: %s is enable with size: %lu mB\n",
-			__func__, __LINE__, name, size);
+	pr_info("%s %d: %s is enable with size: %pa\n",
+			__func__, __LINE__, name, &size);
 	return 0;
 }
 
@@ -967,8 +1058,8 @@ static int __init memory_ssvp_debug_init(void)
 	if (!dentry)
 		pr_warn("Failed to create debugfs memory_ssvp file\n");
 
-	memory_ssvp_init_region("svp_region", SVP_MBSIZE, &_svpregs[SSVP_SVP], &svp_cma_fops);
-	memory_ssvp_init_region("tui_region", TUI_MBSIZE, &_svpregs[SSVP_TUI], NULL);
+	memory_ssvp_init_region("svp_region", secmem_usable_size, &_svpregs[SSVP_SVP], &svp_cma_fops);
+	memory_ssvp_init_region("tui_region", tui_size, &_svpregs[SSVP_TUI], NULL);
 
 	return 0;
 }
