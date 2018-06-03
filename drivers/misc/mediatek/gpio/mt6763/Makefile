@@ -11,12 +11,6 @@
 # GNU General Public License for more details.
 #
 
-ifeq ($(CONFIG_MTK_FPGA),y)
-obj-y	:= mtk_gpio_fpga.o
-else
-obj-y	:= mtk_gpio_base.o
-endif
-obj-y	+= mtk_gpio_affix.o mtk_gpio_debug.o mtk_gpio_ext.o
-ifeq ($(CONFIG_GPIOLIB),y)
-obj-y	+= mtk_gpio_base_linux.o
+ifeq ($(CONFIG_MTK_MT6306_GPIO_SUPPORT),y)
+obj-y	+= mtk_6306_gpio.o
 endif
