@@ -121,7 +121,7 @@ bool report_custom_iommu_fault(
 
 	iommu_globals.enable = 0;
 
-	if (idx >= ERROR_LARB_PORT_ID) {
+	if (idx >= ARRAY_SIZE(iommu_port)) {
 		pr_info("[MTK_IOMMU] fail,iova 0x%x, port %d\n",
 			fault_iova, fault_id);
 		return false;
@@ -151,7 +151,7 @@ int mtk_iommu_register_fault_callback(int port,
 {
 	int idx = mtk_iommu_larb_port_idx(port);
 
-	if (idx >= ERROR_LARB_PORT_ID) {
+	if (idx >= ARRAY_SIZE(iommu_port)) {
 		pr_info("[MTK_IOMMU] %s fail, port=%d\n", __func__, port);
 		return -1;
 	}
@@ -164,7 +164,7 @@ int mtk_iommu_unregister_fault_callback(int port)
 {
 	int idx = mtk_iommu_larb_port_idx(port);
 
-	if (idx >= ERROR_LARB_PORT_ID) {
+	if (idx >= ARRAY_SIZE(iommu_port)) {
 		pr_info("[MTK_IOMMU] %s fail, port=%d\n", __func__, port);
 		return -1;
 	}
@@ -177,7 +177,7 @@ int mtk_iommu_enable_tf(int port, bool fgenable)
 {
 	int idx = mtk_iommu_larb_port_idx(port);
 
-	if (idx >= ERROR_LARB_PORT_ID) {
+	if (idx >= ARRAY_SIZE(iommu_port)) {
 		pr_info("[MTK_IOMMU] %s fail, port=%d\n", __func__, port);
 		return -1;
 	}
@@ -442,7 +442,6 @@ void mtk_iommu_trace_unmap(unsigned long orig_iova,
 void mtk_iommu_trace_register(int event, const char *name)
 {
 	if ((event >= IOMMU_EVENT_MAX) ||
-	    (event <= IOMMU_UNMAP) ||
 	    (name == NULL)) {
 		pr_info("[MTK_IOMMU] parameter error, event-%d, name %p, EVENT_MAX: %d\n",
 			event, name, IOMMU_EVENT_MAX);

@@ -259,7 +259,11 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 			IONMSG("%s kzalloc failed table is null.\n", __func__);
 			goto err;
 		}
-		sg_alloc_table(table, 1, GFP_KERNEL);
+		ret = sg_alloc_table(table, 1, GFP_KERNEL);
+		if (ret) {
+			IONMSG("%s PA2MVA sg table fail %d\n", __func__, ret);
+			goto err1;
+		}
 		sg_dma_address(table->sgl) = align;
 		sg_dma_len(table->sgl) = size;
 		table->sgl->length = size;
