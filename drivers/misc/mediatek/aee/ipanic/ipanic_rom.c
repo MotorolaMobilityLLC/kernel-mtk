@@ -558,6 +558,9 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	__mrdump_create_oops_dump(AEE_REBOOT_MODE_KERNEL_PANIC, &saved_regs, "Kernel Panic");
 	spin_lock_irq(&ipanic_lock);
 	aee_disable_api();
+#ifndef CONFIG_DEBUG_BUGVERBOSE
+	dump_stack();
+#endif
 	mrdump_mini_ke_cpu_regs(NULL);
 	inner_dcache_flush_all();
 	if (!has_mt_dump_support())
