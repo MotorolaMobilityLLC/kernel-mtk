@@ -29,13 +29,11 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 		.ops = &pmic_##_type##_##_name##_ops,	\
 		.type = REGULATOR_VOLTAGE,	\
 	},	\
-	.init_data = {	\
-		.constraints = {	\
-			.valid_ops_mask = (mode),	\
-		},	\
+	.constraints = {	\
+		.valid_ops_mask = (mode),	\
 	},	\
-	.pvoltages = (void *)(array),	\
-	.idxs = (void *)(array_idx),	\
+	.pvoltages = (array),	\
+	.idxs = (array_idx),	\
 	.en_att = __ATTR(_type##_##_name##_status, 0664, show_regulator_status, store_regulator_status), \
 	.voltage_att = __ATTR(_type##_##_name##_voltage, 0664, show_regulator_voltage, store_regulator_voltage), \
 	.en_cb = mt6358_upmu_set_rg_##_type##_##_name##_en,	\
@@ -57,10 +55,8 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 		.uV_step = (step),	\
 		.linear_min_sel = min_sel,	\
 	},	\
-	.init_data = {	\
-		.constraints = {	\
-			.valid_ops_mask = (mode),	\
-		},	\
+	.constraints = {	\
+		.valid_ops_mask = (mode),	\
 	},	\
 	.en_att = __ATTR(_type##_##_name##_status, 0664, show_regulator_status, store_regulator_status), \
 	.voltage_att = __ATTR(_type##_##_name##_voltage, 0664, show_regulator_voltage, store_regulator_voltage), \
@@ -71,7 +67,7 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 	.isUsedable = (use),	\
 }
 
-#define REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(_name, _type, min, max, step, min_sel, mode, use)	\
+#define REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(_name, _type, min, max, step, min_sel, mode, _modeset_reg, use)	\
 {	\
 	.desc = {	\
 		.name = #_name,	\
@@ -82,10 +78,9 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 		.uV_step = (step),	\
 		.linear_min_sel = min_sel,	\
 	},	\
-	.init_data = {	\
-		.constraints = {	\
-			.valid_ops_mask = (mode),	\
-		},	\
+	.constraints = {	\
+		.valid_ops_mask = (mode),	\
+		.valid_modes_mask = REGULATOR_MODE_NORMAL | REGULATOR_MODE_FAST, \
 	},	\
 	.en_att = __ATTR(_type##_##_name##_status, 0664, show_regulator_status, store_regulator_status), \
 	.voltage_att = __ATTR(_type##_##_name##_voltage, 0664, show_regulator_voltage, store_regulator_voltage), \
@@ -93,6 +88,7 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 	.vol_cb = mt6358_upmu_set_rg_##_type##_##_name##_vosel,	\
 	.da_en_cb = mt6358_upmu_get_da_##_name##_en,   \
 	.da_vol_cb = mt6358_upmu_get_da_##_name##_vosel,  \
+	.modeset_reg = _modeset_reg, \
 	.isUsedable = (use),	\
 }
 /* Fixed voltage regulator */
@@ -105,10 +101,8 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 		.type = REGULATOR_VOLTAGE,	\
 		.fixed_uV = (fixed),	\
 	},	\
-	.init_data = {	\
-		.constraints = {	\
-			.valid_ops_mask = (mode),	\
-		},	\
+	.constraints = {	\
+		.valid_ops_mask = (mode),	\
 	},	\
 	.en_att = __ATTR(_type##_##_name##_status, 0664, show_regulator_status, store_regulator_status),	\
 	.voltage_att = __ATTR(_type##_##_name##_voltage, 0664, show_regulator_voltage, store_regulator_voltage), \
@@ -163,6 +157,7 @@ enum MT6358_POWER_LDO {
 	MT6358_POWER_LDO_VLDO28,
 	MT6358_POWER_LDO_VAUD28,
 	MT6358_POWER_LDO_VSIM2,
+	MT6358_POWER_LDO_VA09,
 	MT6358_LDO_COUNT_END
 };
 

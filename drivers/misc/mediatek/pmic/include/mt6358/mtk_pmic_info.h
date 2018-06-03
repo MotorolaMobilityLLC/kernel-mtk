@@ -69,4 +69,10 @@ extern unsigned int gPMICREGDbgLvl;
 		pr_notice(PMICTAG "%s: " fmt, __func__, ##arg); \
 } while (0)
 
+/* MT6358 Export API */
+extern unsigned int pmic_scp_set_vcore(unsigned int);
+extern unsigned int pmic_scp_set_vcore_sleep(unsigned int);
+extern unsigned int pmic_scp_set_vsram_vcore(unsigned int);
+extern unsigned int pmic_scp_set_vsram_vcore_sleep(unsigned int);
+
 #endif				/* _MT_PMIC_INFO_H_ */

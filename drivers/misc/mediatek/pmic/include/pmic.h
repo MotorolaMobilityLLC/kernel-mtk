@@ -118,10 +118,13 @@ struct mtk_regulator_vosel {
 	unsigned int cur_sel; /*-- current vosel --*/
 	bool restore;
 };
+
 struct mtk_regulator {
 	struct regulator_desc desc;
+	/* init_data and config may be removed */
 	struct regulator_init_data init_data;
 	struct regulator_config config;
+	struct regulation_constraints constraints;
 	struct device_attribute en_att;
 	struct device_attribute voltage_att;
 	struct regulator_dev *rdev;
@@ -129,8 +132,9 @@ struct mtk_regulator {
 	PMU_FLAGS_LIST_ENUM vol_reg;
 	PMU_FLAGS_LIST_ENUM qi_en_reg;
 	PMU_FLAGS_LIST_ENUM qi_vol_reg;
-	const void *pvoltages;
-	const void *idxs;
+	PMU_FLAGS_LIST_ENUM modeset_reg;
+	const int *pvoltages;
+	const int *idxs;
 	bool isUsedable;
 	struct regulator *reg;
 	int vsleep_en_saved;

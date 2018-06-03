@@ -4206,7 +4206,102 @@ static int pmic_ldo_vsim2_list_voltage(struct regulator_dev *rdev, unsigned sele
 	return voltage;
 }
 
+/* Regulator EXT_PMIC2 enable */
+static int pmic_regulator_ext2_enable(struct regulator_dev *rdev)
+{
+	unsigned short ext_en = 0, ext_sel = 0;
+	int ret = 0;
 
+	pr_info("regulator ext_pmic2 enable\n");
+	ext_en = pmic_get_register_value(PMIC_RG_STRUP_EXT_PMIC_EN);
+	if ((ext_en & 0x2) != 0x2)
+		ret |= pmic_set_register_value(PMIC_RG_STRUP_EXT_PMIC_EN,
+			ext_en | 0x2);
+	ext_sel = pmic_get_register_value(PMIC_RG_STRUP_EXT_PMIC_SEL);
+	if ((ext_sel & 0x2) != 0x2)
+		ret |= pmic_set_register_value(PMIC_RG_STRUP_EXT_PMIC_SEL,
+			ext_sel | 0x2);
+
+	return ret;
+}
+
+/* Regulator EXT_PMIC2 disable */
+static int pmic_regulator_ext2_disable(struct regulator_dev *rdev)
+{
+	unsigned short ext_en = 0, ext_sel = 0;
+	int ret = 0;
+
+	pr_info("regulator ext_pmic2 disable\n");
+	if (rdev->use_count == 0) {
+		pr_notice("regulator ext_pmic2 should not be disable (use_count=%d)\n", rdev->use_count);
+		return -1;
+	}
+	ext_sel = pmic_get_register_value(PMIC_RG_STRUP_EXT_PMIC_SEL);
+	if ((ext_sel & 0x2) != 0x2)
+		ret |= pmic_set_register_value(PMIC_RG_STRUP_EXT_PMIC_SEL,
+			ext_sel | 0x2);
+	ext_en = pmic_get_register_value(PMIC_RG_STRUP_EXT_PMIC_EN);
+	if ((ext_en & 0x2) == 0x2)
+		ret |= pmic_set_register_value(PMIC_RG_STRUP_EXT_PMIC_EN,
+			ext_en & ~0x2);
+
+	return ret;
+}
+
+/* Regulator EXT_PMIC2 is_enabled */
+static int pmic_regulator_ext2_is_enabled(struct regulator_dev *rdev)
+{
+	const struct regulator_desc *rdesc = rdev->desc;
+	struct mtk_regulator *mreg;
+
+	mreg = container_of(rdesc, struct mtk_regulator, desc);
+
+	pr_info("regulator ext_pmic2 is_enabled\n");
+	if (mreg->da_en_cb == NULL) {
+		pr_notice("regulator ext_pmic2 don't have da_en_cb\n");
+		return -1;
+	}
+
+	return (mreg->da_en_cb)();
+}
+
+static int pmic_buck_set_mode(struct regulator_dev *rdev, unsigned int mode)
+{
+	struct mtk_regulator *mreg = rdev_get_drvdata(rdev);
+	unsigned short val;
+	int ret = 0;
+
+	switch (mode) {
+	case REGULATOR_MODE_FAST:
+		val = 1;
+		break;
+	case REGULATOR_MODE_NORMAL:
+		val = 0;
+		break;
+	default:
+		return -EINVAL;
+	}
+	pmic_set_register_value(mreg->modeset_reg, val);
+	if (val == pmic_get_register_value(mreg->modeset_reg))
+		pr_info("BUCK %s set FPWM mode:%d pass\n", mreg->desc.name, val);
+	else {
+		pr_notice("BUCK %s set FPWM mode:%d fail\n", mreg->desc.name, val);
+		ret = -1;
+	}
+	return ret;
+}
+
+static unsigned int pmic_buck_get_mode(struct regulator_dev *rdev)
+{
+	struct mtk_regulator *mreg = rdev_get_drvdata(rdev);
+	unsigned int mode;
+
+	if (pmic_get_register_value(mreg->modeset_reg) == 1)
+		mode = REGULATOR_MODE_FAST;
+	else
+		mode = REGULATOR_MODE_NORMAL;
+	return mode;
+}
 
 /* Regulator vdram2 ops */
 static struct regulator_ops pmic_ldo_vdram2_ops = {
@@ -4322,6 +4417,8 @@ static struct regulator_ops pmic_buck_vcore_ops = {
 	.get_voltage_sel = pmic_buck_vcore_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vcore_set_voltage_sel,
 	.list_voltage = regulator_list_voltage_linear,
+	.set_mode = pmic_buck_set_mode,
+	.get_mode = pmic_buck_get_mode,
 	/* .enable_time = pmic_buck_vcore_enable_time, */
 };
 
@@ -4363,6 +4460,8 @@ static struct regulator_ops pmic_buck_vproc11_ops = {
 	.get_voltage_sel = pmic_buck_vproc11_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vproc11_set_voltage_sel,
 	.list_voltage = regulator_list_voltage_linear,
+	.set_mode = pmic_buck_set_mode,
+	.get_mode = pmic_buck_get_mode,
 	/* .enable_time = pmic_buck_vproc11_enable_time, */
 };
 
@@ -4396,6 +4495,8 @@ static struct regulator_ops pmic_buck_vproc12_ops = {
 	.get_voltage_sel = pmic_buck_vproc12_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vproc12_set_voltage_sel,
 	.list_voltage = regulator_list_voltage_linear,
+	.set_mode = pmic_buck_set_mode,
+	.get_mode = pmic_buck_get_mode,
 	/* .enable_time = pmic_buck_vproc12_enable_time, */
 };
 
@@ -4453,6 +4554,8 @@ static struct regulator_ops pmic_buck_vgpu_ops = {
 	.get_voltage_sel = pmic_buck_vgpu_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vgpu_set_voltage_sel,
 	.list_voltage = regulator_list_voltage_linear,
+	.set_mode = pmic_buck_set_mode,
+	.get_mode = pmic_buck_get_mode,
 	/* .enable_time = pmic_buck_vgpu_enable_time, */
 };
 
@@ -4620,7 +4723,12 @@ static struct regulator_ops pmic_ldo_vsim2_ops = {
 	/* .enable_time = pmic_ldo_vsim2_enable_time, */
 };
 
-
+/* Regulator EXT_PMIC2 ops */
+static struct regulator_ops pmic_regulator_ext2_ops = {
+	.enable = pmic_regulator_ext2_enable,
+	.disable = pmic_regulator_ext2_disable,
+	.is_enabled = pmic_regulator_ext2_is_enabled,
+};
 
 /*------Regulator ATTR------*/
 static ssize_t show_regulator_status(struct device *dev, struct device_attribute *attr, char *buf)
@@ -4699,20 +4807,59 @@ static ssize_t store_regulator_voltage(struct device *dev, struct device_attribu
 
 
 /* Regulator: BUCK */
-#define BUCK_EN	REGULATOR_CHANGE_STATUS
+#define BUCK_EN REGULATOR_CHANGE_STATUS
 #define BUCK_VOL REGULATOR_CHANGE_VOLTAGE
 #define BUCK_VOL_EN (REGULATOR_CHANGE_STATUS | REGULATOR_CHANGE_VOLTAGE)
+#define BUCK_VOL_EN_MODE \
+	(REGULATOR_CHANGE_STATUS | \
+	REGULATOR_CHANGE_VOLTAGE | \
+	REGULATOR_CHANGE_MODE)
 struct mtk_regulator mt_bucks[] = {
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vdram1, buck, 500000, 2087500, 12500, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vcore, buck, 500000, 1293750, 6250, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vpa, buck, 500000, 3650000, 50000, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vproc11, buck, 500000, 1293750, 6250, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vproc12, buck, 500000, 1293750, 6250, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vgpu, buck, 500000, 1293750, 6250, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vs2, buck, 500000, 2087500, 12500, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vmodem, buck, 500000, 1293750, 6250, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vs1, buck, 1000000, 2587500, 12500, 0, BUCK_VOL_EN, 1),
-
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
+		vdram1, buck,
+		500000, 2087500, 12500, 0,
+		BUCK_VOL_EN, PMIC_RG_VDRAM1_FPWM, 1
+	),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
+		vcore, buck,
+		500000, 1293750, 6250, 0,
+		BUCK_VOL_EN_MODE, PMIC_RG_VCORE_FPWM, 1
+	),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
+		vpa, buck,
+		500000, 3650000, 50000, 0,
+		BUCK_VOL_EN, PMIC_RG_VPA_MODESET, 1
+	),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
+		vproc11, buck,
+		500000, 1293750, 6250, 0,
+		BUCK_VOL_EN_MODE, PMIC_RG_VPROC11_FPWM, 1
+	),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
+		vproc12, buck,
+		500000, 1293750, 6250, 0,
+		BUCK_VOL_EN_MODE, PMIC_RG_VPROC12_FPWM, 1
+	),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
+		vgpu, buck,
+		500000, 1293750, 6250, 0,
+		BUCK_VOL_EN_MODE, PMIC_RG_VGPU_FPWM, 1
+	),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
+		vs2, buck,
+		500000, 2087500, 12500, 0,
+		BUCK_VOL_EN, PMIC_RG_VS2_FPWM, 1
+	),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
+		vmodem, buck,
+		500000, 1293750, 6250, 0,
+		BUCK_VOL_EN, PMIC_RG_VMODEM_FPWM, 1
+	),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
+		vs1, buck,
+		1000000, 2587500, 12500, 0,
+		BUCK_VOL_EN, PMIC_RG_VS1_FPWM, 1
+	),
 };
 
 
@@ -4753,6 +4900,22 @@ struct mtk_regulator mt_ldos[] = {
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vldo28, ldo, vldo28_voltages, vldo28_idx, LDO_VOL_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vaud28, ldo, 2800000, LDO_EN, 1),
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vsim2, ldo, vsim2_voltages, vsim2_idx, LDO_VOL_EN, 1),
+	{
+		.desc = {
+			.name = "va09",
+			.n_voltages = 1,
+			.ops = &pmic_regulator_ext2_ops,
+			.type = REGULATOR_VOLTAGE,
+			.fixed_uV = 900000,
+		},
+		.constraints = {
+			.valid_ops_mask = LDO_EN,
+		},
+		.en_att = __ATTR(ldo_va09_status, 0664, show_regulator_status, store_regulator_status),
+		.voltage_att = __ATTR(ldo_va09_voltage, 0664, show_regulator_voltage, store_regulator_voltage),
+		.da_en_cb = mt6358_upmu_get_da_ext_pmic_en2,
+		.isUsedable = 1,
+	},
 };
 
 
@@ -4825,7 +4988,7 @@ struct of_regulator_match pmic_regulator_ldo_matches[] = {
 	PMIC_REGULATOR_LDO_OF_MATCH(ldo_vldo28, VLDO28),
 	PMIC_REGULATOR_LDO_OF_MATCH(ldo_vaud28, VAUD28),
 	PMIC_REGULATOR_LDO_OF_MATCH(ldo_vsim2, VSIM2),
-
+	PMIC_REGULATOR_LDO_OF_MATCH(ldo_va09, VA09),
 };
 
 int pmic_regulator_ldo_matches_size = ARRAY_SIZE(pmic_regulator_ldo_matches);
