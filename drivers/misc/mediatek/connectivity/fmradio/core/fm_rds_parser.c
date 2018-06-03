@@ -681,8 +681,8 @@ static signed int rds_g0_ps_cmp(unsigned char addr, unsigned short cbc, unsigned
 		*valid = false;
 #endif
 	/* WCN_DBG(FM_NTC | RDSC, "PS seg=%s\n", *valid == true ? "true" : "false"); */
-	/* WCN_DBG(FM_NTC | RDSC, "bitmap=%x\n", *bm); */
-	WCN_DBG(FM_NTC | RDSC, "PS[%02x][1][2]=%x %x|%x %x|%x %x|%x %x|%x %x|%x %x|%x %x|%x %x\n",
+	WCN_DBG(FM_DBG | RDSC, "bitmap=%x\n", *bm);
+	WCN_DBG(FM_DBG | RDSC, "PS[%02x][1][2]=%x %x|%x %x|%x %x|%x %x|%x %x|%x %x|%x %x|%x %x\n",
 		addr, once[0], twice[0], once[1], twice[1], once[2], twice[2], once[3], twice[3],
 		once[4], twice[4], once[5], twice[5], once[6], twice[6], once[7], twice[7]);
 	return ret;
