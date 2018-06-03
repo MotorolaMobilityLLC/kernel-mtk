@@ -20,6 +20,17 @@
 #include "disp_session.h"
 #include "disp_lcm.h"
 #include "disp_helper.h"
+#ifdef CONFIG_MTK_QOS_SUPPORT
+#include <linux/pm_qos.h>
+#endif
+
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+extern struct pm_qos_request primary_display_qos_request;
+extern struct pm_qos_request primary_display_emi_opp_request;
+extern struct pm_qos_request primary_display_mm_freq_request;
+#endif
+
 enum DISP_PRIMARY_PATH_MODE {
 	DIRECT_LINK_MODE,
 	DECOUPLE_MODE,
@@ -438,6 +449,7 @@ extern unsigned int islcmconnected;
 size_t mtkfb_get_fb_size(void);
 
 int primary_fps_ctx_set_wnd_sz(unsigned int wnd_sz);
+int primary_fps_ctx_get_fps(unsigned int *fps, int *stable);
 int primary_fps_ext_ctx_set_interval(unsigned int interval);
 
 int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes_per_pix);

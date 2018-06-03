@@ -35,6 +35,7 @@
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
 
+static unsigned long long rdma_bw;
 static unsigned int rdma_fps[RDMA_INSTANCES] = { 60, 60 };
 static struct golden_setting_context *rdma_golden_setting;
 
@@ -401,6 +402,8 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 		do_div(consume_rate, 1000);
 	}
 	consume_rate *= 1250;
+	rdma_bw = consume_rate;
+	do_div(rdma_bw, frame_rate * 1000 * 1000);
 	do_div(consume_rate, 16*1000);
 	consume_rate_div_tmp = consume_rate;
 	do_div(consume_rate_div_tmp, 100);
@@ -1034,11 +1037,11 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		pConfig->rdma_config.bg_ctrl.right = r_config->dst_w -
 			r_config->dst_x - width;
 	}
-	DDPDBG("top=%d,bottom=%d,left=%d,right=%d,r.dst_x=%d,r.dst_y=%d,r.dst_w=%d,r.dst_h=%d,width=%d,height=%d\n",
+	DDPDBG("top=%d,bottom=%d,left=%d,right=%d,r.dst_x=%d,r.dst_y=%d,r.dst_w=%d,r.dst_h=%d\n",
 		pConfig->rdma_config.bg_ctrl.top, pConfig->rdma_config.bg_ctrl.bottom,
 		pConfig->rdma_config.bg_ctrl.left, pConfig->rdma_config.bg_ctrl.right,
-		r_config->dst_x, r_config->dst_y, r_config->dst_w,
-		r_config->dst_h, width, height);
+		r_config->dst_x, r_config->dst_y, r_config->dst_w, r_config->dst_h);
+	DDPDBG("width=%d,height=%d,bw:%llu\n", width, height, rdma_bw);
 	/*PARGB,etc need convert ARGB,etc*/
 	ufmt_disable_P(r_config->inputFormat, &inFormat);
 	rdma_config(module,
@@ -1051,6 +1054,10 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		    lcm_param->dsi.ufoe_enable,
 		    r_config->security, r_config->yuv_range,
 		    &(r_config->bg_ctrl), handle, p_golden_setting, pConfig->lcm_bpp);
+
+	/* bandwidth report */
+	if (module == DISP_MODULE_RDMA0)
+		DISP_SLOT_SET(handle, DISPSYS_SLOT_BASE, DISP_SLOT_RDMA0_BW, (unsigned int)rdma_bw);
 
 	return 0;
 }
