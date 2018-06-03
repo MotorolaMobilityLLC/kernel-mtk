@@ -481,6 +481,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		      <0 0x0800000c 0 0x0004>;
 	};
 
+	mobicore {
+		compatible = "trustonic,mobicore";
+		interrupts = <GIC_SPI 271 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	timer {
 		compatible = "arm,armv8-timer";
 		interrupt-parent = <&gic>;
