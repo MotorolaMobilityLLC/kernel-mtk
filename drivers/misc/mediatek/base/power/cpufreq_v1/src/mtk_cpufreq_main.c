@@ -19,18 +19,15 @@
 #define __MT_CPUFREQ_C__
 
 /* project includes */
-#include "mach/mt_ppm_api.h"
+/* #include "mach/mt_ppm_api.h" */
 
 /* local includes */
-#include "mt_cpufreq_internal.h"
-#include "mt_cpufreq_platform.h"
-#include "mt_cpufreq_debug.h"
-#include "mt_cpufreq_hybrid.h"
-#ifdef USE_16_OPP
-#include "mt_cpufreq_opp_table_16.h"
-#else
-#include "mt_cpufreq_opp_table.h"
-#endif
+#include "mtk_cpufreq_internal.h"
+#include "mtk_cpufreq_platform.h"
+#include "mtk_cpufreq_debug.h"
+#include "mtk_cpufreq_hybrid.h"
+#include "mtk_cpufreq_opp_table.h"
+
 /* #define DCM_ENABLE 1 */
 /*
  * Global Variables
@@ -42,7 +39,7 @@ struct opp_idx_tbl opp_tbl_m[NR_OPP_IDX];
 int dvfs_disable_flag;
 
 /* Prototype */
-static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
+static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 	void *hcpu);
 
 struct mt_cpu_dvfs *id_to_cpu_dvfs(enum mt_cpu_dvfs_id id)
@@ -374,13 +371,11 @@ static void dump_opp_table(struct mt_cpu_dvfs *p)
 {
 	int i;
 
-	cpufreq_err(m, "[%s/%d]\n", p->name, p->cpu_id);
-	cpufreq_err(m, "cpufreq_oppidx = %d\n", p->idx_opp_tbl);
+	cpufreq_err("[%s/%u] oppidx = %d\n", p->name, p->cpu_id, p->idx_opp_tbl);
 
 	for (i = 0; i < p->nr_opp_tbl; i++) {
-		cpufreq_err("\tOP(%d, %d),\n",
-			    cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i)
-		    );
+		cpufreq_err("%-2d (%u, %u)\n",
+			    i, cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i));
 	}
 }
 
@@ -617,8 +612,9 @@ static int _cpufreq_set_locked_cci(unsigned int target_cci_khz, unsigned int tar
 
 	cpufreq_ver("@%s(): Vproc = %dmv, Vsram = %dmv, freq = %dKHz\n",
 		    __func__,
-		    (p_cci->ops->get_cur_volt(p_cci)) / 100,
-		    (p_cci->ops->get_cur_vsram(p_cci) / 100), p_cci->ops->get_cur_phy_freq(p_cci));
+		    (vproc_p->buck_ops->get_cur_volt(vproc_p)) / 100,
+		    (vsram_p->buck_ops->get_cur_volt(vsram_p) / 100), pll_p->pll_ops->get_cur_freq(pll_p));
+
 out:
 	aee_record_cci_dvfs_step(0);
 
@@ -807,11 +803,7 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, struct mt_cpu_dvfs *p
 		return;
 
 	if (do_dvfs_stress_test && action == MT_CPU_DVFS_NORMAL)
-#ifdef USE_16_OPP
 		new_opp_idx = jiffies & 0xF;
-#else
-		new_opp_idx = jiffies & 0x3;
-#endif
 	else if (action == MT_CPU_DVFS_ONLINE || action == MT_CPU_DVFS_DP)
 		new_opp_idx = _calc_new_opp_idx_no_base(p, new_opp_idx);
 	else
@@ -999,7 +991,7 @@ static int turbo_core_match(unsigned int *cpus)
 }
 
 static int can_turbo;
-static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
+static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 					void *hcpu)
 {
 	unsigned int cpu = (unsigned long)hcpu;
@@ -1613,6 +1605,8 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
+	mt_cpufreq_regulator_map(pdev);
+
 	_mt_cpufreq_aee_init();
 
 	/* Prepare OPP table for PPM in probe to avoid nested lock */
@@ -1749,6 +1743,9 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	struct cpumask cpu_mask;
 	unsigned int cluster_num;
 	int i;
+
+	/* Fix me */
+	return 0;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 

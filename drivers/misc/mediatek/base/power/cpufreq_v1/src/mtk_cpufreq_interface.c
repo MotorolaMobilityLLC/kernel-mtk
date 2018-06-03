@@ -14,8 +14,8 @@
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
 
-#include "mt_cpufreq_internal.h"
-#include "mt_cpufreq_hybrid.h"
+#include "mtk_cpufreq_internal.h"
+#include "mtk_cpufreq_hybrid.h"
 
 unsigned int func_lv_mask;
 unsigned int do_dvfs_stress_test;
