@@ -678,6 +678,7 @@ unsigned int vbus_val(struct typec_hba *hba)
 #define AUXADC_CON6_H (0x0358) /*0x11*/
 #define AUXADC_CON6 (0x0357) /*0xE0*/
 #define AUXADC_RQST0 (0x0341) /*0x04*/
+#define AUXADC_RQST0_SET (0x0342) /*0x04*/
 #define AUXADC_CON2_H (0x0350) /*0x01*/
 #define AUXADC_CON3 (0x0351) /*0x00*/
 #define CLK_CKPDN_CON3 (0x0034) /*0x16*/
@@ -724,8 +725,9 @@ unsigned int vbus_val(struct typec_hba *hba)
 		/*AUXADC_TRIM_CH3~0_SEL*/
 		typec_write8(hba, 0xE0, AUXADC_CON6);
 
-		typec_write8(hba, 0x1, AUXADC_CON3);
+		/*typec_write8(hba, 0x1, AUXADC_CON3);*/
 		typec_write8(hba, 0x0, AUXADC_CON2_H);
+		typec_write8(hba, 0x1D, 0x034F);
 
 		is_global_setting = 1;
 	}
@@ -734,7 +736,7 @@ unsigned int vbus_val(struct typec_hba *hba)
 	 * ;CH2 read 0304(L) 0305(H) 15bit
 	 * WR 55 033F 04
 	 */
-	typec_write8(hba, 0x04, AUXADC_RQST0);
+	typec_write8(hba, 0x04, AUXADC_RQST0_SET);
 
 	/*
 	 * 7 AUXADC_ADC_RDY_CH2 AUXADC channel 2 output data ready
@@ -943,150 +945,120 @@ skip:
 
 #else
 
-#define SWCHR_MAIN_CON0 (0x0400) /*0x0B-->0x03*/
-#define SWCHR_MAIN_CON5 (0x0405) /*0x04*/
-#define SWCHR_MAIN_CON8 (0x0409) /*0x01*/
-#define SWCHR_OTG_CTRL0 (0x040F) /*0x0F*/
-#define SWCHR_OTG_CTRL2 (0x0411) /*0x55*/
-#define SWCHR_ICL_CON1 (0x0438) /*0x08*/
-
-#define ANA_CORE_ANA_CON22 (0x0515) /*0x30-->0x30*/
-#define ANA_CORE_ANA_CON26 (0x0519) /*0x0D-->0x1F*/
-#define ANA_CORE_ANA_CON33 (0x0520) /*0x00-->0x34*/
-#define ANA_CORE_ANA_CON34 (0x0521) /*0x44-->0x44*/
-#define ANA_CORE_ANA_CON49 (0x0530) /*0xC0*/
-#define ANA_CORE_ANA_CON63 (0x053D) /*0x42-->0x47*/
-#define ANA_CORE_ANA_CON102 (0x055F) /*0xE6-->0x5E*/
-#define ANA_CORE_ANA_CON103 (0x0560) /*0x0C-->0x1D*/
-
-#define RG_EN_OTG	 (1<<3)
+#define RG_EN_OTG	 (0x1<<0x3)
 
 void typec_drive_vbus(struct typec_hba *hba, uint8_t on)
 {
 	if (hba->vbus_en == on)
 		goto skip;
+
 	/*
-	 *  From http://teams.mediatek.inc/sites/Power_Management/SP_PMIC/
-	 *  MT6336/Shared Documents/02_ChipVerification/2.4_HQA/
-	 *  E2 bring-up script/
-	 *  MT6336 OTG bring-up script_E2(0720).txt
-	 *  MT6336 Leave OTG script_E2(0720).txt
+	 *  From Script_20160823.xlsx provided by Lynch Lin
 	 */
 	if (on) {
+		uint8_t tmp;
 		/*
-		 * ;Disable LOWQ mode
-		 * WR 56 0409 01
+		 * ==Initial Setting==
+		 * WR	56	411	51	OTG CV and IOLP setting
 		 *
-		 * ;;Before enters OTG mode:
-		 * ;;LOOP Stability, Fast Transient, Switching frequency setting
-		 * ;[6:1]GM enable=000110
-		 * WR 57 0519 0D
-		 * ;GM MSB=00000000
-		 * WR 57 0520 00
-		 * ;GM LSB=01000100
-		 * WR 57 0521 44
+		 * ==Enable OTG==
+		 * 1. Check 0x612[4] (DA_QI_FLASH_MODE) and 0x0613[1] (DA_QI_VBUS_PLUGIN)
 		 *
-		 * ;[3:0]VCS_RTUNE=1101
-		 * WR 57 053F 0B
-		 * ;[6:4]VRAMP_SLP=100,[3:0]VRAMP DC offset=0010
-		 * WR 57 053D 42
+		 * 2. If they are both low, apply below settings
+		 * 3. If any of them is high, do nothing (chip does not support OTG mode while under CHR or Flash mode)"
 		 *
-		 * ;[1:0] GM/4; GM/2, close GM/4 function for OTG IOLP
-		 * WR 57 051E 00
+		 * WR	57	519	0D
+		 * WR	57	520	00
+		 * WR	57	55A	01
+		 * WR	56	455	00
+		 * WR	55	3C9	00
 		 *
-		 * ;[3:0]ST_ITUNE_ICL=1110, OLP status comparator
-		 * WR 57 0529 4E
+		 * WR	55	3CF	00
+		 * WR	57	553	14
+		 * WR	57	55F	E6
+		 * WR	57	53D	47
+		 * WR	57	529	8E
 		 *
-		 * ;[7:6]FTR_RC=11,[5:3]FTR_DROP=100,[2]FTR_SHOOT_EN=1,[1]FTR_DROP_EN=1,
-		 * ;Within Fast Transient(HQA Test)
-		 * WR 57 055F E6
+		 * WR	57	560	0C
+		 * WR	56	40F	04
 		 *
-		 * ;[4]FTR_DISCHARGE_EN=0,[3]FTR_SHOOT_MODE=1,[2]FTR_DROP_MODE=1,[1:0]FTR_DELAY=00
-		 * WR 57 0560 0C
-		 *
-		 * ;[0]SWITCHING FREQ SELECT=0(1MHz)
-		 * WR 56 0463 02
-		 *
-		 * ;[7:6]FTR DROP time extend=11(20us)
-		 * WR 57 0530 C0
-		 *
-		 * ;Set RG_A_LOGIC_RSV_TRIM_LSB[7:0]=8'b00010000, MINOFF function
-		 * WR 57 054A 10
-		 *
-		 * ;[1]RG_FORCE_LSON_VPR=1, turn on LGATE during MINOFF
-		 * WR 57 055A 01
-		 *
-		 * ;[7:6]RG_A_PWR_UG_DTC=11(same as E1 setting, smallest dead time)
-		 * WR 57 0552 E8
-		 *
-		 * ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-		 * ;;OTG hiccup TOLP setting
-		 * ;[2]TOLP_OFF=1,[1:0]TOLP_ON=11
-		 * WR 56 040F 07
-		 * ;RG_TOLP_OFF[2], 0=15ms, 1=30ms(default)
-		 * ;RG_TOLP_ON[1:0], 00=200us, 01=800us, 10=3200us, 11=12800us
-		 *
-		 * ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-		 * ;;OTG Voltage and OLP setting
-		 * ;[7:4]OTG_VCV,[2:0]OTG_IOLP=001
-		 * WR 56 0411 51
-		 * ;RG_OTG_VCV[7:4],0000=4.5V, 0101=5V(default), 1010=5.5V,
-		 * ;RG_OTG_IOLP[2:0],000=100mA,001=500mA,010=0.9A,011=1.2A(default),100=1.5A,101=2A
-		 *
-		 * ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-		 * ;;OTG mode ENABLE
-		 * ;[3]RG_EN_OTG=1(0x0400=1011)
-		 * WR 56 0400 0B
+		 * WR	56	400	[3]=1'b1	Enable OTG
 		 */
-		typec_write8(hba, 0x01, SWCHR_MAIN_CON8);
-		typec_write8(hba, 0x0D, ANA_CORE_ANA_CON26);
-		typec_write8(hba, 0x00, ANA_CORE_ANA_CON33);
-		typec_write8(hba, 0x44, ANA_CORE_ANA_CON34);
-		typec_write8(hba, 0x0B, 0x53F);
-		typec_write8(hba, 0x42, ANA_CORE_ANA_CON63);
-		typec_write8(hba, 0x00, 0X51E);
-		typec_write8(hba, 0x4E, 0X529);
-		typec_write8(hba, 0xE6, ANA_CORE_ANA_CON102);
-		typec_write8(hba, 0x0C, ANA_CORE_ANA_CON103);
-		typec_write8(hba, 0x02, 0x463);
-		typec_write8(hba, 0xC0, ANA_CORE_ANA_CON49);
-		typec_write8(hba, 0x10, 0x54A);
+
+		typec_write8(hba, 0x51, 0x411);
+
+		tmp = typec_read8(hba, 0x612);
+		if (tmp & (0x1<<4)) {
+			dev_err(hba->dev, "At Flash mode, Can not turn on OTG\n");
+			return;
+		}
+
+		tmp = typec_read8(hba, 0x613);
+		if (tmp & (0x1<<1)) {
+			dev_err(hba->dev, "VBUS present, Can not turn on OTG\n");
+			return;
+		}
+
+		typec_write8(hba, 0x0D, 0x519);
+		typec_write8(hba, 0x00, 0x520);
 		typec_write8(hba, 0x01, 0x55A);
-		typec_write8(hba, 0xE8, 0x552);
-		typec_write8(hba, 0x04, SWCHR_OTG_CTRL0);
-		typec_write8(hba, 0x51, SWCHR_OTG_CTRL2);
-		typec_write8(hba, 0x0B, SWCHR_MAIN_CON0);
+		typec_write8(hba, 0x00, 0x455);
+		typec_write8(hba, 0x00, 0x3C9);
+
+		typec_write8(hba, 0x00, 0x3CF);
+		typec_write8(hba, 0x14, 0x553);
+		typec_write8(hba, 0xE6, 0x55F);
+		typec_write8(hba, 0x47, 0x53D);
+		typec_write8(hba, 0x8E, 0x529);
+
+		typec_write8(hba, 0x0C, 0x560);
+		typec_write8(hba, 0x04, 0x40F);
+
+		tmp = typec_read8(hba, 0x400);
+		typec_write8(hba, (tmp | RG_EN_OTG), 0x400);
 	} else {
+		uint8_t tmp;
 		/*
-		 * ;;Disable OTG mde
-		 * ;;Set initial setting to be default value
+		 * ==Disable OTG==
 		 *
-		 * ;[3]RG_EN_OTG=0, Leave OTG Mode
-		 * WR 56 0400 03
+		 * WR	57	52A	88
+		 * WR	57	553	14
+		 * WR	57	519	3F
+		 * WR	57	51E	02
 		 *
-		 * ;[6:1]GM enable=111111
-		 * WR 57 0519 3F
-		 * ;GM MSB=00110100
-		 * WR 57 0520 34
-		 * ;[6:4]VRAMP_SLP=000,[3:0]VRAMP DC offset=0010
-		 * WR 57 053D 02
-		 * ;[2:0]ICL_TRIM=000
-		 * WR 57 053C 00
-		 * ;[1:0] GM/4; GM/2=10
-		 * WR 57 051E 02
-		 * ;[3:0]ST_ITUNE_ICL=0100
-		 * WR 57 0529 44
-		 * ;[2]FTR_SHOOT_EN=0, [1]FTR_DROP_EN=0, without Fast Transient
-		 * WR 57 055F E0
-		 */
-		typec_write8(hba, 0x03, SWCHR_MAIN_CON0);
-		typec_write8(hba, 0x3F, ANA_CORE_ANA_CON26);
-		typec_write8(hba, 0x34, ANA_CORE_ANA_CON33);
-		typec_write8(hba, 0x02, ANA_CORE_ANA_CON63);
-		typec_write8(hba, 0x00, 0x53C);
+		 * WR	57	520	04
+		 * WR	57	55A	00
+		 * WR	56	455	01
+		 * WR	55	3C9	10
+		 *
+		 * WR	55	3CF	03
+		 * WR	57	5AF	02
+		 * WR	58	64E	02
+		 * WR	56	402	03
+		 *
+		 * WR	57	529	88
+		 *
+		 * WR	56	400	[3]=1'b0	Disable OTG
+		*/
+		typec_write8(hba, 0x88, 0x52A);
+		typec_write8(hba, 0x14, 0x553);
+		typec_write8(hba, 0x3F, 0x519);
 		typec_write8(hba, 0x02, 0x51E);
-		typec_write8(hba, 0x44, 0x529);
-		typec_write8(hba, 0xE0, 0x55F);
+
+		typec_write8(hba, 0x04, 0x520);
+		typec_write8(hba, 0x00, 0x55A);
+		typec_write8(hba, 0x01, 0x455);
+		typec_write8(hba, 0x10, 0x3C9);
+
+		typec_write8(hba, 0x03, 0x3CF);
+		typec_write8(hba, 0x02, 0x5AF);
+		typec_write8(hba, 0x02, 0x64E);
+		typec_write8(hba, 0x03, 0x402);
+
+		typec_write8(hba, 0x88, 0x529);
+
+		tmp = typec_read8(hba, 0x400);
+		typec_write8(hba, (tmp & (~RG_EN_OTG)), 0x400);
 	}
 
 skip:
@@ -1095,7 +1067,6 @@ skip:
 
 	hba->vbus_en = (on ? 1 : 0);
 	typec_sw_probe(hba, DBG_VBUS_EN, (on<<DBG_VBUS_EN_OFST));
-
 }
 #endif
 
