@@ -2448,32 +2448,35 @@ static int rdma_mode_switch_to_DC(struct cmdqRecStruct *handle, int block)
 	struct disp_ddp_path_config *data_config_dl = NULL;
 	struct disp_ddp_path_config *data_config_dc = NULL;
 	struct ddp_io_golden_setting_arg gset_arg;
-	static struct cmdqRecStruct *switch_handle;
+	static struct cmdqRecStruct *sync_handle;
 
-	/* use a new handle, and exec it on thread 0 to avoid race condition:
-	 * maybe thread0 has a pending handle of doing DL->RDMA switch,
-	 * this rdma->DC switch must exec after that handle !
+	/* WARNING: thread0 may has a pending handle of doing DL->RDMA switch.
+	 * we use sync_handle to guarantee memory-path being created AFTER
+	 * DL->RDMA switch done.
 	*/
-	if (!switch_handle) {
-		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &switch_handle);
+	if (!sync_handle) {
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &sync_handle);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
 		}
 	}
-	cmdqRecReset(switch_handle);
 	/* clear wdma0 EOF to block next DC configuration */
 	cmdqCoreClearEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
 
-	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	cmdqRecReset(sync_handle);
+	cmdqRecSetEventToken(sync_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
+	_cmdq_flush_config_handle_mira(sync_handle, 0);
 
-	/* create ovl2mem path handle */
+	/* starting to create ovl2mem path */
+	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
+	cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
+
+	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	pgc->ovl2mem_path_handle =
 		dpmgr_create_path(DDP_SCENARIO_PRIMARY_OVL_MEMOUT, pgc->cmdq_handle_ovl1to2_config);
 
-	if (pgc->ovl2mem_path_handle) {
-		DISPDBG("dpmgr create ovl memout path SUCCESS(%p)\n", pgc->ovl2mem_path_handle);
-	} else {
+	if (!pgc->ovl2mem_path_handle) {
 		DISPERR("dpmgr create path FAIL\n");
 		return -1;
 	}
@@ -2481,7 +2484,7 @@ static int rdma_mode_switch_to_DC(struct cmdqRecStruct *handle, int block)
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0);
 
 	dpmgr_path_set_video_mode(pgc->ovl2mem_path_handle, 0);
-	dpmgr_path_init_with_cmdq(pgc->ovl2mem_path_handle, switch_handle);
+	dpmgr_path_init_with_cmdq(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
 
 	data_config_dc = dpmgr_path_get_last_config(pgc->ovl2mem_path_handle);
 	data_config_dc->dst_w = rdma_config.width;
@@ -2491,17 +2494,17 @@ static int rdma_mode_switch_to_DC(struct cmdqRecStruct *handle, int block)
 	/* move ovl config info from dl to dc */
 	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config, sizeof(data_config_dl->ovl_config));
 	data_config_dc->p_golden_setting_context = data_config_dl->p_golden_setting_context;
-	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc, switch_handle);
+	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc, pgc->cmdq_handle_ovl1to2_config);
 
 	memset(&gset_arg, 0, sizeof(gset_arg));
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->ovl2mem_path_handle);
 	gset_arg.is_decouple_mode = 1;
-	dpmgr_path_ioctl(pgc->ovl2mem_path_handle, switch_handle, DDP_OVL_GOLDEN_SETTING, &gset_arg);
+	dpmgr_path_ioctl(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config,
+			 DDP_OVL_GOLDEN_SETTING, &gset_arg);
 
-	ret = dpmgr_path_start_with_cmdq(pgc->ovl2mem_path_handle, switch_handle);
-
-	cmdqRecSetEventToken(switch_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
-	_cmdq_flush_config_handle_mira(switch_handle, block);
+	ret = dpmgr_path_start_with_cmdq(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
+	cmdqRecSetEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
+	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, block);
 
 	/* for next dc configuration */
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
@@ -5549,180 +5552,159 @@ void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, u
 	input_ext->phy_layer = phy_layer;
 }
 
-void prepare_pixel_to_output(unsigned int *rc_r, unsigned int *rc_g, unsigned int *rc_b,
-		unsigned int *rc_alpha, unsigned long gpu_output_data, enum UNIFIED_COLOR_FMT fmt,
-		unsigned long *dst_va)
+#define __ALPHA_BLENDING(val, n, alpha) \
+	((((((val) >> (n)) & 0xff) * (0xf - (alpha))) / 0xf) << n)
+/* warning: Only support fmt
+ * rc:RGBA4444, dst:BPP=4
+ */
+static int draw_rc_rgba4444(void *rc, uint rc_pitch, uint rc_w, uint rc_h,
+			void *dst, uint dst_pitch)
 {
-	unsigned int GPU_ARGB[2] = {0}, GPU_Alpha[2] = {0};
-	unsigned int GPU_r[2] = {0}, GPU_g[2] = {0}, GPU_b[2] = {0};
-	unsigned int dst_r[2] = {0}, dst_g[2] = {0}, dst_b[2] = {0};
-	unsigned long dst_ARGB[2] = {0};
-	int i;
+	uint x, y, rc_a;
+	uint16_t *rc_va = rc;
+	uint32_t *dst_va = dst, val;
 
-	GPU_ARGB[0] = gpu_output_data & 0xffffffff;
-	GPU_ARGB[1] = (gpu_output_data >> 32) & 0xffffffff;
-	if (fmt == UFMT_RGBA8888 || fmt == UFMT_PRGBA8888 || fmt == UFMT_RGBX8888) {
-		for (i = 0; i < 2; i++) {
-			GPU_r[i] = GPU_ARGB[i] & 0xff;
-			GPU_g[i] = (GPU_ARGB[i] >> 8) & 0xff;
-			GPU_b[i] = (GPU_ARGB[i] >> 16) & 0xff;
-			GPU_Alpha[i] = (GPU_ARGB[i] >> 24) & 0xff;
-		}
-	} else if (fmt == UFMT_BGRA8888 || fmt == UFMT_PBGRA8888 || fmt == UFMT_BGRX8888) {
-		for (i = 0; i < 2; i++) {
-			GPU_b[i] = GPU_ARGB[i] & 0xff;
-			GPU_g[i] = (GPU_ARGB[i] >> 8) & 0xff;
-			GPU_r[i] = (GPU_ARGB[i] >> 16) & 0xff;
-			GPU_Alpha[i] = (GPU_ARGB[i] >> 24) & 0xff;
-		}
-	} else if (fmt == UFMT_ARGB8888 || fmt == UFMT_PARGB8888 || fmt == UFMT_XRGB8888) {
-		for (i = 0; i < 2; i++) {
-			GPU_Alpha[i] = GPU_ARGB[i] & 0xff;
-			GPU_r[i] = (GPU_ARGB[i] >> 8) & 0xff;
-			GPU_g[i] = (GPU_ARGB[i] >> 16) & 0xff;
-			GPU_b[i] = (GPU_ARGB[i] >> 24) & 0xff;
-		}
-	} else if (fmt == UFMT_ABGR8888 || fmt == UFMT_PABGR8888 || fmt == UFMT_XBGR8888) {
-		for (i = 0; i < 2; i++) {
-			GPU_Alpha[i] = GPU_ARGB[i] & 0xff;
-			GPU_b[i] = (GPU_ARGB[i] >> 8) & 0xff;
-			GPU_g[i] = (GPU_ARGB[i] >> 16) & 0xff;
-			GPU_r[i] = (GPU_ARGB[i] >> 24) & 0xff;
-		}
-	} else {
-		pr_debug("pixel_warn fmt incorrect!!\n");
-		return;
-	}
-	/* get dst r,g,b */
-	dst_r[0] = (rc_alpha[0] * rc_r[0])/0xf + (GPU_r[0] * (0xf - rc_alpha[0]))/0xf;
-	dst_r[1] = (rc_alpha[1] * rc_r[1])/0xf + (GPU_r[1] * (0xf - rc_alpha[1]))/0xf;
-	dst_g[0] = (rc_alpha[0] * rc_g[0])/0xf + (GPU_g[0] * (0xf - rc_alpha[0]))/0xf;
-	dst_g[1] = (rc_alpha[1] * rc_g[1])/0xf + (GPU_g[1] * (0xf - rc_alpha[1]))/0xf;
-	dst_b[0] = (rc_alpha[0] * rc_b[0])/0xf + (GPU_b[0] * (0xf - rc_alpha[0]))/0xf;
-	dst_b[1] = (rc_alpha[1] * rc_b[1])/0xf + (GPU_b[1] * (0xf - rc_alpha[1]))/0xf;
-	if (fmt == UFMT_RGBA8888 || fmt == UFMT_PRGBA8888 || fmt == UFMT_RGBX8888) {
-		dst_ARGB[0] = (GPU_Alpha[0] << 24) | (dst_b[0] << 16) | (dst_g[0] << 8) | dst_r[0];
-		dst_ARGB[1] = (GPU_Alpha[1] << 24) | (dst_b[1] << 16) | (dst_g[1] << 8) | dst_r[1];
-	} else if (fmt == UFMT_BGRA8888 || fmt == UFMT_PBGRA8888 || fmt == UFMT_BGRX8888) {
-		dst_ARGB[0] = (GPU_Alpha[0] << 24) | (dst_r[0] << 16) | (dst_g[0] << 8) | dst_b[0];
-		dst_ARGB[1] = (GPU_Alpha[1] << 24) | (dst_r[1] << 16) | (dst_g[1] << 8) | dst_b[1];
-	} else if (fmt == UFMT_ARGB8888 || fmt == UFMT_PARGB8888 || fmt == UFMT_XRGB8888) {
-		dst_ARGB[0] = (dst_b[0] << 24) | (dst_g[0] << 16) | (dst_r[0] << 8) | GPU_Alpha[0];
-		dst_ARGB[1] = (dst_b[1] << 24) | (dst_g[1] << 16) | (dst_r[1] << 8) | GPU_Alpha[1];
-	} else if (fmt == UFMT_ABGR8888 || fmt == UFMT_PABGR8888 || fmt == UFMT_XBGR8888) {
-		dst_ARGB[0] = (dst_r[0] << 24) | (dst_g[0] << 16) | (dst_b[0] << 8) | GPU_Alpha[0];
-		dst_ARGB[1] = (dst_r[1] << 24) | (dst_g[1] << 16) | (dst_b[1] << 8) | GPU_Alpha[1];
-	}
+	for (y = 0; y < rc_h; y++) {
+		for (x = 0; x < rc_w; x++) {
+			rc_a = rc_va[x] >> 12;
 
-	*dst_va = (dst_ARGB[1] << 32) | dst_ARGB[0];
+			if (rc_a == 0) {
+				continue;
+			} else if (rc_a == 0xf) {
+				dst_va[x] = 0;
+			} else {
+				val = dst_va[x];
+				val = __ALPHA_BLENDING(val, 0, rc_a) |
+				      __ALPHA_BLENDING(val, 8, rc_a) |
+				      __ALPHA_BLENDING(val, 16, rc_a) |
+				      __ALPHA_BLENDING(val, 24, rc_a);
+				dst_va[x] = val;
+			}
+		}
+		rc_va += rc_pitch;
+		dst_va += dst_pitch;
+	}
+	return 0;
 }
 
-void get_round_corner_pixel(unsigned int round_corner_data, unsigned int *rc_r,
-				unsigned int *rc_g, unsigned int *rc_b, unsigned int *rc_alpha)
+static void rc_copy_img(void *src, uint src_pitch,
+			void *dst, uint dst_pitch,
+			uint w, uint h, uint bpp)
 {
-	unsigned int rc_ARGB[2], i;
+	uint y;
 
-	for (i = 0; i < 2; i++) {
-		rc_ARGB[i] = (round_corner_data >> (i * 16)) & 0xffff;
-		rc_r[i] = rc_ARGB[i] & 0xf;
-		rc_g[i] = (rc_ARGB[i] >> 4) & 0xf;
-		rc_b[i] = (rc_ARGB[i] >> 8) & 0xf;
-		rc_alpha[i] = (rc_ARGB[i] >> 12) & 0xf;
+	for (y = 0; y < h; y++) {
+		memcpy(dst, src, w * bpp);
+		dst += dst_pitch * bpp;
+		src += src_pitch * bpp;
 	}
 }
 
-void draw_round_corner_by_cpu(unsigned long vaddr, enum UNIFIED_COLOR_FMT fmt, unsigned int pitch)
+/* get round corner va:
+ * left-top/right-top/left-bottom/right-bottom
+ */
+static int get_rc_param(void **lt, void **rt, void **lb, void **rb,
+		     uint *w, uint *h, uint *pitch, uint *bpp)
 {
-	int rc_width = 0, rc_height = 0;
-	int rc_height_cnt;
-	int rc_width_cnt;
+	static void *rc_lt, *rc_rt, *rc_lb, *rc_rb;
+	static uint rc_w, rc_h;
+	static uint rc_bpp = UFMT_GET_Bpp(UFMT_RGBA4444);
 
-	unsigned char bpp = 2, gpu_bpp = 4;
-	unsigned int corner_size = 0;
-	unsigned int *rc_top_addr = NULL;
-	unsigned int *rc_bottom_addr = NULL;
-	unsigned int rc_Alpha[2], rc_r[2], rc_g[2], rc_b[2];
-	unsigned long dst_double_ARGB;
-
-	unsigned int dst_w = pitch;
-	unsigned int dst_h = primary_display_get_height() - primary_display_get_corner_pattern_height();
+	uint orig_rc_sz, orig_pitch, rc_buf_sz;
+	void *orig_lt, *orig_rt, *orig_lb, *orig_rb;
+	int ret = 0;
 
 	unsigned int dal_buf_size = DAL_GetLayerSize();
 	unsigned int frame_buf_size = DISP_GetFBRamSize();
 	unsigned int  vram_buf_size = mtkfb_get_fb_size();
 	unsigned long  frame_buf_va = primary_display_get_frame_buffer_va_address();
 
-	/* gpu output buffer */
-	unsigned long *OutputBuffer_top_va = (unsigned long *)vaddr;
-	unsigned long *OutputBuffer_bottom_va = (unsigned long *)(vaddr + dst_w * dst_h * gpu_bpp);
+	if (rc_lt)
+		goto done;
 
 	/* get round corner buffer va */
-	if (vram_buf_size > dal_buf_size + frame_buf_size) {
-		rc_height = primary_display_get_corner_pattern_height();
-		rc_width = primary_display_get_width();
-		corner_size = rc_width * rc_height * bpp;
-
-		rc_top_addr = (unsigned int *)(frame_buf_va + vram_buf_size - 2 * corner_size);
-		rc_bottom_addr = (unsigned int *)((unsigned long)rc_top_addr + corner_size);
-	} else {
+	if (vram_buf_size <= dal_buf_size + frame_buf_size) {
 		DISPERR("vram_buf may not contain corner size!\n");
+		ret = -1;
+		goto done;
 	}
 
-	for (rc_height_cnt = 0; rc_height_cnt < rc_height; rc_height_cnt++) {
-		for (rc_width_cnt = 0; rc_width_cnt < rc_height; rc_width_cnt++)  {
-			/* get top round corner pixel R/G/B/A*/
-			get_round_corner_pixel((*rc_top_addr), rc_r, rc_g, rc_b, rc_Alpha);
-			prepare_pixel_to_output(rc_r, rc_g, rc_b, rc_Alpha, (*OutputBuffer_top_va),
-								fmt, &dst_double_ARGB);
-			*OutputBuffer_top_va = dst_double_ARGB;
+	rc_w = rc_h = primary_display_get_corner_pattern_height();
+	orig_pitch = primary_display_get_width();
+	orig_rc_sz = orig_pitch * rc_h * rc_bpp;
 
-			/* get bottom round corner pixel */
-			get_round_corner_pixel((*rc_bottom_addr), rc_r, rc_g, rc_b, rc_Alpha);
-			prepare_pixel_to_output(rc_r, rc_g, rc_b, rc_Alpha, (*OutputBuffer_bottom_va),
-							fmt, &dst_double_ARGB);
-			*OutputBuffer_bottom_va = dst_double_ARGB;
+	rc_buf_sz = ALIGN(rc_w * rc_h * rc_bpp, sizeof(ulong));
+	rc_lt = kmalloc(rc_buf_sz * 4, GFP_KERNEL);
+	rc_rt = rc_lt + rc_buf_sz;
+	rc_lb = rc_rt + rc_buf_sz;
+	rc_rb = rc_lb + rc_buf_sz;
 
-			if (rc_width_cnt == (rc_height/2 - 1)) {
-				rc_top_addr = (unsigned int *)((unsigned long)rc_top_addr +
-					(unsigned int)((rc_width - 2 * rc_height) * bpp) + 4);
-				OutputBuffer_top_va = (unsigned long *)((unsigned long)OutputBuffer_top_va +
-					(unsigned long)((rc_width - 2 * rc_height) * gpu_bpp) + 8);
-				rc_bottom_addr = (unsigned int *)((unsigned long)rc_bottom_addr +
-					(unsigned long)((rc_width - 2 * rc_height) * bpp) + 4);
-				OutputBuffer_bottom_va = (unsigned long *)((unsigned long)OutputBuffer_bottom_va +
-					(unsigned long)((rc_width - 2 * rc_height) * gpu_bpp) + 8);
-			} else if (rc_width_cnt == (rc_height - 1)) {
-				rc_top_addr++;
-				rc_bottom_addr++;
-				OutputBuffer_top_va = (unsigned long *)((unsigned long)OutputBuffer_top_va +
-					(unsigned long)((dst_w - rc_width) * gpu_bpp) + 8);
-				OutputBuffer_bottom_va = (unsigned long *)((unsigned long)OutputBuffer_bottom_va +
-					(unsigned long)((dst_w - rc_width) * gpu_bpp) + 8);
-			} else {
-				rc_top_addr++;
-				rc_bottom_addr++;
-				OutputBuffer_top_va++;
-				OutputBuffer_bottom_va++;
-			}
-		}
-	}
+	orig_lt = (void *)frame_buf_va + vram_buf_size - 2 * orig_rc_sz;
+	orig_rt = orig_lt + (orig_pitch - rc_w) * rc_bpp;
+	orig_lb = orig_lt + orig_rc_sz;
+	orig_rb = orig_lb + (orig_pitch - rc_w) * rc_bpp;
+
+	rc_copy_img(orig_lt, orig_pitch, rc_lt, rc_w, rc_w, rc_h, rc_bpp);
+	rc_copy_img(orig_rt, orig_pitch, rc_rt, rc_w, rc_w, rc_h, rc_bpp);
+	rc_copy_img(orig_lb, orig_pitch, rc_lb, rc_w, rc_w, rc_h, rc_bpp);
+	rc_copy_img(orig_rb, orig_pitch, rc_rb, rc_w, rc_w, rc_h, rc_bpp);
+done:
+	*lt = rc_lt;
+	*rt = rc_rt;
+	*lb = rc_lb;
+	*rb = rc_rb;
+	*w = rc_w;
+	*h = rc_h;
+	*pitch = rc_w;
+	*bpp = rc_bpp;
+	return ret;
+}
+
+int __draw_round_corner(void *dst_va, enum UNIFIED_COLOR_FMT dst_fmt,
+			uint dst_w, uint dst_h, uint dst_pitch)
+{
+	uint rc_w, rc_h, rc_pitch, rc_bpp;
+	uint dst_bpp = ufmt_get_Bpp(dst_fmt);
+	void *dst_lt, *dst_rt, *dst_lb, *dst_rb;
+	void *rc_lt, *rc_rt, *rc_lb, *rc_rb;
+	int ret;
+
+	if (WARN(dst_bpp != 4, "%s don't support fmt:0x%x\n", __func__, dst_fmt))
+		return -EINVAL;
+
+	ret = get_rc_param(&rc_lt, &rc_rt, &rc_lb, &rc_rb,
+			   &rc_w, &rc_h, &rc_pitch, &rc_bpp);
+	if (ret)
+		return -EINVAL;
+
+	dst_lt = dst_va;
+	dst_rt = dst_lt + (dst_w - rc_w) * dst_bpp;
+	dst_lb = dst_va + (dst_h - rc_h) * dst_pitch * dst_bpp;
+	dst_rb = dst_lb + (dst_w - rc_w) * dst_bpp;
+	/* draw four round corners: left-top to right-bottom */
+	draw_rc_rgba4444(rc_lt, rc_pitch, rc_w, rc_h, dst_lt, dst_pitch);
+	draw_rc_rgba4444(rc_rt, rc_pitch, rc_w, rc_h, dst_rt, dst_pitch);
+	draw_rc_rgba4444(rc_lb, rc_pitch, rc_w, rc_h, dst_lb, dst_pitch);
+	draw_rc_rgba4444(rc_rb, rc_pitch, rc_w, rc_h, dst_rb, dst_pitch);
+
 	/* do cache sync of top */
-	__dma_map_area((void *)vaddr, dst_w * rc_height * gpu_bpp, DMA_TO_DEVICE);
-	__dma_map_area((void *)vaddr + dst_w * dst_h * gpu_bpp, dst_w * rc_height * gpu_bpp, DMA_TO_DEVICE);
+	__dma_map_area((void *)dst_lt, dst_pitch * rc_h * dst_bpp, DMA_TO_DEVICE);
+	__dma_map_area((void *)dst_lb, dst_pitch * rc_h * dst_bpp, DMA_TO_DEVICE);
+	return 0;
 }
 
 static int draw_round_corner(struct disp_frame_cfg_t *cfg, int layer)
 {
-	int i;
+	int i, ret = 01;
 	unsigned int fence_idx = UINT_MAX, size;
 	struct disp_input_config *input_cfg = NULL;
 
 	unsigned long mva;
-	void *va;
+	void *va = NULL;
 
 	if (!lcm_corner_en)
 		return 0;
-
+	/* find the layer to draw to */
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		input_cfg = &cfg->input_cfg[i];
 		if (layer != input_cfg->layer_id)
@@ -5735,11 +5717,14 @@ static int draw_round_corner(struct disp_frame_cfg_t *cfg, int layer)
 
 	mmprofile_log_ex(ddp_mmp_get_events()->draw_rc, MMPROFILE_FLAG_START, 0, 0);
 	___disp_sync_query_buf_info(primary_session_id, layer, fence_idx, &mva, &size, &va, 0);
-	if (va)
-		draw_round_corner_by_cpu((unsigned long)va, disp_fmt_to_unified_fmt(input_cfg->src_fmt),
-					input_cfg->src_pitch);
+	if (!va)
+		goto out;
+
+	ret = __draw_round_corner(va, disp_fmt_to_unified_fmt(input_cfg->src_fmt),
+			input_cfg->tgt_width, input_cfg->tgt_height, input_cfg->src_pitch);
+out:
 	mmprofile_log_ex(ddp_mmp_get_events()->draw_rc, MMPROFILE_FLAG_END, 0, 0);
-	return 0;
+	return ret;
 }
 #endif
 
