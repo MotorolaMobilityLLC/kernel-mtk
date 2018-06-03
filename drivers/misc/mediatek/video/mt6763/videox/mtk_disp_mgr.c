@@ -1073,7 +1073,7 @@ int _ioctl_query_valid_layer(unsigned long arg)
 		ret = -EFAULT;
 	}
 
-	ret = dispsys_hrt_calc(&disp_info_user);
+	ret = dispsys_hrt_calc(&disp_info_user, 0);
 
 	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);

@@ -28,6 +28,8 @@ void init_ddp_mmp_events(void)
 		DDP_MMP_Events.DDP = mmprofile_register_event(MMP_ROOT_EVENT, "Display");
 		DDP_MMP_Events.primary_Parent =
 		    mmprofile_register_event(DDP_MMP_Events.DDP, "primary_disp");
+		DDP_MMP_Events.hrt =
+		    mmprofile_register_event(DDP_MMP_Events.DDP, "hrt");
 		DDP_MMP_Events.primary_trigger =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "trigger");
 		DDP_MMP_Events.primary_config =

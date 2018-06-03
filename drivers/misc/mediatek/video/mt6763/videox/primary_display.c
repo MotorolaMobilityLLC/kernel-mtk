@@ -168,7 +168,7 @@ static int od_need_start;
 #endif
 
 /* dvfs */
-static int dvfs_last_ovl_req = HRT_LEVEL_LOW;
+static int dvfs_last_ovl_req = HRT_LEVEL_LPM;
 
 /* delayed trigger */
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
@@ -3021,18 +3021,22 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	_primary_path_lock(__func__);
 
 #ifdef MTK_FB_MMDVFS_SUPPORT
-	if (real_hrt_level > HRT_LEVEL_LOW &&
+	if (real_hrt_level > HRT_LEVEL_HPM &&
+		primary_display_is_directlink_mode()) {
+		DISPWARN("!!!Be carefull, request Ultra-High-Low-Power-Mode!!!\n");
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_UHPM);
+	} else if (real_hrt_level > HRT_LEVEL_LPM &&
 		primary_display_is_directlink_mode()) {
 
-		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HIGH);
-	} else if (real_hrt_level > HRT_LEVEL_EXTREME_LOW) {
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HPM);
+	} else if (real_hrt_level > HRT_LEVEL_ULPM) {
 		/* be carefull for race condition !! because callback may delay */
 		/* so we need to check last request when ovl_config */
-		if (dvfs_last_ovl_req == HRT_LEVEL_LOW)
-			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LOW);
+		if (dvfs_last_ovl_req == HRT_LEVEL_LPM)
+			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LPM);
 	} else {
-		if (dvfs_last_ovl_req == HRT_LEVEL_EXTREME_LOW)
-			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_EXTREME_LOW);
+		if (dvfs_last_ovl_req == HRT_LEVEL_ULPM)
+			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_ULPM);
 	}
 #endif
 	_primary_path_unlock(__func__);
@@ -5168,20 +5172,22 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	data_config->overlap_layer_num = hrt_level;
 
 #ifdef MTK_FB_MMDVFS_SUPPORT
-	if (hrt_level > HRT_LEVEL_HIGH)
-		DISPCHECK("overlayed layer num is %d > %d\n", hrt_level, HRT_LEVEL_HIGH);
-
-	if (hrt_level > HRT_LEVEL_LOW &&
+	if (hrt_level > HRT_LEVEL_HPM &&
 		primary_display_is_directlink_mode()) {
-		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HIGH);
-		dvfs_last_ovl_req = HRT_LEVEL_HIGH;
-	} else if (hrt_level > HRT_LEVEL_EXTREME_LOW) {
-		dvfs_last_ovl_req = HRT_LEVEL_LOW;
+		DISPWARN("!!!Be carefull, request Ultra-High-Low-Power-Mode!!!\n");
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_UHPM);
+		dvfs_last_ovl_req = HRT_LEVEL_UHPM;
+	} else if (hrt_level > HRT_LEVEL_LPM &&
+		primary_display_is_directlink_mode()) {
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_HPM);
+		dvfs_last_ovl_req = HRT_LEVEL_HPM;
+	} else if (hrt_level > HRT_LEVEL_ULPM) {
+		dvfs_last_ovl_req = HRT_LEVEL_LPM;
 	} else{
-		dvfs_last_ovl_req = HRT_LEVEL_EXTREME_LOW;
+		dvfs_last_ovl_req = HRT_LEVEL_ULPM;
 	}
 #endif
-	dvfs_last_ovl_req = HRT_LEVEL_HIGH;
+	dvfs_last_ovl_req = HRT_LEVEL_HPM;
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
 		char msg[10];
