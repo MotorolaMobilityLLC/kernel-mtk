@@ -70,7 +70,7 @@ static int fstb_fps_klog_on;
 static struct dentry *fstb_debugfs_dir;
 
 #define CFG_MAX_FPS_LIMIT	60
-#define CFG_MIN_FPS_LIMIT	26
+#define CFG_MIN_FPS_LIMIT	10
 
 static int max_fps_limit = CFG_MAX_FPS_LIMIT;
 static int dfps_ceiling = CFG_MAX_FPS_LIMIT;
@@ -87,7 +87,7 @@ static int fps_error_threshold = 10;
 /* FPS is active when over stable tpcb or always */
 
 
-static int QUANTILE = 75;
+static int QUANTILE = 50;
 static long long FRAME_TIME_WINDOW_SIZE_US = 1000000;
 static long long ADJUST_INTERVAL_US = 1000000;
 static int fstb_enable, fstb_active, fstb_idle_cnt;
@@ -95,7 +95,7 @@ static int camera_scn;
 static long long last_update_ts;
 
 static void reset_fps_level(void);
-static int set_fps_level(int nr_level, struct fps_level *level);
+static int set_soft_fps_level(int nr_level, struct fps_level *level);
 
 static struct mutex fstb_lock;
 
@@ -246,7 +246,14 @@ int switch_dfps_ceiling(int fps)
 
 int switch_fps_range(int nr_level, struct fps_level *level)
 {
-	return set_fps_level(nr_level, level);
+	if (nr_level != 1)
+		return 1;
+
+	if (!set_soft_fps_level(nr_level, level) &&
+			!switch_dfps_ceiling(level[0].start))
+		return 0;
+	else
+		return 1;
 }
 
 int switch_fps_error_threhosld(int threshold)
@@ -977,13 +984,13 @@ static void fstb_fps_stats(struct work_struct *work)
 	fpsgo_fstb2xgf_do_recycle(fstb_active2xgf);
 }
 
-static int set_fps_level(int nr_level, struct fps_level *level)
+static int set_soft_fps_level(int nr_level, struct fps_level *level)
 {
 	int i;
 
 	mutex_lock(&fstb_lock);
 
-	if (nr_level > MAX_NR_FPS_LEVELS)
+	if (nr_level != 1)
 		goto set_fps_level_err;
 
 	for (i = 0; i < nr_level; i++) {
@@ -1014,10 +1021,11 @@ static void reset_fps_level(void)
 	level[0].start = CFG_MAX_FPS_LIMIT;
 	level[0].end = CFG_MIN_FPS_LIMIT;
 
-	set_fps_level(1, level);
+	set_soft_fps_level(1, level);
+	switch_dfps_ceiling(level[0].start);
 }
 
-static int fstb_level_read(struct seq_file *m, void *v)
+static int fstb_soft_level_read(struct seq_file *m, void *v)
 {
 	int i;
 
@@ -1029,9 +1037,106 @@ static int fstb_level_read(struct seq_file *m, void *v)
 	return 0;
 }
 
-/* format example: 4 60-45 30-30 20-20 15-15
- * compatible: 4 60 30 20 15
- * mixed: 4 60-45 30 20 15
+/* format example: 1 60-45
+ * compatible: 1 45
+ */
+static ssize_t fstb_soft_level_write(struct file *file, const char __user *buffer,
+		size_t count, loff_t *data)
+{
+	char *buf, *sepstr, *substr;
+	int ret = -EINVAL, new_nr_fps_levels, i, start_fps, end_fps;
+	struct fps_level *new_levels;
+
+	/* we do not allow change fps_level during fps throttling,
+	 * because fps_levels would be changed.
+	 */
+
+	buf = kmalloc(count + 1, GFP_KERNEL);
+	if (buf == NULL)
+		return -ENOMEM;
+
+	new_levels = kmalloc(sizeof(fps_levels), GFP_KERNEL);
+	if (new_levels == NULL) {
+		ret = -ENOMEM;
+		goto err_freebuf;
+	}
+
+	if (copy_from_user(buf, buffer, count)) {
+		ret = -EFAULT;
+		goto err;
+	}
+	buf[count] = '\0';
+	sepstr = buf;
+
+	substr = strsep(&sepstr, " ");
+	if (kstrtoint(substr, 10, &new_nr_fps_levels) != 0 || new_nr_fps_levels > MAX_NR_FPS_LEVELS) {
+		ret = -EINVAL;
+		goto err;
+	}
+
+	for (i = 0; i < new_nr_fps_levels; i++) {
+		substr = strsep(&sepstr, " ");
+		if (!substr) {
+			ret = -EINVAL;
+			goto err;
+		}
+		if (strchr(substr, '-')) { /* maybe contiguous */
+			if (sscanf(substr, "%d-%d", &start_fps, &end_fps) != 2) {
+				ret = -EINVAL;
+				goto err;
+			}
+			new_levels[i].start = start_fps;
+			new_levels[i].end = end_fps;
+		} else { /* discrete */
+			if (kstrtoint(substr, 10, &start_fps) != 0) {
+				ret = -EINVAL;
+				goto err;
+			}
+			new_levels[i].start = start_fps;
+			new_levels[i].end = start_fps;
+		}
+	}
+
+	ret = !set_soft_fps_level(new_nr_fps_levels, new_levels);
+
+	if (ret == 1)
+		ret = count;
+	else
+		ret = -EINVAL;
+
+err:
+	kfree(new_levels);
+err_freebuf:
+	kfree(buf);
+
+	return ret;
+}
+
+static int fstb_soft_level_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, fstb_soft_level_read, NULL);
+}
+
+static const struct file_operations fstb_soft_level_fops = {
+	.owner = THIS_MODULE,
+	.open = fstb_soft_level_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = fstb_soft_level_write,
+	.release = single_release,
+};
+
+static int fstb_level_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d ", nr_fps_levels);
+	seq_printf(m, "%d-%d ", dfps_ceiling, fps_levels[0].end);
+	seq_puts(m, "\n");
+
+	return 0;
+}
+
+/* format example: 1 60-45
+ * compatible: 1 45
  */
 static ssize_t fstb_level_write(struct file *file, const char __user *buffer,
 		size_t count, loff_t *data)
@@ -1090,10 +1195,12 @@ static ssize_t fstb_level_write(struct file *file, const char __user *buffer,
 		}
 	}
 
-	if (set_fps_level(new_nr_fps_levels, new_levels) != 0)
+	if (switch_fps_range(new_nr_fps_levels, new_levels)) {
+		ret = -EINVAL;
 		goto err;
+	} else
+		ret = count;
 
-	ret = count;
 err:
 	kfree(new_levels);
 err_freebuf:
@@ -1152,7 +1259,7 @@ static const struct file_operations fstb_tune_window_size_fops = {
 
 static int fstb_tune_dfps_ceiling_read(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%d ", dfps_ceiling);
+	seq_printf(m, "%d\n", dfps_ceiling);
 	return 0;
 }
 
@@ -1451,6 +1558,12 @@ int mtk_fstb_init(void)
 			fstb_debugfs_dir,
 			NULL,
 			&fstb_fps_fops);
+
+	debugfs_create_file("fstb_soft_level",
+			S_IRUGO | S_IWUSR | S_IWGRP,
+			fstb_debugfs_dir,
+			NULL,
+			&fstb_soft_level_fops);
 
 	debugfs_create_file("fstb_level",
 			S_IRUGO | S_IWUSR | S_IWGRP,
