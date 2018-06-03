@@ -234,6 +234,8 @@ static unsigned int idle_block_log_time_criteria = 65000;	/* 5 sec */
 static unsigned long long idle_cnt_dump_prev_time;
 static unsigned int idle_cnt_dump_criteria = 10000;			/* 10 sec */
 
+static bool idle_by_pass_secure_cg;
+
 static bool             idle_ratio_en;
 static unsigned long long idle_ratio_profile_start_time;
 static unsigned long long idle_ratio_profile_duration;
@@ -625,6 +627,14 @@ static bool soidle3_can_enter(int cpu, int reason)
 		goto out;
 	}
 
+	/* Check Secure CGs - after other SODI3 criteria PASS */
+	if (!idle_by_pass_secure_cg) {
+		if (!mtk_idle_check_secure_cg(idle_block_mask)) {
+			reason = BY_CLK;
+			goto out;
+		}
+	}
+
 out:
 	if (reason < NR_REASONS) {
 		if (soidle3_block_prev_time == 0)
@@ -769,6 +779,14 @@ static bool soidle_can_enter(int cpu, int reason)
 	if (!next_timer_criteria_check(soidle_time_criteria)) {
 		reason = BY_TMR;
 		goto out;
+	}
+
+	/* Check Secure CGs - after other SODI criteria PASS */
+	if (!idle_by_pass_secure_cg) {
+		if (!mtk_idle_check_secure_cg(idle_block_mask)) {
+			reason = BY_CLK;
+			goto out;
+		}
 	}
 
 out:
@@ -953,6 +971,14 @@ static bool dpidle_can_enter(int cpu, int reason)
 	if (!next_timer_criteria_check(dpidle_time_criteria)) {
 		reason = BY_TMR;
 		goto out;
+	}
+
+	/* Check Secure CGs - after other deepidle criteria PASS */
+	if (!idle_by_pass_secure_cg) {
+		if (!mtk_idle_check_secure_cg(idle_block_mask)) {
+			reason = BY_CLK;
+			goto out;
+		}
 	}
 
 out:
@@ -1764,6 +1790,7 @@ static ssize_t idle_state_read(struct file *filp,
 
 	mt_idle_log("\n");
 	mt_idle_log("idle_ratio_en = %u\n", idle_ratio_en);
+	mt_idle_log("bypass_secure_cg = %u\n", idle_by_pass_secure_cg);
 
 	mt_idle_log("\n********** idle command help **********\n");
 	mt_idle_log("status help:   cat /sys/kernel/debug/cpuidle/idle_state\n");
@@ -1808,6 +1835,8 @@ static ssize_t idle_state_write(struct file *filp,
 				for (idx = 0; idx < NR_TYPES; idx++)
 					idle_ratio_value[idx] = 0;
 			}
+		} else if (!strcmp(cmd, "bypass_secure_cg")) {
+			idle_by_pass_secure_cg = param;
 		}
 		return count;
 	}
