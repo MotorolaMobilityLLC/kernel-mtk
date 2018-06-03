@@ -1164,7 +1164,12 @@ EXPORT_SYMBOL(kbase_release_device);
  * Older versions, before v4.6, of the kernel doesn't have
  * kstrtobool_from_user().
  */
-static int kstrtobool_from_user(const char __user *s, size_t count, bool *res)
+/*
+ * We are going to cherry-pick kstrtobool_from_user() back to k44.
+ * Avoiding conflict issue, we re-name the local function first.
+ * TODO: Remove local function & re-name back to kstrtobool_from_user() if the patchback done.
+ */
+static int kstrtobool_from_user_mali(const char __user *s, size_t count, bool *res)
 {
 	char buf[32];
 
@@ -1184,7 +1189,7 @@ static ssize_t write_ctx_infinite_cache(struct file *f, const char __user *ubuf,
 	int err;
 	bool value;
 
-	err = kstrtobool_from_user(ubuf, size, &value);
+	err = kstrtobool_from_user_mali(ubuf, size, &value);
 	if (err)
 		return err;
 
