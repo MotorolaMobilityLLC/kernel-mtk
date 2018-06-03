@@ -217,6 +217,11 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	}
 
 	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_PA2MVA) {
+		table = kzalloc(sizeof(*table), GFP_KERNEL);
+		if (!table) {
+			IONMSG("%s kzalloc failed table is null.\n", __func__);
+			goto err;
+		}
 		sg_alloc_table(table, 1, GFP_KERNEL);
 		sg_dma_address(table->sgl) = align;
 		sg_dma_len(table->sgl) = size;
@@ -445,6 +450,10 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 
 	if (((buffer_info->MVA == 0) && (port_info.flags == 0)) ||
 	    ((buffer_info->FIXED_MVA == 0) && (port_info.flags > 0))) {
+		if (port_info.flags == 0 && buffer_info->module_id == -1) {
+			IONMSG("ion_mm_heap_phys: config buffer fail\n");
+			return -EFAULT;
+		}
 #ifdef CONFIG_MTK_M4U
 		if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) {
 			port_info.va = (unsigned long)buffer_info->VA;
@@ -456,6 +465,7 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 			}
 		}
 #endif
+
 		ret = m4u_alloc_mva_sg(&port_info, buffer->sg_table);
 
 		*(unsigned int *)addr = port_info.mva;
@@ -898,9 +908,11 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 				struct ion_mm_buffer_info *buffer_info = buffer->priv_virt;
 				buffer_sec = buffer_info->security;
 
-				if (param.config_buffer_param.module_id < 0)
+				if (param.config_buffer_param.module_id < 0) {
 					IONMSG("ION_MM_CONFIG_BUFFER module_id error:%d-%d,name %16.s!!!\n",
 					       param.config_buffer_param.module_id, buffer->heap->type, client->name);
+					return -EFAULT;
+				}
 				if (((buffer_info->MVA == 0) && (param.mm_cmd == ION_MM_CONFIG_BUFFER)) ||
 				    ((buffer_info->FIXED_MVA == 0) && (param.mm_cmd == ION_MM_CONFIG_BUFFER_EXT))) {
 					buffer_info->security = param.config_buffer_param.security;
