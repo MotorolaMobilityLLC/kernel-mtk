@@ -460,6 +460,8 @@ struct LCM_DPI_PARAMS {
 	unsigned int embsync;
 	unsigned int lvds_tx_en;
 	unsigned int bit_swap;
+	unsigned int is_dual_lvds_tx;
+	unsigned int is_vesa;
 	/* intermediate buffers parameters */
 	unsigned int intermediat_buffer_num;	/* 2..3 */
 
