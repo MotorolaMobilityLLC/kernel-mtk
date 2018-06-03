@@ -173,21 +173,43 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
  * xxx_ctrl_show Function
  **************************************/
 /* code gen by spm_pwr_ctrl_atf.pl, need struct pwr_ctrl */
-static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
+static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 {
 	char *p = buf;
 
-	p += sprintf(p, "pcm_flags = 0x%x\n", pwrctrl->pcm_flags);
-	p += sprintf(p, "pcm_flags_cust = 0x%x\n", pwrctrl->pcm_flags_cust);
-	p += sprintf(p, "pcm_flags_cust_set = 0x%x\n", pwrctrl->pcm_flags_cust_set);
-	p += sprintf(p, "pcm_flags_cust_clr = 0x%x\n", pwrctrl->pcm_flags_cust_clr);
-	p += sprintf(p, "timer_val = 0x%x\n", pwrctrl->timer_val);
-	p += sprintf(p, "timer_val_cust = 0x%x\n", pwrctrl->timer_val_cust);
-	p += sprintf(p, "timer_val_ramp_en = 0x%x\n", pwrctrl->timer_val_ramp_en);
-	p += sprintf(p, "timer_val_ramp_en_sec = 0x%x\n", pwrctrl->timer_val_ramp_en_sec);
-	p += sprintf(p, "wake_src = 0x%x\n", pwrctrl->wake_src);
-	p += sprintf(p, "wake_src_cust = 0x%x\n", pwrctrl->wake_src_cust);
-	p += sprintf(p, "wdt_disable = 0x%x\n", pwrctrl->wdt_disable);
+	p += sprintf(p, "pcm_flags = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS, 0));
+	p += sprintf(p, "pcm_flags_cust = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS_CUST, 0));
+	p += sprintf(p, "pcm_flags_cust_set = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS_CUST_SET, 0));
+	p += sprintf(p, "pcm_flags_cust_clr = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS_CUST_CLR, 0));
+	p += sprintf(p, "timer_val = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_TIMER_VAL, 0));
+	p += sprintf(p, "timer_val_cust = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_TIMER_VAL_CUST, 0));
+	p += sprintf(p, "timer_val_ramp_en = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_TIMER_VAL_RAMP_EN, 0));
+	p += sprintf(p, "timer_val_ramp_en_sec = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_TIMER_VAL_RAMP_EN_SEC, 0));
+	p += sprintf(p, "wake_src = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_WAKE_SRC, 0));
+	p += sprintf(p, "wake_src_cust = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_WAKE_SRC_CUST, 0));
+	p += sprintf(p, "wdt_disable = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_WDT_DISABLE, 0));
 
 	/* reduce buf usage (should < PAGE_SIZE) */
 
@@ -198,25 +220,25 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 
 static ssize_t suspend_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	return show_pwr_ctrl(__spm_suspend.pwrctrl, buf);
+	return show_pwr_ctrl(SPM_PWR_CTRL_SUSPEND, __spm_suspend.pwrctrl, buf);
 }
 
 /* FIXME: */
 #if 0
 static ssize_t dpidle_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	return show_pwr_ctrl(__spm_dpidle.pwrctrl, buf);
+	return show_pwr_ctrl(SPM_PWR_CTRL_DPIDLE, __spm_dpidle.pwrctrl, buf);
 }
 #endif
 
 static ssize_t sodi3_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	return show_pwr_ctrl(__spm_sodi3.pwrctrl, buf);
+	return show_pwr_ctrl(SPM_PWR_CTRL_SODI3, __spm_sodi3.pwrctrl, buf);
 }
 
 static ssize_t sodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	return show_pwr_ctrl(__spm_sodi.pwrctrl, buf);
+	return show_pwr_ctrl(SPM_PWR_CTRL_SODI, __spm_sodi.pwrctrl, buf);
 }
 
 /* FIXME: */
