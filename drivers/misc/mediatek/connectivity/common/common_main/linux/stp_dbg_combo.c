@@ -61,11 +61,10 @@ static _osal_inline_ INT32 stp_dbg_combo_put_dump_to_aee(VOID)
 			pkt = (STP_PACKET_T *) buf;
 			hdr = &pkt->hdr;
 			if (hdr->dbg_type == STP_DBG_FW_DMP) {
-				osal_memcpy(&tmp[0], pkt->raw, pkt->hdr.len);
-
 				if (pkt->hdr.len <= 1500) {
 					tmp[pkt->hdr.len] = '\n';
 					tmp[pkt->hdr.len + 1] = '\0';
+					osal_memcpy(&tmp[0], pkt->raw, pkt->hdr.len);
 
 					ret = stp_dbg_aee_send(tmp, pkt->hdr.len, 0);
 				} else {
