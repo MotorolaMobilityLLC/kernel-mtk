@@ -176,7 +176,7 @@ void __attribute__((weak)) spm_sodi_mempll_pwr_mode(bool pwr_mode)
 
 }
 
-wake_reason_t __attribute__((weak)) spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
+wake_reason_t __attribute__((weak)) spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 operation_cond)
 {
 	return WR_UNKNOWN;
 }
@@ -255,9 +255,9 @@ static unsigned long long soidle3_block_prev_time;
 static bool             soidle3_by_pass_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
-static u32				sodi3_flags = SODI_FLAG_REDUCE_LOG|SODI_FLAG_V3;
+static u32              sodi3_flags = SODI_FLAG_REDUCE_LOG;
 #ifdef SPM_SODI3_PROFILE_TIME
-unsigned int			soidle3_profile[4];
+unsigned int            soidle3_profile[4];
 #endif
 
 /* SODI */
@@ -270,9 +270,9 @@ static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
 bool                    soidle_by_pass_pg;
 static bool             soidle_by_pass_en;
-static u32				sodi_flags = SODI_FLAG_REDUCE_LOG;
+static u32              sodi_flags = SODI_FLAG_REDUCE_LOG;
 #ifdef SPM_SODI_PROFILE_TIME
-unsigned int			soidle_profile[4];
+unsigned int            soidle_profile[4];
 #endif
 
 /* MCDI */
@@ -1145,9 +1145,7 @@ u32 slp_spm_deepidle_flags = {
 
 static void dpidle_pre_process(int cpu)
 {
-	memset(clkmux_block_mask,
-			IDLE_TYPE_DP * NF_CLK_CFG * sizeof(unsigned int),
-			NF_CLK_CFG * sizeof(unsigned int));
+	memset(clkmux_block_mask[IDLE_TYPE_DP],	0, NF_CLK_CFG * sizeof(unsigned int));
 	clkmux_cond[IDLE_TYPE_DP] = mtk_idle_check_clkmux(IDLE_TYPE_DP, clkmux_block_mask);
 
 	mtk_idle_notifier_call_chain(DPIDLE_START);
@@ -1492,6 +1490,7 @@ EXPORT_SYMBOL(dpidle_enter);
 int soidle3_enter(int cpu)
 {
 	int ret = CPUIDLE_STATE_SO3;
+	u32 operation_cond = 0;
 	unsigned long long soidle3_time = 0;
 	static unsigned long long soidle3_residency;
 
@@ -1500,13 +1499,19 @@ int soidle3_enter(int cpu)
 
 	idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
 
+	/* clkmux for sodi3 */
+	memset(clkmux_block_mask[IDLE_TYPE_SO3], 0, NF_CLK_CFG * sizeof(unsigned int));
+	clkmux_cond[IDLE_TYPE_SO3] = mtk_idle_check_clkmux(IDLE_TYPE_SO3, clkmux_block_mask);
+
 	soidle_pre_handler();
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags);
+	operation_cond =  clkmux_cond[IDLE_TYPE_SO3] ? 0x1 : 0x0;
+
+	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags, operation_cond);
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
@@ -1942,6 +1947,10 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 			mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SO3][i]);
 	}
 
+	mt_idle_log("sodi3_clkmux_cond = %d\n",  clkmux_cond[IDLE_TYPE_SO3]);
+	for (i = 0; i < NF_CLK_CFG; i++)
+		mt_idle_log("[%d]block_cond=0x%08x\n", i, clkmux_block_mask[IDLE_TYPE_SO3][i]);
+
 	mt_idle_log("soidle3_bypass_pll=%u\n", soidle3_by_pass_pll);
 	mt_idle_log("soidle3_bypass_cg=%u\n", soidle3_by_pass_cg);
 	mt_idle_log("soidle3_bypass_en=%u\n", soidle3_by_pass_en);
@@ -1958,6 +1967,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	mt_idle_log("bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("sodi3 flags:   echo sodi3_flags value > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	mt_idle_log("\t[0] reduce log, [1] residency, [2] resource usage\n");
 
 	len = p - dbg_buf;
 
@@ -2062,6 +2072,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("sodi flags:    echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle_state\n");
+	mt_idle_log("\t[0] reduce log, [1] residency, [2] resource usage\n");
 
 	len = p - dbg_buf;
 
