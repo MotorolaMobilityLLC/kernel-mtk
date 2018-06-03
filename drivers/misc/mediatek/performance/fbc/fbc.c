@@ -95,8 +95,8 @@ static void boost_freq(int capacity)
 		}
 	}
 
-	if (i >= 11)
-		freq_limit[0].min = freq_limit[0].max = power_ll[11][0];
+	if (i >= 16)
+		freq_limit[0].min = freq_limit[0].max = power_ll[16][0];
 
 	/*B freq*/
 	for (j = 0; j < 16; j++) {
@@ -105,10 +105,10 @@ static void boost_freq(int capacity)
 			break;
 		}
 	}
-	if (j >= 11)
-		freq_limit[2].min = freq_limit[2].max = power_b[11][0];
+	if (j >= 16)
+		freq_limit[2].min = freq_limit[2].max = power_b[16][0];
 #endif
-	mt_ppm_userlimit_cpu_freq(NR_PPM_CLUSTERS, freq_limit);
+	update_userlimit_cpu_freq(KIR_FBC, NR_PPM_CLUSTERS, freq_limit);
 #if 0
 	pr_crit(TAG"[boost_freq_2] capacity=%d (i,j)=(%d,%d), ll_freq=%d, b_freq=%d\n",
 			capacity, i, j, freq_limit[0].max, freq_limit[2].max);
@@ -158,9 +158,8 @@ static void mt_power_pef_transfer_work(void)
 			boost_value_super = SUPER_BOOST + boost_value;
 		else
 			boost_value_super = 100;
-		/*boost_value_for_GED_idx(1, boost_value_super);*/
-			/*mt_kernel_trace_counter("Timeout", 1);*/
-			/*mt_kernel_trace_counter("boost_value", boost_value_super);*/
+		perfmgr_kick_fg_boost(KIR_FBC, boost_value_super);
+		/* trace .. */
 	}
 }
 
@@ -219,7 +218,7 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 	if (strncmp(option, "DEBUG", 5) == 0) {
 		fbc_debug = arg1;
 		boost_value = 0;
-		/*boost_value_for_GED_idx(1, boost_value);*/
+		perfmgr_kick_fg_boost(KIR_FBC, boost_value);
 	} else if (strncmp(option, "TOUCH", 5) == 0) {
 		fbc_touch_pre = fbc_touch;
 		fbc_touch = arg1;
@@ -232,13 +231,12 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 			core_limit[1].max = 0;
 			core_limit[2].min = 1;
 			core_limit[2].max = 1;
-			mt_ppm_userlimit_cpu_core(NR_PPM_CLUSTERS, core_limit);
+			update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
 
 			capacity = 286;
 			if (boost_method == 2)
 				boost_freq(capacity);
-			/*perfmgr_kick_fg_boost(KIR_FBC, 100);*/
-				boost_value_for_GED_idx(1, 100);
+			perfmgr_kick_fg_boost(KIR_FBC, 100);
 		} else if (fbc_touch == 0 && fbc_touch_pre) {
 			core_limit[0].min = -1;
 			core_limit[0].max = -1;
@@ -246,7 +244,7 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 			core_limit[1].max = -1;
 			core_limit[2].min = -1;
 			core_limit[2].max = -1;
-			mt_ppm_userlimit_cpu_core(NR_PPM_CLUSTERS, core_limit);
+			update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
 
 			freq_limit[0].min = -1;
 			freq_limit[0].max = -1;
@@ -254,7 +252,7 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 			freq_limit[1].max = -1;
 			freq_limit[2].min = -1;
 			freq_limit[2].max = -1;
-			mt_ppm_userlimit_cpu_freq(NR_PPM_CLUSTERS, freq_limit);
+			update_userlimit_cpu_freq(KIR_FBC, NR_PPM_CLUSTERS, freq_limit);
 
 			perfmgr_kick_fg_boost(KIR_FBC, -1);
 		}
@@ -400,8 +398,7 @@ ssize_t device_ioctl(struct file *filp,
 			else if (boost_value <= 0)
 				boost_value = 0;
 
-			/*perfmgr_kick_fg_boost(KIR_FBC, boost_value);*/
-			boost_value_for_GED_idx(1, boost_value);
+			perfmgr_kick_fg_boost(KIR_FBC, boost_value);
 			pr_crit(TAG" pid:%d, frame complete FT=%lu, boost_linear=%lld, boost_real=%d, boost_value=%d\n",
 				current->pid, arg, boost_linear, boost_real, boost_value);
 

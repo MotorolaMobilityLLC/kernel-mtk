@@ -40,8 +40,7 @@
 #include <trace/events/sched.h>
 
 #include <linux/ioctl.h>
-#include <mach/mtk_ppm_api.h>
-
+#include "legacy_controller.h"
 #include "eas_controller.h"
 #include "mtk_unified_power.h"
 
@@ -73,5 +72,7 @@ extern int boost_value_for_GED_idx(int group_idx, int boost_value);
 extern int linear_real_boost(int);
 /*extern int linear_real_boost_pid(int, int);*/
 extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
+extern int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data *freq_limit);
+extern int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data *core_limit);
 
 
