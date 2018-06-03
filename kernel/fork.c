@@ -1367,6 +1367,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	ftrace_graph_init_task(p);
 
 	rt_mutex_init_task(p);
+#ifdef CONFIG_MTK_ENG_BUILD
+	spin_lock_init(&p->stack_trace_lock);
+#endif
 
 #ifdef CONFIG_PROVE_LOCKING
 	DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled);
