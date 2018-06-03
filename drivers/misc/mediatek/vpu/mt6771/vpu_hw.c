@@ -132,9 +132,6 @@ static wait_queue_head_t lock_wait;
 /* isr handler */
 static irqreturn_t vpu0_isr_handler(int irq, void *dev_id);
 static irqreturn_t vpu1_isr_handler(int irq, void *dev_id);
-#ifndef MTK_VPU_FPGA_PORTING
-static irqreturn_t vpu2_isr_handler(int irq, void *dev_id);
-#endif
 
 typedef irqreturn_t (*ISR_CB)(int, void *);
 struct ISR_TABLE {
@@ -143,14 +140,8 @@ struct ISR_TABLE {
 	char            device_name[16];
 };
 const struct ISR_TABLE VPU_ISR_CB_TBL[MTK_VPU_CORE] = {
-	#ifdef MTK_VPU_FPGA_PORTING
 	{vpu0_isr_handler,     0,  "ipu1"}, /* Must be the same name with that in device node. */
 	{vpu1_isr_handler,     0,  "ipu2"}
-	#else
-	{vpu0_isr_handler,     0,  "ipu1"}, /* Must be the same name with that in device node. */
-	{vpu1_isr_handler,     0,  "ipu2"},
-	{vpu2_isr_handler,     0,  "ipu3"}
-	#endif
 };
 
 
@@ -424,17 +415,6 @@ irqreturn_t vpu1_isr_handler(int irq, void *dev_id)
 
 	return IRQ_HANDLED;
 }
-#ifndef MTK_VPU_FPGA_PORTING
-irqreturn_t vpu2_isr_handler(int irq, void *dev_id)
-{
-	LOG_INF("vpu 2 received a interrupt\n");
-	vpu_service_cores[2].is_cmd_done = true;
-	wake_up_interruptible(&cmd_wait);
-	vpu_write_field(2, FLD_APMCU_INT, 1);                   /* clear int */
-
-	return IRQ_HANDLED;
-}
-#endif
 
 static bool service_pool_is_empty(int core)
 {
