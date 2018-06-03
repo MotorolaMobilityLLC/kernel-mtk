@@ -126,16 +126,11 @@ static const char * const InterModemPcm_ASRC_Switch[] = { "Off", "On" };
 static const char * const Audio_Debug_Setting[] = { "Off", "On" };
 static const char * const Audio_IPOH_State[] = { "Off", "On" };
 static const char * const Audio_I2S1_Setting[] = { "Off", "On" };
-static const char * const audio_dctrim_flag_setting[] = { "Not_Yet", "Calibrated" };
 
 static bool AudDrvSuspendStatus;
 /* static bool mModemPcm_ASRC_on = false; */
 static bool AudioI2S1Setting;
 
-static bool mHplCalibrated;
-static int mHplOffset;
-static bool mHprCalibrated;
-static int mHprOffset;
 static bool AudDrvSuspend_ipoh_Status;
 static int audio_dpd_switch;
 
@@ -704,90 +699,6 @@ static int Audio_LowLatencyDebug_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int Audio_Hpl_Offset_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-#ifndef EFUSE_HP_TRIM
-	pr_warn("%s\n", __func__);
-	AudDrv_Clk_On();
-	if (mHplCalibrated == false) {
-		mHplOffset = get_audio_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
-		SetHplTrimOffset(mHplOffset);
-		CalculateDCCompenForEachdB_L();
-		mHplCalibrated = true;
-	}
-	ucontrol->value.integer.value[0] = mHplOffset;
-	AudDrv_Clk_Off();
-#else
-	ucontrol->value.integer.value[0] = 2048;
-#endif
-	return 0;
-}
-
-static int Audio_Hpl_Offset_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-#ifndef EFUSE_HP_TRIM
-	pr_warn("%s()\n", __func__);
-	mHplOffset = ucontrol->value.integer.value[0];
-	SetHplTrimOffset(mHplOffset);
-	CalculateDCCompenForEachdB_L();
-#else
-	mHplOffset = ucontrol->value.integer.value[0];
-#endif
-	return 0;
-}
-
-static int Audio_Hpr_Offset_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-#ifndef EFUSE_HP_TRIM
-	pr_warn("%s\n", __func__);
-	AudDrv_Clk_On();
-	if (mHprCalibrated == false) {
-		mHprOffset = get_audio_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
-		SetHprTrimOffset(mHprOffset);
-		CalculateDCCompenForEachdB_R();
-		mHprCalibrated = true;
-	}
-	ucontrol->value.integer.value[0] = mHprOffset;
-	AudDrv_Clk_Off();
-#else
-	ucontrol->value.integer.value[0] = 2048;
-#endif
-	return 0;
-}
-
-static int Audio_Hpr_Offset_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-#ifndef EFUSE_HP_TRIM
-	pr_warn("%s()\n", __func__);
-	mHprOffset = ucontrol->value.integer.value[0];
-	SetHprTrimOffset(mHprOffset);
-	CalculateDCCompenForEachdB_R();
-#else
-	mHprOffset = ucontrol->value.integer.value[0];
-#endif
-	return 0;
-}
-
-static int audio_dctrim_flag_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_debug("%s(), mHplCalibrated = %d, mHprCalibrated = %d\n", __func__, mHplCalibrated, mHprCalibrated);
-	ucontrol->value.integer.value[0] = mHplCalibrated && mHprCalibrated;
-	return 0;
-}
-
-static int audio_dctrim_flag_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_debug("%s()\n", __func__);
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_dctrim_flag_setting)) {
-		pr_err("return -EINVAL\n");
-		return -EINVAL;
-	}
-	mHplCalibrated = ucontrol->value.integer.value[0];
-	mHprCalibrated = ucontrol->value.integer.value[0];
-	return 0;
-}
-
-
 static const struct soc_enum Audio_Routing_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(DAC_DL_SINEGEN), DAC_DL_SINEGEN),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(DAC_DL_SINEGEN_SAMEPLRATE), DAC_DL_SINEGEN_SAMEPLRATE),
@@ -798,7 +709,6 @@ static const struct soc_enum Audio_Routing_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_Debug_Setting), Audio_Debug_Setting),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_IPOH_State), Audio_IPOH_State),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_I2S1_Setting), Audio_I2S1_Setting),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_dctrim_flag_setting), audio_dctrim_flag_setting),
 };
 
 static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
@@ -816,12 +726,6 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 		       stf_positive_gain_get, stf_positive_gain_set),
 	SOC_ENUM_EXT("Audio_Mode_Switch", Audio_Routing_Enum[4],
 		     Audio_Mode_Get, Audio_Mode_Set),
-	SOC_ENUM_EXT("Audio_Dctrim_Flag", Audio_Routing_Enum[9],
-		     audio_dctrim_flag_get, audio_dctrim_flag_set),
-	SOC_SINGLE_EXT("Audio HPL Offset", SND_SOC_NOPM, 0, 0x20000, 0,
-		       Audio_Hpl_Offset_Get, Audio_Hpl_Offset_Set),
-	SOC_SINGLE_EXT("Audio HPR Offset", SND_SOC_NOPM, 0, 0x20000, 0,
-		       Audio_Hpr_Offset_Get, Audio_Hpr_Offset_Set),
 	SOC_ENUM_EXT("Audio_Debug_Setting", Audio_Routing_Enum[6],
 		     AudioDebug_Setting_Get, AudioDebug_Setting_Set),
 	SOC_ENUM_EXT("Audio_Ipoh_Setting", Audio_Routing_Enum[7],

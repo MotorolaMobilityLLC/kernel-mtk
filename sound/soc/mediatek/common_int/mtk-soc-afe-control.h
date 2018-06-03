@@ -214,8 +214,6 @@ unsigned int GetPLaybackSramPartial(void);
 unsigned int GetPLaybackDramSize(void);
 size_t GetCaptureDramSize(void);
 
-/* offsetTrimming */
-void OpenAfeDigitaldl1(bool bEnable);
 void SetExternalModemStatus(const bool bEnable);
 
 /* set VOW status for AFE GPIO control */
@@ -341,9 +339,6 @@ void set_screen_state(bool state);
 /* low latency debug */
 int get_LowLatencyDebug(void);
 void set_LowLatencyDebug(uint32 bFlag);
-
-/* DC trim API, implement by platform */
-int get_audio_trim_offset(int channel);
 
 /* For handling suspend */
 bool handle_suspend(bool suspend);

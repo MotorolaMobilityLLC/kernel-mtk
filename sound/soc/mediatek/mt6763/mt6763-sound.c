@@ -2177,11 +2177,6 @@ bool SetAncRecordReg(uint32 value, uint32 mask)
 	return false;
 }
 
-int get_audio_trim_offset(int channel)
-{
-	return 0;
-}
-
 const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
 {
 	return &mIRQCtrlRegs[irqIndex];
