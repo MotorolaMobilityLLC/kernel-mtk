@@ -545,12 +545,6 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 				obj->dispatch_data_cb[handle](event, NULL);
 			else
 				SCP_ERR("type:%d don't support this flow?\n", handle);
-			if (handle == ID_TILT_DETECTOR) {
-				if (obj->dispatch_data_cb[ID_WAKE_GESTURE] != NULL)
-					obj->dispatch_data_cb[ID_WAKE_GESTURE](event, NULL);
-				else
-					SCP_ERR("type:%d don't support this flow?\n", ID_WAKE_GESTURE);
-			}
 		}
 		break;
 	default:

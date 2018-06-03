@@ -49,7 +49,7 @@ static int wake_gesture_get_data(int *probability, int *status)
 	uint64_t time_stamp = 0;
 	uint64_t time_stamp_gpt = 0;
 
-	err = sensor_get_data_from_hub(ID_TILT_DETECTOR, &data);
+	err = sensor_get_data_from_hub(ID_WAKE_GESTURE, &data);
 	if (err < 0) {
 		WAKEHUB_ERR("sensor_get_data_from_hub fail!!\n");
 		return -1;
@@ -68,18 +68,18 @@ static int wake_gesture_open_report_data(int open)
 	WAKEHUB_ERR("%s : enable=%d\n", __func__, open);
 #if defined CONFIG_MTK_SCP_SENSORHUB_V1
 	if (open == 1)
-		ret = sensor_set_delay_to_hub(ID_TILT_DETECTOR, 120);
+		ret = sensor_set_delay_to_hub(ID_WAKE_GESTURE, 120);
 #elif defined CONFIG_NANOHUB
 
 #else
 
 #endif
-	ret = sensor_enable_to_hub(ID_TILT_DETECTOR, open);
+	ret = sensor_enable_to_hub(ID_WAKE_GESTURE, open);
 	return ret;
 }
 static int wake_gesture_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
-	return sensor_batch_to_hub(ID_TILT_DETECTOR, flag, samplingPeriodNs, maxBatchReportLatencyNs);
+	return sensor_batch_to_hub(ID_WAKE_GESTURE, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 static int wake_gesture_recv_data(struct data_unit_t *event, void *reserved)
 {
