@@ -2883,7 +2883,7 @@ VOID nicProcessRxInterrupt(IN P_ADAPTER_T prAdapter)
 	ASSERT(prAdapter);
 
 	/* SER break point */
-	if (nicSerIsOperating(prAdapter)) {
+	if (nicSerIsRxStop(prAdapter)) {
 		/* Skip following Rx handling */
 		return;
 	}

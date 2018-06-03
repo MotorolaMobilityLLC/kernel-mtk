@@ -1617,7 +1617,8 @@ VOID aisFsmRunEventAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 	cnmMemFree(prAdapter, prMsgHdr);
 
-	DBGLOG(AIS, LOUD, "EVENT-ABORT: Current State %s\n", apucDebugAisState[prAisFsmInfo->eCurrentState]);
+	DBGLOG(AIS, STATE, "EVENT-ABORT: Current State %s, ucReasonOfDisconnect:%d\n",
+		apucDebugAisState[prAisFsmInfo->eCurrentState], ucReasonOfDisconnect);
 
 	/* record join request time */
 	GET_CURRENT_SYSTIME(&(prAisFsmInfo->rJoinReqTime));
@@ -1650,6 +1651,7 @@ VOID aisFsmRunEventAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 	if (prAisFsmInfo->eCurrentState != AIS_STATE_DISCONNECTING) {
 		/* 4 <3> invoke abort handler */
+		DBGLOG(AIS, STATE, "ucReasonOfDisconnect:%d\n", ucReasonOfDisconnect);
 		aisFsmStateAbort(prAdapter, ucReasonOfDisconnect, fgDelayIndication);
 	}
 }				/* end of aisFsmRunEventAbort() */
@@ -1678,6 +1680,9 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 	prAisBssInfo = prAdapter->prAisBssInfo;
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 	fgIsCheckConnected = FALSE;
+
+	DBGLOG(AIS, STATE, "aisFsmStateAbort DiscReason[%d], CurState[%d]\n",
+		ucReasonOfDisconnect, prAisFsmInfo->eCurrentState);
 
 	/* 4 <1> Save information of Abort Message and then free memory. */
 	prAisBssInfo->ucReasonOfDisconnect = ucReasonOfDisconnect;
@@ -2381,6 +2386,8 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPt
 
 	prAisBssInfo = prAdapter->prAisBssInfo;
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+
+	DBGLOG(AIS, EVENT, "aisPostponedEventOfDisconnTimeout\n");
 
 	/* 4 <1> Deactivate previous AP's STA_RECORD_T in Driver if have. */
 	if (prAisBssInfo->prStaRecOfAP) {
@@ -3467,6 +3474,7 @@ VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter)
 	/* 4 <2> invoke abort handler */
 	if (fgDoAbortIndication) {
 		prConnSettings->fgIsDisconnectedByNonRequest = FALSE;
+		DBGLOG(AIS, EVENT, "aisBssBeaconTimeout\n");
 		aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);
 	}
 }				/* end of aisBssBeaconTimeout() */
@@ -3495,6 +3503,7 @@ aisDeauthXmitComplete(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN 
 		cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rDeauthDoneTimer);
 
 	if (prAisFsmInfo->eCurrentState == AIS_STATE_DISCONNECTING) {
+		DBGLOG(AIS, EVENT, "aisDeauthXmitComplete\n");
 		if (rTxDoneStatus != TX_RESULT_DROPPED_IN_DRIVER && rTxDoneStatus != TX_RESULT_QUEUE_CLEARANCE)
 			aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_NEW_CONNECTION, FALSE);
 	} else {
@@ -3623,7 +3632,7 @@ VOID aisFsmRoamingDisconnectPrevAP(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T p
 {
 	P_BSS_INFO_T prAisBssInfo;
 
-	DBGLOG(AIS, LOUD, "aisFsmRoamingDisconnectPrevAP()");
+	DBGLOG(AIS, EVENT, "aisFsmRoamingDisconnectPrevAP()");
 
 	ASSERT(prAdapter);
 

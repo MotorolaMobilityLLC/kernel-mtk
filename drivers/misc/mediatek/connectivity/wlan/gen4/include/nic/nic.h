@@ -116,6 +116,7 @@ typedef enum _ENUM_IE_UPD_METHOD_T {
 
 typedef enum _ENUM_SER_STATE_T {
 	SER_IDLE_DONE,       /* SER is idle or done */
+	SER_STOP_HOST_TX,    /* Host HIF Tx is stopped */
 	SER_STOP_HOST_TX_RX, /* Host HIF Tx/Rx is stopped */
 	SER_REINIT_HIF,      /* Host HIF is reinit */
 
@@ -357,7 +358,10 @@ UINT_8 nicSetChipSwVer(UINT_8 value);
 UINT_8 nicSetChipFactoryVer(UINT_8 value);
 
 VOID nicSerStopTxRx(IN P_ADAPTER_T prAdapter);
+VOID nicSerStopTx(IN P_ADAPTER_T prAdapter);
 VOID nicSerStartTxRx(IN P_ADAPTER_T prAdapter);
-BOOLEAN nicSerIsOperating(IN P_ADAPTER_T prAdapter);
+BOOLEAN nicSerIsWaitingReset(IN P_ADAPTER_T prAdapter);
+BOOLEAN nicSerIsTxStop(IN P_ADAPTER_T prAdapter);
+BOOLEAN nicSerIsRxStop(IN P_ADAPTER_T prAdapter);
 
 #endif /* _NIC_H */

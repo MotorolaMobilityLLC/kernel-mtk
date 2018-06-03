@@ -3568,7 +3568,7 @@ BOOLEAN nicIsEcoVerEqualOrLaterTo(IN P_ADAPTER_T prAdapter, UINT_8 ucEcoVer)
 
 VOID nicSerStopTxRx(IN P_ADAPTER_T prAdapter)
 {
-	DBGLOG(NIC, WARN, "SER: Stop HIF T/R!\n");
+	DBGLOG(NIC, WARN, "SER: Stop HIF Tx/Rx!\n");
 
 	prAdapter->ucSerState = SER_STOP_HOST_TX_RX;
 
@@ -3576,19 +3576,54 @@ VOID nicSerStopTxRx(IN P_ADAPTER_T prAdapter)
 	prAdapter->fgWiFiInSleepyState = TRUE;
 }
 
+VOID nicSerStopTx(IN P_ADAPTER_T prAdapter)
+{
+	DBGLOG(NIC, WARN, "SER: Stop HIF Tx!\n");
+
+	prAdapter->ucSerState = SER_STOP_HOST_TX;
+}
+
 VOID nicSerStartTxRx(IN P_ADAPTER_T prAdapter)
 {
 	DBGLOG(NIC, WARN, "SER: Start HIF T/R!\n");
 
+	halSerHifReset(prAdapter);
 	prAdapter->ucSerState = SER_IDLE_DONE;
 }
 
-BOOLEAN nicSerIsOperating(IN P_ADAPTER_T prAdapter)
+BOOLEAN nicSerIsWaitingReset(IN P_ADAPTER_T prAdapter)
 {
-	if (prAdapter->ucSerState != SER_IDLE_DONE)
+	if (prAdapter->ucSerState == SER_STOP_HOST_TX_RX)
 		return TRUE;
 	else
 		return FALSE;
 }
 
+BOOLEAN nicSerIsTxStop(IN P_ADAPTER_T prAdapter)
+{
+	switch (prAdapter->ucSerState) {
+	case SER_STOP_HOST_TX:
+	case SER_STOP_HOST_TX_RX:
+	case SER_REINIT_HIF:
+		return TRUE;
+
+	case SER_IDLE_DONE:
+	default:
+		return FALSE;
+	}
+}
+
+BOOLEAN nicSerIsRxStop(IN P_ADAPTER_T prAdapter)
+{
+	switch (prAdapter->ucSerState) {
+	case SER_STOP_HOST_TX_RX:
+	case SER_REINIT_HIF:
+		return TRUE;
+
+	case SER_STOP_HOST_TX:
+	case SER_IDLE_DONE:
+	default:
+		return FALSE;
+	}
+}
 
