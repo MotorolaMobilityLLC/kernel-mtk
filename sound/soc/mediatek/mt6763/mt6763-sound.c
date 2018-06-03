@@ -2266,56 +2266,12 @@ enum Soc_Aud_IRQ_MCU_MODE irq_request_number(Soc_Aud_Digital_Block mem_block)
 
 bool IsNeedToSetHighAddr(bool usingdram, dma_addr_t addr)
 {
-	if (!usingdram)
-		return false;
-	/* Using SRAM, no need to set high addr */
-
-
-	/* Using DRAM, need to check whether it needs to set high address bit */
-	if (!enable_4G())
-		return (0 < (addr >> 32));
-	/*
-	* enable_4G() usually returns false after mt6757, using 6G DRAM.
-	* Set EMI high address when the allocated address in high area
-	*/
-
-	/* 4G DRAM is enabled, always set EMI high address as MT6797 or MT6755 */
-	return true;
+	return false;
 }
 
 bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr)
 {
-	bool highBitEnable = IsNeedToSetHighAddr(usingdram, addr);
-
-/* TODO: need check how m17 support 34 bit */
-	switch (MemBlock) {
-	case Soc_Aud_Digital_Block_MEM_DL1:
-		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 0, 0x1 << 0);
-		break;
-	case Soc_Aud_Digital_Block_MEM_DL2:
-		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 1, 0x1 << 1);
-		break;
-	case Soc_Aud_Digital_Block_MEM_VUL:
-		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 6, 0x1 << 6);
-		break;
-	case Soc_Aud_Digital_Block_MEM_DAI:
-		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 5, 0x1 << 5);
-		break;
-	case Soc_Aud_Digital_Block_MEM_AWB:
-		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 3, 0x1 << 3);
-		break;
-	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
-		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 4, 0x1 << 4);
-		break;
-	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
-		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 2, 0x1 << 2);
-		break;
-	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
-		Afe_Set_Reg(AFE_MEMIF_MSB, highBitEnable << 7, 0x1 << 7);
-		break;
-	default:
-		break;
-	}
+	/* TODO: need check how m17 support 34 bit */
 	return true;
 }
 
