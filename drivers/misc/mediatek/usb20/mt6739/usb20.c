@@ -662,6 +662,11 @@ void musb_platform_reset(struct musb *musb)
 {
 	u16 swrst = 0;
 	void __iomem *mbase = musb->mregs;
+	u8 bit;
+
+	/* clear all DMA enable bit */
+	for (bit = 0; bit < MUSB_HSDMA_CHANNELS; bit++)
+		musb_writew(mbase, MUSB_HSDMA_CHANNEL_OFFSET(bit, MUSB_HSDMA_CONTROL), 0);
 
 	swrst = musb_readw(mbase, MUSB_SWRST);
 	swrst |= (MUSB_SWRST_DISUSBRESET | MUSB_SWRST_SWRST);
