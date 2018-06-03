@@ -325,6 +325,7 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 					XGF_QUEUE_START, &slptime);
 		if (xgf_ret != XGF_SLPTIME_OK)
 			pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
+		f_render->sleep_time = slptime;
 		fpsgo_comp2fbt_enq_start(f_render, enqueue_start_time);
 		fpsgo_comp2fbt_frame_start(f_render,
 				enqueue_start_time, slptime);

@@ -60,6 +60,7 @@
 #include "xgf.h"
 #include "mini_top.h"
 #include "fps_composer.h"
+#include "fbt_fteh.h"
 
 #define GED_VSYNC_MISS_QUANTUM_NS 16666666
 #define TIME_3MS  3000000
@@ -67,7 +68,7 @@
 #define TIME_1S  1000000000ULL
 #define TARGET_UNLIMITED_FPS 60
 #define FBTCPU_SEC_DIVIDER 1000000000
-#define RESET_TOLERENCE 2
+#define RESET_TOLERENCE 3
 #define NSEC_PER_HUSEC 100000
 
 #define SEQ_printf(m, x...)\
@@ -139,6 +140,7 @@ static int walt_enable;
 static int set_idleprefer;
 static int suppress_ceiling;
 static int force_walt_off;
+static int fbt_fteh_enable;
 
 static unsigned int cpu_max_freq;
 static struct fbt_cpu_dvfs_info *cpu_dvfs;
@@ -384,6 +386,23 @@ static int fbt_find_boosting(void)
 	mutex_unlock(&blc_mlock);
 
 	return boosting;
+}
+
+static int fbt_find_freerun(void)
+{
+	struct fbt_thread_blc *pos, *next;
+	int freerun = 0;
+
+	mutex_lock(&blc_mlock);
+	list_for_each_entry_safe(pos, next, &blc_list, entry) {
+		if (pos->freerun) {
+			freerun = 1;
+			break;
+		}
+	}
+	mutex_unlock(&blc_mlock);
+
+	return freerun;
 }
 
 static void fbt_free_bhr(void)
@@ -948,9 +967,11 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 	kfree(clus_floor_freq);
 }
 
-static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid)
+static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid,
+			struct render_info *thread_info)
 {
 	int orig_blc = blc_wt;
+	int ceiling_judge = 1;
 
 	if (floor > 1) {
 		blc_wt = (blc_wt * ((unsigned int)floor + 100)) / 100U;
@@ -959,12 +980,37 @@ static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid)
 	}
 
 	if (blc_wt > max_blc || pid == max_blc_pid) {
+		if (fbt_fteh_enable && thread_info &&
+			(thread_info->frame_type == NON_VSYNC_ALIGNED_TYPE ||
+			(thread_info->frame_type == VSYNC_ALIGNED_TYPE &&
+				thread_info->render_method == GLSURFACE))) {
+			ceiling_judge =
+			fpsgo_fbt2fteh_judge_ceiling(thread_info, blc_wt);
+
+			mutex_lock(&blc_mlock);
+			if (thread_info->p_blc) {
+				thread_info->p_blc->freerun =
+					(ceiling_judge == 0)?1:0;
+				if (ceiling_judge == 0)
+					fpsgo_systrace_c_fbt(pid,
+					thread_info->p_blc->freerun, "freerun");
+			}
+			mutex_unlock(&blc_mlock);
+		}
+		if (!ceiling_judge || fbt_find_freerun()) {
+			fpsgo_systrace_c_fbt(pid, -1, "cluster0 ceiling_freq");
+			fpsgo_systrace_c_fbt(pid, -1, "cluster1 ceiling_freq");
+			blc_wt = 0;
+			pid = 0;
+			fbt_free_bhr();
+			fbt_clear_boost_value();
+		} else
+			fbt_do_boost(blc_wt, pid);
+
 		max_blc = blc_wt;
 		max_blc_pid = pid;
 		fpsgo_systrace_c_fbt_gm(-100, max_blc, "max_blc");
 		fpsgo_systrace_c_fbt_gm(-100, max_blc_pid, "max_blc_pid");
-
-		fbt_do_boost(blc_wt, pid);
 	}
 
 	return blc_wt;
@@ -1158,7 +1204,7 @@ static int fbt_boost_policy(
 
 	blc_wt = clamp(blc_wt, 1U, 100U);
 
-	blc_wt = fbt_set_limit(blc_wt, boost_info->floor, pid);
+	blc_wt = fbt_set_limit(blc_wt, boost_info->floor, pid, thread_info);
 
 	mutex_unlock(&fbt_mlock);
 
@@ -1170,7 +1216,7 @@ static int fbt_boost_policy(
 	fpsgo_systrace_c_fbt(pid, blc_wt, "perf idx");
 
 	/*disable rescue frame for vag*/
-	if (!vag_fps) {
+	if (blc_wt && !vag_fps) {
 		if (thread_info->frame_type == VSYNC_ALIGNED_TYPE &&
 			(thread_info->render_method == HWUI ||
 			 thread_info->render_method == SWUI)) {
@@ -1251,7 +1297,7 @@ static void fbt_check_max_blc_locked(void)
 		fbt_free_bhr();
 		memset(base_opp, 0, cluster_num * sizeof(unsigned int));
 	} else
-		fbt_set_limit(max_blc, 0, max_blc_pid);
+		fbt_set_limit(max_blc, 0, max_blc_pid, NULL);
 }
 
 static void fbt_frame_start(struct render_info *thr, unsigned long long ts,
@@ -1440,7 +1486,7 @@ void fpsgo_comp2fbt_frame_start(struct render_info *thr,
 	if (!fbt_is_enable())
 		return;
 
-	fpsgo_systrace_c_fbt_gm(thr->pid, slptime, "sleep time");
+	fpsgo_systrace_c_fbt(thr->pid, slptime, "sleep time");
 	fpsgo_systrace_c_fbt(thr->pid, thr->Q2Q_time, "q2q time");
 	fpsgo_systrace_c_fbt_gm(thr->pid, thr->self_time, "self_time");
 
@@ -1562,7 +1608,7 @@ void fpsgo_comp2fbt_frame_complete(struct render_info *thr,
 		fbt_clear_boost_value();
 		fpsgo_systrace_c_fbt(thr->pid, 0, "perf idx");
 
-		if (bypass_flag == 0)
+		if (bypass_flag == 0 && !fbt_find_freerun())
 			fbt_set_idleprefer_locked(0);
 		fbt_filter_ppm_log_locked(0);
 		mutex_unlock(&fbt_mlock);
@@ -2008,6 +2054,22 @@ int fbt_switch_idleprefer(int enable)
 	return 0;
 }
 
+int fbt_switch_fteh(int enable)
+{
+	mutex_lock(&fbt_mlock);
+
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return 0;
+	}
+
+	fbt_fteh_enable = enable;
+
+	mutex_unlock(&fbt_mlock);
+
+	return 0;
+}
+
 int fbt_switch_ceiling(int enable)
 {
 	int last_enable;
@@ -2069,6 +2131,32 @@ static const struct file_operations fbt_##name##_fops = { \
 	.release = single_release, \
 }
 
+static int fbt_enable_fteh_show(struct seq_file *m, void *unused)
+{
+	mutex_lock(&fbt_mlock);
+	SEQ_printf(m, "fbt_fteh_enable:%d\n", fbt_fteh_enable);
+	mutex_unlock(&fbt_mlock);
+
+	return 0;
+}
+
+static ssize_t fbt_enable_fteh_write(struct file *flip,
+			const char *ubuf, size_t cnt, loff_t *data)
+{
+	int val;
+	int ret;
+
+	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
+	if (ret)
+		return ret;
+
+	fbt_switch_fteh(val);
+
+	return cnt;
+}
+
+FBT_DEBUGFS_ENTRY(enable_fteh);
+
 static int fbt_switch_idleprefer_show(struct seq_file *m, void *unused)
 {
 	mutex_lock(&fbt_mlock);
@@ -2127,6 +2215,7 @@ FBT_DEBUGFS_ENTRY(thread_info);
 void __exit fbt_cpu_exit(void)
 {
 	minitop_exit();
+	fbt_fteh_exit();
 
 	kfree(base_opp);
 	kfree(clus_obv);
@@ -2166,6 +2255,7 @@ int __init fbt_cpu_init(void)
 
 	fbt_idleprefer_enable = 1;
 	suppress_ceiling = 1;
+	fbt_fteh_enable = 1;
 
 	cluster_num = arch_get_nr_clusters();
 	max_freq_cluster = min((cluster_num - 1), 0);
@@ -2202,6 +2292,11 @@ int __init fbt_cpu_init(void)
 					fbt_debugfs_dir,
 					NULL,
 					&fbt_switch_idleprefer_fops);
+			debugfs_create_file("enable_fteh",
+					0664,
+					fbt_debugfs_dir,
+					NULL,
+					&fbt_enable_fteh_fops);
 		}
 	}
 
@@ -2211,6 +2306,7 @@ int __init fbt_cpu_init(void)
 	/* sub-module initialization */
 	init_xgf();
 	minitop_init();
+	fbt_fteh_init();
 
 	return 0;
 }
