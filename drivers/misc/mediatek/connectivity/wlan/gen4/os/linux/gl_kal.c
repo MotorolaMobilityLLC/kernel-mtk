@@ -5398,7 +5398,8 @@ inline INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo)
 		prPerMonitor->u4CurrPerfLevel = 0;
 		prPerMonitor->u4TarPerfLevel = 0;
 		/*Cancel CPU performance mode request*/
-		kalBoostCpu(0);
+		kalBoostCpu(prGlueInfo->prAdapter,
+			prPerMonitor->u4TarPerfLevel, prGlueInfo->prAdapter->rWifiVar.u4BoostCpuTh);
 	}
 	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
 	return 0;
@@ -5521,11 +5522,7 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	else {
 		DBGLOG(SW4, TRACE, "throughput:%ld bps\n", prPerMonitor->ulThroughput);
 		if (prPerMonitor->u4TarPerfLevel != prPerMonitor->u4CurrPerfLevel) {
-			/* if tar level = 0; core_number=prPerMonitor->u4TarPerfLevel+1*/
-			if (prPerMonitor->u4TarPerfLevel)
-				kalBoostCpu(prPerMonitor->u4TarPerfLevel+1);
-			else
-				kalBoostCpu(0);
+			kalBoostCpu(prAdapter, prPerMonitor->u4TarPerfLevel, prAdapter->rWifiVar.u4BoostCpuTh);
 		}
 		prPerMonitor->u4UpdatePeriod = prAdapter->rWifiVar.u4PerfMonUpdatePeriod;
 		cnmTimerStartTimer(prGlueInfo->prAdapter, &prPerMonitor->rPerfMonTimer, prPerMonitor->u4UpdatePeriod);
@@ -5568,12 +5565,11 @@ UINT_32 kalPerMonGetInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_32
 	return u4Len;
 }
 
-INT_32 __weak kalBoostCpu(UINT_32 core_num)
+INT_32 __weak kalBoostCpu(IN P_ADAPTER_T prAdapter, IN UINT_32 u4TarPerfLevel, IN UINT_32 u4BoostCpuTh)
 {
-	DBGLOG(SW4, WARN, "enter weak kalBoostCpu, core_num:%d\n", core_num);
+	DBGLOG(SW4, WARN, "enter kalBoostCpu\n");
 	return 0;
 }
-
 static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct fb_event *evdata = data;
