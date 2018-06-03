@@ -23,6 +23,7 @@
 #include <linux/of_irq.h>
 #include <linux/printk.h>
 #include <linux/spinlock.h>
+#include <linux/delay.h>
 
 #define MET_USER_EVENT_SUPPORT
 /* #include <linux/met_drv.h> */
@@ -43,6 +44,8 @@ static void __iomem *EMI_MPU_BASE;
 static unsigned int mpu_irq;
 static bool force_drs_disable;
 
+static struct timespec drs_time_start;
+static struct timespec drs_time_end;
 static emi_info_t emi_info;
 
 static int emi_probe(struct platform_device *pdev)
@@ -554,6 +557,8 @@ int disable_drs(unsigned char *backup)
 	force_drs_disable = true;
 	spin_unlock_irqrestore(&emi_drs_lock, flags);
 
+	getnstimeofday(&drs_time_start);
+
 	*backup = (readl(IOMEM(CHA_EMI_DRS)) << 4) & 0x10;
 	*backup |= (readl(IOMEM(CHB_EMI_DRS)) & 0x01);
 
@@ -571,7 +576,7 @@ int disable_drs(unsigned char *backup)
 	}
 
 	if (count == 0) {
-		enable_drs(*backup);
+		restore_drs(*backup);
 		/* pr_err("[EMI] disable DRS fail\n"); */
 		return -1;
 	}
@@ -579,14 +584,20 @@ int disable_drs(unsigned char *backup)
 	return 0;
 }
 
-void enable_drs(unsigned char enable)
+void restore_drs(unsigned char enable)
 {
 	unsigned long flags;
+	long switch_interval;
 
 	if ((CHA_EMI_BASE == NULL) || (CHB_EMI_BASE == NULL)) {
 		pr_err("[EMI] can not get base to enable DRS\n");
 		goto out;
 	}
+
+	getnstimeofday(&drs_time_end);
+	switch_interval = (drs_time_end.tv_nsec - drs_time_start.tv_nsec) / 1000;
+	if ((switch_interval > 0) && (switch_interval < 1000))
+		udelay(1000 - switch_interval);
 
 	writel(readl(IOMEM(CHA_EMI_DRS)) | ((enable >> 4) & 0x1),
 		IOMEM(CHA_EMI_DRS));
@@ -606,14 +617,15 @@ int DRS_enable(void)
 
 	count = 0;
 	while (disable_drs(&status)) {
-		if (count > 1000000) {
+		udelay(100);
+		if (count > 10000) {
 			pr_err("[EMI] waiting to enable DRS\n");
 			count = 0;
 		} else
 			count++;
 	}
 
-	enable_drs(0x11);
+	restore_drs(0x11);
 
 	return 0;
 }
@@ -625,14 +637,15 @@ int DRS_disable(void)
 
 	count = 0;
 	while (disable_drs(&status)) {
-		if (count > 1000000) {
+		udelay(100);
+		if (count > 10000) {
 			pr_err("[EMI] waiting to disable DRS\n");
 			count = 0;
 		} else
 			count++;
 	}
 
-	enable_drs(0x00);
+	restore_drs(0x00);
 
 	return 0;
 }
