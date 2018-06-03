@@ -24,14 +24,8 @@
 #include <linux/compat.h>
 #endif
 
-#define CCU_NUM_PORTS 32
-
-typedef uint8_t ccu_id_t;
-
 /* the last byte of string must be '/0' */
-typedef char ccu_name_t[32];
 
-#define SIG_ERESTARTSYS 512
 /*---------------------------------------------------------------------------*/
 /*  CCU IRQ                                                                */
 /*---------------------------------------------------------------------------*/
@@ -49,19 +43,6 @@ typedef char ccu_name_t[32];
 #define CCU_DMEM_RANGE           (PAGE_SIZE*8)	/* 32KB */
 #define CCU_DMEM_SIZE           (32*1024)	/* 32KB */
 
-#define CCU_MMAP_LOG0       0x10000000
-#define CCU_MMAP_LOG1       0x10100000
-#define CCU_MMAP_LOG2       0x10200000
-
-/*---------------------------------------------------------------------------*/
-/*  CCU IRQ                                                                */
-/*---------------------------------------------------------------------------*/
-/* In order with the suquence of device nodes defined in dtsi */
-typedef enum {
-	CCU_A_IDX = 0,
-	CCU_CAMSYS_IDX,		/* Remider: Add this device node manually in .dtsi */
-	CCU_DEV_NODE_NUM
-} CCU_DEV_NODE_ENUM;
 
 /*---------------------------------------------------------------------------*/
 /*  CCU IRQ                                                                */
@@ -230,155 +211,14 @@ typedef struct {
 #endif
 
 /*---------------------------------------------------------------------------*/
-/*  CCU Attrs                                                                */
+/*  CCU working buffer                                                       */
 /*---------------------------------------------------------------------------*/
-typedef enum ccu_attr_type_e {
-	CCU_ATTR_TYPE_BYTE,
-	CCU_ATTR_TYPE_INT32,
-	CCU_ATTR_TYPE_INT64,
-	CCU_ATTR_TYPE_FLOAT,
-	CCU_ATTR_TYPE_DOUBLE,
-	CCU_NUM_ATTR_TYPES
-} ccu_attr_type_t;
-
-typedef enum ccu_attr_access_e {
-	CCU_ATTR_ACCESS_RDONLY,
-	CCU_ATTR_ACCESS_RDWR
-} ccu_attr_access_t;
-
-/*
- * The description of attributes contains the information about attribute values,
- * which are stored as compact memory. With the offset, it can get the specific value
- * from compact data.
- *
- * The example of ccu_attr_desc_t is as follows:
- *   +--------+---------------------+--------+--------+-------+--------+
- *   |   id   | name                | offset | type   | count | access |
- *   +--------+---------------------+--------+--------+-------+--------+
- *   |   0    | reserved            | 0      | int32  | 64    | RDONLY |
- *   +--------+---------------------+--------+--------+-------+--------+
- *
- */
-typedef struct ccu_attr_desc_s {
-	ccu_id_t id;
-	ccu_name_t name;
-	/* offset = previous offset + previous size */
-	uint32_t offset;
-	/* size = sizeof(type) x count */
-	ccu_attr_type_t type;
-	uint32_t count;
-	/* directional data exchange */
-	ccu_attr_access_t access;
-} ccu_attr_desc_t;
-
-/*
- * The attribute's value is a compact-format data, which could be read by attr_desc.
- * According to the attr_desc's offset, it could locate to the start address of value.
- *
- * The example of compact-format memory is as follows:
- *   +--------+--------+--------+--------+--------+--------+--------+--------+
- *   |    0   |    8   |   16   |   24   |   32   |   40   |   48   |   56   |
- *   +--------+--------+--------+--------+--------+--------+--------+--------+
- *   | alg-ver|       working-buffer-size         | cnt-mem|                 |
- *   +--------+--------+--------+--------+--------+--------+--------+--------+
- *
- */
-typedef struct ccu_attrs_s {
-	/* use the global attribute description */
-	uint64_t ptr;
-	uint32_t length;
-#if 0
-	/* if each algo has its own attr_desc */
-	uint8_t attr_desc_count;
-	ccu_attr_desc_t *attr_descs;
-#endif
-} ccu_attrs_t;
-
-
-/*---------------------------------------------------------------------------*/
-/*  CCU Ports                                                                */
-/*---------------------------------------------------------------------------*/
-typedef enum ccu_buf_type_e {
-	CCU_BUF_TYPE_IMAGE,
-	CCU_BUF_TYPE_DATA,
-	CCU_NUM_BUF_TYPES
-} ccu_buf_type_t;
-
-typedef enum ccu_port_dir_e {
-	CCU_PORT_DIR_IN,
-	CCU_PORT_DIR_OUT,
-	CCU_PORT_DIR_IN_OUT,
-	CCU_NUM_PORT_DIRS
-} ccu_port_dir_t;
-
-/*
- * The ports contains the information about algorithm's input and output.
- * The each buffer on the ccu_command should be assigned a port id,
- * to let algorithm recognize every buffer's purpose.
- *
- * The example of ccu_ports_t is as follows:
- *   +--------+---------------------+--------+--------+
- *   |   id   | name                | type   | dir    |
- *   +--------+---------------------+--------+--------+
- *   |   0    | image-in            | IMAGE  | IN     |
- *   +--------+---------------------+--------+--------+
- *   |   1    | data-in             | DATA   | IN     |
- *   +--------+---------------------+--------+--------+
- *   |   2    | image-out           | IMAGE  | OUT    |
- *   +--------+---------------------+--------+--------+
- *   |   3    | image-temp          | IMAGE  | INOUT  |
- *   +--------+---------------------+--------+--------+
- *
- */
-typedef struct ccu_port_s {
-	ccu_id_t id;
-	ccu_name_t name;
-	ccu_buf_type_t type;
-	ccu_port_dir_t dir;
-} ccu_port_t;
-
-typedef struct ccu_ports_s {
-	uint8_t port_count;
-	ccu_port_t ports[CCU_NUM_PORTS];
-} ccu_ports_t;
-
-
-/*---------------------------------------------------------------------------*/
-/*  CCU Algo                                                                 */
-/*---------------------------------------------------------------------------*/
-typedef struct ccu_algo_s {
-	ccu_id_t id;
-	ccu_name_t name;
-	ccu_attrs_t attrs;
-	ccu_ports_t ports;
-	/* mva of kernel loader, the address is CCU accessible */
-	uint64_t ptr;
-	uint32_t length;
-} ccu_algo_t;
-
-/*---------------------------------------------------------------------------*/
-/*  CCU Register                                                             */
-/*---------------------------------------------------------------------------*/
-typedef struct ccu_reg_value_s {
-	uint64_t ptr;
-	uint32_t value;
-} ccu_reg_value_t;
-
-typedef struct ccu_reg_values_s {
-	ccu_reg_value_t *regs;
-	uint8_t reg_count;
-} ccu_reg_values_t;
-
-
-/*---------------------------------------------------------------------------*/
-/*  CCU working buffer                                                                */
-/*---------------------------------------------------------------------------*/
-#define SIZE_32BYTE        (32)
-#define SIZE_1MB        (1024*1024)
+#define SIZE_32BYTE	(32)
+#define SIZE_1MB	(1024*1024)
 #define SIZE_1MB_PWR2PAGE   (8)
-#define MAX_I2CBUF_NUM         1
+#define MAX_I2CBUF_NUM  1
 #define MAX_MAILBOX_NUM 2
-#define MAX_LOG_BUF_NUM 3
+#define MAX_LOG_BUF_NUM 2
 
 #define MAILBOX_SEND 0
 #define MAILBOX_GET 1
@@ -443,30 +283,6 @@ typedef struct compat_ccu_power_s {
 /*---------------------------------------------------------------------------*/
 /*  CCU command                                                              */
 /*---------------------------------------------------------------------------*/
-typedef struct ccu_plane_s {
-	/* if buffer type is image */
-	uint32_t stride;
-	/* mva, the address is CCU accessible */
-	uint64_t ptr;
-	uint32_t length;
-} ccu_plane_t;
-
-typedef enum ccu_buf_format_e {
-	CCU_BUF_FORMAT_METADATA,
-	CCU_BUF_FORMAT_IMG_YV12,
-	CCU_BUF_FORMAT_IMG_NV21,
-	CCU_BUF_FORMAT_IMG_YUY2,
-} ccu_buf_format_t;
-
-typedef struct ccu_buffer_s {
-	uint8_t plane_count;
-	ccu_plane_t planes[3];
-	ccu_buf_format_t format;
-	uint32_t width;
-	uint32_t height;
-	ccu_id_t port_id;
-} ccu_buffer_t;
-
 
 typedef enum ccu_eng_status_e {
 	CCU_ENG_STATUS_SUCCESS,
@@ -476,17 +292,6 @@ typedef enum ccu_eng_status_e {
 	CCU_ENG_STATUS_FLUSH,
 	CCU_ENG_STATUS_FAILURE,
 } ccu_eng_status_t;
-
-/*js_remove*/
-#if 0
-typedef struct ccu_cmd_s {
-	uint8_t buffer_count;
-	ccu_buffer_t buffers[CCU_NUM_PORTS];
-	ccu_id_t algo_id;
-	ccu_eng_status_t status;
-	uint64_t priv;
-} ccu_cmd_st;
-#endif
 
 /*---------------------------------------------------------------------------*/
 /*  CCU Command                                                                */
@@ -532,7 +337,6 @@ enum CCU_I2C_CHANNEL {
 	CCU_I2C_CHANNEL_SUBCAM = 0x2
 };
 
-#if 1
 struct ccu_i2c_arg {
 	unsigned int i2c_write_id;
 	unsigned int transfer_len;
@@ -544,6 +348,5 @@ extern int ccu_init_i2c_buf_mode(unsigned short i2cId);
 extern int ccu_config_i2c_buf_mode(int transfer_len);
 extern int ccu_i2c_frame_reset(void);
 extern int ccu_trigger_i2c(int transac_len, MBOOL do_dma_en);
-#endif
 
 #endif
