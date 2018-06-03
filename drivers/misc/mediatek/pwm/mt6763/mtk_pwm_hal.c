@@ -56,7 +56,8 @@ enum {
 	PWM_DATA_WIDTH,
 	PWM_THRESH,
 	PWM_SEND_WAVENUM,
-	PWM_VALID
+	PWM_VALID,
+	PWM_BUF_BASE_ADDR2
 } PWM_REG_OFF;
 
 
@@ -462,11 +463,23 @@ void mt_set_intr_ack_hal(u32 pwm_intr_ack_bit)
 
 void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 {
-	unsigned long reg_buff0_addr;
+	unsigned long reg_buff0_addr, reg_buff0_addr2;
+	unsigned int addr_shift_ctrl = 0;
 
-	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
-	/*OUTREG32(reg_buff0_addr, addr);*/
-	OUTREG32_DMA(reg_buff0_addr, addr);
+	reg_buff0_addr = PWM_register[pwm_no] +	4 * PWM_BUF0_BASE_ADDR;
+	reg_buff0_addr2 = PWM_register[pwm_no] + 4 * PWM_BUF_BASE_ADDR2;
+
+	if (addr > 0xFFFFFFFF) {
+
+		addr_shift_ctrl = addr >> 32;
+		CLRREG32(reg_buff0_addr2, 0xF);
+		SETREG32(reg_buff0_addr2, addr_shift_ctrl);
+		OUTREG32_DMA(reg_buff0_addr, (addr & 0xFFFFFFFF));
+	} else {
+		CLRREG32(reg_buff0_addr2, 0xF);
+		OUTREG32_DMA(reg_buff0_addr, addr);
+	}
+
 }
 
 void mt_set_pwm_buf0_size_hal(u32 pwm_no, uint16_t size)
