@@ -5344,7 +5344,12 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	data_config->overlap_layer_num = hrt_level;
 
 #ifdef MTK_FB_MMDVFS_SUPPORT
-	if (hrt_level > HRT_LEVEL_HPM &&
+	if (primary_display_is_decouple_mode() &&
+		primary_display_is_mirror_mode()) {
+		/*if DCMirror mode(WFD/ScreenRecord), forced set dvfs to opp0*/
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_UHPM);
+		dvfs_last_ovl_req = HRT_LEVEL_UHPM;
+	} else if (hrt_level > HRT_LEVEL_HPM &&
 		primary_display_is_directlink_mode()) {
 		/*DISPWARN("!!!Be carefull, request Ultra-High-Low-Power-Mode!!!\n");*/
 		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_UHPM);

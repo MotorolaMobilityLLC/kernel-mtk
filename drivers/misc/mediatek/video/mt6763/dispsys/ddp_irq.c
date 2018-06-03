@@ -375,13 +375,14 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 					    DISP_RDMA_INDEX_OFFSET * index),
 			       DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT +
 					    DISP_RDMA_INDEX_OFFSET * index));
+			cnt_rdma_underflow[index]++;
 			DDPERR("IRQ: RDMA%d underflow! cnt=%d\n", index,
-			       cnt_rdma_underflow[index]++);
+			       cnt_rdma_underflow[index]);
 			if ((cnt_rdma_underflow[index] % 60) == 0)
 				primary_display_diagnose();
 
 			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
-				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]++);
+				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]);
 			disp_irq_log_module |= 1 << module;
 			rdma_underflow_irq_cnt[index]++;
 		}
