@@ -96,10 +96,6 @@
 #undef CMDQ_PWR_AWARE
 #endif
 
-#ifdef CMDQ_SECURE_PATH_HW_LOCK
-#undef CMDQ_SECURE_PATH_NORMAL_IRQ
-#endif
-
 typedef u64 CMDQ_VARIABLE;
 /*
 * SPR / CPR / VAR naming rule and number

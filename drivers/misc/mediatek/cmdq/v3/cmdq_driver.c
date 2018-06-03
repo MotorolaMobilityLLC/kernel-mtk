@@ -377,7 +377,8 @@ static long cmdq_driver_create_secure_medadata(struct cmdqCommandStruct *pComman
 	return 0;
 }
 
-static long cmdq_driver_process_command_request(struct cmdqCommandStruct *pCommand)
+static long cmdq_driver_process_command_request(
+	struct cmdqCommandStruct *pCommand, struct CmdqRecExtend *ext)
 {
 	int32_t status = 0;
 	uint32_t *userRegValue = NULL;
@@ -421,7 +422,7 @@ static long cmdq_driver_process_command_request(struct cmdqCommandStruct *pComma
 	/* scenario id fixup */
 	cmdq_core_fix_command_scenario_for_user_space(pCommand);
 
-	status = cmdqCoreSubmitTask(pCommand, NULL);
+	status = cmdqCoreSubmitTask(pCommand, ext);
 	if (status < 0) {
 		CMDQ_ERR("Submit user commands for execution failed = %d\n", status);
 		cmdq_driver_destroy_secure_medadata(pCommand);
@@ -502,6 +503,9 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 	uint32_t userRegCount = 0;
 	/* backup value after task release */
 	uint32_t regCount = 0, regCountUserSpace = 0, regUserToken = 0;
+	struct CmdqRecExtend ext = {
+		.ctrl = cmdq_core_get_controller(),
+		};
 
 	switch (code) {
 	case CMDQ_IOCTL_EXEC_COMMAND:
@@ -513,11 +517,20 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			command.blockSize > CMDQ_MAX_COMMAND_SIZE)
 			return -EINVAL;
 
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+		/* assign controller for secure case */
+		if (command.secData.is_secure) {
+			ext.ctrl = cmdq_sec_get_controller();
+			ext.exclusive_thread = cmdq_get_func()->getThreadID(
+				command.scenario, true);
+		}
+#endif
+
 		/* insert private_data for resource reclaim */
 		desc_private.node_private_data = pFile->private_data;
 		command.privateData = (cmdqU32Ptr_t)(unsigned long)&desc_private;
 
-		if (cmdq_driver_process_command_request(&command))
+		if (cmdq_driver_process_command_request(&command, &ext))
 			return -EFAULT;
 		break;
 	case CMDQ_IOCTL_QUERY_USAGE:
@@ -555,12 +568,21 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		/* scenario id fixup */
 		cmdq_core_fix_command_scenario_for_user_space(&job.command);
 
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+		/* assign controller for secure case */
+		if (job.command.secData.is_secure) {
+			ext.ctrl = cmdq_sec_get_controller();
+			ext.exclusive_thread = cmdq_get_func()->getThreadID(
+				job.command.scenario, true);
+		}
+#endif
+
 		/* allocate secure medatata */
 		status = cmdq_driver_create_secure_medadata(&job.command);
 		if (status != 0)
 			return status;
 
-		status = cmdqCoreSubmitTaskAsync(&job.command, NULL, NULL, 0, &pTask);
+		status = cmdqCoreSubmitTaskAsync(&job.command, &ext, NULL, 0, &pTask);
 
 		/* store user space request count in TaskStruct */
 		/* for later retrieval */
