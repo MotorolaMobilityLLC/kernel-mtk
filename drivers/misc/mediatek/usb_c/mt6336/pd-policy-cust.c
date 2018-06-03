@@ -22,7 +22,7 @@
 #include "mtk_direct_charge_vdm.h"
 #endif
 
-#define PDO_FIXED_FLAGS (0)
+#define PDO_FIXED_FLAGS (PDO_FIXED_DATA_SWAP)
 
 /* TODO: fill in correct source and sink capabilities */
 uint32_t pd_src_pdo[] = {
@@ -170,13 +170,10 @@ void pd_execute_data_swap(struct typec_hba *hba, int data_role)
 	 * 5. Attached.SNK
 	 *       UFP
 	 */
-	if ((hba->data_role != PD_NO_ROLE) && (hba->data_role != data_role))
-		trigger_driver(hba, DONT_CARE_TYPE, DISABLE, DONT_CARE);
-
 	if (data_role == PD_ROLE_DFP)
-		trigger_driver(hba, HOST_TYPE, ENABLE, hba->cc);
+		schedule_work(&hba->usb_work);
 	else
-		trigger_driver(hba, DEVICE_TYPE, ENABLE, hba->cc);
+		schedule_work(&hba->usb_work);
 }
 
 void pd_check_pr_role(struct typec_hba *hba, int pr_role, int flags)
@@ -457,11 +454,6 @@ static int svdm_dp_config(struct typec_hba *hba, uint32_t *payload)
 	if (!(PD_VDO_DPSTS_CONNECT(dp_status) > 0x0))
 		return 0;
 
-#ifdef NEVER
-	usb_mux_set(port, mf_pref ? TYPEC_MUX_DOCK : TYPEC_MUX_DP,
-			  USB_SWITCH_CONNECT, pd_get_polarity(port));
-#endif /* NEVER */
-
 	payload[0] = VDO(USB_SID_DISPLAYPORT, 1,
 			 CMD_DP_CONFIG | VDO_OPOS(opos));
 
@@ -476,9 +468,6 @@ static void svdm_dp_post_config(struct typec_hba *hba)
 	dp_flags |= DP_FLAGS_DP_ON;
 	if (!(dp_flags & DP_FLAGS_HPD_HI_PENDING))
 		return;
-#ifdef NEVER
-	board_typec_dp_set(port, 1);
-#endif /* NEVER */
 }
 
 static int svdm_dp_attention(struct typec_hba *hba, uint32_t *payload)
@@ -488,9 +477,6 @@ static int svdm_dp_attention(struct typec_hba *hba, uint32_t *payload)
 	int irq = PD_VDO_DPSTS_HPD_IRQ(payload[1]);
 
 	dp_status = payload[1];
-#ifdef NEVER
-	cur_lvl = gpio_get_level(GPIO_USB_DP_HPD);
-#endif /* NEVER */
 
 	/* Its initial DP status message prior to config */
 	if (!(dp_flags & DP_FLAGS_DP_ON)) {
@@ -500,9 +486,7 @@ static int svdm_dp_attention(struct typec_hba *hba, uint32_t *payload)
 	}
 
 	if (irq & cur_lvl) {
-#ifdef NEVER
-		board_typec_dp_on(port);
-#endif /* NEVER */
+		dev_err(hba->dev, "---\n");
 	} else if (irq & !cur_lvl) {
 		dev_err(hba->dev, "ERR:HPD:IRQ&LOW\n");
 		return 0; /* nak */
@@ -515,9 +499,6 @@ static int svdm_dp_attention(struct typec_hba *hba, uint32_t *payload)
 static void svdm_exit_dp_mode(struct typec_hba *hba)
 {
 	svdm_safe_dp_mode(hba);
-#ifdef NEVER
-	board_typec_dp_off(port, dp_flags);
-#endif /* NEVER */
 }
 
 #ifdef CONFIG_RT7207_ADAPTER
@@ -538,38 +519,6 @@ static void svdm_exit_dc_mode(struct typec_hba *hba)
 	dev_err(hba->dev, "Exit PE3.0 mode\n");
 }
 #endif
-
-#ifdef NEVER
-static int svdm_enter_gfu_mode(struct typec_hba *hba, uint32_t mode_caps)
-{
-	/* Always enter GFU mode */
-	return 0;
-}
-
-static void svdm_exit_gfu_mode(struct typec_hba *hba)
-{
-}
-
-static int svdm_gfu_status(struct typec_hba *hba, uint32_t *payload)
-{
-	/*
-	 * This is called after enter mode is successful, send unstructured
-	 * VDM to read info.
-	 */
-	/*pd_send_vdm(hba, USB_VID_GOOGLE, VDO_CMD_READ_INFO, NULL, 0);*/
-	return 0;
-}
-
-static int svdm_gfu_config(struct typec_hba *hba, uint32_t *payload)
-{
-	return 0;
-}
-
-static int svdm_gfu_attention(struct typec_hba *hba, uint32_t *payload)
-{
-	return 0;
-}
-#endif /* NEVER */
 
 const struct svdm_amode_fx supported_modes[] = {
 	{
@@ -592,16 +541,6 @@ const struct svdm_amode_fx supported_modes[] = {
 		.exit = &svdm_exit_dc_mode,
 	},
 #endif
-#ifdef NEVER
-	{
-		.svid = USB_VID_GOOGLE,
-		.enter = &svdm_enter_gfu_mode,
-		.status = &svdm_gfu_status,
-		.config = &svdm_gfu_config,
-		.attention = &svdm_gfu_attention,
-		.exit = &svdm_exit_gfu_mode,
-	}
-#endif /* NEVER */
 };
 const int supported_modes_cnt = ARRAY_SIZE(supported_modes);
 #endif /* CONFIG_USB_PD_ALT_MODE_DFP */
