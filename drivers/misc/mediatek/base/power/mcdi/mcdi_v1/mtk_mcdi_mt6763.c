@@ -64,11 +64,6 @@ unsigned int mcdi_get_buck_ctrl_mask(void)
 	return 0;
 }
 
-/* do nothing */
-void mcdi_update_async_wakeup_enable(void)
-{
-}
-
 void mcdi_of_init(void)
 {
 	struct device_node *node = NULL;

@@ -505,7 +505,7 @@ end:
 	return state;
 }
 
-static bool is_mcdi_working(void)
+bool is_mcdi_working(void)
 {
 	unsigned long flags;
 	bool working = false;
