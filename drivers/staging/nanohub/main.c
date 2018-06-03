@@ -929,7 +929,6 @@ static int nanohub_kthread(void *arg)
 			ret = nanohub_comms_rx_retrans_boottime(
 			    data, CMD_COMMS_READ, buf->buffer,
 			    sizeof(buf->buffer), 10, 0);
-
 			if (ret > 0) {
 				nanohub_process_buffer(data, &buf, ret);
 				if (!nanohub_irq1_fired(data) &&
@@ -1003,6 +1002,7 @@ struct iio_dev *nanohub_probe(struct device *dev, struct iio_dev *iio_dev)
 	g_nanohub_data_p = data;
 	data->iio_dev = iio_dev;
 	/* data->pdata = pdata; */
+	data->pdata = devm_kzalloc(dev, sizeof(struct nanohub_platform_data), GFP_KERNEL);
 	init_waitqueue_head(&data->kthread_wait);
 
 	nanohub_io_init(&data->free_pool, data, dev);
