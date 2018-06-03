@@ -898,6 +898,7 @@ int i2c_tui_enable_clock(int id)
 {
 	struct i2c_adapter *adap;
 	struct mt_i2c *i2c;
+	int ret;
 
 	adap = i2c_get_adapter(id);
 	if (!adap) {
@@ -906,8 +907,17 @@ int i2c_tui_enable_clock(int id)
 	}
 
 	i2c = i2c_get_adapdata(adap);
-	clk_prepare_enable(i2c->clk_main);
-	clk_prepare_enable(i2c->clk_dma);
+	ret = clk_prepare_enable(i2c->clk_main);
+	if (ret) {
+		pr_err("Cannot enable main clk\n");
+		return ret;
+	}
+	ret = clk_prepare_enable(i2c->clk_dma);
+	if (ret) {
+		pr_err("Cannot enable dma clk\n");
+		clk_disable_unprepare(i2c->clk_main);
+		return ret;
+	}
 
 	return 0;
 }
