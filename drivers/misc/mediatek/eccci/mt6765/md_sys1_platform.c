@@ -21,7 +21,7 @@
 #include "ccci_config.h"
 #include <linux/clk.h>
 #include <mach/mtk_pbm.h>
-/*#include <mtk_clkbuf_ctl.h>*/
+#include <mtk_clkbuf_ctl.h>
 #ifdef CONFIG_MTK_EMI_BWL
 #include <emi_mbw.h>
 #endif
@@ -1104,13 +1104,13 @@ int md_cd_vcore_config(unsigned int md_id, unsigned int hold_req)
 
 int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)
 {
-	/*clk_buf_set_by_flightmode(true);*/
+	clk_buf_set_by_flightmode(true);
 	return 0;
 }
 
 int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
 {
-	/*clk_buf_set_by_flightmode(false);*/
+	clk_buf_set_by_flightmode(false);
 	return 0;
 }
 
@@ -1126,7 +1126,7 @@ int md_cd_power_on(struct ccci_modem *md)
 	/* steip 3: power on MD_INFRA and MODEM_TOP */
 	switch (md->index) {
 	case MD_SYS1:
-		/*clk_buf_set_by_flightmode(false);*/
+		clk_buf_set_by_flightmode(false);
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk\n");
 		ret = clk_prepare_enable(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG,
@@ -1215,7 +1215,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 			ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA));
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call md1_pmic_setting_off\n");
 
-		/*clk_buf_set_by_flightmode(true);*/
+		clk_buf_set_by_flightmode(true);
 		/* 3. PMIC off */
 		md1_pmic_setting_off();
 		/* 5. DLPT */
