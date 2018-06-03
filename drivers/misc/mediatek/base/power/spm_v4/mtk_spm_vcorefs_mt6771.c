@@ -547,9 +547,9 @@ void dvfsrc_md_scenario_update(bool suspend)
 			spm_write(DVFSRC_EMI_MD2SPM0, 0x38);
 	} else if (spmfw_dram_type == SPMFW_LP4X_2CH_3733) {
 		if (suspend)
-			spm_write(DVFSRC_EMI_MD2SPM0, 0x0);
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x80C0);
 		else
-			spm_write(DVFSRC_EMI_MD2SPM0, 0x38);
+			spm_write(DVFSRC_EMI_MD2SPM0, 0x80F8);
 	} else {
 		spm_vcorefs_warn("un-support spmfw_dram_type: %d\n", spmfw_dram_type);
 	}
