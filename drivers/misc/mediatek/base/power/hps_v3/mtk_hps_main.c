@@ -23,7 +23,9 @@
 #include "mtk_hps.h"
 #ifdef CONFIG_MACH_MT6799
 #include "isl91302a-spi.h"
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include "mach/mtk_pmic_ipi.h"
+#endif
 #endif
 /*
  * static
@@ -385,8 +387,11 @@ void hps_power_off_vproc2(void)
 
 	ret = regulator_is_enabled(mtk_regulator_vproc2);
 	if (ret == 1) {
-		/*ret = regulator_disable(mtk_regulator_vproc2);*/
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		ret = extbuck_ipi_enable(EXTBUCK_ID_PROC2, 0);
+#else
+		ret = regulator_disable(mtk_regulator_vproc2);
+#endif
 		if (ret != 0)
 			hps_warn("Disabled vproc2 fail\n");
 		ret = regulator_is_enabled(mtk_regulator_vproc2);
@@ -404,8 +409,11 @@ void hps_power_on_vproc2(void)
 	ret = regulator_is_enabled(mtk_regulator_vproc2);
 	ret = 0;
 	if (ret == 0) {
-		/*ret = regulator_enable(mtk_regulator_vproc2);*/
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		ret = extbuck_ipi_enable(EXTBUCK_ID_PROC2, 1);
+#else
+		ret = regulator_enable(mtk_regulator_vproc2);
+#endif
 		if (ret != 0)
 			hps_warn("Enabled vproc2 fail\n");
 	}
@@ -430,8 +438,11 @@ static int hps_probe(struct platform_device *pdev)
 	mtk_regulator_vproc2 = regulator_get(&pdev->dev, "ext_buck_proc2");
 	if (mtk_regulator_vproc2 == NULL) {
 		hps_warn("%s No this Regulator\n", __func__);
-		/*ret = regulator_enable(mtk_regulator_vproc2);*/
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		ret = extbuck_ipi_enable(EXTBUCK_ID_PROC2, 1);
+#else
+	ret = regulator_enable(mtk_regulator_vproc2);
+#endif
 		if (ret != 0)
 			hps_warn("Enabled vproc2 fail\n");
 	}
