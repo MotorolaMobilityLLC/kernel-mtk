@@ -5015,7 +5015,6 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 		}
 
 		count++;
-		status = -ETIMEDOUT;
 	} while (1);
 
 	handle->wakedUp = sched_clock();
