@@ -365,11 +365,19 @@ void cmdq_dev_get_dts_setting(struct cmdq_dts_setting *dts_setting)
 		"max_prefetch_cnt", &dts_setting->prefetch_thread_count);
 	if (ret == 0) {
 		/* read prefetch array base on count */
-		of_property_read_u32_array(gCmdqDev.pDev->of_node, "prefetch_size",
+		ret = of_property_read_u32_array(gCmdqDev.pDev->of_node, "prefetch_size",
 			dts_setting->prefetch_size, dts_setting->prefetch_thread_count);
+		if (ret != 0) {
+			/* print log but do notify error hw setting */
+			CMDQ_ERR("read prefetch size fail\n");
+		}
 	}
-	of_property_read_u32(gCmdqDev.pDev->of_node,
-		"ctl_int0", &dts_setting->ctl_int0);
+	ret = of_property_read_u32(gCmdqDev.pDev->of_node, "ctl_int0",
+		&dts_setting->ctl_int0);
+	if (ret != 0) {
+		/* debug only feature */
+		CMDQ_VERBOSE("ctl_int0 not support\n");
+	}
 }
 
 void cmdq_dev_init_resource(CMDQ_DEV_INIT_RESOURCE_CB init_cb)
