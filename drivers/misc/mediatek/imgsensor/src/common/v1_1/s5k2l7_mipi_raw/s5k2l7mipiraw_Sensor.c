@@ -63,7 +63,7 @@
 /****************************	Modify end	  *******************************************/
 #define LOG_INF(fmt, args...)	pr_debug(PFX "[%s] " fmt, __func__, ##args)
 
-#define MULTI_WRITE 1
+#define MULTI_WRITE 0
 
 #if MULTI_WRITE
 #define I2C_BUFFER_LEN 1020	/* trans# max is 255, each 4 bytes */
