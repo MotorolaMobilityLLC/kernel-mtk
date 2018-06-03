@@ -10,7 +10,7 @@ obj-y += pmic_ipi.o
 endif
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-#obj-$(CONFIG_MTK_SMART_BATTERY) += mt6357_gauge.o
+obj-$(CONFIG_MTK_SMART_BATTERY) += mt6357_gauge.o
 endif
 
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6357)	+= pmic.o pmic_common.o \
