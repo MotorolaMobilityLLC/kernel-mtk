@@ -3954,10 +3954,78 @@ void RGXDebugRequestProcess(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 				if(psDevInfo->sDevFeatureCfg.ui64Features & RGX_FEATURE_MIPS_BIT_MASK)
 				{
 					RGX_MIPS_STATE sMIPSState;
+					IMG_UINT32 i;
 					PVRSRV_ERROR eError;
 					OSCachedMemSet((void *)&sMIPSState, 0x00, sizeof(RGX_MIPS_STATE));
 					eError = _RGXMipsExtraDebug(psDevInfo, psDeviceNode->psDevConfig, &sMIPSState);
 					PVR_DUMPDEBUG_LOG("---- [ MIPS internal state ] ----");
+
+			PVR_DUMPDEBUG_LOG("REMAP1_CONFIG1: 0x%08X",
+				OSReadHWReg32(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_ADDR_REMAP1_CONFIG1));
+
+			PVR_DUMPDEBUG_LOG("REMAP1_CONFIG2: 0x%08llX",
+				OSReadHWReg64(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_ADDR_REMAP1_CONFIG2));
+
+			PVR_DUMPDEBUG_LOG("REMAP2_CONFIG1: 0x%08X",
+				OSReadHWReg32(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_ADDR_REMAP2_CONFIG1));
+
+			PVR_DUMPDEBUG_LOG("REMAP2_CONFIG2: 0x%08llX",
+				OSReadHWReg64(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_ADDR_REMAP2_CONFIG2));
+
+			PVR_DUMPDEBUG_LOG("REMAP3_CONFIG1: 0x%08X",
+				OSReadHWReg32(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_ADDR_REMAP3_CONFIG1));
+
+			PVR_DUMPDEBUG_LOG("REMAP3_CONFIG2: 0x%08llX",
+				OSReadHWReg64(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_ADDR_REMAP3_CONFIG2));
+
+			PVR_DUMPDEBUG_LOG("REMAP4_CONFIG1: 0x%08X",
+				OSReadHWReg32(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_ADDR_REMAP4_CONFIG1));
+
+			PVR_DUMPDEBUG_LOG("REMAP4_CONFIG2: 0x%08llX",
+				OSReadHWReg64(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_ADDR_REMAP4_CONFIG2));
+
+			PVR_DUMPDEBUG_LOG("REMAP5_CONFIG1: 0x%08X",
+				OSReadHWReg32(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_ADDR_REMAP5_CONFIG1));
+
+			PVR_DUMPDEBUG_LOG("REMAP5_CONFIG2: 0x%08llX",
+				OSReadHWReg64(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_ADDR_REMAP5_CONFIG2));
+
+			PVR_DUMPDEBUG_LOG("MIPS_WRAPPER_CONFIG: 0x%08llX",
+				OSReadHWReg64(psDevInfo->pvRegsBaseKM,
+				RGX_CR_MIPS_WRAPPER_CONFIG));
+
+	for (i = 0; i < 32; ++i) {
+		IMG_UINT64 ui64RemapRegContents;
+		IMG_UINT32 ui32RemapEntry =
+			i << RGX_CR_MIPS_ADDR_REMAP_RANGE_READ_ENTRY_SHIFT;
+
+		ui32RemapEntry = (((ui32RemapEntry
+			& RGX_CR_MIPS_ADDR_REMAP_RANGE_READ_REQUEST_CLRMSK)
+			| RGX_CR_MIPS_ADDR_REMAP_RANGE_READ_REQUEST_EN)
+			<< RGX_CR_MIPS_ADDR_REMAP_RANGE_READ_REQUEST_SHIFT);
+
+		OSWriteHWReg32(psDevInfo->pvRegsBaseKM,
+			RGX_CR_MIPS_ADDR_REMAP_RANGE_READ, ui32RemapEntry);
+
+		/* Read RGX_CR_MIPS_ADDR_REMAP_RANGE_DATA */
+		ui64RemapRegContents = OSReadHWReg64(psDevInfo->pvRegsBaseKM,
+					RGX_CR_MIPS_ADDR_REMAP_RANGE_DATA);
+
+		/* 4K (12 bits) aligned address are used as input and output */
+		/* for the address remapping, hence left shifting by 12 */
+		PVR_DUMPDEBUG_LOG("%02d) 0x%08llX", i, ui64RemapRegContents);
+	}
+
 					if (eError != PVRSRV_OK)
 					{
 						PVR_DUMPDEBUG_LOG("MIPS extra debug not available");
