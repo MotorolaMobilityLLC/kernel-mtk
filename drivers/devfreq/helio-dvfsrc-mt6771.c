@@ -40,9 +40,6 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 static struct reg_config dvfsrc_suspend_configs[][4] = {
 	/* HELIO_DVFSRC_DRAM_LP4X_2CH */
 	{
-		{ DVFSRC_EMI_MD2SPM0, 0x00000000 },
-		{ DVFSRC_EMI_MD2SPM1, 0x800080C0 },
-		{ DVFSRC_VCORE_MD2SPM0, 0x800080C0 },
 		{ -1, 0 },
 	},
 	/* HELIO_DVFSRC_DRAM_LP4X_1CH */
@@ -51,18 +48,12 @@ static struct reg_config dvfsrc_suspend_configs[][4] = {
 	},
 	/* HELIO_DVFSRC_DRAM_LP3X_1CH */
 	{
-		{ DVFSRC_EMI_MD2SPM0, 0x000000C0 },
-		{ DVFSRC_EMI_MD2SPM1, 0x80008000 },
-		{ DVFSRC_VCORE_MD2SPM0, 0x800080C0 },
 		{ -1, 0 },
 	},
 };
 static struct reg_config dvfsrc_resume_configs[][4] = {
 	/* HELIO_DVFSRC_DRAM_LP4X_2CH */
 	{
-		{ DVFSRC_EMI_MD2SPM0, 0x0000003E },
-		{ DVFSRC_EMI_MD2SPM1, 0x800080C0 },
-		{ DVFSRC_VCORE_MD2SPM0, 0x800080C0 },
 		{ -1, 0 },
 	},
 	/* HELIO_DVFSRC_DRAM_LP4X_1CH */
@@ -71,9 +62,6 @@ static struct reg_config dvfsrc_resume_configs[][4] = {
 	},
 	/* HELIO_DVFSRC_DRAM_LP3X_1CH */
 	{
-		{ DVFSRC_EMI_MD2SPM0, 0x0000003E },
-		{ DVFSRC_EMI_MD2SPM1, 0x800080C0 },
-		{ DVFSRC_VCORE_MD2SPM0, 0x800080C0 },
 		{ -1, 0 },
 	},
 };
