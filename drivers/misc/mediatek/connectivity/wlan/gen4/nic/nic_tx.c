@@ -481,6 +481,35 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTc, IN UINT_3
 
 /*----------------------------------------------------------------------------*/
 /*!
+* \brief Driver maintain a variable that is synchronous with the usage of individual
+*        TC Buffer Count. This function will release TC Buffer count for resource
+*        allocated but un-Tx MSDU_INFO
+*
+* @return (none)
+*/
+/*----------------------------------------------------------------------------*/
+VOID nicTxReleaseMsduResource(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfoListHead)
+{
+	P_MSDU_INFO_T prMsduInfo = prMsduInfoListHead, prNextMsduInfo;
+
+	KAL_SPIN_LOCK_DECLARATION();
+
+	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
+
+	while (prMsduInfo) {
+		prNextMsduInfo = (P_MSDU_INFO_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prMsduInfo);
+
+		nicTxReleaseResource(prAdapter, prMsduInfo->ucTC,
+			nicTxGetPageCount(prMsduInfo->u2FrameLength, FALSE), FALSE);
+
+		prMsduInfo = prNextMsduInfo;
+	};
+
+	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
 * \brief Reset TC Buffer Count to initialized value
 *
 * \param[in] prAdapter              Pointer to the Adapter structure.

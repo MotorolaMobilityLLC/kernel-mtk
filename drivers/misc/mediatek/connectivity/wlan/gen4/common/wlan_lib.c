@@ -1414,6 +1414,9 @@ VOID wlanClearTxCommandQueue(IN P_ADAPTER_T prAdapter)
 		else
 			wlanReleaseCommand(prAdapter, prCmdInfo, TX_RESULT_QUEUE_CLEARANCE);
 
+		/* Release Tx resource for CMD which resource is allocated but not used */
+		nicTxReleaseResource(prAdapter, nicTxGetCmdResourceType(prCmdInfo),
+			nicTxGetCmdPageCount(prCmdInfo), TRUE);
 		cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
 
 		QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
@@ -1454,6 +1457,9 @@ VOID wlanClearTxOidCommand(IN P_ADAPTER_T prAdapter)
 			else
 				wlanReleaseCommand(prAdapter, prCmdInfo, TX_RESULT_QUEUE_CLEARANCE);
 
+			/* Release Tx resource for CMD which resource is allocated but not used */
+			nicTxReleaseResource(prAdapter, nicTxGetCmdResourceType(prCmdInfo),
+				nicTxGetCmdPageCount(prCmdInfo), TRUE);
 			cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
 
 		} else {
@@ -1526,17 +1532,21 @@ VOID wlanClearDataQueue(IN P_ADAPTER_T prAdapter)
 	QUEUE_INITIALIZE(prDataPort0);
 	QUEUE_INITIALIZE(prDataPort1);
 
-	/* 4 <1> Move whole list of CMD_INFO to temp queue */
+	/* <1> Move whole list of CMD_INFO to temp queue */
 	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_PORT_QUE);
 	QUEUE_MOVE_ALL(prDataPort0, &prAdapter->rTxP0Queue);
 	QUEUE_MOVE_ALL(prDataPort1, &prAdapter->rTxP1Queue);
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_PORT_QUE);
 
-	/* 4 <2> Return sk buffer */
+	/* <2> Release Tx resource */
+	nicTxReleaseMsduResource(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(prDataPort0));
+	nicTxReleaseMsduResource(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(prDataPort1));
+
+	/* <3> Return sk buffer */
 	nicTxReturnMsduInfo(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(prDataPort0));
 	nicTxReturnMsduInfo(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(prDataPort1));
 
-	/* <3> Clear pending MSDU info in data done queue */
+	/* <4> Clear pending MSDU info in data done queue */
 	KAL_ACQUIRE_MUTEX(prAdapter, MUTEX_TX_DATA_DONE_QUE);
 	while (QUEUE_IS_NOT_EMPTY(&prAdapter->rTxDataDoneQueue)) {
 		QUEUE_REMOVE_HEAD(&prAdapter->rTxDataDoneQueue, prMsduInfo, P_MSDU_INFO_T);
@@ -1566,8 +1576,10 @@ VOID wlanClearDataQueue(IN P_ADAPTER_T prAdapter)
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_PORT_QUE);
 
 	/* 4 <2> Return sk buffer */
-	for (i = 0; i < TX_PORT_NUM; i++)
+	for (i = 0; i < TX_PORT_NUM; i++) {
+		nicTxReleaseMsduResource(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(prDataPort[i]));
 		nicTxReturnMsduInfo(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(prDataPort[i]));
+	}
 
 	/* <3> Clear pending MSDU info in data done queue */
 	KAL_ACQUIRE_MUTEX(prAdapter, MUTEX_TX_DATA_DONE_QUE);
