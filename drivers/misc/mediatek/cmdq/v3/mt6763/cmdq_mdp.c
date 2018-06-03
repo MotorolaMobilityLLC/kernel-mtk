@@ -452,7 +452,7 @@ void cmdq_mdp_init_module_clk(void)
 					  &gCmdqMdpModuleClock.clk_MDP_RSZ0);
 	cmdq_dev_get_module_clock_by_name("mdp_rsz1", "MDP_RSZ1",
 					  &gCmdqMdpModuleClock.clk_MDP_RSZ1);
-	cmdq_dev_get_module_clock_by_name("mdp_wdma", "MDP_WDMA",
+	cmdq_dev_get_module_clock_by_name("mdp_wdma0", "MDP_WDMA",
 					  &gCmdqMdpModuleClock.clk_MDP_WDMA);
 	cmdq_dev_get_module_clock_by_name("mdp_wrot0", "MDP_WROT0",
 					  &gCmdqMdpModuleClock.clk_MDP_WROT0);
@@ -941,7 +941,7 @@ void testcase_clkmgr_mdp(void)
 	/* TDSHP clk test with input size */
 	testcase_clkmgr_impl(CMDQ_ENG_MDP_TDSHP0,
 			     "CMDQ_TEST_MDP_TDSHP",
-			     MDP_TDSHP_BASE + 0x244, 0xAACCBBDD, MDP_TDSHP_BASE + 0x244, true);
+			     MDP_TDSHP_BASE + 0x40, 0xAACCBBDD, MDP_TDSHP_BASE + 0x40, true);
 
 	/* RSZ clk test with debug port */
 	testcase_clkmgr_impl(CMDQ_ENG_MDP_RSZ0,
