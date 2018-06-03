@@ -36,6 +36,7 @@ obj-$(CONFIG_MTK_SERIAL)	+= uart/
 obj-$(CONFIG_MTK_AUXADC)	+= auxadc/
 obj-$(CONFIG_MTK_GPT_SCHEME_SUPPORT)	+= partition/
 obj-$(CONFIG_MTK_SYSENV)	+= sysenv/
+obj-$(CONFIG_MTK_VIBRATOR)	+= vibrator/
 obj-$(CONFIG_MTK_MT6306_GPIO_SUPPORT) += gpio/
 obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
 obj-$(CONFIG_MTPROF)	+= mtprof/
