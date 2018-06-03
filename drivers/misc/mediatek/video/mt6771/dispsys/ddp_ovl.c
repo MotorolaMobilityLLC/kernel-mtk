@@ -2071,6 +2071,17 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	/* DISP_REG_OVL_DATAPATH_CON */
 	/* GCLAST_EN is set @ ovl_start() */
 
+	/* Set ultra_sel of ovl0 & ovl0_2l to RDMA0 if path is DL with rsz
+	 * OVL0_2l -> RSZ -> OVL0 -> RDMA0 -> DSI
+	 */
+	if (dst_mod_type == DST_MOD_REAL_TIME) {
+		DISP_REG_SET_FIELD(cmdq, FLD_OVL0_ULTRA_SEL, DISP_REG_CONFIG_MMSYS_MISC, 1);
+		DISP_REG_SET_FIELD(cmdq, FLD_OVL0_2L_ULTRA_SEL, DISP_REG_CONFIG_MMSYS_MISC, 1);
+	} else {
+		DISP_REG_SET_FIELD(cmdq, FLD_OVL0_ULTRA_SEL, DISP_REG_CONFIG_MMSYS_MISC, 0);
+		DISP_REG_SET_FIELD(cmdq, FLD_OVL0_2L_ULTRA_SEL, DISP_REG_CONFIG_MMSYS_MISC, 0);
+	}
+
 	return 0;
 }
 
