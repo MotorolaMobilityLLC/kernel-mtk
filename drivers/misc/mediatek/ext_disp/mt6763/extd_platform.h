@@ -43,6 +43,7 @@
 
 /* #define CONFIG_IO_DRIVING */
 
-#define DP_EINT_GPIO_NUMBER 98
+/* ANX7805 use this define */
+/* #define DP_EINT_GPIO_NUMBER 98 */
 
 #endif

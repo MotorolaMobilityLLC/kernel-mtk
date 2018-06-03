@@ -101,7 +101,6 @@ module_param(reset_on_exit, bool, S_IRUGO);
 
 struct i2c_client *mClient;
 unsigned int mhl_eint_number = 0xffff;
-unsigned int mhl_eint_gpio_number = DP_EINT_GPIO_NUMBER;
 unsigned int mhl_comm_eint_number = 0xffff;
 
 static unsigned int mask_flag;
@@ -201,7 +200,7 @@ void register_slimport_eint(void)
 		SLIMPORT_DBG("mhl_eint_number, node %p-irq %d!!\n",
 			node, get_mhl_irq_num());
 		/*debounce time is microseconds*/
-		gpio_set_debounce(mhl_eint_gpio_number, 50000);
+		gpio_set_debounce(anx7625_pdata->anx7625_gpio_cbl_det, 50000);
 		if (request_irq(mhl_eint_number, anx7625_cbl_det_isr,
 			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
 			IRQF_ONESHOT,
@@ -286,8 +285,8 @@ char *eint_comm_name[1] = {
 	"comm_input_cfg"
 };
 
-char *pd_gpio_name[2] = {
-	"pd_low_cfg", "pd_high_cfg"
+char *power_ctl_gpio_name[2] = {
+	"power_ctrl_low_cfg", "power_ctrl_high_cfg"
 };
 
 void dpi_gpio_ctrl(int enable)
@@ -440,24 +439,24 @@ void mhl_power_ctrl(int enable)
 	int err_cnt = 0;
 	int ret = 0;
 
-	SLIMPORT_DBG("mhl_power_ctrl+	%ld, enable: %d !!\n", sizeof(pd_gpio_name), enable);
+	SLIMPORT_DBG("slimport_power_ctrl+	%ld, enable: %d !!\n", sizeof(power_ctl_gpio_name), enable);
 	if (IS_ERR(mhl_pinctrl)) {
 		ret = PTR_ERR(mhl_pinctrl);
 		SLIMPORT_DBG("Cannot find DP POWER_DOWN pinctrl for mhl_power_ctrl!\n");
 		return;
 	}
 
-	power_low_state = pinctrl_lookup_state(mhl_pinctrl, pd_gpio_name[0]);
+	power_low_state = pinctrl_lookup_state(mhl_pinctrl, power_ctl_gpio_name[0]);
 	if (IS_ERR(power_low_state)) {
 		ret = PTR_ERR(power_low_state);
-		SLIMPORT_DBG("Cannot find DP pinctrl--%s!!\n", pd_gpio_name[0]);
+		SLIMPORT_DBG("Cannot find DP pinctrl--%s!!\n", power_ctl_gpio_name[0]);
 		err_cnt++;
 	}
 
-	power_high_state = pinctrl_lookup_state(mhl_pinctrl, pd_gpio_name[1]);
+	power_high_state = pinctrl_lookup_state(mhl_pinctrl, power_ctl_gpio_name[1]);
 	if (IS_ERR(power_high_state)) {
 		ret = PTR_ERR(power_high_state);
-		SLIMPORT_DBG("Cannot find DP pinctrl--%s!!\n", pd_gpio_name[1]);
+		SLIMPORT_DBG("Cannot find DP pinctrl--%s!!\n", power_ctl_gpio_name[1]);
 		err_cnt++;
 	}
 
@@ -557,9 +556,9 @@ void set_pin_high_low(enum PIN_TYPE pin, bool is_high)
 	else if (pin == RESET_PIN && is_high == true)
 		str = rst_gpio_name[1];
 	else if (pin == PD_PIN && is_high == false)
-		str = pd_gpio_name[0];
+		str = power_ctl_gpio_name[0];
 	else if (pin == PD_PIN && is_high == true)
-		str = pd_gpio_name[1];
+		str = power_ctl_gpio_name[1];
 
 	SLIMPORT_DBG("pinctrl--%s!!\n", str);
 	pin_state = pinctrl_lookup_state(mhl_pinctrl, str);

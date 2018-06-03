@@ -72,8 +72,6 @@ enum PIN_TYPE {
 	MAX_TYPE_PIN
 };
 extern unsigned int mhl_eint_number;
-extern unsigned int mhl_eint_gpio_number;
-
 
 #ifdef ANX7625_MTK_PLATFORM
 extern unsigned int dst_is_dsi;

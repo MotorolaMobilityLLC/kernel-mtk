@@ -1968,6 +1968,10 @@
 		compatible = "mediatek,extd_dev";
 	};
 
+	eint_hdmi_hpd:eint_hdmi_hpd@0{
+		compatible = "mediatek,hdmi_dev";
+	};
+
 	mdp_rdma0: mdp_rdma0@14001000 {
 		compatible = "mediatek,mdp_rdma0";
 		reg = <0 0x14001000 0 0x1000>;
