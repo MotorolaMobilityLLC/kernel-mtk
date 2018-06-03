@@ -135,7 +135,7 @@ static void __iomem *g_apmixed_base;
 #endif
 
 /*
- * Define how to set up VPROC by
+ * Define how to setup VPROC by
  * PMIC_WRAP
  * PMIC
  * external IC
@@ -1526,8 +1526,7 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 			__func__, DRV_Reg32(GPUPLL_CON1));
 
 	/* Step2. Modify gpupll_ck */
-	DRV_WriteReg32(GPUPLL_CON1, (0x80000000) | (post_div_order << POST_DIV_SHIFT) | dds);
-	udelay(40);
+	mt_dfs_general_pll(4, dds);
 
 }
 #endif
