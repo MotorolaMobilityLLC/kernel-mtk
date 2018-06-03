@@ -1259,10 +1259,12 @@ wlanCfgSetCb(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, WLAN_CFG_SET_CB pfSet
 
 WLAN_STATUS wlanCfgParse(IN P_ADAPTER_T prAdapter, PUINT_8 pucConfigBuf, UINT_32 u4ConfigBufLen, BOOLEAN isFwConfig);
 VOID wlanFeatureToFw(IN P_ADAPTER_T prAdapter);
+#endif
+
 VOID wlanLoadDefaultCustomerSetting(IN P_ADAPTER_T prAdapter);
 
 
-#endif
+
 
 WLAN_STATUS wlanCfgInit(IN P_ADAPTER_T prAdapter, PUINT_8 pucConfigBuf, UINT_32 u4ConfigBufLen, UINT_32 u4Flags);
 
