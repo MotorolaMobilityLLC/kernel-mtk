@@ -1093,5 +1093,5 @@ nodata:
 	rcu_read_unlock();
 	return -EINVAL;
 }
-late_initcall(schedtune_init);
+late_initcall_sync(schedtune_init);
 
