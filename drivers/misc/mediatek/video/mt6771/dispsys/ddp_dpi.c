@@ -205,28 +205,28 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 	case HDMI_VIDEO_720x480p_60Hz:
 		{
 			clksrc = TVDPLL_D8;
-			con1 = 0x83214395;	/*54.054M*/
+			con1 = 0x83214395;	/*pix clk: 27.027M, dpi clk: 54.054M*/
 			break;
 		}
-	case HDMI_VIDEO_1280x720p_60Hz:	/*148.5M*/
+	case HDMI_VIDEO_1280x720p_60Hz:	/*pix clk: 74.25M, dpi clk: 148.5M*/
 		{
 			clksrc = TVDPLL_D2;
 			con1 = 0x8316D89D;
 			break;
 		}
-	case HDMI_VIDEO_1920x1080p_30Hz: /*148.5M*/
+	case HDMI_VIDEO_1920x1080p_30Hz: /*pix clk: 74.25M, dpi clk: 148.5M*/
 		{
 			clksrc = TVDPLL_D2;
 			con1 = 0x8316D89D;
 			break;
 		}
-#if 0
-	case HDMI_VIDEO_1920x1080p_60Hz:	/*297M*/
+	case HDMI_VIDEO_1920x1080p_60Hz:	/*pix clk: 148.5M, dpi clk: 297M*/
 		{
 			clksrc = TVDPLL_D2;
 			con1 = 0x8216D89D;
 			break;
 		}
+#if 0
 	case HDMI_VIDEO_2160p_DSC_24Hz:		/*178.2M*/
 		{
 			clksrc = TVDPLL_D8;
@@ -418,6 +418,34 @@ enum DPI_STATUS ddp_dpi_DisableColorBar(void)
 {
 	/*enable internal pattern - color bar */
 	DPI_OUTREG32(0, DISPSYS_DPI_BASE + 0xF00, 0x0);
+
+	return DPI_STATUS_OK;
+}
+
+enum DPI_STATUS ddp_dpi_EnableMux(void)
+{
+	int value = 0;
+
+	/*DPI0_SEL_SOUT*/
+	value = 0;
+	DPI_OUTREG32(0, DISP_REG_CONFIG_DPI0_SEL_SOUT_SEL_IN, value);
+
+	/*DBPI_SEL*/
+	value = 0x1 << 1;
+	DPI_OUTREG32(0, DISP_REG_CONFIG_DBPI_SEL, value);
+
+	return DPI_STATUS_OK;
+}
+
+enum DPI_STATUS ddp_dpi_DisableMux(void)
+{
+	int value = 0;
+
+	/*DPI0_SEL_SOUT*/
+	DPI_OUTREG32(0, DISP_REG_CONFIG_DPI0_SEL_SOUT_SEL_IN, value);
+
+	/*DBPI_SEL*/
+	DPI_OUTREG32(0, DISP_REG_CONFIG_DBPI_SEL, value);
 
 	return DPI_STATUS_OK;
 }
@@ -748,8 +776,9 @@ int ddp_dpi_dump(enum DISP_MODULE_ENUM module, int level)
 	return 0;
 }
 
-#if 0
+
 static void __iomem *io_driving_base;
+static void __iomem *gpio_base;
 void ddp_dpi_change_io_driving(LCM_DRIVING_CURRENT io_driving)
 {
 	LCM_DRIVING_CURRENT vsync_io_driving = (io_driving >> 8) & 0xFF;
@@ -758,7 +787,7 @@ void ddp_dpi_change_io_driving(LCM_DRIVING_CURRENT io_driving)
 
 	DDPDUMP("vsync_io_driving: 0x%x, data_io_driving: 0x%x\n", vsync_io_driving,
 		data_io_driving);
-	node = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_lm");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,pctl-1-syscfg");
 	if (!node)
 		DISPERR("[DISP_IO_DRIVING] find device node failed!\n");
 	io_driving_base = of_iomap(node, 0);
@@ -767,33 +796,33 @@ void ddp_dpi_change_io_driving(LCM_DRIVING_CURRENT io_driving)
 	} else {
 
 		DISPINFO("DISP_IO_DRIVING: DATA_REGISTER VALUE BEFORE WRITE is 0x%x\n",
-				(INREG32(io_driving_base + 0xA0) & 0xfff));
+				(INREG32(io_driving_base + 0xA0) & 0xfff00) >> 8);
 		DISPINFO("DISP_IO_DRIVING: VSYNC_REGISTER VALUE BEFORE WRITE is 0x%x\n",
-				(INREG32(io_driving_base + 0xA0) & 0xf) >> 12);
+				(INREG32(io_driving_base + 0xA0) & 0xf00000) >> 20);
 		switch (data_io_driving) {
 		case LCM_DRIVING_CURRENT_2MA:/*2ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 0), (unsigned long)(io_driving_base + 0xA0), 0x0);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 8), (unsigned long)(io_driving_base + 0xA0), 0x0);
 			break;
 		case LCM_DRIVING_CURRENT_4MA:/*4ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 0), (unsigned long)(io_driving_base + 0xA0), 0x111);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 8), (unsigned long)(io_driving_base + 0xA0), 0x111);
 			break;
 		case LCM_DRIVING_CURRENT_6MA:/*6ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 0), (unsigned long)(io_driving_base + 0xA0), 0x222);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 8), (unsigned long)(io_driving_base + 0xA0), 0x222);
 			break;
 		case LCM_DRIVING_CURRENT_8MA:/*8ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 0), (unsigned long)(io_driving_base + 0xA0), 0x333);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 8), (unsigned long)(io_driving_base + 0xA0), 0x333);
 			break;
 		case LCM_DRIVING_CURRENT_10MA:/*10ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 0), (unsigned long)(io_driving_base + 0xA0), 0x444);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 8), (unsigned long)(io_driving_base + 0xA0), 0x444);
 			break;
 		case LCM_DRIVING_CURRENT_12MA:/*12ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 0), (unsigned long)(io_driving_base + 0xA0), 0x555);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 8), (unsigned long)(io_driving_base + 0xA0), 0x555);
 			break;
 		case LCM_DRIVING_CURRENT_14MA:/*14ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 0), (unsigned long)(io_driving_base + 0xA0), 0x666);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 8), (unsigned long)(io_driving_base + 0xA0), 0x666);
 			break;
 		case LCM_DRIVING_CURRENT_16MA:/*16ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 0), (unsigned long)(io_driving_base + 0xA0), 0x777);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(12, 8), (unsigned long)(io_driving_base + 0xA0), 0x777);
 			break;
 		default:
 			break;
@@ -801,37 +830,53 @@ void ddp_dpi_change_io_driving(LCM_DRIVING_CURRENT io_driving)
 
 		switch (vsync_io_driving) {
 		case LCM_DRIVING_CURRENT_2MA:/*2ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 12), (unsigned long)(io_driving_base + 0xA0), 0x0);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 20), (unsigned long)(io_driving_base + 0xA0), 0x0);
 			break;
 		case LCM_DRIVING_CURRENT_4MA:/*4ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 12), (unsigned long)(io_driving_base + 0xA0), 0x1);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 20), (unsigned long)(io_driving_base + 0xA0), 0x1);
 			break;
 		case LCM_DRIVING_CURRENT_6MA:/*6ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 12), (unsigned long)(io_driving_base + 0xA0), 0x2);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 20), (unsigned long)(io_driving_base + 0xA0), 0x2);
 			break;
 		case LCM_DRIVING_CURRENT_8MA:/*8ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 12), (unsigned long)(io_driving_base + 0xA0), 0x3);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 20), (unsigned long)(io_driving_base + 0xA0), 0x3);
 			break;
 		case LCM_DRIVING_CURRENT_10MA:/*10ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 12), (unsigned long)(io_driving_base + 0xA0), 0x4);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 20), (unsigned long)(io_driving_base + 0xA0), 0x4);
 			break;
 		case LCM_DRIVING_CURRENT_12MA:/*12ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 12), (unsigned long)(io_driving_base + 0xA0), 0x5);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 20), (unsigned long)(io_driving_base + 0xA0), 0x5);
 			break;
 		case LCM_DRIVING_CURRENT_14MA:/*14ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 12), (unsigned long)(io_driving_base + 0xA0), 0x6);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 20), (unsigned long)(io_driving_base + 0xA0), 0x6);
 			break;
 		case LCM_DRIVING_CURRENT_16MA:/*16ma*/
-			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 12), (unsigned long)(io_driving_base + 0xA0), 0x7);
+			DISP_REG_SET_FIELD(NULL, REG_FLD(4, 20), (unsigned long)(io_driving_base + 0xA0), 0x7);
 			break;
 		default:
 			break;
 		}
 		DISPINFO("DISP_IO_DRIVING: DATA_REGISTER VALUE BEFORE WRITE is 0x%x\n",
-				(INREG32(io_driving_base + 0xA0) & 0xfff));
+				(INREG32(io_driving_base + 0xA0) & 0xfff00) >> 8);
 		DISPINFO("DISP_IO_DRIVING: VSYNC_REGISTER VALUE BEFORE WRITE is 0x%x\n",
-				(INREG32(io_driving_base + 0xA0) & 0xf) >> 12);
+				(INREG32(io_driving_base + 0xA0) & 0xf00000) >> 20);
 	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,gpio");
+	if (!node)
+		DISPERR("[DISP_GPIO] find device node failed!\n");
+	gpio_base = of_iomap(node, 0);
+	if (!gpio_base) {
+		DISPERR("[DISP_GPIO] map base failed!\n");
+	} else {
+		DISPINFO("DISP_GPIO: DATA_REGISTER VALUE0 is 0x%x\n",
+				(INREG32(gpio_base + 0x310) & 0xfff00000) >> 20);
+		DISPINFO("DISP_GPIO: DATA_REGISTER VALUE1 is 0x%x\n",
+				(INREG32(gpio_base + 0x320) & 0xffffffff) >> 0);
+		DISPINFO("DISP_GPIO: DATA_REGISTER VALUE2 is 0x%x\n",
+				(INREG32(gpio_base + 0x330) & 0xfffff) >> 0);
+	}
+
 /*
 *
 	DISPINFO
@@ -840,7 +885,6 @@ void ddp_dpi_change_io_driving(LCM_DRIVING_CURRENT io_driving)
 	     INREG32(DISPSYS_IO_DRIVING3));
 */
 }
-#endif
 
 int ddp_dpi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCTL_NAME ioctl_cmd,
 		  void *params)
@@ -857,9 +901,9 @@ int ddp_dpi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCT
 			ddp_dpi_stop(module, NULL);
 			ddp_dpi_reset(module, NULL);
 			ddp_dpi_config(module, config_info, NULL);
+			ddp_dpi_EnableMux();
 			ddp_dpi_EnableColorBar();
 
-#if 0
 /*
 *
 			DISPINFO
@@ -867,10 +911,8 @@ int ddp_dpi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCT
 			     INREG32(DISPSYS_IO_DRIVING1), INREG32(DISPSYS_IO_DRIVING2),
 			     INREG32(DISPSYS_IO_DRIVING3));
 */
-			if (config_info->dispif_config.dpi.io_driving_current !=
-			    LCM_DRIVING_CURRENT_DEFAULT) {
-				ddp_dpi_change_io_driving(config_info->dispif_config.dpi.
-							  io_driving_current);
+			if (config_info->dispif_config.dpi.io_driving_current != LCM_DRIVING_CURRENT_DEFAULT) {
+				ddp_dpi_change_io_driving(config_info->dispif_config.dpi.io_driving_current);
 
 /*
 *
@@ -882,7 +924,6 @@ int ddp_dpi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCT
 					 config_info->dispif_config.dpi.io_driving_current);
 */
 			}
-#endif
 			ddp_dpi_trigger(module, NULL);
 			ddp_dpi_start(module, NULL);
 			ddp_dpi_dump(module, 1);
@@ -893,6 +934,7 @@ int ddp_dpi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, enum DDP_IOCT
 		{
 			ddp_dpi_stop(module, NULL);
 			ddp_dpi_DisableColorBar();
+			ddp_dpi_DisableMux();
 			ddp_dpi_power_off(module, NULL);
 			break;
 		}

@@ -1823,7 +1823,7 @@ int dpmgr_factory_mode_reset(int module_name, void *cmdqhandle, void *config)
 		if (ddp_get_module_driver(module_name)->ioctl != 0) {
 			DISP_LOG_I(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DPI));
 			ddp_get_module_driver(DISP_MODULE_DPI)->ioctl(module_name, cmdqhandle,
-								   DDP_DPI_FACTORY_TEST, config);
+								   DDP_DPI_FACTORY_RESET, config);
 		}
 	}
 
