@@ -14,6 +14,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/platform_device.h>
+#include <linux/rpmb.h>
 
 #include "ufshcd.h"
 #include "ufshcd-pltfrm.h"
@@ -32,6 +33,7 @@
 
 static struct ufs_dev_fix ufs_fixups[] = {
 	/* UFS cards deviations table */
+	UFS_FIX(UFS_VENDOR_SKHYNIX, UFS_ANY_MODEL, UFS_DEVICE_QUIRK_LIMITED_RPMB_MAX_RW_SIZE),
 	END_FIX
 };
 
@@ -1273,6 +1275,43 @@ void ufs_mtk_add_sysfs_nodes(struct ufs_hba *hba)
 {
 	ufs_mtk_add_rpm_info_sysfs_nodes(hba);
 	ufs_mtk_add_spm_info_sysfs_nodes(hba);
+}
+
+struct rpmb_dev *ufs_mtk_rpmb_get_raw_dev(void)
+{
+	return ufs_mtk_hba->rawdev_ufs_rpmb;
+}
+
+void ufs_mtk_rpmb_dump_frame(struct scsi_device *sdev, u8 *data_frame, u32 cnt)
+{
+	u32 i;
+
+	for (i = 0; i < cnt; i++) {
+		pr_debug("\n[ufs-rpmb] frame #%d\n", i);
+		pr_debug("[ufs-rpmb] mac, frame[196] = 0x%x\n", data_frame[196]);
+		pr_debug("[ufs-rpmb] mac, frame[197] = 0x%x\n", data_frame[197]);
+		pr_debug("[ufs-rpmb] mac, frame[198] = 0x%x\n", data_frame[198]);
+		pr_debug("[ufs-rpmb] data,frame[228] = 0x%x\n", data_frame[228]);
+		pr_debug("[ufs-rpmb] data,frame[229] = 0x%x\n", data_frame[229]);
+		pr_debug("[ufs-rpmb] nonce, frame[484] = 0x%x\n", data_frame[484]);
+		pr_debug("[ufs-rpmb] nonce, frame[485] = 0x%x\n", data_frame[485]);
+		pr_debug("[ufs-rpmb] nonce, frame[486] = 0x%x\n", data_frame[486]);
+		pr_debug("[ufs-rpmb] nonce, frame[487] = 0x%x\n", data_frame[487]);
+		pr_debug("[ufs-rpmb] wc, frame[500] = 0x%x\n", data_frame[500]);
+		pr_debug("[ufs-rpmb] wc, frame[501] = 0x%x\n", data_frame[501]);
+		pr_debug("[ufs-rpmb] wc, frame[502] = 0x%x\n", data_frame[502]);
+		pr_debug("[ufs-rpmb] wc, frame[503] = 0x%x\n", data_frame[503]);
+		pr_debug("[ufs-rpmb] addr, frame[504] = 0x%x\n", data_frame[504]);
+		pr_debug("[ufs-rpmb] addr, frame[505] = 0x%x\n", data_frame[505]);
+		pr_debug("[ufs-rpmb] blkcnt,frame[506] = 0x%x\n", data_frame[506]);
+		pr_debug("[ufs-rpmb] blkcnt,frame[507] = 0x%x\n", data_frame[507]);
+		pr_debug("[ufs-rpmb] result, frame[508] = 0x%x\n", data_frame[508]);
+		pr_debug("[ufs-rpmb] result, frame[509] = 0x%x\n", data_frame[509]);
+		pr_debug("[ufs-rpmb] type, frame[510] = 0x%x\n", data_frame[510]);
+		pr_debug("[ufs-rpmb] type, frame[511] = 0x%x\n", data_frame[511]);
+
+		data_frame += 512;
+	}
 }
 
 #ifdef CONFIG_MTK_UFS_DEBUG

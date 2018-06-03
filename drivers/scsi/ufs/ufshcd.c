@@ -37,9 +37,11 @@
  * license terms, and distributes only under these terms.
  */
 
+#include <asm/unaligned.h>
 #include <linux/async.h>
 #include <linux/devfreq.h>
 #include <linux/blkdev.h>
+#include <linux/rpmb.h>
 
 #include "ufshcd.h"
 #include "unipro.h"
@@ -107,7 +109,7 @@ static u32 ufs_query_desc_max_size[] = {
 	QUERY_DESC_INTERCONNECT_MAX_SIZE,
 	QUERY_DESC_STRING_MAX_SIZE,
 	QUERY_DESC_RFU_MAX_SIZE,
-	QUERY_DESC_GEOMETRY_MAZ_SIZE,
+	QUERY_DESC_GEOMETRY_MAX_SIZE,
 	QUERY_DESC_POWER_MAX_SIZE,
 	QUERY_DESC_RFU_MAX_SIZE,
 };
@@ -2054,6 +2056,16 @@ static inline int ufshcd_read_unit_desc_param(struct ufs_hba *hba,
 	return ufshcd_read_desc_param(hba, QUERY_DESC_IDN_UNIT, lun,
 				      param_offset, param_read_buf, param_size);
 }
+
+/* MTK Patch: Read Geometry Descriptor for RPMB initialization */
+static inline int ufshcd_read_geometry_desc_param(struct ufs_hba *hba,
+				enum geometry_desc_param_offset param_offset,
+				u8 *param_read_buf, u32 param_size)
+{
+	return ufshcd_read_desc_param(hba, QUERY_DESC_IDN_GEOMETRY, 0,
+				      param_offset, param_read_buf, param_size);
+}
+
 
 /**
  * ufshcd_memory_alloc - allocate memory for host memory space data structures
@@ -4513,6 +4525,214 @@ static void ufshcd_init_icc_levels(struct ufs_hba *hba)
 
 }
 
+/*
+ * MTK Patch: RPMB feature
+ */
+
+#define SEC_PROTOCOL_UFS  0xEC
+#define SEC_SPECIFIC_UFS_RPMB 0x0001
+
+#define SEC_PROTOCOL_CMD_SIZE 12
+#define SEC_PROTOCOL_RETRIES 3
+#define SEC_PROTOCOL_RETRIES_ON_RESET 10
+#define SEC_PROTOCOL_TIMEOUT msecs_to_jiffies(5000)
+
+static int
+ufshcd_rpmb_security_out(struct scsi_device *sdev,
+			 struct rpmb_frame *frames, u32 cnt)
+{
+	struct scsi_sense_hdr sshdr;
+	u32 trans_len = cnt * sizeof(struct rpmb_frame);
+	int reset_retries = SEC_PROTOCOL_RETRIES_ON_RESET;
+	int ret;
+	u8 cmd[SEC_PROTOCOL_CMD_SIZE];
+
+	memset(cmd, 0, SEC_PROTOCOL_CMD_SIZE);
+	cmd[0] = SECURITY_PROTOCOL_OUT;
+	cmd[1] = SEC_PROTOCOL_UFS;
+	put_unaligned_be16(SEC_SPECIFIC_UFS_RPMB, cmd + 2);
+	cmd[4] = 0;                              /* inc_512 bit 7 set to 0 */
+	put_unaligned_be32(trans_len, cmd + 6);  /* transfer length */
+
+	ufs_mtk_rpmb_dump_frame(sdev, (u8 *)frames, cnt);
+
+retry:
+	ret = scsi_execute_req_flags(sdev, cmd, DMA_TO_DEVICE,
+				     frames, trans_len, &sshdr,
+				     SEC_PROTOCOL_TIMEOUT, SEC_PROTOCOL_RETRIES,
+				     NULL, 0);
+
+	if (ret && scsi_sense_valid(&sshdr) &&
+	    sshdr.sense_key == UNIT_ATTENTION &&
+	    sshdr.asc == 0x29 && sshdr.ascq == 0x00)
+		/*
+		 * Device reset might occur several times,
+		 * give it one more chance
+		 */
+		if (--reset_retries > 0)
+			goto retry;
+
+	if (ret)
+		dev_err(&sdev->sdev_gendev, "%s: failed with err %0x\n",
+			__func__, ret);
+
+	if (driver_byte(ret) & DRIVER_SENSE)
+		scsi_print_sense_hdr(sdev, "rpmb: security out", &sshdr);
+
+	return ret;
+}
+
+static int
+ufshcd_rpmb_security_in(struct scsi_device *sdev,
+			struct rpmb_frame *frames, u32 cnt)
+{
+	struct scsi_sense_hdr sshdr;
+	u32 alloc_len = cnt * sizeof(struct rpmb_frame);
+	int reset_retries = SEC_PROTOCOL_RETRIES_ON_RESET;
+	int ret;
+	u8 cmd[SEC_PROTOCOL_CMD_SIZE];
+
+	memset(cmd, 0, SEC_PROTOCOL_CMD_SIZE);
+	cmd[0] = SECURITY_PROTOCOL_IN;
+	cmd[1] = SEC_PROTOCOL_UFS;
+	put_unaligned_be16(SEC_SPECIFIC_UFS_RPMB, cmd + 2);
+	cmd[4] = 0;                             /* inc_512 bit 7 set to 0 */
+	put_unaligned_be32(alloc_len, cmd + 6); /* allocation length */
+
+retry:
+	ret = scsi_execute_req_flags(sdev, cmd, DMA_FROM_DEVICE,
+				     frames, alloc_len, &sshdr,
+				     SEC_PROTOCOL_TIMEOUT, SEC_PROTOCOL_RETRIES,
+				     NULL, 0);
+
+	if (ret && scsi_sense_valid(&sshdr) &&
+	    sshdr.sense_key == UNIT_ATTENTION &&
+	    sshdr.asc == 0x29 && sshdr.ascq == 0x00)
+		/*
+		 * Device reset might occur several times,
+		 * give it one more chance
+		*/
+		if (--reset_retries > 0)
+			goto retry;
+
+	if (ret)
+		dev_err(&sdev->sdev_gendev, "%s: failed with err %0x\n",
+			__func__, ret);
+
+	if (driver_byte(ret) & DRIVER_SENSE)
+		scsi_print_sense_hdr(sdev, "rpmb: security in", &sshdr);
+
+	ufs_mtk_rpmb_dump_frame(sdev, (u8 *)frames, cnt);
+
+	return ret;
+}
+
+static int ufshcd_rpmb_cmd_seq(struct device *dev,
+			       struct rpmb_cmd *cmds, u32 ncmds)
+{
+	unsigned long flags;
+	struct ufs_hba *hba = dev_get_drvdata(dev);
+	struct scsi_device *sdev;
+	struct rpmb_cmd *cmd;
+	int i;
+	int ret;
+
+	spin_lock_irqsave(hba->host->host_lock, flags);
+	sdev = hba->sdev_ufs_rpmb;
+	if (sdev) {
+		ret = scsi_device_get(sdev);
+		if (!ret && !scsi_device_online(sdev)) {
+			ret = -ENODEV;
+			scsi_device_put(sdev);
+		}
+	} else {
+		ret = -ENODEV;
+	}
+	spin_unlock_irqrestore(hba->host->host_lock, flags);
+	if (ret)
+		return ret;
+
+	for (ret = 0, i = 0; i < ncmds && !ret; i++) {
+		cmd = &cmds[i];
+		if (cmd->flags & RPMB_F_WRITE)
+			ret = ufshcd_rpmb_security_out(sdev, cmd->frames,
+						       cmd->nframes);
+		else
+			ret = ufshcd_rpmb_security_in(sdev, cmd->frames,
+						      cmd->nframes);
+	}
+	scsi_device_put(sdev);
+	return ret;
+}
+
+static struct rpmb_ops ufshcd_rpmb_dev_ops = {
+	.cmd_seq = ufshcd_rpmb_cmd_seq,
+	.type = RPMB_TYPE_UFS,
+};
+
+static inline void ufshcd_rpmb_add(struct ufs_hba *hba)
+{
+	struct rpmb_dev *rdev;
+	u8 rw_size;
+	int ret;
+
+	ret = ufshcd_read_geometry_desc_param(hba, GEOMETRY_DESC_RPMB_RW_SIZE,
+					&rw_size, sizeof(rw_size));
+	if (ret) {
+		dev_warn(hba->dev, "%s: cannot get rpmb rw limit %d\n",
+			 dev_name(hba->dev), ret);
+		/* fallback to singel frame write */
+		rw_size = 1;
+	}
+
+	if (hba->dev_quirks & UFS_DEVICE_QUIRK_LIMITED_RPMB_MAX_RW_SIZE) {
+		if (rw_size > UFS_RPMB_DEV_MAX_RW_SIZE_LIMITATION)
+			rw_size = UFS_RPMB_DEV_MAX_RW_SIZE_LIMITATION;
+	}
+
+	dev_warn(hba->dev, "%s: rw_size: %d\n",
+		dev_name(hba->dev), rw_size);
+
+	ufshcd_rpmb_dev_ops.reliable_wr_cnt = rw_size;
+
+	scsi_device_get(hba->sdev_ufs_rpmb);
+	rdev = rpmb_dev_register(hba->dev, &ufshcd_rpmb_dev_ops);
+	if (IS_ERR(rdev)) {
+		dev_warn(hba->dev, "%s: cannot register to rpmb %ld\n",
+			 dev_name(hba->dev), PTR_ERR(rdev));
+		goto out_put_dev;
+	}
+
+	/*
+	 * MTK Patch: Preserve rpmb_dev to globals for connection of legacy
+	 *            rpmb ioctl solution.
+	 */
+	hba->rawdev_ufs_rpmb = rdev;
+
+	return;
+
+out_put_dev:
+	scsi_device_put(hba->sdev_ufs_rpmb);
+	hba->sdev_ufs_rpmb = NULL;
+	hba->rawdev_ufs_rpmb = NULL;
+}
+
+static inline void ufshcd_rpmb_remove(struct ufs_hba *hba)
+{
+	unsigned long flags;
+
+	if (!hba->sdev_ufs_rpmb)
+		return;
+
+	spin_lock_irqsave(hba->host->host_lock, flags);
+
+	rpmb_dev_unregister(hba->dev);
+	scsi_device_put(hba->sdev_ufs_rpmb);
+	hba->sdev_ufs_rpmb = NULL;
+
+	spin_unlock_irqrestore(hba->host->host_lock, flags);
+}
+
 /**
  * ufshcd_scsi_add_wlus - Adds required W-LUs
  * @hba: per-adapter instance
@@ -4568,6 +4788,11 @@ static int ufshcd_scsi_add_wlus(struct ufs_hba *hba)
 		ret = PTR_ERR(sdev_rpmb);
 		goto remove_sdev_boot;
 	}
+
+	/* MTK Patch: Register RPMB char device if required */
+	hba->sdev_ufs_rpmb = sdev_rpmb;
+	ufshcd_rpmb_add(hba);
+
 	scsi_device_put(sdev_rpmb);
 	goto out;
 
@@ -5820,6 +6045,9 @@ int ufshcd_shutdown(struct ufs_hba *hba)
 			goto out;
 	}
 
+	/* MTK Patch: Remove Unregister RPMB device during shutdown and UFSHCD removal */
+	ufshcd_rpmb_remove(hba);
+
 	ret = ufshcd_suspend(hba, UFS_SHUTDOWN_PM);
 out:
 	if (ret)
@@ -5884,6 +6112,9 @@ ufshcd_exit_latency_hist(struct ufs_hba *hba)
  */
 void ufshcd_remove(struct ufs_hba *hba)
 {
+	/* MTK Patch: Remove Unregister RPMB device during shutdown and UFSHCD removal */
+	ufshcd_rpmb_remove(hba);
+
 	scsi_remove_host(hba->host);
 	/* disable interrupts */
 	ufshcd_disable_intr(hba, hba->intr_mask);
