@@ -220,13 +220,13 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 			con1 = 0x8316D89D;
 			break;
 		}
+#if 0
 	case HDMI_VIDEO_1920x1080p_60Hz:	/*297M*/
 		{
 			clksrc = TVDPLL_D2;
 			con1 = 0x8216D89D;
 			break;
 		}
-#if 0
 	case HDMI_VIDEO_2160p_DSC_24Hz:		/*178.2M*/
 		{
 			clksrc = TVDPLL_D8;

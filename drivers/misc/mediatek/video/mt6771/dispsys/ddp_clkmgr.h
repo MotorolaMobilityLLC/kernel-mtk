@@ -48,12 +48,19 @@ enum DDP_CLK_ID {
 	/* mdp clk */
 	CLK_MDP_WROT0,
 	CLK_MDP_WROT1,
+	DISP1_DPI_MM_CLOCK,
+	DISP1_DPI_INTERFACE_CLOCK,
 	DISP_PWM,
-	MUX_PWM,
-	CLK26M, /*24*/
-	ULPOSC_D2,
-	ULPOSC_D16,
-	UNIVPLL1_D8,
+	TOP_26M,
+	TOP_UNIVPLL2_D4,
+	TOP_OSC_D4,
+	TOP_OSC_D16,
+	MUX_DPI0,
+	TVDPLL_D2,
+	TVDPLL_D4,
+	TVDPLL_D8,
+	TVDPLL_D16,
+	DPI_CK,
 	MAX_DISP_CLK_CNT
 };
 
@@ -87,4 +94,5 @@ int ddp_clk_check(void);
 int ddp_ovl_dcm_reset(void);
 int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module);
 int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module);
+extern void mipi_26m_en(unsigned int module_idx, int en);
 #endif

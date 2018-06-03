@@ -604,8 +604,6 @@ static int __init disp_probe_1(void)
 			ddp_set_module_va(i, va);
 		}
 
-		/* DPI_REG = (struct DPI_REGS *)ddp_get_module_va(DISP_MODULE_DPI); */
-
 		status = of_address_to_resource(node, 0, &res);
 		if (status < 0) {
 			DDPPR_ERR("[ERR]DT, i=%d, module=%s, unable to get PA\n",
@@ -663,6 +661,8 @@ static int __init disp_probe_1(void)
 			       ddp_get_module_name(i), ddp_get_module_irq(i));
 		}
 	}
+
+	DPI_REG = (struct DPI_REGS *)ddp_get_module_va(DISP_MODULE_DPI);
 
 	/* power on MMSYS for early porting */
 #ifdef CONFIG_FPGA_EARLY_PORTING

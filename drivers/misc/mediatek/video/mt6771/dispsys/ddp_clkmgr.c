@@ -191,10 +191,14 @@ int ddp_clk_set_parent(enum DDP_CLK_ID id, enum DDP_CLK_ID parent)
 static int __ddp_set_mipi26m(int idx, int en)
 {
 	if (en) {
-		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPI_DSI0_26M_CK_EN, APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON0, 1);
+		/* mipi_26m_en(idx, en) is ref clk control api provided by clock manager
+		* the first arg idx : 0 means display, 1 means camera
+		* the second arg en : 0 means disable, 1 means enable
+		*/
+		mipi_26m_en(0, 1);
 		apmixed_refcnt++;
 	} else {
-		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPI_DSI0_26M_CK_EN, APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON0, 0);
+		mipi_26m_en(0, 0);
 		apmixed_refcnt--;
 	}
 

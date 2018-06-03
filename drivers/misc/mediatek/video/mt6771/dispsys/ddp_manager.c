@@ -15,6 +15,7 @@
 
 #include <linux/slab.h>
 #include <linux/mutex.h>
+#include <linux/spinlock.h>
 
 #include "disp_helper.h"
 #include "lcm_drv.h"
@@ -31,6 +32,7 @@
 #include "ddp_clkmgr.h"
 
 #include "ddp_log.h"
+#include "disp_drv_platform.h"
 
 /* #define __GED_NOTIFICATION_SUPPORT__ */
 #ifdef __GED_NOTIFICATION_SUPPORT__
@@ -39,6 +41,9 @@
 
 static int ddp_manager_init;
 #define DDP_MAX_MANAGER_HANDLE (DISP_MUTEX_DDP_COUNT+DISP_MUTEX_DDP_FIRST)
+
+static CmdqDumpInfoCB cmdq_dump_callback_table[MAX_SESSION_COUNT];
+static spinlock_t cmdq_dump_lock;
 
 struct DPMGR_WQ_HANDLE {
 	unsigned int init;
@@ -1790,6 +1795,7 @@ int dpmgr_init(void)
 	ddp_debug_init();
 	disp_init_irq();
 	disp_register_irq_callback(dpmgr_irq_handler);
+	spin_lock_init(&cmdq_dump_lock);
 	return 0;
 }
 
@@ -1831,10 +1837,9 @@ int dpmgr_wait_ovl_available(int ovl_num)
 	return ret;
 }
 
-int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const char *caller)
+int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, int module_name, const char *caller)
 {
 	int i = 0;
-	int module_name;
 	struct ddp_path_handle *handle;
 	int *modules;
 	int module_num;
@@ -1846,13 +1851,19 @@ int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle, const 
 	DDPMSG("[SVP] switch module to nonsec on scenario %s, caller=%s\n",
 		ddp_get_scenario_name(handle->scenario), caller);
 
-	for (i = module_num - 1; i >= 0; i--) {
-		module_name = modules[i];
-		if (ddp_get_module_driver(module_name) != 0) {
-			if (ddp_get_module_driver(module_name)->switch_to_nonsec != 0)
-				ddp_get_module_driver(module_name)->switch_to_nonsec(module_name, cmdqhandle);
+	if (module_name == DISP_MODULE_NUM) {
+		for (i = module_num - 1; i >= 0; i--) {
+			module_name = modules[i];
+			if (ddp_get_module_driver(module_name) != 0) {
+				if (ddp_get_module_driver(module_name)->switch_to_nonsec != 0)
+					ddp_get_module_driver(module_name)->switch_to_nonsec(module_name, cmdqhandle);
+			}
 		}
+	} else if (ddp_get_module_driver(module_name) != 0) {
+		if (ddp_get_module_driver(module_name)->switch_to_nonsec != 0)
+			ddp_get_module_driver(module_name)->switch_to_nonsec(module_name, cmdqhandle);
 	}
+
 	return 0;
 }
 
@@ -1896,4 +1907,69 @@ int dpmgr_path_dsi_power_on(disp_path_handle dp_handle, void *cmdqhandle)
 		}
 	}
 	return 0;
+}
+
+int dpmgr_register_cmdq_dump_callback(CmdqDumpInfoCB cb)
+{
+	int i = 0;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cmdq_dump_lock, flags);
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+		if (cmdq_dump_callback_table[i] == cb)
+			break;
+	}
+	if (i < MAX_SESSION_COUNT) {
+		spin_unlock_irqrestore(&cmdq_dump_lock, flags);
+		return 0;
+	}
+
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+		if (cmdq_dump_callback_table[i] == NULL)
+			break;
+	}
+	if (i == MAX_SESSION_COUNT) {
+		DDPAEE("not enough cmdq dump callback entries for session\n");
+		spin_unlock_irqrestore(&cmdq_dump_lock, flags);
+		return -1;
+	}
+	DDPMSG("register callback on %d\n", i);
+	cmdq_dump_callback_table[i] = cb;
+	spin_unlock_irqrestore(&cmdq_dump_lock, flags);
+	return 0;
+}
+
+int dpmgr_unregister_cmdq_dump_callback(CmdqDumpInfoCB cb)
+{
+	int i;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cmdq_dump_lock, flags);
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+		if (cmdq_dump_callback_table[i] == cb) {
+			cmdq_dump_callback_table[i] = NULL;
+			break;
+		}
+	}
+	if (i == MAX_SESSION_COUNT) {
+		DDPMSG("Try to unregister callback function %p which was not registered\n", cb);
+		spin_unlock_irqrestore(&cmdq_dump_lock, flags);
+		return -1;
+	}
+	spin_unlock_irqrestore(&cmdq_dump_lock, flags);
+	return 0;
+}
+
+void dpmgr_invoke_cmdq_dump_callbacks(uint64_t engineFlag, int level)
+{
+	int i;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cmdq_dump_lock, flags);
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+
+		if (cmdq_dump_callback_table[i])
+			cmdq_dump_callback_table[i](engineFlag, level);
+	}
+	spin_unlock_irqrestore(&cmdq_dump_lock, flags);
 }

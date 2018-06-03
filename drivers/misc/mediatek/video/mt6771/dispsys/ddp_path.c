@@ -613,7 +613,7 @@ int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario, enum DISP_MODULE_ENUM ds
 {
 	int i = 0;
 
-	DDPMSG("ddp_set_dst_module, scenario=%s, dst_module=%s\n",
+	DDPDBG("ddp_set_dst_module, scenario=%s, dst_module=%s\n",
 	       ddp_get_scenario_name(scenario), ddp_get_module_name(dst_module));
 	if (ddp_find_module_index(scenario, dst_module) != -1) {
 		DDPDBG("%s is already on path\n", ddp_get_module_name(dst_module));

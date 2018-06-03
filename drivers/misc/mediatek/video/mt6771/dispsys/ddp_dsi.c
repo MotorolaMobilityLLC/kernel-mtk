@@ -1762,6 +1762,9 @@ enum DSI_STATUS DSI_EnableVM_CMD(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 {
 	int i = 0;
 
+	if (cmdq)
+		DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0x00000000);
+
 	if (module != DISP_MODULE_DSIDUAL) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 0);
@@ -1771,6 +1774,12 @@ enum DSI_STATUS DSI_EnableVM_CMD(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, VM_CMD_START, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, VM_CMD_START, 1);
 	}
+
+	if (cmdq) {
+		DSI_POLLREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0x00000020);
+		DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0x00000000);
+	}
+
 	return DSI_STATUS_OK;
 }
 
@@ -2798,15 +2807,15 @@ static void DSI_PHY_CLK_LP_PerLine_config(enum DISP_MODULE_ENUM module, struct c
 			continue;
 
 		/* vdo mode */
-		DSI_OUTREG32(cmdq, &hsa, AS_UINT32(&DSI_REG[i]->DSI_HSA_WC));
-		DSI_OUTREG32(cmdq, &hbp, AS_UINT32(&DSI_REG[i]->DSI_HBP_WC));
-		DSI_OUTREG32(cmdq, &hfp, AS_UINT32(&DSI_REG[i]->DSI_HFP_WC));
-		DSI_OUTREG32(cmdq, &bllp, AS_UINT32(&DSI_REG[i]->DSI_BLLP_WC));
-		DSI_OUTREG32(cmdq, &ps, AS_UINT32(&DSI_REG[i]->DSI_PSCTRL));
-		DSI_OUTREG32(cmdq, &hstx_ckl_wc, AS_UINT32(&DSI_REG[i]->DSI_HSTX_CKL_WC));
-		DSI_OUTREG32(cmdq, &timcon0, AS_UINT32(&DSI_REG[i]->DSI_PHY_TIMECON0));
-		DSI_OUTREG32(cmdq, &timcon2, AS_UINT32(&DSI_REG[i]->DSI_PHY_TIMECON2));
-		DSI_OUTREG32(cmdq, &timcon3, AS_UINT32(&DSI_REG[i]->DSI_PHY_TIMECON3));
+		DSI_READREG32(struct DSI_HSA_WC_REG*, &hsa, &DSI_REG[i]->DSI_HSA_WC);
+		DSI_READREG32(struct DSI_HBP_WC_REG*, &hbp, &DSI_REG[i]->DSI_HBP_WC);
+		DSI_READREG32(struct DSI_HFP_WC_REG*, &hfp, &DSI_REG[i]->DSI_HFP_WC);
+		DSI_READREG32(struct DSI_BLLP_WC_REG*, &bllp, &DSI_REG[i]->DSI_BLLP_WC);
+		DSI_READREG32(struct DSI_PSCTRL_REG*, &ps, &DSI_REG[i]->DSI_PSCTRL);
+		DSI_READREG32(UINT32*, &hstx_ckl_wc, &DSI_REG[i]->DSI_HSTX_CKL_WC);
+		DSI_READREG32(struct DSI_PHY_TIMCON0_REG*, &timcon0, &DSI_REG[i]->DSI_PHY_TIMECON0);
+		DSI_READREG32(struct DSI_PHY_TIMCON2_REG*, &timcon2, &DSI_REG[i]->DSI_PHY_TIMECON2);
+		DSI_READREG32(struct DSI_PHY_TIMCON3_REG*, &timcon3, &DSI_REG[i]->DSI_PHY_TIMECON3);
 
 		if (dsi_mode == SYNC_PULSE_VDO_MODE) {
 			/*
@@ -2827,10 +2836,10 @@ static void DSI_PHY_CLK_LP_PerLine_config(enum DISP_MODULE_ENUM module, struct c
 			DISPCHECK("===>Will Reconfig in order to fulfill LP clock lane per line\n");
 
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HFP_WC, (v_b + v_c + DIFF_CLK_LANE_LP));
-			DSI_OUTREG32(cmdq, &new_hfp, AS_UINT32(&DSI_REG[i]->DSI_HFP_WC));
+			DSI_READREG32(struct DSI_HFP_WC_REG*, &new_hfp, &DSI_REG[i]->DSI_HFP_WC);
 			v_a = hsa.HSA_WC + hbp.HBP_WC + new_hfp.HFP_WC + ps.DSI_PS_WC + 32;
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HSTX_CKL_WC, (v_a - v_b));
-			DSI_OUTREG32(cmdq, &new_hstx_ckl_wc, AS_UINT32(&DSI_REG[i]->DSI_HSTX_CKL_WC));
+			DSI_READREG32(UINT32*, &new_hstx_ckl_wc, &DSI_REG[i]->DSI_HSTX_CKL_WC);
 			DISPCHECK("===>new HSTX_CKL_WC=0x%x, HFP_WC=0x%x\n", new_hstx_ckl_wc, new_hfp.HFP_WC);
 		} else if (dsi_mode == SYNC_EVENT_VDO_MODE) {
 			/*
@@ -2851,10 +2860,10 @@ static void DSI_PHY_CLK_LP_PerLine_config(enum DISP_MODULE_ENUM module, struct c
 			DISPCHECK("===>Will Reconfig in order to fulfill LP clock lane per line\n");
 
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HFP_WC, (v_b + v_c + DIFF_CLK_LANE_LP));
-			DSI_OUTREG32(cmdq, &new_hfp, AS_UINT32(&DSI_REG[i]->DSI_HFP_WC));
+			DSI_READREG32(struct DSI_HFP_WC_REG*, &new_hfp, &DSI_REG[i]->DSI_HFP_WC);
 			v_a = hbp.HBP_WC + new_hfp.HFP_WC + ps.DSI_PS_WC + 26;
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HSTX_CKL_WC, (v_a - v_b));
-			DSI_OUTREG32(cmdq, &new_hstx_ckl_wc, AS_UINT32(&DSI_REG[i]->DSI_HSTX_CKL_WC));
+			DSI_READREG32(UINT32*, &new_hstx_ckl_wc, &DSI_REG[i]->DSI_HSTX_CKL_WC);
 			DISPCHECK("===>new HSTX_CKL_WC=0x%x, HFP_WC=0x%x\n",
 				  new_hstx_ckl_wc, new_hfp.HFP_WC);
 		} else if (dsi_mode == BURST_VDO_MODE) {
@@ -2876,10 +2885,10 @@ static void DSI_PHY_CLK_LP_PerLine_config(enum DISP_MODULE_ENUM module, struct c
 			DISPCHECK("===>Will Reconfig in order to fulfill LP clock lane per line\n");
 
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HFP_WC, (v_b + v_c + DIFF_CLK_LANE_LP));
-			DSI_OUTREG32(cmdq, &new_hfp, AS_UINT32(&DSI_REG[i]->DSI_HFP_WC));
+			DSI_READREG32(struct DSI_HFP_WC_REG*, &new_hfp, &DSI_REG[i]->DSI_HFP_WC);
 			v_a = hbp.HBP_WC + new_hfp.HFP_WC + ps.DSI_PS_WC + bllp.BLLP_WC + 32;
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_HSTX_CKL_WC, (v_a - v_b));
-			DSI_OUTREG32(cmdq, &new_hstx_ckl_wc, AS_UINT32(&DSI_REG[i]->DSI_HSTX_CKL_WC));
+			DSI_READREG32(UINT32*, &new_hstx_ckl_wc, &DSI_REG[i]->DSI_HSTX_CKL_WC);
 			DISPCHECK("===>new HSTX_CKL_WC=0x%x, HFP_WC=0x%x\n",
 				  new_hstx_ckl_wc, new_hfp.HFP_WC);
 		}
@@ -2933,7 +2942,7 @@ static void _dsi_basic_irq_enable(enum DISP_MODULE_ENUM module, void *cmdq)
 		     (_dsi_context[0].dsi_params.switch_mode != CMD_MODE))) {
 			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, VM_DONE, 1);
 			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[1]->DSI_INTEN, VM_DONE, 1);
-			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, VM_CMD_DONE, 1);
+			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, VM_CMD_DONE, 0);
 		}
 
 		DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, INP_UNFINISH_INT_EN, 1);
@@ -2965,7 +2974,7 @@ static void _dsi_basic_irq_enable(enum DISP_MODULE_ENUM module, void *cmdq)
 	    ((_dsi_context[i].dsi_params.switch_mode_enable == 1) &&
 	     (_dsi_context[i].dsi_params.switch_mode != CMD_MODE))) {
 		DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
-		DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
+		DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 0);
 	}
 
 	DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, INP_UNFINISH_INT_EN, 1);
@@ -3030,15 +3039,6 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 	/* Enable clk low power per Line ; */
 	if (dsi_config->clk_lp_per_line_enable)
 		DSI_PHY_CLK_LP_PerLine_config(module, cmdq, dsi_config);
-
-	return 0;
-}
-
-/* Panel_Master_dsi_config_entry will use the api */
-int dsi_te_irq_enable(enum DISP_MODULE_ENUM module, void *handle, unsigned int enable)
-{
-	if (module == DISP_MODULE_DSI0)
-		DSI_OUTREGBIT(handle, struct DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, TE_RDY, enable);
 
 	return 0;
 }
@@ -3263,7 +3263,7 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 		return 0;
 
 	if (DSI_REG[i]->DSI_MODE_CTRL.MODE == CMD_MODE) {
-		DISPMSG("dsi stop: command mode\n");
+		DISPDBG("dsi stop: command mode\n");
 		ret = wait_event_timeout(_dsi_context[i].cmddone_wq.wq, !(DSI_REG[i]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
 		if (ret == 0) {
 			DDPPR_ERR("dsi%d wait event for not busy timeout\n", i);
@@ -3271,7 +3271,7 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 			DSI_Reset(module, NULL);
 		}
 	} else {
-		DISPMSG("dsi stop: brust mode(vdo mode lcm)\n");
+		DISPDBG("dsi stop: brust mode(vdo mode lcm)\n");
 		/* stop vdo mode */
 		DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
 		DSI_SetMode(module, cmdq_handle, CMD_MODE);

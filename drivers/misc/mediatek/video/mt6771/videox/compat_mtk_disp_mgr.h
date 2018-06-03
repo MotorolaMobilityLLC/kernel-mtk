@@ -217,6 +217,7 @@ int _compat_ioctl_set_vsync(struct file *file, unsigned long arg);
 int _compat_ioctl_set_output_buffer(struct file *file, unsigned long arg);
 int _compat_ioctl_set_session_mode(struct file *file, unsigned long arg);
 int _compat_ioctl_frame_config(struct file *file, unsigned long arg);
+int _compat_ioctl_screen_freeze(struct file *file, unsigned long arg);
 
 
 #define	COMPAT_DISP_IOCTL_CREATE_SESSION		DISP_IOW(201, struct compat_disp_session_config)
@@ -239,7 +240,7 @@ int _compat_ioctl_frame_config(struct file *file, unsigned long arg);
 #define COMPAT_DISP_IOCTL_GET_IS_DRIVER_SUSPEND		DISP_IOW(218, compat_uint_t)
 #define COMPAT_DISP_IOCTL_GET_DISPLAY_CAPS		DISP_IOW(219, struct compat_disp_caps_info)
 #define	COMPAT_DISP_IOCTL_FRAME_CONFIG			DISP_IOW(220, struct compat_disp_session_output_config)
-
+#define COMPAT_DISP_IOCTL_SCREEN_FREEZE			DISP_IOW(223, compat_uint_t)
 
 #endif
 #endif /*_COMPAT_MTK_DISP_MGR_H_*/
