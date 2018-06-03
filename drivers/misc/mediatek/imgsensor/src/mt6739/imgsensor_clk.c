@@ -26,7 +26,8 @@ char *gimgsensor_mclk_name[IMGSENSOR_CCF_MAX_NUM] = {
 	"CLK_TOP_UNIVPLL2_D32",
 	"CLK_TOP_UNIVPLL_48M_D4",
 	"CLK_TOP_UNIVPLL_48M_D8",
-	"CLK_CAM_SENINF",
+	"CLK_TOP_SENINF_SEL",
+	"CLK_TOP_SCAM_SEL",
 };
 
 
@@ -138,6 +139,18 @@ int imgsensor_clk_set(struct IMGSENSOR_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk
 
 void imgsensor_clk_enable_all(struct IMGSENSOR_CLK *pclk)
 {
+	int i;
+
+	PK_DBG("imgsensor_clk_enable_all_cg\n");
+	for (i = IMGSENSOR_CCF_CG_MIN_NUM; i < IMGSENSOR_CCF_CG_MAX_NUM; i++) {
+		if (!IS_ERR(pclk->imgsensor_ccf[i])) {
+			if (clk_prepare_enable(pclk->imgsensor_ccf[i]))
+				PK_PR_ERR("[CAMERA SENSOR]imgsensor_ccf enable cg fail cg_index = %d\n", i);
+			else
+				atomic_inc(&pclk->enable_cnt[i]);
+			/*PK_DBG("imgsensor_clk_enable_all %s ok\n", gimgsensor_mclk_name[i]);*/
+		}
+	}
 }
 
 void imgsensor_clk_disable_all(struct IMGSENSOR_CLK *pclk)
