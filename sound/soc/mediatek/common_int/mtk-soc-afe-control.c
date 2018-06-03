@@ -4180,7 +4180,9 @@ static snd_pcm_uframes_t get_ulmem_frame_index(struct snd_pcm_substream *substre
 				pr_info("%s buffer overflow u4DMAReadIdx:%x, u4WriteIdx:%x, DataRemained:%x, BufferSize:%x\n",
 					__func__, UL1_Block->u4DMAReadIdx, UL1_Block->u4WriteIdx,
 					UL1_Block->u4DataRemained, UL1_Block->u4BufferSize);
+#if defined(CONFIG_MT_USERDEBUG_BUILD)
 				AUDIO_AEE("get_ulmem_frame_index - UL overflow");
+#endif
 			}
 			break;
 		}
