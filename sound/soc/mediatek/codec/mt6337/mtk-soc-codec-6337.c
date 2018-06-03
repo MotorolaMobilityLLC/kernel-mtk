@@ -1592,10 +1592,10 @@ static void SetDcCompenSation(bool enable)
 		for (i = times; i >= 0; i--) {
 			tmp_ramp = i << 10;
 			if (tmp_ramp < abs_lch)
-				set_lch_dc_compensation_reg(tmp_ramp);
+				set_lch_dc_compensation_reg(sign_lch * tmp_ramp);
 
 			if (tmp_ramp < abs_rch)
-				set_rch_dc_compensation_reg(tmp_ramp);
+				set_rch_dc_compensation_reg(sign_rch * tmp_ramp);
 			udelay(100);
 		}
 		enable_dc_compensation(false);
