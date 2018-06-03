@@ -4422,8 +4422,17 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		 * in these cases it seems wise to trigger as single
 		 * request after load balancing is done.
 		 */
-		if (task_new || task_wakeup)
-			update_capacity_of(cpu_of(rq), SCHE_VALID);
+		if (task_new || task_wakeup) {
+			/*
+			 * If in_iowait is set, the code below may not trigger any cpufreq
+			 * utilization updates, so do it here explicitly with the IOWAIT flag
+			 * passed.
+			 */
+			if (p->in_iowait)
+				update_capacity_of(cpu_of(rq), SCHE_IOWAIT);
+			else
+				update_capacity_of(cpu_of(rq), SCHE_VALID);
+		}
 
 
 #ifndef CONFIG_CFS_BANDWIDTH
