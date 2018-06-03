@@ -150,7 +150,7 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
-		mt_power_gs_dump_suspend(GS_PMIC);
+		mt_power_gs_dump_suspend(slp_dump_golden_setting_type);
 
 #ifdef SPM_PMIC_DEBUG
 	spm_dump_pmic_reg();
