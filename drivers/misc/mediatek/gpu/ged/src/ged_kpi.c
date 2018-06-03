@@ -186,6 +186,7 @@ static unsigned int gx_frc_mode; /* variable to fix FRC mode*/
 static unsigned int enable_cpu_boost = 1;
 static unsigned int enable_gpu_boost = 1;
 static unsigned int is_GED_KPI_enabled = 1;
+static unsigned int ap_self_frc_detection_rate = 50;
 #ifdef GED_KPI_FUTURE_USED_FEATURE
 static unsigned int enable_check_boost_CP;
 #endif
@@ -194,6 +195,7 @@ module_param(gx_frc_mode, uint, S_IRUGO|S_IWUSR);
 module_param(enable_cpu_boost, uint, S_IRUGO|S_IWUSR);
 module_param(enable_gpu_boost, uint, S_IRUGO|S_IWUSR);
 module_param(is_GED_KPI_enabled, uint, S_IRUGO|S_IWUSR);
+module_param(ap_self_frc_detection_rate, uint, S_IRUGO|S_IWUSR);
 #ifdef GED_KPI_FUTURE_USED_FEATURE
 module_param(enable_check_boost_CP, uint, S_IRUGO|S_IWUSR);
 #endif
@@ -247,7 +249,7 @@ module_param(is_game_control_frame_rate, int, S_IRUGO|S_IWUSR);
 module_param(enable_game_self_frc_detect, int, S_IRUGO|S_IWUSR);
 
 /* ----------------------------------------------------------------------------- */
-#define GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE 30
+#define GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE 60
 static GED_BOOL ged_kpi_frame_rate_control_detect(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
 	static GED_KPI psKPI_list[GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE];
@@ -255,7 +257,7 @@ static GED_BOOL ged_kpi_frame_rate_control_detect(GED_KPI_HEAD *psHead, GED_KPI 
 	static int detected_frame_cnt;
 	static int cur_frame;
 	GED_KPI *psKPI_head = NULL;
-	GED_BOOL ret = GED_FALSE;
+	GED_BOOL ret = GED_TRUE;
 
 	if (enable_game_self_frc_detect) {
 		if (main_head == psHead) {
@@ -265,10 +267,9 @@ static GED_BOOL ged_kpi_frame_rate_control_detect(GED_KPI_HEAD *psHead, GED_KPI 
 				psKPI_head = &psKPI_list[cur_frame];
 
 			if ((psKPI_head != NULL) &&
-				(psKPI_head->t_acquire_period > 29000000) &&
-				(psKPI_head->t_acquire_period < 37000000))
+				(psKPI_head->t_acquire_period < 24000000))
 				detected_frame_cnt--;
-			if ((psKPI->t_acquire_period > 29000000) && (psKPI->t_acquire_period < 37000000))
+			if (psKPI->t_acquire_period < 24000000)
 				detected_frame_cnt++;
 
 			psKPI_list[cur_frame] = *psKPI;
@@ -276,8 +277,9 @@ static GED_BOOL ged_kpi_frame_rate_control_detect(GED_KPI_HEAD *psHead, GED_KPI 
 			cur_frame %= GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE;
 
 			if ((continuous_frame_cnt == GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE)
-				&& (detected_frame_cnt * 100 / GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE) >= 50)
-				ret = GED_TRUE;
+				&& (detected_frame_cnt * 100 / GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE)
+				>= ap_self_frc_detection_rate)
+				ret = GED_FALSE;
 		}
 
 		if (ret == GED_TRUE)
@@ -362,7 +364,7 @@ static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED
 		g_pre_TimeStampH = psKPI->ullTimeStampH;
 
 		if (g_elapsed_time_per_sec >= GED_KPI_SEC_DIVIDER) {
-			unsigned int g_fps;
+			unsigned long long g_fps;
 
 			g_fps = g_frame_count;
 			g_fps *= GED_KPI_SEC_DIVIDER;
@@ -1127,7 +1129,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					else if (boost_accum_gpu > 500)
 						boost_accum_gpu = 500;
 
-					psKPI->boost_accum_gpu = boost_accum_gpu;
+					/* for aligning boost_accum_cpu presentation */
+					psKPI->boost_accum_gpu = boost_accum_gpu - 100;
 
 					if (enable_gpu_boost) {
 						ged_kpi_set_gpu_dvfs_hint((int)(psHead->t_gpu_target/1000)
