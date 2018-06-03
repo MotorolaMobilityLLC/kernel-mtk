@@ -1550,6 +1550,9 @@ VOID
 p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 		IN P_BSS_INFO_T prP2pBssInfo, IN BOOLEAN fgSendDeauth, IN UINT_16 u2ReasonCode)
 {
+	P_STA_RECORD_T prCurrStaRec, prNextStaRec;
+	P_LINK_T prClientList;
+
 	DEBUGFUNC("p2pFuncDissolve()");
 
 	do {
@@ -1588,34 +1591,18 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 			/* Under AP mode, we would net send deauthentication frame to each STA.
 			 * We only stop the Beacon & let all stations timeout.
 			 */
-			{
-				P_STA_RECORD_T prCurrStaRec;
-				P_LINK_T prClientList;
 
-				/* Send deauth. */
-				authSendDeauthFrame(prAdapter,
-						    prP2pBssInfo,
-						    NULL, (P_SW_RFB_T) NULL, u2ReasonCode, (PFN_TX_DONE_HANDLER) NULL);
+			/* Send deauth. */
+			authSendDeauthFrame(prAdapter,
+					    prP2pBssInfo,
+					    NULL, (P_SW_RFB_T) NULL, u2ReasonCode, (PFN_TX_DONE_HANDLER) NULL);
 
-				prClientList = &prP2pBssInfo->rStaRecOfClientList;
+			prClientList = &prP2pBssInfo->rStaRecOfClientList;
 
-				LINK_FOR_EACH_ENTRY(prCurrStaRec, prClientList, rLinkEntry, STA_RECORD_T) {
-					ASSERT(prCurrStaRec);
-					p2pFuncDisconnect(prAdapter, prP2pBssInfo, prCurrStaRec, TRUE, u2ReasonCode);
-				}
-#if 0
-				prCurrStaRec = bssRemoveHeadClient(prAdapter, prP2pBssInfo);
-				while (prCurrStaRec) {
-					/* Indicate to Host. */
-					/* kalP2PGOStationUpdate(prAdapter->prGlueInfo, prCurrStaRec, FALSE); */
-
-					p2pFuncDisconnect(prAdapter, prP2pBssInfo, prCurrStaRec, TRUE, u2ReasonCode);
-
-					prCurrStaRec = bssRemoveHeadClient(prAdapter, prP2pBssInfo);
-				}
-#endif
+			LINK_FOR_EACH_ENTRY_SAFE(prCurrStaRec, prNextStaRec, prClientList, rLinkEntry, STA_RECORD_T) {
+				ASSERT(prCurrStaRec);
+				p2pFuncDisconnect(prAdapter, prP2pBssInfo, prCurrStaRec, TRUE, u2ReasonCode);
 			}
-
 			break;
 		default:
 			return;	/* 20110420 -- alreay in Device Mode. */
