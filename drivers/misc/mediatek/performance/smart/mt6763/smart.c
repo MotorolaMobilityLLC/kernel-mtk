@@ -31,6 +31,10 @@
 #include <linux/kobject.h>
 #include <linux/kthread.h>
 
+#include <linux/ring_buffer.h>
+#include <linux/trace_events.h>
+#include <trace.h>
+
 #include <linux/platform_device.h>
 #include "smart.h"
 
@@ -65,9 +69,11 @@ static struct smart_det tsmart;
 #define CLUSTER_NUM (2)
 
 static int log_enable;
+static int trace_enable;
 static int uevent_enable;
+static unsigned long __read_mostly mark_addr;
 
-static int app_is_benchmark; /* Is foreground benchmark? set from perfservice */
+static int app_is_sports; /* Is foreground enter sports mode? set from perfservice */
 static int app_is_running;   /* Is app running */
 static unsigned long app_load_thresh;
 static unsigned long app_tlp_thresh;
@@ -89,11 +95,14 @@ static unsigned long native_down_count;
 static unsigned long native_pid;
 static unsigned long java_up_count;
 
+static unsigned long turbo_util_thresh;
+static int turbo_mode_enable;
+
 struct smart_data {
 	int is_hps_heavy;
 	unsigned long check_duration;
 	unsigned long valid_duration;
-	int is_app_benchmark;
+	int is_app_sports;
 };
 
 struct smart_context {
@@ -113,9 +122,22 @@ static struct attribute_group smart_attribute_group = {
 };
 #endif
 
+
+inline void smart_tracer(int pid, char *name, int count)
+{
+	if (!trace_enable || !name)
+		return;
+
+	preempt_disable();
+	event_trace_printk(mark_addr, "C|%d|%s|%d\n",
+			   pid, name, count);
+	preempt_enable();
+}
+
+
 /******* FLIPER SETTING *********/
 
-static ssize_t mt_app_is_benchmark_write(struct file *filp, const char *ubuf,
+static ssize_t mt_app_is_sports_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
 	char buf[64];
@@ -131,12 +153,12 @@ static ssize_t mt_app_is_benchmark_write(struct file *filp, const char *ubuf,
 	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
 		ret = 0;
 		if (arg == 0) {
-			app_is_benchmark = 0;
+			app_is_sports = 0;
 			native_up_count = 0;
 			native_down_count = 0;
 			java_up_count = 0;
 		} else if (arg == 1) {
-			app_is_benchmark = 1;
+			app_is_sports = 1;
 			app_up_count = 0;
 			app_down_count = 0;
 		}
@@ -146,9 +168,9 @@ static ssize_t mt_app_is_benchmark_write(struct file *filp, const char *ubuf,
 	return (ret < 0) ? ret : cnt;
 }
 
-static int mt_app_is_benchmark_show(struct seq_file *m, void *v)
+static int mt_app_is_sports_show(struct seq_file *m, void *v)
 {
-	if (app_is_benchmark)
+	if (app_is_sports)
 		SEQ_printf(m, "1\n");
 	else
 		SEQ_printf(m, "0\n");
@@ -531,6 +553,34 @@ static int mt_java_up_times_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+static ssize_t mt_turbo_util_thresh_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	int ret, len = 0;
+	unsigned long arg;
+
+	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
+
+	if (copy_from_user(&buf, ubuf, len))
+		return -EFAULT;
+	buf[cnt] = '\0';
+
+	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+		ret = 0;
+		turbo_util_thresh = arg;
+	} else
+		ret = -EINVAL;
+
+	return (ret < 0) ? ret : cnt;
+}
+
+static int mt_turbo_util_thresh_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%lu\n", turbo_util_thresh);
+	return 0;
+}
+
 static ssize_t mt_smart_log_enable_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
@@ -560,6 +610,41 @@ static ssize_t mt_smart_log_enable_write(struct file *filp, const char *ubuf,
 static int mt_smart_log_enable_show(struct seq_file *m, void *v)
 {
 	if (log_enable)
+		SEQ_printf(m, "1\n");
+	else
+		SEQ_printf(m, "0\n");
+	return 0;
+}
+
+static ssize_t mt_smart_trace_enable_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	char buf[64];
+	int ret, len = 0;
+	unsigned long arg;
+
+	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
+
+	if (copy_from_user(&buf, ubuf, len))
+		return -EFAULT;
+	buf[cnt] = '\0';
+
+	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+		ret = 0;
+		if (arg == 0)
+			trace_enable = 0;
+		if (arg == 1)
+			trace_enable = 1;
+	} else
+		ret = -EINVAL;
+
+	return (ret < 0) ? ret : cnt;
+
+}
+
+static int mt_smart_trace_enable_show(struct seq_file *m, void *v)
+{
+	if (trace_enable)
 		SEQ_printf(m, "1\n");
 	else
 		SEQ_printf(m, "0\n");
@@ -602,14 +687,14 @@ static int mt_smart_uevent_enable_show(struct seq_file *m, void *v)
 }
 
 /*** Seq operation of mtprof ****/
-static int mt_app_is_benchmark_open(struct inode *inode, struct file *file)
+static int mt_app_is_sports_open(struct inode *inode, struct file *file)
 {
-	return single_open(file, mt_app_is_benchmark_show, inode->i_private);
+	return single_open(file, mt_app_is_sports_show, inode->i_private);
 }
 
-static const struct file_operations mt_app_is_benchmark_fops = {
-	.open = mt_app_is_benchmark_open,
-	.write = mt_app_is_benchmark_write,
+static const struct file_operations mt_app_is_sports_fops = {
+	.open = mt_app_is_sports_open,
+	.write = mt_app_is_sports_write,
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
@@ -784,6 +869,19 @@ static const struct file_operations mt_java_up_times_fops = {
 	.release = single_release,
 };
 
+static int mt_turbo_util_thresh_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt_turbo_util_thresh_show, inode->i_private);
+}
+
+static const struct file_operations mt_turbo_util_thresh_fops = {
+	.open = mt_turbo_util_thresh_open,
+	.write = mt_turbo_util_thresh_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 static int mt_smart_log_enable_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, mt_smart_log_enable_show, inode->i_private);
@@ -792,6 +890,19 @@ static int mt_smart_log_enable_open(struct inode *inode, struct file *file)
 static const struct file_operations mt_smart_log_enable_fops = {
 	.open = mt_smart_log_enable_open,
 	.write = mt_smart_log_enable_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static int mt_smart_trace_enable_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt_smart_trace_enable_show, inode->i_private);
+}
+
+static const struct file_operations mt_smart_trace_enable_fops = {
+	.open = mt_smart_trace_enable_open,
+	.write = mt_smart_trace_enable_write,
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
@@ -810,10 +921,14 @@ static const struct file_operations mt_smart_uevent_enable_fops = {
 	.release = single_release,
 };
 
+int smart_enter_turbo_mode(void)
+{
+	return turbo_mode_enable;
+}
 
 void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsigned int btask, unsigned int htask)
 {
-	int ret;
+	int ret, prev_enable;
 	char event_hps[9] = "DETECT=4"; /* HPS*/
 	char event_tlp[9] = "DETECT=6"; /* TLP*/
 	char event_running[9]  = "DETECT=8"; /* running */
@@ -827,16 +942,39 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 	char *envp_native_up[3] = { event_native, event_act_up, NULL };
 	char *envp_native_down[3] = { event_native, event_act_down, NULL };
 	int  pid = 0;
+	unsigned long ll_util, ll_cap;
 
 	if (!uevent_enable)
 		return;
 
 	if (log_enable)
-		pr_debug(TAG"get_sysinfo benchmark:%d, native:%d, cur_load:%d, cur_tlp:%d, btask:%d, htask:%d\n",
-		app_is_benchmark, native_is_running, cur_loads, cur_tlp, btask, htask);
+		pr_debug(TAG"get_sysinfo sports:%d, native:%d, cur_load:%d, cur_tlp:%d, btask:%d, htask:%d\n",
+		app_is_sports, native_is_running, cur_loads, cur_tlp, btask, htask);
 
-	if (app_is_benchmark == 1) { /* foreground app is JAVA benchmark */
-		/* benchmark is not running */
+	if (app_is_sports == 1) { /* foreground app enters sports mode  */
+
+		/* check turbo mode */
+		sched_get_cluster_util(0, &ll_util, &ll_cap);
+		prev_enable = turbo_mode_enable;
+		if (htask <= 1 && (ll_util < ll_cap * turbo_util_thresh / 100)) {
+			turbo_mode_enable = 1;
+			if (turbo_mode_enable != prev_enable) {
+				smart_tracer(-1, "turbo_enable", 1);
+				if (log_enable)
+					pr_debug(TAG"turbo enable - htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu",
+					htask, ll_util, ll_cap, turbo_util_thresh);
+			}
+		} else {
+			turbo_mode_enable = 0;
+			if (turbo_mode_enable != prev_enable) {
+				smart_tracer(-1, "turbo_enable", 0);
+				if (log_enable)
+					pr_debug(TAG"turbo disable - htask:%d, ll_util:%lu, ll_cap:%lu, thresh:%lu",
+					htask, ll_util, ll_cap, turbo_util_thresh);
+			}
+		}
+
+		/* APP is not running */
 		if (app_is_running == 0) {
 			if (cur_loads >= app_load_thresh && btask >= app_btask_thresh)
 				app_up_count++;
@@ -844,7 +982,7 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 				app_up_count = 0;
 
 			if (app_up_count >= app_up_times) {
-				pr_debug(TAG"get_sysinfo benchmark is running!!!\n");
+				pr_debug(TAG"get_sysinfo APP is running!!!\n");
 				app_is_running = 1;
 				if (smart_context_obj) {
 					ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
@@ -862,7 +1000,7 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 				app_down_count = 0;
 
 			if (app_down_count >= app_down_times) {
-				pr_debug(TAG"get_sysinfo benchmark is not running!!!\n");
+				pr_debug(TAG"get_sysinfo APP is not running!!!\n");
 				app_is_running = 0;
 				if (smart_context_obj) {
 					ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
@@ -872,7 +1010,9 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 				}
 			}
 		}
-	} else if (native_is_running == 1) { /* native benchmark is running */
+	} else if (native_is_running == 1) { /* native program is running */
+		turbo_mode_enable = 0; /* reset */
+
 		if (htask != native_btask_thresh)
 			native_down_count++;
 		else
@@ -890,7 +1030,9 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsig
 			}
 		}
 	} else {
-		if (htask == native_btask_thresh) { /* detect native benchmark */
+		turbo_mode_enable = 0; /* reset */
+
+		if (htask == native_btask_thresh) { /* detect native program */
 			native_up_count++;
 			java_up_count = 0;
 			if (native_up_count >= native_up_times) { /* native */
@@ -1100,10 +1242,13 @@ int __init init_smart(void)
 	pe = proc_create("smart_log_enable", 0644, smart_dir, &mt_smart_log_enable_fops);
 	if (!pe)
 		return -ENOMEM;
+	pe = proc_create("smart_trace_enable", 0644, smart_dir, &mt_smart_trace_enable_fops);
+	if (!pe)
+		return -ENOMEM;
 	pe = proc_create("smart_uevent_enable", 0644, smart_dir, &mt_smart_uevent_enable_fops);
 	if (!pe)
 		return -ENOMEM;
-	pe = proc_create("app_is_benchmark", 0644, smart_dir, &mt_app_is_benchmark_fops);
+	pe = proc_create("app_is_sports", 0644, smart_dir, &mt_app_is_sports_fops);
 	if (!pe)
 		return -ENOMEM;
 	pe = proc_create("app_is_running", 0644, smart_dir, &mt_app_is_running_fops);
@@ -1145,8 +1290,11 @@ int __init init_smart(void)
 	pe = proc_create("java_up_times", 0644, smart_dir, &mt_java_up_times_fops);
 	if (!pe)
 		return -ENOMEM;
+	pe = proc_create("turbo_util_thresh", 0644, smart_dir, &mt_turbo_util_thresh_fops);
+	if (!pe)
+		return -ENOMEM;
 
-	app_is_benchmark = 0;
+	app_is_sports = 0;
 	app_is_running = 0;
 	app_load_thresh = 100; /* loading should > 100 */
 	app_tlp_thresh = 100;  /* don't use */
@@ -1163,8 +1311,13 @@ int __init init_smart(void)
 	java_btask_thresh = 8;    /* btask should >= 8 */
 	java_up_times = 3;        /* 40ms * 3 = 120ms */
 
+	turbo_util_thresh = 80;   /* util <= 80% */
+
 	log_enable = 0;    /* debug log */
+	trace_enable = 0;  /* debug trace */
 	uevent_enable = 1; /* smart.c will send uevent to user space */
+
+	mark_addr = kallsyms_lookup_name("tracing_mark_write");
 
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	spin_lock_init(&tsmart.smart_lock);
