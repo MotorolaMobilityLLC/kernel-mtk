@@ -465,7 +465,8 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 	 * request of the caller allocate from it.  Repeat until allocate has
 	 * succeeded or all heaps have been tried
 	 */
-	len = PAGE_ALIGN(len);
+	if (heap_id_mask != ION_HEAP_MULTIMEDIA_MAP_MVA_MASK)
+		len = PAGE_ALIGN(len);
 
 	if (!len) {
 		IONMSG("%s len cannot be zero.\n", __func__);
