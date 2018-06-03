@@ -3298,10 +3298,7 @@ int ddp_dsi_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
 
-	DSI_OUTREGBIT(cmdq_handle, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTSTA, RD_RDY, 0);
-	DSI_OUTREGBIT(cmdq_handle, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 0);
-
-	/*DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTEN, 0);*/
+	DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0);
 
 	return 0;
 }
