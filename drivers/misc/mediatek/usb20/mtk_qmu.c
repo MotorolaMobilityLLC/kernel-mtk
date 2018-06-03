@@ -1457,6 +1457,16 @@ finished:
 				 |MUSB_RXCSR_DATAERROR
 				 |MUSB_RXCSR_PID_ERR);
 
+			/* filter specific value to prevent false alarm */
+			switch (val) {
+			case 0x2020:
+				val = 0;
+				QMU_ERR("force val to 0 for bypass AEE\n");
+				break;
+			default:
+				break;
+			}
+
 			if (val && !skip_val)
 				aee_kernel_warning(string, string);
 		}
