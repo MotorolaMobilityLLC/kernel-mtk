@@ -1615,7 +1615,7 @@ static void spm_pmic_set_extra_low_power_mode(int lock)
 					     MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_MASK,
 					     MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_SHIFT);
 
-		/* LDO_VXO22_CON0(0xA64): RG_VXO22_MODE_CTRL set to be 1 (0xA64[2] = 1?b1) */
+		/* LDO_VXO22_CON0(0xA64): RG_VXO22_MODE_CTRL set to be 1 (0xA64[2] = 1??b1) */
 		pmic_config_interface_nolock(MT6351_PMIC_RG_VXO22_MODE_CTRL_ADDR,
 					     0x1,
 					     MT6351_PMIC_RG_VXO22_MODE_CTRL_MASK,
@@ -1682,7 +1682,7 @@ static void spm_pmic_set_extra_low_power_mode(int lock)
 				      MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_MASK,
 				      MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_SHIFT);
 
-		/* LDO_VXO22_CON0(0xA64): RG_VXO22_MODE_CTRL set to be 1 (0xA64[2] = 1?b1) */
+		/* LDO_VXO22_CON0(0xA64): RG_VXO22_MODE_CTRL set to be 1 (0xA64[2] = 1??b1) */
 		pmic_config_interface(MT6351_PMIC_RG_VXO22_MODE_CTRL_ADDR,
 				      0x1,
 				      MT6351_PMIC_RG_VXO22_MODE_CTRL_MASK,
@@ -1706,6 +1706,51 @@ static void spm_pmic_set_extra_low_power_mode(int lock)
 void spm_pmic_power_mode(int mode, int force, int lock)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	static int prev_mode = -1;
+
+	if (mode < PMIC_PWR_NORMAL || mode >= PMIC_PWR_NUM) {
+		pr_debug("wrong spm pmic power mode");
+		return;
+	}
+
+	if (force == 0 && mode == prev_mode)
+		return;
+
+	switch (mode) {
+	case PMIC_PWR_NORMAL:
+		/* nothing */
+		break;
+	case PMIC_PWR_DEEPIDLE:
+		spm_pmic_set_rg_vcore(RG_VCORE_SLEEP_VOLTAGE_0P75, lock);
+		spm_pmic_set_vcore(RG_BUCK_VCORE_VOSEL_SLEEP_0P75, lock);
+		pmic_buck_vcore_lp(SRCLKEN2, 0, HW_LP);
+		pmic_buck_vcore_lp(SPM, 1, SPM_ON);
+		break;
+	case PMIC_PWR_SODI3:
+		spm_pmic_set_rg_vcore(RG_VCORE_SLEEP_VOLTAGE_0P75, lock);
+		spm_pmic_set_vcore(RG_BUCK_VCORE_VOSEL_SLEEP_0P75, lock);
+
+		pmic_ldo_vldo28_lp(SRCLKEN0, 0, HW_LP);
+		pmic_ldo_vldo28_lp(SW, 1, SW_ON);
+		pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_LP);
+		break;
+	case PMIC_PWR_SODI:
+		/* nothing */
+		break;
+	case PMIC_PWR_SUSPEND:
+		spm_pmic_set_rg_vcore(RG_VCORE_SLEEP_VOLTAGE_0P65, lock);
+		spm_pmic_set_vcore(RG_BUCK_VCORE_VOSEL_SLEEP_0P65, lock);
+
+		pmic_ldo_vldo28_lp(SRCLKEN0, 1, HW_LP);
+		pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_OFF);
+		break;
+	default:
+		pr_debug("spm pmic power mode (%d) is not configured\n", mode);
+	}
+
+	prev_mode = mode;
+#else
 	static int prev_mode = -1;
 
 	if (mode < PMIC_PWR_NORMAL || mode >= PMIC_PWR_NUM) {
@@ -1822,6 +1867,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	}
 
 	prev_mode = mode;
+#endif
 #endif
 }
 
