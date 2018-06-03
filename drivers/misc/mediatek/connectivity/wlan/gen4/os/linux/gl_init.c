@@ -112,7 +112,7 @@ MODULE_DESCRIPTION(NIC_DESC);
 MODULE_SUPPORTED_DEVICE(NIC_NAME);
 
 /* MODULE_LICENSE("MTK Propietary"); */
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("Dual BSD/GPL");
 
 /* NIC interface name */
 #define NIC_INF_NAME    "wlan%d"
@@ -1626,6 +1626,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData, PVOID pvDriverData)
 	/* 4 <8> Init Queues */
 	init_waitqueue_head(&prGlueInfo->waitq);
 	QUEUE_INITIALIZE(&prGlueInfo->rCmdQueue);
+	prGlueInfo->i4TxPendingCmdNum = 0;
 	QUEUE_INITIALIZE(&prGlueInfo->rTxQueue);
 	glSetHifInfo(prGlueInfo, (ULONG) pvData);
 
@@ -1708,7 +1709,7 @@ VOID wlanSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 		return;
 
 	kalSetNetAddressFromInterface(prGlueInfo, prDev, fgEnable);
-	wlanNotifyFwSuspend(prGlueInfo, fgEnable);
+	wlanNotifyFwSuspend(prGlueInfo, prDev, fgEnable);
 }
 
 #if CFG_ENABLE_EARLY_SUSPEND
@@ -2112,7 +2113,9 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 		/* kalMemCopy(&prGlueInfo->rRegInfo, prRegInfo, sizeof(REG_INFO_T)); */
 
 		prRegInfo->u4PowerMode = CFG_INIT_POWER_SAVE_PROF;
+#if 0
 		prRegInfo->fgEnArpFilter = TRUE;
+#endif
 
 		if (wlanAdapterStart(prAdapter, prRegInfo) != WLAN_STATUS_SUCCESS)
 			i4Status = -EIO;

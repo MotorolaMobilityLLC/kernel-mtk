@@ -496,6 +496,14 @@ VOID p2pRoleFsmDeauthTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 			p2pChangeMediaState(prAdapter, prP2pBssInfo, PARAM_MEDIA_STATE_DISCONNECTED);
 		}
 
+		if (IS_NET_PWR_STATE_IDLE(prAdapter, prP2pRoleFsmInfo->ucBssIndex) &&
+			(prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) &&
+			(!bssGetClientCount(prAdapter, prP2pBssInfo))) {
+			DBGLOG(P2P, TRACE, "Role BSS IDLE, deactive network.\n");
+			UNSET_NET_ACTIVE(prAdapter, prP2pRoleFsmInfo->ucBssIndex);
+			nicDeactivateNetwork(prAdapter, prP2pRoleFsmInfo->ucBssIndex);
+		}
+
 		nicUpdateBss(prAdapter, prP2pBssInfo->ucBssIndex);
 	} while (FALSE);
 }				/* p2pRoleFsmRunEventTimeout */
@@ -1024,7 +1032,8 @@ VOID p2pRoleFsmRunEventStopAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		if (!prP2pBssInfo)
 			break;
 
-		p2pFuncStopGO(prAdapter, prP2pBssInfo);
+		if (prP2pRoleFsmInfo->eCurrentState != P2P_ROLE_STATE_REQING_CHANNEL)
+			p2pFuncStopGO(prAdapter, prP2pBssInfo);
 
 		SET_NET_PWR_STATE_IDLE(prAdapter, prP2pBssInfo->ucBssIndex);
 

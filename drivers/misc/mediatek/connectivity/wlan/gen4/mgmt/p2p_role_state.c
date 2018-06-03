@@ -119,11 +119,15 @@ p2pRoleStateAbort_REQING_CHANNEL(IN P_ADAPTER_T prAdapter,
 
 		if (eNextState == P2P_ROLE_STATE_IDLE) {
 			if (prP2pRoleBssInfo->eIntendOPMode == OP_MODE_ACCESS_POINT) {
+				P_P2P_CHNL_REQ_INFO_T prP2pChnlReqInfo = &(prP2pRoleFsmInfo->rChnlReqInfo);
 
-
-				p2pFuncStartGO(prAdapter,
-					       prP2pRoleBssInfo,
-					       &(prP2pRoleFsmInfo->rConnReqInfo), &(prP2pRoleFsmInfo->rChnlReqInfo));
+				if (IS_NET_PWR_STATE_ACTIVE(prAdapter, prP2pRoleFsmInfo->ucBssIndex))
+					p2pFuncStartGO(prAdapter,
+						   prP2pRoleBssInfo,
+						   &(prP2pRoleFsmInfo->rConnReqInfo),
+						   &(prP2pRoleFsmInfo->rChnlReqInfo));
+				else if (prP2pChnlReqInfo->fgIsChannelRequested)
+					p2pFuncReleaseCh(prAdapter, prP2pRoleFsmInfo->ucBssIndex, prP2pChnlReqInfo);
 			} else {
 				p2pFuncReleaseCh(prAdapter, prP2pRoleFsmInfo->ucBssIndex,
 						 &(prP2pRoleFsmInfo->rChnlReqInfo));
@@ -355,6 +359,11 @@ p2pRoleStatePrepare_To_REQING_CHANNEL_STATE(IN P_ADAPTER_T prAdapter,
 		prChnlReqInfo->ucCenterFreqS1 =
 			nicGetVhtS1(prBssInfo->ucPrimaryChannel, prChnlReqInfo->eChannelWidth);
 		prChnlReqInfo->ucCenterFreqS2 = 0;
+
+		/* If the S1 is invalid, force to change bandwidth */
+		if ((prBssInfo->eBand == BAND_5G) &&
+			(prChnlReqInfo->ucCenterFreqS1 == 0))
+			prChnlReqInfo->eChannelWidth = VHT_OP_CHANNEL_WIDTH_20_40;
 
 		DBGLOG(P2P, TRACE, "p2pRoleStatePrepare_To_REQING_CHANNEL_STATE\n");
 

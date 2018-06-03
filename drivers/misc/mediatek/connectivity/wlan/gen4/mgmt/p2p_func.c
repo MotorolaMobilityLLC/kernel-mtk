@@ -531,7 +531,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 			/* and AP do not need send it after STA left */
 			nicTxSetPktLifeTime(prMgmtTxMsdu, 100);
 			prMgmtTxMsdu = p2pFuncProcessP2pProbeRsp(prAdapter, ucBssIndex, prMgmtTxMsdu);
-			ucRetryLimit = 2;
+			ucRetryLimit = 6;
 			break;
 		default:
 			prMgmtTxMsdu->ucBssIndex = ucBssIndex;
@@ -715,11 +715,13 @@ VOID p2pFuncStopGO(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prP2pBssInfo)
 			prP2pBssInfo->eIntendOPMode = OP_MODE_P2P_DEVICE;
 		}
 
-		DBGLOG(P2P, INFO, "Re activate P2P Network.\n");
-		nicDeactivateNetwork(prAdapter, prP2pBssInfo->ucBssIndex);
-		if (u4ClientCount == 0)
+		/* Do not Deactivate Network if any Client existed, Deactive after Deauth Tx done */
+		if (u4ClientCount == 0) {
+			DBGLOG(P2P, INFO, "Re activate P2P Network.\n");
+			nicDeactivateNetwork(prAdapter, prP2pBssInfo->ucBssIndex);
 			nicUpdateBss(prAdapter, prP2pBssInfo->ucBssIndex);
-		nicActivateNetwork(prAdapter, prP2pBssInfo->ucBssIndex);
+			nicActivateNetwork(prAdapter, prP2pBssInfo->ucBssIndex);
+		}
 
 	} while (FALSE);
 
@@ -1298,12 +1300,20 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 			 */
 			{
 				P_STA_RECORD_T prCurrStaRec;
+				P_LINK_T prClientList;
 
 				/* Send deauth. */
 				authSendDeauthFrame(prAdapter,
 						    prP2pBssInfo,
 						    NULL, (P_SW_RFB_T) NULL, u2ReasonCode, (PFN_TX_DONE_HANDLER) NULL);
 
+				prClientList = &prP2pBssInfo->rStaRecOfClientList;
+
+				LINK_FOR_EACH_ENTRY(prCurrStaRec, prClientList, rLinkEntry, STA_RECORD_T) {
+					ASSERT(prCurrStaRec);
+					p2pFuncDisconnect(prAdapter, prP2pBssInfo, prCurrStaRec, TRUE, u2ReasonCode);
+				}
+#if 0
 				prCurrStaRec = bssRemoveHeadClient(prAdapter, prP2pBssInfo);
 				while (prCurrStaRec) {
 					/* Indicate to Host. */
@@ -1313,6 +1323,7 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 
 					prCurrStaRec = bssRemoveHeadClient(prAdapter, prP2pBssInfo);
 				}
+#endif
 			}
 
 			break;
@@ -1811,6 +1822,7 @@ p2pFuncValidateProbeReq(IN P_ADAPTER_T prAdapter,
 			OUT PUINT_32 pu4ControlFlags, IN BOOLEAN fgIsDevInterface, IN UINT_8 ucRoleIdx)
 {
 	BOOLEAN fgIsReplyProbeRsp = FALSE;
+	BOOLEAN fgApplyp2PDevFilter = FALSE;
 	P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo = (P_P2P_ROLE_FSM_INFO_T) NULL;
 	DEBUGFUNC("p2pFuncValidateProbeReq");
 
@@ -1819,11 +1831,21 @@ p2pFuncValidateProbeReq(IN P_ADAPTER_T prAdapter,
 		ASSERT_BREAK((prAdapter != NULL) && (prSwRfb != NULL));
 
 		prP2pRoleFsmInfo = prAdapter->rWifiVar.aprP2pRoleFsmInfo[ucRoleIdx];
-		/* TODO: */
 
-		if ((fgIsDevInterface &&
+		/* Process both cases that with amd without add p2p interface */
+		if (fgIsDevInterface)
+			fgApplyp2PDevFilter = TRUE;
+		else {
+			if (prAdapter->prGlueInfo->prP2PInfo[0]->prDevHandler ==
+				prAdapter->prGlueInfo->prP2PInfo[ucRoleIdx]->aprRoleHandler)
+				fgApplyp2PDevFilter = TRUE;
+			else
+				fgApplyp2PDevFilter = FALSE;
+		}
+		/* TODO: */
+		if ((fgApplyp2PDevFilter &&
 			(prAdapter->u4OsPacketFilter & PARAM_PACKET_FILTER_PROBE_REQ))
-			|| (!fgIsDevInterface &&
+			|| (!fgApplyp2PDevFilter &&
 			(prP2pRoleFsmInfo->u4P2pPacketFilter & PARAM_PACKET_FILTER_PROBE_REQ))) {
 			/* Leave the probe response to p2p_supplicant. */
 			kalP2PIndicateRxMgmtFrame(prAdapter->prGlueInfo, prSwRfb, fgIsDevInterface, ucRoleIdx);

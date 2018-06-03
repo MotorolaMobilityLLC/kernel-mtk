@@ -1342,6 +1342,8 @@ WLAN_STATUS halHifPowerOffWifi(IN P_ADAPTER_T prAdapter)
 
 	wlanClearPendingInterrupt(prAdapter);
 
+	halTxCancelAllSending(prAdapter);
+
 	return rStatus;
 }
 
