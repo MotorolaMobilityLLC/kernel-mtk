@@ -231,7 +231,6 @@ static int mt6311_i2c_probe(struct i2c_client *client,
 	return 0;
 #else
 	ret = mt6311_regulator_init(&client->dev);
-#endif
 	if (ret < 0) {
 		MT6311LOG("MT6311 regulator init fail\n"); /*mt6311_probe regulator init fail*/
 		return -EINVAL;
@@ -240,6 +239,7 @@ static int mt6311_i2c_probe(struct i2c_client *client,
 
 	MT6311LOG("MT6311 probe done\n"); /*mt6311_probe --OK!!--*/
 	return 0;
+#endif
 }
 
 static int mt6311_i2c_remove(struct i2c_client *client)
@@ -276,6 +276,10 @@ static ssize_t show_mt6311_access(struct device *dev, struct device_attribute *a
 static ssize_t store_mt6311_access(struct device *dev, struct device_attribute *attr,
 				   const char *buf, size_t size)
 {
+#ifdef IPIMB_MT6311
+	pr_err(MT6311TAG "mt6311_access not support for SSPM\n");
+	return size;
+#else
 	int ret;
 	char *pvalue = NULL, *addr, *val;
 	unsigned int reg_value = 0;
@@ -303,6 +307,7 @@ static ssize_t store_mt6311_access(struct device *dev, struct device_attribute *
 		}
 	}
 	return size;
+#endif
 }
 
 static DEVICE_ATTR(mt6311_access, 0664, show_mt6311_access, store_mt6311_access);	/*664*/
@@ -338,13 +343,16 @@ static int __init mt6311_init(void)
 	int ret = 0;
 
 	/* MT6311 i2c driver register */
+#ifdef IPIMB_MT6311
+	pr_err(MT6311TAG "Kernel driver not support for SSPM\n");
+#else
 	ret = i2c_add_driver(&mt6311_driver);
 	if (ret != 0) {
 		pr_err(MT6311TAG "failed to register mt6311 i2c driver\n");
 		return ret;
 	}
-
 	MT6311LOG("MT6311 i2c driver probe done\n");
+#endif
 	if (is_mt6311_exist()) {
 		ret = platform_device_register(&mt6311_user_space_device);
 		if (ret)
