@@ -1226,12 +1226,14 @@
 			<&infracfg_ao INFRACFG_AO_PWM2_CG>,
 			<&infracfg_ao INFRACFG_AO_PWM3_CG>,
 			<&infracfg_ao INFRACFG_AO_PWM4_CG>,
-			<&infracfg_ao INFRACFG_AO_PWM_HCLK_CG>;
+			<&infracfg_ao INFRACFG_AO_PWM_HCLK_CG>,
+			<&infracfg_ao INFRACFG_AO_PWM_CG>;
 
 		clock-names = "PWM1-main",
 			"PWM2-main",
 			"PWM3-main",
 			"PWM4-main",
+			"PWM-HCLK-main",
 			"PWM-main";
 	};
 
