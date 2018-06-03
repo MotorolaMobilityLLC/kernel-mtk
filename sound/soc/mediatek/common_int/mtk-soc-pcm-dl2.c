@@ -673,6 +673,7 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream,
 	AFE_BLOCK_T *Afe_Block = &pMemControl->rBlock;
 	int remainCount = 0;
 	int ret = 0;
+	int retryCount = 0;
 
 	PRINTK_AUD_DL2("%s pos = %lu count = %lu, BufferSize %d, ConsumeSize %d\n", __func__, pos,
 		count, ISRCopyBuffer.u4BufferSize, ISRCopyBuffer.u4IsrConsumeSize);
@@ -702,7 +703,7 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream,
 	}
 
 retry:
-	if (!ISRCopyBuffer.u4IsrConsumeSize) {
+	if (ISRCopyBuffer.u4IsrConsumeSize <= 0) {
 		if (!ISRCopyBuffer.u4BufferSize)
 			goto exit;
 
@@ -724,9 +725,13 @@ retry:
 
 		ret = mtk_pcm_dl2_copy_((void *)ISRCopyBuffer.pBufferIndx, &count, Afe_Block, false);
 		ISRCopyBuffer.u4IsrConsumeSize -= count;
+		if (ISRCopyBuffer.u4IsrConsumeSize < 0)
+			ISRCopyBuffer.u4IsrConsumeSize = 0;
 
 		if (unlikely(remainCount)) {
 			count = remainCount;
+			if ((++retryCount) > 1)
+				pr_warn("%s, retryCount %d\n", __func__, retryCount);
 			goto retry;
 		}
 	}
