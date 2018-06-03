@@ -92,6 +92,10 @@ void _ex_mu3d_hal_ssusb_en(void)
 {
 	os_printk(K_DEBUG, "%s\n", __func__);
 
+	/* trigger HW full reset explicitly */
+	os_setmsk(U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
+	udelay(1);
+
 	os_clrmsk(U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
 	os_clrmsk(U3D_SSUSB_IP_PW_CTRL2, SSUSB_IP_DEV_PDN);
 #ifdef SUPPORT_U3
