@@ -371,6 +371,11 @@
 			alignment = <0 0x200000>;
 			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
+
+#ifdef CONFIG_WATCHDATA_TEE_SUPPORT
+#include "watchtrust.dtsi"
+#endif
+
 	};
 
 	gic: interrupt-controller@40001000 {
