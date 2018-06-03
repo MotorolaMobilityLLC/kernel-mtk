@@ -298,7 +298,10 @@ static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribu
 	err = acc_enable_and_batch();
 err_out:
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 #else
 	return count;
 #endif
@@ -353,7 +356,10 @@ static ssize_t acc_store_active(struct device *dev, struct device_attribute *att
 
 err_out:
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -402,7 +408,10 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 #endif
 
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 static ssize_t acc_show_batch(struct device *dev,
 				 struct device_attribute *attr, char *buf)
@@ -430,7 +439,10 @@ static ssize_t acc_store_flush(struct device *dev, struct device_attribute *attr
 	if (err < 0)
 		ACC_PR_ERR("acc enable flush err %d\n", err);
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 static ssize_t acc_show_flush(struct device *dev,

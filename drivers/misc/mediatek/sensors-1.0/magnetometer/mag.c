@@ -267,7 +267,10 @@ static ssize_t mag_store_active(struct device *dev, struct device_attribute *att
 err_out:
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
 	MAG_LOG(" mag_store_active done\n");
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 /*----------------------------------------------------------------------------*/
 static ssize_t mag_show_active(struct device *dev,
@@ -309,7 +312,10 @@ static ssize_t mag_store_batch(struct device *dev, struct device_attribute *attr
 #endif
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
 	MAG_LOG(" mag_store_batch done: %d\n", cxt->is_batch_enable);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 
@@ -349,7 +355,10 @@ static ssize_t mag_store_flush(struct device *dev, struct device_attribute *attr
 	if (err < 0)
 		MAG_PR_ERR("mag enable flush err %d\n", err);
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 static ssize_t mag_show_cali(struct device *dev,

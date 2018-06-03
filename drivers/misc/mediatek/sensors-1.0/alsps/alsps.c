@@ -386,7 +386,10 @@ static ssize_t als_store_active(struct device *dev, struct device_attribute *att
 err_out:
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG(" als_store_active done\n");
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 /*----------------------------------------------------------------------------*/
 static ssize_t als_show_active(struct device *dev,
@@ -410,8 +413,10 @@ static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr
 	ALSPS_LOG("als_store_batch %s\n", buf);
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
 			&cxt->als_delay_ns, &cxt->als_latency_ns);
-	if (err != 4)
+	if (err != 4) {
 		ALSPS_PR_ERR("als_store_batch param error: err = %d\n", err);
+		return -1;
+	}
 
 	if (aal_use)
 		cxt->als_delay_ns = cxt->als_delay_ns < AAL_DELAY ? cxt->als_delay_ns : AAL_DELAY;
@@ -427,7 +432,10 @@ static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr
 #endif
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG(" als_store_batch done: %d\n", cxt->is_als_batch_enable);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 static ssize_t als_show_batch(struct device *dev,
@@ -457,7 +465,10 @@ static ssize_t als_store_flush(struct device *dev, struct device_attribute *attr
 	if (err < 0)
 		ALSPS_PR_ERR("als enable flush err %d\n", err);
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 static ssize_t als_show_flush(struct device *dev,
@@ -584,7 +595,10 @@ static ssize_t ps_store_active(struct device *dev, struct device_attribute *attr
 err_out:
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG(" ps_store_active done\n");
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 /*----------------------------------------------------------------------------*/
 static ssize_t ps_show_active(struct device *dev,
@@ -608,8 +622,10 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 	ALSPS_LOG("ps_store_batch %s\n", buf);
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
 			&cxt->ps_delay_ns, &cxt->ps_latency_ns);
-	if (err != 4)
+	if (err != 4) {
 		ALSPS_PR_ERR("ps_store_batch param error: err = %d\n", err);
+		return -1;
+	}
 
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 #if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_ALSPSHUB)
@@ -622,7 +638,10 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 #endif
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG("ps_store_batch done: %d\n", cxt->is_ps_batch_enable);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 static ssize_t ps_show_batch(struct device *dev,
@@ -652,7 +671,10 @@ static ssize_t ps_store_flush(struct device *dev, struct device_attribute *attr,
 	if (err < 0)
 		ALSPS_PR_ERR("ps enable flush err %d\n", err);
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 static ssize_t ps_show_flush(struct device *dev,

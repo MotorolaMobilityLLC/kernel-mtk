@@ -119,7 +119,7 @@ struct lsm6ds3h_gyro_i2c_data {
 };
 
 /*----------------------------------------------------------------------------*/
-static bool sensor_power;
+static bool sensor_power = true;
 static bool enable_status;
 static int lsm6ds3h_gyro_init_flag = -1;
 static struct i2c_client *lsm6ds3h_i2c_client;
@@ -823,9 +823,10 @@ static int lsm6ds3h_gyro_init_client(struct i2c_client *client, bool enable)
 		return res;
 
 
-	res = LSM6DS3H_gyro_SetSampleRate(client, LSM6DS3H_GYRO_ODR_104HZ);
-	if (res != LSM6DS3H_SUCCESS)
-		return res;
+	/* res = LSM6DS3H_gyro_SetSampleRate(client, LSM6DS3H_GYRO_ODR_104HZ);
+	*if (res != LSM6DS3H_SUCCESS)
+	*	return res;
+	*/
 
 
 	GYRO_LOG("lsm6ds3h_gyro_init_client OK!\n");
