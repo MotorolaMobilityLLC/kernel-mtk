@@ -2464,6 +2464,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 {
 	UINT_8 ucSubtype;
+	UINT_8 ucRxMode;
 #if CFG_SUPPORT_802_11W
 	/* BOOL   fgMfgDrop = FALSE; */
 #endif
@@ -2482,6 +2483,23 @@ VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 		RX_INC_CNT(&prAdapter->rRxCtrl, RX_DROP_TOTAL_COUNT);
 		GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 		return;
+	}
+
+	if (prSwRfb->u2PacketLen < WLAN_MAC_MGMT_HEADER_LEN ||
+		prSwRfb->u2HeaderLen < WLAN_MAC_MGMT_HEADER_LEN) {
+		DBGLOG(RX, WARN, "header len(%d) or total len(%d) for mgmt frame is wrong\n",
+			prSwRfb->u2HeaderLen, prSwRfb->u2PacketLen);
+		nicRxReturnRFB(prAdapter, prSwRfb);
+		RX_INC_CNT(&prAdapter->rRxCtrl, RX_DROP_TOTAL_COUNT);
+		GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
+	}
+	ucRxMode = (prSwRfb->prRxStatusGroup3->u4RxVector[0] & RX_VT_RX_MODE_MASK) >>
+		RX_VT_RX_MODE_OFFSET;
+	if ((ucRxMode == RX_VT_LEGACY_CCK || ucRxMode == RX_VT_LEGACY_OFDM) &&
+		prSwRfb->u2HeaderLen != WLAN_MAC_MGMT_HEADER_LEN) {
+		DBGLOG(RX, WARN, "header len(%d) is not 24 bytes in legacy rates, fix it\n",
+			prSwRfb->u2HeaderLen);
+		prSwRfb->u2HeaderLen = WLAN_MAC_MGMT_HEADER_LEN;
 	}
 
 	ucSubtype = (*(PUINT_8) (prSwRfb->pvHeader) & MASK_FC_SUBTYPE) >> OFFSET_OF_FC_SUBTYPE;
