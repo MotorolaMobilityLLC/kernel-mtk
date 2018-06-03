@@ -100,6 +100,8 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 	host->saved_para.pb1 = MSDC_READ32(MSDC_PATCH_BIT1);
 	host->saved_para.pb2 = MSDC_READ32(MSDC_PATCH_BIT2);
 	host->saved_para.sdc_fifo_cfg = MSDC_READ32(SDC_FIFO_CFG);
+	host->saved_para.sdc_adv_cfg0 = MSDC_READ32(SDC_ADV_CFG0);
+
 
 	if (host->base_top) {
 		base_top = host->base_top;
@@ -412,6 +414,8 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 	MSDC_WRITE32(MSDC_PATCH_BIT1, host->saved_para.pb1);
 	MSDC_WRITE32(MSDC_PATCH_BIT2, host->saved_para.pb2);
 	MSDC_WRITE32(SDC_FIFO_CFG, host->saved_para.sdc_fifo_cfg);
+	MSDC_WRITE32(SDC_ADV_CFG0, host->saved_para.sdc_adv_cfg0);
+
 
 	if (sdio) {
 		MSDC_SET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
