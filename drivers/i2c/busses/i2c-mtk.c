@@ -1983,8 +1983,12 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	}
 	mt_i2c_init_hw(i2c);
 	mt_i2c_clock_disable(i2c);
-	i2c->dma_buf.vaddr = dma_alloc_coherent(&pdev->dev,
-		PAGE_SIZE, &i2c->dma_buf.paddr, GFP_KERNEL);
+	if (i2c->ch_offset_default)
+		i2c->dma_buf.vaddr = dma_alloc_coherent(&pdev->dev,
+			PAGE_SIZE * 2, &i2c->dma_buf.paddr, GFP_KERNEL);
+	else
+		i2c->dma_buf.vaddr = dma_alloc_coherent(&pdev->dev,
+			PAGE_SIZE, &i2c->dma_buf.paddr, GFP_KERNEL);
 	if (i2c->dma_buf.vaddr == NULL) {
 		dev_err(&pdev->dev, "dma_alloc_coherent fail\n");
 		return -ENOMEM;
