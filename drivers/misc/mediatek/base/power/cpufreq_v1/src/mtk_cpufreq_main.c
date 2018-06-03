@@ -1235,17 +1235,14 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy,
 	unsigned int target_freq, unsigned int relation)
 {
 	struct mt_cpu_dvfs *p;
-	int ret;
 	unsigned int new_opp_idx;
 
 	p = id_to_cpu_dvfs(_get_cpu_dvfs_id(policy->cpu));
 	if (!p)
 		return -EINVAL;
 
-	ret = cpufreq_frequency_table_target(policy, target_freq, relation);
-	if (ret)
-		return -EINVAL;
-	new_opp_idx = _search_available_freq_idx(p, ret, relation);
+	new_opp_idx = cpufreq_frequency_table_target(policy, target_freq,
+							relation);
 	if (new_opp_idx >= p->nr_opp_tbl)
 		return -EINVAL;
 
