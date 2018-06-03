@@ -17,5 +17,6 @@
 extern int spm_dvfs_flag_init(int dvfsrc_en);
 extern u32 spm_vcorefs_get_MD_status(void);
 extern u32 spm_vcorefs_get_md_srcclkena(void);
+extern void spm_freq_hopping_cmd(int gps_on);
 
 #endif  /* __MTK_VCORE_DVFS_H */

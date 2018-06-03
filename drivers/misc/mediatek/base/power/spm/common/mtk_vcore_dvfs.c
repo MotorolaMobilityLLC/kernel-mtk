@@ -60,4 +60,3 @@ void spm_dvfs_pwrap_cmd(int pwrap_cmd, int pwrap_vcore)
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
-
