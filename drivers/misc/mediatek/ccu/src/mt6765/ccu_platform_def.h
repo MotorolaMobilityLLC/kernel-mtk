@@ -27,7 +27,7 @@
 #define CCU_CAMSYS_SIZE  (0x1000)
 #define CCU_N3D_A_BASE  (0x1A040000)
 #define CCU_N3D_A_SIZE  (0x1000)
-#define CCU_SENSOR_PM_SIZE  (0xC00)
+#define CCU_SENSOR_PM_SIZE  (0x1000)
 #define CCU_SENSOR_DM_SIZE  (0x600)
 
 #endif
