@@ -1500,7 +1500,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				ASSERT(0);
 			}
 
-			DBGLOG(AIS, TRACE, "Full2Partial eScanChannel = %d, ucSSIDNum=%d\n",
+			DBGLOG(AIS, TRACE, "Full2Partial eScanChannel = %d, ucChannelListNum=%d\n",
 				prScanReqMsg->eScanChannel, prScanReqMsg->ucChannelListNum);
 			/*Full2Partial at here, chech sould update full scan to partial scan or not*/
 			if ((prAisFsmInfo->eCurrentState == AIS_STATE_ONLINE_SCAN)
@@ -3797,7 +3797,7 @@ VOID aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter, IN UINT_8 ucSsidNum, IN P_PA
 		else {
 			prAisFsmInfo->ucScanSSIDNum = ucSsidNum;
 
-			for (i = 0 ; i < ucSsidNum ; i++) {
+			for (i = 0; i < ucSsidNum; i++) {
 				COPY_SSID(prAisFsmInfo->arScanSSID[i].aucSsid,
 						prAisFsmInfo->arScanSSID[i].u4SsidLen,
 						prSsid[i].aucSsid,
