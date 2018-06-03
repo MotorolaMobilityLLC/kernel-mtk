@@ -77,7 +77,7 @@ bool ufs_mtk_tr_cn_used;
 void __iomem *ufs_mtk_mmio_base_infracfg_ao;
 void __iomem *ufs_mtk_mmio_base_pericfg;
 void __iomem *ufs_mtk_mmio_base_ufs_mphy;
-struct ufs_hba *g_ufs_hba;
+struct ufs_hba *ufs_mtk_hba;
 
 void ufs_mtk_dump_reg(struct ufs_hba *hba)
 {
@@ -256,7 +256,7 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_mmio_base_infracfg_ao = NULL;
 	ufs_mtk_mmio_base_pericfg = NULL;
 	ufs_mtk_mmio_base_ufs_mphy = NULL;
-	g_ufs_hba = hba;
+	ufs_mtk_hba = hba;
 
 	ufs_mtk_advertise_hci_quirks(hba);
 
@@ -273,7 +273,7 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 			ufs_mtk_mmio_base_infracfg_ao = NULL;
 		}
 	} else
-	    dev_err(hba->dev, "error: node_infracfg_ao init fail\n");
+		dev_err(hba->dev, "error: node_infracfg_ao init fail\n");
 
 	/* get ufs_mtk_mmio_base_pericfg */
 
@@ -288,9 +288,9 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 			ufs_mtk_mmio_base_pericfg = NULL;
 		}
 	} else
-	    dev_err(hba->dev, "error: node_pericfg init fail\n");
+		dev_err(hba->dev, "error: node_pericfg init fail\n");
 
-    /* get ufs_mtk_mmio_base_ufs_mphy */
+	/* get ufs_mtk_mmio_base_ufs_mphy */
 
 	node_ufs_mphy = of_find_compatible_node(NULL, NULL, "mediatek,ufs_mphy");
 
@@ -325,6 +325,11 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 
 	/* Get auto-hibern8 timeout from device tree */
 	ufs_mtk_parse_auto_hibern8_timer(hba);
+
+#ifdef CONFIG_MTK_UFS_BOOTING
+	/* Rename device to unify device path for booting storage device */
+	device_rename(hba->dev, "bootdevice");
+#endif
 
 	return 0;
 
@@ -1403,25 +1408,25 @@ int ufsh_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute, u16 gen_select_ind
 	unsigned long elapsed_us = 0;
 
 	arg1 = ((u32)mib_attribute << 16) | (u32)gen_select_index;
-	ufshcd_writel(g_ufs_hba, arg1, REG_UIC_COMMAND_ARG_1);
-	ufshcd_writel(g_ufs_hba, 0, REG_UIC_COMMAND_ARG_2);
-	ufshcd_writel(g_ufs_hba, 0, REG_UIC_COMMAND_ARG_3);
-	ufshcd_writel(g_ufs_hba, uic_cmd, REG_UIC_COMMAND);
+	ufshcd_writel(ufs_mtk_hba, arg1, REG_UIC_COMMAND_ARG_1);
+	ufshcd_writel(ufs_mtk_hba, 0, REG_UIC_COMMAND_ARG_2);
+	ufshcd_writel(ufs_mtk_hba, 0, REG_UIC_COMMAND_ARG_3);
+	ufshcd_writel(ufs_mtk_hba, uic_cmd, REG_UIC_COMMAND);
 
-	while ((ufshcd_readl(g_ufs_hba, REG_INTERRUPT_STATUS) & UIC_COMMAND_COMPL) != UIC_COMMAND_COMPL) {
+	while ((ufshcd_readl(ufs_mtk_hba, REG_INTERRUPT_STATUS) & UIC_COMMAND_COMPL) != UIC_COMMAND_COMPL) {
 		/* busy waiting 1us */
 		udelay(1);
 		elapsed_us += 1;
 		if (elapsed_us > (retry_ms * 1000))
 			return -ETIMEDOUT;
 	}
-	ufshcd_writel(g_ufs_hba, UIC_COMMAND_COMPL, REG_INTERRUPT_STATUS);
+	ufshcd_writel(ufs_mtk_hba, UIC_COMMAND_COMPL, REG_INTERRUPT_STATUS);
 
-	ret = ufshcd_readl(g_ufs_hba, REG_UIC_COMMAND_ARG_2);
+	ret = ufshcd_readl(ufs_mtk_hba, REG_UIC_COMMAND_ARG_2);
 	if (ret & MASK_UIC_COMMAND_RESULT)
 		return ret;
 
-	*value = ufshcd_readl(g_ufs_hba, REG_UIC_COMMAND_ARG_3);
+	*value = ufshcd_readl(ufs_mtk_hba, REG_UIC_COMMAND_ARG_3);
 
 	return 0;
 }
@@ -1438,7 +1443,7 @@ int ufs_mtk_deepidle_hibern8_check(void)
 	/* Release all resources if entering H8 mode */
 	ret = ufsh_mtk_generic_read_dme(UIC_CMD_DME_GET, VENDOR_POWERSTATE, 0, &tmp, 100);
 	if (ret) {
-		dev_err(g_ufs_hba->dev, "ufshcd_dme_get 0x%x fail, ret = %d!\n", VENDOR_POWERSTATE, ret);
+		dev_err(ufs_mtk_hba->dev, "ufshcd_dme_get 0x%x fail, ret = %d!\n", VENDOR_POWERSTATE, ret);
 		return ret;
 	}
 	if (tmp == VENDOR_POWERSTATE_HIBERNATE) {
@@ -1610,7 +1615,7 @@ bool ufs_mtk_is_data_cmd(char cmd_op)
  * handshake during initialization.
  */
 static struct ufs_hba_variant_ops ufs_hba_mtk_vops = {
-	"mediatek.ufs",  /* name */
+	"mediatek.ufshci",  /* name */
 	ufs_mtk_init,    /* init */
 	NULL,            /* exit */
 	NULL,            /* get_ufs_hci_version */
@@ -1665,7 +1670,7 @@ static int ufs_mtk_remove(struct platform_device *pdev)
 }
 
 const struct of_device_id ufs_mtk_of_match[] = {
-	{ .compatible = "mediatek,ufs"},
+	{ .compatible = "mediatek,ufshci"},
 	{},
 };
 
