@@ -624,6 +624,12 @@ typedef struct {
 
 	unsigned int ext_te_edge;
 	unsigned int eint_disable;
+
+	unsigned int IsCphy;
+	unsigned int PHY_SEL0;
+	unsigned int PHY_SEL1;
+	unsigned int PHY_SEL2;
+	unsigned int PHY_SEL3;
 } LCM_DSI_PARAMS;
 
 /* --------------------------------------------------------------------------- */
