@@ -246,8 +246,12 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 	while (1) {
 		mailboxRet = mailbox_receive_cmd(&receivedCcuCmd);
 
-		if (mailboxRet == MAILBOX_QUEUE_EMPTY)
+		if (mailboxRet == MAILBOX_QUEUE_EMPTY) {
+			LOG_DBG("MAIL_BOX IS EMPTY");
 			goto ISR_EXIT;
+		}
+
+		LOG_DBG("receivedCcuCmd.msg_id : 0x%x\n", receivedCcuCmd.msg_id);
 
 		switch (receivedCcuCmd.msg_id) {
 #if 0
