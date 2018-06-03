@@ -289,6 +289,9 @@ static void RGXInitMipsProcWrapper(const void *hPrivate)
 	                   ~RGX_CR_MIPS_ADDR_REMAP1_CONFIG2_ADDR_OUT_CLRMSK,
 	                   ui64RemapSettings);
 
+#if defined(CONFIG_MACH_MT6761)
+	/* Device physical address 0x0 is a valid address and can be used by the GPU */
+#else
 #if defined(FIX_HW_BRN_63553)
 	RGXCommentLog(hPrivate, "RGXStart: WA for the delay slot prefetch with TLB miss issue.");
 	RGXCodeRemapConfig(hPrivate,
@@ -299,7 +302,7 @@ static void RGXInitMipsProcWrapper(const void *hPrivate)
 				~RGX_CR_MIPS_ADDR_REMAP5_CONFIG2_ADDR_OUT_CLRMSK,
 				ui64RemapSettings);
 #endif
-
+#endif
 	/*
 	 * Data remap setup
 	 */
@@ -371,7 +374,12 @@ static void RGXInitMipsProcWrapper(const void *hPrivate)
 		 * to apply the WA code on that system, so disable it to simplify. */
 		bLMA = IMG_TRUE;
 #endif
+#if defined(CONFIG_MACH_MT6761)
+		/* Device physical address 0x0 is a valid address and can be used by the GPU */
+		if (0)
+#else
 		if (bPhysBusAbove32Bit || (!bPhysBusAbove32Bit && !bLMA))
+#endif
 		{
 			/* on LMA system, there is a high chance that addr 0x0 is used by the GPU, e.g. TC. In that case
 			 * we don't need to protect the spurious MIPS accesses to addr 0x0, since that's a valid addr

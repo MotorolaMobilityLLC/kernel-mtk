@@ -284,6 +284,10 @@ PVRSRV_ERROR SysDevInit(void *pvOSDevice, PVRSRV_DEVICE_CONFIG **ppsDevConfig)
 	gsDevices[0].ui32IRQ = SYS_MTK_RGX_IRQ;
 #endif
 
+#if defined(SUPPORT_ALT_REGBASE)
+	gsDevices[0].sAltRegsCpuPBase.uiAddr = 0x7F000000;
+#endif
+
 	/* Power management on HW system */
 	gsDevices[0].pfnPrePowerState = MTKDevPrePowerState;
 	gsDevices[0].pfnPostPowerState = MTKDevPostPowerState;
