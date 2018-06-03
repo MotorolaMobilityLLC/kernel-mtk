@@ -68,17 +68,30 @@ enum pd_rx_errors {
 #define PDO_TYPE_MASK     (3 << 30)
 
 #define PDO_FIXED_DUAL_ROLE (1 << 29) /* Dual role device */
-#define PDO_FIXED_HIGHER_CAP  (1 << 28) /* High Capability */
+#define PDO_FIXED_HIGHER_CAP  (1 << 28) /* High Capability(SNK) */
+#define PDO_FIXED_USB_SUSPEND  (1 << 28) /* USB Suspend Supported(SRC) */
 #define PDO_FIXED_EXTERNAL  (1 << 27) /* Externally powered */
 #define PDO_FIXED_COMM_CAP  (1 << 26) /* USB Communications Capable */
 #define PDO_FIXED_DATA_SWAP (1 << 25) /* Data role swap command supported */
-#define PDO_FIXED_PEAK_CURR () /* [21..20] Peak current */
+#define PDO_FIXED_PEAK_CURR_MSK (0x3 << 20) /* Peak current */
+#define PDO_FIXED_PEAK_CURR_OFST (20) /* [21..20] Peak current */
+#define PDO_FIXED_VOLT_MSK (0x3FF << 10)
+#define PDO_FIXED_VOLT_OFST (10) /* [19..10] Voltage in 50mV units */
+#define PDO_FIXED_CURR_MSK (0x3FF << 0)
+#define PDO_FIXED_CURR_OFST (0) /* [9..0] Maximum Current in 10mA units */
 #define PDO_FIXED_VOLT(mv)  (((mv)/50) << 10) /* Voltage in 50mV units */
 #define PDO_FIXED_CURR(ma)  (((ma)/10) << 0)  /* Max current in 10mA units */
 
 #define PDO_FIXED(mv, ma, flags) (PDO_FIXED_VOLT(mv) | \
 				  PDO_FIXED_CURR(ma) | (flags) | \
 				  PDO_TYPE_FIXED)
+
+#define PDO_VAR_MAX_VOLT_MSK (0x3FF << 20)
+#define PDO_VAR_MAX_VOLT_OFST (20) /* [29..20] Maximum Voltage in 50mV units */
+#define PDO_VAR_MIN_VOLT_MSK (0x3FF << 10)
+#define PDO_VAR_MIN_VOLT_OFST (10) /* [19..10] Minimum Voltage in 50mV units */
+#define PDO_VAR_CURR_MSK (0x3FF << 0)
+#define PDO_VAR_CURR_OFST (0) /* [9..0] Maximum Current in 10mA units */
 
 #define PDO_VAR_MAX_VOLT(mv) ((((mv) / 50) & 0x3FF) << 20)
 #define PDO_VAR_MIN_VOLT(mv) ((((mv) / 50) & 0x3FF) << 10)
@@ -89,6 +102,13 @@ enum pd_rx_errors {
 				 PDO_VAR_MAX_VOLT(max_mv) | \
 				 PDO_VAR_OP_CURR(op_ma)   | \
 				 PDO_TYPE_VARIABLE)
+
+#define PDO_BATT_MAX_VOLT_MSK (0x3FF << 20)
+#define PDO_BATT_MAX_VOLT_OFST (20) /* [29..20] Maximum Voltage in 50mV units */
+#define PDO_BATT_MIN_VOLT_MSK (0x3FF << 10)
+#define PDO_BATT_MIN_VOLT_OFST (10) /* [19..10] Minimum Voltage in 50mV units */
+#define PDO_BATT_PWR_MSK (0x3FF << 0)
+#define PDO_BATT_PWR_OFST (0) /* [9..0] Maximum Current in 10mA units */
 
 #define PDO_BATT_MAX_VOLT(mv) ((((mv) / 50) & 0x3FF) << 20)
 #define PDO_BATT_MIN_VOLT(mv) ((((mv) / 50) & 0x3FF) << 10)

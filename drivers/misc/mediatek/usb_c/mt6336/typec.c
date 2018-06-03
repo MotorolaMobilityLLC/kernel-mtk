@@ -27,6 +27,10 @@
 #include <cust_gpio_usage.h>
 #endif
 
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+#include <mt-plat/mtk_boot_common.h>
+#endif
+
 #include <mt6336/mt6336.h>
 
 #include "typec-ioctl.h"
@@ -1377,6 +1381,13 @@ static void typec_wait_vbus_off_then_drive_attached_src(struct work_struct *work
 
 	while ((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SRC) {
 		if (hba->vbus_det_en && typec_is_vbus_present(hba, TYPEC_VSAFE_0V)) {
+
+#ifdef CONFIG_USBC_VCONN
+			/* drive Vconn ONLY when there is Ra */
+			if (hba->ra)
+				typec_drive_vconn(hba, 1);
+#endif
+
 			typec_drive_vbus(hba, 1);
 
 			break;
@@ -1953,6 +1964,14 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 	mt_dual_role_phy_init(hba);
+#endif
+
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
+		|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
+		dev_err(hba->dev, "%s, in KPOC\n", __func__);
+		hba->support_role = TYPEC_ROLE_SINK;
+	}
 #endif
 
 	/*initialization completes*/
