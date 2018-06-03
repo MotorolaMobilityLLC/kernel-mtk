@@ -226,6 +226,11 @@ static int otg_iddig_probe(struct platform_device *pdev)
 	int iddig_gpio, iddig_debounce;
 	u32 ints[2] = {0, 0};
 
+
+	mtk_idpin_irqnum = irq_of_parse_and_map(node, 0);
+	if (mtk_idpin_irqnum < 0)
+		return -ENODEV;
+
 	pinctrl = devm_pinctrl_get(dev);
 	if (IS_ERR(pinctrl)) {
 		dev_err(&pdev->dev, "Cannot find usb pinctrl!\n");
@@ -250,10 +255,6 @@ static int otg_iddig_probe(struct platform_device *pdev)
 	else
 		pinctrl_select_state(pinctrl, pinctrl_iddig_disable);
 #endif
-
-	mtk_idpin_irqnum = irq_of_parse_and_map(node, 0);
-	if (mtk_idpin_irqnum < 0)
-		return -ENODEV;
 
 	retval = of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 	if (!retval) {

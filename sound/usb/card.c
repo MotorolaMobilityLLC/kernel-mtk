@@ -567,6 +567,7 @@ static int usb_audio_probe(struct usb_interface *intf,
 
 	/* enable auto suspend */
 	usb_enable_autosuspend(dev);
+	device_wakeup_enable(&dev->dev);
 
 	atomic_dec(&chip->active);
 	mutex_unlock(&register_mutex);

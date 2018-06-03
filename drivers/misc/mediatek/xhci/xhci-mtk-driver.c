@@ -179,14 +179,14 @@ static void mtk_xhci_wakelock_init(void)
 }
 #endif
 
-static void mtk_xhci_wakelock_lock(void)
+void mtk_xhci_wakelock_lock(void)
 {
 	if (!wake_lock_active(&mtk_xhci_wakelock))
 		wake_lock(&mtk_xhci_wakelock);
 	mtk_xhci_mtk_printk(K_DEBUG, "xhci_wakelock_lock done\n");
 }
 
-static void mtk_xhci_wakelock_unlock(void)
+void mtk_xhci_wakelock_unlock(void)
 {
 	if (wake_lock_active(&mtk_xhci_wakelock))
 		wake_unlock(&mtk_xhci_wakelock);
@@ -212,7 +212,11 @@ int mtk_xhci_driver_load(bool vbus_on)
 		ret = -ENXIO;
 		goto _err;
 	}
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	slp_set_infra_on(true);
+#else
 	mtk_xhci_wakelock_lock();
+#endif
 #ifndef CONFIG_USBIF_COMPLIANCE
 	switch_set_state(&mtk_otg_state, 1);
 #endif
@@ -252,6 +256,9 @@ void mtk_xhci_driver_unload(bool vbus_off)
 
 #ifndef CONFIG_USBIF_COMPLIANCE
 	switch_set_state(&mtk_otg_state, 0);
+#endif
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	slp_set_infra_on(false);
 #endif
 	mtk_xhci_wakelock_unlock();
 	mtk_dualrole_stat = DUALROLE_DEVICE;
