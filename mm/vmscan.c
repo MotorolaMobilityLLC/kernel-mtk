@@ -2431,7 +2431,7 @@ static void shrink_lruvec(struct lruvec *lruvec, int swappiness,
 #ifndef CONFIG_MTK_GMO_RAM_OPTIMIZE
 	/* Give a chance to migrate anon pages */
 	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && nr[LRU_INACTIVE_ANON] == 0)
-		nr[LRU_INACTIVE_ANON] = SWAP_CLUSTER_MAX;
+		nr[LRU_INACTIVE_ANON] = 1UL;
 #endif
 
 	/*
