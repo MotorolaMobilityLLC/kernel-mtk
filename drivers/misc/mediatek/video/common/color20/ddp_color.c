@@ -1121,6 +1121,18 @@ static unsigned long g_mdp_rdma0_va;
 #define MDP_HDR_OFFSET 0x00000800
 #endif
 
+#if defined(SUPPORT_MDP_AAL)
+#include <linux/delay.h>
+#if defined(CONFIG_MACH_MT6771)
+#define MDP_AAL0_PA_BASE 0x1401b000
+#else
+#define MDP_AAL0_PA_BASE 0x1401c000
+#endif
+#define DRE30_HIST_START         (1024)
+#define DRE30_HIST_END           (4092)
+static unsigned long g_mdp_aal0_va;
+#endif
+
 #define TRANSLATION(origin, shift) ((origin >= shift) ? (origin - shift) : 0)
 
 static unsigned long g_tdshp_va;
@@ -2166,6 +2178,53 @@ static unsigned long color_get_MDP_RDMA0_VA(void)
 }
 #endif
 
+#if defined(SUPPORT_MDP_AAL)
+static unsigned long color_get_MDP_AAL0_VA(void)
+{
+	unsigned long VA;
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_aal");
+	VA = (unsigned long)of_iomap(node, 0);
+	COLOR_DBG("MDP_AAL0 VA: 0x%lx\n", VA);
+
+	return VA;
+}
+
+static inline void dre_sram_read(unsigned int addr, unsigned int *value)
+{
+	unsigned int reg_value;
+	unsigned int polling_time = 0;
+	const unsigned int POLL_SLEEP_TIME_US = 10;
+	const unsigned int MAX_POLL_TIME_US = 1000;
+
+	DISP_REG_SET(NULL, g_mdp_aal0_va + 0xD4, addr);
+
+	do {
+		reg_value = DISP_REG_GET(g_mdp_aal0_va + 0xC8);
+
+		if ((reg_value & (0x1 << 17)) == (0x1 << 17))
+			break;
+
+		udelay(POLL_SLEEP_TIME_US);
+		polling_time += POLL_SLEEP_TIME_US;
+	} while (polling_time < MAX_POLL_TIME_US);
+
+	*value = DISP_REG_GET(g_mdp_aal0_va + 0xD8);
+}
+
+static void dump_dre_blk_histogram(void)
+{
+	int i;
+	unsigned int value;
+
+	for (i = DRE30_HIST_START; i < DRE30_HIST_END; i += 4) {
+		dre_sram_read(i, &value);
+		COLOR_NLOG("Hist add[%d], value[0x%08x]", i, value);
+	}
+}
+#endif
+
 static void _color_get_VA(void)
 {
 	/* check if va address initialized*/
@@ -2186,6 +2245,11 @@ static void _color_get_VA(void)
 #if defined(SUPPORT_HDR)
 		g_mdp_rdma0_va = color_get_MDP_RDMA0_VA();
 #endif
+
+#if defined(SUPPORT_MDP_AAL)
+		g_mdp_aal0_va = color_get_MDP_AAL0_VA();
+#endif
+
 		g_get_va_flag = true;
 	}
 }
@@ -2256,6 +2320,16 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 		}
 #endif
 
+	/*Check if MDP AAL base address*/
+#if defined(SUPPORT_MDP_AAL)
+	if ((addr >= g_mdp_aal0_va) && (addr < (g_mdp_aal0_va + 0x1000))) {
+		/* MDP AAL0 */
+		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "MDP_AAL0");
+		if (addr >= g_mdp_aal0_va + 0xFF0)
+			dump_dre_blk_histogram();
+		return 2;
+	}
+#endif
 
 	/* check if TDSHP base address */
 	if ((addr >= g_tdshp_va) && (addr < (g_tdshp_va + 0x1000))) {			/* TDSHP0 */
@@ -2346,6 +2420,15 @@ static unsigned long color_pa2va(unsigned int addr)
 			COLOR_DBG("color_pa2va(), MDP_RDMA0 PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
 					MDP_RDMA0_PA_BASE, g_mdp_rdma0_va);
 			return g_mdp_rdma0_va + (addr - MDP_RDMA0_PA_BASE);
+		}
+#endif
+
+#if defined(SUPPORT_MDP_AAL)
+		/* MDP_AAL */
+		if ((addr >= MDP_AAL0_PA_BASE) && (addr < (MDP_AAL0_PA_BASE + 0x1000))) {
+			COLOR_DBG("color_pa2va(), MDP_AAL0 PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
+				MDP_AAL0_PA_BASE, g_mdp_aal0_va);
+			return g_mdp_aal0_va + (addr - MDP_AAL0_PA_BASE);
 		}
 #endif
 
