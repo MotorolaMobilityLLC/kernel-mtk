@@ -482,7 +482,7 @@ static void mt_auxadc_hal_suspend(void)
 	pr_debug("******** MT auxadc driver suspend!! ********\n");
 #if defined(AUXADC_SPM)
 	AUXADC_SET_BITS((0x3 << 6) | (0x3 << 16), AUXADC_TS_X_BUFFER);
-	AUXADC_DRV_SetData16((volatile u16 *)AUXADC_CON1, 0xffff, 0x0);
+	AUXADC_CLR_BITS(0xffff << 0, AUXADC_CON1);
 #endif
 
 #if !defined(AUXADC_CLOCK_BY_SPM)
