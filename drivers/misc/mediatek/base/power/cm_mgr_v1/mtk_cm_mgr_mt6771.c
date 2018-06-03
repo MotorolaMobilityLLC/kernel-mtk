@@ -331,6 +331,26 @@ static struct notifier_block cm_mgr_fb_notifier = {
 	.notifier_call = cm_mgr_fb_notifier_callback,
 };
 
+static int cm_mgr_is_lp_flavor(void)
+{
+	int r = 0;
+
+#if defined(CONFIG_ARM64)
+	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, "mediatek/k71v1_64_bsp_lp", 24) == 0)
+		r = 1;
+
+	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, "mediatek/k71v1_64_bsp_cmd_lp", 28) == 0)
+		r = 1;
+
+	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, "mediatek/evb6771_64_fhdp_lp", 27) == 0)
+		r = 1;
+
+	pr_info("flavor check: %s, is_lp: %d\n", CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, r);
+#endif
+
+	return r;
+}
+
 int cm_mgr_register_init(void)
 {
 	struct device_node *node;
@@ -380,9 +400,9 @@ int cm_mgr_platform_init(void)
 
 #ifdef CM_MGR_USE_PM_NOTIFY
 	cm_mgr_sched_pm_init();
-	pr_info(" CM_MGR_USE_PM_NOTIFY (%d)\n", r);
+	pr_info(" CM_MGR_USE_PM_NOTIFY\n");
 #else
-	pr_info(" !CM_MGR_USE_PM_NOTIFY (%d)\n", r);
+	pr_info(" !CM_MGR_USE_PM_NOTIFY\n");
 #endif /* CM_MGR_USE_PM_NOTIFY */
 
 	r = fb_register_client(&cm_mgr_fb_notifier);
@@ -390,6 +410,9 @@ int cm_mgr_platform_init(void)
 		pr_info("FAILED TO REGISTER FB CLIENT (%d)\n", r);
 		return r;
 	}
+
+	if (cm_mgr_is_lp_flavor())
+		cm_mgr_enable = 1;
 
 	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);
 
