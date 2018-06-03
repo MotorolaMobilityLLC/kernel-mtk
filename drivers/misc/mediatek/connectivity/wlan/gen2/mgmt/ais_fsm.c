@@ -2465,6 +2465,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	UINT_8 aucP2pSsid[] = CTIA_MAGIC_SSID;
 	OS_SYSTIME rCurrentTime;
 	P_CONNECTION_SETTINGS_T prConnSettings;
+	UINT_16 u2StatusCode = 0;
 #if CFG_SUPPORT_ROAMING_RETRY
 	P_LINK_T prEssLink = NULL;
 	BOOLEAN fgIsUnderRoaming;
@@ -2651,7 +2652,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 				/* ASSERT(prBssDesc); */
 				/* ASSERT(prBssDesc->fgIsConnecting); */
-				prBssDesc->u2JoinStatus = prStaRec->u2StatusCode;
+				u2StatusCode = prStaRec->u2StatusCode;
 				prBssDesc->ucJoinFailureCount++;
 				if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
 					aisAddBlacklist(prAdapter, prBssDesc);
@@ -2690,10 +2691,12 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
 #endif /* CFG_SUPPORT_ROAMING_RETRY */
 					if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
-						(prBssDesc->u2JoinStatus == STATUS_CODE_ASSOC_DENIED_AP_OVERLOAD ||
-						prBssDesc->u2JoinStatus == STATUS_CODE_ASSOC_DENIED_OUTSIDE_STANDARD)) {
+						(u2StatusCode == STATUS_CODE_ASSOC_DENIED_AP_OVERLOAD ||
+						u2StatusCode == STATUS_CODE_ASSOC_DENIED_OUTSIDE_STANDARD)) {
 						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-									WLAN_STATUS_JOIN_FAILURE, NULL, 0);
+									     WLAN_STATUS_JOIN_FAILURE,
+									     (PVOID)&u2StatusCode,
+									     sizeof(u2StatusCode));
 
 						eNextState = AIS_STATE_IDLE;
 					}
@@ -2723,7 +2726,9 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					/* restore tx power control */
 					rlmSetMaxTxPwrLimit(prAdapter, 0, 0);
 					kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-								WLAN_STATUS_JOIN_FAILURE, NULL, 0);
+								     WLAN_STATUS_JOIN_FAILURE,
+								     (PVOID)&u2StatusCode,
+								     sizeof(u2StatusCode));
 
 					eNextState = AIS_STATE_IDLE;
 				} else if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
@@ -2737,7 +2742,9 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					/* restore tx power control */
 					rlmSetMaxTxPwrLimit(prAdapter, 0, 0);
 					kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-								WLAN_STATUS_JOIN_FAILURE, NULL, 0);
+								     WLAN_STATUS_JOIN_FAILURE,
+								     (PVOID)&u2StatusCode,
+								     sizeof(u2StatusCode));
 
 					eNextState = AIS_STATE_IDLE;
 				} else {
