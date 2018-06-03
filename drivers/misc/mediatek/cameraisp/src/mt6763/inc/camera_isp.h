@@ -543,6 +543,11 @@ struct ISP_CLK_INFO {
 	unsigned int clklevel[ISP_CLK_LEVEL_CNT]; /* Reocrd each clk level */
 };
 
+struct ISP_GET_CLK_INFO {
+	unsigned int curClk;
+	unsigned int targetClk;
+};
+
 /********************************************************************************************
  * pass1 real time buffer control use cq0c
  ********************************************************************************************/
@@ -670,7 +675,7 @@ enum ISP_HALT_DMA_ENUM {
 #define ISP_DFS_CTRL              _IOWR(ISP_MAGIC, ISP_CMD_DFS_CTRL, unsigned int)
 #define ISP_DFS_UPDATE              _IOWR(ISP_MAGIC, ISP_CMD_DFS_UPDATE, unsigned int)
 #define ISP_GET_SUPPORTED_ISP_CLOCKS   _IOWR(ISP_MAGIC, ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, struct ISP_CLK_INFO)
-#define ISP_GET_CUR_ISP_CLOCK   _IOWR(ISP_MAGIC, ISP_CMD_GET_CUR_ISP_CLOCK, unsigned int)
+#define ISP_GET_CUR_ISP_CLOCK   _IOWR(ISP_MAGIC, ISP_CMD_GET_CUR_ISP_CLOCK, struct ISP_GET_CLK_INFO)
 
 #define ISP_REGISTER_IRQ_USER_KEY   _IOR(ISP_MAGIC, ISP_CMD_REGISTER_IRQ_USER_KEY, struct ISP_REGISTER_USERKEY_STRUCT)
 
