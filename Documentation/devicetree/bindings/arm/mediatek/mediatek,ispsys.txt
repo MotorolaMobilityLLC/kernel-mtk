@@ -1,0 +1,49 @@
+Mediatek ispsys controller
+============================
+
+The Mediatek ispsys controller provides various clocks to the system.
+
+Required Properties:
+
+- compatible: Should be:
+	- "mediatek,mt6739-ispsys", "syscon"
+- #clock-cells: Must be 1
+
+The ispsys controller uses the common clk binding from
+Documentation/devicetree/bindings/clock/clock-bindings.txt
+The available clocks are defined in dt-bindings/clock/mt*-clk.h.
+
+Example:
+
+ispsys@15000000 {
+	compatible = "mediatek,mt6739-ispsys";
+	reg = <0x0 0x15004000 0x0 0x9000
+		0x0 0x1500d000 0x0 0x1000
+		0x0 0x15000000 0x0 0x10000
+		0x0 0x10215000 0x0 0x3000
+		0x0 0x10211000 0x0 0x1000>;
+	interrupts = <GIC_SPI 217 IRQ_TYPE_LEVEL_LOW>, /* CAM0 */
+	<GIC_SPI 218 IRQ_TYPE_LEVEL_LOW>, /* CAM1 */
+	<GIC_SPI 219 IRQ_TYPE_LEVEL_LOW>, /* CAM2 */
+	<GIC_SPI 220 IRQ_TYPE_LEVEL_LOW>, /* CAMSV0 */
+	<GIC_SPI 221 IRQ_TYPE_LEVEL_LOW>; /* CAMSV1 */
+	/* clocks = <&scpsys SCP_SYS_DIS>,
+	*		<&scpsys SCP_SYS_ISP>,
+	*		<&mmsys MM_DISP0_SMI_COMMON>,
+	*		<&imgsys IMG_IMAGE_CAM_SMI>,
+	*		<&imgsys IMG_IMAGE_CAM_CAM>,
+	*		<&imgsys IMG_IMAGE_SEN_TG>,
+	*		<&imgsys IMG_IMAGE_SEN_CAM>,
+	*		<&imgsys IMG_IMAGE_CAM_SV>,
+	*		<&imgsys IMG_IMAGE_LARB2_SMI>;
+	*clock-names = "CG_SCP_SYS_DIS",
+	*		"CG_SCP_SYS_ISP",
+	*		"CG_DISP0_SMI_COMMON",
+	*		"CG_IMAGE_CAM_SMI",
+	*		"CG_IMAGE_CAM_CAM",
+	*		"CG_IMAGE_SEN_TG",
+	*		"CG_IMAGE_SEN_CAM",
+	*		"CG_IMAGE_CAM_SV",
+	*		"CG_IMAGE_LARB2_SMI";
+	*/
+};
