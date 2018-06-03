@@ -157,7 +157,7 @@ int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
  */
 static bool system_overutil;
 
-static inline bool system_overutilized(int cpu)
+inline bool system_overutilized(int cpu)
 {
 	return system_overutil;
 }
