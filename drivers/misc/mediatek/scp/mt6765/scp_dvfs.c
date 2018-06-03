@@ -77,7 +77,7 @@ enum {
  ****************************/
 
 /* -1:SCP DVFS OFF, 1:SCP DVFS ON */
-static int scp_dvfs_flag = -1;
+static int scp_dvfs_flag = 1;
 
 /*
  * 0: SCP Sleep: OFF,
@@ -183,7 +183,7 @@ void scp_vcore_request(unsigned int clk_opp)
 	 * 0x8: scp request 0.8v
 	 */
 	if (clk_opp == CLK_OPP0 || clk_opp == CLK_OPP1)
-		DRV_WriteReg32(SCP_SCP2SPM_VOL_LV, 0x1);
+		DRV_WriteReg32(SCP_SCP2SPM_VOL_LV, 0x0);
 	else if (clk_opp == CLK_OPP2)
 		DRV_WriteReg32(SCP_SCP2SPM_VOL_LV, 0x4);
 	else
