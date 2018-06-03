@@ -50,6 +50,7 @@ struct cqdma_env_info {
 #endif
 
 static struct cqdma_env_info env_info[MAX_CQDMA_CHANNELS];
+static u32 keep_clock_ao;
 static u32 nr_cqdma_channel;
 struct wake_lock wk_lock[MAX_CQDMA_CHANNELS];
 
@@ -189,7 +190,7 @@ int mt_req_gdma(int chan)
 	unsigned long flags;
 	int i;
 
-	if (clk_cqdma) {
+	if (clk_cqdma && !keep_clock_ao) {
 		if (clk_prepare_enable(clk_cqdma)) {
 			pr_err("enable CQDMA clk fail!\n");
 			return -DMA_ERR_NO_FREE_CH;
@@ -226,7 +227,7 @@ int mt_req_gdma(int chan)
 	}
 
 	/* disable cqdma clock */
-	if (clk_cqdma)
+	if (clk_cqdma && !keep_clock_ao)
 		clk_disable_unprepare(clk_cqdma);
 
 	return -DMA_ERR_NO_FREE_CH;
@@ -499,7 +500,7 @@ int mt_free_gdma(int channel)
 	mt_stop_gdma(channel);
 
 	/* disable cqdma clock */
-	if (clk_cqdma)
+	if (clk_cqdma && !keep_clock_ao)
 		clk_disable_unprepare(clk_cqdma);
 
 	wake_unlock(&wk_lock[channel]);
@@ -669,6 +670,7 @@ static int cqdma_probe(struct platform_device *pdev)
 	int ret = 0, irq = 0;
 	unsigned int i;
 	struct resource *res;
+	const char *keep_clk_ao_str = NULL;
 
 	pr_debug("[MTK CQDMA] module probe.\n");
 
@@ -705,6 +707,15 @@ static int cqdma_probe(struct platform_device *pdev)
 	if (IS_ERR(clk_cqdma)) {
 		pr_err("can not get CQDMA clock fail!\n");
 		return PTR_ERR(clk_cqdma);
+	}
+
+	of_property_read_string(pdev->dev.of_node, "keep_clock_ao", &keep_clk_ao_str);
+	if (keep_clk_ao_str && !strncmp(keep_clk_ao_str, "yes", 3)) {
+		ret = clk_prepare_enable(clk_cqdma);
+		if (ret)
+			pr_info("enable CQDMA clk fail!\n");
+		else
+			keep_clock_ao = 1;
 	}
 
 	return ret;
