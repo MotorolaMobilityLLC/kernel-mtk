@@ -309,6 +309,9 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 
 		/* soft start, when power on */
 		if (card_on) {
+			/* Softstart time slot sel 1'b0: default setting, 1'b1: soft-start time X2*/
+			pmic_set_register_value(PMIC_RG_VMCH_STB_SEL, 0x1);
+#if 0
 			/*
 			 * 2'b00: 60us
 			 * 2'b01: 120 us
@@ -322,7 +325,8 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 			 * 2'b10: 180 us
 			 * 2'b11: 240 us
 			 */
-			pmic_set_register_value(PMIC_RG_LDO_VMCH_STBTD, 0x3);
+			pmic_set_register_value(PMIC_RG_LDO_VMC_STBTD, 0x3);
+#endif
 		}
 
 		/* Disable VMCH OC */
