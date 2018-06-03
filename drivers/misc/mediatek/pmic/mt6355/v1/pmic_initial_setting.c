@@ -74,9 +74,6 @@ int PMIC_MD_INIT_SETTING_V1(void)
 
 	if (modem_temp_node == NULL) {
 		pr_info("PMIC get modem_temp_node failed\n");
-		if (modem_temp_base)
-			iounmap(modem_temp_base);
-		modem_temp_base = 0;
 		return ret;
 	}
 
