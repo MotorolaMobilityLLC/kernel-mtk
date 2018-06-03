@@ -3488,7 +3488,7 @@ retry:
 			return -EFAULT;
 		ptr += sizeof(uint32_t);
 #ifdef MTK_BINDER_DEBUG
-		pr_err("read put err %u to user %p, thread error %u:%u\n",
+		pr_err_ratelimited("read put err %u to user %p, thread error %u:%u\n",
 		       thread->return_error, ptr, thread->return_error, thread->return_error2);
 #endif
 		binder_stat_br(proc, thread, thread->return_error);
