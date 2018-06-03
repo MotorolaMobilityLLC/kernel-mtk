@@ -112,6 +112,7 @@ struct gyro_data {
 	int y;
 	int z;
 	int64_t timestamp;
+	int temperature;
 	void *reserved1;
 };
 
