@@ -140,6 +140,18 @@ enum sink_power_states {
 #define SNK_VRP15_AUXADC_MAX_VAL (1456)
 #define SNK_VRP30_AUXADC_MIN_VAL SNK_VRP15_AUXADC_MAX_VAL
 #define SNK_VRP30_AUXADC_MAX_VAL (AUXADC_VOLTAGE_SCALE - 1)
+
+#ifdef MT6336_E1
+	/*INT_STATUS5 4th*/
+#define TYPE_C_L_MIN (5*8+3)
+	/*INT_STATUS5 7th*/
+#define TYPE_C_H_MAX (5*8+6)
+#else
+	/*INT_STATUS5 1th*/
+#define TYPE_C_L_MIN (5*8+0)
+	/*INT_STATUS5 4th*/
+#define TYPE_C_H_MAX (5*8+3)
+#endif
 #endif
 
 /*timing*/
