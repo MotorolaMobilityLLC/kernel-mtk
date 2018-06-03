@@ -604,6 +604,27 @@ static void init_cmdbuf(unsigned long phy_address,
 	rmb();
 }
 
+int set_soter_version(void)
+{
+	unsigned int versionlen = 0;
+	char *version = NULL;
+
+	memcpy(&versionlen, message_buff, sizeof(unsigned int));
+	if (versionlen > 0 && versionlen < 100) {
+		version = kmalloc(versionlen + 1, GFP_KERNEL);
+		if (version == NULL)
+			return -1;
+		memset(version, 0, versionlen + 1);
+		memcpy(version, message_buff + 4, versionlen);
+	} else {
+		return -2;
+	}
+	TEEI_BOOT_FOOTPRINT(version);
+	kfree(version);
+
+	return 0;
+}
+
 
 long create_cmd_buff(void)
 {
@@ -843,6 +864,8 @@ static int init_teei_framework(void)
 		return TEEI_BOOT_ERROR_INIT_CMD_BUFF_FAILED;
 
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT CMD Buffer Created");
+
+	set_soter_version();
 
 	switch_to_t_os_stages2();
 
