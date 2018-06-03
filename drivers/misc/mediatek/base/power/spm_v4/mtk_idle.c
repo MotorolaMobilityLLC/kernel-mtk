@@ -966,9 +966,7 @@ static noinline void go_to_rgidle(int cpu)
  */
 
 static u32 slp_spm_SODI3_flags = {
-	SPM_FLAG_DIS_CPU_PDN |
 	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_DIS_ATF_ABORT |
@@ -981,9 +979,7 @@ static u32 slp_spm_SODI3_flags = {
 };
 
 static u32 slp_spm_SODI_flags = {
-	SPM_FLAG_DIS_CPU_PDN |
 	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_DIS_ATF_ABORT |
