@@ -1474,6 +1474,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		check_max_freq = /bits/ 8 <1>;
 		ver = /bits/ 8 <2>;
 		set_ltiming = /bits/ 8 <1>;
+		ext_time_config = /bits/ 16 <0x1801>;
 	};
 	i2c0: i2c0@11007000 {
 		compatible = "mediatek,i2c";
