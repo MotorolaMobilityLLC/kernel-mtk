@@ -346,7 +346,7 @@ void do_connection_work(struct work_struct *data)
 	}
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-	if (usb_phy_check_in_uart_mode()) {
+	if (in_uart_mode) {
 		DBG(0, "in uart mode, return\n");
 		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 		return;
@@ -780,21 +780,12 @@ DEVICE_ATTR(saving, 0664, mt_usb_show_saving_mode, mt_usb_store_saving_mode);
 static void uart_usb_switch_dump_register(void)
 {
 	usb_enable_clock(true);
-#ifdef FPGA_PLATFORM
-	DBG(0, "[MUSB]addr: 0x6B, value: %x\n", USB_PHY_Read_Register8(0x6B));
-	DBG(0, "[MUSB]addr: 0x6E, value: %x\n", USB_PHY_Read_Register8(0x6E));
-	DBG(0, "[MUSB]addr: 0x22, value: %x\n", USB_PHY_Read_Register8(0x22));
-	DBG(0, "[MUSB]addr: 0x68, value: %x\n", USB_PHY_Read_Register8(0x68));
-	DBG(0, "[MUSB]addr: 0x6A, value: %x\n", USB_PHY_Read_Register8(0x6A));
-	DBG(0, "[MUSB]addr: 0x1A, value: %x\n", USB_PHY_Read_Register8(0x1A));
-#else
-	DBG(0, "[MUSB]addr: 0x6B, value: %x\n", USBPHY_READ8(0x6B));
-	DBG(0, "[MUSB]addr: 0x6E, value: %x\n", USBPHY_READ8(0x6E));
-	DBG(0, "[MUSB]addr: 0x22, value: %x\n", USBPHY_READ8(0x22));
-	DBG(0, "[MUSB]addr: 0x68, value: %x\n", USBPHY_READ8(0x68));
-	DBG(0, "[MUSB]addr: 0x6A, value: %x\n", USBPHY_READ8(0x6A));
-	DBG(0, "[MUSB]addr: 0x1A, value: %x\n", USBPHY_READ8(0x1A));
-#endif
+
+	DBG(0, "[MUSB]addr: 0x68, value: %x\n", USBPHY_READ32(0x68));
+	DBG(0, "[MUSB]addr: 0x6C, value: %x\n", USBPHY_READ32(0x6C));
+	DBG(0, "[MUSB]addr: 0x20, value: %x\n", USBPHY_READ32(0x20));
+	DBG(0, "[MUSB]addr: 0x18, value: %x\n", USBPHY_READ32(0x18));
+
 	usb_enable_clock(false);
 	DBG(0, "[MUSB]addr: 0x110020B0 (UART0), value: %x\n\n", DRV_Reg8(ap_uart0_base + 0xB0));
 }
@@ -815,6 +806,7 @@ static ssize_t mt_usb_show_portmode(struct device *dev, struct device_attribute 
 		DBG(0, "\nUSB Port mode -> USB\n");
 	else if (port_mode == PORT_MODE_UART)
 		DBG(0, "\nUSB Port mode -> UART\n");
+
 	uart_usb_switch_dump_register();
 
 	return scnprintf(buf, PAGE_SIZE, "%d\n", port_mode);
@@ -828,7 +820,6 @@ static ssize_t mt_usb_store_portmode(struct device *dev, struct device_attribute
 	if (!dev) {
 		DBG(0, "dev is null!!\n");
 		return count;
-	/* } else if (1 == sscanf(buf, "%d", &portmode)) { */
 	} else if (kstrtol(buf, 10, (long *)&portmode) == 0) {
 		DBG(0, "\nUSB Port mode: current => %d (port_mode), change to => %d (portmode)\n",
 		    port_mode, portmode);
@@ -851,95 +842,6 @@ static ssize_t mt_usb_store_portmode(struct device *dev, struct device_attribute
 }
 
 DEVICE_ATTR(portmode, 0664, mt_usb_show_portmode, mt_usb_store_portmode);
-
-
-static ssize_t mt_usb_show_tx(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	UINT8 var;
-	UINT8 var2;
-
-	if (!dev) {
-		DBG(0, "dev is null!!\n");
-		return 0;
-	}
-#ifdef FPGA_PLATFORM
-	var = USB_PHY_Read_Register8(0x6E);
-#else
-	var = USBPHY_READ8(0x6E);
-#endif
-	var2 = (var >> 3) & ~0xFE;
-	DBG(0, "[MUSB]addr: 0x6E (TX), value: %x - %x\n", var, var2);
-
-	sw_tx = var;
-
-	return scnprintf(buf, PAGE_SIZE, "%x\n", var2);
-}
-
-static ssize_t mt_usb_store_tx(struct device *dev, struct device_attribute *attr,
-			       const char *buf, size_t count)
-{
-	unsigned int val;
-	UINT8 var;
-	UINT8 var2;
-
-	if (!dev) {
-		DBG(0, "dev is null!!\n");
-		return count;
-	/* } else if (1 == sscanf(buf, "%d", &val)) { */
-	} else if (kstrtol(buf, 10, (long *)&val) == 0) {
-		DBG(0, "\n Write TX : %d\n", val);
-
-#ifdef FPGA_PLATFORM
-		var = USB_PHY_Read_Register8(0x6E);
-#else
-		var = USBPHY_READ8(0x6E);
-#endif
-
-		if (val == 0)
-			var2 = var & ~(1 << 3);
-		else
-			var2 = var | (1 << 3);
-
-#ifdef FPGA_PLATFORM
-		USB_PHY_Write_Register8(var2, 0x6E);
-		var = USB_PHY_Read_Register8(0x6E);
-#else
-		USBPHY_WRITE8(0x6E, var2);
-		var = USBPHY_READ8(0x6E);
-#endif
-
-		var2 = (var >> 3) & ~0xFE;
-
-		DBG(0, "[MUSB]addr: 0x6E TX [AFTER WRITE], value after: %x - %x\n", var, var2);
-		sw_tx = var;
-	}
-	return count;
-}
-
-DEVICE_ATTR(tx, 0664, mt_usb_show_tx, mt_usb_store_tx);
-
-static ssize_t mt_usb_show_rx(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	UINT8 var;
-	UINT8 var2;
-
-	if (!dev) {
-		DBG(0, "dev is null!!\n");
-		return 0;
-	}
-#ifdef FPGA_PLATFORM
-	var = USB_PHY_Read_Register8(0x77);
-#else
-	var = USBPHY_READ8(0x77);
-#endif
-	var2 = (var >> 7) & ~0xFE;
-	DBG(0, "[MUSB]addr: 0x77 (RX), value: %x - %x\n", var, var2);
-	sw_rx = var;
-
-	return scnprintf(buf, PAGE_SIZE, "%x\n", var2);
-}
-
-DEVICE_ATTR(rx, 0444, mt_usb_show_rx, NULL);
 
 static ssize_t mt_usb_show_uart_path(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -1490,8 +1392,6 @@ static int mt_usb_probe(struct platform_device *pdev)
 	ret = device_create_file(&pdev->dev, &dev_attr_saving);
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	ret = device_create_file(&pdev->dev, &dev_attr_portmode);
-	ret = device_create_file(&pdev->dev, &dev_attr_tx);
-	ret = device_create_file(&pdev->dev, &dev_attr_rx);
 	ret = device_create_file(&pdev->dev, &dev_attr_uartpath);
 #endif
 
