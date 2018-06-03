@@ -751,6 +751,19 @@
 };
 /* AUDIO end */
 
+#ifdef CONFIG_MFD_RT5081_PMU
+&rt5081_pmu {
+	rt,intr_gpio_num = <91>; /* direct defined GPIO num */
+	rt,intr_gpio = <&pio 91 0x0>;
+};
+#endif
+#ifdef CONFIG_TCPC_RT5081
+&rt5081_typec {
+	rt5081pd,intr_gpio_num = <41>; /* direct defined GPIO num */
+	rt5081pd,intr_gpio = <&pio 41 0x0>;
+};
+#endif
+#ifdef CONFIG_MFD_MT6370_PMU
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <91>; /* direct defined GPIO num */
 	mt6370,intr_gpio = <&pio 91 0x0>;
@@ -766,11 +779,13 @@
 	chg1_ta_ac_charger_current = <2000000>;
 	chg2_ta_ac_charger_current = <2000000>;
 };
-
+#endif
+#ifdef CONFIG_TCPC_MT6370
 &mt6370_typec {
 	mt6370pd,intr_gpio_num = <41>; /* direct defined GPIO num */
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
+#endif
 
 &msdc2 {
 	status = "okay";
