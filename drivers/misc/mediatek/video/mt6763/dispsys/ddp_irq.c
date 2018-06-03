@@ -426,6 +426,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		module = DISP_MODULE_AAL0;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA);
 		disp_aal_on_end_of_frame();
+	} else if (irq == ddp_get_module_irq(DISP_MODULE_CCORR0)) {
+		module = DISP_MODULE_CCORR0;
+		reg_val = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
+		disp_ccorr_on_end_of_frame();
 	} else if (irq == ddp_get_module_irq(DISP_MODULE_CONFIG)) {	/* MMSYS error intr */
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA) & 0x7;
 		if (reg_val & (1 << 0))

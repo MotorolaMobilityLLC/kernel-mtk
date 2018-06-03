@@ -5573,7 +5573,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_display_cmd, MMPROFILE_FLAG_START, _IOC_NR(cmd), 0);
 
-	if (cmd == DISP_IOCTL_AAL_GET_HIST) {
+	if (cmd == DISP_IOCTL_AAL_GET_HIST || cmd == DISP_IOCTL_CCORR_GET_IRQ) {
 		_primary_path_lock(__func__);
 
 		if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {

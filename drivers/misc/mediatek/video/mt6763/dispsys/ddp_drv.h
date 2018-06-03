@@ -307,6 +307,11 @@ struct device *disp_get_device(void);
 #define DISP_IOCTL_SET_GAMMALUT    _IOW(DISP_IOCTL_MAGIC, 23, DISP_GAMMA_LUT_T)
 #define DISP_IOCTL_SET_CCORR       _IOW(DISP_IOCTL_MAGIC, 24, DISP_CCORR_COEF_T)
 
+/* Add for PQ transition control */
+/* 0 : disable CCORR event, 1 : enable CCORR event */
+#define DISP_IOCTL_CCORR_EVENTCTL    _IOW(DISP_IOCTL_MAGIC, 110, int)
+/* Get CCORR interrupt */
+#define DISP_IOCTL_CCORR_GET_IRQ    _IOR(DISP_IOCTL_MAGIC, 111, int)
 
 /* Add for AAL control - E */
 /*-----------------------------------------------------------------------------*/

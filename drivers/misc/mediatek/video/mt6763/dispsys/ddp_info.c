@@ -207,7 +207,7 @@ static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
 	 {"mediatek,disp_ccorr0",
 	  0x1400f000,
 	  253,
-	  0,
+	  1,
 	  0,
 	  0}
 	},
