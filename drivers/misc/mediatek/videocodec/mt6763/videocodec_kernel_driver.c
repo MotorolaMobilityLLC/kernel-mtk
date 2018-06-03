@@ -69,6 +69,10 @@
 #include <linux/compat.h>
 #endif
 
+#ifdef CONFIG_FPGA_EARLY_PORTING
+#define VCODEC_FPGAPORTING
+#endif
+
 #define VDO_HW_WRITE(ptr, data)     mt_reg_sync_writel(data, ptr)
 #define VDO_HW_READ(ptr)           (*((volatile unsigned int * const)(ptr)))
 
@@ -81,6 +85,7 @@ static struct cdev *vcodec_cdev;
 static struct class *vcodec_class;
 static struct device *vcodec_device;
 
+#ifndef VCODEC_FPGAPORTING
 #ifndef CONFIG_MTK_CLKMGR
 static struct clk *clk_MT_CG_DISP0_SMI_COMMON;  /* MM_DISP0_SMI_COMMON */
 static struct clk *clk_MT_CG_VDEC0_VDEC;        /* VDEC0_VDEC */
@@ -92,6 +97,7 @@ static struct clk *clk_MT_CG_VENC_LARB;         /* VENC_LARB */
 static struct clk *clk_MT_SCP_SYS_VDE;          /* SCP_SYS_VDE */
 static struct clk *clk_MT_SCP_SYS_VEN;          /* SCP_SYS_VEN */
 static struct clk *clk_MT_SCP_SYS_DIS;          /* SCP_SYS_DIS */
+#endif
 #endif
 
 static DEFINE_MUTEX(IsOpenedLock);
@@ -212,6 +218,7 @@ extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int va
 /* raise/drop voltage */
 void SendDvfsRequest(int level)
 {
+#ifndef VCODEC_FPGAPORTING
 	int ret = 0;
 
 	if (level == MMDVFS_VOLTAGE_LOW_LOW) {
@@ -226,6 +233,7 @@ void SendDvfsRequest(int level)
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: mmdvfs_set_step error!");
 	}
+#endif
 }
 
 void *mt_venc_base_get(void)
@@ -249,6 +257,7 @@ void vdec_power_on(void)
 	mutex_unlock(&VdecPWRLock);
 	ret = 0;
 
+#ifndef VCODEC_FPGAPORTING
 #ifdef CONFIG_MTK_CLKMGR
 	/* Central power on */
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "VDEC");
@@ -289,6 +298,7 @@ void vdec_power_on(void)
 		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC1_LARB is not enabled, ret = %d\n", ret);
 	}
 #endif
+#endif
 }
 
 void vdec_power_off(void)
@@ -298,6 +308,8 @@ void vdec_power_off(void)
 		MODULE_MFV_LOGD("[VCODEC] gu4VdecPWRCounter = 0\n");
 	} else {
 		gu4VdecPWRCounter--;
+
+#ifndef VCODEC_FPGAPORTING
 #ifdef CONFIG_MTK_CLKMGR
 		/* Central power off */
 		disable_clock(MT_CG_VDEC0_VDEC, "VDEC");
@@ -313,6 +325,7 @@ void vdec_power_off(void)
 		clk_disable_unprepare(clk_MT_CG_DISP0_SMI_COMMON);
 		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
 #endif
+#endif
 	}
 	mutex_unlock(&VdecPWRLock);
 }
@@ -327,6 +340,7 @@ void venc_power_on(void)
 	ret = 0;
 
 	MODULE_MFV_LOGD("[VCODEC] venc_power_on +\n");
+#ifndef VCODEC_FPGAPORTING
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "VENC");
 	enable_clock(MT_CG_VENC_VENC, "VENC");
@@ -367,6 +381,7 @@ void venc_power_on(void)
 		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_VENC_LARB is not enabled, ret = %d\n", ret);
 	}
 #endif
+#endif
 
 	MODULE_MFV_LOGD("[VCODEC] venc_power_on -\n");
 }
@@ -379,6 +394,7 @@ void venc_power_off(void)
 	} else {
 		gu4VencPWRCounter--;
 		MODULE_MFV_LOGD("[VCODEC] venc_power_off +\n");
+#ifndef VCODEC_FPGAPORTING
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_VENC_VENC, "VENC");
 		disable_clock(MT_CG_VENC_LARB, "VENC");
@@ -392,6 +408,7 @@ void venc_power_off(void)
 		clk_disable_unprepare(clk_MT_SCP_SYS_VEN);
 		clk_disable_unprepare(clk_MT_CG_DISP0_SMI_COMMON);
 		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
+#endif
 #endif
 		MODULE_MFV_LOGD("[VCODEC] venc_power_off -\n");
 	}
@@ -2242,6 +2259,7 @@ static int vcodec_probe(struct platform_device *dev)
 	disable_irq(VDEC_IRQ_ID);
 	disable_irq(VENC_IRQ_ID);
 
+#ifndef VCODEC_FPGAPORTING
 #ifndef CONFIG_MTK_CLKMGR
 	clk_MT_CG_DISP0_SMI_COMMON = devm_clk_get(&dev->dev, "MT_CG_DISP0_SMI_COMMON");
 	if (IS_ERR(clk_MT_CG_DISP0_SMI_COMMON)) {
@@ -2290,6 +2308,7 @@ static int vcodec_probe(struct platform_device *dev)
 		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_DIS\n");
 		return PTR_ERR(clk_MT_SCP_SYS_DIS);
 	}
+#endif
 #endif
 
 	MODULE_MFV_LOGD("vcodec_probe Done\n");
