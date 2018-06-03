@@ -1076,13 +1076,6 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 		binpa_main_program = binpa_reset_vector + VPU_OFFSET_MAIN_PROGRAM;
 		binpa_iram_data = bin_pa + VPU_OFFSET_MAIN_PROGRAM_IMEM + VPU_DDR_SHIFT_IRAM_DATA;
 		break;
-	case 2:
-		mva_reset_vector = VPU3_MVA_RESET_VECTOR;
-		mva_main_program = VPU3_MVA_MAIN_PROGRAM;
-		binpa_reset_vector = bin_pa + (VPU_DDR_SHIFT_RESET_VECTOR << 2);
-		binpa_main_program = binpa_reset_vector + VPU_OFFSET_MAIN_PROGRAM;
-		binpa_iram_data = bin_pa + VPU_OFFSET_MAIN_PROGRAM_IMEM + (VPU_DDR_SHIFT_IRAM_DATA << 2);
-		break;
 	}
 	LOG_DBG("vpu_map_mva_of_bin(core:%d), pa resvec/mainpro(0x%lx/0x%lx)\n", core,
 		(unsigned long)binpa_reset_vector, (unsigned long)binpa_main_program);
@@ -1604,9 +1597,6 @@ int vpu_hw_boot_sequence(int core)
 		break;
 	case 1:
 		vpu_write_field(core, FLD_CORE_XTENSA_ALTRESETVEC, VPU2_MVA_RESET_VECTOR);
-		break;
-	case 2:
-		vpu_write_field(core, FLD_CORE_XTENSA_ALTRESETVEC, VPU3_MVA_RESET_VECTOR);
 		break;
 	}
 	reg_value = vpu_read_field(core, FLD_CORE_XTENSA_ALTRESETVEC);
