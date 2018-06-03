@@ -27,7 +27,7 @@
 /* 0: Enhanced one-core violation debugging can be enabled dynamically */
 /* Notice: You should only use one core to debug */
 /* (Please note it may trigger PRINTK too much)  */
-#define DEVAPC_ENABLE_ONE_CORE_VIOLATION_DEBUG	1
+#define DEVAPC_ENABLE_ONE_CORE_VIOLATION_DEBUG	0
 
 #define DAPC_INPUT_TYPE_DEBUG_ON	200
 #define DAPC_INPUT_TYPE_DEBUG_OFF	100
