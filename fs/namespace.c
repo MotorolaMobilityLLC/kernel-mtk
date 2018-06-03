@@ -741,7 +741,7 @@ mountpoint:
 	}
 
 	if (!new)
-		new = kmalloc(sizeof(struct mountpoint), GFP_KERNEL);
+		new = kmalloc(sizeof(struct mountpoint), GFP_NOFS);
 	if (!new)
 		return ERR_PTR(-ENOMEM);
 
