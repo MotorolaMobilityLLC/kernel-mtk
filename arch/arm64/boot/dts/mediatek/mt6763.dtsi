@@ -1524,6 +1524,18 @@
 		compatible = "mediatek,mtkfb";
 	};
 
+	als: als_ps@0 {
+		compatible = "mediatek,als_ps";
+	};
+
+	mse: mse {
+		compatible = "mediatek,fix_build_error";
+	};
+
+	gyro: gyro {
+		compatible = "mediatek,fix_build_error";
+	};
+
 	touch: touch {
 		compatible = "mediatek,mt6763-touch";
 		/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
