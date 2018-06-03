@@ -1497,11 +1497,12 @@ void zqcs_timer_callback(unsigned long data)
 	if (mt_spm_base_get()) {
 		if (spm_vcorefs_get_md_srcclkena()) {
 			if (lp4_highfreq_3600)
-				spm_request_dvfs_opp(0, OPP_2);
+				spm_request_dvfs_opp(0, OPP_0);
 			else
 				spm_request_dvfs_opp(0, OPP_1);
 			for (timeout = 100; timeout; timeout--) {
-				if (get_dram_data_rate() >= 3200)
+				if (((!lp4_highfreq_3600) && get_dram_data_rate() >= 3200)
+					|| ((lp4_highfreq_3600) && get_dram_data_rate() >= 3600))
 					break;
 				udelay(1);
 			}
