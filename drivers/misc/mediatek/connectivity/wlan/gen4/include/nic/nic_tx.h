@@ -756,6 +756,7 @@ struct _MSDU_INFO_T {
 	UINT_8 ucWmmQueSet;	/* WMM Set */
 	PFN_TX_DONE_HANDLER pfTxDoneHandler;	/* Tx done handler */
 	UINT_32 u4TxDoneTag;	/* Tag for data frame Tx done log */
+	UINT_8 ucPktType;
 
 #if CFG_ENABLE_PKT_LIFETIME_PROFILE
 	PKT_PROFILE_T rPktProfile;
