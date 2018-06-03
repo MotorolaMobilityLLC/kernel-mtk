@@ -21,7 +21,7 @@
 #include "ged_frr.h"
 #include "ged_base.h"
 #include "ged_type.h"
-#include "primary_display.h"
+/*#include "primary_display.h"*/
 #include "dfrc.h"
 #include "dfrc_drv.h"
 
@@ -227,9 +227,9 @@ int ged_frr_get_fps(int targetPid, uint64_t targetCid)
 GED_ERROR ged_frr_wait_hw_vsync(void)
 {
 	int ret = 0;
-	struct disp_session_vsync_config vsync_config;
+	/*struct disp_session_vsync_config vsync_config;*/
 
-	ret = primary_display_wait_for_vsync(&vsync_config);
+	/*ret = primary_display_wait_for_vsync(&vsync_config);*/
 	if (ret < 0) {
 		GED_LOGE("[FRR] ged_frr_wait_hw_vsync, ret(%d)\n", ret);
 		return GED_ERROR_FAIL;
