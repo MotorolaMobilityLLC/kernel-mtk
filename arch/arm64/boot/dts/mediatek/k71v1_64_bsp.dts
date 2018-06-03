@@ -65,6 +65,12 @@ initcall_debug=1";
 		data = <1>;
 		pwm_config = <0 3 0 0 0>;
 	};
+	vibrator0:vibrator@0 {
+		compatible = "mediatek,vibrator";
+		vib_timer = <25>;
+		vib_limit = <9>;
+		vib_vol= <9>;
+	};
 };
 
 &scp {
