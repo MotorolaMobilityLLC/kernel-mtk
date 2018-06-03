@@ -118,9 +118,9 @@ static char *kicker_name[] = {
 	"KIR_GPU",
 	"KIR_APCCCI",
 	"KIR_SYSFS",
-	"KIR_SYSFSX",
 	"KIR_MM_NON_FORCE",
 	"KIR_SYSFS_N",
+	"KIR_SYSFSX",
 	"NUM_KICKER",
 
 	"KIR_LATE_INIT",
