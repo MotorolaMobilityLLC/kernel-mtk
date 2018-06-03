@@ -135,18 +135,6 @@ struct mmdvfs_clk_hw_map mt6765_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = {
 
 struct mmdvfs_profile_mask qos_apply_profiles[] = {
 #ifdef MMDVFS_QOS_SUPPORT
-	/* VP 4K for opp0 */
-	{"4K VP",
-		SMI_BWC_SCEN_VP_HIGH_RESOLUTION,
-		MMDVFS_FINE_STEP_OPP0 },
-	/* VP 4K for opp1 */
-	{"4K VP",
-		SMI_BWC_SCEN_VP_HIGH_RESOLUTION,
-		MMDVFS_FINE_STEP_OPP1 },
-	/* VPU */
-	{"VPU",
-		MMDVFS_SCEN_VPU_KERNEL,
-		MMDVFS_FINE_STEP_OPP0 },
 	/* ISP for opp0 */
 	{"ISP",
 		MMDVFS_PMQOS_ISP,
@@ -355,29 +343,6 @@ struct mmdvfs_step_profile mt6765_step_profile_lp3[MT6765_MMDVFS_OPP_MAX] = {
 };
 
 /* Part III Scenario and MMSVFS HW configuration mapping */
-
-#define MT6765_MMDVFS_VOLTAGE_LOW_OPP	2
-#define MT6765_MMDVFS_VOLTAGE_HIGH_OPP	1
-#define MT6765_MMDVFS_VOLTAGE_DEFAULT_STEP_OPP	-1
-#define MT6765_MMDVFS_VOLTAGE_LOW_LOW_OPP 3
-
-int mt6765_mmdvfs_legacy_step_to_opp[MMDVFS_VOLTAGE_COUNT] = {
-	MT6765_MMDVFS_VOLTAGE_LOW_OPP,
-	MT6765_MMDVFS_VOLTAGE_HIGH_OPP, MT6765_MMDVFS_VOLTAGE_DEFAULT_STEP_OPP,
-	MT6765_MMDVFS_VOLTAGE_LOW_LOW_OPP
-};
-
-#define MT6765_MMCLK_OPP0_LEGACY_STEP	MMSYS_CLK_HIGH
-#define MT6765_MMCLK_OPP1_LEGACY_STEP	MMSYS_CLK_LOW
-/* MMCLK_OPP3 and OPP2 is not used in this configuration */
-#define MT6765_MMCLK_OPP2_LEGACY_STEP	MMSYS_CLK_LOW
-#define MT6765_MMCLK_OPP3_LEGACY_STEP	MMSYS_CLK_LOW
-
-int mt6765_mmdvfs_mmclk_opp_to_legacy_mmclk_step[MT6765_MMDVFS_OPP_MAX] = {
-	MT6765_MMCLK_OPP0_LEGACY_STEP, MT6765_MMCLK_OPP1_LEGACY_STEP,
-	MT6765_MMCLK_OPP2_LEGACY_STEP, MT6765_MMCLK_OPP3_LEGACY_STEP
-};
-
 
 /* Part IV VPU association */
 /* There is no VPU DVFS in MT6765 */

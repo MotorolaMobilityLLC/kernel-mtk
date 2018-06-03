@@ -18,10 +18,11 @@
 #include <mt-plat/mtk_smi.h>
 
 /* from smi_configuration.h */
-#define SMI_PARAM_DISABLE_MMDVFS		(0)
-#define SMI_PARAM_DISABLE_FREQ_MUX		(1)
-#define SMI_PARAM_DISABLE_FREQ_HOPPING		(1)
+#define SMI_PARAM_DISABLE_MMDVFS				(0)
+#define SMI_PARAM_DISABLE_FREQ_MUX				(1)
+#define SMI_PARAM_DISABLE_FREQ_HOPPING			(1)
 #define SMI_PARAM_DISABLE_FORCE_MMSYS_MAX_CLK	(1)
+
 /* implement in smi_legacy.c */
 int mmdvfs_scen_log_mask_get(void);
 int mmdvfs_debug_level_get(void);

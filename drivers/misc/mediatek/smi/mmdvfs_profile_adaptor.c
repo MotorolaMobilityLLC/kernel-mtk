@@ -38,16 +38,9 @@
 #include "mmdvfs_pmqos.h"
 
 /* Class: mmdvfs_step_util */
-static int mmdvfs_get_legacy_mmclk_step_from_mmclk_opp(
-	struct mmdvfs_step_util *self, int mmclk_step);
-static int mmdvfs_get_opp_from_legacy_step(
-	struct mmdvfs_step_util *self, int legacy_step);
 static void mmdvfs_step_util_init(struct mmdvfs_step_util *self);
 static int mmdvfs_step_util_set_step(
 	struct mmdvfs_step_util *self, s32 step, u32 scenario);
-static int mmdvfs_get_clients_clk_opp(
-	struct mmdvfs_step_util *self, struct mmdvfs_adaptor *adaptor,
-	int clients_mask, int clk_id);
 static bool in_camera_scenario;
 u32 camera_bw_config;
 u32 normal_bw_config;
@@ -57,16 +50,9 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6758 = {
 	MMDVFS_SCEN_COUNT,
 	{0},
 	MT6758_MMDVFS_OPP_MAX,
-	mt6758_mmdvfs_legacy_step_to_opp,
-	MMDVFS_VOLTAGE_COUNT,
-	mt6758_mmdvfs_mmclk_opp_to_legacy_mmclk_step,
-	MT6758_MMDVFS_OPP_MAX,
 	MMDVFS_FINE_STEP_OPP0,
 	mmdvfs_step_util_init,
-	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
-	mmdvfs_get_opp_from_legacy_step,
 	mmdvfs_step_util_set_step,
-	mmdvfs_get_clients_clk_opp
 };
 
 #elif defined(SMI_CER)
@@ -75,16 +61,9 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6765 = {
 	MMDVFS_SCEN_COUNT,
 	{0},
 	MT6765_MMDVFS_OPP_MAX,
-	mt6765_mmdvfs_legacy_step_to_opp,
-	MMDVFS_VOLTAGE_COUNT,
-	mt6765_mmdvfs_mmclk_opp_to_legacy_mmclk_step,
-	MT6765_MMDVFS_OPP_MAX,
 	MMDVFS_FINE_STEP_OPP0,
 	mmdvfs_step_util_init,
-	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
-	mmdvfs_get_opp_from_legacy_step,
 	mmdvfs_step_util_set_step,
-	mmdvfs_get_clients_clk_opp
 };
 #endif
 
@@ -194,18 +173,6 @@ struct mmdvfs_thres_handler mmdvfs_thres_handler_mt6765 = {
 };
 #endif
 
-static const struct mmdvfs_vpu_steps_setting
-	*get_vpu_setting_impl(
-		struct mmdvfs_vpu_dvfs_configurator *self, int vpu_opp);
-
-struct mmdvfs_vpu_dvfs_configurator mmdvfs_vpu_dvfs_configurator_obj = {
-	0,
-	0,
-	0,
-	0,
-	NULL,
-	get_vpu_setting_impl
-};
 /* Member function implementation */
 static int mmdvfs_apply_hw_config(struct mmdvfs_adaptor *self,
 	int mmdvfs_step, const int current_step)
@@ -449,39 +416,6 @@ static int mmdvfs_apply_clk_hw_config(
 
 }
 
-static int mmdvfs_get_clients_clk_opp(struct mmdvfs_step_util *self,
-	struct mmdvfs_adaptor *adaptor, int clients_mask, int clk_id)
-{
-	/* Get the opp determined only by the specified clients */
-	int opp_idx = 0;
-	int final_opp = -1;
-	int final_clk_opp = -1;
-
-	for (opp_idx = 0; opp_idx < self->total_opps; opp_idx++) {
-		int masked_concurrency =
-			self->mmdvfs_concurrency[opp_idx] & clients_mask;
-
-		if (masked_concurrency != 0) {
-			final_opp = opp_idx;
-			break;
-		}
-	}
-
-	/* if no request, return the lowerest step */
-	if (final_opp == -1)
-		final_opp = adaptor->step_num - 1;
-
-	/* Retrieve the CLK opp setting associated the MMDVFS opp */
-	if (clk_id >= 0	&& clk_id < adaptor->mmdvfs_clk_hw_maps_num) {
-		if (final_opp >= 0 && final_opp	<= adaptor->step_num) {
-			struct mmdvfs_step_profile *step_to_profile =
-			adaptor->step_profile_mappings + final_opp;
-			final_clk_opp =
-				step_to_profile->hw_config.clk_steps[clk_id];
-		}
-	}
-	return final_clk_opp;
-}
 
 static int mmdvfs_get_cam_sys_clk(
 	struct mmdvfs_adaptor *self, int mmdvfs_step)
@@ -838,44 +772,6 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self,
 	return final_opp;
 }
 
-static int mmdvfs_get_opp_from_legacy_step(
-	struct mmdvfs_step_util *self, int legacy_step)
-{
-	if (self->legacy_step_to_oop == NULL || legacy_step < 0 ||
-		legacy_step >= self->legacy_step_to_oop_num)
-		return -1;
-	else
-		return self->legacy_step_to_oop_num + legacy_step;
-}
-
-static int mmdvfs_get_legacy_mmclk_step_from_mmclk_opp(
-	struct mmdvfs_step_util *self, int mmclk_step)
-{
-	int step_ret = -1;
-
-	if (self->mmclk_oop_to_legacy_step == NULL || mmclk_step < 0
-	|| mmclk_step >= self->mmclk_oop_to_legacy_step_num) {
-		step_ret = -1;
-	} else {
-		int *step_ptr = self->mmclk_oop_to_legacy_step + mmclk_step;
-
-		step_ret = -1;
-
-		if (step_ptr != NULL)
-			step_ret = *step_ptr;
-	}
-	return step_ret;
-}
-
-static const struct mmdvfs_vpu_steps_setting *get_vpu_setting_impl(
-	struct mmdvfs_vpu_dvfs_configurator *self, int vpu_opp)
-{
-	if (vpu_opp < 0 || vpu_opp > self->nr_vpu_steps)
-		return NULL;
-	else
-		return (const struct mmdvfs_vpu_steps_setting *)&
-				(self->mmdvfs_vpu_steps_settings[vpu_opp]);
-}
 
 /* ISP DVFS Adaptor Impementation */
 static s32 get_step_by_threshold(struct mmdvfs_thres_handler *self,
