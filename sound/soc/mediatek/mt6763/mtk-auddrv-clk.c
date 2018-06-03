@@ -386,7 +386,6 @@ static int apll2_mux_setting(bool enable)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_TOP_MUX_AUD_2].name,
 			       aud_clks[CLOCK_TOP_APLL2_CK].name, ret);
-			AUDIO_AEE("");
 			goto EXIT;
 		}
 
