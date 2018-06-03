@@ -300,8 +300,13 @@ void m4u_dump_pte_nolock(struct m4u_domain *domain, unsigned int mva)
 {
 	m4u_pte_info_t pte_info;
 
-	m4u_get_pte_info(domain, mva, &pte_info);
+	m4u_get_pte_info(domain, mva - 0x1000, &pte_info);
+	__m4u_print_pte(&pte_info, NULL);
 
+	m4u_get_pte_info(domain, mva, &pte_info);
+	__m4u_print_pte(&pte_info, NULL);
+
+	m4u_get_pte_info(domain, mva + 0x1000, &pte_info);
 	__m4u_print_pte(&pte_info, NULL);
 }
 
