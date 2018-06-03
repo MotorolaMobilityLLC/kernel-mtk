@@ -413,6 +413,9 @@ struct cfs_rq {
 	unsigned long propagate_avg;
 #endif
 	atomic_long_t removed_load_avg, removed_util_avg;
+#ifdef CONFIG_SCHED_HMP
+	atomic_long_t removed_loadwop_avg;
+#endif
 #ifndef CONFIG_64BIT
 	u64 load_last_update_time_copy;
 #endif

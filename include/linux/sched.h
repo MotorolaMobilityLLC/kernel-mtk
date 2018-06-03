@@ -1402,8 +1402,8 @@ struct sched_avg {
 	u64 last_update_time, load_sum;
 	u32 util_sum, period_contrib;
 	unsigned long load_avg, util_avg;
-	unsigned long loadwop_avg, loadwop_sum;
 #ifdef CONFIG_SCHED_HMP
+	unsigned long loadwop_avg, loadwop_sum;
 	unsigned long pending_load;
 	u32 nr_pending;
 	u32 nr_dequeuing_low_prio;
