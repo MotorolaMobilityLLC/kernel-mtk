@@ -373,9 +373,6 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_tr_cn_used = 0;
 	ufs_mtk_hba = hba;
 	hba->hwfde_key_idx = -1;
-#ifdef CONFIG_MTK_UFS_CRYPTO_DEBUG
-	memset(ufs_mtk_crypto_map, 0, sizeof(ufs_mtk_crypto_map[0]) * UFS_MAX_LBA);
-#endif
 
 	ufs_mtk_pltfrm_init();
 

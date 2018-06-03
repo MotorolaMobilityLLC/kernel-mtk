@@ -1128,30 +1128,10 @@ int ufshcd_copy_query_response(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
  */
 static inline void ufshcd_hba_capabilities(struct ufs_hba *hba)
 {
-	u32 nutrs;
-
 	hba->capabilities = ufshcd_readl(hba, REG_CONTROLLER_CAPABILITIES);
 
 	/* nutrs and nutmrs are 0 based values */
-
-	/*
-	 * MTK PATCH:
-	 *
-	 * Fix NUTRS if required.
-	 *
-	 * New NUTRS is parsed in vendor init vop and saved in hba->nutrs.
-	 * hba->nutrs will be 0 if no limitation.
-	 *
-	 * For example, if file-based encryption is enabled,
-	 * NUTRS may be limited by the maximum number of crypto configurations.
-	 */
-	nutrs = (hba->capabilities & MASK_TRANSFER_REQUESTS_SLOTS) + 1;
-
-	if (!hba->nutrs)
-		hba->nutrs = nutrs;
-	else
-		hba->nutrs = min_t(unsigned int, nutrs, hba->nutrs);
-
+	hba->nutrs = (hba->capabilities & MASK_TRANSFER_REQUESTS_SLOTS) + 1;
 	hba->nutmrs =
 	((hba->capabilities & MASK_TASK_MANAGEMENT_REQUEST_SLOTS) >> 16) + 1;
 }
