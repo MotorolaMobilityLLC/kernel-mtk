@@ -295,8 +295,6 @@ void wdt_dump_reg(void)
 	pr_alert("MTK_WDT_EXT_REQ_CON:0x%x\n", __raw_readl(MTK_WDT_EXT_REQ_CON));
 	pr_alert("MTK_WDT_DEBUG_CTL:0x%x\n", __raw_readl(MTK_WDT_DEBUG_CTL));
 	pr_alert("MTK_WDT_LATCH_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL));
-	pr_alert("MTK_WDT_LATCH2_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL2));
-	pr_alert("MTK_WDT_RESET_PROTECT:0x%x\n", __raw_readl(MTK_WDT_RESET_PROTECT));
 	pr_alert("MTK_WDT_DEBUG_CTL2:0x%x\n", __raw_readl(MTK_WDT_DEBUG_CTL2));
 	pr_alert("****************dump wdt reg end*************\n");
 
