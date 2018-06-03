@@ -168,6 +168,7 @@ static void update_v2f(int update, int debug)
 	}
 }
 
+/* #define DEBUG_CM_MGR */
 void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 {
 	unsigned long long result = 0;
@@ -283,9 +284,23 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			cpu_power_up_array[i] = cpu_power_up[i] = 0;
 			cpu_power_down_array[i] = cpu_power_down[i] = 0;
 		}
+#ifdef DEBUG_CM_MGR
+		print_hex_dump(KERN_INFO, "cpu_opp_cur: ", DUMP_PREFIX_NONE, 16,
+				1, &cpu_opp_cur[0], ARRAY_SIZE(cpu_opp_cur), 0);
+#endif /* DEBUG_CM_MGR */
 
 		vcore_power_up = 0;
 		vcore_power_down = 0;
+
+		for (i = 0; i < CM_MGR_CPU_COUNT; i++) {
+			cpu_ratio_idx[i] = cm_mgr_get_stall_ratio(i) / 5;
+			if (cpu_ratio_idx[i] > RATIO_COUNT)
+				cpu_ratio_idx[i] = RATIO_COUNT;
+		}
+#ifdef DEBUG_CM_MGR
+		print_hex_dump(KERN_INFO, "cpu_ratio_idx: ", DUMP_PREFIX_NONE, 16,
+				1, &cpu_ratio_idx[0], ARRAY_SIZE(cpu_ratio_idx), 0);
+#endif /* DEBUG_CM_MGR */
 
 		level = CM_MGR_EMI_OPP - vcore_dram_opp_cur;
 		if (vcore_dram_opp_cur != 0) {
@@ -293,9 +308,6 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			cpu_power_total = 0;
 #ifdef PER_CPU_STALL_RATIO
 			for (i = 0; i < CM_MGR_CPU_COUNT; i++) {
-				cpu_ratio_idx[i] = cm_mgr_get_stall_ratio(i) / 5;
-				if (cpu_ratio_idx[i] > RATIO_COUNT)
-					cpu_ratio_idx[i] = RATIO_COUNT;
 				if (i < 4)
 					cpu_power_up_array[0] +=
 						cpu_power_gain_opp(total_bw, IS_UP,
@@ -323,6 +335,10 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			if (cm_mgr_opp_enable == 0) {
 				if (vcore_dram_opp != CM_MGR_EMI_OPP) {
 					vcore_dram_opp = CM_MGR_EMI_OPP;
+#ifdef DEBUG_CM_MGR
+					pr_info("#@# %s(%d) vcore_dram_opp %d->%d\n", __func__, __LINE__,
+							vcore_dram_opp_cur, vcore_dram_opp);
+#endif /* DEBUG_CM_MGR */
 					dvfsrc_set_power_model_ddr_request(CM_MGR_EMI_OPP - vcore_dram_opp);
 				}
 
@@ -331,6 +347,10 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 
 			idx = level;
 			vcore_power_up = vcore_power_gain(vcore_power_gain, total_bw, idx);
+#ifdef DEBUG_CM_MGR
+			pr_info("#@# %s(%d) vcore_power_up 0x%x cpu_power_total 0x%x\n", __func__, __LINE__,
+					vcore_power_up, cpu_power_total);
+#endif /* DEBUG_CM_MGR */
 			if ((vcore_power_up * vcore_power_ratio_up[idx]) <
 					(cpu_power_total * cpu_power_ratio_up[idx])) {
 				debounce_times_down = 0;
@@ -338,6 +358,10 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 					if (debounce_times_reset_adb)
 						debounce_times_up = 0;
 					vcore_dram_opp = vcore_dram_opp_cur - 1;
+#ifdef DEBUG_CM_MGR
+					pr_info("#@# %s(%d) vcore_dram_opp %d->%d\n", __func__, __LINE__,
+							vcore_dram_opp_cur, vcore_dram_opp);
+#endif /* DEBUG_CM_MGR */
 					dvfsrc_set_power_model_ddr_request(CM_MGR_EMI_OPP - vcore_dram_opp);
 				}
 				goto cm_mgr_opp_end;
@@ -348,9 +372,6 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			cpu_power_total = 0;
 #ifdef PER_CPU_STALL_RATIO
 			for (i = 0; i < CM_MGR_CPU_COUNT; i++) {
-				cpu_ratio_idx[i] = cm_mgr_get_stall_ratio(i) / 5;
-				if (cpu_ratio_idx[i] > RATIO_COUNT)
-					cpu_ratio_idx[i] = RATIO_COUNT;
 				if (i < 4)
 					cpu_power_down_array[0] +=
 						cpu_power_gain_opp(total_bw, IS_DOWN,
@@ -378,6 +399,10 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			if (cm_mgr_opp_enable == 0) {
 				if (vcore_dram_opp != CM_MGR_EMI_OPP) {
 					vcore_dram_opp = CM_MGR_EMI_OPP;
+#ifdef DEBUG_CM_MGR
+					pr_info("#@# %s(%d) vcore_dram_opp %d->%d\n", __func__, __LINE__,
+							vcore_dram_opp_cur, vcore_dram_opp);
+#endif /* DEBUG_CM_MGR */
 					dvfsrc_set_power_model_ddr_request(CM_MGR_EMI_OPP - vcore_dram_opp);
 				}
 
@@ -386,6 +411,10 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 
 			idx = level - 1;
 			vcore_power_down =  vcore_power_gain(vcore_power_gain, total_bw, idx);
+#ifdef DEBUG_CM_MGR
+			pr_info("#@# %s(%d) vcore_power_down 0x%x cpu_power_total 0x%x\n", __func__, __LINE__,
+					vcore_power_down, cpu_power_total);
+#endif /* DEBUG_CM_MGR */
 			if ((vcore_power_down * vcore_power_ratio_down[idx]) >
 					(cpu_power_total * cpu_power_ratio_down[idx])) {
 				debounce_times_up = 0;
@@ -393,6 +422,10 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 					if (debounce_times_reset_adb)
 						debounce_times_down = 0;
 					vcore_dram_opp = vcore_dram_opp_cur + 1;
+#ifdef DEBUG_CM_MGR
+					pr_info("#@# %s(%d) vcore_dram_opp %d->%d\n", __func__, __LINE__,
+							vcore_dram_opp_cur, vcore_dram_opp);
+#endif /* DEBUG_CM_MGR */
 					dvfsrc_set_power_model_ddr_request(CM_MGR_EMI_OPP - vcore_dram_opp);
 				}
 			}
