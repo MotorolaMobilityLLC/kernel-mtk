@@ -106,6 +106,11 @@ int ppm_main_freq_to_idx(unsigned int cluster_id,
 
 	FUNC_ENTER(FUNC_LV_MAIN);
 
+	if (cluster_id >= NR_PPM_CLUSTERS) {
+		ppm_err("@%s: Invalid cluster id %d\n", __func__, cluster_id);
+		return 0;
+	}
+
 	if (!ppm_main_info.cluster_info[cluster_id].dvfs_tbl) {
 		ppm_err("@%s: DVFS table of cluster %d is not exist!\n", __func__, cluster_id);
 		idx = (relation == CPUFREQ_RELATION_L)
@@ -846,13 +851,12 @@ static int ppm_main_data_init(void)
 		goto allocate_last_req_mem_fail;
 	}
 
+	ppm_main_info.client_req.cluster_num = ppm_main_info.cluster_num;
+	ppm_main_info.client_req.root_cluster = 0;
+	ppm_main_info.last_req.cluster_num = ppm_main_info.cluster_num;
 	for_each_ppm_clusters(i) {
-		ppm_main_info.client_req.cluster_num = ppm_main_info.cluster_num;
-		ppm_main_info.client_req.root_cluster = 0;
 		ppm_main_info.client_req.cpu_limit[i].cluster_id = i;
 		ppm_main_info.client_req.cpu_limit[i].cpu_id = ppm_main_info.cluster_info[i].cpu_id;
-
-		ppm_main_info.last_req.cluster_num = ppm_main_info.cluster_num;
 	}
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
