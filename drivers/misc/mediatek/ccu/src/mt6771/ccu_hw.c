@@ -237,7 +237,6 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 				g_LogBufIdx = 0xFFFFFFFF;	/* -1*/
 
 				wake_up_interruptible(&ccuInfo.WaitQueueHead);
-				ccu_i2c_dump_errr();
 				LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
 				break;
 			}
@@ -252,8 +251,6 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 				g_LogBufIdx = -2;
 
 				wake_up_interruptible(&ccuInfo.WaitQueueHead);
-				if ((receivedCcuCmd.in_data_ptr == 0xEE)  || (receivedCcuCmd.in_data_ptr == 0xDD))
-					ccu_i2c_dump_errr();
 				LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
 				break;
 			}

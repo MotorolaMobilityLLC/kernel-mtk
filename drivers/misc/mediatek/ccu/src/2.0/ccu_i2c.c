@@ -311,7 +311,6 @@ static int ccu_i2c_controller_en(enum CCU_I2C_CHANNEL i2c_controller_id, int ena
 			/*dump controller status*/
 			i2c = i2c_get_adapdata(pClient->adapter);
 			i2c_writew(2, i2c, 0x240);	/*MCU_INTR re-direct to CCU only*/
-			ccu_i2c_dump_info(i2c);
 		}
 	} else {
 		if (ccu_i2c_initialized[i2c_controller_id] == MTRUE) {
