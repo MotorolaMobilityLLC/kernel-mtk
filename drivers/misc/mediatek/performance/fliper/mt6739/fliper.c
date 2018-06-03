@@ -88,7 +88,9 @@ static ssize_t mt_perf_write(struct file *filp, const char *ubuf,
 	if (val < -1 || val > 4)
 		return -1;
 
-	vcorefs_request_dvfs_opp(KIR_PERF, val);
+	if (vcorefs_request_dvfs_opp(KIR_PERF, val) < 0)
+		return cnt;
+
 	perf_now = val;
 
 	return cnt;
