@@ -461,6 +461,7 @@ static void start_devapc(void)
 	unsigned int i;
 
 	mt_reg_sync_writel(0x80000000, DEVAPC_PD_INFRA_APC_CON);
+	mt_reg_sync_writel(0x3FFFFF, DEVAPC_PD_INFRA_VIO_SHIFT_STA);
 
 	/* SMC call is called to set Device APC in LK instead */
 
