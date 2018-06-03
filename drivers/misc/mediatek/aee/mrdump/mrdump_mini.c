@@ -104,6 +104,10 @@ __weak void aee_rr_get_desc_info(unsigned long *addr, unsigned long *size, unsig
 {
 }
 
+__weak void get_pidmap_aee_buffer(unsigned long *addr, unsigned long *size)
+{
+}
+
 __weak struct vm_struct *find_vm_area(const void *addr)
 {
 	return NULL;
@@ -781,6 +785,11 @@ static void mrdump_mini_build_elf_misc(void)
 		get_android_log_buffer(&misc.vaddr, &misc.size, &misc.start, i + 1);
 		mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, log_type[i]);
 	}
+
+	memset_io(&misc, 0, sizeof(struct mrdump_mini_elf_misc));
+	get_pidmap_aee_buffer(&misc.vaddr, &misc.size);
+	misc.start = 0;
+	mrdump_mini_add_misc(misc.vaddr, misc.size, misc.start, "_PIDMAP_");
 }
 
 static void mrdump_mini_add_loads(void)
