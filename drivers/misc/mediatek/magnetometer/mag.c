@@ -14,7 +14,7 @@
 #include "mag.h"
 #include "accel.h"
 
-struct mag_context *mag_context_obj = NULL;
+struct mag_context *mag_context_obj;
 static struct mag_init_info *msensor_init_list[MAX_CHOOSE_G_NUM] = {0};
 
 static void initTimer(struct hrtimer *timer, enum hrtimer_restart (*callback)(struct hrtimer *))

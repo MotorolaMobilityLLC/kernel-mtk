@@ -84,7 +84,7 @@ enum ACCEL_TRC {
 	ACCEL_TRC_DATA	= 0X20,
 };
 /*----------------------------------------------------------------------------*/
-struct scale_factor{
+struct scale_factor {
 	u8  whole;
 	u8  fraction;
 };
@@ -342,7 +342,7 @@ static void LSM6DS3H_dumpReg(struct i2c_client *client)
 #endif
 static void LSM6DS3H_power(struct acc_hw *hw, unsigned int on)
 {
-	static unsigned int power_on = 0;
+	static unsigned int power_on;
 
 	pr_debug(GSE_TAG "%s %d : power %s\n", __func__, __LINE__, on ? "on" : "off");
 #if 0
@@ -412,31 +412,27 @@ static int LSM6DS3H_ReadCalibration(struct i2c_client *client, int dat[LSM6DS3H_
 static int LSM6DS3H_WriteCalibration(struct i2c_client *client, int dat[LSM6DS3H_AXES_NUM])
 {
 	struct lsm6ds3h_i2c_data *obj = i2c_get_clientdata(client);
-	int err = 0;
 	int cali[LSM6DS3H_AXES_NUM];
 
 	GSE_FUN();
 	if (!obj || !dat) {
 		pr_err(GSE_TAG "%s %d : null ptr!!\n", __func__, __LINE__);
 		return -EINVAL;
-	} else {
-		cali[obj->cvt.map[LSM6DS3H_AXIS_X]] = obj->cvt.sign[LSM6DS3H_AXIS_X]*obj->cali_sw[LSM6DS3H_AXIS_X];
-		cali[obj->cvt.map[LSM6DS3H_AXIS_Y]] = obj->cvt.sign[LSM6DS3H_AXIS_Y]*obj->cali_sw[LSM6DS3H_AXIS_Y];
-		cali[obj->cvt.map[LSM6DS3H_AXIS_Z]] = obj->cvt.sign[LSM6DS3H_AXIS_Z]*obj->cali_sw[LSM6DS3H_AXIS_Z];
-		cali[LSM6DS3H_AXIS_X] += dat[LSM6DS3H_AXIS_X];
-		cali[LSM6DS3H_AXIS_Y] += dat[LSM6DS3H_AXIS_Y];
-		cali[LSM6DS3H_AXIS_Z] += dat[LSM6DS3H_AXIS_Z];
-#if DEBUG
-		if (atomic_read(&obj->trace) & ACCEL_TRC_CALI) {
-			GSE_LOG("write accel calibration data  (%5d, %5d, %5d)-->(%5d, %5d, %5d)\n",
-				dat[LSM6DS3H_AXIS_X], dat[LSM6DS3H_AXIS_Y], dat[LSM6DS3H_AXIS_Z],
-				cali[LSM6DS3H_AXIS_X], cali[LSM6DS3H_AXIS_Y], cali[LSM6DS3H_AXIS_Z]);
-		}
-#endif
-		return LSM6DS3H_write_rel_calibration(obj, cali);
 	}
-
-	return err;
+	cali[obj->cvt.map[LSM6DS3H_AXIS_X]] = obj->cvt.sign[LSM6DS3H_AXIS_X]*obj->cali_sw[LSM6DS3H_AXIS_X];
+	cali[obj->cvt.map[LSM6DS3H_AXIS_Y]] = obj->cvt.sign[LSM6DS3H_AXIS_Y]*obj->cali_sw[LSM6DS3H_AXIS_Y];
+	cali[obj->cvt.map[LSM6DS3H_AXIS_Z]] = obj->cvt.sign[LSM6DS3H_AXIS_Z]*obj->cali_sw[LSM6DS3H_AXIS_Z];
+	cali[LSM6DS3H_AXIS_X] += dat[LSM6DS3H_AXIS_X];
+	cali[LSM6DS3H_AXIS_Y] += dat[LSM6DS3H_AXIS_Y];
+	cali[LSM6DS3H_AXIS_Z] += dat[LSM6DS3H_AXIS_Z];
+#if DEBUG
+	if (atomic_read(&obj->trace) & ACCEL_TRC_CALI) {
+		GSE_LOG("write accel calibration data  (%5d, %5d, %5d)-->(%5d, %5d, %5d)\n",
+			dat[LSM6DS3H_AXIS_X], dat[LSM6DS3H_AXIS_Y], dat[LSM6DS3H_AXIS_Z],
+			cali[LSM6DS3H_AXIS_X], cali[LSM6DS3H_AXIS_Y], cali[LSM6DS3H_AXIS_Z]);
+	}
+#endif
+	return LSM6DS3H_write_rel_calibration(obj, cali);
 }
 /*----------------------------------------------------------------------------*/
 static int LSM6DS3H_CheckDeviceID(struct i2c_client *client)
@@ -493,8 +489,8 @@ static int LSM6DS3H_SetPowerMode(struct i2c_client *client, bool enable)
 	if (res < 0) {
 		GSE_LOG("LSM6DS3H set power mode: ODR 100hz failed!\n");
 		return LSM6DS3H_ERR_I2C;
-	} else
-		GSE_LOG("set LSM6DS3H  power mode:ODR 100HZ ok %d!\n", enable);
+	}
+	GSE_LOG("set LSM6DS3H  power mode:ODR 100HZ ok %d!\n", enable);
 
 	sensor_power = enable;
 
@@ -514,8 +510,8 @@ static int LSM6DS3H_SetFullScale(struct i2c_client *client, u8 acc_fs)
 	if (mpu_i2c_read_block(client, LSM6DS3H_CTRL1_XL, databuf, 0x01)) {
 		pr_err(GSE_TAG "%s %d : read LSM6DS3H_CTRL1_XL err!\n", __func__, __LINE__);
 		return LSM6DS3H_ERR_I2C;
-	} else
-		GSE_LOG("read  LSM6DS3H_CTRL1_XL register: 0x%x\n", databuf[0]);
+	}
+	GSE_LOG("read  LSM6DS3H_CTRL1_XL register: 0x%x\n", databuf[0]);
 
 	databuf[0] &= ~LSM6DS3H_ACC_RANGE_MASK;/*clear*/
 	databuf[0] |= acc_fs;
@@ -529,28 +525,28 @@ static int LSM6DS3H_SetFullScale(struct i2c_client *client, u8 acc_fs)
 		return LSM6DS3H_ERR_I2C;
 	}
 	switch (acc_fs) {
-		case LSM6DS3H_ACC_RANGE_2g:
-			obj->sensitivity = LSM6DS3H_ACC_SENSITIVITY_2G;
-			break;
-		case LSM6DS3H_ACC_RANGE_4g:
-			obj->sensitivity = LSM6DS3H_ACC_SENSITIVITY_4G;
-			break;
-		case LSM6DS3H_ACC_RANGE_8g:
-			obj->sensitivity = LSM6DS3H_ACC_SENSITIVITY_8G;
-			break;
-		case LSM6DS3H_ACC_RANGE_16g:
-			obj->sensitivity = LSM6DS3H_ACC_SENSITIVITY_16G;
-			break;
-		default:
-			obj->sensitivity = LSM6DS3H_ACC_SENSITIVITY_2G;
-			break;
+	case LSM6DS3H_ACC_RANGE_2g:
+		obj->sensitivity = LSM6DS3H_ACC_SENSITIVITY_2G;
+		break;
+	case LSM6DS3H_ACC_RANGE_4g:
+		obj->sensitivity = LSM6DS3H_ACC_SENSITIVITY_4G;
+		break;
+	case LSM6DS3H_ACC_RANGE_8g:
+		obj->sensitivity = LSM6DS3H_ACC_SENSITIVITY_8G;
+		break;
+	case LSM6DS3H_ACC_RANGE_16g:
+		obj->sensitivity = LSM6DS3H_ACC_SENSITIVITY_16G;
+		break;
+	default:
+		obj->sensitivity = LSM6DS3H_ACC_SENSITIVITY_2G;
+		break;
 	}
 
 	if (mpu_i2c_read_block(client, LSM6DS3H_CTRL9_XL, databuf, 0x01)) {
 		pr_err(GSE_TAG "%s %d : read LSM6DS3H_CTRL9_XL err!\n", __func__, __LINE__);
 		return LSM6DS3H_ERR_I2C;
-	} else
-		GSE_LOG("read  LSM6DS3H_CTRL9_XL register: 0x%x\n", databuf[0]);
+	}
+	GSE_LOG("read  LSM6DS3H_CTRL9_XL register: 0x%x\n", databuf[0]);
 
 	databuf[0] &= ~LSM6DS3H_ACC_ENABLE_AXIS_MASK;/*clear*/
 	databuf[0] |= LSM6DS3H_ACC_ENABLE_AXIS_X | LSM6DS3H_ACC_ENABLE_AXIS_Y | LSM6DS3H_ACC_ENABLE_AXIS_Z;
@@ -584,8 +580,8 @@ static int LSM6DS3H_SetSampleRate(struct i2c_client *client, u8 sample_rate)
 	if (mpu_i2c_read_block(client, LSM6DS3H_CTRL1_XL, databuf, 0x01)) {
 		pr_err(GSE_TAG "%s %d : read acc data format register err!\n", __func__, __LINE__);
 		return LSM6DS3H_ERR_I2C;
-	} else
-		GSE_LOG("read  acc data format register: 0x%x\n", databuf[0]);
+	}
+	GSE_LOG("read  acc data format register: 0x%x\n", databuf[0]);
 
 	databuf[0] &= ~LSM6DS3H_ACC_ODR_MASK;/*clear*/
 	databuf[0] |= sample_rate;
@@ -617,8 +613,8 @@ static int LSM6DS3H_Int_Ctrl(struct i2c_client *client, enum LSM6DS3H_ACC_GYRO_I
 	if (mpu_i2c_read_block(client, op_reg, databuf, 0x01)) {
 		pr_err(GSE_TAG "%s %d : read data format register err!\n", __func__, __LINE__);
 		return LSM6DS3H_ERR_I2C;
-	} else
-		GSE_LOG("read  acc data format register: 0x%x\n", databuf[0]);
+	}
+	GSE_LOG("read  acc data format register: 0x%x\n", databuf[0]);
 
 	databuf[0] &= ~LSM6DS3H_ACC_GYRO_INT_LATCH_CTL_MASK;/*clear*/
 	databuf[0] |= int_latch;
@@ -635,8 +631,8 @@ static int LSM6DS3H_Int_Ctrl(struct i2c_client *client, enum LSM6DS3H_ACC_GYRO_I
 	if (mpu_i2c_read_block(client, op_reg, databuf, 0x01)) {
 		pr_err(GSE_TAG "%s %d : read data format register err!\n", __func__, __LINE__);
 		return LSM6DS3H_ERR_I2C;
-	} else
-		GSE_LOG("read  acc data format register: 0x%x\n", databuf[0]);
+	}
+	GSE_LOG("read  acc data format register: 0x%x\n", databuf[0]);
 
 	databuf[0] &= ~LSM6DS3H_ACC_GYRO_INT_ACTIVE_MASK;/*clear*/
 	databuf[0] |= int_act;
@@ -662,10 +658,10 @@ static int LSM6DS3H_Enable_Func(struct i2c_client *client, enum LSM6DS3H_ACC_GYR
 	if (mpu_i2c_read_block(client, LSM6DS3H_CTRL10_C, databuf, 0x01)) {
 		pr_err(GSE_TAG "%s %d : read LSM6DS3H_CTRL10_C register err!\n", __func__, __LINE__);
 		return LSM6DS3H_ERR_I2C;
-	} else
-		GSE_LOG("%s read acc data format register: 0x%x\n", __func__, databuf[0]);
+	}
+	GSE_LOG("%s read acc data format register: 0x%x\n", __func__, databuf[0]);
 
-	databuf[0] &= ~LSM6DS3H_ACC_GYRO_FUNC_EN_MASK;//clear
+	databuf[0] &= ~LSM6DS3H_ACC_GYRO_FUNC_EN_MASK;/*clear*/
 	databuf[0] |= newValue;
 
 	/*databuf[1] = databuf[0];*/
@@ -726,49 +722,48 @@ static int LSM6DS3H_ReadAccData(struct i2c_client *client, char *buf, int bufsiz
 	if (res < 0) {
 		pr_err(GSE_TAG "%s %d : I2C error: ret value=%d", __func__, __LINE__, res);
 		return -3;
-	} else {
-	#if 1
-		obj->data[LSM6DS3H_AXIS_X] = LSM6DS3H_acc_TransfromResolution(obj->data[LSM6DS3H_AXIS_X]
-			, obj->sensitivity);
-		obj->data[LSM6DS3H_AXIS_Y] = LSM6DS3H_acc_TransfromResolution(obj->data[LSM6DS3H_AXIS_Y]
-			, obj->sensitivity);
-		obj->data[LSM6DS3H_AXIS_Z] = LSM6DS3H_acc_TransfromResolution(obj->data[LSM6DS3H_AXIS_Z]
-			, obj->sensitivity);
+	}
+#if 1
+	obj->data[LSM6DS3H_AXIS_X] = LSM6DS3H_acc_TransfromResolution(obj->data[LSM6DS3H_AXIS_X]
+		, obj->sensitivity);
+	obj->data[LSM6DS3H_AXIS_Y] = LSM6DS3H_acc_TransfromResolution(obj->data[LSM6DS3H_AXIS_Y]
+		, obj->sensitivity);
+	obj->data[LSM6DS3H_AXIS_Z] = LSM6DS3H_acc_TransfromResolution(obj->data[LSM6DS3H_AXIS_Z]
+		, obj->sensitivity);
 
-		obj->data[LSM6DS3H_AXIS_X] += obj->cali_sw[LSM6DS3H_AXIS_X];
-		obj->data[LSM6DS3H_AXIS_Y] += obj->cali_sw[LSM6DS3H_AXIS_Y];
-		obj->data[LSM6DS3H_AXIS_Z] += obj->cali_sw[LSM6DS3H_AXIS_Z];
+	obj->data[LSM6DS3H_AXIS_X] += obj->cali_sw[LSM6DS3H_AXIS_X];
+	obj->data[LSM6DS3H_AXIS_Y] += obj->cali_sw[LSM6DS3H_AXIS_Y];
+	obj->data[LSM6DS3H_AXIS_Z] += obj->cali_sw[LSM6DS3H_AXIS_Z];
 
-		/*remap coordinate*/
-		acc[obj->cvt.map[LSM6DS3H_AXIS_X]] = obj->cvt.sign[LSM6DS3H_AXIS_X]*obj->data[LSM6DS3H_AXIS_X];
-		acc[obj->cvt.map[LSM6DS3H_AXIS_Y]] = obj->cvt.sign[LSM6DS3H_AXIS_Y]*obj->data[LSM6DS3H_AXIS_Y];
-		acc[obj->cvt.map[LSM6DS3H_AXIS_Z]] = obj->cvt.sign[LSM6DS3H_AXIS_Z]*obj->data[LSM6DS3H_AXIS_Z];
+	/*remap coordinate*/
+	acc[obj->cvt.map[LSM6DS3H_AXIS_X]] = obj->cvt.sign[LSM6DS3H_AXIS_X]*obj->data[LSM6DS3H_AXIS_X];
+	acc[obj->cvt.map[LSM6DS3H_AXIS_Y]] = obj->cvt.sign[LSM6DS3H_AXIS_Y]*obj->data[LSM6DS3H_AXIS_Y];
+	acc[obj->cvt.map[LSM6DS3H_AXIS_Z]] = obj->cvt.sign[LSM6DS3H_AXIS_Z]*obj->data[LSM6DS3H_AXIS_Z];
 
-		/*GSE_LOG("Mapped gsensor data: %d, %d, %d!\n", acc[LSM6DS3H_AXIS_X],
-		*acc[LSM6DS3H_AXIS_Y], acc[LSM6DS3H_AXIS_Z]);
-		*/
+	/*GSE_LOG("Mapped gsensor data: %d, %d, %d!\n", acc[LSM6DS3H_AXIS_X],
+	*acc[LSM6DS3H_AXIS_Y], acc[LSM6DS3H_AXIS_Z]);
+	*/
 
-		/*Out put the mg*/
-		/*
-		*acc[LSM6DS3H_AXIS_X] = acc[LSM6DS3H_AXIS_X] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
-		*acc[LSM6DS3H_AXIS_Y] = acc[LSM6DS3H_AXIS_Y] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
-		*acc[LSM6DS3H_AXIS_Z] = acc[LSM6DS3H_AXIS_Z] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
-		*/
-	#endif
+	/*Out put the mg*/
+	/*
+	*acc[LSM6DS3H_AXIS_X] = acc[LSM6DS3H_AXIS_X] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
+	*acc[LSM6DS3H_AXIS_Y] = acc[LSM6DS3H_AXIS_Y] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
+	*acc[LSM6DS3H_AXIS_Z] = acc[LSM6DS3H_AXIS_Z] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
+	*/
+#endif
 
 
-		sprintf(buf, "%04x %04x %04x", acc[LSM6DS3H_AXIS_X], acc[LSM6DS3H_AXIS_Y], acc[LSM6DS3H_AXIS_Z]);
+	sprintf(buf, "%04x %04x %04x", acc[LSM6DS3H_AXIS_X], acc[LSM6DS3H_AXIS_Y], acc[LSM6DS3H_AXIS_Z]);
 
-		/*atomic_read(&obj->trace) & ADX_TRC_IOCTL*/
-		if (atomic_read(&obj->trace) & ADX_TRC_IOCTL) {
-			/*GSE_LOG("gsensor data: %s!\n", buf);*/
-			GSE_LOG("raw data:obj->data:%04x %04x %04x\n", obj->data[LSM6DS3H_AXIS_X],
-				obj->data[LSM6DS3H_AXIS_Y], obj->data[LSM6DS3H_AXIS_Z]);
-			GSE_LOG("acc:%04x %04x %04x\n", acc[LSM6DS3H_AXIS_X], acc[LSM6DS3H_AXIS_Y],
-				acc[LSM6DS3H_AXIS_Z]);
+	/*atomic_read(&obj->trace) & ADX_TRC_IOCTL*/
+	if (atomic_read(&obj->trace) & ADX_TRC_IOCTL) {
+		/*GSE_LOG("gsensor data: %s!\n", buf);*/
+		GSE_LOG("raw data:obj->data:%04x %04x %04x\n", obj->data[LSM6DS3H_AXIS_X],
+			obj->data[LSM6DS3H_AXIS_Y], obj->data[LSM6DS3H_AXIS_Z]);
+		GSE_LOG("acc:%04x %04x %04x\n", acc[LSM6DS3H_AXIS_X], acc[LSM6DS3H_AXIS_Y],
+			acc[LSM6DS3H_AXIS_Z]);
 
-			/*LSM6DS3H_dumpReg(client);*/
-		}
+		/*LSM6DS3H_dumpReg(client);*/
 	}
 
 	return 0;
@@ -784,14 +779,13 @@ static int LSM6DS3H_ReadAccRawData(struct i2c_client *client, s16 data[LSM6DS3H_
 		if (hwmsen_read_block(client, LSM6DS3H_OUTX_L_XL, databuf, 6)) {
 			pr_err(GSE_TAG "%s %d : LSM6DS3H read acc data  error\n", __func__, __LINE__);
 			return -2;
-		} else {
-			data[LSM6DS3H_AXIS_X] = (s16)((databuf[LSM6DS3H_AXIS_X*2+1] << 8) |
-				(databuf[LSM6DS3H_AXIS_X*2]));
-			data[LSM6DS3H_AXIS_Y] = (s16)((databuf[LSM6DS3H_AXIS_Y*2+1] << 8) |
-				(databuf[LSM6DS3H_AXIS_Y*2]));
-			data[LSM6DS3H_AXIS_Z] = (s16)((databuf[LSM6DS3H_AXIS_Z*2+1] << 8) |
-				(databuf[LSM6DS3H_AXIS_Z*2]));
 		}
+		data[LSM6DS3H_AXIS_X] = (s16)((databuf[LSM6DS3H_AXIS_X*2+1] << 8) |
+			(databuf[LSM6DS3H_AXIS_X*2]));
+		data[LSM6DS3H_AXIS_Y] = (s16)((databuf[LSM6DS3H_AXIS_Y*2+1] << 8) |
+			(databuf[LSM6DS3H_AXIS_Y*2]));
+		data[LSM6DS3H_AXIS_Z] = (s16)((databuf[LSM6DS3H_AXIS_Z*2+1] << 8) |
+			(databuf[LSM6DS3H_AXIS_Z*2]));
 	}
 	return err;
 }
@@ -924,16 +918,17 @@ static ssize_t store_chipinit_value(struct device_driver *ddri, const char *buf,
 static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 {
 	ssize_t len = 0;
-
 	struct lsm6ds3h_i2c_data *obj = obj_i2c_data;
+
 	if (obj == NULL) {
 		pr_err(GSE_TAG "%s %d : i2c_data obj is null!!\n", __func__, __LINE__);
 		return 0;
 	}
 
 	if (obj->hw) {
-		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: i2c_num=%d, direction=%d, sensitivity = %d,(power_id=%d, power_vol=%d)\n",
-	            obj->hw->i2c_num, obj->hw->direction, obj->sensitivity, obj->hw->power_id, obj->hw->power_vol);
+		len += snprintf(buf+len, PAGE_SIZE-len,
+			"CUST: i2c_num=%d, direction=%d, sensitivity = %d,(power_id=%d, power_vol=%d)\n",
+			obj->hw->i2c_num, obj->hw->direction, obj->sensitivity, obj->hw->power_id, obj->hw->power_vol);
 		LSM6DS3H_dumpReg(obj->client);
 	} else
 		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: NULL\n");
@@ -1042,12 +1037,12 @@ static int LSM6DS3H_Set_RegInc(struct i2c_client *client, bool inc)
 
 	/*GSE_FUN();*/
 
-	if (mpu_i2c_read_block(client, LSM6DS3H_CTRL3_C, databuf, 0x01))
-	{
+	if (mpu_i2c_read_block(client, LSM6DS3H_CTRL3_C, databuf, 0x01)) {
 		pr_err(GSE_TAG "%s %d : read LSM6DS3H_CTRL3_XL err!\n", __func__, __LINE__);
 		return LSM6DS3H_ERR_I2C;
-	} else
-		GSE_LOG("read  LSM6DS3H_CTRL3_C register: 0x%x\n", databuf[0]);
+	}
+
+	GSE_LOG("read  LSM6DS3H_CTRL3_C register: 0x%x\n", databuf[0]);
 
 	if (inc) {
 		databuf[0] |= LSM6DS3H_CTRL3_C_IFINC;
@@ -1132,7 +1127,7 @@ static int lsm6ds3h_enable_nodata(int en)
 	if (((value == 0) && (sensor_power == false)) || ((value == 1) && (sensor_power == true)))
 		GSE_LOG("Gsensor device have updated!\n");
 	else
-		err = LSM6DS3H_SetPowerMode( priv->client, enable_status);
+		err = LSM6DS3H_SetPowerMode(priv->client, enable_status);
 
 	GSE_LOG("%s OK!\n", __func__);
 	return err;
