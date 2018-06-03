@@ -122,18 +122,6 @@ extern void
 register_battery_percent_notify(void (*battery_percent_callback) (BATTERY_PERCENT_LEVEL),
 				BATTERY_PERCENT_PRIO prio_val);
 
-/* ADC Channel Number */
-typedef enum {
-	PMIC_AUX_NONE = -1
-} pmic_adc_ch_list_enum;
-
-/* Not used */
-typedef enum MT_POWER_TAG {
-	MT65XX_POWER_COUNT_END,
-	MT65XX_POWER_LDO_DEFAULT,
-	MT65XX_POWER_NONE = -1
-} MT65XX_POWER;
-
 /*==============================================================================
  * DLPT define
  *==============================================================================
@@ -164,7 +152,7 @@ extern unsigned int g_pmic_pad_vbif28_vol;
  * PMIC IRQ ENUM define
  *==============================================================================
  */
-typedef enum {
+enum PMIC_IRQ_ENUM {
 	INT_PWRKEY,
 	SP_PSC_TOP_START = INT_PWRKEY,
 	INT_HOMEKEY,
@@ -367,7 +355,7 @@ typedef enum {
 	NO_USE_11_14,
 	NO_USE_11_15,
 	INT_ENUM_MAX,
-} PMIC_IRQ_ENUM;
+};
 
 /*==============================================================================
  * PMIC auxadc define
