@@ -43,6 +43,13 @@ struct device *create_function_device(char *name)
 EXPORT_SYMBOL_GPL(create_function_device);
 #endif
 
+#ifndef CONFIG_USB_CONFIGFS_UEVENT
+int acm_shortcut(void)
+{
+	return 0;
+}
+#endif
+
 int check_user_usb_string(const char *name,
 		struct usb_gadget_strings *stringtab_dev)
 {
