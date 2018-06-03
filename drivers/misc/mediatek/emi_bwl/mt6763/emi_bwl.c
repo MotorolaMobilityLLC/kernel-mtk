@@ -137,7 +137,8 @@ static int cur_con_sce = 0x0FFFFFFF;
 
 /* define concurrency scenario strings */
 static const char * const con_sce_str[] = {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) (#con_sce),
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) (#con_sce),
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 };
@@ -145,47 +146,74 @@ static const char * const con_sce_str[] = {
 /****************** For LPDDR4-3200******************/
 
 static const unsigned int emi_arba_lpddr4_val[] = {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) arba,
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) arba,
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbb_lpddr4_val[] = {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) arbb,
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) arbb,
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbc_lpddr4_val[] = {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) arbc,
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) arbc,
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbd_lpddr4_val[] = {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) arbd,
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) arbd,
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbe_lpddr4_val[] = {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) arbe,
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) arbe,
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbf_lpddr4_val[] = {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) arbf,
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) arbf,
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbg_lpddr4_val[] = {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) arbg,
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) arbg,
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_arbh_lpddr4_val[] = {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) arbh,
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) arbh,
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 };
 static const unsigned int emi_conm_lpddr4_val[] = {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) conm,
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) conm,
+#include "con_sce_lpddr4.h"
+#undef X_CON_SCE
+};
+static const unsigned int emi_premask_lpddr4_val[] = {
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) premask,
+#include "con_sce_lpddr4.h"
+#undef X_CON_SCE
+};
+static const unsigned int emi_slct_lpddr4_val[] = {
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) slct,
+#include "con_sce_lpddr4.h"
+#undef X_CON_SCE
+};
+static const unsigned int emi_arb_rff_lpddr4_val[] = {
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) arb_rff,
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 };
@@ -241,6 +269,12 @@ int mtk_mem_bw_ctrl(int sce, int op)
 			writel(emi_arbf_lpddr4_val[highest], EMI_ARBF);
 			writel(emi_arbg_lpddr4_val[highest], EMI_ARBG);
 			writel(emi_arbh_lpddr4_val[highest], EMI_ARBH);
+			writel(emi_premask_lpddr4_val[highest], CHA_EMI_MD_PRE_MASK);
+			writel(emi_premask_lpddr4_val[highest], CHB_EMI_MD_PRE_MASK);
+			writel(emi_slct_lpddr4_val[highest], CHA_EMI_SLCT);
+			writel(emi_slct_lpddr4_val[highest], CHB_EMI_SLCT);
+			writel(emi_arb_rff_lpddr4_val[highest], CHA_EMI_ARB_RFF);
+			writel(emi_arb_rff_lpddr4_val[highest], CHB_EMI_ARB_RFF);
 			mt_reg_sync_writel(emi_conm_lpddr4_val[highest], EMI_CONM);
 		} else {
 			pr_err("[EMI BWL] undefined dram_type\n");
@@ -282,6 +316,12 @@ static ssize_t con_sce_show(struct device_driver *driver, char *buf)
 	ptr += sprintf(ptr, "EMI_ARBG = 0x%x\n",  readl(IOMEM(EMI_ARBG)));
 	ptr += sprintf(ptr, "EMI_ARBH = 0x%x\n",  readl(IOMEM(EMI_ARBH)));
 	ptr += sprintf(ptr, "EMI_CONM = 0x%x\n",  readl(IOMEM(EMI_CONM)));
+	ptr += sprintf(ptr, "CHA_EMI_MD_PRE_MASK = 0x%x\n", readl(IOMEM(CHA_EMI_MD_PRE_MASK)));
+	ptr += sprintf(ptr, "CHB_EMI_MD_PRE_MASK = 0x%x\n", readl(IOMEM(CHB_EMI_MD_PRE_MASK)));
+	ptr += sprintf(ptr, "CHA_EMI_SLCT = 0x%x\n", readl(IOMEM(CHA_EMI_SLCT)));
+	ptr += sprintf(ptr, "CHB_EMI_SLCT = 0x%x\n", readl(IOMEM(CHB_EMI_SLCT)));
+	ptr += sprintf(ptr, "CHA_EMI_ARB_RFF = 0x%x\n", readl(IOMEM(CHA_EMI_ARB_RFF)));
+	ptr += sprintf(ptr, "CHB_EMI_ARB_RFF = 0x%x\n", readl(IOMEM(CHB_EMI_ARB_RFF)));
 	for (i = 0; i < NR_CON_SCE; i++)
 		ptr += sprintf(ptr, "%s = 0x%x\n", con_sce_str[i],
 			ctrl_tbl[i].ref_cnt);
@@ -295,9 +335,15 @@ static ssize_t con_sce_show(struct device_driver *driver, char *buf)
 	pr_debug("[EMI BWL] EMI_ARBG = 0x%x\n", readl(IOMEM(EMI_ARBG)));
 	pr_debug("[EMI BWL] EMI_ARBH = 0x%x\n", readl(IOMEM(EMI_ARBH)));
 	pr_debug("[EMI BWL] EMI_CONM = 0x%x\n", readl(IOMEM(EMI_CONM)));
+	pr_debug("[EMI BWL] CHA_EMI_MD_PRE_MASK = 0x%x\n", readl(IOMEM(CHA_EMI_MD_PRE_MASK)));
+	pr_debug("[EMI BWL] CHB_EMI_MD_PRE_MASK = 0x%x\n", readl(IOMEM(CHB_EMI_MD_PRE_MASK)));
+	pr_debug("[EMI BWL] CHA_EMI_SLCT = 0x%x\n", readl(IOMEM(CHA_EMI_SLCT)));
+	pr_debug("[EMI BWL] CHB_EMI_SLCT = 0x%x\n", readl(IOMEM(CHB_EMI_SLCT)));
+	pr_debug("[EMI BWL] CHA_EMI_ARB_RFF = 0x%x\n", readl(IOMEM(CHA_EMI_ARB_RFF)));
+	pr_debug("[EMI BWL] CHB_EMI_ARB_RFF = 0x%x\n", readl(IOMEM(CHB_EMI_ARB_RFF)));
 #endif
 
-		return strlen(buf);
+	return strlen(buf);
 
 }
 

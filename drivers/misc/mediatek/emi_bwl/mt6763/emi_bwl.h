@@ -29,11 +29,17 @@
 #define EMI_ARBG		(CEN_EMI_BASE + 0x0130)
 #define EMI_ARBH		(CEN_EMI_BASE + 0x0138)
 
+#define CHA_EMI_MD_PRE_MASK	(CHA_EMI_BASE + 0x0080)
+#define CHA_EMI_SLCT		(CHA_EMI_BASE + 0x0158)
+#define CHA_EMI_ARB_RFF		(CHA_EMI_BASE + 0x015C)
 #define CHA_EMI_DRS		(CHA_EMI_BASE + 0x0168)
 #define CHA_EMI_DRS_ST3		(CHA_EMI_BASE + 0x0180)
 #define CHA_EMI_DRS_ST4		(CHA_EMI_BASE + 0x0184)
 #define CHA_EMI_DRS_ST5		(CHA_EMI_BASE + 0x0188)
 
+#define CHB_EMI_MD_PRE_MASK	(CHB_EMI_BASE + 0x0080)
+#define CHB_EMI_SLCT		(CHB_EMI_BASE + 0x0158)
+#define CHB_EMI_ARB_RFF		(CHB_EMI_BASE + 0x015C)
 #define CHB_EMI_DRS		(CHB_EMI_BASE + 0x0168)
 #define CHB_EMI_DRS_ST3		(CHB_EMI_BASE + 0x0180)
 #define CHB_EMI_DRS_ST4		(CHB_EMI_BASE + 0x0184)
@@ -55,7 +61,8 @@ enum {
 
 /* define concurrency scenario ID */
 enum {
-#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, conm) con_sce,
+#define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh, \
+conm, premask, slct, arb_rff) con_sce,
 #include "con_sce_lpddr4.h"
 #undef X_CON_SCE
 	NR_CON_SCE
