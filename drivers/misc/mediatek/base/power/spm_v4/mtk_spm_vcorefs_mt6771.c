@@ -815,6 +815,7 @@ static void plat_info_init(void)
 	spm_vcorefs_warn("dram_issue: 0x%x\n", dram_issue);
 }
 
+#if 0
 static int vcorefs_is_lp_flavor(void)
 {
 	int r = 0;
@@ -831,6 +832,7 @@ static int vcorefs_is_lp_flavor(void)
 
 	return r;
 }
+#endif
 
 static int spm_vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
@@ -870,10 +872,12 @@ void spm_vcorefs_init(void)
 	int flag;
 	int r;
 
+#if 0
 	if (vcorefs_is_lp_flavor()) {
 		vcorefs_set_vcore_dvs_en(true);
 		vcorefs_set_ddr_dfs_en(true);
 	}
+#endif
 
 	dvfsrc_register_init();
 	vcorefs_module_init();
