@@ -1281,6 +1281,7 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 		  IN P_STA_RECORD_T prStaRec, IN BOOLEAN fgSendDeauth, IN UINT_16 u2ReasonCode)
 {
 	ENUM_PARAM_MEDIA_STATE_T eOriMediaStatus;
+	P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo;
 
 	DBGLOG(P2P, INFO, "p2pFuncDisconnect(), sendDeauth: %s, reason: %d\n",
 		   fgSendDeauth ? "TRUE" : "FALSE", u2ReasonCode);
@@ -1294,13 +1295,14 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 
 		eOriMediaStatus = prP2pBssInfo->eConnectionState;
 
+		prP2pRoleFsmInfo =
+			P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prAdapter, prP2pBssInfo->u4PrivateData);
+
 		/* Indicate disconnect. */
 		if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
-			P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo =
-			    P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prAdapter, prP2pBssInfo->u4PrivateData);
-
 			kalP2PGOStationUpdate(prAdapter->prGlueInfo, prP2pRoleFsmInfo->ucRoleIndex, prStaRec, FALSE);
 		} else {
+			prP2pRoleFsmInfo->rJoinInfo.prTargetBssDesc = NULL;
 			scanRemoveConnFlagOfBssDescByBssid(prAdapter, prP2pBssInfo->aucBSSID);
 		}
 
