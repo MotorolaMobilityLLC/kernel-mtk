@@ -64,9 +64,8 @@ static struct single_cma_registration *single_cma_list[NR_ZMC_LOCATIONS][4] = {
  * 0xc0000000 ~ 0x100000000 if 4GB < T <= 6GB
  * 0x100000000 if T > 6GB
  */
-static void __init check_and_fix_base(struct reserved_mem *rmem)
+static void __init check_and_fix_base(struct reserved_mem *rmem, phys_addr_t total_phys_size)
 {
-	phys_addr_t total_phys_size = memblock_phys_mem_size();
 	phys_addr_t new_zmc_base, return_size;
 
 	pr_info("%s: total phys size: %pa\n", __func__, &total_phys_size);
@@ -92,12 +91,25 @@ static void __init check_and_fix_base(struct reserved_mem *rmem)
 		pr_info("%s: new base: %pa, new size: %pa\n", __func__, &rmem->base, &rmem->size);
 	}
 }
-#else
-static void __init check_and_fix_base(struct reserved_mem *rmem)
+#else	/* !CONFIG_MTK_MEMORY_LOWPOWER */
+static void __init check_and_fix_base(struct reserved_mem *rmem, phys_addr_t total_phys_size)
 {
 	/* do nothing */
 }
 #endif
+
+static bool __init zmc_is_the_last(struct reserved_mem *rmem)
+{
+	phys_addr_t phys_end = memblock_end_of_DRAM();
+	phys_addr_t rmem_end_max = rmem->base + rmem->size + (pageblock_nr_pages << PAGE_SHIFT);
+
+	pr_info("%s: phys end: %pa, rmem end max: %pa\n", __func__, &phys_end, &rmem_end_max);
+
+	if (rmem_end_max >= phys_end)
+		return true;
+
+	return false;
+}
 
 static int __init zmc_memory_init(struct reserved_mem *rmem)
 {
@@ -105,11 +117,12 @@ static int __init zmc_memory_init(struct reserved_mem *rmem)
 	int order, i;
 	int cma_area_count = 0;
 	phys_addr_t zmc_size = rmem->size;
+	phys_addr_t total_phys_size = memblock_phys_mem_size();
 
 	pr_alert("%s, name: %s, base: %pa, size: %pa\n", __func__,
 			rmem->name, &rmem->base, &rmem->size);
 
-	if (rmem->base < zmc_max_zone_dma_phys) {
+	if (total_phys_size > 0x80000000ULL && rmem->base < zmc_max_zone_dma_phys) {
 		pr_warn("[Fail] Unsupported memory range under 0x%lx (DMA max range).\n",
 				(unsigned long)zmc_max_zone_dma_phys);
 		pr_warn("Abort reserve memory.\n");
@@ -118,7 +131,14 @@ static int __init zmc_memory_init(struct reserved_mem *rmem)
 		return -1;
 	}
 
-	check_and_fix_base(rmem);
+	if (!zmc_is_the_last(rmem)) {
+		pr_info("[Fail] ZMC is not the last\n");
+		memblock_free(rmem->base, rmem->size);
+		memblock_add(rmem->base, rmem->size);
+		return -1;
+	}
+
+	check_and_fix_base(rmem, total_phys_size);
 
 	/*
 	 * Init CMAs -
