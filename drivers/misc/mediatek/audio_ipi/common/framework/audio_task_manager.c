@@ -41,7 +41,7 @@ static DEFINE_MUTEX(audio_load_task_mutex);
 #endif
 
 
-struct audio_task {
+struct audio_task_t {
 #ifdef CONFIG_MTK_DO /* with DO */
 	char *feature_name;
 	char *do_name;
@@ -49,12 +49,10 @@ struct audio_task {
 	bool is_do_loaded;
 	task_unloaded_t task_unloaded;
 #endif
-	ipi_queue_handler_t *ipi_queue_handler;
+	struct ipi_queue_handler_t *ipi_queue_handler;
 };
 
-typedef struct audio_task audio_task_t;
-
-static audio_task_t g_audio_task_array[TASK_SCENE_SIZE];
+static struct audio_task_t g_audio_task_array[TASK_SCENE_SIZE];
 
 static char *g_current_do_name;
 
@@ -175,7 +173,7 @@ int audio_task_register_callback(
 	recv_message_t  recv_message,
 	task_unloaded_t task_unloaded)
 {
-	audio_task_t *task = &g_audio_task_array[task_scene];
+	struct audio_task_t *task = &g_audio_task_array[task_scene];
 
 #ifdef CONFIG_MTK_DO /* with DO */
 	task->feature_name = get_feature_name(task_scene);
@@ -205,7 +203,7 @@ int audio_task_register_callback(
 #ifdef CONFIG_MTK_DO /* with DO */
 static void load_target_tasks(char *target_do_name)
 {
-	audio_task_t *task = NULL;
+	struct audio_task_t *task = NULL;
 	int i = 0;
 
 
@@ -226,7 +224,7 @@ static void load_target_tasks(char *target_do_name)
 static void unload_current_tasks(void)
 {
 
-	audio_task_t *task = NULL;
+	struct audio_task_t *task = NULL;
 	int i = 0;
 
 	for (i = 0; i < TASK_SCENE_SIZE; i++) {
@@ -302,17 +300,17 @@ audio_load_task_exit:
 
 
 int audio_send_ipi_msg(
-	ipi_msg_t *p_ipi_msg,
+	struct ipi_msg_t *p_ipi_msg,
 	uint8_t task_scene, /* task_scene_t */
 	uint8_t msg_layer, /* audio_ipi_msg_layer_t */
-	audio_ipi_msg_data_t data_type,
-	audio_ipi_msg_ack_t ack_type,
+	uint8_t data_type, /* audio_ipi_msg_data_t */
+	uint8_t ack_type, /* audio_ipi_msg_ack_t */
 	uint16_t msg_id,
 	uint32_t param1,
 	uint32_t param2,
 	char    *data_buffer)
 {
-	ipi_queue_handler_t *handler = NULL;
+	struct ipi_queue_handler_t *handler = NULL;
 	uint32_t ipi_msg_len = 0;
 
 	if (p_ipi_msg == NULL) {
@@ -353,9 +351,9 @@ int audio_send_ipi_msg(
 }
 
 
-int audio_send_ipi_filled_msg(ipi_msg_t *p_ipi_msg)
+int audio_send_ipi_filled_msg(struct ipi_msg_t *p_ipi_msg)
 {
-	ipi_queue_handler_t *handler = NULL;
+	struct ipi_queue_handler_t *handler = NULL;
 
 	handler = get_ipi_queue_handler(p_ipi_msg->task_scene);
 	if (handler == NULL) {
@@ -380,7 +378,7 @@ void audio_task_manager_init(void)
 
 void audio_task_manager_deinit(void)
 {
-	audio_task_t *task = NULL;
+	struct audio_task_t *task = NULL;
 	int i = 0;
 
 	for (i = 0; i < TASK_SCENE_SIZE; i++) {

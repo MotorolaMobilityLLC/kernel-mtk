@@ -61,7 +61,7 @@
  * =============================================================================
  */
 
-uint16_t get_message_buf_size(const ipi_msg_t *p_ipi_msg)
+uint16_t get_message_buf_size(const struct ipi_msg_t *p_ipi_msg)
 {
 	if (p_ipi_msg->data_type == AUDIO_IPI_MSG_ONLY)
 		return IPI_MSG_HEADER_SIZE;
@@ -74,13 +74,13 @@ uint16_t get_message_buf_size(const ipi_msg_t *p_ipi_msg)
 }
 
 
-void dump_msg(const ipi_msg_t *p_ipi_msg)
+void dump_msg(const struct ipi_msg_t *p_ipi_msg)
 {
 #ifdef ENABLE_DUMP_IPI_MSG
 	int i = 0;
 	int payload_size = 0;
 
-	AUD_LOG_D("%s(), sizeof(ipi_msg_t) = %lu\n", __func__, sizeof(ipi_msg_t));
+	AUD_LOG_D("%s(), sizeof(ipi_msg_t) = %lu\n", __func__, sizeof(struct ipi_msg_t));
 
 	AUD_LOG_D("%s(), magic = 0x%x\n", __func__, p_ipi_msg->magic);
 	AUD_LOG_D("%s(), task_scene = 0x%x\n", __func__, p_ipi_msg->task_scene);
@@ -101,7 +101,7 @@ void dump_msg(const ipi_msg_t *p_ipi_msg)
 }
 
 
-void check_msg_format(const ipi_msg_t *p_ipi_msg, unsigned int len)
+void check_msg_format(const struct ipi_msg_t *p_ipi_msg, unsigned int len)
 {
 	dump_msg(p_ipi_msg); /* TODO: remove it later */
 
@@ -113,7 +113,7 @@ void check_msg_format(const ipi_msg_t *p_ipi_msg, unsigned int len)
 void print_msg_info(
 	const char *func_name,
 	const char *description,
-	const ipi_msg_t *p_ipi_msg)
+	const struct ipi_msg_t *p_ipi_msg)
 {
 	/* error handling */
 	if (func_name == NULL || description == NULL || p_ipi_msg == NULL)

@@ -16,16 +16,16 @@
 
 #include <linux/types.h>
 
-typedef struct {
+struct audio_resv_dram_t {
 	char    *phy_addr;
 	char    *vir_addr;
 	uint32_t size;
-} audio_resv_dram_t;
+};
 
 
 void init_reserved_dram(void);
-audio_resv_dram_t *get_reserved_dram(void);
-audio_resv_dram_t *get_reserved_dram_spkprotect(void);
+struct audio_resv_dram_t *get_reserved_dram(void);
+struct audio_resv_dram_t *get_reserved_dram_spkprotect(void);
 
 char *get_resv_dram_vir_addr(char *resv_dram_phy_addr);
 char *get_resv_dram_spkprotect_vir_addr(char *resv_dram_phy_addr);

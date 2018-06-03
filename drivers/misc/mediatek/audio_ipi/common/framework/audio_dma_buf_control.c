@@ -20,7 +20,7 @@
 #include "audio_assert.h"
 #include "audio_ipi_platform.h"
 
-static audio_resv_dram_t resv_dram;
+static struct audio_resv_dram_t resv_dram;
 
 
 void init_reserved_dram(void)
@@ -40,7 +40,7 @@ void init_reserved_dram(void)
 }
 
 
-audio_resv_dram_t *get_reserved_dram(void)
+struct audio_resv_dram_t *get_reserved_dram(void)
 {
 	return &resv_dram;
 }

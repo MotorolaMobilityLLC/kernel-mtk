@@ -85,7 +85,7 @@ static bool b_spm_ap_mdsrc_req_on;
 static bool b_dump_pcm_enable;
 #endif
 
-static audio_resv_dram_t *p_resv_dram;
+static struct audio_resv_dram_t *p_resv_dram;
 static uint32_t resv_dram_offset_cur;
 
 
@@ -128,13 +128,13 @@ static uint32_t get_resv_dram_buf_offset(uint32_t len)
 
 static int parsing_ipi_msg_from_user_space(
 	void __user *user_data_ptr,
-	audio_ipi_msg_data_t data_type)
+	uint8_t data_type)
 {
 	uint32_t resv_dram_offset = 0xFFFFFFFF;
 
 	int retval = 0;
 
-	ipi_msg_t ipi_msg;
+	struct ipi_msg_t ipi_msg;
 	uint32_t msg_len = 0;
 
 
@@ -178,7 +178,7 @@ static int parsing_ipi_msg_from_user_space(
 
 	retval = audio_send_ipi_filled_msg(&ipi_msg);
 	if (retval == 0) {
-		retval = copy_to_user(user_data_ptr, &ipi_msg, sizeof(ipi_msg_t));
+		retval = copy_to_user(user_data_ptr, &ipi_msg, sizeof(struct ipi_msg_t));
 		if (retval) {
 			AUD_LOG_W("%s(), copy_to_user err, id = 0x%x\n", __func__, ipi_msg.msg_id);
 			retval = -EFAULT;

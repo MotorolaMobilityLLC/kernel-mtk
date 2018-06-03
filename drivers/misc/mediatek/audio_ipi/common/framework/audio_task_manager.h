@@ -53,18 +53,18 @@ int audio_load_task(const task_scene_t task_scene);
 
 
 int audio_send_ipi_msg(
-	ipi_msg_t *p_ipi_msg,
+	struct ipi_msg_t *p_ipi_msg,
 	uint8_t task_scene, /* task_scene_t */
 	uint8_t msg_layer, /* audio_ipi_msg_layer_t */
-	audio_ipi_msg_data_t data_type,
-	audio_ipi_msg_ack_t ack_type,
+	uint8_t data_type, /* audio_ipi_msg_data_t */
+	uint8_t ack_type, /* audio_ipi_msg_ack_t */
 	uint16_t msg_id,
 	uint32_t param1, /* payload/DMA => buf_len*/
 	uint32_t param2,
 	char    *data_buffer);
 
 
-int audio_send_ipi_filled_msg(ipi_msg_t *p_ipi_msg);
+int audio_send_ipi_filled_msg(struct ipi_msg_t *p_ipi_msg);
 
 
 

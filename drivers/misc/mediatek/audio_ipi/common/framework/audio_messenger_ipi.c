@@ -63,8 +63,8 @@ static uint16_t current_idx;
 
 static void audio_ipi_msg_dispatcher(int id, void *data, unsigned int len)
 {
-	ipi_msg_t *p_ipi_msg = NULL;
-	ipi_queue_handler_t *handler = NULL;
+	struct ipi_msg_t *p_ipi_msg = NULL;
+	struct ipi_queue_handler_t *handler = NULL;
 
 	AUD_LOG_V("%s(), data = %p, len = %u\n", __func__, data, len);
 
@@ -77,7 +77,7 @@ static void audio_ipi_msg_dispatcher(int id, void *data, unsigned int len)
 		return;
 	}
 
-	p_ipi_msg = (ipi_msg_t *)data;
+	p_ipi_msg = (struct ipi_msg_t *)data;
 	check_msg_format(p_ipi_msg, len);
 
 	if (p_ipi_msg->ack_type == AUDIO_IPI_MSG_ACK_BACK) {
@@ -127,7 +127,7 @@ void audio_reg_recv_message(uint8_t task_scene, recv_message_t recv_message)
 }
 
 
-static bool check_print_msg_info(const ipi_msg_t *p_ipi_msg)
+static bool check_print_msg_info(const struct ipi_msg_t *p_ipi_msg)
 {
 
 #ifdef	CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
@@ -138,7 +138,7 @@ static bool check_print_msg_info(const ipi_msg_t *p_ipi_msg)
 	return true;
 }
 
-int send_message_to_scp(const ipi_msg_t *p_ipi_msg)
+int send_message_to_scp(const struct ipi_msg_t *p_ipi_msg)
 {
 	ipi_status send_status = ERROR;
 

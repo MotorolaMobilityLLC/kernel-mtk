@@ -98,7 +98,7 @@ static struct snd_dma_buffer scp_voice_runtime_feedback_dma_buf; /* real time fo
 static struct snd_dma_buffer scp_voice_DL1Buffer;
 
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-static audio_resv_dram_t *p_scp_voice_resv_dram_normal;
+static struct audio_resv_dram_t *p_scp_voice_resv_dram_normal;
 static scp_reserve_mblock_t scp_voiceReserveBuffer;
 static const int scpvoiceDL1BufferOffset = SOC_NORMAL_USE_BUFFERSIZE_MAX;
 static int scp_voice_Irq_mode = Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE;

@@ -112,16 +112,16 @@ static DEFINE_SPINLOCK(offload_lock);
 struct wake_lock Offload_suspend_lock;
 #endif
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
-static audio_resv_dram_t *resv_dram;
+static struct audio_resv_dram_t *resv_dram;
 #endif
 /*****************************************************************************
 * Function  Declaration
 ****************************************************************************/
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
-static void offloadservice_ipicmd_send(audio_ipi_msg_data_t data_type,
-				       audio_ipi_msg_ack_t ack_type, unsigned short msg_id,
+static void offloadservice_ipicmd_send(uint8_t data_type,
+				       uint8_t ack_type, unsigned short msg_id,
 				       unsigned int param1, unsigned int param2, char *payload);
-static void offloadservice_ipicmd_received(ipi_msg_t *ipi_msg);
+static void offloadservice_ipicmd_received(struct ipi_msg_t *ipi_msg);
 static void offloadservice_task_unloaded_handling(void);
 #endif
 static int offloadservice_copydatatoram(void __user *buf, size_t count);
@@ -538,7 +538,7 @@ static int mtk_compr_offload_mmap(struct snd_compr_stream *stream,
 }
 
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
-static void offloadservice_ipicmd_received(ipi_msg_t *ipi_msg)
+static void offloadservice_ipicmd_received(struct ipi_msg_t *ipi_msg)
 {
 	switch (ipi_msg->msg_id) {
 	case MP3_NEEDDATA:
@@ -573,13 +573,13 @@ static void offloadservice_task_unloaded_handling(void)
 }
 
 
-static void offloadservice_ipicmd_send(audio_ipi_msg_data_t data_type,
-				       audio_ipi_msg_ack_t ack_type,
+static void offloadservice_ipicmd_send(uint8_t data_type,
+				       uint8_t ack_type,
 				       unsigned short msg_id,
 				       unsigned int param1, unsigned int param2,
 				       char *payload)
 {
-	ipi_msg_t ipi_msg;
+	struct ipi_msg_t ipi_msg;
 	unsigned int test_buf[8];
 
 	memset(test_buf, 0, sizeof(test_buf));
