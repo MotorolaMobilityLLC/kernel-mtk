@@ -2338,9 +2338,9 @@ void dcm_mcu_misccfg_mp2_arm_pll_divider_dcm(int on)
 	}
 }
 
-#define MCU_MISCCFG_MP_STALL_DCM_REG0_MASK ((0xf << 24))
-#define MCU_MISCCFG_MP_STALL_DCM_REG0_ON ((0x5 << 24))
-#define MCU_MISCCFG_MP_STALL_DCM_REG0_OFF ((0xf << 24))
+#define MCU_MISCCFG_MP_STALL_DCM_REG0_MASK ((0x1 << 20) | (0xf << 24))
+#define MCU_MISCCFG_MP_STALL_DCM_REG0_ON ((0x0 << 20) | (0x5 << 24))
+#define MCU_MISCCFG_MP_STALL_DCM_REG0_OFF ((0x1 << 20) | (0xf << 24))
 
 bool dcm_mcu_misccfg_mp_stall_dcm_is_on(void)
 {
