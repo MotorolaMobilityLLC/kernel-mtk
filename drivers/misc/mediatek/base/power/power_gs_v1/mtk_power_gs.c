@@ -66,13 +66,14 @@ void mt_power_gs_t_dump_suspend(int count, ...)
 	if (count)
 		p1 = va_arg(v, unsigned int);
 
+#ifdef POWER_GS_DEBUG
+	pr_warn("Power_gs: %s arg count = %d, arg = %d\n", __func__, count, p1);
+#endif
+
 	/* if the argument is void, va_arg will get -1 */
 	if (p1 > GS_ALL)
 		p1 = GS_ALL;
 
-#ifdef POWER_GS_DEBUG
-	pr_warn("Power_gs: %s arg count = %d, arg = %d\n", __func__, count, p1);
-#endif
 	mt_power_gs_f_dump_suspend(p1);
 	va_end(v);
 }
@@ -96,13 +97,14 @@ void mt_power_gs_t_dump_dpidle(int count, ...)
 	if (count)
 		p1 = va_arg(v, unsigned int);
 
+#ifdef POWER_GS_DEBUG
+	pr_warn("Power_gs: %s arg count = %d, arg = %d\n", __func__, count, p1);
+#endif
+
 	/* if the argument is void, va_arg will get -1 */
 	if (p1 > GS_ALL)
 		p1 = GS_ALL;
 
-#ifdef POWER_GS_DEBUG
-	pr_warn("Power_gs: %s arg count = %d, arg = %d\n", __func__, count, p1);
-#endif
 	mt_power_gs_f_dump_dpidle(p1);
 	va_end(v);
 }
@@ -126,13 +128,14 @@ void mt_power_gs_t_dump_sodi3(int count, ...)
 	if (count)
 		p1 = va_arg(v, unsigned int);
 
+#ifdef POWER_GS_DEBUG
+	pr_warn("Power_gs: %s arg count = %d, arg = %d\n", __func__, count, p1);
+#endif
+
 	/* if the argument is void, va_arg will get -1 */
 	if (p1 > GS_ALL)
 		p1 = GS_ALL;
 
-#ifdef POWER_GS_DEBUG
-	pr_warn("Power_gs: %s arg count = %d, arg = %d\n", __func__, count, p1);
-#endif
 	mt_power_gs_f_dump_sodi3(p1);
 	va_end(v);
 }
