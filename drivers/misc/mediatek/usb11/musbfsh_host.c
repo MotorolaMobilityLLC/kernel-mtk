@@ -1364,6 +1364,11 @@ void musbfsh_host_tx(struct musbfsh *musbfsh, u8 epnum)	/* real ep num */
 #endif
 
 	INFO("%s++, real ep=%d\r\n", __func__, epnum);
+	if (epio == NULL) {
+		/* WARNING("epio: NULL!ep:%d\n", epnum); */
+		return;
+	}
+
 	musbfsh_ep_select(mbase, epnum);
 	tx_csr = musbfsh_readw(epio, MUSBFSH_TXCSR);
 
@@ -1637,6 +1642,11 @@ static void musbfsh_bulk_rx_nak_timeout(struct musbfsh *musbfsh,
 	u16 rx_csr;
 
 	INFO("musbfsh_bulk_rx_nak_timeout++\r\n");
+	if (epio == NULL) {
+		/* WARNING("epio: NULL!\n"); */
+		return;
+	}
+
 	musbfsh_ep_select(mbase, ep->epnum);
 	dma = is_dma_capable() ? ep->rx_channel : NULL;
 
@@ -1695,6 +1705,12 @@ void musbfsh_host_rx(struct musbfsh *musbfsh, u8 epnum)
 #endif
 
 	INFO("musbfsh_host_rx++,real ep=%d\r\n", epnum);
+
+	if (epio == NULL) {
+		/* WARNING("epio: NULL!ep:%d\n", epnum); */
+		return;
+	}
+
 	musbfsh_ep_select(mbase, epnum);
 
 	urb = next_urb(qh);	/* current urb */
@@ -2663,7 +2679,7 @@ static int musbfsh_bus_suspend(struct usb_hcd *hcd)
 	struct musbfsh *musbfsh = hcd_to_musbfsh(hcd);
 	unsigned char power = musbfsh_readb(musbfsh->mregs, MUSBFSH_POWER);
 
-	WARNING("musbfsh_bus_suspend++,power=0x%x\r\n", power);
+	WARNING("musbfsh_bus_suspend++,power=0x%x\n", power);
 #ifdef CONFIG_MTK_DT_USB_SUPPORT
 #if defined(CONFIG_PM_RUNTIME)
 	usb11_plat_suspend();
@@ -2688,6 +2704,18 @@ static int musbfsh_bus_suspend(struct usb_hcd *hcd)
 	 * joson,runtime suspend not ready now,i
 	 * set suspend signal here
 	 */
+
+	/* suspend bus */
+#ifdef MUSBFSH_ENABLE_BUS_SUSPEND
+	power = musbfsh_readb(musbfsh->mregs, MUSBFSH_POWER);
+	DBG(1, "power:0x%x\n", power);
+	power |= MUSBFSH_POWER_SUSPENDM | MUSBFSH_POWER_ENSUSPEND;
+	musbfsh_writeb(musbfsh->mregs, MUSBFSH_POWER, power);
+	mdelay(15);
+	power = musbfsh_readb(musbfsh->mregs, MUSBFSH_POWER);
+	DBG(1, "after set, power:0x%x\n", power);
+#endif
+
 	return 0;
 }
 
@@ -2716,6 +2744,19 @@ static int musbfsh_bus_resume(struct usb_hcd *hcd)
 	 * joson,runtime suspend not ready now,
 	 * set resume signal here
 	 */
+	/* resume bus */
+#ifdef MUSBFSH_ENABLE_BUS_SUSPEND
+	power |= MUSBFSH_POWER_RESUME;
+	power &= ~MUSBFSH_POWER_SUSPENDM;
+	musbfsh_writeb(musbfsh->mregs, MUSBFSH_POWER, power);
+	mdelay(30);
+	power &= ~MUSBFSH_POWER_RESUME;
+	musbfsh_writeb(musbfsh->mregs, MUSBFSH_POWER, power);
+
+	power = musbfsh_readb(musbfsh->mregs, MUSBFSH_POWER);
+	DBG(1, "after set, power:0x%x\n", power);
+#endif
+
 	return 0;
 }
 
