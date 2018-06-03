@@ -1239,7 +1239,11 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			}
 
 			DISPDBG("[FB Driver] enter MTKFB_POWEROFF\n");
-			ret = primary_display_suspend();
+			/* TODO: remove unnessecary IOCTL
+			* It will call SurfaceFlinger blank before this that do the same thing,
+			* so it is trivial now.
+			*/
+			/*ret = primary_display_suspend();*/
 			if (ret < 0)
 				DISPERR("primary display suspend failed\n");
 			DISPDBG("[FB Driver] leave MTKFB_POWEROFF\n");
@@ -1256,7 +1260,11 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				return r;
 			}
 			DISPDBG("[FB Driver] enter MTKFB_POWERON\n");
-			primary_display_resume();
+			/* TODO: remove unnessecary IOCTL
+			* It will call SurfaceFlinger unblank after this that do the same thing,
+			* so it is trivial now.
+			*/
+			/*primary_display_resume();*/
 			DISPDBG("[FB Driver] leave MTKFB_POWERON\n");
 			is_early_suspended = FALSE;	/* no care */
 			return r;
