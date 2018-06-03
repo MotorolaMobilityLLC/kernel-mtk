@@ -71,12 +71,19 @@ static inline void fpsgo_com_connect_api_unlock(const char *tag)
 static inline int fpsgo_com_get_tgid(int pid)
 {
 	struct task_struct *tsk;
-	int tgid;
+	int tgid = 0;
 
 	rcu_read_lock();
 	tsk = find_task_by_vpid(pid);
-	tgid = tsk->tgid;
+	if (tsk)
+		get_task_struct(tsk);
 	rcu_read_unlock();
+
+	if (!tsk)
+		return 0;
+
+	tgid = tsk->tgid;
+	put_task_struct(tsk);
 
 	return tgid;
 }
@@ -90,9 +97,17 @@ static inline int fpsgo_com_check_is_surfaceflinger(int pid)
 
 	rcu_read_lock();
 	tsk = find_task_by_vpid(pid);
+
+	if (tsk)
+		get_task_struct(tsk);
+	rcu_read_unlock();
+
+	if (!tsk)
+		return 0;
+
 	if (strstr(tsk->comm, "surfaceflinger"))
 		is_surfaceflinger = 1;
-	rcu_read_unlock();
+	put_task_struct(tsk);
 
 	return is_surfaceflinger;
 }
