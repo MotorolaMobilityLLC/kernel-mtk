@@ -1506,9 +1506,14 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-	mt_cpufreq_regulator_map(pdev);
-
 	_mt_cpufreq_aee_init();
+
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	/* For SSPM probe */
+	cpuhvfs_set_init_sta();
+#endif
+
+	mt_cpufreq_regulator_map(pdev);
 
 	/* Prepare OPP table for PPM in probe to avoid nested lock */
 	for_each_cpu_dvfs(j, p) {
@@ -1530,11 +1535,6 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 				cur_vsram, cpu_dvfs_get_name(vproc_p), cur_vproc);
 		}
 	}
-
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	/* For SSPM probe */
-	cpuhvfs_set_init_sta();
-#endif
 
 #ifdef CONFIG_CPU_FREQ
 	cpufreq_register_driver(&_mt_cpufreq_driver);
