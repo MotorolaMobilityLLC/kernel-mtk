@@ -284,6 +284,8 @@ void Enable_CVSD_Wakeup(void);
 void Set_BTCVSD_State(unsigned long arg);
 
 bool btcvsd_rx_irq_received(void);
+bool btcvsd_rx_timeout(void);
+void btcvsd_rx_reset_timeout(void);
 
 unsigned long btcvsd_frame_to_bytes(struct snd_pcm_substream *substream,
 				    unsigned long count);
