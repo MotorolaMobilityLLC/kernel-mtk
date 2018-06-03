@@ -669,7 +669,12 @@ int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg)
 {
 	int i;
 
-	/* TODO: check session_id */
+	if ((DISP_SESSION_TYPE(cfg->session_id) != DISP_SESSION_PRIMARY) &&
+		(DISP_SESSION_TYPE(cfg->session_id) != DISP_SESSION_EXTERNAL) &&
+		(DISP_SESSION_TYPE(cfg->session_id) != DISP_SESSION_MEMORY)) {
+		disp_aee_print("unsupported session 0x%x\n", cfg->session_id);
+		return -1;
+	}
 
 	if (cfg->input_layer_num > _get_max_layer(cfg->session_id)) {
 		disp_aee_print("sess:0x%x layer_num %d>%d\n", cfg->session_id,
@@ -980,7 +985,7 @@ static long _ioctl_frame_config(unsigned long arg)
 	frame_node = frame_queue_node_create();
 	if (IS_ERR_OR_NULL(frame_node)) {
 		ret_val = ERR_PTR(-ENOMEM);
-		goto Error;
+		return PTR_ERR(ret_val);
 	}
 
 	frame_cfg = &frame_node->frame_cfg;	/* this is initialized correctly when get node from framequeue list */
@@ -999,7 +1004,8 @@ static long _ioctl_frame_config(unsigned long arg)
 	return __frame_config(frame_node);
 
 Error:
-	frame_queue_node_destroy(frame_node);
+	frame_queue_node_recycle(frame_node);
+
 	return PTR_ERR(ret_val);
 }
 

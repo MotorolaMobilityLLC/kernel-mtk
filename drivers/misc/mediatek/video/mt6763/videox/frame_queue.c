@@ -298,12 +298,17 @@ struct frame_queue_t *frame_queue_node_create(void)
 	return framequeue;
 }
 
-void frame_queue_node_destroy(struct frame_queue_t *framequeue)
+void frame_queue_node_recycle(struct frame_queue_t *framequeue)
 {
-	disp_input_free_dirty_roi(&framequeue->frame_cfg);
 	mutex_lock(&framequeue_pool_lock);
 	list_add_tail(&framequeue->link, &framequeue_pool_head);
 	mutex_unlock(&framequeue_pool_lock);
+}
+
+void frame_queue_node_destroy(struct frame_queue_t *framequeue)
+{
+	frame_queue_node_recycle(framequeue);
+	disp_input_free_dirty_roi(&framequeue->frame_cfg);
 }
 
 static int fence_wait_worker_func(void *data)
