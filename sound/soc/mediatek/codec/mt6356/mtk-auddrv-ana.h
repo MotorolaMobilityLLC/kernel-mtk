@@ -237,8 +237,11 @@ typedef	int64 kal_int64;
 
 #define DRV_CON3            ((UINT32)(PMIC_REG_BASE + 0x3a))
 #define GPIO_DIR0           ((UINT32)(PMIC_REG_BASE + 0x4c))
+
 #define GPIO_MODE2          ((UINT32)(PMIC_REG_BASE + 0x7a)) /* mosi */
 #define GPIO_MODE2_SET      ((UINT32)(PMIC_REG_BASE + 0x7c))
+#define GPIO_MODE2_CLR      ((UINT32)(PMIC_REG_BASE + 0x7e))
+
 #define GPIO_MODE3          ((UINT32)(PMIC_REG_BASE + 0x80)) /* miso */
 #define GPIO_MODE3_SET      ((UINT32)(PMIC_REG_BASE + 0x82))
 #define GPIO_MODE3_CLR      ((UINT32)(PMIC_REG_BASE + 0x84))
