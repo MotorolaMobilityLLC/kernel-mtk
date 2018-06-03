@@ -166,47 +166,44 @@ int imgsensor_clk_set(
 
 void imgsensor_clk_enable_all(struct IMGSENSOR_CLK *pclk)
 {
-#ifdef ENABLE_CCF
-
 	int i;
 
-	pr_debug("imgsensor_clk_enable_all_cg\n");
+	pr_info("imgsensor_clk_enable_all_cg\n");
 	for (i = IMGSENSOR_CCF_CG_MIN_NUM; i < IMGSENSOR_CCF_CG_MAX_NUM; i++) {
-		if (pclk->imgsensor_ccf[i] != NULL &&
-			clk_prepare_enable(pclk->imgsensor_ccf[i]))
-			pr_debug(
-				"[CAMERA SENSOR]imgsensor_ccf enable cg fail cg_index = %d\n",
-				i);
-		else
-			atomic_inc(&pclk->enable_cnt[i]);
+		if (!IS_ERR(pclk->imgsensor_ccf[i])) {
+			if (clk_prepare_enable(pclk->imgsensor_ccf[i]))
+				pr_debug(
+					"[CAMERA SENSOR]imgsensor_ccf enable cg fail cg_index = %d\n",
+					i);
+			else
+				atomic_inc(&pclk->enable_cnt[i]);
+		}
 	}
-#endif
 }
 
 void imgsensor_clk_disable_all(struct IMGSENSOR_CLK *pclk)
 {
-#ifdef ENABLE_CCF
 	int i;
 
-	pr_debug("imgsensor_clk_disable_all\n");
-	for (i = 0; i < IMGSENSOR_CCF_MAX_NUM; i++) {
-		for (; atomic_read(&pclk->enable_cnt[i]) > 0; ) {
+	pr_info("imgsensor_clk_disable_all\n");
+	for (i = IMGSENSOR_CCF_MCLK_TG_MIN_NUM;
+		i < IMGSENSOR_CCF_MAX_NUM;
+		i++) {
+		for (; !IS_ERR(pclk->imgsensor_ccf[i]) &&
+			atomic_read(&pclk->enable_cnt[i]) > 0 ;) {
 			clk_disable_unprepare(pclk->imgsensor_ccf[i]);
 			atomic_dec(&pclk->enable_cnt[i]);
 		}
 	}
-#endif
 }
 
 int imgsensor_clk_ioctrl_handler(void *pbuff)
 {
-#ifdef ENABLE_CCF
 
 	*(unsigned int *)pbuff = mt_get_ckgen_freq(*(unsigned int *)pbuff);
-	pr_debug("f_fcamtg_ck = %d, hf_fcam_ck = %d, f_fseninf_ck = %d\n",
-		mt_get_ckgen_freq(11),
-		mt_get_ckgen_freq(38),
-		mt_get_ckgen_freq(56));
-#endif
+	pr_info("hf_fcamtg_ck = %d, hf_fmm_ck = %d, f_fseninf_ck = %d\n",
+		mt_get_ckgen_freq(7),
+		mt_get_ckgen_freq(3),
+		mt_get_ckgen_freq(27));
 	return 0;
 }

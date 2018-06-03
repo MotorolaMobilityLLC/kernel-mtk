@@ -556,28 +556,28 @@ initcall_debug=1 maxcpus=1";
 	};
 	camera_pins_cam2_rst0: cam2@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
+			pinmux = <PINMUX_GPIO87__FUNC_GPIO87>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam2_rst1: cam2@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
+			pinmux = <PINMUX_GPIO87__FUNC_GPIO87>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam2_pnd0: cam2@2 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO107__FUNC_GPIO107>;
+			pinmux = <PINMUX_GPIO160__FUNC_GPIO160>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam2_pnd1: cam2@3 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO107__FUNC_GPIO107>;
+			pinmux = <PINMUX_GPIO160__FUNC_GPIO160>;
 			slew-rate = <1>;
 			output-high;
 		};
