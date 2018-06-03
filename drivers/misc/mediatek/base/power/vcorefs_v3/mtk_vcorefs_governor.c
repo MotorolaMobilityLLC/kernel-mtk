@@ -107,6 +107,7 @@ static char *kicker_name[] = {
 	"KIR_AUTOK_EMMC",
 	"KIR_AUTOK_SDIO",
 	"KIR_AUTOK_SD",
+	"KIR_DDR800",
 	"LAST_KICKER",
 };
 
