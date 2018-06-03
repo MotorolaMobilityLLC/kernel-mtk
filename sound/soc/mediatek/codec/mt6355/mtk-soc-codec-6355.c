@@ -1390,7 +1390,11 @@ static int calOffsetToDcComp(int TrimOffset)
 	/* The formula is from DE programming guide */
 	/* should be mantain by pmic owner */
 	/* 32768/2 is rounded value */
-	return (TrimOffset * 2804225 + (32768 / 2)) / 32768;
+	/* Use 64 bit int for avoid overflow */
+	int64 tmp;
+
+	tmp = TrimOffset;
+	return (tmp * 2804225 + (32768 / 2)) / 32768;
 }
 
 static void EnableDcCompensation(bool bEnable)
