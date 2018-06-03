@@ -53,7 +53,12 @@ struct scp_feature_tb feature_table[NUM_FEATURE_ID] = {
 		.enable      = 0,
 		.sub_feature = 0,
 	},
-
+	{
+		.feature     = SPEAKER_PROTECT_FEATURE_ID,
+		.freq        = 200,
+		.enable      = 0,
+		.sub_feature = 0,
+	},
 #if SCP_VCORE_TEST_ENABLE
 	{
 		.feature     = VCORE_TEST_FEATURE_ID,
