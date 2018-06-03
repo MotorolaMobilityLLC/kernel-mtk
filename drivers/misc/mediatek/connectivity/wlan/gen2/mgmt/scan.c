@@ -140,11 +140,11 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 
 	/* reset NLO state */
 	prScanInfo->fgNloScanning = FALSE;
-	prScanInfo->fgPscnOnnning = FALSE;
+	prScanInfo->fgPscnOngoing = FALSE;
 
-	prScanInfo->prPscnParam = kalMemAlloc(sizeof(PSCN_PARAM_T), VIR_MEM_TYPE);
+	prScanInfo->prPscnParam = kalMemAlloc(sizeof(CMD_SET_PSCAN_PARAM), VIR_MEM_TYPE);
 	if (prScanInfo->prPscnParam)
-		kalMemZero(prScanInfo->prPscnParam, sizeof(PSCN_PARAM_T));
+		kalMemZero(prScanInfo->prPscnParam, sizeof(CMD_SET_PSCAN_PARAM));
 
 	prScanInfo->eCurrentPSCNState = PSCN_IDLE;
 
@@ -181,7 +181,7 @@ VOID scnUninit(IN P_ADAPTER_T prAdapter)
 	LINK_INITIALIZE(&prScanInfo->rRoamFreeBSSDescList);
 	LINK_INITIALIZE(&prScanInfo->rRoamBSSDescList);
 
-	kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(PSCN_PARAM_T));
+	kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(CMD_SET_PSCAN_PARAM));
 
 	prScanInfo->eCurrentPSCNState = PSCN_IDLE;
 
@@ -1648,7 +1648,7 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 	nicAddScanResult(prAdapter,
 			 rMacAddr,
 			 &rSsid,
-			 prWlanBeaconFrame->u2CapInfo & CAP_INFO_PRIVACY ? 1 : 0,
+			 prWlanBeaconFrame->u2CapInfo,
 			 RCPI_TO_dBm(prBssDesc->ucRCPI),
 			 eNetworkType,
 			 &rConfiguration,
@@ -1952,7 +1952,8 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 		/* 4 <3> Send SW_RFB_T to HIF when we perform SCAN for HOST */
 		if (prBssDesc->eBSSType == BSS_TYPE_INFRASTRUCTURE || prBssDesc->eBSSType == BSS_TYPE_IBSS) {
 			/* for AIS, send to host */
-			if (prConnSettings->fgIsScanReqIssued || prAdapter->rWifiVar.rScanInfo.fgNloScanning) {
+			if (prConnSettings->fgIsScanReqIssued || prAdapter->rWifiVar.rScanInfo.fgNloScanning
+				|| prAdapter->rWifiVar.rScanInfo.fgPscnOngoing) {
 				BOOLEAN fgAddToScanResult;
 
 				fgAddToScanResult = scanCheckBssIsLegal(prAdapter, prBssDesc);
