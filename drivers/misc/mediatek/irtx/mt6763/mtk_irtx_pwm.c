@@ -287,7 +287,7 @@ static int irtx_probe(struct platform_device *plat_dev)
 	}
 	pr_notice("[IRTX][PinC]devm_pinctrl_get ppinctrl:%p\n", mt_irtx_dev.ppinctrl_irtx);
 
-	mt_irtx_dev.buck = regulator_get(NULL, "rt5081_ldo");
+	mt_irtx_dev.buck = regulator_get(NULL, "irtx_ldo");
 	if (mt_irtx_dev.buck == NULL) {
 		pr_err("[IRTX] regulator_get fail!!\n");
 		return -1;
