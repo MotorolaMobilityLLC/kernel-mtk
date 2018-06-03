@@ -121,6 +121,17 @@
 #define CFG_SUPPORT_WAPI            1
 #define CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST	0  /* Support FCC/CE Dynamic Tx Power Adjust */
 
+/* Enable QA Tool Support */
+#define CFG_SUPPORT_QA_TOOL			1
+
+/* Enable TX BF Support */
+#define CFG_SUPPORT_TX_BF			1
+
+/* Enable MU MIMO Support */
+#define CFG_SUPPORT_MU_MIMO			1
+
+#define CFG_SUPPORT_BUFFER_MODE                 1
+
 /*------------------------------------------------------------------------------
  * SLT Option
  *------------------------------------------------------------------------------
@@ -808,6 +819,21 @@
 #define CFG_SUPPORT_SNIFFER                 1
 
 #define CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE 1
+
+/*------------------------------------------------------------------------------
+ * Flags of driver delay calibration atfer efuse buffer mode CMD
+ *------------------------------------------------------------------------------
+ */
+
+#define CFG_EFUSE_BUFFER_MODE_DELAY_CAL         1
+
+
+/*------------------------------------------------------------------------------
+ * Flags of driver EEPROM pages for QA tool
+ *------------------------------------------------------------------------------
+ */
+
+#define CFG_EEPROM_PAGE_ACCESS         0
 
 /*******************************************************************************
 *                             D A T A   T Y P E S

@@ -120,6 +120,9 @@ OS_OBJS :=	$(OS_DIR)gl_init.o \
 			$(OS_DIR)gl_bow.o \
 			$(OS_DIR)gl_wext.o \
 			$(OS_DIR)gl_wext_priv.o \
+			$(OS_DIR)gl_ate_agent.o \
+			$(OS_DIR)gl_qa_agent.o \
+			$(OS_DIR)gl_hook_api.o \
 			$(OS_DIR)gl_rst.o \
 			$(OS_DIR)gl_cfg80211.o \
 			$(OS_DIR)gl_vendor.o \

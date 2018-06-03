@@ -37,7 +37,12 @@
 extern BOOLEAN g_bIcapEnable;
 extern BOOLEAN g_bCaptureDone;
 extern UINT_16 g_u2DumpIndex;
-
+#if CFG_SUPPORT_QA_TOOL
+extern UINT_32 g_au4Offset[2][2];
+extern UINT_32 g_au4IQData[20][1024];
+extern UINT_32 g_au4I0Data[1][408000];
+extern UINT_32 g_au4Q0Data[1][408000];
+#endif
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************

@@ -40,6 +40,12 @@
 #include "gl_p2p_os.h"
 #endif
 
+#if CFG_SUPPORT_QA_TOOL
+#include "gl_ate_agent.h"
+#include "gl_qa_agent.h"
+/* extern UINT_16 g_u2DumpIndex; */
+#endif
+
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -78,7 +84,7 @@ priv_set_filter(IN struct net_device *prNetDev,
 		IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, OUT char *pcExtra);
 #endif /* CFG_SUPPORT_WPS */
 
-static BOOLEAN reqSearchSupportedOidEntry(IN UINT_32 rOid, OUT P_WLAN_REQ_ENTRY *ppWlanReqEntry);
+static BOOLEAN reqSearchSupportedOidEntry(IN UINT_32 rOid, OUT P_WLAN_REQ_ENTRY * ppWlanReqEntry);
 
 #if 0
 static WLAN_STATUS
@@ -447,6 +453,11 @@ int priv_support_ioctl(IN struct net_device *prNetDev, IN OUT struct ifreq *prIf
 
 	case IOCTL_GET_STRUCT:
 		return priv_get_struct(prNetDev, &rIwReqInfo, &prIwReq->u, (char *)&(prIwReq->u));
+
+#if (CFG_SUPPORT_QA_TOOL)
+	case IOCTL_QA_TOOL_DAEMON:
+		return priv_qa_agent(prNetDev, &rIwReqInfo, &(prIwReq->u), (char *)&(prIwReq->u));
+#endif
 
 	default:
 		return -EOPNOTSUPP;
@@ -1750,6 +1761,78 @@ priv_get_ndis(IN struct net_device *prNetDev, IN NDIS_TRANSPORT_STRUCT * prNdisR
 	return 0;
 }				/* priv_get_ndis */
 
+#if CFG_SUPPORT_QA_TOOL
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief The routine handles ATE set operation.
+*
+* \param[in] pDev Net device requested.
+* \param[in] ndisReq Ndis request OID information copy from user.
+* \param[out] outputLen_p If the call is successful, returns the number of
+*                         bytes written into the query buffer. If the
+*                         call failed due to invalid length of the query
+*                         buffer, returns the amount of storage needed..
+*
+* \retval 0 On success.
+* \retval -EOPNOTSUPP If cmd is not supported.
+* \retval -EFAULT If copy from user space buffer fail.
+*
+*/
+/*----------------------------------------------------------------------------*/
+int
+priv_ate_set(IN struct net_device *prNetDev,
+	     IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
+{
+	P_GLUE_INFO_T GlueInfo;
+	INT_32 i4Status;
+	UINT_8 *InBuf;
+	/* UINT_8 *addr_str, *value_str; */
+	UINT_32 InBufLen;
+	UINT_32 u4SubCmd;
+	/* BOOLEAN isWrite = 0;
+	 * UINT_32 u4BufLen = 0;
+	 * P_NDIS_TRANSPORT_STRUCT prNdisReq;
+	 * UINT_32 pu4IntBuf[2];
+	 */
+
+	/* sanity check */
+	ASSERT(prNetDev);
+	ASSERT(prIwReqInfo);
+	ASSERT(prIwReqData);
+	ASSERT(pcExtra);
+
+	/* init */
+	DBGLOG(REQ, INFO, "priv_set_string (%s)(%d)\n",
+	       (UINT_8 *) prIwReqData->data.pointer, (INT_32) prIwReqData->data.length);
+
+	if (GLUE_CHK_PR3(prNetDev, prIwReqData, pcExtra) == FALSE)
+		return -EINVAL;
+
+	GlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	u4SubCmd = (UINT_32) prIwReqData->data.flags;
+
+	DBGLOG(REQ, INFO, " priv_ate_set u4SubCmd = %d\n", u4SubCmd);
+
+	switch (u4SubCmd) {
+	case PRIV_QACMD_SET:
+		DBGLOG(REQ, INFO, " priv_ate_set PRIV_QACMD_SET\n");
+		InBuf = aucOidBuf;
+		InBufLen = prIwReqData->data.length;
+		i4Status = 0;
+
+		if (copy_from_user(InBuf, prIwReqData->data.pointer, prIwReqData->data.length))
+			return -EFAULT;
+		i4Status = AteCmdSetHandle(prNetDev, InBuf, InBufLen);
+		break;
+
+	default:
+		return -EOPNOTSUPP;
+	}
+	return 0;
+}
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to search desired OID.
@@ -2122,6 +2205,11 @@ reqExtSetAcpiDevicePowerState(IN P_GLUE_INFO_T prGlueInfo,
 #define CMD_OKC_ENABLE		"OKC_ENABLE"
 
 #define CMD_SETMONITOR		"MONITOR"
+#define CMD_SETBUFMODE		"BUFFER_MODE"
+
+#if CFG_SUPPORT_QA_TOOL
+#define CMD_GET_RX_STATISTICS	"GET_RX_STATISTICS"
+#endif
 
 /* miracast related definition */
 #define MIRACAST_MODE_OFF	0
@@ -2264,6 +2352,115 @@ int priv_driver_set_sw_ctrl(IN struct net_device *prNetDev, IN char *pcCommand, 
 	return i4BytesWritten;
 
 }				/* priv_driver_set_sw_ctrl */
+
+#if CFG_SUPPORT_QA_TOOL
+#if CFG_SUPPORT_BUFFER_MODE
+static int priv_driver_set_efuse_buffer_mode(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	P_ADAPTER_T prAdapter = NULL;
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	UINT_32 u4BufLen = 0;
+	INT_32 i4Argc = 0;
+	INT_32 i4BytesWritten = 0;
+	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
+	PARAM_CUSTOM_EFUSE_BUFFER_MODE_T rSetEfuseBufModeInfo;
+#if (CFG_EFUSE_BUFFER_MODE_DELAY_CAL == 0)
+	int i = 0;
+#endif
+	PUINT_8 pucConfigBuf;
+	UINT_32 u4ConfigReadLen;
+
+	ASSERT(prNetDev);
+	if (GLUE_CHK_PR2(prNetDev, pcCommand) == FALSE)
+		return -1;
+
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+	prAdapter = prGlueInfo->prAdapter;
+
+	wlanCfgParseArgument(pcCommand, &i4Argc, apcArgv);
+
+	pucConfigBuf = (PUINT_8) kalMemAlloc(2048, VIR_MEM_TYPE);
+	kalMemZero(pucConfigBuf, 2048);
+	u4ConfigReadLen = 0;
+
+	if (pucConfigBuf) {
+		if (kalReadToFile("/MT6632_eFuse_usage_table.xlsm.bin", pucConfigBuf, 2048, &u4ConfigReadLen) == 0) {
+			/* ToDo:: Nothing */
+		} else {
+			DBGLOG(INIT, INFO, "can't find file\n");
+			return -1;
+		}
+
+		kalMemFree(pucConfigBuf, VIR_MEM_TYPE, 2048);
+	}
+	/* pucConfigBuf */
+	kalMemZero(&rSetEfuseBufModeInfo, sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T));
+
+	rSetEfuseBufModeInfo.ucSourceMode = 1;
+	rSetEfuseBufModeInfo.ucCount = (UINT_8)EFUSE_CONTENT_SIZE;
+
+#if (CFG_EFUSE_BUFFER_MODE_DELAY_CAL == 0)
+	for (i = 0; i < EFUSE_CONTENT_SIZE; i++) {
+		rSetEfuseBufModeInfo.aBinContent[i].u2Addr = i;
+		rSetEfuseBufModeInfo.aBinContent[i].ucValue = *(pucConfigBuf + i);
+	}
+
+	for (i = 0; i < 20; i++)
+		DBGLOG(INIT, INFO, "%x\n", rSetEfuseBufModeInfo.aBinContent[i].ucValue);
+#endif
+
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidSetEfusBufferMode,
+			   &rSetEfuseBufModeInfo, sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T), FALSE, FALSE, TRUE,
+			   &u4BufLen);
+
+	i4BytesWritten =
+	    snprintf(pcCommand, i4TotalLen, "set buffer mode %s",
+		     (rStatus == WLAN_STATUS_SUCCESS) ? "success" : "fail");
+
+	return i4BytesWritten;
+}
+#endif /* CFG_SUPPORT_BUFFER_MODE */
+
+static int priv_driver_get_rx_statistics(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	UINT_32 u4BufLen = 0;
+	INT_32 i4BytesWritten = 0;
+	INT_32 i4Argc = 0;
+	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
+	INT_32 u4Ret = 0;
+	PARAM_CUSTOM_ACCESS_RX_STAT rRxStatisticsTest;
+
+	ASSERT(prNetDev);
+	if (GLUE_CHK_PR2(prNetDev, pcCommand) == FALSE)
+		return -1;
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	DBGLOG(REQ, LOUD, "command is %s\n", pcCommand);
+	wlanCfgParseArgument(pcCommand, &i4Argc, apcArgv);
+	DBGLOG(REQ, LOUD, "argc is %i\n", i4Argc);
+
+	DBGLOG(INIT, ERROR, " priv_driver_get_rx_statistics\n");
+
+	if (i4Argc >= 2) {
+		u4Ret = kalkStrtou32(apcArgv[1], 0, &(rRxStatisticsTest.u4SeqNum));
+		rRxStatisticsTest.u4TotalNum = sizeof(PARAM_RX_STAT_T) / 4;
+
+		rStatus = kalIoctl(prGlueInfo,
+				   wlanoidQueryRxStatistics,
+				   &rRxStatisticsTest, sizeof(rRxStatisticsTest), TRUE, TRUE, TRUE, &u4BufLen);
+
+		DBGLOG(REQ, LOUD, "rStatus %u\n", rStatus);
+		if (rStatus != WLAN_STATUS_SUCCESS)
+			return -1;
+	}
+
+	return i4BytesWritten;
+}
+#endif /* CFG_SUPPORT_QA_TOOL */
 
 int priv_driver_set_cfg(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
 {
@@ -3083,6 +3280,16 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 		} else if (strncasecmp(pcCommand, CMD_GET_CHIP, strlen(CMD_GET_CHIP)) == 0) {
 			i4BytesWritten = priv_driver_get_chip_config(prNetDev, pcCommand, i4TotalLen);
 		}
+
+#if CFG_SUPPORT_QA_TOOL
+		else if (strncasecmp(pcCommand, CMD_GET_RX_STATISTICS, strlen(CMD_GET_RX_STATISTICS)) == 0)
+			i4BytesWritten = priv_driver_get_rx_statistics(prNetDev, pcCommand, i4TotalLen);
+#if CFG_SUPPORT_BUFFER_MODE
+		else if (strncasecmp(pcCommand, CMD_SETBUFMODE, strlen(CMD_SETBUFMODE)) == 0)
+			i4BytesWritten = priv_driver_set_efuse_buffer_mode(prNetDev, pcCommand, i4TotalLen);
+#endif
+#endif
+
 #if CFG_SUPPORT_BATCH_SCAN
 		else if (strncasecmp(pcCommand, CMD_BATCH_SET, strlen(CMD_BATCH_SET)) == 0) {
 			kalIoctl(prGlueInfo,

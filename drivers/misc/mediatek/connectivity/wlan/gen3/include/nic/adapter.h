@@ -724,6 +724,9 @@ typedef struct _WIFI_VAR_T {
 #if CFG_RX_BA_REORDERING_ENHANCEMENT
 	BOOLEAN fgEnableReportIndependentPkt;
 #endif
+#if (CFG_EFUSE_BUFFER_MODE_DELAY_CAL == 1)
+	UINT_8 ucEfuseBufferModeCal;
+#endif
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */
@@ -1028,7 +1031,10 @@ struct _ADAPTER_T {
 
 	ULONG	ulSuspendFlag;
 	struct PERF_MONITOR_T rPerMonitor;
-
+/*#if (CFG_EEPROM_PAGE_ACCESS == 1)*/
+	UINT_8 aucEepromVaule[16]; /* HQA CMD for Efuse Block size contents */
+	UINT_32 u4FreeBlockNum;
+/*#endif*/
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************

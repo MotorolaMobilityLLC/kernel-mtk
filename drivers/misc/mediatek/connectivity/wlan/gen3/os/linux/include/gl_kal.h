@@ -941,7 +941,12 @@ UINT_32 kalWriteToFile(const PUINT_8 pucPath, BOOLEAN fgDoAppend, PUINT_8 pucDat
 
 UINT_32 kalCheckPath(const PUINT_8 pucPath);
 
+UINT_32 kalTrunkPath(const PUINT_8 pucPath);
+
 INT_32 kalReadToFile(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size, PUINT_32 pu4ReadSize);
+
+INT_32 kalRequestFirmware(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size,
+		PUINT_32 pu4ReadSize, struct device *dev);
 
 /*----------------------------------------------------------------------------*/
 /* NL80211                                                                    */
@@ -971,6 +976,14 @@ WLAN_STATUS kalResetStats(IN struct net_device *prDev);
 PVOID kalGetStats(IN struct net_device *prDev);
 
 VOID kalResetPacket(IN P_GLUE_INFO_T prGlueInfo, IN P_NATIVE_PACKET prPacket);
+
+#if CFG_SUPPORT_QA_TOOL
+struct file *kalFileOpen(const char *path, int flags, int rights);
+
+VOID kalFileClose(struct file *file);
+
+UINT_32 kalFileRead(struct file *file, unsigned long long offset, unsigned char *data, unsigned int size);
+#endif
 
 #if CFG_SUPPORT_SDIO_READ_WRITE_PATTERN
 /*----------------------------------------------------------------------------*/

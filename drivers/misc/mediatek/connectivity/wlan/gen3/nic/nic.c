@@ -1234,8 +1234,13 @@ UINT_32 nicChannelNum2Freq(UINT_32 u4ChannelNum)
 		u4ChannelInMHz = 3665;	/* 802.11y */
 	else if (u4ChannelNum == 137)
 		u4ChannelInMHz = 3685;	/* 802.11y */
+#if CFG_SUPPORT_QA_TOOL
+	else if (u4ChannelNum >= 34 && u4ChannelNum <= 181)
+		u4ChannelInMHz = 5000 + u4ChannelNum * 5;
+#else
 	else if (u4ChannelNum >= 34 && u4ChannelNum <= 165)
 		u4ChannelInMHz = 5000 + u4ChannelNum * 5;
+#endif
 	else if (u4ChannelNum >= 183 && u4ChannelNum <= 196)
 		u4ChannelInMHz = 4000 + u4ChannelNum * 5;
 	else
@@ -1373,6 +1378,18 @@ UINT_32 nicFreq2ChannelNum(UINT_32 u4FreqInKHz)
 		return 169;
 	case 5865000:
 		return 173;
+#if CFG_SUPPORT_QA_TOOL
+	case 5855000:
+		return 171;
+	case 5875000:
+		return 175;
+	case 5885000:
+		return 177;
+	case 5895000:
+		return 179;
+	case 5905000:
+		return 181;
+#endif
 	default:
 		DBGLOG(NIC, WARN, "Return Invalid Channelnum = %u\n", u4FreqInKHz);
 		return 0;

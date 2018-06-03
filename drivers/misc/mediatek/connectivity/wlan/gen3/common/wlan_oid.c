@@ -4338,6 +4338,783 @@ wlanoidQueryLinkSpeed(IN P_ADAPTER_T prAdapter,
 	}
 }				/* end of wlanoidQueryLinkSpeed() */
 
+#if CFG_SUPPORT_QA_TOOL
+#if CFG_SUPPORT_BUFFER_MODE
+WLAN_STATUS
+wlanoidSetEfusBufferMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen,
+			 OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_CUSTOM_EFUSE_BUFFER_MODE_T prSetEfuseBufModeInfo;
+	P_PARAM_CUSTOM_EFUSE_BUFFER_MODE_1_T prSetEfuseBufModeInfo_1;
+	CMD_EFUSE_BUFFER_MODE_T rCmdSetEfuseBufModeInfo;
+	CMD_EFUSE_BUFFER_MODE_1_T rCmdSetEfuseBufModeInfo_1;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	DEBUGFUNC("wlanoidSetEfusBufferMode");
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	if (prAdapter->rWifiVar.ucEfuseBufferModeCal == TRUE) { /* structure for MT7668 */
+		*pu4SetInfoLen = sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_1_T);
+
+		if (u4SetBufferLen < sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_1_T))
+			return WLAN_STATUS_INVALID_LENGTH;
+
+	} else {
+		*pu4SetInfoLen = sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T);
+
+		if (u4SetBufferLen < sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T))
+			return WLAN_STATUS_INVALID_LENGTH;
+	}
+
+	ASSERT(pvSetBuffer);
+
+	if (prAdapter->rWifiVar.ucEfuseBufferModeCal == TRUE) { /* structure for MT7668 */
+		prSetEfuseBufModeInfo_1 = (P_PARAM_CUSTOM_EFUSE_BUFFER_MODE_1_T) pvSetBuffer;
+	} else {
+		prSetEfuseBufModeInfo = (P_PARAM_CUSTOM_EFUSE_BUFFER_MODE_T) pvSetBuffer;
+	}
+
+	if (prAdapter->rWifiVar.ucEfuseBufferModeCal == TRUE) { /* structure for MT7668 */
+
+		rCmdSetEfuseBufModeInfo_1.ucSourceMode = prSetEfuseBufModeInfo_1->ucSourceMode;
+		rCmdSetEfuseBufModeInfo_1.ucCount = prSetEfuseBufModeInfo_1->ucCount;
+		rCmdSetEfuseBufModeInfo_1.ucCmdType = prSetEfuseBufModeInfo_1->ucCmdType;
+		rCmdSetEfuseBufModeInfo_1.ucReserved = prSetEfuseBufModeInfo_1->ucReserved;
+
+		/* kalMemCopy(rCmdSetEfuseBufModeInfo.aBinContent, prSetEfuseBufModeInfo->aBinContent, */
+		/*     sizeof(BIN_CONTENT_T) * EFUSE_CONTENT_SIZE); */
+
+		kalMemCopy(rCmdSetEfuseBufModeInfo_1.aBinContent, prSetEfuseBufModeInfo_1->aBinContent,
+				sizeof(UINT_8) * EFUSE_CONTENT_SIZE_1);
+
+		rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+							CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+							EXT_CMD_ID_EFUSE_BUFFER_MODE,
+							FALSE,
+							TRUE,
+							TRUE,
+							NULL, /* No Tx done function wait until fw ack */
+							nicOidCmdTimeoutCommon,
+							sizeof(CMD_EFUSE_BUFFER_MODE_1_T),
+							(PUINT_8) (&rCmdSetEfuseBufModeInfo_1),
+							pvSetBuffer, u4SetBufferLen);
+	} else{
+		rCmdSetEfuseBufModeInfo.ucSourceMode = prSetEfuseBufModeInfo->ucSourceMode;
+		rCmdSetEfuseBufModeInfo.ucCount = prSetEfuseBufModeInfo->ucCount;
+		rCmdSetEfuseBufModeInfo.ucReserved[0] = prSetEfuseBufModeInfo->ucReserved[0];
+		rCmdSetEfuseBufModeInfo.ucReserved[1] = prSetEfuseBufModeInfo->ucReserved[1];
+		kalMemCopy(rCmdSetEfuseBufModeInfo.aBinContent, prSetEfuseBufModeInfo->aBinContent,
+			   sizeof(BIN_CONTENT_T) * EFUSE_CONTENT_SIZE);
+
+		rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+							CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+							EXT_CMD_ID_EFUSE_BUFFER_MODE,
+							TRUE,
+							FALSE,
+							TRUE,
+							nicCmdEventSetCommon,
+							nicOidCmdTimeoutCommon,
+							sizeof(CMD_EFUSE_BUFFER_MODE_T),
+							(PUINT_8) (&rCmdSetEfuseBufModeInfo),
+							pvSetBuffer, u4SetBufferLen);
+	}
+
+	return rWlanStatus;
+}
+
+/*#if (CFG_EEPROM_PAGE_ACCESS == 1)*/
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to read efuse content.
+*
+* \param[in] pvAdapter Pointer to the Adapter structure.
+* \param[out] pvQueryBuf A pointer to the buffer that holds the result of
+*                           the query.
+* \param[in] u4QueryBufLen The length of the query buffer.
+* \param[out] pu4QueryInfoLen If the call is successful, returns the number of
+*                            bytes written into the query buffer. If the call
+*                            failed due to invalid length of the query buffer,
+*                            returns the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_INVALID_LENGTH
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanoidQueryProcessAccessEfuseRead(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen,
+			 OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_CUSTOM_ACCESS_EFUSE_T prSetAccessEfuseInfo;
+	CMD_ACCESS_EFUSE_T rCmdSetAccessEfuse;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	DEBUGFUNC("wlanoidQueryProcessAccessEfuseRead");
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(P_PARAM_CUSTOM_ACCESS_EFUSE_T);
+
+	if (u4SetBufferLen < sizeof(P_PARAM_CUSTOM_ACCESS_EFUSE_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	ASSERT(pvSetBuffer);
+
+	prSetAccessEfuseInfo = (P_PARAM_CUSTOM_ACCESS_EFUSE_T) pvSetBuffer;
+
+	kalMemSet(&rCmdSetAccessEfuse, 0, sizeof(CMD_ACCESS_EFUSE_T));
+
+	rCmdSetAccessEfuse.u4Address = prSetAccessEfuseInfo->u4Address;
+	rCmdSetAccessEfuse.u4Valid = prSetAccessEfuseInfo->u4Valid;
+
+
+	DBGLOG(INIT, INFO, "wlanoidQueryProcessAccessEfuseRead, address=%d\n", rCmdSetAccessEfuse.u4Address);
+
+	kalMemCopy(rCmdSetAccessEfuse.aucData, prSetAccessEfuseInfo->aucData,
+	       sizeof(UINT_8) * 16);
+
+	rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+					CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+					EXT_CMD_ID_EFUSE_ACCESS,
+					FALSE,   /* Query Bit:  True->write  False->read*/
+					TRUE,
+					TRUE,
+					NULL, /* No Tx done function wait until fw ack */
+					nicOidCmdTimeoutCommon,
+					sizeof(CMD_ACCESS_EFUSE_T),
+					(PUINT_8) (&rCmdSetAccessEfuse), pvSetBuffer, u4SetBufferLen);
+
+	return rWlanStatus;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to write efuse content.
+*
+* \param[in] pvAdapter Pointer to the Adapter structure.
+* \param[out] pvQueryBuf A pointer to the buffer that holds the result of
+*                           the query.
+* \param[in] u4QueryBufLen The length of the query buffer.
+* \param[out] pu4QueryInfoLen If the call is successful, returns the number of
+*                            bytes written into the query buffer. If the call
+*                            failed due to invalid length of the query buffer,
+*                            returns the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_INVALID_LENGTH
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanoidQueryProcessAccessEfuseWrite(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen,
+			 OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_CUSTOM_ACCESS_EFUSE_T prSetAccessEfuseInfo;
+	CMD_ACCESS_EFUSE_T rCmdSetAccessEfuse;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	DEBUGFUNC("wlanoidQueryProcessAccessEfuseWrite");
+	DBGLOG(INIT, INFO, "wlanoidQueryProcessAccessEfuseWrite\n");
+
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(P_PARAM_CUSTOM_ACCESS_EFUSE_T);
+
+	if (u4SetBufferLen < sizeof(P_PARAM_CUSTOM_ACCESS_EFUSE_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	ASSERT(pvSetBuffer);
+
+	prSetAccessEfuseInfo = (P_PARAM_CUSTOM_ACCESS_EFUSE_T) pvSetBuffer;
+
+	kalMemSet(&rCmdSetAccessEfuse, 0, sizeof(CMD_ACCESS_EFUSE_T));
+
+	rCmdSetAccessEfuse.u4Address = prSetAccessEfuseInfo->u4Address;
+	rCmdSetAccessEfuse.u4Valid = prSetAccessEfuseInfo->u4Valid;
+
+	DBGLOG(INIT, INFO, "wlanoidQueryProcessAccessEfuseWrite, address=%d\n", rCmdSetAccessEfuse.u4Address);
+
+
+	kalMemCopy(rCmdSetAccessEfuse.aucData, prSetAccessEfuseInfo->aucData,
+		sizeof(UINT_8) * 16);
+
+	rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+					CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+					EXT_CMD_ID_EFUSE_ACCESS,
+					TRUE,   /* Query Bit:  True->write  False->read*/
+					TRUE,
+					TRUE,
+					NULL, /* No Tx done function wait until fw ack */
+					nicOidCmdTimeoutCommon,
+					sizeof(CMD_ACCESS_EFUSE_T),
+					(PUINT_8) (&rCmdSetAccessEfuse), pvSetBuffer, u4SetBufferLen);
+
+	return rWlanStatus;
+}
+
+
+
+
+WLAN_STATUS
+wlanoidQueryEfuseFreeBlock(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen,
+			 OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_CUSTOM_EFUSE_FREE_BLOCK_T prGetEfuseFreeBlockInfo;
+	CMD_EFUSE_FREE_BLOCK_T rCmdGetEfuseFreeBlock;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	DEBUGFUNC("wlanoidQueryEfuseFreeBlock");
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(P_PARAM_CUSTOM_EFUSE_FREE_BLOCK_T);
+
+	if (u4SetBufferLen < sizeof(P_PARAM_CUSTOM_EFUSE_FREE_BLOCK_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	ASSERT(pvSetBuffer);
+
+	prGetEfuseFreeBlockInfo = (P_PARAM_CUSTOM_EFUSE_FREE_BLOCK_T) pvSetBuffer;
+
+	kalMemSet(&rCmdGetEfuseFreeBlock, 0, sizeof(CMD_EFUSE_FREE_BLOCK_T));
+
+
+	rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+					CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+					EXT_CMD_ID_EFUSE_FREE_BLOCK,
+					TRUE,   /* Query Bit:  True->write  False->read*/
+					TRUE,
+					TRUE,
+					NULL, /* No Tx done function wait until fw ack */
+					nicOidCmdTimeoutCommon,
+					sizeof(CMD_EFUSE_FREE_BLOCK_T),
+					(PUINT_8) (&rCmdGetEfuseFreeBlock), pvSetBuffer, u4SetBufferLen);
+
+	return rWlanStatus;
+}
+
+/*#endif*/
+
+#endif /* CFG_SUPPORT_BUFFER_MODE */
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to query RX statistics.
+*
+* \param[in] pvAdapter Pointer to the Adapter structure.
+* \param[out] pvQueryBuf A pointer to the buffer that holds the result of
+*                           the query.
+* \param[in] u4QueryBufLen The length of the query buffer.
+* \param[out] pu4QueryInfoLen If the call is successful, returns the number of
+*                            bytes written into the query buffer. If the call
+*                            failed due to invalid length of the query buffer,
+*                            returns the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_INVALID_LENGTH
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanoidQueryRxStatistics(IN P_ADAPTER_T prAdapter,
+			 IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen)
+{
+	P_PARAM_CUSTOM_ACCESS_RX_STAT prRxStatistics;
+	P_CMD_ACCESS_RX_STAT prCmdAccessRxStat;
+	CMD_ACCESS_RX_STAT rCmdAccessRxStat;
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+/*	UINT_32 u4MemSize = PARAM_MEM_DUMP_MAX_SIZE; */
+	UINT_32 u4SeqNum = 0;
+	UINT_32 u4TotalNum = 0;
+
+	prCmdAccessRxStat = &rCmdAccessRxStat;
+
+	DEBUGFUNC("wlanoidQueryRxStatistics");
+	DBGLOG(INIT, LOUD, "\n");
+
+	DBGLOG(INIT, ERROR, "wlanoidQueryRxStatistics\n");
+
+	prRxStatistics = (P_PARAM_CUSTOM_ACCESS_RX_STAT) pvQueryBuffer;
+
+	*pu4QueryInfoLen = 8 + prRxStatistics->u4TotalNum;
+
+	u4SeqNum = prRxStatistics->u4SeqNum;
+	u4TotalNum = prRxStatistics->u4TotalNum;
+
+	do {
+		prCmdAccessRxStat->u4SeqNum = u4SeqNum;
+		prCmdAccessRxStat->u4TotalNum = u4TotalNum;
+
+		rStatus = wlanSendSetQueryCmd(prAdapter,
+					      CMD_ID_ACCESS_RX_STAT,
+					      FALSE,
+					      TRUE,
+					      TRUE,
+					      nicCmdEventQueryRxStatistics,
+					      nicOidCmdTimeoutCommon,
+					      sizeof(CMD_ACCESS_RX_STAT),
+					      (PUINT_8) prCmdAccessRxStat, pvQueryBuffer, u4QueryBufferLen);
+	} while (FALSE);
+
+	return rStatus;
+}
+
+#if CFG_SUPPORT_TX_BF
+
+WLAN_STATUS
+wlanoidStaRecUpdate(IN P_ADAPTER_T prAdapter,
+		    IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_CMD_STAREC_UPDATE_T prStaRecUpdateInfo;
+	P_CMD_STAREC_COMMON_T prStaRecCmm;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	DEBUGFUNC("wlanoidStaRecUpdate");
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(CMD_STAREC_COMMON_T);
+	if (u4SetBufferLen < sizeof(CMD_STAREC_COMMON_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	ASSERT(pvSetBuffer);
+
+	prStaRecUpdateInfo =
+	    (P_CMD_STAREC_UPDATE_T) cnmMemAlloc(prAdapter, RAM_TYPE_MSG, (CMD_STAREC_UPDATE_HDR_SIZE + u4SetBufferLen));
+	if (!prStaRecUpdateInfo) {
+		DBGLOG(INIT, ERROR, "Allocate P_CMD_DEV_INFO_UPDATE_T ==> FAILED.\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
+	/* fix me: configurable ucBssIndex */
+	prStaRecCmm = (P_CMD_STAREC_COMMON_T) pvSetBuffer;
+	prStaRecUpdateInfo->ucBssIndex = 0;
+	prStaRecUpdateInfo->ucWlanIdx = prStaRecCmm->u2Reserve1;
+	prStaRecUpdateInfo->u2TotalElementNum = 1;
+	kalMemCopy(prStaRecUpdateInfo->aucBuffer, pvSetBuffer, u4SetBufferLen);
+
+	rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+					     CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+					     EXT_CMD_ID_STAREC_UPDATE,
+					     TRUE,
+					     FALSE,
+					     TRUE,
+					     nicCmdEventSetCommon,
+					     nicOidCmdTimeoutCommon,
+					     (CMD_STAREC_UPDATE_HDR_SIZE + u4SetBufferLen),
+					     (PUINT_8) prStaRecUpdateInfo, NULL, 0);
+
+	cnmMemFree(prAdapter, prStaRecUpdateInfo);
+
+	return rWlanStatus;
+}
+
+WLAN_STATUS
+wlanoidStaRecBFUpdate(IN P_ADAPTER_T prAdapter,
+		      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_CMD_STAREC_UPDATE_T prStaRecUpdateInfo;
+	P_CMD_STAREC_BF prStaRecBF;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	DEBUGFUNC("wlanoidStaRecBFUpdate");
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(CMD_STAREC_BF);
+	if (u4SetBufferLen < sizeof(CMD_STAREC_BF))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	ASSERT(pvSetBuffer);
+
+	prStaRecUpdateInfo =
+	    (P_CMD_STAREC_UPDATE_T) cnmMemAlloc(prAdapter, RAM_TYPE_MSG, (CMD_STAREC_UPDATE_HDR_SIZE + u4SetBufferLen));
+	if (!prStaRecUpdateInfo) {
+		DBGLOG(INIT, ERROR, "Allocate P_CMD_DEV_INFO_UPDATE_T ==> FAILED.\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
+	/* fix me: configurable ucBssIndex */
+	prStaRecBF = (P_CMD_STAREC_BF) pvSetBuffer;
+	prStaRecUpdateInfo->ucBssIndex = prStaRecBF->ucReserved[0];
+	prStaRecUpdateInfo->ucWlanIdx = prStaRecBF->ucReserved[1];
+	prStaRecUpdateInfo->u2TotalElementNum = 1;
+	kalMemCopy(prStaRecUpdateInfo->aucBuffer, pvSetBuffer, u4SetBufferLen);
+
+	rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+					     CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+					     EXT_CMD_ID_STAREC_UPDATE,
+					     TRUE,
+					     FALSE,
+					     TRUE,
+					     nicCmdEventSetCommon,
+					     nicOidCmdTimeoutCommon,
+					     (CMD_STAREC_UPDATE_HDR_SIZE + u4SetBufferLen),
+					     (PUINT_8) prStaRecUpdateInfo, NULL, 0);
+
+	cnmMemFree(prAdapter, prStaRecUpdateInfo);
+
+	return rWlanStatus;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief extend command packet generation utility
+*
+* \param[in] prAdapter Pointer to the Adapter structure.
+* \param[in] ucCID Command ID
+* \param[in] ucExtCID Extend command ID
+* \param[in] fgSetQuery Set or Query
+* \param[in] fgNeedResp Need for response
+* \param[in] pfCmdDoneHandler Function pointer when command is done
+* \param[in] u4SetQueryInfoLen The length of the set/query buffer
+* \param[in] pucInfoBuffer Pointer to set/query buffer
+*
+*
+* \retval WLAN_STATUS_PENDING
+* \retval WLAN_STATUS_FAILURE
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanSendSetQueryExtCmd(IN P_ADAPTER_T prAdapter,
+		       UINT_8 ucCID,
+		       UINT_8 ucExtCID,
+		       BOOLEAN fgSetQuery,
+		       BOOLEAN fgNeedResp,
+		       BOOLEAN fgIsOid,
+		       PFN_CMD_DONE_HANDLER pfCmdDoneHandler,
+		       PFN_CMD_TIMEOUT_HANDLER pfCmdTimeoutHandler,
+		       UINT_32 u4SetQueryInfoLen,
+		       PUINT_8 pucInfoBuffer, OUT PVOID pvSetQueryBuffer, IN UINT_32 u4SetQueryBufferLen)
+{
+	P_GLUE_INFO_T prGlueInfo;
+	P_CMD_INFO_T prCmdInfo;
+	P_WIFI_CMD_T prWifiCmd;
+	UINT_8 ucCmdSeqNum;
+
+	prGlueInfo = prAdapter->prGlueInfo;
+	prCmdInfo = cmdBufAllocateCmdInfo(prAdapter, (CMD_HDR_SIZE + u4SetQueryInfoLen));
+
+	DEBUGFUNC("wlanSendSetQueryCmd");
+
+	if (!prCmdInfo) {
+		DBGLOG(INIT, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
+		return WLAN_STATUS_FAILURE;
+	}
+	/* increase command sequence number */
+	ucCmdSeqNum = nicIncreaseCmdSeqNum(prAdapter);
+	DBGLOG(REQ, TRACE, "ucCmdSeqNum =%d\n", ucCmdSeqNum);
+
+	/* Setup common CMD Info Packet */
+	prCmdInfo->eCmdType = COMMAND_TYPE_NETWORK_IOCTL;
+	prCmdInfo->u2InfoBufLen = (UINT_16) (CMD_HDR_SIZE + u4SetQueryInfoLen);
+	prCmdInfo->pfCmdDoneHandler = pfCmdDoneHandler;
+	prCmdInfo->pfCmdTimeoutHandler = pfCmdTimeoutHandler;
+	prCmdInfo->fgIsOid = fgIsOid;
+	prCmdInfo->ucCID = ucCID;
+	prCmdInfo->fgSetQuery = fgSetQuery;
+	prCmdInfo->fgNeedResp = fgNeedResp;
+	prCmdInfo->ucCmdSeqNum = ucCmdSeqNum;
+	prCmdInfo->u4SetInfoLen = u4SetQueryInfoLen;
+	prCmdInfo->pvInformationBuffer = pvSetQueryBuffer;
+	prCmdInfo->u4InformationBufferLength = u4SetQueryBufferLen;
+
+	/* Setup WIFI_CMD_T (no payload) */
+	prWifiCmd = (P_WIFI_CMD_T) (prCmdInfo->pucInfoBuffer);
+	prWifiCmd->u2TxByteCount = prCmdInfo->u2InfoBufLen;
+	prWifiCmd->u2PQ_ID = CMD_PQ_ID;
+	/*prWifiCmd->u2Length = prCmdInfo->u2InfoBufLen - (UINT_16) OFFSET_OF(WIFI_CMD_T, u2Length);*/
+	/*prWifiCmd->u2PqId = CMD_PQ_ID;*/
+	prWifiCmd->ucPktTypeID = CMD_PACKET_TYPE_ID;
+	prWifiCmd->ucCID = prCmdInfo->ucCID;
+	/*prWifiCmd->ucExtenCID = ucExtCID;*/
+	prWifiCmd->ucSetQuery = prCmdInfo->fgSetQuery;
+	prWifiCmd->ucSeqNum = prCmdInfo->ucCmdSeqNum;
+
+	if (u4SetQueryInfoLen > 0 && pucInfoBuffer != NULL)
+		kalMemCopy(prWifiCmd->aucBuffer, pucInfoBuffer, u4SetQueryInfoLen);
+	/* insert into prCmdQueue */
+	kalEnqueueCommand(prGlueInfo, (P_QUE_ENTRY_T) prCmdInfo);
+
+	/* wakeup txServiceThread later */
+	GLUE_SET_EVENT(prGlueInfo);
+	return WLAN_STATUS_PENDING;
+}
+
+WLAN_STATUS
+wlanoidBssInfoBasic(IN P_ADAPTER_T prAdapter,
+		    IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_CMD_BSS_INFO_UPDATE_T prBssInfoUpdateBasic;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	DEBUGFUNC("wlanoidManualAssoc");
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(CMD_BSSINFO_BASIC_T);
+	if (u4SetBufferLen < sizeof(CMD_BSSINFO_BASIC_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	ASSERT(pvSetBuffer);
+
+	prBssInfoUpdateBasic = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, (CMD_BSSINFO_UPDATE_HDR_SIZE + u4SetBufferLen));
+	if (!prBssInfoUpdateBasic) {
+		DBGLOG(INIT, ERROR, "Allocate P_CMD_DEV_INFO_UPDATE_T ==> FAILED.\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
+	/* fix me: configurable ucBssIndex */
+	prBssInfoUpdateBasic->ucBssIndex = 0;
+	prBssInfoUpdateBasic->u2TotalElementNum = 1;
+	kalMemCopy(prBssInfoUpdateBasic->aucBuffer, pvSetBuffer, u4SetBufferLen);
+
+	rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+					     CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+					     EXT_CMD_ID_BSSINFO_UPDATE,
+					     TRUE,
+					     FALSE,
+					     TRUE,
+					     nicCmdEventSetCommon,
+					     nicOidCmdTimeoutCommon,
+					     (CMD_BSSINFO_UPDATE_HDR_SIZE + u4SetBufferLen),
+					     (PUINT_8) prBssInfoUpdateBasic, NULL, 0);
+
+	cnmMemFree(prAdapter, prBssInfoUpdateBasic);
+
+	return rWlanStatus;
+}
+
+WLAN_STATUS
+wlanoidDevInfoActive(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_CMD_DEV_INFO_UPDATE_T prDevInfoUpdateActive;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	DEBUGFUNC("wlanoidManualAssoc");
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(CMD_DEVINFO_ACTIVE_T);
+	if (u4SetBufferLen < sizeof(CMD_DEVINFO_ACTIVE_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	ASSERT(pvSetBuffer);
+
+	prDevInfoUpdateActive = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, (CMD_DEVINFO_UPDATE_HDR_SIZE + u4SetBufferLen));
+	if (!prDevInfoUpdateActive) {
+		DBGLOG(INIT, ERROR, "Allocate P_CMD_DEV_INFO_UPDATE_T ==> FAILED.\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
+	/* fix me: configurable ucOwnMacIdx */
+	prDevInfoUpdateActive->ucOwnMacIdx = 0;
+	prDevInfoUpdateActive->ucAppendCmdTLV = 0;
+	prDevInfoUpdateActive->u2TotalElementNum = 1;
+	kalMemCopy(prDevInfoUpdateActive->aucBuffer, pvSetBuffer, u4SetBufferLen);
+
+	rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+					     CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+					     EXT_CMD_ID_DEVINFO_UPDATE,
+					     TRUE,
+					     FALSE,
+					     TRUE,
+					     nicCmdEventSetCommon,
+					     nicOidCmdTimeoutCommon,
+					     (CMD_DEVINFO_UPDATE_HDR_SIZE + u4SetBufferLen),
+					     (PUINT_8) prDevInfoUpdateActive, NULL, 0);
+
+	cnmMemFree(prAdapter, prDevInfoUpdateActive);
+
+	return rWlanStatus;
+}
+
+WLAN_STATUS
+wlanoidManualAssoc(IN P_ADAPTER_T prAdapter,
+		   IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_CMD_STAREC_UPDATE_T prStaRecManualAssoc;
+	P_CMD_MANUAL_ASSOC_STRUCT_T prManualAssoc;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	DEBUGFUNC("wlanoidManualAssoc");
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(CMD_STAREC_UPDATE_T);
+	if (u4SetBufferLen < sizeof(CMD_STAREC_UPDATE_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	ASSERT(pvSetBuffer);
+
+	prStaRecManualAssoc = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, (CMD_STAREC_UPDATE_HDR_SIZE + u4SetBufferLen));
+	if (!prStaRecManualAssoc) {
+		DBGLOG(INIT, ERROR, "Allocate P_CMD_STAREC_UPDATE_T ==> FAILED.\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
+	prManualAssoc = (P_CMD_MANUAL_ASSOC_STRUCT_T) pvSetBuffer;
+	prStaRecManualAssoc->ucWlanIdx = prManualAssoc->ucWtbl;
+	prStaRecManualAssoc->ucBssIndex = prManualAssoc->ucOwnmac;
+	prStaRecManualAssoc->u2TotalElementNum = 1;
+	kalMemCopy(prStaRecManualAssoc->aucBuffer, pvSetBuffer, u4SetBufferLen);
+
+	rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+					     CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+					     EXT_CMD_ID_STAREC_UPDATE,
+					     TRUE,
+					     FALSE,
+					     TRUE,
+					     nicCmdEventSetCommon,
+					     nicOidCmdTimeoutCommon,
+					     (CMD_STAREC_UPDATE_HDR_SIZE + u4SetBufferLen),
+					     (PUINT_8) prStaRecManualAssoc, NULL, 0);
+
+	cnmMemFree(prAdapter, prStaRecManualAssoc);
+
+	return rWlanStatus;
+}
+
+typedef struct _TXBF_CMD_DONE_HANDLER_T {
+	UINT_32 u4TxBfCmdId;
+	void (*pFunc)(P_ADAPTER_T, P_CMD_INFO_T, PUINT_8);
+} TXBF_CMD_DONE_HANDLER_T, *P_TXBF_CMD_DONE_HANDLER_T;
+
+TXBF_CMD_DONE_HANDLER_T rTxBfCmdDoneHandler[] = {
+	{BF_SOUNDING_OFF, nicCmdEventSetCommon},
+	{BF_SOUNDING_ON, nicCmdEventSetCommon},
+	{BF_HW_CTRL, nicCmdEventSetCommon},
+	{BF_DATA_PACKET_APPLY, nicCmdEventSetCommon},
+	{BF_PFMU_MEM_ALLOCATE, nicCmdEventSetCommon},
+	{BF_PFMU_MEM_RELEASE, nicCmdEventSetCommon},
+	{BF_PFMU_TAG_READ, nicCmdEventPfmuTagRead},
+	{BF_PFMU_TAG_WRITE, nicCmdEventSetCommon},
+	{BF_PROFILE_READ, nicCmdEventPfmuDataRead},
+	{BF_PROFILE_WRITE, nicCmdEventSetCommon},
+	{BF_PN_READ, nicCmdEventSetCommon},
+	{BF_PN_WRITE, nicCmdEventSetCommon},
+	{BF_PFMU_MEM_ALLOC_MAP_READ, nicCmdEventSetCommon}
+};
+
+WLAN_STATUS
+wlanoidTxBfAction(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_CUSTOM_TXBF_ACTION_STRUCT_T prTxBfActionInfo;
+	CMD_TXBF_ACTION_T rCmdTxBfActionInfo;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+	BOOLEAN fgSetQuery, fgNeedResp;
+	UINT_32 u4TxBfCmdId;
+
+	DEBUGFUNC("wlanoidTxBfAction");
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(PARAM_CUSTOM_TXBF_ACTION_STRUCT_T);
+
+	if (u4SetBufferLen < sizeof(PARAM_CUSTOM_TXBF_ACTION_STRUCT_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	ASSERT(pvSetBuffer);
+
+	prTxBfActionInfo = (P_PARAM_CUSTOM_TXBF_ACTION_STRUCT_T) pvSetBuffer;
+
+	memcpy(&rCmdTxBfActionInfo, prTxBfActionInfo, sizeof(CMD_TXBF_ACTION_T));
+
+	u4TxBfCmdId = rCmdTxBfActionInfo.rProfileTagRead.ucTxBfCategory;
+	if (TXBF_CMD_NEED_TO_RESPONSE(u4TxBfCmdId) == 0) {	/* don't need response */
+		fgSetQuery = TRUE;
+		fgNeedResp = FALSE;
+	} else {
+		fgSetQuery = FALSE;
+		fgNeedResp = TRUE;
+	}
+
+	rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+					     CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+					     EXT_CMD_ID_BF_ACTION,
+					     fgSetQuery,
+					     fgNeedResp,
+					     TRUE,
+					     rTxBfCmdDoneHandler[u4TxBfCmdId].pFunc,
+					     nicOidCmdTimeoutCommon,
+					     sizeof(CMD_TXBF_ACTION_T),
+					     (PUINT_8) &rCmdTxBfActionInfo, pvSetBuffer, u4SetBufferLen);
+
+	return rWlanStatus;
+}
+
+#if CFG_SUPPORT_MU_MIMO
+WLAN_STATUS
+wlanoidMuMimoAction(IN P_ADAPTER_T prAdapter,
+		    IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_CUSTOM_MUMIMO_ACTION_STRUCT_T prMuMimoActionInfo;
+	CMD_MUMIMO_ACTION_T rCmdMuMimoActionInfo;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
+	BOOLEAN fgSetQuery, fgNeedResp;
+	UINT_32 u4MuMimoCmdId;
+
+	VOID (*pFunc)(P_ADAPTER_T, P_CMD_INFO_T, PUINT_8);
+
+	DEBUGFUNC("wlanoidMuMimoAction");
+
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+
+	*pu4SetInfoLen = sizeof(PARAM_CUSTOM_MUMIMO_ACTION_STRUCT_T);
+
+	if (u4SetBufferLen < sizeof(PARAM_CUSTOM_MUMIMO_ACTION_STRUCT_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	ASSERT(pvSetBuffer);
+
+	prMuMimoActionInfo = (P_PARAM_CUSTOM_MUMIMO_ACTION_STRUCT_T) pvSetBuffer;
+
+	memcpy(&rCmdMuMimoActionInfo, prMuMimoActionInfo, sizeof(CMD_MUMIMO_ACTION_T));
+
+	u4MuMimoCmdId = rCmdMuMimoActionInfo.ucMuMimoCategory;
+	if (MU_CMD_NEED_TO_RESPONSE(u4MuMimoCmdId) == 0) {
+		fgSetQuery = TRUE;
+		fgNeedResp = FALSE;
+	} else {
+		fgSetQuery = FALSE;
+		fgNeedResp = TRUE;
+	}
+
+	pFunc = nicCmdEventSetCommon;
+	if (u4MuMimoCmdId == MU_HQA_GET_QD)
+		pFunc = nicCmdEventGetQd;
+	else if (u4MuMimoCmdId == MU_HQA_GET_CALC_LQ)
+		pFunc = nicCmdEventGetCalcLq;
+	else if (u4MuMimoCmdId == MU_GET_CALC_INIT_MCS)
+		pFunc = nicCmdEventGetCalcInitMcs;
+
+	rWlanStatus = wlanSendSetQueryExtCmd(prAdapter,
+					     CMD_ID_LAYER_0_EXT_MAGIC_NUM,
+					     EXT_CMD_ID_MU_CTRL,
+					     fgSetQuery,
+					     fgNeedResp,
+					     TRUE,
+					     pFunc,
+					     nicOidCmdTimeoutCommon,
+					     sizeof(CMD_MUMIMO_ACTION_T),
+					     (PUINT_8) &rCmdMuMimoActionInfo, pvSetBuffer, u4SetBufferLen);
+
+	return rWlanStatus;
+}
+#endif /* CFG_SUPPORT_MU_MIMO */
+#endif /* CFG_SUPPORT_TX_BF */
+#endif /* CFG_SUPPORT_QA_TOOL */
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to query MCR value.
@@ -7375,13 +8152,12 @@ wlanoidRftestQueryAutoTest(IN P_ADAPTER_T prAdapter,
 		ASSERT(pvQueryBuffer);
 	ASSERT(pu4QueryInfoLen);
 
-	/*pu4QueryInfoLen is depended on upper-layer*/
-	*pu4QueryInfoLen = u4QueryBufferLen;
+	*pu4QueryInfoLen = sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T);
 
-
-	if (u4QueryBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T))
-		DBGLOG(OID, WARN, "Invalid data. QueryBufferLen: %ld.\n", u4QueryBufferLen);
-
+	if (u4QueryBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T)) {
+		DBGLOG(OID, ERROR, "Invalid data. QueryBufferLen: %ld.\n", u4QueryBufferLen);
+		/* return WLAN_STATUS_INVALID_LENGTH; */
+	}
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvQueryBuffer;
 	rStatus = rftestQueryATInfo(prAdapter,
@@ -7422,9 +8198,10 @@ wlanoidRftestSetAutoTest(IN P_ADAPTER_T prAdapter,
 
 	*pu4SetInfoLen = sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T);
 
-	if (u4SetBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T))
-		DBGLOG(OID, WARN, "Invalid data. SetBufferLen: %u.\n", u4SetBufferLen);
-
+	if (u4SetBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T)) {
+		DBGLOG(OID, ERROR, "Invalid data. SetBufferLen: %u.\n", u4SetBufferLen);
+		/* return WLAN_STATUS_INVALID_LENGTH; */
+	}
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvSetBuffer;
 	rStatus = rftestSetATInfo(prAdapter, prRfATInfo->u4FuncIndex, prRfATInfo->u4FuncData);
@@ -7519,25 +8296,14 @@ rftestQueryATInfo(IN P_ADAPTER_T prAdapter,
 
 		prTestStatus->rATInfo.u4FuncData =
 		    (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
-		prTestStatus->rATInfo.u4FuncData2 = prAdapter->rVerInfo.u2FwOwnVersionExtend;
-
-		if (u4QueryBufferLen > 8) {
-			/*support FW version extended*/
-			prTestStatus->rATInfo.u4FuncData2 = prAdapter->rVerInfo.u2FwOwnVersionExtend;
-
-			DBGLOG(OID, INFO, "<wifi> version: 0x%x ,extended : 0x%x\n"
-				, prTestStatus->rATInfo.u4FuncData
-				, prTestStatus->rATInfo.u4FuncData2);
-		} else
-			DBGLOG(OID, INFO, "<wifi> version: 0x%x\n"
-				, prTestStatus->rATInfo.u4FuncData);
-
+		u4QueryBufferLen = sizeof(EVENT_TEST_STATUS);
 
 	} else if (u4FuncIndex == RF_AT_FUNCID_DRV_INFO) {
 		/* driver implementation */
 		prTestStatus = (P_EVENT_TEST_STATUS) pvQueryBuffer;
 
 		prTestStatus->rATInfo.u4FuncData = CFG_DRV_OWN_VERSION;
+		u4QueryBufferLen = sizeof(EVENT_TEST_STATUS);
 
 	} else if (u4FuncIndex == RF_AT_FUNCID_QUERY_ICAP_DUMP_FILE) {
 		/* driver implementation */
@@ -9548,8 +10314,11 @@ WLAN_STATUS wlanSendMemDumpCmd(IN P_ADAPTER_T prAdapter, IN PVOID pvQueryBuffer,
 		prCmdDumpMem->u4Length = u4CurLeng;
 		prCmdDumpMem->u4RemainLength = u4RemainLeng;
 		prCmdDumpMem->ucFragNum = ucFragNum;
+#if CFG_SUPPORT_QA_TOOL
+		prCmdDumpMem->u4IcapContent = prMemDumpInfo->u4IcapContent;
+#endif /* CFG_SUPPORT_QA_TOOL */
 
-		DBGLOG(OID, TRACE, "[%d] 0x%lX, len %lu, remain len %lu\n",
+		DBGLOG(RFTEST, INFO, "[ucFragNum = %d] u4Address = 0x%lX, len %lu, remain len %lu\n",
 		       ucFragNum, prCmdDumpMem->u4Address, prCmdDumpMem->u4Length, prCmdDumpMem->u4RemainLength);
 
 		rStatus = wlanSendSetQueryCmd(prAdapter,
@@ -9590,8 +10359,7 @@ wlanoidQueryMemDump(IN P_ADAPTER_T prAdapter,
 {
 	P_PARAM_CUSTOM_MEM_DUMP_STRUCT_T prMemDumpInfo;
 
-	DEBUGFUNC("wlanoidQueryMemDump");
-	DBGLOG(OID, LOUD, "\n");
+	DBGLOG(RFTEST, INFO, "wlanoidQueryMemDump----->\n");
 
 	ASSERT(prAdapter);
 	ASSERT(pu4QueryInfoLen);
@@ -9601,11 +10369,14 @@ wlanoidQueryMemDump(IN P_ADAPTER_T prAdapter,
 	*pu4QueryInfoLen = sizeof(UINT_32);
 
 	prMemDumpInfo = (P_PARAM_CUSTOM_MEM_DUMP_STRUCT_T) pvQueryBuffer;
-	DBGLOG(OID, TRACE, "Dump 0x%lX, len %lu\n", prMemDumpInfo->u4Address, prMemDumpInfo->u4Length);
+	DBGLOG(OID, TRACE, "Dump 0x%X, len %u\n", prMemDumpInfo->u4Address, prMemDumpInfo->u4Length);
 
 	prMemDumpInfo->u4RemainLength = prMemDumpInfo->u4Length;
 	prMemDumpInfo->u4Length = 0;
 	prMemDumpInfo->ucFragNum = 0;
+#if CFG_SUPPORT_QA_TOOL
+	prMemDumpInfo->u4IcapContent = prMemDumpInfo->u4IcapContent;
+#endif /* CFG_SUPPORT_QA_TOOL */
 
 	return wlanSendMemDumpCmd(prAdapter, pvQueryBuffer, u4QueryBufferLen);
 
@@ -9655,12 +10426,10 @@ wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 
 	if (prSetP2P->u4Enable) {
 		p2pSetMode((prSetP2P->u4Mode == 1) ? TRUE : FALSE);
-
-		if (p2pLaunch(prAdapter->prGlueInfo)) {
+		if (p2pLaunch(prAdapter->prGlueInfo))
 			ASSERT(prAdapter->fgIsP2PRegistered);
-		} else
+		else
 			status = WLAN_STATUS_FAILURE;
-
 	} else {
 		if (prAdapter->fgIsP2PRegistered)
 			p2pRemove(prAdapter->prGlueInfo);
