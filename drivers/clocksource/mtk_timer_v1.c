@@ -30,7 +30,7 @@
 #include <linux/sched_clock.h>
 #include <clocksource/arm_arch_timer.h>
 
-#include <mach/mtk_gpt.h>
+#include <mt-plat/mtk_gpt.h>
 #include <mt-plat/sync_write.h>
 
 #include <linux/irqchip/mtk-gic-extend.h> /* for aee dump */
@@ -1081,6 +1081,7 @@ int gpt_set_clk(unsigned int id, unsigned int clksrc, unsigned int clkdiv)
 EXPORT_SYMBOL(gpt_set_clk);
 
 /************************************************************************************************/
+CLOCKSOURCE_OF_DECLARE(mtk_apxgpt, "mediatek,apxgpt", mt_gpt_init);
 CLOCKSOURCE_OF_DECLARE(mtk_apxgpt_mt6739, "mediatek,apxgpt", mt_gpt_init);
 CLOCKSOURCE_OF_DECLARE(mtk_apxgpt_mt6763, "mediatek,mt6763-timer", mt_gpt_init);
 
