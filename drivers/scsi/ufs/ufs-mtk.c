@@ -839,12 +839,10 @@ int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user)
 
 	/* extract firmware from user buffer */
 	if (idata->buf_byte > (u32)UFS_IOCTL_FFU_MAX_FW_SIZE_BYTES) {
-		kfree(idata);
-		kfree(idata_user);
 		dev_err(hba->dev, "%s: idata->buf_byte:0x%x > max 0x%x bytes\n", __func__,
 				idata->buf_byte, (u32)UFS_IOCTL_FFU_MAX_FW_SIZE_BYTES);
 		err = -ENOMEM;
-		goto out;
+		goto out_release_mem;
 	}
 	idata->buf_ptr = kzalloc(idata->buf_byte, GFP_KERNEL);
 
