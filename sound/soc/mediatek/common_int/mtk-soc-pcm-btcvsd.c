@@ -252,8 +252,7 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 
 		BT_CVSD_Mem.u4RXBufferSize = sizeof(struct btsco_rx);
 
-		if ((BT_CVSD_Mem.pucRXVirtBufAddr == NULL)
-				&& (BT_CVSD_Mem.pucRXPhysBufAddr == 0)) {
+		if (!BT_CVSD_Mem.pucRXVirtBufAddr) {
 			BT_CVSD_Mem.pucRXVirtBufAddr = dma_alloc_coherent(mDev_btcvsd_rx,
 											BT_CVSD_Mem.u4RXBufferSize,
 											&BT_CVSD_Mem.pucRXPhysBufAddr,
@@ -283,8 +282,7 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 		tx_timeout = false;
 
 		BT_CVSD_Mem.u4TXBufferSize = sizeof(struct btsco_tx);
-		if ((BT_CVSD_Mem.pucTXVirtBufAddr == NULL)
-				&& (BT_CVSD_Mem.pucTXPhysBufAddr == 0)) {
+		if (!BT_CVSD_Mem.pucTXVirtBufAddr) {
 			BT_CVSD_Mem.pucTXVirtBufAddr = dma_alloc_coherent(mDev_btcvsd_tx,
 											BT_CVSD_Mem.u4TXBufferSize,
 											&BT_CVSD_Mem.pucTXPhysBufAddr,
