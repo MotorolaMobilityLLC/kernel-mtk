@@ -340,6 +340,9 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	if (is_mipi_enterulps())
 		return;
 
+	if (primary_display_is_idle() && !primary_display_is_video_mode())
+		return;
+
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
