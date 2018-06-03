@@ -19,8 +19,6 @@
 #include <mtk_spm_misc.h>
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
-#include <mtk_spm_misc.h>
-#include <mtk_spm_internal.h>
 
 #if defined(CONFIG_MACH_MT6799)
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
