@@ -3090,11 +3090,19 @@ int vpu_dump_mesg(struct seq_file *s)
 	#else
 	vpu_print_seq(s, "=== VPU_%d Log Buffer ===\n", core_index);
 	vpu_print_seq(s, "vpu: print dsp log (0x%x):\n", (unsigned int)(uintptr_t)log_buf);
+
+    /* in case total log < VPU_SIZE_LOG_SHIFT and there's '\0' */
+	*(log_head + VPU_SIZE_LOG_BUF - 1) = '\0';
+	vpu_print_seq(s, "%s", ptr+VPU_SIZE_LOG_HEADER);
+
+	ptr += VPU_SIZE_LOG_HEADER;
+	log_head = ptr;
+
 	jump_out = false;
-	*(log_head + VPU_SIZE_LOG_BUF - 1) = '\n';
+	*(log_head + (VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER) - 1) = '\n';
 	do {
-		if ((ptr + VPU_SIZE_LOG_SHIFT) >= (log_head + VPU_SIZE_LOG_BUF)) {
-			*(log_head + VPU_SIZE_LOG_BUF - 1) = '\0'; /* last part of log buffer */
+		if ((ptr + VPU_SIZE_LOG_SHIFT) >= (log_head + (VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER))) {
+			*(log_head + (VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER) - 1) = '\0'; /* last part of log buffer */
 			jump_out = true;
 		} else {
 			log_a_pos = strchr(ptr + VPU_SIZE_LOG_SHIFT, '\n');
@@ -3106,7 +3114,7 @@ int vpu_dump_mesg(struct seq_file *s)
 		ptr = log_a_pos + 1;
 
 		/* incase log_a_pos is at end of string */
-		if (ptr >= log_head + VPU_SIZE_LOG_BUF)
+		if (ptr >= log_head + (VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER))
 			break;
 	} while (!jump_out);
 
