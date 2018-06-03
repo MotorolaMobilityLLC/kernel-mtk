@@ -1931,7 +1931,7 @@ static INT32 opfunc_hw_rst(P_WMT_OP pWmtOp)
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] = DRV_STS_POWER_OFF;
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] = DRV_STS_POWER_OFF;
 	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WIFI] = DRV_STS_POWER_OFF; */
-	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] = DRV_STS_POWER_OFF;
+	/*gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] = DRV_STS_POWER_OFF;*/
 	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO1]= DRV_STS_POWER_OFF; */
 	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO2]= DRV_STS_POWER_OFF; */
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_STP] = DRV_STS_POWER_OFF;
