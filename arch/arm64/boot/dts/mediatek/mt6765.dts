@@ -45,6 +45,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x000>;
 			enable-method = "psci";
 			clock-frequency = <2340000000>;
+			cpu-idle-states = <&STANDBY &MCDI_CPU &MCDI_CLUSTER>,
+					  <&SODI &SODI3 &DPIDLE &SUSPEND>;
 		};
 
 		cpu1: cpu@001 {
@@ -53,6 +55,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x001>;
 			enable-method = "psci";
 			clock-frequency = <2340000000>;
+			cpu-idle-states = <&STANDBY &MCDI_CPU &MCDI_CLUSTER>,
+					  <&SODI &SODI3 &DPIDLE &SUSPEND>;
 		};
 
 		cpu2: cpu@002 {
@@ -61,6 +65,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x002>;
 			enable-method = "psci";
 			clock-frequency = <2340000000>;
+			cpu-idle-states = <&STANDBY &MCDI_CPU &MCDI_CLUSTER>,
+					  <&SODI &SODI3 &DPIDLE &SUSPEND>;
 		};
 
 		cpu3: cpu@003 {
@@ -69,6 +75,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x003>;
 			enable-method = "psci";
 			clock-frequency = <2340000000>;
+			cpu-idle-states = <&STANDBY &MCDI_CPU &MCDI_CLUSTER>,
+					  <&SODI &SODI3 &DPIDLE &SUSPEND>;
 		};
 
 		cpu4: cpu@100 {
@@ -77,6 +85,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x100>;
 			enable-method = "psci";
 			clock-frequency = <2340000000>;
+			cpu-idle-states = <&STANDBY &MCDI_CPU &MCDI_CLUSTER>,
+					  <&SODI &SODI3 &DPIDLE &SUSPEND>;
 		};
 
 		cpu5: cpu@101 {
@@ -85,6 +95,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x101>;
 			enable-method = "psci";
 			clock-frequency = <2340000000>;
+			cpu-idle-states = <&STANDBY &MCDI_CPU &MCDI_CLUSTER>,
+					  <&SODI &SODI3 &DPIDLE &SUSPEND>;
 		};
 
 		cpu6: cpu@102 {
@@ -93,6 +105,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x102>;
 			enable-method = "psci";
 			clock-frequency = <2340000000>;
+			cpu-idle-states = <&STANDBY &MCDI_CPU &MCDI_CLUSTER>,
+					  <&SODI &SODI3 &DPIDLE &SUSPEND>;
 		};
 
 		cpu7: cpu@103 {
@@ -101,6 +115,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x103>;
 			enable-method = "psci";
 			clock-frequency = <2340000000>;
+			cpu-idle-states = <&STANDBY &MCDI_CPU &MCDI_CLUSTER>,
+					  <&SODI &SODI3 &DPIDLE &SUSPEND>;
 		};
 
 		cpu-map {
@@ -132,6 +148,66 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				core3 {
 					cpu = <&cpu7>;
 				};
+			};
+		};
+
+		idle-states {
+			entry-method = "arm,psci";
+
+			STANDBY: standby {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x00000001>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			MCDI_CPU: mcdi-cpu {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x00010001>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			MCDI_CLUSTER: mcdi-cluster {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x01010001>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			SODI: sodi {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x01010002>;
+				entry-latency-us = <800>;
+				exit-latency-us = <1000>;
+				min-residency-us = <2000>;
+			};
+
+			SODI3: sodi3 {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x01010003>;
+				entry-latency-us = <800>;
+				exit-latency-us = <1000>;
+				min-residency-us = <2000>;
+			};
+
+			DPIDLE: dpidle {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x01010004>;
+				entry-latency-us = <800>;
+				exit-latency-us = <1000>;
+				min-residency-us = <2000>;
+			};
+
+			SUSPEND: suspend {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x01010005>;
+				entry-latency-us = <800>;
+				exit-latency-us = <1000>;
+				min-residency-us = <2000>;
 			};
 		};
 	};
@@ -381,6 +457,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,sleep";
 		reg = <0 0x10006000 0 0x1000>;
 		interrupts = <GIC_SPI 181 IRQ_TYPE_LEVEL_LOW>;
+		wakeup-source = <&keypad 0 (1 << 2)>,
+				<&consys 1 (1 << 5)>,
+				<&mdcldma 3 (1 << 25)>;
 	};
 
 	toprgu@10007000 {
