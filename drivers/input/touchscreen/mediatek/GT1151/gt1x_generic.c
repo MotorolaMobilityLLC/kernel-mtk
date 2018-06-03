@@ -272,7 +272,7 @@ static ssize_t gt1x_debug_write_proc(struct file *file,
 		return count;
 	}
 #endif
-	ret = sscanf(buf, "%s %s", (char *)&mode_str, (char *)&arg1);
+	ret = sscanf(buf, "%49s %49s", (char *)&mode_str, (char *)&arg1);
 	if (ret < 0) {
 		GTP_ERROR("Sscanf buf ERROR2");
 		return ret;
