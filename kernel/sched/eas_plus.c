@@ -196,6 +196,7 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 	struct cpumask cluster_cpus;
 	int max_cap_cpu = 0;
 	int best_cpu = 0;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	/* prefer idle for stune */
 	if (prefer_idle) {
@@ -223,6 +224,9 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 				continue;
 
 			if (cpu_isolated(cpu))
+				continue;
+
+			if (!cpumask_test_cpu(cpu, tsk_cpus_allow))
 				continue;
 
 			if (capacity_of(max_cap_cpu) < target_max_cap &&
