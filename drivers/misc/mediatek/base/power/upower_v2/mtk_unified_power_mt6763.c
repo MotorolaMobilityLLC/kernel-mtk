@@ -38,6 +38,27 @@
 #include "mtk_common_static_power.h"
 #endif
 
+#undef  BIT
+#define BIT(bit)	(1U << (bit))
+
+#define MSB(range)	(1 ? range)
+#define LSB(range)	(0 ? range)
+/**
+ * Genearte a mask wher MSB to LSB are all 0b1
+ * @r:	Range in the form of MSB:LSB
+ */
+#define BITMASK(r)	\
+	(((unsigned) -1 >> (31 - MSB(r))) & ~((1U << LSB(r)) - 1))
+
+/**
+ * Set value at MSB:LSB. For example, BITS(7:3, 0x5A)
+ * will return a value where bit 3 to bit 7 is 0x5A
+ * @r:	Range in the form of MSB:LSB
+ */
+/* BITS(MSB:LSB, value) => Set value at MSB:LSB  */
+#define BITS(r, val)	((val << LSB(r)) & BITMASK(r))
+
+#define GET_BITS_VAL(_bits_, _val_)   (((_val_) & (BITMASK(_bits_))) >> ((0) ? _bits_))
 /* #if (NR_UPOWER_TBL_LIST <= 1) */
 struct upower_tbl final_upower_tbl[NR_UPOWER_BANK] = {};
 /* #endif */
@@ -128,6 +149,46 @@ int upower_bank_to_spower_bank(int upower_bank)
 }
 #endif
 
+static void upower_scale_l_cap(void)
+{
+	unsigned int ratio;
+	unsigned int temp;
+	unsigned int max_cap = 1024;
+	int i, j;
+	struct upower_tbl *tbl;
+
+	/* get L opp0's cap and calculate scaling ratio */
+	/* ratio = round_up(1024 * 1000 / opp0 cap) */
+	/* new cap = orig cap * ratio / 1000 */
+	tbl = upower_tbl_infos[UPOWER_BANK_L].p_upower_tbl;
+	temp = tbl->row[UPOWER_OPP_NUM - 1].cap;
+	ratio = ((max_cap * 1000) + (temp - 1)) / temp;
+	upower_error("scale ratio = %d, orig cap = %d\n", ratio, temp);
+
+	/* if L opp0's cap is 1024, no need to scale cap anymore */
+	if (temp == 1024)
+		return;
+
+	/* scaling L and cluster L cap value */
+	for (i = 0; i < NR_UPOWER_BANK; i++) {
+		if ((i == UPOWER_BANK_L) || (i == UPOWER_BANK_CLS_L)) {
+			tbl = upower_tbl_infos[i].p_upower_tbl;
+			for (j = 0; j < UPOWER_OPP_NUM; j++) {
+				temp = tbl->row[j].cap;
+				tbl->row[j].cap = temp * ratio / 1000;
+			}
+		}
+	}
+
+	/* check opp0's cap after scaling */
+	tbl = upower_tbl_infos[UPOWER_BANK_L].p_upower_tbl;
+	temp = tbl->row[UPOWER_OPP_NUM - 1].cap;
+	if (temp != 1024) {
+		upower_error("Notice: new cap is not 1024 after scaling (%d)\n", ratio);
+		tbl->row[UPOWER_OPP_NUM - 1].cap = 1024;
+	}
+}
+
 /****************************************************
  * According to chip version get the raw upower tbl *
  * and let upower_tbl_infos points to it.           *
@@ -136,31 +197,26 @@ int upower_bank_to_spower_bank(int upower_bank)
  * power tbl.                                       *
  ***************************************************/
 
-void get_original_table(void)
-{
-	unsigned int upower_proj_ver = 0;
-	unsigned int bin = 0;
-	unsigned short idx = 0;
-	unsigned int i, j;
-
-#if 0
 #define SEG_EFUSE 30
 #define BIN_EFUSE 52 /* 588 */
-#define TURBO_EFUSE 54 /* 590 */
+void get_original_table(void)
+{
+	unsigned int bin = 0;
+	unsigned short idx = 2; /* default use MT6763T_FY */
+	unsigned int i, j;
 
-	upower_proj_ver = is_ext_buck_exist();
 	/* 0x588 bit[2:0] */
 	bin = get_devinfo_with_index(BIN_EFUSE);
-	bin = _GET_BITS_VAL_(2:0, bin);
-	if (get_devinfo_with_index(SEG_EFUSE) == n_seg)
+	bin = GET_BITS_VAL(2:0, bin);
+	if (get_devinfo_with_index(SEG_EFUSE) == 0x10)
 		idx = 1; /* MT6763 */
-	else if (get_devinfo_with_index(SEG_EFUSE) == t_seg) {
+	else if (get_devinfo_with_index(SEG_EFUSE) == 0x20) {
 		if (bin == 1)
 			idx = 3; /* MT6763T_SB */
 		else
 			idx = 2; /* MT6763T_FY */
-	} else if (get_devinfo_with_index(SEG_EFUSE) == tt_seg) {
-		if (upower_proj_ver)
+	} else if (get_devinfo_with_index(SEG_EFUSE) == 0x30) {
+		if (is_ext_buck_exist())
 			idx = 0; /* MT6763+ */
 		else {
 			if (bin == 1)
@@ -169,11 +225,9 @@ void get_original_table(void)
 				idx = 2; /* MT6763T_FY */
 		}
 	}
-#else
-	idx = 2; /* MT6763T_FY */
-#endif
 
-	upower_error("projver, bin, idx=%d, %d, %d\n", upower_proj_ver, bin, idx);
+	upower_error("bin=%d, idx=%d, is6311=%d, seg=%d\n", bin, idx,
+				is_ext_buck_exist(), get_devinfo_with_index(SEG_EFUSE));
 
 	/* get location of reference table */
 	upower_tbl_infos = &upower_tbl_infos_list[idx][0];
@@ -207,6 +261,9 @@ void get_original_table(void)
 	for (i = 0; i < NR_UPOWER_BANK; i++)
 		upower_debug("bank[%d] dest:%p dyn_pwr:%u, volt[0]%u\n", i, &upower_tbl_ref[i],
 					upower_tbl_ref[i].row[0].dyn_pwr, upower_tbl_ref[i].row[0].volt);
+
+	/* Not support L+ now, scale L and cluster L cap to 1024 */
+	upower_scale_l_cap();
 }
 
 MODULE_DESCRIPTION("MediaTek Unified Power Driver v0.0");
