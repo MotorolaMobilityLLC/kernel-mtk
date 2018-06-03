@@ -171,9 +171,9 @@ int cm_mgr_get_cpu_count(int cluster)
 	return pstall_all->cpu_count[cluster];
 }
 
-static int cm_mgr_read_stall(int cpu)
+static unsigned int cm_mgr_read_stall(int cpu)
 {
-	int val = 0;
+	unsigned int val = 0;
 
 	if (spin_trylock(&sw_zq_tx_lock)) {
 
