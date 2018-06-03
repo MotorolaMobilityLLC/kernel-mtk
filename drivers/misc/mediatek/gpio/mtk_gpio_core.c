@@ -616,7 +616,9 @@ static struct miscdevice mt_gpio_device = {
 /*---------------------------------------------------------------------------*/
 static int mt_gpio_probe(struct platform_device *dev)
 {
+#ifndef MT_GPIO_INIT_AT_POSTCORE
 	int err;
+#endif
 	struct miscdevice *misc = &mt_gpio_device;
 
 #ifdef CONFIG_OF
@@ -638,9 +640,10 @@ static int mt_gpio_probe(struct platform_device *dev)
 		GPIO_RETERR(-EACCES, "");
 	mt_gpio->misc = misc;
 
+#ifndef MT_GPIO_INIT_AT_POSTCORE
 	err = misc_register(misc);
 	if (err)
-		GPIOERR("register gpio failed\n");
+		GPIOERR("error register gpio misc device %d\n", err);
 
 	err = mt_gpio_create_attr(misc->this_device);
 	if (err)
@@ -649,6 +652,9 @@ static int mt_gpio_probe(struct platform_device *dev)
 	dev_set_drvdata(misc->this_device, mt_gpio);
 
 	return err;
+#else
+	return 0;
+#endif
 }
 
 /*---------------------------------------------------------------------------*/
@@ -728,6 +734,18 @@ struct device_node *get_gpio_np(void)
 	return np_gpio;
 }
 #endif
+
+#ifdef MT_GPIO_INIT_AT_POSTCORE
+struct miscdevice *mt_gpio_get_misc_dev(void)
+{
+	return mt_gpio->misc;
+}
+
+void mt_gpio_set_midcdevice_drvdata(struct device *dev)
+{
+	dev_set_drvdata(dev, mt_gpio);
+}
+#endif
 /*---------------------------------------------------------------------------*/
 
 /*---------------------------------------------------------------------------*/
@@ -752,7 +770,11 @@ static void __exit mt_gpio_exit(void)
 /* return; */
 /* } */
 /*---------------------------------------------------------------------------*/
+#ifdef MT_GPIO_INIT_AT_POSTCORE
+postcore_initcall(mt_gpio_init);
+#else
 subsys_initcall(mt_gpio_init);
+#endif
 module_exit(mt_gpio_exit);
 MODULE_AUTHOR("mediatek ");
 MODULE_DESCRIPTION("MT General Purpose Driver (GPIO) Revision");
