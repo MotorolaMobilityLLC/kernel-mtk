@@ -3244,6 +3244,12 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		memcpy(&daemon_ui_soc, &msg->fgd_data[0],
 			sizeof(daemon_ui_soc));
 
+		if (daemon_ui_soc < 0) {
+			bm_err("FG_DAEMON_CMD_SET_KERNEL_UISOC error,daemon_ui_soc:%d\n",
+				daemon_ui_soc);
+			daemon_ui_soc = 0;
+		}
+
 		fg_cust_data.ui_old_soc = daemon_ui_soc;
 		old_uisoc = gm.ui_soc;
 
@@ -3401,7 +3407,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		ret_msg->fgd_data_len += sizeof(rtc_ui_soc);
 		memcpy(ret_msg->fgd_data, &rtc_ui_soc,
 			sizeof(rtc_ui_soc));
-		bm_debug("[fr] FG_DAEMON_CMD_GET_RTC_UI_SOC = %d\n",
+		bm_err("[fr] FG_DAEMON_CMD_GET_RTC_UI_SOC = %d\n",
 			rtc_ui_soc);
 	}
 	break;
@@ -3411,6 +3417,14 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		int rtc_ui_soc;
 
 		memcpy(&rtc_ui_soc, &msg->fgd_data[0], sizeof(rtc_ui_soc));
+
+		if (rtc_ui_soc < 0) {
+			bm_err("[fr]FG_DAEMON_CMD_SET_RTC_UI_SOC error,rtc_ui_soc=%d\n",
+				rtc_ui_soc);
+
+			rtc_ui_soc = 0;
+		}
+
 		gauge_dev_set_rtc_ui_soc(gm.gdev, rtc_ui_soc);
 		bm_debug(
 			"[fr] BATTERY_METER_CMD_SET_RTC_UI_SOC=%d\n",
