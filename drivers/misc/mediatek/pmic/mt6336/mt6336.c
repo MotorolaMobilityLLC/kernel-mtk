@@ -438,6 +438,8 @@ static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_devic
 	new_client = client;
 
 	/* --------------------- */
+	/* Disable LowQ mode*/
+	mt6336_set_flag_register_value(MT6336_RG_DIS_LOWQ_MODE, 0x1);
 	mt6336_hw_component_detect();
 	mt6336_dump_register();
 
