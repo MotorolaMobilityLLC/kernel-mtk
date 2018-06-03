@@ -56,6 +56,7 @@ static unsigned int  g_MotorResolution;
 static struct timespec g_TSAFOpen;
 static struct timespec g_TSAFClose;
 static unsigned int g_SkipAFUninit;
+static unsigned int g_FirstAFUninit = 1;
 
 #if defined(CONFIG_MACH_MT6771)
 static unsigned int g_ACKErrorCnt = 3;
@@ -353,16 +354,21 @@ int LC898217AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		end_ms = (g_TSAFClose.tv_sec * NSEC_PER_SEC + g_TSAFClose.tv_nsec) / 1000000;
 		diff_ms = end_ms - start_ms;
 
-		LOG_INF("Wait - Excute Time %d\n", diff_ms);
+		LOG_INF("Wait - Excute Time %d , FirstAFUninit(%d)\n", diff_ms, g_FirstAFUninit);
 
-		if (diff_ms < 600) {
+		if (diff_ms < 1000 && g_FirstAFUninit == 0) {
 			g_SkipAFUninit = 1;
 			LOG_INF("Wait - skip uninit\n");
 		} else {
-			s4AF_WriteReg(0, 0x98, 0xC0);
-			s4AF_WriteReg(0, 0x96, 0x28);
-			s4AF_WriteReg(0, 0xF6, 0x80);
+			int Ret = 0;
+
+			Ret = s4AF_WriteReg(0, 0x98, 0xC0);
+			if (Ret == 0)
+				Ret = s4AF_WriteReg(0, 0x96, 0x28);
+			if (Ret == 0)
+				Ret = s4AF_WriteReg(0, 0xF6, 0x80);
 			LOG_INF("Wait - power down\n");
+			g_FirstAFUninit = 0;
 		}
 		LOG_INF("Close\n");
 	}
@@ -383,6 +389,7 @@ int LC898217AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 int LC898217AF_PowerDown(void)
 {
 	LOG_INF("+\n");
+	g_FirstAFUninit = 1;
 	if (*g_pAF_Opened == 0) {
 		int Ret = 0;
 		struct timespec mTS;
