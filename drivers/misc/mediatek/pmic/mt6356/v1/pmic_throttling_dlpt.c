@@ -1629,7 +1629,7 @@ static ssize_t show_battery_oc_protect_thd(struct device *dev, struct device_att
 					     char *buf)
 {
 	PMICLOG("[show_battery_oc_protect_thd] g_battery_oc_level = %d\n", g_battery_oc_level);
-	return sprintf(buf, "[%s] g_battery_oc_l_thd = %x(%d), g_battery_oc_h_thd = %x(%d)\n", __func__,
+	return snprintf(buf, PAGE_SIZE, "[%s] g_battery_oc_l_thd = %x(%d), g_battery_oc_h_thd = %x(%d)\n", __func__,
 			bat_oc_l_thd(g_battery_oc_l_thd), g_battery_oc_l_thd,
 			bat_oc_h_thd(g_battery_oc_h_thd), g_battery_oc_h_thd);
 }
