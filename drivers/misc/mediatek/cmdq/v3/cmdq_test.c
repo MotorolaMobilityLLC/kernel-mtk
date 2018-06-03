@@ -7267,7 +7267,6 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 static ssize_t cmdq_write_test_proc_config(struct file *file,
 	const char __user *userBuf, size_t count, loff_t *data)
 {
-	bool trick_test = false;
 	char desc[50];
 	long long int testConfig[CMDQ_TESTCASE_PARAMETER_MAX];
 	s32 len = 0;
@@ -7306,8 +7305,6 @@ static ssize_t cmdq_write_test_proc_config(struct file *file,
 				testConfig[0], testConfig[1]);
 			break;
 		}
-		if ((testConfig[0] < 2) && (testConfig[1] < 0))
-			trick_test = true;
 
 		mutex_lock(&gCmdqTestProcLock);
 		/* set memory barrier for lock */
@@ -7321,28 +7318,6 @@ static ssize_t cmdq_write_test_proc_config(struct file *file,
 
 		mutex_unlock(&gCmdqTestProcLock);
 	} while (0);
-
-	if (trick_test) {
-		char node_name[25];
-		char clk_name[20];
-		int clk_enable = 0;
-		struct clk *clk_module;
-
-		/* trick to control clock by test node for testing */
-		if (sscanf(desc, "%d %24s %19s", &clk_enable, node_name,
-			clk_name) <= 0) {
-			/* sscanf returns the number of items in argument
-			 * list successfully filled.
-			 */
-			CMDQ_LOG("CLOCK_TEST_CONFIG: sscanf failed: %s\n",
-				desc);
-		} else {
-			cmdq_dev_get_module_clock_by_name(node_name, clk_name,
-				&clk_module);
-			cmdq_dev_enable_device_clock(clk_enable, clk_module,
-				clk_name);
-		}
-	}
 
 	return count;
 }

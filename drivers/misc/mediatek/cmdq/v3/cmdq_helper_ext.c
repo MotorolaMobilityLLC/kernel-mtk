@@ -3460,6 +3460,15 @@ static void cmdq_core_attach_error_handle_detail(
 			cmdq_core_dump_resource_status(event);
 	}
 
+	if (handle->scenario == CMDQ_SCENARIO_DISP_ESD_CHECK) {
+		cmdq_ctx.errNum--;
+		if (!cmdq_ctx.errNum)
+			cmdq_core_reset_first_dump();
+		mutex_unlock(&cmdq_err_mutex);
+		cmdq_core_release_nghandleinfo(&nginfo);
+		return;
+	}
+
 	detail_log = error_num <= 2 || error_num % 16 == 0 ||
 		cmdq_core_should_full_error();
 	cmdq_core_attach_engine_error(handle, thread,
