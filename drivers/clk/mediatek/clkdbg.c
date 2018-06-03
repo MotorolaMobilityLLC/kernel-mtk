@@ -368,6 +368,54 @@ static int clkdbg_dump_regs2(struct seq_file *s, void *v)
 	return 0;
 }
 
+static u32 read_spm_pwr_status(void)
+{
+	static void __iomem *scpsys_base;
+
+	if (!scpsys_base)
+		scpsys_base = ioremap(0x10006000, PAGE_SIZE);
+
+	return clk_readl(scpsys_base + 0x60c);
+}
+
+static bool clk_hw_pwr_is_on(struct clk_hw *c_hw,
+			u32 spm_pwr_status, u32 pwr_mask)
+{
+	if ((spm_pwr_status & pwr_mask) != pwr_mask)
+		return false;
+
+	return clk_hw_is_on(c_hw);
+}
+
+static bool pvdck_pwr_is_on(struct provider_clk *pvdck, u32 spm_pwr_status)
+{
+	struct clk *c = pvdck->ck;
+	struct clk_hw *c_hw = __clk_get_hw(c);
+
+	return clk_hw_pwr_is_on(c_hw, spm_pwr_status, pvdck->pwr_mask);
+}
+
+static bool pvdck_is_on(struct provider_clk *pvdck)
+{
+	u32 spm_pwr_status = 0;
+
+	if (pvdck->pwr_mask)
+		spm_pwr_status = read_spm_pwr_status();
+
+	return pvdck_pwr_is_on(pvdck, spm_pwr_status);
+}
+
+static const char *ccf_state(struct clk_hw *hw)
+{
+	if (__clk_get_enable_count(hw->clk))
+		return "enabled";
+
+	if (clk_hw_is_prepared(hw))
+		return "prepared";
+
+	return "disabled";
+}
+
 static void dump_clk_state(const char *clkname, struct seq_file *s)
 {
 	struct clk *c = __clk_lookup(clkname);
@@ -380,9 +428,9 @@ static void dump_clk_state(const char *clkname, struct seq_file *s)
 		return;
 	}
 
-	seq_printf(s, "[%-17s: %3s, %3d, %3d, %10ld, %17s]\n",
+	seq_printf(s, "[%-17s: %8s, %3d, %3d, %10ld, %17s]\n",
 		clk_hw_get_name(c_hw),
-		clk_hw_is_on(c_hw) ? "ON" : "off",
+		ccf_state(c_hw),
 		clk_hw_is_prepared(c_hw),
 		__clk_get_enable_count(c),
 		clk_hw_get_rate(c_hw),
@@ -495,7 +543,7 @@ static void dump_provider_clk(struct provider_clk *pvdck, struct seq_file *s)
 	seq_printf(s, "[%10s: %-17s: %3s, %3d, %3d, %10ld, %17s]\n",
 		pvdck->provider_name ? pvdck->provider_name : "/ ",
 		clk_hw_get_name(c_hw),
-		clk_hw_is_on(c_hw) ? "ON" : "off",
+		pvdck_is_on(pvdck) ? "ON" : "off",
 		clk_hw_is_prepared(c_hw),
 		__clk_get_enable_count(c),
 		clk_hw_get_rate(c_hw),
@@ -530,10 +578,10 @@ static void dump_provider_mux(struct provider_clk *pvdck, struct seq_file *s)
 		if (IS_ERR_OR_NULL(p_hw))
 			continue;
 
-		seq_printf(s, "\t\t\t(%2d: %-17s: %3s, %10ld)\n",
+		seq_printf(s, "\t\t\t(%2d: %-17s: %8s, %10ld)\n",
 			i,
 			clk_hw_get_name(p_hw),
-			clk_hw_is_on(p_hw) ? "ON" : "off",
+			ccf_state(p_hw),
 			clk_hw_get_rate(p_hw));
 	}
 }
@@ -562,16 +610,6 @@ static int dump_pwr_status(u32 spm_pwr_status, struct seq_file *s)
 	}
 
 	return 0;
-}
-
-static u32 read_spm_pwr_status(void)
-{
-	static void __iomem *scpsys_base;
-
-	if (!scpsys_base)
-		scpsys_base = ioremap(0x10006000, PAGE_SIZE);
-
-	return clk_readl(scpsys_base + 0x60c);
 }
 
 static int clkdbg_pwr_status(struct seq_file *s, void *v)
@@ -1672,12 +1710,8 @@ static void save_all_clks_state(struct provider_clk_state *clks_states,
 
 		st->pvdck = pvdck;
 		st->prepared = clk_hw_is_prepared(c_hw);
-
-		if ((spm_pwr_status & pvdck->pwr_mask) != pvdck->pwr_mask)
-			st->enabled = 0;
-		else
-			st->enabled = clk_hw_is_on(c_hw);
-
+		st->enabled = clk_hw_pwr_is_on(c_hw, spm_pwr_status,
+							pvdck->pwr_mask);
 		st->enable_count = __clk_get_enable_count(c);
 		st->rate = clk_hw_get_rate(c_hw);
 		st->parent = IS_ERR_OR_NULL(c) ? NULL : clk_get_parent(c);
