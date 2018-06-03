@@ -21,6 +21,7 @@
 #include <linux/err.h>
 #include <linux/cpu.h>
 #include <linux/delay.h>
+#include <linux/sched.h>
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 #include <linux/usb/class-dual-role.h>
