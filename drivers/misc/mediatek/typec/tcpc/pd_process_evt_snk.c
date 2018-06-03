@@ -350,7 +350,6 @@ static inline bool pd_process_pe_msg(
 
 static inline void pd_report_typec_only_charger(struct pd_port *pd_port)
 {
-	/* TODO: pd_set_rx_enable(pd_port, PD_RX_CAP_PE_DISABLE);*/
 	uint8_t state;
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -361,6 +360,7 @@ static inline void pd_report_typec_only_charger(struct pd_port *pd_port)
 
 	PE_INFO("TYPE-C Only Charger!\r\n");
 	pd_dpm_sink_vbus(pd_port, true);
+	pd_set_rx_enable(pd_port, PD_RX_CAP_PE_IDLE);
 	pd_notify_pe_hard_reset_completed(pd_port);
 	pd_update_connect_state(pd_port, state);
 }
