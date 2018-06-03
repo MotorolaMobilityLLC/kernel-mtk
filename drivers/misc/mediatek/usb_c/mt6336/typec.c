@@ -488,8 +488,15 @@ void typec_disable_lowq(struct typec_hba *hba, char *str)
 int is_otg_en(void)
 {
 	struct typec_hba *hba = get_hba();
+	int ret = 0;
 
-	return (hba->vbus_en == 1);
+	if (!hba->dev) {
+		pr_info("%s mt6336 is NOT initialized, read from REG to check\n", __func__);
+		ret =  !!(typec_read8(hba, 0x400) & (1<<3));
+	} else {
+		ret = (hba->vbus_en == 1);
+	}
+	return ret;
 }
 EXPORT_SYMBOL_GPL(is_otg_en);
 
@@ -2646,7 +2653,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	hba->pd_rp_val = TYPEC_RP_15A;
 	hba->dbg_lvl = TYPEC_DBG_LVL_2;
 	hba->hr_auto_sent = 0;
-	hba->vbus_en = 0;
+	hba->vbus_en = 1;
 	hba->vsafe_5v = PD_VSAFE5V_LOW;
 	hba->task_state = PD_STATE_DISABLED;
 	hba->is_kpoc = false;
@@ -2660,6 +2667,8 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		hba->drive_vbus = typec_drive_vbus;
 	else
 		hba->drive_vbus = typec_drive_vbus_e3;
+
+	hba->drive_vbus(hba, 0);
 
 	dev_err(hba->dev, "MT6336 HWID=0x%x\n", hba->hwid);
 
