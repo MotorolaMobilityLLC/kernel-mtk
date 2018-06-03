@@ -44,13 +44,19 @@ subdir-ccflags-y += -Werror -I$(src)/common_int
 # PMIC include path
 subdir-ccflags-y += -Werror -I$(src)/codec/$(MTK_CODEC)
 
-# AP include path
-subdir-ccflags-y += -Werror -I$(src)/$(MTK_PLATFORM)
-
 # Update pmic built flow to avoid codec init later than codec probe
 obj-y += common_int/
 obj-y += codec/$(MTK_CODEC)/
-obj-y += $(MTK_PLATFORM)/
+
+ifeq ($(MTK_PLATFORM),mt6758)
+  obj-y += mt6758_int/
+  subdir-ccflags-y += -Werror -I$(src)/mt6758_int
+else
+  obj-y += $(MTK_PLATFORM)/
+
+  # AP include path
+  subdir-ccflags-y += -Werror -I$(src)/$(MTK_PLATFORM)
+endif
 
 # Old architecture
 else
