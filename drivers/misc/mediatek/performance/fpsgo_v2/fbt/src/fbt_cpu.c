@@ -628,8 +628,8 @@ static void fbt_list_find_next_max_blc(unsigned int *temp_max_blc,
 static void fbt_list_clear(void)
 {
 	struct fbt_thread_info *pos, *next;
-	struct fbt_thread_info *pos2, *next2;
 	unsigned long flags;
+	int delete = 0;
 
 	fbt_list_main_lock();
 	list_for_each_entry_safe(pos, next, &active_list, entry) {
@@ -637,30 +637,25 @@ static void fbt_list_clear(void)
 			fbt_list_thread_lock(&pos->thr_mlock);
 			list_del(&pos->entry);
 			fbt_list_loading_del(pos->pLoading);
-			if (pos->boost_info.proc.jerks[0].jerking != 0)
-				hrtimer_cancel(&(pos->boost_info.proc.jerks[0].timer));
-			if (pos->boost_info.proc.jerks[1].jerking != 0)
-				hrtimer_cancel(&(pos->boost_info.proc.jerks[1].timer));
+
+			if (pos->boost_info.proc.jerks[0].jerking == 0 &&
+				pos->boost_info.proc.jerks[1].jerking == 0)
+				delete = 1;
+			else {
+				delete = 0;
+				pos->linger = 1;
+				mutex_lock(&fbt_inactlist_lock);
+				list_add_tail(&pos->entry, &inactive_list);
+				mutex_unlock(&fbt_inactlist_lock);
+			}
 			fbt_list_thread_unlock(&pos->thr_mlock);
-			kfree(pos);
+
+			if (delete)
+				kfree(pos);
 		}
 	}
 	INIT_LIST_HEAD(&active_list);
 	fbt_list_main_unlock();
-
-	mutex_lock(&fbt_inactlist_lock);
-	list_for_each_entry_safe(pos2, next2, &inactive_list, entry) {
-		if (pos2) {
-			list_del(&pos2->entry);
-			if (pos2->boost_info.proc.jerks[0].jerking != 0)
-				hrtimer_cancel(&(pos2->boost_info.proc.jerks[0].timer));
-			if (pos2->boost_info.proc.jerks[1].jerking != 0)
-				hrtimer_cancel(&(pos2->boost_info.proc.jerks[1].timer));
-			kfree(pos2);
-		}
-	}
-	INIT_LIST_HEAD(&inactive_list);
-	mutex_unlock(&fbt_inactlist_lock);
 
 	spin_lock_irqsave(&loading_slock, flags);
 	INIT_LIST_HEAD(&loading_list);
@@ -683,12 +678,18 @@ void fbt_check_thread_status(void)
 	int temp_max_blc = 0;
 	int temp_max_blc_pid = 0;
 
+	struct list_head comp_delete_list;
+	struct fbt_thread_bypass *obj;
+	struct fbt_thread_bypass *pos2, *next2;
+
 	FPSGO_LOGI("check %llu\n", ts);
 
 	if (ts < TIME_1S)
 		return;
 
 	expire_ts = ts - TIME_1S;
+
+	INIT_LIST_HEAD(&comp_delete_list);
 
 	fbt_list_main_lock();
 
@@ -717,12 +718,18 @@ void fbt_check_thread_status(void)
 
 			fbt_list_thread_unlock(&pos->thr_mlock);
 
+			obj = kzalloc(sizeof(struct fbt_thread_bypass), GFP_KERNEL);
+			if (obj) {
+				INIT_LIST_HEAD(&obj->entry);
+				obj->pid = delete_pid;
+				list_add_tail(&obj->entry, &comp_delete_list);
+				FPSGO_LOGI("comp add %d\n", delete_pid);
+			}
+
 			if (delete == 1) {
 				FPSGO_LOGI("free %d now\n", pos->pid);
 				kfree(pos);
 			}
-
-			fpsgo_fbt2comp_destroy_frame_info(delete_pid);
 		} else
 			fbt_list_thread_unlock(&pos->thr_mlock);
 	}
@@ -757,6 +764,15 @@ void fbt_check_thread_status(void)
 			pos->linger++;
 	}
 	mutex_unlock(&fbt_inactlist_lock);
+
+	if (!list_empty(&comp_delete_list)) {
+		list_for_each_entry_safe(pos2, next2, &comp_delete_list, entry) {
+			FPSGO_LOGI("comp delete %d\n", pos2->pid);
+			list_del(&pos2->entry);
+			fpsgo_fbt2comp_destroy_frame_info(pos2->pid);
+			kfree(pos2);
+		}
+	}
 }
 
 static void fbt_free_bhr(void)
