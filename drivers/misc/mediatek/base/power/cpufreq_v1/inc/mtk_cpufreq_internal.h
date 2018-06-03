@@ -310,6 +310,7 @@ extern struct regulator *regulator_proc2;
 
 extern unsigned int _mt_cpufreq_get_cpu_level(void);
 extern u32 get_devinfo_with_index(u32 index);
+extern int turbo_flag;
 
 extern void _kick_PBM_by_cpu(void);
 extern unsigned int dvfs_power_mode;
