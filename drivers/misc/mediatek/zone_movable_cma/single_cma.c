@@ -199,8 +199,7 @@ static bool system_mem_status_ok(unsigned long minus)
 		return false;
 
 	low_wmark += minus;
-	high_wmark += minus;
-	if (free < low_wmark && file < high_wmark)
+	if (free < low_wmark)
 		return false;
 
 	return true;
@@ -216,8 +215,8 @@ static bool zmc_check_mem_status_ok(unsigned long count)
 	for_each_online_pgdat(pgdat) {
 		z = pgdat->node_zones + OPT_ZONE_MOVABLE_CMA;
 		available += zone_page_state(z, NR_FREE_PAGES);
-		available += zone_page_state(z, NR_INACTIVE_FILE) + zone_page_state(z, NR_ACTIVE_FILE);
-		minus += zone_page_state(z, NR_INACTIVE_ANON) + zone_page_state(z, NR_ACTIVE_ANON);
+		minus += zone_page_state(z, NR_INACTIVE_ANON) + zone_page_state(z, NR_ACTIVE_ANON) +
+			zone_page_state(z, NR_INACTIVE_FILE) + zone_page_state(z, NR_ACTIVE_FILE);
 		available += minus;
 	}
 
