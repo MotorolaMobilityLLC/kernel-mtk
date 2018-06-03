@@ -423,6 +423,8 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 
 			if (rStatus != WLAN_STATUS_SUCCESS) {
 				DBGLOG(REQ, WARN, "unable to retrieive statistic\n");
+				sinfo->tx_packets = prGlueInfo->rNetDevStats.tx_packets;
+				sinfo->tx_failed = prGlueInfo->rNetDevStats.tx_errors;
 			} else {
 				INT_32 i4RssiThreshold = -85;	/* set rssi threshold -85dBm */
 				UINT_32 u4LinkspeedThreshold = 55;	/* set link speed threshold 5.5Mbps */
