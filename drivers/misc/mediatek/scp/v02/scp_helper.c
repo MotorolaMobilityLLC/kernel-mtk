@@ -415,6 +415,7 @@ static void scp_A_notify_ws(struct work_struct *ws)
 		scp_pll_ctrl_set(0, 0);
 		scp_recovery_flag[SCP_A_ID] = SCP_A_RECOVERY_OK;
 #endif
+		SCP_TO_SPM_REG = 0xff; /* patch: clear SPM interrupt */
 		mutex_lock(&scp_A_notify_mutex);
 		blocking_notifier_call_chain(&scp_A_notifier_list, SCP_EVENT_READY, NULL);
 		mutex_unlock(&scp_A_notify_mutex);
