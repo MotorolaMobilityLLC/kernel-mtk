@@ -93,7 +93,7 @@ enum Voltage {
 enum IMGSENSOR_HW_ID {
 	IMGSENSOR_HW_ID_REGULATOR,
 	IMGSENSOR_HW_ID_GPIO,
-	IMGSENSOR_HW_ID_MT6306,
+/*	IMGSENSOR_HW_ID_MT6306,*/
 	IMGSENSOR_HW_ID_MCLK,
 
 	IMGSENSOR_HW_ID_MAX_NUM,
@@ -102,11 +102,11 @@ enum IMGSENSOR_HW_ID {
 
 #define IMGSENSOR_I2C_DRV_NAME_0  "kd_camera_hw"
 #define IMGSENSOR_I2C_DRV_NAME_1  "kd_camera_hw_bus2"
-#define IMGSENSOR_I2C_DRV_NAME_2  "kd_camera_hw_trigger"
+#define IMGSENSOR_I2C_DRV_NAME_2  "kd_camera_hw_bus3"
 
 #define IMGSENSOR_I2C_OF_DRV_NAME_0 "mediatek,camera_main"
 #define IMGSENSOR_I2C_OF_DRV_NAME_1 "mediatek,camera_sub"
-#define IMGSENSOR_I2C_OF_DRV_NAME_2 "mediatek,camera_main_hw"
+#define IMGSENSOR_I2C_OF_DRV_NAME_2 "mediatek,camera_main_two"
 
 enum IMGSENSOR_I2C_DEV {
 	IMGSENSOR_I2C_DEV_0,

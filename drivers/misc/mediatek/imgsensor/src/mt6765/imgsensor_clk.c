@@ -18,16 +18,25 @@
 /*by platform settings and elements should not be reordered */
 char *gimgsensor_mclk_name[IMGSENSOR_CCF_MAX_NUM] = {
 	"CLK_TOP_CAMTG_SEL",
+	"CLK_TOP_CAMTG1_SEL",
 	"CLK_TOP_CAMTG2_SEL",
 	"CLK_TOP_CAMTG3_SEL",
-	"CLK_TOP_CAMTG4_SEL",
-	"CLK_TOP_UNIVPLL_D416",
-	"CLK_TOP_UNIVPLL_D208",
-	"CLK_TOP_UNIVPLL_D104",
-	"CLK_TOP_CLK26M",
-	"CLK_TOP_UNIVPLL_D52",
-	"CLK_TOP_UNIVPLL2_D16",
-	"CLK_CAM_SENINF",
+	"CLK_MCLK_6M",
+	"CLK_MCLK_12M",
+	"CLK_MCLK_13M",
+	"CLK_MCLK_24M",
+	"CLK_MCLK_26M",
+	"CLK_MCLK_48M",
+	"CLK_MCLK_52M",
+	"CLK_CAM_SENINF_CG",
+	"CLK_MIPI_C0_26M_CG",
+	"CLK_MIPI_C1_26M_CG",
+	"CLK_MIPI_ANA_0A_CG",
+	"CLK_MIPI_ANA_0B_CG",
+	"CLK_MIPI_ANA_1A_CG",
+	"CLK_MIPI_ANA_1B_CG",
+	"CLK_MIPI_ANA_2A_CG",
+	"CLK_MIPI_ANA_2B_CG"
 };
 
 
@@ -35,6 +44,7 @@ enum {
 	MCLK_ENU_START,
 	MCLK_6MHZ =	MCLK_ENU_START,
 	MCLK_12MHZ,
+	MCLK_13MHZ,
 	MCLK_24MHZ,
 	MCLK_26MHZ,
 	MCLK_48MHZ,
@@ -45,6 +55,7 @@ enum {
 enum {
 	FREQ_6MHZ  =  6,
 	FREQ_12MHZ = 12,
+	FREQ_13MHZ = 13,
 	FREQ_24MHZ = 24,
 	FREQ_26MHZ = 26,
 	FREQ_48MHZ = 48,
@@ -86,7 +97,7 @@ int imgsensor_clk_set(
 	int ret = 0;
 	int mclk_index = MCLK_ENU_START;
 	const int supported_mclk_freq[MCLK_MAX] = {
-		FREQ_6MHZ, FREQ_12MHZ, FREQ_24MHZ,
+		FREQ_6MHZ, FREQ_12MHZ, FREQ_13MHZ, FREQ_24MHZ,
 		FREQ_26MHZ, FREQ_48MHZ, FREQ_52MHZ };
 
 	for (mclk_index = MCLK_ENU_START; mclk_index < MCLK_MAX; mclk_index++) {
@@ -155,10 +166,26 @@ int imgsensor_clk_set(
 
 void imgsensor_clk_enable_all(struct IMGSENSOR_CLK *pclk)
 {
+#ifdef ENABLE_CCF
+
+	int i;
+
+	pr_debug("imgsensor_clk_enable_all_cg\n");
+	for (i = IMGSENSOR_CCF_CG_MIN_NUM; i < IMGSENSOR_CCF_CG_MAX_NUM; i++) {
+		if (pclk->imgsensor_ccf[i] != NULL &&
+			clk_prepare_enable(pclk->imgsensor_ccf[i]))
+			pr_debug(
+				"[CAMERA SENSOR]imgsensor_ccf enable cg fail cg_index = %d\n",
+				i);
+		else
+			atomic_inc(&pclk->enable_cnt[i]);
+	}
+#endif
 }
 
 void imgsensor_clk_disable_all(struct IMGSENSOR_CLK *pclk)
 {
+#ifdef ENABLE_CCF
 	int i;
 
 	pr_debug("imgsensor_clk_disable_all\n");
@@ -168,14 +195,18 @@ void imgsensor_clk_disable_all(struct IMGSENSOR_CLK *pclk)
 			atomic_dec(&pclk->enable_cnt[i]);
 		}
 	}
+#endif
 }
 
 int imgsensor_clk_ioctrl_handler(void *pbuff)
 {
+#ifdef ENABLE_CCF
+
 	*(unsigned int *)pbuff = mt_get_ckgen_freq(*(unsigned int *)pbuff);
 	pr_debug("f_fcamtg_ck = %d, hf_fcam_ck = %d, f_fseninf_ck = %d\n",
 		mt_get_ckgen_freq(11),
 		mt_get_ckgen_freq(38),
 		mt_get_ckgen_freq(56));
+#endif
 	return 0;
 }

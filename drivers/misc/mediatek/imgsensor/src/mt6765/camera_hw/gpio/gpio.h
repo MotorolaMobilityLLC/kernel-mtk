@@ -21,6 +21,7 @@
 #include <linux/pinctrl/pinctrl.h>
 #include "imgsensor_hw.h"
 
+extern struct mutex pinctrl_mutex;
 
 enum GPIO_CTRL_STATE {
 	/* Main */
