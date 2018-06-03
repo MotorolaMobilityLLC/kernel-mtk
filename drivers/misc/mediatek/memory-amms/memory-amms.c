@@ -93,7 +93,7 @@ static int __init amms_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	pr_debug("amms irq num %d.\n", irq_num);
+	pr_info("amms irq num %d.\n", irq_num);
 
 	if (request_irq(irq_num, (irq_handler_t)amms_irq_handler,
 			   IRQF_TRIGGER_NONE,

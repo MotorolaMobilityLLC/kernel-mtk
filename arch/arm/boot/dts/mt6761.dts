@@ -241,6 +241,12 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_SPI 78 IRQ_TYPE_EDGE_RISING>;
 	};
 
+	/* AMMS SW IRQ number GIC:99 DTS:67*/
+	amms_control {
+		compatible = "mediatek,amms";
+		interrupts = <GIC_SPI 67 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	gic: interrupt-controller@0c000000 {
 		compatible = "arm,gic-v3";
 		#interrupt-cells = <3>;
