@@ -178,6 +178,7 @@ static int mtk_linear_charging_plug_in(struct charger_manager *info)
 	algo_data->state = CHR_CC;
 	info->polling_interval = CHARGING_INTERVAL;
 	algo_data->disable_charging = false;
+	get_monotonic_boottime(&algo_data->charging_begin_time);
 	charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
 
 	return 0;
@@ -189,7 +190,7 @@ static int mtk_linear_charging_plug_out(struct charger_manager *info)
 
 	algo_data->total_charging_time = 0;
 	algo_data->cc_charging_time = 0;
-	algo_data->cv_charging_time = 0;
+	algo_data->topoff_charging_time = 0;
 	charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
 	return 0;
 }
@@ -202,6 +203,7 @@ static int mtk_linear_charging_do_charging(struct charger_manager *info, bool en
 	if (en) {
 		algo_data->disable_charging = false;
 		algo_data->state = CHR_CC;
+		get_monotonic_boottime(&algo_data->charging_begin_time);
 		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
 	} else {
 		algo_data->disable_charging = true;
@@ -237,9 +239,33 @@ static bool charging_full_check(struct charger_manager *info)
 	return chg_full_status;
 }
 
+/* return false if total charging time exceeds max_charging_time */
+static bool mtk_linear_check_charging_time(struct charger_manager *info)
+{
+	struct linear_charging_alg_data *algo_data = info->algorithm_data;
+	struct timespec time_now;
+
+	if (info->enable_sw_safety_timer) {
+		get_monotonic_boottime(&time_now);
+		chr_debug("%s: begin: %ld, now: %ld\n", __func__,
+			algo_data->charging_begin_time.tv_sec, time_now.tv_sec);
+
+		if (algo_data->total_charging_time >= info->data.max_charging_time) {
+			chr_err("%s: SW safety timeout: %d sec > %d sec\n",
+				__func__, algo_data->total_charging_time,
+				info->data.max_charging_time);
+			charger_dev_notify(info->chg1_dev, CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT);
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static int mtk_linear_chr_cc(struct charger_manager *info)
 {
 	struct linear_charging_alg_data *algo_data = info->algorithm_data;
+	struct timespec time_now, charging_time;
 	u32 vbat;
 
 	/* check bif */
@@ -251,9 +277,12 @@ static int mtk_linear_chr_cc(struct charger_manager *info)
 		}
 	}
 
-	algo_data->cc_charging_time += info->polling_interval;
-	algo_data->cv_charging_time = 0;
-	algo_data->total_charging_time += info->polling_interval;
+	get_monotonic_boottime(&time_now);
+	charging_time = timespec_sub(time_now, algo_data->charging_begin_time);
+
+	algo_data->cc_charging_time = charging_time.tv_sec;
+	algo_data->topoff_charging_time = 0;
+	algo_data->total_charging_time = charging_time.tv_sec;
 
 	/* discharge for 1 second and charge for 9 seconds */
 	charger_dev_enable(info->chg1_dev, false);
@@ -261,8 +290,9 @@ static int mtk_linear_chr_cc(struct charger_manager *info)
 
 	vbat = battery_get_bat_voltage() * 1000; /* uV */
 	if (vbat > algo_data->topoff_voltage) {
-		algo_data->state = CHR_CV;
-		pr_notice("enter CV mode on vbat = %d uV\n", vbat);
+		algo_data->state = CHR_TOPOFF;
+		get_monotonic_boottime(&algo_data->topoff_begin_time);
+		pr_notice("enter TOPOFF mode on vbat = %d uV\n", vbat);
 	}
 
 	linear_chg_turn_on_charging(info);
@@ -270,9 +300,10 @@ static int mtk_linear_chr_cc(struct charger_manager *info)
 	return 0;
 }
 
-static int mtk_linear_chr_cv(struct charger_manager *info)
+static int mtk_linear_chr_topoff(struct charger_manager *info)
 {
 	struct linear_charging_alg_data *algo_data = info->algorithm_data;
+	struct timespec time_now, charging_time, topoff_time;
 
 	/* check bif */
 	if (IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
@@ -283,13 +314,17 @@ static int mtk_linear_chr_cv(struct charger_manager *info)
 		}
 	}
 
+	get_monotonic_boottime(&time_now);
+	charging_time = timespec_sub(time_now, algo_data->charging_begin_time);
+	topoff_time = timespec_sub(time_now, algo_data->topoff_begin_time);
+
 	algo_data->cc_charging_time = 0;
-	algo_data->cv_charging_time += info->polling_interval;
-	algo_data->total_charging_time += info->polling_interval;
+	algo_data->topoff_charging_time = topoff_time.tv_sec;
+	algo_data->total_charging_time = charging_time.tv_sec;
 
 	linear_chg_turn_on_charging(info);
 
-	if (algo_data->cv_charging_time >= MAX_CV_CHARGING_TIME
+	if (algo_data->topoff_charging_time >= MAX_TOPOFF_CHARGING_TIME
 	    || charging_full_check(info) == true) {
 		algo_data->state = CHR_BATFULL;
 
@@ -313,12 +348,13 @@ static int mtk_linear_chr_err(struct charger_manager *info)
 			(info->sw_jeita.sm != TEMP_BELOW_T0) && (info->sw_jeita.sm != TEMP_ABOVE_T4)) {
 			info->sw_jeita.error_recovery_flag = true;
 			algo_data->state = CHR_CC;
+			get_monotonic_boottime(&algo_data->charging_begin_time);
 		}
 	}
 
 	algo_data->total_charging_time = 0;
 	algo_data->cc_charging_time = 0;
-	algo_data->cv_charging_time = 0;
+	algo_data->topoff_charging_time = 0;
 
 	_disable_all_charging(info);
 	return 0;
@@ -332,7 +368,7 @@ static int mtk_linear_chr_full(struct charger_manager *info)
 
 	algo_data->total_charging_time = 0;
 	algo_data->cc_charging_time = 0;
-	algo_data->cv_charging_time = 0;
+	algo_data->topoff_charging_time = 0;
 
 	/*
 	 * If CV is set to lower value by JEITA,
@@ -354,6 +390,7 @@ static int mtk_linear_chr_full(struct charger_manager *info)
 		algo_data->state = CHR_CC;
 		charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
 		info->enable_dynamic_cv = true;
+		get_monotonic_boottime(&algo_data->charging_begin_time);
 		pr_notice("battery recharging on vbat = %d uV\n", vbat);
 		info->polling_interval = CHARGING_INTERVAL;
 	}
@@ -373,7 +410,7 @@ static int mtk_linear_charging_run(struct charger_manager *info)
 	int ret = 0;
 
 	pr_info("%s [%d], timer=%d %d %d\n", __func__, algo_data->state,
-		algo_data->cc_charging_time, algo_data->cv_charging_time,
+		algo_data->cc_charging_time, algo_data->topoff_charging_time,
 		algo_data->total_charging_time);
 
 	charger_dev_kick_wdt(info->chg1_dev);
@@ -383,8 +420,8 @@ static int mtk_linear_charging_run(struct charger_manager *info)
 		ret = mtk_linear_chr_cc(info);
 		break;
 
-	case CHR_CV:
-		ret = mtk_linear_chr_cv(info);
+	case CHR_TOPOFF:
+		ret = mtk_linear_chr_topoff(info);
 		break;
 
 	case CHR_BATFULL:
@@ -395,6 +432,8 @@ static int mtk_linear_charging_run(struct charger_manager *info)
 		ret = mtk_linear_chr_err(info);
 		break;
 	}
+
+	mtk_linear_check_charging_time(info);
 
 	charger_dev_dump_registers(info->chg1_dev);
 	return 0;

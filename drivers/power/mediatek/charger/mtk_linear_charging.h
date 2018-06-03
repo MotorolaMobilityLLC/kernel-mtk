@@ -18,11 +18,11 @@
  *  Linear Charging State
  ****************************************************************************/
 #define CHR_CC (0x0001)
-#define CHR_CV (0x0002)
+#define CHR_TOPOFF (0x0002)
 #define CHR_BATFULL (0x0003)
 #define CHR_ERROR (0x0004)
 
-#define MAX_CV_CHARGING_TIME (3 * 60 * 60) /* 3 hours */
+#define MAX_TOPOFF_CHARGING_TIME (3 * 60 * 60) /* 3 hours */
 
 #define RECHARGE_OFFSET 150000 /* uV */
 #define TOPOFF_VOLTAGE 4200000 /* uV */
@@ -34,10 +34,11 @@ struct linear_charging_alg_data {
 	struct mutex ichg_access_mutex;
 
 	unsigned int total_charging_time;
-	unsigned int pre_cc_charging_time;
 	unsigned int cc_charging_time;
-	unsigned int cv_charging_time;
+	unsigned int topoff_charging_time;
 	unsigned int full_charging_time;
+	struct timespec topoff_begin_time;
+	struct timespec charging_begin_time;
 
 	int recharge_offset; /* uv */
 	int topoff_voltage; /* uv */

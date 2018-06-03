@@ -40,6 +40,8 @@ struct charger_manager;
 #define CHARGING_INTERVAL 10
 #define CHARGING_FULL_INTERVAL 20
 
+#define MAX_CHARGING_TIME (12 * 60 * 60) /* 12 hours */
+
 #define CHRLOG_ERROR_LEVEL   1
 #define CHRLOG_DEBUG_LEVEL   2
 
