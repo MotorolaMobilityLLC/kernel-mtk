@@ -76,17 +76,15 @@ EXPORT_SYMBOL(is_in_suspend);
 
 int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int nr_volt_tbl)
 {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	FUNC_ENTER(FUNC_LV_API);
-
-	cpuhvfs_update_volt((unsigned int)id, volt_tbl, nr_volt_tbl);
-#else
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
 
 	FUNC_ENTER(FUNC_LV_API);
 
 	_mt_cpufreq_dvfs_request_wrapper(p, p->idx_opp_tbl, MT_CPU_DVFS_EEM_UPDATE,
 		(void *)&volt_tbl);
+
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	cpuhvfs_update_volt((unsigned int)id, volt_tbl, nr_volt_tbl);
 #endif
 
 	FUNC_EXIT(FUNC_LV_API);
