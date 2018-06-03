@@ -992,8 +992,10 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	node = of_find_compatible_node(NULL, NULL, "mediatek, mrdump_ext_rst-eint");
 
 	if (node) {
-		of_property_read_u32_array(node, "interrupts", ints, ARRAY_SIZE(ints));
-		ext_debugkey_io_eint = ints[0];
+		if (!of_property_read_u32_array(node, "interrupts", ints, ARRAY_SIZE(ints)))
+			ext_debugkey_io_eint = ints[0];
+		else
+			pr_info("failed to get interrupts in mrdump_ext_rst-eint node\n");
 	}
 
 	pr_info("ext_debugkey_eint=%d\n", ext_debugkey_io_eint);
