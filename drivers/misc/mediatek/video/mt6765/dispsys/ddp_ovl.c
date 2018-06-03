@@ -1269,7 +1269,7 @@ static unsigned long long full_trans_bw_calc(struct sbch *data,
 	/* caculate the layer bw */
 	if (data->full_trans_en) {
 		bpp = ufmt_get_Bpp(cfg->fmt);
-		bw_sum = cfg->dst_w * cfg->dst_h * bpp;
+		bw_sum = (unsigned long long)cfg->dst_w * cfg->dst_h * bpp;
 	}
 
 	return bw_sum;
