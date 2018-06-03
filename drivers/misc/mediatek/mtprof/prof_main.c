@@ -154,14 +154,12 @@ static void probe_signal_generate(void *ignore, int sig, struct siginfo *info,
 	/*
 	 * only log delivered signals
 	 */
-	if (result == TRACE_SIGNAL_DELIVERED) {
-		STORE_SIGINFO(errno, code, info);
-		pr_debug("[signal][%d:%s]generate sig %d to [%d:%s:%c] errno=%d code=%d grp=%d res=%s\n",
-				current->pid, current->comm, sig,
-				task->pid, task->comm,
-				state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?',
-				errno, code, group, signal_deliver_results[result]);
-	}
+	STORE_SIGINFO(errno, code, info);
+	pr_debug("[signal][%d:%s]generate sig %d to [%d:%s:%c] errno=%d code=%d grp=%d res=%s\n",
+		 current->pid, current->comm, sig,
+		task->pid, task->comm,
+		state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?',
+		errno, code, group, signal_deliver_results[result]);
 }
 
 static void probe_signal_deliver(void *ignore, int sig, struct siginfo *info,
@@ -182,14 +180,11 @@ static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
 	unsigned int state;
 	int group;
 
-	/* kernel log reduction: only print delivered signals */
-	if (result != TRACE_SIGNAL_DELIVERED)
-		return;
-
 	/*
 	 * all action will cause process coredump or terminate
+	 * kernel log reduction: only print delivered signals
 	 */
-	if (sig_fatal(task, sig)) {
+	if (sig_fatal(task, sig) && result == TRACE_SIGNAL_DELIVERED) {
 		signal = task->signal;
 		group = _group ||
 			(signal->flags & (SIGNAL_GROUP_EXIT | SIGNAL_GROUP_COREDUMP));
@@ -227,7 +222,8 @@ static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
 			 current->pid, current->comm,
 			 sig, task->pid, task->comm,
 			 state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-	} else if (sig_kernel_stop(sig) || sig == SIGCONT) {
+	} else if ((sig_kernel_stop(sig) && result == TRACE_SIGNAL_DELIVERED) ||
+		   sig == SIGCONT) {
 
 		/*
 		 * kernel log reduction
