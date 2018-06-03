@@ -731,9 +731,13 @@ void md1_pll_init(struct ccci_modem *md)
 	cldma_write32(md_pll->md_top_Pll, 0x104, 0x4C43100);
 	cldma_write32(md_pll->md_top_Pll, 0x10, 0x100010);
 
-	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0x8000\n");
-	while ((cldma_read32(md_pll->md_top_clkSW, 0x84) & 0x8000) != 0x8000)
-		;
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0x8000, [0x%x]=0x%x\n", MDTOP_CLKSW_BASE + 0x0,
+		cldma_read32(md_pll->md_top_clkSW, 0x0));
+	while ((cldma_read32(md_pll->md_top_clkSW, 0x84) & 0x8000) != 0x8000) {
+		udelay(200);
+		CCCI_BOOTUP_LOG(md->index, TAG, "pll init: [0x%x]=0x%x\n", MDTOP_CLKSW_BASE + 0x84,
+			cldma_read32(md_pll->md_top_clkSW, 0x84));
+	}
 
 	ROr2W(md_pll->md_top_clkSW, 0x24, 0x3);
 	ROr2W(md_pll->md_top_clkSW, 0x24, 0x58103FC);
