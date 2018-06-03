@@ -235,7 +235,8 @@ static irqreturn_t md_cd_ccif_isr(int irq, void *data)
 	/* must ack first, otherwise IRQ will rush in */
 	md_info->channel_id = cldma_read32(md_info->ap_ccif_base, APCCIF_RCHNUM);
 	CCCI_DEBUG_LOG(md->index, TAG, "MD CCIF IRQ 0x%X\n", md_info->channel_id);
-	cldma_write32(md_info->ap_ccif_base, APCCIF_ACK, md_info->channel_id);
+	/*don't ack data queue to avoid missing rx intr*/
+	cldma_write32(md_info->ap_ccif_base, APCCIF_ACK, md_info->channel_id & (0xFFFF << RINGQ_EXP_BASE));
 
 #if (MD_GENERATION <= 6292)
 	if (md_info->channel_id & (1 << AP_MD_CCB_WAKEUP)) {
