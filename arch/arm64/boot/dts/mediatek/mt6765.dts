@@ -2673,7 +2673,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 					dev = "/dev/block/platform/bootdevice/by-name/system";
 					type = "ext4";
 					mnt_flags = "ro";
+#ifndef CONFIG_MTK_DM_VERITY_OFF
+					fsmgr_flags = "wait,verify";
+#else
 					fsmgr_flags = "wait";
+#endif
 				};
 #endif
 #ifndef CONFIG_MTK_LATE_MOUNT
@@ -2683,7 +2687,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 					type = "ext4";
 					mnt_flags = "ro";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
+#ifndef CONFIG_MTK_DM_VERITY_OFF
+					fsmgr_flags = "wait,verify";
+#else
 					fsmgr_flags = "wait";
+#endif
 #else
 					#ifndef CONFIG_MTK_DM_VERITY_OFF
 					fsmgr_flags = "wait,slotselect,verify";
