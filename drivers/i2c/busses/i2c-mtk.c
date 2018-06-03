@@ -1163,6 +1163,11 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	of_property_read_u32(np, "clock-frequency", &i2c->speed_hz);
 	of_property_read_u32(np, "clock-div", &i2c->clk_src_div);
 	of_property_read_u32(np, "id", (u32 *)&i2c->id);
+	if (i2c->id == 6) {
+		/* i2c workaround for mt6311 */
+		pr_err("force set i2c6 speed at 400KHz\n");
+		i2c->speed_hz = 400*1000;
+	}
 	i2c->have_pmic = of_property_read_bool(np, "mediatek,have-pmic");
 	i2c->have_dcm = of_property_read_bool(np, "mediatek,have-dcm");
 	i2c->use_push_pull = of_property_read_bool(np, "mediatek,use-push-pull");

@@ -106,6 +106,10 @@ static int mt6311_disable(struct mtk_simple_regulator_desc *mreg_desc)
 	int ret = 0;
 
 	MT6311LOG("[%s] disable (%s)\n", __func__, mreg_desc->rdesc.name);
+	if (mreg_desc->rdev->use_count == 0) {
+		pr_err(MT6311TAG "MT6311 should not be disable (use_count=%d)\n", mreg_desc->rdev->use_count);
+		return -1;
+	}
 	ret = mt6311_config_interface(mreg_desc->enable_reg, 0, MT6311_enable_mask, mreg_desc->enable_bit);
 	if (ret < 0)
 		pr_err(MT6311TAG "[%s] disable (%s) fail, ret = %d\n",
