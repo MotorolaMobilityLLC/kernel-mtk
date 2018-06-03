@@ -43,7 +43,7 @@
 
 
 /* MET: define to enable MET*/
-/* #define ISP_MET_READY */
+#define ISP_MET_READY
 
 /* #define EP_STAGE */
 #ifdef EP_STAGE
@@ -849,7 +849,7 @@ int MET_Event_Get_BPP(enum _isp_dma_enum_ dmao, unsigned int reg_module)
 	return ret;
 }
 
-void MET_Events_Trace(bool enter, u32 reg_module, enum ISP_IRQ_TYPE_ENUM cam)
+void CAMSYS_MET_Events_Trace(bool enter, u32 reg_module, enum ISP_IRQ_TYPE_ENUM cam)
 {
 	if (enter) {
 		int imgo_en = 0, rrzo_en = 0, imgo_bpp, rrzo_bpp, imgo_xsize, imgo_ysize;
@@ -6052,14 +6052,13 @@ irqreturn_t ISP_Irq_CAM(enum ISP_IRQ_TYPE_ENUM irq_module)
 	fbc_ctrl2[1].Raw = ISP_RD32(CAM_REG_FBC_RRZO_CTL2(reg_module));
 
 	#if defined(ISP_MET_READY)
-	/*MET:ISP EOF*/
-	if (IrqStatus & HW_PASS1_DON_ST) {
-		MET_Events_Trace(0, reg_module, irq_module);
-	}
+	if (trace_ISP__Pass1_CAM_enter_enabled()) {
+		/*MET:ISP EOF*/
+		if (IrqStatus & HW_PASS1_DON_ST)
+			CAMSYS_MET_Events_Trace(0, reg_module, irq_module);
 
-	if (IrqStatus & SOF_INT_ST) {
-		/*met mmsys profile*/
-		MET_Events_Trace(1, reg_module, irq_module);
+		if (IrqStatus & SOF_INT_ST)
+			CAMSYS_MET_Events_Trace(1, reg_module, irq_module);
 	}
 	#endif
 
