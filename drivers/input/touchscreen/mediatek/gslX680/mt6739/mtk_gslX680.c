@@ -1650,10 +1650,12 @@ int tpd_local_init(void)
 /* Function to manage low power suspend */
 static void tpd_suspend(struct device *h)
 {
+	if (tpd_halt == 1) {
+		pr_info("gslX680 already in suspended status\n");
+		return;
+	}
 	GSL_LOGF();
 
-	tpd_halt = 1;
-	disable_irq(touch_irq);
 #ifdef GSL_MONITOR
 	GSL_LOGD("gsl_ts_suspend () : cancel gsl_monitor_work\n");
 	cancel_delayed_work_sync(&gsl_monitor_work);
@@ -1671,12 +1673,19 @@ static void tpd_suspend(struct device *h)
 * #endif
 *	tpd_gpio_output(GTP_RST_PORT, 0);
  */
+	disable_irq(touch_irq);
+	tpd_halt = 1;
+
 	GSL_LOGD("tpd_suspend is ok.");
 }
 
 /* Function to manage power-on resume */
 static void tpd_resume(struct device *h)
 {
+	if (tpd_halt == 0) {
+		pr_info("gslX680 already in resumed status\n");
+		return;
+	}
 	GSL_LOGF();
 
 	tpd_gpio_output(GTP_RST_PORT, 1);
