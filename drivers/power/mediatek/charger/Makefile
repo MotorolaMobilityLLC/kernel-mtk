@@ -29,7 +29,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6336
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 
-obj-$(CONFIG_MTK_SMART_BATTERY) += charger_class.o mtk_charger.o mtk_pdc_intf.o\
+obj-$(CONFIG_MTK_SMART_BATTERY) += charger_class.o mtk_charger.o mtk_pdc_intf.o mtk_pe40_intf.o\
 				mtk_switch_charging.o mtk_linear_charging.o
 ifneq ($(CONFIG_MTK_PMIC_CHIP_MT6336),y)
 obj-$(CONFIG_MTK_SMART_BATTERY) += mtk_chg_type_det.o

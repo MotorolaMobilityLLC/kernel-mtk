@@ -17,11 +17,6 @@
 /*****************************************************************************
  *  Linear Charging State
  ****************************************************************************/
-#define CHR_CC (0x0001)
-#define CHR_TOPOFF (0x0002)
-#define CHR_BATFULL (0x0003)
-#define CHR_ERROR (0x0004)
-
 #define MAX_TOPOFF_CHARGING_TIME (3 * 60 * 60) /* 3 hours */
 
 #define RECHARGE_OFFSET 150000 /* uV */

@@ -29,6 +29,14 @@ static inline u32 pe_get_ibat(void)
 	return battery_meter_get_battery_current() * 100;
 }
 
+static bool cancel_pe(struct charger_manager *pinfo)
+{
+	if (mtk_pdc_check_charger(pinfo) ||
+		mtk_is_TA_support_pd_pps(pinfo))
+		return true;
+	return false;
+}
+
 static int pe_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
 {
 	int ret = 0;
@@ -44,7 +52,12 @@ static int pe_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
 static int pe_enable_vbus_ovp(struct charger_manager *pinfo, bool enable)
 {
 	int ret = 0;
-	u32 sw_ovp = (enable ? V_CHARGER_MAX : 15000000);
+	u32 sw_ovp = 0;
+
+	if (enable)
+		sw_ovp = pinfo->data.max_charger_voltage_setting;
+	else
+		sw_ovp = 15000000;
 
 	/* Enable/Disable HW(PMIC) OVP */
 	ret = pe_enable_hw_vbus_ovp(pinfo, enable);
@@ -213,7 +226,7 @@ static int pe_increase_ta_vchr(struct charger_manager *pinfo, u32 vchr_target)
 
 		retry_cnt++;
 	} while (mt_get_charger_type() != CHARGER_UNKNOWN && retry_cnt < 3 &&
-		pinfo->enable_hv_charging);
+		pinfo->enable_hv_charging && cancel_pe(pinfo) != true);
 
 	ret = -EIO;
 	pr_err("%s: failed, vchr = (%d, %d), vchr_target = %d\n",
@@ -409,6 +422,9 @@ int mtk_pe_check_charger(struct charger_manager *pinfo)
 	    pinfo->data.ta_stop_battery_soc <= battery_get_bat_soc())
 		goto _err;
 
+	if (cancel_pe(pinfo))
+		goto _err;
+
 	/* Reset/Init/Detect TA */
 	ret = mtk_pe_reset_ta_vchr(pinfo);
 	if (ret < 0)
@@ -416,6 +432,9 @@ int mtk_pe_check_charger(struct charger_manager *pinfo)
 
 	ret = pe_init_ta(pinfo);
 	if (ret < 0)
+		goto _err;
+
+	if (cancel_pe(pinfo))
 		goto _err;
 
 	ret = pe_detect_ta(pinfo);

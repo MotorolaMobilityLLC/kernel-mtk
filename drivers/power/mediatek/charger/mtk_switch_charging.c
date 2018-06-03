@@ -66,6 +66,14 @@
 #include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"
 
+static int _uA_to_mA(int uA)
+{
+	if (uA == -1)
+		return -1;
+	else
+		return uA / 1000;
+}
+
 static void _disable_all_charging(struct charger_manager *info)
 {
 	charger_dev_enable(info->chg1_dev, false);
@@ -86,6 +94,12 @@ static void _disable_all_charging(struct charger_manager *info)
 		if (mtk_pe_get_is_connect(info))
 			mtk_pe_reset_ta_vchr(info);
 	}
+
+	if (mtk_pe40_get_is_enable(info)) {
+		if (mtk_pe40_get_is_connect(info))
+			mtk_pe40_end(info, 3, true);
+	}
+
 }
 
 static void swchg_select_charging_current_limit(struct charger_manager *info)
@@ -93,14 +107,13 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	struct charger_data *pdata;
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 	u32 ichg1_min = 0, aicr1_min = 0;
-	int ret = 0;
 
 	pdata = &info->chg1_data;
 	mutex_lock(&swchgalg->ichg_aicr_access_mutex);
 
 	/* AICL */
 	if (!mtk_is_pe30_running(info) && !mtk_pe20_get_is_connect(info) &&
-		!mtk_pe_get_is_connect(info))
+		!mtk_pe_get_is_connect(info) && !mtk_is_TA_support_pd_pps(info))
 		charger_dev_run_aicl(info->chg1_dev, &pdata->input_current_limit_by_aicl);
 
 	if (pdata->force_charging_current > 0) {
@@ -126,7 +139,10 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		goto done;
 	}
 
-	if (mtk_pdc_check_charger(info) == true) {
+	if (mtk_is_TA_support_pd_pps(info)) {
+		pdata->input_current_limit = 3000000;
+		pdata->charging_current_limit = 3000000;
+	} else if (mtk_pdc_check_charger(info) == true) {
 		int vbus = 0, cur = 0, idx = 0;
 
 		mtk_pdc_get_setting(info, &vbus, &cur, &idx);
@@ -195,8 +211,21 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		if (pdata->thermal_input_current_limit < pdata->input_current_limit)
 			pdata->input_current_limit = pdata->thermal_input_current_limit;
 
+	if (mtk_pe40_get_is_connect(info)) {
+		if (info->pe4.pe4_input_current_limit != -1 &&
+			info->pe4.pe4_input_current_limit < pdata->input_current_limit)
+			pdata->input_current_limit = info->pe4.pe4_input_current_limit;
+
+		info->pe4.input_current_limit = pdata->input_current_limit;
+
+		if (info->pe4.pe4_input_current_limit_setting != -1 &&
+			info->pe4.pe4_input_current_limit_setting < pdata->input_current_limit)
+			pdata->input_current_limit = info->pe4.pe4_input_current_limit_setting;
+	}
+
 	if (pdata->input_current_limit_by_aicl != -1 && !mtk_is_pe30_running(info) &&
-		!mtk_pe20_get_is_connect(info) && !mtk_pe_get_is_connect(info))
+		!mtk_pe20_get_is_connect(info) && !mtk_pe_get_is_connect(info) &&
+		!mtk_is_TA_support_pd_pps(info))
 		if (pdata->input_current_limit_by_aicl < pdata->input_current_limit)
 			pdata->input_current_limit = pdata->input_current_limit_by_aicl;
 done:
@@ -208,10 +237,15 @@ done:
 	if (ret != -ENOTSUPP && pdata->input_current_limit < aicr1_min)
 		pdata->input_current_limit = 0;
 
-	chr_err("force:%d thermal:%d %d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d\n",
-		pdata->force_charging_current,
-		pdata->thermal_input_current_limit, pdata->thermal_charging_current_limit,
-		pdata->input_current_limit, pdata->charging_current_limit,
+	chr_err("force:%d thermal:%d,%d pe4:%d,%d,%d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d\n",
+		_uA_to_mA(pdata->force_charging_current),
+		_uA_to_mA(pdata->thermal_input_current_limit),
+		_uA_to_mA(pdata->thermal_charging_current_limit),
+		_uA_to_mA(info->pe4.pe4_input_current_limit),
+		_uA_to_mA(info->pe4.pe4_input_current_limit_setting),
+		_uA_to_mA(info->pe4.input_current_limit),
+		_uA_to_mA(pdata->input_current_limit),
+		_uA_to_mA(pdata->charging_current_limit),
 		info->chr_type, info->usb_unlimited,
 		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state,
 		pdata->input_current_limit_by_aicl);
@@ -313,6 +347,7 @@ static int mtk_switch_charging_plug_out(struct charger_manager *info)
 	mtk_pe_set_is_cable_out_occur(info, true);
 	mtk_pe30_plugout_reset(info);
 	mtk_pdc_plugout(info);
+	mtk_pe40_plugout_reset(info);
 	charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
 	return 0;
 }
@@ -327,6 +362,7 @@ static int mtk_switch_charging_do_charging(struct charger_manager *info, bool en
 		swchgalg->state = CHR_CC;
 		get_monotonic_boottime(&swchgalg->charging_begin_time);
 		charger_manager_notifier(info, CHARGER_NOTIFY_NORMAL);
+		mtk_pe40_set_is_enable(info, en);
 	} else {
 		swchgalg->disable_charging = true;
 		swchgalg->state = CHR_ERROR;
@@ -336,6 +372,18 @@ static int mtk_switch_charging_do_charging(struct charger_manager *info, bool en
 	}
 
 	return 0;
+}
+
+static int mtk_switch_chr_pe40_init(struct charger_manager *info)
+{
+	swchg_turn_on_charging(info);
+	return mtk_pe40_init_state(info);
+}
+
+static int mtk_switch_chr_pe40_cc(struct charger_manager *info)
+{
+	swchg_turn_on_charging(info);
+	return mtk_pe40_cc_state(info);
 }
 
 /* return false if total charging time exceeds max_charging_time */
@@ -381,7 +429,12 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 
 	swchgalg->total_charging_time = charging_time.tv_sec;
 
-	/* turn on LED */
+	if (mtk_pe40_is_ready(info)) {
+		chr_err("enter PE4.0!\n");
+		swchgalg->state = CHR_PE40_INIT;
+		info->pe4.is_connect = true;
+		return 1;
+	}
 
 	swchg_turn_on_charging(info);
 
@@ -454,6 +507,7 @@ int mtk_switch_chr_full(struct charger_manager *info)
 		charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
 		mtk_pe20_set_to_check_chr_type(info, true);
 		mtk_pe_set_to_check_chr_type(info, true);
+		mtk_pe40_set_is_enable(info, true);
 		info->enable_dynamic_cv = true;
 		get_monotonic_boottime(&swchgalg->charging_begin_time);
 		chr_err("battery recharging!\n");
@@ -484,35 +538,48 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 	int ret = 0;
 
-	chr_err("%s [%d], timer=%d\n", __func__, swchgalg->state,
+	chr_err("%s [%d %d], timer=%d\n", __func__, swchgalg->state,
+		info->pd_type,
 		swchgalg->total_charging_time);
 
 	if (mtk_pe30_check_charger(info) == true)
 		swchgalg->state = CHR_PE30;
 
-	if (mtk_is_TA_support_pe30(info) == false) {
+	if (mtk_is_TA_support_pe30(info) == false &&
+		mtk_pdc_check_charger(info) == false &&
+		mtk_is_TA_support_pd_pps(info) == false) {
 		mtk_pe20_check_charger(info);
 		mtk_pe_check_charger(info);
 	}
 
-	switch (swchgalg->state) {
-	case CHR_CC:
-		ret = mtk_switch_chr_cc(info);
-		break;
+	do {
+		switch (swchgalg->state) {
+			chr_err("mtk_switch_charging_run2 [%d] %d\n", swchgalg->state, info->pd_type);
+		case CHR_CC:
+			ret = mtk_switch_chr_cc(info);
+			break;
 
-	case CHR_BATFULL:
-		ret = mtk_switch_chr_full(info);
-		break;
+		case CHR_PE40_INIT:
+			ret = mtk_switch_chr_pe40_init(info);
+			break;
 
-	case CHR_ERROR:
-		ret = mtk_switch_chr_err(info);
-		break;
+		case CHR_PE40_CC:
+			ret = mtk_switch_chr_pe40_cc(info);
+			break;
 
-	case CHR_PE30:
-		ret = mtk_switch_pe30(info);
-		break;
-	}
+		case CHR_BATFULL:
+			ret = mtk_switch_chr_full(info);
+			break;
 
+		case CHR_ERROR:
+			ret = mtk_switch_chr_err(info);
+			break;
+
+		case CHR_PE30:
+			ret = mtk_switch_pe30(info);
+			break;
+		}
+	} while (ret != 0);
 	mtk_switch_check_charging_time(info);
 
 	charger_dev_dump_registers(info->chg1_dev);

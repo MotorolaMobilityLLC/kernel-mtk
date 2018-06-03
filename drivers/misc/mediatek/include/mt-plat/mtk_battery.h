@@ -116,6 +116,7 @@ extern int get_ui_soc(void);
 /************** New Interface *******************/
 extern bool battery_get_bat_current_sign(void);
 extern signed int battery_get_bat_current(void);
+extern signed int battery_get_bat_current_mA(void);
 extern signed int battery_get_bat_avg_current(void);
 extern signed int battery_get_bat_voltage(void);
 extern signed int battery_get_bat_avg_voltage(void);
