@@ -305,27 +305,27 @@ typedef struct ccu_cmd_s {
 /*  IOCTL Command                                                            */
 /*---------------------------------------------------------------------------*/
 #define CCU_MAGICNO             'c'
-#define CCU_IOCTL_SET_POWER                _IOW(CCU_MAGICNO,   0, int)
-#define CCU_IOCTL_ENQUE_COMMAND            _IOW(CCU_MAGICNO,   1, int)
-#define CCU_IOCTL_DEQUE_COMMAND            _IOWR(CCU_MAGICNO,  2, int)
-#define CCU_IOCTL_FLUSH_COMMAND            _IOW(CCU_MAGICNO,   3, int)
-#define CCU_IOCTL_WAIT_IRQ                 _IOW(CCU_MAGICNO,   9, int)
-#define CCU_IOCTL_SEND_CMD                 _IOWR(CCU_MAGICNO, 10, int)
-#define CCU_IOCTL_SET_RUN                  _IO(CCU_MAGICNO,   11)
+#define CCU_IOCTL_SET_POWER                 _IOW(CCU_MAGICNO,   0, int)
+#define CCU_IOCTL_ENQUE_COMMAND             _IOW(CCU_MAGICNO,   1, int)
+#define CCU_IOCTL_DEQUE_COMMAND             _IOWR(CCU_MAGICNO,  2, int)
+#define CCU_IOCTL_FLUSH_COMMAND             _IOW(CCU_MAGICNO,   3, int)
+#define CCU_IOCTL_WAIT_IRQ                  _IOW(CCU_MAGICNO,   9, int)
+#define CCU_IOCTL_SEND_CMD                  _IOWR(CCU_MAGICNO, 10, int)
+#define CCU_IOCTL_SET_RUN                   _IO(CCU_MAGICNO,   11)
 
-#define CCU_CLEAR_IRQ                      _IOW(CCU_MAGICNO,  12, int)
-#define CCU_REGISTER_IRQ_USER_KEY          _IOR(CCU_MAGICNO,  13, int)
-#define CCU_READ_REGISTER                  _IOWR(CCU_MAGICNO, 14, int)
-#define CCU_WRITE_REGISTER                 _IOWR(CCU_MAGICNO, 15, int)
+#define CCU_CLEAR_IRQ                       _IOW(CCU_MAGICNO,  12, int)
+#define CCU_REGISTER_IRQ_USER_KEY           _IOR(CCU_MAGICNO,  13, int)
+#define CCU_READ_REGISTER                   _IOWR(CCU_MAGICNO, 14, int)
+#define CCU_WRITE_REGISTER                  _IOWR(CCU_MAGICNO, 15, int)
 
-#define CCU_IOCTL_SET_WORK_BUF             _IOW(CCU_MAGICNO,  18, int)
-#define CCU_IOCTL_FLUSH_LOG                _IOW(CCU_MAGICNO,  19, int)
+#define CCU_IOCTL_SET_WORK_BUF              _IOW(CCU_MAGICNO,  18, int)
+#define CCU_IOCTL_FLUSH_LOG                 _IOW(CCU_MAGICNO,  19, int)
 
-#define CCU_IOCTL_GET_I2C_DMA_BUF_ADDR     _IOR(CCU_MAGICNO,  20, int)
-#define CCU_IOCTL_SET_I2C_MODE             _IOW(CCU_MAGICNO,  21, int)
-#define CCU_IOCTL_SET_I2C_CHANNEL          _IOW(CCU_MAGICNO,  22, int)
-#define CCU_IOCTL_GET_CURRENT_FPS          _IOR(CCU_MAGICNO,  23, int)
-
+#define CCU_IOCTL_GET_I2C_DMA_BUF_ADDR      _IOR(CCU_MAGICNO,  20, int)
+#define CCU_IOCTL_SET_I2C_MODE              _IOW(CCU_MAGICNO,  21, int)
+#define CCU_IOCTL_SET_I2C_CHANNEL           _IOW(CCU_MAGICNO,  22, int)
+#define CCU_IOCTL_GET_CURRENT_FPS           _IOR(CCU_MAGICNO,  23, int)
+#define CCU_IOCTL_GET_SENSOR_I2C_SLAVE_ADDR _IOR(CCU_MAGICNO,  24, int)
 
 
 /*---------------------------------------------------------------------------*/
