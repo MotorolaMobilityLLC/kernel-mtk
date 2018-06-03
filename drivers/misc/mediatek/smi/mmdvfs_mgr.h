@@ -17,6 +17,7 @@
 #include <aee.h>
 #include "mtk_smi.h"
 
+
 #define MMDVFS_LOG_TAG	"MMDVFS"
 
 #define MMDVFSMSG(string, args...) pr_debug("[pid=%d]"string, current->tgid, ##args)
@@ -56,11 +57,40 @@ extern unsigned int DISP_GetScreenHeight(void);
 #define MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT 1
 #define MMDVFS_EVENT_UI_IDLE_ENTER 2
 #define MMDVFS_EVENT_UI_IDLE_EXIT 3
-
 #define MMDVFS_CLIENT_ID_ISP 0
 
+enum {
+	MMDVFS_CAM_MON_SCEN = SMI_BWC_SCEN_CNT, MMDVFS_SCEN_MHL, MMDVFS_SCEN_MJC, MMDVFS_SCEN_DISP,
+	MMDVFS_SCEN_ISP, MMDVFS_SCEN_VP_HIGH_RESOLUTION, MMDVFS_SCEN_VPU, MMDVFS_MGR, MMDVFS_SCEN_COUNT
+};
+
+enum mmdvfs_vpu_clk {
+		vpu_clk_0, vpu_clk_1, vpu_clk_2, vpu_clk_3
+};
+
+enum mmdvfs_vpu_if_clk {
+		vpu_if_clk_0, vpu_if_clk_1,	vpu_if_clk_2,	vpu_if_clk_3
+};
+
+enum mmdvfs_vimvo_vol {
+		vimvo_vol_0, vimvo_vol_1,	vimvo_vol_2,	vimvo_vol_3
+};
+
+
+struct mmdvfs_state_change_event {
+	int scenario;
+	int feature_flag;
+	int sensor_size;
+	int sensor_fps;
+	int vcore_vol_step;
+	int mmsys_clk_step;
+	int vpu_clk_step;
+	int vpu_if_clk_step;
+	int vimvo_vol_step;
+};
 typedef int (*clk_switch_cb)(int ori_mmsys_clk_mode, int update_mmsys_clk_mode);
 typedef int (*vdec_ctrl_cb)(void);
+typedef int (*mmdvfs_state_change_cb)(struct mmdvfs_state_change_event *event);
 
 /* MMDVFS V2 only APIs */
 extern int mmdvfs_notify_mmclk_switch_request(int event);
@@ -80,6 +110,7 @@ extern int is_force_max_mmsys_clk(void);
 extern int is_force_camera_hpm(void);
 extern int is_mmdvfs_disabled(void);
 extern int mmdvfs_get_stable_isp_clk(void);
+extern int get_mmdvfs_clk_mux_mask(void);
 
 #ifdef MMDVFS_STANDALONE
 #define vcorefs_request_dvfs_opp(scen, mode) do { \
@@ -128,44 +159,14 @@ extern int primary_display_switch_mode_for_mmdvfs(int sess_mode, unsigned int se
 #define MMDVFS_IOCTL_CMD_MMCLK_FIELD_MASK (0xFF00)
 #define MMDVFS_IOCTL_CMD_DDR_TYPE_AUTO_SELECT (0xFF)
 
+
+
 /* Backward compatible */
 #define SMI_BWC_SCEN_120HZ MMDVFS_SCEN_DISP
 
 /* mmdvfs display sizes */
 #define MMDVFS_DISPLAY_SIZE_HD  (1280 * 832)
 #define MMDVFS_DISPLAY_SIZE_FHD (1920 * 1216)
-
-enum {
-	MMDVFS_CAM_MON_SCEN = SMI_BWC_SCEN_CNT, MMDVFS_SCEN_MHL, MMDVFS_SCEN_MJC, MMDVFS_SCEN_DISP,
-	MMDVFS_SCEN_ISP, MMDVFS_SCEN_VP_HIGH_RESOLUTION, MMDVFS_SCEN_VPU, MMDVFS_SCEN_COUNT
-};
-
-enum mmdvfs_vpu_clk {
-		vpu_clk_0, vpu_clk_1, vpu_clk_2, vpu_clk_3
-};
-
-enum mmdvfs_vpu_if_clk {
-		vpu_if_clk_0, vpu_if_clk_1,	vpu_if_clk_2,	vpu_if_clk_3
-};
-
-enum mmdvfs_vimvo_vol {
-		vimvo_vol_0, vimvo_vol_1,	vimvo_vol_2,	vimvo_vol_3
-};
-
-
-struct mmdvfs_state_change_event {
-	int scenario;
-	int feature_flag;
-	int sensor_size;
-	int sensor_fps;
-	int vcore_vol_step;
-	int mmsys_clk_step;
-	int vpu_clk_step;
-	int vpu_if_clk_step;
-	int vimvo_vol_step;
-};
-
-typedef int (*mmdvfs_state_change_cb)(struct mmdvfs_state_change_event *event);
 
 typedef enum {
 	MMDVFS_LCD_SIZE_HD, MMDVFS_LCD_SIZE_FHD, MMDVFS_LCD_SIZE_WQHD, MMDVFS_LCD_SIZE_END_OF_ENUM
@@ -174,8 +175,10 @@ typedef enum {
 
 #ifndef CONFIG_MTK_SMI_EXT
 #define mmdvfs_set_step(scenario, step)
+#define mmdvfs_set_fine_step(scenario, step)
 #else
 int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step);
+int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_fine_step);
 #endif /* CONFIG_MTK_SMI_EXT */
 
 extern int mmdvfs_get_mmdvfs_profile(void);
@@ -183,5 +186,7 @@ extern int is_mmdvfs_supported(void);
 extern int mmdvfs_set_mmsys_clk(MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode);
 extern mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void);
 extern int register_mmdvfs_state_change_cb(int mmdvfs_client_id, mmdvfs_state_change_cb func);
+
+#include "mmdvfs_config_util.h"
 
 #endif /* __MMDVFS_MGR_H__ */

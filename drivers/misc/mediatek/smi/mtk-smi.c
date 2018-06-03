@@ -61,6 +61,7 @@
 #include "smi_public.h"
 #if defined(MMDVFS_HOOK)
 #include "mmdvfs_mgr.h"
+#include "mmdvfs_config_util.h"
 #endif
 #undef pr_fmt
 #define pr_fmt(fmt) "[SMI]" fmt
@@ -209,6 +210,7 @@ static unsigned int bus_optimization;
 static unsigned int enable_bw_optimization;
 static unsigned int smi_profile = SMI_BWC_SCEN_NORMAL;
 static unsigned int disable_mmdvfs;
+static unsigned int clk_mux_mask;
 static unsigned int *pLarbRegBackUp[SMI_LARB_NUM];
 
 MTK_SMI_BWC_MM_INFO g_smi_bwc_mm_info = {
@@ -1501,6 +1503,44 @@ void register_base_dump(void)
 
 static struct class *pSmiClass;
 
+/* MMDVFS related clk initialization */
+static int smi_mmdvfs_clks_init(void)
+{
+		int i = 0;
+		const int mmdvfs_disable_setting = disable_mmdvfs;
+		const int freq_mux_disable_setting = disable_freq_mux;
+		/* const int mmdvfs_disable_setting = disable_mmdvfs; */
+		/* init clk mux of each MM clks*/
+		for (i = 0; i < g_mmdvfs_adaptor->mmdvfs_clk_hw_maps_num; i++) {
+			/* Get the clk mux desc */
+			struct mmdvfs_clk_hw_map *hw_map_ptr = g_mmdvfs_adaptor->mmdvfs_clk_hw_maps + i;
+
+			if (hw_map_ptr->config_method != MMDVFS_CLK_CONFIG_NONE) {
+				SMIMSG("Init CLK %s\n", hw_map_ptr->clk_mux.ccf_name);
+				hw_map_ptr->clk_mux.ccf_handle = get_smi_clk(hw_map_ptr->clk_mux.ccf_name);
+			}
+		}
+
+		for (i = 0; i < g_mmdvfs_adaptor->mmdvfs_clk_sources_num; i++) {
+			SMIMSG("Init CLK %s\n", g_mmdvfs_adaptor->mmdvfs_clk_sources[i].ccf_name);
+			g_mmdvfs_adaptor->mmdvfs_clk_sources[i].ccf_handle =
+			get_smi_clk(g_mmdvfs_adaptor->mmdvfs_clk_sources[i].ccf_name);
+			}
+
+		SMIMSG("Finishe smi_mmdvfs_clks_init\n");
+
+		/* Set default high berfore MMDVFS feature is enabled */
+		if (force_max_mmsys_clk) {
+			SMIMSG("Forcing max mm clks is enabled\n");
+			disable_mmdvfs = 0;
+			disable_freq_mux = 0;
+			mmdvfs_set_fine_step(MMDVFS_MGR, MMDVFS_FINE_STEP_OPP0);
+			disable_mmdvfs = mmdvfs_disable_setting;
+			disable_freq_mux = freq_mux_disable_setting;
+		}
+		return 0;
+}
+
 static int smi_probe(struct platform_device *pdev)
 {
 
@@ -1588,6 +1628,7 @@ static int smi_probe(struct platform_device *pdev)
 		smi_dev->vde_mtcmos = get_smi_clk("mtcmos-vde");
 		smi_dev->ven_mtcmos = get_smi_clk("mtcmos-ven");
 		smi_dev->mjc_mtcmos = get_smi_clk("mtcmos-mjc");
+		smi_mmdvfs_clks_init();
 #endif
 	} else {
 		SMIDBG(1, "enable_bw_optimization is disabled\n");
@@ -1990,6 +2031,11 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 
 #endif
 
+int get_mmdvfs_clk_mux_mask(void)
+{
+	return clk_mux_mask;
+}
+
 int is_mmdvfs_disabled(void)
 {
 	return disable_mmdvfs;
@@ -2046,6 +2092,10 @@ static void smi_driver_setting(void)
 
 #ifdef SMI_PARAM_DISABLE_FORCE_CAMERA_HPM
 	force_camera_hpm = !(SMI_PARAM_DISABLE_FORCE_CAMERA_HPM);
+#endif
+
+#ifdef SMI_PARAM_DISABLE_FORCE_MMSYS_MAX_CLK
+	force_max_mmsys_clk = !(SMI_PARAM_DISABLE_FORCE_MMSYS_MAX_CLK);
 #endif
 
 }
@@ -2142,6 +2192,7 @@ module_param_named(wifi_disp_transaction, wifi_disp_transaction, uint, S_IRUGO |
 module_param_named(bus_optimization, bus_optimization, uint, S_IRUGO | S_IWUSR);
 module_param_named(enable_ioctl, enable_ioctl, uint, S_IRUGO | S_IWUSR);
 module_param_named(enable_bw_optimization, enable_bw_optimization, uint, S_IRUGO | S_IWUSR);
+module_param_named(clk_mux_mask, clk_mux_mask, uint, S_IRUGO | S_IWUSR);
 
 module_exit(smi_exit);
 
