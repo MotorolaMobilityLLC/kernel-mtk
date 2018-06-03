@@ -461,7 +461,6 @@ log_again:
 			     free);
 		lowmem_deathpending = selected;
 		lowmem_deathpending_timeout = jiffies + HZ;
-		set_tsk_thread_flag(selected, TIF_MEMDIE);
 
 		if (output_expect(enable_candidate_log)) {
 			if (print_extra_info) {
