@@ -39,50 +39,50 @@
  *	enum DISP_MODULE_ENUM module_id;
  */
 static ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
-	{NULL, "MMSYS_MTCMOS", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_SMI_COMMON", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_SMI_LARB0", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_SMI_LARB1", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_GALS_COMM0", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_GALS_COMM1", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_GALS_VENC2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_GALS_VDEC2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_GALS_IMG2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_GALS_CAM2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_GALS_IPU2MM", (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
-	{NULL, "MMSYS_DISP_OVL0", (1), DISP_MODULE_OVL0},
-	{NULL, "MMSYS_DISP_OVL0_2L", (1), DISP_MODULE_OVL0_2L},
-	{NULL, "MMSYS_DISP_OVL1_2L", (1<<1), DISP_MODULE_OVL1_2L},
-	{NULL, "MMSYS_DISP_RDMA0", (1), DISP_MODULE_RDMA0},
-	{NULL, "MMSYS_DISP_RDMA1", (1<<1), DISP_MODULE_RDMA1},
-	{NULL, "MMSYS_DISP_WDMA0", (1|1<<1), DISP_MODULE_WDMA0},
-	{NULL, "MMSYS_DISP_COLOR0", (1), DISP_MODULE_COLOR0},
-	{NULL, "MMSYS_DISP_CCORR0", (1), DISP_MODULE_CCORR0},
-	{NULL, "MMSYS_DISP_AAL0", (1), DISP_MODULE_AAL0},
-	{NULL, "MMSYS_DISP_GAMMA0", (1), DISP_MODULE_GAMMA0},
-	{NULL, "MMSYS_DISP_DITHER0", (1), DISP_MODULE_DITHER0},
-	{NULL, "MMSYS_DISP_SPLIT", (1), DISP_MODULE_SPLIT0},
-	{NULL, "MMSYS_DSI0_MM_CK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
-	{NULL, "MMSYS_DSI0_IF_CK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
-	{NULL, "MMSYS_DSI1_MM_CK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
-	{NULL, "MMSYS_DSI1_IF_CK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
-	{NULL, "MMSYS_DPI_MM_CK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
-	{NULL, "MMSYS_DPI_IF_CK", (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
-	{NULL, "MMSYS_26M", (1), DISP_MODULE_UNKNOWN}, /* cg */
-	{NULL, "MMSYS_DISP_RSZ", (1), DISP_MODULE_RSZ0},
-	{NULL, "TOP_MUX_MM", (1), DISP_MODULE_UNKNOWN},
-	{NULL, "TOP_MUX_DISP_PWM", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "DISP_PWM", (1), DISP_MODULE_PWM0},
-	{NULL, "TOP_26M", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "TOP_UNIVPLL2_D4", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "TOP_OSC_D4", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "TOP_OSC_D16", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "MUX_DPI0", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "TVDPLL_D2", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "TVDPLL_D4", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "TVDPLL_D8", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "TVDPLL_D16", (0), DISP_MODULE_UNKNOWN},
-	{NULL, "DPI_CK", (0), DISP_MODULE_UNKNOWN},
+	{NULL, "MMSYS_MTCMOS", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_SMI_COMMON", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_SMI_LARB0", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_SMI_LARB1", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_COMM0", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_COMM1", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_VENC2MM", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_VDEC2MM", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_IMG2MM", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_CAM2MM", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_GALS_IPU2MM", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, top clk */
+	{NULL, "MMSYS_DISP_OVL0", 0, (1), DISP_MODULE_OVL0},		/* 11 */
+	{NULL, "MMSYS_DISP_OVL0_2L", 0, (1), DISP_MODULE_OVL0_2L},
+	{NULL, "MMSYS_DISP_OVL1_2L", 0, (1<<1), DISP_MODULE_OVL1_2L},
+	{NULL, "MMSYS_DISP_RDMA0", 0, (1), DISP_MODULE_RDMA0},
+	{NULL, "MMSYS_DISP_RDMA1", 0, (1<<1), DISP_MODULE_RDMA1},
+	{NULL, "MMSYS_DISP_WDMA0", 0, (1|1<<1), DISP_MODULE_WDMA0},
+	{NULL, "MMSYS_DISP_COLOR0", 0, (1), DISP_MODULE_COLOR0},
+	{NULL, "MMSYS_DISP_CCORR0", 0, (1), DISP_MODULE_CCORR0},
+	{NULL, "MMSYS_DISP_AAL0", 0, (1), DISP_MODULE_AAL0},
+	{NULL, "MMSYS_DISP_GAMMA0", 0, (1), DISP_MODULE_GAMMA0},	/* 20 */
+	{NULL, "MMSYS_DISP_DITHER0", 0, (1), DISP_MODULE_DITHER0},
+	{NULL, "MMSYS_DISP_SPLIT", 0, (1), DISP_MODULE_SPLIT0},
+	{NULL, "MMSYS_DSI0_MM_CK", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "MMSYS_DSI0_IF_CK", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "MMSYS_DSI1_MM_CK", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "MMSYS_DSI1_IF_CK", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "MMSYS_DPI_MM_CK", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "MMSYS_DPI_IF_CK", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "MMSYS_26M", 0, (1), DISP_MODULE_UNKNOWN}, /* cg */
+	{NULL, "MMSYS_DISP_RSZ", 0, (1), DISP_MODULE_RSZ0},		/* 30 */
+	{NULL, "TOP_MUX_MM", 0, (1), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_MUX_DISP_PWM", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "DISP_PWM", 0, (1), DISP_MODULE_PWM0},
+	{NULL, "TOP_26M", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_UNIVPLL2_D4", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_OSC_D4", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_OSC_D16", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "MUX_DPI0", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TVDPLL_D2", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TVDPLL_D4", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TVDPLL_D8", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TVDPLL_D16", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "DPI_CK", 0, (0), DISP_MODULE_UNKNOWN},
 };
 
 static void __iomem *ddp_apmixed_base;
@@ -116,88 +116,26 @@ int ddp_set_clk_handle(struct clk *pclk, unsigned int n)
 	return ret;
 }
 
-#if 0
-int ddp_clk_prepare(enum DDP_CLK_ID id)
+int ddp_clk_check(void)
 {
+	int i;
 	int ret = 0;
+	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
+		if (ddp_clks[i].refcnt != 0)
+			ret++;
 
-	if (id >= MAX_DISP_CLK_CNT) {
-		DDPERR("DISPSYS CLK id=%d is more than MAX_DISP_CLK_CNT\n", id);
-		return -1;
+		DDPDBG("ddp_clk_check %s is %s refcnt=%d\n", ddp_clks[i].clk_name,
+			ddp_clks[i].refcnt == 0 ? "off" : "on", ddp_clks[i].refcnt);
 	}
-
-	if (ddp_clks[id].pclk == NULL) {
-		DDPERR("DISPSYS CLK %d NULL\n", id);
-		return -1;
-	}
-	ret = clk_prepare(ddp_clks[id].pclk);
-	if (ret)
-		DDPERR("DISPSYS CLK prepare failed: errno %d id %d\n", ret, id);
 
 	return ret;
 }
-
-int ddp_clk_unprepare(enum DDP_CLK_ID id)
-{
-	int ret = 0;
-
-	if (id >= MAX_DISP_CLK_CNT) {
-		DDPERR("DISPSYS CLK id=%d is more than MAX_DISP_CLK_CNT\n", id);
-		return -1;
-	}
-
-	if (ddp_clks[id].pclk == NULL) {
-		DDPERR("DISPSYS CLK %d NULL\n", id);
-		return -1;
-	}
-	clk_unprepare(ddp_clks[id].pclk);
-	return ret;
-}
-
-int ddp_clk_enable(enum DDP_CLK_ID id)
-{
-	int ret = 0;
-
-	if (id >= MAX_DISP_CLK_CNT) {
-		DDPERR("DISPSYS CLK id=%d is more than MAX_DISP_CLK_CNT\n", id);
-		return -1;
-	}
-
-	if (ddp_clks[id].pclk == NULL) {
-		DDPERR("DISPSYS CLK %d NULL\n", id);
-		return -1;
-	}
-
-	ret = clk_enable(ddp_clks[id].pclk);
-	if (ret)
-		DDPERR("DISPSYS CLK enable failed: errno %d id=%d\n", ret, id);
-
-	return ret;
-}
-
-int ddp_clk_disable(enum DDP_CLK_ID id)
-{
-	int ret = 0;
-
-	if (id >= MAX_DISP_CLK_CNT) {
-		DDPERR("DISPSYS CLK id=%d is more than MAX_DISP_CLK_CNT\n", id);
-		return -1;
-	}
-
-	if (ddp_clks[id].pclk == NULL) {
-		DDPERR("DISPSYS CLK %d NULL\n", id);
-		return -1;
-	}
-	clk_disable(ddp_clks[id].pclk);
-	return ret;
-}
-#endif
 
 int ddp_clk_prepare_enable(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
-	pr_warn("ddp_clk_prepare_enable, clkid = %d\n", id);
+	DDPDBG("ddp_clk_prepare_enable, clkid = %d\n", id);
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return ret;
@@ -212,6 +150,7 @@ int ddp_clk_prepare_enable(enum DDP_CLK_ID id)
 		return -1;
 	}
 	ret = clk_prepare_enable(ddp_clks[id].pclk);
+	ddp_clks[id].refcnt++;
 	if (ret)
 		DDPERR("DISPSYS CLK prepare failed: errno %d\n", ret);
 
@@ -222,7 +161,7 @@ int ddp_clk_disable_unprepare(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
-	pr_warn("ddp_clk_disable_unprepare, clkid = %d\n", id);
+	DDPDBG("ddp_clk_disable_unprepare, clkid = %d\n", id);
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return ret;
@@ -237,7 +176,7 @@ int ddp_clk_disable_unprepare(enum DDP_CLK_ID id)
 		return -1;
 	}
 	clk_disable_unprepare(ddp_clks[id].pclk);
-
+	ddp_clks[id].refcnt--;
 	return ret;
 }
 

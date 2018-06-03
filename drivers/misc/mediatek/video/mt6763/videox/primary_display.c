@@ -4122,7 +4122,7 @@ done:
 	primary_trigger_cnt = 0;
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_END, 0, 0);
 	DISPCHECK("primary_display_suspend end\n");
-
+	ddp_clk_check();
 	/* set MMDVFS to default, do not prevent it from stepping into ULPM */
 	/* primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_DEFAULT); */
 
@@ -4467,6 +4467,7 @@ done:
 
 	aee_kernel_wdt_kick_Powkey_api("mtkfb_late_resume", WDT_SETBY_Display);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume, MMPROFILE_FLAG_END, 0, 0);
+	ddp_clk_check();
 	return ret;
 }
 

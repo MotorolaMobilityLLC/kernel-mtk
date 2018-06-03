@@ -76,18 +76,14 @@ enum DDP_CLK_ID {
 typedef struct {
 	struct clk *pclk;
 	const char *clk_name;
+	int refcnt;
 	unsigned int belong_to; /* bit 0: main display , bit 1: second display */
 	enum DISP_MODULE_ENUM module_id;
 } ddp_clk;
 
 const char *ddp_get_clk_name(unsigned int n);
 int ddp_set_clk_handle(struct clk *pclk, unsigned int n);
-#if 0
-int ddp_clk_prepare(enum DDP_CLK_ID id);
-int ddp_clk_unprepare(enum DDP_CLK_ID id);
-int ddp_clk_enable(enum DDP_CLK_ID id);
-int ddp_clk_disable(enum DDP_CLK_ID id);
-#endif
+
 int ddp_clk_prepare_enable(enum DDP_CLK_ID id);
 int ddp_clk_disable_unprepare(enum DDP_CLK_ID id);
 int ddp_clk_set_parent(enum DDP_CLK_ID id, enum DDP_CLK_ID parent);
@@ -101,5 +97,5 @@ int ddp_module_clk_enable(enum DISP_MODULE_TYPE_ENUM module_t);
 int ddp_module_clk_disable(enum DISP_MODULE_TYPE_ENUM module_t);
 enum DDP_CLK_ID ddp_get_module_clk_id(enum DISP_MODULE_ENUM module_id);
 void ddp_clk_force_on(unsigned int on);
-
+int ddp_clk_check(void);
 #endif
