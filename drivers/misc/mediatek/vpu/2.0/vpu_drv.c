@@ -610,6 +610,13 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		LOG_DBG("[vpu] enque test: core_index_0x%x\n", req->requested_core);
 		#endif
 
+		if (req->request_id == 0x0) {
+			LOG_ERR("wrong request_id (0x%lx)\n", (unsigned long)req->request_id);
+			vpu_free_request(req);
+			ret = -EFAULT;
+			goto out;
+		}
+
 		if (ret)
 			LOG_ERR("[ENQUE] get params failed, ret=%d\n", ret);
 		else if (req->buffer_count > VPU_MAX_NUM_PORTS)
