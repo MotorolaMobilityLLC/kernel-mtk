@@ -1024,7 +1024,8 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 					NULL);
 		} else if (data_t->flush_action == BIAS_ACTION ||
 			data_t->flush_action == CALI_ACTION ||
-			data_t->flush_action == TEMP_ACTION)
+			data_t->flush_action == TEMP_ACTION ||
+			data_t->flush_action == TEST_ACTION)
 			err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
 	}
 
@@ -1298,6 +1299,30 @@ int sensor_calibration_to_hub(uint8_t sensorType)
 			sizeof(struct ConfigCmd));
 		if (ret < 0) {
 			pr_err("failed calibration handle:%d\n",
+				sensorType);
+			return -1;
+		}
+	} else {
+		pr_err("unhandle handle=%d, is inited?\n", sensorType);
+		return -1;
+	}
+	return 0;
+}
+
+int sensor_selftest_to_hub(uint8_t sensorType)
+{
+	struct ConfigCmd cmd;
+	int ret = 0;
+
+	if (mSensorState[sensorType].sensorType ||
+		(sensorType == ID_ACCELEROMETER &&
+		mSensorState[sensorType].sensorType == ID_ACCELEROMETER)) {
+		init_sensor_config_cmd(&cmd, sensorType);
+		cmd.cmd = CONFIG_CMD_SELF_TEST;
+		ret = nanohub_external_write((const uint8_t *)&cmd,
+			sizeof(struct ConfigCmd));
+		if (ret < 0) {
+			pr_err("failed selfttest handle:%d\n",
 				sensorType);
 			return -1;
 		}

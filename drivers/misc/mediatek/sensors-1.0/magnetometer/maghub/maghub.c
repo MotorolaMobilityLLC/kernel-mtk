@@ -43,11 +43,13 @@ struct maghub_ipi_data {
 	atomic_t	suspend;
 	atomic_t	scp_init_done;
 	atomic_t first_ready_after_boot;
+	atomic_t selftest_status;
 	struct work_struct init_done_work;
 	struct data_unit_t m_data_t;
 	bool factory_enable;
 	bool android_enable;
 	struct mag_dev_info_t mag_dev_info;
+	struct completion selftest_done;
 };
 static int maghub_m_setPowerMode(bool enable)
 {
@@ -303,12 +305,12 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 	struct mag_data data;
 	struct maghub_ipi_data *obj = mag_ipi_data;
 
-		data.x = event->magnetic_t.x;
-		data.y = event->magnetic_t.y;
-		data.z = event->magnetic_t.z;
-		data.status = event->magnetic_t.status;
-		data.timestamp = (int64_t)event->time_stamp;
-		data.reserved[0] = event->reserve[0];
+	data.x = event->magnetic_t.x;
+	data.y = event->magnetic_t.y;
+	data.z = event->magnetic_t.z;
+	data.status = event->magnetic_t.status;
+	data.timestamp = (int64_t)event->time_stamp;
+	data.reserved[0] = event->reserve[0];
 
 	if (event->flush_action == DATA_ACTION &&
 		READ_ONCE(obj->android_enable) == true)
@@ -325,6 +327,9 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 		obj->dynamic_cali[MAGHUB_AXIS_Y] = event->magnetic_t.y_bias;
 		obj->dynamic_cali[MAGHUB_AXIS_Z] = event->magnetic_t.z_bias;
 		spin_unlock(&calibration_lock);
+	} else if (event->flush_action == TEST_ACTION) {
+		atomic_set(&obj->selftest_status, event->magnetic_t.status);
+		complete(&obj->selftest_done);
 	}
 	return err;
 }
@@ -488,7 +493,19 @@ static int maghub_factory_get_cali(int32_t data[3])
 }
 static int maghub_factory_do_self_test(void)
 {
-	return 0;
+	int ret = 0;
+	struct maghub_ipi_data *obj = mag_ipi_data;
+
+	ret = sensor_selftest_to_hub(ID_MAGNETIC);
+	if (ret < 0)
+		return -1;
+
+	init_completion(&obj->selftest_done);
+	ret = wait_for_completion_timeout(&obj->selftest_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return atomic_read(&obj->selftest_status);
 }
 
 static struct mag_factory_fops maghub_factory_fops = {
@@ -525,8 +542,10 @@ static int maghub_probe(struct platform_device *pdev)
 	}
 	mag_ipi_data = data;
 	atomic_set(&data->trace, 0);
+	atomic_set(&data->selftest_status, 0);
 	WRITE_ONCE(data->factory_enable, false);
 	WRITE_ONCE(data->android_enable, false);
+	init_completion(&data->selftest_done);
 
 	platform_set_drvdata(pdev, data);
 

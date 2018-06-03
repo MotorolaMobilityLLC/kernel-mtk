@@ -41,6 +41,7 @@ struct accelhub_ipi_data {
 	/*misc */
 	atomic_t trace;
 	atomic_t suspend;
+	atomic_t selftest_status;
 	int32_t static_cali[ACCELHUB_AXES_NUM];
 	uint8_t static_cali_status;
 	int32_t dynamic_cali[ACCELHUB_AXES_NUM];
@@ -51,6 +52,7 @@ struct accelhub_ipi_data {
 	bool factory_enable;
 	bool android_enable;
 	struct completion calibration_done;
+	struct completion selftest_done;
 };
 
 static struct acc_init_info accelhub_init_info;
@@ -484,6 +486,10 @@ static int gsensor_recv_data(struct data_unit_t *event, void *reserved)
 			(uint8_t)event->accelerometer_t.status;
 		spin_unlock(&calibration_lock);
 		complete(&obj->calibration_done);
+	} else if (event->flush_action == TEST_ACTION) {
+		atomic_set(&obj->selftest_status,
+			event->accelerometer_t.status);
+		complete(&obj->selftest_done);
 	}
 	return err;
 }
@@ -588,7 +594,19 @@ static int gsensor_factory_get_cali(int32_t data[3])
 }
 static int gsensor_factory_do_self_test(void)
 {
-	return 0;
+	int ret = 0;
+	struct accelhub_ipi_data *obj = obj_ipi_data;
+
+	ret = sensor_selftest_to_hub(ID_ACCELEROMETER);
+	if (ret < 0)
+		return -1;
+
+	init_completion(&obj->selftest_done);
+	ret = wait_for_completion_timeout(&obj->selftest_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return atomic_read(&obj->selftest_status);
 }
 
 static struct accel_factory_fops gsensor_factory_fops = {
@@ -603,7 +621,9 @@ static struct accel_factory_fops gsensor_factory_fops = {
 };
 
 static struct accel_factory_public gsensor_factory_device = {
-	.gain = 1, .sensitivity = 1, .fops = &gsensor_factory_fops,
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &gsensor_factory_fops,
 };
 
 static int gsensor_open_report_data(int open)
@@ -759,9 +779,11 @@ static int accelhub_probe(struct platform_device *pdev)
 	atomic_set(&obj->suspend, 0);
 	atomic_set(&obj->scp_init_done, 0);
 	atomic_set(&obj->first_ready_after_boot, 0);
+	atomic_set(&obj->selftest_status, 0);
 	WRITE_ONCE(obj->factory_enable, false);
 	WRITE_ONCE(obj->android_enable, false);
 	init_completion(&obj->calibration_done);
+	init_completion(&obj->selftest_done);
 	scp_power_monitor_register(&scp_ready_notifier);
 	err = scp_sensorHub_data_registration(ID_ACCELEROMETER,
 					      gsensor_recv_data);
