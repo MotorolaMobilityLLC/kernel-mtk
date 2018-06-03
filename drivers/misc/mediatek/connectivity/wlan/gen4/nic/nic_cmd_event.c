@@ -677,31 +677,39 @@ VOID nicCmdEventQueryStatistics(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdI
 		u4QueryInfoLen = sizeof(PARAM_802_11_STATISTICS_STRUCT_T);
 		prStatistics = (P_PARAM_802_11_STATISTICS_STRUCT_T) prCmdInfo->pvInformationBuffer;
 
-		prStatistics->u4Length = sizeof(PARAM_802_11_STATISTICS_STRUCT_T);
 		prStatistics->rTransmittedFragmentCount = prEventStatistics->rTransmittedFragmentCount;
-		prStatistics->rMulticastTransmittedFrameCount = prEventStatistics->rMulticastTransmittedFrameCount;
 		prStatistics->rFailedCount = prEventStatistics->rFailedCount;
 		prStatistics->rRetryCount = prEventStatistics->rRetryCount;
 		prStatistics->rMultipleRetryCount = prEventStatistics->rMultipleRetryCount;
-		prStatistics->rRTSSuccessCount = prEventStatistics->rRTSSuccessCount;
-		prStatistics->rRTSFailureCount = prEventStatistics->rRTSFailureCount;
 		prStatistics->rACKFailureCount = prEventStatistics->rACKFailureCount;
-		prStatistics->rFrameDuplicateCount = prEventStatistics->rFrameDuplicateCount;
 		prStatistics->rReceivedFragmentCount = prEventStatistics->rReceivedFragmentCount;
-		prStatistics->rMulticastReceivedFrameCount = prEventStatistics->rMulticastReceivedFrameCount;
 		prStatistics->rFCSErrorCount = prEventStatistics->rFCSErrorCount;
-		prStatistics->rTKIPLocalMICFailures.QuadPart = 0;
-		prStatistics->rTKIPICVErrors.QuadPart = 0;
-		prStatistics->rTKIPCounterMeasuresInvoked.QuadPart = 0;
-		prStatistics->rTKIPReplays.QuadPart = 0;
-		prStatistics->rCCMPFormatErrors.QuadPart = 0;
-		prStatistics->rCCMPReplays.QuadPart = 0;
-		prStatistics->rCCMPDecryptErrors.QuadPart = 0;
-		prStatistics->rFourWayHandshakeFailures.QuadPart = 0;
-		prStatistics->rWEPUndecryptableCount.QuadPart = 0;
-		prStatistics->rWEPICVErrorCount.QuadPart = 0;
-		prStatistics->rDecryptSuccessCount.QuadPart = 0;
-		prStatistics->rDecryptFailureCount.QuadPart = 0;
+
+		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
+	}
+}
+
+VOID nicCmdEventQueryBugReport(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
+{
+#define BUG_REPORT_VERSION 1
+
+	P_EVENT_BUG_REPORT_T prStatistics;
+	P_EVENT_BUG_REPORT_T prEventStatistics;
+	P_GLUE_INFO_T prGlueInfo;
+	UINT_32 u4QueryInfoLen;
+
+	ASSERT(prAdapter);
+	ASSERT(prCmdInfo);
+
+	prEventStatistics = (P_EVENT_BUG_REPORT_T) pucEventBuf;
+
+	if (prCmdInfo->fgIsOid && (prEventStatistics->u4BugReportVersion == BUG_REPORT_VERSION)) {
+		prGlueInfo = prAdapter->prGlueInfo;
+
+		u4QueryInfoLen = sizeof(EVENT_BUG_REPORT_T);
+		prStatistics = (P_EVENT_BUG_REPORT_T) prCmdInfo->pvInformationBuffer;
+
+		kalMemCopy(prStatistics, prEventStatistics, u4QueryInfoLen);
 
 		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
 	}

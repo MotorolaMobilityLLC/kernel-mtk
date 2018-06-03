@@ -1560,6 +1560,76 @@ typedef struct _EVENT_STATISTICS {
 	LARGE_INTEGER rFCSErrorCount;
 } EVENT_STATISTICS, *P_EVENT_STATISTICS;
 
+typedef struct _EVENT_BUG_REPORT_T {
+	/* BugReportVersion 1 */
+	UINT_32 u4BugReportVersion;
+
+	/* FW Module State 2 */
+	UINT_32 u4FWState;
+
+	/* Scan Counter 3-6 */
+	UINT_32 u4ReceivedBeaconCount;
+	UINT_32 u4ReceivedProbeResponseCount;
+	UINT_32 u4SentProbeRequestCount;
+	UINT_32 u4SentProbeRequestFailCount;
+
+	/* Roaming Counter 7-9 */
+	UINT_32 u4RoamingDebugFlag;
+	UINT_32 u4RoamingThreshold;
+	UINT_32 u4RoamingCurrentRcpi;
+
+	/* RF Counter 10-14 */
+	UINT_32 u4RFPriChannel;
+	UINT_32 u4RFChannelS1;
+	UINT_32 u4RFChannelS2;
+	UINT_32 u4RFChannelWidth;
+	UINT_32 u4RFSco;
+
+	/* Coex Counter 15-17 */
+	UINT_32 u4BTProfile;
+	UINT_32 u4BTOn;
+	UINT_32 u4LTEOn;
+
+	/* Low Power Counter 18-20 */
+	UINT_32 u4LPTxUcPktNum;
+	UINT_32 u4LPRxUcPktNum;
+	UINT_32 u4LPPSProfile;
+
+	/* Base Band Counter 21- 32 */
+	UINT_32 u4OfdmPdCnt;
+	UINT_32 u4CckPdCnt;
+	UINT_32 u4CckSigErrorCnt;
+	UINT_32 u4CckSfdErrorCnt;
+	UINT_32 u4OfdmSigErrorCnt;
+	UINT_32 u4OfdmTaqErrorCnt;
+	UINT_32 u4OfdmFcsErrorCnt;
+	UINT_32 u4CckFcsErrorCnt;
+	UINT_32 u4OfdmMdrdyCnt;
+	UINT_32 u4CckMdrdyCnt;
+	UINT_32 u4PhyCcaStatus;
+	UINT_32 u4WifiFastSpiStatus;
+
+	/* Mac RX Counter 33-45 */
+	UINT_32 u4RxMdrdyCount;
+	UINT_32 u4RxFcsErrorCount;
+	UINT_32 u4RxbFifoFullCount;
+	UINT_32 u4RxMpduCount;
+	UINT_32 u4RxLengthMismatchCount;
+	UINT_32 u4RxCcaPrimCount;
+	UINT_32 u4RxEdCount;
+	UINT_32 u4LmacFreeRunTimer;
+	UINT_32 u4WtblReadPointer;
+	UINT_32 u4RmacWritePointer;
+	UINT_32 u4SecWritePointer;
+	UINT_32 u4SecReadPointer;
+	UINT_32 u4DmaReadPointer;
+
+	/* Mac TX Counter 46-47 */
+	UINT_32 u4TxChannelIdleCount;
+	UINT_32 u4TxCcaNavTxTime;
+	/* If you want to add item, please modify BUG_REPORT_NUM in mtk_driver_nl80211.h */
+} EVENT_BUG_REPORT_T, *P_EVENT_BUG_REPORT_T;
+
 /* EVENT_ID_FW_SLEEPY_NOTIFY */
 typedef struct _EVENT_SLEEPY_INFO_T {
 	UINT_8 ucSleepyState;
@@ -3001,6 +3071,8 @@ VOID nicCmdEventBuildDateCode(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInf
 #endif
 
 VOID nicCmdEventQueryStaStatistics(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
+
+VOID nicCmdEventQueryBugReport(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 /* 4 Auto Channel Selection */

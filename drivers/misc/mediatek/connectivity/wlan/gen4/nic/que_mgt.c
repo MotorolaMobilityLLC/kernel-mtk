@@ -1658,6 +1658,9 @@ P_MSDU_INFO_T qmDequeueTxPacketsMthread(IN P_ADAPTER_T prAdapter, IN P_TX_TCQ_ST
 		prMsduInfo = prNextMsduInfo;
 	}
 
+	if (prReturnedPacketListHead)
+		wlanTxProfilingTagMsdu(prAdapter, prReturnedPacketListHead, TX_PROF_TAG_DRV_DEQUE);
+
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 
 	return prReturnedPacketListHead;
@@ -2319,6 +2322,7 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 						prCurrSwRfb->u2PacketLen > 32 ? 32:prCurrSwRfb->u2PacketLen);
 #if 0
 #if CFG_CHIP_RESET_SUPPORT
+				glGetRstReason(RST_GROUP4_NULL);
 				glResetTrigger(prAdapter);
 #endif
 #endif

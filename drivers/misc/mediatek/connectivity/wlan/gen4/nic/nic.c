@@ -634,6 +634,7 @@ VOID nicProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 
 	halProcessAbnormalInterrupt(prAdapter);
 #if CFG_CHIP_RESET_SUPPORT
+	glGetRstReason(RST_PROCESS_ABNORMAL_INT);
 	glResetTrigger(prAdapter);
 #endif
 }
