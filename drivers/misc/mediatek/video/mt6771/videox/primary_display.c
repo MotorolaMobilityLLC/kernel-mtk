@@ -6055,6 +6055,11 @@ static int can_bypass_ovl(struct disp_ddp_path_config *data_config,
 	    data_config->ovl_config[*bypass_layer_id].dst_x != 0)
 		return 0;
 
+	/* rdma cannot process alpha blending */
+	if ((data_config->ovl_config[*bypass_layer_id].alpha != 255 &&
+			data_config->ovl_config[*bypass_layer_id].aen != 0))
+		return 0;
+
 	/*
 	 * we need to check layer size, because rdma has output_valid_thres setting
 	 * if (size < output_valid_thres) RDMA will hang !!
