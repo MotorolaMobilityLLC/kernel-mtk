@@ -34,35 +34,12 @@ static int mt6370_pmu_core_notifier_call(struct notifier_block *this,
 	struct mt6370_pmu_core_data *core_data =
 			container_of(this, struct mt6370_pmu_core_data, nb);
 	int ret = 0;
-	const u8 pascode[2] = {0xC5, 0x7E};
 
 	dev_dbg(core_data->dev, "%s: code %lu\n", __func__, code);
 	switch (code) {
 	case SYS_RESTART:
 	case SYS_HALT:
 	case SYS_POWER_OFF:
-		ret = mt6370_pmu_reg_write(core_data->chip,
-					   MT6370_PMU_REG_RSTPASCODE1, 0xA9);
-		if (ret < 0)
-			dev_err(core_data->dev, "set passcode1 fail\n");
-		ret = mt6370_pmu_reg_write(core_data->chip,
-					   MT6370_PMU_REG_RSTPASCODE2, 0x96);
-		if (ret < 0)
-			dev_err(core_data->dev, "set passcode2 fail\n");
-		/* reset all chg/fled/ldo/rgb/bl/db reg and logic */
-		ret = mt6370_pmu_reg_set_bit(core_data->chip,
-					     MT6370_PMU_REG_CORECTRL2, 0x7E);
-		if (ret < 0)
-			dev_err(core_data->dev, "reset all reg/logic fail\n");
-
-		/* enable i2c reset */
-		ret = mt6370_pmu_reg_write(core_data->chip,
-			MT6370_PMU_REG_CORECTRL1, 0x86);
-		if (ret < 0)
-			dev_err(core_data->dev, "en i2c reset fail\n");
-
-		ret = mt6370_pmu_reg_block_write(core_data->chip,
-			MT6370_PMU_REG_RSTPASCODE1, 2, pascode);
 		break;
 	default:
 		ret = -EINVAL;
