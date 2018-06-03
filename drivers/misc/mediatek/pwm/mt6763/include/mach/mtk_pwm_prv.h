@@ -19,15 +19,11 @@
 #ifndef __MT_PWM_PRV_H__
 #define __MT_PWM_PRV_H__
 
-
-#ifdef CONFIG_OF
 extern void __iomem *pwm_base;
 /* unsigned int pwm_irqnr; */
 
 #undef PWM_BASE
 #define PWM_BASE pwm_base
-
-#endif
 
 /***********************************
 * PWM register address             *

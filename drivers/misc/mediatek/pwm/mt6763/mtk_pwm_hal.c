@@ -21,11 +21,7 @@
 #include <mt-plat/mtk_pwm_hal_pub.h>
 #include <mach/mtk_pwm_hal.h>
 #include <mach/mtk_pwm_prv.h>
-#if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
-#else
-#include <mach/mt_clkmgr.h>
-#endif
 
 #define PWM_PERI_ADDR_SHIFT_CTRL0 0x10003430
 #define PWM_OFFSET 0x3
@@ -53,32 +49,9 @@ enum {
 } PWM_REG_OFF;
 
 
-#if defined(CONFIG_MTK_CLKMGR)
-int pwm_power_id[] = {
-		MT_CG_PERI_PWM1,
-		MT_CG_PERI_PWM2,
-		MT_CG_PERI_PWM3,
-		MT_CG_PERI_PWM4,
-		MT_CG_INFRA_PWM_HCLK,
-		MT_CG_PERI_PWM
-	};
-
-#define PWM_CG		5
-
-#endif
-#ifdef CONFIG_OF
 unsigned long PWM_register[PWM_NUM] = {};
-#else
-unsigned long PWM_register[PWM_NUM] = {
-	(PWM_BASE+0x0010),	   /* PWM1 register base,   15 registers */
-	(PWM_BASE+0x0050),	   /* PWM2 register base    15 registers */
-	(PWM_BASE+0x0090),	   /* PWM3 register base    15 registers */
-	(PWM_BASE+0x00d0),	   /* PWM4 register base    13 registers */
-};
-#endif
 /**************************************************************/
 
-#if !defined(CONFIG_MTK_CLKMGR)
 enum {
 	PWM1_CLK,
 	PWM2_CLK,
@@ -147,48 +120,13 @@ void mt_pwm_power_off_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 		clear_bit(PWM_CLK, power_flag);
 	}
 }
-#else
-void mt_pwm_power_on_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
-{
-	if (0 == (*power_flag)) {
-		PWMDBG("enable_clock: main\n");
-		enable_clock(pwm_power_id[PWM_CG], "PWM");
-		set_bit(PWM_CG, power_flag);
-	}
-	if (!test_bit(pwm_no, power_flag)) {
-		PWMDBG("enable_clock: %d\n", pwm_no);
-
-			enable_clock(pwm_power_id[pwm_no], "PWM");
-
-		set_bit(pwm_no, power_flag);
-		PWMDBG("enable_clock PWM%d\n", pwm_no+1);
-	}
-}
-
-void mt_pwm_power_off_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
-{
-	if (test_bit(pwm_no, power_flag)) {
-		PWMDBG("disable_clock: %d\n", pwm_no);
-		disable_clock(pwm_power_id[pwm_no], "PWM");
-		clear_bit(pwm_no, power_flag);
-		PWMDBG("disable_clock PWM%d\n", pwm_no+1);
-	}
-	if (BIT(PWM_CG) == (*power_flag)) {
-		PWMDBG("disable_clock: main\n");
-		disable_clock(pwm_power_id[PWM_CG], "PWM");
-		clear_bit(PWM_CG, power_flag);
-	}
-}
-#endif
 
 void mt_pwm_init_power_flag(unsigned long *power_flag)
 {
-#ifdef CONFIG_OF
 	PWM_register[PWM1] = (unsigned long)pwm_base + 0x0010;
 	PWM_register[PWM2] = (unsigned long)pwm_base + 0x0050;
 	PWM_register[PWM3] = (unsigned long)pwm_base + 0x0090;
 	PWM_register[PWM4] = (unsigned long)pwm_base + 0x00d0;
-#endif
 }
 
 s32 mt_pwm_sel_pmic_hal(u32 pwm_no)
@@ -586,7 +524,6 @@ void mt_pwm_platform_init(void)
 {
 }
 
-#if !defined(CONFIG_MTK_CLKMGR)
 int mt_get_pwm_clk_src(struct platform_device *pdev)
 {
 	int i;
@@ -601,4 +538,4 @@ int mt_get_pwm_clk_src(struct platform_device *pdev)
 	}
 	return 0;
 }
-#endif
+
