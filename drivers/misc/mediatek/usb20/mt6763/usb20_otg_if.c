@@ -1071,8 +1071,17 @@ int musb_otg_exec_cmd(unsigned int cmd)
 	case OTG_CMD_E_ENABLE_SRP:	/* need to clear session? */
 		DBG(0, "musb::enable srp!\n");
 		musb_otg_reset_usb();
-		USBPHY_WRITE8(0x6c, 0x1);
-		USBPHY_WRITE8(0x6d, 0x1);
+		{
+			u32 val = 0;
+
+			val = USBPHY_READ32(0x6c);
+			val = (val & ~(0xff<<0)) | (0x1<<0);
+			USBPHY_WRITE32(0x6c, val);
+
+			val = USBPHY_READ32(0x6c);
+			val = (val & ~(0xff<<8)) | (0x1<<8);
+			USBPHY_WRITE32(0x6c, val);
+		}
 		musb_writeb(mtk_musb->mregs, 0x7B, 1);
 		musb_otg_set_session(true);
 		while (g_exec)

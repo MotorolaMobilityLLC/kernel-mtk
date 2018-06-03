@@ -923,8 +923,17 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb, u8 devctl)
 			if (musb->g.otg_srp_reqd) {
 				DBG(0, "HNP: otg_srp_reqd\n");
 				polling_vbus = true;
-				USBPHY_WRITE8(0x6c, 0x13);
-				USBPHY_WRITE8(0x6d, 0x3f);
+				{
+					u32 val = 0;
+
+					val = USBPHY_READ32(0x6c);
+					val = (val & ~(0xff<<0)) | (0x13<<0);
+					USBPHY_WRITE32(0x6c, val);
+
+					val = USBPHY_READ32(0x6c);
+					val = (val & ~(0xff<<8)) | (0x3f<<8);
+					USBPHY_WRITE32(0x6c, val);
+				}
 			}
 #endif
 			break;

@@ -161,37 +161,6 @@ void usb_phy_switch_to_usb(void)
 
 #else
 
-unsigned int usbphy_read8_from_readl(unsigned int offset)
-{
-	unsigned long base = ((offset >> 2) << 2);
-	u32 shift = (offset & 0x3);
-	u32 val = 0;
-
-	val = readl((void __iomem *)((mtk_musb->xceiv->io_priv) + 0x800 + base));
-	val = ((val >> (shift*8)) & 0xFF);
-
-	DBG(0, "READ[0x%x]=0x%x\n", offset, val);
-
-	return val;
-}
-
-void usbphy_write8_from_writel(unsigned int offset, unsigned int value)
-{
-	unsigned long base = ((offset >> 2) << 2);
-	u32 shift = (offset & 0x3);
-	u32 val = 0;
-
-	val = readl((void __iomem *)((mtk_musb->xceiv->io_priv) + 0x800 + base));
-
-	val = ((val & ~(0xFF << (shift*8))) | ((value & 0xFF) << (shift*8)));
-
-	DBG(0, "WRITE[0x%x]=0x%x 0x%x\n", offset, val, value);
-
-	writel(val, (void __iomem *)(((unsigned long)mtk_musb->xceiv->io_priv) + 0x800 + base));
-
-	usbphy_read8_from_readl(offset);
-}
-
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 bool in_uart_mode;
 #endif

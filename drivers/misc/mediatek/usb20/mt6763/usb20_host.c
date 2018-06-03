@@ -259,14 +259,14 @@ void musb_session_restart(struct musb *musb)
 
 	musb_writeb(mbase, MUSB_DEVCTL, (musb_readb(mbase, MUSB_DEVCTL) & (~MUSB_DEVCTL_SESSION)));
 	DBG(0, "[MUSB] stopped session for VBUSERROR interrupt\n");
-	USBPHY_SET8(0x6d, 0x3c);
-	USBPHY_SET8(0x6c, 0x10);
-	USBPHY_CLR8(0x6c, 0x2c);
-	DBG(0, "[MUSB] force PHY to idle, 0x6d=%x, 0x6c=%x\n", USBPHY_READ8(0x6d), USBPHY_READ8(0x6c));
+	USBPHY_SET32(0x6c, (0x3c<<8));
+	USBPHY_SET32(0x6c, (0x10<<0));
+	USBPHY_CLR32(0x6c, (0x2c<<0));
+	DBG(0, "[MUSB] force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
 	mdelay(5);
-	USBPHY_CLR8(0x6d, 0x3c);
-	USBPHY_CLR8(0x6c, 0x3c);
-	DBG(0, "[MUSB] let PHY resample VBUS, 0x6d=%x, 0x6c=%x\n", USBPHY_READ8(0x6d), USBPHY_READ8(0x6c));
+	USBPHY_CLR32(0x6c, (0x3c<<8));
+	USBPHY_CLR32(0x6c, (0x3c<<0));
+	DBG(0, "[MUSB] let PHY resample VBUS, 0x6c=%x\n", USBPHY_READ32(0x6c));
 	musb_writeb(mbase, MUSB_DEVCTL, (musb_readb(mbase, MUSB_DEVCTL) | MUSB_DEVCTL_SESSION));
 	DBG(0, "[MUSB] restart session\n");
 }
@@ -460,10 +460,10 @@ static void musb_id_pin_work(struct work_struct *data)
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, (devctl&(~MUSB_DEVCTL_SESSION)));
 		/* USB MAC OFF*/
 		/* VBUSVALID=0, AVALID=0, BVALID=0, SESSEND=1, IDDIG=X, IDPULLUP=1 */
-		USBPHY_SET8(0x6c, 0x11);
-		USBPHY_CLR8(0x6c, 0x2e);
-		USBPHY_SET8(0x6d, 0x3f);
-		DBG(0, "force PHY to idle, 0x6d=%x, 0x6c=%x\n", USBPHY_READ8(0x6d), USBPHY_READ8(0x6c));
+		USBPHY_SET32(0x6c, (0x11<<0));
+		USBPHY_CLR32(0x6c, (0x2e<<0));
+		USBPHY_SET32(0x6c, (0x3f<<8));
+		DBG(0, "force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
 		/* wait */
 		mdelay(5);
 		/* restart session */
@@ -471,10 +471,10 @@ static void musb_id_pin_work(struct work_struct *data)
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, (devctl | MUSB_DEVCTL_SESSION));
 		/* USB MAC ONand Host Mode*/
 		/* VBUSVALID=1, AVALID=1, BVALID=1, SESSEND=0, IDDIG=0, IDPULLUP=1 */
-		USBPHY_CLR8(0x6c, 0x10);
-		USBPHY_SET8(0x6c, 0x2d);
-		USBPHY_SET8(0x6d, 0x3f);
-		DBG(0, "force PHY to host mode, 0x6d=%x, 0x6c=%x\n", USBPHY_READ8(0x6d), USBPHY_READ8(0x6c));
+		USBPHY_CLR32(0x6c, (0x10<<0));
+		USBPHY_SET32(0x6c, (0x2d<<0));
+		USBPHY_SET32(0x6c, (0x3f<<8));
+		DBG(0, "force PHY to host mode, 0x6c=%x\n", USBPHY_READ32(0x6c));
 	#endif
 
 		musb_start(mtk_musb);
@@ -503,10 +503,10 @@ static void musb_id_pin_work(struct work_struct *data)
 	#if 1
 	/* USB MAC OFF*/
 		/* VBUSVALID=0, AVALID=0, BVALID=0, SESSEND=1, IDDIG=X, IDPULLUP=1 */
-		USBPHY_SET8(0x6c, 0x11);
-		USBPHY_CLR8(0x6c, 0x2e);
-		USBPHY_SET8(0x6d, 0x3f);
-		DBG(0, "force PHY to idle, 0x6d=%x, 0x6c=%x\n", USBPHY_READ8(0x6d), USBPHY_READ8(0x6c));
+		USBPHY_SET32(0x6c, (0x11<<0));
+		USBPHY_CLR32(0x6c, (0x2e<<0));
+		USBPHY_SET32(0x6c, (0x3f<<8));
+		DBG(0, "force PHY to idle, 0x6c=%x\n", USBPHY_READ32(0x6c));
 	#endif
 
 		musb_stop(mtk_musb);
