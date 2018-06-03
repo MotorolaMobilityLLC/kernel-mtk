@@ -261,6 +261,41 @@ struct pmic_sp_interrupt sp_interrupts[] = {
 
 unsigned int sp_interrupt_size = ARRAY_SIZE(sp_interrupts);
 
+static unsigned int get_spNo(enum PMIC_IRQ_ENUM intNo)
+{
+	if (intNo >= SP_BUCK_TOP_START && intNo < SP_LDO_TOP_START)
+		return 0; /* SP_BUCK_TOP */
+	else if (intNo >= SP_LDO_TOP_START && intNo < SP_PSC_TOP_START)
+		return 1; /* SP_LDO_TOP */
+	else if (intNo >= SP_PSC_TOP_START && intNo < SP_SCK_TOP_START)
+		return 2; /* SP_PSC_TOP */
+	else if (intNo >= SP_SCK_TOP_START && intNo < SP_BM_TOP_START)
+		return 3; /* SP_SCK_TOP */
+	else if (intNo >= SP_BM_TOP_START && intNo < SP_HK_TOP_START)
+		return 4; /* SP_BM_TOP */
+	else if (intNo >= SP_HK_TOP_START && intNo < SP_AUD_TOP_START)
+		return 5; /* SP_HK_TOP */
+	else if (intNo >= SP_AUD_TOP_START && intNo < SP_MISC_TOP_START)
+		return 6; /* SP_AUD_TOP */
+	else if (intNo >= SP_MISC_TOP_START && intNo < INT_ENUM_MAX)
+		return 7; /* SP_MISC_TOP */
+	return 99;
+}
+
+static unsigned int pmic_check_intNo(enum PMIC_IRQ_ENUM intNo,
+	unsigned int *spNo, unsigned int *sp_conNo, unsigned int *sp_irqNo)
+{
+	if (intNo >= INT_ENUM_MAX)
+		return 1;	/* fail intNo */
+
+	*spNo = get_spNo(intNo);
+	*sp_conNo = (intNo - sp_interrupts[*spNo].int_offset) / PMIC_INT_WIDTH;
+	*sp_irqNo = intNo % PMIC_INT_WIDTH;
+	if (sp_interrupts[*spNo].sp_irqs[*sp_conNo][*sp_irqNo].used == 0)
+		return 2;	/* fail intNo */
+	return 0;
+}
+
 /* PWRKEY Int Handler */
 void pwrkey_int_handler(void)
 {
@@ -308,6 +343,14 @@ static unsigned int vio18_oc_times;
 static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
 	char oc_str[30] = "";
+	unsigned int spNo, sp_conNo, sp_irqNo;
+	unsigned int times;
+
+	if (pmic_check_intNo(intNo, &spNo, &sp_conNo, &sp_irqNo)) {
+		pr_notice(PMICTAG "[%s] fail intNo=%d\n", __func__, intNo);
+		return;
+	}
+	times = sp_interrupts[spNo].sp_irqs[sp_conNo][sp_irqNo].times;
 
 	IRQLOG("[%s] int name=%s\n", __func__, int_name);
 	switch (intNo) {
@@ -337,6 +380,14 @@ static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 				oc_str,
 				"\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s",
 				int_name);
+			pmic_enable_interrupt(intNo, 0, "PMIC");
+			pr_notice("disable OC interrupt: %s\n", int_name);
+		}
+		break;
+	case INT_VLDO28_OC:
+		/* keep OC interrupt and keep tracking */
+		pr_notice(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
+		if (times >= 2) {
 			pmic_enable_interrupt(intNo, 0, "PMIC");
 			pr_notice("disable OC interrupt: %s\n", int_name);
 		}
@@ -415,42 +466,6 @@ irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 	wake_up_pmic();
 	return IRQ_HANDLED;
 }
-
-static unsigned int get_spNo(enum PMIC_IRQ_ENUM intNo)
-{
-	if (intNo >= SP_BUCK_TOP_START && intNo < SP_LDO_TOP_START)
-		return 0; /* SP_BUCK_TOP */
-	else if (intNo >= SP_LDO_TOP_START && intNo < SP_PSC_TOP_START)
-		return 1; /* SP_LDO_TOP */
-	else if (intNo >= SP_PSC_TOP_START && intNo < SP_SCK_TOP_START)
-		return 2; /* SP_PSC_TOP */
-	else if (intNo >= SP_SCK_TOP_START && intNo < SP_BM_TOP_START)
-		return 3; /* SP_SCK_TOP */
-	else if (intNo >= SP_BM_TOP_START && intNo < SP_HK_TOP_START)
-		return 4; /* SP_BM_TOP */
-	else if (intNo >= SP_HK_TOP_START && intNo < SP_AUD_TOP_START)
-		return 5; /* SP_HK_TOP */
-	else if (intNo >= SP_AUD_TOP_START && intNo < SP_MISC_TOP_START)
-		return 6; /* SP_AUD_TOP */
-	else if (intNo >= SP_MISC_TOP_START && intNo < INT_ENUM_MAX)
-		return 7; /* SP_MISC_TOP */
-	return 99;
-}
-
-static unsigned int pmic_check_intNo(enum PMIC_IRQ_ENUM intNo,
-	unsigned int *spNo, unsigned int *sp_conNo, unsigned int *sp_irqNo)
-{
-	if (intNo >= INT_ENUM_MAX)
-		return 1;	/* fail intNo */
-
-	*spNo = get_spNo(intNo);
-	*sp_conNo = (intNo - sp_interrupts[*spNo].int_offset) / PMIC_INT_WIDTH;
-	*sp_irqNo = intNo % PMIC_INT_WIDTH;
-	if (sp_interrupts[*spNo].sp_irqs[*sp_conNo][*sp_irqNo].used == 0)
-		return 2;	/* fail intNo */
-	return 0;
-}
-
 
 void pmic_enable_interrupt(enum PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 {
