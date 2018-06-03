@@ -34,6 +34,10 @@ void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctr
 
 	__spm_sync_pcm_flags(pwrctrl);
 
+	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_SET_ADDR, 1,
+			PMIC_RG_RTC_MCLK_PDN_MASK, PMIC_RG_RTC_MCLK_PDN_SHIFT);
+	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_SET_ADDR, 1,
+			PMIC_RG_RTC_32K_CK_PDN_MASK, PMIC_RG_RTC_32K_CK_PDN_SHIFT);
 }
 
 void spm_dpidle_post_process(void)
@@ -42,6 +46,11 @@ void spm_dpidle_post_process(void)
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #endif
+
+	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_CLR_ADDR, 1,
+			PMIC_RG_RTC_MCLK_PDN_MASK, PMIC_RG_RTC_MCLK_PDN_SHIFT);
+	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_CLR_ADDR, 1,
+			PMIC_RG_RTC_32K_CK_PDN_MASK, PMIC_RG_RTC_32K_CK_PDN_SHIFT);
 }
 
 void spm_deepidle_chip_init(void)
