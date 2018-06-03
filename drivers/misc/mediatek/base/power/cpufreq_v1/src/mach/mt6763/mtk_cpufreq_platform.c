@@ -578,11 +578,11 @@ int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
 	if (id == MT_CPU_DVFS_L) {
 #if 0
 		if (lv == CPU_LEVEL_2)
-			cpuhvfs_set_turbo_scale(2626 * 1000, turbo_v);
+			cpuhvfs_set_turbo_scale(2678 * 1000, turbo_v);
 		else
-			cpuhvfs_set_turbo_scale(2457 * 1000, turbo_v);
+			cpuhvfs_set_turbo_scale(2509 * 1000, turbo_v);
 #else
-		cpuhvfs_set_turbo_scale(2457 * 1000, turbo_v);
+		cpuhvfs_set_turbo_scale(2509 * 1000, turbo_v);
 #endif
 		return 1;
 	} else
