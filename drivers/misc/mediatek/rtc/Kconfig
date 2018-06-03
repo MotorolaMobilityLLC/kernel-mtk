@@ -3,4 +3,6 @@ config MTK_RTC
 	bool "MediaTek Real Time Clock Support"
 	default n
 	---help---
-	  MediaTek RTC driver
+	  A real-time clock (RTC) is a computer clock (most often
+	  in the form of an integrated circuit) that keeps track
+	  of the current time.

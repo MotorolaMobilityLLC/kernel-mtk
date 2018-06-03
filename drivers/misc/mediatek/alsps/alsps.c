@@ -13,7 +13,7 @@
 
 #include "inc/alsps.h"
 #include "inc/aal_control.h"
-struct alsps_context *alsps_context_obj = NULL;
+struct alsps_context *alsps_context_obj;
 struct platform_device *pltfm_dev;
 
 
@@ -40,7 +40,7 @@ int als_data_report(struct input_dev *dev, int value, int status)
 
 int ps_data_report(struct input_dev *dev, int value, int status)
 {
-	pr_warn("[ALS/PS]ps_data_report! %d, %d\n",value,status);
+	pr_notice("[ALS/PS]ps_data_report! %d, %d\n", value, status);
 	input_report_rel(dev, EVENT_TYPE_PS_VALUE, (value+1));
 	input_report_rel(dev, EVENT_TYPE_PS_STATUS, status);
 	input_sync(dev);
@@ -56,7 +56,7 @@ static void als_work_func(struct work_struct *work)
 	int err;
 
 	cxt  = alsps_context_obj;
-	if (NULL == cxt->als_data.get_data) {
+	if (cxt->als_data.get_data == NULL) {
 		ALSPS_ERR("alsps driver not register data path\n");
 		return;
 	}
@@ -78,7 +78,7 @@ static void als_work_func(struct work_struct *work)
 	if (true ==  cxt->is_als_first_data_after_enable) {
 		cxt->is_als_first_data_after_enable = false;
 		/* filter -1 value */
-		if (ALSPS_INVALID_VALUE == cxt->drv_data.als_data.values[0]) {
+		if (cxt->drv_data.als_data.values[0] == ALSPS_INVALID_VALUE) {
 			ALSPS_LOG(" read invalid data\n");
 			goto als_loop;
 		}
@@ -105,7 +105,7 @@ static void ps_work_func(struct work_struct *work)
 	int err = 0;
 
 	cxt  = alsps_context_obj;
-	if (NULL == cxt->ps_data.get_data) {
+	if (cxt->ps_data.get_data == NULL) {
 		ALSPS_ERR("alsps driver not register data path\n");
 		return;
 	}
@@ -128,14 +128,14 @@ static void ps_work_func(struct work_struct *work)
 	if (true ==  cxt->is_ps_first_data_after_enable) {
 		cxt->is_ps_first_data_after_enable = false;
 		/* filter -1 value */
-		if (ALSPS_INVALID_VALUE == cxt->drv_data.ps_data.values[0]) {
+		if (cxt->drv_data.ps_data.values[0] == ALSPS_INVALID_VALUE) {
 			ALSPS_LOG(" read invalid data\n");
 			goto ps_loop;
 		}
 	}
 
 	if (cxt->is_get_valid_ps_data_after_enable == false) {
-		if (ALSPS_INVALID_VALUE != cxt->drv_data.ps_data.values[0])
+		if (cxt->drv_data.ps_data.values[0] != ALSPS_INVALID_VALUE)
 			cxt->is_get_valid_ps_data_after_enable = true;
 	}
 
@@ -208,7 +208,7 @@ static int als_real_enable(int enable)
 	struct alsps_context *cxt = NULL;
 
 	cxt = alsps_context_obj;
-	if (1 == enable) {
+	if (enable == 1) {
 		if (true == cxt->is_als_active_data || true == cxt->is_als_active_nodata) {
 			err = cxt->als_ctl.enable_nodata(1);
 			if (err) {
@@ -223,7 +223,7 @@ static int als_real_enable(int enable)
 		ALSPS_LOG("alsps real enable\n");
 	}
 
-	if (0 == enable) {
+	if (enable == 0) {
 		if (false == cxt->is_als_active_data && false == cxt->is_als_active_nodata) {
 			ALSPS_LOG("AAL status is %d\n", aal_use);
 			if (aal_use == 0) {
@@ -244,12 +244,12 @@ static int als_enable_data(int enable)
 	struct alsps_context *cxt = NULL;
 
 	cxt = alsps_context_obj;
-	if (NULL  == cxt->als_ctl.open_report_data) {
+	if (cxt->als_ctl.open_report_data == NULL) {
 		ALSPS_ERR("no als control path\n");
 		return -1;
 	}
 
-	if (1 == enable) {
+	if (enable == 1) {
 		ALSPS_LOG("ALSPS enable data\n");
 		cxt->is_als_active_data = true;
 		cxt->is_als_first_data_after_enable = true;
@@ -265,7 +265,7 @@ static int als_enable_data(int enable)
 		}
 	}
 
-	if (0 == enable) {
+	if (enable == 0) {
 		ALSPS_LOG("ALSPS disable\n");
 		cxt->is_als_active_data = false;
 		cxt->als_ctl.open_report_data(0);
@@ -291,7 +291,7 @@ static int ps_real_enable(int enable)
 	struct alsps_context *cxt = NULL;
 
 	cxt = alsps_context_obj;
-	if (1 == enable) {
+	if (enable == 1) {
 		if (true == cxt->is_ps_active_data || true == cxt->is_ps_active_nodata) {
 			err = cxt->ps_ctl.enable_nodata(1);
 			if (err) {
@@ -306,7 +306,7 @@ static int ps_real_enable(int enable)
 		}
 	}
 
-	if (0 == enable) {
+	if (enable == 0) {
 		if (false == cxt->is_ps_active_data && false == cxt->is_ps_active_nodata) {
 			err = cxt->ps_ctl.enable_nodata(0);
 			if (err)
@@ -323,12 +323,12 @@ static int ps_enable_data(int enable)
 	struct alsps_context *cxt = NULL;
 
 	cxt = alsps_context_obj;
-	if (NULL == cxt->ps_ctl.open_report_data) {
+	if (cxt->ps_ctl.open_report_data == NULL) {
 		ALSPS_ERR("no ps control path\n");
 		return -1;
 	}
 
-	if (1 == enable) {
+	if (enable == 1) {
 		ALSPS_LOG("PS enable data\n");
 		cxt->is_ps_active_data = true;
 		cxt->is_ps_first_data_after_enable = true;
@@ -343,7 +343,7 @@ static int ps_enable_data(int enable)
 		}
 	}
 
-	if (0 == enable) {
+	if (enable == 0) {
 		ALSPS_LOG("PS disable\n");
 		cxt->is_ps_active_data = false;
 		cxt->ps_ctl.open_report_data(0);
@@ -405,14 +405,14 @@ static ssize_t als_store_delay(struct device *dev, struct device_attribute *attr
 
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 	cxt = alsps_context_obj;
-	if (NULL == cxt->als_ctl.set_delay) {
+	if (cxt->als_ctl.set_delay == NULL) {
 		ALSPS_LOG("als_ctl set_delay NULL\n");
 		mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 		return count;
 	}
 
 	ret = kstrtoint(buf, 10, &delay);
-	if (0 != ret) {
+	if (ret != 0) {
 		ALSPS_ERR("invalid format!!\n");
 		mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 		return count;
@@ -554,14 +554,14 @@ static ssize_t ps_store_delay(struct device *dev, struct device_attribute *attr,
 
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 	cxt = alsps_context_obj;
-	if (NULL == cxt->ps_ctl.set_delay) {
+	if (cxt->ps_ctl.set_delay == NULL) {
 		ALSPS_LOG("ps_ctl set_delay NULL\n");
 		mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 		return count;
 	}
 
 	ret = kstrtoint(buf, 10, &delay);
-	if (0 != ret) {
+	if (ret != 0) {
 		ALSPS_ERR("invalid format!!\n");
 		mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 		return count;
@@ -703,10 +703,10 @@ static int alsps_real_driver_init(void)
 	ALSPS_LOG(" alsps_real_driver_init +\n");
 	for (i = 0; i < MAX_CHOOSE_ALSPS_NUM; i++) {
 		ALSPS_LOG("alsps_real_driver_init i=%d\n", i);
-		if (0 != alsps_init_list[i]) {
+		if (alsps_init_list[i] != 0) {
 			ALSPS_LOG(" alsps try to init driver %s\n", alsps_init_list[i]->name);
 			err = alsps_init_list[i]->init();
-			if (0 == err) {
+			if (err == 0) {
 				ALSPS_LOG(" alsps real driver %s probe ok\n", alsps_init_list[i]->name);
 				break;
 			}
@@ -733,13 +733,13 @@ int alsps_driver_add(struct alsps_init_info *obj)
 	}
 
 	for (i = 0; i < MAX_CHOOSE_ALSPS_NUM; i++) {
-		if ((i == 0) && (NULL == alsps_init_list[0])) {
+		if ((i == 0) && (alsps_init_list[0] == NULL)) {
 			ALSPS_LOG("register alsps driver for the first time\n");
 			if (platform_driver_register(&als_ps_driver))
 				ALSPS_ERR("failed to register alsps driver already exist\n");
 		}
 
-		if (NULL == alsps_init_list[i]) {
+		if (alsps_init_list[i] == NULL) {
 			obj->platform_diver_addr = &als_ps_driver;
 			alsps_init_list[i] = obj;
 			break;
@@ -766,7 +766,7 @@ int ps_report_interrupt_data(int value)
 	cxt = alsps_context_obj;
 	pr_warn("[ALS/PS] [%s]:value=%d\n", __func__, value);
 	if (cxt->is_get_valid_ps_data_after_enable == false) {
-		if (ALSPS_INVALID_VALUE != value) {
+		if (value != ALSPS_INVALID_VALUE) {
 			cxt->is_get_valid_ps_data_after_enable = true;
 			smp_mb();/*for memory barriier*/
 			del_timer_sync(&cxt->timer_ps);
@@ -803,7 +803,7 @@ static int alsps_input_init(struct alsps_context *cxt)
 	int err = 0;
 
 	dev = input_allocate_device();
-	if (NULL == dev)
+	if (dev == NULL)
 		return -ENOMEM;
 
 	dev->name = ALSPS_INPUTDEV_NAME;
@@ -865,7 +865,7 @@ int als_register_data_path(struct als_data_path *data)
 	cxt->als_data.vender_div = data->vender_div;
 	cxt->als_data.als_get_raw_data = data->als_get_raw_data;
 	ALSPS_LOG("alsps register data path vender_div: %d\n", cxt->als_data.vender_div);
-	if (NULL == cxt->als_data.get_data) {
+	if (cxt->als_data.get_data == NULL) {
 		ALSPS_LOG("als register data path fail\n");
 		return -1;
 	}
@@ -881,7 +881,7 @@ int ps_register_data_path(struct ps_data_path *data)
 	cxt->ps_data.vender_div = data->vender_div;
 	cxt->ps_data.ps_get_raw_data = data->ps_get_raw_data;
 	ALSPS_LOG("alsps register data path vender_div: %d\n", cxt->ps_data.vender_div);
-	if (NULL == cxt->ps_data.get_data) {
+	if (cxt->ps_data.get_data == NULL) {
 		ALSPS_LOG("ps register data path fail\n");
 		return -1;
 	}

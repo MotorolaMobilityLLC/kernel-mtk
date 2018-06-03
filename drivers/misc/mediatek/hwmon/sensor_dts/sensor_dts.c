@@ -202,17 +202,17 @@ struct rgbw_hw *get_rgbw_dts_func(const char *name, struct rgbw_hw *hw)
 
 	node = of_find_compatible_node(NULL, NULL, name);
 	if (node) {
-		ret = of_property_read_u32_array(node , "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
+		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
 	if (ret == 0)
 		hw->i2c_num	=	i2c_num[0];
 
-	ret = of_property_read_u32_array(node , "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
+	ret = of_property_read_u32_array(node, "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
 	if (ret == 0) {
 		for (i = 0; i < C_CUST_I2C_ADDR_NUM; i++)
 			hw->i2c_addr[i]   = i2c_addr[i];
 	}
 
-	ret = of_property_read_u32_array(node , "power_id", power_id, ARRAY_SIZE(power_id));
+	ret = of_property_read_u32_array(node, "power_id", power_id, ARRAY_SIZE(power_id));
 	if (ret == 0) {
 		if (power_id[0] == 0xffff)
 			hw->power_id = -1;
@@ -220,11 +220,11 @@ struct rgbw_hw *get_rgbw_dts_func(const char *name, struct rgbw_hw *hw)
 			hw->power_id	=	power_id[0];
 	}
 
-	ret = of_property_read_u32_array(node , "power_vol", power_vol, ARRAY_SIZE(power_vol));
+	ret = of_property_read_u32_array(node, "power_vol", power_vol, ARRAY_SIZE(power_vol));
 	if (ret == 0)
 		hw->power_vol	=	power_vol[0];
 
-	ret = of_property_read_u32_array(node , "is_batch_supported", is_batch_supported,
+	ret = of_property_read_u32_array(node, "is_batch_supported", is_batch_supported,
 		ARRAY_SIZE(is_batch_supported));
 	if (ret == 0)
 		hw->is_batch_supported		 = is_batch_supported[0];

@@ -33,8 +33,9 @@
 #define CALIBRATION_DATA_SIZE	26
 
 /*! \name AK09911 register address
-\anchor AK09911_REG
-Defines a register address of the AK09911.*/
+*\anchor AK09911_REG
+*Defines a register address of the AK09911.
+*/
 /*! @{*/
 /* Device specific constant values */
 #define AK09911_REG_WIA1			0x00
@@ -55,15 +56,17 @@ Defines a register address of the AK09911.*/
 #define AK09911_REG_CNTL3			0x32
 
 /*! \name AK09911 fuse-rom address
-\anchor AK09911_FUSE
-Defines a read-only address of the fuse ROM of the AK09911.*/
+*\anchor AK09911_FUSE
+*Defines a read-only address of the fuse ROM of the AK09911.
+*/
 #define AK09911_FUSE_ASAX			0x60
 #define AK09911_FUSE_ASAY			0x61
 #define AK09911_FUSE_ASAZ			0x62
 
 /*! \name AK09911 operation mode
- \anchor AK09911_Mode
- Defines an operation mode of the AK09911.*/
+* \anchor AK09911_Mode
+* Defines an operation mode of the AK09911.
+*/
 #define AK09911_MODE_SNG_MEASURE	0x01
 #define AK09911_MODE_SELF_TEST		0x10
 #define AK09911_MODE_FUSE_ACCESS	0x1F
@@ -167,22 +170,22 @@ Defines a read-only address of the fuse ROM of the AK09911.*/
 #define DBGFLAG      DBG_LEVEL2
 
 /*
-//sensors_io.h need modify@junger
-#define AKMIO                   0xA1
-
+*sensors_io.h need modify@junger
+*#define AKMIO                   0xA1
+*
 * IOCTLs for AKM library *
-#define ECS_IOCTL_READ              _IOWR(AKMIO, 0x01, char*)
-#define ECS_IOCTL_WRITE             _IOW(AKMIO, 0x02, char*)
-#define ECS_IOCTL_SET_MODE          _IOW(AKMIO, 0x03, short)
-#define ECS_IOCTL_GETDATA           _IOR(AKMIO, 0x04, char[SENSOR_DATA_SIZE])
-#define ECS_IOCTL_SET_YPR           _IOW(AKMIO, 0x05, int[YPR_DATA_SIZE])
-#define ECS_IOCTL_GET_OPEN_STATUS   _IOR(AKMIO, 0x06, int)
-#define ECS_IOCTL_GET_CLOSE_STATUS  _IOR(AKMIO, 0x07, int)
-#define ECS_IOCTL_GET_DELAY         _IOR(AKMIO, 0x08, long long int[AKM_NUM_SENSORS])
-#define ECS_IOCTL_GET_LAYOUT        _IOR(AKMIO, 0x09, char)
-#define ECS_IOCTL_GET_OUTBIT        _IOR(AKMIO, 0x0B, char)
-#define ECS_IOCTL_RESET             _IO(AKMIO, 0x0C)
-#define ECS_IOCTL_GET_ACCEL         _IOR(AKMIO, 0x30, short[3])
+*#define ECS_IOCTL_READ              _IOWR(AKMIO, 0x01, char*)
+*#define ECS_IOCTL_WRITE             _IOW(AKMIO, 0x02, char*)
+*#define ECS_IOCTL_SET_MODE          _IOW(AKMIO, 0x03, short)
+*#define ECS_IOCTL_GETDATA           _IOR(AKMIO, 0x04, char[SENSOR_DATA_SIZE])
+*#define ECS_IOCTL_SET_YPR           _IOW(AKMIO, 0x05, int[YPR_DATA_SIZE])
+*#define ECS_IOCTL_GET_OPEN_STATUS   _IOR(AKMIO, 0x06, int)
+*#define ECS_IOCTL_GET_CLOSE_STATUS  _IOR(AKMIO, 0x07, int)
+*#define ECS_IOCTL_GET_DELAY         _IOR(AKMIO, 0x08, long long int[AKM_NUM_SENSORS])
+*#define ECS_IOCTL_GET_LAYOUT        _IOR(AKMIO, 0x09, char)
+*#define ECS_IOCTL_GET_OUTBIT        _IOR(AKMIO, 0x0B, char)
+*#define ECS_IOCTL_RESET             _IO(AKMIO, 0x0C)
+*#define ECS_IOCTL_GET_ACCEL         _IOR(AKMIO, 0x30, short[3])
 */
 
 /* IOCTLs for Msensor misc. device library */

@@ -26,13 +26,13 @@
 #define ACCELHUB_DATA_LEN        6
 #define ACCELHUB_DEV_NAME        "accel_hub_pl"	/* name must different with gyro accelhub */
 /* dadadadada */
-typedef enum {
+enum ACCELHUB_TRC {
 	ACCELHUB_TRC_FILTER = 0x01,
 	ACCELHUB_TRC_RAWDATA = 0x02,
 	ACCELHUB_TRC_IOCTL = 0x04,
 	ACCELHUB_TRC_CALI = 0X08,
 	ACCELHUB_TRC_INFO = 0X10,
-} ACCELHUB_TRC;
+};
 struct accelhub_ipi_data {
 	/*misc */
 	atomic_t trace;
@@ -190,7 +190,7 @@ static int accelhub_ReadChipInfo(char *buf, int bufsize)
 
 	memset(databuf, 0, sizeof(u8) * 10);
 
-	if ((NULL == buf) || (bufsize <= 30))
+	if ((buf == NULL) || (bufsize <= 30))
 		return -1;
 
 	sprintf(buf, "ACCELHUB Chip");
@@ -206,6 +206,7 @@ static int accelhub_ReadSensorData(char *buf, int bufsize)
 	int acc[ACCELHUB_AXES_NUM];
 	int err = 0;
 	int status = 0;
+
 	if (!atomic_read(&obj->scp_init_done)) {
 		GSE_ERR("sensor hub has not been ready!!\n");
 		return -1;
@@ -213,7 +214,7 @@ static int accelhub_ReadSensorData(char *buf, int bufsize)
 	if (atomic_read(&obj->suspend))
 		return -3;
 
-	if (NULL == buf)
+	if (buf == NULL)
 		return -1;
 	err = sensor_get_data_from_hub(ID_ACCELEROMETER, &data);
 	if (err < 0) {
@@ -226,8 +227,10 @@ static int accelhub_ReadSensorData(char *buf, int bufsize)
 	acc[ACCELHUB_AXIS_Y] = data.accelerometer_t.y;
 	acc[ACCELHUB_AXIS_Z] = data.accelerometer_t.z;
 	status				 = data.accelerometer_t.status;
-	/*GSE_ERR("accelhub_ReadSensorData: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d, status:%d!\n", time_stamp, time_stamp_gpt,
-		acc[ACCELHUB_AXIS_X], acc[ACCELHUB_AXIS_Y], acc[ACCELHUB_AXIS_Z], status);*/
+	/*GSE_ERR("accelhub_ReadSensorData: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d, status:%d!\n",
+	*	time_stamp, time_stamp_gpt,
+	*	acc[ACCELHUB_AXIS_X], acc[ACCELHUB_AXIS_Y], acc[ACCELHUB_AXIS_Z], status);
+	*/
 
 	sprintf(buf, "%04x %04x %04x %04x", acc[ACCELHUB_AXIS_X], acc[ACCELHUB_AXIS_Y], acc[ACCELHUB_AXIS_Z], status);
 	if (atomic_read(&obj->trace) & ACCELHUB_TRC_IOCTL)
@@ -296,7 +299,7 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 		GSE_ERR("sensor hub has not been ready!!\n");
 		return 0;
 	}
-	if (1 == sscanf(buf, "0x%x", &trace)) {
+	if (sscanf(buf, "0x%x", &trace) == 1) {
 		atomic_set(&obj->trace, trace);
 		res = sensor_set_cmd_to_hub(ID_ACCELEROMETER, CUST_ACTION_SET_TRACE, &trace);
 		if (res < 0) {
@@ -327,7 +330,7 @@ static ssize_t store_chip_orientation(struct device_driver *ddri, const char *bu
 	int _nDirection = 0, ret = 0;
 	struct accelhub_ipi_data *obj = obj_ipi_data;
 
-	if (NULL == obj)
+	if (obj == NULL)
 		return 0;
 	if (!atomic_read(&obj->scp_init_done)) {
 		GSE_ERR("sensor hub has not been ready!!\n");
@@ -368,14 +371,14 @@ static struct driver_attribute *accelhub_attr_list[] = {
 static int accelhub_create_attr(struct device_driver *driver)
 {
 	int idx, err = 0;
-	int num = (int)(sizeof(accelhub_attr_list) / sizeof(accelhub_attr_list[0]));
+	int num = ARRAY_SIZE(accelhub_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
 
 	for (idx = 0; idx < num; idx++) {
 		err = driver_create_file(driver, accelhub_attr_list[idx]);
-		if (0 != err) {
+		if (err != 0) {
 			GSE_ERR("driver_create_file (%s) = %d\n", accelhub_attr_list[idx]->attr.name, err);
 			break;
 		}
@@ -386,7 +389,7 @@ static int accelhub_create_attr(struct device_driver *driver)
 static int accelhub_delete_attr(struct device_driver *driver)
 {
 	int idx, err = 0;
-	int num = (int)(sizeof(accelhub_attr_list) / sizeof(accelhub_attr_list[0]));
+	int num = ARRAY_SIZE(accelhub_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
@@ -405,7 +408,7 @@ static void scp_init_work_done(struct work_struct *work)
 	if (atomic_read(&obj->scp_init_done) == 0) {
 		GSE_LOG("scp is not ready to send cmd\n");
 	} else {
-		if (0 == atomic_read(&obj->first_ready_after_boot)) {
+		if (atomic_read(&obj->first_ready_after_boot) == 0) {
 			atomic_set(&obj->first_ready_after_boot, 1);
 		} else {
 			err = accelhub_WriteCalibration_scp(obj->cali_sw);
@@ -466,8 +469,8 @@ static long accelhub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 	struct SENSOR_DATA sensor_data;
 	long err = 0;
 	int cali[3];
-	static int first_time_enable = 0;
-	
+	static int first_time_enable;
+
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
 	else if (_IOC_DIR(cmd) & _IOC_WRITE)
@@ -511,7 +514,7 @@ static long accelhub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 				GSE_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n", ID_ACCELEROMETER,
 					CUST_ACTION_SET_TRACE);
 				return 0;
-			}		
+			}
 			err = accelhub_SetPowerMode(true);
 			if (err < 0) {
 				GSE_ERR("accelhub_SetPowerMode fail\n");
@@ -727,7 +730,8 @@ static int gsensor_get_data(int *x, int *y, int *z, int *status)
 		GSE_ERR("accelhub_ReadSensorData fail!!\n");
 		return -1;
 	}
-	sscanf(buff, "%x %x %x %x", x, y, z, status);
+	if (sscanf(buff, "%x %x %x %x", x, y, z, status) != 4)
+		GSE_ERR("Parsing fail, %s\n", buff);
 
 	if (atomic_read(&obj->trace) & ACCELHUB_TRC_RAWDATA)
 		GSE_ERR("x = %d, y = %d, z = %d\n", *x, *y, *z);
@@ -861,7 +865,6 @@ static int accelhub_suspend(struct platform_device *pdev, pm_message_t msg)
 
 static int accelhub_resume(struct platform_device *pdev)
 {
-	
 	return 0;
 }
 

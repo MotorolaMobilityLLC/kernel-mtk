@@ -70,10 +70,10 @@ static void mag_work_func(struct work_struct *work)
 		if (!(cxt->active_data_sensor&(0x01<<i)))
 			continue;
 
-		if (ID_M_V_MAGNETIC == i) {
+		if (i == ID_M_V_MAGNETIC) {
 			err = cxt->mag_dev_data.get_data_m(&x, &y, &z, &status);
 			if (err) {
-				MAG_ERR("get %d data fails!!\n" , i);
+				MAG_ERR("get %d data fails!!\n", i);
 				return;
 			}
 			cxt->drv_data[i].mag_data.values[0] = x;
@@ -86,9 +86,9 @@ static void mag_work_func(struct work_struct *work)
 				m_pre_ns = cur_ns;
 				cxt->is_first_data_after_enable_mag = false;
 				/* filter -1 value */
-				if (MAG_INVALID_VALUE == cxt->drv_data[i].mag_data.values[0] ||
-					MAG_INVALID_VALUE == cxt->drv_data[i].mag_data.values[1] ||
-					MAG_INVALID_VALUE == cxt->drv_data[i].mag_data.values[2]) {
+				if (cxt->drv_data[i].mag_data.values[0] == MAG_INVALID_VALUE ||
+					cxt->drv_data[i].mag_data.values[1] == MAG_INVALID_VALUE ||
+					cxt->drv_data[i].mag_data.values[2] == MAG_INVALID_VALUE) {
 					MAG_LOG(" read invalid data\n");
 					continue;
 				}
@@ -110,10 +110,10 @@ static void mag_work_func(struct work_struct *work)
 		/* cxt->drv_data[i].mag_data.values[1],cxt->drv_data[i].mag_data.values[2]); */
 		}
 
-		if (ID_M_V_ORIENTATION == i) {
+		if (i == ID_M_V_ORIENTATION) {
 			err = cxt->mag_dev_data.get_data_o(&x, &y, &z, &status);
 			if (err) {
-				MAG_ERR("get %d data fails!!\n" , i);
+				MAG_ERR("get %d data fails!!\n", i);
 				return;
 			}
 			cxt->drv_data[i].mag_data.values[0] = x;
@@ -126,9 +126,9 @@ static void mag_work_func(struct work_struct *work)
 				o_pre_ns = cur_ns;
 				cxt->is_first_data_after_enable_ori = false;
 				/* filter -1 value */
-				if (MAG_INVALID_VALUE == cxt->drv_data[i].mag_data.values[0] ||
-				MAG_INVALID_VALUE == cxt->drv_data[i].mag_data.values[1] ||
-				MAG_INVALID_VALUE == cxt->drv_data[i].mag_data.values[2]) {
+				if (cxt->drv_data[i].mag_data.values[0] == MAG_INVALID_VALUE ||
+				cxt->drv_data[i].mag_data.values[1] == MAG_INVALID_VALUE ||
+				cxt->drv_data[i].mag_data.values[2] == MAG_INVALID_VALUE) {
 					MAG_LOG(" read invalid data\n");
 					continue;
 				}
@@ -206,21 +206,21 @@ static int mag_enable_data(int handle, int enable)
 		return -1;
 	}
 
-	if (1 == enable) {
+	if (enable == 1) {
 		MAG_LOG("MAG(%d) enable\n", handle);
 		cxt->active_data_sensor |= 1<<handle;
-		if (ID_M_V_ORIENTATION == handle) {
+		if (handle == ID_M_V_ORIENTATION) {
 			cxt->is_first_data_after_enable_ori = true;
 			cxt->mag_ctl.o_enable(1);
 			cxt->mag_ctl.o_open_report_data(1);
 		}
-		if (ID_M_V_MAGNETIC == handle) {
+		if (handle == ID_M_V_MAGNETIC) {
 			cxt->is_first_data_after_enable_mag = true;
 			cxt->mag_ctl.m_enable(1);
 			cxt->mag_ctl.m_open_report_data(1);
 		}
 
-		if ((0 != cxt->active_data_sensor) && (false == cxt->is_polling_run) &&
+		if ((cxt->active_data_sensor != 0) && (cxt->is_polling_run == false) &&
 			(false == cxt->is_batch_enable)) {
 			if (false == cxt->mag_ctl.is_report_input_direct) {
 				MAG_LOG("MAG(%d)  mod timer\n", handle);
@@ -230,19 +230,19 @@ static int mag_enable_data(int handle, int enable)
 		}
 	}
 
-	if (0 == enable) {
+	if (enable == 0) {
 		MAG_LOG("MAG(%d) disable\n", handle);
 		cxt->active_data_sensor &= ~(1<<handle);
-		if (ID_M_V_ORIENTATION == handle) {
+		if (handle == ID_M_V_ORIENTATION) {
 			cxt->mag_ctl.o_enable(0);
 			cxt->mag_ctl.o_open_report_data(0);
 		}
-		if (ID_M_V_MAGNETIC == handle) {
+		if (handle == ID_M_V_MAGNETIC) {
 			cxt->mag_ctl.m_enable(0);
 			cxt->mag_ctl.m_open_report_data(0);
 		}
 
-		if (0 == cxt->active_data_sensor && true == cxt->is_polling_run) {
+		if (cxt->active_data_sensor == 0 && cxt->is_polling_run == true) {
 			if (false == cxt->mag_ctl.is_report_input_direct) {
 				MAG_LOG("MAG(%d)  del timer\n", handle);
 				cxt->is_polling_run = false;
@@ -280,7 +280,7 @@ static ssize_t mag_store_oactive(struct device *dev, struct device_attribute *at
 	MAG_LOG("mag_store_oactive buf=%s\n", buf);
 	mutex_lock(&mag_context_obj->mag_op_mutex);
 	cxt = mag_context_obj;
-	if (NULL == cxt->mag_ctl.o_enable) {
+	if (cxt->mag_ctl.o_enable == NULL) {
 		mutex_unlock(&mag_context_obj->mag_op_mutex);
 		MAG_LOG("mag_ctl o-enable NULL\n");
 		return count;
@@ -318,7 +318,7 @@ static ssize_t mag_store_active(struct device *dev, struct device_attribute *att
 	MAG_LOG("mag_store_active buf=%s\n", buf);
 	mutex_lock(&mag_context_obj->mag_op_mutex);
 	cxt = mag_context_obj;
-	if (NULL == cxt->mag_ctl.m_enable) {
+	if (cxt->mag_ctl.m_enable == NULL) {
 		mutex_unlock(&mag_context_obj->mag_op_mutex);
 		MAG_LOG("mag_ctl path is NULL\n");
 		return count;
@@ -358,7 +358,7 @@ static ssize_t mag_store_odelay(struct device *dev, struct device_attribute *att
 
 	mutex_lock(&mag_context_obj->mag_op_mutex);
 	cxt = mag_context_obj;
-	if (NULL == cxt->mag_ctl.o_set_delay) {
+	if (cxt->mag_ctl.o_set_delay == NULL) {
 		mutex_unlock(&mag_context_obj->mag_op_mutex);
 		MAG_LOG("mag_ctl o_delay NULL\n");
 		return count;
@@ -402,7 +402,7 @@ static ssize_t mag_store_delay(struct device *dev, struct device_attribute *attr
 
 	mutex_lock(&mag_context_obj->mag_op_mutex);
 	cxt = mag_context_obj;
-	if (NULL == cxt->mag_ctl.m_set_delay) {
+	if (cxt->mag_ctl.m_set_delay == NULL) {
 		mutex_unlock(&mag_context_obj->mag_op_mutex);
 		MAG_LOG("mag_ctl m_delay NULL\n");
 		return count;
@@ -600,7 +600,7 @@ int mag_attach(int sensor, struct mag_drv_obj *obj)
 	}
 
 	memcpy(mag_context_obj->drv_obj[sensor], obj, sizeof(*obj));
-	if (NULL == mag_context_obj->drv_obj[sensor]) {
+	if (mag_context_obj->drv_obj[sensor] == NULL) {
 		err =  -1;
 		MAG_ERR(" mag attatch fail\n");
 	}
@@ -649,10 +649,10 @@ static int mag_real_driver_init(void)
 	MAG_LOG(" mag_real_driver_init +\n");
 	for (i = 0; i < MAX_CHOOSE_G_NUM; i++) {
 		MAG_LOG(" i=%d\n", i);
-		if (0 != msensor_init_list[i]) {
+		if (msensor_init_list[i] != 0) {
 			MAG_LOG(" mag try to init driver %s\n", msensor_init_list[i]->name);
 			err = msensor_init_list[i]->init();
-			if (0 == err) {
+			if (err == 0) {
 				MAG_LOG(" mag real driver %s probe ok\n", msensor_init_list[i]->name);
 				break;
 			}
@@ -678,12 +678,12 @@ int mag_driver_add(struct mag_init_info *obj)
 	}
 
 	for (i = 0; i < MAX_CHOOSE_G_NUM; i++) {
-		if ((i == 0) && (NULL == msensor_init_list[0])) {
+		if ((i == 0) && (msensor_init_list[0]) == NULL) {
 			MAG_LOG("register mensor driver for the first time\n");
 			if (platform_driver_register(&msensor_driver))
 				MAG_ERR("failed to register msensor driver already exist\n");
 		}
-		if (NULL == msensor_init_list[i]) {
+		if (msensor_init_list[i] == NULL) {
 			obj->platform_diver_addr = &msensor_driver;
 			msensor_init_list[i] = obj;
 			break;
@@ -715,13 +715,13 @@ static int mag_misc_init(struct mag_context *cxt)
 }
 
 /*
-static void mag_input_destroy(struct mag_context *cxt)
-{
-	struct input_dev *dev = cxt->idev;
-
-	input_unregister_device(dev);
-	input_free_device(dev);
-}
+*static void mag_input_destroy(struct mag_context *cxt)
+*{
+*	struct input_dev *dev = cxt->idev;
+*
+*	input_unregister_device(dev);
+*	input_free_device(dev);
+*}
 */
 
 static int mag_input_init(struct mag_context *cxt)
@@ -730,7 +730,7 @@ static int mag_input_init(struct mag_context *cxt)
 	int err = 0;
 
 	dev = input_allocate_device();
-	if (NULL == dev)
+	if (dev == NULL)
 		return -ENOMEM;
 
 	dev->name = MAG_INPUTDEV_NAME;
@@ -907,7 +907,7 @@ int mag_data_report(enum MAG_TYPE type, int x, int y, int z, int status, int64_t
 		check_abnormal_data(x, y, z, status);
 
 	cxt = mag_context_obj;
-	if (MAGNETIC == type) {
+	if (type == MAGNETIC) {
 		input_report_abs(cxt->idev, EVENT_TYPE_MAGEL_STATUS, status);
 		input_report_abs(cxt->idev, EVENT_TYPE_MAGEL_X, x);
 		input_report_abs(cxt->idev, EVENT_TYPE_MAGEL_Y, y);
@@ -918,7 +918,7 @@ int mag_data_report(enum MAG_TYPE type, int x, int y, int z, int status, int64_t
 		input_sync(cxt->idev);
 	}
 
-	if (ORIENTATION == type) {
+	if (type == ORIENTATION) {
 		input_report_abs(cxt->idev, EVENT_TYPE_O_STATUS, status);
 		input_report_abs(cxt->idev, EVENT_TYPE_O_X, x);
 		input_report_abs(cxt->idev, EVENT_TYPE_O_Y, y);

@@ -86,7 +86,7 @@ long alspshub_read_ps(u8 *ps)
 	long res;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 	struct data_unit_t data_t;
-	
+
 	res = sensor_get_data_from_hub(ID_PROXIMITY, &data_t);
 	if (res < 0) {
 		*ps = -1;
@@ -137,7 +137,7 @@ static ssize_t alspshub_store_trace(struct device_driver *ddri, const char *buf,
 		return 0;
 	}
 
-	if (1 == sscanf(buf, "0x%x", &trace)) {
+	if (sscanf(buf, "0x%x", &trace) == 1) {
 		atomic_set(&obj->trace, trace);
 		res = sensor_set_cmd_to_hub(ID_PROXIMITY, CUST_ACTION_SET_TRACE, &trace);
 		if (res < 0) {
@@ -240,7 +240,7 @@ static struct driver_attribute *alspshub_attr_list[] = {
 static int alspshub_create_attr(struct device_driver *driver)
 {
 	int idx = 0, err = 0;
-	int num = (int)(sizeof(alspshub_attr_list) / sizeof(alspshub_attr_list[0]));
+	int num = ARRAY_SIZE(alspshub_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
@@ -258,7 +258,7 @@ static int alspshub_create_attr(struct device_driver *driver)
 static int alspshub_delete_attr(struct device_driver *driver)
 {
 	int idx = 0, err = 0;
-	int num = (int)(sizeof(alspshub_attr_list) / sizeof(alspshub_attr_list[0]));
+	int num = ARRAY_SIZE(alspshub_attr_list);
 
 	if (!driver)
 		return -EINVAL;
@@ -274,10 +274,10 @@ static void alspshub_init_done_work(struct work_struct *work)
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 	int err = 0;
 
-	if (atomic_read(&obj->scp_init_done) == 0) {
-			APS_ERR("wait for nvram to set calibration\n");
-	} else {
-		if (0 == atomic_read(&obj->first_ready_after_boot)) {
+	if (atomic_read(&obj->scp_init_done) == 0)
+		APS_ERR("wait for nvram to set calibration\n");
+	else {
+		if (atomic_read(&obj->first_ready_after_boot) == 0) {
 			atomic_set(&obj->first_ready_after_boot, 1);
 		} else {
 			err = sensor_set_cmd_to_hub(ID_PROXIMITY, CUST_ACTION_SET_CALI, &obj->ps_cali);
@@ -304,7 +304,8 @@ static int ps_recv_interrupt_ipidata(void *data, unsigned int len)
 	if (!obj)
 		return -1;
 
-	APS_ERR("len = %d, type = %d, action = %d, event = %d\n", len, rsp->notify_rsp.sensorType, rsp->notify_rsp.action,
+	APS_ERR("len = %d, type = %d, action = %d, event = %d\n", len,
+		rsp->notify_rsp.sensorType, rsp->notify_rsp.action,
 		rsp->notify_rsp.event);
 
 	switch (rsp->notify_rsp.action) {
@@ -736,7 +737,8 @@ static int als_get_data(int *value, int *status)
 			*value = data.light;
 
 			/*APS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, light: %d!\n",
-				time_stamp, time_stamp_gpt, *value);*/
+			*	time_stamp, time_stamp_gpt, *value);
+			*/
 			*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 		}
 
