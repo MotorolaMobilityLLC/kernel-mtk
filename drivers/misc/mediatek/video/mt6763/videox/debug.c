@@ -215,7 +215,7 @@ static int test_alloc_buffer(size_t size, struct test_buf_info *buf_info)
 		ret = alloc_buffer_from_dma(size, buf_info);
 
 	if (ret)
-		DISPERR("error to alloc buffer size = %lu\n", size);
+		DISPERR("error to alloc buffer size = %lu\n", (unsigned long)size);
 	return ret;
 }
 
@@ -242,7 +242,7 @@ static int primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 
 	DISPMSG("%s: layer_num=%u,en=0x%x,w=%d,h=%d,fmt=%s,frame_num=%d,vsync=%d, size=%lu\n",
 		__func__, layer_num, layer_en_mask,
-		w, h, unified_color_fmt_name(ufmt), frame_num, vsync_num, size);
+		w, h, unified_color_fmt_name(ufmt), frame_num, vsync_num, (unsigned long)size);
 
 	if (layer_num > PRIMARY_SESSION_INPUT_LAYER_COUNT)
 		return -EINVAL;

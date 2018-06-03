@@ -621,7 +621,7 @@ static int __init disp_probe_1(void)
 		if (ddp_get_module_pa(i) != res.start)
 			DDPERR("[ERR]DT, i=%d, module=%s, map_addr=%p, reg_pa=0x%lx!=0x%pa\n",
 			       i, ddp_get_module_name(i), (void *)ddp_get_module_va(i),
-			       ddp_get_module_pa(i), (void *)res.start);
+			       ddp_get_module_pa(i), (void *)(uintptr_t)res.start);
 
 		/* get IRQ ID and request IRQ */
 		irq = irq_of_parse_and_map(node, 0);
