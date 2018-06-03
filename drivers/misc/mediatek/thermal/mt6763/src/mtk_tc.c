@@ -67,8 +67,8 @@
  */
 
 /*
- * Bank0: MP0 (CPU_L)	(TS_MCU1)
- * Bank1: MP1 (CPU_LL)	(TS_MCU2)
+ * Bank0: MP0 (CPU_LL)	(TS_MCU1)
+ * Bank1: MP1 (CPU_L)	(TS_MCU2)
  * Bank2: CCI			(TS_MCU1 + TS_MCU2)
  * Bank3: GPU			(TS_MCU3)
  * Bank4: SoC			(TS_MCU4 + TS_MCU5)
@@ -88,7 +88,7 @@ int tscpu_ts_temp_r[TS_ENUM_MAX];
 */
 struct thermal_controller tscpu_g_tc[THERMAL_CONTROLLER_NUM] = {
 	[0] = {
-		.ts = {TS_MCU1, TS_MCU2, TS_MCU3},
+		.ts = {TS_MCU2, TS_MCU1, TS_MCU3},
 		.ts_number = 3,
 		.tc_offset = 0x0,
 		.tc_speed = {
@@ -663,7 +663,7 @@ int get_immediate_cpuLL_wrap(void)
 {
 	int curr_temp;
 
-	curr_temp = tscpu_ts_temp[TS_MCU2];
+	curr_temp = tscpu_ts_temp[TS_MCU1];
 
 	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
 
@@ -674,7 +674,7 @@ int get_immediate_cpuL_wrap(void)
 {
 	int curr_temp;
 
-	curr_temp = tscpu_ts_temp[TS_MCU1];
+	curr_temp = tscpu_ts_temp[TS_MCU2];
 
 
 	tscpu_dprintk("%s curr_temp=%d\n", __func__, curr_temp);
