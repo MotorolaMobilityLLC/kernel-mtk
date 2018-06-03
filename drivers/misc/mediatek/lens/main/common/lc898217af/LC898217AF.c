@@ -98,6 +98,21 @@ static int s4AF_WriteReg(u8 a_uLength, u8 a_uAddr, u16 a_u2Data)
 
 static int setPosition(unsigned short UsPosition)
 {
+#if defined(CONFIG_MACH_MT6739)
+	unsigned char UcPosH;
+	unsigned char UcPosL;
+	unsigned int i4RetValue = 0;
+
+	UsPosition = 1023 - UsPosition;
+	UcPosH = (unsigned char) (UsPosition >> 8);
+	UcPosL = (unsigned char) (UsPosition & 0x00FF);
+	i4RetValue = s4AF_WriteReg(0, 0x84, UcPosH);
+	if (i4RetValue != 0)
+		return -1;
+	i4RetValue = s4AF_WriteReg(0, 0x85, UcPosL); /*	set target position */
+
+	return i4RetValue;
+#else
 	unsigned short TarPos;
 	unsigned char UcPosH;
 	unsigned char UcPosL;
@@ -121,6 +136,7 @@ static int setPosition(unsigned short UsPosition)
 	i4RetValue = s4AF_WriteReg(0, 0x85, UcPosL); /*	set target position */
 
 	return i4RetValue;
+#endif
 }
 
 static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
