@@ -29,7 +29,6 @@
 #define ODEBUG_CHUNK_SIZE	(1 << ODEBUG_CHUNK_SHIFT)
 #define ODEBUG_CHUNK_MASK	(~(ODEBUG_CHUNK_SIZE - 1))
 
-#define ODEBUG_MTK_AEE_MOD             "debugobject"
 #define ODEBUG_MTK_AEE_PRINT_BUF_LEN   100
 
 void debug_object_mtk_aee_warning(char *msg)
@@ -38,10 +37,10 @@ void debug_object_mtk_aee_warning(char *msg)
 	char printbuf[ODEBUG_MTK_AEE_PRINT_BUF_LEN] = { '\0' };
 
 	snprintf(printbuf, ODEBUG_MTK_AEE_PRINT_BUF_LEN - 1,
-		"\n[DebugObject Warning]\n%s\n", msg);
+		"\n[debugobject warning] %s\n", msg);
 
 	aee_kernel_warning_api(__FILE__, __LINE__,
-		DB_OPT_DEFAULT, ODEBUG_MTK_AEE_MOD "%s", printbuf);
+		DB_OPT_DEFAULT, "%s", printbuf);
 #endif
 }
 

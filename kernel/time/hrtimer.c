@@ -372,6 +372,7 @@ static int hrtimer_fixup_activate(void *addr, enum debug_obj_state state)
 
 	case ODEBUG_STATE_NOTAVAILABLE:
 		WARN_ON_ONCE(1);
+		debug_object_mtk_aee_warning("activate an unknown hrtimer");
 		return 0;
 
 	case ODEBUG_STATE_ACTIVE:

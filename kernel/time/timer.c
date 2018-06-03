@@ -601,7 +601,7 @@ static int timer_fixup_assert_init(void *addr, enum debug_obj_state state)
 			debug_object_init(timer, &timer_debug_descr);
 			return 0;
 		} else {
-			debug_object_mtk_aee_warning("time shall be initialized");
+			debug_object_mtk_aee_warning("timer shall be initialized");
 			setup_timer(timer, stub_timer, 0);
 			return 1;
 		}
