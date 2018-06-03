@@ -18,6 +18,7 @@
 #include <linux/dmapool.h>
 #include <linux/uaccess.h>
 #include <linux/notifier.h>
+#include <linux/irqchip/mtk-gic-extend.h>
 
 #include "cmdq_helper_ext.h"
 #include "cmdq_record.h"
@@ -1152,7 +1153,7 @@ static s32 cmdq_core_thread_exec_counter(const s32 thread)
 }
 
 static void cmdq_core_dump_thread(const struct cmdqRecStruct *handle,
-	s32 thread, const char *tag)
+	s32 thread, bool dump_irq, bool aee_irq, const char *tag)
 {
 	u32 value[15] = { 0 };
 
@@ -1201,6 +1202,15 @@ static void cmdq_core_dump_thread(const struct cmdqRecStruct *handle,
 		"[%s]Timeout Cycle:%d Status:0x%x reset:0x%x Suspend:%d sec:%d cfg:%d prefetch:%d thrsex:%d\n",
 		tag, value[5], value[6], value[9], value[10],
 		value[11], value[12], value[13], value[14]);
+
+	/* if pc match end and irq flag on, dump irq status */
+	if (dump_irq && value[0] == value[1] && value[2] == 1) {
+		mt_irq_dump_status(cmdq_dev_get_irq_id());
+		if (aee_irq)
+			CMDQ_AEE("CMDQ",
+				"thread irq delay id:%u thread:%d",
+				cmdq_dev_get_irq_id(), thread);
+	}
 }
 
 void cmdq_core_dump_trigger_loop_thread(const char *tag)
@@ -1214,7 +1224,7 @@ void cmdq_core_dump_trigger_loop_thread(const char *tag)
 	for (i = 0; i < max_thread_count; i++) {
 		if (cmdq_ctx.thread[i].scenario != CMDQ_SCENARIO_TRIGGER_LOOP)
 			continue;
-		cmdq_core_dump_thread(NULL, i, tag);
+		cmdq_core_dump_thread(NULL, i, false, false, tag);
 		cmdq_core_dump_pc(NULL, i, tag);
 		val = cmdqCoreGetEvent(evt_rdma);
 		CMDQ_LOG("[%s]CMDQ_SYNC_TOKEN_VAL of %s is %d\n",
@@ -1896,7 +1906,7 @@ static void cmdq_delay_thread_deinit(void)
 
 void cmdq_delay_dump_thread(bool dump_sram)
 {
-	cmdq_core_dump_thread(NULL, CMDQ_DELAY_THREAD_ID, "INFO");
+	cmdq_core_dump_thread(NULL, CMDQ_DELAY_THREAD_ID, false, false, "INFO");
 	CMDQ_LOG(
 		"==Delay Thread Task, size:%u started:%d pa:%pa va:0x%p sram:%u\n",
 		cmdq_delay_thd_cmd.buffer_size, cmdq_delay_thd_started,
@@ -3183,7 +3193,7 @@ static void cmdq_core_dump_error_handle(const struct cmdqRecStruct *handle,
 	u32 *hwPC = NULL;
 	u64 printEngineFlag = 0;
 
-	cmdq_core_dump_thread(handle, thread, "ERR");
+	cmdq_core_dump_thread(handle, thread, true, false, "ERR");
 
 	if (handle) {
 		CMDQ_ERR("============ [CMDQ] Error Thread PC ============\n");
@@ -5006,7 +5016,8 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 			handle->state);
 		cmdq_core_dump_status("INFO");
 		cmdq_core_dump_pc(handle, handle->thread, "INFO");
-		cmdq_core_dump_thread(handle, handle->thread, "INFO");
+		cmdq_core_dump_thread(handle, handle->thread, true,
+			(count == 0), "INFO");
 
 		if (count == 0) {
 			cmdq_core_dump_trigger_loop_thread("INFO");
