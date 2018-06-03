@@ -1491,7 +1491,7 @@ void typec_drive_vbus_e3(struct typec_hba *hba, uint8_t on)
 		typec_write8(hba, 0x03, 0x3CF);
 		typec_write8(hba, 0x03, 0x402);
 
-		typec_write8(hba, 0x88, 0x529);
+		typec_write8(hba, 0x80, 0x529);
 		typec_write8(hba, 0x84, 0x51F);
 		typec_write8(hba, 0x47, 0x53D);
 
