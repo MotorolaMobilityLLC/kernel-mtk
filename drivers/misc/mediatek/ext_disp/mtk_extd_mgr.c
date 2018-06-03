@@ -309,6 +309,13 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 				r = extd_driver[DEV_MHL]->audio_setting(argp);
 			break;
 		}
+	case MTK_HDMI_HDCP_KEY:
+		{
+			if (extd_driver[DEV_MHL] && extd_driver[DEV_MHL]->install_hdcpkey)
+				r = extd_driver[DEV_MHL]->install_hdcpkey(argp);
+
+			break;
+		}
 
 	default:
 		{

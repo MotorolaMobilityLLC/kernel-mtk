@@ -65,6 +65,7 @@ struct EXTD_DRIVER {
 	int (*fake_connect)(int connect);
 	int (*factory_mode_test)(enum HDMI_FACTORY_TEST test_step, void *info);
 	int (*audio_setting)(void *audio_param);
+	int (*install_hdcpkey)(void *hdcpkey);
 	int (*ioctl)(unsigned int ioctl_cmd, int param1, int param2, unsigned long *params);
 };
 
