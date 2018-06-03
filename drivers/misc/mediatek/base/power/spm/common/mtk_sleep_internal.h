@@ -39,7 +39,6 @@
  **************************************/
 int slp_set_wakesrc(u32 wakesrc, bool enable, bool ck26m_on);
 unsigned int slp_get_wake_reason(void);
-void slp_set_infra_on(bool infra_on);
 void slp_module_init(void);
 
 /**************************************
