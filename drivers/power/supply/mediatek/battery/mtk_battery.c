@@ -2050,43 +2050,44 @@ static ssize_t store_BAT_EC(
 	struct device *dev, struct device_attribute *attr,
 	const char *buf, size_t size)
 {
-	int ret1, ret2;
+	int ret1 = 0, ret2 = 0;
 	char cmd_buf[4], param_buf[16];
 
 	bm_err("[FG_IT] store_BAT_EC\n");
+	cmd_buf[3] = '\0';
+	param_buf[15] = '\0';
 
-	if (size < 3 || size > 20) {
-		bm_err("[FG_IT] store_BAT_EC error, size mismatch:%Zu\n", size);
+	if (size < 4 || size > 20) {
+		bm_err("store_BAT_EC error, size mismatch:%Zu\n", size);
 		return -1;
 	}
 
 	if (buf != NULL && size != 0) {
 		bm_err("buf is %s and size is %Zu\n", buf, size);
-
 		cmd_buf[0] = buf[0];
 		cmd_buf[1] = buf[1];
 		cmd_buf[2] = buf[2];
 		cmd_buf[3] = '\0';
-		strncpy(param_buf, buf + 4, size - 4);
-		if ((size - 4) > 0)
-			param_buf[size - 4 - 1] = '\0';
 
-		bm_err(
-			"cmd_buf %s, param_buf %s\n",
-			cmd_buf, param_buf);
+		if ((size - 4) > 0) {
+			strncpy(param_buf, buf + 4, size - 4);
+			param_buf[size - 4 - 1] = '\0';
+			bm_err("[FG_IT]cmd_buf %s, param_buf %s\n",
+				cmd_buf, param_buf);
+			ret2 = kstrtouint(param_buf, 10, &gm.BAT_EC_param);
+		}
 
 		ret1 = kstrtouint(cmd_buf, 10, &gm.BAT_EC_cmd);
-		ret2 = kstrtouint(param_buf, 10, &gm.BAT_EC_param);
 
 		if (ret1 != 0 || ret2 != 0) {
-			bm_err(
-				"[FG_IT]ERROR! not valid number! %d %d\n",
+			bm_err("ERROR! not valid number! %d %d\n",
 				ret1, ret2);
 			return -1;
 		}
 		bm_err("CMD is:%d, param:%d\n",
 			gm.BAT_EC_cmd, gm.BAT_EC_param);
 	}
+
 
 	exec_BAT_EC(gm.BAT_EC_cmd, gm.BAT_EC_param);
 
@@ -2715,10 +2716,7 @@ static int __init battery_probe(struct platform_device *dev)
 		IS_ENABLED(CONFIG_MTK_DISABLE_GAUGE)) {
 		bm_err("disable GM 3.0\n");
 		disable_fg();
-		return true;
-	}
-
-	if (is_recovery_mode())
+	} else if (is_recovery_mode())
 		battery_recovery_init();
 
 	gm.is_probe_done = true;
@@ -2750,6 +2748,10 @@ static int battery_resume(struct platform_device *dev)
 		if (gm.hw_status.iavg_lt > 0)
 			pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
 	}
+	/* reset nafg monitor time to avoid suspend for too long case */
+	get_monotonic_boottime(&gm.last_nafg_update_time);
+
+
 	fg_update_sw_iavg();
 	return 0;
 }
