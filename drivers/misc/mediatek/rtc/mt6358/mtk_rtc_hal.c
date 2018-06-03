@@ -264,12 +264,16 @@ void hal_rtc_bbpu_pwdn(bool charger_status)
 	bbpu = RTC_BBPU_KEY | RTC_BBPU_CLR | RTC_BBPU_PWREN;
 	rtc_write(RTC_BBPU, bbpu);
 
-	rtc_write(RTC_AL_MASK, 0x0);
+	rtc_write(RTC_AL_MASK, RTC_AL_MASK_DOW);	/* mask DOW */
 	rtc_write_trigger();
 
 	rtc_spar_alarm_clear_wait();
 
 	wk_pmic_enable_sdn_delay();
+
+	rtc_write(RTC_BBPU, rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
+	rtc_write_trigger();
+	hal_rtc_xinfo("RTC_AL_MASK= 0x%x RTC_IRQ_EN= 0x%x\n", rtc_read(RTC_AL_MASK), rtc_read(RTC_IRQ_EN));
 	/* lpsd */
 	rtc_bbpu_pwrdown(true);
 }
@@ -420,7 +424,8 @@ void rtc_lpsd_restore_al_mask(void)
 	rtc_write(RTC_BBPU, rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
 	rtc_write_trigger();
 	hal_rtc_xinfo("1st RTC_AL_MASK = 0x%x\n", rtc_read(RTC_AL_MASK));
-	rtc_write(RTC_AL_MASK, RTC_AL_MASK_DOW);    /* mask DOW */
+	/* mask DOW */
+	rtc_write(RTC_AL_MASK, RTC_AL_MASK_DOW);
 	rtc_write_trigger();
 	hal_rtc_xinfo("2nd RTC_AL_MASK = 0x%x\n", rtc_read(RTC_AL_MASK));
 }
