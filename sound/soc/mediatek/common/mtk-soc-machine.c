@@ -518,7 +518,6 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
 	},
 #endif
-#ifdef _NON_COMMON_FEATURE_READY
 	{
 		.name = "OFFLOAD",
 		.stream_name = MT_SOC_OFFLOAD_STREAM_NAME,
@@ -527,7 +526,6 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_OFFLOAD_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
-#endif
 #ifdef _NON_COMMON_FEATURE_READY
 	{
 		.name = "PCM_ANC",
