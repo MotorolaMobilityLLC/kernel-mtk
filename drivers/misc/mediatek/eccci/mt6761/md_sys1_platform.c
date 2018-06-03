@@ -618,13 +618,16 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	/* 3. Bus status */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_BUS)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG,
-			"Dump MD Bus status: [0]0x%X, [1]0x%X, [2]0x%X, [3]0x%X\n",
-			MD_BUS_REG_BASE0, MD_BUS_REG_BASE1,
-			MD_BUS_REG_BASE2, MD_BUS_REG_BASE3);
-		dump_reg0 = ioremap_nocache(MD_BUS_REG_BASE0, MD_BUS_REG_LEN0);
-		ccci_util_mem_dump(md->index,
-			CCCI_DUMP_MEM_DUMP, dump_reg0, MD_BUS_REG_LEN0);
-		iounmap(dump_reg0);
+			"Dump MD Bus status: [0]0x%X, [1]0x%X, [2]0x%X\n",
+			MD_BUS_REG_BASE1, MD_BUS_REG_BASE2,
+			MD_BUS_REG_BASE3);
+		/* remove MDPERI_AO_MISC all address range */
+		/*dump_reg0 =
+		 *	ioremap_nocache(MD_BUS_REG_BASE0, MD_BUS_REG_LEN0);
+		 *ccci_util_mem_dump(md->index,
+		 *	CCCI_DUMP_MEM_DUMP, dump_reg0, MD_BUS_REG_LEN0);
+		 *iounmap(dump_reg0);
+		 */
 		dump_reg0 = ioremap_nocache(MD_BUS_REG_BASE1, MD_BUS_REG_LEN1);
 		ccci_util_mem_dump(md->index,
 			CCCI_DUMP_MEM_DUMP, dump_reg0, MD_BUS_REG_LEN1);
@@ -642,9 +645,8 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	/* 4. Bus REC */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_BUSREC)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG,
-			"Dump MD Bus REC: [0]0x%X, [1]0x%X, [2]0x%X\n",
-			MD_MCU_MO_BUSREC_BASE, MD_INFRA_BUSREC_BASE,
-			MD_BUSREC_LAY_BASE);
+			"Dump MD Bus REC: [0]0x%X, [1]0x%X\n",
+			MD_MCU_MO_BUSREC_BASE, MD_INFRA_BUSREC_BASE);
 		dump_reg0 =
 		 ioremap_nocache(MD_MCU_MO_BUSREC_BASE, MD_MCU_MO_BUSREC_LEN);
 		ccci_write32(dump_reg0, 0x10, 0x0); /* stop */
@@ -679,11 +681,13 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 			CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x700), 0x51C);
 		ccci_write32(dump_reg0, 0x10, 0x1);/* re-start */
 		iounmap(dump_reg0);
-		dump_reg0 =
-		 ioremap_nocache(MD_BUSREC_LAY_BASE, MD_BUSREC_LAY_LEN);
-		ccci_util_mem_dump(md->index,
-			CCCI_DUMP_MEM_DUMP, dump_reg0, 0x8);
-		iounmap(dump_reg0);
+		/* remove BUSREC_LAYER_SELECT all address range */
+		/*dump_reg0 =
+		 *	ioremap_nocache(MD_BUSREC_LAY_BASE, MD_BUSREC_LAY_LEN);
+		 *ccci_util_mem_dump(md->index,
+		 *	CCCI_DUMP_MEM_DUMP, dump_reg0, 0x8);
+		 *iounmap(dump_reg0);
+		 */
 	}
 
 	/* 5. ECT */
