@@ -54,7 +54,11 @@
 #define MMP_DEVNAME "mmp"
 
 #define MMPROFILE_DEFAULT_BUFFER_SIZE 0x18000
+#ifdef CONFIG_MTK_ENG_BUILD
 #define MMPROFILE_DEFAULT_META_BUFFER_SIZE 0x800000
+#else
+#define MMPROFILE_DEFAULT_META_BUFFER_SIZE 0x0
+#endif
 
 #define MMPROFILE_DUMP_BLOCK_SIZE (1024*4)
 
@@ -417,6 +421,7 @@ static void mmprofile_reset_buffer(void)
 		memset((void *)(p_mmprofile_ring_buffer), 0,
 			mmprofile_globals.buffer_size_bytes);
 		mmprofile_globals.write_pointer = 0;
+#ifdef CONFIG_MTK_ENG_BUILD
 		mutex_lock(&mmprofile_meta_buffer_mutex);
 		mmprofile_meta_datacookie = 1;
 		memset((void *)(p_mmprofile_meta_buffer), 0,
@@ -430,6 +435,7 @@ static void mmprofile_reset_buffer(void)
 		list_add_tail(&(p_block->list), &mmprofile_meta_buffer_list);
 
 		mutex_unlock(&mmprofile_meta_buffer_mutex);
+#endif
 	}
 }
 
@@ -839,6 +845,7 @@ static long mmprofile_log_meta_int(mmp_event event, enum mmp_log_type type,
 	struct mmprofile_meta_datablock_t *p_node = NULL;
 	unsigned long block_size;
 
+#ifdef CONFIG_MTK_ENG_BUILD
 	if (!mmprofile_globals.enable)
 		return 0;
 	if ((event >= MMPROFILE_MAX_EVENT_COUNT) ||
@@ -954,6 +961,7 @@ static long mmprofile_log_meta_int(mmp_event event, enum mmp_log_type type,
 			memcpy(p_node->meta_data, p_data, p_meta_data->size);
 	}
 	mutex_unlock(&mmprofile_meta_buffer_mutex);
+#endif
 
 	return 0;
 }
@@ -1755,6 +1763,8 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd,
 	break;
 	case MMP_IOC_DUMPMETADATA:
 	{
+#ifdef CONFIG_MTK_ENG_BUILD
+
 		unsigned int meta_data_count = 0;
 		unsigned int offset = 0;
 		unsigned int index;
@@ -1819,7 +1829,9 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd,
 		}
 		put_user(offset - 8, (unsigned int __user *)(arg + 4));
 		mutex_unlock(&mmprofile_meta_buffer_mutex);
+#endif
 	}
+
 	break;
 	case MMP_IOC_SELECTBUFFER:
 		mmprofile_globals.selected_buffer = arg;
@@ -2039,6 +2051,8 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd,
 	break;
 	case COMPAT_MMP_IOC_DUMPMETADATA:
 	{
+#ifdef CONFIG_MTK_ENG_BUILD
+
 		unsigned int meta_data_count = 0;
 		unsigned int offset = 0;
 		unsigned int index;
@@ -2111,6 +2125,7 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd,
 		p_user = compat_ptr(arg + 4);
 		put_user(offset - 8, p_user);
 		mutex_unlock(&mmprofile_meta_buffer_mutex);
+#endif
 	}
 	break;
 	case MMP_IOC_SELECTBUFFER:
