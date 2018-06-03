@@ -321,7 +321,9 @@ static void ged_exit(void)
 
 	ged_fdvfs_exit();
 
+#ifdef MTK_FRR20
 	ged_frr_system_exit();
+#endif
 
 	ged_kpi_system_exit();
 
@@ -410,11 +412,14 @@ static int ged_init(void)
 		goto ERROR;
 	}
 
+#ifdef MTK_FRR20
 	err = ged_frr_system_init();
 	if (unlikely(err != GED_OK)) {
 		GED_LOGE("ged: failed to init FRR Table!\n");
 		goto ERROR;
 	}
+#endif
+
 #ifdef GED_FDVFS_ENABLE
 	err = ged_fdvfs_system_init();
 	if (unlikely(err != GED_OK)) {

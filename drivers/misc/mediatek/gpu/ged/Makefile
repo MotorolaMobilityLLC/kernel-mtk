@@ -71,9 +71,8 @@ endif
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
-ccflags-y += -DGED_DVFS_ENABLE \
-             -DENABLE_COMMON_DVFS \
-	     -DENABLE_TIMER_BACKUP 
+ccflags-y += -DENABLE_COMMON_DVFS \
+             -DENABLE_TIMER_BACKUP
 else
 ccflags-y += -DGED_FDVFS_ENABLE
 endif
@@ -90,14 +89,6 @@ ccflags-y += -DGED_DVFS_DEBUG_BUF
 
 ifeq ($(VER),eng)
 ccflags-y += -DGED_DEBUG_IOCTL_LOCK
-endif
-
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799"))
-ccflags-y += -DMTK_FRR20
-endif
-
-ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt8167)
-ccflags-y += -DMTK_FRR20
 endif
 
 ccflags-y += \
@@ -121,6 +112,5 @@ ged-y += \
 	src/ged_ge.o \
 	src/ged_dvfs.o \
 	src/ged_kpi.o \
-	src/ged_frr.o \
 	src/ged_fdvfs.o
 
