@@ -245,7 +245,7 @@ int gt1x_update_prepare(char *filename)
 		update_info.fw_name = NULL;
 		update_info.update_type = UPDATE_TYPE_HEADER;
 
-		sprintf(buf, "%s%s.img", GT1151_DEFAULT_FW, CONFIG_GT1151_FIRMWARE);
+		snprintf(buf, sizeof(buf), "%s%s.img", GT1151_DEFAULT_FW, CONFIG_GT1151_FIRMWARE);
 		GTP_INFO("Request default firmware version: %s\n", buf);
 		ret = request_firmware(&fw_entry, buf, &gt1x_i2c_client->dev);
 		if (ret) {
