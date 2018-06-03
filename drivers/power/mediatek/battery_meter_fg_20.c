@@ -2248,6 +2248,11 @@ signed int battery_meter_get_VSense(void)
 #endif
 }
 
+signed int battery_meter_get_QMAX25(void)
+{
+	return batt_meter_cust_data.q_max_pos_25;
+}
+
 #ifdef USING_SMOOTH_UI_SOC2
 void battery_meter_smooth_uisoc2(void)
 {
