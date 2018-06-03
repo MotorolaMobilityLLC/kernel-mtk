@@ -343,9 +343,6 @@ extern int hps_procfs_init(void);
 #define num_possible_little_cpus()          cpumask_weight(&hps_ctxt.little_cpumask)
 #define num_possible_big_cpus()             cpumask_weight(&hps_ctxt.big_cpumask)
 
-extern int hps_cpu_up(unsigned int cpu);
-extern int hps_cpu_down(unsigned int cpu);
-
 extern int hps_cpu_init(void);
 extern int hps_cpu_deinit(void);
 
