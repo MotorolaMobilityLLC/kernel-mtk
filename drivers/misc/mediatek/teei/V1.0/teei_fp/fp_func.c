@@ -120,6 +120,11 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
+		if (args_len + 16 > MICROTRUST_FP_SIZE) {
+			IMSG_ERROR("args_len is invalid!.\n");
+			up(&fp_api_lock);
+			return -EFAULT;
+		}
 		memset((void *)fp_buff_addr, 0, args_len + 16);
 		if (copy_from_user((void *)fp_buff_addr, (void *)arg, args_len + 16)) {
 			IMSG_ERROR("copy from user failed.\n");
