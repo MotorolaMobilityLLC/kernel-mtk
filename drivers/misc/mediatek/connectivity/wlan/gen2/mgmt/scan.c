@@ -3730,7 +3730,7 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 
 try_again:
 	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
-		DBGLOG_MEM8_IE_ONE_LINE(SCN, INFO, "BCN_IE", &prBssDesc->aucIEBuf[0], prBssDesc->u2IELength);
+		DBGLOG_MEM8_IE_ONE_LINE(SCN, TRACE, "BCN_IE", &prBssDesc->aucIEBuf[0], prBssDesc->u2IELength);
 
 		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
 			EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prConnSettings->aucBSSID)) {
