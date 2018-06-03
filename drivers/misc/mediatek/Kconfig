@@ -446,6 +446,7 @@ source "drivers/misc/mediatek/smartpa/Kconfig"
 source "drivers/misc/mediatek/reg_monitor/Kconfig"
 source "drivers/misc/mediatek/iccs/Kconfig"
 source "drivers/misc/mediatek/fiq_cache/Kconfig"
+source "drivers/misc/mediatek/base/power/mcdi/Kconfig"
 
 endmenu    # Misc
 
