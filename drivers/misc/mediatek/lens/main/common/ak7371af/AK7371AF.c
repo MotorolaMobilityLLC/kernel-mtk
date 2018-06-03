@@ -401,6 +401,9 @@ int AK7371AF_PowerDown(void)
 
 			cnt++;
 		}
+	} else if (*g_pAF_Opened == 2) {
+		*g_pAF_Opened = 1;
+		LOG_INF("reopen driver init\n");
 	}
 	LOG_INF("-\n");
 
