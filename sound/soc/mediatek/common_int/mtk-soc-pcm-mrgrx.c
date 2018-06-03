@@ -122,7 +122,7 @@ static int Audio_Wcn_Cmb_Set(struct snd_kcontrol *kcontrol,
 	mAudio_Wcn_Cmb = ucontrol->value.integer.value[0];
 	#ifndef CONFIG_SND_SOC_MTK_BTCVSD
 	pr_warn("%s mAudio_Wcn_Cmb = 0x%x\n", __func__, mAudio_Wcn_Cmb);
-	mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)mAudio_Wcn_Cmb);
+	mtk_wcn_cmb_stub_audio_ctrl((enum CMB_STUB_AIF_X)mAudio_Wcn_Cmb);
 	#endif
 	return 0;
 }
@@ -228,7 +228,7 @@ static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream)
 	pr_warn("%s\n", __func__);
 
 #ifndef CONFIG_SND_SOC_MTK_BTCVSD
-	mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_0);
+	mtk_wcn_cmb_stub_audio_ctrl((enum CMB_STUB_AIF_X)CMB_STUB_AIF_0);
 #endif
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MRG_I2S_OUT, false);
@@ -268,7 +268,7 @@ static int mtk_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 	if (mPrepareDone == false) {
 
 #ifndef CONFIG_SND_SOC_MTK_BTCVSD
-		mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_3);
+		mtk_wcn_cmb_stub_audio_ctrl((enum CMB_STUB_AIF_X)CMB_STUB_AIF_3);
 #endif
 
 		/* interconnection setting */
