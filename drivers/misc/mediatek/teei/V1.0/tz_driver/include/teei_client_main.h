@@ -24,7 +24,7 @@ extern unsigned long create_gatekeeper_fdrv(int buff_size);
 extern unsigned long create_cancel_fdrv(int buff_size);
 extern long init_all_service_handlers(void);
 extern int register_sched_irq_handler(void);
-extern int register_soter_irq_handler(void);
+extern int register_soter_irq_handler(int irq);
 extern int register_error_irq_handler(void);
 extern int register_fp_ack_handler(void);
 extern int register_keymaster_ack_handler(void);
@@ -33,7 +33,7 @@ extern int register_tlog_handler(void);
 extern int register_boot_irq_handler(void);
 extern int register_switch_irq_handler(void);
 
-extern int register_ut_irq_handler(void);
+extern int register_ut_irq_handler(int irq);
 
 extern struct teei_context *teei_create_context(int dev_count);
 extern struct teei_session *teei_create_session(struct teei_context *cont);

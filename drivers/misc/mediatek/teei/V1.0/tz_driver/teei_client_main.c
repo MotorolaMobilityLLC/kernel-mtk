@@ -756,20 +756,7 @@ static int init_teei_framework(void)
 	sema_init(&(fdrv_lock), 1);
 	sema_init(&(api_lock), 1);
 	sema_init(&(boot_decryto_lock), 0);
-#if 0
-	register_boot_irq_handler();
-	register_sched_irq_handler();
-	register_switch_irq_handler();
-	register_soter_irq_handler();
-	register_fp_ack_handler();
-	/* register_keymaster_ack_handler(); */
-	register_bdrv_handler();
-	register_tlog_handler();
-	register_error_irq_handler();
-#else
-	register_ut_irq_handler();
-	register_soter_irq_handler();
-#endif
+
 	tlog_buff = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(TLOG_SIZE, SZ_4K)));
 
 	if (tlog_buff == NULL)
@@ -1678,6 +1665,63 @@ static const struct file_operations teei_client_fops = {
 	.release = teei_client_release
 };
 
+static int teei_probe(struct platform_device *dev)
+{
+	int ut_irq = 0;
+	int soter_irq = 0;
+
+#ifdef CONFIG_OF
+	ut_irq = platform_get_irq(dev, 0);
+	pr_debug("teei device ut_irq is %d\n", ut_irq);
+	soter_irq = platform_get_irq(dev, 1);
+	pr_debug("teei device soter_irq is %d\n", soter_irq);
+
+	if (ut_irq <= 0 || soter_irq <= 0) {
+		pr_err("teei_device can't get correct irqs\n");
+		return -1;
+	}
+#else
+	ut_irq = UT_DRV_IRQ;
+	soter_irq = SOTER_IRQ;
+#endif
+	if (register_ut_irq_handler(ut_irq) < 0) {
+		pr_err("teei_device can't register for irq %d\n", ut_irq);
+		return -1;
+	}
+	if (register_soter_irq_handler(soter_irq) < 0) {
+		pr_err("teei_device can't register for irq %d\n", soter_irq);
+		return -1;
+	}
+
+	pr_info("teei device irqs are registed successfully\n");
+
+	return 0;
+}
+
+static int teei_remove(struct platform_device *dev)
+{
+	return 0;
+}
+
+static const struct of_device_id teei_of_ids[] = {
+	{ .compatible = "microtrust,utos", },
+	{}
+};
+
+static struct platform_driver teei_driver = {
+	.probe = teei_probe,
+	.remove = teei_remove,
+	.suspend = NULL,
+	.resume = NULL,
+	.driver = {
+		.name = "utos",
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = teei_of_ids,
+#endif
+	},
+};
+
 /**
  * @brief TEEI Agent Driver initialization
  * initialize service framework
@@ -1704,6 +1748,12 @@ static int teei_client_init(void)
 	ret_code = alloc_chrdev_region(&teei_client_device_no, 0, 1, TEEI_CLIENT_DEV);
 	if (ret_code < 0) {
 		pr_err("alloc_chrdev_region failed %x\n", ret_code);
+		return ret_code;
+	}
+
+	ret_code = platform_driver_register(&teei_driver);
+	if (ret_code) {
+		pr_err("unable to register teei driver(%d)\n", ret_code);
 		return ret_code;
 	}
 
@@ -1808,6 +1858,7 @@ static void teei_client_exit(void)
 	device_destroy(driver_class, teei_client_device_no);
 	class_destroy(driver_class);
 	unregister_chrdev_region(teei_client_device_no, 1);
+	platform_driver_unregister(&teei_driver);
 }
 
 

@@ -153,36 +153,9 @@ static irqreturn_t nt_soter_irq_handler(void)
 }
 
 
-int register_soter_irq_handler(void)
+int register_soter_irq_handler(int irq)
 {
-	int retVal = 0;
-
-#ifdef CONFIG_OF
-	int irq_num = 0;
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "microtrust,utos");
-	irq_num = irq_of_parse_and_map(node, 1);
-
-	retVal = request_irq(irq_num, nt_soter_irq_handler, 0, "tz_drivers_service", NULL);
-
-	if (retVal)
-		pr_err("[CONFIG_OF] [%s] ERROR for request_irq %d error code : %d.\n", __func__, irq_num, retVal);
-	else
-		pr_debug("[CONFIG_OF] [%s] request irq [ %d ] OK.\n", __func__, irq_num);
-
-#else
-	/* register 285 IRQ */
-	retVal = request_irq(SOTER_IRQ, nt_soter_irq_handler, 0, "tz_drivers_service", NULL);
-
-	if (retVal)
-		pr_err("ERROR for request_irq %d error code : %d.\n", SOTER_IRQ, retVal);
-	else
-		pr_debug("request irq [ %d ] OK.\n", SOTER_IRQ);
-
-#endif
-
-	return 0;
+	return request_irq(irq, nt_soter_irq_handler, 0, "tz_drivers_service", NULL);
 }
 
 
@@ -656,33 +629,7 @@ static irqreturn_t ut_drv_irq_handler(void)
 }
 
 
-int register_ut_irq_handler(void)
+int register_ut_irq_handler(int irq)
 {
-	int retVal = 0;
-
-#ifdef CONFIG_OF
-	int irq_num = 0;
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "microtrust,utos");
-	irq_num = irq_of_parse_and_map(node, 0);
-
-	retVal = request_irq(irq_num, ut_drv_irq_handler, 0, "tz_drivers_service", NULL);
-
-	if (retVal)
-		pr_err("[CONFIG_OF] [%s] ERROR for request_irq %d error code : %d.\n", __func__, irq_num, retVal);
-	else
-		pr_debug("[CONFIG_OF] [%s] request irq [ %d ] OK.\n", __func__, irq_num);
-
-#else
-	/* register 284 IRQ */
-	retVal = request_irq(UT_DRV_IRQ, ut_drv_irq_handler, 0, "tz_drivers_service", NULL);
-
-	if (retVal)
-		pr_err("ERROR for request_irq %d error code : %d.\n", UT_DRV_IRQ, retVal);
-	else
-		pr_debug("request irq [ %d ] OK.\n", UT_DRV_IRQ);
-
-#endif
-
+	return request_irq(irq, ut_drv_irq_handler, 0, "tz_drivers_service", NULL);
 }
