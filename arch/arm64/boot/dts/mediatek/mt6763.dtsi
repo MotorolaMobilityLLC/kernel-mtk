@@ -1479,11 +1479,6 @@
 		num_eps = <16>;
 		clocks = <&infracfg_ao INFRACFG_AO_ICUSB_CG>;
 		clock-names = "usb0";
-		/*
-		 *vusb33-supply = <&mt_pmic_vusb33_ldo_reg>;
-		 *iddig_gpio = <0 1>;
-		 *drvvbus_gpio = <83 2>;
-		*/
 	};
 
 	usb_sif@11210000 {
@@ -3404,6 +3399,10 @@
 		bif_threshold1 = <4250000>;
 		bif_threshold2 = <4300000>;
 		bif_cv_under_threshold2 = <4450000>;
+	};
+
+	otg_iddig: otg_iddig{
+		compatible = "mediatek,usb_iddig_bi_eint";
 	};
 
 	rt5081_pmu_eint: rt5081_pmu_eint {
