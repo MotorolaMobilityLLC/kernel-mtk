@@ -120,7 +120,7 @@ enum DPREC_LOGGER_ENUM {
 #define DEBUG_BUFFER_COUNT 16
 #define DUMP_BUFFER_COUNT 10
 #define STATUS_BUFFER_COUNT 1
-#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#if defined(CONFIG_MTK_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 #define DEBUG_BUFFER_SIZE (4096 + \
 	(ERROR_BUFFER_COUNT + FENCE_BUFFER_COUNT + DEBUG_BUFFER_COUNT + \
 	DUMP_BUFFER_COUNT + STATUS_BUFFER_COUNT) * LOGGER_BUFFER_SIZE)
@@ -230,4 +230,45 @@ int dprec_mmp_dump_ovl_layer(struct OVL_CONFIG_STRUCT *ovl_layer,
 	unsigned int l, unsigned int session);
 void init_log_buffer(void);
 char *get_dprec_status_ptr(int buffer_idx);
+
+
+/* systrace utils functions */
+#ifdef CONFIG_TRACING
+
+#include <linux/trace_events.h>
+unsigned long disp_get_tracing_mark(void);
+
+#define __DISP_SYSTRACE_BEGIN(pid, fmt, args...) do {\
+	preempt_disable();\
+	event_trace_printk(disp_get_tracing_mark(), "B|%d|"fmt, pid, ##args);\
+	preempt_enable();\
+} while (0)
+
+#define DISP_SYSTRACE_BEGIN(fmt, args...) \
+	__DISP_SYSTRACE_BEGIN(current->tgid, fmt, ##args)
+
+#define DISP_SYSTRACE_END() do {\
+	preempt_disable();\
+	event_trace_printk(disp_get_tracing_mark(), "E\n");\
+	preempt_enable();\
+} while (0)
+
+#define _DISP_TRACE_CNT(tgid, cnt, fmt, args...) do {\
+	preempt_disable();\
+	event_trace_printk(disp_get_tracing_mark(), "C|%d|"fmt"|%d\n",\
+			   in_interrupt() ? 0 : tgid, ##args, cnt);\
+	preempt_enable();\
+} while (0)
+
+#define DISP_TRACE_CNT(cnt, fmt, args...) \
+	_DISP_TRACE_CNT(current->tgid, cnt, fmt, args...)
+
+#else
+
+#define DISP_SYSTRACE_BEGIN(fmt, args...)
+#define DISP_SYSTRACE_END()
+#define _DISP_TRACE_CNT(tgid, cnt, fmt, args...)
+#define DISP_TRACE_CNT(cnt, fmt, args...)
+#endif
+
 #endif
