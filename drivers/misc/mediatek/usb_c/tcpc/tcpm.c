@@ -98,6 +98,29 @@ int tcpm_inquire_remote_cc(struct tcpc_device *tcpc_dev,
 	return 0;
 }
 
+int tcpm_inquire_typec_remote_rp_curr(struct tcpc_device *tcpc_dev)
+{
+	int rp_lvl, ret = 0;
+
+	if (tcpm_check_typec_attached(tcpc_dev))
+		return 0;
+	rp_lvl = tcpc_dev->typec_remote_rp_level;
+	switch (rp_lvl) {
+	case TYPEC_CC_VOLT_SNK_DFT:
+		ret = 500;
+		break;
+	case TYPEC_CC_VOLT_SNK_1_5:
+		ret = 1500;
+		break;
+	case TYPEC_CC_VOLT_SNK_3_0:
+		ret = 3000;
+		break;
+	default:
+		break;
+	}
+	return ret;
+}
+
 int tcpm_inquire_vbus_level(
 	struct tcpc_device *tcpc_dev, bool from_ic)
 {
