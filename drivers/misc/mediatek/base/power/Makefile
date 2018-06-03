@@ -145,3 +145,5 @@ obj-$(CONFIG_MACH_MT6775) += mcdi/
 else
 obj-y += mcdi_dummy/
 endif
+obj-$(CONFIG_MACH_MT6771) += swpm_v1/
+obj-$(CONFIG_MACH_MT6775) += swpm_v1/
