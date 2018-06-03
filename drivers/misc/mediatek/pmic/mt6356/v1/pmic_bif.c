@@ -452,7 +452,7 @@ _err:
 #define BIF_X1_CK_PDN_SHIFT 6
 #define BIF_X4_CK_PDN_SHIFT 7
 #define BIF_X104_CK_PDN_SHIFT 8
-
+#define PMU26M_CK_DIV_PDN_SHIFT 9
 
 static int bif_init(void)
 {
@@ -467,7 +467,8 @@ static int bif_init(void)
 				(1 << BIF_1M_CK_PDN_SHIFT) |
 				(1 << BIF_X1_CK_PDN_SHIFT) |
 				(1 << BIF_X4_CK_PDN_SHIFT) |
-				(1 << BIF_X104_CK_PDN_SHIFT));
+				(1 << BIF_X104_CK_PDN_SHIFT) |
+				(1 << PMU26M_CK_DIV_PDN_SHIFT));
 
 
 	/* Enable HT protection */
