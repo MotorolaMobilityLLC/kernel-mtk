@@ -1,0 +1,19 @@
+&i2c0 {
+	rt9750@67 {
+		compatible = "richtek,rt9750";
+		reg = <0x67>;
+		status = "okay";
+		charger_name = "primary_load_switch";
+		alias_name = "rt9750";
+		rt,en_gpio_num = <195>;
+		rt,en_gpio = <&pio 195 0x0>;
+		rt,intr_gpio_num = <37>; /* direct defined GPIO num */
+		rt,intr_gpio = <&pio 37 0x0>;
+		vout_reg = <5000000>; /* uV */
+		vbat_reg = <4500000>; /* uV */
+		iococp = <6500000>; /* uA */
+		regmap_represent_slave_addr = <0x67>;
+		regmap_name = "rt9750";
+		wdt = <0>; /* 0, 500000, 1000000, 2000000 us */
+	};
+};
