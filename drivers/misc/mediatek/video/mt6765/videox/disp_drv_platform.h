@@ -32,7 +32,8 @@
 #define ALIGN_TO(x, n)  (((x) + ((n) - 1)) & ~((n) - 1))
 
 #if defined(CONFIG_FPGA_EARLY_PORTING) || !defined(CONFIG_MTK_GPU_SUPPORT)
-#define MTK_FB_ALIGNMENT 1 /* SW 3D */
+/* SW 3D already use 32 */
+#define MTK_FB_ALIGNMENT 32 /* SW 3D */
 #else
 #define MTK_FB_ALIGNMENT 32 /* HW 3D */
 #endif
