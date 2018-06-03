@@ -71,7 +71,7 @@ static void __iomem *pwrap_base;
 #define PMIC_CW11_INIT_VAL			0xA000
 
 /* TODO: marked this after driver is ready */
-#define CLKBUF_BRINGUP
+/* #define CLKBUF_BRINGUP */
 
 /* #define CLKBUF_CONN_SUPPORT_CTRL_FROM_PMIC_WRAP */
 
@@ -962,10 +962,6 @@ short is_clkbuf_bringup(void)
 
 void clk_buf_post_init(void)
 {
-#ifndef CONFIG_MTK_NFC_SUPPORT
-	/* no need to use XO_NFC if no NFC chip */
-	clk_buf_ctrl_internal(CLK_BUF_NFC, false);
-#endif
 #ifndef CONFIG_MTK_UFS_BOOTING
 	/* no need to use XO_EXT if storage is emmc */
 	clk_buf_ctrl_internal(CLK_BUF_UFS, false);
