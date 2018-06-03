@@ -1457,6 +1457,22 @@
 		clock-names = "therm-main";
 	};
 
+	eem_fsm@1100b000 {
+		compatible = "mediatek,eem_fsm";
+		reg = <0 0x1100b000 0 0x1000>;
+		interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_LOW>;
+		clocks =
+			<&scpsys SCP_SYS_MFG_ASYNC>,
+			<&scpsys SCP_SYS_MFG>,
+			<&scpsys SCP_SYS_MFG_CORE0>,
+			<&scpsys SCP_SYS_MFG_CORE1>;
+		clock-names =
+			"mfg-async",
+			"mfg",
+			"mfg-core0",
+			"mfg-core1";
+	};
+
 	btif@1100c000 {
 		compatible = "mediatek,btif";
 		#address-cells = <2>;

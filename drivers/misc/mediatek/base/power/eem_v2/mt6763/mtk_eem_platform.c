@@ -229,14 +229,11 @@ void get_freq_table_cpu(struct eem_det *det)
 			(det_id == EEM_DET_2L) ? MT_CPU_DVFS_LL :
 			MT_CPU_DVFS_L;
 
-	det->max_freq_khz = mt_cpufreq_get_freq_by_idx(cpu_id, 0);
-	if (det->max_freq_khz != 0) {
-		for (i = 0; i < NR_FREQ_CPU; i++) {
-			det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu_id, i), det->max_freq_khz);
-			/* eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]); */
-			if (det->freq_tbl[i] == 0)
-				break;
-		}
+	for (i = 0; i < NR_FREQ_CPU; i++) {
+		det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu_id, i), det->max_freq_khz);
+		/* eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]); */
+		if (det->freq_tbl[i] == 0)
+			break;
 	}
 	#endif
 
@@ -333,15 +330,12 @@ void get_freq_table_gpu(struct eem_det *det)
 			break;
 	}
 	#else
-	#ifndef EARLY_PORTING_GPU
-	det->max_freq_khz = mt_gpufreq_get_freq_by_idx(0);
-	if (det->max_freq_khz != 0) {
+		#ifndef EARLY_PORTING_GPU
 		for (i = 0; i < NR_FREQ_GPU; i++) {
 			det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx(i), det->max_freq_khz);
 			/* eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]);*/
 		}
-	}
-	#endif
+		#endif
 	#endif /* if DVT */
 
 	det->num_freq_tbl = i;

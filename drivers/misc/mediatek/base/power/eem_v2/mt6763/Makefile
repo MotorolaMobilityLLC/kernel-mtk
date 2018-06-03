@@ -23,6 +23,7 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/pmic/include	\
 	-I$(srctree)/drivers/misc/mediatek/pmic/include/mt6355	\
 	-I$(srctree)/include/linux/	\
+	-I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)	\
 	-I$(EEM_ROOT_DIR)/$(CONFIG_MTK_PLATFORM)/inc	\
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)

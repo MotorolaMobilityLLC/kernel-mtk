@@ -101,7 +101,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#endif
 		.ctrl_id	= EEM_CTRL_2L,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1638000,/* 1599 MHz */
+		.max_freq_khz	= 1690000,/* 1690 MHz */
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
@@ -128,7 +128,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#endif
 		.ctrl_id	= EEM_CTRL_L,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 2340000,/* 2249 MHz */
+		.max_freq_khz	= 2340000,/* 2340 MHz */
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
@@ -155,7 +155,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#endif
 		.ctrl_id	= EEM_CTRL_CCI,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1391000,/* 1118 MHz */
+		.max_freq_khz	= 1040000,/* 1040 MHz */
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
@@ -182,7 +182,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#endif
 		.ctrl_id	= EEM_CTRL_GPU,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 850000,/* 850 MHz */
+		.max_freq_khz	= 950000,/* 950 MHz */
 		.VBOOT		= VBOOT_VAL_GPU, /* 10uV */
 		.VMAX		= VMAX_VAL_GPU,
 		.VMIN		= VMIN_VAL,

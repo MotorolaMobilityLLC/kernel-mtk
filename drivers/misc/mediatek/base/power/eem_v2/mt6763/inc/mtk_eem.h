@@ -72,6 +72,7 @@ enum eem_features {
 	FEA_INIT02	= BIT(EEM_PHASE_INIT02),
 	FEA_MON		= BIT(EEM_PHASE_MON),
 };
+
 enum {
 	EEM_VOLT_NONE	= 0,
 	EEM_VOLT_UPDATE  = BIT(0),

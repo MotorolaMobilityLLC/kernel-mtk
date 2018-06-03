@@ -90,6 +90,7 @@
 	#include "mtk_eem_internal.h"
 	#include "mtk_spm_vcore_dvfs.h"
 	#include "mtk_gpufreq.h"
+	#include "mtk_dramc.h"
 	#include <mt-plat/mtk_devinfo.h>
 	#include <regulator/consumer.h>
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
@@ -98,7 +99,7 @@
 	#endif
 
 	#if UPDATE_TO_UPOWER
-	#include "mtk_unified_power.h"
+	#include "mtk_upower.h"
 	#endif
 
 	#if 0
@@ -240,7 +241,7 @@
 *******************************************
 */
 #if (defined(__KERNEL__) && !defined(CONFIG_MTK_CLKMGR)) && !(EARLY_PORTING)
-struct clk *clk_mfg0, *clk_mfg1, *clk_mfg2, *clk_mfg3, *clk_mfg4;
+struct clk *clk_mfg0, *clk_mfg1, *clk_mfg2, *clk_mfg3;
 #endif
 
 /* SOC v1 Voltage (10uv)*/
@@ -266,7 +267,6 @@ static unsigned int vcore_opp_L4_2CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
 	 72500, 72500, 72500, 72500},
 };
 
-#if 0
 static unsigned int vcore_opp_L4_1CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
 	{80000, 79375, 78750, 78125,
 	 77500, 76875, 76250, 75625,
@@ -311,6 +311,7 @@ static unsigned int vcore_opp_L3_1CH[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
 	 72500, 72500, 72500, 72500},
 };
 
+#if 0
 /* SOC v2 Voltage (10uv)*/
 static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
 	{84000, 815000, 79000, 76500},
@@ -391,7 +392,19 @@ static void get_vcore_opp(void)
 	 * vcore_opp_L4_2CH, vcore_opp_L4_1CH, vcore_opp_L3_1CH
 	*/
 
-	vcore_opp = &vcore_opp_L4_2CH[0];
+	int ddr_type = get_ddr_type();
+	#if 0
+		int emi_ch_num = get_emi_ch_num();
+	#else
+		int emi_ch_num = 2;
+	#endif
+
+	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2)
+		vcore_opp = &vcore_opp_L4_2CH[0];
+	else if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 1)
+		vcore_opp = &vcore_opp_L4_1CH[0];
+	else if (ddr_type == TYPE_LPDDR3 && emi_ch_num == 1)
+		vcore_opp = &vcore_opp_L3_1CH[0];
 #endif
 }
 
@@ -400,7 +413,7 @@ static void get_soc_efuse(void)
 {
 	unsigned int soc_efuse;
 
-	soc_efuse = get_devinfo_with_index(DEVINFO_IDX_12);
+	soc_efuse = get_devinfo_with_index(DEVINFO_IDX_10);
 	/* no voltage bin, use default opp 0 */
 	soc_efuse = 0;
 
@@ -519,25 +532,21 @@ static void mt_eem_enable_big_cluster(unsigned int enable)
 static void mt_eem_get_clk(struct platform_device *pdev)
 {
 	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
-	clk_mfg0 = devm_clk_get(&pdev->dev, "mtcmos-mfg0");
+	clk_mfg0 = devm_clk_get(&pdev->dev, "mfg-async");
 	if (IS_ERR(clk_mfg0))
-		eem_error("cannot get mtcmos-mfg-sync\n");
+		eem_error("cannot get mtcmos-mfg-async\n");
 
-	clk_mfg1 = devm_clk_get(&pdev->dev, "mtcmos-mfg1");
+	clk_mfg1 = devm_clk_get(&pdev->dev, "mfg");
 	if (IS_ERR(clk_mfg1))
-		eem_error("cannot get mtcmos-mfg-top\n");
+		eem_error("cannot get mtcmos-mfg\n");
 
-	clk_mfg2 = devm_clk_get(&pdev->dev, "mtcmos-mfg2");
+	clk_mfg2 = devm_clk_get(&pdev->dev, "mfg-core0");
 	if (IS_ERR(clk_mfg2))
-		eem_error("cannot get mtcmos-shader0\n");
+		eem_error("cannot get mtcmos-mfg-core0\n");
 
-	clk_mfg3 = devm_clk_get(&pdev->dev, "mtcmos-mfg3");
+	clk_mfg3 = devm_clk_get(&pdev->dev, "mfg-core1");
 	if (IS_ERR(clk_mfg3))
-		eem_error("cannot get mtcmos-shader1\n");
-
-	clk_mfg4 = devm_clk_get(&pdev->dev, "mtcmos-mfg4");
-	if (IS_ERR(clk_mfg4))
-		eem_error("cannot get mtcmos-shader2\n");
+		eem_error("cannot get mtcmos-mfg-core1\n");
 	#endif
 }
 static void mt_eem_enable_mtcmos(void)
@@ -552,7 +561,7 @@ static void mt_eem_enable_mtcmos(void)
 
 	ret = clk_prepare_enable(clk_mfg1); /* gpu mtcmos enable*/
 	if (ret)
-		eem_error("clk_prepare_enable failed when enabling clk_mfg_top\n");
+		eem_error("clk_prepare_enable failed when enabling clk_mfg\n");
 
 	ret = clk_prepare_enable(clk_mfg2); /* gpu mtcmos enable*/
 	if (ret)
@@ -561,10 +570,6 @@ static void mt_eem_enable_mtcmos(void)
 	ret = clk_prepare_enable(clk_mfg3); /* gpu mtcmos enable*/
 	if (ret)
 		eem_error("clk_prepare_enable failed when enabling clk_shader1\n");
-
-	ret = clk_prepare_enable(clk_mfg4); /* gpu mtcmos enable*/
-	if (ret)
-		eem_error("clk_prepare_enable failed when enabling clk_shader2\n");
 	#endif /* if !defined CONFIG_MTK_CLKMGR */
 
 	eem_debug("mt_eem_enable_mtcmos done\n");
@@ -573,7 +578,6 @@ static void mt_eem_enable_mtcmos(void)
 static void mt_eem_disable_mtcmos(void)
 {
 	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
-	clk_disable_unprepare(clk_mfg4);
 	clk_disable_unprepare(clk_mfg3);
 	clk_disable_unprepare(clk_mfg2);
 	clk_disable_unprepare(clk_mfg1);
@@ -599,25 +603,23 @@ static int get_devinfo(void)
 
 	#if !DVT
 		#if defined(__KERNEL__)
-		/* big */
-		val[0] = get_devinfo_with_index(DEVINFO_IDX_0);
-		val[1] = get_devinfo_with_index(DEVINFO_IDX_1);
-		/* cci */
-		val[2] = get_devinfo_with_index(DEVINFO_IDX_2);
-		val[3] = get_devinfo_with_index(DEVINFO_IDX_3);
-		/* gpu */
-		val[4] = get_devinfo_with_index(DEVINFO_IDX_4);
-		val[5] = get_devinfo_with_index(DEVINFO_IDX_5);
-		/* ll */
-		val[6] = get_devinfo_with_index(DEVINFO_IDX_6);
-		val[7] = get_devinfo_with_index(DEVINFO_IDX_7);
-		/* l */
-		val[8] = get_devinfo_with_index(DEVINFO_IDX_8);
-		val[9] = get_devinfo_with_index(DEVINFO_IDX_9);
-		/* soc */
-		val[10] = get_devinfo_with_index(DEVINFO_IDX_12);
 		/* FTPGM */
-		val[11] = get_devinfo_with_index(DEVINFO_IDX_FTPGM);
+		val[0] = get_devinfo_with_index(DEVINFO_IDX_0);
+		/* LL */
+		val[1] = get_devinfo_with_index(DEVINFO_IDX_1);
+		val[2] = get_devinfo_with_index(DEVINFO_IDX_2);
+		/* L */
+		val[3] = get_devinfo_with_index(DEVINFO_IDX_3);
+		val[4] = get_devinfo_with_index(DEVINFO_IDX_4);
+		/* CCI */
+		val[5] = get_devinfo_with_index(DEVINFO_IDX_5);
+		val[6] = get_devinfo_with_index(DEVINFO_IDX_6);
+		/* GPU */
+		val[7] = get_devinfo_with_index(DEVINFO_IDX_7);
+		val[8] = get_devinfo_with_index(DEVINFO_IDX_8);
+		/* soc */
+		val[9] = get_devinfo_with_index(DEVINFO_IDX_9);
+		val[10] = get_devinfo_with_index(DEVINFO_IDX_10);
 		#if EEM_FAKE_EFUSE
 		/* for verification */
 		val[0] = DEVINFO_0;
@@ -630,8 +632,7 @@ static int get_devinfo(void)
 		val[7] = DEVINFO_7;
 		val[8] = DEVINFO_8;
 		val[9] = DEVINFO_9;
-		val[10] = DEVINFO_12;
-		val[11] = 0;
+		val[10] = DEVINFO_10;
 		#endif
 
 		#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
@@ -647,19 +648,19 @@ static int get_devinfo(void)
 			aee_rr_rec_ptp_e9((unsigned int)val[9]);
 			aee_rr_rec_ptp_e10((unsigned int)val[10]);
 		#endif
+
 		#else
-		val[0] = eem_read(0x10450580); /* M_HW_RES0 */
-		val[1] = eem_read(0x10450584); /* M_HW_RES1 */
-		val[2] = eem_read(0x10450588); /* M_HW_RES2 */
-		val[3] = eem_read(0x1045058C); /* M_HW_RES3 */
-		val[4] = eem_read(0x10450590); /* M_HW_RES4 */
-		val[5] = eem_read(0x10450594); /* M_HW_RES5 */
-		val[6] = eem_read(0x10450598); /* M_HW_RES6 */
-		val[7] = eem_read(0x1045059C); /* M_HW_RES7 */
-		val[8] = eem_read(0x104505A0); /* M_HW_RES8 */
-		val[9] = eem_read(0x104505A4); /* M_HW_RES9 */
-		val[10] = eem_read(0x104505B0); /* M_HW_RES12 */
-		val[11] = 0;
+		val[0] = eem_read(0x11F10580); /* M_HW_RES0 */
+		val[1] = eem_read(0x11f10584); /* M_HW_RES1 */
+		val[2] = eem_read(0x11f10588); /* M_HW_RES2 */
+		val[3] = eem_read(0x11f1058C); /* M_HW_RES3 */
+		val[4] = eem_read(0x11f10590); /* M_HW_RES4 */
+		val[5] = eem_read(0x11f10594); /* M_HW_RES5 */
+		val[6] = eem_read(0x11f10598); /* M_HW_RES6 */
+		val[7] = eem_read(0x11f1059C); /* M_HW_RES7 */
+		val[8] = eem_read(0x11f105A0); /* M_HW_RES8 */
+		val[9] = eem_read(0x11f105A4); /* M_HW_RES9 */
+		val[10] = eem_read(0x11f105A8); /* M_HW_RES10 */
 		#endif
 	#else
 	/* for DVT */
@@ -673,8 +674,7 @@ static int get_devinfo(void)
 	val[7] = DEVINFO_DVT_7;
 	val[8] = DEVINFO_DVT_8;
 	val[9] = DEVINFO_DVT_9;
-	val[10] = DEVINFO_12;
-	val[11] = 0;
+	val[10] = DEVINFO_DVT_10;
 	#endif
 	eem_debug("M_HW_RES0 = 0x%08X\n", val[0]);
 	eem_debug("M_HW_RES1 = 0x%08X\n", val[1]);
@@ -686,6 +686,7 @@ static int get_devinfo(void)
 	eem_debug("M_HW_RES7 = 0x%08X\n", val[7]);
 	eem_debug("M_HW_RES8 = 0x%08X\n", val[8]);
 	eem_debug("M_HW_RES9 = 0x%08X\n", val[9]);
+	eem_debug("M_HW_RES10 = 0x%08X\n", val[10]);
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -700,11 +701,6 @@ static int get_devinfo(void)
 			break;
 		}
 	}
-
-	/* (MT6759 only) 0: add voltage, 1: non add voltage */
-	ret = GET_BITS_VAL(11:11, get_devinfo_with_index(DEVINFO_IDX_VOLT_ADJUST));
-	if (ret == 0)
-		eem_checkEfuse = 0;
 
 	#if (EEM_FAKE_EFUSE || DVT)
 	eem_checkEfuse = 1;
@@ -832,7 +828,7 @@ void base_ops_disable_locked(struct eem_det *det, int reason)
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	switch (reason) {
-	case BY_MON_ERROR:
+	case BY_MON_ERROR: /* 4 */
 		/* disable EEM */
 		eem_write(EEMEN, 0x0);
 
@@ -840,7 +836,7 @@ void base_ops_disable_locked(struct eem_det *det, int reason)
 		eem_write(EEMINTSTS, 0x00ffffff);
 		/* fall through */
 
-	case BY_PROCFS_INIT2: /* 2 */
+	case BY_PROCFS_INIT2: /* 8 */
 		/* set init2 value to DVFS table (PMIC) */
 		memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl_init2));
 		#if UPDATE_TO_UPOWER
@@ -851,7 +847,7 @@ void base_ops_disable_locked(struct eem_det *det, int reason)
 		eem_debug("det->disabled=%x", det->disabled);
 		break;
 
-	case BY_INIT_ERROR:
+	case BY_INIT_ERROR: /* 2 */
 		/* disable EEM */
 		eem_write(EEMEN, 0x0);
 
@@ -1219,7 +1215,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		#if EEM_FAKE_EFUSE
 		eem_write(EEM_INIT2VALS,
 			  ((det->AGEVOFFSETIN << 16) & 0xffff0000) |
-			  ((eem_devinfo.FTPGM_VER == 0) ? 0 : det->DCVOFFSETIN & 0xffff));
+			  ((eem_devinfo.FT_PGM == 0) ? 0 : det->DCVOFFSETIN & 0xffff));
 		#else
 		eem_write(EEM_INIT2VALS,
 			  ((det->AGEVOFFSETIN << 16) & 0xffff0000) | (det->DCVOFFSETIN & 0xffff));
@@ -2072,7 +2068,7 @@ static void read_volt_from_VOP(struct eem_det *det)
 {
 	int temp, i, j;
 	unsigned int step = NR_FREQ / 8;
-	int ref_idx = (det->num_freq_tbl / 2) - 1;
+	int ref_idx = ((det->num_freq_tbl + 1) / 2) - 1;
 
 	temp = eem_read(EEM_VOP30);
 	eem_debug("read(EEM_VOP30) = 0x%08X\n", temp);
@@ -4651,7 +4647,7 @@ int __init eem_init(void)
 
 	#if ITurbo
 	/* Read E-Fuse to control ITurbo mode */
-	ctrl_ITurbo = eem_devinfo.OD18_TURBO;
+	ctrl_ITurbo = eem_devinfo.CPU_L_TURBO;
 	#endif
 
 	#ifdef __KERNEL__
