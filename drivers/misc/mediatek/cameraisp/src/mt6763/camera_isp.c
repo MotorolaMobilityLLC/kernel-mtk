@@ -19,7 +19,7 @@
  *
  ******************************************************************************/
 /* MET: define to enable MET*/
-#define ISP_MET_READY
+/* #define ISP_MET_READY */
 
 #include <linux/types.h>
 #include <linux/device.h>
@@ -90,6 +90,9 @@
 #include <mmdvfs_mgr.h>
 /* Use this qos request to control camera dynamic frequency change */
 struct mmdvfs_pm_qos_request isp_qos;
+
+#define CREATE_TRACE_POINTS
+#include "inc/met_events_camsys.h"
 
 #define CAMSV_DBG
 #ifdef CAMSV_DBG
@@ -2215,6 +2218,94 @@ static struct _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 #include "camera_isp_isr.c"
 #endif
 
+/*******************************************************************************
+* Add MET ftrace event for power profilling. CAM_enter when SOF and CAM_leave when P1_Done
+********************************************************************************/
+#if defined(ISP_MET_READY)
+int MET_Event_Get_BPP(_isp_dma_enum_ dmao, unsigned int reg_module)
+{
+	unsigned int fmt_sel = ISP_RD32(CAM_REG_CTL_FMT_SEL(reg_module));
+	int ret = 0;
+
+	if (dmao == _imgo_) {
+		switch (fmt_sel & 0x1F0) {
+		case 0:
+		case 12:
+		case 13:
+		case 14:
+		case 15:
+			ret = 16;
+			break;
+		case 8:
+			ret = 8;
+			break;
+		case 9:
+		case 16:
+			ret = 10;
+			break;
+		case 10:
+			ret = 12;
+			break;
+		case 11:
+			ret = 14;
+			break;
+		default:
+			LOG_ERR("get imgo bpp error\n");
+			break;
+		}
+	} else if (dmao == _rrzo_) {
+		switch (fmt_sel & 0x0C) {
+		case 0:
+			ret = 8;
+			break;
+		case 1:
+			ret = 10;
+			break;
+		case 2:
+			ret = 12;
+			break;
+		default:
+			LOG_ERR("get rrzo bpp error\n");
+			break;
+		}
+	}
+
+	return ret;
+}
+
+void MET_Events_Trace(bool enter, unsigned int reg_module)
+{
+	if (enter) {
+		int imgo_en = 0, rrzo_en = 0, imgo_bpp, rrzo_bpp, imgo_xsize, imgo_ysize;
+		int rrzo_xsize, rrzo_ysize, rrz_src_w, rrz_src_h, rrz_dst_w;
+		int rrz_dst_h, rrz_hori_step, rrz_vert_step;
+		unsigned int dma_en, rrz_in, rrz_out;
+
+		dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
+		rrz_in = ISP_RD32(CAM_REG_RRZ_IN_IMG(reg_module));
+		rrz_out = ISP_RD32(CAM_REG_RRZ_OUT_IMG(reg_module));
+		imgo_en = dma_en & 0x1;
+		rrzo_en = dma_en & 0x4;
+		imgo_bpp = MET_Event_Get_BPP(_imgo_, reg_module);
+		rrzo_bpp = MET_Event_Get_BPP(_rrzo_, reg_module);
+		imgo_xsize = (int)(ISP_RD32(CAM_REG_IMGO_XSIZE(reg_module)) & 0xFFFF);
+		imgo_ysize = (int)(ISP_RD32(CAM_REG_IMGO_YSIZE(reg_module)) & 0xFFFF);
+		rrzo_xsize = (int)(ISP_RD32(CAM_REG_RRZO_XSIZE(reg_module)) & 0xFFFF);
+		rrzo_ysize = (int)(ISP_RD32(CAM_REG_RRZO_YSIZE(reg_module)) & 0xFFFF);
+		rrz_src_w = rrz_in & 0xFFFF;
+		rrz_src_h = (rrz_in >> 16) & 0xFFFF;
+		rrz_dst_w = rrz_out & 0xFFFF;
+		rrz_dst_h = (rrz_out >> 16) & 0xFFFF;
+		rrz_hori_step = (int)(ISP_RD32(CAM_REG_RRZ_HORI_STEP(reg_module)) & 0x3FFFF);
+		rrz_vert_step = (int)(ISP_RD32(CAM_REG_RRZ_VERT_STEP(reg_module)) & 0x3FFFF);
+
+		trace_ISP_Pass1_CAM_enter(imgo_en, rrzo_en, imgo_bpp, rrzo_bpp, imgo_xsize, imgo_ysize,
+		rrzo_xsize, rrzo_ysize, rrz_src_w, rrz_src_h, rrz_dst_w, rrz_dst_h, rrz_hori_step, rrz_vert_step);
+	} else {
+		trace_ISP_Pass1_CAM_leave(0);
+	}
+}
+#endif
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -11720,12 +11811,14 @@ irqreturn_t ISP_Irq_CAM_A(int Irq, void *DeviceId)
 	if (IrqStatus & SW_PASS1_DON_ST) {
 		if (met_mmsys_event_isp_pass1_end)
 			met_mmsys_event_isp_pass1_end(0);
+		MET_Events_Trace(0, reg_module);
 	}
 
 	if (IrqStatus & SOF_INT_ST) {
 		/*met mmsys profile*/
 		if (met_mmsys_event_isp_pass1_begin)
 			met_mmsys_event_isp_pass1_begin(0);
+		MET_Events_Trace(1, reg_module);
 	}
 	#endif
 
@@ -12210,12 +12303,14 @@ irqreturn_t ISP_Irq_CAM_B(int  Irq, void *DeviceId)
 	if (IrqStatus & SW_PASS1_DON_ST) {
 		if (met_mmsys_event_isp_pass1_end)
 			met_mmsys_event_isp_pass1_end(1);
+		MET_Events_Trace(0, reg_module);
 	}
 
 	if (IrqStatus & SOF_INT_ST) {
 		/*met mmsys profile*/
 		if (met_mmsys_event_isp_pass1_begin)
 			met_mmsys_event_isp_pass1_begin(1);
+		MET_Events_Trace(1, reg_module);
 	}
 	#endif
 
