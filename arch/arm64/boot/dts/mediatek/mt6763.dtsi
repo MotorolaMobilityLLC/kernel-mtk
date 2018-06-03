@@ -1204,6 +1204,11 @@
 		clock-names = "GCE";
 	};
 
+	met_cci_pmu@10390000 {
+		compatible = "mediatek,met_cci_pmu";
+		reg = <0 0x10390000 0 0x10000>;
+	};
+
 	sspm@10440000 {
 		compatible = "mediatek,sspm";
 		reg = <0 0x10440000 0 0x1000>,
