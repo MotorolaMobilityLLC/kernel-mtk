@@ -33,6 +33,8 @@ struct qos_data {
 	union {
 		struct {
 			unsigned int enable;
+			unsigned int dvfs_en;
+			unsigned int spm_dram_type;
 		} qos_init;
 		struct {
 			unsigned int opp;

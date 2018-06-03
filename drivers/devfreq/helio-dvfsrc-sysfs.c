@@ -162,8 +162,37 @@ static ssize_t dvfsrc_debug_show(struct device *dev,
 	p += snprintf(p, buff_end - p, "%-24s: 0x%x\n",
 			"DVFSRC_RSRV_0",
 			dvfsrc_read(dvfsrc, DVFSRC_RSRV_0));
+	p += snprintf(p, buff_end - p, "\n");
 
-	/* ToDo: SPM Debug message */
+	p += snprintf(p, buff_end - p, "%-24s: %d\n",
+			"QOS_EMI_OPP",
+			pm_qos_request(PM_QOS_EMI_OPP));
+	p += snprintf(p, buff_end - p, "%-24s: %d\n",
+			"QOS_VCORE_OPP",
+			pm_qos_request(PM_QOS_VCORE_OPP));
+	p += snprintf(p, buff_end - p, "%-24s: %3d (100MB/s)\n",
+			"DVFSRC_EMI_QOS0 THRES",
+			dvfsrc_read(dvfsrc, DVFSRC_EMI_QOS0));
+	p += snprintf(p, buff_end - p, "%-24s: %3d (100MB/s)\n",
+			"DVFSRC_EMI_QOS1 THRES",
+			dvfsrc_read(dvfsrc, DVFSRC_EMI_QOS1));
+	p += snprintf(p, buff_end - p, "%-24s: %3d (100MB/s)\n",
+			"DVFSRC_SW_BW_0 (Test)",
+			dvfsrc_read(dvfsrc, DVFSRC_SW_BW_0));
+	p += snprintf(p, buff_end - p, "%-24s: %3d (100MB/s)\n",
+			"DVFSRC_SW_BW_1 (CPU)",
+			dvfsrc_read(dvfsrc, DVFSRC_SW_BW_1));
+	p += snprintf(p, buff_end - p, "%-24s: %3d (100MB/s)\n",
+			"DVFSRC_SW_BW_2 (GPU)",
+			dvfsrc_read(dvfsrc, DVFSRC_SW_BW_2));
+	p += snprintf(p, buff_end - p, "%-24s: %3d (100MB/s)\n",
+			"DVFSRC_SW_BW_3 (MM)",
+			dvfsrc_read(dvfsrc, DVFSRC_SW_BW_3));
+	p += snprintf(p, buff_end - p, "%-24s: %3d (100MB/s)\n",
+			"DVFSRC_SW_BW_4 (OTHER)",
+			dvfsrc_read(dvfsrc, DVFSRC_SW_BW_4));
+	p += snprintf(p, buff_end - p, "\n");
+
 	return p - buf;
 }
 

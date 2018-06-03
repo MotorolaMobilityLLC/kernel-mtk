@@ -413,6 +413,13 @@ static void set_vcorefs_en(void)
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6771)
 	vcorefs_late_init_dvfs();
 #endif
+#if defined(CONFIG_MACH_MT6771)
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
+	dvfsrc_update_sspm_qos_enable(is_vcorefs_feature_enable(), __spm_get_dram_type());
+	vcorefs_crit("[%s] dvfsrc_update_sspm_qos_enable(%d, %d)\n",
+			__func__, is_vcorefs_feature_enable(), __spm_get_dram_type());
+#endif
+#endif
 }
 
 int governor_debug_store(const char *buf)
@@ -620,6 +627,19 @@ void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
 
 	qos_ipi_to_sspm_command(&qos_d, 3);
 }
+
+void dvfsrc_update_sspm_qos_enable(int dvfs_en, unsigned int dram_type)
+{
+	struct qos_data qos_d;
+
+	qos_d.cmd = QOS_IPI_QOS_ENABLE;
+	qos_d.u.qos_init.enable = 1;
+	qos_d.u.qos_init.dvfs_en = dvfs_en;
+	qos_d.u.qos_init.spm_dram_type = dram_type;
+
+	qos_ipi_to_sspm_command(&qos_d, 4);
+}
+
 #endif
 #endif
 
