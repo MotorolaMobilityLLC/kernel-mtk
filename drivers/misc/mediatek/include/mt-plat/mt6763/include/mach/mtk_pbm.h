@@ -21,10 +21,17 @@
 #define DISABLE_PBM_FEATURE
 #endif
 
-#define MD1_MAX_PW	3000	/* mW */
-#define MD3_MAX_PW	2500	/* mW */
+#define DISABLE_PBM_MD3
+
+#define MD1_MAX_PW	4000	/* mW */
+#if !defined(DISABLE_PBM_MD3)
+#define MD3_MAX_PW	1000	/* mW */
+#endif
 #define POWER_FLASH	3500	/* mW */
 #define GUARDING_PATTERN	0
+
+#define _BIT_(_bit_)		(unsigned)(1 << (_bit_))
+#define _BITMASK_(_bits_)	(((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1))
 
 struct pbm {
 	u8 feature_en;
@@ -34,12 +41,16 @@ struct pbm {
 
 struct hpf {
 	bool switch_md1;
+#if !defined(DISABLE_PBM_MD3)
 	bool switch_md3;
+#endif
 	bool switch_gpu;
 	bool switch_flash;
 
 	bool md1_ccci_ready;
+#if !defined(DISABLE_PBM_MD3)
 	bool md3_ccci_ready;
+#endif
 
 	int cpu_volt;
 	int gpu_volt;
@@ -48,7 +59,9 @@ struct hpf {
 	unsigned long loading_leakage;
 	unsigned long loading_dlpt;
 	unsigned long loading_md1;
+#if !defined(DISABLE_PBM_MD3)
 	unsigned long loading_md3;
+#endif
 	unsigned long loading_cpu;
 	unsigned long loading_gpu;
 	unsigned long loading_flash;
@@ -71,7 +84,9 @@ struct mrp {
 enum pbm_kicker {
 	KR_DLPT,		/* 0 */
 	KR_MD1,			/* 1 */
+#if !defined(DISABLE_PBM_MD3)
 	KR_MD3,			/* 2 */
+#endif
 	KR_CPU,			/* 3 */
 	KR_GPU,			/* 4 */
 	KR_FLASH		/* 5 */
@@ -94,61 +109,98 @@ enum section_level_tbl {
 };
 
 enum md1_scenario {
-	CAT6_CA_DATALINK,	/* 0 */
-	NON_CA_DATALINK,	/* 1 */
-	PAGING,			/* 2 */
-	POSITION,		/* 3 */
-	CELL_SEARCH,		/* 4 */
-	CELL_MANAGEMENT,	/* 5 */
-	TALKING_2G,		/* 6 */
-	DATALINK_2G,		/* 7 */
-	TALKING_3G,		/* 8 */
-	DATALINK_3G,		/* 9 */
-	SCENARIO_NUM		/* 10 */
+	S_STANDBY = 0,
+	S_2G_TALKING_OR_DATALINK,
+	S_3G_TALKING,
+	S_3G_DATALINK,
+	S_4G_DL_1CC,
+	S_4G_DL_2CC,
+	S_4G_DL_3CC,
+	SCENARIO_NUM
 };
 
 enum share_mem_mapping {	/* each of 4 byte */
 	DBM_2G_TABLE = 0,
-	DBM_3G_TABLE = 1,
-	DBM_4G_TABLE = 2,
-	DBM_TDD_TABLE = 3,
-	DBM_C2K_TABLE = 4,
-	SECTION_LEVLE_2G = 5,
-	SECTION_LEVLE_3G = 6,
-	SECTION_LEVLE_4G = 7,
-	SECTION_LEVLE_TDD = 8,
-	SECTION_LEVLE_C2K = 9,
+	DBM_3G_TABLE,
+	DBM_4G_TABLE,
+	DBM_4G_1_TABLE,
+	DBM_4G_2_TABLE,
+	DBM_4G_3_TABLE,
+	DBM_4G_4_TABLE,
+	DBM_4G_5_TABLE,
+	DBM_4G_6_TABLE,
+	DBM_4G_7_TABLE,
+	DBM_4G_8_TABLE,
+	DBM_4G_9_TABLE,
+	DBM_4G_10_TABLE,
+	DBM_4G_11_TABLE,
+	DBM_4G_12_TABLE,
+	DBM_TDD_TABLE,
+	DBM_C2K_1_TABLE,
+	DBM_C2K_2_TABLE,
+	DBM_C2K_3_TABLE,
+	DBM_C2K_4_TABLE,
+	SECTION_LEVLE_2G,
+	SECTION_LEVLE_3G,
+	SECTION_LEVLE_4G,
+	SECTION_1_LEVLE_4G,
+	SECTION_2_LEVLE_4G,
+	SECTION_3_LEVLE_4G,
+	SECTION_4_LEVLE_4G,
+	SECTION_5_LEVLE_4G,
+	SECTION_6_LEVLE_4G,
+	SECTION_7_LEVLE_4G,
+	SECTION_8_LEVLE_4G,
+	SECTION_9_LEVLE_4G,
+	SECTION_10_LEVLE_4G,
+	SECTION_11_LEVLE_4G,
+	SECTION_12_LEVLE_4G,
+	SECTION_LEVLE_TDD,
+	SECTION_1_LEVLE_C2K,
+	SECTION_2_LEVLE_C2K,
+	SECTION_3_LEVLE_C2K,
+	SECTION_4_LEVLE_C2K,
 	SHARE_MEM_BLOCK_NUM
 };
 
 /*
  * MD1/MD3 Section level (can't more than SECTION_VALUE)
  */
+/* Each section has only 5 bits. The range is from 0 to 31 */
 enum md1_section_level_tbl_2g {
 	VAL_MD1_2G_SECTION_1 = 31,
 	VAL_MD1_2G_SECTION_2 = 29,
-	VAL_MD1_2G_SECTION_3 = 27,
-	VAL_MD1_2G_SECTION_4 = 23,
-	VAL_MD1_2G_SECTION_5 = 17,
+	VAL_MD1_2G_SECTION_3 = 25,
+	VAL_MD1_2G_SECTION_4 = 19,
+	VAL_MD1_2G_SECTION_5 = 11,
 	VAL_MD1_2G_SECTION_6 = 0
 };
 
 enum md1_section_level_tbl_3g {
-	VAL_MD1_3G_SECTION_1 = 21,
-	VAL_MD1_3G_SECTION_2 = 19,
-	VAL_MD1_3G_SECTION_3 = 18,
+	VAL_MD1_3G_SECTION_1 = 22,
+	VAL_MD1_3G_SECTION_2 = 20,
+	VAL_MD1_3G_SECTION_3 = 17,
 	VAL_MD1_3G_SECTION_4 = 16,
-	VAL_MD1_3G_SECTION_5 = 13,
+	VAL_MD1_3G_SECTION_5 = 11,
 	VAL_MD1_3G_SECTION_6 = 0
 };
 
-enum md1_section_level_tbl_4g {
-	VAL_MD1_4G_SECTION_1 = 21,
-	VAL_MD1_4G_SECTION_2 = 19,
-	VAL_MD1_4G_SECTION_3 = 18,
-	VAL_MD1_4G_SECTION_4 = 16,
-	VAL_MD1_4G_SECTION_5 = 13,
-	VAL_MD1_4G_SECTION_6 = 0
+enum md1_section_level_tbl_4g_upL1 {
+	VAL_MD1_4G_upL1_SECTION_1 = 21,
+	VAL_MD1_4G_upL1_SECTION_2 = 19,
+	VAL_MD1_4G_upL1_SECTION_3 = 17,
+	VAL_MD1_4G_upL1_SECTION_4 = 16,
+	VAL_MD1_4G_upL1_SECTION_5 = 11,
+	VAL_MD1_4G_upL1_SECTION_6 = 0
+};
+
+enum md1_section_level_tbl_4g_upL2 {
+	VAL_MD1_4G_upL2_SECTION_1 = 21,
+	VAL_MD1_4G_upL2_SECTION_2 = 19,
+	VAL_MD1_4G_upL2_SECTION_3 = 17,
+	VAL_MD1_4G_upL2_SECTION_4 = 16,
+	VAL_MD1_4G_upL2_SECTION_5 = 11,
+	VAL_MD1_4G_upL2_SECTION_6 = 0
 };
 
 enum md1_section_level_tbl_tdd {
@@ -160,86 +212,97 @@ enum md1_section_level_tbl_tdd {
 	VAL_MD1_TDD_SECTION_6 = 0
 };
 
-enum md3_section_level_tbl {
-	VAL_MD3_SECTION_1 = 24,
-	VAL_MD3_SECTION_2 = 23,
-	VAL_MD3_SECTION_3 = 21,
-	VAL_MD3_SECTION_4 = 19,
-	VAL_MD3_SECTION_5 = 14,
-	VAL_MD3_SECTION_6 = 0
+enum md3_section_level_tbl_c2k {
+	VAL_MD3_C2K_SECTION_1 = 23,
+	VAL_MD3_C2K_SECTION_2 = 22,
+	VAL_MD3_C2K_SECTION_3 = 20,
+	VAL_MD3_C2K_SECTION_4 = 17,
+	VAL_MD3_C2K_SECTION_5 = 16,
+	VAL_MD3_C2K_SECTION_6 = 0
 };
 
 /*
  * MD1/MD3 Scenario power
  */
 enum md1_scenario_pwr_tbl {
-	PW_CAT6_CA_DATALINK = 870,
-	PW_NON_CA_DATALINK = 650,
-	PW_PAGING = 30,
-	PW_POSITION = 870,		/* same as PW_CAT6_CA_DATALINK */
-	PW_CELL_SEARCH = 0,		/* no use */
-	PW_CELL_MANAGEMENT = 0,		/* no use */
-	PW_TALKING_2G = 200,
-	PW_DATALINK_2G = 200,
-	PW_TALKING_3G = 320,
-	PW_DATALINK_3G = 450
+	PW_STANDBY = 1,
+	PW_2G_TALKING_OR_DATALINK = 63,
+	PW_3G_TALKING = 142,
+	PW_3G_DATALINK = 258,
+	PW_4G_DL_1CC = 329,
+	PW_4G_DL_2CC = 449,
+	PW_4G_DL_3CC = 679
 };
 
+#if !defined(DISABLE_PBM_MD3)
 enum md3_scenario_pwr_tbl {
-	PW_MD3 = 500
+	PW_MD3 = 100			/* Talking or Datalink */
 };
+#endif
 
 /*
  * MD1/MD3 PA power
  */
 enum md1_pa_pwr_tbl_2g {
 	PW_MD1_PA_2G_SECTION_1 = 688,
-	PW_MD1_PA_2G_SECTION_2 = 440,
+	PW_MD1_PA_2G_SECTION_2 = 549,
 	PW_MD1_PA_2G_SECTION_3 = 353,
-	PW_MD1_PA_2G_SECTION_4 = 284,
-	PW_MD1_PA_2G_SECTION_5 = 184,
-	PW_MD1_PA_2G_SECTION_6 = 99
+	PW_MD1_PA_2G_SECTION_4 = 228,
+	PW_MD1_PA_2G_SECTION_5 = 121,
+	PW_MD1_PA_2G_SECTION_6 = 56
 };
 
 enum md1_pa_pwr_tbl_3g {
-	PW_MD1_PA_3G_SECTION_1 = 1965,
-	PW_MD1_PA_3G_SECTION_2 = 1557,
-	PW_MD1_PA_3G_SECTION_3 = 1022,
-	PW_MD1_PA_3G_SECTION_4 = 914,
-	PW_MD1_PA_3G_SECTION_5 = 553,
-	PW_MD1_PA_3G_SECTION_6 = 294
+	PW_MD1_PA_3G_SECTION_1 = 1980,
+	PW_MD1_PA_3G_SECTION_2 = 1391,
+	PW_MD1_PA_3G_SECTION_3 = 888,
+	PW_MD1_PA_3G_SECTION_4 = 633,
+	PW_MD1_PA_3G_SECTION_5 = 394,
+	PW_MD1_PA_3G_SECTION_6 = 192
 };
 
-enum md1_pa_pwr_tbl_4g {
-	PW_MD1_PA_4G_SECTION_1 = 1965,
-	PW_MD1_PA_4G_SECTION_2 = 1557,
-	PW_MD1_PA_4G_SECTION_3 = 1022,
-	PW_MD1_PA_4G_SECTION_4 = 914,
-	PW_MD1_PA_4G_SECTION_5 = 553,
-	PW_MD1_PA_4G_SECTION_6 = 294
+enum md1_pa_pwr_tbl_4g_upL1 {
+	PW_MD1_PA_4G_upL1_SECTION_1 = 1851,
+	PW_MD1_PA_4G_upL1_SECTION_2 = 1397,
+	PW_MD1_PA_4G_upL1_SECTION_3 = 931,
+	PW_MD1_PA_4G_upL1_SECTION_4 = 745,
+	PW_MD1_PA_4G_upL1_SECTION_5 = 423,
+	PW_MD1_PA_4G_upL1_SECTION_6 = 202
 };
 
-enum md3_pa_pwr_tbl {
-	PW_MD3_PA_SECTION_1 = 1956,
-	PW_MD3_PA_SECTION_2 = 1759,
-	PW_MD3_PA_SECTION_3 = 1257,
-	PW_MD3_PA_SECTION_4 = 907,
-	PW_MD3_PA_SECTION_5 = 554,
-	PW_MD3_PA_SECTION_6 = 226
+enum md1_pa_pwr_tbl_4g_upL2 {
+	PW_MD1_PA_4G_upL2_SECTION_1 = 1851,
+	PW_MD1_PA_4G_upL2_SECTION_2 = 1397,
+	PW_MD1_PA_4G_upL2_SECTION_3 = 931,
+	PW_MD1_PA_4G_upL2_SECTION_4 = 745,
+	PW_MD1_PA_4G_upL2_SECTION_5 = 423,
+	PW_MD1_PA_4G_upL2_SECTION_6 = 202
+};
+
+enum md3_pa_pwr_tbl_c2k {
+	PW_MD3_PA_C2K_SECTION_1 = 2084,
+	PW_MD3_PA_C2K_SECTION_2 = 1548,
+	PW_MD3_PA_C2K_SECTION_3 = 1146,
+	PW_MD3_PA_C2K_SECTION_4 = 767,
+	PW_MD3_PA_C2K_SECTION_5 = 535,
+	PW_MD3_PA_C2K_SECTION_6 = 329
 };
 
 /*
  * MD1/MD3 RF power
  */
 enum md1_rf_power {
-	PW_MD1_RF_SECTION_1 = 512,
-	PW_MD1_RF_SECTION_2 = 256
+	PW_MD1_RF_2G = 32,
+	PW_MD1_RF_3G = 99,
+	PW_MD1_RF_4G_UPL1 = 201,
+	PW_MD1_RF_4G_UPL2 = 201
 };
 
+#if !defined(DISABLE_PBM_MD3)
 enum md3_rf_power {
-	PW_MD3_RF_SECTION_1 = 280,
-	PW_MD3_RF_SECTION_2 = 140
+	PW_MD3_RF_C2K = 310
 };
+#endif
 
 extern void kicker_pbm_by_dlpt(unsigned int i_max);
 extern void kicker_pbm_by_md(enum pbm_kicker kicker, bool status);
