@@ -1052,13 +1052,19 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 			rStatus = wlanSendCommand(prAdapter, prCmdInfo);
 
 			if (rStatus == WLAN_STATUS_RESOURCES) {
-				/* no more TC4 resource for further transmission */
 				QUEUE_INSERT_TAIL(prMergeCmdQue, prQueueEntry);
 				DBGLOG(TX, INFO,
 					"No TC4 resource to send cmd, CID=0x%x, SEQ=%d, CMD type=%d, OID=%d\n",
 					prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum,
 					prCmdInfo->eCmdType, prCmdInfo->fgIsOid);
-				break;
+
+				/*
+				 * We reserve one TC4 resource for CMD specially, only break
+				 * checking the left tx request if no resource for true CMD.
+				 */
+				if ((prCmdInfo->eCmdType != COMMAND_TYPE_SECURITY_FRAME) &&
+				    (prCmdInfo->eCmdType != COMMAND_TYPE_MANAGEMENT_FRAME))
+					break;
 			} else if (rStatus == WLAN_STATUS_PENDING) {
 				/* command packet which needs further handling upon response */
 				/* i.e. we need to wait for FW's response */
