@@ -22,7 +22,8 @@
 #define ENABLE_TURBO_MODE_AP	1
 #endif
 #define PPM_AP_SIDE	1
-#define CPU_DVFS_NOT_READY	1
+#define EEM_AP_SIDE	1
+/* #define CPU_DVFS_NOT_READY	1 */
 #endif
 
 /* buck ctrl configs */
@@ -63,9 +64,10 @@ extern unsigned char get_posdiv(struct pll_ctrl_t *pll_p);
 #ifdef ENABLE_TURBO_MODE_AP
 extern void mt_cpufreq_turbo_action(unsigned long action,
 	unsigned int *cpus, enum mt_cpu_dvfs_id cluster_id);
+#endif
 extern int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
 	unsigned int turbo_f, unsigned int turbo_v);
-#endif
+
 
 extern int mt_cpufreq_regulator_map(struct platform_device *pdev);
 extern int mt_cpufreq_dts_map(void);

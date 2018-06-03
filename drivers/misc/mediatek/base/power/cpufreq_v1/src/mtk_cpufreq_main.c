@@ -233,7 +233,7 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 	if (cur_clkdiv < opp_tbl_m[TARGET_OPP_IDX].slot->clk_div)
 		pll_p->pll_ops->set_armpll_clkdiv(pll_p, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
 
-#if 0
+#ifndef CONFIG_MTK_FREQ_HOPPING
 	aee_record_cpu_dvfs_step(7);
 	pll_p->pll_ops->set_armpll_dds(pll_p, _search_for_vco_dds(p, idx, opp_tbl_m[TARGET_OPP_IDX].slot),
 		opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
@@ -1166,12 +1166,10 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		p->mt_policy = policy;
 		p->armpll_is_available = 1;
 
-#ifdef ENABLE_TURBO_MODE_AP
 		if (turbo_flag && !turbo_is_inited) {
 			turbo_is_inited = mt_cpufreq_turbo_config(id, cpu_dvfs_get_max_freq(p),
 				p->opp_tbl[0].cpufreq_volt);
 		}
-#endif
 
 		/* Sync cci */
 		if (cci_is_inited == 0) {

@@ -76,7 +76,7 @@ EXPORT_SYMBOL(is_in_suspend);
 
 int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int nr_volt_tbl)
 {
-#ifdef EEM_AP2SSPM
+#ifdef CONFIG_HYBRID_CPU_DVFS
 	FUNC_ENTER(FUNC_LV_API);
 
 	cpuhvfs_update_volt((unsigned int)id, volt_tbl, nr_volt_tbl);
