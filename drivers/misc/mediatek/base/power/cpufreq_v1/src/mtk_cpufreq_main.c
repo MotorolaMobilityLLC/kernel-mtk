@@ -19,7 +19,7 @@
 #define __MT_CPUFREQ_C__
 
 /* project includes */
-#include "mach/mt_ppm_api.h"
+#include "mach/mtk_ppm_api.h"
 
 /* local includes */
 #include "mtk_cpufreq_internal.h"
