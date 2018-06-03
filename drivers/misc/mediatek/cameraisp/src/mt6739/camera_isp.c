@@ -12076,7 +12076,8 @@ EXPORT_SYMBOL(ISP_UnregCallback);
 void ISP_MCLK1_EN(unsigned char En)
 {
 	unsigned int temp = 0;
-
+	if (IspInfo.UserCount <= 0)
+		return;
 	if (En == 1) {
 		mMclk1User++;
 	} else {
@@ -12109,7 +12110,8 @@ EXPORT_SYMBOL(ISP_MCLK1_EN);
 void ISP_MCLK2_EN(unsigned char En)
 {
 	unsigned int temp = 0;
-
+	if (IspInfo.UserCount <= 0)
+		return;
 	if (En == 1) {
 		mMclk2User++;
 	} else {
@@ -12139,7 +12141,8 @@ EXPORT_SYMBOL(ISP_MCLK2_EN);
 void ISP_MCLK3_EN(unsigned char En)
 {
 	unsigned int temp = 0;
-
+	if (IspInfo.UserCount <= 0)
+		return;
 	if (En == 1) {
 		mMclk3User++;
 	} else {
