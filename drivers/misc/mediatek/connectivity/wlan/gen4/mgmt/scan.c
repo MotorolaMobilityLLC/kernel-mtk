@@ -2228,6 +2228,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 	BOOLEAN fgIsFixedChannel;
 	ENUM_BAND_T eBand;
 	UINT_8 ucChannel;
+	UINT_32 u4ScnAdhocBssDescTimeout = 0;
 
 	ASSERT(prAdapter);
 
@@ -2296,16 +2297,24 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 				prBssDesc->eBand, prBssDesc->ucChannelNum);
 			continue;
 		}
+		/* 4 <2.5> Check if this BSS_DESC_T is stale */
+		u4ScnAdhocBssDescTimeout = SCN_BSS_DESC_STALE_SEC;
+#if CFG_ENABLE_WIFI_DIRECT
+#if CFG_SUPPORT_WFD
+		if (prAdapter->rWifiVar.rWfdConfigureSettings.ucWfdEnable)
+			u4ScnAdhocBssDescTimeout = SCN_BSS_DESC_STALE_SEC_WFD;
+#endif
+#endif
 #if CFG_SUPPORT_RN
 		if (prBssInfo->fgDisConnReassoc == FALSE)
 #endif
-			/* 4 <2.5> Check if this BSS_DESC_T is stale */
 			if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime,
-						SEC_TO_SYSTIME(SCN_BSS_DESC_STALE_SEC))) {
+						SEC_TO_SYSTIME(u4ScnAdhocBssDescTimeout))) {
 				DBGLOG(SCN, LOUD, "SEARCH: Ignore stale Bss, CurrTime[%ld] BssUpdateTime[%ld]\n",
 					rCurrentTime, prBssDesc->rUpdateTime);
 				continue;
 			}
+
 		/* 4 <3> Check if reach the excessive join retry limit */
 		/* NOTE(Kevin): STA_RECORD_T is recorded by TA. */
 		prStaRec = cnmGetStaRecByAddress(prAdapter, ucBssIndex, prBssDesc->aucSrcAddr);
@@ -2383,6 +2392,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 			/* 4 <4.3> Check for AdHoc Mode */
 			if (prBssDesc->eBSSType == BSS_TYPE_IBSS) {
 				OS_SYSTIME rCurrentTime;
+				u4ScnAdhocBssDescTimeout = SCN_ADHOC_BSS_DESC_TIMEOUT_SEC;
 
 				/* 4 <4.3.1> Check if this SCAN record has been updated recently for IBSS. */
 				/* NOTE(Kevin): Because some STA may change its BSSID frequently after it
@@ -2391,13 +2401,23 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 				 * the Join Process later.
 				 */
 				GET_CURRENT_SYSTIME(&rCurrentTime);
+#if CFG_ENABLE_WIFI_DIRECT
+#if CFG_SUPPORT_WFD
+				if (prAdapter->rWifiVar.rWfdConfigureSettings.ucWfdEnable)
+					u4ScnAdhocBssDescTimeout = SCN_ADHOC_BSS_DESC_TIMEOUT_SEC_WFD;
+#endif
+#endif
 				if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime,
-						      SEC_TO_SYSTIME(SCN_ADHOC_BSS_DESC_TIMEOUT_SEC))) {
+						      SEC_TO_SYSTIME(u4ScnAdhocBssDescTimeout))) {
 					DBGLOG(SCN, LOUD,
-					       "SEARCH: Skip old record of BSS Descriptor - BSSID:["
-					       MACSTR "]\n\n", MAC2STR(prBssDesc->aucBSSID));
+					       "SEARCH: Now(%zd) Skip old record of BSS Descriptor(%zd) - BSSID:["
+					       MACSTR "]\n\n",
+					       rCurrentTime,
+					       prBssDesc->rUpdateTime,
+					       MAC2STR(prBssDesc->aucBSSID));
 					continue;
 				}
+
 				/* 4 <4.3.2> Check Peer's capability */
 				if (ibssCheckCapabilityForAdHocMode(prAdapter, prBssDesc) == WLAN_STATUS_FAILURE) {
 
