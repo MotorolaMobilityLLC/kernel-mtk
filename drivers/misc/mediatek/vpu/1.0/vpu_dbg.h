@@ -15,7 +15,8 @@
 #define __VPU_DBG_H__
 
 /*
- * level5: open per-frame log
+ * level 5: open per-frame log
+ * level 9: dump log buffer
  */
 extern int g_vpu_log_level;
 

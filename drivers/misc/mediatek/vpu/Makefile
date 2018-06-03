@@ -15,5 +15,10 @@ obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6799) += 1.0/
 
 #subdir-ccflags-y += -DMTK_VPU_EMULATOR
-#subdir-ccflags-y += -DMTK_VPU_FPGA_PORTING
 subdir-ccflags-y += -DMTK_VPU_DVT
+
+ifdef CONFIG_MTK_FPGA
+	subdir-ccflags-y += -DMTK_VPU_FPGA_PORTING
+elif CONFIG_FPGA_EARLY_PORTING
+	subdir-ccflags-y += -DMTK_VPU_FPGA_PORTING
+endif

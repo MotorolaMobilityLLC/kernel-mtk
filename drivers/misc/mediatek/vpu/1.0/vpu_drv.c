@@ -186,7 +186,7 @@ int vpu_create_user(struct vpu_user **user)
 {
 	struct vpu_user *u;
 
-	u = kmalloc(sizeof(vlist_type(struct vpu_user)), GFP_ATOMIC);
+	u = kzalloc(sizeof(vlist_type(struct vpu_user)), GFP_KERNEL);
 	if (!u)
 		return -1;
 
@@ -194,8 +194,6 @@ int vpu_create_user(struct vpu_user **user)
 	u->id = ++vpu_num_users;
 	u->open_pid = current->pid;
 	u->open_tgid = current->tgid;
-	u->running = false;
-	u->flush = false;
 	INIT_LIST_HEAD(&u->enque_list);
 	INIT_LIST_HEAD(&u->deque_list);
 	init_waitqueue_head(&u->deque_wait);
@@ -254,6 +252,7 @@ int vpu_flush_requests_from_queue(struct vpu_user *user)
 
 	user->flush = false;
 	mutex_unlock(&user->data_mutex);
+
 	return 0;
 }
 
@@ -319,9 +318,10 @@ int vpu_dump_user(struct seq_file *s)
 	struct list_head *head_req;
 	uint32_t cnt_enq, cnt_deq;
 
-#define LINE_BAR "  +------+------+------+-------+-------+-------+\n"
+#define LINE_BAR "  +------+------+------+-------+-------+-------+-------+\n"
 	vpu_print_seq(s, LINE_BAR);
-	vpu_print_seq(s, "  |%-6s|%-6s|%-6s|%-7s|%-7s|%-7s|\n", "Id", "Pid", "Tid", "Enque", "Running", "Deque");
+	vpu_print_seq(s, "  |%-6s|%-6s|%-6s|%-7s|%-7s|%-7s|%-7s|\n",
+			"Id", "Pid", "Tid", "Enque", "Running", "Deque", "Locked");
 	vpu_print_seq(s, LINE_BAR);
 
 	mutex_lock(&vpu_device->user_mutex);
@@ -340,13 +340,14 @@ int vpu_dump_user(struct seq_file *s)
 			cnt_deq++;
 		}
 
-		vpu_print_seq(s, "  |%-6d|%-6d|%-6d|%-7d|%-7d|%-7d|\n",
+		vpu_print_seq(s, "  |%-6d|%-6d|%-6d|%-7d|%-7d|%-7d|%-7d|\n",
 			      user->id,
 			      user->open_pid,
 			      user->open_tgid,
 			      cnt_enq,
 			      user->running,
-			      cnt_deq);
+			      cnt_deq,
+			      user->locked);
 		vpu_print_seq(s, LINE_BAR);
 	}
 	mutex_unlock(&vpu_device->user_mutex);
@@ -458,22 +459,6 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		break;
 	}
-	case VPU_IOCTL_LOAD_ALG:
-	{
-		vpu_id_t id;
-		struct vpu_algo *algo;
-
-		ret = copy_from_user(&id, (void *) arg, sizeof(vpu_id_t));
-		VPU_ASSERT(ret == 0, "[LOAD_ALGO] copy_from_user failed, ret=%d\n", ret);
-
-		ret = vpu_find_algo_from_pool(id, NULL, &algo);
-		VPU_ASSERT(ret == 0, "[LOAD_ALGO] can not find algo, id=%d\n", id);
-
-		ret = vpu_hw_load_algo(algo);
-		VPU_ASSERT(ret == 0, "[LOAD_ALGO] fail to load kernel, id=%d\n", id);
-
-		break;
-	}
 	case VPU_IOCTL_GET_ALGO_INFO:
 	{
 		vpu_name_t name;
@@ -488,7 +473,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		name[sizeof(vpu_name_t) - 1] = '\0';
 
 		/* 1. find algo by name */
-		ret = vpu_find_algo_from_pool(0, name, &algo);
+		ret = vpu_find_algo_by_name(name, &algo);
 		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] can not find algo, name=%s\n", u_algo->name);
 
 		/* 2. write data to user */
@@ -535,6 +520,36 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		ret = vpu_write_register(regs);
 		break;
 	}
+	case VPU_IOCTL_LOCK:
+	{
+		vpu_hw_lock(user);
+		break;
+	}
+	case VPU_IOCTL_UNLOCK:
+	{
+		vpu_hw_unlock(user);
+		break;
+	}
+	case VPU_IOCTL_LOAD_ALG:
+	{
+		vpu_id_t id;
+		struct vpu_algo *algo;
+
+		if (!user->locked)
+			ret = -ENOTBLK;
+		VPU_ASSERT(ret == 0, "[LOAD_ALGO] should lock device");
+
+		ret = copy_from_user(&id, (void *) arg, sizeof(vpu_id_t));
+		VPU_ASSERT(ret == 0, "[LOAD_ALGO] copy_from_user failed, ret=%d\n", ret);
+
+		ret = vpu_find_algo_by_id(id, &algo);
+		VPU_ASSERT(ret == 0, "[LOAD_ALGO] can not find algo, id=%d\n", id);
+
+		ret = vpu_hw_load_algo(algo);
+		VPU_ASSERT(ret == 0, "[LOAD_ALGO] fail to load kernel, id=%d\n", id);
+
+		break;
+	}
 	default:
 		LOG_WRN("ioctl: no such command!\n");
 		ret = -EINVAL;
@@ -554,6 +569,9 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 static int vpu_release(struct inode *inode, struct file *flip)
 {
 	struct vpu_user *user = flip->private_data;
+
+	if (user->locked)
+		vpu_hw_unlock(user);
 
 	vpu_delete_user(user);
 
@@ -776,7 +794,7 @@ static int __init VPU_INIT(void)
 
 	/* Register M4U callback */
 	LOG_DBG("register m4u callback");
-	m4u_register_fault_callback(VPU_OF_M4U_PORT, vpu_m4u_fault_callback, NULL);
+	m4u_register_fault_callback(VPU_PORT_OF_IOMMU, vpu_m4u_fault_callback, NULL);
 
 	LOG_DBG("platform_driver_register start\n");
 	if (platform_driver_register(&vpu_driver)) {
@@ -796,7 +814,7 @@ static void __exit VPU_EXIT(void)
 	kfree(vpu_device);
 	/* Un-Register M4U callback */
 	LOG_DBG("un-register m4u callback");
-	m4u_unregister_fault_callback(VPU_OF_M4U_PORT);
+	m4u_unregister_fault_callback(VPU_PORT_OF_IOMMU);
 }
 
 
