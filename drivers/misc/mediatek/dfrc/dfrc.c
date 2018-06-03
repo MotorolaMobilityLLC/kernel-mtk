@@ -1235,7 +1235,7 @@ static void dfrc_select_policy_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_
 			(expected_policy->mode == DFRC_DRV_MODE_DEFAULT ||
 			expected_policy->mode == DFRC_DRV_MODE_INTERNAL_SW)) {
 		expected_policy->mode = DFRC_DRV_MODE_INTERNAL_SW;
-		node = dfrc_find_min_fps(&arr_statistics->statistics[DFRC_DRV_API_WHITELIST]);
+		node = dfrc_find_min_fps(&isw_statistics->statistics[DFRC_DRV_API_WHITELIST]);
 		if (expected_policy->isw_policy == NULL)
 			expected_policy->isw_policy = &node->policy;
 		else if (expected_policy->isw_policy->fps > node->policy.fps)
