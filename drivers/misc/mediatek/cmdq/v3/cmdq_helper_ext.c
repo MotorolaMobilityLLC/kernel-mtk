@@ -4849,9 +4849,8 @@ static s32 cmdq_core_get_pmqos_handle_list(struct cmdqRecStruct *handle,
 	u32 i;
 	u32 pkt_count;
 
-	if (!handle || !handle_out || !handle_list_size) {
+	if (!handle || !handle_out || !handle_list_size)
 		return -EINVAL;
-	}
 
 	pkt_list = kcalloc(handle_list_size, sizeof(*pkt_list), GFP_KERNEL);
 	if (!pkt_list)
