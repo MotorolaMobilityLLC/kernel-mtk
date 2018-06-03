@@ -23,6 +23,17 @@
 
 #include "tick-internal.h"
 
+#define CONFIG_MTK_TICK_BROADCAST_AEE_DUMP
+
+#if defined(CONFIG_MTK_RAM_CONSOLE)
+#if defined(CONFIG_MTK_TICK_BROADCAST_AEE_DUMP)
+#include <linux/cpumask.h>
+#include <mt-plat/mtk_ram_console.h>
+
+#define _MTK_TICK_BROADCAST_AEE_DUMP
+#endif
+#endif
+
 /*
  * Broadcast support for broken x86 hardware, where the local apic
  * timer stops in C3 state.
@@ -521,6 +532,69 @@ static cpumask_var_t tick_broadcast_oneshot_mask;
 static cpumask_var_t tick_broadcast_pending_mask;
 static cpumask_var_t tick_broadcast_force_mask;
 
+#ifdef _MTK_TICK_BROADCAST_AEE_DUMP
+
+struct tick_broadcast_history_struct {
+	unsigned long long time_enter;
+	unsigned long long time_exit;
+	int ret_enter;
+};
+
+static struct tick_broadcast_history_struct tick_broadcast_history[NR_CPUS];
+static char tick_broadcast_mtk_aee_dump_buf[128];
+
+void tick_broadcast_mtk_aee_dump(void)
+{
+	int i;
+
+	/*
+	 * Notice: printk cannot be used during AEE flow to avoid lock issues.
+	 */
+
+	/* tick_broadcast_oneshot_mask */
+
+	memset(tick_broadcast_mtk_aee_dump_buf, 0,
+		sizeof(tick_broadcast_mtk_aee_dump_buf));
+	snprintf(tick_broadcast_mtk_aee_dump_buf,
+		sizeof(tick_broadcast_mtk_aee_dump_buf),
+		"[TICK] oneshot_mask: %*pbl\n",
+		cpumask_pr_args(tick_broadcast_oneshot_mask));
+	aee_sram_fiq_log(tick_broadcast_mtk_aee_dump_buf);
+
+	/* tick_broadcast_pending_mask */
+
+	memset(tick_broadcast_mtk_aee_dump_buf, 0,
+		sizeof(tick_broadcast_mtk_aee_dump_buf));
+	snprintf(tick_broadcast_mtk_aee_dump_buf,
+		sizeof(tick_broadcast_mtk_aee_dump_buf),
+		"[TICK] pending_mask: %*pbl\n",
+		cpumask_pr_args(tick_broadcast_pending_mask));
+	aee_sram_fiq_log(tick_broadcast_mtk_aee_dump_buf);
+
+	/* tick_broadcast_force_mask */
+
+	memset(tick_broadcast_mtk_aee_dump_buf, 0,
+		sizeof(tick_broadcast_mtk_aee_dump_buf));
+	snprintf(tick_broadcast_mtk_aee_dump_buf,
+		sizeof(tick_broadcast_mtk_aee_dump_buf),
+		"[TICK] force_mask: %*pbl\n",
+		cpumask_pr_args(tick_broadcast_force_mask));
+	aee_sram_fiq_log(tick_broadcast_mtk_aee_dump_buf);
+
+	for_each_possible_cpu(i) {
+		memset(tick_broadcast_mtk_aee_dump_buf, 0,
+			sizeof(tick_broadcast_mtk_aee_dump_buf));
+		snprintf(tick_broadcast_mtk_aee_dump_buf,
+			sizeof(tick_broadcast_mtk_aee_dump_buf),
+			"[TICK] cpu %d, %llu, %d, %llu\n",
+			i, tick_broadcast_history[i].time_enter,
+			tick_broadcast_history[i].ret_enter,
+			tick_broadcast_history[i].time_exit);
+		aee_sram_fiq_log(tick_broadcast_mtk_aee_dump_buf);
+	}
+}
+#endif
+
 /*
  * Exposed for debugging: see timer_list.c
  */
@@ -727,6 +801,9 @@ int __tick_broadcast_oneshot_control(enum tick_broadcast_state state)
 	struct clock_event_device *bc, *dev;
 	int cpu, ret = 0;
 	ktime_t now;
+#ifdef _MTK_TICK_BROADCAST_AEE_DUMP
+	unsigned long long now_sched_clock = sched_clock();
+#endif
 
 	/*
 	 * If there is no broadcast device, tell the caller not to go
@@ -864,6 +941,15 @@ int __tick_broadcast_oneshot_control(enum tick_broadcast_state state)
 		}
 	}
 out:
+
+#ifdef _MTK_TICK_BROADCAST_AEE_DUMP
+	if (state == TICK_BROADCAST_ENTER) {
+		tick_broadcast_history[cpu].time_enter = now_sched_clock;
+		tick_broadcast_history[cpu].ret_enter = ret;
+	} else
+		tick_broadcast_history[cpu].time_exit = now_sched_clock;
+#endif
+
 	raw_spin_unlock(&tick_broadcast_lock);
 	return ret;
 }
