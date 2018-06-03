@@ -844,33 +844,53 @@ static struct platform_driver mt_scp_dvfs_pdrv = {
 void mt_pmic_sshub_init(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	unsigned int ret[6];
+	unsigned int val[8];
 
-	ret[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON);
-	ret[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_MODE);
-	ret[2] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
-	ret[3] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_ON);
-	ret[4] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_MODE);
-	ret[5] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_VOSEL);
+	val[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN);
+	val[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
+
+	val[2] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN);
+	val[3] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
+
+	val[4] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN);
+	val[5] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP);
+
+	val[6] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN);
+	val[7] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
+
 	pr_info(SCP_DVFS_TAG "Before init vcore and vsram_core:\n");
-	pr_info(SCP_DVFS_TAG "vcore: on, mode, vosel = 0x%x, 0x%x, 0x%x\n", ret[0], ret[1], ret[2]);
-	pr_info(SCP_DVFS_TAG "vsram: on, mode, vosel = 0x%x, 0x%x, 0x%x\n", ret[3], ret[4], ret[5]);
+	pr_info(SCP_DVFS_TAG "vcore: en=0x%x, vosel=0x%x\n", val[0], val[1]);
+	pr_info(SCP_DVFS_TAG "vsram: en=0x%x, vosel=0x%x\n", val[2], val[3]);
+	pr_info(SCP_DVFS_TAG "vcore sleep: en=0x%x, vosel=0x%x\n", val[4], val[5]);
+	pr_info(SCP_DVFS_TAG "vsram sleep: en=0x%x, vosel=0x%x\n", val[6], val[7]);
 
 	pmic_scp_set_vcore(600000);
 	pmic_scp_set_vsram_vcore(850000);
-	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON, 1);
-	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_MODE, 1);
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_ON, 1);
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_MODE, 1);
-	ret[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON);
-	ret[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_MODE);
-	ret[2] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
-	ret[3] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_ON);
-	ret[4] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_MODE);
-	ret[5] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_VOSEL);
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN, 1);
+	pmic_set_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN, 1);
+
+	pmic_scp_set_vcore_sleep(600000);
+	pmic_scp_set_vsram_vcore_sleep(850000);
+	pmic_set_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_ON, 0);
+	pmic_set_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_MODE, 0);
+
+	val[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN);
+	val[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
+
+	val[2] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN);
+	val[3] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
+
+	val[4] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN);
+	val[5] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP);
+
+	val[6] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN);
+	val[7] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
+
 	pr_info(SCP_DVFS_TAG "After init vcore and vsram_core:\n");
-	pr_info(SCP_DVFS_TAG "vcore: on, mode, vosel = 0x%x, 0x%x, 0x%x\n", ret[0], ret[1], ret[2]);
-	pr_info(SCP_DVFS_TAG "vsram: on, mode, vosel = 0x%x, 0x%x, 0x%x\n", ret[3], ret[4], ret[5]);
+	pr_info(SCP_DVFS_TAG "vcore: en=0x%x, vosel=0x%x\n", val[0], val[1]);
+	pr_info(SCP_DVFS_TAG "vsram: en=0x%x, vosel=0x%x\n", val[2], val[3]);
+	pr_info(SCP_DVFS_TAG "vcore sleep: en=0x%x, vosel=0x%x\n", val[4], val[5]);
+	pr_info(SCP_DVFS_TAG "vsram sleep: en=0x%x, vosel=0x%x\n", val[6], val[7]);
 #endif
 }
 
