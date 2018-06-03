@@ -411,24 +411,26 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 	arch_get_cluster_cpus(&cls_cpus, cid);
 
 	for_each_cpu(cpu, &cls_cpus) {
+		arch_scale_set_max_freq(cpu, policy->max);
+		arch_scale_set_min_freq(cpu, policy->min);
+
 		if (!sched_assist()) {
 			/* update current freqnecy */
 			per_cpu(freq_scale, cpu) = scale;
 			arch_scale_set_curr_freq(cpu, cur);
 		}
-		arch_scale_set_max_freq(cpu, policy->max);
-		arch_scale_set_min_freq(cpu, policy->min);
 	}
 
 #else
 	for_each_cpu(cpu, policy->cpus) {
+		arch_scale_set_max_freq(cpu, policy->max);
+		arch_scale_set_min_freq(cpu, policy->min);
+
 		if (!sched_assist()) {
 			/* update current freqnecy */
 			per_cpu(freq_scale, cpu) = scale;
 			arch_scale_set_curr_freq(cpu, cur);
 		}
-		arch_scale_set_max_freq(cpu, policy->max);
-		arch_scale_set_min_freq(cpu, policy->min);
 	}
 
 	if (freqs)
