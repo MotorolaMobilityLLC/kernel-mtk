@@ -658,4 +658,5 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter);
 extern VOID mtk_wcn_wmt_set_wifi_ver(UINT_32 Value);
 VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid);
 
+UINT_32 wlanDecimalStr2Hexadecimals(PUINT_8 pucDecimalStr, PUINT_16 pu2Out);
 #endif /* _WLAN_LIB_H */

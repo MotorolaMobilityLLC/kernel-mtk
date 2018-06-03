@@ -227,7 +227,9 @@ MGMT_OBJS += $(MGMT_DIR)p2p_assoc.o \
              $(MGMT_DIR)p2p_rlm_obss.o \
              $(MGMT_DIR)p2p_scan.o \
              $(MGMT_DIR)p2p_ie.o \
-             $(MGMT_DIR)p2p_state.o
+             $(MGMT_DIR)p2p_state.o \
+             $(MGMT_DIR)wnm.o \
+             $(MGMT_DIR)wmm.o
 
 
 ifeq ($(CONFIG_MTK_WAPI_SUPPORT), y)

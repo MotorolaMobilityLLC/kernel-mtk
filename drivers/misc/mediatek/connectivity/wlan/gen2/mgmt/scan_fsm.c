@@ -278,7 +278,11 @@ VOID scnSendScanReq(IN P_ADAPTER_T prAdapter)
 		}
 		/* send command packet for scan */
 		kalMemZero(prCmdScanReq, sizeof(CMD_SCAN_REQ));
-
+		prCmdScanReq->ucStructVersion = 1;
+		COPY_MAC_ADDR(prCmdScanReq->aucBSSID, prScanParam->aucBSSID);
+		if (!EQUAL_MAC_ADDR(prCmdScanReq->aucBSSID, "\xff\xff\xff\xff\xff\xff"))
+			DBGLOG(SCN, INFO, "Include BSSID %pM in probe request, NetIdx %d\n",
+				   prCmdScanReq->aucBSSID, prScanParam->eNetTypeIndex);
 		prCmdScanReq->ucSeqNum = prScanParam->ucSeqNum;
 		prCmdScanReq->ucNetworkType = (UINT_8) prScanParam->eNetTypeIndex;
 		prCmdScanReq->ucScanType = (UINT_8) prScanParam->eScanType;
@@ -315,6 +319,11 @@ VOID scnSendScanReq(IN P_ADAPTER_T prAdapter)
 		if (prScanParam->eNetTypeIndex == NETWORK_TYPE_AIS_INDEX)
 			prCmdScanReq->u2ChannelDwellTime = CFG_FAST_SCAN_DWELL_TIME;
 #endif
+		if (prScanParam->eNetTypeIndex == NETWORK_TYPE_AIS_INDEX) {
+			prCmdScanReq->u2ChannelDwellTime = prScanParam->u2ChannelDwellTime;
+			prCmdScanReq->u2ChannelMinDwellTime = prScanParam->u2MinChannelDwellTime;
+		}
+
 		if (prScanParam->u2IELen <= MAX_IE_LENGTH)
 			prCmdScanReq->u2IELen = prScanParam->u2IELen;
 		else
@@ -794,7 +803,9 @@ VOID scnFsmHandleScanMsg(IN P_ADAPTER_T prAdapter, IN P_MSG_SCN_SCAN_REQ prScanR
 	prScanParam->eScanType = prScanReqMsg->eScanType;
 	prScanParam->eNetTypeIndex = (ENUM_NETWORK_TYPE_INDEX_T) prScanReqMsg->ucNetTypeIndex;
 	prScanParam->ucSSIDType = prScanReqMsg->ucSSIDType;
-	if (prScanParam->ucSSIDType & (SCAN_REQ_SSID_SPECIFIED | SCAN_REQ_SSID_P2P_WILDCARD)) {
+	kalMemCopy(prScanParam->aucBSSID, prScanReqMsg->aucBSSID, MAC_ADDR_LEN);
+	if (prScanParam->ucSSIDType & (SCAN_REQ_SSID_SPECIFIED | SCAN_REQ_SSID_P2P_WILDCARD |
+		SCAN_REQ_SSID_SPECIFIED_ONLY)) {
 		prScanParam->ucSSIDNum = 1;
 
 		COPY_SSID(prScanParam->aucSpecifiedSSID[0],
@@ -833,6 +844,10 @@ VOID scnFsmHandleScanMsg(IN P_ADAPTER_T prAdapter, IN P_MSG_SCN_SCAN_REQ prScanR
 	if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX)
 		prScanParam->u2PassiveListenInterval = prScanReqMsg->u2ChannelDwellTime;
 #endif
+	if (prScanParam->eNetTypeIndex == NETWORK_TYPE_AIS_INDEX) {
+		prScanParam->u2ChannelDwellTime = prScanReqMsg->u2ChannelDwellTime;
+		prScanParam->u2MinChannelDwellTime = prScanReqMsg->u2MinChannelDwellTime;
+	}
 	prScanParam->ucSeqNum = prScanReqMsg->ucSeqNum;
 
 	if (prScanReqMsg->rMsgHdr.eMsgId == MID_RLM_SCN_SCAN_REQ)

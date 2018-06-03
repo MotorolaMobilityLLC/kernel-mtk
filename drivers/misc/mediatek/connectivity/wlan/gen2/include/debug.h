@@ -45,6 +45,11 @@ extern UINT_8 aucDebugModule[];
 #define DBG_CLASS_TEMP          BIT(7)
 #define DBG_CLASS_MASK          BITS(0, 7)
 
+enum PKT_PHASE {
+	PHASE_XMIT_RCV,
+	PHASE_ENQ_QM,
+	PHASE_HIF_TX,
+};
 #if defined(LINUX)
 #define DBG_PRINTF_64BIT_DEC    "lld"
 
@@ -91,6 +96,8 @@ typedef enum _ENUM_DBG_MODULE_T {
 	DBG_TDLS_IDX,		/* TDLS *//* CFG_SUPPORT_TDLS */
 	DBG_OID_IDX,
 	DBG_NIC_IDX,
+	DBG_WNM_IDX,
+	DBG_WMM_IDX,
 
 	DBG_MODULE_NUM		/* Notice the XLOG check */
 } ENUM_DBG_MODULE_T;
@@ -105,6 +112,10 @@ typedef enum _ENUM_DBG_SCAN_T {
 	DBG_SCAN_WRITE_DONE,		/*hal write success and ScanRequest done*/
 } ENUM_DBG_SCAN_T;
 
+struct WLAN_DEBUG_INFO {
+	BOOLEAN fgVoE5_7Test:1;
+	BOOLEAN fgReserved:7;
+};
 
 /* Define debug TRAFFIC_CLASS index */
 
@@ -422,6 +433,8 @@ VOID wlanPktStatusDebugTraceInfo(UINT_8 status, UINT_8 eventType
 	, UINT_16 u2EtherType, UINT_8 ucIpProto, UINT_16 u2IpId, UINT_16 u2ArpOpCode, PUINT_8 pucPkt);
 #if CFG_SUPPORT_EMI_DEBUG
 VOID wlanReadFwInfoFromEmi(IN PUINT_32 pAddr);
+
+VOID wlanFillTimestamp(P_ADAPTER_T prAdapter, PVOID pvPacket, UINT_8 ucPhase);
 #endif
 /*******************************************************************************
 *                              F U N C T I O N S

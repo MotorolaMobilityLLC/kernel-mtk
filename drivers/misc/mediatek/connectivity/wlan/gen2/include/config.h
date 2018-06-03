@@ -725,17 +725,31 @@
 #define CFG_MAX_NUM_OF_CHNL_INFO				50
 #define CFG_SELECT_BSS_BASE_ON_MULTI_PARAM		1
 #define CFG_SELECT_BSS_BASE_ON_RSSI				0
-#define CFG_SUPPORT_802_11K			0
+#define CFG_SUPPORT_VO_ENTERPRISE               1
+#define CFG_NEIGHBOR_AP_CHANNEL_NUM             50
+#define CFG_SUPPORT_WMM_AC                      1
 
-#define CFG_SUPPORT_802_11V                    0	/* Support 802.11v Wireless Network Management */
-#define CFG_SUPPORT_802_11V_TIMING_MEASUREMENT 0
-#define CFG_SUPPORT_OKC							1
-#if (CFG_SUPPORT_802_11V_TIMING_MEASUREMENT == 1) && (CFG_SUPPORT_802_11V == 0)
+#if CFG_SUPPORT_VO_ENTERPRISE
+#define CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT  1
+#define CFG_SUPPORT_802_11R                     1
+#define CFG_SUPPORT_802_11V                     1
+#define CFG_SUPPORT_802_11K                     1
+#else
+#define CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT  0
+#define CFG_SUPPORT_802_11R                     0
+#define CFG_SUPPORT_802_11V                     0
+#define CFG_SUPPORT_802_11K                     0
+#endif
+
+#define CFG_SUPPORT_802_11V_TIMING_MEASUREMENT  0
+#define CFG_SUPPORT_OKC                         1
+
+#if (CFG_SUPPORT_802_11V_TIMING_MEASUREMENT == 1) || CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT == 1 \
+	&& (CFG_SUPPORT_802_11V == 0)
 #error "CFG_SUPPORT_802_11V should be 1 once CFG_SUPPORT_802_11V_TIMING_MEASUREMENT equals to 1"
 #endif
-#if (CFG_SUPPORT_802_11V == 0)
+
 #define WNM_UNIT_TEST 0
-#endif
 
 #define CFG_SUPPORT_PPR2	1
 #define CFG_DRIVER_COMPOSE_ASSOC_REQ   1

@@ -112,6 +112,22 @@ saaFsmSteps(IN P_ADAPTER_T prAdapter,
 		fgIsTransition = (BOOLEAN) FALSE;
 		switch (prStaRec->eAuthAssocState) {
 		case AA_STATE_IDLE:
+			DBGLOG(SAA, TRACE, "authAlgNum %d, AuthTranNum %d\n",
+					prStaRec->ucAuthAlgNum, prStaRec->ucAuthTranNum);
+			if (prStaRec->ucAuthAlgNum == AUTH_ALGORITHM_NUM_FAST_BSS_TRANSITION &&
+				prStaRec->ucAuthTranNum == AUTH_TRANSACTION_SEQ_2 &&
+				prStaRec->ucStaState == STA_STATE_1) {
+				PARAM_STATUS_INDICATION_T rStatus = {.eStatusType = ENUM_STATUS_TYPE_FT_AUTH_STATUS};
+				struct cfg80211_ft_event_params *prFtEvent = &prAdapter->prGlueInfo->rFtEventParam;
+
+				prFtEvent->target_ap = prStaRec->aucMacAddr;
+				/* now, we don't support RIC first */
+				prFtEvent->ric_ies = NULL;
+				prFtEvent->ric_ies_len = 0;
+				kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
+					WLAN_STATUS_MEDIA_SPECIFIC_INDICATION, &rStatus, sizeof(rStatus));
+				break; /* wait supplicant update ft ies and then continue to send assoc 1 */
+			}
 			if (ePreviousState != prStaRec->eAuthAssocState) { /* Only trigger this event once */
 
 				if (prRetainedSwRfb) {
@@ -155,7 +171,7 @@ saaFsmSteps(IN P_ADAPTER_T prAdapter,
 					fgIsTransition = TRUE;
 				} else {
 					prStaRec->ucTxAuthAssocRetryCount++;
-
+					prStaRec->ucAuthTranNum = AUTH_TRANSACTION_SEQ_1;
 					/* Update Station Record - Class 1 Flag */
 					cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
 
@@ -198,7 +214,7 @@ saaFsmSteps(IN P_ADAPTER_T prAdapter,
 					fgIsTransition = TRUE;
 				} else {
 					prStaRec->ucTxAuthAssocRetryCount++;
-
+					prStaRec->ucAuthTranNum = AUTH_TRANSACTION_SEQ_3;
 #if !CFG_SUPPORT_AAA
 					if (authSendAuthFrame(prAdapter,
 						prStaRec, AUTH_TRANSACTION_SEQ_3) != WLAN_STATUS_SUCCESS) {
@@ -406,6 +422,11 @@ VOID saaFsmRunEventStart(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 	cnmMemFree(prAdapter, prMsgHdr);
 
+	if (prStaRec->ucAuthAlgNum == AUTH_ALGORITHM_NUM_FAST_BSS_TRANSITION &&
+		prStaRec->ucAuthTranNum == AUTH_TRANSACTION_SEQ_2) {
+		DBGLOG(SAA, ERROR, "current is waiting FT auth, don't reentry\n");
+		return;
+	}
 	/* 4 <1> Validation of SAA Start Event */
 	if (!IS_AP_STA(prStaRec)) {
 
@@ -469,6 +490,45 @@ VOID saaFsmRunEventStart(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		saaFsmSteps(prAdapter, prStaRec, SAA_STATE_SEND_ASSOC1, (P_SW_RFB_T) NULL);
 
 }				/* end of saaFsmRunEventStart() */
+
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief This function will handle the Continue Event to SAA FSM.
+*
+* @param[in] prMsgHdr   Message of Join Request for a particular STA.
+*
+* @return (none)
+*/
+/*----------------------------------------------------------------------------*/
+VOID saaFsmRunEventFTContinue(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
+{
+	struct MSG_SAA_FT_CONTINUE *prSaaFsmMsg = NULL;
+	P_STA_RECORD_T prStaRec;
+	BOOLEAN fgFtRicRequest = FALSE;
+
+	ASSERT(prAdapter);
+	ASSERT(prMsgHdr);
+
+	prSaaFsmMsg = (struct MSG_SAA_FT_CONTINUE *)prMsgHdr;
+	prStaRec = prSaaFsmMsg->prStaRec;
+	fgFtRicRequest = prSaaFsmMsg->fgFTRicRequest;
+	cnmMemFree(prAdapter, prMsgHdr);
+	if ((!prStaRec) || (prStaRec->fgIsInUse == FALSE)) {
+		DBGLOG(SAA, ERROR, "No Sta Record or it is not in use\n");
+		return;
+	}
+	if (prStaRec->eAuthAssocState != AA_STATE_IDLE) {
+		DBGLOG(SAA, ERROR, "Wrong SAA FSM state %d to continue auth/assoc\n", prStaRec->eAuthAssocState);
+		return;
+	}
+	DBGLOG(SAA, TRACE, "Continue to do auth/assoc\n");
+	if (fgFtRicRequest)
+		saaFsmSteps(prAdapter, prStaRec, SAA_STATE_SEND_AUTH3, (P_SW_RFB_T) NULL);
+	else {
+		cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_2);
+		saaFsmSteps(prAdapter, prStaRec, SAA_STATE_SEND_ASSOC1, (P_SW_RFB_T) NULL);
+	}
+}
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -758,11 +818,15 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			if (u2StatusCode == STATUS_CODE_SUCCESSFUL) {
 
 				authProcessRxAuth2_Auth4Frame(prAdapter, prSwRfb);
-
-				if (prStaRec->ucAuthAlgNum == (UINT_8) AUTH_ALGORITHM_NUM_SHARED_KEY) {
-
+				prStaRec->ucAuthTranNum = AUTH_TRANSACTION_SEQ_2;
+				/* after received Auth2 for FT, should indicate to supplicant
+				* and wait response from supplicant
+				*/
+				if (prStaRec->ucAuthAlgNum == AUTH_ALGORITHM_NUM_FAST_BSS_TRANSITION)
+					eNextState = AA_STATE_IDLE;
+				else if (prStaRec->ucAuthAlgNum == (UINT_8) AUTH_ALGORITHM_NUM_SHARED_KEY)
 					eNextState = SAA_STATE_SEND_AUTH3;
-				} else {
+				else {
 					/* Update Station Record - Class 2 Flag */
 					cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_2);
 
@@ -797,8 +861,21 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			prStaRec->u2StatusCode = u2StatusCode;
 
 			if (u2StatusCode == STATUS_CODE_SUCCESSFUL) {
+				/* Add for 802.11r handling */
+				WLAN_STATUS rStatus = authProcessRxAuth2_Auth4Frame(prAdapter, prSwRfb);
 
-				authProcessRxAuth2_Auth4Frame(prAdapter, prSwRfb);	/* Add for 802.11r handling */
+				prStaRec->ucAuthTranNum = AUTH_TRANSACTION_SEQ_4;
+				/* if Auth4 check is failed(check mic in Auth ack frame), should disconnect */
+				if (prStaRec->ucAuthAlgNum == AUTH_ALGORITHM_NUM_FAST_BSS_TRANSITION &&
+					 rStatus != WLAN_STATUS_SUCCESS) {
+					DBGLOG(SAA, INFO,
+						"Check Rx Auth4 Frame failed, may be MIC error, %pM, status %d\n",
+						(prStaRec->aucMacAddr), u2StatusCode);
+					/* Reset Send Auth/(Re)Assoc Frame Count */
+					prStaRec->ucTxAuthAssocRetryCount = 0;
+					saaFsmSteps(prAdapter, prStaRec, AA_STATE_IDLE, (P_SW_RFB_T) NULL);
+					break;
+				}
 
 				/* Update Station Record - Class 2 Flag */
 				cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_2);
@@ -1023,6 +1100,7 @@ static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRe
 						prBlackList->u2DeauthReason = prStaRec->u2ReasonCode;
 				}
 				prBssDesc->fgDeauthLastTime = TRUE;
+				prBssDesc->fgIsConnected = FALSE;
 			} else
 				DBGLOG(SAA, INFO, "<drv> prBssDesc is NULL!\n");
 			aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);

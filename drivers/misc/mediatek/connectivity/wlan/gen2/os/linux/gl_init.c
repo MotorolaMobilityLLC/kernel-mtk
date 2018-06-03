@@ -275,6 +275,7 @@ static struct cfg80211_ops mtk_wlan_ops = {
 	.sched_scan_start = mtk_cfg80211_sched_scan_start,
 	.sched_scan_stop = mtk_cfg80211_sched_scan_stop,
 #endif
+	.update_ft_ies = mtk_cfg80211_update_ft_ies,
 };
 
 
@@ -1366,6 +1367,7 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 #if CFG_ENABLE_PKT_LIFETIME_PROFILE
 		GLUE_SET_PKT_ARRIVAL_TIME(prSkb, kalGetTimeTick());
 #endif
+		wlanFillTimestamp(prGlueInfo->prAdapter, (PVOID)prSkb, PHASE_XMIT_RCV);
 		GLUE_INC_REF_CNT(prGlueInfo->i4TxPendingFrameNum);
 		if (u2QueueIdx < CFG_MAX_TXQ_NUM)
 			GLUE_INC_REF_CNT(prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][u2QueueIdx]);
@@ -1772,6 +1774,9 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 #else
 	prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME,
 						   NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
+
+	/* Device can help us to save at most 3000 packets, after we stopped queue */
+	prGlueInfo->prDevHandler->tx_queue_len = 3000;
 #endif
 	if (!prGlueInfo->prDevHandler) {
 		DBGLOG(INIT, ERROR, "Allocating memory to net_device context failed\n");
@@ -2573,7 +2578,20 @@ bailout:
 				DBGLOG(INIT, WARN, "set Driver read EMI address fail 0x%x\n", rStatus);
 		}
 #endif
+#if CFG_SUPPORT_802_11K
+		{
+			WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+			UINT_32 u4SetInfoLen = 0;
 
+			rStatus = kalIoctl(prGlueInfo,
+					   wlanoidSync11kCapbilities,
+					   NULL,
+					   0, FALSE, FALSE, TRUE, FALSE, &u4SetInfoLen);
+
+			if (rStatus != WLAN_STATUS_SUCCESS)
+				DBGLOG(INIT, WARN, "set 11k Capabilities fail 0x%x\n", rStatus);
+		}
+#endif
 		/* 4 <3> Register the card */
 		DBGLOG(INIT, TRACE, "wlanNetRegister...\n");
 		i4DevIdx = wlanNetRegister(prWdev);
@@ -2624,6 +2642,7 @@ bailout:
 		if (glIsChipNeedWakelock(prGlueInfo))
 			KAL_WAKE_LOCK_INIT(prGlueInfo->prAdapter, &prGlueInfo->prAdapter->rApWakeLock, "WLAN AP");
 #endif
+		kalMemZero(&prGlueInfo->rFtIeForTx, sizeof(prGlueInfo->rFtIeForTx));
 	} while (FALSE);
 
 	if (i4Status != WLAN_STATUS_SUCCESS) {

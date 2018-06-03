@@ -149,6 +149,9 @@ WLAN_STATUS wlanFwFileCfg(IN P_ADAPTER_T prAdapter)
 	else if (kalReadToFile(FW_CFG_FILE_2, pucFwCfgBuf,
 		WLAN_CFG_FILE_BUF_SIZE, &u4FwCfgReadLen) == 0)
 		DBGLOG(INIT, INFO, "read wifi_fw.cfg :%s\n", FW_CFG_FILE_2);
+	else if (kalReadToFile(FW_CFG_FILE_3, pucFwCfgBuf,
+		WLAN_CFG_FILE_BUF_SIZE, &u4FwCfgReadLen) == 0)
+		DBGLOG(INIT, INFO, "read wifi_fw.cfg :%s\n", FW_CFG_FILE_3);
 
 	if (pucFwCfgBuf[0] != '\0' && u4FwCfgReadLen > 0) {
 		/* Here limited the file length < 2048, bcz only for dbg purpose

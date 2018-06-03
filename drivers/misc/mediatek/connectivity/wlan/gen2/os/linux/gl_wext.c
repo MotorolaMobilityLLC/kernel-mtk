@@ -74,7 +74,9 @@ static const struct iw_priv_args rIwPrivTable[] = {
 	{IOCTL_GET_INT, 0, IW_PRIV_TYPE_INT | 50, ""},
 	{IOCTL_GET_INT, 0, IW_PRIV_TYPE_CHAR | 16, ""},
 
-	{IOCTL_SET_STRING, IW_PRIV_TYPE_CHAR | 256, 0, ""},
+	{IOCTL_SET_STRING, IW_PRIV_TYPE_CHAR | 512, 0, ""},
+
+	{IOCTL_GET_STRING, IW_PRIV_TYPE_CHAR | 128, IW_PRIV_TYPE_CHAR | 512, ""},
 
 	/* added for set_oid and get_oid */
 	{IOCTL_SET_STRUCT, 256, 0, ""},
@@ -134,7 +136,9 @@ static const struct iw_priv_args rIwPrivTable[] = {
 	{PRIV_CMD_GET_BUILD_DATE_CODE, 0, IW_PRIV_TYPE_CHAR | 16, "get_date_code"},
 	{PRIV_CMD_GET_DEBUG_CODE, 0, IW_PRIV_TYPE_CHAR | 16, "get_dbg_code"},
 	/* handle any command with many input parameters */
-	{PRIV_CMD_OTHER, IW_PRIV_TYPE_CHAR | 256, 0, "set_str_cmd"},
+	{PRIV_CMD_OTHER, IW_PRIV_TYPE_CHAR | 512, 0, "set_str_cmd"},
+
+	{PRIV_CMD_DUMP_DRIVER, IW_PRIV_TYPE_CHAR | 128, IW_PRIV_TYPE_CHAR | 512, "dump_driver"},
 
 	{PRIV_CMD_WFD_DEBUG_CODE, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_wfd_dbg_code"},
 };
@@ -154,6 +158,7 @@ static const iw_handler rIwPrivHandler[] = {
 	[IOCTL_SET_INTS - SIOCIWFIRSTPRIV] = priv_set_ints,
 	[IOCTL_GET_INTS - SIOCIWFIRSTPRIV] = priv_get_ints,
 	[IOCTL_SET_STRING - SIOCIWFIRSTPRIV] = priv_set_string,
+	[IOCTL_GET_STRING - SIOCIWFIRSTPRIV] = priv_get_string,
 };
 
 const struct iw_handler_def wext_handler_def = {

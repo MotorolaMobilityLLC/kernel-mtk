@@ -34,12 +34,26 @@
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
-APPEND_IE_ENTRY_T txAuthIETable[] = {
-	{(ELEM_HDR_LEN + ELEM_MAX_LEN_CHALLENGE_TEXT), authAddIEChallengeText}
+APPEND_VAR_IE_ENTRY_T txAuthIETable[] = {
+	{(ELEM_HDR_LEN + ELEM_MAX_LEN_CHALLENGE_TEXT), NULL, authAddIEChallengeText},
+	{0, authCalculateRSNIELen, authAddRSNIE}, /* Element ID: 48 */
+	{(ELEM_HDR_LEN + 1), NULL, authAddMDIE}, /* Element ID: 54 */
+	{0, rsnCalculateFTIELen, rsnGenerateFTIE}, /* Element ID: 55 */
 };
 
 HANDLE_IE_ENTRY_T rxAuthIETable[] = {
-	{ELEM_ID_CHALLENGE_TEXT, authHandleIEChallengeText}
+	{ELEM_ID_CHALLENGE_TEXT, authHandleIEChallengeText},
+/* since we only need to indicate these IEs to supplicant, so process them in one function
+* Now we disable it, because no FtIEs need to indicate to supplicant
+**/
+#if 0
+	{ELEM_ID_MOBILITY_DOMAIN, authHandleFtIEs},
+	{ELEM_ID_FAST_TRANSITION, authHandleFtIEs},
+	{ELEM_ID_RSN, authHandleFtIEs},
+	{ELEM_ID_RESOURCE_INFO_CONTAINER, authHandleFtIEs},
+	{ELEM_ID_TIMEOUT_INTERVAL, authHandleFtIEs},
+#endif
+
 };
 
 /*******************************************************************************
@@ -223,7 +237,11 @@ WLAN_STATUS authSendAuthFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaR
 	u2EstimatedExtraIELen = 0;
 
 	for (i = 0; i < sizeof(txAuthIETable) / sizeof(APPEND_IE_ENTRY_T); i++)
-		u2EstimatedExtraIELen += txAuthIETable[i].u2EstimatedIELen;
+		if (txAuthIETable[i].u2EstimatedIELen != 0)
+			u2EstimatedExtraIELen += txAuthIETable[i].u2EstimatedIELen;
+		else
+			u2EstimatedExtraIELen += txAuthIETable[i].pfnCalculateVariableIELen(prAdapter,
+				prStaRec->ucNetTypeIndex, prStaRec);
 
 	u2EstimatedFrameLen += u2EstimatedExtraIELen;
 
@@ -316,8 +334,17 @@ authSendAuthFrame(IN P_ADAPTER_T prAdapter,
 	/* + Extra IE Length */
 	u2EstimatedExtraIELen = 0;
 
-	for (i = 0; i < sizeof(txAuthIETable) / sizeof(APPEND_IE_ENTRY_T); i++)
-		u2EstimatedExtraIELen += txAuthIETable[i].u2EstimatedIELen;
+	for (i = 0; i < sizeof(txAuthIETable) / sizeof(APPEND_VAR_IE_ENTRY_T); i++)
+		if (txAuthIETable[i].u2EstimatedFixedIELen != 0)
+			u2EstimatedExtraIELen += txAuthIETable[i].u2EstimatedFixedIELen;
+		else {
+			/*2016/12/16 add null check before access prStaRec*/
+			if (prStaRec)
+				u2EstimatedExtraIELen += txAuthIETable[i].pfnCalculateVariableIELen(prAdapter,
+					prStaRec->ucNetTypeIndex, prStaRec);
+			else
+				DBGLOG(SAA, WARN, "prStaRec is NULL !\n");
+		}
 
 	u2EstimatedFrameLen += u2EstimatedExtraIELen;
 
@@ -392,7 +419,7 @@ authSendAuthFrame(IN P_ADAPTER_T prAdapter,
 	prMsduInfo->fgIsBasicRate = TRUE;
 
 	/* 4 <4> Compose IEs in MSDU_INFO_T */
-	for (i = 0; i < sizeof(txAuthIETable) / sizeof(APPEND_IE_ENTRY_T); i++) {
+	for (i = 0; i < sizeof(txAuthIETable) / sizeof(APPEND_VAR_IE_ENTRY_T); i++) {
 		if (txAuthIETable[i].pfnAppendIE)
 			txAuthIETable[i].pfnAppendIE(prAdapter, prMsduInfo);
 	}
@@ -657,6 +684,14 @@ WLAN_STATUS authProcessRxAuth2_Auth4Frame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 
 			if (ucIEID == rxAuthIETable[i].ucElemID)
 				rxAuthIETable[i].pfnHandleIE(prAdapter, prSwRfb, (P_IE_HDR_T) pucIEsBuffer);
+		}
+	}
+	if (prAuthFrame->u2AuthAlgNum == AUTH_ALGORITHM_NUM_FAST_BSS_TRANSITION) {
+		if (prAuthFrame->u2AuthTransSeqNo == AUTH_TRANSACTION_SEQ_4) {
+			/* todo: check MIC, if mic error, return WLAN_STATUS_FAILURE */
+		} else if (prAuthFrame->u2AuthTransSeqNo == AUTH_TRANSACTION_SEQ_2) {
+			prAdapter->prGlueInfo->rFtEventParam.ies = &prAuthFrame->aucInfoElem[0];
+			prAdapter->prGlueInfo->rFtEventParam.ies_len = u2IEsLen;
 		}
 	}
 
@@ -1045,3 +1080,42 @@ authProcessRxAuth1Frame(IN P_ADAPTER_T prAdapter,
 	return WLAN_STATUS_SUCCESS;
 
 }				/* end of authProcessRxAuth1Frame() */
+
+/* ToDo: authAddRicIE, authHandleFtIEs, authAddTimeoutIE */
+
+VOID authAddMDIE(IN P_ADAPTER_T prAdapter, IN OUT P_MSDU_INFO_T prMsduInfo)
+{
+	struct FT_IES *prFtIEs = &prAdapter->prGlueInfo->rFtIeForTx;
+	PUINT_8 pucBuffer = (PUINT_8)prMsduInfo->prPacket + prMsduInfo->u2FrameLength;
+
+	if (!prFtIEs->prMDIE)
+		return;
+	prMsduInfo->u2FrameLength += 5; /* IE size for MD IE is fixed, it is 5 */
+	kalMemCopy(pucBuffer, prFtIEs->prMDIE, 5);
+}
+
+UINT_32 authCalculateRSNIELen(P_ADAPTER_T prAdapter,
+	ENUM_NETWORK_TYPE_INDEX_T eNetTypeIndex, P_STA_RECORD_T prStaRec)
+{
+	ENUM_PARAM_AUTH_MODE_T eAuthMode = prAdapter->rWifiVar.rConnSettings.eAuthMode;
+	struct FT_IES *prFtIEs = &prAdapter->prGlueInfo->rFtIeForTx;
+
+	if (!prFtIEs->prRsnIE || (eAuthMode != AUTH_MODE_WPA2_FT && eAuthMode != AUTH_MODE_WPA2_FT_PSK))
+		return 0;
+	return IE_SIZE(prFtIEs->prRsnIE);
+}
+
+VOID authAddRSNIE(IN P_ADAPTER_T prAdapter, IN OUT P_MSDU_INFO_T prMsduInfo)
+{
+	ENUM_PARAM_AUTH_MODE_T eAuthMode = prAdapter->rWifiVar.rConnSettings.eAuthMode;
+	struct FT_IES *prFtIEs = &prAdapter->prGlueInfo->rFtIeForTx;
+	PUINT_8 pucBuffer = (PUINT_8)prMsduInfo->prPacket + prMsduInfo->u2FrameLength;
+	UINT_32 ucRSNIeSize = 0;
+
+	if (!prFtIEs->prRsnIE || (eAuthMode != AUTH_MODE_WPA2_FT && eAuthMode != AUTH_MODE_WPA2_FT_PSK))
+		return;
+	ucRSNIeSize = IE_SIZE(prFtIEs->prRsnIE);
+	prMsduInfo->u2FrameLength += ucRSNIeSize;
+	kalMemCopy(pucBuffer, prFtIEs->prRsnIE, ucRSNIeSize);
+}
+
