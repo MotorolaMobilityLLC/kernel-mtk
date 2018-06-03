@@ -182,7 +182,9 @@ void hal_rtc_set_gpio_32k_status(u16 user, bool enable)
 void rtc_enable_k_eosc(void)
 {
 	u16 osc32;
-
+	/* Truning on eosc cali mode clock */
+	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_CLR_ADDR, 1, PMIC_RG_RTC_EOSC32_CK_PDN_MASK,
+		PMIC_RG_RTC_EOSC32_CK_PDN_SHIFT);
 	pmic_config_interface_nolock(PMIC_RG_SRCLKEN_IN0_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN0_HW_MODE_MASK,
 		PMIC_RG_SRCLKEN_IN0_HW_MODE_SHIFT);
 	pmic_config_interface_nolock(PMIC_RG_SRCLKEN_IN1_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN1_HW_MODE_MASK,
