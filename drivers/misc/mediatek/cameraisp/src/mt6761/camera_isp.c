@@ -1915,9 +1915,9 @@ AF_EXIT:
 			if ((cam_aao_ysize + 1) != 1)
 				log_inf("Err HwRWCtrl::AAO_YSIZE(%d) must be 1",
 					cam_aao_ysize);
-			if ((AAO_XSIZE + 1) != (AWB_W_HNUM * AWB_W_VNUM * 5 +
+			if ((AAO_XSIZE + 1) != (AWB_W_HNUM * AWB_W_VNUM * 7 +
 						(histogramen_num << 8)))
-				pr_info("Error HwRWCtrl::AAO_XSIZE(%d) = AWB_W_HNUM(%d)*AWB_W_VNUM(%d)*5 + (how many histogram enable(%d)(AE_HST0/1/2/3_EN))*2*128 !!",
+				pr_info("Error HwRWCtrl::AAO_XSIZE(%d) = AWB_W_HNUM(%d)*AWB_W_VNUM(%d)*7 + (how many histogram enable(%d)(AE_HST0/1/2/3_EN))*2*128 !!",
 					AAO_XSIZE, AWB_W_HNUM, AWB_W_VNUM,
 					histogramen_num);
 		}
