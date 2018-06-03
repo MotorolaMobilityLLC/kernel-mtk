@@ -1694,14 +1694,19 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 {
 	CMD_SW_DBG_CTRL_T rCmdSwCtrl;
 	CMD_ACCESS_REG rCmdAccessReg;
+	struct CMD_SET_CTIA_MODE rCmdSetCtiaMode;
 	WLAN_STATUS rWlanStatus;
 
 	DEBUGFUNC("nicEnterCtiaMode");
-	DBGLOG(NIC, TRACE, "nicEnterCtiaMode: %d\n", fgEnterCtia);
+	DBGLOG(NIC, INFO, "nicEnterCtiaMode: %d\n", fgEnterCtia);
 
 	ASSERT(prAdapter);
 
 	rWlanStatus = WLAN_STATUS_SUCCESS;
+
+	kalMemZero(&rCmdSetCtiaMode, sizeof(rCmdSetCtiaMode));
+	rCmdSetCtiaMode.ucCmdVersion = 0x01,
+	rCmdSetCtiaMode.ucCtiaModeEnable = fgEnterCtia;
 
 	if (fgEnterCtia) {
 		/* 1. Disable On-Lin Scan */
@@ -1809,6 +1814,13 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 		prAdapter->fgDisBcnLostDetection = FALSE;
 
 	}
+
+	/* 6. Sync to FW : enable/disable CTIA mode*/
+	wlanSendSetQueryCmd(prAdapter,
+	    CMD_ID_SET_CTIA_MODE_STATUS,
+	    TRUE,
+	    FALSE,
+	    FALSE, NULL, NULL, sizeof(rCmdSetCtiaMode), (PUINT_8)&rCmdSetCtiaMode, NULL, 0);
 
 	return rWlanStatus;
 }				/* end of nicEnterCtiaMode() */
