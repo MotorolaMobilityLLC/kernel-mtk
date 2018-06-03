@@ -78,7 +78,6 @@ static u32 slp_spm_flags = {
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 	SPM_FLAG_DIS_ATF_ABORT |
-	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 	SPM_FLAG_SUSPEND_OPTION
 };
 #if SLP_SLEEP_DPIDLE_EN
@@ -92,7 +91,6 @@ static u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 	SPM_FLAG_DIS_ATF_ABORT |
-	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 	SPM_FLAG_DEEPIDLE_OPTION
 };
 #endif
@@ -102,7 +100,7 @@ u32 slp_spm_data;
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
 	/* FIXME: */
-#if 0
+#if 1
 	return false;
 #else
 	return state == PM_SUSPEND_MEM;
