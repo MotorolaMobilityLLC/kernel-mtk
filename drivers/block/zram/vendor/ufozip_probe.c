@@ -430,10 +430,12 @@ static void ufozip_vcorectrl(bool set_high)
 
 	if (set_high) {
 		vcorefs_request_dvfs_opp(KIR_UFO, OPP_1);
+		/* after this, ufozip can run at high freq */
 		err = clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_high_624);
 	} else {
-		vcorefs_request_dvfs_opp(KIR_UFO, OPP_UNREQ);
 		err = clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_low_312);
+		/* before this, ufozip should run at low freq */
+		vcorefs_request_dvfs_opp(KIR_UFO, OPP_UNREQ);
 	}
 
 	if (err)
