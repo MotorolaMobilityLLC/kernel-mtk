@@ -11,156 +11,235 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <linux/cpu.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
-#include <linux/notifier.h>
-#include <mt-plat/sync_write.h>
 #include <mtk_swpm_common.h>
+#include <mtk_swpm_platform.h>
 
 
 /****************************************************************************
  *  Macro Definitions
  ****************************************************************************/
-#define swpm_pmu_read(cpu, offs)		\
-	__raw_readl(pmu_base[cpu] + (offs))
-#define swpm_pmu_write(cpu, offs, val)	\
-	mt_reg_sync_writel(val, pmu_base[cpu] + (offs))
-
-#define PMU_EVENT_L2D_CACHE             (0x16)
-#define PMU_EVENT_LOAD_STALL            (0xE7)
-#define PMU_EVENT_STORE_STALL           (0xE8)
-#define PMU_CNTENSET_EVT_CNT            (0x7) /* 3 event counter enabled */
-#define PMU_CNTENSET_C                  (0x1 << 31)
-#define PMU_EVTYPER_INC_EL2             (0x1 << 27)
-#define PMU_PMCR_E                      (0x1)
-#define OFF_PMEVCNTR_0                  (0x000)
-#define OFF_PMEVCNTR_1                  (0x008)
-#define OFF_PMEVCNTR_2                  (0x010)
-#define OFF_PMEVCNTR_3                  (0x018)
-#define OFF_PMEVCNTR_4                  (0x020)
-#define OFF_PMEVCNTR_5                  (0x028)
-#define OFF_PMCCNTR_L                   (0x0F8)
-#define OFF_PMCCNTR_H                   (0x0FC)
-#define OFF_PMEVTYPER0                  (0x400)
-#define OFF_PMEVTYPER1                  (0x404)
-#define OFF_PMEVTYPER2                  (0x408)
-#define OFF_PMEVTYPER3                  (0x40C)
-#define OFF_PMEVTYPER4                  (0x410)
-#define OFF_PMEVTYPER5                  (0x414)
-#define OFF_PMCNTENSET                  (0xC00)
-#define OFF_PMCNTENCLR                  (0xC20)
-#define OFF_PMCFGR                      (0xE00)
-#define OFF_PMCR                        (0xE04)
-#define OFF_PMLAR                       (0xFB0)
-#define OFF_PMLSR                       (0xFB4)
 
 /****************************************************************************
  *  Type Definitions
  ****************************************************************************/
-enum pmu_event {
-	PMUEVT_L2_ACCESS,
-	PMUEVT_LOAD_STALL,
-	PMUEVT_STORE_STALL,
-	PMUEVT_CYCLE_CNT,
-
-	NR_PMU_EVENT
-};
 
 /****************************************************************************
  *  Local Variables
  ****************************************************************************/
-static int swpm_hotplug_cb(struct notifier_block *nfb,
-				unsigned long action, void *hcpu);
-static struct notifier_block __refdata swpm_hotplug_notifier = {
-	.notifier_call = swpm_hotplug_cb,
+static struct aphy_pwr_data aphy_def_pwr_tbl[] = {
+	[APHY_VCORE_0P7V] = {
+		.read_pwr = {
+			[DDR_800] = {
+				.bw = {768, 1888, 3328, 5120},
+				.coef = {6980, 9408, 10387, 11053},
+			},
+			[DDR_1200] = {
+				.bw = {768, 1920, 3328, 7872},
+				.coef = {9612, 13202, 14567, 16670},
+			},
+			[DDR_1600] = {
+				.bw = {768, 1920, 3360, 9216},
+				.coef = {11838, 15836, 18198, 21684},
+			},
+			[DDR_1866] = {
+				.bw = {896, 2239, 3919, 10748},
+				.coef = {13806, 18468, 21223, 25289},
+			},
+		},
+		.write_pwr = {
+			[DDR_800] = {
+				.bw = {768, 1888, 3328, 5120},
+				.coef = {6980, 9408, 10387, 11053},
+			},
+			[DDR_1200] = {
+				.bw = {768, 1920, 3328, 7872},
+				.coef = {9612, 13202, 14567, 16670},
+			},
+			[DDR_1600] = {
+				.bw = {768, 1920, 3360, 9216},
+				.coef = {11838, 15836, 18198, 21684},
+			},
+			[DDR_1866] = {
+				.bw = {896, 2239, 3919, 10748},
+				.coef = {13806, 18468, 21223, 25289},
+			},
+		},
+		.coef_idle = {4009, 4219, 4452, 5192},
+	},
+	[APHY_VDDQ_0P6V] = {
+		.read_pwr = {
+			[DDR_800] = {
+				.bw = {320, 640, 1280, 1920},
+				.coef = {890, 1430, 1610, 1993},
+			},
+			[DDR_1200] = {
+				.bw = {480, 960, 1920, 2880},
+				.coef = {755, 1368, 1445, 1793},
+			},
+			[DDR_1600] = {
+				.bw = {640, 1280, 2560, 3840},
+				.coef = {445, 875, 857, 1157},
+			},
+			[DDR_1866] = {
+				.bw = {746, 1493, 2986, 4478},
+				.coef = {519, 1020, 999, 1349},
+			},
+		},
+		.write_pwr = {
+			[DDR_800] = {
+				.bw = {320, 640, 1280, 3200},
+				.coef = {1632, 3703, 4330, 7297},
+			},
+			[DDR_1200] = {
+				.bw = {480, 960, 2880, 4800},
+				.coef = {1628, 3640, 5547, 7682},
+			},
+			[DDR_1600] = {
+				.bw = {640, 1280, 2560, 3840},
+				.coef = {1942, 3915, 6565, 8895},
+			},
+			[DDR_1866] = {
+				.bw = {746, 1493, 2986, 4478},
+				.coef = {2264, 4566, 7656, 10374},
+			},
+		},
+		.coef_idle = {53, 37, 25, 29},
+	},
+	[APHY_VM_1P1V] = {
+		.read_pwr = {
+			[DDR_800] = {
+				.bw = {320, 640, 1280, 1920},
+				.coef = {491, 699, 896, 955},
+			},
+			[DDR_1200] = {
+				.bw = {480, 960, 1920, 2880},
+				.coef = {656, 1132, 1227, 1376},
+			},
+			[DDR_1600] = {
+				.bw = {640, 1280, 2560, 3840},
+				.coef = {753, 1471, 1605, 1893},
+			},
+			[DDR_1866] = {
+				.bw = {746, 1493, 2986, 4478},
+				.coef = {878, 1715, 1872, 2207},
+			},
+		},
+		.write_pwr = {
+			[DDR_800] = {
+				.bw = {320, 640, 1280, 3200},
+				.coef = {792, 1345, 2486, 3265},
+			},
+			[DDR_1200] = {
+				.bw = {480, 1920, 2880, 4800},
+				.coef = {1151, 2953, 3525, 4742},
+			},
+			[DDR_1600] = {
+				.bw = {640, 1280, 2560, 3840},
+				.coef = {1418, 2601, 3916, 4836},
+			},
+			[DDR_1866] = {
+				.bw = {746, 1493, 2986, 4478},
+				.coef = {1654, 3033, 4567, 5640},
+			},
+		},
+		.coef_idle = {64, 64, 64, 74},
+	},
+	[APHY_VIO_1P8V] = {
+		.read_pwr = {
+			[DDR_800] = {
+				.bw = {320, 640, 1280, 1920},
+				.coef = {141, 276, 442, 558},
+			},
+			[DDR_1200] = {
+				.bw = {480, 960, 1920, 2880},
+				.coef = {151, 292, 461, 587},
+			},
+			[DDR_1600] = {
+				.bw = {640, 1280, 2560, 3840},
+				.coef = {152, 316, 465, 624},
+			},
+			[DDR_1866] = {
+				.bw = {746, 1493, 2986, 4478},
+				.coef = {178, 368, 542, 728},
+			},
+		},
+		.write_pwr = {
+			[DDR_800] = {
+				.bw = {320, 640, 1280, 1920},
+				.coef = {0, 0, 0, 0},
+			},
+			[DDR_1200] = {
+				.bw = {480, 960, 1920, 2880},
+				.coef = {0, 0, 0, 0},
+			},
+			[DDR_1600] = {
+				.bw = {640, 1280, 2560, 3840},
+				.coef = {0, 0, 0, 0},
+			},
+			[DDR_1866] = {
+				.bw = {746, 1493, 2986, 4478},
+				.coef = {0, 0, 0, 0},
+			},
+		},
+		.coef_idle = {102, 175, 198, 231},
+	},
 };
-static void __iomem *pmu_base[NR_CPUS];
+
+static struct dram_pwr_conf dram_def_pwr_conf[] = {
+	[DRAM_VDD1_1P8V] = {
+		.i_dd0 = 10500,
+		.i_dd2p = 600,
+		.i_dd2n = 900,
+		.i_dd4r = 14700,
+		.i_dd4w = 16000,
+		.i_dd5 = 4100,
+		.i_dd6 = 900,
+	},
+	[DRAM_VDD2_1P1V] = {
+		.i_dd0 = 48400,
+		.i_dd2p = 600,
+		.i_dd2n = 21100,
+		.i_dd4r = 125700,
+		.i_dd4w = 171500,
+		.i_dd5 = 27100,
+		.i_dd6 = 1100,
+	},
+	[DRAM_VDDQ_0P6V] = {
+		.i_dd0 = 200,
+		.i_dd2p = 200,
+		.i_dd2n = 200,
+		.i_dd4r = 153100,
+		.i_dd4w = 600,
+		.i_dd5 = 200,
+		.i_dd6 = 100,
+	},
+};
 
 /****************************************************************************
  *  Global Variables
  ****************************************************************************/
-const struct of_device_id swpm_of_ids[] = {
-	{.compatible = "mediatek,dbgapb_pmu",},
-	{}
-};
 
 /****************************************************************************
  *  Static Function
  ****************************************************************************/
-static int swpm_hotplug_cb(struct notifier_block *nfb,
-				unsigned long action, void *hcpu)
-{
-	/* unsigned int cpu = (unsigned long)hcpu; */
-
-	switch (action & ~CPU_TASKS_FROZEN) {
-	case CPU_DOWN_PREPARE:
-		/* swpm_stop_pmu(cpu); */
-		break;
-	case CPU_DOWN_FAILED:
-	case CPU_ONLINE:
-		/* swpm_start_pmu(cpu); */
-		break;
-	default:
-		break;
-	}
-
-	return NOTIFY_OK;
-}
 
 /***************************************************************************
  *  API
  ***************************************************************************/
-#if 0 /* TODO: need this? */
-void swpm_start_pmu(int cpu)
-{
-	if (cpu >= num_possible_cpus())
-		return;
-
-	/* release PMU reg access lock */
-	swpm_pmu_write(cpu, OFF_PMLAR, 0xC5ACCE55);
-	/* wait for ready */
-	while (swpm_pmu_read(cpu, OFF_PMLSR) != 1)
-		;
-	/* set event type */
-	swpm_pmu_write(cpu, OFF_PMEVTYPER0,
-		PMU_EVTYPER_INC_EL2 | PMU_EVENT_L2D_CACHE);
-	swpm_pmu_write(cpu, OFF_PMEVTYPER1,
-		PMU_EVTYPER_INC_EL2 | PMU_EVENT_LOAD_STALL);
-	swpm_pmu_write(cpu, OFF_PMEVTYPER2,
-		PMU_EVTYPER_INC_EL2 | PMU_EVENT_STORE_STALL);
-	/* enable counters */
-	swpm_pmu_write(cpu, OFF_PMCNTENSET,
-		PMU_CNTENSET_C | PMU_CNTENSET_EVT_CNT);
-	swpm_pmu_write(cpu, OFF_PMCR,
-		swpm_pmu_read(cpu, OFF_PMCR) | PMU_PMCR_E);
-}
-
-void swpm_stop_pmu(int cpu)
-{
-	if (cpu >= num_possible_cpus())
-		return;
-
-	/* disable all counters */
-	swpm_pmu_write(cpu, OFF_PMCR,
-		swpm_pmu_read(cpu, OFF_PMCR) & ~PMU_PMCR_E);
-}
-#endif
-
 int swpm_platform_init(struct platform_device *pdev)
 {
 	int ret = 0;
-	int i;
 
-	for (i = 0; i < num_possible_cpus(); i++) {
-		pmu_base[i] = of_iomap(pdev->dev.of_node, i);
+	/* copy pwr data */
+	memcpy(swpm_info_ref->aphy_pwr_tbl, aphy_def_pwr_tbl,
+		sizeof(aphy_def_pwr_tbl));
+	memcpy(swpm_info_ref->dram_conf, dram_def_pwr_conf,
+		sizeof(dram_def_pwr_conf));
 
-		if (pmu_base[i] == NULL)
-			swpm_err("MAP CPU%d PMU addr failed\n", i);
-	}
-
-	/* TODO: register callback to MCDI */
-	register_hotcpu_notifier(&swpm_hotplug_notifier);
+	swpm_info("copy pwr data (size: aphy/dram = %ld/%ld) done!\n",
+		sizeof(aphy_def_pwr_tbl), sizeof(dram_def_pwr_conf));
 
 	return ret;
 }

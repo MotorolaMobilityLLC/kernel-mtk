@@ -22,16 +22,15 @@
 #include <sspm_reservedmem_define.h>
 #endif
 #include <mtk_spm_vcore_dvfs.h>
+#include <mtk_dramc.h>
 #include <mtk_swpm_common.h>
+#include <mtk_swpm_platform.h>
 #include <mtk_swpm.h>
 
 /****************************************************************************
  *  Macro Definitions
  ****************************************************************************/
-#define MAX_RECORD_CNT			(64)
 #define DEFAULT_AVG_WINDOW		(50)
-
-#define for_each_meter(i)		for (i = 0; i < NR_SWPM_TYPE; i++)
 
 #define MAX(a, b)			((a) >= (b) ? (a) : (b))
 #define MIN(a, b)			((a) >= (b) ? (b) : (a))
@@ -71,39 +70,6 @@
 /****************************************************************************
  *  Type Definitions
  ****************************************************************************/
-/* data shared w/ SSPM */
-enum profile_point {
-	READ_EMI_TIME,
-	MON_TIME,
-	CALC_TIME,
-	REC_TIME,
-	TOTAL_TIME,
-
-	NR_PROFILE_POINT
-};
-
-struct swpm_rec_data {
-	/* 8 bytes */
-	unsigned int cur_idx;
-	unsigned int profile_enable;
-
-	/* 4(int) * 64(rec_cnt) * 4 = 1KB */
-	unsigned int cpu_pwr[MAX_RECORD_CNT];
-	unsigned int gpu_pwr[MAX_RECORD_CNT];
-	unsigned int core_pwr[MAX_RECORD_CNT];
-	unsigned int mem_pwr[MAX_RECORD_CNT];
-
-	/* 8(long) * 4(prof_pt) * 3 = 96 bytes */
-	unsigned long long avg_latency[NR_PROFILE_POINT];
-	unsigned long long max_latency[NR_PROFILE_POINT];
-	unsigned long long prof_cnt[NR_PROFILE_POINT];
-
-	/* 4(int) * 8(core) * 4(event) * 2 = 256 bytes */
-#if 0
-	unsigned int pmu_val[NR_CPUS][NR_PMU_EVENT];
-	unsigned int prev_pmu_cnt[NR_CPUS][NR_PMU_EVENT];
-#endif
-};
 
 /****************************************************************************
  *  Local Variables
@@ -114,7 +80,6 @@ static unsigned long long rec_size;
 #endif
 static bool swpm_enable;
 static unsigned char avg_window = DEFAULT_AVG_WINDOW;
-static struct swpm_rec_data *swpm_info_ref;
 static int swpm_probe(struct platform_device *pdev);
 static struct platform_driver swpm_drv = {
 	.probe = swpm_probe,
@@ -122,13 +87,13 @@ static struct platform_driver swpm_drv = {
 		.name = "swpm",
 		.bus = &platform_bus_type,
 		.owner = THIS_MODULE,
-		.of_match_table = of_match_ptr(swpm_of_ids),
 	},
 };
 
 /****************************************************************************
  *  Global Variables
  ****************************************************************************/
+struct swpm_rec_data *swpm_info_ref;
 bool swpm_debug = true;
 DEFINE_MUTEX(swpm_mutex);
 
@@ -161,13 +126,13 @@ out:
 static int dump_power_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "Avg CPU pwr = %dmA\n",
-		swpm_get_avg_power(SWPM_CPU, avg_window));
+		swpm_get_avg_power(CPU_POWER_METER, avg_window));
 	seq_printf(m, "Avg GPU pwr = %dmA\n",
-		swpm_get_avg_power(SWPM_GPU, avg_window));
+		swpm_get_avg_power(GPU_POWER_METER, avg_window));
 	seq_printf(m, "Avg CORE pwr = %dmA\n",
-		swpm_get_avg_power(SWPM_CORE, avg_window));
+		swpm_get_avg_power(CORE_POWER_METER, avg_window));
 	seq_printf(m, "Avg MEM pwr = %dmA\n",
-		swpm_get_avg_power(SWPM_MEM, avg_window));
+		swpm_get_avg_power(MEM_POWER_METER, avg_window));
 
 	return 0;
 }
@@ -363,11 +328,9 @@ static int __init swpm_init(void)
 		return ret;
 	}
 
-	/* TODO: get DRAM info(ex: ch num) here */
-
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	send_swpm_init_ipi((unsigned int)(rec_phys_addr & 0xFFFFFFFF),
-		(unsigned int)(rec_size & 0xFFFFFFFF), 2);
+		(unsigned int)(rec_size & 0xFFFFFFFF), get_emi_ch_num());
 #endif
 
 	swpm_info("SWPM init done!\n");
@@ -379,12 +342,12 @@ late_initcall(swpm_init);
 /***************************************************************************
  *  API
  ***************************************************************************/
-unsigned int swpm_get_avg_power(enum swpm_type type, unsigned int avg_window)
+unsigned int swpm_get_avg_power(unsigned int type, unsigned int avg_window)
 {
 	unsigned int *ptr;
 	unsigned int cnt, idx, sum = 0, pwr = 0;
 
-	if (type >= NR_SWPM_TYPE) {
+	if (type >= NR_POWER_METER) {
 		swpm_err("Invalid SWPM type = %d\n", type);
 		return 0;
 	}
@@ -394,9 +357,7 @@ unsigned int swpm_get_avg_power(enum swpm_type type, unsigned int avg_window)
 	avg_window = MIN(avg_window, MAX_RECORD_CNT);
 
 	/* get ptr of the target meter record */
-	ptr = swpm_info_ref->cpu_pwr + type *
-		(sizeof(swpm_info_ref->cpu_pwr) /
-		sizeof(swpm_info_ref->cpu_pwr[0]));
+	ptr = &swpm_info_ref->pwr[type][0];
 
 	/* calculate avg */
 	for (idx = swpm_info_ref->cur_idx, cnt = 0; cnt < avg_window; cnt++) {
