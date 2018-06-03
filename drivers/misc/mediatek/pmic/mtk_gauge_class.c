@@ -83,6 +83,9 @@ int gauge_dev_initial(struct gauge_device *gauge_dev)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_initial)
 		ret = gauge_dev->ops->gauge_initial(gauge_dev);
@@ -94,6 +97,9 @@ int gauge_dev_initial(struct gauge_device *gauge_dev)
 int gauge_dev_get_current(struct gauge_device *gauge_dev, bool *is_charging, int *battery_current)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_read_current)
@@ -107,6 +113,9 @@ int gauge_dev_get_average_current(struct gauge_device *gauge_dev, int *data, boo
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_average_current)
 		ret = gauge_dev->ops->gauge_get_average_current(gauge_dev, data, valid);
@@ -118,6 +127,9 @@ int gauge_dev_get_average_current(struct gauge_device *gauge_dev, int *data, boo
 int gauge_dev_get_coulomb(struct gauge_device *gauge_dev, int *data)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_coulomb)
@@ -131,6 +143,9 @@ int gauge_dev_reset_hw(struct gauge_device *gauge_dev)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_reset_hw)
 		ret = gauge_dev->ops->gauge_reset_hw(gauge_dev);
@@ -141,6 +156,9 @@ int gauge_dev_reset_hw(struct gauge_device *gauge_dev)
 int gauge_dev_get_hwocv(struct gauge_device *gauge_dev, int *data)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_hwocv)
@@ -153,6 +171,9 @@ int gauge_dev_set_coulomb_interrupt1_ht(struct gauge_device *gauge_dev, int car)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_coulomb_interrupt1_ht)
 		ret = gauge_dev->ops->gauge_set_coulomb_interrupt1_ht(gauge_dev, car);
@@ -163,6 +184,9 @@ int gauge_dev_set_coulomb_interrupt1_ht(struct gauge_device *gauge_dev, int car)
 int gauge_dev_set_coulomb_interrupt1_lt(struct gauge_device *gauge_dev, int car)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_coulomb_interrupt1_lt)
@@ -176,6 +200,9 @@ int gauge_dev_get_boot_battery_plug_out_status(struct gauge_device *gauge_dev, i
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_boot_battery_plug_out_status)
 		ret = gauge_dev->ops->gauge_get_boot_battery_plug_out_status(gauge_dev, is_plugout, plutout_time);
@@ -187,6 +214,9 @@ int gauge_dev_get_boot_battery_plug_out_status(struct gauge_device *gauge_dev, i
 int gauge_dev_get_ptim_current(struct gauge_device *gauge_dev, int *ptim_current, bool *is_charging)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_ptim_current)
@@ -200,6 +230,9 @@ int gauge_dev_get_zcv_current(struct gauge_device *gauge_dev, int *zcv_current)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_zcv_current)
 		ret = gauge_dev->ops->gauge_get_zcv_current(gauge_dev, zcv_current);
@@ -211,6 +244,9 @@ int gauge_dev_get_zcv_current(struct gauge_device *gauge_dev, int *zcv_current)
 int gauge_dev_get_zcv(struct gauge_device *gauge_dev, int *zcv)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_zcv)
@@ -224,6 +260,9 @@ int gauge_dev_is_gauge_initialized(struct gauge_device *gauge_dev, int *init)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_is_gauge_initialized)
 		ret = gauge_dev->ops->gauge_is_gauge_initialized(gauge_dev, init);
@@ -235,6 +274,9 @@ int gauge_dev_is_gauge_initialized(struct gauge_device *gauge_dev, int *init)
 int gauge_dev_set_gauge_initialized(struct gauge_device *gauge_dev, int init)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_gauge_initialized)
@@ -248,6 +290,9 @@ int gauge_dev_set_battery_cycle_interrupt(struct gauge_device *gauge_dev, int ca
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_battery_cycle_interrupt)
 		ret = gauge_dev->ops->gauge_set_battery_cycle_interrupt(gauge_dev, car);
@@ -259,6 +304,9 @@ int gauge_dev_set_battery_cycle_interrupt(struct gauge_device *gauge_dev, int ca
 int gauge_dev_reset_shutdown_time(struct gauge_device *gauge_dev)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_reset_shutdown_time)
@@ -272,6 +320,9 @@ int gauge_dev_reset_ncar(struct gauge_device *gauge_dev)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_reset_ncar)
 		ret = gauge_dev->ops->gauge_reset_ncar(gauge_dev);
@@ -283,6 +334,9 @@ int gauge_dev_reset_ncar(struct gauge_device *gauge_dev)
 int gauge_dev_set_nag_zcv(struct gauge_device *gauge_dev, int zcv)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_nag_zcv)
@@ -296,6 +350,9 @@ int gauge_dev_set_nag_c_dltv(struct gauge_device *gauge_dev, int c_dltv_mv)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_nag_c_dltv)
 		ret = gauge_dev->ops->gauge_set_nag_c_dltv(gauge_dev, c_dltv_mv);
@@ -307,6 +364,9 @@ int gauge_dev_set_nag_c_dltv(struct gauge_device *gauge_dev, int c_dltv_mv)
 int gauge_dev_enable_nag_interrupt(struct gauge_device *gauge_dev, int en)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_nag_interrupt)
@@ -320,6 +380,9 @@ int gauge_dev_get_nag_cnt(struct gauge_device *gauge_dev, int *nag_cnt)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_nag_cnt)
 		ret = gauge_dev->ops->gauge_get_nag_cnt(gauge_dev, nag_cnt);
@@ -331,6 +394,9 @@ int gauge_dev_get_nag_cnt(struct gauge_device *gauge_dev, int *nag_cnt)
 int gauge_dev_get_nag_dltv(struct gauge_device *gauge_dev, int *nag_dltv)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_nag_dltv)
@@ -345,6 +411,9 @@ int gauge_dev_get_nag_c_dltv(struct gauge_device *gauge_dev, int *nag_c_dltv)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_nag_c_dltv)
 		ret = gauge_dev->ops->gauge_get_nag_c_dltv(gauge_dev, nag_c_dltv);
@@ -356,6 +425,9 @@ int gauge_dev_get_nag_c_dltv(struct gauge_device *gauge_dev, int *nag_c_dltv)
 int gauge_dev_enable_zcv_interrupt(struct gauge_device *gauge_dev, int en)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_zcv_interrupt)
@@ -369,6 +441,9 @@ int gauge_dev_set_zcv_interrupt_threshold(struct gauge_device *gauge_dev, int th
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_zcv_interrupt_threshold)
 		ret = gauge_dev->ops->gauge_set_zcv_interrupt_threshold(gauge_dev, threshold);
@@ -380,6 +455,9 @@ int gauge_dev_set_zcv_interrupt_threshold(struct gauge_device *gauge_dev, int th
 int gauge_dev_enable_battery_tmp_lt_interrupt(struct gauge_device *gauge_dev, bool en, int threshold)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_battery_tmp_lt_interrupt)
@@ -393,6 +471,9 @@ int gauge_dev_enable_battery_tmp_ht_interrupt(struct gauge_device *gauge_dev, bo
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_battery_tmp_ht_interrupt)
 		ret = gauge_dev->ops->gauge_enable_battery_tmp_ht_interrupt(gauge_dev, en, threshold);
@@ -404,6 +485,9 @@ int gauge_dev_enable_battery_tmp_ht_interrupt(struct gauge_device *gauge_dev, bo
 int gauge_dev_get_time(struct gauge_device *gauge_dev, unsigned int *time)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_time)
@@ -417,6 +501,9 @@ int gauge_dev_enable_time_interrupt(struct gauge_device *gauge_dev, int threshol
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_time_interrupt)
 		ret = gauge_dev->ops->gauge_enable_time_interrupt(gauge_dev, threshold);
@@ -428,6 +515,9 @@ int gauge_dev_enable_time_interrupt(struct gauge_device *gauge_dev, int threshol
 int gauge_dev_get_hw_status(struct gauge_device *gauge_dev, struct gauge_hw_status *hw_status, int interno)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_hw_status)
@@ -441,6 +531,9 @@ int gauge_dev_enable_bat_plugout_interrupt(struct gauge_device *gauge_dev, int e
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_bat_plugout_interrupt)
 		ret = gauge_dev->ops->gauge_enable_bat_plugout_interrupt(gauge_dev, en);
@@ -452,6 +545,9 @@ int gauge_dev_enable_bat_plugout_interrupt(struct gauge_device *gauge_dev, int e
 int gauge_dev_enable_iavg_interrupt(struct gauge_device *gauge_dev, int iavg_gap)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_iavg_interrupt)
@@ -465,6 +561,9 @@ int gauge_dev_enable_vbat_low_interrupt(struct gauge_device *gauge_dev, int en)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_vbat_low_interrupt)
 		ret = gauge_dev->ops->gauge_enable_vbat_low_interrupt(gauge_dev, en);
@@ -476,6 +575,9 @@ int gauge_dev_enable_vbat_low_interrupt(struct gauge_device *gauge_dev, int en)
 int gauge_dev_enable_vbat_high_interrupt(struct gauge_device *gauge_dev, int en)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_vbat_high_interrupt)
@@ -489,6 +591,9 @@ int gauge_dev_enable_vbat_low_threshold(struct gauge_device *gauge_dev, int thre
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_vbat_low_threshold)
 		ret = gauge_dev->ops->gauge_enable_vbat_low_threshold(gauge_dev, threshold);
@@ -501,6 +606,9 @@ int gauge_dev_enable_vbat_high_threshold(struct gauge_device *gauge_dev, int thr
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_vbat_high_threshold)
 		ret = gauge_dev->ops->gauge_enable_vbat_high_threshold(gauge_dev, threshold);
@@ -512,6 +620,9 @@ int gauge_dev_enable_vbat_high_threshold(struct gauge_device *gauge_dev, int thr
 int gauge_dev_enable_car_tune_value_calibration(struct gauge_device *gauge_dev, int init_current, int *car_tune_value)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_car_tune_value_calibration)
@@ -526,6 +637,9 @@ int gauge_dev_get_nag_vbat(struct gauge_device *gauge_dev, int *vbat)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_nag_vbat)
 		ret = gauge_dev->ops->gauge_get_nag_vbat(gauge_dev, vbat);
@@ -539,6 +653,9 @@ int gauge_dev_set_rtc_ui_soc(struct gauge_device *gauge_dev, int ui_soc)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_rtc_ui_soc)
 		ret = gauge_dev->ops->gauge_set_rtc_ui_soc(gauge_dev, ui_soc);
@@ -550,6 +667,9 @@ int gauge_dev_set_rtc_ui_soc(struct gauge_device *gauge_dev, int ui_soc)
 int gauge_dev_get_rtc_ui_soc(struct gauge_device *gauge_dev, int *ui_soc)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_get_rtc_ui_soc)
@@ -564,6 +684,9 @@ int gauge_dev_is_rtc_invalid(struct gauge_device *gauge_dev, int *invalid)
 {
 	int ret = -ENOTSUPP;
 
+	if (gauge_dev == NULL)
+		return ret;
+
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_is_rtc_invalid)
 		ret = gauge_dev->ops->gauge_is_rtc_invalid(gauge_dev, invalid);
@@ -575,6 +698,9 @@ int gauge_dev_is_rtc_invalid(struct gauge_device *gauge_dev, int *invalid)
 int gauge_dev_set_reset_status(struct gauge_device *gauge_dev, int reset)
 {
 	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_reset_status)
