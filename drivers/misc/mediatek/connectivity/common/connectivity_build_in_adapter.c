@@ -20,6 +20,7 @@
 #include <linux/version.h>
 #include <linux/types.h>
 #include <linux/printk.h>
+#include <linux/sched.h>
 #include <linux/export.h>
 
 /*device tree mode*/
