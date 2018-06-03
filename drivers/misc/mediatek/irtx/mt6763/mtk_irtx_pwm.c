@@ -103,13 +103,13 @@ void switch_irtx_gpio(int mode)
 	if (mode == IRTX_GPIO_MODE_LED_SET) {
 		ret = regulator_enable(mt_irtx_dev.buck);
 		if (ret < 0) {
-			pr_err("[IRTX] mtk_regulator_enable enable fail!!\n");
+			pr_err("[IRTX] regulator_enable fail!!\n");
 			return;
 		}
 	} else {
 		ret = regulator_disable(mt_irtx_dev.buck);
 		if (ret < 0) {
-			pr_err("[IRTX] mtk_regulator_enable disable fail!!\n");
+			pr_err("[IRTX] regulator_disable fail!!\n");
 			return;
 		}
 	}
@@ -179,7 +179,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			/* gpio: bit 0-11 */
 			gpio_id = (unsigned long)((para & 0x0FFF0000) > 16);
 			en = (para & 0xF);
-			pr_warn("[IRTX] IRTX_IOC_SET_IRTX_LED_EN: 0x%x, gpio_id:%ul, en:%ul\n", para, gpio_id, en);
+			pr_info("[IRTX] IRTX_IOC_SET_IRTX_LED_EN: 0x%x, gpio_id:%ul, en:%ul\n", para, gpio_id, en);
 
 			if (en)
 				switch_irtx_gpio(IRTX_GPIO_MODE_LED_SET);
@@ -290,13 +290,13 @@ static int irtx_probe(struct platform_device *plat_dev)
 
 	mt_irtx_dev.buck = regulator_get(NULL, "rt5081_ldo");
 	if (mt_irtx_dev.buck == NULL) {
-		pr_err("[IRTX] mtk_regulator_get fail!!\n");
+		pr_err("[IRTX] regulator_get fail!!\n");
 		return -1;
 	}
 
 	ret = regulator_set_voltage(mt_irtx_dev.buck, 2800000, 2800000);
 	if (ret < 0) {
-		pr_err("[IRTX] mtk_regulator_set_voltage fail!!\n");
+		pr_err("[IRTX] regulator_set_voltage fail!!\n");
 		return -1;
 	}
 
@@ -367,11 +367,11 @@ static int __init irtx_init(void)
 {
 	int ret = 0;
 
-	pr_debug("[IRTX] irtx init\n");
+	pr_info("[IRTX] irtx init\n");
 #ifdef CONFIG_OF
 	irtx_driver.driver.of_match_table = irtx_of_ids;
 #else
-	pr_err("[IRTX] irtx needs device tree!\n");
+	pr_info("[IRTX] irtx needs device tree!\n");
 #endif
 
 	ret = platform_driver_register(&irtx_driver);
