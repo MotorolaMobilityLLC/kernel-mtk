@@ -662,8 +662,6 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target)
 		gpu_freq_pre = mt_gpufreq_get_freq_by_idx(0) >> 10;
 
 	busy_cycle_cur = t_gpu * gpu_freq_pre;
-	if (num_pre_frames != 0 && busy_cycle_cur < busy_cycle[pre_frame_idx] * 30 / 100)
-		return gpu_freq_pre;
 	busy_cycle[cur_frame_idx] = busy_cycle_cur;
 	if (num_pre_frames != GED_DVFS_BUSY_CYCLE_MONITORING_WINDOW_NUM - 1) {
 		gpu_busy_cycle = busy_cycle[cur_frame_idx];
