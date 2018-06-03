@@ -265,9 +265,7 @@ static inline int __minitop_is_render(struct minitop_rec *mr)
 {
 	int ret;
 
-	fpsgo_render_tree_lock(__func__);
 	ret = has_xgf_dep(mr->tid);
-	fpsgo_render_tree_unlock(__func__);
 	return !!ret;
 }
 
