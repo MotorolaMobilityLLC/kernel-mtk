@@ -2160,7 +2160,7 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* switch to ground to de pop-noise */
 			/* HP_Switch_to_Ground(); */
 
-			EnableDcCompensation(false);
+			SetDcCompenSation(false);
 
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0f00); /* 0x30FF */
 			/* HPR/HPL mux to open */
