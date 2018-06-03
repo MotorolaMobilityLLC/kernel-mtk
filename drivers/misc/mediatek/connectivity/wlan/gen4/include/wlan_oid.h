@@ -1853,6 +1853,8 @@ typedef struct _PARAM_SCAN_REQUEST_ADV_T {
 	PARAM_SSID_T rSsid[CFG_SCAN_SSID_MAX_NUM];
 	UINT_32 u4IELength;
 	PUINT_8 pucIE;
+	/* partial scan temp save request info */
+	UINT_8 ucSetChannel;
 } PARAM_SCAN_REQUEST_ADV_T, *P_PARAM_SCAN_REQUEST_ADV_T;
 
 /*--------------------------------------------------------------*/
@@ -1940,6 +1942,11 @@ typedef struct _PARAM_PREFER_CHN_INFO {
 } PARAM_PREFER_CHN_INFO, *P_PARAM_PREFER_CHN_INFO;
 #endif
 
+/* use to save partial scan channel information */
+typedef struct _PARTIAL_SCAN_INFO_T {
+	UINT_8 ucChannelListNum;
+	RF_CHANNEL_INFO_T arChnlInfoList[MAXIMUM_OPERATION_CHANNEL_LIST];
+} PARTIAL_SCAN_INFO, *P_PARTIAL_SCAN_INFO;
 
 /*******************************************************************************
 *                            P U B L I C   D A T A

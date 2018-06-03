@@ -1708,6 +1708,17 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData, PVOID pvDriverData)
 	prGlueInfo->prScanRequest = NULL;
 	prGlueInfo->prSchedScanRequest = NULL;
 
+	kalMemSet(&prGlueInfo->rScanChannelInfo, 0, sizeof(PARTIAL_SCAN_INFO));
+	prGlueInfo->pucScanChannel = NULL;
+	/* Full2Partial */
+	prGlueInfo->u4LastFullScanTime = 0;
+	prGlueInfo->ucTrScanType = 0;
+	kalMemSet(prGlueInfo->aucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
+
+	kalMemSet(&prGlueInfo->rFullScanApChannel, 0, sizeof(PARTIAL_SCAN_INFO));
+	/* alloc pucFullScan2PartialChannel buffer */
+	prGlueInfo->pucFullScan2PartialChannel = NULL;
+
 #if CFG_SUPPORT_PASSPOINT
 	/* Init DAD */
 	prGlueInfo->fgIsDad = FALSE;
@@ -1812,7 +1823,6 @@ static VOID wlanNetDestroy(struct wireless_dev *prWdev)
 	kalCancelTimer(prGlueInfo);
 
 	glClearHifInfo(prGlueInfo);
-
 	wlanAdapterDestroy(prGlueInfo->prAdapter);
 	prGlueInfo->prAdapter = NULL;
 
