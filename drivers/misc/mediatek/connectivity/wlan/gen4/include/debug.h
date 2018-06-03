@@ -343,6 +343,7 @@ typedef enum _ENUM_DBG_ASSERT_PATH_T {
 */
 VOID dumpMemory8(IN PUINT_8 pucStartAddr, IN UINT_32 u4Length);
 VOID dumpMemory32(IN PUINT_32 pu4StartAddr, IN UINT_32 u4Length);
+VOID wlanPrintFwLog(PUINT_8 pucLogContent, UINT_16 u2MsgSize, UINT_8 ucMsgType);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

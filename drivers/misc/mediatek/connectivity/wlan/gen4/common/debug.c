@@ -176,3 +176,37 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 	}
 }
 #endif
+
+VOID wlanPrintFwLog(PUINT_8 pucLogContent, UINT_16 u2MsgSize, UINT_8 ucMsgType)
+{
+#define OLD_KBUILD_MODNAME KBUILD_MODNAME
+#define OLD_LOG_FUNC LOG_FUNC
+#undef KBUILD_MODNAME
+#undef LOG_FUNC
+#define KBUILD_MODNAME "wlan_mt6632_fw"
+#define LOG_FUNC pr_debug
+
+	if (u2MsgSize > DEBUG_MSG_SIZE_MAX - 1) {
+		LOG_FUNC("Firmware Log Size(%d) is too large, type %d\n", u2MsgSize, ucMsgType);
+		return;
+	}
+	switch (ucMsgType) {
+	case DEBUG_MSG_TYPE_ASCII:
+		pucLogContent[u2MsgSize] = '\0';
+		LOG_FUNC("%s\n", pucLogContent);
+		break;
+	case DEBUG_MSG_TYPE_MEM8:
+		DBGLOG_MEM8(RX, INFO, pucLogContent, u2MsgSize);
+		break;
+	default:
+		DBGLOG_MEM32(RX, INFO, (PUINT_32)pucLogContent, u2MsgSize);
+		break;
+	}
+
+#undef KBUILD_MODNAME
+#undef LOG_FUNC
+#define KBUILD_MODNAME OLD_KBUILD_MODNAME
+#define LOG_FUNC OLD_LOG_FUNC
+#undef OLD_KBUILD_MODNAME
+#undef OLD_LOG_FUNC
+}
