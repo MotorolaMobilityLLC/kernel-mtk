@@ -58,6 +58,7 @@ static struct work_struct chr_work;
 
 #if !defined(CONFIG_MTK_FPGA)
 static struct mt6336_ctrl *core_ctrl;
+static bool first_connect = true;
 #endif
 
 
@@ -98,6 +99,25 @@ static bool check_rdm_dwm_requirement(void)
 
 static void hw_bc12_init(void)
 {
+	int timeout = 200;
+
+	if (first_connect == true) {
+		/* add make sure USB Ready */
+		if (is_usb_rdy() == false) {
+			pr_err("CDP, block\n");
+			while (is_usb_rdy() == false && timeout > 0) {
+				msleep(100);
+				timeout--;
+			}
+			if (timeout == 0)
+				pr_err("CDP, timeout\n");
+			else
+				pr_err("CDP, free\n");
+		} else
+			pr_err("CDP, PASS\n");
+		first_connect = false;
+	}
+
 	/* RG_BC12_BB_CTRL = 1 */
 	bc12_set_register_value(MT6336_RG_A_BC12_BB_CTRL, 1);
 	/* RG_BC12_RST = 1 */
