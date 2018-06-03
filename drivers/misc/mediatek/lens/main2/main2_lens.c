@@ -113,9 +113,16 @@ void MAIN2AF_PowerDown(void)
 	if (g_pstAF_I2Cclient != NULL) {
 		LOG_INF("CONFIG_MTK_PLATFORM : %s\n", CONFIG_MTK_PLATFORM);
 
-		#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
+		#if defined(CONFIG_MACH_MT6775)
 		LC898217AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
 		LC898217AF_PowerDown();
+		#endif
+
+		#if defined(CONFIG_MACH_MT6771)
+		if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k71v1_64_bsp_ducam", 18) == 0) {
+			LC898217AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+			LC898217AF_PowerDown();
+		}
 		#endif
 
 		#ifdef CONFIG_MACH_MT6758
