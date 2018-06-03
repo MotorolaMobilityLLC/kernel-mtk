@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/err.h>
@@ -108,7 +122,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	} else
 		retVal = -EAGAIN;
 
-/* Release the resource and return. */
+	/* Release the resource and return. */
 Destroy_t_nt_buffer:
 	free_pages(t_nt_buffer, get_order(ROUND_UP(size, SZ_4K)));
 Destroy_nt_t_buffer:

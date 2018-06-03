@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 
 #ifndef __LIB_LIST_H__
 #define __LIB_LIST_H__
@@ -15,19 +28,19 @@ struct list {
 #define INIT_HEAD(__lname)  { &(__lname), &(__lname) }
 #define LIST_HEAD(_lname)   struct list _lname = INIT_HEAD(_lname)
 #define INIT_LIST_HEAD(ptr)  do { \
-	(ptr)->next = ptr; (ptr)->prev = ptr;   \
-	} while (0)
+        (ptr)->next = ptr; (ptr)->prev = ptr;   \
+        } while (0)
 
 #define list_entry(ptr, type, member) \
-	((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
+        ((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
 
 #define list_for_each(curr, head) \
-	for (curr = (head)->next; curr != head; curr = (curr)->next)
+        for (curr = (head)->next; curr != head; curr = (curr)->next)
 
 #define list_for_each_entry(ptr, head, member) \
-	for (ptr = list_entry((head)->next, typeof(*ptr), member); \
-		&ptr->member != (head); \
-		ptr = list_entry(ptr->member.next, typeof(*ptr), member))
+        for (ptr = list_entry((head)->next, typeof(*ptr), member); \
+                &ptr->member != (head); \
+                ptr = list_entry(ptr->member.next, typeof(*ptr), member))
 
 /**
  * list_for_each_entry_safe - iterate over list of given type
@@ -38,10 +51,10 @@ struct list {
  * @param member: the name of the list_struct within the struct.
  */
 #define list_for_each_entry_safe(pos, n, head, member)          \
-	for (pos = list_entry((head)->next, typeof(*pos), member),  \
-		n = list_entry(pos->member.next, typeof(*pos), member); \
-		&pos->member != (head);                    \
-		pos = n, n = list_entry(n->member.next, typeof(*n), member))
+        for (pos = list_entry((head)->next, typeof(*pos), member),  \
+                n = list_entry(pos->member.next, typeof(*pos), member); \
+                &pos->member != (head);                    \
+                pos = n, n = list_entry(n->member.next, typeof(*n), member))
 
 /**
  * @brief
@@ -51,7 +64,7 @@ struct list {
  * @param new
  */
 static inline void __list_add(struct list *prev,
-			struct list *next, struct list *new)
+                              struct list *next, struct list *new)
 {
 	new->prev = prev;
 	new->next = next;
@@ -90,7 +103,7 @@ static inline void list_add_tail(struct list *tnode, struct list *new)
  * @param next
  */
 static inline void __list_del(struct list *node,
-			struct list *prev, struct list *next)
+                              struct list *prev, struct list *next)
 {
 	prev->next = node->next;
 	next->prev = node->prev;

@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/mutex.h>
@@ -12,13 +26,14 @@
 
 #define VFS_SYS_NO      0x08
 #define REETIME_SYS_NO  0x07
+#define GLSCH_LOW      0x01
 
 struct bdrv_call_struct {
 	int bdrv_call_type;
 	struct service_handler *handler;
 	int retVal;
 };
-
+extern int forward_call_flag;
 extern int add_work_entry(int work_type, unsigned long buff);
 static long register_shared_param_buf(struct service_handler *handler);
 
@@ -52,20 +67,37 @@ void set_ack_vdrv_cmd(unsigned int sys_num)
 
 
 
-static void secondary_invoke_fastcall(void *info)
+void secondary_invoke_fastcall(void *info)
 {
-	n_invoke_t_fast_call(0, 0, 0);
+	unsigned long smc_type = 2;
+	n_invoke_t_fast_call(&smc_type, 0, 0);
+
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 }
 
 
 void invoke_fastcall(void)
 {
 	int cpu_id = 0;
+	forward_call_flag = GLSCH_LOW;
+	/* get_online_cpus(); */
 
-	get_online_cpus();
+#if 1
+
+	add_work_entry(INVOKE_FASTCALL, NULL);
+
+#else
+
 	cpu_id = get_current_cpuid();
+
 	smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
-	put_online_cpus();
+
+#endif
+
+	/* put_online_cpus(); */
 }
 
 static long register_shared_param_buf(struct service_handler *handler)
@@ -168,6 +200,8 @@ int __reetime_handle(struct service_handler *handler)
 	void *ptr = NULL;
 	int tv_sec;
 	int tv_usec;
+	unsigned long smc_type = 2;
+
 	do_gettimeofday(&tv);
 	ptr = handler->param_buf;
 	tv_sec = tv.tv_sec;
@@ -180,7 +214,11 @@ int __reetime_handle(struct service_handler *handler)
 	set_ack_vdrv_cmd(handler->sysno);
 	teei_vfs_flag = 0;
 
-	n_ack_t_invoke_drv(0, 0, 0);
+	n_ack_t_invoke_drv(&smc_type, 0, 0);
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 
 	return 0;
 }
@@ -276,12 +314,18 @@ static void vfs_deinit(struct service_handler *handler) /*! stop service  */
 
 int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 {
+	unsigned long smc_type = 2;
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
 	teei_vfs_flag = 0;
 
-	n_ack_t_invoke_drv(0, 0, 0);
+	n_ack_t_invoke_drv(&smc_type, 0, 0);
+
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 
 	return 0;
 }
