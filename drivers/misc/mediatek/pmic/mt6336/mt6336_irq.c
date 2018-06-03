@@ -194,6 +194,8 @@ unsigned int mt6336_interrupts_size = ARRAY_SIZE(mt6336_interrupts);
 unsigned char cc_pd_i = MT6336_INT_TYPE_C_CC_IRQ / CHR_INT_WIDTH;
 unsigned char cc_j = MT6336_INT_TYPE_C_CC_IRQ % CHR_INT_WIDTH;
 unsigned char pd_j = MT6336_INT_TYPE_C_PD_IRQ % CHR_INT_WIDTH;
+unsigned char cl_j = MT6336_INT_TYPE_C_L_MIN % CHR_INT_WIDTH;
+
 
 /*****************************************************************************
  * MT6336 Interrupt service
@@ -367,11 +369,16 @@ static void mt6336_int_handler(void)
 					mt6336_interrupts[cc_pd_i].interrupts[pd_j].callback();
 					mt6336_interrupts[cc_pd_i].interrupts[pd_j].times++;
 				}
+				if (cc_pd_status & (1 << cl_j)
+				    && mt6336_interrupts[cc_pd_i].interrupts[cl_j].callback != NULL) {
+					mt6336_interrupts[cc_pd_i].interrupts[cl_j].callback();
+					mt6336_interrupts[cc_pd_i].interrupts[cl_j].times++;
+				}
 				pr_err(MT6336TAG "[CHR_INT] Type-C status[0x%x]=0x%x\n",
 					mt6336_interrupts[cc_pd_i].address, cc_pd_status);
 				mt6336_set_register_value(mt6336_interrupts[cc_pd_i].address, cc_pd_status);
 			}
-			if (i == cc_pd_i && (j == cc_j || j == pd_j))
+			if (i == cc_pd_i && (j == cc_j || j == pd_j || j == cl_j))
 				continue;
 			/* handle other irqs */
 			if ((int_status_vals[i]) & (1 << j)) {

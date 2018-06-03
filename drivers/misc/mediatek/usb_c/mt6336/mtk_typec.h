@@ -330,6 +330,7 @@ struct typec_hba {
 	int id;
 	bool is_kpoc;
 	bool is_boost;
+	bool is_shutdown;
 
 #if !COMPLIANCE
 	atomic_t lowq_cnt;
@@ -585,6 +586,7 @@ extern int pd_kpoc_task(void *data);
 extern void pd_set_data_role(struct typec_hba *hba, int role);
 extern void pd_get_message(struct typec_hba *hba, uint16_t *header, uint32_t *payload);
 extern int pd_is_power_swapping(struct typec_hba *hba);
+extern void pd_int_enable(struct typec_hba *hba, uint8_t enable);
 
 extern void pmic_enable_chrdet(unsigned char en);
 
@@ -592,6 +594,9 @@ extern void pmic_enable_chrdet(unsigned char en);
 extern int mt_dual_role_phy_init(struct typec_hba *hba);
 #endif
 
+extern void typec_auxadc_low_register(struct typec_hba *hba);
+extern void typec_auxadc_set_thresholds(struct typec_hba *hba, uint16_t min, uint16_t max);
+extern void typec_disable_auxadc_irq(struct typec_hba *hba);
 #endif
 
 #endif /* End of Header */

@@ -17,6 +17,7 @@
 
 #include <typec.h>
 #include "usb_pd_func.h"
+#include <mt6336/mt6336.h>
 
 #ifdef CONFIG_RT7207_ADAPTER
 #include "mtk_direct_charge_vdm.h"
@@ -508,6 +509,10 @@ static int svdm_enter_dc_mode(struct typec_hba *hba, uint32_t mode_caps)
 	if (mode_caps == 1) {
 		hba->dc->auth_pass = -1;
 		dev_err(hba->dev, "Enter PE3.0 mode\n");
+
+		typec_auxadc_low_register(hba);
+		typec_auxadc_set_thresholds(hba, SNK_VRPUSB_AUXADC_MIN_VAL, 0);
+		mt6336_enable_interrupt(TYPE_C_L_MIN, "TYPE_C_L_MIN");
 		return 0;
 	}
 
@@ -517,6 +522,10 @@ static int svdm_enter_dc_mode(struct typec_hba *hba, uint32_t mode_caps)
 static void svdm_exit_dc_mode(struct typec_hba *hba)
 {
 	hba->dc->auth_pass = -1;
+
+	typec_disable_auxadc_irq(hba);
+	mt6336_disable_interrupt(TYPE_C_L_MIN, "TYPE_C_L_MIN");
+
 	dev_err(hba->dev, "Exit PE3.0 mode\n");
 }
 #endif
