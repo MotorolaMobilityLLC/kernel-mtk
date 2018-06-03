@@ -126,7 +126,7 @@ void init_ddp_mmp_events(void)
 		DDP_MMP_Events.svp_module[DISP_MODULE_RDMA1] =
 			mmprofile_register_event(DDP_MMP_Events.sec, "rdma1_sec");
 		DDP_MMP_Events.tui =  mmprofile_register_event(DDP_MMP_Events.primary_Parent, "tui");
-		DDP_MMP_Events.self_refresh = mmprofile_register_event(DDP_MMP_Events.primary_Parent, "self_refresh");
+		DDP_MMP_Events.scen = mmprofile_register_event(DDP_MMP_Events.primary_Parent, "scenario");
 		DDP_MMP_Events.fps_set =  mmprofile_register_event(DDP_MMP_Events.primary_Parent, "fps_set");
 		DDP_MMP_Events.fps_get =  mmprofile_register_event(DDP_MMP_Events.primary_Parent, "fps_get");
 		DDP_MMP_Events.fps_ext_set =  mmprofile_register_event(DDP_MMP_Events.primary_Parent, "fps_ext_set");

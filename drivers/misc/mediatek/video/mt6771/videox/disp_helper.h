@@ -85,6 +85,12 @@ enum DISP_HELPER_STAGE {
 	DISP_HELPER_STAGE_NORMAL
 };
 
+struct DISP_OPT_INFO {
+	enum DISP_HELPER_OPT option;
+	int value;
+	int backup;
+};
+
 void disp_helper_option_init(void);
 int disp_helper_get_option(enum DISP_HELPER_OPT option);
 int disp_helper_set_option(enum DISP_HELPER_OPT option, int value);
@@ -94,5 +100,7 @@ int disp_helper_get_option_list(char *stringbuf, int buf_len);
 enum DISP_HELPER_STAGE disp_helper_get_stage(void);
 const char *disp_helper_stage_spy(void);
 enum DISP_HELPER_OPT disp_helper_name_to_opt(const char *name);
+int disp_helper_backup_reset(struct DISP_OPT_INFO info[], int n);
+int disp_helper_restore(struct DISP_OPT_INFO info[], int n);
 
 #endif

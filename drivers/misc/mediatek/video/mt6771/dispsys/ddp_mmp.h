@@ -75,7 +75,7 @@ struct DDP_MMP_Events {
 	mmp_event sec;
 	mmp_event svp_module[DISP_MODULE_NUM];
 	mmp_event tui;
-	mmp_event self_refresh;
+	mmp_event scen;
 	mmp_event fps_set;
 	mmp_event fps_get;
 	mmp_event fps_ext_set;

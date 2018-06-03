@@ -1265,6 +1265,8 @@ int _ioctl_set_scenario(unsigned long arg)
 		DISPPR_ERROR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
+	if (scenario_cfg.scenario >= DISP_SCENARIO_NUM)
+		return -EINVAL;
 
 	if (DISP_SESSION_TYPE(scenario_cfg.session_id) == DISP_SESSION_PRIMARY)
 		ret = primary_display_set_scenario(scenario_cfg.scenario);

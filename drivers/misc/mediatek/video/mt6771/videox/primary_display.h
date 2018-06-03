@@ -201,11 +201,6 @@ struct disp_frm_seq_info {
 	enum DISP_FRM_SEQ_STATE state;
 };
 
-struct OPT_BACKUP {
-	enum DISP_HELPER_OPT option;
-	int value;
-};
-
 /* AOD */
 enum lcm_power_state {
 	LCM_OFF = 0,
@@ -266,7 +261,7 @@ struct display_primary_path_context {
 	cmdqBackupSlotHandle dsi_vfp_line;
 
 	int is_primary_sec;
-	int primary_display_scenario;
+	int scen;
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	int request_fps;
 #endif
