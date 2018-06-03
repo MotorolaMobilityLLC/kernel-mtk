@@ -18,7 +18,7 @@
 #include <mt-plat/rt-regmap.h>
 
 #define RT5509_DEVICE_NAME		"rt5509"
-#define RT5509_DRV_VER			"1.0.7_M"
+#define RT5509_DRV_VER			"1.0.8_M"
 
 #ifdef CONFIG_RT_REGMAP
 #define RT5509_SIMULATE_DEVICE	0
@@ -75,8 +75,12 @@ struct rt5509_chip {
 	u8 mode_store;
 	u8 func_en;
 	u8 spk_prot_en;
+	u8 alc_min_gain;
 	u8 recv_spec_set:1;
 	u8 bypass_dsp:1;
+	u8 calibrated:1;
+	u8 tdm_mode:1;
+	u8 rlr_func:1;
 	int dev_cnt;
 	int calib_start;
 	int param_put;
@@ -257,6 +261,7 @@ struct rt5509_chip {
 #define RT5509_REG_TDM_CTRL		0xB4
 #define RT5509_REG_ECO_CTRL		0xB5
 #define RT5509_REG_BSTTM		0xB8
+#define RT5509_REG_ALCMINGAIN		0xB9
 #define RT5509_REG_OTPCONF		0xC0
 #define RT5509_REG_OTPADDR		0xC1
 #define RT5509_REG_OTPDIN		0xC2
@@ -427,6 +432,9 @@ enum {
 
 /* RT5509_REG_DSPKCONF5: 0x94 */
 #define RT5509_VBG_ENMASK	0x40
+
+/* RT5509_REG_TDM_CTRL: 0xB4 */
+#define RT5509_TDM_ENMASK	0x08
 
 /* RT5509_REG_CLKEN1: 0xF4 */
 #define RT5509_CLKEN1_MASK	0xFF
