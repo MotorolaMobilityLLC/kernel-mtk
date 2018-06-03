@@ -2810,6 +2810,7 @@ out:
 	return retval;
 }
 
+#ifndef CONFIG_MTK_GMO_RAM_OPTIMIZE
 static unsigned long tree_stat(struct mem_cgroup *memcg,
 			       enum mem_cgroup_stat_index idx)
 {
@@ -2839,6 +2840,36 @@ static unsigned long mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
 	}
 	return val;
 }
+#else
+static unsigned long mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
+{
+	unsigned long val;
+
+	if (mem_cgroup_is_root(memcg)) {
+		/*
+		 * For root memcg, using the following statistics to
+		 * evaluate "memory" & "memsw". This can help reduce
+		 * the CPU loading when iterating mem_cgroup_tree.
+		 */
+		val = global_page_state(NR_INACTIVE_ANON) +
+		      global_page_state(NR_ACTIVE_ANON) +
+		      global_page_state(NR_INACTIVE_FILE) +
+		      global_page_state(NR_ACTIVE_FILE) +
+		      global_page_state(NR_UNEVICTABLE);
+		if (swap) {
+			val += total_swap_pages -
+			       get_nr_swap_pages() -
+			       total_swapcache_pages();
+		}
+	} else {
+		if (!swap)
+			val = page_counter_read(&memcg->memory);
+		else
+			val = page_counter_read(&memcg->memsw);
+	}
+	return val;
+}
+#endif
 
 enum {
 	RES_USAGE,
