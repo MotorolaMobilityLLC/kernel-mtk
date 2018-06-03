@@ -295,6 +295,7 @@ static bool is_mtk_pe30_rdy(struct charger_manager *info)
 	int vbat = 0;
 	int ret = false;
 	struct mtk_pe30 *pe3 = &info->pe3;
+	signed int tmp = battery_meter_get_battery_temperature();
 
 	if (pmic_is_bif_exist() == false)
 		goto _fail;
@@ -311,6 +312,12 @@ static bool is_mtk_pe30_rdy(struct charger_manager *info)
 	if (mtk_cooler_is_abcct_unlimit() != 1)
 		goto _fail;
 
+	if (tmp <= info->data.battery_temp_min)
+		goto _fail;
+
+	if (tmp >= (info->data.battery_temp_max - 5))
+		goto _fail;
+
 	if (mtk_is_pep30_en_unlock() == true)
 		pe3->is_vdm_rdy = true;
 	else {
@@ -323,22 +330,22 @@ static bool is_mtk_pe30_rdy(struct charger_manager *info)
 		ret = true;
 
 	pr_err(
-		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d th:%d bif:%d\n",
+		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d th:%d bif:%d tmp:%d\n",
 		info->enable_pe_3, (info->dc_chg == NULL),
 		vbat, info->data.bat_upper_bound, info->data.bat_lower_bound, ret, pe3->is_pe30_done,
 		mtk_is_pd_chg_ready(),
-		pe3->is_vdm_rdy, mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit(), pmic_is_bif_exist());
+		pe3->is_vdm_rdy, mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit(), pmic_is_bif_exist(), tmp);
 
 	return ret;
 
 _fail:
 
 	pr_err(
-		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d th:%d bif:%d\n",
+		"[is_mtk_pe30_rdy]pe3:%d:%d vbat=%d max/min=%d %d ret=%d is_pe30_done:%d is_pd_rdy:%d is_vdm_rdy:%d %d th:%d bif:%d tmp:%d\n",
 		info->enable_pe_3, (info->dc_chg == NULL),
 		vbat, info->data.bat_upper_bound, info->data.bat_lower_bound, ret, pe3->is_pe30_done,
 		mtk_is_pd_chg_ready(),
-		pe3->is_vdm_rdy, mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit(), pmic_is_bif_exist());
+		pe3->is_vdm_rdy, mtk_is_pep30_en_unlock(), mtk_cooler_is_abcct_unlimit(), pmic_is_bif_exist(), tmp);
 
 
 
@@ -1087,6 +1094,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 		pr_err("[%s]battery temperature is too high %d, end pe30\n",
 		__func__, pe3->batteryTemperature);
 		reset = false;
+		info->pe3.is_pe30_done = false;
 		goto _fail;
 	}
 
@@ -1094,6 +1102,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 		pr_err("[%s]battery temperature is too low %d, end pe30\n",
 		__func__, pe3->batteryTemperature);
 		reset = false;
+		info->pe3.is_pe30_done = false;
 		goto _fail;
 	}
 
