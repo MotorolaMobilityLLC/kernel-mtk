@@ -1010,6 +1010,11 @@
 		interrupts = <GIC_SPI 171 IRQ_TYPE_LEVEL_LOW>;
 	};
 
+	mcdi@0011b000 {
+		compatible = "mediatek,mt6771-mcdi";
+		reg = <0 0x0011b000 0 0x800>;
+	};
+
 	dramc_ch0_top0@10228000 {
 		compatible = "mediatek,dramc_ch0_top0";
 		reg = <0 0x10228000 0 0x1000>;
