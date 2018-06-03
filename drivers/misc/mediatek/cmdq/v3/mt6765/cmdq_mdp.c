@@ -1002,7 +1002,7 @@ static void cmdq_mdp_enable_common_clock(bool enable)
 #ifdef CONFIG_MTK_SMI_EXT
 	if (enable) {
 		/* Use SMI clock API */
-		smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "MDP", true)
+		smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "MDP", true);
 
 		/* reset ovl engine to avoid
 		 * ovl eof event always set and block bus

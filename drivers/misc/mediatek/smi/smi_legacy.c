@@ -31,6 +31,8 @@
 
 #if IS_ENABLED(CONFIG_MACH_MT6758)
 #include <clk-mt6758-pg.h>
+#elif IS_ENABLED(CONFIG_MACH_MT6765)
+#include <clk-mt6765-pg.h>
 #endif
 
 #if IS_ENABLED(CONFIG_MTK_M4U)
@@ -61,9 +63,13 @@
 		aee_kernel_warning("%s:" string, __func__, ##args); \
 	} while (0)
 
+static unsigned int disable_smi_bwc_config;
+
 enum SMI_ESL_GOLDEN_SETTING {
 #if IS_ENABLED(CONFIG_MACH_MT6758)
 	SMI_ESL_INIT = 0, SMI_ESL_VPWFD, SMI_ESL_VR4K, SMI_ESL_ICFP
+#elif IS_ENABLED(CONFIG_MACH_MT6765) /* ICFP for all camera scenarios */
+	SMI_ESL_INIT = 0, SMI_ESL_VPWFD = 0, SMI_ESL_VR4K = 1, SMI_ESL_ICFP = 1
 #else
 	SMI_ESL_INIT = 0, SMI_ESL_VPWFD = 0, SMI_ESL_VR4K = 0, SMI_ESL_ICFP = 0
 #endif
@@ -267,6 +273,19 @@ static unsigned int smi_clk_subsys_larbs(enum subsys_id sys)
 	default:
 		return 0x0;
 	}
+#elif IS_ENABLED(CONFIG_MACH_MT6765)
+	switch (sys) {
+	case SYS_DIS:
+		return 0x1; /* larb 0 */
+	case SYS_CAM:
+		return 0x8; /* larb 3 */
+	case SYS_ISP:
+		return 0x4; /* larb 2 */
+	case SYS_VCODEC:
+		return 0x2; /* larb 1 */
+	default:
+		return 0x0;
+	}
 #endif
 	return 0;
 }
@@ -371,6 +390,10 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *config)
 	unsigned int scen, smi_scen;
 	int i, ret = 0;
 	/* check parameter */
+	if (disable_smi_bwc_config) {
+		SMIDBG("disable configure smi bwc profile\n");
+		return 0;
+	}
 	if (!config) {
 		SMIDBG("struct MTK_SMI_BWC_CONFIG config no such address\n");
 		return -ENXIO;
@@ -528,7 +551,6 @@ static ssize_t smi_bwc_scen_store(struct device_driver *driver, const char *buf,
 		SMIDBG("unknown operation: %s\n", buf);
 	return count;
 }
-
 DRIVER_ATTR(smi_bwc_scen, 0644, smi_bwc_scen_show, smi_bwc_scen_store);
 
 /* smi debug */
@@ -1399,3 +1421,4 @@ module_param(disable_freq_hopping, uint, 0644);
 module_param(force_max_mmsys_clk, uint, 0644);
 module_param(clk_mux_mask, uint, 0644);
 #endif /* MMDVFS_HOOK */
+module_param(disable_smi_bwc_config, uint, 0644);

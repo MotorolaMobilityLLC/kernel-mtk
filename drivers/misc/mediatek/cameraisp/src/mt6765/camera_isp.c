@@ -62,8 +62,6 @@
 
 /*#define EP_MARK_SMI*/ /* disable SMI related for EP */
 #include <smi_public.h>
-/*for SMI BW debug log*/
-#include <smi_debug.h>
 
 /*for kernel log count*/
 #define _K_LOG_ADJUST (0)//wait log owner rdy
@@ -2595,7 +2593,7 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 	}
 
 #ifdef CONFIG_MTK_SMI_EXT
-	smi_debug_bus_hanging_detect(SMI_PARAM_BUS_OPTIMIZATION, 1, 0, 1);
+	smi_debug_bus_hang_detect(SMI_PARAM_BUS_OPTIMIZATION, 1, 0, 1);
 	/* smi_dumpDebugMsg(); */
 #endif
 }

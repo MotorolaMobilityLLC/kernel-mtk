@@ -15,5 +15,6 @@ ifeq ($(CONFIG_FTRACE),y)
 ifeq ($(CONFIG_TRACING),y)
 obj-y += met_smi.o
 obj-$(CONFIG_MACH_MT6758) += met_smi_config_mt6758.o
+obj-$(CONFIG_MACH_MT6765) += met_smi_config_mt6765.o
 endif
 endif

@@ -160,8 +160,8 @@ static int mtk_smi_clks_get(struct mtk_smi_dev *smi)
 	smi->nr_clks = of_property_count_strings(smi->dev->of_node, clk_names);
 	if (!smi->nr_clks)
 		return ret;
-#if IS_ENABLED(CONFIG_MACH_MT6758)
-	/* workaround for mmdvfs at mt6758 */
+#if IS_ENABLED(CONFIG_MACH_MT6758) || IS_ENABLED(CONFIG_MACH_MT6765)
+	/* workaround for mmdvfs at mt6758/mt6765 */
 	if (smi->index == common->index)
 		smi->nr_clks = 4;
 #endif

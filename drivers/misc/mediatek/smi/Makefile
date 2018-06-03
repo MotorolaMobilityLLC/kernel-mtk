@@ -18,22 +18,18 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/$(CONFIG_MTK_PLATFORM)/
 
+obj-y += smi_legacy.o
+
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6758"))
 ccflags-y += -DSMI_VIN
 ccflags-y += -DMMDVFS_HOOK
-obj-y += smi_legacy.o
+
 obj-y += mmdvfs_mgr_v3.o
 obj-y += mmdvfs_mgr_util.o
 obj-y += mmdvfs_profile_adaptor.o
-SUPPORT_MET_SMI := true
-
-else
-ccflags-y += -DSMI_DUMMY
 endif
 
-ifeq (true, $(SUPPORT_MET_SMI))
 obj-y += $(subst ",,met)/
-endif
 
 else
 obj-y += $(subst ",,variant)/
