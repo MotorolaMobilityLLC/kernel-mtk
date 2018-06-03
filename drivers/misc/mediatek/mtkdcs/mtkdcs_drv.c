@@ -231,7 +231,7 @@ static int dcs_get_status(enum dcs_status *sys_dcs_status)
 		return -EBUSY;
 	}
 
-	*sys_dcs_status = (ret) ? DCS_LOWPOWER : DCS_LOWPOWER;
+	*sys_dcs_status = (ret) ? DCS_LOWPOWER : DCS_NORMAL;
 
 	return 0;
 }
@@ -299,11 +299,11 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 		break;
 	case DCS_SYSFS_FREERUN_ASYNC_NORMAL:
 		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
-		ret = dcs_enter_perf(DCS_KICKER_DEBUG);
+		ret = dcs_enter_perf(DCS_KICKER_PERF);
 		break;
 	case DCS_SYSFS_FREERUN_ASYNC_EXIT_NORMAL:
 		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
-		ret = dcs_exit_perf(DCS_KICKER_DEBUG);
+		ret = dcs_exit_perf(DCS_KICKER_PERF);
 		break;
 	default:
 		pr_alert("unknown sysfs mode: %d\n", mode);
