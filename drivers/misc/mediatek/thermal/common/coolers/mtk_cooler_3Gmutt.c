@@ -65,8 +65,7 @@ static unsigned long last_md_boot_cnt;
 
 static unsigned int tm_pid;
 static unsigned int tm_input_pid_3Gtest;
-static struct task_struct g_task;
-static struct task_struct *pg_task = &g_task;
+static struct task_struct *pg_task;
 #define MAX_LEN	256
 /* unsigned int tm_input_pid_3Gtest= 0; */
 
@@ -140,6 +139,9 @@ static int mutt3G_send_signal(int level, int level2)
 
 	if (ret == 0 && tm_input_pid_3Gtest != tm_pid) {
 		tm_pid = tm_input_pid_3Gtest;
+
+		if (pg_task != NULL)
+			put_task_struct(pg_task);
 		pg_task = get_pid_task(find_vpid(tm_pid), PIDTYPE_PID);
 		mtk_cooler_3Gmutt_dprintk_always("[%s] line %d\n", __func__, __LINE__);
 	}
