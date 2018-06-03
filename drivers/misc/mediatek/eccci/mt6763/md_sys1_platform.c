@@ -52,6 +52,7 @@ static struct pinctrl *mdcldma_pinctrl;
 #endif
 
 static void __iomem *md_sram_pd_psmcusys_base;
+static void __iomem *md_cldma_misc_base;
 
 #define TAG "mcd"
 
@@ -136,6 +137,12 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 
 		hw_info->md_pcore_pccif_base = ioremap_nocache(MD_PCORE_PCCIF_BASE, 0x20);
 		CCCI_BOOTUP_LOG(dev_cfg->index, TAG, "pccif:%x\n", MD_PCORE_PCCIF_BASE);
+
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mdcldmamisc");
+		if (node)
+			md_cldma_misc_base = of_iomap(node, 0);
+		else
+			CCCI_BOOTUP_LOG(dev_cfg->index, TAG, "warning: no md cldma misc in dts\n");
 
 		/* Device tree using none flag to register irq, sensitivity has set at "irq_of_parse_and_map" */
 		cldma_hw->cldma_irq_flags = IRQF_TRIGGER_NONE;
@@ -990,6 +997,8 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 
 void cldma_dump_register(struct md_cd_ctrl *md_ctrl)
 {
+	if (md_cldma_misc_base)
+		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "MD CLDMA IP busy = %x\n", ccci_read32(md_cldma_misc_base, 0));
 
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "dump AP CLDMA Tx pdn register, active=%x\n", md_ctrl->txq_active);
 	ccci_util_mem_dump(md_ctrl->md_id, CCCI_DUMP_MEM_DUMP, md_ctrl->cldma_ap_pdn_base + CLDMA_AP_UL_START_ADDR_0,

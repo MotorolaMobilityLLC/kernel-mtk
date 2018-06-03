@@ -596,11 +596,11 @@ int md_ccif_send(unsigned char hif_id, int channel_id)
 
 	busy = ccif_read32(md_ctrl->ccif_ap_base, APCCIF_BUSY);
 	if (busy & (1 << channel_id)) {
-		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "CCIF channel %d busy\n", channel_id);
+		CCCI_REPEAT_LOG(md_ctrl->md_id, TAG, "CCIF channel %d busy\n", channel_id);
 	} else {
 		ccif_write32(md_ctrl->ccif_ap_base, APCCIF_BUSY, 1 << channel_id);
 		ccif_write32(md_ctrl->ccif_ap_base, APCCIF_TCHNUM, channel_id);
-		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "CCIF start=0x%x\n",
+		CCCI_REPEAT_LOG(md_ctrl->md_id, TAG, "CCIF start=0x%x\n",
 			ccif_read32(md_ctrl->ccif_ap_base, APCCIF_START));
 	}
 	return 0;
