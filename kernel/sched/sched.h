@@ -1477,6 +1477,10 @@ extern int
 inc_nr_heavy_running(int invoker, struct task_struct *p, int inc, bool ack_cap);
 #endif
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+extern void sched_max_util_task_tracking(void);
+#endif
+
 static inline void __add_nr_running(struct rq *rq, unsigned count)
 {
 	unsigned prev_nr = rq->nr_running;
