@@ -267,6 +267,7 @@ PVRSRV_ERROR PVRSRVRGXKickSyncKM(RGX_SERVER_KICKSYNC_CONTEXT * psKickSyncContext
 	PVRSRV_CLIENT_SYNC_PRIM *psFenceTimelineUpdateSync = NULL;
 	void *pvUpdateFenceFinaliseData = NULL;
 #endif
+	IMG_DEV_VIRTADDR sRobustnessResetReason = {0};
 
 #if !defined(PVRSRV_USE_BRIDGE_LOCK)
 	OSLockAcquire(psKickSyncContext->hLock);
@@ -554,7 +555,8 @@ PVRSRV_ERROR PVRSRVRGXKickSyncKM(RGX_SERVER_KICKSYNC_CONTEXT * psKickSyncContext
 	                                PDUMP_FLAGS_NONE,
 	                                NULL,
 	                                "KickSync",
-	                                asCmdHelperData);
+	                                asCmdHelperData,
+									sRobustnessResetReason);
 	if (eError != PVRSRV_OK)
 	{
 		goto fail_cmdinit;

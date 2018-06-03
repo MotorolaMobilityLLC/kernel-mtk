@@ -321,7 +321,8 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 								IMG_PBYTE					pui8FCDMCmd,
 								IMG_UINT32					ui32FrameContextID,
 								IMG_UINT32					ui32PDumpFlags,
-								IMG_UINT32					ui32ExtJobRef);
+								IMG_UINT32					ui32ExtJobRef,
+								IMG_DEV_VIRTADDR			sRobustnessResetReason);
 /*!
 *******************************************************************************
 
@@ -358,7 +359,8 @@ PVRSRV_ERROR PVRSRVRGXKickVRDMKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 								 IMG_UINT32					ui32CmdSize,
 								 IMG_PBYTE					pui8DMCmd,
 								 IMG_UINT32					ui32PDumpFlags,
-								 IMG_UINT32					ui32ExtJobRef);
+								 IMG_UINT32					ui32ExtJobRef,
+								 IMG_DEV_VIRTADDR			sRobustnessResetReason);
 
 PVRSRV_ERROR PVRSRVRGXSetRayContextPriorityKM(CONNECTION_DATA *psConnection,
                                               PVRSRV_DEVICE_NODE *psDevNode,

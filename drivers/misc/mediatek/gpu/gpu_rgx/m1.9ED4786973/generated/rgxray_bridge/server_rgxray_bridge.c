@@ -934,7 +934,8 @@ PVRSRVBridgeRGXKickRS(IMG_UINT32 ui32DispatchTableEntry,
 					psFCDMCmdInt,
 					psRGXKickRSIN->ui32FrameContext,
 					psRGXKickRSIN->ui32PDumpFlags,
-					psRGXKickRSIN->ui32ExtJobRef);
+					psRGXKickRSIN->ui32ExtJobRef,
+					psRGXKickRSIN->sRobustnessResetReason);
 
 
 
@@ -1424,7 +1425,8 @@ PVRSRVBridgeRGXKickVRDM(IMG_UINT32 ui32DispatchTableEntry,
 					psRGXKickVRDMIN->ui32CmdSize,
 					psDMCmdInt,
 					psRGXKickVRDMIN->ui32PDumpFlags,
-					psRGXKickVRDMIN->ui32ExtJobRef);
+					psRGXKickVRDMIN->ui32ExtJobRef,
+					psRGXKickVRDMIN->sRobustnessResetReason);
 
 
 

@@ -415,6 +415,7 @@ PVRSRV_ERROR PVRSRVRGXTDMSubmitTransferKM(
 	IMG_UINT32 ui32FenceTimelineUpdateValue = 0;
 	void *pvUpdateFenceFinaliseData = NULL;
 #endif
+	IMG_DEV_VIRTADDR sRobustnessResetReason = {0};
 
 #if defined(SUPPORT_NATIVE_FENCE_SYNC) || defined(SUPPORT_FALLBACK_FENCE_SYNC)
 	if (iUpdateTimeline >= 0 && !piUpdateFence)
@@ -837,7 +838,8 @@ PVRSRV_ERROR PVRSRVRGXTDMSubmitTransferKM(
 		                                ui32PDumpFlags,
 		                                NULL,
 		                                pszCommandName,
-		                                psCmdHelper);
+		                                psCmdHelper,
+										sRobustnessResetReason);
 		if (eError != PVRSRV_OK)
 		{
 			goto fail_initcmd;

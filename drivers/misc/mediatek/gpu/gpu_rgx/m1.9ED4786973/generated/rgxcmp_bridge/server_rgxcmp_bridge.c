@@ -702,7 +702,8 @@ PVRSRVBridgeRGXKickCDM(IMG_UINT32 ui32DispatchTableEntry,
 					psRGXKickCDMIN->ui32CmdSize,
 					psDMCmdInt,
 					psRGXKickCDMIN->ui32PDumpFlags,
-					psRGXKickCDMIN->ui32ExtJobRef);
+					psRGXKickCDMIN->ui32ExtJobRef,
+					psRGXKickCDMIN->sRobustnessResetReason);
 
 
 

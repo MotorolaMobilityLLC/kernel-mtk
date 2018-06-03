@@ -426,6 +426,7 @@ typedef struct PVRSRV_BRIDGE_IN_RGXKICKTA3D_TAG
 	IMG_UINT32 ui32NumberOfIndices;
 	IMG_UINT32 ui32NumberOfMRTs;
 	IMG_UINT64 ui64Deadline;
+	IMG_DEV_VIRTADDR sRobustnessResetReason;
 } __attribute__((packed)) PVRSRV_BRIDGE_IN_RGXKICKTA3D;
 
 /* Bridge out structure for RGXKickTA3D */
