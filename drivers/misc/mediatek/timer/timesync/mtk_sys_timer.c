@@ -40,6 +40,14 @@
 #include <sspm_mbox.h>
 #endif
 
+#define SYS_TIMER_DEBUG                    (0)
+
+#if SYS_TIMER_DEBUG
+#define sys_timer_print(fmt, ...)          pr_debug(fmt, ##__VA_ARGS__)
+#else
+#define sys_timer_print(fmt, ...)
+#endif
+
 #define sys_timer_sysram_write(val, addr) mt_reg_sync_writel(val, addr)
 
 static void __iomem                        *sys_timer_base;
@@ -110,7 +118,7 @@ static void sys_timer_timesync_update_sspm(int suspended, u64 tick, u64 ts)
 	val |= header;
 	sys_timer_mbox_write(SYS_TIMER_MBOX_TICK_H, val);
 
-	pr_debug("%s: tick_h=0x%x\n", __func__, val);
+	sys_timer_print("%s: tick_h=0x%x\n", __func__, val);
 
 	/* fix update sequence to promise atomicity */
 	mb();
@@ -118,7 +126,7 @@ static void sys_timer_timesync_update_sspm(int suspended, u64 tick, u64 ts)
 	val = tick & 0xFFFFFFFF;
 	sys_timer_mbox_write(SYS_TIMER_MBOX_TICK_L, val);
 
-	pr_debug("%s: tick_l=0x%x\n", __func__, val);
+	sys_timer_print("%s: tick_l=0x%x\n", __func__, val);
 
 	/* fix update sequence to promise atomicity */
 	mb();
@@ -127,7 +135,7 @@ static void sys_timer_timesync_update_sspm(int suspended, u64 tick, u64 ts)
 	val = ts & 0xFFFFFFFF;
 	sys_timer_mbox_write(SYS_TIMER_MBOX_TS_L, val);
 
-	pr_debug("%s: ts_l=0x%x\n", __func__, val);
+	sys_timer_print("%s: ts_l=0x%x\n", __func__, val);
 
 	/* fix update sequence to promise atomicity */
 	mb();
@@ -136,7 +144,7 @@ static void sys_timer_timesync_update_sspm(int suspended, u64 tick, u64 ts)
 	val |= header;
 	sys_timer_mbox_write(SYS_TIMER_MBOX_TS_H, val);
 
-	pr_debug("%s: ts_h=0x%x\n", __func__, val);
+	sys_timer_print("%s: ts_h=0x%x\n", __func__, val);
 
 	/* fix update sequence to promise atomicity */
 	mb();
@@ -245,7 +253,7 @@ static void sys_timer_timesync_sync_base_internal(unsigned int flag)
 
 	spin_unlock_irqrestore(&timesync_cxt.lock, irq_flags);
 
-	pr_info("update base: ts=%llu, tick=0x%llx, fz=%d, ver=%d\n",
+	pr_debug("update base: ts=%llu, tick=0x%llx, fz=%d, ver=%d\n",
 		ts, tick, freeze, timesync_cxt.base_ver);
 }
 
