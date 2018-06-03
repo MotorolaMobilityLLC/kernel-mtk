@@ -353,12 +353,16 @@ static void get_soc_efuse(void)
 	eem_vcore_index[0] = eem_devinfo.VCORE_1_15V;
 	eem_vcore_index[3] = eem_devinfo.VCORE_1_05V;
 
-	if (eem_vcore_index[0] >= VCORE_NR_FREQ_EFUSE || eem_vcore_index[3] >= VCORE_NR_FREQ_EFUSE) {
-		/* Wrong or corrupted efuse value */
+	if (eem_vcore_index[0] >= VCORE_NR_FREQ_EFUSE) {
+		eem_error("eem_vcore_index[0]:%d is larger than %d\n",  eem_vcore_index[0],
+			VCORE_NR_FREQ_EFUSE);
 		eem_vcore_index[0] = 0;
+	}
+
+	if (eem_vcore_index[3] >= VCORE_NR_FREQ_EFUSE) {
+		eem_error("eem_vcore_index[3]:%d is larger than %d\n",  eem_vcore_index[3],
+			VCORE_NR_FREQ_EFUSE);
 		eem_vcore_index[3] = 0;
-		eem_error("vcore_index[%d,%d] are larger than %d\n",  eem_vcore_index[0],
-				eem_vcore_index[3], VCORE_NR_FREQ_EFUSE);
 	}
 
 	eem_vcore_index[1] = VCORE_INDEX_FOR_INTERPOLATION;
