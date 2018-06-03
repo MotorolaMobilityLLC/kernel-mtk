@@ -529,8 +529,9 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 			} else {
 				charger_dev_set_eoc_current(info->chg1_dev,
 								150000);
-				charger_dev_enable_termination(info->chg1_dev,
-								true);
+				if (mtk_pe40_get_is_connect(info) == false)
+					charger_dev_enable_termination(
+							info->chg1_dev, true);
 			}
 		} else {
 			if (chg2_chip_enabled) {
