@@ -338,9 +338,9 @@ static int usb_switch_set(void *data, u64 val)
 		usb3_switch_en(typec, ENABLE);
 
 		if (sel == 1)
-			usb3_switch_sel(typec, UP_SIDE);
+			usb3_switch_sel(typec, CC1_SIDE);
 		else
-			usb3_switch_sel(typec, DOWN_SIDE);
+			usb3_switch_sel(typec, CC2_SIDE);
 	}
 
 	return 0;

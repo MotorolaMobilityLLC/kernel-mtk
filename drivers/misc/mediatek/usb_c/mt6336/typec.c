@@ -422,13 +422,13 @@ void trigger_driver(struct typec_hba *hba, int type, int stat, int dir)
 		if (typec->host_driver && typec->host_driver->on == DISABLE) {
 			typec->host_driver->enable(typec->host_driver->priv_data);
 			typec->host_driver->on = ENABLE;
-			dev_err(hba->dev, "Attached.SRC enable host");
+			dev_err(hba->dev, "%s enable host", __func__);
 		}
 	} else if ((type == DEVICE_TYPE) && (stat == ENABLE)) {
 		if (typec->device_driver && typec->device_driver->on == DISABLE) {
 			typec->device_driver->enable(typec->device_driver->priv_data);
 			typec->device_driver->on = ENABLE;
-			dev_err(hba->dev, "Attached.SNK enable device");
+			dev_err(hba->dev, "%s enable device", __func__);
 		}
 	} else if (stat == DISABLE) {
 		/*
@@ -441,11 +441,11 @@ void trigger_driver(struct typec_hba *hba, int type, int stat, int dir)
 		if (typec->device_driver && typec->device_driver->on == ENABLE) {
 			typec->device_driver->disable(typec->device_driver->priv_data);
 			typec->device_driver->on = DISABLE;
-			dev_err(hba->dev, "Unattach.SNK disable device");
+			dev_err(hba->dev, "%s disable device", __func__);
 		} else if (typec->host_driver && typec->device_driver->on == ENABLE) {
 			typec->host_driver->disable(typec->host_driver->priv_data);
 			typec->host_driver->on = DISABLE;
-			dev_err(hba->dev, "Unattach.SRC disable host");
+			dev_err(hba->dev, "%s disable host", __func__);
 		}
 	}
 #endif
@@ -1145,7 +1145,7 @@ static void typec_basic_settings(struct typec_hba *hba)
  * 2. 0x0045[0] set 1'b1, turn on csr_ck. (0x0046[0] set 1'b1 can turn off this clock in lowQ)
  * 3. 0x0042[6] set 1'b1, turn on cc_ck. (0x0043[6] set 1'b1 can turn off this clock in lowQ)
  */
-	const int is_print = 1;
+	const int is_print = 0;
 
 	typec_write8(hba, 0x01, MAIN_CON8);
 	if (is_print)
@@ -1621,7 +1621,6 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		 * If Vbus detected, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 1
 		 * to notify MAC layer.
 		 */
-		hba->vbus_on_polling = 100;
 		schedule_work(&hba->wait_vbus_on_attach_wait_snk);
 	}
 
@@ -1653,7 +1652,6 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		 * If Vbus is removed, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 0
 		 * to notify MAC layer.
 		 */
-		hba->vbus_off_polling = 500;
 		schedule_work(&hba->wait_vbus_off_attached_snk);
 		#if USE_AUXADC
 		schedule_work(&hba->auxadc_voltage_mon_attached_snk);
@@ -1731,24 +1729,26 @@ static irqreturn_t typec_top_intr(int irq, void *__hba)
 	handled = (cc_is0 | cc_is2);
 
 #if SUPPORT_PD
-	/* PD */
-	typec_sw_probe(hba, DBG_INTR_STATE, (DBG_INTR_PD<<DBG_INTR_STATE_OFST));
+	if (hba->mode == 2) {
+		/* PD */
+		typec_sw_probe(hba, DBG_INTR_STATE, (DBG_INTR_PD<<DBG_INTR_STATE_OFST));
 
-	pd_is0 = typec_readw(hba, PD_INTR_0);
-	pd_is1 = typec_readw(hba, PD_INTR_1);
+		pd_is0 = typec_readw(hba, PD_INTR_0);
+		pd_is1 = typec_readw(hba, PD_INTR_1);
 #if PD_SW_WORKAROUND1_2
-	if (pd_is0 & PD_RX_RCV_MSG_INTR)
-		typec_clear(hba, REG_PD_RX_RCV_MSG_INTR_EN, PD_INTR_EN_0);
-	typec_writew(hba, (pd_is0 & ~PD_RX_RCV_MSG_INTR), PD_INTR_0);
+		if (pd_is0 & PD_RX_RCV_MSG_INTR)
+			typec_clear(hba, REG_PD_RX_RCV_MSG_INTR_EN, PD_INTR_EN_0);
+		typec_writew(hba, (pd_is0 & ~PD_RX_RCV_MSG_INTR), PD_INTR_0);
 #else
-	typec_writew(hba, pd_is0, PD_INTR_0);
+		typec_writew(hba, pd_is0, PD_INTR_0);
 #endif
-	typec_writew(hba, pd_is1, PD_INTR_1);
+		typec_writew(hba, pd_is1, PD_INTR_1);
 
-	cc_is0 &= PD_INTR_IS0_LISTEN;
-	if (pd_is0 | pd_is1 | cc_is0)
-		pd_intr(hba, pd_is0, pd_is1, cc_is0, 0);
-	handled |= (pd_is0 | pd_is1);
+		cc_is0 &= PD_INTR_IS0_LISTEN;
+		if (pd_is0 | pd_is1 | cc_is0)
+			pd_intr(hba, pd_is0, pd_is1, cc_is0, 0);
+		handled |= (pd_is0 | pd_is1);
+	}
 #endif
 
 	/*check if at least 1 interrupt has been served this time*/
@@ -1808,6 +1808,66 @@ void typec_hanlder(void)
 	typec_top_intr(0, g_hba);
 }
 
+struct typec_hba *get_hba(void)
+{
+	return g_hba;
+}
+EXPORT_SYMBOL_GPL(get_hba);
+
+int get_u32(struct device_node *np, const char *name, unsigned int *val)
+{
+	uint32_t tmp;
+	int ret = -1;
+
+	if (of_property_read_u32(np, name, &tmp) == 0) {
+		*val = tmp;
+		pr_err("%s get %s = %d\n", __func__, name, *val);
+		ret = 0;
+	} else {
+		pr_err("%s get %s fail\n", __func__, name);
+	}
+	return ret;
+}
+
+void parse_dts(struct device_node *np, struct typec_hba *hba)
+{
+	uint32_t tmp;
+
+	if (get_u32(np, "mode", &hba->mode) != 0)
+		hba->mode = 1;
+
+	if (of_property_read_u32(np, "support_role", &tmp) == 0) {
+		hba->support_role = tmp;
+		pr_err("%s get support_role = %d\n", __func__, hba->support_role);
+	} else {
+		hba->support_role = TYPEC_ROLE_DRP;
+		pr_err("%s get support_role fail\n", __func__);
+	}
+
+	if (get_u32(np, "prefer_role", &hba->prefer_role) != 0)
+		hba->prefer_role = 2;
+
+	if (of_property_read_u32(np, "rp_val", &tmp) == 0) {
+		hba->rp_val = tmp;
+		pr_err("%s get rp_val = %d\n", __func__, hba->rp_val);
+	} else {
+		hba->rp_val = TYPEC_RP_DFT;
+		pr_err("%s get rp_val fail\n", __func__);
+	}
+
+	if (get_u32(np, "cc_irq", &hba->cc_irq) != 0)
+		hba->cc_irq = 0;
+
+	if (get_u32(np, "pd_irq", &hba->pd_irq) != 0)
+		hba->pd_irq = 0;
+
+	if (get_u32(np, "vbus_on_polling", &hba->vbus_on_polling) != 0)
+		hba->vbus_on_polling = 100;
+
+	if (get_u32(np, "vbus_off_polling", &hba->vbus_off_polling) != 0)
+		hba->vbus_off_polling = 500;
+}
+
 int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		void __iomem *mmio_base, unsigned int irq, int id)
 {
@@ -1841,6 +1901,15 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	g_hba = hba;
 
 	dev_set_drvdata(dev, hba);
+
+	parse_dts(dev->of_node, hba);
+
+	if (hba->mode == 0)
+		dev_err(hba->dev, "Disable Type-C & PD\n");
+	else if (hba->mode == 1)
+		dev_err(hba->dev, "Enable Type-C\n");
+	else if (hba->mode == 2)
+		dev_err(hba->dev, "Enable PD\n");
 
 	mutex_init(&hba->ioctl_lock);
 	mutex_init(&hba->typec_lock);
@@ -1923,22 +1992,9 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	/* PD*/
 	dev_err(hba->dev, "PD_TX_PARAMETER(16b)=0x%x Should be 0x732B\n",
 		typec_readw(hba, PD_TX_PARAMETER));
-
-	dev_err(hba->dev, "PD_TX_PARAMETER=0x%x Should be 0x2B\n",
-		typec_read8(hba, PD_TX_PARAMETER));
-
-	dev_err(hba->dev, "PD_TX_PARAMETER+1=0x%x Should be 0x73\n",
-		typec_read8(hba, PD_TX_PARAMETER+1));
-
 	/* Type-c*/
 	dev_err(hba->dev, "PERIODIC_MEAS_VAL(16b)=0x%x Should be 0x2ED\n",
 		typec_readw(hba, TYPE_C_CC_VOL_PERIODIC_MEAS_VAL));
-
-	dev_err(hba->dev, "PERIODIC_MEAS_VAL=0x%x Should be 0xED\n",
-		typec_read8(hba, TYPE_C_CC_VOL_PERIODIC_MEAS_VAL));
-
-	dev_err(hba->dev, "PERIODIC_MEAS_VAL+1=0x%x Should be 0x2\n",
-		typec_read8(hba, TYPE_C_CC_VOL_PERIODIC_MEAS_VAL+1));
 
 	typec_basic_settings(hba);
 	pd_basic_settings(hba);
@@ -1946,10 +2002,9 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	/*initialize TYPEC*/
 	typec_set_default_param(hba);
 
-	typec_int_enable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
+	if (hba->mode > 0)
+		typec_int_enable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
 
-	hba->support_role = TYPEC_ROLE_DRP;
-	hba->rp_val = TYPEC_RP_DFT;
 	hba->pd_rp_val = TYPEC_RP_15A;
 	hba->dbg_lvl = TYPEC_DBG_LVL_3;
 	hba->hr_auto_sent = 0;
@@ -1960,9 +2015,9 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 #endif
 
 	#if SUPPORT_PD
-	/*pd_basic_settings(hba);*/
 	/*initialize PD*/
-	pd_init(hba);
+	if (hba->mode == 2)
+		pd_init(hba);
 	#endif
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
@@ -1972,9 +2027,14 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	/*initialization completes*/
 	*hba_handle = hba;
 
-	typec_set_mode(hba, hba->support_role, hba->rp_val, 0);
+	if (hba->mode > 0) {
+		/*Prefer Role 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
+		typec_set_mode(hba, hba->support_role, hba->rp_val, ((hba->prefer_role == 3)?1:0));
 
-	typec_enable(hba, 1);
+		typec_enable(hba, 1);
+	} else {
+		typec_enable(hba, 0);
+	}
 
 	return 0;
 
@@ -2061,6 +2121,12 @@ static int __init typec_module_init(void)
 	err = typec_pltfrm_init();
 	if (err)
 		goto err_handle;
+
+#ifdef CONFIG_RT7207_ADAPTER
+	err = mtk_direct_charge_vdm_init();
+	if (err)
+		goto err_handle;
+#endif
 
 	return 0;
 

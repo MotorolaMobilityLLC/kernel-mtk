@@ -17,6 +17,10 @@
 
 #include "usb_pd_func.h"
 
+#ifdef CONFIG_RT7207_ADAPTER
+#include "mtk_direct_charge_vdm.h"
+#endif
+
 #define MIN(x, y)               (((x) < (y)) ? (x) : (y))
 
 #ifdef CONFIG_USB_PD_DUAL_ROLE
@@ -473,12 +477,6 @@ int pd_dfp_exit_mode(struct typec_hba *hba, uint16_t svid, int opos)
 		return 0;
 	}
 
-	/*
-	 * TODO(crosbug.com/p/33946) : below needs revisited to allow multiple
-	 * mode exit.  Additionally it should honor OPOS == 7 as DFP's request
-	 * to exit all modes.  We currently don't have any UFPs that support
-	 * multiple modes on one SVID.
-	 */
 	modep = get_modep(hba, svid);
 	if (!modep || !validate_mode_request(hba, modep, svid, opos))
 		return 0;
@@ -684,9 +682,16 @@ int pd_svdm(struct typec_hba *hba, int cnt, uint32_t *payload, uint32_t **rpaylo
 					pd_dfp_enter_mode(hba, 0, 0);
 
 				if (modep->opos) {
-					rsize = modep->fx->status(hba,
-								  payload);
-					payload[0] |= PD_VDO_OPOS(modep->opos);
+#ifdef CONFIG_RT7207_ADAPTER
+					if (modep->fx->svid == RT7207_SVID) {
+						start_dc_auth(hba->dc);
+						rsize = 0;
+					} else
+#endif
+					{
+						rsize = modep->fx->status(hba, payload);
+						payload[0] |= PD_VDO_OPOS(modep->opos);
+					}
 				}
 			}
 			break;
