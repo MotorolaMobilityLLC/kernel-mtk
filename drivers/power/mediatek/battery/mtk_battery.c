@@ -126,6 +126,7 @@ static struct gauge_consumer coulomb_minus;
 static struct gauge_consumer soc_plus;
 static struct gauge_consumer soc_minus;
 
+static struct timespec gchr_full_handler_time;
 /*sw average current*/
 static struct timespec sw_iavg_time;
 static int sw_iavg_car;
@@ -3632,10 +3633,17 @@ void fg_vbat2_h_int_handler(void)
 
 void fg_chr_full_int_handler(void)
 {
-	bm_err("[fg_chr_full_int_handler]\n");
-	wakeup_fg_algo(FG_INTR_CHR_FULL);
+	struct timespec now_time, difftime;
 
-	fg_bat_temp_int_sw_check();
+	get_monotonic_boottime(&now_time);
+	difftime = timespec_sub(now_time, gchr_full_handler_time);
+	if (difftime.tv_sec >= 10) {
+		gchr_full_handler_time = now_time;
+		bm_err("[fg_chr_full_int_handler]\n");
+		wakeup_fg_algo(FG_INTR_CHR_FULL);
+		fg_bat_temp_int_sw_check();
+	}
+
 }
 
 void fg_shutdown_int_handler(void)
