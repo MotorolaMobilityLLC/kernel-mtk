@@ -368,8 +368,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	/* 1. PC Monitor */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_PCMON)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD PC monitor\n");
-		CCCI_MEM_LOG_TAG(md->index, TAG, "core0: [0]0x%X, [1]0x%X\n",
-			MD1_PC_MONITOR_BASE0, MD1_PC_MONITOR_BASE1);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "common: 0x%X\n", MD1_PC_MONITOR_BASE0);
 		/* Stop all PCMon */
 		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CTRL_STOP_ALL); /* stop MD PCMon */
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon1, 0x100);
@@ -377,6 +376,8 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x200), 0x60);
 
 		/* core0 */
+		CCCI_MEM_LOG_TAG(md->index, TAG, "core0/1: [0]0x%X, [1]0x%X\n",
+			MD1_PC_MONITOR_BASE1, MD1_PC_MONITOR_BASE1 + 0x400);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x400);
 		/* core1 */
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x400), 0x400);
@@ -427,7 +428,10 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_2, MD1_GLOBALCON_LEN2);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_3, MD1_GLOBALCON_LEN3);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_4, MD1_GLOBALCON_LEN4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_5, MD1_GLOBALCON_LEN5);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_5, 0x8);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_5 + 0x300, 0x1C);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_5 + 0x400, 4);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_global_con_5 + 0x600, 8);
 	}
 	/* 3. Bus status */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_BUS)) {
