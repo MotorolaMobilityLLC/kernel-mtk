@@ -237,6 +237,7 @@ X(145, RGXFW_GROUP_MAIN, RGXFW_SF_MAIN_RD_DEINIT, "Rascal+Dusts deinit\n", 0) \
 X(146, RGXFW_GROUP_MAIN, RGXFW_SF_MAIN_OS_INIT_CONFIG, "Initialised OS %d with config flags 0x%08x\n", 2) \
 X(147, RGXFW_GROUP_MAIN, RGXFW_SF_MAIN_UFO_CHKPT_LIMIT, "Fence checkpoint UFO limit exceeded %d/%d\n", 2) \
 X(148, RGXFW_GROUP_MAIN, RGXFW_SF_MAIN_3D_62850KICK, "3D Dummy stencil store\n", 0) \
+X(149, RGXFW_GROUP_MAIN, RGXFW_SF_MAIN_FWIRQ, "FW IRQ # %u @ %u\n", 2) \
 \
 X( 1, RGXFW_GROUP_MTS, RGXFW_SF_MTS_BG_KICK_DEPRECATED, "Bg Task DM = %u, counted = %d\n", 2) \
 X( 2, RGXFW_GROUP_MTS, RGXFW_SF_MTS_BG_COMPLETE_DEPRECATED, "Bg Task complete DM = %u\n", 1) \
