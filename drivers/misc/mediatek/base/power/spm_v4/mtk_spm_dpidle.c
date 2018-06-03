@@ -603,8 +603,6 @@ static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle, u32 operation_co
 	struct spm_data spm_d;
 	unsigned int spm_opt = 0;
 
-	__spm_set_pcm_wdt(0);
-
 	memset(&spm_d, 0, sizeof(struct spm_data));
 
 	spm_opt |= sleep_dpidle ?      SPM_OPT_SLEEP_DPIDLE : 0;
