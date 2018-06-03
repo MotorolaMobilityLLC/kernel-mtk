@@ -189,6 +189,8 @@ unsigned int data_lane1[2] = { 0 }; /* MIPITX_DSI_DATA_LANE1 */
 unsigned int data_lane2[2] = { 0 }; /* MIPITX_DSI_DATA_LANE2 */
 unsigned int data_lane3[2] = { 0 }; /* MIPITX_DSI_DATA_LANE3 */
 
+unsigned int mipitx_impedance_backup[5];
+
 atomic_t PMaster_enable = ATOMIC_INIT(0);
 
 static void _init_condition_wq(struct t_condition_wq *waitq)
@@ -1316,6 +1318,7 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 	unsigned int prediv    = 0;
 	unsigned int delta1 = 2; /* Delta1 is SSC range, default is 0%~-5% */
 	unsigned int pdelta1 = 0;
+	unsigned long addr = 0;
 	MIPITX_PAD_VALUE pad_mapping[MIPITX_PHY_LANE_NUM]
 		= {PAD_D0P_V, PAD_D1P_V, PAD_D2P_V, PAD_D3P_V, PAD_CKP_V, PAD_CKP_V};
 
@@ -1411,6 +1414,17 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 		} else {
 			MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_CK_CKMODE_EN, FLD_DSI_CK_CKMODE_EN, 1);
 		}
+	}
+
+	/* re-fill mipitx impendance */
+	addr = DSI_PHY_REG[0]+0x100;
+	for (i = 0; i < 5; i++) {
+		for (j = 0; j < 10; j++) {
+			MIPITX_OUTREG32(addr, ((mipitx_impedance_backup[i])>>j)&0x1);
+			addr += 0x4;
+		}
+		/* 0xD8 = 0x300 - 0x228*/
+		addr += 0xD8;
 	}
 
 	/* MIPI INIT */
@@ -2770,7 +2784,8 @@ static void _set_power_on_status(enum DISP_MODULE_ENUM module, unsigned int ispo
 
 int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 {
-	int i = 0;
+	int i = 0, j = 0;
+	unsigned long addr = 0;
 
 	DISPFUNC();
 	cmdqBackupAllocateSlot(&_h_intstat, 1);
@@ -2833,6 +2848,17 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 		lcm1_set_te_pin();
 	}
 #endif
+
+	/* backup mipitx impedance0 which is inited in LK*/
+	addr = DSI_PHY_REG[0]+0x100;
+	for (i = 0; i < 5; i++) {
+		for (j = 0; j < 10; j++) {
+			mipitx_impedance_backup[i] |= ((INREG32(addr))<<j);
+			addr += 0x4;
+		}
+		/* 0xD8 = 0x300 - 0x228*/
+		addr += 0xD8;
+	}
 
 	return DSI_STATUS_OK;
 }
