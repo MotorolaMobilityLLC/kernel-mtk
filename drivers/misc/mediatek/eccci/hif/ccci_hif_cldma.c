@@ -481,6 +481,9 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 	char using_napi = is_net_queue ? (ccci_md_get_cap_by_id(md_ctrl->md_id) & MODEM_CAP_NAPI) : 0;
 	unsigned int L2RISAR0 = 0;
 	unsigned int skb_size;
+	unsigned long time_limit = jiffies + 2;
+	unsigned int l2qe_s_offset = CLDMA_RX_QE_OFFSET;
+
 #ifdef CLDMA_TRACE
 	unsigned long long port_recv_time = 0;
 	unsigned long long skb_alloc_time = 0;
@@ -491,7 +494,6 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 	static unsigned long long last_leave_time[CLDMA_RXQ_NUM] = { 0 };
 	static unsigned int sample_time[CLDMA_RXQ_NUM] = { 0 };
 	static unsigned int sample_bytes[CLDMA_RXQ_NUM] = { 0 };
-	unsigned int l2qe_s_offset = CLDMA_RX_QE_OFFSET;
 
 	total_time = sched_clock();
 	if (last_leave_time[queue->index] == 0)
@@ -507,8 +509,18 @@ again:
 #endif
 		req = queue->tr_done;
 		rgpd = (struct cldma_rgpd *)req->gpd;
-		if (!((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0 && req->skb))
+		if (!((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0 && req->skb)) {
+			ret = ALL_CLEAR;
 			break;
+		}
+
+		new_skb = ccci_alloc_skb(queue->tr_ring->pkt_size, !is_net_queue, blocking);
+		if (unlikely(!new_skb)) {
+			CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "alloc skb fail on q%d, retry!\n", queue->index);
+			ret = LOW_MEMORY;
+			return ret;
+		}
+
 		skb = req->skb;
 		/* update skb */
 		skb_size = skb_data_size(skb);
@@ -577,19 +589,13 @@ again:
 			skb->tstamp.tv64 = sched_clock();
 #endif
 			ccci_skb_enqueue(&queue->skb_list, skb);
-			wake_up_all(&queue->rx_wq);
 			ret = 0;
 		}
 #ifdef CLDMA_TRACE
 		port_recv_time = ((skb_alloc_time = sched_clock()) - port_recv_time);
 #endif
-		new_skb = NULL;
+
 		if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
-			new_skb = ccci_alloc_skb(queue->tr_ring->pkt_size, !is_net_queue, blocking);
-			if (!new_skb)
-				CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "alloc skb fail on q%d\n", queue->index);
-		}
-		if (new_skb) {
 			/* mark cldma_request as available */
 			req->skb = NULL;
 			cldma_rgpd_set_data_ptr(rgpd, 0);
@@ -618,6 +624,7 @@ again:
 				req->data_buffer_ptr_saved = 0;
 				spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 				ccci_free_skb(new_skb);
+				wake_up_all(&queue->rx_wq);
 				return -1;
 			}
 			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
@@ -635,7 +642,11 @@ again:
 			CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "rxq%d leave skb %p in ring, ret = 0x%x\n",
 					queue->index, skb, ret);
 			/* no need to retry if port refused to recv */
-			skb_handled = ret == -CCCI_ERR_PORT_RX_FULL ? 1 : 0;
+			if (ret == -CCCI_ERR_PORT_RX_FULL)
+				ret = ONCE_MORE;
+			else
+				ret = ALL_CLEAR; /*maybe never come here*/
+			ccci_free_skb(new_skb);
 			break;
 		}
 #ifdef CLDMA_TRACE
@@ -653,12 +664,20 @@ again:
 			cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD); /* dummy read */
 		}
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
+
+		count++;
+		if (count % 8 == 0)
+			wake_up_all(&queue->rx_wq);
 		/* check budget, only NAPI and queue0 are allowed to reach budget, as they can be scheduled again */
-		if (++count >= budget && !blocking) {
+		if ((count >= budget || time_after_eq(jiffies, time_limit)) && !blocking) {
 			over_budget = 1;
+			ret = ONCE_MORE;
+			CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "rxq%d over budget or timeout, count = %d\n",
+					queue->index, count);
 			break;
 		}
 	}
+	wake_up_all(&queue->rx_wq);
 	/*
 	 * do not use if(count == RING_BUFFER_SIZE) to resume Rx queue.
 	 * resume Rx queue every time. we may not handle all RX ring buffer at one time due to
@@ -666,7 +685,6 @@ again:
 	 * GPD, there is a chance that "count" never reaches ring buffer size and the queue is stopped
 	 * permanentely.
 	 */
-	ret = ALL_CLEAR;
 	spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 	if (md_ctrl->rxq_active & (1 << queue->index)) {
 		/* resume Rx queue */
@@ -681,29 +699,21 @@ again:
 		L2RISAR0 = cldma_reg_bit_gather(L2RISAR0);
 		l2qe_s_offset = CLDMA_RX_QE_OFFSET * 8;
 #endif
-		if ((L2RISAR0 & CLDMA_RX_INT_DONE & (1 << queue->index)))
+		if ((L2RISAR0 & CLDMA_RX_INT_DONE & (1 << queue->index)) && !(!blocking && ret == ONCE_MORE))
 			retry = 1;
 		else
 			retry = 0;
 		/* where are we going */
-		if (over_budget) {
-			/* remember only NAPI and queue0 can reach here */
-			retry = skb_handled ? retry : 1;
-			ret = retry ? ONCE_MORE : ALL_CLEAR;
-		} else {
-			if (retry) {
-				/* ACK interrupt */
-				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0,
+		if (retry) {
+			/* ACK interrupt */
+			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0,
 						((1 << queue->index) << l2qe_s_offset));
-				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0, (1 << queue->index));
-				/* clear IP busy register wake up cpu case */
-				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY,
+			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0, (1 << queue->index));
+			/* clear IP busy register wake up cpu case */
+			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY,
 						cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY));
-				spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
-				goto again;
-			} else {
-				ret = ALL_CLEAR;
-			}
+			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
+			goto again;
 		}
 	}
 	spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
@@ -733,7 +743,9 @@ static int cldma_net_rx_push_thread(void *arg)
 	struct sk_buff *skb = NULL;
 	struct md_cd_queue *queue = (struct md_cd_queue *)arg;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)ccci_hif_get_by_id(queue->hif_id);
+#ifdef CCCI_SKB_TRACE
 	struct ccci_per_md *per_md_data = ccci_get_per_md_data(md_ctrl->md_id);
+#endif
 	int count = 0;
 	int ret;
 
@@ -1290,14 +1302,17 @@ void cldma_disable_irq_nosync(struct md_cd_ctrl *md_ctrl)
 }
 static void cldma_rx_worker_start(struct md_cd_ctrl *md_ctrl, int qno)
 {
+#if MD_GENERATION <= (6292)
 	int ret = 0;
-
 	if (qno != 0) {
 		ret = queue_work(md_ctrl->rxq[qno].worker,
 					&md_ctrl->rxq[qno].cldma_rx_work);
 	} else {
 		tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
 	}
+#else
+	tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
+#endif
 }
 static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 {
@@ -2378,9 +2393,13 @@ static void md_cldma_rxq0_tasklet(unsigned long data)
 	queue = &md_ctrl->rxq[0];
 	md_ctrl->traffic_info.latest_q_rx_time[queue->index] = local_clock();
 	ret = queue->tr_ring->handle_rx_done(queue, queue->budget, 0);
-	if (ret != ALL_CLEAR)
+	if (ret == ONCE_MORE)
 		tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
-	else
+	else if (unlikely(ret == LOW_MEMORY)) {
+		/*Rx done and empty interrupt will be enabled in workqueue*/
+		queue_work(md_ctrl->rxq[queue->index].worker,
+			&md_ctrl->rxq[queue->index].cldma_rx_work);
+	} else
 		/* enable RX_DONE and QUEUE_EMPTY interrupt */
 		cldma_write32_ao_misc(md_ctrl, CLDMA_AP_L2RIMCR0,
 				(CLDMA_RX_INT_DONE & (1 << queue->index)) |
