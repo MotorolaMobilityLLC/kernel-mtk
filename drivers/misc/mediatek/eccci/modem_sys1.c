@@ -715,7 +715,7 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int tx_ch,
 		ap_rt_data_v2_1 = (struct ap_query_md_feature_v2_1 *)ccif_hif_fill_rt_header(CCIF_HIF_ID, packet_size,
 			tx_ch, txqno);
 #endif
-		memset(ap_rt_data_v2_1, 0, sizeof(struct ap_query_md_feature_v2_1));
+		memset_io(ap_rt_data_v2_1, 0, sizeof(struct ap_query_md_feature_v2_1));
 		config_ap_runtime_data_v2_1(md, ap_rt_data_v2_1);
 		dump_runtime_data_v2_1(md, ap_rt_data_v2_1);
 	} else {
@@ -728,7 +728,7 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int tx_ch,
 		ap_rt_data = (struct ap_query_md_feature *)ccif_hif_fill_rt_header(CCIF_HIF_ID, packet_size,
 			tx_ch, txqno);
 #endif
-		memset(ap_rt_data, 0, sizeof(struct ap_query_md_feature));
+		memset_io(ap_rt_data, 0, sizeof(struct ap_query_md_feature));
 		config_ap_runtime_data_v2(md, ap_rt_data);
 		dump_runtime_data_v2(md, ap_rt_data);
 	}
