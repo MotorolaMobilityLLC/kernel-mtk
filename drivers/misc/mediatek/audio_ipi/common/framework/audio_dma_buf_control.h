@@ -25,9 +25,10 @@ typedef struct {
 
 void init_reserved_dram(void);
 audio_resv_dram_t *get_reserved_dram(void);
+audio_resv_dram_t *get_reserved_dram_spkprotect(void);
 
 char *get_resv_dram_vir_addr(char *resv_dram_phy_addr);
-
+char *get_resv_dram_spkprotect_vir_addr(char *resv_dram_phy_addr);
 
 #endif /* end of AUDIO_DMA_BUF_CONTROL_H */
 

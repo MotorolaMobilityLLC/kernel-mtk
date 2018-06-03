@@ -172,6 +172,9 @@ void Auddrv_Dl2_Spinlock_unlock(void);
 void Auddrv_Dl3_Spinlock_lock(void);
 void Auddrv_Dl3_Spinlock_unlock(void);
 
+
+int AudDrv_DSP_IRQ_handler(void *PrivateData);
+void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData);
 void Auddrv_DL1_Interrupt_Handler(void);
 void Auddrv_DL2_Interrupt_Handler(void);
 void Auddrv_UL1_Interrupt_Handler(void);
