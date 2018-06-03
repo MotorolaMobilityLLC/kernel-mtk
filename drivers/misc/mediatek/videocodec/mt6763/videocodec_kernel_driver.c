@@ -289,6 +289,11 @@ void vdec_power_on(void)
 
 void vdec_power_off(void)
 {
+	/* bianco VCODEC_SEL reset */
+	do {
+		VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x20, 0);
+	} while (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20) != 0);
+
 	mutex_lock(&VdecPWRLock);
 	if (gu4VdecPWRCounter == 0) {
 		MODULE_MFV_PR_DEBUG("[VCODEC] gu4VdecPWRCounter = 0\n");
@@ -356,6 +361,11 @@ void venc_power_on(void)
 
 void venc_power_off(void)
 {
+	/* bianco VCODEC_SEL reset */
+	do {
+		VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x20, 0);
+	} while (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20) != 0);
+
 	mutex_lock(&VencPWRLock);
 	if (gu4VencPWRCounter == 0) {
 		MODULE_MFV_PR_DEBUG("[VCODEC] gu4VencPWRCounter = 0\n");
@@ -1044,11 +1054,6 @@ static long vcodec_unlockhw(unsigned long arg)
 				disable_irq(VDEC_IRQ_ID);
 			}
 
-			/* bianco VCODEC_SEL reset */
-			do {
-				VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x20, 0);
-			} while (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20) != 0);
-
 			/* TODO: check if turning power off is ok */
 #ifndef KS_POWER_WORKAROUND
 			vdec_power_off();
@@ -1074,11 +1079,6 @@ static long vcodec_unlockhw(unsigned long arg)
 				rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
 				rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
 				disable_irq(VENC_IRQ_ID);
-
-				/* bianco VCODEC_SEL reset */
-				do {
-					VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x20, 0);
-				} while (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20) != 0);
 
 				/* turn venc power off */
 #ifndef KS_POWER_WORKAROUND
