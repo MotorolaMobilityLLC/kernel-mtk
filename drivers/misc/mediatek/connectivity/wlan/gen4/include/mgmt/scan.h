@@ -480,8 +480,10 @@ typedef struct _SCAN_INFO_T {
 	UINT_8			aucReserved[3];
 	UINT_8			aucChannelNum[64];
 	UINT_16			au2ChannelIdleTime[64];
-	UINT_8			aucChannelFlag[64];
+	/* Mdrdy Count in each Channel  */
 	UINT_8			aucChannelMDRDYCnt[64];
+	/* Beacon and Probe Response Count in each Channel  */
+	UINT_8			aucChannelBAndPCnt[64];
 
 	UINT_32 u4ScanUpdateIdx;
 } SCAN_INFO_T, *P_SCAN_INFO_T;

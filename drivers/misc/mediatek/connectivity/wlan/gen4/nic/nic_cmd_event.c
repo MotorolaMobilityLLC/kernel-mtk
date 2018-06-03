@@ -738,6 +738,9 @@ VOID nicCmdEventEnterRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo,
 	nicResetSystemService(prAdapter);
 	nicInitMGMT(prAdapter, NULL);
 
+	/* Block til firmware completed entering into RF test mode */
+	kalMsleep(500);
+
 #if defined(_HIF_SDIO) && 0
 	/* 3. Disable Interrupt */
 	HAL_INTR_DISABLE(prAdapter);
@@ -799,6 +802,9 @@ VOID nicCmdEventEnterRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo,
 
 VOID nicCmdEventLeaveRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
 {
+	/* Block until firmware completed leaving from RF test mode */
+	kalMsleep(500);
+
 #if defined(_HIF_SDIO) && 0
 	UINT_32 u4WHISR = 0;
 	UINT_16 au2TxCount[16];
