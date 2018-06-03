@@ -46,30 +46,37 @@ struct shutdown_controller {
 
 static struct shutdown_controller sdc;
 
+static int g_vbat_lt;
+static int g_vbat_lt_lv1;
+
+
 static void wake_up_power_misc(struct shutdown_controller *sdd)
 {
 	sdd->timeout = true;
 	wake_up(&sdd->wait_que);
 }
 
+void set_shutdown_vbat_lt(int vbat_lt, int vbat_lt_lv1)
+{
+	g_vbat_lt = vbat_lt;
+	g_vbat_lt_lv1 = vbat_lt_lv1;
+}
+
 int get_shutdown_cond(void)
 {
-	int ret;
+	int ret = 0;
 
 	if (sdc.shutdown_status.is_soc_zero_percent)
-		ret = 1;
+		ret |= 1;
 	if (sdc.shutdown_status.is_uisoc_one_percent)
-		ret = 1;
-	if (sdc.shutdown_status.is_under_shutdown_voltage)
-		ret = 1;
-
+		ret |= 1;
+	if (sdc.lowbatteryshutdown)
+		ret |= 1;
 	return ret;
 }
 
 int set_shutdown_cond(int shutdown_cond)
 {
-	int i;
-
 	pr_err("set_shutdown_cond %d\n", shutdown_cond);
 	switch (shutdown_cond) {
 	case OVERHEAT:
@@ -96,17 +103,20 @@ int set_shutdown_cond(int shutdown_cond)
 			mutex_unlock(&sdc.lock);
 		}
 		break;
+#ifdef SHUTDOWN_CONDITION_LOW_BAT_VOLT
 	case LOW_BAT_VOLT:
+		int i;
+
 		if (sdc.shutdown_status.is_under_shutdown_voltage != true) {
 			mutex_lock(&sdc.lock);
 			sdc.shutdown_status.is_under_shutdown_voltage = true;
 			for (i = 0; i < AVGVBAT_ARRAY_SIZE; i++)
-				sdc.batdata[i] = INIT_VOLTAGE;
+				sdc.batdata[i] = battery_get_bat_avg_voltage();
 			sdc.batidx = 0;
-			notify_fg_shutdown();
 			mutex_unlock(&sdc.lock);
 		}
 		break;
+#endif
 	case DLPT_SHUTDOWN:
 		if (sdc.shutdown_status.is_dlpt_shutdown != true) {
 			mutex_lock(&sdc.lock);
@@ -130,6 +140,11 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 {
 	struct timespec now, duraction;
 	int polling = 0;
+	static int ui_zero_time_flag;
+	static int down_to_low_bat;
+	int current_ui_soc = battery_get_bat_uisoc();
+	int current_soc = battery_get_bat_soc();
+
 
 	now.tv_sec = 0;
 	now.tv_nsec = 0;
@@ -139,20 +154,33 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 	get_monotonic_boottime(&now);
 
 	if (sdd->shutdown_status.is_soc_zero_percent) {
-		duraction = timespec_sub(now, sdd->pre_time[SOC_ZERO_PERCENT]);
-		polling = 10;
-		if (duraction.tv_sec >= SHUTDOWN_TIME) {
-			pr_err("soc zero shutdown\n");
-			kernel_power_off();
+		if (current_ui_soc == 0) {
+			duraction = timespec_sub(now, sdd->pre_time[SOC_ZERO_PERCENT]);
+			polling = 10;
+			if (duraction.tv_sec >= SHUTDOWN_TIME) {
+				pr_err("soc zero shutdown\n");
+				kernel_power_off();
+			}
+		} else if (current_soc > 0) {
+			sdd->shutdown_status.is_soc_zero_percent = false;
+			polling = 0;
+		} else {
+			/* ui_soc is not zero, check it after 10s */
+			polling = 10;
 		}
 	}
 
 	if (sdd->shutdown_status.is_uisoc_one_percent) {
-		duraction = timespec_sub(now, sdd->pre_time[UISOC_ONE_PERCENT]);
-		polling = 10;
-		if (duraction.tv_sec >= SHUTDOWN_TIME) {
-			pr_err("uisoc one shutdown\n");
-			kernel_power_off();
+		if (current_ui_soc == 0) {
+			duraction = timespec_sub(now, sdd->pre_time[UISOC_ONE_PERCENT]);
+			polling = 10;
+			if (duraction.tv_sec >= SHUTDOWN_TIME) {
+				pr_err("uisoc one shutdown\n");
+				kernel_power_off();
+			}
+		} else {
+			/* ui_soc is not zero, check it after 10s */
+			polling = 10;
 		}
 	}
 
@@ -166,11 +194,11 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 	}
 
 	if (sdd->shutdown_status.is_under_shutdown_voltage) {
-#if 0
+#if 1
 		int vbatcnt = 0, i;
 
 		sdd->batdata[sdd->batidx] = battery_get_bat_avg_voltage();
-		sdd->batidx++;
+
 		for (i = 0; i < AVGVBAT_ARRAY_SIZE; i++)
 			vbatcnt += sdd->batdata[i];
 		sdd->avgvbat = vbatcnt / AVGVBAT_ARRAY_SIZE;
@@ -178,25 +206,78 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 		sdd->avgvbat = battery_get_bat_avg_voltage();
 #endif
 
+#if 0
 		if (sdd->avgvbat < (UNIT_TRANS_10 * BAT_VOLTAGE_LOW_BOUND) && sdd->lowbatteryshutdown == false) {
 			sdd->lowbatteryshutdown = true;
-			get_monotonic_boottime(&sdc.pre_time[LOW_BAT_VOLT]);
+			/*get_monotonic_boottime(&sdc.pre_time[LOW_BAT_VOLT]);*/
 			notify_fg_shutdown();
 		}
 
-		if (sdd->lowbatteryshutdown == true) {
-			duraction = timespec_sub(now, sdd->pre_time[LOW_BAT_VOLT]);
-			polling = 10;
-			if (duraction.tv_sec >= SHUTDOWN_TIME) {
-				pr_err("low bat shutdown\n");
-				kernel_power_off();
-			}
+		if ((ui_soc == 0) && (ui_zero_time_flag == 0)) {
+			get_monotonic_boottime(&sdc.pre_time[LOW_BAT_VOLT]);
+			ui_zero_time_flag = 1;
 		}
 
-		if (sdd->avgvbat >= (UNIT_TRANS_10 * BAT_VOLTAGE_HIGH_BOUND))
-			sdd->shutdown_status.is_under_shutdown_voltage = false;
-		else
+		if (sdd->lowbatteryshutdown == true) {
 			polling = 10;
+			if (ui_soc == 0) {
+				duraction = timespec_sub(now, sdd->pre_time[LOW_BAT_VOLT]);
+				if (duraction.tv_sec >= SHUTDOWN_TIME) {
+					pr_err("low bat shutdown\n");
+					kernel_power_off();
+				}
+			}
+
+			if (sdd->avgvbat > (UNIT_TRANS_10 * BAT_VOLTAGE_LOW_BOUND))
+				sdd->lowbatteryshutdown == false;
+		}
+#else
+		if (sdd->avgvbat < (UNIT_TRANS_10 * BAT_VOLTAGE_LOW_BOUND)) {
+			/* less than 3.4v */
+
+			if (down_to_low_bat == 0) {
+				down_to_low_bat = 1;
+				notify_fg_shutdown();
+			}
+
+			if ((current_ui_soc == 0) && (ui_zero_time_flag == 0)) {
+				duraction = timespec_sub(now, sdd->pre_time[LOW_BAT_VOLT]);
+				ui_zero_time_flag = 1;
+			}
+
+			if (current_ui_soc == 0) {
+				if (duraction.tv_sec >= SHUTDOWN_TIME) {
+					pr_err("low bat shutdown\n");
+					kernel_power_off();
+				}
+			}
+
+			sdd->lowbatteryshutdown = true;
+			polling = 10;
+		} else {
+			/* greater than 3.4v, clear status */
+			down_to_low_bat = 0;
+			ui_zero_time_flag = 0;
+			sdd->pre_time[LOW_BAT_VOLT].tv_sec = 0;
+			sdd->lowbatteryshutdown = false;
+			polling = 10;
+		}
+#endif
+		if ((sdd->avgvbat >= (UNIT_TRANS_10 * BAT_VOLTAGE_HIGH_BOUND)) &&
+			(g_vbat_lt == g_vbat_lt_lv1)) {
+			sdd->shutdown_status.is_under_shutdown_voltage = false;
+			polling = 0;
+		} else
+			polling = 10;
+			pr_err("[shutdown_event_handler][UT] V %d ui_soc %d dur %d [%d:%d:%d:%d] batdata[%d] %d\n",
+				sdd->avgvbat, current_ui_soc, (int)duraction.tv_sec,
+			down_to_low_bat, ui_zero_time_flag,
+			(int)sdd->pre_time[LOW_BAT_VOLT].tv_sec,
+			sdd->lowbatteryshutdown, sdd->batidx, sdd->batdata[sdd->batidx]);
+
+		sdd->batidx++;
+		if (sdd->batidx >= AVGVBAT_ARRAY_SIZE)
+			sdd->batidx = 0;
 	}
 
 	pr_err("shutdown_event_handler %d avgvbat:%d sec:%d lowst:%d\n", polling, sdd->avgvbat,
