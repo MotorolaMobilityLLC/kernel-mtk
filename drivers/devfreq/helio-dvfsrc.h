@@ -75,8 +75,10 @@ struct helio_dvfsrc {
 
 #define wait_for_completion(condition, timeout)			\
 ({								\
-	int ret = 0;						\
-	while (!(condition) && ret >= 0) {			\
+	int ret = 1;						\
+	if (!is_dvfsrc_enabled())				\
+		ret = 0;					\
+	while (!(condition) && ret > 0) {			\
 		if (ret++ >= timeout)				\
 			ret = -EBUSY;				\
 		udelay(1);					\
