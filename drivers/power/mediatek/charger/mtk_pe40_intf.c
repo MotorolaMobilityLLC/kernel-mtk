@@ -852,6 +852,12 @@ int mtk_pe40_cc_state(struct charger_manager *pinfo)
 	} else
 		pinfo->polling_interval = 10;
 
+	ret = mtk_pe40_safety_check(pinfo);
+	if (ret == -1)
+		goto err;
+	if (ret == 1)
+		goto disable_hv;
+
 	if (pe40->avbus * ibus <= PE40_MIN_WATT) {
 		if (pinfo->enable_hv_charging == false ||
 			pdata->thermal_charging_current_limit != -1 ||
@@ -861,12 +867,6 @@ int mtk_pe40_cc_state(struct charger_manager *pinfo)
 		else
 			mtk_pe40_end(pinfo, 1, false);
 	}
-
-	ret = mtk_pe40_safety_check(pinfo);
-	if (ret == -1)
-		goto err;
-	if (ret == 1)
-		goto disable_hv;
 
 	return 0;
 
