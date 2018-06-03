@@ -2723,7 +2723,11 @@ static void cmdq_core_enable_resource_clk_unlock(
 
 static void cmdq_core_release_task_unlocked(struct TaskStruct *pTask)
 {
+	if (!pTask)
+		return;
+
 	CMDQ_MSG("%s task:%p\n", __func__, pTask);
+
 	pTask->taskState = TASK_STATE_IDLE;
 	pTask->thread = CMDQ_INVALID_THREAD;
 	pTask->exclusive_thread = CMDQ_INVALID_THREAD;
@@ -2759,21 +2763,7 @@ static void cmdq_core_release_task_in_queue(struct work_struct *workItem)
 	CMDQ_MSG("-->Work QUEUE: TASK: Release task structure 0x%p begin\n", pTask);
 
 	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_in_queue);
-
-	pTask->taskState = TASK_STATE_IDLE;
-	pTask->thread = CMDQ_INVALID_THREAD;
-	pTask->exclusive_thread = CMDQ_INVALID_THREAD;
-
-	cmdq_core_release_buffer(pTask);
-
-	kfree(pTask->privateData);
-	pTask->privateData = NULL;
-
-	/* remove from active/waiting list */
-	list_del_init(&(pTask->listEntry));
-	/* insert into free list. Currently we don't shrink free list. */
-	list_add_tail(&(pTask->listEntry), &gCmdqContext.taskFreeList);
-
+	cmdq_core_release_task_unlocked(pTask);
 	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, release_task_in_queue);
 
 	CMDQ_MSG("<--Work QUEUE: TASK: Release task structure end\n");
