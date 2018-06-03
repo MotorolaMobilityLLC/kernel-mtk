@@ -421,10 +421,13 @@ static ssize_t acc_show_sensordevnum(struct device *dev,
 			devname = handle->name;
 			break;
 		}
-
-	if (devname != NULL)
-		ret = sscanf(devname+5, "%d", &devnum);
-	return snprintf(buf, PAGE_SIZE, "%d\n", devnum);
+	if (devname == NULL)
+		return -1;
+	ret = sscanf(devname+5, "%u", &devnum);
+	if (ret > 0)
+		return snprintf(buf, PAGE_SIZE, "%d\n", devnum);
+	else
+		return -1;
 }
 
 static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr,
