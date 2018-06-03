@@ -55,7 +55,9 @@ endif
 endif
 
 # platform dependent definition
+ifeq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6758"))
 ccflags-$(CONFIG_MTK_SMI_EXT) += -DCMDQ_CONFIG_SMI
+endif
 ccflags-y += -DCMDQ_SPECIAL_ESD_PRIORITY
 ccflags-y += -D_CMDQ_DISABLE_MARKER_
 ccflags-y += -DCMDQ_PROFILE_MMP
