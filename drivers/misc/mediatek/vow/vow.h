@@ -91,6 +91,7 @@ enum vow_flag_type_t {
 	VOW_FLAG_FORCE_PHASE1_DEBUG,
 	VOW_FLAG_FORCE_PHASE2_DEBUG,
 	VOW_FLAG_SWIP_LOG_PRINT,
+	VOW_FLAG_MTKIF_TYPE,
 	NUM_OF_VOW_FLAG_TYPE
 };
 
@@ -117,6 +118,13 @@ enum vow_model_type_t {
 	VOW_MODEL_SPEAKER = 1,
 	VOW_MODEL_NOISE = 2,   /* no use */
 	VOW_MODEL_FIR = 3      /* no use */
+};
+
+enum vow_mtkif_type_t {
+	VOW_MTKIF_NONE = 0,
+	VOW_MTKIF_AMIC = 1,
+	VOW_MTKIF_DMIC = 2,
+	VOW_MTKIF_DMIC_LP = 3,
 };
 
 /***********************************************************************************

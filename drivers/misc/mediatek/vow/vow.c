@@ -85,7 +85,7 @@ static bool vow_IPICmd_Send(uint8_t data_type,
 static void vow_IPICmd_Received(struct ipi_msg_t *ipi_msg);
 static bool vow_IPICmd_ReceiveAck(struct ipi_msg_t *ipi_msg);
 static void vow_Task_Unloaded_Handling(void);
-static bool VowDrv_SetFlag(int type, bool set);
+static bool VowDrv_SetFlag(int type, unsigned int set);
 static int VowDrv_GetHWStatus(void);
 
 /*****************************************************************************
@@ -735,7 +735,7 @@ void VowDrv_SetSmartDevice_GPIO(bool enable)
 	}
 }
 
-static bool VowDrv_SetFlag(int type, bool set)
+static bool VowDrv_SetFlag(int type, unsigned int set)
 {
 	bool ret;
 
@@ -761,6 +761,16 @@ void VowDrv_SetDmicLowPower(bool enable)
 	}
 
 	VowDrv_SetFlag(VOW_FLAG_DMIC_LOWPOWER, enable);
+}
+
+void VowDrv_SetMtkifType(unsigned int type)
+{
+	if (!vow_check_scp_status()) {
+		VOWDRV_DEBUG("SCP is off, do not support VOW\n");
+		return;
+	}
+
+	VowDrv_SetFlag(VOW_FLAG_MTKIF_TYPE, type);
 }
 
 void VowDrv_SetPeriodicEnable(bool enable)

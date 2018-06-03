@@ -4393,20 +4393,26 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 
 		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01) {
 			/* gamma K value and vow mtkaif tx setting, but AFE_VOW_CFG4[8:4]= 0x4 */
-			Ana_Set_Reg(AFE_VOW_CFG4, 0x024E, 0xfff0); /* 16k */
+			Ana_Set_Reg(AFE_VOW_CFG4, 0x024E, 0xfff0);  /* 16k */
 			/* vow posdiv and cic mode configure, and LP MIC settings */
-			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C0A, 0xffff);
+			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C0A, 0xffff);  /* 812.5k */
 			/* Ana_Set_Reg(AFE_VOW_CFG4, 0x022E, 0xfff0);*/ /*32K*/
 			/* Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x2C0A, 0xffff);*/ /* 32K*/
-		} else {
-		    /* gamma K value and vow mtkaif tx setting */
+		} else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K) {
+			/* gamma K value and vow mtkaif tx setting */
+			Ana_Set_Reg(AFE_VOW_CFG4, 0x024E, 0xfff0); /* 16k */
+			/* vow posdiv and cic mode configure */
+			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C0A, 0xffff); /* 812.5k */
+		} else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC) {
+			/* gamma K value and vow mtkaif tx setting */
 			Ana_Set_Reg(AFE_VOW_CFG4, 0x029E, 0xfff0); /* 16k */
-			if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)
-			    /* vow posdiv and cic mode configure */
-				Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C08, 0xffff); /* 800k */
-			else
-			    /* vow posdiv and cic mode configure */
-				Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C00, 0xffff); /* 1.6m */
+			/* vow posdiv and cic mode configure */
+			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C00, 0xffff); /* 1625k */
+		} else {
+			/* gamma K value and vow mtkaif tx setting */
+			Ana_Set_Reg(AFE_VOW_CFG4, 0x029E, 0xfff0); /* 16k */
+			/* vow posdiv and cic mode configure */
+			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C00, 0xffff); /* 1.6m */
 		}
 		TurnOnVOWPeriodicOnOff(MicType, reg_AFE_VOW_PERIODIC, true);
 
@@ -4414,17 +4420,23 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC) {
 			/*digital MIC need to config bit13 and bit6, (bit7 need to check)  0x6840*/
 
-			VowDrv_SetDmicLowPower(false);
+			/* VowDrv_SetDmicLowPower(false); */
+			VowDrv_SetMtkifType(2);  /* 2: DMIC */
 
 			Ana_Set_Reg(AFE_VOW_TOP, 0x20C0, 0x20C0);   /*VOW enable, with bit7*/
 		} else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K) {
 
-			VowDrv_SetDmicLowPower(true);
+			/* VowDrv_SetDmicLowPower(true); */
+			VowDrv_SetMtkifType(3);  /* 3: DMIC_LP */
 
 			Ana_Set_Reg(AFE_VOW_TOP, 0x20C0, 0x20C0);   /*VOW enable, with bit7*/
+		} else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01) {
+			/* same as AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K */
+			VowDrv_SetMtkifType(3);  /* 3: DMIC_LP */
 		} else {
 			/* Normal */
-			VowDrv_SetDmicLowPower(false);
+			/* VowDrv_SetDmicLowPower(false); */
+			VowDrv_SetMtkifType(1);  /* 1: AMIC */
 		}
 #endif /* #ifndef VOW_STANDALONE_CONTROL */
 
@@ -4444,9 +4456,11 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		msleep(20);
 
 		VOW_GPIO_Enable(false);
+
+		VowDrv_SetMtkifType(0);  /* 0: NONE */
 		if ((MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
 		 || (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)) {
-			VowDrv_SetDmicLowPower(false);
+			/* VowDrv_SetDmicLowPower(false); */
 			Ana_Set_Reg(AFE_VOW_TOP, 0x0000, 0x20C0);   /*VOW disable, with bit7*/
 		}
 		switch (MicType) {
