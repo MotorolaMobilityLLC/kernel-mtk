@@ -839,12 +839,6 @@ static int _ext_disp_trigger_LCM(int blocking, void *callback, unsigned int user
 /*		disp_lcm_init(pgc->plcm, 1);	*/
 		external_display_esd_check_enable(1);
 		pgc->lcm_state = EXTD_LCM_INITED;
-	} else if (pgc->lcm_state == EXTD_LCM_SUSPEND) {
-		EXT_DISP_LOG("[POWER]lcm resume[begin]\n");
-		disp_lcm_resume(pgc->plcm);
-		EXT_DISP_LOG("[POWER]lcm resume[end]\n");
-		external_display_esd_check_enable(1);
-		pgc->lcm_state = EXTD_LCM_RESUME;
 	}
 
 	if (_should_set_cmdq_dirty())
@@ -1368,6 +1362,19 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 	return ret;
 }
 
+static int ext_disp_suspend_release_fence(unsigned int session)
+{
+	unsigned int i = 0;
+
+	EXT_DISP_FUNC();
+
+	for (i = 0; i < EXTERNAL_SESSION_INPUT_LAYER_COUNT; i++) {
+		DISPPR_FENCE("ext_disp_suspend_release_fence  session=0x%x,layerid=%d\n", session, i);
+		mtkfb_release_layer_fence(session, i);
+	}
+	return 0;
+}
+
 int ext_disp_suspend(unsigned int session)
 {
 	enum EXT_DISP_STATUS ret = EXT_DISP_STATUS_OK;
@@ -1409,6 +1416,7 @@ int ext_disp_suspend(unsigned int session)
 		disp_lcm_suspend(pgc->plcm);
 		EXT_DISP_LOG("lcm suspend[end]\n");
 		pgc->lcm_state = EXTD_LCM_SUSPEND;
+		ext_disp_suspend_release_fence(session);
 	}
 
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -1479,6 +1487,14 @@ int ext_disp_resume(unsigned int session)
 		if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
 			EXT_DISP_ERR("[POWER]Fatal error, we didn't start display path but it's already busy\n");
 			ret = EXT_DISP_STATUS_ERROR;
+		}
+
+		if (DISP_SESSION_DEV(session) == DEV_LCM) {
+			EXT_DISP_LOG("[POWER]lcm resume[begin]\n");
+			disp_lcm_resume(pgc->plcm);
+			EXT_DISP_LOG("[POWER]lcm resume[end]\n");
+			external_display_esd_check_enable(1);
+			pgc->lcm_state = EXTD_LCM_RESUME;
 		}
 
 		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -2193,6 +2209,57 @@ void *ext_disp_get_dpmgr_handle(void)
 	return pgc->dpmgr_handle;
 }
 
+static void _ext_disp_cmdq_flush_config_handle_mira(void *handle, int blocking)
+{
+	if (blocking)
+		cmdqRecFlush(handle);
+	else
+		cmdqRecFlushAsync(handle);
+}
+
+static void _ext_disp_cmdq_handle_clear_dirty_by_handle(struct cmdqRecStruct *cmdq_handle)
+{
+	if (!ext_disp_is_video_mode())
+		cmdqRecClearEventToken(cmdq_handle, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
+}
+
+static int _set_backlight_by_cmdq(unsigned int level)
+{
+	int ret = 0;
+	struct cmdqRecStruct *cmdq_handle_backlight = NULL;
+
+	ret = cmdqRecCreate(CMDQ_SCENARIO_MHL_DISP, &cmdq_handle_backlight);
+	if (ret) {
+		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+		ret = -1;
+		goto done;
+	}
+	DISPDBG("external backlight, handle=%p\n", cmdq_handle_backlight);
+	cmdqRecSetEngine(cmdq_handle_backlight,
+						((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1)));
+
+	cmdqRecReset(cmdq_handle_backlight);
+
+	if (ext_disp_is_video_mode()) {
+		_ext_cmdq_insert_wait_frame_done_token_no_clear(cmdq_handle_backlight);
+		disp_lcm_set_backlight(pgc->plcm, cmdq_handle_backlight, level);
+		_ext_disp_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
+		DISPMSG("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
+	} else {
+		_ext_disp_cmdq_handle_clear_dirty_by_handle(cmdq_handle_backlight);
+		_ext_cmdq_insert_wait_frame_done_token_no_clear(cmdq_handle_backlight);
+		disp_lcm_set_backlight(pgc->plcm, cmdq_handle_backlight, level);
+		cmdqRecSetEventToken(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
+		_ext_disp_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
+		DISPMSG("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
+	}
+	cmdqRecDestroy(cmdq_handle_backlight);
+	cmdq_handle_backlight = NULL;
+
+done:
+	return ret;
+}
+
 static int _set_backlight_by_cpu(unsigned int level)
 {
 	int ret = 0;
@@ -2267,7 +2334,7 @@ int external_display_setbacklight(unsigned int level)
 			if (ext_disp_is_video_mode())
 				disp_lcm_set_backlight(pgc->plcm, NULL, level);
 			else
-				_set_backlight_by_cpu(level);
+				_set_backlight_by_cmdq(level);
 		} else {
 			_set_backlight_by_cpu(level);
 		}
@@ -2277,7 +2344,7 @@ int external_display_setbacklight(unsigned int level)
 	_ext_disp_path_unlock();
 	ext_disp_esd_check_unlock();
 
-/*	DISPDBG("external_display_setbacklight done\n"); */
+	DISPDBG("external_display_setbacklight done\n");
 	return ret;
 }
 #endif
