@@ -3523,7 +3523,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
 	if (uargs)
 		mod->args = strndup_user(uargs, ~0UL >> 1);
 	else
-		mod->args = "";
+		mod->args = kstrdup("", GFP_KERNEL);
 	if (IS_ERR(mod->args)) {
 		err = PTR_ERR(mod->args);
 		goto free_arch_cleanup;
