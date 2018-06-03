@@ -27,7 +27,8 @@
 #define IPI_ID_PPM          8
 #define IPI_ID_THERMAL      9
 #define IPI_ID_UPOWER       10
-#define IPI_ID_TOTAL        11
+#define IPI_ID_CM           11
+#define IPI_ID_TOTAL        12
 
 #define IPI_OPT_REDEF_MASK      0x1
 #define IPI_OPT_LOCK_MASK       0x2

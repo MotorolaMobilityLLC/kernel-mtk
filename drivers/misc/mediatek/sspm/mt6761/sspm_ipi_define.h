@@ -42,6 +42,8 @@ struct _pin_send send_pintable[] = {
 	 0, 1, 0, 0, 0, 0},
 	{{{0} }, {0}, 1, PINS_OFFSET_UPOWER,  PINS_SIZE_UPOWER,
 	 0, 1, 1, 1, 0, 0},
+	{{{0} }, {0}, 1, PINS_OFFSET_CM,  PINS_SIZE_CM,
+	 0, 1, 1, 1, 0, 0},
  /*====================================================================*/
 };
 #define TOTAL_SEND_PIN      (sizeof(send_pintable)/sizeof(struct _pin_send))
@@ -59,7 +61,7 @@ struct _pin_recv recv_pintable[] = {
 /* info for all mbox: start, end, used_slot, mode, unused */
 struct _mbox_info mbox_table[IPI_MBOX_TOTAL] = {
 	{0, 4, PINS_MBOX0_USED, 2, 0},  /* mbox 0 for send */
-	{5, 10, PINS_MBOX1_USED, 2, 0},  /* mbox 1 for send */
+	{5, 11, PINS_MBOX1_USED, 2, 0},  /* mbox 1 for send */
 	{0, 3, PINR_MBOX2_USED, 1, 0},  /* mbox 2 for recv */
 	{0, 0, 0, 0, 0}, /* mbox 3 */
 };
@@ -76,6 +78,7 @@ static char *pin_name[IPI_ID_TOTAL] = {
 	"PPM",
 	"Thermal",
 	"UPower",
+	"CM_MGR",
 };
 
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT

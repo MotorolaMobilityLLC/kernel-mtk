@@ -44,6 +44,7 @@
 #define PINS_SIZE_PPM            7
 #define PINS_SIZE_THERMAL        4
 #define PINS_SIZE_UPOWER         4
+#define PINS_SIZE_CM             2
 /* ============================================================ */
 
 /* definition of slot offset for PINs */
@@ -64,7 +65,8 @@
 #define PINS_OFFSET_PPM          (PINS_OFFSET_PMIC + PINS_SIZE_PMIC)
 #define PINS_OFFSET_THERMAL      (PINS_OFFSET_PPM + PINS_SIZE_PPM)
 #define PINS_OFFSET_UPOWER       (PINS_OFFSET_THERMAL + PINS_SIZE_THERMAL)
-#define PINS_MBOX1_USED          (PINS_OFFSET_UPOWER + PINS_SIZE_UPOWER)
+#define PINS_OFFSET_CM           (PINS_OFFSET_UPOWER + PINS_SIZE_UPOWER)
+#define PINS_MBOX1_USED          (PINS_OFFSET_CM + PINS_SIZE_CM)
 #if (PINS_MBOX1_USED > IPI_MBOX1_SLOTS)
 #error "MBOX1 cannot hold all pin definitions"
 #endif
