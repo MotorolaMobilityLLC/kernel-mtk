@@ -1,8 +1,43 @@
 /*
- * Hardware Compressed RAM block device
- * Copyright (C) 2015 Google Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
- * Sonny Rao <sonnyrao@chromium.org>
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ *  Modifications from MediaTek Inc.:
+ *  1. Provide a vendor directory and callback for private initialization.
+ *  2. Change vendor ids for Google and MTK.
+ *  3. Compression fifo needs to be cleared to 0 before use.
+ *  4. Change the register base for decompression.
+ *  5. Handle HWZRAM_ABORT case.
+ *  6. Set decompression command compress buffer to 0 to stand for no buffer.
+ *  7. Update refill_cached_bufs.
+ *  8. Add GFP_NOIO to avoid deadlock with reclaim path.
+ *  9. Use polling in decompression flow for quick response.
+ *
+ * It is based on Hardware Compressed RAM block device (see below)
+ *
+ *  Hardware Compressed RAM offload driver
+ *
+ *  Copyright (C) 2015 The Chromium OS Authors
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  Sonny Rao <sonnyrao@chromium.org>
  *
  */
 
@@ -33,7 +68,6 @@
 #include <asm/page.h>
 #include <asm/system_misc.h>
 #include "hwzram_impl.h"
-
 
 /* global ID number for zram devices */
 static DEFINE_IDA(hwzram_ida);
@@ -142,13 +176,48 @@ void hwzram_impl_free_buffers(struct hwzram_impl *hwz, phys_addr_t *bufs)
 		cache = hwz->allocator.size_allocator[index];
 
 		pr_devel("%s: freeing encoded %pa size %u addr %pa cache %p\n",
-				__func__, &bufs[i], size, &addr, cache);
+			__func__, &bufs[i], size, &addr, cache);
 
 		kmem_cache_free(cache, phys_to_virt(addr));
 		atomic64_dec(&hwz->allocator.size_count[index]);
 	}
 }
 EXPORT_SYMBOL(hwzram_impl_free_buffers);
+
+static void hwzram_impl_free_fifos(struct hwzram_impl *hwz, phys_addr_t *bufs)
+{
+	int i;
+	phys_addr_t addr;
+	uint16_t size;
+	int index;
+	struct kmem_cache *cache;
+
+	for (i = 0; i < HWZRAM_MAX_BUFFERS_USED; i++) {
+		addr = bufs[i];
+		if (!addr)
+			continue;
+		size = ENCODED_ADDR_TO_SIZE(addr);
+		addr = ENCODED_ADDR_TO_PHYS(addr);
+		WARN_ON(!size);
+		index = ffs(size) - 1 - ZRAM_MIN_SIZE_SHIFT;
+		cache = hwz->allocator.size_allocator[index];
+
+		pr_devel("%s: freeing encoded %pa size %u addr %pa cache %p\n",
+			__func__, &bufs[i], size, &addr, cache);
+
+		/* convert to phys */
+		if (hwzram_non_coherent(hwz)) {
+			dma_addr_t daddr = addr;
+
+			addr = dma_to_phys(hwz->dev, daddr);
+			dma_unmap_single(hwz->dev, daddr, size,
+					DMA_FROM_DEVICE);
+		}
+
+		kmem_cache_free(cache, phys_to_virt(addr));
+		atomic64_dec(&hwz->allocator.size_count[index]);
+	}
+}
 
 /* TODO(sonnyrao) when using non-hacky allocator need to count fragmentation */
 uint64_t hwzram_impl_get_total_used(struct hwzram_impl *hwz)
@@ -322,7 +391,7 @@ static void hwzram_impl_fifo_cleanup(struct hwzram_impl *hwz)
 		} else {
 			desc = p;
 		}
-		hwzram_impl_free_buffers(hwz,
+		hwzram_impl_free_fifos(hwz,
 					 (phys_addr_t *)desc->dst_addr);
 
 		/* clean up descriptor memory just for paranoia */
@@ -336,23 +405,6 @@ static void hwzram_impl_fifo_cleanup(struct hwzram_impl *hwz)
 }
 
 static void update_complete_index(struct hwzram_impl *hwz);
-
-static void hwzram_impl_rearm_timer(struct hwzram_impl *hwz)
-{
-	if (hwz->need_timer) {
-		pr_devel("%s: %s: timer expires 0x%lx mod to 0x%lx\n",
-			 hwz->name, __func__, hwz->timer.expires,
-			 jiffies + HWZRAM_TIMER_DELAY);
-		if (timer_pending(&hwz->timer)) {
-			pr_devel("%s %s pending\n", hwz->name, __func__);
-			mod_timer(&hwz->timer, jiffies + HWZRAM_TIMER_DELAY);
-		} else {
-			hwz->timer.expires = jiffies + HWZRAM_TIMER_DELAY;
-			add_timer(&hwz->timer);
-		}
-	}
-}
-
 static void abort_incomplete_descriptors(struct hwzram_impl *hwz)
 {
 	uint16_t new_complete_index, masked_write_index;
@@ -422,29 +474,31 @@ static void hwzram_impl_complete_decompression(struct hwzram_impl *hwz,
 
 	hwzram_impl_put_decompr_index(hwz, index);
 	cmpl->callback(cmpl);
+
+	/* disable clock */
+	if (hwz->hwctrl)
+		hwz->hwctrl(DECOMP_DISABLE);
 }
 
 static void hwzram_impl_timer_fn(unsigned long data)
 {
 	struct hwzram_impl *hwz = (void *)data;
-	u64 compr, decompr, error;
 	unsigned long flags;
+	u64 compr, decompr, error;
 	int i;
 
-	compr   = hwzram_read_register(hwz, ZRAM_INTRP_STS_CMP);
-	decompr = hwzram_read_register(hwz, ZRAM_INTRP_STS_DCMP);
-	error   = hwzram_read_register(hwz, ZRAM_INTRP_STS_ERROR);
-
-	pr_devel("%s: (%s) error 0x%llx compr 0x%llx decompr 0x%llx\n",
-		 hwz->name, __func__, (unsigned long long)error,
-		 (unsigned long long)compr, (unsigned long long)decompr);
-
-	/* !!! if error handle errors */
-	if (error) {
-		pr_err("%s: error interrupt was active\n", hwz->name);
-		hwzram_impl_dump_regs(hwz);
-		return;
+	/* enable clock */
+	if (hwz->hwctrl) {
+		hwz->hwctrl(COMP_ENABLE);
+		hwz->hwctrl(DECOMP_ENABLE);
 	}
+
+	compr = hwzram_read_register(hwz, ZRAM_INTRP_STS_CMP);
+	decompr = hwzram_read_register(hwz, ZRAM_INTRP_STS_DCMP);
+	error = hwzram_read_register(hwz, ZRAM_INTRP_STS_ERROR);
+
+	if (compr)
+		hwzram_write_register(hwz, ZRAM_INTRP_STS_CMP, compr);
 
 	if (decompr) {
 		hwzram_write_register(hwz, ZRAM_INTRP_STS_DCMP,
@@ -453,34 +507,32 @@ static void hwzram_impl_timer_fn(unsigned long data)
 			if (decompr & (1 << i))
 				hwzram_impl_complete_decompression(hwz, i);
 		}
-		/* !!! handle late interrupts ? */
+	}
+
+	spin_lock_irqsave(&hwz->fifo_lock, flags);
+
+	/* if error occurs */
+	if (error) {
+		hwzram_write_register(hwz, ZRAM_INTRP_STS_ERROR, error);
+		error = hwzram_read_register(hwz, ZRAM_ERR_COND);
+		pr_err("%s: error condition interrupt non-zero 0x%llx\n",
+				hwz->name, (u64)error);
+		hwzram_impl_dump_regs(hwz);
+		abort_incomplete_descriptors(hwz);
+		goto exit;
 	}
 
 	if (compr)
-		hwzram_write_register(hwz, ZRAM_INTRP_STS_CMP, compr);
-
-	spin_lock_irqsave(&hwz->fifo_lock, flags);
-	error = hwzram_read_register(hwz, ZRAM_ERR_COND);
-	if (error) {
-		pr_err("%s: error condition interrupt non-zero 0x%llx\n",
-		       hwz->name, (u64)error);
-		hwzram_impl_dump_regs(hwz);
-		abort_incomplete_descriptors(hwz);
-		spin_unlock_irqrestore(&hwz->fifo_lock, flags);
-		return;
-	}
-
-	/* need a loop since we can race with interrupt clearing */
-	do {
-		/* clear interrupt first, then process */
-		hwzram_write_register(hwz, ZRAM_INTRP_STS_CMP, compr);
 		update_complete_index(hwz);
-	} while ((compr = hwzram_read_register(hwz, ZRAM_INTRP_STS_CMP)));
 
-	if ((hwz->need_timer) && (hwz->write_index != hwz->complete_index))
-		hwzram_impl_rearm_timer(hwz);
-
+exit:
 	spin_unlock_irqrestore(&hwz->fifo_lock, flags);
+
+	/* disable clock */
+	if (hwz->hwctrl) {
+		hwz->hwctrl(COMP_DISABLE);
+		hwz->hwctrl(DECOMP_DISABLE);
+	}
 }
 
 static irqreturn_t hwzram_impl_irq(int irq, void *data)
@@ -617,7 +669,8 @@ EXPORT_SYMBOL(hwzram_return_impl);
 /* initialize hardware zram block */
 struct hwzram_impl *hwzram_impl_init(struct device *dev, uint16_t fifo_size,
 				     phys_addr_t regs, int irq,
-				     hwzram_platform_initcall platform_init)
+				     hwzram_platform_initcall platform_init,
+				     hwzram_clock_control hwctrl)
 {
 	struct hwzram_impl *hwz;
 	int ret, i;
@@ -652,8 +705,8 @@ struct hwzram_impl *hwzram_impl_init(struct device *dev, uint16_t fifo_size,
 		hwzram_read_register(hwz, ZRAM_DECOMP_OFFSET + ZRAM_HWFEATURES2);
 
 	pr_devel("%s: hwid(%llu) hwfeatures(%llu) hwfeatures2(%llu) (decomp)hwfeatures2(%llu)\n",
-			__func__, hwid, hwfeatures, hwfeatures2,
-			decomp_hwfeatures2);
+			__func__, hwid, hwfeatures, hwfeatures2, decomp_hwfeatures2);
+
 
 	if (ZRAM_FEATURES2_FIFOS(hwfeatures2) < 1) {
 		pr_err("unexpected zram device with 0 fifos\n");
@@ -685,6 +738,22 @@ struct hwzram_impl *hwzram_impl_init(struct device *dev, uint16_t fifo_size,
 	else
 		hwz->descriptor_size = sizeof(struct compr_desc_0);
 	desc_size = hwz->descriptor_size;
+
+	/* Set HW related controls */
+	if (hwctrl != NULL)
+		hwz->hwctrl = hwctrl;
+
+	/* Enable clock */
+	if (hwz->hwctrl) {
+		hwz->hwctrl(COMP_ENABLE);
+		hwz->hwctrl(DECOMP_ENABLE);
+	}
+
+	/* Run platform proprietary init function */
+	if (platform_init != NULL)
+		platform_init(hwz, ZRAM_HWID_VENDOR(hwid), ZRAM_HWID_DEVICE(hwid));
+	else
+		hwzram_platform_init(hwz, ZRAM_HWID_VENDOR(hwid), ZRAM_HWID_DEVICE(hwid));
 
 	/* Check descriptor fifo */
 	if (hwz->fifo_fixed) {
@@ -849,12 +918,6 @@ struct hwzram_impl *hwzram_impl_init(struct device *dev, uint16_t fifo_size,
 	/* Reset the block */
 	hwzram_reset(hwz);
 
-	/* Run platform proprietary init function */
-	if (platform_init != NULL)
-		platform_init(hwz, ZRAM_HWID_VENDOR(hwid), ZRAM_HWID_DEVICE(hwid));
-	else
-		hwzram_platform_init(hwz, ZRAM_HWID_VENDOR(hwid), ZRAM_HWID_DEVICE(hwid));
-
 	/* Set up the fifo and enable */
 	hwzram_compr_fifo_init(hwz);
 
@@ -863,6 +926,12 @@ struct hwzram_impl *hwzram_impl_init(struct device *dev, uint16_t fifo_size,
 	hwzram_write_register(hwz, ZRAM_INTRP_MASK_CMP, 0ULL);
 	hwzram_write_register(hwz, ZRAM_DECOMP_OFFSET + ZRAM_INTRP_MASK_ERROR, 0ULL);
 	hwzram_write_register(hwz, ZRAM_INTRP_MASK_DCMP, 0ULL);
+
+	/* Disable clock */
+	if (hwz->hwctrl) {
+		hwz->hwctrl(COMP_DISABLE);
+		hwz->hwctrl(DECOMP_DISABLE);
+	}
 
 	return hwz;
 
@@ -979,7 +1048,7 @@ static void *update_buf_for_incompressible(struct hwzram_impl *hwz, gfp_t gfp_fl
 		return hwzram_alloc_size_noncoherent(hwz, PAGE_SIZE, gfp_flags);
 
 	/* fill bufs */
-	if (to_fill)
+	if (to_fill && bufs[index] == 0)
 		bufs[index] = hwzram_alloc_size_noncoherent(hwz, PAGE_SIZE, gfp_flags);
 
 	return NULL;
@@ -987,7 +1056,7 @@ static void *update_buf_for_incompressible(struct hwzram_impl *hwz, gfp_t gfp_fl
 
 static void refill_cached_bufs(struct hwzram_impl *hwz, phys_addr_t *bufs)
 {
-#define FILL_BUFS_GFP_FLAGS	(GFP_NOIO | __GFP_FS | __GFP_ZERO)
+#define FILL_BUFS_GFP_FLAGS	(GFP_NOIO | __GFP_ZERO)
 	int i, enlarge;
 	uint16_t size;
 	phys_addr_t addr;
@@ -1067,28 +1136,17 @@ static int setup_desc_1(struct hwzram_impl *hwz, dma_addr_t src,
 			struct compr_desc_1 *desc, phys_addr_t *bufs)
 {
 	int i, empty_dest_bufs = 0;
+	u32 value = 0;
 
 	pr_devel("%s: %s: desc = %p src = %pad\n",
 		 hwz->name, __func__, desc, &src);
 
-	if (hwz->fifo_fixed) {
-		uint32_t value = 0;
+	/* avoid incomplete assignment issue (ex. strb) */
+	value = (src >> UNCOMPRESSED_BLOCK_SIZE_LOG2) |
+		(HWZRAM_PEND << COMPR_DESC_1_STATUS_SHIFT) |
+		(1 << COMPR_DESC_1_INTR_SHIFT);	/* always interrupt */
 
-		/* avoid incomplete assignment issue (ex. strb) */
-		value = (src >> UNCOMPRESSED_BLOCK_SIZE_LOG2) |
-			(HWZRAM_PEND << COMPR_DESC_1_STATUS_SHIFT)|
-			(1 << COMPR_DESC_1_INTR_SHIFT);	/* always interrupt */
-
-		desc->u2.value = value;
-	} else {
-		desc->u2.src_addr = src >> UNCOMPRESSED_BLOCK_SIZE_LOG2;
-
-		/* for now always interrupt */
-		desc->u2.status.interrupt_request = 1;
-
-		/* mark it as pend for hardware */
-		desc->u2.status.status = HWZRAM_PEND;
-	}
+	desc->u2.value = value;
 
 	for (i = 0; i < ZRAM_NUM_OF_FREE_BLOCKS; i++) {
 		if (!desc->dst_addr[i]) {
@@ -1096,40 +1154,9 @@ static int setup_desc_1(struct hwzram_impl *hwz, dma_addr_t src,
 				desc->dst_addr[i] = bufs[i] >>
 					(ZRAM_MIN_SIZE_SHIFT - 1);
 				bufs[i] = 0;
-			} else
+			} else {
 				empty_dest_bufs++;
-
-		}
-	}
-
-	if (empty_dest_bufs == ZRAM_NUM_OF_FREE_BLOCKS)
-		return -ENOMEM;
-
-	return 0;
-}
-
-static int setup_desc_0(struct hwzram_impl *hwz, dma_addr_t src,
-			struct compr_desc_0 *desc, phys_addr_t *bufs)
-{
-	int i, empty_dest_bufs = 0;
-
-	pr_devel("%s: %s: desc = %p src = %pad\n",
-		 hwz->name, __func__, desc, &src);
-
-	desc->u1.src_addr = src;
-	desc->u1.s1.intr_request = 1;
-
-	/* mark it as pend for hardware */
-	desc->u1.s1.status = HWZRAM_PEND;
-
-	/* !!! hack for now, 128 to 4096 */
-	for (i = 0; i < ZRAM_NUM_OF_FREE_BLOCKS; i++) {
-		if (!desc->dst_addr[i]) {
-			if (bufs[i]) {
-				desc->dst_addr[i] = bufs[i];
-				bufs[i] = 0;
-			} else
-				empty_dest_bufs++;
+			}
 		}
 	}
 
@@ -1148,25 +1175,10 @@ static int process_completed_descriptor(struct hwzram_impl *hwz,
 	struct compr_desc_0 tmp;
 	phys_addr_t paddr;
 
-	if (!hwz->fifo_fixed &&
-	    (hwz->need_cache_invalidate || hwzram_force_non_coherent)) {
-		dma_addr_t daddr = hwz->fifo_dma_addr +
-			(fifo_index *  hwz->descriptor_size);
-		dma_sync_single_for_cpu(hwz->dev,
-					daddr,
-					hwz->descriptor_size,
-					DMA_FROM_DEVICE);
-	}
-
 	/* we handle type 1 descriptors by converting to type 0 first */
-	if (hwz->descriptor_type) {
-		desc1 = hwz->fifo + (fifo_index * hwz->descriptor_size);
-		convert_desc1(&tmp, desc1, cmpl->src_copy);
-		desc = &tmp;
-	} else {
-		desc = hwz->fifo +
-			(fifo_index * hwz->descriptor_size);
-	}
+	desc1 = hwz->fifo + (fifo_index * hwz->descriptor_size);
+	convert_desc1(&tmp, desc1, cmpl->src_copy);
+	desc = &tmp;
 
 	pr_devel("%s: desc 0x%x status 0x%x len %u src %pap\n", hwz->name,
 		 fifo_index, desc->u1.s1.status, desc->compr_len,
@@ -1332,6 +1344,11 @@ exit:
 	desc->u1.s1.status = HWZRAM_IDLE;
 	if (desc1)
 		desc1->u2.status.status = HWZRAM_IDLE;
+
+	/* disable clock: the completion of one compression request */
+	if (hwz->hwctrl)
+		hwz->hwctrl(COMP_DISABLE);
+
 	return 0;
 }
 
@@ -1383,6 +1400,30 @@ static bool fifo_full(struct hwzram_impl *hwz, uint16_t new_write_index)
 	return false;
 }
 
+void hwzram_impl_suspend(struct hwzram_impl *hwz)
+{
+	/* Clean fifo */
+	hwzram_impl_fifo_cleanup(hwz);
+
+	/* Reset index */
+	hwz->write_index = hwz->complete_index = 0;
+}
+
+void hwzram_impl_resume(struct hwzram_impl *hwz)
+{
+	/* Reset the block */
+	hwzram_reset(hwz);
+
+	/* Set up the fifo and enable */
+	hwzram_compr_fifo_init(hwz);
+
+	/* Enable all the interrupts */
+	hwzram_write_register(hwz, ZRAM_INTRP_MASK_ERROR, 0ULL);
+	hwzram_write_register(hwz, ZRAM_INTRP_MASK_CMP, 0ULL);
+	hwzram_write_register(hwz, ZRAM_DECOMP_OFFSET + ZRAM_INTRP_MASK_ERROR, 0ULL);
+	hwzram_write_register(hwz, ZRAM_INTRP_MASK_DCMP, 0ULL);
+}
+
 int hwzram_impl_compress_page(struct hwzram_impl *hwz, struct page *page,
 	struct hwzram_impl_completion *completion)
 {
@@ -1396,8 +1437,13 @@ int hwzram_impl_compress_page(struct hwzram_impl *hwz, struct page *page,
 	pr_devel("[%s] %s: starting desc 0x%x for page at 0x%llx\n",
 		 current->comm, hwz->name, hwz->write_index,
 		 (u64)page_to_phys(page));
+
 	mutex_lock(&hwz->cached_bufs_lock);
 	refill_cached_bufs(hwz, hwz->cached_bufs);
+
+	/* enable clock */
+	if (hwz->hwctrl)
+		hwz->hwctrl(COMP_ENABLE);
 
 	spin_lock_irqsave(&hwz->fifo_lock, flags);
 
@@ -1428,11 +1474,7 @@ int hwzram_impl_compress_page(struct hwzram_impl *hwz, struct page *page,
 	}
 	completion->src_copy = dma_src;
 
-	if (!hwz->descriptor_type)
-		ret = setup_desc_0(hwz, dma_src, p, hwz->cached_bufs);
-	else
-		ret = setup_desc_1(hwz, dma_src, p, hwz->cached_bufs);
-
+	ret = setup_desc_1(hwz, dma_src, p, hwz->cached_bufs);
 	if (ret) {
 		spin_unlock_irqrestore(&hwz->fifo_lock, flags);
 		mutex_unlock(&hwz->cached_bufs_lock);
@@ -1442,19 +1484,6 @@ int hwzram_impl_compress_page(struct hwzram_impl *hwz, struct page *page,
 		return -ENOMEM;
 	}
 
-	if (!hwz->fifo_fixed &&
-	    (hwz->need_cache_flush || hwzram_force_non_coherent)) {
-		/*
-		 * TODO(sonnyrao) handle > 4k fifo and only flush what is
-		 * required
-		 */
-		dma_sync_single_for_device(hwz->dev,
-					   hwz->fifo_dma_addr,
-					   UNCOMPRESSED_BLOCK_SIZE,
-					   DMA_TO_DEVICE);
-		flush_dcache_page(page);
-	}
-
 	/* write barrier to force writes to be visible everywhere */
 	wmb();
 	hwzram_write_register(hwz, ZRAM_CDESC_WRIDX, new_write_index);
@@ -1462,8 +1491,6 @@ int hwzram_impl_compress_page(struct hwzram_impl *hwz, struct page *page,
 	pr_devel("%s: desc 0x%x submitted\n", hwz->name, hwz->write_index);
 	hwz->write_index = new_write_index;
 	hwz->stats.compr_total_commands++;
-
-	hwzram_impl_rearm_timer(hwz);
 
 	spin_unlock_irqrestore(&hwz->fifo_lock, flags);
 	mutex_unlock(&hwz->cached_bufs_lock);
@@ -1480,6 +1507,7 @@ static int hwzram_impl_get_decompr_index(struct hwzram_impl *hwz,
 	for (i = 0; i < hwz->decompr_cmd_count; i++) {
 		if (!atomic_cmpxchg(&hwz->decompr_cmd_used[i], 0, 1)) {
 			hwz->decompr_completions[i] = cmpl;
+			/* memory barrier */
 			smp_wmb();
 			return i;
 		}
@@ -1491,161 +1519,10 @@ static int hwzram_impl_get_decompr_index(struct hwzram_impl *hwz,
 static void hwzram_impl_put_decompr_index(struct hwzram_impl *hwz, int index)
 {
 	hwz->decompr_completions[index] = NULL;
+	/* memory barrier */
 	smp_wmb();
 	atomic_set(&hwz->decompr_cmd_used[index], 0);
 }
-
-int hwzram_impl_decompress_page_atomic(struct hwzram_impl *hwz,
-				       struct page *page,
-				       struct hwzram_impl_completion *cmpl)
-{
-	unsigned int status, index, i, ret = 0;
-	uint64_t csize_data, dest_data;
-	unsigned long timeout = jiffies + 100; /* !!! make this a parameter */
-	dma_addr_t daddr = 0;
-	phys_addr_t dma_bufs[HWZRAM_MAX_BUFFERS_USED];
-	phys_addr_t page_phys = page_to_phys(page);
-	uint16_t compr_size = cmpl->compr_size;
-	phys_addr_t *bufs = cmpl->buffers;
-
-	preempt_disable();
-
-	/* make a static mapping of cpu to decompression command set */
-	index = smp_processor_id() % hwz->decompr_cmd_count;
-
-	/*
-	 * if that set is unavailable, bail out since this is supposed to be
-	 * atomic
-	 */
-
-	if (atomic_cmpxchg(&hwz->decompr_cmd_used[index], 0, 1)) {
-		pr_info("%s: unable to get lock on dcmd index %d\n",
-			__func__, index);
-		preempt_enable();
-		return -EBUSY;
-	}
-	hwz->decompr_completions[index] = cmpl;
-	smp_wmb();
-
-	pr_devel("%s: cpu %u cmd set [%u] size 0x%x dest %pa\n",
-		 __func__, smp_processor_id(), index, compr_size, &page_phys);
-
-	memcpy(dma_bufs, bufs, sizeof(phys_addr_t) * HWZRAM_MAX_BUFFERS_USED);
-
-	csize_data = compr_size << ZRAM_DCMD_CSIZE_SIZE_SHIFT;
-	dest_data = page_to_phys(page);
-
-	if (hwzram_non_coherent(hwz)) {
-		daddr = dest_data = dma_map_page(hwz->dev, page, 0,
-						 UNCOMPRESSED_BLOCK_SIZE,
-						 DMA_FROM_DEVICE);
-		if (dma_mapping_error(hwz->dev, daddr)) {
-			pr_err("%s: error mapping page 0x%llx for decompression\n",
-			       hwz->name, dest_data);
-			preempt_enable();
-			return -ENOMEM;
-		}
-	}
-
-	dest_data |= ((uint64_t)HWZRAM_DCMD_PEND) << ZRAM_DCMD_DEST_STATUS_SHIFT;
-
-	/* spin_lock_irqsave(&hwz->decompr_locks[index], flags); */
-
-	hwzram_write_register(hwz, ZRAM_DCMD_CSIZE(index), csize_data);
-
-	for (i = 0; i < HWZRAM_MAX_BUFFERS_USED; i++) {
-		unsigned int size = ENCODED_ADDR_TO_SIZE(dma_bufs[i]);
-		uint64_t encoded_size = ffs(size) - ZRAM_MIN_SIZE_SHIFT;
-		uint64_t addr = ENCODED_ADDR_TO_PHYS(dma_bufs[i]);
-		uint64_t data;
-
-		/* Set to 0 for representing "no buffer" */
-		if (!dma_bufs[i]) {
-			hwzram_write_register(hwz, ZRAM_DCMD_BUF0(index) + (0x8 * i), 0);
-			continue;
-		}
-
-		if (hwzram_non_coherent(hwz)) {
-			void *dest = phys_to_virt(addr);
-
-			addr = dma_map_single(hwz->dev, dest, size,
-					      DMA_TO_DEVICE);
-			if (dma_mapping_error(hwz->dev, addr)) {
-				pr_err("%s: error mapping buffer 0x%llx for decompression\n",
-				       hwz->name, addr);
-				ret = -ENOMEM;
-				goto out_dma_unmap;
-			}
-			dma_bufs[i] = PHYS_ADDR_TO_ENCODED(addr, size);
-			pr_devel("%s: [%u] dest %p dma_bufs[%u] = %pad (%u)\n",
-				hwz->name, index, dest, i, &dma_bufs[i],
-				size);
-		}
-		data = addr | encoded_size << ZRAM_DCMD_BUF_SIZE_SHIFT;
-		pr_devel("%s [%u] buf %u data = 0x%llx\n", hwz->name, index, i,
-			 data);
-		hwzram_write_register(hwz, ZRAM_DCMD_BUF0(index) + (0x8 * i),
-				      data);
-	}
-	hwzram_write_register(hwz, ZRAM_DCMD_DEST(index), dest_data);
-
-	do {
-		cpu_relax();
-		if (time_after(jiffies, timeout)) {
-			pr_err("%s: timeout waiting for dcmd %u\n",
-			       __func__, index);
-			ret = -1;
-			break;
-		}
-
-		dest_data = hwzram_read_register(hwz, ZRAM_DCMD_DEST(index));
-		status = ZRAM_DCMD_DEST_STATUS(dest_data);
-	} while (status == HWZRAM_DCMD_PEND);
-
-	cmpl->decompr_status = status;
-	pr_devel("%s: [%u] status = %u\n",
-		 hwz->name, index, status);
-
-	if (status != HWZRAM_DCMD_DECOMPRESSED) {
-		pr_err("%s: bad status 0x%x\n", hwz->name, status);
-		ret = -1;
-		hwzram_impl_dump_regs(hwz);
-	}
-
-	if (!ret &&
-	    (hwz->need_cache_invalidate || hwzram_force_non_coherent)) {
-		dma_sync_single_range_for_cpu(hwz->dev,
-					      daddr, 0,
-					      UNCOMPRESSED_BLOCK_SIZE,
-					      DMA_FROM_DEVICE);
-	}
-
-out_dma_unmap:
-	/* spin_unlock_irqrestore(&hwz->decompr_locks[index], flags); */
-	hwzram_impl_put_decompr_index(hwz, index);
-	preempt_enable();
-
-	if (hwzram_non_coherent(hwz)) {
-		for (i = 0; i < HWZRAM_MAX_BUFFERS_USED; i++) {
-			if (!dma_bufs[i])
-				continue;
-
-			dma_unmap_single(hwz->dev,
-					 ENCODED_ADDR_TO_PHYS(dma_bufs[i]),
-					 ENCODED_ADDR_TO_SIZE(dma_bufs[i]),
-					 DMA_TO_DEVICE);
-		}
-	}
-
-	if (daddr) {
-		dma_unmap_page(hwz->dev, daddr, UNCOMPRESSED_BLOCK_SIZE,
-			DMA_FROM_DEVICE);
-	}
-
-	atomic64_inc(&hwz->stats.total_decompr_commands);
-	return ret;
-}
-EXPORT_SYMBOL(hwzram_impl_decompress_page_atomic);
 
 int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 				struct page *page,
@@ -1658,15 +1535,11 @@ int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 	phys_addr_t page_phys = page_to_phys(page);
 	uint16_t compr_size = cmpl->compr_size;
 
-	/* if we have a lot of command sets, try to do it atomically */
-	if (hwz->decompr_cmd_count >= num_present_cpus()) {
-		ret = hwzram_impl_decompress_page_atomic(hwz, page, cmpl);
-		if (ret != -EBUSY) {
-			cmpl->callback(cmpl);
-			return ret;
-		}
-		/* If got -EBUSY, then fallback to non-atomic operation */
-	}
+	/* enable clock */
+	if (hwz->hwctrl)
+		hwz->hwctrl(DECOMP_ENABLE);
+
+	preempt_disable();
 
 	/* loop until we got a valid index */
 	do {
@@ -1679,9 +1552,6 @@ int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 
 	pr_devel("%s: cmd set [%u] size 0x%x dest %pa\n",
 		 __func__, index, compr_size, &page_phys);
-
-	memcpy(cmpl->dma_bufs, cmpl->buffers,
-	       sizeof(phys_addr_t) * HWZRAM_MAX_BUFFERS_USED);
 
 	csize_data = compr_size << ZRAM_DCMD_CSIZE_SIZE_SHIFT;
 	dest_data = page_to_phys(page);
@@ -1742,7 +1612,7 @@ int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 	}
 
 	hwzram_write_register(hwz, ZRAM_DCMD_DEST(index), dest_data);
-	hwzram_impl_rearm_timer(hwz);
+	preempt_enable();
 
 	return 0;
 
@@ -1765,9 +1635,13 @@ out_dma_unmap:
 	}
 
 out_no_dest:
-
 	hwzram_impl_put_decompr_index(hwz, index);
 	cmpl->callback(cmpl);
+	preempt_enable();
+
+	/* disable clock */
+	if (hwz->hwctrl)
+		hwz->hwctrl(DECOMP_DISABLE);
 
 	return ret;
 }
@@ -1811,31 +1685,51 @@ int hwzram_impl_copy_buf(struct hwzram_impl *hwz, struct page *page,
 		return -ENOMEM;
 	}
 
-	for (i = 0; i < HWZRAM_MAX_BUFFERS_USED; i++) {
-		if (!bufs[i])
-			continue;
+	if (!hwzram_force_no_copy_enable) {
+		for (i = 0; i < HWZRAM_MAX_BUFFERS_USED; i++) {
+			if (!bufs[i])
+				continue;
 
-		paddr = ENCODED_ADDR_TO_PHYS(bufs[i]);
-		size = ENCODED_ADDR_TO_SIZE(bufs[i]);
-		offset = paddr & (PAGE_SIZE - 1);
+			paddr = ENCODED_ADDR_TO_PHYS(bufs[i]);
+			size = ENCODED_ADDR_TO_SIZE(bufs[i]);
+			offset = paddr & (PAGE_SIZE - 1);
 
-		if (hwz->need_cache_invalidate || hwzram_force_non_coherent) {
-			if (hwzram_cache_invl_buf(hwz, paddr, size)) {
-				pr_err("%s: unable to invalidate %pap (%u)\n",
-				       hwz->name, &paddr, size);
-				ret = -ENOMEM;
-				goto out;
+			if (hwz->need_cache_invalidate || hwzram_force_non_coherent) {
+				if (hwzram_cache_invl_buf(hwz, paddr, size)) {
+					pr_err("%s: unable to invalidate %pap (%u)\n",
+					       hwz->name, &paddr, size);
+					ret = -ENOMEM;
+					goto out;
+				}
 			}
+
+			src_map = kmap_atomic(pfn_to_page(paddr >> PAGE_SHIFT));
+			if (!src_map) {
+				pr_err("%s: kmap_atomic() failed for src\n", __func__);
+				kunmap_atomic(dest_map);
+				return -ENOMEM;
+			}
+
+			memcpy(dest_map + copied_size, src_map + offset, size);
+			copied_size += size;
+			kunmap_atomic(src_map);
+		}
+	} else {
+		if (!bufs[0]) {
+			ret = -ENOMEM;
+			goto out;
 		}
 
+		paddr = ENCODED_ADDR_TO_PHYS(bufs[0]);
+		size = ENCODED_ADDR_TO_SIZE(bufs[0]);
 		src_map = kmap_atomic(pfn_to_page(paddr >> PAGE_SHIFT));
 		if (!src_map) {
 			pr_err("%s: kmap_atomic() failed for src\n", __func__);
-			kunmap_atomic(dest_map);
-			return -ENOMEM;
+			ret = -ENOMEM;
+			goto out;
 		}
 
-		memcpy(dest_map + copied_size, src_map + offset, size);
+		memcpy(dest_map + copied_size, src_map, size);
 		copied_size += size;
 		kunmap_atomic(src_map);
 	}
@@ -1859,5 +1753,6 @@ module_param(hwzram_force_timer, bool, 0644);
 module_param(hwzram_force_no_copy_enable, bool, 0644);
 
 MODULE_AUTHOR("Sonny Rao");
+MODULE_AUTHOR("Mediatek");
 MODULE_DESCRIPTION("Google Hardware Memory compression accelerator");
 MODULE_LICENSE("GPL");

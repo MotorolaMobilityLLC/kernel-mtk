@@ -126,4 +126,11 @@ struct zram {
 /* mlog */
 unsigned long zram_mlog(void);
 
+#ifdef CONFIG_HWZRAM_DRV
+extern unsigned long hwzram_mem_used_total(void);
+#ifdef CONFIG_PROC_FS
+extern void hwzraminfo_proc_show(struct seq_file *m, void *v);
+#endif
+#endif
+
 #endif

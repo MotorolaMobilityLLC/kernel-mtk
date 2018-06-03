@@ -28,18 +28,30 @@ config ZRAM_LZ4_COMPRESS
 config HWZRAM_IMPL
        bool "Hardware version of ZRAM"
        default n
-
-config HWZRAM_IMPL_TEST
-       bool "Tests for hardware version of ZRAM"
-       default n
+       help
+        This is a hardware implementation layer for hwzram block device driver,
+        which is used to control hardware operations of specific HW modules.
+        This is used to replace ZRAM with faster HW compression/decompression
+        or better compression ratio.
+        If there is corresponding hardware module, please enable it.
 
 config HWZRAM_DRV
        bool "Block device on top of hardware version of ZRAM"
        default n
+       help
+        Block device on top of hardware version of ZRAM.
+        Before enabling HWZRAM_IMPL, you should enable this option.
+        This imitates the implementation of ZRAM but with the hook of HW
+        implementation in HWZRAM_IMPL.
 
 config HWZRAM_DEBUG
        bool "Debug message for hardware version of ZRAM"
        default n
+       help
+        Debug option for hwzram driver.
+        This is an option for development. You can enable it to
+        get more information about HW compression/decompression
+        flow and try to enhance it.
 
 if HWZRAM_IMPL
 

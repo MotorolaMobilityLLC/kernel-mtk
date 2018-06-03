@@ -1,6 +1,9 @@
-config HWZRAM_UFOZIP
-	bool "Enable Mediatek UFOZIP for HWZRAM Impl"
-	depends on HWZRAM_IMPL
-	default n
-	help
-	  Mediatek UFOZIP for HWZRAM implementation.
+config MTK_UFOZIP
+       bool "MediaTek Hardware Compression Engine"
+       default n
+       help
+        This is an implementation for MediaTek proprietary
+	hardware compression engine. It can provide better
+	compression ratio or power saving. Anyone wants to
+	use it needs to implement upper SW layer to control
+	compression/decompression operations.
