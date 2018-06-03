@@ -798,7 +798,8 @@
 
 	dvfsrc_top@10012000 {
 		compatible = "mediatek,dvfsrc_top";
-		reg = <0 0x10012000 0 0x1000>;
+		reg = <0 0x10012000 0 0x1000>,
+		      <0 0x0011bb80 0 0x80>;
 	};
 
 	apcldmain_ao@10014000 {
