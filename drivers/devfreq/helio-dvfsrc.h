@@ -20,6 +20,8 @@
 
 #if defined(CONFIG_MACH_MT6765)
 #include <helio-dvfsrc-mt6765.h>
+#elif defined(CONFIG_MACH_MT6761)
+#include <helio-dvfsrc-mt6761.h>
 #else
 #include <helio-dvfsrc-mt67xx.h>
 #endif
@@ -36,6 +38,7 @@ struct helio_dvfsrc {
 
 	bool qos_enabled;
 	bool dvfsrc_enabled;
+	int dvfsrc_flag;
 
 	void __iomem		*regs;
 	void __iomem		*sram_regs;
@@ -108,6 +111,8 @@ extern int get_vcore_dvfs_level(void);
 extern void mtk_spmfw_init(int dvfsrc_en, int skip_check);
 extern struct reg_config *dvfsrc_get_init_conf(void);
 extern void helio_dvfsrc_enable(int dvfsrc_en);
+extern void helio_dvfsrc_flag_set(int flag);
+extern int helio_dvfsrc_flag_get(void);
 extern char *dvfsrc_dump_reg(char *ptr);
 extern u32 dvfsrc_read(u32 offset);
 extern void dvfsrc_write(u32 offset, u32 val);

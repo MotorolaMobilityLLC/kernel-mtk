@@ -41,6 +41,12 @@ static DEFINE_MUTEX(sw_req1_mutex);
 #define DVFSRC_REG(offset) (dvfsrc->regs + offset)
 #define DVFSRC_SRAM_REG(offset) (dvfsrc->sram_regs + offset)
 
+int __weak dram_steps_freq(unsigned int step)
+{
+	pr_info("get dram steps_freq fail\n");
+	return -1;
+}
+
 u32 dvfsrc_read(u32 offset)
 {
 	return readl(DVFSRC_REG(offset));
@@ -273,7 +279,20 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 #endif
 
 	dvfsrc_restore();
+	if (dvfsrc_en)
+		dvfsrc_en |= (dvfsrc->dvfsrc_flag << 1);
+
 	mtk_spmfw_init(dvfsrc_en, 1);
+}
+
+void helio_dvfsrc_flag_set(int flag)
+{
+	dvfsrc->dvfsrc_flag = flag;
+}
+
+int helio_dvfsrc_flag_get(void)
+{
+	return	dvfsrc->dvfsrc_flag;
 }
 
 void dvfsrc_opp_table_init(void)
