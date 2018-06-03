@@ -365,6 +365,7 @@
 #define MUSB_QMUBASE	(0x800)
 #define MUSB_QISAR	(0xc00)
 #define MUSB_QIMR	(0xc04)
+#define MUSB_GPZCR (0xc34)
 #endif
 
 static inline void musb_write_txfifosz(void __iomem *mbase, u8 c_size)
