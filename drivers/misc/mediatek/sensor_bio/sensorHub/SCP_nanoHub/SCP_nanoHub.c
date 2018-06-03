@@ -291,8 +291,9 @@ int scp_sensorHub_req_send(SCP_SENSOR_HUB_DATA_P data, uint *len, unsigned int w
 {
 	int ret = 0;
 
-	SCP_ERR("sensorType = %d, action = %d\n", data->req.sensorType,
-		data->req.action);
+	/* SCP_ERR("sensorType = %d, action = %d\n", data->req.sensorType,
+	 *	data->req.action);
+	 */
 
 	if (*len > SENSOR_DATA_SIZE) {
 		SCP_ERR("!!\n");
