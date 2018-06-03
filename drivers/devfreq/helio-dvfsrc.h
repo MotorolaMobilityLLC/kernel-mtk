@@ -72,16 +72,13 @@ struct helio_dvfsrc {
 
 #define wait_for_completion(condition, timeout)			\
 ({								\
-	int i = 0;						\
+	int ret = 0;						\
 	while (!(condition)) {					\
-		if (i >= (timeout)) {				\
-			i = -EBUSY;				\
-			break;					\
-		}						\
+		if (ret++ >= timeout)				\
+			ret = -EBUSY;				\
 		udelay(1);					\
-		i++;						\
 	}							\
-	i;							\
+	ret;							\
 })
 
 enum {
@@ -93,15 +90,24 @@ enum {
 	QOS_TOTAL_AVE
 };
 
-extern int helio_dvfsrc_add_interface(struct device *dev);
-extern void helio_dvfsrc_remove_interface(struct device *dev);
-extern void vcore_volt_init(void);
-
+extern int is_dvfsrc_enabled(void);
 extern int dvfsrc_get_bw(int type);
 extern int get_vcore_dvfs_level(void);
 extern void mtk_spmfw_init(void);
 extern struct reg_config *dvfsrc_get_init_conf(void);
-extern void helio_dvfsrc_enable(int enable);
+extern void helio_dvfsrc_enable(int dvfsrc_en);
+extern char *dvfsrc_dump_reg(char *ptr);
+extern void dvfsrc_write(u32 offset, u32 val);
+extern u32 dvfsrc_read(u32 offset);
+extern void dvfsrc_rmw(u32 offset, u32 val, u32 mask, u32 shift);
+
+extern int helio_dvfsrc_add_interface(struct device *dev);
+extern void helio_dvfsrc_remove_interface(struct device *dev);
+extern void vcore_volt_init(void);
+extern void helio_dvfsrc_sspm_ipi_init(int dvfsrc_en);
+extern void get_opp_info(char *p);
+extern void get_dvfsrc_reg(char *p);
+extern void get_spm_reg(char *p);
 
 #endif /* __HELIO_DVFSRC_H */
 

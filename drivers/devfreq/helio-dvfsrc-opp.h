@@ -26,13 +26,19 @@ struct opp_profile {
 };
 
 extern int get_cur_vcore_dvfs_opp(void);
+extern void set_opp_table(int vcore_dvfs_opp, int vcore_uv, int ddr_khz);
+
+extern int get_vcore_opp(int opp);
 extern int get_vcore_uv(int opp);
 extern int get_cur_vcore_opp(void);
 extern int get_cur_vcore_uv(void);
+extern void set_vcore_opp(int vcore_dvfs_opp, int vcore_opp);
 
+extern int get_ddr_opp(int opp);
 extern int get_ddr_khz(int opp);
 extern int get_cur_ddr_opp(void);
 extern int get_cur_ddr_khz(void);
+extern void set_ddr_opp(int vcore_dvfs_opp, int ddr_opp);
 
 #endif /* __HELIO_DVFSRC_OPP_H */
 
