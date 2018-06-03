@@ -1240,7 +1240,7 @@ static int sensor_send_timestamp_to_hub(void)
 
 	__pm_stay_awake(&obj->ws);
 	err = sensor_send_timestamp_wake_locked();
-	__pm_stay_awake(&obj->ws);
+	__pm_relax(&obj->ws);
 	return err;
 }
 
