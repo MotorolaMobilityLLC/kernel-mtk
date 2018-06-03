@@ -455,6 +455,14 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 		IONMSG("%s len cannot be zero.\n", __func__);
 		return ERR_PTR(-EINVAL);
 	}
+
+    /* add by k.zhang for sgtable_init KE bug */
+	if ((len > 1024 * 1024 * 1024)) {
+		IONMSG("%s error: size (%zu) is more than 1G !!\n",
+		       __func__, len);
+		return ERR_PTR(-EINVAL);
+	}
+	/*avoid camelcase, will modify in a letter*/
 	mmprofile_log_ex(ion_mmp_events[PROFILE_ALLOC], MMPROFILE_FLAG_START,
 			 (unsigned long)client, len);
 	start = sched_clock();
@@ -882,19 +890,22 @@ void ion_client_destroy(struct ion_client *client)
 	struct rb_node *n;
 
 	pr_debug("%s: %d\n", __func__, __LINE__);
-	mutex_lock(&debugfs_mutex);
 	while ((n = rb_first(&client->handles))) {
 		struct ion_handle *handle = rb_entry(n, struct ion_handle,
 						     node);
-		IONMSG("warn destroy: hdl=%p, buf=%p, ref=%d, sz=%zu, kmp=%d\n",
-		       handle, handle->buffer,
+
+		mutex_lock(&client->lock);
+		IONMSG("%s:hdl=%p,buf=%p,sz=%zu,ref=%d,kmp=%d\n",
+		       __func__, handle, handle->buffer,
+		       handle->buffer->size,
 		       atomic_read(&handle->buffer->ref.refcount),
-		       handle->buffer->size,  handle->buffer->kmap_cnt);
-		IONMSG("client %s, disp %s, dbg %s\n",
-		       client->name ? client->name : NULL,
+		       handle->buffer->kmap_cnt);
+		IONMSG("%s:client=%s,disp=%s,dbg=%s\n",
+		       __func__, client->name ? client->name : NULL,
 		       client->display_name ? client->display_name : NULL,
 		       client->dbg_name ? client->dbg_name : NULL);
 		ion_handle_destroy(&handle->ref);
+		mutex_unlock(&client->lock);
 	}
 
 	idr_destroy(&client->idr);
@@ -909,7 +920,6 @@ void ion_client_destroy(struct ion_client *client)
 	kfree(client->display_name);
 	kfree(client->name);
 	kfree(client);
-	mutex_unlock(&debugfs_mutex);
 }
 EXPORT_SYMBOL(ion_client_destroy);
 
