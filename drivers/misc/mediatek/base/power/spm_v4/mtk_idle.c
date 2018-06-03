@@ -202,6 +202,7 @@ static unsigned long    soidle3_block_cnt[NR_REASONS] = {0};
 static bool             soidle3_by_pass_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
+static bool             soidle3_by_pass_disp_pwm;
 static u32              sodi3_flags = SODI_FLAG_REDUCE_LOG;
 static int              sodi3_by_uptime_count;
 
@@ -499,9 +500,11 @@ static bool soidle3_can_enter(int cpu, int reason)
 		}
 	}
 
-	if (!mtk_idle_disp_is_pwm_rosc()) {
-		reason = BY_PWM;
-		goto out;
+	if (soidle3_by_pass_disp_pwm == 0) {
+		if (!mtk_idle_disp_is_pwm_rosc()) {
+			reason = BY_PWM;
+			goto out;
+		}
 	}
 
 	if (soidle3_by_pass_pll == 0) {
@@ -793,6 +796,7 @@ static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_DIS_ATF_ABORT |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
+	/* SPM_FLAG_DIS_VPROC_VSRAM_DVS | */
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 #endif
@@ -806,6 +810,7 @@ static u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_DIS_ATF_ABORT |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
+	/* SPM_FLAG_DIS_VPROC_VSRAM_DVS | */
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 #endif
@@ -820,6 +825,7 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_DIS_ATF_ABORT |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
+	/* SPM_FLAG_DIS_VPROC_VSRAM_DVS | */
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 #endif
@@ -1613,6 +1619,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	mt_idle_log("soidle3_bypass_pll=%u\n", soidle3_by_pass_pll);
 	mt_idle_log("soidle3_bypass_cg=%u\n", soidle3_by_pass_cg);
 	mt_idle_log("soidle3_bypass_en=%u\n", soidle3_by_pass_en);
+	mt_idle_log("soidle3_by_pass_disp_pwm=%u\n", soidle3_by_pass_disp_pwm);
 	mt_idle_log("sodi3_flags=0x%x\n", sodi3_flags);
 
 	mt_idle_log("\n*********** soidle3 command help  ************\n");
@@ -1662,6 +1669,9 @@ static ssize_t soidle3_state_write(struct file *filp,
 		} else if (!strcmp(cmd, "bypass_en")) {
 			soidle3_by_pass_en = param;
 			idle_dbg("bypass_en = %d\n", soidle3_by_pass_en);
+		} else if (!strcmp(cmd, "bypass_pwm")) {
+			soidle3_by_pass_disp_pwm = param;
+			idle_dbg("bypass_pwm = %d\n", soidle3_by_pass_disp_pwm);
 		} else if (!strcmp(cmd, "sodi3_flags")) {
 			sodi3_flags = param;
 			idle_dbg("sodi3_flags = 0x%x\n", sodi3_flags);
