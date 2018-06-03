@@ -897,7 +897,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	}
 
 	if (!cap_min) {
-		ct = allocated_group[idx];
+		ct = allocated_group[group_idx];
 		if (ct) {
 			rcu_read_lock();
 			ct->capacity_min = 0;
