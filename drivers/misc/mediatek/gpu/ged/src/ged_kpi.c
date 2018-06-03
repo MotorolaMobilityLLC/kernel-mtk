@@ -279,11 +279,11 @@ static void ged_kpi_check_fallback_main_head_reset(void)
 static inline void ged_kpi_check_if_fallback_is_needed(int boost_value, int t_cpu_latest)
 {
 	if (if_fallback_to_ft == 0) {
-		if (boost_value > 70 && t_cpu_latest < 19000000)
+		if (boost_value > 30 && t_cpu_latest < 19000000)
 			num_fallback_vote++;
 		recorded_fallback_vote++;
 		if (recorded_fallback_vote == GED_KPI_FALLBACK_VOTE_NUM) {
-			if (num_fallback_vote * 100 / recorded_fallback_vote > 80)
+			if (num_fallback_vote * 100 / recorded_fallback_vote > 85)
 				if_fallback_to_ft = 1;
 			else
 				ged_kpi_check_fallback_main_head_reset();
@@ -326,6 +326,8 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE; i++) {
 					if (fps_records[i] <= 25)
 						fps_grp[i] = 24;
+					else if (fps_records[i] <= 28)
+						fps_grp[i] = 27;
 					else if (fps_records[i] <= 31)
 						fps_grp[i] = 30;
 					else if (fps_records[i] <= 45)
@@ -354,6 +356,8 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 			} else {
 				if (fps <= 25)
 					fps = 24;
+				else if (fps <= 28)
+					fps = 27;
 				else if (fps <= 31)
 					fps = 30;
 				else if (fps <= 45)
@@ -374,6 +378,8 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE; i++) {
 					if (fps_records[i] <= 25)
 						fps_grp[i] = 24;
+					else if (fps_records[i] <= 28)
+						fps_grp[i] = 27;
 					else if (fps_records[i] <= 31)
 						fps_grp[i] = 30;
 					else if (fps_records[i] <= 45)
@@ -602,6 +608,7 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 	long long t_cpu_rem_cur = 0;
 	int is_gpu_bound;
 	int temp_boost_accum_cpu;
+	static int num_over_boost, num_monitored;
 
 	if (psHead == main_head) {
 		boost_linear_cpu = 0;
@@ -697,6 +704,18 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 #endif
 
 		ged_kpi_check_if_fallback_is_needed(boost_accum_cpu, psKPI->t_cpu_latest);
+
+		if (t_cpu_cur < (int)psHead->t_cpu_target + 2000000 && boost_accum_cpu > 30)
+			num_over_boost++;
+		num_monitored++;
+
+		if (num_monitored == GED_KPI_FALLBACK_VOTE_NUM) {
+			if (num_over_boost * 100 / num_monitored > 85)
+				boost_accum_cpu = 0;
+			num_over_boost = 0;
+			num_monitored = 0;
+		}
+
 #ifdef GED_KPI_MET_DEBUG
 		met_tag_oneshot(0, "ged_pframeb_boost_accum_cpu", boost_accum_cpu);
 
@@ -1232,7 +1251,6 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 						psTimeStamp->i32FrameID,
 						ulID);
 				}
-				target_fps_4_main_head = 60;
 #endif
 			}
 		}
@@ -1503,13 +1521,9 @@ void ged_kpi_get_latest_perf_state(long long *t_cpu_remained,
 #ifdef MTK_GED_KPI
 	if (t_cpu_remained != NULL && main_head != NULL && !(main_head->t_cpu_remained < (-1)*SCREEN_IDLE_PERIOD))
 		*t_cpu_remained = main_head->t_cpu_remained;
-	else
-		*t_cpu_remained = 0;
 
 	if (t_gpu_remained != NULL && main_head != NULL && !(main_head->t_gpu_remained < (-1)*SCREEN_IDLE_PERIOD))
 		*t_gpu_remained = main_head->t_gpu_remained;
-	else
-		*t_gpu_remained = 0;
 
 	if (t_cpu_target != NULL && main_head != NULL)
 		*t_cpu_target = main_head->t_cpu_target;
