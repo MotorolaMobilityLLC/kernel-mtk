@@ -2733,11 +2733,12 @@ static int mtkfb_remove(struct device *dev)
 /* PM suspend */
 static int mtkfb_suspend(struct device *pdev, pm_message_t mesg)
 {
+	DISPFUNC();
 	NOT_REFERENCED(pdev);
 	MSG_FUNC_ENTER();
 	MTKFB_LOG("[FB Driver] mtkfb_suspend(): 0x%x\n", mesg.event);
-	ovl2mem_wait_done();
-
+	/* memory session suspend */
+	ovl2mem_suspend();
 	MSG_FUNC_LEAVE();
 	return 0;
 }
@@ -2821,9 +2822,12 @@ static void mtkfb_early_suspend(void)
 /* PM resume */
 static int mtkfb_resume(struct device *pdev)
 {
+	DISPFUNC();
 	NOT_REFERENCED(pdev);
 	MSG_FUNC_ENTER();
 	MTKFB_LOG("[FB Driver] mtkfb_resume()\n");
+	/* memory session resume */
+	ovl2mem_resume();
 	MSG_FUNC_LEAVE();
 	return 0;
 }

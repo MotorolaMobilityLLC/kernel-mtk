@@ -481,7 +481,7 @@ static struct early_suspend extd_early_suspend_handler = {
 };
 #endif
 
-#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT != 2)
+#if defined(CONFIG_MTK_HDMI_SUPPORT)
 static int fb_notifier_callback(struct notifier_block *p,
 				unsigned long event, void *data)
 {
@@ -519,13 +519,13 @@ static int fb_notifier_callback(struct notifier_block *p,
 }
 #endif
 
-#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT != 2)
+#if defined(CONFIG_MTK_HDMI_SUPPORT)
 static struct notifier_block notifier;
 #endif
 static int __init mtk_extd_mgr_init(void)
 {
 	int i = 0;
-#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT != 2)
+#if defined(CONFIG_MTK_HDMI_SUPPORT)
 	int ret = 0;
 #endif
 
@@ -548,7 +548,7 @@ static int __init mtk_extd_mgr_init(void)
 		return -1;
 	}
 
-#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT != 2)
+#if defined(CONFIG_MTK_HDMI_SUPPORT)
 	notifier.notifier_call = fb_notifier_callback;
 	ret = fb_register_client(&notifier);
 	if (ret)

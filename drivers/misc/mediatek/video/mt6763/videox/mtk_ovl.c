@@ -47,18 +47,18 @@
 #include "mtk_ovl.h"
 
 #include "mtkfb_fence.h"
-#include <linux/wakelock.h>
 
 #include <linux/atomic.h>
 
 #include "extd_platform.h"
 
 
-struct wake_lock mem_wk_lock;
 static int is_context_inited;
 static int ovl2mem_layer_num;
 static int ovl2mem_use_m4u = 1;
 static int ovl2mem_use_cmdq = CMDQ_ENABLE;
+
+static unsigned int ovl2mem_is_suspended;
 
 struct ovl2mem_path_context {
 	int state;
@@ -73,7 +73,6 @@ struct ovl2mem_path_context {
 	char *mutex_locker;
 	cmdqBackupSlotHandle ovl2mem_cur_config_fence;
 	cmdqBackupSlotHandle ovl2mem_subtractor_when_free;
-	cmdqBackupSlotHandle ovl2mem_output_config_fence;
 };
 
 atomic_t g_trigger_ticket = ATOMIC_INIT(1);
@@ -81,14 +80,16 @@ atomic_t g_release_ticket = ATOMIC_INIT(1);
 
 #define pgcl	_get_context_l()
 
+#define MEMORY_SESSION_ID 0x30002
+
 static struct ovl2mem_path_context *_get_context_l(void)
 {
 	static struct ovl2mem_path_context g_context;
 
 	if (!is_context_inited) {
 		memset((void *)&g_context, 0, sizeof(struct ovl2mem_path_context));
+		mutex_init(&(g_context.lock));
 		is_context_inited = 1;
-		wake_lock_init(&mem_wk_lock, WAKE_LOCK_SUSPEND, "mem_disp_wakelock");
 	}
 
 	return &g_context;
@@ -253,24 +254,26 @@ static int ovl2mem_callback(unsigned int userdata)
 	}
 
 	layid = disp_sync_get_output_timeline_id();
-	cmdqBackupReadSlot(pgcl->ovl2mem_output_config_fence, 0, &fence_idx);
-	if (pgcl->dpmgr_handle != NULL) {
-		struct disp_ddp_path_config *data_config =
-			dpmgr_path_get_last_config(pgcl->dpmgr_handle);
-		if (data_config) {
-			struct WDMA_CONFIG_STRUCT wdma_layer;
+	fence_idx = mtkfb_query_idx_by_ticket(pgcl->session, layid, userdata);
+	if (fence_idx >= 0) {
+		if (pgcl->dpmgr_handle != NULL) {
+			struct disp_ddp_path_config *data_config =
+				dpmgr_path_get_last_config(pgcl->dpmgr_handle);
+			if (data_config) {
+				struct WDMA_CONFIG_STRUCT wdma_layer;
 
-			wdma_layer.idx = 0;
-			wdma_layer.dstAddress = mtkfb_query_buf_mva(pgcl->session, layid, fence_idx);
-			wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
-			wdma_layer.srcWidth = data_config->wdma_config.srcWidth;
-			wdma_layer.srcHeight = data_config->wdma_config.srcHeight;
-			wdma_layer.dstPitch = data_config->wdma_config.dstPitch;
+				wdma_layer.idx = 0;
+				wdma_layer.dstAddress = mtkfb_query_buf_mva(pgcl->session, layid, fence_idx);
+				wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
+				wdma_layer.srcWidth = data_config->wdma_config.srcWidth;
+				wdma_layer.srcHeight = data_config->wdma_config.srcHeight;
+				wdma_layer.dstPitch = data_config->wdma_config.dstPitch;
 
-			dprec_mmp_dump_wdma_layer(&wdma_layer, 1);
+				dprec_mmp_dump_wdma_layer(&wdma_layer, 1);
+			}
 		}
+		mtkfb_release_fence(pgcl->session, layid, fence_idx);
 	}
-	mtkfb_release_fence(pgcl->session, layid, fence_idx);
 
 	/* Update ticket */
 	atomic_set(&g_release_ticket, userdata);
@@ -328,7 +331,6 @@ int ovl2mem_init(unsigned int session)
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x01, 0);
 
 	dpmgr_init();
-	mutex_init(&(pgcl->lock));
 
 	_ovl2mem_path_lock(__func__);
 
@@ -340,7 +342,6 @@ int ovl2mem_init(unsigned int session)
 	if (pgcl->state == 0) {
 		init_cmdq_slots(&(pgcl->ovl2mem_cur_config_fence), MEMORY_SESSION_INPUT_LAYER_COUNT, 0);
 		init_cmdq_slots(&(pgcl->ovl2mem_subtractor_when_free), MEMORY_SESSION_INPUT_LAYER_COUNT, 0);
-		init_cmdq_slots(&(pgcl->ovl2mem_output_config_fence), 1, 0);
 	}
 
 	/* Register memory session cmdq dump callback */
@@ -418,7 +419,6 @@ int ovl2mem_init(unsigned int session)
 	pgcl->session = session;
 	atomic_set(&g_trigger_ticket, 1);
 	atomic_set(&g_release_ticket, 0);
-	wake_lock(&mem_wk_lock);
 
 Exit:
 	_ovl2mem_path_unlock(__func__);
@@ -553,6 +553,10 @@ static int ovl2mem_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 						  (unsigned int)(cfg->output_cfg.buff_idx));
 	}
 
+	/* Update output buffer ticket */
+	mtkfb_update_buf_ticket(session_id, disp_sync_get_output_timeline_id(),
+					cfg->output_cfg.buff_idx, get_ovl2mem_ticket());
+
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
 	data_config = dpmgr_path_get_last_config(pgcl->dpmgr_handle);
 	data_config->dst_dirty = 1;
@@ -589,9 +593,6 @@ static int ovl2mem_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 
 	ret = dpmgr_path_config(pgcl->dpmgr_handle, data_config, pgcl->cmdq_handle_config);
 
-	cmdqRecBackupUpdateSlot(pgcl->cmdq_handle_config, pgcl->ovl2mem_output_config_fence,
-				0, cfg->output_cfg.buff_idx);
-
 	pgcl->need_trigger_path = 1;
 	DISPINFO("ovl2mem_output_config done\n");
 
@@ -605,6 +606,14 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 	struct disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
 	struct dprec_logger_event *input_event, *output_event, *trigger_event;
 
+	_ovl2mem_path_lock(__func__);
+
+	if (pgcl->state == 0) {
+		DISPERR("ovl2mem is already slept\n");
+		_ovl2mem_path_unlock(__func__);
+		return 0;
+	}
+
 	session_id = cfg->session_id;
 
 	if (session_info) {
@@ -613,14 +622,6 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 		trigger_event = &session_info->event_trigger;
 	} else {
 		input_event = output_event = trigger_event = NULL;
-	}
-
-	_ovl2mem_path_lock(__func__);
-
-	if (pgcl->state == 0) {
-		DISPERR("ovl2mem is already slept\n");
-		_ovl2mem_path_unlock(__func__);
-		return 0;
 	}
 
 	/* set input */
@@ -728,10 +729,9 @@ int ovl2mem_deinit(void)
 	/* release output layer all fence */
 	mtkfb_release_layer_fence(pgcl->session, disp_sync_get_output_timeline_id());
 
-	if (pgc->state == 1) {
+	if (pgcl->state == 1) {
 		deinit_cmdq_slots(pgcl->ovl2mem_cur_config_fence);
 		deinit_cmdq_slots(pgcl->ovl2mem_subtractor_when_free);
-		deinit_cmdq_slots(pgcl->ovl2mem_output_config_fence);
 	}
 
 	/* Unregister memory session cmdq dump callback */
@@ -743,7 +743,7 @@ int ovl2mem_deinit(void)
 	pgcl->need_trigger_path = 0;
 	atomic_set(&g_trigger_ticket, 1);
 	atomic_set(&g_release_ticket, 0);
-	wake_unlock(&mem_wk_lock);
+	ret = 0;
 
 Exit:
 	_ovl2mem_path_unlock(__func__);
@@ -751,5 +751,27 @@ Exit:
 
 	DISPMSG("ovl2mem_deinit done\n");
 	return ret;
+}
+
+void ovl2mem_suspend(void)
+{
+	DISPFUNC();
+	if (ovl2mem_deinit() == 0) {
+		ovl2mem_is_suspended = 1;
+		DISPMSG("ovl2mem_suspend done\n");
+	} else
+		DISPMSG("ovl2mem no need suspend\n");
+}
+
+void ovl2mem_resume(void)
+{
+	DISPFUNC();
+	/* resume memory session when memory session is already suspended */
+	if (ovl2mem_is_suspended == 1) {
+		ovl2mem_init(MEMORY_SESSION_ID);
+		ovl2mem_is_suspended = 0;
+		DISPMSG("ovl2mem_resume done\n");
+	} else
+		DISPMSG("ovl2mem no need resume\n");
 }
 
