@@ -28,9 +28,6 @@ typedef bool(*CmdqIsDispScenario) (const enum CMDQ_SCENARIO_ENUM scenario);
 /* should enable prefetch */
 typedef bool(*CmdqShouldEnablePrefetch) (const enum CMDQ_SCENARIO_ENUM scenario);
 
-/* should profile */
-typedef bool(*CmdqShouldProfile) (const enum CMDQ_SCENARIO_ENUM scenario);
-
 /* display thread index from scenario */
 typedef int (*CmdqDispThread) (enum CMDQ_SCENARIO_ENUM scenario);
 
@@ -105,7 +102,6 @@ struct cmdqCoreFuncStruct {
 	CmdqIsSecureThread isSecureThread;
 	CmdqIsDispScenario isDispScenario;
 	CmdqShouldEnablePrefetch shouldEnablePrefetch;
-	CmdqShouldProfile shouldProfile;
 	CmdqDispThread dispThread;
 	CmdqGetThreadID getThreadID;
 	CmdqPriority priority;

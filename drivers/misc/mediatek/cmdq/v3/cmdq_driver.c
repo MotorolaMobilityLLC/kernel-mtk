@@ -68,9 +68,7 @@ static ssize_t cmdq_driver_dummy_write(struct device *dev,
 	return -EACCES;
 }
 
-static DEVICE_ATTR(status, S_IRUSR | S_IWUSR, cmdqCorePrintStatus, cmdq_driver_dummy_write);
 static DEVICE_ATTR(error, S_IRUSR | S_IWUSR, cmdqCorePrintError, cmdq_driver_dummy_write);
-static DEVICE_ATTR(record, S_IRUSR | S_IWUSR, cmdqCorePrintRecord, cmdq_driver_dummy_write);
 static DEVICE_ATTR(log_level, S_IRUSR | S_IWUSR, cmdqCorePrintLogLevel, cmdqCoreWriteLogLevel);
 static DEVICE_ATTR(profile_enable, S_IRUSR | S_IWUSR, cmdqCorePrintProfileEnable,
 		   cmdqCoreWriteProfileEnable);
@@ -81,11 +79,6 @@ static int cmdq_proc_status_open(struct inode *inode, struct file *file)
 	return single_open(file, cmdqCorePrintStatusSeq, inode->i_private);
 }
 
-static int cmdq_proc_error_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, cmdqCorePrintErrorSeq, inode->i_private);
-}
-
 static int cmdq_proc_record_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, cmdqCorePrintRecordSeq, inode->i_private);
@@ -94,14 +87,6 @@ static int cmdq_proc_record_open(struct inode *inode, struct file *file)
 static const struct file_operations cmdqDebugStatusOp = {
 	.owner = THIS_MODULE,
 	.open = cmdq_proc_status_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-static const struct file_operations cmdqDebugErrorOp = {
-	.owner = THIS_MODULE,
-	.open = cmdq_proc_error_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
@@ -908,7 +893,6 @@ static int cmdq_create_debug_entries(void)
 		struct proc_dir_entry *entry = NULL;
 
 		entry = proc_create("status", 0440, debugDirEntry, &cmdqDebugStatusOp);
-		entry = proc_create("error", 0440, debugDirEntry, &cmdqDebugErrorOp);
 		entry = proc_create("record", 0440, debugDirEntry, &cmdqDebugRecordOp);
 #ifdef CMDQ_INSTRUCTION_COUNT
 		entry =
@@ -988,9 +972,7 @@ static int cmdq_probe(struct platform_device *pDevice)
 	cmdq_create_debug_entries();
 
 	/* device attributes for debugging */
-	device_create_file(&pDevice->dev, &dev_attr_status);
 	device_create_file(&pDevice->dev, &dev_attr_error);
-	device_create_file(&pDevice->dev, &dev_attr_record);
 	device_create_file(&pDevice->dev, &dev_attr_log_level);
 	device_create_file(&pDevice->dev, &dev_attr_profile_enable);
 #ifdef CMDQ_INSTRUCTION_COUNT
@@ -1007,9 +989,7 @@ static int cmdq_remove(struct platform_device *pDevice)
 {
 	disable_irq(cmdq_dev_get_irq_id());
 
-	device_remove_file(&pDevice->dev, &dev_attr_status);
 	device_remove_file(&pDevice->dev, &dev_attr_error);
-	device_remove_file(&pDevice->dev, &dev_attr_record);
 	device_remove_file(&pDevice->dev, &dev_attr_log_level);
 	device_remove_file(&pDevice->dev, &dev_attr_profile_enable);
 #ifdef CMDQ_INSTRUCTION_COUNT

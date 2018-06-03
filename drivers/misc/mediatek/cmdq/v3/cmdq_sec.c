@@ -814,9 +814,9 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 	struct cmdqSecContextStruct *handle = NULL;
 	int32_t status = 0;
 	int32_t duration = 0;
-	char longMsg[CMDQ_LONGSTRING_MAX];
-	uint32_t msgOffset;
-	int32_t msgMAXSize;
+	char long_msg[CMDQ_LONGSTRING_MAX];
+	u32 msg_offset;
+	s32 msg_max_size;
 	char *dispatch_mod = "CMDQ";
 
 	CMDQ_TIME tEntrySec;
@@ -870,56 +870,45 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 	if (status == -ETIMEDOUT) {
 		/* t-base strange issue, mc_wait_notification false timeout when secure world has done */
 		/* because retry may failed, give up retry method */
-		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
+		cmdq_long_string_init(true, long_msg, &msg_offset, &msg_max_size);
+		cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 				   "[SEC]<--SEC_SUBMIT: err[%d][mc_wait_notification timeout], pTask[0x%p], THR[%d],",
 				   status, pTask, thread);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
+		cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 				   " tgid[%d:%d], config_duration_ms[%d], cmdId[%d]\n",
 				   tgid, pid, duration, iwcCommand);
 
-		if (msgOffset > 0) {
-			/* print message */
-			if (throwAEE) {
-				/* In timeout case, error come from TEE API, dispatch to AEE directly. */
-				CMDQ_AEE("TEE", "%s", longMsg);
-			}
-			cmdq_core_turnon_first_dump(pTask);
-			cmdq_core_dump_secure_task_status();
-			CMDQ_ERR("%s", longMsg);
-		}
+		if (throwAEE)
+			CMDQ_AEE("TEE", "%s", long_msg);
+
+		cmdq_core_turnon_first_dump(pTask);
+		cmdq_core_dump_secure_task_status();
+		CMDQ_ERR("%s", long_msg);
 	} else if (status < 0) {
-		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
+		cmdq_long_string_init(true, long_msg, &msg_offset, &msg_max_size);
+		cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 				   "[SEC]<--SEC_SUBMIT: err[%d], pTask[0x%p], THR[%d], tgid[%d:%d],",
 				   status, pTask, thread, tgid, pid);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
+		cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 				   " config_duration_ms[%d], cmdId[%d]\n", duration, iwcCommand);
 
-		if (msgOffset > 0) {
-			/* print message */
-			if (throwAEE) {
-				/* print message */
-				CMDQ_AEE(dispatch_mod, "%s", longMsg);
-			}
-			cmdq_core_turnon_first_dump(pTask);
-			CMDQ_ERR("%s", longMsg);
-		}
+		if (throwAEE)
+			CMDQ_AEE(dispatch_mod, "%s", long_msg);
+
+		cmdq_core_turnon_first_dump(pTask);
+		CMDQ_ERR("%s", long_msg);
 
 		/* dump metadata first */
 		if (pTask)
 			cmdq_core_dump_secure_metadata(&(pTask->secData));
 	} else {
-		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
+		cmdq_long_string_init(false, long_msg, &msg_offset, &msg_max_size);
+		cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 				   "[SEC]<--SEC_SUBMIT: err[%d], pTask[0x%p], THR[%d], tgid[%d:%d],",
 				   status, pTask, thread, tgid, pid);
-		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
+		cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 				   " config_duration_ms[%d], cmdId[%d]\n", duration, iwcCommand);
-		if (msgOffset > 0) {
-			/* print message */
-			CMDQ_MSG("%s", longMsg);
-		}
+		CMDQ_MSG("%s", long_msg);
 	}
 	return status;
 }

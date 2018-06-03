@@ -28,11 +28,8 @@
 #define CMDQ_SPECIAL_SUBSYS_ADDR (99)
 
 #define CMDQ_GPR_SUPPORT
-#define CMDQ_PROFILE_MARKER_SUPPORT
 
-#ifdef CMDQ_PROFILE_MARKER_SUPPORT
-#define CMDQ_MAX_PROFILE_MARKER_IN_TASK	(5)
-#endif
+#define CMDQ_MAX_PROFILE_MARKER_IN_TASK (5)
 
 #define CMDQ_INVALID_THREAD		(-1)
 
@@ -55,7 +52,11 @@
 #define CMDQ_MAX_ERROR_COUNT            (2)
 #define CMDQ_MAX_RETRY_COUNT            (1)
 /* ram optimization related configuration */
+#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
 #define CMDQ_MAX_RECORD_COUNT           (64)
+#else
+#define CMDQ_MAX_RECORD_COUNT           (128)
+#endif
 
 #define CMDQ_INITIAL_CMD_BLOCK_SIZE     (PAGE_SIZE)
 #define CMDQ_INST_SIZE                  (2 * sizeof(uint32_t))	/* instruction is 64-bit */
@@ -407,13 +408,11 @@ struct cmdq_v3_replace_struct {
 	cmdqU32Ptr_t position;
 };
 
-#ifdef CMDQ_PROFILE_MARKER_SUPPORT
 struct cmdqProfileMarkerStruct {
 	uint32_t count;
 	long long hSlot;	/* i.e. cmdqBackupSlotHandle, physical start address of backup slot */
 	cmdqU32Ptr_t tag[CMDQ_MAX_PROFILE_MARKER_IN_TASK];
 };
-#endif
 
 struct cmdqCommandStruct {
 	/* [IN] deprecated. will remove in the future. */
@@ -445,9 +444,7 @@ struct cmdqCommandStruct {
 	uint32_t debugRegDump;
 	/* [Reserved] This is for CMDQ driver usage itself. Not for client. Do not access this field from User Space */
 	cmdqU32Ptr_t privateData;
-#ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	struct cmdqProfileMarkerStruct profileMarker;
-#endif
 	cmdqU32Ptr_t userDebugStr;
 	uint32_t userDebugStrLen;
 };

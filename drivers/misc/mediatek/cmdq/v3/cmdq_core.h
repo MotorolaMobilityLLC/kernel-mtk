@@ -497,9 +497,6 @@ struct TaskStruct {
 	uint32_t durRelease;	/* release time duration */
 	bool dumpAllocTime;	/* flag to print static info to kernel log. */
 
-	uint32_t *profileData;	/* store GPT counter when it starts and ends */
-	dma_addr_t profileDataPA;
-
 	void *privateData;	/* this is used to track associated file handle */
 
 	pid_t callerPid;
@@ -507,9 +504,7 @@ struct TaskStruct {
 	char *userDebugStr;
 
 	/* Custom profile marker */
-#ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	struct cmdqProfileMarkerStruct profileMarker;
-#endif
 };
 
 struct EngineStruct {
@@ -543,7 +538,6 @@ struct RecordStruct {
 	int32_t thread;		/* allocated thread */
 	int32_t reorder;
 	int32_t size;
-	uint32_t writeTimeNS;	/* if profile enabled, the time of command execution */
 	uint64_t engineFlag;	/* task engine flag */
 
 	bool is_secure;		/* true for secure task */
@@ -559,15 +553,10 @@ struct RecordStruct {
 	uint32_t durReclaim;	/* allocae time duration */
 	uint32_t durRelease;	/* release time duration */
 
-	unsigned long long writeTimeNSBegin;
-	unsigned long long writeTimeNSEnd;
-
 	/* Custom profile marker */
-#ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	uint32_t profileMarkerCount;
 	unsigned long long profileMarkerTimeNS[CMDQ_MAX_PROFILE_MARKER_IN_TASK];
 	const char *profileMarkerTag[CMDQ_MAX_PROFILE_MARKER_IN_TASK];
-#endif
 
 	/* GCE instructions count information */
 #ifdef CMDQ_INSTRUCTION_COUNT
@@ -941,12 +930,9 @@ extern "C" {
 	int32_t cmdqCoreQueryUsage(int32_t *pCount);
 
 	int cmdqCorePrintRecordSeq(struct seq_file *m, void *v);
-	int cmdqCorePrintErrorSeq(struct seq_file *m, void *v);
 	int cmdqCorePrintStatusSeq(struct seq_file *m, void *v);
 
-	ssize_t cmdqCorePrintRecord(struct device *dev, struct device_attribute *attr, char *buf);
 	ssize_t cmdqCorePrintError(struct device *dev, struct device_attribute *attr, char *buf);
-	ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, char *buf);
 
 	void cmdq_core_fix_command_scenario_for_user_space(struct cmdqCommandStruct *pCommand);
 	bool cmdq_core_is_request_from_user_space(const enum CMDQ_SCENARIO_ENUM scenario);
@@ -975,8 +961,8 @@ extern "C" {
 /* created when opening the device file. */
 	void cmdq_core_release_task_by_file_node(void *file_node);
 
-	void cmdq_core_longstring_init(char *buf, uint32_t *offset, int32_t *maxSize);
-	void cmdqCoreLongString(bool forceLog, char *buf, uint32_t *offset, int32_t *maxSize,
+	void cmdq_long_string_init(bool force, char *buf, u32 *offset, s32 *max_size);
+	void cmdq_long_string(char *buf, u32 *offset, s32 *max_size,
 				const char *string, ...);
 
 	/* Command Buffer Dump */
