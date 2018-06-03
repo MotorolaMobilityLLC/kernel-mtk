@@ -15,6 +15,22 @@
 #define _MT_GPUFREQ_CORE_H_
 
 /**************************************************
+ * MT6761 : GPU DVFS OPP table Setting
+ **************************************************/
+#define GPU_DVFS_FREQ0			(660000)/* KHz */
+#define GPU_DVFS_FREQ1			(500000)/* KHz */
+#define GPU_DVFS_FREQ2			(390000)/* KHz */
+
+#define GPU_DVFS_VOLT0			(80000)	/* mV x 100 */
+#define GPU_DVFS_VOLT1			(70000)	/* mV x 100 */
+#define GPU_DVFS_VOLT2			(65000)	/* mV x 100 */
+
+#define GPU_DVFS_VSRAM0			(87500)	/* mV x 100 */
+#define GPU_DVFS_VSRAM1			(87500)	/* mV x 100 */
+#define GPU_DVFS_VSRAM2			(87500)	/* mV x 100 */
+
+
+/**************************************************
  * MT6762M segment_1 : GPU DVFS OPP table Setting
  **************************************************/
 #define SEG1_GPU_DVFS_FREQ0			(376000)/* KHz */
@@ -95,8 +111,8 @@
 #define POST_DIV_4_MIN_FREQ			(375000)
 #define POST_DIV_8_MAX_FREQ			(475000)
 #define POST_DIV_8_MIN_FREQ			(187500)
-#define POST_DIV_16_MAX_FREQ			(237500)
-#define POST_DIV_16_MIN_FREQ			(93750)
+#define POST_DIV_16_MAX_FREQ		(237500)
+#define POST_DIV_16_MIN_FREQ		(125000)
 #define POST_DIV_MASK				(0x70000000)
 #define POST_DIV_SHIFT				(24)
 #define TO_MHz_HEAD				(100)
@@ -104,8 +120,8 @@
 #define ROUNDING_VALUE				(5)
 #define DDS_SHIFT				(14)
 #define GPUPLL_FIN				(26)
-#define GPUPLL_CON0				(g_apmixed_base + 0x24C)
-#define GPUPLL_CON1				(g_apmixed_base + 0x250)
+#define GPUPLL_CON0				(g_apmixed_base + 0x218)
+#define GPUPLL_CON1				(g_apmixed_base + 0x21c)
 
 
 /**************************************************
