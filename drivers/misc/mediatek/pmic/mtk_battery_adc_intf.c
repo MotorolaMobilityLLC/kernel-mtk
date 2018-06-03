@@ -104,6 +104,26 @@ int pmic_get_ibus(void)
 	return 0;
 }
 
+int pmic_get_charging_current(void)
+{
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
+	return 0;
+#else
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6357)
+	int v_batsns = 0, v_isense = 0;
+
+	v_batsns = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
+	v_isense = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
+
+	return (v_batsns - v_isense) * 1000 / R_SENSE;
+#else
+	return 0;
+#endif
+
+#endif
+}
+
 bool __attribute__ ((weak))
 	mtk_bif_is_hw_exist(void)
 {
