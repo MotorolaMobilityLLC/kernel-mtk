@@ -40,7 +40,7 @@ extern phys_addr_t zmc_max_zone_dma_phys;
 
 /* Priority of ZONE_MOVABLE_CMA users */
 enum zmc_prio {
-	ZMC_SSVP,
+	ZMC_SSMR,
 	ZMC_CHECK_MEM_STAT,
 	ZMC_MLP = ZMC_CHECK_MEM_STAT,
 	NR_ZMC_OWNER,
@@ -71,11 +71,10 @@ extern int zmc_notifier_call_chain(unsigned long val, void *v);
 #define ZMC_EVENT_ALLOC_MOVABLE 0x01
 #endif
 
-#ifdef CONFIG_MTK_SVP
-extern phys_addr_t memory_ssvp_cma_base(void);
-extern phys_addr_t memory_ssvp_cma_size(void);
-extern struct single_cma_registration memory_ssvp_registration;
-#endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
+#ifdef CONFIG_MTK_SSMR
+extern bool memory_ssmr_inited(void);
+extern struct single_cma_registration memory_ssmr_registration;
+#endif /* end CONFIG_MTK_SSMR */
 
 #ifdef CONFIG_MTK_DCS
 #define DCS_SCREENOFF_ONLY_MODE

@@ -48,8 +48,8 @@ static struct single_cma_registration *single_cma_list[NR_ZMC_LOCATIONS][4] = {
 	},
 	/* MOVABLE, instead */
 	[ZMC_LOCATE_MOVABLE] = {
-#ifdef CONFIG_MTK_SVP
-		&memory_ssvp_registration,
+#ifdef CONFIG_MTK_SSMR
+		&memory_ssmr_registration,
 #endif
 		END_OF_REGISTER
 	},
@@ -370,7 +370,7 @@ retry:
 	if (abandon != NULL)
 		cma_release(cma, abandon, count);
 
-	if (p->prio == ZMC_SSVP &&
+	if (p->prio == ZMC_SSMR &&
 			candidate != NULL &&
 			page_to_pfn(candidate) == ABANDON_PFN) {
 		abandon = candidate;

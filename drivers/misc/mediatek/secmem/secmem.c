@@ -70,7 +70,7 @@ static u32 secmem_session_ref;
 static u32 secmem_devid = MC_DEVICE_ID_DEFAULT;
 static struct tciMessage_t *secmem_tci;
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 #define SECMEM_RECLAIM_DELAY 1000 /* ms */
 
 static u32 secmem_region_ref;
@@ -98,7 +98,7 @@ static void secmem_reclaim_handler(struct work_struct *work)
 	secmem_region_release();
 	mutex_unlock(&secmem_region_lock);
 }
-#endif /* defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP) */
+#endif /* defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR) */
 
 static int secmem_execute(u32 cmd, struct secmem_param *param)
 {
@@ -195,7 +195,7 @@ static int secmem_handle_register(struct secmem_context *ctx, u32 type, u32 id)
 			handle->id = id;
 			handle->type = type;
 			spin_unlock(&ctx->lock);
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 			mutex_lock(&secmem_region_lock);
 			secmem_region_ref++;
 			mutex_unlock(&secmem_region_lock);
@@ -291,7 +291,7 @@ static int secmem_handle_unregister(struct secmem_context *ctx, u32 id)
 
 	spin_unlock(&ctx->lock);
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	/* found a match */
 	if (i != num) {
 		mutex_lock(&secmem_region_lock);
@@ -521,7 +521,7 @@ static int secmem_release(struct inode *inode, struct file *file)
 	return ret;
 }
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 static int secmem_region_alloc(void)
 {
 	int ret;
@@ -653,7 +653,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case SECMEM_MEM_ALLOC:
 		if (!(file->f_mode & FMODE_WRITE))
 			return -EROFS;
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 		cancel_delayed_work_sync(&secmem_reclaim_work);
 		mutex_lock(&secmem_region_lock);
 		if (!secmem_region_online) {
@@ -686,7 +686,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case SECMEM_MEM_ALLOC_TBL:
 		if (!(file->f_mode & FMODE_WRITE))
 			return -EROFS;
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 		cancel_delayed_work_sync(&secmem_reclaim_work);
 		mutex_lock(&secmem_region_lock);
 		if (!secmem_region_online) {
@@ -729,7 +729,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return -ENOTTY;
 	}
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	mutex_lock(&secmem_region_lock);
 	if (secmem_region_online == 1 && secmem_region_ref == 0) {
 		pr_debug("queue secmem_reclaim_work!!\n");
@@ -749,7 +749,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	return err;
 }
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
 static int secmem_enable(u64 addr, u64 size)
 #else
@@ -839,7 +839,7 @@ static int secmem_api_alloc_internal(u32 alignment, u32 size, u32 *refcount,
 	struct secmem_param param;
 	u32 cmd = clean ? CMD_SEC_MEM_ALLOC_ZERO : CMD_SEC_MEM_ALLOC;
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	cancel_delayed_work_sync(&secmem_reclaim_work);
 	mutex_lock(&secmem_region_lock);
 	if (!secmem_region_online)
@@ -883,7 +883,7 @@ end:
 		*refcount = param.refcount;
 		*sec_handle = param.sec_handle;
 	} else {
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 		mutex_lock(&secmem_region_lock);
 		/*
 		 * Decrease region_ref when session_open() and
@@ -895,7 +895,7 @@ end:
 #endif
 	}
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	pr_debug("align=0x%x size=0x%x id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x region_online=%u region_ref=%u\n",
 		alignment, size, id, clean, ret, *refcount, *sec_handle,
 		secmem_region_online, secmem_region_ref);
@@ -950,7 +950,7 @@ int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id)
 
 end:
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	if (ret == 0) {
 		mutex_lock(&secmem_region_lock);
 		if (secmem_region_online == 1 && --secmem_region_ref == 0) {
@@ -966,7 +966,7 @@ end:
 	}
 #endif
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	pr_debug("ret=%d shndl=0x%x owner=%p id=0x%x region_online=%u region_ref=%u\n",
 		ret, sec_handle, owner, id, secmem_region_online,
 		secmem_region_ref);
@@ -999,7 +999,7 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer,
 	if (sscanf(desc, "%1s", cmd) == 1) {
 		if (!strcmp(cmd, "0")) {
 			pr_info("[SECMEM] - test for secmem_region_release()\n");
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 			mutex_lock(&secmem_region_lock);
 			secmem_region_ref--;
 			secmem_region_release();
@@ -1007,14 +1007,14 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer,
 #endif
 		} else if (!strcmp(cmd, "1")) {
 			pr_info("[SECMEM] - test for secmem_region_alloc()\n");
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 			mutex_lock(&secmem_region_lock);
 			secmem_region_alloc();
 			secmem_region_ref++;
 			mutex_unlock(&secmem_region_lock);
 #endif
 		} else if (!strcmp(cmd, "2")) {
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
 			u64 size = 0;
 #else
@@ -1026,7 +1026,7 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer,
 			pr_info("[SECMEM] - allocated : 0x%llx\n", (u64)size);
 #endif
 		} else if (!strcmp(cmd, "3")) {
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
 			u64 size = 0;
 			u64 sec_handle = 0;
@@ -1088,7 +1088,7 @@ static int __init secmem_init(void)
 {
 	proc_create("secmem0", 0664, NULL, &secmem_fops);
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	if (!secmem_reclaim_wq)
 		secmem_reclaim_wq =
 			create_singlethread_workqueue("secmem_reclaim");

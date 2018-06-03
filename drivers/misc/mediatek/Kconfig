@@ -175,15 +175,6 @@ config CUSTOM_KERNEL_IMGSENSOR
 	  CUSTOM_KERNEL_MAIN_BACKUP_IMGSENSOR, CUSTOM_KERNEL_SUB_IMGSENSOR,
 	  and CUSTOM_KERNEL_SUB_BACKUP_IMGSENSOR
 
-config MTK_SVP
-	bool "Support Mediatek Shareable Secure Video Playback technology"
-	depends on CMA && ZONE_MOVABLE_CMA
-	help
-	  Mediatek Shareable SVP technology.
-	  It tries to save memory by switching
-	  different DRAM mode dynamically. It is a
-	  platform-dependent feature.
-
 config MTK_SEC_VIDEO_PATH_SUPPORT
 	bool "Enable MTK Secure Video Path Support"
 	depends on MTK_IN_HOUSE_TEE_SUPPORT || TRUSTONIC_TEE_SUPPORT || TRUSTY
@@ -354,6 +345,16 @@ config MTK_MEMCFG
 	  platform memory layout information and
 	  fragmentation test tools. The features
 	  cost additional memory.
+
+config MTK_SSMR
+	bool "Support Mediatek Shareable Secure Memory Region technology"
+	depends on CMA
+	default y if (ARM || ARM64)
+	help
+	  Mediatek Shareable SMR technology.
+	  It tries to save memory by switching
+	  different DRAM mode dynamically. It's a
+	  platform-dependent feature.
 
 source "drivers/misc/mediatek/mtprintk/Kconfig"
 source "drivers/misc/mediatek/mtprof/Kconfig"

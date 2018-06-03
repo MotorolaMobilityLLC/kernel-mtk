@@ -81,7 +81,7 @@ static struct TEEC_Context context;
 static struct TEEC_Session session;
 static struct TEEC_SharedMemory wsm; /* world shared memory */
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 #define SECMEM_RECLAIM_DELAY 1000 /* ms */
 
 static u32 secmem_region_ref;
@@ -213,7 +213,7 @@ static int secmem_handle_register(struct secmem_context *ctx, u32 type, u32 id)
 			handle->id = id;
 			handle->type = type;
 			spin_unlock(&ctx->lock);
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 			mutex_lock(&secmem_region_lock);
 			secmem_region_ref++;
 			mutex_unlock(&secmem_region_lock);
@@ -303,7 +303,7 @@ static int secmem_handle_unregister(struct secmem_context *ctx, u32 id)
 
 	spin_unlock(&ctx->lock);
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	/* found a match */
 	if (i != num) {
 		mutex_lock(&secmem_region_lock);
@@ -542,7 +542,7 @@ static int secmem_release(struct inode *inode, struct file *file)
 	return ret;
 }
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 static int secmem_region_alloc(void)
 {
 	int ret;
@@ -671,7 +671,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case SECMEM_MEM_ALLOC:
 		if (!(file->f_mode & FMODE_WRITE))
 			return -EROFS;
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 		cancel_delayed_work_sync(&secmem_reclaim_work);
 		mutex_lock(&secmem_region_lock);
 		if (!secmem_region_online) {
@@ -704,7 +704,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case SECMEM_MEM_ALLOC_TBL:
 		if (!(file->f_mode & FMODE_WRITE))
 			return -EROFS;
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 		cancel_delayed_work_sync(&secmem_reclaim_work);
 		mutex_lock(&secmem_region_lock);
 		if (!secmem_region_online) {
@@ -747,7 +747,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return -ENOTTY;
 	}
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	mutex_lock(&secmem_region_lock);
 	if (secmem_region_online == 1 && secmem_region_ref == 0) {
 		pr_debug("queue secmem_reclaim_work!!\n");
@@ -767,7 +767,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	return err;
 }
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
 static int secmem_enable(u64 addr, u64 size)
 #else
@@ -847,7 +847,7 @@ end:
 	return err;
 }
 EXPORT_SYMBOL(secmem_api_query);
-#endif /* CONFIG_CMA && CONFIG_MTK_SVP */
+#endif /* CONFIG_CMA && CONFIG_MTK_SSMR */
 
 #ifdef SECMEM_KERNEL_API
 static int secmem_api_alloc_internal(u32 alignment, u32 size, u32 *refcount,
@@ -857,7 +857,7 @@ static int secmem_api_alloc_internal(u32 alignment, u32 size, u32 *refcount,
 	struct secmem_param param;
 	u32 cmd = clean ? CMD_SEC_MEM_ALLOC_ZERO : CMD_SEC_MEM_ALLOC;
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	cancel_delayed_work_sync(&secmem_reclaim_work);
 	mutex_lock(&secmem_region_lock);
 	if (!secmem_region_online)
@@ -901,7 +901,7 @@ end:
 		*refcount = param.refcount;
 		*sec_handle = param.sec_handle;
 	} else {
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 		mutex_lock(&secmem_region_lock);
 		/*
 		 * decrease region_ref when session_open() and
@@ -913,7 +913,7 @@ end:
 #endif
 	}
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	pr_debug("align=0x%x size=0x%x owner=%s id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x rgn_on=%u rgn_ref=%u\n",
 		alignment, size, (owner ? (char *)owner : "NULL"), id, clean,
 		ret, *refcount, *sec_handle, secmem_region_online,
@@ -968,7 +968,7 @@ int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id)
 
 end:
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	if (ret == 0) {
 		mutex_lock(&secmem_region_lock);
 		if (secmem_region_online == 1 && --secmem_region_ref == 0) {
@@ -985,7 +985,7 @@ end:
 	}
 #endif
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	pr_debug("ret=%d shndl=0x%x owner=%s id=0x%x rgn_on=%u rgn_ref=%u\n",
 		ret, sec_handle, (owner ? (char *)owner : "NULL"), id,
 		secmem_region_online, secmem_region_ref);
@@ -1006,7 +1006,7 @@ static void secmem_unit_test(char *cmd)
 		pr_err("cmd is NULL!\n");
 		return;
 	}
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	if (!strncmp(cmd, "0", 1)) {
 		pr_info("test for secmem_region_release()\n");
 		mutex_lock(&secmem_region_lock);
@@ -1050,9 +1050,9 @@ static void secmem_unit_test(char *cmd)
 		pr_info("after unref : 0x%llx\n", (u64)size);
 #endif /* SECMEM_KERNEL_API */
 	}
-#else /* CONFIG_CMA && CONFIG_MTK_SVP */
+#else /* CONFIG_CMA && CONFIG_MTK_SSMR */
 
-#endif /* CONFIG_CMA || !CONFIG_MTK_SVP */
+#endif /* CONFIG_CMA || !CONFIG_MTK_SSMR */
 #endif /* CONFIG_MT_ENG_BUILD */
 }
 
@@ -1092,7 +1092,7 @@ static int __init secmem_init(void)
 {
 	proc_create("secmem0", 0664, NULL, &secmem_fops);
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	if (!secmem_reclaim_wq)
 		secmem_reclaim_wq =
 			create_singlethread_workqueue("secmem_reclaim");
