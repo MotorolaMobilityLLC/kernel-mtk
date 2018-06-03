@@ -49,6 +49,7 @@
 #include <mt-plat/mtk_ram_console.h>
 #endif
 #include <mrdump_private.h>
+#include <mt-plat/upmu_common.h>
 
 #define THREAD_INFO(sp) ((struct thread_info *) \
 				((unsigned long)(sp) & ~(THREAD_SIZE - 1)))
@@ -574,9 +575,18 @@ void notrace aee_wdt_atf_entry(void)
 	int cpu = get_HW_cpuid();
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #ifdef CONFIG_MTK_WATCHDOG
-	if (mtk_rgu_status_is_sysrst() || mtk_rgu_status_is_eintrst())
+	if (mtk_rgu_status_is_sysrst() || mtk_rgu_status_is_eintrst()) {
+#ifdef CONFIG_MTK_PMIC_COMMON
+		if (pmic_get_register_value(PMIC_JUST_SMART_RST) == 1) {
+			pr_notice("SMART RESET: TRUE\n");
+			aee_sram_fiq_log("SMART RESET: TRUE\n");
+		} else {
+			pr_notice("SMART RESET: FALSE\n");
+			aee_sram_fiq_log("SMART RESET: FALSE\n");
+		}
+#endif
 		aee_rr_rec_exp_type(4);
-	else
+	} else
 		aee_rr_rec_exp_type(1);
 #else
 	aee_rr_rec_exp_type(1);
