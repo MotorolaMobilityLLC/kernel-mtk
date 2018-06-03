@@ -44,6 +44,8 @@
 #define DISP_AAL_DRE_MAPPING_00                 (DISPSYS_AAL0_BASE + 0x3b0)
 #define DISP_AAL_CABC_GAINLMT_TBL(idx)          (DISPSYS_AAL0_BASE + 0x40c + (idx) * 4)
 
+#define DISP_AAL_DRE_FLT_FORCE_11               (DISPSYS_AAL0_BASE + 0x44C)
+#define DISP_AAL_DRE_FLT_FORCE_12               (DISPSYS_AAL0_BASE + 0x450)
 
 #define DISP_PWM_EN_OFF                         (0x00)
 #define DISP_PWM_RST_RX                         (0x04)
