@@ -58,6 +58,9 @@ struct ppm_data ppm_main_info = {
 	.fixed_root_cluster = -1,
 #endif
 	.min_power_budget = ~0,
+#ifdef PPM_1LL_MIN_FREQ
+	.min_freq_1LL = PPM_1LL_MIN_FREQ,
+#endif
 
 #ifdef PPM_VPROC_5A_LIMIT_CHECK
 	.is_5A_limit_enable = true,
@@ -683,17 +686,36 @@ int mt_ppm_main(void)
 	aee_rr_rec_ppm_step(4);
 #endif
 
+	/* boost LL freq when single core */
+	if (ppm_main_info.min_freq_1LL && c_req->cpu_limit[PPM_CLUSTER_LL].max_cpu_core != 0) {
+		/* only CPU0 online -> set min freq */
+		if (num_online_cpus() == 1 && cpu_online(0)) {
+			int idx = ppm_main_freq_to_idx(PPM_CLUSTER_LL,
+				ppm_main_info.min_freq_1LL, CPUFREQ_RELATION_L);
+
+			if (idx != -1) {
+				c_req->cpu_limit[PPM_CLUSTER_LL].min_cpufreq_idx =
+					(idx > c_req->cpu_limit[PPM_CLUSTER_LL].max_cpufreq_idx)
+					? idx : c_req->cpu_limit[PPM_CLUSTER_LL].max_cpufreq_idx;
+
+				ppm_ver("boost LL freq = %dKHz(idx = %d) when 1LL only!\n",
+					ppm_main_info.min_freq_1LL, idx);
+			}
+		}
+	}
+
 #ifdef PPM_CLUSTER_MIGRATION_BOOST
 	if (prev_state == PPM_POWER_STATE_L_ONLY && next_state == PPM_POWER_STATE_LL_ONLY) {
 		unsigned int freq_L = mt_cpufreq_get_cur_phy_freq_no_lock(PPM_CLUSTER_L);
 		int freq_idx_LL = ppm_main_freq_to_idx(PPM_CLUSTER_LL, freq_L, CPUFREQ_RELATION_L);
 
-		if (freq_idx_LL != -1)
+		if (freq_idx_LL != -1) {
 			c_req->cpu_limit[PPM_CLUSTER_LL].min_cpufreq_idx =
 				(freq_idx_LL > c_req->cpu_limit[PPM_CLUSTER_LL].max_cpufreq_idx)
 				? freq_idx_LL : c_req->cpu_limit[PPM_CLUSTER_LL].max_cpufreq_idx;
 
-		ppm_ver("boost when L -> LL! L freq = %dKHz(LL min idx = %d)\n", freq_L, freq_idx_LL);
+			ppm_ver("boost when L -> LL! L freq = %dKHz(LL min idx = %d)\n", freq_L, freq_idx_LL);
+		}
 	}
 #endif
 
