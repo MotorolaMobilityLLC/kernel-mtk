@@ -192,6 +192,8 @@ struct compat_disp_session_info {
 	compat_uint_t vsyncFPS;
 	compat_uint_t physicalWidth;
 	compat_uint_t physicalHeight;
+	compat_uint_t physicalWidthUm;	/* length: um, for more precise precision */
+	compat_uint_t physicalHeightUm;	/* length: um, for more precise precision */
 	compat_uint_t isConnected;
 	compat_uint_t isHDCPSupported;
 	compat_uint_t isOVLDisabled;
