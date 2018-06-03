@@ -946,7 +946,7 @@ static int _ccu_powerdown(void)
 
 		if (timeout <= 0) {
 			LOG_ERR("_ccu_powerdown timeout\n");
-			return -ETIMEDOUT;
+			/*Even timed-out, clock disable is still necessary, DO NOT return here.*/
 		}
 	}
 
