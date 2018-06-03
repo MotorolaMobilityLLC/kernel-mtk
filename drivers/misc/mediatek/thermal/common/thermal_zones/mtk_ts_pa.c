@@ -388,9 +388,6 @@ static int tspa_sysrst_get_cur_state(struct thermal_cooling_device *cdev, unsign
 
 static int tspa_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
-#ifdef CONFIG_MTK_AEE_FEATURE
-	static int tspa_sysrst_triggered;
-#endif
 
 	cl_dev_sysrst_state = state;
 	if (cl_dev_sysrst_state == 1) {
@@ -399,18 +396,8 @@ static int tspa_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsign
 		pr_debug("*****************************************");
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
-
-#if 0 /* Temp solution to catch MD log. */
 		/* To trigger data abort to reset the system for thermal protection. */
 		*(unsigned int *)0x0 = 0xdead;
-#else
-#ifdef CONFIG_MTK_AEE_FEATURE
-		if (tspa_sysrst_triggered == 0) {
-			aee_kernel_warning("tspa_sysrst", "RF HT, plz get MD log!");
-			tspa_sysrst_triggered = 1;
-		}
-#endif
-#endif
 	}
 	return 0;
 }
