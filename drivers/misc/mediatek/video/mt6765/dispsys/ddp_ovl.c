@@ -1669,7 +1669,6 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 	if (disp_helper_get_option(DISP_OPT_OVL_SBCH)) {
 		static struct sbch sbch_info[OVL_NUM][TOTAL_OVL_LAYER_NUM];
 		int ovl_index = ovl_to_index(module);
-		unsigned long long full_trans_bw = 0;
 
 		if (!pConfig->sbch_enable) {
 			DISPINFO("sbch disable\n");
