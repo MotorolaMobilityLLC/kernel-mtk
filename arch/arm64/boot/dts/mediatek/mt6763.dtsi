@@ -1353,6 +1353,7 @@
 		interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&infracfg_ao INFRACFG_AO_I2C2_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>,
 					<&infracfg_ao INFRACFG_AO_I2C2_ARBITER_CG>;
+		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
 		mediatek,buffermode_used;
 	};
