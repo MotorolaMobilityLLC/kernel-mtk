@@ -259,7 +259,8 @@ static int cm_mgr_check_dram_type(void)
 		cm_mgr_idx = CM_MGR_LP4X_2CH_3200;
 	else if (ddr_type == TYPE_LPDDR3 && ddr_hz == 1866)
 		cm_mgr_idx = CM_MGR_LP3_1CH_1866;
-	pr_info("#@# %s(%d) cm_mgr_idx 0x%x\n", __func__, __LINE__, cm_mgr_idx);
+	pr_info("#@# %s(%d) ddr_type 0x%x, ddr_hz %d, cm_mgr_idx 0x%x\n",
+			__func__, __LINE__, ddr_type, ddr_hz, cm_mgr_idx);
 #else
 	cm_mgr_idx = 0;
 	pr_info("#@# %s(%d) NO CONFIG_MTK_DRAMC !!! set cm_mgr_idx to 0x%x\n",
@@ -305,11 +306,11 @@ static unsigned int cm_mgr_read_stall(int cpu)
 		return val;
 
 	if (cpu < CM_MGR_CPU_LIMIT) {
-		if (cm_mgr_idle_mask & 0x0f)
+		if (cm_mgr_idle_mask & CLUSTER0_MASK)
 
 			val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
 	} else {
-		if (cm_mgr_idle_mask & 0xf0)
+		if (cm_mgr_idle_mask & CLUSTER1_MASK)
 			val = cm_mgr_read(MP1_CPU0_STALL_COUNTER +
 					4 * (cpu - CM_MGR_CPU_LIMIT));
 	}
@@ -471,10 +472,10 @@ static int cm_mgr_sched_pm_notifier(struct notifier_block *self,
 	spin_lock_irqsave(&cm_mgr_cpu_mask_lock, spinlock_save_flags);
 
 	if (cmd == CPU_PM_EXIT) {
-		if (((cm_mgr_idle_mask & 0x0f) == 0x0) &&
+		if (((cm_mgr_idle_mask & CLUSTER0_MASK) == 0x0) &&
 				(cur_cpu < CM_MGR_CPU_LIMIT))
 			init_cpu_stall_counter(0);
-		else if (((cm_mgr_idle_mask & 0xf0) == 0x0) &&
+		else if (((cm_mgr_idle_mask & CLUSTER1_MASK) == 0x0) &&
 				(cur_cpu >= CM_MGR_CPU_LIMIT))
 			init_cpu_stall_counter(1);
 		cm_mgr_idle_mask |= (1 << cur_cpu);
@@ -509,10 +510,10 @@ static int cm_mgr_cpu_callback(struct notifier_block *nfb,
 
 	switch (action) {
 	case CPU_ONLINE:
-		if (((cm_mgr_idle_mask & 0x0f) == 0x0) &&
+		if (((cm_mgr_idle_mask & CLUSTER0_MASK) == 0x0) &&
 				(cur_cpu < CM_MGR_CPU_LIMIT))
 			init_cpu_stall_counter(0);
-		else if (((cm_mgr_idle_mask & 0xf0) == 0x0) &&
+		else if (((cm_mgr_idle_mask & CLUSTER1_MASK) == 0x0) &&
 				(cur_cpu >= CM_MGR_CPU_LIMIT))
 			init_cpu_stall_counter(1);
 		cm_mgr_idle_mask |= (1 << cur_cpu);
