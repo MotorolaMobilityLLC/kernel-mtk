@@ -10,8 +10,8 @@
  * of the License, or (at your option) any later version.
  */
 
-#ifndef __LINUX_MFD_RT5081_PMU_CHARGER_IMPL_H
-#define __LINUX_MFD_RT5081_PMU_CHARGER_IMPL_H
+#ifndef __LINUX_MFD_RT5081_PMU_CHARGER_H
+#define __LINUX_MFD_RT5081_PMU_CHARGER_H
 
 /* Parameter */
 #define RT5081_ICHG_NUM 64
@@ -125,9 +125,9 @@
 #define RT5081_ADC_OFFSET_CHG_VDDP	0 /* mV */
 #define RT5081_ADC_OFFSET_TEMP_JC	(-40)  /* degree */
 
-/* ========== CORE_CTRL0 0x00 ============ */
-#define RT5081_SHIFT_RST 7
-#define RT5081_MASK_RST  (1 << RT5081_SHIFT_RST)
+/* ========== CORE_CTRL2 0x02 ============ */
+#define RT5081_SHIFT_CHG_RST	6
+#define RT5081_MASK_CHG_RST	(1 << RT5081_SHIFT_CHG_RST)
 
 /* ========== CHG_CTRL1 0x11 ============ */
 #define RT5081_SHIFT_OPA_MODE   0
@@ -325,4 +325,4 @@
 #define RT5081_MASK_ADC_DONEI	(1 << RT5081_SHIFT_ADC_DONEI)
 
 
-#endif /* __LINUX_MFD_RT5081_PMU_CHARGER_IMPL_H */
+#endif /* __LINUX_MFD_RT5081_PMU_CHARGER_H */
