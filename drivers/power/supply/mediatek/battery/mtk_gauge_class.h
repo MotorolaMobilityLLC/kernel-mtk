@@ -109,6 +109,12 @@ struct gauge_hw_info_data {
 	int car;
 	int ncar;
 	int time;
+	int iavg_valid;
+
+	int pmic_zcv;
+	int pmic_zcv_rdy;
+	int charger_zcv;
+	int hw_zcv;
 };
 
 

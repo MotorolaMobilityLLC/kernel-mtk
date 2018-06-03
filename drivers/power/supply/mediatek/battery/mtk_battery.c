@@ -1348,6 +1348,8 @@ int wakeup_fg_algo(unsigned int flow_state)
 		return 0;
 	}
 
+	gm3_log_notify(flow_state);
+
 	if (gm.g_fgd_pid != 0) {
 		struct fgd_nl_msg_t *fgd_msg;
 		int size = FGD_NL_MSG_T_HDR_LEN + sizeof(flow_state);
@@ -1380,6 +1382,8 @@ int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1)
 		bm_err("FG daemon is disabled\n");
 		return -1;
 	}
+
+	gm3_log_notify(flow_state);
 
 	if (gm.g_fgd_pid != 0) {
 		struct fgd_nl_msg_t *fgd_msg;
@@ -1416,6 +1420,8 @@ int wakeup_fg_algo_atomic(unsigned int flow_state)
 		bm_err("FG daemon is disabled\n");
 		return -1;
 	}
+
+	gm3_log_notify(flow_state);
 
 	if (gm.g_fgd_pid != 0) {
 		struct fgd_nl_msg_t *fgd_msg;

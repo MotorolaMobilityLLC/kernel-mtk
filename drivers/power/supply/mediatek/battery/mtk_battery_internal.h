@@ -102,7 +102,7 @@ do {\
 	}						\
 } while (0)
 
-#define BM_DAEMON_DEFAULT_LOG_LEVEL 3
+#define BM_DAEMON_DEFAULT_LOG_LEVEL 7
 
 enum gauge_hw_version {
 	GAUGE_HW_V1000 = 1000,
@@ -576,6 +576,19 @@ struct battery_temperature_table {
 	unsigned int bif_ntc_r;
 };
 
+struct simulator_log {
+	int bat_full_int;
+	int dlpt_sd_int;
+	int chr_in_int;
+	int zcv_int;
+	int zcv_current;
+	int zcv;
+	int chr_status;
+
+	/* initial */
+	int fg_reset;
+};
+
 struct mtk_battery {
 
 	struct gauge_device *gdev;
@@ -591,6 +604,8 @@ struct mtk_battery {
 /*custom related*/
 	int battery_id;
 
+/*simulator log*/
+	struct simulator_log log;
 
 /*daemon related*/
 	struct sock *daemo_nl_sk;
@@ -634,7 +649,7 @@ struct mtk_battery {
 	struct notifier_block bat_nb;
 
 /* ptim */
-	unsigned int ptim_vol;
+	int ptim_vol;
 	int ptim_curr;
 
 /* proc */
@@ -812,6 +827,9 @@ extern void fg_custom_init_from_header(void);
 extern void notify_fg_chr_full(void);
 extern void fg_update_sw_iavg(void);
 extern void fg_bat_temp_int_sw_check(void);
+extern void gm3_log_notify(unsigned int interrupt);
+extern void dump_gm3_log(void);
+
 
 /* query function , review */
 extern struct BAT_EC_Struct *get_ec(void);
