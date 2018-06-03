@@ -745,6 +745,10 @@ void mt_fh_unlock(void)
 }
 EXPORT_SYMBOL(mt_fh_unlock);
 
+void mt_freqhopping_all_ssc_off(void)
+{
+}
+EXPORT_SYMBOL(mt_freqhopping_all_ssc_off);
 
 #else
 
@@ -1005,6 +1009,15 @@ void mt_fh_unlock(void)
 	g_p_fh_hal_drv->mt_fh_unlock(&g_irq_flags);
 }
 EXPORT_SYMBOL(mt_fh_unlock);
+
+void mt_freqhopping_all_ssc_off(void)
+{
+	int id = 0;
+
+	for (id = 0; id < FH_PLL_COUNT; id++)
+		freqhopping_config(id, 0, false);
+}
+EXPORT_SYMBOL(mt_freqhopping_all_ssc_off);
 
 
 #endif
