@@ -14,7 +14,7 @@
 obj-$(CONFIG_MTK_AEE_FEATURE)	+= mrdump_hw.o mrdump_key_setup.o
 
 ifeq ($(CONFIG_MTK_AEE_MRDUMP),y)
-obj-y += mrdump.o
+obj-y += mrdump.o mrdump_control.o
 mrdump-y := mrdump_full.o mrdump_setup.o
 obj-$(CONFIG_ARM) += mrdump_arm.o
 obj-$(CONFIG_ARM64) += mrdump_arm64.o
