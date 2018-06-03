@@ -528,7 +528,7 @@ static void _od_write_table(void *cmdq, u8 TableSel, u8 ColorSel, const u8 *pTab
 
 static u8 _od_read_table(void *cmdq, u8 TableSel, u8 ColorSel, const u8 *pTable, int table_inverse)
 {
-	u32 i, u4TblVal, u4TblSize, u4ErrCnt, u4TblConf = 0;
+	u32 i, u4TblVal, u4TblSize, u4ErrCnt = 0, u4TblConf = 0;
 	u32 mask;
 	u32 u1ODBypass    = DISP_REG_GET(OD_REG02) & (1 << 9)  ? 1 : 0;
 	u32 u1FBBypass    = DISP_REG_GET(OD_REG02) & (1 << 10) ? 1 : 0;
