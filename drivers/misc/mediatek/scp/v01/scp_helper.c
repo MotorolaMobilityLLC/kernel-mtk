@@ -292,7 +292,7 @@ static void scp_A_notify_ws(struct work_struct *ws)
 #ifdef CFG_RECOVERY_SUPPORT
 		/* release pll lock after scp ulposc calibration */
 #if SCP_DVFS_INIT_ENABLE
-		scp_pll_ctrl_set(0, 0);
+		scp_pll_ctrl_set(PLL_DISABLE, 0);
 #endif
 		scp_recovery_flag[SCP_A_ID] = SCP_A_RECOVERY_OK;
 #endif
@@ -429,7 +429,7 @@ int reset_scp(int reset)
 						/* lock pll for ulposc calibration */
 						 /* do it only in reset */
 #if SCP_DVFS_INIT_ENABLE
-						scp_pll_ctrl_set(1, 0);
+						scp_pll_ctrl_set(PLL_ENABLE, CLK_OPP0);
 #endif
 						dsb(SY);
 						break;

@@ -417,7 +417,7 @@ static void scp_A_notify_ws(struct work_struct *ws)
 	if (scp_notify_flag) {
 #ifdef CFG_RECOVERY_SUPPORT
 		/* release pll lock after scp ulposc calibration */
-		scp_pll_ctrl_set(0, 0);
+		scp_pll_ctrl_set(PLL_DISABLE, 0);
 		scp_recovery_flag[SCP_A_ID] = SCP_A_RECOVERY_OK;
 #endif
 		SCP_TO_SPM_REG = 0xff; /* patch: clear SPM interrupt */
@@ -447,7 +447,7 @@ static void scp_B_notify_ws(struct work_struct *ws)
 	if (scp_notify_flag) {
 #ifdef CFG_RECOVERY_SUPPORT
 		/* release pll lock after scp ulposc calibration */
-		scp_pll_ctrl_set(0, 0);
+		scp_pll_ctrl_set(PLL_DISABLE, 0);
 		scp_recovery_flag[SCP_B_ID] = SCP_B_RECOVERY_OK;
 #endif
 		mutex_lock(&scp_B_notify_mutex);
@@ -610,7 +610,7 @@ int reset_scp(int reset)
 						*(unsigned int *)SCP_GPR_CM4_A_REBOOT = 1;
 						/* lock pll for ulposc calibration */
 						 /* do it only in reset */
-						scp_pll_ctrl_set(1, 0);
+						scp_pll_ctrl_set(PLL_ENABLE, CLK_OPP0);
 						dsb(SY);
 						break;
 					}
@@ -665,7 +665,7 @@ int reset_scp(int reset)
 						*(unsigned int *)SCP_GPR_CM4_B_REBOOT = 2;
 						/* lock pll for ulposc calibration */
 						 /* do it only in reset */
-						scp_pll_ctrl_set(1, 0);
+						scp_pll_ctrl_set(PLL_ENABLE, CLK_OPP0);
 						dsb(SY);
 						break;
 					}
