@@ -16,7 +16,14 @@
 #include <sound/soc.h>
 #include <sound/tlv.h>
 #include <linux/debugfs.h>
+#include <linux/delay.h>
 #include "mt6392-codec.h"
+
+/*
+ * Class D: has HW Trim mode and SW Trim mode
+ * Class AB: only has SW Trim mode
+ */
+#define USE_HW_TRIM_CLASS_D
 
 /* Int Spk Amp Playback Volume
  * {mute, 0, 4, 5, 6, 7, 8, ..., 17} dB
@@ -168,6 +175,91 @@ static const struct snd_kcontrol_new mt6392_codec_controls[] = {
 		mt6392_speaker_oc_flag_get, NULL),
 };
 
+static void mt6392_codec_get_spk_trim_offset(struct snd_soc_codec *codec)
+{
+	struct mt6392_codec_priv *codec_data =
+			snd_soc_codec_get_drvdata(codec);
+
+	/* turn on spk (class D) and hw trim */
+	snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x000E);
+	snd_soc_update_bits(codec, SPK_CON7, 0xFFFF, 0x48F4);
+	snd_soc_update_bits(codec, SPK_CON11, 0xFFFF, 0x0055);
+	snd_soc_update_bits(codec, SPK_CON9, 0xF0FF, 0x2018);
+	snd_soc_update_bits(codec, SPK_CON2, 0xFFFF, 0x0414);
+	snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3409);
+	usleep_range(20000, 21000);
+
+	/* save trim offset */
+	codec_data->spk_trim_offset =
+		snd_soc_read(codec, SPK_CON1) & GENMASK(4, 0);
+
+	/* turn off trim */
+	snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3401);
+	snd_soc_update_bits(codec, SPK_CON9, 0xF0FF, 0x2000);
+	usleep_range(2000, 3000);
+
+	/* turn off spk */
+	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0000);
+	snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3400);
+	snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x0000);
+}
+
+static void mt6392_int_spk_on_with_hw_trim(struct snd_soc_codec *codec)
+{
+	/* turn on spk (class D) and hw trim */
+	snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x000E);
+	snd_soc_update_bits(codec, SPK_CON7, 0xFFFF, 0x48F4);
+	snd_soc_update_bits(codec, SPK_CON11, 0xFFFF, 0x0055);
+	snd_soc_update_bits(codec, SPK_CON9, 0xF0FF, 0x2018);
+	snd_soc_update_bits(codec, SPK_CON2, 0xFFFF, 0x0414);
+	snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3409);
+	usleep_range(20000, 21000);
+
+	/* turn off trim */
+	snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3401);
+	snd_soc_update_bits(codec, SPK_CON9, 0xF0FF, 0x2000);
+	usleep_range(2000, 3000);
+}
+
+static void mt6392_int_spk_on_with_sw_trim(struct snd_soc_codec *codec)
+{
+	struct mt6392_codec_priv *codec_data =
+			snd_soc_codec_get_drvdata(codec);
+
+	/* turn on spk */
+	snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x000E);
+	snd_soc_update_bits(codec, SPK_CON7, 0xFFFF, 0x48F4);
+	snd_soc_update_bits(codec, SPK_CON2, 0xFFFF, 0x0414);
+
+	switch (codec_data->speaker_mode) {
+	case MT6392_CLASS_D:
+		snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3001);
+		break;
+	case MT6392_CLASS_AB:
+		snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3005);
+		break;
+	default:
+		break;
+	}
+
+	/* enable sw trim */
+	snd_soc_update_bits(codec, SPK_CON9, 0xF0FF, 0x2000);
+	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0009);
+	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0001);
+	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0283);
+	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0281);
+	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x2A81);
+
+	/* class D and class AB use the same trim offset value */
+	snd_soc_update_bits(codec, SPK_CON1,
+		GENMASK(12, 8), (codec_data->spk_trim_offset << 8));
+	snd_soc_update_bits(codec, SPK_CON1, 0xFFFF, 0x6000);
+
+	/* trim stop */
+	snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0xAA81);
+	usleep_range(2000, 3000);
+}
+
 int mt6392_int_spk_turn_on(struct snd_soc_codec *codec)
 {
 	struct mt6392_codec_priv *codec_data =
@@ -178,14 +270,14 @@ int mt6392_int_spk_turn_on(struct snd_soc_codec *codec)
 
 	switch (codec_data->speaker_mode) {
 	case MT6392_CLASS_D:
-		snd_soc_update_bits(codec, SPK_CON0, 0xffff, 0x3400);
-		snd_soc_update_bits(codec, SPK_CON9, 0xffff, 0x0400);
-		snd_soc_update_bits(codec, SPK_CON12, 0xffff, 0x0F00);
+#if defined(USE_HW_TRIM_CLASS_D)
+		mt6392_int_spk_on_with_hw_trim(codec);
+#else
+		mt6392_int_spk_on_with_sw_trim(codec);
+#endif
 		break;
 	case MT6392_CLASS_AB:
-		snd_soc_update_bits(codec, SPK_CON0, 0xffff, 0x3404);
-		snd_soc_update_bits(codec, SPK_CON9, 0xffff, 0x0400);
-		snd_soc_update_bits(codec, SPK_CON12, 0xffff, 0x0F00);
+		mt6392_int_spk_on_with_sw_trim(codec);
 		break;
 	default:
 		ret = -EINVAL;
@@ -206,12 +298,14 @@ int mt6392_int_spk_turn_off(struct snd_soc_codec *codec)
 
 	switch (codec_data->speaker_mode) {
 	case MT6392_CLASS_D:
-		snd_soc_update_bits(codec, SPK_CON0, 0xffff, 0x0400);
-		snd_soc_update_bits(codec, SPK_CON12, 0xffff, 0x0055);
+		snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0000);
+		snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3400);
+		snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x0000);
 		break;
 	case MT6392_CLASS_AB:
-		snd_soc_update_bits(codec, SPK_CON0, 0xffff, 0x0400);
-		snd_soc_update_bits(codec, SPK_CON12, 0xffff, 0x0055);
+		snd_soc_update_bits(codec, SPK_CON12, 0xFFFF, 0x0000);
+		snd_soc_update_bits(codec, SPK_CON0, 0xFFFF, 0x3404);
+		snd_soc_update_bits(codec, TOP_CKPDN1_CLR, 0x000E, 0x0000);
 		break;
 	default:
 		ret = -EINVAL;
@@ -311,6 +405,9 @@ static const struct file_operations mt6392_codec_debug_ops = {
 static void mt6392_codec_init_regs(struct snd_soc_codec *codec)
 {
 	dev_dbg(codec->dev, "%s\n", __func__);
+
+	/* default PGA gain: 12dB */
+	snd_soc_update_bits(codec, SPK_CON9, 0x0A00, 0x0F00);
 }
 
 static int mt6392_codec_parse_dt(struct snd_soc_codec *codec)
@@ -362,6 +459,8 @@ int mt6392_codec_probe(struct snd_soc_codec *codec)
 	mt6392_codec_parse_dt(codec);
 
 	mt6392_codec_init_regs(codec);
+
+	mt6392_codec_get_spk_trim_offset(codec);
 
 #ifdef CONFIG_DEBUG_FS
 	codec_data->debugfs = debugfs_create_file("mt6392_codec_regs",
