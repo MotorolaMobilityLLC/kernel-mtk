@@ -228,6 +228,7 @@ struct disp_input_config {
 
 	__u32 src_color_key;
 	__u32 frm_sequence;
+	__u32 dim_color;
 
 	void *dirty_roi_addr;
 	__u16 dirty_roi_num;
