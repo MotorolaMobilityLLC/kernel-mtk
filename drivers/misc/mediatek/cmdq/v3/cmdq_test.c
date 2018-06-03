@@ -241,6 +241,7 @@ static void testcase_scenario(void)
 }
 
 static struct timer_list timer;
+static bool timer_stop;
 
 static void _testcase_sync_token_timer_func(unsigned long data)
 {
@@ -258,6 +259,11 @@ static void _testcase_sync_token_timer_loop_func(unsigned long data)
 	/* trigger sync event */
 	CMDQ_MSG("trigger event=0x%08lx\n", (1L << 16) | data);
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | data);
+
+	if (timer_stop) {
+		del_timer(&timer);
+		return;
+	}
 
 	/* repeate timeout until user delete it */
 	mod_timer(&timer, jiffies + msecs_to_jiffies(10));
@@ -550,6 +556,7 @@ static void testcase_multiple_async_request(void)
 
 	CMDQ_LOG("%s\n", __func__);
 
+	timer_stop = false;
 	setup_timer(&timer, &_testcase_sync_token_timer_loop_func, CMDQ_SYNC_TOKEN_USER_0);
 	mod_timer(&timer, jiffies + msecs_to_jiffies(10));
 
@@ -599,6 +606,7 @@ static void testcase_multiple_async_request(void)
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
 
+	timer_stop = true;
 	del_timer(&timer);
 
 	CMDQ_LOG("%s END\n", __func__);
