@@ -78,24 +78,18 @@ enum {
 	UFSHCI_REG_SPACE_SIZE			= 0xA0,
 
 	/* MTK vendor-specific registers */
-	REG_UMABA				= 0xB0, /* not used */
-	REG_UMABAU				= 0xB4, /* not used */
-	REG_UMAOMAX				= 0xB8, /* not used */
-	REG_UMACONF				= 0xBC, /* not used */
-	REG_XCNF				= 0xC8,
-	REG_CDACFG				= 0xD0,
-	REG_CDATX1				= 0xD4,
-	REG_CDATX2				= 0xD8,
-	REG_CDARX1				= 0xDC,
-	REG_CDARX2				= 0xE0,
-	REG_CDASTA				= 0xE4,
-	REG_CRYPTO_CAPABILITY			= 0x100,
-	REG_CRYPTO_CAPABILITY_X			= 0x104,
-	REG_EXTREG1				= 0x2100,
-	REG_MPHYCTRL				= 0x2200,
-	REG_MTK_AUTO_DEEP_STALL			= 0x2210,
+	REG_UFS_MTK_START			= 0x2100, /* the start offset of MTK proprietary registers */
+	REG_UFS_MTK_EXTREG1			= 0x2100, /* shall be equal to REG_UFS_MTK_START */
+	REG_UFS_MTK_MPHYCTRL		= 0x2200,
+	REG_UFS_MTK_AUTO_DEEP_STALL	= 0x2210,
 	REG_UFS_MTK_HW_VER			= 0x2240,
-	REG_UFS_MTK_OCS_ERR_STATUS		= 0x2244,
+	REG_UFS_MTK_OCS_ERR_STATUS	= 0x2244,
+	REG_UFS_MTK_COMMAND_MON		= 0x2288,
+	REG_UFS_MTK_DATAOUT_MON		= 0x2290,
+	REG_UFS_MTK_RTT_MON			= 0x22A0,
+	REG_UFS_MTK_DEBUG_SEL		= 0x22C0,
+	REG_UFS_MTK_PROBE			= 0x22C8,
+	REG_UFS_MTK_SIZE			= (REG_UFS_MTK_PROBE - REG_UFS_MTK_START + 16)
 };
 
 /* Controller capability masks */

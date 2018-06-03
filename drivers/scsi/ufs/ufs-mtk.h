@@ -278,6 +278,7 @@ extern u32 ufs_mtk_aborted_cmd_cnt;
 
 void             ufs_mtk_add_sysfs_nodes(struct ufs_hba *hba);
 void             ufs_mtk_advertise_fixup_device(struct ufs_hba *hba);
+int              ufs_mtk_auto_hiber8_quirk_handler(struct ufs_hba *hba, bool enable);
 void             ufs_mtk_cache_setup_cmd(struct scsi_cmnd *cmd);
 void             ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu);
 void             ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd);

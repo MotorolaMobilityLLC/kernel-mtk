@@ -962,6 +962,8 @@ void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 	if (!hba->outstanding_reqs && !hba->outstanding_tasks)
 		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_DMA_OP);
 
+	ufs_mtk_auto_hiber8_quirk_handler(hba, false);
+
 	__set_bit(task_tag, &hba->outstanding_reqs);
 	ufs_mtk_biolog_check(hba->outstanding_reqs);
 	ufshcd_writel(hba, 1 << task_tag, REG_UTP_TRANSFER_REQ_DOOR_BELL);
@@ -1079,6 +1081,8 @@ ufshcd_dispatch_uic_cmd(struct ufs_hba *hba, struct uic_command *uic_cmd)
 	/* Notice: the resource of UIC cmds only released in SODI callback when entering H8 */
 	if (!hba->outstanding_tasks && !hba->outstanding_reqs)
 		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_MPHY_NON_H8);
+
+	ufs_mtk_auto_hiber8_quirk_handler(hba, false);
 
 	hba->active_uic_cmd = uic_cmd;
 
@@ -3330,6 +3334,8 @@ static int ufshcd_task_req_compl(struct ufs_hba *hba, u32 index, u8 *resp)
 	if (!hba->outstanding_tasks && !hba->outstanding_reqs)
 		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_MPHY_NON_H8);
 
+	ufs_mtk_auto_hiber8_quirk_handler(hba, true);
+
 	task_req_descp = hba->utmrdl_base_addr;
 	ocs_value = ufshcd_get_tmr_ocs(&task_req_descp[index]);
 
@@ -3595,6 +3601,8 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 	/* Because they are still resources required to enter H8 */
 	if (!hba->outstanding_reqs && !hba->outstanding_tasks)
 		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_MPHY_NON_H8);
+
+	ufs_mtk_auto_hiber8_quirk_handler(hba, true);
 
 	ufshcd_clk_scaling_update_busy(hba);
 
@@ -4534,6 +4542,8 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	/* Because they are still resources required to enter H8 */
 	if (!hba->outstanding_reqs && !hba->outstanding_tasks)
 		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_MPHY_NON_H8);
+
+	ufs_mtk_auto_hiber8_quirk_handler(hba, true);
 
 	spin_unlock_irqrestore(host->host_lock, flags);
 
@@ -6003,15 +6013,22 @@ static int ufshcd_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	}
 
 	/*
-	 * SK-Hynix Device Issue:
-	 * If "entering manual H8" is issued immediately after
-	 * "leaving AH8", device may stuck and then LineReset happen.
+	 * SK-Hynix device issue:
+	 * After device enters sleep mode, device allows only 1 time
+	 * entering/leaving h8 state. If multiple h8 entering/leaving
+	 * happens, device may stuck.
 	 *
-	 * Temporary SW Workaround:
-	 * Disable Auto H8 before SSU command, make "leaving AH8"
-	 * followed by SSU, then issue "entering manual H8" to avoid
-	 * the fail scene described above.
-	*/
+	 * Fail scenario:
+	 * 1. SSU device to enter sleep.
+	 * 2. Disable ah8 (may leave h8).
+	 * 3. Manually enter h8.
+	 *
+	 * SW workaround:
+	 * Change suspend flow to avoid above scenario:
+	 * 1. Disable ah8 (may leave h8).
+	 * 2. SSU device to enter sleep.
+	 * 3. Manually enter h8.
+	 */
 	ufshcd_vops_auto_hibern8(hba, false);
 	do {
 		ret = ufshcd_dme_get(hba, UIC_ARG_MIB(VENDOR_POWERSTATE), &reg);
