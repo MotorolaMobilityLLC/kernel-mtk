@@ -132,6 +132,10 @@ extern void musb_bug(void);
 #include <linux/usb/hcd.h>
 #include "musb_host.h"
 
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+#include <linux/usb/class-dual-role.h>
+#endif
+
 /* NOTE:  otg and peripheral-only state machines start at B_IDLE.
  * OTG or host-only go to A_IDLE when ID is sensed.
  */
@@ -518,6 +522,10 @@ struct musb {
 	enum usb_otg_event otg_event;
 #endif
 	struct workqueue_struct *st_wq;
+
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+	struct dual_role_phy_instance *dr_usb;
+#endif /* CONFIG_DUAL_ROLE_USB_INTF */
 };
 
 static inline struct musb *gadget_to_musb(struct usb_gadget *g)
