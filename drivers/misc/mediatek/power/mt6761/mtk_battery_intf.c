@@ -131,15 +131,9 @@ signed int battery_get_vbus(void)
 
 signed int battery_get_bat_avg_current(void)
 {
-	bool is_charging;
-	int bat_current;
+	bool valid;
 
-	is_charging = gauge_get_current(&bat_current);
-
-	if (is_charging != true)
-		bat_current = 0 - bat_current;
-
-	return bat_current;
+	return gauge_get_average_current(&valid);
 }
 
 #endif
