@@ -1023,17 +1023,18 @@ static void PointDelay(void)
 			point_delay[i].other.init = 0;
 		}
 		if (point_delay[i].other.able == 0 && point_delay[i].other.init != 0) {
-			for (j = 0; j <= (int)point_delay[i].other.delay; j++)
+			for (j = 0; j <= (int)point_delay[i].other.delay; j++) {
 				if (pp[j][i].all == 0 || pp[j][i].other.fill != 0 || pp[j][i].other.able != 0)
 					break;
-				if (j <= (int)point_delay[i].other.delay)
-					continue;
-				if (PointDelayAvg(i))
-					point_delay[i].other.able = 1;
-				else
-					j = 0;
-				if (id_flag.other.first_avg)
-					point_delay[i].other.report = point_delay[i].other.dele;
+			}
+			if (j <= (int)point_delay[i].other.delay)
+				continue;
+			if (PointDelayAvg(i))
+				point_delay[i].other.able = 1;
+			else
+				j = 0;
+			if (id_flag.other.first_avg)
+				point_delay[i].other.report = point_delay[i].other.dele;
 		}
 		if (pp[point_delay[i].other.dele][i].all == 0) {
 			point_delay[i].other.able = 0;
