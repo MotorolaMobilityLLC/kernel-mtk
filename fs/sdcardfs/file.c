@@ -19,6 +19,7 @@
  */
 
 #include "sdcardfs.h"
+#include <linux/uio.h>
 #ifdef CONFIG_SDCARD_FS_FADV_NOACTIVE
 #include <linux/backing-dev.h>
 #endif
@@ -71,6 +72,72 @@ static ssize_t sdcardfs_write(struct file *file, const char __user *buf,
 
 	lower_file = sdcardfs_lower_file(file);
 	err = vfs_write(lower_file, buf, count, ppos);
+	/* update our inode times+sizes upon a successful lower write */
+	if (err >= 0) {
+		fsstack_copy_inode_size(d_inode(dentry),
+					file_inode(lower_file));
+		fsstack_copy_attr_times(d_inode(dentry),
+					file_inode(lower_file));
+	}
+
+	return err;
+}
+
+static ssize_t sdcardfs_read_iter(struct kiocb *kiocb, struct iov_iter *iter)
+{
+	ssize_t err;
+	struct file *lower_file;
+	struct file *file = kiocb->ki_filp;
+	struct dentry *dentry = file->f_path.dentry;
+	struct kiocb lower_kiocb;
+
+	lower_file = sdcardfs_lower_file(file);
+
+	if (!lower_file->f_op->read_iter)
+		return -EINVAL;
+
+	init_sync_kiocb(&lower_kiocb, lower_file);
+	lower_kiocb.ki_pos = kiocb->ki_pos;
+
+	err = lower_file->f_op->read_iter(&lower_kiocb, iter);
+
+	if (err > 0)
+		kiocb->ki_pos = lower_kiocb.ki_pos;
+
+	if (err >= 0)
+		fsstack_copy_attr_atime(d_inode(dentry),
+					file_inode(lower_file));
+
+	return err;
+}
+
+static ssize_t sdcardfs_write_iter(struct kiocb *kiocb, struct iov_iter *iter)
+{
+	ssize_t err;
+	struct file *lower_file;
+	struct file *file = kiocb->ki_filp;
+	struct dentry *dentry = file->f_path.dentry;
+	struct kiocb lower_kiocb;
+
+	/* check disk space */
+	if (!check_min_free_space(dentry, iter->count, 0)) {
+		pr_info("sdcardfs: No minimum free space.\n");
+		return -ENOSPC;
+	}
+
+	lower_file = sdcardfs_lower_file(file);
+
+	if (!lower_file->f_op->write_iter)
+		return -EINVAL;
+
+	init_sync_kiocb(&lower_kiocb, lower_file);
+	lower_kiocb.ki_pos = kiocb->ki_pos;
+
+	err = lower_file->f_op->write_iter(&lower_kiocb, iter);
+
+	if (err > 0)
+		kiocb->ki_pos = lower_kiocb.ki_pos;
+
 	/* update our inode times+sizes upon a successful lower write */
 	if (err >= 0) {
 		fsstack_copy_inode_size(d_inode(dentry),
@@ -327,6 +394,8 @@ const struct file_operations sdcardfs_main_fops = {
 	.llseek		= generic_file_llseek,
 	.read		= sdcardfs_read,
 	.write		= sdcardfs_write,
+	.read_iter	= sdcardfs_read_iter,
+	.write_iter	= sdcardfs_write_iter,
 	.unlocked_ioctl	= sdcardfs_unlocked_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl	= sdcardfs_compat_ioctl,
