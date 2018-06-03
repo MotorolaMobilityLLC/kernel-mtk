@@ -35,6 +35,7 @@
 	defined(CONFIG_MACH_MT6799)
 #include <disp_helper.h>
 #endif
+#include <primary_display.h>
 
 /* To enable debug log: */
 /* # echo corr_dbg:1 > /sys/kernel/debug/dispsys */
@@ -87,16 +88,19 @@ static DEFINE_MUTEX(g_gamma_global_lock);
 #define index_of_gamma(module) (0)
 #endif
 
+static unsigned int g_gamma_relay_value;
+
 static DISP_GAMMA_LUT_T *g_disp_gamma_lut[DISP_GAMMA_TOTAL] = { NULL };
 
 static ddp_module_notify g_gamma_ddp_notify;
 
 
-static int disp_gamma_write_lut_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE_ENUM module, int lock);
+static int disp_gamma_write_lut_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE_ENUM module,
+		disp_gamma_id_t id, int lock);
 
 static int disp_gamma_start(enum DISP_MODULE_ENUM module, void *cmdq)
 {
-	disp_gamma_write_lut_reg(cmdq, module, 1);
+	disp_gamma_write_lut_reg(cmdq, module, DISP_GAMMA0, 1);
 
 	return 0;
 }
@@ -145,10 +149,10 @@ static void disp_gamma_trigger_refresh(disp_gamma_id_t id)
 }
 
 
-static int disp_gamma_write_lut_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE_ENUM module, int lock)
+static int disp_gamma_write_lut_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE_ENUM module,
+		disp_gamma_id_t id, int lock)
 {
 	const int offset = gamma_get_offset(module);
-	const disp_gamma_id_t id = index_of_gamma(module);
 	unsigned long lut_base = 0;
 	DISP_GAMMA_LUT_T *gamma_lut;
 	int i;
@@ -171,7 +175,7 @@ static int disp_gamma_write_lut_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE
 	}
 
 	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_EN + offset, 0x1, 0x1);
-	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG + offset, 0x2, 0x2);
+	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG + offset, 0x2|g_gamma_relay_value, 0x3);
 	lut_base = DISP_REG_GAMMA_LUT + offset;
 
 	for (i = 0; i < DISP_GAMMA_LUT_SIZE; i++) {
@@ -222,7 +226,7 @@ static int disp_gamma_set_lut(const DISP_GAMMA_LUT_T __user *user_gamma_lut,
 			g_disp_gamma_lut[id] = gamma_lut;
 
 			GAMMA_DBG("Set module(%d) lut", module);
-			ret = disp_gamma_write_lut_reg(cmdq, module, 0);
+			ret = disp_gamma_write_lut_reg(cmdq, module, id, 0);
 
 			mutex_unlock(&g_gamma_global_lock);
 
@@ -289,8 +293,12 @@ static int disp_gamma_bypass(enum DISP_MODULE_ENUM module, int bypass)
 {
 	int relay = 0;
 
-	if (bypass)
+	if (bypass) {
 		relay = 1;
+		g_gamma_relay_value = 0x1;
+	} else {
+		g_gamma_relay_value = 0x0;
+	}
 
 	DISP_REG_MASK(NULL, DISP_REG_GAMMA_CFG + gamma_get_offset(module), relay, 0x1);
 
@@ -415,7 +423,8 @@ static DISP_CCORR_COEF_T *g_disp_ccorr_coef[DISP_CCORR_TOTAL] = { NULL };
 
 static ddp_module_notify g_ccorr_ddp_notify;
 
-static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE_ENUM module, int lock);
+static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE_ENUM module,
+		disp_ccorr_id_t id, int lock);
 static void ccorr_dump_reg(void);
 
 static void disp_ccorr_init(enum DISP_MODULE_ENUM module, unsigned int width, unsigned int height, void *cmdq)
@@ -450,7 +459,7 @@ static void disp_ccorr_init(enum DISP_MODULE_ENUM module, unsigned int width, un
 static int disp_ccorr_start(enum DISP_MODULE_ENUM module, void *cmdq)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-		disp_ccorr_write_coef_reg(cmdq, module, 1);
+		disp_ccorr_write_coef_reg(cmdq, module, DISP_CCORR0, 1);
 #else
 		DISP_REG_SET(cmdq, DISP_REG_CCORR_EN + ccorr_get_offset(module), 1);
 		CCORR_DBG("FPGA_EARLY_PORTING");
@@ -460,17 +469,17 @@ static int disp_ccorr_start(enum DISP_MODULE_ENUM module, void *cmdq)
 
 #define CCORR_REG(base, idx) (base + (idx) * 4 + 0x80)
 
-static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE_ENUM module, int lock)
+static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE_ENUM module,
+		disp_ccorr_id_t id, int lock)
 {
 	const int base_offset = ccorr_get_offset(module);
-	const disp_ccorr_id_t id = index_of_ccorr(module);
 	const unsigned long ccorr_base = CCORR0_BASE_NAMING + base_offset;
 	int ret = 0;
 	DISP_CCORR_COEF_T *ccorr;
 	unsigned int cfg_val;
 
 	 if (module < CCORR0_MODULE_NAMING || module >= CCORR0_MODULE_NAMING + CCORR_TOTAL_MODULE_NUM) {
-		GAMMA_ERR("disp_ccorr_write_coef_reg: invalid module = %d\n", module);
+		CCORR_ERR("disp_ccorr_write_coef_reg: invalid module = %d\n", module);
 		return -EFAULT;
 	}
 
@@ -541,7 +550,7 @@ static int disp_ccorr_set_coef(const DISP_CCORR_COEF_T __user *user_color_corr,
 			g_disp_ccorr_coef[id] = ccorr;
 
 			CCORR_DBG("Set module(%d) coef", module);
-			ret = disp_ccorr_write_coef_reg(cmdq, module, 0);
+			ret = disp_ccorr_write_coef_reg(cmdq, module, id, 0);
 
 			mutex_unlock(&g_gamma_global_lock);
 
@@ -696,7 +705,7 @@ struct DDP_MODULE_DRIVER ddp_driver_ccorr = {
 
 int ccorr_coef_interface(enum DISP_MODULE_ENUM module, unsigned int ccorr_coef_ref[3][3], void *handle)
 {
-	const disp_ccorr_id_t id = index_of_ccorr(module);
+	const disp_ccorr_id_t id = DISP_CCORR0;
 	int y, x;
 	DISP_CCORR_COEF_T *ccorr;
 
@@ -721,7 +730,7 @@ int ccorr_coef_interface(enum DISP_MODULE_ENUM module, unsigned int ccorr_coef_r
 	CCORR_DBG("%4d %4d %4d", ccorr->coef[1][0], ccorr->coef[1][1], ccorr->coef[1][2]);
 	CCORR_DBG("%4d %4d %4d", ccorr->coef[2][0], ccorr->coef[2][1], ccorr->coef[2][2]);
 
-	disp_ccorr_write_coef_reg(handle, module, 1);
+	disp_ccorr_write_coef_reg(handle, module, id, 1);
 
 	return 0;
 
@@ -853,8 +862,9 @@ void ccorr_test(const char *cmd, char *debug_output)
 	int i;
 	int config_module_num = 1;
 
-#ifdef _DUAL_PIPE_DUMMY_
-	config_module_num = CCORR_TOTAL_MODULE_NUM;
+#if defined(CONFIG_MACH_MT6799)
+	if (primary_display_get_pipe_status() == DUAL_PIPE)
+		config_module_num = CCORR_TOTAL_MODULE_NUM;
 #endif
 
 	CCORR_DBG("ccorr_test(%s)", cmd);

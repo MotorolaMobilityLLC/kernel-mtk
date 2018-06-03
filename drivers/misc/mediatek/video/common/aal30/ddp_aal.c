@@ -93,6 +93,7 @@ static volatile int g_aal_hist_available;
 static volatile int g_aal_is_init_regs_valid;
 static volatile int g_aal_backlight_notified = 1023;
 static volatile int g_aal_initialed;
+static volatile bool g_aal0_is_clock_on;
 static atomic_t g_aal_allowPartial = ATOMIC_INIT(0);
 static volatile int g_led_mode = MT65XX_LED_MODE_NONE;
 
@@ -146,7 +147,15 @@ do {												\
 
 #define AAL_MAX_HIST_COUNT           (0xFFFFFFFF)
 
-static bool g_aal_should_reset_hist_count;
+enum AAL_UPDATE_HIST {
+	UPDATE_NONE = 0,
+	UPDATE_SINGLE,
+	UPDATE_MULTIPLE
+};
+
+static DISP_AAL_HIST g_aal_hist_multi_pipe;
+static volatile bool g_aal_reset_count;
+static volatile int g_aal_prev_pipe;
 /* Locked by  g_aal#_hist_lock */
 static unsigned int g_aal_module_hist_count[AAL_TOTAL_MODULE_NUM];
 /* Locked by  g_aal_hist_lock */
@@ -216,8 +225,6 @@ static int disp_aal_init(enum DISP_MODULE_ENUM module, int width, int height, vo
 	DISP_REG_MASK(cmdq, DISP_AAL_CFG + aal_get_offset(module), 0x3 << 1, (0x3 << 1) | 0x1);
 
 	disp_aal_write_init_regs(module, cmdq);
-
-	g_aal_should_reset_hist_count = true;
 #endif
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* disable stall cg for avoid display path hang */
@@ -313,10 +320,10 @@ static void disp_aal_set_interrupt(int enabled)
 	int i;
 	int config_module_num = 1;
 
-#ifdef _DUAL_PIPE_DUMMY_
-	config_module_num = AAL_TOTAL_MODULE_NUM;
+#if defined(CONFIG_MACH_MT6799)
+	if (primary_display_get_pipe_status() != SINGLE_PIPE)
+		config_module_num = AAL_TOTAL_MODULE_NUM;
 #endif
-
 	for (i = 0; i < config_module_num; i++) {
 		module += i;
 		AAL_DBG("Set AAL%d interrupt enable (%d)", i, enabled);
@@ -360,7 +367,33 @@ static int disp_aal_wait_hist(unsigned long timeout)
 }
 
 #ifdef CONFIG_MTK_AAL_SUPPORT
-static void disp_aal_single_module_hist_update(enum DISP_MODULE_ENUM module)
+static void disp_aal_clear_irq_only(enum DISP_MODULE_ENUM module)
+{
+	unsigned int intsta;
+	unsigned long flags;
+	const int index = index_of_aal(module);
+	const int offset = aal_get_offset(module);
+	int getlock;
+
+	intsta = DISP_REG_GET(DISP_AAL_INTSTA + offset);
+
+	aal_index_hist_spin_trylock(index, flags, getlock);
+	if (getlock > 0) {
+		DISP_CPU_REG_SET(DISP_AAL_INTSTA + offset, (intsta & ~0x3));
+
+		/* Allow to disable interrupt */
+		g_aal_dirty_frame_retrieved[index] = 1;
+		aal_index_hist_spin_unlock(index, flags);
+
+		/*
+		 * no need per-frame wakeup.
+		 * We stop interrupt until next frame dirty.
+		 */
+		disp_aal_set_interrupt_by_module(module, 0);
+	}
+}
+
+static void disp_aal_single_pipe_hist_update(enum DISP_MODULE_ENUM module)
 {
 	unsigned int intsta;
 	int i;
@@ -370,31 +403,28 @@ static void disp_aal_single_module_hist_update(enum DISP_MODULE_ENUM module)
 	int getlock;
 
 	do {
+		/* Only process AAL0 in single module state */
+		if (module != AAL0_MODULE_NAMING) {
+			disp_aal_clear_irq_only(module);
+			break;
+		}
+
 		intsta = DISP_REG_GET(DISP_AAL_INTSTA + offset);
-		AAL_DBG("Module(%d) disp_aal_single_module_hist_update: intsta: 0x%x", module, intsta);
+		AAL_DBG("Module(%d) disp_aal_single_pipe_hist_update: intsta: 0x%x", module, intsta);
 
 		/* Only process end of frame state */
 		if ((intsta & 0x2) == 0x0)
 			break;
 
-		/* Only process AAL0 in single module state */
-		if (module != AAL0_MODULE_NAMING) {
-			DISP_CPU_REG_SET(DISP_AAL_INTSTA + offset, (intsta & ~0x3));
-
-			aal_index_hist_spin_trylock(index, flags, getlock);
-			if (getlock > 0) {
-				/* Allow to disable interrupt */
-				g_aal_dirty_frame_retrieved[index] = 1;
-				aal_index_hist_spin_unlock(index, flags);
-
-				/*
-				 * no need per-frame wakeup.
-				 * We stop interrupt until next frame dirty.
-				 */
-				disp_aal_set_interrupt_by_module(module, 0);
-			}
+		aal_index_hist_spin_trylock(index, flags, getlock);
+		if (getlock <= 0)
 			break;
-		}
+
+		DISP_CPU_REG_SET(DISP_AAL_INTSTA + offset, (intsta & ~0x3));
+
+		/* Allow to disable interrupt */
+		g_aal_dirty_frame_retrieved[index] = 1;
+		aal_index_hist_spin_unlock(index, flags);
 
 		if (spin_trylock_irqsave(&g_aal_hist_lock, flags)) {
 			DISP_CPU_REG_SET(DISP_AAL_INTSTA + offset, (intsta & ~0x3));
@@ -407,21 +437,6 @@ static void disp_aal_single_module_hist_update(enum DISP_MODULE_ENUM module)
 
 			spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 
-			aal_index_hist_spin_trylock(index, flags, getlock);
-			if (getlock > 0) {
-				/* Allow to disable interrupt */
-				g_aal_dirty_frame_retrieved[index] = 1;
-				aal_index_hist_spin_unlock(index, flags);
-
-				if (!g_aal_is_init_regs_valid) {
-					/*
-					 * AAL service is not running, not need per-frame wakeup.
-					 * We stop interrupt until next frame dirty.
-					 */
-					disp_aal_set_interrupt_by_module(module, 0);
-				}
-			}
-
 			wake_up_interruptible(&g_aal_hist_wq);
 		} else {
 			/*
@@ -429,6 +444,14 @@ static void disp_aal_single_module_hist_update(enum DISP_MODULE_ENUM module)
 			 * Another interrupt will come until histogram available
 			 * See: disp_aal_set_interrupt()
 			 */
+		}
+
+		if (!g_aal_is_init_regs_valid) {
+			/*
+			 * AAL service is not running, not need per-frame wakeup.
+			 * We stop interrupt until next frame dirty.
+			 */
+			disp_aal_set_interrupt_by_module(module, 0);
 		}
 	} while (0);
 }
@@ -447,46 +470,17 @@ static void disp_aal_reset_count(void)
 
 	spin_lock_irqsave(&g_aal_hist_lock, flags);
 	g_aal_hist_count = 0;
+	g_aal_reset_count = false;
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 }
 
-static void disp_aal_hist_combination(DISP_AAL_HIST_MODULE *hist_information)
-{
-	int i;
-	unsigned long flags;
-
-	if (spin_trylock_irqsave(&g_aal_hist_lock, flags)) {
-		if (hist_information->count > g_aal_hist_count ||
-			(hist_information->count == 0 && g_aal_hist_count > 0)) {
-			for (i = 0; i < AAL_HIST_BIN; i++)
-				g_aal_hist.maxHist[i] = hist_information->maxHist[i];
-			g_aal_hist.colorHist = hist_information->colorHist;
-
-			g_aal_hist_count = hist_information->count;
-			AAL_DBG("disp_aal_hist_combination: copy histogram");
-		} else if (hist_information->count == g_aal_hist_count) {
-			for (i = 0; i < AAL_HIST_BIN; i++)
-				g_aal_hist.maxHist[i] += hist_information->maxHist[i];
-			g_aal_hist.colorHist += hist_information->colorHist;
-
-			g_aal_hist_available = 1;
-			AAL_DBG("disp_aal_hist_combination: histogram is updated");
-		} else if (hist_information->count+1 < g_aal_hist_count) {
-			g_aal_should_reset_hist_count = true;
-			AAL_NOTICE("Interrupts sync problem is happened, reset count");
-		}
-		spin_unlock_irqrestore(&g_aal_hist_lock, flags);
-
-		wake_up_interruptible(&g_aal_hist_wq);
-	}
-}
-
-static void disp_aal_multiple_module_hist_update(enum DISP_MODULE_ENUM module)
+static void disp_aal_multiple_pipe_hist_update(enum DISP_MODULE_ENUM module)
 {
 	unsigned int intsta;
 	int i;
 	unsigned long flags;
-	DISP_AAL_HIST_MODULE hist_information;
+	unsigned int hist_count;
+	unsigned int is_hist_available;
 	const int index = index_of_aal(module);
 	const int offset = aal_get_offset(module);
 	const int color_offset = (module == AAL0_MODULE_NAMING) ? 0 : (DISPSYS_COLOR1_BASE - DISPSYS_COLOR0_BASE);
@@ -494,51 +488,74 @@ static void disp_aal_multiple_module_hist_update(enum DISP_MODULE_ENUM module)
 
 	do {
 		intsta = DISP_REG_GET(DISP_AAL_INTSTA + offset);
-		AAL_DBG("Module(%d) disp_aal_multiple_module_hist_update: intsta: 0x%x", module, intsta);
+		AAL_DBG("Module(%d) disp_aal_multiple_pipe_hist_update: intsta: 0x%x", module, intsta);
 
 		/* Only process end of frame state */
 		if ((intsta & 0x2) == 0x0)
 			break;
 
-		if (g_aal_should_reset_hist_count == true) {
-			disp_aal_reset_count();
-			g_aal_should_reset_hist_count = false;
-		}
-
 		aal_index_hist_spin_trylock(index, flags, getlock);
-		if (getlock > 0) {
-			DISP_CPU_REG_SET(DISP_AAL_INTSTA + offset, (intsta & ~0x3));
+		if (getlock <= 0)
+			break;
 
-			for (i = 0; i < AAL_HIST_BIN; i++)
-				hist_information.maxHist[i] = DISP_REG_GET(DISP_AAL_STATUS_00 + offset + (i << 2));
-			hist_information.colorHist = DISP_REG_GET(DISP_COLOR_TWO_D_W1_RESULT + color_offset);
+		DISP_CPU_REG_SET(DISP_AAL_INTSTA + offset, (intsta & ~0x3));
 
-			if (g_aal_module_hist_count[index] < AAL_MAX_HIST_COUNT)
-				g_aal_module_hist_count[index]++;
-			else
-				g_aal_module_hist_count[index] = 0;
-			hist_information.count = g_aal_module_hist_count[index];
+		/* Allow to disable interrupt */
+		g_aal_dirty_frame_retrieved[index] = 1;
 
-			/* Allow to disable interrupt */
-			g_aal_dirty_frame_retrieved[index] = 1;
+		if (g_aal_module_hist_count[index] < AAL_MAX_HIST_COUNT)
+			g_aal_module_hist_count[index]++;
+		else
+			g_aal_module_hist_count[index] = 0;
 
-			aal_index_hist_spin_unlock(index, flags);
+		hist_count = g_aal_module_hist_count[index];
 
-			if (!g_aal_is_init_regs_valid) {
-				/*
-				 * AAL service is not running, not need per-frame wakeup.
-				 * We stop interrupt until next frame dirty.
-				 */
-				disp_aal_set_interrupt_by_module(module, 0);
+		aal_index_hist_spin_unlock(index, flags);
+
+		if (spin_trylock_irqsave(&g_aal_hist_lock, flags)) {
+			if ((hist_count-g_aal_hist_count) == 1 || (hist_count == 0 && g_aal_hist_count > 0)) {
+				for (i = 0; i < AAL_HIST_BIN; i++) {
+					g_aal_hist_multi_pipe.maxHist[i] =
+						DISP_REG_GET(DISP_AAL_STATUS_00 + offset + (i << 2));
+				}
+				g_aal_hist_multi_pipe.colorHist =
+					DISP_REG_GET(DISP_COLOR_TWO_D_W1_RESULT + color_offset);
+
+				g_aal_hist_count = hist_count;
+				AAL_DBG("disp_aal_hist_combination: copy histogram");
+			} else if (hist_count == g_aal_hist_count) {
+				for (i = 0; i < AAL_HIST_BIN; i++) {
+					g_aal_hist.maxHist[i] = g_aal_hist_multi_pipe.maxHist[i] +
+						DISP_REG_GET(DISP_AAL_STATUS_00 + offset + (i << 2));
+				}
+				g_aal_hist.colorHist = g_aal_hist_multi_pipe.colorHist +
+					DISP_REG_GET(DISP_COLOR_TWO_D_W1_RESULT + color_offset);
+
+				is_hist_available = g_aal_hist_available = 1;
+				AAL_DBG("disp_aal_hist_combination: histogram is updated");
+			} else {
+				g_aal_reset_count = true;
+				AAL_DBG("Can not update histogram now");
 			}
 
-			disp_aal_hist_combination(&hist_information);
+			spin_unlock_irqrestore(&g_aal_hist_lock, flags);
+
+			if (is_hist_available == 1)
+				wake_up_interruptible(&g_aal_hist_wq);
 		} else {
 			/*
 			 * Histogram was not be retrieved, but it's OK.
 			 * Another interrupt will come until histogram available
 			 * See: disp_aal_set_interrupt()
 			 */
+		}
+
+		if (!g_aal_is_init_regs_valid) {
+			/*
+			 * AAL service is not running, not need per-frame wakeup.
+			 * We stop interrupt until next frame dirty.
+			 */
+			disp_aal_set_interrupt_by_module(module, 0);
 		}
 	} while (0);
 }
@@ -547,20 +564,37 @@ static void disp_aal_multiple_module_hist_update(enum DISP_MODULE_ENUM module)
 void disp_aal_on_end_of_frame_by_module(disp_aal_id_t id)
 {
 #ifdef CONFIG_MTK_AAL_SUPPORT
-	bool is_dualpipe = false;
+	int update_method = UPDATE_SINGLE;
 	enum DISP_MODULE_ENUM module = aal_get_module_from_id(id);
+#if defined(CONFIG_MACH_MT6799)
+	int pipe_status = primary_display_get_pipe_status();
+
+	AAL_DBG("pipe_status(%d), Module(%d) disp_aal_on_end_of_frame_by_module", pipe_status, module);
+
+	if (pipe_status == SINGLE_PIPE)
+		update_method = UPDATE_SINGLE;
+	else if (pipe_status == DUAL_PIPE)
+		update_method = UPDATE_MULTIPLE;
+	else
+		update_method = UPDATE_NONE;
+#endif
 
 	if (id < DISP_AAL0 || id >= DISP_AAL0 + AAL_TOTAL_MODULE_NUM)
 		return;
 
-#ifdef _DUAL_PIPE_DUMMY_
-	is_dualpipe = true;
-#endif
+	if (update_method == UPDATE_SINGLE) {
+		/* Process single AAL engine */
+		disp_aal_single_pipe_hist_update(module);
+	} else if (update_method == UPDATE_MULTIPLE) {
+		/* Process multiple AAL engine */
+		if ((g_aal_prev_pipe != update_method) || (g_aal_reset_count == true))
+			disp_aal_reset_count();
+		disp_aal_multiple_pipe_hist_update(module);
+	} else {
+		disp_aal_clear_irq_only(module);
+	}
 
-	if (is_dualpipe == false)
-		disp_aal_single_module_hist_update(module);
-	else
-		disp_aal_multiple_module_hist_update(module);
+	g_aal_prev_pipe = update_method;
 #else
 	/*
 	 * We will not wake up AAL unless signals
@@ -873,6 +907,10 @@ static int aal_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config 
 {
 	bool should_update = (module == AAL0_MODULE_NAMING ? true : false);
 
+#if defined(CONFIG_MACH_MT6799)
+	if (pConfig->is_dual)
+		should_update = true;
+#endif
 
 	if (pConfig->dst_dirty) {
 		int width, height;
@@ -956,7 +994,6 @@ static void ddp_aal_backup(void)
 
 }
 
-
 static void ddp_aal_restore(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	int i;
@@ -981,7 +1018,6 @@ static void ddp_aal_restore(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	}
 }
 
-
 static int aal_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
@@ -1005,6 +1041,11 @@ static int aal_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 #endif
 #endif		/* ENABLE_CLK_MGR */
 #endif
+
+	if (module == AAL0_MODULE_NAMING)
+		g_aal0_is_clock_on = true;
+	else if (g_aal0_is_clock_on == true)
+		ddp_aal_backup();
 
 	ddp_aal_restore(module, cmq_handle);
 
@@ -1036,6 +1077,12 @@ static int aal_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	}
 #endif
 #endif		/* ENABLE_CLK_MGR */
+#endif
+
+	if (module == AAL0_MODULE_NAMING)
+		g_aal0_is_clock_on = false;
+#ifdef CONFIG_MTK_AAL_SUPPORT
+	g_aal_reset_count = true;
 #endif
 	return 0;
 }
@@ -1294,9 +1341,9 @@ void aal_test(const char *cmd, char *debug_output)
 	enum DISP_MODULE_ENUM module = AAL0_MODULE_NAMING;
 	int i;
 	int config_module_num = 1;
-
-#ifdef _DUAL_PIPE_DUMMY_
-	config_module_num = AAL_TOTAL_MODULE_NUM;
+#if defined(CONFIG_MACH_MT6799)
+	if (primary_display_get_pipe_status() == DUAL_PIPE)
+		config_module_num = AAL_TOTAL_MODULE_NUM;
 #endif
 	debug_output[0] = '\0';
 	AAL_TLOG("aal_test(%s)", cmd);
