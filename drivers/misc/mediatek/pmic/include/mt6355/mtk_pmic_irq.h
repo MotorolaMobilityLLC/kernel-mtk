@@ -46,4 +46,10 @@ struct pmic_interrupts {
 	struct pmic_interrupt_bit *interrupts;
 };
 
+#if defined(MTK_EVB_PLATFORM) || defined(CONFIG_FPGA_EARLY_PORTING)
+#define ENABLE_ALL_OC_IRQ 0
+#else
+#define ENABLE_ALL_OC_IRQ 1
+#endif
+
 #endif /*--PMIC_IRQ_H--*/
