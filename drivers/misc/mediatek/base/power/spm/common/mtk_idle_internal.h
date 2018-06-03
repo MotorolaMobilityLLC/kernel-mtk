@@ -79,15 +79,15 @@ const char*
 
 #include <linux/debugfs.h>	/* struct dentry */
 
-void mtk_dpidle_init(struct dentry *root_entry);
+void mtk_dpidle_init(void);
 bool mtk_dpidle_enabled(void);
 bool dpidle_can_enter(int reason);
 
-void mtk_sodi3_init(struct dentry *root_entry);
+void mtk_sodi3_init(void);
 bool mtk_sodi3_enabled(void);
 bool sodi3_can_enter(int reason);
 
-void mtk_sodi_init(struct dentry *root_entry);
+void mtk_sodi_init(void);
 bool mtk_sodi_disp_is_ready(void);
 bool mtk_sodi_enabled(void);
 bool sodi_can_enter(int reason);
