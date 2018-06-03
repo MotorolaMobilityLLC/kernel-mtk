@@ -1197,7 +1197,7 @@ static ssize_t store_cali_value(struct device_driver *ddri, const char *buf, siz
 		err = BMI160_ACC_WriteCalibration(obj, dat);
 		if (err)
 			GSE_ERR("write calibration err = %d\n", err);
-	else
+	} else
 		GSE_ERR("set calibration value by invalid format.\n");
 	return count;
 }
@@ -2375,7 +2375,7 @@ static int bmi160_acc_get_data(int *x, int *y, int *z, int *status)
 		return err;
 	}
 	if (sscanf(buff, "%x %x %x", x, y, z) != 3)
-		GER_ERR("Parsing Failed, %s\n", buff);
+		GSE_ERR("Parsing Failed, %s\n", buff);
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	return 0;
 }

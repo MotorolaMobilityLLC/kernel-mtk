@@ -13,11 +13,11 @@
 
 #include <linux/ioctl.h>
 
-#define COMPATIABLE_NAME 		"mediatek,bmi160_acc"
-#define BMI160_DEV_NAME        	"bmi160_acc"
+#define COMPATIABLE_NAME			"mediatek,bmi160_acc"
+#define BMI160_DEV_NAME			"bmi160_acc"
 #define GSE_TAG                  "[Gsensor] "
-#define GSE_FUN(f)               /*printk*/pr_err(GSE_TAG"%s\n", __FUNCTION__)
-#define GSE_ERR(fmt, args...)    /*printk*/pr_err(GSE_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
+#define GSE_FUN(f)               /*printk*/pr_info(GSE_TAG"%s\n", __func__)
+#define GSE_ERR(fmt, args...)    /*printk*/pr_info(GSE_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define GSE_LOG(fmt, args...)    /*printk*/pr_err(GSE_TAG fmt, ##args)
 
 #define BMI160_GET_BITSLICE(regvar, bitname)\
@@ -37,7 +37,7 @@ u8 *, u8)
 #define BMI160_BRD_FUNC_PTR s8 \
 	(*burst_read)(u8, u8, u8 *, u32)
 
-#define BMI_INT_LEVEL      	0
+#define BMI_INT_LEVEL		0
 #define BMI_INT_EDGE        1
 /* Interrupt mapping*/
 #define	BMI160_MAP_INTR1	(0)
@@ -63,15 +63,15 @@ u8 *, u8)
 #define BMI160_SIG_MOTION_STAT_HIGH		(1)
 #define  BMI160_MAX_UNDER_SIG_MOTION    (3)
 #define	BMI160_MAX_VALUE_SIGNIFICANT_MOTION     (1)
-#define BMI160_MDELAY_DATA_TYPE               	u32
+#define BMI160_MDELAY_DATA_TYPE				u32
 #define BMI160_ACC_SUCCESS	0
 #define BMI160_ACC_ERR_I2C	-1
-#define BMI_INT0       		0
-#define BMI_INT1      		1
-#define DISABLE      		0
-#define ENABLE       		1
-#define BMI_DELAY_MIN 		(1)
-#define FIFO_FRAME_CNT 		(20)
+#define BMI_INT0			0
+#define BMI_INT1			1
+#define DISABLE			0
+#define ENABLE				1
+#define BMI_DELAY_MIN		(1)
+#define FIFO_FRAME_CNT		(20)
 #define FIFO_DATA_BUFSIZE   1024
 #define BMI160_BUFSIZE		256
 #define CONVERT_M			1
@@ -84,7 +84,7 @@ u8 *, u8)
 #define CONVERT_VRV			1
 #define CONVERT_VRV_DIV		(0x40000000)
 #define CONVERT_VLA_DIV		16384
-#define CONVERT_VG_DIV 		16384
+#define CONVERT_VG_DIV		16384
 #define	RESET_STEP_COUNTER	(0xB2)
 #define BMI160_RETURN_FUNCTION_TYPE			s8
 #define BMI160_NULL							(0)
@@ -127,14 +127,14 @@ u8 *, u8)
 #define C_BMI160_THIRTYONE_U8X          ((u8)31)
 #define C_BMI160_THIRTYTWO_U8X          ((u8)32)
 
-#define C_MAX_FIR_LENGTH 			(32)
-#define REG_MAX0 					0x24
-#define REG_MAX1 					0x56
-#define BMI160_ACC_AXIS_X          	0
-#define BMI160_ACC_AXIS_Y          	1
-#define BMI160_ACC_AXIS_Z          	2
-#define BMI160_ACC_AXES_NUM        	3
-#define BMI160_ACC_DATA_LEN        	6
+#define C_MAX_FIR_LENGTH				(32)
+#define REG_MAX0					0x24
+#define REG_MAX1					0x56
+#define BMI160_ACC_AXIS_X			0
+#define BMI160_ACC_AXIS_Y			1
+#define BMI160_ACC_AXIS_Z			2
+#define BMI160_ACC_AXES_NUM			3
+#define BMI160_ACC_DATA_LEN			6
 
 #define BMI160_ACC_MODE_NORMAL      0
 #define BMI160_ACC_MODE_LOWPOWER    1
@@ -144,12 +144,12 @@ u8 *, u8)
 /* Chip ID Description - Reg Addr --> 0x00, Bit --> 0...7 */
 #define BMI160_USER_CHIP_ID__POS        0
 #define BMI160_USER_CHIP_ID__MSK        0xFF
-#define BMI160_USER_CHIP_ID__LEN       	8
+#define BMI160_USER_CHIP_ID__LEN		8
 #define BMI160_USER_CHIP_ID__REG        BMI160_USER_CHIP_ID_ADDR
 
-#define SENSOR_CHIP_ID_BMI 				(0xD0)
-#define SENSOR_CHIP_ID_BMI_C2 			(0xD1)
-#define SENSOR_CHIP_ID_BMI_C3 			(0xD3)
+#define SENSOR_CHIP_ID_BMI				(0xD0)
+#define SENSOR_CHIP_ID_BMI_C2				(0xD1)
+#define SENSOR_CHIP_ID_BMI_C3				(0xD3)
 
 #define BMI160_USER_INTR_STAT_0_ADDR	(0X1C)
 #define BMI160_USER_INTR_STAT_1_ADDR	(0X1D)
@@ -216,7 +216,7 @@ u8 *, u8)
 #define BMI160_USER_ACC_CONF_ACC_UNDER_SAMPLING__POS		7
 #define BMI160_USER_ACC_CONF_ACC_UNDER_SAMPLING__LEN		1
 #define BMI160_USER_ACC_CONF_ACC_UNDER_SAMPLING__MSK		0x80
-#define BMI160_USER_ACC_CONF_ACC_UNDER_SAMPLING__REG 		BMI160_USER_ACC_CONF_ADDR
+#define BMI160_USER_ACC_CONF_ACC_UNDER_SAMPLING__REG		BMI160_USER_ACC_CONF_ADDR
 
 #define BMI160_USER_ACC_RANGE_ADDR          0X41
 /* Acc_Range Description - Reg Addr --> 0x41, Bit --> 0...3 */
@@ -271,17 +271,17 @@ u8 *, u8)
 #define BMI160_USER_INTR_MAP_1_ADDR			(0X56)
 #define BMI160_USER_INTR_MAP_2_ADDR			(0X57)
 
-#define CMD_PMU_ACC_SUSPEND           		0x10
-#define CMD_PMU_ACC_NORMAL            		0x11
-#define CMD_PMU_ACC_LP1               		0x12
-#define CMD_PMU_ACC_LP2               		0x13
+#define CMD_PMU_ACC_SUSPEND				0x10
+#define CMD_PMU_ACC_NORMAL				0x11
+#define CMD_PMU_ACC_LP1					0x12
+#define CMD_PMU_ACC_LP2					0x13
 
 #define BMI160_CMD_COMMANDS_ADDR			0X7E
 /* Command description address - Reg Addr --> 0x7E, Bit -->  0....7 */
 #define BMI160_CMD_COMMANDS__POS            0
 #define BMI160_CMD_COMMANDS__LEN            8
 #define BMI160_CMD_COMMANDS__MSK            0xFF
-#define BMI160_CMD_COMMANDS__REG	 		BMI160_CMD_COMMANDS_ADDR
+#define BMI160_CMD_COMMANDS__REG			BMI160_CMD_COMMANDS_ADDR
 
 #define BMI160_SHIFT_1_POSITION             1
 #define BMI160_SHIFT_2_POSITION             2
@@ -377,7 +377,7 @@ u8 *, u8)
 /* Int_Out_Ctrl Description - Reg Addr --> 0x53, Bit -->5 */
 #define BMI160_USER_INTR2_LEVEL__POS		(5)
 #define BMI160_USER_INTR2_LEVEL__LEN		(1)
-#define BMI160_USER_INTR2_LEVEL__MSK 		(0x20)
+#define BMI160_USER_INTR2_LEVEL__MSK		(0x20)
 #define BMI160_USER_INTR2_LEVEL__REG         \
 (BMI160_USER_INTR_OUT_CTRL_ADDR)
 
@@ -413,7 +413,7 @@ u8 *, u8)
 /**************************************************************/
 /* Int_Out_Ctrl Description - Reg Addr --> 0x53, Bit -->0 */
 #define BMI160_USER_INTR1_EDGE_CTRL__POS		(0)
-#define BMI160_USER_INTR1_EDGE_CTRL__LEN 		(1)
+#define BMI160_USER_INTR1_EDGE_CTRL__LEN		(1)
 #define BMI160_USER_INTR1_EDGE_CTRL__MSK        (0x01)
 #define BMI160_USER_INTR1_EDGE_CTRL__REG		\
 (BMI160_USER_INTR_OUT_CTRL_ADDR)
@@ -465,8 +465,8 @@ u8 *, u8)
 /**************************************************************/
 /* Int_En_1 Description - Reg Addr --> (0x51), Bit -->3 */
 #define BMI160_USER_INTR_ENABLE_1_LOW_G_ENABLE__POS		(3)
-#define BMI160_USER_INTR_ENABLE_1_LOW_G_ENABLE__LEN 	(1)
-#define BMI160_USER_INTR_ENABLE_1_LOW_G_ENABLE__MSK 	(0x08)
+#define BMI160_USER_INTR_ENABLE_1_LOW_G_ENABLE__LEN	(1)
+#define BMI160_USER_INTR_ENABLE_1_LOW_G_ENABLE__MSK	(0x08)
 #define BMI160_USER_INTR_ENABLE_1_LOW_G_ENABLE__REG		\
 (BMI160_USER_INTR_ENABLE_1_ADDR)
 /**************************************************************/
@@ -633,9 +633,9 @@ u8 *, u8)
 #define CMD_CLR_FIFO_DATA           0xB0
 
 /*! FIFO Head definition*/
-#define FIFO_HEAD_A        	0x84
-#define FIFO_HEAD_G        	0x88
-#define FIFO_HEAD_M        	0x90
+#define FIFO_HEAD_A			0x84
+#define FIFO_HEAD_G			0x88
+#define FIFO_HEAD_M			0x90
 
 #define FIFO_HEAD_G_A       (FIFO_HEAD_G | FIFO_HEAD_A)
 #define FIFO_HEAD_M_A       (FIFO_HEAD_M | FIFO_HEAD_A)
@@ -686,16 +686,16 @@ enum BMI_FIFO_DATA_SELECT_T {
 
 /*bmi fifo analyse return err status*/
 enum BMI_FIFO_ANALYSE_RETURN_T {
-        FIFO_OVER_READ_RETURN = -10,
-        FIFO_SENSORTIME_RETURN = -9,
-        FIFO_SKIP_OVER_LEN = -8,
-        FIFO_M_G_A_OVER_LEN = -7,
-        FIFO_M_G_OVER_LEN = -6,
-        FIFO_M_A_OVER_LEN = -5,
-        FIFO_G_A_OVER_LEN = -4,
-        FIFO_M_OVER_LEN = -3,
-        FIFO_G_OVER_LEN = -2,
-        FIFO_A_OVER_LEN = -1
+	FIFO_OVER_READ_RETURN = -10,
+	FIFO_SENSORTIME_RETURN = -9,
+	FIFO_SKIP_OVER_LEN = -8,
+	FIFO_M_G_A_OVER_LEN = -7,
+	FIFO_M_G_OVER_LEN = -6,
+	FIFO_M_A_OVER_LEN = -5,
+	FIFO_G_A_OVER_LEN = -4,
+	FIFO_M_OVER_LEN = -3,
+	FIFO_G_OVER_LEN = -2,
+	FIFO_A_OVER_LEN = -1
 };
 
 struct bmi160acc_t {
@@ -722,26 +722,26 @@ struct bmi160gyro_t {
 
 /*! bmi sensor time resolution definition*/
 enum BMI_SENSOR_TIME_RS_TYPE {
-        TS_0_78_HZ = 1,/*0.78HZ*/
-        TS_1_56_HZ,/*1.56HZ*/
-        TS_3_125_HZ,/*3.125HZ*/
-        TS_6_25_HZ,/*6.25HZ*/
-        TS_12_5_HZ,/*12.5HZ*/
-        TS_25_HZ,/*25HZ, odr=6*/
-        TS_50_HZ,/*50HZ*/
-        TS_100_HZ,/*100HZ*/
-        TS_200_HZ,/*200HZ*/
-        TS_400_HZ,/*400HZ*/
-        TS_800_HZ,/*800HZ*/
-        TS_1600_HZ,/*1600HZ*/
-        TS_MAX_HZ
+	TS_0_78_HZ = 1,/*0.78HZ*/
+	TS_1_56_HZ,/*1.56HZ*/
+	TS_3_125_HZ,/*3.125HZ*/
+	TS_6_25_HZ,/*6.25HZ*/
+	TS_12_5_HZ,/*12.5HZ*/
+	TS_25_HZ,/*25HZ, odr=6*/
+	TS_50_HZ,/*50HZ*/
+	TS_100_HZ,/*100HZ*/
+	TS_200_HZ,/*200HZ*/
+	TS_400_HZ,/*400HZ*/
+	TS_800_HZ,/*800HZ*/
+	TS_1600_HZ,/*1600HZ*/
+	TS_MAX_HZ
 };
 
 /*! bmi sensor time depend on ODR*/
 struct bmi_sensor_time_odr_tbl {
-        u32 ts_duration_lsb;
-        u32 ts_duration_us;
-        u32 ts_delat;/*sub current delat fifo_time*/
+	u32 ts_duration_lsb;
+	u32 ts_duration_us;
+	u32 ts_delat;/*sub current delat fifo_time*/
 };
 
 /*! bmi sensor support type*/
@@ -752,13 +752,18 @@ enum BMI_SENSOR_TYPE {
 	BMI_SENSOR_TYPE_MAX
 };
 
-typedef enum {
+enum STEP_NOTIFY_TYPE {
 	TYPE_STEP_NON = 0,
 	TYPE_STEP_DETECTOR = 1,
 	TYPE_SIGNIFICANT = 2
-} STEP_NOTIFY_TYPE;
+};
 
 
 int bmi160_acc_get_mode(struct i2c_client *client, unsigned char *mode);
 int bmi160_acc_get_drop_cmd_err(struct i2c_client *client, unsigned char *drop_cmd_err);
+
+#ifdef CUSTOM_KERNEL_SIGNIFICANT_MOTION_SENSOR
+extern int bmi160_step_notify(enum STEP_NOTIFY_TYPE);
+#endif
+
 #endif
