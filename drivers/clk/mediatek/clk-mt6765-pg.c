@@ -123,13 +123,15 @@ static void __iomem *infracfg_base;/* infracfg_ao */
 static void __iomem *spm_base;/* spm */
 static void __iomem *infra_base;/* infra */
 static void __iomem *smi_common_base;/* smi_common */
-static void __iomem *conn_base;/* connsys */
+static void __iomem *conn_base; /* connsys*/
+static void __iomem *conn_mcu_base; /* connsys MCU */
 
 #define INFRACFG_REG(offset)		(infracfg_base + offset)
 #define SPM_REG(offset)			(spm_base + offset)
 #define INFRA_REG(offset)		(infra_base + offset)
 #define SMI_COMMON_REG(offset)	(smi_common_base + offset)
 #define CONN_HIF_REG(offset)	(conn_base + offset)
+#define CONN_MCU_REG(offset)	(conn_mcu_base + offset)
 
 /* Define MTCMOS power control */
 #define PWR_RST_B			(0x1 << 0)
@@ -200,6 +202,14 @@ static void __iomem *conn_base;/* connsys */
 #define CONN_HIF_DBG_IDX		CONN_HIF_REG(0x012C)
 #define CONN_HIF_DBG_PROBE		CONN_HIF_REG(0x0130)
 #define CONN_HIF_BUSY_STATUS		CONN_HIF_REG(0x0138)
+#define CONN_HIF_PDMA_BUSY_STATUS	CONN_HIF_REG(0x0168)
+
+/* CONN MCU */
+#define CONN_MCU_CLOCK_CONTROL		CONN_MCU_REG(0x0100)
+#define CONN_MCU_BUS_CONTROL		CONN_MCU_REG(0x0110)
+#define CONN_MCU_EMI_CONTROL		CONN_MCU_REG(0x0150)
+#define CONN_MCU_DEBUG_SELECT		CONN_MCU_REG(0x0400)
+#define CONN_MCU_DEBUG_STATUS		CONN_MCU_REG(0x040C)
 
 /* Define MTCMOS Bus Protect Mask */
 #define MD1_PROT_STEP1_0_MASK		((0x1 << 7))
@@ -501,7 +511,7 @@ static int DBG_STEP;
 static void ram_console_update(void)
 {
 #ifdef CONFIG_MTK_RAM_CONSOLE
-	unsigned long data[8] = {0};
+	unsigned long data[8] = {0x0};
 	unsigned int i = 0, j = 0;
 	static unsigned long pre_data;
 	static int k;
@@ -533,6 +543,47 @@ static void ram_console_update(void)
 			data[++i] = clk_readl(CONN_HIF_BUSY_STATUS);
 			clk_writel(CONN_HIF_DBG_IDX, 0x3333);
 			data[++i] = clk_readl(CONN_HIF_DBG_PROBE);
+
+			/* Space for clk in AEE is not enough,
+			 * use printk instead.
+			 */
+			pr_notice("CONN_HIF_TOP_MISC=0x%08x\n",
+				clk_readl(CONN_HIF_TOP_MISC));
+			pr_notice("CONN_HIF_BUSY_STATUS=0x%08x\n",
+				clk_readl(CONN_HIF_BUSY_STATUS));
+			pr_notice("CONN_HIF_PDMA_BUSY_STATUS=0x%08x\n",
+				clk_readl(CONN_HIF_PDMA_BUSY_STATUS));
+
+			clk_writel(CONN_HIF_DBG_IDX, 0x2222);
+			pr_notice("CONN_HIF_DBG_PROBE=0x%08x\n",
+				clk_readl(CONN_HIF_DBG_PROBE));
+			clk_writel(CONN_HIF_DBG_IDX, 0x3333);
+			pr_notice("CONN_HIF_DBG_PROBE=0x%08x\n",
+				clk_readl(CONN_HIF_DBG_PROBE));
+			clk_writel(CONN_HIF_DBG_IDX, 0x4444);
+			pr_notice("CONN_HIF_DBG_PROBE=0x%08x\n",
+				clk_readl(CONN_HIF_DBG_PROBE));
+
+			pr_notice("CONN_MCU_EMI_CONTROL=0x%08x\n",
+				clk_readl(CONN_MCU_EMI_CONTROL));
+			pr_notice("CONN_MCU_CLOCK_CONTROL=0x%08x\n",
+				clk_readl(CONN_MCU_CLOCK_CONTROL));
+			pr_notice("CONN_MCU_BUS_CONTROL=0x%08x\n",
+				clk_readl(CONN_MCU_BUS_CONTROL));
+
+			clk_writel(CONN_MCU_DEBUG_SELECT, 0x003e3d00);
+			pr_notice("CONN_MCU_DEBUG_STATUS=0x%08x\n",
+				clk_readl(CONN_MCU_DEBUG_STATUS));
+			clk_writel(CONN_MCU_DEBUG_SELECT, 0x00403f00);
+			pr_notice("CONN_MCU_DEBUG_STATUS=0x%08x\n",
+				clk_readl(CONN_MCU_DEBUG_STATUS));
+			clk_writel(CONN_MCU_DEBUG_SELECT, 0x00424100);
+			pr_notice("CONN_MCU_DEBUG_STATUS=0x%08x\n",
+				clk_readl(CONN_MCU_DEBUG_STATUS));
+			clk_writel(CONN_MCU_DEBUG_SELECT, 0x00444300);
+			pr_notice("CONN_MCU_DEBUG_STATUS=0x%08x\n",
+				clk_readl(CONN_MCU_DEBUG_STATUS));
+
 		}
 		print_enabled_clks_once();
 		pr_notice("%s: clk = %lu\n", __func__, data[0]);
@@ -2858,9 +2909,10 @@ static void __init mt_scpsys_init(struct device_node *node)
 	smi_common_base = get_reg(node, 2);
 	infra_base = get_reg(node, 3);
 	conn_base = get_reg(node, 4);
+	conn_mcu_base = get_reg(node, 5);
 
 	if (!infracfg_base || !spm_base || !smi_common_base || !infra_base ||
-		!conn_base) {
+		!conn_base || !conn_mcu_base) {
 		pr_debug("clk-pg-mt6758: missing reg\n");
 		return;
 	}
