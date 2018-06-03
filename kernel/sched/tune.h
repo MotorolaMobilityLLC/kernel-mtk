@@ -14,6 +14,8 @@ struct target_nrg {
 
 extern struct target_nrg schedtune_target_nrg;
 
+extern int stune_task_threshold;
+
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 
 int schedtune_cpu_boost(int cpu);

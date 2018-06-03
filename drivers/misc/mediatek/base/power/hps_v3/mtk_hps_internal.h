@@ -348,9 +348,6 @@ extern int sched_get_cluster_util(int id, unsigned long *util, unsigned long *ca
 extern void sched_max_util_task(int *cpu, int *pid, int *util, int *boost);
 #endif
 
-/* defined in kernel/sched/fair.c */
-extern int STUNE_TASK_THRESHOLD;
-
 /* define in drivers/misc/mediatek/sched/sched_power.c */
 extern int sodi_limit;
 
