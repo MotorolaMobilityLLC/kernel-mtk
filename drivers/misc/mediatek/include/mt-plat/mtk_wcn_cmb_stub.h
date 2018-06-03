@@ -94,6 +94,8 @@ typedef signed long (*wmt_thermal_query_cb) (void);
 typedef int (*wmt_deep_idle_ctrl_cb) (unsigned int);
 typedef int (*wmt_func_do_reset) (unsigned int);
 
+typedef void (*wmt_clock_fail_dump_cb) (void);
+
 typedef void (*msdc_sdio_irq_handler_t) (void *);	/* external irq handler */
 typedef void (*pm_callback_t) (pm_message_t state, void *data);
 
@@ -112,6 +114,7 @@ typedef struct _CMB_STUB_CB_ {
 	wmt_thermal_query_cb thermal_query_cb;
 	wmt_deep_idle_ctrl_cb deep_idle_ctrl_cb;
 	wmt_func_do_reset wmt_do_reset_cb;
+	wmt_clock_fail_dump_cb clock_fail_dump_cb;
 } CMB_STUB_CB, *P_CMB_STUB_CB;
 
 /*******************************************************************************
@@ -150,6 +153,7 @@ extern int mt_combo_plt_exit_deep_idle(enum COMBO_IF src);
  */
 extern void mtk_wcn_cmb_stub_func_ctrl(unsigned int type, unsigned int on);
 extern int mtk_wcn_cmb_stub_query_ctrl(void);
+extern void mtk_wcn_cmb_stub_clock_fail_dump(void);
 extern int board_sdio_ctrl(unsigned int sdio_port_num, unsigned int on);
 extern int mtk_wcn_sdio_irq_flag_set(int falg);
 
