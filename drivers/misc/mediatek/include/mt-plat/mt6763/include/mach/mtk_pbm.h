@@ -21,7 +21,7 @@
 #define DISABLE_PBM_FEATURE
 #endif
 
-#define DISABLE_PBM_MD3
+/* #define DISABLE_PBM_MD3 */
 
 #define MD1_MAX_PW	4000	/* mW */
 #if !defined(DISABLE_PBM_MD3)
@@ -84,15 +84,13 @@ struct mrp {
 enum pbm_kicker {
 	KR_DLPT,		/* 0 */
 	KR_MD1,			/* 1 */
-#if !defined(DISABLE_PBM_MD3)
 	KR_MD3,			/* 2 */
-#endif
 	KR_CPU,			/* 3 */
 	KR_GPU,			/* 4 */
 	KR_FLASH		/* 5 */
 };
 
-#define MD_POWER_METER_ENABLE 1
+#define MD_POWER_METER_ENABLE 0
 /* #define TEST_MD_POWER */
 
 #define SECTION_LEN	0xFFFFFFFF	/* total 4 byte, 6 section =  11 11111 11111 11111 11111 11111 11111 */

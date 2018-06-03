@@ -18,7 +18,7 @@
 
 #define LOW_POWER_LIMIT_LEVEL_1 15
 
-#define PT_DLPT_BRINGUP
+/* #define PT_DLPT_BRINGUP */
 
 #if defined(CONFIG_FPGA_EARLY_PORTING) || defined(PT_DLPT_BRINGUP)
 /*Define for disable low battery protect feature, default no define for enable low battery protect.*/
