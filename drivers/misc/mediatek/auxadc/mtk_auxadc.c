@@ -1432,26 +1432,49 @@ static ssize_t store_AUXADC_register(struct device *dev, struct device_attribute
 
 static DEVICE_ATTR(AUXADC_register, 0664, show_AUXADC_register, store_AUXADC_register);
 
+static ssize_t show_AUXADC_channel(struct device *dev, struct device_attribute *attr, char *buf)
+{/* for support factory mode, It will make a fatal error if you delete this */
+	int ret = 0;
+	int i = 0;
+	int tmp_len = 0;
+	int rawdata = 0;
+	int tmp_vol[4] = { 0, 0, 0, 0 };
+	char tmp_buf[256];
 
-static ssize_t show_AUXADC_chanel(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	/* read data */
-	int i = 0, data[4] = { 0, 0, 0, 0 };
-	char buf_temp[256];
-	int res = 0;
-
-	for (i = 0; i < 16; i++) {
-		res = IMM_auxadc_GetOneChannelValue(i, data, NULL);
-		if (res < 0) {
-			pr_debug("[adc_driver]: get data error\n");
+	for (i = 0; i < ADC_CHANNEL_MAX; i++) {
+		if (i == PAD_AUX_XP || i == PAD_AUX_YM) {
+		/* For avoid the illegal pointer access as auxadc_apmix_base get error. */
+		/* As the channels don't use,  we set a consist value. */
+		/* Maybe it can delete after you confirm the auxadc_apmix_base is OK. */
+			rawdata = 0;
+			tmp_vol[0] = 0;
+			tmp_len = snprintf(tmp_buf, 255, "[%2d,%4d,%4d]-%15.15s-\n",
+				i, rawdata, tmp_vol[0], g_adc_info[i].channel_name);
+			strncat(buf, tmp_buf, strlen(tmp_buf));
 		} else {
-			pr_debug("[adc_driver]: channel[%d]=%d.%d\n", i, data[0], data[1]);
-			sprintf(buf_temp, "channel[%d]=%d.%d\n", i, data[0], data[1]);
-			strncat(buf, buf_temp, strlen(buf_temp));
+			ret = IMM_auxadc_GetOneChannelValue(i, tmp_vol, &rawdata);
+			if (ret < 0) {
+				pr_err("[auxadc]: show_AUXADC_channel, get chn[%d] data error\n", i);
+				rawdata = 0;
+				tmp_vol[0] = -1;
+				tmp_len = snprintf(tmp_buf, 255, "[%2d,%4d,%4d]-%15.15s-\n",
+					i, rawdata, tmp_vol[0], g_adc_info[i].channel_name);
+				strncat(buf, tmp_buf, strlen(tmp_buf));
+			} else {
+				tmp_len = snprintf(tmp_buf, 255, "[%2d,%4d,%4d]-%15.15s-\n", i, rawdata,
+					(tmp_vol[0]*1000+tmp_vol[2]), g_adc_info[i].channel_name);
+				strncat(buf, tmp_buf, strlen(tmp_buf));
+				pr_err("[auxadc]:len:%d,chn[%d]=%d mv, [%s]\n", (int)strlen(buf), i,
+					(tmp_vol[0]*1000+tmp_vol[2]), g_adc_info[i].channel_name);
+			}
 		}
 	}
-	mt_auxadc_dump_register(buf_temp);
-	strncat(buf, buf_temp, strlen(buf_temp));
+
+	sprintf(tmp_buf, "-->REG:0x%4x,GAIN:%4u,GE_A:%4u,OE_A:%4u,GE:%4d,OE:%4d\n",
+		cali_reg, gain, cali_ge_a, cali_oe_a, cali_ge, cali_oe);
+	strncat(buf, tmp_buf, strlen(tmp_buf));
+	/* mt_auxadc_dump_register(tmp_buf); */
+	/* strncat(buf, tmp_buf, strlen(tmp_buf)); */
 	return strlen(buf);
 }
 
@@ -1515,7 +1538,7 @@ static ssize_t store_AUXADC_channel(struct device *dev, struct device_attribute 
 }
 
 
-static DEVICE_ATTR(AUXADC_read_channel, 0664, show_AUXADC_chanel, store_AUXADC_channel);
+static DEVICE_ATTR(AUXADC_read_channel, 0664, show_AUXADC_channel, store_AUXADC_channel);
 
 static int mt_auxadc_create_device_attr(struct device *dev)
 {
