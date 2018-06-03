@@ -2580,8 +2580,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
 
 		/* Set a default clk for EP */
-		ispclks.clklevel[lv] = 364;
-		LOG_VRB("Default DFS Clk level:%d for EP", ispclks.clklevel[lv]);
+		ispclks.clklevelcnt = 1;
+		ispclks.clklevel[lv] = 546;
+		LOG_NOTICE("Default DFS Clk level:%d for EP", ispclks.clklevel[lv]);
 
 		if (copy_to_user((void *)Param, &ispclks, sizeof(struct ISP_CLK_INFO)) != 0) {
 			LOG_NOTICE("copy_to_user failed");
@@ -2626,6 +2627,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
+#if 0
 		/* To get how many clk levels this platform is supported */
 		ispclks.clklevelcnt = mmdvfs_qos_get_thres_count(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA);
 
@@ -2640,7 +2642,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			ispclks.clklevel[lv] = mmdvfs_qos_get_thres_value(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, lv);
 			LOG_VRB("DFS Clk level:%d", ispclks.clklevel[lv]);
 		}
-
+#else
+		ispclks.clklevelcnt = 1;
+		ispclks.clklevel[lv] = 546;
+#endif
 		if (copy_to_user((void *)Param, &ispclks, sizeof(struct ISP_CLK_INFO)) != 0) {
 			LOG_NOTICE("copy_to_user failed");
 			Ret = -EFAULT;
