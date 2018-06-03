@@ -5679,8 +5679,10 @@ static VOID aisFsmSetRoamingThreshold(P_ADAPTER_T prAdapter, INT_8 cThreshold)
 		cThreshold, prAisFsmInfo->cRoamTriggerThreshold);
 
 #if CFG_SUPPORT_NCHO
-	if (prAdapter->rNchoInfo.fgECHOEnabled)
+	if (prAdapter->rNchoInfo.fgECHOEnabled) {
+		DBGLOG(AIS, WARN, "NCHO is enabled now! Don't support to set Roaming Threshold!\n");
 		return;
+	}
 #endif
 	if (prAisFsmInfo->cRoamTriggerThreshold == cThreshold)
 		return;
