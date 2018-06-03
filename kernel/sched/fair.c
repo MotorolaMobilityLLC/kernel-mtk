@@ -79,8 +79,9 @@ unsigned int normalized_sysctl_sched_latency = 6000000ULL;
 unsigned int sysctl_sched_isolation_hint_enable; /* default off */
 int sys_boosted;
 #ifdef CONFIG_SCHED_WALT
-unsigned int sysctl_sched_use_walt_cpu_util = 1;
-unsigned int sysctl_sched_use_walt_task_util = 1;
+static int sched_use_walt_nice = 101;
+unsigned int sysctl_sched_use_walt_cpu_util;
+unsigned int sysctl_sched_use_walt_task_util;
 __read_mostly unsigned int sysctl_sched_walt_cpu_high_irqload =
 	(10 * NSEC_PER_MSEC);
 #endif
@@ -4976,7 +4977,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
 static inline unsigned long task_util(struct task_struct *p)
 {
 #ifdef CONFIG_SCHED_WALT
-	if (!walt_disabled && sysctl_sched_use_walt_task_util) {
+	if (!walt_disabled && (sysctl_sched_use_walt_task_util || p->prio < sched_use_walt_nice)) {
 		unsigned long demand = p->ravg.demand;
 		return (demand << 10) / walt_ravg_window;
 	}
@@ -5464,10 +5465,11 @@ boosted_task_util(struct task_struct *task)
 		return util;
 }
 
-unsigned long
-get_boosted_task_util(struct task_struct *task)
+void get_task_util(struct task_struct *p, unsigned long *util,
+	unsigned long *boost_util)
 {
-	return boosted_task_util(task);
+	*boost_util = boosted_task_util(p);
+	*util = task_util(p);
 }
 
 /*

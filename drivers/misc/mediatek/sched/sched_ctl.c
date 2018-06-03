@@ -571,3 +571,32 @@ static struct kobj_attribute sched_boost_attr =
 __ATTR(sched_boost, S_IWUSR | S_IRUSR, show_sched_boost,
 		store_sched_boost);
 #endif
+
+
+/* schedule loading trackign change
+ * 0: default
+ * 1: walt
+ */
+static int lt_walt_table[LT_UNKNOWN_USER];
+
+int sched_walt_enable(int user, int en)
+{
+	int walted = 0;
+	int i;
+
+	if ((user < 0) || (user >= LT_UNKNOWN_USER))
+		return -1;
+
+	lt_walt_table[user] = en;
+
+	for (i = 0; i < LT_UNKNOWN_USER; i++)
+		walted |= lt_walt_table[i];
+
+#ifdef CONFIG_SCHED_WALT
+	sysctl_sched_use_walt_cpu_util  = walted;
+	sysctl_sched_use_walt_task_util = walted;
+#endif
+
+	return 0;
+}
+EXPORT_SYMBOL(sched_walt_enable);

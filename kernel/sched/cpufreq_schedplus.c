@@ -36,9 +36,9 @@
 #include "cpufreq_schedplus.h"
 
 /* next throttling period expiry if increasing OPP */
-#define THROTTLE_DOWN_NSEC     2000000 /* 2ms default */
+#define THROTTLE_DOWN_NSEC     4000000 /* 4ms default */
 /* next throttling period expiry if decreasing OPP */
-#define THROTTLE_UP_NSEC       500000  /* 500us default */
+#define THROTTLE_UP_NSEC       0  /* 0us */
 
 #define THROTTLE_NSEC          2000000 /* 2ms default */
 
@@ -210,6 +210,7 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	unsigned int max;
 	unsigned long scale;
 #endif
+	ktime_t cur_time;
 
 	cid = arch_get_cluster_id(target_cpu);
 
@@ -234,6 +235,8 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	if (boost_min)
 		if (cpufreq_notifier_fp)
 			cpufreq_notifier_fp(cid, freq);
+
+	cur_time = ktime_get();
 
 	/* update current freq asap if tiny system. */
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -295,12 +298,9 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	 * update throttle time:
 	 * avoid inteference betwewn increasing/decreasing OPP.
 	 */
-	if (gd->thro_type == DVFS_THROTTLE_UP)
-		gd->up_throttle = ktime_add_ns(ktime_get(), gd->up_throttle_nsec);
-	else
-		gd->down_throttle = ktime_add_ns(ktime_get(), gd->down_throttle_nsec);
-
-	gd->throttle = ktime_add_ns(ktime_get(), gd->throttle_nsec);
+	gd->up_throttle   = ktime_add_ns(cur_time, gd->up_throttle_nsec);
+	gd->down_throttle = ktime_add_ns(cur_time, gd->down_throttle_nsec);
+	gd->throttle      = ktime_add_ns(cur_time, gd->throttle_nsec);
 }
 
 void update_cpu_freq_quick(int cpu, int freq)
