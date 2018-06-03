@@ -13,6 +13,20 @@
 
 #include "ccci_fsm_internal.h"
 
+void mdee_set_ex_start_str(struct ccci_fsm_ee *ee_ctl, unsigned int type, char *str)
+{
+	u64 ts_nsec;
+	unsigned long rem_nsec;
+
+	if (type == MD_FORCE_ASSERT_BY_AP_MPU)
+		snprintf(ee_ctl->ex_mpu_string, MD_EX_MPU_STR_LEN, "EMI MPU VIOLATION: %s", str);
+	ts_nsec = local_clock();
+	rem_nsec = do_div(ts_nsec, 1000000000);
+	snprintf(ee_ctl->ex_start_time, MD_EX_START_TIME_LEN, "AP detect MDEE time:%5lu.%06lu\n",
+		(unsigned long)ts_nsec, rem_nsec / 1000);
+	CCCI_MEM_LOG_TAG(ee_ctl->md_id, FSM, "%s\n", ee_ctl->ex_start_time);
+}
+
 void fsm_md_bootup_timeout_handler(struct ccci_fsm_ee *ee_ctl)
 {
 	struct ccci_mem_layout *mem_layout = ccci_md_get_mem(ee_ctl->md_id);
@@ -33,6 +47,7 @@ void fsm_md_exception_stage(struct ccci_fsm_ee *ee_ctl, int stage)
 	unsigned long flags;
 
 	if (stage == 0) { /* CCIF handshake just came in */
+		mdee_set_ex_start_str(ee_ctl, 0, NULL);
 		ee_ctl->mdlog_dump_done = 0;
 		ee_ctl->ee_info_flag = 0;
 		spin_lock_irqsave(&ee_ctl->ctrl_lock, flags);

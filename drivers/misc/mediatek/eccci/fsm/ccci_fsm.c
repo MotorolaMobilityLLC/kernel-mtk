@@ -27,6 +27,12 @@ unsigned long __weak BAT_Get_Battery_Voltage(int polling_mode)
 	return 0;
 }
 
+void mdee_set_ex_time_str(unsigned char md_id, unsigned int type, char *str)
+{
+	struct ccci_fsm_ctl *ctl = fsm_get_entity_by_md_id(md_id);
+
+	mdee_set_ex_start_str(&ctl->ee_ctl, type, str);
+}
 
 static struct ccci_fsm_command *fsm_check_for_ee(struct ccci_fsm_ctl *ctl, int xip)
 {
@@ -105,6 +111,9 @@ static void fsm_routine_exception(struct ccci_fsm_ctl *ctl, struct ccci_fsm_comm
 	}
 	ctl->last_state = ctl->curr_state;
 	ctl->curr_state = CCCI_FSM_EXCEPTION;
+	if (reason == EXCEPTION_WDT || reason == EXCEPTION_HS1_TIMEOUT || reason == EXCEPTION_HS2_TIMEOUT)
+		mdee_set_ex_start_str(&ctl->ee_ctl, 0, NULL);
+
 	/* 2. check EE reason */
 	switch (reason) {
 	case EXCEPTION_HS1_TIMEOUT:
