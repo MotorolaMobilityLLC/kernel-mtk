@@ -1443,7 +1443,6 @@ uint32_t scp_get_freq(void)
 	uint32_t sum = 0;
 	uint32_t return_freq = 0;
 
-	mutex_lock(&scp_feature_mutex);
 	/*
 	 * calculate scp frequence
 	 */
@@ -1461,7 +1460,6 @@ uint32_t scp_get_freq(void)
 	else
 		sum = sum_core_1;
 
-	mutex_unlock(&scp_feature_mutex);
 	/*pr_debug("[SCP] needed freq sum:%d\n",sum);*/
 	if (sum > FREQ_330MHZ)
 		return_freq = FREQ_416MHZ;
@@ -1478,10 +1476,13 @@ uint32_t scp_get_freq(void)
 void scp_register_feature(feature_id_t id)
 {
 	uint32_t i;
+	int ret = 0;
 
 	/*prevent from access when scp is down*/
-	if (!scp_ready[SCP_A_ID])
+	if (!scp_ready[SCP_A_ID] || !scp_ready[SCP_B_ID]) {
+		pr_err("scp_register_feature:not ready, A=%u,B=%u\n", scp_ready[SCP_A_ID], scp_ready[SCP_B_ID]);
 		return;
+	}
 	/* because feature_table is a global variable, use mutex lock to protect it from
 	 * accessing in the same time
 	 */
@@ -1490,24 +1491,37 @@ void scp_register_feature(feature_id_t id)
 		if (feature_table[i].feature == id)
 			feature_table[i].enable = 1;
 	}
-	mutex_unlock(&scp_feature_mutex);
 	EXPECTED_FREQ_REG = scp_get_freq();
+	/* set scp freq. here*/
+	ret = scp_request_freq();
+	if (ret == -1) {
+		pr_err("[SCP]scp_register_feature request_freq fail\n");
+		WARN_ON(1);
+	}
+	mutex_unlock(&scp_feature_mutex);
 }
 
 void scp_deregister_feature(feature_id_t id)
 {
 	uint32_t i;
+	int ret = 0;
 
 	/*prevent from access when scp is down*/
-	if (!scp_ready[SCP_A_ID])
+	if (!scp_ready[SCP_A_ID] || !scp_ready[SCP_B_ID])
 		return;
 	mutex_lock(&scp_feature_mutex);
 	for (i = 0; i < NUM_FEATURE_ID; i++) {
 		if (feature_table[i].feature == id)
 			feature_table[i].enable = 0;
 	}
-	mutex_unlock(&scp_feature_mutex);
 	EXPECTED_FREQ_REG = scp_get_freq();
+	/* set scp freq. here*/
+	ret = scp_request_freq();
+	if (ret == -1) {
+		pr_err("[SCP]scp_register_feature request_freq fail\n");
+		WARN_ON(1);
+	}
+	mutex_unlock(&scp_feature_mutex);
 }
 int scp_check_resource(void)
 {
@@ -1552,12 +1566,13 @@ int scp_request_freq(void)
 	if (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
 		/*  pll CCF ctrl */
 		scp_pll_ctrl_set(1, EXPECTED_FREQ_REG);
-		if (ret != 0)
-			goto fatal_error;
 	}
 
 	while (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
-		scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0, SCP_A_ID);
+		ret = scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0, SCP_A_ID);
+		if (ret != DONE)
+			pr_err("[SCP] set freq wait ipi=%d\n", ret);
+
 		mdelay(2);
 		timeout -= 1; /*try 50 times, total about 100ms*/
 		if (timeout <= 0) {
