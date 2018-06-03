@@ -78,8 +78,13 @@ const char *wakesrc_str[32] = {
 	[8] = " R12_CCIF0_EVENT_B",
 	[9] = " R12_LOWBATTERY_IRQ_B",
 	[10] = " R12_SSPM_SPM_IRQ_B",
+#if defined(CONFIG_MACH_MT6771)
+	[11] = " R12_SCP_SPM_IRQ_B",
+	[12] = " R12_SCP_WDT_EVENT_B",
+#else /* MT6763 and MT6739 */
 	[11] = " R12_26M_WAKE",
 	[12] = " R12_26M_SLEEP",
+#endif
 	[13] = " R12_PCM_WDT_WAKEUP_B",
 	[14] = " R12_USB_CDSC_B",
 	[15] = " R12_USB_POWERDWN_B",
