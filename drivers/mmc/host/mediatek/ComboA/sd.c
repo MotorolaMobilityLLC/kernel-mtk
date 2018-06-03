@@ -4614,8 +4614,10 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 		msdc_dump_gpd_bd(host->id);
 		msdc_dump_dbg_register(host);
 		if (host->hw->host_function == MSDC_SD) {
+#ifdef CONFIG_GPIOLIB
 			if (host->hw->cd_level == __gpio_get_value(cd_gpio))
 				BUG_ON(1);
+#endif
 		} else {
 			BUG_ON(1);
 		}

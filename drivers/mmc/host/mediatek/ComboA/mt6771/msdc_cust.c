@@ -29,8 +29,9 @@
 
 #include "mtk_sd.h"
 #include "dbg.h"
+#ifdef POWER_READY
 #include "include/pmic_regulator.h"
-
+#endif
 
 struct msdc_host *mtk_msdc_host[HOST_MAX_NUM];
 EXPORT_SYMBOL(mtk_msdc_host);
@@ -108,12 +109,17 @@ void __iomem *msdc_io_cfg_bases[HOST_MAX_NUM];
 #if !defined(FPGA_PLATFORM)
 int msdc_regulator_set_and_enable(struct regulator *reg, int powerVolt)
 {
+#ifdef POWER_READY
 	regulator_set_voltage(reg, powerVolt, powerVolt);
 	return regulator_enable(reg);
+#else
+	return 0;
+#endif /* POWER_READY */
 }
 
 void msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 {
+#ifdef POWER_READY
 	int voltage_uv = voltage_mv * 1000;
 
 	if (reg == NULL)
@@ -142,10 +148,12 @@ void msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 			pr_notice("msdc not power on\n");
 		}
 	}
+#endif /* POWER_READY */
 }
 
 void msdc_dump_ldo_sts(struct msdc_host *host)
 {
+#ifdef POWER_READY
 	u32 ldo_en = 0, ldo_vol = 0, ldo_cal = 0;
 	u32 id = host->id;
 
@@ -182,10 +190,12 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 	default:
 		break;
 	}
+#endif /* POWER_READY */
 }
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 {
+#ifdef POWER_READY
 	if (host->id == 1) {
 		/* VMC cal +60mV when power on */
 		if (on)
@@ -198,6 +208,7 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 		host->hw->driving_applied = &host->hw->driving_sdr50;
 		msdc_set_driving(host, host->hw->driving_applied);
 	}
+#endif /* POWER_READY */
 }
 
 void msdc_sdio_power(struct msdc_host *host, u32 on)
@@ -210,6 +221,7 @@ void msdc_sdio_power(struct msdc_host *host, u32 on)
 
 void msdc_power_calibration_init(struct msdc_host *host)
 {
+#ifdef POWER_READY
 	if (host->hw->host_function == MSDC_EMMC) {
 		pmic_config_interface(REG_VEMC_VOSEL_CAL,
 			VEMC_VOSEL_CAL_mV(EMMC_VOL_ACTUAL - VOL_3000),
@@ -223,10 +235,12 @@ void msdc_power_calibration_init(struct msdc_host *host)
 			VMC_VOSEL_CAL_mV(SD_VOL_ACTUAL - VOL_3000),
 			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
 	}
+#endif /* POWER_READY */
 }
 
 int msdc_oc_check(struct msdc_host *host, u32 en)
 {
+#ifdef POWER_READY
 	u32 val = 0;
 	int ret = 0;
 
@@ -259,6 +273,9 @@ int msdc_oc_check(struct msdc_host *host, u32 en)
 
 out:
 	return ret;
+#else
+	return 0;
+#endif /* POWER_READY */
 }
 
 void msdc_emmc_power(struct msdc_host *host, u32 on)
@@ -285,6 +302,7 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 
 void msdc_sd_power(struct msdc_host *host, u32 on)
 {
+#ifdef POWER_READY
 	u32 card_on = on;
 
 	switch (host->id) {
@@ -314,6 +332,7 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	msdc_dump_ldo_sts(host);
 #endif
+#endif /* POWER_READY */
 }
 
 void msdc_sd_power_off(void)
