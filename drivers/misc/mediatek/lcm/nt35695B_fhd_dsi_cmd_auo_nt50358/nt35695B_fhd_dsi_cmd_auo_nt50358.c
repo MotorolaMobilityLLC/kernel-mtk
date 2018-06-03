@@ -183,7 +183,29 @@ static int tps65132_write_bytes(unsigned char addr, unsigned char value)
 }
 #endif
 
-static int tps65132_iic_init(void)
+#if defined(CONFIG_MTK_LEGACY)
+static int __init tps65132_iic_init(void)
+{
+	i2c_register_board_info(TPS_I2C_BUSNUM, &tps65132_board_info, 1);
+	return 0;
+}
+
+static void __exit tps65132_iic_exit(void)
+{
+	LCM_LOGI("tps65132_iic_exit\n");
+}
+
+
+module_init(tps65132_iic_init);
+module_exit(tps65132_iic_exit);
+
+MODULE_AUTHOR("Xiaokuan Shi");
+MODULE_DESCRIPTION("MTK TPS65132 I2C Driver");
+MODULE_LICENSE("GPL");
+#endif
+
+
+static int tps65132_iic_add_driver(void)
 {
 	static int inited;
 	int ret;
@@ -203,13 +225,6 @@ static int tps65132_iic_init(void)
 	return 0;
 }
 
-#if 0
-static void tps65132_iic_exit(void)
-{
-	LCM_LOGI("tps65132_iic_exit\n");
-	i2c_del_driver(&tps65132_iic_driver);
-}
-#endif
 #endif
 #endif
 
@@ -257,7 +272,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 	{REGFLAG_DELAY, 120, {} }
 };
 
-static struct LCM_setting_table init_setting[] = {
+static struct LCM_setting_table init_setting_cmd[] = {
 	{0xFF, 1, {0x24} },
 	{0xFB, 1, {0x01} },
 	{0xC5, 1, {0x31} },
@@ -348,6 +363,7 @@ static struct LCM_setting_table init_setting[] = {
 	{0xB8, 1, {0x07} },
 	{0xB9, 1, {0x07} },
 	{0xC1, 1, {0x6D} },
+	{0xC2, 1, {0x00} }, /* disable Vblank protection for low fps power saving (for vdo mode)*/
 	{0xC4, 1, {0x24} },/* updated */
 
 	{0xBE, 1, {0x07} },
@@ -768,7 +784,7 @@ static struct LCM_setting_table init_setting[] = {
 
 	{0xFF, 1, {0x10} }, /* Return  To CMD1 */
 	{REGFLAG_UDELAY, 1, {} },
-	{0x3B, 3, {0x03, 0x06, 0x06} },
+	{0x3B, 3, {0x03, 0x0a, 0x0a} },
 
 	{0x35, 1, {0x00} },
 	{0x44, 2, {0x07, 0x78} }, /* set TE event @ line 0x778(1912) for partial update */
@@ -785,14 +801,14 @@ static struct LCM_setting_table init_setting[] = {
 	{REGFLAG_DELAY, 200, {} },
 	{0x29, 0, {} },
 	/*{REGFLAG_DELAY, 200, {} },*/
-/* ///////////////////CABC SETTING///////// */
-	{0x51, 1, {0xFF} },
-	{0x5E, 1, {0xFF} },
-	{0x53, 1, {0x70} },
-	{0x55, 1, {0x03} },
+	/* ///////////////////CABC SETTING///////// */
+	{0x51, 1, {0x00} },
+	{0x5E, 1, {0x00} },
+	{0x53, 1, {0x24} },
+	{0x55, 1, {0x00} },
 };
 
-static struct LCM_setting_table init_setting2[] = {
+static struct LCM_setting_table init_setting_vdo[] = {
 	{0xFF, 1, {0x24} },
 	{0xFB, 1, {0x01} },
 	{0xC5, 1, {0x31} },
@@ -883,6 +899,7 @@ static struct LCM_setting_table init_setting2[] = {
 	{0xB8, 1, {0x07} },
 	{0xB9, 1, {0x07} },
 	{0xC1, 1, {0x6D} },
+	{0xC2, 1, {0x00} }, /* disable Vblank protection for low fps power saving (for vdo mode)*/
 	{0xC4, 1, {0x24} },/* updated */
 
 	{0xBE, 1, {0x07} },
@@ -1303,7 +1320,7 @@ static struct LCM_setting_table init_setting2[] = {
 
 	{0xFF, 1, {0x10} }, /* Return  To CMD1 */
 	{REGFLAG_UDELAY, 1, {} },
-	{0x3B, 3, {0x03, 0x06, 0x06} },
+	{0x3B, 3, {0x03, 0x0a, 0x0a} },
 
 	{0x35, 1, {0x00} },
 	{0x44, 2, {0x07, 0x78} }, /* set TE event @ line 0x778(1912) for partial update */
@@ -1317,14 +1334,14 @@ static struct LCM_setting_table init_setting2[] = {
 
 	/*{REGFLAG_DELAY, 200, {} },*/
 	{0x11, 0, {} },
-	{REGFLAG_DELAY, 200, {} },
+	{REGFLAG_DELAY, 120, {} },
 	{0x29, 0, {} },
 	/*{REGFLAG_DELAY, 200, {} },*/
-/* ///////////////////CABC SETTING///////// */
-	{0x51, 1, {0xFF} },
-	{0x5E, 1, {0xFF} },
-	{0x53, 1, {0x70} },
-	{0x55, 1, {0x03} },
+	/* ///////////////////CABC SETTING///////// */
+	{0x51, 1, {0x00} },
+	{0x5E, 1, {0x00} },
+	{0x53, 1, {0x24} },
+	{0x55, 1, {0x00} },
 };
 
 #if 0
@@ -1442,7 +1459,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 8;
-	params->dsi.vertical_frontporch = 10;
+	params->dsi.vertical_frontporch = 20;
+	params->dsi.vertical_frontporch_for_low_power = 620;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 10;
@@ -1471,16 +1489,15 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
 
-	params->dsi.lane_swap_en = 0;
-#if 0
+#ifdef CONFIG_NT35695_LANESWAP
 	params->dsi.lane_swap_en = 1;
 
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_0] = MIPITX_PHY_LANE_CK;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_1] = MIPITX_PHY_LANE_2;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_2] = MIPITX_PHY_LANE_1;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_2] = MIPITX_PHY_LANE_3;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_3] = MIPITX_PHY_LANE_0;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_CK] = MIPITX_PHY_LANE_3;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] = MIPITX_PHY_LANE_3;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_CK] = MIPITX_PHY_LANE_1;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] = MIPITX_PHY_LANE_1;
 #endif
 }
 
@@ -1550,7 +1567,7 @@ static void lcm_init(void)
 	cmd = 0x00;
 	data = 0x0E;
 
-	tps65132_iic_init();
+	tps65132_iic_add_driver();
 
 	SET_RESET_PIN(0);
 
@@ -1601,10 +1618,10 @@ static void lcm_init(void)
 	SET_RESET_PIN(1);
 	MDELAY(10);
 	if (lcm_dsi_mode == CMD_MODE) {
-		push_table(NULL, init_setting, sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
+		push_table(NULL, init_setting_cmd, sizeof(init_setting_cmd) / sizeof(struct LCM_setting_table), 1);
 		LCM_LOGI("nt35695----tps6132----lcm mode = cmd mode :%d----\n", lcm_dsi_mode);
 	} else {
-		push_table(NULL, init_setting2, sizeof(init_setting2) / sizeof(struct LCM_setting_table), 1);
+		push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
 		LCM_LOGI("nt35695----tps6132----lcm mode = vdo mode :%d----\n", lcm_dsi_mode);
 	}
 }
@@ -1799,6 +1816,8 @@ static void *lcm_switch_mode(int mode)
 #endif
 }
 
+#if (LCM_DSI_CMD_MODE)
+
 /* partial update restrictions:
  * 1. roi width must be 1080 (full lcm width)
  * 2. vertical start (y) must be multiple of 16
@@ -1838,9 +1857,16 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 	*y = y1;
 	*height = h;
 }
+#endif
 
+#if (LCM_DSI_CMD_MODE)
 LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_lcm_drv = {
 	.name = "nt35695B_fhd_dsi_cmd_auo_nt50358_drv",
+#else
+
+LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_nt50358_lcm_drv = {
+	.name = "nt35695B_fhd_dsi_vdo_auo_nt50358_drv",
+#endif
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
@@ -1855,5 +1881,8 @@ LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_lcm_drv = {
 	.ata_check = lcm_ata_check,
 	.update = lcm_update,
 	.switch_mode = lcm_switch_mode,
+#if (LCM_DSI_CMD_MODE)
 	.validate_roi = lcm_validate_roi,
+#endif
+
 };
