@@ -1493,10 +1493,10 @@ CLK_OF_DECLARE(mtk_infracfg_ao, "mediatek,infracfg_ao",
 
 static const struct mtk_pll_data plls[] = {
 	/* FIXME: need to fix flags/div_table/tuner_reg/table */
-	PLL(APMIXED_MAINPLL, "mainpll", 0x0220, 0x022C, 0x00000001, 0,
+	PLL(APMIXED_MAINPLL, "mainpll", 0x0220, 0x022C, 0x00000001, HAVE_RST_BAR,
 		22, 0x0224, 24, 0x0, 0x0224, 0),
 
-	PLL(APMIXED_UNIVPLL, "univpll", 0x0230, 0x023C, 0x00000001, 0,
+	PLL(APMIXED_UNIVPLL, "univpll", 0x0230, 0x023C, 0x00000001, HAVE_RST_BAR,
 		22, 0x0234, 24, 0x0, 0x0234, 0),
 
 	PLL(APMIXED_MFGPLL, "mfgpll", 0x0240, 0x024C, 0x00000001, 0,
