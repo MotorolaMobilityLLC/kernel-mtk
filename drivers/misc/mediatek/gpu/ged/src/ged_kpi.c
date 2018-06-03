@@ -1775,12 +1775,7 @@ GED_ERROR ged_kpi_dequeue_buffer_ts(int pid, u64 ullWdnd, int i32FrameID,
 			&psMonitor->sSyncWaiter, ged_kpi_pre_fence_sync_cb);
 
 		if (ret < 0) {
-			/* if fence not signaled then it means error,
-			 * need to do fence put
-			 */
-			if (ret != -ENOENT)
-				fence_put(psMonitor->psSyncFence);
-
+			fence_put(psMonitor->psSyncFence);
 			ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
 			ret = ged_kpi_timeP(pid, ullWdnd, i32FrameID);
 		}
@@ -1828,12 +1823,7 @@ GED_ERROR ged_kpi_queue_buffer_ts(int pid, u64 ullWdnd, int i32FrameID,
 			, ged_kpi_gpu_3d_fence_sync_cb);
 
 		if (ret < 0) {
-		/* if fence not signaled then it means error,
-		 * need to do fence put
-		 */
-			if (ret != -ENOENT)
-				fence_put(psMonitor->psSyncFence);
-
+			fence_put(psMonitor->psSyncFence);
 			ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
 			ret = ged_kpi_time2(pid, ullWdnd, i32FrameID);
 		}
