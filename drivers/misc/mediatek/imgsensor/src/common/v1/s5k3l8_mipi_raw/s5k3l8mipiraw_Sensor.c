@@ -46,6 +46,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 2104,
 		.grabwindow_height = 1560,
 		.mipi_data_lp2hs_settle_dc = 21,
+		.mipi_pixel_rate = 449000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -59,6 +60,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 449000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -72,6 +74,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 21,
+		.mipi_pixel_rate = 449000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -85,6 +88,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 449000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 150,
 	},
@@ -97,6 +101,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 21,
+		.mipi_pixel_rate = 449000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -109,6 +114,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 640,
 		.grabwindow_height = 480,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 449000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 1200,
 	},
@@ -121,6 +127,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 1280,
 		.grabwindow_height = 720,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 449000000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 1200,
 	},
@@ -2589,15 +2596,32 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		}
 		break;
-#if 0 /* fix me */
-	case SENSOR_FEATURE_GET_PDAF_DATA:
-		pr_info("SENSOR_FEATURE_GET_PDAF_DATA\n");
-		S5K3L8_read_eeprom((kal_uint16)(*feature_data),
-			(char *)(uintptr_t)(*(feature_data+1)),
-			(kal_uint32)(*(feature_data+2)));
+	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.cap.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.normal_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.hs_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.slim_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		default:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.pre.mipi_pixel_rate;
+			break;
+		}
 		break;
-#endif
-/******************** PDAF END   <<< *********/
+
 	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
 		pr_debug("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
 		streaming_control(KAL_FALSE);
