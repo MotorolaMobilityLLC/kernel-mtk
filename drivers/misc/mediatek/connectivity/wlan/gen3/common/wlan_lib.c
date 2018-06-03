@@ -5419,8 +5419,10 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	    (UINT_8) wlanCfgGetUint32(prAdapter, "ThreadPriority", WLAN_TX_THREAD_TASK_PRIORITY);
 	prWifiVar->cThreadNice = (INT_8) wlanCfgGetInt32(prAdapter, "ThreadNice", WLAN_TX_THREAD_TASK_NICE);
 
-	prAdapter->rQM.u4MaxForwardBufferCount =
-	    (UINT_32) wlanCfgGetUint32(prAdapter, "ApForwardBufferCnt", QM_FWD_PKT_QUE_THRESHOLD);
+	prAdapter->rQM.u4MaxForwardBuffer =
+	    (UINT_32) wlanCfgGetUint32(prAdapter, "ApForwardBufferCnt", QM_FWD_PKT_QUE_HIGH_THRESHOLD);
+	prAdapter->rQM.u4MaxForwardBufferForLowUP =
+	    (UINT_32) wlanCfgGetUint32(prAdapter, "ApForwardBufferCntForLowUP", QM_FWD_PKT_QUE_LOW_THRESHOLD);
 
 	/*
 	 * AP channel setting
