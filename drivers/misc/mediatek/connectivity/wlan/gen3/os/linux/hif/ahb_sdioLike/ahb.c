@@ -1056,6 +1056,7 @@ static irqreturn_t HifAhbISR(IN int irq, IN void *arg)
 	if (!prGlueInfo)
 		return IRQ_HANDLED;
 
+	prGlueInfo->u8HifIntTime = sched_clock();
 	prGlueInfo->IsrCnt++;
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		__disable_irq();

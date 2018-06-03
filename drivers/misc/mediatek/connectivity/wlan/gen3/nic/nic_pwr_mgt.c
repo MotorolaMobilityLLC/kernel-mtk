@@ -148,11 +148,12 @@ VOID nicPmTriggerDriverOwn(IN P_ADAPTER_T prAdapter)
 BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 {
 #define LP_OWN_BACK_TOTAL_DELAY_MS      2048	/* exponential of 2 */
-#define LP_OWN_BACK_LOOP_DELAY_MS       1	/* exponential of 2 */
 #define LP_OWN_BACK_CLR_OWN_ITERATION   256	/* exponential of 2 */
 #define LP_OWN_BACK_FAILED_RETRY_CNT    5
 #define LP_OWN_BACK_FAILED_LOG_SKIP_MS  2000
 #define LP_OWN_BACK_FAILED_RESET_CNT    5
+#define LP_OWN_BACK_LOOP_DELAY_MIN_US   900
+#define LP_OWN_BACK_LOOP_DELAY_MAX_US   1000
 
 	BOOLEAN fgStatus = TRUE;
 	UINT_32 i, u4CurrTick, u4RegValue = 0;
@@ -212,10 +213,10 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 		}
 
 		/* Delay for LP engine to complete its operation. */
-		kalMsleep(LP_OWN_BACK_LOOP_DELAY_MS);
+		kalUsleep_range(LP_OWN_BACK_LOOP_DELAY_MIN_US, LP_OWN_BACK_LOOP_DELAY_MAX_US);
 		i++;
 	}
-	DBGLOG(NIC, INFO, "DRIVER OWN, status=%d\n", fgStatus);
+	DBGLOG(NIC, INFO, "DRIVER OWN, status=%d count=%d\n", fgStatus, i);
 
 	return fgStatus;
 }

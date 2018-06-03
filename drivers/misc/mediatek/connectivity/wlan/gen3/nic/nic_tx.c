@@ -1589,6 +1589,8 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 
 			u4TotalLength += ALIGN_4(prMsduInfo->u2FrameLength);
 
+			StatsEnvTxTime2Hif(prAdapter, prMsduInfo);
+
 			/* Free MSDU_INFO */
 			if (prMsduInfo->eSrc == TX_PACKET_MGMT) {
 				GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
