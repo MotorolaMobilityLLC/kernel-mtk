@@ -150,3 +150,14 @@ int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
 	return best_idle_cpu;
 }
 
+/*
+ * Add a system-wide over-utilization indicator which
+ * is updated in load-balance.
+ */
+static bool system_overutil;
+
+static inline bool system_overutilized(int cpu)
+{
+	return system_overutil;
+}
+
