@@ -87,8 +87,8 @@ extern struct device *mDev_btcvsd_tx;
 
 /* RX */
 #define SCO_RX_PLC_SIZE (30)
-#define SCO_RX_PACKER_BUF_NUM (16) /* 16*/
-#define SCO_RX_PACKET_MASK (0xF)   /* 0xF */
+#define SCO_RX_PACKER_BUF_NUM (64)
+#define SCO_RX_PACKET_MASK (0x3F)
 #define SCO_RX_PCM64K_BUF_SIZE (SCO_RX_PLC_SIZE * 2 * 8)
 #define SCO_RX_PCM8K_BUF_SIZE (SCO_RX_PLC_SIZE * 2)
 

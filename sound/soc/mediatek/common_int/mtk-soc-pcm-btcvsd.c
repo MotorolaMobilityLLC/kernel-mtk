@@ -632,9 +632,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 		return -1;
 	}
 
-	read_timeout_limit = ((kal_uint64)SCO_RX_PACKER_BUF_NUM *
-			      SCO_RX_PLC_SIZE * 16 * 1000000000) /
-			     2 / 2 / 64000;
+	read_timeout_limit = 22500000;  /* one interrupt period = 22.5ms */
 
 	while (count) {
 		pr_debug("%s pRX->i_w=%d, pRX->i_r=%d,count=%zu\n",
