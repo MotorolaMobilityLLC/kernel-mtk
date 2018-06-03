@@ -194,4 +194,8 @@ endif
 
 obj-$(CONFIG_THERMAL) += mtk_tsAll.o
 obj-$(CONFIG_THERMAL) += mtk_ts_Abts.o
+
+ifneq ($(CONFIG_MTK_BIF_SUPPORT),)
+obj-$(CONFIG_THERMAL) += mtk_ts_bif.o
+endif
 endif
