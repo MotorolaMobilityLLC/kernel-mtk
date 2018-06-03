@@ -24,7 +24,7 @@
 #include "audio_ipi_platform.h"
 
 /* using for filter ipi message*/
-#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 #include "audio_spkprotect_msg_id.h"
 #endif
 
@@ -129,10 +129,13 @@ void audio_reg_recv_message(uint8_t task_scene, recv_message_t recv_message)
 
 static bool check_print_msg_info(const struct ipi_msg_t *p_ipi_msg)
 {
-
-#ifdef	CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
+#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	if (p_ipi_msg->task_scene == TASK_SCENE_SPEAKER_PROTECTION
 		&& p_ipi_msg->msg_id == SPK_PROTECT_DLCOPY)
+		return false;
+#endif
+#ifdef CONFIG_MTK_VOW_SUPPORT
+	if (p_ipi_msg->task_scene == TASK_SCENE_VOW)
 		return false;
 #endif
 	return true;
