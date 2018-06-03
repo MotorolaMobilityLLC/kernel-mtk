@@ -32,9 +32,9 @@
 #include <ap_thermal_limit.h>
 
 #if defined(ATM_USES_PPM)
-#include "mach/mtk_ppm_api.h"
+#include "mtk_ppm_api.h"
 #else
-//#include "mtk_cpufreq.h"
+#include "mtk_cpufreq.h"
 #endif
 
 

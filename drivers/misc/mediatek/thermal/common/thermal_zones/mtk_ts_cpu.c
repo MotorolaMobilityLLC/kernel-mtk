@@ -64,7 +64,7 @@
 #endif
 
 #if defined(ATM_USES_PPM)
-#include "mach/mtk_ppm_api.h"
+#include "mtk_ppm_api.h"
 #else
 #include "mt_cpufreq.h"
 #endif
