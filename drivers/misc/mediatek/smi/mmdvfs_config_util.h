@@ -237,6 +237,7 @@ extern struct mmdvfs_step_util *g_mmdvfs_step_util;
 extern struct mmdvfs_step_util *g_mmdvfs_non_force_step_util;
 
 extern struct mmdvfs_thresholds_dvfs_handler *g_mmdvfs_thresholds_dvfs_handler;
+extern u32 camera_bw_config;
 
 void mmdvfs_config_util_init(void);
 

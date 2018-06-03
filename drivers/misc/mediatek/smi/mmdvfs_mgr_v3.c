@@ -541,6 +541,8 @@ void mmdvfs_handle_cmd(struct MTK_MMDVFS_CMD *cmd)
 	case MTK_MMDVFS_CMD_TYPE_CONFIG:
 		g_mmdvfs_mgr->is_boost_disable = cmd->boost_disable;
 		MMDVFSMSG("Config: is_boost_disable=%d\n", g_mmdvfs_mgr->is_boost_disable);
+		camera_bw_config = cmd->ddr_type;
+		MMDVFSMSG("Config: bw_config=0x%08x\n", camera_bw_config);
 		break;
 
 	case MTK_MMDVFS_CMD_TYPE_STEP_SET:
@@ -563,7 +565,7 @@ void mmdvfs_handle_cmd(struct MTK_MMDVFS_CMD *cmd)
 	}
 }
 
-#define MMDVFS_CAMERA_SCENARIOS_MASK	((1<<SMI_BWC_SCEN_VR) | \
+#define MMDVFS_CAMERA_BOOST_MASK	((1<<SMI_BWC_SCEN_VR) | \
 					(1<<SMI_BWC_SCEN_VR_SLOW) | \
 					(1<<SMI_BWC_SCEN_ICFP) | \
 					(1<<SMI_BWC_SCEN_VSS) | \
@@ -591,7 +593,7 @@ void mmdvfs_notify_scenario_exit(enum MTK_SMI_BWC_SCEN scen)
 		g_mmdvfs_mgr->is_vp_high_fps_enable = 0;
 
 	/* Boost for ISP related scenario */
-	if ((1 << scen & MMDVFS_CAMERA_SCENARIOS_MASK))
+	if ((1 << scen & MMDVFS_CAMERA_BOOST_MASK))
 		mmdvfs_start_cam_monitor(scen, 8);
 
 	/* If the scenario is defined in disable_auto_control_mask */
@@ -651,7 +653,7 @@ void mmdvfs_notify_scenario_enter(enum MTK_SMI_BWC_SCEN scen)
 	}
 
 	/* Boost for ISP related scenario */
-	if ((1 << scen & MMDVFS_CAMERA_SCENARIOS_MASK))
+	if ((1 << scen & MMDVFS_CAMERA_BOOST_MASK))
 		mmdvfs_start_cam_monitor(scen, 8);
 
 	/* Record the engine status for debugging */

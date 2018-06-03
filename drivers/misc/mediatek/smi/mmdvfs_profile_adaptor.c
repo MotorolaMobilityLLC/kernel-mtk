@@ -34,6 +34,9 @@
 #include "mmdvfs_mgr.h"
 #include "mmdvfs_internal.h"
 #include "mach/mtk_freqhopping.h"
+#ifdef USE_DDR_TYPE
+#include "mt_emi_api.h"
+#endif
 
 
 /* Class: mmdvfs_step_util */
@@ -43,6 +46,9 @@ static void mmdvfs_step_util_init(struct mmdvfs_step_util *self);
 static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, s32 step, u32 scenario);
 static int mmdvfs_get_clients_clk_opp(struct mmdvfs_step_util *self, struct mmdvfs_adaptor *adaptor,
 	int clients_mask, int clk_id);
+static bool in_camera_scenario;
+u32 camera_bw_config;
+u32 normal_bw_config;
 
 #if defined(SMI_WHI)
 struct mmdvfs_step_util mmdvfs_step_util_obj = {
@@ -922,6 +928,13 @@ static inline void mmdvfs_adjust_scenario(s32 *mmdvfs_scen_opp_map,
 	}
 }
 
+#define MMDVFS_CAMERA_SCEN_MASK	((1<<SMI_BWC_SCEN_VR) | \
+				(1<<SMI_BWC_SCEN_VR_SLOW) | \
+				(1<<SMI_BWC_SCEN_ICFP) | \
+				(1<<SMI_BWC_SCEN_VSS) | \
+				(1<<SMI_BWC_SCEN_CAM_PV) | \
+				(1<<SMI_BWC_SCEN_CAM_CP))
+
 /* updat the step members only (HW independent part) */
 /* return the final step */
 static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, s32 step, u32 scenario)
@@ -929,6 +942,7 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, s32 step, u3
 	int scenario_idx = 0;
 	int opp_idx = 0;
 	int final_opp = -1;
+	bool has_camera_scenario = false;
 
 	/* check step range here */
 	if (step < -1 || step >= self->total_opps)
@@ -973,6 +987,29 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, s32 step, u3
 		MMDVFSMSG("[force] set step (%d) by MMDVFS_MGR, force to use it!\n", final_opp);
 	}
 
+	for (opp_idx = 0; opp_idx < self->total_opps; opp_idx++) {
+		if ((self->mmdvfs_concurrency_of_opps[opp_idx] & MMDVFS_CAMERA_SCEN_MASK) != 0) {
+			has_camera_scenario = true;
+			break;
+		}
+	}
+
+	if (camera_bw_config && in_camera_scenario != has_camera_scenario) {
+#if defined(SPECIAL_BW_CONFIG_MM)
+		u32 bw_config = has_camera_scenario ? camera_bw_config : normal_bw_config;
+		u32 old_bw_config, new_bw_config;
+
+		MMDVFSDEBUG(3, "[DRAM setting] in camera? %d\n", has_camera_scenario);
+		in_camera_scenario = has_camera_scenario;
+		old_bw_config = BM_GetBW();
+		BM_SetBW(bw_config);
+		new_bw_config = BM_GetBW();
+		MMDVFSDEBUG(3, "[DRAM setting] old:0x%08x, want:0x%08x, new:0x%08x\n",
+			old_bw_config, bw_config, new_bw_config);
+#else
+		MMDVFSDEBUG(3, "[DRAM setting] not support\n");
+#endif
+	}
 	return final_opp;
 }
 
@@ -1080,10 +1117,12 @@ void mmdvfs_config_util_init(void)
 		break;
 	case MMDVFS_PROFILE_BIA:
 #if defined(SMI_BIA)
-		if (get_ddr_type() == TYPE_LPDDR3) {
+		if (get_dram_type() == TYPE_LPDDR3) {
+			camera_bw_config = 0x07000507;
+			normal_bw_config = 0x05000407;
 			g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6763_lp3;
 			MMDVFSMSG("g_mmdvfs_step_util init with lp3\n");
-		} else if (get_ddr_type() == TYPE_LPDDR3 && get_emi_ch_num() == 1) {
+		} else if (get_dram_type() == TYPE_LPDDR4 && get_ch_num() == 1) {
 			g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6763_lp4_1ch;
 			MMDVFSMSG("g_mmdvfs_step_util init with lp4 1-ch\n");
 		} else {

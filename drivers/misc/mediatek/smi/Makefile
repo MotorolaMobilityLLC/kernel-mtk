@@ -18,6 +18,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi_bwl/$(MTK_PLATFORM)/
 
 
 BUILD_ALL_FILES := true
@@ -55,6 +56,7 @@ SUPPORT_MET_SMI := true
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6763"))
 ccflags-y += -DSMI_BIA
 ccflags-y += -DSMI_MMU_V2
+ccflags-y += -DSPECIAL_BW_CONFIG_MM
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
@@ -62,6 +64,7 @@ obj-y += mmdvfs_mgr_v3.o
 obj-y += mmdvfs_profile_adaptor.o
 obj-y += mtk-smi.o
 obj-y += smi_configuration_mt6763.o
+SUPPORT_USE_DDR_TYPE := true
 SUPPORT_MET_SMI := true
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6758"))
 ccflags-y += -DSMI_VIN
@@ -114,6 +117,12 @@ endif
 
 ifeq (true, $(SUPPORT_MET_SMI))
 obj-y += $(subst ",,met)/
+endif
+
+ifeq (true, $(SUPPORT_USE_DDR_TYPE))
+ccflags-y += -DUSE_DDR_TYPE
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi/submodule/
 endif
 
 ifeq (true, $(BUILD_ALL_FILES))
