@@ -33,6 +33,7 @@
 #include <linux/proc_fs.h>
 
 #include <mt-plat/mtk_partition.h>
+#include <mt-plat/mtk_boot.h>
 
 #include "mtk_sd.h"
 #include <mmc/card/queue.h>
@@ -161,6 +162,12 @@ EXPORT_SYMBOL(msdc_get_cache_region);
 static struct delayed_work get_cache_info;
 static int __init init_get_cache_work(void)
 {
+	int boot_type;
+
+	boot_type = get_boot_type();
+	if (boot_type != BOOTDEV_SDMMC)
+		return 0;
+
 	INIT_DELAYED_WORK(&get_cache_info, msdc_get_cache_region);
 	schedule_delayed_work(&get_cache_info, 100);
 	return 0;

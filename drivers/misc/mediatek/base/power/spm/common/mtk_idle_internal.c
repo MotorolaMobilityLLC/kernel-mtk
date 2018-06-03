@@ -30,7 +30,10 @@
 #include <mtk_idle_internal.h>
 
 #include <mtk_spm_internal.h>
-
+#if defined(CONFIG_MTK_UFS_SUPPORT)
+#include <ufs-mtk.h>
+#endif
+#include <mt-plat/mtk_boot.h>
 
 /* --------------------------------------
  *   mtk idle scenario footprint definitions
@@ -146,12 +149,16 @@ const char*
 static unsigned int ufs_cb_before_idle(void)
 {
 	unsigned int op_cond = 0;
+#if defined(CONFIG_MTK_UFS_SUPPORT)
+	int boot_type;
 
-	#if defined(CONFIG_MTK_UFS_BOOTING)
-	op_cond |=
-		!ufs_mtk_deepidle_hibern8_check()
-				? MTK_IDLE_OPT_XO_UFS_ON_OFF : 0;
-	#endif
+	boot_type = get_boot_type();
+	if (boot_type == BOOTDEV_UFS) {
+		op_cond |=
+			!ufs_mtk_deepidle_hibern8_check()
+					? MTK_IDLE_OPT_XO_UFS_ON_OFF : 0;
+	}
+#endif
 
 	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	op_cond |= !clk_buf_bblpm_enter_cond()
@@ -163,9 +170,13 @@ static unsigned int ufs_cb_before_idle(void)
 
 static void ufs_cb_after_idle(void)
 {
-	#if defined(CONFIG_MTK_UFS_BOOTING)
-	ufs_mtk_deepidle_leave();
-	#endif
+#if defined(CONFIG_MTK_UFS_SUPPORT)
+	int boot_type;
+
+	boot_type = get_boot_type();
+	if (boot_type == BOOTDEV_UFS)
+		ufs_mtk_deepidle_leave();
+#endif
 }
 
 static int idle_notify_enter[NR_IDLE_TYPES] = {

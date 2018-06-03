@@ -16,6 +16,7 @@
 #include <linux/spinlock.h>
 
 #include <mt-plat/mtk_meminfo.h> /* dcs_get_dcs_status_trylock/unlock */
+#include <mt-plat/mtk_boot.h>
 
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 #include <teei_client_main.h> /* is_teei_ready */
@@ -118,7 +119,7 @@ int mtk_idle_enter_dvt(int cpu)
 }
 #endif /* MTK_IDLE_DVT_TEST_ONLY */
 
-#if defined(CONFIG_MTK_UFS_BOOTING)
+#if defined(CONFIG_MTK_UFS_SUPPORT)
 static unsigned int idle_ufs_lock;
 static DEFINE_SPINLOCK(idle_ufs_spin_lock);
 
@@ -159,9 +160,10 @@ int mtk_idle_select(int cpu)
 {
 	int idx;
 	int reason = NR_REASONS;
-	#if defined(CONFIG_MTK_UFS_BOOTING)
+	#if defined(CONFIG_MTK_UFS_SUPPORT)
 	unsigned long flags = 0;
 	unsigned int ufs_locked;
+	int boot_type;
 	#endif
 	#if defined(CONFIG_MTK_DCS)
 	int ch = 0, ret = -1;
@@ -195,14 +197,17 @@ int mtk_idle_select(int cpu)
 	}
 
 	/* 3. locked by ufs ? */
-	#if defined(CONFIG_MTK_UFS_BOOTING)
-	spin_lock_irqsave(&idle_ufs_spin_lock, flags);
-	ufs_locked = idle_ufs_lock;
-	spin_unlock_irqrestore(&idle_ufs_spin_lock, flags);
+	#if defined(CONFIG_MTK_UFS_SUPPORT)
+	boot_type = get_boot_type();
+	if (boot_type == BOOTDEV_UFS) {
+		spin_lock_irqsave(&idle_ufs_spin_lock, flags);
+		ufs_locked = idle_ufs_lock;
+		spin_unlock_irqrestore(&idle_ufs_spin_lock, flags);
 
-	if (ufs_locked) {
-		reason = BY_UFS;
-		goto get_idle_idx;
+		if (ufs_locked) {
+			reason = BY_UFS;
+			goto get_idle_idx;
+		}
 	}
 	#endif
 
