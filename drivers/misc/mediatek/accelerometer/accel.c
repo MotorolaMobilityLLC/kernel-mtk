@@ -120,6 +120,8 @@ static void acc_work_func(struct work_struct *work)
 	/* printk("new acc work run....\n"); */
 	/* ACC_LOG("acc data[%d,%d,%d]\n" ,cxt->drv_data.acc_data.values[0], */
 	/* cxt->drv_data.acc_data.values[1],cxt->drv_data.acc_data.values[2]); */
+	if ((cur_ns - pre_ns) > 500000000LL)
+		ACC_ERR("Ever blocking > 500ms may defect timestamp!!\n");
 
 	while ((cur_ns - pre_ns) >= delay_ms*1800000LL) {
 		pre_ns += delay_ms*1000000LL;
