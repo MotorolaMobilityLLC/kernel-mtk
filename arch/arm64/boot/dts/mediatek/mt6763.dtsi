@@ -2005,11 +2005,30 @@
 	vdec_gcon@17000000 {
 		compatible = "mediatek,vdec_gcon";
 		reg = <0 0x17000000 0 0x1000>;
+		clocks =
+				<&mmsys_config MMSYS_SMI_COMMON>,
+				<&venc_gcon VENC_GCON_VDEC>,
+				<&venc_gcon VENC_GCON_LARB>,
+				<&venc_gcon VENC_GCON_VENC>,
+				<&venc_gcon VENC_GCON_LARB>,
+				<&scpsys SCP_SYS_DIS>,
+				<&scpsys SCP_SYS_VEN>,
+				<&scpsys SCP_SYS_VEN>;
+		clock-names =
+				"MT_CG_SMI_COMMON",
+				"MT_CG_VDEC",
+				"MT_CG_VDEC_LARB",
+				"MT_CG_VENC",
+				"MT_CG_VENC_LARB",
+				"MT_SCP_SYS_DIS",
+				"MT_SCP_SYS_VDE",
+				"MT_SCP_SYS_VEN";
+		#clock-cells = <1>;
 	};
 
 	vdec@17040000 {
 		compatible = "mediatek,vdec";
-		reg = <0 0x17040000 0 0x1000>;
+		reg = <0 0x17040000 0 0x10000>;
 		interrupts = <GIC_SPI 233 IRQ_TYPE_LEVEL_LOW>;
 	};
 

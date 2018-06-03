@@ -87,12 +87,12 @@ static struct device *vcodec_device;
 
 #ifndef VCODEC_FPGAPORTING
 #ifndef CONFIG_MTK_CLKMGR
-static struct clk *clk_MT_CG_DISP0_SMI_COMMON;  /* MM_DISP0_SMI_COMMON */
-static struct clk *clk_MT_CG_VDEC0_VDEC;        /* VDEC0_VDEC */
-static struct clk *clk_MT_CG_VDEC1_LARB;        /* VDEC1_LARB */
+static struct clk *clk_MT_CG_SMI_COMMON;        /* MMSYS_SMI_COMMON */
+static struct clk *clk_MT_CG_VDEC;              /* VENC_GCON_VDEC */
+static struct clk *clk_MT_CG_VDEC_LARB;         /* VENC_GCON_LARB */ /* common with enc */
 
-static struct clk *clk_MT_CG_VENC_VENC;         /* VENC_VENC */
-static struct clk *clk_MT_CG_VENC_LARB;         /* VENC_LARB */
+static struct clk *clk_MT_CG_VENC;              /* VENC_GCON_VENC */
+static struct clk *clk_MT_CG_VENC_LARB;         /* VENC_GCON_LARB */
 
 static struct clk *clk_MT_SCP_SYS_VDE;          /* SCP_SYS_VDE */
 static struct clk *clk_MT_SCP_SYS_VEN;          /* SCP_SYS_VEN */
@@ -160,8 +160,8 @@ static VAL_UINT32_T gu4VdecLockThreadId;
 #define VENC_REGION     0x1000
 
 /* VDEC virtual base address */
-#define VDEC_BASE_PHY   0x16000000
-#define VDEC_REGION     0x29000
+#define VDEC_BASE_PHY   0x17000000
+#define VDEC_REGION     0x50000
 
 #define HW_BASE         0x7FFF000
 #define HW_REGION       0x2000
@@ -198,7 +198,7 @@ static VAL_UINT32_T gu4VdecLockThreadId;
 
 
 VAL_ULONG_T KVA_VENC_IRQ_ACK_ADDR, KVA_VENC_IRQ_STATUS_ADDR, KVA_VENC_BASE;
-VAL_ULONG_T KVA_VDEC_MISC_BASE, KVA_VDEC_VLD_BASE, KVA_VDEC_BASE, KVA_VDEC_GCON_BASE;
+VAL_ULONG_T KVA_VDEC_MISC_BASE, KVA_VDEC_BASE, KVA_VDEC_GCON_BASE;
 VAL_UINT32_T VENC_IRQ_ID, VDEC_IRQ_ID;
 
 extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int value);
@@ -273,10 +273,10 @@ void vdec_power_on(void)
 		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
 	}
 
-	ret = clk_prepare_enable(clk_MT_CG_DISP0_SMI_COMMON);
+	ret = clk_prepare_enable(clk_MT_CG_SMI_COMMON);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_DISP0_SMI_COMMON is not enabled, ret = %d\n",
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_SMI_COMMON is not enabled, ret = %d\n",
 		ret);
 	}
 
@@ -286,16 +286,16 @@ void vdec_power_on(void)
 		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_VDE is not enabled, ret = %d\n", ret);
 	}
 
-	ret = clk_prepare_enable(clk_MT_CG_VDEC0_VDEC);
+	ret = clk_prepare_enable(clk_MT_CG_VDEC);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC0_VDEC is not enabled, ret = %d\n", ret);
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC is not enabled, ret = %d\n", ret);
 	}
 
-	ret = clk_prepare_enable(clk_MT_CG_VDEC1_LARB);
+	ret = clk_prepare_enable(clk_MT_CG_VDEC_LARB);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC1_LARB is not enabled, ret = %d\n", ret);
+		MODULE_MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC_LARB is not enabled, ret = %d\n", ret);
 	}
 #endif
 #endif
@@ -319,10 +319,10 @@ void vdec_power_off(void)
 		/* disable_clock(MT_CG_INFRA_L2C_SRAM, "VDEC"); */
 #endif
 #else
-		clk_disable_unprepare(clk_MT_CG_VDEC1_LARB);
-		clk_disable_unprepare(clk_MT_CG_VDEC0_VDEC);
+		clk_disable_unprepare(clk_MT_CG_VDEC_LARB);
+		clk_disable_unprepare(clk_MT_CG_VDEC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VDE);
-		clk_disable_unprepare(clk_MT_CG_DISP0_SMI_COMMON);
+		clk_disable_unprepare(clk_MT_CG_SMI_COMMON);
 		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
 #endif
 #endif
@@ -356,10 +356,10 @@ void venc_power_on(void)
 		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
 	}
 
-	ret = clk_prepare_enable(clk_MT_CG_DISP0_SMI_COMMON);
+	ret = clk_prepare_enable(clk_MT_CG_SMI_COMMON);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_DISP0_SMI_COMMON is not enabled, ret = %d\n",
+		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_SMI_COMMON is not enabled, ret = %d\n",
 		ret);
 	}
 
@@ -369,10 +369,10 @@ void venc_power_on(void)
 		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_VEN is not enabled, ret = %d\n", ret);
 	}
 
-	ret = clk_prepare_enable(clk_MT_CG_VENC_VENC);
+	ret = clk_prepare_enable(clk_MT_CG_VENC);
 	if (ret) {
 		/* print error log & error handling */
-		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_VENC_VENC is not enabled, ret = %d\n", ret);
+		MODULE_MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_VENC is not enabled, ret = %d\n", ret);
 	}
 
 	ret = clk_prepare_enable(clk_MT_CG_VENC_LARB);
@@ -404,9 +404,9 @@ void venc_power_off(void)
 #endif
 #else
 		clk_disable_unprepare(clk_MT_CG_VENC_LARB);
-		clk_disable_unprepare(clk_MT_CG_VENC_VENC);
+		clk_disable_unprepare(clk_MT_CG_VENC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VEN);
-		clk_disable_unprepare(clk_MT_CG_DISP0_SMI_COMMON);
+		clk_disable_unprepare(clk_MT_CG_SMI_COMMON);
 		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
 #endif
 #endif
@@ -422,16 +422,9 @@ void dec_isr(void)
 
 	VAL_UINT32_T u4TempDecISRCount = 0;
 	VAL_UINT32_T u4TempLockDecHWCount = 0;
-	VAL_UINT32_T u4CgStatus = 0;
 	VAL_UINT32_T u4DecDoneStatus = 0;
 
-	u4CgStatus = VDO_HW_READ(KVA_VDEC_GCON_BASE);
-	if ((u4CgStatus & 0x10) != 0) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] DEC ISR, VDEC active is not 0x0 (0x%08x)", u4CgStatus);
-		return;
-	}
-
-	u4DecDoneStatus = VDO_HW_READ(KVA_VDEC_BASE+0xA4);
+	u4DecDoneStatus = VDO_HW_READ(KVA_VDEC_MISC_BASE+0xA4);
 	if ((u4DecDoneStatus & (0x1 << 16)) != 0x10000) {
 		MODULE_MFV_LOGE("[VCODEC][ERROR] DEC ISR, Decode done status is not 0x1 (0x%08x)", u4DecDoneStatus);
 		return;
@@ -457,7 +450,6 @@ void dec_isr(void)
 	/* Clear interrupt */
 	VDO_HW_WRITE(KVA_VDEC_MISC_BASE+41*4, VDO_HW_READ(KVA_VDEC_MISC_BASE + 41*4) | 0x11);
 	VDO_HW_WRITE(KVA_VDEC_MISC_BASE+41*4, VDO_HW_READ(KVA_VDEC_MISC_BASE + 41*4) & ~0x10);
-
 
 	spin_lock_irqsave(&DecIsrLock, ulFlags);
 	eValRet = eVideoSetEvent(&DecIsrEvent, sizeof(VAL_EVENT_T));
@@ -2308,34 +2300,40 @@ static int vcodec_probe(struct platform_device *dev)
 
 #ifndef VCODEC_FPGAPORTING
 #ifndef CONFIG_MTK_CLKMGR
-	clk_MT_CG_DISP0_SMI_COMMON = devm_clk_get(&dev->dev, "MT_CG_DISP0_SMI_COMMON");
-	if (IS_ERR(clk_MT_CG_DISP0_SMI_COMMON)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_DISP0_SMI_COMMON\n");
-		return PTR_ERR(clk_MT_CG_DISP0_SMI_COMMON);
+	clk_MT_CG_SMI_COMMON = devm_clk_get(&dev->dev, "MT_CG_SMI_COMMON");
+	if (IS_ERR(clk_MT_CG_SMI_COMMON)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_SMI_COMMON\n");
+		return PTR_ERR(clk_MT_CG_SMI_COMMON);
 	}
 
-	clk_MT_CG_VDEC0_VDEC = devm_clk_get(&dev->dev, "MT_CG_VDEC0_VDEC");
-	if (IS_ERR(clk_MT_CG_VDEC0_VDEC)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VDEC0_VDEC\n");
-		return PTR_ERR(clk_MT_CG_VDEC0_VDEC);
+	clk_MT_CG_VDEC = devm_clk_get(&dev->dev, "MT_CG_VDEC");
+	if (IS_ERR(clk_MT_CG_VDEC)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VDEC\n");
+		return PTR_ERR(clk_MT_CG_VDEC);
 	}
 
-	clk_MT_CG_VDEC1_LARB = devm_clk_get(&dev->dev, "MT_CG_VDEC1_LARB");
-	if (IS_ERR(clk_MT_CG_VDEC1_LARB)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VDEC1_LARB\n");
-		return PTR_ERR(clk_MT_CG_VDEC1_LARB);
+	clk_MT_CG_VDEC_LARB = devm_clk_get(&dev->dev, "MT_CG_VDEC_LARB");
+	if (IS_ERR(clk_MT_CG_VDEC_LARB)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VDEC_LARB\n");
+		return PTR_ERR(clk_MT_CG_VDEC_LARB);
 	}
 
-	clk_MT_CG_VENC_VENC = devm_clk_get(&dev->dev, "MT_CG_VENC_VENC");
-	if (IS_ERR(clk_MT_CG_VENC_VENC)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VENC_VENC\n");
-		return PTR_ERR(clk_MT_CG_VENC_VENC);
+	clk_MT_CG_VENC = devm_clk_get(&dev->dev, "MT_CG_VENC");
+	if (IS_ERR(clk_MT_CG_VENC)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VENC\n");
+		return PTR_ERR(clk_MT_CG_VENC);
 	}
 
 	clk_MT_CG_VENC_LARB = devm_clk_get(&dev->dev, "MT_CG_VENC_LARB");
 	if (IS_ERR(clk_MT_CG_VENC_LARB)) {
 		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VENC_LARB\n");
 		return PTR_ERR(clk_MT_CG_VENC_LARB);
+	}
+
+	clk_MT_SCP_SYS_DIS = devm_clk_get(&dev->dev, "MT_SCP_SYS_DIS");
+	if (IS_ERR(clk_MT_SCP_SYS_DIS)) {
+		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_DIS\n");
+		return PTR_ERR(clk_MT_SCP_SYS_DIS);
 	}
 
 	clk_MT_SCP_SYS_VDE = devm_clk_get(&dev->dev, "MT_SCP_SYS_VDE");
@@ -2350,11 +2348,6 @@ static int vcodec_probe(struct platform_device *dev)
 		return PTR_ERR(clk_MT_SCP_SYS_VEN);
 	}
 
-	clk_MT_SCP_SYS_DIS = devm_clk_get(&dev->dev, "MT_SCP_SYS_DIS");
-	if (IS_ERR(clk_MT_SCP_SYS_DIS)) {
-		MODULE_MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_DIS\n");
-		return PTR_ERR(clk_MT_SCP_SYS_DIS);
-	}
 #endif
 #endif
 
@@ -2443,8 +2436,7 @@ static int __init vcodec_driver_init(void)
 		node = of_find_compatible_node(NULL, NULL, "mediatek,vdec");
 		KVA_VDEC_BASE = (VAL_ULONG_T)of_iomap(node, 0);
 		VDEC_IRQ_ID =  irq_of_parse_and_map(node, 0);
-		KVA_VDEC_MISC_BASE = KVA_VDEC_BASE + 0x0000;
-		KVA_VDEC_VLD_BASE = KVA_VDEC_BASE + 0x1000;
+		KVA_VDEC_MISC_BASE = KVA_VDEC_BASE + 0x5000;
 	}
 	{
 		struct device_node *node = NULL;
