@@ -91,6 +91,17 @@ int vproc_pmic_set_mode(unsigned char mode)
 	return (ret == mode) ? (0) : (-1);
 }
 /* [Export API] */
+/* Support for MT6357 CRV/MRV */
+unsigned int is_pmic_mrv(void)
+{
+	unsigned int g_is_mrv;
+
+	pmic_read_interface(PMIC_RG_TOP2_RSV0_ADDR,
+			    &g_is_mrv, 0x1, 15);
+
+	return g_is_mrv;
+}
+
 void pmic_enable_smart_reset(unsigned char smart_en, unsigned char smart_sdn_en)
 {
 	pmic_set_register_value(PMIC_RG_SMART_RST_MODE, smart_en);

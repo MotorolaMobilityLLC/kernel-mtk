@@ -22,6 +22,7 @@
 #include "include/pmic.h"
 #include "include/pmic_api.h"
 #include "include/pmic_api_buck.h"
+#include "include/regulator_codegen.h"
 
 #define LP_INIT_SETTING_VERIFIED	1
 
@@ -327,9 +328,12 @@ void PMIC_LP_INIT_SETTING(void)
 #elif defined(CONFIG_MACH_MT6761)
 void PMIC_LP_INIT_SETTING(void)
 {
+	int i = 0;
+
 	g_pmic_chip_version = PMIC_CHIP_VER();
-	PMICLOG("[PMIC_LP_INIT_SETTING_v1] Chip Ver = %d\n"
-		, g_pmic_chip_version);
+	PMICLOG("[PMIC_LP_INIT_SETTING_v1] Chip Ver = %d mrv=%d\n"
+		, g_pmic_chip_version
+		, is_pmic_mrv());
 #if LP_INIT_SETTING_VERIFIED
 	/* Suspend */
 	pmic_buck_vproc_lp(SW, 1, SW_OFF);
@@ -337,8 +341,8 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_buck_vmodem_lp(SRCLKEN0, 1, HW_LP);
 	pmic_buck_vs1_lp(SRCLKEN0, 1, HW_LP);
 	pmic_buck_vpa_lp(SW, 1, SW_OFF);
-	pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);
-	pmic_ldo_vsram_others_lp(SRCLKEN0, 1, HW_LP);
+	/*pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);*/
+	/*pmic_ldo_vsram_others_lp(SRCLKEN0, 1, HW_LP);*/
 	pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
 	pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_LP);
 	pmic_ldo_vrf18_lp(SRCLKEN1, 1, HW_OFF);
@@ -370,8 +374,8 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_buck_vmodem_lp(SRCLKEN2, 1, HW_LP);
 	pmic_buck_vs1_lp(SRCLKEN2, 1, HW_LP);
 	pmic_buck_vpa_lp(SW, 1, SW_OFF);
-	pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);
-	pmic_ldo_vsram_others_lp(SRCLKEN2, 1, HW_LP);
+	/*pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);*/
+	/*pmic_ldo_vsram_others_lp(SRCLKEN2, 1, HW_LP);*/
 	pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
 	pmic_ldo_vxo22_lp(SRCLKEN2, 1, HW_LP);
 	pmic_ldo_vrf18_lp(SRCLKEN1, 1, HW_OFF);
@@ -397,6 +401,47 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_ldo_vibr_lp(SW, 1, SW_OFF);
 	pmic_ldo_vusb33_lp(SRCLKEN2, 1, HW_LP);
 	pmic_ldo_tref_lp(SRCLKEN2, 1, HW_OFF);
+
+	/* Workaround setting for MT6357 MRV */
+	if (is_pmic_mrv()) {
+		/* Suspend */
+		pmic_ldo_vsram_others_lp(SW, 1, SW_OFF);
+		pmic_ldo_vsram_proc_lp(SRCLKEN0, 1, HW_LP);
+		/* Deepidle */
+		pmic_ldo_vsram_others_lp(SW, 1, SW_OFF);
+		pmic_ldo_vsram_proc_lp(SRCLKEN2, 1, HW_LP);
+		/* Update regulator ops */
+		for (i = 0; i < pmic_regulator_ldo_matches_size; i++) {
+			if (strncmp(mt_ldos[i].desc.name,
+					"vsram_others", 12) == 0) {
+				mt_ldos[i].en_cb =
+					mt6357_upmu_set_rg_ldo_vsram_proc_en;
+				mt_ldos[i].vol_cb =
+					mt6357_upmu_set_rg_ldo_vsram_proc_vosel;
+				mt_ldos[i].da_en_cb =
+					mt6357_upmu_get_da_vsram_proc_en;
+				mt_ldos[i].da_vol_cb =
+					mt6357_upmu_get_da_vsram_proc_vosel;
+			} else if (strncmp(mt_ldos[i].desc.name,
+					"vsram_proc", 10) == 0) {
+				mt_ldos[i].en_cb =
+					mt6357_upmu_set_rg_ldo_vsram_others_en;
+				mt_ldos[i].vol_cb =
+				mt6357_upmu_set_rg_ldo_vsram_others_vosel;
+				mt_ldos[i].da_en_cb =
+					mt6357_upmu_get_da_vsram_others_en;
+				mt_ldos[i].da_vol_cb =
+					mt6357_upmu_get_da_vsram_others_vosel;
+			}
+		}
+	} else {
+		/* Suspend */
+		pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);
+		pmic_ldo_vsram_others_lp(SRCLKEN0, 1, HW_LP);
+		/* Deepidle */
+		pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);
+		pmic_ldo_vsram_others_lp(SRCLKEN2, 1, HW_LP);
+	}
 #endif /*LP_INIT_SETTING_VERIFIED*/
 }
 #endif
