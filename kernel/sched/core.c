@@ -5833,11 +5833,11 @@ int _sched_isolate_cpu(int cpu)
 	update_cpu_isolation_mask_to_mcdi_controller(cpu_isolated_mask->bits[0]);
 
 	cpumask_clear_cpu(cpu, &avail_cpus);
-#if 0
+
 	/* Migrate timers */
 	smp_call_function_any(&avail_cpus, hrtimer_quiesce_cpu, &cpu, 1);
 	smp_call_function_any(&avail_cpus, timer_quiesce_cpu, &cpu, 1);
-#endif
+
 	stop_cpus(cpumask_of(cpu), do_isolation_work_cpu_stop, 0);
 
 	calc_load_migrate(rq);
