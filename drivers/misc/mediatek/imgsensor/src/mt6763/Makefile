@@ -42,10 +42,20 @@ obj-y				+= imgsensor_sensor_list.o
 
 #$(info -= project path  $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/ =-)
 
+mtk_project_folder = $(ARCH_MTK_PROJECT)
+$(info imgsensor drv bkbkbkbkbk $(findstring k63v1us, $(ARCH_MTK_PROJECT)))
+ifneq ($(findstring k63v1us, $(ARCH_MTK_PROJECT)),)
+mtk_project_folder = k63v1us_64_bsp
+else
+ifneq ($(findstring zoom, $(ARCH_MTK_PROJECT)),)
+mtk_project_folder = k63v1_64_bsp_zoom
+endif
+endif
+
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw),)
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/camera_hw/
 subdir-ccflags-y		+= -I$(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw
-#$(info by porject kd_camera_hw)
+$(info by porject $(mtk_project_folder))
 else
 obj-y				+= camera_hw/
 subdir-ccflags-y		+= -I$(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_hw
