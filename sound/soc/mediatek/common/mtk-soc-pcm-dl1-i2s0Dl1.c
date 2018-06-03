@@ -287,13 +287,11 @@ static int mtk_pcm_I2S0dl1_open(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 {
-	bool ext_sync_signal_locked = false;
-
 	pr_warn("%s\n", __func__);
 
 	if (is_irq_from_ext_module()) {
 		ext_sync_signal_lock();
-		ext_sync_signal_locked = true;
+		ext_sync_signal_unlock();
 	}
 
 	if (mPrepareDone == true) {
@@ -339,9 +337,6 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 	AudDrv_Clk_Off();
 
 	vcore_dvfs(&vcore_dvfs_enable, true);
-
-	if (ext_sync_signal_locked)
-		ext_sync_signal_unlock();
 
 	return 0;
 }
