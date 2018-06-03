@@ -58,6 +58,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define	PVR_FENCE_CONTEXT_DESTROY_RETRIES		5
 #endif
 
+#if defined(MTK_DEBUG_PROC_PRINT)
+/* MTK: sync log */
+#include "mtk_pp.h"
+#endif
+
 #define PVR_DUMPDEBUG_LOG(pfnDumpDebugPrintf, pvDumpDebugFile, fmt, ...) \
 	do {                                                             \
 		if (pfnDumpDebugPrintf)                                  \
@@ -145,14 +150,22 @@ pvr_fence_context_fences_dump(struct pvr_fence_context *fctx,
 
 	spin_lock_irqsave(&fctx->list_lock, flags);
 	pvr_context_value_str(fctx, value, sizeof(value));
+#if defined(MTK_DEBUG_PROC_PRINT)
+	MTKPP_LOG(MTKPP_ID_SYNC, "hw: %s @%s", fctx->name, value);
+#else
 	PVR_DUMPDEBUG_LOG(pfnDumpDebugPrintf, pvDumpDebugFile,
 			 "hw: %s @%s", fctx->name, value);
+#endif
 	list_for_each_entry(pvr_fence, &fctx->fence_list, fence_head) {
 		if (is_pvr_fence(pvr_fence->fence)) {
 			pvr_fence->fence->ops->fence_value_str(pvr_fence->fence,
 				value, sizeof(value));
+#if defined(MTK_DEBUG_PROC_PRINT)
+			MTKPP_LOG(MTKPP_ID_SYNC, " @%s", value);
+#else
 			PVR_DUMPDEBUG_LOG(pfnDumpDebugPrintf, pvDumpDebugFile,
 				" @%s", value);
+#endif
 		} else {
 			/* Try to query as much info possible from foreign
 			 * fences
@@ -162,6 +175,13 @@ pvr_fence_context_fences_dump(struct pvr_fence_context *fctx,
 				pvr_fence->fence->ops->fence_value_str(
 					pvr_fence->fence,
 					value, sizeof(value));
+#if defined(MTK_DEBUG_PROC_PRINT)
+				MTKPP_LOG(MTKPP_ID_SYNC, " %s@%s (foreign)",
+					pvr_fence->fence->ops->
+						get_timeline_name(
+							pvr_fence->fence),
+					value);
+#else
 				PVR_DUMPDEBUG_LOG(pfnDumpDebugPrintf,
 					pvDumpDebugFile,
 					" %s@%s (foreign)",
@@ -169,14 +189,20 @@ pvr_fence_context_fences_dump(struct pvr_fence_context *fctx,
 						get_timeline_name(
 							pvr_fence->fence),
 					value);
+#endif
 			} else if (pvr_fence->fence->ops->fence_value_str) {
 				pvr_fence->fence->ops->fence_value_str(
 					pvr_fence->fence,
 					value, sizeof(value));
+#if defined(MTK_DEBUG_PROC_PRINT)
+				MTKPP_LOG(MTKPP_ID_SYNC, " @%s (foreign)",
+					value);
+#else
 				PVR_DUMPDEBUG_LOG(pfnDumpDebugPrintf,
 					pvDumpDebugFile,
 					" @%s (foreign)",
 					value);
+#endif
 			}
 		}
 	}
