@@ -118,11 +118,11 @@ static int s4AF_WriteReg_LC898212XD_TVC820(u8 *a_pSendData, u16 a_sizeSendData, 
 #define STMSV_SET		STMSV_ON
 #define STMLFF_SET		STMLFF_OFF
 
-typedef struct STMVPAR {
+struct stSmvPar {
 	unsigned short	UsSmvSiz;
 	unsigned char	UcSmvItv;
 	unsigned char	UcSmvEnb;
-} stSmvPar;
+};
 
 
 /* *********************************************************** */
@@ -395,7 +395,7 @@ static const struct INIDATAT Init_Table_TVC820[] = {
 #define DeviceAddr	0xE4 /* Device address of driver IC */
 
 
-static stSmvPar StSmvPar;
+static struct stSmvPar StSmvPar;
 
 
 static void RamWriteA(unsigned short addr, unsigned short data)
@@ -449,7 +449,7 @@ static void WaitTime(unsigned short msec)
 	usleep_range(msec * 1000, (msec + 1) * 1000);
 }
 
-static void StmvSet(stSmvPar StSetSmv)
+static void StmvSet(struct stSmvPar StSetSmv)
 {
 	unsigned char UcSetEnb;
 	unsigned char UcSetSwt;
@@ -583,7 +583,7 @@ static void s4AF_WriteReg(unsigned short addr, unsigned char data)
 
 static void LC898212XD_init(void)
 {
-	stSmvPar StSmvPar;
+	struct stSmvPar StSmvPar;
 	u8 val1 = 0, val2 = 0;
 
 	int Hall_Off = 0x80;	/* Please Read Offset from EEPROM or OTP */

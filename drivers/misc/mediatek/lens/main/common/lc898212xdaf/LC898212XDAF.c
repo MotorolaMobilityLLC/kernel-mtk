@@ -171,8 +171,8 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0017, &val2);
 		HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		if ((0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-			(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+		if ((HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+			(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 			Hall_Min = HallMinCheck;
 			Hall_Max = HallMaxCheck;
@@ -222,8 +222,8 @@ static void LC898212XD_init(void)
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
 
-			if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-				(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+			if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+				(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 				Hall_Min = HallMinCheck;
 				Hall_Max = HallMaxCheck;
@@ -247,8 +247,8 @@ static void LC898212XD_init(void)
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F37, &val1);
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F38, &val2);
 
-				if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-					(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+				if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+					(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 					Hall_Min = HallMinCheck;
 					Hall_Max = HallMaxCheck;
@@ -281,8 +281,8 @@ static void LC898212XD_init(void)
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val1);
 			HallCheck = val1;
 
-			if ((HallCheck == 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-				(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+			if ((HallCheck == 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+				(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val1);
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F64, &val2);
@@ -400,8 +400,8 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
 
-		if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-			(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+		if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+			(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 			Hall_Min = HallMinCheck;
 			Hall_Max = HallMaxCheck;
@@ -416,7 +416,7 @@ static void LC898212XD_init(void)
 	}
 
 	/* Range Protection : Min = 0x8001 , Max = 0x7FFF */
-	if (!(0 <= Hall_Max && Hall_Max <= 0x7FFF)) {
+	if (!(Hall_Max >= 0 && Hall_Max <= 0x7FFF)) {
 		signed short Temp;
 
 		Temp = Hall_Min;
@@ -576,7 +576,7 @@ static inline int getAFCalPos(__user struct stAF_MotorCalPos *pstMotorCalPos)
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F70, &val2);
 		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		if (!(0 <= Hall_Max && Hall_Max <= 0x7FFF)) {
+		if (!(Hall_Max >= 0 && Hall_Max <= 0x7FFF)) {
 			signed short Temp;
 
 			Temp = Hall_Min;
@@ -622,7 +622,7 @@ static inline int getAFCalPos(__user struct stAF_MotorCalPos *pstMotorCalPos)
 		}
 	}
 
-	if (0 < u4AF_CalibData_INF && u4AF_CalibData_MACRO < 1024 && u4AF_CalibData_INF < u4AF_CalibData_MACRO) {
+	if (u4AF_CalibData_INF > 0 && u4AF_CalibData_MACRO < 1024 && u4AF_CalibData_INF < u4AF_CalibData_MACRO) {
 		stMotorCalPos.u4MacroPos = u4AF_CalibData_MACRO;
 		stMotorCalPos.u4InfPos = u4AF_CalibData_INF;
 	} else {
