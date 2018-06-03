@@ -46,14 +46,6 @@
 #define LPDDR3_MODE_REG_2_LOW	0x00140002              /*RL6 WL3.*/
 #define LPDDR2_MODE_REG_2_LOW	0x00040002              /*RL6 WL3.*/
 
-#define DRAMC_REG_MRS		0x088
-#define DRAMC_REG_PADCTL4	0x0e4
-#define DRAMC_REG_LPDDR2_3	0x1e0
-#define DRAMC_REG_SPCMD		0x1e4
-#define DRAMC_REG_ACTIM1	0x1e8
-#define DRAMC_REG_RRRATE_CTL	0x1f4
-#define DRAMC_REG_MRR_CTL	0x1fc
-#define DRAMC_REG_SPCMDRESP	0x3b8
 #define PATTERN1 0x5A5A5A5A
 #define PATTERN2 0xA5A5A5A5
 
@@ -65,6 +57,7 @@
 #define DRAMC_AO_SPCMDCTRL	(dramc_ao_chx_base+0x064)
 #define DRAMC_AO_DQSOSCR	(dramc_ao_chx_base+0x0C8)
 #define DRAMC_AO_SHUSTATUS	(dramc_ao_chx_base+0x0E4)
+#define DRAMC_AO_DQSOSCTHRD	(dramc_ao_chx_base+0x854)
 #define DRAMC_AO_CKECTRL	(dramc_ao_chx_base+0x024)
 #define DRAMC_AO_DQSOSC_PRD	(dramc_ao_chx_base+0x868)
 #define DRAMC_AO_SHU1RK0_PI	(dramc_ao_chx_base+0xA0C)
