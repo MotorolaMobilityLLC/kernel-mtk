@@ -25,8 +25,10 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
 endif
 
-# only build-in dummy driver for MT6775
-ifeq ($(CONFIG_MACH_MT6775),y)
+# only build-in dummy driver for MT6771/MT6775
+ifeq ($(CONFIG_MACH_MT6771),y)
+obj-y := mtk_ppm_dummy.o
+else ifeq ($(CONFIG_MACH_MT6775),y)
 obj-y := mtk_ppm_dummy.o
 
 else
