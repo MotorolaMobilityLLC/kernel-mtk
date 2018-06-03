@@ -158,6 +158,11 @@ int vcorefs_get_num_opp(void)
 	return NUM_OPP;
 }
 
+int vcorefs_get_hw_opp(void)
+{
+	return spm_vcorefs_get_opp();
+}
+
 int vcorefs_get_sw_opp(void)
 {
 	return vcorefs_sw_opp;
@@ -222,16 +227,17 @@ char *vcorefs_get_opp_table_info(char *p)
 {
 	struct opp_profile *opp_ctrl_table = opp_table;
 	int i;
+	char *buff_end = p + PAGE_SIZE;
 
 	for (i = 0; i < NUM_OPP; i++) {
-		p += sprintf(p, "[OPP%d] vcore_uv: %d (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
+		p += snprintf(p, buff_end - p, "[OPP%d] vcore_uv: %d (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
 			     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
-		p += sprintf(p, "[OPP%d] ddr_khz : %d\n", i, opp_ctrl_table[i].ddr_khz);
-		p += sprintf(p, "\n");
+		p += snprintf(p, buff_end - p, "[OPP%d] ddr_khz : %d\n", i, opp_ctrl_table[i].ddr_khz);
+		p += snprintf(p, buff_end - p, "\n");
 	}
 
 	for (i = 0; i < NUM_OPP; i++)
-		p += sprintf(p, "OPP%d  : %u\n", i, opp_ctrl_table[i].vcore_uv);
+		p += snprintf(p, buff_end - p, "OPP%d  : %u\n", i, opp_ctrl_table[i].vcore_uv);
 
 	return p;
 }
@@ -292,16 +298,18 @@ char *governor_get_dvfs_info(char *p)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	int uv = vcorefs_get_curr_vcore();
+	char *buff_end = p + PAGE_SIZE;
 
-	p += sprintf(p, "sw_opp: %d\n", vcorefs_get_sw_opp());
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "sw_opp: %d\n", vcorefs_get_sw_opp());
+	p += snprintf(p, buff_end - p, "hw_opp: %d\n", vcorefs_get_hw_opp());
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, "[vcore_dvs]: %d\n", gvrctrl->vcore_dvs);
-	p += sprintf(p, "[ddr_dfs  ]: %d\n", gvrctrl->ddr_dfs);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "[vcore_dvs]: %d\n", gvrctrl->vcore_dvs);
+	p += snprintf(p, buff_end - p, "[ddr_dfs  ]: %d\n", gvrctrl->ddr_dfs);
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
-	p += sprintf(p, "[ddr  ] khz: %u\n", vcorefs_get_curr_ddr());
+	p += snprintf(p, buff_end - p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
+	p += snprintf(p, buff_end - p, "[ddr  ] khz: %u\n", vcorefs_get_curr_ddr());
 
 	return p;
 }

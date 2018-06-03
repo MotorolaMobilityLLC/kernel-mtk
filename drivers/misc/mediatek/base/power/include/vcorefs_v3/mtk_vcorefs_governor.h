@@ -71,10 +71,10 @@ struct opp_profile {
 };
 
 /* boot up opp for SPM init */
-#define BOOT_UP_OPP             (NUM_OPP - 1)
+#define BOOT_UP_OPP             OPP_0
 
 /* target OPP when feature enable */
-#define LATE_INIT_OPP           (NUM_OPP - 1)
+#define LATE_INIT_OPP           OPP_0 /* (NUM_OPP - 1) */
 
 /* need autok in MSDC group */
 #define AUTOK_KIR_GROUP         ((1U << KIR_AUTOK_EMMC) | (1U << KIR_AUTOK_SDIO) | (1U << KIR_AUTOK_SD))
@@ -119,5 +119,6 @@ extern void vcorefs_init_opp_table(void);
 extern void governor_autok_manager(void);
 extern bool governor_autok_check(int kicker);
 extern bool governor_autok_lock_check(int kicker, int opp);
+extern int vcorefs_get_hw_opp(void);
 
 #endif	/* _MTK_VCOREFS_GOVERNOR_H */
