@@ -270,7 +270,7 @@ typedef enum {
 
 /* AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC */
 /* AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM */
-static uint16 Handset_AMIC_DCC_PeriodicOnOff[7][22] = {
+static const uint16 Handset_AMIC_DCC_PeriodicOnOff[7][22] = {
 	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
 	{0x8000, 0x8000, 0x81AA, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0x0000, 0x81EC, 0x0000,
 	 0x1917, 0x8021, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x0000, 0x18F6, 0x0000},/* 90% */
@@ -290,7 +290,7 @@ static uint16 Handset_AMIC_DCC_PeriodicOnOff[7][22] = {
 
 /* AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC */
 /* AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM */
-static uint16 Headset_MIC_DCC_PeriodicOnOff[7][22] = {
+static const uint16 Headset_MIC_DCC_PeriodicOnOff[7][22] = {
 	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
 	{0x8000, 0x8000, 0x81AA, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0xC000, 0x81EC, 0x0000,
 	 0x1917, 0x8021, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x1917, 0x18F6, 0x0000},/* 90% */
@@ -3816,7 +3816,7 @@ static bool TurnOnVOWDigitalHW(bool enable)
 static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 {
 	int i = 0;
-	uint16 (*pBuf)[22];
+	const uint16 (*pBuf)[22];
 
 	/* give a default value */
 	pBuf = Handset_AMIC_DCC_PeriodicOnOff;
@@ -4228,14 +4228,7 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 
 		/* VOW AMPREF Setting, set by MD32 after DC calibration */
 		Ana_Set_Reg(AFE_VOW_CFG0, reg_AFE_VOW_CFG0, 0xffff);   /* 0xffff */
-
 		Ana_Set_Reg(AFE_VOW_CFG1, reg_AFE_VOW_CFG1, 0xffff);   /*VOW A,B timeout initial value 0x0200*/
-#if 0
-		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
-			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C00, 0xffff);/* 1.6m */
-		else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)
-			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C08, 0xffff);
-#endif
 		Ana_Set_Reg(AFE_VOW_CFG2, reg_AFE_VOW_CFG2, 0xffff);   /*VOW A,B value setting 0x2424*/
 		Ana_Set_Reg(AFE_VOW_CFG3, reg_AFE_VOW_CFG3, 0xffff);   /*alhpa and beta K value setting 0xDBAC*/
 		Ana_Set_Reg(AFE_VOW_CFG4, reg_AFE_VOW_CFG4, 0x000f);   /*gamma K value setting 0x029E*/
