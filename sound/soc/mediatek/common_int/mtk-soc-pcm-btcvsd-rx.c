@@ -104,16 +104,17 @@ static int Auddrv_BTCVSD_Irq_Map(void)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,audio_bt_cvsd");
 	if (node == NULL)
-		pr_debug("BTCVSD get node failed\n");
+		pr_warn("%s [BTCVSD] get node failed!!!\n", __func__);
 
 	/* get btcvsd irq num */
 	btcvsd_irq_number = irq_of_parse_and_map(node, 0);
-
+	pr_debug("%s [BTCVSD] btcvsd_irq_number=%d\n", __func__,
+		 btcvsd_irq_number);
 	if (!btcvsd_irq_number) {
-		pr_debug("[BTCVSD] get btcvsd_irq_number failed!!!\n");
+		pr_warn("%s [BTCVSD] get btcvsd_irq_number failed!!!\n",
+			__func__);
 		return -1;
 	}
-	pr_debug("%s, btcvsd_irq_number=%d\n", __func__, btcvsd_irq_number);
 	return 0;
 }
 
@@ -126,7 +127,7 @@ static int Auddrv_BTCVSD_Address_Map(void)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,audio_bt_cvsd");
 	if (node == NULL)
-		pr_debug("BTCVSD get node failed\n");
+		pr_warn("%s [BTCVSD] get node failed!!!\n", __func__);
 
 	/*get INFRA_MISC offset, conn_bt_cvsd_mask, cvsd_mcu_read_offset,
 	 * write_offset, packet_indicator
@@ -154,28 +155,27 @@ static int Auddrv_BTCVSD_Address_Map(void)
 	btsys_sram_bank2_physical_base = (unsigned long)base;
 
 	/*print for debug */
-	pr_debug("[BTCVSD] Auddrv_BTCVSD_Address_Map:\n infra_misc_offset =%lx conn_bt_cvsd_mask = %lx cvsd_mcu_read_offset = %lx",
-		infra_misc_offset,
-		conn_bt_cvsd_mask,
-		cvsd_mcu_read_offset
-		);
-	pr_debug("write_off=0x%lx\n packet_ind=0x%lx\n infra_base=0x%lx\n btsys_pkv_physical_base=0x%lx",
-		cvsd_mcu_write_offset,
-		cvsd_packet_indicator,
-		infra_base,
-		btsys_pkv_physical_base
-		);
+	pr_debug(
+		"[BTCVSD] %s:\n infra_misc_offset =%lx conn_bt_cvsd_mask = %lx cvsd_mcu_read_offset = %lx",
+		__func__, infra_misc_offset, conn_bt_cvsd_mask,
+		cvsd_mcu_read_offset);
+	pr_debug(
+		"write_off=0x%lx\n packet_ind=0x%lx\n infra_base=0x%lx\n btsys_pkv_physical_base=0x%lx",
+		cvsd_mcu_write_offset, cvsd_packet_indicator, infra_base,
+		btsys_pkv_physical_base);
 
 	if (!infra_base) {
-		pr_warn("[BTCVSD] get infra_base failed!!!\n");
+		pr_warn("%s [BTCVSD] get infra_base failed!!!\n", __func__);
 		return -1;
 	}
 	if (!btsys_pkv_physical_base) {
-		pr_warn("[BTCVSD] get btsys_pkv_physical_base failed!!!\n");
+		pr_warn("%s [BTCVSD] get btsys_pkv_physical_base failed!!!\n",
+			__func__);
 		return -1;
 	}
 	if (!btsys_sram_bank2_physical_base) {
-		pr_warn("[BTCVSD] get btsys_sram_bank2_physical_base failed!!!\n");
+		pr_warn("%s [BTCVSD] get btsys_sram_bank2_physical_base failed!!!\n",
+			__func__);
 		return -1;
 	}
 	return 0;
@@ -202,13 +202,13 @@ mtk_pcm_btcvsd_rx_pointer(struct snd_pcm_substream *substream)
 
 	unsigned long flags;
 
-	pr_debug("%s\n", __func__);
-
 	spin_lock_irqsave(&auddrv_btcvsd_rx_lock, flags);
 
-	/* get packet diff from last time */
+/* get packet diff from last time */
+#if defined(LOGBT_ON)
 	pr_debug("%s(), btsco.pRX->iPacket_w = %d, prev_iPacket_w = %d\n",
-	      __func__, btsco.pRX->iPacket_w, prev_iPacket_w);
+		 __func__, btsco.pRX->iPacket_w, prev_iPacket_w);
+#endif
 	if (btsco.pRX->iPacket_w >= prev_iPacket_w) {
 		packet_diff = btsco.pRX->iPacket_w - prev_iPacket_w;
 	} else {
@@ -226,8 +226,10 @@ mtk_pcm_btcvsd_rx_pointer(struct snd_pcm_substream *substream)
 	frame %= substream->runtime->buffer_size;
 
 	prev_frame = frame;
+#if defined(LOGBT_ON)
 	pr_debug("%s(),frame %lu, byte=%d, pRX->iPacket_w=%d\n", __func__,
-	      frame, byte, btsco.pRX->iPacket_w);
+		 frame, byte, btsco.pRX->iPacket_w);
+#endif
 
 	spin_unlock_irqrestore(&auddrv_btcvsd_rx_lock, flags);
 
@@ -325,7 +327,7 @@ static int mtk_pcm_btcvsd_rx_open(struct snd_pcm_substream *substream)
 	prev_usec_rx = begin_rx.tv_usec;
 
 	if (ret < 0) {
-		pr_warn("ret < 0 mtk_pcm_btcvsd_rx_close\n");
+		pr_warn("%s ret < 0 mtk_pcm_btcvsd_rx_close\n", __func__);
 		mtk_pcm_btcvsd_rx_close(substream);
 		return ret;
 	}
@@ -355,7 +357,9 @@ static int mtk_pcm_btcvsd_rx_start(struct snd_pcm_substream *substream)
 static int mtk_pcm_btcvsd_rx_trigger(struct snd_pcm_substream *substream,
 				     int cmd)
 {
+#if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
+#endif
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -379,7 +383,9 @@ static int mtk_pcm_btcvsd_rx_copy(struct snd_pcm_substream *substream,
 
 	AudDrv_btcvsd_read(Read_Data_Ptr, count);
 
-	pr_debug("pcm_copy return\n");
+#if defined(LOGBT_ON)
+	pr_debug("%s pcm_copy return\n", __func__);
+#endif
 	return 0;
 }
 
@@ -387,7 +393,9 @@ static int mtk_pcm_btcvsd_rx_silence(struct snd_pcm_substream *substream,
 				     int channel, snd_pcm_uframes_t pos,
 				     snd_pcm_uframes_t count)
 {
+#if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
+#endif
 	return 0; /* do nothing */
 }
 
@@ -428,8 +436,9 @@ static int btcvsd_band_get(struct snd_kcontrol *kcontrol,
 static int btcvsd_band_set(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
 {
+	pr_debug("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(btsco_band_str)) {
-		pr_warn("return -EINVAL\n");
+		pr_warn("%s return -EINVAL\n", __func__);
 		return -EINVAL;
 	}
 	set_btcvsd_band(ucontrol->value.integer.value[0]);
@@ -455,7 +464,7 @@ static int btcvsd_tx_mute_set(struct snd_kcontrol *kcontrol,
 {
 	pr_debug("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(btsco_mute_str)) {
-		pr_warn("return -EINVAL\n");
+		pr_warn("%s return -EINVAL\n", __func__);
 		return -EINVAL;
 	}
 	if (!btsco.pTX)
@@ -479,7 +488,7 @@ static int btcvsd_rx_irq_received_set(struct snd_kcontrol *kcontrol,
 {
 	pr_debug("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(irq_received_str)) {
-		pr_warn("return -EINVAL\n");
+		pr_warn("%s return -EINVAL\n", __func__);
 		return -EINVAL;
 	}
 
@@ -500,7 +509,7 @@ static int btcvsd_rx_timeout_set(struct snd_kcontrol *kcontrol,
 				 struct snd_ctl_elem_value *ucontrol)
 {
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(rx_timeout_str)) {
-		pr_warn("return -EINVAL\n");
+		pr_warn("%s return -EINVAL\n", __func__);
 		return -EINVAL;
 	}
 
@@ -544,8 +553,10 @@ static int btcvsd_rx_timestamp_set(struct snd_kcontrol *kcontrol,
 static int btcvsd_tx_timeout_get(struct snd_kcontrol *kcontrol,
 				 struct snd_ctl_elem_value *ucontrol)
 {
+#if defined(LOGBT_ON)
 	pr_debug("%s(), btcvsd tx timeout %d\n", __func__,
 		 btcvsd_tx_timeout() ? 1 : 0);
+#endif
 	ucontrol->value.integer.value[0] = btcvsd_tx_timeout() ? 1 : 0;
 	/*btcvsd_tx_reset_timeout();*/
 	return 0;
@@ -556,7 +567,7 @@ static int btcvsd_tx_timeout_set(struct snd_kcontrol *kcontrol,
 {
 	pr_debug("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(rx_timeout_str)) {
-		pr_warn("return -EINVAL\n");
+		pr_warn("%s return -EINVAL\n", __func__);
 		return -EINVAL;
 	}
 
@@ -625,7 +636,7 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 	INFRA_MISC_ADDRESS =
 		(kal_uint32 *)(AUDIO_INFRA_BASE_VIRTUAL + INFRA_MISC_OFFSET);
 #endif
-	pr_debug("[BTCVSD probe] INFRA_MISC_ADDRESS = %p\n",
+	pr_debug("[BTCVSD probe] %s INFRA_MISC_ADDRESS = %p\n", __func__,
 		 INFRA_MISC_ADDRESS);
 
 	pr_debug("%s disable BT IRQ disableBTirq = %d,irq=%d\n", __func__,
@@ -653,8 +664,9 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 	bt_hw_REG_CONTROL = BTSYS_PKV_BASE_ADDRESS + cvsd_packet_indicator;
 
 	pr_debug(
-		"[BTCVSD probe] BTSYS_PKV_BASE_ADDRESS = %p BTSYS_SRAM_BANK2_BASE_ADDRESS = %p\n",
-		BTSYS_PKV_BASE_ADDRESS, BTSYS_SRAM_BANK2_BASE_ADDRESS);
+		"[BTCVSD probe] %s  BTSYS_PKV_BASE_ADDRESS = %p BTSYS_SRAM_BANK2_BASE_ADDRESS = %p\n",
+		__func__, BTSYS_PKV_BASE_ADDRESS,
+		BTSYS_SRAM_BANK2_BASE_ADDRESS);
 
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_btcvsd_rx_soc_platform);
@@ -662,7 +674,9 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 
 static int mtk_btcvsd_rx_remove(struct platform_device *pdev)
 {
+#if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
+#endif
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -685,6 +699,7 @@ static const struct of_device_id mt_soc_pcm_btcvsd_rx_of_ids[] = {
 
 static struct platform_driver mtk_btcvsd_rx_driver = {
 	.driver = {
+
 
 			.name = MT_SOC_BTCVSD_RX_PCM,
 			.owner = THIS_MODULE,

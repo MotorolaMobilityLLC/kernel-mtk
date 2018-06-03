@@ -127,20 +127,25 @@ void AudDrv_BTCVSD_ReadFromBT(enum bt_sco_packet_len uLen,
 	connsys_addr_rx = *bt_hw_REG_PACKET_R;
 	ap_addr_rx = (unsigned long)BTSYS_SRAM_BANK2_BASE_ADDRESS +
 		     (connsys_addr_rx & 0xFFFF);
-	pr_debug("%s connsys_addr_rx=0x%lx,ap_addr_rx=0x%lx btsco.pRX->iPacket_w=%d\n",
-		__func__,
-	      connsys_addr_rx,
-	      ap_addr_rx,
-	      btsco.pRX->iPacket_w);
+#if defined(LOGBT_ON)
+	pr_debug(
+		"%s connsys_addr_rx=0x%lx,ap_addr_rx=0x%lx btsco.pRX->iPacket_w=%d\n",
+		__func__, connsys_addr_rx, ap_addr_rx, btsco.pRX->iPacket_w);
+#endif
 	pSrc = (kal_uint8 *)ap_addr_rx;
 
+#if defined(LOGBT_ON)
 	pr_debug("%s uPacketLength=%d,uPacketNumber=%d, btsco.uRXState=%d\n",
-	      __func__, uPacketLength, uPacketNumber, btsco.uRXState);
+		 __func__, uPacketLength, uPacketNumber, btsco.uRXState);
+#endif
 	AudDrv_BTCVSD_DataTransfer(BT_SCO_DIRECT_BT2ARM, pSrc,
 				   btsco.pRX->TempPacketBuf, uPacketLength,
 				   uPacketNumber, btsco.uRXState);
-	pr_debug("%s AudDrv_BTCVSD_DataTransfer DONE!!!,uControl=0x%x,uLen=%d\n",
-	      __func__, uControl, uLen);
+#if defined(LOGBT_ON)
+	pr_debug(
+		"%s AudDrv_BTCVSD_DataTransfer DONE!!!,uControl=0x%x,uLen=%d\n",
+		__func__, uControl, uLen);
+#endif
 
 	spin_lock_irqsave(&auddrv_btcvsd_rx_lock, flags);
 	for (i = 0; i < uBlockSize; i++) {
@@ -160,10 +165,11 @@ void AudDrv_BTCVSD_ReadFromBT(enum bt_sco_packet_len uLen,
 			       btsco.pRX->TempPacketBuf + (SCO_RX_PLC_SIZE * i),
 			       SCO_RX_PLC_SIZE);
 			if ((uControl & btsco_PacketValidMask[uLen][i]) ==
-			    btsco_PacketValidMask[uLen][i])
+			    btsco_PacketValidMask[uLen][i]) {
 				pv = 1;
-			else
+			} else {
 				pv = 0;
+			}
 		}
 #else
 		memcpy(btsco.pRX->PacketBuf[btsco.pRX->iPacket_w &
@@ -187,8 +193,10 @@ void AudDrv_BTCVSD_ReadFromBT(enum bt_sco_packet_len uLen,
 		btsco.pRX->iPacket_w++;
 	}
 	spin_unlock_irqrestore(&auddrv_btcvsd_rx_lock, flags);
+#if defined(LOGBT_ON)
 	pr_debug("%s(-) btsco.pRX->iPacket_w=%d\n", __func__,
-	      btsco.pRX->iPacket_w);
+		 btsco.pRX->iPacket_w);
+#endif
 }
 
 void AudDrv_BTCVSD_WriteToBT(enum bt_sco_packet_len uLen,
@@ -206,8 +214,10 @@ void AudDrv_BTCVSD_WriteToBT(enum bt_sco_packet_len uLen,
 		return;
 	}
 
+#if defined(LOGBT_ON)
 	pr_debug("%s(+) btsco.pTX->iPacket_r=%d\n", __func__,
-	      btsco.pTX->iPacket_r);
+		 btsco.pTX->iPacket_r);
+#endif
 
 	spin_lock_irqsave(&auddrv_btcvsd_tx_lock, flags);
 	for (i = 0; i < uBlockSize; i++) {
@@ -224,8 +234,10 @@ void AudDrv_BTCVSD_WriteToBT(enum bt_sco_packet_len uLen,
 	connsys_addr_tx = *bt_hw_REG_PACKET_W;
 	ap_addr_tx = (unsigned long)BTSYS_SRAM_BANK2_BASE_ADDRESS +
 		     (connsys_addr_tx & 0xFFFF);
-	pr_debug("Aud CVSD connsys_addr_tx=0x%lx,ap_addr_tx=0x%lx\n",
-	      connsys_addr_tx, ap_addr_tx);
+#if defined(LOGBT_ON)
+	pr_debug("%s connsys_addr_tx=0x%lx,ap_addr_tx=0x%lx\n", __func__,
+		 connsys_addr_tx, ap_addr_tx);
+#endif
 	pDst = (kal_uint8 *)ap_addr_tx;
 
 	if (!btsco.pTX->mute) {
@@ -255,15 +267,14 @@ void AudDrv_BTCVSD_WriteToBT(enum bt_sco_packet_len uLen,
 
 	if (btsco.pTX->mute)
 		btcvsd_tx_clean_buffer();
-
+#if defined(LOGBT_ON)
 	pr_debug("%s(-),btsco.pTX->iPacket_r=%d\n", __func__,
-	      btsco.pTX->iPacket_r);
+		 btsco.pTX->iPacket_r);
+#endif
 }
 
 int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 {
-	pr_debug("%s(+) isRX=%d\n", __func__, isRX);
-
 	if (isRX == 1) {
 		readFromBT_cnt = 0;
 		rx_timeout = false;
@@ -277,16 +288,21 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 				&BT_CVSD_Mem.pucRXPhysBufAddr, GFP_KERNEL);
 			if ((BT_CVSD_Mem.pucRXPhysBufAddr == 0) ||
 			    (BT_CVSD_Mem.pucRXVirtBufAddr == NULL)) {
-				pr_warn("dma_alloc_coherent RX fail\n");
+				pr_warn("%s isRX=%d,  dma_alloc_coherent RX fail\n",
+					__func__, isRX);
 				return -1;
 			}
 
 			memset((void *)BT_CVSD_Mem.pucRXVirtBufAddr, 0,
 			       BT_CVSD_Mem.u4RXBufferSize);
 
-			pr_debug("pucRXVirtBufAddr = %p pucRXPhysBufAddr = %pad\n",
-			      BT_CVSD_Mem.pucRXVirtBufAddr,
-			      &BT_CVSD_Mem.pucRXPhysBufAddr);
+#if defined(LOGBT_ON)
+			pr_debug(
+				"%s isRX=%d, pucRXVirtBufAddr = %p pucRXPhysBufAddr = %pad\n",
+				__func__, isRX,
+				BT_CVSD_Mem.pucRXVirtBufAddr,
+				&BT_CVSD_Mem.pucRXPhysBufAddr);
+#endif
 
 			btsco.pRX =
 				(struct btsco_rx *)(BT_CVSD_Mem
@@ -316,15 +332,19 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 				&BT_CVSD_Mem.pucTXPhysBufAddr, GFP_KERNEL);
 			if ((BT_CVSD_Mem.pucTXPhysBufAddr == 0) ||
 			    (BT_CVSD_Mem.pucTXVirtBufAddr) == NULL) {
-				pr_warn("dma_alloc_coherent TX fail\n");
+				pr_warn("%s isRX=%d, dma_alloc_coherent TX fail\n",
+					__func__, isRX);
 				return -1;
 			}
 			memset((void *)BT_CVSD_Mem.pucTXVirtBufAddr, 0,
 			       BT_CVSD_Mem.u4TXBufferSize);
 
-			pr_debug("pucTXVA = 0x%p pucTXPA = %pad\n",
-			      BT_CVSD_Mem.pucTXVirtBufAddr,
-			      &BT_CVSD_Mem.pucTXPhysBufAddr);
+#if defined(LOGBT_ON)
+			pr_debug("%s isRX=%d, pucTXVA = 0x%p pucTXPA = %pad\n",
+				 __func__, isRX,
+				 BT_CVSD_Mem.pucTXVirtBufAddr,
+				 &BT_CVSD_Mem.pucTXPhysBufAddr);
+#endif
 
 			btsco.pTX =
 				(struct btsco_tx *)(BT_CVSD_Mem
@@ -341,20 +361,19 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 				BT_CVSD_Mem.u4TXBufferSize;
 		}
 	}
-	pr_debug("%s(-)\n", __func__);
 	return 0;
 }
 
 int AudDrv_btcvsd_Free_Buffer(kal_uint8 isRX)
 {
-	pr_debug("%s(+) isRX=%d\n", __func__, isRX);
-
 	if (isRX == 1) {
 		if ((BT_CVSD_Mem.pucRXVirtBufAddr != NULL) &&
 		    (BT_CVSD_Mem.pucRXPhysBufAddr != 0)) {
-			pr_debug("%s pucRXVA = 0x%p pucRXPA = %pad",
-			      __func__, BT_CVSD_Mem.pucRXVirtBufAddr,
-			      &BT_CVSD_Mem.pucRXPhysBufAddr);
+#if defined(LOGBT_ON)
+			pr_debug("%s isRX=%d, pucRXVA = 0x%p pucRXPA = %pad",
+				 __func__, isRX, BT_CVSD_Mem.pucRXVirtBufAddr,
+				 &BT_CVSD_Mem.pucRXPhysBufAddr);
+#endif
 			btsco.pRX = NULL;
 			dma_free_coherent(mDev_btcvsd_rx,
 					  BT_CVSD_Mem.u4RXBufferSize,
@@ -364,17 +383,19 @@ int AudDrv_btcvsd_Free_Buffer(kal_uint8 isRX)
 			BT_CVSD_Mem.pucRXVirtBufAddr = NULL;
 			BT_CVSD_Mem.pucRXPhysBufAddr = 0;
 		} else {
-			pr_warn("%s pucRXVirtBufAddr = 0x%p pucRXPhysBufAddr = %pad",
-				__func__, BT_CVSD_Mem.pucRXVirtBufAddr,
+			pr_warn("%s isRX=%d, pucRXVirtBufAddr = 0x%p pucRXPhysBufAddr = %pad",
+				__func__, isRX, BT_CVSD_Mem.pucRXVirtBufAddr,
 				&BT_CVSD_Mem.pucRXPhysBufAddr);
 			return -1;
 		}
 	} else {
 		if ((BT_CVSD_Mem.pucTXVirtBufAddr != NULL) &&
 		    (BT_CVSD_Mem.pucTXPhysBufAddr != 0)) {
-			pr_debug("%s pucTXVA = 0x%p pucTXPA = %pad",
-			      __func__, BT_CVSD_Mem.pucTXVirtBufAddr,
-			      &BT_CVSD_Mem.pucTXPhysBufAddr);
+#if defined(LOGBT_ON)
+			pr_debug("%s isRX=%d, pucTXVA = 0x%p pucTXPA = %pad",
+				 __func__, isRX, BT_CVSD_Mem.pucTXVirtBufAddr,
+				 &BT_CVSD_Mem.pucTXPhysBufAddr);
+#endif
 			btsco.pTX = NULL;
 			dma_free_coherent(mDev_btcvsd_tx,
 					  BT_CVSD_Mem.u4TXBufferSize,
@@ -385,8 +406,8 @@ int AudDrv_btcvsd_Free_Buffer(kal_uint8 isRX)
 			BT_CVSD_Mem.pucTXPhysBufAddr = 0;
 
 		} else {
-			pr_warn("%s pucTXVirtBufAddr = 0x%p pucTXPhysBufAddr = %pad",
-				__func__, BT_CVSD_Mem.pucTXVirtBufAddr,
+			pr_warn("%s isRX=%d, pucTXVirtBufAddr = 0x%p pucTXPhysBufAddr = %pad",
+				__func__, isRX, BT_CVSD_Mem.pucTXVirtBufAddr,
 				&BT_CVSD_Mem.pucTXPhysBufAddr);
 			return -1;
 		}
@@ -400,7 +421,9 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 	kal_uint32 uPacketType, uPacketNumber, uPacketLength, uBufferCount_TX,
 		uBufferCount_RX, uControl;
 
+#if defined(LOGBT_ON)
 	pr_debug("+%s, irq=%d\n", __func__, btcvsd_irq_number);
+#endif
 
 	if ((btsco.uRXState != BT_SCO_RXSTATE_RUNNING &&
 	     btsco.uRXState != BT_SCO_RXSTATE_ENDING) &&
@@ -415,8 +438,10 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 
 	uControl = *bt_hw_REG_CONTROL;
 	uPacketType = (uControl >> 18) & 0x7;
-	pr_debug("%s BT uControl =0x%x, BT uPacketType=%d\n",
-		__func__, uControl, uPacketType);
+#if defined(LOGBT_ON)
+	pr_debug("%s BT uControl =0x%x, BT uPacketType=%d\n", __func__,
+		 uControl, uPacketType);
+#endif
 
 	if (((uControl >> 31) & 1) == 0) {
 		pr_warn("%s(), ((uControl >> 31) & 1) == 0, uControl = 0x%x\n",
@@ -437,11 +462,12 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 	uBufferCount_TX = (kal_uint32)btsco_PacketInfo[uPacketType][2];
 	uBufferCount_RX = (kal_uint32)btsco_PacketInfo[uPacketType][3];
 
-	pr_debug("%s Length=%d, uPNum=%d, uCount_TX=%d, uCount_RX=%d uTXState=0x%x,uRXState=0x%x\n",
-	      __func__, uPacketLength, uPacketNumber, uBufferCount_TX,
-	      uBufferCount_RX,
-	      btsco.uTXState,
-	      btsco.uRXState);
+#if defined(LOGBT_ON)
+	pr_debug(
+		"%s Length=%d, uPNum=%d, uCount_TX=%d, uCount_RX=%d uTXState=0x%x,uRXState=0x%x\n",
+		__func__, uPacketLength, uPacketNumber, uBufferCount_TX,
+		uBufferCount_RX, btsco.uTXState, btsco.uRXState);
+#endif
 
 	if (btsco.pTX && btsco.uTXState == BT_SCO_TXSTATE_DIRECT_LOOPBACK) {
 		kal_uint8 *pSrc, *pDst;
@@ -454,15 +480,19 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 		connsys_addr_rx = *bt_hw_REG_PACKET_R;
 		ap_addr_rx = (unsigned long)BTSYS_SRAM_BANK2_BASE_ADDRESS +
 			     (connsys_addr_rx & 0xFFFF);
-		pr_debug("connsys_addr_rx=0x%lx,ap_addr_rx=0x%lx\n",
-		      connsys_addr_rx, ap_addr_rx);
+#if defined(LOGBT_ON)
+		pr_debug("connsys_addr_rx=0x%lx, ap_addr_rx=0x%lx\n",
+			 connsys_addr_rx, ap_addr_rx);
+#endif
 		pSrc = (kal_uint8 *)ap_addr_rx;
 
 		connsys_addr_tx = *bt_hw_REG_PACKET_W;
 		ap_addr_tx = (unsigned long)BTSYS_SRAM_BANK2_BASE_ADDRESS +
 			     (connsys_addr_tx & 0xFFFF);
-		pr_debug("connsys_addr_tx=0x%lx,ap_addr_tx=0x%lx\n",
-		      connsys_addr_tx, ap_addr_tx);
+#if defined(LOGBT_ON)
+		pr_debug("connsys_addr_tx=0x%lx, ap_addr_tx=0x%lx\n",
+			 connsys_addr_tx, ap_addr_tx);
+#endif
 		pDst = (kal_uint8 *)ap_addr_tx;
 
 		AudDrv_BTCVSD_DataTransfer(
@@ -500,10 +530,13 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 		if (btsco.pRX) {
 			if (btsco.uRXState == BT_SCO_RXSTATE_RUNNING ||
 			    btsco.uRXState == BT_SCO_RXSTATE_ENDING) {
-				pr_debug("%s fOverflow=%d, iw=%d, ir=%d, RX=%d\n",
-				      __func__, btsco.pRX->fOverflow,
-				      btsco.pRX->iPacket_w,
-				      btsco.pRX->iPacket_r, uBufferCount_RX);
+#if defined(LOGBT_ON)
+				pr_debug(
+					"%s fOverflow=%d, iw=%d, ir=%d, RX=%d\n",
+					__func__, btsco.pRX->fOverflow,
+					btsco.pRX->iPacket_w,
+					btsco.pRX->iPacket_r, uBufferCount_RX);
+#endif
 				if (btsco.pRX->fOverflow) {
 					if (btsco.pRX->iPacket_w -
 						    btsco.pRX->iPacket_r <=
@@ -514,8 +547,8 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 						 */
 						btsco.pRX->fOverflow =
 							false; /*KAL_FALSE;*/
-						pr_debug(
-							"AudDrv_BTCVSD_IRQ_handler pRX->fOverflow FALSE!!!\n");
+						pr_warn("%s pRX->fOverflow FALSE!!!\n",
+							__func__);
 					}
 				}
 
@@ -531,8 +564,8 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 				} else {
 					btsco.pRX->fOverflow =
 						true; /*KAL_TRUE;*/
-					pr_debug("%s pRX->fOverflow TRUE!!!\n",
-						 __func__);
+					pr_warn("%s pRX->fOverflow TRUE!!!\n",
+						__func__);
 				}
 			}
 		}
@@ -541,10 +574,13 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 			tx_timeout = false;
 			if (btsco.uTXState == BT_SCO_TXSTATE_RUNNING ||
 			    btsco.uTXState == BT_SCO_TXSTATE_ENDING) {
-				pr_debug("%s fUnderflow=%d, iw=%d, ir=%d, TX=%d\n",
-				      __func__, btsco.pTX->fUnderflow,
-				      btsco.pTX->iPacket_w,
-				      btsco.pTX->iPacket_r, uBufferCount_TX);
+#if defined(LOGBT_ON)
+				pr_debug(
+					"%s fUnderflow=%d, iw=%d, ir=%d, TX=%d\n",
+					__func__, btsco.pTX->fUnderflow,
+					btsco.pTX->iPacket_w,
+					btsco.pTX->iPacket_r, uBufferCount_TX);
+#endif
 				if (btsco.pTX->fUnderflow) {
 					/* prepared data is larger then twice
 					 * interrupt tx data size
@@ -554,8 +590,7 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 					    2 * uBufferCount_TX) {
 						btsco.pTX->fUnderflow =
 							false; /*KAL_FALSE;*/
-						pr_debug(
-							"%s pTX->fUnderflow FALSE!!!\n",
+						pr_warn("%s pTX->fUnderflow FALSE!!!\n",
 							__func__);
 					}
 				}
@@ -572,14 +607,16 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 				} else {
 					btsco.pTX->fUnderflow =
 						true; /*KAL_TRUE;*/
-					pr_debug("%s pTX->fUnderflow TRUE!!!\n",
-						 __func__);
+					pr_warn("%s pTX->fUnderflow TRUE!!!\n",
+						__func__);
 				}
 			}
 		}
 	}
-	pr_debug("writeToBT_cnt=%d, readFromBT_cnt=%d\n", writeToBT_cnt,
-	      readFromBT_cnt);
+#if defined(LOGBT_ON)
+	pr_debug("%s writeToBT_cnt=%d, readFromBT_cnt=%d\n", __func__,
+		 writeToBT_cnt, readFromBT_cnt);
+#endif
 
 	*bt_hw_REG_CONTROL &= ~BT_CVSD_CLEAR;
 
@@ -608,7 +645,7 @@ bool Register_BTCVSD_Irq(void *dev, unsigned int irq_number)
 			  IRQF_TRIGGER_LOW, "BTCVSD_ISR_Handle", dev);
 
 	if (ret)
-		pr_debug("%s fail!!! irq_number=%d\n", __func__, irq_number);
+		pr_warn("%s fail!!! irq_number=%d\n", __func__, irq_number);
 
 	return ret;
 }
@@ -626,19 +663,19 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 		SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE;
 
 	if ((btsco.pRX == NULL) || (btsco.pRX->u4BufferSize == 0)) {
-		pr_debug(
-			"AudDrv_btcvsd_read btsco.pRX == NULL || btsco.pRX->u4BufferSize == 0!!!\n");
+		pr_warn("%s btsco.pRX == NULL || btsco.pRX->u4BufferSize == 0!!!\n",
+			__func__);
 		msleep(60);
 		return -1;
 	}
 
-	read_timeout_limit = 22500000;  /* one interrupt period = 22.5ms */
+	read_timeout_limit = 22500000; /* one interrupt period = 22.5ms */
 
 	while (count) {
-		pr_debug("%s pRX->i_w=%d, pRX->i_r=%d,count=%zu\n",
-		      __func__, btsco.pRX->iPacket_w,
-		      btsco.pRX->iPacket_r,
-		      count);
+#if defined(LOGBT_ON)
+		pr_debug("%s pRX->i_w=%d, pRX->i_r=%d,count=%zu\n", __func__,
+			 btsco.pRX->iPacket_w, btsco.pRX->iPacket_r, count);
+#endif
 
 		spin_lock_irqsave(&auddrv_btcvsd_rx_lock, flags);
 		/* available data in RX packet buffer */
@@ -668,25 +705,29 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 		else
 			read_size = count;
 
-		pr_debug("read_size=%zd, BTSCORX_ReadIdx_tmp=%zd %s 0,r_c:%zd,rsize:%zd,Remain:%lx,i_r:%x,i_w:%x\n",
-		      read_size, BTSCORX_ReadIdx_tmp,
-		      __func__, read_count, read_size, u4DataRemained,
-		      btsco.pRX->iPacket_r, btsco.pRX->iPacket_w
-		      );
+#if defined(LOGBT_ON)
+		pr_debug(
+			"%s read_count:%zd, read_size:%zd, Remain:0x%lx, i_r:0x%x, i_w:0x%x, BTSCORX_ReadIdx_tmp=%zd\n",
+			__func__, read_count, read_size, u4DataRemained,
+			btsco.pRX->iPacket_r, btsco.pRX->iPacket_w,
+			BTSCORX_ReadIdx_tmp);
+#endif
 		if (BTSCORX_ReadIdx_tmp + read_size <
 		    btsco.pRX->u4BufferSize) /* copy once */ {
-			pr_debug("%s 1 user target=0x%p, source=0x%p, rsize=%zd\n",
-			      __func__, Read_Data_Ptr,
-			      ((unsigned char *)btsco.pRX->PacketBuf +
-			       BTSCORX_ReadIdx_tmp),
-			      read_size);
+#if defined(LOGBT_ON)
+			pr_debug(
+				"%s 1 user target=0x%p, source=0x%p, rsize=%zd\n",
+				__func__, Read_Data_Ptr,
+				((unsigned char *)btsco.pRX->PacketBuf +
+				 BTSCORX_ReadIdx_tmp),
+				read_size);
+#endif
 			if (copy_to_user(
 				    (void __user *)Read_Data_Ptr,
 				    (void *)((kal_uint8 *)btsco.pRX->PacketBuf +
 					     BTSCORX_ReadIdx_tmp),
 				    read_size)) {
-				pr_debug(
-					"%s Fail 1 Ptr:%p,Buf:%p,RIdx_tmp:%zd,read_size:%zd",
+				pr_warn("%s Fail 1 Ptr:%p,Buf:%p,RIdx_tmp:%zd,read_size:%zd",
 					__func__, Read_Data_Ptr,
 					(kal_uint8 *)btsco.pRX->PacketBuf,
 					BTSCORX_ReadIdx_tmp, read_size);
@@ -706,30 +747,37 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 
 			Read_Data_Ptr += read_size;
 			count -= read_size;
+#if defined(LOGBT_ON)
 			pr_debug(
-			      "%s 1:r_size:%zd, pRX->r:%x, pRX->w:%x,count:%zu\n",
-			      __func__, read_size, btsco.pRX->iPacket_r,
-			      btsco.pRX->iPacket_w, count);
+				"%s 1:r_size:%zd, pRX->r:%x, pRX->w:%x,count:%zu\n",
+				__func__, read_size, btsco.pRX->iPacket_r,
+				btsco.pRX->iPacket_w, count);
+#endif
 		} else /* copy twice */ {
 			unsigned long size_1 =
 				btsco.pRX->u4BufferSize - BTSCORX_ReadIdx_tmp;
 			unsigned long size_2 = read_size - size_1;
 
-			pr_debug("%s 2 c_u target=%p, source=0x%p, size_1=%lu\n",
-			      __func__, Read_Data_Ptr,
-			      ((unsigned char *)btsco.pRX->PacketBuf +
-			       BTSCORX_ReadIdx_tmp),
-			      size_1);
+#if defined(LOGBT_ON)
+			pr_debug(
+				"%s 2 c_u target=%p, source=0x%p, size_1=%lu\n",
+				__func__, Read_Data_Ptr,
+				((unsigned char *)btsco.pRX->PacketBuf +
+				 BTSCORX_ReadIdx_tmp),
+				size_1);
+#endif
 			if (copy_to_user(
 				    (void __user *)Read_Data_Ptr,
 				    (void *)((kal_uint8 *)btsco.pRX->PacketBuf +
 					     BTSCORX_ReadIdx_tmp),
 				    size_1)) {
+#if defined(LOGBT_ON)
 				pr_debug(
-				      "%s Fail2 Ptr:%p,PBuf:%p,Rtmp:%zx,rsize:%zd",
-				      __func__, Read_Data_Ptr,
-				      btsco.pRX->PacketBuf, BTSCORX_ReadIdx_tmp,
-				      read_size);
+					"%s Fail2 Ptr:%p,PBuf:%p,Rtmp:%zx,rsize:%zd",
+					__func__, Read_Data_Ptr,
+					btsco.pRX->PacketBuf,
+					BTSCORX_ReadIdx_tmp, read_size);
+#endif
 				if (read_count == 0)
 					return -1;
 				else
@@ -744,20 +792,24 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 					  BTSCO_CVSD_PACKET_VALID_SIZE);
 			spin_unlock_irqrestore(&auddrv_btcvsd_rx_lock, flags);
 
+#if defined(LOGBT_ON)
 			pr_debug("%s 2 user target=%p, source=%p,size_2=%lu\n",
-			      __func__, (Read_Data_Ptr + size_1),
-			      ((unsigned char *)btsco.pRX->PacketBuf +
-			       BTSCORX_ReadIdx_tmp + size_1),
-			      size_2);
+				 __func__, (Read_Data_Ptr + size_1),
+				 ((unsigned char *)btsco.pRX->PacketBuf +
+				  BTSCORX_ReadIdx_tmp + size_1),
+				 size_2);
+#endif
 			if (copy_to_user(
 				    (void __user *)(Read_Data_Ptr + size_1),
 				    (void *)((kal_uint8 *)btsco.pRX->PacketBuf),
 				    size_2)) {
+#if defined(LOGBT_ON)
 				pr_debug(
-				      "%s Fail 3 Ptr:%p,Buf:%p,Rtmp:%zd,size:%zd",
-				      __func__, Read_Data_Ptr,
-				      btsco.pRX->PacketBuf, BTSCORX_ReadIdx_tmp,
-				      read_size);
+					"%s Fail 3 Ptr:%p,Buf:%p,Rtmp:%zd,size:%zd",
+					__func__, Read_Data_Ptr,
+					btsco.pRX->PacketBuf,
+					BTSCORX_ReadIdx_tmp, read_size);
+#endif
 				if (read_count == 0)
 					return -1;
 				else
@@ -774,16 +826,21 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 
 			count -= read_size;
 			Read_Data_Ptr += read_size;
+#if defined(LOGBT_ON)
 			pr_debug("%s 3 size_2:%lu, i_r:0x%x, i_w:0x%x Re:%lu\n",
-			      __func__, size_2, btsco.pRX->iPacket_r,
-			      btsco.pRX->iPacket_w, u4DataRemained);
+				 __func__, size_2, btsco.pRX->iPacket_r,
+				 btsco.pRX->iPacket_w, u4DataRemained);
+#endif
 		}
 
 		if (count != 0) {
 			kal_uint64 t1, t2;
 
-			pr_debug("%s WAITING... pRX->iPacket_r=0x%x, count=%zu\n",
-			      __func__, btsco.pRX->iPacket_r, count);
+#if defined(LOGBT_ON)
+			pr_debug(
+				"%s WAITING... pRX->iPacket_r=0x%x, count=%zu\n",
+				__func__, btsco.pRX->iPacket_r, count);
+#endif
 			t1 = sched_clock();
 			BTCVSD_read_wait_queue_flag = 0;
 			ret = wait_event_interruptible_timeout(
@@ -793,8 +850,10 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 			t2 = sched_clock();
 			t2 = t2 - t1; /* in ns (10^9) */
 
+#if defined(LOGBT_ON)
 			pr_debug("%s(), WAKEUP.ret = %d, BT_read_flag = %d\n",
-			      __func__, ret, BTCVSD_read_wait_queue_flag);
+				 __func__, ret, BTCVSD_read_wait_queue_flag);
+#endif
 
 			if (t2 > read_timeout_limit) {
 				pr_warn("%s timeout %llu ns,limit %llu, ret %d, flag %d\n",
@@ -824,9 +883,11 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 					return read_count;
 				}
 			} else if (ret == 1) {
-				/* condition is true after timeout */
+/* condition is true after timeout */
+#if defined(LOGBT_ON)
 				pr_debug("%s(), timeout, condition is true\n",
-				      __func__);
+					 __func__);
+#endif
 			}
 		}
 	}
@@ -845,11 +906,13 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 	bt_rx_bufdata_equivalent_time *=
 		1000; /* return equivalent time(us) to data count */
 
-	pr_debug("bt_rx_ts:%llu,bt_rx_buf_time:%llu, iPacket_w:%d, iPacket_r:%d read_count = %zd,read_timeout_limit=%llu\n",
-	      bt_rx_timestamp, bt_rx_bufdata_equivalent_time,
-	      btsco.pRX->iPacket_w, btsco.pRX->iPacket_r,
-	      read_count, read_timeout_limit
-	      );
+#if defined(LOGBT_ON)
+	pr_debug(
+		"%s bt_rx_ts:%llu,bt_rx_buf_time:%llu, iPacket_w:%d, iPacket_r:%d read_count = %zd,read_timeout_limit=%llu\n",
+		__func__, bt_rx_timestamp, bt_rx_bufdata_equivalent_time,
+		btsco.pRX->iPacket_w, btsco.pRX->iPacket_r, read_count,
+		read_timeout_limit);
+#endif
 
 	return read_count;
 }
@@ -863,8 +926,8 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 	int max_timeout_trial = 2;
 
 	if ((btsco.pTX == NULL) || (btsco.pTX->u4BufferSize == 0)) {
-		pr_debug(
-			"AudDrv_btcvsd_write btsco.pTX == NULL || (btsco.pTX->u4BufferSize == 0 !!!\n");
+		pr_warn("%s btsco.pTX == NULL || btsco.pTX->u4BufferSize == 0 !!!\n",
+			__func__);
 		msleep(60);
 		return written_size;
 	}
@@ -884,13 +947,18 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 		(SCO_TX_ENCODE_SIZE)*16 * 1000 / 2 / 64;
 	bt_tx_bufdata_equivalent_time *=
 		1000; /* return equivalent time(us) to data count */
+#if defined(LOGBT_ON)
 	pr_debug("bt_tx_ts:%llu,bt_tx_buf_time:%llu, i_w:%d, i_r:%d ",
-	      bt_tx_timestamp, bt_tx_bufdata_equivalent_time,
-	      btsco.pTX->iPacket_w, btsco.pTX->iPacket_r);
+		 bt_tx_timestamp, bt_tx_bufdata_equivalent_time,
+		 btsco.pTX->iPacket_w, btsco.pTX->iPacket_r);
+#endif
 
 	while (count) {
-		pr_debug("%s btsco.pTX->iPacket_w=%d, btsco.pTX->iPacket_r=%d\n",
-		      __func__, btsco.pTX->iPacket_w, btsco.pTX->iPacket_r);
+#if defined(LOGBT_ON)
+		pr_debug(
+			"%s btsco.pTX->iPacket_w=%d, btsco.pTX->iPacket_r=%d\n",
+			__func__, btsco.pTX->iPacket_w, btsco.pTX->iPacket_r);
+#endif
 		spin_lock_irqsave(&auddrv_btcvsd_tx_lock, flags);
 		/*	free space of TX packet buffer */
 		copy_size = btsco.pTX->u4BufferSize -
@@ -911,8 +979,10 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 		if (count <= (kal_uint32)copy_size)
 			copy_size = count;
 
-		pr_debug("AudDrv_btcvsd_write count=%zd, copy_size=%d\n", count,
-		      copy_size);
+#if defined(LOGBT_ON)
+		pr_debug("%s count=%zd, copy_size=%d\n", __func__, count,
+			 copy_size);
+#endif
 
 		if (copy_size != 0) {
 			spin_lock_irqsave(&auddrv_btcvsd_tx_lock, flags);
@@ -926,25 +996,28 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 
 				if (!access_ok(VERIFY_READ, data_w_ptr,
 					       copy_size)) {
-					pr_debug("%s ptr invalid w_ptr=%lx, size=%d Size=%d, BTSCOTX_WriteIdx=%d\n",
+					pr_warn("%s ptr invalid w_ptr=0x%lx, copy_size=%d, bufSize=%d, BTSCOTX_WriteIdx=%d\n",
 						__func__,
 						(unsigned long)data_w_ptr,
 						copy_size,
 						btsco.pTX->u4BufferSize,
 						BTSCOTX_WriteIdx);
 				} else {
+#if defined(LOGBT_ON)
 					pr_debug(
-					      "Packet+T_WIdx=%lx w_p=%p size=%d\n",
-					      (unsigned long)(btsco.pTX
-					      ->PacketBuf +
-					      BTSCOTX_WriteIdx),
-					      data_w_ptr, copy_size);
+						"%s Packet+T_WIdx=%lx w_p=%p size=%d\n",
+						__func__,
+						(unsigned long)(btsco.pTX
+								->PacketBuf +
+							BTSCOTX_WriteIdx),
+						data_w_ptr, copy_size);
+#endif
 					if (copy_from_user(
 						    btsco.pTX->PacketBuf +
 							    BTSCOTX_WriteIdx,
 						    data_w_ptr, copy_size)) {
-						pr_debug(
-							"AudDrv_btcvsd_write Fail copy_from_user\n");
+						pr_warn("%s Fail copy_from_user\n",
+							__func__);
 						return -1;
 					}
 				}
@@ -957,42 +1030,47 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 						       flags);
 				data_w_ptr += copy_size;
 				count -= copy_size;
+#if defined(LOGBT_ON)
 				pr_debug("%s ,size:%d, tw:%d,ir=%d,count=%zd\n",
-				      __func__, copy_size, btsco.pTX->iPacket_w,
-				      btsco.pTX->iPacket_r, count);
+					 __func__, copy_size,
+					 btsco.pTX->iPacket_w,
+					 btsco.pTX->iPacket_r, count);
+#endif
 			} else /* copy twice */ {
 				kal_int32 size_1 = 0, size_2 = 0;
 
 				size_1 = btsco.pTX->u4BufferSize -
 					 BTSCOTX_WriteIdx;
 				size_2 = copy_size - size_1;
+#if defined(LOGBT_ON)
 				pr_debug("%s size_1=%d, size_2=%d\n", __func__,
-				      size_1, size_2);
+					 size_1, size_2);
+#endif
 				if (!access_ok(VERIFY_READ, data_w_ptr,
 					       size_1)) {
-					pr_debug(
-						"%s 1ptr invalid data_w_ptr=%lx, size_1=%d\n",
+					pr_warn("%s 1ptr invalid data_w_ptr=%lx, size_1=%d\n",
 						__func__,
 						(unsigned long)data_w_ptr,
 						size_1);
-					pr_debug(
-						"%s u4BufferSize=%d, BTSCOTX_WriteIdx=%d\n",
+					pr_warn("%s u4BufferSize=%d, BTSCOTX_WriteIdx=%d\n",
 						__func__,
 						btsco.pTX->u4BufferSize,
 						BTSCOTX_WriteIdx);
 				} else {
+#if defined(LOGBT_ON)
 					pr_debug(
-					      "TX_WIdx=%lx w_ptr=%p size_1=%d\n",
-					      (unsigned long)(btsco.pTX
-					      ->PacketBuf +
-					      BTSCOTX_WriteIdx),
-					      data_w_ptr, size_1);
+						"TX_WIdx=%lx w_ptr=%p size_1=%d\n",
+						(unsigned long)(btsco.pTX
+								->PacketBuf +
+							BTSCOTX_WriteIdx),
+						data_w_ptr, size_1);
+#endif
 					if (copy_from_user(
 						    btsco.pTX->PacketBuf +
 							    BTSCOTX_WriteIdx,
 						    data_w_ptr, size_1)) {
-						pr_debug(
-							"AudDrv_write Fail 1 copy_from_user\n");
+						pr_warn("%s Fail 1 copy_from_user\n",
+							__func__);
 						return -1;
 					}
 				}
@@ -1006,26 +1084,28 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 
 				if (!access_ok(VERIFY_READ, data_w_ptr + size_1,
 					       size_2)) {
-					pr_debug(
-						"w2ptr inval _ptr=%lx, size_1=%d, size_2=%d\n",
+					pr_warn("%s w2ptr inval _ptr=0x%lx, size_1=%d, size_2=%d, bufSize=%d, pTX->iPacket_w=%d\n",
+						__func__,
 						(unsigned long)data_w_ptr,
-						size_1, size_2);
-					pr_debug(
-						"write Size=%d, pTX->iPacket_w=%d\n",
+						size_1, size_2,
 						btsco.pTX->u4BufferSize,
 						btsco.pTX->iPacket_w);
 				} else {
+#if defined(LOGBT_ON)
 					pr_debug(
-					      "WIdx+size_1=%lx w_p+size_1=%p size_2=%x\n",
-					      (unsigned long)(btsco.pTX
-								   ->PacketBuf +
-							      BTSCOTX_WriteIdx +
-							      size_1),
-					      data_w_ptr + size_1, size_2);
+						"%s WIdx+size_1=%lx w_p+size_1=%p size_2=%x\n",
+						__func__,
+						(unsigned long)(btsco.pTX
+								->PacketBuf +
+							BTSCOTX_WriteIdx +
+								size_1),
+						data_w_ptr + size_1, size_2);
+#endif
 					if (copy_from_user(btsco.pTX->PacketBuf,
 							   data_w_ptr + size_1,
 							   size_2)) {
-						pr_debug("AudDrv_btcvsd_write Fail 2 copy_from_user\n");
+						pr_warn("%s Fail 2 copy_from_user\n",
+							__func__);
 						return -1;
 					}
 				}
@@ -1039,17 +1119,23 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 						       flags);
 				count -= copy_size;
 				data_w_ptr += copy_size;
-				pr_debug("%s size:%d,iP_w=%d,i_r=%d,count:%zd\n",
-				      __func__, copy_size, btsco.pTX->iPacket_w,
-				      btsco.pTX->iPacket_r, count);
+#if defined(LOGBT_ON)
+				pr_debug(
+					"%s size:%d,iP_w=%d,i_r=%d,count:%zd\n",
+					__func__, copy_size,
+					btsco.pTX->iPacket_w,
+					btsco.pTX->iPacket_r, count);
+#endif
 			}
 		}
 
 		if (count != 0) {
 			kal_uint64 t1, t2;
 
-			pr_debug("%s WAITING.iP_w=%d, count=%zd\n",
-			      __func__, btsco.pTX->iPacket_w, count);
+#if defined(LOGBT_ON)
+			pr_debug("%s WAITING.iP_w=%d, count=%zd\n", __func__,
+				 btsco.pTX->iPacket_w, count);
+#endif
 			t1 = sched_clock();
 			BTCVSD_write_wait_queue_flag = 0;
 			ret = wait_event_interruptible_timeout(
@@ -1059,8 +1145,10 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 			t2 = sched_clock();
 			t2 = t2 - t1; /* in ns (10^9) */
 
+#if defined(LOGBT_ON)
 			pr_debug("%s(),interrupt, ret = %d, queue_flag = %d\n",
-			      __func__, ret, BTCVSD_write_wait_queue_flag);
+				 __func__, ret, BTCVSD_write_wait_queue_flag);
+#endif
 
 			if (t2 > write_timeout_limit) {
 				pr_warn("%s timeout, %llu, limit %llu, ret %d, flag %d\n",
@@ -1091,14 +1179,19 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 				}
 			} else if (ret == 1) {
 				/* condition is true after timeout */
-				pr_debug("%s(), timeout, condn is true\n",
-				      __func__);
+				pr_warn("%s(), timeout, condn is true\n",
+					__func__);
+			} else {
+				pr_warn("%s(), condn is true before timeout\n",
+					__func__);
 			}
 		}
 		/* here need to wait for interrupt handler */
 	}
-	pr_debug("write written_size = %d, write_timeout_limit=%llu\n",
-	      written_size, write_timeout_limit);
+#if defined(LOGBT_ON)
+	pr_debug("%s write written_size = %d, write_timeout_limit=%llu\n",
+		 __func__, written_size, write_timeout_limit);
+#endif
 	return written_size;
 }
 

@@ -90,10 +90,12 @@ static int btcvsd_tx_timestamp_get(struct snd_kcontrol *kcontrol,
 
 	get_tx_timestamp(&time_buffer_info_tx);
 
-	pr_debug("%s(), tS_us:%llu, data_time:%llu, sizeof = %zu",
-	      __func__, time_buffer_info_tx.timestamp_us,
-	      time_buffer_info_tx.data_count_equi_time,
-	      sizeof(struct time_buffer_info));
+#if defined(LOGBT_ON)
+	pr_debug("%s(), ts_us:%llu, data_time:%llu, sizeof = %zu", __func__,
+		 time_buffer_info_tx.timestamp_us,
+		 time_buffer_info_tx.data_count_equi_time,
+		 sizeof(struct time_buffer_info));
+#endif
 
 	if (copy_to_user(data, &time_buffer_info_tx,
 			 sizeof(struct time_buffer_info))) {
@@ -122,7 +124,7 @@ static int Btcvsd_Loopback_Control_Set(struct snd_kcontrol *kcontrol,
 	}
 	btcvsd_loopback_usage_control = ucontrol->value.integer.value[0];
 	pr_debug("%s(), btcvsd_loopback_usage_control=%d\n", __func__,
-		btcvsd_loopback_usage_control);
+		 btcvsd_loopback_usage_control);
 	if (btcvsd_loopback_usage_control)
 		Set_BTCVSD_State(BT_SCO_TXSTATE_DIRECT_LOOPBACK);
 	else
@@ -158,13 +160,17 @@ mtk_pcm_btcvsd_tx_pointer(struct snd_pcm_substream *substream)
 
 	unsigned long flags;
 
+#if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
+#endif
 
 	spin_lock_irqsave(&auddrv_btcvsd_tx_lock, flags);
 
-	/* get packet diff from last time */
+/* get packet diff from last time */
+#if defined(LOGBT_ON)
 	pr_debug("%s(), btsco.pTX->iPacket_r = %d, prev_iPacket_r = %d\n",
-	      __func__, btsco.pTX->iPacket_r, prev_iPacket_r);
+		 __func__, btsco.pTX->iPacket_r, prev_iPacket_r);
+#endif
 	if (btsco.pTX->iPacket_r >= prev_iPacket_r) {
 		packet_diff = btsco.pTX->iPacket_r - prev_iPacket_r;
 	} else {
@@ -182,8 +188,10 @@ mtk_pcm_btcvsd_tx_pointer(struct snd_pcm_substream *substream)
 	frame %= substream->runtime->buffer_size;
 
 	prev_frame = frame;
-	pr_debug("%s(),frame %lu,byte=%d,pTX->iPacket_r=%d\n", __func__,
-	      frame, byte, btsco.pTX->iPacket_r);
+#if defined(LOGBT_ON)
+	pr_debug("%s(),frame %lu,byte=%d,pTX->iPacket_r=%d\n", __func__, frame,
+		 byte, btsco.pTX->iPacket_r);
+#endif
 
 	spin_unlock_irqrestore(&auddrv_btcvsd_tx_lock, flags);
 
@@ -196,8 +204,9 @@ static int mtk_pcm_btcvsd_tx_hw_params(struct snd_pcm_substream *substream,
 	int ret = 0;
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 
+#if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
-
+#endif
 
 	if (params_period_size(hw_params) % SCO_TX_ENCODE_SIZE != 0) {
 		pr_err("%s(), error, period size %d not valid\n", __func__,
@@ -218,16 +227,18 @@ static int mtk_pcm_btcvsd_tx_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	pr_debug("%s, 1 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
-		__func__, substream->runtime->dma_bytes,
-		substream->runtime->dma_area,
-		(long)substream->runtime->dma_addr);
+		 __func__, substream->runtime->dma_bytes,
+		 substream->runtime->dma_area,
+		 (long)substream->runtime->dma_addr);
 
 	return ret;
 }
 
 static int mtk_pcm_btcvsd_tx_hw_free(struct snd_pcm_substream *substream)
 {
+#if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
+#endif
 
 	btcvsd_tx_clean_buffer();
 
@@ -304,7 +315,9 @@ static int mtk_pcm_btcvsd_tx_prepare(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_btcvsd_tx_start(struct snd_pcm_substream *substream)
 {
+#if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
+#endif
 
 	prev_frame = 0;
 	prev_iPacket_r = btsco.pTX->iPacket_r;
@@ -315,7 +328,9 @@ static int mtk_pcm_btcvsd_tx_start(struct snd_pcm_substream *substream)
 static int mtk_pcm_btcvsd_tx_trigger(struct snd_pcm_substream *substream,
 				     int cmd)
 {
+#if defined(LOGBT_ON)
 	pr_debug("%s, cmd=%d\n", __func__, cmd);
+#endif
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -338,7 +353,9 @@ static int mtk_pcm_btcvsd_tx_copy(struct snd_pcm_substream *substream,
 	count = btcvsd_frame_to_bytes(substream, count);
 	AudDrv_btcvsd_write(data_w_ptr, count);
 
-	pr_debug("pcm_copy return\n");
+#if defined(LOGBT_ON)
+	pr_debug("%s pcm_copy return\n", __func__);
+#endif
 	return 0;
 }
 
@@ -403,7 +420,9 @@ static int mtk_btcvsd_tx_probe(struct platform_device *pdev)
 
 static int mtk_btcvsd_tx_remove(struct platform_device *pdev)
 {
+#if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
+#endif
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -426,6 +445,7 @@ static const struct of_device_id mt_soc_pcm_btcvsd_tx_of_ids[] = {
 
 static struct platform_driver mtk_btcvsd_tx_driver = {
 	.driver = {
+
 
 			.name = MT_SOC_BTCVSD_TX_PCM,
 			.owner = THIS_MODULE,
@@ -475,7 +495,9 @@ module_init(mtk_btcvsd_tx_soc_platform_init);
 
 static void __exit mtk_btcvsd_tx_soc_platform_exit(void)
 {
+#if defined(LOGBT_ON)
 	pr_debug("%s\n", __func__);
+#endif
 
 	platform_driver_unregister(&mtk_btcvsd_tx_driver);
 }

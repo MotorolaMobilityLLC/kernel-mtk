@@ -41,6 +41,8 @@
 #include <linux/types.h>
 #include <sound/soc.h>
 
+//#define LOGBT_ON
+
 static DECLARE_WAIT_QUEUE_HEAD(BTCVSD_Write_Wait_Queue);
 static DECLARE_WAIT_QUEUE_HEAD(BTCVSD_Read_Wait_Queue);
 extern spinlock_t auddrv_btcvsd_tx_lock;
