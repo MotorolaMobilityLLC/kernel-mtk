@@ -77,7 +77,7 @@
 
 #define CMDQ_GCE_END_ADDR_PA         (GCE_BASE_PA + 0xC00)
 #define CMDQ_THR_FIX_END_ADDR(id)    (CMDQ_GCE_END_ADDR_PA | (id << 4))
-#define CMDQ_IS_END_ADDR(addr)       ((addr & CMDQ_GCE_END_ADDR_PA) == CMDQ_GCE_END_ADDR_PA)
+#define CMDQ_IS_END_ADDR(addr)       ((addr & 0xFFFFFFC00) == CMDQ_GCE_END_ADDR_PA)
 
 #define CMDQ_APXGPT2_COUNT           (cmdq_dev_get_APXGPT2_count())
 
