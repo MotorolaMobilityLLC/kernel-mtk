@@ -139,7 +139,7 @@ extern int get_target_tj(void);
 
 extern int mtk_thermal_get_tpcb_target(void);
 
-extern void thermal_set_big_core_speed(U32 tempMonCtl1, U32 tempMonCtl2, U32 tempAhbPoll);
+extern void thermal_set_big_core_speed(unsigned int tempMonCtl1, unsigned int tempMonCtl2, unsigned int tempAhbPoll);
 
 /* return value(1): cooler of abcct/abcct_lcmoff is deactive, and no thermal current limit. */
 extern int mtk_cooler_is_abcct_unlimit(void);
