@@ -19,8 +19,6 @@
 
 #include "fpsgo_base.h"
 
-#define MAX_FREQ_BOUND_NUM 2
-
 #ifdef CONFIG_MTK_FPSGO_FBT_GAME
 void fpsgo_ctrl2fbt_dfrc_fps(int fps_limit);
 void fpsgo_ctrl2fbt_cpufreq_cb(int cid, unsigned long freq);
