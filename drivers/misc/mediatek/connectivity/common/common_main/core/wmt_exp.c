@@ -147,9 +147,8 @@ INT32 mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag)
 		wmt_lib_ps_ctrl(0);
 		WMT_INFO_FUNC("disable PSM\n");
 	} else {
-		wmt_lib_ps_set_idle_time(5000);
 		wmt_lib_ps_ctrl(1);
-		WMT_INFO_FUNC("enable PSM, idle to sleep time = 5000 ms\n");
+		WMT_INFO_FUNC("enable PSM\n");
 	}
 #else
 	WMT_INFO_FUNC("WMT PS not supported\n");
