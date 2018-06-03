@@ -434,6 +434,7 @@ static kal_uint16 read_cmos_sensor_twobyte(kal_uint32 addr)
 	kal_uint16 get_byte = 0;
 	char get_word[2];
 	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
+	memset(get_word, 0, 2);
 	/* iReadRegI2C(pu_send_cmd, 2, get_word, 2, imgsensor.i2c_write_id); */
 	iReadRegI2CTiming(pu_send_cmd, 2, get_word, 2, imgsensor.i2c_write_id,
 			  imgsensor_info.i2c_speed);
