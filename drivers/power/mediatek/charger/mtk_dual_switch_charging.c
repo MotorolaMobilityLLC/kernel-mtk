@@ -101,7 +101,7 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 		goto done;
 	}
 
-	if (info->usb_unlimited && (info->chr_type == STANDARD_HOST || info->chr_type == CHARGING_HOST)) {
+	if (info->usb_unlimited) {
 		pdata->input_current_limit = info->data.ac_charger_input_current;
 		pdata->charging_current_limit = info->data.ac_charger_current;
 		goto done;
