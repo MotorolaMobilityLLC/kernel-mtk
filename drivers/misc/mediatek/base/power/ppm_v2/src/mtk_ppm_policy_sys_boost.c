@@ -620,12 +620,6 @@ static int __init ppm_sysboost_policy_init(void)
 		sysboost_data[i].user = (enum ppm_sysboost_user)i;
 
 		switch (sysboost_data[i].user) {
-		case BOOST_BY_DEBUGD:
-			sysboost_data[i].user_name = "DEBUGD";
-			break;
-		case BOOST_BY_DEBUGD_64:
-			sysboost_data[i].user_name = "DEBUGD_64";
-			break;
 		case BOOST_BY_WIFI:
 			sysboost_data[i].user_name = "WIFI";
 			break;
@@ -637,6 +631,12 @@ static int __init ppm_sysboost_policy_init(void)
 			break;
 		case BOOST_BY_USB_PD:
 			sysboost_data[i].user_name = "USB_PD";
+			break;
+		case BOOST_BY_DEBUGD:
+			sysboost_data[i].user_name = "DEBUGD";
+			break;
+		case BOOST_BY_DEBUGD_64:
+			sysboost_data[i].user_name = "DEBUGD_64";
 			break;
 		case BOOST_BY_UT:
 		default:
