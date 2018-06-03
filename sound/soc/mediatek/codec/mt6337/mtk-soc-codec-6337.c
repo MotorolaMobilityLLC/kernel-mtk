@@ -140,29 +140,62 @@ static const int DC1devider = 8;	/* in uv */
 
 static int ANC_enabled;
 static int low_power_mode;
+
 /* DPD efuse variable and table */
 static unsigned int dpd_lch[DPD_IMPEDANCE_MAX][DPD_HARMONIC_MAX];
 static unsigned int dpd_rch[DPD_IMPEDANCE_MAX][DPD_HARMONIC_MAX];
 static int dpd_on;
 static int dpd_version;
-static int dpd_table[4][32] = {
+static int dpd_offset_table[12][32] = {
 	/* T = [1/(10^(Fund-HDX/20)] * 8 * 32768 */
-	{42, 37, 33, 29, 26, 23, 21, 19,
-	 17, 15, 13, 12, 10,  9,  8,  7,
-	  7,  6,  5,  5,  4,  4,  3,  3,
-	  3,  2,  2,  2,  2,  1,  1,  1}, /* 1T */
-	{332, 296, 264, 235, 210, 187, 167, 148,
-	 132, 118, 105,  94,  83,  74,  66,  59,
-	  53,  47,  42,  37,  33,  30,  26,  24,
-	  21,  19,  17,  15,  13,  12,  11,   9}, /* 8T */
-	{1330, 1185, 1056, 941, 839, 748, 666, 594,
-	  529,  472,  420, 375, 334, 298, 265, 236,
-	  211,  188,  167, 149, 133, 118, 106,  94,
-	   84,   75,   67,  59,  53,  47,  42,  37}, /* 32T */
-	{1662, 1481, 1320, 1177, 1049, 935, 833, 742,
-	  662,  590,  526,  468,  417, 372, 332, 296,
-	  263,  235,  209,  186,  166, 148, 132, 118,
-	  105,   93,   83,   74,   66,  59,  53,  47}, /* 40T */
+	{273, 243, 217, 193, 172, 153, 137, 122,
+	 109,  97,  86,  77,  68,  61,  54,  48,
+	  43,  39,  34,  31,  27,  24,  22,  19,
+	  17,  15,  14,  12,  11,  10,   9,   8}, /* 8T with 1.72 offset 16Ohm L HD2*/
+	{204, 181, 162, 144, 128, 114, 102, 91,
+	  81,  72,  64,  57,  51,  46,  41, 36,
+	  32,  29,  26,  23,  20,  18,  16, 14,
+	  13,  11,  10,   9,   8,   7,   6,  6},  /* 8T with 4.26 offset 16Ohm L HD3*/
+	{218, 194, 173, 154, 137, 122, 109, 97,
+	  87,  77,  69,  61,  55,  49,  43, 39,
+	  34,  31,  27,  24,  22,  19,  17, 15,
+	  14,  12,  11,  10,   9,   8,   7,  6},  /* 8T with 3.68 offset 16Ohm R HD2*/
+	{195, 174, 155, 138, 123, 110, 98, 87,
+	  78,  69,  62,  55,  49,  44,  39, 35,
+	  31,  28,  25,  22,  19,  17,  15, 14,
+	  12,  11,  10,   9,   8,   7,   6,  5},  /* 8T with 4.64 offset 16Ohm R HD3*/
+	{268, 239, 213, 190, 169, 151, 134, 120,
+	 107,  95,  85,  75,  67,  60,  53,  48,
+	  42,  38,  34,  30,  27,  24,  21,  19,
+	  17,  15,  13,  12,  11,   9,   8,   8}, /* 8T with 1.88 offset 32Ohm L HD2*/
+	{248, 221, 197, 175, 156, 139, 124, 111,
+	  99,  88,  78,  70,  62,  55,  49,  44,
+	  39,  35,  31,  28,  25,  22,  20,  18,
+	  16,  14,  12,  11,  10,   9,   8,   7}, /* 8T with 2.56 offset 32Ohm L HD3*/
+	{241, 214, 191, 170, 152, 135, 121, 107,
+	  96,  85,  76,  68,  60,  54,  48,  43,
+	  38,  34,  30,  27,  24,  21,  19,  17,
+	  15,  14,  12,  11,  10,   9,   8,   7}, /* 8T with 2.81 offset 32Ohm R HD2*/
+	{233, 208, 185, 165, 147, 131, 117, 104,
+	  93,  83,  74,  66,  58,  52,  46,  41,
+	  37,  33,  29,  26,  23,  21,  18,  16,
+	  15,  13,  12,  10,   9,   8,   7,   7,},/* 8T with 3.09 offset 32Ohm R HD3*/
+	{209, 186, 166, 148, 132, 118, 105, 93,
+	  83,  74,  66,  59,  53,  47,  42, 37,
+	  33,  30,  26,  23,  21,  19,  17, 15,
+	  13,  12,  10,   9,   8,   7,   7,  6}, /* 8T with 4.02 offset 560Ohm L HD2*/
+	{195, 173, 155, 138, 123, 109, 98, 87,
+	  77,  69,  62,  55,  49,  44, 39, 35,
+	  31,  27,  24,  22,  19,  17, 15, 14,
+	  12,  11,  10,   9,   8,   7,  6,  5}, /* 8T with 4.65 offset 560Ohm L HD3*/
+	{208, 185, 165, 147, 131, 117, 104, 93,
+	  83,  74,  66,  59,  52,  47,  42, 37,
+	  33,  29,  26,  23,  21,  19,  17, 15,
+	  13,  12,  10,   9,   8,   7,   7,  6}, /* 8T with 4.07 offset 560Ohm R HD2*/
+	{239, 213, 190, 169, 151, 134, 120, 107,
+	  95,  85,  76,  67,  60,  54,  48,  43,
+	  38,  34,  30,  27,  24,  21,  19,  17,
+	  15,  13,  12,  11,  10,   8,   8,   7},/* 8T with 2.86 offset 560Ohm R HD3*/
 };
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -698,75 +731,27 @@ void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param)
 	int a2_lch = 0, a3_lch = 0, a2_rch = 0, a3_rch = 0;
 	int a4_lch = 0, a5_lch = 0, a4_rch = 0, a5_rch = 0;
 
-	if (dpd_version == DPD_3RD) {
-		/* a2 = T , a3 = 8T*/
-		if (impedance < 24) {
-			a2_lch = dpd_table[0][dpd_lch[DPD_16K][DPD_HD2]] + 1;
-			a3_lch = dpd_table[1][dpd_lch[DPD_16K][DPD_HD3]];
-			a2_rch = dpd_table[0][dpd_rch[DPD_16K][DPD_HD2]] + 1;
-			a3_rch = dpd_table[1][dpd_rch[DPD_16K][DPD_HD3]];
-		} else if (impedance < 100) {
-			a2_lch = dpd_table[0][dpd_lch[DPD_32K][DPD_HD2]] + 1;
-			a3_lch = dpd_table[1][dpd_lch[DPD_32K][DPD_HD3]];
-			a2_rch = dpd_table[0][dpd_rch[DPD_32K][DPD_HD2]] + 1;
-			a3_rch = dpd_table[1][dpd_rch[DPD_32K][DPD_HD3]];
-		} else if (impedance < 1000) {
-			a2_lch = dpd_table[0][dpd_lch[DPD_560K][DPD_HD2]];
-			a3_lch = dpd_table[1][dpd_lch[DPD_560K][DPD_HD3]];
-			a2_rch = dpd_table[0][dpd_rch[DPD_560K][DPD_HD2]];
-			a3_rch = dpd_table[1][dpd_rch[DPD_560K][DPD_HD3]];
-		}
-		a2_lch = a2_lch < 2 ? 0 : a2_lch;
-		a3_lch = a3_lch < 12 ? 0 : a3_lch;
-		a2_rch = a2_rch < 2 ? 0 : a2_rch;
-		a3_rch = a3_rch < 12 ? 0 : a3_rch;
-	} else if (dpd_version == DPD_5TH) {
-		/* a4 = 8T , a5 = 8T  , a2 = 8T1 - 32T2 , a3 = 8T1 - 40T2 */
-		if (impedance < 24) {
-			a4_lch = dpd_table[1][dpd_lch[DPD_16K][DPD_HD4]];
-			a5_lch = dpd_table[1][dpd_lch[DPD_16K][DPD_HD5]];
-			a4_rch = dpd_table[1][dpd_rch[DPD_16K][DPD_HD4]];
-			a5_rch = dpd_table[1][dpd_rch[DPD_16K][DPD_HD5]];
-			a2_lch = dpd_table[1][dpd_lch[DPD_16K][DPD_HD2]] -
-				 dpd_table[2][dpd_lch[DPD_16K][DPD_HD4]] + 1;
-			a3_lch = dpd_table[1][dpd_lch[DPD_16K][DPD_HD3]] -
-				 dpd_table[3][dpd_lch[DPD_16K][DPD_HD5]];
-			a2_rch = dpd_table[1][dpd_rch[DPD_16K][DPD_HD2]] -
-				 dpd_table[2][dpd_rch[DPD_16K][DPD_HD4]] + 1;
-			a3_rch = dpd_table[1][dpd_rch[DPD_16K][DPD_HD3]] -
-				 dpd_table[3][dpd_rch[DPD_16K][DPD_HD5]];
-		} else if (impedance < 100) {
-			a4_lch = dpd_table[1][dpd_lch[DPD_32K][DPD_HD4]];
-			a5_lch = dpd_table[1][dpd_lch[DPD_32K][DPD_HD5]];
-			a4_rch = dpd_table[1][dpd_rch[DPD_32K][DPD_HD4]];
-			a5_rch = dpd_table[1][dpd_rch[DPD_32K][DPD_HD5]];
-			a2_lch = dpd_table[1][dpd_lch[DPD_32K][DPD_HD2]] -
-				 dpd_table[2][dpd_lch[DPD_32K][DPD_HD4]] + 1;
-			a3_lch = dpd_table[1][dpd_lch[DPD_32K][DPD_HD3]] -
-				 dpd_table[3][dpd_lch[DPD_32K][DPD_HD5]];
-			a2_rch = dpd_table[1][dpd_rch[DPD_32K][DPD_HD2]] -
-				 dpd_table[2][dpd_rch[DPD_32K][DPD_HD4]] + 1;
-			a3_rch = dpd_table[1][dpd_rch[DPD_32K][DPD_HD3]] -
-				 dpd_table[3][dpd_rch[DPD_32K][DPD_HD5]];
-		} else if (impedance < 1000) {
-			a4_lch = dpd_table[1][dpd_lch[DPD_560K][DPD_HD4]];
-			a5_lch = dpd_table[1][dpd_lch[DPD_560K][DPD_HD5]];
-			a4_rch = dpd_table[1][dpd_rch[DPD_560K][DPD_HD4]];
-			a5_rch = dpd_table[1][dpd_rch[DPD_560K][DPD_HD5]];
-			a2_lch = dpd_table[1][dpd_lch[DPD_560K][DPD_HD2]] -
-				 dpd_table[2][dpd_lch[DPD_560K][DPD_HD4]];
-			a3_lch = dpd_table[1][dpd_lch[DPD_560K][DPD_HD3]] -
-				 dpd_table[3][dpd_lch[DPD_560K][DPD_HD5]];
-			a2_rch = dpd_table[1][dpd_rch[DPD_560K][DPD_HD2]] -
-				 dpd_table[2][dpd_rch[DPD_560K][DPD_HD4]];
-			a3_rch = dpd_table[1][dpd_rch[DPD_560K][DPD_HD3]] -
-				 dpd_table[3][dpd_rch[DPD_560K][DPD_HD5]];
-		}
-		a2_lch = (a2_lch < 12) && (a2_lch > -12) ? 0 : a2_lch;
-		a3_lch = (a3_lch < 12) && (a3_lch > -12) ? 0 : a3_lch;
-		a2_rch = (a2_rch < 12) && (a2_rch > -12) ? 0 : a2_rch;
-		a3_rch = (a3_rch < 12) && (a3_rch > -12) ? 0 : a3_rch;
+	if (impedance < 24) {
+		a2_lch = dpd_offset_table[0][dpd_lch[DPD_16K][DPD_HD2]] + 1;
+		a3_lch = dpd_offset_table[1][dpd_lch[DPD_16K][DPD_HD3]];
+		a2_rch = dpd_offset_table[2][dpd_rch[DPD_16K][DPD_HD2]] + 1;
+		a3_rch = dpd_offset_table[3][dpd_rch[DPD_16K][DPD_HD3]];
+	} else if (impedance < 100) {
+		a2_lch = dpd_offset_table[4][dpd_lch[DPD_32K][DPD_HD2]];
+		a3_lch = dpd_offset_table[5][dpd_lch[DPD_32K][DPD_HD3]] - 1;
+		a2_rch = dpd_offset_table[6][dpd_rch[DPD_32K][DPD_HD2]];
+		a3_rch = dpd_offset_table[7][dpd_rch[DPD_32K][DPD_HD3]] - 1;
+	} else if (impedance < 1000) {
+		a2_lch = dpd_offset_table[8][dpd_lch[DPD_560K][DPD_HD2]];
+		a3_lch = dpd_offset_table[9][dpd_lch[DPD_560K][DPD_HD3]];
+		a2_rch = dpd_offset_table[10][dpd_rch[DPD_560K][DPD_HD2]];
+		a3_rch = dpd_offset_table[11][dpd_rch[DPD_560K][DPD_HD3]];
 	}
+	a2_lch = (a2_lch < 12) && (a2_lch > -12) ? 0 : a2_lch;
+	a3_lch = (a3_lch < 12) && (a3_lch > -12) ? 0 : a3_lch;
+	a2_rch = (a2_rch < 12) && (a2_rch > -12) ? 0 : a2_rch;
+	a3_rch = (a3_rch < 12) && (a3_rch > -12) ? 0 : a3_rch;
+
 	dpd_param->efuse_on = dpd_on;
 	dpd_param->version = dpd_version;
 	dpd_param->a2_lch = a2_lch;
@@ -779,7 +764,6 @@ void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param)
 	dpd_param->a5_rch = a5_rch;
 	pr_warn("%s dpd_param lch : %d, %d, %d, %d   rch : %d, %d, %d, %d\n", __func__,
 		a2_lch, a3_lch, a4_lch, a5_lch, a2_rch, a3_rch, a4_rch, a5_rch);
-	pr_warn("-%s\n", __func__);
 }
 
 
