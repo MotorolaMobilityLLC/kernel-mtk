@@ -240,5 +240,8 @@ int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1, u
 
 extern DCM dcm_array[NR_DCM_TYPE];
 
+extern void __iomem *mt_cen_emi_base_get(void);
+extern void __iomem *mt_chn_emi_base_get(int chn);
+
 #endif /* #ifndef __MTK_DCM_INTERNAL_H__ */
 

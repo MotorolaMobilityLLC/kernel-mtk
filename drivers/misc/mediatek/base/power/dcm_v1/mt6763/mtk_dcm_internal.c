@@ -163,35 +163,20 @@ int mt_dcm_dts_map(void)
 	}
 #endif /* #ifndef USE_DRAM_API_INSTEAD */
 
-	node = of_find_compatible_node(NULL, NULL, CHN0_EMI_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", CHN0_EMI_NODE);
-		return -1;
-	}
-	dcm_chn0_emi_base = (unsigned long)of_iomap(node, 0);
+	dcm_chn0_emi_base = (unsigned long)mt_chn_emi_base_get(0);
 	if (!dcm_chn0_emi_base) {
 		dcm_err("error: cannot iomap %s\n", CHN0_EMI_NODE);
 		return -1;
 	}
 
-	node = of_find_compatible_node(NULL, NULL, CHN1_EMI_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", CHN1_EMI_NODE);
-		return -1;
-	}
-	dcm_chn1_emi_base = (unsigned long)of_iomap(node, 0);
+	dcm_chn1_emi_base = (unsigned long)mt_chn_emi_base_get(1);
 	if (!dcm_chn1_emi_base) {
 		dcm_err("error: cannot iomap %s\n", CHN1_EMI_NODE);
 		return -1;
 	}
 
 	/* emi */
-	node = of_find_compatible_node(NULL, NULL, EMI_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", EMI_NODE);
-		return -1;
-	}
-	dcm_emi_base = (unsigned long)of_iomap(node, 0);
+	dcm_emi_base = (unsigned long)mt_cen_emi_base_get();
 	if (!dcm_emi_base) {
 		dcm_err("error: cannot iomap %s\n", EMI_NODE);
 		return -1;
