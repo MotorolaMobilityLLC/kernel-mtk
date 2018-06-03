@@ -1303,10 +1303,10 @@ static void rt_show_regs(struct rt_regmap_device *rd, struct seq_file *seq_file)
 	const rt_register_map_t *rm = rd->props.rm;
 
 	if (rd->props.map_byte_num == 0)
-		regval = kzalloc(sizeof(char)*512, GFP_KERNEL);
+		regval = devm_kzalloc(&rd->dev, sizeof(char)*512, GFP_KERNEL);
 	else
-		regval = kcalloc(rd->props.map_byte_num,
-					sizeof(char), GFP_KERNEL);
+		regval = devm_kzalloc(&rd->dev,
+			rd->props.map_byte_num*sizeof(char), GFP_KERNEL);
 
 	down(&rd->semaphore);
 	for (i = 0; i < rd->props.register_num; i++) {
@@ -1339,6 +1339,7 @@ static void rt_show_regs(struct rt_regmap_device *rd, struct seq_file *seq_file)
 				"reg0x%02x:reserve\n", rm[i]->addr);
 	}
 err_show_regs:
+	devm_kfree(&rd->dev, regval);
 	up(&rd->semaphore);
 }
 
@@ -1800,18 +1801,21 @@ static ssize_t eachreg_read(struct file *file, char __user *ubuf,
 {
 	struct rt_debug_st *st = file->private_data;
 	struct rt_regmap_device *rd = st->info;
+	ssize_t retval = 0;
 	char *lbuf;
 	unsigned char *regval;
 	const rt_register_map_t rm = rd->props.rm[st->id];
 	int i, j = 0, rc;
 
 	if (rd->props.max_byte_size == 0) {
-		regval = kzalloc(sizeof(unsigned char)*32, GFP_KERNEL);
-		lbuf = kzalloc(sizeof(char)*200, GFP_KERNEL);
+		regval = devm_kzalloc(&rd->dev,
+			sizeof(unsigned char)*32, GFP_KERNEL);
+		lbuf = devm_kzalloc(&rd->dev, sizeof(char)*200, GFP_KERNEL);
 	} else {
-		regval = kcalloc(rd->props.max_byte_size,
+		regval = devm_kzalloc(&rd->dev, rd->props.max_byte_size *
 				sizeof(unsigned char), GFP_KERNEL);
-		lbuf = kzalloc(rd->props.max_byte_size*3+2, GFP_KERNEL);
+		lbuf = devm_kzalloc(&rd->dev,
+			rd->props.max_byte_size*3+2, GFP_KERNEL);
 	}
 
 	lbuf[0] = '\0';
@@ -1821,6 +1825,8 @@ static ssize_t eachreg_read(struct file *file, char __user *ubuf,
 	up(&rd->semaphore);
 	if (rc < 0) {
 		dev_err(&rd->dev, "regmap block read fail\n");
+		devm_kfree(&rd->dev, regval);
+		devm_kfree(&rd->dev, lbuf);
 		return -EIO;
 	}
 
@@ -1830,7 +1836,10 @@ static ssize_t eachreg_read(struct file *file, char __user *ubuf,
 			PAGE_SIZE-strlen(lbuf), "%02x,", regval[i]);
 	j += snprintf(lbuf + j, PAGE_SIZE-strlen(lbuf), "\n");
 
-	return simple_read_from_buffer(ubuf, count, ppos, lbuf, strlen(lbuf));
+	retval = simple_read_from_buffer(ubuf, count, ppos, lbuf, strlen(lbuf));
+	devm_kfree(&rd->dev, regval);
+	devm_kfree(&rd->dev, lbuf);
+	return retval;
 }
 
 static const struct file_operations eachreg_ops = {
