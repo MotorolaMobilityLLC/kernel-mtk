@@ -135,7 +135,7 @@ static unsigned int ppm_get_cpu_temp(enum ppm_cluster cluster)
 
 	switch (cluster) {
 	case PPM_CLUSTER_LL:
-		temp = get_immediate_cpuLL_wrap() / 1000;
+		temp = get_immediate_cpu_wrap() / 1000;
 		break;
 	default:
 		ppm_err("@%s: invalid cluster id = %d\n", __func__, cluster);
@@ -200,20 +200,8 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 		int core = cluster_status[i].core_num;
 		int opp = cluster_status[i].freq_idx;
 
-#ifdef CONFIG_MTK_UNIFY_POWER
-		if (core > 0 && opp >= 0 && opp < DVFS_OPP_NUM) {
-#if 1
+		if (core > 0 && opp >= 0 && opp < DVFS_OPP_NUM)
 			pwr_idx += cobra_tbl.basic_pwr_tbl[4*i+core-1][opp].power_idx;
-#else
-			pwr_idx += ((upower_get_power(i, opp, UPOWER_DYN) +
-				upower_get_power(i, opp, UPOWER_LKG)) * core +
-				(upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_DYN) +
-				upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_LKG))) / 1000;
-#endif
-		}
-#else
-		pwr_idx += 100;
-#endif
 
 		ppm_ver("[%d] core = %d, opp = %d\n", i, core, opp);
 	}
@@ -275,9 +263,9 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 				+ ((upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_DYN) +
 				upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_LKG)) / 1000);
 #else
-			dynamic = 100;
-			lkg = 50;
-			total = dynamic + lkg;
+			dynamic = 0;
+			lkg = 0;
+			total = cobra_tbl.basic_pwr_tbl[4*i+core-1][opp].power_idx;
 #endif
 			budget += total;
 			delta = ktime_sub(ktime_get(), now);

@@ -42,6 +42,7 @@ static int get_delta_pwr(unsigned int core, unsigned int opp)
 		|| opp > get_cluster_min_cpufreq_idx(PPM_CLUSTER_LL)) {
 		ppm_err("%s: Invalid input: core=%d, opp=%d\n", __func__, core, opp);
 		WARN_ON(1);
+
 		return 0;
 	}
 
@@ -65,12 +66,14 @@ void ppm_cobra_update_core_limit(unsigned int cluster, int limit)
 	if (cluster >= NR_PPM_CLUSTERS) {
 		ppm_err("%s: Invalid cluster id = %d\n", __func__, cluster);
 		WARN_ON(1);
+
 		return;
 	}
 
 	if (limit < 0 || limit > get_cluster_max_cpu_core(cluster)) {
 		ppm_err("%s: Invalid core limit for cluster%d = %d\n", __func__, cluster, limit);
 		WARN_ON(1);
+
 		return;
 	}
 
@@ -90,11 +93,11 @@ void ppm_cobra_update_limit(void *user_req)
 {
 	struct ppm_policy_req *req;
 	int power_budget;
-	int opp[NR_PPM_CLUSTERS];
-	int active_core[NR_PPM_CLUSTERS];
+	int opp[NR_PPM_CLUSTERS] = {0};
+	int active_core[NR_PPM_CLUSTERS] = {0};
 #if PPM_COBRA_USE_CORE_LIMIT
-	int core_limit_tmp[NR_PPM_CLUSTERS];
-	int max_throttle_core_num[NR_PPM_CLUSTERS];
+	int core_limit_tmp[NR_PPM_CLUSTERS] = {0};
+	int max_throttle_core_num[NR_PPM_CLUSTERS] = {0};
 #endif
 	int i;
 	struct cpumask cluster_cpu, online_cpu;
@@ -357,8 +360,8 @@ void ppm_cobra_init(void)
 #else
 	for (i = 0; i < TOTAL_CORE_NUM; i++) {
 		for (j = 0; j < DVFS_OPP_NUM; j++) {
-			cobra_tbl.basic_pwr_tbl[i][j].power_idx = 0;
-			cobra_tbl.basic_pwr_tbl[i][j].perf_idx = 0;
+			cobra_tbl.basic_pwr_tbl[i][j].power_idx = 20*(i+1)*(DVFS_OPP_NUM-j);
+			cobra_tbl.basic_pwr_tbl[i][j].perf_idx = 40*(i+1)*(DVFS_OPP_NUM-j);
 		}
 	}
 #endif
@@ -424,7 +427,7 @@ static unsigned int get_limit_opp_and_budget(void)
 	for (i = 0; i <= get_cluster_min_cpufreq_idx(PPM_CLUSTER_LL); i++) {
 		cobra_lookup_data.limit[PPM_CLUSTER_LL].opp = i;
 
-		idx = cobra_lookup_data.limit[i].core - 1;
+		idx = cobra_lookup_data.limit[PPM_CLUSTER_LL].core - 1;
 		power = cobra_tbl.basic_pwr_tbl[idx][i].power_idx;
 
 		if (power <= cobra_lookup_data.budget)
