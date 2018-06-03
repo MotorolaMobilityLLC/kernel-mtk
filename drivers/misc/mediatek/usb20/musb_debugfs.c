@@ -445,9 +445,13 @@ static ssize_t musb_regw_mode_write(struct file *file,
 		pr_warn("Mac base adddr 0x%lx, Write 0x%x[0x%x]\n", (unsigned long)musb->mregs, offset, data);
 		musb_writeb(musb->mregs, offset, data);
 	} else {
+		if ((offset % 4) != 0) {
+			pr_warn("Must use 32bits alignment address\n");
+			return count;
+		}
 		pr_warn("Phy base adddr 0x%lx, Write 0x%x[0x%x]\n",
 		(unsigned long)((void __iomem *)(((unsigned long)musb->xceiv->io_priv) + 0x800)), offset, data);
-		USBPHY_WRITE8(offset, data);
+		USBPHY_WRITE32(offset, data);
 	}
 
 	return count;
@@ -518,10 +522,15 @@ static ssize_t musb_regr_mode_write(struct file *file,
 	if (is_mac == 1)
 		pr_warn("Read Mac base adddr 0x%lx, Read 0x%x[0x%x]\n",
 			(unsigned long)musb->mregs, offset, musb_readb(musb->mregs, offset));
-	else
+	else {
+		if ((offset % 4) != 0) {
+			pr_warn("Must use 32bits alignment address\n");
+			return count;
+		}
 		pr_warn("Read Phy base adddr 0x%lx, Read 0x%x[0x%x]\n",
 			(unsigned long)((void __iomem *)(((unsigned long)musb->xceiv->io_priv) + 0x800)), offset,
-			USBPHY_READ8(offset));
+			USBPHY_READ32(offset));
+	}
 
 	return count;
 }

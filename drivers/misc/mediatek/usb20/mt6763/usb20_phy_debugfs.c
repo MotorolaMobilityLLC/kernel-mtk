@@ -56,18 +56,18 @@
 
 #define FILE_RG_USB20_TERM_VREF_SEL "RG_USB20_TERM_VREF_SEL"
 #define MSK_RG_USB20_TERM_VREF_SEL MSK_WIDTH_3
-#define SHFT_RG_USB20_TERM_VREF_SEL 0
-#define OFFSET_RG_USB20_TERM_VREF_SEL 0x5
+#define SHFT_RG_USB20_TERM_VREF_SEL 8
+#define OFFSET_RG_USB20_TERM_VREF_SEL 0x4
 
 #define FILE_RG_USB20_HSTX_SRCTRL "RG_USB20_HSTX_SRCTRL"
 #define MSK_RG_USB20_HSTX_SRCTRL MSK_WIDTH_3
-#define SHFT_RG_USB20_HSTX_SRCTRL 4
-#define OFFSET_RG_USB20_HSTX_SRCTRL 0x15
+#define SHFT_RG_USB20_HSTX_SRCTRL 12
+#define OFFSET_RG_USB20_HSTX_SRCTRL 0x14
 
 #define FILE_RG_USB20_VRT_VREF_SEL "RG_USB20_VRT_VREF_SEL"
 #define MSK_RG_USB20_VRT_VREF_SEL MSK_WIDTH_3
-#define SHFT_RG_USB20_VRT_VREF_SEL 4
-#define OFFSET_RG_USB20_VRT_VREF_SEL 0x5
+#define SHFT_RG_USB20_VRT_VREF_SEL 12
+#define OFFSET_RG_USB20_VRT_VREF_SEL 0x4
 
 #define FILE_RG_USB20_INTR_EN "RG_USB20_INTR_EN"
 #define MSK_RG_USB20_INTR_EN MSK_WIDTH_1
@@ -96,8 +96,8 @@ void usb20_phy_debugfs_write_width1(u8 offset, u8 shift, char *buf)
 		clr_val <<= shift;
 		set_val <<= shift;
 		MYDBG("offset:%x, clr_val:%x, set_val:%x, after shft\n", offset, clr_val, set_val);
-		USBPHY_CLR8(offset, clr_val);
-		USBPHY_SET8(offset, set_val);
+		USBPHY_CLR32(offset, clr_val);
+		USBPHY_SET32(offset, set_val);
 	} else {
 		MYDBG("do nothing\n");
 	}
@@ -147,8 +147,8 @@ void usb20_phy_debugfs_write_width3(u8 offset, u8 shift, char *buf)
 		clr_val <<= shift;
 		set_val <<= shift;
 		MYDBG("offset:%x, clr_val:%x, set_val:%x, after shft\n", offset, clr_val, set_val);
-		USBPHY_CLR8(offset, clr_val);
-		USBPHY_SET8(offset, set_val);
+		USBPHY_CLR32(offset, clr_val);
+		USBPHY_SET32(offset, set_val);
 	} else {
 		MYDBG("do nothing\n");
 	}
@@ -159,7 +159,7 @@ u8 usb20_phy_debugfs_read_val(u8 offset, u8 shft, u8 msk, u8 width, char *str)
 	u8 val;
 	int i, temp;
 
-	val = USBPHY_READ8(offset);
+	val = USBPHY_READ32(offset);
 	MYDBG("offset:%x, val:%x, shft:%x, msk:%x\n", offset, val, shft, msk);
 	val = val >> shft;
 	MYDBG("offset:%x, val:%x, shft:%x, msk:%x\n", offset, val, shft, msk);
