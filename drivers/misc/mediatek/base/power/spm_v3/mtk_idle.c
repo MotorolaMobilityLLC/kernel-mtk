@@ -1916,7 +1916,7 @@ static ssize_t mcidle_state_write(struct file *filp,
 			mcidle_time_criteria = param;
 
 		return count;
-	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
+	} else if (!kstrtoint(cmd_buf, 10, &param)) {
 		idle_switch[IDLE_TYPE_MC] = param;
 
 		return count;
@@ -2040,7 +2040,7 @@ static ssize_t dpidle_state_write(struct file *filp,
 			dpidle_force_vcore_lp_mode = param;
 
 		return count;
-	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
+	} else if (!kstrtoint(cmd_buf, 10, &param)) {
 		idle_switch[IDLE_TYPE_DP] = param;
 
 		return count;
@@ -2167,7 +2167,7 @@ static ssize_t soidle3_state_write(struct file *filp,
 			idle_pr_dbg("sodi3_force_vcore_lp_mode = %d\n", sodi3_force_vcore_lp_mode);
 		}
 		return count;
-	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
+	} else if (!kstrtoint(cmd_buf, 10, &param)) {
 		idle_switch[IDLE_TYPE_SO3] = param;
 		return count;
 	}
@@ -2274,7 +2274,7 @@ static ssize_t soidle_state_write(struct file *filp,
 			idle_pr_dbg("sodi_flags = 0x%x\n", sodi_flags);
 		}
 		return count;
-	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
+	} else if (!kstrtoint(cmd_buf, 10, &param)) {
 		idle_switch[IDLE_TYPE_SO] = param;
 		return count;
 	}
@@ -2378,7 +2378,7 @@ static ssize_t mcsodi_state_write(struct file *filp,
 			idle_pr_dbg("bypass_en = %d\n", mcsodi_by_pass_en);
 		}
 		return count;
-	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
+	} else if (!kstrtoint(cmd_buf, 10, &param)) {
 		idle_switch[IDLE_TYPE_MCSO] = param;
 		return count;
 	}
@@ -2455,7 +2455,7 @@ static ssize_t slidle_state_write(struct file *filp, const char __user *userbuf,
 			disable_slidle_by_bit(param);
 
 		return count;
-	} else if (!kstrtoint(userbuf, 10, &param) == 1) {
+	} else if (!kstrtoint(userbuf, 10, &param)) {
 		idle_switch[IDLE_TYPE_SL] = param;
 		return count;
 	}
