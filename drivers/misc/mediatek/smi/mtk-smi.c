@@ -1091,7 +1091,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 		return -1;
 	}
 
-	SMIMSG("current request is turn %s %d\n", p_conf->b_on_off ? "on" : "off", p_conf->scenario);
+	SMIDBG(3, "current request is turn %s %d\n", p_conf->b_on_off ? "on" : "off", p_conf->scenario);
 #ifdef MMDVFS_HOOK
 	if (!disable_mmdvfs) {
 		if (p_conf->b_on_off) {
@@ -1157,7 +1157,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 			u4Concurrency |= (1 << i);
 	}
 
-	SMIMSG("after update, u4Concurrency=0x%x\n", u4Concurrency);
+	SMIDBG(3, "after update, u4Concurrency=0x%x\n", u4Concurrency);
 #ifdef MMDVFS_HOOK
 	/* notify mmdvfs concurrency */
 	if (!disable_mmdvfs)
