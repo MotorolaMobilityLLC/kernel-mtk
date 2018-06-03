@@ -72,8 +72,9 @@
 #include <linux/io.h>
 #include <asm/div64.h>
 #include <mt-plat/aee.h>
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #include <mt-plat/upmu_common.h>
-
+#endif
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
