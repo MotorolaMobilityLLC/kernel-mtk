@@ -30,7 +30,7 @@
 #define SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH       (1U << 8)
 #define SPM_FLAG_DIS_VPROC_VSRAM_DVS          (1U << 9)
 #define SPM_FLAG_RUN_COMMON_SCENARIO          (1U << 10)
-#define SPM_FLAG_EN_MET_DEBUG_USAGE           (1U << 11)
+#define SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS    (1U << 11)
 #define SPM_FLAG_SODI_CG_MODE                 (1U << 12)
 #define SPM_FLAG_SODI_NO_EVENT                (1U << 13)
 #define SPM_FLAG_ENABLE_SODI3                 (1U << 14)

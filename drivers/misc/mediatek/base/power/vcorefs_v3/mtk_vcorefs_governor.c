@@ -201,10 +201,8 @@ int vcorefs_enable_debug_isr(bool enable)
 
 	flag = spm_dvfs_flag_init();
 
-#if !defined(CONFIG_MACH_MT6763) /* FIXME */
 	if (enable)
 		flag |= SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS;
-#endif
 
 	spm_go_to_vcorefs(flag);
 
