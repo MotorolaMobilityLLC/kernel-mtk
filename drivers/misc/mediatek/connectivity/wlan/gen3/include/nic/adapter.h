@@ -66,6 +66,10 @@ typedef struct _WLAN_INFO_T {
 
 	struct ESS_SCAN_RESULT_T arScanResultEss[CFG_MAX_NUM_BSS_LIST];
 	UINT_32 u4ScanResultEssNum;
+	UINT_32 u4ScanDbgTimes1;
+	UINT_32 u4ScanDbgTimes2;
+	UINT_32 u4ScanDbgTimes3;
+	UINT_32 u4ScanDbgTimes4;
 
 	/* IE pool for Scanning Result */
 	UINT_8 aucScanIEBuf[CFG_MAX_COMMON_IE_BUF_LEN];
@@ -411,6 +415,7 @@ struct _BSS_INFO_T {
 	BOOLEAN fgPoorRcpiArea;
 	UINT_8 ucKeyCmdAction; /* 0: will queue add key command, 1: send add key command, 2: drop command */
 	BOOLEAN fgUnencryptedEapol;
+	UINT_32 u4CoexPhyRateLimit;
 };
 
 struct ESS_CHNL_INFO {
@@ -716,6 +721,9 @@ typedef struct _WIFI_VAR_T {
 	UINT_8 ucArpTxDone;
 	UINT_8 ucIcmpTxDone;
 	PARAM_POWER_MODE ePowerMode;
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+	BOOLEAN fgEnableReportIndependentPkt;
+#endif
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */

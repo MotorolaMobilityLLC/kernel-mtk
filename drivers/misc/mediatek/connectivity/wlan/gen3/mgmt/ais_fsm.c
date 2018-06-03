@@ -1049,6 +1049,13 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					/* increase connection trial count for infrastructure connection */
 					if (prConnSettings->eOPMode == NET_TYPE_INFRA)
 						prAisFsmInfo->ucConnTrialCount++;
+#if CFG_SUPPORT_RN
+					if (prAisBssInfo->fgDisConnReassoc == TRUE) {
+						eNextState = AIS_STATE_JOIN_FAILURE;
+						fgIsTransition = TRUE;
+						break;
+					}
+#endif
 					if (prAisFsmInfo->rJoinReqTime != 0 &&
 						CHECK_FOR_TIMEOUT(kalGetTimeTick(),
 								  prAisFsmInfo->rJoinReqTime,
@@ -3340,9 +3347,9 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 
 		/* 2. Increase Join Failure Count */
 		aisAddBlacklist(prAdapter, prAisFsmInfo->prTargetBssDesc);
-		prAisFsmInfo->prTargetStaRec->ucJoinFailureCount++;
+		prAisFsmInfo->prTargetBssDesc->ucJoinFailureCount++;
 
-		if (prAisFsmInfo->prTargetStaRec->ucJoinFailureCount < JOIN_MAX_RETRY_FAILURE_COUNT) {
+		if (prAisFsmInfo->prTargetBssDesc->ucJoinFailureCount < JOIN_MAX_RETRY_FAILURE_COUNT) {
 			/* 3.1 Retreat to AIS_STATE_SEARCH state for next try */
 			eNextState = AIS_STATE_SEARCH;
 		} else if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
@@ -3750,7 +3757,7 @@ VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter)
 		}
 	}
 	/* 4 <2> invoke abort handler */
-	if (fgDoAbortIndication) {
+	if (fgDoAbortIndication && (prAdapter->rWifiVar.rAisFsmInfo.u4PostponeIndStartTime == 0)) {
 		prConnSettings->fgIsDisconnectedByNonRequest = FALSE;
 		if (prConnSettings->eReConnectLevel < RECONNECT_LEVEL_USER_SET) {
 			prConnSettings->eReConnectLevel = RECONNECT_LEVEL_BEACON_TIMEOUT;

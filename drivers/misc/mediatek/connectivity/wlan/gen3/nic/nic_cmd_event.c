@@ -1428,3 +1428,17 @@ VOID nicCmdEventQueryCfgRead(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 	}
 }
 #endif
+
+VOID nicEventUpdateFwInfo(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
+{
+	UINT_8 i;
+	P_EVENT_UPDATE_FW_INFO_T prEventUpdateFwInfo;
+
+	prEventUpdateFwInfo = (P_EVENT_UPDATE_FW_INFO_T)(prEvent->aucBuffer);
+	for (i = 0; i < (HW_BSSID_NUM + 1); i++) {
+		if (prAdapter->aprBssInfo[i]) {
+			prAdapter->aprBssInfo[i]->u4CoexPhyRateLimit = prEventUpdateFwInfo->au4PhyRateLimit[i];
+			DBGLOG(NIC, INFO, "Coex:BSS[%d]R:%d\n", i, prAdapter->aprBssInfo[i]->u4CoexPhyRateLimit);
+		}
+	}
+}
