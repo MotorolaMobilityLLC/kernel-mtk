@@ -79,6 +79,13 @@ struct SENSOR_DATA {
 #define MSENSOR_IOCTL_SENSOR_ENABLE				_IOW(MSENSOR, 0x51, int)
 #define MSENSOR_IOCTL_READ_FACTORY_SENSORDATA	_IOW(MSENSOR, 0x52, int)
 
+/* IOCTLs for akm09911 device */
+#define ECS_IOCTL_GET_INFO			_IOR(MSENSOR, 0x27, unsigned char[AKM_SENSOR_INFO_SIZE])
+#define ECS_IOCTL_GET_CONF			_IOR(MSENSOR, 0x28, unsigned char[AKM_SENSOR_CONF_SIZE])
+#define ECS_IOCTL_SET_YPR_09911               _IOW(MSENSOR, 0x29, int[26])
+#define ECS_IOCTL_GET_DELAY_09911             _IOR(MSENSOR, 0x30, int64_t[3])
+#define	ECS_IOCTL_GET_LAYOUT_09911			_IOR(MSENSOR, 0x31, char)
+
 #ifdef CONFIG_COMPAT
 /*COMPACT IOCTL for 64bit kernel running 32bit daemon*/
 #define COMPAT_MSENSOR_IOCTL_INIT					_IO(MSENSOR, 0x01)
@@ -93,6 +100,28 @@ struct SENSOR_DATA {
 #define COMPAT_MSENSOR_IOCTL_SET_CALIDATA		    _IOW(MSENSOR, 0x0a, compat_int_t)
 #define COMPAT_MSENSOR_IOCTL_SENSOR_ENABLE          _IOW(MSENSOR, 0x51, compat_int_t)
 #define COMPAT_MSENSOR_IOCTL_READ_FACTORY_SENSORDATA  _IOW(MSENSOR, 0x52, compat_int_t)
+
+/*COMPAT IOCTLs for AKM library */
+#define COMPAT_ECS_IOCTL_WRITE                 _IOW(MSENSOR, 0x0b, compat_uptr_t)
+#define COMPAT_ECS_IOCTL_READ                  _IOWR(MSENSOR, 0x0c, compat_uptr_t)
+#define COMPAT_ECS_IOCTL_RESET		           _IO(MSENSOR, 0x0d)	/* NOT used in AK8975 */
+#define COMPAT_ECS_IOCTL_SET_MODE              _IOW(MSENSOR, 0x0e, compat_short_t)
+#define COMPAT_ECS_IOCTL_GETDATA               _IOR(MSENSOR, 0x0f, char[SENSOR_DATA_SIZE])
+#define COMPAT_ECS_IOCTL_SET_YPR               _IOW(MSENSOR, 0x10, compat_short_t[12])
+#define COMPAT_ECS_IOCTL_GET_OPEN_STATUS       _IOR(MSENSOR, 0x11, compat_int_t)
+#define COMPAT_ECS_IOCTL_GET_CLOSE_STATUS      _IOR(MSENSOR, 0x12, compat_int_t)
+#define COMPAT_ECS_IOCTL_GET_OSENSOR_STATUS	   _IOR(MSENSOR, 0x13, compat_int_t)
+#define COMPAT_ECS_IOCTL_GET_DELAY             _IOR(MSENSOR, 0x14, compat_short_t)
+#define COMPAT_ECS_IOCTL_GET_PROJECT_NAME      _IOR(MSENSOR, 0x15, char[64])
+#define COMPAT_ECS_IOCTL_GET_MATRIX            _IOR(MSENSOR, 0x16, compat_short_t [4][3][3])
+#define	COMPAT_ECS_IOCTL_GET_LAYOUT			   _IOR(MSENSOR, 0x17, compat_int_t[3])
+
+/*COMPAT IOCTLs for akm09911 device */
+#define COMPAT_ECS_IOCTL_GET_INFO			   _IOR(MSENSOR, 0x27, unsigned char[AKM_SENSOR_INFO_SIZE])
+#define COMPAT_ECS_IOCTL_GET_CONF			   _IOR(MSENSOR, 0x28, unsigned char[AKM_SENSOR_CONF_SIZE])
+#define COMPAT_ECS_IOCTL_SET_YPR_09911         _IOW(MSENSOR, 0x29, compat_int_t[26])
+#define COMPAT_ECS_IOCTL_GET_DELAY_09911       _IOR(MSENSOR, 0x30, int64_t[3])
+#define	COMPAT_ECS_IOCTL_GET_LAYOUT_09911	   _IOR(MSENSOR, 0x31, char)
 #endif
 
 #define ALSPS							0X84
