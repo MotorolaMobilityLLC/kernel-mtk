@@ -52,6 +52,8 @@ typedef enum {
 	IPC_RPC_GET_GPIO_ADC_OP = 0x4009,
 	IPC_RPC_USIM2NFC_OP = 0x400A,
 	IPC_RPC_DSP_EMI_MPU_SETTING = 0x400B,
+	/*0x400C is reserved*/
+	IPC_RPC_CCCI_LHIF_MAPPING = 0x400D,
 
 	IPC_RPC_IT_OP = 0x4321,
 } RPC_OP_ID;
@@ -81,6 +83,21 @@ struct ccci_rpc_clkbuf_input {
 	u16 CLKBuf_Num;
 	u32 AfcCwData;
 } __packed;
+
+enum {
+	LHIF_HWQ_SW_DL = 0,
+	LHIF_HWQ_SW_UL,
+	LHIF_HWQ_AP_UL_Q0,
+	LHIF_HWQ_AP_UL_Q1,
+	LHIF_HWQ_DIRECT_DL,
+	LHIF_HWQ_MAX_NUM,
+	LHIF_HWQ_NO_USE = LHIF_HWQ_MAX_NUM,
+};
+
+struct ccci_rpc_queue_mapping {
+	u32 net_if;		/*ccmni index*/
+	u32 lhif_q;	/*lhif queue id*/
+};
 
 #ifdef CONFIG_MTK_TC1_FEATURE
 /* hardcode, becarefull with data size, should not exceed tmp_data[] in ccci_rpc_work_helper() */
