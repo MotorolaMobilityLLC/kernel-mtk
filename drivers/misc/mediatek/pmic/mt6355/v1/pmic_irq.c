@@ -344,6 +344,8 @@ void auxadc_imp_int_handler_r(void)
 /* General OC Int Handler */
 void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
+	char oc_str[30] = "";
+
 	PMICLOG("[%s] int name=%s\n", __func__, int_name);
 	switch (intNo) {
 	case INT_VPA_OC:
@@ -353,7 +355,8 @@ void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 	default:
 		/* issue AEE exception and disable OC interrupt */
 		/* TBD: dump_exception_reg */
-		aee_kernel_warning("PMIC OC", "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
+		snprintf(oc_str, 30, "PMIC OC:%s", int_name);
+		aee_kernel_warning(oc_str, "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
 		pmic_enable_interrupt(intNo, 0, "PMIC");
 		pr_notice(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
 		break;
