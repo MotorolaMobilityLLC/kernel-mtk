@@ -439,7 +439,7 @@ static int __init upower_get_tbl_ref(void)
 #ifdef UPOWER_USE_QOS_IPI
 	upower_send_data_ipi(upower_data_phy_addr, upower_data_size);
 #else
-	/* send sspm reserved mem into sspm through eem's ipi */
+	/* send sspm reserved mem into sspm through eem's ipi (need fix) */
 	mt_eem_send_upower_table_ref(upower_data_phy_addr, upower_data_size);
 #endif
 #endif

@@ -21,4 +21,9 @@
 #include "mtk_unified_power_data_mt6765.h"
 #endif
 
+#if defined(CONFIG_MACH_MT6761)
+#include "mtk_unified_power_data_mt6761.h"
+#endif
+
+
 #endif /* UNIFIED_POWER_DATA_H */
