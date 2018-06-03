@@ -844,6 +844,7 @@ struct _ADAPTER_T {
 
 	UINT_32 u4AirDelayTotal;	/*  dbg privilege power mode, always keep in active */
 	ULONG	ulSuspendFlag;
+	UINT_8 ucFlushCount;	/*FW flush packet count*/
 	struct PERF_MONITOR_T rPerMonitor;
 
 	/* NLO Timer */
