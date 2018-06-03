@@ -18,7 +18,6 @@
 #define LAST_DRAMC
 #define SW_ZQCS
 #define SW_TX_TRACKING
-#define MIX_MODE
 
 /* Registers define */
 #define PDEF_DRAMC0_CHA_REG_0E4	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x00e4))
@@ -152,19 +151,15 @@ enum DDRTYPE {
 enum DRAM_MODE {
 	NORMAL_MODE = 0,
 	BYTE_MODE,
-#ifdef MIX_MODE
 	R0_NORMAL_R1_BYTE,
 	R0_BYTE_R1_NORMAL
-#endif
 };
 
-#ifdef MIX_MODE
 #define PDEF_DRAMC0_CHA_REG_01C	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x001c))
 enum RANK_MODE {
 	RANK_NORMAL = 0,
 	RANK_BYTE
 };
-#endif
 
 enum {
 	DRAM_OK = 0,

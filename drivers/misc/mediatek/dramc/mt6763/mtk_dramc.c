@@ -34,6 +34,7 @@
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/dma.h>
 #include <mt-plat/sync_write.h>
+#include <mtk_spm_vcore_dvfs.h>
 
 #include "emi_bwl.h"
 #include "mtk_dramc.h"
@@ -81,14 +82,18 @@ phys_addr_t dram_rank0_addr, dram_rank1_addr;
 struct dram_info *g_dram_info_dummy_read, *get_dram_info;
 struct dram_info dram_info_dummy_read;
 
-#ifdef MIX_MODE
 static unsigned int cbt_mode_rank[2];
-#endif
+
 #define DRAMC_RSV_TAG "[DRAMC_RSV]"
 #define dramc_rsv_aee_warn(string, args...) do {\
 	pr_err("[ERR]"string, ##args); \
 	aee_kernel_warning(DRAMC_RSV_TAG, "[ERR]"string, ##args);  \
 } while (0)
+
+__weak void *mt_spm_base_get(void)
+{
+	return 0;
+}
 
 /* Return 0 if success, -1 if failure */
 static int __init dram_dummy_read_fixup(void)
@@ -392,14 +397,12 @@ static unsigned int dramc_tx_tracking(int channel)
 	if (CBT_MODE == BYTE_MODE) {
 		mr1819_base[0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
 		mr1819_base[1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
-#ifdef MIX_MODE
 	} else if (CBT_MODE == R0_NORMAL_R1_BYTE) {
 		mr1819_base[0][1] = mr1819_base[0][0];
 		mr1819_base[1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
 	} else if (CBT_MODE == R0_BYTE_R1_NORMAL) {
 		mr1819_base[0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
 		mr1819_base[1][1] = mr1819_base[1][0];
-#endif
 	} else { /* normal mode */
 		mr1819_base[0][1] = mr1819_base[0][0];
 		mr1819_base[1][1] = mr1819_base[1][0];
@@ -429,11 +432,7 @@ static unsigned int dramc_tx_tracking(int channel)
 		if (res != TX_DONE)
 			return res;
 		mr1819_cur[0] = (mr18_cur & 0xFF) | ((mr19_cur & 0xFF) << 8);
-#ifdef MIX_MODE
 		if (cbt_mode_rank[rank] == RANK_BYTE)
-#else
-		if (CBT_MODE == BYTE_MODE)
-#endif
 			mr1819_cur[1] = (mr18_cur >> 8) | (mr19_cur & 0xFF00);
 		else /* Normal Mode */
 			mr1819_cur[1] = mr1819_cur[0];
@@ -1304,18 +1303,45 @@ void zqcs_timer_callback(unsigned long data)
 	void __iomem *u4rg_60;
 	void __iomem *u4rg_88;
 #endif
-#if defined(SW_ZQCS) || defined(SW_TX_TRACKING)
-	unsigned long save_flags;
-#endif
+
 #ifdef SW_TX_TRACKING
 	unsigned int res[2];
 #endif
+
+#if defined(SW_ZQCS) || defined(SW_TX_TRACKING)
+	unsigned long save_flags;
+	unsigned int timeout;
+
+	if ((get_dram_data_rate() == 3200) || (low_freq_counter >= 10))
+		low_freq_counter = 0;
+	else {
+		low_freq_counter++;
+		mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
+		return;
+	}
+
+	if (mt_spm_base_get()) {
+		if (spm_vcorefs_get_md_srcclkena()) {
+			spm_request_dvfs_opp(0, OPP_1);
+			for (timeout = 100; timeout; timeout--) {
+				if (get_dram_data_rate() == 3200)
+					break;
+				udelay(1);
+			}
+			if (timeout == 0)
+				pr_info("[DRAMC] request OPP0 timeout!\n");
+			else
+				udelay(100);
+		}
+	}
+#endif
+
 #ifdef SW_ZQCS
 	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
 		pr_info("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
-		local_irq_restore(save_flags);
-	} else {
+		goto tx_start;
+	}
 	writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
   /* CH0_Rank0 --> CH1Rank0 */
 	for (RankCounter = 0; RankCounter < get_rk_num(); RankCounter++) {
@@ -1388,7 +1414,7 @@ void zqcs_timer_callback(unsigned long data)
 			writel(readl(u4rg_38) & 0xFBFFFFFF, u4rg_38); /* DMMIOCKCTRLOFF */
 			if (TimeCnt == 0) { /* time out */
 				if (release_dram_ctrl() != 0)
-					pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
+					pr_info("[DRAMC] release SPM HW SEMAPHORE fail!\n");
 			mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
 			local_irq_restore(save_flags);
 			pr_err("CA%x Rank%x ZQCal latch time out\n", CHCounter, RankCounter);
@@ -1399,8 +1425,9 @@ void zqcs_timer_callback(unsigned long data)
 	}
 	if (release_dram_ctrl() != 0)
 		pr_info("[DRAMC] release SPM HW SEMAPHORE fail!\n");
+
+tx_start:
 	local_irq_restore(save_flags);
-}
 #endif
 
 #ifdef SW_TX_TRACKING
@@ -1408,40 +1435,38 @@ void zqcs_timer_callback(unsigned long data)
 	res[1] = TX_DONE;
 
 	udelay(200);
-	if ((get_dram_data_rate() == 3200) || (low_freq_counter >= 10))	{
-		local_irq_save(save_flags);
-		if (acquire_dram_ctrl() != 0) {
-			local_irq_restore(save_flags);
-			pr_warn("[DRAMC] TX 0 can NOT get SPM HW SEMAPHORE!\n");
-		} else {
-			writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
-			res[0] = dramc_tx_tracking(0);
-			if (release_dram_ctrl() != 0)
-				pr_warn("[DRAMC] TX 0 release SPM HW SEMAPHORE fail!\n");
-			local_irq_restore(save_flags);
-		}
+
+	local_irq_save(save_flags);
+	if (acquire_dram_ctrl() != 0) {
+		local_irq_restore(save_flags);
+		pr_info("[DRAMC] TX 0 can NOT get SPM HW SEMAPHORE!\n");
+	} else {
+		writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
+		res[0] = dramc_tx_tracking(0);
+		if (release_dram_ctrl() != 0)
+			pr_info("[DRAMC] TX 0 release SPM HW SEMAPHORE fail!\n");
+		local_irq_restore(save_flags);
+	}
 
 	udelay(200);
 
-		local_irq_save(save_flags);
-		if (acquire_dram_ctrl() != 0) {
-			local_irq_restore(save_flags);
-			pr_warn("[DRAMC] TX 1 can NOT get SPM HW SEMAPHORE!\n");
-		} else {
-			writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
-			res[1] = dramc_tx_tracking(1);
-			if (release_dram_ctrl() != 0)
-				pr_warn("[DRAMC] TX 1 release SPM HW SEMAPHORE fail!\n");
-			local_irq_restore(save_flags);
-		}
-
-		low_freq_counter = 0;
+	local_irq_save(save_flags);
+	if (acquire_dram_ctrl() != 0) {
+		local_irq_restore(save_flags);
+		pr_info("[DRAMC] TX 1 can NOT get SPM HW SEMAPHORE!\n");
 	} else {
-		low_freq_counter++;
-		}
+		writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
+		res[1] = dramc_tx_tracking(1);
+		if (release_dram_ctrl() != 0)
+			pr_info("[DRAMC] TX 1 release SPM HW SEMAPHORE fail!\n");
+		local_irq_restore(save_flags);
+	}
 #endif
 
+#if defined(SW_ZQCS) || defined(SW_TX_TRACKING)
+	spm_request_dvfs_opp(0, OPP_3);
 	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
+#endif
 
 #ifdef SW_TX_TRACKING
 	if (res[0] != TX_DONE)
@@ -1540,13 +1565,8 @@ static int dram_probe(struct platform_device *pdev)
 		return -1;
 	}
 
-#ifdef MIX_MODE
 	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_01C) & 0x6000) >> 13;
-#else
-	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
-#endif
 	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
-#ifdef MIX_MODE
 	switch (CBT_MODE) {
 	case NORMAL_MODE:
 		cbt_mode_rank[0] = RANK_NORMAL;
@@ -1568,7 +1588,6 @@ static int dram_probe(struct platform_device *pdev)
 		pr_err("[DRAMC] CBT mode error!!!\n");
 		break;
 	}
-#endif
 
 	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
 	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
