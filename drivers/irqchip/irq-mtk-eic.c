@@ -197,7 +197,7 @@ static int is_bulitin_eint_hw_deb(u32 eint_num)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_GPIOLIB_STAND
+#if defined(CONFIG_PINCTRL_MTK_COMMON) && defined(CONFIG_MTK_GPIOLIB_STAND)
 int hwgpio_to_vgpio(int gpio)
 {
 	int gpio_base = 0;
