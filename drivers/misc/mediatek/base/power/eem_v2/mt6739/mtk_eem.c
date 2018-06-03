@@ -266,6 +266,37 @@ static unsigned int vcore_opp_mt6739[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
 	{ VCORE_OPP3_SINGOFF, 105000, 105000},	/* opp3 candidates	*/
 };
 
+/*
+ * MT6739: Following settings are for corener tightening test only.
+ * 3 percent for turbo version.
+ */
+#define VCORE_OPP0_SINGOFF_DOWN_3_PERCENT	115625
+#define VCORE_OPP1_SINGOFF_DOWN_3_PERCENT	111875
+#define VCORE_OPP2_SINGOFF_DOWN_3_PERCENT	108750
+#define VCORE_OPP3_SINGOFF_DOWN_3_PERCENT	105625
+static unsigned int vcore_opp_mt6739_down_3_percent[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
+	{ VCORE_OPP0_SINGOFF_DOWN_3_PERCENT, 111250, 111250},  /* opp0 candidates      */
+	{ VCORE_OPP1_SINGOFF_DOWN_3_PERCENT,      0,      0},
+	{ VCORE_OPP2_SINGOFF_DOWN_3_PERCENT,      0,      0},
+	{ VCORE_OPP3_SINGOFF_DOWN_3_PERCENT, 101250, 101250},  /* opp3 candidates      */
+};
+
+/*
+ * MT6739: Following settings are for corener tightening test only.
+ */
+#define VCORE_OPP0_SINGOFF_DOWN_5_PERCENT	113125
+#define VCORE_OPP1_SINGOFF_DOWN_5_PERCENT	110000
+#define VCORE_OPP2_SINGOFF_DOWN_5_PERCENT	106875
+#define VCORE_OPP3_SINGOFF_DOWN_5_PERCENT	103750
+static unsigned int vcore_opp_mt6739_down_5_percent[VCORE_NR_FREQ][VCORE_NR_FREQ_EFUSE] = {
+	{ VCORE_OPP0_SINGOFF_DOWN_5_PERCENT, 108750, 108750},  /* opp0 candidates      */
+	{ VCORE_OPP1_SINGOFF_DOWN_5_PERCENT,      0,      0},
+	{ VCORE_OPP2_SINGOFF_DOWN_5_PERCENT,      0,      0},
+	{ VCORE_OPP3_SINGOFF_DOWN_5_PERCENT,  99375,  99375},  /* opp3 candidates      */
+};
+
+
+
 /* ptr that points to v1 or v2 opp table */
 unsigned int (*vcore_opp)[VCORE_NR_FREQ_EFUSE];
 /* final vcore opp table */
@@ -337,7 +368,14 @@ static void inherit_base_det_transfer_fops(struct eem_det *det)
 
 static void get_vcore_opp(void)
 {
-	vcore_opp = &vcore_opp_mt6739[0];
+	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k39tv1_ctightening", 18) == 0)
+		vcore_opp = &vcore_opp_mt6739_down_3_percent[0];
+	else if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k39v1_ctightening", 17) == 0)
+		vcore_opp = &vcore_opp_mt6739_down_5_percent[0];
+	else if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k39v1_bsp_ctighten", 18) == 0)
+		vcore_opp = &vcore_opp_mt6739_down_5_percent[0];
+	else
+		vcore_opp = &vcore_opp_mt6739[0];
 }
 
 #if !EEM_BANK_SOC
@@ -564,7 +602,6 @@ static void mt_eem_enable_mtcmos(void)
 	/* spm_mtcmos_ctrl_mfg2(enable); */
 	#if !defined(CONFIG_MTK_CLKMGR) && !(EARLY_PORTING)
 	int ret;
-
 	ret = clk_prepare_enable(clk_mfg0); /* gpu mtcmos enable*/
 	if (ret)
 		eem_error("clk_prepare_enable failed when enabling clk_mfg_sync\n");
@@ -1660,9 +1697,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 
 #ifdef CONFIG_MACH_MT6739
 		det->pmic_base = CPU_PMIC_BASE_6357;
-
-		if (eem_devinfo.FT_PGM == 0x3)
+		if (eem_devinfo.FT_PGM >= 0x3) {
 			det->DVTFIXED = DVTFIXED_VAL_CPU_VER_3;
+			det->features = FEA_INIT01 | FEA_INIT02;
+		}
 #else
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		det->pmic_base = CPU_PMIC_BASE_6356;

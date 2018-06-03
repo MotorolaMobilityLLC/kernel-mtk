@@ -104,7 +104,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#endif
 		.ctrl_id	= EEM_CTRL_2L,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1280000,/* MT6739 FY: 1280 MHz */
+		.max_freq_khz	= 1274000,/* MT6739 FY: 1274 MHz */
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
