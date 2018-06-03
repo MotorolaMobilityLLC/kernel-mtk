@@ -3023,13 +3023,15 @@ void AudDrv_checkDLISRStatus(void)
 		}
 		if (localctl.u4UnderflowCnt) {
 			for (index = 0; index < localctl.u4UnderflowCnt && index < DL_ABNORMAL_CONTROL_MAX; index++) {
-				pr_warn("AudWarn data underflow [%d/%d] MemType %d, Remain:0x%x, R:0x%x,",
+				MTK_SND_LOG_LIMIT(20,
+					"AudWarn data underflow [%d/%d] MemType %d, Remain:0x%x, R:0x%x,",
 					index,
 					localctl.u4UnderflowCnt,
 					localctl.MemIfNum[index],
 					localctl.u4DataRemained[index],
 					localctl.u4DMAReadIdx[index]);
-				pr_warn("W:0x%x, BufSize:0x%x, consumebyte:0x%x, hw index:0x%x, addr:0x%x\n",
+				MTK_SND_LOG_LIMIT(20,
+					"W:0x%x, BufSize:0x%x, consumebyte:0x%x, hw index:0x%x, addr:0x%x\n",
 					localctl.u4WriteIdx[index],
 					localctl.u4BufferSize[index],
 					localctl.u4ConsumedBytes[index],
@@ -4101,7 +4103,8 @@ static snd_pcm_uframes_t get_dlmem_frame_index(struct snd_pcm_substream *substre
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
 		if (Afe_Block->u4DataRemained < 0) {
-			pr_warn("[AudioWarn] u4DataRemained=0x%x\n", Afe_Block->u4DataRemained);
+			MTK_SND_LOG_LIMIT(20, "[AudioWarn] u4DataRemained=0x%x, mem_block %d\n",
+					  Afe_Block->u4DataRemained, mem_block);
 		};
 		Frameidx = bytes_to_frames(substream->runtime, Afe_Block->u4DMAReadIdx);
 	} else {

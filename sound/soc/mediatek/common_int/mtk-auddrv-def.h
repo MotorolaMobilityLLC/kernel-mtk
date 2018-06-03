@@ -160,6 +160,18 @@
 #define PRINTK_AUD_OFFLOAD(format, args...)
 #endif
 
+#define MTK_SND_LOG(fmt, args...) pr_info("<%s(), %d> " fmt, __func__, __LINE__, ## args)
+#define MTK_SND_LOG_LIMIT(FREQ, fmt, args...) do {\
+	static DEFINE_RATELIMIT_STATE(ratelimit, HZ, FREQ);\
+	static int skip_cnt;\
+	\
+	if (__ratelimit(&ratelimit)) {\
+		MTK_SND_LOG(fmt ", skip_cnt<%d>\n", ## args, skip_cnt);\
+		skip_cnt = 0;\
+	} else\
+		skip_cnt++;\
+} while (0)\
+
 /* if need assert , use AUDIO_ASSERT(true) */
 #define AUDIO_ASSERT(value) WARN_ON(value)
 
