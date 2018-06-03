@@ -3608,15 +3608,21 @@ void mtcmos_force_off(void)
 	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);
 
+	spm_mtcmos_ctrl_vpu_core1_shut_down(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_vpu_core0_shut_down(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_vpu_top(STA_POWER_DOWN);
+
 	spm_mtcmos_ctrl_cam(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_ven(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_vde(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_dis(STA_POWER_DOWN);
+
+	spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
 
 	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
 
 	spm_mtcmos_ctrl_audio(STA_POWER_DOWN);
-
 }
 #endif
 
