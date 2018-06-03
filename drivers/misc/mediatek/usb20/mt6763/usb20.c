@@ -1538,8 +1538,10 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 	if (retval != 0)
 		DBG(0, "register musbfsh device fail!\n");
 
+#ifdef CONFIG_DEBUG_FS
 	if (usb20_phy_init_debugfs())
 		DBG(0, "usb20_phy_init_debugfs fail!\n");
+#endif
 	return retval;
 
 }
