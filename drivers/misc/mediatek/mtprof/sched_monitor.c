@@ -76,6 +76,7 @@ static unsigned int AEE_WARN_DUR = TIME_500MS;
 static unsigned int irq_info_enable;
 static unsigned int sched_mon_enable;
 static unsigned int sched_mon_warn_enable;
+static unsigned int sched_mon_door_key;
 static unsigned int skip_aee_once;
 
 /* //////////////////////////////////////////////////////// */
@@ -585,7 +586,8 @@ DEFINE_PER_CPU(struct mt_local_irq_count, ipi_count_mon);
 DEFINE_PER_CPU(unsigned long long, save_irq_count_time);
 
 DEFINE_SPINLOCK(mt_irq_count_lock);
-static void burst_irq_check(int irq, int irq_num, unsigned long long t_diff)
+static void burst_irq_check(int irq, int irq_num, unsigned long long t_diff,
+	unsigned long long t_start, unsigned long long t_end)
 {
 	int count, old_irq;
 	unsigned long long t_avg;
@@ -599,12 +601,14 @@ static void burst_irq_check(int irq, int irq_num, unsigned long long t_diff)
 		t_avg = t_diff;
 		do_div(t_avg, count);
 		if (t_avg < WARN_BURST_IRQ_DETECT) {
-			pr_info("[BURST IRQ DURATION WARN] IRQ[%3d:%14s] +%d (dur:%lld us, avg:%lld us)\n",
+			pr_info("[BURST IRQ DURATION WARN] IRQ[%3d:%14s] +%d (dur:%lld us, avg:%lld us, %lld ~ %lld us)\n",
 				irq,
 				isr_name(irq),
 				count,
 				usec_high(t_diff),
-				usec_high(t_avg));
+				usec_high(t_avg),
+				usec_high(t_start),
+				usec_high(t_end));
 		}
 	}
 }
@@ -613,7 +617,7 @@ void mt_save_irq_counts(int action)
 {
 	int irq, cpu, irq_num;
 	unsigned long flags;
-	unsigned long long t_diff;
+	unsigned long long t_start, t_end;
 
 	/* do not refresh data in 200ms */
 	if (action == SCHED_TICK &&
@@ -625,12 +629,13 @@ void mt_save_irq_counts(int action)
 
 	cpu = smp_processor_id();
 
-	t_diff = sched_clock() - __raw_get_cpu_var(save_irq_count_time);
+	t_end = sched_clock();
+	t_start = __raw_get_cpu_var(save_irq_count_time);
 	__raw_get_cpu_var(save_irq_count_time) = sched_clock();
 
 	for (irq = 0; irq < nr_irqs && irq < MAX_NR_IRQS; irq++) {
 		irq_num = kstat_irqs_cpu(irq, cpu);
-		burst_irq_check(irq, irq_num, t_diff);
+		burst_irq_check(irq, irq_num, t_end - t_start, t_start, t_end);
 		__raw_get_cpu_var(irq_count_mon).irqs[irq] = irq_num;
 	}
 
@@ -987,6 +992,9 @@ static ssize_t mt_sched_monitor_##param##_write(			\
 	unsigned long val;						\
 	int ret;							\
 									\
+	if (!sched_mon_door_key)			\
+		return cnt;						\
+									\
 	if (cnt >= sizeof(buf))					\
 		return -EINVAL;						\
 									\
@@ -1041,6 +1049,32 @@ DECLARE_MT_SCHED_MATCH(AEE_WARNING_DUR, AEE_WARN_DUR);
 DECLARE_MT_SCHED_MATCH(SCHED_MON_ENABLE, sched_mon_enable);
 DECLARE_MT_SCHED_MATCH(SCHED_MON_WARN_ENABLE, sched_mon_warn_enable);
 
+static ssize_t mt_sched_monitor_door_write(struct file *filp,
+	const char *ubuf, size_t cnt, loff_t *data)
+{
+	char buf[24];
+
+	if (cnt >= sizeof(buf))
+		return cnt;
+
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
+
+	buf[cnt-1] = 0;
+
+	if (strcmp("ENABLE_setting", buf) == 0)
+		sched_mon_door_key = 1;
+	if (strcmp("DISABLE_setting", buf) == 0)
+		sched_mon_door_key = 0;
+
+	return cnt;
+}
+
+static const struct file_operations mt_sched_monitor_door_fops = {
+	.open = simple_open,
+	.write = mt_sched_monitor_door_write,
+};
+
 static int __init init_mtsched_mon(void)
 {
 	int cpu;
@@ -1067,7 +1101,6 @@ static int __init init_mtsched_mon(void)
 	pe = proc_create("mtmon/sched_mon", 0664, NULL, &mt_sched_monitor_fops);
 	if (!pe)
 		return -ENOMEM;
-
 	pe = proc_create("mtmon/sched_mon_duration_ISR", 0664, NULL,
 			 &mt_sched_monitor_ISR_DUR_fops);
 	if (!pe)
@@ -1100,6 +1133,10 @@ static int __init init_mtsched_mon(void)
 			 &mt_sched_monitor_IRQ_DISABLE_DUR_fops);
 	if (!pe)
 		return -ENOMEM;
+	pe = proc_create("mtmon/sched_mon_duration_AEE_WARNING", 0664, NULL,
+			 &mt_sched_monitor_AEE_WARNING_DUR_fops);
+	if (!pe)
+		return -ENOMEM;
 	pe = proc_create("mtmon/irq_info_enable", 0664, NULL,
 			 &mt_sched_monitor_IRQ_INFO_ENABLE_fops);
 	if (!pe)
@@ -1110,6 +1147,10 @@ static int __init init_mtsched_mon(void)
 		return -ENOMEM;
 	pe = proc_create("mtmon/sched_mon_warn_enable", 0664, NULL,
 			 &mt_sched_monitor_SCHED_MON_WARN_ENABLE_fops);
+	if (!pe)
+		return -ENOMEM;
+	pe = proc_create("mtmon/sched_mon_door", 0220, NULL,
+			&mt_sched_monitor_door_fops);
 	if (!pe)
 		return -ENOMEM;
 
