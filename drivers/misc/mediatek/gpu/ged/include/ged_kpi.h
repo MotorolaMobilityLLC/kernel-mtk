@@ -15,6 +15,7 @@
 #define __GED_KPI_H__
 
 #include "ged_type.h"
+#include "eas_controller.h"
 #include <linux/sched.h>
 #include <linux/topology.h>
 
@@ -49,7 +50,6 @@ bool ged_kpi_set_gpu_dvfs_hint(int t_gpu_target, int t_gpu_cur);
 void ged_kpi_set_game_hint(int mode);
 unsigned int ged_kpi_enabled(void);
 
-extern int boost_value_for_GED_idx(int group_idx, int boost_value);
 extern int linear_real_boost(int linear_boost);
 extern unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu);
 extern unsigned long arch_scale_get_max_freq(int cpu);
