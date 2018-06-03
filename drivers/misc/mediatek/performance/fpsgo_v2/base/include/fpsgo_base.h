@@ -46,7 +46,7 @@ struct fbt_frame_info {
 	int target_fps;
 	int mips_diff;
 	long mips;
-	unsigned long long q2q_time;
+	unsigned long long running_time;
 	int count;
 };
 
