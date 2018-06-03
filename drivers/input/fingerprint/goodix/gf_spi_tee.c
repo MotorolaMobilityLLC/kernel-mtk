@@ -49,12 +49,14 @@
 #include <linux/spi/spidev.h>
 
 /* MTK header */
+#ifndef CONFIG_SPI_MT65XX
 #include "mtk_spi.h"
 #include "mtk_spi_hal.h"
+#endif
 #include "mtk_gpio.h"
 
 /* there is no this file on standardized GPIO platform */
-#ifndef CONFIG_MTK_GPIOLIB_STAND
+#ifdef CONFIG_MTK_GPIO
 #include "mach/gpio_const.h"
 #endif
 
@@ -214,7 +216,11 @@ static int gf_get_gpio_dts_info(struct gf_device *gf_dev)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,goodix-fp");
 	if (node) {
 		virq = irq_of_parse_and_map(node, 0);
+#ifndef CONFIG_MTK_EIC
 		irq_set_irq_wake(virq, 1);
+#else
+		enable_irq_wake(virq);
+#endif
 		pdev = of_find_device_by_node(node);
 		if (pdev) {
 			gf_dev->pinctrl_gpios = devm_pinctrl_get(&pdev->dev);
@@ -1069,7 +1075,9 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 
 	case GF_IOC_SPI_INIT_CFG_CMD:
+#ifndef CONFIG_SPI_MT65XX
 		retval = gf_ioctl_spi_init_cfg_cmd(&gf_dev->spi_mcc, arg);
+#endif
 		break;
 
 #endif /* SUPPORT_REE_SPI */
@@ -1120,6 +1128,15 @@ static ssize_t gf_debug_store(struct device *dev,
 	int retval = 0;
 #ifdef SUPPORT_REE_OSWEGO
 	u8 flag = 0;
+#endif
+
+#ifdef SUPPORT_REE_SPI
+#ifdef SUPPORT_REE_MILAN_A
+	u8 id_buf[2] = {0};
+#ifndef CONFIG_TRUSTONIC_TEE_SUPPORT
+	u16 chip_id;
+#endif
+#endif
 #endif
 
 	if (!strncmp(buf, "-8", 2)) {
@@ -1185,12 +1202,13 @@ static ssize_t gf_debug_store(struct device *dev,
 	} else if (!strncmp(buf, "-13", 3)) {
 		gf_debug(INFO_LOG, "%s: parameter is -13, Vendor ID test --> 0x%x\n", __func__, g_vendor_id);
 	} else if (!strncmp(buf, "-15", 3)) {
-	/* make fingerprint to lower power mode for nonTEE project */
-	#ifdef SUPPORT_REE_SPI
-	#ifdef SUPPORT_REE_MILAN_A
-		u8 id_buf[2] = {0};
-		u16 chip_id;
+#ifdef SUPPORT_REE_SPI
+#ifdef SUPPORT_REE_MILAN_A
+		gf_spi_read_bytes_ree(gf_dev, 0x0142, 2, id_buf);
+		gf_debug(INFO_LOG, "%s line:%d ChipID:0x%x  0x%x\n", __func__, __LINE__, id_buf[0], id_buf[1]);
 
+		/* make fingerprint to lower power mode for nonTEE project */
+#ifndef CONFIG_TRUSTONIC_TEE_SUPPORT
 		gf_spi_read_bytes_ree_new(gf_dev, 0x0142, 2, id_buf);
 		chip_id = (u16)id_buf[0];
 		chip_id += ((u16)id_buf[1]) << 8;
@@ -1200,12 +1218,11 @@ static ssize_t gf_debug_store(struct device *dev,
 		if (0x12A4 == chip_id || 0x12A1 == chip_id) {
 			gf_debug(INFO_LOG, "[%s], line:%d, no TEE support so make the sensor sleep.\n",
 				__func__, __LINE__);
-#ifndef CONFIG_TRUSTONIC_TEE_SUPPORT
 			gf_milan_a_series_init_process(gf_dev);
-#endif
 		}
-	#endif
-	#endif
+#endif
+#endif
+#endif
 	} else {
 		gf_debug(ERR_LOG, "%s: wrong parameter!===============\n", __func__);
 	}
@@ -1477,10 +1494,13 @@ int gf_spi_write_bytes_ree(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 
 	tmp_buf = gf_dev->spi_buffer;
 
 	/* switch to DMA mode if transfer length larger than 32 bytes */
+#ifndef CONFIG_SPI_MT65XX
 	if ((data_len + 3) > 32) {
 		gf_dev->spi_mcc.com_mod = DMA_TRANSFER;
 		spi_setup(gf_dev->spi);
 	}
+#endif
+
 	spi_message_init(&msg);
 	*tmp_buf = 0xF0;
 	*(tmp_buf + 1) = (u8)((addr >> 8) & 0xFF);

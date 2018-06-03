@@ -22,7 +22,9 @@
 #include <linux/netlink.h>
 #include <linux/cdev.h>
 #include <linux/input.h>
+#ifndef CONFIG_SPI_MT65XX
 #include "mtk_spi.h"
+#endif
 #ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 #include <mach/mtk_6306_gpio.h>
 #endif
@@ -192,7 +194,9 @@ struct gf_device {
 	struct class *class;
 	struct spi_device *spi;
 	int device_count;
+#ifndef CONFIG_SPI_MT65XX
 	struct mt_chip_conf spi_mcc;
+#endif
 
 	spinlock_t spi_lock;
 	struct list_head device_entry;
@@ -257,13 +261,21 @@ struct gf_device {
 #define ERR_PREPARE_FAIL 113
 
 /**********************function defination**********************/
+#ifndef CONFIG_SPI_MT65XX
 void gf_spi_setup_conf_ree(struct gf_device *gf_dev, u32 speed, enum spi_transfer_mode mode);
+#endif
 int gf_spi_read_bytes_ree(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *rx_buf);
 int gf_spi_write_bytes_ree(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *tx_buf);
 int gf_spi_read_byte_ree(struct gf_device *gf_dev, u16 addr, u8 *value);
 int gf_spi_write_byte_ree(struct gf_device *gf_dev, u16 addr, u8 value);
 int gf_ioctl_transfer_raw_cmd(struct gf_device *gf_dev, unsigned long arg, unsigned int bufsiz);
+#ifndef CONFIG_SPI_MT65XX
 int  gf_ioctl_spi_init_cfg_cmd(struct mt_chip_conf *mcc, unsigned long arg);
+#endif
+#ifdef CONFIG_SPI_MT65XX
+extern void mt_spi_enable_master_clk(struct spi_device *spidev);
+extern void mt_spi_disable_master_clk(struct spi_device *spidev);
+#endif
 
 #ifdef SUPPORT_REE_MILAN_A
 #ifndef CONFIG_TRUSTONIC_TEE_SUPPORT
