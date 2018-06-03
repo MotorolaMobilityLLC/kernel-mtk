@@ -14,6 +14,9 @@
 #include <linux/timer.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
+#ifdef CONFIG_ACCDET_EINT
+#include <linux/gpio.h>
+#endif
 
 /* for EINT register and enum */
 #include <upmu_common.h>
@@ -35,8 +38,8 @@
 #define ACCDET_INFO(format, args...)	pr_debug_ratelimited(format, ##args)
 #define ACCDET_ERROR(format, args...)	pr_debug_ratelimited(format, ##args)
 #endif
-#define ACCDET_DEBUG(format, args...)	pr_warn(format, ##args)
-#define ACCDET_INFO(format, args...)	pr_warn(format, ##args)
+#define ACCDET_DEBUG(format, args...)	pr_debug(format, ##args)
+#define ACCDET_INFO(format, args...)	pr_info(format, ##args)
 #define ACCDET_ERROR(format, args...)	pr_err(format, ##args)
 
 /* for accdet_read_audio_res */
@@ -216,55 +219,6 @@ int accdet_read_audio_res(unsigned int res_value)
 	return RET_GT_5K;
 }
 EXPORT_SYMBOL(accdet_read_audio_res);
-unsigned int accdet_get_pin_recognition(void)
-{
-#ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
-	return cable_pin_recognition;
-#else
-	return 0;
-#endif
-}
-EXPORT_SYMBOL(accdet_get_pin_recognition);
-void accdet_detect(void)
-{
-	int ret = 0;
-
-	ACCDET_INFO("[accdet_detect]enter\n");
-	s_accdet_status = PLUG_OUT;
-	ret = queue_work(accdet_workqueue, &accdet_work);
-	if (!ret)
-		ACCDET_ERROR("[accdet_detect]accdet_work return:%d!\n", ret);
-}
-EXPORT_SYMBOL(accdet_detect);
-
-void accdet_state_reset(void)
-{
-	ACCDET_INFO("[accdet_state_reset]enter\n");
-
-	s_accdet_status = PLUG_OUT;
-	s_cable_type = NO_DEVICE;
-}
-EXPORT_SYMBOL(accdet_state_reset);
-
-int accdet_get_cable_type(void)
-{
-	return s_cable_type;
-}
-
-/*
- *void accdet_auxadc_switch(int enable)
- *{
- *	if (enable) {
- *		pmic_pwrap_write(AUDENC_ADC_REG,
- *			pmic_pwrap_read(AUDENC_ADC_REG) | RG_SWBUF_SW_EN);
- *		ACCDET_DEBUG("ACCDET enable switch\n");
- *	} else {
- *		pmic_pwrap_write(AUDENC_ADC_REG,
- *			pmic_pwrap_read(AUDENC_ADC_REG) & ~(RG_SWBUF_SW_EN));
- *		ACCDET_DEBUG("1ACCDET disable switch\n");
- *	}
- *}
- */
 
 /*
  * PART5: static basic functions
@@ -427,15 +381,15 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	ACCDET_INFO("[accdet_efuse]efuse=0x%x,adc_offset=%d mv\n", efusevalue, g_accdet_auxadc_offset);
 }
 
-static unsigned int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
+static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 {
-	unsigned int vol_val = 0;
+	int vol_val = 0;
 
 #if 1
 	/* use auxadc API */
 	vol_val = pmic_get_auxadc_value(AUXADC_LIST_ACCDET);
 	vol_val -= g_accdet_auxadc_offset;
-	ACCDET_INFO("[accdet] adc_offset=%d mv,MIC_Vol=%d mv\n", g_accdet_auxadc_offset, vol_val);
+	ACCDET_DEBUG("[accdet] adc_offset=%d mv,MIC_Vol=%d mv\n", g_accdet_auxadc_offset, vol_val);
 	return vol_val;
 
 #endif
@@ -480,7 +434,7 @@ static unsigned int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 }
 
 #ifdef CONFIG_FOUR_KEY_HEADSET
-static int key_check(unsigned int b)
+static int key_check(int b)
 {
 	if ((b < headset_dts_data.four_key.down_key_four)
 		&& (b >= headset_dts_data.four_key.up_key_four))
@@ -498,7 +452,7 @@ static int key_check(unsigned int b)
 	return NO_KEY;
 }
 #else
-static int key_check(unsigned int b)
+static int key_check(int b)
 {
 	/* 0.24V ~  */
 	/* ACCDET_DEBUG("[key_check] 3-keys enter:%d!!\n", b); */
@@ -522,22 +476,22 @@ static void send_key_event(int keycode, int flag)
 	case DW_KEY:
 		input_report_key(kpd_accdet_dev, KEY_VOLUMEDOWN, flag);
 		input_sync(kpd_accdet_dev);
-		ACCDET_INFO("[accdet][send_key_event]KEY_VOLUMEDOWN %d\n", flag);
+		ACCDET_DEBUG("[accdet][send_key_event]KEY_VOLUMEDOWN %d\n", flag);
 		break;
 	case UP_KEY:
 		input_report_key(kpd_accdet_dev, KEY_VOLUMEUP, flag);
 		input_sync(kpd_accdet_dev);
-		ACCDET_INFO("[accdet][send_key_event]KEY_VOLUMEUP %d\n", flag);
+		ACCDET_DEBUG("[accdet][send_key_event]KEY_VOLUMEUP %d\n", flag);
 		break;
 	case MD_KEY:
 		input_report_key(kpd_accdet_dev, KEY_PLAYPAUSE, flag);
 		input_sync(kpd_accdet_dev);
-		ACCDET_INFO("[accdet][send_key_event]KEY_PLAYPAUSE %d\n", flag);
+		ACCDET_DEBUG("[accdet][send_key_event]KEY_PLAYPAUSE %d\n", flag);
 		break;
 	case AS_KEY:
 		input_report_key(kpd_accdet_dev, KEY_VOICECOMMAND, flag);
 		input_sync(kpd_accdet_dev);
-		ACCDET_INFO("[accdet][send_key_event]KEY_VOICECOMMAND %d\n", flag);
+		ACCDET_DEBUG("[accdet][send_key_event]KEY_VOICECOMMAND %d\n", flag);
 		break;
 	}
 }
@@ -545,15 +499,15 @@ static void send_key_event(int keycode, int flag)
 static void multi_key_detection(int current_status)
 {
 	int m_key = 0;
-	unsigned int cali_voltage = 0;
 	unsigned int reg_val = 0;
+	int cali_voltage = 0;
 
 	if (current_status == ACCDET_STATE_ABC_00) {
 		cali_voltage = Accdet_PMIC_IMM_GetOneChannelValue(1);
-		/* ACCDET_DEBUG("[Accdet]adc cali_voltage1 = %d mv\n", cali_voltage); */
+		ACCDET_DEBUG("[Accdet]adc cali_voltage1 = %d mv\n", cali_voltage);
 		m_key = g_cur_key = key_check(cali_voltage);
 	}
-	mdelay(10);/* delay 10ms, not 30ms */
+	mdelay(10);/* maybe delay 10ms, not 30ms */
 
 	reg_val = pmic_pwrap_read(ACCDET_CON12);
 #ifdef CONFIG_ACCDET_EINT_IRQ
@@ -567,7 +521,7 @@ static void multi_key_detection(int current_status)
 #endif
 
 #ifdef CONFIG_ACCDET_EINT
-	if ((reg_val & ACCDET_IRQ_STS_BIT_ALL) != ACCDET_IRQ_STS_BIT_ALL)
+	if (((reg_val & ACCDET_IRQ_STS_BIT_ALL) != ACCDET_IRQ_STS_BIT_ALL)
 		|| s_eint_accdet_sync_flag) {
 		send_key_event(g_cur_key, !current_status);
 	} else {
@@ -582,9 +536,6 @@ static void multi_key_detection(int current_status)
 
 static inline void check_cable_type(void)
 {
-	bool IRQ_CLR_FLAG = false;
-	int irq_temp = 0;/* for clear IRQ_bit */
-	int wait_clear_irq_times = 0;
 	int current_status = 0;
 	int tmp_ABC = 0;
 	unsigned int reg_val = 0;
@@ -593,7 +544,7 @@ static inline void check_cable_type(void)
 	/*A=bit2; B=bit1;C=bit0*/
 	current_status = ((reg_val>>ACCDET_STATE_MEM_BIT_OFFSET)&ACCDET_STATE_ABC_MASK);
 	tmp_ABC = current_status;/* have ignored C  already */
-	ACCDET_INFO("[accdet]addr:[0x%x]=0x%x, cur_ABC=0x%x\n", ACCDET_CON14, reg_val, current_status);
+	ACCDET_DEBUG("[accdet]addr:[0x%x]=0x%x, cur_ABC=0x%x\n", ACCDET_CON14, reg_val, current_status);
 
 	/* just get AB state, ignore C */
 	/* current_status = (current_status & 0x06); */
@@ -625,9 +576,9 @@ static inline void check_cable_type(void)
 			mutex_unlock(&accdet_eint_irq_sync_mutex);
 			accdet_set_debounce(accdet_state000, s_button_press_debounce);
 		} else if (current_status == ACCDET_STATE_ABC_11) {
-			ACCDET_INFO("[accdet]1.PLUG_OUT state don't change!\n");
+			ACCDET_DEBUG("[accdet]1.PLUG_OUT state don't change!\n");
 #ifdef CONFIG_ACCDET_EINT
-			ACCDET_INFO("[accdet]1.no send plug out event in plug out\n");
+			ACCDET_DEBUG("[accdet]1.no send plug out event in plug out\n");
 #else
 			mutex_lock(&accdet_eint_irq_sync_mutex);
 			if (s_eint_accdet_sync_flag == 1) {
@@ -648,24 +599,10 @@ static inline void check_cable_type(void)
 		/* pmic_pwrap_write(ACCDET_CON06, accdet_cust_setting->debounce0); */
 		if (current_status == ACCDET_STATE_ABC_00) {
 			mutex_lock(&accdet_eint_irq_sync_mutex);
-			reg_val = pmic_pwrap_read(ACCDET_CON12);
-			if (s_eint_accdet_sync_flag == 1) {
-				while ((reg_val & ACCDET_IRQ_STS_BIT_ALL)
-					&& (wait_clear_irq_times < 3)) {
-					reg_val = pmic_pwrap_read(ACCDET_CON12);
-					ACCDET_INFO("[accdet]2.MIC BIAS clear IRQ on-going1..\n");
-					wait_clear_irq_times++;
-					msleep(20);
-				}
-				irq_temp = reg_val;
-				irq_temp = irq_temp & (~ACCDET_IRQ_CLR_B8);
-				pmic_pwrap_write(ACCDET_CON12, irq_temp);
-				wait_clear_irq_times = 0;/* add clear wait_clear_irq_times */
-				IRQ_CLR_FLAG = true;
+			if (s_eint_accdet_sync_flag == 1)
 				s_accdet_status = HOOK_SWITCH;
-			} else {
+			else
 				ACCDET_ERROR("[accdet]2.1 Headset has plugged out(000)\n");
-			}
 			mutex_unlock(&accdet_eint_irq_sync_mutex);
 			s_button_status = 1;
 			if (s_button_status) {
@@ -675,7 +612,7 @@ static inline void check_cable_type(void)
 				else
 					ACCDET_INFO("[accdet]2.2 Headset has plugged out (000)\n");
 				mutex_unlock(&accdet_eint_irq_sync_mutex);
-				ACCDET_INFO("[accdet] switch to HOOK_SWITCH\n");
+				ACCDET_DEBUG("[accdet] switch to HOOK_SWITCH\n");
 				/* recover  pwm frequency and duty */
 				pmic_pwrap_write(ACCDET_CON04, REGISTER_VALUE(accdet_cust_setting->pwm_thresh));
 				pmic_pwrap_write(ACCDET_CON03, REGISTER_VALUE(accdet_cust_setting->pwm_width));
@@ -685,13 +622,13 @@ static inline void check_cable_type(void)
 			if (s_eint_accdet_sync_flag == 1) {
 				s_accdet_status = MIC_BIAS;
 				s_cable_type = HEADSET_MIC;
-				ACCDET_INFO("[accdet]2.MIC_BIAS state not change!\n");
+				ACCDET_DEBUG("[accdet]2.MIC_BIAS state not change!\n");
 			} else {
 				ACCDET_INFO("[accdet]2.Headset has plugged out(010)\n");
 			}
 			mutex_unlock(&accdet_eint_irq_sync_mutex);
 		} else if (current_status == ACCDET_STATE_ABC_11) {
-			ACCDET_INFO("[accdet]2.do not send plug out in micbias\n");
+			ACCDET_DEBUG("[accdet]2.do not send plug out in micbias\n");
 			mutex_lock(&accdet_eint_irq_sync_mutex);
 			if (s_eint_accdet_sync_flag == 1)
 				s_accdet_status = PLUG_OUT;
@@ -709,7 +646,7 @@ static inline void check_cable_type(void)
 				/* for avoid 01->00 framework of Headset will report press key info for Audio */
 				/* s_cable_type = HEADSET_NO_MIC; */
 				/* s_accdet_status = HOOK_SWITCH; */
-				ACCDET_INFO("[accdet]3.HOOK_SWITCH state not change!\n");
+				ACCDET_DEBUG("[accdet]3.HOOK_SWITCH state not change!\n");
 			else
 				ACCDET_INFO("[accdet]3.Headset has plugged out(000)\n");
 			mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -719,7 +656,7 @@ static inline void check_cable_type(void)
 				multi_key_detection(current_status);
 				s_accdet_status = MIC_BIAS;/* 4 poles */
 				s_cable_type = HEADSET_MIC;
-				ACCDET_INFO("[accdet]3.switch to MIC_BIAS\n");
+				ACCDET_DEBUG("[accdet]3.switch to MIC_BIAS\n");
 			} else {
 				ACCDET_INFO("[accdet]3.Headset has plugged out(010)\n");
 			}
@@ -729,7 +666,7 @@ static inline void check_cable_type(void)
 			accdet_set_debounce(accdet_state000, s_button_press_debounce);
 			/* pmic_pwrap_write(ACCDET_CON06, s_button_press_debounce); */
 		} else if (current_status == ACCDET_STATE_ABC_11) {
-			ACCDET_INFO("[accdet]3.do not send plug out event in hook switch\n");
+			ACCDET_DEBUG("[accdet]3.do not send plug out event in hook switch\n");
 			mutex_lock(&accdet_eint_irq_sync_mutex);
 			if (s_eint_accdet_sync_flag == 1)
 				s_accdet_status = PLUG_OUT;
@@ -737,7 +674,7 @@ static inline void check_cable_type(void)
 				ACCDET_INFO("[accdet]3.Headset has plugged out(110)\n");
 			mutex_unlock(&accdet_eint_irq_sync_mutex);
 		} else {
-			ACCDET_INFO("[accdet]3.HOOK-SWITCH undefined state ABC=%d!\n", current_status);
+			ACCDET_ERROR("[accdet]3.HOOK-SWITCH undefined state ABC=%d!\n", current_status);
 		}
 		break;
 	case STAND_BY:
@@ -751,30 +688,8 @@ static inline void check_cable_type(void)
 		break;
 	}
 
-	if (!IRQ_CLR_FLAG) {
-		mutex_lock(&accdet_eint_irq_sync_mutex);
-		reg_val =  pmic_pwrap_read(ACCDET_CON12);
-		if (s_eint_accdet_sync_flag == 1) {
-			while ((reg_val & ACCDET_IRQ_STS_BIT_ALL)
-				&& (wait_clear_irq_times < 3)) {
-				reg_val =  pmic_pwrap_read(ACCDET_CON12);
-				ACCDET_INFO("[accdet]6.Clear interrupt on-going2..\n");
-				wait_clear_irq_times++;
-				msleep(20);
-			}
-		}
-		irq_temp = reg_val;
-		irq_temp = irq_temp & (~ACCDET_IRQ_CLR_B8);
-		pmic_pwrap_write(ACCDET_CON12, irq_temp);
-		mutex_unlock(&accdet_eint_irq_sync_mutex);
-		IRQ_CLR_FLAG = true;
-		ACCDET_INFO("[accdet]6.Clear Done[0x%x]=0x%x\n",
-			ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
-	} else {
-		IRQ_CLR_FLAG = false;
-	}
 
-	ACCDET_INFO("[accdet]7.cable type:[%s], status switch:[%s]->[%s]\n",
+	ACCDET_DEBUG("[accdet]7.cable type:[%s], status switch:[%s]->[%s]\n",
 		     accdet_report_string[s_cable_type], accdet_status_string[s_pre_status],
 		     accdet_status_string[s_accdet_status]);
 }
@@ -793,7 +708,7 @@ static inline void headset_plug_out(void)
 		g_cur_key = 0;
 	}
 	switch_set_state((struct switch_dev *)&accdet_data, s_cable_type);
-	ACCDET_INFO("[accdet]set state in cable_type = NO_DEVICE\n");
+	ACCDET_DEBUG("[accdet]set state in cable_type = NO_DEVICE\n");
 }
 
 /* Accdet only need this func */
@@ -813,7 +728,7 @@ static inline void clear_accdet_interrupt(void)
 {
 	/* it is safe by using polling to adjust when to clear IRQ_CLR_BIT */
 	pmic_pwrap_write(ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12) | ACCDET_IRQ_CLR_B8);
-	ACCDET_INFO("[clear_accdet_interrupt][0x%x]=0x%x\n", ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
+	ACCDET_DEBUG("[clear_accdet_interrupt][0x%x]=0x%x\n", ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
 }
 
 static inline void disable_accdet(void)
@@ -831,7 +746,7 @@ static inline void disable_accdet(void)
 	reg_val = pmic_pwrap_read(ACCDET_CON12);
 	while (reg_val & ACCDET_IRQ_B0) {
 		reg_val = pmic_pwrap_read(ACCDET_CON12);
-		ACCDET_INFO("[disable_accdet]Clear interrupt on-going..\n");
+		ACCDET_DEBUG("[disable_accdet]Clear interrupt on-going..\n");
 		msleep(20);
 	}
 	irq_temp = reg_val;
@@ -850,18 +765,18 @@ static inline void disable_accdet(void)
 			ACCDET_EINT1_PWM_IDLE|ACCDET_EINT0_PWM_IDLE);
 	#endif
 #endif
+#endif
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01) & (~(ACCDET_ENABLE_B0)));
 	pmic_pwrap_write(ACCDET_CON02, pmic_pwrap_read(ACCDET_CON02)&(~ACCDET_SWCTRL_ACCDET_EN));/* clear clk */
-	ACCDET_INFO("[disable_accdet][0x%x]=0x%x\n", ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
-#endif
+	ACCDET_DEBUG("[disable_accdet][0x%x]=0x%x\n", ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
 }
 
 static inline void clear_accdet_eint_interrupt(int eint_id)
 {
+#ifdef CONFIG_ACCDET_EINT_IRQ
 	unsigned int reg_val = 0;
 
 	reg_val = pmic_pwrap_read(ACCDET_CON12);
-
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
 	pmic_pwrap_write(ACCDET_CON12, reg_val | ACCDET_EINT0_IRQ_CLR_B10);
 #elif defined CONFIG_ACCDET_SUPPORT_EINT1
@@ -876,8 +791,11 @@ static inline void clear_accdet_eint_interrupt(int eint_id)
 		ACCDET_ERROR("[clear_accdet_eint_interrupt]error:eint_id=0x%x\n", eint_id);
 	}
 #endif
-	ACCDET_INFO("[clear_accdet_eint_interrupt][0x%x]=0x%x\n",
+	ACCDET_DEBUG("[clear_accdet_eint_interrupt][0x%x]=0x%x\n",
 		ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
+#else
+	ACCDET_INFO("[clear_accdet_eint_interrupt]CONFIG_ACCDET_EINT no support the API\n");
+#endif
 }
 
 /*
@@ -897,7 +815,7 @@ static void disable_micbias_callback(struct work_struct *work)
 		pmic_pwrap_write(ACCDET_CON02, reg_val|(~ACCDET_PWM_IDLE_B8_9_10));
 #endif
 		disable_accdet();
-		ACCDET_INFO("[disable_micbias_callback]more than 5s MICBIAS, disable micbias\n");
+		ACCDET_DEBUG("[disable_micbias_callback]more than 5s MICBIAS, disable micbias\n");
 	}
 }
 
@@ -909,7 +827,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 	int irq_temp = 0;
 
 	if (g_cur_eint_state == EINT_PIN_PLUG_IN) {/* EINT_PIN_PLUG_IN */
-		ACCDET_INFO("[accdet]DCC plug-in, g_cur_eint_state = %d\n", g_cur_eint_state);
+		ACCDET_DEBUG("[accdet]DCC plug-in, g_cur_eint_state = %d\n", g_cur_eint_state);
 		mutex_lock(&accdet_eint_irq_sync_mutex);
 		s_eint_accdet_sync_flag = 1;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -935,7 +853,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 
 	} else {/* EINT_PIN_PLUG_OUT */
 /* Disable ACCDET */
-		ACCDET_INFO("[accdet]DCC EINT:plug-out, cur_eint_state=%d\n", g_cur_eint_state);
+		ACCDET_DEBUG("[accdet]DCC EINT:plug-out, cur_eint_state=%d\n", g_cur_eint_state);
 		mutex_lock(&accdet_eint_irq_sync_mutex);
 		s_eint_accdet_sync_flag = 0;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -952,14 +870,14 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		irq_temp = pmic_pwrap_read(ACCDET_CON12);
 		irq_temp = irq_temp & (~ACCDET_EINT_IRQ_CLR_B10_11);/* need think??? */
 		pmic_pwrap_write(ACCDET_CON12, irq_temp);
-		ACCDET_INFO("[accdet]plug-out,[0x%x]=0x%x\n", ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
+		ACCDET_DEBUG("[accdet]plug-out,[0x%x]=0x%x\n", ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
 	}
 #endif
 
 #ifdef CONFIG_ACCDET_EINT
 	/* KE under fastly plug in and plug out */
 	if (g_cur_eint_state == EINT_PIN_PLUG_IN) {
-		ACCDET_INFO("[accdet]ACC plug-in, g_cur_eint_state = %d\n", g_cur_eint_state);
+		ACCDET_DEBUG("[accdet]ACC plug-in, g_cur_eint_state = %d\n", g_cur_eint_state);
 		mutex_lock(&accdet_eint_irq_sync_mutex);
 		s_eint_accdet_sync_flag = 1;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -974,7 +892,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		enable_accdet(ACCDET_PWM_IDLE_B8_9_10);
 	} else {/* EINT_PIN_PLUG_OUT */
 /* Disable ACCDET */
-		ACCDET_INFO("[accdet]ACC plug-out, g_cur_eint_state = %d\n", g_cur_eint_state);
+		ACCDET_DEBUG("[accdet]ACC plug-out, g_cur_eint_state = %d\n", g_cur_eint_state);
 		mutex_lock(&accdet_eint_irq_sync_mutex);
 		s_eint_accdet_sync_flag = 0;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -1116,7 +1034,7 @@ static int accdet_eint_func(int eint_id)
 		ACCDET_ERROR("[accdet_eint_func]eint_id is err!\n");
 	}
 
-	/* bi_eint trigger issued current state */
+	/* bi_eint trigger issued current state, may */
 	if (g_cur_eint_state == EINT_PIN_PLUG_OUT) {
 		g_cur_eint_state = (g_cur_eint0_state&g_cur_eint1_state);
 		if (g_cur_eint_state == EINT_PIN_PLUG_IN) {
@@ -1178,7 +1096,7 @@ static void accdet_work_callback(struct work_struct *work)
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
 	wake_unlock(&accdet_irq_lock);
 
-	ACCDET_INFO("[accdet] report cable_type:%d\n", s_cable_type);
+	ACCDET_DEBUG("[accdet] report cable_type:%d\n", s_cable_type);
 }
 
 static void accdet_workqueue_func(void)
@@ -1198,7 +1116,7 @@ static irqreturn_t accdet_ap_eint_func(int irq, void *data)
 {
 	int ret = 0;
 
-	ACCDET_INFO("[accdet_ap_eint_func]Enter!\n");
+	ACCDET_DEBUG("[accdet_ap_eint_func]Enter!\n");
 	if (g_cur_eint_state == EINT_PIN_PLUG_IN) {
 		/* the headset was plugged in set the polarity back as initialed */
 		if (g_accdet_eint_type == IRQ_TYPE_LEVEL_HIGH)
@@ -1226,7 +1144,7 @@ static irqreturn_t accdet_ap_eint_func(int irq, void *data)
 	}
 
 	disable_irq_nosync(g_accdet_irq);
-	ACCDET_INFO("[accdet][accdet_ap_eint_func]end,g_cur_eint_state=%d\n", g_cur_eint_state);
+	ACCDET_DEBUG("[accdet_ap_eint_func]end,g_cur_eint_state=%d\n", g_cur_eint_state);
 
 	ret = queue_work(accdet_eint_workqueue, &accdet_eint_work);
 	return IRQ_HANDLED;
@@ -1237,13 +1155,12 @@ static inline int accdet_setup_eint(struct platform_device *accdet_device)
 	int ret = 0;
 	u32 ints[2] = { 0, 0 };
 	u32 ints1[2] = { 0, 0 };
-
 	struct device_node *node = NULL;
-	/* struct pinctrl_state *pins_default = NULL; */
+	struct pinctrl_state *pins_default = NULL;
 
 	/* configure to GPIO function, external interrupt */
-	ACCDET_INFO("[accdet][accdet_setup_eint]enter\n");
-#if 0
+	ACCDET_INFO("[accdet_setup_eint]enter\n");
+#if 1
 	accdet_pinctrl1 = devm_pinctrl_get(&accdet_device->dev);
 	if (IS_ERR(accdet_pinctrl1)) {
 		ret = PTR_ERR(accdet_pinctrl1);
@@ -1276,11 +1193,11 @@ static inline int accdet_setup_eint(struct platform_device *accdet_device)
 		g_accdet_irq = irq_of_parse_and_map(node, 0);
 		ret = request_irq(g_accdet_irq, accdet_ap_eint_func, IRQF_TRIGGER_NONE, "accdet-eint", NULL);
 		if (ret != 0)
-			ACCDET_ERROR("[accdet][accdet_setup_eint]EINT IRQ LINE NOT AVAILABLE\n");
+			ACCDET_ERROR("[accdet_setup_eint]EINT IRQ LINE NOT AVAILABLE\n");
 		else
-			ACCDET_INFO("[accdet]irq=%d, deb=%d\n", g_accdet_irq, g_gpio_headset_deb);
+			ACCDET_INFO("[accdet_setup_eint]irq=%d, deb=%d\n", g_accdet_irq, g_gpio_headset_deb);
 	} else {
-		ACCDET_ERROR("[accdet]%s can't find compatible node\n", __func__);
+		ACCDET_ERROR("[accdet_setup_eint]%s can't find compatible node\n", __func__);
 	}
 	return 0;
 }
@@ -1299,7 +1216,7 @@ static int accdet_irq_handler(void)
 	eint_type = 0;
 	cur_time = accdet_get_current_time();
 	reg_val = pmic_pwrap_read(ACCDET_CON12);
-	ACCDET_INFO("[accdet_irq_handler][0x%x]=0x%x\n", ACCDET_CON12, reg_val);
+	ACCDET_DEBUG("[accdet_irq_handler][0x%x]=0x%x\n", ACCDET_CON12, reg_val);
 
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
 	if ((reg_val & ACCDET_IRQ_B0) &&
@@ -1461,7 +1378,7 @@ static int accdet_irq_handler(void)
 	u64 cur_time = 0;
 
 	cur_time = accdet_get_current_time();
-	ACCDET_INFO("[accdet_irq_handler]CONFIG_ACCDET_EINT-->enter\n");
+	ACCDET_DEBUG("[accdet_irq_handler]CONFIG_ACCDET_EINT-->enter\n");
 	if ((pmic_pwrap_read(ACCDET_CON12) & ACCDET_IRQ_B0))
 		eint_type = ACCDET_IRQ_IN;
 		clear_accdet_interrupt();
@@ -1474,6 +1391,9 @@ static int accdet_irq_handler(void)
 	while (((pmic_pwrap_read(ACCDET_CON12) & ACCDET_IRQ_B0)
 		&& (accdet_timeout_ns(cur_time, ACCDET_TIME_OUT))))
 		;
+	pmic_pwrap_write(ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12)&(~ACCDET_IRQ_CLR_B8));
+	/* interrupt issued */
+	pmic_pwrap_write(AUD_TOP_INT_STATUS0, RG_INT_STATUS_ACCDET_B5);
 
 	return 1;
 }
@@ -1493,7 +1413,7 @@ static inline void accdet_eint_high_level_support(void)
 	unsigned int reg_val = 0;
 
 	reg_val = 0;
-	ACCDET_DEBUG("[accdet]accdet_eint_high_level_support enter\n");
+	ACCDET_DEBUG("[accdet]eint_high_level_support enter--->\n");
 
 #if 0
 	/* set high level trigger */
@@ -1681,23 +1601,22 @@ void accdet_init_once(int init_flag)
 			/* pmic_pwrap_write(AUDENC_ANA_CON11, reg_val|RG_ACCDET_MODE_ANA11|(0x01<<10)); */
 			pmic_pwrap_write(AUDENC_ANA_CON11, reg_val|RG_ACCDET_MODE_ANA11);/* 0x0887 */
 			reg_val = pmic_pwrap_read(AUDENC_ANA_CON10);
-			/* pmic_pwrap_write(AUDENC_ANA_CON10, reg_val&(~RG_MBIAS_MODE_6)); *//*0x0150*/
-			/* pmic_pwrap_write(AUDENC_ANA_CON10, reg_val|0x50); *//*0x50*/
+			pmic_pwrap_write(AUDENC_ANA_CON10, reg_val&(~RG_AUD_MBIAS1_DC_SW_3P));/*0x0150*/
 		} else if (headset_dts_data.accdet_mic_mode == HEADSET_MODE_6) {/* Low cost mode with internal bias*/
-			pmic_pwrap_write(AUDENC_ANA_CON11, reg_val|ACCDET_SEL_EINT_EN);/* 0x0887 */
-			/* pmic_pwrap_write(AUDENC_ANA_CON10, reg_val|0x150); *//*0x0150*/
-			pmic_pwrap_write(AUDENC_ANA_CON10, reg_val|0x100);/*0x0150*/
+			pmic_pwrap_write(AUDENC_ANA_CON11, reg_val|RG_ACCDET_MODE_ANA11);/* 0x0887 */
 			reg_val = pmic_pwrap_read(AUDENC_ANA_CON10);
 			#ifdef CONFIG_HEADSET_SUPPORT_FIVE_POLE
 			pmic_pwrap_write(AUDENC_ANA_CON10, reg_val|RG_MBIAS_MODE_6);/* 0x1F2 */
 			#else
-			 /* pmic_pwrap_write(AUDENC_ANA_CON10, reg_val|RG_AUD_MBIAS1_DC_SW_1P); *//* 0x0F2 */
+			 pmic_pwrap_write(AUDENC_ANA_CON10, reg_val|RG_AUD_MBIAS1_DC_SW_3P);
 			#endif
 
+			#if 0
 			#ifdef CONFIG_FOUR_KEY_HEADSET/* 4-key, 2.7V, internal bias for mt6337*/
 			reg_val = pmic_pwrap_read(AUDENC_ANA_CON10);/* for 4-key more accuracy */
 			if ((reg_val & RG_MBIAS_OUTPUT_2V7) == RG_MBIAS_OUTPUT_2V7)
 				s_4_key_efuse_flag = 1;
+			#endif
 			#endif
 		} /* end HEADSET_MODE_6 */
 
@@ -1722,7 +1641,7 @@ void accdet_init_once(int init_flag)
 		 reg_val = pmic_pwrap_read(ACCDET_CON02);
 		 pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_EINT0_PWM_EN_B3|ACCDET_EINT0_PWM_IDLE_B11);
 		 /* pmic_pwrap_write(ACCDET_CON2, reg_val|ACCDET_EINT0_PWM_EN_B3); *//* discard */
-		 ACCDET_INFO("[accdet_init_once]-1[0x%x]=0x%x\n", ACCDET_CON02, pmic_pwrap_read(ACCDET_CON02));
+		 ACCDET_DEBUG("[accdet_init_once]-1_0[0x%x]=0x%x\n", ACCDET_CON02, pmic_pwrap_read(ACCDET_CON02));
 
 		 /* open top interrupt eint0 */
 		pmic_pwrap_write(AUD_TOP_INT_CON0_SET, RG_INT_EN_ACCDET_EINT0_B6);
@@ -1738,6 +1657,7 @@ void accdet_init_once(int init_flag)
 		reg_val = pmic_pwrap_read(ACCDET_CON02);
 		pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_EINT1_PWM_EN_B4|ACCDET_EINT1_PWM_IDLE_B12);
 		/* pmic_pwrap_write(ACCDET_CON2, reg_val|ACCDET_EINT1_PWM_EN_B4); *//* discard */
+		ACCDET_DEBUG("[accdet_init_once]-1_1[0x%x]=0x%x\n", ACCDET_CON02, pmic_pwrap_read(ACCDET_CON02));
 
 		/* open top interrupt eint1 */
 		pmic_pwrap_write(AUD_TOP_INT_CON0_SET, RG_INT_EN_ACCDET_EINT1_B7);
@@ -1756,6 +1676,7 @@ void accdet_init_once(int init_flag)
 		reg_val = pmic_pwrap_read(ACCDET_CON02);
 		pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_EINT_PWM_IDLE_B11_12|ACCDET_EINT_PWM_EN_B3_4);
 		/* pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_EINT_PWM_EN_B3_4); *//* discard */
+		ACCDET_DEBUG("[accdet_init_once]-1_2[0x%x]=0x%x\n", ACCDET_CON02, pmic_pwrap_read(ACCDET_CON02));
 
 		/* open top interrupt eint0 & eint1 */
 		pmic_pwrap_write(AUD_TOP_INT_CON0_SET, RG_INT_EN_ACCDET_EINT_B6_7);
@@ -1791,7 +1712,7 @@ static inline void accdet_init(void)
 	/* set and clear initial bit every eint interrutp */
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)|ACCDET_SEQ_INIT_EN_B1);
 	mdelay(2);/* 2ms */
-	ACCDET_INFO("[accdet_init][0x%x]=0x%x\n", ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01));
+	ACCDET_DEBUG("[accdet_init][0x%x]=0x%x\n", ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01));
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)&(~ACCDET_SEQ_INIT_EN_B1));
 	mdelay(1);
 
@@ -1981,6 +1902,10 @@ static int cat_register(char *buf)
 		REG_ACCDET_AD_CALI_0, pmic_pwrap_read(REG_ACCDET_AD_CALI_0),
 		REG_ACCDET_AD_CALI_1, pmic_pwrap_read(REG_ACCDET_AD_CALI_1),
 		REG_ACCDET_AD_CALI_2, pmic_pwrap_read(REG_ACCDET_AD_CALI_2));
+	strncat(buf, buf_temp, strlen(buf_temp));
+
+	sprintf(buf_temp, "efuse_offset=%d mV, cali_vol=%d mV\n",
+		g_accdet_auxadc_offset, Accdet_PMIC_IMM_GetOneChannelValue(1));
 	strncat(buf, buf_temp, strlen(buf_temp));
 
 	sprintf(buf_temp, "[accdet_dts]deb0=0x%x,deb1=0x%x,deb3=0x%x,deb4=0x%x\n",
