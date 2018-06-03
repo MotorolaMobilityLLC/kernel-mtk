@@ -917,17 +917,17 @@ u32 spm_vcorefs_get_MD_status(void)
 	return spm_read(MD2SPM_DVFS_CON);
 }
 
-static void spm_dvfsfw_init(void)
+static void spm_dvfsfw_init(int curr_opp, u32 channel)
 {
 	unsigned long flags;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, BOOT_UP_OPP, plat_channel_num);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, curr_opp, channel);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	spm_vcorefs_warn("DVFS_LEVEL: 0x%x, BOOT_UP_OPP: %u\n", spm_read(DVFS_LEVEL), BOOT_UP_OPP);
+	spm_vcorefs_warn("DVFS_LEVEL: 0x%x, curr_opp: %u, channel:%d\n", spm_read(DVFS_LEVEL), curr_opp, channel);
 }
 
 void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl)
@@ -1024,7 +1024,7 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	r = wait_spm_complete_by_condition(is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
 	if (r < 0) {
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		aee_kernel_warning("SPM Warring", "Vcore DVFS timeout warning");
+		/* aee_kernel_warning("SPM Warring", "Vcore DVFS timeout warning"); */
 		return -1;
 	}
 #endif
@@ -1044,7 +1044,7 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 
 	if (r < 0) {
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		aee_kernel_warning("SPM Warring", "Vcore DVFS timeout warning");
+		/* aee_kernel_warning("SPM Warring", "Vcore DVFS timeout warning"); */
 		return -1;
 	}
 #endif
@@ -1240,6 +1240,20 @@ dvfsrc_exit:
 	spm_vcorefs_warn("spm_dvfsrc_register_init: dvfsrc_base = %p\n", dvfsrc_base);
 }
 
+static void spm_check_status_before_dvfs(void)
+{
+	int flag;
+
+	if (spm_read(PCM_REG15_DATA) != 0x0)
+		return;
+
+	flag = spm_dvfs_flag_init();
+
+	spm_dvfsfw_init(spm_vcorefs_get_opp(), plat_channel_num);
+
+	spm_go_to_vcorefs(flag);
+}
+
 int spm_set_vcore_dvfs(struct kicker_config *krconf)
 {
 	unsigned long flags;
@@ -1248,6 +1262,8 @@ int spm_set_vcore_dvfs(struct kicker_config *krconf)
 	bool fix = (((1U << krconf->kicker) & autok_kir_group) || krconf->kicker == KIR_SYSFSX) &&
 									krconf->opp != OPP_UNREQ;
 	int opp = fix ? krconf->opp : krconf->dvfs_opp;
+
+	spm_check_status_before_dvfs();
 
 	spm_vcorefs_footprint(SPM_VCOREFS_ENTER);
 
@@ -1319,8 +1335,8 @@ void spm_vcorefs_init(void)
 	if (is_vcorefs_feature_enable()) {
 		flag = spm_dvfs_flag_init();
 		vcorefs_init_opp_table();
-		spm_dvfsfw_init(); /* kernel/ATF */
-		spm_go_to_vcorefs(flag); /* kernel/ATF */
+		spm_dvfsfw_init(BOOT_UP_OPP, plat_channel_num);
+		spm_go_to_vcorefs(flag);
 		dvfsrc_init();
 		vcorefs_late_init_dvfs();
 		spm_vcorefs_warn("[%s] DONE\n", __func__);
