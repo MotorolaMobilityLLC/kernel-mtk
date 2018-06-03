@@ -562,7 +562,7 @@ static int maghub_probe(struct platform_device *pdev)
 create_attr_failed:
 	maghub_delete_attr(&(maghub_init_info.platform_diver_addr->driver));
 exit_misc_device_register_failed:
-	misc_deregister(&maghub_misc_device);
+	mag_factory_device_deregister(&maghub_factory_device);
 exit_kfree:
 	kfree(data);
 exit:

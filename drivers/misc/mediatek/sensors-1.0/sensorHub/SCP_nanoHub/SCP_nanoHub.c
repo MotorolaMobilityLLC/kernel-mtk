@@ -225,11 +225,11 @@ static int ipi_txrx_bufs(struct ipi_transfer *t)
 	hw->context = &hw->done;
 	do {
 		status = scp_ipi_send(IPI_SENSOR, (unsigned char *)hw->tx, hw->len, 0, SCP_A_ID);
-		if (status == ERROR) {
+		if (status == SCP_IPI_ERROR) {
 			SCP_PR_ERR("scp_ipi_send fail\n");
 			return -1;
 		}
-		if (status == BUSY) {
+		if (status == SCP_IPI_BUSY) {
 			if (retry++ == 1000) {
 				SCP_PR_ERR("retry fail\n");
 				return -1;
@@ -237,7 +237,7 @@ static int ipi_txrx_bufs(struct ipi_transfer *t)
 			if (retry % 100 == 0)
 				usleep_range(1000, 2000);
 		}
-	} while (status == BUSY);
+	} while (status == SCP_IPI_BUSY);
 
 	if (retry >= 100)
 		SCP_PR_ERR("retry time:%d\n", retry);
