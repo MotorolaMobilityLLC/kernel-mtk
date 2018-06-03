@@ -10037,7 +10037,7 @@ static int idle_balance(struct rq *this_rq)
 	rcu_read_unlock();
 
 	if (this_rq->online) {
-		if (!pulled_task)
+		if (should_hmp(this_cpu) && !pulled_task)
 			pulled_task = hmp_idle_pull(this_cpu);
 	}
 
