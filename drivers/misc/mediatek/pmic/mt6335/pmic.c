@@ -144,7 +144,6 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		pr_err("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
-		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
