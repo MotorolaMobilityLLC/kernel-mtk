@@ -40,11 +40,6 @@ int mtk_spm_init(void);
 void *mt_spm_base_get(void);
 extern int spm_load_firmware_status(void);
 
-/********************************************************************
- * Set pending bit for edge trigger irqs (caller: cpuidle driver)
- *******************************************************************/
-void mtk_spm_wakeup_src_restore(void);
-
 
 /********************************************************************
  * sspm lock spm scenario
