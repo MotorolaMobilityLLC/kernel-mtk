@@ -284,6 +284,7 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		loading_cnt++;
 
 		if ((cm_mgr_abs_load < light_load_cps) && (vcore_dram_opp_cur == CM_MGR_EMI_OPP)) {
+			cps_valid = 0;
 			cm_mgr_update_met();
 			spin_unlock(&cm_mgr_lock);
 			return;
