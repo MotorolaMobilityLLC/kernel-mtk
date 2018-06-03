@@ -297,9 +297,9 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 	else if (event->flush_action == DATA_ACTION)
 		err = mag_data_report(&data);
 	else if (event->flush_action == BIAS_ACTION) {
-		data.x = event->magnetic_t.x;
-		data.y = event->magnetic_t.y;
-		data.z = event->magnetic_t.z;
+		data.x = event->magnetic_t.x_bias;
+		data.y = event->magnetic_t.y_bias;
+		data.z = event->magnetic_t.z_bias;
 		err = mag_bias_report(&data);
 	}
 	return err;
