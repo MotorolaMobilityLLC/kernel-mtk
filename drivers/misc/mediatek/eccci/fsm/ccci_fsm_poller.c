@@ -78,6 +78,7 @@ static int fsm_poll_main(void *data)
 			poller_ctl->poller_state == FSM_POLLER_RECEIVED_RESPONSE, POLLING_TIMEOUT * HZ);
 		CCCI_NORMAL_LOG(poller_ctl->md_id, FSM, "poll MD status wait done %d\n", ret);
 		if (!ret) { /* timeout */
+			md_state = ccci_fsm_get_md_state(poller_ctl->md_id);
 			if (md_state == READY) {
 				CCCI_ERROR_LOG(poller_ctl->md_id, FSM, "poll MD status timeout, force assert\n");
 				assert_md_type = fsm_get_no_response_assert_type(poller_ctl);
