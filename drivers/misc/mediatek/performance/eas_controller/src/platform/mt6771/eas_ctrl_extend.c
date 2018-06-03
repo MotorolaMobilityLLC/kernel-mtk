@@ -29,8 +29,6 @@
 #include <linux/trace_events.h>
 #endif
 
-static struct notifier_block fpsgo_lcmoff_fb_notifier;
-
 static void walt_mode(int enable)
 {
 #ifdef CONFIG_SCHED_WALT
@@ -65,22 +63,6 @@ static inline void eas_ctrl_extend_kernel_trace_end(void)
 }
 #endif
 
-void fpsgo_cond(int cond_check)
-{
-	switch (cond_check) {
-	case 0:
-		pr_debug("fpsgo_lcm_off\n");
-		fpsgo_switch_enable(0);
-		break;
-	case 1:
-		pr_debug("fpsgo_lcm_on\n");
-		fpsgo_switch_enable(1);
-		break;
-	default:
-		break;
-	}
-}
-
 void ext_launch_start(void)
 {
 	pr_debug("ext_launch_start\n");
@@ -110,47 +92,7 @@ void ext_launch_end(void)
 #endif
 }
 
-static int fpsgo_lcmoff_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
-{
-	struct fb_event *evdata = data;
-	int blank;
-
-	if (!evdata) {
-		pr_info("evdata is NULL!!\n");
-		return 0;
-	}
-
-	blank = *(int *)evdata->data;
-	pr_info("@%s: blank = %d, event = %lu\n", __func__, blank, event);
-	/* skip if it's not a blank event */
-	if (event != FB_EVENT_BLANK)
-		return 0;
-	switch (blank) {
-	/* LCM ON */
-	case FB_BLANK_UNBLANK:
-		fpsgo_cond(1);
-		break;
-	/* LCM OFF */
-	case FB_BLANK_POWERDOWN:
-		fpsgo_cond(0);
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
-
 void eas_ctrl_extend_notify_init(void)
 {
-	int ret;
-
-	fpsgo_lcmoff_fb_notifier = (struct notifier_block){
-		.notifier_call = fpsgo_lcmoff_fb_notifier_callback,
-	};
-
-	ret = fb_register_client(&fpsgo_lcmoff_fb_notifier);
-	if (ret)
-		pr_info("@%s: lcmoff policy register FB client failed!\n", __func__);
-
 	pr_debug("eas_ctl_extend_notify_init\n");
 }
