@@ -29,6 +29,9 @@
 /* MBOX: AP read, SSPM write */
 #define MCDI_MBOX_CPU_CLUSTER_PWR_STAT          7
 #define MCDI_MBOX_ACTION_STAT                   8
+#define MCDI_MBOX_CLUSTER_0_CNT                 9
+#define MCDI_MBOX_CLUSTER_1_CNT                 10
+#define MCDI_MBOX_CLUSTER_2_CNT                 11
 
 /* MCDI_MBOX_ACTION_STAT */
 #define MCDI_ACTION_INIT                        0
