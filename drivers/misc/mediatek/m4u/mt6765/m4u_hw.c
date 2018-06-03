@@ -1810,12 +1810,10 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 		m4u_port = m4u_get_port_by_tf_id(m4u_index, regval);
 
 		/* dump something quickly */
-		dump_pgd_info(fault_mva);
 		///m4u_dump_rs_info(m4u_index, slave_id);
 		m4u_dump_invalid_main_tlb(m4u_index, m4u_slave_id);
-		m4u_dump_reg(m4u_index, 0);
-		///m4u_dump_reg(m4u_index, 0x900);
-		///m4u_dump_main_tlb(m4u_index, 0);
+		/* m4u_dump_reg(m4u_index, 0x860); */
+		/* m4u_dump_main_tlb(m4u_index, 0); */
 		/* m4u_dump_pfh_tlb(m4u_index); */
 
 		if (IntrSrc & F_INT_TRANSLATION_FAULT(m4u_slave_id)) {
