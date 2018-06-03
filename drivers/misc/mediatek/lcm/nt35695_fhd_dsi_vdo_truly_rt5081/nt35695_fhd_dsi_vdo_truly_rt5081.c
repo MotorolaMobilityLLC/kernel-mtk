@@ -107,9 +107,9 @@ struct LCM_setting_table {
 static struct LCM_setting_table lcm_suspend_setting[] = {
 	{0x28, 0, {} },
 	{0x10, 0, {} },
-	{REGFLAG_DELAY, 120, {} },
+	{REGFLAG_DELAY, 80, {} },
 	{0x4F, 1, {0x01} },
-	{REGFLAG_DELAY, 120, {} }
+	{REGFLAG_DELAY, 80, {} }
 };
 
 static struct LCM_setting_table init_setting[] = {
@@ -1378,7 +1378,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.horizontal_backporch = 20;
 	params->dsi.horizontal_frontporch = 40;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.ssc_disable  = 1;
+	params->dsi.ssc_disable  = 0;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 420;

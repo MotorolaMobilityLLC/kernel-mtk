@@ -166,7 +166,7 @@ int ovl_start(enum DISP_MODULE_ENUM module, void *handle)
 			   ovl_base + DISP_REG_OVL_EN, 0x1);
 
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_INTEN,
-		     0x1E | REG_FLD_VAL(INTEN_FLD_ABNORMAL_SOF, 1) |
+		     0x1E0 | REG_FLD_VAL(INTEN_FLD_ABNORMAL_SOF, 1) |
 		     REG_FLD_VAL(INTEN_FLD_START_INTEN, 1));
 #if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || \
 	defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \

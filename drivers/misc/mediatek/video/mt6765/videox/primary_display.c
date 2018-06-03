@@ -230,7 +230,7 @@ void _primary_path_unlock(const char *caller)
 
 	mutex_time_end = sched_clock();
 	mutex_time_period = mutex_time_end - mutex_time_start;
-	if (mutex_time_period > 100000000) {
+	if (mutex_time_period > 300000000) {
 		DISPCHECK("mutex_release_timeout1 <%lld ns>\n",
 			mutex_time_period);
 		dump_stack();
@@ -240,8 +240,8 @@ void _primary_path_unlock(const char *caller)
 
 	mutex_time_end1 = sched_clock();
 	mutex_time_period1 = mutex_time_end1 - mutex_time_start;
-	if ((mutex_time_period < 100000000 && mutex_time_period1 > 100000000) ||
-	   (mutex_time_period < 100000000 && mutex_time_period1 < 0)) {
+	if ((mutex_time_period < 300000000 && mutex_time_period1 > 300000000) ||
+	   (mutex_time_period < 300000000 && mutex_time_period1 < 0)) {
 		DISPCHECK("mutex_release_timeout2 <%lld ns>,<%lld ns>\n",
 			mutex_time_period1, mutex_time_period);
 		dump_stack();
