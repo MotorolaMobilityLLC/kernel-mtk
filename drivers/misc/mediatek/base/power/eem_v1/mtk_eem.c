@@ -292,11 +292,13 @@ static void mt_eem_enable_big_cluster(unsigned int enable)
 /* enable mtcmos for GPU ptp detector */
 static void mt_eem_enable_mtcmos(int enable)
 {
+
 	if ((enable == 1) || (enable == 0)) {
 		spm_mtcmos_ctrl_mfg1(enable);
 		spm_mtcmos_ctrl_mfg2(enable);
-		eem_debug("eem_enable_mtcmos_mfg %d\n", enable);
+		eem_error("eem_enable_mtcmos_mfg %d\n", enable);
 	}
+
 }
 /*============================================================
  * function declarations of EEM detectors
@@ -444,10 +446,10 @@ void base_ops_disable_locked(struct eem_det *det, int reason)
 		break;
 
 	default:
-		eem_debug("det->disabled=%x", det->disabled);
+		eem_debug("det->disabled=%x\n", det->disabled);
 		det->disabled &= ~BY_PROCFS;
 		det->disabled &= ~BY_PROCFS_INIT2;
-		eem_debug("det->disabled=%x", det->disabled);
+		eem_debug("det->disabled=%x\n", det->disabled);
 		eem_set_eem_volt(det);
 		break;
 	}
@@ -714,6 +716,10 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		det->VMIN = 0x10;
 	#endif
 
+	#if 1 /*fake*/
+		det->VMAX = 0xFE;
+	#endif
+
 	eem_write(EEM_LIMITVALS,
 		  ((det->VMAX << 24) & 0xff000000)	|
 		  ((det->VMIN << 16) & 0xff0000)	|
@@ -727,10 +733,12 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 	/* eem ctrl choose thermal sensors */
 	switch (det->ctrl_id) {
 	case EEM_CTRL_BIG:
+		#if 0
 		eem_error("[SET_PHASE]big: EEM_FREQPCT30 = 0x%08X, EEM_FREQPCT74 = 0X%08X\n",
 					eem_read(EEM_FREQPCT30), eem_read(EEM_FREQPCT74));
 		eem_error("[SET_PHASE]big: EEM_VBOOT = 0x%08X, EEMCORESEL = 0x%08X\n",
 					eem_read(EEM_VBOOT), eem_read(EEMCORESEL));
+		#endif
 		eem_write(EEM_CTL0, (0x1 | (0 << 16)));
 		break;
 	case EEM_CTRL_CCI:
@@ -741,6 +749,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 					eem_read(EEM_FREQPCT30), eem_read(EEM_FREQPCT74));
 		eem_error("[SET_PHASE]gpu: EEM_VBOOT = 0x%08X, EEMCORESEL = 0x%08X\n",
 					eem_read(EEM_VBOOT), eem_read(EEMCORESEL));
+
 		eem_write(EEM_CTL0, (0x1 | (5 << 16)));
 		break;
 	case EEM_CTRL_2L:
@@ -750,13 +759,13 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		eem_write(EEM_CTL0, (0x1 | (1 << 16)));
 		break;
 	case EEM_CTRL_SOC:
+		#if 0
 		eem_error("[SET_PHASE]soc: EEM_FREQPCT30 = 0x%08X, EEM_FREQPCT74 = 0X%08X\n",
 					eem_read(EEM_FREQPCT30), eem_read(EEM_FREQPCT74));
 		eem_error("[SET_PHASE]soc: EEM_VBOOT = 0x%08X, EEMCORESEL = 0x%08X\n",
 					eem_read(EEM_VBOOT), eem_read(EEMCORESEL));
+		#endif
 		eem_write(EEM_CTL0, (0x3 | (6 << 20) | (8 << 16)));
-		/* eem_write(EEM_CTL0, (0x7 | (1 << 24) | (0 << 20) | (4 << 16))); */
-		eem_debug("set EEM_CTL0 to 0x%08X\n", eem_read(EEM_CTL0));
 		break;
 	default:
 		eem_error("unknown ctrl try to set therm sensors\n");
@@ -956,6 +965,10 @@ static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 		if (det->ctrl_id == EEM_CTRL_SOC)
 			continue;
 
+		/* get rid of redundent banks */
+		if (det->features == 0)
+			continue;
+
 		eem_error("Timer Bk=%d (%d)(%d, %d, %d, %d, %d, %d, %d, %d)(0x%x)\n",
 			det->ctrl_id,
 			det->ops->get_temp(det),
@@ -1051,6 +1064,7 @@ static int eem_volt_thread_handler(void *data)
 				break;
 			}
 		#endif
+
 		det->ops->set_volt(det);
 		eem_error("B=%d,T=%d,DC=%x,V30=%x,F30=%x,sts=%x,250=%x\n",
 		det->ctrl_id,
@@ -2097,7 +2111,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 			}
 		} /* if (NR_FREQ > 8) */
 	for (i = 0; i < NR_FREQ; i++) {
-		#if defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING) /* I-Chang */
+		#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING) /* I-Chang */
 		switch (det->ctrl_id) {
 		case EEM_CTRL_BIG:
 			if (i < 8) {
@@ -3794,6 +3808,9 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 		if (newVolt > 10)
 			newVolt = newVolt / 10;
 
+		if (index >= VCORE_NR_FREQ)
+			goto out;
+
 		ret = mt_eem_update_vcore_volt(index, newVolt);
 		if (ret == 1) {
 			ret = -EINVAL;
@@ -3957,6 +3974,7 @@ static int create_procfs(void)
 
 	struct pentry det_entries_vcore[] = {
 		PROC_ENTRY(eem_vcore_volt),
+		/* PROC_ENTRY(eem_debug), */
 	};
 
 	struct pentry det_entries[] = {
@@ -4021,6 +4039,9 @@ static int create_procfs(void)
 
 		for_each_det(det) {
 			if (det->ctrl_id == EEM_CTRL_SOC)
+				continue;
+
+			if (det->features == 0)
 				continue;
 
 			det_dir = proc_mkdir(det->name, eem_dir);
@@ -4203,16 +4224,19 @@ static unsigned int  mt_eem_update_vcore_volt(unsigned int index, unsigned int n
 	else
 		ret = 1;
 	#else
-	if ((index < VCORE_NR_FREQ) && (index >= 0))
+	if ((index < VCORE_NR_FREQ) && (index >= 0)) {
 		eem_vcore[index] = volt_pmic;
+		eem_debug("update volt: new Volt: %d --> eem_vcore[%d] = 0x%x\n",
+				newVolt, index, eem_vcore[index]);
+	} else {
+		/* index illegal */
+		ret = 1;
+	}
 	#endif
 
 	#ifndef EARLY_PORTING_VCORE
 	ret = spm_vcorefs_pwarp_cmd();
 	#endif
-
-	eem_debug("update volt: new Volt: %d --> eem_vcore[%d] = 0x%x\n",
-				newVolt, index, eem_vcore[index]);
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 	return ret;
