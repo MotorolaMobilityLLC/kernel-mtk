@@ -79,3 +79,12 @@ config SWCHR_POWER_PATH
 	  used to representing voltage of system
 	  or battery.
 
+config CHARGER_RT9465
+	bool "Charger Driver for Richtek RT9465 Charger IC"
+	default n
+	depends on MTK_CHARGER
+	help
+	  Say Yes to enable Richtek RT9465 driver.
+	  It is mainly used as slave IC for dual charger
+	  application.
+	  It depends on config MTK_CHARGER.
