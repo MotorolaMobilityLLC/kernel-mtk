@@ -1739,9 +1739,6 @@ void fpsgo_base2fbt_node_init(struct render_info *obj)
 	if (!obj)
 		return;
 
-	if (!fbt_is_enable())
-		return;
-
 	boost = &(obj->boost_info);
 	boost->sf_bound = sf_bound_min;
 	boost->fstb_target_fps = TARGET_UNLIMITED_FPS;

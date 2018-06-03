@@ -505,7 +505,7 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 
 	fpsgo_render_tree_lock(__func__);
 
-	f_render = fpsgo_search_and_add_render_info(pid, 0);
+	f_render = fpsgo_search_and_add_render_info(pid, 1);
 
 	if (!f_render) {
 		fpsgo_render_tree_unlock(__func__);
