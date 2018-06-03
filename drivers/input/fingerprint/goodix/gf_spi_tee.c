@@ -287,6 +287,18 @@ static void gf_hw_power_enable(struct gf_device *gf_dev, u8 onoff)
 		/* TODO:  set power  according to actual situation  */
 		/* hwPowerOn(MT6331_POWER_LDO_VIBR, VOL_2800, "fingerprint"); */
 		enable = 0;
+
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+	gf_debug(INFO_LOG, "%s line:%d\n", __func__, __LINE__);
+
+	if (gf_rst_mt6306_support == 1) {
+		mt6306_set_gpio_out(gf_rst_mt6306_gpionum, MT6306_GPIO_OUT_LOW);
+		mdelay(15);
+		mt6306_set_gpio_out(gf_rst_mt6306_gpionum, MT6306_GPIO_OUT_HIGH);
+		return;
+	}
+#endif
+
 		#ifdef CONFIG_OF
 		pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_low);
 		mdelay(15);
@@ -343,6 +355,13 @@ static void gf_irq_gpio_cfg(struct gf_device *gf_dev)
 
 static void gf_reset_gpio_cfg(struct gf_device *gf_dev)
 {
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+	if (gf_rst_mt6306_support == 1) {
+		mt6306_set_gpio_out(gf_rst_mt6306_gpionum, MT6306_GPIO_OUT_HIGH);
+		return;
+	}
+#endif
+
 #ifdef CONFIG_OF
 	pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->pins_reset_high);
 #endif
@@ -1679,7 +1698,7 @@ static int gf_probe(struct spi_device *spi)
 
 #ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 	if (gf_rst_mt6306_support == 1 && gf_rst_mt6306_gpionum != -1)
-		mt6306_set_gpio_dir(gf_rst_mt6306_gpionum, MT6306_GPIO_DIR_IN);
+		mt6306_set_gpio_dir(gf_rst_mt6306_gpionum, MT6306_GPIO_DIR_OUT);
 
 	if (gf_rst_mt6306_support == 1 && gf_rst_mt6306_gpionum == -1)
 		goto err_class;
