@@ -68,5 +68,5 @@ extern unsigned long teei_config_flag;
 extern void tz_free_shared_mem(void *addr, size_t size);
 extern void *tz_malloc_shared_mem(size_t size, int flags);
 extern int get_current_cpuid(void);
-extern int add_nq_entry(unsigned char *command_buff, int command_length, int valid_flag);
-extern int add_work_entry(int work_type, unsigned long buff);
+extern int add_nq_entry(unsigned int command_buff, int command_length, int valid_flag);
+extern int add_work_entry(int work_type, unsigned char *buff);

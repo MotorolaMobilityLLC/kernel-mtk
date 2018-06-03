@@ -112,8 +112,9 @@
 #define N_SWITCH_CORE \
                 MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
 #define N_GET_NON_IRQ_NUM      \
-                MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
-
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
+#define N_GET_SE_OS_STATE     \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 10)
 
 /*For nt side Standard Call*/
 #define NT_SCHED_T              \
@@ -134,6 +135,10 @@
                 MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 7)
 #define NT_SCHED_T_FIQ  \
                 MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 8)
+#ifdef TUI_SUPPORT
+#define NT_CANCEL_T_TUI	\
+				MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 9)
+#endif
 
 /*For nt side Fast Call*/
 #define N_SWITCH_TO_T_OS_STAGE2_32      \
@@ -164,6 +169,8 @@
         MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
 #define N_GET_NON_IRQ_NUM_32      \
         MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
+#define N_GET_SE_OS_STATE_32     \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 10)
 
 
 /*For nt side Standard Call*/
@@ -185,11 +192,17 @@
         MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 7)
 #define NT_SCHED_T_FIQ_32       \
         MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 8)
+		#ifdef TUI_SUPPORT
+#define NT_CANCEL_T_TUI_32	\
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 9)
+#endif
 
 
 /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
 #ifdef CONFIG_ARM64
 /*  ==================  NT FAST CALL ================   */
+
+
 static inline void n_init_t_boot_stage1(
         uint64_t p0,
         uint64_t p1,
@@ -198,7 +211,7 @@ static inline void n_init_t_boot_stage1(
 	uint64_t temp[3];
 	temp[0] = p0;
 	temp[1] = p1;
-	temp[2] = *p2;
+//	temp[2] = p2;
 
 	__asm__ volatile(
 	        /* ".arch_extension sec\n" */
@@ -584,12 +597,69 @@ static inline void nt_get_non_irq_num (uint64_t *p0)
 
 
 
+static inline void nt_get_secure_os_state (uint64_t *p0)
+{
+	uint64_t temp[3];
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"smc 0\n\t"
+	"str x1, [%[temp], #0]\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (N_GET_SE_OS_STATE), [temp] "r" (temp)
+	: "x0", "x1", "memory");
+	*p0 = temp[0];
+}
 
-/* ///////////////////////////////////////////////////////////////////////////////////////////////////////////// */
+/*
+* SMC CALL FUNC : NT_DUMP_T
+* Here will be use for manual dump from Ns world.
+*/
+static inline void nt_dump_t(void)
+{
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"mov x1, #0x9527\n\t"
+	"mov x2, #0\n\t"
+	"mov x3, #0\n\t"
+	"smc 0\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (NT_SCHED_T)
+	: "x0", "x1", "x2", "x3", "memory");
+}
+
+#ifdef TUI_SUPPORT
+static inline void nt_cancel_t_tui(
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
+{
+	uint64_t temp[3];
+	temp[0] = *p0;
+	temp[1] = p1;
+	temp[2] = p2;
+
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"ldr x1, [%[temp], #0]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
+	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (NT_CANCEL_T_TUI), [temp] "r" (temp)
+	: "x0", "x1", "x2", "x3", "memory");
+	*p0 = temp[0];
+}
+#endif
 
 
 #else
-
 static inline void smc_out(uint32_t id,
                            uint32_t p0,
                            uint32_t p1,
@@ -658,6 +728,38 @@ static inline void smc_in(
 
 }
 
+static inline void smc_inout(uint32_t id,
+		uint32_t p0,
+		uint32_t p1,
+		uint32_t p2,
+		uint32_t *ret)
+{
+	uint32_t fun_id = (uint32_t)id;
+	uint32_t temp[3];
+
+	temp[0] = p0;
+	temp[1] = p1;
+	temp[2] = p2;
+
+
+	__asm__ volatile(
+			".arch_extension sec\n"
+			"mov r0, %[fun_id]\n\t"
+			"ldr r1, [%[temp], #0]\n\t"
+			"ldr r2, [%[temp], #4]\n\t"
+			"ldr r3, [%[temp], #8]\n\t"
+			"smc 0\n\t"
+			"nop\n\t"
+			"nop\n\t"
+			"nop\n\t"
+			"str r2, [%[temp]]\n\t"
+			"nop"
+			: :
+			[fun_id] "r" (fun_id), [temp] "r" (temp)
+			: "r0", "r1", "r2", "r3",  "memory");
+			*ret = temp[0];
+
+}
 
 
 /*  ==================  NT FAST CALL ================   */
@@ -810,6 +912,26 @@ static inline void nt_get_non_irq_num(uint32_t *p0)
 	smc_in(N_GET_NON_IRQ_NUM_32, &rtc1, p0, &rtc2, &rtc3);
 }
 
+/*
+* SMC CALL FUNC : NT_DUMP_T
+* Here will be use for manual dump from Ns world.
+*/
+
+static inline void nt_dump_t(void)
+{
+	smc_out(NT_SCHED_T_32, 0x9527, 0, 0);
+}
+
+
+#ifdef TUI_SUPPORT
+static inline void nt_cancel_t_tui(
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
+{
+	smc_inout(NT_CANCEL_T_TUI_32,*p0,p1,p2,p0);
+}
+#endif
 
 #endif
 #endif /* SMC_CALL_H_ */

@@ -27,7 +27,7 @@
 #include<linux/semaphore.h>
 #include<linux/slab.h>
 #include"TEEI.h"
-#include "../tz_driver/include/teei_id.h"
+#include"teei_id.h"
 
 #define VFS_SIZE        0x80000
 #define MEM_CLEAR       0x1
@@ -43,6 +43,7 @@
 static int vfs_major = VFS_MAJOR;
 static struct class *driver_class;
 static dev_t devno;
+int enter_tui_flag = 0;
 
 struct vfs_dev {
 	struct cdev cdev;
@@ -52,7 +53,7 @@ struct vfs_dev {
 
 extern struct completion global_down_lock;
 
-#ifdef MICROTRUST_TUI_DRIVER
+#ifdef CONFIG_MICROTRUST_TUI_DRIVER
 extern int display_enter_tui(void);
 extern int display_exit_tui(void);
 extern int primary_display_trigger(int blocking, void *callback, int need_merge);
@@ -61,8 +62,9 @@ extern void mt_deint_restore(void);
 extern int tui_i2c_enable_clock(void);
 extern int tui_i2c_disable_clock(void);
 #endif
+#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
 extern int tz_sec_drv_notification(unsigned int driver_id);
-
+#endif
 #ifdef VFS_RDWR_SEM
 struct semaphore VFS_rd_sem;
 EXPORT_SYMBOL_GPL(VFS_rd_sem);
@@ -105,12 +107,15 @@ static long tz_vfs_ioctl(struct file *filp,
                          unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
+#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
 	unsigned int drm_driver_id;
+#endif
 
 	switch (cmd) {
 #ifdef MICROTRUST_TUI_DRIVER
 		case SOTER_TUI_ENTER:
 			pr_debug("***************SOTER_TUI_ENTER\n");
+		enter_tui_flag = 1;
 			ret = tui_i2c_enable_clock();
 			if (ret)
 				pr_err("tui_i2c_enable_clock failed!!\n");
@@ -136,9 +141,10 @@ static long tz_vfs_ioctl(struct file *filp,
 			if (ret)
 				pr_err("display_exit_tui failed!!\n");
 			/* primary_display_trigger(0, NULL, 0); */
-
+		enter_tui_flag = 0;
 			break;
 #endif
+#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
 		case TEEI_VFS_NOTIFY_DRM:
 			pr_debug("***************TEEI_VFS_NOTIFY_DRM\n");
 			if (copy_from_user((void *)&drm_driver_id, (void *)arg, sizeof(unsigned int)))
@@ -151,6 +157,7 @@ static long tz_vfs_ioctl(struct file *filp,
 			if (copy_to_user((void *)arg, (void *)&ret, sizeof(unsigned int)))
 				return -EFAULT;
 			break;
+#endif
 		default:
 			return -EINVAL;
 	}

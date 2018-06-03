@@ -65,6 +65,6 @@ struct utgate_log_head {
  *********************************************/
 static struct tlog_struct tlog_ent[TLOG_MAX_CNT];
 extern unsigned long tlog_message_buff;
-extern struct work_queue *secure_wq;
+extern struct workqueue_struct *secure_wq;
 extern int irq_call_flag;
 extern struct semaphore smc_lock;

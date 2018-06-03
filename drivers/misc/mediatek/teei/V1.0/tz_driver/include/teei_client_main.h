@@ -15,11 +15,14 @@
 #ifndef __TEEI_CLIENT_MAIN_H__
 #define __TEEI_CLIENT_MAIN_H__
 
+#include "teei_smc_struct.h"
+
 #define TLOG_SIZE       (256 * 1024)
+extern struct semaphore api_lock;
+extern struct semaphore fp_api_lock;
+extern struct semaphore keymaster_api_lock;
 
-#define MICROTRUST_DRM_SUPPORT
-
-#ifdef MICROTRUST_DRM_SUPPORT
+#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
 
 #define TOTAL_DRM_DRIVER_NUM (8)
 enum drm_dcih_buf_mode {
@@ -41,11 +44,17 @@ struct drm_dcih_info {
 };
 #endif
 
+
 extern int create_nq_buffer(void);
 extern unsigned long create_fp_fdrv(int buff_size);
 extern unsigned long create_keymaster_fdrv(int buff_size);
 extern unsigned long create_gatekeeper_fdrv(int buff_size);
 extern unsigned long create_cancel_fdrv(int buff_size);
+#ifdef TUI_SUPPORT
+unsigned long create_tui_buff(int buff_size,unsigned int fdrv_type);
+int wait_for_power_down(void);
+int tui_notify_reboot(struct notifier_block* this,unsigned long code,void *x);
+#endif
 extern long init_all_service_handlers(void);
 extern int register_sched_irq_handler(void);
 extern int register_soter_irq_handler(int irq);
@@ -94,20 +103,30 @@ extern void init_tlog_entry(void);
 extern int global_fn(void);
 
 extern long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
-extern int add_work_entry(int work_type, unsigned long buff);
+extern int add_work_entry(int work_type, unsigned char *buff);
 extern long create_utgate_log_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
 extern void init_sched_work_ent(void);
 extern void *__teei_client_map_mem(int dev_file_id, unsigned long size, unsigned long user_addr);
 extern long __teei_client_open_dev(void);
 
 struct semaphore api_lock;
+#ifdef TUI_SUPPORT
+struct semaphore tui_notify_sema;
+#endif
 extern unsigned long fp_buff_addr;
 extern unsigned long cancel_message_buff;
 extern unsigned long keymaster_buff_addr;
 extern unsigned long gatekeeper_buff_addr;
 
-struct work_queue *secure_wq;
-struct work_queue *bdrv_wq;
+extern struct semaphore fp_api_lock;
+extern struct semaphore keymaster_api_lock;
+
+#ifdef TUI_SUPPORT
+extern unsigned long tui_display_message_buff;
+extern unsigned long tui_notice_message_buff;
+#endif
+struct workqueue_struct *secure_wq;
+struct workqueue_struct *bdrv_wq;
 
 unsigned long fdrv_message_buff;
 unsigned long bdrv_message_buff;

@@ -186,7 +186,32 @@ static void rpmb_cmd_set(struct rpmb_cmd *cmd, u32 flags,
 	cmd->frames = frames;
 	cmd->nframes = nframes;
 }
-
+#ifdef RPMB_DEBUG
+static void rpmb_dump_frame(u8 *data_frame)
+{
+	pr_err("mac, frame[196] = 0x%x\n", data_frame[196]);
+	pr_err("mac, frame[197] = 0x%x\n", data_frame[197]);
+	pr_err("mac, frame[198] = 0x%x\n", data_frame[198]);
+	pr_err("data,frame[228] = 0x%x\n", data_frame[228]);
+	pr_err("data,frame[229] = 0x%x\n", data_frame[229]);
+	pr_err("nonce, frame[484] = 0x%x\n", data_frame[484]);
+	pr_err("nonce, frame[485] = 0x%x\n", data_frame[485]);
+	pr_err("nonce, frame[486] = 0x%x\n", data_frame[486]);
+	pr_err("nonce, frame[487] = 0x%x\n", data_frame[487]);
+	pr_err("wc, frame[500] = 0x%x\n", data_frame[500]);
+	pr_err("wc, frame[501] = 0x%x\n", data_frame[501]);
+	pr_err("wc, frame[502] = 0x%x\n", data_frame[502]);
+	pr_err("wc, frame[503] = 0x%x\n", data_frame[503]);
+	pr_err("addr, frame[504] = 0x%x\n", data_frame[504]);
+	pr_err("addr, frame[505] = 0x%x\n", data_frame[505]);
+	pr_err("blkcnt,frame[506] = 0x%x\n", data_frame[506]);
+	pr_err("blkcnt,frame[507] = 0x%x\n", data_frame[507]);
+	pr_err("result, frame[508] = 0x%x\n", data_frame[508]);
+	pr_err("result, frame[509] = 0x%x\n", data_frame[509]);
+	pr_err("type, frame[510] = 0x%x\n", data_frame[510]);
+	pr_err("type, frame[511] = 0x%x\n", data_frame[511]);
+}
+#endif
 /**
  * rpmb_cmd_req - send rpmb request command
  *
@@ -218,7 +243,9 @@ int rpmb_cmd_req(struct rpmb_dev *rdev, struct rpmb_data *rpmbd)
 
 	if (!rdev->ops || !rdev->ops->cmd_seq)
 		return -EOPNOTSUPP;
-
+#ifdef RPMB_DEBUG
+	rpmb_dump_frame((u8 *)(rpmbd->icmd.frames));
+#endif
 	cnt_in = rpmbd->icmd.nframes;
 	cnt_out = rpmbd->ocmd.nframes;
 	type = rpmbd->req_type;
@@ -256,7 +283,9 @@ int rpmb_cmd_req(struct rpmb_dev *rdev, struct rpmb_data *rpmbd)
 	mutex_lock(&rdev->lock);
 	ret = rdev->ops->cmd_seq(rdev->dev.parent, cmd, ncmds);
 	mutex_unlock(&rdev->lock);
-
+#ifdef RPMB_DEBUG
+	rpmb_dump_frame((u8 *)(rpmbd->ocmd.frames));
+#endif
 	return ret;
 }
 EXPORT_SYMBOL_GPL(rpmb_cmd_req);

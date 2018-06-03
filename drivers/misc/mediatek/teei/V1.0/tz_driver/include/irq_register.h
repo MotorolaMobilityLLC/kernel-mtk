@@ -68,7 +68,7 @@ extern struct service_handler vfs_handler;
 extern struct service_handler printer_driver;
 
 extern unsigned long forward_call_flag;
-extern unsigned long soter_error_flag;
+extern unsigned int soter_error_flag;
 extern struct semaphore smc_lock;
 extern struct completion global_down_lock;
 extern unsigned long teei_config_flag;
@@ -84,5 +84,8 @@ extern int fp_call_flag;
 extern int keymaster_call_flag;
 static struct work_entry work_ent;
 static struct work_entry sched_work_ent[SCHED_ENT_CNT];
-extern struct work_queue *secure_wq;
-extern struct work_queue *bdrv_wq;
+extern struct workqueue_struct *secure_wq;
+extern struct workqueue_struct *bdrv_wq;
+#ifdef TUI_SUPPORT
+extern struct semaphore tui_notify_sema;
+#endif

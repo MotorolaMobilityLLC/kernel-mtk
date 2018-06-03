@@ -79,7 +79,7 @@ int keymaster_release(struct inode *inode, struct file *filp)
 	filp->private_data = NULL;
 	return 0;
 }
-static int keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	down(&keymaster_api_lock);
 
@@ -121,13 +121,14 @@ static int keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
 
 			/* memcpy(&keymaster_msg, (void *)keymaster_buff_addr, sizeof(tciMessage_t)); */
 			/* pr_debug("microtrust keymaster cmd is:id = %d, type = %d\n", keymaster_msg.command.commandId, keymaster_msg.rsa_gen_key.type); */
-			Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, keymaster_buff_addr + KEYMASTER_SIZE);
+			Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, (unsigned long)keymaster_buff_addr + KEYMASTER_SIZE);
 
 
 			/* this para 'KEYMASTER_DRIVER_ID' is not used */
 			send_keymaster_command(KEYMASTER_DRIVER_ID);
 
-			if (copy_to_user((void *)arg, (unsigned long)keymaster_buff_addr, KEYMASTER_SIZE)) {
+			if (copy_to_user((void *)arg, (void *)keymaster_buff_addr,
+				KEYMASTER_SIZE)) {
 				pr_err("microtrust keymaster copy from user failed. \n");
 				up(&keymaster_api_lock);
 				return -EFAULT;
@@ -161,13 +162,14 @@ static int keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
 
 			/* memcpy(&keymaster_msg, (void *)keymaster_buff_addr, sizeof(tciMessage_t)); */
 			/* pr_debug("microtrust keymaster cmd is:id=%d,type=%d\n",keymaster_msg.command.commandId,keymaster_msg.rsa_gen_key.type); */
-			Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, keymaster_buff_addr + 8);
+			Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, (unsigned long)keymaster_buff_addr + 8);
 
 
 			/* this para 'KEYMASTER_DRIVER_ID' is not used */
 			send_keymaster_command(KEYMASTER_DRIVER_ID);
 
-			if (copy_to_user((void *)arg, (unsigned long)keymaster_buff_addr, 8)) {
+			if (copy_to_user((void *)arg, (void *)keymaster_buff_addr,
+				8)) {
 				pr_debug("microtrust keymaster copy from user failed. \n");
 				up(&keymaster_api_lock);
 				return -EFAULT;
@@ -228,7 +230,7 @@ static void keymaster_setup_cdev(struct keymaster_dev *dev, int index)
 	}
 }
 
-void keymaster_init(void)
+int keymaster_init(void)
 {
 	int result = 0;
 	struct device *class_dev = NULL;
