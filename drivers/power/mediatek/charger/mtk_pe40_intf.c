@@ -125,6 +125,8 @@ void mtk_pe40_reset(struct charger_manager *pinfo, bool enable)
 		charger_enable_vbus_ovp(pinfo, true);
 		pinfo->polling_interval = 10;
 		swchgalg->state = CHR_CC;
+		chr_err("set TD true\n");
+		charger_dev_enable_termination(pinfo->chg1_dev, true);
 	}
 
 	pe40->cap.nr = 0;
@@ -492,6 +494,9 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 
 	if (pinfo->enable_hv_charging == false)
 		goto disable_hv;
+
+	chr_err("set TD false\n");
+	charger_dev_enable_termination(pinfo->chg1_dev, false);
 
 	charger_enable_vbus_ovp(pinfo, false);
 

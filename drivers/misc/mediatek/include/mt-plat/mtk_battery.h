@@ -22,6 +22,12 @@
 /* ============================================================ */
 /* typedef */
 /* ============================================================ */
+
+/* battery notify charger_consumer */
+enum {
+	EVENT_BATTERY_PLUG_OUT,
+};
+
 struct FUELGAUGE_TEMPERATURE {
 	signed int BatteryTemp;
 	signed int TemperatureR;
@@ -173,5 +179,8 @@ extern int gauge_set_coulomb_interrupt1_lt(int car);
 extern int gauge_get_ptim_current(int *ptim_current, bool *is_charging);
 
 extern unsigned int battery_meter_enable_time_interrupt(unsigned int sec);
+
+extern int register_battery_notifier(struct notifier_block *nb);
+extern int unregister_battery_notifier(struct notifier_block *nb);
 
 #endif /* End of _FUEL_GAUGE_GM_30_H */
