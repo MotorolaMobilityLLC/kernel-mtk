@@ -290,7 +290,7 @@ static int mtk_pinctrl_probe(struct platform_device *pdev)
 
 static const struct of_device_id mtk_pctrl_match[] = {
 	{
-		.compatible = "mediatek,mtk-pinctrl",
+		.compatible = "mediatek,pinctrl",
 	}, {
 	}
 };
