@@ -20,7 +20,7 @@ initcall_debug=1 maxcpus=1";
 		atag,videolfb-islcm_inited = <0>;
 		atag,videolfb-fps= <6000>;
 		atag,videolfb-vramSize= <0x017bb000>;
-		atag,videolfb-lcmname= "nt35595_fhd_dsi_cmd_truly_nt50358_drv";
+		atag,videolfb-lcmname= "nt35695B_fhd_dsi_cmd_auo_rt5081_drv";
 	};
 
 	led0:led@0 {

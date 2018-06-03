@@ -13,6 +13,7 @@
 
 #include "disp_dts_gpio.h"
 #include "disp_helper.h"
+#include "disp_drv_log.h"
 #include <linux/kernel.h> /* printk */
 
 #ifndef CONFIG_FPGA_EARLY_PORTING

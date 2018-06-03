@@ -208,7 +208,7 @@ static struct sel_s sel_in_map[] = {
 
 	/* DISP_WDMA0_SEL_IN */
 	{DISP_MODULE_WDMA0, {DISP_MODULE_DITHER0, DISP_MODULE_OVL0,
-	 DISP_MODULE_RSZ0, -1}, 0, 0},
+	 DISP_MODULE_OVL0_2L, DISP_MODULE_RSZ0, -1}, 0, 0},
 };
 
 static const int DDP_MOUT_NUM = sizeof(mout_map)/sizeof(struct mout_s);

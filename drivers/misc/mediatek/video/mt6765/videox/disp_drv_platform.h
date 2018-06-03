@@ -39,7 +39,7 @@
 #endif
 
 /* Wrap SPM/MMDVFS code for early porting */
-#define MTK_FB_SPM_SUPPORT
+/* #define MTK_FB_SPM_SUPPORT */
 /* #define MTK_FB_MMDVFS_SUPPORT */
 #define MTK_FB_SHARE_WDMA0_SUPPORT
 
