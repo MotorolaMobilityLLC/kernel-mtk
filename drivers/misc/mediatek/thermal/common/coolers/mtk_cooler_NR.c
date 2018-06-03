@@ -119,9 +119,9 @@ static ssize_t clNR_status_write(struct file *file, const char __user *buffer, s
 	if (kstrtoint(desc, 10, &isEnabled) == 0) {
 		cl_dev_NR_state = isEnabled;
 		if (isEnabled == 1)
-			*(volatile unsigned int *)(clNR_mmap + 0x00) = 0x1;
+			*(unsigned int *)(clNR_mmap + 0x00) = 0x1;
 		else
-			*(volatile unsigned int *)(clNR_mmap + 0x00) = 0x0;
+			*(unsigned int *)(clNR_mmap + 0x00) = 0x0;
 
 		clNR_dprintk("%s %d\n", __func__, __LINE__);
 		return count;
@@ -194,10 +194,10 @@ static int clNR_set_cur_state(struct thermal_cooling_device *cdev, unsigned long
 
 	if (cl_dev_NR_state == 1) {
 		clNR_dprintk("mtkclNR triggered\n");
-		*(volatile unsigned int *)(clNR_mmap + 0x00) = 0x1;
+		*(unsigned int *)(clNR_mmap + 0x00) = 0x1;
 	} else {
 		clNR_dprintk("mtkclNR exited\n");
-		*(volatile unsigned int *)(clNR_mmap + 0x00) = 0x0;
+		*(unsigned int *)(clNR_mmap + 0x00) = 0x0;
 	}
 
 	return 0;
@@ -227,7 +227,7 @@ static int __init mtk_cooler_NR_init(void)
 			proc_set_user(clNR_status, uid, gid);
 
 		clNR_mmap = (char *)get_zeroed_page(GFP_KERNEL);
-		*(volatile unsigned int *)(clNR_mmap + 0x00) = 0x0;
+		*(unsigned int *)(clNR_mmap + 0x00) = 0x0;
 	}
 
 	clNR_dprintk("%s %d\n", __func__, __LINE__);

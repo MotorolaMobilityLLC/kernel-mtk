@@ -87,13 +87,13 @@ static activate_cooler_opp_func opp_func[COOLER_STEPS] = { 0 };
 
 static unsigned int amutt_param[COOLER_STEPS] = { 0 };
 
-typedef struct adaptive_cooler {
+struct adaptive_coolers {
 	int cur_level;
 	int max_level;
 	activate_cooler_opp_func *opp_func_array;
-} adaptive_coolers;
+};
 
-static adaptive_coolers amutt;
+static struct adaptive_coolers amutt;
 
 static int amutt_backoff(int level)
 {
@@ -123,7 +123,7 @@ static int amutt_backoff(int level)
 
 
 
-static int down_throttle(adaptive_coolers *p, int step)
+static int down_throttle(struct adaptive_coolers *p, int step)
 {
 	if (p == NULL)
 		return -1;
@@ -140,7 +140,7 @@ static int down_throttle(adaptive_coolers *p, int step)
 	return p->cur_level;
 }
 
-static int up_throttle(adaptive_coolers *p, int step)
+static int up_throttle(struct adaptive_coolers *p, int step)
 {
 	if (p == NULL)
 		return -1;
@@ -157,7 +157,7 @@ static int up_throttle(adaptive_coolers *p, int step)
 	return p->cur_level;
 }
 
-static int rst_throttle(adaptive_coolers *p)
+static int rst_throttle(struct adaptive_coolers *p)
 {
 	if (p == NULL)
 		return -1;
