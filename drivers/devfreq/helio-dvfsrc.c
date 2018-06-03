@@ -296,7 +296,11 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_2, data / 100);
 		break;
 	case PM_QOS_MM_MEMORY_BANDWIDTH:
+#if defined(CONFIG_MACH_MT6771)
+		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_3, data / 75); /* x 4/3 */
+#else
 		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_3, data / 100);
+#endif
 		break;
 	case PM_QOS_MD_PERI_MEMORY_BANDWIDTH:
 		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_4, data / 100);
