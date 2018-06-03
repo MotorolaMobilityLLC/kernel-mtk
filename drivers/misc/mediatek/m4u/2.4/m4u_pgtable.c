@@ -428,8 +428,12 @@ int m4u_clean_pte(m4u_domain_t *domain, unsigned int mva, unsigned int size)
 			sync_entry_nr = (next_mva - tmp_mva) >> 12;
 			pte_end = pte + sync_entry_nr;
 			/* do cache sync for [pte, pte_end) */
-			dmac_flush_range((void *)pte, sync_entry_nr);
-
+#ifdef CONFIG_ARM64
+			__dma_flush_area((void *)pte,
+					 sync_entry_nr * sizeof(*pte));
+#else
+			dmac_flush_range((void *)pte, (void *)pte_end);
+#endif
 			imu_pte_unmap(pte);
 			tmp_mva = next_mva;
 
