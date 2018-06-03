@@ -573,7 +573,8 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch,
 	static MFC_HANDLE mfc_handle;
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
-		m4u_query_mva_info(mva, layer_size, &real_mva, &real_size);
+		ret = m4u_query_mva_info(mva, layer_size,
+					&real_mva, &real_size);
 		if (ret < 0) {
 			pr_debug("m4u_query_mva_info error\n");
 			return -1;
