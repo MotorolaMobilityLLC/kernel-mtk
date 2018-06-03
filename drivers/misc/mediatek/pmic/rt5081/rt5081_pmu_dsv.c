@@ -17,9 +17,9 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
-#include <linux/regulator/mtk_regulator_core.h>
-#include <linux/regulator/mtk_regulator.h>
-#include <linux/mfd/rt5081_pmu.h>
+#include <linux/regulator/mediatek/mtk_regulator_core.h>
+#include <linux/regulator/mediatek/mtk_regulator.h>
+#include "inc/rt5081_pmu.h"
 
 #define rt5081_dsvp_vol_reg RT5081_PMU_REG_DBVPOS
 #define rt5081_dsvp_vol_mask (0x3F)
