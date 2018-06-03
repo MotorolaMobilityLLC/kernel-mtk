@@ -47,12 +47,6 @@
 #define _BITMASK_(_bits_)               (((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1))
 #define _GET_BITS_VAL_(_bits_, _val_)   (((_val_) & (_BITMASK_(_bits_))) >> ((0) ? _bits_))
 
-/*
- * PMIC_WRAP
- */
-#define VOLT_TO_PMIC_VAL(volt)  (((volt) - 40000 + 625 - 1) / 625)	/* ((((volt) - 700 * 100 + 625 - 1) / 625) */
-#define PMIC_VAL_TO_VOLT(pmic)  (((pmic) * 625) + 40000)	/* (((pmic) * 625) / 100 + 700) */
-
 #define DEFAULT_VOLT_VSRAM      (100000)
 #define DEFAULT_VOLT_VCORE      (100000)
 #define NR_PMIC_WRAP_CMD (16)	/* 16 pmic wrap cmd */
