@@ -18,8 +18,8 @@
 /* for TUI mepping to Security World */
 extern int tpd_enter_tui(void);
 extern int tpd_exit_tui(void);
-extern int i2c_tui_enable_clock(void);
-extern int i2c_tui_disable_clock(void);
+extern int i2c_tui_enable_clock(int id);
+extern int i2c_tui_disable_clock(int id);
 extern int tui_region_offline(phys_addr_t *pa, unsigned long *size);
 extern int tui_region_online(void);
 extern int display_enter_tui(void);
