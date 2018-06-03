@@ -181,11 +181,12 @@ spinlock_t lock_polling[TOTAL_SEND_PIN];
 /* used for IPI module isr to sync with its task */
 struct completion sema_ipi_task[TOTAL_RECV_PIN];
 struct mutex mutex_ipi_reg;
+static int sspm_ipi_inited;
 static unsigned int ipi_isr_cb(unsigned int mbox, void __iomem *base, unsigned int irq);
 
 int sspm_ipi_init(void)
 {
-	int i;
+	int i, ret;
 
 	mutex_init(&mutex_ipi_reg);
 	for (i = 0; i < TOTAL_SEND_PIN; i++) {
@@ -213,12 +214,24 @@ int sspm_ipi_init(void)
 		return -1;
 	}
 
-	return check_table_tag(IPI_MBOX_TOTAL);
+	ret = check_table_tag(IPI_MBOX_TOTAL);
+	if (ret == 0)
+		sspm_ipi_inited = 1;
+
+	return ret;
+}
+
+extern int sspm_ipi_is_inited(void)
+{
+	return sspm_ipi_inited;
 }
 
 int sspm_ipi_recv_registration(int mid, struct ipi_action *act)
 {
 	struct _pin_recv *pin;
+
+	if (sspm_ipi_inited == 0)
+		return IPI_SERVICE_NOT_INITED;
 
 	if ((mid < 0) || (mid >= TOTAL_RECV_PIN))
 		return IPI_SERVICE_NOT_AVAILABLE;
@@ -257,6 +270,9 @@ int sspm_ipi_recv_registration_ex(int mid, spinlock_t *lock, struct ipi_action *
 int sspm_ipi_recv_wait(int mid)
 {
 	struct _pin_recv *pin;
+
+	if (sspm_ipi_inited == 0)
+		return IPI_SERVICE_NOT_INITED;
 
 	if ((mid < 0) || (mid >= TOTAL_RECV_PIN))
 		return IPI_SERVICE_NOT_AVAILABLE;
@@ -395,6 +411,9 @@ int sspm_ipi_send_async(int mid, int opts, void *buffer, int len)
 	struct _pin_send *pin;
 	struct _mbox_info *mbox;
 	static int timeout;
+
+	if (sspm_ipi_inited == 0)
+		return IPI_SERVICE_NOT_INITED;
 
 	if ((mid < 0) || (mid >= TOTAL_SEND_PIN))
 		return IPI_SERVICE_NOT_AVAILABLE;
@@ -595,6 +614,9 @@ int sspm_ipi_send_sync_new(int mid, int opts, void *buffer, int slot,
 	int mbno, ret;
 	struct _pin_send *pin;
 	struct _mbox_info *mbox;
+
+	if (sspm_ipi_inited == 0)
+		return IPI_SERVICE_NOT_INITED;
 
 	/* check if mid is in the predefined range */
 	if ((mid < 0) || (mid >= TOTAL_SEND_PIN))
