@@ -32,13 +32,13 @@ static struct layering_rule_info_t l_rule_info;
 
 int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
-	{5, 7, 7, 8},
+	{4, 6, 6, 8},
 	/* HRT_BOUND_TYPE_LP3 */
-	{3, 5, 5, 6},
+	{4, 4, 4, 5},
 	/* HRT_BOUND_TYPE_LP4_1CH */
-	{0, 3, 6, 8},
+	{0, 4, 4, 5},
 	/* HRT_BOUND_TYPE_LP4_HYBRID */
-	{5, 7, 7, 8},
+	{4, 6, 6, 8},
 };
 
 int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
