@@ -133,6 +133,8 @@ static int tee_scheduler(void *arg)
 			if (!timeout_ms) {
 				mc_scheduler_command(NSIQ);
 			} else {
+				bool infinite_timeout = timeout_ms < 0;
+
 				if ((timeout_ms < 0) ||
 				    (timeout_ms > DEFAULT_TIMEOUT_MS))
 					timeout_ms = DEFAULT_TIMEOUT_MS;
@@ -140,6 +142,9 @@ static int tee_scheduler(void *arg)
 				if (!wait_for_completion_timeout(
 					&sched_ctx.idle_complete,
 					msecs_to_jiffies(timeout_ms))) {
+					if (infinite_timeout)
+						continue;
+
 					/* Timed out, force SWd schedule */
 					mc_scheduler_command(NSIQ);
 				}
