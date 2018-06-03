@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -12,8 +12,6 @@
  * GNU General Public License for more details.
  */
 
-
-
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/module.h>
@@ -24,8 +22,8 @@
 #include <linux/sched.h>
 #include <linux/init.h>
 #include <linux/cdev.h>
-#include <asm/io.h>
-#include <asm/uaccess.h>
+#include <linux/io.h>
+#include <linux/uaccess.h>
 #include <asm/cacheflush.h>
 #include <linux/semaphore.h>
 #include <linux/slab.h>
@@ -36,6 +34,8 @@
 #include "../tz_driver/include/teei_keymaster.h"
 #include "../tz_driver/include/teei_client_main.h"
 #define TEEI_IOC_MAGIC 'T'
+
+#define SEMA_INIT_ZERO			0
 #define KEYMASTER_DRIVER_ID            101
 #define KEYMASTER_MAJOR	               254
 #define KEYMASTER_SIZE		           (128 * 1024)
@@ -79,7 +79,8 @@ int keymaster_release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+static long keymaster_ioctl(struct file *filp,
+				unsigned int cmd, unsigned long arg)
 {
 	down(&keymaster_api_lock);
 
@@ -97,7 +98,8 @@ static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 
 		memset((void *)keymaster_buff_addr, 0, KEYMASTER_SIZE);
 
-		if (copy_from_user((void *)keymaster_buff_addr, (void *)arg, KEYMASTER_SIZE)) {
+		if (copy_from_user((void *)keymaster_buff_addr,
+					(void *)arg, KEYMASTER_SIZE)) {
 			IMSG_ERROR(KERN_ERR "microturst keymaster copy from user failed.\n");
 			up(&keymaster_api_lock);
 			return -EFAULT;
@@ -109,7 +111,8 @@ static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 		/*this para 'KEYMASTER_DRIVER_ID' is not used*/
 		send_keymaster_command(KEYMASTER_DRIVER_ID);
 
-		if (copy_to_user((void *)arg, (void *)keymaster_buff_addr, KEYMASTER_SIZE)) {
+		if (copy_to_user((void *)arg, (void *)keymaster_buff_addr,
+			KEYMASTER_SIZE)) {
 			IMSG_ERROR("microtrust keymaster copy from user failed.\n");
 			up(&keymaster_api_lock);
 			return -EFAULT;
@@ -132,13 +135,15 @@ static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 
 		memset((void *)keymaster_buff_addr, 0, 8);
 
-		if (copy_from_user((void *)keymaster_buff_addr, (void *)arg, 8)) {
+		if (copy_from_user((void *)keymaster_buff_addr,
+				(void *)arg, 8)) {
 			IMSG_ERROR(KERN_ERR "microturst keymaster copy from user failed.\n");
 			up(&keymaster_api_lock);
 			return -EFAULT;
 		}
 
-		Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, (unsigned long)keymaster_buff_addr + 8);
+		Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr,
+							(unsigned long)keymaster_buff_addr + 8);
 
 		/*this para 'KEYMASTER_DRIVER_ID' is not used*/
 		send_keymaster_command(KEYMASTER_DRIVER_ID);
@@ -210,7 +215,7 @@ int keymaster_init(void)
 	devno = MKDEV(keymaster_major, 0);
 	result = alloc_chrdev_region(&devno, 0, 1, DEV_NAME);
 	keymaster_major = MAJOR(devno);
-	sema_init(&(keymaster_api_lock), 0);
+	sema_init(&(keymaster_api_lock), SEMA_INIT_ZERO);
 
 	if (result < 0)
 		return result;
@@ -246,7 +251,8 @@ int keymaster_init(void)
 	sema_init(&keymaster_devp->sem, 1);
 
 
-	IMSG_DEBUG("[%s][%d]create the ut_keymaster device node successfully!\n", __func__, __LINE__);
+	IMSG_DEBUG("[%s][%d]create keymaster device node successfully!\n",
+			__func__, __LINE__);
 	goto return_fn;
 
 class_device_destroy:

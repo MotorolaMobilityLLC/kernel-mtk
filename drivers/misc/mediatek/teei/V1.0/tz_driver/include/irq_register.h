@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #ifndef IRQ_REGISTER_H
 #define IRQ_REGISTER_H
 
@@ -39,7 +40,8 @@ void work_func(struct work_struct *entry);
 void init_sched_work_ent(void);
 int register_ut_irq_handler(int irq);
 int register_soter_irq_handler(int irq);
-int vfs_thread_function(unsigned long virt_addr, unsigned long para_vaddr, unsigned long buff_vaddr);
+int vfs_thread_function(unsigned long virt_addr,
+		unsigned long para_vaddr, unsigned long buff_vaddr);
 void secondary_load_func(void);
 
 #endif /* end of IRQ_REGISTER_H */

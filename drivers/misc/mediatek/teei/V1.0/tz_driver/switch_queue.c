@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -51,6 +51,12 @@ struct switch_call_struct {
 };
 
 static void switch_fn(struct kthread_work *work);
+
+
+
+
+
+
 
 static struct switch_call_struct *create_switch_call_struct(void)
 {
@@ -146,16 +152,19 @@ void handle_lock_pm_mutex(struct mutex *lock)
 	if (ut_pm_count == 0)
 		mutex_lock(lock);
 
+
 	ut_pm_count++;
 }
 
 
 void handle_unlock_pm_mutex(struct mutex *lock)
 {
+
 	ut_pm_count--;
 
 	if (ut_pm_count == 0)
 		mutex_unlock(lock);
+
 }
 
 int add_work_entry(int work_type, unsigned char *buff)

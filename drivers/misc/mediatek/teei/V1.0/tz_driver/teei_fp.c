@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
@@ -40,6 +41,7 @@ unsigned long create_fp_fdrv(int buff_size)
 		IMSG_ERROR("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
 		return (unsigned long)NULL;
 	}
+
 
 	if (buff_size > VDRV_MAX_SIZE) {
 		IMSG_ERROR("[%s][%d]: FP Drv buffer is too large, Can NOT create it.\n", __FILE__, __LINE__);
@@ -176,6 +178,7 @@ int send_fp_command(unsigned long share_memory_size)
 
 	ut_pm_mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);
+
 
 	return fdrv_ent.retVal;
 }

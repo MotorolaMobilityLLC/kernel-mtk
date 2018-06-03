@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #include <linux/kernel.h>
 #include <linux/wait.h>
 #include <linux/semaphore.h>
@@ -295,8 +296,6 @@ long init_utgate_log_buff_head(unsigned long log_virt_addr, unsigned long buff_s
 
 int utgate_log_print(unsigned long log_start)
 {
-#if 1
-
 	if (*((char *)log_start) == '\n') {
 		IMSG_PRINTK("[uTgate LOG] %s\n", utgate_log_line);
 		utgate_log_len = 0;
@@ -313,7 +312,7 @@ int utgate_log_print(unsigned long log_start)
 			/*WARN_ON(1);*/
 		}
 	}
-#endif
+
 	utgate_log_pos = (utgate_log_pos + 1) % (((struct utgate_log_head *)utgate_log_buff)->length
 					- sizeof(struct utgate_log_head));
 
@@ -376,7 +375,8 @@ int utgate_log_worker(void *p)
 	return ret;
 }
 
-long create_utgate_log_thread(unsigned long log_virt_addr, unsigned long buff_size)
+long create_utgate_log_thread(unsigned long log_virt_addr,
+				unsigned long buff_size)
 {
 	long retVal = 0;
 	int ret = 0;

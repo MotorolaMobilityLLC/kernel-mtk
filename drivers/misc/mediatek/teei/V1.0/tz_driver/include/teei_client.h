@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@ struct teei_client_encode_cmd {
 	int   flags;
 	int   param_type;
 
-	int encode_id;/* 命令参数编码数据块索引 */
+	int encode_id;
 	/* int service_id; */
 	int session_id;
 	unsigned int cmd_id;
@@ -137,4 +137,5 @@ struct teei_smc_cdata {
 
 #define TEEI_CANCEL_COMMAND \
 	_IO(TEEI_CLIENT_IOC_MAGIC, 0x1002)
+
 #endif /* __TEEI_CLIENT_H_ */
