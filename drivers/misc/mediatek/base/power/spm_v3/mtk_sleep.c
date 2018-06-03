@@ -108,10 +108,8 @@ static int slp_suspend_ops_valid(suspend_state_t state)
 static int slp_suspend_ops_begin(suspend_state_t state)
 {
 #ifdef CONFIG_MACH_MT6799
-	if (mt_get_chip_sw_ver() == (unsigned int)CHIP_SW_VER_02) {
+	if (mt_get_chip_sw_ver() == (unsigned int)CHIP_SW_VER_02)
 		slp_spm_flags &= ~SPM_FLAG_DIS_VCORE_NORMAL_0P65;
-		slp_spm_flags |= SPM_FLAG_DIS_DCSS0_LOW;
-	}
 #endif
 
 	/* legacy log */
