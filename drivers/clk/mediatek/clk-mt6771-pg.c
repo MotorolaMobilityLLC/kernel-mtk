@@ -24,6 +24,7 @@
 #include <linux/clk.h>
 #include "clk-mtk-v1.h"
 #include "clk-mt6771-pg.h"
+/*#include "../../misc/mediatek/base/power/mt6771/mtk_gpufreq.h"*/
 
 #include <dt-bindings/clock/mt6771-clk.h>
 
@@ -66,6 +67,7 @@ void __iomem *clk_imgsys_base;
 void __iomem *clk_vdec_gcon_base;
 void __iomem *clk_venc_gcon_base;
 void __iomem *clk_camsys_base;
+void __iomem *clk_mfg_base;
 #endif
 
 #if 0
@@ -82,6 +84,12 @@ void __iomem *clk_camsys_base;
 #define CAM_CG_CON	(clk_camsys_base + 0x0000)
 
 
+#define MFG_QCHANNEL_CON (clk_mfg_base + 0x0B4)
+#define MFG_DEBUG_17C (clk_mfg_base + 0x17C)
+#define MFG_DEBUG_SEL (clk_mfg_base + 0x180)
+#define MFG_DEBUG_LATCH (clk_mfg_base + 0x184)
+#define MFG_DEBUG_TOP (clk_mfg_base + 0x188)
+#define MFG_DEBUG_ASYNC (clk_mfg_base + 0x18C)
 /*
  * MTCMOS
  */
@@ -160,6 +168,8 @@ static DEFINE_SPINLOCK(spm_noncpu_md_lock);
 
 #if 1
 #define POWERON_CONFIG_EN			SPM_REG(0x0000)
+#define SUBSYS_IDLE_STA	SPM_REG(0x0170)
+
 #define PWR_STATUS       SPM_REG(0x0180)
 #define PWR_STATUS_2ND       SPM_REG(0x0184)
 
@@ -212,6 +222,11 @@ static DEFINE_SPINLOCK(spm_noncpu_md_lock);
 #define INFRA_TOPAXI_PROTECTEN_MCU_CLR	INFRACFG_REG(0x02C8)
 #define INFRA_TOPAXI_PROTECTEN_MCU_STA0	INFRACFG_REG(0x02E0)
 #define INFRA_TOPAXI_PROTECTEN_MCU_STA1	INFRACFG_REG(0x02E4)
+
+#define INFRABUS_DBG1	INFRACFG_REG(0x0D04)
+#define INFRABUS_DBG15	INFRACFG_REG(0x0D3C)
+#define INFRABUS_DBG17	INFRACFG_REG(0x0D44)
+#define INFRABUS_DBG21	INFRACFG_REG(0x0D54)
 /* INFRACFG */
 #define INFRA_TOPAXI_SI0_STA		INFRA_REG(0x0000)
 #define INFRA_BUS_IDLE_STA5	INFRA_REG(0x0190)
@@ -1449,6 +1464,71 @@ int spm_mtcmos_ctrl_ven(int state)
 	return err;
 }
 
+void dump_mfg_sts(void)
+{
+	pr_notice("MFG_DEBUG_17C = %08x\n",
+		spm_read(MFG_DEBUG_17C));
+	pr_notice("MFG_DEBUG_SEL = %08x\n",
+		spm_read(MFG_DEBUG_SEL));
+	pr_notice("MFG_DEBUG_LATCH = %08x\n",
+		spm_read(MFG_DEBUG_LATCH));
+	pr_notice("MFG_DEBUG_TOP = %08x\n",
+		spm_read(MFG_DEBUG_TOP));
+	pr_notice("MFG_DEBUG_ASYNC = %08x\n",
+		spm_read(MFG_DEBUG_ASYNC));
+}
+
+void gpu_dump(void)
+{
+	spm_write(MFG_DEBUG_SEL, 0x10);
+	spm_write(MFG_DEBUG_LATCH, 0xff);
+	dump_mfg_sts();
+	spm_write(MFG_DEBUG_SEL, 0x11);
+	spm_write(MFG_DEBUG_LATCH, 0xff);
+	dump_mfg_sts();
+	spm_write(MFG_DEBUG_SEL, 0x12);
+	spm_write(MFG_DEBUG_LATCH, 0xff);
+	dump_mfg_sts();
+	spm_write(MFG_DEBUG_SEL, 0x13);
+	spm_write(MFG_DEBUG_LATCH, 0xff);
+	dump_mfg_sts();
+	spm_write(MFG_DEBUG_SEL, 0x100000);
+	spm_write(MFG_DEBUG_LATCH, 0xff00);
+	dump_mfg_sts();
+	spm_write(MFG_DEBUG_SEL, 0x110000);
+	spm_write(MFG_DEBUG_LATCH, 0xff00);
+	dump_mfg_sts();
+	spm_write(MFG_DEBUG_SEL, 0x80000);
+	spm_write(MFG_DEBUG_LATCH, 0x0);
+	dump_mfg_sts();
+	spm_write(MFG_DEBUG_SEL, 0x90000);
+	spm_write(MFG_DEBUG_LATCH, 0x0);
+	dump_mfg_sts();
+	pr_notice("SUBSYS_IDLE_STA = %08x\n",
+		spm_read(SUBSYS_IDLE_STA));
+	pr_notice("INFRA_BUS_IDLE_STA5 = %08x\n",
+		spm_read(INFRA_BUS_IDLE_STA5));
+	pr_notice("INFRABUS_DBG1 = %08x\n",
+		spm_read(INFRABUS_DBG1));
+	pr_notice("INFRABUS_DBG15 = %08x\n",
+		spm_read(INFRABUS_DBG15));
+	pr_notice("INFRABUS_DBG17 = %08x\n",
+		spm_read(INFRABUS_DBG17));
+	pr_notice("INFRABUS_DBG21 = %08x\n",
+		spm_read(INFRABUS_DBG21));
+	pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
+		spm_read(INFRA_TOPAXI_PROTECTEN));
+	pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
+		spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
+	pr_notice("INFRA_TOPAXI_PROTECTEN_1 = %08x\n",
+		spm_read(INFRA_TOPAXI_PROTECTEN_1));
+	pr_notice("INFRA_TOPAXI_PROTECTEN_STA1_1 = %08x\n",
+		spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1));
+	pr_notice("INFRA_TOPAXI_PROTECTSTA0_1 = %08x\n",
+		spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+}
+
+
 int spm_mtcmos_ctrl_mfg_2d(int state)
 {
 	int err = 0;
@@ -1462,16 +1542,8 @@ int spm_mtcmos_ctrl_mfg_2d(int state)
 			MFG_PROT_STEP1_0_ACK_MASK) {
 			retry++;
 			if (retry == 5000) {
-				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN));
-				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
-				pr_notice("INFRA_TOPAXI_PROTECTEN_1 = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_1));
-				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1_1 = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1));
-				pr_notice("INFRA_TOPAXI_PROTECTSTA0_1 = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+				gpu_dump();
+				/*mt_gpufreq_dump_DVFS_status();*/
 				BUG_ON(1);
 			}
 		}
@@ -3619,6 +3691,13 @@ void iomap_mm(void)
 	clk_camsys_base = of_iomap(node, 0);
 	if (!clk_camsys_base)
 		pr_debug("[CLK_CAM] base failed\n");
+/*mfg*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mfgcfg");
+	if (!node)
+		pr_debug("[CLK_MFG] find node failed\n");
+	clk_mfg_base = of_iomap(node, 0);
+	if (!clk_mfg_base)
+		pr_debug("[CLK_MFG] base failed\n");
 }
 #endif
 
