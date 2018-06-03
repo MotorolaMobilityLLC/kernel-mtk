@@ -31,6 +31,7 @@
 #include <linux/uidgid.h>
 #include <tmp_bts.h>
 #include <linux/slab.h>
+#include <linux/math64.h>
 
 #ifdef CONFIG_PM
 #include <linux/suspend.h>
@@ -49,7 +50,7 @@ do {                                    \
 } while (0)
 
 #define mtkts_dctm_printk(fmt, args...) \
-pr_info("[Thermal/TZ/DCTM]" fmt, ##args)
+pr_debug("[Thermal/TZ/DCTM]" fmt, ##args)
 
 /*=============================================================
  *Function prototype
@@ -82,8 +83,8 @@ static char g_bind[10][20] = {"mtktsdctm-sysrst", "no-cooler",
  *	use interval*polling_factor1
  * else, use interval*polling_factor2
  */
-static int polling_trip_temp1;
-static int polling_trip_temp2;
+static int polling_trip_temp1 = 40000;
+static int polling_trip_temp2 = 20000;
 static int polling_factor1 = 1000;
 static int polling_factor2 = 1000;
 
@@ -144,11 +145,12 @@ static int tskinInit(int tpcbInit)
 	mutex_lock(&dctm_mutex);
 	rhs[TSKINNODE] = tamb_coef * tamb; // 10^3
 	rhs[TPCBNODE]  = tpcb_coef * tpcbInit; //10^3
+
 	for (i = 0; i < NUMNODE; i++) {
 		tInit = 0;
 		for (j = 0; j < NUMRHS; j++)
 			tInit += DcMatrix[i][j] *
-				(rhs[rhsNode[j]] / SCALE_UNIT_RHS);
+				div_s64(rhs[rhsNode[j]], SCALE_UNIT_RHS);
 
 		tInit = tInit / SCALE_UNIT_TINT;
 		tn[i] = tInit;
@@ -168,9 +170,14 @@ static int tskinTransient(int tpcb)
 {
 	int i = 0;
 
+	/* -127 deg: invalid value */
+	if (tpcb ==  -127)
+		return tn[TSKINNODE];
+
 	mutex_lock(&dctm_mutex);
+
 	for (i = 0; i < NUMNODE; i++) {
-		rhs[i] = (CapMatrix[i] * tn_1[i]) / SCALE_UNIT_CAP;
+		rhs[i] = div_s64(CapMatrix[i] * tn_1[i], SCALE_UNIT_CAP);
 		tn[i] = 0;
 	}
 	rhs[TSKINNODE] += tamb_coef * tamb;
@@ -178,12 +185,13 @@ static int tskinTransient(int tpcb)
 
 	for (i = 0; i < ACNZ; i++)
 		tn[AcMatrixNzRow[i]] += AcMatrixNz[i] *
-			(rhs[AcMatrixNzCol[i]] / SCALE_UNIT_RHS);
+			div_s64(rhs[AcMatrixNzCol[i]], SCALE_UNIT_RHS);
 
 	for (i = 0; i < NUMNODE; i++) {
-		tn[i] /= SCALE_UNIT_T_TRANSIENT;
+		tn[i] = div_s64(tn[i], SCALE_UNIT_T_TRANSIENT);
 		tn_1[i] = tn[i];
 	}
+
 	mutex_unlock(&dctm_mutex);
 
 	return tn[TSKINNODE];
