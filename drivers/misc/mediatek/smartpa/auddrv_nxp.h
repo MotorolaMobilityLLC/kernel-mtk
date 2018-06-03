@@ -64,17 +64,12 @@
  *****************************************************************************/
 static char const *const kAudioNXPSpkName = "/dev/nxpspk";
 
-
 typedef struct {
 	unsigned char data0;
 	unsigned char data1;
 	unsigned char data2;
 	unsigned char data3;
 } Aud_Buffer_Control;
-
-extern int mt_set_gpio_mode(int pin, int mode);
-extern int mt_set_gpio_dir(int pin, int mode);
-extern int mt_set_gpio_out(int pin, int mode);
 
 /*below is control message*/
 #define AUD_NXP_IOC_MAGIC 'C'

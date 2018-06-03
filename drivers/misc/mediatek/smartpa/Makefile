@@ -1,1 +1,1 @@
-obj-$(CONFIG_MTK_SOUND) += auddrv_nxp.o
+obj-$(CONFIG_MTK_SMARTPA_SOUND) += auddrv_nxp.o
