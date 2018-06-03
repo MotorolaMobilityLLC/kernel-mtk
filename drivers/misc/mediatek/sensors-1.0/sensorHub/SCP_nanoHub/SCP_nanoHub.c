@@ -865,6 +865,10 @@ static void SCP_sensorHub_init_sensor_state(void)
 	mSensorState[ID_FLOOR_COUNTER].sensorType = ID_FLOOR_COUNTER;
 	mSensorState[ID_FLOOR_COUNTER].rate = SENSOR_RATE_ONCHANGE;
 	mSensorState[ID_FLOOR_COUNTER].timestamp_filter = false;
+
+	mSensorState[ID_FLAT].sensorType = ID_FLAT;
+	mSensorState[ID_FLAT].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_FLAT].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int handle)
