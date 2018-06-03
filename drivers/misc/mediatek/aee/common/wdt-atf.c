@@ -41,7 +41,7 @@
 #include <ext_wd_drv.h>
 #endif
 #include "aee-common.h"
-#include "../ipanic/ipanic.h"
+#include <ipanic.h>
 #include <mt-plat/mtk_secure_api.h>
 #ifdef CONFIG_MTK_EIC_HISTORY_DUMP
 #include <linux/irqchip/mtk-eic.h>

@@ -36,6 +36,7 @@
 #include <smp.h>
 #endif
 #include "aee-common.h"
+#include <ipanic.h>
 #include <mrdump_private.h>
 
 #undef WDT_DEBUG_VERBOSE
@@ -518,6 +519,9 @@ void aee_wdt_fiq_info(void *arg, void *regs, void *svc_sp)
 
 	/* FIXME: correct mrdump function if necessary */
 	__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, regs, "WDT/HWT");
+
+	/* add info for minidump */
+	mrdump_mini_ke_cpu_regs(regs);
 
 	aee_wdt_irq_info();
 }
