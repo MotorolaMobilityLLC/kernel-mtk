@@ -355,6 +355,7 @@ INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd);
 INT32 stp_dbg_dump_num(UINT32 dmp_num);
 INT32 stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd, INT32 len);
 INT32 stp_dbg_dump_send_retry_handler(PINT8 tmp, INT32 len);
+VOID stp_dbg_set_coredump_timer_state(CORE_DUMP_STA state);
 INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd);
 INT32 stp_dbg_poll_dmaregs(UINT32 times, UINT32 sleep);
 INT32 stp_dbg_poll_cpupcr_ctrl(UINT32 en);
