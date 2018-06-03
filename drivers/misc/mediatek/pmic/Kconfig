@@ -62,6 +62,16 @@ config MTK_PMIC_CHIP_MT6357
 	  Set y to support this driver.
 	  Set n and choose other chip.
 
+config MTK_PMIC_CHIP_MT6358
+	tristate "MediaTek PMIC MT6358 Driver"
+	default n
+	---help---
+	  This selects for MediaTek(R) PMIC MT6358 driver.
+	  It's main chip type and providing power features like auxadc,
+	  buck/ldo, interrupt-controller..etc
+	  Set y to support this driver.
+	  Set n and choose other chip.
+
 config MTK_PMIC_CHIP_MT6335
 	tristate "MediaTek Power MT6335 Driver"
 	default n

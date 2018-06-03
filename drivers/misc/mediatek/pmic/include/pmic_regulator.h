@@ -27,7 +27,9 @@
 #include <linux/regulator/consumer.h>
 
 #include "include/pmic.h"
-#include "mtk_pmic_regulator.h"
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
+#include "mt6335/mtk_pmic_regulator.h"
+#endif
 
 #define REGULATOR_READY
 
