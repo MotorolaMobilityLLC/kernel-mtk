@@ -1081,6 +1081,7 @@ eExit:
 		OSFreeMem(psCleanupData);
 
 		OSAtomicDecrement(&g_iPoolCleanTasks);
+		eError = PVRSRV_OK;
 	}
 
 	return eError;
