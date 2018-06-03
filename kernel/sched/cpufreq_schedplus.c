@@ -292,10 +292,6 @@ static void cpufreq_sched_try_driver_target(
 	for_each_cpu(cpu, &cls_cpus) {
 		per_cpu(freq_scale, cpu) = scale;
 		arch_scale_set_curr_freq(cpu, freq);
-
-		#ifdef CONFIG_SCHED_WALT
-		cpu_rq(cpu)->cur_freq = freq;
-		#endif
 	}
 #endif
 

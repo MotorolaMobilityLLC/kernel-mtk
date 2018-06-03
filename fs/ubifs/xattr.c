@@ -16,7 +16,7 @@
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * Authors: Artem Bityutskiy (Битюцкий Артём)
+ * Authors: Artem Bityutskiy (?и???кий ????м)
  *          Adrian Hunter
  */
 
@@ -550,7 +550,8 @@ static int init_xattrs(struct inode *inode, const struct xattr *xattr_array,
 		}
 		strcpy(name, XATTR_SECURITY_PREFIX);
 		strcpy(name + XATTR_SECURITY_PREFIX_LEN, xattr->name);
-		err = __ubifs_setxattr(inode, name, xattr->value, xattr->value_len, 0, false);
+		err = __ubifs_setxattr(inode, name, xattr->value,
+				       xattr->value_len, 0, false);
 		kfree(name);
 		if (err < 0)
 			break;
@@ -596,7 +597,8 @@ static int ubifs_xattr_set(const struct xattr_handler *handler,
 	name = xattr_full_name(handler, name);
 
 	if (value)
-		return __ubifs_setxattr(inode, name, value, size, flags, true);
+		return __ubifs_setxattr(inode, name, value, size, flags,
+					true);
 	else
 		return __ubifs_removexattr(inode, name);
 }

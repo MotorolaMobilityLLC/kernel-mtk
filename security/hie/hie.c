@@ -387,7 +387,7 @@ try_lock_key:
 	if (!ret)
 		goto try_lock_key;
 
-	ukp = user_key_payload(keyring_key);
+	ukp = user_key_payload_locked(keyring_key);
 	ret = hie_key_payload(&bio->bi_crypt_ctx, ukp->data, &key);
 
 	if (ret == -EINVAL) {

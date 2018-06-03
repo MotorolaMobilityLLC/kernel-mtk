@@ -47,7 +47,7 @@
  * If the page is in the bottom half, we have to use the top half. If
  * the page is in the top half, we have to use the bottom half:
  *
- * T = __virt_to_phys(__hyp_idmap_text_start)
+ * T = __pa_symbol(__hyp_idmap_text_start)
  * if (T & BIT(VA_BITS - 1))
  *	HYP_VA_MIN = 0  //idmap in upper half
  * else
@@ -270,7 +270,7 @@ static inline void __kvm_flush_dcache_pud(pud_t pud)
 	kvm_flush_dcache_to_poc(page_address(page), PUD_SIZE);
 }
 
-#define kvm_virt_to_phys(x)		__virt_to_phys((unsigned long)(x))
+#define kvm_virt_to_phys(x)		__pa_symbol(x)
 
 void kvm_set_way_flush(struct kvm_vcpu *vcpu);
 void kvm_toggle_cache(struct kvm_vcpu *vcpu, bool was_enabled);
@@ -312,6 +312,60 @@ static inline unsigned int kvm_get_vmid_bits(void)
 
 	return (cpuid_feature_extract_unsigned_field(reg, ID_AA64MMFR1_VMIDBITS_SHIFT) == 2) ? 16 : 8;
 }
+
+/*
+ * We are not in the kvm->srcu critical section most of the time, so we take
+ * the SRCU read lock here. Since we copy the data from the user page, we
+ * can immediately drop the lock again.
+ */
+static inline int kvm_read_guest_lock(struct kvm *kvm,
+				      gpa_t gpa, void *data, unsigned long len)
+{
+	int srcu_idx = srcu_read_lock(&kvm->srcu);
+	int ret = kvm_read_guest(kvm, gpa, data, len);
+
+	srcu_read_unlock(&kvm->srcu, srcu_idx);
+
+	return ret;
+}
+
+#ifdef CONFIG_HARDEN_BRANCH_PREDICTOR
+#include <asm/mmu.h>
+
+static inline void *kvm_get_hyp_vector(void)
+{
+	struct bp_hardening_data *data = arm64_get_bp_hardening_data();
+	void *vect = kvm_ksym_ref(__kvm_hyp_vector);
+
+	if (data->fn) {
+		vect = __bp_harden_hyp_vecs_start +
+		       data->hyp_vectors_slot * SZ_2K;
+
+		if (!cpus_have_cap(ARM64_HAS_VIRT_HOST_EXTN))
+			vect = lm_alias(vect);
+	}
+
+	return vect;
+}
+
+static inline int kvm_map_vectors(void)
+{
+	return create_hyp_mappings(kvm_ksym_ref(__bp_harden_hyp_vecs_start),
+				   kvm_ksym_ref(__bp_harden_hyp_vecs_end),
+				   PAGE_HYP_EXEC);
+}
+
+#else
+static inline void *kvm_get_hyp_vector(void)
+{
+	return kvm_ksym_ref(__kvm_hyp_vector);
+}
+
+static inline int kvm_map_vectors(void)
+{
+	return 0;
+}
+#endif
 
 #endif /* __ASSEMBLY__ */
 #endif /* __ARM64_KVM_MMU_H__ */

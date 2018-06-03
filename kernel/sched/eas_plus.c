@@ -14,21 +14,15 @@
 static bool is_intra_domain(int prev, int target);
 static inline unsigned long task_util(struct task_struct *p);
 static int select_max_spare_capacity(struct task_struct *p, int target);
-static int __energy_diff(struct energy_env *eenv);
 int cpu_eff_tp = 1024;
 int tiny_thresh;
-#ifdef CONFIG_SCHED_TUNE
-static inline int energy_diff(struct energy_env *eenv);
-#else
-#define energy_diff(eenv) __energy_diff(eenv)
-#endif
 
 #ifndef cpu_isolated
 #define cpu_isolated(cpu) 0
 #endif
 
 #ifndef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-static int l_plus_cpu = -1;
+int l_plus_cpu = -1;
 #endif
 
 static bool is_intra_domain(int prev, int target)
@@ -115,38 +109,6 @@ int select_max_spare_capacity(struct task_struct *p, int target)
 		return task_cpu(p);
 }
 
-
-int
-find_best_idle_cpu_in_domain(struct task_struct *p, struct hmp_domain *domain)
-{
-	int i;
-	int best_idle_cpu = -1;
-	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
-
-	for_each_cpu(i, &domain->possible_cpus) {
-
-		if (!cpu_online(i) || cpu_isolated(i) ||
-				!cpumask_test_cpu(i, tsk_cpus_allow))
-			continue;
-
-#ifdef CONFIG_MTK_SCHED_INTEROP
-		if (cpu_rq(i)->rt.rt_nr_running &&
-			likely(!is_rt_throttle(i)))
-		continue;
-#endif
-
-		/* favoring tasks that prefer idle cpus
-		 * to improve latency.
-		 */
-		if (idle_cpu(i)) {
-			best_idle_cpu = i;
-			break;
-		}
-	}
-
-	return best_idle_cpu;
-}
-
 /*
  * @p: the task want to be located at.
  *
@@ -157,27 +119,36 @@ find_best_idle_cpu_in_domain(struct task_struct *p, struct hmp_domain *domain)
  */
 int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
 {
-	int B_first;
+	int iter_cpu;
 	int best_idle_cpu = -1;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 	struct hmp_domain *domain;
 
-	/* tsk with prefer idle to find bigger idle cpu */
-	B_first = (sched_boost() || (prefer_idle &&
-			(task_util(p) > stune_task_threshold)));
+	for_each_hmp_domain_L_first(domain) {
+		for_each_cpu(iter_cpu, &domain->possible_cpus) {
 
-	if (B_first) {
-		for_each_hmp_domain_B_first(domain) {
-			best_idle_cpu = find_best_idle_cpu_in_domain(p, domain);
+			/* tsk with prefer idle to find bigger idle cpu */
+			int i = (sched_boost() || (prefer_idle &&
+				(task_util(p) > stune_task_threshold)))
+				?  nr_cpu_ids-iter_cpu-1 : iter_cpu;
 
-			if (best_idle_cpu  >= 0)
+			if (!cpu_online(i) || cpu_isolated(i) ||
+					!cpumask_test_cpu(i, tsk_cpus_allow))
+				continue;
+
+#ifdef CONFIG_MTK_SCHED_INTEROP
+			if (cpu_rq(i)->rt.rt_nr_running &&
+					likely(!is_rt_throttle(i)))
+				continue;
+#endif
+
+			/* favoring tasks that prefer idle cpus
+			 * to improve latency.
+			 */
+			if (idle_cpu(i)) {
+				best_idle_cpu = i;
 				break;
-		}
-	} else {
-		for_each_hmp_domain_L_first(domain) {
-			best_idle_cpu = find_best_idle_cpu_in_domain(p, domain);
-
-			if (best_idle_cpu  >= 0)
-				break;
+			}
 		}
 	}
 
@@ -195,45 +166,10 @@ inline bool system_overutilized(int cpu)
 	return system_overutil;
 }
 
-static inline unsigned long
-__src_cpu_util(int cpu, int delta, unsigned long task_delta)
-{
-	unsigned long util = cpu_rq(cpu)->cfs.avg.util_avg;
-	unsigned long capacity = capacity_orig_of(cpu);
-
-#ifdef CONFIG_SCHED_WALT
-	if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
-		util = div64_u64((cpu_rq(cpu)->prev_runnable_sum
-				<< SCHED_CAPACITY_SHIFT),
-				walt_ravg_window);
-#endif
-	util = max(util, task_delta);
-	delta += util;
-	if (delta < 0)
-		return 0;
-
-	return (delta >= capacity) ? capacity : delta;
-}
-
-static unsigned long
-__src_cpu_norm_util(int cpu, unsigned long capacity, int delta, int task_delta)
-{
-	int util = __src_cpu_util(cpu, delta, task_delta);
-
-	if (util >= capacity)
-		return SCHED_CAPACITY_SCALE;
-
-	return (util << SCHED_CAPACITY_SHIFT)/capacity;
-}
-
 static int init_cpu_info(void)
 {
 	int i;
-	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
-	int min_cpu = 0;
-	int max_cpu = 0;
 
-	rcu_read_lock();
 	for (i = 0; i < nr_cpu_ids; i++) {
 		unsigned long capacity = SCHED_CAPACITY_SCALE;
 
@@ -244,17 +180,7 @@ static int init_cpu_info(void)
 		}
 
 		cpu_rq(i)->cpu_capacity_hw = capacity;
-
-		if (capacity > capacity_hw_of(max_cpu))
-			max_cpu = i;
-
-		if (capacity < capacity_hw_of(min_cpu))
-			min_cpu = i;
 	}
-
-	WRITE_ONCE(rd->max_cap_orig_cpu, max_cpu);
-	WRITE_ONCE(rd->min_cap_orig_cpu, min_cpu);
-	rcu_read_unlock();
 
 	return 0;
 }

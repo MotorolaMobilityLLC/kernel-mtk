@@ -132,6 +132,8 @@ lockd(void *vrqstp)
 {
 	int		err = 0;
 	struct svc_rqst *rqstp = vrqstp;
+	struct net *net = &init_net;
+	struct lockd_net *ln = net_generic(net, lockd_net_id);
 
 	/* try_to_freeze() is called from svc_recv() */
 	set_freezable();
@@ -176,6 +178,8 @@ lockd(void *vrqstp)
 	if (nlmsvc_ops)
 		nlmsvc_invalidate_all();
 	nlm_shutdown_hosts();
+	cancel_delayed_work_sync(&ln->grace_period_end);
+	locks_end_grace(&ln->lockd_manager);
 	return 0;
 }
 
@@ -596,7 +600,7 @@ static struct ctl_table nlm_sysctl_root[] = {
  */
 
 #define param_set_min_max(name, type, which_strtol, min, max)		\
-static int param_set_##name(const char *val, struct kernel_param *kp)	\
+static int param_set_##name(const char *val, const struct kernel_param *kp) \
 {									\
 	char *endp;							\
 	__typeof__(type) num = which_strtol(val, &endp, 0);		\

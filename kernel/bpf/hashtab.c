@@ -14,6 +14,8 @@
 #include <linux/jhash.h>
 #include <linux/filter.h>
 #include "percpu_freelist.h"
+#define HTAB_CREATE_FLAG_MASK						\
+	(BPF_F_NO_PREALLOC | BPF_F_RDONLY | BPF_F_WRONLY)
 
 struct bucket {
 	struct hlist_head head;
@@ -148,7 +150,7 @@ static struct bpf_map *htab_map_alloc(union bpf_attr *attr)
 	int err, i;
 	u64 cost;
 
-	if (attr->map_flags & ~BPF_F_NO_PREALLOC)
+	if (attr->map_flags & ~HTAB_CREATE_FLAG_MASK)
 		/* reserved bits should not be used */
 		return ERR_PTR(-EINVAL);
 
@@ -326,11 +328,14 @@ static int htab_map_get_next_key(struct bpf_map *map, void *key, void *next_key)
 	struct hlist_head *head;
 	struct htab_elem *l, *next_l;
 	u32 hash, key_size;
-	int i;
+	int i = 0;
 
 	WARN_ON_ONCE(!rcu_read_lock_held());
 
 	key_size = map->key_size;
+
+	if (!key)
+		goto find_first_elem;
 
 	hash = htab_map_hash(key, key_size);
 
@@ -339,10 +344,8 @@ static int htab_map_get_next_key(struct bpf_map *map, void *key, void *next_key)
 	/* lookup the key */
 	l = lookup_elem_raw(head, hash, key, key_size);
 
-	if (!l) {
-		i = 0;
+	if (!l)
 		goto find_first_elem;
-	}
 
 	/* key was found, get next key in the same bucket */
 	next_l = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(&l->hash_node)),
