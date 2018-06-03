@@ -228,6 +228,12 @@ EXPORT_SYMBOL(connectivity_arch_setup_dma_ops);
  * GPIO dump information
  ******************************************************************************/
 #ifndef CONFIG_MTK_GPIO
+void __weak gpio_dump_regs_range(int start, int end)
+{
+	pr_info(DFT_TAG "[W]%s: is not define!\n", __func__);
+}
+#endif
+#ifndef CONFIG_MTK_GPIO
 void connectivity_export_dump_gpio_info(int start, int end)
 {
 	gpio_dump_regs_range(start, end);
