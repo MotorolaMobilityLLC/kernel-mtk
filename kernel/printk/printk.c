@@ -65,6 +65,25 @@
 static bool overflow_info_flag;
 static u64 overflow_gap;
 
+/* console duration detect */
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+struct __conwrite_stat_struct {
+	struct console *con; /* current console */
+	u64 time_before_conwrite; /* the last record before write */
+	u64 time_after_conwrite; /* the last record after write */
+	char con_write_statbuf[256]; /* con write status buf*/
+};
+u64 time_con_write_ttyMT, time_con_write_pstore;
+u64 len_con_write_ttyMT, len_con_write_pstore;
+static struct __conwrite_stat_struct conwrite_stat_struct = {
+	.con = NULL,
+	.time_before_conwrite = 0,
+	.time_after_conwrite = 0
+};
+unsigned long rem_nsec_con_write_ttyMT, rem_nsec_con_write_pstore;
+bool console_status_detected;
+#endif
+
 int printk_too_much_enable;
 
 #if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
@@ -1684,6 +1703,10 @@ static void call_console_drivers(int level,
 {
 	struct console *con;
 
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+	unsigned long interval_con_write = 0;
+#endif
+
 	trace_console(text, len);
 
 	if (level >= console_loglevel && !ignore_loglevel)
@@ -1706,8 +1729,25 @@ static void call_console_drivers(int level,
 			continue;
 		if (con->flags & CON_EXTENDED)
 			con->write(con, ext_text, ext_len);
-		else
+		else {
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+			conwrite_stat_struct.con = con;
+			conwrite_stat_struct.time_before_conwrite = local_clock();
 			con->write(con, text, len);
+			conwrite_stat_struct.time_after_conwrite = local_clock();
+			interval_con_write = conwrite_stat_struct.time_after_conwrite -
+								conwrite_stat_struct.time_before_conwrite;
+			if (!strcmp(con->name, "ttyMT")) {
+				time_con_write_ttyMT += interval_con_write;
+				len_con_write_ttyMT += len;
+			} else if (!strcmp(con->name, "pstore")) {
+				time_con_write_pstore += interval_con_write;
+				len_con_write_pstore += len;
+			}
+#else
+			con->write(con, text, len);
+#endif
+		}
 	}
 }
 
@@ -1936,7 +1976,9 @@ asmlinkage int vprintk_emit(int facility, int level,
 	int in_irq_disable;
 	/* cpu currently holding logbuf_lock in this function */
 	static unsigned int logbuf_cpu = UINT_MAX;
-
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+	u64 log_enter_time = local_clock();
+#endif
 	in_irq_disable = irqs_disabled();
 
 	if (level == LOGLEVEL_SCHED) {
@@ -2057,9 +2099,15 @@ asmlinkage int vprintk_emit(int facility, int level,
 		if (cont_add(facility, level, text, text_len))
 			printed_len += text_len;
 		else
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+			printed_len += log_store(facility, level,
+						 lflags | LOG_CONT, log_enter_time,
+						 dict, dictlen, text, text_len);
+#else
 			printed_len += log_store(facility, level,
 						 lflags | LOG_CONT, 0,
 						 dict, dictlen, text, text_len);
+#endif
 	} else {
 		bool stored = false;
 
@@ -2081,8 +2129,13 @@ asmlinkage int vprintk_emit(int facility, int level,
 		if (stored)
 			printed_len += text_len;
 		else
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+			printed_len += log_store(facility, level, lflags, log_enter_time,
+						 dict, dictlen, text, text_len);
+#else
 			printed_len += log_store(facility, level, lflags, 0,
 						 dict, dictlen, text, text_len);
+#endif
 	}
 
 	logbuf_cpu = UINT_MAX;
@@ -2587,6 +2640,11 @@ void console_unlock(void)
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
 	bool block_overtime = false;
 	u64 con_dura_time = local_clock();
+	u64 current_time;
+
+	len_con_write_ttyMT = len_con_write_pstore = 0;
+	time_con_write_ttyMT = time_con_write_pstore = 0;
+	rem_nsec_con_write_ttyMT = rem_nsec_con_write_pstore = 0;
 #endif
 	if (console_suspended) {
 		up_console_sem();
@@ -2636,10 +2694,34 @@ skip:
 			break;
 
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-		/* console_unlock block time over 1 second */
-		if ((local_clock() - con_dura_time) > 1000000000ULL) {
+		/* console_unlock block time over 2 seconds */
+		current_time = local_clock();
+		if ((current_time - con_dura_time) > 2000000000ULL) {
+			unsigned long tmp_rem_nsec_start = 0, tmp_rem_nsec_end = 0;
 			block_overtime = true;
+			console_status_detected = true;
+			rem_nsec_con_write_ttyMT = do_div(time_con_write_ttyMT, 1000000000);
+			rem_nsec_con_write_pstore = do_div(time_con_write_pstore, 1000000000);
+			tmp_rem_nsec_start = do_div(con_dura_time, 1000000000);
+			tmp_rem_nsec_end = do_div(current_time, 1000000000);
+			memset(conwrite_stat_struct.con_write_statbuf, 0x0,
+					sizeof(conwrite_stat_struct.con_write_statbuf) - 1);
+			snprintf(conwrite_stat_struct.con_write_statbuf,
+				sizeof(conwrite_stat_struct.con_write_statbuf) - 1,
+				"cpu%d from [%lu.%06lu]--[%lu.%06lu] console 'ttyMT' %lubytes spent %lu.%06lus, console 'pstore' %lubytes spent %lu.%06lus\n",
+				smp_processor_id(), (unsigned long)con_dura_time, tmp_rem_nsec_start/1000,
+				(unsigned long)current_time, tmp_rem_nsec_end/1000,
+				(unsigned long)len_con_write_ttyMT,
+				(unsigned long)time_con_write_ttyMT, rem_nsec_con_write_ttyMT/1000,
+				(unsigned long)len_con_write_pstore,
+				(unsigned long)time_con_write_pstore, rem_nsec_con_write_pstore/1000);
 			break;
+		}
+		/* print the uart status next time enter the console_unlock */
+		if (console_status_detected) {
+			len += snprintf(text + len, strlen(conwrite_stat_struct.con_write_statbuf),
+					conwrite_stat_struct.con_write_statbuf);
+			console_status_detected = false;
 		}
 #endif
 
