@@ -179,7 +179,8 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 
 	reg_after = disp_pwm_get_pwmmux();
 	g_pwm_mux_clock_source = (reg_after) & 0x3;
-	PWM_NOTICE("PWM_MUX %x->%x, clk_req=%d clkid=%d", reg_before, reg_after, clk_req, clkid);
+	/* PWM_NOTICE("PWM_MUX %x->%x, clk_req=%d clkid=%d", */
+	/* reg_before, reg_after, clk_req, clkid); */
 
 	return 0;
 }
