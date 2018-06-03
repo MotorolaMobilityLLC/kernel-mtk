@@ -44,6 +44,11 @@ static unsigned long mcucfg_base	= 0x10200000;
 #define CKDIV1_L_CFG      (mcucfg_base + 0x7a0)	/* MP0 */
 #define CKDIV1_CCI_CFG    (mcucfg_base + 0x7c0)	/* BUS */
 
+#define UP_VPROC_ST 1000
+#define DOWN_VPROC_ST 1000
+#define UP_VSRAM_ST 1000
+#define DOWN_VSRAM_ST 1000
+
 struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 	[MT_CPU_DVFS_L] = {
 		.name		= __stringify(MT_CPU_DVFS_L),
@@ -114,11 +119,11 @@ static unsigned int mt6357_vproc_settletime(unsigned int old_volt,
 {
 	/* UP:10mv/us DOWN:10mv/us */
 	if (new_volt > old_volt)
-		return ((new_volt - old_volt) + 1000 - 1) / 1000 +
-		PMIC_CMD_DELAY_TIME;
+		return ((new_volt - old_volt) + UP_VPROC_ST - 1) /
+		UP_VPROC_ST + PMIC_CMD_DELAY_TIME;
 	else
-		return ((old_volt - new_volt) + 1000 - 1) / 1000 +
-		PMIC_CMD_DELAY_TIME;
+		return ((old_volt - new_volt) + DOWN_VPROC_ST - 1) /
+		DOWN_VPROC_ST + PMIC_CMD_DELAY_TIME;
 }
 
 static int set_cur_volt_sram_cpu(struct buck_ctrl_t *buck_p,
@@ -144,11 +149,11 @@ static unsigned int mt6357_vsram_settletime(unsigned int old_volt,
 {
 	/* UP:10mv/us DOWN:10mv/us */
 	if (new_volt > old_volt)
-		return ((new_volt - old_volt) + 1000 - 1) / 1000 +
-		PMIC_CMD_DELAY_TIME;
+		return ((new_volt - old_volt) + UP_VSRAM_ST - 1) /
+		UP_VSRAM_ST + PMIC_CMD_DELAY_TIME;
 	else
-		return ((old_volt - new_volt) + 1000 - 1) / 1000 +
-		PMIC_CMD_DELAY_TIME;
+		return ((old_volt - new_volt) + DOWN_VSRAM_ST - 1) /
+		DOWN_VSRAM_ST + PMIC_CMD_DELAY_TIME;
 }
 
 /* upper layer CANNOT use 'set' function in secure path */
@@ -573,8 +578,10 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 #endif
 
 	turbo_flag = 0;
-	tag_pr_info("%d, %d, %d\n",
-		lv, turbo_flag, val);
+	tag_pr_info("%d,%d,%d,%d,%d,%d,%d\n",
+		lv, turbo_flag, val,
+		UP_VPROC_ST, DOWN_VPROC_ST,
+		UP_VSRAM_ST, DOWN_VSRAM_ST);
 
 	return lv;
 }
