@@ -26,12 +26,19 @@ enum mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 	long lcd_h = 0;
 	int convert_err = -EINVAL;
 
+#if defined(CONFIG_LCM_WIDTH) && defined(CONFIG_LCM_HEIGHT)
+	convert_err = kstrtoul(CONFIG_LCM_WIDTH, 10, &lcd_w);
+	if (!convert_err)
+		convert_err = kstrtoul(CONFIG_LCM_HEIGHT, 10, &lcd_h);
+#endif	/* CONFIG_LCM_WIDTH, CONFIG_LCM_HEIGHT */
+
 	if (convert_err) {
-#ifdef CONFIG_MTK_FB
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_MTK_FB)
 		lcd_w = DISP_GetScreenWidth();
 		lcd_h = DISP_GetScreenHeight();
 #else
-		MMDVFSMSG("unable to get resolution\n");
+		MMDVFSMSG(
+			"unable to get resolution, query API is unavailable\n");
 #endif
 	}
 
@@ -50,7 +57,7 @@ enum mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 int register_mmdvfs_prepare_cb(int client_id, mmdvfs_prepare_cb func)
 {
 	if (client_id >= 0 && client_id < MMDVFS_SCEN_COUNT) {
-		MMDVFSMSG("register_mmdvfs_prepare_cb: %d\n", client_id);
+		MMDVFSMSG("%s: %d\n", __func__, client_id);
 		quick_prepare_action_cbs[client_id] = func;
 	} else {
 		MMDVFSMSG("clk_switch_cb register failed: %d\n", client_id);
@@ -65,7 +72,7 @@ void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_event *event)
 
 	mmdvfs_internal_notify_vcore_calibration(event);
 
-	MMDVFSMSG("mmdvfs_notify_prepare_action: %d\n", event->event_type);
+	MMDVFSMSG("%s: %d\n", __func__, event->event_type);
 	for (i = 0; i < MMDVFS_SCEN_COUNT; i++) {
 		mmdvfs_prepare_cb func = quick_prepare_action_cbs[i];
 

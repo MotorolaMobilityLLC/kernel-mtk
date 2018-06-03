@@ -1029,7 +1029,7 @@ static struct class *pSmiClass;
 /* MMDVFS related clk initialization */
 static int smi_mmdvfs_clks_init(void)
 {
-#if defined(SMI_WHI) || defined(SMI_ALA) || defined(SMI_BIA) || defined(SMI_ZIO)
+#ifdef MMDVFS_HOOK
 		int i = 0;
 
 		SMIMSG("start smi_mmdvfs_clks_init\n");
@@ -1632,6 +1632,14 @@ module_param_named(force_always_on_mm_clks_mask, force_always_on_mm_clks_mask,
 	uint, 0644);
 
 arch_initcall_sync(smi_init);
+
+#ifdef MMDVFS_QOS_SUPPORT
+static struct kernel_param_ops qos_scenario_ops = {
+	.set = set_qos_scenario,
+	.get = get_qos_scenario,
+};
+module_param_cb(qos_scenario, &qos_scenario_ops, NULL, 0644);
+#endif
 module_exit(smi_exit);
 
 MODULE_DESCRIPTION("MTK SMI driver");

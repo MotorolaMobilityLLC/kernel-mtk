@@ -18,41 +18,83 @@
 #define OPP_UNREQ -1
 #endif
 #include <mt-plat/mtk_chip.h>
+#include <mtk_dramc.h>
 
 #if defined(SMI_VIN)
 #include "mmdvfs_config_mt6758.h"
+#elif defined(SMI_CER)
+#include "mmdvfs_config_mt6765.h"
 #endif
 
 #include "mmdvfs_mgr.h"
 #include "mmdvfs_internal.h"
 #ifdef PLL_HOPPING_READY
-#include <mt_freqhopping.h>
+#include "mach/mtk_freqhopping.h"
 #endif
 
+#ifdef USE_DDR_TYPE
+#include "mt_emi_api.h"
+#endif
+#include "mmdvfs_pmqos.h"
+
 /* Class: mmdvfs_step_util */
+static int mmdvfs_get_legacy_mmclk_step_from_mmclk_opp(
+	struct mmdvfs_step_util *self, int mmclk_step);
+static int mmdvfs_get_opp_from_legacy_step(
+	struct mmdvfs_step_util *self, int legacy_step);
 static void mmdvfs_step_util_init(struct mmdvfs_step_util *self);
 static int mmdvfs_step_util_set_step(
 	struct mmdvfs_step_util *self, s32 step, u32 scenario);
+static int mmdvfs_get_clients_clk_opp(
+	struct mmdvfs_step_util *self, struct mmdvfs_adaptor *adaptor,
+	int clients_mask, int clk_id);
+static bool in_camera_scenario;
+u32 camera_bw_config;
+u32 normal_bw_config;
 #if defined(SMI_VIN)
 struct mmdvfs_step_util mmdvfs_step_util_obj_mt6758 = {
 	{0},
 	MMDVFS_SCEN_COUNT,
 	{0},
 	MT6758_MMDVFS_OPP_MAX,
+	mt6758_mmdvfs_legacy_step_to_opp,
+	MMDVFS_VOLTAGE_COUNT,
+	mt6758_mmdvfs_mmclk_opp_to_legacy_mmclk_step,
+	MT6758_MMDVFS_OPP_MAX,
 	MMDVFS_FINE_STEP_OPP0,
 	mmdvfs_step_util_init,
+	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
+	mmdvfs_get_opp_from_legacy_step,
 	mmdvfs_step_util_set_step,
+	mmdvfs_get_clients_clk_opp
 };
 
+#elif defined(SMI_CER)
+struct mmdvfs_step_util mmdvfs_step_util_obj_mt6765 = {
+	{0},
+	MMDVFS_SCEN_COUNT,
+	{0},
+	MT6765_MMDVFS_OPP_MAX,
+	mt6765_mmdvfs_legacy_step_to_opp,
+	MMDVFS_VOLTAGE_COUNT,
+	mt6765_mmdvfs_mmclk_opp_to_legacy_mmclk_step,
+	MT6765_MMDVFS_OPP_MAX,
+	MMDVFS_FINE_STEP_OPP0,
+	mmdvfs_step_util_init,
+	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
+	mmdvfs_get_opp_from_legacy_step,
+	mmdvfs_step_util_set_step,
+	mmdvfs_get_clients_clk_opp
+};
 #endif
 
 /* Class: mmdvfs_adaptor */
 static void mmdvfs_single_profile_dump(
 	struct mmdvfs_profile *profile);
 static void mmdvfs_profile_dump(struct mmdvfs_adaptor *self);
-static void mmdvfs_hw_config_dump(
-	struct mmdvfs_adaptor *self,
+static void mmdvfs_single_hw_config_dump(struct mmdvfs_adaptor *self,
 	struct mmdvfs_hw_configurtion *hw_configuration);
+static void mmdvfs_hw_config_dump(struct mmdvfs_adaptor *self);
 static int mmdvfs_determine_step(struct mmdvfs_adaptor *self, int smi_scenario,
 	struct mmdvfs_cam_property *cam_setting,
 	struct mmdvfs_video_property *codec_setting);
@@ -89,6 +131,42 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6758 = {
 	mmdvfs_single_profile_dump,
 };
 
+#elif defined(SMI_CER)
+struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6765 = {
+	KIR_MM,
+	0, 0, 0,
+	mt6765_clk_sources, MT6765_CLK_SOURCE_NUM,
+	mt6765_clk_hw_map_setting, MMDVFS_CLK_MUX_NUM,
+	mt6765_step_profile, MT6765_MMDVFS_OPP_MAX,
+	MT6765_MMDVFS_USER_CONTROL_SCEN_MASK,
+	mmdvfs_profile_dump,
+	mmdvfs_single_hw_config_dump,
+	mmdvfs_hw_config_dump,
+	mmdvfs_determine_step,
+	mmdvfs_apply_hw_config,
+	mmdvfs_apply_vcore_hw_config,
+	mmdvfs_apply_clk_hw_config,
+	mmdvfs_get_cam_sys_clk,
+	mmdvfs_single_profile_dump,
+};
+
+struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6765_lp3 = {
+	KIR_MM,
+	0, 0, 0,
+	mt6765_clk_sources, MT6765_CLK_SOURCE_NUM,
+	mt6765_clk_hw_map_setting, MMDVFS_CLK_MUX_NUM,
+	mt6765_step_profile_lp3, MT6765_MMDVFS_OPP_MAX,
+	MT6765_MMDVFS_USER_CONTROL_SCEN_MASK,
+	mmdvfs_profile_dump,
+	mmdvfs_single_hw_config_dump,
+	mmdvfs_hw_config_dump,
+	mmdvfs_determine_step,
+	mmdvfs_apply_hw_config,
+	mmdvfs_apply_vcore_hw_config,
+	mmdvfs_apply_clk_hw_config,
+	mmdvfs_get_cam_sys_clk,
+	mmdvfs_single_profile_dump,
+};
 #endif
 
 /* class: ISP PMQoS Handler */
@@ -107,8 +185,27 @@ struct mmdvfs_thres_handler mmdvfs_thres_handler_mt6758 = {
 	MMDVFS_PM_QOS_SUB_SYS_NUM,
 	get_step_by_threshold
 };
+
+#elif defined(SMI_CER)
+struct mmdvfs_thres_handler mmdvfs_thres_handler_mt6765 = {
+	mt6765_thres_handler,
+	MMDVFS_PM_QOS_SUB_SYS_NUM,
+	get_step_by_threshold
+};
 #endif
 
+static const struct mmdvfs_vpu_steps_setting
+	*get_vpu_setting_impl(
+		struct mmdvfs_vpu_dvfs_configurator *self, int vpu_opp);
+
+struct mmdvfs_vpu_dvfs_configurator mmdvfs_vpu_dvfs_configurator_obj = {
+	0,
+	0,
+	0,
+	0,
+	NULL,
+	get_vpu_setting_impl
+};
 /* Member function implementation */
 static int mmdvfs_apply_hw_config(struct mmdvfs_adaptor *self,
 	int mmdvfs_step, const int current_step)
@@ -194,7 +291,8 @@ static int mmdvfs_apply_vcore_hw_config(
 		vcore_step = hw_config_ptr->vcore_step;
 	}
 
-	vcorefs_request_dvfs_opp(self->vcore_kicker, vcore_step);
+	if (vcorefs_request_dvfs_opp(self->vcore_kicker, vcore_step) != 0)
+		MMDVFSMSG("Set vcore step failed: %d\n", vcore_step);
 	/* Set vcore step */
 	MMDVFSDEBUG(3, "Set vcore step: %d\n", vcore_step);
 
@@ -351,6 +449,40 @@ static int mmdvfs_apply_clk_hw_config(
 
 }
 
+static int mmdvfs_get_clients_clk_opp(struct mmdvfs_step_util *self,
+	struct mmdvfs_adaptor *adaptor, int clients_mask, int clk_id)
+{
+	/* Get the opp determined only by the specified clients */
+	int opp_idx = 0;
+	int final_opp = -1;
+	int final_clk_opp = -1;
+
+	for (opp_idx = 0; opp_idx < self->total_opps; opp_idx++) {
+		int masked_concurrency =
+			self->mmdvfs_concurrency[opp_idx] & clients_mask;
+
+		if (masked_concurrency != 0) {
+			final_opp = opp_idx;
+			break;
+		}
+	}
+
+	/* if no request, return the lowerest step */
+	if (final_opp == -1)
+		final_opp = adaptor->step_num - 1;
+
+	/* Retrieve the CLK opp setting associated the MMDVFS opp */
+	if (clk_id >= 0	&& clk_id < adaptor->mmdvfs_clk_hw_maps_num) {
+		if (final_opp >= 0 && final_opp	<= adaptor->step_num) {
+			struct mmdvfs_step_profile *step_to_profile =
+			adaptor->step_profile_mappings + final_opp;
+			final_clk_opp =
+				step_to_profile->hw_config.clk_steps[clk_id];
+		}
+	}
+	return final_clk_opp;
+}
+
 static int mmdvfs_get_cam_sys_clk(
 	struct mmdvfs_adaptor *self, int mmdvfs_step)
 {
@@ -399,7 +531,7 @@ static void mmdvfs_profile_dump(struct mmdvfs_adaptor *self)
 	}
 }
 
-static void mmdvfs_hw_config_dump(struct mmdvfs_adaptor *self,
+static void mmdvfs_single_hw_config_dump(struct mmdvfs_adaptor *self,
 	struct mmdvfs_hw_configurtion *hw_configuration)
 {
 	int i = 0;
@@ -409,13 +541,13 @@ static void mmdvfs_hw_config_dump(struct mmdvfs_adaptor *self,
 
 	if (clk_hw_map == NULL) {
 		MMDVFSMSG(
-		"hw_configuration_dump: mmdvfs_clk_hw_maps can't be NULL\n");
+		"single_hw_config_dump: mmdvfs_clk_hw_maps can't	be NULL\n");
 		return;
 	}
 
 	if (hw_configuration == NULL) {
 		MMDVFSMSG(
-		"hw_configuration_dump: hw_configuration can't be NULL\n");
+		"single_hw_config_dump: hw_configuration can't be NULL\n");
 		return;
 	}
 
@@ -507,6 +639,30 @@ static int mmdvfs_determine_step(struct mmdvfs_adaptor *self,
 	return MMDVFS_FINE_STEP_UNREQUEST;
 }
 
+/* Show each setting of opp */
+static void mmdvfs_hw_config_dump(struct mmdvfs_adaptor *self)
+{
+	int i =	0;
+	struct mmdvfs_step_profile *mapping =
+	self->step_profile_mappings;
+
+	if (mapping == NULL) {
+		MMDVFSMSG(
+		"mmdvfs_hw_config_dump: mmdvfs_clk_hw_maps can't	be NULL");
+		return;
+	}
+
+	MMDVFSDEBUG(3, "All OPP	configurtion dump\n");
+	for (i = 0; i < self->step_num; i++) {
+		struct mmdvfs_step_profile *mapping_item = mapping + i;
+
+		MMDVFSDEBUG(3, "MMDVFS OPP %d:\n", i);
+		if (mapping_item != NULL)
+			self->single_hw_config_dump(
+				self, &mapping_item->hw_config);
+	}
+}
+
 static int check_camera_profile(
 	struct mmdvfs_cam_property *cam_setting,
 	struct mmdvfs_cam_property *profile_property)
@@ -588,6 +744,13 @@ static inline void mmdvfs_adjust_scenario(s32 *mmdvfs_scen_opp_map,
 	}
 }
 
+#define MMDVFS_CAMERA_SCEN_MASK	((1<<SMI_BWC_SCEN_VR) | \
+				(1<<SMI_BWC_SCEN_VR_SLOW) | \
+				(1<<SMI_BWC_SCEN_ICFP) | \
+				(1<<SMI_BWC_SCEN_VSS) | \
+				(1<<SMI_BWC_SCEN_CAM_PV) | \
+				(1<<SMI_BWC_SCEN_CAM_CP))
+
 /* updat the step members only (HW independent part) */
 /* return the final step */
 static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self,
@@ -595,6 +758,7 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self,
 {
 	int idx, opp_idx;
 	int final_opp = -1;
+	bool has_camera_scenario = false;
 
 	/* check step range here */
 	if (step < -1 || step >= self->total_opps)
@@ -641,7 +805,76 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self,
 		MMDVFSMSG("[force] set step (%d)!\n", final_opp);
 	}
 
+	for (opp_idx = 0; opp_idx < self->total_opps; opp_idx++) {
+		if ((self->mmdvfs_concurrency[opp_idx] &
+				MMDVFS_CAMERA_SCEN_MASK) != 0) {
+			has_camera_scenario = true;
+			break;
+		}
+	}
+
+	if (camera_bw_config && in_camera_scenario != has_camera_scenario) {
+#if defined(SPECIAL_BW_CONFIG_MM)
+		u32 bw_config =
+			has_camera_scenario ?
+				camera_bw_config : normal_bw_config;
+		u32 old_bw_config, new_bw_config;
+
+		MMDVFSDEBUG(
+			3, "[DRAM setting] in camera? %d\n",
+			has_camera_scenario);
+		in_camera_scenario = has_camera_scenario;
+		old_bw_config = BM_GetBW();
+		BM_SetBW(bw_config);
+		new_bw_config = BM_GetBW();
+		MMDVFSDEBUG(
+			3,
+			"[DRAM setting] old:0x%08x, want:0x%08x, new:0x%08x\n",
+			old_bw_config, bw_config, new_bw_config);
+#else
+		MMDVFSDEBUG(3, "[DRAM setting] not support\n");
+#endif
+	}
 	return final_opp;
+}
+
+static int mmdvfs_get_opp_from_legacy_step(
+	struct mmdvfs_step_util *self, int legacy_step)
+{
+	if (self->legacy_step_to_oop == NULL || legacy_step < 0 ||
+		legacy_step >= self->legacy_step_to_oop_num)
+		return -1;
+	else
+		return self->legacy_step_to_oop_num + legacy_step;
+}
+
+static int mmdvfs_get_legacy_mmclk_step_from_mmclk_opp(
+	struct mmdvfs_step_util *self, int mmclk_step)
+{
+	int step_ret = -1;
+
+	if (self->mmclk_oop_to_legacy_step == NULL || mmclk_step < 0
+	|| mmclk_step >= self->mmclk_oop_to_legacy_step_num) {
+		step_ret = -1;
+	} else {
+		int *step_ptr = self->mmclk_oop_to_legacy_step + mmclk_step;
+
+		step_ret = -1;
+
+		if (step_ptr != NULL)
+			step_ret = *step_ptr;
+	}
+	return step_ret;
+}
+
+static const struct mmdvfs_vpu_steps_setting *get_vpu_setting_impl(
+	struct mmdvfs_vpu_dvfs_configurator *self, int vpu_opp)
+{
+	if (vpu_opp < 0 || vpu_opp > self->nr_vpu_steps)
+		return NULL;
+	else
+		return (const struct mmdvfs_vpu_steps_setting *)&
+				(self->mmdvfs_vpu_steps_settings[vpu_opp]);
 }
 
 /* ISP DVFS Adaptor Impementation */
@@ -679,10 +912,17 @@ static s32 get_step_by_threshold(struct mmdvfs_thres_handler *self,
 	return step_found;
 }
 
+struct mmdvfs_vpu_dvfs_configurator *g_mmdvfs_vpu_adaptor;
 struct mmdvfs_adaptor *g_mmdvfs_adaptor;
 struct mmdvfs_adaptor *g_mmdvfs_non_force_adaptor;
 struct mmdvfs_step_util *g_mmdvfs_step_util;
+struct mmdvfs_step_util *g_mmdvfs_non_force_step_util;
 struct mmdvfs_thres_handler *g_mmdvfs_threshandler;
+
+#ifdef MMDVFS_QOS_SUPPORT
+static int mask_concur[MMDVFS_OPP_NUM_LIMITATION];
+static void update_qos_scenario(void);
+#endif
 void mmdvfs_config_util_init(void)
 {
 	int mmdvfs_profile_id = mmdvfs_get_mmdvfs_profile();
@@ -695,6 +935,24 @@ void mmdvfs_config_util_init(void)
 		g_mmdvfs_threshandler = &mmdvfs_thres_handler_mt6758;
 #endif
 		break;
+	case MMDVFS_PROFILE_CER:
+#if defined(SMI_CER)
+		g_mmdvfs_threshandler = &mmdvfs_thres_handler_mt6765;
+#if defined(USE_DDR_TYPE)
+		if (get_dram_type() == TYPE_LPDDR3) {
+			g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6765_lp3;
+			MMDVFSMSG("g_mmdvfs_step_util init with lp3\n");
+		} else{
+			g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6765;
+			MMDVFSMSG("g_mmdvfs_step_util init with lp4 2-ch\n");
+		}
+#else
+		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6765;
+		MMDVFSMSG("g_mmdvfs_step_util init with lp4 2-ch\n");
+#endif
+		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6765;
+#endif
+		break;
 	default:
 		break;
 	}
@@ -704,6 +962,14 @@ void mmdvfs_config_util_init(void)
 
 	if (g_mmdvfs_step_util)
 		g_mmdvfs_step_util->init(g_mmdvfs_step_util);
+
+	if (g_mmdvfs_non_force_step_util)
+		g_mmdvfs_non_force_step_util->init(
+			g_mmdvfs_non_force_step_util);
+
+#ifdef MMDVFS_QOS_SUPPORT
+	update_qos_scenario();
+#endif
 }
 
 void mmdvfs_pm_qos_update_request(
@@ -823,3 +1089,99 @@ u32 mmdvfs_qos_get_cur_thres(struct mmdvfs_pm_qos_request *req,
 	return 0;
 }
 
+#ifdef MMDVFS_QOS_SUPPORT
+static int get_qos_step(s32 opp)
+{
+	if (opp == MMDVFS_FINE_STEP_UNREQUEST)
+		return opp;
+	if (opp >= ARRAY_SIZE(legacy_to_qos_step))
+		return MMDVFS_FINE_STEP_UNREQUEST;
+
+	return legacy_to_qos_step[opp].qos_step;
+}
+
+void mmdvfs_qos_update(struct mmdvfs_step_util *step_util, int new_step)
+{
+	int i;
+	int *concur = step_util->mmdvfs_concurrency;
+
+	i = ARRAY_SIZE(qos_apply_profiles) - 1;
+	if (qos_apply_profiles[i].smi_scenario_id == QOS_ALL_SCENARIO) {
+		MMDVFSDEBUG(5, "force update qos step: %d\n", new_step);
+		mmdvfs_qos_force_step(get_qos_step(new_step));
+		return;
+	}
+	for (i = 0; i < MMDVFS_OPP_NUM_LIMITATION; i++) {
+		if (mask_concur[i] & concur[i]) {
+			/* scenario matched, check */
+			MMDVFSDEBUG(5, "qos match,S(%d,%d,0x%0x,0x%0x)\n",
+				new_step, i, mask_concur[i],
+				step_util->mmdvfs_concurrency[i]);
+			mmdvfs_qos_force_step(get_qos_step(i));
+			return;
+		}
+	}
+	/* No scenario is matched, cancel qos step anyway */
+	mmdvfs_qos_force_step(get_qos_step(MMDVFS_FINE_STEP_UNREQUEST));
+}
+
+static void update_qos_scenario(void)
+{
+	int i;
+
+	memset(&mask_concur, 0, sizeof(mask_concur));
+	for (i = 0; i < ARRAY_SIZE(qos_apply_profiles); i++) {
+		int opp = qos_apply_profiles[i].mask_opp;
+
+		if (opp >= MMDVFS_OPP_NUM_LIMITATION || opp < 0)
+			continue;
+		mask_concur[opp] |=
+			(1 << qos_apply_profiles[i].smi_scenario_id);
+	}
+}
+
+int set_qos_scenario(const char *val, const struct kernel_param *kp)
+{
+	int i, result, scenario, opp;
+
+	result = sscanf(val, "%d %d", &scenario, &opp);
+	if (result != 2) {
+		MMDVFSMSG("invalid input: %s, result(%d)\n", val, result);
+		return -EINVAL;
+	}
+	if (scenario != QOS_ALL_SCENARIO &&
+		(scenario < 0 || scenario > MMDVFS_SCEN_COUNT)) {
+		MMDVFSMSG(
+			"scenario %d not in %d~%d\n",
+			scenario, 0, MMDVFS_SCEN_COUNT);
+		return -EINVAL;
+	}
+	if (opp < MMDVFS_FINE_STEP_UNREQUEST || opp > MMDVFS_FINE_STEP_OPP5) {
+		MMDVFSMSG("opp %d not in %d~%d\n", opp,
+			MMDVFS_FINE_STEP_UNREQUEST, MMDVFS_FINE_STEP_OPP5);
+		return -EINVAL;
+	}
+	/* only update latest debug entry */
+	i = ARRAY_SIZE(qos_apply_profiles) - 1;
+	qos_apply_profiles[i].smi_scenario_id = scenario;
+	qos_apply_profiles[i].mask_opp = opp;
+
+	update_qos_scenario();
+	return 0;
+}
+
+int get_qos_scenario(char *buf, const struct kernel_param *kp)
+{
+	int i, off = 0;
+
+	for (i = 0; i < ARRAY_SIZE(qos_apply_profiles); i++) {
+		off += snprintf(buf + off, PAGE_SIZE - off,
+			"[%d]%s: %d / %d\n", i,
+			qos_apply_profiles[i].profile_name,
+			qos_apply_profiles[i].smi_scenario_id,
+			qos_apply_profiles[i].mask_opp);
+	}
+	buf[off] = '\0';
+	return off;
+}
+#endif

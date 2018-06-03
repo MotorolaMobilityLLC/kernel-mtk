@@ -125,6 +125,95 @@ static struct pm_qos_object memory_bandwidth_pm_qos = {
 	.name = "memory_bandwidth",
 };
 
+static BLOCKING_NOTIFIER_HEAD(disp_freq_notifier);
+static struct pm_qos_constraints disp_freq_constraints = {
+	.req_list = LIST_HEAD_INIT(disp_freq_constraints.req_list),
+	.list = PLIST_HEAD_INIT(disp_freq_constraints.list),
+	.target_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.default_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &disp_freq_notifier,
+};
+static struct pm_qos_object disp_freq_pm_qos = {
+	.constraints = &disp_freq_constraints,
+	.name = "disp_freq",
+};
+
+static BLOCKING_NOTIFIER_HEAD(mdp_freq_notifier);
+static struct pm_qos_constraints mdp_freq_constraints = {
+	.req_list = LIST_HEAD_INIT(mdp_freq_constraints.req_list),
+	.list = PLIST_HEAD_INIT(mdp_freq_constraints.list),
+	.target_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.default_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &mdp_freq_notifier,
+};
+static struct pm_qos_object mdp_freq_pm_qos = {
+	.constraints = &mdp_freq_constraints,
+	.name = "mdp_freq",
+};
+
+static BLOCKING_NOTIFIER_HEAD(vdec_freq_notifier);
+static struct pm_qos_constraints vdec_freq_constraints = {
+	.req_list = LIST_HEAD_INIT(vdec_freq_constraints.req_list),
+	.list = PLIST_HEAD_INIT(vdec_freq_constraints.list),
+	.target_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.default_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &vdec_freq_notifier,
+};
+static struct pm_qos_object vdec_freq_pm_qos = {
+	.constraints = &vdec_freq_constraints,
+	.name = "vdec_freq",
+};
+
+static BLOCKING_NOTIFIER_HEAD(venc_freq_notifier);
+static struct pm_qos_constraints venc_freq_constraints = {
+	.req_list = LIST_HEAD_INIT(venc_freq_constraints.req_list),
+	.list = PLIST_HEAD_INIT(venc_freq_constraints.list),
+	.target_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.default_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &venc_freq_notifier,
+};
+static struct pm_qos_object venc_freq_pm_qos = {
+	.constraints = &venc_freq_constraints,
+	.name = "venc_freq",
+};
+
+static BLOCKING_NOTIFIER_HEAD(img_freq_notifier);
+static struct pm_qos_constraints img_freq_constraints = {
+	.req_list = LIST_HEAD_INIT(img_freq_constraints.req_list),
+	.list = PLIST_HEAD_INIT(img_freq_constraints.list),
+	.target_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.default_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &img_freq_notifier,
+};
+static struct pm_qos_object img_freq_pm_qos = {
+	.constraints = &img_freq_constraints,
+	.name = "img_freq",
+};
+
+static BLOCKING_NOTIFIER_HEAD(cam_freq_notifier);
+static struct pm_qos_constraints cam_freq_constraints = {
+	.req_list = LIST_HEAD_INIT(cam_freq_constraints.req_list),
+	.list = PLIST_HEAD_INIT(cam_freq_constraints.list),
+	.target_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.default_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &cam_freq_notifier,
+};
+static struct pm_qos_object cam_freq_pm_qos = {
+	.constraints = &cam_freq_constraints,
+	.name = "cam_freq",
+};
 
 static BLOCKING_NOTIFIER_HEAD(cpu_memory_bandwidth_notifier);
 static struct pm_qos_constraints cpu_memory_bw_constraints = {
@@ -299,6 +388,13 @@ static struct pm_qos_object *pm_qos_array[] = {
 	&power_model_ddr_req_pm_qos,
 	&power_model_vcore_req_pm_qos,
 	&vcore_dvfs_force_opp_pm_qos,
+
+	&disp_freq_pm_qos,
+	&mdp_freq_pm_qos,
+	&vdec_freq_pm_qos,
+	&venc_freq_pm_qos,
+	&img_freq_pm_qos,
+	&cam_freq_pm_qos,
 };
 
 static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
