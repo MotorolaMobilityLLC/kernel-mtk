@@ -23,15 +23,18 @@ config MTK_CAMERA_ISP_TSF_SUPPORT
 	default n
 	depends on MTK_CAMERA_ISP
 	help
-	  Table Smooth Function. Enable to compensate lens
-	  shading. Disable if it is ot supported or not wanted.
+	  Table Smooth Function.
+	  Enable to compensate lens
+	  shading.
+	  Disable if it is ot supported or not wanted.
 
 config MTK_CAMERA_ISP_GEPF_SUPPORT
 	bool "[GEPF]Global Edge Preserving Filter"
 	default n
 	depends on MTK_CAMERA_ISP
 	help
-	  Global Edge Preserving Filter. Enable to use color
+	  Global Edge Preserving Filter.
+	  Enable to use color
 	  image to improve the quality of depth map.
 	  Disable if it is not supported or not wanted.
 
@@ -40,8 +43,10 @@ config MTK_CAMERA_ISP_FD_SUPPORT
 	default n
 	depends on MTK_CAMERA_ISP
 	help
-	  Face Detection. Enable to detect faces on images.
-	  Disable if it is not supported or not wanted.
+	  Face Detection.
+	  Enable to detect faces on images.
+	  Disable if it is not supported or
+	  not wanted.
 
 config MTK_CAMERA_ISP_WPE_SUPPORT
 	bool "[WPE]Warping Engine"
@@ -60,6 +65,7 @@ config MTK_CAMERA_ISP_EAF_SUPPORT
 	default n
 	depends on MTK_CAMERA_ISP
 	help
-	  Edge Aware Filter. Enable to use segment target foreground object
+	  Edge Aware Filter.
+	  Enable to use segment target foreground object
 	  in video sequences.
 	  Disable if it is not supported or not wanted.
