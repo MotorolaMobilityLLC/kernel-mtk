@@ -53,7 +53,25 @@ static const char module_name[64] = "arctic";
 /* To define limit of SODI */
 int sodi_limit = DEFAULT_SODI_LIMIT;
 
+/* A lock for scheduling switcher */
+DEFINE_SPINLOCK(sched_switch_lock);
+
 #define VOLT_SCALE 10
+
+int sched_scheduler_switch(SCHED_LB_TYPE new_sched)
+{
+	unsigned long flags;
+
+	if (sched_type >= SCHED_UNKNOWN_LB)
+		return -1;
+
+	spin_lock_irqsave(&sched_switch_lock, flags);
+	sched_type = new_sched;
+	spin_unlock_irqrestore(&sched_switch_lock, flags);
+
+	return 0;
+}
+EXPORT_SYMBOL(sched_scheduler_switch);
 
 struct power_tuning_t *get_eas_power_setting(void)
 {
@@ -551,8 +569,13 @@ static ssize_t store_eas_knob(struct kobject *kobj,
 	 * 2: Hybrid
 	 */
 	if (sscanf(buf, "%iu", &val) != 0) {
-		if (val < SCHED_UNKNOWN_LB)
+		if (val < SCHED_UNKNOWN_LB) {
+			unsigned long flags;
+
+			spin_lock_irqsave(&sched_switch_lock, flags);
 			sched_type = val;
+			spin_unlock_irqrestore(&sched_switch_lock, flags);
+		}
 	}
 
 	return count;
