@@ -147,6 +147,7 @@ int cm_mgr_check_stall_ratio(int mp0, int mp2)
 	}
 
 	for (i = 0; i < CM_MGR_CPU_COUNT; i++) {
+		pstall_all->ratio[i] = 0;
 		clustor = i / 4;
 
 		stall_val_new = cm_mgr_read_stall(i);
