@@ -193,6 +193,7 @@ static int reg_AFE_VOW_CFG2 = 0x2222;		/* VOW A,B value setting (BABA) */
 static int reg_AFE_VOW_CFG3 = 0x8767;		/* alhpa and beta K value setting (beta_rise,fall,alpha_rise,fall) */
 static int reg_AFE_VOW_CFG4 = 0x006E;		/* gamma K value setting (gamma), bit4:8 should not modify */
 static int reg_AFE_VOW_CFG5 = 0x0001;		/* N mini value setting (Nmin) */
+static int reg_AFE_VOW_CFG6 = 0x0100;		/* FLR ratio */
 static int reg_AFE_VOW_PERIODIC;		/* Periodic On/Off setting (On percent)*/
 static bool mIsVOWOn;
 
@@ -233,26 +234,6 @@ typedef enum {
 /* @} Build pass: */
 #define SOC_HIGH_USE_RATE	(SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_192000)
 #ifdef CONFIG_MTK_VOW_SUPPORT
-
-/* AUDIO_VOW_MIC_TYPE_Handset_DMIC */
-/* AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K */
-static uint16 Handset_DMIC_PeriodicOnOff[7][22] = {
-	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
-	{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x81EC, 0x0000,
-	 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x18F6, 0x0000},/* 90% */
-	{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x847B, 0x0000,
-	 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x18F6, 0x0000},/* 80% */
-	{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x870A, 0x0000,
-	 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x18F6, 0x0000},/* 70% */
-	{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x899A, 0x0000,
-	 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x18F6, 0x0000},/* 60% */
-	{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x8C29, 0x0000,
-	 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x18F6, 0x0000},/* 50% */
-	{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x8EB8, 0x0000,
-	 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x18F6, 0x0000},/* 40% */
-	{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x9148, 0x0000,
-	 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x18F6, 0x0000},/* 30% */
-};
 
 /* AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC */
 /* AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM */
@@ -3811,6 +3792,8 @@ static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 
 	if ((MicType == AUDIO_VOW_MIC_TYPE_Headset_MIC)
 	 || (MicType == AUDIO_VOW_MIC_TYPE_Handset_AMIC)
+	 || (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
+	 || (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)
 	 || (MicType >= AUDIO_VOW_MIC_TYPE_NUM)
 	 || (MicType < 0)) {
 		pr_warn("MicType:%d, No support periodic On/Off\n", MicType);
@@ -3837,11 +3820,6 @@ static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 
 		VOW32KCK_Enable(true);
 		switch (MicType) {
-		case AUDIO_VOW_MIC_TYPE_Handset_DMIC:
-		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K:
-			pBuf = Handset_DMIC_PeriodicOnOff;
-			break;
-
 		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC:
 		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM:
 			pBuf = Handset_AMIC_DCC_PeriodicOnOff;
@@ -4209,7 +4187,7 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K:
 			VOW_DMIC_CLK_Enable(true);
 			/* 0x9838 Enable DMIC*/
-			Ana_Set_Reg(AUDENC_ANA_CON13,  0x0003, 0x0007);
+			Ana_Set_Reg(AUDENC_ANA_CON13,  0x0005, 0x0007);
 			break;
 		default:
 			break;
@@ -4231,6 +4209,7 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		Ana_Set_Reg(AFE_VOW_CFG3, reg_AFE_VOW_CFG3, 0xffff);   /*alhpa and beta K value setting 0xDBAC*/
 		Ana_Set_Reg(AFE_VOW_CFG4, reg_AFE_VOW_CFG4, 0x000f);   /*gamma K value setting 0x029E*/
 		Ana_Set_Reg(AFE_VOW_CFG5, reg_AFE_VOW_CFG5, 0xffff);   /*N mini value setting 0x0000*/
+		Ana_Set_Reg(AFE_VOW_CFG6, reg_AFE_VOW_CFG6, 0x0700);   /*N mini value setting 0x0000*/
 
 		/* 16K */
 		Ana_Set_Reg(AFE_VOW_CFG4, 0x029E, 0xfff0); /* 16k */
@@ -5769,6 +5748,23 @@ static int Audio_Vow_Cfg5_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	return 0;
 }
 
+static int Audio_Vow_Cfg6_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	int value = /*Ana_Get_Reg(AFE_VOW_CFG6) */ reg_AFE_VOW_CFG6;
+
+	pr_warn("%s()  = %d\n", __func__, value);
+	ucontrol->value.integer.value[0] = value;
+	return 0;
+}
+
+static int Audio_Vow_Cfg6_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
+	/* Ana_Set_Reg(AFE_VOW_CFG6, ucontrol->value.integer.value[0], 0xffff); */
+	reg_AFE_VOW_CFG6 = ucontrol->value.integer.value[0];
+	return 0;
+}
+
 static int Audio_Vow_State_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	int value = mIsVOWOn;
@@ -6219,6 +6215,9 @@ static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
 	SOC_SINGLE_EXT("Audio VOWCFG5 Data", SND_SOC_NOPM, 0, 0x80000, 0,
 		       Audio_Vow_Cfg5_Get,
 		       Audio_Vow_Cfg5_Set),
+	SOC_SINGLE_EXT("Audio VOWCFG6 Data", SND_SOC_NOPM, 0, 0x80000, 0,
+		       Audio_Vow_Cfg6_Get,
+		       Audio_Vow_Cfg6_Set),
 	SOC_SINGLE_EXT("Audio_VOW_State", SND_SOC_NOPM, 0, 0x80000, 0,
 		       Audio_Vow_State_Get,
 		       Audio_Vow_State_Set),
