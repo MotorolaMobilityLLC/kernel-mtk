@@ -18,6 +18,7 @@ bool schedtune_initialized = false;
 unsigned int sysctl_sched_cfs_boost __read_mostly;
 
 static int default_stune_threshold;
+bool global_negative_flag;
 
 extern struct reciprocal_value schedtune_spc_rdiv;
 extern struct target_nrg schedtune_target_nrg;
@@ -265,7 +266,16 @@ schedtune_cpu_update(int cpu)
 	/* Ensures boost_max is non-negative when all cgroup boost values
 	 * are neagtive. Avoids under-accounting of cpu capacity which may cause
 	 * task stacking and frequency spikes.*/
-	boost_max = max(boost_max, 0);
+	/*
+	 * mtk:
+	 * If original path, max(boost_max, 0)
+	 * If use mtk perfservice kernel API to update negative boost,
+	 * when all group are neagtive, boost_max should lower than 0
+	 * and it can decrease frequency.
+	 */
+	if (!global_negative_flag)
+		boost_max = max(boost_max, 0);
+
 	bg->boost_max = boost_max;
 }
 
@@ -597,6 +607,10 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 
 	if (boost < -100 || boost > 100)
 		return -EINVAL;
+
+	if (boost < 0)
+		global_negative_flag = false;
+
 	boost_pct = boost;
 
 	/*

@@ -18,4 +18,5 @@ extern unsigned long arch_scale_get_min_freq(int cpu);
 
 #ifdef CONFIG_SCHED_TUNE
 extern int stune_task_threshold;
+extern bool global_negative_flag;
 #endif
