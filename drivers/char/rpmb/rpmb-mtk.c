@@ -2215,7 +2215,6 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int err = 0;
 	struct rpmb_ioc_param param;
-	int ret = 0;
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	u32 rpmb_size = 0;
 	struct rpmb_infor rpmbinfor;
@@ -2274,12 +2273,18 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_READ_DATA!!!!!!!!!!!!!!\n", __func__);
 
-		ret = rpmb_req_ioctl_read_data(&param);
+		err = rpmb_req_ioctl_read_data(&param);
+
+		if (err) {
+			MSG(ERR, "%s, rpmb_req_ioctl_read_data IO error!!!(%x)\n", __func__, err);
+			return err;
+		}
 
 		err = copy_to_user((void *)arg, &param, sizeof(param));
-		if (err < 0) {
-			MSG(ERR, "%s, err=%x\n", __func__, err);
-			return -1;
+
+		if (err) {
+			MSG(ERR, "%s, copy to user user failed: %x\n", __func__, err);
+			return -EFAULT;
 		}
 
 		break;
@@ -2288,7 +2293,10 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_WRITE_DATA!!!!!!!!!!!!!!\n", __func__);
 
-		ret = rpmb_req_ioctl_write_data(&param);
+		err = rpmb_req_ioctl_write_data(&param);
+
+		if (err)
+			MSG(ERR, "%s, rpmb_req_ioctl_write_data IO error!!!(%x)\n", __func__, err);
 
 		break;
 
@@ -2297,14 +2305,19 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_WRITE_DATA\n", __func__);
 
-		ret = rpmb_req_write_data(rpmbinfor.data_frame, rpmbinfor.size / 1024);
+		err = rpmb_req_write_data(rpmbinfor.data_frame, rpmbinfor.size / 1024);
 
-		if (ret) {
-			MSG(ERR, "%s, rpmb_req_write_data IO error!!!(%x)\n", __func__, ret);
-			goto end;
+		if (err) {
+			MSG(ERR, "%s, rpmb_req_write_data IO error!!!(%x)\n", __func__, err);
+			return err;
 		}
 
-		ret = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
+		err = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
+
+		if (err) {
+			MSG(ERR, "%s, copy to user user failed: %x\n", __func__, err);
+			return -EFAULT;
+		}
 
 		break;
 
@@ -2312,14 +2325,19 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_READ_DATA\n", __func__);
 
-		ret = rpmb_req_read_data(rpmbinfor.data_frame, rpmbinfor.size / 1024);
+		err = rpmb_req_read_data(rpmbinfor.data_frame, rpmbinfor.size / 1024);
 
-		if (ret) {
-			MSG(ERR, "%s, rpmb_req_read_data IO error!!!(%x)\n", __func__, ret);
-			goto end;
+		if (err) {
+			MSG(ERR, "%s, rpmb_req_read_data IO error!!!(%x)\n", __func__, err);
+			return err;
 		}
 
-		ret = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
+		err = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
+
+		if (err) {
+			MSG(ERR, "%s, copy to user user failed: %x\n", __func__, err);
+			return -EFAULT;
+		}
 
 		break;
 
@@ -2327,7 +2345,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_GET_CNT\n", __func__);
 
-		ret = rpmb_req_get_wc(NULL, (u32 *)arg, NULL);
+		err = rpmb_req_get_wc(NULL, (u32 *)arg, NULL);
 
 		break;
 
@@ -2340,7 +2358,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		if (rawdev_ufs_rpmb)
 			*(unsigned int *)arg = rpmb_get_rw_size(rawdev_ufs_rpmb);
 		else
-			ret = RPMB_ALLOC_ERROR;
+			err = RPMB_ALLOC_ERROR;
 
 		break;
 
@@ -2349,10 +2367,8 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		MSG(ERR, "%s, wrong ioctl code (%d)!!!\n", __func__, cmd);
 		return -ENOTTY;
 	}
-#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
-end:
-#endif
-	return ret;
+
+	return err;
 }
 
 #else	/* eMMC */
@@ -2422,9 +2438,10 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = rpmb_req_ioctl_read_data(card, &param);
 
 		err = copy_to_user((void *)arg, &param, sizeof(param));
-		if (err < 0) {
+
+		if (err) {
 			MSG(ERR, "%s, err=%x\n", __func__, err);
-			return -1;
+			return -EFAULT;
 		}
 
 		break;
@@ -2449,6 +2466,9 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		ret = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
 
+		if (ret)
+			return -EFAULT;
+
 		break;
 
 	case RPMB_IOCTL_SOTER_READ_DATA:
@@ -2461,6 +2481,9 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 
 		ret = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
+
+		if (ret)
+			return -EFAULT;
 
 		break;
 
