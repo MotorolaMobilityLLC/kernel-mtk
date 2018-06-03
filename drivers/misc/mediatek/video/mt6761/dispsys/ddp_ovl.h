@@ -65,5 +65,7 @@ unsigned int ovl_to_index(enum DISP_MODULE_ENUM module);
 
 void ovl_get_info(enum DISP_MODULE_ENUM module, void *data);
 unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid);
+extern int is_slt_test(void);
+
 
 #endif
