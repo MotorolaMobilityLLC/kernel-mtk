@@ -37,7 +37,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.11_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.12_MTK"
 
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, S_IRUGO | S_IWUSR);
@@ -299,6 +299,7 @@ static int rt5081_set_aicr(struct charger_device *chg_dev, u32 uA);
 static int rt5081_get_aicr(struct charger_device *chg_dev, u32 *uA);
 static int rt5081_set_ichg(struct charger_device *chg_dev, u32 uA);
 static int rt5081_get_ichg(struct charger_device *chg_dev, u32 *uA);
+static int rt5081_enable_charging(struct charger_device *chg_dev, bool en);
 
 static inline void rt5081_chg_irq_set_flag(
 	struct rt5081_pmu_charger_data *chg_data, u8 *irq, u8 mask)
@@ -752,6 +753,10 @@ static int rt5081_enable_pump_express(struct rt5081_pmu_charger_data *chg_data,
 		return ret;
 
 	ret = rt5081_set_ichg(chg_data->chg_dev, 2000000);
+	if (ret < 0)
+		return ret;
+
+	ret = rt5081_enable_charging(chg_data->chg_dev, true);
 	if (ret < 0)
 		return ret;
 
@@ -3112,17 +3117,19 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 
 	dev_info(chg_data->dev, "%s\n", __func__);
 
-	/* Disable hardware ILIM */
-	ret = rt5081_enable_ilim(chg_data, false);
-	if (ret < 0)
-		dev_err(chg_data->dev, "%s: disable ilim failed\n", __func__);
-
 	/* Select IINLMTSEL to use AICR */
 	ret = rt5081_select_input_current_limit(chg_data,
 		RT5081_IINLMTSEL_AICR);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: select iinlmtsel failed\n",
 			__func__);
+
+	mdelay(5);
+
+	/* Disable hardware ILIM */
+	ret = rt5081_enable_ilim(chg_data, false);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: disable ilim failed\n", __func__);
 
 	ret = _rt5081_set_ichg(chg_data, chg_desc->ichg);
 	if (ret < 0)
@@ -3431,6 +3438,10 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.12_MTK
+ * (1) Enable charger before sending PE+/PE+20 pattern
+ * (2) Select to use reg AICR as input limit -> disable HW limit
+ *
  * 1.1.11_MTK
  * (1) Fix get_adc lock unbalance issue
  * (2) Add pe_access_lock
