@@ -24,6 +24,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 #obj-$(CONFIG_MMC_MTK_PRO) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 
+ifeq ($(CONFIG_MTK_HW_FDE_AES),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/fde_aes/$(MTK_PLATFORM)
+endif
+
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/drrpmb/public
