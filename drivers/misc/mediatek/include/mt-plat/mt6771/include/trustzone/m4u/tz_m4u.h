@@ -22,7 +22,7 @@ extern "C" {
 
 /* #define __M4U_SECURE_SYSTRACE_ENABLE__ */
 
-#define M4U_NONSEC_MVA_START (0x40000000)
+#define M4U_NONSEC_MVA_START	(0x40000000)
 
 #define CMD_M4U_MAGIC           (0x77880000)
 
@@ -107,7 +107,7 @@ struct m4u_systrace_param {
 	unsigned long size;
 };
 
-struct m4u_systrace_param {
+struct m4u_cfg_port_array_param {
 	unsigned char m4u_port_array[(M4U_PORT_NR+1)/2];
 };
 
@@ -115,7 +115,7 @@ struct m4u_larb_restore_param {
 	unsigned int larb_idx;
 };
 
-struct m4u_reserved_memory_param {
+struct m4u_reserverd_memory_param {
 	unsigned int reserved_mem_start;
 	unsigned int reserved_mem_size;
 };
