@@ -387,7 +387,7 @@ arch_timer_detect_rate(void __iomem *cntbase, struct device_node *np)
 
 	/* Check the timer frequency. */
 	if (arch_timer_rate == 0)
-		pr_warn("Architected timer frequency not available\n");
+		pr_info("Architected timer frequency not available\n");
 }
 
 static void arch_timer_banner(unsigned type)
@@ -565,7 +565,7 @@ static int __init arch_timer_register(void)
 	int err;
 	int ppi;
 
-	pr_alert("%s:arch_timer_rate(0x%x),arch_timer_use_virtual=%d\n",
+	pr_info("%s:arch_timer_rate(0x%x),arch_timer_use_virtual=%d\n",
 		__func__, arch_timer_rate, arch_timer_use_virtual);
 
 	arch_timer_evt = alloc_percpu(struct clock_event_device);
@@ -582,12 +582,12 @@ static int __init arch_timer_register(void)
 		ppi = arch_timer_ppi[PHYS_SECURE_PPI];
 		err = request_percpu_irq(ppi, arch_timer_handler_phys,
 					 "arch_timer", arch_timer_evt);
-		pr_alert("%s:request_percpu_irq PHYS_SECURE_PPI err=%d\n", __func__, err);
+		pr_info("%s:request_percpu_irq PHYS_SECURE_PPI err=%d\n", __func__, err);
 		if (!err && arch_timer_ppi[PHYS_NONSECURE_PPI]) {
 			ppi = arch_timer_ppi[PHYS_NONSECURE_PPI];
 			err = request_percpu_irq(ppi, arch_timer_handler_phys,
 						 "arch_timer", arch_timer_evt);
-			pr_alert("%s:request_percpu_irq PHYS_NONSECURE_PPI err=%d\n", __func__, err);
+			pr_info("%s:request_percpu_irq PHYS_NONSECURE_PPI err=%d\n", __func__, err);
 			if (err)
 				free_percpu_irq(arch_timer_ppi[PHYS_SECURE_PPI],
 						arch_timer_evt);
@@ -595,7 +595,7 @@ static int __init arch_timer_register(void)
 	}
 
 	if (err) {
-		pr_err("arch_timer: can't register interrupt %d (%d)\n",
+		pr_info("arch_timer: can't register interrupt %d (%d)\n",
 		       ppi, err);
 		goto out_free;
 	}
@@ -653,7 +653,7 @@ static int __init arch_timer_mem_register(void __iomem *base, unsigned int irq)
 
 	ret = request_irq(irq, func, IRQF_TIMER, "arch_mem_timer", &t->evt);
 	if (ret) {
-		pr_err("arch_timer: Failed to request mem timer irq\n");
+		pr_info("arch_timer: Failed to request mem timer irq\n");
 		kfree(t);
 	}
 
@@ -732,7 +732,7 @@ static void __init arch_timer_init(void)
 	 * If no interrupt provided for virtual timer, we'll have to
 	 * stick to the physical timer. It'd better be accessible...
 	 */
-	 pr_alert("%s:arch_timer_rate(0x%x),PHYS_SECURE_PPI=%d,PHYS_NONSECURE_PPI=%d,VIRT_PPI=%d,HYP_PPI=%d\n",
+	 pr_info("%s:arch_timer_rate(0x%x),PHYS_SECURE_PPI=%d,PHYS_NONSECURE_PPI=%d,VIRT_PPI=%d,HYP_PPI=%d\n",
 	 __func__, arch_timer_rate, arch_timer_ppi[PHYS_SECURE_PPI], arch_timer_ppi[PHYS_NONSECURE_PPI],
 	 arch_timer_ppi[VIRT_PPI], arch_timer_ppi[HYP_PPI]);
 
@@ -741,12 +741,12 @@ static void __init arch_timer_init(void)
 
 		if (!arch_timer_ppi[PHYS_SECURE_PPI] ||
 		    !arch_timer_ppi[PHYS_NONSECURE_PPI]) {
-			pr_warn("arch_timer: No interrupt available, giving up\n");
+			pr_info("arch_timer: No interrupt available, giving up\n");
 			return;
 		}
 	}
 
-	pr_alert("%s:arch_timer_c3stop=%d\n", __func__, arch_timer_c3stop);
+	pr_info("%s:arch_timer_c3stop=%d\n", __func__, arch_timer_c3stop);
 
 	arch_timer_register();
 	arch_timer_common_init();
@@ -757,7 +757,7 @@ static void __init arch_timer_of_init(struct device_node *np)
 	int i;
 
 	if (arch_timers_present & ARCH_CP15_TIMER) {
-		pr_warn("arch_timer: multiple nodes in dt, skipping\n");
+		pr_info("arch_timer: multiple nodes in dt, skipping\n");
 		return;
 	}
 
@@ -792,7 +792,7 @@ static void __init arch_timer_mem_init(struct device_node *np)
 	arch_timers_present |= ARCH_MEM_TIMER;
 	cntctlbase = of_iomap(np, 0);
 	if (!cntctlbase) {
-		pr_err("arch_timer: Can't find CNTCTLBase\n");
+		pr_info("arch_timer: Can't find CNTCTLBase\n");
 		return;
 	}
 
@@ -807,7 +807,7 @@ static void __init arch_timer_mem_init(struct device_node *np)
 		int n;
 
 		if (of_property_read_u32(frame, "frame-number", &n)) {
-			pr_err("arch_timer: Missing frame-number\n");
+			pr_info("arch_timer: Missing frame-number\n");
 			of_node_put(best_frame);
 			of_node_put(frame);
 			return;
@@ -825,7 +825,7 @@ static void __init arch_timer_mem_init(struct device_node *np)
 
 	base = arch_counter_base = of_iomap(best_frame, 0);
 	if (!base) {
-		pr_err("arch_timer: Can't map frame's registers\n");
+		pr_info("arch_timer: Can't map frame's registers\n");
 		of_node_put(best_frame);
 		return;
 	}
@@ -836,7 +836,7 @@ static void __init arch_timer_mem_init(struct device_node *np)
 		irq = irq_of_parse_and_map(best_frame, 0);
 	of_node_put(best_frame);
 	if (!irq) {
-		pr_err("arch_timer: Frame missing %s irq",
+		pr_info("arch_timer: Frame missing %s irq",
 		       arch_timer_mem_use_virtual ? "virt" : "phys");
 		return;
 	}
@@ -871,7 +871,7 @@ static int __init arch_timer_acpi_init(struct acpi_table_header *table)
 	struct acpi_table_gtdt *gtdt;
 
 	if (arch_timers_present & ARCH_CP15_TIMER) {
-		pr_warn("arch_timer: already initialized, skipping\n");
+		pr_info("arch_timer: already initialized, skipping\n");
 		return -EINVAL;
 	}
 
