@@ -33,7 +33,6 @@ GED_FDVFS_COUNTER counters[] = {
 #define FDVFS_COUNTER_SIZE (ARRAY_SIZE(counters))
 #define FDVFS_SAMPLE_TIME 1000000
 
-#define GED_FDVFS_SYSTRACE  1
 
 void fdvfs_print_info(void)
 {
