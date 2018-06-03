@@ -583,49 +583,60 @@ static int cm_mgr_is_lp_flavor(void)
 #endif /* 0 */
 
 struct timer_list cm_mgr_ratio_timer;
-#define CM_MGR_RATIO_TIMER_MS	1
+#define CM_MGR_RATIO_TIMER_MS	msecs_to_jiffies(1)
 
 static void cm_mgr_ratio_timer_fn(unsigned long data)
 {
 	trace_CM_MGR__stall_raio_0(
 			(unsigned int)cm_mgr_read(MP0_CPU_AVG_STALL_RATIO));
 
-	cm_mgr_ratio_timer.expires = jiffies +
-		msecs_to_jiffies(CM_MGR_RATIO_TIMER_MS);
+	cm_mgr_ratio_timer.expires = jiffies + CM_MGR_RATIO_TIMER_MS;
 	add_timer(&cm_mgr_ratio_timer);
 }
 
 void cm_mgr_ratio_timer_en(int enable)
 {
 	if (enable) {
-		cm_mgr_ratio_timer.expires = jiffies +
-			msecs_to_jiffies(CM_MGR_RATIO_TIMER_MS);
+		cm_mgr_ratio_timer.expires = jiffies + CM_MGR_RATIO_TIMER_MS;
 		add_timer(&cm_mgr_ratio_timer);
 	} else {
 		del_timer(&cm_mgr_ratio_timer);
 	}
 }
 
+static struct pm_qos_request ddr_opp_req;
+static int debounce_times_perf_down_local;
+static int pm_qos_update_request_status;
 void cm_mgr_perf_platform_set_status(int enable)
 {
 	if (enable) {
-		cpu_power_ratio_up[0] = 500;
-		cpu_power_ratio_up[1] = 500;
-		debounce_times_up_adb[1] = 0;
+		debounce_times_perf_down_local = 0;
+
+		if (cm_mgr_perf_enable == 0)
+			return;
+
+		pm_qos_update_request(&ddr_opp_req, 0);
+		pm_qos_update_request_status = enable;
 	} else {
-		cpu_power_ratio_up[0] = 100;
-		cpu_power_ratio_up[1] = 100;
-		debounce_times_up_adb[1] = 3;
+		if (++debounce_times_perf_down_local < debounce_times_perf_down)
+			return;
+
+		pm_qos_update_request(&ddr_opp_req,
+				PM_QOS_DDR_OPP_DEFAULT_VALUE);
+		pm_qos_update_request_status = enable;
+
+		debounce_times_perf_down_local = 0;
 	}
 }
 
-static struct pm_qos_request ddr_opp_req;
-static int debounce_times_perf_down_local;
 static int pm_qos_update_request_status;
 void cm_mgr_perf_platform_set_force_status(int enable)
 {
 	if (enable) {
 		debounce_times_perf_down_local = 0;
+
+		if (cm_mgr_perf_enable == 0)
+			return;
 
 		if ((cm_mgr_perf_force_enable == 0) ||
 				(pm_qos_update_request_status == 1))
@@ -639,7 +650,7 @@ void cm_mgr_perf_platform_set_force_status(int enable)
 
 		if ((cm_mgr_perf_force_enable == 0) ||
 				(++debounce_times_perf_down_local >=
-				 debounce_times_perf_down)) {
+				 debounce_times_perf_force_down)) {
 			pm_qos_update_request(&ddr_opp_req,
 					PM_QOS_DDR_OPP_DEFAULT_VALUE);
 			pm_qos_update_request_status = enable;

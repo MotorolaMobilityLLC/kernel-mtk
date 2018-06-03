@@ -54,7 +54,9 @@ extern int vcore_power_ratio_down[CM_MGR_EMI_OPP];
 extern int debounce_times_up_adb[CM_MGR_EMI_OPP];
 extern int debounce_times_down_adb[CM_MGR_EMI_OPP];
 extern int debounce_times_perf_down;
+extern int debounce_times_perf_force_down;
 extern int cm_mgr_enable;
+extern int cm_mgr_perf_enable;
 extern int cm_mgr_perf_timer_enable;
 extern int cm_mgr_perf_force_enable;
 

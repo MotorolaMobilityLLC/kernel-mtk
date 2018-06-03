@@ -43,7 +43,7 @@
 #define RATIO_COUNT (100 / 5 - 1)
 #define IS_UP 1
 #define IS_DOWN 0
-#define USE_TIMER_CHECK_TIME msecs_to_jiffies(500)
+#define USE_TIMER_CHECK_TIME msecs_to_jiffies(50)
 
 enum {
 	CM_MGR_LP4X_2CH_3200 = 0,
