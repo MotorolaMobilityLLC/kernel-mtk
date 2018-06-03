@@ -65,44 +65,6 @@ static void __mtk_check_MFG_idle(void)
 	writel(0x00000001, g_MFG_base + 0xb4);
 	/* mali_pr_debug("@%s: 0x130000b4 val = 0x%x\n", __func__, readl(g_MFG_base + 0xb4)); */
 
-	if (mt_gpufreq_get_MMU_AS_ACTIVE() == 1) {
-		/* Step 1: enable monitor, write address 0d0a_0044 bit[0] = 1 */
-		val = readl(g_DBGAPB_base + 0xa0044);
-		writel((val & ~(0x1)) | 0x1, g_DBGAPB_base + 0xa0044);
-		/* Step 2: check address 1000_0188 bit[24] should be “0”  ;  if not 0, please set this bit to 0 */
-		val = readl(g_TOPCKGEN_base + 0x188);
-		writel(val & ~(0x1000000), g_TOPCKGEN_base + 0x188);
-
-		/* for infra2mfg gals */
-		mali_pr_info("@%s: infra2mfg gals ...\n", __func__);
-		/* Step 6: write address 0d0a_0044 bit[8:0] = 9’b000111101 ; // (7'd30) <<1 ; */
-		val = readl(g_DBGAPB_base + 0xa0044);
-		writel((val & ~(0x1ff)) | 0x3d, g_DBGAPB_base + 0xa0044);
-		mali_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
-		mali_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
-		/* Step 7: write address 0d0a_0044 bit[8:0] = 9’b000111111 ;  // (7'd31) <<1 ; */
-		val = readl(g_DBGAPB_base + 0xa0044);
-		writel((val & ~(0x1ff)) | 0x3f, g_DBGAPB_base + 0xa0044);
-		mali_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
-		mali_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
-
-		/* bus protect related */
-		mali_pr_info("@%s: bus protect related ...\n", __func__);
-		/* INFRA_TOPAXI_PROTECTEN */
-		mali_pr_info("@%s: 0x10001220 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x220));
-		/* INFRA_TOPAXI_PROTECTEN_STA1 */
-		mali_pr_info("@%s: 0x10001228 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x228));
-		/* INFRA_TOPAXI_PROTECTEN_1 */
-		mali_pr_info("@%s: 0x10001250 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x250));
-		/* INFRA_TOPAXI_PROTECTEN_STA1_1 */
-		mali_pr_info("@%s: 0x10001258 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x258));
-		/* INFRA_TOPAXI_PROTECTSTA0_1 */
-		mali_pr_info("@%s: 0x10001254 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x254));
-
-		mt_gpufreq_set_MMU_AS_ACTIVE(0);
-	}
-
-
 	/* set register MFG_DEBUG_SEL (0x13000180) bit [7:0] = 0x03 */
 	writel(0x00000003, g_MFG_base + 0x180);
 	/* mali_pr_debug("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180)); */
@@ -167,21 +129,6 @@ static int pm_callback_power_on_nolock(struct kbase_device *kbdev)
 	/* Write 1 into 0x13000130 bit 0 to enable timestamp register (TIMESTAMP).*/
 	/* TIMESTAMP will be used by clGetEventProfilingInfo.*/
 	writel(0x00000001, g_MFG_base + 0x130);
-
-	/* enable latency_debug */
-	mfg_latency_debug_enable();
-
-	/* merge_w off */
-	writel(0x0, g_MFG_base + 0x8b0);
-	/* merge_r off */
-	writel(0x0, g_MFG_base + 0x8a0);
-	/* axi1to2 to m6 */
-	writel(0x0, g_MFG_base + 0x8f4);
-
-	GPULOG("merge_w: 0x%08x merge_r: 0x%08x axi1to2: 0x%08x",
-			readl(g_MFG_base + 0x8b0),
-			readl(g_MFG_base + 0x8a0),
-			readl(g_MFG_base + 0x8f4));
 
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0x4 | (aee_rr_curr_gpu_dvfs_status() & 0xF0));

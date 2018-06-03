@@ -25,12 +25,6 @@
 #include <backend/gpu/mali_kbase_jm_internal.h>
 #include <backend/gpu/mali_kbase_js_internal.h>
 
-#ifdef ENABLE_MTK_DEBUG
-#include <mtk_gpu_log.h>
-#else
-#define GPULOG2(...) do {} while (0)
-#endif
-
 /*
  * Hold the runpool_mutex for this
  */
@@ -84,7 +78,6 @@ static inline bool timer_callback_should_run(struct kbase_device *kbdev)
 		return (bool) (nr_running_ctxs > 0);
 	}
 }
-
 
 static enum hrtimer_restart timer_callback(struct hrtimer *timer)
 {
@@ -194,18 +187,7 @@ static enum hrtimer_restart timer_callback(struct hrtimer *timer)
 					dev_warn(kbdev->dev, "JS: Job Hard-Stopped (took more than %lu ticks at %lu ms/tick)",
 							(unsigned long)ticks,
 							(unsigned long)ms);
-
-					/* 1.try dump information before hard-stop command issue */
-					GPULOG2("hard-stop trigger, +dump_gpu_info_before_COMMAND_HARD_STOP");
-					kbase_try_dump_gpu_debug_info(kbdev);
-					GPULOG2("hard-stop trigger, -dump_gpu_info_before_COMMAND_HARD_STOP");
-
 					kbase_job_slot_hardstop(atom->kctx, s, atom);
-
-					/* 2.try dump information again after hard-stop command issue */
-					GPULOG2("hard-stop trigger, +dump_gpu_info_after_COMMAND_HARD_STOP");
-					kbase_try_dump_gpu_debug_info(kbdev);
-					GPULOG2("hard-stop trigger, -dump_gpu_info_after_COMMAND_HARD_STOP");
 #endif
 				} else if (ticks == gpu_reset_ticks) {
 					/* Job has been scheduled for at least
