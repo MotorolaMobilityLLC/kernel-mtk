@@ -16,9 +16,12 @@
 typedef enum MTKPP_ID_TAG {
 	MTKPP_ID_FW,
 	MTKPP_ID_SYNC,
+	MTKPP_ID_SHOT_FW,
 
 	MTKPP_ID_SIZE
 } MTKPP_ID;
+
+extern int g_use_id;
 
 typedef enum MTKPP_BUFFERTYPE_TAG {
 	MTKPP_BUFFERTYPE_QUEUEBUFFER,

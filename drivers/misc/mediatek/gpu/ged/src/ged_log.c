@@ -396,6 +396,11 @@ static int ged_log_buf_seq_show(struct seq_file *psSeqFile, void *pvData)
 	{
 		int i;
 
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173) || defined(CONFIG_MACH_MT6739)
+		if (strncmp(psGEDLogBuf->acName, "fw_trace", 8) == 0)
+			ged_dump_fw();
+#endif
+
 		spin_lock_irqsave(&psGEDLogBuf->sSpinLock, psGEDLogBuf->ulIRQFlags);
 
 		if (psGEDLogBuf->acName[0] != '\0')

@@ -374,6 +374,7 @@ static void MTKPP_WORKR_Handle(struct work_struct *_psWork)
 
 #endif
 
+int g_use_id;
 void MTKPP_Init(void)
 {
 	int i;
@@ -385,6 +386,7 @@ void MTKPP_Init(void)
 	} MTKPP_TABLE[] = {
 		{MTKPP_ID_FW,       MTKPP_BUFFERTYPE_QUEUEBUFFER,  248 * 1024,  1 * 1024}, /* 256 KB */
 		{MTKPP_ID_SYNC,     MTKPP_BUFFERTYPE_RINGBUFFER,    56 * 1024,  1 * 1024}, /*  64 KB */
+		{MTKPP_ID_SHOT_FW,	MTKPP_BUFFERTYPE_RINGBUFFER,   248 * 1024,	1 * 1024}, /* 256 KB */
 	};
 
 	for (i = 0; i < MTKPP_ID_SIZE; ++i) {
@@ -413,6 +415,7 @@ void MTKPP_Init(void)
 	INIT_WORK(&g_MTKPP_worker.sWork, MTKPP_WORKR_Handle);
 #endif
 
+	g_use_id = MTKPP_ID_FW;
 	g_init_done = 1;
 
 err_out:

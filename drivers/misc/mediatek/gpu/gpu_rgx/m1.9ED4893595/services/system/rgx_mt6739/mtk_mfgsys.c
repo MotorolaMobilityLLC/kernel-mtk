@@ -1462,6 +1462,15 @@ void MTKSaveFrame(const char func_name[])
 }
 EXPORT_SYMBOL(MTKSaveFrame);
 
+void MTKFWDump(void)
+{
+	PVRSRV_DEVICE_NODE *psDevNode = MTKGetRGXDevNode();
+
+	MTK_PVRSRVDebugRequestSetSilence(IMG_TRUE);
+	PVRSRVDebugRequest(psDevNode, DEBUG_REQUEST_VERBOSITY_MAX, NULL, NULL);
+	MTK_PVRSRVDebugRequestSetSilence(IMG_FALSE);
+}
+EXPORT_SYMBOL(MTKFWDump);
 
 #if defined(MODULE)
 int mtk_mfg_async_init(void)
