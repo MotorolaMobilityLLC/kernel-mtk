@@ -15,6 +15,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/delay.h>
+#include <linux/wakeup_reason.h>
 #include <asm/setup.h>
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
@@ -228,6 +229,8 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 		NULL, 0);
 #endif
 #endif
+	log_wakeup_reason(mtk_spm_get_irq_0());
+
 	return wr;
 }
 

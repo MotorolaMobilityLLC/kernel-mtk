@@ -150,6 +150,11 @@ void mtk_spm_irq_restore(void)
 #endif
 }
 
+unsigned int mtk_spm_get_irq_0(void)
+{
+	return spm_irq_0;
+}
+
 /********************************************************************
  * spm irq handler and initialize function
  *******************************************************************/
