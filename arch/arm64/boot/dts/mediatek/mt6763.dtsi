@@ -3757,5 +3757,10 @@
 };
 
 #include "mt6356.dtsi"
-#include "rt5081.dtsi"
 #include "cust_mt6763_msdc.dtsi"
+#ifdef CONFIG_MFD_RT5081_PMU
+#include "rt5081.dtsi"
+#endif
+#ifdef CONFIG_TCPC_CLASS
+#include "tcpc_config.dtsi"
+#endif
