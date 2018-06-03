@@ -15,6 +15,9 @@
 #include "mtk_ppm_api.h"
 #include "usb_boost.h"
 #include <mtk_vcorefs_manager.h>
+#ifdef CONFIG_MTK_QOS_SUPPORT
+#include <helio-dvfsrc-opp.h>
+#endif
 
 /* platform specific parameter here */
 #ifdef CONFIG_MACH_MT6799
@@ -72,6 +75,9 @@ struct act_arg_obj dram_vcore_test_arg = {OPP_0, -1, -1};
 #endif
 
 static struct pm_qos_request pm_qos_req;
+#ifdef CONFIG_MTK_QOS_SUPPORT
+static struct pm_qos_request pm_qos_emi_req;
+#endif
 
 static int freq_hold(struct act_arg_obj *arg)
 {
@@ -112,6 +118,10 @@ static int core_release(struct act_arg_obj *arg)
 
 static int vcorefs_hold(struct act_arg_obj *arg)
 {
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	pm_qos_update_request(&pm_qos_emi_req, DDR_OPP_0);
+	return 0;
+#else
 	int vcore_ret;
 
 	vcore_ret = vcorefs_request_dvfs_opp(KIR_USB, arg->arg1);
@@ -121,10 +131,15 @@ static int vcorefs_hold(struct act_arg_obj *arg)
 		USB_BOOST_DBG("hold VCORE ok\n");
 
 	return 0;
+#endif
 }
 
 static int vcorefs_release(struct act_arg_obj *arg)
 {
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	pm_qos_update_request(&pm_qos_emi_req, DDR_OPP_UNREQ);
+	return 0;
+#else
 	int vcore_ret;
 
 	vcore_ret = vcorefs_request_dvfs_opp(KIR_USB, OPP_UNREQ);
@@ -134,6 +149,7 @@ static int vcorefs_release(struct act_arg_obj *arg)
 		USB_BOOST_DBG("release VCORE ok\n");
 
 	return 0;
+#endif
 }
 
 static int __init init(void)
@@ -159,6 +175,9 @@ static int __init init(void)
 
 
 	pm_qos_add_request(&pm_qos_req, PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	pm_qos_add_request(&pm_qos_emi_req, PM_QOS_EMI_OPP, PM_QOS_EMI_OPP_DEFAULT_VALUE);
+#endif
 
 	return 0;
 }
