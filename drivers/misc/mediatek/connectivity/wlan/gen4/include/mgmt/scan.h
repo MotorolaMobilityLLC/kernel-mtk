@@ -83,8 +83,6 @@
 #define SCN_ROAM_MAX_BUFFER_SIZE		(CFG_MAX_NUM_ROAM_BSS_LIST * ALIGN_4(sizeof(ROAM_BSS_DESC_T)))
 #endif
 
-#define SCN_RM_POLICY_EXCLUDE_SPECIFIC_SSID     BIT(4)	/* Remove SCAN result except the connected one. */
-
 #define SCN_RM_POLICY_EXCLUDE_CONNECTED     BIT(0)	/* Remove SCAN result except the connected one. */
 #define SCN_RM_POLICY_TIMEOUT               BIT(1)	/* Remove the timeout one */
 #define SCN_RM_POLICY_OLDEST_HIDDEN         BIT(2)	/* Remove the oldest one with hidden ssid */
@@ -94,6 +92,8 @@
 							 * Else remove the weakest one.
 							 */
 #define SCN_RM_POLICY_ENTIRE                BIT(4)	/* Remove entire SCAN result */
+
+#define SCN_RM_POLICY_EXCLUDE_SPECIFIC_SSID BIT(5)	/* Remove SCAN result except the specific one. */
 
 #define SCN_BSS_DESC_SAME_SSID_THRESHOLD    20	/* This is used by POLICY SMART WEAKEST,
 						 * If exceed this value, remove weakest BSS_DESC_T
