@@ -41,6 +41,8 @@
 #include <mtk_spm_misc.h>
 #include <mtk_spm_resource_req_internal.h>
 
+#include <trace/events/mtk_events.h>
+
 int spm_for_gps_flag;
 static struct dentry *spm_dir;
 static struct dentry *spm_file;
@@ -749,6 +751,40 @@ void unmask_edge_trig_irqs_for_cirq(void)
 			mt_irq_unmask_for_sleep_ex(edge_trig_irqs[i]);
 		}
 	}
+}
+
+static atomic_t ipi_lock_cnt;
+
+bool is_sspm_ipi_lock_spm(void)
+{
+	int lock_cnt = -1;
+	bool ret = false;
+
+	lock_cnt = atomic_read(&ipi_lock_cnt);
+
+	ret = (lock_cnt == 0) ? false : true;
+
+	return ret;
+}
+
+void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name)
+{
+	if (id == IPI_ID_SPM_SUSPEND)
+		return;
+
+	if (id < 0 || id >= IPI_ID_TOTAL)
+		return;
+
+	if (start)
+		atomic_inc(&ipi_lock_cnt);
+	else
+		atomic_dec(&ipi_lock_cnt);
+
+	/* FTRACE tag */
+	if (start)
+		trace_sspm_ipi(start, id, opt);
+	else
+		trace_sspm_ipi(start, id, opt);
 }
 
 MODULE_DESCRIPTION("SPM Driver v0.1");

@@ -109,6 +109,9 @@ void mt_spm_for_gps_only(int enable);
 void mt_spm_dcs_s1_setting(int enable, int flags);
 extern void unmask_edge_trig_irqs_for_cirq(void);
 
+extern bool is_sspm_ipi_lock_spm(void);
+extern void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name);
+
 /**************************************
  * Macro and Inline
  **************************************/

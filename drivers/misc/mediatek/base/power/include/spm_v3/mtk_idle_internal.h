@@ -313,6 +313,7 @@ enum {
 	BY_DCS,
 	BY_UFS,
 	BY_GPU,
+	BY_SSPM_IPI,
 	NR_REASONS,
 };
 
