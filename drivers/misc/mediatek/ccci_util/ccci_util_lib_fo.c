@@ -1802,17 +1802,19 @@ int check_md_type(int data)
 	int i;
 
 	/* check md view md type */
-	if ((val & MD_CAP_ENHANCE) == MD_CAP_ENHANCE) {
-		val &= MD_CAP_MASK;
-		val = compatible_convert(val);
-		for (i = 0;
-			 i < (sizeof(legacy_ubin_rat_map)/sizeof(unsigned int));
-			 i++) {
-			if (val == legacy_ubin_rat_map[i])
-				return LEGACY_UBIN_START_ID + i;
+	if ((val >> 8) == (MD_CAP_ENHANCE >> 8)) {
+		if ((val & MD_CAP_ENHANCE) == MD_CAP_ENHANCE) {
+			val &= MD_CAP_MASK;
+			val = compatible_convert(val);
+			for (i = 0;
+			i < (sizeof(legacy_ubin_rat_map)/sizeof(unsigned int));
+			i++) {
+				if (val == legacy_ubin_rat_map[i])
+					return LEGACY_UBIN_START_ID + i;
+			}
 		}
+	} else
 		return -INVALID_MD_VIEW_MD_TYPE;
-	}
 	/* check ap view md type */
 	if (val >= LEGACY_UBIN_START_ID && val <= LEGACY_UBIN_END_ID)
 		return val;
