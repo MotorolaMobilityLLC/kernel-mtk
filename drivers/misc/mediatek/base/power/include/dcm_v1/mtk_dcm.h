@@ -112,9 +112,9 @@ enum {
 	STALL_DCM,
 	BIG_CORE_DCM,
 #ifdef CONFIG_MACH_MT6799
-	GIC_SYNC_DCM,	/* WE2 */
-	LAST_CORE_DCM,	/* WE2 */
-	RGU_DCM,	/* WE2 */
+	GIC_SYNC_DCM,
+	LAST_CORE_DCM,
+	RGU_DCM,
 	TOPCKG_DCM,
 	LPDMA_DCM,
 #elif defined(CONFIG_MACH_ELBRUS)
@@ -162,6 +162,42 @@ enum {
 #endif
 
 #ifdef CONFIG_MACH_MT6799
+#define INFRACFG_AO_EMI_INDIV_MASK		(INFRACFG_AO_EMI_INDIV_CPU0_MASK \
+						 | INFRACFG_AO_EMI_INDIV_CPU1_MASK \
+						 | INFRACFG_AO_EMI_INDIV_MM_MASK \
+						 | INFRACFG_AO_EMI_INDIV_MD_PERI_MASK \
+						 | INFRACFG_AO_EMI_INDIV_GPU_MASK)
+#define INFRACFG_AO_EMI_INDIV_ON		(INFRACFG_AO_EMI_INDIV_CPU0_ON \
+						 | INFRACFG_AO_EMI_INDIV_CPU1_ON \
+						 | INFRACFG_AO_EMI_INDIV_MM_ON \
+						 | INFRACFG_AO_EMI_INDIV_MD_PERI_ON \
+						 | INFRACFG_AO_EMI_INDIV_GPU_ON)
+#define INFRACFG_AO_EMI_INDIV_OFF		(INFRACFG_AO_EMI_INDIV_CPU0_OFF \
+						 | INFRACFG_AO_EMI_INDIV_CPU1_OFF \
+						 | INFRACFG_AO_EMI_INDIV_MM_OFF \
+						 | INFRACFG_AO_EMI_INDIV_MD_PERI_OFF \
+						 | INFRACFG_AO_EMI_INDIV_GPU_OFF)
+
+#define INFRACFG_AO_EMI_INDIV_CPU0_MASK		((0x1 << 1) | (0x3 << 6))
+#define INFRACFG_AO_EMI_INDIV_CPU0_ON		((0x1 << 1) | (0x3 << 6))
+#define INFRACFG_AO_EMI_INDIV_CPU0_OFF		((0x0 << 1) | (0x0 << 6))
+
+#define INFRACFG_AO_EMI_INDIV_CPU1_MASK		((0x1 << 2) | (0x3 << 8))
+#define INFRACFG_AO_EMI_INDIV_CPU1_ON		((0x1 << 2) | (0x3 << 8))
+#define INFRACFG_AO_EMI_INDIV_CPU1_OFF		((0x0 << 2) | (0x0 << 8))
+
+#define INFRACFG_AO_EMI_INDIV_MM_MASK		((0x1 << 3) | (0x3 << 10))
+#define INFRACFG_AO_EMI_INDIV_MM_ON		((0x1 << 3) | (0x3 << 10))
+#define INFRACFG_AO_EMI_INDIV_MM_OFF		((0x0 << 3) | (0x0 << 10))
+
+#define INFRACFG_AO_EMI_INDIV_MD_PERI_MASK	((0x1 << 4) | (0x3 << 12))
+#define INFRACFG_AO_EMI_INDIV_MD_PERI_ON	((0x1 << 4) | (0x3 << 12))
+#define INFRACFG_AO_EMI_INDIV_MD_PERI_OFF	((0x0 << 4) | (0x0 << 12))
+
+#define INFRACFG_AO_EMI_INDIV_GPU_MASK		((0x1 << 5) | (0x3 << 14))
+#define INFRACFG_AO_EMI_INDIV_GPU_ON		((0x1 << 5) | (0x3 << 14))
+#define INFRACFG_AO_EMI_INDIV_GPU_OFF		((0x0 << 5) | (0x0 << 14))
+
 #define MCUCFG_SYNC_DCM_MP0_REG		MP0_SCAL_SYNC_DCM_CONFIG
 #define MCUCFG_SYNC_DCM_MP1_REG		SYNC_DCM_CONFIG
 #define MCUCFG_SYNC_DCM_MP2_REG		MCUCFG_SYNC_DCM
@@ -265,6 +301,7 @@ int dcm_last_core(ENUM_LAST_CORE_DCM on);
 int dcm_rgu(ENUM_RGU_DCM on);
 int dcm_topckg(ENUM_TOPCKG_DCM on);
 int dcm_lpdma(ENUM_LPDMA_DCM on);
+void dcm_infracfg_ao_emi_indiv(int on);
 #endif
 
 int mt_dcm_init(void);
