@@ -82,6 +82,10 @@
 #include "mtk_spm_dpidle_mt6757.h"
 #endif
 
+#if defined(CONFIG_MACH_MT6759)
+#include "mtk_idle.h"
+#endif
+
 /*****************************************************************************
  * PMIC related define
  ******************************************************************************/
@@ -1243,7 +1247,7 @@ int dlpt_notify_handler(void *unused)
 	cur_ui_soc = pre_ui_soc;
 
 	do {
-#ifdef CONFIG_MACH_MT6757
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_MT6759)
 		if (dpidle_active_status())
 			ktime = ktime_set(20, 0); /* light-loading mode */
 		else
