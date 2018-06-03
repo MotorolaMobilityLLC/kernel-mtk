@@ -12,7 +12,7 @@
 #
 
 #obj-y += dip/
-obj-y += src/
+#obj-y += src/
 #obj-y += owe/
 obj-y += rsc/
 #obj-y += wpe/
