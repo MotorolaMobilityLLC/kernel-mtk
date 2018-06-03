@@ -42,7 +42,11 @@ struct cqdma_env_info {
 	u32 irq;
 };
 
+#if defined(CONFIG_MACH_MT6799)
+#define MAX_CQDMA_CHANNELS 3
+#else
 #define MAX_CQDMA_CHANNELS 2
+#endif
 
 static struct cqdma_env_info env_info[MAX_CQDMA_CHANNELS];
 static u32 nr_cqdma_channel;
@@ -73,25 +77,35 @@ static u32 nr_cqdma_channel;
 #define DMA_AXIATTR(ch)            IOMEM((env_info[ch].base + 0x0038))
 #define DMA_DBG_STAT(ch)           IOMEM((env_info[ch].base + 0x0050))
 
+#if defined(CONFIG_MACH_MT6799)
+#define DMA_GDMA_SEC_EN(ch)        IOMEM((env_info[ch].base + 0x003C))
+#define DMA_VIO_DBG1(ch)           IOMEM((env_info[ch].base + 0x0040))
+#define DMA_VIO_DBG(ch)            IOMEM((env_info[ch].base + 0x0044))
+#else
 #define DMA_VIO_DBG1(ch)           IOMEM((env_info[ch].base + 0x003c))
+#define DMA_GDMA_SEC_EN(ch)        IOMEM((env_info[ch].base + 0x0058))
+#define DMA_VIO_DBG(ch)            IOMEM((env_info[ch].base + 0x0060))
+#endif
 
-#if defined(CONFIG_ARCH_MT6797)
+/*Everest,Elbrus,whitney:0x60,0x64,0x68*/
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6799)
 #define DMA_SRC_4G_SUPPORT(ch)     IOMEM((env_info[ch].base + 0x0060))
 #define DMA_DST_4G_SUPPORT(ch)     IOMEM((env_info[ch].base + 0x0064))
 #define DMA_JUMP_4G_SUPPORT(ch)    IOMEM((env_info[ch].base + 0x0068))
 
 #elif defined(CONFIG_ARCH_MT6752)
+/*k2:0x40,0x44,0x48*/
 #define DMA_SRC_4G_SUPPORT(ch)     IOMEM((env_info[ch].base + 0x0040))
 #define DMA_DST_4G_SUPPORT(ch)     IOMEM((env_info[ch].base + 0x0044))
 #define DMA_JUMP_4G_SUPPORT(ch)    IOMEM((env_info[ch].base + 0x0048))
 #else
+/*jade ,Olympus,KIBO:0xe0,0xe4,0xe8*//*denali,Rainier:N/A*/
 #define DMA_SRC_4G_SUPPORT(ch)     IOMEM((env_info[ch].base + 0x00E0))
 #define DMA_DST_4G_SUPPORT(ch)     IOMEM((env_info[ch].base + 0x00E4))
 #define DMA_JUMP_4G_SUPPORT(ch)    IOMEM((env_info[ch].base + 0x00E8))
 #endif
 
-#define DMA_GDMA_SEC_EN(ch)        IOMEM((env_info[ch].base + 0x0058))
-#define DMA_VIO_DBG(ch)            IOMEM((env_info[ch].base + 0x0060))
+
 
 /*
  * Register Setting
