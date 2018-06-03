@@ -1014,10 +1014,12 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	else
 		mask = dvfs_mask[opp];
 
-	if (plat_channel_num == 2)
-		dvfs_level[OPP_1] = 0x8;
-	else if (plat_channel_num == 4)
-		dvfs_level[OPP_1] = 0x4;
+	if (plat_chip_ver == CHIP_SW_VER_01) {
+		if (plat_channel_num == 2)
+			dvfs_level[OPP_1] = 0x8;
+		else if (plat_channel_num == 4)
+			dvfs_level[OPP_1] = 0x4;
+	}
 
 #if 1
 	/* check DVFS idle */
@@ -1029,7 +1031,17 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	}
 #endif
 
-	spm_write(DVFSRC_CPU_LEVEL_MASK, (spm_read(DVFSRC_CPU_LEVEL_MASK) & ~(0xf)) | mask);
+	if (plat_chip_ver == CHIP_SW_VER_01) {
+		spm_write(DVFSRC_CPU_LEVEL_MASK, (spm_read(DVFSRC_CPU_LEVEL_MASK) & ~(0xf)) | mask);
+	} else {
+		if (opp == OPP_1) {
+			spm_write(DVFSRC_DEBUG_EN, spm_read(DVFSRC_DEBUG_EN) | (0x2 << 4));
+			spm_write(DVFSRC_CPU_LEVEL_MASK, (spm_read(DVFSRC_CPU_LEVEL_MASK) & ~(0xf)));
+		} else {
+			spm_write(DVFSRC_CPU_LEVEL_MASK, (spm_read(DVFSRC_CPU_LEVEL_MASK) & ~(0xf)) | mask);
+			spm_write(DVFSRC_DEBUG_EN, spm_read(DVFSRC_DEBUG_EN) & ~(0x3 << 4));
+		}
+	}
 
 	vcorefs_crit_mask(log_mask(), kicker, "[%s] fix: %d, opp: %d, CPU_LEVEL_MASK: 0x%x (v:%d)(r:%d)(c:%d)\n",
 				__func__, fix, opp, spm_read(DVFSRC_CPU_LEVEL_MASK),
@@ -1070,30 +1082,22 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		}
 
 		if (plat_chip_ver == CHIP_SW_VER_01) {
-			/* E1 HRT WQHD/FHD */
 			spm_write(DVFSRC_M3733, 0xa60b4); /* >5.3G to opp0 */
 			spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp0 */
 			spm_write(DVFSRC_M1600, 0x3205a); /* >1.6G to opp2 */
 		} else {
-			#ifdef CONFIG_MTK_SMI_EXT
-			/* panel resolution */
-			if (plat_lcd_resolution == MMDVFS_LCD_SIZE_WQHD) {
-				/* E2 HRT WQHD */
-				spm_write(DVFSRC_M3733, 0xc80b4); /* >6.4G to opp0 */
-				spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp1 */
-				spm_write(DVFSRC_M1600, 0x6405a); /* >3.2G to opp2 */
-			} else if (plat_lcd_resolution == MMDVFS_LCD_SIZE_FHD) {
-				/* E2 HRT FHD */
-				spm_write(DVFSRC_M3733, 0xc80b4); /* >6.4G to opp0 */
-				spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp1 */
-				spm_write(DVFSRC_M1600, 0x5305a); /* >2.7G to opp2 */
-			}
-			#endif
+			spm_write(DVFSRC_M3733, 0xc83ff); /* >12.8G to opp0 */
+			spm_write(DVFSRC_M3200, 0xa63ff); /* >10.7G to opp1 */
+			spm_write(DVFSRC_M1600, 0x643ff); /* >6.4G to opp2 */
 		}
 
 		break;
 	case DVFSRC_CHANNEL_4:
-		spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) | (1U << 0));
+		if (plat_chip_ver == CHIP_SW_VER_01)
+			spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) | (1U << 0));
+		else
+			spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) & ~(1U << 0));
+
 		spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) | (1U << 2));
 
 		if (plat_chip_ver == CHIP_SW_VER_01) {
@@ -1105,25 +1109,13 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		}
 
 		if (plat_chip_ver == CHIP_SW_VER_01) {
-			/* E1 HRT WQHD/FHD */
 			spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
 			spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp0 */
 			spm_write(DVFSRC_M1600, 0x3205a); /* >3.2G to opp2 */
 		} else {
-			#ifdef CONFIG_MTK_SMI_EXT
-			/* panel resolution */
-			if (plat_lcd_resolution == MMDVFS_LCD_SIZE_WQHD) {
-				/* E2 HRT WQHD */
-				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
-				spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp0 */
-				spm_write(DVFSRC_M1600, 0x6405a); /* >6.4G to opp2 */
-			} else if (plat_lcd_resolution == MMDVFS_LCD_SIZE_FHD) {
-				/* E2 HRT FHD */
-				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
-				spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp0 */
-				spm_write(DVFSRC_M1600, 0x5305a); /* >5.3G to opp2 */
-			}
-			#endif
+			spm_write(DVFSRC_M3733, 0xc83ff); /* >12.8G to opp0 */
+			spm_write(DVFSRC_M3200, 0xa63ff); /* >10.7G to opp0 */
+			spm_write(DVFSRC_M1600, 0x643ff); /* >6.4G to opp2 */
 		}
 
 		break;
@@ -1196,8 +1188,8 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_DEBUG_EN, 0x49);
 	spm_write(DVFSRC_CHANNEL_MASK, 0x201fffff);
 	spm_write(DVFSRC_LEVEL_JMP_METHOD, 0x32C801fc);
-	spm_write(DVFSRC_BANDWIDTH_CONST1, 0x04100000);
-	spm_write(DVFSRC_BANDWIDTH_CONST2, 0x04104000);
+	spm_write(DVFSRC_BANDWIDTH_CONST1, 0x41000000);
+	spm_write(DVFSRC_BANDWIDTH_CONST2, 0x40140000);
 
 	if (plat_chip_ver == CHIP_SW_VER_01)
 		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001);
