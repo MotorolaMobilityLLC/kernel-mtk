@@ -79,7 +79,7 @@ static idle_footprint_t fp[NR_IDLE_TYPES] = {
  ************************************************************/
 /* [ByChip] Internal weak functions: implemented in mtk_spm_idle.c */
 int __attribute__((weak)) mtk_idle_trigger_wfi(
-	int idle_type, int cpu)
+	int idle_type, unsigned int idle_flag, int cpu)
 {
 	pr_notice("Power/swap %s is not implemented!\n", __func__);
 
@@ -215,16 +215,6 @@ static void mtk_idle_post_handler(int idle_type)
 	mtk_idle_notifier_call_chain(idle_notify_leave[idle_type]);
 }
 
-static void mtk_idle_gs_dump(int idle_type)
-{
-#if 0 /* FIXME: Golden setting dump not ready */
-	if (idle_type == IDLE_TYPE_DP)
-		mt_power_gs_dump_dpidle(GS_ALL);
-	else if (idle_type == IDLE_TYPE_SO3 || idle_type == IDLE_TYPE_SO)
-		mt_power_gs_dump_sodi3(GS_ALL);
-#endif
-}
-
 /************************************************************
  * mtk idle flow for dp/so3/so
  ************************************************************/
@@ -274,10 +264,6 @@ int mtk_idle_enter(
 
 	__mtk_idle_footprint(IDLE_FP_PWR_PRE_SYNC);
 
-	/* Dump low power golden setting */
-	if (idle_flag & MTK_IDLE_LOG_DUMP_LP_GS)
-		mtk_idle_gs_dump(idle_type);
-
 	__mtk_idle_footprint(IDLE_FP_UART_SLEEP);
 
 	/* uart sleep */
@@ -294,7 +280,7 @@ int mtk_idle_enter(
 
 	/* [by_chip] enter cpuidle driver for wfi */
 	__profile_idle_stop(idle_type, PIDX_ENTER_TOTAL);
-	mtk_idle_trigger_wfi(idle_type, cpu);
+	mtk_idle_trigger_wfi(idle_type, idle_flag, cpu);
 	__profile_idle_start(idle_type, PIDX_LEAVE_TOTAL);
 
 	__mtk_idle_footprint(IDLE_FP_LEAVE_WFI);

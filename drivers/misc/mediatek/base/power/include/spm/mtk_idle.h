@@ -74,6 +74,10 @@ extern void idle_lock_by_ufs(unsigned int lock);
  * For other modules
  **********************************************************/
 
+/* For DVT only: Verify SODI/DP w/o MCDI enable */
+/* #define MTK_IDLE_DVT_TEST_ONLY */
+extern int mtk_idle_enter_dvt(int cpu);
+
 /* FIXME: DPIDLE - Refine dpidle api */
 #define dpidle_active_status() mtk_dpidle_is_active()
 extern bool mtk_dpidle_is_active(void);

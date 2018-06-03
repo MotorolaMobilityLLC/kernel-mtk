@@ -702,6 +702,13 @@ void mcdi_governor_init(void)
 	mcdi_status_init();
 
 	set_mcdi_s_state(MCDI_STATE_SODI3);
+
+	/* Note: [DVT] Select mcdi state w/o mcdi enable
+	 * Include mtk_idle.h for MTK_IDLE_DVT_TEST_ONLY
+	 */
+	#if defined(MTK_IDLE_DVT_TEST_ONLY)
+	set_mcdi_enable_by_pm_qos(true);
+	#endif
 }
 
 void get_mcdi_feature_status(struct mcdi_feature_status *stat)

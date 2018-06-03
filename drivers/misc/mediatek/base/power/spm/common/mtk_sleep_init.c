@@ -18,6 +18,12 @@
 #include <mtk_spm.h>
 #include <mtk_sleep_internal.h>
 
+int __attribute__((weak)) mtk_spm_init(void)
+{
+	pr_info("%s not implemented\n", __func__);
+	return 0;
+}
+
 static int __init mtk_sleep_init(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)

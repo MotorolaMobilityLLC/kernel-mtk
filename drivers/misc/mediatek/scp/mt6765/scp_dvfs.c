@@ -50,7 +50,6 @@
 #include <linux/clk.h>
 #endif
 
-#include "mtk_spm_vcore_dvfs.h"
 #include "mtk_spm_resource_req.h"
 
 #ifdef pr_fmt

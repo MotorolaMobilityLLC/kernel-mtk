@@ -52,14 +52,12 @@
 #include <linux/notifier.h>
 
 #include <linux/pm_qos.h>
-#include <mtk_spm_vcore_dvfs.h>
 #ifdef USE_IDLE_NOTIFY
 #include "mtk_idle.h"
 #endif /* USE_IDLE_NOTIFY */
 
 #include <linux/cpu_pm.h>
 static int cm_mgr_idle_mask;
-#include <mtk_spm_reg.h>
 void __iomem *spm_sleep_base;
 
 void __iomem *mcucfg_mp0_counter_base;

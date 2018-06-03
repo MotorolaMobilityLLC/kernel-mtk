@@ -36,7 +36,6 @@ extern void __iomem *spm_base;
 /********************************************************************
  * FIXME: To be refined !!!
  *******************************************************************/
-int mtk_spm_init(void);
 void *mt_spm_base_get(void);
 extern int spm_load_firmware_status(void);
 

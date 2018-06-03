@@ -36,7 +36,6 @@ void __attribute__((weak)) idle_refcnt_dec(void) {}
 
 /* Local variables */
 /* External variables */
-//extern unsigned long slp_dp_cnt[NR_CPUS];	/* FIXME: sleep dpidle count */
 static unsigned long slp_dp_cnt[NR_CPUS];	/* FIXM: To be removed */
 
 
@@ -55,7 +54,7 @@ static ssize_t idle_state_read(char *ToUserBuf, size_t sz_t, void *priv)
 	} while (0)
 
 	log("*************** idle state ***********************\n");
-	for_each_possible_cpu(i) {
+	for (i = 0; i < nr_cpu_ids; i++) {
 		log("cpu%d: slp_dp=%lu, dp=%lu, so3=%lu, so=%lu\n"
 			, i, slp_dp_cnt[i], dp_cnt[i], so3_cnt[i], so_cnt[i]);
 	}

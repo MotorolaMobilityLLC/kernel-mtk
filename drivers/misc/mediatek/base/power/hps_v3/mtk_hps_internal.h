@@ -21,7 +21,7 @@
 #include <linux/sched/rt.h>	/* MAX_RT_PRIO */
 
 #include "mtk_ppm_api.h"
-#include <mtk_idle_profile.h>
+#include "mtk_idle.h"
 
 /*
  * CONFIG - compile time

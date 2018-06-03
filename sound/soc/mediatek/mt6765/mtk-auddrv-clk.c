@@ -57,7 +57,6 @@
 #include <linux/spinlock.h>
 #if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <mtk_idle.h>
-#include <spm_v3/mtk_clk_id.h>
 #endif
 #include <linux/err.h>
 #include <linux/platform_device.h>

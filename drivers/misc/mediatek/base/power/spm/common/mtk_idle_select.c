@@ -33,10 +33,8 @@ int __attribute__((weak)) spm_load_firmware_status(void) { return -1; }
 void __attribute__((weak)) mtk_idle_cond_update_state(void) {}
 
 
-/* For ACAO case, no need to check single cpu criteria. */
-#define MTK_IDLE_SINGLE_CPU_CHECK   (0)
+#if defined(MTK_IDLE_DVT_TEST_ONLY)
 
-#if MTK_IDLE_SINGLE_CPU_CHECK
 #include <linux/cpu.h>
 static atomic_t is_in_hotplug = ATOMIC_INIT(0);
 
@@ -85,7 +83,40 @@ int __init mtk_idle_hotplug_cb_init(void)
 }
 
 late_initcall(mtk_idle_hotplug_cb_init);
-#endif /* MTK_IDLE_SINGLE_CPU_CHECK */
+
+static void __go_to_wfi(int cpu)
+{
+	isb();
+	/* memory barrier before WFI */
+	mb();
+	__asm__ __volatile__("wfi" : : : "memory");
+}
+
+int mtk_idle_enter_dvt(int cpu)
+{
+	int state = -1;
+
+	if (mtk_idle_cpu_criteria())
+		state = mtk_idle_select(cpu);
+
+	switch (state) {
+	case IDLE_TYPE_DP:
+		dpidle_enter(cpu);
+		break;
+	case IDLE_TYPE_SO:
+		soidle3_enter(cpu);
+		break;
+	case IDLE_TYPE_SO3:
+		soidle_enter(cpu);
+		break;
+	default:
+		__go_to_wfi(cpu);
+		break;
+	}
+
+	return 0;
+}
+#endif /* MTK_IDLE_DVT_TEST_ONLY */
 
 #if defined(CONFIG_MTK_UFS_BOOTING)
 static unsigned int idle_ufs_lock;
@@ -135,11 +166,6 @@ int mtk_idle_select(int cpu)
 	int ch = 0, ret = -1;
 	enum dcs_status dcs_status;
 	bool dcs_lock_get = false;
-	#endif
-
-	#if MTK_IDLE_SINGLE_CPU_CHECK
-	if (!mtk_idle_cpu_criteria())
-		return -1;
 	#endif
 
 	/* direct return if all mtk idle features are off */
