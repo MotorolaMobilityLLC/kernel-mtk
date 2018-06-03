@@ -18,8 +18,10 @@
 #define AAL_HAS_DRE3            (1)
 #endif
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
-#define AAL_CUSTOMER_GET_PANEL_TYPE            (1)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || \
+	defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775) || \
+	defined(CONFIG_MACH_MT6765)
+#define AAL_SUPPORT_KERNEL_API            (1)
 #endif
 
 #define AAL_HIST_BIN            33	/* [0..32] */
@@ -51,6 +53,24 @@ enum AAL_ESS_UD_MODE {
 	CONFIG_TO_LCD = 1,
 	CONFIG_TO_AMOLED = 2
 };
+
+enum AAL_DRE_MODE {
+	DRE_EN_BY_CUSTOM_LIB = 0xFFFF,
+	DRE_OFF = 0,
+	DRE_ON = 1
+};
+
+enum AAL_ESS_MODE {
+	ESS_EN_BY_CUSTOM_LIB = 0xFFFF,
+	ESS_OFF = 0,
+	ESS_ON = 1
+};
+
+enum AAL_ESS_LEVEL {
+	ESS_LEVEL_BY_CUSTOM_LIB = 0xFFFF
+};
+
+#define AAL_CONTROL_CMD(ID, CONTROL) (ID << 16 | CONTROL)
 
 struct DISP_AAL_INITREG {
 	/* DRE */
@@ -111,8 +131,11 @@ struct DISP_AAL_HIST {
 #ifdef AAL_HAS_DRE3
 	aal_u32_handle_t dre30_hist;
 #endif
-#ifdef AAL_CUSTOMER_GET_PANEL_TYPE
+#ifdef AAL_SUPPORT_KERNEL_API
 	unsigned int panel_type;
+	int essStrengthIndex;
+	int ess_enable;
+	int dre_enable;
 #endif
 };
 
@@ -155,5 +178,8 @@ int aal_request_partial_support(int partial);
 void disp_aal_notify_backlight_changed(int bl_1024);
 
 void disp_aal_set_lcm_type(unsigned int panel_type);
+void disp_aal_set_ess_level(int level);
+void disp_aal_set_ess_en(int enable);
+void disp_aal_set_dre_en(int enable);
 
 #endif
