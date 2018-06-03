@@ -25,7 +25,8 @@ endif
 ccflags-y += \
 	-I$(src)/../common/common_main/include \
 	-I$(src)/../common/common_main/linux/include \
-	-I$(src)/../common/common_main/core/include
+	-I$(src)/../common/common_main/core/include \
+	-I$(src)/../common/common_main/platform/include
 
 obj-$(CONFIG_MTK_COMBO_GPS)	+= stp_chrdev_gps.o
 obj-$(CONFIG_MTK_GPS)		+= gps.o
