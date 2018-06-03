@@ -561,9 +561,9 @@ static int bmg_set_range(struct i2c_client *client, enum BMG_RANGE_ENUM range)
 			actual_range = BMI160_RANGE_1000;
 		else if (range == BMG_RANGE_500)
 			actual_range = BMI160_RANGE_500;
-		else if (range == BMG_RANGE_500)
+		else if (range == BMG_RANGE_250) /*ALPS02962852*/
 			actual_range = BMI160_RANGE_250;
-		else if (range == BMG_RANGE_500)
+		else if (range == BMG_RANGE_125) /*ALPS02962852*/
 			actual_range = BMI160_RANGE_125;
 		else {
 			err = -EINVAL;
@@ -1184,9 +1184,11 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 	struct SENSOR_DATA sensor_data;
 	int cali[BMG_AXES_NUM] = {0};
 	struct bmg_i2c_data *obj = (struct bmg_i2c_data *)file->private_data;
-	struct i2c_client *client = obj->client;
+	struct i2c_client *client; /*ALPS03195299*/
+
 	if (obj == NULL)
 		return -EFAULT;
+	client = obj->client; /*ALPS03195299*/
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE,
 			(void __user *)arg, _IOC_SIZE(cmd));
@@ -1370,7 +1372,7 @@ static struct notifier_block pm_notifier_func = {
 static int bmg_i2c_detect(struct i2c_client *client,
 		struct i2c_board_info *info)
 {
-	strcpy(info->type, BMG_DEV_NAME);
+	strncpy(info->type, BMG_DEV_NAME, sizeof(info->type)); /*ALPS03195530*/
 	return 0;
 }
 

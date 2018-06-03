@@ -248,13 +248,13 @@ static int bma_i2c_read_block(struct i2c_client *client,
 	u8 beg = addr;
 	struct i2c_msg msgs[2] = {
 		{
-			.addr = client->addr,	
+			/*.addr = client->addr,	 ALPS03195309*/
 			.flags = 0,
 			.len = 1,		
 			.buf = &beg
 		},
 		{
-			.addr = client->addr,	
+			/*.addr = client->addr,	 ALPS03195309*/
 			.flags = I2C_M_RD,
 			.len = len,		
 			.buf = data,
@@ -262,6 +262,8 @@ static int bma_i2c_read_block(struct i2c_client *client,
 	};
 	if (!client)
 		return -EINVAL;
+	msgs[0].addr = client->addr; /*ALPS03195309*/
+	msgs[1].addr = client->addr; /*ALPS03195309*/
 #if 0
 	else if (len > C_I2C_FIFO_SIZE) {
 		GSE_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
