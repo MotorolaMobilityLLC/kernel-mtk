@@ -635,6 +635,9 @@ static int bmg_set_datarate(struct i2c_client *client,
 #endif
 		data = BMG_SET_BITSLICE(data,
 			BMI160_USER_GYR_CONF_ODR, datarate);
+#ifdef CONFIG_MTK_GPS_SUPPORT
+		data &= 0x0F;	/* set filter mode to OSR4 */
+#endif
 #ifdef BMI160_ACCESS_BY_GSE_I2C
 		err += bmi_i2c_write_wrapper(0, BMI160_USER_GYR_CONF_ODR__REG, &data, 1);
 #else
@@ -1409,8 +1412,12 @@ static int bmi160_gyro_set_delay(u64 ns)
 {
 	int err;
 	int value = (int)ns/1000/1000 ;
+#ifdef CONFIG_MTK_GPS_SUPPORT
+	int sample_delay = BMI160_GYRO_ODR_3200HZ;
+#else
 	/* Currently, fix data rate to 100Hz. */
 	int sample_delay = BMI160_GYRO_ODR_100HZ;
+#endif
 	struct bmg_i2c_data *priv = obj_i2c_data;
 	err = bmg_set_datarate(priv->client, sample_delay);
 	if (err < 0)
