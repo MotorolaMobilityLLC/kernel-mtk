@@ -450,8 +450,6 @@ static int rt9750_i2c_block_read(struct rt9750_info *info, u8 cmd, u32 leng,
 	return ret;
 }
 
-
-#if 0
 static int rt9750_i2c_test_bit(struct rt9750_info *info, u8 cmd, u8 shift)
 {
 	int ret = 0;
@@ -464,7 +462,6 @@ static int rt9750_i2c_test_bit(struct rt9750_info *info, u8 cmd, u8 shift)
 
 	return ret;
 }
-#endif
 
 static int rt9750_i2c_update_bits(struct rt9750_info *info, u8 cmd, u8 data,
 	u8 mask)
@@ -503,7 +500,6 @@ static inline int rt9750_clr_bit(struct rt9750_info *info, u8 reg, u8 mask)
 /* Internal function         */
 /* ========================= */
 
-#if 0
 static u8 rt9750_find_closest_reg_value(const u32 min, const u32 max,
 	const u32 step, const u32 num, const u32 target)
 {
@@ -530,7 +526,6 @@ static u8 rt9750_find_closest_reg_value(const u32 min, const u32 max,
 	/* Greater than maximum supported value, use maximum one */
 	return num - 1;
 }
-#endif
 
 static u8 rt9750_find_closest_reg_value_via_table(const u32 *value_table,
 	const u32 table_size, const u32 target_value)
@@ -608,10 +603,10 @@ static irqreturn_t rt9750_irq_handler(int irq, void *data)
 		irq_data[i] &= ~irq_mask[i];
 		pr_info("%s: event-%d(%d, %d, %d, %d, %d, %d, %d, %d)\n",
 			__func__, i + 1,
-			irq_data[i] & 0x01, (irq_data[i] >> 1) & 0x01,
-			(irq_data[i] >> 2) & 0x01, (irq_data[i] >> 3) & 0x01,
-			(irq_data[i] >> 4) & 0x01, (irq_data[i] >> 5) & 0x01,
-			(irq_data[i] >> 6) & 0x01, (irq_data[i] >> 7) & 0x01);
+			(irq_data[i] & 0x80) >> 7, (irq_data[i] & 0x40) >> 6,
+			(irq_data[i] & 0x20) >> 5, (irq_data[i] & 0x10) >> 4,
+			(irq_data[i] & 0x08) >> 3, (irq_data[i] & 0x04) >> 2,
+			(irq_data[i] & 0x02) >> 1, irq_data[i] & 0x01);
 	}
 
 	return IRQ_HANDLED;
@@ -668,6 +663,7 @@ static int rt9750_parse_dt(struct rt9750_info *info, struct device *dev)
 		pr_err("%s: no enough memory\n", __func__);
 		return -ENOMEM;
 	}
+	memcpy(desc, &rt9750_default_desc, sizeof(struct rt9750_desc));
 
 	/*
 	 * The following is how gpio is uesed on MTK's platform, "GPIO pinctrl"
@@ -692,42 +688,28 @@ static int rt9750_parse_dt(struct rt9750_info *info, struct device *dev)
 	}
 
 	if (of_property_read_string(np, "charger_name",
-		&desc->chg_dev_name) < 0) {
+		&desc->chg_dev_name) < 0)
 		pr_err("%s: no charger name\n", __func__);
-		desc->chg_dev_name = rt9750_default_desc.chg_dev_name;
-	}
 
-	if (of_property_read_string(np, "eint_name", &desc->eint_name) < 0) {
+	if (of_property_read_string(np, "eint_name", &desc->eint_name) < 0)
 		pr_err("%s: no eint name\n", __func__);
-		desc->eint_name = rt9750_default_desc.eint_name;
-	}
 
 	if (of_property_read_string(np, "regmap_name",
-		&desc->regmap_name) < 0) {
+		&desc->regmap_name) < 0)
 		pr_err("%s: no regmap name\n", __func__);
-		desc->regmap_name = rt9750_default_desc.regmap_name;
-	}
 
 	if (of_property_read_string(np, "alias_name",
-		&info->chg_props.alias_name) < 0) {
+		&info->chg_props.alias_name) < 0)
 		pr_err("%s: no alias name\n", __func__);
-		info->chg_props.alias_name = rt9750_default_desc.alias_name;
-	}
 
-	if (of_property_read_u32(np, "vout_reg", &desc->vout_reg) < 0) {
+	if (of_property_read_u32(np, "vout_reg", &desc->vout_reg) < 0)
 		pr_err("%s: no vout regulation\n", __func__);
-		desc->vout_reg = rt9750_default_desc.vout_reg;
-	}
 
-	if (of_property_read_u32(np, "vbat_reg", &desc->vbat_reg) < 0) {
+	if (of_property_read_u32(np, "vbat_reg", &desc->vbat_reg) < 0)
 		pr_err("%s: no vbat regulation\n", __func__);
-		desc->vout_reg = rt9750_default_desc.vbat_reg;
-	}
 
-	if (of_property_read_u32(np, "wdt", &desc->wdt) < 0) {
+	if (of_property_read_u32(np, "wdt", &desc->wdt) < 0)
 		pr_err("%s: no wdt\n", __func__);
-		desc->wdt = rt9750_default_desc.wdt;
-	}
 
 	info->desc = desc;
 	pr_info("%s: chg_name:%s alias:%s\n", __func__,
@@ -810,9 +792,26 @@ static int rt9750_init_setting(struct rt9750_info *info)
 {
 	int ret = 0;
 
-	ret = rt9750_enable_all_irq(info, false);
+	ret = rt9750_enable_all_irq(info, true);
 
 	ret = rt9750_set_wdt(info, info->desc->wdt);
+
+	return ret;
+}
+
+static int rt9750_is_switch_enable(struct rt9750_info *info, bool *en)
+{
+	int ret = 0;
+
+	ret = rt9750_i2c_test_bit(info, RT9750_REG_CONTROL,
+		RT9750_SHIFT_CHG_EN);
+	if (ret < 0) {
+		*en = false;
+		return ret;
+	}
+
+	*en = (ret == 0 ? false : true);
+	pr_info("%s: enable = %d\n", __func__, *en);
 
 	return ret;
 }
@@ -929,10 +928,12 @@ static int rt9750_dump_register(struct charger_device *chg_dev)
 {
 	int i = 0, ret = 0;
 	u32 vout = 0, vbat = 0;
+	bool en = false;
 	struct rt9750_info *info = dev_get_drvdata(&chg_dev->dev);
 
 	ret = rt9750_get_vout(info, &vout);
 	ret = rt9750_get_vbat(info, &vbat);
+	ret = rt9750_is_switch_enable(info, &en);
 
 	for (i = 0; i < ARRAY_SIZE(rt9750_reg_addr); i++) {
 		ret = rt9750_i2c_read_byte(info, rt9750_reg_addr[i]);
@@ -940,16 +941,14 @@ static int rt9750_dump_register(struct charger_device *chg_dev)
 			return ret;
 	}
 
-	pr_info("%s: VOUT = %dmV, VBAT = %dmV\n",
-		__func__, vout / 1000, vbat / 1000);
+	pr_info("%s: VOUT = %dmV, VBAT = %dmV, SWITCH_EN = %d\n",
+		__func__, vout / 1000, vbat / 1000, en);
 
 	return ret;
 }
 
-static int rt9750_enable_chip(struct charger_device *chg_dev, bool en)
+static int _rt9750_enable_chip(struct rt9750_info *info, bool en)
 {
-	struct rt9750_info *info = dev_get_drvdata(&chg_dev->dev);
-
 	pr_info("%s\n", __func__);
 	if (!info->en_pinctrl || !info->en_enable || !info->en_disable) {
 		pr_info("%s: no pinctrl\n", __func__);
@@ -971,6 +970,27 @@ static int rt9750_enable_chip(struct charger_device *chg_dev, bool en)
 
 	mutex_unlock(&info->gpio_access_lock);
 	return 0;
+
+}
+
+static int rt9750_enable_chip(struct charger_device *chg_dev, bool en)
+{
+	int ret = 0;
+	struct rt9750_info *info = dev_get_drvdata(&chg_dev->dev);
+
+	ret = _rt9750_enable_chip(info, en);
+	if (ret < 0) {
+		pr_err("%s: enable chip failed\n", __func__);
+		return ret;
+	}
+
+	if (en) {
+		ret = rt9750_init_setting(info);
+		if (ret < 0)
+			pr_err("%s: init setting failed\n", __func__);
+	}
+
+	return ret;
 }
 
 static int rt9750_enable_switch(struct charger_device *chg_dev)
@@ -994,6 +1014,50 @@ static int rt9750_disable_switch(struct charger_device *chg_dev)
 
 	return ret;
 }
+
+static int rt9750_set_ibusoc(struct charger_device *chg_dev, u32 uA)
+{
+	int ret = 0;
+	struct rt9750_info *info = dev_get_drvdata(&chg_dev->dev);
+	u8 reg_ibusoc = 0;
+
+	reg_ibusoc = rt9750_find_closest_reg_value(RT9750_IBUSOC_MIN,
+		RT9750_IBUSOC_MAX, RT9750_IBUSOC_STEP, RT9750_IBUSOC_NUM, uA);
+
+	pr_info("%s: ibusoc = %d (0x%02X)\n", __func__, uA, reg_ibusoc);
+
+	ret = rt9750_i2c_update_bits(
+		info,
+		RT9750_REG_PROT_DLYOCP,
+		reg_ibusoc << RT9750_SHIFT_IOCOCP,
+		RT9750_MASK_IOCOCP
+	);
+
+	return ret;
+}
+
+static int rt9750_set_vbusov(struct charger_device *chg_dev, u32 uV)
+{
+	int ret = 0;
+	struct rt9750_info *info = dev_get_drvdata(&chg_dev->dev);
+	u8 reg_vbusov = 0;
+
+	reg_vbusov = rt9750_find_closest_reg_value(RT9750_VBUSOV_MIN,
+		RT9750_VBUSOV_MAX, RT9750_VBUSOV_STEP, RT9750_VBUSOV_NUM,
+		uV);
+
+	pr_info("%s: vbusov = %d (0x%02X)\n", __func__, uV, reg_vbusov);
+
+	ret = rt9750_i2c_update_bits(
+		info,
+		RT9750_REG_VBUS_OVP,
+		reg_vbusov << RT9750_SHIFT_VBUSOVP,
+		RT9750_MASK_VBUSOVP
+	);
+
+	return ret;
+}
+
 
 static int rt9750_kick_wdt(struct charger_device *chg_dev)
 {
@@ -1051,6 +1115,8 @@ static struct charger_ops rt9750_chg_ops = {
 	.disable_direct_charging = rt9750_disable_switch,
 	.dump_registers = rt9750_dump_register,
 	.kick_direct_charging_wdt = rt9750_kick_wdt,
+	.set_direct_charging_ibusoc = rt9750_set_ibusoc,
+	.set_direct_charging_vbusov = rt9750_set_vbusov,
 	.get_ibus_adc = rt9750_get_ibus_adc,
 	.get_tchg_adc = rt9750_get_tdie_adc,
 };
@@ -1064,14 +1130,20 @@ static struct charger_ops rt9750_chg_ops = {
 static int rt9750_dbg_thread(void *data)
 {
 	int ret = 0;
-	u32 ibus_adc = 0, tdie_adc = 0;
+	u32 ibus_adc = 0;
+	int tdie_min = 0, tdie_max = 0;
+	bool en = false;
 	struct rt9750_info *info = (struct rt9750_info *)data;
 
 	pr_info("%s\n", __func__);
+	ret = rt9750_enable_chip(info->chg_dev, true);
 	while (1) {
 		ret = rt9750_get_ibus_adc(info->chg_dev, &ibus_adc);
-		ret = rt9750_get_tdie_adc(info->chg_dev, &tdie_adc);
-		msleep(1000);
+		ret = rt9750_get_tdie_adc(info->chg_dev, &tdie_min, &tdie_max);
+		ret = rt9750_set_ibusoc(info->chg_dev, 6000000);
+		ret = rt9750_set_vbusov(info->chg_dev, 6000000);
+		ret = rt9750_is_switch_enable(info->chg_dev, &en);
+		msleep(2000);
 	};
 
 	return ret;
@@ -1123,7 +1195,7 @@ static int rt9750_probe(struct i2c_client *i2c,
 	}
 
 	/* Enable Chip */
-	ret = rt9750_enable_chip(info->chg_dev, true);
+	ret = _rt9750_enable_chip(info, true);
 	if (ret < 0) {
 		pr_err("%s: enable chip failed\n", __func__);
 		goto err_enable_chip;
@@ -1143,12 +1215,6 @@ static int rt9750_probe(struct i2c_client *i2c,
 		goto err_register_regmap;
 #endif
 
-	ret = rt9750_init_setting(info);
-	if (ret < 0) {
-		pr_err("%s: set failed\n", __func__);
-		goto err_init_setting;
-	}
-
 	ret = rt9750_register_irq(info);
 	if (ret < 0) {
 		pr_err("%s: register irq failed\n", __func__);
@@ -1156,34 +1222,35 @@ static int rt9750_probe(struct i2c_client *i2c,
 	}
 	rt9750_dump_register(info->chg_dev);
 
-#if 0
-	info->task = kthread_create(rt9750_dbg_thread, (void *)info, "dbg_thread");
-	if (IS_ERR(info->task))
-		pr_err("%s: create dbg thread failed\n", __func__);
-	wake_up_process(info->task);
-#endif
-
 	/* Disable Chip */
-	ret = rt9750_enable_chip(info->chg_dev, false);
+	ret = _rt9750_enable_chip(info, false);
 	if (ret < 0) {
 		pr_err("%s: enable chip failed\n", __func__);
 		goto err_disable_chip;
 	}
 
+#if 0
+	info->task = kthread_create(rt9750_dbg_thread, (void *)info,
+		"dbg_thread");
+	if (IS_ERR(info->task))
+		pr_err("%s: create dbg thread failed\n", __func__);
+	wake_up_process(info->task);
+#endif
+
+
 	return ret;
 
-err_init_setting:
 err_register_irq:
 err_disable_chip:
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(info->regmap_dev);
 err_register_regmap:
 #endif
+err_enable_chip:
+err_no_dev:
 err_parse_dt:
 err_register_psy:
 err_register_chg_dev:
-err_enable_chip:
-err_no_dev:
 	mutex_destroy(&info->i2c_access_lock);
 	mutex_destroy(&info->adc_access_lock);
 	mutex_destroy(&info->gpio_access_lock);
@@ -1279,10 +1346,14 @@ module_exit(rt9750_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9750 Load Switch Driver");
-MODULE_VERSION("1.0.0_MTK");
+MODULE_VERSION("1.0.2_MTK");
 
 /*
  * Version Note
+ * 1.0.2
+ * (1) Add interface for setting ibusoc/vbusov
+ * (2) Write initial setting every time after enabling chip
+ *
  * 1.0.1
  * (1) Add gpio lock for rt9750_enable_chip
  *
