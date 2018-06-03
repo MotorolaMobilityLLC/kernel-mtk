@@ -113,6 +113,7 @@ struct governor_profile {
 	u32 segment_code;
 	bool precise_lpm_vcore;
 	bool emi_grouping;
+	bool dfd_wakeup_src;
 
 	bool perform_bw_enable;
 	u32 perform_bw_ulpm_threshold;
@@ -123,6 +124,9 @@ struct governor_profile {
 	u32 total_bw_ulpm_threshold;
 	u32 total_bw_lpm_threshold;
 	u32 total_bw_hpm_threshold;
+
+	bool ulpm_perform_bw_enable;
+	bool ulpm_total_bw_enable;
 };
 
 static struct governor_profile governor_ctrl = {
@@ -142,6 +146,7 @@ static struct governor_profile governor_ctrl = {
 	.segment_code = 0,
 	.precise_lpm_vcore = 0,
 	.emi_grouping = 0,
+	.dfd_wakeup_src = 0,
 
 	.curr_vcore_uv = VCORE_0_P_80_UV,
 	.curr_ddr_khz = FDDR_S0_KHZ,
@@ -155,6 +160,8 @@ static struct governor_profile governor_ctrl = {
 	.total_bw_ulpm_threshold = 0,
 	.total_bw_lpm_threshold = 0,
 	.total_bw_hpm_threshold = 0,
+	.ulpm_perform_bw_enable = 0,
+	.ulpm_total_bw_enable	= 0,
 };
 
 int kicker_table[LAST_KICKER] __nosavedata;
@@ -432,7 +439,6 @@ static u32 sram_debug_info[SRAM_DEBUG_COUNT];
 static char *vcorefs_get_sram_debug_info(char *p)
 {
 	char *buff_end = p + PAGE_SIZE;
-
 	if (p) {
 		p += snprintf(p, buff_end - p,
 				"dvfs  up/down count: %u / %u\n",
@@ -725,11 +731,18 @@ int governor_debug_store(const char *buf)
 			spm_write(VCOREFS_SRAM_EMI_BLOCK_TIME, 0);
 		else if (!strcmp(cmd, "screen_off_ulpm"))
 			gvrctrl->screen_off_ulpm = !!val;
+		else if (!strcmp(cmd, "ulpm_perform_bw_en"))
+			vcorefs_enable_ulpm_perform_bw(!!val);
+		else if (!strcmp(cmd, "ulpm_total_bw_en"))
+			vcorefs_enable_ulpm_total_bw(!!val);
 		else if (!strcmp(cmd, "precise_lpm_vcore"))
 			r = vcorefs_precise_lpm_vcore_enable(!!val);
 		else if (!strcmp(cmd, "emi_grouping"))
 			r = vcorefs_emi_grouping_enable(!!val);
-		else
+		else if (!strcmp(cmd, "dfd_wakeup_src")) {
+			gvrctrl->dfd_wakeup_src = !!val;
+			spm_set_dfd_wakeup_src(!!val);
+		} else
 			r = -EPERM;
 	} else {
 		r = -EPERM;
@@ -757,6 +770,7 @@ char *governor_get_dvfs_info(char *p)
 	p += snprintf(p, buff_end - p, "[segment_code]: %d\n", gvrctrl->segment_code);
 	p += snprintf(p, buff_end - p, "[precise_lpm_vcore]: %d\n", gvrctrl->precise_lpm_vcore);
 	p += snprintf(p, buff_end - p, "[emi_grouping]: %d\n", gvrctrl->emi_grouping);
+	p += snprintf(p, buff_end - p, "[dfd_wakeup_src]: %d\n", gvrctrl->dfd_wakeup_src);
 	p += snprintf(p, buff_end - p, "\n");
 
 	p += snprintf(p, buff_end - p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
@@ -775,6 +789,8 @@ char *governor_get_dvfs_info(char *p)
 			gvrctrl->total_bw_ulpm_threshold,
 			gvrctrl->total_bw_lpm_threshold,
 			gvrctrl->total_bw_hpm_threshold);
+	p += sprintf(p, "[ulpm perform_bw]: en=%d\n", gvrctrl->ulpm_perform_bw_enable);
+	p += sprintf(p, "[ulpm total_bw]  : en=%d\n", gvrctrl->ulpm_total_bw_enable);
 	p += snprintf(p, buff_end - p, "\n");
 
 	p = vcorefs_get_sram_debug_info(p);
@@ -845,6 +861,30 @@ int vcorefs_set_total_bw_threshold(u32 ulpm_threshold, u32 lpm_threshold, u32 hp
 
 	mutex_lock(&governor_mutex);
 	spm_vcorefs_set_total_bw_threshold(ulpm_threshold, lpm_threshold, hpm_threshold);
+	mutex_unlock(&governor_mutex);
+
+	return 0;
+}
+
+int vcorefs_enable_ulpm_perform_bw(bool enable)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	mutex_lock(&governor_mutex);
+	gvrctrl->ulpm_perform_bw_enable = enable;
+	spm_vcorefs_enable_ulpm_perform_bw(enable, true);
+	mutex_unlock(&governor_mutex);
+
+	return 0;
+}
+
+int vcorefs_enable_ulpm_total_bw(bool enable)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	mutex_lock(&governor_mutex);
+	gvrctrl->ulpm_total_bw_enable = enable;
+	spm_vcorefs_enable_ulpm_total_bw(enable, true);
 	mutex_unlock(&governor_mutex);
 
 	return 0;
@@ -1063,8 +1103,6 @@ int vcorefs_late_init_dvfs(void)
 		spm_go_to_vcore_dvfs(flag, 0);
 	}
 
-
-
 	mutex_lock(&governor_mutex);
 	gvrctrl->late_init_opp = set_init_opp_index();
 
@@ -1097,6 +1135,32 @@ int vcorefs_late_init_dvfs(void)
 	return 0;
 }
 
+#if 0
+static int vcorefs_is_lp_flavor(void)
+{
+#if defined(CONFIG_ARM64)
+	vcorefs_crit("flavor: %s\n", CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES);
+
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES, "mediatek/k57pv1_dm_64_op01_lwctg_lp", 35) == 0)
+		return 1;
+
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES, "mediatek/k57pv1_dm_64_om_lwctg_lp", 33) == 0)
+		return 1;
+
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES, "mediatek/k57pv1_64_op01_lwctg_lp", 32) == 0)
+		return 1;
+
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES, "mediatek/k57pv1_64_om_lwctg_lp", 30) == 0)
+		return 1;
+
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES, "mediatek/k57pv1_dm_64_6m_cnop_lp", 32) == 0)
+		return 1;
+#endif
+
+	return 0;
+}
+#endif
+
 static int __init vcorefs_module_init(void)
 {
 	int r;
@@ -1111,12 +1175,21 @@ static int __init vcorefs_module_init(void)
 
 	gvrctrl->segment_code = (get_devinfo_with_index(30) & 0x000000E0) >> 5;
 
-#if 0 /* TODO: enable after bring-up */
 	if (gvrctrl->segment_code == 3 || gvrctrl->segment_code == 7) {
-		gvrctrl->precise_lpm_vcore = 1;
-		gvrctrl->emi_grouping = 1;
-	}
+		/* gvrctrl->precise_lpm_vcore = 1; */
+		gvrctrl->dfd_wakeup_src = 1;
+		/* gvrctrl->emi_grouping = 1; */
+#if 0
+		if (gvrctrl->ddr_type != TYPE_LPDDR3) {
+			if (!vcorefs_is_lp_flavor()) {
+				gvrctrl->plat_feature_en = 0;
+				spm_vcorefs_off_load_lpm_req(0);
+			}
+		}
 #endif
+	}
+
+	spm_set_dfd_wakeup_src(gvrctrl->dfd_wakeup_src);
 	spm_vcorefs_emi_grouping_req(gvrctrl->emi_grouping);
 
 	r = init_vcorefs_cmd_table();
@@ -1149,9 +1222,11 @@ static int __init vcorefs_module_init(void)
 	vcorefs_init_sram_debug();
 
 	for (i = 0; i < NUM_KICKER; i++)
-		kicker_table[i] = -1;
+		kicker_table[i] = OPPI_UNREQ;
 
-	kicker_table[KIR_SYSFSX] = -1;
+	kicker_table[KIR_CPU] = OPPI_LOW_PWR;
+
+	kicker_table[KIR_SYSFSX] = OPPI_UNREQ;
 
 
 	return r;
