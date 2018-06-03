@@ -17,9 +17,9 @@
 /* submodule control */
 #define ENABLE_BWL	1
 #define ENABLE_MPU	1
-#define ENABLE_ELM	0
+#define ENABLE_ELM	1
 #define ENABLE_MBW	0
-//#define DECS_ON_SSPM
+#define DECS_ON_SSPM
 /* #define ENABLE_BWL_CONFIG */
 /* #define ENABLE_MPU_SLVERR */
 
