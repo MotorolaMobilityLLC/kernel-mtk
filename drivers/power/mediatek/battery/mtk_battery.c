@@ -3243,7 +3243,7 @@ void fg_drv_update_hw_status(void)
 	signed int chr_vol;
 	int fg_current, fg_coulomb, bat_vol, hwocv, plugout_status, tmp, bat_plugout_time;
 	int fg_current_iavg;
-	bool valid;
+	bool valid = false;
 
 	bm_debug("[fg_drv_update_hw_status]=>\n");
 
