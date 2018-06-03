@@ -74,6 +74,12 @@ void update_pwd_tbl(void)
 	long long max_freq;
 
 	max_freq = mt_cpufreq_get_freq_by_idx(0, 0);
+	if (max_freq <= 0) {
+		cpu_freq_thres = 101;
+		pr_debug(TAG "max_freq:%lld cpu_freq_thres:%u\n", max_freq,
+			     cpu_freq_thres);
+		return;
+	}
 
 	/*
 	 * unit in KHz, and multiply 100 before dividing by @max_freq.

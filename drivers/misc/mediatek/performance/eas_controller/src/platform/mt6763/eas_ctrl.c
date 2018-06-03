@@ -38,7 +38,18 @@ void update_pwd_tbl(void)
 	long long max_freq;
 
 	ddr_type = get_ddr_type();
-	max_freq = mt_cpufreq_get_freq_by_idx(0, 0);
+	max_freq = mt_cpufreq_get_freq_by_idx(1, 0);
+	if (max_freq <= 0) {
+		cpi_ll_boost_threshold[0] = 101;
+		cpi_ll_boost_threshold[1] = 101;
+		cpi_l_boost_threshold[0] = 101;
+		cpi_l_boost_threshold[1] = 101;
+		pr_debug(TAG" max_freq:%lld, ll_0:%lld, ll_1:%lld, l_0:%lld, l_1:%lld\n",
+			max_freq, cpi_ll_boost_threshold[0], cpi_ll_boost_threshold[1],
+			cpi_l_boost_threshold[0], cpi_l_boost_threshold[1]);
+		return;
+	}
+
 
 	switch (ddr_type) {
 	case TYPE_LPDDR3:
