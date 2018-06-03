@@ -832,8 +832,11 @@ static void ufshcd_clk_scaling_update_busy(struct ufs_hba *hba)
 void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 {
 	ufshcd_clk_scaling_start_busy(hba);
-	/* MTK patch for Deepidle & SODI */
-	/* Only get resources at first outstanding reqs&&tasks */
+
+	/*
+	 * MTK Patch:
+	 * For Deepidle & SODI, get resources at first outstanding reqs && tasks.
+	 */
 	if (!hba->outstanding_reqs && !hba->outstanding_tasks)
 		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_DMA_OP);
 
@@ -1371,6 +1374,15 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 		cmd->scsi_done(cmd);
 		goto out_unlock;
 	}
+
+	/* MTK Patch: Check if performance heuristic is applied */
+	err = ufs_mtk_perf_heurisic_if_allow_cmd(hba, cmd);
+
+	if (err) {
+		err = SCSI_MLQUEUE_HOST_BUSY;
+		goto out_unlock;
+	}
+
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
 
 	/* acquire the tag to make sure device cmds don't use it */
@@ -3373,6 +3385,10 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 		lrbp = &hba->lrb[index];
 		cmd = lrbp->cmd;
 		if (cmd) {
+
+			/* MTK Patch: handler of performance heuristic */
+			ufs_mtk_perf_heurisic_req_done(hba, cmd);
+
 			ufs_mtk_biolog_transfer_req_compl(index);
 			result = ufshcd_transfer_rsp_status(hba, lrbp);
 			scsi_dma_unmap(cmd);
