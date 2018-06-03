@@ -139,7 +139,7 @@ static unsigned long long drcc_pTime_us, drcc_cTime_us, drcc_diff_us;
 #define drcc_write_field(addr, range, val)	\
 	drcc_write(addr, (drcc_read(addr) & ~BITMASK(range)) | BITS(range, val))
 
-/* #define DRCC_K_CHECK */
+#define DRCC_K_CHECK
 #ifdef DRCC_K_CHECK
 /************************************************
  * call back registeration
@@ -239,8 +239,7 @@ static int _mt_drcc_cpu_CB(struct notifier_block *nfb,
 			mtk_drcc_lock(&flags);
 			if (big_cpus == 1) {
 				if (mtk_drcc_calibration_result() == 0) {
-					/* Log into SRAM debug. */
-					drcc_fail_composite();
+					/* drcc_fail_composite(); */
 					/* drcc_debug("K fail !!\n"); */
 				}
 				/* drcc_debug("K done !!\n"); */
@@ -263,10 +262,11 @@ static int drcc_cpu_pm_notifier(struct notifier_block *self,
 		if (cpu > 3) {
 			mtk_drcc_lock(&flags);
 			if (mtk_drcc_calibration_result() == 0) {
-				/* Log into SRAM debug. */
+				#if 0
 				drcc_debug("[%s] xxxx_drcc K fail !!!\n",
 					__func__);
-				drcc_fail_composite();
+				#endif
+				/* drcc_fail_composite(); */
 			}
 			/* drcc_debug("[%s] DRCC K check done !!!\n", __func__); */
 			mtk_drcc_unlock(&flags);
@@ -311,35 +311,32 @@ int mtk_drcc_calibration_result(void)
 	#ifndef DRCC_K_CHECK
 	unsigned long flags;
 	#endif
-	unsigned int value, result;
 
 	/* check the calibration result */
 	#ifndef DRCC_K_CHECK
 	mtk_drcc_lock(&flags);
 	#endif
+
+	mtk_drcc_log2RamConsole();
+	#if 0
 	value = mt_secure_call_drcc(MTK_SIP_KERNEL_DRCC_K_RST,
 		0, 0, 0);
-	/* drcc_debug("K rst = (0x%x) !!\n", value); */
-	if (value == 0xF) {
-		/* drcc_debug("K fail !! rst = (0x%x) !!\n", value); */
-		mtk_drcc_log2RamConsole();
-		aee_rr_rec_drcc_dbg_info(value,
-			7,
-			drcc_get_current_time_us());
+	if ((value & 0xf) == 0xF) {
+		drcc_debug("K fail = (0x%x) !!\n", value);
+		aee_rr_rec_drcc_dbg_info((value >> 4),
+			0,
+			drcc_k_fail_times++);
+		WARN_ON(drcc_k_fail_times > 500);
 		mtk_drcc_enable(0);
 		result = 0;
-	} else if (value == 0xD) {
-		/* drcc_debug("K fail by disable!! rst = (0x%x) !!\n", value); */
-		mtk_drcc_log2RamConsole();
-		mtk_drcc_enable(0);
-		result = 0;
-	} else
-		result = 1;
+	}
+	#endif
+
 	#ifndef DRCC_K_CHECK
 	mtk_drcc_unlock(&flags);
 	#endif
 
-	return result;
+	return 1;
 }
 
 void mtk_drcc_init(void)
