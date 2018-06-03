@@ -3739,7 +3739,7 @@ int DIP_pm_suspend(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	/*pr_debug("calling %s()\n", __func__);*/
-	LOG_INF("DPE suspend G_u4DipEnClkCnt: %d, g_u4DipCnt: %d", G_u4DipEnClkCnt, g_u4DipCnt);
+	LOG_INF("DIP suspend G_u4DipEnClkCnt: %d, g_u4DipCnt: %d", G_u4DipEnClkCnt, g_u4DipCnt);
 
 	return DIP_suspend(pdev, PMSG_SUSPEND);
 }
@@ -3751,7 +3751,7 @@ int DIP_pm_resume(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	/*pr_debug("calling %s()\n", __func__);*/
-	LOG_INF("DPE resume G_u4DipEnClkCnt: %d, g_u4DipCnt: %d", G_u4DipEnClkCnt, g_u4DipCnt);
+	LOG_INF("DIP resume G_u4DipEnClkCnt: %d, g_u4DipCnt: %d", G_u4DipEnClkCnt, g_u4DipCnt);
 
 	return DIP_resume(pdev);
 }
