@@ -35,13 +35,6 @@
 #include <linux/of_irq.h>
 #include <linux/clk.h>
 
-/* for bxx debug start */
-#include <../../misc/mediatek/systracker/systracker_v2.h>
-extern void print_enabled_clks_once(void);
-extern int systracker_watchpoint_disable(void);
-/* for bxx debug end */
-
-
 #define I2C_DEBUG_FS
 
 #define I2C_BUS_ERR			(0x01 << 8)

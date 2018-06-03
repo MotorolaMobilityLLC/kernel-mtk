@@ -89,13 +89,6 @@ static inline u16 _i2c_readw(struct mt_i2c *i2c, u16 offset)
 
 void __iomem *cg_base;
 
-/* for bxx debug start */
-static void __iomem *clk_cg_base;
-static void __iomem *power_base;
-static void __iomem *i2c_cg_base;
-static void __iomem *i2c_g_base;
-/* for bxx debug end */
-
 s32 map_cg_regs(struct mt_i2c *i2c)
 {
 	struct device_node *cg_node;
@@ -1525,28 +1518,6 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 			dev_info(i2c->dev, "addr: 0x%x, irq stat 0\n",
 				i2c->addr);
 
-			/* for bxx debug start */
-			dev_info(i2c->dev, "[bxx]0x11017000:[0x10]=0x%x\n"
-					"[0x14]=0x%x,[0x18]=0x%x\n",
-					readw(i2c_g_base + 0x10),
-					readw(i2c_g_base + 0x14),
-					readw(i2c_g_base + 0x18));
-			dev_info(i2c->dev, "[bxx]0x11017E00:[0x00]=0x%x\n"
-					"[0x10]=0x%x,[0x20]=0x%x\n",
-					readw(i2c_cg_base + 0x00),
-					readw(i2c_cg_base + 0x10),
-					readw(i2c_cg_base + 0x20));
-			pr_info("[bxx][0x10001090]=0x%x\n"
-					"[0x10001094]=0x%x,[0x100010AC]=0x%x\n"
-					"[0x100010C8]=0x%x,[0x10006318]=0x%x\n",
-					readw(clk_cg_base + 0x90),
-					readw(clk_cg_base + 0x94),
-					readw(clk_cg_base + 0xAC),
-					readw(clk_cg_base + 0xC8),
-					readw(power_base+0x18));
-			print_enabled_clks_once();
-			/* for bxx debug end */
-
 			i2c_dump_info(i2c);
 			#if defined(CONFIG_MTK_GIC_EXT)
 			mt_irq_dump_status(i2c->irqnr);
@@ -1582,10 +1553,7 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 					_i2c_readw(i2c, 0x258));
 
 				/* IBI triggered */
-				if ((i2c->id == 2) &&
-					(i2c->irq_stat & I2C_IBI)) {
-					/* systracker_disable(); */
-					systracker_watchpoint_disable();
+				if (i2c->irq_stat & I2C_IBI) {
 					pr_info("[bxx]0x54=0x%x,0x154=0x%x,0x254=0x%x\n",
 						_i2c_readw(i2c, 0x54),
 						_i2c_readw(i2c, 0x154),
@@ -1831,17 +1799,6 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	}
 	mt_i2c_init_hw(i2c);
 
-	/* for bxx debug start */
-	if (i2c->id == 2) {
-		pr_info("[bxx]probe:SOFTRESET:0x%x,COMMAND:0x%x,TRAFFIC:0x%x\n",
-			i2c_readw(i2c, OFFSET_SOFTRESET),
-			i2c_readw(i2c, OFFSET_COMMAND),
-			i2c_readw(i2c, OFFSET_TRAFFIC));
-		systracker_set_watchpoint_addr(0x11009154);
-		systracker_watchpoint_enable();
-	}
-	/* for bxx debug end */
-
 	mt_i2c_clock_disable(i2c);
 	if (i2c->ch_offset_default)
 		i2c->dma_buf.vaddr = dma_alloc_coherent(&pdev->dev,
@@ -1866,19 +1823,6 @@ static int mt_i2c_probe(struct platform_device *pdev)
 
 	if (!map_cg_regs(i2c))
 		pr_info("Map cg regs successfully.\n");
-
-	/* for bxx debug start */
-	if (i2c->id == 2) {
-		clk_cg_base = ioremap(0x10001000, 0x100);
-		power_base = ioremap(0x10006300, 0x100);
-		i2c_g_base = ioremap(0x11017000, 0x100);
-		i2c_cg_base = ioremap(0x11017E00, 0x100);
-		pr_info("[bxx]i2c2 clk_cg_base: 0x%p, power_base:0x%p\n",
-			clk_cg_base, power_base);
-		pr_info("[bxx]i2c2 i2c_g_base: 0x%p, i2c_cg_base:0x%p\n",
-			i2c_g_base, i2c_cg_base);
-	}
-	/* for bxx debug end */
 
 	return 0;
 }
@@ -1911,12 +1855,6 @@ static int mt_i2c_suspend_noirq(struct device *dev)
 		i2c->suspended = true;
 	spin_unlock(&i2c->cg_lock);
 
-	/* for bxx debug start */
-	if (i2c->id == 2)
-		pr_info("[bxx][%s] i2c%d, cg_cnt:%d, ch_offset_default:0x%x\n",
-			__func__, i2c->id, i2c->cg_cnt, i2c->ch_offset_default);
-	/* for bxx debug end */
-
 	return ret;
 }
 
@@ -1928,12 +1866,6 @@ static int mt_i2c_resume_noirq(struct device *dev)
 	spin_lock(&i2c->cg_lock);
 	i2c->suspended = false;
 	spin_unlock(&i2c->cg_lock);
-
-	/* for bxx debug start */
-	if (i2c->id == 2)
-		pr_info("[bxx][%s] i2c%d, cg_cnt:%d, ch_offset_default:0x%x\n",
-			__func__, i2c->id, i2c->cg_cnt, i2c->ch_offset_default);
-	/* for bxx debug end */
 
 	if (i2c->ch_offset_default) {
 		if (mt_i2c_clock_enable(i2c))
