@@ -15,7 +15,7 @@
 #define __SCP_DVFS_H__
 
 /* MT6758 DVFS doesn't need PLL because it switches between ULPOSC1 and ULPOSC2 directly  */
-#define SCP_DVFS_USE_PLL	0
+#define SCP_DVFS_USE_PLL	1
 
 #define PLL_ENABLE				(1)
 #define PLL_DISABLE				(0)
@@ -48,9 +48,9 @@ enum {
 /*#ifdef CONFIG_PINCTRL_MT6797*/
 
 enum clk_opp_enum {
-	CLK_OPP0 = 82,
-	CLK_OPP1 = 250,
-	CLK_OPP2 = 328,
+	CLK_OPP0 = 125,
+	CLK_OPP1 = 330,
+	CLK_OPP2 = 416,
 	CLK_INVALID_OPP,
 };
 
@@ -83,7 +83,7 @@ struct mt_scp_pll_t {
 };
 
 extern int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel);
-extern short  scp_set_pmic_vcore(unsigned int cur_freq);
+extern int scp_set_pmic_vcore(unsigned int cur_freq);
 extern unsigned int scp_get_dvfs_opp(void);
 extern uint32_t scp_get_freq(void);
 extern int scp_request_freq(void);
