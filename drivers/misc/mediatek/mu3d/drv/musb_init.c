@@ -354,6 +354,10 @@ static inline void mtu3d_u2_common_intr_handler(u32 dwIntrUsbValue)
 		usb_hal_dpidle_request(USB_DPIDLE_TIMER);
 		os_printk(K_NOTICE, "[U2 SUSPEND_INTR], USB_DPIDLE_TIMER\n");
 		mu3d_hal_pdn_ip_port(0, 0, 0, 1);
+#ifdef U3_COMPLIANCE
+		os_writel(U3D_LTSSM_INFO, CLR_DISABLE_CNT);
+		os_printk(K_NOTICE, "w1c, U3D_LTSSM_INFO, CLR_DISABLE_CNT\n");
+#endif
 	}
 
 	if (dwIntrUsbValue & RESUME_INTR) {

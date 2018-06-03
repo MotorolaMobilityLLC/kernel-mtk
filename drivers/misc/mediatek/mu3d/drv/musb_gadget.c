@@ -824,7 +824,7 @@ static int musb_gadget_disable(struct usb_ep *ep)
 			musb->active_ep, epnum, (musb_ep->is_in ? USB_TX : USB_RX));
 
 	if (musb->active_ep == 0 && musb->is_active == 0)
-		schedule_work(&musb->suspend_work);
+		queue_work(musb->st_wq, &musb->suspend_work);
 
 	spin_unlock_irqrestore(&(musb->lock), flags);
 
@@ -1587,7 +1587,7 @@ static struct musb *mu3d_clk_off_musb;
 static void do_mu3d_clk_off_work(struct work_struct *work)
 {
 	os_printk(K_NOTICE, "do_mu3d_clk_off_work, issue connection work\n");
-	schedule_delayed_work(&mu3d_clk_off_musb->connection_work, 0);
+	queue_delayed_work(mu3d_clk_off_musb->st_wq, &mu3d_clk_off_musb->connection_work, 0);
 }
 
 void set_usb_rdy(void)

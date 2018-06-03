@@ -1099,7 +1099,7 @@ void musb_stop(struct musb *musb)
 	dev_dbg(musb->controller, "HDRC disabled\n");
 
 	if (musb->active_ep == 0)
-		schedule_work(&musb->suspend_work);
+		queue_work(musb->st_wq, &musb->suspend_work);
 
 	/* Move to suspend work queue */
 #ifdef NEVER
@@ -2262,6 +2262,7 @@ static int __init musb_init_controller(struct device *dev, int nIrq, void __iome
 #ifdef EP_PROFILING
 	INIT_DELAYED_WORK(&musb->ep_prof_work, ep_prof_work);
 #endif
+	musb->st_wq = create_singlethread_workqueue("mu3d_st_wq");
 
 	/* The musb_platform_init() call:
 	 *   - adjusts musb->mregs and musb->isr if needed,
