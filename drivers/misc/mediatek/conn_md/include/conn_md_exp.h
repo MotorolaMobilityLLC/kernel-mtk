@@ -23,6 +23,17 @@
 #undef CHAR
 #endif
 
+/*
+ * Provide a common conn_md_ipc_ilm_t definition for wmt_drv.ko to reference,
+ * this decouples wmt_drv.ko away from ECCCI's ipc_ilm definition, as its
+ * naming varies between different Kernel versions currently.
+ * If in future the fields in this struct varies as well, we could either:
+ * 1. Redefine entire struct from conn_md, or
+ * 2. Let wmt_drv.ko handles the difference via:
+ *      #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0))
+ */
+typedef struct ipc_ilm conn_md_ipc_ilm_t;
+
 enum CONN_MD_ERR_CODE {
 	CONN_MD_ERR_NO_ERR = 0,
 	CONN_MD_ERR_DEF_ERR = -1,
