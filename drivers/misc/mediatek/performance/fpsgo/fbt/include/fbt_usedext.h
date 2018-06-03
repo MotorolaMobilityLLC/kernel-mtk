@@ -50,8 +50,6 @@ extern void (*update_lppcap)(unsigned int);
 
 extern void (*set_fps)(unsigned int);
 
-extern int update_userlimit_cpu_freq(int, int, struct ppm_limit_data *);
-
 extern int (*fbt_notifier_dfrc_fp_fbt_cpu)(unsigned int DFRC_fpt_limit);
 
 void fbt_cpu_set_game_hint_cb(int game);

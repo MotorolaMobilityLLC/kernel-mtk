@@ -62,9 +62,7 @@ extern int fbt_reset_asfc(int level);
 extern void fstb_game_mode_change(int is_game);
 
 extern int set_cpuset(int cluster);
-extern int set_idle_prefer(int enable);
-extern int update_userlimit_cpu_freq(int kicker, int num_cluster,
-		struct ppm_limit_data *freq_limit);
+extern int prefer_idle_for_perf_idx(int idx, int prefer_idle);
 extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
 extern unsigned int mt_ppm_userlimit_freq_limit_by_others(
 		unsigned int cluster);

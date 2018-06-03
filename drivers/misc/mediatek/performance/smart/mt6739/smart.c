@@ -96,44 +96,6 @@ int set_cpuset(int cluster)
 	return 0;
 }
 
-int set_idle_prefer(int enable)
-{
-	int ret;
-	char event_enable[10] = "DETECT=13"; /* HPS*/
-	char event_disable[10] = "DETECT=14"; /* HPS*/
-	char event_act_up[9]   = "ACTION=1"; /* up   */
-	char *envp_enable[3] = { event_enable, event_act_up, NULL };
-	char *envp_disable[3] = { event_disable, event_act_up, NULL };
-	char **envp;
-
-	switch (enable) {
-	case 0:
-		/* send 0-3 */
-		envp = &envp_disable[0];
-		break;
-
-	case 1:
-		/* send 4-7 */
-		envp = &envp_enable[0];
-		break;
-
-	default:
-		return -EINVAL;
-	}
-
-	if (!smart_context_obj)
-		return 0;
-
-	ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
-				 KOBJ_CHANGE, envp);
-	if (ret) {
-		pr_debug(TAG"kobject_uevent error:%d\n", ret);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
 /*--------------------INIT------------------------*/
 static int init_smart_obj(void)
 {

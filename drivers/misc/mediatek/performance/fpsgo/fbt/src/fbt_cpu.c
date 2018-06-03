@@ -50,6 +50,7 @@
 #include <mtk_vcorefs_manager.h>
 
 #include "eas_controller.h"
+#include "legacy_controller.h"
 
 #include "fbt_error.h"
 #include "fbt_base.h"
@@ -397,7 +398,7 @@ void xgf_setting_exit(void)
 
 	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
 	if (fbt_cpuset_enable) {
-		set_idle_prefer(0); /*todo sync?*/
+		prefer_idle_for_perf_idx(CGROUP_TA, 0); /*todo sync?*/
 		if (cluster_num > 1)
 			set_cpuset(-1); /*todo sync?*/
 		/*vcorefs_request_dvfs_opp(KIR_FBT, -1);*/
@@ -408,7 +409,7 @@ void xgf_setting_exit(void)
 		pld[i].min = -1;
 	}
 
-	update_userlimit_cpu_freq(EAS_KIR_FBC, cluster_num, pld);
+	update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
 	kfree(pld);
 }
 
@@ -440,7 +441,7 @@ void fbt_cpu_set_game_hint_cb(int is_game_mode)
 	ppm_game_mode_change_cb(game_mode);
 	if (game_mode) {
 		if (fbt_cpuset_enable)
-			set_idle_prefer(1);
+			prefer_idle_for_perf_idx(CGROUP_TA, 1);
 	} else
 		xgf_setting_exit();
 	mutex_unlock(&xgf_mlock);
@@ -583,7 +584,7 @@ unsigned int fbt_get_new_base_blc(void)
 
 	if (move_cluster && cluster_num > 1 && fbt_cpuset_enable)
 		set_cpuset(target_cluster);
-	update_userlimit_cpu_freq(EAS_KIR_FBC, cluster_num, pld);
+	update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
 
 	for (cluster = 0 ; cluster < cluster_num; cluster++) {
 		fpsgo_systrace_c_fbt_gm(-100, pld[cluster].max, "cluster%d limit freq", cluster);
@@ -1162,7 +1163,7 @@ void xgf_set_cpuset_and_limit(unsigned int blc_wt)
 
 	fbt_set_boost_value(target_cluster, base_blc);
 
-	update_userlimit_cpu_freq(EAS_KIR_FBC, cluster_num, pld);
+	update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
 	for (cluster = 0 ; cluster < cluster_num; cluster++) {
 		fpsgo_systrace_c_fbt_gm(-100, pld[cluster].max, "cluster%d limit freq", cluster);
 		fpsgo_systrace_c_fbt_gm(-100, lpp_clus_max_freq[cluster], "lpp_clus_max_freq %d", cluster);
@@ -1492,10 +1493,10 @@ int switch_fbt_cpuset(int enable)
 	spin_unlock_irqrestore(&xgf_slock, flags);
 
 	if (last_enable && !fbt_cpuset_enable) {
-		set_idle_prefer(0);
+		prefer_idle_for_perf_idx(CGROUP_TA, 0);
 		set_cpuset(-1);
 	} else if (game_mode && !last_enable && fbt_cpuset_enable)
-		set_idle_prefer(1);
+		prefer_idle_for_perf_idx(CGROUP_TA, 1);
 
 	return 0;
 }
