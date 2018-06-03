@@ -4204,9 +4204,7 @@ wlanoidQueryBugReport(IN P_ADAPTER_T prAdapter,
 		DBGLOG(OID, WARN, "Too short length %u\n", u4QueryBufferLen);
 		return WLAN_STATUS_INVALID_LENGTH;
 	}
-
-	return WLAN_STATUS_SUCCESS; /* firmware is not ready */
-
+#if 0
 	return wlanSendSetQueryCmd(prAdapter,
 				   CMD_ID_GET_BUG_REPORT,
 				   FALSE,
@@ -4214,6 +4212,8 @@ wlanoidQueryBugReport(IN P_ADAPTER_T prAdapter,
 				   TRUE,
 				   nicCmdEventQueryBugReport,
 				   nicOidCmdTimeoutCommon, 0, NULL, pvQueryBuffer, u4QueryBufferLen);
+#endif /* firmware is not ready */
+	return WLAN_STATUS_SUCCESS;
 }				/* wlanoidQueryBugReport */
 
 /*----------------------------------------------------------------------------*/
