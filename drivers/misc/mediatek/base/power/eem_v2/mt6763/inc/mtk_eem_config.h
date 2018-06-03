@@ -35,11 +35,11 @@
 
 /* for early porting */
 /*
-#ifdef CONFIG_FPGA_EARLY_PORTING
-#define EARLY_PORTING_GPU
-#else
-#define EARLY_PORTING_GPU
-#endif
+* #ifdef CONFIG_FPGA_EARLY_PORTING
+* #define EARLY_PORTING_GPU
+* #else
+* #define EARLY_PORTING_GPU
+* #endif
 */
 
 /* #define EARLY_PORTING_CPU */

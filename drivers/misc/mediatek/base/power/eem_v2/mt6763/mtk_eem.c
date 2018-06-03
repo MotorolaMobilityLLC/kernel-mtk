@@ -303,7 +303,7 @@ static unsigned int eem_checkEfuse = 1;
 static unsigned int informEEMisReady;
 
 /* Global variable for slow idle*/
-volatile unsigned int ptp_data[3] = {0, 0, 0};
+unsigned int ptp_data[3] = {0, 0, 0};
 #ifdef CONFIG_OF
 void __iomem *eem_base;
 static u32 eem_irq_number;
@@ -967,8 +967,8 @@ int base_ops_mon_mode(struct eem_det *det)
 		det->BTS =  BTS_VAL; /* orig: 0x80E, 4 * TS_INTERCEPT; */
 	#endif
 	/*
-	eem_debug("[base_ops_mon_mode] Bk = %d, MTS = 0x%08X, BTS = 0x%08X\n",
-				det->ctrl_id, det->MTS, det->BTS);
+	* eem_debug("[base_ops_mon_mode] Bk = %d, MTS = 0x%08X, BTS = 0x%08X\n",
+	*			det->ctrl_id, det->MTS, det->BTS);
 	*/
 	#if 0
 	if ((det->EEMINITEN == 0x0) || (det->EEMMONEN == 0x0)) {
@@ -1953,18 +1953,18 @@ static void mt_eem_reg_dump_locked(void)
 	unsigned int addr;
 
 	for (addr = (unsigned int)EEM_DESCHAR; addr <= (unsigned int)EEM_SMSTATE1; addr += 4)
-		eem_isr_info("0x%08X = 0x%08X\n", addr, *(volatile unsigned int *)addr);
+		eem_isr_info("0x%08X = 0x%08X\n", addr, *(unsigned int *)addr);
 
 	addr = (unsigned int)EEMCORESEL;
-	eem_isr_info("0x%08X = 0x%08X\n", addr, *(volatile unsigned int *)addr);
+	eem_isr_info("0x%08X = 0x%08X\n", addr, *(unsigned int *)addr);
 #else
 	unsigned long addr;
 
 	for (addr = (unsigned long)EEM_DESCHAR; addr <= (unsigned long)EEM_SMSTATE1; addr += 4)
-		eem_isr_info("0x %lu = 0x %lu\n", addr, *(volatile unsigned long *)addr);
+		eem_isr_info("0x %lu = 0x %lu\n", addr, *(unsigned long *)addr);
 
 	addr = (unsigned long)EEMCORESEL;
-	eem_isr_info("0x %lu = 0x %lu\n", addr, *(volatile unsigned long *)addr);
+	eem_isr_info("0x %lu = 0x %lu\n", addr, *(unsigned long *)addr);
 #endif
 }
 #endif
@@ -2037,13 +2037,16 @@ static unsigned int interpolate(unsigned int y1, unsigned int y0,
 {
 	unsigned int ratio, result;
 
-	ratio = (((y1 - y0) * 100) + (x1 - x0 - 1)) / (x1 - x0);
-	result =  (x1 - ((((y1 - ym) * 10000) + ratio - 1) / ratio) / 100);
-	/*
-	*eem_debug("y1(%d), y0(%d), x1(%d), x0(%d), ym(%d), ratio(%d), rtn(%d)\n",
-	*	y1, y0, x1, x0, ym, ratio, result);
-	*/
-
+	if (x1 == x0) {
+		result =  x1;
+	} else {
+		ratio = (((y1 - y0) * 100) + (x1 - x0 - 1)) / (x1 - x0);
+		result =  (x1 - ((((y1 - ym) * 10000) + ratio - 1) / ratio) / 100);
+		/*
+		*eem_debug("y1(%d), y0(%d), x1(%d), x0(%d), ym(%d), ratio(%d), rtn(%d)\n",
+		*	y1, y0, x1, x0, ym, ratio, result);
+		*/
+	}
 	return result;
 }
 
