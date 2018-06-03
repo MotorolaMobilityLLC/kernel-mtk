@@ -1961,7 +1961,7 @@ int pd_task(void *data)
 			schedule_work(&hba->usb_work);
 
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
-			if (hba->charger_det_notify)
+			if (hba->charger_det_notify && (hba->last_state != PD_STATE_DISABLED))
 				hba->charger_det_notify(0);
 #endif
 
