@@ -1159,7 +1159,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 					WMT_ERR_FUNC("string convert fail(%d)\n", iRet);
 					break;
 				}
-				WMT_INFO_FUNC("dynamic dump data buf[%d]:(0x%x)\n", j, int_buf[j]);
+				WMT_INFO_FUNC("dynamic dump data buf[%d]:(0x%x)\n", i, int_buf[i]);
 			}
 			wmt_plat_set_dynamic_dumpmem(int_buf);
 			kfree(pBuf);
