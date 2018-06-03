@@ -2129,6 +2129,11 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	} else if (!page) {
 		/* No page in the page cache at all */
 		do_sync_mmap_readahead(vma, ra, file, offset);
+
+		/* mlog */
+		count_vm_event(PGFMFAULT);
+		current->fm_flt++;
+
 		count_vm_event(PGMAJFAULT);
 		mem_cgroup_count_vm_event(vma->vm_mm, PGMAJFAULT);
 		ret = VM_FAULT_MAJOR;

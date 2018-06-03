@@ -1858,6 +1858,12 @@ struct task_struct {
 /* mm fault and swap info: this can arguably be seen as either mm-specific or thread-specific */
 	unsigned long min_flt, maj_flt;
 
+	/* for thrashing accounting */
+	unsigned long fm_flt;
+#ifdef CONFIG_SWAP
+	unsigned long swap_in, swap_out;
+#endif
+
 	struct task_cputime cputime_expires;
 	struct list_head cpu_timers[3];
 
