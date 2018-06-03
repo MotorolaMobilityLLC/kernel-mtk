@@ -43,6 +43,8 @@ struct FSTB_FRAME_INFO {
 	int queue_fps;
 	int frame_type;
 	int render_method;
+	int connected_api;
+	unsigned long long bufid;
 	int asfc_flag;
 	int new_info;
 

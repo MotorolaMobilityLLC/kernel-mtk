@@ -310,13 +310,13 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 		fpsgo_comp2fbt_enq_start(f_render, enqueue_start_time);
 		fpsgo_comp2fbt_frame_start(f_render, enqueue_start_time, slptime);
 		fpsgo_comp2fstb_queue_time_update(pid, f_render->frame_type,
-			f_render->render_method, enqueue_start_time);
+			f_render->render_method, enqueue_start_time, f_render->buffer_id, f_render->api);
 		break;
 	case BY_PASS_TYPE:
 		f_render->t_enqueue_start = enqueue_start_time;
 		fpsgo_comp2fbt_bypass_enq();
 		fpsgo_comp2fstb_queue_time_update(pid, f_render->frame_type,
-					0, enqueue_start_time);
+					0, enqueue_start_time, f_render->buffer_id, f_render->api);
 		fpsgo_systrace_c_fbt_gm(-100, 0, "%d-frame_time", pid);
 		break;
 	default:
@@ -648,7 +648,7 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 		f_render->self_time = frame_time;
 		f_render->Q2Q_time = frame_time;
 		fpsgo_comp2fstb_queue_time_update(pid, f_render->frame_type,
-			f_render->render_method, t_frame_done);
+			f_render->render_method, t_frame_done, f_render->buffer_id, f_render->api);
 	}
 	fpsgo_systrace_c_fbt_gm(-300, render, "%d_%d-render", pid, f_render->frame_type);
 	fpsgo_comp2fbt_frame_complete(f_render, t_frame_done);
