@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#define UPOWER_ENABLE (0)
+#define UPOWER_ENABLE (1)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
@@ -40,7 +40,7 @@ extern "C" {
 /* #define UPOWER_UT */
 /* #define UPOWER_PROFILE_API_TIME */
 #define UPOWER_RCU_LOCK
-#define UPOWER_LOG (1)
+#define UPOWER_LOG (0)
 #define UPOWER_L_PLUS
 #define UPOWER_L_PLUS_CORE 7
 /* for unified power driver internal use */
