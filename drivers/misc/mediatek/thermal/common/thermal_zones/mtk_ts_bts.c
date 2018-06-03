@@ -142,6 +142,24 @@ static struct BTS_TEMPERATURE BTS_Temperature_Table[] = {
 	{0, 0},
 	{0, 0},
 	{0, 0},
+#if defined(APPLY_PRECISE_NTC_TABLE)
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
+#endif
 	{0, 0},
 	{0, 0},
 	{0, 0},
@@ -444,11 +462,35 @@ static struct BTS_TEMPERATURE BTS_Temperature_Table7[] = {
 	{25, 100000},		/* 100K */
 	{30, 79222},
 	{35, 63167},
+#if defined(APPLY_PRECISE_NTC_TABLE)
+	{40, 50677},
+	{41, 48528},
+	{42, 46482},
+	{43, 44533},
+	{44, 42675},
+	{45, 40904},
+	{46, 39213},
+	{47, 37601},
+	{48, 36063},
+	{49, 34595},
+	{50, 33195},
+	{51, 31859},
+	{52, 30584},
+	{53, 29366},
+	{54, 28203},
+	{55, 27091},
+	{56, 26028},
+	{57, 25013},
+	{58, 24042},
+	{59, 23113},
+	{60, 22224},
+#else
 	{40, 50677},
 	{45, 40904},
 	{50, 33195},
 	{55, 27091},
 	{60, 22224},
+#endif
 	{65, 18323},
 	{70, 15184},
 	{75, 12635},
@@ -549,6 +591,9 @@ static int get_hw_bts_temp(void)
 	int ret = 0, data[4], i, ret_value = 0, ret_temp = 0, output;
 	int times = 1, Channel = g_RAP_ADC_channel;	/* 6752=0(AUX_IN0_NTC) */
 	static int valid_temp;
+#if defined(APPLY_AUXADC_CALI_DATA)
+	int auxadc_cali_temp;
+#endif
 
 	if (IMM_IsAdcInitReady() == 0) {
 		mtkts_bts_printk("[thermal_auxadc_get_data]: AUXADC is not ready\n");
@@ -558,20 +603,53 @@ static int get_hw_bts_temp(void)
 	i = times;
 	while (i--) {
 		ret_value = IMM_GetOneChannelValue(Channel, data, &ret_temp);
-		if (ret_value == -1) {/* AUXADC is busy */
+		if (ret_value) {/* AUXADC is busy */
+#if defined(APPLY_AUXADC_CALI_DATA)
+			auxadc_cali_temp = valid_temp;
+#else
 			ret_temp = valid_temp;
+#endif
 		} else {
+#if defined(APPLY_AUXADC_CALI_DATA)
+		/*
+		 * by reference mtk_auxadc.c
+		 *
+		 * convert to volt:
+		 *	data[0] = (rawdata * 1500 / (4096 + cali_ge)) / 1000;
+		 *
+		 * convert to mv, need multiply 10:
+		 *	data[1] = (rawdata * 150 / (4096 + cali_ge)) % 100;
+		 *
+		 * provide high precision mv:
+		 *	data[2] = (rawdata * 1500 / (4096 + cali_ge)) % 1000;
+		 */
+			auxadc_cali_temp = data[0]*1000+data[2];
+			valid_temp = auxadc_cali_temp;
+#else
 			valid_temp = ret_temp;
+#endif
 		}
+
+#if defined(APPLY_AUXADC_CALI_DATA)
+		ret += auxadc_cali_temp;
+		mtkts_bts_dprintk(
+			"[thermal_auxadc_get_data(AUX_IN0_NTC)]: ret_temp=%d\n",
+			auxadc_cali_temp);
+#else
 		ret += ret_temp;
-		mtkts_bts_dprintk("[thermal_auxadc_get_data(AUX_IN0_NTC)]: ret_temp=%d\n",
-				  ret_temp);
+		mtkts_bts_dprintk(
+			"[thermal_auxadc_get_data(AUX_IN0_NTC)]: ret_temp=%d\n",
+			ret_temp);
+#endif
 	}
 
 	/* Mt_auxadc_hal.c */
 	/* #define VOLTAGE_FULL_RANGE  1500 // VA voltage */
 	/* #define AUXADC_PRECISE      4096 // 12 bits */
+#if defined(APPLY_AUXADC_CALI_DATA)
+#else
 	ret = ret * 1500 / 4096;
+#endif
 	/* ret = ret*1800/4096;//82's ADC power */
 	mtkts_bts_dprintk("APtery output mV = %d\n", ret);
 	output = mtk_ts_bts_volt_to_temp(ret);
