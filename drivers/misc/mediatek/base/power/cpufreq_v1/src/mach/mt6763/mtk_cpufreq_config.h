@@ -27,6 +27,7 @@ enum cpu_level {
 	CPU_LEVEL_1,
 	CPU_LEVEL_2,
 	CPU_LEVEL_3,
+	CPU_LEVEL_4,
 
 	NUM_CPU_LEVEL,
 };

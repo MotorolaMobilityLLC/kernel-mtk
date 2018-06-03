@@ -124,7 +124,7 @@ static unsigned int fy2Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	{ 195,  16, 2, 4 },
 };
 
-static unsigned int fy3Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
+static unsigned int sb2Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	/* Freq, Vproc, post_div, clk_div */
 	{ 1794, 99, 1, 1 },	/* LL */
 	{ 1755, 95, 1, 1 },
@@ -178,7 +178,61 @@ static unsigned int fy3Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	{ 195,  16, 2, 4 },
 };
 
-static unsigned int fy4Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
+static unsigned int fy3Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
+	/* Freq, Vproc, post_div, clk_div */
+	{ 1690, 99, 1, 1 },	/* LL */
+	{ 1677, 95, 1, 1 },
+	{ 1664, 91, 1, 1 },
+	{ 1651, 87, 1, 1 },
+	{ 1612, 82, 1, 1 },
+	{ 1534, 77, 1, 1 },
+	{ 1456, 72, 2, 1 },
+	{ 1391, 67, 2, 1 },
+	{ 1287, 61, 2, 1 },
+	{ 1157, 55, 2, 1 },
+	{ 1014, 48, 2, 1 },
+	{ 910,  43, 2, 1 },
+	{ 806,  38, 2, 1 },
+	{ 689,  33, 2, 2 },
+	{ 520,  25, 2, 2 },
+	{ 338,  16, 2, 4 },
+
+	{ 2496, 99, 1, 1 },	/* L */
+	{ 2418, 95, 1, 1 },
+	{ 2340, 91, 1, 1 },
+	{ 2262, 87, 1, 1 },
+	{ 2171, 82, 1, 1 },
+	{ 2106, 77, 1, 1 },
+	{ 2028, 72, 1, 1 },
+	{ 1963, 67, 1, 1 },
+	{ 1833, 61, 1, 1 },
+	{ 1664, 55, 1, 1 },
+	{ 1469, 48, 2, 1 },
+	{ 1313, 43, 2, 1 },
+	{ 1157, 38, 2, 1 },
+	{ 1001, 33, 2, 1 },
+	{ 767,  25, 2, 1 },
+	{ 520,  16, 2, 2 },
+
+	{ 1092, 99, 2, 1 },	/* CCI */
+	{ 1066, 95, 2, 1 },
+	{ 1040, 91, 2, 1 },
+	{ 1014, 87, 2, 1 },
+	{ 975,  82, 2, 1 },
+	{ 923,  77, 2, 1 },
+	{ 871,  72, 2, 1 },
+	{ 819,  67, 2, 1 },
+	{ 767,  61, 2, 1 },
+	{ 689,  55, 2, 2 },
+	{ 624,  48, 2, 2 },
+	{ 559,  43, 2, 2 },
+	{ 494,  38, 2, 2 },
+	{ 429,  33, 2, 2 },
+	{ 325,  25, 2, 4 },
+	{ 195,  16, 2, 4 },
+};
+
+static unsigned int sb3Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 	/* Freq, Vproc, post_div, clk_div */
 	{ 1885, 99, 1, 1 },	/* LL */
 	{ 1820, 95, 1, 1 },
@@ -235,6 +289,7 @@ static unsigned int fy4Tbl[NR_FREQ * NR_MT_CPU_DVFS][ARRAY_COL_SIZE] = {
 unsigned int *xrecordTbl[NUM_CPU_LEVEL] = {	/* v1.1 */
 	[CPU_LEVEL_0] = &fyTbl[0][0],
 	[CPU_LEVEL_1] = &fy2Tbl[0][0],
-	[CPU_LEVEL_2] = &fy3Tbl[0][0],
-	[CPU_LEVEL_3] = &fy4Tbl[0][0],
+	[CPU_LEVEL_2] = &sb2Tbl[0][0],
+	[CPU_LEVEL_3] = &fy3Tbl[0][0],
+	[CPU_LEVEL_4] = &sb3Tbl[0][0],
 };

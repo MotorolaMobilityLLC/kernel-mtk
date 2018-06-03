@@ -658,8 +658,8 @@ int mt_cpufreq_dts_map(void)
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int bin = 0;
-	lv = CPU_LEVEL_1;
 
+	lv = CPU_LEVEL_1;
 	/* 0x588 bit[2:0] */
 	bin = get_devinfo_with_index(BIN_EFUSE);
 	bin = _GET_BITS_VAL_(2:0, bin);
@@ -672,9 +672,12 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 		else
 			lv = CPU_LEVEL_1;
 	} else if (get_devinfo_with_index(SEG_EFUSE) == 0x30) {
-		if (is_ext_buck_exist())
-			lv = CPU_LEVEL_3;
-		else {
+		if (is_ext_buck_exist()) {
+			if (bin == 1)
+				lv = CPU_LEVEL_4;
+			else
+				lv = CPU_LEVEL_3;
+		} else {
 			if (bin == 1)
 				lv = CPU_LEVEL_2;
 			else
