@@ -234,7 +234,7 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		.name = MT_SOC_TDMRX_NAME,
 		.ops = &mtk_dai_stub_ops,
 	},
-#ifdef _NON_COMMON_FEATURE_READY
+#ifdef CONFIG_MTK_HDMI_TDM
 	{
 		.playback = {
 			.stream_name = MT_SOC_HDMI_STREAM_NAME,
