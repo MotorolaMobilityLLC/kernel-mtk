@@ -129,12 +129,15 @@ VAL_RESULT_T eVideoWaitEvent(VAL_EVENT_T *a_prParam, VAL_UINT32_T a_u4ParamSize)
 	/* MODULE_MFV_LOGD("[MFV]eVideoWaitEvent,a_prParam->u4TimeoutMs=%d, timeout = %ld\n",
 	 * a_prParam->u4TimeoutMs,timeout_jiff);
 	 */
+	timeout_jiff = (timeout_jiff == 0) ? 1 : timeout_jiff;
 	i4Ret = wait_event_interruptible_timeout(*pWaitQueue,
 						 *((VAL_UINT8_T *) a_prParam->
 						   pvReserved) /*g_mflexvideo_interrupt_handler */,
 						 timeout_jiff);
 	if (i4Ret == 0) {
-		/* MODULE_MFV_LOGE("[VCODEC] eVideoWaitEvent timeout: %d ms", a_prParam->u4TimeoutMs); */
+		/* MODULE_MFV_LOGE("[VCODEC] eVideoWaitEvent timeout: %d ms",
+		 * a_prParam->u4TimeoutMs);
+		 */
 		status = VAL_RESULT_INVALID_ISR;	/* timeout */
 	} else if (-ERESTARTSYS == i4Ret) {
 		MODULE_MFV_LOGE("[VCODEC] eVideoWaitEvent wake up by ERESTARTSYS");
