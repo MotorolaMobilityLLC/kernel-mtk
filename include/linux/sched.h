@@ -1636,7 +1636,7 @@ struct task_struct {
 	int nr_cpus_allowed;
 	cpumask_t cpus_allowed;
 #ifdef CONFIG_MTK_ACAO_SUPPORT
-	cpumask_t cpus_allowed_turboed;
+	cpumask_t cpus_allowed_isolated;
 #endif
 
 #ifdef CONFIG_PREEMPT_RCU
@@ -2067,16 +2067,23 @@ extern int arch_task_struct_size __read_mostly;
 #ifndef CONFIG_MTK_ACAO_SUPPORT
 #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
 #else
-extern struct cpumask turbo_cpus;
+extern struct cpumask *iso_cpus_ptr;
+extern int enter_isolation;
+enum iso_prio_t {ISO_TURBO, ISO_SCHED, ISO_UNSET};
 
-extern int smart_enter_turbo_mode(void);
 static inline struct cpumask *tsk_cpus_allowed(struct task_struct *tsk)
 {
-	if (smart_enter_turbo_mode() & cpumask_and(&(tsk)->cpus_allowed_turboed, &(tsk)->cpus_allowed, &turbo_cpus))
-		return (&(tsk)->cpus_allowed_turboed);
+
+	if (enter_isolation &&
+			cpumask_and(&(tsk)->cpus_allowed_isolated, &(tsk)->cpus_allowed, iso_cpus_ptr))
+		return (&(tsk)->cpus_allowed_isolated);
 	else
 		return (&(tsk)->cpus_allowed);
 }
+
+extern int set_cpu_isolation(enum iso_prio_t prio, struct cpumask *cpumask_ptr);
+extern int unset_cpu_isolation(enum iso_prio_t prio);
+extern void iso_cpumask_init(void);
 #endif
 
 #define TNF_MIGRATED	0x01
