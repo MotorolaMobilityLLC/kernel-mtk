@@ -170,6 +170,7 @@ unsigned int __spm_output_wake_reason(
 	char *local_ptr;
 	int log_size = 0;
 	unsigned int wr = WR_UNKNOWN;
+	unsigned int spm_26M_off_pct = 0;
 
 	if (wakesta->assert_pc != 0) {
 		/* add size check for vcoredvfs */
@@ -233,6 +234,12 @@ unsigned int __spm_output_wake_reason(
 		  wakesta->req_sta, wakesta->event_reg, wakesta->isr);
 
 	if (!strcmp(scenario, "suspend")) {
+		/* calculate 26M off percentage in suspend period */
+		if (wakesta->timer_out != 0) {
+			spm_26M_off_pct = 100 * spm_read(SPM_PASR_DPD_0)
+						/ wakesta->timer_out;
+		}
+
 		log_size += sprintf(log_buf + log_size,
 			"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x, req = 0x%x, ",
 			wakesta->raw_ext_sta,
@@ -242,9 +249,10 @@ unsigned int __spm_output_wake_reason(
 			spm_read(SPM_SRC_REQ));
 
 		log_size += sprintf(log_buf + log_size,
-			"wlk_cntcv_l = 0x%x, wlk_cntcv_h = 0x%x\n",
+			"wlk_cntcv_l = 0x%x, wlk_cntcv_h = 0x%x, 26M_off_pct = %d\n",
 			_golden_read_reg(WORLD_CLK_CNTCV_L),
-			_golden_read_reg(WORLD_CLK_CNTCV_H));
+			_golden_read_reg(WORLD_CLK_CNTCV_H),
+			spm_26M_off_pct);
 	} else
 		log_size += sprintf(log_buf + log_size,
 			"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x, req = 0x%x\n",
