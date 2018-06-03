@@ -31,4 +31,4 @@ static int select_max_spare_capacity(struct task_struct *p, int target);
 static int init_cpu_info(void);
 static unsigned int aggressive_idle_pull(int this_cpu);
 bool idle_lb_enhance(struct task_struct *p, int cpu);
-
+static int is_tiny_task(struct task_struct *p);
