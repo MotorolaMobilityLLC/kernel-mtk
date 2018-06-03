@@ -22,6 +22,7 @@
 #include <hwmsensor.h>
 #include <accel.h>
 #include "lsm6ds3hg.h"
+#include "lsm6ds3hg_API.h"
 
 
 /*---------------------------------------------------------------------------*/
@@ -181,7 +182,7 @@ static struct acc_init_info lsm6ds3h_init_info = {
 };
 
 /*----------------------------------------------------------------------------*/
-static struct i2c_client *lsm6ds3h_i2c_client;
+struct i2c_client *lsm6ds3h_acc_i2c_client;
 
 static struct lsm6ds3h_i2c_data *obj_i2c_data;
 static bool sensor_power;
@@ -267,21 +268,21 @@ static int mpu_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data, u8 
 
 int LSM6DS3H_hwmsen_read_block(u8 addr, u8 *buf, u8 len)
 {
-	if (lsm6ds3h_i2c_client == NULL) {
+	if (lsm6ds3h_acc_i2c_client == NULL) {
 		GSE_PR_ERR("LSM6DS3H_hwmsen_read_block null ptr!!\n");
 		return LSM6DS3H_ERR_I2C;
 	}
-	return mpu_i2c_read_block(lsm6ds3h_i2c_client, addr, buf, len);
+	return mpu_i2c_read_block(lsm6ds3h_acc_i2c_client, addr, buf, len);
 }
 EXPORT_SYMBOL(LSM6DS3H_hwmsen_read_block);
 
 int LSM6DS3H_hwmsen_write_block(u8 addr, u8 *buf, u8 len)
 {
-	if (lsm6ds3h_i2c_client == NULL) {
+	if (lsm6ds3h_acc_i2c_client == NULL) {
 		GSE_PR_ERR("LSM6DS3H_hwmsen_write_block null ptr!!\n");
 		return LSM6DS3H_ERR_I2C;
 	}
-	return mpu_i2c_write_block(lsm6ds3h_i2c_client, addr, buf, len);
+	return mpu_i2c_write_block(lsm6ds3h_acc_i2c_client, addr, buf, len);
 }
 EXPORT_SYMBOL(LSM6DS3H_hwmsen_write_block);
 
@@ -805,7 +806,7 @@ static int LSM6DS3H_ReadChipInfo(struct i2c_client *client, char *buf, int bufsi
 /*----------------------------------------------------------------------------*/
 static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
 {
-	struct i2c_client *client = lsm6ds3h_i2c_client;
+	struct i2c_client *client = lsm6ds3h_acc_i2c_client;
 	char strbuf[LSM6DS3H_BUFSIZE];
 
 	if (client == NULL) {
@@ -820,7 +821,7 @@ static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
 /*----------------------------------------------------------------------------*/
 static ssize_t show_sensordata_value(struct device_driver *ddri, char *buf)
 {
-	struct i2c_client *client = lsm6ds3h_i2c_client;
+	struct i2c_client *client = lsm6ds3h_acc_i2c_client;
 	char strbuf[LSM6DS3H_BUFSIZE];
 	int x, y, z;
 
@@ -837,7 +838,7 @@ static ssize_t show_sensordata_value(struct device_driver *ddri, char *buf)
 
 static ssize_t show_sensorrawdata_value(struct device_driver *ddri, char *buf)
 {
-	struct i2c_client *client = lsm6ds3h_i2c_client;
+	struct i2c_client *client = lsm6ds3h_acc_i2c_client;
 	s16 data[LSM6DS3H_AXES_NUM] = { 0 };
 
 	if (client == NULL) {
@@ -1221,7 +1222,7 @@ static int lsm6ds3h_get_data(int *x, int *y, int *z, int *status)
 ******************************************************************************/
 static int lsm6ds3h_open(struct inode *inode, struct file *file)
 {
-	file->private_data = lsm6ds3h_i2c_client;
+	file->private_data = lsm6ds3h_acc_i2c_client;
 
 	if (file->private_data == NULL) {
 		GSE_PR_ERR("null pointer!!\n");
@@ -1513,7 +1514,7 @@ static int bmi160_factory_enable_sensor(bool enabledisable, int64_t sample_perio
 		return -1;
 	}
 #endif
-	err = LSM6DS3H_init_client(lsm6ds3h_i2c_client, 0);
+	err = LSM6DS3H_init_client(lsm6ds3h_acc_i2c_client, 0);
 	if (err) {
 		GSE_PR_ERR("initialize client fail!!\n");
 		return -1;
@@ -1529,7 +1530,7 @@ static int bmi160_factory_get_data(int32_t data[3], int *status)
 #endif
 	mutex_lock(&lsm6ds3h_factory_mutex);
 	if (sensor_power == false) {
-		err = LSM6DS3H_SetPowerMode(lsm6ds3h_i2c_client, true);
+		err = LSM6DS3H_SetPowerMode(lsm6ds3h_acc_i2c_client, true);
 		if (err)
 			GSE_PR_ERR("Power on lsm6ds3h error %d!\n", err);
 
@@ -1544,7 +1545,7 @@ static int bmi160_factory_get_raw_data(int32_t data[3])
 {
 	s16 strbuf[3];
 
-	LSM6DS3H_ReadAccRawData(lsm6ds3h_i2c_client, strbuf);
+	LSM6DS3H_ReadAccRawData(lsm6ds3h_acc_i2c_client, strbuf);
 	data[0] = strbuf[0];
 	data[1] = strbuf[1];
 	data[2] = strbuf[2];
@@ -1562,7 +1563,7 @@ static int bmi160_factory_clear_cali(void)
 	int err = 0;
 
 	/* err = BMI160_ACC_ResetCalibration(obj_data); */
-	err = LSM6DS3H_ResetCalibration(lsm6ds3h_i2c_client);
+	err = LSM6DS3H_ResetCalibration(lsm6ds3h_acc_i2c_client);
 	if (err) {
 		GSE_PR_ERR("lsm6ds3h_ResetCalibration failed!\n");
 		return -1;
@@ -1586,7 +1587,7 @@ static int bmi160_factory_set_cali(int32_t data[3])
 	cali[LSM6DS3H_AXIS_X] = data[0];
 	cali[LSM6DS3H_AXIS_Y] = data[1];
 	cali[LSM6DS3H_AXIS_Z] = data[2];
-	err = LSM6DS3H_WriteCalibration(lsm6ds3h_i2c_client, cali);
+	err = LSM6DS3H_WriteCalibration(lsm6ds3h_acc_i2c_client, cali);
 	if (err) {
 		GSE_PR_ERR("LSM6DS3H_WriteCalibration failed!\n");
 		return -1;
@@ -1611,7 +1612,7 @@ static int bmi160_factory_get_cali(int32_t data[3])
 	data[2] = cali[BMI160_ACC_AXIS_Z]
 	    * GRAVITY_EARTH_1000 / obj_data->reso->sensitivity;
 #endif
-	err = LSM6DS3H_ReadCalibration(lsm6ds3h_i2c_client, cali);
+	err = LSM6DS3H_ReadCalibration(lsm6ds3h_acc_i2c_client, cali);
 	if (err) {
 		GSE_PR_ERR("LSM6DS3H_ReadCalibration failed!\n");
 		return -1;
@@ -1740,7 +1741,7 @@ static int lsm6ds3h_i2c_probe(struct i2c_client *client, const struct i2c_device
 	atomic_set(&obj->trace, 0);
 	atomic_set(&obj->suspend, 0);
 
-	lsm6ds3h_i2c_client = new_client;
+	lsm6ds3h_acc_i2c_client = new_client;
 	err = LSM6DS3H_init_client(new_client, false);	/*??*/
 	if (err)
 		goto exit_init_failed;
@@ -1815,7 +1816,7 @@ static int lsm6ds3h_i2c_remove(struct i2c_client *client)
 	/*misc_deregister(&lsm6ds3h_acc_device); */
 	accel_factory_device_deregister(&lsm6ds3ha_factory_device);
 
-	lsm6ds3h_i2c_client = NULL;
+	lsm6ds3h_acc_i2c_client = NULL;
 	i2c_unregister_device(client);
 	kfree(i2c_get_clientdata(client));
 	return 0;

@@ -14,6 +14,7 @@
  */
 
 #include "lsm6ds3hgy.h"
+#include "lsm6ds3hg_API.h"
 #include <cust_gyro.h>
 #include <gyroscope.h>
 
@@ -124,6 +125,8 @@ static int lsm6ds3h_gyro_init_flag = -1;
 static struct i2c_client *lsm6ds3h_i2c_client;
 static struct platform_driver lsm6ds3h_driver;
 static struct lsm6ds3h_gyro_i2c_data *obj_i2c_data;
+
+
 
 
 /*----------------------------------------------------------------------------*/
@@ -988,7 +991,11 @@ static int lsm6ds3hg_factory_get_data(int32_t data[3], int *status)
 			GYRO_PR_ERR("MPU6515_SetPowerMode fail\n");
 		msleep(50);
 	}
-	return lsm6ds3h_gyro_get_data(&data[0], &data[1], &data[2], status);
+	err = lsm6ds3h_gyro_get_data(&data[0], &data[1], &data[2], status);
+	data[0] = (int32_t) (data[0] / 1000);
+	data[1] = (int32_t) (data[1] / 1000);
+	data[2] = (int32_t) (data[2] / 1000);
+	return err;
 }
 
 static int lsm6ds3hg_factory_get_raw_data(int32_t data[3])
@@ -1008,6 +1015,9 @@ static int lsm6ds3hg_factory_get_raw_data(int32_t data[3])
 		GYRO_PR_ERR("sscanf parsing fail\n");
 
 	kfree(strbuf);
+	data[0] = (int32_t) (data[0] / 1000);
+	data[1] = (int32_t) (data[1] / 1000);
+	data[2] = (int32_t) (data[2] / 1000);
 
 	return 0;
 }
@@ -1591,12 +1601,12 @@ static int lsm6ds3h_gyro_i2c_probe(struct i2c_client *client, const struct i2c_d
 
 	GYRO_LOG("gyro_default_i2c_addr: %x\n", client->addr);
 #ifdef LSM6DS3H_ACCESS_BY_GSE_I2C
-	obj->hw->addr = LSM6DS3H_I2C_SLAVE_ADDR;
+	obj->hw->addr = lsm6ds3h_acc_i2c_client->addr;
 #endif
 
 	GYRO_LOG("gyro_custom_i2c_addr: %x\n", obj->hw->addr);
 	if (obj->hw->addr != 0) {
-		client->addr = obj->hw->addr >> 1;
+		client->addr = obj->hw->addr;
 		GYRO_LOG("gyro_use_i2c_addr: %x\n", client->addr);
 	}
 
