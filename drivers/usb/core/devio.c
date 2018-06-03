@@ -56,6 +56,8 @@
 
 #include "usb.h"
 
+#include "usb_boost.h"
+
 #define USB_MAXBUS			64
 #define USB_DEVICE_MAX			(USB_MAXBUS * 128)
 #define USB_SG_SIZE			16384 /* split-size for large txs */
@@ -1198,6 +1200,9 @@ static int proc_bulk(struct usb_dev_state *ps, void __user *arg)
 		goto done;
 	}
 	tmo = bulk.timeout;
+
+	usb_boost();
+
 	if (bulk.ep & 0x80) {
 		if (len1 && !access_ok(VERIFY_WRITE, bulk.data, len1)) {
 			ret = -EINVAL;
