@@ -88,8 +88,7 @@
 #endif
 
 /* static function declaration */
-static bool AudioPreAmp1_Sel(int Mul_Sel);
-static bool GetAdcStatus(void);
+static bool get_analog_input_status(void);
 static void Apply_Speaker_Gain(void);
 static bool TurnOnVOWDigitalHW(bool enable);
 static void TurnOffDacPower(void);
@@ -99,6 +98,11 @@ static void SetDcCompenSation(void);
 static void Voice_Amp_Change(bool enable);
 static void Speaker_Amp_Change(bool enable);
 static bool TurnOnVOWADcPower(int MicType, bool enable);
+static void audio_preamp1_en(bool power);
+static void audio_preamp2_en(bool power);
+static void audio_preamp3_en(bool power);
+static void audio_preamp4_en(bool power);
+static void audio_dmic_input_enable(bool power, AUDIO_ANALOG_DEVICE_TYPE device_in);
 
 #ifdef CONFIG_MTK_VOW_SUPPORT
 static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable);
@@ -112,7 +116,7 @@ static void VOW32KCK_Enable(bool enable);
 #endif
 
 static Codec_Data_Priv *mCodec_data;
-static uint32 mBlockSampleRate[AUDIO_ANALOG_DEVICE_INOUT_MAX] = { 48000, 48000, 48000 };
+static uint32 mBlockSampleRate[AUDIO_DAI_INTERFACE_MAX] = { 48000, 48000, 48000, 48000};
 
 static DEFINE_MUTEX(Ana_Ctrl_Mutex);
 static DEFINE_MUTEX(Ana_buf_Ctrl_Mutex);
@@ -121,11 +125,10 @@ static DEFINE_MUTEX(Ana_Power_Mutex);
 static DEFINE_MUTEX(AudAna_lock);
 static DEFINE_MUTEX(Ana_SwOp_Mutex);
 
-
-static int mAudio_Analog_Mic1_mode = AUDIO_ANALOGUL_MODE_ACC;
-static int mAudio_Analog_Mic2_mode = AUDIO_ANALOGUL_MODE_ACC;
-static int mAudio_Analog_Mic3_mode = AUDIO_ANALOGUL_MODE_ACC;
-static int mAudio_Analog_Mic4_mode = AUDIO_ANALOGUL_MODE_ACC;
+static int adc1_mic_mode_mux = AUDIO_ANALOGUL_MODE_ACC;
+static int adc2_mic_mode_mux = AUDIO_ANALOGUL_MODE_ACC;
+static int adc3_mic_mode_mux = AUDIO_ANALOGUL_MODE_ACC;
+static int adc4_mic_mode_mux = AUDIO_ANALOGUL_MODE_ACC;
 
 static int mAudio_Vow_Analog_Func_Enable;
 static int mAudio_Vow_Digital_Func_Enable;
@@ -133,16 +136,6 @@ static int mAudio_Vow_Digital_Func_Enable;
 static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
 /* static const int DC1unit_in_uv = 21500; */	/* in uv with 0DB */
 static const int DC1devider = 8;	/* in uv */
-
-enum hp_depop_flow {
-	HP_DEPOP_FLOW_DEPOP_HW,
-	HP_DEPOP_FLOW_33OHM,
-	HP_DEPOP_FLOW_DEPOP_HW_33OHM,
-	HP_DEPOP_FLOW_NONE,
-};
-static unsigned int mUseHpDepopFlow;
-
-static unsigned int mUseUl260kFlow;
 
 static int ANC_enabled;
 
@@ -512,7 +505,7 @@ static void SwOperationEnable(bool enable)
 	}
 	mutex_unlock(&Ana_SwOp_Mutex);
 }
-#if 0
+
 static int anc_clk_counter;
 static void anc_clk_enable(bool _enable)
 {
@@ -564,23 +557,6 @@ static void anc_ul_src_enable(bool _enable)
 		}
 	}
 	mutex_unlock(&Ana_Clk_Mutex);
-}
-#endif
-bool hasHpDepopHw(void)
-{
-	return mUseHpDepopFlow == HP_DEPOP_FLOW_DEPOP_HW ||
-	       mUseHpDepopFlow == HP_DEPOP_FLOW_DEPOP_HW_33OHM;
-}
-
-bool hasHp33Ohm(void)
-{
-	return mUseHpDepopFlow == HP_DEPOP_FLOW_33OHM ||
-	       mUseHpDepopFlow == HP_DEPOP_FLOW_DEPOP_HW_33OHM;
-}
-
-bool useUl260k(void)
-{
-	return (mUseUl260kFlow >= 1);
 }
 
 #ifdef CONFIG_MTK_VOW_SUPPORT
@@ -913,7 +889,7 @@ void OpenAnalogHeadphone(bool bEnable)
 {
 	pr_warn("OpenAnalogHeadphone bEnable = %d", bEnable);
 	if (bEnable) {
-		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = 44100;
+		mBlockSampleRate[AUDIO_DAI_DL1] = 44100;
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true, false);
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] = true;
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true, false);
@@ -1175,58 +1151,50 @@ uint32 ULSampleRateTransform(uint32 SampleRate)
 	}
 }
 
-
-static int mt63xx_codec_startup(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
-{
-	/* pr_warn("+mt63xx_codec_startup name = %s number = %d\n", substream->name, substream->number); */
-	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE && substream->runtime->rate)
-		mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC] = substream->runtime->rate;
-	else if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK && substream->runtime->rate)
-		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = substream->runtime->rate;
-	/* pr_warn("-mt63xx_codec_startup name = %s number = %d\n", substream->name, substream->number); */
-	return 0;
-}
-
-static int mt63xx_codec_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
+static int mtk_codec_dai_1_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_aud("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
+		pr_aud("mtk_codec_dai_1_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
 		       substream->runtime->rate);
-		mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC] = substream->runtime->rate;
-
+		mBlockSampleRate[AUDIO_DAI_UL1] = substream->runtime->rate;
+		/* If 4-ch record set UL1/UL2 same sampleRate */
+		if (substream->runtime->channels > 2)
+			mBlockSampleRate[AUDIO_DAI_UL2] = substream->runtime->rate;
 	} else if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_aud("mt63xx_codec_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
+		pr_aud("mtk_codec_dai_1_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
 		       substream->runtime->rate);
-		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = substream->runtime->rate;
+		mBlockSampleRate[AUDIO_DAI_DL1] = substream->runtime->rate;
 	}
 	return 0;
 }
 
-static int mt6323_codec_trigger(struct snd_pcm_substream *substream, int command,
-				struct snd_soc_dai *Daiport)
+static int mtk_codec_dai_2_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
-	switch (command) {
-	case SNDRV_PCM_TRIGGER_START:
-	case SNDRV_PCM_TRIGGER_RESUME:
-	case SNDRV_PCM_TRIGGER_STOP:
-	case SNDRV_PCM_TRIGGER_SUSPEND:
-		break;
+	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+		pr_aud("mtk_codec_dai_2_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
+		       substream->runtime->rate);
+		mBlockSampleRate[AUDIO_DAI_UL2] = substream->runtime->rate;
+	} else if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		pr_aud("mtk_codec_dai_2_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
+		       substream->runtime->rate);
+		mBlockSampleRate[AUDIO_DAI_DL2] = substream->runtime->rate;
 	}
-
-	/* pr_warn("mt6323_codec_trigger command = %d\n ", command); */
 	return 0;
 }
 
-static const struct snd_soc_dai_ops mt6323_aif1_dai_ops = {
-	.startup = mt63xx_codec_startup,
-	.prepare = mt63xx_codec_prepare,
-	.trigger = mt6323_codec_trigger,
+
+static const struct snd_soc_dai_ops mtk_codec_dai_1_ops = {
+	.prepare = mtk_codec_dai_1_prepare,
+};
+
+static const struct snd_soc_dai_ops mtk_codec_dai_2_ops = {
+	.prepare = mtk_codec_dai_2_prepare,
 };
 
 static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	{
 	 .name = MT_SOC_CODEC_TXDAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_DL1_STREAM_NAME,
 		      .channels_min = 1,
@@ -1237,7 +1205,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_RXDAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .capture = {
 		     .stream_name = MT_SOC_UL1_STREAM_NAME,
 		     .channels_min = 1,
@@ -1248,7 +1216,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_TDMRX_DAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .capture = {
 		     .stream_name = MT_SOC_TDM_CAPTURE_STREAM_NAME,
 		     .channels_min = 2,
@@ -1267,7 +1235,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_I2S0TXDAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_I2SDL1_STREAM_NAME,
 		      .channels_min = 1,
@@ -1280,7 +1248,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_VOICE_MD1DAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_VOICE_MD1_STREAM_NAME,
 		      .channels_min = 1,
@@ -1298,7 +1266,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_VOICE_MD2DAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_VOICE_MD2_STREAM_NAME,
 		      .channels_min = 1,
@@ -1316,7 +1284,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_VOICE_ULTRADAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_VOICE_ULTRA_STREAM_NAME,
 		      .channels_min = 1,
@@ -1334,7 +1302,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_FMI2S2RXDAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_FM_I2S2_STREAM_NAME,
 		      .channels_min = 1,
@@ -1352,7 +1320,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_FMMRGTXDAI_DUMMY_DAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_FM_MRGTX_STREAM_NAME,
 		      .channels_min = 1,
@@ -1363,7 +1331,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_ULDLLOOPBACK_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_ULDLLOOPBACK_STREAM_NAME,
 		      .channels_min = 1,
@@ -1381,7 +1349,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_STUB_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_ROUTING_STREAM_NAME,
 		      .channels_min = 1,
@@ -1402,7 +1370,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_MRGRX_DAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_MRGRX_STREAM_NAME,
 		      .channels_min = 1,
@@ -1420,7 +1388,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_HP_IMPEDANCE_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_HP_IMPEDANCE_STREAM_NAME,
 		      .channels_min = 1,
@@ -1431,7 +1399,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_FM_I2S_DAI_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_FM_I2S_PLAYBACK_STREAM_NAME,
 		      .channels_min = 1,
@@ -1442,7 +1410,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_TXDAI2_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_DL2_STREAM_NAME,
 		      .channels_min = 1,
@@ -1453,7 +1421,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_OFFLOAD_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
+	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {
 		      .stream_name = MT_SOC_OFFLOAD_STREAM_NAME,
 		      .channels_min = 1,
@@ -1463,15 +1431,15 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		      },
 	},
 	{
-		.name = MT_SOC_CODEC_ANC_NAME,
-		.ops = &mt6323_aif1_dai_ops,
-		.playback = {
-			.stream_name = MT_SOC_ANC_STREAM_NAME,
-			.channels_min = 1,
-			.channels_max = 2,
-			.rates = SNDRV_PCM_RATE_8000_48000,
-			.formats = SND_SOC_ADV_MT_FMTS,
-			},
+	 .name = MT_SOC_CODEC_ANC_NAME,
+	 .ops = &mtk_codec_dai_1_ops,
+	 .playback = {
+		      .stream_name = MT_SOC_ANC_STREAM_NAME,
+		      .channels_min = 1,
+		      .channels_max = 2,
+		      .rates = SNDRV_PCM_RATE_8000_48000,
+		      .formats = SND_SOC_ADV_MT_FMTS,
+		     },
 	}
 };
 
@@ -1528,9 +1496,9 @@ static void TurnOnDacPower(void)
 	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
 	/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 
-	usleep_range(250, 500);
+	usleep_range(250, 350);
 
-	if (GetAdcStatus() == false)
+	if (get_analog_input_status() == false)
 		Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x8020, 0xffff);
 	else
 		Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x8000, 0xffff);
@@ -1541,7 +1509,7 @@ static void TurnOnDacPower(void)
 	Ana_Set_Reg(AFE_NCP_CFG0, 0xC801, 0xfE01);
 	/* NCP enable */
 
-	usleep_range(250, 500);
+	usleep_range(250, 350);
 
 	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0006, 0x009f);
 	/* sdm audio fifo clock power on */
@@ -1565,7 +1533,7 @@ static void TurnOffDacPower(void)
 
 	setDlMtkifSrc(false);
 
-	if (GetAdcStatus() == false)
+	if (get_analog_input_status() == false)
 		Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);	/* turn off afe */
 
 	usleep_range(250, 500);
@@ -1588,16 +1556,14 @@ static void TurnOffDacPower(void)
 
 static void setDlMtkifSrc(bool enable)
 {
-	pr_warn("%s(), enable = %d, freq = %d\n",
-		__func__,
-		enable,
-		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]);
+	pr_warn("%s(), enable = %d, freq = %d\n", __func__, enable,
+		mBlockSampleRate[AUDIO_DAI_DL1]);
 	if (enable) {
 		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0,
-			    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]) << 12) |
+			    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_DAI_DL1]) << 12) |
 			     0x330), 0xfff0);
 		Ana_Set_Reg(AFE_DL_SRC2_CON0_H,
-			    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]) << 12) |
+			    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_DAI_DL1]) << 12) |
 			     0x300), 0xf300);
 
 		Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0001, 0x0001);
@@ -3086,24 +3052,12 @@ static const struct snd_kcontrol_new mt6331_Voice_Switch[] = {
 	/* SOC_DAPM_ENUM_EXT("Voice Mux", Audio_DL_Enum[10], Voice_Mux_Get, Voice_Mux_Set), */
 };
 
-void SetMicPGAGain(void)
-{
-	int index = 0;
-
-	index = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1];
-	pr_aud("%s  AUDIO_ANALOG_VOLUME_MICAMP1 index =%d\n", __func__, index);
-	Ana_Set_Reg(AUDENC_ANA_CON0, index << 8, 0x0700);
-	index = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2];
-	Ana_Set_Reg(AUDENC_ANA_CON1, index << 8, 0x0700);
-
-}
-
-static bool GetAdcStatus(void)
+static bool get_analog_input_status(void)
 {
 	int i = 0;
 
-	for (i = AUDIO_ANALOG_DEVICE_IN_ADC1; i < AUDIO_ANALOG_DEVICE_MAX; i++) {
-		if ((mCodec_data->mAudio_Ana_DevicePower[i] == true)
+	for (i = AUDIO_ANALOG_DEVICE_IN_ADC1; i <= AUDIO_ANALOG_DEVICE_IN_DMIC2; i++) {
+		if ((mCodec_data->mAudio_Ana_DevicePower[i] > 0)
 		    && (i != AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH))
 			return true;
 	}
@@ -3121,207 +3075,61 @@ static bool GetDacStatus(void)
 	return false;
 }
 
-
-static bool TurnOnADcPowerACC(int ADCType, bool enable)
+static bool get_adc_clock_status(void)
 {
-	bool refmic_using_ADC_L = false;
-	uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
+	int i = 0;
 
-	pr_warn("%s ADCType = %d enable = %d, refmic_using_ADC_L=%d\n", __func__, ADCType,
-	       enable, refmic_using_ADC_L);
-
-	if (enable) {
-		if (GetAdcStatus() == false) {
-			audckbufEnable(true);
-			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0400);
-			/* Globe bias VOW LPW mode (Default off) */
-			NvregEnable(true);
-			/* Enable audio globe bias */
-
-			/* this part should be checked, if need open */
-			/* Ana_Set_Reg(TOP_CLKSQ_SET, 0x0800, 0x0800); */
-			/* RG_CLKSQ_IN_SEL_VA18_SWCTRL: 0_HW, 1_SW */
-			/* Ana_Set_Reg(TOP_CLKSQ_CLR, 0x0400, 0x0400); */
-			/* RG_CLKSQ_IN_SEL_VA18: 0_PAD, 1_DCXO */
-
-			ClsqEnable(true);
-			/* Enable CLKSQ 26MHz */
-			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0040, 0x0070);
-			/* Enable Audio ADC clock gen */
-			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0040, 0x000C);
-			/* ADC CLK from CLKGEN (13MHz) */
-		}
-
-		/* PMIC analog uplink setting */
-		if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC1) {	/* main and headset mic */
-			pr_warn("%s  AUDIO_ANALOG_DEVICE_IN_ADC1 mux =%d\n",
-				__func__, mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]);
-			if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
-				/* "ADC1", main_mic */
-				/* SetDCcoupleNP(AUDIO_MIC_BIAS0, mAudio_Analog_Mic1_mode); */
-				/* micbias0 DCCopuleNP */
-				Ana_Set_Reg(AUDENC_ANA_CON16, 0x0021, 0x00f1);
-				/* Enable MICBIAS0, MISBIAS0 = 1P9V */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0311, 0x0737);
-				/* Setting and Enable Audio CH0_01 PGA  input sel : AIN0*/
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5000, 0x7000);
-				/* Select Input CH0 PGA and Enable audio CH0 ADC*/
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0008, 0x00C8);
-				/* Audio CH0_01 PGA high performance mode*/
-
-			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
-				/* "ADC2", headset mic */
-				/* SetDCcoupleNP(AUDIO_MIC_BIAS1, mAudio_Analog_Mic1_mode); */
-				/* micbias1 DCCopuleNP */
-				Ana_Set_Reg(AUDENC_ANA_CON17, 0x0001, 0x0081);
-				/* MIC Bias 1 high power mode, power on : normal mode */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0321, 0x0737);
-				/* Setting and Enable Audio CH0_01 PGA  input sel : AIN1*/
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5000, 0x7000);
-				/* Select Input CH0 PGA and Enable audio CH0 ADC*/
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0008, 0x00C8);
-				/* Audio CH0_01 PGA high performance mode*/
-			}
-		} else if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC2) {
-			pr_warn("%s  AUDIO_ANALOG_DEVICE_IN_ADC2 refmic_using_ADC_L =%d\n",
-				__func__, refmic_using_ADC_L);
-			/* ref mic */
-			/* SetDCcoupleNP(AUDIO_MIC_BIAS2, mAudio_Analog_Mic2_mode); */
-			/* micbias0 DCCopuleNP */
-			Ana_Set_Reg(AUDENC_ANA_CON16, 0x2100, 0xf100);
-			/* Enable MICBIAS2, MISBIAS2 = 1P9V */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0331, 0x0737);
-			/* Setting and Enable Audio CH1_23 PGA  input sel : AIN2*/
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x5000, 0x7000);
-			/* Select Input CH0 PGA and Enable audio CH0 ADC*/
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0008, 0x00C8);
-			/* Audio CH0_01 PGA high performance mode*/
-		}
-
-		SetMicPGAGain();
-
-		/* PMIC digital uplink setting */
-		if (GetAdcStatus() == false) {
-			Topck_Enable(true);
-			/* AdcClockEnable(true); */
-			if (GetDacStatus() == false) {
-				Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x8040, 0xffff);
-				/* power on clock : except dac clk */
-			} else {
-				Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x8000, 0xffff);
-				/* power on clock */
-			}
-			Ana_Set_Reg(AFE_AMIC_ARRAY_CFG, 0x00E4, 0x00ff);
-			/* AMIC array setting */
-			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
-			/* ADDA loopback setting : off all */
-			Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0018, 0x03ff);
-			/* UL/DL mtkaif format setting : mtk1.5 */
-			Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0xC001);
-			/* afe enable */
-			Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x0000, 0xfff0);
-			Ana_Set_Reg(AFE_UL_SRC_CON0_H, (ULSampleRateTransform(SampleRate_VUL1)
-							 << 1), 0x7 << 1);
-			/* UL sample rate and mode configure */
-#if 0
-			/* fixed 260k path for 8/16/32/48 */
-			if (useUl260k() && SampleRate_VUL1 <= 48000) {
-				/* anc ul path src on */
-				anc_ul_src_enable(true);
-				/* ANC clk pdn release */
-				anc_clk_enable(true);
-			}
-#endif
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0xE8E2);
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0x0001);
-			/* UL turn on */
-		}
-	} else {
-		if (GetAdcStatus() == false) {
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0x0001);
-			/* UL turn off */
-#if 0
-			if (SampleRate_VUL1 <= 48000) {
-				/* anc ul path src off */
-				anc_ul_src_enable(false);
-				/* ANC clk pdn enable */
-				anc_clk_enable(false);
-			}
-#endif
-			Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0020, 0x0020);
-			/* up-link power down */
-		}
-		if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC1) {
-			/* main and headset mic */
-			if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
-				/* "ADC1", main_mic */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x00C8);
-				/* disable high performance mode*/
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x7000);
-				/* disable AUDADCCH0_01 */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0737);
-				/* disable AUDPREAMPCH0_01 */
-				Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0x0001);
-				/* disable MICBIAS0 */
-			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]
-				   == 1) {
-				/* "ADC2", headset mic */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x00C8);
-				/* disable high performance mode */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x7000);
-				/* disable AUDADCCH0_01 */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0737);
-				/* disable AUDPREAMPCH0_01 */
-				Ana_Set_Reg(AUDENC_ANA_CON17, 0x0080, 0x0081);
-				/* disable MICBIAS1 */
-			}
-		} else if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC2) {
-			/* ref mic */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x00C8);
-			/* disable high performance mode */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x7000);
-			/* disable AUDADCCH1_23 */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x0737);
-			/* disable AUDPREAMPCH1_23 */
-			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0xf100);
-			/* disable MICBIAS2 */
-		}
-
-		if (GetAdcStatus() == false) {
-			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0000, 0x000C);
-			/* ADC CLK from CLKGEN (13MHz) */
-			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0000, 0x0070);
-			/* disable CLKGEN */
-
-			if (GetDLStatus() == false) {
-				Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);
-				/* afe disable */
-				Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x00C4, 0x00C4);
-				/* afe power down and total audio clk disable */
-			}
-
-			/* AdcClockEnable(false); */
-			Topck_Enable(false);
-			/* ClsqAuxEnable(false); */
-			ClsqEnable(false);
-			NvregEnable(false);
-			audckbufEnable(false);
-		}
-
+	for (i = AUDIO_ANALOG_DEVICE_IN_ADC1; i <= AUDIO_ANALOG_DEVICE_IN_ADC4; i++) {
+		if (mCodec_data->mAudio_Ana_DevicePower[i] > 0)
+			return true;
 	}
-	return true;
+	return false;
 }
 
-static bool TurnOnADcPowerDmic(int ADCType, bool enable)
+static bool is_amic(AUDIO_ANALOG_DEVICE_TYPE device_in)
 {
-	pr_warn("%s ADCType = %d enable = %d\n", __func__, ADCType, enable);
-	if (enable) {
-		uint32 ULIndex = GetULFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]);
-		uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
+	return (device_in >= AUDIO_ANALOG_DEVICE_IN_ADC1
+		&& device_in <= AUDIO_ANALOG_DEVICE_IN_ADC4);
+}
 
-		if (GetAdcStatus() == false) {
+static bool is_dmic(AUDIO_ANALOG_DEVICE_TYPE device_in)
+{
+	return (device_in >= AUDIO_ANALOG_DEVICE_IN_DMIC0
+		&& device_in <= AUDIO_ANALOG_DEVICE_IN_DMIC2);
+}
+
+static unsigned int amic_array_status(void)
+{
+	int mask = 0x3;
+	int mux0 = mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_LCH_MUX] & mask;
+	int mux1 = mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_RCH_MUX] & mask;
+	int mux2 = mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_LCH_MUX] & mask;
+	int mux3 = mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_RCH_MUX] & mask;
+	/* Mux (0~3) => amic array value range 0~3 */
+	return mux0 | (mux1 << 2) | (mux2 << 4) | (mux3 << 6);
+}
+
+static unsigned int dmic_array_status(void)
+{
+	int mask = 0x7;
+	int offset = AUDIO_UL_ARRAY_DMIC0_LCH;
+	int mux0 = (mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_LCH_MUX] - offset) & mask;
+	int mux1 = (mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_RCH_MUX] - offset) & mask;
+	int mux2 = (mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_LCH_MUX] - offset) & mask;
+	int mux3 = (mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_RCH_MUX] - offset) & mask;
+
+	/* Mux(4~8) => dmic array value range 0~4 */
+	return mux0 | (mux1 << 4) | (mux2 << 8) | (mux3 << 12);
+}
+
+static bool TurnOnADcPowerACC(AUDIO_ANALOG_DEVICE_TYPE device_in, bool enable)
+{
+	pr_warn("%s device_in = %d enable = %d\n", __func__, device_in, enable);
+
+	if (enable) {
+		if (get_analog_input_status() == false) {
 			audckbufEnable(true);
-			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0400);
+			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0060);
 			/* Globe bias VOW LPW mode (Default off) */
 			NvregEnable(true);
 			/* Enable audio globe bias */
@@ -3332,70 +3140,138 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			/* Ana_Set_Reg(TOP_CLKSQ_CLR, 0x0400, 0x0400); */
 			/* RG_CLKSQ_IN_SEL_VA18: 0_PAD, 1_DCXO */
 
-			ClsqEnable(true);
-			/* Enable CLKSQ 26MHz */
+			ClsqEnable(true); /* Enable CLKSQ 26MHz */
+			Topck_Enable(true); /* Turn on AUDNCP_CLKDIV engine clock */
+		}
 
-			/* SetDCcoupleNP(AUDIO_MIC_BIAS0, mAudio_Analog_Mic1_mode); */
-			/* micbias0 DCCopuleNP */
-			/* Ana_Set_Reg(AUDENC_ANA_CON9, 0x0201, 0xff09); //Enable MICBIAS0, MISBIAS0 = 1P9V */
-			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0021, 0x00f1);
-			/* Enable MICBIAS0 , MISBIAS0 = 1P9V */
-			Ana_Set_Reg(AUDENC_ANA_CON13, 0x0005, 0x0007);
-			/* Enable DMIC0 */
+		if (get_adc_clock_status() == false)
+			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0040, 0x007C);
+			/* Enable Audio ADC clock gen and ADC CLK from CLKGEN(13MHz) */
 
-			/* here to set digital part */
-			Topck_Enable(true);
-			/* AdcClockEnable(true); */
+		/* PMIC analog uplink setting */
+		switch (device_in) {
+		case AUDIO_ANALOG_DEVICE_IN_ADC1:
+			audio_preamp1_en(true);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC2:
+			audio_preamp2_en(true);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC3:
+			audio_preamp3_en(true);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC4:
+			audio_preamp4_en(true);
+			break;
+		default:
+			pr_warn("%s unsupport adc type = %d", __func__, device_in);
+		}
+
+		/* digital part setting */
+		if (get_analog_input_status() == false) {
 			if (GetDacStatus() == false) {
 				Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0040, 0xffff);
-				/* power on clock : except Dac clock*/
-
+				/* power on clock */
 			} else {
 				Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0000, 0xffff);
 				/* power on clock */
 			}
-			Ana_Set_Reg(AFE_DMIC_ARRAY_CFG, 0x0043, 0xffff);
-			/* dmic adc  array: Ch2L_4, Ch2R_56*/
-			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
-			/* ADDA loopback setting : off all */
-			Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0018, 0x03ff);
-			/* UL/DL mtkaif format setting : mtk1.5 */
-
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, (ULIndex << 13), 0x2000);
-			/* dmic sample rate, ch1 and ch2 set to 3.25MHz 48k */
 			Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
 			/* [0] afe enable */
-
-			Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x0000, 0xfff0);
-			Ana_Set_Reg(AFE_UL_SRC_CON0_H, (ULSampleRateTransform(SampleRate_VUL1)
-							 << 1), 0x000E);
-			/* UL sample rate and mode configure */
-
-			/* use 260k/130/65k@18bit mt6797:LP uplink */
-			if (useUl260k()) {
-				if (SampleRate_VUL1 <= 48000) {
-					/* use cic out */
-					Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x1 << 4, 0x1 << 4);
-				} else {	/* hires */
-					/* use 4.33MHz mode */
-					Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x1 << 6, 0x1 << 6);
-				}
-			}
-
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0003, 0xC8E3);
-			/* digmic input mode 3.25MHz, select SDM 3-level mode, UL turn on */
 		}
+
+		Ana_Set_Reg(AFE_AMIC_ARRAY_CFG, amic_array_status(), 0x00ff);
+		/* AMIC array setting */
+		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
+		/* ADDA loopback/sgen setting : off all */
+
 	} else {
-		if (GetAdcStatus() == false) {
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0x0001);
-			/* UL turn off */
+		/* PMIC analog uplink setting */
+		switch (device_in) {
+		case AUDIO_ANALOG_DEVICE_IN_ADC1:
+			audio_preamp1_en(false);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC2:
+			audio_preamp2_en(false);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC3:
+			audio_preamp3_en(false);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC4:
+			audio_preamp4_en(false);
+			break;
+		default:
+			pr_warn("%s unsupport adc type = %d", __func__, device_in);
+		}
+
+		if (get_adc_clock_status() == false)
+			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0000, 0x007C);
+			/* disable Audio ADC clock gen and ADC CLK from CLKGEN(13MHz) */
+
+		if (get_analog_input_status() == false) {
+			Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0020, 0x0020);
+			/* up-link power down */
+			if (GetDLStatus() == false) {
+				Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);
+				/* afe disable */
+				Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x00C4, 0x00C4);
+				/* afe power down and total audio clk disable */
+			}
+			Topck_Enable(false);
+			ClsqEnable(false);
+			NvregEnable(false);
+			audckbufEnable(false);
+		}
+	}
+	return true;
+}
+
+static bool audio_dmic_enable(bool enable, AUDIO_ANALOG_DEVICE_TYPE device_in)
+{
+	pr_warn("%s DeviceType = %d enable = %d\n", __func__, device_in, enable);
+	if (enable) {
+		if (get_analog_input_status() == false) {
+			audckbufEnable(true);
+			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0060);
+			/* Globe bias VOW LPW mode (Default off) */
+			NvregEnable(true); /* Enable audio globe bias */
+
+			/* this part should be checked, if need open */
+			/* Ana_Set_Reg(TOP_CLKSQ_SET, 0x0800, 0x0800); */
+			/* RG_CLKSQ_IN_SEL_VA18_SWCTRL: 0_HW, 1_SW */
+			/* Ana_Set_Reg(TOP_CLKSQ_CLR, 0x0400, 0x0400); */
+			/* RG_CLKSQ_IN_SEL_VA18: 0_PAD, 1_DCXO */
+
+			ClsqEnable(true); /* Enable CLKSQ 26MHz */
+			Topck_Enable(true); /* Turn on AUDNCP_CLKDIV engine clock */
+		}
+
+		audio_dmic_input_enable(true, device_in); /* enable dmic power */
+
+		/* digital part setting */
+		if (get_analog_input_status() == false) {
+			if (GetDacStatus() == false) {
+				Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0040, 0xffff);
+				/* power on clock : except Dac clock*/
+			} else {
+				Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0000, 0xffff);
+				/* power on clock */
+			}
+			Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
+			/* [0] afe enable */
+		}
+
+		Ana_Set_Reg(AFE_DMIC_ARRAY_CFG, dmic_array_status(), 0x7777);
+		/* dmic adc  array */
+		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
+		/* ADDA loopback/sgen setting : off all */
+	} else {
+		if (get_analog_input_status() == false)
 			Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0020, 0x0020);
 			/* up-link power down  */
-			Ana_Set_Reg(AUDENC_ANA_CON13, 0x0000, 0x0007);
-			/* disable DMIC0 */
-			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0x0001);
-			/* Disable MICBIAS0 */
 
+		audio_dmic_input_enable(false, device_in); /* disable dmic power */
+
+		if (get_analog_input_status() == false) {
 			if (GetDLStatus() == false) {
 				Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);
 				/* afe disable */
@@ -3414,23 +3290,16 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 	return true;
 }
 
-static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
+static bool TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_TYPE device_in, bool enable, int ECMmode)
 {
-	uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
-
-	pr_warn("%s(), enable %d, ADCType %d, AUDIO_MICSOURCE_MUX_IN_1 %d\n",
-		__func__,
-		enable,
-		ADCType,
-		mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]);
+	pr_warn("%s(), enable %d, device_in %d\n", __func__, enable, device_in);
 
 	if (enable) {
-		if (GetAdcStatus() == false) {
+		if (get_analog_input_status() == false) {
 			audckbufEnable(true);
-			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0400);
+			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0060);
 			/* Globe bias VOW LPW mode (Default off) */
-			NvregEnable(true);
-			/* Enable audio globe bias */
+			NvregEnable(true); /* Enable audio globe bias */
 
 			/* this part should be checked, if need open */
 			/* Ana_Set_Reg(TOP_CLKSQ_SET, 0x0800, 0x0800); */
@@ -3438,12 +3307,13 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* Ana_Set_Reg(TOP_CLKSQ_CLR, 0x0400, 0x0400); */
 			/* RG_CLKSQ_IN_SEL_VA18: 0_PAD, 1_DCXO */
 
-			ClsqEnable(true);
-			/* Enable CLKSQ 26MHz */
-			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0040, 0x0070);
-			/* Enable Audio ADC clock gen */
-			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0040, 0x000C);
-			/* ADC CLK from CLKGEN (13MHz) */
+			ClsqEnable(true); /* Enable CLKSQ 26MHz */
+			Topck_Enable(true); /* Turn on AUDNCP_CLKDIV engine clock */
+		}
+
+		if (get_adc_clock_status() == false) {
+			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0040, 0x007C);
+			/* Enable Audio ADC clock gen and ADC CLK from CLKGEN(13MHz) */
 
 			/* DCC 50k CLK (from 26M) */
 			Ana_Set_Reg(TOP_CLKSQ_SET, 0x0003, 0xffff);
@@ -3456,74 +3326,34 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* dcclk_div=11'b00100000011, dcclk_ref_ck_sel=2'b00 dcclk_pdn=1'b0 */
 			Ana_Set_Reg(AFE_DCCLK_CFG1, 0x0100, 0x0100);
 			/* bypass resync function */
-
-		}
-		if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC1) {
-			if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
-				/* "ADC1", phone mic */
-				/* SetDCcoupleNP(AUDIO_MIC_BIAS0, mAudio_Analog_Mic1_mode); */
-				/* micbias0 DCCopuleNP */
-				Ana_Set_Reg(AUDENC_ANA_CON16, 0x0021, 0x00f1);
-				/* Enable MICBIAS0, MISBIAS0 = 1P9V */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0317, 0x0737);
-				/* Setting and Enable Audio CH0_01 PGA  input sel : AIN0*/
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5000, 0x7000);
-				/* Select Input CH0 PGA and Enable audio CH0 ADC*/
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x00C8, 0x00C8);
-				/* Audio CH0_01 PGA high performance mode*/
-
-				udelay(100);
-
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0004);
-				/* Audio CH0_01 PGA DCC precharge off */
-			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]
-				   == 1) {
-				/* "ADC2", headset mic */
-				/* SetDCcoupleNP(AUDIO_MIC_BIAS1, mAudio_Analog_Mic1_mode); */
-				/* micbias1 DCCopuleNP */
-				Ana_Set_Reg(AUDENC_ANA_CON10, 0x0001, 0x0081);
-				/* MIC Bias 1 high power mode, power on */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0327, 0x0737);
-				/* Setting and Enable Audio CH0_01 PGA  input sel : AIN1*/
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x5000, 0x7000);
-				/* Select Input CH0 PGA and Enable audio CH0 ADC*/
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0008, 0x00C8);
-				/* Audio CH0_01 PGA high performance mode*/
-
-				udelay(100);
-
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0004);
-				/* Audio CH0_01 PGA DCC precharge off */
-			}
-		} else if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC2) {
-			/* ref mic */
-			/* SetDCcoupleNP(AUDIO_MIC_BIAS0, mAudio_Analog_Mic2_mode); */
-			/* micbias0 DCCopuleNP */
-			Ana_Set_Reg(AUDENC_ANA_CON16, 0x2100, 0xf100);
-			/* Enable MICBIAS2, MISBIAS2 = 1P9V */
-
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0337, 0x0737);
-			/* Setting and Enable Audio CH1_23 PGA  input sel : AIN2*/
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x5000, 0x7000);
-			/* Select Input CH1 PGA and Enable audio CH1 ADC*/
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x00C8, 0x00C8);
-			/* Audio CH1_23 PGA high performance mode */
-
-			udelay(100);
-
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x0004);
-			/* Audio CH1_23 PGA DCC precharge off */
+			Ana_Set_Reg(AFE_DCCLK_CFG2, 0x0001, 0x0001);
+			/* dcclk_gen_on=1'b1 */
+			Ana_Set_Reg(AFE_DCCLK_CFG2, 0x2060, 0xffEE);
+			/* dcclk_div=11'b00100000011, dcclk_ref_ck_sel=2'b00 dcclk_pdn=1'b0 */
+			Ana_Set_Reg(AFE_DCCLK_CFG3, 0x0100, 0x0100);
+			/* bypass resync function */
 		}
 
-		SetMicPGAGain();
+		/* PMIC analog uplink setting */
+		switch (device_in) {
+		case AUDIO_ANALOG_DEVICE_IN_ADC1:
+			audio_preamp1_en(true);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC2:
+			audio_preamp2_en(true);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC3:
+			audio_preamp3_en(true);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC4:
+			audio_preamp4_en(true);
+			break;
+		default:
+			pr_warn("%s unsupport adc type = %d", __func__, device_in);
+		}
 
-		if (GetAdcStatus() == false) {
-			/* here to set digital part */
-			Topck_Enable(true);
-			/* AdcClockEnable(true); */
-			Ana_Set_Reg(GPIO_MODE1, 0x1249, 0x7fff);
-			/* Audio gpio mode setting */
-			/* Audio system digital clock power down release */
+		/* digital part setting */
+		if (get_analog_input_status() == false) {
 			if (GetDacStatus() == false) {
 				Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0040, 0xffff);
 				/* power on clock */
@@ -3531,94 +3361,49 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 				Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0000, 0xffff);
 				/* power on clock */
 			}
-			Ana_Set_Reg(AFE_AMIC_ARRAY_CFG, 0x00E4, 0x00ff);
-			/* AMIC array setting */
-			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
-			/* ADDA loopback setting : off all */
-			Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0018, 0x03ff);
-			/* UL/DL mtkaif format setting : mtk1.5 */
 			Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
 			/* [0] afe enable */
-			Ana_Set_Reg(AFE_UL_SRC_CON0_H, (ULSampleRateTransform(SampleRate_VUL1)
-							<< 1), 0x7 << 1);
-			/* UL sample rate and mode configure */
-#if 0
-			/* fixed 260k path for 8/16/32/48 */
-			if (useUl260k() && SampleRate_VUL1 <= 48000) {
-				/* anc ul path src on */
-				anc_ul_src_enable(true);
-				/* ANC clk pdn release */
-				anc_clk_enable(true);
-			}
-#endif
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);
-			/* UL turn on */
-		}
-	} else {
-		if (GetAdcStatus() == false) {
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0xffff);
-			/* UL turn off */
-#if 0
-			if (SampleRate_VUL1 <= 48000) {
-				/* anc ul path src off */
-				anc_ul_src_enable(false);
-				/* ANC clk pdn enable */
-				anc_clk_enable(false);
-			}
-#endif
-			Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0020, 0x0020);
-			/* up-link power down */
-		}
-		if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC1) {
-			/* main and headset mic */
-			if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
-				/* "ADC1", main_mic */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x00C8);
-				/* disable high performance mode*/
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x7000);
-				/* disable AUDADCCH0_01 */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0737);
-				/* disable AUDPREAMPCH0_01 */
-				Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0x0001);
-				/* disable MICBIAS0 */
-			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]
-				   == 1) {
-				/* "ADC2", headset mic */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x00C8);
-				/* disable high performance mode */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x7000);
-				/* disable AUDADCCH0_01 */
-				Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0737);
-				/* disable AUDPREAMPCH0_01 */
-				Ana_Set_Reg(AUDENC_ANA_CON17, 0x0000, 0x0002);
-				/* MIC Bias 1 DC couple switch 1P off */
-				Ana_Set_Reg(AUDENC_ANA_CON17, 0x0080, 0x0081);
-				/* disable MICBIAS1 */
-			}
-		} else if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC2) {
-			/* ref mic */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x00C8);
-			/* disable high performance mode */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x7000);
-			/* disable AUDADCCH1_23 */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x0737);
-			/* disable AUDPREAMPCH1_23*/
-			Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0xf100);
-			/* disable MICBIAS2 */
 		}
 
-		if (GetAdcStatus() == false) {
+		Ana_Set_Reg(AFE_AMIC_ARRAY_CFG, amic_array_status(), 0x00ff);
+		/* AMIC array setting */
+		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
+		/* ADDA loopback/sgen setting : off all */
+
+	} else {
+		/* PMIC analog uplink setting */
+		switch (device_in) {
+		case AUDIO_ANALOG_DEVICE_IN_ADC1:
+			audio_preamp1_en(false);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC2:
+			audio_preamp2_en(false);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC3:
+			audio_preamp3_en(false);
+			break;
+		case AUDIO_ANALOG_DEVICE_IN_ADC4:
+			audio_preamp4_en(false);
+			break;
+		default:
+			pr_warn("%s unsupport adc type = %d", __func__, device_in);
+		}
+
+		if (get_adc_clock_status() == false) {
 			Ana_Set_Reg(AFE_DCCLK_CFG0, 0x0000, 0x0001);
 			/* dcclk_gen_on=1'b0 */
 			Ana_Set_Reg(AFE_DCCLK_CFG0, 0x0fe2, 0xffEE);
 			/* Default Value, dcclk_pdn=1'b0 */
-			Ana_Set_Reg(TOP_CKPDN_CON0, 0x1800, 0x1800);
-			/* AUD_CK power down */
 
 			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0000, 0x000C);
 			/* ADC CLK from CLKGEN (13MHz) */
 			Ana_Set_Reg(AUDENC_ANA_CON6, 0x0000, 0x0070);
 			/* disable CLKGEN */
+		}
+
+		if (get_analog_input_status() == false) {
+			Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0020, 0x0020);
+			/* up-link power down */
 
 			if (GetDLStatus() == false) {
 				Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);
@@ -3627,9 +3412,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 				/* afe power down and total audio clk disable */
 			}
 
-			/* AdcClockEnable(false); */
 			Topck_Enable(false);
-			/* ClsqAuxEnable(false); */
 			ClsqEnable(false);
 			NvregEnable(false);
 			audckbufEnable(false);
@@ -4133,15 +3916,19 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 /* here start uplink power function */
 static const char *const ADC_function[] = { "Off", "On" };
 static const char *const ADC_power_mode[] = { "normal", "lowpower" };
-static const char *const PreAmp_Mux_function[] = { "OPEN", "IN_ADC1", "IN_ADC2", "IN_ADC3" };
 
 /* OPEN:0, IN_ADC1: 1, IN_ADC2:2, IN_ADC3:3 */
-static const char *const ADC_UL_PGA_GAIN[] = { "0Db", "6Db", "12Db", "18Db", "24Db", "30Db" };
-static const char *const Pmic_Digital_Mux[] = { "ADC1", "ADC2", "ADC3", "ADC4" };
-static const char *const Adc_Input_Sel[] = { "idle", "AIN", "Preamp" };
-
-static const char *const Audio_AnalogMic_Mode[] = {
-	"ACCMODE", "DCCMODE", "DMIC", "DCCECMDIFFMODE", "DCCECMSINGLEMODE"
+static const char *const ADC_UL_PGA_GAIN[] = {"0Db", "6Db", "12Db", "18Db", "24Db"};
+static const char *const audio_adc1_mic_source[] = {"AIN0", "AIN1", "AIN2"};
+static const char *const audio_adc2_mic_source[] = {"AIN0", "AIN3", "AIN2"};
+static const char *const audio_adc3_mic_source[] = {"AIN5", "AIN4", "AIN6"};
+static const char *const audio_adc4_mic_source[] = {"AIN5", "AIN0", "AIN6"};
+static const char *const audio_ul_array_in[] = {
+	"ADC1", "ADC2", "ADC3", "ADC4",
+	"DMIC0", "DMIC1_Lch", "DMIC1_Rch", "DMIC2_Lch", "DMIC2_Rch"
+};
+static const char *const audio_adc_mic_mode[] = {
+	"ACCMODE", "DCCMODE", "DCCECMDIFFMODE", "DCCECMSINGLEMODE"
 };
 static const char *const Audio_VOW_ADC_Function[] = { "Off", "On" };
 static const char *const Audio_VOW_Digital_Function[] = { "Off", "On" };
@@ -4157,539 +3944,1240 @@ static const char * const Pmic_LPBK_function[] = { "Off", "LPBK3" };
 
 static const struct soc_enum Audio_UL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_function), ADC_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_function), ADC_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_function), ADC_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_function), ADC_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(PreAmp_Mux_function),
-			    PreAmp_Mux_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Adc_Input_Sel), Adc_Input_Sel),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Adc_Input_Sel), Adc_Input_Sel),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Adc_Input_Sel), Adc_Input_Sel),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Adc_Input_Sel), Adc_Input_Sel),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_ul_array_in), audio_ul_array_in),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_adc1_mic_source), audio_adc1_mic_source),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_adc2_mic_source), audio_adc2_mic_source),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_adc3_mic_source), audio_adc3_mic_source),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_adc4_mic_source), audio_adc4_mic_source),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_UL_PGA_GAIN), ADC_UL_PGA_GAIN),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_UL_PGA_GAIN), ADC_UL_PGA_GAIN),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_UL_PGA_GAIN), ADC_UL_PGA_GAIN),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_UL_PGA_GAIN), ADC_UL_PGA_GAIN),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Digital_Mux), Pmic_Digital_Mux),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Digital_Mux), Pmic_Digital_Mux),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Digital_Mux), Pmic_Digital_Mux),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Digital_Mux), Pmic_Digital_Mux),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_AnalogMic_Mode),
-			    Audio_AnalogMic_Mode),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_AnalogMic_Mode),
-			    Audio_AnalogMic_Mode),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_AnalogMic_Mode),
-			    Audio_AnalogMic_Mode),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_AnalogMic_Mode),
-			    Audio_AnalogMic_Mode),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_adc_mic_mode), audio_adc_mic_mode),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_power_mode), ADC_power_mode),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_VOW_ADC_Function),
 			    Audio_VOW_ADC_Function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(PreAmp_Mux_function),
-			    PreAmp_Mux_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_VOW_Digital_Function),
 			    Audio_VOW_Digital_Function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_VOW_MIC_Type),
 			    Audio_VOW_MIC_Type),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_function), ADC_function),
 };
 
-static int Audio_ADC1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int channel_map_to_device(enum AUDIO_ANALOG_UL_ARRAY_TYPE channel)
 {
-	pr_aud("Audio_ADC1_Get = %d\n",
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_IN_ADC1]);
-	ucontrol->value.integer.value[0] =
-	    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_IN_ADC1];
+	switch (channel) {
+	case AUDIO_UL_ARRAY_ADC1:
+		return AUDIO_ANALOG_DEVICE_IN_ADC1;
+	case AUDIO_UL_ARRAY_ADC2:
+		return AUDIO_ANALOG_DEVICE_IN_ADC2;
+	case AUDIO_UL_ARRAY_ADC3:
+		return AUDIO_ANALOG_DEVICE_IN_ADC3;
+	case AUDIO_UL_ARRAY_ADC4:
+		return AUDIO_ANALOG_DEVICE_IN_ADC4;
+	case AUDIO_UL_ARRAY_DMIC0_LCH:
+		return AUDIO_ANALOG_DEVICE_IN_DMIC0;
+	case AUDIO_UL_ARRAY_DMIC1_LCH:
+	case AUDIO_UL_ARRAY_DMIC1_RCH:
+		return AUDIO_ANALOG_DEVICE_IN_DMIC1;
+	case AUDIO_UL_ARRAY_DMIC2_LCH:
+	case AUDIO_UL_ARRAY_DMIC2_RCH:
+		return AUDIO_ANALOG_DEVICE_IN_DMIC2;
+	default:
+		pr_err("%s can't mapping channel %d to device", __func__, channel);
+	}
 	return 0;
 }
 
-static int Audio_ADC1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static void audio_preamp1_en(bool power)
 {
-	pr_aud("%s()\n", __func__);
-	mutex_lock(&Ana_Power_Mutex);
-	if (ucontrol->value.integer.value[0]) {
-		if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_ACC)
-			TurnOnADcPowerACC(AUDIO_ANALOG_DEVICE_IN_ADC1, true);
-		else if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_DCC)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC1, true, 0);
-		else if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_DMIC)
-			TurnOnADcPowerDmic(AUDIO_ANALOG_DEVICE_IN_ADC1, true);
-		else if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_DCCECMDIFF)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC1, true, 1);
-		else if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_DCCECMSINGLE)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC1, true, 2);
+	int mic_mode = adc1_mic_mode_mux;
+	int mic_source = mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1];
+	int mic_gain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1];
 
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_IN_ADC1] =
-		    ucontrol->value.integer.value[0];
-	} else {
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_IN_ADC1] =
-		    ucontrol->value.integer.value[0];
-		if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_ACC)
-			TurnOnADcPowerACC(AUDIO_ANALOG_DEVICE_IN_ADC1, false);
-		else if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_DCC)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC1, false, 0);
-		else if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_DMIC)
-			TurnOnADcPowerDmic(AUDIO_ANALOG_DEVICE_IN_ADC1, false);
-		else if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_DCCECMDIFF)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC1, false, 1);
-		else if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_DCCECMSINGLE)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC1, false, 2);
+	pr_warn("%s power=%d, mic_mode=%d, mic_source=%d, mic_gain=%d", __func__,
+	       power, mic_mode, mic_source, mic_gain);
 
+	if (power) { /* power on */
+		switch (mic_source) {
+		case AUDIO_AMIC_AIN0:
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0021, 0x00f1);
+			/* Enable MICBIAS0, MISBIAS0 = 1P9V */
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0010, 0x0030);
+			/* Setting and Enable Audio CH0_01 PGA  input sel : AIN0*/
+			break;
+		case AUDIO_AMIC_AIN1:
+			Ana_Set_Reg(AUDENC_ANA_CON17, 0x0001, 0x0081);
+			/* MIC Bias 1 high power mode, power on : normal mode */
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0020, 0x0030);
+			/* Setting and Enable Audio CH0_01 PGA  input sel : AIN1*/
+			break;
+		case AUDIO_AMIC_AIN2:
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x2100, 0xf100);
+			/* Enable MICBIAS2, MISBIAS2 = 1P9V */
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0030, 0x0030);
+			/* Setting and Enable Audio CH0_01 PGA  input sel : AIN2*/
+			break;
+		default:
+			pr_warn("preamp1 : wrong mic source %d", mic_source);
+			break;
+		}
+
+		Ana_Set_Reg(AUDENC_ANA_CON0, mic_gain << 8, 0x7 << 8);
+		/* Mic Gain : Audio CH0_01 preamplifier gain adjust */
+
+		if (mic_mode == AUDIO_ANALOGUL_MODE_ACC) {
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0001, 0x0007);
+			/* Setting and Enable Audio CH0_01 PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x5000, 0x7000);
+			/* Select Input CH0 PGA and Enable audio CH0 ADC*/
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0008, 0x00C8);
+			/* Audio CH0_01 PGA high performance mode*/
+		} else if (mic_mode == AUDIO_ANALOGUL_MODE_DCC) {
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0007, 0x0007);
+			/* Setting and Enable Audio CH0_01 PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x5000, 0x7000);
+			/* Select Input CH0 PGA and Enable audio CH0 ADC*/
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x00C8, 0x00C8);
+			/* Audio CH0_01 PGA high performance mode*/
+			udelay(100);
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0004);
+			/* Audio CH0_01 PGA DCC precharge off */
+		}
+	} else {  /* power off */
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x00C8);
+		/* disable high performance mode*/
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x7000);
+		/* disable AUDADCCH0_01 */
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0737);
+		/* disable AUDPREAMPCH0_01  input sel : NONE */
+		switch (mic_source) {
+		case AUDIO_AMIC_AIN0:
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0x0001);
+			/* disable MICBIAS0 */
+			break;
+		case AUDIO_AMIC_AIN1:
+			Ana_Set_Reg(AUDENC_ANA_CON17, 0x0080, 0x0081);
+			/* disable MICBIAS1 */
+			break;
+		case AUDIO_AMIC_AIN2:
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0xf100);
+			/* disable MICBIAS2 */
+			break;
+		default:
+			pr_warn("preamp1 : wrong mic source %d", mic_source);
+			break;
+		}
 	}
+}
+
+static void audio_preamp2_en(bool power)
+{
+	int mic_mode = adc2_mic_mode_mux;
+	int mic_source = mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_2];
+	int mic_gain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2];
+
+	pr_warn("%s power=%d, mic_mode=%d, mic_source=%d, mic_gain=%d", __func__,
+	       power, mic_mode, mic_source, mic_gain);
+
+	if (power) {  /* power on */
+		switch (mic_source) {
+		case AUDIO_AMIC_AIN0:
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0021, 0x00f1);
+			/* Enable MICBIAS0, MISBIAS0 = 1P9V */
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0010, 0x0030);
+			/* Setting and Enable Audio CH1_23 PGA  input sel : AIN0*/
+			break;
+		case AUDIO_AMIC_AIN3:
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0020, 0x0030);
+			/* Setting and Enable Audio CH1_23 PGA  input sel : AIN3*/
+			break;
+		case AUDIO_AMIC_AIN2:
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x2100, 0xf100);
+			/* Enable MICBIAS2, MISBIAS2 = 1P9V */
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0030, 0x0030);
+			/* Setting and Enable AudioCH1_23 PGA  input sel : AIN2*/
+			break;
+		default:
+			pr_warn("preamp2 : wrong mic source %d", mic_source);
+			break;
+		}
+
+		Ana_Set_Reg(AUDENC_ANA_CON1, mic_gain << 8, 0x7 << 8);
+		/* Mic Gain : Audio CH2_23 preamplifier gain adjust */
+
+		if (mic_mode == AUDIO_ANALOGUL_MODE_ACC) {
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0001, 0x0007);
+			/* Setting and Enable Audio CH1 PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x5000, 0x7000);
+			/* Select Input CH1 PGA and Enable audio CH1 ADC*/
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0008, 0x00C8);
+			/* Audio CH1 PGA high performance mode*/
+		} else if (mic_mode == AUDIO_ANALOGUL_MODE_DCC) {
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0007, 0x0007);
+			/* Setting and Enable Audio CH1PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x5000, 0x7000);
+			/* Select Input CH1 PGA and Enable audio CH1 ADC*/
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x00C8, 0x00C8);
+			/* Audio CH1 PGA high performance mode*/
+			udelay(100);
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x0004);
+			/* Audio CH1 PGA DCC precharge off */
+		}
+	} else {  /* power off */
+		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x00C8);
+		/* disable high performance mode*/
+		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x7000);
+		/* disable AUDADCCH1_23 */
+		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x0737);
+		/* disable AUDPREAMPCH1_23  input sel : NONE */
+		switch (mic_source) {
+		case AUDIO_AMIC_AIN0:
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0x0001);
+			/* disable MICBIAS0 */
+			break;
+		case AUDIO_AMIC_AIN3:
+			break;
+		case AUDIO_AMIC_AIN2:
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0xf100);
+			/* disable MICBIAS2 */
+			break;
+		default:
+			pr_warn("preamp2 : wrong mic source %d", mic_source);
+			break;
+		}
+	}
+}
+
+static void audio_preamp3_en(bool power)
+{
+	int mic_mode = adc3_mic_mode_mux;
+	int mic_source = mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_3];
+	int mic_gain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP3];
+
+	pr_warn("%s power=%d, mic_mode=%d, mic_source=%d, mic_gain=%d", __func__,
+	       power, mic_mode, mic_source, mic_gain);
+
+	if (power) { /* power on */
+		switch (mic_source) {
+		case AUDIO_AMIC_AIN5:
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0071, 0x00f1);
+			/* Enable MICBIAS3, MISBIAS3 = 2P7V */
+			Ana_Set_Reg(AUDENC_ANA_CON2, 0x0010, 0x0030);
+			/* Setting and Enable Audio CH2_45 PGA  input sel : AIN5*/
+			break;
+		case AUDIO_AMIC_AIN4:
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0071, 0x00f1);
+			/* Enable MICBIAS3, MISBIAS3 = 2P7V */
+			Ana_Set_Reg(AUDENC_ANA_CON2, 0x0020, 0x0030);
+			/* Setting and Enable Audio CH2_45 PGA  input sel : AIN4*/
+			break;
+		case AUDIO_AMIC_AIN6:
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0071, 0x00f1);
+			/* Enable MICBIAS3, MISBIAS3 = 2P7V */
+			Ana_Set_Reg(AUDENC_ANA_CON2, 0x0030, 0x0030);
+			/* Setting and Enable Audio CH2_45 PGA  input sel : AIN6*/
+			break;
+		default:
+			pr_warn("preamp3 : wrong mic source %d", mic_source);
+			break;
+		}
+
+		Ana_Set_Reg(AUDENC_ANA_CON2, mic_gain << 8, 0x7 << 8);
+		/* Mic Gain : Audio CH2_45 preamplifier gain adjust */
+
+		if (mic_mode == AUDIO_ANALOGUL_MODE_ACC) {
+			Ana_Set_Reg(AUDENC_ANA_CON2, 0x0001, 0x0007);
+			/* Setting and Enable Audio CH2_45 PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON2, 0x5000, 0x7000);
+			/* Select Input CH2 PGA and Enable audio CH2 ADC*/
+			Ana_Set_Reg(AUDENC_ANA_CON2, 0x0008, 0x00C8);
+			/* Audio CH2 PGA high performance mode*/
+		} else if (mic_mode == AUDIO_ANALOGUL_MODE_DCC) {
+			Ana_Set_Reg(AUDENC_ANA_CON2, 0x0007, 0x0007);
+			/* Setting and Enable Audio CH2 PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON2, 0x5000, 0x7000);
+			/* Select Input CH2 PGA and Enable audio CH2 ADC*/
+			Ana_Set_Reg(AUDENC_ANA_CON2, 0x00C8, 0x00C8);
+			/* Audio CH2 PGA high performance mode*/
+			udelay(100);
+			Ana_Set_Reg(AUDENC_ANA_CON2, 0x0000, 0x0004);
+			/* Audio CH2 PGA DCC precharge off */
+		}
+	} else {  /* power off */
+		Ana_Set_Reg(AUDENC_ANA_CON2, 0x0000, 0x00C8);
+		/* disable high performance mode*/
+		Ana_Set_Reg(AUDENC_ANA_CON2, 0x0000, 0x7000);
+		/* disable AUDADCCH2_45 */
+		Ana_Set_Reg(AUDENC_ANA_CON2, 0x0000, 0x0737);
+		/* disable AUDPREAMPCH2_45  input sel : NONE */
+		switch (mic_source) {
+		case AUDIO_AMIC_AIN5:
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0000, 0x00f1);
+			/* disable MICBIAS3 */
+			break;
+		case AUDIO_AMIC_AIN4:
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0000, 0x00f1);
+			/* disable MICBIAS3 */
+			break;
+		case AUDIO_AMIC_AIN6:
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0000, 0x00f1);
+			/* disable MICBIAS3 */
+			break;
+		default:
+			pr_warn("preamp3 : wrong mic source %d", mic_source);
+			break;
+		}
+	}
+}
+
+static void audio_preamp4_en(bool power)
+{
+	int mic_mode = adc4_mic_mode_mux;
+	int mic_source = mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_4];
+	int mic_gain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP4];
+
+	pr_warn("%s power=%d, mic_mode=%d, mic_source=%d, mic_gain=%d", __func__,
+	       power, mic_mode, mic_source, mic_gain);
+
+	if (power) { /* power on */
+		switch (mic_source) {
+		case AUDIO_AMIC_AIN5:
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0071, 0x00f1);
+			/* Enable MICBIAS3, MISBIAS3 = 2P7V */
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0010, 0x0030);
+			/* Setting and Enable Audio CH3_6 PGA  input sel : AIN5*/
+			break;
+		case AUDIO_AMIC_AIN0:
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0021, 0x00f1);
+			/* Enable MICBIAS0, MISBIAS0 = 1P9V */
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0020, 0x0030);
+			/* Setting and Enable Audio CH3_6 PGA  input sel : AIN0*/
+			break;
+		case AUDIO_AMIC_AIN6:
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0071, 0x00f1);
+			/* Enable MICBIAS3, MISBIAS3 = 2P7V */
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0030, 0x0030);
+			/* Setting and Enable Audio CH3_6 PGA  input sel : AIN6*/
+			break;
+		default:
+			pr_warn("preamp4 : wrong mic source %d", mic_source);
+			break;
+		}
+
+		Ana_Set_Reg(AUDENC_ANA_CON3, mic_gain << 8, 0x7 << 8);
+		/* Mic Gain : Audio CH3_6 preamplifier gain adjust */
+
+		if (mic_mode == AUDIO_ANALOGUL_MODE_ACC) {
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0001, 0x0007);
+			/* Setting and Enable Audio CH3_6 PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x5000, 0x7000);
+			/* Select Input CH3 PGA and Enable audio CH3 ADC*/
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0008, 0x00C8);
+			/* Audio CH3PGA high performance mode*/
+		} else if (mic_mode == AUDIO_ANALOGUL_MODE_DCC) {
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0007, 0x0007);
+			/* Setting and Enable Audio CH3 PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x5000, 0x7000);
+			/* Select Input CH3 PGA and Enable audio CH3ADC*/
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x00C8, 0x00C8);
+			/* Audio CH3 PGA high performance mode*/
+			udelay(100);
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0000, 0x0004);
+			/* Audio CH3 PGA DCC precharge off */
+		}
+	} else {  /* power off */
+		Ana_Set_Reg(AUDENC_ANA_CON3, 0x0000, 0x00C8);
+		/* disable high performance mode*/
+		Ana_Set_Reg(AUDENC_ANA_CON3, 0x0000, 0x7000);
+		/* disable AUDADCCH3_6 */
+		Ana_Set_Reg(AUDENC_ANA_CON3, 0x0000, 0x0737);
+		/* disable AUDPREAMPCH3_6 input sel : NONE */
+		switch (mic_source) {
+		case AUDIO_AMIC_AIN5:
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0000, 0x00f1);
+			/* disable MICBIAS3 */
+			break;
+		case AUDIO_AMIC_AIN0:
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0x0001);
+			/* disable MICBIAS0 */
+			break;
+		case AUDIO_AMIC_AIN6:
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0000, 0x00f1);
+			/* disable MICBIAS3 */
+			break;
+		default:
+			pr_warn("preamp4 : wrong mic source %d", mic_source);
+			break;
+		}
+	}
+}
+
+static void audio_dmic_input_enable(bool power, AUDIO_ANALOG_DEVICE_TYPE device_in)
+{
+	switch (device_in) {
+	case AUDIO_ANALOG_DEVICE_IN_DMIC0:
+		if (power) {
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0021, 0x00f1);
+			/* Enable MICBIAS0 , MISBIAS0 = 1P9V */
+			Ana_Set_Reg(AUDENC_ANA_CON13, 0x0005, 0x0007);
+			/* Enable DMIC0 */
+		} else {
+			Ana_Set_Reg(AUDENC_ANA_CON13, 0x0000, 0x0007);
+			/* disable DMIC0 */
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0x0001);
+			/* Enable MICBIAS0 , MISBIAS0 = 1P9V */
+		}
+		break;
+	case AUDIO_ANALOG_DEVICE_IN_DMIC1:
+		if (power) {
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x2100, 0xf100);
+			/* Enable MICBIAS2 , MISBIAS2 = 1P9V */
+			Ana_Set_Reg(AUDENC_ANA_CON14, 0x0005, 0x0007);
+			/* Enable DMIC1 */
+		} else {
+			Ana_Set_Reg(AUDENC_ANA_CON14, 0x0000, 0x0007);
+			/* disable DMIC1 */
+			Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0xf100);
+			/* Enable MICBIAS2 , MISBIAS2 = 1P9V */
+		}
+		break;
+	case AUDIO_ANALOG_DEVICE_IN_DMIC2:
+		if (power) {
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0071, 0x00f1);
+			/* Enable MICBIAS3 , MISBIAS3 = 2P7V */
+			Ana_Set_Reg(AUDENC_ANA_CON15, 0x0005, 0x0007);
+			/* Enable DMIC2 */
+		} else {
+			Ana_Set_Reg(AUDENC_ANA_CON15, 0x0000, 0x0007);
+			/* disable DMIC2 */
+			Ana_Set_Reg(AUDENC_ANA_CON18, 0x0000, 0x00f1);
+			/* Enable MICBIAS3 , MISBIAS3 = 2P7V */
+		}
+		break;
+	default:
+		pr_warn("%s not support this device_type = %d", __func__, device_in);
+		break;
+	}
+	pr_aud("%s power = %d, device_type = %d,", __func__, power, device_in);
+}
+
+static void audio_adc_enable(bool power, AUDIO_ANALOG_DEVICE_TYPE adc)
+{
+	int mic_mode = 0;
+
+	switch (adc) {
+	case AUDIO_ANALOG_DEVICE_IN_ADC1:
+		mic_mode = adc1_mic_mode_mux;
+		break;
+	case AUDIO_ANALOG_DEVICE_IN_ADC2:
+		mic_mode = adc2_mic_mode_mux;
+		break;
+	case AUDIO_ANALOG_DEVICE_IN_ADC3:
+		mic_mode = adc3_mic_mode_mux;
+		break;
+	case AUDIO_ANALOG_DEVICE_IN_ADC4:
+		mic_mode = adc4_mic_mode_mux;
+		break;
+	default:
+		pr_warn("%s can't mapping adc %d to mic mode", __func__, adc);
+		break;
+	}
+
+	pr_aud("%s, power(%d), adc(%d), mic_mode(%d)\n", __func__, power, adc, mic_mode);
+
+	switch (mic_mode) {
+	case AUDIO_ANALOGUL_MODE_ACC:
+		TurnOnADcPowerACC(adc, power);
+		break;
+	case AUDIO_ANALOGUL_MODE_DCC:
+		TurnOnADcPowerDCC(adc, power, 0);
+		break;
+	case AUDIO_ANALOGUL_MODE_DCCECMDIFF:
+		TurnOnADcPowerDCC(adc, power, 1);
+		break;
+	case AUDIO_ANALOGUL_MODE_DCCECMSINGLE:
+		TurnOnADcPowerDCC(adc, power, 2);
+		break;
+	default:
+		pr_err("return -EINVAL of Mic mode = %d\n", mic_mode);
+		break;
+	}
+}
+
+static void audio_uplink1_cic_setting(bool power, bool dmic_flag)
+{
+	int samplerate_ul1 = mBlockSampleRate[AUDIO_DAI_UL1];
+	int ul1_index = GetULFrequency(mBlockSampleRate[AUDIO_DAI_UL1]);
+
+	pr_aud("%s samplerate(%d) power(%d) dmic_flag(%d)",
+	       __func__, samplerate_ul1, power, dmic_flag);
+
+	if (power && !dmic_flag) { /* amic power on setting*/
+		/* UL1 setting and turn on */
+		Ana_Set_Reg(AFE_UL_SRC_CON0_H,
+			    (ULSampleRateTransform(samplerate_ul1) << 1),
+			    0x7 << 1);
+		Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);
+
+	} else if (power && dmic_flag) { /* dmic power on setting*/
+		/* UL1 setting and turn on */
+		Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x00e0, 0xffe0);
+		Ana_Set_Reg(AFE_UL_SRC_CON0_H,
+			    (ULSampleRateTransform(samplerate_ul1) << 1),
+			    0x7 << 1);
+
+		if (samplerate_ul1 <= 48000) {
+			Ana_Set_Reg(AFE_UL_SRC_CON0_L, (ul1_index << 13), 0x2000);
+			/* dmic sample rate, ch1 and ch2 set to 3.25MHz 48k */
+		} else {
+			/* hires : use 4.33MHz mode */
+			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0040, 0x0040);
+		}
+
+		Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0003, 0x0003);
+	} else {
+		Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0xffff);
+		/* UL1 turn off */
+	}
+}
+
+static void audio_uplink2_cic_setting(bool power, bool dmic_flag)
+{
+	int samplerate_ul2 = mBlockSampleRate[AUDIO_DAI_UL2];
+	int ul2_index = GetULFrequency(mBlockSampleRate[AUDIO_DAI_UL2]);
+
+	if (power && !dmic_flag) { /* amic power on setting*/
+		/* UL2 fixed 260k anc path and turn on */
+		Ana_Set_Reg(AFE_ADDA6_UL_SRC_CON0_H,
+			    (ULSampleRateTransform(samplerate_ul2) << 1),
+			    0x7 << 1);
+		Ana_Set_Reg(AFE_ADDA6_UL_SRC_CON0_L, 0x0001, 0xffff);
+
+		if (samplerate_ul2 <= 48000) {
+			anc_ul_src_enable(true); /* anc ul path src on */
+			anc_clk_enable(true); /* ANC clk pdn release */
+		}
+
+	} else if (power && dmic_flag) { /* dmic power on setting*/
+		/* UL2 fixed 260k anc path and turn on */
+		Ana_Set_Reg(AFE_ADDA6_UL_SRC_CON0_H, 0x00e0, 0xffe0);
+		Ana_Set_Reg(AFE_ADDA6_UL_SRC_CON0_H,
+			    (ULSampleRateTransform(samplerate_ul2) << 1),
+			    0x7 << 1);
+
+		if (samplerate_ul2 <= 48000) {
+			Ana_Set_Reg(AFE_ADDA6_UL_SRC_CON0_L, (ul2_index << 13), 0x2000);
+			/* dmic sample rate, ch1 and ch2 set to 3.25MHz 48k */
+			Ana_Set_Reg(AFE_ADDA6_UL_SRC_CON0_L, 0x0800, 0x0800);
+			/* digmic_duplicate_mode to 6.25M */
+			anc_ul_src_enable(true); /* anc ul path src on */
+			anc_clk_enable(true); /* ANC clk pdn release */
+		} else {
+			/* hires : use 4.33MHz mode */
+			Ana_Set_Reg(AFE_ADDA6_UL_SRC_CON0_L, 0x0040, 0x0040);
+		}
+
+		Ana_Set_Reg(AFE_ADDA6_UL_SRC_CON0_L, 0x0003, 0x0003);
+	} else {
+		Ana_Set_Reg(AFE_ADDA6_UL_SRC_CON0_H, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_ADDA6_UL_SRC_CON0_L, 0x0000, 0xffff);
+		/*UL2 turn off */
+		if (samplerate_ul2 <= 48000) {
+			anc_ul_src_enable(false); /* anc ul path src off */
+			anc_clk_enable(false); /* ANC clk pdn enable */
+		}
+	}
+}
+
+static int audio_capture1_enable(bool power)
+{
+	int lch = mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_LCH_MUX];
+	int rch = mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_RCH_MUX];
+	int device_lch = channel_map_to_device(lch);
+	int device_rch = channel_map_to_device(rch);
+	int *counter1 = &mCodec_data->mAudio_Ana_DevicePower[device_lch];
+	int *counter2 = &mCodec_data->mAudio_Ana_DevicePower[device_rch];
+
+	if ((is_amic(device_lch) && is_dmic(device_rch)) ||
+	    (is_dmic(device_lch) && is_amic(device_rch))) {
+		pr_err("%s one is amic and another is dmic, lch(%d) rch(%d)", __func__, device_lch, device_rch);
+		return -EPERM;
+	}
+
+	if (power) {
+		/* uplink1 left channel device */
+		if (*counter1 == 0) {
+			if (is_amic(device_lch))
+				audio_adc_enable(true, device_lch);
+			else if (is_dmic(device_lch))
+				audio_dmic_enable(true, device_lch);
+			else
+				pr_warn("%s is not uplink device %d", __func__, device_lch);
+		}
+		(*counter1)++;
+
+		/* uplink1 right channel device*/
+		if (*counter2 == 0) {
+			if (is_amic(device_rch))
+				audio_adc_enable(true, device_rch);
+			else if (is_dmic(device_rch))
+				audio_dmic_enable(true, device_rch);
+			else
+				pr_warn("%s is not uplink device %d", __func__, device_rch);
+		}
+		(*counter2)++;
+
+		audio_uplink1_cic_setting(true, is_dmic(device_lch));
+	} else {
+		audio_uplink1_cic_setting(false, is_dmic(device_lch));
+
+		/* uplink1 left channel device */
+		(*counter1)--;
+		if (*counter1 == 0) {
+			if (is_amic(device_lch))
+				audio_adc_enable(false, device_lch);
+			else if (is_dmic(device_lch))
+				audio_dmic_enable(false, device_lch);
+			else
+				pr_warn("%s is not uplink device %d", __func__, device_lch);
+		}
+		if (*counter1 < 0) {
+			pr_warn(" device power(%d) < 0 = %d\n ", device_lch, *counter1);
+			*counter1 = 0;
+		}
+
+		/* uplink1 right channel device*/
+		(*counter2)--;
+		if (*counter2 == 0) {
+			if (is_amic(device_rch))
+				audio_adc_enable(false, device_rch);
+			else if (is_dmic(device_rch))
+				audio_dmic_enable(false, device_rch);
+			else
+				pr_warn("%s is not uplink device %d", __func__, device_rch);
+		}
+		if (*counter1 < 0) {
+			pr_warn(" device power(%d) < 0 = %d\n ", device_rch, *counter2);
+			*counter2 = 0;
+		}
+	}
+	return 0;
+}
+
+static int audio_capture2_enable(bool power)
+{
+	int lch = mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_LCH_MUX];
+	int rch = mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_RCH_MUX];
+	int device_lch = channel_map_to_device(lch);
+	int device_rch = channel_map_to_device(rch);
+	int *counter1 = &mCodec_data->mAudio_Ana_DevicePower[device_lch];
+	int *counter2 = &mCodec_data->mAudio_Ana_DevicePower[device_rch];
+
+	if ((is_amic(device_lch) && is_dmic(device_rch)) ||
+	    (is_dmic(device_lch) && is_amic(device_rch))) {
+		pr_err("channel one is amic and another is dmic, lch(%d) rch(%d)", device_lch, device_rch);
+		return -EPERM;
+	}
+
+	if (power) {
+		/* uplink1 left channel device */
+		if (*counter1 == 0) {
+			if (is_amic(device_lch))
+				audio_adc_enable(true, device_lch);
+			else if (is_dmic(device_lch))
+				audio_dmic_enable(true, device_lch);
+			else
+				pr_warn("%s is not uplink device %d", __func__, device_lch);
+		}
+		(*counter1)++;
+
+		/* uplink1 right channel device*/
+		if (*counter2 == 0) {
+			if (is_amic(device_rch))
+				audio_adc_enable(true, device_rch);
+			else if (is_dmic(device_rch))
+				audio_dmic_enable(true, device_rch);
+			else
+				pr_warn("%s is not uplink device %d", __func__, device_rch);
+		}
+		(*counter2)++;
+
+		audio_uplink2_cic_setting(true, is_dmic(device_lch));
+	} else {
+		audio_uplink2_cic_setting(false, is_dmic(device_lch));
+
+		/* uplink1 left channel device */
+		(*counter1)--;
+		if (*counter1 == 0) {
+			if (is_amic(device_lch))
+				audio_adc_enable(false, device_lch);
+			else if (is_dmic(device_lch))
+				audio_dmic_enable(false, device_lch);
+			else
+				pr_warn("%s is not uplink device %d", __func__, device_lch);
+		}
+		if (*counter1 < 0) {
+			pr_warn(" device power(%d) < 0 = %d\n ", device_lch, *counter1);
+			*counter1 = 0;
+		}
+
+		/* uplink1 right channel device*/
+		(*counter2)--;
+		if (*counter2 == 0) {
+			if (is_amic(device_rch))
+				audio_adc_enable(false, device_rch);
+			else if (is_dmic(device_rch))
+				audio_dmic_enable(false, device_rch);
+			else
+				pr_warn("%s is not uplink device %d", __func__, device_rch);
+		}
+		if (*counter1 < 0) {
+			pr_warn(" device power(%d) < 0 = %d\n ", device_rch, *counter2);
+			*counter2 = 0;
+		}
+	}
+	return 0;
+}
+
+static int audio_capture1_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	int power = mCodec_data->audio_interface_power[AUDIO_DAI_UL1];
+
+	pr_aud("%s = %d\n", __func__, power);
+	ucontrol->value.integer.value[0] = power;
+	return 0;
+}
+
+static int audio_capture1_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	int power = ucontrol->value.integer.value[0];
+	int *ul1_power = &mCodec_data->audio_interface_power[AUDIO_DAI_UL1];
+
+	pr_aud("%s power = %d , ul_power = %d\n", __func__, power, *ul1_power);
+	mutex_lock(&Ana_Power_Mutex);
+
+	if (power && !(*ul1_power)) {
+		audio_capture1_enable(true);
+		*ul1_power = power;
+	} else if (!power && (*ul1_power)) {
+		*ul1_power = power;
+		audio_capture1_enable(false);
+	} else {
+		pr_warn("%s Nothing happened : ctrl_power = %d , ul_power = %d\n",
+			__func__, power, *ul1_power);
+	}
+
 	mutex_unlock(&Ana_Power_Mutex);
 	return 0;
 }
 
-static int Audio_ADC2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int audio_capture2_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("Audio_ADC2_Get = %d\n",
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_IN_ADC2]);
-	ucontrol->value.integer.value[0] =
-	    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_IN_ADC2];
+	int power = mCodec_data->audio_interface_power[AUDIO_DAI_UL2];
+
+	pr_aud("%s = %d\n", __func__, power);
+	ucontrol->value.integer.value[0] = power;
 	return 0;
 }
 
-static int Audio_ADC2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int audio_capture2_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("%s()\n", __func__);
+	int power = ucontrol->value.integer.value[0];
+	int *ul2_power = &mCodec_data->audio_interface_power[AUDIO_DAI_UL2];
+
+	pr_aud("%s power = %d , ul_power = %d\n", __func__, power, *ul2_power);
 	mutex_lock(&Ana_Power_Mutex);
-	if (ucontrol->value.integer.value[0]) {
-		if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_ACC)
-			TurnOnADcPowerACC(AUDIO_ANALOG_DEVICE_IN_ADC2, true);
-		else if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_DCC)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC2, true, 0);
-		else if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_DMIC)
-			TurnOnADcPowerDmic(AUDIO_ANALOG_DEVICE_IN_ADC2, true);
-		else if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_DCCECMDIFF)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC2, true, 1);
-		else if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_DCCECMSINGLE)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC2, true, 2);
 
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_IN_ADC2] =
-		    ucontrol->value.integer.value[0];
+	if (power && !(*ul2_power)) {
+		audio_capture2_enable(true);
+		*ul2_power = power;
+	} else if (!power && (*ul2_power)) {
+		*ul2_power = power;
+		audio_capture2_enable(false);
 	} else {
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_IN_ADC2] =
-		    ucontrol->value.integer.value[0];
-		if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_ACC)
-			TurnOnADcPowerACC(AUDIO_ANALOG_DEVICE_IN_ADC2, false);
-		else if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_DCC)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC2, false, 0);
-		else if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_DMIC)
-			TurnOnADcPowerDmic(AUDIO_ANALOG_DEVICE_IN_ADC2, false);
-		else if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_DCCECMDIFF)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC2, false, 1);
-		else if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_DCCECMSINGLE)
-			TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_IN_ADC2, false, 2);
-
+		pr_warn("%s Nothing happened : ctrl_power = %d , ul_power = %d\n",
+			__func__, power, *ul2_power);
 	}
+
 	mutex_unlock(&Ana_Power_Mutex);
 	return 0;
 }
 
-static int Audio_ADC3_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+
+/* PGA1: ADC1 MIC GAIN */
+static int audio_pga_amp1_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	/* 6752 removed */
+	int gain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1];
+
+	pr_aud("%s = %d\n", __func__, gain);
+	ucontrol->value.integer.value[0] = gain;
 	return 0;
 }
 
-static int Audio_ADC3_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int audio_pga_amp1_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	/* 6752 removed */
-	return 0;
-}
-
-static int Audio_ADC4_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-static int Audio_ADC4_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-static int Audio_ADC1_Sel_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_warn("%s() = %d\n", __func__, mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC1]);
-	ucontrol->value.integer.value[0] = mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC1];
-	return 0;
-}
-
-static int Audio_ADC1_Sel_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_warn("%s()\n", __func__);
-
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Adc_Input_Sel)) {
-		pr_err("return -EINVAL\n");
-		return -EINVAL;
-	}
-
-	if (ucontrol->value.integer.value[0] == 0)
-		Ana_Set_Reg(AUDENC_ANA_CON0, (0x00 << 13), 0x6000);	/* pinumx sel */
-	else if (ucontrol->value.integer.value[0] == 1)
-		Ana_Set_Reg(AUDENC_ANA_CON0, (0x01 << 13), 0x6000);	/* AIN0 */
-	else if (ucontrol->value.integer.value[0] == 2)
-		Ana_Set_Reg(AUDENC_ANA_CON0, (0x02 << 13), 0x6000);	/* Left preamp */
-	else
-		pr_warn("%s() [AudioWarn]\n ", __func__);
-
-	pr_warn("%s() done\n", __func__);
-	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC1] = ucontrol->value.integer.value[0];
-	return 0;
-}
-
-static int Audio_ADC2_Sel_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_warn("%s() = %d\n", __func__, mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC2]);
-	ucontrol->value.integer.value[0] = mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC2];
-	return 0;
-}
-
-static int Audio_ADC2_Sel_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_warn("%s()\n", __func__);
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Adc_Input_Sel)) {
-		pr_err("return -EINVAL\n");
-		return -EINVAL;
-	}
-
-	if (ucontrol->value.integer.value[0] == 0)
-		Ana_Set_Reg(AUDENC_ANA_CON1, (0x00 << 13), 0x6000);	/* pinumx sel */
-	else if (ucontrol->value.integer.value[0] == 1)
-		Ana_Set_Reg(AUDENC_ANA_CON1, (0x01 << 13), 0x6000);	/* AIN0 */
-	else if (ucontrol->value.integer.value[0] == 2)
-		Ana_Set_Reg(AUDENC_ANA_CON1, (0x02 << 13), 0x6000);	/* Right preamp */
-	else
-		pr_warn("%s() [AudioWarn]\n ", __func__);
-
-	pr_warn("%s() done\n", __func__);
-	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC2] = ucontrol->value.integer.value[0];
-	return 0;
-}
-
-static int Audio_ADC3_Sel_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-static int Audio_ADC3_Sel_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-static int Audio_ADC4_Sel_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-static int Audio_ADC4_Sel_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-
-static bool AudioPreAmp1_Sel(int Mul_Sel)
-{
-	pr_aud("%s Mul_Sel = %d ", __func__, Mul_Sel);
-	if (Mul_Sel == 0)
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0030);	/* pinumx open */
-	else if (Mul_Sel == 1)
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0010, 0x0030);	/* AIN0 */
-	else if (Mul_Sel == 2)
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0020, 0x0030);	/* AIN1 */
-	else if (Mul_Sel == 3)
-		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0030, 0x0030);	/* AIN2 */
-	else
-		pr_warn("[AudioWarn] AudioPreAmp1_Sel Mul_Sel=%d", Mul_Sel);
-
-	return true;
-}
-
-
-static int Audio_PreAmp1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	ucontrol->value.integer.value[0] =
-	    mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_PREAMP_1];
-	return 0;
-}
-
-static int Audio_PreAmp1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_aud("%s()\n", __func__);
-
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(PreAmp_Mux_function)) {
-		pr_err("return -EINVAL\n");
-		return -EINVAL;
-	}
-	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_PREAMP_1] =
-	    ucontrol->value.integer.value[0];
-	AudioPreAmp1_Sel(mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_PREAMP_1]);
-
-	return 0;
-}
-
-static bool AudioPreAmp2_Sel(int Mul_Sel)
-{
-	pr_aud("%s Mul_Sel = %d ", __func__, Mul_Sel);
-
-	if (Mul_Sel == 0)
-		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x0030);	/* pinumx open */
-	else if (Mul_Sel == 1)
-		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0010, 0x0030);	/* AIN0 */
-	else if (Mul_Sel == 2)
-		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0020, 0x0030);	/* AIN3 */
-	else if (Mul_Sel == 3)
-		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0030, 0x0030);	/* AIN2 */
-	else
-		pr_warn("[AudioWarn] AudioPreAmp1_Sel, Mul_Sel=%d", Mul_Sel);
-
-	return true;
-}
-
-
-static int Audio_PreAmp2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	ucontrol->value.integer.value[0] =
-	    mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_PREAMP_2];
-	return 0;
-}
-
-static int Audio_PreAmp2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_aud("%s()\n", __func__);
-
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(PreAmp_Mux_function)) {
-		pr_err("return -EINVAL\n");
-		return -EINVAL;
-	}
-	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_PREAMP_2] =
-	    ucontrol->value.integer.value[0];
-	AudioPreAmp2_Sel(mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_PREAMP_2]);
-	return 0;
-}
-
-/* PGA1: PGA_L */
-static int Audio_PGA1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_aud("Audio_AmpR_Get = %d\n",
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1]);
-	ucontrol->value.integer.value[0] =
-	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1];
-	return 0;
-}
-
-static int Audio_PGA1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	int index = 0;
+	int gain = ucontrol->value.integer.value[0];
 
 	pr_aud("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ADC_UL_PGA_GAIN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	index = ucontrol->value.integer.value[0];
-	Ana_Set_Reg(AUDENC_ANA_CON0, (index << 8), 0x0700);
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1] =
-	    ucontrol->value.integer.value[0];
+	Ana_Set_Reg(AUDENC_ANA_CON0, (gain << 8), 0x0700);
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1] = gain;
 	return 0;
 }
 
-/* PGA2: PGA_R */
-static int Audio_PGA2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+/* PGA2: ADC2 MIC GAIN */
+static int audio_pga_amp2_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("Audio_PGA2_Get = %d\n",
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2]);
-	ucontrol->value.integer.value[0] =
-	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2];
+	int gain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2];
+
+	pr_aud("%s = %d\n", __func__, gain);
+	ucontrol->value.integer.value[0] = gain;
 	return 0;
 }
 
-static int Audio_PGA2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int audio_pga_amp2_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int index = 0;
+	int gain = ucontrol->value.integer.value[0];
 
 	pr_aud("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ADC_UL_PGA_GAIN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	index = ucontrol->value.integer.value[0];
-	Ana_Set_Reg(AUDENC_ANA_CON1, index << 8, 0x0700);
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2] =
-	    ucontrol->value.integer.value[0];
+	Ana_Set_Reg(AUDENC_ANA_CON1, gain << 8, 0x0700);
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2] = gain;
 	return 0;
 }
 
-static int Audio_PGA3_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+/* PGA3: ADC3 MIC GAIN */
+static int audio_pga_amp3_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	/* 6752 removed */
+	int gain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP3];
+
+	pr_aud("%s = %d\n", __func__, gain);
+	ucontrol->value.integer.value[0] = gain;
 	return 0;
 }
 
-static int Audio_PGA3_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int audio_pga_amp3_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	/* 6752 removed */
-	return 0;
-}
+	int gain = ucontrol->value.integer.value[0];
 
-static int Audio_PGA4_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-static int Audio_PGA4_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-static int Audio_MicSource1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_aud("Audio_MicSource1_Get = %d\n",
-		mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]);
-	ucontrol->value.integer.value[0] = mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1];
-	return 0;
-}
-
-static int Audio_MicSource1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* ADC1 Mic source selection, "ADC1" is main_mic, "ADC2" is headset_mic */
-	int index = 0;
-
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Pmic_Digital_Mux)) {
+	pr_aud("%s()\n", __func__);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ADC_UL_PGA_GAIN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	index = ucontrol->value.integer.value[0];
-	pr_aud("%s() index = %d done\n", __func__, index);
-	mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] = ucontrol->value.integer.value[0];
-
+	Ana_Set_Reg(AUDENC_ANA_CON2, (gain << 8), 0x0700);
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP3] = gain;
 	return 0;
 }
 
-static int Audio_MicSource2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+/* PGA4: ADC4 MIC GAIN */
+static int audio_pga_amp4_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	/* 6752 removed */
+	int gain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP4];
+
+	pr_aud("%s = %d\n", __func__, gain);
+	ucontrol->value.integer.value[0] = gain;
 	return 0;
 }
 
-static int Audio_MicSource2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int audio_pga_amp4_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	/* 6752 removed */
-	return 0;
-}
+	int gain = ucontrol->value.integer.value[0];
 
-static int Audio_MicSource3_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-static int Audio_MicSource3_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-
-static int Audio_MicSource4_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-static int Audio_MicSource4_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	/* 6752 removed */
-	return 0;
-}
-
-/* Mic ACC/DCC Mode Setting */
-static int Audio_Mic1_Mode_Select_Get(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
-{
-	pr_aud("%s() mAudio_Analog_Mic1_mode = %d\n", __func__, mAudio_Analog_Mic1_mode);
-	ucontrol->value.integer.value[0] = mAudio_Analog_Mic1_mode;
-	return 0;
-}
-
-static int Audio_Mic1_Mode_Select_Set(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
-{
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_AnalogMic_Mode)) {
+	pr_aud("%s()\n", __func__);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ADC_UL_PGA_GAIN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	mAudio_Analog_Mic1_mode = ucontrol->value.integer.value[0];
-	pr_aud("%s() mAudio_Analog_Mic1_mode = %d\n", __func__, mAudio_Analog_Mic1_mode);
+	Ana_Set_Reg(AUDENC_ANA_CON3, (gain << 8), 0x0700);
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP4] = gain;
 	return 0;
 }
 
-static int Audio_Mic2_Mode_Select_Get(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+static int audio_adc1_mic_source_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("%s()  = %d\n", __func__, mAudio_Analog_Mic2_mode);
-	ucontrol->value.integer.value[0] = mAudio_Analog_Mic2_mode;
+	int adc1_mic = mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1];
+
+	switch (adc1_mic) {
+	case AUDIO_AMIC_AIN0:
+		ucontrol->value.integer.value[0] = 0;
+		break;
+	case AUDIO_AMIC_AIN1:
+		ucontrol->value.integer.value[0] = 1;
+		break;
+	case AUDIO_AMIC_AIN2:
+		ucontrol->value.integer.value[0] = 2;
+		break;
+	default:
+		pr_warn("%s adc1 not support this mic source = %d\n", __func__, adc1_mic);
+		break;
+	}
+
+	pr_aud("adc1_mic_source = %d\n", adc1_mic);
 	return 0;
 }
 
-static int Audio_Mic2_Mode_Select_Set(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+static int audio_adc1_mic_source_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_AnalogMic_Mode)) {
+	int index = ucontrol->value.integer.value[0];
+	int *adc1_mic = &mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1];
+
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_adc1_mic_source)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	mAudio_Analog_Mic2_mode = ucontrol->value.integer.value[0];
-	pr_aud("%s() mAudio_Analog_Mic2_mode = %d\n", __func__, mAudio_Analog_Mic2_mode);
+	switch (index) {
+	case 0:
+		*adc1_mic = AUDIO_AMIC_AIN0;
+		break;
+	case 1:
+		*adc1_mic = AUDIO_AMIC_AIN1;
+		break;
+	case 2:
+		*adc1_mic = AUDIO_AMIC_AIN2;
+		break;
+	default:
+		pr_warn("%s adc1 not support this index = %d\n", __func__, index);
+		break;
+	}
+	pr_aud("%s() index = %d mic_source = %d\n", __func__, index, *adc1_mic);
+
 	return 0;
 }
 
-
-static int Audio_Mic3_Mode_Select_Get(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+static int audio_adc2_mic_source_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("%s()  = %d\n", __func__, mAudio_Analog_Mic3_mode);
-	ucontrol->value.integer.value[0] = mAudio_Analog_Mic3_mode;
+	int adc2_mic = mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_2];
+
+	switch (adc2_mic) {
+	case AUDIO_AMIC_AIN0:
+		ucontrol->value.integer.value[0] = 0;
+		break;
+	case AUDIO_AMIC_AIN3:
+		ucontrol->value.integer.value[0] = 1;
+		break;
+	case AUDIO_AMIC_AIN2:
+		ucontrol->value.integer.value[0] = 2;
+		break;
+	default:
+		pr_warn("%s adc2 not support this mic source = %d\n", __func__, adc2_mic);
+		break;
+	}
+
+	pr_aud("adc2_mic_source = %d\n", adc2_mic);
 	return 0;
 }
 
-static int Audio_Mic3_Mode_Select_Set(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+static int audio_adc2_mic_source_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_AnalogMic_Mode)) {
+	int index = ucontrol->value.integer.value[0];
+	int *adc2_mic = &mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_2];
+
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_adc2_mic_source)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	mAudio_Analog_Mic3_mode = ucontrol->value.integer.value[0];
-	pr_aud("%s() mAudio_Analog_Mic3_mode = %d\n", __func__, mAudio_Analog_Mic3_mode);
+	switch (index) {
+	case 0:
+		*adc2_mic = AUDIO_AMIC_AIN0;
+		break;
+	case 1:
+		*adc2_mic = AUDIO_AMIC_AIN3;
+		break;
+	case 2:
+		*adc2_mic = AUDIO_AMIC_AIN2;
+		break;
+	default:
+		pr_warn("%s adc2 not support this index = %d\n", __func__, index);
+		break;
+	}
+	pr_aud("%s() index = %d mic_source = %d\n", __func__, index, *adc2_mic);
+
 	return 0;
 }
 
-static int Audio_Mic4_Mode_Select_Get(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+static int audio_adc3_mic_source_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("%s()  = %d\n", __func__, mAudio_Analog_Mic4_mode);
-	ucontrol->value.integer.value[0] = mAudio_Analog_Mic4_mode;
+	int adc3_mic = mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_3];
+
+	switch (adc3_mic) {
+	case AUDIO_AMIC_AIN5:
+		ucontrol->value.integer.value[0] = 0;
+		break;
+	case AUDIO_AMIC_AIN4:
+		ucontrol->value.integer.value[0] = 1;
+		break;
+	case AUDIO_AMIC_AIN6:
+		ucontrol->value.integer.value[0] = 2;
+		break;
+	default:
+		pr_warn("%s adc3 not support this mic source = %d\n", __func__, adc3_mic);
+		break;
+	}
+
+	pr_aud("adc3_mic_source = %d\n", adc3_mic);
 	return 0;
 }
 
-static int Audio_Mic4_Mode_Select_Set(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+static int audio_adc3_mic_source_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_AnalogMic_Mode)) {
+	int index = ucontrol->value.integer.value[0];
+	int *adc3_mic = &mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_3];
+
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_adc3_mic_source)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	mAudio_Analog_Mic4_mode = ucontrol->value.integer.value[0];
-	pr_aud("%s() mAudio_Analog_Mic4_mode = %d\n", __func__, mAudio_Analog_Mic4_mode);
+	switch (index) {
+	case 0:
+		*adc3_mic = AUDIO_AMIC_AIN5;
+		break;
+	case 1:
+		*adc3_mic = AUDIO_AMIC_AIN4;
+		break;
+	case 2:
+		*adc3_mic = AUDIO_AMIC_AIN6;
+		break;
+	default:
+		pr_warn("%s adc3 not support this index = %d\n", __func__, index);
+		break;
+	}
+	pr_aud("%s() index = %d mic_source = %d\n", __func__, index, *adc3_mic);
+
+	return 0;
+}
+
+
+static int audio_adc4_mic_source_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	int adc4_mic = mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_4];
+
+	switch (adc4_mic) {
+	case AUDIO_AMIC_AIN5:
+		ucontrol->value.integer.value[0] = 0;
+		break;
+	case AUDIO_AMIC_AIN0:
+		ucontrol->value.integer.value[0] = 1;
+		break;
+	case AUDIO_AMIC_AIN6:
+		ucontrol->value.integer.value[0] = 2;
+		break;
+	default:
+		pr_warn("%s adc4 not support this mic source = %d\n", __func__, adc4_mic);
+		break;
+	}
+
+	pr_aud("adc4_mic_source = %d\n", adc4_mic);
+	return 0;
+}
+
+static int audio_adc4_mic_source_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	int index = ucontrol->value.integer.value[0];
+	int *adc4_mic = &mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_4];
+
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_adc4_mic_source)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	switch (index) {
+	case 0:
+		*adc4_mic = AUDIO_AMIC_AIN5;
+		break;
+	case 1:
+		*adc4_mic = AUDIO_AMIC_AIN0;
+		break;
+	case 2:
+		*adc4_mic = AUDIO_AMIC_AIN6;
+		break;
+	default:
+		pr_warn("%s adc4 not support this index = %d\n", __func__, index);
+		break;
+	}
+	pr_aud("%s() index = %d mic_source = %d\n", __func__, index, *adc4_mic);
+
+	return 0;
+}
+
+/* ADC MIC Mode Setting */
+static int audio_adc1_mic_mode_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_aud("%s() mic_mode = %d\n", __func__, adc1_mic_mode_mux);
+	ucontrol->value.integer.value[0] = adc1_mic_mode_mux;
+	return 0;
+}
+
+static int audio_adc1_mic_mode_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_adc_mic_mode)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	adc1_mic_mode_mux = ucontrol->value.integer.value[0];
+	pr_aud("%s() mic_mode = %d\n", __func__, adc1_mic_mode_mux);
+	return 0;
+}
+
+static int audio_adc2_mic_mode_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_aud("%s() mic_mode = %d\n", __func__, adc2_mic_mode_mux);
+	ucontrol->value.integer.value[0] = adc2_mic_mode_mux;
+	return 0;
+}
+
+static int audio_adc2_mic_mode_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_adc_mic_mode)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	adc2_mic_mode_mux = ucontrol->value.integer.value[0];
+	pr_aud("%s() mic_mode = %d\n", __func__, adc2_mic_mode_mux);
+	return 0;
+}
+
+
+static int audio_adc3_mic_mode_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_aud("%s() mic_mode = %d\n", __func__, adc3_mic_mode_mux);
+	ucontrol->value.integer.value[0] = adc3_mic_mode_mux;
+	return 0;
+}
+
+static int audio_adc3_mic_mode_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_adc_mic_mode)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	adc3_mic_mode_mux = ucontrol->value.integer.value[0];
+	pr_aud("%s() mic_mode = %d\n", __func__, adc3_mic_mode_mux);
+	return 0;
+}
+
+static int audio_adc4_mic_mode_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_aud("%s() mic_mode = %d\n", __func__, adc4_mic_mode_mux);
+	ucontrol->value.integer.value[0] = adc4_mic_mode_mux;
+	return 0;
+}
+
+static int audio_adc4_mic_mode_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_adc_mic_mode)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	adc4_mic_mode_mux = ucontrol->value.integer.value[0];
+	pr_aud("%s() mic_mode = %d\n", __func__, adc4_mic_mode_mux);
+	return 0;
+}
+
+static int audio_ul1_lch_in_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	int lch_in = mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_LCH_MUX];
+
+	pr_aud("%s() lch_in = %d\n", __func__, lch_in);
+	ucontrol->value.integer.value[0] = lch_in;
+	return 0;
+}
+
+static int audio_ul1_lch_in_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	int *lch_in = &mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_LCH_MUX];
+
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_ul_array_in)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	*lch_in = ucontrol->value.integer.value[0];
+	pr_aud("%s() lch_in = %d\n", __func__, *lch_in);
+	return 0;
+}
+
+static int audio_ul1_rch_in_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	int rch_in = mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_RCH_MUX];
+
+	pr_aud("%s() rch_in = %d\n", __func__, rch_in);
+	ucontrol->value.integer.value[0] = rch_in;
+	return 0;
+}
+
+static int audio_ul1_rch_in_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	int *rch_in = &mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_RCH_MUX];
+
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_ul_array_in)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	*rch_in = ucontrol->value.integer.value[0];
+	pr_aud("%s() rch_in = %d\n", __func__, *rch_in);
+	return 0;
+}
+
+static int audio_ul2_lch_in_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	int lch_in = mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_LCH_MUX];
+
+	pr_aud("%s() lch_in = %d\n", __func__, lch_in);
+	ucontrol->value.integer.value[0] = lch_in;
+	return 0;
+}
+
+static int audio_ul2_lch_in_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	int *lch_in = &mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_LCH_MUX];
+
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_ul_array_in)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	*lch_in = ucontrol->value.integer.value[0];
+	pr_aud("%s() lch_in = %d\n", __func__, *lch_in);
+	return 0;
+}
+
+static int audio_ul2_rch_in_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	int rch_in = mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_RCH_MUX];
+
+	pr_aud("%s() rch_in = %d\n", __func__, rch_in);
+	ucontrol->value.integer.value[0] = rch_in;
+	return 0;
+}
+
+static int audio_ul2_rch_in_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	int *rch_in = &mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_RCH_MUX];
+
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_ul_array_in)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	*rch_in = ucontrol->value.integer.value[0];
+	pr_aud("%s() rch_in = %d\n", __func__, *rch_in);
 	return 0;
 }
 
@@ -4982,8 +5470,8 @@ static int Pmic_Loopback_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	unsigned int dl_rate = mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC];
-	unsigned int ul_rate = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
+	unsigned int dl_rate = mBlockSampleRate[AUDIO_DAI_DL1];
+	unsigned int ul_rate = mBlockSampleRate[AUDIO_DAI_UL1];
 
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Pmic_LPBK_function)) {
 		pr_err("return -EINVAL\n");
@@ -5145,70 +5633,52 @@ static const struct snd_kcontrol_new mt6331_pmic_Test_controls[] = {
 };
 
 static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
-	SOC_ENUM_EXT("Audio_ADC_1_Switch", Audio_UL_Enum[0], Audio_ADC1_Get,
-		     Audio_ADC1_Set),
-	SOC_ENUM_EXT("Audio_ADC_2_Switch", Audio_UL_Enum[1], Audio_ADC2_Get,
-		     Audio_ADC2_Set),
-	SOC_ENUM_EXT("Audio_ADC_3_Switch", Audio_UL_Enum[2], Audio_ADC3_Get,
-		     Audio_ADC3_Set),
-	SOC_ENUM_EXT("Audio_ADC_4_Switch", Audio_UL_Enum[3], Audio_ADC4_Get,
-		     Audio_ADC4_Set),
-	SOC_ENUM_EXT("Audio_Preamp1_Switch", Audio_UL_Enum[4],
-		     Audio_PreAmp1_Get,
-		     Audio_PreAmp1_Set),
-	SOC_ENUM_EXT("Audio_ADC_1_Sel", Audio_UL_Enum[5],
-		     Audio_ADC1_Sel_Get, Audio_ADC1_Sel_Set),
-	SOC_ENUM_EXT("Audio_ADC_2_Sel", Audio_UL_Enum[6],
-		     Audio_ADC2_Sel_Get, Audio_ADC2_Sel_Set),
-	SOC_ENUM_EXT("Audio_ADC_3_Sel", Audio_UL_Enum[7],
-		     Audio_ADC3_Sel_Get, Audio_ADC3_Sel_Set),
-	SOC_ENUM_EXT("Audio_ADC_4_Sel", Audio_UL_Enum[8],
-		     Audio_ADC4_Sel_Get, Audio_ADC4_Sel_Set),
-	SOC_ENUM_EXT("Audio_PGA1_Setting", Audio_UL_Enum[9], Audio_PGA1_Get,
-		     Audio_PGA1_Set),
-	SOC_ENUM_EXT("Audio_PGA2_Setting", Audio_UL_Enum[10],
-		     Audio_PGA2_Get, Audio_PGA2_Set),
-	SOC_ENUM_EXT("Audio_PGA3_Setting", Audio_UL_Enum[11],
-		     Audio_PGA3_Get, Audio_PGA3_Set),
-	SOC_ENUM_EXT("Audio_PGA4_Setting", Audio_UL_Enum[12],
-		     Audio_PGA4_Get, Audio_PGA4_Set),
-	SOC_ENUM_EXT("Audio_MicSource1_Setting", Audio_UL_Enum[13],
-		     Audio_MicSource1_Get,
-		     Audio_MicSource1_Set),
-	SOC_ENUM_EXT("Audio_MicSource2_Setting", Audio_UL_Enum[14],
-		     Audio_MicSource2_Get,
-		     Audio_MicSource2_Set),
-	SOC_ENUM_EXT("Audio_MicSource3_Setting", Audio_UL_Enum[15],
-		     Audio_MicSource3_Get,
-		     Audio_MicSource3_Set),
-	SOC_ENUM_EXT("Audio_MicSource4_Setting", Audio_UL_Enum[16],
-		     Audio_MicSource4_Get,
-		     Audio_MicSource4_Set),
-	SOC_ENUM_EXT("Audio_MIC1_Mode_Select", Audio_UL_Enum[17],
-		     Audio_Mic1_Mode_Select_Get,
-		     Audio_Mic1_Mode_Select_Set),
-	SOC_ENUM_EXT("Audio_MIC2_Mode_Select", Audio_UL_Enum[18],
-		     Audio_Mic2_Mode_Select_Get,
-		     Audio_Mic2_Mode_Select_Set),
-	SOC_ENUM_EXT("Audio_MIC3_Mode_Select", Audio_UL_Enum[19],
-		     Audio_Mic3_Mode_Select_Get,
-		     Audio_Mic3_Mode_Select_Set),
-	SOC_ENUM_EXT("Audio_MIC4_Mode_Select", Audio_UL_Enum[20],
-		     Audio_Mic4_Mode_Select_Get,
-		     Audio_Mic4_Mode_Select_Set),
-	SOC_ENUM_EXT("Audio_Mic_Power_Mode", Audio_UL_Enum[21],
+	SOC_ENUM_EXT("Audio_Capture1_Switch", Audio_UL_Enum[0],
+		     audio_capture1_get, audio_capture1_set),
+	SOC_ENUM_EXT("Audio_Capture2_Switch", Audio_UL_Enum[0],
+		     audio_capture2_get, audio_capture2_set),
+	SOC_ENUM_EXT("Audio_UL1_Lch_Mux", Audio_UL_Enum[1],
+		     audio_ul1_lch_in_get, audio_ul1_lch_in_set),
+	SOC_ENUM_EXT("Audio_UL1_Rch_Mux", Audio_UL_Enum[1],
+		     audio_ul1_rch_in_get, audio_ul1_rch_in_set),
+	SOC_ENUM_EXT("Audio_UL2_Lch_Mux", Audio_UL_Enum[1],
+		     audio_ul2_lch_in_get, audio_ul2_lch_in_set),
+	SOC_ENUM_EXT("Audio_UL2_Rch_Mux", Audio_UL_Enum[1],
+		     audio_ul2_rch_in_get, audio_ul2_rch_in_set),
+	SOC_ENUM_EXT("Audio_MicSource1_Setting", Audio_UL_Enum[2],
+		     audio_adc1_mic_source_get, audio_adc1_mic_source_set),
+	SOC_ENUM_EXT("Audio_MicSource2_Setting", Audio_UL_Enum[3],
+		     audio_adc2_mic_source_get, audio_adc2_mic_source_set),
+	SOC_ENUM_EXT("Audio_MicSource3_Setting", Audio_UL_Enum[4],
+		     audio_adc3_mic_source_get, audio_adc3_mic_source_set),
+	SOC_ENUM_EXT("Audio_MicSource4_Setting", Audio_UL_Enum[5],
+		     audio_adc4_mic_source_get, audio_adc4_mic_source_set),
+	SOC_ENUM_EXT("Audio_PGA1_Setting", Audio_UL_Enum[6],
+		     audio_pga_amp1_get, audio_pga_amp1_set),
+	SOC_ENUM_EXT("Audio_PGA2_Setting", Audio_UL_Enum[6],
+		     audio_pga_amp2_get, audio_pga_amp2_set),
+	SOC_ENUM_EXT("Audio_PGA3_Setting", Audio_UL_Enum[6],
+		     audio_pga_amp3_get, audio_pga_amp3_set),
+	SOC_ENUM_EXT("Audio_PGA4_Setting", Audio_UL_Enum[6],
+		     audio_pga_amp4_get, audio_pga_amp4_set),
+	SOC_ENUM_EXT("Audio_MIC1_Mode_Select", Audio_UL_Enum[7],
+		     audio_adc1_mic_mode_get, audio_adc1_mic_mode_set),
+	SOC_ENUM_EXT("Audio_MIC2_Mode_Select", Audio_UL_Enum[7],
+		     audio_adc2_mic_mode_get, audio_adc2_mic_mode_set),
+	SOC_ENUM_EXT("Audio_MIC3_Mode_Select", Audio_UL_Enum[7],
+		     audio_adc3_mic_mode_get, audio_adc3_mic_mode_set),
+	SOC_ENUM_EXT("Audio_MIC4_Mode_Select", Audio_UL_Enum[7],
+		     audio_adc4_mic_mode_get, audio_adc4_mic_mode_set),
+	SOC_ENUM_EXT("Audio_Mic_Power_Mode", Audio_UL_Enum[8],
 		     Audio_Adc_Power_Mode_Get,
 		     Audio_Adc_Power_Mode_Set),
-	SOC_ENUM_EXT("Audio_Vow_ADC_Func_Switch", Audio_UL_Enum[22],
+	SOC_ENUM_EXT("Audio_Vow_ADC_Func_Switch", Audio_UL_Enum[9],
 		     Audio_Vow_ADC_Func_Switch_Get,
 		     Audio_Vow_ADC_Func_Switch_Set),
-	SOC_ENUM_EXT("Audio_Preamp2_Switch", Audio_UL_Enum[23],
-		     Audio_PreAmp2_Get,
-		     Audio_PreAmp2_Set),
-	SOC_ENUM_EXT("Audio_Vow_Digital_Func_Switch", Audio_UL_Enum[24],
+	SOC_ENUM_EXT("Audio_Vow_Digital_Func_Switch", Audio_UL_Enum[10],
 		     Audio_Vow_Digital_Func_Switch_Get,
 		     Audio_Vow_Digital_Func_Switch_Set),
-	SOC_ENUM_EXT("Audio_Vow_MIC_Type_Select", Audio_UL_Enum[25],
+	SOC_ENUM_EXT("Audio_Vow_MIC_Type_Select", Audio_UL_Enum[11],
 		     Audio_Vow_MIC_Type_Select_Get,
 		     Audio_Vow_MIC_Type_Select_Set),
 	SOC_SINGLE_EXT("Audio VOWCFG0 Data", SND_SOC_NOPM, 0, 0x80000, 0,
@@ -5235,7 +5705,7 @@ static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
 	SOC_SINGLE_EXT("Audio_VOW_Periodic", SND_SOC_NOPM, 0, 0x80000, 0,
 		       Audio_Vow_Periodic_Get,
 		       Audio_Vow_Periodic_Set),
-	SOC_ENUM_EXT("Audio_UL_LR_Swap", Audio_UL_Enum[26],
+	SOC_ENUM_EXT("Audio_UL_LR_Swap", Audio_UL_Enum[0],
 		     Audio_UL_LR_Swap_Get,
 		     Audio_UL_LR_Swap_Set),
 };
@@ -6096,7 +6566,11 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* [5] = 1, disable LO buffer left short circuit protection */
 	/* Ana_Set_Reg(DRV_CON2, 0xe << 4, 0xf << 4); */
 	/* PAD_AUD_DAT_MISO gpio driving MAX */
-	Ana_Set_Reg(GPIO_MODE1, 0x1200, 0x7e00);
+	Ana_Set_Reg(GPIO_MODE1, 0x1249, 0x7fff);
+
+	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0018, 0x03ff);
+	Ana_Set_Reg(AFE_ADDA6_PMIC_NEWIF_CFG1, 0x0000, 0x0300);
+	/* UL/UL2 /DL mtkaif format setting : mtk1.5 */
 	audckbufEnable(false);
 }
 
@@ -6110,14 +6584,15 @@ void InitCodecDefault(void)
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
 
-	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC1] =
-	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;
-	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC2] =
-	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;
-	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC3] =
-	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;
-	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC4] =
-	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;
+	mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_LCH_MUX] = AUDIO_UL_ARRAY_ADC1;
+	mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_RCH_MUX] = AUDIO_UL_ARRAY_ADC2;
+	mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_LCH_MUX] = AUDIO_UL_ARRAY_ADC3;
+	mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_RCH_MUX] = AUDIO_UL_ARRAY_ADC4;
+
+	mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] = AUDIO_AMIC_AIN0;
+	mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_2] = AUDIO_AMIC_AIN0;
+	mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_3] = AUDIO_AMIC_AIN5;
+	mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_4] = AUDIO_AMIC_AIN5;
 }
 
 static void InitGlobalVarDefault(void)
@@ -6248,25 +6723,11 @@ static int mtk_mt6331_codec_dev_probe(struct platform_device *pdev)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
 
-	if (pdev->dev.of_node) {
+	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_CODEC_NAME);
-
-		/* check if use hp depop flow */
-		of_property_read_u32(pdev->dev.of_node,
-				     "use_hp_depop_flow",
-				     &mUseHpDepopFlow);
-
-		/* check if use UL 260k flow */
-		of_property_read_u32(pdev->dev.of_node,
-				     "use_ul_260k",
-				     &mUseUl260kFlow);
-
-		pr_warn("%s(), use_hp_depop_flow = %d, use_ul_260k = %d\n",
-			__func__, mUseHpDepopFlow, mUseUl260kFlow);
-
-	} else {
+	else
 		pr_warn("%s(), pdev->dev.of_node = NULL!!!\n", __func__);
-	}
+
 
 	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_codec(&pdev->dev,
