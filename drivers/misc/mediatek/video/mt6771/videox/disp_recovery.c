@@ -439,7 +439,7 @@ int primary_display_esd_check(void)
 
 		mode = get_esd_check_mode();
 		if (mode == GPIO_EINT_MODE) {
-			DISPCHECK("[ESD]ESD check eint\n");
+			DISPINFO("[ESD]ESD check eint\n");
 			mmprofile_log_ex(mmp_te, MMPROFILE_FLAG_PULSE,
 				primary_display_is_video_mode(), mode);
 			primary_display_switch_esd_mode(mode);
@@ -495,7 +495,7 @@ int primary_display_esd_check(void)
 	mmprofile_log_ex(mmp_rd, MMPROFILE_FLAG_END, 0, ret);
 
 done:
-	DISPCHECK("[ESD]ESD check end, ret = %d\n", ret);
+	DISPINFO("[ESD]ESD check end, ret = %d\n", ret);
 	mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_END, 0, ret);
 	dprec_logger_done(DPREC_LOGGER_ESD_CHECK, 0, 0);
 	return ret;

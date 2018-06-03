@@ -707,7 +707,7 @@ static int _is_lcm_cmd_mode(enum DISP_MODULE_ENUM module)
 static void dsi_wait_not_busy(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
-	int ret = 0;
+	unsigned int loop_cnt = 0;
 
 	if (module == DISP_MODULE_DSI0)
 		i = 0;
@@ -731,13 +731,22 @@ static void dsi_wait_not_busy(enum DISP_MODULE_ENUM module, struct cmdqRecStruct
 	if (!(DSI_REG[i]->DSI_INTSTA.BUSY))
 		return;
 
+#if 0
 	ret = wait_event_timeout(_dsi_context[i].cmddone_wq.wq,
-				 !(DSI_REG[i]->DSI_INTSTA.BUSY), HZ / 10);
+				!(DSI_REG[i]->DSI_INTSTA.BUSY), HZ/10);
 	if (ret == 0) {
 		DDPPR_ERR("dsi%d wait cmddone(not busy) timeout\n", i);
 		DSI_DumpRegisters(module, 1);
 		DSI_Reset(module, NULL);
 	}
+#else
+	while (loop_cnt < 100*1000) {
+		if (!(DSI_REG[i]->DSI_INTSTA.BUSY))
+			break;
+		loop_cnt++;
+		udelay(1);
+	}
+#endif
 }
 
 #if 0
@@ -2352,6 +2361,285 @@ UINT32 DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module, struct cmdqRecStruc
 	return recv_data_cnt;
 }
 
+UINT32 DSI_dcs_read_lcm_reg_v3(enum DISP_MODULE_ENUM module,
+		UINT8 cmd, UINT8 *usr_buffer, UINT8 buffer_size)
+{
+	/* Just read 10 bytes valid each time */
+	UINT32 VALID_DATA_SIZE = 10;
+	int dsi_i = 0, i;
+	UINT8 buffer[30];
+	struct DSI_T0_INS t0;
+	struct DSI_T0_INS t1;
+	struct DSI_T0_INS t2;
+	struct DSI_RX_DATA_REG read_data0;
+	struct DSI_RX_DATA_REG read_data1;
+	struct DSI_RX_DATA_REG read_data2;
+	struct DSI_RX_DATA_REG read_data3;
+	unsigned char packet_type;
+	UINT32 recv_data_cnt = 0;
+	UINT32 read_data_cnt = 0;
+	UINT32 recv_data_offset = 0;
+	UINT8  read_data_offset = 0;
+	struct cmdqRecStruct *cmdq;
+	cmdqBackupSlotHandle hSlot;
+
+	/* illegal parameters */
+
+	if (buffer == NULL || buffer_size == 0) {
+		DISPINFO("DSI Read Fail: buffer=%p and buffer_size=%d\n", buffer,
+			  (unsigned int)buffer_size);
+		return 0;
+	}
+
+	if (module == DISP_MODULE_DSIDUAL)
+		dsi_i = 0;
+	else
+	dsi_i = DSI_MODULE_to_ID(module);
+
+	/* 0.create esd check cmdq */
+	cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &cmdq);
+	cmdqBackupAllocateSlot(&hSlot, 4);
+
+	/* how many times we should read to get all data */
+	read_data_cnt = (buffer_size + (VALID_DATA_SIZE - 1)) / VALID_DATA_SIZE;
+
+	while (read_data_cnt > 0) {
+		read_data_cnt--;
+
+		cmdqRecReset(cmdq);
+
+		/* 1. wait dsi not busy => can't read if dsi busy */
+		if (DSI_REG[dsi_i]->DSI_MODE_CTRL.MODE) {
+			/* wait EOF */
+			cmdqRecWaitNoClear(cmdq, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+			/* use cmdq to stop dsi vdo mode */
+			/* 0. set dsi cmd mode */
+			DSI_SetMode(module, cmdq, CMD_MODE);
+
+			/* 2.dual dsi need do reset DSI_DUAL_EN/DSI_START */
+			if (module == DISP_MODULE_DSIDUAL) {
+				DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG,
+						  DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+				DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG,
+						  DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+				DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START,
+						  DSI_START, 0);
+				DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START,
+						  DSI_START, 0);
+			} else if (module == DISP_MODULE_DSI0) {
+				DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START,
+						  DSI_START, 0);
+			} else if (module == DISP_MODULE_DSI1) {
+				DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START,
+						  DSI_START, 0);
+			}
+
+			/* 1. polling dsi not busy */
+			i = DSI_MODULE_BEGIN(module);
+			if (i == 0) {
+				/* polling dsi busy */
+				DSI_POLLREG32(cmdq, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0);
+			}
+			#if 1
+			i = DSI_MODULE_END(module);
+			if (i == 1) {/* DUAL */
+				DSI_POLLREG32(cmdq, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0);
+			}
+			#endif
+			/* 3.disable HS */
+			/* DSI_clk_HS_mode(module, cmdq_trigger_handle, FALSE); */
+
+		} else {
+			cmdqRecWaitNoClear(cmdq, CMDQ_SYNC_TOKEN_STREAM_EOF);
+
+		}
+
+		/* 2. Check rd_rdy & cmd_done irq */
+		if (DSI_REG[dsi_i]->DSI_INTEN.RD_RDY == 0) {
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[dsi_i]->DSI_INTEN,
+					  RD_RDY, 1);
+		}
+		if (DSI_REG[dsi_i]->DSI_INTEN.CMD_DONE == 0) {
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[dsi_i]->DSI_INTEN,
+					  CMD_DONE, 1);
+		}
+
+		/* 3. Send cmd */
+		t0.CONFG = 0x04;	/* /BTA */
+		/* / 0xB0 is used to distinguish DCS cmd or Gerneric cmd, is that Right??? */
+		t0.Data_ID = (cmd < 0xB0) ? DSI_DCS_READ_PACKET_ID
+									: DSI_GERNERIC_READ_LONG_PACKET_ID;
+		t0.Data0 = cmd;
+		t0.Data1 = 0;
+
+		/* set max return size */
+		t1.CONFG = 0x00;
+		t1.Data_ID = 0x37;
+		t1.Data0 = buffer_size <= 10 ? buffer_size : 10;
+		t1.Data1 = 0;
+
+		/* set offset value for some panel */
+		t2.CONFG = 0x00;
+		t2.Data_ID = 0x15;
+		t2.Data0 = 0xB0;
+		t2.Data1 = read_data_offset;
+
+		/* write DSI CMDQ */
+		DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[dsi_i]->data[0],
+					AS_UINT32(&t2));
+		DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[dsi_i]->data[1],
+					AS_UINT32(&t1));
+		DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[dsi_i]->data[2],
+					AS_UINT32(&t0));
+		DSI_OUTREG32(cmdq, &DSI_REG[dsi_i]->DSI_CMDQ_SIZE, 3);
+
+		/* start DSI */
+		DSI_OUTREG32(cmdq, &DSI_REG[dsi_i]->DSI_START, 0);
+		DSI_OUTREG32(cmdq, &DSI_REG[dsi_i]->DSI_START, 1);
+
+		/*1. wait DSI RD_RDY(must clear, in case of cpu RD_RDY interrupt handler) */
+		if (dsi_i == 0) {
+			DSI_POLLREG32(cmdq, &DSI_REG[dsi_i]->DSI_INTSTA,
+				0x00000001, 0x1);
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_STATUS_REG,
+				DSI_REG[dsi_i]->DSI_INTSTA, RD_RDY, 0x00000000);
+		}
+
+		/* 2. save RX data */
+		if (hSlot) {
+			DSI_BACKUPREG32(cmdq, hSlot, 0,
+							&DSI_REG[0]->DSI_RX_DATA0);
+			DSI_BACKUPREG32(cmdq, hSlot, 1,
+							&DSI_REG[0]->DSI_RX_DATA1);
+			DSI_BACKUPREG32(cmdq, hSlot, 2,
+							&DSI_REG[0]->DSI_RX_DATA2);
+			DSI_BACKUPREG32(cmdq, hSlot, 3,
+							&DSI_REG[0]->DSI_RX_DATA3);
+		} else {
+			DISPINFO("DSI read save RX data fail\n");
+		}
+		/* 3. write RX_RACK */
+		DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG, DSI_REG[dsi_i]->DSI_RACK,
+					DSI_RACK, 1);
+		/* 4. polling not busy(no need CLEAR) */
+		if (dsi_i == 0)
+			DSI_POLLREG32(cmdq, &DSI_REG[dsi_i]->DSI_INTSTA, 0x80000000, 0);
+
+		if (DSI_REG[dsi_i]->DSI_MODE_CTRL.MODE) {
+			/* 0. dual dsi set DSI_START/DSI_DUAL_EN */
+			if (module == DISP_MODULE_DSIDUAL) {
+				/* must set DSI_START to 0 before set dsi_dual_en, don't know why.2014.02.15 */
+				DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START,
+						  DSI_START, 0);
+				DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START,
+						  DSI_START, 0);
+
+				DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG,
+						  DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+				DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG,
+						  DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+			} else if (module == DISP_MODULE_DSI0) {
+				DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START,
+						  DSI_START, 0);
+			} else if (module == DISP_MODULE_DSI1) {
+				DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START,
+						  DSI_START, 0);
+			}
+
+			/* 1. set dsi vdo mode */
+			DSI_SetMode(module, cmdq, _dsi_context[dsi_i].dsi_params.mode);
+
+			/* 2. enable HS */
+			/* DSI_clk_HS_mode(module, cmdq_trigger_handle, TRUE); */
+
+			/* 3. enable mutex */
+			/* ddp_mutex_enable(mutex_id_for_latest_trigger,0,cmdq_trigger_handle); */
+
+			/* 4. start dsi */
+			/* DSI_Start(module, cmdq_trigger_handle); */
+
+		}
+
+		cmdqRecFlush(cmdq);
+		if (hSlot) {
+			/* read from slot */
+			cmdqBackupReadSlot(hSlot, 0, (uint32_t *)&read_data0);
+			cmdqBackupReadSlot(hSlot, 1, (uint32_t *)&read_data1);
+			cmdqBackupReadSlot(hSlot, 2, (uint32_t *)&read_data2);
+			cmdqBackupReadSlot(hSlot, 3, (uint32_t *)&read_data3);
+		} else {
+			DISPINFO("DSI read hSlot is empty\n");
+		}
+		packet_type = read_data0.byte0;
+		/* 0x02: acknowledge & error report */
+		/* 0x11: generic short read response(1 byte return) */
+		/* 0x12: generic short read response(2 byte return) */
+		/* 0x1a: generic long read response */
+		/* 0x1c: dcs long read response */
+		/* 0x21: dcs short read response(1 byte return) */
+		/* 0x22: dcs short read response(2 byte return) */
+		if (packet_type == 0x1A || packet_type == 0x1C) {
+			recv_data_cnt = read_data0.byte1 + read_data0.byte2 * 16;
+			if (recv_data_cnt > 10) {
+				DISPCHECK("DSI read long packet data exceeds 4 bytes return size: %d\n",
+						recv_data_cnt);
+				recv_data_cnt = 10;
+			}
+			if (recv_data_cnt > buffer_size) {
+				DISPCHECK("DSI read long packet data exceeds buffer size return size %d\n",
+						recv_data_cnt);
+				recv_data_cnt = buffer_size;
+			}
+			DISPCHECK("DSI read long packet size: %d\n", recv_data_cnt);
+			if (recv_data_cnt <= 4) {
+				memcpy((void *)(buffer + recv_data_offset), (void *)&read_data1, recv_data_cnt);
+			} else if (recv_data_cnt <= 8) {
+				memcpy((void *)(buffer + recv_data_offset), (void *)&read_data1, 4);
+				memcpy((void *)(buffer + recv_data_offset) + 4, (void *)&read_data2,
+					recv_data_cnt - 4);
+			} else {
+				memcpy((void *)(buffer + recv_data_offset), (void *)&read_data1, 4);
+				memcpy((void *)(buffer + recv_data_offset) + 4, (void *)&read_data2, 4);
+				memcpy((void *)(buffer + recv_data_offset) + 8, (void *)&read_data3,
+					recv_data_cnt - 8);
+			}
+		} else if (packet_type == 0x11 || packet_type == 0x12 ||
+				packet_type == 0x21 || packet_type == 0x22) {
+			if (packet_type == 0x11 || packet_type == 0x21)
+				recv_data_cnt = 1;
+			else
+				recv_data_cnt = 2;
+			if (recv_data_cnt > buffer_size) {
+				DISPCHECK("DSI read short packet data exceeds buffer size: %d\n",
+						buffer_size);
+				recv_data_cnt = buffer_size;
+				memcpy((void *)(buffer + recv_data_offset), (void *)&read_data0.byte1, recv_data_cnt);
+			} else {
+				memcpy((void *)(buffer + recv_data_offset), (void *)&read_data0.byte1, recv_data_cnt);
+			}
+		} else if (packet_type == 0x02) {
+			DISPCHECK("read return type is 0x02, re-read\n");
+		} else {
+			DISPCHECK("read return type is non-recognite, type = 0x%x\n",
+					packet_type);
+			return 0;
+		}
+
+		/* update buffer offset for next time reading */
+		recv_data_offset += recv_data_cnt;
+		read_data_offset += VALID_DATA_SIZE;
+	}
+
+	/* 3.destroy cmdq resources */
+	cmdqBackupFreeSlot(hSlot);
+	cmdqRecDestroy(cmdq);
+	for (i = 0; i < buffer_size; i++)
+		usr_buffer[i] = buffer[i];
+
+	return recv_data_cnt;
+}
+
 void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned cmd, unsigned char count,
 		     unsigned char *para_list, unsigned char force_update)
 {
@@ -2888,6 +3176,11 @@ void DSI_set_cmdq_wrapper_DSIDual(unsigned int *pdata, unsigned int queue_size,
 unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSI0(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size)
 {
 	return DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSI0, NULL, cmd, buffer, buffer_size);
+}
+
+unsigned int DSI_dcs_read_lcm_reg_v3_wrapper_DSI0(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size)
+{
+	return DSI_dcs_read_lcm_reg_v3(DISP_MODULE_DSI0, cmd, buffer, buffer_size);
 }
 
 unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSI1(UINT8 cmd, UINT8 *buffer, UINT8 buffer_size)
