@@ -427,7 +427,7 @@ out:
 
 void hps_define_root_cluster(struct hps_sys_struct *hps_sys)
 {
-	/*int i;*/
+	int i;
 
 	mutex_lock(&hps_ctxt.para_lock);
 #if 1
@@ -440,7 +440,7 @@ void hps_define_root_cluster(struct hps_sys_struct *hps_sys)
 		}
 	}
 #endif
-#if 0
+#if 1
 	/*Determine root cluster. */
 	if (hps_sys->cluster_info[hps_sys->root_cluster_id].limit_value > 0) {
 		mutex_unlock(&hps_ctxt.para_lock);

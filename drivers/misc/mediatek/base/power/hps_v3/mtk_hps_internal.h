@@ -217,6 +217,8 @@ typedef struct hps_ctxt_struct {
 	/* state */
 	unsigned int init_state;
 	unsigned int state;
+	cpumask_var_t online_core;
+	cpumask_var_t online_core_req;
 	unsigned int is_interrupt;
 	/*unsigned int pwrseq;*/
 	ktime_t hps_regular_ktime;

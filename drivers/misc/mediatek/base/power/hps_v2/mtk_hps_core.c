@@ -68,7 +68,7 @@ unsigned int hps_get_hvytsk(unsigned int cluster_id)
 		return hps_sys.cluster_info[cluster_id].hvyTsk_value;
 }
 
-
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 static void hps_get_sysinfo(void)
 {
 	unsigned int cpu;
@@ -195,26 +195,24 @@ static void hps_get_sysinfo(void)
 	ppm_unlock(&ppm_main_info.lock);
 #endif
 }
-
+#endif
 /*
  * hps task main loop
  */
 static int _hps_task_main(void *data)
 {
+	int cnt = 0;
+	void (*algo_func_ptr)(void);
 #ifdef CONFIG_MTK_ACAO_SUPPORT
-	unsigned int cpu, first_cpu;
-	ktime_t enter_ktime;
+	unsigned int cpu, first_cpu, i;
 
-	footprint = 0;
+	ktime_t enter_ktime;
 	enter_ktime = ktime_get();
 	aee_rr_rec_hps_cb_enter_times((u64) ktime_to_ms(enter_ktime));
 	aee_rr_rec_hps_cb_footprint(0);
 	aee_rr_rec_hps_cb_fp_times(0);
 
 #endif
-	int cnt = 0;
-	void (*algo_func_ptr)(void);
-
 	hps_ctxt_print_basic(1);
 
 	algo_func_ptr = hps_algo_main;
@@ -243,56 +241,63 @@ static int _hps_task_main(void *data)
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 ACAO_HPS_START:
 	aee_rr_rec_hps_cb_footprint(1);
-	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 
 	mutex_lock(&hps_ctxt.para_lock);
 	memcpy(&hps_ctxt.online_core, &hps_ctxt.online_core_req, sizeof(cpumask_var_t));
 	mutex_unlock(&hps_ctxt.para_lock);
 
 	aee_rr_rec_hps_cb_footprint(2);
-	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
+	/*Debgu message dump*/
+	for (i = 0 ; i < 8 ; i++) {
+		if (cpumask_test_cpu(i, hps_ctxt.online_core))
+			pr_info("CPU %d ==>1\n", i);
+		else
+			pr_info("CPU %d ==>0\n", i);
+	}
 
 	if (hps_ctxt.online_core) {
-
-	aee_rr_rec_hps_cb_footprint(3);
-	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
-
+		aee_rr_rec_hps_cb_footprint(3);
+		aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 		first_cpu = cpumask_first(hps_ctxt.online_core);
 		if (!cpu_online(first_cpu))
 			cpu_up(first_cpu);
+		aee_rr_rec_hps_cb_footprint(4);
+		aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 
-	aee_rr_rec_hps_cb_footprint(4);
-	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
-
-		for_each_possible_cpu(cpu, hps_ctxt.online_core) {
+		for_each_possible_cpu(cpu) {
 			if (cpumask_test_cpu(cpu, hps_ctxt.online_core)) {
 				if (!cpu_online(cpu)) {
 					aee_rr_rec_hps_cb_footprint(5);
-					aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+					aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 					cpu_up(cpu);
+
 					aee_rr_rec_hps_cb_footprint(6);
-					aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+					aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 				}
 			} else {
 				if (cpu_online(cpu)) {
 					aee_rr_rec_hps_cb_footprint(7);
-					aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+					aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 					cpu_down(cpu);
 					aee_rr_rec_hps_cb_footprint(8);
-					aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+					aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 				}
 			}
-			if (!cpumask_equal(&hps_ctxt.online_core, &hps_ctxt.online_core_req))
+			if (!cpumask_equal(hps_ctxt.online_core, hps_ctxt.online_core_req))
 				goto ACAO_HPS_START;
 		}
 	}
 	aee_rr_rec_hps_cb_footprint(9);
-	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 
-	set_current_state(TASK_INTERRUPTIBLE);
-
+ACAO_HPS_END:
 	aee_rr_rec_hps_cb_footprint(10);
-	aee_rr_rec_hps_cb_fp_times((u64) ktime_get());
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
+	set_current_state(TASK_INTERRUPTIBLE);
+	aee_rr_rec_hps_cb_footprint(11);
+	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 	schedule();
 #else
 
@@ -418,7 +423,6 @@ void hps_task_wakeup(void)
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *p = (struct ppm_client_req *)&req;
-	int i;
 
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	mutex_lock(&hps_ctxt.para_lock);
@@ -426,6 +430,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	mutex_unlock(&hps_ctxt.para_lock);
 	hps_task_wakeup_nolock();
 #else
+	int i;
 
 	mutex_lock(&hps_ctxt.para_lock);
 	hps_sys.ppm_root_cluster = p->root_cluster;
