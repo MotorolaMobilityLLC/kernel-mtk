@@ -1335,6 +1335,7 @@ struct xhci_segment {
 	/* private to HCD */
 	struct xhci_segment	*next;
 	dma_addr_t		dma;
+	int sram_flag;
 };
 
 struct xhci_td {
@@ -1656,6 +1657,8 @@ struct xhci_hcd {
 	/* Compliance Mode Recovery Data */
 	struct timer_list	comp_mode_recovery_timer;
 	u32			port_status_u0;
+	dma_addr_t		msram_phys_addr;
+	void                    *msram_virt_addr;
 /* Compliance Mode Timer Triggered every 2 seconds */
 #define COMP_MODE_RCVRY_MSECS 2000
 };
