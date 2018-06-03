@@ -19,13 +19,14 @@
 #define SCREEN_MAX_X	TPD_RES_X
 #define SCREEN_MAX_Y	TPD_RES_Y
 
+#define TPD_ROTATION_SUPPORT
 #ifdef TPD_ROTATION_SUPPORT
 enum TPD_ROTATION_TYPE {
 	TPD_ROTATION_90 = 0,
 	TPD_ROTATION_180 = 1,
 	TPD_ROTATION_270 = 2,
 };
-int tpd_rotation_type = TPD_ROTATION_270;
+int tpd_rotation_type = TPD_ROTATION_180;
 #endif
 extern struct tpd_device *tpd;
 struct fw_data {
