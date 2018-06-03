@@ -30,8 +30,6 @@ unsigned int get_kick_dump_size(void);
 /*return 1: display is idle*/
 int primary_display_is_idle(void);
 void primary_display_idlemgr_kick(const char *source, int need_lock);
-void exit_pd_by_cmdq(struct cmdqRecStruct *handler);
-void enter_pd_by_cmdq(struct cmdqRecStruct *handler);
 void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent);
 void leave_share_sram(enum CMDQ_EVENT_ENUM resourceEvent);
 void set_hrtnum(unsigned int new_hrtnum);
@@ -45,7 +43,6 @@ unsigned int set_idlemgr(unsigned int flag, int need_lock);
 int _blocking_flush(void);
 unsigned int get_idlemgr_flag(void);
 unsigned int set_idlemgr(unsigned int flag, int need_lock);
-void primary_display_sodi_enable(int flag);
 unsigned int get_us_perline(unsigned int width);
 unsigned int time_to_line(unsigned int ms, unsigned int width);
 /**************************************** for met******************************************* */

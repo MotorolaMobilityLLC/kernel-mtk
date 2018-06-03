@@ -29,7 +29,7 @@
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
 #include "mtk_boot_common.h"
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
-/* #include "mtk_spm_idle.h" */
+#include "mtk_spm_idle.h"
 #include "mt-plat/mtk_smi.h"
 #include "m4u.h"
 
@@ -565,8 +565,6 @@ void _primary_display_disable_mmsys_clk(void)
 		DISPINFO("[LP]3.1 dpmanager path power off: ovl2men [end]\n");
 	}
 	DISPCHECK("[LP]3.dpmanager path power off[end]\n");
-	if (disp_helper_get_option(DISP_OPT_MET_LOG))
-		set_enterulps(1);
 }
 
 void _primary_display_enable_mmsys_clk(void)
@@ -595,8 +593,6 @@ void _primary_display_enable_mmsys_clk(void)
 
 	dpmgr_path_power_on_bypass_pwm(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 	DISPINFO("[LP]1.dpmanager path power on[end]\n");
-	if (disp_helper_get_option(DISP_OPT_MET_LOG))
-		set_enterulps(0);
 
 	DISPDBG("[LP]2.dpmanager path config[begin]\n");
 
@@ -732,26 +728,11 @@ void _vdo_mode_enter_idle(void)
 	set_is_display_idle(1);
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		_idle_set_golden_setting();
-
-	/* Enable sodi - need wait golden setting done ??? */
-#ifdef MTK_FB_SPM_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT)) {
-		/* set power down mode forbidden */
-		spm_sodi_mempll_pwr_mode(1);
-		spm_enable_sodi(1);
-	}
-#endif
 }
 
 void _vdo_mode_leave_idle(void)
 {
 	DISPMSG("[disp_lowpower]%s\n", __func__);
-
-	/* Disable sodi */
-#ifdef MTK_FB_SPM_SUPPORT
-	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		spm_enable_sodi(0);
-#endif
 
 	/* set golden setting */
 	set_is_display_idle(0);
@@ -986,13 +967,6 @@ unsigned int get_mipi_clk(void)
 	}
 }
 
-void primary_display_sodi_enable(int flag)
-{
-#ifdef MTK_FB_SPM_SUPPORT
-	spm_enable_sodi(flag);
-#endif
-}
-
 /* for met - end */
 void primary_display_sodi_rule_init(void)
 {
@@ -1068,30 +1042,6 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 	if (need_lock)
 		primary_display_manual_unlock();
 }
-
-#if 0
-void exit_pd_by_cmdq(struct cmdqRecStruct *handler)
-{
-	/* Enable SPM CG Mode(Force 30+ times to ensure write success, need find root cause and fix later) */
-	cmdqRecWrite(handler, 0x100062B0, 0x2, ~0);
-	/* Polling EMI Status to ensure EMI is enabled */
-	cmdqRecPoll(handler, 0x1000611C, 0x10000, 0x10000);
-}
-
-void enter_pd_by_cmdq(struct cmdqRecStruct *handler)
-{
-	cmdqRecWrite(handler, 0x100062B0, 0x0, 0x2);
-}
-#endif
-
-void __attribute__((weak)) exit_pd_by_cmdq(struct cmdqRecStruct *handler)
-{
-}
-
-void __attribute__((weak)) enter_pd_by_cmdq(struct cmdqRecStruct *handler)
-{
-}
-
 
 void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
