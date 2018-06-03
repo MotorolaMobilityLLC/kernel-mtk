@@ -824,6 +824,11 @@ void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask)
 	mcdi_mbox_write(MCDI_MBOX_AVAIL_CPU_MASK, cpu_mask);
 }
 
+void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
+{
+
+}
+
 bool is_cpu_pwr_on_event_pending(void)
 {
 	return (!(mcdi_mbox_read(MCDI_MBOX_PENDING_ON_EVENT) == 0));
