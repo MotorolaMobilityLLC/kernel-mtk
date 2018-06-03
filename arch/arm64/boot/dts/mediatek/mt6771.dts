@@ -2095,6 +2095,11 @@
 		#clock-cells = <1>;
 	};
 
+	imgsyscq@15020000 {
+		compatible = "mediatek,imgsyscq";
+		reg = <0 0x15020000 0 0x10>;
+	};
+
 	smi_larb2: smi_larb2@1502f000 {
 		compatible = "mediatek,smi_larb2";
 		reg = <0 0x1502f000 0 0x1000>;
