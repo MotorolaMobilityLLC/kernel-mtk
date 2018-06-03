@@ -44,6 +44,20 @@
 #define BUFF_EARLY_PRINTK	0x400
 #define	LOG_PL_LK  0x0	/* Preloader and lk log buff */
 
+/* total 8 char size. u32 2 */
+struct mirror_log {
+	u32 start_addr;
+	u32 size;
+};
+
+/* total 48 char size. u32 6 */
+struct mirror_log_header {
+	u32 sig;
+	u32 count;//mirror log save times
+	struct mirror_log mlog[2];//twice pllk log header
+};
+
+/* total 32 char size. u32 8 */
 struct pl_lk_log {
 	u32 sig;		/* default 0xabcd1234 */
 	u32 buff_size;		/* total buf size */
@@ -56,7 +70,7 @@ struct pl_lk_log {
 	u32 lk_flag;		/* lk log flag */
 };
 
-/* total 100 char size. u32 25 */
+/* total 80 char size. u32 20 */
 struct dram_buf_header {
 	u32 sig;
 	u32 flag;
@@ -69,16 +83,19 @@ struct dram_buf_header {
 	u32 klog_size;
 	u32 atf_log_addr;
 	u32 atf_log_len;
-	u32 reserve2[14];
+	u32 reserve2[9];
 };
 
-/* total 256 char size */
+/* total 232 char size */
 struct sram_log_header {
 	u32 sig;
 	u32 reboot_count;
 	u32 save_to_emmc;
-	u32 reserve[11];
+	u32 reserve[1]; // reserve 4 char size
+	// 160 char size(2 * 80)
 	struct dram_buf_header dram_buf[MAX_DRAM_COUNT];
+	struct pl_lk_log dram_curlog_header; // 32 char size(8 * 4)
+	struct mirror_log_header dram_mlog_header; // 24 char size(6 * 4)
 };
 
 #ifdef CONFIG_MTK_DRAM_LOG_STORE
