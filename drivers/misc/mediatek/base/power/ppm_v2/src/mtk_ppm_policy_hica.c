@@ -74,6 +74,7 @@ static void ppm_hica_mode_change_cb(enum ppm_mode mode);
 
 #ifdef PPM_HICA_2P0
 int hica_is_limit_big_freq = 1;
+int hica_limit_idx = -1;
 #else
 #if PPM_HICA_VARIANT_SUPPORT
 int cur_hica_variant = 1;
@@ -253,8 +254,17 @@ void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 #endif
 
 #ifdef PPM_HICA_2P0
-	if (state == PPM_POWER_STATE_ALL && hica_is_limit_big_freq)
-		policy->req.limit[i].max_cpufreq_idx = PPM_HICA_B_LIMITED_OPP;
+	if (state == PPM_POWER_STATE_ALL && hica_is_limit_big_freq) {
+		/* hica_limit_idx = 0: DVFS table is not ready yet. */
+		/* hica_limit_idx < 0: First init or freq not found. */
+		if (hica_limit_idx <= 0) {
+			hica_limit_idx = ppm_main_freq_to_idx(
+				PPM_CLUSTER_B, PPM_HICA_BIG_LIMIT_FREQ, CPUFREQ_RELATION_H);
+			policy->req.limit[PPM_CLUSTER_B].max_cpufreq_idx =
+				(hica_limit_idx <= 0) ? (DVFS_OPP_NUM / 2) : hica_limit_idx;
+		} else
+			policy->req.limit[PPM_CLUSTER_B].max_cpufreq_idx = hica_limit_idx;
+	}
 #endif
 
 	FUNC_EXIT(FUNC_LV_HICA);
@@ -527,7 +537,12 @@ static ssize_t ppm_hica_power_state_proc_write(struct file *file, const char __u
 #ifdef PPM_HICA_2P0
 static int ppm_hica_is_limit_big_freq_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "\nhica_is_limit_big_freq = %d\n", hica_is_limit_big_freq);
+	if (hica_is_limit_big_freq)
+		seq_printf(m, "\nhica_is_limit_big_freq = %d (idx = %d)\n",
+			hica_is_limit_big_freq, hica_limit_idx);
+	else
+		seq_printf(m, "\nhica_is_limit_big_freq = %d\n", hica_is_limit_big_freq);
+
 	seq_puts(m, "\nNote: echo 0 to unlimit big freq!\n");
 
 	return 0;
