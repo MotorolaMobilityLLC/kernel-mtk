@@ -2185,7 +2185,6 @@ mbim_bind(struct usb_configuration *c, struct usb_function *f)
 
 fail:
 	pr_err("%s failed to bind, err %d\n", f->name, status);
-	usb_free_all_descriptors(f);
 
 
 	if (mbim->not_port.notify_req) {
