@@ -3216,8 +3216,8 @@ static signed int ISP_DumpDIPReg(void)
 	unsigned int ctrl_start;
 #endif
 	/*  */
-	pr_info("- E.");
-	pr_info(
+	CMDQ_ERR("- E.");
+	CMDQ_ERR(
 	"g_bDumpPhyISPBuf:(0x%x), g_pPhyISPBuffer:(0x%p), g_bIonBuf:(0x%x)\n",
 		g_bDumpPhyISPBuf, g_pPhyISPBuffer, g_bIonBufferAllocated);
 #ifdef AEE_DUMP_REDUCE_MEMORY
@@ -3225,7 +3225,7 @@ static signed int ISP_DumpDIPReg(void)
 		ctrl_start = ISP_RD32(ISP_DIP_A_BASE + 0x0000);
 		if (g_bIonBufferAllocated == MFALSE) {
 			if (g_pPhyISPBuffer != NULL) {
-				pr_info(
+				CMDQ_ERR(
 				"g_pPhyISPBuffer is not NULL:(0x%pK)\n",
 					g_pPhyISPBuffer);
 				vfree(g_pPhyISPBuffer);
@@ -3234,11 +3234,11 @@ static signed int ISP_DumpDIPReg(void)
 			g_pPhyISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
 			/* //mark for checkpatch, unnecessart msg
 			 * if (g_pPhyISPBuffer == NULL)
-			 *	pr_info(
+			 *	CMDQ_ERR(
 			 *	"ERROR: g_pPhyISPBuffer kmalloc failed\n");
 			 */
 			if (g_pKWTpipeBuffer != NULL) {
-				pr_info(
+				CMDQ_ERR(
 				"g_pKWTpipeBuffer is not NULL:(0x%pK)\n",
 					g_pKWTpipeBuffer);
 				vfree(g_pKWTpipeBuffer);
@@ -3247,11 +3247,11 @@ static signed int ISP_DumpDIPReg(void)
 			g_pKWTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
 			/* //mark for checkpatch, unnecessart msg
 			 * if (g_pKWTpipeBuffer == NULL)
-			 *	pr_info(
+			 *	CMDQ_ERR(
 			 *	"ERROR: g_pKWTpipeBuffer kmalloc failed\n");
 			 */
 			if (g_pKWCmdqBuffer != NULL) {
-				pr_info(
+				CMDQ_ERR(
 				"g_KWCmdqBuffer is not NULL:(0x%pK)\n",
 					g_pKWCmdqBuffer);
 				vfree(g_pKWCmdqBuffer);
@@ -3260,11 +3260,11 @@ static signed int ISP_DumpDIPReg(void)
 			g_pKWCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
 			/* //mark for checkpatch, unnecessart msg
 			 * if (g_pKWCmdqBuffer == NULL)
-			 *	pr_info(
+			 *	CMDQ_ERR(
 			 *	"ERROR: g_KWCmdqBuffer kmalloc failed\n");
 			 */
 			if (g_pKWVirISPBuffer != NULL) {
-				pr_info(
+				CMDQ_ERR(
 				"g_KWVirISPBuffer is not NULL:(0x%pK)\n",
 					g_pKWVirISPBuffer);
 				vfree(g_pKWVirISPBuffer);
@@ -3273,7 +3273,7 @@ static signed int ISP_DumpDIPReg(void)
 			g_pKWVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
 			/* //mark for checkpatch, unnecessart msg
 			 * if (g_pKWVirISPBuffer == NULL)
-			 *	pr_info(
+			 *	CMDQ_ERR(
 			 *	"ERROR: g_KWVirISPBuffer kmalloc failed\n");
 			 */
 		}
@@ -3291,7 +3291,7 @@ static signed int ISP_DumpDIPReg(void)
 					ISP_RD32(ISP_DIP_A_BASE + ((i+3)*4));
 			}
 		} else {
-			pr_info("g_pPhyISPBuffer:(0x%pK)\n", g_pPhyISPBuffer);
+			CMDQ_ERR("g_pPhyISPBuffer:(0x%pK)\n", g_pPhyISPBuffer);
 		}
 		g_dumpInfo.tdri_baseaddr = ISP_RD32(ISP_DIP_A_BASE + 0x204);
 		g_dumpInfo.imgi_baseaddr = ISP_RD32(ISP_DIP_A_BASE + 0x400);
@@ -3318,14 +3318,14 @@ static signed int ISP_DumpDIPReg(void)
 			if (copy_from_user(g_pKWTpipeBuffer,
 			    (void __user *)(OffsetAddr),
 			    MAX_ISP_TILE_TDR_HEX_NO) != 0) {
-				pr_err(
+				CMDQ_ERR(
 				"cpy tpipe fail. tdriaddr:0x%x, MemVa:0x%lx,MemPa:0x%x, offset:0x%x\n",
 				g_tdriaddr,
 				(uintptr_t)g_TpipeBaseAddrInfo.MemVa,
 				g_TpipeBaseAddrInfo.MemPa, offset);
 			}
 		}
-		pr_info(
+		CMDQ_ERR(
 		"tdraddr:0x%x,MemVa:0x%lx,MemPa:0x%x,MemSizeDiff:0x%x,offset:0x%x,g_pKWTpipeBuffer:0x%pK\n",
 		g_tdriaddr, (uintptr_t)g_TpipeBaseAddrInfo.MemVa,
 		g_TpipeBaseAddrInfo.MemPa,
@@ -3340,13 +3340,13 @@ static signed int ISP_DumpDIPReg(void)
 			if (copy_from_user(g_pKWCmdqBuffer,
 			    (void __user *)(OffsetAddr),
 			    MAX_ISP_CMDQ_BUFFER_SIZE) != 0) {
-				pr_err(
+				CMDQ_ERR(
 				"cpy cmdq fail. cmdqaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, offset:0x%x\n",
 					g_cmdqaddr,
 					(uintptr_t)g_CmdqBaseAddrInfo.MemVa,
 					g_CmdqBaseAddrInfo.MemPa, offset);
 			}
-			pr_info(
+			CMDQ_ERR(
 			"cmdqidx:0x%x, cmdqaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, offset:0x%x\n",
 			cmdqidx, g_cmdqaddr,
 			(uintptr_t)g_CmdqBaseAddrInfo.MemVa,
@@ -3357,21 +3357,21 @@ static signed int ISP_DumpDIPReg(void)
 			if (copy_from_user(g_pKWVirISPBuffer,
 			    (void __user *)(OffsetAddr),
 			    ISP_DIP_REG_SIZE) != 0) {
-				pr_err(
+				CMDQ_ERR(
 				"cpy vir isp fail.cmdqaddr:0x%x,MVa:0x%lx,MPa:0x%x,MSzDiff:0x%x,offset:0x%x\n",
 				g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa,
 				g_CmdqBaseAddrInfo.MemPa,
 				g_CmdqBaseAddrInfo.MemSizeDiff, offset);
 			}
-			pr_info(
+			CMDQ_ERR(
 			"cmdqaddr:0x%x,MVa:0x%lx,MPa:0x%x,MSzDiff:0x%x\n",
 				g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa,
 				g_CmdqBaseAddrInfo.MemPa,
 				g_CmdqBaseAddrInfo.MemSizeDiff);
-			pr_info("ofset:0x%x,KWCmdBuf:0x%pK,KWTdrBuf:0x%pK\n",
+			CMDQ_ERR("ofset:0x%x,KWCmdBuf:0x%pK,KWTdrBuf:0x%pK\n",
 				offset, g_pKWCmdqBuffer, g_pKWTpipeBuffer);
 		} else {
-			pr_info(
+			CMDQ_ERR(
 			"cmdqadd:0x%x,MVa:0x%lx,MPa:0x%x,MSzDiff:0x%x,KWCmdBuf:0x%pK,KWTdrBuf:0x%pK\n",
 				g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa,
 				g_CmdqBaseAddrInfo.MemPa,
@@ -3399,7 +3399,7 @@ static signed int ISP_DumpDIPReg(void)
 				}
 			}
 		} else {
-			pr_info("g_pPhyISPBuffer:(0x%pK)\n", g_pPhyISPBuffer);
+			CMDQ_ERR("g_pPhyISPBuffer:(0x%pK)\n", g_pPhyISPBuffer);
 		}
 		g_dumpInfo.tdri_baseaddr = ISP_RD32(ISP_DIP_A_BASE + 0x204);
 		g_dumpInfo.imgi_baseaddr = ISP_RD32(ISP_DIP_A_BASE + 0x400);
@@ -3425,13 +3425,13 @@ static signed int ISP_DumpDIPReg(void)
 			if (copy_from_user(g_KWTpipeBuffer,
 			    (void __user *)(OffsetAddr),
 			    MAX_ISP_TILE_TDR_HEX_NO) != 0) {
-				pr_err(
+				CMDQ_ERR(
 				"cpy tpipe fail.tdriaddr:0x%x,MVa:0x%lx,MPa:0x%x,ofset:0x%x\n",
 					g_tdriaddr,
 					(uintptr_t)g_TpipeBaseAddrInfo.MemVa,
 					g_TpipeBaseAddrInfo.MemPa, offset);
 			}
-			pr_info(
+			CMDQ_ERR(
 			"tdriaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, MemSizeDiff:0x%x, offset:0x%x\n",
 				g_tdriaddr,
 				(uintptr_t)g_TpipeBaseAddrInfo.MemVa,
@@ -3446,13 +3446,13 @@ static signed int ISP_DumpDIPReg(void)
 			if (copy_from_user(g_KWCmdqBuffer,
 			(void __user *)(OffsetAddr),
 			MAX_ISP_CMDQ_BUFFER_SIZE) != 0) {
-				pr_err(
+				CMDQ_ERR(
 				"cpy cmdq fail. cmdqaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, offset:0x%x\n",
 					g_cmdqaddr,
 					(uintptr_t)g_CmdqBaseAddrInfo.MemVa,
 					g_CmdqBaseAddrInfo.MemPa, offset);
 			}
-			pr_info(
+			CMDQ_ERR(
 			"cmdqidx:0x%x, cmdqaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, offset:0x%x\n",
 				cmdqidx, g_cmdqaddr,
 				(uintptr_t)g_CmdqBaseAddrInfo.MemVa,
@@ -3463,13 +3463,13 @@ static signed int ISP_DumpDIPReg(void)
 			if (copy_from_user(g_KWVirISPBuffer,
 			    (void __user *)(OffsetAddr),
 				ISP_DIP_REG_SIZE) != 0) {
-				pr_err(
+				CMDQ_ERR(
 				"cpy vir isp fail.cmdqaddr:0x%x,MVa:0x%lx,MPa:0x%x,MSzDiff:0x%x,ofset:0x%x\n",
 				g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa,
 				g_CmdqBaseAddrInfo.MemPa,
 				g_CmdqBaseAddrInfo.MemSizeDiff, offset);
 			}
-			pr_info(
+			CMDQ_ERR(
 			"cmdqaddr:0x%x, MemVa:0x%lx, MemPa:0x%x, MemSizeDiff:0x%x, offset:0x%x\n",
 			g_cmdqaddr, (uintptr_t)g_CmdqBaseAddrInfo.MemVa,
 			g_CmdqBaseAddrInfo.MemPa,
@@ -3479,87 +3479,87 @@ static signed int ISP_DumpDIPReg(void)
 	}
 #endif
 
-	pr_info(
+	CMDQ_ERR(
 	"direct link:15020030(0x%x),g_bDumpPhyISPBuf:(0x%x),cmdqidx(0x%x),cmdqaddr(0x%x),tdriaddr(0x%x)\n",
 		ISP_RD32(ISP_IMGSYS_CONFIG_BASE + 0x0030), g_bDumpPhyISPBuf,
 		cmdqidx, g_cmdqaddr, g_tdriaddr);
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022000(0x%x)-15022004(0x%x)-15022008(0x%x)-1502200C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0000),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0004),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0008),
 		ISP_RD32(ISP_DIP_A_BASE + 0x000C));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022010(0x%x)-15022014(0x%x)-15022018(0x%x)-1502201C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0010),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0014),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0018),
 		ISP_RD32(ISP_DIP_A_BASE + 0x001C));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022D20(0x%x)-15022D24(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0D20),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0D24));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022408(0x%x)-15022204(0x%x)-15022208(0x%x)-1502220C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0408),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0204),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0208),
 		ISP_RD32(ISP_DIP_A_BASE + 0x020C));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022050(0x%x)-15022054(0x%x)-15022058(0x%x)-1502205C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0050),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0054),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0058),
 		ISP_RD32(ISP_DIP_A_BASE + 0x005C));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 150220B8(0x%x)-150220BC(0x%x)-150220C0(0x%x)-150220C4(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x00B8),
 		ISP_RD32(ISP_DIP_A_BASE + 0x00BC),
 		ISP_RD32(ISP_DIP_A_BASE + 0x00C0),
 		ISP_RD32(ISP_DIP_A_BASE + 0x00C4));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 150220C8(0x%x)-150220CC(0x%x)-150220D0(0x%x)-150220D4(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x00C8),
 		ISP_RD32(ISP_DIP_A_BASE + 0x00CC),
 		ISP_RD32(ISP_DIP_A_BASE + 0x00D0),
 		ISP_RD32(ISP_DIP_A_BASE + 0x00D4));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022104(0x%x)-15022108(0x%x)-1502211C(0x%x)-15022120(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0104),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0108),
 		ISP_RD32(ISP_DIP_A_BASE + 0x011C),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0120));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022128(0x%x)-1502212C(0x%x)-15022134(0x%x)-15022138(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0128),
 		ISP_RD32(ISP_DIP_A_BASE + 0x012C),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0134),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0138));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022140(0x%x)-15022144(0x%x)-1502214C(0x%x)-15022150(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0140),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0144),
 		ISP_RD32(ISP_DIP_A_BASE + 0x014C),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0150));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022158(0x%x)-1502215C(0x%x)-15022164(0x%x)-15022168(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0158),
 		ISP_RD32(ISP_DIP_A_BASE + 0x015C),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0164),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0168));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022170(0x%x)-15022174(0x%x)-1502217C(0x%x)-15022180(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0170),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0174),
 		ISP_RD32(ISP_DIP_A_BASE + 0x017C),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0180));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022188(0x%x)-1502218C(0x%x)-15022194(0x%x)-15022198(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0188),
 		ISP_RD32(ISP_DIP_A_BASE + 0x018C),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0194),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0198));
-	pr_info(
+	CMDQ_ERR(
 	"isp: 15022060(0x%x)-15022064(0x%x)-15022068(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0060),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0064),
@@ -3569,232 +3569,234 @@ static signed int ISP_DumpDIPReg(void)
 		/* 06BC, 0x150226BC, DIP_A_DMA_DEBUG_SEL */
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x000013);
 		/* 0084, 0x15022084, DIP_A_CTL_DBG_PORT */
-		pr_info("0x000013 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x000013 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x000113);
-		pr_info("0x000113 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x000113 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x000213);
-		pr_info("0x000213 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x000213 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x000313);
-		pr_info("0x000313 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x000313 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		/* IMG2O */
 		/* 06BC, 0x150226BC, DIP_A_DMA_DEBUG_SEL */
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x001013);
 		/* 0084, 0x15022084, DIP_A_CTL_DBG_PORT */
-		pr_info("0x001013 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x001013 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x001113);
-		pr_info("0x001113 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x001113 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x001213);
-		pr_info("0x001213 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x001213 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x001313);
-		pr_info("0x001313 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x001313 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		/*IMG3O */
 		/* 06BC, 0x150226BC, DIP_A_DMA_DEBUG_SEL */
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x001813);
 		/* 0084, 0x15022084, DIP_A_CTL_DBG_PORT */
-		pr_info("0x001813 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x001813 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x001913);
-		pr_info("0x001913 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x001913 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x001A13);
-		pr_info("0x001A13 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x001A13 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x001B13);
-		pr_info("0x001B13 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x001B13 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x080, 0x003016);
-		pr_info("0x003016 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x003016 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x080, 0x003017);
-		pr_info("0x003017 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x003017 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x080, 0x003018);
-		pr_info("0x003018 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x003018 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x080, 0x003019);
-		pr_info("0x003019 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x003019 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x080, 0x005100);
-		pr_info("0x005100 : isp: 0x15022084(0x%x)",
+		CMDQ_ERR("0x005100 : isp: 0x15022084(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		/* DMA Error */
-		pr_info("img2o  0x15022644(0x%x)",
+		CMDQ_ERR("img2o  0x15022644(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x644));
-		pr_info("img2bo 0x15022648(0x%x)",
+		CMDQ_ERR("img2bo 0x15022648(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x648));
-		pr_info("img3o  0x1502264C(0x%x)",
+		CMDQ_ERR("img3o  0x1502264C(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x64C));
-		pr_info("img3bo 0x15022650(0x%x)",
+		CMDQ_ERR("img3bo 0x15022650(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x650));
-		pr_info("img3Co 0x15022654(0x%x)",
+		CMDQ_ERR("img3Co 0x15022654(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x654));
-		pr_info("feo    0x15022658(0x%x)",
+		CMDQ_ERR("feo    0x15022658(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x658));
-		pr_info("mfbo   0x1502265C(0x%x)",
+		CMDQ_ERR("mfbo   0x1502265C(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x65C));
-		pr_info("imgi   0x15022660(0x%x)",
+		CMDQ_ERR("imgi   0x15022660(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x660));
-		pr_info("imgbi  0x15022664(0x%x)",
+		CMDQ_ERR("imgbi  0x15022664(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x664));
-		pr_info("imgci  0x15022668(0x%x)",
+		CMDQ_ERR("imgci  0x15022668(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x668));
-		pr_info("vipi   0x1502266c(0x%x)",
+		CMDQ_ERR("vipi   0x1502266c(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x66c));
-		pr_info("vip2i  0x15022670(0x%x)",
+		CMDQ_ERR("vip2i  0x15022670(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x670));
-		pr_info("vip3i  0x15022674(0x%x)",
+		CMDQ_ERR("vip3i  0x15022674(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x674));
-		pr_info("dmgi   0x15022678(0x%x)",
+		CMDQ_ERR("dmgi   0x15022678(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x678));
-		pr_info("depi   0x1502267c(0x%x)",
+		CMDQ_ERR("depi   0x1502267c(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x67C));
-		pr_info("lcei   0x15022680(0x%x)",
+		CMDQ_ERR("lcei   0x15022680(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x680));
-		pr_info("ufdi   0x15022684(0x%x)",
+		CMDQ_ERR("ufdi   0x15022684(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x684));
-		pr_info("CTL_INT_STATUSX      0x15022040(0x%x)",
+		CMDQ_ERR("CTL_INT_STATUSX      0x15022040(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x040));
-		pr_info("CTL_CQ_INT_STATUSX   0x15022044(0x%x)",
+		CMDQ_ERR("CTL_CQ_INT_STATUSX   0x15022044(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x044));
-		pr_info("CTL_CQ_INT2_STATUSX  0x15022048(0x%x)",
+		CMDQ_ERR("CTL_CQ_INT2_STATUSX  0x15022048(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x048));
-		pr_info("CTL_CQ_INT3_STATUSX  0x1502204C(0x%x)",
+		CMDQ_ERR("CTL_CQ_INT3_STATUSX  0x1502204C(0x%x)",
 			ISP_RD32(ISP_DIP_A_BASE + 0x04C));
-	pr_info(
+	CMDQ_ERR(
 	"img3o: 0x15022290(0x%x)-0x15022298(0x%x)-0x150222A0(0x%x)-0x150222A4(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x290),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0298),
 		ISP_RD32(ISP_DIP_A_BASE + 0x2A0),
 		ISP_RD32(ISP_DIP_A_BASE + 0x02A4));
-	pr_info(
+	CMDQ_ERR(
 	"img3o: 0x150222A8(0x%x)-0x150222AC(0x%x)-0x150222B0(0x%x)-0x150222B4(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x02A8),
 		ISP_RD32(ISP_DIP_A_BASE + 0x02AC),
 		ISP_RD32(ISP_DIP_A_BASE + 0x02B0),
 		ISP_RD32(ISP_DIP_A_BASE + 0x02B4));
-	pr_info("img3o: 0x150222B8(0x%x)\n", ISP_RD32(ISP_DIP_A_BASE + 0x02B8));
+	CMDQ_ERR(
+	"img3o: 0x150222B8(0x%x)\n", ISP_RD32(ISP_DIP_A_BASE + 0x02B8));
 
-	pr_info(
+	CMDQ_ERR(
 	"imgi: 0x15022400(0x%x)-0x15022408(0x%x)-0x15022410(0x%x)-0x15022414(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x400),
 		ISP_RD32(ISP_DIP_A_BASE + 0x408),
 		ISP_RD32(ISP_DIP_A_BASE + 0x410),
 		ISP_RD32(ISP_DIP_A_BASE + 0x414));
-	pr_info(
+	CMDQ_ERR(
 	"imgi: 0x15022418(0x%x)-0x1502241C(0x%x)-0x15022420(0x%x)-0x15022424(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x418),
 		ISP_RD32(ISP_DIP_A_BASE + 0x41C),
 		ISP_RD32(ISP_DIP_A_BASE + 0x420),
 		ISP_RD32(ISP_DIP_A_BASE + 0x424));
 
-	pr_info(
+	CMDQ_ERR(
 	"mfbo: 0x15022350(0x%x)-0x15022358(0x%x)-0x15022360(0x%x)-0x15022364(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x350),
 		ISP_RD32(ISP_DIP_A_BASE + 0x358),
 		ISP_RD32(ISP_DIP_A_BASE + 0x360),
 		ISP_RD32(ISP_DIP_A_BASE + 0x364));
-	pr_info(
+	CMDQ_ERR(
 	"mfbo: 0x15022368(0x%x)-0x1502236C(0x%x)-0x15022370(0x%x)-0x15022374(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x368),
 		ISP_RD32(ISP_DIP_A_BASE + 0x36C),
 		ISP_RD32(ISP_DIP_A_BASE + 0x370),
 		ISP_RD32(ISP_DIP_A_BASE + 0x374));
-	pr_info("mfbo: 0x15022378(0x%x)\n", ISP_RD32(ISP_DIP_A_BASE + 0x378));
+	CMDQ_ERR("mfbo: 0x15022378(0x%x)\n", ISP_RD32(ISP_DIP_A_BASE + 0x378));
 
-	pr_info(
+	CMDQ_ERR(
 	"img2o: 0x15022230(0x%x)-0x15022238(0x%x)-0x15022240(0x%x)-0x15022244(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x230),
 		ISP_RD32(ISP_DIP_A_BASE + 0x238),
 		ISP_RD32(ISP_DIP_A_BASE + 0x240),
 		ISP_RD32(ISP_DIP_A_BASE + 0x244));
-	pr_info(
+	CMDQ_ERR(
 	"img2o: 0x15022248(0x%x)-0x1502224C(0x%x)-0x15022250(0x%x)-0x15022254(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0248),
 		ISP_RD32(ISP_DIP_A_BASE + 0x024C),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0250),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0254));
-	pr_info("img2o: 0x15022258(0x%x)\n", ISP_RD32(ISP_DIP_A_BASE + 0x0258));
+	CMDQ_ERR(
+	"img2o: 0x15022258(0x%x)\n", ISP_RD32(ISP_DIP_A_BASE + 0x0258));
 
-	pr_info(
+	CMDQ_ERR(
 	"lcei: 0x15022580(0x%x)-0x15022588(0x%x)-0x15022590(0x%x)-0x15022594(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x580),
 		ISP_RD32(ISP_DIP_A_BASE + 0x588),
 		ISP_RD32(ISP_DIP_A_BASE + 0x590),
 		ISP_RD32(ISP_DIP_A_BASE + 0x594));
-	pr_info(
+	CMDQ_ERR(
 	"lcei: 0x15022598(0x%x)-0x1502259C(0x%x)-0x150225A0(0x%x)-0x150225A4(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0598),
 		ISP_RD32(ISP_DIP_A_BASE + 0x059C),
 		ISP_RD32(ISP_DIP_A_BASE + 0x05A0),
 		ISP_RD32(ISP_DIP_A_BASE + 0x05A4));
 
-	pr_info(
+	CMDQ_ERR(
 	"crz: 0x15022C10(0x%x)-0x15022C14(0x%x)-0x15022C18(0x%x)-0x15022C1C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0xC10),
 		ISP_RD32(ISP_DIP_A_BASE + 0xC14),
 		ISP_RD32(ISP_DIP_A_BASE + 0xC18),
 		ISP_RD32(ISP_DIP_A_BASE + 0xC1C));
-	pr_info(
+	CMDQ_ERR(
 	"crz: 0x15022C20(0x%x)-0x15022C24(0x%x)-0x15022C28(0x%x)-0x15022C2C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0C20),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0C24),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0C28),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0C2C));
-	pr_info(
+	CMDQ_ERR(
 	"crz: 0x15022C30(0x%x)-0x15022C34(0x%x)-0x15022C38(0x%x)-0x15022C3C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0C30),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0C34),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0C38),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0C3C));
-	pr_info("crz: 0x15022C40(0x%x)-0x15022C44(0x%x)\n",
+	CMDQ_ERR("crz: 0x15022C40(0x%x)-0x15022C44(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0C40),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0C44));
 
-	pr_info(
+	CMDQ_ERR(
 	"mfb: 0x15022F60(0x%x)-0x15022F64(0x%x)-0x15022F68(0x%x)-0x15022F6C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0xF60),
 		ISP_RD32(ISP_DIP_A_BASE + 0xF64),
 		ISP_RD32(ISP_DIP_A_BASE + 0xF68),
 		ISP_RD32(ISP_DIP_A_BASE + 0xF6C));
-	pr_info(
+	CMDQ_ERR(
 	"mfb: 0x15022F70(0x%x)-0x15022F74(0x%x)-0x15022F78(0x%x)-0x15022F7C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F70),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F74),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F78),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F7C));
-	pr_info(
+	CMDQ_ERR(
 	"mfb: 0x15022F80(0x%x)-0x15022F84(0x%x)-0x15022F88(0x%x)-0x15022F8C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F80),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F84),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F88),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F8C));
-	pr_info(
+	CMDQ_ERR(
 	"mfb: 0x15022F90(0x%x)-0x15022F94(0x%x)-0x15022F98(0x%x)-0x15022F9C(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F90),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F94),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F98),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0F9C));
-	pr_info(
+	CMDQ_ERR(
 	"mfb: 0x15022FA0(0x%x)-0x15022FA4(0x%x)-0x15022FA8(0x%x)-0x15022FAC(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0FA0),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0FA4),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0FA8),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0FAC));
-	pr_info(
+	CMDQ_ERR(
 	"mfb: 0x15022FB0(0x%x)-0x15022FB4(0x%x)-0x15022FB8(0x%x)\n",
 		ISP_RD32(ISP_DIP_A_BASE + 0x0FB0),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0FB4),
 		ISP_RD32(ISP_DIP_A_BASE + 0x0FB8));
 
-	pr_info("- X.");
+	CMDQ_ERR("- X.");
 	/*  */
 	return Ret;
 }
