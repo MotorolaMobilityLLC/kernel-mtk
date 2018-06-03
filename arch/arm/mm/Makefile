@@ -109,3 +109,5 @@ obj-$(CONFIG_CACHE_TAUROS2)	+= cache-tauros2.o
 obj-$(CONFIG_CACHE_UNIPHIER)	+= cache-uniphier.o
 
 KBUILD_CPPFLAGS += -Werror -I$(srctree)/drivers/misc/mediatek/include
+
+obj-$(CONFIG_MEDIATEK_SOLUTION)	+= cache-mtk-v7.o
