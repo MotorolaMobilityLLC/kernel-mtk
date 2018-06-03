@@ -12,8 +12,7 @@
 #
 
 MTK_GPU_VERSION = $(subst ",,$(CONFIG_MTK_GPU_VERSION))
-$(info *MTK_GPU_VERSION 2 = $(word 2,$(MTK_GPU_VERSION)))
+$(info *MTK_GPU_VERSION 3 = $(word 3,$(MTK_GPU_VERSION)))
 
-#obj-y += rgx_$(word 2,$(MTK_GPU_VERSION))/
-obj-y += 1.7ED/
+obj-y += $(word 3,$(MTK_GPU_VERSION))/
 
