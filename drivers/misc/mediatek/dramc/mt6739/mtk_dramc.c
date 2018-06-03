@@ -292,7 +292,6 @@ int Binning_DRAM_complex_mem_test(void)
 
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0) {
-			vfree(ptr);
 			/* return -1; */
 			ret = -1;
 			goto fail;
@@ -303,7 +302,6 @@ int Binning_DRAM_complex_mem_test(void)
 	/* === Verify the tied bits (tied low) === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xffffffff) {
-			vfree(ptr);
 			/* return -2; */
 			ret = -2;
 			goto fail;
@@ -318,7 +316,6 @@ int Binning_DRAM_complex_mem_test(void)
 	pattern8 = 0x00;
 	for (i = 0; i < len; i++) {
 		if (MEM8_BASE[i] != pattern8++) {
-			vfree(ptr);
 			/* return -3; */
 			ret = -3;
 			goto fail;
@@ -331,7 +328,6 @@ int Binning_DRAM_complex_mem_test(void)
 		if (MEM8_BASE[i] == pattern8)
 			MEM16_BASE[j] = pattern8;
 		if (MEM16_BASE[j] != pattern8) {
-			vfree(ptr);
 			/* return -4; */
 			ret = -4;
 			goto fail;
@@ -346,7 +342,6 @@ int Binning_DRAM_complex_mem_test(void)
 	pattern16 = 0x00;
 	for (i = 0; i < (len >> 1); i++) {
 		if (MEM16_BASE[i] != pattern16++) {
-			vfree(ptr);
 			/* return -5; */
 			ret = -5;
 			goto fail;
@@ -360,7 +355,6 @@ int Binning_DRAM_complex_mem_test(void)
 	pattern32 = 0x00;
 	for (i = 0; i < (len >> 2); i++) {
 		if (MEM32_BASE[i] != pattern32++) {
-			vfree(ptr);
 			/* return -6; */
 			ret = -6;
 			goto fail;
@@ -374,7 +368,6 @@ int Binning_DRAM_complex_mem_test(void)
 	/* === Read Check then Fill Memory with a5a5a5a5 Pattern === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0x44332211) {
-			vfree(ptr);
 			/* return -7; */
 			ret = -7;
 			goto fail;
@@ -387,7 +380,6 @@ int Binning_DRAM_complex_mem_test(void)
 	/* 00 Byte Pattern at offset 0h === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xa5a5a5a5) {
-			vfree(ptr);
 			/* return -8; */
 			ret = -8;
 			goto fail;
@@ -400,7 +392,6 @@ int Binning_DRAM_complex_mem_test(void)
 	/* 00 Byte Pattern at offset 2h === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xa5a5a500) {
-			vfree(ptr);
 			/* return -9; */
 			ret = -9;
 			goto fail;
@@ -413,7 +404,6 @@ int Binning_DRAM_complex_mem_test(void)
 	/* 00 Byte Pattern at offset 1h === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xa500a500) {
-			vfree(ptr);
 			/* return -10; */
 			ret = -10;
 			goto fail;
@@ -426,7 +416,6 @@ int Binning_DRAM_complex_mem_test(void)
 	/* 00 Byte Pattern at offset 3h === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xa5000000) {
-			vfree(ptr);
 			/* return -11; */
 			ret = -11;
 			goto fail;
@@ -439,7 +428,6 @@ int Binning_DRAM_complex_mem_test(void)
 	/* Word Pattern at offset 1h == */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0x00000000) {
-			vfree(ptr);
 			/* return -12; */
 			ret = -12;
 			goto fail;
@@ -452,7 +440,6 @@ int Binning_DRAM_complex_mem_test(void)
 	/* Word Pattern at offset 0h == */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xffff0000) {
-			vfree(ptr);
 			/* return -13; */
 			ret = -13;
 			goto fail;
@@ -463,7 +450,6 @@ int Binning_DRAM_complex_mem_test(void)
     /*===  Read Check === */
 	for (i = 0; i < size; i++) {
 		if (MEM32_BASE[i] != 0xffffffff) {
-			vfree(ptr);
 			/* return -14; */
 			ret = -14;
 			goto fail;
@@ -483,7 +469,6 @@ int Binning_DRAM_complex_mem_test(void)
 		value = MEM_BASE[i];
 
 		if (value != PATTERN1) {
-			vfree(ptr);
 			/* return -15; */
 			ret = -15;
 			goto fail;
@@ -495,7 +480,6 @@ int Binning_DRAM_complex_mem_test(void)
 	for (i = 0; i < size; i++) {
 		value = MEM_BASE[i];
 		if (value != PATTERN2) {
-			vfree(ptr);
 			/* return -16; */
 			ret = -16;
 			goto fail;
@@ -507,7 +491,6 @@ int Binning_DRAM_complex_mem_test(void)
 	for (i = 0; i < size; i++) {
 		value = MEM_BASE[i];
 		if (value != PATTERN1) {
-			vfree(ptr);
 			/* return -17; */
 			ret = -17;
 			goto fail;
@@ -519,7 +502,6 @@ int Binning_DRAM_complex_mem_test(void)
 	for (i = 0; i < size; i++) {
 		value = MEM_BASE[i];
 		if (value != PATTERN2) {
-			vfree(ptr);
 			/* return -18; */
 			ret = -18;
 			goto fail;
@@ -531,7 +513,6 @@ int Binning_DRAM_complex_mem_test(void)
 	for (i = 0; i < size; i++) {
 		value = MEM_BASE[i];
 		if (value != PATTERN1) {
-			vfree(ptr);
 			/* return -19; */
 			ret = -19;
 			goto fail;
@@ -577,7 +558,6 @@ int Binning_DRAM_complex_mem_test(void)
 	for (i = 0; i < size; i++) {
 		value = MEM_BASE[i];
 		if (value != 0x12345678) {
-			vfree(ptr);
 			/* return -20; */
 			ret = -20;
 			goto fail;
@@ -595,7 +575,6 @@ int Binning_DRAM_complex_mem_test(void)
 		if (i < size * 4 - 1)
 			MEM8_BASE[waddr8] = pattern8 + 1;
 		if (MEM8_BASE[raddr8] != pattern8) {
-			vfree(ptr);
 			/* return -21; */
 			ret = -21;
 			goto fail;
@@ -610,7 +589,6 @@ int Binning_DRAM_complex_mem_test(void)
 		if (i < size * 2 - 1)
 			MEM16_BASE[i + 1] = pattern16 + 1;
 		if (MEM16_BASE[i] != pattern16) {
-			vfree(ptr);
 			/* return -22; */
 			ret = -22;
 			goto fail;
@@ -624,7 +602,6 @@ int Binning_DRAM_complex_mem_test(void)
 		if (i < size - 1)
 			MEM32_BASE[i + 1] = pattern32 + 1;
 		if (MEM32_BASE[i] != pattern32) {
-			vfree(ptr);
 			/* return -23; */
 			ret = -23;
 			goto fail;
