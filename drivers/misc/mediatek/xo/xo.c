@@ -42,6 +42,8 @@
 #define READ_REGISTER_UINT32(reg)          readl((void __iomem *)reg)
 #define WRITE_REGISTER_UINT32(reg, val)     writel((val), (void __iomem *)(reg))
 
+#define KEEP_LDOH
+
 struct xo_dev {
 	struct device *dev;
 	void __iomem *base;
@@ -158,12 +160,15 @@ static void enable_xo_low_power_mode(void)
 	/* RG_DA_EN_XO_BG_MAN = 1 */
 	value = BSI_read(0x03) | (1<<13);
 	BSI_write(0x03, value);
+
+#if defined(KEEP_LDOH)
 	/* RG_DA_EN_XO_LDOH_MANVALUE = 1 */
 	value = BSI_read(0x03) | (1<<8);
 	BSI_write(0x03, value);
 	/* RG_DA_EN_XO_LDOH_MAN = 1 */
 	value = BSI_read(0x03) | (1<<9);
 	BSI_write(0x03, value);
+#endif
 	/* RG_DA_EN_XO_LDOL_MANVALUE = 1 */
 	value = BSI_read(0x03) | 0x1;
 	BSI_write(0x03, value);
@@ -196,17 +201,19 @@ static void enable_xo_low_power_mode(void)
 	BSI_write(0x06, value);
 	value = BSI_read(0x06) | (1<<11);
 	BSI_write(0x06, value);
+#if defined(KEEP_LDOH)
 	value = BSI_read(0x06) | (1<<9);
 	BSI_write(0x06, value);
-
+#endif
 	/* RG_DA_XO_LPM_BIAS1/2/3_MANVALUE=0 */
 	value = BSI_read(0x06) & ~BIT(12);
 	BSI_write(0x06, value);
 	value = BSI_read(0x06) & ~BIT(10);
 	BSI_write(0x06, value);
+#if defined(KEEP_LDOH)
 	value = BSI_read(0x06) & ~BIT(8);
 	BSI_write(0x06, value);
-
+#endif
 	/* bit 10 set 0 */
 	value = BSI_read(0x08) & 0xFBFF;
 	BSI_write(0x08, value);
@@ -214,7 +221,55 @@ static void enable_xo_low_power_mode(void)
 	/* DIG_CR_XO_04_L[9]:RG_XO_INT32K_NOR2LPM_TRIGGER = 1 */
 	value = BSI_read(0x08) | (1<<9);
 	BSI_write(0x08, value);
+	mdelay(5);
 	pr_notice("[xo] enable xo low power mode!\n");
+}
+
+static void disable_xo_low_power_mode(void)
+{
+	uint32_t value = 0;
+
+	/* DIG_CR_XO_04_L[9]:RG_XO_INT32K_NOR2LPM_TRIGGER = 0 */
+	value = BSI_read(0x08) & ~BIT(9);
+	BSI_write(0x08, value);
+	mdelay(5);
+
+	/* RG_DA_EN_XO_BG_MAN = 0 */
+	value = BSI_read(0x03) & ~BIT(13);
+	BSI_write(0x03, value);
+
+#if defined(KEEP_LDOH)
+	/* RG_DA_EN_XO_LDOH_MAN = 0 */
+	value = BSI_read(0x03) & ~BIT(9);
+	BSI_write(0x03, value);
+#endif
+	/* RG_DA_EN_XO_LDOL_MAN = 0 */
+	value = BSI_read(0x03) & ~BIT(1);
+	BSI_write(0x03, value);
+
+	/* RG_DA_EN_XO_PRENMBUF_MAN = 0 */
+	value = BSI_read(0x02) & ~BIT(7);
+	BSI_write(0x02, value);
+
+	/* RG_DA_EN_XO_PLLGP_BUF_MAN = 0 */
+	value = BSI_read(0x34) & ~BIT(1);
+	BSI_write(0x34, value);
+
+	/* RG_DA_EN_XO_VGTIELOW_MAN= 0 */
+	value = BSI_read(0x05) & ~BIT(9);
+	BSI_write(0x05, value);
+
+	/* RG_DA_XO_LPM_BIAS1/2_MAN=0 */
+	value = BSI_read(0x06) & ~BIT(13);
+	BSI_write(0x06, value);
+	value = BSI_read(0x06) & ~BIT(11);
+	BSI_write(0x06, value);
+#if defined(KEEP_LDOH)
+	value = BSI_read(0x06) & ~BIT(9);
+	BSI_write(0x06, value);
+#endif
+
+	pr_notice("[xo] disable xo low power mode!\n");
 }
 
 static void get_xo_status(void)
@@ -223,6 +278,95 @@ static void get_xo_status(void)
 
 	status = (BSI_read(0x26) & BITS(4, 9))>>4;
 	pr_notice("[xo] status: 0x%x\n", status);
+}
+
+void enable_32K_clock_to_pmic(void)
+{
+	uint32_t value = 0;
+
+	/* Set DIG_CR_XO_24[3:2]=2'b10. */
+	value = BSI_read(0x34) | BITS(2, 3);
+	BSI_write(0x34, value);
+}
+
+void disable_32K_clock_to_pmic(void)
+{
+	uint32_t value = 0;
+
+	/* Set DIG_CR_XO_24[3:2]=2'b10. */
+	value = BSI_read(0x34) & ~BITS(2, 3);
+	value = value | (1<<3);
+	BSI_write(0x34, value);
+}
+
+void enable_26M_clock_to_pmic(void)
+{
+	uint32_t value = 0;
+
+	/* Set DIG_CR_XO_02[2]=1 */
+	value = BSI_read(0x04) | 0x4;
+	BSI_write(0x04, value);
+	/* Set DIG_CR_XO_02[1]=1 */
+	value = BSI_read(0x04) | 0x2;
+	BSI_write(0x04, value);
+	/* Set DIG_CR_XO_03[29]=1 */
+	value = BSI_read(0x7) | (1<<13);
+	BSI_write(0x07, value);
+	/* Set DIG_CR_XO_03[28]=1 */
+	value = BSI_read(0x7) | (1<<12);
+	BSI_write(0x07, value);
+}
+
+void disable_26M_clock_to_pmic(void)
+{
+	uint32_t value = 0;
+
+	/* Set DIG_CR_XO_02[2]=1 */
+	value = BSI_read(0x04) | 0x4;
+	BSI_write(0x04, value);
+	/* Set DIG_CR_XO_02[1]=0 */
+	value = BSI_read(0x04) & 0xFFFD;
+	BSI_write(0x04, value);
+	/* Set DIG_CR_XO_03[29]=1 */
+	value = BSI_read(0x7) | (1<<13);
+	BSI_write(0x07, value);
+	/* Set DIG_CR_XO_03[28]=0 */
+	value = BSI_read(0x7) & 0xEFFF;
+	BSI_write(0x07, value);
+}
+
+void disable_26M_clock_to_conn_rf(void)
+{
+	uint32_t value = 0;
+
+	/* RG_CLKBUF_XO_EN<7:0>=8'h00 */
+	value = BSI_read(0x33) & !BITS(8, 15);
+	BSI_write(0x33, value);
+
+	/* Toggle RG_XO_1_2=0'1'0 */
+	value = BSI_read(0x29) & 0xFFFE;
+	BSI_write(0x29, value);
+	value = BSI_read(0x29) | 0x1;
+	BSI_write(0x29, value);
+	value = BSI_read(0x29) & 0xFFFE;
+	BSI_write(0x29, value);
+}
+
+void enable_26M_clock_to_conn_rf(void)
+{
+	uint32_t value = 0;
+
+	/* RG_CLKBUF_XO_EN<7:0>=8'hFF */
+	value = BSI_read(0x33) | BITS(8, 15);
+	BSI_write(0x33, value);
+
+	/* Toggle RG_XO_1_2=0'1'0 */
+	value = BSI_read(0x29) & 0xFFFE;
+	BSI_write(0x29, value);
+	value = BSI_read(0x29) | 0x1;
+	BSI_write(0x29, value);
+	value = BSI_read(0x29) & 0xFFFE;
+	BSI_write(0x29, value);
 }
 
 static void bsi_clock_enable(bool en)
@@ -327,7 +471,7 @@ static DEVICE_ATTR(xo_board_offset, 0664, show_xo_board_offset, store_xo_board_o
 
 static ssize_t show_xo_cmd(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "1: xo status 2: low power mode\n");
+	return sprintf(buf, "1: status 2/3: in/out LPM 4/5: dis/en 26M 6/7: dis/en 32K 8/9: dis/en rf\n");
 }
 
 static ssize_t store_xo_cmd(struct device *dev, struct device_attribute *attr,
@@ -355,6 +499,30 @@ static ssize_t store_xo_cmd(struct device *dev, struct device_attribute *attr,
 			mdelay(10);
 			get_xo_status();
 			break;
+		case 3:
+			get_xo_status();
+			disable_xo_low_power_mode();
+			mdelay(10);
+			get_xo_status();
+			break;
+		case 4:
+			disable_26M_clock_to_pmic();
+			break;
+		case 5:
+			enable_26M_clock_to_pmic();
+			break;
+		case 6:
+			disable_32K_clock_to_pmic();
+			break;
+		case 7:
+			enable_32K_clock_to_pmic();
+			break;
+		case 8:
+			disable_26M_clock_to_conn_rf();
+			break;
+		case 9:
+			enable_26M_clock_to_conn_rf();
+			break;
 		default:
 			pr_notice("cmd not support!\n");
 		}
@@ -366,6 +534,74 @@ static ssize_t store_xo_cmd(struct device *dev, struct device_attribute *attr,
 }
 
 static DEVICE_ATTR(xo_cmd, 0664, show_xo_cmd, store_xo_cmd);
+
+static ssize_t show_bsi_read(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "not support!\n");
+}
+
+static ssize_t store_bsi_read(struct device *dev, struct device_attribute *attr,
+				     const char *buf, size_t size)
+{
+	uint32_t addr, value;
+	int ret;
+
+	if (buf != NULL && size != 0) {
+		ret = kstrtouint(buf, 0, &addr);
+		if (ret) {
+			pr_err("wrong format!\n");
+			return size;
+		}
+
+		bsi_clock_enable(true);
+		value = BSI_read(addr);
+		bsi_clock_enable(false);
+		pr_notice("bsi read 0x%x: 0x%x\n", addr, value);
+	}
+
+	return size;
+}
+
+static DEVICE_ATTR(bsi_read, 0664, show_bsi_read, store_bsi_read);
+
+static ssize_t show_bsi_write(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "not support!\n");
+}
+
+static ssize_t store_bsi_write(struct device *dev, struct device_attribute *attr,
+				     const char *buf, size_t size)
+{
+	char temp_buf[32];
+	char *pvalue;
+	uint32_t addr, value;
+	int ret;
+
+	strncpy(temp_buf, buf, sizeof(temp_buf));
+	temp_buf[sizeof(temp_buf) - 1] = 0;
+	pvalue = temp_buf;
+
+	if (buf != NULL && size > 5) {
+
+		ret = kstrtouint(strsep(&pvalue, " "), 0, &addr);
+		if (ret)
+			return ret;
+		ret = kstrtouint(pvalue, 0, &value);
+		if (ret)
+			return ret;
+
+		bsi_clock_enable(true);
+		pr_notice("bsi read 0x%x: 0x%x\n", addr, BSI_read(addr));
+		BSI_write(addr, value);
+		pr_notice("bsi write 0x%x: 0x%x\n", addr, value);
+		pr_notice("bsi read 0x%x: 0x%x\n", addr, BSI_read(addr));
+		bsi_clock_enable(false);
+	}
+
+	return size;
+}
+
+static DEVICE_ATTR(bsi_write, 0664, show_bsi_write, store_bsi_write);
 
 /* for SPM driver to get cap code at suspend */
 uint32_t mt_xo_get_current_capid(void)
@@ -402,6 +638,14 @@ static int mt_xo_dts_probe(struct platform_device *pdev)
 	xo_inst->crystal_check_done = false;
 	xo_inst->dev = &pdev->dev;
 	platform_set_drvdata(pdev, xo_inst);
+
+	retval = device_create_file(&pdev->dev, &dev_attr_bsi_read);
+	if (retval != 0)
+		dev_dbg(&pdev->dev, "fail to create file: %d\n", retval);
+
+	retval = device_create_file(&pdev->dev, &dev_attr_bsi_write);
+	if (retval != 0)
+		dev_dbg(&pdev->dev, "fail to create file: %d\n", retval);
 
 	retval = device_create_file(&pdev->dev, &dev_attr_xo_capid);
 	if (retval != 0)
