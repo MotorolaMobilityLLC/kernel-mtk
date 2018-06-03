@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -10,7 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 #ifndef __TSCPU_SETTINGS_H__
 #define __TSCPU_SETTINGS_H__
 
@@ -49,84 +48,87 @@
 			pr_warn(TSCPU_LOG_TAG "Warning: tProfiling uses incorrect %s %d\n", __func__, __LINE__); \
 		}	\
 	} while (0)
+
 /*=============================================================
  * CONFIG (SW related)
  *=============================================================
  */
-#define ENALBE_UART_LIMIT		(1)
-#define TEMP_EN_UART			(80000)
-#define TEMP_DIS_UART			(85000)
-#define TEMP_TOLERANCE			(0)
+#define ENALBE_UART_LIMIT						(1)
+#define TEMP_EN_UART							(80000)
+#define TEMP_DIS_UART							(85000)
+#define TEMP_TOLERANCE							(0)
 
-#define ENALBE_SW_FILTER		(0)
-#define ATM_USES_PPM	(1)
+#define ENALBE_SW_FILTER						(0)
+#define ATM_USES_PPM							(1)
 
-#define THERMAL_GET_AHB_BUS_CLOCK		    (0)
-#define THERMAL_PERFORMANCE_PROFILE         (0)
+#define THERMAL_GET_AHB_BUS_CLOCK				(0)
+#define THERMAL_PERFORMANCE_PROFILE				(0)
 
-/* 1: turn on GPIO toggle monitor; 0: turn off*/
-#define THERMAL_GPIO_OUT_TOGGLE             (0)
+/* 1: turn on GPIO toggle monitor; 0: turn off */
+#define THERMAL_GPIO_OUT_TOGGLE					(0)
 
-/* 1: turn on adaptive AP cooler; 0: turn off*/
-#define CPT_ADAPTIVE_AP_COOLER              (1)
+/* 1: turn on adaptive AP cooler; 0: turn off */
+#define CPT_ADAPTIVE_AP_COOLER					(1)
 
-/* 1: turn on supports to MET logging; 0: turn off*/
-#define CONFIG_SUPPORT_MET_MTKTSCPU         (0)
+/* 1: turn on supports to MET logging; 0: turn off */
+#define CONFIG_SUPPORT_MET_MTKTSCPU				(0)
 
 /* Thermal controller HW filtering function. Only 1, 2, 4, 8, 16 are valid values,
-*they means one reading is a avg of X samples
-*/
-#define THERMAL_CONTROLLER_HW_FILTER        (2) /* 1, 2, 4, 8, 16*/
+ * they means one reading is a avg of X samples
+ */
+#define THERMAL_CONTROLLER_HW_FILTER			(2) /* 1, 2, 4, 8, 16 */
 
-/* 1: turn on thermal controller HW thermal protection; 0: turn off*/
-#define THERMAL_CONTROLLER_HW_TP            (1)
+/* 1: turn on thermal controller HW thermal protection; 0: turn off */
+#define THERMAL_CONTROLLER_HW_TP				(1)
 
-/* 1: turn on fast polling in this sw module; 0: turn off*/
-#define MTKTSCPU_FAST_POLLING               (1)
+/* 1: turn on fast polling in this sw module; 0: turn off */
+#define MTKTSCPU_FAST_POLLING					(1)
 
 #if CPT_ADAPTIVE_AP_COOLER
-#define MAX_CPT_ADAPTIVE_COOLERS            (3)
+#define MAX_CPT_ADAPTIVE_COOLERS				(3)
 
-#define THERMAL_HEADROOM                    (0)
-#define CONTINUOUS_TM                       (1)
-#define DYNAMIC_GET_GPU_POWER			    (1)
+#define THERMAL_HEADROOM						(0)
+#define CONTINUOUS_TM							(1)
+#define DYNAMIC_GET_GPU_POWER					(1)
 
 /* 1: turn on precise power budgeting; 0: turn off */
-#define PRECISE_HYBRID_POWER_BUDGET         (1)
+#define PRECISE_HYBRID_POWER_BUDGET				(1)
 
-#define PHPB_DEFAULT_ON						(1)
+#define PHPB_DEFAULT_ON							(1)
 #endif
 
-/* 1: thermal driver fast polling, use hrtimer; 0: turn off*/
-/*#define THERMAL_DRV_FAST_POLL_HRTIMER          (1)*/
+/* 1: thermal driver fast polling, use hrtimer; 0: turn off */
+/*#define THERMAL_DRV_FAST_POLL_HRTIMER			(1)*/
 
-/* 1: thermal driver update temp to MET directly, use hrtimer; 0: turn off*/
-#define THERMAL_DRV_UPDATE_TEMP_DIRECT_TO_MET  (1)
+/* 1: thermal driver update temp to MET directly, use hrtimer; 0: turn off */
+#define THERMAL_DRV_UPDATE_TEMP_DIRECT_TO_MET	(1)
 
-/*	Define this in tscpu_settings.h enables this feature. It polls CPU TS in hrtimer and
-*	run ATM in RT 98 kthread. This is for Everest only.
+/* Define this in tscpu_settings.h enables this feature. It polls CPU TS in hrtimer and
+ * run ATM in RT 98 kthread. This is for Everest only.
  */
-#define FAST_RESPONSE_ATM					(1)
-#define THERMAL_INIT_VALUE (0xDA1)
+#define FAST_RESPONSE_ATM						(1)
+#define THERMAL_INIT_VALUE						(0xDA1)
+
+/* 1: mtk_tc.c supports LVTS; 0: o.w. */
+#define CFG_THERM_LVTS							(1)
+
 /*=============================================================
  * Chip related
  *=============================================================
  */
+/* double check */
+#define TS_CONFIGURE		TS_CON1_TM	/* depend on CPU design*/
+#define TS_CONFIGURE_P		TS_CON1_P	/* depend on CPU design*/
+#define TS_TURN_ON			0xFFFFFFCF	/* turn on TS_CON1[5:4] 2'b 00  11001111 -> 0xCF  ~(0x30)*/
+#define TS_TURN_OFF			0x00000030	/* turn off thermal*/
 
-#define THERMAL_INFORM_OTP	(0)
-#define OTP_HIGH_OFFSET_TEMP	80000
-#define OTP_LOW_OFFSET_TEMP	70000
-#define OTP_TEMP_TOLERANCE	3000
-
-/*double check*/
-#define TS_CONFIGURE     TS_CON1_TM    /* depend on CPU design*/
-#define TS_CONFIGURE_P   TS_CON1_P  /* depend on CPU design*/
-#define TS_TURN_ON       0xFFFFFFCF /* turn on TS_CON1[5:4] 2'b 00  11001111 -> 0xCF  ~(0x30)*/
-#define TS_TURN_OFF      0x00000030 /* turn off thermal*/
-/*chip dependent*/
-#define ADDRESS_INDEX_0  46  /*0x10206184*/
-#define ADDRESS_INDEX_1	 45  /*0x10206180*/
-#define ADDRESS_INDEX_2	 47  /*0x10206188*/
+/* chip dependent */
+/* TODO: change to new reg addr. */
+#define ADDRESS_INDEX_0  101 /*0x11F10184*/
+#define ADDRESS_INDEX_1	 100 /*0x11F10180*/
+#define ADDRESS_INDEX_2	 102 /*0x11F10188*/
+#define ADDRESS_INDEX_3	 111 /*0x104501AC*/
+#define ADDRESS_INDEX_4	 112 /*0x104501B0*/
 
 #define CLEAR_TEMP 26111
 
@@ -207,26 +209,35 @@
 #define tscpu_dprintk(fmt, args...)   \
 do {                                    \
 	if (tscpu_debug_log == 1) {                \
-		pr_debug(TSCPU_LOG_TAG fmt, ##args); \
+		pr_warn(TSCPU_LOG_TAG fmt, ##args); \
 	}                                   \
 } while (0)
 
-#define tscpu_printk(fmt, args...) pr_debug(TSCPU_LOG_TAG fmt, ##args)
+#define tscpu_printk(fmt, args...) pr_warn(TSCPU_LOG_TAG fmt, ##args)
 #define tscpu_warn(fmt, args...)  pr_warn(TSCPU_LOG_TAG fmt, ##args)
 
 /*=============================================================
  * Structures
  *=============================================================
  */
-typedef struct {
-	char ts_name[MAX_TS_NAME];
-	ts_e type;
-} thermal_sensor_t;
+typedef enum {
+	THERMAL_CONTROLLER0 = 0,
+	THERMAL_CONTROLLER1,
+	THERMAL_CONTROLLER_NUM
+} thermal_controller_name;
 
-typedef struct {
-	thermal_sensor_t ts[TS_ENUM_MAX];
+struct thermal_controller_speed {
+	unsigned int tempMonCtl1;
+	unsigned int tempMonCtl2;
+	unsigned int tempAhbPoll;
+};
+
+struct thermal_controller {
+	ts_e ts[TS_ENUM_MAX];
 	int ts_number;
-} bank_t;
+	int tc_offset;
+	struct thermal_controller_speed tc_speed;
+};
 
 #if (CONFIG_THERMAL_AEE_RR_REC == 1)
 enum thermal_state {
@@ -261,13 +272,14 @@ extern int temp_dUART;
 
 extern int tscpu_debug_log;
 extern const struct of_device_id mt_thermal_of_match[2];
-extern int tscpu_bank_ts[THERMAL_BANK_NUM][TS_ENUM_MAX];
-extern int tscpu_bank_ts_r[THERMAL_BANK_NUM][TS_ENUM_MAX]; /* raw data */
-extern bank_t tscpu_g_bank[THERMAL_BANK_NUM];
+extern int tscpu_ts_temp[TS_ENUM_MAX];
+extern int tscpu_ts_temp_r[TS_ENUM_MAX]; /* raw data */
+extern struct thermal_controller tscpu_g_tc[THERMAL_CONTROLLER_NUM];
 extern int tscpu_polling_trip_temp1;
 extern int tscpu_polling_trip_temp2;
 extern int tscpu_polling_factor1;
 extern int tscpu_polling_factor2;
+
 #if MTKTSCPU_FAST_POLLING
 /* Combined fast_polling_trip_temp and fast_polling_factor,
 *it means polling_delay will be 1/5 of original interval
@@ -350,13 +362,11 @@ extern int tscpu_cpu_dmips[CPU_COOLER_NUM];
  */
 /*In common/thermal_zones/mtk_ts_cpu.c*/
 extern void thermal_init_interrupt_for_UART(int temp_e, int temp_d);
-extern void tscpu_print_all_temperature(int isDprint);
 extern void tscpu_update_tempinfo(void);
 #if THERMAL_GPIO_OUT_TOGGLE
 void tscpu_set_GPIO_toggle_for_monitor(void);
 #endif
-extern void tscpu_thermal_tempADCPNP(int adc, int order);
-extern void tscpu_thermal_enable_all_periodoc_sensing_point(thermal_bank_name bank_num);
+
 extern void tscpu_update_tempinfo(void);
 extern int tscpu_max_temperature(void);
 
@@ -364,20 +374,23 @@ extern int tscpu_max_temperature(void);
 extern int get_io_reg_base(void);
 extern void tscpu_config_all_tc_hw_protect(int temperature, int temperature2);
 extern void tscpu_reset_thermal(void);
-extern void tscpu_thermal_initial_all_bank(void);
-extern int tscpu_switch_bank(thermal_bank_name bank);
-extern void tscpu_thermal_read_bank_temp(thermal_bank_name bank, ts_e type, int order);
+extern void tscpu_thermal_initial_all_tc(void);
+extern void tscpu_thermal_read_tc_temp(int tc_num, ts_e type, int order);
 extern void tscpu_thermal_cal_prepare(void);
 extern void tscpu_thermal_cal_prepare_2(U32 ret);
-extern irqreturn_t tscpu_thermal_all_bank_interrupt_handler(int irq, void *dev_id);
+extern irqreturn_t tscpu_thermal_all_tc_interrupt_handler(int irq, void *dev_id);
 extern int tscpu_thermal_clock_on(void);
 extern int tscpu_thermal_clock_off(void);
 extern int tscpu_read_temperature_info(struct seq_file *m, void *v);
-extern int tscpu_thermal_fast_init(void);
+extern int tscpu_thermal_fast_init(int tc_num);
 extern int tscpu_get_curr_temp(void);
 extern int tscpu_get_curr_max_ts_temp(void);
 extern void thermal_get_AHB_clk_info(void);
 extern void print_risky_temps(char *prefix, int offset, int printLevel);
+extern void thermal_pause_all_periodoc_temp_sensing(void);
+extern void thermal_release_all_periodoc_temp_sensing(void);
+extern int (*max_temperature_in_bank[THERMAL_BANK_NUM])(void);
+extern void thermal_disable_all_periodoc_temp_sensing(void);
 
 /*
 *In drivers/misc/mediatek/gpu/hal/mtk_gpu_utility.c
@@ -426,8 +439,6 @@ extern void __iomem *INFRACFG_AO_base;
 #define PERICFG_BASE_2    PERICFG_BASE
 #define APMIXED_BASE_2    APMIXED_BASE
 #endif
-
-#define MT6752_EVB_BUILD_PASS /*Jerry fix build error FIX_ME*/
 
 /*******************************************************************************
  * AUXADC Register Definition
@@ -481,16 +492,15 @@ extern void __iomem *INFRACFG_AO_base;
  */
 
 /*APB Module infracfg_ao*/
-/*#define INFRACFG_AO_BASE (0xF0001000)*/
-#define INFRA_GLOBALCON_RST_0_SET (INFRACFG_AO_BASE_2 + 0x120) /*yes, 0x10001000*/
-#define INFRA_GLOBALCON_RST_0_CLR (INFRACFG_AO_BASE_2 + 0x124) /*yes, 0x10001000*/
-#define INFRA_GLOBALCON_RST_0_STA (INFRACFG_AO_BASE_2 + 0x128) /*yes, 0x10001000*/
+#define INFRA_GLOBALCON_RST_0_SET (INFRACFG_AO_BASE_2 + 0x120) /*yes, 0x10000000*/
+#define INFRA_GLOBALCON_RST_0_CLR (INFRACFG_AO_BASE_2 + 0x124) /*yes, 0x10000000*/
+#define INFRA_GLOBALCON_RST_0_STA (INFRACFG_AO_BASE_2 + 0x128) /*yes, 0x10000000*/
 /*******************************************************************************
  * APMixedSys Configuration Register Definition
  *****************************************************************************
  */
-
-#define TS_CON0_TM             (APMIXED_BASE_2 + 0x600) /*yes 0x10209000*/
+/* TODO: check base addr. */
+#define TS_CON0_TM             (APMIXED_BASE_2 + 0x600) /*yes 0x10212000*/
 #define TS_CON1_TM             (APMIXED_BASE_2 + 0x604)
 #define TS_CON0_P           (apmixed_phy_base + 0x600)
 #define TS_CON1_P           (apmixed_phy_base + 0x604)
@@ -519,7 +529,6 @@ extern void __iomem *INFRACFG_AO_base;
 #define TEMPADCPNP0         (THERM_CTRL_BASE_2 + 0x048)
 #define TEMPADCPNP1         (THERM_CTRL_BASE_2 + 0x04C)
 #define TEMPADCPNP2         (THERM_CTRL_BASE_2 + 0x050)
-#define TEMPADCPNP3         (THERM_CTRL_BASE_2 + 0x0B4)
 
 #define TEMPADCMUX          (THERM_CTRL_BASE_2 + 0x054)
 #define TEMPADCEXT          (THERM_CTRL_BASE_2 + 0x058)
@@ -539,13 +548,17 @@ extern void __iomem *INFRACFG_AO_base;
 #define TEMPMSR0            (THERM_CTRL_BASE_2 + 0x090)
 #define TEMPMSR1            (THERM_CTRL_BASE_2 + 0x094)
 #define TEMPMSR2            (THERM_CTRL_BASE_2 + 0x098)
-#define TEMPMSR3            (THERM_CTRL_BASE_2 + 0x0B8)
+
+#define TEMPADCHADDR        (THERM_CTRL_BASE_2 + 0x09C)
 
 #define TEMPIMMD0           (THERM_CTRL_BASE_2 + 0x0A0)
 #define TEMPIMMD1           (THERM_CTRL_BASE_2 + 0x0A4)
 #define TEMPIMMD2           (THERM_CTRL_BASE_2 + 0x0A8)
-#define TEMPIMMD3           (THERM_CTRL_BASE_2 + 0x0BC)
 
+#define TEMPMONIDET3        (THERM_CTRL_BASE_2 + 0x0B0)
+#define TEMPADCPNP3         (THERM_CTRL_BASE_2 + 0x0B4)
+#define TEMPMSR3            (THERM_CTRL_BASE_2 + 0x0B8)
+#define TEMPIMMD3           (THERM_CTRL_BASE_2 + 0x0BC)
 
 #define TEMPPROTCTL         (THERM_CTRL_BASE_2 + 0x0C0)
 #define TEMPPROTTA          (THERM_CTRL_BASE_2 + 0x0C4)
@@ -557,25 +570,86 @@ extern void __iomem *INFRACFG_AO_base;
 #define TEMPSPARE2          (THERM_CTRL_BASE_2 + 0x0F8)
 #define TEMPSPARE3          (THERM_CTRL_BASE_2 + 0x0FC)
 
-#define PTPCORESEL          (THERM_CTRL_BASE_2 + 0x400)
-#define THERMINTST          (THERM_CTRL_BASE_2 + 0x404)
-#define PTPODINTST          (THERM_CTRL_BASE_2 + 0x408)
-#define THSTAGE0ST          (THERM_CTRL_BASE_2 + 0x40C)
-#define THSTAGE1ST          (THERM_CTRL_BASE_2 + 0x410)
-#define THSTAGE2ST          (THERM_CTRL_BASE_2 + 0x414)
-#define THAHBST0            (THERM_CTRL_BASE_2 + 0x418)
-#define THAHBST1            (THERM_CTRL_BASE_2 + 0x41C)
-#define PTPSPARE0           (THERM_CTRL_BASE_2 + 0x420)
-#define PTPSPARE1           (THERM_CTRL_BASE_2 + 0x424)
-#define PTPSPARE2           (THERM_CTRL_BASE_2 + 0x428)
-#define PTPSPARE3           (THERM_CTRL_BASE_2 + 0x42C)
-#define THSLPEVEB           (THERM_CTRL_BASE_2 + 0x430)
 
 
-#define PTPSPARE0_P           (thermal_phy_base + 0x420)
-#define PTPSPARE1_P           (thermal_phy_base + 0x424)
-#define PTPSPARE2_P           (thermal_phy_base + 0x428)
-#define PTPSPARE3_P           (thermal_phy_base + 0x42C)
+#define TEMPMONCTL0_1         (THERM_CTRL_BASE_2 + 0x100)
+#define TEMPMONCTL1_1         (THERM_CTRL_BASE_2 + 0x104)
+#define TEMPMONCTL2_1         (THERM_CTRL_BASE_2 + 0x108)
+#define TEMPMONINT_1          (THERM_CTRL_BASE_2 + 0x10C)
+#define TEMPMONINTSTS_1       (THERM_CTRL_BASE_2 + 0x110)
+#define TEMPMONIDET0_1        (THERM_CTRL_BASE_2 + 0x114)
+#define TEMPMONIDET1_1        (THERM_CTRL_BASE_2 + 0x118)
+#define TEMPMONIDET2_1        (THERM_CTRL_BASE_2 + 0x11C)
+#define TEMPH2NTHRE_1         (THERM_CTRL_BASE_2 + 0x124)
+#define TEMPHTHRE_1           (THERM_CTRL_BASE_2 + 0x128)
+#define TEMPCTHRE_1           (THERM_CTRL_BASE_2 + 0x12C)
+#define TEMPOFFSETH_1         (THERM_CTRL_BASE_2 + 0x130)
+#define TEMPOFFSETL_1         (THERM_CTRL_BASE_2 + 0x134)
+#define TEMPMSRCTL0_1         (THERM_CTRL_BASE_2 + 0x138)
+#define TEMPMSRCTL1_1         (THERM_CTRL_BASE_2 + 0x13C)
+#define TEMPAHBPOLL_1         (THERM_CTRL_BASE_2 + 0x140)
+#define TEMPAHBTO_1           (THERM_CTRL_BASE_2 + 0x144)
+#define TEMPADCPNP0_1         (THERM_CTRL_BASE_2 + 0x148)
+#define TEMPADCPNP1_1         (THERM_CTRL_BASE_2 + 0x14C)
+#define TEMPADCPNP2_1         (THERM_CTRL_BASE_2 + 0x150)
+
+#define TEMPADCMUX_1          (THERM_CTRL_BASE_2 + 0x154)
+#define TEMPADCEXT_1          (THERM_CTRL_BASE_2 + 0x158)
+#define TEMPADCEXT1_1         (THERM_CTRL_BASE_2 + 0x15C)
+#define TEMPADCEN_1           (THERM_CTRL_BASE_2 + 0x160)
+#define TEMPPNPMUXADDR_1      (THERM_CTRL_BASE_2 + 0x164)
+#define TEMPADCMUXADDR_1      (THERM_CTRL_BASE_2 + 0x168)
+#define TEMPADCEXTADDR_1      (THERM_CTRL_BASE_2 + 0x16C)
+#define TEMPADCEXT1ADDR_1     (THERM_CTRL_BASE_2 + 0x170)
+#define TEMPADCENADDR_1       (THERM_CTRL_BASE_2 + 0x174)
+#define TEMPADCVALIDADDR_1    (THERM_CTRL_BASE_2 + 0x178)
+#define TEMPADCVOLTADDR_1     (THERM_CTRL_BASE_2 + 0x17C)
+#define TEMPRDCTRL_1          (THERM_CTRL_BASE_2 + 0x180)
+#define TEMPADCVALIDMASK_1    (THERM_CTRL_BASE_2 + 0x184)
+#define TEMPADCVOLTAGESHIFT_1 (THERM_CTRL_BASE_2 + 0x188)
+#define TEMPADCWRITECTRL_1    (THERM_CTRL_BASE_2 + 0x18C)
+#define TEMPMSR0_1            (THERM_CTRL_BASE_2 + 0x190)
+#define TEMPMSR1_1            (THERM_CTRL_BASE_2 + 0x194)
+#define TEMPMSR2_1            (THERM_CTRL_BASE_2 + 0x198)
+#define TEMPADCHADDR_1        (THERM_CTRL_BASE_2 + 0x19C)
+
+#define TEMPIMMD0_1           (THERM_CTRL_BASE_2 + 0x1A0)
+#define TEMPIMMD1_1           (THERM_CTRL_BASE_2 + 0x1A4)
+#define TEMPIMMD2_1           (THERM_CTRL_BASE_2 + 0x1A8)
+
+#define TEMPMONIDET3_1        (THERM_CTRL_BASE_2 + 0x1B0)
+#define TEMPADCPNP3_1         (THERM_CTRL_BASE_2 + 0x1B4)
+#define TEMPMSR3_1            (THERM_CTRL_BASE_2 + 0x1B8)
+#define TEMPIMMD3_1           (THERM_CTRL_BASE_2 + 0x1BC)
+
+#define TEMPPROTCTL_1         (THERM_CTRL_BASE_2 + 0x1C0)
+#define TEMPPROTTA_1          (THERM_CTRL_BASE_2 + 0x1C4)
+#define TEMPPROTTB_1          (THERM_CTRL_BASE_2 + 0x1C8)
+#define TEMPPROTTC_1          (THERM_CTRL_BASE_2 + 0x1CC)
+
+#define TEMPSPARE0_1          (THERM_CTRL_BASE_2 + 0x1F0)
+#define TEMPSPARE1_1          (THERM_CTRL_BASE_2 + 0x1F4)
+#define TEMPSPARE2_1          (THERM_CTRL_BASE_2 + 0x1F8)
+#define TEMPSPARE3_1          (THERM_CTRL_BASE_2 + 0x1FC)
+
+#define PTPCORESEL          (THERM_CTRL_BASE_2 + 0xF00)
+#define THERMINTST          (THERM_CTRL_BASE_2 + 0xF04)
+#define PTPODINTST          (THERM_CTRL_BASE_2 + 0xF08)
+#define THSTAGE0ST          (THERM_CTRL_BASE_2 + 0xF0C)
+#define THSTAGE1ST          (THERM_CTRL_BASE_2 + 0xF10)
+#define THSTAGE2ST          (THERM_CTRL_BASE_2 + 0xF14)
+#define THAHBST0            (THERM_CTRL_BASE_2 + 0xF18)
+#define THAHBST1            (THERM_CTRL_BASE_2 + 0xF1C)
+#define PTPSPARE0           (THERM_CTRL_BASE_2 + 0xF20)
+#define PTPSPARE1           (THERM_CTRL_BASE_2 + 0xF24)
+#define PTPSPARE2           (THERM_CTRL_BASE_2 + 0xF28)
+#define PTPSPARE3           (THERM_CTRL_BASE_2 + 0xF2C)
+#define THSLPEVEB           (THERM_CTRL_BASE_2 + 0xF30)
+
+#define PTPSPARE0_P           (thermal_phy_base + 0xF20)
+#define PTPSPARE1_P           (thermal_phy_base + 0xF24)
+#define PTPSPARE2_P           (thermal_phy_base + 0xF28)
+#define PTPSPARE3_P           (thermal_phy_base + 0xF2C)
 
 /*******************************************************************************
  * Thermal Controller Register Mask Definition
@@ -624,9 +698,7 @@ extern void __iomem *INFRACFG_AO_base;
 #define THERMAL_MSRCTL1_MASK    0x00000038
 #define THERMAL_MSRCTL2_MASK    0x000001C0
 
-
 /*cpu core nums*/
 #define TZCPU_NO_CPU_CORES              (8)
-
 
 #endif	/* __TSCPU_SETTINGS_H__ */
