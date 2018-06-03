@@ -1281,7 +1281,7 @@ static int __init scp_init(void)
 	ret = scp_excep_init();
 	if (ret) {
 		pr_err("[SCP]Excep Init Fail\n");
-		return -1;
+		goto err;
 	}
 	if (platform_driver_register(&mtk_scp_device))
 		pr_err("[SCP] scp probe fail\n");
@@ -1292,16 +1292,16 @@ static int __init scp_init(void)
 	/* skip initial if dts status = "disable" */
 	if (!scp_enable[SCP_A_ID]) {
 		pr_err("[SCP] scp disabled!!\n");
-		return -1;
+		goto err;
 	}
 	/* scp ipi initialise */
 	scp_send_buff[SCP_A_ID] = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
 	if (!scp_send_buff[SCP_A_ID])
-		return -1;
+		goto err;
 
 	scp_recv_buff[SCP_A_ID] = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
 	if (!scp_recv_buff[SCP_A_ID])
-		return -1;
+		goto err;
 
 	INIT_WORK(&scp_A_notify_work.work, scp_A_notify_ws);
 	INIT_WORK(&scp_timeout_work.work, scp_timeout_ws);
@@ -1325,7 +1325,7 @@ static int __init scp_init(void)
 
 	if (unlikely(ret != 0)) {
 		pr_err("[SCP] create files failed\n");
-		return -1;
+		goto err;
 	}
 
 	/* scp request irq */
@@ -1333,7 +1333,7 @@ static int __init scp_init(void)
 	ret = request_irq(scpreg.irq, scp_A_irq_handler, IRQF_TRIGGER_NONE, "SCP A IPC2HOST", NULL);
 	if (ret) {
 		pr_err("[SCP] CM4 A require irq failed\n");
-		return -1;
+		goto err;
 	}
 
 #if SCP_RESERVED_MEM
@@ -1342,7 +1342,7 @@ static int __init scp_init(void)
 	ret = scp_reserve_memory_ioremap();
 	if (ret) {
 		pr_err("[SCP]scp_reserve_memory_ioremap failed\n");
-		return -1;
+		goto err;
 	}
 #endif
 #if SCP_LOGGER_ENABLE
@@ -1351,7 +1351,7 @@ static int __init scp_init(void)
 	if (scp_logger_init(scp_get_reserve_mem_virt(SCP_A_LOGGER_MEM_ID),
 				scp_get_reserve_mem_size(SCP_A_LOGGER_MEM_ID)) == -1) {
 		pr_err("[SCP] scp_logger_init_fail\n");
-		return -1;
+		goto err;
 	}
 #endif
 
@@ -1367,6 +1367,14 @@ static int __init scp_init(void)
 	reset_scp(SCP_ALL_ENABLE);
 
 	return ret;
+
+err:
+#if SCP_DVFS_INIT_ENABLE
+	/* remember to release pll */
+	scp_pll_mux_set(PLL_DISABLE);
+#endif
+	return -1;
+
 }
 
 /*
