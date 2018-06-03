@@ -53,8 +53,8 @@ struct mmdvfs_clk_hw_map mt6763_mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = 
 			{-1, -1},
 			{-1, -1}
 		},
-		{ MMDVFS_CLK_CONFIG_PLL_RATE, { NULL, "MMDVFS_CLK_TOP_MMPLL_CK"}, -1, 2,
-			{420000000, 300000000},
+		{ MMDVFS_CLK_CONFIG_PLL_RATE, { NULL, "MMDVFS_CLK_TOP_MMPLL_CK"}, 9, 2,
+			{0x00204EC4, 0x001713B1},
 			{-1, -1}
 		},
 		{ MMDVFS_CLK_CONFIG_BY_MUX, { NULL, "MMDVFS_CLK_MUX_TOP_CAM_SEL"}, -1, 2,

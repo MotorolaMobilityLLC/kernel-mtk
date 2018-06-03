@@ -29,6 +29,7 @@
 #include "mtk_smi.h"
 #include "mmdvfs_mgr.h"
 #include "mmdvfs_internal.h"
+#include "mach/mtk_freqhopping.h"
 
 
 /* Class: mmdvfs_step_util */
@@ -514,13 +515,16 @@ static int mmdvfs_apply_clk_hw_configurtion_by_step(
 				}
 			} else if (clk_hw_map_ptr->config_method == MMDVFS_CLK_CONFIG_PLL_RATE) {
 				int clk_rate = clk_hw_map_ptr->step_pll_freq_map[clk_step];
+				int pll_id = clk_hw_map_ptr->pll_id;
 
-				if (clk_rate < 0)
-					MMDVFSMSG("invalid clk rate: %d, step:%d, pll:%s\n",
-					clk_rate, mmdvfs_step, clk_hw_map_ptr->clk_mux.ccf_name);
-				else {
+				if (pll_id == -1) {
 					int ccf_ret = -1;
 
+					if (clk_rate < 0) {
+						MMDVFSMSG("invalid clk rate: %d, step:%d, pll:%s\n",
+						clk_rate, mmdvfs_step, clk_hw_map_ptr->clk_mux.ccf_name);
+						continue;
+					}
 					if (clk_hw_map_ptr->clk_mux.ccf_handle == NULL) {
 						MMDVFSMSG("CCF handle can't be NULL during MMDVFS\n");
 						continue;
@@ -534,6 +538,14 @@ static int mmdvfs_apply_clk_hw_configurtion_by_step(
 					if (ccf_ret)
 						MMDVFSMSG("Failed to set rate:%s->%d\n",
 						clk_hw_map_ptr->clk_mux.ccf_name, clk_rate);
+				} else {
+					int hopping_ret = -1;
+
+					hopping_ret = mt_dfs_general_pll(pll_id, clk_rate);
+					MMDVFSMSG("pll_hopping_rate: id = (%d), dds = 0x%08x\n", pll_id, clk_rate);
+
+					if (hopping_ret)
+						MMDVFSMSG("Failed to hopping rate:%d->0x%08x\n", pll_id, clk_rate);
 				}
 			}
 		}
