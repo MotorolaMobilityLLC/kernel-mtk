@@ -48,7 +48,11 @@ static atomic_t svp_online_count_down;
 /* 64 MB alignment */
 #define SSVP_CMA_ALIGN_PAGE_ORDER 14
 #define SSVP_ALIGN_SHIFT (SSVP_CMA_ALIGN_PAGE_ORDER + PAGE_SHIFT)
+#if _SSVP_MBSIZE_
 #define SSVP_ALIGN (1 << SSVP_ALIGN_SHIFT)
+#else
+#define SSVP_ALIGN (1 << (PAGE_SHIFT + (MAX_ORDER - 1)))
+#endif
 
 static u64 ssvp_upper_limit = UPPER_LIMIT64;
 
@@ -124,7 +128,12 @@ void zmc_ssvp_init(struct cma *zmc_cma)
 
 struct single_cma_registration memory_ssvp_registration = {
 	.align = SSVP_ALIGN,
+#if _SSVP_MBSIZE_
 	.size = (_SSVP_MBSIZE_ * SZ_1M),
+#else
+	/* Memory of SVP and TUI are both from reserved memory */
+	.size = SSVP_ALIGN,
+#endif
 	.name = "memory-ssvp",
 	.init = zmc_ssvp_init,
 	.prio = ZMC_SSVP,
@@ -173,6 +182,27 @@ static int __init dedicate_tui_memory(struct reserved_mem *rmem)
 }
 RESERVEDMEM_OF_DECLARE(tui_memory, "mediatek,memory-tui",
 			dedicate_tui_memory);
+
+static int __init dedicate_svp_memory(struct reserved_mem *rmem)
+{
+	struct SSVP_Region *region;
+
+	region = &_svpregs[SSVP_SVP];
+
+	pr_info("%s, name: %s, base: 0x%pa, size: 0x%pa\n",
+		 __func__, rmem->name,
+		 &rmem->base, &rmem->size);
+
+	region->use_cache_memory = true;
+	region->is_unmapping = true;
+	region->count = rmem->size / PAGE_SIZE;
+	region->cache_page = phys_to_page(rmem->base);
+
+	return 0;
+}
+RESERVEDMEM_OF_DECLARE(svp_memory, "mediatek,memory-svp",
+			dedicate_svp_memory);
+
 /*
  * Check whether memory_ssvp is initialized
  */
