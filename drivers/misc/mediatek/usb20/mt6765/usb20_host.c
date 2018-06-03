@@ -450,6 +450,8 @@ void musb_disable_host(struct musb *musb)
 		musb_writeb(musb->mregs, MUSB_DEVCTL,
 				(~MUSB_DEVCTL_SESSION) &
 				musb_readb(musb->mregs, MUSB_DEVCTL));
+
+		usb_prepare_clock(false);
 	}
 
 #ifdef CONFIG_TCPC_CLASS
@@ -569,7 +571,7 @@ static void musb_host_work(struct work_struct *data)
 	static int inited, timeout; /* default to 0 */
 	static s64 diff_time;
 	int host_mode;
-	static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 3);
+	int usb_clk_state = NO_CHANGE;
 
 	/* kernel_init_done should be set in
 	 * early-init stage through init.$platform.usb.rc
@@ -578,13 +580,13 @@ static void musb_host_work(struct work_struct *data)
 		ktime_end = ktime_get();
 		diff_time = ktime_to_ms(ktime_sub(ktime_end, ktime_start));
 
-		if (__ratelimit(&ratelimit))
-			pr_debug("<ratelimit> init_done:%d, is_ready:%d, inited:%d, TO:%d, diff:%lld\n",
-				kernel_init_done,
-				mtk_musb->is_ready,
-				inited,
-				timeout,
-				diff_time);
+		DBG_LIMIT(3,
+			"init_done:%d, is_ready:%d, inited:%d, TO:%d, diff:%lld",
+			kernel_init_done,
+			mtk_musb->is_ready,
+			inited,
+			timeout,
+			diff_time);
 
 		if (diff_time > ID_PIN_WORK_BLOCK_TIMEOUT) {
 			DBG(0, "diff_time:%lld\n", diff_time);
@@ -600,6 +602,10 @@ static void musb_host_work(struct work_struct *data)
 	}
 
 	inited = 1;
+
+	/* always prepare clock and check if need to unprepater later */
+	/* clk_prepare_cnt +1 here */
+	usb_prepare_clock(true);
 
 	spin_lock_irqsave(&mtk_musb->lock, flags);
 	musb_generic_disable(mtk_musb);
@@ -671,6 +677,7 @@ static void musb_host_work(struct work_struct *data)
 		if (host_plug_test_enable && !host_plug_test_triggered)
 			queue_delayed_work(mtk_musb->st_wq,
 						&host_plug_test_work, 0);
+		usb_clk_state = OFF_TO_ON;
 	} else {
 		/* for device no disconnect interrupt */
 		spin_lock_irqsave(&mtk_musb->lock, flags);
@@ -710,11 +717,21 @@ static void musb_host_work(struct work_struct *data)
 		mtk_musb->xceiv->otg->state = OTG_STATE_B_IDLE;
 		/* switch to DEV state after turn off VBUS */
 		MUSB_DEV_MODE(mtk_musb);
+
+		usb_clk_state = ON_TO_OFF;
 	}
 out:
 	DBG(0, "work end, is_host=%d\n", mtk_musb->is_host);
 	up(&mtk_musb->musb_lock);
 
+	if (usb_clk_state == ON_TO_OFF) {
+		/* clock on -> of: clk_prepare_cnt -2 */
+		usb_prepare_clock(false);
+		usb_prepare_clock(false);
+	} else if (usb_clk_state == NO_CHANGE) {
+		/* clock no change : clk_prepare_cnt -1 */
+		usb_prepare_clock(false);
+	}
 }
 
 static irqreturn_t mt_usb_ext_iddig_int(int irq, void *dev_id)
@@ -853,7 +870,7 @@ static void bypass_disc_circuit(int act)
 {
 	u32 val;
 
-	usb_enable_clock(true);
+	usb_prepare_enable_clock(true);
 
 	val = USBPHY_READ32(0x18);
 	DBG(0, "val<0x%x>\n", val);
@@ -869,14 +886,14 @@ static void bypass_disc_circuit(int act)
 	val = USBPHY_READ32(0x18);
 	DBG(0, "val<0x%x>\n", val);
 
-	usb_enable_clock(false);
+	usb_prepare_enable_clock(false);
 }
 
 static void disc_threshold_to_max(int act)
 {
 	u32 val;
 
-	usb_enable_clock(true);
+	usb_prepare_enable_clock(true);
 
 	val = USBPHY_READ32(0x18);
 	DBG(0, "val<0x%x>\n", val);
@@ -892,7 +909,7 @@ static void disc_threshold_to_max(int act)
 	val = USBPHY_READ32(0x18);
 	DBG(0, "val<0x%x>\n", val);
 
-	usb_enable_clock(false);
+	usb_prepare_enable_clock(false);
 }
 
 static int option;

@@ -28,6 +28,7 @@
 #ifdef CONFIG_OF
 #include <linux/of_address.h>
 #endif
+#include <mt-plat/aee.h>
 
 #define FRA (48)
 #define PARA (28)
@@ -36,6 +37,15 @@
 bool usb_enable_clock(bool enable)
 {
 	return true;
+}
+
+bool usb_prepare_clock(bool enable)
+{
+	return true;
+}
+
+void usb_prepare_enable_clock(bool enable)
+{
 }
 
 void usb_phy_poweron(void)
@@ -128,6 +138,66 @@ int usb2jtag_usb_init(void)
 bool in_uart_mode;
 #endif
 
+void usb_prepare_enable_clock(bool enable)
+{
+	if (enable) {
+		usb_prepare_clock(true);
+		usb_enable_clock(true);
+	} else {
+		usb_enable_clock(false);
+		usb_prepare_clock(false);
+	}
+}
+
+DEFINE_MUTEX(prepare_lock);
+static atomic_t clk_prepare_cnt = ATOMIC_INIT(0);
+
+bool usb_prepare_clock(bool enable)
+{
+	int before_cnt = atomic_read(&clk_prepare_cnt);
+
+	mutex_lock(&prepare_lock);
+
+	if (IS_ERR_OR_NULL(musb_clk) ||
+			IS_ERR_OR_NULL(musb_clk_top_sel) ||
+			IS_ERR_OR_NULL(musb_clk_univpll3_d4)) {
+		DBG(0, "clk not ready\n");
+		mutex_unlock(&prepare_lock);
+		return 0;
+	}
+
+	if (enable) {
+
+		if (clk_prepare(musb_clk_top_sel)) {
+			DBG(0, "musb_clk_top_sel prepare fail\n");
+		} else {
+			if (clk_set_parent(musb_clk_top_sel,
+						musb_clk_univpll3_d4))
+				DBG(0, "musb_clk_top_sel set_parent fail\n");
+		}
+		if (clk_prepare(musb_clk))
+			DBG(0, "musb_clk prepare fail\n");
+
+		atomic_inc(&clk_prepare_cnt);
+	} else {
+
+		clk_unprepare(musb_clk_top_sel);
+		clk_unprepare(musb_clk);
+
+		atomic_dec(&clk_prepare_cnt);
+	}
+
+	mutex_unlock(&prepare_lock);
+
+	DBG(1, "enable(%d), usb prepare_cnt, before(%d), after(%d)\n",
+		enable, before_cnt, atomic_read(&clk_prepare_cnt));
+
+	if (atomic_read(&clk_prepare_cnt) < 0)
+		aee_kernel_warning("usb20", "usb clock prepare_cnt error\n");
+
+	return 1;
+}
+
 static DEFINE_SPINLOCK(musb_reg_clock_lock);
 
 bool usb_enable_clock(bool enable)
@@ -135,7 +205,6 @@ bool usb_enable_clock(bool enable)
 	static int count;
 	static int real_enable = 0, real_disable;
 	static int virt_enable = 0, virt_disable;
-	int res = -1;
 	unsigned long flags;
 
 	DBG(1, "enable(%d),count(%d),<%d,%d,%d,%d>\n",
@@ -144,38 +213,49 @@ bool usb_enable_clock(bool enable)
 
 	spin_lock_irqsave(&musb_reg_clock_lock, flags);
 
+	if (unlikely(atomic_read(&clk_prepare_cnt) <= 0)) {
+		DBG_LIMIT(1, "clock not prepare");
+		goto exit;
+	}
+
 	if (enable && count == 0) {
+		if (clk_enable(musb_clk_top_sel)) {
+			DBG(0, "musb_clk_top_sel enable fail\n");
+			goto exit;
+		}
+
+		if (clk_enable(musb_clk)) {
+			DBG(0, "musb_clk enable fail\n");
+			clk_disable(musb_clk_top_sel);
+			goto exit;
+		}
+
 		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 		real_enable++;
 
-#ifdef CONFIG_MTK_CLKMGR
-		res = enable_clock(MT_CG_PERI_USB0, "PERI_USB");
-#else
-		res = clk_enable(musb_clk);
-#endif
 	} else if (!enable && count == 1) {
-		real_disable++;
-#ifdef CONFIG_MTK_CLKMGR
-		res = disable_clock(MT_CG_PERI_USB0, "PERI_USB");
-#else
-		res = 0;
 		clk_disable(musb_clk);
-#endif
+		clk_disable(musb_clk_top_sel);
+
 		usb_hal_dpidle_request(USB_DPIDLE_ALLOWED);
+		real_disable++;
 	}
 
-	if (enable) {
-		virt_enable++;
+	if (enable)
 		count++;
-	} else {
-		virt_disable++;
+	else
 		count = (count == 0) ? 0 : (count - 1);
-	}
+
+exit:
+	if (enable)
+		virt_enable++;
+	else
+		virt_disable++;
 
 	spin_unlock_irqrestore(&musb_reg_clock_lock, flags);
 
-	DBG(1, "enable(%d),count(%d),res(%d),<%d,%d,%d,%d>\n",
-	    enable, count, res, virt_enable, virt_disable,
+	DBG(1, "enable(%d),count(%d), <%d,%d,%d,%d>\n",
+	    enable, count, virt_enable, virt_disable,
 	    real_enable, real_disable);
 	return 1;
 }
@@ -269,7 +349,6 @@ void usb_phy_switch_to_uart(void)
 		return;
 	}
 
-	usb_enable_clock(true);
 	udelay(50);
 
 	/* RG_USB20_BC11_SW_EN 0x11F4_0818[23] = 1'b0 */
@@ -309,8 +388,6 @@ void usb_phy_switch_to_uart(void)
 	/* Set RG_USB20_DM_100K_EN to 1 */
 	USBPHY_SET32(0x20, (0x1 << 17));
 
-	usb_enable_clock(false);
-
 	/* GPIO Selection */
 	val = readl(ap_gpio_base);
 	writel(val & (~(GPIO_SEL_MASK)), ap_gpio_base);
@@ -329,8 +406,6 @@ void usb_phy_switch_to_usb(void)
 	val = readl(ap_gpio_base);
 	writel(val & (~(GPIO_SEL_MASK)), ap_gpio_base);
 
-	usb_enable_clock(true);
-	udelay(50);
 	/* clear force_uart_en */
 	USBPHY_CLR32(0x68, (0x1 << 26));
 
@@ -339,11 +414,7 @@ void usb_phy_switch_to_usb(void)
 
 	in_uart_mode = false;
 
-	usb_enable_clock(false);
-
 	usb_phy_poweron();
-	/* disable the USB clock turned on in usb_phy_poweron() */
-	usb_enable_clock(false);
 }
 #endif
 
@@ -399,9 +470,6 @@ void usb_phy_poweron(void)
 		return;
 	}
 #endif
-	/* enable USB MAC clock. */
-	usb_enable_clock(true);
-
 	/* wait 50 usec for PHY3.3v/1.8v stable. */
 	udelay(50);
 
@@ -529,15 +597,7 @@ static void usb_phy_savecurrent_internal(void)
 
 void usb_phy_savecurrent(void)
 {
-
-
 	usb_phy_savecurrent_internal();
-
-
-	/* 4 14. turn off internal 48Mhz PLL. */
-	usb_enable_clock(false);
-
-
 	DBG(0, "usb save current success\n");
 }
 
@@ -552,8 +612,6 @@ void usb_phy_recover(void)
 		return;
 	}
 #endif
-	/* turn on USB reference clock. */
-	usb_enable_clock(true);
 
 	/* wait 50 usec. */
 	udelay(50);
@@ -648,17 +706,7 @@ void usb_phy_recover(void)
 /* BC1.2 */
 void Charger_Detect_Init(void)
 {
-	unsigned long flags;
-	int do_lock = 0;
-
-	if (mtk_musb) {
-		spin_lock_irqsave(&mtk_musb->lock, flags);
-		do_lock = 1;
-	} else
-		DBG(0, "mtk_musb is NULL\n");
-
-	/* turn on USB reference clock. */
-	usb_enable_clock(true);
+	usb_prepare_enable_clock(true);
 
 	/* wait 50 usec. */
 	udelay(50);
@@ -666,38 +714,21 @@ void Charger_Detect_Init(void)
 	/* RG_USB20_BC11_SW_EN = 1'b1 */
 	USBPHY_SET32(0x18, (0x1 << 23));
 
-	/* turn off USB reference clock. */
-	usb_enable_clock(false);
+	usb_prepare_enable_clock(false);
 
-	if (do_lock)
-		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 	DBG(0, "Charger_Detect_Init\n");
 }
 
 void Charger_Detect_Release(void)
 {
-	unsigned long flags;
-	int do_lock = 0;
-
-	if (mtk_musb) {
-		spin_lock_irqsave(&mtk_musb->lock, flags);
-		do_lock = 1;
-	} else
-		DBG(0, "mtk_musb is NULL\n");
-
-	/* turn on USB reference clock. */
-	usb_enable_clock(true);
+	usb_prepare_enable_clock(true);
 
 	/* RG_USB20_BC11_SW_EN = 1'b0 */
 	USBPHY_CLR32(0x18, (0x1 << 23));
 
 	udelay(1);
 
-	/* 4 14. turn off internal 48Mhz PLL. */
-	usb_enable_clock(false);
-
-	if (do_lock)
-		spin_unlock_irqrestore(&mtk_musb->lock, flags);
+	usb_prepare_enable_clock(false);
 
 	DBG(0, "Charger_Detect_Release\n");
 }

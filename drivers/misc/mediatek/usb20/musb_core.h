@@ -258,6 +258,11 @@ struct musb_platform_ops {
 
 	int (*adjust_channel_params)(struct dma_channel *channel,
 		u16 packet_sz, u8 *mode, dma_addr_t *dma_addr, u32 *len);
+
+	void (*enable_clk)(struct musb *musb);
+	void (*disable_clk)(struct musb *musb);
+	void (*prepare_clk)(struct musb *musb);
+	void (*unprepare_clk)(struct musb *musb);
 };
 
 /*
@@ -619,6 +624,30 @@ static inline int musb_platform_exit(struct musb *musb)
 		return -EINVAL;
 
 	return musb->ops->exit(musb);
+}
+
+static inline void musb_platform_enable_clk(struct musb *musb)
+{
+	if (musb->ops->enable_clk)
+		musb->ops->enable_clk(musb);
+}
+
+static inline void musb_platform_disable_clk(struct musb *musb)
+{
+	if (musb->ops->disable_clk)
+		musb->ops->disable_clk(musb);
+}
+
+static inline void musb_platform_prepare_clk(struct musb *musb)
+{
+	if (musb->ops->prepare_clk)
+		musb->ops->prepare_clk(musb);
+}
+
+static inline void musb_platform_unprepare_clk(struct musb *musb)
+{
+	if (musb->ops->unprepare_clk)
+		musb->ops->unprepare_clk(musb);
 }
 
 /* #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0) */

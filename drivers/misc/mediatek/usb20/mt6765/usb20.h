@@ -44,6 +44,13 @@ enum CABLE_MODE {
 	CABLE_MODE_MAX
 };
 
+
+enum USB_CLK_STATE {
+	NO_CHANGE = 0,
+	ON_TO_OFF,
+	OFF_TO_ON,
+};
+
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 enum PORT_MODE {
 	PORT_MODE_USB = 0,
@@ -62,6 +69,9 @@ extern u8 USB_PHY_Read_Register8(u8 addr);
 #endif
 
 extern struct clk *musb_clk;
+extern struct clk *musb_clk_top_sel;
+extern struct clk *musb_clk_univpll3_d4;
+
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 
 #define RG_GPIO_SELECT (0x6E0)
@@ -85,5 +95,7 @@ extern enum charger_type mt_get_charger_type(void);
 void set_usb_phy_mode(int mode);
 #ifdef CONFIG_USB_MTK_OTG
 extern bool usb20_check_vbus_on(void);
+extern bool usb_prepare_clock(bool enable);
+extern void usb_prepare_enable_clock(bool enable);
 #endif
 #endif
