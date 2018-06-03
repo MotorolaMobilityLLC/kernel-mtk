@@ -966,6 +966,7 @@
 		mdp_wrot0 = <&mdp_wrot0>;
 		mdp_tdshp0 = <&mdp_tdshp0>;
 		mm_mutex = <&disp_mutex>;
+		disp_ovl0 = <&disp_ovl0>;
 		sram_share_cnt = <1>;
 		sram_share_engine = <8>;
 		sram_share_event = <480>;
@@ -1844,10 +1845,12 @@
 		clock-names = "MDP_TDSHP";
 	};
 
-	disp_ovl0@1400a000 {
+	disp_ovl0: disp_ovl0@1400a000 {
 		compatible = "mediatek,disp_ovl0";
 		reg = <0 0x1400a000 0 0x1000>;
 		interrupts = <GIC_SPI 201 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config CLK_MM_DISP_OVL0>;
+		clock-names = "DISP_OVL0";
 	};
 
 	disp_rdma0@1400b000 {

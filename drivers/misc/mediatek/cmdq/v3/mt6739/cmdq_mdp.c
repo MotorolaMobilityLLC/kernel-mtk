@@ -46,6 +46,7 @@ struct CmdqMdpModuleClock {
 	struct clk *clk_MDP_WDMA;
 	struct clk *clk_MDP_WROT0;
 	struct clk *clk_MDP_TDSHP;
+	struct clk *clk_DISP_OVL0;
 };
 static struct CmdqMdpModuleClock gCmdqMdpModuleClock;
 #define IMP_ENABLE_MDP_HW_CLOCK(FN_NAME, HW_NAME)	\
@@ -66,6 +67,7 @@ IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ1, MDP_RSZ1);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_WDMA, MDP_WDMA);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT0, MDP_WROT0);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_TDSHP0, MDP_TDSHP);
+IMP_ENABLE_MDP_HW_CLOCK(DISP_OVL0, DISP_OVL0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP, CAM_MDP);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA0, MDP_RDMA0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ0, MDP_RSZ0);
@@ -468,6 +470,8 @@ void cmdq_mdp_init_module_clk(void)
 					  &gCmdqMdpModuleClock.clk_MDP_WROT0);
 	cmdq_dev_get_module_clock_by_name("mdp_tdshp0", "MDP_TDSHP",
 					  &gCmdqMdpModuleClock.clk_MDP_TDSHP);
+	cmdq_dev_get_module_clock_by_name("disp_ovl0", "DISP_OVL0",
+					  &gCmdqMdpModuleClock.clk_DISP_OVL0);
 }
 /* MDP engine dump */
 void cmdq_mdp_dump_rsz(const unsigned long base, const char *label)
@@ -937,6 +941,25 @@ void testcase_clkmgr_mdp(void)
 #endif
 }
 
+static void cmdq_mdp_enable_common_clock(bool enable)
+{
+#ifdef CMDQ_PWR_AWARE
+	if (enable) {
+		/* Use SMI clock API */
+		smi_bus_enable(SMI_LARB_MMSYS0, "MDP");
+
+		/* reset ovl engine to avoid
+		 * ovl eof event always set and block bus
+		 */
+		cmdq_mdp_enable_clock_DISP_OVL0(true);
+		cmdq_mdp_enable_clock_DISP_OVL0(false);
+	} else {
+		/* disable, reverse the sequence */
+		smi_bus_disable(SMI_LARB_MMSYS0, "MDP");
+	}
+#endif	/* CMDQ_PWR_AWARE */
+}
+
 void cmdq_mdp_platform_function_setting(void)
 {
 	struct cmdqMDPFuncStruct *pFunc = cmdq_mdp_get_func();
@@ -966,4 +989,5 @@ void cmdq_mdp_platform_function_setting(void)
 	pFunc->parseErrModByEngFlag = cmdq_mdp_parse_error_module;
 	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits;
 	pFunc->testcaseClkmgrMdp = testcase_clkmgr_mdp;
+	pFunc->mdpEnableCommonClock = cmdq_mdp_enable_common_clock;
 }
