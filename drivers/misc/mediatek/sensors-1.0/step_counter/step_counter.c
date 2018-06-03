@@ -119,7 +119,7 @@ static struct step_c_context *step_c_context_alloc_object(void)
 		STEP_C_PR_ERR("Alloc step_c object error!\n");
 		return NULL;
 	}
-	atomic_set(&obj->delay, 200);	/*5Hz */
+	atomic_set(&obj->delay, 2000);	/*0.5Hz */
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, step_c_work_func);
 	init_timer(&obj->timer);
