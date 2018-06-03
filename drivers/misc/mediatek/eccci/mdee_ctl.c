@@ -57,13 +57,15 @@ void mdee_bootup_timeout_handler(struct md_ee *mdee)
 	int md_id = mdee->md_id;
 	struct ccci_mem_layout *mem_layout = ccci_md_get_mem(mdee->md_obj);
 
-	CCCI_NORMAL_LOG(md_id, KERN, "Dump MD image memory\n");
-	ccci_mem_dump(md_id, (void *)mem_layout->md_region_vir, MD_IMG_DUMP_SIZE);
-	CCCI_NORMAL_LOG(md_id, KERN, "Dump MD layout struct\n");
-	ccci_mem_dump(md_id, mem_layout, sizeof(struct ccci_mem_layout));
-	CCCI_NORMAL_LOG(md_id, KERN, "Dump queue 0 & 1\n");
+	CCCI_MEM_LOG_TAG(md_id, KERN, "Dump MD image memory\n");
+	ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP,
+		(void *)mem_layout->md_region_vir, MD_IMG_DUMP_SIZE);
+	CCCI_MEM_LOG_TAG(md_id, KERN, "Dump MD layout struct\n");
+	ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP,
+		mem_layout, sizeof(struct ccci_mem_layout));
+	CCCI_MEM_LOG_TAG(md_id, KERN, "Dump queue 0 & 1\n");
 	ccci_md_dump_info(mdee->md_obj, (DUMP_FLAG_QUEUE_0_1 | DUMP_MD_BOOTUP_STATUS), NULL, 0);
-	CCCI_NORMAL_LOG(md_id, KERN, "Dump MD ee boot failed info\n");
+	CCCI_MEM_LOG_TAG(md_id, KERN, "Dump MD ee boot failed info\n");
 	mdee_dump_ee_info(mdee, MDEE_DUMP_LEVEL_BOOT_FAIL, 0);
 }
 
