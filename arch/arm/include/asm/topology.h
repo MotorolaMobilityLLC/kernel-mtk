@@ -17,6 +17,7 @@ struct cputopo_arm {
 extern struct cputopo_arm cpu_topology[NR_CPUS];
 extern unsigned long arch_get_max_cpu_capacity(int);
 extern unsigned long arch_get_cur_cpu_capacity(int);
+extern unsigned long cpufreq_scale_max_freq_capacity(int cpu);
 
 #define topology_physical_package_id(cpu)	(cpu_topology[cpu].socket_id)
 #define topology_core_id(cpu)		(cpu_topology[cpu].core_id)

@@ -932,6 +932,14 @@ enum cpu_idle_type {
 #define SCHED_CAPACITY_SHIFT	10
 #define SCHED_CAPACITY_SCALE	(1L << SCHED_CAPACITY_SHIFT)
 
+struct sched_capacity_reqs {
+	unsigned long cfs;
+	unsigned long rt;
+	unsigned long dl;
+
+	unsigned long total;
+};
+
 /*
  * Wake-queues are lists of tasks with a pending wakeup, whose
  * callers have already marked the task as woken internally,
@@ -3394,12 +3402,9 @@ extern inline struct task_struct *task_of(struct sched_entity *se);
 extern inline int throttled_lb_pair(struct task_group *tg,
 		int src_cpu, int dest_cpu);
 extern int task_hot(struct task_struct *p, struct lb_env *env);
-extern unsigned long capacity_curr_of(int cpu);
 
 /* for EAS */
 extern int calc_util_delta(struct energy_env *eenv, int cpu);
-extern unsigned long cpu_util(int cpu);
-extern unsigned long __cpu_util(int cpu, int delta);
 extern unsigned long __get_cpu_usage(int cpu, int delta);
 extern int calc_usage_delta(struct energy_env *eenv, int cpu);
 
