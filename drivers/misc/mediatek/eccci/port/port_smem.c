@@ -34,7 +34,7 @@ static enum hrtimer_restart smem_tx_timer_func(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
-void collect_ccb_info(int md_id, struct ccci_smem_port *smem_port)
+static void collect_ccb_info(int md_id, struct ccci_smem_port *smem_port)
 {
 	unsigned int i, j, len, curr_size;
 	struct ccci_smem_region *prev, *curr;
@@ -119,6 +119,8 @@ int port_smem_rx_poll(struct port_t *port, unsigned int user_data)
 
 	if (smem_port->type != TYPE_CCB)
 		return -EFAULT;
+	if ((smem_port->addr_phy == 0) || (smem_port->length == 0))
+		return -EFAULT;
 	CCCI_DEBUG_LOG(md_id, TAG, "before wait event, bitmask=%x\n", user_data);
 	ret = wait_event_interruptible(smem_port->rx_wq, smem_port->wakeup & user_data);
 	spin_lock_irqsave(&smem_port->write_lock, flags);
@@ -148,6 +150,8 @@ int port_smem_rx_wakeup(struct port_t *port)
 		return -EFAULT;
 
 	if (smem_port->type != TYPE_CCB)
+		return -EFAULT;
+	if ((smem_port->addr_phy == 0) || (smem_port->length == 0))
 		return -EFAULT;
 	spin_lock_irqsave(&smem_port->write_lock, flags);
 	smem_port->wakeup = 0xFFFFFFFF;
@@ -190,7 +194,12 @@ long port_ccb_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 	struct ccci_smem_region *ccb_ctl = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_RAW_CCB_CTRL);
 	struct ccb_ctrl_info ctrl_info;
 	struct port_t *s_port;
-	struct ccci_smem_port *smem_port;
+	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
+
+	if (ccb_ctl == NULL) {
+		CCCI_ERROR_LOG(md_id, TAG, "ccb ctrl is NULL!\n");
+		return -1;
+	}
 
 	/*
 	 * all users share this ccb ctrl region, and port CCCI_SMEM_CH's initailization is special,
@@ -274,7 +283,7 @@ long port_smem_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 	long ret = 0;
 	int md_id = port->md_id;
 	unsigned int data;
-	struct ccci_smem_port *smem_port;
+	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
 	unsigned char *ptr;
 	struct ccci_ccb_debug debug_in, debug_out;
 	struct ccci_smem_region *ccb_dhl = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_CCB_DHL);
@@ -286,6 +295,10 @@ long port_smem_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 		smp_mb();
 		break;
 	case CCCI_IOC_GET_CCB_DEBUG_VAL:
+		if ((smem_port->addr_phy == 0) || (smem_port->length == 0)) {
+			ret = -EFAULT;
+			break;
+		}
 		if (copy_from_user(&debug_in, (void __user *)arg, sizeof(struct ccci_ccb_debug))) {
 			CCCI_ERROR_LOG(md_id, TAG, "set user_id fail: copy_from_user fail!\n");
 		} else {
@@ -322,6 +335,10 @@ long port_smem_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 		break;
 	case CCCI_IOC_CCB_CTRL_OFFSET:
 		CCCI_REPEAT_LOG(md_id, TAG, "rx_ch who invoke CCCI_IOC_CCB_CTRL_OFFSET:%d\n", port->rx_ch);
+		if ((smem_port->addr_phy == 0) || (smem_port->length == 0)) {
+			ret = -EFAULT;
+			break;
+		}
 
 		smem_port = (struct ccci_smem_port *)port->private_data;
 		ret = put_user((unsigned int)smem_port->ccb_ctrl_offset,
@@ -389,6 +406,9 @@ static int smem_dev_mmap(struct file *fp, struct vm_area_struct *vma)
 	int len, ret;
 	unsigned long pfn;
 	struct ccci_smem_region *ccb_ctl = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_RAW_CCB_CTRL);
+
+	if ((smem_port->addr_phy == 0) || (smem_port->length == 0))
+		return -EFAULT;
 
 	switch (port->rx_ch) {
 	case CCCI_CCB_CTRL:
@@ -478,10 +498,6 @@ int port_smem_init(struct port_t *port)
 	struct ccci_smem_port *smem_port;
 	struct ccci_smem_region *smem_region = ccci_md_get_smem_by_user_id(md_id, port->minor);
 
-	if (!smem_region) {
-		CCCI_ERROR_LOG(md_id, CHAR, "smem port %d not available\n", port->minor);
-		return -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
-	}
 	/*Set SMEM MINOR base*/
 	port->minor += CCCI_SMEM_MINOR_BASE;
 	if (port->flags & PORT_F_WITH_CHAR_NODE) {
