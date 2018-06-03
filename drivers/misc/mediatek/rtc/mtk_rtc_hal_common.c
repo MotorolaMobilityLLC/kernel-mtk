@@ -180,6 +180,7 @@ void hal_rtc_get_tick_time(struct rtc_time *tm)
 	rtc_get_tick(tm);
 	bbpu = rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD;
 	rtc_write(RTC_BBPU, bbpu);
+	rtc_write_trigger();
 	if (rtc_read(RTC_INT_CNT) < tm->tm_cnt) {	/* SEC has carried */
 		rtc_get_tick(tm);
 	}
