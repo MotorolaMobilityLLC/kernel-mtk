@@ -180,6 +180,9 @@ config MACH_MT6771
 	select MTK_SYS_CIRQ
 	select FAST_CIRQ_CLONE_FLUSH
 	select MTK_SYSTRACKER_V2
+	select ARM_CRYPTO
+	select CRYPTO_SHA2_ARM_CE
+	select CRYPTO_AES_ARM_CE
 	help
 	  This enables support for MediaTek MT6771
 	  Support for aarch64 Architecture
