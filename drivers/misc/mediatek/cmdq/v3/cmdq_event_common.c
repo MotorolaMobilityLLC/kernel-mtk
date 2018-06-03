@@ -34,7 +34,7 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_MDP_COLOR_SOF, mdp_color_sof)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_MVW_SOF, mdp_mvw_sof)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_CROP_SOF, mdp_crop_sof)
-	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR0_SOF, mdp_ccorr0_sof)
+	DECLAR_EVENT(CMDQ_EVENT_MDP_AAL_SOF, mdp_aal_sof)
 
 	/* Display start frame */
 	DECLAR_EVENT(CMDQ_EVENT_DISP_OVL0_SOF, disp_ovl0_sof)
@@ -100,7 +100,6 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_MDP_WROT1_R_EOF, mdp_wrot1_read_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_COLOR_EOF, mdp_color_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_CROP_EOF, mdp_crop_frame_done)
-	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR0_FRAME_DONE, mdp_ccorr0_frame_done)
 
 	/* Display frame done */
 	DECLAR_EVENT(CMDQ_EVENT_DISP_OVL0_EOF, disp_ovl0_frame_done)
@@ -338,7 +337,7 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_DIP_CQ_THREAD11_EOF,
 		dip_cq_thread11_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_DIP_CQ_THREAD12_EOF,
-	dip_cq_thread12_frame_done)
+		dip_cq_thread12_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_DIP_CQ_THREAD13_EOF,
 		dip_cq_thread13_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_DIP_CQ_THREAD14_EOF,
@@ -440,7 +439,28 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_DISP_DBI0_SOF, disp_dbi0_sof)
 	DECLAR_EVENT(CMDQ_EVENT_DISP_DBI0_EOF, disp_dbi0_frame_done)
 
-	/* 3887 New Events */
+	/* 6771 New Event */
+	DECLAR_EVENT(CMDQ_EVENT_SPE_B_FRAME_DONE, spe_b_frame_done)
+
+	/* 6775 New Event */
+	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR_SOF, mdp_ccorr_sof)
+	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR_FRAME_DONE, mdp_ccorr_frame_done)
+	DECLAR_EVENT(CMDQ_EVENT_MDP_AAL_FRAME_DONE, mdp_aal_frame_done)
+	DECLAR_EVENT(CMDQ_EVENT_WPE_B_FRAME_DONE, wpe_b_frame_done)
+	DECLAR_EVENT(CMDQ_EVENT_MFB_DONE, mfb_done)
+	DECLAR_EVENT(CMDQ_EVENT_OCC_DONE, occ_done)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_1_0, ipu_done_1_0)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_1_1, ipu_done_1_1)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_1_2, ipu_done_1_2)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_1_3, ipu_done_1_3)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_2_0, ipu_done_2_0)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_2_1, ipu_done_2_1)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_2_2, ipu_done_2_2)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_2_3, ipu_done_2_3)
+
+	/* 6765 */
+	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR0_SOF, mdp_ccorr0_sof)
+	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR0_FRAME_DONE, mdp_ccorr0_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_IMG_DL_RELAY_SOF, img_dl_relay_sof)
 
 	/* Keep this at the end of HW events */
@@ -542,7 +562,8 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_SYNC_RESOURCE_WROT0, sw_token)
 	DECLAR_EVENT(CMDQ_SYNC_RESOURCE_WROT1, sw_token)
 
-	/* Event for CMDQ delay implement
+	/*
+	 * Event for CMDQ delay implement
 	 * Plz sync CMDQ_SYNC_TOKEN_DELAY_THR(id) in cmdq_core source file.
 	 */
 	DECLAR_EVENT(CMDQ_SYNC_TOKEN_TIMER, sw_token)
