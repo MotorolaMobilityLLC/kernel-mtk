@@ -15,9 +15,11 @@ subdir-ccflags-y += \
 ccflags-y += -D CREATE_NODE_DYNAMIC=1
 
 ifeq ($(CONFIG_MTK_TC1_FEATURE), y)
-	ccflags-y += -D CFG_TC1_FEATURE=1
-else
-	ccflags-y += -D CFG_TC1_FEATURE=0
+    ccflags-y += -DCFG_USE_AOSP_TETHERING_NAME
+endif
+
+ifeq ($(CONFIG_MTK_TC10_FEATURE), y)
+    ccflags-y += -DCFG_USE_AOSP_TETHERING_NAME
 endif
 
 obj-$(CONFIG_MTK_COMBO_WIFI) += wmt_chrdev_wifi.o

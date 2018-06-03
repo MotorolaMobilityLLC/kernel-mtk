@@ -211,8 +211,8 @@ const UINT_32 mtk_cipher_suites[] = {
 /*********************************************************/
 
 /* NIC interface name */
-#define NIC_INF_NAME    "wlan%d"
-#if CFG_TC1_FEATURE
+#define NIC_INF_NAME    "wlan%d"	/* interface name */
+#if defined(CFG_USE_AOSP_TETHERING_NAME)
 #define NIC_INF_NAME_IN_AP_MODE  "legacy%d"
 #endif
 
@@ -1764,7 +1764,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(prWdev->wiphy);
 	kalMemZero(prGlueInfo, sizeof(GLUE_INFO_T));
 	/* 4 <3.1> Create net device */
-#if CFG_TC1_FEATURE
+#if defined(CFG_USE_AOSP_TETHERING_NAME)
 	if (wlan_if_changed)
 		prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME_IN_AP_MODE,
 							   NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);

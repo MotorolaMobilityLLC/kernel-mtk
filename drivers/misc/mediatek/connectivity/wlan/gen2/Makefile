@@ -60,7 +60,8 @@ else
     ccflags-y += -I$(srctree)/drivers/misc/mediatek/tc1_interface/pmt
 endif
     ccflags-y += -DCFG_TC1_FEATURE=1
-	ccflags-y += -DCFG_SUPPORT_CFG_FILE=1
+    ccflags-y += -DCFG_SUPPORT_CFG_FILE=1
+    ccflags-y += -DCFG_USE_AOSP_TETHERING_NAME
 else
     ccflags-y += -DCFG_TC1_FEATURE=0
 endif
