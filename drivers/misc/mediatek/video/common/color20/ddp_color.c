@@ -2186,6 +2186,11 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 {
 	unsigned int i = 0;
 
+	if (addr == 0) {
+		COLOR_ERR("color_is_reg_addr_valid, addr is NULL\n");
+		return 0;
+	}
+
 	if ((addr & 0x3) != 0) {
 		COLOR_ERR("color_is_reg_addr_valid, addr is not 4-byte aligned!\n");
 		return 0;
