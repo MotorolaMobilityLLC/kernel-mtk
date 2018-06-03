@@ -39,8 +39,8 @@
 #include <mtk_spm_misc.h>
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
-static volatile void __iomem *mtk_cpuidle_aee_phys_addr;
-static volatile void __iomem *mtk_cpuidle_aee_virt_addr;
+static void __iomem *mtk_cpuidle_aee_phys_addr;
+static void __iomem *mtk_cpuidle_aee_virt_addr;
 #endif
 
 #if MTK_CPUIDLE_TIME_PROFILING
