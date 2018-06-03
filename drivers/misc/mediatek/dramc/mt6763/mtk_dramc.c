@@ -103,7 +103,9 @@ struct regulator *_reg_VCORE;
 struct regulator *_reg_VDRAM1;
 struct regulator *_reg_VDRAM2;
 #endif
-
+#ifdef MIX_MODE
+static unsigned int cbt_mode_rank[2];
+#endif
 #define DRAMC_RSV_TAG "[DRAMC_RSV]"
 #define dramc_rsv_aee_warn(string, args...) do {\
 	pr_err("[ERR]"string, ##args); \
@@ -359,6 +361,8 @@ static tx_result dramc_tx_tracking(int channel)
 	unsigned int dqsosc_inc, dqsosc_dec;
 	unsigned int pi_orig[3][2][2]; /* [shuffle][rank][byte] */
 	unsigned int pi_new[3][2][2]; /* [shuffle][rank][byte] */
+	unsigned int dqm_orig[3][2][2];
+	unsigned int dqm_new[3][2][2];
 	unsigned int pi_adjust;
 	unsigned int mr1819_base[2][2];
 	unsigned int mr1819_cur[2];
@@ -410,6 +414,14 @@ static tx_result dramc_tx_tracking(int channel)
 	if (CBT_MODE == BYTE_MODE) {
 		mr1819_base[0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
 		mr1819_base[1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
+#ifdef MIX_MODE
+	} else if (CBT_MODE == R0_NORMAL_R1_BYTE) {
+		mr1819_base[0][1] = mr1819_base[0][0];
+		mr1819_base[1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
+	} else if (CBT_MODE == R0_BYTE_R1_NORMAL) {
+		mr1819_base[0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
+		mr1819_base[1][1] = mr1819_base[1][0];
+#endif
 	} else { /* normal mode */
 		mr1819_base[0][1] = mr1819_base[0][0];
 		mr1819_base[1][1] = mr1819_base[1][0];
@@ -418,10 +430,17 @@ static tx_result dramc_tx_tracking(int channel)
 	/* pi_orig[shuffle][rank][byte] */
 	for (shu_index = 0; shu_index < 3; shu_index++) {
 		shu_offset_dramc = 0x600 * shu_index;
-		pi_orig[shu_index][0][0] = (Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc) >> 8) & 0x3F;
-		pi_orig[shu_index][0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc) >> 0) & 0x3F;
-		pi_orig[shu_index][1][0] = (Reg_Readl(DRAMC_AO_SHU1RK1_PI + shu_offset_dramc) >> 8) & 0x3F;
-		pi_orig[shu_index][1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_PI + shu_offset_dramc) >> 0) & 0x3F;
+		temp = Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc);
+		pi_orig[shu_index][0][0] = (temp >> 8) & 0x3F;
+		pi_orig[shu_index][0][1] = (temp >> 0) & 0x3F;
+		dqm_orig[shu_index][0][0] = (temp >> 24) & 0x3F;
+		dqm_orig[shu_index][0][1] = (temp >> 16) & 0x3F;
+
+		temp = Reg_Readl(DRAMC_AO_SHU1RK1_PI + shu_offset_dramc);
+		pi_orig[shu_index][1][0] = (temp >> 8) & 0x3F;
+		pi_orig[shu_index][1][1] = (temp >> 0) & 0x3F;
+		dqm_orig[shu_index][1][0] = (temp >> 24) & 0x3F;
+		dqm_orig[shu_index][1][1] = (temp >> 16) & 0x3F;
 	}
 
 	temp = Reg_Readl(DRAMC_AO_SPCMDCTRL);
@@ -432,7 +451,11 @@ static tx_result dramc_tx_tracking(int channel)
 		if (res != TX_DONE)
 			return res;
 		mr1819_cur[0] = (mr18_cur & 0xFF) | ((mr19_cur & 0xFF) << 8);
+#ifdef MIX_MODE
+		if (cbt_mode_rank[rank] == RANK_BYTE)
+#else
 		if (CBT_MODE == BYTE_MODE)
+#endif
 			mr1819_cur[1] = (mr18_cur >> 8) | (mr19_cur & 0xFF00);
 		else /* Normal Mode */
 			mr1819_cur[1] = mr1819_cur[0];
@@ -449,6 +472,8 @@ static tx_result dramc_tx_tracking(int channel)
 						return TX_FAIL_VARIATION;
 					pi_new[shu_index][rank][byte] =
 						(pi_orig[shu_index][rank][byte] - pi_adj) & 0x3F;
+					dqm_new[shu_index][rank][byte] =
+						(dqm_orig[shu_index][rank][byte] - pi_adj) & 0x3F;
 #if 0 /* print message for debugging */
 pr_err("[DRAMC], CH%d RK%d B%d, shu=%d base=%X cur=%X delta=%d INC=%d PI=0x%x Adj=%d newPI=0x%x\n",
 channel, rank, byte, shu_index, mr1819_base[rank][byte], mr1819_cur[byte],
@@ -466,6 +491,8 @@ pi_new[shu_index][rank][byte]);
 						return TX_FAIL_VARIATION;
 					pi_new[shu_index][rank][byte] =
 						(pi_orig[shu_index][rank][byte] + pi_adj) & 0x3F;
+					dqm_new[shu_index][rank][byte] =
+						(dqm_orig[shu_index][rank][byte] + pi_adj) & 0x3F;
 #if 0 /* print message for debugging */
 pr_err("[DRAMC], CH%d RK%d B%d, shu=%d base=%X cur=%X delta=%d DEC=%d PI=0x%x Adj=%d newPI=0x%x\n",
 channel, rank, byte, shu_index, mr1819_base[rank][byte], mr1819_cur[byte],
@@ -485,16 +512,16 @@ pi_new[shu_index][rank][byte]);
 	for (shu_index = 0; shu_index < 3; shu_index++) {
 		shu_offset_ddrphy = 0x500 * shu_index;
 		temp = Reg_Readl(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][0][0] << 16)
+		Reg_Sync_Writel(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy, temp | (dqm_new[shu_index][0][0] << 16)
 										| (pi_new[shu_index][0][0] << 8));
 		temp = Reg_Readl(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][0][1] << 16)
+		Reg_Sync_Writel(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy, temp | (dqm_new[shu_index][0][1] << 16)
 										| (pi_new[shu_index][0][1] << 8));
 		temp = Reg_Readl(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][1][0] << 16)
+		Reg_Sync_Writel(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy, temp | (dqm_new[shu_index][1][0] << 16)
 										| (pi_new[shu_index][1][0] << 8));
 		temp = Reg_Readl(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][1][1] << 16)
+		Reg_Sync_Writel(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy, temp | (dqm_new[shu_index][1][1] << 16)
 										| (pi_new[shu_index][1][1] << 8));
 	}
 
@@ -1423,8 +1450,35 @@ static int dram_probe(struct platform_device *pdev)
 	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
 	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
 
+#ifdef MIX_MODE
+	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_01C) & 0xF000) >> 12;
+#else
 	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
+#endif
 	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
+#ifdef MIX_MODE
+	switch (CBT_MODE) {
+	case NORMAL_MODE:
+		cbt_mode_rank[0] = RANK_NORMAL;
+		cbt_mode_rank[1] = RANK_NORMAL;
+		break;
+	case BYTE_MODE:
+		cbt_mode_rank[0] = RANK_BYTE;
+		cbt_mode_rank[1] = RANK_BYTE;
+		break;
+	case R0_NORMAL_R1_BYTE:
+		cbt_mode_rank[0] = RANK_NORMAL;
+		cbt_mode_rank[1] = RANK_BYTE;
+		break;
+	case R0_BYTE_R1_NORMAL:
+		cbt_mode_rank[0] = RANK_BYTE;
+		cbt_mode_rank[1] = RANK_NORMAL;
+		break;
+	default:
+		pr_err("[DRAMC] CBT mode error!!!\n");
+		break;
+	}
+#endif
 
 	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
 	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
@@ -1474,27 +1528,29 @@ static unsigned char low_freq_counter;
 
 void zqcs_timer_callback(unsigned long data)
 {
+#ifdef SW_ZQCS
 	unsigned int Response, TimeCnt, CHCounter, RankCounter;
 	void __iomem *u4rg_24;
 	void __iomem *u4rg_38;
 	void __iomem *u4rg_5C;
 	void __iomem *u4rg_60;
 	void __iomem *u4rg_88;
+#endif
+#if defined(SW_ZQCS) || defined(SW_TX_TRACKING)
 	unsigned long save_flags;
+#endif
 #ifdef SW_TX_TRACKING
 	tx_result res[2];
 #endif
 
+#ifdef SW_ZQCS
 	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
 		pr_warn("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
-		mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
 		local_irq_restore(save_flags);
-		return;
-	}
-
+	} else {
   /* CH0_Rank0 --> CH1Rank0 */
-	for (RankCounter = 0; RankCounter < 2; RankCounter++) {
+	for (RankCounter = 0; RankCounter < dram_rank_num; RankCounter++) {
 		for (CHCounter = 0; CHCounter < 2; CHCounter++) {
 			TimeCnt = 100;
 
@@ -1573,23 +1629,48 @@ void zqcs_timer_callback(unsigned long data)
 			udelay(1);
 		}
 	}
+	if (release_dram_ctrl() != 0)
+		pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
+	local_irq_restore(save_flags);
+}
+#endif
 
 #ifdef SW_TX_TRACKING
 	res[0] = TX_DONE;
 	res[1] = TX_DONE;
+	udelay(3);
 	if ((get_dram_data_rate() == 3200) || (low_freq_counter >= 10))	{
-		res[0] = dramc_tx_tracking(0);
-		res[1] = dramc_tx_tracking(1);
+		local_irq_save(save_flags);
+		if (acquire_dram_ctrl() != 0) {
+			local_irq_restore(save_flags);
+			pr_warn("[DRAMC] TX 0 can NOT get SPM HW SEMAPHORE!\n");
+		} else {
+			res[0] = dramc_tx_tracking(0);
+			if (release_dram_ctrl() != 0)
+				pr_warn("[DRAMC] TX 0 release SPM HW SEMAPHORE fail!\n");
+			local_irq_restore(save_flags);
+		}
+
+	udelay(3);
+
+		local_irq_save(save_flags);
+		if (acquire_dram_ctrl() != 0) {
+			local_irq_restore(save_flags);
+			pr_warn("[DRAMC] TX 1 can NOT get SPM HW SEMAPHORE!\n");
+		} else {
+			res[1] = dramc_tx_tracking(1);
+			if (release_dram_ctrl() != 0)
+				pr_warn("[DRAMC] TX 1 release SPM HW SEMAPHORE fail!\n");
+			local_irq_restore(save_flags);
+		}
+
 		low_freq_counter = 0;
 	} else {
 		low_freq_counter++;
 		}
 #endif
 
-	if (release_dram_ctrl() != 0)
-		pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
-	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
-	local_irq_restore(save_flags);
+mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
 
 #ifdef SW_TX_TRACKING
 	if (res[0] != TX_DONE)

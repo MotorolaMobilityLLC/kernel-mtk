@@ -47,8 +47,10 @@
 #define PATTERN1 0x5A5A5A5A
 #define PATTERN2 0xA5A5A5A5
 
+#define SW_ZQCS
 #define SW_TX_TRACKING
 #ifdef SW_TX_TRACKING
+/* #define MIX_MODE */
 #define DRAMC_AO_RKCFG		(dramc_ao_chx_base+0x034)
 #define DRAMC_AO_PD_CTRL	(dramc_ao_chx_base+0x038)
 #define DRAMC_AO_MRS		(dramc_ao_chx_base+0x05C)
@@ -239,11 +241,24 @@ enum DDRTYPE {
 	TYPE_LPDDR4X
 };
 
+#ifdef MIX_MODE
+#define PDEF_DRAMC0_CHA_REG_01C	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x001c))
+enum DRAM_MODE {
+	NORMAL_MODE = 0,
+	BYTE_MODE,
+	R0_NORMAL_R1_BYTE,
+	R0_BYTE_R1_NORMAL
+};
+enum RANK_MODE {
+	RANK_NORMAL = 0,
+	RANK_BYTE
+};
+#else
 enum DRAM_MODE {
 	NORMAL_MODE = 0,
 	BYTE_MODE
 };
-
+#endif
 enum {
 	DRAM_OK = 0,
 	DRAM_FAIL
