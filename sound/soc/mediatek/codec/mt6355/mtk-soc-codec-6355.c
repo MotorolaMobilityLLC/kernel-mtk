@@ -3954,9 +3954,8 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			SetDCcoupleNP(AUDIO_MIC_BIAS0, mAudio_Analog_Mic1_mode);
 			/* micbias0 DCCopuleNP */
 
-			/* Ana_Set_Reg(AUDENC_ANA_CON9, 0x0201, 0xff09); //Enable MICBIAS0, MISBIAS0 = 1P9V */
-			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0021, 0x00ff);
-			/* Enable MICBIAS0 , MISBIAS0 = 1P9V */
+			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0121, 0x01ff);
+			/* Enable MICBIAS0 MICBIAS2, MISBIAS0/MICBIAS2 = 1P9V */
 			Ana_Set_Reg(AUDENC_ANA_CON9, 0x0005, 0x0007);
 			/* DMIC enable */
 
@@ -4023,7 +4022,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 
 			/* Ana_Set_Reg(AUDENC_ANA_CON9, (MicbiasRef|0x0000), 0xff09); */
 			/* MICBIAS0(1.7v), powen down, restore to micbias set by accdet */
-			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x00ff);
+			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x01ff);
 			/* MICBIAS0(1.7v), Disable MICBIAS0 */
 			if (GetDLStatus() == false) {
 				Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);
