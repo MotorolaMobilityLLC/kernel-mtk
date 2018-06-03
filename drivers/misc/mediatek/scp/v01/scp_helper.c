@@ -1599,7 +1599,7 @@ static int __init scp_init(void)
 							scp_fw_size);
 
 
-	scp_loader_base_virt = (phys_addr_t)ioremap_wc(scp_loader_base_phys, scp_loader_size);
+	scp_loader_base_virt = (phys_addr_t)(size_t)ioremap_wc(scp_loader_base_phys, scp_loader_size);
 	pr_debug("[SCP]loader image mem:virt:0x%llx - 0x%llx (0x%x)\n",
 		(phys_addr_t)scp_loader_base_virt,
 		(phys_addr_t)scp_loader_base_virt + (phys_addr_t)scp_loader_size,

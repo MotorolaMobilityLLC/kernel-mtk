@@ -245,7 +245,7 @@ int scp_sys_full_reset(void)
 
 	/*copy loader to scp sram*/
 	pr_debug("[SCP]copy to sram\n");
-	memcpy_to_scp(SCP_TCM, (const void *)scp_loader_base_virt, scp_loader_size);
+	memcpy_to_scp(SCP_TCM, (const void *)(size_t)scp_loader_base_virt, scp_loader_size);
 	/*set info to sram*/
 	pr_debug("[SCP]set firmware info to sram\n");
 	writel(scp_fw_base_phys, SCP_TCM + 0x408);
