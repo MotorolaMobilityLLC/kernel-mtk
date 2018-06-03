@@ -99,6 +99,16 @@ struct cooler_data {
 
 static struct cooler_data g_clData[RESERVED_TZS];
 static int g_img_max; /* Number of image sensors in this platform */
+
+/**
+ * If curr_temp >= polling_trip_temp1, use interval
+ * else if cur_temp >= polling_trip_temp2 && curr_temp < polling_trip_temp1, use interval*polling_factor1
+ * else, use interval*polling_factor2
+ */
+static int polling_trip_temp1 = 40000;
+static int polling_trip_temp2 = 20000;
+static int polling_factor1 = 5;
+static int polling_factor2 = 10;
 /*=============================================================
  * Local function
  *=============================================================
@@ -173,7 +183,37 @@ static const struct file_operations mtk_imgs_log_fops = {
 	.write = mtk_imgs_write_log,
 	.release = single_release,
 };
+/*=============================================================
+ * Image sensor on/off status
+ *=============================================================
+ */
+static int sensor_on_off_bitmap; /* 0: power off, 1: power on*/
+enum sensor_state {power_off = 0, power_on = 1};
 
+static void set_image_sensor_state(int device, enum sensor_state status)
+{
+	int mask = 1;
+
+	mask = mask << device;
+
+	if (status == power_on)
+		sensor_on_off_bitmap |= mask;
+	else
+		sensor_on_off_bitmap &= ~(mask);
+
+}
+/* It returns a bitmap to indicate power on/off status of all image
+ * sensors. Each bit binds to physical image sensor except bit 0.
+ * Bit 0 binds the pseudo image sensor reporting the max temperature
+ * of all physical image sensors, so bit 0 is always 0.
+ * For example:
+ * If bit 1 is 1, it means the image sensor 1 is power on. Otherwise,
+ * it is power off.
+ */
+int get_image_sensor_state(void)
+{
+	return sensor_on_off_bitmap;
+}
 /*=============================================================
  * Thermal Zone
  *=============================================================
@@ -214,7 +254,7 @@ static int mtk_imgs_get_max_temp(void)
 static int mtk_imgs_get_temp(struct thermal_zone_device *thermal, int *t)
 {
 	int curr_temp, index, ret;
-	MUINT8 valid;
+	MUINT8 invalid;
 
 	index = mtk_imgs_get_index(thermal);
 
@@ -224,19 +264,60 @@ static int mtk_imgs_get_temp(struct thermal_zone_device *thermal, int *t)
 		 */
 		curr_temp = mtk_imgs_get_max_temp();
 	} else {
-		ret = Get_Camera_Temperature(1 << (index - 1), &valid, &curr_temp);
+		ret = Get_Camera_Temperature(1 << (index - 1), &invalid, &curr_temp);
 
 		curr_temp *= 1000;
 
-		if (!valid) {
-			mtk_imgs_dprintk("Invalid temp %d in camera device %d, val %d\n",
-				curr_temp, 1 << (index - 1), valid);
-			/* Report the current temperature as previous one */
-			curr_temp = g_tsData[index].cTemp;
+		if ((invalid & SENSOR_TEMPERATURE_UNKNOWN_STATUS) != 0) {
+			mtk_imgs_dprintk("Invalid 0x%x: Image sensor %d status unknown\n",
+				invalid,  1 << (index - 1));
+			/* In sensor init state
+			 * report the invalid temp
+			 */
+			curr_temp = -127000;
+
+			set_image_sensor_state(index, power_on);
+		} else if ((invalid & SENSOR_TEMPERATURE_CANNOT_SEARCH_SENSOR) != 0) {
+			mtk_imgs_dprintk("Invalid 0x%x: Cannot serach the image sensor %d\n",
+				invalid,  1 << (index - 1));
+			/* The sensor doesn't exist in this project,
+			 * Assign the invalid temp, and stop polling
+			 */
+			curr_temp = -127000;
+			g_tsData[index].cTemp = curr_temp;
+			*t = curr_temp;
+			thermal->polling_delay = 0;
+
+			set_image_sensor_state(index, power_off);
+			return 0;
+		} else if ((invalid & SENSOR_TEMPERATURE_NOT_POWER_ON) != 0) {
+			mtk_imgs_dprintk("Invalid 0x%x: Image sensor %d not power on\n",
+				invalid,  1 << (index - 1));
+			/* The camera doesn't power on
+			 * report the invalid temp
+			 */
+			curr_temp = -127000;
+			set_image_sensor_state(index, power_off);
+		} else if ((invalid & SENSOR_TEMPERATURE_NOT_POWER_ON) == 0) {
+			if ((invalid & SENSOR_TEMPERATURE_NOT_SUPPORT_THERMAL) != 0) {
+				mtk_imgs_dprintk("Invalid 0x%x: Image sensor %d doesn't support power meter\n",
+					invalid,  1 << (index - 1));
+				/* The camera doesn't support power meter
+				 * report the invalid temp
+				 */
+				curr_temp = -127000;
+			} else if ((invalid & SENSOR_TEMPERATURE_VALID) == 0) {
+				mtk_imgs_dprintk("Invalid 0x%x: Image sensor %d reports invalid temp temporarily\n",
+					invalid,  1 << (index - 1));
+				/* Report the previous temp */
+				curr_temp = g_tsData[index].cTemp;
+			}
+
+			set_image_sensor_state(index, power_on);
 		}
 
 		if (ret != 0) {
-			mtk_imgs_dprintk("Error in the camera temp API (%d), device %d\n", ret,
+			mtk_imgs_dprintk("Error (%d): Image sensor %d\n", ret,
 				 1 << (index - 1));
 			/* Report the current temperature as previous one */
 			curr_temp = g_tsData[index].cTemp;
@@ -247,6 +328,13 @@ static int mtk_imgs_get_temp(struct thermal_zone_device *thermal, int *t)
 
 	g_tsData[index].cTemp = curr_temp;
 	*t = curr_temp;
+
+	if ((int)*t >= polling_trip_temp1)
+		thermal->polling_delay = g_tsData[index].interval;
+	else if ((int)*t < polling_trip_temp2)
+		thermal->polling_delay = g_tsData[index].interval * polling_factor2;
+	else
+		thermal->polling_delay = g_tsData[index].interval * polling_factor1;
 
 	return 0;
 }
