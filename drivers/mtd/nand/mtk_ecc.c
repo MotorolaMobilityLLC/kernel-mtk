@@ -333,6 +333,11 @@ static irqreturn_t mtk_ecc_irq(int irq, void *id)
 		op = ECC_DECODE;
 		dec = readw(ECC_REG(ecc, ECC_DECDONE));
 		if (dec & ecc->sectors) {
+			/*
+			 * Clear decode IRQ status once again to ensure that
+			 * there will be no extra IRQ.
+			 */
+			readw(ecc->regs + ECC_DECIRQ_STA);
 			ecc->sectors = 0;
 			complete(&ecc->done);
 		} else {
@@ -347,8 +352,6 @@ static irqreturn_t mtk_ecc_irq(int irq, void *id)
 			return IRQ_NONE;
 		}
 	}
-
-	writel(0, ECC_IRQ_REG(ecc, op));
 
 	return IRQ_HANDLED;
 }
@@ -586,8 +589,14 @@ void mtk_ecc_disable(struct mtk_ecc *ecc)
 
 	/* disable it */
 	mtk_ecc_wait_idle(ecc, op);
-	writew(0, ECC_IRQ_REG(ecc, op));
-	writew(ECC_OP_DISABLE, ECC_CTL_REG(ecc, op));
+	if (op == ECC_DECODE)
+		/*
+		 * Clear decode IRQ status in case there is a timeout to wait
+		 * decode IRQ.
+		 */
+		readw(ecc->regs + ECC_DECIRQ_STA);
+	writew(0, ecc->regs + ECC_IRQ_REG(op));
+	writew(ECC_OP_DISABLE, ecc->regs + ECC_CTL_REG(op));
 
 	mutex_unlock(&ecc->lock);
 }

@@ -244,7 +244,7 @@ static void sync_timeline_signal(struct sync_timeline *obj, unsigned int inc)
  * NULL in case of error.
  */
 static struct sync_pt *sync_pt_create(struct sync_timeline *obj,
-					  unsigned int value)
+				      unsigned int value)
 {
 	struct sync_pt *pt;
 
@@ -287,9 +287,7 @@ static struct sync_pt *sync_pt_create(struct sync_timeline *obj,
 
 		parent = rb_next(&pt->node);
 		list_add_tail(&pt->link,
-			      parent ?
-			      &rb_entry(parent, typeof(*pt), node)->link :
-								&obj->pt_list);
+			      parent ? &rb_entry(parent, typeof(*pt), node)->link : &obj->pt_list);
 	}
 unlock:
 	spin_unlock_irq(&obj->lock);
@@ -323,8 +321,16 @@ static int sw_sync_debugfs_open(struct inode *inode, struct file *file)
 static int sw_sync_debugfs_release(struct inode *inode, struct file *file)
 {
 	struct sync_timeline *obj = file->private_data;
+	struct sync_pt *pt, *next;
 
-	smp_wmb();
+	spin_lock_irq(&obj->lock);
+
+	list_for_each_entry_safe(pt, next, &obj->pt_list, link) {
+		fence_set_error(&pt->base, -ENOENT);
+		fence_signal_locked(&pt->base);
+	}
+
+	spin_unlock_irq(&obj->lock);
 
 	sync_timeline_put(obj);
 	return 0;
