@@ -1305,7 +1305,6 @@ bool SetHwDigitalGain(uint32 Gain, int GainType)
 
 bool SetModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribute)
 {
-	pr_debug("+%s()\n", __func__);
 	SetChipModemPcmConfig(modem_index, p_modem_pcm_attribute);
 	return true;
 }

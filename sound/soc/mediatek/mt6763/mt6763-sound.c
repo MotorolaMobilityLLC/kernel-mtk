@@ -723,8 +723,6 @@ void SetChipModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribut
 	uint32 reg_pcm2_intf_con = 0;
 	uint32 reg_pcm_intf_con1 = 0;
 
-	pr_debug("+%s()\n", __func__);
-
 	if (modem_index == MODEM_1) {
 		reg_pcm2_intf_con |= (p_modem_pcm_attribute.mTxLchRepeatSel & 0x1) << 13;
 		reg_pcm2_intf_con |= (p_modem_pcm_attribute.mVbt16kModeSel & 0x1) << 12;
@@ -757,9 +755,6 @@ void SetChipModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribut
 
 bool SetChipModemPcmEnable(int modem_index, bool modem_pcm_on)
 {
-	pr_debug("+%s(), modem_index = %d, modem_pcm_on = %d\n", __func__, modem_index,
-		 modem_pcm_on);
-
 	if (modem_index == MODEM_1) {	/* MODEM_1 use PCM2_INTF_CON (0x53C) !!! */
 		/* todo:: temp for use fifo */
 		Afe_Set_Reg(PCM2_INTF_CON, modem_pcm_on, 0x1);
@@ -1129,9 +1124,7 @@ bool EnableSideToneFilter(bool stf_on)
 	uint8_t kSideToneHalfTapNum;
 	const uint16_t *kSideToneCoefficientTable;
 	uint32 eSamplingRate = (Afe_Get_Reg(AFE_ADDA_UL_SRC_CON0) & 0x60000) >> 17;
-	uint32 eSamplingRate2 = (Afe_Get_Reg(AFE_ADDA_UL_SRC_CON0) >> 17) & 0x3;
 
-	pr_debug("+%s(), eSamplingRate = %d, eSamplingRate2=%d\n", __func__, eSamplingRate, eSamplingRate2);
 	if (eSamplingRate == Soc_Aud_ADDA_UL_SAMPLERATE_32K) {
 		kSideToneHalfTapNum = sizeof(kSideToneCoefficientTable32k) / sizeof(uint16_t);
 		kSideToneCoefficientTable = kSideToneCoefficientTable32k;
@@ -1139,7 +1132,8 @@ bool EnableSideToneFilter(bool stf_on)
 		kSideToneHalfTapNum = sizeof(kSideToneCoefficientTable16k) / sizeof(uint16_t);
 		kSideToneCoefficientTable = kSideToneCoefficientTable16k;
 	}
-	pr_debug("+%s(), stf_on = %d, kSTFCoef[0]=0x%x\n", __func__, stf_on, kSideToneCoefficientTable[0]);
+	pr_debug("+%s(), stf_on = %d, rate %u, kSTFCoef[0]=0x%x\n",
+		 __func__, stf_on, eSamplingRate, kSideToneCoefficientTable[0]);
 	AudDrv_Clk_On();
 
 	if (stf_on == false) {
@@ -1151,11 +1145,8 @@ bool EnableSideToneFilter(bool stf_on)
 				     (stf_on << 8);
 
 		Afe_Set_Reg(AFE_SIDETONE_CON1, reg_value, MASK_ALL);
-		pr_debug("%s(), AFE_SIDETONE_CON1[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON1,
-			 reg_value);
 		/* set side tone gain = 0 */
 		Afe_Set_Reg(AFE_SIDETONE_GAIN, 0, MASK_ALL);
-		pr_debug("%s(), AFE_SIDETONE_GAIN[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_GAIN, 0);
 	} else {
 		const bool bypass_stf_on = false;
 		/* using STF result & enable & set half tap num */
@@ -1170,8 +1161,6 @@ bool EnableSideToneFilter(bool stf_on)
 		const bool sel_ch2 = false;	/* using uplink ch1 as STF input */
 		uint32_t read_reg_value = Afe_Get_Reg(AFE_SIDETONE_CON0);
 		size_t coef_addr = 0;
-
-		pr_debug("%s(), AFE_SIDETONE_GAIN[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_GAIN, 0);
 
 		/* set side tone gain */
 		Afe_Set_Reg(AFE_SIDETONE_GAIN, 0, MASK_ALL);
@@ -1190,8 +1179,6 @@ bool EnableSideToneFilter(bool stf_on)
 			coef_addr	<< 16 |
 			kSideToneCoefficientTable[coef_addr];
 			Afe_Set_Reg(AFE_SIDETONE_CON0, write_reg_value, 0x39FFFFF);
-			pr_warn("%s(), AFE_SIDETONE_CON0[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON0,
-				write_reg_value);
 
 			/* wait until flag write_ready changed (means write done) */
 			for (try_cnt = 0; try_cnt < 10; try_cnt++) { /* max try 10 times */
@@ -1216,7 +1203,6 @@ bool EnableSideToneFilter(bool stf_on)
 	}
 
 	AudDrv_Clk_Off();
-	pr_debug("-%s(), stf_on = %d\n", __func__, stf_on);
 
 	return true;
 }
@@ -2354,7 +2340,6 @@ static int set_hp_impedance_ctl(bool enable)
 			SetI2SDacEnable(true);
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
-			pr_err("%s(), this should not happen\n", __func__);
 		}
 
 		/* set data mute */
