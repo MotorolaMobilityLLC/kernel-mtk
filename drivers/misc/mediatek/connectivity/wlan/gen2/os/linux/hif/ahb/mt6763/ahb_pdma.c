@@ -188,7 +188,7 @@ VOID HifPdmaInit(GL_HIF_INFO_T *HifInfo)
 		PDMA_DBG("PDMA> Initialize DMA mask fail!\n");
 	}
 
-#if 1				/* MPU Setting */
+#if 0				/* MPU Setting */
 	/* WIFI using TOP 512KB */
 	DBGLOG(INIT, INFO, "[wlan] MPU region 12, 0x%08x - 0x%08x\n", (UINT_32) gConEmiPhyBase,
 	       (UINT_32) (gConEmiPhyBase + 512 * 1024));
