@@ -46,10 +46,16 @@ void mt_power_gs_dump_dpidle(void)
 }
 EXPORT_SYMBOL(mt_power_gs_dump_dpidle);
 
+void __weak mt_power_gs_sodi_compare(void)
+{
+	pr_warn("Power_gs: %s does not implement intead of dump suspend\n", __func__);
+	mt_power_gs_dump_suspend();
+}
+
 void mt_power_gs_dump_sodi3(void)
 {
 	if (slp_chk_golden_sodi3)
-		mt_power_gs_dump_suspend();
+		mt_power_gs_sodi_compare();
 }
 EXPORT_SYMBOL(mt_power_gs_dump_sodi3);
 
