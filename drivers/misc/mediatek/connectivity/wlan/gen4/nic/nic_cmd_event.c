@@ -2990,7 +2990,7 @@ VOID nicEventDebugMsg(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 	u4Value = prEventDebugMsg->u4Value;
 	u2MsgSize = prEventDebugMsg->u2MsgSize;
 	pucMsg = prEventDebugMsg->aucMsg;
-
+#if ENABLE_HOSTPRINT
 	DBGLOG(SW4, TRACE, "DEBUG_MSG Id %u Type %u Fg 0x%x Val 0x%x Size %u\n",
 		u2DebugMsgId, ucMsgType, ucFlags, u4Value, u2MsgSize);
 
@@ -3019,6 +3019,7 @@ VOID nicEventDebugMsg(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 	} /* DEBUG_MSG_SIZE_MAX */
 	else
 		DBGLOG(SW4, INFO, "Debug msg size %u is too large.\n", u2MsgSize);
+#endif
 }
 
 VOID nicEventTdls(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
