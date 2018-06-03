@@ -1766,7 +1766,7 @@ int mtk_p2p_cfg80211_disconnect(struct wiphy *wiphy, struct net_device *dev, u16
 		if ((wiphy == NULL) || (dev == NULL))
 			break;
 
-		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_disconnect.\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_disconnect reason: %d.\n", reason_code);
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
