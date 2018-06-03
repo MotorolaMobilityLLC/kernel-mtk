@@ -131,8 +131,11 @@ bool is_clk_buf_from_pmic(void)
 
 int clk_buf_init(void)
 {
-	if (is_clkbuf_bringup())
+	if (is_clkbuf_bringup()) {
+		clk_buf_dts_map();
+		clk_buf_fs_init();
 		return 0;
+	}
 
 	if (is_clkbuf_initiated)
 		return -1;
