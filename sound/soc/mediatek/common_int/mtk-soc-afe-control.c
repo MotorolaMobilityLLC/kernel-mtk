@@ -497,25 +497,31 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	/* unsigned long flags; */
 	kal_uint32 volatile u4RegValue;
 	kal_uint32 volatile irq_mcu_en;
+	kal_uint32 volatile irq_scp_en;
 	uint32 irqIndex = 0;
 	unsigned int mcu_mask = get_mcu_irq_mask();
-	const struct Aud_RegBitsInfo *irqOnReg, *irqEnReg, *irqStatusReg, *irqMcuEnReg;
+	const struct Aud_RegBitsInfo *irqOnReg, *irqEnReg, *irqStatusReg, *irqMcuEnReg, *irqScpEnReg;
 
 	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS) & mcu_mask;
 
 	/* here is error handle , for interrupt is trigger but not status , clear all interrupt with bit 6 */
 	if (u4RegValue == 0) {
 		irqMcuEnReg = GetIRQPurposeReg(Soc_Aud_IRQ_MCU);
+		irqScpEnReg = GetIRQPurposeReg(Soc_Aud_IRQ_CM4);
 		irq_mcu_en = Afe_Get_Reg(irqMcuEnReg->reg);
-		pr_warn("%s(), [AudioWarn] u4RegValue = 0x%x, irqcount = %d, AFE_IRQ_MCU_EN = 0x%x\n",
+		irq_scp_en = Afe_Get_Reg(irqScpEnReg->reg);
+		pr_warn("%s(), [AudioWarn] u4RegValue = 0x%x, irqcount = %d, AFE_IRQ_MCU_EN = 0x%x irq_scp_en = 0x%x\n",
 			__func__,
 			u4RegValue,
 			irqcount,
-			irq_mcu_en);
+			irq_mcu_en,
+			irq_scp_en);
 
 		/* only clear IRQ which is sent to MCU */
 		irq_mcu_en &= irqMcuEnReg->mask;
+		irq_scp_en &= irqScpEnReg->mask;
 		Afe_Set_Reg(AFE_IRQ_MCU_CLR, irq_mcu_en, irq_mcu_en);
+		Afe_Set_Reg(AFE_IRQ_MCU_CLR, irq_scp_en, irq_scp_en);
 		irqcount++;
 
 		if (irqcount > AudioInterruptLimiter) {
