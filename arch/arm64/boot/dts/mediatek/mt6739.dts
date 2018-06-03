@@ -372,6 +372,10 @@
 		reg = <0 0x10005000 0 0x1000>;
 	};
 
+	accdet: accdet {
+		compatible = "mediatek,pmic-accdet";
+	};
+
 	syscfg_pctl_a: syscfg_pctl_a@10005000 {
 		compatible = "mediatek,pctl-a-syscfg", "syscon";
 		reg = <0 0x10005000 0 0x1000>;

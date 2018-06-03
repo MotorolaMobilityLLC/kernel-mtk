@@ -42,6 +42,8 @@
 #define ACCDET_INFO(format, args...)	pr_info(format, ##args)
 #define ACCDET_ERROR(format, args...)	pr_info(format, ##args)
 
+static void send_accdet_status_event(int cable_type, int status);
+
 /* for accdet_read_audio_res */
 #define RET_LT_5K				(-1)/* less than 5k ohm, return -1 */
 #define RET_GT_5K			(0)/* greater than 5k ohm, return 0 */
@@ -170,7 +172,6 @@ static struct cdev *accdet_cdev;
 static struct class *accdet_class;
 static struct device *accdet_nor_device;
 static struct input_dev *kpd_accdet_dev;
-static struct switch_dev accdet_data;
 static dev_t accdet_devno;
 
 static struct workqueue_struct *accdet_workqueue;
@@ -228,7 +229,7 @@ int accdet_read_audio_res(unsigned int res_value)
 		s_cable_type = LINE_OUT_DEVICE;
 		s_accdet_status = LINE_OUT;
 		/* update state */
-		switch_set_state((struct switch_dev *)&accdet_data, s_cable_type);
+		send_accdet_status_event(s_cable_type, 1);
 		ACCDET_INFO("[accdet_read_audio_res]update state:%d\n", s_cable_type);
 	}
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -375,6 +376,7 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	unsigned int efusevalue = 0;
 #ifdef CONFIG_FOUR_KEY_HEADSET
 	unsigned int tmp_val = 0;
+	unsigned int tmp_8bit = 0
 #endif
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
 	unsigned int moisture_eint0;
@@ -385,10 +387,14 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	if (s_4_key_efuse_flag) {
 		/* get 8bit from efuse rigister, so need extend to 12bit, shift right 2*/
 		tmp_val = pmic_Read_Efuse_HPOffset(83);
-		headset_dts_data.four_key.mid_key_four = (tmp_val & ACCDET_CALI_MASK2);/* AD */
-		headset_dts_data.four_key.voice_key_four = tmp_val & ACCDET_CALI_MASK3;/* DB,bit0,bit1 */
+		tmp_8bit = tmp_val & ACCDET_CALI_MASK0;
+		headset_dts_data.four_key.mid_key_four = tmp_8bit << 2;/* AD */
+
+		tmp_8bit = (tmp_val >> 8) & ACCDET_CALI_MASK0;
+		headset_dts_data.four_key.voice_key_four = tmp_8bit << 2;/* DB */
 		tmp_val = pmic_Read_Efuse_HPOffset(84);
-		headset_dts_data.four_key.up_key_four = (tmp_val & ACCDET_CALI_MASK4);/* BC,bit0,bit1 */
+		tmp_8bit = tmp_val & ACCDET_CALI_MASK0;
+		headset_dts_data.four_key.up_key_four = tmp_8bit << 2;/* BC */
 		headset_dts_data.four_key.down_key_four = 600;/* the max voltage */
 		ACCDET_INFO("[accdet]key thresh: mid=%d mv,voice=%d mv,up=%d mv,down=%d mv\n",
 			headset_dts_data.four_key.mid_key_four, headset_dts_data.four_key.voice_key_four,
@@ -409,7 +415,6 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	g_moisture_vdd_offset = (int)((efusevalue >> 8) & ACCDET_CALI_MASK0);
 	if (g_moisture_vdd_offset > 128)
 		g_moisture_vdd_offset -= 256;
-	g_moisture_vdd_offset = (g_moisture_vdd_offset / 2);
 	ACCDET_INFO("[moisture_vdd_efuse]efuse=0x%x, moisture_vdd_offset=%d mv\n",
 		efusevalue, g_moisture_vdd_offset);
 	/* moisture efuse offset */
@@ -417,7 +422,6 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	g_moisture_offset = (int)(efusevalue & ACCDET_CALI_MASK0);
 	if (g_moisture_offset > 128)
 		g_moisture_offset -= 256;
-	g_moisture_offset = (g_moisture_offset / 2);
 	ACCDET_INFO("[moisture_efuse]efuse=0x%x,moisture_offset=%d mv\n",
 		efusevalue, g_moisture_offset);
 #endif
@@ -427,15 +431,20 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	moisture_eint0 = (int)((efusevalue >> 8) & ACCDET_CALI_MASK0);
 	if (moisture_eint0 > 128)
 		moisture_eint0 -= 256;
-	moisture_eint0 = (moisture_eint0 / 2);
+	ACCDET_INFO("[moisture_eint0]efuse=0x%x,moisture_eint0=0x%x\n",
+		efusevalue, moisture_eint0);
 
 	efusevalue = pmic_Read_Efuse_HPOffset(85);
 	moisture_eint1 = (int)(efusevalue & ACCDET_CALI_MASK0);
 	if (moisture_eint1 > 128)
 		moisture_eint1 -= 256;
-	moisture_eint1 = (moisture_eint1 / 2);
+	ACCDET_INFO("[moisture_eint1]efuse=0x%x,moisture_eint1=0x%x\n",
+		efusevalue, moisture_eint1);
+
+	/* RG_EINT_RES = RG_EINT1_RES<<8 | RG_EINT0_RES */
 	g_moisture_eint_offset = (moisture_eint1 << 8) | moisture_eint0;
-	ACCDET_INFO("[moisture_eint_efuse]moisture_vdd_offset=%d mv\n", g_moisture_eint_offset);
+
+	ACCDET_INFO("[moisture_eint_efuse]moisture_eint_offset=%d mv\n", g_moisture_eint_offset);
 	g_moisture_vm = (2800 + g_moisture_vdd_offset) * 57000 / (57000 + (8 * g_moisture_eint_offset) + 450000)
 		+ g_moisture_offset / 2;
 	ACCDET_INFO("[moisture_vm]moisture_vm=%d mv\n", g_moisture_vm);
@@ -498,6 +507,40 @@ static int key_check(int b)
 	return NO_KEY;
 }
 #endif
+
+static void send_accdet_status_event(int cable, int status)
+{
+	switch (cable) {
+	case HEADSET_NO_MIC:
+		input_report_switch(kpd_accdet_dev, SW_HEADPHONE_INSERT, status);
+		/* when plug 4-pole out, if both AB=3 AB=0 happen,3-pole plug in will be incorrectly reported,
+		* then 3-pole plug-out is reported, if no mantory 4-pole plug-out,icon would be visible.
+		*/
+		if (status == 0)
+			input_report_switch(kpd_accdet_dev, SW_MICROPHONE_INSERT, status);
+
+		input_report_switch(kpd_accdet_dev, SW_JACK_PHYSICAL_INSERT, status);
+		input_sync(kpd_accdet_dev);
+		ACCDET_DEBUG("HEADPHONE(3-pole) %s\n", status?"PlugIn":"PlugOut");
+		break;
+	case HEADSET_MIC:
+		/* when plug 4-pole out, 3-pole plug out should also be reported for slow plug-in case */
+		if (status == 0)
+			input_report_switch(kpd_accdet_dev, SW_HEADPHONE_INSERT, status);
+		input_report_switch(kpd_accdet_dev, SW_MICROPHONE_INSERT, status);
+		input_report_switch(kpd_accdet_dev, SW_JACK_PHYSICAL_INSERT, status);
+		input_sync(kpd_accdet_dev);
+		ACCDET_DEBUG("MICROPHONE(4-pole) %s\n", status?"PlugIn":"PlugOut");
+		break;
+	case LINE_OUT_DEVICE:
+		input_report_switch(kpd_accdet_dev, SW_LINEOUT_INSERT, status);
+		input_sync(kpd_accdet_dev);
+		ACCDET_DEBUG("LineOut %s\n", status?"PlugIn":"PlugOut");
+		break;
+	default:
+		ACCDET_DEBUG("Invalid cable type\n");
+	}
+}
 
 static void send_key_event(int keycode, int flag)
 {
@@ -728,6 +771,7 @@ static inline void check_cable_type(void)
  */
 static inline void headset_plug_out(void)
 {
+	send_accdet_status_event(s_cable_type, 0);
 	s_accdet_status = PLUG_OUT;
 	s_cable_type = NO_DEVICE;
 	/* update the cable_type */
@@ -736,7 +780,6 @@ static inline void headset_plug_out(void)
 		ACCDET_INFO("[accdet]plug_out send key = %d release\n", g_cur_key);
 		g_cur_key = 0;
 	}
-	switch_set_state((struct switch_dev *)&accdet_data, s_cable_type);
 	ACCDET_DEBUG("[accdet]set state in cable_type = NO_DEVICE\n");
 }
 
@@ -936,6 +979,11 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
 		del_timer_sync(&micbias_timer);
 
+		/* need close idle, otherwise will make leakage */
+		reg_val = pmic_pwrap_read(ACCDET_CON02);
+		pmic_pwrap_write(ACCDET_CON02,
+				(reg_val&(~ACCDET_PWM_IDLE_B8_9_10)));
+
 		/* accdet_auxadc_switch(0); */
 		disable_accdet();
 		headset_plug_out();
@@ -1112,7 +1160,7 @@ static void accdet_work_callback(struct work_struct *work)
 
 	mutex_lock(&accdet_eint_irq_sync_mutex);
 	if (s_eint_accdet_sync_flag == 1)
-		switch_set_state((struct switch_dev *)&accdet_data, s_cable_type);
+		send_accdet_status_event(s_cable_type, 1);
 	else
 		ACCDET_ERROR("[accdet]Headset has plugged out don't set accdet state\n");
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -1278,7 +1326,7 @@ static int accdet_irq_handler(void)
 		pmic_pwrap_write(AUDENC_ANA_CON10, pmic_pwrap_read(AUDENC_ANA_CON10) | 0x0400);
 #endif
 		moisture = Accdet_PMIC_IMM_GetOneChannelValue(0);
-		ACCDET_DEBUG("[ACCDET]Moisture Read Auxadc] moisture =  %d\n\r", moisture);
+		ACCDET_INFO("[ACCDET]Moisture Read Auxadc] new moisture =  %d\n\r", moisture);
 
 		pmic_pwrap_write(ACCDET_CON00, pmic_pwrap_read(ACCDET_CON00) & 0xF7FF); /*set bit[11] = 0*/
 		/* disable moisture detection, set 219A bit[13] = 0*/
@@ -1316,7 +1364,7 @@ static int accdet_irq_handler(void)
 		pmic_pwrap_write(AUD_TOP_INT_STATUS0, RG_INT_STATUS_ACCDET_EINT0_B6);
 		return 1;
 	}
-	if (moisture > g_moisture_vm) {
+	if (moisture > 300) {
 		ACCDET_DEBUG("ACCDET Moisture plug in detectecd\n");
 		if (g_cur_eint_state == EINT_PIN_PLUG_OUT) {/*just for low level trigger*/
 			if (g_accdet_eint_type == IRQ_TYPE_LEVEL_HIGH)
@@ -1987,17 +2035,7 @@ static int cat_register(char *buf)
 		AUXADC_ADC5, pmic_pwrap_read(AUXADC_ADC5));
 	strncat(buf, buf_temp, strlen(buf_temp));
 
-#if 0
-	sprintf(buf_temp, "(0x%x)=0x%x, (0x%x)=0x%x, (0x%x)=0x%x\n",
-		REG_ACCDET_AD_CALI_0, pmic_pwrap_read(REG_ACCDET_AD_CALI_0),
-		REG_ACCDET_AD_CALI_1, pmic_pwrap_read(REG_ACCDET_AD_CALI_1),
-		REG_ACCDET_AD_CALI_2, pmic_pwrap_read(REG_ACCDET_AD_CALI_2));
-	strncat(buf, buf_temp, strlen(buf_temp));
 
-	sprintf(buf_temp, "efuse_offset=%d mV, cali_vol=%d mV\n",
-		g_accdet_auxadc_offset, Accdet_PMIC_IMM_GetOneChannelValue(1));
-	strncat(buf, buf_temp, strlen(buf_temp));
-#endif
 	sprintf(buf_temp, "[accdet_dts]deb0=0x%x,deb1=0x%x,deb3=0x%x,deb4=0x%x\n",
 		 accdet_cust_setting->debounce0, accdet_cust_setting->debounce1,
 		 accdet_cust_setting->debounce3, accdet_cust_setting->debounce4);
@@ -2028,9 +2066,6 @@ static ssize_t store_accdet_call_state(struct device_driver *ddri, const char *b
 		break;
 	case CALL_ACTIVE:
 		ACCDET_DEBUG("[%s]accdet call: active or hold state!\n", __func__);
-		ACCDET_DEBUG("[%s]accdet_ioctl : s_button_status=%d (state:%d)\n",
-			__func__, s_button_status, accdet_data.state);
-		/*return button_status;*/
 		break;
 	default:
 		ACCDET_DEBUG("[%s]accdet call: Invalid value=%d\n", __func__, s_call_status);
@@ -2318,17 +2353,6 @@ int mt_accdet_probe(struct platform_device *dev)
 #endif
 	ACCDET_INFO("[mt_accdet_probe]probe start..\n");
 
-	/* below register accdet as switch class */
-	accdet_data.name = "h2w";
-	accdet_data.index = 0;
-	accdet_data.state = NO_DEVICE;
-	/* create  /sys/class/switch/h2w node /sys/devices/virtual/switch/h2w */
-	ret = switch_dev_register(&accdet_data);
-	if (ret) {
-		ACCDET_ERROR("[mt_accdet_probe]switch_dev_register returned:%d!\n", ret);
-		return 1;
-	}
-
 	/* Create normal device for auido use */
 	ret = alloc_chrdev_region(&accdet_devno, 0, 1, ACCDET_DEVNAME);/* get devNo */
 	if (ret)
@@ -2365,6 +2389,11 @@ int mt_accdet_probe(struct platform_device *dev)
 	__set_bit(KEY_VOLUMEDOWN, kpd_accdet_dev->keybit);
 	__set_bit(KEY_VOLUMEUP, kpd_accdet_dev->keybit);
 	__set_bit(KEY_VOICECOMMAND, kpd_accdet_dev->keybit);
+	__set_bit(EV_SW, kpd_accdet_dev->evbit);
+	__set_bit(SW_HEADPHONE_INSERT, kpd_accdet_dev->swbit);
+	__set_bit(SW_MICROPHONE_INSERT, kpd_accdet_dev->swbit);
+	__set_bit(SW_JACK_PHYSICAL_INSERT, kpd_accdet_dev->swbit);
+	__set_bit(SW_LINEOUT_INSERT, kpd_accdet_dev->swbit);
 
 	kpd_accdet_dev->id.bustype = BUS_HOST;
 	kpd_accdet_dev->name = "ACCDET";
@@ -2454,7 +2483,6 @@ void mt_accdet_remove(void)
 	/* cancel_delayed_work(&accdet_work); */
 	destroy_workqueue(accdet_eint_workqueue);
 	destroy_workqueue(accdet_workqueue);
-	switch_dev_unregister(&accdet_data);
 	device_del(accdet_nor_device);
 	class_destroy(accdet_class);
 	cdev_del(accdet_cdev);
@@ -2489,34 +2517,6 @@ void mt_accdet_resume(void)/* wake up */
 		ACCDET_CON02, pmic_pwrap_read(ACCDET_CON02), s_pre_state_swctrl);
 #endif
 }
-#endif
-
-/*
- * add for IPO-H need update headset state when resume
- */
-#if 0
-#ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
-/* struct timer_list accdet_disable_ipoh_timer; */
-static void mt_accdet_pm_disable(unsigned long a)
-{
-	if (s_cable_type == NO_DEVICE && s_eint_accdet_sync_flag == 0) {
-		/*disable accdet*/
-		s_pre_state_swctrl = pmic_pwrap_read(ACCDET_CON02);
-		pmic_pwrap_write(ACCDET_CON02, 0);
-#ifdef CONFIG_ACCDET_EINT
-		pmic_pwrap_write(ACCDET_CON01, ACCDET_DISABLE);
-		/*disable clock*/
-		pmic_pwrap_write(TOP_CKPDN_SET, RG_ACCDET_CLK_SET);
-#endif
-#ifdef CONFIG_ACCDET_EINT_IRQ
-		pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01) & (~(ACCDET_ENABLE_B0)));
-#endif
-		ACCDET_DEBUG("[Accdet]daccdet_pm_disable: disable!\n");
-	} else {
-		ACCDET_DEBUG("[Accdet]daccdet_pm_disable: enable!\n");
-	}
-}
-#endif
 #endif
 
 void mt_accdet_pm_restore_noirq(void)
@@ -2569,12 +2569,15 @@ void mt_accdet_pm_restore_noirq(void)
 	case 0:		/* AB=0 */
 		s_cable_type = HEADSET_NO_MIC;
 		s_accdet_status = HOOK_SWITCH;
+		send_accdet_status_event(s_cable_type, 1);
 		break;
 	case 1:		/* AB=1 */
 		s_cable_type = HEADSET_MIC;
 		s_accdet_status = MIC_BIAS;
+		send_accdet_status_event(s_cable_type, 1);
 		break;
 	case 3:		/* AB=3 */
+		send_accdet_status_event(s_cable_type, 0);
 		s_cable_type = NO_DEVICE;
 		s_accdet_status = PLUG_OUT;
 		break;
@@ -2582,7 +2585,6 @@ void mt_accdet_pm_restore_noirq(void)
 		ACCDET_DEBUG("[Accdet]accdet_pm_restore_noirq:error current status:%d!\n", current_status_restore);
 		break;
 	}
-	switch_set_state((struct switch_dev *)&accdet_data, s_cable_type);
 	if (s_cable_type == NO_DEVICE) {
 		/* disable accdet */
 		s_pre_state_swctrl = pmic_pwrap_read(ACCDET_CON02);
@@ -2610,8 +2612,6 @@ long mt_accdet_unlocked_ioctl(unsigned int cmd, unsigned long arg)
 		ACCDET_DEBUG("[Accdet]accdet_ioctl : CALL_STATE=%d\n", s_call_status);
 		break;
 	case GET_BUTTON_STATUS:
-		ACCDET_DEBUG("[Accdet]accdet_ioctl : Button_Status=%d (state:%d)\n",
-			s_button_status, accdet_data.state);
 		return s_button_status;
 	default:
 		ACCDET_DEBUG("[Accdet]accdet_ioctl : default\n");
