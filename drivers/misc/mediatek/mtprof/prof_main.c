@@ -182,12 +182,14 @@ static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
 	unsigned int state;
 	int group;
 
+	/* kernel log reduction: only print delivered signals */
+	if (result != TRACE_SIGNAL_DELIVERED)
+		return;
+
 	/*
 	 * all action will cause process coredump or terminate
-	 * kernel log reduction: only print delivered signals
 	 */
-	if ((result == TRACE_SIGNAL_DELIVERED) &&
-	    sig_fatal(task, sig)) {
+	if (sig_fatal(task, sig)) {
 		signal = task->signal;
 		group = _group ||
 			(signal->flags & (SIGNAL_GROUP_EXIT | SIGNAL_GROUP_COREDUMP));
@@ -212,6 +214,7 @@ static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
 		if (unlikely(signal->flags & SIGNAL_UNKILLABLE) &&
 				!sig_kernel_only(sig))
 			return;
+
 		/*
 		 * kernel log reduction
 		 * only print process instead of all threads
@@ -220,8 +223,23 @@ static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
 			return;
 
 		state = task->state ? __ffs(task->state) + 1 : 0;
-		pr_debug("[signal][%d:%s] send death sig %d to [%d:%s:%c]\n",
+		pr_debug("[signal][%d:%s]send death sig %d to[%d:%s:%c]\n",
 			 current->pid, current->comm,
+			 sig, task->pid, task->comm,
+			 state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
+	} else if (sig_kernel_stop(sig) || sig == SIGCONT) {
+
+		/*
+		 * kernel log reduction
+		 * only print process instead of all threads
+		 */
+		if (_group && (task != task->group_leader))
+			return;
+
+		state = task->state ? __ffs(task->state) + 1 : 0;
+		pr_debug("[signal][%d:%s]send %s sig %d to[%d:%s:%c]\n",
+			 current->pid, current->comm,
+			 (sig == SIGCONT) ? "continue" : "stop",
 			 sig, task->pid, task->comm,
 			 state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
 	}
