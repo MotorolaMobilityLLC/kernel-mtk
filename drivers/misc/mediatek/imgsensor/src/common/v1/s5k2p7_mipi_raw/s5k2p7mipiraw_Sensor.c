@@ -50,6 +50,7 @@
 #include "s5k2p7mipiraw_Sensor.h"
 
 
+#undef ORINGNAL_VERSION
 
 
 

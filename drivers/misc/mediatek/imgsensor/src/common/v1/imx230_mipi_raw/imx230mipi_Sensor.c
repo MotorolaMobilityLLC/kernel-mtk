@@ -3675,13 +3675,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_SET_ESHUTTER:
-		set_shutter((kal_uint32) *feature_data);
+		set_shutter((kal_uint32) (*feature_data));
 		break;
 	case SENSOR_FEATURE_SET_NIGHTMODE:
-		night_mode((BOOL) *feature_data);
+		night_mode((BOOL) (*feature_data));
 		break;
 	case SENSOR_FEATURE_SET_GAIN:
-		set_gain((UINT16) *feature_data);
+		set_gain((UINT16) (*feature_data));
 		break;
 	case SENSOR_FEATURE_SET_FLASHLIGHT:
 		break;
