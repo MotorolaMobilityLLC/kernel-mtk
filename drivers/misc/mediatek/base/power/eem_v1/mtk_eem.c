@@ -5299,7 +5299,6 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 	unsigned int index = 0;
 	unsigned int newVolt = 0;
 	struct eem_ipi_data eem_data;
-	int ipi_ret = 0;
 	unsigned long flags;
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -5342,7 +5341,8 @@ static ssize_t eem_vcore_volt_proc_write(struct file *file,
 		memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 		eem_data.u.data.arg[0] = index;
 		eem_data.u.data.arg[1] = newVolt;
-		ipi_ret = eem_to_sspm(IPI_EEM_VCORE_UPDATE_PROC_WRITE, &eem_data);
+		/* ret 0 */
+		ret = eem_to_sspm(IPI_EEM_VCORE_UPDATE_PROC_WRITE, &eem_data);
 		spin_unlock_irqrestore(&eem_spinlock, flags);
 	} else {
 		ret = -EINVAL;
