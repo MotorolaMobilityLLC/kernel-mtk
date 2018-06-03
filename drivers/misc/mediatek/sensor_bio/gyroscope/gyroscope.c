@@ -307,14 +307,14 @@ static ssize_t gyro_store_enable_nodata(struct device *dev, struct device_attrib
 			err = cxt->gyro_ctl.enable_nodata(1);
 			if (err) {
 				GYRO_PR_ERR("gyro turn on power err = %d\n", err);
-				return -1;
+				goto err_out;
 			}
 			GYRO_LOG("gyro turn on power done\n");
 		} else {
 			err = cxt->gyro_ctl.enable_nodata(0);
 			if (err) {
 				GYRO_PR_ERR("gyro turn off power err = %d\n", err);
-				return -1;
+				goto err_out;
 			}
 			GYRO_LOG("gyro turn off power done\n");
 		}
@@ -408,11 +408,12 @@ static ssize_t gyro_store_batch(struct device *dev, struct device_attribute *att
 		err = cxt->gyro_ctl.batch(0, cxt->delay_ns, 0);
 	if (err) {
 		GYRO_PR_ERR("gyro set batch(ODR) err %d\n", err);
-		return -1;
+		goto err_out;
 	}
 #else
 	err = gyro_enable_and_batch();
 #endif
+err_out:
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 	return err;
 }
@@ -444,7 +445,7 @@ static ssize_t gyro_store_flush(struct device *dev, struct device_attribute *att
 	if (err < 0)
 		GYRO_INFO("gyro enable flush err %d\n", err);
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t gyro_show_flush(struct device *dev,

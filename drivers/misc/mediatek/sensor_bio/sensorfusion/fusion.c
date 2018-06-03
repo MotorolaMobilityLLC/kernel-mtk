@@ -257,7 +257,7 @@ static ssize_t fusion_store_flush(struct device *dev, struct device_attribute *a
 	if (err < 0)
 		FUSION_PR_ERR("fusion enable flush err %d\n", err);
 	mutex_unlock(&fusion_context_obj->fusion_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t fusion_show_flush(struct device *dev, struct device_attribute *attr, char *buf)
