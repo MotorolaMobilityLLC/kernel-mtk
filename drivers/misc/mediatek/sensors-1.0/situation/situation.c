@@ -74,6 +74,9 @@ static int handle_to_index(int handle)
 	case ID_TILT_DETECTOR:
 		index = tilt_detector;
 		break;
+	case ID_FLAT:
+		index = flat;
+		break;
 	default:
 		index = -1;
 		pr_err("handle_to_index invalid handle:%d,index:%d\n",
