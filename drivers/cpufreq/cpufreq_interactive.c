@@ -364,8 +364,6 @@ static void cpufreq_interactive_timer(unsigned long data)
 	unsigned int index;
 	unsigned long flags;
 	u64 max_fvtime;
-	int j;
-	unsigned int max_t_freq = 0;
 
 #ifdef CPUDVFS_POWER_MODE
 	/* default(normal), low power, just make, performance(sports) */
@@ -480,24 +478,13 @@ static void cpufreq_interactive_timer(unsigned long data)
 
 	if (pcpu->target_freq == new_freq &&
 			pcpu->target_freq <= pcpu->policy->cur) {
-		max_t_freq = 0;
-		for_each_cpu(j, pcpu->policy->cpus) {
-			struct cpufreq_interactive_cpuinfo *pjcpu;
-
-			pjcpu = &per_cpu(cpuinfo, j);
-			max_t_freq = max(max_t_freq, pjcpu->target_freq);
-		}
-
-		if (max_t_freq != pcpu->policy->cur)
-			goto pass_t;
-
 		trace_cpufreq_interactive_already(
 			data, cpu_load, pcpu->target_freq,
 			pcpu->policy->cur, new_freq);
 		spin_unlock_irqrestore(&pcpu->target_freq_lock, flags);
 		goto rearm;
 	}
-pass_t:
+
 	trace_cpufreq_interactive_target(data, cpu_load, pcpu->target_freq,
 					 pcpu->policy->cur, new_freq);
 
