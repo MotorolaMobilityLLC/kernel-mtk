@@ -143,7 +143,7 @@ int msdc_rsp[] = {
 		WARN_ON(dlen > 0xFFFFFFUL); \
 		((struct bd_t *)bd)->blkpad = blkpad; \
 		((struct bd_t *)bd)->dwpad = dwpad; \
-		((struct bd_t *)bd)->ptrh4 = (u32)((dptr >> 32) & 0xF); \
+		((struct bd_t *)bd)->ptrh4 = upper_32_bits(dptr) & 0xF; \
 		((struct bd_t *)bd)->ptr = (u32)(dptr & 0xFFFFFFFFUL); \
 		((struct bd_t *)bd)->buflen = dlen; \
 	} while (0)
@@ -2420,7 +2420,7 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 			dma_len, (u64)dma_address);
 
 		MSDC_SET_FIELD(MSDC_DMA_SA_HIGH, MSDC_DMA_SURR_ADDR_HIGH4BIT,
-			(u32) ((dma_address >> 32) & 0xF));
+			upper_32_bits(dma_address) & 0xF);
 		MSDC_WRITE32(MSDC_DMA_SA, (u32) (dma_address & 0xFFFFFFFFUL));
 
 		MSDC_SET_FIELD(MSDC_DMA_CTRL, MSDC_DMA_CTRL_LASTBUF, 1);
@@ -2497,7 +2497,7 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 		MSDC_SET_FIELD(MSDC_DMA_CTRL, MSDC_DMA_CTRL_MODE, 1);
 
 		MSDC_SET_FIELD(MSDC_DMA_SA_HIGH, MSDC_DMA_SURR_ADDR_HIGH4BIT,
-			(u32) ((dma->gpd_addr >> 32) & 0xF));
+			upper_32_bits(dma->gpd_addr) & 0xF);
 		MSDC_WRITE32(MSDC_DMA_SA, (u32) (dma->gpd_addr & 0xFFFFFFFFUL));
 		break;
 
@@ -4765,14 +4765,13 @@ static void msdc_init_gpd_bd(struct msdc_host *host, struct msdc_dma *dma)
 	/* init the 2 gpd */
 	memset(gpd, 0, sizeof(struct gpd_t) * 2);
 	dma_addr = dma->gpd_addr + sizeof(struct gpd_t);
-	gpd->nexth4 = (u32) ((dma_addr >> 32) & 0xF);
+	gpd->nexth4 = upper_32_bits(dma_addr) & 0xF;
 	gpd->next = (u32) (dma_addr & 0xFFFFFFFFUL);
 
 	/* gpd->intr = 0; */
 	gpd->bdp = 1;           /* hwo, cs, bd pointer */
-	/* gpd->ptr  = (void*)virt_to_phys(bd); */
 	dma_addr = dma->bd_addr;
-	gpd->ptrh4 = (u32) ((dma_addr >> 32) & 0xF); /* physical address */
+	gpd->ptrh4 = upper_32_bits(dma_addr) & 0xF;
 	gpd->ptr = (u32) (dma_addr & 0xFFFFFFFFUL); /* physical address */
 
 	memset(bd, 0, sizeof(struct bd_t) * bdlen);
@@ -4780,7 +4779,7 @@ static void msdc_init_gpd_bd(struct msdc_host *host, struct msdc_dma *dma)
 	while (ptr != bd) {
 		prev = ptr - 1;
 		dma_addr = dma->bd_addr + sizeof(struct bd_t) * (ptr - bd);
-		prev->nexth4 = (u32) ((dma_addr >> 32) & 0xF);
+		prev->nexth4 = upper_32_bits(dma_addr) & 0xF;
 		prev->next = (u32) (dma_addr & 0xFFFFFFFFUL);
 		ptr = prev;
 	}
