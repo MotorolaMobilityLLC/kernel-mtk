@@ -714,6 +714,7 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, struct sched_entity *se)
 static int select_idle_sibling(struct task_struct *p, int cpu);
 static inline int find_best_idle_cpu(struct task_struct *p, bool prefer_idle);
 static int select_max_spare_capacity_cpu(struct task_struct *p, int target);
+static int select_prefer_idle_cpu(struct task_struct *p);
 static unsigned long task_h_load(struct task_struct *p);
 
 /*
@@ -5924,8 +5925,6 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 {
 	int target_max_cap = INT_MAX;
 	int target_cpu = task_cpu(p);
-	unsigned long min_util;
-	unsigned long new_util;
 	int i, cpu;
 	bool is_tiny = false;
 	int nrg_diff = 0;
@@ -5933,7 +5932,18 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 	struct cpumask cluster_cpus;
 	int max_cap_cpu = 0;
 	int best_cpu = 0;
-	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	bool prefer_idle = schedtune_prefer_idle(p) > 0;
+#else
+	bool prefer_idle = 0;
+#endif
+
+	/* prefer idle for stune */
+	if (prefer_idle) {
+		cpu = select_prefer_idle_cpu(p);
+		if (cpu > 0)
+			return cpu;
+	}
 
 	/*
 	 * Find group with sufficient capacity. We only get here if no cpu is
@@ -5962,51 +5972,8 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 		}
 	}
 
-	if (task_util(p) < TINY_TASK_THRESHOLD)
-		is_tiny = true;
-
 	/* Find cpu with sufficient capacity */
-	min_util = boosted_task_util(p);
-
-	if (!is_tiny)
-		target_cpu = select_max_spare_capacity_cpu(p, best_cpu);
-	else
-		for_each_cpu_and(i, tsk_cpus_allow, &cluster_cpus) {
-
-			if (!cpu_online(i))
-				continue;
-
-			/*
-			 * p's blocked utilization is still accounted for on prev_cpu
-			 * so prev_cpu will receive a negative bias due to the double
-			 * accounting. However, the blocked utilization may be zero.
-			 */
-			new_util = cpu_util(i) + task_util(p);
-
-			/*
-			 * Ensure minimum capacity to grant the required boost.
-			 * The target CPU can be already at a capacity level higher
-			 * than the one required to boost the task.
-			 */
-			new_util = max(min_util, new_util);
-
-#ifdef CONFIG_MTK_SCHED_INTEROP
-			if (cpu_rq(i)->rt.rt_nr_running && likely(!is_rt_throttle(i)))
-				continue;
-#endif
-			if (new_util > capacity_orig_of(i))
-				continue;
-
-			if (new_util < capacity_curr_of(i)) {
-				target_cpu = i;
-				if (cpu_rq(i)->nr_running)
-					break;
-			}
-
-			/* cpu has capacity at higher OPP, keep it as fallback */
-			if (target_cpu == task_cpu(p))
-				target_cpu = i;
-		}
+	target_cpu = select_max_spare_capacity_cpu(p, best_cpu);
 
 	/* no need energy calculation if the same domain */
 	if (is_intra_domain(task_cpu(p), target_cpu) && target_cpu != l_plus_cpu)
@@ -9901,4 +9868,53 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 		return max_spare_cpu;
 	else
 		return task_cpu(p);
+}
+
+static
+int select_prefer_idle_cpu(struct task_struct *p)
+{
+	unsigned long min_util = boosted_task_util(p);
+	int best_idle_cpu = -1;
+	int iter_cpu;
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	bool boosted = schedtune_task_boost(p) > 0;
+#else
+	bool boosted = 0;
+#endif
+	int fallback = -1;
+	unsigned long new_util;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
+
+	for (iter_cpu = 0; iter_cpu < nr_cpu_ids; iter_cpu++) {
+		/*
+		 * Iterate from higher cpus for boosted tasks.
+		 */
+		int i = boosted ? nr_cpu_ids - iter_cpu - 1 : iter_cpu;
+
+		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allow))
+			continue;
+
+		new_util = cpu_util(i) + min_util;
+
+		if (new_util > capacity_orig_of(i))
+			continue;
+
+		/*
+		 * Unconditionally favoring tasks that prefer idle cpus to
+		 * improve latency.
+		 */
+		if (idle_cpu(i)) {
+			if (best_idle_cpu < 0) {
+				if (i != l_plus_cpu) {
+					best_idle_cpu = i;
+					break;
+				}
+			}
+			if (fallback < 0)
+				fallback = i;
+		}
+	}
+
+
+	return (best_idle_cpu > 0) ? best_idle_cpu : fallback;
 }
