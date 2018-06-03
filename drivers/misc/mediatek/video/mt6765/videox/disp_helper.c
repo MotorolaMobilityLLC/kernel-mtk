@@ -414,7 +414,7 @@ void disp_helper_option_init(void) /* SHANG: Need modify */
 
 	/* OVL SBCH */
 #ifndef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
-	disp_helper_set_option(DISP_OPT_OVL_SBCH, 1);
+	disp_helper_set_option(DISP_OPT_OVL_SBCH, 0);
 #endif
 }
 
