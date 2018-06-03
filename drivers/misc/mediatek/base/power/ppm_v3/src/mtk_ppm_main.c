@@ -35,7 +35,7 @@
 /*==============================================================*/
 #define LOG_BUF_SIZE		(128)
 #define LOG_CHECK_INTERVAL	(500)/* ms */
-#define LOG_MAX_CNT		(15) /* max log cnt within a check interval */
+#define LOG_MAX_CNT		(5) /* max log cnt within a check interval */
 #define LOG_MAX_DIFF_INTERVAL	(100)/* ms */
 
 /*==============================================================*/
@@ -548,7 +548,7 @@ end:
 
 void ppm_game_mode_change_cb(int is_game_mode)
 {
-	is_in_game = is_game_mode;
+	is_in_game = 0;
 }
 
 static void ppm_main_log_print(unsigned int policy_mask,
