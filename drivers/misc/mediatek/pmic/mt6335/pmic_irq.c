@@ -410,15 +410,19 @@ void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
 {
 	PMICLOG("[general_oc_int_handler] int name=%s\n", int_name);
 	switch (intNo) {
+	case INT_VSIM1_OC:
+	case INT_VSIM2_OC:
+		/* Just logging, then disable PMIC OC*/
+		pr_err(PMICTAG "[PMIC_INT] Just logging, then disable PMIC OC: %s\n", int_name);
+		pmic_enable_interrupt(intNo, 0, "PMIC");
+		break;
+	case INT_VPA1_OC:
 	case INT_VCAMAF_OC:
 	case INT_VCAMD1_OC:
 	case INT_VCAMD2_OC:
 	case INT_VCAMIO_OC:
-	case INT_VSIM1_OC:
-	case INT_VSIM2_OC:
 		/* keep OC interrupt and keep tracking */
-		pr_err(PMICTAG "[PMIC_INT] Just logging, then disable PMIC OC: %s\n", int_name);
-		pmic_enable_interrupt(intNo, 0, "PMIC");
+		pr_err(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
 		break;
 	default:
 		/* issue AEE exception and disable OC interrupt */
