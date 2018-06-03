@@ -188,14 +188,15 @@ VOID HifPdmaInit(GL_HIF_INFO_T *HifInfo)
 		PDMA_DBG("PDMA> Initialize DMA mask fail!\n");
 	}
 
-#if 0				/* MPU Setting */
+	/* MPU Setting */
 	/* WIFI using TOP 512KB */
-	DBGLOG(INIT, INFO, "[wlan] MPU region 12, 0x%08x - 0x%08x\n", (UINT_32) gConEmiPhyBase,
+	DBGLOG(INIT, INFO, "[wlan] MPU region 23, 0x%08x - 0x%08x\n", (UINT_32) gConEmiPhyBase,
 	       (UINT_32) (gConEmiPhyBase + 512 * 1024));
-	emi_mpu_set_region_protection(gConEmiPhyBase, gConEmiPhyBase + 512 * 1024 - 1, 12,
-				      SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-							   NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
-#endif
+
+	emi_mpu_set_region_protection(gConEmiPhyBase, gConEmiPhyBase + 512 * 1024 - 1, 23,
+		SET_ACCESS_PERMISSON(UNLOCK, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+			FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+			FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN));
 
 #if !defined(CONFIG_MTK_CLKMGR)
 	g_clk_wifi_pdma = HifInfo->clk_wifi_dma;
