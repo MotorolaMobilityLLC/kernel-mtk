@@ -85,10 +85,6 @@ u8 msdc_clock_src[HOST_MAX_NUM] = {
 	0
 };
 
-/* use for SPM spm_resource_req */
-unsigned int msdc_cg_lock_init, msdc_cg_cnt;
-spinlock_t msdc_cg_lock;
-
 /**************************************************************/
 /* Section 1: Device Tree Global Variables                    */
 /**************************************************************/
@@ -260,12 +256,7 @@ int msdc_oc_check(struct msdc_host *host, u32 en)
 void msdc_emmc_power(struct msdc_host *host, u32 on)
 {
 #if !defined(CONFIG_MTK_MSDC_BRING_UP_BYPASS)
-	void __iomem *base = host->base;
-
-	if (on == 0) {
-		if ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000)
-			emmc_sleep_failed = 1;
-	} else {
+	if (on) {
 		msdc_set_driving(host, &host->hw->driving);
 		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
 		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
@@ -325,32 +316,6 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 #endif
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	msdc_dump_ldo_sts(host);
-#endif
-}
-
-void msdc_clk_pre_enable(struct msdc_host *host)
-{
-#ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
-	unsigned long flags;
-
-	spin_lock_irqsave(&msdc_cg_lock, flags);
-	msdc_cg_cnt++;
-	if (msdc_cg_cnt > 0)
-		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_ALL);
-	spin_unlock_irqrestore(&msdc_cg_lock, flags);
-#endif
-}
-
-void msdc_clk_post_disble(struct msdc_host *host)
-{
-#ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
-	unsigned long flags;
-
-	spin_lock_irqsave(&msdc_cg_lock, flags);
-	msdc_cg_cnt--;
-	if (msdc_cg_cnt == 0)
-		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_RELEASE);
-	spin_unlock_irqrestore(&msdc_cg_lock, flags);
 #endif
 }
 
@@ -613,35 +578,20 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
 	msdc_dump_clock_sts_core(host, m);
 }
 
-void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
+void msdc_clk_enable_and_stable(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
 	u32 div, mode, hs400_div_dis;
 	u32 val;
 
-	if ((on) && (host->core_clkon == 0)) {
+	msdc_clk_enable(host);
 
-		msdc_clk_enable(host);
-
-		host->core_clkon = 1;
-		udelay(10);
-
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
-
-		val = MSDC_READ32(MSDC_CFG);
-		GET_FIELD(val, CFG_CKDIV_SHIFT, CFG_CKDIV_MASK, div);
-		GET_FIELD(val, CFG_CKMOD_SHIFT, CFG_CKMOD_MASK, mode);
-		GET_FIELD(val, CFG_CKMOD_HS400_SHIFT, CFG_CKMOD_HS400_MASK,
+	val = MSDC_READ32(MSDC_CFG);
+	GET_FIELD(val, CFG_CKDIV_SHIFT, CFG_CKDIV_MASK, div);
+	GET_FIELD(val, CFG_CKMOD_SHIFT, CFG_CKMOD_MASK, mode);
+	GET_FIELD(val, CFG_CKMOD_HS400_SHIFT, CFG_CKMOD_HS400_MASK,
 			hs400_div_dis);
-		msdc_clk_stable(host, mode, div, hs400_div_dis);
-
-	} else if ((!on) && (host->core_clkon == 1)) {
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
-
-		msdc_clk_disable(host);
-
-		host->core_clkon = 0;
-	}
+	msdc_clk_stable(host, mode, div, hs400_div_dis);
 }
 
 
@@ -1263,10 +1213,6 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 	}
 #endif
 
-	/* get msdc flag(caps)*/
-	if (of_find_property(np, "msdc-sys-suspend", &len))
-		host->hw->flags |= MSDC_SYS_SUSPEND;
-
 	if (of_find_property(np, "sd-uhs-ddr208", &len))
 		host->hw->flags |= MSDC_SDIO_DDR208;
 
@@ -1322,14 +1268,6 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 		host->hw->register_pm = mt_sdio_ops[3].sdio_register_pm;
 	}
 #endif
-
-	/* init spinlock for SPM */
-	if (msdc_cg_lock_init == 0) {
-		msdc_cg_lock_init = 1;
-		spin_lock_init(&msdc_cg_lock);
-		msdc_cg_cnt = 0;
-	}
-
 	/* device rename */
 	if ((host->id == 0) && !device_rename(mmc->parent, "bootdevice"))
 		pr_notice("[msdc%d] device renamed to bootdevice.\n", host->id);

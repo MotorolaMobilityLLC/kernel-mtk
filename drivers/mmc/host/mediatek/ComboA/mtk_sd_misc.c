@@ -87,13 +87,13 @@ int msdc_reinit(struct msdc_host *host)
 	if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
 	 || (host->block_bad_card != 0))
 		goto skip_reinit1;
-	mmc_claim_host(mmc);
+	mmc_get_card(card);
 	mmc->ios.timing = MMC_TIMING_LEGACY;
 	msdc_ops_set_ios(mmc, &mmc->ios);
 	/* FIX ME, check if bus_ops->reset() shall be un-commented */
 	/* power reset sdcard */
 	/* ret = mmc->bus_ops->reset(mmc); */
-	mmc_release_host(mmc);
+	mmc_put_card(card);
 
 	ERR_MSG("Reinit %s", ret == 0 ? "success" : "fail");
 
@@ -193,7 +193,7 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	} else {
 		memset(sg_msdc_multi_buffer, 0, total_size);
 	}
-	mmc_claim_host(mmc);
+	mmc_get_card(mmc->card);
 
 	MMC_IOCTL_PR_DBG("user want access %d partition\n",
 		msdc_ctl->partition);
@@ -332,7 +332,7 @@ skip_sbc_prepare:
 	}
 #endif
 
-	mmc_release_host(mmc);
+	mmc_put_card(mmc->card);
 	if (!msdc_ctl->iswrite) {
 		if (msdc_ctl->opcode != MSDC_CARD_DUNM_FUNC) {
 			if (copy_to_user(msdc_ctl->buffer, sg_msdc_multi_buffer,
@@ -363,7 +363,7 @@ rw_end:
 			is_cmdq_en = false;
 	}
 #endif
-	mmc_release_host(mmc);
+	mmc_put_card(mmc->card);
 
 rw_end_without_release:
 	if (ret)
@@ -461,7 +461,7 @@ static int simple_sd_ioctl_get_bootpart(struct msdc_ioctl *msdc_ctl)
 	if (get_user(user_buffer, msdc_ctl->buffer))
 		return -EINVAL;
 
-	mmc_claim_host(mmc);
+	mmc_get_card(mmc->card);
 
 	MMC_IOCTL_PR_DBG("user want get boot partition info in msdc slot%d\n",
 		msdc_ctl->host_num);
@@ -489,7 +489,7 @@ static int simple_sd_ioctl_get_bootpart(struct msdc_ioctl *msdc_ctl)
 end:
 	msdc_ctl->result = ret;
 
-	mmc_release_host(mmc);
+	mmc_put_card(mmc->card);
 
 	kfree(l_buf);
 
@@ -515,7 +515,7 @@ static int simple_sd_ioctl_set_bootpart(struct msdc_ioctl *msdc_ctl)
 	if (msdc_ctl->buffer == NULL)
 		return -EINVAL;
 
-	mmc_claim_host(mmc);
+	mmc_get_card(mmc->card);
 
 	MMC_IOCTL_PR_DBG("user want set boot partition in msdc slot%d\n",
 		msdc_ctl->host_num);
@@ -558,7 +558,7 @@ static int simple_sd_ioctl_set_bootpart(struct msdc_ioctl *msdc_ctl)
 end:
 	msdc_ctl->result = ret;
 
-	mmc_release_host(mmc);
+	mmc_put_card(mmc->card);
 
 	kfree(l_buf);
 	return ret;
@@ -580,7 +580,7 @@ static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
 
 	mmc = host_ctl->mmc;
 
-	mmc_claim_host(mmc);
+	mmc_put_card(mmc->card);
 
 	MMC_IOCTL_PR_DBG("get size of partition=%d\n", msdc_ctl->partition);
 
@@ -610,7 +610,7 @@ static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
 
 	msdc_ctl->result = ret;
 
-	mmc_release_host(mmc);
+	mmc_put_card(mmc->card);
 
 	return ret;
 }
@@ -646,6 +646,7 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 	host->hw->driving_applied->ds_drv = msdc_ctl->ds_pu_driving;
 	msdc_set_driving(host, host->hw->driving_applied);
 
+	msdc_clk_disable(host);
 #ifdef DEBUG_MMC_IOCTL
 #if 0
 	msdc_dump_padctl(host);
@@ -692,6 +693,7 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 		msdc_ctl->rst_pu_driving);
 	MMC_IOCTL_PR_DBG("read: ds driving is 0x%x\n",
 		msdc_ctl->ds_pu_driving);
+	msdc_clk_disable(host);
 
 	return 0;
 }
@@ -716,7 +718,7 @@ static int simple_mmc_erase_func(unsigned int start, unsigned int size)
 	}
 	mmc = host->mmc;
 
-	mmc_claim_host(mmc);
+	mmc_get_card(mmc->card);
 
 	if (mmc_can_discard(mmc->card)) {
 		arg = __MMC_DISCARD_ARG;
@@ -741,7 +743,7 @@ static int simple_mmc_erase_func(unsigned int start, unsigned int size)
 	MMC_IOCTL_PR_DBG("[%s]: erase done....arg=0x%x\n", __func__, arg);
 
 end:
-	mmc_release_host(mmc);
+	mmc_put_card(mmc->card);
 
 	return 0;
 }
@@ -770,7 +772,7 @@ static int simple_sd_ioctl_erase_selected_area(struct msdc_ioctl *msdc_ctl)
 
 	mmc = host_ctl->mmc;
 
-	mmc_claim_host(mmc);
+	mmc_get_card(mmc->card);
 
 	msdc_switch_part(host_ctl, 0);
 
@@ -807,7 +809,7 @@ static int simple_sd_ioctl_erase_selected_area(struct msdc_ioctl *msdc_ctl)
 	err = mmc_erase(mmc->card, from, nr, arg);
 out:
 
-	mmc_release_host(mmc);
+	mmc_put_card(mmc->card);
 
 	msdc_ctl->result = err;
 

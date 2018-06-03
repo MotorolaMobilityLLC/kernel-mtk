@@ -39,6 +39,7 @@
 #include <mt-plat/mtk_boot.h>
 #include <mt-plat/mtk_lpae.h>
 #include <linux/seq_file.h>
+#include <linux/pm_runtime.h>
 
 #include "mtk_sd.h"
 #include <mmc/core/core.h>
@@ -344,10 +345,6 @@ void msdc_dump_dbg_register(struct msdc_host *host)
 	}
 
 	pr_info("%s\n", buffer);
-
-	/* BEGIN temporarily debug ALPS03052531*/
-	pr_info("writes after resume %d\n", host->resume_write_times);
-	/* END temporarily debug ALPS03052531*/
 
 	MSDC_WRITE32(MSDC_DBG_SEL, 0);
 }
@@ -656,47 +653,6 @@ void msdc_set_check_endbit(struct msdc_host *host, bool enable)
 	}
 }
 
-/* host doesn't need the clock on */
-void msdc_gate_clock(struct msdc_host *host, int delay)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&host->clk_gate_lock, flags);
-	/* delay < 0 means suspend */
-	if ((delay >= 0) && (host->clk_gate_count > 0))
-		host->clk_gate_count--;
-	if (delay > 0) {
-		mod_timer(&host->timer, jiffies + CLK_TIMEOUT);
-		N_MSG(CLK, "[%s]: msdc%d, clk_gate_count=%d, delay=%d",
-			__func__, host->id, host->clk_gate_count, delay);
-	} else if (host->clk_gate_count == 0) {
-		del_timer(&host->timer);
-		msdc_clksrc_onoff(host, 0);
-		N_MSG(CLK, "[%s]: msdc%d, clock gated done",
-			__func__, host->id);
-	} else {
-		if (is_card_sdio(host))
-			host->error = -EBUSY;
-		ERR_MSG("[%s]: msdc%d, clock is needed, clk_gate_count=%d",
-			__func__, host->id, host->clk_gate_count);
-	}
-	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
-}
-
-/* host does need the clock on */
-void msdc_ungate_clock(struct msdc_host *host)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&host->clk_gate_lock, flags);
-	host->clk_gate_count++;
-	N_MSG(CLK, "[%s]: msdc%d, clk_gate_count=%d", __func__, host->id,
-		host->clk_gate_count);
-	if (host->clk_gate_count == 1)
-		msdc_clksrc_onoff(host, 1);
-	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
-}
-
 /* count of bad sd detecter (or bad sd condition kinds),
  * we can add it here if has other condition
  */
@@ -979,8 +935,6 @@ static void msdc_init_hw(struct msdc_host *host)
 	/* Power on */
 	/* msdc_pin_reset(host, MSDC_PIN_PULL_UP, 0); */
 
-	msdc_ungate_clock(host);
-
 	/* Configure to MMC/SD mode */
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
 
@@ -1057,8 +1011,6 @@ static void msdc_init_hw(struct msdc_host *host)
 	/* Set default sample edge, use mode 0 for init */
 	msdc_set_smpl_all(host, 0);
 
-	msdc_gate_clock(host, 1);
-
 	N_MSG(FUC, "init hardware done!");
 }
 
@@ -1073,25 +1025,11 @@ static void msdc_card_reset(struct mmc_host *mmc)
 
 	pr_notice("XXX msdc%d reset card\n", host->id);
 
-	if (mmc->caps & MMC_CAP_HW_RESET) {
-		if (host->power_control) {
-			host->power_control(host, 0);
-			udelay(10);
-			host->power_control(host, 1);
-		}
-		usleep_range(200, 500);
-
-		msdc_pin_reset(host, MSDC_PIN_PULL_DOWN, 1);
-		udelay(2);
-		msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
-		usleep_range(200, 500);
-	}
-
-	mmc->ios.timing = MMC_TIMING_LEGACY;
-	mmc->ios.clock = 260000;
-	msdc_ops_set_ios(mmc, &mmc->ios);
-
-	msdc_init_hw(host);
+	usleep_range(200, 500);
+	msdc_pin_reset(host, MSDC_PIN_PULL_DOWN, 1);
+	udelay(2);
+	msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
+	usleep_range(200, 500);
 }
 
 static int msdc_prepare_hs400_tuning(struct mmc_host *mmc, struct mmc_ios *ios)
@@ -1113,9 +1051,8 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 		if (host->power_control)
 			host->power_control(host, 1);
 
-		mdelay(10);
-
 		if (host->id == 1) {
+			mdelay(10);
 			if (msdc_oc_check(host, 1))
 				return;
 
@@ -1153,114 +1090,6 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 	}
 	host->power_mode = mode;
 }
-
-#ifdef CONFIG_PM
-static void msdc_pm(pm_message_t state, void *data)
-{
-	struct msdc_host *host = (struct msdc_host *)data;
-	void __iomem *base = host->base;
-
-	int evt = state.event;
-
-	msdc_ungate_clock(host);
-
-	if (evt == PM_EVENT_SUSPEND || evt == PM_EVENT_USER_SUSPEND) {
-		if (host->suspend)
-			goto end;
-
-		if (evt == PM_EVENT_SUSPEND &&
-		     host->power_mode == MMC_POWER_OFF)
-			goto end;
-
-		host->suspend = 1;
-		host->pm_state = state;
-
-		N_MSG(PWR, "msdc%d -> %s Suspend", host->id,
-			evt == PM_EVENT_SUSPEND ? "PM" : "USR");
-
-#if (defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)) \
-	&& !defined(CONFIG_MTK_HW_FDE_AES)
-		host->is_crypto_init = false;
-#endif
-
-		if (host->hw->flags & MSDC_SYS_SUSPEND) {
-			if (host->hw->host_function == MSDC_EMMC) {
-				msdc_save_timing_setting(host, 1);
-				msdc_set_power_mode(host, MMC_POWER_OFF);
-			}
-		} else {
-			host->mmc->pm_flags |= MMC_PM_IGNORE_PM_NOTIFY;
-			mmc_remove_host(host->mmc);
-		}
-	} else if (evt == PM_EVENT_RESUME || evt == PM_EVENT_USER_RESUME) {
-		if (!host->suspend)
-			goto end;
-
-		if (evt == PM_EVENT_RESUME
-			&& host->pm_state.event == PM_EVENT_USER_SUSPEND) {
-			ERR_MSG("PM Resume when in USR Suspend");
-			goto end;
-		}
-
-		host->suspend = 0;
-		host->pm_state = state;
-
-		N_MSG(PWR, "msdc%d -> %s Resume", host->id,
-			evt == PM_EVENT_RESUME ? "PM" : "USR");
-
-		if (!(host->hw->flags & MSDC_SYS_SUSPEND)) {
-			host->mmc->pm_flags |= MMC_PM_IGNORE_PM_NOTIFY;
-			mmc_add_host(host->mmc);
-			goto end;
-		}
-
-		if (host->hw->host_function == MSDC_EMMC) {
-			msdc_reset_hw(host->id);
-			msdc_set_power_mode(host, MMC_POWER_ON);
-			msdc_restore_timing_setting(host);
-
-			/* BEGIN temporarily debug ALPS03052531*/
-			host->resume_write_times = 0;
-			/* END temporarily debug  ALPS03052531*/
-
-			if (emmc_sleep_failed) {
-				msdc_card_reset(host->mmc);
-				mdelay(200);
-				mmc_card_clr_sleep(host->mmc->card);
-				emmc_sleep_failed = 0;
-				host->mmc->ios.timing = MMC_TIMING_LEGACY;
-				mmc_set_clock(host->mmc, 260000);
-			}
-		}
-	}
-
-end:
-#ifdef SDIO_ERROR_BYPASS
-	if (is_card_sdio(host))
-		host->sdio_error = 0;
-#endif
-	if ((evt == PM_EVENT_SUSPEND) || (evt == PM_EVENT_USER_SUSPEND)) {
-		if ((host->hw->host_function == MSDC_SDIO) &&
-		    (evt == PM_EVENT_USER_SUSPEND)) {
-			pr_info("msdc%d -> MSDC Device Request Suspend",
-				host->id);
-		}
-		msdc_gate_clock(host, 0);
-	} else {
-		if ((host->hw->host_function == MSDC_SDIO) &&
-		    (evt == PM_EVENT_USER_RESUME)) {
-			pr_info("msdc%d -> MSDC Device Request Resume",
-				host->id);
-		}
-		msdc_gate_clock(host, 1);
-	}
-
-	if (host->hw->host_function == MSDC_SDIO) {
-		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
-		host->mmc->rescan_entered = 0;
-	}
-}
-#endif
 
 int msdc_switch_part(struct msdc_host *host, char part_id)
 {
@@ -2836,13 +2665,6 @@ int msdc_rw_cmd_using_sync_dma(struct mmc_host *mmc, struct mmc_command *cmd,
 		/* start DMA after response, so that DMA need not be stopped
 		 * if response error occurs
 		 */
-
-		/* BEGIN temporarily debug ALPS03052531*/
-		if (check_mmc_cmd2425(cmd->opcode)
-			|| check_mmc_cmd47(cmd->opcode))
-			host->resume_write_times++;
-		/* END temporarily debug ALPS03052531*/
-
 		msdc_dma_setup(host, &host->dma, data->sg, data->sg_len);
 		msdc_dma_start(host);
 	} else {
@@ -3050,9 +2872,7 @@ static void msdc_if_set_request_err(struct msdc_host *host,
 			if (mrq->cmd->arg & 0x8000) {
 				pr_notice("Sleep_Awake CMD timeout, MSDC_PS %0x\n",
 					MSDC_READ32(MSDC_PS));
-				emmc_sleep_failed = 1;
 				mrq->cmd->error = 0x0;
-				pr_notice("eMMC sleep CMD5 TMO will reinit\n");
 			} else {
 				host->error |= REQ_CMD_TMO;
 			}
@@ -3205,8 +3025,8 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 			pr_debug("[%s]: start pio read\n", __func__);
 #endif
 			if (msdc_pio_read(host, data)) {
-				msdc_gate_clock(host, 0);
-				msdc_ungate_clock(host);
+				msdc_clk_enable_and_stable(host);
+				msdc_clk_disable(host);
 				goto stop;      /* need cmd12 */
 			}
 		} else {
@@ -3214,8 +3034,8 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 			pr_debug("[%s]: start pio write\n", __func__);
 #endif
 			if (msdc_pio_write(host, data)) {
-				msdc_gate_clock(host, 0);
-				msdc_ungate_clock(host);
+				msdc_clk_enable_and_stable(host);
+				msdc_clk_disable(host);
 				goto stop;
 			}
 
@@ -3517,8 +3337,6 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	unsigned int tune_smpl = 0;
 	u32 status;
 
-	msdc_ungate_clock(host);
-
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (mmc->card && mmc->card->ext_csd.cmdq_mode_en) {
 		pr_notice("msdc%d waiting data transfer done3\n", host->id);
@@ -3681,7 +3499,6 @@ recovery:
 
 end:
 	host->tuning_in_progress = false;
-	msdc_gate_clock(host, 1);
 
 	return ret;
 }
@@ -3821,8 +3638,6 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 	MVG_EMMC_DECLARE_INT32(delay_us);
 	MVG_EMMC_DECLARE_INT32(delay_ms);
 
-	msdc_ungate_clock(host);
-
 	host->error = 0;
 
 	spin_lock(&host->lock);
@@ -3848,11 +3663,6 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	if (msdc_command_resp_polling(host, cmd, CMD_TIMEOUT) != 0)
 		goto stop;
-
-	/* BEGIN temporarily debug ALPS03052531*/
-	if (check_mmc_cmd2425(cmd->opcode) || check_mmc_cmd47(cmd->opcode))
-		host->resume_write_times++;
-	/* END temporarily debug ALPS03052531*/
 
 	/* for msdc use cmd23, but card not supported(sbc is NULL),
 	 * need enable autocmd23 for next request
@@ -3926,7 +3736,6 @@ done:
 	if (mrq->done)
 		mrq->done(mrq);
 
-	msdc_gate_clock(host, 1);
 	spin_unlock(&host->lock);
 
 	return host->error;
@@ -3998,8 +3807,6 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	data = mrq->cmd->data;
 	if (data)
 		stop = data->stop;
-
-	msdc_ungate_clock(host);
 
 	if (sdio_pro_enable)
 		sdio_get_time(mrq, &sdio_profile_start);
@@ -4086,8 +3893,6 @@ cq_req_done:
 	if (sdio_pro_enable)
 		sdio_calc_time(mrq, &sdio_profile_start);
 
-	msdc_gate_clock(host, 1);       /* clear flag. */
-
 	spin_unlock(&host->lock);
 
 	mmc_request_done(mmc, mrq);
@@ -4115,14 +3920,11 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	}
 #endif
 
-	msdc_ungate_clock(host);
-
 	msdc_init_tune_path(host, mmc->ios.timing);
 	autok_msdc_tx_setting(host, &mmc->ios);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (mmc->card && mmc->card->ext_csd.cmdq_mode_en) {
-		pr_notice("msdc%d waiting data transfer done4\n", host->id);
 		if (msdc_cq_cmd_wait_xfr_done(host)) {
 			pr_notice("msdc%d waiting data transfer done4 TMO\n",
 				host->id);
@@ -4146,8 +3948,6 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	host->tuning_in_progress = false;
 	if (ret)
 		msdc_dump_info(host->id);
-
-	msdc_gate_clock(host, 1);
 
 	/* return error to reset emmc when timeout occurs during autok */
 	return ret;
@@ -4239,10 +4039,15 @@ void msdc_sd_clock_run(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
 
+	/* mclk: 0 -> 260000 */
 	msdc_set_mclk(host, MMC_TIMING_LEGACY, 260000);
+
 	MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_CKPDN);
 	mdelay(1);
 	MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_CKPDN);
+
+	/* mclk: 260000 -> 0  */
+	msdc_set_mclk(host, MMC_TIMING_LEGACY, 0);
 }
 
 /* ops.set_ios */
@@ -4251,16 +4056,18 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	struct msdc_host *host = mmc_priv(mmc);
 
 	spin_lock(&host->lock);
-	msdc_ungate_clock(host);
+	msdc_clk_enable_and_stable(host);
 
 	if (host->power_mode != ios->power_mode) {
 		switch (ios->power_mode) {
 		case MMC_POWER_OFF:
+			spin_unlock(&host->lock);
+			msdc_set_power_mode(host, ios->power_mode);
+			spin_lock(&host->lock);
+			break;
 		case MMC_POWER_UP:
 			spin_unlock(&host->lock);
-			if (ios->power_mode == MMC_POWER_UP
-			 && host->power_mode == MMC_POWER_OFF)
-				msdc_init_hw(host);
+			msdc_init_hw(host);
 			msdc_set_power_mode(host, ios->power_mode);
 			spin_lock(&host->lock);
 			break;
@@ -4320,6 +4127,10 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	}
 
 	if (host->mclk != ios->clock) {
+		if (!host->mclk)
+			msdc_clk_enable_and_stable(host);
+		if (!ios->clock)
+			msdc_clk_disable(host);
 		if ((host->mclk > ios->clock)
 		 && (ios->clock <= 52000000)
 		 && (ios->clock > 0))
@@ -4335,13 +4146,12 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 			msdc_execute_tuning(host->mmc,
 				MMC_SEND_TUNING_BLOCK_HS200);
 #ifndef MMC_K44_RETUNE
-			pr_notice("msdc%d:disable mmc retune\n", host->id);
 			mmc_retune_disable(host->mmc);
 #endif
 		}
 	}
 
-	msdc_gate_clock(host, 1);
+	msdc_clk_disable(host);
 	spin_unlock(&host->lock);
 }
 
@@ -4354,10 +4164,10 @@ static int msdc_ops_get_ro(struct mmc_host *mmc)
 	int ro = 0;
 
 	spin_lock_irqsave(&host->lock, flags);
-	msdc_ungate_clock(host);
+	msdc_clk_enable_and_stable(host);
 	if (host->hw->flags & MSDC_WP_PIN_EN)
 		ro = (MSDC_READ32(MSDC_PS) >> 31);
-	msdc_gate_clock(host, 1);
+	msdc_clk_disable(host);
 	spin_unlock_irqrestore(&host->lock, flags);
 
 	return ro;
@@ -4371,13 +4181,6 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 	int level = 1;
 
 	/* spin_lock_irqsave(&host->lock, flags); */
-
-	/* for sdio, depends on USER_RESUME */
-	if (is_card_sdio(host) && !(host->hw->flags & MSDC_SDIO_IRQ)) {
-		host->card_inserted =
-			(host->pm_state.event == PM_EVENT_USER_RESUME) ? 1 : 0;
-		goto end;
-	}
 
 	/* for emmc, MSDC_REMOVABLE not set, always return 1 */
 	if (mmc->caps & MMC_CAP_NONREMOVABLE) {
@@ -4486,10 +4289,6 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		return 0;
 
 	case MMC_SIGNAL_VOLTAGE_180:
-		/* If voltage switch takes up to 1 second, clock maybe gated.
-		 *  So, ungate_clock to guarantee clock during voltage switch.
-		 */
-		msdc_ungate_clock(host);
 		/* switch voltage */
 		if (host->power_switch)
 			host->power_switch(host, 1);
@@ -4507,7 +4306,6 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		while ((status =
 			MSDC_READ32(MSDC_CFG)) & MSDC_CFG_BV18SDT)
 			;
-		msdc_gate_clock(host, 1);
 		if (status & MSDC_CFG_BV18PSS)
 			return 0;
 
@@ -4529,14 +4327,7 @@ static int msdc_card_busy(struct mmc_host *mmc)
 	if (host->block_bad_card)
 		return 0;
 
-	/* SDIO check card busy before send request in kernel 4.4.
-	 * So that host need ungate/gate clock first otherwise read busy fail.
-	 * eMMC and SD still use ungate/gate clock when sending request
-	 */
-	msdc_ungate_clock(host);
 	status = MSDC_READ32(MSDC_PS);
-	msdc_gate_clock(host, 1);
-
 	if (((status >> 16) & 0x1) != 0x1) {
 		if (host->hw->host_function == MSDC_SDIO)
 			pr_info("msdc%d: card is busy!\n", host->id);
@@ -4634,7 +4425,6 @@ static void msdc_check_data_timeout(struct work_struct *work)
 		if (mrq->done)
 			mrq->done(mrq);
 
-		msdc_gate_clock(host, 1);
 		host->error |= REQ_DAT_ERR;
 	} else {
 		pr_info("[%s]: Warn! should not go here %d\n",
@@ -4747,7 +4537,6 @@ skip:
 		}
 		if (mrq->done)
 			mrq->done(mrq);
-		msdc_gate_clock(host, 1);
 	} else {
 		/* Autocmd12 issued but error, data transfer done INT won't set,
 		 * so cmplete is need here
@@ -4954,46 +4743,15 @@ static void msdc_init_gpd_bd(struct msdc_host *host, struct msdc_dma *dma)
 	}
 }
 
-/* This is called by run_timer_softirq */
-static void msdc_timer_pm(unsigned long data)
-{
-	struct msdc_host *host = (struct msdc_host *)data;
-	void __iomem *base = host->base;
-	unsigned long flags;
-
-	spin_lock_irqsave(&host->clk_gate_lock, flags);
-	/*
-	 * clock may be disabled when msdc_timer_pm executing,
-	 * need to check core_clkon status first
-	 */
-	if (host->clk_gate_count == 0 && host->core_clkon) {
-		/* re-schedule when controller or device is busy */
-		if (host->power_mode != MMC_POWER_OFF
-		 && (sdc_is_busy() ||
-		     !((MSDC_READ32(MSDC_PS) >> 16) & 0x1))) {
-			mod_timer(&host->timer, jiffies + CLK_TIMEOUT);
-		} else {
-			msdc_clksrc_onoff(host, 0);
-			N_MSG(CLK, "gate msdc%d clock, clk_gate_count=%d",
-				host->id, host->clk_gate_count);
-		}
-	}
-
-	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
-}
-
 #ifdef CONFIG_MTK_HIBERNATION
 int msdc_drv_pm_restore_noirq(struct device *device)
 {
-	struct platform_device *pdev = to_platform_device(device);
-	struct mmc_host *mmc = NULL;
 	struct msdc_host *host = NULL;
 
-	WARN_ON(pdev == NULL);
-	mmc = platform_get_drvdata(pdev);
-	host = mmc_priv(mmc);
+	WARN_ON(device == NULL);
+	host = dev_get_drvdata(device);
 	if (host->hw->host_function == MSDC_SD) {
-		if (!(mmc->caps & MMC_CAP_NONREMOVABLE)) {
+		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)) {
 #ifdef CONFIG_GPIOLIB
 			if ((host->hw->cd_level == __gpio_get_value(cd_gpio))
 			 && host->mmc->card) {
@@ -5026,7 +4784,7 @@ static void msdc_remove_host(struct msdc_host *host)
 {
 	if (host->irq >= 0)
 		free_irq(host->irq, host);
-	platform_set_drvdata(host->pdev, NULL);
+	dev_set_drvdata(&host->pdev->dev, NULL);
 	msdc_deinit_hw(host);
 	kfree(host->hw);
 	mmc_free_host(host->mmc);
@@ -5065,6 +4823,11 @@ static void msdc_dvfs_kickoff(struct work_struct *work)
 	}
 }
 
+/* use for SPM spm_resource_req */
+unsigned int msdc_cg_lock_init;
+unsigned int msdc_cg_cnt;
+spinlock_t msdc_cg_lock;
+
 static int msdc_drv_probe(struct platform_device *pdev)
 {
 	struct mmc_host *mmc = NULL;
@@ -5100,7 +4863,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (host->hw->host_function == MSDC_EMMC)
 		mmc->caps |= MMC_CAP_CMD23;
 #endif
-
+	mmc->caps |= MMC_CAP_AGGRESSIVE_PM;
 	mmc->caps |= MMC_CAP_ERASE;
 
 	/* If 0  < mmc->max_busy_timeout < cmd.busy_timeout,
@@ -5121,7 +4884,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	mmc->max_blk_count = MAX_REQ_SZ / 512; /* mmc->max_req_size; */
 
 	host->hclk              = msdc_get_hclk(pdev->id, hw->clk_src);
-	host->pm_state          = PMSG_RESUME;
 	host->power_mode        = MMC_POWER_OFF;
 	host->power_control     = NULL;
 	host->power_switch      = NULL;
@@ -5191,15 +4953,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card);
 
 	spin_lock_init(&host->lock);
-	spin_lock_init(&host->clk_gate_lock);
 	spin_lock_init(&host->remove_bad_card);
 	spin_lock_init(&host->cmd_dump_lock);
 	spin_lock_init(&host->sdio_irq_lock);
-	/* init dynamtic timer */
-	init_timer(&host->timer);
-	/* host->timer.expires = jiffies + HZ; */
-	host->timer.function = msdc_timer_pm;
-	host->timer.data = (unsigned long)host;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	atomic_set(&host->cq_error_need_stop, 0);
@@ -5221,23 +4977,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		/* msdc_eirq_sdio() will be called when EIRQ */
 		hw->request_sdio_eirq(msdc_eirq_sdio, (void *)host);
 
-#ifdef CONFIG_PM
-	if (hw->register_pm) {/* only for sdio */
-		/* function pointer to combo_sdio_register_pm() */
-		hw->register_pm(msdc_pm, (void *)host);
-		if (hw->flags & MSDC_SYS_SUSPEND) {
-			/* will not set for WIFI */
-			ERR_MSG("MSDC_SYS_SUSPEND and register_pm both set");
-		}
-		/* pm not controlled by system but by client. */
-		mmc->pm_flags |= MMC_PM_IGNORE_PM_NOTIFY;
-	}
-#endif
-
 	if (host->hw->host_function == MSDC_EMMC)
 		mmc->pm_flags |= MMC_PM_KEEP_POWER;
 
-	platform_set_drvdata(pdev, mmc);
+	dev_set_drvdata(&pdev->dev, host);
 
 #ifdef CONFIG_MTK_HIBERNATION
 	if (pdev->id == 1)
@@ -5266,6 +5009,19 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		}
 	}
 
+	/* init spinlock for SPM */
+	if (msdc_cg_lock_init == 0) {
+		msdc_cg_lock_init = 1;
+		spin_lock_init(&msdc_cg_lock);
+		msdc_cg_cnt = 2;
+	}
+
+	pm_runtime_set_active(&pdev->dev);
+	pm_runtime_enable(&pdev->dev);
+
+	if (host->id == 1)
+		device_init_wakeup(&pdev->dev, true);
+
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	pr_info("[%s]: msdc%d, mmc->caps=0x%x, mmc->caps2=0x%x\n",
 		__func__, host->id, mmc->caps, mmc->caps2);
@@ -5287,12 +5043,10 @@ release:
 /* 4 device share one driver, using "drvdata" to show difference */
 static int msdc_drv_remove(struct platform_device *pdev)
 {
-	struct mmc_host *mmc;
 	struct msdc_host *host;
 	struct resource *mem;
 
-	mmc = platform_get_drvdata(pdev);
-	host = mmc_priv(mmc);
+	host = dev_get_drvdata(&pdev->dev);
 
 	ERR_MSG("msdc_drv_remove");
 
@@ -5308,6 +5062,7 @@ static int msdc_drv_remove(struct platform_device *pdev)
 #endif
 #endif
 
+	pm_runtime_disable(&pdev->dev);
 	mmc_remove_host(host->mmc);
 
 	dma_free_coherent(NULL, MAX_GPD_NUM * sizeof(struct gpd_t),
@@ -5327,92 +5082,88 @@ static int msdc_drv_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
+static int msdc_runtime_suspend(struct device *dev)
 {
+#ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
+	unsigned long flags;
+
+	spin_lock_irqsave(&msdc_cg_lock, flags);
+	msdc_cg_cnt--;
+	if (msdc_cg_cnt == 0)
+		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_RELEASE);
+	spin_unlock_irqrestore(&msdc_cg_lock, flags);
+#endif
+	return 0;
+}
+
+static int msdc_runtime_resume(struct device *dev)
+{
+#ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
+	unsigned long flags;
+
+	spin_lock_irqsave(&msdc_cg_lock, flags);
+	msdc_cg_cnt++;
+	if (msdc_cg_cnt == 1)
+		spm_resource_req(SPM_RESOURCE_USER_MSDC, SPM_RESOURCE_ALL);
+	spin_unlock_irqrestore(&msdc_cg_lock, flags);
+#endif
+	return 0;
+}
+
+static int msdc_suspend(struct device *dev)
+{
+	struct msdc_host *host = dev_get_drvdata(dev);
 	int ret = 0;
-	struct mmc_host *mmc = platform_get_drvdata(pdev);
-	struct msdc_host *host;
-	void __iomem *base;
 
-	host = mmc_priv(mmc);
-	base = host->base;
-
-	if (state.event == PM_EVENT_SUSPEND) {
-		if  (host->hw->flags & MSDC_SYS_SUSPEND) {
-			/* will set for card */
-			msdc_pm(state, (void *)host);
-		} else {
-			/* WIFI slot should be off when enter suspend */
-			msdc_gate_clock(host, -1);
-			if (host->error == -EBUSY) {
-				ret = host->error;
-				host->error = 0;
-			}
-		}
+	if (pm_runtime_suspended(dev)) {
+		pr_debug("%s: %s: already runtime suspended\n",
+				mmc_hostname(host->mmc), __func__);
+		goto out;
 	}
+	ret = msdc_runtime_suspend(dev);
 
-	if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
-		if (host->clk_gate_count > 0) {
-			host->error = 0;
-			return -EBUSY;
-		}
-		if (host->saved_para.suspend_flag == 0) {
-			host->saved_para.hz = host->mclk;
-			if (host->saved_para.hz) {
-				host->saved_para.suspend_flag = 1;
-				msdc_ungate_clock(host);
-				msdc_save_timing_setting(host, 2);
-				msdc_gate_clock(host, 0);
-				if (host->error == -EBUSY) {
-					ret = host->error;
-					host->error = 0;
-				}
-			}
-			ERR_MSG("msdc suspend, save_cfg=%x, cur_hz=%d",
-				host->saved_para.msdc_cfg, host->mclk);
-		}
-	}
+out:
+#if (defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)) \
+	&& !defined(CONFIG_MTK_HW_FDE_AES)
+	host->is_crypto_init = false;
+#endif
 	return ret;
 }
 
-static int msdc_drv_resume(struct platform_device *pdev)
+static int msdc_resume(struct device *dev)
 {
-	struct mmc_host *mmc = platform_get_drvdata(pdev);
-	struct msdc_host *host = mmc_priv(mmc);
-	struct pm_message state;
+	struct msdc_host *host = dev_get_drvdata(dev);
+	int ret = 0;
 
-	state.event = PM_EVENT_RESUME;
-	if (mmc && (host->hw->flags & MSDC_SYS_SUSPEND)) {
-		/* will set for card; */
-		msdc_pm(state, (void *)host);
+	if (pm_runtime_suspended(dev)) {
+		pr_debug("%s: %s: runtime suspended, defer system resume\n",
+				mmc_hostname(host->mmc), __func__);
+		goto out;
 	}
 
-	/* This mean WIFI not controller by PM */
-	if (host->hw->host_function == MSDC_SDIO) {
-		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
-		host->mmc->rescan_entered = 0;
-		#ifdef SDIO_EARLY_SETTING_RESTORE
-		msdc_ungate_clock(host);
-		msdc_sdio_restore_after_resume(host);
-		msdc_gate_clock(host, 0);
-		#endif
-	}
+	ret = msdc_runtime_resume(dev);
 
-	return 0;
+out:
+	return ret;
 }
+
+static const struct dev_pm_ops msdc_pmops = {
+	SET_SYSTEM_SLEEP_PM_OPS(msdc_suspend, msdc_resume)
+		SET_RUNTIME_PM_OPS(msdc_runtime_suspend, msdc_runtime_resume,
+				NULL)
+};
 #endif
 
 static struct platform_driver mt_msdc_driver = {
 	.probe = msdc_drv_probe,
 	.remove = msdc_drv_remove,
-#ifdef CONFIG_PM
-	.suspend = msdc_drv_suspend,
-	.resume = msdc_drv_resume,
-#endif
 	.driver = {
 		.name = DRV_NAME,
 		.owner = THIS_MODULE,
 		.of_match_table = msdc_of_ids,
+#ifdef CONFIG_PM
+		.pm     = &msdc_pmops,
+#endif
 	},
 };
 

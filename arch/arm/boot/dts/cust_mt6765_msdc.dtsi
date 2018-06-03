@@ -18,11 +18,11 @@
 	bus-width = <8>;
 	max-frequency = <200000000>;
 	cap-mmc-highspeed;
-	msdc-sys-suspend;
 	mmc-ddr-1_8v;
 	mmc-hs200-1_8v;
 	mmc-hs400-1_8v;
-	cap-mmc-hw-reset;
+	no-sd;
+	no-sdio;
 	non-removable;
 	pinctl = <&msdc0_pins_default>;
 	pinctl_hs400 = <&msdc0_pins_hs400>;
@@ -47,13 +47,14 @@
 	clk_src = /bits/ 8 <MSDC1_CLKSRC_200MHZ>;
 	bus-width = <4>;
 	max-frequency = <200000000>;
-	msdc-sys-suspend;
 	cap-sd-highspeed;
 	sd-uhs-sdr12;
 	sd-uhs-sdr25;
 	sd-uhs-sdr50;
 	sd-uhs-sdr104;
 	sd-uhs-ddr50;
+	no-mmc;
+	no-sdio;
 
 	pinctl = <&msdc1_pins_default>;
 	pinctl_sdr104 = <&msdc1_pins_sdr104>;
