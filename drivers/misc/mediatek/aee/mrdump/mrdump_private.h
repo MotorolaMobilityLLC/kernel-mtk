@@ -116,4 +116,8 @@ static inline void mrdump_mini_save_regs(struct pt_regs *regs)
 		      "mrs %0, cpsr\n":"=r" (regs->uregs[16]) : "r"(regs) : "memory");
 #endif
 }
+
+/* dedicated reboot flow for exception */
+extern void aee_exception_reboot(void);
+
 #endif /* __MRDUMP_PRIVATE_H__ */

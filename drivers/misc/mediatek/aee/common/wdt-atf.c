@@ -565,7 +565,7 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 #endif
 		__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, regs, "WDT/HWT");
 
-	emergency_restart();
+	aee_exception_reboot();
 }
 
 void notrace aee_wdt_atf_entry(void)

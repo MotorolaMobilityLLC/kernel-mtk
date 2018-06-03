@@ -48,4 +48,7 @@ extern void irq_raise_softirq(const struct cpumask *mask, unsigned int irq);
 /* for test case only */
 extern int no_zap_locks;
 
+/* dedicated reboot flow for exception */
+extern void aee_exception_reboot(void);
+
 #endif				/* AEE_COMMON_H */

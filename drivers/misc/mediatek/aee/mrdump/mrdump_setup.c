@@ -33,17 +33,7 @@ static void mrdump_hw_enable(bool enabled)
 
 static void mrdump_reboot(void)
 {
-	int res;
-	struct wd_api *wd_api = NULL;
-
-	res = get_wd_api(&wd_api);
-	if (res < 0) {
-		pr_alert("arch_reset, get wd api error %d\n", res);
-		while (1)
-			cpu_relax();
-	} else {
-		wd_api->wd_sw_reset(1);
-	}
+	aee_exception_reboot();
 }
 
 const struct mrdump_platform mrdump_v1_platform = {
