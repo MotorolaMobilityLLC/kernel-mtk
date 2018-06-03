@@ -164,8 +164,4 @@ extern phys_addr_t scp_get_reserve_mem_virt(enum scp_reserve_mem_id_t id);
 extern phys_addr_t scp_get_reserve_mem_size(enum scp_reserve_mem_id_t id);
 extern int scp_check_resource(void);
 
-#if SCP_VCORE_TEST_ENABLE
-extern unsigned int mt_get_ckgen_freq(unsigned int ID);
-extern unsigned int mt_get_abist_freq(unsigned int ID);
-#endif
 #endif
