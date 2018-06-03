@@ -36,7 +36,15 @@
 #define OVL_LAYER_NUM_PER_OVL (4)
 
 
-unsigned int met_tag_on;
+static unsigned int met_tag_on;
+
+static struct ovl_info_s {
+	unsigned char ovl_idx;
+	unsigned char layer_num;
+} ovl_infos[OVL_NUM] = {
+	{DISP_MODULE_OVL0, 4}, {DISP_MODULE_OVL0_2L, 2}, {DISP_MODULE_OVL1_2L, 2},
+};
+
 #if 0
 static const char *const parse_color_format(DpColorFormat fmt)
 {
@@ -114,36 +122,37 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 		}
 
 	} else {
-		static struct OVL_BASIC_STRUCT old_ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
-		static struct OVL_BASIC_STRUCT ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
-		int ovl_index;
-		int b_layer_changed;
+		static struct OVL_BASIC_STRUCT old_ovlInfo[4+2+2];
+		static struct OVL_BASIC_STRUCT ovlInfo[4+2+2];
+		int layer_idx = 0;
+		int layer_pos = 0;
+		int b_layer_changed = 0;
 		int i, j;
-
-		b_layer_changed = 0;
 
 		/*Traversal layers and get layer info*/
 		memset(ovlInfo, 0, sizeof(ovlInfo));/*essential for structure comparision*/
 
 		for (i = 0; i < OVL_NUM; i++) {
+			if (i > 0)
+				layer_pos += ovl_infos[i-1].layer_num;
 
-			ovl_get_info(i, &(ovlInfo[i*OVL_LAYER_NUM_PER_OVL]));
+			ovl_get_info(ovl_infos[i].ovl_idx, &(ovlInfo[layer_pos]));
 
-			for (j = 0; j < OVL_LAYER_NUM_PER_OVL; j++) {
-				ovl_index = (i * OVL_LAYER_NUM_PER_OVL) + j;
+			for (j = 0; j < ovl_infos[i].layer_num; j++) {
+				layer_idx++;
 
-				if (memcmp(&(ovlInfo[ovl_index]), &(old_ovlInfo[ovl_index]),
+				if (memcmp(&(ovlInfo[layer_idx]), &(old_ovlInfo[layer_idx]),
 						sizeof(struct OVL_BASIC_STRUCT)) == 0)
 					continue;
 
-				if (ovlInfo[ovl_index].layer_en)
+				if (ovlInfo[layer_idx].layer_en)
 					b_layer_changed = 1;
 			}
 
 			/*store old value*/
-			memcpy(&(old_ovlInfo[i*OVL_LAYER_NUM_PER_OVL]),
-				&(ovlInfo[i*OVL_LAYER_NUM_PER_OVL]),
-				OVL_LAYER_NUM_PER_OVL*sizeof(struct OVL_BASIC_STRUCT));
+			memcpy(&(old_ovlInfo[layer_pos]),
+				&(ovlInfo[layer_pos]),
+				ovl_infos[i].layer_num*sizeof(struct OVL_BASIC_STRUCT));
 
 		}
 
