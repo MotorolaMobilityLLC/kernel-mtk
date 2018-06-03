@@ -40,6 +40,12 @@ static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
 
+#if defined(CONFIG_MACH_MT6771)
+static unsigned int g_ACKErrorCnt = 5;
+#else
+static unsigned int g_ACKErrorCnt = 100;
+#endif
+
 
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
@@ -94,6 +100,9 @@ static int s4AF_ReadReg(u8 a_uAddr, u16 *a_pu2Result)
 	char pBuff;
 	char puSendCmd[1];
 
+	if (g_ACKErrorCnt == 0)
+		return 0;
+
 	puSendCmd[0] = a_uAddr;
 
 	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
@@ -103,6 +112,9 @@ static int s4AF_ReadReg(u8 a_uAddr, u16 *a_pu2Result)
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 1);
 
 	if (i4RetValue < 0) {
+		if (g_ACKErrorCnt > 0)
+			g_ACKErrorCnt--;
+
 		LOG_INF("I2C read - send failed!!\n");
 		return -1;
 	}
@@ -110,6 +122,9 @@ static int s4AF_ReadReg(u8 a_uAddr, u16 *a_pu2Result)
 	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, &pBuff, 1);
 
 	if (i4RetValue < 0) {
+		if (g_ACKErrorCnt > 0)
+			g_ACKErrorCnt--;
+
 		LOG_INF("I2C read - recv failed!!\n");
 		return -1;
 	}
@@ -124,6 +139,9 @@ static int s4AF_WriteReg(u16 a_u2Addr, u16 a_u2Data)
 
 	char puSendCmd[2] = { (char)a_u2Addr, (char)a_u2Data };
 
+	if (g_ACKErrorCnt == 0)
+		return 0;
+
 	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 
 	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
@@ -133,6 +151,9 @@ static int s4AF_WriteReg(u16 a_u2Addr, u16 a_u2Data)
 	/* LOG_INF("I2C Addr[0] = 0x%x , Data[0] = 0x%x\n", puSendCmd[0], puSendCmd[1]); */
 
 	if (i4RetValue < 0) {
+		if (g_ACKErrorCnt > 0)
+			g_ACKErrorCnt--;
+
 		LOG_INF("I2C write failed!!\n");
 		return -1;
 	}
@@ -415,6 +436,12 @@ int AK7371AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_Sp
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+
+	#if defined(CONFIG_MACH_MT6771)
+	g_ACKErrorCnt = 5;
+	#else
+	g_ACKErrorCnt = 100;
+	#endif
 
 	return 1;
 }
