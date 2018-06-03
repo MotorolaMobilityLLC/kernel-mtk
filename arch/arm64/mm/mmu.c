@@ -189,6 +189,14 @@ static inline bool use_1G_block(unsigned long addr, unsigned long next,
 
 	if (((addr | next | phys) & ~PUD_MASK) != 0)
 		return false;
+#ifdef CONFIG_MTK_SVP
+	/*
+	 * SSVP will unmapping memory region which shared with kernel
+	 * and SVP to prevent illegal fetch of EMI MPU Violation.
+	 * Return false to make all memory become pmd mapping.
+	 */
+	return false;
+#endif
 
 	return true;
 }
