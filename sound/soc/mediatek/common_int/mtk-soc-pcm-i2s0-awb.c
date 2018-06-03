@@ -121,7 +121,7 @@ bypass_default_i2s_in:
 
 static void StartAudioI2sInAWBHardware(struct snd_pcm_substream *substream)
 {
-	uint32 u32Audio2ndI2sIn = 0;
+	unsigned int u32Audio2ndI2sIn = 0;
 
 	/*
 	 * SmartPa might use different i2s in different chips.

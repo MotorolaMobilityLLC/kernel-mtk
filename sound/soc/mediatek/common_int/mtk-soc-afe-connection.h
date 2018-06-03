@@ -50,8 +50,8 @@
 /*****************************************************************************
  *                E X T E R N A L   R E F E R E N C E
  *****************************************************************************/
-bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output);
-bool SetIntfConnectionFormat(uint32 ConnectionFormat, uint32 Aud_block);
-bool SetIntfConnectionState(uint32 ConnectionState, uint32 Aud_block_In, uint32 Aud_block_Out);
+bool SetConnectionState(unsigned int ConnectionState, unsigned int Input, unsigned int Output);
+bool SetIntfConnectionFormat(unsigned int ConnectionFormat, unsigned int Aud_block);
+bool SetIntfConnectionState(unsigned int ConnectionState, unsigned int Aud_block_In, unsigned int Aud_block_Out);
 
 #endif

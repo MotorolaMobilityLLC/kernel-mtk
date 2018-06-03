@@ -87,7 +87,7 @@ static int mscp_voice_iv_meminterface_type;
 static bool mscp_voice_PrepareDone;
 static int mscp_voice_md_select;
 static const void *scp_voice_irq_user_id;
-static uint32 scp_voice_irq_cnt;
+static unsigned int scp_voice_irq_cnt;
 static int mscp_voice_hdoutput_control;
 static struct device *mDev;
 

@@ -96,7 +96,8 @@ static const uint16_t kSideToneCoefficientTable48k[] = {
 	0x25F9, 0x27B0, 0x2890
 };
 
-static const uint32 mMemIfSampleRate[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = { /* reg, bit position, bit mask */
+/* reg, bit position, bit mask */
+static const unsigned int mMemIfSampleRate[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = {
 	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_DAC_CON1, 0, 0xf},
 	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_DAC_CON1, 4, 0xf},
 	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_DAC_CON1, 16, 0xf},
@@ -112,7 +113,8 @@ static const uint32 mMemIfSampleRate[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = { /
 	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_DAC_CON1, 8, 0xf},
 };
 
-static const uint32 mMemIfChannels[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = { /* reg, bit position, bit mask */
+/* reg, bit position, bit mask */
+static const unsigned int mMemIfChannels[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = {
 	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_DAC_CON1, 21, 0x1},
 	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_DAC_CON1, 22, 0x1},
 	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_DAC_CON1, 27, 0x1},
@@ -128,7 +130,8 @@ static const uint32 mMemIfChannels[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = { /* 
 	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_REG_UNDEFINED, 0, 0x0},
 };
 
-static const uint32 mMemIfMonoChSelect[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = { /* reg, bit position, bit mask */
+/* reg, bit position, bit mask */
+static const unsigned int mMemIfMonoChSelect[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = {
 	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_REG_UNDEFINED, 0, 0x0},
 	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_REG_UNDEFINED, 0, 0x0},
 	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_DAC_CON1, 28, 0x1},
@@ -144,7 +147,8 @@ static const uint32 mMemIfMonoChSelect[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = {
 	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_REG_UNDEFINED, 0, 0x0},
 };
 
-static const uint32 mMemDuplicateWrite[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = { /* reg, bit position, bit mask */
+/* reg, bit position, bit mask */
+static const unsigned int mMemDuplicateWrite[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = {
 	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_REG_UNDEFINED, 0, 0x0},
 	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_REG_UNDEFINED, 0, 0x0},
 	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_REG_UNDEFINED, 0, 0x0},
@@ -160,7 +164,8 @@ static const uint32 mMemDuplicateWrite[Soc_Aud_Digital_Block_MEM_I2S + 1][3] = {
 	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_REG_UNDEFINED, 0, 0x0},
 };
 
-static const uint32 mMemAudioBlockEnableReg[][MEM_BLOCK_ENABLE_REG_INDEX_NUM] = { /* audio block, reg, bit position */
+/* audio block, reg, bit position */
+static const unsigned int mMemAudioBlockEnableReg[][MEM_BLOCK_ENABLE_REG_INDEX_NUM] = {
 	{Soc_Aud_Digital_Block_MEM_DL1, AFE_DAC_CON0, 1},
 	{Soc_Aud_Digital_Block_MEM_DL2, AFE_DAC_CON0, 2},
 	{Soc_Aud_Digital_Block_MEM_VUL, AFE_DAC_CON0, 3},
@@ -702,11 +707,11 @@ void Afe_Log_Print(void)
 /* export symbols for other module using */
 EXPORT_SYMBOL(Afe_Log_Print);
 
-void Enable4pin_I2S0_I2S3(uint32 SampleRate, uint32 wLenBit)
+void Enable4pin_I2S0_I2S3(unsigned int SampleRate, unsigned int wLenBit)
 {
 	/*wLenBit : 0:Soc_Aud_I2S_WLEN_WLEN_32BITS /1:Soc_Aud_I2S_WLEN_WLEN_16BITS */
-	uint32 Audio_I2S0 = 0;
-	uint32 Audio_I2S3 = 0;
+	unsigned int Audio_I2S0 = 0;
+	unsigned int Audio_I2S3 = 0;
 
 	/*Afe_Set_Reg(AUDIO_TOP_CON1, 0x2,  0x2);*/  /* I2S_SOFT_Reset  4 wire i2s mode*/
 	Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4,  0x1 << 4); /* I2S0 clock-gated */
@@ -745,8 +750,8 @@ void Enable4pin_I2S0_I2S3(uint32 SampleRate, uint32 wLenBit)
 
 void SetChipModemPcmConfig(int modem_index, struct audio_digital_pcm p_modem_pcm_attribute)
 {
-	uint32 reg_pcm2_intf_con = 0;
-	uint32 reg_pcm_intf_con1 = 0;
+	unsigned int reg_pcm2_intf_con = 0;
+	unsigned int reg_pcm_intf_con1 = 0;
 
 	if (modem_index == MODEM_1) {
 		reg_pcm2_intf_con |= (p_modem_pcm_attribute.mTxLchRepeatSel & 0x1) << 13;
@@ -798,7 +803,7 @@ bool SetChipModemPcmEnable(int modem_index, bool modem_pcm_on)
 	return true;
 }
 
-bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable)
+bool set_chip_sine_gen_enable(unsigned int connection, bool direction, bool Enable)
 {
 	pr_debug("+%s(), connection = %d, direction = %d, Enable= %d\n", __func__, connection,
 		 direction, Enable);
@@ -961,10 +966,10 @@ bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable)
 	return true;
 }
 
-bool set_chip_sine_gen_sample_rate(uint32 sample_rate)
+bool set_chip_sine_gen_sample_rate(unsigned int sample_rate)
 {
-	uint32 sine_mode_ch1 = 0;
-	uint32 sine_mode_ch2 = 0;
+	unsigned int sine_mode_ch1 = 0;
+	unsigned int sine_mode_ch2 = 0;
 
 	pr_debug("+%s(): sample_rate = %d\n", __func__, sample_rate);
 	sine_mode_ch1 = SampleRateTransform(sample_rate, 0) << 8;
@@ -975,7 +980,7 @@ bool set_chip_sine_gen_sample_rate(uint32 sample_rate)
 	return true;
 }
 
-bool set_chip_sine_gen_amplitude(uint32 amp_divide)
+bool set_chip_sine_gen_amplitude(unsigned int amp_divide)
 {
 	if (amp_divide < Soc_Aud_SGEN_AMP_DIV_128 || amp_divide > Soc_Aud_SGEN_AMP_DIV_1) {
 		pr_warn("%s(): [AudioWarn] amp_divide = %d is invalid\n", __func__, amp_divide);
@@ -1031,9 +1036,9 @@ bool set_chip_dai_bt_enable(bool enable, struct audio_digital_dai_bt *dai_bt, st
 	return true;
 }
 
-bool set_chip_hw_digital_gain_mode(uint32 gain_type, uint32 sample_rate, uint32 sample_per_step)
+bool set_chip_hw_digital_gain_mode(unsigned int gain_type, unsigned int sample_rate, unsigned int sample_per_step)
 {
-	uint32 value = 0;
+	unsigned int value = 0;
 
 	value = (sample_per_step << 8) | (SampleRateTransform(sample_rate, gain_type) << 4);
 
@@ -1072,7 +1077,7 @@ bool set_chip_hw_digital_gain_enable(int gain_type, bool enable)
 	return true;
 }
 
-bool set_chip_hw_digital_gain(uint32 gain, int gain_type)
+bool set_chip_hw_digital_gain(unsigned int gain, int gain_type)
 {
 	switch (gain_type) {
 	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1:
@@ -1120,7 +1125,7 @@ bool set_chip_dl_src_enable(bool enable)
 	return true;
 }
 
-bool set_i2s_dac_out_source(uint32 aud_block)
+bool set_i2s_dac_out_source(unsigned int aud_block)
 {
 	int source_sel = 0;
 
@@ -1148,7 +1153,7 @@ bool EnableSideToneFilter(bool stf_on)
 	/* MD support 16K/32K sampling rate */
 	uint8_t kSideToneHalfTapNum;
 	const uint16_t *kSideToneCoefficientTable;
-	uint32 eSamplingRate = (Afe_Get_Reg(AFE_ADDA_UL_SRC_CON0) & 0x60000) >> 17;
+	unsigned int eSamplingRate = (Afe_Get_Reg(AFE_ADDA_UL_SRC_CON0) & 0x60000) >> 17;
 
 	if (eSamplingRate == Soc_Aud_ADDA_UL_SAMPLERATE_48K) {
 		kSideToneHalfTapNum = sizeof(kSideToneCoefficientTable48k) / sizeof(uint16_t);
@@ -1272,9 +1277,9 @@ static void set_adda_dl_src_gain(bool mute)
 	}
 }
 
-bool SetDLSrc2(uint32 rate)
+bool SetDLSrc2(unsigned int rate)
 {
-	uint32 AfeAddaDLSrc2Con0;
+	unsigned int AfeAddaDLSrc2Con0;
 
 	AfeAddaDLSrc2Con0 = SampleRateTransform(rate,
 						Soc_Aud_Digital_Block_ADDA_DL);
@@ -1297,7 +1302,7 @@ bool SetDLSrc2(uint32 rate)
 	return true;
 }
 
-uint32 SampleRateTransformI2s(uint32 SampleRate)
+unsigned int SampleRateTransformI2s(unsigned int SampleRate)
 {
 	switch (SampleRate) {
 	case 8000:
@@ -1337,8 +1342,8 @@ uint32 SampleRateTransformI2s(uint32 SampleRate)
 
 bool set_chip_adc_in(unsigned int rate)
 {
-	uint32 dVoiceModeSelect = 0;
-	uint32 afeAddaUlSrcCon0 = 0;	/* default value */
+	unsigned int dVoiceModeSelect = 0;
+	unsigned int afeAddaUlSrcCon0 = 0;	/* default value */
 
 	/* enable aud_pad_top fifo, need set after GPIO enable, pmic miso clk on */
 	Afe_Set_Reg(AFE_AUD_PAD_TOP_CFG, 0x31, MASK_ALL);
@@ -1367,12 +1372,12 @@ bool set_chip_adc2_in(unsigned int rate)
 	return true;
 }
 
-bool setChipDmicPath(bool _enable, uint32 sample_rate)
+bool setChipDmicPath(bool _enable, unsigned int sample_rate)
 {
 	return true;
 }
 
-bool SetSampleRate(uint32 Aud_block, uint32 SampleRate)
+bool SetSampleRate(unsigned int Aud_block, unsigned int SampleRate)
 {
 	/* pr_warn("%s Aud_block = %d SampleRate = %d\n", __func__, Aud_block, SampleRate); */
 	SampleRate = SampleRateTransform(SampleRate, Aud_block);
@@ -1401,7 +1406,7 @@ bool SetSampleRate(uint32 Aud_block, uint32 SampleRate)
 }
 
 
-bool SetChannels(uint32 Memory_Interface, uint32 channel)
+bool SetChannels(unsigned int Memory_Interface, unsigned int channel)
 {
 	const bool bMono = (channel == 1) ? true : false;
 	/* pr_warn("SetChannels Memory_Interface = %d channels = %d\n", Memory_Interface, channel); */
@@ -1429,7 +1434,7 @@ bool SetChannels(uint32 Memory_Interface, uint32 channel)
 	return true;
 }
 
-int SetMemifMonoSel(uint32 Memory_Interface, bool mono_use_r_ch)
+int SetMemifMonoSel(unsigned int Memory_Interface, bool mono_use_r_ch)
 {
 	switch (Memory_Interface) {
 	case Soc_Aud_Digital_Block_MEM_AWB:
@@ -1448,7 +1453,7 @@ int SetMemifMonoSel(uint32 Memory_Interface, bool mono_use_r_ch)
 	return 0;
 }
 
-bool SetMemDuplicateWrite(uint32 InterfaceType, int dupwrite)
+bool SetMemDuplicateWrite(unsigned int InterfaceType, int dupwrite)
 {
 	switch (InterfaceType) {
 	case Soc_Aud_Digital_Block_MEM_DAI:
@@ -1463,7 +1468,7 @@ bool SetMemDuplicateWrite(uint32 InterfaceType, int dupwrite)
 	return true;
 }
 
-uint32 GetEnableAudioBlockRegInfo(uint32 Aud_block, int index)
+unsigned int GetEnableAudioBlockRegInfo(unsigned int Aud_block, int index)
 {
 	int i = 0;
 
@@ -1474,20 +1479,20 @@ uint32 GetEnableAudioBlockRegInfo(uint32 Aud_block, int index)
 	return 0; /* 0: no such bit */
 }
 
-uint32 GetEnableAudioBlockRegAddr(uint32 Aud_block)
+unsigned int GetEnableAudioBlockRegAddr(unsigned int Aud_block)
 {
 	return GetEnableAudioBlockRegInfo(Aud_block, MEM_BLOCK_ENABLE_REG_INDEX_REG);
 }
 
-uint32 GetEnableAudioBlockRegOffset(uint32 Aud_block)
+unsigned int GetEnableAudioBlockRegOffset(unsigned int Aud_block)
 {
 	return GetEnableAudioBlockRegInfo(Aud_block, MEM_BLOCK_ENABLE_REG_INDEX_OFFSET);
 }
 
-bool SetMemIfFormatReg(uint32 InterfaceType, uint32 eFetchFormat)
+bool SetMemIfFormatReg(unsigned int InterfaceType, unsigned int eFetchFormat)
 {
-	uint32 isAlign = eFetchFormat == AFE_WLEN_32_BIT_ALIGN_24BIT_DATA_8BIT_0 ? 1 : 0;
-	uint32 isHD = eFetchFormat == AFE_WLEN_16_BIT ? 0 : 1;
+	unsigned int isAlign = eFetchFormat == AFE_WLEN_32_BIT_ALIGN_24BIT_DATA_8BIT_0 ? 1 : 0;
+	unsigned int isHD = eFetchFormat == AFE_WLEN_16_BIT ? 0 : 1;
 	/*
 	  *   pr_debug("+%s(), InterfaceType = %d, eFetchFormat = %d,
 	  *   mAudioMEMIF[InterfaceType].mFetchFormatPerSample = %d\n", __FUNCTION__
@@ -2145,7 +2150,7 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 	return n;
 }
 
-bool SetFmI2sConnection(uint32 ConnectionState)
+bool SetFmI2sConnection(unsigned int ConnectionState)
 {
 	SetIntfConnection(ConnectionState,
 			  Soc_Aud_AFE_IO_Block_I2S_CONNSYS,
@@ -2162,7 +2167,7 @@ bool SetFmI2sConnection(uint32 ConnectionState)
 	return true;
 }
 
-bool SetFmAwbConnection(uint32 ConnectionState)
+bool SetFmAwbConnection(unsigned int ConnectionState)
 {
 	SetIntfConnection(ConnectionState,
 			Soc_Aud_AFE_IO_Block_I2S_CONNSYS, Soc_Aud_AFE_IO_Block_MEM_AWB);
@@ -2199,7 +2204,7 @@ int SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate)
 	return setConnsysI2SAsrc(bIsUseASRC, dToSampleRate);
 }
 
-bool SetAncRecordReg(uint32 value, uint32 mask)
+bool SetAncRecordReg(unsigned int value, unsigned int mask)
 {
 	return false;
 }

@@ -119,15 +119,15 @@ void AudDrv_ANC_Clk_On(void);
 void AudDrv_ANC_Clk_Off(void);
 
 /* APLL , low jitter mode setting */
-uint32 GetApllbySampleRate(uint32 SampleRate);
-void EnableALLbySampleRate(uint32 SampleRate);
-void DisableALLbySampleRate(uint32 SampleRate);
-void EnableI2SDivPower(uint32 Diveder_name, bool bEnable);
+unsigned int GetApllbySampleRate(unsigned int SampleRate);
+void EnableALLbySampleRate(unsigned int SampleRate);
+void DisableALLbySampleRate(unsigned int SampleRate);
+void EnableI2SDivPower(unsigned int Diveder_name, bool bEnable);
 void EnableApll1(bool bEnable);
 void EnableApll2(bool bEnable);
-void SetCLkBclk(uint32 MckDiv, uint32 SampleRate, uint32 Channels, uint32 Wlength);
-uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate);
-void EnableI2SCLKDiv(uint32 I2snum, bool bEnable);
+void SetCLkBclk(unsigned int MckDiv, unsigned int SampleRate, unsigned int Channels, unsigned int Wlength);
+unsigned int SetCLkMclk(unsigned int I2snum, unsigned int SampleRate);
+void EnableI2SCLKDiv(unsigned int I2snum, bool bEnable);
 void PowerDownAllI2SDiv(void);
 void audio_clk_control(void);
 

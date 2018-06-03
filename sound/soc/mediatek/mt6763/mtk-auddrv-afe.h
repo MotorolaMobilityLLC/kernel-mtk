@@ -446,12 +446,12 @@ enum audio_sdm_level {
 /* do afe register ioremap */
 int Auddrv_Reg_map(struct device *pdev);
 
-void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask);
-uint32 Afe_Get_Reg(uint32 offset);
+void Afe_Set_Reg(unsigned int offset, unsigned int value, unsigned int mask);
+unsigned int Afe_Get_Reg(unsigned int offset);
 
 /* function to apmixed */
-uint32 GetApmixedCfg(uint32 offset);
-void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask);
+unsigned int GetApmixedCfg(unsigned int offset);
+void SetApmixedCfg(unsigned int offset, unsigned int value, unsigned int mask);
 
 /* function to get/set clksys register */
 unsigned int clksys_get_reg(unsigned int offset);
@@ -476,13 +476,13 @@ bool SetChipModemPcmEnable(int modem_index, bool modem_pcm_on);
 
 bool EnableSideToneFilter(bool stf_on);
 bool CleanPreDistortion(void);
-bool SetDLSrc2(uint32 SampleRate);
+bool SetDLSrc2(unsigned int SampleRate);
 
-bool SetSampleRate(uint32 Aud_block, uint32 SampleRate);
-bool SetChannels(uint32 Memory_Interface, uint32 channel);
-int SetMemifMonoSel(uint32 Memory_Interface, bool mono_use_r_ch);
+bool SetSampleRate(unsigned int Aud_block, unsigned int SampleRate);
+bool SetChannels(unsigned int Memory_Interface, unsigned int channel);
+int SetMemifMonoSel(unsigned int Memory_Interface, bool mono_use_r_ch);
 
-bool SetMemDuplicateWrite(uint32 InterfaceType, int dupwrite);
+bool SetMemDuplicateWrite(unsigned int InterfaceType, int dupwrite);
 
 ssize_t AudDrv_Reg_Dump(char *buffer, int size);
 

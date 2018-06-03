@@ -152,7 +152,7 @@ static struct mtk_afe_platform_ops *s_afe_platform_ops;
 
 static bool ScreenState;
 
-static uint32 LowLatencyDebug;
+static unsigned int LowLatencyDebug;
 
 
 /*
@@ -163,17 +163,17 @@ static irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id);
 static void Clear_Mem_CopySize(enum soc_aud_digital_block MemBlock);
 static kal_uint32 Get_Mem_MaxCopySize(enum soc_aud_digital_block MemBlock);
 
-static uint32 GeneralSampleRateTransform(uint32 sampleRate);
-static uint32 DAIMEMIFSampleRateTransform(uint32 sampleRate);
-static uint32 ADDADLSampleRateTransform(uint32 sampleRate);
-static uint32 ADDAULSampleRateTransform(uint32 sampleRate);
-static uint32 MDSampleRateTransform(uint32 sampleRate);
+static unsigned int GeneralSampleRateTransform(unsigned int sampleRate);
+static unsigned int DAIMEMIFSampleRateTransform(unsigned int sampleRate);
+static unsigned int ADDADLSampleRateTransform(unsigned int sampleRate);
+static unsigned int ADDAULSampleRateTransform(unsigned int sampleRate);
+static unsigned int MDSampleRateTransform(unsigned int sampleRate);
 
 /*
  *    function implementation
  */
 
-static bool CheckSize(uint32 size)
+static bool CheckSize(unsigned int size)
 {
 	if (size == 0) {
 		pr_debug("CheckSize size = 0\n");
@@ -426,7 +426,7 @@ bool ResetAfeControl(void)
  *
  *****************************************************************************
  */
-bool Register_Aud_Irq(void *dev, uint32 afe_irq_number)
+bool Register_Aud_Irq(void *dev, unsigned int afe_irq_number)
 {
 	int ret;
 
@@ -485,7 +485,7 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	kal_uint32 u4RegValue;
 	kal_uint32 irq_mcu_en;
 	kal_uint32 irq_scp_en;
-	uint32 irqIndex = 0;
+	unsigned int irqIndex = 0;
 	unsigned int mcu_mask = get_mcu_irq_mask();
 	const struct Aud_RegBitsInfo *irqOnReg, *irqEnReg, *irqStatusReg, *irqMcuEnReg, *irqScpEnReg;
 
@@ -547,7 +547,7 @@ AudDrv_IRQ_handler_exit:
 	return IRQ_HANDLED;
 }
 
-void EnableAPLLTunerbySampleRate(uint32 SampleRate)
+void EnableAPLLTunerbySampleRate(unsigned int SampleRate)
 {
 	pr_aud("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
 	       APLL2TunerCounter, SampleRate);
@@ -568,7 +568,7 @@ void EnableAPLLTunerbySampleRate(uint32 SampleRate)
 
 }
 
-void DisableAPLLTunerbySampleRate(uint32 SampleRate)
+void DisableAPLLTunerbySampleRate(unsigned int SampleRate)
 {
 	pr_aud("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
 	       APLL2TunerCounter, SampleRate);
@@ -667,7 +667,7 @@ void EnableAfe(bool bEnable)
 }
 
 
-uint32 SampleRateTransform(uint32 sampleRate, enum soc_aud_digital_block audBlock)
+unsigned int SampleRateTransform(unsigned int sampleRate, enum soc_aud_digital_block audBlock)
 {
 	switch (audBlock) {
 	case Soc_Aud_Digital_Block_ADDA_DL:
@@ -685,7 +685,7 @@ uint32 SampleRateTransform(uint32 sampleRate, enum soc_aud_digital_block audBloc
 	}
 }
 
-uint32 GeneralSampleRateTransform(uint32 sampleRate)
+unsigned int GeneralSampleRateTransform(unsigned int sampleRate)
 {
 	switch (sampleRate) {
 	case 8000:
@@ -725,7 +725,7 @@ uint32 GeneralSampleRateTransform(uint32 sampleRate)
 	}
 }
 
-uint32 DAIMEMIFSampleRateTransform(uint32 sampleRate)
+unsigned int DAIMEMIFSampleRateTransform(unsigned int sampleRate)
 {
 	switch (sampleRate) {
 	case 8000:
@@ -742,7 +742,7 @@ uint32 DAIMEMIFSampleRateTransform(uint32 sampleRate)
 }
 
 
-uint32 ADDADLSampleRateTransform(uint32 sampleRate)
+unsigned int ADDADLSampleRateTransform(unsigned int sampleRate)
 {
 	switch (sampleRate) {
 	case 8000:
@@ -774,7 +774,7 @@ uint32 ADDADLSampleRateTransform(uint32 sampleRate)
 	}
 }
 
-uint32 ADDAULSampleRateTransform(uint32 sampleRate)
+unsigned int ADDAULSampleRateTransform(unsigned int sampleRate)
 {
 	switch (sampleRate) {
 	case 8000:
@@ -796,7 +796,7 @@ uint32 ADDAULSampleRateTransform(uint32 sampleRate)
 	}
 }
 
-uint32 MDSampleRateTransform(uint32 sampleRate)
+unsigned int MDSampleRateTransform(unsigned int sampleRate)
 {
 	switch (sampleRate) {
 	case 8000:
@@ -831,7 +831,7 @@ bool Set2ndI2SOutAttribute(uint32_t sampleRate)
 
 bool Set2ndI2SOut(struct audio_digital_i2s *DigtalI2S)
 {
-	uint32 u32AudioI2S = 0;
+	unsigned int u32AudioI2S = 0;
 
 	memcpy((void *)m2ndI2Sout, (void *)DigtalI2S, sizeof(struct audio_digital_i2s));
 	u32AudioI2S = SampleRateTransform(m2ndI2Sout->mI2S_SAMPLERATE, Soc_Aud_Digital_Block_I2S_OUT_2) << 8;
@@ -885,7 +885,7 @@ bool GetMrgI2SEnable(void)
 
 bool SetMrgI2SEnable(bool bEnable, unsigned int sampleRate)
 {
-	uint32 sampleRateType;
+	unsigned int sampleRateType;
 
 	sampleRateType = SampleRateTransform(sampleRate, Soc_Aud_Digital_Block_MRG_I2S_OUT);
 
@@ -967,8 +967,8 @@ bool Set2ndI2SAdcIn(struct audio_digital_i2s *DigtalI2S)
 
 bool SetExtI2SAdcIn(struct audio_digital_i2s *DigtalI2S)
 {
-	uint32 Audio_I2S_Adc = 0;
-	uint32 sampleRateType;
+	unsigned int Audio_I2S_Adc = 0;
+	unsigned int sampleRateType;
 
 	sampleRateType =
 		    SampleRateTransform(DigtalI2S->mI2S_SAMPLERATE, Soc_Aud_Digital_Block_I2S_IN_ADC);
@@ -1084,7 +1084,7 @@ int setConnsysI2SEnable(bool enable)
 	if (enable) {
 		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON0, ((1 << 6) | (1 << 0)), ((1 << 6) | (1 << 0)));
 	} else {
-		uint32 dNeedDisableASM = (Afe_Get_Reg(AFE_ASRC_CONNSYS_CON0) & 0x0030) ? 1 : 0;
+		unsigned int dNeedDisableASM = (Afe_Get_Reg(AFE_ASRC_CONNSYS_CON0) & 0x0030) ? 1 : 0;
 
 		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON0, 0, (1 << 6 | dNeedDisableASM));
 	}
@@ -1116,13 +1116,13 @@ int setConnsysI2SEnable(bool enable)
 
 bool setDmicPath(bool _enable)
 {
-	uint32 sample_rate =
+	unsigned int sample_rate =
 		mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate;
 
 	return setChipDmicPath(_enable, sample_rate);
 }
 
-bool EnableSineGen(uint32 connection, bool direction, bool Enable)
+bool EnableSineGen(unsigned int connection, bool direction, bool Enable)
 {
 	bool ret = 0;
 
@@ -1141,12 +1141,12 @@ bool EnableSineGen(uint32 connection, bool direction, bool Enable)
 }
 
 
-bool SetSineGenSampleRate(uint32 SampleRate)
+bool SetSineGenSampleRate(unsigned int SampleRate)
 {
 	return set_chip_sine_gen_sample_rate(SampleRate);
 }
 
-bool SetSineGenAmplitude(uint32 ampDivide)
+bool SetSineGenAmplitude(unsigned int ampDivide)
 {
 	return set_chip_sine_gen_amplitude(ampDivide);
 }
@@ -1252,9 +1252,9 @@ bool Set2ndI2SEnable(bool bEnable)
 	return true;
 }
 
-bool SetI2SDacOut(uint32 SampleRate, bool lowjitter, bool I2SWLen)
+bool SetI2SDacOut(unsigned int SampleRate, bool lowjitter, bool I2SWLen)
 {
-	uint32 Audio_I2S_Dac = 0;
+	unsigned int Audio_I2S_Dac = 0;
 
 	/* force use 32bit for speaker codec */
 	I2SWLen = Soc_Aud_I2S_WLEN_WLEN_32BITS;
@@ -1277,7 +1277,7 @@ bool SetI2SDacOut(uint32 SampleRate, bool lowjitter, bool I2SWLen)
 }
 
 
-bool SetHwDigitalGainMode(uint32 GainType, uint32 SampleRate, uint32 SamplePerStep)
+bool SetHwDigitalGainMode(unsigned int GainType, unsigned int SampleRate, unsigned int SamplePerStep)
 {
 	/*
 	  * printk("SetHwDigitalGainMode GainType = %d, SampleRate = %d,
@@ -1293,7 +1293,7 @@ bool SetHwDigitalGainEnable(int GainType, bool Enable)
 }
 
 
-bool SetHwDigitalGain(uint32 Gain, int GainType)
+bool SetHwDigitalGain(unsigned int Gain, int GainType)
 {
 	pr_debug("+%s(), Gain = 0x%x, gain type = %d\n", __func__, Gain, GainType);
 	return set_chip_hw_digital_gain(Gain, GainType);
@@ -1326,10 +1326,10 @@ bool SetModemPcmEnable(int modem_index, bool modem_pcm_on)
 	return ret;
 }
 
-bool SetMemoryPathEnableReg(uint32 Aud_block, bool bEnable)
+bool SetMemoryPathEnableReg(unsigned int Aud_block, bool bEnable)
 {
-	uint32 offset = GetEnableAudioBlockRegOffset(Aud_block);
-	uint32 reg = GetEnableAudioBlockRegAddr(Aud_block);
+	unsigned int offset = GetEnableAudioBlockRegOffset(Aud_block);
+	unsigned int reg = GetEnableAudioBlockRegAddr(Aud_block);
 
 	if (reg == 0) {
 		pr_err("%s(), no such memory path enable bit!!", __func__);
@@ -1339,7 +1339,7 @@ bool SetMemoryPathEnableReg(uint32 Aud_block, bool bEnable)
 	return true;
 }
 
-bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
+bool SetMemoryPathEnable(unsigned int Aud_block, bool bEnable)
 {
 	pr_aud("%s Aud_block = %d bEnable = %d\n", __func__, Aud_block, bEnable);
 	if (Aud_block >= Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK)
@@ -1376,7 +1376,7 @@ bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 	return true;
 }
 
-bool GetMemoryPathEnable(uint32 Aud_block)
+bool GetMemoryPathEnable(unsigned int Aud_block)
 {
 	if (Aud_block < Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK)
 		return mAudioMEMIF[Aud_block]->mState;
@@ -1519,26 +1519,26 @@ bool checkUplinkMEMIfStatus(void)
 		mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL_DATA2]->mState;
 }
 
-bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
+bool SetConnection(unsigned int ConnectionState, unsigned int Input, unsigned int Output)
 {
 	return SetConnectionState(ConnectionState, Input, Output);
 }
 
-bool SetConnectionFormat(uint32 ConnectionFormat, uint32 Aud_block)
+bool SetConnectionFormat(unsigned int ConnectionFormat, unsigned int Aud_block)
 {
 	return SetIntfConnectionFormat(ConnectionFormat, Aud_block);
 }
 
-bool SetIntfConnection(uint32 ConnectionState, uint32 Aud_block_In, uint32 Aud_block_Out)
+bool SetIntfConnection(unsigned int ConnectionState, unsigned int Aud_block_In, unsigned int Aud_block_Out)
 {
 	return SetIntfConnectionState(ConnectionState, Aud_block_In, Aud_block_Out);
 }
 
-static bool SetIrqEnable(uint32 irqmode, bool bEnable)
+static bool SetIrqEnable(unsigned int irqmode, bool bEnable)
 {
 	const struct Aud_RegBitsInfo *irqOnReg, *irqEnReg, *irqClrReg, *irqMissClrReg;
 	const struct Aud_RegBitsInfo *irqPurposeEnReg;
-	uint32 enShift, purposeIndex;
+	unsigned int enShift, purposeIndex;
 	bool enSet;
 
 	pr_debug("+ %s(), Irqmode %d, bEnable %d\n", __func__, irqmode, bEnable);
@@ -1586,9 +1586,9 @@ static bool SetIrqEnable(uint32 irqmode, bool bEnable)
 }
 
 
-static bool SetIrqMcuSampleRate(uint32 irqmode, uint32 SampleRate)
+static bool SetIrqMcuSampleRate(unsigned int irqmode, unsigned int SampleRate)
 {
-	uint32 SRIdx = SampleRateTransform(SampleRate, 0);
+	unsigned int SRIdx = SampleRateTransform(SampleRate, 0);
 	const struct Aud_RegBitsInfo *irqModeReg;
 
 	pr_aud("%s(), Irqmode %d, SampleRate %d\n",
@@ -1604,7 +1604,7 @@ static bool SetIrqMcuSampleRate(uint32 irqmode, uint32 SampleRate)
 	return true;
 }
 
-static bool SetIrqMcuCounter(uint32 irqmode, uint32 Counter)
+static bool SetIrqMcuCounter(unsigned int irqmode, unsigned int Counter)
 {
 	const struct Aud_RegBitsInfo *irqCntReg;
 
@@ -1636,7 +1636,7 @@ bool Set2ndI2SInConfig(unsigned int sampleRate, bool bIsSlaveMode)
 
 bool Set2ndI2SIn(struct audio_digital_i2s *mDigitalI2S)
 {
-	uint32 Audio_I2S_Adc = 0;
+	unsigned int Audio_I2S_Adc = 0;
 
 	memcpy((void *)m2ndI2S, (void *)mDigitalI2S, sizeof(struct audio_digital_i2s));
 
@@ -1665,13 +1665,13 @@ bool Set2ndI2SInEnable(bool bEnable)
 	return true;
 }
 
-bool SetMemIfFetchFormatPerSample(uint32 InterfaceType, uint32 eFetchFormat)
+bool SetMemIfFetchFormatPerSample(unsigned int InterfaceType, unsigned int eFetchFormat)
 {
 	mAudioMEMIF[InterfaceType]->mFetchFormatPerSample = eFetchFormat;
 	return SetMemIfFormatReg(InterfaceType, eFetchFormat);
 }
 
-bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output)
+bool SetoutputConnectionFormat(unsigned int ConnectionFormat, unsigned int Output)
 {
 	if (Output >= Soc_Aud_InterConnectionOutput_O32) {
 #ifdef AFE_CONN_24BIT_1
@@ -1770,7 +1770,7 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length,
 }
 
 int AudDrv_Allocate_mem_Buffer(struct device *pDev, enum soc_aud_digital_block MemBlock,
-			       uint32 Buffer_length)
+			       unsigned int Buffer_length)
 {
 	switch (MemBlock) {
 	case Soc_Aud_Digital_Block_MEM_DL1:
@@ -2777,7 +2777,7 @@ static kal_uint32 Get_Mem_MaxCopySize(enum soc_aud_digital_block MemBlock)
 }
 
 void Set_Mem_CopySizeByStream(enum soc_aud_digital_block MemBlock,
-			      struct snd_pcm_substream *substream, uint32 size)
+			      struct snd_pcm_substream *substream, unsigned int size)
 {
 	struct substream_list *head;
 	unsigned long flags;
@@ -4476,8 +4476,8 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream,
 	}
 
 	else {
-		uint32 size_1 = Vul_Block->u4BufferSize - DMA_Read_Ptr;
-		uint32 size_2 = read_size - size_1;
+		unsigned int size_1 = Vul_Block->u4BufferSize - DMA_Read_Ptr;
+		unsigned int size_2 = read_size - size_1;
 
 		if (DMA_Read_Ptr != Vul_Block->u4DMAReadIdx) {
 
@@ -4676,7 +4676,7 @@ int get_LowLatencyDebug(void)
 	return LowLatencyDebug;
 }
 
-void set_LowLatencyDebug(uint32 bFlag)
+void set_LowLatencyDebug(unsigned int bFlag)
 {
 	LowLatencyDebug = bFlag;
 	pr_warn("%s LowLatencyDebug = %d\n", __func__, LowLatencyDebug);

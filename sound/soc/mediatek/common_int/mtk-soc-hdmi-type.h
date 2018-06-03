@@ -53,19 +53,19 @@ enum hdmi_display_type {
 };
 
 struct audio_hdmi_format {
-	uint8 mHDMI_DisplayType;
-	uint32 mI2Snum;
-	uint32 mI2S_MCKDIV;
-	uint32 mI2S_BCKDIV;
+	unsigned char mHDMI_DisplayType;
+	unsigned int mI2Snum;
+	unsigned int mI2S_MCKDIV;
+	unsigned int mI2S_BCKDIV;
 
-	uint32 mHDMI_Samplerate;
-	uint32 mHDMI_Channels; /* channel number HDMI transmitted */
-	uint32 mHDMI_Data_Lens;
-	uint32 mTDM_Data_Lens;
-	uint32 mClock_Data_Lens;
-	uint32 mTDM_LRCK;
-	uint32 msDATA_Channels; /* channel number per sdata */
-	uint32 mMemIfFetchFormatPerSample;
+	unsigned int mHDMI_Samplerate;
+	unsigned int mHDMI_Channels; /* channel number HDMI transmitted */
+	unsigned int mHDMI_Data_Lens;
+	unsigned int mTDM_Data_Lens;
+	unsigned int mClock_Data_Lens;
+	unsigned int mTDM_LRCK;
+	unsigned int msDATA_Channels; /* channel number per sdata */
+	unsigned int mMemIfFetchFormatPerSample;
 	bool mSdata0;
 	bool mSdata1;
 	bool mSdata2;
