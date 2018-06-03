@@ -2035,7 +2035,6 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 		}
 	}
 
-	bCompatibleAll = IMG_TRUE;
 	if (!bCompatibleAll)
 	{
 		if (!bCompatibleVersion)
@@ -2908,6 +2907,7 @@ PVRSRVRGXInitFirmwareKM(PVRSRV_DEVICE_NODE       *psDeviceNode,
 	else
 	{
 		RGX_BVNC_EQUAL(sBVNC, *psFirmwareBVNC, bCompatibleAll, bCompatibleVersion, bCompatibleLenMax, bCompatibleBNC, bCompatibleV);
+		bCompatibleAll = IMG_TRUE;
 	}
 
 	if (!bCompatibleAll)
