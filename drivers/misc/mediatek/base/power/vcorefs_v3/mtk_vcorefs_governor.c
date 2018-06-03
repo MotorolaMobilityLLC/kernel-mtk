@@ -352,7 +352,7 @@ int vcorefs_get_vcore_by_steps(u32 opp)
 #if defined(CONFIG_MACH_MT6775)
 	return vcore_pmic_to_uv(get_vcore_opp_volt(opp));
 #elif defined(CONFIG_MACH_MT6771)
-	return get_vcore_opp_volt(spm_get_vcore_opp(opp));
+	return get_vcore_opp_volt(opp);
 #else
 	return vcore_pmic_to_uv(get_vcore_ptp_volt(opp));
 #endif

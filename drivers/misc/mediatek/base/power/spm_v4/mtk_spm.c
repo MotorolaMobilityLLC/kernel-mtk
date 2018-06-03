@@ -542,7 +542,7 @@ static void __spm_check_dram_type(void)
 	int ddr_type = get_ddr_type();
 	int ddr_hz = get_dram_data_rate();
 
-	if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3733)
+	if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3600)
 		__spmfw_idx = SPMFW_LP4X_2CH_3733;
 	else if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3200)
 		__spmfw_idx = SPMFW_LP4X_2CH_3200;
