@@ -739,25 +739,61 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	dvfs_threshold_low = preultra_low;
 	dvfs_threshold_high = preultra_low;
 
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
-		DISP_REG_RDMA_MEM_GMC_SETTING_0,
-		preultra_low | (preultra_high << 16) |
-		REG_FLD_VAL(
-		MEM_GMC_SETTING_0_FLD_RG_VALID_THRESHOLD_FORCE_PREULTRA,
-						1) |
-		REG_FLD_VAL(MEM_GMC_SETTING_0_FLD_RG_VDE_FORCE_PREULTRA, 0));
+	/* Disable HRT_URGENT_SIGNAL */
+	DISP_REG_SET_FIELD(handle, MMSYS_EMI_REQ_CTL_FLD_HRT_URGENT_CTL,
+		DISP_REG_CONFIG_MMSYS_EMI_REQ_CTL, 0x3);
 
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
-		DISP_REG_RDMA_MEM_GMC_SETTING_1,
-		ultra_low | (ultra_high << 16) |
-		REG_FLD_VAL(
-		MEM_GMC_SETTING_1_FLD_RG_VALID_THRESHOLD_BLOCK_ULTRA,
-						1) |
-		REG_FLD_VAL(MEM_GMC_SETTING_1_FLD_RG_VDE_BLOCK_ULTRA, 0));
+	if (primary_display_is_video_mode()) {
+		/* video mode*/
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
+			DISP_REG_RDMA_MEM_GMC_SETTING_0,
+			preultra_low | (preultra_high << 16) |
+			REG_FLD_VAL(
+			MEM_GMC_SETTING_0_FLD_RG_VALID_THRESHOLD_FORCE_PREULTRA,
+							0) |
+			REG_FLD_VAL(MEM_GMC_SETTING_0_FLD_RG_VDE_FORCE_PREULTRA,
+							1));
 
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
-		DISP_REG_RDMA_MEM_GMC_SETTING_2,
-		issue_req_threshold);
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
+			DISP_REG_RDMA_MEM_GMC_SETTING_1,
+			ultra_low | (ultra_high << 16) |
+			REG_FLD_VAL(
+			MEM_GMC_SETTING_1_FLD_RG_VALID_THRESHOLD_BLOCK_ULTRA,
+							0) |
+			REG_FLD_VAL(MEM_GMC_SETTING_1_FLD_RG_VDE_BLOCK_ULTRA,
+							1));
+
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
+			DISP_REG_RDMA_MEM_GMC_SETTING_2,
+			issue_req_threshold);
+	} else {
+		/* cmd mode */
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
+			DISP_REG_RDMA_MEM_GMC_SETTING_0,
+			preultra_low | (preultra_high << 16) |
+			REG_FLD_VAL(
+			MEM_GMC_SETTING_0_FLD_RG_VALID_THRESHOLD_FORCE_PREULTRA,
+							1) |
+			REG_FLD_VAL(MEM_GMC_SETTING_0_FLD_RG_VDE_FORCE_PREULTRA,
+							0));
+
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
+			DISP_REG_RDMA_MEM_GMC_SETTING_1,
+			ultra_low | (ultra_high << 16) |
+			REG_FLD_VAL(
+			MEM_GMC_SETTING_1_FLD_RG_VALID_THRESHOLD_BLOCK_ULTRA,
+							1) |
+			REG_FLD_VAL(MEM_GMC_SETTING_1_FLD_RG_VDE_BLOCK_ULTRA,
+							0));
+
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
+			DISP_REG_RDMA_MEM_GMC_SETTING_2,
+			issue_req_threshold);
+	}
+
+	/* In video mode, output_valid_fifo_threshold = 0 */
+	if (primary_display_is_video_mode())
+		output_valid_fifo_threshold = 0;
 
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
 		DISP_REG_RDMA_FIFO_CON,
