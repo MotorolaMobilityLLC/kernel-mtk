@@ -139,6 +139,7 @@ static unsigned long long drcc_pTime_us, drcc_cTime_us, drcc_diff_us;
 #define drcc_write_field(addr, range, val)	\
 	drcc_write(addr, (drcc_read(addr) & ~BITMASK(range)) | BITS(range, val))
 
+#define DRCC_K_CHECK
 #ifdef DRCC_K_CHECK
 /************************************************
  * call back registeration
@@ -170,13 +171,13 @@ static DEFINE_SPINLOCK(drcc_spinlock);
 /************************************************
 * Global function definition
 ************************************************/
-#if 0 /* def CONFIG_MTK_RAM_CONSOLE */
+#ifdef CONFIG_MTK_RAM_CONSOLE
 static void _mt_drcc_aee_init(void)
 {
-	aee_rr_rec_drcc_0(0xFFFFFFFF);
-	aee_rr_rec_drcc_1(0xFFFFFFFF);
-	aee_rr_rec_drcc_2(0xFFFFFFFF);
-	aee_rr_rec_drcc_3(0xFFFFFFFF);
+	aee_rr_rec_drcc_0(0x0);
+	aee_rr_rec_drcc_1(0x0);
+	aee_rr_rec_drcc_2(0x0);
+	aee_rr_rec_drcc_3(0x0);
 }
 #endif
 
@@ -240,7 +241,7 @@ static int _mt_drcc_cpu_CB(struct notifier_block *nfb,
 				if (mtk_drcc_calibration_result() == 0) {
 					/* Log into SRAM debug. */
 					drcc_fail_composite();
-					drcc_debug("K fail !!\n");
+					/* drcc_debug("K fail !!\n"); */
 				}
 				/* drcc_debug("K done !!\n"); */
 			}
@@ -287,7 +288,7 @@ void mtk_drcc_log2RamConsole(void)
 			DRCC_CONF0 + (i * 4), 0, 0);
 		/* drcc_debug("reg_0x%x = 0x%X\n", i, value[i]); */
 	}
-	#if 0 /* def CONFIG_MTK_RAM_CONSOLE */
+	#ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_drcc_0(value[0]);
 	aee_rr_rec_drcc_1(value[1]);
 	aee_rr_rec_drcc_2(value[2]);
@@ -320,7 +321,16 @@ int mtk_drcc_calibration_result(void)
 		0, 0, 0);
 	/* drcc_debug("K rst = (0x%x) !!\n", value); */
 	if (value == 0xF) {
-		drcc_debug("K fail !! rst = (0x%x) !!\n", value);
+		/* drcc_debug("K fail !! rst = (0x%x) !!\n", value); */
+		mtk_drcc_log2RamConsole();
+		aee_rr_rec_drcc_dbg_info(value,
+			7,
+			drcc_get_current_time_us());
+		mtk_drcc_enable(0);
+		result = 0;
+	} else if (value == 0xD) {
+		/* drcc_debug("K fail by disable!! rst = (0x%x) !!\n", value); */
+		mtk_drcc_log2RamConsole();
 		mtk_drcc_enable(0);
 		result = 0;
 	} else
@@ -1030,7 +1040,7 @@ static int create_procfs(void)
 
 static int drcc_probe(struct platform_device *pdev)
 {
-	#if 0 /* def CONFIG_MTK_RAM_CONSOLE */
+	#ifdef CONFIG_MTK_RAM_CONSOLE
 	_mt_drcc_aee_init();
 	#endif
 	drcc_debug("drcc probe ok!!\n");
