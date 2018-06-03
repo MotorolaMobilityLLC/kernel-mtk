@@ -575,7 +575,7 @@ static int tpd_probe(struct platform_device *pdev)
 	{
 #ifdef CONFIG_CUSTOM_LCM_X
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#ifdef CONFIG_MTK_FB
+#if defined(CONFIG_MTK_FB) && defined(CONFIG_MTK_LCM)
 /*Fix build errors,as some projects  cannot support these apis while bring up*/
 		TPD_RES_X = DISP_GetScreenWidth();
 		TPD_RES_Y = DISP_GetScreenHeight();
