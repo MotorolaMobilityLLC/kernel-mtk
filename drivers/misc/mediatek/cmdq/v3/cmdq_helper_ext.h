@@ -689,9 +689,7 @@ struct cmdqRecStruct {
 	struct cmdq_timeout_info *timeout_info;
 
 	/* debug information */
-#if 0
-	dma_addr_t pa_base;
-#endif
+	u32 error_irq_pc;
 	bool dumpAllocTime;	/* flag to print static info to kernel log. */
 	s32 reorder;
 	CMDQ_TIME submit;

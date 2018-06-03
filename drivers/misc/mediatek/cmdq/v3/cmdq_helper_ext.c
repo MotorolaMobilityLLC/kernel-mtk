@@ -3068,6 +3068,15 @@ static void cmdq_core_dump_handle(const struct cmdqRecStruct *handle,
 		CMDQ_LOG("[%s]Result buffer va:0x%p pa:%pa count:%u\n",
 			tag, handle->reg_values, &handle->reg_values_pa,
 			handle->reg_count);
+	if (handle->sram_base)
+		CMDQ_LOG("[%s]** This is SRAM task, sram base:0x%08x\n",
+			tag, handle->sram_base);
+	CMDQ_LOG(
+		"[%s]Reorder:%d Trigger:%lld Got IRQ:0x%llx Wait:%lld Finish:%lld\n",
+		tag, handle->reorder, handle->trigger, handle->gotIRQ,
+		handle->beginWait, handle->wakedUp);
+	CMDQ_LOG("[%s]Caller pid:%d name:%s\n",
+		tag, handle->caller_pid, handle->caller_name);
 }
 
 u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
@@ -3223,7 +3232,7 @@ static void cmdq_core_release_nghandleinfo(struct cmdq_ng_handle_info *nginfo)
 }
 
 static void cmdq_core_dump_error_buffer(const struct cmdqRecStruct *handle,
-	void *pc)
+	void *pc, u32 pc_pa)
 {
 	struct cmdq_pkt_buffer *buf;
 	const struct cmdq_pkt *pkt = handle->pkt;
@@ -3246,6 +3255,10 @@ static void cmdq_core_dump_error_buffer(const struct cmdqRecStruct *handle,
 			 * instruction, add offset 1
 			 */
 			dump_size = pc - buf->va_base + CMDQ_INST_SIZE;
+			dump = true;
+		} else if (pc_pa && pc_pa >= buf->pa_base &&
+			pc_pa < buf->pa_base + cmd_size) {
+			dump_size = pc_pa - buf->pa_base + CMDQ_INST_SIZE;
 			dump = true;
 		} else {
 			dump_size = cmd_size;
@@ -3273,7 +3286,7 @@ static void cmdq_core_dump_handle_command(const struct cmdqRecStruct *handle,
 {
 	CMDQ_ERR("============ [CMDQ] Error Command Buffer ============\n");
 
-	cmdq_core_dump_error_buffer(handle, pc);
+	cmdq_core_dump_error_buffer(handle, pc, 0);
 }
 
 s32 cmdq_core_is_group_flag(enum CMDQ_GROUP_ENUM engGroup, u64 engineFlag)
@@ -4383,7 +4396,7 @@ static s32 cmdq_pkt_extend_new_buf(struct cmdqRecStruct *handle,
 	struct cmdq_pkt_buffer *buf;
 
 	/* DO NOT copy last instruction to new buffer.
-	 * So that we keep cmd_end[-2]:cmd_end[1] can offset
+	 * So that we keep cmd_end[-2]:cmd_end[-1] can offset
 	 * to EOC directly.
 	 */
 	if (handle->finalized) {
@@ -4525,10 +4538,11 @@ s32 cmdq_pkt_copy_cmd(struct cmdqRecStruct *handle, void *src, const u32 size,
 			return status;
 
 		/* update last instruction position */
-		handle->cmd_end = va + copy_size - CMDQ_INST_SIZE;
 		pkt->avail_buf_size -= copy_size;
 		pkt->cmd_buf_size += copy_size;
 		remaind_cmd_size -= copy_size;
+		handle->cmd_end = buf->va_base + CMDQ_CMD_BUFFER_SIZE -
+			pkt->avail_buf_size - CMDQ_INST_SIZE;
 
 		if (unlikely(!cmdq_pkt_is_buffer_size_valid(handle))) {
 			/* buffer size is total size and should sync
@@ -4672,6 +4686,10 @@ static void cmdq_pkt_err_dump_handler(struct cmdq_cb_data data)
 		atomic_inc(&handle->exec);
 		cmdq_core_attach_error_handle(handle, TASK_STATE_TIMEOUT);
 		atomic_dec(&handle->exec);
+	} else if (data.err == -EINVAL) {
+		/* store PC for later dump buffer */
+		handle->error_irq_pc =
+			CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(handle->thread));
 	}
 }
 
@@ -4738,10 +4756,13 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 	} else if (data.err == -ECONNABORTED) {
 		/* task killed */
 		handle->state = TASK_STATE_KILLED;
-	} else if (data.err < 0) {
+	} else if (data.err == -EINVAL) {
 		/* IRQ with error, dump commands */
 		handle->state = TASK_STATE_ERR_IRQ;
-		CMDQ_AEE("CMDQ", "Error IRQ\n");
+	} else if (data.err < 0) {
+		/* unknown error print it */
+		handle->state = TASK_STATE_KILLED;
+		CMDQ_ERR("%s error code:%d\n", __func__, data.err);
 	} else {
 		/* success done */
 		handle->state = TASK_STATE_DONE;
@@ -4760,7 +4781,7 @@ s32 cmdq_pkt_dump_command(struct cmdqRecStruct *handle)
 	u32 cnt = 0;
 
 	CMDQ_LOG("===== REC 0x%p command buffer =====\n", handle);
-	cmdq_core_dump_error_buffer(handle, NULL);
+	cmdq_core_dump_error_buffer(handle, NULL, 0);
 	CMDQ_LOG("===== REC 0x%p command buffer END =====\n", handle);
 
 	list_for_each_entry(buf, &pkt->buf, list_entry) {
@@ -4848,9 +4869,16 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 
 	/* set to timeout if state change to */
 	if (handle->state == TASK_STATE_TIMEOUT) {
+		/* timeout info already dump during callback */
 		status = -ETIMEDOUT;
 	} else if (handle->state == TASK_STATE_ERR_IRQ) {
+		/* dump current buffer for trace */
 		status = -EINVAL;
+		CMDQ_ERR("dump error irq handle:0x%p pc:0x%08x\n",
+			handle, handle->error_irq_pc);
+		cmdq_core_dump_error_buffer(handle, NULL,
+			handle->error_irq_pc);
+		CMDQ_AEE("CMDQ", "Error IRQ\n");
 	}
 
 	cmdq_core_track_handle_record(handle, handle->thread);
@@ -4920,9 +4948,9 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 	handle->pkt->err_cb.cb = cmdq_pkt_err_dump_handler;
 	handle->pkt->err_cb.data = (void *)handle;
 
-	CMDQ_MSG("%s handle:0x%p client:0x%p pkt:0x%p thread:%d timeout:%d\n",
-		__func__, handle, client, handle->pkt, handle->thread,
-		handle->pkt->timeout);
+	CMDQ_MSG("%s handle:0x%p pkt:0x%p size:%zu thread:%d timeout:%d\n",
+		__func__, handle, handle->pkt, handle->pkt->cmd_buf_size,
+		handle->thread, handle->pkt->timeout);
 
 	handle->trigger = sched_clock();
 

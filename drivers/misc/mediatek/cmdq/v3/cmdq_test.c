@@ -1207,7 +1207,7 @@ static void testcase_long_command(void)
 
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0xdeaddead);
 
-	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG_MDP, &handle);
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, gCmdqTestSecure);
 	/* build a 64K instruction buffer */
@@ -1218,7 +1218,7 @@ static void testcase_long_command(void)
 	CMDQ_LOG("handle:0x%p buf size:%zu size:%zu avail:%zu\n",
 		handle, handle->pkt->cmd_buf_size, handle->pkt->buf_size,
 		handle->pkt->avail_buf_size);
-	cmdq_task_flush(handle);
+	_test_flush_task(handle);
 	CMDQ_LOG("handle:0x%p buf size:%zu size:%zu avail:%zu\n",
 		handle, handle->pkt->cmd_buf_size, handle->pkt->buf_size,
 		handle->pkt->avail_buf_size);

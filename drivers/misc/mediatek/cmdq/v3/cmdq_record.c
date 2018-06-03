@@ -427,12 +427,18 @@ s32 cmdq_task_duplicate(struct cmdqRecStruct *handle,
 		}
 		memcpy(new_buf->va_base, buf->va_base, copy_size);
 		if (last_buf) {
-			va = (u32 *)(last_buf->va_base + copy_size -
+			va = (u32 *)(last_buf->va_base + CMDQ_CMD_BUFFER_SIZE -
 				CMDQ_INST_SIZE);
 			va[0] = new_buf->pa_base;
 		}
 		last_buf = new_buf;
 	}
+	if (last_buf)
+		handle_new->cmd_end = (u32 *)(last_buf->va_base +
+			CMDQ_CMD_BUFFER_SIZE - handle->pkt->avail_buf_size -
+			CMDQ_INST_SIZE);
+	else
+		handle_new->cmd_end = NULL;
 	handle_new->pkt->avail_buf_size = handle->pkt->avail_buf_size;
 	handle_new->pkt->cmd_buf_size = handle->pkt->cmd_buf_size;
 	handle_new->pkt->priority = handle->pkt->priority;
