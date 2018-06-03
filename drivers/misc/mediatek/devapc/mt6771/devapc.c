@@ -32,6 +32,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/types.h>
+#include <mt-plat/mtk_secure_api.h>
 
 #ifdef CONFIG_MTK_HIBERNATION
 #include <mtk_hibernate_dpm.h>
@@ -960,6 +961,31 @@ static int check_debug_input_type(const char *str)
 		return 0;
 }
 
+#ifdef DBG_ENABLE
+static ssize_t devapc_dbg_read(struct file *file, char __user *buffer, size_t count, loff_t *ppos)
+{
+	int ret;
+	ssize_t retval = 0;
+	char msg[256] = "DBG: dump devapc reg...\n";
+
+	if (*ppos >= strlen(msg))
+		return 0;
+
+	pr_info("enter %s...\n", __func__);
+	pr_info("call smc to ATF.\n");
+
+	retval = simple_read_from_buffer(buffer, count, ppos, msg, strlen(msg));
+
+	ret = mt_secure_call(MTK_SIP_LK_DAPC, 1, 0, 0);
+	if (ret == 0)
+		pr_info("dump devapc reg success !\n");
+	else
+		pr_info("dump devapc reg failed !\n");
+
+	return retval;
+}
+#endif
+
 static ssize_t devapc_dbg_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
 {
 	char desc[32];
@@ -996,7 +1022,11 @@ static const struct file_operations devapc_dbg_fops = {
 	.owner = THIS_MODULE,
 	.open  = devapc_dbg_open,
 	.write = devapc_dbg_write,
+#ifdef DBG_ENABLE
+	.read = devapc_dbg_read,
+#else
 	.read = NULL,
+#endif
 };
 
 static const struct of_device_id plat_devapc_dt_match[] = {
