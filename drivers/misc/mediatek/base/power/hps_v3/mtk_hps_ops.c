@@ -287,7 +287,7 @@ static int (*hps_func[]) (void) = {
 #if USE_EAS
 hps_algo_perf_indicator, hps_algo_rush_boost, hps_algo_eas};
 #else
-hps_algo_perf_indicator, hps_algo_rush_boost, hps_algo_up, hps_algo_down};
+hps_algo_rush_boost, hps_algo_perf_indicator, hps_algo_up, hps_algo_down};
 #endif
 int hps_ops_init(void)
 {

@@ -494,11 +494,12 @@ void hps_algo_main(void)
 
 	if (!hps_ctxt.enabled)
 		goto HPS_END;
-
+#if 0
 	if (hps_ctxt.eas_indicator) {
 		/*Set cpu cores by scheduler*/
 		goto HPS_ALGO_END;
 	}
+#endif
 	/*
 	 * algo - begin
 	 */
@@ -575,7 +576,7 @@ void hps_algo_main(void)
 	if (hps_sys.action_id == 0)
 		goto HPS_END;
 
-HPS_ALGO_END:
+/*HPS_ALGO_END:*/
 	/*
 	 * algo - end
 	 */
