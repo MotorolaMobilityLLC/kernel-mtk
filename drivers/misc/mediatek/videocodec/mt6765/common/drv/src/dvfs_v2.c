@@ -21,6 +21,7 @@
 #include "dvfs_v2.h"
 
 #define DEFAULT_MHZ 99999
+#define MAX_SUBMIT (33*1000)
 #define SHOW_ALGO_INFO 0
 
 long long div_64(long long a, long long b)
@@ -257,6 +258,7 @@ int find_calc_idx(struct codec_history *hist, int *first_idx, int *prev_idx)
 long long est_next_submit(struct codec_history *hist)
 {
 	int first_idx, prev_idx;
+	long long next_submit;
 
 	if (find_calc_idx(hist, &first_idx, &prev_idx) < 0)
 		return 0;
@@ -264,14 +266,26 @@ long long est_next_submit(struct codec_history *hist)
 	/* Add 2x estimated gap for next next job */
 	if (hist->cur_cnt == 1)
 		return (hist->submit[prev_idx] + MIN_SUBMIT_GAP * 2);
+
 #if SHOW_ALGO_INFO
 	pr_info("est_next_submit first_idx %d(%lld) prev_idx %d(%lld)",
 		first_idx, hist->submit[first_idx],
 		prev_idx, hist->submit[prev_idx]);
 #endif
-	return hist->submit[prev_idx] + div_64(
+
+	next_submit = div_64(
 		(hist->submit[prev_idx] - hist->submit[first_idx]) * 2,
 		(hist->cur_cnt - 1));
+
+	if (next_submit > MAX_SUBMIT) {
+#if SHOW_ALGO_INFO
+		pr_info("est_next_submit %lld -> MAX SUBMIT(%d)",
+			next_submit, MAX_SUBMIT);
+#endif
+		next_submit = MAX_SUBMIT;
+	}
+
+	return hist->submit[prev_idx] + next_submit;
 }
 
 /**
