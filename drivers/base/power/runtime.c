@@ -1215,9 +1215,13 @@ void pm_runtime_enable(struct device *dev)
 
 	spin_lock_irqsave(&dev->power.lock, flags);
 
-	if (dev->power.disable_depth > 0)
+	if (dev->power.disable_depth > 0) {
+		if (!strcmp(dev->kobj.name, "mmc0")
+			&& (dev->power.disable_depth == 1)) {
+			BUG_ON(1);
+		}
 		dev->power.disable_depth--;
-	else
+	} else
 		dev_warn(dev, "Unbalanced %s!\n", __func__);
 
 	spin_unlock_irqrestore(&dev->power.lock, flags);

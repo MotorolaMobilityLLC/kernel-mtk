@@ -302,6 +302,7 @@ struct msdc_host {
 
 	int                     error;
 	spinlock_t              lock;           /* mutex */
+	spinlock_t              reg_lock;
 	/* to solve removing bad card
 	 * race condition with hot-plug enable
 	 */
@@ -346,7 +347,15 @@ struct msdc_host {
 	u8                      card_inserted;  /* card inserted ? */
 	u8                      autocmd;
 	u8                      app_cmd;        /* for app command */
+	volatile int            is_data_dma;
 	u32                     app_cmd_arg;
+
+	u32                     intsts;         /* raw insts */
+	bool                    use_cmd_intr;   /* cmd intr mode */
+	struct completion       cmd_done;
+	u32                     busy_timeout_ms;/* check device busy */
+	u32                     max_busy_timeout_ms;
+
 	int                     pin_state;      /* for hw trapping */
 	u32                     sw_timeout;
 #ifdef SDCARD_ESD_RECOVERY

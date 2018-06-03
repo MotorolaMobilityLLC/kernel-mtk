@@ -430,6 +430,31 @@ static int mmc_wait_tran(struct mmc_host *host)
 	return 0;
 }
 
+static int mmc_force_wait_tran(struct mmc_host *host)
+{
+	u32 status;
+	int err;
+	unsigned long timeout;
+
+	timeout = jiffies + msecs_to_jiffies(10 * 1000);
+	do {
+		err = mmc_blk_status_check(host->card, &status);
+		if (err) {
+			pr_debug("[CQ] check card status error = %d\n", err);
+			return 1;
+		}
+
+		if (time_after(jiffies, timeout)) {
+			pr_notice("%s: Card stuck in %d state! %s\n",
+					mmc_hostname(host),
+					R1_CURRENT_STATE(status), __func__);
+			BUG_ON(1);
+		}
+	} while (R1_CURRENT_STATE(status) != R1_STATE_TRAN);
+
+	return 0;
+}
+
 /*
  *	check write
  */
@@ -528,6 +553,7 @@ int mmc_run_queue_thread(void *data)
 
 			if (done_mrq && !done_mrq->data->error
 			&& !done_mrq->cmd->error) {
+				mmc_force_wait_tran(host);
 				task_id = (done_mrq->cmd->arg >> 16) & 0x1f;
 				mt_biolog_cmdq_dma_end(task_id);
 				mmc_check_write(host, done_mrq);
