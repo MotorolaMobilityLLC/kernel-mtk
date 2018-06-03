@@ -469,7 +469,7 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		pr_err("%s:%d: LCM init table overflow: %d\n", __FILE__, __LINE__, len);
 		return;
 	}
-	pr_debug("%s:%d: len: %d\n", __FILE__, __LINE__, len);
+	DISPMSG("%s:%d: len: %d\n", __FILE__, __LINE__, len);
 
 	tmp = dts;
 	for (i = 0; i < INIT_SIZE; i++) {
@@ -478,7 +478,7 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		lcm_dts->init[i].size = (*(tmp + 2)) & 0xFF;
 		tmp_len = 3;
 
-		pr_debug("%s:%d: dts: %d, %d, %d\n", __FILE__, __LINE__, *tmp, *(tmp + 1), i);
+		DISPMSG("%s:%d: dts: %d, %d, %d\n", __FILE__, __LINE__, *tmp, *(tmp + 1), i);
 		switch (lcm_dts->init[i].func) {
 		case LCM_FUNC_GPIO:
 			memcpy(&(lcm_dts->init[i].data_t1), tmp + 3, lcm_dts->init[i].size);
@@ -821,7 +821,7 @@ int check_lcm_node_from_DT(void)
 	struct device_node *np = NULL;
 
 	sprintf(lcm_node, "mediatek,lcm_params-%s", lcm_name_list[0]);
-	pr_debug("LCM PARAMS DT compatible: %s\n", lcm_node);
+	DISPMSG("LCM PARAMS DT compatible: %s\n", lcm_node);
 
 	/* Load LCM parameters from DT */
 	np = of_find_compatible_node(NULL, NULL, lcm_node);
@@ -831,7 +831,7 @@ int check_lcm_node_from_DT(void)
 	}
 
 	sprintf(lcm_node, "mediatek,lcm_ops-%s", lcm_name_list[0]);
-	pr_debug("LCM OPS DT compatible: %s\n", lcm_node);
+	DISPMSG("LCM OPS DT compatible: %s\n", lcm_node);
 
 	/* Load LCM parameters from DT */
 	np = of_find_compatible_node(NULL, NULL, lcm_node);
@@ -858,7 +858,7 @@ void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 	memset((unsigned char *)parse_dts, 0x0, sizeof(LCM_DTS));
 
 	sprintf(lcm_node, "mediatek,lcm_params-%s", lcm_name_list[0]);
-	pr_debug("LCM PARAMS DT compatible: %s\n", lcm_node);
+	DISPMSG("LCM PARAMS DT compatible: %s\n", lcm_node);
 
 	/* Load LCM parameters from DT */
 	np = of_find_compatible_node(NULL, NULL, lcm_node);
@@ -868,7 +868,7 @@ void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 		parse_lcm_params_dt_node(np, &(parse_dts->params));
 
 	sprintf(lcm_node, "mediatek,lcm_ops-%s", lcm_name_list[0]);
-	pr_debug("LCM OPS DT compatible: %s\n", lcm_node);
+	DISPMSG("LCM OPS DT compatible: %s\n", lcm_node);
 
 	/* Load LCM parameters from DT */
 	np = of_find_compatible_node(NULL, NULL, lcm_node);
@@ -1045,14 +1045,14 @@ int disp_lcm_init(struct disp_lcm_handle *plcm, int force)
 
 		if (lcm_drv->init_power) {
 			if (!disp_lcm_is_inited(plcm) || force) {
-				pr_debug("lcm init power()\n");
+				DISPMSG("lcm init power()\n");
 				lcm_drv->init_power();
 			}
 		}
 
 		if (lcm_drv->init) {
 			if (!disp_lcm_is_inited(plcm) || force) {
-				pr_debug("lcm init()\n");
+				DISPMSG("lcm init()\n");
 				lcm_drv->init();
 			}
 		} else {
@@ -1066,9 +1066,9 @@ int disp_lcm_init(struct disp_lcm_handle *plcm, int force)
 
 			ret = DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSI0, NULL, 0x0A, &buffer, 1);
 			if (ret == 0)
-				pr_debug("lcm is not connected\n");
+				DISPMSG("lcm is not connected\n");
 			else
-				pr_debug("lcm is connected\n");
+				DISPMSG("lcm is connected\n");
 
 		}
 #endif

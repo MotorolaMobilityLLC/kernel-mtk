@@ -87,7 +87,8 @@
 /* #define DISP_INDEX_OFFSET 0x1000 */
 #define DISP_RDMA_INDEX_OFFSET  (ddp_get_module_va(DISP_MODULE_RDMA1) - ddp_get_module_va(DISP_MODULE_RDMA0))
 #define DISP_WDMA_INDEX_OFFSET  (0)
-#define DISP_OVL_INDEX_OFFSET  (0)
+#define DISP_OVL_INDEX_OFFSET   (0)
+#define DISP_MIPI_INDEX_OFFSET  (0)
 
 #define DISPSYS_CONFIG_BASE			ddp_get_module_va(DISP_MODULE_CONFIG)
 #define DISPSYS_OVL0_BASE		    ddp_get_module_va(DISP_MODULE_OVL0)
@@ -263,5 +264,6 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #include "ddp_reg_dma.h"
 /* #include "ddp_reg_rsz.h" */
 #include "ddp_reg_dsi.h"
+#include "ddp_reg_mipi.h"
 
 #endif /* _DDP_REG_H_ */

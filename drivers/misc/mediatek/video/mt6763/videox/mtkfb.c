@@ -1609,7 +1609,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 	struct fb_overlay_layer layerInfo;
 	long ret = 0;
 
-	pr_debug("[FB Driver] mtkfb_compat_ioctl, cmd=0x%08x, cmd nr=0x%08x, cmd size=0x%08x\n", cmd,
+	DISPDBG("[FB Driver] mtkfb_compat_ioctl, cmd=0x%08x, cmd nr=0x%08x, cmd size=0x%08x\n", cmd,
 	       (unsigned int)_IOC_NR(cmd), (unsigned int)_IOC_SIZE(cmd));
 
 	switch (cmd) {
@@ -1624,7 +1624,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 				pr_err("MTKFB_FRAMEBUFFER_MVA failed\n");
 				ret = -EFAULT;
 			}
-			pr_debug("MTKFB_FRAMEBUFFER_MVA success 0x%lx\n", fb_pa);
+			DISPDBG("MTKFB_FRAMEBUFFER_MVA success 0x%lx\n", fb_pa);
 			return ret;
 		}
 	case COMPAT_MTKFB_GET_DISPLAY_IF_INFORMATION:
@@ -1688,7 +1688,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 				pr_err("MTKFB_GET_POWERSTATE failed\n");
 				ret = -EFAULT;
 			}
-			pr_debug("MTKFB_GET_POWERSTATE success %d\n", power_state);
+			DISPDBG("MTKFB_GET_POWERSTATE success %d\n", power_state);
 			break;
 		}
 	case COMPAT_MTKFB_CAPTURE_FRAMEBUFFER:
@@ -1737,7 +1737,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 
 			/* in early suspend mode ,will not update buffer index, info SF by return value */
 			if (primary_display_is_sleepd()) {
-				pr_debug("[FB Driver] error, set overlay in early suspend ,skip!\n");
+				DISPERR("[FB Driver] error, set overlay in early suspend ,skip!\n");
 				kfree(compat_layerInfo);
 				return MTKFB_ERROR_IS_EARLY_SUSPEND;
 			}
@@ -1920,7 +1920,7 @@ static int mtkfb_fbinfo_init(struct fb_info *info)
 	var.yres = MTK_FB_YRES;
 	var.xres_virtual = MTK_FB_XRESV;
 	var.yres_virtual = MTK_FB_YRESV;
-	pr_debug("mtkfb_fbinfo_init var.xres=%d,var.yres=%d,var.xres_virtual=%d,var.yres_virtual=%d\n",
+	DISPMSG("mtkfb_fbinfo_init var.xres=%d,var.yres=%d,var.xres_virtual=%d,var.yres_virtual=%d\n",
 	     var.xres, var.yres, var.xres_virtual, var.yres_virtual);
 	/* use 32 bit framebuffer as default */
 	var.bits_per_pixel = 32;
@@ -2085,7 +2085,7 @@ static void _mtkfb_draw_block(unsigned long addr, unsigned int x, unsigned int y
 char *mtkfb_find_lcm_driver(void)
 {
 	_parse_tag_videolfb();
-	DISPDBG("%s, %s\n", __func__, mtkfb_lcm_name);
+	DISPMSG("%s, %s\n", __func__, mtkfb_lcm_name);
 	return mtkfb_lcm_name;
 }
 
@@ -2191,7 +2191,7 @@ int __parse_tag_videolfb_extra(unsigned long node)
 	memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
 	strncpy((char *)mtkfb_lcm_name, prop, sizeof(mtkfb_lcm_name));
 	mtkfb_lcm_name[size] = '\0';
-	pr_debug("__parse_tag_videolfb_extra done\n");
+	DISPMSG("__parse_tag_videolfb_extra done\n");
 	return 0;
 }
 
@@ -2342,7 +2342,7 @@ static int update_test_kthread(void *data)
 		if (kthread_should_stop())
 			break;
 		msleep(1000);	/* 2s */
-		pr_debug("update test thread work,offset = %d\n", i);
+		DISPMSG("update test thread work,offset = %d\n", i);
 
 		mtkfb_fbi->var.yoffset = 0;
 		disp_get_fb_address(&fb_va, &fb_pa);
@@ -2355,7 +2355,7 @@ static int update_test_kthread(void *data)
 		i++;
 	}
 
-	pr_debug("exit update_test_kthread()\n");
+	DISPMSG("exit update_test_kthread()\n");
 	return 0;
 }
 #endif
@@ -2630,7 +2630,7 @@ static void mtkfb_late_resume(void)
 /*---------------------------------------------------------------------------*/
 int mtkfb_pm_suspend(struct device *device)
 {
-	/* pr_debug("calling %s()\n", __func__); */
+	/* DISPMSG("calling %s()\n", __func__); */
 
 	struct platform_device *pdev = to_platform_device(device);
 
@@ -2644,7 +2644,7 @@ int mtkfb_pm_suspend(struct device *device)
 
 int mtkfb_pm_resume(struct device *device)
 {
-	/* pr_debug("calling %s()\n", __func__); */
+	/* DISPMSG("calling %s()\n", __func__); */
 
 	struct platform_device *pdev = to_platform_device(device);
 
