@@ -7,6 +7,8 @@ import traceback
 import subprocess
 import xml.dom.minidom
 
+sys.dont_write_bytecode = True
+
 sys.path.append('.')
 sys.path.append('..')
 
