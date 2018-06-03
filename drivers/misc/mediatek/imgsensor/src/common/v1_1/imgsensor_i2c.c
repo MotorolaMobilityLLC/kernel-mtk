@@ -145,6 +145,11 @@ enum IMGSENSOR_RETURN imgsensor_i2c_buffer_mode(int enable)
 
 	PK_DBG("i2c_buf_mode_en %d\n", enable);
 
+	if (pinst->pi2c_client == NULL) {
+		PK_PR_ERR("pi2c_client is NULL!\n");
+		return IMGSENSOR_RETURN_ERROR;
+	}
+
 	ret = (enable) ?
 		hw_trig_i2c_enable(pinst->pi2c_client->adapter) :
 		hw_trig_i2c_disable(pinst->pi2c_client->adapter);
@@ -163,6 +168,11 @@ enum IMGSENSOR_RETURN imgsensor_i2c_read(
 {
 	struct IMGSENSOR_I2C_INST *pinst = pi2c_cfg->pinst;
 	enum   IMGSENSOR_RETURN    ret   = IMGSENSOR_RETURN_SUCCESS;
+
+	if (pinst->pi2c_client == NULL) {
+		PK_PR_ERR("pi2c_client is NULL!\n");
+		return IMGSENSOR_RETURN_ERROR;
+	}
 
 	mutex_lock(&pi2c_cfg->i2c_mutex);
 
@@ -209,6 +219,11 @@ enum IMGSENSOR_RETURN imgsensor_i2c_write(
 	u8                 *pdata = pwrite_data;
 	u8                 *pend  = pwrite_data + write_length;
 	int i   = 0;
+
+	if (pinst->pi2c_client == NULL) {
+		PK_PR_ERR("pi2c_client is NULL!\n");
+		return IMGSENSOR_RETURN_ERROR;
+	}
 
 	mutex_lock(&pi2c_cfg->i2c_mutex);
 
