@@ -362,6 +362,7 @@ INT32 wmt_plat_init(P_PWR_SEQ_TIME pPwrSeqTime, UINT32 co_clock_type)
 	/*init wmt function ctrl wakelock if wake lock is supported by host platform */
 #ifdef CFG_WMT_WAKELOCK_SUPPORT
 	osal_strcpy(wmt_wake_lock.name, "wmtFuncCtrl");
+	wmt_wake_lock.init_flag = 0;
 	osal_wake_lock_init(&wmt_wake_lock);
 	osal_sleepable_lock_init(&gOsSLock);
 #endif
