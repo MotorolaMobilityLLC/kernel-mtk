@@ -550,6 +550,7 @@ static int maghub_probe(struct platform_device *pdev)
 	ctl.is_support_batch = false;
 #else
 #endif
+	strlcpy(ctl.libinfo.libname, "akl", sizeof(ctl.libinfo.libname));
 
 	err = mag_register_control_path(&ctl);
 	if (err) {
