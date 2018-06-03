@@ -452,6 +452,7 @@ s32 cmdq_task_duplicate(struct cmdqRecStruct *handle,
 	handle_new->arg_value = handle->arg_value;
 	handle_new->arg_timeout = handle->arg_timeout;
 	handle_new->node_private = handle->node_private;
+	handle_new->engine_clk = handle->engine_clk;
 	handle_new->res_flag_acquire = handle->res_flag_acquire;
 	handle_new->res_flag_release = handle->res_flag_release;
 	handle_new->ctrl = handle->ctrl;
@@ -1018,6 +1019,7 @@ s32 cmdq_task_reset(struct cmdqRecStruct *handle)
 	handle->sram_base = 0;
 	handle->error_pass = false;
 	handle->node_private = NULL;
+	handle->engine_clk = 0;
 	handle->res_flag_acquire = 0;
 	handle->res_flag_release = 0;
 

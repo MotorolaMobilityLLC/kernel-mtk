@@ -1144,20 +1144,6 @@ static int __init cmdq_init(void)
 	cmdq_mdp_virtual_function_setting();
 	cmdq_mdp_platform_function_setting();
 
-	/* Register MDP callback */
-	cmdqCoreRegisterCB(CMDQ_GROUP_MDP, mdp_func->mdpClockOn,
-		mdp_func->mdpDumpInfo, mdp_func->mdpResetEng,
-		mdp_func->mdpClockOff);
-
-	cmdqCoreRegisterErrorResetCB(CMDQ_GROUP_MDP, mdp_func->errorReset);
-
-	/* Register module dispatch callback */
-	cmdqCoreRegisterDispatchModCB(CMDQ_GROUP_MDP,
-		mdp_func->dispatchModule);
-
-	/* Register restore task */
-	cmdqCoreRegisterTrackTaskCB(CMDQ_GROUP_MDP, mdp_func->trackTask);
-
 	/* Register VENC callback */
 	cmdqCoreRegisterCB(CMDQ_GROUP_VENC, NULL, mdp_func->vEncDumpInfo,
 		NULL, NULL);
