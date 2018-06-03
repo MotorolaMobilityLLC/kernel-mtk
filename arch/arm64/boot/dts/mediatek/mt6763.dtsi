@@ -1719,6 +1719,14 @@
 		compatible = "mediatek,gps";
 	};
 
+	flashlight_core: flashlight_core {
+		compatible = "mediatek,flashlight_core";
+	};
+
+	flashlights_rt5081: flashlights_rt5081 {
+		compatible = "mediatek,flashlights_rt5081";
+	};
+
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
 	};
