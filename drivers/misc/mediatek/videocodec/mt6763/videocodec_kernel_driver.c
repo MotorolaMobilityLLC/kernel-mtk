@@ -720,6 +720,7 @@ static long vcodec_lockhw(unsigned long arg)
 	VAL_TIME_T rCurTime;
 	VAL_UINT32_T u4TimeInterval;
 	VAL_ULONG_T ulFlagsLockHW;
+	VAL_UINT32_T u4VcodecSel;
 
 	MODULE_MFV_LOGD("VCODEC_LOCKHW + tid = %d\n", current->pid);
 
@@ -1008,6 +1009,33 @@ static long vcodec_lockhw(unsigned long arg)
 		return -EFAULT;
 	}
 
+	/* bianco VCODEC_SEL setting */
+	if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_DEC ||
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
+		u4VcodecSel = 0x2;
+	} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
+		rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
+		u4VcodecSel = 0x1;
+	} else if rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
+		u4VcodecSel = 0x4;
+	} else {
+		u4VcodecSel = 0x0;
+		MODULE_MFV_LOGE("[WARNING] Unknown driver type\n");
+	}
+
+	if (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20) == 0) {
+		do {
+			VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x20, u4VcodecSel);
+		} while (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20) != u4VcodecSel);
+	} else {
+		MODULE_MFV_LOGE("[WARNING] VCODEC_SEL is not 0\n");
+	}
+
 	MODULE_MFV_LOGD("VCODEC_LOCKHW - tid = %d\n", current->pid);
 
 	return 0;
@@ -1047,6 +1075,12 @@ static long vcodec_unlockhw(unsigned long arg)
 				/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 				disable_irq(VDEC_IRQ_ID);
 			}
+
+			/* bianco VCODEC_SEL reset */
+			do {
+				VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x20, 0);
+			} while (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20) != 0);
+
 			/* TODO: check if turning power off is ok */
 #ifndef KS_POWER_WORKAROUND
 			vdec_power_off();
@@ -1071,6 +1105,12 @@ static long vcodec_unlockhw(unsigned long arg)
 			if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
 				rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
 				disable_irq(VENC_IRQ_ID);
+
+				/* bianco VCODEC_SEL reset */
+				do {
+					VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x20, 0);
+				} while (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20) != 0);
+
 				/* turn venc power off */
 #ifndef KS_POWER_WORKAROUND
 				venc_power_off();
