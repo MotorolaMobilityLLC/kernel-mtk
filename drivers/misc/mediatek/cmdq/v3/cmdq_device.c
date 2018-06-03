@@ -293,13 +293,13 @@ void cmdq_dev_test_subsys_correctness_impl(enum CMDQ_SUBSYS_ENUM subsys)
 
 void cmdq_dev_init_subsys(struct device_node *node)
 {
-#undef DECLARE_CMDQ_SUBSYS
-#define DECLARE_CMDQ_SUBSYS(name, val, grp, dts_name) \
-{	\
-	cmdq_dev_get_subsys_by_name(node, val, #grp, #dts_name);	\
-}
-#include "cmdq_subsys_common.h"
-#undef DECLARE_CMDQ_SUBSYS
+	u32 i;
+	struct cmdq_subsys_dts_name *subsys = cmdq_subsys_get_dts();
+
+	for (i = 0; i < cmdq_subsys_get_size(); i++)
+		if (subsys[i].name)
+			cmdq_dev_get_subsys_by_name(node, i, subsys[i].group,
+				subsys[i].name);
 }
 
 void cmdq_dev_get_event_value_by_name(struct device_node *node, enum CMDQ_EVENT_ENUM event, const char *dts_name)
@@ -319,13 +319,17 @@ void cmdq_dev_get_event_value_by_name(struct device_node *node, enum CMDQ_EVENT_
 	} while (0);
 }
 
-void cmdq_dev_test_event_correctness_impl(enum CMDQ_EVENT_ENUM event, const char *event_name)
+void cmdq_dev_test_event_correctness_impl(enum CMDQ_EVENT_ENUM event,
+	const char *dts_name, const char *event_name)
 {
 	int32_t eventValue = cmdq_core_get_event_value(event);
 
 	if (eventValue >= 0 && eventValue < CMDQ_SYNC_TOKEN_MAX) {
 		/* print event name from device tree */
-		CMDQ_LOG("%s = %d\n", event_name, eventValue);
+		if (event < CMDQ_MAX_HW_EVENT_COUNT)
+			CMDQ_LOG("%s = %d\n", dts_name, eventValue);
+		else
+			CMDQ_LOG("%s = %d\n", event_name, eventValue);
 	}
 }
 
@@ -345,19 +349,15 @@ void cmdq_dev_init_event_table(struct device_node *node)
 void cmdq_dev_test_dts_correctness(void)
 {
 	struct cmdq_event_table *events = cmdq_event_get_table();
-	u32 table_size = cmdq_event_get_table_size();
-	u32 i = 0;
+	struct cmdq_subsys_dts_name *subsys = cmdq_subsys_get_dts();
+	u32 i;
 
-	for (i = 0; i < table_size; i++)
-		cmdq_dev_test_event_correctness_impl(events[i].event, events[i].dts_name);
-
-#undef DECLARE_CMDQ_SUBSYS
-#define DECLARE_CMDQ_SUBSYS(name, val, grp, dts_name) \
-{	\
-		cmdq_dev_test_subsys_correctness_impl(val);	\
-}
-#include "cmdq_subsys_common.h"
-#undef DECLARE_CMDQ_SUBSYS
+	for (i = 0; i < cmdq_event_get_table_size(); i++)
+		cmdq_dev_test_event_correctness_impl(events[i].event,
+			events[i].dts_name, events[i].event_name);
+	for (i = 0; i < cmdq_subsys_get_size(); i++)
+		if (subsys[i].name)
+			cmdq_dev_test_subsys_correctness_impl(i);
 }
 
 void cmdq_dev_get_dts_setting(struct cmdq_dts_setting *dts_setting)
