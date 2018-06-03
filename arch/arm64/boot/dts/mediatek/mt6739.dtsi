@@ -701,7 +701,7 @@
 		camsys_base = <0x18080000 27 0xffff0000>;
 		camsys1_base = <0x180a0000 28 0xffff0000>;
 		camsys2_base = <0x180b0000 29 0xffff0000>;
-		pwm_sw_base = <0x1100e000 99 0xffff0000>;
+		pwm_sw_base = <0x11000000 99 0xffff0000>;
 		mdp_rdma0_sof = <0>;
 		mdp_rsz0_sof = <1>;
 		mdp_rsz1_sof = <2>;
