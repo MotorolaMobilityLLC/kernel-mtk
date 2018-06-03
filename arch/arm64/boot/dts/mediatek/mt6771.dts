@@ -3958,6 +3958,7 @@
 		enable_pe_2;
 		enable_pe_3;
 		enable_pe_4;
+		enable_type_c;
 		power_path_support;
 
 		/* common */
@@ -4016,6 +4017,7 @@
 		pe40_dual_charger_input_current = <3000000>;
 		pe40_dual_charger_chg1_current = <2000000>;
 		pe40_dual_charger_chg2_current = <2000000>;
+		pe40_stop_battery_soc = <80>;
 
 		/* dual charger */
 		chg1_ta_ac_charger_current = <1500000>;

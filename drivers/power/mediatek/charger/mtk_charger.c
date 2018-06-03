@@ -742,6 +742,20 @@ int charger_enable_vbus_ovp(struct charger_manager *pinfo, bool enable)
 			    enable, sw_ovp);
 	return ret;
 }
+
+bool is_typec_adapter(struct charger_manager *info)
+{
+	if (info->pd_type == PD_CONNECT_TYPEC_ONLY_SNK &&
+			info->chr_type != STANDARD_HOST &&
+			info->chr_type != CHARGING_HOST &&
+			mtk_pe20_get_is_connect(info) == false &&
+			mtk_pe_get_is_connect(info) == false &&
+			info->enable_type_c == true)
+		return true;
+
+	return false;
+}
+
 /* internal algorithm common function end */
 
 
@@ -1527,6 +1541,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	info->enable_pe_2 = of_property_read_bool(np, "enable_pe_2");
 	info->enable_pe_3 = of_property_read_bool(np, "enable_pe_3");
 	info->enable_pe_4 = of_property_read_bool(np, "enable_pe_4");
+	info->enable_type_c = of_property_read_bool(np, "enable_type_c");
 
 	info->enable_hv_charging = true;
 
@@ -1924,6 +1939,14 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		info->data.pe40_dual_charger_chg2_current = 2000;
 	}
 
+	if (of_property_read_u32(np, "pe40_stop_battery_soc", &val) >= 0) {
+		info->data.pe40_stop_battery_soc = val;
+	} else {
+		chr_err(
+			"use default pe40_stop_battery_soc:%d\n",
+			2000);
+		info->data.pe40_stop_battery_soc = 80;
+	}
 
 #ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
 	/* dual charger */
