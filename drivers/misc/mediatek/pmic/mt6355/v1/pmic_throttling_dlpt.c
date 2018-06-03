@@ -653,7 +653,7 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 	/*ptim_bat_vol = (vbat_reg * 3 * 18000) / 32768; */
 	*bat = (vbat_reg * 3 * 18000) / 32768;
 
-#if defined(CONFIG_MTK_SMART_BATTERY)
+#if defined(CONFIG_MTK_SMART_BATTERY) && !defined(CONFIG_POWER_EXT)
 	/*fgauge_read_IM_current((void *)cur);*/
 	gauge_get_ptim_current(cur, is_charging);
 #else
