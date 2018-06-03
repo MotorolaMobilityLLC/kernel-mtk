@@ -19,6 +19,9 @@
 
 #include <linux/types.h>
 
+/* for debug share sram clock */
+extern atomic_t g_mdp_wrot0_usage;
+
 /* runtime pm to probe MDP device */
 typedef s32 (*CmdqMDPProbe) (void);
 
@@ -185,6 +188,8 @@ extern "C" {
 
 	void cmdq_mdp_check_TF_address(unsigned int mva, char *module);
 	const char *cmdq_mdp_parse_error_module_by_hwflag(const struct TaskStruct *task);
+
+	s32 cmdq_mdp_dump_wrot0_usage(void);
 
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/

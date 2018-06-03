@@ -486,9 +486,11 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 		if (enable) {
 			smi_bus_enable(SMI_LARB_MMSYS0, "MDPSRAM");
 			cmdq_mdp_enable_clock_MDP_WROT0(enable);
+			atomic_inc(&g_mdp_wrot0_usage);
 		} else {
 			cmdq_mdp_enable_clock_MDP_WROT0(enable);
 			smi_bus_disable(SMI_LARB_MMSYS0, "MDPSRAM");
+			atomic_dec(&g_mdp_wrot0_usage);
 		}
 		break;
 	case CMDQ_ENG_MDP_WDMA:

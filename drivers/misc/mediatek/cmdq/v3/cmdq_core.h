@@ -713,6 +713,7 @@ struct ResourceUnitStruct {
 	u64 engine_flag;		/* engine flag */
 	CmdqResourceAvailableCB availableCB;
 	CmdqResourceReleaseCB releaseCB;
+	atomic_t ref;
 	struct delayed_work delayCheckWork;	/* Delay Work item when delay check is used */
 };
 
@@ -1164,6 +1165,7 @@ extern "C" {
 	void cmdqCoreSetResourceCallback(enum CMDQ_EVENT_ENUM resourceEvent,
 								CmdqResourceAvailableCB resourceAvailable,
 								CmdqResourceReleaseCB resourceRelease);
+	void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent);
 
 	void cmdq_core_dump_dts_setting(void);
 	int32_t cmdq_core_get_running_task_by_engine_unlock(uint64_t engineFlag,
