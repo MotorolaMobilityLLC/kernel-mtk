@@ -4,6 +4,8 @@
 class KpdData:
     _row = -1
     _col = -1
+    _row_ext = -1
+    _col_ext = -1
     _gpioNum = -1
     _util = ''
     _homeKey = ''
@@ -11,6 +13,7 @@ class KpdData:
     _pressTime = -1
     _dinHigh = False
     _matrix = []
+    _matrix_ext = []
     _useEint = False
     _downloadKeys = []
     _keyValueMap = {}
@@ -37,8 +40,32 @@ class KpdData:
         return KpdData._col
 
     @staticmethod
+    def set_row_ext(row):
+        KpdData._row_ext = row
+
+    @staticmethod
+    def get_row_ext():
+        return KpdData._row_ext
+
+    @staticmethod
+    def set_col_ext(col):
+        KpdData._col_ext = col
+
+    @staticmethod
+    def get_col_ext():
+        return KpdData._col_ext
+
+    @staticmethod
     def set_matrix(matrix):
         KpdData._matrix = matrix
+
+    @staticmethod
+    def set_matrix_ext(matrix):
+        KpdData._matrix_ext = matrix
+
+    @staticmethod
+    def get_matrix_ext():
+        return KpdData._matrix_ext
 
     @staticmethod
     def get_matrix():
@@ -108,4 +135,14 @@ class KpdData:
     def set_keyType(keyType):
         KpdData._keyType = keyType
 
+    @staticmethod
+    def get_keyType():
+        return KpdData._keyType
+
+    @staticmethod
+    def get_keyVal(key):
+        if key in KpdData._keyValueMap.keys():
+            return KpdData._keyValueMap[key]
+
+        return 0
 

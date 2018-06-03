@@ -52,6 +52,10 @@ class EintData:
         EintData._map_table = map
 
     @staticmethod
+    def get_mapTable():
+        return EintData._map_table
+
+    @staticmethod
     def get_modeName(gpio_num, mode_idx):
         key = 'gpio%s' %(gpio_num)
 
@@ -73,8 +77,8 @@ class EintData:
         EintData._mode_map = map
 
     @staticmethod
-    def get_mapTable():
-        return EintData._map_table
+    def get_modeMap():
+        return EintData._mode_map
 
     @staticmethod
     def get_gpioNum(num):
