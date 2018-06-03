@@ -73,7 +73,6 @@ extern bool mtk_pe40_is_ready(struct charger_manager *pinfo);
 extern bool mtk_pe40_get_is_connect(struct charger_manager *pinfo);
 extern void mtk_pe40_set_is_enable(struct charger_manager *pinfo, bool enable);
 extern bool mtk_pe40_get_is_enable(struct charger_manager *pinfo);
-extern int mtk_pe40_reset_ta_vchr(struct charger_manager *pinfo, int flag);
 extern int mtk_pe40_init_state(struct charger_manager *pinfo);
 extern int mtk_pe40_tune1_state(struct charger_manager *pinfo);
 extern int mtk_pe40_tune2_state(struct charger_manager *pinfo);

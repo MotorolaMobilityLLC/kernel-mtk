@@ -738,6 +738,8 @@ int charger_enable_vbus_ovp(struct charger_manager *pinfo, bool enable)
 	/* Enable/Disable SW OVP status */
 	pinfo->data.max_charger_voltage = sw_ovp;
 
+	chr_err("[charger_enable_vbus_ovp] en:%d ovp:%d\n",
+			    enable, sw_ovp);
 	return ret;
 }
 /* internal algorithm common function end */
