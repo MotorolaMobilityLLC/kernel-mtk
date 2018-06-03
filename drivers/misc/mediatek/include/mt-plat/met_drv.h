@@ -363,6 +363,88 @@ void __attribute__((weak)) met_mmsys_config_isp_base_addr(unsigned long *isp_reg
 void __attribute__((weak)) met_mmsys_event_isp_pass1_begin(int sensor_id);
 void __attribute__((weak)) met_mmsys_event_isp_pass1_end(int sensor_id);
 
+/* ====================== SPO API ================================ */
+enum MET_SPO_MEM_MODULE {
+	MSMM_ISP_P1_IMGO,
+	MSMM_ISP_P1_RRZO,
+	MSMM_ISP_P2_IMGI,
+
+	MSMM_MDP_RDMA0,
+	MSMM_MDP_RDMA1,
+	MSMM_MDP_WDMA0,
+	MSMM_MDP_WDMA1,
+
+	MSMM_CODEC_READ,
+	MSMM_CODE_WRITE,
+
+	MSMM_DISP_RDMA0,
+	MSMM_DISP_RDMA1,
+	MSMM_DISP_WDMA0,
+	MSMM_DISP_WDMA1,
+
+
+	/*Base index of OVL layers, use param1 to assign layer offset*/
+	MSMM_DISP_OVL_L_0,
+	MSMM_DISP_OVL_L_1,
+	MSMM_DISP_OVL_L_2,
+	MSMM_DISP_OVL_L_3,
+
+	MSMM_DISP_OVL_L_4,
+	MSMM_DISP_OVL_L_5,
+	MSMM_DISP_OVL_L_6,
+	MSMM_DISP_OVL_L_7,
+
+	MSMM_DISP_OVL_L_8,
+	MSMM_DISP_OVL_L_9,
+	MSMM_DISP_OVL_L_10,
+	MSMM_DISP_OVL_L_11,
+
+	MSMM_DISP_OVL_L_12,
+	MSMM_DISP_OVL_L_13,
+	MSMM_DISP_OVL_L_14,
+	MSMM_DISP_OVL_L_15,
+
+
+};
+
+enum MET_SPO_MEM_ACCESS_TYPE {
+	MSMA_READ = 0,
+	MSMA_WRITE
+};
+
+
+
+void __attribute__((weak)) _met_spo_mem_decl(enum MET_SPO_MEM_MODULE mod,
+		enum MET_SPO_MEM_ACCESS_TYPE type,
+		unsigned long memory_bw_in_bit, unsigned long estimated_exe_time_in_us,
+		unsigned long param1, unsigned long param2);
+
+void __attribute__((weak)) _met_spo_mem_alloc(enum MET_SPO_MEM_MODULE mod,
+		unsigned long param1, unsigned long param2);
+void __attribute__((weak)) _met_spo_mem_free(enum MET_SPO_MEM_MODULE mod,
+		unsigned long param1, unsigned long param2);
+
+/*invoke before SOF*/
+#define met_spo_mem_decl(...)			\
+do {						\
+	if (_met_spo_mem_decl)			\
+		_met_spo_mem_decl(__VA_ARGS__);	\
+} while (0)
+
+/*invoke when SOF*/
+#define met_spo_mem_alloc(...)			\
+do {						\
+	if (_met_spo_mem_alloc)			\
+		_met_spo_mem_alloc(__VA_ARGS__);\
+} while (0)
+
+/*invoke when EOF*/
+#define met_spo_mem_free(...)			\
+do {						\
+	if (_met_spo_mem_free)			\
+		_met_spo_mem_free(__VA_ARGS__);	\
+} while (0)
+
 
 
 
