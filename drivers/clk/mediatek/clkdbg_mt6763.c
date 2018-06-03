@@ -728,6 +728,7 @@ static struct clkdbg_ops clkdbg_mt6763_ops = {
 	.get_all_clk_names = get_all_clk_names,
 	.get_pwr_names = get_pwr_names,
 	.setup_provider_clk = setup_provider_clk,
+	.read_spm_pwr_status = NULL,
 };
 
 static void __init init_custom_cmds(void)
