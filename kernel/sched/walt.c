@@ -728,26 +728,14 @@ static void update_task_demand(struct task_struct *p, struct rq *rq,
 	add_to_task_demand(rq, p, wallclock - mark_start);
 }
 
-static DEFINE_PER_CPU(raw_spinlock_t, walt_dvfs_lock) =
-		__RAW_SPIN_LOCK_UNLOCKED(walt_dvfs_lock);
-
 /* Reflect task activity on its demand and cpu's busy time statistics */
 void walt_update_task_ravg(struct task_struct *p, struct rq *rq,
 	     int event, u64 wallclock, u64 irqtime)
 {
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	unsigned long flags;
-	int cpu = cpu_of(rq);
-#endif
-
 	if (walt_disabled || !rq->window_start)
 		return;
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	raw_spin_lock_irqsave(&per_cpu(walt_dvfs_lock, cpu), flags);
-#else
 	lockdep_assert_held(&rq->lock);
-#endif
 
 	update_window_start(rq, wallclock);
 
@@ -761,10 +749,6 @@ done:
 	trace_walt_update_task_ravg(p, rq, event, wallclock, irqtime);
 
 	p->ravg.mark_start = wallclock;
-
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	raw_spin_unlock_irqrestore(&per_cpu(walt_dvfs_lock, cpu), flags);
-#endif
 }
 
 unsigned long arch_get_cpu_efficiency(int cpu)
@@ -862,6 +846,7 @@ void walt_fixup_busy_time(struct task_struct *p, int new_cpu)
 	struct rq *src_rq = task_rq(p);
 	struct rq *dest_rq = cpu_rq(new_cpu);
 	u64 wallclock;
+	int lock_needed = 0;
 
 	if (!p->on_rq && p->state != TASK_WAKING)
 		return;
@@ -871,6 +856,9 @@ void walt_fixup_busy_time(struct task_struct *p, int new_cpu)
 	}
 
 	if (p->state == TASK_WAKING)
+		lock_needed = 1;
+
+	if (lock_needed)
 		double_rq_lock(src_rq, dest_rq);
 
 	wallclock = walt_ktime_clock();
@@ -904,7 +892,7 @@ void walt_fixup_busy_time(struct task_struct *p, int new_cpu)
 	trace_walt_migration_update_sum(src_rq, p);
 	trace_walt_migration_update_sum(dest_rq, p);
 
-	if (p->state == TASK_WAKING)
+	if (lock_needed)
 		double_rq_unlock(src_rq, dest_rq);
 }
 
@@ -1128,7 +1116,6 @@ static int cpufreq_notifier_trans(struct notifier_block *nb,
 int cpufreq_notifier_trans_sspm_walt(unsigned int cpu, unsigned int new_freq)
 {
 	struct rq *rq = cpu_rq(cpu);
-	unsigned long flags;
 
 	if (rq->cur_freq == new_freq)
 		return 0;
@@ -1137,9 +1124,7 @@ int cpufreq_notifier_trans_sspm_walt(unsigned int cpu, unsigned int new_freq)
 	walt_update_task_ravg(rq->curr, rq, TASK_UPDATE,
 			walt_ktime_clock(), 0);
 
-	raw_spin_lock_irqsave(&per_cpu(walt_dvfs_lock, cpu), flags);
 	rq->cur_freq = new_freq;
-	raw_spin_unlock_irqrestore(&per_cpu(walt_dvfs_lock, cpu), flags);
 
 	return 0;
 }
