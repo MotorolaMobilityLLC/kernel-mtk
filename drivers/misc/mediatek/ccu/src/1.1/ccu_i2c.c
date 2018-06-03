@@ -225,7 +225,7 @@ int ccu_i2c_buf_mode_en(int enable)
 			ret = i2c_ccu_enable(
 				pClient->adapter, I2C_BASE_OFS_CH1);
 			ccu_i2c_enabled = MTRUE;
-			LOG_DBG_MUST("hw_trig_i2c_enable done.\n");
+			LOG_DBG_MUST("i2c_ccu_enable done(%d).\n", ret);
 			i2c = i2c_get_adapdata(pClient->adapter);
 			i2c_writew(2, i2c, 0x240);
 		}
@@ -234,7 +234,7 @@ int ccu_i2c_buf_mode_en(int enable)
 			ret = i2c_ccu_disable(pClient->adapter);
 			ccu_i2c_enabled = MFALSE;
 
-			LOG_DBG_MUST("hw_trig_i2c_disable done.\n");
+			LOG_DBG_MUST("i2c_ccu_disable done(%d).\n", ret);
 		}
 	}
 	return ret;
@@ -256,13 +256,13 @@ int i2c_get_dma_buffer_addr(void **va,
 	i2c = i2c_get_adapdata(pClient->adapter);
 
 	/*i2c_get_dma_buffer_addr_imp(pClient->adapter ,va);*/
-	*va = i2c->dma_buf.vaddr;
-	*pa_l = i2c->dma_buf.paddr;
+	*va = i2c->dma_buf.vaddr + PAGE_SIZE;
+	*pa_l = i2c->dma_buf.paddr + PAGE_SIZE;
 #ifdef CONFIG_COMPAT
-	*pa_h = (i2c->dma_buf.paddr >> 32);
+	*pa_h = ((i2c->dma_buf.paddr  + PAGE_SIZE) >> 32);
 #endif
 	*i2c_id = i2c->id;
-	LOG_DBG_MUST("got i2c buf: %p %d %d %d\n",
+	LOG_DBG_MUST("va(%p), pal(%d), pah(%d), id(%d)\n",
 		*va, *pa_l, *pa_h, *i2c_id);
 
 	return 0;
