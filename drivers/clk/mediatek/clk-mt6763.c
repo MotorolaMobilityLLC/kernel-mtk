@@ -1769,6 +1769,7 @@ void check_seninf_ck(void)
 	pr_err("%s: CLK_CFG_9 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_9));
 	pr_err("%s: UNIVPLL_CON0 = 0x%08x\r\n", __func__, clk_readl(UNIVPLL_CON0));
 	pr_err("%s: UNIVPLL_CON1 = 0x%08x\r\n", __func__, clk_readl(UNIVPLL_CON1));
+	pr_err("%s: AP_PLL_CON2 = 0x%08x\r\n", __func__, clk_readl(AP_PLL_CON2));
 }
 
 void mipic_26m_en(int en)
