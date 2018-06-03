@@ -216,10 +216,7 @@ static int sspm_dt_init(void)
 
 static inline ssize_t sspm_status_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
-	if (sspm_ready)
-		return sprintf(buf, "SSPM is ready");
-	else
-		return sprintf(buf, "SSPM is not ready");
+		return snprintf(buf, PAGE_SIZE, "SSPM is %s ready", sspm_ready ? "" : "not");
 }
 
 DEVICE_ATTR(sspm_status, S_IRUSR | S_IRGRP | S_IROTH, sspm_status_show, NULL);

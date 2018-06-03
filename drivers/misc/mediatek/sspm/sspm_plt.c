@@ -114,7 +114,7 @@ static ssize_t sspm_alive_show(struct device *kobj, struct device_attribute *att
 	sspm_ipi_send_sync(IPI_ID_PLATFORM, IPI_OPT_DEFAUT,
 		&ipi_data, sizeof(ipi_data) / MBOX_SLOT_SIZE, &ackdata);
 
-	return sprintf(buf, "%s\n", ackdata ? "Alive" : "Dead");
+	return snprintf(buf, PAGE_SIZE, "%s\n", ackdata ? "Alive" : "Dead");
 }
 DEVICE_ATTR(sspm_alive, S_IRUGO, sspm_alive_show, NULL);
 
