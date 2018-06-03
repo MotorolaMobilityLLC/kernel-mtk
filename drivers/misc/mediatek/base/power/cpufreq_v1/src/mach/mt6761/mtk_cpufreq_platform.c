@@ -30,9 +30,11 @@ static struct regulator *regulator_sram1;
 
 static unsigned long apmixed_base	= 0x1000c000;
 static unsigned long mcucfg_base	= 0x10200000;
+static unsigned long hw_ver_base	= 0x08000008;
 
 #define APMIXED_NODE		"mediatek,apmixed"
 #define MCUCFG_NODE		"mediatek,mcucfg"
+#define HW_VER_NODE		"mediatek,hw_ver"
 
 #define ARMPLL_LL_CON1    (apmixed_base + 0x310) /* ARMPLL */
 
@@ -475,13 +477,40 @@ int mt_cpufreq_dts_map(void)
 	return 0;
 }
 
+static int dts_map_pre_done;
+int mt_cpufreq_dts_map_pre(void)
+{
+	struct device_node *node;
+
+	/* hw_ver */
+	node = of_find_compatible_node(NULL, NULL, HW_VER_NODE);
+	if (GEN_DB_ON(!node, "HW_VER Not Found"))
+		return -ENODEV;
+
+	hw_ver_base = (unsigned long)of_iomap(node, 0);
+	if (GEN_DB_ON(!hw_ver_base, "HW_VER Map Failed"))
+		return -ENOMEM;
+
+	dts_map_pre_done = 1;
+
+	return 0;
+}
+
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = CPU_LEVEL_0;
 	int val = 0; /* = get_devinfo_with_index(num); */
 
+	if (dts_map_pre_done == 0)
+		mt_cpufreq_dts_map_pre();
+
+	val = _GET_BITS_VAL_(15:0, cpufreq_read(hw_ver_base));
+
+	if (val == 0xCA00)
+		lv = CPU_LEVEL_2;
+
 	turbo_flag = 0;
-	tag_pr_info("%d,%d,%d,%d,%d,%d,%d\n",
+	tag_pr_info("%d,%d,0x%x,%d,%d,%d,%d\n",
 		lv, turbo_flag, val,
 		UP_VPROC_ST, DOWN_VPROC_ST,
 		UP_VSRAM_ST, DOWN_VSRAM_ST);
