@@ -3351,7 +3351,7 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 			   struct cmdqRecStruct *cmdq_handle,
 			   CmdqAsyncFlushCB callback, unsigned int data)
 {
-	int layer = 0;
+	int layer = 0, i;
 	unsigned int rdma_pitch_sec;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_START, 0, data);
@@ -3378,6 +3378,13 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 	rdma_pitch_sec = mem_config.pitch | (mem_config.security << 30);
 	cmdqRecBackupUpdateSlot(cmdq_handle, pgc->rdma_buff_info, 1, rdma_pitch_sec);
 	cmdqRecBackupUpdateSlot(cmdq_handle, pgc->rdma_buff_info, 2, (unsigned int)mem_config.fmt);
+
+	/* backup night params here */
+	cmdqRecBackupUpdateSlot(cmdq_handle, pgc->night_light_params, 0,
+		mem_config.m_ccorr_config.mode);
+	for (i = 0; i < 16; i++)
+		cmdqRecBackupUpdateSlot(cmdq_handle, pgc->night_light_params, i + 1,
+			mem_config.m_ccorr_config.color_matrix[i]);
 
 	cmdqRecFlushAsyncCallback(cmdq_handle, callback, data);
 	cmdqRecReset(cmdq_handle);
@@ -3647,6 +3654,19 @@ static int _rdma_update_callback(unsigned long if_fence)
 	return ret;
 }
 
+static void DC_config_nightlight(struct cmdqRecStruct *cmdq_handle)
+{
+	int i, mode, ccorr_matrix[16];
+
+	cmdqBackupReadSlot(pgc->night_light_params, 0, &mode);
+
+	for (i = 0; i < 16; i++)
+		cmdqBackupReadSlot(pgc->night_light_params,
+			i + 1, &(ccorr_matrix[i]));
+
+	disp_ccorr_set_color_matrix(cmdq_handle, ccorr_matrix, mode);
+}
+
 static int _decouple_update_rdma_config_nolock(void)
 {
 	int interface_fence = 0;
@@ -3676,6 +3696,10 @@ static int _decouple_update_rdma_config_nolock(void)
 
 		cmdqRecReset(cmdq_handle);
 		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
+
+		/* update night light params */
+		DC_config_nightlight(cmdq_handle);
+
 		cmdqBackupReadSlot(pgc->rdma_buff_info, 0, (uint32_t *)(&(tmpConfig.address)));
 
 		/* rdma pitch only use bit[15..0], we use bit[31:30] to store secure information */
@@ -3755,6 +3779,10 @@ static int _decouple_update_ovl1_config_nolock(void)
 
 	cmdqRecReset(cmdq_handle);
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
+
+	/* update night light params */
+	DC_config_nightlight(cmdq_handle);
+
 	cmdqBackupReadSlot(pgc->rdma_buff_info, 0, (uint32_t *)(&(tmpConfig.address)));
 
 	/* rdma pitch only use bit[15..0], we use bit[31:30] to store secure information */
@@ -3864,7 +3892,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 		unblock_release_wrot_sram();
 
 	prev_wrot_sram = wrot_sram;
-	real_hrt_level = (backup & 0xF0000);
+	real_hrt_level = ((backup & 0xF0000) >> 16);
 
 	_primary_path_lock(__func__);
 
@@ -4263,6 +4291,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	init_cmdq_slots(&(pgc->ovl_status_info), 4, 0);
 	init_cmdq_slots(&(pgc->dither_status_info), 1, 0x10001);
 	init_cmdq_slots(&(pgc->dsi_vfp_line), 1, 0);
+	init_cmdq_slots(&(pgc->night_light_params), 17, 0);
 
 	mutex_init(&(pgc->capture_lock));
 	mutex_init(&(pgc->lock));
@@ -6858,15 +6887,17 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 
 	_config_ovl_input(cfg, disp_handle, cmdq_handle);
 
-	/* set ccorr matrix */
-	if (m_ccorr_config.is_dirty) {
-		disp_ccorr_set_color_matrix(cmdq_handle,
-			m_ccorr_config.color_matrix,
-			m_ccorr_config.mode);
-	}
-
 	/* disp mode may be changed */
 	primary_get_path_handles(&disp_handle, &cmdq_handle);
+
+	/* handle night light in DL, DC separately */
+	if (!primary_display_is_decouple_mode()) {
+		if (m_ccorr_config.is_dirty)
+			disp_ccorr_set_color_matrix(cmdq_handle,
+				m_ccorr_config.color_matrix,
+				m_ccorr_config.mode);
+	} else
+		mem_config.m_ccorr_config = m_ccorr_config;
 
 	if (primary_display_is_decouple_mode() && !primary_display_is_mirror_mode()) {
 		struct WDMA_CONFIG_STRUCT wdma_config;
