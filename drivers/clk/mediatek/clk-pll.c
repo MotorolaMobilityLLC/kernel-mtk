@@ -212,7 +212,7 @@ static int mtk_pll_set_rate_dummy(struct clk_hw *hw, unsigned long rate,
 {
 	return 0;
 }
-
+#if 0
 static unsigned long mtk_pll_recalc_rate_dummy(struct clk_hw *hw,
 		unsigned long parent_rate)
 {
@@ -224,7 +224,7 @@ static long mtk_pll_round_rate_dummy(struct clk_hw *hw, unsigned long rate,
 {
 	return 0;
 }
-
+#endif
 static int mtk_pll_prepare_dummy(struct clk_hw *hw)
 {
 	return 0;
@@ -538,8 +538,8 @@ static const struct clk_ops mtk_pll_ops_dummy = {
 	.is_enabled	= mtk_pll_is_prepared_dummy,
 	.enable		= mtk_pll_prepare_dummy,
 	.disable	= mtk_pll_unprepare_dummy,
-	.recalc_rate	= mtk_pll_recalc_rate_dummy,
-	.round_rate	= mtk_pll_round_rate_dummy,
+	.recalc_rate	= mtk_pll_recalc_rate,
+	.round_rate	= mtk_pll_round_rate,
 	.set_rate	= mtk_pll_set_rate_dummy,
 };
 #endif
