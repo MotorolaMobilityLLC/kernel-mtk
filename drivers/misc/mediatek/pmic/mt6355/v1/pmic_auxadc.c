@@ -36,6 +36,7 @@
 #include <linux/uaccess.h>
 
 #include "include/pmic.h"
+#include "include/mtk_pmic_common.h"
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_auxadc_intf.h>
 
@@ -44,6 +45,23 @@ static int count_time_out = 100;
 static struct wake_lock  mt6355_auxadc_wake_lock;
 static struct mutex mt6355_adc_mutex;
 static DEFINE_MUTEX(auxadc_ch3_mutex);
+
+/*--Monitor MTS Thread Start--*/
+static int mts_adc;
+static struct wake_lock  adc_monitor_wake_lock;
+static struct mutex adc_monitor_mutex;
+static struct task_struct *adc_thread_handle;
+
+void wake_up_auxadc_detect(void)
+{
+	PMICLOG("[%s]\n", __func__);
+	if (adc_thread_handle != NULL) {
+		wake_lock(&adc_monitor_wake_lock);
+		wake_up_process(adc_thread_handle);
+	} else
+		pr_err(PMICTAG "[%s] adc_thread_handle not ready\n", __func__);
+}
+/*--Monitor MTS Thread End--*/
 
 unsigned int wk_auxadc_ch3_bif_on(unsigned char en)
 {
@@ -219,6 +237,9 @@ int mt6355_get_auxadc_value(u8 channel)
 	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, reg_val, adc_result);
 
+	/*--Monitor MTS Thread--*/
+	if (channel == AUXADC_LIST_BATADC)
+		wake_up_auxadc_detect();
 	/* Audio request HPOPS to return raw data */
 	if (channel == AUXADC_LIST_HPOFS_CAL)
 		return reg_val * auxadc_channel->r_val;
@@ -226,12 +247,80 @@ int mt6355_get_auxadc_value(u8 channel)
 		return adc_result;
 }
 
+static unsigned int mts_count;
+/*--Monitor MTS Thread Start--*/
+void mt6355_auxadc_monitor_mts_regs(void)
+{
+	int mts_adc_tmp = 0;
+
+	mts_adc_tmp = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
+	pr_err("[MTS_ADC] OLD = 0x%x, NOW = 0x%x, CNT = %d\n", mts_adc, mts_adc_tmp, mts_count);
+
+	if (mts_adc ==  mts_adc_tmp)
+		mts_count++;
+	else
+		mts_count = 0;
+
+	if ((mts_count > 15)) {
+		pr_err("DEW_READ_TEST = 0x%x\n", pmic_get_register_value(PMIC_DEW_READ_TEST));
+		/*--AUXADC CH7--*/
+		pr_err("AUXADC_LIST_TSX = %d\n", mt6355_get_auxadc_value(AUXADC_LIST_TSX));
+		/*--AUXADC--*/
+		pr_err("AUXADC_ADC36 = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_ADC36));
+		pr_err("AUXADC_MDRT_0 = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_MDRT_0));
+		pr_err("AUXADC_MDRT_1 = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_MDRT_1));
+		pr_err("AUXADC_MDRT_2 = 0x%x\n", upmu_get_reg_value(MT6355_AUXADC_MDRT_2));
+		/*--AUXADC CLK--*/
+		pr_err("RG_AUXADC_CK_PDN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN));
+		pr_err("RG_AUXADC_CK_PDN_HWEN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN));
+		mts_count = 0;
+	}
+	mts_adc = mts_adc_tmp;
+}
+
+int mt6355_auxadc_kthread(void *x)
+{
+	set_current_state(TASK_INTERRUPTIBLE);
+
+	PMICLOG("mt6355 auxadc thread enter\n");
+
+	/* Run on a process content */
+	while (1) {
+		mutex_lock(&adc_monitor_mutex);
+
+		mt6355_auxadc_monitor_mts_regs();
+
+		mutex_unlock(&adc_monitor_mutex);
+		wake_unlock(&adc_monitor_wake_lock);
+
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule();
+	}
+
+	return 0;
+}
+
+void mt6355_auxadc_thread_init(void)
+{
+	adc_thread_handle = kthread_create(mt6355_auxadc_kthread, (void *)NULL, "adc_thread");
+	if (IS_ERR(adc_thread_handle)) {
+		adc_thread_handle = NULL;
+		pr_err(PMICTAG "[adc_kthread] creation fails\n");
+	} else {
+		PMICLOG("[adc_kthread] kthread_create Done\n");
+	}
+}
+/*--Monitor MTS Thread End--*/
+
 void mt6355_auxadc_init(void)
 {
 	pr_err("%s\n", __func__);
 	wake_lock_init(&mt6355_auxadc_wake_lock,
 			WAKE_LOCK_SUSPEND, "MT6355 AuxADC wakelock");
+	wake_lock_init(&adc_monitor_wake_lock,
+			WAKE_LOCK_SUSPEND, "MT6355 AuxADC Monitor wakelock");
 	mutex_init(&mt6355_adc_mutex);
+	mutex_init(&adc_monitor_mutex);
 
 	/* set channel 0, 7 as 15 bits, others = 12 bits  000001000001*/
 	pmic_set_register_value(PMIC_RG_STRUP_AUXADC_RSTB_SEL, 1);
@@ -253,11 +342,15 @@ void mt6355_auxadc_init(void)
 	pmic_set_register_value(PMIC_AUXADC_TRIM_CH0_SEL, 0);
 	pmic_config_interface(0x3370, 0x1, 0x1, 0); /*IMP DCM WK Peter-SW 12/21--*/
 
+	mt6355_auxadc_thread_init();
+
 	pr_info("****[%s] DONE\n", __func__);
 
 	/* update VBIF28 by AUXADC */
 	g_pmic_pad_vbif28_vol = mt6355_get_auxadc_value(AUXADC_LIST_VBIF);
-	pr_info("****[%s] VBIF28 = %d\n", __func__, pmic_get_vbif28_volt());
+	/* update TSX by AUXADC */
+	mts_adc = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
+	pr_info("****[%s] VBIF28 = %d, MTS_ADC = 0x%x\n", __func__, pmic_get_vbif28_volt(), mts_adc);
 }
 EXPORT_SYMBOL(mt6355_auxadc_init);
 
