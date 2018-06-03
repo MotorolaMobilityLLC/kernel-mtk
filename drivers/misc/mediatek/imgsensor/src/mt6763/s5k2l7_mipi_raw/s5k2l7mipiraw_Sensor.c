@@ -1863,13 +1863,12 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
-			       sizeof(SET_PD_BLOCK_INFO_T));
-			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
+			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+			       sizeof(SET_PD_BLOCK_INFO_T));
 			break;
 		}
 		break;
