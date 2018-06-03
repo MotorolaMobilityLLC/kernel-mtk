@@ -327,6 +327,7 @@ static int _hps_task_main(void *data)
 	void (*algo_func_ptr)(void);
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	unsigned int cpu, first_cpu, i;
+	int is_acao_enable;
 
 	ktime_t enter_ktime;
 
@@ -365,7 +366,7 @@ static int _hps_task_main(void *data)
 ACAO_HPS_START:
 	aee_rr_rec_hps_cb_footprint(1);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
-
+	is_acao_enable = 0;
 	mutex_lock(&hps_ctxt.para_lock);
 	memcpy(&hps_ctxt.online_core, &hps_ctxt.online_core_req, sizeof(cpumask_var_t));
 	mutex_unlock(&hps_ctxt.para_lock);
@@ -374,9 +375,10 @@ ACAO_HPS_START:
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 	/*Debgu message dump*/
 	for (i = 0 ; i < 8 ; i++) {
-		if (cpumask_test_cpu(i, hps_ctxt.online_core))
+		if (cpumask_test_cpu(i, hps_ctxt.online_core)) {
 			pr_info("CPU %d ==>1\n", i);
-		else
+			is_acao_enable++;
+		} else
 			pr_info("CPU %d ==>0\n", i);
 	}
 
@@ -384,6 +386,10 @@ ACAO_HPS_START:
 		aee_rr_rec_hps_cb_footprint(3);
 		aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 		first_cpu = cpumask_first(hps_ctxt.online_core);
+		if (!is_acao_enable) {
+			pr_err("PPM request without first cpu online!\n");
+			goto ACAO_HPS_END;
+		}
 		if (!cpu_online(first_cpu))
 			cpu_up(first_cpu);
 		aee_rr_rec_hps_cb_footprint(4);
@@ -414,7 +420,7 @@ ACAO_HPS_START:
 	}
 	aee_rr_rec_hps_cb_footprint(9);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
-
+ACAO_HPS_END:
 	aee_rr_rec_hps_cb_footprint(10);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 	set_current_state(TASK_INTERRUPTIBLE);
