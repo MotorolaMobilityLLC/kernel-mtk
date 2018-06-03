@@ -2928,9 +2928,6 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		headset_volume_ramp(DL_GAIN_N_10DB,
 				    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]);
 
-		/* HP IVBUF (Vin path) de-gain enable: -12dB */
-		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0004, 0xffff);
-
 		/* Set LO STB enhance circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0110, 0xffff);
 		/* Enable LO driver bias circuits */
