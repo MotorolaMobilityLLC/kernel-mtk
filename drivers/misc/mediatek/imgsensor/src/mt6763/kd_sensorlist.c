@@ -1518,7 +1518,7 @@ kd_MultiSensorClose(void)
         return ret;
         }
 
-		g_pInvokeSensorFunc[i]->sensorState = SENSOR_STATE_CLOSE; /* State is close */
+	g_pInvokeSensorFunc[i]->sensorState = SENSOR_STATE_CLOSE; /* State is close */
 		gSensorTempState[g_invokeSocketIdx[i]] |= SENSOR_TEMPERATURE_NOT_POWER_ON; /* sensor power off */
 		if((gSensorTempState[g_invokeSocketIdx[i]] & SENSOR_TEMPERATURE_VALID) > 0) /* clear temperature valid */
 			gSensorTempState[g_invokeSocketIdx[i]] &= ~SENSOR_TEMPERATURE_VALID;
@@ -1644,7 +1644,9 @@ int kdSetDriver(unsigned int *pDrvIndex)
         memcpy((char *)g_invokeSensorNameStr[i], (char *)pSensorList[drvIdx[i]].drvname, sizeof(pSensorList[drvIdx[i]].drvname));
         /* return sensor ID */
         /* pDrvIndex[0] = (unsigned int)pSensorList[drvIdx].SensorId; */
-        PK_XLOG_INFO("[kdSetDriver] :[%d][%d][%d][%s][%lu]\n", i, g_bEnableDriver[i], g_invokeSocketIdx[i], g_invokeSensorNameStr[i], sizeof(pSensorList[drvIdx[i]].drvname));
+	PK_XLOG_INFO("[kdSetDriver] :[%d][%d][%d][%s][%u]\n", i, g_bEnableDriver[i],
+		g_invokeSocketIdx[i], g_invokeSensorNameStr[i],
+		(unsigned int)sizeof(pSensorList[drvIdx[i]].drvname));
     }
     }
     return 0;
