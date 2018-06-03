@@ -20,6 +20,10 @@
 #include <dt-bindings/pinctrl/mt6739-pinfunc.h>
 #include <generated/autoconf.h>
 
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/dts-v1/;
+#endif
+
 / {
 	model = "mt6739";
 	compatible = "mediatek,mt6739";
@@ -28,7 +32,7 @@
 	#size-cells = <2>;
 
 	/* chosen */
-	chosen {
+	chosen: chosen {
 		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram initrd=0x44000000,\
 0x1000000 loglevel=8 androidboot.selinux=permissive";
 	};
@@ -204,7 +208,7 @@
 			<GIC_SPI 132 IRQ_TYPE_EDGE_RISING>;
 	};
 
-	reserved-memory {
+	reserved_memory: reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
