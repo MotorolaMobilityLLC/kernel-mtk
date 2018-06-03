@@ -70,6 +70,7 @@ UINT_8 pref5GhzLo = PREF_LO_5GHZ;
 #if CFG_SUPPORT_RSN_SCORE
 #define WEIGHT_IDX_RSN			2
 #endif
+#define WEIGHT_IDX_SAA	2
 
 #define P2P_INDICATE_COMPLETE_BSS_INFO	1
 
@@ -3554,7 +3555,7 @@ static UINT_16 scanCalculateScoreByRssi(P_BSS_DESC_T prBssDesc)
 	else if (cRssi >= -55)
 		u2Score = 95;
 	else if (cRssi >= -65)
-		u2Score = 90;
+		u2Score = 80;
 	else if (cRssi >= -70)
 		u2Score = 50;
 	else if (cRssi >= -77)
@@ -3565,6 +3566,37 @@ static UINT_16 scanCalculateScoreByRssi(P_BSS_DESC_T prBssDesc)
 		u2Score = 0;
 
 	u2Score *= WEIGHT_IDX_RSSI;
+
+	return u2Score;
+}
+
+static UINT_16 scanCalculateScoreByBand(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc, INT_8 cRssi)
+{
+	UINT_16 u2Score = 0;
+	P_AIS_FSM_INFO_T prAisFsmInfo;
+	P_ROAMING_INFO_T prRoamingFsmInfo;
+
+	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+	prRoamingFsmInfo = (P_ROAMING_INFO_T) &(prAdapter->rWifiVar.rRoamingInfo);
+
+	if (prBssDesc->eBand == BAND_5G && prAdapter->fgEnable5GBand && cRssi > -60
+		&& prRoamingFsmInfo->eCurrentState == ROAMING_STATE_IDLE
+		&& prAisFsmInfo->u4PostponeIndStartTime == 0)
+		u2Score = (WEIGHT_IDX_5G_BAND * BSS_FULL_SCORE);
+
+	return u2Score;
+}
+
+static UINT_16 scanCalculateScoreBySaa(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
+{
+	UINT_16 u2Score = 0;
+	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
+
+	prStaRec = cnmGetStaRecByAddress(prAdapter, NETWORK_TYPE_AIS_INDEX, prBssDesc->aucSrcAddr);
+	if (prStaRec)
+		u2Score = WEIGHT_IDX_SAA * (prStaRec->ucTxAuthAssocRetryCount ? 0 : BSS_FULL_SCORE);
+	else
+		u2Score = WEIGHT_IDX_SAA * BSS_FULL_SCORE;
 
 	return u2Score;
 }
@@ -3609,6 +3641,7 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 	UINT_16 u2ScoreSnrRssi = 0;
 	UINT_16 u2ScoreTotal = 0;
 	UINT_16 u2ScoreRSN = 0;
+	UINT_16 u2ScoreSaa = 0;
 	UINT_16 u2CandBssScore = 0;
 	UINT_16 u2CandBssScoreForLowRssi = 0;
 	UINT_16 u2BlackListScore = 0;
@@ -3719,19 +3752,21 @@ try_again:
 		u2ScoreDeauth = CALCULATE_SCORE_BY_DEAUTH(prBssDesc);
 		u2ScoreProbeRsp = CALCULATE_SCORE_BY_PROBE_RSP(prBssDesc);
 		u2ScoreScanMiss = CALCULATE_SCORE_BY_MISS_CNT(prAdapter, prBssDesc);
-		u2ScoreBand = CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc, cRssi);
+		u2ScoreBand = scanCalculateScoreByBand(prAdapter, prBssDesc, cRssi);
 #if CFG_SUPPORT_RSN_SCORE
 		u2ScoreRSN = CALCULATE_SCORE_BY_RSN(prBssDesc);
 #endif
+		u2ScoreSaa = scanCalculateScoreBySaa(prAdapter, prBssDesc);
+
 		u2ScoreTotal = u2ScoreBandwidth + u2ScoreChnlInfo + u2ScoreDeauth + u2ScoreProbeRsp +
 			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand +
-			u2BlackListScore + u2ScoreRSN;
+			u2BlackListScore + u2ScoreRSN + u2ScoreSaa;
 
 		DBGLOG(SCN, INFO,
-			"%pM cRSSI[%d] Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d], RSN[%d]\n",
-			prBssDesc->aucBSSID, cRssi, u2ScoreTotal, u2ScoreBandwidth, u2ScoreChnlInfo, u2ScoreDeauth,
-			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreStaCnt, u2ScoreSnrRssi, u2ScoreSTBC,
-			u2ScoreBand, u2ScoreRSN);
+			"%pM cRSSI[%d] Score, Total %d: DE[%d], PR[%d], SM[%d], SR[%d], BD[%d], RSN[%d], SAA[%d]\n",
+			prBssDesc->aucBSSID, cRssi, u2ScoreTotal, u2ScoreDeauth,
+			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreSnrRssi,
+			u2ScoreBand, u2ScoreRSN, u2ScoreSaa);
 		/*if (cRssi < HARD_TO_CONNECT_RSSI_THRESOLD) {
 		*	if (!prCandBssDescForLowRssi) {
 		*		prCandBssDescForLowRssi = prBssDesc;
