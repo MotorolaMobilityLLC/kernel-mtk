@@ -873,8 +873,8 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35532_fhd_dsi_vdo_sharp_lcm_drv,
 #endif
 
-#if defined(CLAP070WP03XG_LVDS_8163)
-	&clap070wp03xg_lvds_8163_lcm_drv,
+#if defined(CLAP070WP03XG_LVDS)
+	&clap070wp03xg_lvds_lcm_drv,
 #endif
 
 #if defined(S6D7AA0_WXGA_DSI_VDO)
