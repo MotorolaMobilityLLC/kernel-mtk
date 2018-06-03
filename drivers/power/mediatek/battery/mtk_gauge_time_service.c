@@ -79,6 +79,7 @@ void gtimer_dump_list(void)
 	struct gtimer *ptr;
 	struct timespec time_now;
 
+	mutex_gtimer_lock();
 	get_monotonic_boottime(&time_now);
 
 	ft_debug("dump gtimer list start %ld\n", time_now.tv_sec);
@@ -88,6 +89,7 @@ void gtimer_dump_list(void)
 		ptr->endtime.tv_sec, ptr->interval);
 	}
 	ft_debug("dump list end\n");
+	mutex_gtimer_unlock();
 }
 
 void wake_up_gtimer(void)

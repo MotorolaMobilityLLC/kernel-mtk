@@ -95,6 +95,7 @@ void gauge_coulomb_dump_list(void)
 	struct gauge_consumer *ptr;
 	int car = gauge_get_coulomb();
 
+	mutex_coulomb_lock();
 	if (list_empty(phead) != true) {
 		ft_debug("dump plus list start\n");
 		list_for_each(pos, phead) {
@@ -113,13 +114,15 @@ void gauge_coulomb_dump_list(void)
 			ptr->start, ptr->end, car, ptr->variable);
 		}
 	}
+	mutex_coulomb_unlock();
 }
 
 
 void gauge_coulomb_before_reset(void)
 {
-	ft_err("gauge_coulomb_before_reset\n");
 	reset_coulomb = gauge_get_coulomb();
+	ft_err("gauge_coulomb_before_reset car=%ld\n", reset_coulomb);
+	gauge_coulomb_dump_list();
 }
 
 void gauge_coulomb_after_reset(void)
@@ -135,79 +138,37 @@ void gauge_coulomb_after_reset(void)
 	gauge_set_coulomb_interrupt1_ht(0);
 	gauge_set_coulomb_interrupt1_lt(0);
 
-	gauge_coulomb_dump_list();
 	/* check plus list */
 	phead = &coulomb_head_plus;
 	list_for_each(pos, phead) {
 		ptr = container_of(pos, struct gauge_consumer, list);
-		if (ptr->end > now) {
-			ptr->start = 0;
-			duraction = ptr->end - now;
-			if (duraction <= 0)
-				duraction = 1;
-			ptr->end = duraction;
-			ptr->variable = duraction;
-			ft_debug("[gauge_coulomb_after_reset]+ %s %ld %ld %d\n", dev_name(ptr->dev),
-			ptr->start, ptr->end, ptr->variable);
-		} else {
-			struct list_head *ptmp;
 
-			ptmp = pos;
-			pos = pos->next;
-			list_del_init(ptmp);
-			ft_err("[gauge_coulomb_after_reset]+ %s s:%ld e:%ld car:%ld %d int:%d timeout\n", ptr->name,
-			ptr->start, ptr->end, now, pre_coulomb, ptr->variable);
-			if (ptr->callback) {
-				mutex_coulomb_unlock();
-				ptr->callback(ptr);
-				mutex_coulomb_lock();
-			}
-		}
+		ptr->start = 0;
+		duraction = ptr->end - now;
+		ptr->end = duraction;
+		ptr->variable = duraction;
+		ft_debug("[gauge_coulomb_after_reset]+ %s %ld %ld %d\n", dev_name(ptr->dev),
+		ptr->start, ptr->end, ptr->variable);
 	}
-	pos = coulomb_head_plus.next;
-	if (list_empty(pos) != true) {
-		ptr = container_of(pos, struct gauge_consumer, list);
-		gauge_set_coulomb_interrupt1_ht(ptr->end - now);
-	}
-
 
 	/* check minus list */
 	phead = &coulomb_head_minus;
 	list_for_each(pos, phead) {
 		ptr = container_of(pos, struct gauge_consumer, list);
-		if (ptr->end < now) {
-			ptr->start = 0;
-			duraction = now - ptr->end;
-			if (duraction <= 0)
-				duraction = 1;
-			ptr->end = duraction;
-			ptr->variable = duraction;
-			ft_debug("[gauge_coulomb_after_reset]- %s %ld %ld %d\n", dev_name(ptr->dev),
-			ptr->start, ptr->end, ptr->variable);
-		} else {
-			struct list_head *ptmp;
 
-			ptmp = pos;
-			pos = pos->next;
-			list_del_init(ptmp);
-			ft_err("[gauge_coulomb_after_reset]- %s s:%ld e:%ld car:%ld %d int:%d timeout\n", ptr->name,
-			ptr->start, ptr->end, now, pre_coulomb, ptr->variable);
+		ptr->start = 0;
+		duraction = ptr->end - now;
+		ptr->end = duraction;
+		ptr->variable = duraction;
+		ft_debug("[gauge_coulomb_after_reset]- %s %ld %ld %d\n", dev_name(ptr->dev),
+		ptr->start, ptr->end, ptr->variable);
+	}
 
-			if (ptr->callback) {
-				mutex_coulomb_unlock();
-				ptr->callback(ptr);
-				mutex_coulomb_lock();
-			}
-		}
-	}
-	pos = coulomb_head_minus.next;
-	if (list_empty(pos) != true) {
-		ptr = container_of(pos, struct gauge_consumer, list);
-		gauge_set_coulomb_interrupt1_lt(now - ptr->end);
-	}
+	mutex_coulomb_unlock();
 
 	gauge_coulomb_dump_list();
-	mutex_coulomb_unlock();
+
+	wake_up_gauge_coulomb();
 }
 
 void gauge_coulomb_start(struct gauge_consumer *coulomb, int car)
