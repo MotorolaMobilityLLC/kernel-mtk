@@ -728,6 +728,29 @@ static inline long long llabs(long long val)
 	return (val < 0) ? -val : val;
 }
 
+static unsigned long long fbt_get_next_vsync_locked(unsigned long long queue_end)
+{
+	unsigned long long next_vsync;
+	unsigned long mod;
+	unsigned long long diff;
+
+	if (vsync_time == 0 || queue_end <= vsync_time || vsync_period == 0) {
+		xgf_trace("ERROR 1 when get next_vsync");
+		return 0ULL;
+	}
+
+	diff = queue_end - vsync_time;
+	mod = do_div(diff, vsync_period);
+	next_vsync = queue_end + vsync_period - mod;
+
+	if (unlikely(next_vsync < queue_end)) {
+		xgf_trace("ERROR when get next_vsync");
+		return 0ULL;
+	}
+
+	return next_vsync;
+}
+
 static inline int fbt_is_self_control(unsigned long long t_cpu_target,
 		unsigned long long deqtime_thr, unsigned long long q2q_time,
 		unsigned long long deq_time)
@@ -786,19 +809,9 @@ static long long fbt_middle_vsync_check(long long t_cpu_target,
 {
 	unsigned long long next_vsync;
 	unsigned long long diff;
-	int i;
 
-	if (vsync_time == 0)
-		return t_cpu_target;
-
-	next_vsync = vsync_time;
-	for (i = 1; i < 5; i++) {
-		if (next_vsync > queue_end)
-			break;
-		next_vsync = vsync_time + (unsigned long long)(vsync_period * i);
-	}
-
-	if (next_vsync < queue_end)
+	next_vsync = fbt_get_next_vsync_locked(queue_end);
+	if (next_vsync == 0ULL)
 		return t_cpu_target;
 
 	diff = next_vsync - queue_end;
@@ -964,8 +977,6 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 
 		clus_floor_freq[cluster] = cpu_dvfs[cluster].power[tgt_opp];
 		clus_opp[cluster] = tgt_opp;
-		xgf_trace("cluster %d, opp %d, floor_freq %d",
-			cluster, clus_opp[cluster], clus_floor_freq[cluster]);
 
 		mbhr_opp = max((clus_opp[cluster] - bhr_opp), 0);
 
@@ -1003,7 +1014,6 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 	}
 
 	fbt_set_boost_value(blc_wt);
-	fpsgo_systrace_c_fbt(pid, blc_wt, "perf idx");
 
 	if (bypass_flag == 0)
 		update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
@@ -1087,7 +1097,6 @@ static int fbt_get_t2wnt(long long t_cpu_target,
 		unsigned long long *t2wnt)
 {
 	unsigned long long next_vsync, queue_end, temp;
-	int i;
 	int ret = 0;
 
 	if (!first_t2wnt || !t2wnt)
@@ -1095,18 +1104,10 @@ static int fbt_get_t2wnt(long long t_cpu_target,
 
 	mutex_lock(&fbt_mlock);
 
-	if (vsync_time == 0)
-		goto exit;
-
 	queue_end = queue_start + t_cpu_target;
-	next_vsync = vsync_time;
-	for (i = 1; i < 6; i++) {
-		if (next_vsync > queue_end)
-			break;
-		next_vsync = vsync_time + vsync_period * i;
-	}
+	next_vsync = fbt_get_next_vsync_locked(queue_end);
 
-	if (next_vsync < queue_end)
+	if (next_vsync == 0ULL)
 		goto exit;
 
 	temp = next_vsync - queue_start;
@@ -1137,32 +1138,21 @@ static unsigned long long fbt_get_t2wnt(long long t_cpu_target,
 {
 	unsigned long long next_vsync, queue_end;
 	unsigned long long t2wnt = 0ULL;
-	int i;
 
 	mutex_lock(&fbt_mlock);
 
-	if (vsync_time == 0) {
-		mutex_unlock(&fbt_mlock);
-		return 0;
-	}
-
 	queue_end = queue_start + t_cpu_target;
-	next_vsync = vsync_time;
-	for (i = 1; i < 6; i++) {
-		if (next_vsync > queue_end)
-			break;
-		next_vsync = vsync_time + vsync_period * i;
-	}
+	next_vsync = fbt_get_next_vsync_locked(queue_end);
 
-	if (next_vsync < queue_end) {
+	if (next_vsync == 0ULL) {
 		mutex_unlock(&fbt_mlock);
-		return 0;
+		return 0ULL;
 	}
 
 	if (next_vsync - queue_start < g_rescue_distance) {
 		FPSGO_LOGI("ERROR %d\n", __LINE__);
 		mutex_unlock(&fbt_mlock);
-		return 0;
+		return 0ULL;
 	}
 
 	t2wnt = next_vsync - g_rescue_distance - queue_start;
@@ -1299,14 +1289,20 @@ static int fbt_boost_policy(
 
 		if (thread_info->frame_type == VSYNC_ALIGNED_TYPE &&
 			(thread_info->render_method == HWUI || thread_info->render_method == SWUI)) {
-			unsigned long long cur_ts;
+			unsigned long long cur_ts = fpsgo_get_time();
+			long long diff = ts + vsync_period * (100 - rescue_percent) / 100 - cur_ts;
 
-			cur_ts = fpsgo_get_time();
-			t2wnt = ts + vsync_period * (100 - rescue_percent) / 100 - cur_ts;
-			first_t2wnt = ts + vsync_period * (100 - rescue_first_percent) / 100 - cur_ts;
+			if (diff > 0)
+				t2wnt = diff;
+
+			diff = ts + vsync_period * (100 - rescue_first_percent) / 100 - cur_ts;
+			if (diff > 0)
+				first_t2wnt = diff;
+
 			ret = 1;
 		} else
 			ret = fbt_get_t2wnt(target_time, ts, &first_t2wnt, &t2wnt);
+		xgf_trace("first_t2wnt %llu, t2wnt %llu", first_t2wnt, t2wnt);
 
 		if (ret) {
 			boost_info->proc.active_jerk_id ^= 1;
@@ -1338,10 +1334,11 @@ static int fbt_boost_policy(
 #else
 		if (thread_info->frame_type == VSYNC_ALIGNED_TYPE &&
 			(thread_info->render_method == HWUI || thread_info->render_method == SWUI)) {
-			unsigned long long cur_ts;
+			unsigned long long cur_ts = fpsgo_get_time();
+			long long diff = ts + vsync_period * (100 - rescue_percent) / 100 - cur_ts;
 
-			cur_ts = fpsgo_get_time();
-			t2wnt = ts + vsync_period * (100 - rescue_percent) / 100 - cur_ts;
+			if (diff > 0)
+				t2wnt = diff;
 		} else
 			t2wnt = (u64) fbt_get_t2wnt(target_time, ts);
 		xgf_trace("t2wnt %llu", t2wnt);
@@ -1568,8 +1565,6 @@ void fpsgo_ctrl2fbt_vsync(void)
 
 void fpsgo_comp2fbt_frame_start(struct render_info *thr, unsigned long long ts, unsigned long long slptime)
 {
-	struct fbt_boost_info *boost;
-
 	if (!thr)
 		return;
 
@@ -1582,8 +1577,6 @@ void fpsgo_comp2fbt_frame_start(struct render_info *thr, unsigned long long ts, 
 
 	if (thr->Q2Q_time < slptime || thr->self_time < slptime || thr->Q2Q_time < thr->self_time)
 		return;
-
-	boost = &(thr->boost_info);
 
 	fbt_frame_start(thr, ts, slptime, 1);
 }
@@ -1830,8 +1823,6 @@ void fpsgo_comp2fbt_bypass_enq(void)
 		fbt_set_idleprefer_locked(1);
 
 		fpsgo_systrace_c_fbt_gm(-100, bypass_flag, "bypass_flag");
-		xgf_trace("walt_enable %d", walt_enable);
-		xgf_trace("set_idleprefer %d", set_idleprefer);
 	}
 	mutex_unlock(&fbt_mlock);
 }
@@ -1855,7 +1846,6 @@ void fpsgo_base2fbt_set_bypass(int has_bypass)
 
 		bypass_flag = has_bypass;
 		fpsgo_systrace_c_fbt_gm(-100, bypass_flag, "bypass_flag");
-		xgf_trace("walt_enable %d", walt_enable);
 	}
 	mutex_unlock(&fbt_mlock);
 }
