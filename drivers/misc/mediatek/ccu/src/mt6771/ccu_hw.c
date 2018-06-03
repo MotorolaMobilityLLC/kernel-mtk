@@ -620,6 +620,7 @@ int ccu_force_powerdown(void)
 		if (ret < 0)
 			return ret;
 
+		mdelay(60);
 		LOG_WARN("CCU force shutdown success\n");
 	}
 
