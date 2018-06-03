@@ -987,6 +987,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(CLAA101FP01_DSI_VDO)
 	&claa101fp01_dsi_vdo_lcm_drv,
 #endif
+
+#if defined(R61322_FHD_DSI_VDO_SHARP_LFR)
+	&r61322_fhd_dsi_vdo_sharp_lfr_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
