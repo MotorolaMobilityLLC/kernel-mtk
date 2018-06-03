@@ -234,6 +234,10 @@ extern INT_32 mtk_wcn_hif_sdio_readb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT_32 offset
 
 extern INT_32 mtk_wcn_hif_sdio_writeb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT_32 offset, UINT_8 vb);
 
+extern INT_32 mtk_wcn_hif_sdio_f0_readb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT_32 offset, PUINT_8 pvb);
+
+extern INT_32 mtk_wcn_hif_sdio_f0_writeb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT_32 offset, UINT_8 vb);
+
 extern INT_32 mtk_wcn_hif_sdio_readl(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT_32 offset, PUINT_32 pvl);
 
 extern INT_32 mtk_wcn_hif_sdio_writel(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT_32 offset, UINT_32 vl);
