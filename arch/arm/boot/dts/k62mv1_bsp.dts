@@ -1,6 +1,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/mt6765-pinfunc.h>
+#include <dt-bindings/mmc/mt6765-msdc.h>
 #include <dt-bindings/clock/mt6765-clk.h>
 
 /dts-v1/;
@@ -606,5 +607,9 @@ initcall_debug=1 maxcpus=1";
 
 };
 /* Camera Gpio cfg end */
+
+&msdc1 {
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+};
 #include <k62mv1_bsp/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
