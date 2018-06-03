@@ -932,6 +932,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695_FHD_DSI_VDO_TRULY_RT5081)
 	&nt35695_fhd_dsi_vdo_truly_rt5081_lcm_drv,
 #endif
+#if defined(NT35695_FHD_DSI_VDO_TRULY_RT5081_HDP)
+	&nt35695_fhd_dsi_vdo_truly_rt5081_hdp_lcm_drv,
+#endif
 #if defined(NT35695_FHD_DSI_VDO_TRULY_RT5081_720P)
 	&nt35695_fhd_dsi_vdo_truly_rt5081_720p_lcm_drv,
 #endif
