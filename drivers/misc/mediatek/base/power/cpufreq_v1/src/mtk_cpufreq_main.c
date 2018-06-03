@@ -1234,11 +1234,8 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		ret = _mt_cpufreq_setup_freqs_table(policy,
 						    opp_tbl_info->opp_tbl, opp_tbl_info->size);
 
-		policy->cpuinfo.max_freq = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
-		policy->cpuinfo.min_freq = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
-
-		policy->max = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
-		policy->min = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
+		policy->cpuinfo.max_freq = cpu_dvfs_get_max_freq(p);
+		policy->cpuinfo.min_freq = cpu_dvfs_get_min_freq(p);
 
 		opp_tbl_m_info = &opp_tbls_m[id][lv];
 		p->freq_tbl = opp_tbl_m_info->opp_tbl_m;
@@ -1250,6 +1247,8 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 				p->idx_normal_max_opp = p->idx_opp_tbl;
 
 		policy->cur = cpu_dvfs_get_cur_freq(p);	/* use cur phy freq is better */
+		policy->max = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
+		policy->min = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
 		p->mt_policy = policy;
 		p->armpll_is_available = 1;
 

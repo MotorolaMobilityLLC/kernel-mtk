@@ -16,7 +16,7 @@
 #include <linux/regulator/consumer.h>
 
 #include <mach/mtk_freqhopping.h>
-
+#include <mt-plat/upmu_common.h>
 #include "mtk_cpufreq_platform.h"
 #include "../../mtk_cpufreq_hybrid.h"
 
@@ -50,8 +50,8 @@ struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 		.id		= MT_CPU_DVFS_LL,
 		.cpu_id		= 0,
 		.idx_normal_max_opp = -1,
-		.idx_opp_ppm_base = -1,
-		.idx_opp_ppm_limit = -1,
+		.idx_opp_ppm_base = 15,
+		.idx_opp_ppm_limit = 0,
 		.Vproc_buck_id	= CPU_DVFS_VPROC1,
 		.Vsram_buck_id	= CPU_DVFS_VSRAM1,
 		.Pll_id		= PLL_LL_CLUSTER,
@@ -62,8 +62,8 @@ struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 		.id		= MT_CPU_DVFS_L,
 		.cpu_id		= 4,
 		.idx_normal_max_opp = -1,
-		.idx_opp_ppm_base = -1,
-		.idx_opp_ppm_limit = -1,
+		.idx_opp_ppm_base = 15,
+		.idx_opp_ppm_limit = 0,
 		.Vproc_buck_id	= CPU_DVFS_VPROC1,
 		.Vsram_buck_id	= CPU_DVFS_VSRAM1,
 		.Pll_id		= PLL_L_CLUSTER,
@@ -75,8 +75,8 @@ struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 		.id		= MT_CPU_DVFS_CCI,
 		.cpu_id		= 10,
 		.idx_normal_max_opp = -1,
-		.idx_opp_ppm_base = -1,
-		.idx_opp_ppm_limit = -1,
+		.idx_opp_ppm_base = 15,
+		.idx_opp_ppm_limit = 0,
 		.Vproc_buck_id	= CPU_DVFS_VPROC1,
 		.Vsram_buck_id	= CPU_DVFS_VSRAM1,
 		.Pll_id		= PLL_CCI_CLUSTER,
@@ -525,6 +525,9 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 #if 0
 	turbo_flag = mt_eem_get_turbo();
 	cpufreq_info("turbo_flag = %d\n", turbo_flag);
+
+	if (is_ext_buck_exist())
+		lv = CPU_LEVEL_2;
 #endif
 
 	return lv;

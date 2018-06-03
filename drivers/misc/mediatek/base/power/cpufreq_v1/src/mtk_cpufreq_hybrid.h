@@ -22,23 +22,15 @@ struct cpu_dvfs_log {
 	unsigned int time_stamp_h_log:32;
 
 	struct {
-		unsigned int vproc_log:10;
+		unsigned int pause_bit:2;
+		unsigned int cluster_en:2;
+		unsigned int limit:4;
+		unsigned int base:4;
 		unsigned int opp_idx_log:4;
 		unsigned int sche_idx_log:5;
 		unsigned int wfi_idx_log:4;
-		unsigned int vsram_log:9;
+		unsigned int padd:7;
 	} cluster_opp_cfg[NR_MT_CPU_DVFS];
-
-	unsigned int pause_bit:2;
-	unsigned int ll_en:2;
-	unsigned int l_ll_limit:4;
-	unsigned int h_ll_limit:4;
-	unsigned int l_en:2;
-	unsigned int l_l_limit:4;
-	unsigned int h_l_limit:4;
-	unsigned int b_en:2;
-	unsigned int l_b_limit:4;
-	unsigned int h_b_limit:4;
 };
 
 struct cpu_dvfs_log_box {
