@@ -3069,6 +3069,9 @@ retry:
 	}
 
 	*address = temp;
+		pr_info("[mtk_net] prefix:[%04X%04X] iid[%04X%04X]\n",
+			ntohl(temp.s6_addr32[0]), ntohl(temp.s6_addr32[1]),
+			ntohl(temp.s6_addr32[2]), ntohl(temp.s6_addr32[3]));
 	return 0;
 }
 
@@ -6005,8 +6008,9 @@ static int __net_init addrconf_init_net(struct net *net)
 	dflt->autoconf = ipv6_defaults.autoconf;
 	dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
 
-	dflt->stable_secret.initialized = false;
-	all->stable_secret.initialized = false;
+	/* MTK_NET:Enable stable address */
+	dflt->stable_secret.initialized = true;
+	all->stable_secret.initialized = true;
 
 	net->ipv6.devconf_all = all;
 	net->ipv6.devconf_dflt = dflt;
