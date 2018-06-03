@@ -96,7 +96,12 @@ u32 slp_spm_data;
 #if 1
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
+	/* FIXME: */
+#if 1
+	return false;
+#else
 	return state == PM_SUSPEND_MEM;
+#endif
 }
 
 static int slp_suspend_ops_begin(suspend_state_t state)
