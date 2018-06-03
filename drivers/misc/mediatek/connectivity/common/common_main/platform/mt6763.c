@@ -1021,10 +1021,10 @@ static UINT32 consys_emi_set_remapping_reg(VOID)
 	UINT32 addrPhy = 0;
 
 	/*consys to ap emi remapping register:10001380, cal remapping address */
-	addrPhy = (gConEmiPhyBase >> 21) & 0x0FFF;
+	addrPhy = (gConEmiPhyBase >> 21) & 0x1FFF;
 
-	/*enable consys to ap emi remapping bit12 */
-	addrPhy = addrPhy | 0x1000;
+	/*enable consys to ap emi remapping bit13 */
+	addrPhy = addrPhy | 0x2000;
 
 	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET,
 			CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET) | addrPhy);
