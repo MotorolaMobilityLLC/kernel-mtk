@@ -1599,6 +1599,9 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	unsigned int layer_greq_num;
 	unsigned int dst_w, dst_h;
 
+
+	return 0;
+
 	layer_num = ovl_layer_num(module);
 
 	dst_w = primary_display_get_width();
