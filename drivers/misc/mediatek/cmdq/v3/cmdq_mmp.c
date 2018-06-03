@@ -25,7 +25,7 @@ void cmdq_mmp_init(void)
 #ifdef CMDQ_PROFILE_MMP
 	mmprofile_enable(1);
 	if (CMDQ_MMP_events.CMDQ == 0) {
-		CMDQ_MMP_events.CMDQ = mmprofile_register_event(MMP_RootEvent, "CMDQ");
+		CMDQ_MMP_events.CMDQ = mmprofile_register_event(MMP_ROOT_EVENT, "CMDQ");
 		CMDQ_MMP_events.thread_en =
 		    mmprofile_register_event(CMDQ_MMP_events.CMDQ, "thread_en");
 		CMDQ_MMP_events.CMDQ_IRQ = mmprofile_register_event(CMDQ_MMP_events.CMDQ, "CMDQ_IRQ");
