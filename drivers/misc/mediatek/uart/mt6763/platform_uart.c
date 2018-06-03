@@ -818,32 +818,30 @@ void mtk_uart_dma_vfifo_tx_tasklet(unsigned long arg)
 	unsigned long flags;
 
 	spin_lock_irqsave(&vfifo->iolock, flags);
-	if (atomic_inc_and_test(&vfifo->entry) > 1) {
-		MSG(ERR, "tx entry!!\n");
-		tasklet_schedule(&vfifo->dma->tasklet);
-	} else {
-		while (UART_READ32(VFF_LEFT_SIZE(base)) >= vfifo->trig) {
-			/* deal with x_char first */
-			if (unlikely(port->x_char)) {
-				MSG(INFO, "detect x_char!!\n");
-				uart->write_byte(uart, port->x_char);
-				port->icount.tx++;
-				port->x_char = 0;
-				break;
-			}
-			if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
-				uart->pending_tx_reqs = 0;
-				atomic_set(&dma->free, 1);
-				complete(&dma->done);
-				break;
-			}
-			mtk_uart_dma_vfifo_tx_tasklet_byte(arg);
+	atomic_inc(&vfifo->entry);
+
+	while (UART_READ32(VFF_LEFT_SIZE(base)) >= vfifo->trig) {
+		/* deal with x_char first */
+		if (unlikely(port->x_char)) {
+			MSG(INFO, "detect x_char!!\n");
+			uart->write_byte(uart, port->x_char);
+			port->icount.tx++;
+			port->x_char = 0;
+			break;
 		}
-		if (txcount != port->icount.tx) {
-			mtk_uart_vfifo_enable_tx_intr(uart);
-			mtk_uart_tx_vfifo_flush(uart, 0);
+		if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
+			uart->pending_tx_reqs = 0;
+			atomic_set(&dma->free, 1);
+			complete(&dma->done);
+			break;
 		}
+		mtk_uart_dma_vfifo_tx_tasklet_byte(arg);
 	}
+	if (txcount != port->icount.tx) {
+		mtk_uart_vfifo_enable_tx_intr(uart);
+		mtk_uart_tx_vfifo_flush(uart, 0);
+	}
+
 	atomic_dec(&vfifo->entry);
 	spin_unlock_irqrestore(&vfifo->iolock, flags);
 }
@@ -1096,13 +1094,11 @@ void mtk_uart_dma_vfifo_rx_tasklet(unsigned long arg)
 
 	MSG(DMA, "%d, %x, %x\n", uart->read_allow(uart), UART_READ32(VFF_VALID_SIZE(vfifo->base)), vfifo->trig);
 	spin_lock_irqsave(&vfifo->iolock, flags);
-	if (atomic_inc_and_test(&vfifo->entry) > 1) {
-		MSG(ERR, "rx entry!!\n");
-		tasklet_schedule(&vfifo->dma->tasklet);
-	} else {
-		if (uart->read_allow(uart))
-			mtk_uart_dma_vfifo_rx_tasklet_str(arg);
-	}
+	atomic_inc(&vfifo->entry);
+
+	if (uart->read_allow(uart))
+		mtk_uart_dma_vfifo_rx_tasklet_str(arg);
+
 	atomic_dec(&vfifo->entry);
 	spin_unlock_irqrestore(&vfifo->iolock, flags);
 }
