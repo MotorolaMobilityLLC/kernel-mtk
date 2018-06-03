@@ -477,6 +477,7 @@ typedef UINT_32 KAL_WAKE_LOCK_T, *P_KAL_WAKE_LOCK_T;
 
 #define WLAN_TAG                                    "[wlan]"
 #define kalPrint(_Fmt...)                           pr_debug(WLAN_TAG _Fmt)
+#define kalPrintLimited(_Fmt...)                    pr_debug_ratelimited(WLAN_TAG _Fmt)
 
 #define kalBreakPoint() \
 do { \

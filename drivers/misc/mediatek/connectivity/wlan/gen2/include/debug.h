@@ -183,6 +183,7 @@ typedef enum _ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T {
  */
 
 #define LOG_FUNC                kalPrint
+#define LOG_FUNC_LIMITED        kalPrintLimited
 
 #if defined(LINUX)
 #define DBGLOG(_Module, _Class, _Fmt, ...) \
@@ -191,8 +192,16 @@ typedef enum _ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T {
 			break; \
 		LOG_FUNC("%s:(" #_Module " " #_Class ") " _Fmt, __func__, ##__VA_ARGS__); \
 	} while (0)
+
+#define DBGLOGLIMITED(_Module, _Class, _Fmt, ...) \
+	do { \
+		if ((aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) == 0) \
+			break; \
+		LOG_FUNC_LIMITED("%s:(" #_Module " " #_Class ") " _Fmt, __func__, ##__VA_ARGS__); \
+	} while (0)
 #else
 #define DBGLOG(_Module, _Class, _Fmt)
+#define DBGLOGLIMITED(_Module, _Class, _Fmt)
 #endif
 
 #if DBG
