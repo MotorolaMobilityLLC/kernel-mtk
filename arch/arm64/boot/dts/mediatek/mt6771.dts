@@ -2276,76 +2276,25 @@
 	cam1@1a003000 {
 		compatible = "mediatek,cam1";
 		reg = <0 0x1a003000 0 0x1000>;
-		interrupts = <GIC_SPI 252 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 253 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	cam2@1a004000 {
 		compatible = "mediatek,cam2";
-		reg = <0 0x1a004000 0 0x1000>;
-		interrupts = <GIC_SPI 253 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	cam3@1a005000 {
-		compatible = "mediatek,cam3";
-		reg = <0 0x1a005000 0 0x1000>;
+		reg = <0 0x1a004000 0 0x2000>;
 		interrupts = <GIC_SPI 254 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	cam4@1a006000 {
-		compatible = "mediatek,cam4";
-		reg = <0 0x1a006000 0 0x1000>;
+	cam3@1a006000 {
+		compatible = "mediatek,cam3";
+		reg = <0 0x1a006000 0 0x2000>;
 		interrupts = <GIC_SPI 255 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	cam5@1a007000 {
-		compatible = "mediatek,cam5";
-		reg = <0 0x1a007000 0 0x1000>;
+	cam4@1a008000 {
+		compatible = "mediatek,cam4";
+		reg = <0 0x1a008000 0 0x2000>;
 		interrupts = <GIC_SPI 256 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	cam6@1a008000 {
-		compatible = "mediatek,cam6";
-		reg = <0 0x1a008000 0 0x1000>;
-	};
-
-	cam7@1a009000 {
-		compatible = "mediatek,cam7";
-		reg = <0 0x1a009000 0 0x1000>;
-	};
-
-	cam10@1a01c000 {
-		compatible = "mediatek,cam10";
-		reg = <0 0x1a01c000 0 0x1000>;
-	};
-
-	cam11@1a01d000 {
-		compatible = "mediatek,cam11";
-		reg = <0 0x1a01d000 0 0x1000>;
-	};
-
-	cam14@1a02c000 {
-		compatible = "mediatek,cam14";
-		reg = <0 0x1a02c000 0 0x1000>;
-	};
-
-	cam15@1a02d000 {
-		compatible = "mediatek,cam15";
-		reg = <0 0x1a02d000 0 0x1000>;
-	};
-
-	cam18@1a03c000 {
-		compatible = "mediatek,cam18";
-		reg = <0 0x1a03c000 0 0x1000>;
-	};
-
-	cam19@1a03d000 {
-		compatible = "mediatek,cam19";
-		reg = <0 0x1a03d000 0 0x1000>;
-	};
-
-	camsv_top@1a050000 {
-		compatible = "mediatek,camsv_top";
-		reg = <0 0x1a050000 0 0x1000>;
 	};
 
 	camsv1@1a050000 {
@@ -2357,7 +2306,7 @@
 	camsv2@1a051000 {
 		compatible = "mediatek,camsv2";
 		reg = <0 0x1a051000 0 0x1000>;
-		interrupts = <GIC_SPI 257 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 259 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	camsv3@1a052000 {
@@ -2369,7 +2318,7 @@
 	camsv4@1a053000 {
 		compatible = "mediatek,camsv4";
 		reg = <0 0x1a053000 0 0x1000>;
-		interrupts = <GIC_SPI 259 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 261 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	camsv5@1a054000 {
