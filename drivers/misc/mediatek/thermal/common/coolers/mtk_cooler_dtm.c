@@ -37,12 +37,19 @@
 #else
 #include "mtk_cpufreq.h"
 #endif
-
+#include <linux/uidgid.h>
+#if defined(CONFIG_MTK_VPU_SUPPORT)
+#include "vpu_dvfs.h"
+#endif
 
 /*=============================================================
  *Local variable definition
  *=============================================================
  */
+#if defined(THERMAL_VPU_SUPPORT)
+static kuid_t uid = KUIDT_INIT(0);
+static kgid_t gid = KGIDT_INIT(1000);
+#endif
 int tscpu_cpu_dmips[CPU_COOLER_NUM] = { 0 };
 int mtktscpu_limited_dmips = 1;	/* Use in mtk_thermal_platform.c */
 static int previous_step = -1;
@@ -54,6 +61,10 @@ static unsigned int prv_stc_cpu_pwr_lim;
 static unsigned int prv_stc_gpu_pwr_lim;
 unsigned int static_cpu_power_limit = 0x7FFFFFFF;
 unsigned int static_gpu_power_limit = 0x7FFFFFFF;
+#if defined(THERMAL_VPU_SUPPORT)
+static unsigned int prv_stc_vpu_pwr_lim;
+unsigned int static_vpu_power_limit = 0x7FFFFFFF;
+#endif
 static struct apthermolmt_user ap_dtm;
 static char *ap_dtm_log = "ap_dtm";
 
@@ -117,6 +128,21 @@ static void set_static_gpu_power_limit(unsigned int limit)
 		apthermolmt_set_gpu_power_limit(&ap_dtm, static_gpu_power_limit);
 	}
 }
+
+#if defined(THERMAL_VPU_SUPPORT)
+static void set_static_vpu_power_limit(unsigned int limit)
+{
+	prv_stc_vpu_pwr_lim = static_vpu_power_limit;
+	static_vpu_power_limit = (limit != 0) ? limit : 0x7FFFFFFF;
+
+	if (prv_stc_vpu_pwr_lim != static_vpu_power_limit) {
+		tscpu_printk("%s %d\n", __func__,
+			(static_vpu_power_limit != 0x7FFFFFFF) ? static_vpu_power_limit : 0);
+
+		apthermolmt_set_vpu_power_limit(&ap_dtm, static_vpu_power_limit);
+	}
+}
+#endif
 
 static int tscpu_set_power_consumption_state(void)
 {
@@ -227,6 +253,78 @@ static struct thermal_cooling_device_ops mtktscpu_cooling_F0x2_ops = {
 	.set_cur_state = dtm_cpu_set_cur_state,
 };
 
+#if defined(THERMAL_VPU_SUPPORT)
+static ssize_t clvpu_opp_proc_write(struct file *filp, const char __user *buf, size_t len, loff_t *data)
+{
+	int vpu_upper_opp = -1;
+	unsigned int vpu_power = 0;
+	char tmp[32] = {0};
+
+	len = (len < (sizeof(tmp) - 1)) ? len : (sizeof(tmp) - 1);
+
+	/* write data to the buffer */
+	if (copy_from_user(tmp, buf, len))
+		return -EFAULT;
+
+	if (kstrtoint(tmp, 10, &vpu_upper_opp) == 0) {
+#if defined(CONFIG_MTK_VPU_SUPPORT)
+		if (vpu_upper_opp == -1)
+			vpu_power = 0;
+		else if (vpu_upper_opp >= VPU_OPP_0 && vpu_upper_opp < VPU_OPP_NUM)
+			vpu_power = vpu_power_table[vpu_upper_opp].power;
+		else
+#endif
+			vpu_power = 0;
+
+		set_static_vpu_power_limit(vpu_power);
+		tscpu_printk("[%s] = %d\n", __func__, vpu_power);
+		return len;
+	}
+
+	tscpu_dprintk("[%s] invalid input\n", __func__);
+
+	return -EINVAL;
+}
+
+static int clvpu_opp_proc_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d,%d\n", prv_stc_vpu_pwr_lim, static_vpu_power_limit);
+
+	tscpu_dprintk("[%s] %d\n", __func__, static_vpu_power_limit);
+
+	return 0;
+}
+
+static int clvpu_opp_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, clvpu_opp_proc_read, PDE_DATA(inode));
+}
+
+static const struct file_operations clvpu_opp_fops = {
+	.owner = THIS_MODULE,
+	.open = clvpu_opp_proc_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = clvpu_opp_proc_write,
+	.release = single_release,
+};
+
+static void thermal_vpu_init(void)
+{
+	struct proc_dir_entry *dir_entry = NULL;
+	struct proc_dir_entry *entry = NULL;
+
+	dir_entry = mtk_thermal_get_proc_drv_therm_dir_entry();
+	if (!dir_entry)
+		tscpu_printk("[%s]: mkdir /proc/driver/thermal failed\n", __func__);
+	else {
+		entry = proc_create("thermal_vpu_limit", S_IRUGO | S_IWUSR | S_IWGRP, dir_entry, &clvpu_opp_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+	}
+}
+#endif
+
 /* Init local structure for AP coolers */
 static int init_cooler(void)
 {
@@ -271,6 +369,10 @@ static int __init mtk_cooler_dtm_init(void)
 		cl_dev[i] = mtk_thermal_cooling_device_register(&cooler_name[i * 20], NULL,
 						&mtktscpu_cooling_F0x2_ops);
 	}
+
+#if defined(THERMAL_VPU_SUPPORT)
+	thermal_vpu_init();
+#endif
 /*
 *	if (err) {
 *		tscpu_printk("tscpu_register_DVFS_hotplug_cooler fail\n");
