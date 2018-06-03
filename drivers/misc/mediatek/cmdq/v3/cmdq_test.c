@@ -1296,7 +1296,6 @@ static void testcase_perisys_apb(void)
 	cmdq_dev_free_module_base_VA(UART0_VA_BASE);
 
 	CMDQ_LOG("%s END\n", __func__);
-	return;
 }
 
 static void testcase_write_address(void)

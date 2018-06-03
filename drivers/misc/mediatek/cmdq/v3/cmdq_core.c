@@ -4181,11 +4181,10 @@ static bool cmdq_core_check_engine_conflict_unlocked(const uint64_t engineFlag,
 				cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
 						   " also occupied by thread %d, secure:%d\n",
 						   pEngine[index].currOwner, is_secure);
-				if (forceLog) {
+				if (forceLog)
 					CMDQ_LOG("%s", long_msg);
-				} else {
+				else
 					CMDQ_VERBOSE("%s", long_msg);
-				}
 
 				isEngineConflict = true;	/* engine conflict! */
 				thread = CMDQ_INVALID_THREAD;
@@ -8000,6 +7999,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 	/* update task end address by with thread */
 	if (CMDQ_IS_END_ADDR(pTask->pCMDEnd[-1])) {
 		pTask->pCMDEnd[-1] = CMDQ_THR_FIX_END_ADDR(thread);
+		/* make sure address change to DRAM before start HW thread */
 		smp_mb();
 	}
 #endif

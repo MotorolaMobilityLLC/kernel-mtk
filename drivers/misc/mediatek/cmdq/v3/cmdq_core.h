@@ -83,35 +83,31 @@ struct DumpFirstErrorStruct {
 #endif
 
 #define CMDQ_LOG(string, args...) \
-{			\
-if (1) {	\
+do {			\
 	pr_notice("[CMDQ]"string, ##args); \
 	cmdq_core_save_first_dump("[CMDQ]"string, ##args); \
-}			\
-}
+} while (0)
 
 #define CMDQ_MSG(string, args...) \
-{			\
+do {			\
 if (cmdq_core_should_print_msg()) { \
 	pr_notice("[CMDQ]"string, ##args); \
 }			\
-}
+} while (0)
 
 #define CMDQ_VERBOSE(string, args...) \
-{			\
+do {			\
 if (cmdq_core_should_print_msg()) { \
 	pr_debug("[CMDQ]"string, ##args); \
 }			\
-}
+} while (0)
 
 
 #define CMDQ_ERR(string, args...) \
-{			\
-if (1) {	\
+do {			\
 	pr_notice("[CMDQ][ERR]"string, ##args); \
 	cmdq_core_save_first_dump("[CMDQ][ERR]"string, ##args); \
-}			\
-}
+} while (0)
 
 #define CMDQ_CHECK_AND_BREAK_STATUS(status)\
 {					\
