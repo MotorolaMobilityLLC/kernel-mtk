@@ -208,13 +208,7 @@ static int rt5509_block_read(
 		memcpy(dest, chip->sim + offset, bytes);
 	return ret;
 #else
-	int ret = 0;
-
-	/* customized for MTK I2C based upon no Sr */
-	ret = i2c_master_send(client, (const char *)&reg, 1);
-	if (ret < 0)
-		return ret;
-	return i2c_master_recv(client, dest, bytes);
+	return i2c_smbus_read_i2c_block_data(client, reg, bytes, dest);
 #endif /* #if RT5509_SIMULATE_DEVICE */
 }
 
