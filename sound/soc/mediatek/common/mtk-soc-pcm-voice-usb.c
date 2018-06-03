@@ -316,6 +316,57 @@ static int Audio_USB_Debug_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int usb_echo_ref_delay_us;
+struct memif_lpbk usb_memif_lpbk;
+static void set_echo_ref_path(int connect)
+{
+	if (usb_md_select) {
+		SetIntfConnection(connect,
+				  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1,
+				  Soc_Aud_AFE_IO_Block_MEM_MOD_DAI);
+		SetIntfConnection(connect,
+				  Soc_Aud_AFE_IO_Block_MEM_DL1_CH1,
+				  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
+	} else {
+		SetIntfConnection(connect,
+				  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1,
+				  Soc_Aud_AFE_IO_Block_MEM_MOD_DAI);
+		SetIntfConnection(connect,
+				  Soc_Aud_AFE_IO_Block_MEM_DL1_CH1,
+				  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+
+	}
+}
+static int Audio_USB_Echo_Ref_Get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = usb_echo_ref_delay_us;
+	return 0;
+}
+
+static int Audio_USB_Echo_Ref_Set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	usb_echo_ref_delay_us = ucontrol->value.integer.value[0];
+	pr_warn("%s(), usb_echo_ref_delay_us = %d\n", __func__, usb_echo_ref_delay_us);
+
+	if (usb_echo_ref_delay_us > 0) {
+		usb_memif_lpbk.dl_memif = Soc_Aud_Digital_Block_MEM_DL1;
+		usb_memif_lpbk.ul_memif = Soc_Aud_Digital_Block_MEM_MOD_DAI;
+
+		usb_memif_lpbk.delay_us = usb_echo_ref_delay_us;
+
+		set_echo_ref_path(Soc_Aud_InterCon_Connection);
+
+		memif_lpbk_enable(&usb_memif_lpbk);
+	} else {
+		memif_lpbk_disable(&usb_memif_lpbk);
+
+		set_echo_ref_path(Soc_Aud_InterCon_DisConnect);
+	}
+	return 0;
+}
+
 static const struct snd_kcontrol_new speech_usb_controls[] = {
 	SOC_ENUM_EXT("USB_Modem_Select",
 		     speech_usb_enum[0],
@@ -331,6 +382,8 @@ static const struct snd_kcontrol_new speech_usb_controls[] = {
 		     Audio_USB_Lpbk_Set),
 	SOC_SINGLE_EXT("USB_Voice_Debug", SND_SOC_NOPM, 0, 0xFFFFFFFF, 0,
 		       Audio_USB_Debug_Get, Audio_USB_Debug_Set),
+	SOC_SINGLE_EXT("USB_Voice_Echo_Ref", SND_SOC_NOPM, 0, 0xFFFFFFFF, 0,
+		       Audio_USB_Echo_Ref_Get, Audio_USB_Echo_Ref_Set),
 };
 
 static void usb_md1_enable(bool enable, struct snd_pcm_runtime *runtime)
@@ -578,6 +631,11 @@ static int mtk_voice_usb_prepare(struct snd_pcm_substream *substream)
 				usb_md1_enable(true, runtime);
 
 			voice_usb_status = true;
+
+			/* setup for echo ref path */
+			usb_memif_lpbk.format = runtime->format;
+			usb_memif_lpbk.rate = runtime->rate;
+			usb_memif_lpbk.channel = runtime->channels;
 
 			if (usb_debug_enable & USB_DBG_ECHO_REF_ALIGN) {
 				SetConnection(Soc_Aud_InterCon_Connection,

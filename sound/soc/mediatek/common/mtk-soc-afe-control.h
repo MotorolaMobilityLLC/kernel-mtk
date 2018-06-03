@@ -236,6 +236,7 @@ int irq_update_user(const void *_user,
 		    enum Soc_Aud_IRQ_MCU_MODE _irq,
 		    unsigned int _rate,
 		    unsigned int _count);
+int irq_get_total_user(enum Soc_Aud_IRQ_MCU_MODE _irq);
 
 /* IRQ Register Control Table and Handler Function Table*/
 void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
@@ -243,6 +244,9 @@ const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
 const struct Aud_RegBitsInfo *GetIRQPurposeReg(enum Soc_Aud_IRQ_PURPOSE sIrqPurpose);
 
 bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr);
+
+int memif_lpbk_enable(struct memif_lpbk *memif_lpbk);
+int memif_lpbk_disable(struct memif_lpbk *memif_lbpk);
 
 /* GetEnableAudioBlockRegOffset */
 enum MEM_BLOCK_ENABLE_REG_INDEX {
@@ -286,7 +290,7 @@ int mtk_audio_request_sram(dma_addr_t *phys_addr,
 void mtk_audio_free_sram(void *user);
 
 struct mtk_mem_blk_ops {
-	int (*set_memif_addr)(AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk);
+	int (*set_chip_memif_addr)(int mem_blk, dma_addr_t addr, size_t size);
 };
 
 struct mtk_afe_platform_ops {
@@ -309,6 +313,7 @@ int mtk_memblk_copy(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos, void __user *dst, snd_pcm_uframes_t count,
 				AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk);
 
+int set_memif_addr(int mem_blk, dma_addr_t addr, size_t size);
 int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params,
 	AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk);
 void init_afe_ops(void);
