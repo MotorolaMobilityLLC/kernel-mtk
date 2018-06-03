@@ -58,6 +58,7 @@ static struct scp_status_reg scp_A_aee_status;
 static struct mutex scp_excep_mutex;
 static struct mutex scp_A_excep_dump_mutex;
 int scp_ee_force_ke_enable;
+int scp_ee_enable;
 
 /* An ELF note in memory */
 struct memelfnote {
@@ -511,7 +512,11 @@ void scp_aed(enum scp_excep_id type, enum scp_core_id id)
 void scp_aed_reset_inplace(enum scp_excep_id type, enum scp_core_id id)
 {
 	pr_debug("[SCP]scp_aed_reset_inplace\n");
-	scp_aed(type, id);
+	if (scp_ee_enable)
+		scp_aed(type, id);
+	else
+		pr_debug("[SCP]ee disable value=%d\n", scp_ee_enable);
+
 #ifndef CFG_RECOVERY_SUPPORT
 	/* workaround for QA, not reset SCP in WDT */
 	if (type == EXCEP_RUNTIME) {
@@ -624,7 +629,8 @@ int scp_excep_init(void)
 
 	/* init global values */
 	scp_A_dump_length = 0;
-
+	/* 1: ee on, 0: ee disable*/
+	scp_ee_enable = 1;
 
 	return 0;
 }
