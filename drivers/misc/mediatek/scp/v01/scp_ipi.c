@@ -177,10 +177,13 @@ EXPORT_SYMBOL_GPL(scp_ipi_unregistration);
 enum scp_ipi_status scp_ipi_send(enum ipi_id id, void *buf,
 	unsigned int  len, unsigned int wait, enum scp_core_id scp_id)
 {
-
 #if SCP_IPI_STAMP_SUPPORT
 	unsigned long flag = 0;
 #endif
+    /* the variable is for reading back the id from sram
+     * to check the if the sram is ready for accesses.
+     */
+	enum ipi_id rb_id;
 
 	/*avoid scp log print too much*/
 	if (scp_ipi_id_record == id)
@@ -276,8 +279,20 @@ enum scp_ipi_status scp_ipi_send(enum ipi_id id, void *buf,
 	memcpy(scp_send_buff[scp_id], buf, len);
 	memcpy_to_scp((void *)scp_send_obj[scp_id]->share_buf,
 					scp_send_buff[scp_id], len);
+
 	scp_send_obj[scp_id]->len = len;
 	scp_send_obj[scp_id]->id = id;
+
+	/*
+	 * read the value back to quarantee that scp's sram is ready.
+	 */
+	rb_id = readl(&(scp_send_obj[scp_id]->id));
+	if (rb_id != id) {
+		pr_debug("[SCP]ERR: write/read id failed, %d, %d\n",
+				id, rb_id);
+		WARN_ON(1);
+	}
+
 	dsb(SY);
 	/*record timestamp*/
 	scp_ipi_desc[id].success_count++;
