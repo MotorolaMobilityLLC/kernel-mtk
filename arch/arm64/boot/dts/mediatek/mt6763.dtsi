@@ -1707,7 +1707,7 @@
 
 		/* Runtime Suspend Configuration */
 		/* 1. Runtime PM on/off (on: 1, off: 0) */
-		mediatek,rpm-enable = <0>;
+		mediatek,rpm-enable = <1>;
 
 		/* 2. Auto Suspend Delay. Unit: ms */
 		mediatek,rpm-autosuspend-delay = <2000>;
