@@ -444,6 +444,7 @@ static int __maybe_unused check_dsi_checksum(void)
 		ret = cmdqBackupAllocateSlot(&cksum_slot, 1);
 		if (ret) {
 			DISPERR("Fail to alloc cmd slot\n");
+			cmdqRecDestroy(handle);
 			return -1;
 		}
 	}
