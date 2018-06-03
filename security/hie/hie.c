@@ -24,7 +24,9 @@
 #include <linux/blk_types.h>
 #include <linux/preempt.h>
 
+#ifdef CONFIG_HIE_DEBUG
 static DEFINE_SPINLOCK(hie_dev_list_lock);
+#endif
 static LIST_HEAD(hie_dev_list);
 static DEFINE_SPINLOCK(hie_fs_list_lock);
 static LIST_HEAD(hie_fs_list);
@@ -76,6 +78,8 @@ int hie_register_device(struct hie_dev *dev)
 
 	if (IS_ERR_OR_NULL(hie_default_dev))
 		hie_default_dev = dev;
+
+	dev->kh = NULL;
 
 	return 0;
 }
@@ -495,6 +499,202 @@ int hie_set_bio_crypt_context(struct inode *inode, struct bio *bio)
 	return ret;
 }
 EXPORT_SYMBOL(hie_set_bio_crypt_context);
+
+int hie_kh_register(struct hie_dev *dev, unsigned int key_bits, unsigned int key_slot)
+{
+	int size;
+
+	if (dev->kh) {
+		pr_info("kh: already registered, dev 0x%p\n", dev);
+		return -1;
+	}
+
+	if (key_bits % (sizeof(unsigned int) * BITS_PER_LONG)) {
+		pr_info("kh: key_bits %u shall be multiple of %u\n",
+			key_bits, BITS_PER_LONG);
+	}
+
+	size = ((key_bits / BITS_PER_BYTE) / sizeof(unsigned long)) * key_slot;
+
+	pr_info("kh: key_bits=%u, key_slot=%u, size=%u bytes\n",
+		key_bits, key_slot, size);
+
+	dev->kh = kzalloc(size, GFP_KERNEL);
+
+	size = key_slot * sizeof(unsigned long);
+
+	dev->kh_last_access = kzalloc(size, GFP_KERNEL);
+
+	if (dev->kh && dev->kh_last_access) {
+		dev->kh_num_slot = key_slot;
+		dev->kh_unit_per_key = (key_bits / BITS_PER_BYTE) / sizeof(unsigned long);
+		dev->kh_active_slot = 0;
+		pr_info("kh: register ok, dev=0x%p, unit_per_key=%d\n",
+			dev, dev->kh_unit_per_key);
+		return 0;
+	}
+
+	pr_info("kh: register fail, dev=0x%p\n", dev);
+
+	return -1;
+}
+
+static unsigned int hie_kh_get_free_slot(struct hie_dev *dev)
+{
+	int i, min_slot;
+	unsigned long min_time = LONG_MAX;
+
+	if (dev->kh_active_slot < dev->kh_num_slot) {
+		dev->kh_active_slot++;
+#ifdef CONFIG_HIE_DEBUG
+		if (hie_debug(HIE_DBG_KH))
+			pr_info("kh: new, slot=%d\n", (dev->kh_active_slot - 1));
+#endif
+		return (dev->kh_active_slot - 1);
+	}
+
+	min_slot = dev->kh_active_slot;
+
+	for (i = 0; i < dev->kh_active_slot; i++) {
+		if (dev->kh_last_access[i] < min_time) {
+			min_time = dev->kh_last_access[i];
+			min_slot = i;
+		}
+	}
+
+#ifdef CONFIG_HIE_DEBUG
+	if (hie_debug(HIE_DBG_KH))
+		pr_info("kh: vic, slot=%d, min_time=%lu\n", min_slot, min_time);
+#endif
+
+	return min_slot;
+}
+
+int hie_kh_get_hint(struct hie_dev *dev, const char *key, int *need_update)
+{
+	int i, j, matched, matched_slot;
+	unsigned long *ptr_kh, *ptr_key;
+
+	if (!dev->kh || !need_update) {
+#ifdef CONFIG_HIE_DEBUG
+		if (hie_debug(HIE_DBG_KH))
+			pr_info("kh: get, err, key=0x%lx\n", *(unsigned long *)key);
+#endif
+		return -1;
+	}
+
+	/* round 1: simple match */
+
+	matched = 0;
+	matched_slot = 0;
+	ptr_kh = (unsigned long *)dev->kh;
+	ptr_key = (unsigned long *)key;
+
+	for (i = 0; i < dev->kh_active_slot; i++) {
+
+		if (*ptr_kh == *ptr_key) {
+			matched_slot = i;
+			matched++;
+		}
+
+		ptr_kh += dev->kh_unit_per_key;
+	}
+
+	if (matched == 1) {
+
+		/* fully match rest part to ensure 100% matched */
+
+		ptr_kh = (unsigned long *)dev->kh;
+		ptr_kh += (dev->kh_unit_per_key * matched_slot);
+
+		for (i = 0; i < dev->kh_unit_per_key - 1; i++) {
+
+			ptr_kh++;
+			ptr_key++;
+
+			if (*ptr_kh != *ptr_key) {
+
+				matched = 0;
+				break;
+			}
+		}
+
+		if (matched) {
+			*need_update = 0;
+			dev->kh_last_access[matched_slot] = jiffies;
+#ifdef CONFIG_HIE_DEBUG
+			if (hie_debug(HIE_DBG_KH))
+				pr_info("kh: get, 1, %d, key=0x%lx\n", matched_slot, *(unsigned long *)key);
+#endif
+			return matched_slot;
+		}
+	}
+
+	/* round 2: full match if simple match finds multiple targets */
+
+	if (matched) {
+
+		matched = 0;
+
+		for (i = 0; i < dev->kh_active_slot; i++) {
+
+			ptr_kh = (unsigned long *)dev->kh;
+			ptr_kh += (i * dev->kh_unit_per_key);
+			ptr_key = (unsigned long *)key;
+
+			for (j = 0; j < dev->kh_unit_per_key; j++) {
+				if (*ptr_kh++ != *ptr_key++)
+					break;
+			}
+
+			if (j == dev->kh_unit_per_key) {
+				*need_update = 0;
+				dev->kh_last_access[i] = jiffies;
+#ifdef CONFIG_HIE_DEBUG
+				if (hie_debug(HIE_DBG_KH))
+					pr_info("kh: get, 2, %d, key=0x%lx\n", i, *(unsigned long *)key);
+#endif
+				return i;
+			}
+		}
+	}
+
+	/* nothing matched, add new hint */
+
+	j = hie_kh_get_free_slot(dev);
+	ptr_kh = (unsigned long *)dev->kh;
+	ptr_kh += (j * dev->kh_unit_per_key);
+	ptr_key = (unsigned long *)key;
+
+	for (i = 0; i < dev->kh_unit_per_key; i++)
+		*ptr_kh++ = *ptr_key++;
+
+	dev->kh_last_access[j] = jiffies;
+
+	*need_update = 1;
+
+#ifdef CONFIG_HIE_DEBUG
+	if (hie_debug(HIE_DBG_KH))
+		pr_info("kh: get, n, %d, key=0x%lx\n", j, *(unsigned long *)key);
+#endif
+
+	return j;
+}
+
+int hie_kh_reset(struct hie_dev *dev)
+{
+	if (!dev->kh)
+		return -1;
+
+	dev->kh_active_slot = 0;
+
+#ifdef CONFIG_HIE_DEBUG
+	if (hie_debug(HIE_DBG_KH))
+		pr_info("kh: rst, dev=0x%p\n", dev);
+#endif
+
+	return 0;
+}
 
 #ifdef CONFIG_HIE_DEBUG
 static void *hie_seq_start(struct seq_file *seq, loff_t *pos)

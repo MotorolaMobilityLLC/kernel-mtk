@@ -27,6 +27,7 @@
 #define HIE_DBG_HIE 0x10
 #define HIE_DBG_DRV 0x20
 #define HIE_DBG_CRY 0x40
+#define HIE_DBG_KH  0x80
 
 struct hie_fs {
 	const char *name;
@@ -44,6 +45,11 @@ struct hie_dev {
 	int (*encrypt)(unsigned, const char *, int, struct request *, void *);
 	int (*decrypt)(unsigned, const char *, int, struct request *, void *);
 	void *priv; /* device specific data */
+	void *kh;
+	unsigned long *kh_last_access;
+	unsigned int kh_num_slot;
+	unsigned int kh_unit_per_key;
+	unsigned int kh_active_slot;
 
 	struct list_head list;
 };
@@ -67,6 +73,9 @@ int hie_debug(unsigned mask);
 int hie_debug_ino(unsigned long ino);
 int hie_req_end(struct request *req);
 int hie_dump_req(struct request *req, const char *prefix);
+int hie_kh_get_hint(struct hie_dev *dev, const char *key, int *need_update);
+int hie_kh_register(struct hie_dev *dev, unsigned int key_bits, unsigned int key_slot);
+int hie_kh_reset(struct hie_dev *dev);
 #else
 static inline
 int hie_is_ready(void)
@@ -134,6 +143,20 @@ int hie_dump_req(struct request *req, const char *prefix)
 	return 0;
 }
 
+static inline int hie_kh_get_hint(struct hie_dev *dev, const char *key, int *need_update)
+{
+	return 0;
+}
+
+static inline int hie_kh_register(struct hie_dev *dev, unsigned int key_bits, unsigned int key_slot)
+{
+	return 0;
+}
+
+static inline int hie_kh_reset(struct hie_dev *dev)
+{
+	return 0;
+}
 #endif
 
 #endif
