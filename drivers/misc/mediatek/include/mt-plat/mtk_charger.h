@@ -161,6 +161,10 @@ struct charger_manager {
 	bool enable_sw_jeita;
 	struct sw_jeita_data sw_jeita;
 
+	/* battery warning */
+	unsigned int notify_code;
+	unsigned int notify_test_mode;
+
 	/* battery thermal protection */
 	struct battery_thermal_protection_data thermal;
 

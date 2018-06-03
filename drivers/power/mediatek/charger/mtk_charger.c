@@ -528,6 +528,78 @@ static void charger_update_data(struct charger_manager *info)
 	info->battery_temperature = battery_meter_get_battery_temperature();
 }
 
+static void mtk_battery_notify_VCharger_check(struct charger_manager *info)
+{
+#if defined(BATTERY_NOTIFY_CASE_0001_VCHARGER)
+	int vchr = 0;
+
+	vchr = pmic_get_vbus();
+	if (vchr > info->data.max_charger_voltage) {
+		info->notify_code |= 0x0001;
+		pr_err("[BATTERY] charger_vol(%d) > %d mV\n",
+			vchr, info->data.max_charger_voltage);
+	} else {
+		info->notify_code &= ~(0x0001);
+	}
+	if (info->notify_code != 0x0000)
+		pr_err("[BATTERY] BATTERY_NOTIFY_CASE_0001_VCHARGER (%x)\n",
+			info->notify_code);
+#endif
+}
+
+static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
+{
+#if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
+	if (info->battery_temperature >= info->thermal.max_charge_temperature) {
+		info->notify_code |= 0x0002;
+		pr_err("[BATTERY] bat_temp(%d) out of range(too high)\n",
+			info->battery_temperature);
+	}
+
+	if (info->enable_sw_jeita == true) {
+		if (info->battery_temperature < TEMP_NEG_10_THRESHOLD) {
+			info->notify_code |= 0x0020;
+			pr_err("[BATTERY] bat_temp(%d) out of range(too low)\n",
+				info->battery_temperature);
+		}
+	} else {
+#ifdef BAT_LOW_TEMP_PROTECT_ENABLE
+		if (info->battery_temperature < info->thermal.min_charge_temperature) {
+			info->notify_code |= 0x0020;
+			pr_err("[BATTERY] bat_temp(%d) out of range(too low)\n",
+				info->battery_temperature);
+		}
+#endif
+	}
+	pr_debug("[BATTERY] BATTERY_NOTIFY_CASE_0002_VBATTEMP (%x)\n",
+		info->notify_code);
+#endif
+}
+
+static void mtk_battery_notify_UI_test(struct charger_manager *info)
+{
+	if (info->notify_test_mode == 0x0001) {
+		info->notify_code = 0x0001;
+		pr_debug("[BATTERY_TestMode] BATTERY_NOTIFY_CASE_0001_VCHARGER\n");
+	} else if (info->notify_test_mode == 0x0002) {
+		info->notify_code = 0x0002;
+		pr_debug("[BATTERY_TestMode] BATTERY_NOTIFY_CASE_0002_VBATTEMP\n");
+	} else {
+		pr_debug("[BATTERY] Unknown BN_TestMode Code : %x\n",
+			info->notify_test_mode);
+	}
+}
+
+static void mtk_battery_notify_check(struct charger_manager *info)
+{
+	if (info->notify_test_mode == 0x0000) {
+		mtk_battery_notify_VCharger_check(info);
+		mtk_battery_notify_VBatTemp_check(info);
+	} else {
+		mtk_battery_notify_UI_test(info);
+	}
+}
+
 static void charger_check_status(struct charger_manager *info)
 {
 	bool charging = true;
@@ -585,6 +657,8 @@ static void charger_check_status(struct charger_manager *info)
 			}
 		}
 	}
+
+	mtk_battery_notify_check(info);
 
 stop_charging:
 
@@ -786,6 +860,60 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	return 0;
 }
 
+static ssize_t show_BatteryNotify(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+
+	pr_debug("[Battery] show_BatteryNotify: %x\n", pinfo->notify_code);
+
+	return sprintf(buf, "%u\n", pinfo->notify_code);
+}
+
+static ssize_t store_BatteryNotify(struct device *dev, struct device_attribute *attr,
+				   const char *buf, size_t size)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+	unsigned int reg = 0;
+	int ret;
+
+	pr_debug("[Battery] store_BatteryNotify\n");
+	if (buf != NULL && size != 0) {
+		pr_debug("[Battery] buf is %s and size is %Zu\n", buf, size);
+		ret = kstrtouint(buf, 16, &reg);
+		pinfo->notify_code = reg;
+		pr_debug("[Battery] store code: %x\n", pinfo->notify_code);
+	}
+	return size;
+}
+
+static DEVICE_ATTR(BatteryNotify, 0664, show_BatteryNotify, store_BatteryNotify);
+
+static ssize_t show_BN_TestMode(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+
+	pr_debug("[Battery] show_BN_TestMode : %x\n", pinfo->notify_test_mode);
+	return sprintf(buf, "%u\n", pinfo->notify_test_mode);
+}
+
+static ssize_t store_BN_TestMode(struct device *dev, struct device_attribute *attr, const char *buf,
+				 size_t size)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+	unsigned int reg = 0;
+	int ret;
+
+	pr_debug("[Battery] store_BN_TestMode\n");
+	if (buf != NULL && size != 0) {
+		pr_debug("[Battery] buf is %s and size is %Zu\n", buf, size);
+		ret = kstrtouint(buf, 16, &reg);
+		pinfo->notify_test_mode = reg;
+		pr_debug("[Battery] store mode: %x\n", pinfo->notify_test_mode);
+	}
+	return size;
+}
+static DEVICE_ATTR(BN_TestMode, 0664, show_BN_TestMode, store_BN_TestMode);
+
 static int mtk_charger_probe(struct platform_device *pdev)
 {
 	struct charger_manager *info = NULL;
@@ -830,6 +958,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	srcu_init_notifier_head(&info->evt_nh);
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_sw_jeita);
+	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify);
+	ret = device_create_file(&(pdev->dev), &dev_attr_BN_TestMode);
 
 	mtk_pe20_init(info);
 

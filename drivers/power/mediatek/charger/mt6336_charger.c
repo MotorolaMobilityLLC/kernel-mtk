@@ -238,7 +238,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList,
 
 	if (max_value_in_last_element == true) {
 		/* max value in the last element */
-		for (i = (number - 1); i != 0; i--) {
+		for (i = (number - 1); i >= 0; i--) {
 			if (pList[i] <= level) {
 				pr_debug("zzf_%d<=%d i=%d\n", pList[i], level, i);
 				return pList[i];
@@ -335,58 +335,26 @@ static int mt6336_charger_set_property(struct power_supply *psy,
 
 int mt6336_plug_in_setting(struct charger_device *chg_dev)
 {
-	/* Before any software action, set RG_DIS_LOWQ_MODE = High */
-	mt6336_config_interface(0x409, 0x01, 0xFF, 0);
-	/* disable ICL150 pin */
-	mt6336_config_interface(0x438, 0x08, 0xFF, 0);
-	/* DISABLE BC12 TIMER AND ALSO RESET BC12 */
-	mt6336_config_interface(0x42B, 0x01, 0xFF, 0);
-	/* It would overwrite FT vale */
-	mt6336_config_interface(0x50E, 0x20, 0xFF, 0);
-	/* switching freq to 1MHz */
-	mt6336_config_interface(0x43A, 0x02, 0xFF, 0);
-	/* AUXADC E-Fuse calibration setting for each channel */
-	mt6336_config_interface(0x357, 0x04, 0xFF, 0);
-	mt6336_config_interface(0x356, 0x31, 0xFF, 0);
-	mt6336_config_interface(0x355, 0xE0, 0xFF, 0);
-	/* VM<=7V for normal VBUS stability */
-	mt6336_config_interface(0x552, 0xE8, 0xFF, 0);
-	mt6336_config_interface(0x548, 0x11, 0xFF, 0);
-	mt6336_config_interface(0x53F, 0x0B, 0xFF, 0);
-	mt6336_config_interface(0x53D, 0x02, 0xFF, 0);
+	/* VCV/PAM status bias current setting */
+	mt6336_config_interface(0x52A, 0x88, 0xFF, 0);
+	/* Program the LG dead time control */
+	mt6336_config_interface(0x553, 0x14, 0xFF, 0);
+	/* Loop GM enable control */
 	mt6336_config_interface(0x519, 0x3F, 0xFF, 0);
-	/* DPM */
-	mt6336_config_interface(0x51A, 0x35, 0xFF, 0);
-	mt6336_config_interface(0x51B, 0x84, 0xFF, 0);
-	/* IBAT */
-	mt6336_config_interface(0x51C, 0x01, 0xFF, 0);
-	mt6336_config_interface(0x51D, 0x84, 0xFF, 0);
-	/* ICHIN */
-	mt6336_config_interface(0x51E, 0x01, 0xFF, 0);
-	mt6336_config_interface(0x51F, 0x84, 0xFF, 0);
-	/* SYS */
-	mt6336_config_interface(0x520, 0x34, 0xFF, 0);
-	mt6336_config_interface(0x521, 0x44, 0xFF, 0);
-	/* THR */
-	mt6336_config_interface(0x522, 0x35, 0xFF, 0);
-	mt6336_config_interface(0x523, 0x84, 0xFF, 0);
-	mt6336_config_interface(0x526, 0x04, 0xFF, 0);
-	/* RG_VCV[7:0] set value 88=4.3V; 80=4.2V; B1=4.8V; FF=4.8V; 8C=4.35V */
-	mt6336_config_interface(0x427, 0x8C, 0xFF, 0);
-	mt6336_config_interface(0x428, 0x03, 0xFF, 0);
-	mt6336_config_interface(0x42F, 0x8c, 0xFF, 0);
-	mt6336_config_interface(0x528, 0x02, 0xFF, 0);
-	mt6336_config_interface(0x431, 0x16, 0xFF, 0);
-	mt6336_config_interface(0x437, 0x79, 0xFF, 0);
-	mt6336_config_interface(0x42A, 0x20, 0xFF, 0);
-	mt6336_config_interface(0x426, 0x26, 0xFF, 0);
-	mt6336_config_interface(0x42C, 0x20, 0xFF, 0);
-	mt6336_config_interface(0x436, 0x0F, 0xFF, 0);
+	mt6336_config_interface(0x51E, 0x02, 0xFF, 0);
+	/* GM MSB */
+	mt6336_config_interface(0x520, 0x04, 0xFF, 0);
+	mt6336_config_interface(0x55A, 0x00, 0xFF, 0);
+	mt6336_config_interface(0x455, 0x01, 0xFF, 0);
+	mt6336_config_interface(0x3C9, 0x10, 0xFF, 0);
+	mt6336_config_interface(0x3CF, 0x03, 0xFF, 0);
+	/* Set the software mode BATON switch control signal to be high */
+	mt6336_config_interface(0x5AF, 0x02, 0xFF, 0);
+	/* Enable the software mode of BATON switch control signal  */
+	mt6336_config_interface(0x64E, 0x02, 0xFF, 0);
 	mt6336_config_interface(0x402, 0x03, 0xFF, 0);
-	mt6336_config_interface(0x430, 0x00, 0xFF, 0);
-	mt6336_config_interface(0x400, 0x03, 0xFF, 0);
-	mt6336_config_interface(0x434, 0x0C, 0xFF, 0);
-	mt6336_config_interface(0x43B, 0x00, 0xFF, 0);
+	/* ICC/ICL status bias current setting */
+	mt6336_config_interface(0x529, 0x88, 0xFF, 0);
 
 	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
 	mt6336_unmask_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
@@ -667,6 +635,9 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 		ret = PTR_ERR(info->charger_dev);
 		goto err_register_charger_dev;
 	}
+
+	/* Enable RG_EN_TERM */
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_BAT_OVP, mt6336_vbat_ovp_callback);
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_VBUS_OVP, mt6336_vbus_ovp_callback);
