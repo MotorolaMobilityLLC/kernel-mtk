@@ -241,6 +241,11 @@ extern int is_ext_buck2_exist(void);
 extern int is_ext_buck_gpio_exist(void);
 extern int is_ext_vbat_boost_exist(void);
 extern int is_ext_swchr_exist(void);
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6357
+extern unsigned int PMIC_CHIP_VER(void);
+extern unsigned int PMIC_LP_CHIP_VER(void);
+#endif
+
 
 /*----- Smart Reset -----*/
 extern void pmic_enable_smart_reset(unsigned char smart_en,
