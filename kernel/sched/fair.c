@@ -102,7 +102,12 @@ unsigned int sysctl_sched_child_runs_first __read_mostly;
 unsigned int sysctl_sched_wakeup_granularity = 1000000UL;
 unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
 
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+/* shorten the schedule migration cost and let the idle balance more aggregative */
+const_debug unsigned int sysctl_sched_migration_cost = 33000UL;
+#else
 const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
+#endif
 
 /*
  * The exponential sliding  window over which load is averaged for shares
@@ -7345,7 +7350,11 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 		else
 			load = source_load(i, load_idx);
 
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+		sgs->group_load += (load * capacity_orig_of(i)) >> SCHED_CAPACITY_SHIFT;
+#else
 		sgs->group_load += load;
+#endif
 		sgs->group_util += cpu_util(i);
 		sgs->sum_nr_running += rq->cfs.h_nr_running;
 
@@ -7807,7 +7816,12 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	if (local->avg_load >= sds.avg_load)
 		goto out_balanced;
 
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+	if ((env->idle == CPU_IDLE) || (env->idle == CPU_NEWLY_IDLE)) {
+		int i = (env->idle == CPU_IDLE) ? 1:0;
+#else
 	if (env->idle == CPU_IDLE) {
+#endif
 		/*
 		 * This cpu is idle. If the busiest group is not overloaded
 		 * and there is no imbalance between this and busiest group
@@ -7815,8 +7829,13 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 		 * significant if the diff is greater than 1 otherwise we
 		 * might end up to just move the imbalance on another group
 		 */
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+		if ((busiest->group_type != group_overloaded) &&
+			(local->idle_cpus < (busiest->idle_cpus + i)))
+#else
 		if ((busiest->group_type != group_overloaded) &&
 				(local->idle_cpus <= (busiest->idle_cpus + 1)))
+#endif
 			goto out_balanced;
 	} else {
 		/*
@@ -7831,6 +7850,11 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 force_balance:
 	/* Looks like there is an imbalance. Compute it */
 	calculate_imbalance(env, &sds);
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+	env->imbalance = env->imbalance * SCHED_CAPACITY_SCALE
+		/ (sds.busiest->sgc->capacity / cpumask_weight(sched_group_cpus(sds.busiest)));
+#endif
+
 	return sds.busiest;
 
 out_balanced:
@@ -8341,10 +8365,17 @@ static int idle_balance(struct rq *this_rq)
 		if (!(sd->flags & SD_LOAD_BALANCE))
 			continue;
 
-		if (this_rq->avg_idle < curr_cost + sd->max_newidle_lb_cost) {
-			update_next_balance(sd, 0, &next_balance);
-			break;
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+		/* when overutilized, do aggressive idle balance for cross-cluster */
+		if (!this_rq->rd->overutilized) {
+#endif
+			if (this_rq->avg_idle < curr_cost + sd->max_newidle_lb_cost) {
+				update_next_balance(sd, 0, &next_balance);
+				break;
+			}
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
 		}
+#endif
 
 		if (sd->flags & SD_BALANCE_NEWIDLE) {
 			t0 = sched_clock_cpu(this_cpu);
@@ -8673,12 +8704,15 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
 		if (!(sd->flags & SD_LOAD_BALANCE))
 			continue;
 
+#ifndef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+		/* nohz CPU need GTS balance to migrate tasks for more than 2 clusters*/
 		/* Don't consider GTS balance if hybrid support */
 		if (hybrid_support()) {
 			if (sd->child || (!sd->child &&
 				(rcu_dereference(per_cpu(sd_scs, cpu)) == NULL)))
 			continue;
 		}
+#endif
 
 		/*
 		 * Stop the load balance at this level. There is another
@@ -8852,7 +8886,8 @@ static inline bool nohz_kick_needed(struct rq *rq)
 	if (time_before(now, nohz.next_balance))
 		return false;
 
-#ifdef CONFIG_SCHED_HMP
+#if !defined(CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT) && defined(CONFIG_HMP)
+	/* for more than two clusters, still need wakup nohz CPUs and force balancing */
 	/*
 	 * Bail out if there are no nohz CPUs in our
 	 * HMP domain, since we will move tasks between
