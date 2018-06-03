@@ -702,15 +702,22 @@ static void add_layer_info(void)
 		int full_layer_height = primary_display_get_height();
 		int full_layer_size = full_layer_width * full_layer_height * 4;
 
-		dbg_disp.layer_size_low = do_div(dbg_disp.layer_size_high, full_layer_size);
-		dbg_disp.layer_size_low *= 10;
-		do_div(dbg_disp.layer_size_low, full_layer_size);
+		if (full_layer_size) {
+			dbg_disp.layer_size_low = do_div(dbg_disp.layer_size_high, full_layer_size);
+			dbg_disp.layer_size_low *= 10;
+			do_div(dbg_disp.layer_size_low, full_layer_size);
 
-		snprintf(p, sizeof(disp_tmp), "Lsize:%01d.%01d ", dbg_disp.layer_size_high,
-			dbg_disp.layer_size_low);
-		j = strlen(p);
-		p = p + j;
-		dbg_disp.layer_size_high = 0;
+			snprintf(p, sizeof(disp_tmp), "Lsize:%01d.%01d ", dbg_disp.layer_size_high,
+				dbg_disp.layer_size_low);
+			j = strlen(p);
+			p = p + j;
+			dbg_disp.layer_size_high = 0;
+		} else {
+			snprintf(p, sizeof(disp_tmp), "Lsize:NULL ");
+			j = strlen(p);
+			p = p + j;
+			dbg_disp.layer_size_high = 0;
+		}
 	}
 	screen_logger_add_message("layer_info", MESSAGE_REPLACE, disp_tmp);
 }
