@@ -44,6 +44,8 @@
 #include <mtk_idle_internal.h>
 #include <mtk_spm_reg.h>
 
+#include "ufs-mtk.h"
+
 #include <linux/uaccess.h>
 
 #define FEATURE_ENABLE_SODI2P5
@@ -210,6 +212,18 @@ int __attribute__((weak)) localtimer_set_next_event(unsigned long evt)
 {
 	return 0;
 }
+
+#if 0
+int __attribute__((weak)) ufs_mtk_deepidle_hibern8_check(void)
+{
+	return -1;
+}
+
+void __attribute__((weak)) ufs_mtk_deepidle_leave(void)
+{
+
+}
+#endif
 #endif
 
 static char log_buf[500];
@@ -1157,14 +1171,42 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_DIS_PERI_PDN |
+#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
+#endif
 	SPM_FLAG_DEEPIDLE_OPTION
 };
 
-static void dpidle_pre_process(int cpu)
+unsigned int ufs_cb_before_xxidle(void)
 {
+#if defined(CONFIG_MTK_UFS_BOOTING)
+	unsigned int op_cond = 0;
+	bool ufs_in_hibernate = false;
+
+	ufs_in_hibernate = !ufs_mtk_deepidle_hibern8_check();
+	op_cond = ufs_in_hibernate ? DEEPIDLE_OPT_XO_UFS_ON_OFF : 0;
+
+	return op_cond;
+#else
+	return 0;
+#endif
+}
+
+void ufs_cb_after_xxidle(void)
+{
+#if defined(CONFIG_MTK_UFS_BOOTING)
+	ufs_mtk_deepidle_leave();
+#endif
+}
+
+static unsigned int dpidle_pre_process(int cpu)
+{
+	unsigned int op_cond = 0;
+
 	memset(clkmux_block_mask[IDLE_TYPE_DP],	0, NF_CLK_CFG * sizeof(unsigned int));
 	clkmux_cond[IDLE_TYPE_DP] = mtk_idle_check_clkmux(IDLE_TYPE_DP, clkmux_block_mask);
+
+	op_cond = ufs_cb_before_xxidle();
 
 	mtk_idle_notifier_call_chain(DPIDLE_START);
 
@@ -1180,6 +1222,8 @@ static void dpidle_pre_process(int cpu)
 #endif
 
 	timer_setting_before_wfi(false);
+
+	return op_cond;
 }
 
 static void dpidle_post_process(int cpu)
@@ -1198,6 +1242,8 @@ static void dpidle_post_process(int cpu)
 #endif
 
 	mtk_idle_notifier_call_chain(DPIDLE_END);
+
+	ufs_cb_after_xxidle();
 
 	dpidle_cnt[cpu]++;
 }
@@ -1496,7 +1542,7 @@ int dpidle_enter(int cpu)
 
 	idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
 
-	dpidle_pre_process(cpu);
+	operation_cond |= dpidle_pre_process(cpu);
 
 	if (dpidle_gs_dump_req) {
 		unsigned int current_ts = idle_get_current_time_ms();

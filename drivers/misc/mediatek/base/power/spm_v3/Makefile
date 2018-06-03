@@ -22,6 +22,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 
+ccflags-y += -I$(srctree)/drivers/scsi/ufs/
+
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH), y)
 ccflags-y += -I$(srctree)/sound/soc/mediatek/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/sound/soc/mediatek/common/
