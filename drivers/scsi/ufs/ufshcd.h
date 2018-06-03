@@ -598,6 +598,10 @@ struct ufs_hba {
 	/* hwfde key index */
 	int hwfde_key_idx;
 
+	int req_r_cnt;
+	int req_w_cnt;
+	unsigned long req_tag_map;
+
 	int			latency_hist_enabled;
 	struct io_latency_state io_lat_s;
 };

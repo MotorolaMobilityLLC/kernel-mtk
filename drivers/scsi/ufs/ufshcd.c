@@ -1346,6 +1346,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	unsigned long flags;
 	int tag;
 	int err = 0;
+	int cmd_allowed = 0;
 #ifdef CONFIG_MTK_HW_FDE
 	int hw_crypto_en = 0;
 	u32 dunl, dunu, lba;
@@ -1378,13 +1379,15 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	/* MTK Patch: Check if HW FDE key change is required */
 	ufs_mtk_hwfde_key_config(hba, cmd);
 
-	/* MTK Patch: Check if performance heuristic is applied */
+	/* MTK Patch: Check if this cmd can get ticket */
 	err = ufs_mtk_perf_heurisic_if_allow_cmd(hba, cmd);
 
 	if (err) {
 		err = SCSI_MLQUEUE_HOST_BUSY;
 		goto out_unlock;
 	}
+
+	cmd_allowed = 1;
 
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
 
@@ -1492,6 +1495,15 @@ out_unlock:
 	if (!err)
 		ufs_mtk_biolog_send_command(tag);
 out:
+	/* MTK Patch:
+	 * Release ticket if any error happens after ticket is got.
+	 */
+	if (err && cmd_allowed) {
+		spin_lock_irqsave(hba->host->host_lock, flags);
+		ufs_mtk_perf_heurisic_req_done(hba, cmd);
+		spin_unlock_irqrestore(hba->host->host_lock, flags);
+	}
+
 	return err;
 }
 
@@ -4215,6 +4227,11 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	tag = cmd->request->tag;
 
 	ufshcd_hold(hba, false);
+
+	/* MTK Patch: debugging log for aborting cmd */
+	dev_info(hba->dev,
+		"abort: tag %d, cmd 0x%x\n", tag, (int)cmd->cmnd[0]);
+
 	/* If command is already aborted/completed, return SUCCESS */
 	if (!(test_bit(tag, &hba->outstanding_reqs)))
 		goto out;
@@ -4318,6 +4335,10 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	scsi_dma_unmap(cmd);
 
 	spin_lock_irqsave(host->host_lock, flags);
+
+	/* MTK Patch: release ticket after this command is aborted */
+	ufs_mtk_perf_heurisic_req_done(hba, cmd);
+
 	__clear_bit(tag, &hba->outstanding_reqs);
 	hba->lrb[tag].cmd = NULL;
 	/* MTK patch for Deepidle & SODI */
