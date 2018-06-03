@@ -1107,24 +1107,6 @@ static void accdet_work_callback(struct work_struct *work)
 
 	reg_val = 0;
 	wake_lock(&accdet_irq_lock);
-#if 0
-#if	HW_MODE_SUPPORT/* open HW-mode for plug-out to avoid pop-noise */
-	reg_val = pmic_pwrap_read(ACCDET_CON24);
-#ifdef CONFIG_ACCDET_SUPPORT_EINT0
-	pwrap_write(ACCDET_CON24, reg_val|ACCDET_HWMODE_EN|ACCDET_HWEN_SEL_0);
-#elif defined CONFIG_ACCDET_SUPPORT_EINT1
-	pwrap_write(ACCDET_CON24, reg_val|ACCDET_HWMODE_EN|ACCDET_HWEN_SEL_1);
-#elif defined CONFIG_ACCDET_SUPPORT_BI_EINT
-	pwrap_write(ACCDET_CON24, reg_val|ACCDET_HWMODE_EN|ACCDET_HWEN_SEL_0_AND_1);
-#else/* uncertain state */
-	pwrap_write(ACCDET_CON24, reg_val|ACCDET_HWMODE_EN|ACCDET_HWEN_SEL_0_OR_1);
-#endif
-#endif
-	/* disable ACCDET unit */
-	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)&(~ACCDET_ENABLE_B0));
-	ACCDET_INFO("[accdet]open HW mode,[0x%x]=0x%x\n",
-		ACCDET_CON24, pmic_pwrap_read(ACCDET_CON24));
-#endif
 
 	check_cable_type();
 
@@ -1135,12 +1117,12 @@ static void accdet_work_callback(struct work_struct *work)
 		ACCDET_ERROR("[accdet]Headset has plugged out don't set accdet state\n");
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
 	wake_unlock(&accdet_irq_lock);
-#ifdef HW_MODE_SUPPORT
+#ifdef HW_MODE_SUPPORT_DIGITAL
 	/* workround for HW fast discharge */
 	if ((!fast_discharge) && (s_cable_type == MIC_BIAS)) {
 		pmic_pwrap_write(ACCDET_CON24, ACCDET_FAST_DISCAHRGE_REVISE);
 		/* if AB = 01, enabel fast discharge */
-		udelay(100);
+		udelay(2000);
 		pmic_pwrap_write(ACCDET_CON24, ACCDET_FAST_DISCAHRGE_EN);
 		fast_discharge = true;
 	}
@@ -1736,7 +1718,7 @@ void accdet_init_once(int init_flag)
 	} else if (init_flag == ACCDET_INIT1_ONCE) {
 /* ======================config analog======================= */
 		reg_val = pmic_pwrap_read(AUDENC_ANA_CON9);
-		pmic_pwrap_write(AUDENC_ANA_CON9, reg_val|(headset_dts_data.mic_bias_vol<<4)|RG_ACCDET_AUXADC_SW_ON);
+		pmic_pwrap_write(AUDENC_ANA_CON9, reg_val|(headset_dts_data.mic_bias_vol<<4));
 		reg_val = pmic_pwrap_read(AUDENC_ANA_CON10);
 /* need add clear mode bit----bxx */
 		if (headset_dts_data.accdet_mic_mode == HEADSET_MODE_1)/* ACC mode*/
@@ -1745,23 +1727,10 @@ void accdet_init_once(int init_flag)
 			/* for test discharge quickly */
 			pmic_pwrap_write(AUDENC_ANA_CON10, reg_val|RG_ACCDET_MODE_ANA10_MODE2);/* 0x887 */
 		} else if (headset_dts_data.accdet_mic_mode == HEADSET_MODE_6) {/* Low cost mode with internal bias*/
-			pmic_pwrap_write(AUDENC_ANA_CON10, reg_val|RG_ACCDET_MODE_ANA10_MODE6);/* 0x987 */
-			#if 0
-			#ifdef CONFIG_FOUR_KEY_HEADSET/* 4-key, 2.7V, internal bias for mt6337*/
-			reg_val = pmic_pwrap_read(AUDENC_ANA_CON9);/* for 4-key more accuracy */
-			if ((reg_val & RG_MBIAS_OUTPUT_2V7) == RG_MBIAS_OUTPUT_2V7)
-				s_4_key_efuse_flag = 1;
-			#endif
-			#endif
+			pmic_pwrap_write(AUDENC_ANA_CON10, reg_val|RG_ACCDET_MODE_ANA10_MODE2);/* 0x887 */
+			reg_val = pmic_pwrap_read(AUDENC_ANA_CON9);
+			pmic_pwrap_write(AUDENC_ANA_CON9, reg_val | 0x100);/* Set bit8 = 1 to use internal bias */
 		} /* end HEADSET_MODE_6 */
-
-		/* just do once, for fix AUXADC read key wrong data */
-		/* New add: set ch5 to large(128,1.3ms) sample,default small(8,200us) sample */
-		/* pmic_pwrap_write(AUXADC_AVG_NUM_SEL, AUXADC_AVG_CH5_NUM_SEL); */
-
-		 /* for discharge: on HW mode, needn't set the RG as it just need on SW mode */
-		/* close HW path of auxadc, for test */
-		/* pmic_pwrap_write(ACCDET_CON17, pmic_pwrap_read(ACCDET_CON17)|(1<<5)); */
 
 		 /* ACCDET AUXADC AUTO Setting  */
 		pmic_pwrap_write(AUXADC_ACCDET, pmic_pwrap_read(AUXADC_ACCDET)|AUXADC_ACCDET_AUTO_SPL_EN);
@@ -2315,7 +2284,6 @@ void accdet_late_init(unsigned long a)
 		accdet_init_once(ACCDET_INIT0_ONCE);
 		/* just need run once, config analog, enable interrupt, etc.*/
 		accdet_init_once(ACCDET_INIT1_ONCE);
-		accdet_pmic_Read_Efuse_HPOffset();
 		/* schedule a work for the first detection */
 		/* delete by xuexi as maybe it redundant */
 		/* queue_work(accdet_workqueue, &accdet_work); */
@@ -2334,7 +2302,6 @@ static void accdet_delay_callback(unsigned long a)
 		accdet_init_once(ACCDET_INIT0_ONCE);
 		/* just need run once, config analog, enable interrupt, etc.*/
 		accdet_init_once(ACCDET_INIT1_ONCE);
-		accdet_pmic_Read_Efuse_HPOffset();
 		/* schedule a work for the first detection */
 		/* delete by xuexi as maybe it redundant */
 		/* queue_work(accdet_workqueue, &accdet_work); */
@@ -2421,6 +2388,8 @@ int mt_accdet_probe(struct platform_device *dev)
 	accdet_init_timer.expires = jiffies + ACCDET_INIT_WAIT_TIMER;
 	accdet_init_timer.function = &accdet_delay_callback;
 	accdet_init_timer.data = ((unsigned long)0);
+
+	accdet_pmic_Read_Efuse_HPOffset();
 
 	/* Create workqueue */
 	accdet_workqueue = create_singlethread_workqueue("accdet");
