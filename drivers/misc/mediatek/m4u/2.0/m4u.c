@@ -621,6 +621,13 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 		M4UMSG("%s, va or sg_table are both valid: va=0x%lx, sg=0x%p\n", __func__,
 		       va, sg_table);
 	}
+
+	if (!va && !sg_table)	{
+		M4UMSG("%s, va or sg_table are both invalid: va=0x%lx, sg=0x%p\n", __func__, va, sg_table);
+		ret = -EFAULT;
+		goto err;
+	}
+
 	if (va) {
 		sg_table = m4u_create_sgtable(va, size);
 		if (IS_ERR_OR_NULL(sg_table)) {
