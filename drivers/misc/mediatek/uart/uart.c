@@ -1200,6 +1200,7 @@ static inline unsigned short mtk_uart_vfifo_get_trig(struct mtk_uart *uart, stru
 /*---------------------------------------------------------------------------*/
 #define get_mtk_uart(ptr, type, member) (type *)((char *)ptr - offsetof(type, member))
 /*---------------------------------------------------------------------------*/
+#ifdef ENABE_HRTIMER_FLUSH
 static enum hrtimer_restart mtk_uart_tx_vfifo_timeout(struct hrtimer *hrt)
 {
 	struct mtk_uart_vfifo *vfifo = container_of(hrt, struct mtk_uart_vfifo, flush);
@@ -1214,6 +1215,7 @@ static enum hrtimer_restart mtk_uart_tx_vfifo_timeout(struct hrtimer *hrt)
 	mtk_uart_tx_vfifo_flush(uart, 1);
 	return HRTIMER_NORESTART;
 }
+#endif
 
 /*---------------------------------------------------------------------------*/
 static void mtk_uart_dma_vfifo_callback(void *data)
@@ -1378,8 +1380,10 @@ static void mtk_uart_dma_free(struct mtk_uart *uart, struct mtk_uart_dma *dma)
 	if (dma->mode == UART_TX_VFIFO_DMA) {
 		if (dma->vfifo && timer_pending(&dma->vfifo->timer))
 			del_timer_sync(&dma->vfifo->timer);
+#ifdef ENABE_HRTIMER_FLUSH
 		if (dma->vfifo && hrtimer_active(&dma->vfifo->flush))
 			hrtimer_cancel(&dma->vfifo->flush);
+#endif
 	}
 	/* [ALPS00030487] tasklet_kill function may schedule, so release spin lock first,
 	 *                  after release, set spin lock again.
@@ -1864,8 +1868,10 @@ static int mtk_uart_startup(struct uart_port *port)
 		if (mtk_uart_dma_start(uart, &uart->dma_tx))
 			MSG(ERR, "mtk_uart_dma_start fails\n");
 
+#ifdef ENABE_HRTIMER_FLUSH
 		hrtimer_init(&uart->tx_vfifo->flush, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
 		uart->tx_vfifo->flush.function = mtk_uart_tx_vfifo_timeout;
+#endif
 	} else if (uart->tx_mode == UART_NON_DMA) {
 		uart->write_allow = mtk_uart_write_allow;
 		uart->write_byte = mtk_uart_write_byte;
