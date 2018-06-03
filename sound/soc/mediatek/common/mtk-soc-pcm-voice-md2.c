@@ -85,7 +85,6 @@ static int mtk_voice_md2_platform_probe(struct snd_soc_platform *platform);
 #define USE_PERIODS_MAX     2048
 
 static bool voice_md2_Status;
-static AudioDigtalI2S mAudioDigitalI2S;
 
 bool get_voice_md2_status(void)
 {
@@ -174,19 +173,6 @@ static int mtk_voice_md2_pcm_open(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static void ConfigAdcI2S(struct snd_pcm_substream *substream)
-{
-	mAudioDigitalI2S.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-	mAudioDigitalI2S.mBuffer_Update_word = 8;
-	mAudioDigitalI2S.mFpga_bit_test = 0;
-	mAudioDigitalI2S.mFpga_bit = 0;
-	mAudioDigitalI2S.mloopback = 0;
-	mAudioDigitalI2S.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
-	mAudioDigitalI2S.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
-	mAudioDigitalI2S.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_16BITS;
-	mAudioDigitalI2S.mI2S_SAMPLERATE = (substream->runtime->rate);
-}
-
 static int mtk_voice_md2_close(struct snd_pcm_substream *substream)
 {
 	pr_warn("mtk_voice_md2_close\n");
@@ -200,17 +186,19 @@ static int mtk_voice_md2_close(struct snd_pcm_substream *substream)
 	/* todo : enable sidetone */
 	/* here start digital part */
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
+			Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 			Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 			Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 
-	SetI2SAdcEnable(false);
 	SetI2SDacEnable(false);
 	SetModemPcmEnable(MODEM_EXTERNAL, false);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
+
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
+		set_adc_enable(false);
 
 	EnableAfe(false);
 	AudDrv_Clk_Off();
@@ -271,7 +259,7 @@ static int mtk_voice1_ext_prepare(struct snd_pcm_substream *substream)
 	}
 	/* here start digital part */
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
+			Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
 			Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
@@ -280,13 +268,16 @@ static int mtk_voice1_ext_prepare(struct snd_pcm_substream *substream)
 	/* start I2S DAC out */
 	SetI2SDacOut(substream->runtime->rate, false, Soc_Aud_I2S_WLEN_WLEN_16BITS);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
-
-	ConfigAdcI2S(substream);
-	SetI2SAdcIn(&mAudioDigitalI2S);
 	SetI2SDacEnable(true);
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
-	SetI2SAdcEnable(true);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false) {
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+		set_adc_in(substream->runtime->rate);
+		set_adc_enable(true);
+	} else {
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+	}
+
 	EnableAfe(true);
 
 	Voice2IntPcm.mPcmModeWidebandSel = SampleRateTransform(runtimeStream->rate,

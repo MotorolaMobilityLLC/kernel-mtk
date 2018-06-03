@@ -173,7 +173,7 @@ static void ultra_md1_enable(bool enable, struct snd_pcm_runtime *runtime)
 		/* connect */
 		/* i3i4 -> pcm2 o17o28 */
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
+				Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		/* pcm2 i14 --> awb o5 */
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_MEM_AWB_CH1);
@@ -187,7 +187,7 @@ static void ultra_md1_enable(bool enable, struct snd_pcm_runtime *runtime)
 		/* disconnect */
 		/* i3i4 -> pcm2 o17o28 */
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
+				Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		/* pcm2 i14 --> awb o5 */
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_MEM_AWB_CH1);
@@ -202,7 +202,7 @@ static void ultra_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 		/* connect */
 		/* i3i4 -> pcm1 o7o8 */
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
+				Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		/* pcm1 i9 --> awb o5 */
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_MEM_AWB_CH1);
@@ -216,7 +216,7 @@ static void ultra_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 		/* disconnect */
 		/* i3i4 -> pcm1 o7o8 */
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
+				Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		/* pcm1 i9 --> awb o5 */
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_MEM_AWB_CH1);
@@ -309,8 +309,9 @@ static int mtk_voice_ultra_close(struct snd_pcm_substream *substream)
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE && mUlPrepareDone) {
 		mUlPrepareDone = false;
 		pr_warn("%s(), with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
-		SetI2SAdcEnable(false);
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
+			set_adc_enable(false);
 
 		if (md_select)
 			ultra_md2_enable(false, substream->runtime);
@@ -359,19 +360,6 @@ static int mtk_voice_ultra_open(struct snd_pcm_substream *substream)
 
 	pr_warn("%s(), return\n", __func__);
 	return 0;
-}
-
-static void ConfigAdcI2S(struct snd_pcm_substream *substream)
-{
-	mAudioDigitalI2S.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-	mAudioDigitalI2S.mBuffer_Update_word = 8;
-	mAudioDigitalI2S.mFpga_bit_test = 0;
-	mAudioDigitalI2S.mFpga_bit = 0;
-	mAudioDigitalI2S.mloopback = 0;
-	mAudioDigitalI2S.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
-	mAudioDigitalI2S.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
-	mAudioDigitalI2S.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_16BITS;
-	mAudioDigitalI2S.mI2S_SAMPLERATE = (substream->runtime->rate);
 }
 
 static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
@@ -463,10 +451,13 @@ static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
 		mUlPrepareDone = true;
 		pr_warn("%s(), with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 
-		ConfigAdcI2S(substream);
-		SetI2SAdcIn(&mAudioDigitalI2S);
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
-		SetI2SAdcEnable(true);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+			set_adc_in(substream->runtime->rate);
+			set_adc_enable(true);
+		} else {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+		}
 
 		if (md_select)
 			ultra_md2_enable(true, runtime);

@@ -95,8 +95,6 @@ static void print_usb_dbg_log(void)
 /*
  *    function implementation
  */
-static AudioDigtalI2S mAudioDigitalI2S;
-
 static bool usb_prepare_done[2] = {false, false};
 static bool usb_use_dram[2] = {false, false};
 static int usb_mem_blk[2] = {Soc_Aud_Digital_Block_MEM_DL2,
@@ -223,19 +221,19 @@ static int Audio_USB_MD_UL_Select_Ctl_Set(struct snd_kcontrol *kcontrol,
 		if (usb_md_select) {
 			/* i3i4 -> pcm1 o7o8 */
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL,
 					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		} else {
 			/* i3i4 -> pcm2 o17o28 */
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL,
 					  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		}
 
 		/* disable adda ul path */
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
-		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
-			SetI2SAdcEnable(false);
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
+			set_adc_enable(false);
 
 		/* connect between usb mic (dl2) with modem */
 		if (usb_md_select) {
@@ -393,7 +391,7 @@ static void usb_md1_enable(bool enable, struct snd_pcm_runtime *runtime)
 		if (usb_ul_select == VOICE_UL_PRIMARY) {
 			/* i3i4 -> pcm2 o17o28 */
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
-					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL,
 					  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		} else {
 			/* dl2 i7i8 -> pcm2 o17o28 */
@@ -418,7 +416,7 @@ static void usb_md1_enable(bool enable, struct snd_pcm_runtime *runtime)
 		if (usb_ul_select == VOICE_UL_PRIMARY) {
 			/* i3i4 -> pcm2 o17o28 */
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL,
 					  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		} else {
 			/* dl2 i7i8 -> pcm2 o17o28 */
@@ -442,7 +440,7 @@ static void usb_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 		if (usb_ul_select == VOICE_UL_PRIMARY) {
 			/* i3i4 -> pcm1 o7o8 */
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
-					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL,
 					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		} else {
 			/* dl2 i7i8 -> pcm1 o7o8 */
@@ -467,7 +465,7 @@ static void usb_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 		if (usb_ul_select == VOICE_UL_PRIMARY) {
 			/* i3i4 -> pcm1 o7o8 */
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL,
 					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		} else {
 			/* dl2 i7i8 -> pcm1 o7o8 */
@@ -501,9 +499,9 @@ static int mtk_voice_usb_close(struct snd_pcm_substream *substream)
 
 		if (stream == SNDRV_PCM_STREAM_CAPTURE) {
 			if (usb_ul_select == VOICE_UL_PRIMARY) {
-				SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
-				if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
-					SetI2SAdcEnable(false);
+				SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
+				if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
+					set_adc_enable(false);
 			}
 
 			if (usb_md_select)
@@ -568,19 +566,6 @@ static int mtk_voice_usb_open(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static void ConfigAdcI2S(struct snd_pcm_substream *substream)
-{
-	mAudioDigitalI2S.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-	mAudioDigitalI2S.mBuffer_Update_word = 8;
-	mAudioDigitalI2S.mFpga_bit_test = 0;
-	mAudioDigitalI2S.mFpga_bit = 0;
-	mAudioDigitalI2S.mloopback = 0;
-	mAudioDigitalI2S.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
-	mAudioDigitalI2S.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
-	mAudioDigitalI2S.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_16BITS;
-	mAudioDigitalI2S.mI2S_SAMPLERATE = (substream->runtime->rate);
-}
-
 static int mtk_voice_usb_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -617,13 +602,12 @@ static int mtk_voice_usb_prepare(struct snd_pcm_substream *substream)
 
 		if (stream == SNDRV_PCM_STREAM_CAPTURE) {
 			if (usb_ul_select == VOICE_UL_PRIMARY) {
-				if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false) {
-					SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
-					ConfigAdcI2S(substream);
-					SetI2SAdcIn(&mAudioDigitalI2S);
-					SetI2SAdcEnable(true);
+				if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false) {
+					SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+					set_adc_in(substream->runtime->rate);
+					set_adc_enable(true);
 				} else {
-					SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
+					SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
 				}
 			}
 

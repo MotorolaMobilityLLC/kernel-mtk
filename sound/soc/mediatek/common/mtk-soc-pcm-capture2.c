@@ -66,8 +66,6 @@ static AudioDigtalI2S *mAudioDigitalI2S;
 /*
  *    function implementation
  */
-static void StartAudioCapture2Hardware(struct snd_pcm_substream *substream);
-static void StopAudioCapture2Hardware(struct snd_pcm_substream *substream);
 static int mtk_capture2_probe(struct platform_device *pdev);
 static int mtk_capture2_pcm_close(struct snd_pcm_substream *substream);
 static int mtk_asoc_capture2_pcm_new(struct snd_soc_pcm_runtime *rtd);
@@ -78,102 +76,76 @@ static struct snd_pcm_hardware mtk_capture2_hardware = {
 	SNDRV_PCM_INFO_INTERLEAVED |
 	SNDRV_PCM_INFO_RESUME |
 	SNDRV_PCM_INFO_MMAP_VALID),
-	.formats =      SND_SOC_STD_MT_FMTS,
+	.formats =      SND_SOC_ADV_MT_FMTS,
 	.rates =        SOC_HIGH_USE_RATE,
 	.rate_min =     SOC_HIGH_USE_RATE_MIN,
 	.rate_max =     SOC_HIGH_USE_RATE_MAX,
-	.channels_min =     SOC_NORMAL_USE_CHANNELS_MIN,
-	.channels_max =     SOC_NORMAL_USE_CHANNELS_MAX,
+	.channels_min =     SOC_HIGH_USE_CHANNELS_MIN,
+	.channels_max =     SOC_HIGH_USE_CHANNELS_MAX,
 	.buffer_bytes_max = UL2_MAX_BUFFER_SIZE,
 	.period_bytes_max = UL2_MAX_BUFFER_SIZE,
-	.periods_min =      UL1_MIN_PERIOD_SIZE,
-	.periods_max =      UL1_MAX_PERIOD_SIZE,
+	.periods_min =      UL2_MIN_PERIOD_SIZE,
+	.periods_max =      UL2_MAX_PERIOD_SIZE,
 	.fifo_size =        0,
 };
 
-static void StopAudioCapture2Hardware(struct snd_pcm_substream *substream)
-{
-	pr_warn("StopAudioCapture2Hardware\n");
-
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC_2, false);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC_2) == false)
-		Set2ndI2SAdcEnable(false);
-
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false);
-
-	/* here to set interrupt */
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
-
-	/* here to turn off digital part */
-	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC_2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
-
-	EnableAfe(false);
-}
-
-static void ConfigAdcI2S(struct snd_pcm_substream *substream)
-{
-	mAudioDigitalI2S->mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-	mAudioDigitalI2S->mBuffer_Update_word = 8;
-	mAudioDigitalI2S->mFpga_bit_test = 0;
-	mAudioDigitalI2S->mFpga_bit = 0;
-	mAudioDigitalI2S->mloopback = 0;
-	mAudioDigitalI2S->mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
-	mAudioDigitalI2S->mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
-	mAudioDigitalI2S->mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_16BITS;
-	mAudioDigitalI2S->mI2S_SAMPLERATE = (substream->runtime->rate);
-}
-
-static void StartAudioCapture2Hardware(struct snd_pcm_substream *substream)
-{
-	pr_warn("StartAudioCapture2Hardware\n");
-
-	ConfigAdcI2S(substream);
-	Set2ndI2SAdcIn(mAudioDigitalI2S);/* To do, JY */
-
-	SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_WLEN_16_BIT);
-	SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
-
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC_2) == false) {
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC_2, true);
-		Set2ndI2SAdcEnable(true);/* To Do, JY */
-	} else {
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC_2, true);
-	}
-
-	/* here to set interrupt */
-	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
-		     substream->runtime->rate,
-		     substream->runtime->period_size);
-
-
-	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream->runtime->rate);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);
-
-	SetIntfConnection(Soc_Aud_InterCon_Connection,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC_2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
-	EnableAfe(true);
-
-}
-
 static int mtk_capture2_pcm_prepare(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_capture2_pcm_prepare substream->rate = %d  substream->channels = %d\n",
-		substream->runtime->rate, substream->runtime->channels);
+	pr_warn("%s, format = %d, rate = %d\n", __func__, substream->runtime->format, substream->runtime->rate);
+
+	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream);
+
+	if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
+		substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2,
+					     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
+		SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+	} else {
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_WLEN_16_BIT);
+		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+	}
+
+	if (substream->runtime->channels > 2) {
+		pr_warn("%s channel(%d) open 4-ch path\n", __func__, substream->runtime->channels);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL);
+
+		Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE, 0x1 << 17, 0x1 << 17); /* vul_data2 4-ch */
+
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+			set_adc_in(substream->runtime->rate);
+			set_adc_enable(true);
+		} else {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+		}
+	} else {
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+	}
+
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false) {
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+		set_adc2_in(substream->runtime->rate);
+		set_adc2_enable(true);
+	} else {
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+	}
+
 	return 0;
 }
 
 static int mtk_capture2_alsa_stop(struct snd_pcm_substream *substream)
 {
-	AFE_BLOCK_T *Vul_Block = &(VUL2_Control_context->rBlock);
+	pr_warn("mtk_capture_alsa_stop\n");
 
-	pr_warn("mtk_capture2_alsa_stop\n");
-	StopAudioCapture2Hardware(substream);
-	Vul_Block->u4DMAReadIdx  = 0;
-	Vul_Block->u4WriteIdx  = 0;
-	Vul_Block->u4DataRemained = 0;
-	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
+
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false);
+
+	ClearMemBlock(Soc_Aud_Digital_Block_MEM_VUL_DATA2);
 	return 0;
 }
 
@@ -230,8 +202,8 @@ static int mtk_capture2_pcm_hw_free(struct snd_pcm_substream *substream)
 }
 
 static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
-	.count = ARRAY_SIZE(soc_normal_supported_sample_rates),
-	.list = soc_normal_supported_sample_rates,
+	.count = ARRAY_SIZE(soc_high_supported_sample_rates),
+	.list = soc_high_supported_sample_rates,
 };
 
 static int mtk_capture2_pcm_open(struct snd_pcm_substream *substream)
@@ -240,7 +212,6 @@ static int mtk_capture2_pcm_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	AudDrv_Clk_On();
-	AudDrv_ADC2_Clk_On();
 
 	pr_warn("%s\n", __func__);
 	VUL2_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_VUL_DATA2);
@@ -271,16 +242,51 @@ static int mtk_capture2_pcm_open(struct snd_pcm_substream *substream)
 
 static int mtk_capture2_pcm_close(struct snd_pcm_substream *substream)
 {
-	AudDrv_ADC2_Clk_Off();
+	pr_warn("%s\n", __func__);
+
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, false);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false)
+		set_adc2_enable(false);
+
+	/* here to turn off digital part */
+	if (substream->runtime->channels > 2) {
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL);
+
+		Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE, 0x0 << 17, 0x1 << 17);
+
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
+			set_adc_enable(false);
+	} else {
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+	}
+
+	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream);
+
+	EnableAfe(false);
+
 	AudDrv_Clk_Off();
 	return 0;
 }
 
 static int mtk_capture2_alsa_start(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_capture2_alsa_start\n");
-	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream);
-	StartAudioCapture2Hardware(substream);
+	pr_warn("%s\n", __func__);
+
+	/* here to set interrupt */
+	irq_add_user(substream,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+		     substream->runtime->rate,
+		     substream->runtime->period_size);
+
+	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream->runtime->rate);
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);
+
+	EnableAfe(true);
 	return 0;
 }
 

@@ -1374,6 +1374,9 @@ static int mtk_codec_dai_2_prepare(struct snd_pcm_substream *substream, struct s
 		pr_aud("mtk_codec_dai_2_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
 		       substream->runtime->rate);
 		mBlockSampleRate[AUDIO_DAI_UL2] = substream->runtime->rate;
+		/* If 4-ch record set UL1/UL2 same sampleRate */
+		if (substream->runtime->channels > 2)
+			mBlockSampleRate[AUDIO_DAI_UL1] = substream->runtime->rate;
 	} else if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		pr_aud("mtk_codec_dai_2_prepare set up SNDRV_PCM_STREAM_PLAYBACK rate = %d\n",
 		       substream->runtime->rate);
@@ -1459,7 +1462,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 .capture = {
 		     .stream_name = MT_SOC_VOICE_MD1_STREAM_NAME,
 		     .channels_min = 1,
-		     .channels_max = 2,
+		     .channels_max = 4,
 		     .rates = SNDRV_PCM_RATE_8000_48000,
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
@@ -1596,10 +1599,11 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 	{
 	 .name = MT_SOC_CODEC_RXDAI2_NAME,
+	 .ops = &mtk_codec_dai_2_ops,
 	 .capture = {
 		     .stream_name = MT_SOC_UL1DATA2_STREAM_NAME,
 		     .channels_min = 1,
-		     .channels_max = 2,
+		     .channels_max = 4,
 		     .rates = SNDRV_PCM_RATE_8000_192000,
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },

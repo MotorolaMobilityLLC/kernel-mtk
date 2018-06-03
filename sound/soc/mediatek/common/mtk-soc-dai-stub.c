@@ -124,7 +124,7 @@ static int mtk_dai_i2s2_adc2_start(struct snd_pcm_substream *substream)
 
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, true);
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC_2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+				Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 	}
 
 	return 0;
@@ -136,7 +136,7 @@ static int mtk_dai_i2s2_adc2_stop(struct snd_pcm_substream *substream)
 		pr_warn("%s()\n", __func__);
 		i2s2_adc2_is_started = false;
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC_2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+				Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN, false);
 		if (!GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN))
 			SetExtI2SAdcInEnable(false);
@@ -352,7 +352,7 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 			.rates = SNDRV_PCM_RATE_8000_48000,
 			.formats = SND_SOC_STD_MT_FMTS,
 			.channels_min = 1,
-			.channels_max = 2,
+			.channels_max = 4,
 			.rate_min = 8000,
 			.rate_max = 32000,
 		},
@@ -514,7 +514,7 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 			.rates = SNDRV_PCM_RATE_8000_48000,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
 			.channels_min = 1,
-			.channels_max = 2,
+			.channels_max = 4,
 			.rate_min = 8000,
 			.rate_max = 48000,
 		},
