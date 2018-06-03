@@ -1311,8 +1311,7 @@ static INT32 wmt_plat_uart_rx_ctrl(ENUM_PIN_STATE state)
 		WMT_DBG_FUNC("WMT-PLAT:UART Rx output high\n");
 		break;
 	case PIN_STA_OUT_L:
-		pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
-				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_state[GPIO_OUT_LOW]);
+		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num, 0);
 		WMT_DBG_FUNC("WMT-PLAT:UART Rx deinit (out 0)\n");
 		break;
 	default:
