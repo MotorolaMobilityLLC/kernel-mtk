@@ -140,6 +140,10 @@ static inline int moveAF(unsigned long a_u4Position)
 	if (*g_pAF_Opened == 1) {
 		unsigned char Temp;
 
+		s4AF_WriteReg(0, 0xF6, 0x00);
+		s4AF_WriteReg(0, 0x96, 0x20);
+		s4AF_WriteReg(0, 0x98, 0x00);
+
 		s4AF_ReadReg(0xF0, &Temp);
 
 		if (Temp == 0x72) {
@@ -238,6 +242,9 @@ int LC898217AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	if (*g_pAF_Opened == 2) {
 		LOG_INF("Wait\n");
+		s4AF_WriteReg(0, 0x98, 0xC0);
+		s4AF_WriteReg(0, 0x96, 0x28);
+		s4AF_WriteReg(0, 0xF6, 0x80);
 		LOG_INF("Close\n");
 	}
 
