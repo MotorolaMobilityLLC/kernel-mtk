@@ -4940,7 +4940,7 @@ static void VOW_Pwr_Enable(int MicType, bool enable)
 		 && (MicType != AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)) {
 			/* 0x0D0C Enable audio uplink LPW mode, Enable Audio ADC 1st, 2nd & 3rd Stage LPW, */
 			/* Enable Audio ADC flash Audio ADC flash */
-			Ana_Set_Reg(AUDENC_ANA_CON2,  0x0039, 0x0039);
+			Ana_Set_Reg(AUDENC_ANA_CON2,  0x0031, 0x0039);
 		}
 
 		/* 0x0D26 set PLL VCOBAND */
