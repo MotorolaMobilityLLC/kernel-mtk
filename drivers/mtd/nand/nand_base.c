@@ -2143,7 +2143,7 @@ read_retry:
 	return max_bitflips;
 }
 
-#ifdef CONFIG_MTK_MTD_NAND
+#if (defined(CONFIG_MTK_MTD_NAND) && !defined(CONFIG_MNTL_SUPPORT))
 
 /* #define _SNAND_SUBPAGE_READ_DBG */
 
@@ -2616,7 +2616,7 @@ static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
 {
 	struct mtd_oob_ops ops;
 	int ret;
-#ifdef CONFIG_MTK_MTD_NAND
+#if (defined(CONFIG_MTK_MTD_NAND) && !defined(CONFIG_MNTL_SUPPORT))
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	struct nand_chip *chip = mtd->priv;
 	int page;
@@ -2634,7 +2634,7 @@ static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
 	ops.len = len;
 	ops.datbuf = buf;
 	ops.mode = MTD_OPS_PLACE_OOB;
-#ifdef CONFIG_MTK_MTD_NAND
+#if (defined(CONFIG_MTK_MTD_NAND) && !defined(CONFIG_MNTL_SUPPORT))
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	if (likely(len > mtd->writesize)) {
 		page = (int)(from >> chip->page_shift);
@@ -3002,7 +3002,7 @@ static int nand_read_oob(struct mtd_info *mtd, loff_t from,
 	if (!ops->datbuf)
 		ret = nand_do_read_oob(mtd, from, ops);
 	else {
-#ifdef CONFIG_MTK_MTD_NAND
+#if (defined(CONFIG_MTK_MTD_NAND) && !defined(CONFIG_MNTL_SUPPORT))
 		if (g_mtk_nss_cachev_cnt)
 			ret = nand_do_read_ops_ex(mtd, from, ops);
 		else
@@ -3474,7 +3474,7 @@ static int nand_do_write_ops(struct mtd_info *mtd, loff_t to,
 	    ((loff_t)chip->pagebuf << chip->page_shift) < (to + ops->len))
 		chip->pagebuf = -1;
 
-#ifdef CONFIG_MTK_MTD_NAND
+#if (defined(CONFIG_MTK_MTD_NAND) && !defined(CONFIG_MNTL_SUPPORT))
 	mtk_nss_invalidate_cache_by_val(g_mtk_nss_cachev, realpage);
 #endif
 	/* Don't allow multipage oob writes with offset */
@@ -3947,10 +3947,10 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 		if (page <= chip->pagebuf && chip->pagebuf <
 		    (page + pages_per_block))
 			chip->pagebuf = -1;
-#ifdef CONFIG_MTK_MTD_NAND
+#if (defined(CONFIG_MTK_MTD_NAND) && !defined(CONFIG_MNTL_SUPPORT))
 		mtk_nss_invalidate_cache_by_range(g_mtk_nss_cachev, page,
 						  page + pages_per_block - 1);
-	    #endif
+#endif
 
 #ifdef CONFIG_MTK_MTD_NAND
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
@@ -5474,7 +5474,7 @@ int nand_scan(struct mtd_info *mtd, int maxchips)
 	int ret;
 
 	ret = nand_scan_ident(mtd, maxchips, NULL);
-#ifdef CONFIG_MTK_MTD_NAND
+#if (defined(CONFIG_MTK_MTD_NAND) && !defined(CONFIG_MNTL_SUPPORT))
 	mtk_nss_init_cache(mtd);	/* init CacheV (if CacheV is disabled by driver, do nothing inside) */
 #endif
 	if (!ret)
