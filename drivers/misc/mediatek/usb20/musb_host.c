@@ -114,9 +114,15 @@ int musb_host_alloc_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 		maxpacket = qh->maxpacket;
 
 	if (maxpacket <= 512) {
-		request_fifo_sz = 512;
-		fifo_unit_nr = 1;
-		c_size = 6;
+		if (qh->type == USB_ENDPOINT_XFER_BULK) {
+			request_fifo_sz = 1024;
+			fifo_unit_nr = 2;
+			c_size = 6 | MUSB_FIFOSZ_DPB;
+		} else {
+			request_fifo_sz = 512;
+			fifo_unit_nr = 1;
+			c_size = 6;
+		}
 	} else if (maxpacket <= 1024) {
 		request_fifo_sz = 1024;
 		fifo_unit_nr = 2;
@@ -197,8 +203,13 @@ void musb_host_free_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 		maxpacket = qh->maxpacket;
 
 	if (maxpacket <= 512) {
-		request_fifo_sz = 512;
-		fifo_unit_nr = 1;
+		if (qh->type == USB_ENDPOINT_XFER_BULK) {
+			request_fifo_sz = 1024;
+			fifo_unit_nr = 2;
+		} else {
+			request_fifo_sz = 512;
+			fifo_unit_nr = 1;
+		}
 	} else if (maxpacket <= 1024) {
 		request_fifo_sz = 1024;
 		fifo_unit_nr = 2;
@@ -1688,9 +1699,18 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 		 * "missed" TXPKTRDY interrupts and deal with double-buffered
 		 * FIFO mode too...
 		 */
-		if (tx_csr & (MUSB_TXCSR_FIFONOTEMPTY | MUSB_TXCSR_TXPKTRDY)) {
-			DBG(4, "DMA complete but packet still in FIFO, CSR %04x\n", tx_csr);
-			return;
+		{
+			u32 cnt = 1000000000;	/* 1GHZ, (1000*1000*1000) */
+
+			while (cnt--) {
+				if (tx_csr & (MUSB_TXCSR_FIFONOTEMPTY | MUSB_TXCSR_TXPKTRDY))
+					tx_csr = musb_readw(epio, MUSB_TXCSR);
+				else
+					break;
+			}
+			if (!cnt)
+				DBG(0, "ERROR !!!, DMA complete but packet still in FIFO, CSR %04x", tx_csr);
+
 		}
 	}
 
