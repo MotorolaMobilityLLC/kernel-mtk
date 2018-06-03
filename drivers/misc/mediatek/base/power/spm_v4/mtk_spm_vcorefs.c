@@ -546,10 +546,10 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_EMI_REQUEST, 0x00299299);
 	spm_write(DVFSRC_VCORE_REQUEST, 0x00105000);
 	spm_write(DVFSRC_FORCE, 0x00080000);
-	spm_write(DVFSRC_BASIC_CONTROL, 0x00008033);
-	spm_write(DVFSRC_BASIC_CONTROL, 0x00000233);
+	spm_write(DVFSRC_BASIC_CONTROL, 0x0000803B);
+	spm_write(DVFSRC_BASIC_CONTROL, 0x0000023B);
 
-#if 0
+#if 1
 	mtk_rgu_cfg_dvfsrc(1);
 #endif
 	spin_unlock_irqrestore(&__spm_lock, flags);
