@@ -94,7 +94,7 @@ struct ccci_smem_region md1_6292_noncacheable_fat[] = {
 {SMEM_USER_RAW_USB,		104*1024,	4*1024,		0, },
 {SMEM_USER_RAW_AUDIO,		108*1024,	20*1024,	0, },
 #if defined(CONFIG_MTK_MD3_SUPPORT) &&  (CONFIG_MTK_MD3_SUPPORT > 0)
-{SMEM_USER_RAW_MD2MD,		2*1024*1024,	2*1024*1024,	0, },
+{SMEM_USER_RAW_MD2MD,		2*1024*1024,	2*1024*1024,	SMF_MD3_RELATED, },
 #endif
 {SMEM_USER_MAX, }, /* tail guard */
 };
@@ -138,13 +138,13 @@ struct ccci_smem_region md1_6291_noncacheable_fat[] = {
 {SMEM_USER_RAW_NETD,		100*1024,	4*1024,		0, },
 {SMEM_USER_RAW_USB,		104*1024,	4*1024,		0, },
 #if defined(CONFIG_MTK_MD3_SUPPORT) &&  (CONFIG_MTK_MD3_SUPPORT > 0)
-{SMEM_USER_RAW_MD2MD,		2*1024*1024,	2*1024*1024,	SMF_CLR_RESET, },
+{SMEM_USER_RAW_MD2MD,		2*1024*1024,	2*1024*1024,	SMF_MD3_RELATED, },
 #endif
 {SMEM_USER_MAX, },
 };
 
 struct ccci_smem_region md3_6291_noncacheable_fat[] = {
-{SMEM_USER_RAW_MD2MD,		0,				2*1024*1024,	SMF_CLR_RESET, },
+{SMEM_USER_RAW_MD2MD,		0,				2*1024*1024,	0, },
 {SMEM_USER_RAW_MDCCCI_DBG,	2*1024*1024,			2*1024,		0, },
 {SMEM_USER_RAW_MDSS_DBG,	(2*1024 + 2)*1024,		2*1024,		0, },
 {SMEM_USER_RAW_RESERVED,	(2*1024 + 4)*1024,		58*1024,	0, },
@@ -163,8 +163,13 @@ static struct ccci_smem_region *get_smem_by_user_id(struct ccci_smem_region *reg
 	for (i = 0; ; i++) {
 		if (!regions || regions[i].id == SMEM_USER_MAX)
 			return NULL;
-		if (regions[i].id == user_id)
-			return regions + i;
+
+		if (regions[i].id == user_id) {
+			if (!get_modem_is_enabled(MD_SYS3) && (regions[i].flag & SMF_MD3_RELATED))
+				return NULL;
+			else
+				return regions + i;
+		}
 	}
 	return NULL;
 }
@@ -179,6 +184,10 @@ static void init_smem_regions(struct ccci_smem_region *regions,
 	for (i = 0; ; i++) {
 		if (!regions || regions[i].id == SMEM_USER_MAX)
 			break;
+
+		if (!get_modem_is_enabled(MD_SYS3) && (regions[i].flag & SMF_MD3_RELATED))
+			continue;
+
 		regions[i].base_ap_view_phy = base_ap_view_phy + regions[i].offset;
 		regions[i].base_ap_view_vir = base_ap_view_vir + regions[i].offset;
 		regions[i].base_md_view_phy = base_md_view_phy + regions[i].offset;
@@ -195,6 +204,10 @@ static void clear_smem_region(struct ccci_smem_region *regions, int first_boot)
 	for (i = 0; ; i++) {
 		if (!regions || regions[i].id == SMEM_USER_MAX)
 			break;
+
+		if (!get_modem_is_enabled(MD_SYS3) && (regions[i].flag & SMF_MD3_RELATED))
+			continue;
+
 		if (first_boot) {
 			if (!(regions[i].flag & SMF_NCLR_FIRST)) {
 				if (regions[i].id == SMEM_USER_RAW_MD2MD) {
@@ -668,11 +681,13 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 	ap_side_md_feature->feature_set[CCISM_SHARE_MEMORY_EXP].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 	ap_side_md_feature->feature_set[MD_PHY_CAPTURE].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 	ap_side_md_feature->feature_set[MD_CONSYS_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
-#if defined(CONFIG_MTK_MD3_SUPPORT) &&  (CONFIG_MTK_MD3_SUPPORT > 0)
-	ap_side_md_feature->feature_set[MD1MD3_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
-#else
-	ap_side_md_feature->feature_set[MD1MD3_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
-#endif
+	if (get_modem_is_enabled(MD_SYS3))
+		ap_side_md_feature->feature_set[MD1MD3_SHARE_MEMORY].support_mask =
+			CCCI_FEATURE_MUST_SUPPORT;
+	else
+		ap_side_md_feature->feature_set[MD1MD3_SHARE_MEMORY].support_mask =
+			CCCI_FEATURE_NOT_SUPPORT;
+
 #endif
 
 #if (MD_GENERATION >= 6292)
