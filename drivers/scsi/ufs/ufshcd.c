@@ -1452,6 +1452,13 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	/* issue command to the controller */
 	spin_lock_irqsave(hba->host->host_lock, flags);
 	ufshcd_send_command(hba, tag);
+/* MTK patch for SPOH */
+#ifdef MTK_UFS_HQA
+	if (!err && (cmd->request->cmd_flags & REQ_POWER_LOSS)) {
+		random_delay(hba);
+		wdt_pmic_full_reset();
+	}
+#endif
 out_unlock:
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
 	ufs_mtk_biolog_send_command(tag);

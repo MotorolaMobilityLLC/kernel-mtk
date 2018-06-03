@@ -24,6 +24,10 @@
 #include "mtk_secure_api.h"
 
 /* #define UFS_DEV_REF_CLK_CONTROL */
+#ifdef MTK_UFS_HQA
+#include <mtk_reboot.h>
+#include <upmu_common.h>
+#endif
 
 static void __iomem *ufs_mtk_mmio_base_infracfg_ao;
 static void __iomem *ufs_mtk_mmio_base_pericfg;
@@ -32,6 +36,22 @@ static struct pinctrl *ufs_mtk_pinctrl;
 static struct pinctrl_state *ufs_mtk_pins_default;
 static struct pinctrl_state *ufs_mtk_pins_va09_on;
 static struct pinctrl_state *ufs_mtk_pins_va09_off;
+#ifdef MTK_UFS_HQA
+/* UFS write is performance  200MB/s, 4KB will take around 20us */
+/* Set delay before reset to 100us to cover 4KB & >4KB write */
+#define UFS_SPOH_USDELAY_BEFORE_RESET (100)
+void random_delay(struct ufs_hba *hba)
+{
+	u32 time = (sched_clock()%UFS_SPOH_USDELAY_BEFORE_RESET);
+
+	dev_err(hba->dev, "%s: mvg_spoh reset delay time 0x%x\n", __func__, time);
+	udelay(time);
+}
+void wdt_pmic_full_reset(void)
+{
+	/* Need porting for SPOH test */
+}
+#endif
 
 /*
  * In early-porting stage, because of no bootrom, something finished by bootrom shall be finished here instead.

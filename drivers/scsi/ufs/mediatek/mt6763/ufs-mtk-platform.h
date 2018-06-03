@@ -62,5 +62,10 @@ int  ufs_mtk_pltfrm_res_req(struct ufs_hba *hba, u32 option);
 int  ufs_mtk_pltfrm_resume(struct ufs_hba *hba);
 int  ufs_mtk_pltfrm_suspend(struct ufs_hba *hba);
 
+#ifdef MTK_UFS_HQA
+void random_delay(struct ufs_hba *hba);
+void wdt_pmic_full_reset(void);
+#endif
+
 #endif /* _UFS_MTK_PLATFORM_H */
 
