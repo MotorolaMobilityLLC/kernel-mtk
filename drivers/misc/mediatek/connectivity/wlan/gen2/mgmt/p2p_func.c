@@ -326,6 +326,15 @@ VOID p2pFuncStartGO(IN P_ADAPTER_T prAdapter,
 			}
 		}
 
+		if (prAdapter->rWifiVar.prP2pSpecificBssInfo) {
+			prAdapter->rWifiVar.prP2pSpecificBssInfo->ucNoAIndex = 0;
+			prAdapter->rWifiVar.prP2pSpecificBssInfo->ucNoATimingCount = 0;
+			prAdapter->rWifiVar.prP2pSpecificBssInfo->fgIsNoaAttrExisted = FALSE;
+			kalMemZero(prAdapter->rWifiVar.prP2pSpecificBssInfo->arNoATiming,
+				sizeof(prAdapter->rWifiVar.prP2pSpecificBssInfo->arNoATiming));
+		} else
+			DBGLOG(BSS, WARN, "p2pFuncStartGO prP2pSpecificBssInfo is NULL");
+
 		DBGLOG(P2P, INFO, "NFC Done[%d] AP Channel=%d, Band=%d, SCO=%d, Phy=%d\n",
 			prAdapter->rWifiVar.prP2pFsmInfo->rScanReqInfo.fgIsGOInitialDone,
 			ucChannelNum, eBand, eSco, prBssInfo->ucPhyTypeSet);
