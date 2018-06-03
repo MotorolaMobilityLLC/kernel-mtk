@@ -33,6 +33,12 @@
 #define PATH_FMT_DISP_SHIFT 5
 #define PATH_FMT_ID_SHIFT 0
 
+#define HRT_UINT_BOUND_BPP 4
+#define HRT_UINT_WEIGHT 100
+/* bpp x uint weight = 2 x 100 */
+#define HRT_AEE_WEIGHT 200
+#define HRT_ROUND_CORNER_WEIGHT 200
+
 #define MAKE_UNIFIED_HRT_PATH_FMT(rsz_type, pipe_type, disp_type, id) \
 	( \
 	((rsz_type)		<< PATH_FMT_RSZ_SHIFT)	| \
@@ -142,7 +148,6 @@ struct layering_rule_ops {
 #define HRT_SET_AEE_FLAG(hrt_num, value) (hrt_num = ((hrt_num & ~(0x100)) | ((value & 0x1) << 8)))
 #define HRT_GET_PATH_SCENARIO(hrt_num) ((hrt_num & 0xFFFF0000) >> 16)
 #define HRT_SET_PATH_SCENARIO(hrt_num, value) (hrt_num = ((hrt_num & ~(0xFFFF0000)) | ((value & 0xFFFF) << 16)))
-#define HRT_AEE_LAYER_MASK 0xFFFFFFDF
 #define HRT_GET_PATH_RSZ_TYPE(hrt_path) ((hrt_path >> PATH_FMT_RSZ_SHIFT) & 0x3)
 #define HRT_GET_PATH_DISP_TYPE(hrt_path) ((hrt_path >> PATH_FMT_DISP_SHIFT) & 0x3)
 #define HRT_GET_PATH_PIPE_TYPE(hrt_path) ((hrt_path >> PATH_FMT_PIPE_SHIFT) & 0x3)
