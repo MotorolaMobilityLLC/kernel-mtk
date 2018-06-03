@@ -33,16 +33,8 @@
 /* #define EEM_LOCK_TOO_LONG */
 /*  #define EEM_VCORE_IN_SSPM */
 
-/* if FAKE_VOLT_FOR_TEST, ptp will apply fake volt to dvfs (for elbrus test)*/
-/* #define FAKE_VOLT_FOR_TEST */
-
-/* if APPLY_INIT2_VOLT, ptp can restore init2 volt to dvfs when mon error or
- *user give order directly through procfs
-*/
-#define APPLY_INIT2_VOLT
-
 /* for early porting */
-#define EARLY_PORTING_GPU
+/* #define EARLY_PORTING_GPU */
 #define EARLY_PORTING_PPM
 /* #define EARLY_PORTING_PMIC */
 /* #define EARLY_PORTING_VCORE */
@@ -56,7 +48,7 @@
 	#define EEM_ENABLE_TINYSYS_SSPM (0)
 #endif
 #define SET_PMIC_VOLT (1)
-#define SET_PMIC_VOLT_TO_DVFS (0)
+#define SET_PMIC_VOLT_TO_DVFS (1)
 #define LOG_INTERVAL	(2LL * NSEC_PER_SEC)
 #define ITurbo (0)
 
@@ -160,6 +152,7 @@
 
 /* different for GPU */
 #define VMAX_VAL_GPU        (0x56) /* eem domain: 0x56, volt domain: 0.935v */
+#define VBOOT_VAL_GPU       (0x41) /* eem domain: 0x38, volt domain: 0.75.v */
 #define DVTFIXED_VAL_GPU    (0x6)
 
 /* different for SOC */
@@ -170,6 +163,7 @@
 #define MTS_VAL    (0x1fb)
 #define BTS_VAL    (0x6d1)
 
+#define CORESEL_VAL (0x83ff0000)
 /* After ATE program version 5 */
 /* #define VCO_VAL_AFTER_5        0x04 */
 /* #define VCO_VAL_AFTER_5_BIG    0x32 */
