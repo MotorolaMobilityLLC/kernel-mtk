@@ -56,5 +56,9 @@ extern void smi_dump_clk_status(void);
 extern void smi_dump_larb_m4u_register(int larb);
 #if IS_ENABLED(CONFIG_MACH_MT6771)
 extern void __iomem *mmsys_config_reg;
+
+extern unsigned long long smi_latest_mdelay_sec;
+extern unsigned long smi_latest_mdelay_nsec;
+extern unsigned int smi_latest_mdelay_larb;
 #endif
 #endif				/* _SMI_DEBUG_H__ */

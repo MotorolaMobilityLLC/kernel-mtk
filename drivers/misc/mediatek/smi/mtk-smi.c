@@ -34,6 +34,10 @@
 #include <linux/uaccess.h>
 #include <linux/compat.h>
 #endif
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+#include <linux/delay.h>
+#include <linux/sched.h>
+#endif
 
 /* Define SMI_INTERNAL_CCF_SUPPORT when CCF needs to be enabled */
 #if !defined(CONFIG_MTK_CLKMGR) && !defined(SMI_DUMMY) && !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -474,9 +478,21 @@ static int smi_bus_disable_unprepare(const unsigned int reg_indx,
 #if IS_ENABLED(CONFIG_MACH_MT6771)
 	comm_ref_cnt = smi_clk_get_ref_count(SMI_COMMON_REG_INDX);
 	larb_ref_cnt = smi_clk_get_ref_count(reg_indx);
+
 	comm_val = M4U_ReadReg32(get_common_base_addr(), 0x440);
 	larb_val = M4U_ReadReg32(get_larb_base_addr(reg_indx), 0x0);
+	if (reg_indx != SMI_LARB0_REG_INDX && reg_indx != SMI_COMMON_REG_INDX
+		&& (larb_ref_cnt - 1 == 0) && larb_val != 0x0) {
+		pr_info("%s(%d, %s, %d): delay for 1 msec\n",
+			__func__, reg_indx, user_name, enable_mtcmos ? 1 : 0);
+		smi_latest_mdelay_sec = sched_clock();
+		smi_latest_mdelay_nsec = do_div(smi_latest_mdelay_sec, 1000000000);
+		smi_latest_mdelay_larb = reg_indx;
+		mdelay(1); /* delay for 1 msec */
+	}
 
+	comm_val = M4U_ReadReg32(get_common_base_addr(), 0x440);
+	larb_val = M4U_ReadReg32(get_larb_base_addr(reg_indx), 0x0);
 	if (reg_indx != SMI_LARB0_REG_INDX && reg_indx != SMI_COMMON_REG_INDX
 		&& (larb_ref_cnt - 1 == 0) && larb_val != 0x0) {
 		smi_debug_bus_hanging_detect_ext2(0x1ff, 1, 0, 1);

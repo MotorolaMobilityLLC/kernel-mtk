@@ -60,6 +60,11 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+unsigned long long smi_latest_mdelay_sec;
+unsigned long smi_latest_mdelay_nsec;
+unsigned int smi_latest_mdelay_larb;
+#endif
 
 /* Debug Function */
 static void smi_dump_format(unsigned long base, unsigned int from, unsigned int to);
@@ -171,6 +176,9 @@ void smi_dump_mmsys(int output_gce_buffer)
 	SMIMSG3(output_gce_buffer, "========== mmsys reg dump, CLK: %d ==========\n", smiCommonClkEnabled);
 	smi_dumpper(output_gce_buffer, smi_mmsys_debug_offset, u4Base,
 		    SMI_MMSYS_DEBUG_OFFSET_NUM, false);
+
+	SMIMSG3(output_gce_buffer, "latest mdelay kernel time:[%5llu.%06lu], smi larb:%d\n",
+		smi_latest_mdelay_sec, smi_latest_mdelay_nsec / 1000, smi_latest_mdelay_larb);
 }
 #endif
 
