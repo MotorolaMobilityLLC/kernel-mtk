@@ -3035,7 +3035,8 @@ static int wext_set_country(IN struct net_device *prNetDev, IN struct iw_point *
 
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetCountryCode,
-			   &aucCountry[COUNTRY_CODE_LEN-2], 2, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+			   &aucCountry[COUNTRY_CODE_LEN - 2], 2, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+
 	if (rStatus != WLAN_STATUS_SUCCESS) {
 		DBGLOG(REQ, ERROR, "Set country code error: %x\n", rStatus);
 		return -EFAULT;

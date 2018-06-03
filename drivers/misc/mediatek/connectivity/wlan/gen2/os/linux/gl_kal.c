@@ -167,6 +167,16 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo)
 		break;
 	}
 #elif defined(MT6628)
+/* filp = filp_open("/vendor/firmware/"CFG_FW_FILENAME"_MT6628", O_RDONLY, 0); */
+/* filp = filp_open("/vendor/firmware/"CFG_FW_FILENAME"_MT6582", O_RDONLY, 0); */
+#if 0				/* new wifi ram code mechanism, waiting firmware ready, then we can enable these code */
+	kalMemZero(aucFilePath, sizeof(aucFilePath));
+	kalMemCopy(aucFilePath, "/vendor/firmware/" CFG_FW_FILENAME "_AD",
+		sizeof("/vendor/firmware/" CFG_FW_FILENAME "_AD"));
+	filp = filp_open(aucFilePath, O_RDONLY, 0);
+	if (!IS_ERR(filp))
+		goto open_success;
+#endif
 	kalMemZero(aucFilePath, sizeof(aucFilePath));
 	kalMemCopy(aucFilePath, "/vendor/firmware/" CFG_FW_FILENAME "_",
 		strlen("/vendor/firmware/" CFG_FW_FILENAME "_"));
@@ -1551,6 +1561,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 			ucIpTos = pucIpHdr[1];
 			/* Get the DSCP value from the header of IP packet. */
 			ucUserPriority = getUpFromDscp(prGlueInfo, *pucNetworkType, ucIpTos & 0x3F);
+
 			if (ucUserPriority == 0xFF)
 				ucUserPriority = ((ucIpTos & IPTOS_PREC_MASK) >> IPTOS_PREC_OFFSET);
 		}
