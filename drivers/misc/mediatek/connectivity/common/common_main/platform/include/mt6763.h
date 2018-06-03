@@ -31,7 +31,7 @@
 #define CONSYS_AHB_CLK_MAGEMENT		1
 #define CONSYS_USE_PLATFORM_WRITE	1
 #define CONSYS_PWR_ON_OFF_API_AVAILABLE	1
-#define CONSYS_CLOCK_BUF_CTRL		0
+#define CONSYS_CLOCK_BUF_CTRL		1
 #define CONSYS_AFE_REG_SETTING		1
 
 /*******************************************************************************
