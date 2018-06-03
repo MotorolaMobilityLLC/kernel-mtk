@@ -51,6 +51,7 @@
 
 static struct vpu_device *vpu_device;
 static struct wakeup_source vpu_wake_lock;
+unsigned int efuse_data;
 
 static int vpu_probe(struct platform_device *dev);
 
@@ -252,6 +253,10 @@ int vpu_put_request_to_pool(struct vpu_user *user, struct vpu_request *req)
 		/*LOG_DBG("debug i(%d), (0x1 << i) (0x%x)", i, (0x1 << i));*/
 		if (req->requested_core == (0x1 << i)) {
 			request_core_index = i;
+			if (!vpu_device->vpu_hw_support[request_core_index]) {
+				LOG_ERR("[vpu_%d] not support. push to common queue\n", request_core_index);
+				request_core_index = -1;
+			}
 			break;
 		}
 	}
@@ -425,13 +430,19 @@ int vpu_get_request_from_queue(struct vpu_user *user, uint64_t request_id, struc
 
 int vpu_get_core_status(struct vpu_status *status)
 {
-	int index = status->vpu_core_index - 1;
+	int index = status->vpu_core_index; /* - 1;*/
 
 	if (index > -1 && index < MTK_VPU_CORE) {
-		mutex_lock(&vpu_device->servicepool_mutex[index]);
-		status->vpu_core_available = vpu_device->service_core_available[index];
-		status->pool_list_size = vpu_device->servicepool_list_size[index];
-		mutex_unlock(&vpu_device->servicepool_mutex[index]);
+		LOG_DBG("vpu_%d, support(%d/0x%x)\n", index, vpu_device->vpu_hw_support[index], efuse_data);
+		if (vpu_device->vpu_hw_support[index]) {
+			mutex_lock(&vpu_device->servicepool_mutex[index]);
+			status->vpu_core_available = vpu_device->service_core_available[index];
+			status->pool_list_size = vpu_device->servicepool_list_size[index];
+			mutex_unlock(&vpu_device->servicepool_mutex[index]);
+		} else {
+			LOG_ERR("core_%d not support (0x%x).\n", index, efuse_data);
+			return -EINVAL;
+		}
 	} else {
 		mutex_lock(&vpu_device->commonpool_mutex);
 		status->vpu_core_available = true;
@@ -530,10 +541,22 @@ int vpu_dump_user(struct seq_file *s)
 
 static int vpu_open(struct inode *inode, struct file *flip)
 {
-	int ret = 0;
+	int ret = 0, i = 0;
+	bool not_support_vpu = true;
 	struct vpu_user *user;
 
-	LOG_INF("vpu_open core : %d\n", MTK_VPU_CORE);
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		if (vpu_device->vpu_hw_support[i]) {
+			not_support_vpu = false;
+			break;
+		}
+	}
+	if (not_support_vpu) {
+		LOG_ERR("not support vpu...(%d/0x%x)\n", not_support_vpu, efuse_data);
+		return -ENODEV;
+	}
+
+	LOG_INF("vpu_support core : 0x%x\n", efuse_data);
 
 	vpu_create_user(&user);
 	if (IS_ERR_OR_NULL(user)) {

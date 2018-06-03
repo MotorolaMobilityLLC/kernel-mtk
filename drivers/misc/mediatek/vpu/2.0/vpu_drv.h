@@ -19,6 +19,8 @@
 #define VPU_MAX_NUM_PORTS 32
 #define VPU_MAX_NUM_PROPS 32
 #define VPU_MAX_NUM_CORES 3
+extern unsigned int efuse_data;
+
 typedef uint8_t vpu_id_t;
 
 /* the last byte of string must be '/0' */
