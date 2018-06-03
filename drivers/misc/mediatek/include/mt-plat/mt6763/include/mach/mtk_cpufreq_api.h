@@ -29,6 +29,7 @@ enum cpu_dvfs_sched_type {
 };
 
 /* Schedule Assist Input */
+extern int mt_cpufreq_set_by_wfi_load_cluster(unsigned int cluster_id, unsigned int freq);
 #if 0
 extern int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq);
 #else
