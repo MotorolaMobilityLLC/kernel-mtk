@@ -1027,7 +1027,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 		goto _fail;
 	}
 
-	if (chrCur >= (info->data.cc_max / 1000)) {
+	if (chrCur >= info->data.cc_max) {
 		pr_err("[%s]current is too high from chr :%d\n",
 		__func__, chrCur);
 		goto _fail;
@@ -1507,6 +1507,9 @@ bool mtk_pe30_init(struct charger_manager *info)
 	init_waitqueue_head(&pe3->mtk_charger_pe30_thread_waiter);
 
 	mtk_pe30_parse_dt(info, &info->pdev->dev);
+#ifdef CONFIG_TCPC_CLASS
+	pe3->tcpc = tcpc_dev_get_by_name("type_c_port0");
+#endif
 
 	pe3->pe30_charging_state = DC_STOP;
 	pe3->batteryTemperature = -1000;
@@ -1515,7 +1518,7 @@ bool mtk_pe30_init(struct charger_manager *info)
 	ktime = ktime_set(0, BAT_MS_TO_NS(2000));
 
 	wake_lock_init(&pe3->pe30_wakelock, WAKE_LOCK_SUSPEND, "pe30 wakelock");
-	info->dc_chg = get_charger_by_name("load_switch");
+	info->dc_chg = get_charger_by_name("primary_load_switch");
 	if (info->dc_chg == NULL)
 		return false;
 

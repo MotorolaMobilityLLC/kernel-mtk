@@ -286,6 +286,9 @@ struct charger_manager {
 	bool enable_sw_safety_timer;
 	bool enable_pe_plus;
 
+	/* High voltage charging */
+	bool enable_hv_charging;
+
 	/* pe 2.0 */
 	bool enable_pe_2;
 	struct mtk_pe20 pe2;

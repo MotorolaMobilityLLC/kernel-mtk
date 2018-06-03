@@ -378,7 +378,7 @@ static int mt6336_parse_dt(struct mt6336_charger *info, struct device *dev)
 	if (of_property_read_string(np, "charger_name",
 		&info->charger_dev_name) < 0) {
 		pr_err("%s: no charger name\n", __func__);
-		info->charger_dev_name = "PrimarySWCHG";
+		info->charger_dev_name = "primary_chg";
 	}
 
 	if (of_property_read_string(np, "alias_name",
@@ -716,16 +716,16 @@ int mt6336_set_pe20_efficiency_table(struct charger_device *chg_dev)
 	pinfo = charger_dev_get_drvdata(chg_dev);
 
 	if (pinfo != NULL) {
-		pinfo->pe2.profile[0].vchr = 8500;
-		pinfo->pe2.profile[1].vchr = 8500;
-		pinfo->pe2.profile[2].vchr = 8500;
-		pinfo->pe2.profile[3].vchr = 9000;
-		pinfo->pe2.profile[4].vchr = 9000;
-		pinfo->pe2.profile[5].vchr = 9500;
-		pinfo->pe2.profile[6].vchr = 9500;
-		pinfo->pe2.profile[7].vchr = 9500;
-		pinfo->pe2.profile[8].vchr = 10000;
-		pinfo->pe2.profile[9].vchr = 10000;
+		pinfo->pe2.profile[0].vchr = 8500000;
+		pinfo->pe2.profile[1].vchr = 8500000;
+		pinfo->pe2.profile[2].vchr = 8500000;
+		pinfo->pe2.profile[3].vchr = 9000000;
+		pinfo->pe2.profile[4].vchr = 9000000;
+		pinfo->pe2.profile[5].vchr = 9500000;
+		pinfo->pe2.profile[6].vchr = 9500000;
+		pinfo->pe2.profile[7].vchr = 9500000;
+		pinfo->pe2.profile[8].vchr = 10000000;
+		pinfo->pe2.profile[9].vchr = 10000000;
 		return 0;
 	}
 	return -1;
@@ -778,6 +778,17 @@ static int mt6336_set_ta20_reset(struct charger_device *chg_dev)
 	mt6336_set_flag_register_value(MT6336_RG_ICL, val);
 
 	return 0;
+}
+
+static int mt6336_enable_cable_drop_comp(struct charger_device *chg_dev, bool en)
+{
+	int ret = 0;
+
+	pr_info("%s: en = %d\n", __func__, en);
+	if (!en)
+		ret = mt6336_send_ta20_current_pattern(chg_dev, 25000000);
+
+	return ret;
 }
 
 static int mt6336_set_mivr(struct charger_device *chg_dev, u32 uV)
@@ -1001,6 +1012,7 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.set_pe20_efficiency_table = mt6336_set_pe20_efficiency_table,
 	.send_ta20_current_pattern = mt6336_send_ta20_current_pattern,
 	.set_ta20_reset = mt6336_set_ta20_reset,
+	.enable_cable_drop_comp = mt6336_enable_cable_drop_comp,
 	.set_mivr = mt6336_set_mivr,
 	.get_mivr_state = mt6336_get_mivr_state,
 	.enable_safety_timer = mt6336_enable_safety_timer,
