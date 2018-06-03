@@ -2927,7 +2927,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						unsigned long flags;
 
 						spin_lock_irqsave(&IspInfo.SpinLockIrq[0], flags);
-						ISP_WR32(CAM_REG_CTL_CD_DONE_SEL(ISP_CAM_A_IDX), 0x1);
+						ISP_WR32(CAM_REG_CTL_CD_DONE_SEL(ISP_CAM_A_IDX), 0x10000);
 						ISP_WR32(CAM_REG_CTL_UNI_DONE_SEL(ISP_CAM_A_IDX), 0x1);
 						ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_C_IDX), Addr[2]);
 						ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_A_IDX), Addr[0]);
@@ -2942,7 +2942,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						unsigned long flags;
 
 						spin_lock_irqsave(&IspInfo.SpinLockIrq[1], flags);
-						ISP_WR32(CAM_REG_CTL_CD_DONE_SEL(ISP_CAM_B_IDX), 0x1);
+						ISP_WR32(CAM_REG_CTL_CD_DONE_SEL(ISP_CAM_B_IDX), 0x10000);
 						ISP_WR32(CAM_REG_CTL_UNI_DONE_SEL(ISP_CAM_B_IDX), 0x1);
 						ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_C_IDX), Addr[2]);
 						ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_B_IDX), Addr[1]);
@@ -2956,7 +2956,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						unsigned long flags;
 
 						spin_lock_irqsave(&IspInfo.SpinLockIrq[0], flags);
-						ISP_WR32(CAM_REG_CTL_CD_DONE_SEL(ISP_CAM_A_IDX), 0x1);
+						ISP_WR32(CAM_REG_CTL_CD_DONE_SEL(ISP_CAM_A_IDX), 0x10000);
 						ISP_WR32(CAM_REG_CTL_UNI_DONE_SEL(ISP_CAM_A_IDX), 0x1);
 						ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_B_IDX), Addr[1]);
 						ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_A_IDX), Addr[0]);
@@ -2972,7 +2972,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					unsigned long flags;
 
 					spin_lock_irqsave(&IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST], flags);
-					ISP_WR32(CAM_REG_CTL_CD_DONE_SEL(ISP_CAM_A_IDX), 0x1);
+					ISP_WR32(CAM_REG_CTL_CD_DONE_SEL(ISP_CAM_A_IDX), 0x10000);
 					ISP_WR32(CAM_REG_CTL_UNI_DONE_SEL(ISP_CAM_A_IDX), 0x1);
 					ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_C_IDX), Addr[2]);
 					ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_B_IDX), Addr[1]);
