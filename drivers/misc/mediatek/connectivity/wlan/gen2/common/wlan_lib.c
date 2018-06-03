@@ -3715,9 +3715,11 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 		if (prRegInfo->ucTxPwrValid != 0) {
 			/* send to F/W */
 			nicUpdateTxPower(prAdapter, (P_CMD_TX_PWR_T) (&(prRegInfo->rTxPwr)));
+
 #if CFG_SUPPORT_TX_POWER_BACK_OFF
-			nicUpdateTxPowerOffset(prAdapter,
-				(P_CMD_MITIGATED_PWR_OFFSET_T) (prRegInfo->arRlmMitigatedPwrByChByMode));
+			if (prRegInfo->fgRlmMitigatedPwrByChByMode)
+				nicUpdateTxPowerOffset(prAdapter,
+					(P_CMD_MITIGATED_PWR_OFFSET_T) (prRegInfo->arRlmMitigatedPwrByChByMode));
 #endif
 		}
 	}
