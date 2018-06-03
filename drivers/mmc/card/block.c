@@ -1131,6 +1131,10 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 	struct mmc_blk_data *md;
 	int i, err = 0, ioc_err = 0;
 	__u64 num_of_cmds;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	unsigned char cmdq_en;
+#endif
+
 
 	/*
 	 * The caller must have CAP_SYS_RAWIO, and must be calling this on the
@@ -1171,15 +1175,15 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 	}
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (card->ext_csd.cmdq_mode_en) {
+	cmdq_en = card->ext_csd.cmdq_mode_en;
+	if (cmdq_en) {
 		mmc_wait_cmdq_empty(card->host);
 		mmc_claim_host(card->host);
-
 		err = mmc_blk_cmdq_switch(card, 0);
-		mmc_release_host(card->host);
 		if (err) {
-			pr_notice("FFU: %s: disable cmdq error %d\n",
+			pr_notice("MMC ioctl: %s disable cmdq error %d\n",
 				mmc_hostname(card->host), err);
+			mmc_release_host(card->host);
 			goto cmd_done;
 		}
 	}
@@ -1195,6 +1199,16 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 	/* copy to user if data and response */
 	for (i = 0; i < num_of_cmds && !err; i++)
 		err = mmc_blk_ioctl_copy_to_user(&cmds[i], idata[i]);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (cmdq_en) {
+		err = mmc_blk_cmdq_switch(card, 1);
+		mmc_release_host(card->host);
+		if (err)
+			pr_notice("MMC ioctl: %s re-enable CMDQ error %d\n",
+				mmc_hostname(card->host), err);
+	}
+#endif
 
 cmd_done:
 	mmc_blk_put(md);
