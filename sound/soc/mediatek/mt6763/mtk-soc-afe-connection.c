@@ -197,6 +197,15 @@ bool SetDl1ToDaiBtOut(uint32 ConnectionState)
 	return true;
 }
 
+bool SetDl2ToDaiBtOut(uint32 ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I07,
+			Soc_Aud_InterConnectionOutput_O02);
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I08,
+			Soc_Aud_InterConnectionOutput_O02);
+	return true;
+}
+
 bool SetModem1InCh1ToI2s3(uint32 ConnectionState)
 {
 	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I09,
@@ -634,6 +643,7 @@ static const struct connection_link_t mConnectionLink[] = {
 	{Soc_Aud_AFE_IO_Block_MEM_DL2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O, SetDl2ToModem1Out},
 	{Soc_Aud_AFE_IO_Block_MEM_DL2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O, SetDl2ToModem2Out},
 	{Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_DAI_BT_OUT, SetDl1ToDaiBtOut},
+	{Soc_Aud_AFE_IO_Block_MEM_DL2, Soc_Aud_AFE_IO_Block_DAI_BT_OUT, SetDl2ToDaiBtOut},
 	{Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3, SetModem1InCh1ToI2s3},
 	{Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3, SetModem2InCh1ToI2s3},
 	{Soc_Aud_AFE_IO_Block_I2S0_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4, SetI2s0Ch2ToModem1OutCh4},
