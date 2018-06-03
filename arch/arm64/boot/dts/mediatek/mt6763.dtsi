@@ -261,7 +261,7 @@
 
 			SODI: sodi {
 				compatible = "arm,idle-state";
-				arm,psci-suspend-param = <0x2010002>;
+				arm,psci-suspend-param = <0x1010002>;
 				entry-latency-us = <800>;
 				exit-latency-us = <1000>;
 				min-residency-us = <2000>;
@@ -269,7 +269,7 @@
 
 			SODI3: sodi3 {
 				compatible = "arm,idle-state";
-				arm,psci-suspend-param = <0x2010003>;
+				arm,psci-suspend-param = <0x1010003>;
 				entry-latency-us = <800>;
 				exit-latency-us = <1000>;
 				min-residency-us = <2000>;
@@ -277,7 +277,7 @@
 
 			DPIDLE: dpidle {
 				compatible = "arm,idle-state";
-				arm,psci-suspend-param = <0x2010004>;
+				arm,psci-suspend-param = <0x1010004>;
 				entry-latency-us = <800>;
 				exit-latency-us = <1000>;
 				min-residency-us = <2000>;
@@ -285,7 +285,7 @@
 
 			SUSPEND: suspend {
 				compatible = "arm,idle-state";
-				arm,psci-suspend-param = <0x2010005>;
+				arm,psci-suspend-param = <0x1010005>;
 				entry-latency-us = <800>;
 				exit-latency-us = <1000>;
 				min-residency-us = <2000>;
