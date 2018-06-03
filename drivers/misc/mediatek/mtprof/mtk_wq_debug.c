@@ -352,12 +352,14 @@ static int mt_wq_debug_show(struct seq_file *m, void *v)
 	struct hlist_node *tmp = NULL;
 	unsigned long long now, ts;
 	unsigned long rem_nsec;
+	unsigned long flags;
 	int i;
 
 	ts = now = sched_clock();
 	rem_nsec = do_div(ts, NSEC_PER_SEC);
 	SEQ_printf(m, "wq_debug: %d, now: %ld.%06lu\n",
 		   wq_debug, (unsigned long)ts, rem_nsec / NSEC_PER_USEC);
+	raw_spin_lock_irqsave(&works_lock, flags);
 	hash_for_each_safe(active_works, i, tmp, wi, hash) {
 		if (wi) {
 			ts = wi->ts;
@@ -371,6 +373,7 @@ static int mt_wq_debug_show(struct seq_file *m, void *v)
 				(unsigned long)ts, rem_nsec / NSEC_PER_USEC);
 		}
 	}
+	raw_spin_unlock_irqrestore(&works_lock, flags);
 	return 0;
 }
 
