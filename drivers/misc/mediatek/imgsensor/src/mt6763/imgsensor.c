@@ -178,7 +178,7 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 						IMGSENSOR_HW_POWER_STATUS_ON);
 		if (ret != IMGSENSOR_RETURN_SUCCESS) {
 			PK_PR_ERR("[%s] Power on fail", __func__);
-			return ret ? -EIO : ret;
+			return -EIO;
 		}
 		/* wait for power stable */
 		mDELAY(5);
