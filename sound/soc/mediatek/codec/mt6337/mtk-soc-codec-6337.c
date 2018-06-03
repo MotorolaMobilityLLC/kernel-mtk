@@ -3835,11 +3835,11 @@ static const struct snd_kcontrol_new mt6331_snd_controls[] = {
 	SOC_ENUM_EXT("Audio_Power_Mode", Audio_DL_Enum[5], audio_power_mode_get, audio_power_mode_set),
 	SOC_ENUM_EXT("Audio_Hp_Differential_Mode", Audio_DL_Enum[0],
 		     audio_hp_differential_mode_get, audio_hp_differential_mode_set),
-	SOC_SINGLE_EXT("Codec_UL_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_ul_rate_get,
+	SOC_SINGLE_EXT("Codec_ADC_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_ul_rate_get,
 		       audio_ul_rate_set),
-	SOC_SINGLE_EXT("Codec_UL2_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_ul2_rate_get,
+	SOC_SINGLE_EXT("Codec_ADC2_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_ul2_rate_get,
 		       audio_ul2_rate_set),
-	SOC_SINGLE_EXT("Codec_DL_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_dl_rate_get,
+	SOC_SINGLE_EXT("Codec_DAC_SampleRate", SND_SOC_NOPM, 0, 0x80000, 0, audio_dl_rate_get,
 		       audio_dl_rate_set),
 };
 
