@@ -161,12 +161,12 @@ struct mblock {
 	u32 rank;	/* rank the mblock belongs to */
 };
 
-typedef struct {
+struct mblock_reserved {
 	u64 start;
 	u64 size;
 	u32 mapping;   /* mapping or unmap*/
 	char name[MBLOCK_RESERVED_NAME_SIZE];
-} reserved_t;
+};
 
 struct mblock_info {
 	u32 mblock_num;
@@ -174,7 +174,7 @@ struct mblock_info {
 	u32 mblock_magic;
 	u32 mblock_version;
 	u32 reserved_num;
-	reserved_t reserved[MBLOCK_RESERVED_NUM_MAX];
+	struct mblock_reserved reserved[MBLOCK_RESERVED_NUM_MAX];
 };
 
 struct dram_info {
