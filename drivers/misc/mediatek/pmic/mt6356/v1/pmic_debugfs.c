@@ -40,10 +40,10 @@ void pmic_dump_register(struct seq_file *m)
 	const PMU_FLAG_TABLE_ENTRY *pFlag = &pmu_flags_table[PMU_COMMAND_MAX - 1];
 	unsigned int i = 0;
 
-	PMICLOG("dump PMIC register\n");
+	pr_err("dump PMIC register\n");
 
-	for (i = 0; i < (pFlag->offset - 10); i = i + 10) {
-		PMICLOG("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
+	for (i = 0; i < pFlag->offset; i = i + 10) {
+		pr_err("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
 			i, upmu_get_reg_value(i),
 			i + 2, upmu_get_reg_value(i + 2),
 			i + 4, upmu_get_reg_value(i + 4),
@@ -59,7 +59,6 @@ void pmic_dump_register(struct seq_file *m)
 				i + 8, upmu_get_reg_value(i + 8));
 		}
 	}
-
 }
 
 /*
