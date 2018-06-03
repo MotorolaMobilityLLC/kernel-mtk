@@ -21,10 +21,12 @@
 #include <mt-plat/sync_write.h>
 #include <linux/sched_clock.h>
 #include <linux/ratelimit.h>
+#include <linux/delay.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
 #include "scp_feature_define.h"
+#include "scp_l1c.h"
 
 struct scp_aed_cfg {
 	int *log;
@@ -215,7 +217,7 @@ void exception_header_init(void *oldbufp, enum scp_core_id id)
 void scp_reg_copy(void *bufp)
 {
 	struct scp_reg_dump_list *scp_reg;
-
+	uint32_t tmp;
 	scp_reg = (struct scp_reg_dump_list *) bufp;
 
 	/*setup scp reg*/
@@ -237,9 +239,32 @@ void scp_reg_copy(void *bufp)
 	scp_reg->debug_addr_spi1 = readl(SCP_DEBUG_ADDR_SPI1);
 	scp_reg->debug_addr_spi2 = readl(SCP_DEBUG_ADDR_SPI2);
 	scp_reg->debug_bus_status = readl(SCP_DEBUG_BUS_STATUS);
+	/*  scp_reg->debug_infra_mon = readl(SCP_SYS_INFRA_MON); */
+	tmp = readl(SCP_BUS_CTRL)&(~dbg_irq_info_sel_mask);
+	writel(tmp | (0 << dbg_irq_info_sel_shift), SCP_BUS_CTRL);
+	scp_reg->infra_addr_latch = readl(SCP_DEBUG_IRQ_INFO);
+	writel(tmp | (1 << dbg_irq_info_sel_shift), SCP_BUS_CTRL);
+	scp_reg->ddebug_latch = readl(SCP_DEBUG_IRQ_INFO);
+	writel(tmp | (2 << dbg_irq_info_sel_shift), SCP_BUS_CTRL);
+	scp_reg->pdebug_latch = readl(SCP_DEBUG_IRQ_INFO);
+	writel(tmp | (3 << dbg_irq_info_sel_shift), SCP_BUS_CTRL);
+	scp_reg->pc_value = readl(SCP_DEBUG_IRQ_INFO);
 	scp_reg->scp_reg_magic_end = 0xDEADBEEF;
-
 }
+
+/*dump scp l1c header*/
+void scp_sub_header_init(void *bufp)
+{
+	struct scp_dump_header_list *scp_sub_head;
+
+	scp_sub_head = (struct scp_dump_header_list *) bufp;
+	/*setup scp reg*/
+	scp_sub_head->scp_head_magic = 0xDEADBEEF;
+	memcpy(&scp_sub_head->scp_region_info,
+		&scp_region_info_copy, sizeof(scp_region_info_copy));
+	scp_sub_head->scp_head_magic_end = 0xDEADBEEF;
+}
+
 /*
  * return last lr for debugging
  */
@@ -318,6 +343,8 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 	unsigned int *reg;
 	unsigned int scp_dump_size;
 	unsigned int scp_awake_fail_flag;
+	uint32_t dram_start = 0;
+	uint32_t dram_size = 0;
 
 	/*flag use to indicate scp awake success or not*/
 	scp_awake_fail_flag = 0;
@@ -336,17 +363,43 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 		return 0;
 	}
 
+	/* L1C support? */
+	if ((int)(scp_region_info_copy.ap_dram_size) <= 0) {
+		scp_dump_size = sizeof(struct MemoryDump);
+	} else {
+
+		dram_start = scp_region_info_copy.ap_dram_start;
+		dram_size = scp_region_info_copy.ap_dram_size;
+		scp_dump_size = sizeof(struct MemoryDump) +
+			roundup(dram_size, 4);
+	}
+
 	exception_header_init(pMemoryDump, id);
+	/* init sub header*/
+	scp_sub_header_init(&(pMemoryDump->scp_dump_header));
+
 	memcpy_from_scp((void *)&(pMemoryDump->memory),
 		(void *)(SCP_TCM + CRASH_MEMORY_OFFSET),
 		(SCP_A_TCM_SIZE - CRASH_MEMORY_OFFSET));
 
-	/*dump scp reg*/
-	scp_reg_copy(&(pMemoryDump->scp_reg_dump));
-
-	scp_dump_size = CRASH_MEMORY_HEADER_SIZE +
-					SCP_A_TCM_SIZE +
-					sizeof(struct scp_reg_dump_list);
+	/* L1C support? */
+	if (dram_size) {
+		/* l1c enable,flua l1c */
+		scp_l1c_flua(SCP_DL1C);
+		scp_l1c_flua(SCP_IL1C);
+		udelay(10);
+		pr_debug("scp:scp_l1c_start_virt 0x%p\n",
+			scp_l1c_start_virt);
+		/* copy dram data*/
+		memcpy((void *)&(pMemoryDump->scp_reg_dump),
+			scp_l1c_start_virt, dram_size);
+		/* dump scp reg */
+		scp_reg_copy((void *)(&pMemoryDump->scp_reg_dump) +
+			roundup(dram_size, 4));
+	} else {
+		/* dump scp reg */
+		scp_reg_copy(&(pMemoryDump->scp_reg_dump));
+	}
 
 	*reg = lock;
 	dsb(SY);
@@ -651,6 +704,7 @@ struct bin_attribute bin_attr_scp_dump = {
  */
 int scp_excep_init(void)
 {
+	int dram_size = 0;
 	mutex_init(&scp_excep_mutex);
 	mutex_init(&scp_A_excep_dump_mutex);
 
@@ -661,11 +715,17 @@ int scp_excep_init(void)
 	if (!scp_A_detail_buffer)
 		return -1;
 
-	scp_A_dump_buffer = vmalloc(sizeof(struct MemoryDump));
+	/* support L1C or not? */
+	if ((int)(scp_region_info->ap_dram_size) > 0)
+		dram_size = scp_region_info->ap_dram_size;
+
+	scp_A_dump_buffer = vmalloc(sizeof(struct MemoryDump) +
+		roundup(dram_size, 4));
 	if (!scp_A_dump_buffer)
 		return -1;
 
-	scp_A_dump_buffer_last = vmalloc(sizeof(struct MemoryDump));
+	scp_A_dump_buffer_last = vmalloc(sizeof(struct MemoryDump) +
+		roundup(dram_size, 4));
 	if (!scp_A_dump_buffer_last)
 		return -1;
 
