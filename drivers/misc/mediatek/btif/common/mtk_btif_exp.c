@@ -629,7 +629,7 @@ int btif_dbg_ctrl_no_id(ENUM_BTIF_DBG_ID flag)
 		}
 		break;
 	case BTIF_DUMP_BTIF_REG:
-		 /*TBD*/ btif_dump_reg(p_btif);
+		btif_dump_reg(p_btif);
 		break;
 	case BTIF_ENABLE_RT_LOG:
 		BTIF_INFO_FUNC

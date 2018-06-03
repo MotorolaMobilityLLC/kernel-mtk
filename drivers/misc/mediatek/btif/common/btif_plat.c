@@ -1157,6 +1157,8 @@ int hal_btif_dump_reg(P_MTK_BTIF_INFO_STR p_btif, ENUM_BTIF_REG_ID flag)
 		return i_ret;
 	}
 #endif
+	mt_irq_dump_status(p_btif->p_irq->irq_id);
+
 	lsr = BTIF_READ32(BTIF_LSR(base));
 	dma_en = BTIF_READ32(BTIF_DMA_EN(base));
 	/*
