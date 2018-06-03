@@ -69,6 +69,10 @@ void __iomem *mmsys_config_base;
 void __iomem *pericfg_base;
 void __iomem *venc_gcon_base;
 void __iomem *vdec_gcon_base;
+void __iomem *ipu_conn_base;
+void __iomem *ipu_adl_base;
+void __iomem *ipu_core0_base;
+void __iomem *ipu_core1_base;
 
 /* CKSYS */
 #define CLK_CFG_0		(cksys_base + 0x040)
@@ -161,6 +165,18 @@ void __iomem *vdec_gcon_base;
 #define LARB1_CKEN_SET          (vdec_gcon_base + 0x0008)
 #define LARB1_CKEN_CLR          (vdec_gcon_base + 0x000C)
 
+#define IPU_CONN_CG_CON              (ipu_conn_base + 0x0000)
+#define IPU_CONN_CG_SET              (ipu_conn_base + 0x0004)
+#define IPU_CONN_CG_CLR              (ipu_conn_base + 0x0008)
+
+#define IPU_CORE0_CG_CON              (ipu_core0_base + 0x0000)
+#define IPU_CORE0_CG_SET              (ipu_core0_base + 0x0004)
+#define IPU_CORE0_CG_CLR              (ipu_core0_base + 0x0008)
+
+#define IPU_CORE1_CG_CON              (ipu_core1_base + 0x0000)
+#define IPU_CORE1_CG_SET              (ipu_core1_base + 0x0004)
+#define IPU_CORE1_CG_CLR              (ipu_core1_base + 0x0008)
+
 #if MT_CCF_BRINGUP
 #define INFRA_CG0 0x132f8110/*[25:24][21][19:15][8][4]*/
 #define INFRA_CG1 0x080a0a64/*[27][11][9], [17][6][5][2], [19]*/
@@ -174,6 +190,9 @@ void __iomem *vdec_gcon_base;
 #define VENC_CG 0x00111 /* inverse */
 #define VDEC_CG 0x1 /* inverse */
 #define VDEC_LARB1_CG 0x1 /* inverse */
+#define IPU_CONN_CG 0x3f
+#define IPU_CORE0_CG 0x7
+#define IPU_CORE1_CG 0x7
 #else
 /*add normal cg init setting*/
 #endif
@@ -1593,6 +1612,163 @@ static const struct mtk_gate venc_global_con_clks[] __initconst = {
 		"mm_sel", 8),
 };
 
+static const struct mtk_gate_regs ipu_conn_cg_regs = {
+	.set_ofs = 0x4,
+	.clr_ofs = 0x8,
+	.sta_ofs = 0x0,
+};
+
+static const struct mtk_gate_regs ipu_conn_apb_cg_regs = {
+	.set_ofs = 0x10,
+	.clr_ofs = 0x10,
+	.sta_ofs = 0x10,
+};
+
+static const struct mtk_gate_regs ipu_conn_axi_cg_regs = {
+	.set_ofs = 0x18,
+	.clr_ofs = 0x18,
+	.sta_ofs = 0x18,
+};
+
+static const struct mtk_gate_regs ipu_conn_axi1_cg_regs = {
+	.set_ofs = 0x1c,
+	.clr_ofs = 0x1c,
+	.sta_ofs = 0x1c,
+};
+
+static const struct mtk_gate_regs ipu_conn_axi2_cg_regs = {
+	.set_ofs = 0x20,
+	.clr_ofs = 0x20,
+	.sta_ofs = 0x20,
+};
+
+#define GATE_IPU_CONN(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &ipu_conn_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_setclr,	\
+	}
+
+#define GATE_IPU_CONN_APB(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &ipu_conn_apb_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops,	\
+	}
+
+#define GATE_IPU_CONN_AXI(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &ipu_conn_axi_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_inv,	\
+	}
+
+#define GATE_IPU_CONN_AXI1(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &ipu_conn_axi1_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_inv,	\
+	}
+
+#define GATE_IPU_CONN_AXI2(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &ipu_conn_axi2_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_inv,	\
+	}
+
+static const struct mtk_gate ipu_conn_clks[] __initconst = {
+	GATE_IPU_CONN(IPU_CONN_IPU_CG, "ipu_conn_ipu", "dsp_sel", 0),
+	GATE_IPU_CONN(IPU_CONN_AHB_CG, "ipu_conn_ahb", "dsp_sel", 1),
+	GATE_IPU_CONN(IPU_CONN_AXI_CG, "ipu_conn_axi", "dsp_sel", 2),
+	GATE_IPU_CONN(IPU_CONN_ISP_CG, "ipu_conn_isp", "dsp_sel", 3),
+	GATE_IPU_CONN(IPU_CONN_CAM_ADL_CG, "ipu_conn_cam_adl", "dsp_sel", 4),
+	GATE_IPU_CONN(IPU_CONN_IMG_ADL_CG, "ipu_conn_img_adl", "dsp_sel", 5),
+
+	GATE_IPU_CONN_APB(IPU_CONN_DAP_RX_CG, "ipu_conn_dap_rx", "dsp1_sel", 0),
+	GATE_IPU_CONN_APB(IPU_CONN_APB2AXI_CG, "ipu_conn_apb2axi", "dsp1_sel", 3),
+	GATE_IPU_CONN_APB(IPU_CONN_APB2AHB_CG, "ipu_conn_apb2ahb", "dsp1_sel", 20),
+
+	GATE_IPU_CONN_AXI(IPU_CONN_IPU_CAB1TO2, "ipu_conn_ipu_cab1to2", "dsp1_sel", 6),
+	GATE_IPU_CONN_AXI(IPU_CONN_IPU1_CAB1TO2, "ipu_conn_ipu1_cab1to2", "dsp1_sel", 13),
+	GATE_IPU_CONN_AXI(IPU_CONN_IPU2_CAB1TO2, "ipu_conn_ipu2_cab1to2", "dsp1_sel", 20),
+
+	GATE_IPU_CONN_AXI1(IPU_CONN_CAB3TO3, "ipu_conn_cab3to3", "dsp1_sel", 0),
+
+	GATE_IPU_CONN_AXI2(IPU_CONN_CAB2TO1, "ipu_conn_cab2to1", "dsp1_sel", 14),
+	GATE_IPU_CONN_AXI2(IPU_CONN_CAB3TO1_SLICE, "ipu_conn_cab3to1_slice", "dsp1_sel", 17),
+};
+
+static const struct mtk_gate_regs ipu_adl_cg_regs = {
+	.set_ofs = 0x0,
+	.clr_ofs = 0x0,
+	.sta_ofs = 0x0,
+};
+
+#define GATE_IPU_ADL(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &ipu_adl_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_inv,	\
+	}
+
+static const struct mtk_gate ipu_adl_clks[] __initconst = {
+	GATE_CAM(IPU_ADL_CABGEN, "ipu_adl_cabgen", "dsp_sel", 24),
+};
+
+static const struct mtk_gate_regs ipu_core0_cg_regs = {
+	.set_ofs = 0x4,
+	.clr_ofs = 0x8,
+	.sta_ofs = 0x0,
+};
+
+#define GATE_IPU_CORE0(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &ipu_core0_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_setclr,	\
+	}
+
+static const struct mtk_gate ipu_core0_clks[] __initconst = {
+	GATE_CAM(IPU_CORE0_JTAG_CG, "ipu_core0_jtag", "dsp_sel", 0),
+	GATE_CAM(IPU_CORE0_AXI_M_CG, "ipu_core0_axi", "dsp_sel", 1),
+	GATE_CAM(IPU_CORE0_IPU_CG, "ipu_core0_ipu", "dsp_sel", 2),
+};
+
+static const struct mtk_gate_regs ipu_core1_cg_regs = {
+	.set_ofs = 0x4,
+	.clr_ofs = 0x8,
+	.sta_ofs = 0x0,
+};
+
+#define GATE_IPU_CORE1(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &ipu_core1_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_setclr,	\
+	}
+
+static const struct mtk_gate ipu_core1_clks[] __initconst = {
+	GATE_CAM(IPU_CORE1_JTAG_CG, "ipu_core1_jtag", "dsp_sel", 0),
+	GATE_CAM(IPU_CORE1_AXI_M_CG, "ipu_core1_axi", "dsp_sel", 1),
+	GATE_CAM(IPU_CORE1_IPU_CG, "ipu_core1_ipu", "dsp_sel", 2),
+};
 
 static void __init mtk_topckgen_init(struct device_node *node)
 {
@@ -2024,6 +2200,120 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 }
 CLK_OF_DECLARE(mtk_venc_global_con, "mediatek,venc_gcon",
 		mtk_venc_global_con_init);
+
+static void __init mtk_ipu_conn_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_notice("%s(): ioremap failed\n", __func__);
+		return;
+	}
+	clk_data = mtk_alloc_clk_data(IPU_CONN_NR_CLK);
+
+	mtk_clk_register_gates(node, ipu_conn_clks, ARRAY_SIZE(ipu_conn_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_notice("%s(): could not register clock provider: %d\n",
+			__func__, r);
+	ipu_conn_base = base;
+
+#if MT_CCF_BRINGUP
+	clk_writel(IPU_CONN_CG_CLR, IPU_CONN_CG);
+#else
+	clk_writel(IPU_CONN_CG_SET, IPU_CONN_CG);
+#endif
+}
+CLK_OF_DECLARE(mtk_ipu_conn, "mediatek,ipu_conn", mtk_ipu_conn_init);
+
+static void __init mtk_ipu_adl_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_notice("%s(): ioremap failed\n", __func__);
+		return;
+	}
+	clk_data = mtk_alloc_clk_data(IPU_ADL_NR_CLK);
+
+	mtk_clk_register_gates(node, ipu_adl_clks, ARRAY_SIZE(ipu_adl_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_notice("%s(): could not register clock provider: %d\n",
+			__func__, r);
+	ipu_adl_base = base;
+}
+CLK_OF_DECLARE(mtk_ipu_adl, "mediatek,ipu_adl", mtk_ipu_adl_init);
+
+static void __init mtk_ipu_core0_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_notice("%s(): ioremap failed\n", __func__);
+		return;
+	}
+	clk_data = mtk_alloc_clk_data(IPU_CORE0_NR_CLK);
+
+	mtk_clk_register_gates(node, ipu_core0_clks, ARRAY_SIZE(ipu_core0_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_notice("%s(): could not register clock provider: %d\n",
+			__func__, r);
+	ipu_core0_base = base;
+
+#if MT_CCF_BRINGUP
+	clk_writel(IPU_CORE0_CG_CLR, IPU_CORE0_CG);
+#else
+	clk_writel(IPU_CORE0_CG_SET, IPU_CORE0_CG);
+#endif
+}
+CLK_OF_DECLARE(mtk_ipu_core0, "mediatek,ipu0", mtk_ipu_core0_init);
+
+static void __init mtk_ipu_core1_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_notice("%s(): ioremap failed\n", __func__);
+		return;
+	}
+	clk_data = mtk_alloc_clk_data(IPU_CORE1_NR_CLK);
+
+	mtk_clk_register_gates(node, ipu_core1_clks, ARRAY_SIZE(ipu_core1_clks), clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+
+	if (r)
+		pr_notice("%s(): could not register clock provider: %d\n",
+			__func__, r);
+	ipu_core1_base = base;
+
+#if MT_CCF_BRINGUP
+	clk_writel(IPU_CORE1_CG_CLR, IPU_CORE1_CG);
+#else
+	clk_writel(IPU_CORE1_CG_SET, IPU_CORE1_CG);
+#endif
+}
+CLK_OF_DECLARE(mtk_ipu_core1, "mediatek,ipu1", mtk_ipu_core1_init);
 
 void check_seninf_ck(void)
 {
