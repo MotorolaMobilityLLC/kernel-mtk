@@ -49,6 +49,7 @@
 #include <mt-plat/aee.h>
 #include <mt-plat/mtk_chip.h>
 
+void __iomem *SYS_TIMER_BASE_ADDR;
 void __iomem *DRAMC_AO_CHA_BASE_ADDR;
 void __iomem *DRAMC_AO_CHB_BASE_ADDR;
 void __iomem *DRAMC_NAO_CHA_BASE_ADDR;
@@ -1411,6 +1412,7 @@ void zqcs_timer_callback(unsigned long data)
 		pr_info("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
 		local_irq_restore(save_flags);
 	} else {
+	writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
   /* CH0_Rank0 --> CH1Rank0 */
 	for (RankCounter = 0; RankCounter < get_rk_num(); RankCounter++) {
 		for (CHCounter = 0; CHCounter < get_ch_num(); CHCounter++) {
@@ -1508,6 +1510,7 @@ void zqcs_timer_callback(unsigned long data)
 			local_irq_restore(save_flags);
 			pr_warn("[DRAMC] TX 0 can NOT get SPM HW SEMAPHORE!\n");
 		} else {
+			writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
 			res[0] = dramc_tx_tracking(0);
 			if (release_dram_ctrl() != 0)
 				pr_warn("[DRAMC] TX 0 release SPM HW SEMAPHORE fail!\n");
@@ -1521,6 +1524,7 @@ void zqcs_timer_callback(unsigned long data)
 			local_irq_restore(save_flags);
 			pr_warn("[DRAMC] TX 1 can NOT get SPM HW SEMAPHORE!\n");
 		} else {
+			writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
 			res[1] = dramc_tx_tracking(1);
 			if (release_dram_ctrl() != 0)
 				pr_warn("[DRAMC] TX 1 release SPM HW SEMAPHORE fail!\n");
@@ -1605,6 +1609,16 @@ static int dram_probe(struct platform_device *pdev)
 		SLEEP_BASE_ADDR);
 	} else {
 		pr_err("[DRAMC]can't find SLEEP_BASE_ADDR compatible node\n");
+		return -1;
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sys_timer");
+	if (node) {
+		SYS_TIMER_BASE_ADDR = of_iomap(node, 0);
+		pr_info("[DRAMC]get SYS_TIMER_BASE_ADDR @ %p\n",
+		SYS_TIMER_BASE_ADDR);
+	} else {
+		pr_info("[DRAMC]can't find SYS_TIMER_BASE_ADDR compatible node\n");
 		return -1;
 	}
 
