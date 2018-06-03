@@ -837,6 +837,7 @@ static int simple_mmc_erase_partition_wrap(struct msdc_ioctl *msdc_ctl)
 	if (copy_from_user(name, (unsigned char *)msdc_ctl->buffer,
 		msdc_ctl->total_size))
 		return -EFAULT;
+	name[msdc_ctl->total_size] = 0;
 
 	return simple_mmc_erase_partition(name);
 }
