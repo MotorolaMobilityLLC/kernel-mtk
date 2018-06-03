@@ -154,19 +154,19 @@ static ssize_t resource_req_read(struct file *filp,
 		p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 					"resource_req_bypass_stat[%s] = %x %x, usage %x %x\n",
 					spm_resource_name[i],
-					~resc_desc[i].user_usage_mask[1],
 					~resc_desc[i].user_usage_mask[0],
+					~resc_desc[i].user_usage_mask[1],
 					resc_desc[i].user_usage[0],
 					resc_desc[i].user_usage[1]);
 	}
 
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "enable:\n");
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
-			"echo enable [bit] > /d/spm/resource_req\n");
+			"echo enable [bit] > /d/cpuidle/spm_resource_req\n");
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 			"bypass:\n");
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
-			"echo bypass [bit] > /d/spm/resource_req\n");
+			"echo bypass [bit] > /d/cpuidle/spm_resource_req\n");
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 			"[1] UFS, [2] SSUSB, [3] AUDIO, [4] UART, ");
@@ -231,7 +231,7 @@ static const struct file_operations resource_req_fops = {
 void spm_resource_req_debugfs_init(struct dentry *spm_dir)
 {
 	spm_resource_req_file =
-		debugfs_create_file("resource_req",
+		debugfs_create_file("spm_resource_req",
 							0444,
 							spm_dir,
 							NULL,

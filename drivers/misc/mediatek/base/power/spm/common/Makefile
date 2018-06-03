@@ -5,7 +5,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/common/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/$(MTK_PLATFORM)/
 
-# Include cpu dvfs header cpufreq_api.h and thermal header mtk_thermal.h
+# Include cpu dvfs header cpufreq_api.h
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach/
 # Include mtk_ram_console.h for aee_xxx api
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
@@ -25,6 +25,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1/
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH), y)
 ccflags-y += -I$(srctree)/sound/soc/mediatek/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/sound/soc/mediatek/common_int/
+endif
+# Include thermal header mtk_thermal.h
+ifeq ($(CONFIG_THERMAL), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/$(MTK_PLATFORM)/inc/mach/
 endif
 
 obj-y += mtk_idle.o

@@ -429,13 +429,12 @@ bool mtk_idle_select_state(int type, int reason)
 		/* xxidle, rgidle count */
 		reset_idle_buf(idle_state_log);
 		idle_buf_append(idle_state_log
-			, "CNT(%s,rgidle): ", p_idle->name);
+			, "CNT(%s): ", p_idle->name);
 
 		for (i = 0; i < nr_cpu_ids; i++)
 			idle_buf_append(idle_state_log
-				, "[%d] = (%lu,%lu), "
-				, i, p_idle->cnt[i]
-				, idle_prof[IDLE_TYPE_RG].block.cnt[i]);
+				, "[%d] = (%lu), "
+				, i, p_idle->cnt[i]);
 
 		pr_notice("Power/swap %s\n", get_idle_buf(idle_state_log));
 
@@ -489,7 +488,7 @@ void mtk_idle_block_setting(
 				type);
 
 	#if SPM_MET_TAGGING
-	if (type == IDLE_TYPE_RGIDLE)
+	if (type == IDLE_TYPE_RG)
 		met_tag_init();
 	#endif
 }

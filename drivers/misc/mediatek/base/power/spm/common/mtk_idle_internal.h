@@ -106,7 +106,6 @@ int mtk_idle_enter(
  *******************************************************************/
 
 unsigned int spm_get_resource_usage(void);
-void spm_resource_req_init(void);
 
 
 /********************************************************************

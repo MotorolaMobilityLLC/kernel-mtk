@@ -87,27 +87,27 @@ static struct idle_cond_info idle_cg_info[] = {
 static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 	[IDLE_TYPE_DP] = {
 		0x00200038, /* MTCMOS, 21:VEN,5:ISP,4:MFG,3:DIS */
-		0x08040802,	/* INFRA0 */
-		0x03AFB800,	/* INFRA1 */
+		0x08040802,	/* INFRA0, 27:dxcc_sec_core_cg_sta */
+		0x03BFB800,	/* INFRA1 */
 		0x000000C5,	/* INFRA2 */
-		0xFFFFFFFB,	/* MMSYS0 */
-		0x000003FF,	/* MMSYS1 */
+		0x3FFFFFFF,	/* MMSYS0 */
+		0x00000000,	/* MMSYS1 */
 	},
 	[IDLE_TYPE_SO3] = {
 		0x00200030, /* MTCMOS, 21:VEN,5:ISP,4:MFG */
-		0x0A040802,	/* INFRA0 */
-		0x03AFB800,	/* INFRA1 */
+		0x0A040802,	/* INFRA0, 27:dxcc_sec_core_cg_sta */
+		0x03BFB800,	/* INFRA1 */
 		0x000000D1,	/* INFRA2 */
-		0xFFFFFFFB,	/* MMSYS0 */
-		0x000003FF,	/* MMSYS1 */
+		0x3FFFFFFF,	/* MMSYS0 */
+		0x00000000,	/* MMSYS1 */
 	},
 	[IDLE_TYPE_SO] = {
 		0x00200030, /* MTCMOS, 21:VEN,5:ISP,4:MFG */
-		0x08040802,	/* INFRA0 */
-		0x03AFB800,	/* INFRA1 */
+		0x08040802,	/* INFRA0, 27:dxcc_sec_core_cg_sta */
+		0x03BFB800,	/* INFRA1 */
 		0x000000C1,	/* INFRA2 */
-		0x000DFFE0,	/* MMSYS0 */
-		0x00000170,	/* MMSYS1 */
+		0x0F84005F,	/* MMSYS0 */
+		0x00000000,	/* MMSYS1 */
 	},
 	[IDLE_TYPE_RG] = {
 		0, 0, 0, 0, 0, 0},
@@ -260,10 +260,8 @@ static void update_secure_cg_state(unsigned int clk[NR_CG_GRPS])
 
 	clk[1] = clk[1] & ~INFRAO0_BIT27;
 
-#if 0 //FIXME
 	if (mt_secure_call(MTK_SIP_KERNEL_CHECK_SECURE_CG, 0, 0, 0, 0))
 		clk[1] |= INFRAO0_BIT27;
-#endif
 }
 
 /* update all idle condition state: mtcmos/pll/cg/secure_cg */
