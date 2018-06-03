@@ -4657,11 +4657,13 @@ int mtk_nand_exec_read_page_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4Pa
 					/*pr_err("mtk_nand_check_bch_error fail, retryCount: %d\n", retryCount);*/
 				bRet = ERR_RTN_BCH_FAIL;
 			} else {
+#if 0
 				if ((0 != (DRV_Reg32(NFI_STA_REG32) & STA_READ_EMPTY)) && (retryCount != 0)) {
 					pr_err("read retry read empty page, return as uncorrectable\n");
 					mtd->ecc_stats.failed += data_sector_num;
 					bRet = ERR_RTN_BCH_FAIL;
 				}
+#endif
 			}
 		}
 		mtk_nand_stop_read();
@@ -5115,12 +5117,14 @@ bool mtk_nand_exec_read_sector_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u
 				/* pr_err("mtk_nand_check_bch_error fail, retryCount:%d\n", retryCount); */
 				bRet = ERR_RTN_BCH_FAIL;
 			} else {
+#if 0
 				if (0 != (DRV_Reg32(NFI_STA_REG32) & STA_READ_EMPTY) &&
 					(retryCount != 0)) {
 					pr_debug("NFI read retry read empty page, return as uecc\n");
 					mtd->ecc_stats.failed += data_sector_num[logical_plane_num - 1];
 					bRet = ERR_RTN_BCH_FAIL;
 				}
+#endif
 			}
 		}
 		mtk_nand_stop_read();
