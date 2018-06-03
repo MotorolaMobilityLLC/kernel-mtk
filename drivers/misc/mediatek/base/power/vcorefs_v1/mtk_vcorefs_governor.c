@@ -64,8 +64,14 @@ __weak int sdio_autok(void)
 /*
  * PMIC
  */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#define PMIC_VCORE_ADDR PMIC_RG_BUCK_VCORE_VOSEL_ADDR
+#define VCORE_BASE_UV		406250
+#else
 #define PMIC_VCORE_ADDR MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR
 #define VCORE_BASE_UV		600000
+#endif
+
 #define VCORE_STEP_UV		6250
 
 #define VCORE_INVALID		0x80
