@@ -22,14 +22,17 @@
 #include <linux/err.h>
 #include <linux/syscalls.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include <charging.h>
-#include <tmp_battery.h>
 #include <linux/uidgid.h>
 #include <linux/notifier.h>
 #include <linux/fb.h>
 #include "mach/mtk_thermal.h"
-#include <mtk_pep30_intf.h>
-
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+#include <mt-plat/charger_type.h>
+#include <mt-plat/mtk_charger.h>
+#else
+#include <tmp_battery.h>
+#include <charging.h>
+#endif
 /* ************************************ */
 /* Weak functions */
 /* ************************************ */
