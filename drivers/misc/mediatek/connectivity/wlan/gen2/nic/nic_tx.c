@@ -142,6 +142,8 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN BO
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
 	P_QUE_MGT_T prQM;
+	BOOLEAN fgWmtCoreDump = FALSE;
+
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -200,9 +202,17 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN BO
 			cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
 			glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
 			/* dump TC4[0] ~ TC4[3] TX_DESC */
+
 			wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
-			kalSendAeeWarning("[TC4 no resource delay 5s!]", __func__);
-			glDoChipReset();
+
+			fgWmtCoreDump = glIsWmtCodeDump();
+			if (fgWmtCoreDump == FALSE) {
+				kalSendAeeWarning("[TC4 no resource delay 5s!]", __func__);
+				glDoChipReset();
+			} else
+				DBGLOG(TX, WARN,
+					"[TC4 no resource delay 5s!] WMT is code dumping! STOP AEE & chip reset\n");
+
 			u4CurrTick = 0;
 		}
 
