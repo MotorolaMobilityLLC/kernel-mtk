@@ -108,6 +108,9 @@ int Ripi_cpu_dvfs_thread(void *data)
 				cpu_dvfs_get_freq_by_idx(p, (int)((pwdata[1] >> (8*i+4)) & 0xF)),
 				cpu_dvfs_get_freq_by_idx(p, (int)((pwdata[1] >> (8*i)) & 0xF)));
 #endif
+			if (!p->armpll_is_available)
+				continue;
+
 			if (p->idx_opp_tbl != (int)((pwdata[0] >> (8*i)) & 0xF)) {
 				freqs.old = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl);
 				freqs.new = cpu_dvfs_get_freq_by_idx(p, (int)(pwdata[0] >> (8*i)) & 0xF);
@@ -119,7 +122,7 @@ int Ripi_cpu_dvfs_thread(void *data)
 				}
 			}
 			/* cpufreq_para_lock(para_flags); */
-			if (p->armpll_is_available && p->mt_policy && p->mt_policy->governor) {
+			if (p->mt_policy && p->mt_policy->governor) {
 				p->idx_opp_ppm_base = (int)((pwdata[1] >> (8*i)) & 0xF);
 				p->idx_opp_ppm_limit = (int)((pwdata[1] >> (8*i+4)) & 0xF);
 				p->mt_policy->min =
