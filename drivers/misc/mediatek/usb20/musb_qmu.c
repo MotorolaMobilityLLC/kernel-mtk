@@ -55,23 +55,12 @@ static void do_low_power_timer_monitor_work(struct work_struct *work)
 {
 	static int state = IDLE_STAGE;
 	static unsigned int last_trigger_cnt;
-	struct usb_composite_dev *cdev = NULL;
-	char *usb_state = "NO-CDEV";
 
-	if (mtk_musb && mtk_musb->is_ready) {
-		cdev = (mtk_musb->g).ep0->driver_data;
-		usb_state = "DISCONNECTED";
-	}
-
-	if (cdev && cdev->config)
-		usb_state = "CONFIGURED";
-
-	DBG(0, "state:%s, last:%d, balanced<%d,%d>, usb_state:%s\n",
+	DBG(0, "state:%s, last:%d, balanced<%d,%d>\n",
 			state?"RUNNING_STAGE":"IDLE_STAGE",
 			last_trigger_cnt,
 			low_power_timer_total_trigger_cnt,
-			low_power_timer_total_wake_cnt,
-			usb_state);
+			low_power_timer_total_wake_cnt);
 
 	if (state == IDLE_STAGE) {
 		if (last_trigger_cnt != low_power_timer_total_trigger_cnt)
