@@ -28,7 +28,9 @@
 #ifdef CONFIG_ARM64
 #define IOMEM(a)	((void __force __iomem *)((a)))
 #endif
-
+static DEFINE_SPINLOCK(mipi_lock);
+#define apmixed_mipi_lock(flags)   spin_lock_irqsave(&mipi_lock, flags)
+#define apmixed_mipi_unlock(flags) spin_unlock_irqrestore(&mipi_lock, flags)
 #define mt_reg_sync_writel(v, a) \
 	do { \
 		__raw_writel((v), IOMEM(a)); \
@@ -1795,6 +1797,36 @@ void mipic_26m_en(int en)
 		clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) | 0x00000840);
 	else
 		clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xfffff7bf);
+}
+
+/*
+* module_idx mapping
+* display  ->    0
+* camera   ->    1
+*/
+void mipi_26m_en(unsigned int module_idx, int en)
+{
+	unsigned long flags;
+
+	apmixed_mipi_lock(flags);
+
+	if (module_idx == 0) {
+		/* [17:16] MIPID 26M */
+		if (en)
+			clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) | 0x00030000);
+		else
+			clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xfffcffff);
+	} else if (module_idx == 1) {
+		/* [6] MIPIC0 26M */
+		/* [11] MIPIC1 26M */
+		if (en)
+			clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) | 0x00000840);
+		else
+			clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xfffff7bf);
+	} else {
+	}
+
+	apmixed_mipi_unlock(flags);
 }
 
 unsigned int mt_get_ckgen_freq(unsigned int ID)
