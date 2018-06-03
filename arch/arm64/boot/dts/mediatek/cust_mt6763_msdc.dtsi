@@ -9,9 +9,9 @@
 	max-frequency = <200000000>;
 	cap-mmc-highspeed;
 	msdc-sys-suspend;
-	/*mmc-ddr-1_8v;*/
-	/*mmc-hs200-1_8v;*/
-	/*mmc-hs400-1_8v;*/
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
+	mmc-hs400-1_8v;
 	non-removable;
 	pinctl = <&msdc0_pins_default>;
 	register_setting = <&msdc0_register_setting_default>;

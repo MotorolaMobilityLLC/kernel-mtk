@@ -469,6 +469,7 @@ void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
 void msdc_init_tune_setting(struct msdc_host *host)
 {
 	void __iomem *base = host->base, *base_top = host->base_top;
+	u32 val;
 
 	/* FIX ME: check if always convered by autok */
 	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY,
@@ -484,7 +485,8 @@ void msdc_init_tune_setting(struct msdc_host *host)
 			(PAD_DS_DLY3 | PAD_DS_DLY2 | PAD_DS_DLY1), 0);
 	}
 
-	MSDC_WRITE32(MSDC_IOCON, 0x00000000);
+	val = MSDC_READ32(MSDC_IOCON) & MSDC_IOCON_DDR50CKD;
+	MSDC_WRITE32(MSDC_IOCON, val);
 
 	MSDC_WRITE32(MSDC_DAT_RDDLY0, 0x00000000);
 	MSDC_WRITE32(MSDC_DAT_RDDLY1, 0x00000000);

@@ -615,7 +615,7 @@ void msdc_dump_padctl_by_id(u32 id)
 	}
 
 	if (id == 0) {
-		pr_err("MSDC0 MODE16 [0x%p] =0x%8x\tshould: 0x222121?? or 0x111111??n",
+		pr_err("MSDC0 MODE16 [0x%p] =0x%8x\tshould: 0x222121?? or 0x111111??\n",
 			MSDC0_GPIO_MODE16, MSDC_READ32(MSDC0_GPIO_MODE16));
 		pr_err("MSDC0 MODE17 [0x%p] =0x%8x\tshould: 0x??121122 or 0x??111111\n",
 			MSDC0_GPIO_MODE17, MSDC_READ32(MSDC0_GPIO_MODE17));
@@ -1333,7 +1333,7 @@ u16 msdc_offsets[] = {
 	OFFSET_SDC_CSTS,
 	OFFSET_SDC_CSTS_EN,
 	OFFSET_SDC_DCRC_STS,
-	OFFSET_SDC_CMD_STS,
+	OFFSET_SDC_ADV_CFG0,
 	OFFSET_EMMC_CFG0,
 	OFFSET_EMMC_CFG1,
 	OFFSET_EMMC_STS,

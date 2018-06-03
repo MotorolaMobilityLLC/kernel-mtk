@@ -202,6 +202,10 @@ enum EXD_RW_FLAG {
 	EXT_WRITE,
 };
 
+struct autok_host {
+	u32 clk_tx;
+};
+
 unsigned int autok_debug_level = AUTOK_DBG_RES;
 
 const struct AUTOK_PARAM_INFO autok_param_info[] = {
@@ -255,6 +259,7 @@ const struct AUTOK_PARAM_INFO autok_param_info[] = {
 	{{0, 31}, "CKGEN_MSDC_DLY_SEL"},
 	{{1, 7}, "CMD_RSP_TA_CNTR"},
 	{{1, 7}, "WRDAT_CRCS_TA_CNTR"},
+	{{0, 1}, "SDC_RX_ENHANCE"},
 };
 
 /**********************************************************
@@ -378,7 +383,8 @@ end:
 	return ret;
 }
 
-static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum TUNE_TYPE tune_type_value)
+static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode,
+	enum TUNE_TYPE tune_type_value, struct autok_host *host_para)
 {
 	void __iomem *base = host->base;
 	unsigned int value;
@@ -393,6 +399,7 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 	unsigned int fifo_1k_cnt = 0;
 	unsigned int i = 0;
 	int ret = E_RESULT_PASS;
+	unsigned int clk_tx_pre = 0;
 
 	switch (opcode) {
 	case MMC_SEND_EXT_CSD:
@@ -489,6 +496,8 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 			MSDC_WRITE32(SDC_BLK_NUM, 1);
 		break;
 	case MMC_WRITE_BLOCK:
+		/* get clk tx dly, for SD card tune clk tx */
+		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY, clk_tx_pre);
 		rawcmd = (512 << 16) | (1 << 13) | (1 << 11) | (1 << 7) | (24);
 		arg = TUNE_DATA_TX_ADDR;
 		MSDC_WRITE32(SDC_BLK_NUM, 1);
@@ -584,11 +593,22 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 			}
 		} else if ((tune_type_value == TUNE_DATA) && ((opcode == MMC_WRITE_BLOCK)
 		|| (opcode == MMC_WRITE_REQUESTED_QUEUE) || (opcode == MMC_WRITE_MULTIPLE_BLOCK))) {
-			for (i = 0; i < 64; i++) {
-				MSDC_WRITE32(MSDC_TXDATA, 0xf0f0f0f0);
-				MSDC_WRITE32(MSDC_TXDATA, 0x0f0f0f0f);
+			if (host->hw->host_function == MSDC_SD) {
+				MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY, host_para->clk_tx);
+				for (i = 0; i < 63; i++) {
+					MSDC_WRITE32(MSDC_TXDATA, 0xa5a5a5a5);
+					MSDC_WRITE32(MSDC_TXDATA, 0x1c345678);
+				}
+				/* restore clk tx brefore half data transfer */
+				MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY, clk_tx_pre);
+				MSDC_WRITE32(MSDC_TXDATA, 0xa5a5a5a5);
+				MSDC_WRITE32(MSDC_TXDATA, 0x1c345678);
+			} else {
+				for (i = 0; i < 64; i++) {
+					MSDC_WRITE32(MSDC_TXDATA, 0xf0f0f0f0);
+					MSDC_WRITE32(MSDC_TXDATA, 0x0f0f0f0f);
+				}
 			}
-
 			write_tmo = AUTOK_DAT_TIMEOUT;
 			wait_cond_tmo(!(MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY), write_tmo);
 			if (write_tmo == 0) {
@@ -2001,6 +2021,27 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		reg = (u32 *) MSDC_PATCH_BIT1;
 		field = (u32) (MSDC_PB1_WRDAT_CRCS_TA_CNTR);
 		break;
+	case SDC_RX_ENHANCE:
+		if ((rw == AUTOK_WRITE) && (*value > 7)) {
+			pr_debug
+			    ("[%s] Input value(%d) for SDC_RX_ENHANCE is out of range, it should be [0~7]\n",
+			     __func__, *value);
+			return -1;
+		}
+		if (((host->hw->host_function == MSDC_EMMC) && (platform_top_ctrl.msdc0_rx_enhance_top == 1))
+			|| ((host->hw->host_function == MSDC_SD) && (platform_top_ctrl.msdc1_rx_enhance_top == 1))
+			|| ((host->hw->host_function == MSDC_SDIO) && (platform_top_ctrl.msdc2_rx_enhance_top == 1))) {
+#if !defined(FPGA_PLATFORM)
+			reg = (u32 *) EMMC_TOP_CONTROL;
+			field = (u32) (AUTOK_TOP_SDC_RX_ENHANCE_EN);
+#else
+			return 0;
+#endif
+		} else {
+			reg = (u32 *) SDC_ADV_CFG0;
+			field = (u32) (AUTOK_SDC_RX_ENH_EN);
+		}
+		break;
 	case PAD_CLK_TXDLY_AUTOK:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
 			pr_debug
@@ -2409,6 +2450,7 @@ static int autok_result_dump(struct msdc_host *host, u8 *autok_tune_res)
 		autok_tune_res[13], autok_tune_res[9], autok_tune_res[11]);
 	AUTOK_RAWPRINT("[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
 		autok_tune_res[14], autok_tune_res[16], autok_tune_res[18]);
+	AUTOK_RAWPRINT("[AUTOK]CLK TX  [%d]\r\n", autok_tune_res[28]);
 	AUTOK_RAWPRINT("[AUTOK]CMD TX  [%d]\r\n", autok_tune_res[19]);
 	if (host->hw->host_function == MSDC_EMMC) {
 		AUTOK_RAWPRINT("[AUTOK]DAT TX  [D0:%d D1:%d D2:%d D3:%d]\r\n",
@@ -2442,6 +2484,7 @@ static int autok_register_dump(struct msdc_host *host)
 		autok_tune_res[13], autok_tune_res[9], autok_tune_res[11]);
 	AUTOK_RAWPRINT("[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
 		autok_tune_res[14], autok_tune_res[16], autok_tune_res[18]);
+	AUTOK_RAWPRINT("[AUTOK]CLK TX  [%d]\r\n", autok_tune_res[28]);
 	AUTOK_RAWPRINT("[AUTOK]CMD TX  [%d]\r\n", autok_tune_res[19]);
 	if (host->hw->host_function == MSDC_EMMC) {
 		AUTOK_RAWPRINT("[AUTOK]DAT TX  [D0:%d D1:%d D2:%d D3:%d]\r\n",
@@ -2733,10 +2776,16 @@ int autok_init_ddr208(struct msdc_host *host)
 	autok_path_sel(host);
 
 	/* if any specific config need modify add here */
-	/* LATCH_TA_EN Config for WCRC Path non_HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, platform_para_rx.latch_en_crc_ddr208);
-	/* LATCH_TA_EN Config for CMD Path non_HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, platform_para_rx.latch_en_cmd_ddr208);
+	if (platform_para_func.rx_enhance) {
+		autok_write_param(host, SDC_RX_ENHANCE, 1);
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, 0);
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, 0);
+	} else {
+		/* LATCH_TA_EN Config for WCRC Path non_HS400 */
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, platform_para_rx.latch_en_crc_ddr208);
+		/* LATCH_TA_EN Config for CMD Path non_HS400 */
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, platform_para_rx.latch_en_cmd_ddr208);
+	}
 	/* response path switch to emmc50 */
 #if SDIO_PLUS_CMD_TUNE
 	autok_write_param(host, EMMC50_CMD_MUX_EN, 0);
@@ -2761,6 +2810,7 @@ int autok_init_ddr208(struct msdc_host *host)
 	}
 	MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_READ_DAT_CNT, platform_para_rx.read_dat_cnt_ddr208);
 	MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_END_BIT_CHK_CNT, platform_para_rx.end_bit_chk_cnt_ddr208);
+	MSDC_SET_FIELD(EMMC50_CFG1, MSDC_EMMC50_CFG1_CKSWITCH_CNT, platform_para_rx.latchck_switch_cnt_ddr208);
 
 	return 0;
 }
@@ -2781,16 +2831,33 @@ int autok_init_sdr104(struct msdc_host *host)
 	autok_path_sel(host);
 
 	/* if any specific config need modify add here */
-	if (host->sclk <= 100000000) {
-		/* LATCH_TA_EN Config for WCRC Path HS FS mode */
-		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, platform_para_rx.latch_en_crc_hs);
-		/* LATCH_TA_EN Config for CMD Path HS FS mode */
-		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, platform_para_rx.latch_en_cmd_hs);
+	if (platform_para_func.rx_enhance) {
+		autok_write_param(host, SDC_RX_ENHANCE, 1);
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, 0);
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, 0);
 	} else {
-		/* LATCH_TA_EN Config for WCRC Path SDR104 mode */
-		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, platform_para_rx.latch_en_crc_sdr104);
-		/* LATCH_TA_EN Config for CMD Path SDR104 mode */
-		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, platform_para_rx.latch_en_cmd_sdr104);
+		if (host->sclk <= 100000000) {
+			/* LATCH_TA_EN Config for WCRC Path HS FS mode */
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL,
+				platform_para_rx.latch_en_crc_hs);
+			/* LATCH_TA_EN Config for CMD Path HS FS mode */
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL,
+				platform_para_rx.latch_en_cmd_hs);
+		} else if (host->hw->host_function == MSDC_SD) {
+			/* LATCH_TA_EN Config for WCRC Path SDR104 mode */
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL,
+				platform_para_rx.latch_en_crc_sd_sdr104);
+			/* LATCH_TA_EN Config for CMD Path SDR104 mode */
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL,
+				platform_para_rx.latch_en_cmd_sd_sdr104);
+		} else if (host->hw->host_function == MSDC_SDIO) {
+			/* LATCH_TA_EN Config for WCRC Path SDR104 mode */
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL,
+				platform_para_rx.latch_en_crc_sdio_sdr104);
+			/* LATCH_TA_EN Config for CMD Path SDR104 mode */
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL,
+				platform_para_rx.latch_en_cmd_sdio_sdr104);
+		}
 	}
 	/* enable dvfs feature */
 	/* if (host->hw->host_function == MSDC_SDIO) */
@@ -2829,11 +2896,16 @@ int autok_init_hs200(struct msdc_host *host)
 	autok_path_sel(host);
 
 	/* if any specific config need modify add here */
-	/* LATCH_TA_EN Config for WCRC Path non_HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, platform_para_rx.latch_en_crc_hs200);
-	/* LATCH_TA_EN Config for CMD Path non_HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, platform_para_rx.latch_en_cmd_hs200);
-
+	if (platform_para_func.rx_enhance) {
+		autok_write_param(host, SDC_RX_ENHANCE, 1);
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, 0);
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, 0);
+	} else {
+		/* LATCH_TA_EN Config for WCRC Path non_HS400 */
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, platform_para_rx.latch_en_crc_hs200);
+		/* LATCH_TA_EN Config for CMD Path non_HS400 */
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, platform_para_rx.latch_en_cmd_hs200);
+	}
 	if (platform_para_func.multi_sync == 0) {
 		if (platform_para_func.new_path_hs200 == 1) {
 			MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, platform_para_rx.new_stop_hs200);
@@ -2868,10 +2940,16 @@ int autok_init_hs400(struct msdc_host *host)
 	autok_path_sel(host);
 
 	/* if any specific config need modify add here */
-	/* LATCH_TA_EN Config for WCRC Path HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, platform_para_rx.latch_en_crc_hs400);
-	/* LATCH_TA_EN Config for CMD Path HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, platform_para_rx.latch_en_cmd_hs400);
+	if (platform_para_func.rx_enhance) {
+		autok_write_param(host, SDC_RX_ENHANCE, 1);
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, 0);
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, 0);
+	} else {
+		/* LATCH_TA_EN Config for WCRC Path HS400 */
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, platform_para_rx.latch_en_crc_hs400);
+		/* LATCH_TA_EN Config for CMD Path HS400 */
+		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, platform_para_rx.latch_en_cmd_hs400);
+	}
 	/* write path switch to emmc50 */
 	autok_write_param(host, EMMC50_WDATA_MUX_EN, 1);
 	/* Specifical for HS400 Path Sel */
@@ -2887,6 +2965,7 @@ int autok_init_hs400(struct msdc_host *host)
 	}
 	MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_READ_DAT_CNT, platform_para_rx.read_dat_cnt_hs400);
 	MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_END_BIT_CHK_CNT, platform_para_rx.end_bit_chk_cnt_hs400);
+	MSDC_SET_FIELD(EMMC50_CFG1, MSDC_EMMC50_CFG1_CKSWITCH_CNT, platform_para_rx.latchck_switch_cnt_hs400);
 
 	return 0;
 }
@@ -2909,9 +2988,11 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	u8 p_autok_tune_res[TUNING_PARA_SCAN_COUNT];
 	unsigned int opcode = MMC_SEND_STATUS;
 	unsigned int uDatDly = 0;
+	struct autok_host autok_host_para;
 	struct AUTOK_PLAT_PARA_RX platform_para_rx;
 	struct AUTOK_PLAT_PARA_TX platform_para_tx;
 
+	memset(&autok_host_para, 0, sizeof(struct autok_host));
 	memset(&platform_para_rx, 0, sizeof(struct AUTOK_PLAT_PARA_RX));
 	memset(&platform_para_tx, 0, sizeof(struct AUTOK_PLAT_PARA_TX));
 	get_platform_para_rx(platform_para_rx);
@@ -2920,6 +3001,27 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	autok_init_hs400(host);
 	memset((void *)p_autok_tune_res, 0, sizeof(p_autok_tune_res) / sizeof(u8));
 
+	/* restore TX value */
+	autok_param_update(PAD_CLK_TXDLY_AUTOK,
+		platform_para_tx.msdc0_hs400_clktx, p_autok_tune_res);
+	autok_param_update(EMMC50_CMD_TX_DLY,
+		platform_para_tx.msdc0_hs400_cmdtx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA0_TX_DLY,
+		platform_para_tx.msdc0_hs400_dat0tx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA1_TX_DLY,
+		platform_para_tx.msdc0_hs400_dat1tx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA2_TX_DLY,
+		platform_para_tx.msdc0_hs400_dat2tx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA3_TX_DLY,
+		platform_para_tx.msdc0_hs400_dat3tx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA4_TX_DLY,
+		platform_para_tx.msdc0_hs400_dat4tx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA5_TX_DLY,
+		platform_para_tx.msdc0_hs400_dat5tx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA6_TX_DLY,
+		platform_para_tx.msdc0_hs400_dat6tx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA7_TX_DLY,
+		platform_para_tx.msdc0_hs400_dat7tx, p_autok_tune_res);
 	/* Step1 : Tuning Cmd Path */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
@@ -2932,7 +3034,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 		for (j = 0; j < 64; j++) {
 			msdc_autok_adjust_paddly(host, &j, CMD_PAD_RDLY);
 			for (k = 0; k < AUTOK_CMD_TIMES / 2; k++) {
-				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD);
+				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD, &autok_host_para);
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					RawData64 |= (u64)(1LL << j);
 					break;
@@ -2972,14 +3074,14 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 #endif
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	/* check device status */
-	ret = autok_send_tune_cmd(host, MMC_SEND_STATUS, TUNE_CMD);
+	ret = autok_send_tune_cmd(host, MMC_SEND_STATUS, TUNE_CMD, &autok_host_para);
 	if (ret == E_RESULT_PASS) {
 		response = MSDC_READ32(SDC_RESP0);
 		AUTOK_RAWPRINT("[AUTOK]current device status 0x%08x\r\n", response);
 	} else
 		AUTOK_RAWPRINT("[AUTOK]CMD error while check device status\r\n");
 	/* check QSR status */
-	ret = autok_send_tune_cmd(host, CHECK_QSR, TUNE_CMD);
+	ret = autok_send_tune_cmd(host, CHECK_QSR, TUNE_CMD, &autok_host_para);
 	if (ret == E_RESULT_PASS) {
 		response = MSDC_READ32(SDC_RESP0);
 		AUTOK_RAWPRINT("[AUTOK]current QSR 0x%08x\r\n", response);
@@ -2989,7 +3091,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	for (j = 0; j < 32; j++) {
 		msdc_autok_adjust_paddly(host, &j, DAT_PAD_RDLY);
 		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
-			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
+			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA, &autok_host_para);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 				AUTOK_RAWPRINT
 				    ("[AUTOK]Error Autok CMD Failed while tune DATA PAD Delay\r\n");
@@ -3014,7 +3116,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	for (j = 0; j < 32; j++) {
 		msdc_autok_adjust_paddly(host, &j, DS_PAD_RDLY);
 		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
-			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
+			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA, &autok_host_para);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 				AUTOK_RAWPRINT
 				    ("[AUTOK]Error Autok CMD Failed while tune DS Delay\r\n");
@@ -3041,25 +3143,6 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
 	}
-	/* restore TX value */
-	autok_param_update(EMMC50_CMD_TX_DLY,
-		platform_para_tx.msdc0_hs400_cmdtx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA0_TX_DLY,
-		platform_para_tx.msdc0_hs400_dat0tx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA1_TX_DLY,
-		platform_para_tx.msdc0_hs400_dat1tx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA2_TX_DLY,
-		platform_para_tx.msdc0_hs400_dat2tx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA3_TX_DLY,
-		platform_para_tx.msdc0_hs400_dat3tx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA4_TX_DLY,
-		platform_para_tx.msdc0_hs400_dat4tx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA5_TX_DLY,
-		platform_para_tx.msdc0_hs400_dat5tx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA6_TX_DLY,
-		platform_para_tx.msdc0_hs400_dat6tx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA7_TX_DLY,
-		platform_para_tx.msdc0_hs400_dat7tx, p_autok_tune_res);
 
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	autok_result_dump(host, p_autok_tune_res);
@@ -3091,7 +3174,9 @@ int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 	char tune_result_str64[65];
 	u8 p_autok_tune_res[5];
 	unsigned int opcode = MMC_SEND_STATUS;
+	struct autok_host autok_host_para;
 
+	memset(&autok_host_para, 0, sizeof(struct autok_host));
 	memset((void *)p_autok_tune_res, 0, sizeof(p_autok_tune_res) / sizeof(u8));
 
 	/* Tuning Cmd Path */
@@ -3105,7 +3190,7 @@ int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 		for (j = 0; j < 64; j++) {
 			msdc_autok_adjust_paddly(host, &j, CMD_PAD_RDLY);
 			for (k = 0; k < AUTOK_CMD_TIMES / 2; k++) {
-				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD);
+				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD, &autok_host_para);
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					RawData64 |= (u64)(1LL << j);
 					break;
@@ -3165,8 +3250,10 @@ int autok_execute_tuning_latch_ck(struct msdc_host *host, unsigned int opcode,
 	unsigned int j, k;
 	void __iomem *base = host->base;
 	unsigned int tune_time;
+	struct autok_host autok_host_para;
 	struct AUTOK_PLAT_PARA_MISC platform_para_misc;
 
+	memset(&autok_host_para, 0, sizeof(struct autok_host));
 	memset(&platform_para_misc, 0, sizeof(struct AUTOK_PLAT_PARA_MISC));
 	get_platform_para_misc(platform_para_misc);
 	MSDC_WRITE32(MSDC_INT, 0xffffffff);
@@ -3213,7 +3300,7 @@ int autok_execute_tuning_latch_ck(struct msdc_host *host, unsigned int opcode,
 				host->tune_latch_ck_cnt = k + 1;
 			} else
 				host->tune_latch_ck_cnt++;
-			ret = autok_send_tune_cmd(host, opcode, TUNE_LATCH_CK);
+			ret = autok_send_tune_cmd(host, opcode, TUNE_LATCH_CK, &autok_host_para);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 				AUTOK_RAWPRINT("[AUTOK]Error Autok CMD Failed while tune LATCH CK\r\n");
 				break;
@@ -3249,13 +3336,22 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 	char tune_result_str64[65];
 	u8 p_autok_tune_res[TUNING_PARA_SCAN_COUNT];
 	unsigned int opcode = MMC_SEND_STATUS;
+	struct autok_host autok_host_para;
 	struct AUTOK_PLAT_FUNC platform_para_func;
+	struct AUTOK_PLAT_PARA_TX platform_para_tx;
 
+	memset(&autok_host_para, 0, sizeof(struct autok_host));
 	memset(&platform_para_func, 0, sizeof(struct AUTOK_PLAT_FUNC));
+	memset(&platform_para_tx, 0, sizeof(struct AUTOK_PLAT_PARA_TX));
 	get_platform_func(platform_para_func);
+	get_platform_para_tx(platform_para_tx);
 
 	autok_init_hs200(host);
 	memset((void *)p_autok_tune_res, 0, sizeof(p_autok_tune_res) / sizeof(u8));
+
+	/* restore TX value */
+	autok_param_update(PAD_CLK_TXDLY_AUTOK,
+		platform_para_tx.msdc0_clktx, p_autok_tune_res);
 
 	/* Step1 : Tuning Cmd Path */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
@@ -3269,7 +3365,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 		for (j = 0; j < 64; j++) {
 			msdc_autok_adjust_paddly(host, &j, CMD_PAD_RDLY);
 			for (k = 0; k < AUTOK_CMD_TIMES; k++) {
-				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD);
+				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD, &autok_host_para);
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					RawData64 |= (u64) (1LL << j);
 					break;
@@ -3303,7 +3399,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 	/* Step2 Tuning Data Path (Only Rising Edge Used) */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	/* check device status */
-	ret = autok_send_tune_cmd(host, 13, TUNE_CMD);
+	ret = autok_send_tune_cmd(host, 13, TUNE_CMD, &autok_host_para);
 	if (ret == E_RESULT_PASS) {
 		response = MSDC_READ32(SDC_RESP0);
 		AUTOK_RAWPRINT("[AUTOK]current device status 0x%08x\r\n", response);
@@ -3320,7 +3416,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 		for (j = 0; j < 64; j++) {
 			msdc_autok_adjust_paddly(host, &j, DAT_PAD_RDLY);
 			for (k = 0; k < AUTOK_CMD_TIMES / 2; k++) {
-				ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
+				ret = autok_send_tune_cmd(host, opcode, TUNE_DATA, &autok_host_para);
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					AUTOK_RAWPRINT("[AUTOK]Error Autok CMD Failed while tune Read\r\n");
 					return -1;
@@ -3409,9 +3505,11 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	unsigned int cmd_bd_find = 0;
 	unsigned int dat_bd_find = 0;
 #endif
+	struct autok_host autok_host_para;
 	struct AUTOK_PLAT_PARA_RX platform_para_rx;
 	struct AUTOK_PLAT_PARA_TX platform_para_tx;
 
+	memset(&autok_host_para, 0, sizeof(struct autok_host));
 	memset(&platform_para_rx, 0, sizeof(struct AUTOK_PLAT_PARA_RX));
 	memset(&platform_para_tx, 0, sizeof(struct AUTOK_PLAT_PARA_TX));
 	get_platform_para_rx(platform_para_rx);
@@ -3420,6 +3518,19 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	autok_init_ddr208(host);
 	memset((void *)p_autok_tune_res, 0, sizeof(p_autok_tune_res) / sizeof(u8));
 
+	/* restore TX value */
+	autok_param_update(PAD_CLK_TXDLY_AUTOK,
+		platform_para_tx.sdio30_plus_clktx, p_autok_tune_res);
+	autok_param_update(EMMC50_CMD_TX_DLY,
+		platform_para_tx.sdio30_plus_cmdtx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA0_TX_DLY,
+		platform_para_tx.sdio30_plus_dat0tx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA1_TX_DLY,
+		platform_para_tx.sdio30_plus_dat1tx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA2_TX_DLY,
+		platform_para_tx.sdio30_plus_dat2tx, p_autok_tune_res);
+	autok_param_update(EMMC50_DATA3_TX_DLY,
+		platform_para_tx.sdio30_plus_dat3tx, p_autok_tune_res);
 	/* Step1 : Tuning Cmd Path */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
@@ -3435,7 +3546,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 		for (j = 0; j < 64; j++) {
 			msdc_autok_adjust_paddly(host, &j, CMD_PAD_RDLY);
 			for (k = 0; k < AUTOK_CMD_TIMES / 2; k++) {
-				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD);
+				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD, &autok_host_para);
 				if ((ret & E_RESULT_RSP_CRC) != 0) {
 					RawData64 |= (u64) (1LL << j);
 					break;
@@ -3477,7 +3588,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	for (j = 0; j < 32; j++) {
 		msdc_autok_adjust_paddly(host, &j, DAT_PAD_RDLY);
 		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
-			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
+			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA, &autok_host_para);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 				AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]Error CMD Failed while tune DATA\r\n");
 				return -1;
@@ -3505,7 +3616,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	for (j = 0; j < 32; j++) {
 		msdc_autok_adjust_paddly(host, &j, DS_PAD_RDLY);
 		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
-			ret = autok_send_tune_cmd(host, opcode, TUNE_SDIO_PLUS);
+			ret = autok_send_tune_cmd(host, opcode, TUNE_SDIO_PLUS, &autok_host_para);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 				AUTOK_RAWPRINT
 				    ("[AUTOK]Error Autok CMD Failed while tune DS Delay\r\n");
@@ -3546,7 +3657,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 		if (dat_bd_find == 0)
 			msdc_autok_adjust_paddly(host, &j, DAT_PAD_RDLY);
 		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
-			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
+			ret = autok_send_tune_cmd(host, opcode, TUNE_SDIO_PLUS, &autok_host_para);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 				if (cmd_bd_find == 0) {
 					cmd_bd_find = 1;
@@ -3585,7 +3696,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	for (j = 0; j < 32; j++) {
 		msdc_autok_adjust_paddly(host, &j, DS_PAD_RDLY);
 		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
-			ret = autok_send_tune_cmd(host, opcode, TUNE_SDIO_PLUS);
+			ret = autok_send_tune_cmd(host, opcode, TUNE_SDIO_PLUS, &autok_host_para);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0)
 				RawCmd64 |= (u64) (1LL << j);
 			else if ((ret & E_RESULT_FATAL_ERR) != 0)
@@ -3630,18 +3741,6 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	}
 #endif
 
-	/* restore TX value */
-	autok_param_update(EMMC50_CMD_TX_DLY,
-		platform_para_tx.sdio30_plus_cmdtx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA0_TX_DLY,
-		platform_para_tx.sdio30_plus_dat0tx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA1_TX_DLY,
-		platform_para_tx.sdio30_plus_dat1tx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA2_TX_DLY,
-		platform_para_tx.sdio30_plus_dat2tx, p_autok_tune_res);
-	autok_param_update(EMMC50_DATA3_TX_DLY,
-		platform_para_tx.sdio30_plus_dat3tx, p_autok_tune_res);
-
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	autok_result_dump(host, p_autok_tune_res);
 #if AUTOK_PARAM_DUMP_ENABLE
@@ -3672,14 +3771,32 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 	struct AUTOK_SCAN_RES *pBdInfo;
 	char tune_result_str64[65];
 	u8 p_autok_tune_res[TUNING_PARA_SCAN_COUNT];
+	struct autok_host autok_host_para;
 	struct AUTOK_PLAT_FUNC platform_para_func;
+	struct AUTOK_PLAT_PARA_TX platform_para_tx;
 
+	memset(&autok_host_para, 0, sizeof(struct autok_host));
 	memset(&platform_para_func, 0, sizeof(struct AUTOK_PLAT_FUNC));
+	memset(&platform_para_tx, 0, sizeof(struct AUTOK_PLAT_PARA_TX));
 	get_platform_func(platform_para_func);
+	get_platform_para_tx(platform_para_tx);
 
 	autok_init_sdr104(host);
 	memset((void *)p_autok_tune_res, 0, sizeof(p_autok_tune_res) / sizeof(u8));
 
+	/* restore TX value */
+	if (host->hw->host_function == MSDC_SDIO) {
+		autok_param_update(PAD_CLK_TXDLY_AUTOK,
+			platform_para_tx.msdc2_clktx, p_autok_tune_res);
+	} else if (host->hw->host_function == MSDC_SD) {
+		if (host->sclk <= 100000000) {
+			autok_param_update(PAD_CLK_TXDLY_AUTOK,
+				platform_para_tx.msdc1_clktx, p_autok_tune_res);
+		} else {
+			autok_param_update(PAD_CLK_TXDLY_AUTOK,
+				platform_para_tx.msdc1_sdr104_clktx, p_autok_tune_res);
+		}
+	}
 	/* Step1 : Tuning Cmd Path */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
@@ -3692,7 +3809,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		for (j = 0; j < 64; j++) {
 			msdc_autok_adjust_paddly(host, &j, CMD_PAD_RDLY);
 			for (k = 0; k < AUTOK_CMD_TIMES / 2; k++) {
-				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD);
+				ret = autok_send_tune_cmd(host, opcode, TUNE_CMD, &autok_host_para);
 				if ((ret & E_RESULT_RSP_CRC) != 0) {
 					RawData64 |= (u64) (1LL << j);
 					break;
@@ -3741,7 +3858,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		for (j = 0; j < 64; j++) {
 			msdc_autok_adjust_paddly(host, &j, DAT_PAD_RDLY);
 			for (k = 0; k < AUTOK_CMD_TIMES / 2; k++) {
-				ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
+				ret = autok_send_tune_cmd(host, opcode, TUNE_DATA, &autok_host_para);
 				if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
 					AUTOK_RAWPRINT
 					    ("[AUTOK]Error Autok CMD Failed while tune Read\r\n");
@@ -3806,9 +3923,11 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 	void __iomem *base = host->base;
 	struct AUTOK_PLAT_PARA_TX platform_para_tx;
 	unsigned int value;
+	unsigned int clk_mode;
 
 	memset(&platform_para_tx, 0, sizeof(struct AUTOK_PLAT_PARA_TX));
 	get_platform_para_tx(platform_para_tx);
+	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, clk_mode);
 	if (host->hw->host_function == MSDC_EMMC) {
 		if (ios->timing == MMC_TIMING_MMC_HS400) {
 			MSDC_SET_FIELD(EMMC50_CFG0,
@@ -3870,7 +3989,7 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 		}
 	} else if (host->hw->host_function == MSDC_SD) {
 		MSDC_SET_FIELD(MSDC_IOCON,
-			MSDC_IOCON_DDR50CKD, platform_para_tx.msdc_ddr_ckd);
+			MSDC_IOCON_DDR50CKD, platform_para_tx.msdc1_ddr_ckd);
 		if (ios->timing == MMC_TIMING_UHS_SDR104) {
 			value = platform_para_tx.msdc1_sdr104_clktx;
 			msdc_autok_adjust_param(host, PAD_CLK_TXDLY_AUTOK, &value, AUTOK_WRITE);
@@ -3879,18 +3998,32 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 			msdc_autok_adjust_param(host, PAD_CLK_TXDLY_AUTOK, &value, AUTOK_WRITE);
 		}
 	} else if (host->hw->host_function == MSDC_SDIO) {
-		value = platform_para_tx.sdio30_plus_clktx;
-		msdc_autok_adjust_param(host, PAD_CLK_TXDLY_AUTOK, &value, AUTOK_WRITE);
-		value = platform_para_tx.sdio30_plus_cmdtx;
-		msdc_autok_adjust_param(host, EMMC50_CMD_TX_DLY, &value, AUTOK_WRITE);
-		value = platform_para_tx.sdio30_plus_dat0tx;
-		msdc_autok_adjust_param(host, EMMC50_DATA0_TX_DLY, &value, AUTOK_WRITE);
-		value = platform_para_tx.sdio30_plus_dat1tx;
-		msdc_autok_adjust_param(host, EMMC50_DATA1_TX_DLY, &value, AUTOK_WRITE);
-		value = platform_para_tx.sdio30_plus_dat2tx;
-		msdc_autok_adjust_param(host, EMMC50_DATA2_TX_DLY, &value, AUTOK_WRITE);
-		value = platform_para_tx.sdio30_plus_dat3tx;
-		msdc_autok_adjust_param(host, EMMC50_DATA3_TX_DLY, &value, AUTOK_WRITE);
+		if ((ios->timing == MMC_TIMING_UHS_DDR50)
+			&& (host->sclk > 200000000)) {
+			MSDC_SET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_DDR50CKD,
+				platform_para_tx.msdc2_ddr_ckd);
+		} else {
+			MSDC_SET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_DDR50CKD, 0);
+		}
+		if (clk_mode == 3) {
+			value = platform_para_tx.sdio30_plus_clktx;
+			msdc_autok_adjust_param(host, PAD_CLK_TXDLY_AUTOK, &value, AUTOK_WRITE);
+			value = platform_para_tx.sdio30_plus_cmdtx;
+			msdc_autok_adjust_param(host, EMMC50_CMD_TX_DLY, &value, AUTOK_WRITE);
+			value = platform_para_tx.sdio30_plus_dat0tx;
+			msdc_autok_adjust_param(host, EMMC50_DATA0_TX_DLY, &value, AUTOK_WRITE);
+			value = platform_para_tx.sdio30_plus_dat1tx;
+			msdc_autok_adjust_param(host, EMMC50_DATA1_TX_DLY, &value, AUTOK_WRITE);
+			value = platform_para_tx.sdio30_plus_dat2tx;
+			msdc_autok_adjust_param(host, EMMC50_DATA2_TX_DLY, &value, AUTOK_WRITE);
+			value = platform_para_tx.sdio30_plus_dat3tx;
+			msdc_autok_adjust_param(host, EMMC50_DATA3_TX_DLY, &value, AUTOK_WRITE);
+		} else {
+			value = platform_para_tx.msdc2_clktx;
+			msdc_autok_adjust_param(host, PAD_CLK_TXDLY_AUTOK, &value, AUTOK_WRITE);
+		}
 	}
 }
 EXPORT_SYMBOL(autok_msdc_tx_setting);
@@ -4296,9 +4429,11 @@ int autok_offline_tuning_device_RX(struct msdc_host *host, u8 *res)
 	unsigned int data_p_rx = 0;
 	unsigned int data_n_rx = 0;
 	u64 Rx64 = 0LL;
+	struct autok_host autok_host_para;
 	struct AUTOK_REF_INFO_NEW uRxInfo;
 	struct AUTOK_SCAN_RES_NEW *pInfo;
 
+	memset(&autok_host_para, 0, sizeof(struct autok_host));
 	memset(&uRxInfo, 0, sizeof(struct AUTOK_REF_INFO_NEW));
 	pInfo = (struct AUTOK_SCAN_RES_NEW *)&(uRxInfo.scan_info[0]);
 	Rx64 = 0LL;
@@ -4367,7 +4502,7 @@ tune_device_rx:
 		tune_pass_cnt[tune_rx_value] = 0;
 		autok_msdc_device_rx_set(host, tune_rx_value, data_p_rx & 0x1f, data_n_rx & 0x1f);
 		for (tune_cnt = 0; tune_cnt < TUNE_TX_CNT; tune_cnt++) {
-			ret = autok_send_tune_cmd(host, MMC_SEND_TUNING_BLOCK, TUNE_SDIO_PLUS);
+			ret = autok_send_tune_cmd(host, MMC_SEND_TUNING_BLOCK, TUNE_SDIO_PLUS, &autok_host_para);
 			if ((ret & E_RESULT_CMD_TMO) != 0) {
 				tune_tmo_cnt[tune_rx_value]++;
 				Rx64 |= (u64) (1LL << tune_rx_value);
@@ -4418,7 +4553,7 @@ tune_device_rx:
 		autok_msdc_device_rx_set(host, cmd_rx & 0x1f, tune_rx_value, tune_rx_value);
 		for (tune_cnt = 0; tune_cnt < TUNE_TX_CNT; tune_cnt++) {
 			/* send cmd53 write data */
-			ret = autok_send_tune_cmd(host, SD_IO_RW_EXTENDED, TUNE_SDIO_PLUS);
+			ret = autok_send_tune_cmd(host, SD_IO_RW_EXTENDED, TUNE_SDIO_PLUS, &autok_host_para);
 			if ((ret & (E_RESULT_RSP_CRC | E_RESULT_CMD_TMO)) != 0) {
 				AUTOK_RAWPRINT("[AUTOK]tune data RX cmd%d occur error\n",
 					MMC_WRITE_BLOCK);
@@ -4429,12 +4564,12 @@ tune_device_rx:
 				tune_tmo_cnt[tune_rx_value]++;
 				Rx64 |= (u64) (1LL << tune_rx_value);
 				/* send CMD52 abort command */
-				autok_send_tune_cmd(host, SD_IO_RW_DIRECT, TUNE_CMD);
+				autok_send_tune_cmd(host, SD_IO_RW_DIRECT, TUNE_CMD, &autok_host_para);
 			} else if ((ret & (E_RESULT_DAT_CRC)) != 0) {
 				tune_crc_cnt[tune_rx_value]++;
 				Rx64 |= (u64) (1LL << tune_rx_value);
 				/* send CMD52 abort command */
-				autok_send_tune_cmd(host, SD_IO_RW_DIRECT, TUNE_CMD);
+				autok_send_tune_cmd(host, SD_IO_RW_DIRECT, TUNE_CMD, &autok_host_para);
 			} else if ((ret & (E_RESULT_PASS)) == 0)
 				tune_pass_cnt[tune_rx_value]++;
 		}
@@ -4474,62 +4609,160 @@ end:
 	return ret;
 }
 
-int autok_emmc_tune_tx(struct msdc_host *host)
+int autok_offline_tuning_clk_TX(struct msdc_host *host, unsigned int opcode)
 {
 	int ret = 0;
 	void __iomem *base = host->base;
-	unsigned int opcode;
 	unsigned int response;
-	struct AUTOK_PLAT_PARA_MISC platform_para_misc;
+	unsigned int data_pin_status = 0xff;
+	unsigned int tune_tx_value;
+	unsigned char tune_cnt;
+	unsigned char i;
+	unsigned char tune_crc_cnt[32];
+	unsigned char tune_pass_cnt[32];
+	unsigned char tune_tmo_cnt[32];
+	char tune_result[33];
+	unsigned int clk_tx;
+	struct autok_host autok_host_para;
 
-	memset(&platform_para_misc, 0, sizeof(struct AUTOK_PLAT_PARA_MISC));
-	get_platform_para_misc(platform_para_misc);
+	memset(&autok_host_para, 0, sizeof(struct autok_host));
+	AUTOK_RAWPRINT("[AUTOK][tune clk TX]=========start========\r\n");
+	/* store tx setting */
+	MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY, clk_tx);
 
-#if 0
-	if (host->cmdq_en == 1) {
-		autok_send_tune_cmd(host, MMC_SET_QUEUE_CONTEXT_WR, TUNE_CMD);
-		autok_send_tune_cmd(host, MMC_QUEUE_READ_ADDRESS, TUNE_CMD);
-		response = 0;
-		while (!(response & 0x1)) {
-			ret = autok_send_tune_cmd(host, CHECK_QSR, TUNE_CMD);
-			if (ret == E_RESULT_PASS)
-				response = MSDC_READ32(SDC_RESP0);
-			else
-				AUTOK_RAWPRINT("[AUTOK]CMD error while check QSR\r\n");
+	/* Step1 : Tuning Clk TX */
+	for (tune_tx_value = 0; tune_tx_value < 32; tune_tx_value++) {
+		tune_tmo_cnt[tune_tx_value] = 0;
+		tune_crc_cnt[tune_tx_value] = 0;
+		tune_pass_cnt[tune_tx_value] = 0;
+		MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY, tune_tx_value);
+		for (tune_cnt = 0; tune_cnt < TUNE_TX_CNT; tune_cnt++) {
+			ret = autok_send_tune_cmd(host, MMC_SEND_TUNING_BLOCK, TUNE_CMD, &autok_host_para);
+			if ((ret & E_RESULT_CMD_TMO) != 0) {
+				autok_msdc_reset();
+				msdc_clear_fifo();
+				MSDC_WRITE32(MSDC_INT, 0xffffffff);
+				tune_tmo_cnt[tune_tx_value]++;
+			} else if ((ret&(E_RESULT_RSP_CRC)) != 0)
+				tune_crc_cnt[tune_tx_value]++;
+			else if ((ret & (E_RESULT_PASS)) == 0)
+				tune_pass_cnt[tune_tx_value]++;
 		}
-	} else {
+#if 0
+		AUTOK_RAWPRINT("[AUTOK]tune_cmd_TX cmd_tx_value = %d tmo_cnt = %d crc_cnt = %d pass_cnt = %d\r\n",
+			tune_tx_value, tune_tmo_cnt[tune_tx_value], tune_crc_cnt[tune_tx_value],
+			tune_pass_cnt[tune_tx_value]);
 #endif
-		if (platform_para_misc.emmc_data_tx_tune == 1)
-			opcode = MMC_WRITE_MULTIPLE_BLOCK;
-		else if (platform_para_misc.emmc_data_tx_tune == 0)
-			opcode = MMC_WRITE_BLOCK;
-		/* check device status */
-		response = 0;
-		while (((response >> 9) & 0xF) != 4) {
-			ret = autok_send_tune_cmd(host, MMC_SEND_STATUS, TUNE_CMD);
-			if ((ret & (E_RESULT_RSP_CRC | E_RESULT_CMD_TMO)) != 0) {
-				AUTOK_RAWPRINT("[AUTOK]tune data TX cmd13 occur error\r\n");
-				AUTOK_RAWPRINT("[AUTOK]tune data TX fail\r\n");
-				return -1;
-			}
-			response = MSDC_READ32(SDC_RESP0);
-			if ((((response >> 9) & 0xF) == 5) || (((response >> 9) & 0xF) == 6))
-				ret = autok_send_tune_cmd(host, MMC_STOP_TRANSMISSION, TUNE_CMD);
-		}
-
-		/* send cmd24/cmd23-cmd25 write one block data */
-		if (opcode == MMC_WRITE_MULTIPLE_BLOCK) {
-			ret = autok_send_tune_cmd(host, MMC_SET_BLOCK_COUNT, TUNE_CMD);
-			if ((ret & (E_RESULT_RSP_CRC | E_RESULT_CMD_TMO)) != 0) {
-				AUTOK_RAWPRINT("[AUTOK]------while tune data TX cmd23 occur error------\r\n");
-				AUTOK_RAWPRINT("[AUTOK]------tune data TX fail------\r\n");
-				return -1;
-			}
-		}
-#if 0
 	}
-#endif
 
+	/* print result */
+	for (i = 0; i < 32; i++) {
+		if (tune_tmo_cnt[i] != 0)
+			tune_result[i] = 'X';
+		else if (tune_crc_cnt[i] != 0)
+			tune_result[i] = 'R';
+		else if (tune_pass_cnt[i] == TUNE_TX_CNT)
+			tune_result[i] = 'O';
+	}
+	tune_result[32] = '\0';
+	AUTOK_RAWPRINT("[AUTOK]tune_clk_TX 0 - 31   %s\r\n", tune_result);
+	AUTOK_RAWPRINT("[AUTOK][tune clk TX]=========end========\r\n");
+
+	/* restore clk tx setting */
+	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY, clk_tx);
+	AUTOK_RAWPRINT("[AUTOK][tune clk TX @write data]=========start========\r\n");
+
+	/* Step2 : Tuning clk TX @ write data */
+	for (tune_tx_value = 0; tune_tx_value < 32; tune_tx_value++) {
+		tune_tmo_cnt[tune_tx_value] = 0;
+		tune_crc_cnt[tune_tx_value] = 0;
+		tune_pass_cnt[tune_tx_value] = 0;
+		autok_host_para.clk_tx = tune_tx_value;
+		for (tune_cnt = 0; tune_cnt < TUNE_TX_CNT / 2; tune_cnt++) {
+			/* check device status */
+			if (opcode == MMC_WRITE_BLOCK) {
+				MSDC_GET_FIELD(MSDC_PS, MSDC_PS_DAT, data_pin_status);
+				if (!(data_pin_status & 0x1)) {
+					autok_send_tune_cmd(host, MMC_STOP_TRANSMISSION, TUNE_CMD, &autok_host_para);
+					while (!(data_pin_status & 0x1))
+						MSDC_GET_FIELD(MSDC_PS, MSDC_PS_DAT, data_pin_status);
+				}
+			}
+			/* send cmd24 write one block data */
+			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA, &autok_host_para);
+			response = MSDC_READ32(SDC_RESP0);
+			if ((ret & (E_RESULT_RSP_CRC | E_RESULT_CMD_TMO)) != 0) {
+				autok_msdc_reset();
+				msdc_clear_fifo();
+				MSDC_WRITE32(MSDC_INT, 0xffffffff);
+				AUTOK_RAWPRINT("[AUTOK]------while tune clk TX cmd%d occur error------\n",
+					MMC_WRITE_BLOCK);
+				AUTOK_RAWPRINT("[AUTOK]------tune clk TX fail------\n");
+				goto end;
+			}
+			if ((ret & E_RESULT_DAT_TMO) != 0)
+				tune_tmo_cnt[tune_tx_value]++;
+			else if ((ret & (E_RESULT_DAT_CRC)) != 0)
+				tune_crc_cnt[tune_tx_value]++;
+			else if ((ret & (E_RESULT_PASS)) == 0)
+				tune_pass_cnt[tune_tx_value]++;
+		}
+#if 0
+		AUTOK_RAWPRINT("[AUTOK]tune_data_TX data_tx_value = %d tmo_cnt = %d crc_cnt = %d pass_cnt = %d\r\n",
+			tune_tx_value, tune_tmo_cnt[tune_tx_value], tune_crc_cnt[tune_tx_value],
+			tune_pass_cnt[tune_tx_value]);
+#endif
+	}
+
+	/* print result */
+	for (i = 0; i < 32; i++) {
+		if ((tune_tmo_cnt[i] != 0) || (tune_crc_cnt[i] != 0))
+			tune_result[i] = 'X';
+		else if (tune_pass_cnt[i] == (TUNE_TX_CNT / 2))
+			tune_result[i] = 'O';
+	}
+	tune_result[32] = '\0';
+	AUTOK_RAWPRINT("[AUTOK]tune_clk_TX 0 - 31  %s\r\n", tune_result);
+
+end:
+	/* restore clk tx setting */
+	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY, clk_tx);
+
+	AUTOK_RAWPRINT("[AUTOK][tune clk TX @write data]=========end========\r\n");
+	return ret;
+}
+
+int autok_emmc_tune_tx(struct msdc_host *host, unsigned int opcode)
+{
+	int ret = 0;
+	void __iomem *base = host->base;
+	unsigned int response;
+	struct autok_host autok_host_para;
+
+	memset(&autok_host_para, 0, sizeof(struct autok_host));
+	/* check device status */
+	response = 0;
+	while (((response >> 9) & 0xF) != 4) {
+		ret = autok_send_tune_cmd(host, MMC_SEND_STATUS, TUNE_CMD, &autok_host_para);
+		if ((ret & (E_RESULT_RSP_CRC | E_RESULT_CMD_TMO)) != 0) {
+			AUTOK_RAWPRINT("[AUTOK]tune data TX cmd13 occur error\r\n");
+			AUTOK_RAWPRINT("[AUTOK]tune data TX fail\r\n");
+			return -1;
+		}
+		response = MSDC_READ32(SDC_RESP0);
+		if ((((response >> 9) & 0xF) == 5) || (((response >> 9) & 0xF) == 6))
+			ret = autok_send_tune_cmd(host, MMC_STOP_TRANSMISSION, TUNE_CMD, &autok_host_para);
+	}
+
+	/* send cmd24/cmd23-cmd25 write one block data */
+	if (opcode == MMC_WRITE_MULTIPLE_BLOCK) {
+		ret = autok_send_tune_cmd(host, MMC_SET_BLOCK_COUNT, TUNE_CMD, &autok_host_para);
+		if ((ret & (E_RESULT_RSP_CRC | E_RESULT_CMD_TMO)) != 0) {
+			AUTOK_RAWPRINT("[AUTOK]------while tune data TX cmd23 occur error------\r\n");
+			AUTOK_RAWPRINT("[AUTOK]------tune data TX fail------\r\n");
+			return -1;
+		}
+	}
 	return 0;
 }
 
@@ -4573,8 +4806,10 @@ int autok_offline_tuning_TX(struct msdc_host *host, u8 *res)
 	unsigned int j;
 	unsigned int opcode = MMC_WRITE_BLOCK;
 	u64 Rx64_separate[8] = {0LL};
+	struct autok_host autok_host_para;
 	struct AUTOK_PLAT_PARA_MISC platform_para_misc;
 
+	memset(&autok_host_para, 0, sizeof(struct autok_host));
 	memset(&platform_para_misc, 0, sizeof(struct AUTOK_PLAT_PARA_MISC));
 	get_platform_para_misc(platform_para_misc);
 #endif
@@ -4651,9 +4886,10 @@ tune_host_tx:
 		msdc_autok_adjust_param(host, EMMC50_CMD_TX_DLY, &tune_tx_value, AUTOK_WRITE);
 		for (tune_cnt = 0; tune_cnt < TUNE_TX_CNT; tune_cnt++) {
 			if (host->hw->host_function == MSDC_EMMC)
-				ret = autok_send_tune_cmd(host, MMC_SEND_STATUS, TUNE_CMD);
+				ret = autok_send_tune_cmd(host, MMC_SEND_STATUS, TUNE_CMD, &autok_host_para);
 			else
-				ret = autok_send_tune_cmd(host, MMC_SEND_TUNING_BLOCK, TUNE_SDIO_PLUS);
+				ret = autok_send_tune_cmd(host, MMC_SEND_TUNING_BLOCK,
+					TUNE_SDIO_PLUS, &autok_host_para);
 			if ((ret & E_RESULT_CMD_TMO) != 0) {
 				tune_tmo_cnt[tune_tx_value]++;
 				Rx64 |= (u64) (1LL << tune_tx_value);
@@ -4718,7 +4954,7 @@ separate_tune_dat_tx:
 #if 0
 	if (host->cmdq_en == 1) {
 		opcode = MMC_WRITE_REQUESTED_QUEUE;
-		autok_send_tune_cmd(host, MMC_SWITCH_CQ_EN, TUNE_CMD);
+		autok_send_tune_cmd(host, MMC_SWITCH_CQ_EN, TUNE_CMD, &autok_host_para);
 	}
 #endif
 	if (separate_tune_start == 1) {
@@ -4726,6 +4962,12 @@ separate_tune_dat_tx:
 			separate_tune_cnt = 8;
 		else
 			separate_tune_cnt = 4;
+	}
+	if (host->hw->host_function == MSDC_EMMC) {
+		if (platform_para_misc.emmc_data_tx_tune == 1)
+			opcode = MMC_WRITE_MULTIPLE_BLOCK;
+		else if (platform_para_misc.emmc_data_tx_tune == 0)
+			opcode = MMC_WRITE_BLOCK;
 	}
 	for (j = 0; j < separate_tune_cnt; j++) {
 		for (tune_tx_value = 0; tune_tx_value < 32; tune_tx_value++) {
@@ -4811,15 +5053,15 @@ separate_tune_dat_tx:
 			}
 			for (tune_cnt = 0; tune_cnt < TUNE_TX_CNT; tune_cnt++) {
 				if (host->hw->host_function == MSDC_EMMC) {
-					if (autok_emmc_tune_tx(host) == -1)
+					if (autok_emmc_tune_tx(host, opcode) == -1)
 						goto end;
 
-					ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
+					ret = autok_send_tune_cmd(host, opcode, TUNE_DATA, &autok_host_para);
 					response = MSDC_READ32(SDC_RESP0);
 				} else {
 					/* send cmd53 write data */
 					opcode = SD_IO_RW_EXTENDED;
-					ret = autok_send_tune_cmd(host, opcode, TUNE_SDIO_PLUS);
+					ret = autok_send_tune_cmd(host, opcode, TUNE_SDIO_PLUS, &autok_host_para);
 				}
 				if ((ret & (E_RESULT_RSP_CRC | E_RESULT_CMD_TMO)) != 0) {
 					AUTOK_RAWPRINT("[AUTOK]tune data TX cmd%d occur error\n",
@@ -4836,11 +5078,12 @@ separate_tune_dat_tx:
 					if ((host->hw->host_function == MSDC_EMMC)
 						&& ((opcode == MMC_WRITE_MULTIPLE_BLOCK)
 						|| (opcode == MMC_WRITE_REQUESTED_QUEUE))) {
-						autok_send_tune_cmd(host, MMC_STOP_TRANSMISSION, TUNE_CMD);
+						autok_send_tune_cmd(host, MMC_STOP_TRANSMISSION,
+							TUNE_CMD, &autok_host_para);
 					}
 					/* send CMD52 abort command */
 					if (host->hw->host_function == MSDC_SDIO)
-						autok_send_tune_cmd(host, SD_IO_RW_DIRECT, TUNE_CMD);
+						autok_send_tune_cmd(host, SD_IO_RW_DIRECT, TUNE_CMD, &autok_host_para);
 				} else if ((ret & (E_RESULT_DAT_CRC)) != 0) {
 					tune_crc_cnt[tune_tx_value]++;
 					if (separate_tune_start == 1)
@@ -4850,11 +5093,12 @@ separate_tune_dat_tx:
 					if ((host->hw->host_function == MSDC_EMMC)
 						&& ((opcode == MMC_WRITE_MULTIPLE_BLOCK)
 						|| (opcode == MMC_WRITE_REQUESTED_QUEUE))) {
-						autok_send_tune_cmd(host, MMC_STOP_TRANSMISSION, TUNE_CMD);
+						autok_send_tune_cmd(host, MMC_STOP_TRANSMISSION,
+							TUNE_CMD, &autok_host_para);
 					}
 					/* send CMD52 abort command */
 					if (host->hw->host_function == MSDC_SDIO)
-						autok_send_tune_cmd(host, SD_IO_RW_DIRECT, TUNE_CMD);
+						autok_send_tune_cmd(host, SD_IO_RW_DIRECT, TUNE_CMD, &autok_host_para);
 				} else if ((ret & (E_RESULT_PASS)) == 0)
 					tune_pass_cnt[tune_tx_value]++;
 			}
@@ -5030,7 +5274,7 @@ separate_tune_dat_tx:
 	}
 #if 0
 	if (host->cmdq_en == 1)
-		autok_send_tune_cmd(host, MMC_SWITCH_CQ_DIS, TUNE_CMD);
+		autok_send_tune_cmd(host, MMC_SWITCH_CQ_DIS, TUNE_CMD, &autok_host_para);
 #endif
 end:
 #endif
@@ -5142,7 +5386,10 @@ int autok_execute_tuning(struct msdc_host *host, u8 *res)
 			msdc_autok_adjust_param(host, i, &value, AUTOK_WRITE);
 		}
 	}
-
+#if AUTOK_SD_CARD_OFFLINE_TUNE_TX_ENABLE
+	if (host->hw->host_function == MSDC_SD)
+		autok_offline_tuning_clk_TX(host, MMC_WRITE_BLOCK);
+#endif
 	autok_msdc_reset();
 	msdc_clear_fifo();
 	MSDC_WRITE32(MSDC_INT, 0xffffffff);

@@ -469,7 +469,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 	}
 
 	/* Enable this line if eMMC use HW DVFS */
-	msdc_set_hw_dvfs(vcore, host);
+	/* msdc_set_hw_dvfs(vcore, host); */
 	/* msdc_dump_register_core(host, NULL); */
 
 	return ret;

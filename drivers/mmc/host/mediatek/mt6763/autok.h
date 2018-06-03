@@ -309,6 +309,8 @@ enum AUTOK_PARAM {
 	 */
 	WRDAT_CRCS_TA_CNTR,
 
+	SDC_RX_ENHANCE,
+
 	TOTAL_PARAM_COUNT
 };
 
@@ -320,6 +322,7 @@ extern int autok_init_ddr208(struct msdc_host *host);
 extern int autok_init_sdr104(struct msdc_host *host);
 extern int autok_init_hs200(struct msdc_host *host);
 extern int autok_init_hs400(struct msdc_host *host);
+extern int autok_offline_tuning_clk_TX(struct msdc_host *host, unsigned int opcode);
 extern int autok_offline_tuning_TX(struct msdc_host *host, u8 *res);
 extern int autok_offline_tuning_device_RX(struct msdc_host *host, u8 *res);
 extern void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios);

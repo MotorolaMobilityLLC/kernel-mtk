@@ -15,7 +15,7 @@
 
 #include <mt-plat/mtk_chip.h>
 
-#define AUTOK_VERSION                   (0x17011217)
+#define AUTOK_VERSION                   (0x17030910)
 
 struct AUTOK_PLAT_PARA_TX {
 	unsigned int chip_hw_ver;
@@ -32,7 +32,8 @@ struct AUTOK_PLAT_PARA_TX {
 	u8 msdc0_hs400_dat7tx;
 	u8 msdc0_hs400_txskew;
 	u8 msdc0_ddr_ckd;
-	u8 msdc_ddr_ckd;
+	u8 msdc1_ddr_ckd;
+	u8 msdc2_ddr_ckd;
 
 	u8 msdc0_clktx;
 	u8 msdc0_cmdtx;
@@ -69,8 +70,10 @@ struct AUTOK_PLAT_PARA_RX {
 	u8 latch_en_crc_hs200;
 	u8 latch_en_cmd_ddr208;
 	u8 latch_en_crc_ddr208;
-	u8 latch_en_cmd_sdr104;
-	u8 latch_en_crc_sdr104;
+	u8 latch_en_cmd_sd_sdr104;
+	u8 latch_en_crc_sd_sdr104;
+	u8 latch_en_cmd_sdio_sdr104;
+	u8 latch_en_crc_sdio_sdr104;
 	u8 latch_en_cmd_hs;
 	u8 latch_en_crc_hs;
 	u8 cmd_ta_val;
@@ -107,6 +110,9 @@ struct AUTOK_PLAT_PARA_RX {
 	u8 end_bit_chk_cnt_hs400;
 	u8 end_bit_chk_cnt_ddr208;
 
+	u8 latchck_switch_cnt_hs400;
+	u8 latchck_switch_cnt_ddr208;
+
 	u8 ds_dly3_hs400;
 	u8 ds_dly3_ddr208;
 };
@@ -125,6 +131,9 @@ struct AUTOK_PLAT_TOP_CTRL {
 	u8 msdc0_pad_dly_top;
 	u8 msdc1_pad_dly_top;
 	u8 msdc2_pad_dly_top;
+	u8 msdc0_rx_enhance_top;
+	u8 msdc1_rx_enhance_top;
+	u8 msdc2_rx_enhance_top;
 };
 
 struct AUTOK_PLAT_FUNC {
@@ -136,6 +145,7 @@ struct AUTOK_PLAT_FUNC {
 	u8 new_path_sdr104;
 	u8 new_path_hs;
 	u8 multi_sync;
+	u8 rx_enhance;
 };
 
 #define get_platform_para_tx(autok_para_tx) \
@@ -153,7 +163,8 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_tx.msdc0_hs400_dat7tx = 0; \
 		autok_para_tx.msdc0_hs400_txskew = 0; \
 		autok_para_tx.msdc0_ddr_ckd = 1; \
-		autok_para_tx.msdc_ddr_ckd = 0; \
+		autok_para_tx.msdc1_ddr_ckd = 0; \
+		autok_para_tx.msdc2_ddr_ckd = 1; \
 		autok_para_tx.msdc0_clktx = 0; \
 		autok_para_tx.msdc0_cmdtx = 0; \
 		autok_para_tx.msdc0_dat0tx = 0; \
@@ -180,14 +191,16 @@ struct AUTOK_PLAT_FUNC {
 	do { \
 		autok_para_rx.chip_hw_ver = mt_get_chip_hw_ver(); \
 		autok_para_rx.ckgen_val = 0; \
-		autok_para_rx.latch_en_cmd_hs400 = 3; \
-		autok_para_rx.latch_en_crc_hs400 = 3; \
-		autok_para_rx.latch_en_cmd_hs200 = 2; \
-		autok_para_rx.latch_en_crc_hs200 = 2; \
-		autok_para_rx.latch_en_cmd_ddr208 = 3; \
-		autok_para_rx.latch_en_crc_ddr208 = 3; \
-		autok_para_rx.latch_en_cmd_sdr104 = 2; \
-		autok_para_rx.latch_en_crc_sdr104 = 2; \
+		autok_para_rx.latch_en_cmd_hs400 = 2; \
+		autok_para_rx.latch_en_crc_hs400 = 2; \
+		autok_para_rx.latch_en_cmd_hs200 = 1; \
+		autok_para_rx.latch_en_crc_hs200 = 1; \
+		autok_para_rx.latch_en_cmd_ddr208 = 2; \
+		autok_para_rx.latch_en_crc_ddr208 = 2; \
+		autok_para_rx.latch_en_cmd_sd_sdr104 = 1; \
+		autok_para_rx.latch_en_crc_sd_sdr104 = 1; \
+		autok_para_rx.latch_en_cmd_sdio_sdr104 = 1; \
+		autok_para_rx.latch_en_crc_sdio_sdr104 = 1; \
 		autok_para_rx.latch_en_cmd_hs = 1; \
 		autok_para_rx.latch_en_crc_hs = 1; \
 		autok_para_rx.cmd_ta_val = 0; \
@@ -217,6 +230,8 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_rx.read_dat_cnt_ddr208 = 1; \
 		autok_para_rx.end_bit_chk_cnt_hs400 = 3; \
 		autok_para_rx.end_bit_chk_cnt_ddr208 = 3; \
+		autok_para_rx.latchck_switch_cnt_hs400 = 3; \
+		autok_para_rx.latchck_switch_cnt_ddr208 = 3; \
 		autok_para_rx.ds_dly3_hs400 = 20; \
 		autok_para_rx.ds_dly3_ddr208 = 20; \
 	} while (0)
@@ -236,6 +251,9 @@ struct AUTOK_PLAT_FUNC {
 		autok_top_ctrl.msdc0_pad_dly_top = 1; \
 		autok_top_ctrl.msdc1_pad_dly_top = 1; \
 		autok_top_ctrl.msdc2_pad_dly_top = 0; \
+		autok_top_ctrl.msdc0_rx_enhance_top = 1; \
+		autok_top_ctrl.msdc1_rx_enhance_top = 1; \
+		autok_top_ctrl.msdc2_rx_enhance_top = 0; \
 	} while (0)
 /*
 * emmc_data_tx_tune:0 use cmd24;1 use cmd23+cmd25;2:use cmdq cmd
@@ -249,6 +267,7 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_func.new_path_sdr104 = 1; \
 		autok_para_func.new_path_hs = 1; \
 		autok_para_func.multi_sync = 1; \
+		autok_para_func.rx_enhance = 0; \
 	} while (0)
 
 #define PORT0_PB0_RD_DAT_SEL_VALID
@@ -259,10 +278,17 @@ struct AUTOK_PLAT_FUNC {
 #define MMC_SWITCH_CQ_EN 601
 #define MMC_SWITCH_CQ_DIS 600
 
+/*
+* reg define
+*/
+#define AUTOK_SDC_RX_ENH_EN	(0x1  << 20) /* RW */
+#define AUTOK_TOP_SDC_RX_ENHANCE_EN (0x1 << 15) /* RW */
+
 /**********************************************************
 * Feature  Control Defination                             *
 **********************************************************/
 #define AUTOK_EMMC_OFFLINE_TUNE_TX_ENABLE 0
+#define AUTOK_SD_CARD_OFFLINE_TUNE_TX_ENABLE 0
 #define AUTOK_SDIO_OFFLINE_TUNE_TX_ENABLE 1
 #define AUTOK_OFFLINE_CMD_H_TX_ENABLE 0
 #define AUTOK_OFFLINE_DAT_H_TX_ENABLE 1
