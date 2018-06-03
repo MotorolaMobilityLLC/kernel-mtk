@@ -62,9 +62,10 @@ int scp_awake_lock(enum scp_core_id scp_id)
 	int *scp_awake_count;
 	int count = 0;
 	int ret = -1;
+	unsigned int tmp;
 
 	if (scp_id >= SCP_CORE_TOTAL) {
-		pr_err("scp_awake_lock: SCP ID >= SCP_CORE_TOTAL\n");
+		pr_notice("scp_awake_lock: SCP ID >= SCP_CORE_TOTAL\n");
 		return ret;
 	}
 
@@ -73,7 +74,7 @@ int scp_awake_lock(enum scp_core_id scp_id)
 	core_id = core_ids[scp_id];
 
 	if (is_scp_ready(scp_id) == 0) {
-		pr_err("scp_awake_lock: %s not enabled\n", core_id);
+		pr_notice("scp_awake_lock: %s not enabled\n", core_id);
 		return ret;
 	}
 
@@ -93,16 +94,23 @@ int scp_awake_lock(enum scp_core_id scp_id)
 
 	/*set a direct IPI to awake SCP */
 	/*pr_debug("scp_awake_lock: try to awake %s\n", core_id);*/
-	writel((1 << AP_AWAKE_LOCK), INFRA_IRQ_SET);
+	writel(0xA0 | (1 << AP_AWAKE_LOCK), INFRA_IRQ_SET);
 
 	count = 0;
 	while (++count != SCP_AWAKE_TIMEOUT) {
-		if (!(readl(INFRA_IRQ_SET) & (1 << AP_AWAKE_LOCK))) {
+		tmp = readl(INFRA_IRQ_SET);
+		if ((tmp & 0xf0) != 0xA0) {
+			pr_notice("scp_awake_lock: INFRA_IRQ_SET %x\n", tmp);
+			break;
+		}
+		if (!((tmp & 0x0f) & (1 << AP_AWAKE_LOCK))) {
 			ret = 0;
 			break;
 		}
 		udelay(10);
 	}
+	/* clear status */
+	writel(readl(INFRA_IRQ_SET), INFRA_IRQ_CLEAR);
 
 	/* scp lock awake success*/
 	if (ret != -1)
@@ -112,7 +120,7 @@ int scp_awake_lock(enum scp_core_id scp_id)
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
 	if (ret == -1) {
-		pr_err("scp_awake_lock: awake %s fail..\n", core_id);
+		pr_notice("scp_awake_lock: awake %s fail..\n", core_id);
 		WARN_ON(1);
 #if SCP_RECOVERY_SUPPORT
 		if (scp_set_reset_status() == RESET_STATUS_STOP) {
@@ -143,9 +151,10 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 	char *core_id;
 	int count = 0;
 	int ret = -1;
+	unsigned int tmp;
 
 	if (scp_id >= SCP_CORE_TOTAL) {
-		pr_err("scp_awake_unlock: SCP ID >= SCP_CORE_TOTAL\n");
+		pr_notice("scp_awake_unlock: SCP ID >= SCP_CORE_TOTAL\n");
 		return ret;
 	}
 
@@ -154,7 +163,7 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 	core_id = core_ids[scp_id];
 
 	if (is_scp_ready(scp_id) == 0) {
-		pr_err("scp_awake_unlock: %s not enabled\n", core_id);
+		pr_notice("scp_awake_unlock: %s not enabled\n", core_id);
 		return ret;
 	}
 
@@ -174,18 +183,26 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 	/* spinlock context safe */
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 
-	/* set a direct IPI to release awake SCP */
+	/* WE1: set a direct IPI to release awake SCP */
 	/*pr_debug("scp_awake_lock: try to awake %s\n", core_id);*/
-	writel((1 << AP_AWAKE_UNLOCK), INFRA_IRQ_SET);
+	writel(0xA0 | (1 << AP_AWAKE_UNLOCK), INFRA_IRQ_SET);
 
 	count = 0;
 	while (++count != SCP_AWAKE_TIMEOUT) {
-		if (!(readl(INFRA_IRQ_SET) & (1 << AP_AWAKE_UNLOCK))) {
+		tmp = readl(INFRA_IRQ_SET);
+		if ((tmp & 0xf0) != 0xA0) {
+			pr_notice("scp_awake_unlock: INFRA_IRQ_SET %x\n", tmp);
+			break;
+		}
+		if (!((tmp & 0x0f) & (1 << AP_AWAKE_UNLOCK))) {
 			ret = 0;
 			break;
 		}
 		udelay(10);
 	}
+	/* clear status */
+	writel(readl(INFRA_IRQ_SET), INFRA_IRQ_CLEAR);
+
 	/* scp unlock awake success*/
 	if (ret != -1) {
 		if (*scp_awake_count <= 0)
