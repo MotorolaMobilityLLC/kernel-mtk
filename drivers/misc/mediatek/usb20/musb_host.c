@@ -2965,10 +2965,10 @@ static int musb_bus_suspend(struct usb_hcd *hcd)
 		DBG_LIMIT(1, "trying to suspend as %s while active, skip_cnt<%d>",
 				otg_state_string(musb->xceiv->otg->state), skip_cnt);
 		return -EBUSY;
-	} else {
-		usb_hal_dpidle_request(USB_DPIDLE_TIMER);
-		return 0;
 	}
+
+	usb_hal_dpidle_request(USB_DPIDLE_TIMER);
+	return 0;
 }
 
 static int musb_bus_resume(struct usb_hcd *hcd)

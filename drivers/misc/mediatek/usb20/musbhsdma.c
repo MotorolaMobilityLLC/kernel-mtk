@@ -346,6 +346,7 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 
 	/* musb_read_clear_dma_interrupt */
 	int_hsdma = musb_readb(musb->mregs, MUSB_HSDMA_INTR);
+	/* make sure int_hsdma up to date before W1C */
 	mb();
 	musb_writeb(musb->mregs, MUSB_HSDMA_INTR, int_hsdma);
 	/* musb_read_clear_dma_interrupt */

@@ -459,6 +459,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 	}
 
 	host_plug_test_triggered = 1;
+	/* sync global status */
 	mb();
 	wake_lock(&host_test_wakelock);
 	DBG(0, "BEGIN");

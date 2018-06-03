@@ -418,10 +418,11 @@ void do_connection_work(struct work_struct *data)
 				mtk_musb->power);
 		queue_delayed_work(mtk_musb->st_wq, &connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
 		return;
-	} else
-		DBG(0, "is_host<%d>, power<%d>\n",
-				mtk_musb->is_host,
-				mtk_musb->power);
+	}
+
+	DBG(0, "is_host<%d>, power<%d>\n",
+			mtk_musb->is_host,
+			mtk_musb->power);
 
 	/* be aware this could not be used in non-sleep context */
 	usb_in = usb_cable_connected();
@@ -643,6 +644,7 @@ static irqreturn_t generic_interrupt(int irq, void *__hci)
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 	musb->int_queue = musb_readl(musb->mregs, MUSB_QISAR);
 #endif
+	/* hw status up to date before W1C */
 	mb();
 	musb_writew(musb->mregs, MUSB_INTRRX, musb->int_rx);
 	musb_writew(musb->mregs, MUSB_INTRTX, musb->int_tx);

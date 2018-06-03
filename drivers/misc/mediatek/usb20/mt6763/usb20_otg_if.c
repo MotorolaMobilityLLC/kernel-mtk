@@ -215,6 +215,7 @@ unsigned int musb_polling_ep0_interrupt(void)
 	DBG(0, "polling ep0 interrupt\n");
 	do {
 		intrtx = musb_readw(mtk_musb->mregs, MUSB_INTRTX);
+		/* sync status */
 		mb();
 		musb_writew(mtk_musb->mregs, MUSB_INTRTX, intrtx);
 		if (intrtx & 0x1) {	/* ep0 interrupt happen */
@@ -455,6 +456,7 @@ unsigned int musb_polling_bus_interrupt(unsigned int intr)
 
 	do {
 		intrusb = musb_readb(mtk_musb->mregs, MUSB_INTRUSB);
+		/* sync status */
 		mb();
 		musb_writeb(mtk_musb->mregs, MUSB_INTRUSB, intrusb);
 		if (intrusb & intr) {
@@ -829,9 +831,11 @@ TD_4_6:
 
 	do {
 		intrtx = musb_readw(mtk_musb->mregs, MUSB_INTRTX);
+		/* sync status */
 		mb();
 		musb_writew(mtk_musb->mregs, MUSB_INTRTX, intrtx);
 		intrusb = musb_readb(mtk_musb->mregs, MUSB_INTRUSB);
+		/* sync status */
 		mb();
 		musb_writeb(mtk_musb->mregs, MUSB_INTRUSB, intrusb);
 		if (intrtx || (intrusb & MUSB_INTR_SUSPEND)) {
@@ -920,9 +924,11 @@ void otg_cmd_b_uut(void)
 TD6_13:
 	do {
 		intrtx = musb_readw(mtk_musb->mregs, MUSB_INTRTX);
+		/* sync status */
 		mb();
 		musb_writew(mtk_musb->mregs, MUSB_INTRTX, intrtx);
 		intrusb = musb_readb(mtk_musb->mregs, MUSB_INTRUSB);
+		/* sync status */
 		mb();
 		musb_writeb(mtk_musb->mregs, MUSB_INTRUSB, intrusb);
 		if (intrtx || (intrusb & 0xf7)) {
