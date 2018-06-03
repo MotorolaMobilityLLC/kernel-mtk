@@ -56,7 +56,7 @@
  * CONFIG (SW related)
  *=============================================================
  */
-#define ENALBE_UART_LIMIT						(1)
+#define ENALBE_UART_LIMIT						(0)
 #define TEMP_EN_UART							(80000)
 #define TEMP_DIS_UART							(85000)
 #define TEMP_TOLERANCE							(0)
