@@ -936,7 +936,7 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	GATE_INFRA0(INFRACFG_AO_APXGPT_CG, "infra_apxgpt",
 		"axi_sel", 6),
 	GATE_INFRA0(INFRACFG_AO_ICUSB_CG, "infra_icusb",
-		"axi_sel", 8),
+		"usb_top_sel", 8),
 	GATE_INFRA0(INFRACFG_AO_GCE_CG, "infra_gce",
 		"axi_sel", 9),
 	GATE_INFRA0(INFRACFG_AO_THERM_CG, "infra_therm",
@@ -1458,6 +1458,9 @@ CLK_OF_DECLARE(mtk_infracfg_ao, "mediatek,infracfg_ao",
 
 static const struct mtk_pll_data plls[] = {
 	/* FIXME: need to fix flags/div_table/tuner_reg/table */
+	PLL(APMIXED_MAINPLL, "mainpll", 0x0220, 0x022C, 0x00000001, 0,
+		22, 0x0224, 24, 0x0, 0x0224, 0),
+
 	PLL(APMIXED_UNIVPLL, "univpll", 0x0230, 0x023C, 0x00000001, 0,
 		22, 0x0234, 24, 0x0, 0x0234, 0),
 
