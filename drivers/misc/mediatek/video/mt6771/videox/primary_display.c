@@ -6929,14 +6929,19 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		}
 		if (all_zero)
 			disp_aee_print("HWC set zero matrix\n");
-		else {
-			if (!primary_display_is_decouple_mode())
-				disp_ccorr_set_color_matrix(cmdq_handle,
-					m_ccorr_config.color_matrix,
-					m_ccorr_config.mode);
-			else
-				mem_config.m_ccorr_config = m_ccorr_config;
-		}
+		else if (!primary_display_is_decouple_mode()) {
+			disp_ccorr_set_color_matrix(cmdq_handle,
+				m_ccorr_config.color_matrix,
+				m_ccorr_config.mode);
+
+			/* backup night params here */
+			cmdqRecBackupUpdateSlot(cmdq_handle, pgc->night_light_params, 0,
+				mem_config.m_ccorr_config.mode);
+			for (i = 0; i < 16; i++)
+				cmdqRecBackupUpdateSlot(cmdq_handle, pgc->night_light_params, i + 1,
+					mem_config.m_ccorr_config.color_matrix[i]);
+		} else
+			mem_config.m_ccorr_config = m_ccorr_config;
 	}
 
 	if (primary_display_is_decouple_mode() && !primary_display_is_mirror_mode()) {
