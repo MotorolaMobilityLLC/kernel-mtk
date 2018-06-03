@@ -2907,6 +2907,7 @@ VOID qmPopOutDueToFallAhead(P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReorderQ
 
 		/* SN > WinStart, break to update WinEnd */
 		else {
+			prReorderQueParm->fgHasBubbleInQue = TRUE;
 			/* Start bubble timer */
 			if (!prReorderQueParm->fgHasBubble) {
 				cnmTimerStartTimer(prAdapter,
@@ -3383,6 +3384,52 @@ VOID qmHandleNoNeedWaitPktList(IN P_RX_BA_ENTRY_T prReorderQueParm)
 			kalMemFree(prNoNeedWaitPkt, VIR_MEM_TYPE, sizeof(NO_NEED_WAIT_PKT_T));
 		}
 	}
+}
+
+VOID qmHandleNoNeedWaitStopBubTimer(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReorderQueParm)
+{
+	QUE_T rReturnedQue;
+	P_QUE_T prReturnedQue = &rReturnedQue;
+	P_SW_RFB_T prSwRfb;
+
+	QUEUE_INITIALIZE(prReturnedQue);
+	prReorderQueParm->fgHasBubbleInQue = FALSE;
+
+	qmPopOutDueToFallAhead(prAdapter, prReorderQueParm, prReturnedQue);
+
+	DBGLOG(QM, INFO, "qmHandleNoNeedWaitStopBubTimer BubInQue[%d] STA[%u] TID[%u] BubSN[%u] Win{%d, %d}\n",
+			   prReorderQueParm->fgHasBubbleInQue,
+			   prReorderQueParm->ucStaRecIdx,
+			   prReorderQueParm->ucTid,
+			   prReorderQueParm->u2FirstBubbleSn,
+			   prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
+
+	if (prReorderQueParm->fgHasBubbleInQue == FALSE) {
+		/* Stop bubble timer if there are no bubbles in reorder queue. */
+		cnmTimerStopTimer(prAdapter, &(prReorderQueParm->rReorderBubbleTimer));
+
+		prReorderQueParm->fgHasBubble = FALSE;
+
+		if (QUEUE_IS_NOT_EMPTY(prReturnedQue)) {
+			QM_TX_SET_NEXT_MSDU_INFO((P_SW_RFB_T) QUEUE_GET_TAIL(prReturnedQue), NULL);
+
+			prSwRfb = (P_SW_RFB_T) QUEUE_GET_HEAD(prReturnedQue);
+			while (prSwRfb) {
+				DBGLOG(QM, TRACE,
+					   "qmHandleNoNeedWaitStopBubTimer Flush STA[%u] TID[%u] Pop Out SN[%u]\n",
+					prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid, prSwRfb->u2SSN);
+
+				prSwRfb = (P_SW_RFB_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prSwRfb);
+			}
+
+			wlanProcessQueuedSwRfb(prAdapter, (P_SW_RFB_T) QUEUE_GET_HEAD(prReturnedQue));
+		} else {
+			DBGLOG(QM, TRACE, "qmHandleNoNeedWaitStopBubTimer Flush STA[%u] TID[%u] Pop Out 0 packet\n",
+					   prReorderQueParm->ucStaRecIdx, prReorderQueParm->ucTid);
+		}
+	}
+
+	qmHandleMissTimeout(prReorderQueParm);
 }
 
 P_NO_NEED_WAIT_PKT_T qmSearchNoNeedWaitPktBySSN(IN P_RX_BA_ENTRY_T prReorderQueParm, IN UINT_32 u2SSN)
@@ -5065,4 +5112,24 @@ VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 				   prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
 	}
 
+	qmHandleMissTimeout(prReorderQueParm);
+
 }
+
+VOID qmHandleMissTimeout(IN P_RX_BA_ENTRY_T prReorderQueParm)
+{
+	P_QUE_T prReorderQue;
+	OS_SYSTIME *prMissTimeout;
+
+	prReorderQue = &(prReorderQueParm->rReOrderQue);
+
+	prMissTimeout = &g_arMissTimeout[prReorderQueParm->ucStaRecIdx][prReorderQueParm->ucTid];
+	if (QUEUE_IS_EMPTY(prReorderQue)) {
+		DBGLOG(QM, TRACE, "QM:(Bub Check) Reset prMissTimeout to zero\n");
+		*prMissTimeout = 0;
+	} else {
+		DBGLOG(QM, TRACE, "QM:(Bub Check) Reset prMissTimeout to current time\n");
+		GET_CURRENT_SYSTIME(prMissTimeout);
+	}
+}
+

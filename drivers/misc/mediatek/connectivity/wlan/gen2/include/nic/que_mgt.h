@@ -203,7 +203,7 @@
 
 #define TXM_DEFAULT_FLUSH_QUEUE_GUARD_TIME              0	/* Unit: 64 us */
 
-#define QM_RX_BA_ENTRY_MISS_TIMEOUT_MS      (1000)
+#define QM_RX_BA_ENTRY_MISS_TIMEOUT_MS      (200)
 
 #if CFG_RX_BA_REORDERING_ENHANCEMENT
 #define QM_RX_MAX_FW_DROP_SSN_SIZE	8
@@ -297,6 +297,7 @@ typedef struct _RX_BA_ENTRY_T {
 
 	BOOLEAN fgIsWaitingForPktWithSsn;
 	BOOLEAN fgHasBubble;
+	BOOLEAN fgHasBubbleInQue;
 
 	/* UINT_8                  ucTxBufferSize; */
 	/* BOOL                    fgIsAcConstrain; */
@@ -870,6 +871,7 @@ UINT_32 qmGetRxReorderQueuedBufferCount(IN P_ADAPTER_T prAdapter);
 
 VOID qmHandleReorderBubbleTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr);
 VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
+VOID qmHandleMissTimeout(IN P_RX_BA_ENTRY_T prReorderQueParm);
 
 #if ARP_MONITER_ENABLE
 VOID qmDetectArpNoResponse(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
