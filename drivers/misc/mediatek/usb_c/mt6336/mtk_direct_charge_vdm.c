@@ -61,7 +61,7 @@ int tcpm_hard_reset(void *ptr)
 	return 0;
 }
 
-#define MTK_PE30_VSAFE5V 2000
+#define MTK_PE30_VSAFE5V 3400
 
 int tcpm_set_direct_charge_en(void *ptr, bool en)
 {

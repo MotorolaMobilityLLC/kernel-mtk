@@ -42,23 +42,23 @@ struct typec_hba *g_hba;
 
 #if USE_AUXADC
 
-#define AUXADC_TYPEC_H_DEBT_MAX 0x37D
-#define AUXADC_TYPEC_H_DET_PRD_15_0_L 0x37F
-#define AUXADC_TYPEC_H_DET_PRD_15_0_H 0x380
-#define AUXADC_TYPEC_H_VOLT_MAX_L 0x382
+#define AUXADC_TYPEC_H_DEBT_MAX 0x37F
+#define AUXADC_TYPEC_H_DET_PRD_15_0_L 0x381
+#define AUXADC_TYPEC_H_DET_PRD_15_0_H 0x382
+#define AUXADC_TYPEC_H_VOLT_MAX_L 0x384
 
-#define AUXADC_TYPEC_H3_H 0x383
+#define AUXADC_TYPEC_H3_H 0x385
 #define AUXADC_TYPEC_H_MAX_IRQ_B (0x1<<7)
 #define AUXADC_TYPEC_H_EN_MAX (0x1<<5)
 #define AUXADC_TYPEC_H_IRQ_EN_MAX (0x1<<4)
 #define AUXADC_TYPEC_H_VOLT_MAX_H (0xF<<0)
 
-#define AUXADC_TYPEC_L_DEBT_MIN 0x38B
-#define AUXADC_TYPEC_L_DET_PRD_15_0_L 0x38C
-#define AUXADC_TYPEC_L_DET_PRD_15_0_H 0x38D
-#define AUXADC_TYPEC_L_VOLT_MIN_L 0x391
+#define AUXADC_TYPEC_L_DEBT_MIN 0x38D
+#define AUXADC_TYPEC_L_DET_PRD_15_0_L 0x38E
+#define AUXADC_TYPEC_L_DET_PRD_15_0_H 0x38F
+#define AUXADC_TYPEC_L_VOLT_MIN_L 0x393
 
-#define AUXADC_TYPEC_L4_H 0x392
+#define AUXADC_TYPEC_L4_H 0x394
 #define AUXADC_TYPEC_L_MIN_IRQ_B (0x1<<7)
 #define AUXADC_TYPEC_L_EN_MIN (0x1<<5)
 #define AUXADC_TYPEC_L_IRQ_EN_MIN (0x1<<4)
@@ -1876,7 +1876,8 @@ static void typec_auxadc_voltage_mon_attached_snk(struct work_struct *work)
 				break;
 			}
 		} else {
-			dev_err(hba->dev, "Event coming in %d\n", flag);
+			if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
+				dev_err(hba->dev, "Event coming in %d\n", flag);
 
 			val = typec_auxadc_get_value(hba, flag);
 
@@ -2066,8 +2067,13 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		 * to notify MAC layer.
 		 */
 		queue_work(hba->pd_wq, &hba->wait_vbus_off_attached_snk);
+
 		#if USE_AUXADC
-		schedule_work(&hba->auxadc_voltage_mon_attached_snk);
+		if (hba->is_kpoc) {
+			typec_auxadc_register(hba);
+			typec_auxadc_set_state(hba, STATE_POWER_DEFAULT);
+		}
+		/*schedule_work(&hba->auxadc_voltage_mon_attached_snk);*/
 		#endif
 	}
 
@@ -2208,6 +2214,25 @@ static void typec_irq_work(struct work_struct *work)
 }
 
 #if USE_AUXADC
+void auxadc_detect_cableout_hanlder(void)
+{
+	struct typec_hba *hba = get_hba();
+	uint16_t val;
+
+	typec_disable_auxadc_irq(hba);
+
+	val = typec_auxadc_get_value(hba, FLAGS_AUXADC_MIN);
+
+	dev_err(hba->dev, "ADC VAL=%d\n", val);
+
+	typec_disable_auxadc(hba, 1, 1);
+
+	if (val < SNK_VRPUSB_AUXADC_MIN_VAL) {
+		if (hba->charger_det_notify)
+			hba->charger_det_notify(0);
+	}
+}
+
 void auxadc_min_hanlder(void)
 {
 	mutex_lock(&g_hba->typec_lock);
@@ -2371,8 +2396,9 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	/*INT_STATUS5 1th*/
 #define TYPE_C_L_MIN (5*8+0)
 #endif
-	mt6336_enable_interrupt(TYPE_C_L_MIN, "TYPE_C_L_MIN");
-	mt6336_register_interrupt_callback(TYPE_C_L_MIN, auxadc_min_hanlder);
+	/*mt6336_enable_interrupt(TYPE_C_L_MIN, "TYPE_C_L_MIN");*/
+	/*mt6336_register_interrupt_callback(TYPE_C_L_MIN, auxadc_min_hanlder);*/
+	mt6336_register_interrupt_callback(TYPE_C_L_MIN, auxadc_detect_cableout_hanlder);
 
 #ifdef MT6336_E1
 	/*INT_STATUS5 7th*/
@@ -2381,7 +2407,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	/*INT_STATUS5 4th*/
 #define TYPE_C_H_MAX (5*8+3)
 #endif
-	mt6336_enable_interrupt(TYPE_C_H_MAX, "TYPE_C_H_MAX");
+	/*mt6336_enable_interrupt(TYPE_C_H_MAX, "TYPE_C_H_MAX");*/
 	mt6336_register_interrupt_callback(TYPE_C_H_MAX, auxadc_max_hanlder);
 #endif
 	/*create character device for CLI*/
@@ -2453,6 +2479,8 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		hba->support_role = TYPEC_ROLE_SINK;
 		hba->is_kpoc = true;
 		hba->kpoc_retry = 3;
+		hba->vbus_off_polling = hba->vbus_off_polling/2;
+		typec_set(hba, REG_TYPE_C_ADC_EN, TYPE_C_CTRL);
 	}
 #endif
 
@@ -2490,8 +2518,12 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 
 		mt6336_enable_interrupt(TYPE_C_CC_IRQ_NUM, "TYPE_C_CC_IRQ");
 
-		if (hba->mode == 2)
+		if (hba->mode == 2) {
 			mt6336_enable_interrupt(TYPE_C_PD_IRQ_NUM, "TYPE_C_PD_IRQ");
+
+			if (hba->is_kpoc)
+				mt6336_enable_interrupt(TYPE_C_L_MIN, "TYPE_C_L_MIN");
+		}
 
 		/*Prefer Role 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
 		typec_set_mode(hba, hba->support_role, hba->rp_val, ((hba->prefer_role == 3)?1:0));
