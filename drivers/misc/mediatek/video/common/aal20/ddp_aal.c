@@ -169,7 +169,7 @@ static int disp_aal_get_latency_lowerbound(void)
 {
 	int aalrefresh;
 #ifdef	CONFIG_MTK_SMI_EXT
-	MTK_SMI_BWC_SCEN bwc_scen;
+	enum MTK_SMI_BWC_SCEN bwc_scen;
 
 	bwc_scen = smi_get_current_profile();
 	if (bwc_scen == SMI_BWC_SCEN_VR || bwc_scen == SMI_BWC_SCEN_SWDEC_VP ||
