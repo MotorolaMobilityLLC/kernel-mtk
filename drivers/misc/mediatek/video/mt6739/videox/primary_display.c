@@ -81,6 +81,7 @@
 #include "mmdvfs_mgr.h"
 #endif
 
+#include "mtk_spm_vcore_dvfs.h"
 #include "mt-plat/aee.h"
 
 #include "ddp_clkmgr.h"
@@ -4020,6 +4021,7 @@ int primary_display_suspend(void)
 	/* pgc->state = DISP_SLEPT; */
 done:
 	primary_set_state(DISP_SLEPT);
+	dvfsrc_mdsrclkena_control_nolock(0);
 
 	if (primary_display_get_power_mode_nolock() == DOZE_SUSPEND)
 		primary_display_esd_check_enable(0);
@@ -4130,7 +4132,7 @@ int primary_display_resume(void)
 		if (dsi_force_config)
 			DSI_ForceConfig(1);
 	}
-
+	dvfsrc_mdsrclkena_control_nolock(1);
 	DISPDBG("dpmanager path power on[begin]\n");
 	primary_display_power_control(1);
 	/* dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE); */
