@@ -66,11 +66,12 @@ void wake_up_auxadc_detect(void)
 
 unsigned int wk_auxadc_ch3_bif_on(unsigned char en)
 {
-	pmic_set_register_value(PMIC_RG_LDO_VBIF28_EN, en);
-	pmic_set_register_value(PMIC_RG_LDO_VBIF28_SW_OP_EN, 1);
-
-	if (!en)
-		pmic_set_register_value(PMIC_RG_LDO_VBIF28_SW_OP_EN, 0);
+	if (en < 2) {
+		pmic_set_register_value(PMIC_RG_LDO_VBIF28_EN, en);
+		pmic_set_register_value(PMIC_RG_LDO_VBIF28_SW_OP_EN, 1);
+		if (!en)
+			pmic_set_register_value(PMIC_RG_LDO_VBIF28_SW_OP_EN, 0);
+	}
 
 	return pmic_get_register_value(PMIC_DA_QI_VBIF28_EN);
 }
@@ -177,6 +178,7 @@ int mt6355_get_auxadc_value(u8 channel)
 {
 	int count = 0;
 	signed int adc_result = 0, reg_val = 0;
+	unsigned int bif_en = 0;
 	struct pmic_auxadc_channel *auxadc_channel;
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
 
@@ -200,7 +202,8 @@ int mt6355_get_auxadc_value(u8 channel)
 	if (channel == AUXADC_LIST_MT6355_CHIP_TEMP)
 		pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 0);
 	if (channel == AUXADC_LIST_BATTEMP || channel == AUXADC_LIST_BATID || channel == AUXADC_LIST_VBIF) {
-		if (!wk_auxadc_ch3_bif_on(1))
+		bif_en = wk_auxadc_ch3_bif_on(1);
+		if (!bif_en)
 			pr_err("ch3 bif off\n");
 		if (channel == AUXADC_LIST_BATTEMP)
 			mutex_lock(&auxadc_ch3_mutex);
@@ -235,6 +238,15 @@ int mt6355_get_auxadc_value(u8 channel)
 	else if (auxadc_channel->resolution == 15)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
+
+	if (channel == AUXADC_LIST_BATTEMP) {
+		if (adc_result > 2000 || adc_result < 300) {
+			pr_err("[bif] b=%d,a=%d\n", bif_en, wk_auxadc_ch3_bif_on(2));
+			pr_err("[baton] vsen_mux_en = %d, tdet_en = %d\n",
+				pmic_get_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN),
+				pmic_get_register_value(PMIC_BATON_TDET_EN));
+		}
+	}
 
 	if (__ratelimit(&ratelimit))
 		pr_err("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
