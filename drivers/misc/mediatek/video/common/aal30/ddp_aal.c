@@ -818,6 +818,25 @@ static int disp_aal_write_param_to_reg(enum DISP_MODULE_ENUM module, struct cmdq
 	const int offset = aal_get_offset(module);
 
 	gain = param->DREGainFltStatus;
+#if defined(CONFIG_MACH_MT6799)
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(0) + offset, DRE_REG_2(gain[0], 0, gain[1], 14), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(1) + offset, DRE_REG_2(gain[2], 0, gain[3], 13), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(2) + offset, DRE_REG_2(gain[4], 0, gain[5], 12), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(3) + offset, DRE_REG_2(gain[6], 0, gain[7], 11), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(4) + offset, DRE_REG_2(gain[8], 0, gain[9], 11), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(5) + offset, DRE_REG_2(gain[10], 0, gain[11], 11), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(6) + offset,
+		      DRE_REG_3(gain[12], 0, gain[13], 11, gain[14], 22), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(7) + offset,
+		      DRE_REG_3(gain[15], 0, gain[16], 10, gain[17], 20), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(8) + offset,
+		      DRE_REG_3(gain[18], 0, gain[19], 10, gain[20], 20), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(9) + offset,
+		      DRE_REG_3(gain[21], 0, gain[22], 9, gain[23], 18), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(10) + offset,
+		      DRE_REG_3(gain[24], 0, gain[25], 9, gain[26], 18), ~0);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE_11 + offset, DRE_REG_2(gain[27], 0, gain[28], 9), ~0);
+#else
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(0) + offset, DRE_REG_2(gain[0], 0, gain[1], 12), ~0);
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(1) + offset, DRE_REG_2(gain[2], 0, gain[3], 12), ~0);
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(2) + offset, DRE_REG_2(gain[4], 0, gain[5], 11), ~0);
@@ -836,7 +855,7 @@ static int disp_aal_write_param_to_reg(enum DISP_MODULE_ENUM module, struct cmdq
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(9) + offset,
 		      DRE_REG_3(gain[24], 0, gain[25], 9, gain[26], 18), ~0);
 	DISP_REG_MASK(cmdq, DISP_AAL_DRE_FLT_FORCE(10) + offset, DRE_REG_2(gain[27], 0, gain[28], 9), ~0);
-
+#endif
 	DISP_REG_MASK(cmdq, DISP_AAL_CABC_00 + offset, 1 << 31, 1 << 31);
 	DISP_REG_MASK(cmdq, DISP_AAL_CABC_02 + offset, ((1 << 26) | param->cabc_fltgain_force),
 		      ((1 << 26) | 0x3ff));
@@ -901,9 +920,15 @@ static int aal_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config 
 /*****************************************************************************
  * AAL Backup / Restore function
  *****************************************************************************/
+#if defined(CONFIG_MACH_MT6799)
+#define DRE_FLT_NUM	(12)
+#else
+#define DRE_FLT_NUM	(11)
+#endif
+
 struct aal_backup { /* structure for backup AAL register value */
 	unsigned int DRE_MAPPING;
-	unsigned int DRE_FLT_FORCE[11];
+	unsigned int DRE_FLT_FORCE[DRE_FLT_NUM];
 	unsigned int CABC_00;
 	unsigned int CABC_02;
 	unsigned int CABC_GAINLMT[11];
@@ -921,8 +946,14 @@ static void ddp_aal_backup(void)
 		g_aal_backup.CABC_GAINLMT[i] = DISP_REG_GET(DISP_AAL_CABC_GAINLMT_TBL(i));
 
 	g_aal_backup.DRE_MAPPING = DISP_REG_GET(DISP_AAL_DRE_MAPPING_00);
-	for (i = 0; i <= 10; i++)
+#if defined(CONFIG_MACH_MT6799)
+	for (i = 0; i < (DRE_FLT_NUM-1); i++)
 		g_aal_backup.DRE_FLT_FORCE[i] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE(i));
+	g_aal_backup.DRE_FLT_FORCE[11] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE_11);
+#else
+	for (i = 0; i < DRE_FLT_NUM; i++)
+		g_aal_backup.DRE_FLT_FORCE[i] = DISP_REG_GET(DISP_AAL_DRE_FLT_FORCE(i));
+#endif
 	g_aal_initialed = 1;
 
 }
@@ -941,8 +972,14 @@ static void ddp_aal_restore(enum DISP_MODULE_ENUM module, void *cmq_handle)
 			DISP_REG_SET(cmq_handle, DISP_AAL_CABC_GAINLMT_TBL(i) + offset, g_aal_backup.CABC_GAINLMT[i]);
 
 		DISP_REG_SET(cmq_handle, DISP_AAL_DRE_MAPPING_00 + offset, g_aal_backup.DRE_MAPPING);
-		for (i = 0; i <= 10; i++)
+#if defined(CONFIG_MACH_MT6799)
+		for (i = 0; i < (DRE_FLT_NUM-1); i++)
 			DISP_REG_SET(cmq_handle, DISP_AAL_DRE_FLT_FORCE(i) + offset, g_aal_backup.DRE_FLT_FORCE[i]);
+		DISP_REG_SET(cmq_handle, DISP_AAL_DRE_FLT_FORCE_11 + offset, g_aal_backup.DRE_FLT_FORCE[11]);
+#else
+		for (i = 0; i < DRE_FLT_NUM; i++)
+			DISP_REG_SET(cmq_handle, DISP_AAL_DRE_FLT_FORCE(i) + offset, g_aal_backup.DRE_FLT_FORCE[i]);
+#endif
 	}
 }
 
