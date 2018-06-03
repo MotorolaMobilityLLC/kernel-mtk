@@ -105,6 +105,7 @@ config MTK_EINT_MULTI_TRIGGER_DESIGN
 	depends on PINCTRL_MTK
 	default n
 	help
-	  On MTK EINT design, a GPIO pin is connected to 2 EINT pin  in order to
-	  save pins for assignments. Which EINT pin is actually occupied by a GPIO
+	  On MTK EINT design, a GPIO pin is connected to 2 EINT pin in order to
+	  save pins for assignments.
+	  Which EINT pin is actually occupied by a GPIO
 	  is described in *pins and it is decided in run time.
