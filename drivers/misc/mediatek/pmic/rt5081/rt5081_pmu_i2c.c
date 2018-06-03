@@ -1,14 +1,15 @@
 /*
- *  drivers/mfd/rt5081_pmu_i2c.c
- *  Driver to Richtek RT5081 PMU.
- *
  *  Copyright (C) 2016 Richtek Technology Corp.
  *  cy_huang <cy_huang@richtek.com>
  *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/module.h>
@@ -158,6 +159,17 @@ out_parse_dt:
 	return ret;
 }
 
+static inline void rt_config_of_node(struct device *dev)
+{
+	struct device_node *np = NULL;
+
+	np = of_find_node_by_name(NULL, "rt5081_pmu_dts");
+	if (np) {
+		dev_err(dev, "find rt5081_pmu_dts node\n");
+		dev->of_node = np;
+	}
+}
+
 static inline int rt5081_pmu_chip_id_check(struct i2c_client *i2c)
 {
 	int ret = 0;
@@ -205,6 +217,7 @@ static int rt5081_pmu_probe(struct i2c_client *i2c,
 		return ret;
 	chip_rev = ret;
 	if (use_dt) {
+		rt_config_of_node(&i2c->dev);
 		pdata = devm_kzalloc(&i2c->dev, sizeof(*pdata), GFP_KERNEL);
 		if (!pdata)
 			return -ENOMEM;

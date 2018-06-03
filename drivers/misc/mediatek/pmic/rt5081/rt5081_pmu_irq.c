@@ -1,14 +1,15 @@
 /*
- *  drivers/mfd/rt5081_pmu_irq.c
- *  Driver to Richtek RT5081 PMU IRQ.
- *
  *  Copyright (C) 2016 Richtek Technology Corp.
  *  cy_huang <cy_huang@richtek.com>
  *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/module.h>
@@ -131,48 +132,52 @@ static const struct irq_mapping_tbl rt5081_pmu_irq_mapping_tbl[] = {
 	RT5081_PMU_IRQ_MAPPING(dsv_vpos_scp, 127),
 };
 
+static uint8_t rt5081_pmu_curr_irqmask[16];
+
+static void rt5081_pmu_irq_bus_lock(struct irq_data *data)
+{
+	struct rt5081_pmu_chip *chip = data->chip_data;
+	int ret = 0;
+
+	ret = rt5081_pmu_reg_block_read(chip,
+					RT5081_PMU_CHGMASK1, 16,
+					rt5081_pmu_curr_irqmask);
+	if (ret < 0)
+		dev_err(chip->dev, "%s: read irq mask fail\n", __func__);
+}
+
+static void rt5081_pmu_irq_bus_sync_unlock(struct irq_data *data)
+{
+	struct rt5081_pmu_chip *chip = data->chip_data;
+	int ret = 0;
+
+	ret = rt5081_pmu_reg_block_write(chip,
+					 RT5081_PMU_CHGMASK1, 16,
+					 rt5081_pmu_curr_irqmask);
+	if (ret < 0)
+		dev_err(chip->dev, "%s: write irq mask fail\n", __func__);
+}
+
 static void rt5081_pmu_irq_mask(struct irq_data *data)
 {
 	struct rt5081_pmu_chip *chip = data->chip_data;
-	u8 mask[16] = {0};
-	int ret = 0;
 
 	dev_dbg(chip->dev, "%s: hwirq = %d\n", __func__, (int)data->hwirq);
-	ret = rt5081_pmu_reg_block_read(chip,
-					RT5081_PMU_CHGMASK1, 16, mask);
-	if (ret < 0) {
-		dev_err(chip->dev, "%s: read irq mask fail\n", __func__);
-		return;
-	}
-	mask[data->hwirq / 8] |= (1 << (data->hwirq % 8));
-	ret = rt5081_pmu_reg_block_write(chip,
-					 RT5081_PMU_CHGMASK1, 16, mask);
-	if (ret < 0)
-		dev_err(chip->dev, "%s: write irq mask fail\n", __func__);
+	rt5081_pmu_curr_irqmask[data->hwirq / 8] |= (1 << (data->hwirq % 8));
 }
 
 static void rt5081_pmu_irq_unmask(struct irq_data *data)
 {
 	struct rt5081_pmu_chip *chip = data->chip_data;
-	u8 mask[16] = {0};
-	int ret = 0;
 
 	dev_dbg(chip->dev, "%s: hwirq = %d\n", __func__, (int)data->hwirq);
-	ret = rt5081_pmu_reg_block_read(chip,
-					RT5081_PMU_CHGMASK1, 16, mask);
-	if (ret < 0) {
-		dev_err(chip->dev, "%s: read irq mask fail\n", __func__);
-		return;
-	}
-	mask[data->hwirq / 8] &= ~(1 << (data->hwirq % 8));
-	ret = rt5081_pmu_reg_block_write(chip,
-					 RT5081_PMU_CHGMASK1, 16, mask);
-	if (ret < 0)
-		dev_err(chip->dev, "%s: write irq mask fail\n", __func__);
+	rt5081_pmu_curr_irqmask[data->hwirq / 8] &= ~(1 << (data->hwirq % 8));
 }
 
 static struct irq_chip rt5081_pmu_irq_chip = {
 	.name = "rt5081_pmu_irq",
+	.irq_bus_lock = rt5081_pmu_irq_bus_lock,
+	.irq_bus_sync_unlock = rt5081_pmu_irq_bus_sync_unlock,
 	.irq_mask = rt5081_pmu_irq_mask,
 	.irq_unmask = rt5081_pmu_irq_unmask,
 };
@@ -187,7 +192,7 @@ static int rt5081_pmu_irq_domain_map(struct irq_domain *d, unsigned int virq,
 	irq_set_chip_data(virq, chip);
 	irq_set_chip_and_handler(virq, &rt5081_pmu_irq_chip, handle_simple_irq);
 	irq_set_nested_thread(virq, true);
-#if 1 /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)) */
+#if 1 /*(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)) */
 	irq_set_parent(virq, chip->irq);
 #endif
 #ifdef CONFIG_ARM
@@ -369,7 +374,7 @@ void rt5081_pmu_irq_unregister(struct rt5081_pmu_chip *chip)
 
 	device_init_wakeup(chip->dev, false);
 	devm_free_irq(chip->dev, chip->irq, chip);
-#if 1 /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)) */
+#if 1 /*(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)) */
 	irq_domain_remove(chip->irq_domain);
 #endif
 	gpio_free(pdata->intr_gpio);
