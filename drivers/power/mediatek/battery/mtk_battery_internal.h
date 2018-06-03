@@ -479,19 +479,19 @@ struct hw_info_data {
 struct fuel_gauge_table_custom_data {
 	/* cust_battery_meter_table.h */
 	int fg_profile_t0_size;
-	FUELGAUGE_PROFILE_STRUCT fg_profile_t0[100];
+	struct FUELGAUGE_PROFILE_STRUCT fg_profile_t0[100];
 	int fg_profile_t1_size;
-	FUELGAUGE_PROFILE_STRUCT fg_profile_t1[100];
+	struct FUELGAUGE_PROFILE_STRUCT fg_profile_t1[100];
 	int fg_profile_t2_size;
-	FUELGAUGE_PROFILE_STRUCT fg_profile_t2[100];
+	struct FUELGAUGE_PROFILE_STRUCT fg_profile_t2[100];
 	int fg_profile_t3_size;
-	FUELGAUGE_PROFILE_STRUCT fg_profile_t3[100];
+	struct FUELGAUGE_PROFILE_STRUCT fg_profile_t3[100];
 	int fg_profile_t4_size;
-	FUELGAUGE_PROFILE_STRUCT fg_profile_t4[100];
+	struct FUELGAUGE_PROFILE_STRUCT fg_profile_t4[100];
 	int fg_profile_temperature_0_size;
-	FUELGAUGE_PROFILE_STRUCT fg_profile_temperature_0[100];
+	struct FUELGAUGE_PROFILE_STRUCT fg_profile_temperature_0[100];
 	int fg_profile_temperature_1_size;
-	FUELGAUGE_PROFILE_STRUCT fg_profile_temperature_1[100];
+	struct FUELGAUGE_PROFILE_STRUCT fg_profile_temperature_1[100];
 };
 
 struct PMU_ChargerStruct {
