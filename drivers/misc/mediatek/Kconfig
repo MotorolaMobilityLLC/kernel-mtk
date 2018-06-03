@@ -51,6 +51,15 @@ config MTK_DTBO_FEATURE
 	  in the existing tree.
 	  If you are not sure about this, set y
 
+config MTK_AB_OTA_UPDATER
+	bool "Support Android A/B system updates"
+	default n
+	help
+	  MediaTek A/B system updates support.
+	  Partitions which need OTA update have both A and B partition.
+	  Y means this kernel enabled OTA A/B system updates feature.
+	  If you are not sure about this, set n
+
 config MTK_ENG_BUILD
 	bool "flag for MTK eng/usr build verification"
 	default n
