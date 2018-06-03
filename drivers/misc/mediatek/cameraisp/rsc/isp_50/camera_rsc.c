@@ -377,6 +377,7 @@ struct RSC_INFO_STRUCT {
 	spinlock_t SpinLockIrq[RSC_IRQ_TYPE_AMOUNT];
 	wait_queue_head_t WaitQueueHead;
 	struct work_struct ScheduleRscWork;
+	struct workqueue_struct *wkqueue;
 	unsigned int UserCount;	/* User Count */
 	unsigned int DebugMask;	/* Debug Mask */
 	signed int IrqNum;
@@ -3428,6 +3429,9 @@ static signed int RSC_probe(struct platform_device *pDev)
 		/*  */
 		init_waitqueue_head(&RSCInfo.WaitQueueHead);
 		INIT_WORK(&RSCInfo.ScheduleRscWork, RSC_ScheduleWork);
+		RSCInfo.wkqueue = create_singlethread_workqueue("RSC-CMDQ-WQ");
+		if (!RSCInfo.wkqueue)
+			LOG_ERR("NULL RSC-CMDQ-WQ\n");
 
 		wake_lock_init(&RSC_wake_lock, WAKE_LOCK_SUSPEND, "rsc_lock_wakelock");
 
@@ -3466,6 +3470,11 @@ static signed int RSC_remove(struct platform_device *pDev)
 	int i;
 	/*  */
 	LOG_DBG("- E.");
+
+	/* wait for unfinished works in the workqueue. */
+	destroy_workqueue(RSCInfo.wkqueue);
+	RSCInfo.wkqueue = NULL;
+
 	/* unregister char driver. */
 	RSC_UnregCharDev();
 
@@ -4084,10 +4093,12 @@ static irqreturn_t ISP_Irq_RSC(signed int Irq, void *DeviceId)
 		/* ConfigRSC(); */
 		if (bResulst == MTRUE) {
 			#ifndef ENGINE
-			schedule_work(&RSCInfo.ScheduleRscWork);
+			/* schedule_work(&RSCInfo.ScheduleRscWork); */
+			queue_work(RSCInfo.wkqueue, &RSCInfo.ScheduleRscWork);
 			#else
 			#if REQUEST_REGULATION == REQUEST_BASE_REGULATION
-			schedule_work(&RSCInfo.ScheduleRscWork);
+			/* schedule_work(&RSCInfo.ScheduleRscWork); */
+			queue_work(RSCInfo.wkqueue, &RSCInfo.ScheduleRscWork);
 			#endif
 			#endif
 #ifdef RSC_USE_GCE
@@ -4131,7 +4142,8 @@ static irqreturn_t ISP_Irq_RSC(signed int Irq, void *DeviceId)
 	*  DpeDveSta0:0x%x\n", DveStatus, RscStatus, DpeDveSta0);
 	*/
 	#if defined(ENGINE) && (REQUEST_REGULATION == FRAME_BASE_REGULATION)
-	schedule_work(&RSCInfo.ScheduleRscWork);
+	/* schedule_work(&RSCInfo.ScheduleRscWork); */
+	queue_work(RSCInfo.wkqueue, &RSCInfo.ScheduleRscWork);
 	#endif
 
 	if (RscStatus & RSC_INT_ST)
