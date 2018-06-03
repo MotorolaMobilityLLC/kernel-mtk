@@ -19,6 +19,8 @@
 #include <kd_imgsensor_define.h>
 #include "imgsensor_common.h"
 
+extern void mipi_26m_en(unsigned int module_idx, int en);
+
 struct IMGSENSOR_CLK {
 	struct clk *mclk_sel[IMGSENSOR_MCLK_MAX_NUM];
 	atomic_t    enable_cnt[IMGSENSOR_MCLK_MAX_NUM];

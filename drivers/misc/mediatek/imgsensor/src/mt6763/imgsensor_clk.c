@@ -15,8 +15,6 @@
 #include "imgsensor_common.h"
 #include "imgsensor_clk.h"
 
-extern void mipic_26m_en(int en);
-
 char *gimgsensor_mclk_name[IMGSENSOR_MCLK_MAX_NUM] = {
 	"TOP_CAMTG_SEL",
 	"TOP_CAMTG2_SEL",
@@ -113,14 +111,18 @@ int imgsensor_clk_set(struct IMGSENSOR_CLK *pclk, ACDK_SENSOR_MCLK_STRUCT *pmclk
 
 void imgsensor_clk_enable_all(struct IMGSENSOR_CLK *pclk)
 {
-	mipic_26m_en(1);
+	/* mipi_26m_en(idx, en) is ref clk control api provided by clock manager
+	* the first arg idx : 0 means display, 1 means camera
+	* the second arg en : 0 means disable, 1 means enable
+	*/
+	mipi_26m_en(1, 1);
 }
 
 void imgsensor_clk_disable_all(struct IMGSENSOR_CLK *pclk)
 {
 	int i;
 
-	mipic_26m_en(0);
+	mipi_26m_en(1, 0);
 
 	for (i = 0; i < IMGSENSOR_MCLK_MAX_NUM; i++) {
 		for (; atomic_read(&pclk->enable_cnt[i]) > 0; ) {
