@@ -2065,6 +2065,7 @@ static void usb_update(struct usb_data *usb_data)
 		power_supply_changed(usb_psy);
 	}
 }
+#endif
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // Battery Temprature Parameters and functions */
@@ -4905,7 +4906,7 @@ static struct platform_driver mt_batteryNotify_dts_driver = {
 };
 #endif
 /* -------------------------------------------------------- */
-#endif
+
 static int battery_pm_event(struct notifier_block *notifier, unsigned long pm_event, void *unused)
 {
 	switch (pm_event) {
