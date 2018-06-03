@@ -445,7 +445,7 @@ void mt6358_auxadc_monitor_mts_regs(void)
 		pr_notice("AUXADC_ADC16 = 0x%x\n", upmu_get_reg_value(MT6358_AUXADC_ADC16));
 		pr_notice("AUXADC_ADC17 = 0x%x\n", upmu_get_reg_value(MT6358_AUXADC_ADC17));
 	}
-	if (mts_count > 15) {
+	if (mts_count > 30) {
 #ifdef CONFIG_MTK_PMIC_WRAP_HAL
 		pwrap_dump_all_register();
 #endif
@@ -506,7 +506,7 @@ int mts_kthread(void *x)
 				pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
 				pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
 			}
-			if (polling_cnt >= 312) { /* 312 * 32ms ~= 10s*/
+			if (polling_cnt >= 624) { /* 624 * 32ms ~= 20s*/
 				mt6358_mts_reg_dump();
 				aee_kernel_warning("PMIC AUXADC:MDRT", "MDRT");
 				break;
