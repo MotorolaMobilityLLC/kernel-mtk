@@ -1141,7 +1141,7 @@ int mtk_uart_vfifo_prepare(struct mtk_uart *uart)
 }
 
 /*---------------------------------------------------------------------------*/
-static struct mtk_uart_vfifo *mtk_uart_vfifo_alloc(struct mtk_uart *uart, UART_VFF_TYPE type)
+static struct mtk_uart_vfifo *mtk_uart_vfifo_alloc(struct mtk_uart *uart, int type)
 {
 	struct mtk_uart_vfifo *vfifo = NULL;
 	unsigned long flags;
