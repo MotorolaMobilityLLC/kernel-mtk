@@ -160,12 +160,9 @@ void __iomem *usb_phy_base;
 #endif
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-u32 port_mode = PORT_MODE_USB;
-u32 sw_tx;
-u32 sw_rx;
-u32 sw_uart_path;
-#define AP_UART0_COMPATIBLE_NAME "mediatek,mt6735-uart"
-void __iomem *ap_uart0_base;
+static u32 port_mode = PORT_MODE_USB;
+#define AP_GPIO_COMPATIBLE_NAME "mediatek,gpio"
+void __iomem *ap_gpio_base;
 #endif
 
 /*EP Fifo Config*/
@@ -806,7 +803,7 @@ static void uart_usb_switch_dump_register(void)
 	DBG(0, "[MUSB]addr: 0x18, value: %x\n", USBPHY_READ32(0x18));
 
 	usb_enable_clock(false);
-	DBG(0, "[MUSB]addr: 0x110020B0 (UART0), value: %x\n\n", DRV_Reg8(ap_uart0_base + 0xB0));
+	DBG(0, "[MUSB]GPIO_SEL=%x\n", GET_GPIO_SEL_VAL(readl(ap_gpio_base)));
 }
 
 static ssize_t mt_usb_show_portmode(struct device *dev, struct device_attribute *attr, char *buf)
@@ -864,16 +861,15 @@ DEVICE_ATTR(portmode, 0664, mt_usb_show_portmode, mt_usb_store_portmode);
 
 static ssize_t mt_usb_show_uart_path(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	UINT8 var;
+	UINT32 var;
 
 	if (!dev) {
 		DBG(0, "dev is null!!\n");
 		return 0;
 	}
 
-	var = DRV_Reg8(ap_uart0_base + 0xB0);
-	DBG(0, "[MUSB]addr: (UART0) 0xB0, value: %x\n\n", DRV_Reg8(ap_uart0_base + 0xB0));
-	sw_uart_path = var;
+	var = GET_GPIO_SEL_VAL(readl(ap_gpio_base));
+	DBG(0, "[MUSB]GPIO SELECT=%x\n", var);
 
 	return scnprintf(buf, PAGE_SIZE, "%x\n", var);
 }
@@ -1210,6 +1206,7 @@ static int mt_usb_init(struct musb *musb)
 	musb->power = false;
 	musb->is_host = false;
 	musb->fifo_size = 8 * 1024;
+	musb->usb_rev6_setting = usb_rev6_setting;
 
 	wake_lock_init(&musb->usb_lock, WAKE_LOCK_SUSPEND, "USB suspend lock");
 
@@ -1247,6 +1244,8 @@ static int mt_usb_init(struct musb *musb)
 		pr_err("regulator_get va12 failed\n");
 
 #endif
+
+	ret = device_create_file(musb->controller, &dev_attr_cmode);
 
 	/* mt_usb_enable(musb); */
 
@@ -1311,7 +1310,7 @@ static int mt_usb_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node;
 #endif
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-	struct device_node *ap_uart0_node = NULL;
+	struct device_node *ap_gpio_node = NULL;
 #endif
 	int ret = -ENOMEM;
 
@@ -1321,7 +1320,7 @@ static int mt_usb_probe(struct platform_device *pdev)
 		goto err0;
 	}
 
-	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
+	musb = platform_device_alloc("musb-hdrc", -1);
 	if (!musb) {
 		dev_err(&pdev->dev, "failed to allocate musb device\n");
 		goto err1;
@@ -1349,16 +1348,18 @@ static int mt_usb_probe(struct platform_device *pdev)
 #endif
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-	ap_uart0_node = of_find_compatible_node(NULL, NULL, AP_UART0_COMPATIBLE_NAME);
+	ap_gpio_node = of_find_compatible_node(NULL, NULL, AP_GPIO_COMPATIBLE_NAME);
 
-	if (ap_uart0_node == NULL) {
-		dev_err(&pdev->dev, "USB get ap_uart0_node failed\n");
-		if (ap_uart0_base)
-			iounmap(ap_uart0_base);
-		ap_uart0_base = 0;
+	if (ap_gpio_node == NULL) {
+		dev_err(&pdev->dev, "USB get ap_gpio_node failed\n");
+		if (ap_gpio_base)
+			iounmap(ap_gpio_base);
+		ap_gpio_base = 0;
 	} else {
-		ap_uart0_base = of_iomap(ap_uart0_node, 0);
+		ap_gpio_base = of_iomap(ap_gpio_node, 0);
+		ap_gpio_base += RG_GPIO_SELECT;
 	}
+
 #endif
 
 	of_property_read_u32(np, "num_eps", (u32 *) &config->num_eps);
@@ -1410,7 +1411,6 @@ static int mt_usb_probe(struct platform_device *pdev)
 		goto err2;
 	}
 
-	ret = device_create_file(&pdev->dev, &dev_attr_cmode);
 	ret = device_create_file(&pdev->dev, &dev_attr_saving);
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	ret = device_create_file(&pdev->dev, &dev_attr_portmode);

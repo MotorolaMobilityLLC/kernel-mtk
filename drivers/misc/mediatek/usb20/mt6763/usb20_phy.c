@@ -294,6 +294,8 @@ bool usb_phy_check_in_uart_mode(void)
 
 void usb_phy_switch_to_uart(void)
 {
+	unsigned int val = 0;
+
 	if (usb_phy_check_in_uart_mode()) {
 		DBG(0, "Already in UART mode.\n");
 		return;
@@ -342,15 +344,22 @@ void usb_phy_switch_to_uart(void)
 	usb_enable_clock(false);
 
 	/* GPIO Selection */
-	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x1);
+	val = readl(ap_gpio_base);
+	writel(val & (~(GPIO_SEL_MASK)), ap_gpio_base);
+
+	val = readl(ap_gpio_base);
+	writel(val | (GPIO_SEL_UART0), ap_gpio_base);
 
 	in_uart_mode = true;
 }
 
 void usb_phy_switch_to_usb(void)
 {
+	unsigned int val = 0;
+
 	/* GPIO Selection */
-	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x0);
+	val = readl(ap_gpio_base);
+	writel(val & (~(GPIO_SEL_MASK)), ap_gpio_base);
 
 	usb_enable_clock(true);
 	udelay(50);
@@ -369,6 +378,19 @@ void usb_phy_switch_to_usb(void)
 	usb_enable_clock(false);
 }
 #endif
+
+void usb_rev6_setting(int value)
+{
+	DBG(0, "0x18=0x%x\n", USBPHY_READ32(0x18));
+
+	/* RG_USB20_PHY_REV[7:0] = 8'b01000000 */
+	USBPHY_CLR32(0x18, (0xFF << 24));
+
+	if (value)
+		USBPHY_SET32(0x18, (value << 24));
+
+	DBG(0, "0x18=0x%x\n", USBPHY_READ32(0x18));
+}
 
 /* M17_USB_PWR Sequence 20160603.xls */
 void usb_phy_poweron(void)
@@ -418,6 +440,10 @@ void usb_phy_poweron(void)
 
 	/* force_suspendm, 1'b0 */
 	USBPHY_CLR32(0x68, (0x1 << 18));
+
+	/* RG_USB20_PHY_REV[7:0] = 8'b01000000 */
+	USBPHY_CLR32(0x18, (0xFF << 24));
+	USBPHY_SET32(0x18, (0x40 << 24));
 
 	/* wait for 800 usec. */
 	udelay(800);
@@ -588,6 +614,10 @@ void usb_phy_recover(void)
 	USBPHY_CLR32(0x18, (0x1 << 23));
 	/* RG_USB20_OTG_VBUSCMP_EN, 1'b1 */
 	USBPHY_SET32(0x18, (0x1 << 20));
+
+	/* RG_USB20_PHY_REV[7:0] = 8'b01000000 */
+	USBPHY_CLR32(0x18, (0xFF << 24));
+	USBPHY_SET32(0x18, (0x40 << 24));
 
 	/* wait 800 usec. */
 	udelay(800);
