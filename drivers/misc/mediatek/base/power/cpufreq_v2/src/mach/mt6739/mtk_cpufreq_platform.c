@@ -60,7 +60,7 @@ static int set_cur_volt_proc1_cpu(struct buck_ctrl_t *buck_p, unsigned int volt)
 	return regulator_set_voltage(regulator_proc1, volt * 10, max_volt * 10);
 }
 
-static unsigned int get_cur_volt_proc1_cpu_6357(struct buck_ctrl_t *buck_p)
+static unsigned int get_cur_volt_proc1_cpu(struct buck_ctrl_t *buck_p)
 {
 	unsigned int rdata;
 
@@ -69,18 +69,14 @@ static unsigned int get_cur_volt_proc1_cpu_6357(struct buck_ctrl_t *buck_p)
 	return rdata;
 }
 
-static unsigned int mt6357_vproc1_transfer2pmicval(unsigned int volt)
+static unsigned int mt6357_volt_transfer2pmicval(unsigned int volt)
 {
-#if 0
-	return ((volt - 50000) + PMIC_STEP - 1) / PMIC_STEP;
-#else	/* 6357*/
 	return ((volt - 51875) + PMIC_STEP - 1) / PMIC_STEP;
-#endif
 }
 
-static unsigned int mt6357_vproc1_transfer2volt(unsigned int val)
+static unsigned int mt6357_volt_transfer2volt(unsigned int val)
 {
-	return val * PMIC_STEP + 50000;
+	return val * PMIC_STEP + 51875;
 }
 
 static unsigned int mt6357_vproc1_settletime(unsigned int old_volt, unsigned int new_volt)
@@ -108,24 +104,6 @@ static unsigned int get_cur_volt_sram1_cpu(struct buck_ctrl_t *buck_p)
 	return rdata;
 }
 
-static unsigned int mt6357_vsram1_transfer2pmicval(unsigned int volt)
-{
-#if 0
-	return ((volt - 50000) + PMIC_STEP - 1) / PMIC_STEP;
-#else	/* 6357 */
-	return ((volt - 51875) + PMIC_STEP - 1) / PMIC_STEP;
-#endif
-}
-
-static unsigned int mt6357_vsram1_transfer2volt(unsigned int val)
-{
-#if 0
-	return val * PMIC_STEP + 50000;
-#else	/* 6357 */
-	return val * PMIC_STEP + 51875;
-#endif
-}
-
 static unsigned int mt6357_vsram1_settletime(unsigned int old_volt, unsigned int new_volt)
 {
 	if (new_volt > old_volt)
@@ -136,18 +114,18 @@ static unsigned int mt6357_vsram1_settletime(unsigned int old_volt, unsigned int
 
 /* upper layer CANNOT use 'set' function in secure path */
 static struct buck_ctrl_ops buck_ops_mt6357_vproc1 = {
-	.get_cur_volt		= get_cur_volt_proc1_cpu_6357,
+	.get_cur_volt		= get_cur_volt_proc1_cpu,
 	.set_cur_volt		= set_cur_volt_proc1_cpu,
-	.transfer2pmicval	= mt6357_vproc1_transfer2pmicval,
-	.transfer2volt		= mt6357_vproc1_transfer2volt,
+	.transfer2pmicval	= mt6357_volt_transfer2pmicval,
+	.transfer2volt		= mt6357_volt_transfer2volt,
 	.settletime		= mt6357_vproc1_settletime,
 };
 
 static struct buck_ctrl_ops buck_ops_mt6357_vsram1 = {
 	.get_cur_volt		= get_cur_volt_sram1_cpu,
 	.set_cur_volt		= set_cur_volt_sram1_cpu,
-	.transfer2pmicval	= mt6357_vsram1_transfer2pmicval,
-	.transfer2volt		= mt6357_vsram1_transfer2volt,
+	.transfer2pmicval	= mt6357_volt_transfer2pmicval,
+	.transfer2volt		= mt6357_volt_transfer2volt,
 	.settletime		= mt6357_vsram1_settletime,
 };
 

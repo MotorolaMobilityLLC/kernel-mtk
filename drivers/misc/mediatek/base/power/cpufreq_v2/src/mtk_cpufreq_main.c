@@ -23,7 +23,7 @@
 #include "mtk_cpufreq_hybrid.h"
 #include "mtk_cpufreq_opp_table.h"
 
-#define DCM_ENABLE 1
+/* #define DCM_ENABLE 1 */
 /*
  * Global Variables
  */
