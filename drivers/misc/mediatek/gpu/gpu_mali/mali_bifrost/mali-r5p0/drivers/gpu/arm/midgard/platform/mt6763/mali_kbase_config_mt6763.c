@@ -32,6 +32,7 @@
 #include "mali_kbase_cpu_mt6763.h"
 #include "mtk_config_mt6763.h"
 #include "platform/mtk_platform_common.h"
+#include "ged_dvfs.h"
 
 #include "mtk_gpufreq.h"
 
@@ -143,6 +144,10 @@ static void _mtk_pm_callback_power_off(void)
 
 	mutex_lock(&g_mfg_lock);
 
+#ifdef ENABLE_COMMON_DVFS
+	ged_dvfs_gpu_clock_switch_notify(0);
+#endif
+
 	g_curFreqID = mt_gpufreq_get_cur_freq_index();
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
 
@@ -166,6 +171,7 @@ static void _mtk_pm_callback_power_off(void)
 static int _mtk_pm_callback_power_on(void)
 {
 	struct mtk_config *config = g_config;
+	u32 val;
 
 	if (!config) {
 		pr_alert("[MALI] power_on : mtk_config is NULL\n");
@@ -185,6 +191,18 @@ static int _mtk_pm_callback_power_on(void)
 	MTKCLK_prepare_enable(clk_mfg_cg);
 
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
+
+	val = readl(g_MFG_base + 0x8b0);
+	MFG_DEBUG("[MALI] B: 0x130008b0 val = 0x%x\n", readl(g_MFG_base + 0x8b0));
+	writel(val & ~(0x1), g_MFG_base + 0x8b0);
+	MFG_DEBUG("[MALI] A: 0x130008b0 val = 0x%x\n", readl(g_MFG_base + 0x8b0));
+
+	/* Resume frequency before power off */
+	mtk_set_mt_gpufreq_target(g_curFreqID);
+
+#ifdef ENABLE_COMMON_DVFS
+	ged_dvfs_gpu_clock_switch_notify(1);
+#endif
 
 	MFG_DEBUG("[MALI] power on");
 
