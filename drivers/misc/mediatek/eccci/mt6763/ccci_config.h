@@ -57,7 +57,7 @@
 #endif
 #define FEATURE_USING_4G_MEMORY_API
 /*#define FEATURE_LOW_BATTERY_SUPPORT disable for customer complaint*/
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 #define FEATURE_FPGA_PORTING
 #else
 #define FEATURE_RF_CLK_BUF
