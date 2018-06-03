@@ -92,7 +92,6 @@ static atomic_t ext_idlemgr_task_wakeup = ATOMIC_INIT(1);
 /* dvfs */
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_ULPM);
 #endif
-static int register_share_sram;
 
 
 /* Local API */
@@ -353,13 +352,15 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	int32_t acquireResult;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
-	DISPINFO("[disp_lowpower]%s\n", __func__);
-	if (use_wrot_sram())
+	DISPMSG("%s\n", __func__);
+	if (use_wrot_sram()) {
+		DISPERR("already acquired sram!!!");
 		return;
-
-	if (is_mipi_enterulps())
+	}
+	if (is_mipi_enterulps()) {
+		DISPERR("ULPS mode, cannot acquire sram");
 		return;
-
+	}
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
@@ -400,12 +401,6 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	primary_display_manual_lock();
-
-	if (!register_share_sram) {
-		/*DISPMSG("warning: mdp acquire wrot_resource after unregister the callback!\n");*/
-		primary_display_manual_unlock();
-		return 0;
-	}
 	_acquire_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
 
@@ -419,11 +414,11 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 	unsigned int rdma0_shadow_mode = 0;
 
-	DISPINFO("[disp_lowpower]%s\n", __func__);
-
-	if (use_wrot_sram() == 0)
+	DISPMSG("%s\n", __func__);
+	if (use_wrot_sram() == 0) {
+		DISPERR("no acquired sram to release!!!");
 		return;
-
+	}
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
@@ -467,13 +462,6 @@ static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* need lock  */
 	primary_display_manual_lock();
-
-	if (!register_share_sram) {
-		/*DISPMSG("warning:mdp release wrot_resource after unregister the callback!\n");*/
-		primary_display_manual_unlock();
-		return 0;
-	}
-
 	_release_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
 
@@ -1182,7 +1170,6 @@ void enter_share_sram(void)
 	/* 1. register call back first */
 	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0,
 		_acquire_wrot_resource, _release_wrot_resource);
-	register_share_sram = 1;
 	mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_PULSE, 0, 1);
 
 	/* 2. try to allocate sram at the fisrt time */
@@ -1193,7 +1180,6 @@ void leave_share_sram(void)
 {
 	/* 1. unregister call back */
 	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0, NULL, NULL);
-	register_share_sram = 0;
 	mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_PULSE, 0, 0);
 
 	/* 2. try to release share sram */
