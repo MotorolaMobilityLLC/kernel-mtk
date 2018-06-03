@@ -823,6 +823,8 @@
  */
 #define CFG_SUPPORT_SNIFFER                 1
 
+#define CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE 1
+
 #define WLAN_INCLUDE_PROC                   1
 
 
