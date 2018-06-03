@@ -15,6 +15,7 @@
 #include <linux/spinlock.h>
 #include <linux/slab.h>
 #include <mt-plat/aee.h>
+#include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/ioport.h>
 #include <linux/io.h>
@@ -143,43 +144,54 @@ static irqreturn_t sspm_mbox_irq_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static int sspm_mbox_group_init(int mbox, struct device_node *node, unsigned int is64d, sspm_ipi_isr isr)
+static int sspm_mbox_group_activate(int mbox, unsigned int is64d, sspm_ipi_isr isr)
 {
 	struct sspm_mbox *desc;
+	char name[32];
 	int ret;
+	struct device *dev = &sspm_pdev->dev;
+	struct resource *res;
 
 	desc = &sspmmbox[mbox];
 
-	desc->id = mbox;
-
 	desc->size = (is64d) ? SSPM_MBOX_8BYTE : SSPM_MBOX_4BYTE;
-
-	desc->base = of_iomap(node, 0);
-	if (!desc->base) {
-		pr_err("[SSPM] MBOX %d can't remap BASE\n", mbox);
-		goto fail;
-	}
-
-	desc->in_out = of_iomap(node, 1);
-	if (!desc->in_out) {
-		pr_err("[SSPM] MBOX %d can't find IN_OUT_IRQ\n", mbox);
-		goto fail;
-	}
-
-	desc->irq_num = irq_of_parse_and_map(node, 0);
-	if (!desc->irq_num) {
-		pr_err("[SSPM] MBOX %d can't find IRQ\n", mbox);
-		goto fail;
-	}
-
-	ret = request_irq(desc->irq_num, sspm_mbox_irq_handler, IRQF_TRIGGER_NONE, "SSPM_MBOX", (void *) desc);
-	if (ret) {
-		pr_err("[SSPM] MBOX %d request irq Failed\n", mbox);
-		goto fail;
-	}
-
 	desc->isr = isr;
-	desc->enable = 1;
+
+	if (sspm_pdev) {
+		snprintf(name, sizeof(name), "mbox%d_base", mbox);
+		res = platform_get_resource_byname(sspm_pdev, IORESOURCE_MEM, name);
+		desc->base = devm_ioremap_resource(dev, res);
+
+		if (IS_ERR((void const *) desc->base)) {
+			pr_err("[SSPM] MBOX %d can't remap BASE\n", mbox);
+			goto fail;
+		}
+
+		snprintf(name, sizeof(name), "mbox%d_ctrl", mbox);
+		res = platform_get_resource_byname(sspm_pdev, IORESOURCE_MEM, name);
+		desc->in_out = devm_ioremap_resource(dev, res);
+		if (IS_ERR((void const *) desc->in_out)) {
+			pr_err("[SSPM] MBOX %d can't find IN_OUT_IRQ\n", mbox);
+			goto fail;
+		}
+
+		snprintf(name, sizeof(name), "mbox%d", mbox);
+		desc->irq_num = platform_get_irq_byname(sspm_pdev, name);
+		if (desc->irq_num < 0) {
+			pr_err("[SSPM] MBOX %d can't find IRQ\n", mbox);
+			goto fail;
+		}
+
+		ret = request_irq(desc->irq_num, sspm_mbox_irq_handler, IRQF_TRIGGER_NONE, "SSPM_MBOX", (void *) desc);
+		if (ret) {
+			pr_err("[SSPM] MBOX %d request irq Failed\n", mbox);
+			goto fail;
+		}
+
+		desc->enable = 1;
+		desc->id = mbox;
+
+	}
 
 	return 0;
 
@@ -194,8 +206,6 @@ fail:
 unsigned int sspm_mbox_init(unsigned int mode, unsigned int count, sspm_ipi_isr isr)
 {
 	int mbox;
-	char compatible[32];
-	struct device_node *node = NULL;
 
 	if (count > SSPM_MBOX_MAX) {
 		pr_debug("[SSPM] %s(): count (%u) too large, set to %u\n", __func__, count, SSPM_MBOX_MAX);
@@ -203,15 +213,7 @@ unsigned int sspm_mbox_init(unsigned int mode, unsigned int count, sspm_ipi_isr 
 	}
 
 	for (mbox = 0; mbox < count; mbox++) {
-		snprintf(compatible, sizeof(compatible), "mediatek,sspm_mbox%d", mbox);
-
-		node = of_find_compatible_node(NULL, NULL, compatible);
-		if (!node) {
-			pr_err("[SSPM] Can't find node: mediatek, sspm_mbox%d", mbox);
-			goto fail;
-		}
-
-		if (sspm_mbox_group_init(mbox, node, mode & 0x1, isr))
+		if (sspm_mbox_group_activate(mbox, mode & 0x1, isr))
 			goto fail;
 
 		mode >>= 1;

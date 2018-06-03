@@ -79,8 +79,6 @@ int sspm_ipi_recv_registration(int mid, struct ipi_action *act)
 {
 	struct _pin_recv *pin;
 
-	sspm_lazy_init();
-
 	if ((mid < 0) || (mid >= TOTAL_RECV_PIN))
 		return IPI_SERVICE_NOT_AVAILABLE;
 	if (act == NULL)
@@ -258,8 +256,6 @@ int sspm_ipi_send_async(int mid, int opts, void *buffer, int len)
 	if ((mid < 0) || (mid >= TOTAL_SEND_PIN))
 		return IPI_SERVICE_NOT_AVAILABLE;
 
-	sspm_lazy_init();
-
 #ifdef SSPM_STF_ENABLED
 	if (test_table[mid].data)
 		test_table[mid].start_us = (unsigned int)(cpu_clock(0)/1000);
@@ -435,10 +431,9 @@ int sspm_ipi_send_async_wait_ex(int mid, int opts, void *retbuf, int retlen)
 	if (test_cnt >= IPI_TS_TEST_MAX) {
 		int i;
 
-		for (i = 0; i < IPI_TS_TEST_MAX; i++) {
+		for (i = 0; i < IPI_TS_TEST_MAX; i++)
 			pr_err("IPI %d: t0=%llu, t4=%llu, t5=%llu\n",
 				   i, ipi_t0[i], ipi_t4[i], ipi_t5[i]);
-		}
 		test_cnt = 0;
 	}
 #endif
