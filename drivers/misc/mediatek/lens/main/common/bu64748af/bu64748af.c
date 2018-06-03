@@ -126,6 +126,8 @@ static inline int moveAF(unsigned long a_u4Position)
 		g_u4CurrPosition = 0;
 		spin_unlock(g_pAF_SpinLock);
 
+		BU64748_main_soft_power_ctrl(1);
+
 		ret = BU64748_main_Initial();
 		if (ret) {
 			LOG_INF("bu64748af_main init failed.line:%d.\n",
@@ -207,7 +209,7 @@ int bu64748af_Release_Main(struct inode *a_pstInode, struct file *a_pstFile)
 
 	if (*g_pAF_Opened == 2) {
 		LOG_INF("Wait\n");
-		msleep(20);
+		BU64748_main_soft_power_ctrl(0);
 	}
 
 	if (*g_pAF_Opened) {
@@ -225,6 +227,13 @@ int bu64748af_Release_Main(struct inode *a_pstInode, struct file *a_pstFile)
 
 int bu64748af_PowerDown_Main(void)
 {
+	LOG_INF("+\n");
+	if (*g_pAF_Opened == 0) {
+		BU64748_main_soft_power_ctrl(0);
+		LOG_INF("apply\n");
+	}
+	LOG_INF("-\n");
+
 	return 0;
 }
 

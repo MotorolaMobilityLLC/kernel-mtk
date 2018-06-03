@@ -204,4 +204,6 @@ extern int main_SInEx(u8 slaveAddress, u8 *dat, int size, u8 *ret,
 void main_AF_TARGET(u16 target);
 int BU64748_main_Initial(void);
 u16 bu64748_main_af_cur_pos(void);
+void BU64748_main_soft_power_ctrl(int On);
+
 #endif

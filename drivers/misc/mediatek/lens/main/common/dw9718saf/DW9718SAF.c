@@ -127,8 +127,14 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 static int initdrv(void)
 {
 	int i4RetValue = 0;
+	char puSendCmd[2] = {0x00, 0x00}; /* soft power on */
 	char puSendCmd2[2] = {0x01, 0x39};
 	char puSendCmd3[2] = {0x05, 0x07};
+
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+
+	if (i4RetValue < 0)
+		return -1;
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 
@@ -249,8 +255,14 @@ int DW9718SAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
-	if (*g_pAF_Opened == 2)
-		LOG_INF("Wait\n");
+	if (*g_pAF_Opened == 2) {
+		int i4RetValue = 0;
+		char puSendCmd[2] = {0x00, 0x01};
+
+		LOG_INF("apply\n");
+
+		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	}
 
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
@@ -261,6 +273,22 @@ int DW9718SAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	}
 
 	LOG_INF("End\n");
+
+	return 0;
+}
+
+int DW9718SAF_PowerDown(void)
+{
+	LOG_INF("+\n");
+	if (*g_pAF_Opened == 0) {
+		int i4RetValue = 0;
+		char puSendCmd[2] = {0x00, 0x01};
+
+		LOG_INF("apply\n");
+
+		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	}
+	LOG_INF("-\n");
 
 	return 0;
 }

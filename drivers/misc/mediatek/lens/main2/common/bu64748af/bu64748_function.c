@@ -249,3 +249,18 @@ u16 bu64748_main2_af_cur_pos(void)
 	u16_dat = (read[0] * 256) + read[1];
 	return u16_dat;
 }
+
+void BU64748_main2_soft_power_ctrl(int On)
+{
+	if (On) {
+		I2C_func_MEM_WRITE(0x59, 0x000C);
+		I2C_func_MEM_WRITE(0x3D, 0x0080);
+		I2C_func_MEM_WRITE(0x72, 0x1111);
+		I2C_func_MEM_WRITE(0x30, 0x000D);
+	} else {
+		I2C_func_MEM_WRITE(0x30, 0x0000);
+		I2C_func_MEM_WRITE(0x59, 0x0000);
+		I2C_func_MEM_WRITE(0x3D, 0x0000);
+		I2C_func_MEM_WRITE(0x72, 0x0000);
+	}
+}
