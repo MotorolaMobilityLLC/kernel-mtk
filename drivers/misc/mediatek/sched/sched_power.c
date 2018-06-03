@@ -105,7 +105,7 @@ bool is_hybrid_enabled(void)
 	return (sched_type == SCHED_HYBRID_LB) ? true : false;
 }
 
-#if defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 /* MT6763: 2 gears. cluster 0 & 1 is buck shared. */
 static int share_buck[3] = {1, 0, 2};
 /* cpu7 is L+ */
