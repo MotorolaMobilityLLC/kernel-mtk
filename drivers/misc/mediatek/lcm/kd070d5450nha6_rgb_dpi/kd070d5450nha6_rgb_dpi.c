@@ -322,7 +322,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
-
+	params->density = 160;
 	params->dpi.format = LCM_DPI_FORMAT_RGB666;
 	params->dpi.rgb_order = LCM_COLOR_ORDER_RGB;
 
