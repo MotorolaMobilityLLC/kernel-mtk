@@ -314,6 +314,17 @@ extern struct cpumask cpu_domain_little_mask;	/* definition in kernel-3.10/arch/
 extern int sched_get_nr_running_avg(int *avg, int *iowait_avg);
 	/* definition in mediatek/kernel/kernel/sched/rq_stats.c */
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+extern int sched_get_cluster_util(int id, unsigned long *util, unsigned long *cap);
+extern void sched_max_util_task(int *cpu, int *pid, int *util, int *boost);
+#endif
+
+/* defined in kernel/sched/fair.c */
+extern int STUNE_TASK_THRESHOLD;
+
+/* define in drivers/misc/mediatek/sched/sched_power.c */
+extern int sodi_limit;
+
 /*=============================================================*/
 /* Global function declaration */
 /*=============================================================*/

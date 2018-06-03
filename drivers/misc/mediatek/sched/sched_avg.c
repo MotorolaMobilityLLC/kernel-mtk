@@ -55,6 +55,7 @@ typedef struct overutil_stats {
 	u64 l_last_update_time;
 	u64 h_last_update_time;
 	int max_task_util;
+	int max_boost_util;
 	int max_task_pid;
 } overutil_stats_t;
 
@@ -92,6 +93,7 @@ overutil_type_t is_task_overutil(struct task_struct *p)
 	/* track task with max utilization */
 	if (task_util > cpu_overutil->max_task_util) {
 		cpu_overutil->max_task_util = task_util;
+		cpu_overutil->max_boost_util = get_boosted_task_util(p);
 		cpu_overutil->max_task_pid = p->pid;
 	}
 
@@ -107,12 +109,14 @@ overutil_type_t is_task_overutil(struct task_struct *p)
 static int gb_task_util;
 static int gb_task_pid;
 static int gb_task_cpu;
+static int gb_boosted_util;
 
 void sched_max_util_task_tracking(void)
 {
 	int cpu;
 	overutil_stats_t *cpu_overutil;
 	int max_util = 0;
+	int boost_util = 0;
 	int max_cpu = 0;
 	int max_task_pid = 0;
 
@@ -121,28 +125,37 @@ void sched_max_util_task_tracking(void)
 
 		if (cpu_online(cpu) && (cpu_overutil->max_task_util > max_util)) {
 			max_util = cpu_overutil->max_task_util;
+			boost_util = cpu_overutil->max_boost_util;
 			max_cpu = cpu;
 			max_task_pid = cpu_overutil->max_task_pid;
 		}
 
 		cpu_overutil->max_task_util = 0;
+		cpu_overutil->max_boost_util = 0;
 		cpu_overutil->max_task_pid = 0;
 	}
 
 	gb_task_util = max_util;
+	gb_boosted_util = boost_util;
 	gb_task_pid = max_task_pid;
 	gb_task_cpu = max_cpu;
 
 #if MET_DEBUG_LOG
 	met_tag_oneshot(0, "sched_max_task_util", max_util);
+	met_tag_oneshot(0, "sched_boost_task_util", boost_util);
 #endif
 }
 
-void sched_max_util_task(int *cpu, int *pid, int *util)
+void sched_max_util_task(int *cpu, int *pid, int *util, int *boost)
 {
-	*cpu = gb_task_cpu;
-	*pid = gb_task_pid;
-	*util = gb_task_util;
+	if (cpu)
+		*cpu = gb_task_cpu;
+	if (pid)
+		*pid = gb_task_pid;
+	if (util)
+		*util = gb_task_util;
+	if (boost)
+		*boost = gb_boosted_util;
 }
 EXPORT_SYMBOL(sched_max_util_task);
 
@@ -471,13 +484,16 @@ int sched_get_cluster_util(int cluster_id, unsigned long *usage, unsigned long *
 	int cpu;
 	struct cpumask cls_cpus;
 
+	/* initialized */
+	if (usage)
+		*usage = 0;
+	if (capacity)
+		*capacity = 0;
+
 	/* cluster_id  need reasonale. */
 	cluster_nr = arch_get_nr_clusters();
 	if (cluster_id < 0 || cluster_id >= cluster_nr)
 		return -1;
-
-	/* initialized  */
-	*usage = *capacity = 0;
 
 	arch_get_cluster_cpus(&cls_cpus, cluster_id);
 
@@ -487,14 +503,15 @@ int sched_get_cluster_util(int cluster_id, unsigned long *usage, unsigned long *
 		 * cpu_util returns the amount of capacity of
 		 * a CPU that is used by CFS tasks
 		 */
-		*capacity += capacity_orig_of(cpu);
+		if (capacity)
+			*capacity += capacity_orig_of(cpu);
 
 		if (!cpu_online(cpu))
 			continue;
 
-		*usage += cpu_util(cpu);
+		if (usage)
+			*usage += cpu_util(cpu);
 	}
-
 
 	return 0;
 }
@@ -585,6 +602,8 @@ EXPORT_SYMBOL(sched_get_nr_overutil_avg);
  * @L_nr: task suggested in L.
  */
 #define MAX_CLUSTER_NR 3
+#define BIG_TASK_THRESHOLD 150
+
 void sched_big_task_nr(int *L_nr, int *B_nr)
 {
 	int l_nr, b_nr;
@@ -602,11 +621,20 @@ void sched_big_task_nr(int *L_nr, int *B_nr)
 	*L_nr = (l_nr%100 > 25)?(l_nr/100+1):(l_nr/100);
 	*B_nr = (b_nr%100 > 25)?(b_nr/100+1):(b_nr/100);
 
+	if (!(*L_nr + *B_nr)) {
+		/* To consider boosted util of stune */
+		int boosted;
+
+		sched_max_util_task(NULL, NULL, NULL, &boosted);
+		/* how to quantify it???? */
+		if (boosted > BIG_TASK_THRESHOLD)
+			*B_nr = 1;
+	}
+
 #if MET_DEBUG_LOG
 	met_tag_oneshot(0, "sched_task_b_nr", b_nr);
 	met_tag_oneshot(0, "sched_task_l_nr", l_nr);
 #endif
-
 }
 EXPORT_SYMBOL(sched_big_task_nr);
 

@@ -3436,6 +3436,8 @@ extern int calc_usage_delta(struct energy_env *eenv, int cpu);
 extern inline struct cfs_rq *group_cfs_rq(struct sched_entity *grp);
 extern inline struct cfs_rq *cfs_rq_of(struct sched_entity *se);
 extern struct sched_entity *__pick_next_entity(struct sched_entity *se);
+extern unsigned long
+get_boosted_task_util(struct task_struct *task);
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
 /* An entity is a task if it doesn't "own" a runqueue */

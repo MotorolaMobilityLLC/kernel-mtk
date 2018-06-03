@@ -520,10 +520,10 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 /* mtk: a linear bosot value for tuning */
 int linear_real_boost(int linear_boost)
 {
-	int target_cpu, pid, usage;
+	int target_cpu, usage;
 	int boost;
 
-	sched_max_util_task(&target_cpu, &pid, &usage);
+	sched_max_util_task(&target_cpu, NULL, &usage, NULL);
 
 	/* margin = (usage*linear_boost)/100; */
 	/* (original_cap - usage)*boost/100 = margin; */

@@ -180,24 +180,30 @@ int hps_cpu_init(void)
 		hps_sys.cluster_info[i].up_threshold = DEF_CPU_UP_THRESHOLD;
 		hps_sys.cluster_info[i].down_threshold = DEF_CPU_DOWN_THRESHOLD;
 	}
+
 #if 1
-/* Change default power sequence of HPS*/
+	/* Change default power sequence of HPS*/
 	hps_sys.cluster_info[0].pwr_seq = 0;
 	hps_sys.cluster_info[1].pwr_seq = 2;
 	hps_sys.cluster_info[2].pwr_seq = 1;
 #endif
-#if 0  /*For EAS  evaluation*/
-		hps_sys.cluster_info[0].up_threshold = 20;
-		hps_sys.cluster_info[0].down_threshold = 10;
 
-		hps_sys.cluster_info[1].up_threshold = 70;
-		hps_sys.cluster_info[1].down_threshold = 60;
+	/*
+	 * For EAS evaluation
+	 */
+	/* LL: relative threshold, for more cores + low frequency policy */
+	hps_sys.cluster_info[0].up_threshold = 20;
+	hps_sys.cluster_info[0].down_threshold = 10;
 
-		hps_sys.cluster_info[2].up_threshold = 95;
-		hps_sys.cluster_info[2].down_threshold = 20;
-#endif
+	/* L: absolute threshold */
+	hps_sys.cluster_info[1].up_threshold = 70;
+	hps_sys.cluster_info[1].down_threshold = 60;
+
+	/* B: absolute threshold */
+	hps_sys.cluster_info[2].up_threshold = 80;
+	hps_sys.cluster_info[2].down_threshold = 20;
+
 	hps_ops_init();
-	/*========================================================================================================*/
 
 	return r;
 }

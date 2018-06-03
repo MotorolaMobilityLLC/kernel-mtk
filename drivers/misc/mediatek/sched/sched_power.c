@@ -42,12 +42,12 @@ struct eas_data {
 struct eas_data eas_info;
 
 static int ver_major = 1;
-static int ver_minor = 6;
+static int ver_minor = 8;
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-static const char module_name[32] = "arctic, sched-assistDVFS";
+static const char module_name[64] = "arctic, sched-assist dvfs,hps";
 #else
-static const char module_name[32] = "arctic";
+static const char module_name[64] = "arctic";
 #endif
 
 
@@ -535,7 +535,7 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 {
 	unsigned int len = 0;
 	unsigned int max_len = 4096;
-	int max_cpu = -1, max_pid = 0, max_util = 0;
+	int max_cpu = -1, max_pid = 0, max_util = 0, boost;
 
 	len += snprintf(buf, max_len, "version=%d.%d(%s)\n\n", ver_major, ver_minor, module_name);
 	len += show_cpu_capacity(buf+len, max_len - len);
@@ -547,10 +547,10 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 	len += snprintf(buf+len, max_len - len, "turning_point=%d\n", power_tuning.turning_point);
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_KS
-	sched_max_util_task(&max_cpu, &max_pid, &max_util);
+	sched_max_util_task(&max_cpu, &max_pid, &max_util, &boost);
 #endif
-	len += snprintf(buf+len, max_len - len, "\nheaviest task pid=%d util=%d run in cpu%d\n\n",
-				max_pid, max_util, max_cpu);
+	len += snprintf(buf+len, max_len - len, "\nheaviest task pid=%d util=%d boost=%d run in cpu%d\n\n",
+				max_pid, max_util, boost, max_cpu);
 
 	return len;
 }
@@ -614,6 +614,35 @@ static struct kobj_attribute eas_cap_margin_attr =
 __ATTR(cap_margin, S_IWUSR | S_IRUSR, show_cap_margin_knob,
 		store_cap_margin_knob);
 
+/* To define limit of SODI */
+int sodi_limit = 120;
+
+static ssize_t store_sodi_limit_knob(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int val = 0;
+
+	if (sscanf(buf, "%iu", &val) != 0)
+		sodi_limit = val;
+
+	return count;
+}
+
+static ssize_t show_sodi_limit_knob(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len += snprintf(buf, max_len, "sodi limit=%d\n", sodi_limit);
+
+	return len;
+}
+
+static struct kobj_attribute eas_sodi_limit_attr =
+__ATTR(sodi_limit, S_IWUSR | S_IRUSR, show_sodi_limit_knob,
+		store_sodi_limit_knob);
+
 static struct attribute *eas_attrs[] = {
 	&eas_info_attr.attr,
 	&eas_knob_attr.attr,
@@ -621,6 +650,7 @@ static struct attribute *eas_attrs[] = {
 	&eas_turning_point_attr.attr,
 	&eas_stune_task_thresh_attr.attr,
 	&eas_cap_margin_attr.attr,
+	&eas_sodi_limit_attr.attr,
 	NULL,
 };
 
