@@ -2305,7 +2305,6 @@ static unsigned int mcu_misccfg_mp0_sync_dcm_stall_wr_del_sel_get(void)
 {
 	return (reg_read(SYNC_DCM_CLUSTER_CONFIG) >> 0) & 0x1f;
 }
-#endif
 static void mcu_misccfg_mp0_sync_dcm_stall_wr_del_sel_set(unsigned int val)
 {
 	reg_write(SYNC_DCM_CLUSTER_CONFIG,
@@ -2313,6 +2312,7 @@ static void mcu_misccfg_mp0_sync_dcm_stall_wr_del_sel_set(unsigned int val)
 		~(0x1f << 0)) |
 		(val & 0x1f) << 0);
 }
+#endif
 
 bool dcm_mcu_misccfg_mp0_stall_dcm_is_on(void)
 {
@@ -2329,14 +2329,18 @@ void dcm_mcu_misccfg_mp0_stall_dcm(int on)
 {
 	if (on) {
 		/* TINFO = "Turn ON DCM 'mcu_misccfg_mp0_stall_dcm'" */
+#if 0
 		mcu_misccfg_mp0_sync_dcm_stall_wr_del_sel_set(0x0);
+#endif
 		reg_write(SYNC_DCM_CLUSTER_CONFIG,
 			(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
 			~MCU_MISCCFG_MP0_STALL_DCM_REG0_MASK) |
 			MCU_MISCCFG_MP0_STALL_DCM_REG0_ON);
 	} else {
 		/* TINFO = "Turn OFF DCM 'mcu_misccfg_mp0_stall_dcm'" */
+#if 0
 		mcu_misccfg_mp0_sync_dcm_stall_wr_del_sel_set(0x1);
+#endif
 		reg_write(SYNC_DCM_CLUSTER_CONFIG,
 			(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
 			~MCU_MISCCFG_MP0_STALL_DCM_REG0_MASK) |
@@ -2481,7 +2485,6 @@ static unsigned int mcu_misccfg_mp1_sync_dcm_stall_wr_del_sel_get(void)
 {
 	return (reg_read(SYNC_DCM_CLUSTER_CONFIG) >> 8) & 0x1f;
 }
-#endif
 static void mcu_misccfg_mp1_sync_dcm_stall_wr_del_sel_set(unsigned int val)
 {
 	reg_write(SYNC_DCM_CLUSTER_CONFIG,
@@ -2489,6 +2492,7 @@ static void mcu_misccfg_mp1_sync_dcm_stall_wr_del_sel_set(unsigned int val)
 		~(0x1f << 8)) |
 		(val & 0x1f) << 8);
 }
+#endif
 
 bool dcm_mcu_misccfg_mp1_stall_dcm_is_on(void)
 {
@@ -2505,14 +2509,18 @@ void dcm_mcu_misccfg_mp1_stall_dcm(int on)
 {
 	if (on) {
 		/* TINFO = "Turn ON DCM 'mcu_misccfg_mp1_stall_dcm'" */
+#if 0
 		mcu_misccfg_mp1_sync_dcm_stall_wr_del_sel_set(0x0);
+#endif
 		reg_write(SYNC_DCM_CLUSTER_CONFIG,
 			(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
 			~MCU_MISCCFG_MP1_STALL_DCM_REG0_MASK) |
 			MCU_MISCCFG_MP1_STALL_DCM_REG0_ON);
 	} else {
 		/* TINFO = "Turn OFF DCM 'mcu_misccfg_mp1_stall_dcm'" */
+#if 0
 		mcu_misccfg_mp1_sync_dcm_stall_wr_del_sel_set(0x1);
+#endif
 		reg_write(SYNC_DCM_CLUSTER_CONFIG,
 			(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
 			~MCU_MISCCFG_MP1_STALL_DCM_REG0_MASK) |
@@ -2595,7 +2603,7 @@ void dcm_mcu_misccfg_mp1_sync_dcm_enable(int on)
 }
 
 #define MCU_MISCCFG_MP_STALL_DCM_REG0_MASK ((0xf << 24))
-#define MCU_MISCCFG_MP_STALL_DCM_REG0_ON ((0x5 << 24))
+#define MCU_MISCCFG_MP_STALL_DCM_REG0_ON ((0x6 << 24))
 #define MCU_MISCCFG_MP_STALL_DCM_REG0_OFF ((0xf << 24))
 
 bool dcm_mcu_misccfg_mp_stall_dcm_is_on(void)
