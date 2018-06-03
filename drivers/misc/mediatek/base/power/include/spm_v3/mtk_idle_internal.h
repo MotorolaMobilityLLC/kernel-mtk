@@ -14,6 +14,7 @@
 #ifndef __MTK_IDLE_INTERNAL_H__
 #define __MTK_IDLE_INTERNAL_H__
 #include <linux/io.h>
+#include "mtk_idle_mcdi.h"
 
 /*
  * Chip specific declaratinos
@@ -34,18 +35,6 @@ enum mt_idle_mode {
 	MT_SOIDLE,
 	MT_MCIDLE,
 	MT_SLIDLE
-};
-
-/* IDLE_TYPE is used for idle_switch in mt_idle.c */
-enum {
-	IDLE_TYPE_DP = 0,
-	IDLE_TYPE_SO3,
-	IDLE_TYPE_SO,
-	IDLE_TYPE_MC,
-	IDLE_TYPE_MCSO,
-	IDLE_TYPE_SL,
-	IDLE_TYPE_RG,
-	NR_TYPES,
 };
 
 /* CPUIDLE_STATE is used to represent CPUidle C States */

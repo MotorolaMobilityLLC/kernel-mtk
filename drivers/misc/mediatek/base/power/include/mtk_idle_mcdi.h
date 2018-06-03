@@ -18,6 +18,10 @@
 
 #include "spm_v4/mtk_idle_mcdi.h"
 
+#elif defined(CONFIG_MACH_MT6758)
+
+#include "spm_v3/mtk_idle_mcdi.h"
+
 #endif
 
 #endif /* __MTK_IDLE_MCDI_COMMON_H__ */

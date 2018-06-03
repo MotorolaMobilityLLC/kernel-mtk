@@ -14,7 +14,7 @@
 #ifndef __MTK_MCDI_COMMON_H__
 #define __MTK_MCDI_COMMON_H__
 
-#if defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 
 #include "mcdi_v1/mtk_mcdi.h"
 
