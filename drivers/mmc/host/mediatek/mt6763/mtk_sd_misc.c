@@ -134,7 +134,9 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	struct mmc_command msdc_cmd = { 0 };
 	struct mmc_command msdc_stop;
 	int ret = 0;
+#ifdef CONFIG_EMMC_SUPPORT
 	char part_id;
+#endif
 	int no_single_rw;
 	u32 total_size;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
@@ -208,6 +210,7 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	}
 #endif
 
+#ifdef CONFIG_EMMC_SUPPORT
 	if (host_ctl->hw->host_function == MSDC_EMMC) {
 		switch (msdc_ctl->partition) {
 		case EMMC_PART_BOOT1:
@@ -225,6 +228,7 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 		if (msdc_switch_part(host_ctl, part_id))
 			goto rw_end;
 	}
+#endif
 
 	if (no_single_rw) {
 		memset(&msdc_stop, 0, sizeof(struct mmc_command));
@@ -348,8 +352,8 @@ skip_sbc_prepare:
 	memset(sg_msdc_multi_buffer, 0, total_size);
 	goto rw_end_without_release;
 
-rw_end:
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+rw_end:
 	if (is_cmdq_en) {
 		pr_debug("[MSDC_DBG] turn on cmdq\n");
 		ret = mmc_blk_cmdq_switch(mmc->card, 1);
@@ -359,6 +363,7 @@ rw_end:
 			is_cmdq_en = false;
 	}
 #endif
+
 	mmc_release_host(mmc);
 
 rw_end_without_release:
@@ -559,10 +564,12 @@ end:
 
 static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
 {
+	int ret = 0;
+
+#ifdef CONFIG_EMMC_SUPPORT
 	struct msdc_host *host_ctl;
 	unsigned long long partitionsize = 0;
 	struct mmc_host *mmc;
-	int ret = 0;
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
 
@@ -604,6 +611,8 @@ static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
 	msdc_ctl->result = ret;
 
 	mmc_release_host(mmc);
+#endif
+
 	return ret;
 }
 

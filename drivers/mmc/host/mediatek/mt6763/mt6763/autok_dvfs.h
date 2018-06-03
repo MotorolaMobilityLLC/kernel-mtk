@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -25,7 +25,8 @@
 enum AUTOK_VCORE {
 	AUTOK_VCORE_LEVEL0 = 0,
 	AUTOK_VCORE_LEVEL1,
-	AUTOK_VCORE_NUM
+	AUTOK_VCORE_MERGE,
+	AUTOK_VCORE_NUM = AUTOK_VCORE_MERGE
 };
 
 #else
@@ -38,6 +39,8 @@ enum dvfs_opp {
 	NUM_OPP,
 };
 
+/* define as any value is ok, just for build pass */
+#define KIR_SDIO	1
 #define KIR_AUTOK_EMMC	9
 #define KIR_AUTOK_SDIO	10
 #define KIR_AUTOK_SD	11
@@ -51,6 +54,7 @@ enum dvfs_opp {
 #define AUTOK_VCORE_LEVEL1	0
 #define AUTOK_VCORE_LEVEL2	0
 #define AUTOK_VCORE_LEVEL3	0
+#define AUTOK_VCORE_MERGE       0
 #define AUTOK_VCORE_NUM		1
 #endif
 

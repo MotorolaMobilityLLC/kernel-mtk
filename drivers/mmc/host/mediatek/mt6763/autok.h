@@ -42,6 +42,19 @@ struct msdc_host;
 
 #define E_RESULT_MAX
 
+#define MERGE_CMD           (1<<0)
+#define MERGE_DAT           (1<<1)
+#define MERGE_DS_DAT        (1<<2)
+#define MERGE_DS_CMD        (1<<3)
+#define MERGE_DEVICE_D_RX   (1<<4)
+#define MERGE_DEVICE_C_RX   (1<<5)
+#define MERGE_HOST_D_TX     (1<<6)
+#define MERGE_HOST_C_TX     (1<<7)
+#define MERGE_HOST_CLK_TX   (1<<8)
+#define MERGE_HS200_SDR104  (MERGE_CMD | MERGE_DAT)
+#define MERGE_HS400         (MERGE_CMD | MERGE_DS_DAT)
+#define MERGE_DDR208        (MERGE_CMD | MERGE_DS_DAT | MERGE_DEVICE_D_RX | MERGE_HOST_D_TX)
+
 #ifndef NULL
 #define NULL                0
 #endif
@@ -64,13 +77,13 @@ extern unsigned int autok_debug_level;
 #define AUTOK_DBGPRINT(_level, _fmt ...)   \
 ({                                         \
 	if (autok_debug_level >= _level) { \
-		pr_info(_fmt);              \
+		pr_info(_fmt);             \
 	}                                  \
 })
 
 #define AUTOK_RAWPRINT(_fmt ...)           \
 ({                                         \
-	pr_info(_fmt);                      \
+	pr_info(_fmt);                     \
 })
 
 enum ERROR_TYPE {
@@ -255,6 +268,15 @@ enum AUTOK_PARAM {
 	AUTOK_VER2,
 	AUTOK_VER3,
 
+	CMD_MAX_WIN,
+	DAT_MAX_WIN,
+	DS_MAX_WIN,
+	DEV_D_RX_MAX_WIN,
+	DEV_C_RX_MAX_WIN,
+	H_D_TX_MAX_WIN,
+	H_C_TX_MAX_WIN,
+	H_CLK_TX_MAX_WIN,
+
 	TUNING_PARA_SCAN_COUNT,
 
 	/* Data line rising/falling latch  fine tune selection in read transaction.
@@ -334,6 +356,7 @@ extern int hs200_execute_tuning(struct msdc_host *host, u8 *res);
 extern int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res);
 extern int hs400_execute_tuning(struct msdc_host *host, u8 *res);
 extern int hs400_execute_tuning_cmd(struct msdc_host *host, u8 *res);
+extern int autok_vcore_merge_sel(struct msdc_host *host, unsigned int merge_cap);
 
 #endif  /* _AUTOK_H_ */
 

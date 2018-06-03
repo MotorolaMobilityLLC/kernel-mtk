@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -455,7 +455,7 @@
 /**************************************************************/
 #ifdef CONFIG_MTK_COMBO_COMM
 #include <mt-plat/mtk_wcn_cmb_stub.h>
-#define CFG_DEV_MSDC2
+#define CFG_DEV_SDIO                    2
 #endif
 
 #endif /* _MSDC_CUST_MT6763_H_ */

@@ -26,6 +26,8 @@ static char const * const sdio_autok_res_path[] = {
 	"/data/sdio_autok_2", "/data/sdio_autok_3",
 };
 
+/* After merge still have over 10 OOOOOOOOOOO window */
+#define AUTOK_MERGE_MIN_WIN     10
 #define SDIO_AUTOK_DIFF_MARGIN  6
 
 static struct file *msdc_file_open(const char *path, int flags, int rights)
@@ -98,7 +100,7 @@ int sdio_autok_res_exist(struct msdc_host *host)
 		filp_close(filp, NULL);
 	}
 
-	pr_err("autok result found\n");
+	pr_info("autok result found\n");
 	return 1;
 #else
 	return 0;
@@ -345,12 +347,12 @@ static void msdc_dvfs_reg_backup(struct msdc_host *host)
 	}
 }
 
-static void msdc_set_hw_dvfs(int vcore, struct msdc_host *host)
+void msdc_set_hw_dvfs(int vcore, struct msdc_host *host)
 {
 	void __iomem *addr, *addr_src;
 	int i;
 
-	vcore = AUTOK_VCORE_NUM - vcore;
+	vcore = AUTOK_VCORE_NUM - 1 - vcore;
 
 	addr = host->base + MSDC_DVFS_SET_SIZE * vcore;
 	for (i = 0; i < host->dvfs_reg_backup_cnt; i++) {
@@ -421,7 +423,7 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 
 void msdc_dvfs_reg_backup_init(struct msdc_host *host)
 {
-	if (host->hw->host_function == MSDC_EMMC) {
+	if (host->hw->host_function == MSDC_EMMC && host->use_hw_dvfs) {
 		host->dvfs_reg_backup = emmc_reg_backup;
 		host->dvfs_reg_offsets = emmc_dvfs_reg_backup_offsets;
 		host->dvfs_reg_offsets_src = emmc_reg_backup_offsets_src;
@@ -429,6 +431,11 @@ void msdc_dvfs_reg_backup_init(struct msdc_host *host)
 			host->dvfs_reg_offsets_top = emmc_dvfs_reg_backup_offsets_top;
 		host->dvfs_reg_backup_cnt = BACKUP_REG_COUNT_EMMC_INTERNAL;
 		host->dvfs_reg_backup_cnt_top = BACKUP_REG_COUNT_EMMC_TOP;
+	} else if (host->hw->host_function == MSDC_SDIO && host->use_hw_dvfs) {
+		host->dvfs_reg_backup = sdio_reg_backup;
+		host->dvfs_reg_offsets = sdio_dvfs_reg_backup_offsets;
+		host->dvfs_reg_offsets_src = sdio_reg_backup_offsets_src;
+		host->dvfs_reg_backup_cnt = BACKUP_REG_COUNT_SDIO;
 	}
 }
 
@@ -454,16 +461,16 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 		vcore_dvfs_work = is_vcorefs_can_work();
 		if (vcore_dvfs_work == -1) {
 			vcore = 0;
-			pr_err("DVFS feature not enabled\n");
+			pr_info("DVFS feature not enabled\n");
 		} else if (vcore_dvfs_work == 0) {
 			vcore = vcorefs_get_hw_opp();
-			pr_err("DVFS not ready\n");
+			pr_info("DVFS not ready\n");
 		} else if (vcore_dvfs_work == 1) {
 			vcore = vcorefs_get_hw_opp();
-			pr_err("DVFS ready\n");
+			pr_info("DVFS ready\n");
 		} else {
 			vcore = 0;
-			pr_err("Invalid return value from is_vcorefs_can_work()\n");
+			pr_notice("Invalid return value from is_vcorefs_can_work()\n");
 		}
 		if (vcore >= AUTOK_VCORE_NUM)
 			vcore = AUTOK_VCORE_NUM - 1;
@@ -517,17 +524,20 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 	int sdio_res_exist = 0;
 	int vcore;
 	int i;
+	int merge_result, merge_mode, merge_window;
 	int (*autok_init)(struct msdc_host *host);
 	int (*autok_execute)(struct msdc_host *host, u8 *res);
 
 	if (ddr208) {
 		autok_init = autok_init_ddr208;
 		autok_execute = autok_sdio30_plus_tuning;
-		pr_err("[AUTOK]SDIO DDR208 Tune\n");
+		merge_mode = MERGE_DDR208;
+		pr_info("[AUTOK]SDIO DDR208 Tune\n");
 	} else {
 		autok_init = autok_init_sdr104;
 		autok_execute = autok_execute_tuning;
-		pr_err("[AUTOK]SDIO SDR104 Tune\n");
+		merge_mode = MERGE_HS200_SDR104;
+		pr_info("[AUTOK]SDIO SDR104 Tune\n");
 	}
 
 	if (host->is_autok_done) {
@@ -536,12 +546,12 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		/* Check which vcore setting to apply */
 		if (host->use_hw_dvfs == 0) {
 			if (host->lock_vcore == 0)
-				vcore = AUTOK_VCORE_NUM - 1;
+				vcore = AUTOK_VCORE_MERGE;
 			else
 				vcore = AUTOK_VCORE_LEVEL0;
 		} else {
 			/* Force use_hw_dvfs as 1 to shut-up annoying
-			 * "maybe-uninitialized" error
+			   "maybe-uninitialized" error
 			 */
 			host->use_hw_dvfs = 1;
 			vcore = vcorefs_get_hw_opp();
@@ -549,7 +559,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
 
-		pr_err("[AUTOK]Apply first tune para (vcore = %d) %s HW DVFS\n",
+		pr_info("[AUTOK]Apply first tune para (vcore = %d) %s HW DVFS\n",
 			vcore, (host->use_hw_dvfs ? "with" : "without"));
 		if (host->use_hw_dvfs == 1)
 			msdc_dvfs_reg_restore(host);
@@ -559,18 +569,13 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 	/* HQA need read autok setting from file */
 	sdio_res_exist = sdio_autok_res_exist(host);
 
-	host->dvfs_reg_backup = sdio_reg_backup;
-	host->dvfs_reg_offsets = sdio_dvfs_reg_backup_offsets;
-	host->dvfs_reg_offsets_src = sdio_reg_backup_offsets_src;
-	host->dvfs_reg_backup_cnt = BACKUP_REG_COUNT_SDIO;
-
 	/* Wait DFVS ready for excute autok here */
 	sdio_autok_wait_dvfs_ready();
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		pr_err("[AUTOK]sdio_execute_dvfs_autok_mode %d\n", i);
+		pr_info("[AUTOK]sdio_execute_dvfs_autok_mode %d\n", i);
 		if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, i) != 0)
-			pr_err("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
+			pr_notice("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
 
 		#ifdef SDIO_HQA
 		msdc_HQA_set_voltage(host);
@@ -585,19 +590,28 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 			msdc_set_hw_dvfs(i, host);
 	}
 
-	if (autok_res_check(host->autok_res[AUTOK_VCORE_NUM - 1],
-		host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
+	merge_result = autok_vcore_merge_sel(host, merge_mode);
+	for (i = CMD_MAX_WIN; i <= H_CLK_TX_MAX_WIN; i++) {
+		merge_window = host->autok_res[AUTOK_VCORE_MERGE][i];
+		if (merge_window < AUTOK_MERGE_MIN_WIN)
+			merge_result = -1;
+		if (merge_window != 0xFF)
+			pr_info("[AUTOK]merge_window = %d\n", merge_window);
+	}
+
+	if (merge_result == 0) {
 		host->lock_vcore = 0;
 		host->use_hw_dvfs = 0;
-		pr_err("[AUTOK]No need change para when dvfs\n");
+		autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_MERGE]);
+		pr_info("[AUTOK]No need change para when dvfs\n");
 	} else if (host->use_hw_dvfs == 0) {
 		host->lock_vcore = 1;
-		pr_err("[AUTOK]Need lock vcore for SDIO access\n");
+		pr_info("[AUTOK]Need lock vcore for SDIO access\n");
 	} else {
 		/* host->use_hw_dvfs == 1 and
 		 * autok window of all vcores cannot overlap properly
 		 */
-		pr_err("[AUTOK]Need change para when dvfs\n");
+		pr_info("[AUTOK]Need change para when dvfs\n");
 
 		msdc_dvfs_reg_backup(host);
 
@@ -611,7 +625,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 
 	/* Un-request, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPP_UNREQ) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
+		pr_notice("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
 
 	/* Tell DVFS can start now because AUTOK done */
 	spm_msdc_dvfs_setting(KIR_AUTOK_SDIO, 1);

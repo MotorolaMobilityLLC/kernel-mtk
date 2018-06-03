@@ -1,4 +1,4 @@
-/* Copyright (C) 2015 MediaTek Inc.
+/* Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -13,7 +13,9 @@
 #ifndef _AUTOK_CUST_H_
 #define _AUTOK_CUST_H_
 
+#if !defined(FPGA_PLATFORM)
 #include <mt-plat/mtk_chip.h>
+#endif
 
 #define AUTOK_VERSION                   (0x17030910)
 

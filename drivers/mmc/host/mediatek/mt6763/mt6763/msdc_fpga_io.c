@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -127,15 +127,6 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 {
 	if (on)
 		hwPowerSwitch_fpga();
-}
-
-void msdc_select_clksrc(struct msdc_host *host, int clksrc)
-{
-	host->hclk = msdc_get_hclk(host->id, clksrc);
-	host->hw->clk_src = clksrc;
-
-	pr_err("[%s]: msdc%d select clk_src as %d(%dKHz)\n", __func__,
-		host->id, clksrc, host->hclk/1000);
 }
 
 /* do we need sync object or not */

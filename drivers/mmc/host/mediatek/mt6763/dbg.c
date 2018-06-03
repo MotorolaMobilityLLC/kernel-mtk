@@ -422,7 +422,7 @@ void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m)
 #else
 	seq_puts(m, "driver not supported\n");
 #endif
-#ifdef CONFIG_MTK_HW_FDE
+#if defined(CONFIG_MTK_HW_FDE) && !defined(CONFIG_MTK_HW_FDE_AES)
 	seq_puts(m, "hardware fde support\n");
 #endif
 }
@@ -1005,7 +1005,7 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 			*(wPtr + forIndex) = wData[forIndex % wData_len];
 	}
 
-#ifdef CONFIG_MTK_HW_FDE_AES
+#if defined(CONFIG_MTK_HW_FDE) && defined(CONFIG_MTK_HW_FDE_AES)
 	if (fde_aes_check_cmd(FDE_AES_EN_RAW, fde_aes_get_raw(), host_num)) {
 		fde_aes_set_msdc_id(host_num & 0xff);
 		if (read)
@@ -1477,7 +1477,8 @@ static int rwThread(void *data)
 void msdc_dump_gpd_bd(int id)
 {
 	struct msdc_host *host;
-	int i = 0;
+	u32 i, j, k;
+	u8 *cptr;
 	struct gpd_t *gpd;
 	struct bd_t *bd;
 
@@ -1494,41 +1495,71 @@ void msdc_dump_gpd_bd(int id)
 	gpd = host->dma.gpd;
 	bd  = host->dma.bd;
 
-	pr_err("================MSDC GPD INFO ==================\n");
+	pr_notice("================MSDC GPD INFO ==================\n");
 	if (gpd == NULL) {
-		pr_err("GPD is NULL\n");
+		pr_notice("GPD is NULL\n");
 	} else {
 #ifdef CONFIG_ARM64
-		pr_err("gbd addr:0x%llx\n", host->dma.gpd_addr);
-#else
-		pr_err("gbd addr:0x%x\n", (unsigned int)host->dma.gpd_addr);
-#endif
-		pr_err("hwo:0x%x, bdp:0x%x, rsv0:0x%x, chksum:0x%x,intr:0x%x,rsv1:0x%x,nexth4:0x%x,ptrh4:0x%x\n",
-			gpd->hwo, gpd->bdp, gpd->rsv0, gpd->chksum,
-			gpd->intr, gpd->rsv1, (unsigned int)gpd->nexth4,
-			(unsigned int)gpd->ptrh4);
-		pr_err("next:0x%x, ptr:0x%x, buflen:0x%x, extlen:0x%x, arg:0x%x,blknum:0x%x,cmd:0x%x\n",
+		pr_notice("    GPD ADDR     HO BD RS CS INT RS NH4 PH4   NEXT     PTR    BUFLEN EXTL\n");
+		pr_notice("================ == == == == === == === === ======== ======== ====== ====\n");
+		pr_notice("%16llx %2x %2x %2x %2x %3x %2x %3x %3x %8x %8x %6x %4x\n",
+			host->dma.gpd_addr,
+			gpd->hwo, gpd->bdp, gpd->rsv0, gpd->chksum, gpd->intr, gpd->rsv1,
+			(unsigned int)gpd->nexth4, (unsigned int)gpd->ptrh4,
 			(unsigned int)gpd->next, (unsigned int)gpd->ptr,
-			gpd->buflen, gpd->extlen, gpd->arg, gpd->blknum,
-			gpd->cmd);
+			gpd->buflen, gpd->extlen);
+#else
+		pr_notice("  ADDR   HO BD RS CS INT RS NH4 PH4   NEXT     PTR    BUFLEN EXTL\n");
+		pr_notice("======== == == == == === == === === ======== ======== ====== ====\n");
+		pr_notice("%8x %2x %2x %2x %2x %3x %2x %3x %3x %8x %8x %6x %4x\n",
+			(unsigned int)host->dma.gpd_addr,
+			gpd->hwo, gpd->bdp, gpd->rsv0, gpd->chksum, gpd->intr, gpd->rsv1,
+			(unsigned int)gpd->nexth4, (unsigned int)gpd->ptrh4,
+			(unsigned int)gpd->next, (unsigned int)gpd->ptr,
+			gpd->buflen, gpd->extlen);
+#endif
 	}
-	pr_err("================MSDC BD INFO ===================\n");
+	pr_notice("================MSDC BD INFO ===================\n");
 	if (bd == NULL) {
 		pr_err("BD is NULL\n");
 	} else {
 #ifdef CONFIG_ARM64
-		pr_err("bd addr:0x%llx\n", host->dma.bd_addr);
+		pr_notice("BD#      BD ADDR      EL RS CS RS PAD RS NH4 PH4   NEXT     PTR    BUFLEN RS\n");
+		pr_notice("==== ================ == == == == === == === === ======== ======== ====== ==\n");
 #else
-		pr_err("bd addr:0x%x\n", (unsigned int)host->dma.bd_addr);
+		pr_notice("BD#  BD ADDR  EL RS CS RS PAD RS NH4 PH4   NEXT     PTR    BUFLEN RS\n");
+		pr_notice("==== ======== == == == == === == === === ======== ======== ====== ==\n");
 #endif
 		for (i = 0; i < host->dma.sglen; i++) {
-			pr_err("%4d BD eol:0x%x, rsv0:0x%x, chksum:0x%x, rsv1:0x%x,blkpad:0x%x,dwpad:0x%x,rsv2:0x%x\n",
-				i, bd->eol, bd->rsv0, bd->chksum, bd->rsv1,
-				bd->blkpad, bd->dwpad, bd->rsv2);
-			pr_err("        nexth4:0x%x, ptrh4:0x%x, next:0x%x, ptr:0x%x, buflen:0x%x, rsv3:0x%x\n",
+			cptr = (u8 *)bd;
+			k = 0;
+			for (j = 0; j < 16; j++) {
+				if (j != 1) /* skip chksum field */
+					k += cptr[j];
+			}
+			k &= 0xff;
+			k ^= 0xff;
+			if (k == bd->chksum)
+				continue;
+#ifdef CONFIG_ARM64
+			pr_notice("%4d %16llx %2x %2x %2x %2x %x,%x %2x %3x %3x %8x %8x %6x %2x -> cs error: %2x\n",
+				i, host->dma.bd_addr,
+				bd->eol, bd->rsv0, bd->chksum, bd->rsv1,
+				bd->blkpad, bd->dwpad, bd->rsv2,
 				(unsigned int)bd->nexth4,
 				(unsigned int)bd->ptrh4, (unsigned int)bd->next,
-				(unsigned int)bd->ptr, bd->buflen, bd->rsv3);
+				(unsigned int)bd->ptr, bd->buflen, bd->rsv3,
+				k);
+#else
+			pr_notice("%4d %8x %2x %2x %2x %2x %x,%x %2x %3x %3x %8x %8x %6x %2x -> cs error: %2x\n",
+				i, (unsigned int)host->dma.bd_addr,
+				bd->eol, bd->rsv0, bd->chksum, bd->rsv1,
+				bd->blkpad, bd->dwpad, bd->rsv2,
+				(unsigned int)bd->nexth4,
+				(unsigned int)bd->ptrh4, (unsigned int)bd->next,
+				(unsigned int)bd->ptr, bd->buflen, bd->rsv3,
+				k);
+#endif
 			bd++;
 		}
 	}
@@ -2135,18 +2166,22 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			sdio_pro_enable = 0;
 		}
 	} else if (cmd == SMP_TEST_ON_ONE_HOST) {
-		id = p1;
-		thread_num = p2;
-		compare_count = p3;
-		multi_address = p4;
-		smp_test_on_hosts(m, thread_num, id, compare_count,
-			multi_address);
+		if (p2 > 0) {
+			id = p1;
+			thread_num = p2;
+			compare_count = p3;
+			multi_address = p4;
+			smp_test_on_hosts(m, thread_num, id, compare_count,
+				multi_address);
+		}
 	} else if (cmd == SMP_TEST_ON_ALL_HOST) {
-		thread_num = p1;
-		compare_count = p2;
-		multi_address = p3;
-		smp_test_on_hosts(m, thread_num, HOST_MAX_NUM, compare_count,
-			multi_address);
+		if (p1 > 0) {
+			thread_num = p1;
+			compare_count = p2;
+			multi_address = p3;
+			smp_test_on_hosts(m, thread_num, HOST_MAX_NUM, compare_count,
+				multi_address);
+		}
 #ifdef MTK_IO_PERFORMANCE_DEBUG
 	} else if (cmd == MMC_PERF_DEBUG) {
 		/* 1 enable; 0 disable */
@@ -2231,7 +2266,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		if (!host)
 			goto invalid_host_id;
 
-		base = host->base;
+		base = mtk_msdc_host[0]->base;
 		if (p1 == 0) {
 			/* do nothing */
 		} else if (p1 == 1)  {

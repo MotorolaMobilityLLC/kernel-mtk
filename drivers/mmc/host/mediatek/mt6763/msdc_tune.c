@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -548,7 +548,7 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	MSDC_SET_BIT32(MSDC_PATCH_BIT1, MSDC_PB1_DDR_CMD_FIX_SEL);
 
 	/* DDR50 mode */
-	MSDC_SET_BIT32(MSDC_PATCH_BIT2, MSDC_PB2_DDR50_SEL);
+	MSDC_SET_BIT32(MSDC_PATCH_BIT2, MSDC_PB2_DDR50SEL);
 
 	/* 64T + 48T cmd <-> resp */
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPWAITCNT,
@@ -557,6 +557,12 @@ void msdc_init_tune_setting(struct msdc_host *host)
 		MSDC_PB2_DEFAULT_RESPSTENSEL);
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL,
 		MSDC_PB2_DEFAULT_CRCSTSENSEL);
+
+	/* FIX ME: check if can be moved to msdc_cust.c */
+#ifdef CONFIG_MACH_MT6799
+	if (CHIP_IS_VER2())
+		SET_EMMC50_CFG_END_BIT_CHK_CNT(EMMC50_CFG_END_BIT_CHK_CNT);
+#endif
 
 	autok_path_sel(host);
 }

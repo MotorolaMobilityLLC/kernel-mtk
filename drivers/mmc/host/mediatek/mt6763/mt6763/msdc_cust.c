@@ -1,4 +1,4 @@
-/* Copyright (C) 2015 MediaTek Inc.
+/* Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -75,12 +75,6 @@ u32 drv_mode[HOST_MAX_NUM] = {
 	MODE_SIZE_DEP, /* using DMA or not depend on the size */
 	MODE_SIZE_DEP,
 	MODE_SIZE_DEP
-};
-
-u8 msdc_clock_src[HOST_MAX_NUM] = {
-	0,
-	0,
-	0
 };
 
 int dma_force[HOST_MAX_NUM];
@@ -198,8 +192,8 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_1860,
 			&host->power_io);
-		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
-		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
+		msdc_set_tdsel(host, MSDC_TDRDSEL_CUST, 0);
+		msdc_set_rdsel(host, MSDC_TDRDSEL_CUST, 0);
 		host->hw->driving_applied = &host->hw->driving_sdr50;
 		msdc_set_driving(host, host->hw->driving_applied);
 	}
@@ -275,8 +269,8 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 			emmc_sleep_failed = 1;
 	} else {
 		msdc_set_driving(host, &host->hw->driving);
-		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
-		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
+		msdc_set_tdsel(host, MSDC_TDRDSEL_CUST, 0);
+		msdc_set_rdsel(host, MSDC_TDRDSEL_CUST, 0);
 	}
 
 	msdc_ldo_power(on, host->mmc->supply.vmmc, VOL_3000, &host->power_flash);
@@ -293,8 +287,8 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 	switch (host->id) {
 	case 1:
 		msdc_set_driving(host, &host->hw->driving);
-		msdc_set_tdsel(host, MSDC_TDRDSEL_3V, 0);
-		msdc_set_rdsel(host, MSDC_TDRDSEL_3V, 0);
+		msdc_set_tdsel(host, MSDC_TDRDSEL_CUST, 0);
+		msdc_set_rdsel(host, MSDC_TDRDSEL_CUST, 0);
 		if (host->hw->flags & MSDC_SD_NEED_POWER)
 			card_on = 1;
 		/* VMCH VOLSEL */
@@ -360,7 +354,7 @@ void msdc_pmic_force_vcore_pwm(bool enable)
 	/* Temporarily disable force pwm */
 	/* buck_set_mode(VCORE, enable); */
 }
-#endif /*dif !defined(FPGA_PLATFORM)*/
+#endif /*if !defined(FPGA_PLATFORM)*/
 
 void msdc_set_host_power_control(struct msdc_host *host)
 {
@@ -510,21 +504,6 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 		pdev->id, host->hclk, host->clk_ctl, host->hclk_ctl);
 
 	return 0;
-}
-
-void msdc_select_clksrc(struct msdc_host *host, int clksrc)
-{
-	if (host->id != 0) {
-		pr_err("[msdc%d] NOT Support switch pll souce[%s]%d\n",
-			host->id, __func__, __LINE__);
-		return;
-	}
-
-	host->hclk = msdc_get_hclk(host->id, clksrc);
-	host->hw->clk_src = clksrc;
-
-	pr_err("[%s]: msdc%d select clk_src as %d(%dKHz)\n", __func__,
-		host->id, clksrc, host->hclk/1000);
 }
 
 void msdc_clk_pre_enable(struct msdc_host *host)
@@ -1247,7 +1226,7 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 
 	/* get irq # */
 	host->irq = irq_of_parse_and_map(np, 0);
-	pr_err("[msdc%d] get irq # %d\n", host->id, host->irq);
+	pr_info("[msdc%d] get irq # %d\n", host->id, host->irq);
 	WARN_ON(host->irq < 0);
 
 #if !defined(FPGA_PLATFORM)
@@ -1256,7 +1235,8 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 		pr_err("[msdc%d] error: clk_src isn't found in device tree.\n",
 			host->id);
 		WARN_ON(1);
-	}
+	} else
+		host->hclk = msdc_get_hclk(host->id, host->hw->clk_src);
 #endif
 
 	/* get msdc flag(caps)*/
@@ -1313,13 +1293,13 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 			host->id, host->base_top);
 #endif
 
-#if defined(CFG_DEV_MSDC2)
+#if defined(CFG_DEV_SDIO)
 	if (host->hw->host_function == MSDC_SDIO) {
 		host->hw->flags |= MSDC_EXT_SDIO_IRQ;
-		host->hw->request_sdio_eirq = mt_sdio_ops[2].sdio_request_eirq;
-		host->hw->enable_sdio_eirq = mt_sdio_ops[2].sdio_enable_eirq;
-		host->hw->disable_sdio_eirq = mt_sdio_ops[2].sdio_disable_eirq;
-		host->hw->register_pm = mt_sdio_ops[2].sdio_register_pm;
+		host->hw->request_sdio_eirq = mt_sdio_ops[CFG_DEV_SDIO].sdio_request_eirq;
+		host->hw->enable_sdio_eirq = mt_sdio_ops[CFG_DEV_SDIO].sdio_enable_eirq;
+		host->hw->disable_sdio_eirq = mt_sdio_ops[CFG_DEV_SDIO].sdio_disable_eirq;
+		host->hw->register_pm = mt_sdio_ops[CFG_DEV_SDIO].sdio_register_pm;
 	}
 #endif
 

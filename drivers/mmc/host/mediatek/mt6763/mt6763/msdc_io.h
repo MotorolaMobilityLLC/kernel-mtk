@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -46,10 +46,10 @@ void msdc_dump_ldo_sts(struct msdc_host *host);
 void msdc_HQA_set_voltage(struct msdc_host *host);
 
 #else
-#define msdc_power_calibration_init(host)
-#define msdc_pmic_force_vcore_pwm(enable)
 #define msdc_clk_pre_enable(host)
 #define msdc_clk_post_disble(host)
+#define msdc_power_calibration_init(host)
+#define msdc_pmic_force_vcore_pwm(enable)
 void msdc_fpga_pwr_init(void);
 #define msdc_oc_check(msdc_host, en)    (0)
 #define msdc_io_check(msdc_host)        (1)
@@ -94,6 +94,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 		if (host->hclk_ctl) \
 			(void)clk_enable(host->hclk_ctl); \
 	} while (0)
+
 #define msdc_clk_disable(host) \
 	do { \
 		clk_disable(host->clk_ctl); \
@@ -101,6 +102,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 			clk_disable(host->hclk_ctl); \
 		msdc_clk_post_disble(host); \
 	} while (0)
+
 #endif
 
 /**************************************************************/

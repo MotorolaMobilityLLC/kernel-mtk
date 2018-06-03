@@ -95,7 +95,7 @@ enum TUNE_TYPE {
 		while (1) { \
 			if ((cond) || (tmo == 0)) \
 				break; \
-			if (time_after(jiffies, timeout)) \
+			if (time_after(jiffies, timeout) && (!cond)) \
 				tmo = 0; \
 		} \
 	} while (0)
@@ -352,7 +352,7 @@ unsigned int *reg_value, unsigned int r_w_dirc, unsigned int opcode)
 			}
 		}
 	}
-	if (tmo == 0) {
+	if ((tmo == 0) && (MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)) {
 		AUTOK_RAWPRINT("[AUTOK]DRS MSDC busy tmo3...\n");
 		ret |= E_RESULT_FATAL_ERR;
 		goto end;
@@ -627,7 +627,7 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode,
 			}
 		}
 	}
-	if (tmo == 0) {
+	if ((tmo == 0) && (MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)) {
 		AUTOK_RAWPRINT("[AUTOK]MSDC busy tmo3 cmd%d goto end...\n", opcode);
 		ret |= E_RESULT_FATAL_ERR;
 		goto end;
@@ -671,6 +671,42 @@ end:
 	}
 
 	return ret;
+}
+
+static int autok_simple_score(char *res_str, unsigned int result)
+{
+	unsigned int bit = 0;
+	unsigned int num = 0;
+	unsigned int old = 0;
+
+	if (result == 0) {
+		strcpy(res_str, "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");	/* maybe result is 0 */
+		return 32;
+	}
+	if (result == 0xFFFFFFFF) {
+		strcpy(res_str, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+		return 0;
+	}
+
+	/* calc continue zero number */
+	while (bit < 32) {
+		if (result & (1 << bit)) {
+			res_str[bit] = 'X';
+			bit++;
+			if (old < num)
+				old = num;
+			num = 0;
+			continue;
+		}
+		res_str[bit] = 'O';
+		bit++;
+		num++;
+	}
+	if (num > old)
+		old = num;
+
+	res_str[32] = '\0';
+	return old;
 }
 
 static int autok_simple_score64(char *res_str64, u64 result64)
@@ -1619,7 +1655,6 @@ autok_pad_dly_sel_single_edge(struct AUTOK_SCAN_RES *pInfo, unsigned int cycle_c
 
 static int autok_ds_dly_sel(struct AUTOK_SCAN_RES_NEW *pInfo, unsigned int *pDlySel)
 {
-	unsigned int ret = 0;
 	int uDlySel = 0;
 	unsigned int max_pass_win;
 	unsigned char max_pass_win_position;
@@ -1641,7 +1676,7 @@ static int autok_ds_dly_sel(struct AUTOK_SCAN_RES_NEW *pInfo, unsigned int *pDly
 		+ pInfo->pass_bd_info[max_pass_win_position].Bound_End) / 2;
 	*pDlySel = uDlySel;
 
-	return ret;
+	return max_pass_win;
 }
 
 /*************************************************************************
@@ -1680,7 +1715,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 	switch (param) {
 	case READ_DATA_SMPL_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for READ_DATA_SMPL_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1691,7 +1726,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case WRITE_DATA_SMPL_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for WRITE_DATA_SMPL_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1702,7 +1737,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case DATA_DLYLINE_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DATA_DLYLINE_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1723,7 +1758,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case MSDC_DAT_TUNE_SEL:	/* 0-Dat tune 1-CLk tune ; */
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DAT_TUNE_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1744,7 +1779,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case MSDC_WCRC_ASYNC_FIFO_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for WCRC_ASYNC_FIFO_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1754,7 +1789,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case MSDC_RESP_ASYNC_FIFO_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for RESP_ASYNC_FIFO_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1764,7 +1799,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1774,7 +1809,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_FIFO_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_FIFO_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1784,7 +1819,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case RDATA_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for RDATA_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1794,7 +1829,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case RD_FIFO_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for RD_FIFO_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1804,7 +1839,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case WD_FIFO_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for WD_FIFO_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -1814,7 +1849,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_RD_D_DLY1:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_RD_DLY is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1835,7 +1870,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_RD_D_DLY1_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_RD_DLY_SEL is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1856,7 +1891,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_RD_D_DLY2:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_RD_DLY2 is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1877,7 +1912,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_RD_D_DLY2_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_RD_DLY2_SEL is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1898,7 +1933,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case DAT_RD_D_DLY1:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DAT_RD_DLY is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1919,7 +1954,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case DAT_RD_D_DLY1_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DAT_RD_DLY_SEL is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1940,7 +1975,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case DAT_RD_D_DLY2:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DAT_RD_DLY2 is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1961,7 +1996,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case DAT_RD_D_DLY2_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for DAT_RD_DLY2_SEL is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -1982,7 +2017,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case INT_DAT_LATCH_CK:
 		if ((rw == AUTOK_WRITE) && (*value > 7)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for INT_DAT_LATCH_CK is out of range, it should be [0~7]\n",
 			     __func__, *value);
 			return -1;
@@ -1992,7 +2027,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CKGEN_MSDC_DLY_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CKGEN_MSDC_DLY_SEL is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -2002,7 +2037,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case CMD_RSP_TA_CNTR:
 		if ((rw == AUTOK_WRITE) && (*value > 7)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for CMD_RSP_TA_CNTR is out of range, it should be [0~7]\n",
 			     __func__, *value);
 			return -1;
@@ -2012,7 +2047,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case WRDAT_CRCS_TA_CNTR:
 		if ((rw == AUTOK_WRITE) && (*value > 7)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for WRDAT_CRCS_TA_CNTR is out of range, it should be [0~7]\n",
 			     __func__, *value);
 			return -1;
@@ -2022,7 +2057,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case SDC_RX_ENHANCE:
 		if ((rw == AUTOK_WRITE) && (*value > 7)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for SDC_RX_ENHANCE is out of range, it should be [0~7]\n",
 			     __func__, *value);
 			return -1;
@@ -2043,7 +2078,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case PAD_CLK_TXDLY_AUTOK:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for PAD_CLK_TXDLY_AUTOK is out of range, it should be [0~31]\n",
 			     __func__, *value);
 			return -1;
@@ -2064,7 +2099,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_WDATA_MUX_EN:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_WDATA_MUX_EN is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2074,7 +2109,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_CMD_MUX_EN:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_CMD_MUX_EN is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2084,7 +2119,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_CMD_RESP_LATCH:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_CMD_RESP_LATCH is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2094,7 +2129,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_WDATA_EDGE:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_WDATA_EDGE is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2104,7 +2139,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DS_Z_DLY1:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DS_Z_DLY1 is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2125,7 +2160,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DS_Z_DLY1_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DS_Z_DLY1_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2146,7 +2181,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DS_Z_DLY2:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DS_Z_DLY2 is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2167,7 +2202,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DS_Z_DLY2_SEL:
 		if ((rw == AUTOK_WRITE) && (*value > 1)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DS_Z_DLY2_SEL is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2188,7 +2223,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DS_ZDLY_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DS_Z_DLY3 is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2209,7 +2244,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_CMD_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_CMD_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2230,7 +2265,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA0_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA0_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2251,7 +2286,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA1_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA1_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2272,7 +2307,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA2_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA2_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2293,7 +2328,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA3_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA3_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2314,7 +2349,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA4_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA4_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2333,7 +2368,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA5_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA5_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2352,7 +2387,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA6_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA6_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2371,7 +2406,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		break;
 	case EMMC50_DATA7_TX_DLY:
 		if ((rw == AUTOK_WRITE) && (*value > 31)) {
-			pr_debug
+			pr_notice
 			    ("[%s] Input value(%d) for EMMC50_DATA7_TX_DLY is out of range, it should be [0~1]\n",
 			     __func__, *value);
 			return -1;
@@ -2389,7 +2424,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		}
 		break;
 	default:
-		pr_debug("[%s] Value of [enum AUTOK_PARAM param] is wrong\n", __func__);
+		pr_notice("[%s] Value of [enum AUTOK_PARAM param] is wrong\n", __func__);
 		return -1;
 	}
 
@@ -2401,7 +2436,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 		if (param == CKGEN_MSDC_DLY_SEL)
 			mdelay(1);
 	} else {
-		pr_debug("[%s] Value of [int rw] is wrong\n", __func__);
+		pr_notice("[%s] Value of [int rw] is wrong\n", __func__);
 		return -1;
 	}
 
@@ -2475,25 +2510,8 @@ static int autok_register_dump(struct msdc_host *host)
 		msdc_autok_adjust_param(host, i, &value, AUTOK_READ);
 		autok_tune_res[i] = value;
 	}
-	AUTOK_RAWPRINT("[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
-		autok_tune_res[0], autok_tune_res[1], autok_tune_res[5], autok_tune_res[7]);
-	AUTOK_RAWPRINT("[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
-		autok_tune_res[2], autok_tune_res[3], autok_tune_res[4]);
-	AUTOK_RAWPRINT("[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
-		autok_tune_res[13], autok_tune_res[9], autok_tune_res[11]);
-	AUTOK_RAWPRINT("[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
-		autok_tune_res[14], autok_tune_res[16], autok_tune_res[18]);
-	AUTOK_RAWPRINT("[AUTOK]CLK TX  [%d]\r\n", autok_tune_res[28]);
-	AUTOK_RAWPRINT("[AUTOK]CMD TX  [%d]\r\n", autok_tune_res[19]);
-	if (host->hw->host_function == MSDC_EMMC) {
-		AUTOK_RAWPRINT("[AUTOK]DAT TX  [D0:%d D1:%d D2:%d D3:%d]\r\n",
-			autok_tune_res[20], autok_tune_res[21], autok_tune_res[22], autok_tune_res[23]);
-		AUTOK_RAWPRINT("[AUTOK]DAT TX  [D4:%d D5:%d D6:%d D7:%d]\r\n",
-			autok_tune_res[24], autok_tune_res[25], autok_tune_res[26], autok_tune_res[27]);
-	} else {
-		AUTOK_RAWPRINT("[AUTOK]DAT TX  [D0:%d D1:%d D2:%d D3:%d]\r\n",
-			autok_tune_res[20], autok_tune_res[21], autok_tune_res[22], autok_tune_res[23]);
-	}
+
+	autok_result_dump(host, autok_tune_res);
 
 	return 0;
 }
@@ -3129,19 +3147,14 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	}
 	RawData64 |= 0xffffffff00000000;
 	score = autok_simple_score64(tune_result_str64, RawData64);
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] DLY1/2 %d \t %d \t %s\r\n", uCmdEdge, score,
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DLY1/2 %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
 	msdc_autok_window_apply(DS_DATA_WIN, RawData64, p_autok_tune_res);
 	if (autok_check_scan_res64_new(RawData64, pInfo, 0) != 0)
 		return -1;
 
-
-	if (autok_ds_dly_sel(pInfo, &uDatDly) == 0) {
-		autok_paddly_update(DS_PAD_RDLY, uDatDly, p_autok_tune_res);
-	} else {
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
-	}
+	autok_ds_dly_sel(pInfo, &uDatDly);
+	autok_paddly_update(DS_PAD_RDLY, uDatDly, p_autok_tune_res);
 
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	autok_result_dump(host, p_autok_tune_res);
@@ -3629,7 +3642,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	}
 	RawData64 |= 0xffffffff00000000;
 	score = autok_simple_score64(tune_result_str64, RawData64);
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] DLY1/2 %d \t %d \t %s\r\n", uCmdEdge, score,
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DLY1/2 %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
 	msdc_autok_window_apply(DS_DATA_WIN, RawData64, p_autok_tune_res);
 	if (autok_check_scan_res64_new(RawData64, pInfo, 0) != 0)
@@ -3638,12 +3651,8 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 #if DS_DLY3_SCAN
 	}
 #endif
-	if (autok_ds_dly_sel(pInfo, &uDatDly) == 0) {
-		autok_paddly_update(DS_PAD_RDLY, uDatDly, p_autok_tune_res);
-	} else {
-		AUTOK_DBGPRINT(AUTOK_DBG_RES,
-			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
-	}
+	autok_ds_dly_sel(pInfo, &uDatDly);
+	autok_paddly_update(DS_PAD_RDLY, uDatDly, p_autok_tune_res);
 #else
 	/* DLY3 keep default value 20 */
 	p_autok_tune_res[EMMC50_DS_ZDLY_DLY] = platform_para_rx.ds_dly3_ddr208;
@@ -3709,15 +3718,15 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	}
 	RawCmd64 |= 0xffffffff00000000;
 	score = autok_simple_score64(tune_result_str64, RawCmd64);
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] DLY1/2 CMD %d \t %d \t %s\r\n", uCmdEdge, score,
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DLY1/2 CMD %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
 	RawData64 |= 0xffffffff00000000;
 	score = autok_simple_score64(tune_result_str64, RawData64);
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] DLY1/2 DAT %d \t %d \t %s\r\n", uCmdEdge, score,
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DLY1/2 DAT %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
 	/* check cmd and data DS merge window */
 	score = autok_simple_score64(tune_result_str64, RawCmd64 | RawData64);
-	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] DLY1/2 CMD & DAT MERGE %d \t %d \t %s\r\n", uCmdEdge, score,
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DLY1/2 CMD & DAT MERGE %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
 	if (score <= 5)
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK][WARN]CMD & DAT MERGE WIN is too small %d\r\n", score);
@@ -4587,12 +4596,12 @@ tune_device_rx:
 			tune_result[i] = 'O';
 	}
 	tune_result[32] = '\0';
-	AUTOK_RAWPRINT("[AUTOK]tune_device_data_RX 0 - 31      %s\r\n", tune_result);
+	AUTOK_RAWPRINT("[AUTOK]device DAT RX 0 - 31      %s\r\n", tune_result);
 	/* select a best dat rx setting */
 	Rx64 |= 0xffffffff00000000;
 	autok_check_scan_res64_new(Rx64, pInfo, 0);
 	autok_ds_dly_sel(pInfo, &dat_rx_sel);
-	AUTOK_RAWPRINT("[AUTOK]tune device data RX sel:%d\r\n", dat_rx_sel);
+	AUTOK_RAWPRINT("[AUTOK]device DAT RX dly:%d\r\n", dat_rx_sel);
 	/* restore data rx setting */
 	autok_msdc_device_rx_set(host, cmd_rx & 0x1f, data_p_rx & 0x1f, data_n_rx & 0x1f);
 	msdc_autok_adjust_param(host, EMMC50_CMD_TX_DLY, &cmd_tx, AUTOK_WRITE);
@@ -5118,9 +5127,9 @@ separate_tune_dat_tx:
 		}
 		tune_result[32] = '\0';
 		if (separate_tune_start == 0)
-			AUTOK_RAWPRINT("[AUTOK]tune_data_TX 0 - 31      %s\r\n", tune_result);
+			AUTOK_RAWPRINT("[AUTOK]DAT TX 0 - 31      %s\r\n", tune_result);
 		else
-			AUTOK_RAWPRINT("[AUTOK]tune_data%d_TX 0 - 31      %s\r\n", j, tune_result);
+			AUTOK_RAWPRINT("[AUTOK]DAT TX(%d) 0 - 31      %s\r\n", j, tune_result);
 		if (separate_tune_start == 1) {
 			switch (j) {
 			case 0:
@@ -5568,4 +5577,234 @@ int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	return ret;
 }
 EXPORT_SYMBOL(hs200_execute_tuning_cmd);
+
+int autok_vcore_merge_sel(struct msdc_host *host, unsigned int merge_cap)
+{
+	void __iomem *base = host->base;
+	unsigned int ret = 0;
+	struct timeval tm_s, tm_e;
+	unsigned int tm_val = 0;
+	unsigned int uCmdEdge = 0;
+	unsigned int uDatEdge = 0;
+	u64 RawData64 = 0LL;
+	unsigned int RawData = 0;
+	unsigned int j, k;
+	struct AUTOK_REF_INFO_NEW uInfo;
+	struct AUTOK_SCAN_RES_NEW *pInfo;
+	unsigned int max_win[2];
+	unsigned int dly_sel[2];
+	char tune_result_str64[65];
+	char tune_result_str[33];
+	unsigned int score = 0;
+	unsigned int data_dly = 0;
+	unsigned int clk_mode = 0;
+
+	do_gettimeofday(&tm_s);
+	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, clk_mode);
+
+	/* Init set window 0xFF as infinite */
+	for (j = CMD_MAX_WIN; j <= H_CLK_TX_MAX_WIN; j++)
+		host->autok_res[AUTOK_VCORE_MERGE][j] = 0xFF;
+
+	/* Step1 :  Cmd Path */
+	if (!(merge_cap & MERGE_CMD))
+		goto data_merge;
+	memset(&uInfo, 0, sizeof(struct AUTOK_REF_INFO_NEW));
+
+	uCmdEdge = 0;
+	do {
+		pInfo = (struct AUTOK_SCAN_RES_NEW *)&(uInfo.scan_info[uCmdEdge]);
+		RawData64 = 0LL;
+		for (j = 0; j < (AUTOK_VCORE_NUM); j++) {
+			for (k = 0; k < 8; k++) {
+				if (uCmdEdge)
+					RawData64 |= (((u64)host->autok_res[j][CMD_SCAN_F0 + k]) << (8 * k));
+				else
+					RawData64 |= (((u64)host->autok_res[j][CMD_SCAN_R0 + k]) << (8 * k));
+			}
+		}
+		score = autok_simple_score64(tune_result_str64, RawData64);
+		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD %d \t %d \t %s merge\r\n", uCmdEdge, score,
+			       tune_result_str64);
+		if (autok_check_scan_res64_new(RawData64, pInfo, 0) != 0)
+			return -1;
+		max_win[uCmdEdge] = autok_ds_dly_sel(pInfo, &dly_sel[uCmdEdge]);
+		if (uCmdEdge)
+			msdc_autok_window_apply(CMD_FALL, RawData64, host->autok_res[AUTOK_VCORE_MERGE]);
+		else
+			msdc_autok_window_apply(CMD_RISE, RawData64, host->autok_res[AUTOK_VCORE_MERGE]);
+		uCmdEdge ^= 0x1;
+	} while (uCmdEdge);
+	if (max_win[0] >= max_win[1]) {
+		uInfo.opt_edge_sel = 0;
+		uInfo.opt_dly_cnt = dly_sel[0];
+	} else {
+		uInfo.opt_edge_sel = 1;
+		uInfo.opt_dly_cnt = dly_sel[1];
+	}
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]cmd edge = %d cmd dly = %d max win = %d\r\n", uInfo.opt_edge_sel,
+			       uInfo.opt_dly_cnt, max_win[uInfo.opt_edge_sel]);
+	host->autok_res[AUTOK_VCORE_MERGE][CMD_MAX_WIN] = max_win[uInfo.opt_edge_sel];
+	autok_param_update(CMD_EDGE, uInfo.opt_edge_sel, host->autok_res[AUTOK_VCORE_MERGE]);
+	autok_paddly_update(CMD_PAD_RDLY, uInfo.opt_dly_cnt, host->autok_res[AUTOK_VCORE_MERGE]);
+	msdc_autok_adjust_param(host, CMD_EDGE, &uInfo.opt_edge_sel, AUTOK_WRITE);
+	msdc_autok_adjust_paddly(host, &uInfo.opt_dly_cnt, CMD_PAD_RDLY);
+	/* Step2 :  Dat Path */
+data_merge:
+	if (clk_mode == 3) {
+		data_dly = 0;
+		for (j = 0; j < AUTOK_VCORE_NUM; j++)
+			data_dly += host->autok_res[j][DAT_RD_D_DLY1];
+		data_dly = data_dly / AUTOK_VCORE_NUM;
+		autok_paddly_update(DAT_PAD_RDLY, data_dly, host->autok_res[AUTOK_VCORE_MERGE]);
+		msdc_autok_adjust_paddly(host, &data_dly, DAT_PAD_RDLY);
+		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]dat dly = %d\r\n", data_dly);
+	} else {
+		if (!(merge_cap & MERGE_DAT))
+			goto ds_merge;
+		memset(&uInfo, 0, sizeof(struct AUTOK_REF_INFO_NEW));
+		uDatEdge = 0;
+		do {
+			pInfo = (struct AUTOK_SCAN_RES_NEW *)&(uInfo.scan_info[uDatEdge]);
+			RawData64 = 0LL;
+			for (j = 0; j < AUTOK_VCORE_NUM; j++) {
+				for (k = 0; k < 8; k++) {
+					if (uDatEdge)
+						RawData64 |= (((u64)host->autok_res[j][DAT_SCAN_F0 + k]) << (8 * k));
+					else
+						RawData64 |= (((u64)host->autok_res[j][DAT_SCAN_R0 + k]) << (8 * k));
+				}
+			}
+			score = autok_simple_score64(tune_result_str64, RawData64);
+			AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DAT %d \t %d \t %s merge\r\n", uDatEdge, score,
+				       tune_result_str64);
+			if (autok_check_scan_res64_new(RawData64, pInfo, 0) != 0)
+				return -1;
+			max_win[uDatEdge] = autok_ds_dly_sel(pInfo, &dly_sel[uDatEdge]);
+			if (uDatEdge)
+				msdc_autok_window_apply(DAT_FALL, RawData64, host->autok_res[AUTOK_VCORE_MERGE]);
+			else
+				msdc_autok_window_apply(DAT_RISE, RawData64, host->autok_res[AUTOK_VCORE_MERGE]);
+			uDatEdge ^= 0x1;
+		} while (uDatEdge);
+		if (max_win[0] >= max_win[1]) {
+			uInfo.opt_edge_sel = 0;
+			uInfo.opt_dly_cnt = dly_sel[0];
+		} else {
+			uInfo.opt_edge_sel = 1;
+			uInfo.opt_dly_cnt = dly_sel[1];
+		}
+		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]dat edge = %d dat dly = %d max win = %d\r\n", uInfo.opt_edge_sel,
+				       uInfo.opt_dly_cnt, max_win[uInfo.opt_edge_sel]);
+		host->autok_res[AUTOK_VCORE_MERGE][DAT_MAX_WIN] = max_win[uInfo.opt_edge_sel];
+		autok_param_update(RD_FIFO_EDGE, uInfo.opt_edge_sel, host->autok_res[AUTOK_VCORE_MERGE]);
+		autok_paddly_update(DAT_PAD_RDLY, uInfo.opt_dly_cnt, host->autok_res[AUTOK_VCORE_MERGE]);
+		autok_param_update(WD_FIFO_EDGE, uInfo.opt_edge_sel, host->autok_res[AUTOK_VCORE_MERGE]);
+		msdc_autok_adjust_param(host, RD_FIFO_EDGE, &uInfo.opt_edge_sel, AUTOK_WRITE);
+		msdc_autok_adjust_param(host, WD_FIFO_EDGE, &uInfo.opt_edge_sel, AUTOK_WRITE);
+		msdc_autok_adjust_paddly(host, &uInfo.opt_dly_cnt, DAT_PAD_RDLY);
+	}
+	/* Step3 :  DS Path */
+ds_merge:
+	if (!(merge_cap & MERGE_DS_DAT))
+		goto device_data_rx_merge;
+
+	host->autok_res[AUTOK_VCORE_MERGE][EMMC50_DS_ZDLY_DLY] =
+		host->autok_res[AUTOK_VCORE_LEVEL0][EMMC50_DS_ZDLY_DLY];
+
+	RawData64 = 0LL;
+	memset(&uInfo, 0, sizeof(struct AUTOK_REF_INFO_NEW));
+	pInfo = (struct AUTOK_SCAN_RES_NEW *)&(uInfo.scan_info[0]);
+	for (j = 0; j < AUTOK_VCORE_NUM; j++) {
+		for (k = 0; k < 8; k++)
+			RawData64 |= (((u64)host->autok_res[j][DS_DAT_SCAN_0 + k]) << (8 * k));
+	}
+	score = autok_simple_score64(tune_result_str64, RawData64);
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DLY1/2 \t %d \t %s merge\r\n", score,
+		       tune_result_str64);
+
+	msdc_autok_window_apply(DS_DATA_WIN, RawData64, host->autok_res[AUTOK_VCORE_MERGE]);
+	if (autok_check_scan_res64_new(RawData64, pInfo, 0) != 0)
+		return -1;
+
+	max_win[0] = autok_ds_dly_sel(pInfo, &data_dly);
+	host->autok_res[AUTOK_VCORE_MERGE][DS_MAX_WIN] = max_win[0];
+	autok_paddly_update(DS_PAD_RDLY, data_dly, host->autok_res[AUTOK_VCORE_MERGE]);
+	msdc_autok_adjust_paddly(host, &data_dly, DS_PAD_RDLY);
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DS dly = %d\r\n", data_dly);
+	/* Step4 :  Device Dat RX */
+device_data_rx_merge:
+	if (!(merge_cap & MERGE_DEVICE_D_RX))
+		goto host_data_tx_merge;
+	RawData64 = 0LL;
+	RawData = 0;
+	memset(&uInfo, 0, sizeof(struct AUTOK_REF_INFO_NEW));
+	pInfo = (struct AUTOK_SCAN_RES_NEW *)&(uInfo.scan_info[0]);
+	for (j = 0; j < AUTOK_VCORE_NUM; j++) {
+		for (k = 0; k < 4; k++)
+			RawData |= ((host->autok_res[j][D_DATA_SCAN_0 + k]) << (8 * k));
+	}
+	score = autok_simple_score(tune_result_str, RawData);
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]device DAT RX \t %d \t %s merge\r\n", score,
+		       tune_result_str);
+	msdc_autok_window_apply(D_DATA_RX, RawData, host->autok_res[AUTOK_VCORE_MERGE]);
+	RawData64 = ((u64)RawData) | 0xffffffff00000000;
+	if (autok_check_scan_res64_new(RawData64, pInfo, 0) != 0)
+		return -1;
+
+	max_win[0] = autok_ds_dly_sel(pInfo, &data_dly);
+	host->autok_res[AUTOK_VCORE_MERGE][DEV_D_RX_MAX_WIN] = max_win[0];
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]device DAT RX dly = %d\r\n", data_dly);
+	/* Step5 :  Dat TX */
+host_data_tx_merge:
+	if (!(merge_cap & MERGE_HOST_D_TX))
+		goto end;
+	RawData64 = 0LL;
+	RawData = 0;
+	memset(&uInfo, 0, sizeof(struct AUTOK_REF_INFO_NEW));
+	pInfo = (struct AUTOK_SCAN_RES_NEW *)&(uInfo.scan_info[0]);
+	for (j = 0; j < AUTOK_VCORE_NUM; j++) {
+		for (k = 0; k < 4; k++)
+			RawData |= ((host->autok_res[j][H_DATA_SCAN_0 + k]) << (8 * k));
+	}
+	score = autok_simple_score(tune_result_str, RawData);
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DAT TX \t %d \t %s merge\r\n", score,
+		       tune_result_str);
+	msdc_autok_window_apply(H_DATA_TX, RawData, host->autok_res[AUTOK_VCORE_MERGE]);
+	RawData64 = ((u64)RawData) | 0xffffffff00000000;
+	if (autok_check_scan_res64_new(RawData64, pInfo, 0) != 0)
+		return -1;
+
+	max_win[0] = autok_ds_dly_sel(pInfo, &data_dly);
+	host->autok_res[AUTOK_VCORE_MERGE][H_D_TX_MAX_WIN] = max_win[0];
+	autok_param_update(EMMC50_DATA0_TX_DLY, data_dly, host->autok_res[AUTOK_VCORE_MERGE]);
+	autok_param_update(EMMC50_DATA1_TX_DLY, data_dly, host->autok_res[AUTOK_VCORE_MERGE]);
+	autok_param_update(EMMC50_DATA2_TX_DLY, data_dly, host->autok_res[AUTOK_VCORE_MERGE]);
+	autok_param_update(EMMC50_DATA3_TX_DLY, data_dly, host->autok_res[AUTOK_VCORE_MERGE]);
+	if (host->hw->host_function == MSDC_EMMC) {
+		autok_param_update(EMMC50_DATA4_TX_DLY, data_dly, host->autok_res[AUTOK_VCORE_MERGE]);
+		autok_param_update(EMMC50_DATA5_TX_DLY, data_dly, host->autok_res[AUTOK_VCORE_MERGE]);
+		autok_param_update(EMMC50_DATA6_TX_DLY, data_dly, host->autok_res[AUTOK_VCORE_MERGE]);
+		autok_param_update(EMMC50_DATA7_TX_DLY, data_dly, host->autok_res[AUTOK_VCORE_MERGE]);
+	}
+	msdc_autok_adjust_param(host, EMMC50_DATA0_TX_DLY, &data_dly, AUTOK_WRITE);
+	msdc_autok_adjust_param(host, EMMC50_DATA1_TX_DLY, &data_dly, AUTOK_WRITE);
+	msdc_autok_adjust_param(host, EMMC50_DATA2_TX_DLY, &data_dly, AUTOK_WRITE);
+	msdc_autok_adjust_param(host, EMMC50_DATA3_TX_DLY, &data_dly, AUTOK_WRITE);
+	if (host->hw->host_function == MSDC_EMMC) {
+		msdc_autok_adjust_param(host, EMMC50_DATA4_TX_DLY, &data_dly, AUTOK_WRITE);
+		msdc_autok_adjust_param(host, EMMC50_DATA5_TX_DLY, &data_dly, AUTOK_WRITE);
+		msdc_autok_adjust_param(host, EMMC50_DATA6_TX_DLY, &data_dly, AUTOK_WRITE);
+		msdc_autok_adjust_param(host, EMMC50_DATA7_TX_DLY, &data_dly, AUTOK_WRITE);
+	}
+	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]dat tx = %d\r\n", data_dly);
+
+end:
+	do_gettimeofday(&tm_e);
+	tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000 + (tm_e.tv_usec - tm_s.tv_usec) / 1000;
+	AUTOK_RAWPRINT("[AUTOK][merge]=========Time Cost:%d ms========\r\n", tm_val);
+
+	return ret;
+}
+EXPORT_SYMBOL(autok_vcore_merge_sel);
 

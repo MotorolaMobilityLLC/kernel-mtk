@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -29,6 +29,13 @@
 
 #include "autok.h"
 #include "autok_dvfs.h"
+
+#if 0
+#ifdef CONFIG_MTK_HW_FDE_AES
+#include <fde_aes.h>
+#include <fde_aes_dbg.h>
+#endif
+#endif
 
 /* MSDC_SWITCH_MODE_WHEN_ERROR */
 #define TUNE_NONE                (0)        /* No need tune */
@@ -205,9 +212,6 @@ struct gpd_t {
 	u32  ptr;
 	u32  buflen:24;
 	u32  extlen:8;
-	u32  arg;
-	u32  blknum;
-	u32  cmd;
 };
 
 struct bd_t {
@@ -352,7 +356,7 @@ struct msdc_host {
 	bool                    is_autok_done;
 	u8                      use_hw_dvfs;
 	u8                      lock_vcore;
-	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARA_SCAN_COUNT];
+	u8                      autok_res[AUTOK_VCORE_NUM+1][TUNING_PARA_SCAN_COUNT]; /* +1 for merge */
 	u16                     dvfs_reg_backup_cnt;
 	u16                     dvfs_reg_backup_cnt_top;
 	u32                     *dvfs_reg_backup;
@@ -598,7 +602,6 @@ enum {
 extern unsigned int sd_debug_zone[];
 extern u32 drv_mode[];
 extern u32 dma_size[];
-extern unsigned char msdc_clock_src[];
 extern int dma_force[];
 
 extern u32 sdio_pro_enable;
