@@ -920,7 +920,7 @@ static const WMT_IC_INFO_S mtk_wcn_soc_info_table[] = {
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-static INT32 mtk_wcn_soc_trigger_assert(VOID);
+static MTK_WCN_BOOL mtk_wcn_soc_trigger_assert(VOID);
 
 static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf);
 
@@ -1621,7 +1621,7 @@ static MTK_WCN_BOOL mtk_wcn_soc_aee_dump_flag_get(VOID)
 {
 	return MTK_WCN_BOOL_FALSE;
 }
-static INT32 mtk_wcn_soc_trigger_assert(VOID)
+static MTK_WCN_BOOL mtk_wcn_soc_trigger_assert(VOID)
 {
 	INT32 ret = 0;
 	UINT32 u4Res;
@@ -1644,7 +1644,7 @@ static INT32 mtk_wcn_soc_trigger_assert(VOID)
 			     tstCmdSz);
 		ret = -1;
 	}
-	return ret;
+	return (ret == 0);
 }
 
 WMT_CO_CLOCK mtk_wcn_soc_co_clock_get(VOID)
