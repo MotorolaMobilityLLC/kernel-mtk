@@ -176,15 +176,23 @@ static void fgauge_read_RTC_boot_status(struct gauge_device *gauge_dev)
 static int fgauge_initial(struct gauge_device *gauge_dev)
 {
 	int bat_flag = 0;
+	int is_charger_exist;
 
 	fgauge_read_RTC_boot_status(gauge_dev);
 
 	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, 10);
 	fgauge_get_info(gauge_dev, GAUGE_BAT_PLUG_STATUS, &bat_flag);
+	fgauge_get_info(gauge_dev, GAUGE_PL_CHARGING_STATUS, &is_charger_exist);
+
+	if (is_charger_exist == 1) {
+		is_bat_plugout = 1;
+		fgauge_set_info(gauge_dev, GAUGE_2SEC_REBOOT, 0);
+	} else {
 	if (bat_flag == 0)
 		is_bat_plugout = 1;
 	else
 		is_bat_plugout = 0;
+	}
 
 	return 0;
 }
@@ -444,7 +452,7 @@ static int fgauge_get_coulomb(struct gauge_device *gauge_dev, int *data)
 
 static int fgauge_reset_hw(struct gauge_device *gauge_dev)
 {
-	volatile unsigned int val_car = 1;
+	unsigned int val_car = 1;
 	unsigned int val_car_temp = 1;
 	unsigned int ret = 0;
 
