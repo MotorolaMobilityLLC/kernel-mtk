@@ -31,7 +31,7 @@
 
 #include "include/mtk_gauge_class.h"
 #include <mtk_battery_internal.h>
-
+#include <mt-plat/aee.h>
 
 static signed int g_hw_ocv_tune_value;
 static bool g_fg_is_charger_exist;
@@ -1133,8 +1133,9 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 	}
 
 	/* final chance to check hwocv */
-	if (_hw_ocv < 30000) {
-		bm_err("[read_hw_ocv] ERROR, _hw_ocv=%d, force use swocv\n", _hw_ocv);
+	if (_hw_ocv < 28000 && (is_evb_load() == 0)) {
+		aee_kernel_warning("GAUGE", "HWOCV error %d %d!\n", _hw_ocv, _hw_ocv_src);
+		bm_err("[read_hw_ocv] ERROR, _hw_ocv=%d  src:%d, force use swocv\n", _hw_ocv, _hw_ocv_src);
 		_hw_ocv = _sw_ocv;
 		_hw_ocv_src = FROM_SW_OCV;
 	}
