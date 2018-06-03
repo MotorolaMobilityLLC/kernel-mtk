@@ -182,7 +182,7 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	}
 	/* QHQ RT Monitor */
 	if (cmd == AEEIOCTL_RT_MON_Kick) {
-		LOGE("AEEIOCTL_RT_MON_Kick ( %d)\n", (int)arg);
+		pr_info("AEEIOCTL_RT_MON_Kick ( %d)\n", (int)arg);
 		aee_kernel_RT_Monitor_api((int)arg);
 		return ret;
 	}
@@ -320,7 +320,7 @@ static void get_kernel_bt(struct task_struct *tsk)
 	trace.skip = 0;
 	save_stack_trace_tsk(tsk, &trace);
 	for (i = 0; i < trace.nr_entries; i++)
-		Log2HangInfo("[<%lx>] %pS\n", (long)trace.entries[i], (void *)trace.entries[i]);
+		Log2HangInfo("<%lx> %pS\n", (long)trace.entries[i], (void *)trace.entries[i]);
 }
 
 
@@ -356,7 +356,7 @@ void sched_show_task_local(struct task_struct *p)
 	     task_pid_nr(p), ppid, (unsigned long)task_thread_info(p)->flags);
 
 	Log2HangInfo("%-15.15s %c ", p->comm, state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-	Log2HangInfo("%5lu %5d %6d 0x%08lx\n", free, task_pid_nr(p), ppid,
+	Log2HangInfo("%5lu %d %d x%lx\n", free, task_pid_nr(p), ppid,
 		     (unsigned long)task_thread_info(p)->flags);
 	get_kernel_bt(p);	/* Catch kernel-space backtrace */
 
@@ -401,7 +401,7 @@ static int DumpThreadNativeMaps(pid_t pid)
 			     (unsigned char *)(file->f_path.dentry->d_iname));
 
 			if (flags & VM_EXEC) {	/* we only catch code section for reduce maps space */
-				Log2HangInfo("%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start,
+				Log2HangInfo("%08lx-%08lx %c%c%c%c %s\n", vma->vm_start,
 					     vma->vm_end, flags & VM_READ ? 'r' : '-',
 					     flags & VM_WRITE ? 'w' : '-',
 					     flags & VM_EXEC ? 'x' : '-',
@@ -431,7 +431,7 @@ static int DumpThreadNativeMaps(pid_t pid)
 			     flags & VM_WRITE ? 'w' : '-',
 			     flags & VM_EXEC ? 'x' : '-', flags & VM_MAYSHARE ? 's' : 'p', name);
 			if (flags & VM_EXEC) {
-				Log2HangInfo("%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start,
+				Log2HangInfo("%08lx-%08lx %c%c%c%c %s\n", vma->vm_start,
 					     vma->vm_end, flags & VM_READ ? 'r' : '-',
 					     flags & VM_WRITE ? 'w' : '-',
 					     flags & VM_EXEC ? 'x' : '-',
@@ -472,8 +472,18 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 		return ret;
 	}
 #ifndef __aarch64__		/* 32bit */
-	LOGV(" pc/lr/sp 0x%08lx/0x%08lx/0x%08lx\n", user_ret->ARM_pc, user_ret->ARM_lr,
+	Log2HangInfo(" pc/lr/sp 0x%08lx/0x%08lx/0x%08lx\n", user_ret->ARM_pc, user_ret->ARM_lr,
 	     user_ret->ARM_sp);
+	Log2HangInfo("r12-r0 0x%lx/0x%x/0x%lx/0x%lx\n",
+		(long)(user_ret->ARM_ip), (long)(user_ret->ARM_fp),
+		(long)(user_ret->ARM_r10), (long)(user_ret->ARM_r9));
+	Log2HangInfo("0x%lx/0x%lx/0x%lx/0x%lx/0x%lx\n",
+		(long)(user_ret->ARM_r8), (long)(user_ret->ARM_r7),
+		(long)(user_ret->ARM_r6), (long)(user_ret->ARM_r5),
+		(long)(user_ret->ARM_r4));
+	Log2HangInfo("0x%lx/0x%lx/0x%lx/0x%lx\n",
+		(long)(user_ret->ARM_r3), (long)(user_ret->ARM_r2),
+		(long)(user_ret->ARM_r1), (long)(user_ret->ARM_r0));
 
 	userstack_start = (unsigned long)user_ret->ARM_sp;
 	vma = current_task->mm->mmap;
@@ -503,7 +513,7 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 
 		SPStart = userstack_start;
 		SPEnd = SPStart + length;
-		Log2HangInfo("UserSP_start:0x%016x: UserSP_Length:0x%08x ,UserSP_End:0x%016x\n",
+		Log2HangInfo("UserSP_start:%x,Length:%x,End:%x\n",
 				SPStart, length, SPEnd);
 		while (SPStart < SPEnd) {
 			/* memcpy(&tempSpContent[0],(void *)(userstack_start+i),4*4); */
@@ -517,7 +527,7 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 			}
 			if (tempSpContent[0] != 0 || tempSpContent[1] != 0 ||
 					tempSpContent[2] != 0 || tempSpContent[3] != 0) {
-				Log2HangInfo("0x%08x:%08x %08x %08x %08x\n", SPStart, tempSpContent[0],
+				Log2HangInfo("%08x:%x %x %x %x\n", SPStart, tempSpContent[0],
 				     tempSpContent[1], tempSpContent[2], tempSpContent[3]);
 			}
 			SPStart += 4 * 4;
@@ -529,9 +539,19 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 
 	/* K64_U32 for current task */
 	if (compat_user_mode(user_ret)) {	/* K64_U32 for check reg */
-		LOGV(" K64+ U32 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
-		     (long)(user_ret->user_regs.pc),
-		     (long)(user_ret->user_regs.regs[14]), (long)(user_ret->user_regs.regs[13]));
+		Log2HangInfo("K64+ U32 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
+			(long)(user_ret->user_regs.pc), (long)(user_ret->user_regs.regs[14]),
+			(long)(user_ret->user_regs.regs[13]));
+		Log2HangInfo("r12-r0 0x%lx/0x%lx/0x%lx/0x%lx\n",
+			(long)(user_ret->user_regs.regs[12]), (long)(user_ret->user_regs.regs[11]),
+		    (long)(user_ret->user_regs.regs[10]), (long)(user_ret->user_regs.regs[9]));
+		Log2HangInfo("0x%lx/0x%lx/0x%lx/0x%lx/0x%lx\n",
+			(long)(user_ret->user_regs.regs[8]), (long)(user_ret->user_regs.regs[7]),
+		    (long)(user_ret->user_regs.regs[6]), (long)(user_ret->user_regs.regs[5]),
+		    (long)(user_ret->user_regs.regs[4]));
+		Log2HangInfo("0x%lx/0x%lx/0x%lx/0x%lx\n",
+		    (long)(user_ret->user_regs.regs[3]), (long)(user_ret->user_regs.regs[2]),
+		    (long)(user_ret->user_regs.regs[1]), (long)(user_ret->user_regs.regs[0]));
 		userstack_start = (unsigned long)user_ret->user_regs.regs[13];
 		vma = current_task->mm->mmap;
 		while (vma != NULL) {
@@ -560,7 +580,7 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 
 			SPStart = userstack_start;
 			SPEnd = SPStart + length;
-			Log2HangInfo("UserSP_start:0x%016x: UserSP_Length:0x%08x ,UserSP_End:0x%016x\n",
+			Log2HangInfo("UserSP_start:%x,Length:%x,End:%x\n",
 				SPStart, length, SPEnd);
 			while (SPStart < SPEnd) {
 				/*  memcpy(&tempSpContent[0],(void *)(userstack_start+i),4*4); */
@@ -574,7 +594,7 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 				}
 				if (tempSpContent[0] != 0 || tempSpContent[1] != 0 ||
 					tempSpContent[2] != 0 || tempSpContent[3] != 0) {
-					Log2HangInfo("0x%08x:%08x %08x %08x %08x\n", SPStart,
+					Log2HangInfo("%08x:%x %x %x %x\n", SPStart,
 						     tempSpContent[0], tempSpContent[1], tempSpContent[2],
 						     tempSpContent[3]);
 				}
@@ -635,7 +655,7 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 			for (copied = 0; copied < frames; copied++) {
 				LOGV("frame:#%d: pc(%016lx)\n", copied, native_bt[copied]);
 				/*  #00 pc 000000000006c760  /system/lib64/ libc.so (__epoll_pwait+8) */
-				Log2HangInfo(" #%d pc %016lx\n", copied, native_bt[copied]);
+				Log2HangInfo("#%d pc %lx\n", copied, native_bt[copied]);
 			}
 			LOGE("tid(%d:%s),frame %d. tmpfp(0x%lx),userstack_start(0x%lx),userstack_end(0x%lx)\n",
 				tid, current_task->comm, frames, tmpfp, userstack_start, userstack_end);
@@ -646,12 +666,14 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 	return 0;
 }
 
-
 static void show_bt_by_pid(int task_pid)
 {
 	struct task_struct *t, *p;
 	struct pid *pid;
-	int count = 0;
+#ifdef __aarch64__
+	struct pt_regs *user_ret;
+#endif
+	int count = 0, dump_native = 0;
 	unsigned state;
 	char stat_nam[] = TASK_STATE_TO_CHAR_STR;
 
@@ -661,7 +683,30 @@ static void show_bt_by_pid(int task_pid)
 	if (p != NULL) {
 		LOGE("show_bt_by_pid: %d: %s\n", task_pid, t->comm);
 		Log2HangInfo("show_bt_by_pid: %d: %s.\n", task_pid, t->comm);
-		DumpThreadNativeMaps(task_pid);	/* catch maps to Userthread_maps */
+#ifndef __aarch64__	 /* 32bit */
+		if (strcmp(t->comm, "system_server") == 0)
+			dump_native = 1;
+		else
+			dump_native = 0;
+#else
+		user_ret = task_pt_regs(t);
+
+		if (!user_mode(user_ret)) {
+			pr_info(" %s,%d:%s,fail in user_mode", __func__, task_pid, t->comm);
+			dump_native = 0;
+		} else	if (t->mm == NULL) {
+			pr_info(" %s,%d:%s, current_task->mm == NULL", __func__, task_pid, t->comm);
+			dump_native = 0;
+		} else if (compat_user_mode(user_ret)) { /* K64_U32 for check reg */
+			if (strcmp(t->comm, "system_server") == 0)
+				dump_native = 1;
+			else
+				dump_native = 0;
+		} else
+			dump_native = 1;
+#endif
+		if (dump_native == 1)
+			DumpThreadNativeMaps(task_pid);	/* catch maps to Userthread_maps */
 		do {
 			if (t) {
 				pid_t tid = 0;
@@ -676,22 +721,18 @@ static void show_bt_by_pid(int task_pid)
 
 				Log2HangInfo("%s sysTid=%d, pid=%d\n", t->comm, tid, task_pid);
 
-				do_send_sig_info(SIGSTOP, SEND_SIG_FORCED, t, true);
-				/* change send ptrace_stop to send signal stop */
-				DumpThreadNativeInfo_By_tid(tid);	/* catch user-space bt */
-
-
-				/*
-				* !!!!!!!!!do need to send sigcontinue£¿£¿£¿
-				* if thread has been stopped before do_send_sig_info(SIGSTOP, SEND_SIG_FORCED, t, true),
-				* so need not to send sigcont
-				*/
-				if (stat_nam[state] != 'T')	/* change send ptrace_stop to send signal stop */
-					do_send_sig_info(SIGCONT, SEND_SIG_FORCED, t, true);
+				if (dump_native == 1) {
+					do_send_sig_info(SIGSTOP, SEND_SIG_FORCED, t, true);
+					/* change send ptrace_stop to send signal stop */
+					DumpThreadNativeInfo_By_tid(tid);	/* catch user-space bt */
+					/* change send ptrace_stop to send signal stop */
+					if (stat_nam[state] != 'T')
+						do_send_sig_info(SIGCONT, SEND_SIG_FORCED, t, true);
+				}
 			}
 			if ((++count) % 5 == 4)
 				msleep(20);
-			Log2HangInfo("---\n");
+			Log2HangInfo("-\n");
 		} while_each_thread(p, t);
 		put_task_struct(t);
 	}
@@ -708,7 +749,8 @@ static void show_state_filter_local(void)
 		 * console might take a lot of time:
 		 *discard wdtk-* for it always stay in D state
 		 */
-		if ((p->state == TASK_RUNNING || p->state & TASK_UNINTERRUPTIBLE) && !strstr(p->comm, "wdtk"))
+		if ((Hang_Detect_first || p->state == TASK_RUNNING || p->state & TASK_UNINTERRUPTIBLE)
+			&& !strstr(p->comm, "wdtk"))
 			sched_show_task_local(p);
 	} while_each_thread(g, p);
 }
@@ -859,7 +901,7 @@ void aee_kernel_RT_Monitor_api(int lParam)
 			hang_detect_counter = hd_timeout =
 			    ((long)lParam + HD_INTER - 1) / (HD_INTER);
 		}
-		if (hd_timeout < 10) { /*  hang detect min timeout is 10 (5min) */
+		if (hd_timeout < 10) { /* hang detect min timeout is 10 (5min) */
 			hang_detect_counter = 10;
 			hd_timeout = 10;
 		}
