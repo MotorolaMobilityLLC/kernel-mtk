@@ -2399,6 +2399,36 @@
 		reg = <0 0x1a008000 0 0x1000>;
 	};
 
+	kd_camera_hw1:kd_camera_hw1@1a040000 {
+		compatible = "mediatek,camera_hw";
+		reg = <0 0x1a040000 0 0x1000>;  /* SENINF_ADDR */
+		/* Camera Common Clock Framework (CCF) */
+		clocks = <&topckgen TOP_MUX_CAMTG>,
+		<&topckgen TOP_MUX_CAMTG2>,
+		<&topckgen TOP_UNIVPLL2_D8>,
+		<&topckgen TOP_UNIVPLL_D52>,
+		<&topckgen TOP_UNIVPLL2_D16>,
+		<&topckgen TOP_UNIVPLL2_D32>,
+		<&topckgen TOP_UNIVPLL_D104>,
+		<&topckgen TOP_UNIVPLL_D208>,
+		<&topckgen TOP_UNIVPLL_D26>,
+		<&clk26m TOP_CLK26M>;
+		clock-names = "TOP_CAMTG_SEL",
+			"TOP_CAMTG2_SEL",
+			"TOP_UNIVPLL2_D8",
+			"TOP_UNIVPLL_D52",
+			"TOP_UNIVPLL2_D16",
+			"TOP_UNIVPLL2_D32",
+			"TOP_UNIVPLL_D104",
+			"TOP_UNIVPLL_D208",
+			"TOP_UNIVPLL_D26",
+			"TOP_CLK26M";
+	};
+	kd_camera_hw2:kd_camera_hw2@1a040000 {
+		compatible = "mediatek,camera_hw2";
+		reg = <0 0x1a040000 0 0x1000>;  /* SENINF_ADDR */
+	};
+
 	seninf1_csi2@1a040000 {
 		compatible = "mediatek,seninf1_csi2";
 		reg = <0 0x1a040000 0 0x1000>;
@@ -3676,11 +3706,11 @@
 	mt6311_pmic: mt6311_pmic {
 
 	};
-
+/*
 	kd_camera_hw1:kd_camera_hw1@1a040000 {
 
 	};
-
+*/
 };
 
 &ufshci {

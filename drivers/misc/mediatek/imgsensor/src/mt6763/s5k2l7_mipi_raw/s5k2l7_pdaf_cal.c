@@ -92,14 +92,13 @@ static bool s5k2l7_selective_read_eeprom(kal_uint16 addr, BYTE* data)
 static bool s5k2l7_read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
 	int i = 0;
 	//int offset = addr;
-	int offset = 0x791;
-	//for(i = 0; i < 1404; i++) {
+	int offset = 0x763;
 	for(i = 0; i < 2048; i++) {
 		if(!s5k2l7_selective_read_eeprom(offset, &data[i])){
 			LOG_INF("read_eeprom 0x%0x %d fail \n",offset, data[i]);
 			return false;
 		}
-		LOG_INF("read_eeprom 0x%0x 0x%x.\n",offset, data[i]);
+		/*LOG_INF("read_eeprom 0x%0x 0x%x.\n",offset, data[i]);*/
 		offset++;
 	}
 	get_done = true;

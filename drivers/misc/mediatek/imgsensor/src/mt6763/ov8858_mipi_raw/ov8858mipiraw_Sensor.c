@@ -2362,7 +2362,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 						  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF("E! current %d fps\n", imgsensor.current_fps);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
 	if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
@@ -2379,12 +2379,13 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
         imgsensor.autoflicker_en = KAL_FALSE;
 	} else {
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor_info.cap1.max_framerate/10,imgsensor_info.cap.max_framerate);
+			LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",imgsensor.current_fps/10,imgsensor_info.cap.max_framerate);
 		imgsensor.pclk = imgsensor_info.cap.pclk;
 		imgsensor.line_length = imgsensor_info.cap.linelength;
 		imgsensor.frame_length = imgsensor_info.cap.framelength;
 		imgsensor.min_frame_length = imgsensor_info.cap.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
+		imgsensor.current_fps = imgsensor_info.cap.max_framerate;
 	}
 	spin_unlock(&imgsensor_drv_lock);
 

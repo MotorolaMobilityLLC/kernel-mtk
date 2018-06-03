@@ -10,9 +10,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+#include "kd_camera_typedef.h"
 
 #ifndef _KD_CAMERA_HW_H_
 #define _KD_CAMERA_HW_H_
+
+#ifndef SUPPORT_I2C_BUS_NUM1
+    #define SUPPORT_I2C_BUS_NUM1        2
+#endif
+#ifndef SUPPORT_I2C_BUS_NUM2
+    #define SUPPORT_I2C_BUS_NUM2        3
+#endif
+
+#ifndef SUPPORT_I2C_BUS_NUM3
+    #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
+#endif
+
 
 #define VOL2800 2800000
 #define VOL1800 1800000
@@ -110,6 +123,11 @@ typedef struct {
 
 extern bool _hwPowerDown(PowerType type);
 extern bool _hwPowerOn(PowerType type, int powerVolt);
+extern void ISP_MCLK1_EN(BOOL En);
+extern void ISP_MCLK2_EN(BOOL En);
+extern void ISP_MCLK3_EN(BOOL En);
+extern void ISP_MCLK4_EN(BOOL En);
+extern unsigned int mt_get_ckgen_freq(int ID);
 
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val);
 int mtkcam_gpio_init(struct platform_device *pdev);

@@ -82,6 +82,25 @@ static bool _read_imx258_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
     return true;
 }
 
+bool read_imx258_pdaf( kal_uint16 addr, BYTE* data, kal_uint32 size){
+	addr = 0x0763;
+	size = 1404;
+
+	LOG_INF("read imx258 eeprom, size = %d\n", size);
+
+	if(!get_done || last_size != size || last_offset != addr) {
+		if(!_read_imx258_eeprom(addr, imx258_eeprom_data, size)){
+			get_done = 0;
+            last_size = 0;
+            last_offset = 0;
+			return false;
+		}
+	}
+
+	memcpy(data, imx258_eeprom_data, size);
+    return true;
+}
+
 bool read_imx258_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
 	addr = 0x0763;
 	size = 1404;

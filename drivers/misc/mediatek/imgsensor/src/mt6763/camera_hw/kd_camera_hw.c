@@ -31,12 +31,17 @@
  * Debug configuration
 ******************************************************************************/
 #define PFX "[kd_camera_hw]"
+/*  #define MT6306_support */
 
-//#define DEBUG_CAMERA_HW_K
+#ifdef MT6306_support
+#include "mt6306.h"
+#endif
+
+#define DEBUG_CAMERA_HW_K
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG(fmt, arg...)			pr_debug(PFX fmt, ##arg)
 #define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
-#define PK_INFO(fmt, arg...) 		pr_debug(PFX fmt, ##arg)
+#define PK_INFO(fmt, arg...) 	pr_debug(PFX fmt, ##arg)
 #else
 #define PK_DBG(fmt, arg...)
 #define PK_ERR(fmt, arg...)			pr_err(fmt, ##arg)
@@ -53,8 +58,6 @@
 #define IDX_PS_CMPDN 4
 
 
-extern void ISP_MCLK1_EN(BOOL En);
-extern void ISP_MCLK2_EN(BOOL En);
 
 u32 pinSetIdx = 0;		/* default main sensor */
 u32 pinSet[3][8] = {
@@ -111,10 +114,10 @@ PowerCust PowerCustList = {
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for DOVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for AFVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for SUB_AVDD; */
-	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for SUB_DVDD; */
+	 {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},		/* for SUB_DVDD; GPIO17 */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for SUB_DOVDD; */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_AVDD; */
-	 {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DVDD; */
+	 {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DVDD; GPIO17 */
 	 {GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for MAIN2_DOVDD; */
 /* {GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_Low}, */
 	 }
@@ -622,7 +625,7 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 {
 	int ret = 0;
-//	static signed int mAVDD_usercounter = 0;
+	/* static signed int mAVDD_usercounter = 0; */
 	static signed int mDVDD_usercounter = 0;
 
 	if (IS_ERR(camctrl)) {
@@ -678,26 +681,25 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 				PK_ERR("%s : pinctrl err, PinIdx %d, Val %d, PDN\n", __func__,PinIdx ,Val);
 		}
 		break;
+	case SUB_DVDD:
 	case MAIN2_DVDD:
-	case SUB_AVDD:
-	case MAIN2_AVDD:
-		/*SUB_DVDD & SUB_AVDD MAIN2_AVDD use same cotrol GPIO */
+		/*SUB_DVDD & MAIN2_DVDD use same cotrol GPIO */
 		PK_DBG("mDVDD_usercounter(%d)\n",mDVDD_usercounter);
-		if (Val == 0 && !IS_ERR(cam_ldo_vcamd_l)){
+		if (Val == 0 && !IS_ERR(cam_ldo_sub_vcamd_l)){
 			mDVDD_usercounter --;
 			if(mDVDD_usercounter <= 0)
 			{
 				if(mDVDD_usercounter < 0)
-					PK_ERR("Please check AVDD pin control\n");
+					PK_ERR("Please check SUB_DVDD pin control\n");
 
 				mDVDD_usercounter = 0;
-				pinctrl_select_state(camctrl, cam_ldo_vcamd_l);
+				pinctrl_select_state(camctrl, cam_ldo_sub_vcamd_l);
 			}
 
 		}
-		else if (Val == 1 && !IS_ERR(cam_ldo_vcamd_h)){
+		else if (Val == 1 && !IS_ERR(cam_ldo_sub_vcamd_h)){
 			mDVDD_usercounter ++;
-			pinctrl_select_state(camctrl, cam_ldo_vcamd_h);
+			pinctrl_select_state(camctrl, cam_ldo_sub_vcamd_h);
 		}
 		break;
 	case DVDD:
@@ -1045,6 +1047,17 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 		PK_INFO("PowerOn:SensorName=%s, pinSetIdx=%d, sensorIdx:%d\n", currSensorName, pinSetIdx, SensorIdx);
 	    /* MIPI SWITCH */
 		if(has_mipi_switch){
+		#ifdef  MT6306_support
+			if (DUAL_CAMERA_SUB_SENSOR == SensorIdx) {
+				mt6306_set_gpio_dir(*ppin_list, MT6306_GPIO_DIR_OUT);
+				mt6306_set_gpio_out(*ppin_list, (pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_0) ?
+					MT6306_GPIO_OUT_HIGH : MT6306_GPIO_OUT_LOW);
+			} else if (DUAL_CAMERA_MAIN_2_SENSOR == SensorIdx) {
+				mt6306_set_gpio_dir(*ppin_list, MT6306_GPIO_DIR_OUT);
+				mt6306_set_gpio_out(*ppin_list, (pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_0) ?
+					MT6306_GPIO_OUT_HIGH : MT6306_GPIO_OUT_LOW);
+			}
+		#else
 			if (DUAL_CAMERA_SUB_SENSOR == SensorIdx) {
 				pinctrl_select_state(camctrl, cam_mipi_switch_en_l);
 				pinctrl_select_state(camctrl, cam_mipi_switch_sel_h);
@@ -1053,6 +1066,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				pinctrl_select_state(camctrl, cam_mipi_switch_en_l);
 				pinctrl_select_state(camctrl, cam_mipi_switch_sel_l);
 			}
+		#endif
 		}
 
 		for (pwListIdx = 0; pwListIdx < 16; pwListIdx++) {

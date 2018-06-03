@@ -29,6 +29,29 @@
 #ifndef _s5k2l7MIPI_SENSOR_H
 #define _s5k2l7MIPI_SENSOR_H
 
+#include "kd_imgsensor.h"
+
+#define S5K2L7_DIGITAL_GAIN
+
+#define S5K2L7_GAIN_ANALOG_RATIO_MAX 4
+#define S5K2L7_GAIN_ANALOG_MIN       BASEGAIN
+#define S5K2L7_GAIN_ANALOG_MAX       (0x7F << 1) /* Analog gain max 4x, 0x80 won't work need to change to 0x7F */
+
+#define S5K2L7_GAIN_DIGITAL_RATIO_MAX 16
+#define S5K2L7_GAIN_DIGITAL_MIN       BASEGAIN
+#define S5K2L7_GAIN_DIGITAL_MAX       (BASEGAIN * S5K2L7_GAIN_DIGITAL_RATIO_MAX)
+
+#ifdef S5K2L7_DIGITAL_GAIN
+#define S5K2L7_GAIN_RATIO_MAX S5K2L7_GAIN_DIGITAL_RATIO_MAX
+#define S5K2L7_GAIN_MIN       S5K2L7_GAIN_DIGITAL_MIN
+#define S5K2L7_GAIN_MAX       S5K2L7_GAIN_DIGITAL_MAX
+#else
+#define S5K2L7_GAIN_RATIO_MAX S5K2L7_GAIN_ANALOG_RATIO_MAX
+#define S5K2L7_GAIN_MIN       S5K2L7_GAIN_ANALOG_MIN
+#define S5K2L7_GAIN_MAX       S5K2L7_GAIN_ANALOG_MAX
+#endif
+
+#define S5K2L7_GAIN_LE_SE_RATIO_MAX S5K2L7_GAIN_ANALOG_RATIO_MAX
 
 typedef enum{
     IMGSENSOR_MODE_INIT,
@@ -131,11 +154,16 @@ typedef struct imgsensor_info_struct {
 //#define IMGSENSOR_WRITE_ID_2 (0x20)
 //#define IMGSENSOR_READ_ID_2  (0x21)
 
+#define HV_MIRROR_FLIP
+
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iReadRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId, u16 timing);
 
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 extern int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timing);
+
+extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing);
+
 
 //for s5k2l7 pdaf
 extern bool s5k2l7_read_otp_pdaf_data( kal_uint16 addr, BYTE* data, kal_uint32 size, kal_uint32 sensor_id);
