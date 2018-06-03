@@ -1592,25 +1592,20 @@
 		<GIC_SPI 219 IRQ_TYPE_LEVEL_LOW>, /* CAM2 */
 		<GIC_SPI 220 IRQ_TYPE_LEVEL_LOW>, /* CAMSV0 */
 		<GIC_SPI 221 IRQ_TYPE_LEVEL_LOW>; /* CAMSV1 */
-		/* clocks = <&scpsys SCP_SYS_DIS>,
-		*		<&scpsys SCP_SYS_ISP>,
-		*		<&mmsys MM_DISP0_SMI_COMMON>,
-		*		<&imgsys IMG_IMAGE_CAM_SMI>,
-		*		<&imgsys IMG_IMAGE_CAM_CAM>,
-		*		<&imgsys IMG_IMAGE_SEN_TG>,
-		*		<&imgsys IMG_IMAGE_SEN_CAM>,
-		*		<&imgsys IMG_IMAGE_CAM_SV>,
-		*		<&imgsys IMG_IMAGE_LARB2_SMI>;
-		*clock-names = "CG_SCP_SYS_DIS",
-		*		"CG_SCP_SYS_ISP",
-		*		"CG_DISP0_SMI_COMMON",
-		*		"CG_IMAGE_CAM_SMI",
-		*		"CG_IMAGE_CAM_CAM",
-		*		"CG_IMAGE_SEN_TG",
-		*		"CG_IMAGE_SEN_CAM",
-		*		"CG_IMAGE_CAM_SV",
-		*		"CG_IMAGE_LARB2_SMI";
-		*/
+		clocks = <&scpsys SCP_SYS_MM0>,
+				<&scpsys SCP_SYS_ISP>,
+				<&imgsys_config CLK_IMG_CAM_SMI>,
+				<&imgsys_config CLK_IMG_CAM_CAM>,
+				<&imgsys_config CLK_IMG_SEN_TG>,
+				<&imgsys_config CLK_IMG_SEN_CAM>,
+				<&imgsys_config CLK_IMG_CAM_SV>;
+		clock-names = "CG_SCP_SYS_MM0",
+				"CG_SCP_SYS_ISP",
+				"CG_IMG_CAM_SMI",
+				"CG_IMG_CAM_CAM",
+				"CG_IMG_SEN_TG",
+				"CG_IMG_SEN_CAM",
+				"CG_IMG_CAM_SV";
 	};
 
 	smi_larb2: smi_larb2@15001000 {
