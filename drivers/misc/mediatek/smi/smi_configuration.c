@@ -2369,7 +2369,7 @@ struct SMI_SETTING_VALUE smi_basic_common_setting[SMI_BASIC_COMMON_SETTING_NUM] 
 };
 
 struct SMI_SETTING_VALUE smi_basic_larb0_setting[SMI_BASIC_LARB0_SETTING_NUM] = {
-	{0x24, (0x6 << 0) + (0x5 << 4) + (0x2 << 8) + (0x1 << 16) + (0x1 << 17) + (0x1 << 18) + (0x3 << 20)},
+	{0x24, 0x300246},
 	{0x100, 0xf}, {0x104, 0xf}, {0x108, 0xf}
 };
 struct SMI_SETTING_VALUE smi_basic_larb1_setting[SMI_BASIC_LARB1_SETTING_NUM] = {
