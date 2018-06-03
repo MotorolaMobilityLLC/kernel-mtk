@@ -267,12 +267,12 @@ struct _BSS_DESC_T {
 	ULARGE_INTEGER u8TimeStamp;	/* Place u8TimeStamp before aucIEBuf[1] to force DW align */
 	UINT_8 aucRawBuf[CFG_RAW_BUFFER_SIZE];
 	UINT_8 aucIEBuf[CFG_IE_BUFFER_SIZE];
-
+	UINT_8 ucJoinFailureCount;
+	UINT_16 u2JoinStatus;
 	OS_SYSTIME rJoinFailTime;
 	struct AIS_BLACKLIST_ITEM *prBlack;
 	UINT_16 u2StaCnt;
 	UINT_16 u2AvaliableAC; /* Available Admission Capacity */
-	UINT_8 ucJoinFailureCount;
 	UINT_8 ucChnlUtilization;
 	UINT_8 ucSNR;
 	BOOLEAN fgSeenProbeResp;
