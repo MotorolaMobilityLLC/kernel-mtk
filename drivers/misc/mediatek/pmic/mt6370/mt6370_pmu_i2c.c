@@ -215,8 +215,9 @@ static inline int mt6370_pmu_chip_id_check(struct i2c_client *i2c)
 	if (ret < 0)
 		return ret;
 
-	if ((ret & 0xF0) == 0x80 || (ret & 0xF0) == 0xE0)
-		return (ret & 0x0F);
+	if ((ret & 0xF0) == 0x80 || (ret & 0xF0) == 0xE0 ||
+		(ret & 0xF0) == 0xF0)
+		return (ret & 0xff);
 	return -ENODEV;
 }
 
@@ -247,13 +248,13 @@ static int mt6370_pmu_probe(struct i2c_client *i2c,
 	struct mt6370_pmu_chip *chip;
 	struct mt6370_pmu_platform_data *pdata = dev_get_platdata(&i2c->dev);
 	bool use_dt = i2c->dev.of_node;
-	uint8_t chip_rev = 0;
+	uint8_t chip_id = 0;
 	int ret = 0;
 
 	ret = mt6370_pmu_chip_id_check(i2c);
 	if (ret < 0)
 		return ret;
-	chip_rev = ret;
+	chip_id = ret;
 	if (use_dt) {
 		rt_config_of_node(&i2c->dev);
 		pdata = devm_kzalloc(&i2c->dev, sizeof(*pdata), GFP_KERNEL);
@@ -275,7 +276,8 @@ static int mt6370_pmu_probe(struct i2c_client *i2c,
 		return -ENOMEM;
 	chip->i2c = i2c;
 	chip->dev = &i2c->dev;
-	chip->chip_rev = chip_rev;
+	chip->chip_rev = chip_id & 0x0f;
+	chip->chip_vid = chip_id & 0xf0;
 	rt_mutex_init(&chip->io_lock);
 	i2c_set_clientdata(i2c, chip);
 
