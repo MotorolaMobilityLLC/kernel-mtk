@@ -22,6 +22,7 @@ static struct ccu_mailbox_t *_ccu_mailbox;
 static struct ccu_mailbox_t *_apmcu_mailbox;
 
 static enum mb_result _mailbox_write_to_buffer(struct ccu_msg_t *task);
+static int ccu_msg_copy(struct ccu_msg_t *dest, struct ccu_msg_t *src);
 
 /*********************************************************************
  * Public functions
@@ -89,8 +90,7 @@ enum mb_result mailbox_receive_cmd(struct ccu_msg_t *task)
 		 */
 		nextReadSlot = (_apmcu_mailbox->front + 1) &
 			(CCU_MAILBOX_QUEUE_SIZE - 1);
-		ccu_memcpy(task, &(_apmcu_mailbox->queue[nextReadSlot]),
-			sizeof(struct ccu_msg_t));
+		ccu_msg_copy(task, &(_apmcu_mailbox->queue[nextReadSlot]));
 		_apmcu_mailbox->front = nextReadSlot;
 
 		LOG_DBG("%s: f(%d), r(%d), cmd(%d), in(%x), out(%x)\n",
@@ -116,20 +116,10 @@ enum mb_result mailbox_receive_cmd(struct ccu_msg_t *task)
  *********************************************************************/
 static int ccu_msg_copy(struct ccu_msg_t *dest, struct ccu_msg_t *src)
 {
-	/*LOG_DBG("src->msg_id: %d\n", src->msg_id);*/
 	dest->msg_id = src->msg_id;
-	/*LOG_DBG("dest->msg_id: %d\n", dest->msg_id);*/
-
-	/*LOG_DBG("src->in_data_ptr: %d\n", src->in_data_ptr);*/
 	dest->in_data_ptr = src->in_data_ptr;
-	/*LOG_DBG("dest->in_data_ptr: %d\n", dest->in_data_ptr);*/
-
-	/*LOG_DBG("src->out_data_ptr: %d\n", src->out_data_ptr);*/
 	dest->out_data_ptr = src->out_data_ptr;
-	/*LOG_DBG("dest->out_data_ptr: %d\n", dest->out_data_ptr);*/
-
 	dest->tg_info = src->tg_info;
-	/*LOG_DBG_MUST("dest->tg_info: %d\n", dest->tg_info);*/
 	return 0;
 }
 
