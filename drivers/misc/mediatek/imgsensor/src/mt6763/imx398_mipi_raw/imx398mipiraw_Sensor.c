@@ -260,7 +260,7 @@ static imgsensor_struct imgsensor = {
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	{4656, 3496, 0000, 0000, 4656, 3496, 2328, 1748, 0000, 0000, 2328, 1748, 0000, 0000, 2328, 1748},/* Preview */
 	{4656, 3496, 0000, 0000, 4656, 3496, 4656, 3496, 0000, 0000, 4656, 3496, 0000, 0000, 4656, 3496},/* capture */
-	{4656, 3496, 0000, 0000, 4656, 3496, 4656, 3496, 0000, 0000, 4656, 3496, 0000, 0000, 4656, 3496},/* video */
+	{4656, 3496, 0000, 0000, 4656, 2608, 4656, 2608, 0000, 0000, 4656, 2608, 0000, 0000, 4656, 2608},/* video */
 	{4656, 3496, 0000, 648, 4656, 2199, 1922, 722, 0000, 0000, 1922, 722, 0000, 0000, 1920, 720},/* hs video */
 	{4656, 3496, 0000, 492, 4656, 2500, 2216, 834, 0000, 0000, 2216, 834, 0000, 0000, 1476, 834},/* slim video */
 	{4656, 3496, 0000, 0000, 4656, 3496, 2328, 1748, 0000, 0000, 2328, 1748, 0000, 0000, 2328, 1748},/* Custom1 */
@@ -293,7 +293,8 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3] = {
 	}
 };
 
-static SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
+
+static SET_PD_BLOCK_INFO_T pd_block_info_cap = {
 	.i4OffsetX = 88,
 	.i4OffsetY = 72,
 	.i4PitchX = 32,
@@ -310,6 +311,31 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 		{90, 89},
 		{98, 89}, {106, 89}, {114, 89}, {94, 97}, {102, 97}, {110, 97}, {118, 97} },
 	.iMirrorFlip = 0,	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
+	.i4BlockNumX = 140,
+	.i4BlockNumY = 104,
+	.i4Crop = { {0, 0}, {0, 0}, {0, 444}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
+};
+
+static SET_PD_BLOCK_INFO_T pd_block_info_normal_video = {
+	.i4OffsetX = 88,
+	.i4OffsetY = 72,
+	.i4PitchX = 32,
+	.i4PitchY = 32,
+	.i4PairNum = 16,
+	.i4SubBlkW = 8,
+	.i4SubBlkH = 8,
+	.i4PosL = {
+		{91, 73}, {99, 73}, {107, 73}, {115, 73}, {95, 81}, {103, 81}, {111, 81}, {119, 81},
+		{91, 89},
+		{99, 89}, {107, 89}, {115, 89}, {95, 97}, {103, 97}, {111, 97}, {119, 97} },
+	.i4PosR = {
+		{90, 73}, {98, 73}, {106, 73}, {114, 73}, {94, 81}, {102, 81}, {110, 81}, {118, 81},
+		{90, 89},
+		{98, 89}, {106, 89}, {114, 89}, {94, 97}, {102, 97}, {110, 97}, {118, 97} },
+	.iMirrorFlip = 0,	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
+	.i4BlockNumX = 140,
+	.i4BlockNumY = 80,
+	.i4Crop = { {0, 0}, {0, 0}, {0, 444}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0} },
 };
 
 
@@ -3598,10 +3624,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-			memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
+			memcpy((void *)PDAFinfo, (void *)&pd_block_info_cap,
 			       sizeof(SET_PD_BLOCK_INFO_T));
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			memcpy((void *)PDAFinfo, (void *)&pd_block_info_normal_video,
+			       sizeof(SET_PD_BLOCK_INFO_T));
+			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -3653,7 +3682,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 0;
+			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 1;
 			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 0;
