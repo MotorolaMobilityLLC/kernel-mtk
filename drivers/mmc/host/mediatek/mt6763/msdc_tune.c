@@ -150,7 +150,7 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 #else
 		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
 		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
-			/* do nothing */
+			mmc_detect_change(host->mmc, msecs_to_jiffies(200));
 		} else
 #endif
 		{
@@ -269,7 +269,10 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 	}
 
 	mmc->ios.timing = MMC_TIMING_LEGACY;
-	mmc->ios.clock = 260000;
+	/* do not set same as HOST_MIN_MCLK
+	 * or else it will be set as block_bad_card when power off
+	 */
+	mmc->ios.clock = 300000;
 	msdc_ops_set_ios(mmc, &mmc->ios);
 	/* power reset sdcard */
 	ret = mmc_hw_reset(mmc);
@@ -278,6 +281,7 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 			host->block_bad_card = 1;
 		pr_err("msdc%d power reset (%d) failed, block_bad_card = %d\n",
 			host->id, host->power_cycle_cnt, host->block_bad_card);
+		mmc_detect_change(mmc, msecs_to_jiffies(200));
 	} else {
 		host->power_cycle_cnt = 0;
 		pr_err("msdc%d power reset success\n", host->id);
