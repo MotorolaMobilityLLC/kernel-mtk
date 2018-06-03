@@ -1020,6 +1020,7 @@ out:
 #endif
 	raw_spin_unlock(&tick_broadcast_lock);
 
+#ifdef _MTK_TICK_BROADCAST_AEE_DUMP
 	if (need_dump) {
 		reset_bc_dump_buf(bc_dump_buf);
 
@@ -1071,6 +1072,7 @@ out:
 		}
 		pr_info("%s\n", get_bc_dump_buf(bc_dump_buf));
 	}
+#endif
 	return ret;
 }
 
