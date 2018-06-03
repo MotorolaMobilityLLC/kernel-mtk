@@ -92,6 +92,7 @@ static atomic_t ext_idlemgr_task_wakeup = ATOMIC_INIT(1);
 /* dvfs */
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_ULPM);
 #endif
+static int register_share_sram;
 
 
 /* Local API */
@@ -344,9 +345,6 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	if (is_mipi_enterulps())
 		return;
 
-	if (primary_display_is_idle() && !primary_display_is_video_mode())
-		return;
-
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
@@ -387,6 +385,12 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	primary_display_manual_lock();
+
+	if (!register_share_sram) {
+		/*DISPMSG("warning: mdp acquire wrot_resource after unregister the callback!\n");*/
+		primary_display_manual_unlock();
+		return 0;
+	}
 	_acquire_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
 
@@ -448,6 +452,13 @@ static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* need lock  */
 	primary_display_manual_lock();
+
+	if (!register_share_sram) {
+		/*DISPMSG("warning:mdp release wrot_resource after unregister the callback!\n");*/
+		primary_display_manual_unlock();
+		return 0;
+	}
+
 	_release_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
 
@@ -1155,6 +1166,8 @@ void enter_share_sram(void)
 	/* 1. register call back first */
 	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0,
 		_acquire_wrot_resource, _release_wrot_resource);
+	register_share_sram = 1;
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_PULSE, 0, 1);
 
 	/* 2. try to allocate sram at the fisrt time */
 	_acquire_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);
@@ -1164,6 +1177,8 @@ void leave_share_sram(void)
 {
 	/* 1. unregister call back */
 	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0, NULL, NULL);
+	register_share_sram = 0;
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_PULSE, 0, 0);
 
 	/* 2. try to release share sram */
 	_release_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);
