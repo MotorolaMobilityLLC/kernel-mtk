@@ -223,7 +223,7 @@
 #ifdef CONFIG_PWR_LOSS_MTK_TEST
 #define MAX_REQ_SZ              (512 * 65536)
 #else
-#define MAX_REQ_SZ              (4 * 1024 * 1024)
+#define MAX_REQ_SZ              (512 * 1024)
 #endif
 
 #ifdef FPGA_PLATFORM
