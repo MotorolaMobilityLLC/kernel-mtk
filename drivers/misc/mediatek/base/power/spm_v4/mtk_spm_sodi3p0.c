@@ -43,6 +43,12 @@
 
 #include <mtk_idle_internal.h>
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#include <sspm_define.h>
+#include <sspm_timesync.h>
+#endif
+
+
 /**************************************
  * only for internal debug
  **************************************/
