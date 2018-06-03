@@ -26,6 +26,7 @@
 #include "ddp_mmp.h"
 #include "debug.h"
 #include "disp_drv_platform.h"
+#include "mtk_dramc.h"
 
 #define OVL_REG_BACK_MAX	(40)
 #define OVL_LAYER_OFFSET	(0x20)
@@ -2016,6 +2017,7 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	int is_large_resolution = 0;
 	unsigned int layer_greq_num;
 	unsigned int dst_w, dst_h;
+	int ddr_type = get_ddr_type();
 
 
 	layer_num = ovl_layer_num(module);
@@ -2033,8 +2035,8 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 
 	/* DISP_REG_OVL_RDMA0_MEM_GMC_SETTING */
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_ULTRA_THRESHOLD, 0x3ff);
-	if (dst_mod_type == DST_MOD_REAL_TIME)
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_PRE_ULTRA_THRESHOLD, 0x3ff);
+	if (dst_mod_type == DST_MOD_REAL_TIME && ddr_type == TYPE_LPDDR3)
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_PRE_ULTRA_THRESHOLD, 0xe0);
 	else
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_PRE_ULTRA_THRESHOLD, 0x3ff);
 
@@ -2120,8 +2122,8 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 
 	/* DISP_REG_OVL_RDMAn_BUF_LOW */
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_ULTRA_TH, 0);
-	if (dst_mod_type == DST_MOD_REAL_TIME)
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, 0);
+	if (dst_mod_type == DST_MOD_REAL_TIME && ddr_type == TYPE_LPDDR3)
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, 0x18);
 	else
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, 0x0);
 
@@ -2130,8 +2132,8 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 
 	/* DISP_REG_OVL_RDMAn_BUF_HIGH */
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_BUF_HIGH_PREULTRA_DIS, 1);
-	if (dst_mod_type == DST_MOD_REAL_TIME)
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_HIGH_PREULTRA_TH, 0);
+	if (dst_mod_type == DST_MOD_REAL_TIME && ddr_type == TYPE_LPDDR3)
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_HIGH_PREULTRA_TH, 0x90);
 	else
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_HIGH_PREULTRA_TH, 0x0);
 
