@@ -25,6 +25,6 @@ extern u32 fp_log_level;
 
 #define fp_printk(level, fmt, args...) do { \
 		if (fp_log_level & level) { \
-			pr_err("[MDT]" fmt, ## args); \
+			pr_notice("[MDT]" fmt, ## args); \
 		} \
 	} while (0)
