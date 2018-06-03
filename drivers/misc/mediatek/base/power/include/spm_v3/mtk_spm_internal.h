@@ -610,6 +610,7 @@ extern struct spm_lp_scen __spm_vcorefs;
 
 extern int __spm_check_opp_level(int ch);
 
+extern int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl);
 #if !defined(CONFIG_MTK_SPM_IN_ATF)
 extern void __spm_set_cpu_status(int cpu);
 extern void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc);
