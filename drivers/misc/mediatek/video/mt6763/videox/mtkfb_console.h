@@ -60,6 +60,7 @@ do {                                \
 		UINT32 cursor_col;
 		UINT32 font_width;
 		UINT32 font_height;
+		UINT32 font_scale;
 	};
 
 /* MTK Framebuffer Console API */
@@ -80,10 +81,12 @@ do {                                \
 
 	enum MFC_STATUS MFC_Close(MFC_HANDLE handle);
 
+	enum MFC_STATUS MFC_SetScale(MFC_HANDLE handle, unsigned int scale);
+
 	enum MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int bg_color);
 
 	enum MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle);
-
+	enum MFC_STATUS MFC_SetCursor(MFC_HANDLE handle, unsigned int x, unsigned int y);
 	enum MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str);
 
 	enum MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_color,

@@ -60,14 +60,15 @@ static void _MFC_DrawChar(struct MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 	const BYTE *cdat;
 	BYTE *dest;
 	INT32 rows, cols, offset;
+	INT32 cols_mul, rows_mul;
 
 	int font_draw_table16[4];
 
-	if (x > (MFC_WIDTH - MFC_FONT_WIDTH)) {
+	if (x > (MFC_WIDTH - MFC_FONT_WIDTH*ctxt->font_scale)) {
 		pr_err("draw width too large,x=%d\n", x);
 		return;
 	}
-	if (y > (MFC_HEIGHT - MFC_FONT_HEIGHT)) {
+	if (y > (MFC_HEIGHT - MFC_FONT_HEIGHT*ctxt->font_scale)) {
 		pr_err("draw hight too large,y=%d\n", y);
 		return;
 	}
@@ -95,32 +96,48 @@ static void _MFC_DrawChar(struct MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 		break;
 	case 3:
 		cdat = (const BYTE *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
-		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
+		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH*ctxt->font_scale) {
 			BYTE bits = *cdat++;
-			BYTE *tmp = dest;
+			BYTE *temp_row = dest;
 
-			for (cols = 0; cols < 8; ++cols) {
-				UINT32 color = ((bits >> (7 - cols)) & 0x1) ? MFC_FG_COLOR : MFC_BG_COLOR;
-				((BYTE *)tmp)[0] = color & 0xff;
-				((BYTE *)tmp)[1] = (color >> 8) & 0xff;
-				((BYTE *)tmp)[2] = (color >> 16) & 0xff;
-				tmp += 3;
+			for (rows_mul = 0; rows_mul < ctxt->font_scale; rows_mul++) {
+				BYTE *tmp = temp_row;
+
+				for (cols = 0; cols < 8; ++cols) {
+					UINT32 color = ((bits >> (7 - cols)) & 0x1) ? MFC_FG_COLOR : MFC_BG_COLOR;
+
+					for (cols_mul = 0; cols_mul < ctxt->font_scale; cols_mul++) {
+						((BYTE *)tmp)[0] = color & 0xff;
+						((BYTE *)tmp)[1] = (color >> 8) & 0xff;
+						((BYTE *)tmp)[2] = (color >> 16) & 0xff;
+						tmp += 3;
+					}
+				}
+				temp_row += MFC_PITCH;
 			}
 		}
 		break;
 	case 4:
 		cdat = (const BYTE *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
-		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
+		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH*ctxt->font_scale) {
 			BYTE bits = *cdat++;
-			BYTE *tmp = dest;
+			BYTE *temp_row = dest;
 
-			for (cols = 0; cols < 8; ++cols) {
-				UINT32 color = ((bits >> (7 - cols)) & 0x1) ? MFC_FG_COLOR : MFC_BG_COLOR;
-				((BYTE *)tmp)[1] = color & 0xff;
-				((BYTE *)tmp)[2] = (color >> 8) & 0xff;
-				((BYTE *)tmp)[3] = (color >> 16) & 0xff;
-				((BYTE *)tmp)[0] = (color >> 16) & 0xff;
-				tmp += 4;
+			for (rows_mul = 0; rows_mul < ctxt->font_scale; rows_mul++) {
+				BYTE *tmp = temp_row;
+
+				for (cols = 0; cols < 8; ++cols) {
+					UINT32 color = ((bits >> (7 - cols)) & 0x1) ? MFC_FG_COLOR : MFC_BG_COLOR;
+
+					for (cols_mul = 0; cols_mul < ctxt->font_scale; cols_mul++) {
+						((BYTE *)tmp)[1] = color & 0xff;
+						((BYTE *)tmp)[2] = (color >> 8) & 0xff;
+						((BYTE *)tmp)[3] = (color >> 16) & 0xff;
+						((BYTE *)tmp)[0] = (color >> 24) & 0xff;
+						tmp += 4;
+					}
+				}
+				temp_row += MFC_PITCH;
 			}
 		}
 		break;
@@ -231,6 +248,7 @@ enum MFC_STATUS MFC_Open(MFC_HANDLE *handle,
 	ctxt->cols = fb_width / MFC_FONT_WIDTH;
 	ctxt->font_width = MFC_FONT_WIDTH;
 	ctxt->font_height = MFC_FONT_HEIGHT;
+	ctxt->font_scale = 1;
 
 	*handle = ctxt;
 
@@ -286,6 +304,24 @@ enum MFC_STATUS MFC_Close(MFC_HANDLE handle)
 	return MFC_STATUS_OK;
 }
 
+enum MFC_STATUS MFC_SetScale(MFC_HANDLE handle, unsigned int scale)
+{
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
+
+	if (!ctxt)
+		return MFC_STATUS_INVALID_ARGUMENT;
+
+	if (down_interruptible(&ctxt->sem)) {
+		pr_debug("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
+		return MFC_STATUS_LOCK_FAIL;
+	}
+
+	ctxt->font_scale = scale;
+	up(&ctxt->sem);
+
+	return MFC_STATUS_OK;
+}
+
 enum MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int bg_color)
 {
 	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
@@ -294,7 +330,7 @@ enum MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned 
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
-		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
+		pr_debug("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -313,11 +349,31 @@ enum MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
-		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
+		pr_debug("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
 	ctxt->cursor_row = ctxt->cursor_col = 0;
+	up(&ctxt->sem);
+
+	return MFC_STATUS_OK;
+}
+
+enum MFC_STATUS MFC_SetCursor(MFC_HANDLE handle, unsigned int x, unsigned int y)
+{
+	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)handle;
+
+	if (!ctxt)
+		return MFC_STATUS_INVALID_ARGUMENT;
+
+	if (down_interruptible(&ctxt->sem)) {
+		pr_debug("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
+		WARN_ON(1);
+		return MFC_STATUS_LOCK_FAIL;
+	}
+
+	ctxt->cursor_row = y;
+	ctxt->cursor_col = x;
 	up(&ctxt->sem);
 
 	return MFC_STATUS_OK;
@@ -332,7 +388,7 @@ enum MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
-		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
+		pr_debug("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -357,7 +413,7 @@ enum MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
-		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
+		pr_debug("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -386,7 +442,7 @@ enum MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (down_interruptible(&ctxt->sem)) {
-		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
+		pr_debug("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 

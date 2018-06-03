@@ -169,6 +169,7 @@ DECLARE_WAIT_QUEUE_HEAD(decouple_trigger_wq);
 wait_queue_head_t primary_display_present_fence_wq;
 atomic_t primary_display_present_fence_update_event = ATOMIC_INIT(0);
 static unsigned int _need_lfr_check(void);
+struct Layer_draw_info *draw_info;
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 static int od_need_start;
@@ -3000,6 +3001,19 @@ static int _decouple_update_rdma_config_nolock(void)
 			return -1;
 		}
 
+		if (dump_output) {
+			int i = pgc->dc_buf_id;
+
+			show_layers_draw_wdma(draw_info);
+			if (dump_output_comp) {
+				memcpy(composed_buf, decouple_buffer_info[i]->va,
+				disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT) *
+				disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH) * 3);
+				complete(&dump_buf_comp);
+				dump_output_comp = 0;
+			}
+		}
+
 		if (cmdq_handle == NULL)
 			ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
 		if (ret == 0) {
@@ -5285,6 +5299,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	int bypass, bypass_layer_id = 0;
 	int hrt_level;
 	struct disp_rect total_dirty_roi = {0, 0, 0, 0};
+
+	int j, draw_temp;
 #ifdef DEBUG_OVL_CONFIG_TIME
 	cmdqRecBackupRegisterToSlot(cmdq_handle, pgc->ovl_config_time, 0, 0x10008028);
 #endif
@@ -5509,6 +5525,65 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	}
 #endif
 
+	if (dump_output) {
+		kfree(draw_info);
+		draw_info = NULL;
+
+		draw_info = kzalloc(sizeof(*draw_info), GFP_KERNEL);
+		for (i = 0; i < TOTAL_REAL_OVL_LAYER_NUM; i++) {
+			struct disp_input_config *input_cfg = &cfg->input_cfg[i];
+			struct OVL_CONFIG_STRUCT *ovl_cfg;
+
+			if (input_cfg->layer_enable) {
+				layer = input_cfg->layer_id;
+				ovl_cfg = &(data_config->ovl_config[layer]);
+				_convert_disp_input_to_ovl(ovl_cfg, input_cfg);
+			} else
+				ovl_cfg = &(data_config->ovl_config[i]);
+
+			if (ovl_cfg->layer_en == 1) {
+				draw_temp = draw_info->layer_num++;
+				draw_info->digit_x[draw_temp] = ovl_cfg->dst_x;
+				draw_info->digit_y[draw_temp] = ovl_cfg->dst_y;
+				draw_info->frame_upper_left_x[draw_temp] = ovl_cfg->dst_x;
+				draw_info->frame_upper_left_y[draw_temp] = ovl_cfg->dst_y;
+				draw_info->frame_lower_right_x[draw_temp] = ovl_cfg->dst_x + ovl_cfg->dst_w - 1;
+				draw_info->frame_lower_right_y[draw_temp] = ovl_cfg->dst_y + ovl_cfg->dst_h - 1;
+				draw_info->frame_width[draw_temp] = 6;
+				if ((draw_info->digit_y[draw_temp] > primary_display_get_height() - 4*16))
+					draw_info->digit_y[draw_temp] = primary_display_get_height() - 4*16 - 1;
+
+				for (j = 0; j < draw_info->layer_num - 1; j++) {
+					if ((draw_info->digit_x[draw_temp] == draw_info->digit_x[j]) &&
+						(draw_info->digit_y[draw_temp] == draw_info->digit_y[j])) {
+						draw_info->digit_x[draw_temp] = draw_info->digit_x[j] + 4*8;
+					}
+					if (((ovl_cfg->dst_x <=
+						draw_info->frame_upper_left_x[j] + draw_info->frame_width[j]) &&
+						(ovl_cfg->dst_x >= draw_info->frame_upper_left_x[j])) ||
+						((ovl_cfg->dst_y <=
+						draw_info->frame_upper_left_x[j] + draw_info->frame_width[j]) &&
+						(ovl_cfg->dst_y >= draw_info->frame_upper_left_x[j])) ||
+						((ovl_cfg->dst_x + ovl_cfg->dst_w >=
+						draw_info->frame_lower_right_x[j] - draw_info->frame_width[j]) &&
+						(ovl_cfg->dst_x + ovl_cfg->dst_w <=
+						draw_info->frame_lower_right_x[j])) ||
+						((ovl_cfg->dst_y + ovl_cfg->dst_h >=
+						draw_info->frame_lower_right_y[j] - draw_info->frame_width[j]) &&
+						(ovl_cfg->dst_y + ovl_cfg->dst_h <=
+						draw_info->frame_lower_right_y[j])))
+						draw_info->frame_width[draw_temp] += 3;
+					if (draw_info->frame_upper_left_y[draw_temp]
+						+ draw_info->frame_width[draw_temp]
+						> draw_info->frame_lower_right_y[draw_temp])
+						draw_info->frame_width[draw_temp] =
+							draw_info->frame_lower_right_y[draw_temp]
+							- draw_info->frame_upper_left_y[draw_temp];
+				}
+			}
+		}
+	}
+
 	ret = dpmgr_path_config(disp_handle, data_config, cmdq_handle);
 
 #ifdef DEBUG_OVL_CONFIG_TIME
@@ -5635,6 +5710,11 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		mem_config.fmt = decouple_wdma_config.outputFormat;
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_wdma_config, MMPROFILE_FLAG_PULSE,
 			       pgc->dc_buf_id, wdma_mva);
+		show_layers_va = decouple_buffer_info[pgc->dc_buf_id]->va;
+		DAL_CHECK_MFC_RET(MFC_Open(&show_mfc_handle, decouple_buffer_info[pgc->dc_buf_id]->va,
+			   DISP_GetScreenWidth(), DISP_GetScreenHeight(), 3, color_wdma[0], DAL_COLOR_OPAQUE));
+		DAL_CHECK_MFC_RET(MFC_SetScale(show_mfc_handle, 4));
+
 	}
 done:
 	return ret;
