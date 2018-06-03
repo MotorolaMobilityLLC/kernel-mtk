@@ -2359,7 +2359,6 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 	unsigned int uni_path;
 	unsigned int flk2_sel;
 	unsigned int hds2_sel;
-	unsigned int i;
 	unsigned int dmaerr[_cam_max_];
 	enum ISP_DEV_NODE_ENUM regModule; /* for read/write register */
 
@@ -2480,8 +2479,8 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 		break;
 	}
 
-	for (i = 0 ; i < 5 ; i++)
-		smi_dumpDebugMsg();
+	smi_debug_bus_hanging_detect_ext2(0x1FF, 1, 0, 1);
+	/* smi_dumpDebugMsg(); */
 }
 
 
