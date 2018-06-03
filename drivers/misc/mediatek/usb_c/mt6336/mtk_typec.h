@@ -308,6 +308,9 @@ struct typec_hba {
 	unsigned int pd_irq;
 	int id;
 
+	bool is_lowq;
+	struct mt6336_ctrl *core_ctrl;
+
 	struct mutex ioctl_lock;
 	struct mutex typec_lock;
 
