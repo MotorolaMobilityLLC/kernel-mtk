@@ -487,6 +487,7 @@ static unsigned int _mt_gpufreq_get_cur_volt(void);
 static unsigned int _mt_gpufreq_get_cur_freq(void);
 static void _mt_gpufreq_kick_pbm(int enable);
 static int _mt_gpufreq_set_lpm_status(unsigned int unit, unsigned int enable_lpm);
+static unsigned int g_latest_freq_at_lowest;
 
 
 #ifndef DISABLE_PBM_FEATURE
@@ -941,13 +942,12 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 			gpufreq_err("@%s: enable = %x, reg_val = %d\n", __func__, enable, reg_val);
 		}
 	} else {
+		g_latest_freq_at_lowest = (g_cur_gpu_freq == GPU_DVFS_FREQ1_6763T) ||
+					(g_cur_gpu_freq == GPU_DVFS_FREQ1_6763);
+
 		if (enable == BUCK_ON) {
-			if (g_cur_gpu_freq == GPU_DVFS_FREQ1_6763T ||
-					g_cur_gpu_freq == GPU_DVFS_FREQ1_6763) {
-				/* Low Freq, no need to kick Vcore */
-			} else {
+			if (!g_latest_freq_at_lowest)
 				ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
-			}
 		} else {
 			ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
 		}
@@ -1039,15 +1039,15 @@ unsigned int mt_gpufreq_voltage_lpm_set(unsigned int enable_lpm)
 				goto SET_LPM_EXIT;
 		}
 	} else {
-		if (enable_lpm && !mt_gpufreq_ptpod_disable) {
-			vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
+		g_latest_freq_at_lowest = (g_cur_gpu_freq == GPU_DVFS_FREQ1_6763T) ||
+					(g_cur_gpu_freq == GPU_DVFS_FREQ1_6763);
+
+		if (enable_lpm) {
+			if (!mt_gpufreq_ptpod_disable)
+				ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);
 		} else {
-			if (g_cur_gpu_freq == GPU_DVFS_FREQ1_6763T ||
-					g_cur_gpu_freq == GPU_DVFS_FREQ1_6763) {
-				/* Low Freq, no need to kick Vcore */
-			} else {
-				vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
-			}
+			if (!g_latest_freq_at_lowest)
+				ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_0);
 		}
 	}
 
