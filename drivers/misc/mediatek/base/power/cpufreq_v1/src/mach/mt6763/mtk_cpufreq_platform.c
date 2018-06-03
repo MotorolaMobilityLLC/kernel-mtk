@@ -651,28 +651,26 @@ int mt_cpufreq_dts_map(void)
 	return 0;
 }
 
-unsigned int _mt_cpufreq_get_cpu_level(void)
-{
-	lv = CPU_LEVEL_1;
-
-#if 0
 #define SEG_EFUSE 30
 #define BIN_EFUSE 52 /* 588 */
 #define TURBO_EFUSE 54 /* 590 */
 
+unsigned int _mt_cpufreq_get_cpu_level(void)
+{
 	unsigned int bin = 0;
+	lv = CPU_LEVEL_1;
 
 	/* 0x588 bit[2:0] */
 	bin = get_devinfo_with_index(BIN_EFUSE);
 	bin = _GET_BITS_VAL_(2:0, bin);
-	if (get_devinfo_with_index(SEG_EFUSE) == n_seg)
+	if (get_devinfo_with_index(SEG_EFUSE) == 0x10)
 		lv = CPU_LEVEL_0;
-	else if (get_devinfo_with_index(SEG_EFUSE) == t_seg) {
+	else if (get_devinfo_with_index(SEG_EFUSE) == 0x20) {
 		if (bin == 1)
 			lv = CPU_LEVEL_2;
 		else
 			lv = CPU_LEVEL_1;
-	} else if (get_devinfo_with_index(SEG_EFUSE) == tt_seg) {
+	} else if (get_devinfo_with_index(SEG_EFUSE) == 0x30) {
 		if (is_ext_buck_exist())
 			lv = CPU_LEVEL_3;
 		else {
@@ -687,7 +685,6 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	turbo_flag = get_devinfo_with_index(TURBO_EFUSE);
 	turbo_flag = _GET_BITS_VAL_(3:3, turbo_flag);
 	cpufreq_info("(%d, %d, %d)\n", lv, bin, turbo_flag);
-#endif
 
 	return lv;
 }
