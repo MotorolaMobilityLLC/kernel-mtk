@@ -53,6 +53,7 @@ obj-$(CONFIG_MACH_KIBOPLUS) += hps_v2/
 obj-$(CONFIG_MACH_MT6757) += ppm_v2/
 obj-$(CONFIG_MACH_KIBOPLUS) += ppm_v2/
 obj-$(CONFIG_MACH_MT6759) += ppm_v2/
+obj-$(CONFIG_MACH_MT6763) += ppm_v2/
 obj-$(CONFIG_MACH_MT6799) += ppm_v2/
 obj-$(CONFIG_MACH_MT6759) += spm_v3/
 obj-$(CONFIG_MACH_MT6799) += spm_v3/

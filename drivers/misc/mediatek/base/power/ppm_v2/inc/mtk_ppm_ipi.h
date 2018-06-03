@@ -17,9 +17,6 @@
 #include "mach/mtk_ppm_api.h"
 #include "mtk_ppm_platform.h"
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-#define PPM_SSPM_SUPPORT	(1)
-#endif
 
 #define PPM_D_LEN	(7) /* # of cmd + arg0 + arg1 + ... */
 
