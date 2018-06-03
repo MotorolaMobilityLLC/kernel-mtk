@@ -29,6 +29,9 @@
 #include <mt-plat/rt-regmap.h>
 #endif
 
+#ifdef CONFIG_RT9465_PWR_EN_TO_MT6336
+#include <mt6336.h>
+#endif
 #include "mtk_charger_intf.h"
 #include "rt9465.h"
 #define I2C_ACCESS_MAX_RETRY	5
@@ -48,6 +51,14 @@ enum rt9465_charging_status {
 /* Charging status name */
 static const char *rt9465_chg_status_name[RT9465_CHG_STATUS_MAX] = {
 	"ready", "progress", "done", "fault",
+};
+
+static const u8 rt9465_hidden_mode_addr[] = {
+	0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57,
+};
+
+static const u8 rt9465_hidden_mode_val[] = {
+	0x30, 0x26, 0xC7, 0xA4, 0x33, 0x06, 0x5F, 0xE1,
 };
 
 struct rt9465_desc {
@@ -98,6 +109,9 @@ struct rt9465_info {
 	struct rt_regmap_device *regmap_dev;
 	struct rt_regmap_properties *regmap_prop;
 #endif
+#ifdef CONFIG_RT9465_PWR_EN_TO_MT6336
+	struct mt6336_ctrl *lowq_ctrl;
+#endif
 };
 
 
@@ -120,6 +134,8 @@ static const unsigned char rt9465_reg_addr[] = {
 	RT9465_REG_CHG_CTRL10,
 	RT9465_REG_CHG_CTRL12,
 	RT9465_REG_CHG_CTRL13,
+	RT9465_REG_HIDDEN_CTRL2,
+	RT9465_REG_HIDDEN_CTRL6,
 	RT9465_REG_SYSTEM1,
 	RT9465_REG_CHG_STATC,
 	RT9465_REG_CHG_FAULT,
@@ -149,6 +165,8 @@ RT_REG_DECL(RT9465_REG_CHG_CTRL9, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9465_REG_CHG_CTRL10, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9465_REG_CHG_CTRL12, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9465_REG_CHG_CTRL13, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT9465_REG_HIDDEN_CTRL2, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT9465_REG_HIDDEN_CTRL6, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9465_REG_SYSTEM1, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9465_REG_CHG_STATC, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9465_REG_CHG_FAULT, 1, RT_VOLATILE, {});
@@ -173,6 +191,8 @@ static rt_register_map_t rt9465_regmap_map[] = {
 	RT_REG(RT9465_REG_CHG_CTRL10),
 	RT_REG(RT9465_REG_CHG_CTRL12),
 	RT_REG(RT9465_REG_CHG_CTRL13),
+	RT_REG(RT9465_REG_HIDDEN_CTRL2),
+	RT_REG(RT9465_REG_HIDDEN_CTRL6),
 	RT_REG(RT9465_REG_SYSTEM1),
 	RT_REG(RT9465_REG_CHG_STATC),
 	RT_REG(RT9465_REG_CHG_FAULT),
@@ -283,7 +303,6 @@ static inline int _rt9465_i2c_write_byte(struct rt9465_info *info, u8 cmd,
 	return ret;
 }
 
-#if 0
 static int rt9465_i2c_write_byte(struct rt9465_info *info, u8 cmd, u8 data)
 {
 	int ret = 0;
@@ -294,7 +313,6 @@ static int rt9465_i2c_write_byte(struct rt9465_info *info, u8 cmd, u8 data)
 
 	return ret;
 }
-#endif
 
 static inline int _rt9465_i2c_read_byte(struct rt9465_info *info, u8 cmd)
 {
@@ -337,7 +355,6 @@ static int rt9465_i2c_read_byte(struct rt9465_info *info, u8 cmd)
 	return (ret & 0xFF);
 }
 
-#if 0
 static inline int _rt9465_i2c_block_write(struct rt9465_info *info, u8 cmd,
 	u32 leng, const u8 *data)
 {
@@ -364,7 +381,6 @@ static int rt9465_i2c_block_write(struct rt9465_info *info, u8 cmd, u32 leng,
 
 	return ret;
 }
-#endif
 
 static inline int _rt9465_i2c_block_read(struct rt9465_info *info, u8 cmd,
 	u32 leng, u8 *data)
@@ -488,6 +504,59 @@ static u32 rt9465_find_closest_real_value(const u32 min, const u32 max,
 		ret_val = max;
 
 	return ret_val;
+}
+
+static int rt9465_enable_hidden_mode(struct rt9465_info *info, bool en)
+{
+	int ret = 0;
+
+	pr_info("%s: enable = %d\n", __func__, en);
+
+	/* Disable hidden mode */
+	if (!en) {
+		ret = rt9465_i2c_write_byte(info, 0x50, 0x00);
+		if (ret < 0)
+			goto err;
+		return ret;
+	}
+
+	/* Enable hidden mode */
+	ret = rt9465_i2c_block_write(info, rt9465_hidden_mode_addr[0],
+		ARRAY_SIZE(rt9465_hidden_mode_val),
+		rt9465_hidden_mode_val);
+	if (ret < 0)
+		goto err;
+
+	return ret;
+
+err:
+	pr_err("%s: enable = %d failed, ret = %d\n", __func__, en, ret);
+	return ret;
+}
+static int rt9465_sw_workaround(struct rt9465_info *info)
+{
+	int ret = 0;
+
+	pr_info("%s\n", __func__);
+
+	/* Enter hidden mode */
+	ret = rt9465_enable_hidden_mode(info, true);
+	if (ret < 0)
+		return ret;
+
+	/* For chip rev == E2, set Hidden code to make ICHG accurate */
+	if (info->device_id == RT9465_VERSION_E2) {
+		ret = rt9465_i2c_write_byte(info, RT9465_REG_HIDDEN_CTRL2, 0x68);
+		if (ret < 0)
+			goto out;
+		ret = rt9465_i2c_write_byte(info, RT9465_REG_HIDDEN_CTRL6, 0x3A);
+		if (ret < 0)
+			goto out;
+	}
+
+out:
+	rt9465_enable_hidden_mode(info, false);
+	return ret;
 }
 
 static irqreturn_t rt9465_irq_handler(int irq, void *data)
@@ -831,6 +900,14 @@ static int rt9465_parse_dt(struct rt9465_info *info, struct device *dev)
 		info->en_disable = NULL;
 	}
 
+#ifdef CONFIG_RT9465_PWR_EN_TO_MT6336
+	info->lowq_ctrl = mt6336_ctrl_get("rt9465");
+
+	mt6336_ctrl_enable(info->lowq_ctrl);
+	mt6336_set_flag_register_value(MT6336_GPIO11_MODE, 0x0);
+	mt6336_set_flag_register_value(MT6336_GPIO_DIR1_SET, 0x8);
+	mt6336_ctrl_disable(info->lowq_ctrl);
+#endif
 
 	if (of_property_read_u32(np, "regmap_represent_slave_addr",
 		&(desc->regmap_represent_slave_addr)) < 0) {
@@ -908,23 +985,39 @@ static int rt9465_enable_chip(struct charger_device *chg_dev, bool enable)
 	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
 
 	pr_info("%s: enable = %d\n", __func__, enable);
-
+#ifndef CONFIG_RT9465_PWR_EN_TO_MT6336
 	if (!info->en_pinctrl || !info->en_enable || !info->en_disable) {
 		pr_err("%s: no en pinctrl\n", __func__);
 		return -EIO;
 	}
+#endif
 
 	mutex_lock(&info->gpio_access_lock);
 	if (enable) {
 		i2c_lock_adapter(info->i2c->adapter);
+#ifndef CONFIG_RT9465_PWR_EN_TO_MT6336
 		pinctrl_select_state(info->en_pinctrl, info->en_enable);
+#else
+		mt6336_ctrl_enable(info->lowq_ctrl);
+		mt6336_set_flag_register_value(MT6336_GPIO_DOUT1_SET, 0x8);
+		mt6336_ctrl_disable(info->lowq_ctrl);
+#endif
 		pr_info("%s: set gpio high\n", __func__);
 		udelay(10);
 		i2c_unlock_adapter(info->i2c->adapter);
 	} else {
+#ifndef CONFIG_RT9465_PWR_EN_TO_MT6336
 		pinctrl_select_state(info->en_pinctrl, info->en_disable);
+#else
+		mt6336_ctrl_enable(info->lowq_ctrl);
+		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x8);
+		mt6336_ctrl_disable(info->lowq_ctrl);
+#endif
 		pr_info("%s: set gpio low\n", __func__);
 	}
+
+	/* Wait for chip's enable/disable */
+	mdelay(1);
 	mutex_unlock(&info->gpio_access_lock);
 
 	return 0;
@@ -1237,6 +1330,12 @@ static int rt9465_probe(struct i2c_client *i2c,
 		goto err_init_setting;
 	}
 
+	ret = rt9465_sw_workaround(info);
+	if (ret < 0) {
+		pr_err("%s: sw workaround failed\n", __func__);
+		goto err_sw_workaround;
+	}
+
 	rt9465_dump_register(info->chg_dev);
 
 	pr_info("%s: ends\n", __func__);
@@ -1244,6 +1343,7 @@ static int rt9465_probe(struct i2c_client *i2c,
 	return ret;
 
 err_init_setting:
+err_sw_workaround:
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(info->regmap_dev);
 err_register_regmap:
@@ -1358,11 +1458,16 @@ module_exit(rt9465_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9465 Charger Driver");
-MODULE_VERSION("1.0.1_MTK");
+MODULE_VERSION("1.0.2_MTK");
 
 
 /*
  * Version Note
+ * 1.0.2
+ * (1) Add ICHG accuracy workaround for E2
+ * (2) Support E3 chip
+ * (3) Add config to separate EN pin from MT6336 or AP
+ *
  * 1.0.1
  * (1) Remove registering power supply class
  *
