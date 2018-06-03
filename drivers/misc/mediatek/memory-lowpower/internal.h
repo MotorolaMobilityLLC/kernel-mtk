@@ -117,6 +117,7 @@ struct memory_lowpower_statistics {
  */
 
 /* memory-lowpower-task APIs */
+extern phys_addr_t memory_lowpower_get_grab_lastsize(void);
 extern bool memory_lowpower_task_inited(void);
 extern void register_memory_lowpower_operation(struct memory_lowpower_operation *handler);
 extern void unregister_memory_lowpower_operation(struct memory_lowpower_operation *handler);
