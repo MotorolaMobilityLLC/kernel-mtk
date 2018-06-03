@@ -19,6 +19,9 @@
 #include "cmdq_mmp.h"
 #endif
 
+static struct cmdqMDPTaskStruct gCmdqMDPTask[MDP_MAX_TASK_NUM];
+static int gCmdqMDPTaskIndex;
+
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/
 /**************************************************************************************/
@@ -226,6 +229,26 @@ const char *cmdq_mdp_dispatch_virtual(uint64_t engineFlag)
 	return "MDP";
 }
 
+void cmdq_mdp_trackTask_virtual(const struct TaskStruct *pTask)
+{
+	memcpy(gCmdqMDPTask[gCmdqMDPTaskIndex].callerName,
+		pTask->callerName, sizeof(pTask->callerName));
+	if (pTask->userDebugStr)
+		memcpy(gCmdqMDPTask[gCmdqMDPTaskIndex].userDebugStr,
+			pTask->userDebugStr, (uint32_t)strlen(pTask->userDebugStr) + 1);
+	else
+		gCmdqMDPTask[gCmdqMDPTaskIndex].userDebugStr[0] = '\0';
+
+	CMDQ_MSG("cmdq_mdp_trackTask: caller: %s\n",
+		gCmdqMDPTask[gCmdqMDPTaskIndex].callerName);
+	CMDQ_MSG("cmdq_mdp_trackTask: DebugStr: %s\n",
+		gCmdqMDPTask[gCmdqMDPTaskIndex].userDebugStr);
+	CMDQ_MSG("cmdq_mdp_trackTask: Index: %d\n",
+		gCmdqMDPTaskIndex);
+
+	gCmdqMDPTaskIndex = (gCmdqMDPTaskIndex + 1) % MDP_MAX_TASK_NUM;
+}
+
 /**************************************************************************************/
 /************************                      Common Code                      ************************/
 /**************************************************************************************/
@@ -265,6 +288,7 @@ void cmdq_mdp_virtual_function_setting(void)
 
 	pFunc->dispatchModule = cmdq_mdp_dispatch_virtual;
 
+	pFunc->trackTask = cmdq_mdp_trackTask_virtual;
 }
 
 struct cmdqMDPFuncStruct *cmdq_mdp_get_func(void)
@@ -742,4 +766,87 @@ void cmdq_mdp_dump_wdma(const unsigned long base, const char *label)
 	CMDQ_ERR("WDMA grep:%d, FIFO full:%d\n", grep, isFIFOFull);
 	CMDQ_ERR("WDMA suggest: Need SMI help:%d, Need check WDMA config:%d\n", (grep),
 		 ((grep == 0) && (isFIFOFull == 1)));
+}
+
+void cmdq_mdp_check_TF_address(unsigned int mva, char *module)
+{
+	bool findTFTask = false;
+	char *searchStr = NULL;
+	char bufInfoKey[] = "x";
+	char str2int[MDP_BUF_INFO_STR_LEN + 1] = "";
+	char *callerNameEnd = NULL;
+	char *callerNameStart = NULL;
+	int callerNameLen = TASK_COMM_LEN;
+	int taskIndex = 0;
+	int bufInfoIndex = 0;
+	int tfTaskIndex = -1;
+	int planeIndex = 0;
+	unsigned int bufInfo[MDP_PORT_BUF_INFO_NUM] = {0};
+	unsigned int bufAddrStart = 0;
+	unsigned int bufAddrEnd = 0;
+
+	/* search track task */
+	for (taskIndex = 0; taskIndex < MDP_MAX_TASK_NUM; taskIndex++) {
+		searchStr = strpbrk(gCmdqMDPTask[taskIndex].userDebugStr, bufInfoKey);
+		bufInfoIndex = 0;
+
+		/* catch buffer info in string and transform to integer */
+		/* bufInfo format: */
+		/* [address1, address2, address3, size1, size2, size3] */
+		while (searchStr != NULL && findTFTask != true) {
+			strncpy(str2int, searchStr + 1, MDP_BUF_INFO_STR_LEN);
+			if (kstrtoint(str2int, 16, &bufInfo[bufInfoIndex]) != 0) {
+				CMDQ_ERR("[MDP] buf info transform to integer failed\n");
+				CMDQ_ERR("[MDP] fail string: %s\n", str2int);
+			}
+
+			searchStr = strpbrk(searchStr + MDP_BUF_INFO_STR_LEN + 1, bufInfoKey);
+			bufInfoIndex++;
+
+			/* check TF mva in this port or not */
+			if (bufInfoIndex == MDP_PORT_BUF_INFO_NUM) {
+				for (planeIndex = 0; planeIndex < MDP_MAX_PLANE_NUM; planeIndex++) {
+					bufAddrStart = bufInfo[planeIndex];
+					bufAddrEnd = bufAddrStart + bufInfo[planeIndex + MDP_MAX_PLANE_NUM];
+					if (mva >= bufAddrStart && mva < bufAddrEnd) {
+						findTFTask = true;
+						break;
+					}
+				}
+				bufInfoIndex = 0;
+			}
+		}
+
+		/* find TF task and keep task index */
+		if (findTFTask == true) {
+			tfTaskIndex = taskIndex;
+			break;
+		}
+	}
+
+	/* find TF task caller and return dispatch key */
+	if (findTFTask == true) {
+		CMDQ_ERR("[MDP] TF caller: %s\n", gCmdqMDPTask[tfTaskIndex].callerName);
+		CMDQ_ERR("%s\n", gCmdqMDPTask[tfTaskIndex].userDebugStr);
+		strncat(module, "_", 1);
+
+		/* catch caller name only before - or _ */
+		callerNameStart = gCmdqMDPTask[tfTaskIndex].callerName;
+		callerNameEnd = strchr(gCmdqMDPTask[tfTaskIndex].callerName, '-');
+		if (callerNameEnd != NULL)
+			callerNameLen = callerNameEnd - callerNameStart;
+		else {
+			callerNameEnd = strchr(gCmdqMDPTask[tfTaskIndex].callerName, '_');
+			if (callerNameEnd != NULL)
+				callerNameLen = callerNameEnd - callerNameStart;
+		}
+		strncat(module, gCmdqMDPTask[tfTaskIndex].callerName, callerNameLen);
+	} else {
+		CMDQ_ERR("[MDP] TF Task not found\n");
+		for (taskIndex = 0; taskIndex < MDP_MAX_TASK_NUM; taskIndex++) {
+			CMDQ_ERR("[MDP] Task%d:\n", taskIndex);
+			CMDQ_ERR("[MDP] Caller: %s\n", gCmdqMDPTask[taskIndex].callerName);
+			CMDQ_ERR("%s\n", gCmdqMDPTask[taskIndex].userDebugStr);
+		}
+	}
 }

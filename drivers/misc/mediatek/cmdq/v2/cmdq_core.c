@@ -2056,6 +2056,24 @@ int32_t cmdqCoreRegisterDebugRegDumpCB(CmdqDebugRegDumpBeginCB beginCB, CmdqDebu
 	return 0;
 }
 
+int32_t cmdqCoreRegisterTrackTaskCB(enum CMDQ_GROUP_ENUM engGroup,
+			   CmdqTrackTaskCB trackTask)
+{
+	struct CmdqCBkStruct *pCallback;
+
+	if (!cmdq_core_is_valid_group(engGroup))
+		return -EFAULT;
+
+	CMDQ_MSG("Register %d group engines' callback\n", engGroup);
+	CMDQ_MSG("trackTask:  %pf\n", trackTask);
+
+	pCallback = &(gCmdqGroupCallback[engGroup]);
+
+	pCallback->trackTask = trackTask;
+
+	return 0;
+}
+
 bool cmdqIsValidTaskPtr(void *pTask)
 {
 	struct TaskStruct *ptr = NULL;
@@ -7323,6 +7341,7 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 	bool timeout_flag = false;
 	uint32_t disp_list_count = 0;
 	uint32_t user_list_count = 0;
+	uint32_t index = 0;
 
 	/* when we're suspending, do not execute any tasks. delay & hold them. */
 	if (gCmdqSuspended)
@@ -7399,6 +7418,17 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 
 		CMDQ_MSG("<--THREAD: acquire thread w/flag: 0x%llx on thread(%d): 0x%p end\n",
 			 pTask->engineFlag, thread, pThread);
+
+		/* callback task for tracked group */
+		for (index = 0; index < CMDQ_MAX_GROUP_COUNT; ++index) {
+			if (gCmdqGroupCallback[index].trackTask) {
+				CMDQ_MSG("Track: track task group %d with task: %p\n", index, pTask);
+				if (cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM) index, pTask->engineFlag)) {
+					CMDQ_MSG("Track: track task group %d flag=0x%llx\n", index, pTask->engineFlag);
+					gCmdqGroupCallback[index].trackTask(pTask);
+				}
+			}
+		}
 
 		/* Run task on thread */
 		status = cmdq_core_exec_task_async_with_retry(pTask, thread);
