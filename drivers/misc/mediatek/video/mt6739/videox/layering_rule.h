@@ -56,9 +56,10 @@ enum {
 
 enum HRT_BOUND_TYPE {
 	HRT_BOUND_TYPE_LP4 = 0,		/* LP4-2ch */
-	HRT_BOUND_TYPE_LP3,			/* LP3-1ch */
+	HRT_BOUND_TYPE_LP3,			/* LP3-1ch 16:9, 18:9*/
 	HRT_BOUND_TYPE_LP4_1CH,		/* LP4-1ch */
 	HRT_BOUND_TYPE_LP4_HYBRID,	/* LP4-2ch special */
+	HRT_BOUND_TYPE_LP3_PLUSP,	/* LP3- 19:9, 20:9, 21:9*/
 	HRT_BOUND_NUM,
 };
 

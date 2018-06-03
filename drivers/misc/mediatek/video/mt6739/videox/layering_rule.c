@@ -38,12 +38,14 @@ int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	{0, 300, 600, 800},
 	/* HRT_BOUND_TYPE_LP4_HYBRID */
 	{0, 0, 300, 400},
+	/* HRT_BOUND_TYPE_LP3_PLUSP */
+	{0, 0, 200, 400},
 };
 
 int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
 	{1200, 1200, 1200, 1200},
-	/* HRT_BOUND_TYPE_LP3 */
+	/*  */
 	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP4_1CH */
 	{1200, 1200, 1200, 1200},
@@ -101,7 +103,10 @@ static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 
 	l_rule_info.primary_fps = 60;
 
-	l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4;
+	if (primary_display_get_height() <= 1440)
+		l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4;
+	else
+		l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP3_PLUSP;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_END, l_rule_info.disp_path,
 		l_rule_info.layer_tb_idx | (l_rule_info.bound_tb_idx << 16));

@@ -4896,6 +4896,37 @@ static int evaluate_bandwidth_save(struct disp_ddp_path_config *cfg, int *ori, i
 }
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+unsigned int full_content;
+unsigned int corner_pattern_height_bot;
+
+int primary_display_get_corner_full_content(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->full_content;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+int primary_display_get_corner_pattern_height_bot(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->corner_pattern_height_bot;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+
 int primary_display_get_corner_pattern_width(void)
 {
 	if (pgc->plcm == NULL) {
@@ -4910,11 +4941,27 @@ int primary_display_get_corner_pattern_width(void)
 	return 0;
 }
 
+int primary_display_get_corner_pattern_height(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->corner_pattern_height;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+
 int primary_display_get_round_corner_mva(unsigned int *top_mva, unsigned int *bottom_mva,
-				unsigned int *pitch, unsigned int *height)
+				unsigned int *pitch, unsigned int *height, unsigned int *height_bot)
 {
 	unsigned char ret = -1;
 	unsigned char argb444_bpp = 2;
+	unsigned int bt_size = 0;
 	unsigned int corner_size = 0;
 	unsigned int dal_buf_size = DAL_GetLayerSize();
 	unsigned int frame_buf_size = DISP_GetFBRamSize();
@@ -4922,12 +4969,19 @@ int primary_display_get_round_corner_mva(unsigned int *top_mva, unsigned int *bo
 	unsigned long  frame_buf_mva = primary_display_get_frame_buffer_mva_address();
 
 	if (vram_buf_size > dal_buf_size + frame_buf_size) {
-		*height = primary_display_get_corner_pattern_width();
+		*height_bot = primary_display_get_corner_pattern_height_bot();
+		*height = primary_display_get_corner_pattern_height();
 		*pitch = primary_display_get_width();
+		bt_size = (*pitch) * (*height_bot) * argb444_bpp;
 		corner_size = (*pitch) * (*height) * argb444_bpp;
 
-		*top_mva = frame_buf_mva + vram_buf_size - 2 * corner_size;
-		*bottom_mva = *top_mva + corner_size;
+		if (full_content) {
+			*top_mva = frame_buf_mva + vram_buf_size - corner_size;
+			*bottom_mva = frame_buf_mva + vram_buf_size - corner_size - bt_size;
+		} else {
+			*top_mva = frame_buf_mva + vram_buf_size - 2 * corner_size;
+			*bottom_mva = *top_mva + corner_size;
+		}
 		ret = 0;
 	} else {
 		DISPERR("vram_buf may not contain corner size!\n");
@@ -4941,6 +4995,7 @@ void primary_display_set_round_corner_layers(struct disp_ddp_path_config *cfg)
 	static unsigned char init_corner;
 	static unsigned int pitch;
 	static unsigned int h;
+	static unsigned int h_bot;
 	static unsigned int top_mva, bottom_mva;
 	struct OVL_CONFIG_STRUCT *input_phy, *input_ext;
 	/* by chip */
@@ -4949,8 +5004,9 @@ void primary_display_set_round_corner_layers(struct disp_ddp_path_config *cfg)
 	int ext_layer_id = phy_layer_id + 1;
 	enum DISP_MODULE_ENUM module = DISP_MODULE_OVL0;
 
+	full_content = primary_display_get_corner_full_content();
 	if (unlikely(init_corner == 0)) {
-		ret = primary_display_get_round_corner_mva(&top_mva, &bottom_mva, &pitch, &h);
+		ret = primary_display_get_round_corner_mva(&top_mva, &bottom_mva, &pitch, &h, &h_bot);
 		init_corner = 1;
 	}
 	if (ret || h == 0 || h > (primary_display_get_height()>>1)) {
@@ -5021,6 +5077,12 @@ void primary_display_set_round_corner_layers(struct disp_ddp_path_config *cfg)
 	input_ext->ext_layer = 2;
 	input_ext->ext_sel_layer = 3;
 	input_ext->phy_layer = phy_layer_idx;
+
+	if (full_content) {
+	input_ext->src_h = h_bot;
+	input_ext->dst_y = primary_display_get_height() - h_bot;
+	input_ext->dst_h = h_bot;
+	}
 }
 #endif
 
