@@ -128,35 +128,35 @@ initcall_debug=1 maxcpus=1";
 	};
 	ctp_pins_eint_as_int: eint@0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO0__FUNC_GPIO0>;
+			pinmux = <PINMUX_GPIO0__FUNC_GPIO0>;
 			slew-rate = <0>;
 			bias-disable;
 		};
 	};
 	ctp_pins_eint_output0: eintoutput0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO0__FUNC_GPIO0>;
+			pinmux = <PINMUX_GPIO0__FUNC_GPIO0>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	ctp_pins_eint_output1: eintoutput1 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO0__FUNC_GPIO0>;
+			pinmux = <PINMUX_GPIO0__FUNC_GPIO0>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	ctp_pins_rst_output0: rstoutput0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO174__FUNC_GPIO174>;
+			pinmux = <PINMUX_GPIO174__FUNC_GPIO174>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	ctp_pins_rst_output1: rstoutput1 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO174__FUNC_GPIO174>;
+			pinmux = <PINMUX_GPIO174__FUNC_GPIO174>;
 			slew-rate = <1>;
 			output-high;
 		};
