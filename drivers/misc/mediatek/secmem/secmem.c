@@ -44,28 +44,8 @@
 #define DEFAULT_HANDLES_NUM (64)
 #define MAX_OPEN_SESSIONS   (0xffffffff - 1)
 
-/* Debug message event */
-#define DBG_EVT_NONE        (0)	/* No event */
-#define DBG_EVT_CMD         (1 << 0)	/* SEC CMD related event */
-#define DBG_EVT_FUNC        (1 << 1)	/* SEC function event */
-#define DBG_EVT_INFO        (1 << 2)	/* SEC information event */
-#define DBG_EVT_WRN         (1 << 30)	/* Warning event */
-#define DBG_EVT_ERR         (1 << 31)	/* Error event */
-#define DBG_EVT_ALL         (0xffffffff)
-
-#define DBG_EVT_MASK        (DBG_EVT_ALL)
-
-#define MSG(evt, fmt, args...) \
-do { \
-	if ((DBG_EVT_##evt) & DBG_EVT_MASK) { \
-		pr_debug("[%s] "fmt, SECMEM_NAME, ##args); \
-	} \
-} while (0)
-
-#define MSG_FUNC() MSG(FUNC, "%s\n", __func__)
-
-#define INFO(fmt, args...) \
-	pr_info("[%s] %s:%d "fmt, SECMEM_NAME, __func__, __LINE__, ##args)
+#undef pr_fmt
+#define pr_fmt(fmt) "[" KBUILD_MODNAME "] %s:%d: " fmt, __func__, __LINE__
 
 struct secmem_handle {
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
@@ -114,7 +94,7 @@ static DECLARE_DELAYED_WORK(secmem_reclaim_work, secmem_reclaim_handler);
 static void secmem_reclaim_handler(struct work_struct *work)
 {
 	mutex_lock(&secmem_region_lock);
-	INFO("triggered!!\n");
+	pr_debug("triggered!!\n");
 	secmem_region_release();
 	mutex_unlock(&secmem_region_lock);
 }
@@ -131,7 +111,7 @@ static int secmem_execute(u32 cmd, struct secmem_param *param)
 
 	if (secmem_tci == NULL) {
 		mutex_unlock(&secmem_lock);
-		MSG(ERR, "secmem_tci not exist\n");
+		pr_err("secmem_tci not exist\n");
 		return -ENODEV;
 	}
 
@@ -154,14 +134,14 @@ static int secmem_execute(u32 cmd, struct secmem_param *param)
 	mc_ret = mc_notify(&secmem_session);
 
 	if (mc_ret != MC_DRV_OK) {
-		MSG(ERR, "mc_notify failed: %d\n", mc_ret);
+		pr_err("mc_notify failed: %d\n", mc_ret);
 		goto exit;
 	}
 
 	mc_ret = mc_wait_notification(&secmem_session, -1);
 
 	if (mc_ret != MC_DRV_OK) {
-		MSG(ERR, "mc_wait_notification failed: 0x%x\n", mc_ret);
+		pr_err("mc_wait_notification failed: 0x%x\n", mc_ret);
 		goto exit;
 	}
 
@@ -172,14 +152,14 @@ static int secmem_execute(u32 cmd, struct secmem_param *param)
 	param->size = secmem_tci->size;
 
 	if (RSP_ID(cmd) != secmem_tci->rsp_secmem.header.responseId) {
-		MSG(ERR, "trustlet did not send a response: 0x%x\n",
+		pr_err("trustlet did not send a response: 0x%x\n",
 			secmem_tci->rsp_secmem.header.responseId);
 		mc_ret = MC_DRV_ERR_INVALID_RESPONSE;
 		goto exit;
 	}
 
 	if (secmem_tci->rsp_secmem.header.returnCode != MC_DRV_OK) {
-		MSG(ERR, "trustlet did not send a valid return code: 0x%x\n",
+		pr_err("trustlet did not send a valid return code: 0x%x\n",
 			secmem_tci->rsp_secmem.header.returnCode);
 		mc_ret = secmem_tci->rsp_secmem.header.returnCode;
 	}
@@ -266,11 +246,11 @@ static void secmem_handle_unregister_check(struct secmem_context *ctx, u32 type,
 		if (handle->id == id) {
 			if (handle->type != type) {
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
-				MSG(WRN,
+				pr_debug(
 					"unref check result: type mismatched (%d!=%d), handle=0x%llx\n",
 					_IOC_NR(handle->type), _IOC_NR(type), handle->id);
 #else
-				MSG(WRN,
+				pr_debug(
 					"unref check result: type mismatched (%d!=%d), handle=0x%x\n",
 					_IOC_NR(handle->type), _IOC_NR(type), handle->id);
 #endif
@@ -344,17 +324,17 @@ static int secmem_handle_cleanup(struct secmem_context *ctx)
 				cmd = CMD_SEC_MEM_UNREF_TBL;
 				break;
 			default:
-				MSG(ERR, "secmem_handle_cleanup: incorrect type=%d (ioctl:%d)\n",
+				pr_err("secmem_handle_cleanup: incorrect type=%d (ioctl:%d)\n",
 					handle->type, _IOC_NR(handle->type));
 				goto error;
 			}
 			spin_unlock(&ctx->lock);
 			ret = secmem_execute(cmd, &param);
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
-			MSG(INFO, "secmem_handle_cleanup: id=0x%llx type=%d (ioctl:%d)\n",
+			pr_debug("secmem_handle_cleanup: id=0x%llx type=%d (ioctl:%d)\n",
 				handle->id, handle->type, _IOC_NR(handle->type));
 #else
-			MSG(INFO, "secmem_handle_cleanup: id=0x%x type=%d (ioctl:%d)\n",
+			pr_debug("secmem_handle_cleanup: id=0x%x type=%d (ioctl:%d)\n",
 				handle->id, handle->type, _IOC_NR(handle->type));
 #endif
 			spin_lock(&ctx->lock);
@@ -376,7 +356,7 @@ static int secmem_session_open(void)
 	do {
 		/* sessions reach max numbers ? */
 		if (secmem_session_ref > MAX_OPEN_SESSIONS) {
-			MSG(WRN, "secmem_session > 0x%x\n", MAX_OPEN_SESSIONS);
+			pr_err("secmem_session > 0x%x\n", MAX_OPEN_SESSIONS);
 			break;
 		}
 
@@ -388,7 +368,7 @@ static int secmem_session_open(void)
 		/* open device */
 		mc_ret = mc_open_device(secmem_devid);
 		if (mc_ret != MC_DRV_OK) {
-			MSG(ERR, "mc_open_device failed: %d\n", mc_ret);
+			pr_err("mc_open_device failed: %d\n", mc_ret);
 			break;
 		}
 
@@ -397,7 +377,7 @@ static int secmem_session_open(void)
 					   (uint8_t **) &secmem_tci, 0);
 		if (mc_ret != MC_DRV_OK) {
 			mc_close_device(secmem_devid);
-			MSG(ERR, "mc_malloc_wsm failed: %d\n", mc_ret);
+			pr_err("mc_malloc_wsm failed: %d\n", mc_ret);
 			break;
 		}
 
@@ -410,14 +390,14 @@ static int secmem_session_open(void)
 			mc_free_wsm(secmem_devid, (uint8_t *) secmem_tci);
 			mc_close_device(secmem_devid);
 			secmem_tci = NULL;
-			MSG(ERR, "mc_open_session failed: %d\n", mc_ret);
+			pr_err("mc_open_session failed: %d\n", mc_ret);
 			break;
 		}
 		secmem_session_ref = 1;
 
 	} while (0);
 
-	MSG(INFO, "secmem_session_open: ret=%d, ref=%d\n", mc_ret, secmem_session_ref);
+	pr_debug("secmem_session_open: ret=%d, ref=%d\n", mc_ret, secmem_session_ref);
 
 	mutex_unlock(&secmem_lock);
 
@@ -436,7 +416,7 @@ static int secmem_session_close(void)
 	do {
 		/* session is already closed ? */
 		if (secmem_session_ref == 0) {
-			MSG(WRN, "secmem_session already closed\n");
+			pr_debug("secmem_session already closed\n");
 			break;
 		}
 
@@ -448,14 +428,14 @@ static int secmem_session_close(void)
 		/* close session */
 		mc_ret = mc_close_session(&secmem_session);
 		if (mc_ret != MC_DRV_OK) {
-			MSG(ERR, "mc_close_session failed: %d\n", mc_ret);
+			pr_err("mc_close_session failed: %d\n", mc_ret);
 			break;
 		}
 
 		/* free WSM for DCI */
 		mc_ret = mc_free_wsm(secmem_devid, (uint8_t *) secmem_tci);
 		if (mc_ret != MC_DRV_OK) {
-			MSG(ERR, "mc_free_wsm failed: %d\n", mc_ret);
+			pr_err("mc_free_wsm failed: %d\n", mc_ret);
 			break;
 		}
 		secmem_tci = NULL;
@@ -464,11 +444,11 @@ static int secmem_session_close(void)
 		/* close device */
 		mc_ret = mc_close_device(secmem_devid);
 		if (mc_ret != MC_DRV_OK)
-			MSG(ERR, "mc_close_device failed: %d\n", mc_ret);
+			pr_err("mc_close_device failed: %d\n", mc_ret);
 
 	} while (0);
 
-	MSG(INFO, "secmem_session_close: ret=%d, ref=%d\n", mc_ret, secmem_session_ref);
+	pr_debug("secmem_session_close: ret=%d, ref=%d\n", mc_ret, secmem_session_ref);
 
 	mutex_unlock(&secmem_lock);
 
@@ -536,7 +516,7 @@ static int secmem_region_alloc(void)
 
 	/* already online */
 	if (secmem_region_online) {
-		MSG(INFO, "%s: secure memory already online\n", __func__);
+		pr_debug("%s: secure memory already online\n", __func__);
 		return 0;
 	}
 
@@ -547,12 +527,12 @@ static int secmem_region_alloc(void)
 	ret = svp_region_offline(&pa, &size);
 #endif
 	if (ret) {
-		MSG(ERR, "%s: svp_region_offline failed! ret=%d\n", __func__, ret);
+		pr_err("%s: svp_region_offline failed! ret=%d\n", __func__, ret);
 		return -1;
 	}
 
 	if (pa == 0 || size == 0) {
-		MSG(ERR, "%s: invalid pa(0x%llx) or size(0x%lx)\n", __func__, pa, size);
+		pr_err("%s: invalid pa(0x%llx) or size(0x%lx)\n", __func__, pa, size);
 		return -1;
 	}
 
@@ -561,7 +541,7 @@ static int secmem_region_alloc(void)
 	if (ret) {
 		/* free secure memory */
 		svp_region_online();
-		MSG(ERR, "%s: secmem_enable failed! ret=%d\n", __func__, ret);
+		pr_err("%s: secmem_enable failed! ret=%d\n", __func__, ret);
 		return -1;
 	}
 
@@ -572,7 +552,7 @@ static int secmem_region_alloc(void)
 	spm_enable_sodi(false);
 #endif
 
-	INFO("phyaddr=0x%llx sz=0x%lx region_online=%u region_ref=%u\n",
+	pr_debug("phyaddr=0x%llx sz=0x%lx region_online=%u region_ref=%u\n",
 			pa, size, secmem_region_online, secmem_region_ref);
 
 	return 0;
@@ -584,13 +564,13 @@ static int secmem_region_release(void)
 
 	/* already offline */
 	if (secmem_region_online == 0) {
-		MSG(INFO, "%s: secure memory already offline\n", __func__);
+		pr_debug("%s: secure memory already offline\n", __func__);
 		return 0;
 	}
 
 	/* region has reference so abort the release */
 	if (secmem_region_ref > 0) {
-		MSG(ERR, "%s: aborted due to secmem_region_ref != 0 (%d)\n",
+		pr_err("%s: aborted due to secmem_region_ref != 0 (%d)\n",
 			__func__, secmem_region_ref);
 		return -1;
 	}
@@ -598,13 +578,13 @@ static int secmem_region_release(void)
 	/* disable protection and recalim secure memory */
 	ret = secmem_disable();
 	if (ret) {
-		MSG(ERR, "%s: secmem_disable failed! ret=%d\n", __func__, ret);
+		pr_err("%s: secmem_disable failed! ret=%d\n", __func__, ret);
 		return -1;
 	}
 
 	ret = svp_region_online();
 	if (ret) {
-		MSG(ERR, "%s: svp_region_online failed! ret=%d\n", __func__, ret);
+		pr_err("%s: svp_region_online failed! ret=%d\n", __func__, ret);
 		return -1;
 	}
 
@@ -614,7 +594,7 @@ static int secmem_region_release(void)
 	spm_enable_sodi(true);
 #endif
 
-	MSG(INFO, "%s: done, region_online=%u\n", __func__, secmem_region_online);
+	pr_debug("%s: done, region_online=%u\n", __func__, secmem_region_online);
 
 	return 0;
 }
@@ -694,7 +674,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				break;
 			}
 		}
-		INFO("region_online=%u region_ref=%u\n",
+		pr_debug("region_online=%u region_ref=%u\n",
 				secmem_region_online, secmem_region_ref);
 		mutex_unlock(&secmem_region_lock);
 #endif
@@ -728,11 +708,11 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 	mutex_lock(&secmem_region_lock);
 	if (secmem_region_online == 1 && secmem_region_ref == 0) {
-		INFO("queue secmem_reclaim_work!!\n");
+		pr_debug("queue secmem_reclaim_work!!\n");
 		queue_delayed_work(secmem_reclaim_wq, &secmem_reclaim_work,
 			msecs_to_jiffies(SECMEM_RECLAIM_DELAY));
 	} else {
-		INFO("cmd=%u region_online=%u region_ref=%u!!\n",
+		pr_debug("cmd=%u region_online=%u region_ref=%u!!\n",
 				_IOC_NR(cmd), secmem_region_online, secmem_region_ref);
 	}
 	mutex_unlock(&secmem_region_lock);
@@ -766,7 +746,7 @@ static int secmem_enable(u32 addr, u32 size)
 	secmem_session_close();
 
 end:
-	MSG(INFO, "%s ret = %d\n", __func__, err);
+	pr_debug("%s ret = %d\n", __func__, err);
 
 	return err;
 }
@@ -786,7 +766,7 @@ static int secmem_disable(void)
 	secmem_session_close();
 
 end:
-	MSG(INFO, "%s ret = %d\n", __func__, err);
+	pr_debug("%s ret = %d\n", __func__, err);
 
 	return err;
 }
@@ -819,7 +799,7 @@ int secmem_api_query(u32 *allocate_size)
 	secmem_session_close();
 
 end:
-	MSG(INFO, "%s ret = %d\n", __func__, err);
+	pr_debug("%s ret = %d\n", __func__, err);
 
 	return err;
 }
@@ -843,7 +823,7 @@ static int secmem_api_alloc_internal(u32 alignment, u32 size, u32 *refcount,
 	if (secmem_region_online)
 		secmem_region_ref++;
 
-	INFO("region_online=%u region_ref=%u\n",
+	pr_debug("region_online=%u region_ref=%u\n",
 			secmem_region_online, secmem_region_ref);
 	mutex_unlock(&secmem_region_lock);
 	if (ret != 0)
@@ -887,10 +867,10 @@ end:
 	}
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
-	INFO("align=0x%x size=0x%x id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x region_online=%u region_ref=%u\n",
+	pr_debug("align=0x%x size=0x%x id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x region_online=%u region_ref=%u\n",
 		alignment, size, id, clean, ret, *refcount, *sec_handle, secmem_region_online, secmem_region_ref);
 #else
-	MSG(INFO, "%s: align: 0x%x, size 0x%x, id 0x%x, clean(%d), ret(%d), refcnt 0x%x, sec_handle 0x%x\n",
+	pr_debug("%s: align: 0x%x, size 0x%x, id 0x%x, clean(%d), ret(%d), refcnt 0x%x, sec_handle 0x%x\n",
 		__func__, alignment, size, id, clean, ret, *refcount, *sec_handle);
 #endif
 
@@ -940,11 +920,11 @@ end:
 	if (ret == 0) {
 		mutex_lock(&secmem_region_lock);
 		if (secmem_region_online == 1 && --secmem_region_ref == 0) {
-			INFO("queue secmem_reclaim_work!!\n");
+			pr_debug("queue secmem_reclaim_work!!\n");
 			queue_delayed_work(secmem_reclaim_wq, &secmem_reclaim_work,
 					msecs_to_jiffies(SECMEM_RECLAIM_DELAY));
 		} else {
-			INFO("region_online=%u region_ref=%u\n",
+			pr_debug("region_online=%u region_ref=%u\n",
 			secmem_region_online, secmem_region_ref);
 		}
 		mutex_unlock(&secmem_region_lock);
@@ -952,10 +932,10 @@ end:
 #endif
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
-	INFO("ret=%d shndl=0x%x owner=%p id=0x%x region_online=%u region_ref=%u\n",
+	pr_debug("ret=%d shndl=0x%x owner=%p id=0x%x region_online=%u region_ref=%u\n",
 		ret, sec_handle, owner, id, secmem_region_online, secmem_region_ref);
 #else
-	MSG(INFO, "%s: ret %d, sec_handle 0x%x, owner %p, id 0x%x\n",
+	pr_debug("%s: ret %d, sec_handle 0x%x, owner %p, id 0x%x\n",
 		__func__, ret, sec_handle, owner, id);
 #endif
 
@@ -981,7 +961,7 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t
 
 	if (sscanf(desc, "%1s", cmd) == 1) {
 		if (!strcmp(cmd, "0")) {
-			MSG(ERR, "[SECMEM] - test for secmem_region_release()\n");
+			pr_info("[SECMEM] - test for secmem_region_release()\n");
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 			mutex_lock(&secmem_region_lock);
 			secmem_region_ref--;
@@ -989,7 +969,7 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t
 			mutex_unlock(&secmem_region_lock);
 #endif
 		} else if (!strcmp(cmd, "1")) {
-			MSG(ERR, "[SECMEM] - test for secmem_region_alloc()\n");
+			pr_info("[SECMEM] - test for secmem_region_alloc()\n");
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 			mutex_lock(&secmem_region_lock);
 			secmem_region_alloc();
@@ -1004,9 +984,9 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t
 			u32 size = 0;
 #endif
 
-			MSG(ERR, "[SECMEM] - test for secmem_api_query()\n");
+			pr_info("[SECMEM] - test for secmem_api_query()\n");
 			secmem_api_query(&size);
-			MSG(ERR, "[SECMEM] - allocated : 0x%llx\n", (u64)size);
+			pr_info("[SECMEM] - allocated : 0x%llx\n", (u64)size);
 #endif
 		} else if (!strcmp(cmd, "3")) {
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
@@ -1021,25 +1001,25 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t
 			u32 refcount = 0;
 			char owner[] = "secme_ut";
 
-			MSG(ERR, "[SECMEM] - test for alloc-free\n");
+			pr_info("[SECMEM] - test for alloc-free\n");
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
 			secmem_api_alloc(0x1000, 0x1000, (u32 *)&refcount, (u32 *)&sec_handle, owner, 0);
 #else
 			secmem_api_alloc(0x1000, 0x1000, &refcount, &sec_handle, owner, 0);
 #endif
 			secmem_api_query(&size);
-			MSG(ERR, "[SECMEM] - after alloc : 0x%llx\n", (u64)size);
+			pr_info("[SECMEM] - after alloc : 0x%llx\n", (u64)size);
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
 			secmem_api_unref((u32)sec_handle, owner, 0);
 #else
 			secmem_api_unref(sec_handle, owner, 0);
 #endif
 			secmem_api_query(&size);
-			MSG(ERR, "[SECMEM] - after free : 0x%llx\n", (u64)size);
+			pr_info("[SECMEM] - after free : 0x%llx\n", (u64)size);
 #endif
 		} else if (!strcmp(cmd, "4")) {
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
-			MSG(ERR, "[SECMEM] - test for command 2\n");
+			pr_info("[SECMEM] - test for command 2\n");
 			tbase_trigger_aee_dump();
 #endif
 		}

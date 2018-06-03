@@ -56,19 +56,8 @@
 #define DEFAULT_HANDLES_NUM (64)
 #define MAX_OPEN_SESSIONS   (0xffffffff - 1)
 
-#if defined(CONFIG_MTK_ENG_BUILD)
-#define DBG(fmt, args...) \
-	pr_debug("[%s] %s:%d "fmt, SECMEM_NAME, __func__, __LINE__, ##args)
-#else
-#define DBG(fmt, args...) do {} while (0)
-#endif
-
-#define INFO(fmt, args...) \
-	pr_info("[%s] %s:%d "fmt, SECMEM_NAME, __func__, __LINE__, ##args)
-
-#define ERR(fmt, args...) \
-	pr_err("[%s] %s:%d "fmt, SECMEM_NAME, __func__, __LINE__, ##args)
-
+#undef pr_fmt
+#define pr_fmt(fmt) "[" KBUILD_MODNAME "] %s:%d: " fmt, __func__, __LINE__
 
 struct secmem_handle {
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
@@ -116,7 +105,7 @@ static DECLARE_DELAYED_WORK(secmem_reclaim_work, secmem_reclaim_handler);
 static void secmem_reclaim_handler(struct work_struct *work)
 {
 	mutex_lock(&secmem_region_lock);
-	INFO("triggered!!\n");
+	pr_debug("triggered!!\n");
 	secmem_region_release();
 	mutex_unlock(&secmem_region_lock);
 }
@@ -140,7 +129,7 @@ static int secmem_execute(u32 cmd, struct secmem_param *param)
 	struct TEEC_Operation op;
 	struct secmem_msg_t *msg;
 
-	DBG("\n");
+	pr_debug("\n");
 
 	mutex_lock(&secmem_lock);
 
@@ -174,7 +163,7 @@ static int secmem_execute(u32 cmd, struct secmem_param *param)
 
 	ret = TEEC_InvokeCommand(&session, cmd, &op, NULL);
 	if (ret != TEEC_SUCCESS) {
-		ERR("TEEC_InvokeCommand failed: %x\n", ret);
+		pr_err("TEEC_InvokeCommand failed: %x\n", ret);
 		goto err_invoke_command;
 	}
 
@@ -183,13 +172,13 @@ static int secmem_execute(u32 cmd, struct secmem_param *param)
 	param->alignment = msg->alignment;
 	param->size = msg->size;
 
-	INFO("shndl=0x%llx refcnt=%d align=0x%llx size=0x%llx\n",
+	pr_debug("shndl=0x%llx refcnt=%d align=0x%llx size=0x%llx\n",
 		(u64)param->sec_handle, param->refcount, (u64)param->alignment, (u64)param->size);
 
 err_invoke_command:
 	mutex_unlock(&secmem_lock);
 
-	DBG("\n");
+	pr_debug("\n");
 
 	return ret;
 }
@@ -266,7 +255,7 @@ static void secmem_handle_unregister_check(struct secmem_context *ctx, u32 type,
 	for (i = 0; i < num; i++, handle++) {
 		if (handle->id == id) {
 			if (handle->type != type) {
-				INFO("type mismatch (%d!=%d) hndl=0x%llx\n",
+				pr_debug("type mismatch (%d!=%d) hndl=0x%llx\n",
 					_IOC_NR(handle->type), _IOC_NR(type), (u64)handle->id);
 			}
 			break;
@@ -338,13 +327,13 @@ static int secmem_handle_cleanup(struct secmem_context *ctx)
 				cmd = CMD_SEC_MEM_UNREF_TBL;
 				break;
 			default:
-				ERR("incorrect type=%d (ioctl:%d)\n",
+				pr_err("incorrect type=%d (ioctl:%d)\n",
 					handle->type, _IOC_NR(handle->type));
 				goto error;
 			}
 			spin_unlock(&ctx->lock);
 			ret = secmem_execute(cmd, &param);
-			INFO("shndl=0x%llx type=%d (ioctl:%d) ret=%d\n",
+			pr_debug("shndl=0x%llx type=%d (ioctl:%d) ret=%d\n",
 				(u64)handle->id, handle->type, _IOC_NR(handle->type), ret);
 			spin_lock(&ctx->lock);
 		}
@@ -366,7 +355,7 @@ static int secmem_session_open(void)
 	do {
 		/* sessions reach max numbers ? */
 		if (secmem_session_ref > MAX_OPEN_SESSIONS) {
-			ERR("secmem_session > 0x%x\n", MAX_OPEN_SESSIONS);
+			pr_err("secmem_session > 0x%x\n", MAX_OPEN_SESSIONS);
 			break;
 		}
 
@@ -375,15 +364,15 @@ static int secmem_session_open(void)
 			break;
 		}
 
-		INFO("Testing teec_initialize_context\n");
+		pr_debug("Testing teec_initialize_context\n");
 
 		ret = TEEC_InitializeContext(SECMEM_TL_GP_UUID_STRING, &context);
 		if (ret != TEEC_SUCCESS) {
-			ERR("teec_initialize_context failed: %x\n", ret);
+			pr_err("teec_initialize_context failed: %x\n", ret);
 			goto err_initialize_context;
 		}
 
-		INFO("Testing teec_register_shared_memory with get_zeroed_page\n");
+		pr_debug("Testing teec_register_shared_memory with get_zeroed_page\n");
 
 		wsm.buffer = kmalloc(sizeof(struct secmem_msg_t), GFP_KERNEL);
 		wsm.size = sizeof(struct secmem_msg_t);
@@ -392,15 +381,15 @@ static int secmem_session_open(void)
 
 		ret = TEEC_RegisterSharedMemory(&context, &wsm);
 		if (ret != TEEC_SUCCESS) {
-			ERR("TEEC_RegisterSharedMemory failed: %x\n", ret);
+			pr_err("TEEC_RegisterSharedMemory failed: %x\n", ret);
 			goto err_register_shared_memory;
 		}
 
-		INFO("Testing TEEC_OpenSession\n");
+		pr_debug("Testing TEEC_OpenSession\n");
 		ret = TEEC_OpenSession(&context, &session, &destination,
 				TEEC_LOGIN_PUBLIC, NULL, NULL, NULL);
 		if (ret != TEEC_SUCCESS) {
-			ERR("TEEC_OpenSession failed: %x\n", ret);
+			pr_err("TEEC_OpenSession failed: %x\n", ret);
 			goto err_open_session;
 		}
 
@@ -409,17 +398,17 @@ static int secmem_session_open(void)
 	} while (0);
 
 
-	INFO("ret=%d ref=%d\n", ret, secmem_session_ref);
+	pr_debug("ret=%d ref=%d\n", ret, secmem_session_ref);
 
 	mutex_unlock(&secmem_lock);
 	return ret;
 
 err_open_session:
-	ERR("TEEC_ReleaseSharedMemory\n");
+	pr_err("TEEC_ReleaseSharedMemory\n");
 	TEEC_ReleaseSharedMemory(&wsm);
 
 err_register_shared_memory:
-	ERR("TEEC_FinalizeContext\n");
+	pr_err("TEEC_FinalizeContext\n");
 	kfree(wsm.buffer);
 	TEEC_FinalizeContext(&context);
 
@@ -436,7 +425,7 @@ static int secmem_session_close(void)
 	do {
 		/* session is already closed ? */
 		if (secmem_session_ref == 0) {
-			INFO("secmem_session already closed\n");
+			pr_debug("secmem_session already closed\n");
 			break;
 		}
 
@@ -445,22 +434,22 @@ static int secmem_session_close(void)
 			break;
 		}
 
-		INFO("Testing TEEC_CloseSession\n");
+		pr_debug("Testing TEEC_CloseSession\n");
 		TEEC_CloseSession(&session);
 
-		INFO("Testing TEEC_ReleaseSharedMemory\n");
+		pr_debug("Testing TEEC_ReleaseSharedMemory\n");
 		TEEC_ReleaseSharedMemory(&wsm);
 
 		/* kfree(NULL) is safe and this check is probably not required */
 		kfree(wsm.buffer);
 
-		INFO("Testing TEEC_FinalizeContext\n");
+		pr_debug("Testing TEEC_FinalizeContext\n");
 		TEEC_FinalizeContext(&context);
 
 		secmem_session_ref = 0;
 	} while (0);
 
-	INFO("ref=%d\n", secmem_session_ref);
+	pr_debug("ref=%d\n", secmem_session_ref);
 
 	mutex_unlock(&secmem_lock);
 
@@ -488,7 +477,7 @@ static int secmem_open(struct inode *inode, struct file *file)
 	/* open session */
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 	while (!is_teei_ready()) {
-		INFO("teei NOT ready!, sleep 1s\n");
+		pr_debug("teei NOT ready!, sleep 1s\n");
 		msleep(1000);
 	}
 #endif
@@ -531,7 +520,7 @@ static int secmem_region_alloc(void)
 
 	/* already online */
 	if (secmem_region_online) {
-		INFO("secure memory already online\n");
+		pr_debug("secure memory already online\n");
 		return 0;
 	}
 
@@ -542,12 +531,12 @@ static int secmem_region_alloc(void)
 	ret = svp_region_offline(&pa, &size);
 #endif
 	if (ret) {
-		ERR("svp_region_offline() failed! ret=%d\n", ret);
+		pr_err("svp_region_offline() failed! ret=%d\n", ret);
 		return -1;
 	}
 
 	if (pa == 0 || size == 0) {
-		ERR("invalid pa(0x%llx) or size(0x%lx)\n", pa, size);
+		pr_err("invalid pa(0x%llx) or size(0x%lx)\n", pa, size);
 		return -1;
 	}
 
@@ -556,7 +545,7 @@ static int secmem_region_alloc(void)
 	if (ret) {
 		/* free secure memory */
 		svp_region_online();
-		ERR("secmem_enable() failed! ret=%d\n", ret);
+		pr_err("secmem_enable() failed! ret=%d\n", ret);
 		return -1;
 	}
 
@@ -567,7 +556,7 @@ static int secmem_region_alloc(void)
 	spm_enable_sodi(false);
 #endif
 
-	INFO("phyaddr=0x%llx sz=0x%lx rgn_on=%u rgn_ref=%u\n",
+	pr_debug("phyaddr=0x%llx sz=0x%lx rgn_on=%u rgn_ref=%u\n",
 			pa, size, secmem_region_online, secmem_region_ref);
 
 	return 0;
@@ -579,13 +568,13 @@ static int secmem_region_release(void)
 
 	/* already offline */
 	if (secmem_region_online == 0) {
-		INFO("secure memory already offline\n");
+		pr_debug("secure memory already offline\n");
 		return 0;
 	}
 
 	/* region has reference so abort the release */
 	if (secmem_region_ref > 0) {
-		ERR("aborted due to secmem_region_ref != 0 (%d)\n",
+		pr_err("aborted due to secmem_region_ref != 0 (%d)\n",
 			secmem_region_ref);
 		return -1;
 	}
@@ -593,13 +582,13 @@ static int secmem_region_release(void)
 	/* disable protection and recalim secure memory */
 	ret = secmem_disable();
 	if (ret) {
-		ERR("secmem_disable() failed! ret=%d\n", ret);
+		pr_err("secmem_disable() failed! ret=%d\n", ret);
 		return -1;
 	}
 
 	ret = svp_region_online();
 	if (ret) {
-		ERR("svp_region_online() failed! ret=%d\n", ret);
+		pr_err("svp_region_online() failed! ret=%d\n", ret);
 		return -1;
 	}
 
@@ -609,7 +598,7 @@ static int secmem_region_release(void)
 	spm_enable_sodi(true);
 #endif
 
-	INFO("done, rgn_on=%u\n", secmem_region_online);
+	pr_debug("done, rgn_on=%u\n", secmem_region_online);
 
 	return 0;
 }
@@ -689,7 +678,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				break;
 			}
 		}
-		INFO("rgn_on=%u rgn_ref=%u\n",
+		pr_debug("rgn_on=%u rgn_ref=%u\n",
 				secmem_region_online, secmem_region_ref);
 		mutex_unlock(&secmem_region_lock);
 #endif
@@ -723,11 +712,11 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 	mutex_lock(&secmem_region_lock);
 	if (secmem_region_online == 1 && secmem_region_ref == 0) {
-		INFO("queue secmem_reclaim_work!!\n");
+		pr_debug("queue secmem_reclaim_work!!\n");
 		queue_delayed_work(secmem_reclaim_wq, &secmem_reclaim_work,
 			msecs_to_jiffies(SECMEM_RECLAIM_DELAY));
 	} else {
-		INFO("cmd=%u rgn_on=%u rgn_ref=%u!!\n",
+		pr_debug("cmd=%u rgn_on=%u rgn_ref=%u!!\n",
 				_IOC_NR(cmd), secmem_region_online, secmem_region_ref);
 	}
 	mutex_unlock(&secmem_region_lock);
@@ -761,7 +750,7 @@ static int secmem_enable(u32 addr, u32 size)
 	secmem_session_close();
 
 end:
-	INFO("ret=%d\n", err);
+	pr_debug("ret=%d\n", err);
 
 	return err;
 }
@@ -781,7 +770,7 @@ static int secmem_disable(void)
 	secmem_session_close();
 
 end:
-	INFO("ret=%d\n", err);
+	pr_debug("ret=%d\n", err);
 
 	return err;
 }
@@ -814,7 +803,7 @@ int secmem_api_query(u32 *allocate_size)
 	secmem_session_close();
 
 end:
-	INFO("ret=%d\n", err);
+	pr_debug("ret=%d\n", err);
 
 	return err;
 }
@@ -838,7 +827,7 @@ static int secmem_api_alloc_internal(u32 alignment, u32 size, u32 *refcount,
 	if (secmem_region_online)
 		secmem_region_ref++;
 
-	INFO("rgn_on=%u rgn_ref=%u\n",
+	pr_debug("rgn_on=%u rgn_ref=%u\n",
 			secmem_region_online, secmem_region_ref);
 	mutex_unlock(&secmem_region_lock);
 	if (ret != 0)
@@ -882,11 +871,11 @@ end:
 	}
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
-	INFO("align=0x%x size=0x%x owner=%s id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x rgn_on=%u rgn_ref=%u\n",
+	pr_debug("align=0x%x size=0x%x owner=%s id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x rgn_on=%u rgn_ref=%u\n",
 		alignment, size, (owner ? (char *)owner : "NULL"), id, clean, ret,
 		*refcount, *sec_handle, secmem_region_online, secmem_region_ref);
 #else
-	INFO("align=0x%x size=0x%x id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x\n",
+	pr_debug("align=0x%x size=0x%x id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x\n",
 		alignment, size, id, clean, ret, *refcount, *sec_handle);
 #endif
 
@@ -936,11 +925,11 @@ end:
 	if (ret == 0) {
 		mutex_lock(&secmem_region_lock);
 		if (secmem_region_online == 1 && --secmem_region_ref == 0) {
-			INFO("queue secmem_reclaim_work!!\n");
+			pr_debug("queue secmem_reclaim_work!!\n");
 			queue_delayed_work(secmem_reclaim_wq, &secmem_reclaim_work,
 					msecs_to_jiffies(SECMEM_RECLAIM_DELAY));
 		} else {
-			INFO("rgn_on=%u rgn_ref=%u\n",
+			pr_debug("rgn_on=%u rgn_ref=%u\n",
 			secmem_region_online, secmem_region_ref);
 		}
 		mutex_unlock(&secmem_region_lock);
@@ -948,10 +937,10 @@ end:
 #endif
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
-	INFO("ret=%d shndl=0x%x owner=%s id=0x%x rgn_on=%u rgn_ref=%u\n",
+	pr_debug("ret=%d shndl=0x%x owner=%s id=0x%x rgn_on=%u rgn_ref=%u\n",
 		ret, sec_handle, (owner ? (char *)owner : "NULL"), id, secmem_region_online, secmem_region_ref);
 #else
-	INFO("ret=%d shndl=0x%x owner=%s id=0x%x\n", ret, sec_handle, (owner ? (char *)owner : "NULL"), id);
+	pr_debug("ret=%d shndl=0x%x owner=%s id=0x%x\n", ret, sec_handle, (owner ? (char *)owner : "NULL"), id);
 #endif
 
 	return ret;
@@ -963,18 +952,18 @@ static void secmem_unit_test(char *cmd)
 {
 #ifdef CONFIG_MTK_ENG_BUILD
 	if (!cmd) {
-		ERR("cmd is NULL!\n");
+		pr_err("cmd is NULL!\n");
 		return;
 	}
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 	if (!strncmp(cmd, "0", 1)) {
-		INFO("test for secmem_region_release()\n");
+		pr_info("test for secmem_region_release()\n");
 		mutex_lock(&secmem_region_lock);
 		secmem_region_ref--;
 		secmem_region_release();
 		mutex_unlock(&secmem_region_lock);
 	} else if (!strncmp(cmd, "1", 1)) {
-		INFO("test for secmem_region_alloc()\n");
+		pr_info("test for secmem_region_alloc()\n");
 		mutex_lock(&secmem_region_lock);
 		secmem_region_alloc();
 		secmem_region_ref++;
@@ -986,9 +975,9 @@ static void secmem_unit_test(char *cmd)
 		u32 size = 0;
 #endif
 
-		INFO("test for secmem_api_query()\n");
+		pr_info("test for secmem_api_query()\n");
 		secmem_api_query(&size);
-		INFO("allocated : 0x%llx\n", (u64)size);
+		pr_info("allocated : 0x%llx\n", (u64)size);
 	} else if (!strncmp(cmd, "3", 1)) {
 #ifdef SECMEM_KERNEL_API
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
@@ -1000,13 +989,13 @@ static void secmem_unit_test(char *cmd)
 		u32 refcount = 0;
 		char owner[] = "secme_ut";
 
-		INFO("test for alloc-query-unref\n");
+		pr_info("test for alloc-query-unref\n");
 		secmem_api_alloc(0x1000, 0x1000, &refcount, &sec_handle, owner, 0);
 		secmem_api_query(&size);
-		INFO("after alloc : 0x%llx\n", (u64)size);
+		pr_info("after alloc : 0x%llx\n", (u64)size);
 		secmem_api_unref(sec_handle, owner, 0);
 		secmem_api_query(&size);
-		INFO("after unref : 0x%llx\n", (u64)size);
+		pr_info("after unref : 0x%llx\n", (u64)size);
 #endif /* SECMEM_KERNEL_API */
 	}
 #else /* CONFIG_CMA && CONFIG_MTK_SVP */
