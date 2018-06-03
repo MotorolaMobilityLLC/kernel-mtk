@@ -4026,6 +4026,19 @@ static void addrconf_verify_rtnl(void)
 restart:
 		hlist_for_each_entry_rcu_bh(ifp, &inet6_addr_lst[i], addr_lst) {
 			unsigned long age;
+			u32 route_lft, minimum_lft;
+			struct rt6_info *rt;
+
+			rt = rt6_get_dflt_router_expires(ifp->idev->dev);
+			if (rt && (rt->rt6i_flags & RTF_EXPIRES)) {
+				route_lft = (rt->dst.expires - ifp->tstamp) / HZ;
+				minimum_lft = min(ifp->prefered_lft, route_lft);
+				pr_info("[mtk_net]RA: %s, rt6_get_dflt_router_expires, ifp %p, rt %p, lifetime %lld, prefered_lft %lld, minimum_lft %lld for dev: %s\n",
+					__func__, ifp, rt, (u64)route_lft, (u64)ifp->prefered_lft,
+					(u64)minimum_lft, rt->rt6i_idev->dev->name);
+			} else {
+				minimum_lft = ifp->prefered_lft;
+			}
 
 			/* When setting preferred_lft to a value not zero or
 			 * infinity, while valid_lft is infinity
@@ -4046,6 +4059,24 @@ restart:
 				ipv6_del_addr(ifp);
 				goto restart;
 			} else if (ifp->prefered_lft == INFINITY_LIFE_TIME) {
+				/*mtk10127 change for VzW
+				 *prefered_lft is INFINITY scenario
+				 *ccmni interface will send RS when time flow
+				 *reaches 75% of route_lft
+				 */
+				if (strncmp(ifp->idev->dev->name, "ccmni", 2) == 0) {
+					if (rt && (rt->rt6i_flags & RTF_EXPIRES)) {
+						if (!(ifp->idev->if_flags & IF_RS_VZW_SENT) &&
+						    age >= (minimum_lft * 3 / 4))
+							inet6_send_rs_vzw(ifp);
+						pr_info("[mtk_net]RA: %s, prefered_lft is INFINITY, ifp %p, rt %p, minimum_lft %lld, age %lld, if_rs_vzw_sent %d\n",
+							__func__, ifp, rt, (u64)minimum_lft, (u64)age,
+							ifp->idev->if_flags & IF_RS_VZW_SENT);
+						if (!(ifp->idev->if_flags & IF_RS_VZW_SENT) &&
+						    time_before(ifp->tstamp + ((minimum_lft * 3 / 4) * HZ), next))
+							next = ifp->tstamp + ((minimum_lft * 3 / 4) * HZ);
+					}
+				}
 				spin_unlock(&ifp->lock);
 				continue;
 			} else if (age >= ifp->prefered_lft) {
@@ -4101,17 +4132,22 @@ restart:
 				/* ifp->prefered_lft <= ifp->valid_lft */
 				if (time_before(ifp->tstamp + ifp->prefered_lft * HZ, next))
 					next = ifp->tstamp + ifp->prefered_lft * HZ;
-				/*only ccmni interface will send RS,if prefered_lft reach 75% of itself*/
-				if (strncmp(ifp->idev->dev->name, "ccmni", 2) == 0) {
-					if ((age > (ifp->prefered_lft * 3 / 4)) &&
-					    !(ifp->idev->if_flags & IF_RS_VZW_SENT))
-						inet6_send_rs_vzw(ifp);
 
-				if (!(ifp->idev->if_flags & IF_RS_VZW_SENT)) {
-					if (time_before(ifp->tstamp +
-					    ((ifp->prefered_lft * 3 / 4) * HZ), next))
-						next = ifp->tstamp + ((ifp->prefered_lft * 3 / 4) * HZ);
-				}
+				/*mtk10127 change for VzW
+				 *prefered_lft is NOT INFINITY scenario
+				 *ccmni interface will send RS when time flow
+				 *reaches 75% of min{prefered_lft, route_lft}
+				 */
+				if (strncmp(ifp->idev->dev->name, "ccmni", 2) == 0) {
+					if (!(ifp->idev->if_flags & IF_RS_VZW_SENT) &&
+					    age >= (minimum_lft * 3 / 4))
+						inet6_send_rs_vzw(ifp);
+					pr_info("[mtk_net]RA: %s, prefered_lft is FINITY, ifp %p, rt %p, minimum_lft %lld, age %lld, if_rs_vzw_sent %d\n",
+						__func__, ifp, rt, (u64)minimum_lft, (u64)age,
+						ifp->idev->if_flags & IF_RS_VZW_SENT);
+					if (!(ifp->idev->if_flags & IF_RS_VZW_SENT) &&
+					    time_before(ifp->tstamp + ((minimum_lft * 3 / 4) * HZ), next))
+						next = ifp->tstamp + ((minimum_lft * 3 / 4) * HZ);
 				}
 				spin_unlock(&ifp->lock);
 			}
