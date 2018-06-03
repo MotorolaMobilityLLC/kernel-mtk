@@ -471,7 +471,7 @@ void rndis_activate_direct_tethering(struct usb_function *f, bool suspend)
 	activate_req.tethering_meta_info.init_msg_max_transfer_size = 0x4000; /* defined by spec. */
 	rndis_get_net_stats(rndis->params, &activate_req.tethering_meta_info.net_stats);
 
-	pr_debug("%s: config %d, speed %d, epin %d %d %d, epout %d %d %d, MAC %pM, Host MAC %pM, pktPerTransfer %d, transferSize %d\n",
+	pr_info("%s: config %d, speed %d, epin %d %d %d, epout %d %d %d, MAC %pM, Host MAC %pM, pktPerTransfer %d, transferSize %d\n",
 			__func__,
 			activate_req.configuration,
 			activate_req.speed,
@@ -492,14 +492,14 @@ void rndis_activate_direct_tethering(struct usb_function *f, bool suspend)
 		}
 
 	if (musb_activate_md_fast_path(&activate_req) >= 0) {
-		pr_debug("%s, ok\n", __func__);
+		pr_info("%s, ok\n", __func__);
 	} else {
 		usb_ep_resume_control(rndis->port.in_ep);
 		usb_ep_resume_control(rndis->port.out_ep);
 		rndis->direct_state = DIRECT_STATE_DEACTIVATED;
 	}
 
-	pr_debug("%s, state: %d\n", __func__, rndis->direct_state);
+	pr_info("%s, state: %d\n", __func__, rndis->direct_state);
 }
 
 int rndis_deactivate_direct_tethering(struct usb_function *f)
@@ -513,7 +513,7 @@ int rndis_deactivate_direct_tethering(struct usb_function *f)
 	if (ret >= 0)
 		rndis->direct_state = DIRECT_STATE_DEACTIVATING;
 
-	pr_debug("%s, state:%d, ret:%d\n", __func__, rndis->direct_state, ret);
+	pr_info("%s, state:%d, ret:%d\n", __func__, rndis->direct_state, ret);
 
 	return ret;
 }
@@ -542,7 +542,7 @@ static int rndis_md_msg_hdlr(struct usb_function *f, int msg_id, void *data)
 					}
 				} else {
 					rndis->direct_state = DIRECT_STATE_NONE;
-					pr_debug("%s, switch to state: %d\n", __func__, rndis->direct_state);
+					pr_info("%s, switch to state: %d\n", __func__, rndis->direct_state);
 				}
 			}
 			handled = 1;
@@ -562,7 +562,7 @@ static int rndis_md_msg_hdlr(struct usb_function *f, int msg_id, void *data)
 		if (rsp->mode == UFPM_FUNC_MODE_TETHER) {
 			if (rndis->direct_state == DIRECT_STATE_ACTIVATING) {
 				rndis->direct_state = DIRECT_STATE_ACTIVATED;
-				pr_debug("%s, switch to state: %d\n", __func__, rndis->direct_state);
+				pr_info("%s, switch to state: %d\n", __func__, rndis->direct_state);
 			}
 			handled = 1;
 		}
@@ -590,7 +590,7 @@ static int rndis_md_msg_hdlr(struct usb_function *f, int msg_id, void *data)
 		break;
 
 	case IPC_MSG_ID_UFPM_DEACTIVATE_MD_FAST_PATH_IND:
-		pr_debug("%s, switch to state: %d in FLIGHT MODE!\n", __func__, rndis->direct_state);
+		pr_info("%s, switch to state: %d in FLIGHT MODE!\n", __func__, rndis->direct_state);
 		rndis_set_direct_tethering(f, false);
 		break;
 
@@ -626,7 +626,7 @@ static bool rndis_md_fast_path_enable(struct usb_function *f)
 	struct f_rndis *rndis = func_to_rndis(f);
 
 	if (rndis->direct_feature_on) {
-		pr_debug("%s enable direct tethering\n", __func__);
+		pr_info("%s enable direct tethering\n", __func__);
 		/* Enable direct tethering */
 		if (musb_enable_md_fast_path(UFPM_FUNC_MODE_TETHER) >= 0) {
 			rndis->direct_state = DIRECT_STATE_ENABLING;
@@ -665,9 +665,9 @@ void rndis_set_direct_tethering(struct usb_function *f, bool direct)
 					rndis->network_type = RNDIS_NETWORK_TYPE_NON_MOBILE;
 					rndis_deactivate_direct_tethering(f);
 					/* Don't need to wait MD and resume ep directly */
-					rndis->direct_state = DIRECT_STATE_DEACTIVATED;
 					pr_info("%s, rndis_resume_data_control\n", __func__);
 					rndis_resume_data_control(rndis);
+					rndis->direct_state = DIRECT_STATE_DEACTIVATED;
 				}
 			}
 		}
@@ -1008,9 +1008,9 @@ static void rndis_disable(struct usb_function *f)
 		rndis->network_type = RNDIS_NETWORK_TYPE_NONE;
 		/* Deactivating direct tethering */
 		rndis_deactivate_direct_tethering(f);
-		rndis->direct_state = DIRECT_STATE_DEACTIVATED;
 		pr_info("%s, rndis_resume_data_control\n", __func__);
 		rndis_resume_data_control(rndis);
+		rndis->direct_state = DIRECT_STATE_DEACTIVATED;
 	}
 #endif
 
