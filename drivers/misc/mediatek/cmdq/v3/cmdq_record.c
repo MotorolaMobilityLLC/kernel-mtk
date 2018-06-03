@@ -18,6 +18,7 @@
 #include "cmdq_virtual.h"
 #include "cmdq_helper_ext.h"
 #include "cmdq_device.h"
+#include "cmdq_mmp.h"
 
 #define CMDQ_DATA_VAR		(CMDQ_BIT_VAR<<CMDQ_DATA_BIT)
 #define CMDQ_TASK_TPR_VAR	(CMDQ_DATA_VAR | CMDQ_TPR_ID)
@@ -339,8 +340,13 @@ s32 cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario,
 	struct cmdqRecStruct *handle = NULL;
 	s32 err;
 
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_START,
+		current->pid, scenario);
+
 	if (unlikely(!handle_out)) {
 		CMDQ_ERR("Invalid empty handle\n");
+		CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task,
+			MMPROFILE_FLAG_END, current->pid, scenario);
 		return -EINVAL;
 	}
 
@@ -348,12 +354,17 @@ s32 cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario,
 
 	if (scenario < 0 || scenario >= CMDQ_MAX_SCENARIO_COUNT) {
 		CMDQ_ERR("Unknown scenario type %d\n", scenario);
+		CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task,
+			MMPROFILE_FLAG_END, current->pid, scenario);
 		return -EINVAL;
 	}
 
 	handle = kzalloc(sizeof(struct cmdqRecStruct), GFP_KERNEL);
-	if (!handle)
+	if (!handle) {
+		CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task,
+			MMPROFILE_FLAG_END, current->pid, scenario);
 		return -ENOMEM;
+	}
 
 	INIT_LIST_HEAD(&handle->list_entry);
 	handle->engineFlag = cmdq_get_func()->flagFromScenario(scenario);
@@ -367,6 +378,8 @@ s32 cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario,
 	err = cmdq_task_reset(handle);
 	if (err < 0) {
 		kfree(handle);
+		CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task,
+			MMPROFILE_FLAG_END, current->pid, scenario);
 		return err;
 	}
 
@@ -387,6 +400,8 @@ s32 cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario,
 	}
 
 	handle->submit = sched_clock();
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_END,
+		current->pid, scenario);
 
 	return 0;
 }

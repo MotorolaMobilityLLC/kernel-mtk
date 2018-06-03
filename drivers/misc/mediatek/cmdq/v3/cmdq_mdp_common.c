@@ -802,6 +802,8 @@ static s32 cmdq_mdp_consume_handle(void)
 	bool acquired = false;
 	struct CmdqCBkStruct *callback = cmdq_core_get_group_cb();
 
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_done, MMPROFILE_FLAG_START,
+		current->pid, 0);
 	/* operation for tasks_wait list need task mutex */
 	mutex_lock(&mdp_task_mutex);
 
@@ -864,6 +866,9 @@ static s32 cmdq_mdp_consume_handle(void)
 		acquired = true;
 	}
 	mutex_unlock(&mdp_task_mutex);
+
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_done, MMPROFILE_FLAG_END,
+		current->pid, 0);
 
 	if (acquired) {
 		/* notify some task's SW thread to change their waiting state.

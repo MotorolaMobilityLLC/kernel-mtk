@@ -4692,6 +4692,9 @@ static void cmdq_pkt_err_dump_handler(struct cmdq_cb_data data)
 		return;
 	}
 
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->timeout, MMPROFILE_FLAG_START,
+		(unsigned long)handle, handle->thread);
+
 	if (data.err == -ETIMEDOUT) {
 		atomic_inc(&handle->exec);
 		cmdq_core_attach_error_handle(handle, TASK_STATE_TIMEOUT);
@@ -4701,6 +4704,9 @@ static void cmdq_pkt_err_dump_handler(struct cmdq_cb_data data)
 		handle->error_irq_pc =
 			CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(handle->thread));
 	}
+
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->timeout, MMPROFILE_FLAG_END,
+		(unsigned long)handle, handle->thread);
 }
 
 static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
@@ -4744,9 +4750,13 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 
 	if (handle->loop) {
 		if (handle->loop_cb) {
+			s32 loop_ret = 0;
+
 			/* for loop task only callback and no need to do more */
 			CMDQ_LOG("loop callback handle:0x%p\n", handle);
-			handle->loop_cb(handle->loop_user_data);
+			loop_ret = handle->loop_cb(handle->loop_user_data);
+			CMDQ_PROF_MMP(cmdq_mmp_get_event()->loopBeat,
+			      MMPROFILE_FLAG_PULSE, handle->thread, loop_ret);
 			CMDQ_LOG("loop callback done\n");
 		}
 
@@ -4777,6 +4787,9 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 		/* success done */
 		handle->state = TASK_STATE_DONE;
 	}
+
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->CMDQ_IRQ, MMPROFILE_FLAG_PULSE,
+		(unsigned long)handle, handle->thread);
 
 	wake_up(&cmdq_wait_queue[handle->thread]);
 }
@@ -4890,6 +4903,9 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 	struct cmdqRecStruct **pmqos_handle_list = NULL;
 	u32 handle_count;
 
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->wait_task,
+		MMPROFILE_FLAG_PULSE, ((unsigned long)handle), handle->thread);
+
 	handle->beginWait = sched_clock();
 
 	do {
@@ -4970,6 +4986,10 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 		CMDQ_AEE("CMDQ", "Error IRQ\n");
 	}
 
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->wait_task_done,
+		MMPROFILE_FLAG_PULSE, ((unsigned long)handle),
+		handle->wakedUp - handle->beginWait);
+
 	cmdq_core_track_handle_record(handle, handle->thread);
 	cmdq_pkt_release_handle(handle);
 
@@ -4991,6 +5011,9 @@ static void cmdq_pkt_auto_release_work(struct work_struct *work)
 
 	cb = handle->async_callback;
 	user_data = handle->async_user_data;
+
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->autoRelease_done,
+		MMPROFILE_FLAG_PULSE, ((unsigned long)handle), current->pid);
 	cmdq_pkt_wait_flush_ex_result(handle);
 
 	if (cb)
@@ -5005,6 +5028,9 @@ s32 cmdq_pkt_auto_release_task(struct cmdqRecStruct *handle)
 			handle, handle->pkt, handle->thread, handle->scenario);
 		return -EINVAL;
 	}
+
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->autoRelease_add,
+		MMPROFILE_FLAG_PULSE, ((unsigned long)handle), handle->thread);
 
 	/* the work item is embeded in pTask already
 	 * but we need to initialized it

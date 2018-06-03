@@ -60,6 +60,8 @@ void cmdq_mmp_init(void)
 			CMDQ_MMP_events.CMDQ, "thread_resume");
 		CMDQ_MMP_events.alloc_buffer = mmprofile_register_event(
 			CMDQ_MMP_events.CMDQ, "alloc_buffer");
+		CMDQ_MMP_events.timeout = mmprofile_register_event(
+			CMDQ_MMP_events.CMDQ, "timeout");
 
 		mmprofile_enable_event_recursive(CMDQ_MMP_events.CMDQ, 1);
 	}
