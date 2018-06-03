@@ -2139,6 +2139,27 @@
 		compatible = "mediatek,imgsys", "syscon";
 		reg = <0 0x15020000 0 0x1000>;
 		#clock-cells = <1>;
+				/* Camera CCF */
+				clocks = <&scpsys SCP_SYS_DIS>,
+						<&scpsys SCP_SYS_ISP>,
+						<&scpsys SCP_SYS_CAM>,
+						<&imgsys IMG_DIP>,
+						<&camsys CAMSYS_CAM_CGPDN>,
+						<&camsys CAMSYS_CAMTG_CGPDN>,
+						<&camsys CAMSYS_SENINF_CGPDN>,
+						<&camsys CAMSYS_CAMSV0_CGPDN>,
+						<&camsys CAMSYS_CAMSV1_CGPDN>,
+						<&camsys CAMSYS_CAMSV2_CGPDN>;
+				clock-names = "ISP_SCP_SYS_DIS",
+						"ISP_SCP_SYS_ISP",
+						"ISP_SCP_SYS_CAM",
+						"IMG_DIP",
+						"CAMSYS_CAM_CGPDN",
+						"CAMSYS_CAMTG_CGPDN",
+						"CAMSYS_SENINF_CGPDN",
+						"CAMSYS_CAMSV0_CGPDN",
+						"CAMSYS_CAMSV1_CGPDN",
+						"CAMSYS_CAMSV2_CGPDN";
 	};
 
 	smi_larb1@15021000 {
