@@ -393,7 +393,7 @@
 #define MSDC2_PUPD1_MASK        (0xF <<  0)
 
 #define MSDC_HW_TRAPPING_ADDR   (MSDC_GPIO_BASE + 0x6E0)
-#define MSDC_HW_TRAPPING_MASK   (0x3 << 27) /* 0: Aux2, other:Aux1 */
+#define MSDC_HW_TRAPPING_MASK   (0x3 << 25) /* 0: Aux2, other:Aux1 */
 
 /**************************************************************/
 /* Section 5: Adjustable Driver Parameter                     */
