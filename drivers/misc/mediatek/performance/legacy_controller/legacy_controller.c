@@ -28,7 +28,6 @@
 
 #include <linux/platform_device.h>
 #include "legacy_controller.h"
-#include <mach/mtk_cpufreq_api.h>
 
 #ifdef CONFIG_TRACING
 #include <linux/kallsyms.h>
