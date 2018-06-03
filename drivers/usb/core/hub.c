@@ -1928,6 +1928,8 @@ void usb_set_device_state(struct usb_device *udev,
 	unsigned long flags;
 	int wakeup = -1;
 
+	dev_info(&udev->dev, "%s %d->%d\n", __func__, udev->state, new_state);
+
 	spin_lock_irqsave(&device_state_lock, flags);
 	if (udev->state == USB_STATE_NOTATTACHED)
 		;	/* do nothing */
@@ -2693,6 +2695,9 @@ static int hub_port_reset(struct usb_hub *hub, int port1,
 	int i, status;
 	u16 portchange, portstatus;
 	struct usb_port *port_dev = hub->ports[port1 - 1];
+
+	dev_info(&port_dev->dev, "%s delay=%d %s\n",
+						__func__, delay, warm?"WARM":"");
 
 	if (!hub_is_superspeed(hub->hdev)) {
 		if (warm) {
@@ -4677,6 +4682,9 @@ static void hub_port_connect(struct usb_hub *hub, int port1, u16 portstatus,
 	struct usb_device *udev = port_dev->child;
 	static int unreliable_port = -1;
 
+	dev_info(&port_dev->dev, "%s portstatus=0x%x portchange=0x%x\n",
+		__func__, portstatus, portchange);
+
 	/* Disconnect any existing devices under this port */
 	if (udev) {
 		if (hcd->usb_phy && !hdev->parent)
@@ -4870,7 +4878,7 @@ loop:
 			!(hcd->driver->port_handed_over)(hcd, port1)) {
 		if (status != -ENOTCONN && status != -ENODEV)
 			dev_err(&port_dev->dev,
-					"unable to enumerate USB device\n");
+					"unable to enumerate USB device status=%d\n", status);
 	}
 
 done:

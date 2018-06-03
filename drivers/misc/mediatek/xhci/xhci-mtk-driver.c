@@ -296,6 +296,45 @@ static void mtk_xhci_hcd_cleanup(void)
 {
 	xhci_mtk_unregister_plat();
 }
+
+static int option;
+static int set_option(const char *val, const struct kernel_param *kp)
+{
+	int local_option;
+	int rv;
+
+	/* update module parameter */
+	rv = param_set_int(val, kp);
+	if (rv)
+		return rv;
+
+	/* update local_option */
+	rv = kstrtoint(val, 10, &local_option);
+	if (rv != 0)
+		return rv;
+
+	pr_info("option:%d, local_option:%d\n", option, local_option);
+
+	switch (local_option) {
+	case 0:
+		pr_info("mtk_enable_otg_mode %d\n", local_option);
+		mtk_enable_otg_mode();
+		break;
+	case 1:
+		pr_info("mtk_disable_otg_mode %d\n", local_option);
+		mtk_disable_otg_mode();
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+static struct kernel_param_ops option_param_ops = {
+	.set = set_option,
+	.get = param_get_int,
+};
+module_param_cb(option, &option_param_ops, &option, 0644);
+
 static struct delayed_work host_plug_test_work;
 static int host_plug_test_enable; /* default disable */
 module_param(host_plug_test_enable, int, 0400);
