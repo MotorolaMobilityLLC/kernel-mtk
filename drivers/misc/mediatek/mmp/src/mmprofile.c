@@ -1358,7 +1358,6 @@ static struct dentry *g_p_debug_fs_buffer;
 static struct dentry *g_p_debug_fs_global;
 static struct dentry *g_p_debug_fs_reset;
 static struct dentry *g_p_debug_fs_enable;
-static struct dentry *g_p_debug_fs_mmp;
 
 static ssize_t mmprofile_dbgfs_reset_write(struct file *file,
 	const char __user *buf, size_t size, loff_t *ppos)
@@ -2207,18 +2206,20 @@ const struct file_operations mmprofile_fops = {
 #endif
 };
 
+struct miscdevice *mmp_dev;
+
 
 static int mmprofile_probe(void)
 {
+
+	int ret;
+
 	mmp_log_on = false;
 	mmp_trace_log_on = false;
 	/* Create debugfs */
 	g_p_debug_fs_dir = debugfs_create_dir("mmprofile", NULL);
 	if (g_p_debug_fs_dir) {
 		/* Create debugfs files. */
-		g_p_debug_fs_mmp =
-		    debugfs_create_file("mmp", 0x444,
-				g_p_debug_fs_dir, NULL, &mmprofile_fops);
 		g_p_debug_fs_enable =
 		    debugfs_create_file("enable", 0x600,
 				g_p_debug_fs_dir, NULL,
@@ -2240,18 +2241,34 @@ static int mmprofile_probe(void)
 				g_p_debug_fs_dir, NULL,
 				&mmprofile_dbgfs_reset_fops);
 	}
+
+	mmp_dev = kzalloc(sizeof(*mmp_dev), GFP_KERNEL);
+	if (!mmp_dev)
+		return -ENOMEM;
+
+	mmp_dev->minor = MISC_DYNAMIC_MINOR;
+	mmp_dev->name = "mmp";
+	mmp_dev->fops = &mmprofile_fops;
+	mmp_dev->parent = NULL;
+	ret = misc_register(mmp_dev);
+	if (ret) {
+		pr_err("mmp: failed to register misc device.\n");
+		kfree(mmp_dev);
+		return ret;
+	}
+
 	return 0;
 }
 
 static int mmprofile_remove(void)
 {
+	kfree(mmp_dev);
 	debugfs_remove(g_p_debug_fs_dir);
 	debugfs_remove(g_p_debug_fs_enable);
 	debugfs_remove(g_p_debug_fs_start);
 	debugfs_remove(g_p_debug_fs_global);
 	debugfs_remove(g_p_debug_fs_buffer);
 	debugfs_remove(g_p_debug_fs_reset);
-	debugfs_remove(g_p_debug_fs_mmp);
 	return 0;
 }
 
