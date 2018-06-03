@@ -29,6 +29,17 @@ config DMAUSER_PAGES
 	  DMA (<= 4GB) pages. It makes all drivers have more chances
 	  to allocate >= 4GB physical memory.
 
+config MTK_DTBO_FEATURE
+	bool "Support Device Tree Overlay"
+	default y
+	select BUILD_ARM_DTB_OVERLAY_IMAGE if !ARM64
+	select BUILD_ARM64_DTB_OVERLAY_IMAGE if ARM64
+	help
+	  This allows a central DTB and overlays it dynamically.
+	  An overlay can add nodes to the tree and make changes to properties
+	  in the existing tree.
+	  If you are not sure about this, set y
+
 endif
 
 menu "Storage: EMMC, NAND, partition..."
