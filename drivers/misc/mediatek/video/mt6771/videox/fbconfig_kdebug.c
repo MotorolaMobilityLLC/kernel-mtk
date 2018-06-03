@@ -313,6 +313,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case DRIVER_IC_CONFIG:
 	{
 		struct CONFIG_RECORD_LIST *record_tmp_list = kmalloc(sizeof(*record_tmp_list), GFP_KERNEL);
+		if (record_tmp_list == NULL)
+			return -ENOMEM;
 
 		if (copy_from_user(&record_tmp_list->record, (void __user *)arg, sizeof(struct CONFIG_RECORD))) {
 			pr_debug("list_add: copy_from_user failed! line:%d\n", __LINE__);

@@ -731,7 +731,7 @@ static int rdma_config(enum DISP_MODULE_ENUM module, enum RDMA_MODE mode,
 	unsigned int regval;
 
 	DDPDBG("%s:%s,mode:%s,addr:0x%lx,fmt:%s,pitch:%u,wxh(%ux%u),sec:%d\n",
-	       __func__, ddp_get_mode_name(module), mode ? "MEM" : "DL", address,
+	       __func__, ddp_get_module_name(module), mode ? "MEM" : "DL", address,
 	       unified_color_fmt_name(inFormat), pitch, width, height, sec);
 
 	ASSERT(idx <= RDMA_INSTANCES);

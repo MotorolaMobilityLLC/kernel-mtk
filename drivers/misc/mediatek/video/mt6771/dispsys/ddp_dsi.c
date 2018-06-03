@@ -1432,7 +1432,7 @@ void dsi_phy_cmdq_dummy_delay(struct cmdqRecStruct *cmdq)
 		return;
 
 	for (i = 0; i < 20; i++)
-		DISP_REG_SET(cmdq, &DSI_REG[0]->DSI_START + DISP_REG_DSI_MMCLK_STALL_DBG1, 0);
+		DISP_REG_SET(cmdq, DISPSYS_DSI0_BASE + DISP_REG_DSI_MMCLK_STALL_DBG1, 0);
 }
 
 static void _dsi_phy_clk_setting_gce(enum DISP_MODULE_ENUM module,
@@ -2257,6 +2257,8 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, u
 	struct DSI_T0_INS t0;
 	struct DSI_T2_INS t2;
 
+	memset(&t0, 0, sizeof(struct DSI_T0_INS));
+	memset(&t2, 0, sizeof(struct DSI_T2_INS));
 	if (module == DISP_MODULE_DSI0)
 		d = 0;
 	else if (module == DISP_MODULE_DSI1)
