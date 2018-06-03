@@ -161,7 +161,7 @@ int aed_get_process_bt(struct aee_process_bt *bt)
 	err = mutex_lock_killable(&task->signal->cred_guard_mutex);
 	if (err)
 		goto exit;
-	if (!ptrace_may_access(task, PTRACE_MODE_ATTACH)) {
+	if (!ptrace_may_access(task, PTRACE_MODE_ATTACH_FSCREDS)) {
 		mutex_unlock(&task->signal->cred_guard_mutex);
 		err = -EPERM;
 		goto exit;
