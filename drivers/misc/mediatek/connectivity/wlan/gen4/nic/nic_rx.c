@@ -1356,6 +1356,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	P_SW_RFB_T prRetSwRfb, prNextSwRfb;
 	P_HW_MAC_RX_DESC_T prRxStatus;
 	BOOLEAN fgDrop;
+	P_STA_RECORD_T prStaRec;
 
 	DEBUGFUNC("nicRxProcessDataPacket");
 	/* DBGLOG(INIT, TRACE, ("\n")); */
@@ -1462,6 +1463,13 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 
 				switch (prRetSwRfb->eDst) {
 				case RX_PKT_DESTINATION_HOST:
+					prStaRec = cnmGetStaRecByIndex(prAdapter, prRetSwRfb->ucStaRecIdx);
+					if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
+#if ARP_MONITER_ENABLE
+						qmHandleRxArpPackets(prAdapter, prRetSwRfb);
+						qmHandleRxDhcpPackets(prAdapter, prRetSwRfb);
+#endif
+					}
 					nicRxProcessPktWithoutReorder(prAdapter, prRetSwRfb);
 					break;
 
