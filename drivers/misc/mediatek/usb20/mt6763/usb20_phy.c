@@ -636,22 +636,25 @@ void usb_phy_recover(void)
 void Charger_Detect_Init(void)
 {
 	unsigned long flags;
-	int do_lock;
+	int do_lock = 0;
 
-	do_lock = 0;
 	if (mtk_musb) {
 		spin_lock_irqsave(&mtk_musb->lock, flags);
 		do_lock = 1;
-	} else {
+	} else
 		DBG(0, "mtk_musb is NULL\n");
 
-	}
 	/* turn on USB reference clock. */
 	usb_enable_clock(true);
+
 	/* wait 50 usec. */
 	udelay(50);
+
 	/* RG_USB20_BC11_SW_EN = 1'b1 */
 	USBPHY_SET32(0x18, (0x1 << 23));
+
+	/* turn off USB reference clock. */
+	usb_enable_clock(false);
 
 	if (do_lock)
 		spin_unlock_irqrestore(&mtk_musb->lock, flags);
@@ -661,24 +664,28 @@ void Charger_Detect_Init(void)
 void Charger_Detect_Release(void)
 {
 	unsigned long flags;
-	int do_lock;
+	int do_lock = 0;
 
-	do_lock = 0;
 	if (mtk_musb) {
 		spin_lock_irqsave(&mtk_musb->lock, flags);
 		do_lock = 1;
-	} else {
+	} else
 		DBG(0, "mtk_musb is NULL\n");
-	}
+
+	/* turn on USB reference clock. */
+	usb_enable_clock(true);
 
 	/* RG_USB20_BC11_SW_EN = 1'b0 */
 	USBPHY_CLR32(0x18, (0x1 << 23));
+
 	udelay(1);
+
 	/* 4 14. turn off internal 48Mhz PLL. */
 	usb_enable_clock(false);
 
 	if (do_lock)
 		spin_unlock_irqrestore(&mtk_musb->lock, flags);
+
 	DBG(0, "Charger_Detect_Release\n");
 }
 
