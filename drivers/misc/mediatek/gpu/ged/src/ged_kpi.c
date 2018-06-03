@@ -1531,6 +1531,9 @@ static GED_ERROR ged_kpi_push_timestamp(
 	void *fence_addr)
 {
 	static int event_QedBuffer_cnt, event_3d_fence_cnt, event_hw_vsync;
+#ifdef GED_ENABLE_FB_DVFS
+	unsigned long ui32IRQFlags;
+#endif
 
 	if (g_psWorkQueue && is_GED_KPI_enabled) {
 		GED_TIMESTAMP *psTimeStamp = (GED_TIMESTAMP *)ged_alloc_atomic(sizeof(GED_TIMESTAMP));
@@ -1545,14 +1548,14 @@ static GED_ERROR ged_kpi_push_timestamp(
 
 		if (eTimeStampType == GED_TIMESTAMP_TYPE_2) {
 #ifdef GED_ENABLE_FB_DVFS
-			mutex_lock(&gsGpuUtilLock);
+			spin_lock_irqsave(&gsGpuUtilLock, ui32IRQFlags);
 			if (!ged_kpi_check_if_fallback_mode()) {
 				ged_kpi_trigger_fb_dvfs();
 				ged_dvfs_cal_gpu_utilization(&(psTimeStamp->i32GPUloading), &pui32Block, &pui32Idle);
 			} else {
 				psTimeStamp->i32GPUloading = 0;
 			}
-			mutex_unlock(&gsGpuUtilLock);
+			spin_unlock_irqrestore(&gsGpuUtilLock, ui32IRQFlags);
 #else
 			psTimeStamp->i32GPUloading = 0;
 #endif
