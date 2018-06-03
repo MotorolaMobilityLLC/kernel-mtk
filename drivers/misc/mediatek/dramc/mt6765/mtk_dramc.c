@@ -71,6 +71,13 @@ unsigned int CBT_MODE;
 
 static unsigned int dram_rank_num;
 static unsigned int dram_mr_mode;
+#ifdef SW_TX_TRACKING
+static unsigned int dram_sw_tx;
+#endif
+#ifdef SW_ZQCS
+static unsigned int dram_sw_zq;
+#endif
+
 
 struct dram_info *g_dram_info_dummy_read, *get_dram_info;
 struct dram_info dram_info_dummy_read;
@@ -1381,6 +1388,10 @@ void zqcs_timer_callback(unsigned long data)
 #ifdef SW_ZQCS
 	spin_lock_irqsave(&sw_zq_tx_lock, spinlock_save_flags);
 	local_irq_save(save_flags);
+
+	if (!dram_sw_zq)
+		goto tx_start;
+
 	if (acquire_dram_ctrl() != 0)
 		goto tx_start;
 
@@ -1527,6 +1538,9 @@ tx_start:
 	res[0] = TX_DONE;
 	res[1] = TX_DONE;
 
+	if (!dram_sw_tx)
+		goto tx_end;
+
 	udelay(200);
 
 	spin_lock_irqsave(&sw_zq_tx_lock, spinlock_save_flags);
@@ -1564,6 +1578,7 @@ tx_start:
 		local_irq_restore(save_flags);
 		spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 	}
+tx_end:
 #endif
 
 #if defined(SW_ZQCS) || defined(SW_TX_TRACKING)
@@ -1583,13 +1598,15 @@ tx_start:
 
 void del_zqcs_timer(void)
 {
-	del_timer_sync(&zqcs_timer);
+	if (dram_sw_tx || dram_sw_zq)
+		del_timer_sync(&zqcs_timer);
 }
 
 void add_zqcs_timer(void)
 {
 	/* add_timer(&zqcs_timer); */
-	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
+	if (dram_sw_tx || dram_sw_zq)
+		mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
 }
 
 static int dram_probe(struct platform_device *pdev)
@@ -1717,7 +1734,17 @@ static int dram_probe(struct platform_device *pdev)
 	dramc_info("shuffle_status = %d\n", get_shuffle_status());
 	dramc_info("MR mode = %d\n", dram_mr_mode);
 
-	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+#ifdef SW_TX_TRACKING
+	dram_sw_tx = (readl(PDEF_DRAMC0_CHA_REG_0C8) >> 24) & 0x1;
+	dramc_info("SW_TX = %d\n", dram_sw_tx);
+#endif
+#ifdef SW_ZQCS
+	dram_sw_zq = 0x1 - ((readl(PDEF_DRAMC0_CHA_REG_22C) >> 20) & 0x1);
+	dramc_info("SW_ZQ = %d\n", dram_sw_zq);
+#endif
+
+	if (((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) &&
+			(dram_sw_tx || dram_sw_zq)) {
 		low_freq_counter = 10;
 		init_timer_deferrable(&zqcs_timer);
 		zqcs_timer.function = zqcs_timer_callback;
