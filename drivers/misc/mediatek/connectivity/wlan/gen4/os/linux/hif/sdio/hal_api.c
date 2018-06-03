@@ -465,6 +465,11 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 
 		HAL_MCR_RD(prAdapter, MCR_D2HRM1R, &i);
 		if (i == 0x77889901) {
+			if (halIsPendingTxDone(prAdapter)) {
+				/* Workaround for missing Tx done */
+				halSerHifReset(prAdapter);
+			}
+
 			/* fgIsWakeupFromDeepSleep */
 			wlanSendDummyCmd(prAdapter, FALSE);
 
@@ -2176,6 +2181,31 @@ VOID halSerHifReset(IN P_ADAPTER_T prAdapter)
 	/* Clear interrupt status from Rx interrupt enhance mode */
 	prHifInfo->fgIsPendingInt = FALSE;
 	kalMemZero(prHifInfo->prSDIOCtrl, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
+}
+
+BOOLEAN halIsPendingTxDone(IN P_ADAPTER_T prAdapter)
+{
+	P_GL_HIF_INFO_T prHifInfo = &prAdapter->prGlueInfo->rHifInfo;
+	UINT_32 i;
+	BOOLEAN fgIsPendingTxDone = FALSE;
+
+	for (i = TC0_INDEX; i <= TC5_INDEX; i++) {
+		if (prHifInfo->au4PendingTxDoneCount[i]) {
+			fgIsPendingTxDone = TRUE;
+			break;
+		}
+	}
+
+	if (fgIsPendingTxDone)
+		DBGLOG(NIC, ERROR, "Missing Tx done[%u:%u:%u:%u:%u:%u]\n",
+			prHifInfo->au4PendingTxDoneCount[TC0_INDEX],
+			prHifInfo->au4PendingTxDoneCount[TC1_INDEX],
+			prHifInfo->au4PendingTxDoneCount[TC2_INDEX],
+			prHifInfo->au4PendingTxDoneCount[TC3_INDEX],
+			prHifInfo->au4PendingTxDoneCount[TC4_INDEX],
+			prHifInfo->au4PendingTxDoneCount[TC5_INDEX]);
+
+	return fgIsPendingTxDone;
 }
 
 VOID halPrintHifDbgInfo(IN P_ADAPTER_T prAdapter)
