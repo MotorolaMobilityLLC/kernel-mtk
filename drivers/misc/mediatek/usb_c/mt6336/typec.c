@@ -2088,10 +2088,11 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		queue_work(hba->pd_wq, &hba->wait_vbus_off_attached_snk);
 
 		#if USE_AUXADC
-		if (hba->is_kpoc) {
+		if (hba->is_kpoc && hba->charger_det_notify) {
 			typec_auxadc_low_register(hba);
 			typec_auxadc_set_thresholds(hba, SNK_VRPUSB_AUXADC_MIN_VAL, 0);
 			mt6336_enable_interrupt(TYPE_C_L_MIN, "TYPE_C_L_MIN");
+			pmic_enable_chrdet(0);
 		}
 		/*schedule_work(&hba->auxadc_voltage_mon_attached_snk);*/
 		#endif
