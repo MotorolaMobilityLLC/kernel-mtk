@@ -1565,7 +1565,7 @@ static int dram_probe(struct platform_device *pdev)
 {
 	unsigned int i;
 	struct resource *res;
-	void __iomem *base_temp[6];
+	void __iomem *base_temp[8];
 	struct device_node *node = NULL;
 
 	pr_debug("[DRAMC] module probe.\n");
