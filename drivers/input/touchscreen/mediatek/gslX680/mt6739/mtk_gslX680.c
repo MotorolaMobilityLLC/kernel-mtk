@@ -71,6 +71,7 @@ enum check_err {
 	esd_protected
 }; /* check mode err info  2,3,4 */
 
+#define GSL_LATE_INIT_CHIP
 #define TPD_PROC_DEBUG
 /* #define ADD_I2C_DEVICE_ANDROID_4_0 */
 /* #define HIGH_SPEED_I2C */
@@ -93,6 +94,12 @@ static int tpd_halt;
 static int touch_irq;
 static struct i2c_client *i2c_client;
 static struct task_struct *thread;
+
+#ifdef GSL_LATE_INIT_CHIP
+static struct delayed_work gsl_late_init_work;
+static struct workqueue_struct *gsl_late_init_workqueue;
+#define LATE_INIT_CYCLE_BY_REG_CHECK 10
+#endif
 
 #ifdef GSL_MONITOR
 static struct delayed_work gsl_monitor_work;
@@ -1412,6 +1419,32 @@ static void green_mode(struct i2c_client *client, int mode)
 	}
 }
 #endif
+
+#ifdef GSL_LATE_INIT_CHIP
+static void gsl_late_init_worker(struct work_struct *work)
+{
+	int result = 0;
+	int ret = 0;
+
+	GSL_LOGD("---------gsl_late_init_worker-------\n");
+	if (1) {
+		result = check_mode(i2c_client,
+			(power_status + interrupt_status + esd_scanning));
+		if (result)
+			init_chip(i2c_client);
+		GSL_LOGD("---result num is[%d] ", result);
+		GSL_LOGD("power_shutdowned[%d]", power_shutdowned);
+		GSL_LOGD("interrupt_fail[%d] ", interrupt_fail);
+		GSL_LOGD("esd_protected[%d]\n", esd_protected);
+	}
+	check_mem_data(i2c_client);
+	if (ret < 0) {
+		GSL_LOGE("Failed to init chip!\n");
+		return;
+	}
+}
+#endif
+
 static int tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int ret = 0;
@@ -1434,12 +1467,19 @@ static int tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	msleep(50);
 
 	i2c_client = client;
+#ifdef GSL_LATE_INIT_CHIP
+	GSL_LOGD("tpd_i2c_probe () : queue gsl_late_init_workqueue\n");
+	INIT_DELAYED_WORK(&gsl_late_init_work, gsl_late_init_worker);
+	gsl_late_init_workqueue = create_singlethread_workqueue("gsl_late_init_workqueue");
+	queue_delayed_work(gsl_late_init_workqueue, &gsl_late_init_work, LATE_INIT_CYCLE_BY_REG_CHECK);
+#else
 	ret = init_chip(i2c_client);
 	check_mem_data(i2c_client);
 	if (ret < 0) {
 		GSL_LOGE("Failed to init chip!\n");
 		return -1;
 	}
+#endif
 #ifdef GREEN_MODE
 	green_mode(i2c_client, MODE_ON);
 	reset_chip(i2c_client);
