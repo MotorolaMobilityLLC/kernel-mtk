@@ -421,7 +421,6 @@ void PMIC_LP_INIT_SETTING(void)
 #elif defined(CONFIG_MACH_MT6758)
 void PMIC_LP_INIT_SETTING(void)
 {
-#if 0
 	int ret = 0;
 
 /*--Suspend--*/
@@ -526,7 +525,6 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vio18_lp(SRCLKEN2, 1, HW_LP);
 	ret = pmic_ldo_vgp_lp(SW, 1, SW_OFF);
 	ret = pmic_ldo_vgp2_lp(SW, 1, SW_OFF);
-#endif
 }
 #else
 void PMIC_LP_INIT_SETTING(void)
