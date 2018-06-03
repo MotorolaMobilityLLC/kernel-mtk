@@ -1,0 +1,8 @@
+
+config MTK_KERNEL_GEOFENCE
+	bool "MTK KERNEL GEOFENCE CONFIG"
+	help
+	  GEOFENCE is a feature that uses fused location position (GPS, sensor, cell)
+	  to define geographical boundaries and report transitions (enter, exit)
+	  Kernel space geofence sensor driver can get ccci data and motion data
+	  to help to reach low power geofence.
