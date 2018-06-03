@@ -6256,7 +6256,7 @@ static void cmdq_core_dump_error_buffer(const struct TaskStruct *pTask, uint32_t
 			else
 				cmd_size = CMDQ_CMD_BUFFER_SIZE;
 			if (hwPC >= cmd_buffer->pVABase &&
-				hwPC < cmd_buffer->pVABase + (cmd_size / CMDQ_INST_SIZE)) {
+				hwPC < (u32 *)(((u8 *)cmd_buffer->pVABase) + cmd_size)) {
 				/* because hwPC points to "start" of the instruction, add offset 1 */
 				dump_size = (u32)(2 + hwPC - cmd_buffer->pVABase) * sizeof(u32);
 				dump = true;
