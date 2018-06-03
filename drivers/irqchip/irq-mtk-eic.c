@@ -2001,9 +2001,13 @@ int mt_eint_domain_xlate_onetwocell(struct irq_domain *d,
 				    unsigned long *out_hwirq,
 				unsigned int *out_type)
 {
-	if (WARN_ON(intsize < 1))
+	int irq;
+
+	irq = mt_gpio_to_irq(intspec[0]);
+	if (WARN_ON(intsize < 1) || irq < 0)
 		return -EINVAL;
-	*out_hwirq = mt_gpio_to_irq(intspec[0]) - EINT_IRQ_BASE;
+
+	*out_hwirq = irq - EINT_IRQ_BASE;
 	*out_type = (intsize > 1) ? intspec[1] : IRQ_TYPE_NONE;
 	EINT_FUNC.gpio[*out_hwirq] = intspec[0];
 
