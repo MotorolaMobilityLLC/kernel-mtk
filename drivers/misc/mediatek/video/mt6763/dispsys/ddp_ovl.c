@@ -154,11 +154,11 @@ int ovl_start(enum DISP_MODULE_ENUM module, void *handle)
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_INTEN,
 		     0x1E | REG_FLD_VAL(INTEN_FLD_ABNORMAL_SOF, 1) | REG_FLD_VAL(INTEN_FLD_START_INTEN, 1));
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_LAYER_SMI_ID_EN,
-			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0x1);
+			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0);
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_OUTPUT_NO_RND,
 			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0x0);
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_GCLAST_EN,
-			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0);
+			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 1);
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_OUTPUT_CLAMP,
 			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 1);
 	return 0;
@@ -1586,22 +1586,9 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 	unsigned long ovl_base = ovl_base_addr(module);
 	unsigned int regval;
 	int i, layer_num;
-	int is_large_resolution = 0;
 	unsigned int layer_greq_num;
-	unsigned int dst_w, dst_h;
 
 	layer_num = ovl_layer_num(module);
-
-	dst_w = primary_display_get_width();
-	dst_h = primary_display_get_height();
-
-	if (dst_w > 1260 && dst_h > 2240) {
-		/* WQHD */
-		is_large_resolution = 1;
-	} else {
-		/* FHD */
-		is_large_resolution = 0;
-	}
 
 	/* DISP_REG_OVL_RDMA0_MEM_GMC_SETTING */
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_ULTRA_THRESHOLD, 0x3ff);
@@ -1672,13 +1659,16 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_type
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_LAYER3_GREQ_URG_NUM, layer_greq_num);
 
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_ARG_GREQ_URG_TH, 0);
-	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_ARG_URG_BIAS, 0);
+	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_NUM_SHT_VAL, 0);
 	DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMA_GREQ_URG_NUM, regval);
 
 	/* DISP_REG_OVL_RDMA_ULTRA_SRC */
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_BUF_SRC, 0);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_SMI_SRC, 0);
-	regval |= REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_ROI_END_SRC, 0);
+	if (dst_mod_type == DST_MOD_REAL_TIME)
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_ROI_END_SRC, 0);
+	else
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_ROI_END_SRC, 2);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_RDMA_SRC, 1);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_ULTRA_BUF_SRC, 0);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_ULTRA_SMI_SRC, 0);
