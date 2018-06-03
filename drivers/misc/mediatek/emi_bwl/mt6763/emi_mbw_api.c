@@ -494,6 +494,7 @@ static inline void aee_simple_print(const char *msg, unsigned int val)
 
 void dump_emi_outstanding(void)
 {
+#if 0
 	/* CEN_EMI_BASE: 0x10219000 */
 	if (!CEN_EMI_BASE)
 		return;
@@ -505,8 +506,13 @@ void dump_emi_outstanding(void)
 	/* CHB_EMI_BASE: 0x10235000 */
 	if (!CHB_EMI_BASE)
 		return;
+#endif
 
 	/* INFRACFG_BASE: 0x10001000 */
+	if (!INFRA_AO_BASE)
+		return;
+
+	/* INFRACFG_BASE: 0x1020E000 */
 	if (!INFRA_AO_BASE)
 		return;
 
@@ -534,13 +540,11 @@ void dump_emi_outstanding(void)
 		(INFRA_AO_BASE + 0x284));
 	EMI_DBG_SIMPLE_R("[EMI] 0x10001d04 = 0x%x\n",
 		(INFRA_AO_BASE + 0xd04));
+
 	EMI_DBG_SIMPLE_R("[EMI] 0x10003500 = 0x%x\n",
 		(PERICFG_BASE + 0x500));
 	EMI_DBG_SIMPLE_R("[EMI] 0x10003504 = 0x%x\n",
 		(PERICFG_BASE + 0x504));
-
-	EMI_DBG_SIMPLE_RWR("[EMI] 0x102190e8 = 0x%x\n",
-		(CEN_EMI_BASE + 0x0e8), readl(CEN_EMI_BASE + 0x0e8) | 0x100);
 
 	EMI_DBG_SIMPLE_R("[EMI] 0x1020e000 = 0x%x\n",
 		(INFRACFG_BASE + 0x000));
@@ -560,6 +564,11 @@ void dump_emi_outstanding(void)
 		(INFRACFG_BASE + 0x028));
 	EMI_DBG_SIMPLE_R("[EMI] 0x1020e190 = 0x%x\n",
 		(INFRACFG_BASE + 0x190));
+
+#if 0
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x102190e8 = 0x%x\n",
+		(CEN_EMI_BASE + 0x0e8), readl(CEN_EMI_BASE + 0x0e8) | 0x100);
+
 	EMI_DBG_SIMPLE_RWR("[EMI] 0x1020e100 = 0x%x\n",
 		(INFRACFG_BASE + 0x100), 0x00000104 >> 3);
 	EMI_DBG_SIMPLE_RWR("[EMI] 0x1020e104 = 0x%x\n",
@@ -756,6 +765,7 @@ void dump_emi_outstanding(void)
 		(CHB_EMI_BASE + 0xa84));
 	EMI_DBG_SIMPLE_R("[EMI] 0x10235a84 = 0x%x\n",
 		(CHB_EMI_BASE + 0xa84));
+#endif
 }
 
 #define EMI_DBG_SIMPLE_RWR_MD(msg, addr, wval)	do {\
@@ -769,6 +779,7 @@ void dump_emi_outstanding(void)
 
 void dump_emi_outstanding_for_md(void)
 {
+#if 0
 	/* CEN_EMI_BASE: 0x10219000 */
 	if (!CEN_EMI_BASE)
 		return;
@@ -984,6 +995,7 @@ void dump_emi_outstanding_for_md(void)
 		(CHB_EMI_BASE + 0xa84));
 	EMI_DBG_SIMPLE_R_MD("[EMI] 0x10235a84 = 0x%x\n",
 		(CHB_EMI_BASE + 0xa84));
+#endif
 }
 
 void dump_emi_latency(void)
