@@ -2552,14 +2552,15 @@ static signed int read_hw_ocv(void *data)
 			} else {
 				_hw_ocv = _hw_ocv_35_pon;
 				_hw_ocv_src = FROM_6335_PON_ON;
-					if ((_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV) {
-					_prev_hw_ocv = _hw_ocv;
-					_prev_hw_ocv_src = _hw_ocv_src;
-					_hw_ocv = _sw_ocv;
-					_hw_ocv_src = FROM_SW_OCV;
-					set_hw_ocv_unreliable(true);
-					_flag_unreliable = 1;
-				}
+			}
+
+			if (abs(_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV) {
+				_prev_hw_ocv = _hw_ocv;
+				_prev_hw_ocv_src = _hw_ocv_src;
+				_hw_ocv = _sw_ocv;
+				_hw_ocv_src = FROM_SW_OCV;
+				set_hw_ocv_unreliable(true);
+				_flag_unreliable = 1;
 			}
 		} else {
 			/* fixme: swocv is workaround */
@@ -2568,7 +2569,7 @@ static signed int read_hw_ocv(void *data)
 			_hw_ocv = _sw_ocv;
 			_hw_ocv_src = FROM_SW_OCV;
 			if (MTK_CHR_EXIST != 1) {
-				if ((_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV) {
+				if (abs(_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV) {
 					_prev_hw_ocv = _hw_ocv;
 					_prev_hw_ocv_src = _hw_ocv_src;
 					_hw_ocv = _sw_ocv;
