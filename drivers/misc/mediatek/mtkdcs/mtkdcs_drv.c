@@ -1022,6 +1022,11 @@ static int __init mtkdcs_init(void)
 	mpu_start = get_max_DRAM_size() / 2 + PHYS_OFFSET;
 	mpu_end = get_max_DRAM_size() + PHYS_OFFSET;
 
+	/* setup MPU (default no protection) */
+	emi_mpu_set_region_protection((unsigned long long)mpu_start,
+			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
+			MPU_ACCESS_PERMISSON_NO_PROTECTION);
+
 	/* Start a kernel thread */
 	dcs_thread = kthread_run(dcs_thread_entry, NULL, "dcs_thread");
 	if (IS_ERR(dcs_thread)) {
