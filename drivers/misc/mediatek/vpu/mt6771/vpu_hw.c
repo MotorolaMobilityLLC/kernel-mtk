@@ -655,7 +655,6 @@ static int vpu_enable_regulator_and_clock(int core)
 	LOG_INF("[vpu_%d] result vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 	LOG_DBG("[vpu_%d] en_rc setmmdvfs(%d) done\n", core, opps.vcore.index);
 #endif
-	LOG_INF("[vpu_%d] result vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 #define ENABLE_VPU_MTCMOS(clk) \
 	{ \
 		if (clk != NULL) { \
@@ -1024,7 +1023,7 @@ static int vpu_service_routine(void *arg)
 			user->running = true; /* for flush request from queue, DL usage */
 			/* unlock for avoiding long time locking */
 			mutex_unlock(&vpu_dev->user_mutex);
-			#if 0
+			#if 1
 			if (req->power_param.opp_step == 0xFF) {
 				vcore_opp_index = 0xFF;
 				dsp_freq_index = 0xFF;
@@ -1039,10 +1038,11 @@ static int vpu_service_routine(void *arg)
 			LOG_DBG("[vpu_%d] run, opp(%d/%d/%d)\n", service_core, req->power_param.opp_step,
 				vcore_opp_index, dsp_freq_index);
 			vpu_opp_check(service_core, vcore_opp_index, dsp_freq_index);
-			LOG_INF("[vpu_%d] run, algo_id(%d/%d), opp(%d->%d, %d->%d)\n", service_core,
+			LOG_INF("[vpu_%d] run, algo_id(%d/%d), opp(%d,%d/%d->%d, %d->%d)\n", service_core,
 				(int)(req->algo_id[service_core]), vpu_service_cores[service_core].current_algo,
-				req->power_param.opp_step, opps.vcore.index,
-				req->power_param.freq_step, opps.dspcore[service_core].index);
+				req->power_param.opp_step, req->power_param.freq_step,
+				vcore_opp_index, opps.vcore.index,
+				dsp_freq_index, opps.dspcore[service_core].index);
 
 			/*  prevent the worker shutdown vpu first, and current enque use the same algo_id */
 			mutex_lock(&(vpu_service_cores[service_core].state_mutex));
