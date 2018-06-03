@@ -19,9 +19,7 @@
 #include "cmdq_core.h"
 
 struct TaskStruct;
-typedef uint64_t CMDQ_VARIABLE;
 
-#ifdef CMDQ_RECORD_V3
 enum CMDQ_STACK_TYPE_ENUM {
 	CMDQ_STACK_NULL = -1,
 	CMDQ_STACK_TYPE_IF = 0,
@@ -37,10 +35,9 @@ enum CMDQ_STACK_TYPE_ENUM {
 
 struct cmdq_stack_node {
 	uint32_t position;
-	CMDQ_STACK_TYPE_ENUM stack_type;
+	enum CMDQ_STACK_TYPE_ENUM stack_type;
 	struct cmdq_stack_node *next;
 };
-#endif				/* CMDQ_RECORD_V3 */
 
 struct cmdq_sub_function {
 	bool is_subfunction;		/* [IN]true for subfunction */
@@ -66,13 +63,11 @@ struct cmdqRecStruct {
 
 	/* For v3 CPR use */
 	struct cmdq_v3_replace_struct replace_instr;
-#ifdef CMDQ_RECORD_V3
 	uint8_t local_var_num;
 	struct cmdq_stack_node *if_stack_node;
 	struct cmdq_stack_node *while_stack_node;
 	/* sub-function */
-	cmdq_sub_function sub_function;
-#endif
+	struct cmdq_sub_function sub_function;
 
 	/* profile marker */
 #ifdef CMDQ_PROFILE_MARKER_SUPPORT
@@ -461,12 +456,34 @@ extern "C" {
 	int32_t cmdqRecStartLoopWithCallback(struct cmdqRecStruct *handle, CmdqInterruptCB loopCB,
 		unsigned long loopData);
 
+	s32 cmdq_task_start_loop_sram(struct cmdqRecStruct *handle, const char *SRAM_owner_name);
+
 /**
  * Unconditionally stops the loop thread.
  * Must call after cmdq_task_start_loop().
  */
 	int32_t cmdq_task_stop_loop(struct cmdqRecStruct *handle);
 	int32_t cmdqRecStopLoop(struct cmdqRecStruct *handle);
+
+/**
+ * Trigger CMDQ to copy data between DRAM and SRAM.
+ *
+ * Parameter:
+ *     pa_src: the copy to source of DRAM PA address
+ *     pa_dest: the copy from destination of DRAM PA address
+ *     sram_src: the copy to destination of SRAM address
+ *     sram_dest: the copy from source of SRAM address
+ *     size: the copy size
+ *
+ * Return:
+ *     0 for success; else the error code is returned
+ *
+ * Note:
+ *     This is an BLOCKING function. When the function is returned,
+ *     the SRAM move is done.
+ */
+	s32 cmdq_task_copy_to_sram(dma_addr_t pa_src, u32 sram_dest, size_t size);
+	s32 cmdq_task_copy_from_sram(dma_addr_t pa_dest, u32 sram_src, size_t size);
 
 /**
  * returns current count of instructions in given handle
@@ -609,7 +626,6 @@ extern "C" {
 	int32_t cmdqRecWriteAndReleaseResource(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM resourceEvent,
 		uint32_t addr, uint32_t value, uint32_t mask);
 
-#ifdef CMDQ_RECORD_V3
 /**
  * Initialize the logical variable
  * Parameter:
@@ -757,11 +773,15 @@ extern "C" {
  * Append commands for delay (micro second)
  * Parameter:
  *     handle: the command queue recorder handle
- *     delay_time: delay time
+ *     delay_time: delay time in us
  * Return:
  *     0 for success; else the error code is returned
  */
-	int32_t cmdq_op_delay_us(struct cmdqRecStruct *handle, CMDQ_VARIABLE delay_time);
+	s32 cmdq_op_delay_us(struct cmdqRecStruct *handle, u32 delay_time);
+	s32 cmdq_op_backup_delay_result(struct cmdqRecStruct *handle,
+		cmdqBackupSlotHandle h_backup_slot, uint32_t slot_start_index, uint32_t slot_count);
+	s32 cmdq_op_backup_CPR(struct cmdqRecStruct *handle, CMDQ_VARIABLE cpr,
+		cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index);
 
 /**
  * Append if statement command
@@ -775,7 +795,7 @@ extern "C" {
  *     0 for success; else the error code is returned
  */
 	int32_t cmdq_op_if(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
-				   CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c);
+				   enum CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c);
 
 /**
  * Append end if statement command
@@ -807,7 +827,7 @@ extern "C" {
  *     0 for success; else the error code is returned
  */
 	int32_t cmdq_op_else_if(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
-				   CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c);
+				   enum CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c);
 
 /**
  * Append while statement command
@@ -820,7 +840,7 @@ extern "C" {
  *     0 for success; else the error code is returned
  */
 	int32_t cmdq_op_while(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
-				   CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c);
+				   enum CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c);
 
 /**
  * Append continue statement command into while loop
@@ -907,7 +927,6 @@ extern "C" {
  */
 	int32_t cmdq_op_read_mem(struct cmdqRecStruct *handle, cmdqBackupSlotHandle h_backup_slot,
 				    uint32_t slot_index, CMDQ_VARIABLE *arg_out);
-#endif				/* CMDQ_RECORD_V3 */
 
 #ifdef __cplusplus
 }
