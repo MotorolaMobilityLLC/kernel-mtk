@@ -1116,3 +1116,6 @@ CONFIG_USB_CONFIGFS_MASS_STORAGE,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_RNDIS,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_SERIAL,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_IRIS_SUPPORT,PROJECT,yicheng.chen,new config in this commit Ie6ddb08406104d35a595ed9b83593cb455f91dca,,,,,,,,,,
+CONFIG_F2FS_FS,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,O,X,X,X,X
+CONFIG_F2FS_FS_SECURITY,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,O,X,X,X,X
+CONFIG_F2FS_FS_ENCRYPTION,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,O,X,X,X,X
