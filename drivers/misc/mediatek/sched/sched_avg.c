@@ -607,7 +607,8 @@ EXPORT_SYMBOL(sched_get_nr_overutil_avg);
  * @L_nr: task suggested in L.
  */
 #define MAX_CLUSTER_NR 3
-#define BIG_TASK_THRESHOLD 150
+#define BIG_TASK_BOOSTED_THRESHOLD 150
+#define BIG_TASK_GAME_THRESHOLD 80
 
 void sched_big_task_nr(int *L_nr, int *B_nr)
 {
@@ -626,14 +627,20 @@ void sched_big_task_nr(int *L_nr, int *B_nr)
 	*L_nr = (l_nr%100 > 25)?(l_nr/100+1):(l_nr/100);
 	*B_nr = (b_nr%100 > 25)?(b_nr/100+1):(b_nr/100);
 
-	if (!(*L_nr + *B_nr)) {
+	if (!(*B_nr)) {
 		/* To consider boosted util of stune */
 		int boosted;
+		int util;
 
-		sched_max_util_task(NULL, NULL, NULL, &boosted);
+		sched_max_util_task(NULL, NULL, &util, &boosted);
 		/* how to quantify it???? */
-		if (boosted > BIG_TASK_THRESHOLD)
+		if (boosted > BIG_TASK_BOOSTED_THRESHOLD)
 			*B_nr = 1;
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+		/* Game mode detection is supported in EAS power module */
+		else if (is_game_mode && util > BIG_TASK_GAME_THRESHOLD)
+			*B_nr = 1;
+#endif
 	}
 
 #if MET_SCHED_DEBUG
