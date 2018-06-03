@@ -118,7 +118,7 @@ static struct mtk_idle_prof idle_prof[NR_TYPES] = {
 #define GET_EVENT_RATIO_SPEED(x)    ((x)/(WINDOW_LEN_SPEED/1000))
 #define GET_EVENT_RATIO_NORMAL(x)   ((x)/(WINDOW_LEN_NORMAL/1000))
 
-idle_twam_t idle_twam;
+struct mtk_idle_twam idle_twam;
 
 #define idle_get_current_time_us(x) do {\
 		struct timeval t;\
@@ -136,7 +136,7 @@ static const char *idle_met_label[NR_TYPES] = {
 };
 #endif
 
-p_idle_twam_t mtk_idle_get_twam(void)
+struct mtk_idle_twam *mtk_idle_get_twam(void)
 {
 	return &idle_twam;
 }
