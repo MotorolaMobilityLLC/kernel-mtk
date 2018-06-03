@@ -372,7 +372,7 @@ bool disp_pwm_mux_is_osc(void)
 {
 	bool is_osc = false;
 
-	if (g_pwm_mux_clock_source == 0 || g_pwm_mux_clock_source == 1)
+	if (g_pwm_mux_clock_source == 2 || g_pwm_mux_clock_source == 3)
 		is_osc = true;
 
 	return is_osc;
