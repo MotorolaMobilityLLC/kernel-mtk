@@ -219,6 +219,7 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_generic *nop,
 			clk_rate = 0;
 
 		needs_vcc = of_property_read_bool(node, "vcc-supply");
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		nop->gpiod_reset = devm_gpiod_get_optional(dev, "reset",
 							   GPIOD_ASIS);
 		err = PTR_ERR_OR_ZERO(nop->gpiod_reset);
@@ -230,6 +231,9 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_generic *nop,
 			err = PTR_ERR_OR_ZERO(nop->gpiod_vbus);
 		}
 		MYDBG("ORG, err<%d>\n", err);
+#else
+		MYDBG("SKIP\n");
+#endif
 	} else if (pdata) {
 		type = pdata->type;
 		clk_rate = pdata->clk_rate;
