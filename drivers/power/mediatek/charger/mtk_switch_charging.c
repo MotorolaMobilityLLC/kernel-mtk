@@ -202,6 +202,7 @@ static int mtk_switch_charging_plug_in(struct charger_manager *info)
 
 static int mtk_switch_charging_plug_out(struct charger_manager *info)
 {
+	mtk_pe20_set_is_cable_out_occur(info, true);
 	charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
 	return 0;
 }
