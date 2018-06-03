@@ -1499,6 +1499,7 @@ bool SetChannels(unsigned int Memory_Interface, unsigned int channel)
 	case Soc_Aud_Digital_Block_MEM_AWB:
 	case Soc_Aud_Digital_Block_MEM_VUL:
 	case Soc_Aud_Digital_Block_MEM_AWB2:
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
 	case Soc_Aud_Digital_Block_MEM_VUL2:
 		Afe_Set_Reg(mMemIfChannels[Memory_Interface][0], bMono << mMemIfChannels[Memory_Interface][1],
 			mMemIfChannels[Memory_Interface][2] << mMemIfChannels[Memory_Interface][1]);
@@ -1523,6 +1524,7 @@ int SetMemifMonoSel(unsigned int Memory_Interface, bool mono_use_r_ch)
 	case Soc_Aud_Digital_Block_MEM_VUL:
 	case Soc_Aud_Digital_Block_MEM_AWB2:
 	case Soc_Aud_Digital_Block_MEM_VUL2:
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
 		Afe_Set_Reg(mMemIfMonoChSelect[Memory_Interface][0],
 			mono_use_r_ch << mMemIfMonoChSelect[Memory_Interface][1],
 			mMemIfMonoChSelect[Memory_Interface][2] << mMemIfMonoChSelect[Memory_Interface][1]);
