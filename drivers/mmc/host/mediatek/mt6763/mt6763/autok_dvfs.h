@@ -14,7 +14,7 @@
 #ifndef _AUTOK_DVFS_H_
 #define _AUTOK_DVFS_H_
 
-/* #define VOREFS_READY */
+#define VOREFS_READY
 /* #define SDIO_HQA */
 
 #include "autok.h"
@@ -30,16 +30,8 @@ enum AUTOK_VCORE {
 	AUTOK_VCORE_LEVEL3,
 	AUTOK_VCORE_NUM
 };
-#else
-enum dvfs_opp {
-	OPP_UNREQ = -1,
-	OPP_0 = 0,
-	OPP_1,
-	OPP_2,
-	OPP_3,
-	NUM_OPP,
-};
 
+#else
 #define KIR_AUTOK_EMMC	9
 #define KIR_AUTOK_SDIO	10
 #define KIR_AUTOK_SD	11
