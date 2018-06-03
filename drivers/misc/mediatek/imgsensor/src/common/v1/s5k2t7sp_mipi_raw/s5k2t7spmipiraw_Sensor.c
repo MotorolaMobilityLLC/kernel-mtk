@@ -319,8 +319,8 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	(u16) addr, (u32) para, 1,  imgsensor.i2c_write_id)
 #endif
 #define RWB_ID_OFFSET 0x0F73
-#define EEPROM_READ_ID  0xA0
-#define EEPROM_WRITE_ID   0xA1
+#define EEPROM_READ_ID  0xA4
+#define EEPROM_WRITE_ID   0xA5
 
 #if 0
 static kal_uint16 is_RWB_sensor(void)
@@ -2285,6 +2285,27 @@ static kal_uint32 get_sensor_temperature(void)
 	return temperature_convert;
 }
 
+#define FOUR_CELL_SIZE 3072
+static void read_4cell_from_eeprom(char *data)
+{
+	int i = 0;
+	int addr = 0x763;/*Start of 4 cell data*/
+	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
+
+	/*size = 3072 = 0xc00*/
+	data[0] = (FOUR_CELL_SIZE & 0xff);/*Low*/
+	data[1] = ((FOUR_CELL_SIZE >> 8) & 0xff);/*High*/
+
+	for (i = 2; i < (FOUR_CELL_SIZE + 2); i++) {
+		pu_send_cmd[0] = (char)(addr >> 8);
+		pu_send_cmd[1] = (char)(addr & 0xFF);
+		iReadRegI2C(pu_send_cmd, 2, &data[i], 1, EEPROM_READ_ID);
+		addr++;
+	}
+}
+
+
+
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				  UINT8 *feature_para, UINT32 *feature_para_len)
 {
@@ -2447,14 +2468,21 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 /* ihdr_write_shutter((UINT16)*feature_data,(UINT16)*(feature_data+1)); */
 		break;
 
-/*	case SENSOR_FEATURE_GET_PDAF_DATA:	//get cal data from eeprom
- *	pr_debug("SENSOR_FEATURE_GET_PDAF_DATA\n");
- *	s5k2t7_read_otp_pdaf_data((kal_uint16)(*feature_data),
- *				(BYTE *)(uintptr_t)(*(feature_data+1)),
- *					(kal_uint32)(*(feature_data+2)));
- *		pr_debug("SENSOR_FEATURE_GET_PDAF_DATA success\n");
- *		break;
- */
+	case SENSOR_FEATURE_GET_4CELL_DATA:/*get 4 cell data from eeprom*/
+	{
+		int type = (kal_uint16)(*feature_data);
+		char *data = (char *)(uintptr_t)(*(feature_data+1));
+
+		if (type == FOUR_CELL_CAL_TYPE_XTALK_CAL) {
+			read_4cell_from_eeprom(data);
+			pr_debug("read Cross Talk = %02x %02x %02x %02x %02x %02x\n",
+				(UINT16)data[0], (UINT16)data[1],
+				(UINT16)data[2], (UINT16)data[3],
+				(UINT16)data[4], (UINT16)data[5]);
+		}
+		break;
+	}
+
 
 		/******************** PDAF START >>> *********/
 		/*
