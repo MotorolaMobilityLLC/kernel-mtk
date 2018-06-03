@@ -533,7 +533,7 @@ int mtk_set_mt_gpufreq_target(int freq_id)
 
 	return ret;
 #else
-	pr_alert("MALI: GPU DVFS doesn't support\n");
+	/* pr_info("MALI: GPU DVFS doesn't support\n"); */
 #endif
 
 	return 0;
