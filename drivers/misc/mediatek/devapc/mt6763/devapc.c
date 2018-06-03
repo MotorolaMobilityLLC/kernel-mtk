@@ -49,8 +49,8 @@
 #endif
 
 /* 0 for early porting */
-#define DEVAPC_TURN_ON         1
-#define DEVAPC_USE_CCF         0
+#define DEVAPC_TURN_ON         0
+#define DEVAPC_USE_CCF         1
 
 /* Debug message event */
 #define DEVAPC_LOG_NONE        0x00000000
