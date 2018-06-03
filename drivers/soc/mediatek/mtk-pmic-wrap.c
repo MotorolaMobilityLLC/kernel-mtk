@@ -1014,10 +1014,16 @@ static int pwrap_init(struct pmic_wrapper *wrp)
 
 	if (wrp->rstc)
 		reset_control_reset(wrp->rstc);
+	else {
+		pwrap_writel(wrp, 1, PWRAP_SW_RST);
+		pwrap_writel(wrp, 0, PWRAP_SW_RST);
+	}
+
 	if (wrp->rstc_bridge)
 		reset_control_reset(wrp->rstc_bridge);
 
-	if (wrp->master->type == PWRAP_MT8173) {
+	if ((wrp->master->type == PWRAP_MT8173) ||
+		(wrp->master->type == PWRAP_MT8167)) {
 		/* Enable DCM */
 		pwrap_writel(wrp, 3, PWRAP_DCM_EN);
 		pwrap_writel(wrp, 0, PWRAP_DCM_DBC_PRD);
