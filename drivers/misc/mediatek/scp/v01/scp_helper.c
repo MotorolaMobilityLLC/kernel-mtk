@@ -78,7 +78,8 @@ unsigned int scp_recovery_flag[SCP_CORE_TOTAL];
  *  0: scp not in reset status
  *  1: scp in reset status
  */
-unsigned int scp_reset_status;
+atomic_t scp_reset_status = ATOMIC_INIT(RESET_STATUS_STOP);
+
 unsigned int scp_reset_by_cmd;
 struct scp_region_info_st *scp_region_info;
 struct completion scp_sys_reset_cp;
@@ -102,6 +103,9 @@ unsigned char *scp_recv_buff[SCP_CORE_TOTAL];
 
 static struct workqueue_struct *scp_workqueue;
 static struct workqueue_struct *scp_reset_workqueue;
+#if SCP_LOGGER_ENABLE
+static struct workqueue_struct *scp_logger_workqueue;
+#endif
 #if SCP_BOOT_TIME_OUT_MONITOR
 static struct timer_list scp_ready_timer[SCP_CORE_TOTAL];
 #endif
@@ -311,6 +315,13 @@ void scp_schedule_reset_work(struct scp_work_struct *scp_ws)
 }
 #endif
 
+#if SCP_LOGGER_ENABLE
+void scp_schedule_logger_work(struct scp_work_struct *scp_ws)
+{
+	queue_work(scp_logger_workqueue, &scp_ws->work);
+}
+#endif
+
 /*
  * callback function for work struct
  * notify apps to start their tasks or generate an exception according to flag
@@ -334,6 +345,10 @@ static void scp_A_notify_ws(struct work_struct *ws)
 #endif
 		writel(0xff, SCP_TO_SPM_REG); /* patch: clear SPM interrupt */
 		mutex_lock(&scp_A_notify_mutex);
+#if SCP_RECOVERY_SUPPORT
+		atomic_set(&scp_reset_status, RESET_STATUS_STOP);
+#endif
+		pr_debug("[SCP] notify blocking call\n");
 		blocking_notifier_call_chain(&scp_A_notifier_list, SCP_EVENT_READY, NULL);
 		mutex_unlock(&scp_A_notify_mutex);
 	}
@@ -343,7 +358,6 @@ static void scp_A_notify_ws(struct work_struct *ws)
 #if SCP_RECOVERY_SUPPORT
 	/*clear reset status and unlock wake lock*/
 	pr_debug("[SCP] clear scp reset flag and unlock\n");
-	scp_reset_status = RESET_STATUS_STOP;
 	wake_unlock(&scp_reset_lock);
 	spm_resource_req(SPM_RESOURCE_USER_SCP, SPM_RESOURCE_RELEASE);
 	/* register scp dvfs*/
@@ -377,6 +391,9 @@ static void scp_A_set_ready(void)
 	pr_debug("%s()\n", __func__);
 #if SCP_BOOT_TIME_OUT_MONITOR
 	del_timer(&scp_ready_timer[SCP_A_ID]);
+#endif
+#if SCP_RECOVERY_SUPPORT
+	atomic_set(&scp_reset_status, RESET_STATUS_STOP);
 #endif
 	scp_A_notify_work.flags = 1;
 	scp_schedule_work(&scp_A_notify_work);
@@ -1225,12 +1242,12 @@ unsigned int scp_set_reset_status(void)
 	unsigned long spin_flags;
 
 	spin_lock_irqsave(&scp_reset_spinlock, spin_flags);
-	if (scp_reset_status == RESET_STATUS_START) {
+	if (atomic_read(&scp_reset_status) == RESET_STATUS_START) {
 		spin_unlock_irqrestore(&scp_reset_spinlock, spin_flags);
 		return 1;
 	}
 	/* scp not in reset status, set it and return*/
-	scp_reset_status = RESET_STATUS_START;
+	atomic_set(&scp_reset_status, RESET_STATUS_START);
 	spin_unlock_irqrestore(&scp_reset_spinlock, spin_flags);
 	return 0;
 }
@@ -1588,6 +1605,8 @@ static int __init scp_init(void)
 #if SCP_LOGGER_ENABLE
 	/* scp logger initialise */
 	pr_debug("[SCP] logger init\n");
+	/*create wq for scp logger*/
+	scp_logger_workqueue = create_workqueue("SCP_LOG_WQ");
 	if (scp_logger_init(scp_get_reserve_mem_virt(SCP_A_LOGGER_MEM_ID),
 				scp_get_reserve_mem_size(SCP_A_LOGGER_MEM_ID)) == -1) {
 		pr_err("[SCP] scp_logger_init_fail\n");
@@ -1674,6 +1693,11 @@ static void __exit scp_exit(void)
 	flush_workqueue(scp_reset_workqueue);
 	destroy_workqueue(scp_reset_workqueue);
 	wake_lock_destroy(&scp_reset_lock);
+#endif
+
+#if SCP_LOGGER_ENABLE
+	flush_workqueue(scp_logger_workqueue);
+	destroy_workqueue(scp_logger_workqueue);
 #endif
 
 #if SCP_BOOT_TIME_OUT_MONITOR

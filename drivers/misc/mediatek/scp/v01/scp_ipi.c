@@ -205,7 +205,7 @@ enum scp_ipi_status scp_ipi_send(enum ipi_id id, void *buf,
 		return SCP_IPI_ERROR;
 	}
 #if SCP_RECOVERY_SUPPORT
-	if (scp_reset_status == RESET_STATUS_START) {
+	if (atomic_read(&scp_reset_status) == RESET_STATUS_START) {
 		scp_ipi_desc[id].error_count++;
 		return SCP_IPI_ERROR;
 	}

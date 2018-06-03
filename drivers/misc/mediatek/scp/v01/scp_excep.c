@@ -542,7 +542,7 @@ void scp_aed_reset_inplace(enum scp_excep_id type, enum scp_core_id id)
 	}
 
 #if SCP_RECOVERY_SUPPORT
-	if (scp_reset_status == RESET_STATUS_START) {
+	if (atomic_read(&scp_reset_status) == RESET_STATUS_START) {
 		/*complete scp ee, if scp reset by wdt or awake fail*/
 		pr_debug("[SCP]aed finished, complete it\n");
 		complete(&scp_sys_reset_cp);
