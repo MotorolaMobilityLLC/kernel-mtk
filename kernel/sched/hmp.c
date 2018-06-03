@@ -107,18 +107,6 @@ static void move_task(struct task_struct *p, struct lb_env *env)
 	check_preempt_curr(env->dst_rq, p, 0);
 }
 
-
-/*
- * Returns the current capacity of cpu after applying both
- * cpu and freq scaling.
- */
-unsigned long capacity_curr_of(int cpu)
-{
-	return cpu_rq(cpu)->cpu_capacity_orig *
-		arch_scale_freq_capacity(NULL, cpu)
-		>> SCHED_CAPACITY_SHIFT;
-}
-
 static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluster_cpus, int target)
 {
 #define HMP_RESOLUTION_SCALING (4)
