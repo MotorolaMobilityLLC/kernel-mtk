@@ -2005,6 +2005,7 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 
 	return 0;
 }
+EXPORT_SYMBOL(wmt_lib_get_fwinfor_from_emi);
 
 INT32 wmt_lib_merge_if_flag_ctrl(UINT32 enable)
 {
