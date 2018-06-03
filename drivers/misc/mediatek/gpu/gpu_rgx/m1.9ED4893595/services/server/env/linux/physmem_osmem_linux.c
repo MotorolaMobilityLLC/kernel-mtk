@@ -1237,7 +1237,12 @@ _GetGFPFlags(IMG_BOOL bZero,
 		/* Limit to 32 bit.
 		 * Achieved by NOT setting __GFP_HIGHMEM for 32 bit systems and
          * setting __GFP_DMA32 for 64 bit systems */
+#if defined(CONFIG_MACH_MT6739)
+		/* change to use __GFP_HIGHMEM since __GFP_DMA32 can access only 512 MB DRAM */
+		gfp_flags |= __GFP_HIGHMEM;
+#else
 		gfp_flags |= __GFP_DMA32;
+#endif
 	}
 	else if (psDev)
 	{
