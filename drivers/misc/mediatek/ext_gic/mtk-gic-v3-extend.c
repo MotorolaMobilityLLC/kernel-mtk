@@ -324,15 +324,14 @@ u32 mt_irq_get_en_hw(unsigned int hwirq)
 	u32 bit = 1 << (hwirq % 32);
 
 	if (hwirq >= 32) {
-		base = GIC_DIST_BASE + GIC_DIST_ENABLE_SET;
+		base = GIC_DIST_BASE;
 	} else {
 		gic_populate_rdist(&base);
 		base += SZ_64K;
-		base = GIC_DIST_BASE + GIC_DIST_ENABLE_SET;
 	}
 
-	return (readl_relaxed(base + (hwirq/32)*4) & bit) ?
-		1 : 0;
+	return (readl_relaxed(base + GIC_DIST_ENABLE_SET
+			+ (hwirq/32)*4) & bit) ? 1 : 0;
 }
 #endif
 
@@ -412,7 +411,7 @@ void mt_irq_mask_for_sleep(unsigned int irq)
 
 char *mt_irq_dump_status_buf(int irq, char *buf)
 {
-	int rc;
+	unsigned long rc;
 	unsigned int result;
 	char *ptr = buf;
 
@@ -424,10 +423,6 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 	ptr += sprintf(ptr, "[mt gic dump] irq = %d\n", irq);
 
 	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0, 0);
-	if (rc < 0) {
-		ptr += sprintf(ptr, "[mt gic dump] not allowed to dump!\n");
-		return ptr;
-	}
 
 	/* get mask */
 	result = rc & 0x1;
@@ -470,14 +465,12 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 
 int mt_irq_dump_cpu(int irq)
 {
-	int rc;
-	unsigned int result;
+	unsigned long rc;
+	unsigned long result;
 
 	irq = virq_to_hwirq(irq);
 
 	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0, 0);
-	if (rc < 0)
-		return rc;
 
 	/* get target cpu mask */
 	result = (rc >> 14) & 0xffff;
