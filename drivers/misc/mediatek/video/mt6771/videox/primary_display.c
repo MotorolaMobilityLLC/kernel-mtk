@@ -584,11 +584,14 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 		}
 	}
 
+/* Temporary remove function call due to improper parameter type */
+#if 0
 	dynamic_debug_msg_print((phys_addr_t)cfg->input_cfg[dst_layer_id].src_phy_addr,
 				cfg->input_cfg[dst_layer_id].tgt_width,
 				cfg->input_cfg[dst_layer_id].tgt_height,
 				cfg->input_cfg[dst_layer_id].src_pitch,
 				4);
+#endif
 	return 0;
 }
 
