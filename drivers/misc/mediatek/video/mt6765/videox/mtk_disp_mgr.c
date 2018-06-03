@@ -1007,7 +1007,7 @@ long _frame_config(unsigned long arg)
 		return -EFAULT;
 	}
 
-	DISPMSG("%s\n", __func__);
+	DISPDBG("%s\n", __func__);
 	frame_cfg->setter = SESSION_USER_HWC;
 
 	input_config_preprocess(frame_cfg);

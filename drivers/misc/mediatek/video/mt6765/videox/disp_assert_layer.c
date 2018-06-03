@@ -223,7 +223,7 @@ enum DAL_STATUS DAL_Clean(void)
 	static int dal_clean_cnt;
 	struct MFC_CONTEXT *ctxt = (struct MFC_CONTEXT *)mfc_handle;
 
-	DISPWARN("[MTKFB_DAL] DAL_Clean\n");
+	DISPMSG("[MTKFB_DAL] DAL_Clean\n");
 	if (mfc_handle == NULL)
 		return DAL_STATUS_NOT_READY;
 
@@ -241,7 +241,7 @@ enum DAL_STATUS DAL_Clean(void)
 	if (isAEEEnabled == 1) {
 		show_dal_layer(0);
 		/* DAL disable, switch UI layer to default layer 3 */
-		DISPWARN("[DDP] isAEEEnabled from 1 to 0, %d\n",
+		DISPMSG("[DDP] isAEEEnabled from 1 to 0, %d\n",
 		dal_clean_cnt++);
 		isAEEEnabled = 0;
 		/* restore UI layer to DEFAULT_UI_LAYER */
@@ -286,7 +286,7 @@ enum DAL_STATUS DAL_Printf(const char *fmt, ...)
 		MMPROFILE_FLAG_START, 0, 0);
 	DAL_LOCK();
 	if (isAEEEnabled == 0) {
-		DISPWARN(
+		DISPMSG(
 			"[DDP] isAEEEnabled from 0 to 1, ASSERT_LAYER=%d, dal_fb_pa 0x%lx\n",
 		       primary_display_get_option("ASSERT_LAYER"), dal_fb_pa);
 

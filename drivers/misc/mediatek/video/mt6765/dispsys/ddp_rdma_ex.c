@@ -627,7 +627,8 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	else
 		fill_rate = 960 * mmsysclk * 3 / 16; /* FIFO depth / us  */
 
-	/*do_div(fill_rate, 1000);*/
+	do_div(fill_rate, 100);
+	fill_rate = DIV_ROUND_UP((unsigned int)fill_rate, 10);
 
 	if (idx == 0) {
 		/* only for offset */
@@ -699,13 +700,16 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 				? (preultra_low_us * consume_rate_div) : temp;
 
 	/* SODI threshold */
-	sodi_threshold_low = (ultra_low_us * 10 + fifo_off_spm) * consume_rate;
-	sodi_threshold_low = DIV_ROUND_UP(sodi_threshold_low, 1000 * 10);
+	sodi_threshold_low = (ultra_low_us * 10 + fifo_off_spm)
+							* consume_rate_div;
+	sodi_threshold_low = DIV_ROUND_UP(sodi_threshold_low, 10);
 
-	temp_for_div = 5000 * (fill_rate - consume_rate);
+	temp_for_div = 5000 * (fill_rate - consume_rate_div);
 	WARN_ON((long long)temp_for_div < 0);
-	do_div(temp_for_div, 1000000);
-	temp = fifo_valid_size - temp_for_div;
+	do_div(temp_for_div, 100);
+	temp_for_div = DIV_ROUND_UP((unsigned int)temp_for_div, 10);
+	temp = (long long)fifo_valid_size - temp_for_div;
+
 	if ((long long)temp < 0)
 		sodi_threshold_high = preultra_high;
 	else
@@ -778,11 +782,11 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 		dvfs_ultra_low | (dvfs_ultra_high << 16));
 
 	/*DISP_REG_RDMA_LEAVE_DRS_SETTING*/
-	urgent_low = urgent_low_us * consume_rate;
-	urgent_low = DIV_ROUND_UP(urgent_low, 1000 * 10);
+	urgent_low = urgent_low_us * consume_rate_div;
+	urgent_low = DIV_ROUND_UP(urgent_low, 10);
 
-	urgent_high = urgent_high_us * consume_rate;
-	urgent_high = DIV_ROUND_UP(urgent_high, 1000 * 10);
+	urgent_high = urgent_high_us * consume_rate_div;
+	urgent_high = DIV_ROUND_UP(urgent_high, 10);
 
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
 		DISP_REG_RDMA_LEAVE_DRS_SETTING,
@@ -1065,6 +1069,16 @@ void rdma_dump_reg(enum DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_RDMA_STALL_CG_CON + offset));
 	DDPDUMP("(0x0b8)DISP_REG_RDMA_SHADOW_UPDATE=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_SHADOW_UPDATE + offset));
+	DDPDUMP("(0x0c0)R_DRAM_CON=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_DRAM_CON + offset));
+	DDPDUMP("(0x0d0)R_DVFS_SETTING_PRE=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_DVFS_SETTING_PRE + offset));
+	DDPDUMP("(0x0d4)R_DVFS_SETTING_ULTRA=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_DVFS_SETTING_ULTRA + offset));
+	DDPDUMP("(0x0d8)R_LEAVE_DRS_SETTING=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_LEAVE_DRS_SETTING + offset));
+	DDPDUMP("(0x0dc)R_ENTER_DRS_SETTING=0x%x\n",
+		DISP_REG_GET(DISP_REG_RDMA_ENTER_DRS_SETTING + offset));
 	DDPDUMP("(0x0e8)R_M_GMC_SET3=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_3 + offset));
 	DDPDUMP("(0x0f0)R_IN_PXL_CNT=0x%x\n",

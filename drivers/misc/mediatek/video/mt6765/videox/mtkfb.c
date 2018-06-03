@@ -2806,7 +2806,7 @@ static void mtkfb_early_suspend(void)
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return;
 
-	DISPWARN("[FB Driver] enter early_suspend\n");
+	DISPMSG("[FB Driver] enter early_suspend\n");
 
 	ret = primary_display_suspend();
 
@@ -2815,7 +2815,7 @@ static void mtkfb_early_suspend(void)
 		return;
 	}
 
-	DISPWARN("[FB Driver] leave early_suspend\n");
+	DISPMSG("[FB Driver] leave early_suspend\n");
 
 }
 
@@ -2826,7 +2826,7 @@ static void mtkfb_late_resume(void)
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return;
 
-	DISPWARN("[FB Driver] enter late_resume\n");
+	DISPMSG("[FB Driver] enter late_resume\n");
 
 	ret = primary_display_resume();
 
@@ -2835,7 +2835,7 @@ static void mtkfb_late_resume(void)
 		return;
 	}
 
-	DISPWARN("[FB Driver] leave late_resume\n");
+	DISPMSG("[FB Driver] leave late_resume\n");
 
 }
 
