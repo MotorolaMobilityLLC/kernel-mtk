@@ -641,7 +641,7 @@
 #define CFG_ENABLE_STATISTICS_BUFFERING         0
 #endif
 #define CFG_STATISTICS_VALID_CYCLE              2000
-#define CFG_LINK_QUALITY_VALID_PERIOD           5000
+#define CFG_LINK_QUALITY_VALID_PERIOD           1000
 
 /*------------------------------------------------------------------------------
  * Migration Option
