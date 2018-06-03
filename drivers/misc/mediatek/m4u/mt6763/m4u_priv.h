@@ -108,13 +108,16 @@ extern void smp_inner_dcache_flush_all(void);
 #endif
 
 #if !defined(CONFIG_MTK_CLKMGR)
-
+#if 0
 enum {
 	SMI_COMMON,
 	SMI_LARB0,
 	SMI_LARB1,
 	SMI_LARB2,
 	SMI_LARB3,
+	SMI_LARB3_2,
+	SMI_LARB4,
+	SMI_LARB5,
 	MTCMOS_VEN,
 	MTCMOS_VDE,
 	MTCMOS_ISP,
@@ -122,7 +125,7 @@ enum {
 	MTCMOS_CAM,
 	SMI_CLK_NUM,
 };
-
+#endif
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 struct m4u_device {
@@ -132,10 +135,10 @@ struct m4u_device {
 	struct dentry *debug_root;
 	unsigned long m4u_base[TOTAL_M4U_NUM];
 	unsigned int irq_num[TOTAL_M4U_NUM];
-#if !defined(CONFIG_MTK_CLKMGR)
+
 	struct clk *infra_m4u;
-	struct clk *smi_clk[SMI_CLK_NUM];
-#endif
+	/*struct clk *smi_clk[SMI_CLK_NUM];*/
+
 };
 
 typedef struct {
@@ -385,9 +388,6 @@ int m4u_config_port_array_tee(unsigned char *port_array);
 int m4u_sec_init(void);
 #endif
 
-#if !defined(CONFIG_MTK_CLKMGR)
-extern const char *smi_clk_name[];
-#endif
 
 
 #endif
