@@ -89,9 +89,15 @@
 #include <mt-plat/met_drv.h>
 #endif
 
+/*#define EP_STAGE*/
+#ifdef EP_STAGE
 #define EP_MARK_SMI
-#define EP_MARK_MMDVFS /* disable MMDVFS related for EP */
-#ifndef EP_MARK_MMDVFS
+#define DUMMY_INT    /*for EP if load dont need to use camera*/
+#define EP_NO_CLKMGR /* for clkmgr*/
+#endif
+
+#define EP_NO_PMQOS /* If PMQoS is not ready on EP stage */
+#ifndef EP_NO_PMQOS
 #include <mmdvfs_mgr.h>
 /* Use this qos request to control camera dynamic frequency change */
 struct mmdvfs_pm_qos_request isp_qos;
@@ -120,8 +126,7 @@ struct mmdvfs_pm_qos_request isp_qos;
 
 #define ISP_DEV_NAME           "camera-isp"
 #define SMI_LARB_MMU_CTL       (1)
-#define DUMMY_INT              (0)   /*for EP if load dont need to use camera*/
-#define EP_NO_CLKMGR           /* for clkmgr*/
+
 /*#define ENABLE_WAITIRQ_LOG*/       /* wait irq debug logs */
 /*#define ENABLE_STT_IRQ_LOG*/       /*show STT irq debug logs */
 /* Queue timestamp for deque. Update when non-drop frame @SOF */
@@ -347,7 +352,7 @@ const struct ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
 /* int number is got from kernel api */
 /* Must be the same name with that in device node. */
 const struct ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
-#if DUMMY_INT
+#ifdef DUMMY_INT
 	{ISP_Irq_CAM_A,     0,  "cam2-dummy"},
 	{ISP_Irq_CAM_B,     0,  "cam3-dummy"},
 	{ISP_Irq_DIP_A,     0,  "dip-dummy"},
@@ -3968,15 +3973,8 @@ static void ISP_EnableClock(bool En)
 			 * 2. IMG_CG_CLR (0x15000008) = 0xffffffff;
 			 */
 			setReg = 0xFFFFFFFF;
-			pr_info("louis smt + CAMSYS(0x%x) IMGSYS(0x%x)\n",
-				ISP_RD32(CAMSYS_REG_CG_CON),
-				ISP_RD32(IMGSYS_REG_CG_CON));
-
 			ISP_WR32(CAMSYS_REG_CG_CLR, setReg);
 			ISP_WR32(IMGSYS_REG_CG_CLR, setReg);
-			pr_info("louis smt - CAMSYS(0x%x) IMGSYS(0x%x)\n",
-				ISP_RD32(CAMSYS_REG_CG_CON),
-				ISP_RD32(IMGSYS_REG_CG_CON));
 #else /* Everest not support CLKMGR, only CCF!!*/
 			/*pr_info("MTK_LEGACY:enable clk");*/
 			enable_clock(MT_CG_DISP0_SMI_COMMON, "CAMERA");
@@ -6876,7 +6874,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	struct ion_handle *handle;
 	struct ion_handle *p_IonHnd;
 	#endif
-	#ifndef EP_MARK_MMDVFS
+	#ifndef EP_NO_PMQOS
 	struct ISP_CLK_INFO ispclks;
 	unsigned int lv = 0;
 	#endif
@@ -7878,8 +7876,14 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
+#ifdef EP_NO_PMQOS
 	case ISP_DFS_CTRL:
-		#ifndef EP_MARK_MMDVFS
+	case ISP_DFS_UPDATE:
+	case ISP_GET_SUPPORTED_ISP_CLOCKS:
+	case ISP_GET_CUR_ISP_CLOCK:
+		break;
+#else
+	case ISP_DFS_CTRL:
 		{
 			static unsigned int camsys_qos;
 			unsigned int dfs_ctrl;
@@ -7908,10 +7912,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 			}
 		}
-		#endif
 		break;
 	case ISP_DFS_UPDATE:
-		#ifndef EP_MARK_MMDVFS
 		{
 			unsigned int dfs_update;
 
@@ -7925,10 +7927,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 			}
 		}
-		#endif
 		break;
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
-		#ifndef EP_MARK_MMDVFS
 		/* To get how many clk levels this platform is supported */
 		ispclks.clklevelcnt = mmdvfs_qos_get_thres_count(&isp_qos,
 						MMDVFS_PM_QOS_SUB_SYS_CAMERA);
@@ -7951,10 +7951,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			pr_err("copy_to_user failed");
 			Ret = -EFAULT;
 		}
-		#endif
 		break;
 	case ISP_GET_CUR_ISP_CLOCK:
-		#ifndef EP_MARK_MMDVFS
 		{
 			unsigned int curclk;
 
@@ -7968,8 +7966,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 			}
 		}
-		#endif
 		break;
+#endif
 	case ISP_GET_VSYNC_CNT:
 		if (copy_from_user(&DebugFlag[0], (void *)Param,
 		    sizeof(unsigned int)) != 0) {
