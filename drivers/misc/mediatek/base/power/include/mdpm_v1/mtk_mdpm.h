@@ -14,7 +14,6 @@
 #ifndef __MTK_MDPM_H__
 #define __MTK_MDPM_H__
 
-#include "mtk_mdpm_common.h"
 #if defined(CONFIG_MACH_MT6765)
 #include "mt6765/mtk_mdpm_platform.h"
 #endif

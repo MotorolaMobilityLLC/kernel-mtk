@@ -287,7 +287,8 @@ struct mdpm mdpm_info[SCENARIO_NUM] = {
 			MAX_PW_STANDBY,
 			AVG_PW_STANDBY},
 		.dbm_power_func = {
-			NULL, NULL, NULL, NULL, NULL
+			get_md1_4g_dbm_power, /* 4G 0D0U  or sleep */
+			NULL, NULL, NULL, NULL
 		},
 	},
 
@@ -297,7 +298,7 @@ struct mdpm mdpm_info[SCENARIO_NUM] = {
 			AVG_PW_2G_CONNECT},
 		.dbm_power_func = {
 			get_md1_2g_dbm_power,
-			get_md1_3g_dbm_power,
+			get_md1_4g_dbm_power, /* 2G=1, 4G 0D0U or sleep */
 			NULL, NULL, NULL
 		},
 
@@ -331,7 +332,9 @@ struct mdpm mdpm_info[SCENARIO_NUM] = {
 			MAX_PW_3G_C2K_DATALINK,
 			AVG_PW_3G_C2K_DATALINK},
 		.dbm_power_func = {
-			NULL, NULL, NULL, NULL, NULL
+			get_md1_3g_dbm_power,
+			get_md1_c2k_dbm_power,
+			NULL, NULL, NULL
 		},
 	},
 
@@ -360,14 +363,16 @@ struct mdpm mdpm_info[SCENARIO_NUM] = {
 void md_power_meter_ut(void)
 {
 	int i = 0, j = 0, k = 0, l = 0;
+	int md_power = 0;
 
 	for (i = 0; i < POWER_CATEGORY_NUM; i++) {
 		if (mt_mdpm_debug)
-			pr_info("[UT] === POWERCATEGORY=%d ===\n", i);
+			pr_info("[UT] ====== POWERCATEGORY:%d ======\n", i);
 
 		for (j = 0; j <= 16; j++) {
 			if (mt_mdpm_debug)
-				pr_info("[UT] === MD SCENARIO=%d ===\n", j);
+				pr_info("[UT] ====== MD SCENARIO:%d ======\n",
+					j);
 
 			if (j == 0)
 				fake_share_reg = 0;
@@ -380,32 +385,44 @@ void md_power_meter_ut(void)
 
 			for (k = 0; k < SECTION_NUM; k++) {
 				if (mt_mdpm_debug)
-					pr_info("[UT] === DBM SECTION=%d ===\n",
+					pr_info("[UT] ====== DBM SECTION:%d ======\n",
 					k + 1);
 
 				/* test if share_mem not change */
-				get_md1_power(i);
+				md_power = get_md1_power(i);
+				if (mt_mdpm_debug)
+					pr_info("[UT] md_power:%d ====(dbm=0)\n",
+					md_power);
 
 				/* test section min value */
 				for (l = 0; l < SECTION_LEVLE_2G; l++)
 					fake_share_mem[l] |= 1 <<
 						section_level[k+1];
 
-				get_md1_power(i);
+				md_power = get_md1_power(i);
+				if (mt_mdpm_debug)
+					pr_info("[UT] md_power:%d ====\n",
+					md_power);
 
 				/* test section median value */
 				for (l = 0; l < SECTION_LEVLE_2G; l++)
 					fake_share_mem[l] |= 0x10 <<
 						section_level[k+1];
 
-				get_md1_power(i);
+				md_power = get_md1_power(i);
+				if (mt_mdpm_debug)
+					pr_info("[UT] md_power:%d ====\n",
+					md_power);
 
 				/* test section max value */
 				for (l = 0; l < SECTION_LEVLE_2G; l++)
 					fake_share_mem[l] |= SECTION_VALUE <<
 						section_level[k+1];
 
-				get_md1_power(i);
+				md_power = get_md1_power(i);
+				if (mt_mdpm_debug)
+					pr_info("[UT] md_power:%d ====\n",
+					md_power);
 			}
 		}
 	}
@@ -469,6 +486,18 @@ void init_md1_section_level(u32 *share_mem)
 	int section;
 
 	for (section = 1; section <= SECTION_NUM; section++) {
+		if (md1_section_level_2g[section] > SECTION_VALUE
+			|| md1_section_level_3g[section] > SECTION_VALUE
+			|| md1_section_level_3g[section] > SECTION_VALUE
+			|| md1_section_level_4g_upL1[section] > SECTION_VALUE
+			|| md1_section_level_4g_upL2[section] > SECTION_VALUE
+			|| md1_section_level_tdd[section] > SECTION_VALUE
+			|| md1_section_level_c2k[section] > SECTION_VALUE) {
+			pr_notice("[%s] md1_section_level too large !\n",
+			__func__);
+			WARN_ON_ONCE(1);
+		}
+
 		mem_2g |= md1_section_level_2g[section] <<
 			section_level[section];
 		mem_3g |= md1_section_level_3g[section] <<
@@ -554,12 +583,14 @@ int get_md1_dBm_power(unsigned int scenario, u32 *share_mem,
 	int i;
 	int dbm_power = 0, dbm_power_max = 0;
 
+#if 0
 	if (scenario == S_STANDBY) {
 		if (mt_mdpm_debug)
 			pr_info("MD1 is standby, dBm pw: 0\n");
 
 		return 0;
 	}
+#endif
 
 	if (share_mem == NULL) {
 		if (mt_mdpm_debug)
@@ -574,8 +605,11 @@ int get_md1_dBm_power(unsigned int scenario, u32 *share_mem,
 		usedBytes += sprintf(log_buffer + usedBytes, "0x%x ",
 			share_mem[i]);
 
-		if ((i + 1) % 10 == 0)
+		if ((i + 1) % 10 == 0) {
 			usedBytes = 0;
+			if (mt_mdpm_debug)
+				pr_info("%s\n", log_buffer);
+		}
 	}
 
 	for (i = 0; i < MAX_DBM_FUNC_NUM; i++) {
