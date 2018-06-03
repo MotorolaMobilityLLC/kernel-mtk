@@ -978,6 +978,9 @@ typedef struct _EMU_MAC_RATE_INFO_T {
 #define RXM_IS_QOS_DATA_FRAME(_u2FrameCtrl) \
 	(((_u2FrameCtrl & MASK_FRAME_TYPE) == MAC_FRAME_QOS_DATA) ? TRUE : FALSE)
 
+#define RXM_IS_DATA_FRAME(_u2FrameCtrl) \
+	(((_u2FrameCtrl & MASK_FC_TYPE) == MAC_FRAME_TYPE_DATA) ? TRUE : FALSE)
+
 /*******************************************************************************
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
