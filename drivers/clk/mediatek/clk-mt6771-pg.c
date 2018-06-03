@@ -20,6 +20,8 @@
 #include <linux/delay.h>
 #include <linux/clkdev.h>
 
+#include <linux/clk-provider.h>
+#include <linux/clk.h>
 #include "clk-mtk-v1.h"
 #include "clk-mt6771-pg.h"
 
@@ -3562,11 +3564,243 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 CLK_OF_DECLARE(mtk_pg_regs, "mediatek,scpsys", mt_scpsys_init);
 
+#if 0
+static const char * const *get_all_clk_names(size_t *num)
+{
+	static const char * const clks[] = {
+
+		/* CAM */
+		"camsys_larb6",
+		"camsys_dfp_vad",
+		"camsys_larb3",
+		"camsys_cam",
+		"camsys_camtg",
+		"camsys_seninf",
+		"camsys_camsv0",
+		"camsys_camsv1",
+		"camsys_camsv2",
+		"camsys_ccu",
+		/* IMG */
+		"imgsys_larb5",
+		"imgsys_larb2",
+		"imgsys_dip",
+		"imgsys_fdvt",
+		"imgsys_dpe",
+		"imgsys_rsc",
+		"imgsys_mfb",
+		"imgsys_wpe_a",
+		"imgsys_wpe_b",
+		"imgsys_owe",
+		/* MM */
+		"mm_smi_common",
+		"mm_smi_larb0",
+		"mm_smi_larb1",
+		"mm_gals_comm0",
+		"mm_gals_comm1",
+		"mm_gals_ccu2mm",
+		"mm_gals_ipu12mm",
+		"mm_gals_img2mm",
+		"mm_gals_cam2mm",
+		"mm_gals_ipu2mm",
+		"mm_mdp_dl_txck",
+		"mm_ipu_dl_txck",
+		"mm_mdp_rdma0",
+		"mm_mdp_rdma1",
+		"mm_mdp_rsz0",
+		"mm_mdp_rsz1",
+		"mm_mdp_tdshp",
+		"mm_mdp_wrot0",
+		"mm_mdp_wdma0",
+		"mm_fake_eng",
+		"mm_disp_ovl0",
+		"mm_disp_ovl0_2l",
+		"mm_disp_ovl1_2l",
+		"mm_disp_rdma0",
+		"mm_disp_rdma1",
+		"mm_disp_wdma0",
+		"mm_disp_color0",
+		"mm_disp_ccorr0",
+		"mm_disp_aal0",
+		"mm_disp_gamma0",
+		"mm_disp_dither0",
+		"mm_disp_split",
+		"mm_dsi0_mmck",
+		"mm_dsi0_ifck",
+		"mm_dpi_mmck",
+		"mm_dpi_ifck",
+		"mm_fake_eng2",
+		"mm_mdp_dl_rxck",
+		"mm_ipu_dl_rxck",
+		"mm_26m",
+		"mm_mmsys_r2y",
+		"mm_disp_rsz",
+		"mm_mdp_aal",
+		"mm_mdp_ccorr",
+		"mm_dbi_mmck",
+		"mm_dbi_ifck",
+		/* VENC */
+		"venc_larb",
+		"venc_venc",
+		"venc_jpgenc",
+		/* VDE */
+		"vdec_cken",
+		"vdec_larb1_cken",
+	};
+	*num = ARRAY_SIZE(clks);
+	return clks;
+}
+#endif
+
+static const char * const *get_cam_clk_names(size_t *num)
+{
+	static const char * const clks[] = {
+
+		/* CAM */
+		"camsys_larb6",
+		"camsys_dfp_vad",
+		"camsys_larb3",
+		"camsys_cam",
+		"camsys_camtg",
+		"camsys_seninf",
+		"camsys_camsv0",
+		"camsys_camsv1",
+		"camsys_camsv2",
+		"camsys_ccu",
+	};
+	*num = ARRAY_SIZE(clks);
+	return clks;
+}
+
+static const char * const *get_img_clk_names(size_t *num)
+{
+	static const char * const clks[] = {
+
+		/* IMG */
+		"imgsys_larb5",
+		"imgsys_larb2",
+		"imgsys_dip",
+		"imgsys_fdvt",
+		"imgsys_dpe",
+		"imgsys_rsc",
+		"imgsys_mfb",
+		"imgsys_wpe_a",
+		"imgsys_wpe_b",
+		"imgsys_owe",
+	};
+	*num = ARRAY_SIZE(clks);
+	return clks;
+}
+
+static const char * const *get_mm_clk_names(size_t *num)
+{
+	static const char * const clks[] = {
+
+		/* MM */
+		"mm_smi_common",
+		"mm_smi_larb0",
+		"mm_smi_larb1",
+		"mm_gals_comm0",
+		"mm_gals_comm1",
+		"mm_gals_ccu2mm",
+		"mm_gals_ipu12mm",
+		"mm_gals_img2mm",
+		"mm_gals_cam2mm",
+		"mm_gals_ipu2mm",
+		"mm_mdp_dl_txck",
+		"mm_ipu_dl_txck",
+		"mm_mdp_rdma0",
+		"mm_mdp_rdma1",
+		"mm_mdp_rsz0",
+		"mm_mdp_rsz1",
+		"mm_mdp_tdshp",
+		"mm_mdp_wrot0",
+		"mm_mdp_wdma0",
+		"mm_fake_eng",
+		"mm_disp_ovl0",
+		"mm_disp_ovl0_2l",
+		"mm_disp_ovl1_2l",
+		"mm_disp_rdma0",
+		"mm_disp_rdma1",
+		"mm_disp_wdma0",
+		"mm_disp_color0",
+		"mm_disp_ccorr0",
+		"mm_disp_aal0",
+		"mm_disp_gamma0",
+		"mm_disp_dither0",
+		"mm_disp_split",
+		"mm_dsi0_mmck",
+		"mm_dsi0_ifck",
+		"mm_dpi_mmck",
+		"mm_dpi_ifck",
+		"mm_fake_eng2",
+		"mm_mdp_dl_rxck",
+		"mm_ipu_dl_rxck",
+		"mm_26m",
+		"mm_mmsys_r2y",
+		"mm_disp_rsz",
+		"mm_mdp_aal",
+		"mm_mdp_ccorr",
+		"mm_dbi_mmck",
+		"mm_dbi_ifck",
+	};
+	*num = ARRAY_SIZE(clks);
+	return clks;
+}
+
+static const char * const *get_venc_clk_names(size_t *num)
+{
+	static const char * const clks[] = {
+
+		/* VENC */
+		"venc_larb",
+		"venc_venc",
+		"venc_jpgenc",
+	};
+	*num = ARRAY_SIZE(clks);
+	return clks;
+}
+
+static const char * const *get_vdec_clk_names(size_t *num)
+{
+	static const char * const clks[] = {
+
+		/* VDE */
+		"vdec_cken",
+		"vdec_larb1_cken",
+	};
+	*num = ARRAY_SIZE(clks);
+	return clks;
+}
+
+static void dump_cg_state(const char *clkname)
+{
+	struct clk *c = __clk_lookup(clkname);
+
+	if (IS_ERR_OR_NULL(c)) {
+		pr_notice("[%17s: NULL]\n", clkname);
+		return;
+	}
+
+	pr_notice("[%-17s: %3d]\n",
+		__clk_get_name(c),
+		__clk_get_enable_count(c));
+}
+
 void subsys_if_on(void)
 {
 	unsigned int sta = spm_read(PWR_STATUS);
 	unsigned int sta_s = spm_read(PWR_STATUS_2ND);
 	int ret = 0;
+	int i = 0;
+	size_t cam_num, img_num, mm_num, venc_num, vdec_num = 0;
+	/*size_t num, cam_num, img_num, mm_num, venc_num, vdec_num = 0;*/
+
+	/*const char * const *clks = get_all_clk_names(&num);*/
+	const char * const *cam_clks = get_cam_clk_names(&cam_num);
+	const char * const *img_clks = get_img_clk_names(&img_num);
+	const char * const *mm_clks = get_mm_clk_names(&mm_num);
+	const char * const *venc_clks = get_venc_clk_names(&venc_num);
+	const char * const *vdec_clks = get_vdec_clk_names(&vdec_num);
 
 	if ((sta & (1U << 0)) && (sta_s & (1U << 0)))
 		pr_notice("suspend warning: SYS_MD1 is on!!!\n");
@@ -3575,6 +3809,8 @@ void subsys_if_on(void)
 	if ((sta & (1U << 3)) && (sta_s & (1U << 3))) {
 		pr_notice("suspend warning: SYS_DIS is on!!!\n");
 		check_mm0_clk_sts();
+		for (i = 0; i < mm_num; i++)
+			dump_cg_state(mm_clks[i]);
 		ret++;
 	}
 	if ((sta & (1U << 4)) && (sta_s & (1U << 4))) {
@@ -3584,6 +3820,8 @@ void subsys_if_on(void)
 	if ((sta & (1U << 5)) && (sta_s & (1U << 5))) {
 		pr_notice("suspend warning: SYS_ISP is on!!!\n");
 		check_img_clk_sts();
+		for (i = 0; i < img_num; i++)
+			dump_cg_state(img_clks[i]);
 		ret++;
 	}
 	if ((sta & (1U << 7)) && (sta_s & (1U << 7))) {
@@ -3597,6 +3835,8 @@ void subsys_if_on(void)
 	if ((sta & (1U << 21)) && (sta_s & (1U << 21))) {
 		pr_notice("suspend warning: SYS_VEN is on!!!\n");
 		check_ven_clk_sts();
+		for (i = 0; i < venc_num; i++)
+			dump_cg_state(venc_clks[i]);
 		ret++;
 	}
 	if ((sta & (1U << 22)) && (sta_s & (1U << 22))) {
@@ -3612,6 +3852,8 @@ void subsys_if_on(void)
 	if ((sta & (1U << 25)) && (sta_s & (1U << 25))) {
 		pr_notice("suspend warning: SYS_CAM is on!!!\n");
 		check_cam_clk_sts();
+		for (i = 0; i < cam_num; i++)
+			dump_cg_state(cam_clks[i]);
 		ret++;
 	}
 	if ((sta & (1U << 26)) && (sta_s & (1U << 26))) {
@@ -3628,10 +3870,16 @@ void subsys_if_on(void)
 	}
 	if ((sta & (1U << 31)) && (sta_s & (1U << 31))) {
 		pr_notice("suspend warning: SYS_VDE is on!!!\n");
+		for (i = 0; i < vdec_num; i++)
+			dump_cg_state(vdec_clks[i]);
 		ret++;
 	}
 	if (ret > 0)
 		BUG_ON(1);
+#if 0
+	for (i = 0; i < num; i++)
+		dump_cg_state(clks[i]);
+#endif
 }
 
 #if 1 /*only use for suspend test*/
