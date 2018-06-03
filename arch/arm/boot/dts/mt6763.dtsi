@@ -1656,7 +1656,7 @@
 
 	audio_sram@11221000 {
 		compatible = "mediatek,audio_sram";
-		reg = <0 0x11221000 0 0x9000>;
+		reg = <0 0x11221000 0 0xc000>;
 	};
 
 	ufshci:ufshci@11270000 {
