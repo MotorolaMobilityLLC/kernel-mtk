@@ -70,6 +70,7 @@ struct pmic_adc_dbg_st {
 static unsigned int adc_dbg_addr[DBG_REG_SIZE];
 static struct pmic_adc_dbg_st pmic_adc_dbg[4];
 static unsigned char dbg_stamp;
+static unsigned char boot_time;/*--0: means boot time--*/
 
 /*
  * The vbif28 variable and function are defined in upmu_regulator
@@ -512,10 +513,12 @@ int mt6356_get_auxadc_value(u8 channel)
 				is_charging = gauge_get_current(&bat_cur);
 				if (is_charging == 0)
 					bat_cur = 0 - bat_cur;
-				pr_notice("[%s] ch_idx = %d, channel = %d, bat_cur = %d, reg_val = 0x%x, adc_result = %d\n",
+				if (boot_time)
+					pr_notice("[%s] ch_idx = %d, channel = %d, bat_cur = %d, reg_val = 0x%x, adc_result = %d\n",
 					__func__, channel, auxadc_channel->ch_num, bat_cur, reg_val, adc_result);
 			} else {
-				pr_notice("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n",
+				if (boot_time)
+					pr_notice("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n",
 					__func__, channel, auxadc_channel->ch_num, reg_val, adc_result);
 			}
 		}
@@ -597,7 +600,7 @@ void mt6356_auxadc_init(void)
 {
 	unsigned char i;
 
-	pr_info("%s\n", __func__);
+	PMICLOG("%s\n", __func__);
 	wake_lock_init(&pmic_auxadc_wake_lock,
 			WAKE_LOCK_SUSPEND, "MT6356 AuxADC wakelock");
 	mutex_init(&pmic_adc_mutex);
@@ -643,15 +646,19 @@ void mt6356_auxadc_init(void)
 			WARN_ON(1);
 		} else
 			g_pmic_pad_vbif28_vol = pmic_get_auxadc_value(AUXADC_LIST_VBIF);
+
+		pr_info("****[%s] VBIF28 = %d\n", __func__, pmic_get_vbif28_volt());
 	}
 	battmp = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
 	mts_adc = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
-	pr_info("****[%s] VBIF28 = %d, BAT TEMP = %d, MTS_ADC = 0x%x\n",
-		__func__, pmic_get_vbif28_volt(), battmp, mts_adc);
+	if (battmp < 500 || battmp > 800)
+		pr_info("****[%s] BAT TEMP = %d, MTS_ADC = 0x%x\n",
+			__func__, battmp, mts_adc);
 	mtk_idle_notifier_register(&pmic_auxadc_nb);
 	adc_dbg_init();
 	mts_thread_init();
-	pr_info("****[%s] DONE\n", __func__);
+	boot_time = 1;/*--means non boot time--*/
+	PMICLOG("****[%s] DONE\n", __func__);
 }
 EXPORT_SYMBOL(mt6356_auxadc_init);
 

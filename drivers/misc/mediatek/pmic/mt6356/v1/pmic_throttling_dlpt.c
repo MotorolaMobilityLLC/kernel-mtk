@@ -207,13 +207,13 @@ void low_battery_protect_init(void)
 	lbat_min_en_setting(1);
 	lbat_max_en_setting(0);
 
-	pr_notice("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 		PMIC_AUXADC_LBAT_VOLT_MAX_ADDR, upmu_get_reg_value(PMIC_AUXADC_LBAT_VOLT_MAX_ADDR),
 		PMIC_AUXADC_LBAT_VOLT_MIN_ADDR, upmu_get_reg_value(PMIC_AUXADC_LBAT_VOLT_MIN_ADDR),
 		PMIC_RG_INT_EN_BAT_L_ADDR, upmu_get_reg_value(PMIC_RG_INT_EN_BAT_L_ADDR)
 	    );
 
-	pr_notice("[low_battery_protect_init] %d mV, %d mV, %d mV\n",
+	PMICLOG("[low_battery_protect_init] %d mV, %d mV, %d mV\n",
 		POWER_INT0_VOLT, POWER_INT1_VOLT, POWER_INT2_VOLT);
 	PMICLOG("[low_battery_protect_init] Done\n");
 
@@ -325,13 +325,13 @@ void battery_oc_protect_init(void)
 	bat_oc_h_en_setting(0);
 	bat_oc_l_en_setting(1);
 
-	pr_notice("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 		PMIC_FG_CUR_HTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
 		PMIC_FG_CUR_LTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
 		PMIC_RG_INT_EN_FG_BAT0_H_ADDR, upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT0_H_ADDR)
 	    );
 
-	pr_notice("[battery_oc_protect_init] %d mA, %d mA\n",
+	PMICLOG("[battery_oc_protect_init] %d mA, %d mA\n",
 		POWER_BAT_OC_CURRENT_H, POWER_BAT_OC_CURRENT_L);
 	PMICLOG("[battery_oc_protect_init] Done\n");
 }
@@ -536,7 +536,7 @@ void bat_percent_notify_init(void)
 	if (IS_ERR(bat_percent_notify_thread))
 		pr_err("Failed to create bat_percent_notify_thread\n");
 	else
-		pr_notice("Create bat_percent_notify_thread : done\n");
+		PMICLOG("Create bat_percent_notify_thread : done\n");
 }
 #endif /* #ifdef BATTERY_PERCENT_PROTECT */
 
@@ -1441,7 +1441,7 @@ void dlpt_notify_init(void)
 	if (IS_ERR(dlpt_notify_thread))
 		pr_err("Failed to create dlpt_notify_thread\n");
 	else
-		pr_notice("Create dlpt_notify_thread : done\n");
+		PMICLOG("Create dlpt_notify_thread : done\n");
 
 	pmic_set_register_value(PMIC_RG_UVLO_VTHL, 0);
 
@@ -1478,7 +1478,7 @@ void dlpt_notify_init(void)
 		PMICLOG("Invalid value(%d)\n", POWER_UVLO_VOLT_LEVEL);
 		break;
 	}
-	pr_notice("POWER_UVLO_VOLT_LEVEL = %d, [0x%x] = 0x%x\n",
+	PMICLOG("POWER_UVLO_VOLT_LEVEL = %d, [0x%x] = 0x%x\n",
 	       POWER_UVLO_VOLT_LEVEL, PMIC_RG_UVLO_VTHL_ADDR,
 	       upmu_get_reg_value(PMIC_RG_UVLO_VTHL_ADDR));
 }
@@ -2206,19 +2206,19 @@ int pmic_throttling_dlpt_init(void)
 	np = of_find_node_by_path(path);
 	if (of_property_read_u32(np, "CAR_TUNE_VALUE", &val) == 0) {
 		fg_cust_data.car_tune_value = (int)val*10;
-		pr_notice("Get car_tune_value from DT: %d\n", fg_cust_data.car_tune_value);
+		PMICLOG("Get car_tune_value from DT: %d\n", fg_cust_data.car_tune_value);
 	} else {
 		fg_cust_data.car_tune_value = CAR_TUNE_VALUE*10;
 		pr_info("Get default car_tune_value= %d\n", fg_cust_data.car_tune_value);
 	}
 	if (of_property_read_u32(np, "R_FG_VALUE", &val) == 0) {
 		fg_cust_data.r_fg_value = (int)val*10;
-		pr_notice("Get r_fg_value from DT: %d\n", fg_cust_data.r_fg_value);
+		PMICLOG("Get r_fg_value from DT: %d\n", fg_cust_data.r_fg_value);
 	} else {
 		fg_cust_data.r_fg_value = R_FG_VALUE*10;
 		pr_info("Get default r_fg_value= %d\n", fg_cust_data.r_fg_value);
 	}
-	pr_notice("Get default UNIT_FGCURRENT= %d\n", UNIT_FGCURRENT);
+	PMICLOG("Get default UNIT_FGCURRENT= %d\n", UNIT_FGCURRENT);
 	#else
 	path = "/bus/BAT_METTER";
 	np = of_find_node_by_path(path);
