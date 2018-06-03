@@ -48,7 +48,7 @@ int extd_sw_mutex_unlock(struct mutex *m)
 
 int extd_msleep(unsigned int ms)
 {
-	EXT_DISP_LOG("sleep %dms\n", ms);
+	EXTDINFO("sleep %dms\n", ms);
 	msleep(ms);
 	return 0;
 }
@@ -117,6 +117,9 @@ char *_extd_ioctl_spy(unsigned int cmd)
 
 	case MTK_HDMI_FACTORY_MODE_ENABLE:
 		return "MTK_HDMI_FACTORY_MODE_ENABLE";
+
+	case MTK_HDMI_USBOTG_STATUS:
+		return "MTK_HDMI_USBOTG_STATUS";
 
 	case MTK_HDMI_WRITE_DEV:
 		return "MTK_HDMI_WRITE_DEV";

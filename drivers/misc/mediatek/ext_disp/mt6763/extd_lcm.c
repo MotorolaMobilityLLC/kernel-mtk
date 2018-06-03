@@ -128,7 +128,7 @@ void lcm_set_layer_num(int layer_num)
 
 int lcm_ioctl(unsigned int ioctl_cmd, int param1, int param2, unsigned long *params)
 {
-	/* HDMI_LOG("hdmi_ioctl ioctl_cmd:%d\n", ioctl_cmd); */
+	/* EXTDINFO("hdmi_ioctl ioctl_cmd:%d\n", ioctl_cmd); */
 	int ret = 0;
 
 	switch (ioctl_cmd) {
@@ -136,7 +136,7 @@ int lcm_ioctl(unsigned int ioctl_cmd, int param1, int param2, unsigned long *par
 		lcm_set_layer_num(param1);
 		break;
 	default:
-		LCM_LOG("lcm_ioctl unknown command\n");
+		EXTDERR("lcm_ioctl unknown command\n");
 		break;
 	}
 
@@ -148,6 +148,7 @@ int lcm_post_init(void)
 	struct disp_lcm_handle *plcm;
 	LCM_PARAMS *lcm_param;
 
+	EXTDFUNC();
 	memset((void *)&extd_interface_params, 0, sizeof(LCM_PARAMS));
 
 	extd_disp_get_interface((struct disp_lcm_handle **)&plcm);
@@ -158,6 +159,7 @@ int lcm_post_init(void)
 	}
 
 	Extd_DBG_Init();
+	EXTDINFO("lcm_post_init done\n");
 	return 0;
 }
 #endif

@@ -42,7 +42,7 @@ static struct _hdmi_factory_context *_get_context(void)
 	if (!is_context_inited) {
 		memset((void *)&g_context, 0, sizeof(struct _hdmi_factory_context));
 		is_context_inited = 1;
-		EXTD_FACTORY_LOG("[hdmi]_get_context set is_context_inited\n");
+		EXTDINFO("[hdmi]_get_context set is_context_inited\n");
 	}
 
 	return &g_context;
@@ -52,17 +52,17 @@ static struct _hdmi_factory_context *_get_context(void)
 
 static void hdmi_factory_callback(enum HDMI_STATE state)
 {
-	EXTD_FACTORY_LOG("[hdmi]hdmi_factory_callback, state: %d\n", state);
+	EXTDINFO("[hdmi]hdmi_factory_callback, state: %d\n", state);
 	pgc->hdmi_callback_returned = state;
 }
 
 int hdmi_factory_mode_init(void)
 {
-	EXTD_FACTORY_FUNC();
+	EXTDFUNC();
 
 	hdmi_tx_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
 	if (hdmi_tx_drv == NULL) {
-		EXTD_FACTORY_ERR("[hdmi]%s, hdmi_init fail, can not get hdmi driver handle\n", __func__);
+		EXTDERR("[hdmi]%s, hdmi_init fail, can not get hdmi driver handle\n", __func__);
 		return -1;
 	}
 	hdmi_tx_drv->register_callback(hdmi_factory_callback);
@@ -216,7 +216,7 @@ void hdmi_factory_dpi_parameters(int arg, int io_driving)
 	hdmi_factory_dpi_params.dispif_config.dpi.io_driving_current = (LCM_DRIVING_CURRENT) io_driving;
 	hdmi_factory_dpi_params.dispif_config.dpi.dpi_clock = dpi_clock;
 
-	EXTD_FACTORY_LOG("[hdmi]hdmi_factory_dpi_parameters:%d\n", arg);
+	EXTDMSG("[hdmi]hdmi_factory_dpi_parameters:%d\n", arg);
 }
 
 int hdmi_factory_mode_test(enum HDMI_FACTORY_TEST test_step, void *info)
@@ -229,7 +229,7 @@ int hdmi_factory_mode_test(enum HDMI_FACTORY_TEST test_step, void *info)
 	switch (test_step) {
 	case STEP1_CHIP_INIT:
 		{
-			EXTD_FACTORY_LOG("[hdmi] STEP1_CHIP_INIT\n");
+			EXTDMSG("[hdmi] STEP1_CHIP_INIT\n");
 			hdmi_tx_drv->power_on();
 			hdmi_tx_drv->audio_enable(1);
 			break;
@@ -238,9 +238,9 @@ int hdmi_factory_mode_test(enum HDMI_FACTORY_TEST test_step, void *info)
 		{
 			int hdmi_status = (int)pgc->hdmi_callback_returned;
 
-			EXTD_FACTORY_LOG("[hdmi] STEP2_JUDGE_CALLBACK: %d\n", pgc->hdmi_callback_returned);
+			EXTDMSG("[hdmi] STEP2_JUDGE_CALLBACK: %d\n", pgc->hdmi_callback_returned);
 			if (copy_to_user(info, &hdmi_status, sizeof(hdmi_status))) {
-				EXTD_FACTORY_ERR("[HDMI]copy_to_user failed! line:%d\n", __LINE__);
+				EXTDERR("[HDMI]copy_to_user failed! line:%d\n", __LINE__);
 				ret = -1;
 			}
 			break;
@@ -258,8 +258,8 @@ int hdmi_factory_mode_test(enum HDMI_FACTORY_TEST test_step, void *info)
 			int test_case = resolution;
 			int io_driving = ((long int)info & 0xFFFF);
 
-			EXTD_FACTORY_LOG("STEP3_START_DPI_AND_CONFIG +\n");
-			EXTD_FACTORY_LOG("resolution/test case:%d, driving:0x%x\n", resolution, io_driving);
+			EXTDMSG("STEP3_START_DPI_AND_CONFIG +\n");
+			EXTDMSG("resolution/test case:%d, driving:0x%x\n", resolution, io_driving);
 
 			if (test_type == 0) {	/* Factory mode */
 				hdmi_factory_dpi_parameters(resolution, io_driving);
@@ -271,9 +271,9 @@ int hdmi_factory_mode_test(enum HDMI_FACTORY_TEST test_step, void *info)
 				hdmi_factory_dpi_parameters(resolution, io_driving);
 				ext_disp_factory_test(0, (void *)&hdmi_factory_dpi_params);
 
-				EXTD_FACTORY_LOG("[hdmi] Not need video config for DPI HQA\n");
+				EXTDMSG("[hdmi] Not need video config for DPI HQA\n");
 			} else if (test_type == 2) {	/* DVT */
-				EXTD_FACTORY_LOG("[hdmi] Start DPI DVT Test\n");
+				EXTDMSG("[hdmi] Start DPI DVT Test\n");
 				dpi_dvt_ioctl(test_case);
 			}
 
@@ -283,7 +283,7 @@ int hdmi_factory_mode_test(enum HDMI_FACTORY_TEST test_step, void *info)
 		{
 			int test_type = ((long int)info >> 24);
 
-			EXTD_FACTORY_LOG("[hdmi] STEP4_DPI_STOP_AND_POWER_OFF\n");
+			EXTDMSG("[hdmi] STEP4_DPI_STOP_AND_POWER_OFF\n");
 			hdmi_tx_drv->power_off();
 			if (test_type == 0)
 				ext_disp_factory_test(1, (void *)&hdmi_factory_dpi_params);

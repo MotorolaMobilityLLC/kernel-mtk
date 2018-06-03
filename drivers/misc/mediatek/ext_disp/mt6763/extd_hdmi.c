@@ -16,7 +16,6 @@
 #include "extd_info.h"
 
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
-#define _tx_c_
 #include <linux/mm.h>
 #include <linux/init.h>
 #include <linux/fb.h>
@@ -39,11 +38,6 @@
 #include <linux/atomic.h>
 #include <linux/io.h>
 #include <linux/string.h>
-
-
-#ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
-#endif
 
 #include <asm/cacheflush.h>
 #include <asm/tlbflush.h>
@@ -77,11 +71,6 @@
 #ifdef CONFIG_MTK_SMARTBOOK_SUPPORT
 #include <linux/sbsuspend.h>
 #include "smartbook.h"
-#endif
-
-#ifdef I2C_DBG
-#include "tmbslHdmiTx_types.h"
-#include "tmbslTDA9989_local.h"
 #endif
 
 #ifdef MHL_DYNAMIC_VSYNC_OFFSET
@@ -174,7 +163,7 @@ void hdmi_force_on(int from_uart_drv)
 /*	if ((hdmi_force_to_on > 0) && (from_uart_drv > 0))
 *		return;
 
-	HDMI_LOG("hdmi_force_on %d force on %d, cnt %d\n", from_uart_drv, hdmi_force_to_on, mhl_forcr_on_cnt);
+	EXTDINFO("hdmi_force_on %d force on %d, cnt %d\n", from_uart_drv, hdmi_force_to_on, mhl_forcr_on_cnt);
 	mhl_forcr_on_cnt++;
 	hdmi_force_to_on = 1;
 	if (hdmi_drv && hdmi_drv->force_on)
@@ -191,7 +180,7 @@ void hdmi_force_resolution(int params)
 	else
 		hdmi_params->is_3d_support = 0;
 
-	HDMI_LOG("hdmi_force_resolution params:0x%lx, 3d:%d\n", force_reschange, hdmi_params->is_3d_support);
+	EXTDMSG("hdmi_force_resolution params:0x%lx, 3d:%d\n", force_reschange, hdmi_params->is_3d_support);
 }
 
 #ifdef MM_MHL_DVFS
@@ -210,7 +199,7 @@ static void hdmi_enable_dvfs(int enable)
 void hdmi_cable_fake_plug_in(void)
 {
 	SET_HDMI_FAKE_PLUG_IN();
-	HDMI_LOG("[HDMIFake]Cable Plug In\n");
+	EXTDMSG("[HDMIFake]Cable Plug In\n");
 
 	if (p->is_force_disable == false) {
 		if (IS_HDMI_STANDBY()) {
@@ -229,7 +218,7 @@ void hdmi_cable_fake_plug_in(void)
 void hdmi_cable_fake_plug_out(void)
 {
 	SET_HDMI_NOT_FAKE();
-	HDMI_LOG("[HDMIFake]Disable\n");
+	EXTDMSG("[HDMIFake]Disable\n");
 
 	if (p->is_force_disable == false) {
 		if (IS_HDMI_ON()) {
@@ -304,6 +293,7 @@ int hdmi_get_support_info(void)
 {
 	int value = 0, temp = 0;
 
+	EXTDFUNC();
 #ifdef USING_SCALE_ADJUSTMENT
 	value |= HDMI_SCALE_ADJUSTMENT_SUPPORT;
 #endif
@@ -321,7 +311,7 @@ int hdmi_get_support_info(void)
 	value |= temp;
 	value |= HDMI_FACTORY_MODE_NEW;
 
-	HDMI_LOG("value is 0x%x\n", value);
+	EXTDINFO("value is 0x%x\n", value);
 	return value;
 }
 
@@ -333,9 +323,9 @@ enum HDMI_VIDEO_OUTPUT_FORMAT vout)
 	if (p->is_mhl_video_on == true && (p->vout == vout))
 		return 0;
 
-	HDMI_LOG("hdmi_video_config video_on=%d\n", p->is_mhl_video_on);
+	EXTDMSG("hdmi_video_config video_on=%d\n", p->is_mhl_video_on);
 	if (IS_HDMI_NOT_ON()) {
-		HDMI_LOG("return in %d\n", __LINE__);
+		EXTDMSG("return in %d\n", __LINE__);
 		return 0;
 	}
 
@@ -355,7 +345,7 @@ enum HDMI_VIDEO_OUTPUT_FORMAT vout)
 		/* wait DCS switch to 4ch */
 		wait_event_interruptible(hdmi_video_config_wq, atomic_read(&dcs_4ch_switch_done_event));
 		atomic_set(&dcs_4ch_switch_done_event, 0);
-		HDMI_LOG("hdmi_video_config wait DCS switch to 4ch done\n");
+		EXTDMSG("hdmi_video_config wait DCS switch to 4ch done\n");
 	}
 #endif
 
@@ -375,49 +365,49 @@ int hdmi_audio_config(int format)
 	unsigned int sampleRate = (format & 0x70) >> 4;
 	unsigned int bitWidth = (format & 0x180) >> 7, sampleBit = 0;
 
-	HDMI_LOG("channel_count: %d, sampleRate: %d, bitWidth: %d\n", channel_count, sampleRate, bitWidth);
+	EXTDFUNC();
+	EXTDMSG("channel_count: %d, sampleRate: %d, bitWidth: %d\n", channel_count, sampleRate, bitWidth);
 
 	if (bitWidth == HDMI_MAX_BITWIDTH_16) {
 		sampleBit = 16;
-		HDMI_LOG("HDMI_MAX_BITWIDTH_16\n");
+		EXTDMSG("HDMI_MAX_BITWIDTH_16\n");
 	} else if (bitWidth == HDMI_MAX_BITWIDTH_24) {
 		sampleBit = 24;
-		HDMI_LOG("HDMI_MAX_BITWIDTH_24\n");
+		EXTDMSG("HDMI_MAX_BITWIDTH_24\n");
 	}
 
 	if (channel_count == HDMI_MAX_CHANNEL_2 && sampleRate == HDMI_MAX_SAMPLERATE_44) {
 		audio_format = HDMI_AUDIO_44K_2CH;
-		HDMI_LOG("AUDIO_44K_2CH\n");
+		EXTDMSG("AUDIO_44K_2CH\n");
 	} else if (channel_count == HDMI_MAX_CHANNEL_2 && sampleRate == HDMI_MAX_SAMPLERATE_48) {
 		audio_format = HDMI_AUDIO_48K_2CH;
-		HDMI_LOG("AUDIO_48K_2CH\n");
+		EXTDMSG("AUDIO_48K_2CH\n");
 	} else if (channel_count == HDMI_MAX_CHANNEL_8 && sampleRate == HDMI_MAX_SAMPLERATE_32) {
 		audio_format = HDMI_AUDIO_32K_8CH;
-		HDMI_LOG("AUDIO_32K_8CH\n");
+		EXTDMSG("AUDIO_32K_8CH\n");
 	} else if (channel_count == HDMI_MAX_CHANNEL_8 && sampleRate == HDMI_MAX_SAMPLERATE_44) {
 		audio_format = HDMI_AUDIO_44K_8CH;
-		HDMI_LOG("AUDIO_44K_8CH\n");
+		EXTDMSG("AUDIO_44K_8CH\n");
 	} else if (channel_count == HDMI_MAX_CHANNEL_8 && sampleRate == HDMI_MAX_SAMPLERATE_48) {
 		audio_format = HDMI_AUDIO_48K_8CH;
-		HDMI_LOG("AUDIO_48K_8CH\n");
+		EXTDMSG("AUDIO_48K_8CH\n");
 	} else if (channel_count == HDMI_MAX_CHANNEL_8 && sampleRate == HDMI_MAX_SAMPLERATE_96) {
 		audio_format = HDMI_AUDIO_96K_8CH;
-		HDMI_LOG("AUDIO_96K_8CH\n");
+		EXTDMSG("AUDIO_96K_8CH\n");
 	}
 
 	else if (channel_count == HDMI_MAX_CHANNEL_8 && sampleRate == HDMI_MAX_SAMPLERATE_192) {
 		audio_format = HDMI_AUDIO_192K_8CH;
-		HDMI_LOG("AUDIO_192K_8CH\n");
+		EXTDMSG("AUDIO_192K_8CH\n");
 	} else
-		HDMI_LOG("audio format is not supported\n");
+		EXTDERR("audio format is not supported\n");
 
 	if (!p->is_enabled) {
-		HDMI_LOG("return in %d\n", __LINE__);
+		EXTDMSG("return in %d\n", __LINE__);
 		return 0;
 	}
 
 	hdmi_drv->audio_config(audio_format, sampleBit);
-
 	return 0;
 }
 
@@ -448,7 +438,7 @@ static int hdmi_3d_config_kthread(void *data)
 		wait_event_interruptible(hdmi_3d_config_wq, atomic_read(&hdmi_3d_config_event));
 		atomic_set(&hdmi_3d_config_event, 0);
 
-		HDMI_LOG("video_on=%d, %d, %d\n", p->is_mhl_video_on, p->vin, p->vout);
+		EXTDMSG("video_on=%d, %d, %d\n", p->is_mhl_video_on, p->vin, p->vout);
 
 		if (p->vout >= HDMI_VOUT_FORMAT_2D)
 			hdmi_drv->video_config(vformat, p->vin, p->vout);
@@ -481,7 +471,7 @@ static int hdmi_dcs_switch_to_4ch_kthread(void *data)
 			msleep(100);
 			ret = dcs_get_dcs_status_lock(&dcs_channel, &dcs_status);
 			if (dcs_channel == 4 && dcs_status == 0) {
-				HDMI_LOG("dcs switch successfully! channel=%d\n", dcs_channel);
+				EXTDMSG("dcs switch successfully! channel=%d\n", dcs_channel);
 				dcs_get_dcs_status_unlock();
 				atomic_set(&dcs_4ch_switch_done_event, 1);
 				/* wake up hdmi_video_config_wq for video config */
@@ -491,7 +481,7 @@ static int hdmi_dcs_switch_to_4ch_kthread(void *data)
 			dcs_get_dcs_status_unlock();
 		}
 		/* dcs switch fail */
-		HDMI_ERR("ERROR!!!!! dsc switch fail!!! channel=%d dcs_status=%d ret=%d\n"
+		EXTDERR("ERROR!!!!! dsc switch fail!!! channel=%d dcs_status=%d ret=%d\n"
 					, dcs_channel, dcs_status, ret);
 
 Finish:
@@ -508,7 +498,7 @@ Finish:
 /* Will only be used in ioctl(MTK_HDMI_AUDIO_VIDEO_ENABLE) */
 static enum HDMI_STATUS hdmi_drv_init(void)
 {
-	HDMI_FUNC();
+	EXTDFUNC();
 
 	p->hdmi_width = hdmi_resolution_param_table[hdmi_params->init_config.vformat][0];
 	p->hdmi_height = hdmi_resolution_param_table[hdmi_params->init_config.vformat][1];
@@ -541,7 +531,7 @@ static enum HDMI_STATUS hdmi_drv_init(void)
 /* Will only be used in ioctl(MTK_HDMI_AUDIO_VIDEO_ENABLE) */
 static enum HDMI_STATUS hdmi_drv_deinit(void)
 {
-	HDMI_FUNC();
+	EXTDFUNC();
 
 	return HDMI_STATUS_OK;
 }
@@ -549,7 +539,7 @@ static enum HDMI_STATUS hdmi_drv_deinit(void)
 /* Reset HDMI Driver state */
 static void hdmi_state_reset(void)
 {
-	HDMI_FUNC();
+	EXTDFUNC();
 
 	if (hdmi_drv->get_state() == HDMI_STATE_ACTIVE) {
 		if (enable_ut != 1)
@@ -569,14 +559,14 @@ static void hdmi_state_reset(void)
 {
 	int session_id = 0;
 
-	HDMI_FUNC();
+	EXTDFUNC();
 	if (IS_HDMI_NOT_ON())
 		return;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_START, Plugout, 0);
 
 	if (down_interruptible(&hdmi_update_mutex)) {
-		HDMI_ERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
+		EXTDERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
 		return;
 	}
 
@@ -596,18 +586,20 @@ static void hdmi_state_reset(void)
 	up(&hdmi_update_mutex);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_END, Plugout, 0);
+	EXTDINFO("hdmi_suspend done\n");
 }
 
 /*static*/ void hdmi_resume(void)
 {
-	HDMI_LOG("p->state is %d,(0:off, 1:on, 2:standby)\n", atomic_read(&p->state));
+	EXTDFUNC();
+	EXTDMSG("p->state is %d,(0:off, 1:on, 2:standby)\n", atomic_read(&p->state));
 	if (IS_HDMI_NOT_STANDBY())
 		return;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_START, Plugin, 0);
 
 	if (down_interruptible(&hdmi_update_mutex)) {
-		HDMI_ERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
+		EXTDERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
 		return;
 	}
 
@@ -617,17 +609,18 @@ static void hdmi_state_reset(void)
 	up(&hdmi_update_mutex);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_END, Plugin, 0);
+	EXTDINFO("hdmi_resume done\n");
 }
 
 /*static*/ void hdmi_power_on(void)
 {
-	HDMI_FUNC();
+	EXTDFUNC();
 
 	if (IS_HDMI_NOT_OFF())
 		return;
 
 	if (down_interruptible(&hdmi_update_mutex)) {
-		HDMI_ERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
+		EXTDERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
 		return;
 	}
 
@@ -652,16 +645,17 @@ static void hdmi_state_reset(void)
 			hdmi_state_reset();
 		}
 	}
+	EXTDINFO("hdmi_power_on done\n");
 }
 
 /*static*/ void hdmi_power_off(void)
 {
-	HDMI_FUNC();
+	EXTDFUNC();
 	if (IS_HDMI_OFF())
 		return;
 
 	if (down_interruptible(&hdmi_update_mutex)) {
-		HDMI_ERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
+		EXTDERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
 		return;
 	}
 
@@ -678,11 +672,12 @@ static void hdmi_state_reset(void)
 	/* Nortify DCS can switch to 2ch */
 	dcs_exit_perf(DCS_KICKER_MHL);
 #endif
+	EXTDINFO("hdmi_power_off done\n");
 }
 
 static void hdmi_resolution_setting(int arg)
 {
-	HDMI_FUNC();
+	EXTDFUNC();
 
 	extd_dpi_params.dispif_config.dpi.dsc_enable = 0;
 	if (hdmi_drv && hdmi_drv->get_params) {
@@ -795,7 +790,7 @@ static void hdmi_resolution_setting(int arg)
 	}
 
 	ext_disp_set_lcm_param(&(extd_dpi_params.dispif_config));
-	HDMI_LOG("hdmi_resolution_setting_res (%d)\n", arg);
+	EXTDMSG("hdmi_resolution_setting_res (%d)\n", arg);
 }
 
 int hdmi_recompute_bg(int src_w, int src_h)
@@ -808,7 +803,7 @@ int hdmi_recompute_bg(int src_w, int src_h)
 /* HDMI Driver state callback function */
 void hdmi_state_callback(enum HDMI_STATE state)
 {
-	HDMI_LOG("[hdmi]%s, state = %d\n", __func__, state);
+	EXTDMSG("[hdmi]%s, state = %d\n", __func__, state);
 	if ((p->is_force_disable == true) || (IS_HDMI_FAKE_PLUG_IN()))
 		return;
 
@@ -827,13 +822,13 @@ void hdmi_state_callback(enum HDMI_STATE state)
 			if (hdmi_params->cabletype == MHL_SMB_CABLE)
 				sb_plug_out();
 #endif
-			HDMI_LOG("[hdmi]%s, state = %d out!\n", __func__, state);
+			EXTDMSG("[hdmi]%s, state = %d out!\n", __func__, state);
 			break;
 		}
 	case HDMI_STATE_ACTIVE:
 		{
 			if (IS_HDMI_ON()) {
-				HDMI_LOG("[hdmi]%s, already on(%d) !\n", __func__, atomic_read(&p->state));
+				EXTDMSG("[hdmi]%s, already on(%d) !\n", __func__, atomic_read(&p->state));
 				break;
 			}
 
@@ -852,15 +847,16 @@ void hdmi_state_callback(enum HDMI_STATE state)
 #ifdef MHL_DYNAMIC_VSYNC_OFFSET
 			ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL_EVENT, true);
 #endif
-			HDMI_LOG("[hdmi]%s, state = %d out!\n", __func__, state);
+			EXTDMSG("[hdmi]%s, state = %d out!\n", __func__, state);
 			break;
 		}
 	default:
 		{
-			HDMI_LOG("[hdmi]%s, state not support\n", __func__);
+			EXTDMSG("[hdmi]%s, state not support\n", __func__);
 			break;
 		}
 	}
+	EXTDINFO("hdmi_state_callback done\n");
 }
 
 void hdmi_set_layer_num(int layer_num)
@@ -875,10 +871,10 @@ void hdmi_set_layer_num(int layer_num)
 
 int hdmi_enable(int enable)
 {
-	HDMI_FUNC();
+	EXTDFUNC();
 	if (enable) {
 		if (p->is_enabled) {
-			HDMI_LOG("[hdmi] hdmi already enable, %s()\n", __func__);
+			EXTDMSG("[hdmi] hdmi already enable, %s()\n", __func__);
 			return 0;
 		}
 
@@ -902,15 +898,15 @@ int hdmi_enable(int enable)
 		if (hdmi_drv->exit)
 			hdmi_drv->exit();
 	}
-
+	EXTDINFO("hdmi_enable done\n");
 	return 0;
 }
 
 int hdmi_power_enable(int enable)
 {
-	HDMI_FUNC();
+	EXTDFUNC();
 	if (!p->is_enabled) {
-		HDMI_LOG("return in %d\n", __LINE__);
+		EXTDMSG("return in %d\n", __LINE__);
 		return 0;
 	}
 
@@ -920,14 +916,14 @@ int hdmi_power_enable(int enable)
 		hdmi_power_off();
 		switch_set_state(&hdmi_switch_data, HDMI_STATE_NO_DEVICE);
 	}
-
+	EXTDINFO("hdmi_power_enable done\n");
 	return 0;
 }
 
 int hdmi_set_audio_enable(int enable)
 {
 	if (!p->is_enabled) {
-		HDMI_LOG("return in %d\n", __LINE__);
+		EXTDMSG("return in %d\n", __LINE__);
 		return 0;
 	}
 
@@ -941,10 +937,11 @@ int hdmi_set_resolution(int res)
 	int i = 0;
 	int session_id = 0;
 
-	HDMI_LOG("video resolution configuration, res:%d, old res:%ld, video_on:%d\n",
+	EXTDFUNC();
+	EXTDMSG("video resolution configuration, res:%d, old res:%ld, video_on:%d\n",
 		res, hdmi_reschange, p->is_mhl_video_on);
 	if (!p->is_enabled) {
-		HDMI_LOG("return in %d\n", __LINE__);
+		EXTDMSG("return in %d\n", __LINE__);
 		return 0;
 	}
 
@@ -953,7 +950,7 @@ int hdmi_set_resolution(int res)
 		res = force_reschange & 0xff;
 
 	if (hdmi_reschange == res) {
-		HDMI_LOG("hdmi_reschange=%ld\n", hdmi_reschange);
+		EXTDMSG("hdmi_reschange=%ld\n", hdmi_reschange);
 		return 0;
 	}
 
@@ -962,7 +959,7 @@ int hdmi_set_resolution(int res)
 		/* Notify the DCS switch to 4ch */
 		dcs_enter_perf(DCS_KICKER_MHL);
 		atomic_set(&dcs_4ch_switch_event, 1);
-		HDMI_LOG("Notify the DCS switch to 4ch, and wake up hdmi_dcs_switch_to_4ch_kthread\n");
+		EXTDMSG("Notify the DCS switch to 4ch, and wake up hdmi_dcs_switch_to_4ch_kthread\n");
 		/* wake up dcs_switch_to_4ch_kthread for wait switch done */
 		wake_up_interruptible(&dcs_switch_to_4ch_wq);
 	}
@@ -974,7 +971,7 @@ int hdmi_set_resolution(int res)
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_START, ResChange, res);
 
 	if (down_interruptible(&hdmi_update_mutex)) {
-		HDMI_LOG("[HDMI] can't get semaphore in\n");
+		EXTDERR("[HDMI] can't get semaphore in\n");
 		return 0;
 	}
 
@@ -1008,6 +1005,7 @@ int hdmi_set_resolution(int res)
 	hdmi_factory_mode_test(STEP3_START_DPI_AND_CONFIG,NULL);
 	hdmi_drv->video_config(HDMI_VIDEO_1280x720p_60Hz, HDMI_VIN_FORMAT_RGB888, HDMI_VOUT_FORMAT_RGB888);
 */
+	EXTDINFO("hdmi_set_resolution done\n");
 	return 0;
 }
 
@@ -1020,7 +1018,7 @@ int hdmi_get_dev_info(int is_sf, void *info)
 		struct mtk_dispif_info hdmi_info;
 
 		if (!info) {
-			HDMI_LOG("ioctl pointer is NULL\n");
+			EXTDERR("ioctl pointer is NULL\n");
 			return -EFAULT;
 		}
 
@@ -1029,12 +1027,9 @@ int hdmi_get_dev_info(int is_sf, void *info)
 
 		if (copy_from_user(&displayid, info, sizeof(displayid))) {
 			mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE, Devinfo, 0);
-			HDMI_ERR(": copy_from_user failed! line:%d\n", __LINE__);
+			EXTDERR(": copy_from_user failed! line:%d\n", __LINE__);
 			return -EAGAIN;
 		}
-
-		if (displayid != MTKFB_DISPIF_HDMI)
-			HDMI_LOG(": invalid display id:%d\n", displayid);
 
 		memset(&hdmi_info, 0, sizeof(hdmi_info));
 		hdmi_info.displayFormat = DISPIF_FORMAT_RGB888;
@@ -1064,13 +1059,13 @@ int hdmi_get_dev_info(int is_sf, void *info)
 
 		if (copy_to_user(info, &hdmi_info, sizeof(hdmi_info))) {
 			mmprofile_log_ex(ddp_mmp_get_events()->Extd_ErrorInfo, MMPROFILE_FLAG_PULSE, Devinfo, 1);
-			HDMI_ERR("copy_to_user failed! line:%d\n", __LINE__);
+			EXTDERR("copy_to_user failed! line:%d\n", __LINE__);
 			ret = -EFAULT;
 		}
 
 		mmprofile_log_ex(ddp_mmp_get_events()->Extd_DevInfo, MMPROFILE_FLAG_END,
 				 p->is_enabled, hdmi_info.displayType);
-		HDMI_LOG("DEV_INFO configuration get displayType-%d\n", hdmi_info.displayType);
+		EXTDINFO("DEV_INFO configuration get displayType-%d\n", hdmi_info.displayType);
 	} else if (is_sf == SF_GET_INFO) {
 		struct disp_session_info *dispif_info = (struct disp_session_info *) info;
 
@@ -1130,13 +1125,14 @@ int hdmi_get_capability(void *info)
 	int ret = 0;
 	int query_type = 0;
 
+	EXTDFUNC();
 	query_type = hdmi_get_support_info();
 
 	if (copy_to_user(info, &query_type, sizeof(query_type))) {
-		HDMI_LOG(": copy_to_user error! line:%d\n", __LINE__);
+		EXTDERR(": copy_to_user error! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
-	HDMI_LOG("[hdmi][HDMI] query_type  done %x\n", query_type);
+	EXTDMSG("[hdmi][HDMI] query_type  done %x\n", query_type);
 
 	return ret;
 }
@@ -1146,10 +1142,11 @@ int hdmi_get_edid(void *edid_info)
 	int ret = 0;
 	struct _HDMI_EDID_T pv_get_info;
 
+	EXTDFUNC();
 	memset(&pv_get_info, 0, sizeof(pv_get_info));
 
 	if (!edid_info) {
-		HDMI_LOG("ioctl pointer is NULL\n");
+		EXTDERR("ioctl pointer is NULL\n");
 		return -EFAULT;
 	}
 
@@ -1159,6 +1156,8 @@ int hdmi_get_edid(void *edid_info)
 #ifdef MHL_RESOLUTION_LIMIT_720P_60
 		pv_get_info.ui4_pal_resolution &= (~SINK_1080P60);
 		pv_get_info.ui4_pal_resolution &= (~SINK_1080P30);
+		pv_get_info.ui4_pal_resolution &= (~SINK_2160p30);
+		pv_get_info.ui4_pal_resolution &= (~SINK_2160p24);
 #endif
 
 #ifdef MHL_RESOLUTION_LIMIT_1080P_30
@@ -1174,10 +1173,10 @@ int hdmi_get_edid(void *edid_info)
 	}
 
 	if (copy_to_user(edid_info, &pv_get_info, sizeof(pv_get_info))) {
-		HDMI_LOG("copy_to_user failed! line:%d\n", __LINE__);
+		EXTDERR("copy_to_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
-
+	EXTDINFO("hdmi_get_edid done\n");
 	return ret;
 }
 
@@ -1199,9 +1198,9 @@ int hdmi_get_device_type(void)
 
 int hdmi_ioctl(unsigned int ioctl_cmd, int param1, int param2, unsigned long *params)
 {
-	/* HDMI_LOG("hdmi_ioctl ioctl_cmd:%d\n", ioctl_cmd); */
 	int ret = 0;
 
+	/* EXTDINFO("hdmi_ioctl ioctl_cmd:%d\n", ioctl_cmd); */
 	switch (ioctl_cmd) {
 	case RECOMPUTE_BG_CMD:
 		ret = hdmi_recompute_bg(param1, param2);
@@ -1213,7 +1212,7 @@ int hdmi_ioctl(unsigned int ioctl_cmd, int param1, int param2, unsigned long *pa
 		hdmi_set_layer_num(param1);
 		break;
 	default:
-		HDMI_LOG("hdmi_ioctl unknown command\n");
+		EXTDERR("hdmi_ioctl unknown command\n");
 		break;
 	}
 
@@ -1237,7 +1236,7 @@ int hdmi_init(void)
 	const char interface_type[10];
 	const char *type = interface_type;
 
-	HDMI_LOG("hdmi_init start\n");
+	EXTDMSG("hdmi_init start\n");
 	/* for support hdmi hotplug, inform AP the event */
 	hdmi_switch_data.name = "hdmi";
 	hdmi_switch_data.index = 0;
@@ -1245,7 +1244,7 @@ int hdmi_init(void)
 	ret = switch_dev_register(&hdmi_switch_data);
 
 	if (ret)
-		HDMI_ERR("[hdmi][HDMI]switch_dev_register failed, returned:%d!\n", ret);
+		EXTDERR("[hdmi][HDMI]switch_dev_register failed, returned:%d!\n", ret);
 
 	hdmires_switch_data.name = "res_hdmi";
 	hdmires_switch_data.index = 0;
@@ -1253,23 +1252,23 @@ int hdmi_init(void)
 	ret = switch_dev_register(&hdmires_switch_data);
 
 	if (ret)
-		HDMI_ERR("[hdmi][HDMI]switch_dev_register failed, returned:%d!\n", ret);
+		EXTDERR("[hdmi][HDMI]switch_dev_register failed, returned:%d!\n", ret);
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,extd_dev");
 	if (!node)
-		EXT_MGR_ERR("Failed to find device node mediatek,extd_dev\n");
+		EXTDERR("Failed to find device node mediatek,extd_dev\n");
 	if (node)
 		of_property_read_string(node, "interface_type", &type);
 
-	EXT_MGR_LOG("interface_type is %s\n", type);
+	EXTDMSG("interface_type is %s\n", type);
 	if (!strncmp(type, "DPI", 3)) {
-		EXT_MGR_LOG("interface_type is DPI\n");
+		EXTDMSG("interface_type is DPI\n");
 		dst_is_dsi = 0;
 	} else if (!strncmp(type, "DSI", 3)) {
-		EXT_MGR_LOG("interface_type is DSI\n");
+		EXTDMSG("interface_type is DSI\n");
 		dst_is_dsi = 1;
 	}
-
+	EXTDINFO("hdmi_init done\n");
 	return 0;
 }
 
@@ -1288,9 +1287,10 @@ int hdmi_post_init(void)
 		.state_callback = hdmi_state_callback,
 	};
 
+	EXTDFUNC();
 	hdmi_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
 	if (hdmi_drv == NULL) {
-		HDMI_ERR("[hdmi]%s, hdmi_init fail, can not get hdmi driver handle\n", __func__);
+		EXTDERR("[hdmi]%s, hdmi_init fail, can not get hdmi driver handle\n", __func__);
 		return -1;
 	}
 
@@ -1328,6 +1328,7 @@ int hdmi_post_init(void)
 #endif
 
 	Extd_DBG_Init();
+	EXTDINFO("hdmi_post_init done\n");
 	return 0;
 }
 #endif

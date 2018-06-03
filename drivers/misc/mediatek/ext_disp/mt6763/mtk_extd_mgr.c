@@ -18,7 +18,6 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
-/*#include <linux/rtpm_prio.h>*/
 #include <linux/miscdevice.h>
 #include <linux/fs.h>
 #include <linux/file.h>
@@ -58,7 +57,7 @@ static void external_display_enable(unsigned long param)
 	int enable = EXTD_DEV_PARAM(param);
 
 	if (device_id >= DEV_MAX_NUM) {
-		EXT_MGR_ERR("external_display_enable, device id is invalid!");
+		EXTDERR("external_display_enable, device id is invalid!");
 		return;
 	}
 
@@ -72,7 +71,7 @@ static void external_display_power_enable(unsigned long param)
 	int enable = EXTD_DEV_PARAM(param);
 
 	if (device_id >= DEV_MAX_NUM) {
-		EXT_MGR_ERR("external_display_power_enable, device id is invalid!");
+		EXTDERR("external_display_power_enable, device id is invalid!");
 		return;
 	}
 
@@ -80,27 +79,13 @@ static void external_display_power_enable(unsigned long param)
 		extd_driver[device_id]->power_enable(enable);
 }
 
-/*
-*static void external_display_force_disable(unsigned long param)
-{
-	enum EXTD_DEV_ID device_id = EXTD_DEV_ID(param);
-
-	if (device_id >= DEV_MAX_NUM) {
-		EXT_MGR_ERR("external_display_force_disable, device id is invalid!");
-		return;
-	}
-
-	return;
-}
-*/
-
 static void external_display_set_resolution(unsigned long param)
 {
 	enum EXTD_DEV_ID device_id = EXTD_DEV_ID(param);
 	int res = EXTD_DEV_PARAM(param);
 
 	if (device_id >= DEV_MAX_NUM) {
-		EXT_MGR_ERR("external_display_set_resolution, device id is invalid!");
+		EXTDERR("external_display_set_resolution, device id is invalid!");
 		return;
 	}
 
@@ -114,7 +99,7 @@ static int external_display_get_dev_info(unsigned long param, void *info)
 	enum EXTD_DEV_ID device_id = EXTD_DEV_ID(param);
 
 	if (device_id >= DEV_MAX_NUM) {
-		EXT_MGR_ERR("external_display_get_dev_info, device id is invalid!");
+		EXTDERR("external_display_get_dev_info, device id is invalid!");
 		return ret;
 	}
 
@@ -132,7 +117,7 @@ static int external_display_get_capability(unsigned long param, void *info)
 	device_id = DEV_MHL;
 
 	if (device_id >= DEV_MAX_NUM) {
-		EXT_MGR_ERR("external_display_get_capability, device id is invalid!");
+		EXTDERR("external_display_get_capability, device id is invalid!");
 		return ret;
 	}
 
@@ -148,7 +133,7 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	int r = 0;
 
 #ifndef MTK_EXTENSION_MODE_SUPPORT
-	EXT_MGR_LOG("[EXTD]ioctl= %s(%d), arg = %lu\n", _extd_ioctl_spy(cmd), cmd & 0xff, arg);
+	EXTDINFO("[EXTD]ioctl= %s(%d), arg = %lu\n", _extd_ioctl_spy(cmd), cmd & 0xff, arg);
 #endif
 
 	switch (cmd) {
@@ -222,7 +207,7 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 			int displayid = 0;
 
 			if (copy_from_user(&displayid, argp, sizeof(displayid))) {
-				HDMI_ERR(": copy_from_user failed! line:%d\n", __LINE__);
+				EXTDERR(": copy_from_user failed! line:%d\n", __LINE__);
 				return -EAGAIN;
 			}
 			r = external_display_get_dev_info(displayid, argp);
@@ -235,7 +220,7 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		}
 	case MTK_HDMI_AUDIO_ENABLE:
 		{
-			EXT_MGR_LOG("[EXTD]hdmi_set_audio_enable, arg = %lu\n", arg);
+			EXTDINFO("[EXTD]hdmi_set_audio_enable, arg = %lu\n", arg);
 			if (extd_driver[DEV_MHL] && extd_driver[DEV_MHL]->set_audio_enable)
 				extd_driver[DEV_MHL]->set_audio_enable((arg & 0x0FF));
 
@@ -247,7 +232,7 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		}
 	case MTK_HDMI_AUDIO_CONFIG:
 		{
-			EXT_MGR_LOG("[EXTD]hdmi_audio_format, arg = %lu\n", arg);
+			EXTDINFO("[EXTD]hdmi_audio_format, arg = %lu\n", arg);
 			if (extd_driver[DEV_MHL] && extd_driver[DEV_MHL]->set_audio_format)
 				extd_driver[DEV_MHL]->set_audio_format(arg);
 
@@ -331,27 +316,27 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 
 	default:
 		{
-			EXT_MGR_ERR("[EXTD]ioctl(%d) arguments is not support\n", cmd & 0x0ff);
+			EXTDERR("[EXTD]ioctl(%d) arguments is not support\n", cmd & 0x0ff);
 			r = -EFAULT;
 			break;
 		}
 	}
 
 #ifndef MTK_EXTENSION_MODE_SUPPORT
-	EXT_MGR_LOG("[EXTD]ioctl = %s(%d) done\n", _extd_ioctl_spy(cmd), cmd & 0x0ff);
+	EXTDINFO("[EXTD]ioctl = %s(%d) done\n", _extd_ioctl_spy(cmd), cmd & 0x0ff);
 #endif
 	return r;
 }
 
 static int mtk_extd_mgr_open(struct inode *inode, struct file *file)
 {
-	/*EXT_MGR_FUNC();*/
+	/*EXTDFUNC();*/
 	return 0;
 }
 
 static int mtk_extd_mgr_release(struct inode *inode, struct file *file)
 {
-	/*EXT_MGR_FUNC();*/
+	/*EXTDFUNC();*/
 	return 0;
 }
 
@@ -395,13 +380,13 @@ static int mtk_extd_mgr_probe(struct platform_device *pdev)
 	int i = 0;
 	struct class_device *class_dev = NULL;
 
-	EXT_MGR_FUNC();
+	EXTDFUNC();
 
 	/* Allocate device number for hdmi driver */
 	ret = alloc_chrdev_region(&extd_devno, 0, 1, EXTD_DEVNAME);
 
 	if (ret) {
-		EXT_MGR_LOG("alloc_chrdev_region fail\n");
+		EXTDERR("alloc_chrdev_region fail\n");
 		return -1;
 	}
 
@@ -422,13 +407,13 @@ static int mtk_extd_mgr_probe(struct platform_device *pdev)
 			extd_driver[i]->post_init();
 	}
 
-	EXT_MGR_LOG("[%s] out\n", __func__);
+	EXTDINFO("[%s] out\n", __func__);
 	return 0;
 }
 
 static int mtk_extd_mgr_remove(struct platform_device *pdev)
 {
-	EXT_MGR_FUNC();
+	EXTDFUNC();
 
 	return 0;
 }
@@ -436,14 +421,14 @@ static int mtk_extd_mgr_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 int extd_pm_suspend(struct device *device)
 {
-	EXT_MGR_FUNC();
+	EXTDFUNC();
 
 	return 0;
 }
 
 int extd_pm_resume(struct device *device)
 {
-	EXT_MGR_FUNC();
+	EXTDFUNC();
 
 	return 0;
 }
@@ -469,7 +454,7 @@ static struct platform_driver external_display_driver = {
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void extd_early_suspend(struct early_suspend *h)
 {
-	EXT_MGR_FUNC();
+	EXTDFUNC();
 	int i = 0;
 
 	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
@@ -480,7 +465,7 @@ static void extd_early_suspend(struct early_suspend *h)
 
 static void extd_late_resume(struct early_suspend *h)
 {
-	EXT_MGR_FUNC();
+	EXTDFUNC();
 	int i = 0;
 
 	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
@@ -508,7 +493,7 @@ static int fb_notifier_callback(struct notifier_block *p,
 		return 0;
 
 	blank_mode = *(int *)evdata->data;
-	EXT_MGR_LOG("[%s] - blank_mode:%d\n", __func__, blank_mode);
+	EXTDMSG("[%s] - blank_mode:%d\n", __func__, blank_mode);
 
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
@@ -527,7 +512,7 @@ static int fb_notifier_callback(struct notifier_block *p,
 
 		break;
 	default:
-		EXT_MGR_ERR("[%s] - unknown blank mode!\n", __func__);
+		EXTDERR("[%s] - unknown blank mode!\n", __func__);
 	}
 
 	return 0;
@@ -543,9 +528,8 @@ static int __init mtk_extd_mgr_init(void)
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT != 2)
 	int ret = 0;
 #endif
-/*	struct notifier_block notifier;*/
 
-	EXT_MGR_FUNC();
+	EXTDFUNC();
 
 	extd_driver[DEV_MHL] = EXTD_HDMI_Driver();
 	extd_driver[DEV_EINK] = EXTD_EPD_Driver();
@@ -560,7 +544,7 @@ static int __init mtk_extd_mgr_init(void)
 	}
 
 	if (platform_driver_register(&external_display_driver)) {
-		EXT_MGR_ERR("failed to register mtkfb driver\n");
+		EXTDERR("failed to register mtkfb driver\n");
 		return -1;
 	}
 
@@ -568,7 +552,7 @@ static int __init mtk_extd_mgr_init(void)
 	notifier.notifier_call = fb_notifier_callback;
 	ret = fb_register_client(&notifier);
 	if (ret)
-		EXT_MGR_ERR("unable to register fb callback!\n");
+		EXTDERR("unable to register fb callback!\n");
 #endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND

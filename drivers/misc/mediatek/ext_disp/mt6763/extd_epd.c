@@ -22,12 +22,10 @@
 #include <linux/vmalloc.h>
 #include <linux/delay.h>
 #include <linux/kthread.h>
-/*#include <linux/rtpm_prio.h>*/
 
 #include <linux/atomic.h>
 #include <linux/io.h>
 
-/*#include "mach/eint.h"*/
 #include "mach/irqs.h"
 
 #include "ddp_irq.h"
@@ -136,13 +134,13 @@ int epd_waitVsync(void)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
 
 	if (!IS_EPD_ON()) {
-		EPD_ERR("[epd]:epd has suspend, return directly\n");
+		EXTDERR("[epd]:epd has suspend, return directly\n");
 		msleep(20);
 		return 0;
 	}
 
 	if (wait_event_interruptible_timeout(epd_vsync_wq, atomic_read(&epd_vsync_event), HZ / 10) == 0)
-		EPD_ERR("[epd] Wait VSync timeout. early_suspend=%d\n", IS_EPD_ON());
+		EXTDERR("[epd] Wait VSync timeout. early_suspend=%d\n", IS_EPD_ON());
 
 	atomic_set(&epd_vsync_event, 0);
 
@@ -154,7 +152,7 @@ int epd_waitVsync(void)
 
 /*static*/ void epd_suspend(void)
 {
-	EPD_FUNC();
+	EXTDFUNC();
 	/*RET_VOID_IF(!IS_EPD_ON());*/
 	if (IS_EPD_ON())
 		SET_EPD_STANDBY();
@@ -162,7 +160,7 @@ int epd_waitVsync(void)
 
 /*static*/ void epd_resume(void)
 {
-	EPD_FUNC();
+	EXTDFUNC();
 	/*RET_VOID_IF(!IS_EPD_STANDBY());*/
 	if (IS_EPD_STANDBY())
 		SET_EPD_ON();
@@ -170,12 +168,12 @@ int epd_waitVsync(void)
 
 void epd_enable(int enable)
 {
-	EPD_FUNC();
+	EXTDFUNC();
 }
 
 void epd_power_enable(int enable)
 {
-	EPD_FUNC();
+	EXTDFUNC();
 
 	if (enable) {
 		/*RET_VOID_IF(!IS_EPD_OFF());*/
@@ -199,7 +197,7 @@ int epd_get_dev_info(int is_sf, void *info)
 	EPD_DRIVER *epd_drv = (EPD_DRIVER *) EPD_GetDriver();
 
 	if (epd_drv == NULL) {
-		EPD_ERR("[epd]%s, can not get epd driver handle\n", __func__);
+		EXTDERR("[epd]%s, can not get epd driver handle\n", __func__);
 		return -EFAULT;
 	}
 
@@ -211,12 +209,12 @@ int epd_get_dev_info(int is_sf, void *info)
 		mtk_dispif_info_t epd_info;
 
 		if (!info) {
-			EPD_ERR("ioctl pointer is NULL\n");
+			EXTDERR("ioctl pointer is NULL\n");
 			return -EFAULT;
 		}
 
 		if (copy_from_user(&displayid, info, sizeof(displayid))) {
-			EPD_ERR(": copy_from_user failed! line:%d\n", __LINE__);
+			EXTDERR(": copy_from_user failed! line:%d\n", __LINE__);
 			return -EAGAIN;
 		}
 
@@ -232,11 +230,11 @@ int epd_get_dev_info(int is_sf, void *info)
 		epd_info.isHwVsyncAvailable = 1;
 
 		if (copy_to_user(info, &epd_info, sizeof(mtk_dispif_info_t))) {
-			EPD_ERR("copy_to_user failed! line:%d\n", __LINE__);
+			EXTDERR("copy_to_user failed! line:%d\n", __LINE__);
 			ret = -EFAULT;
 		}
 
-		HDMI_LOG("DEV_INFO configuration get displayType-%d\n", epd_info.displayType);
+		EXTDINFO("DEV_INFO configuration get displayType-%d\n", epd_info.displayType);
 	} else if (is_sf == SF_GET_INFO) {
 		disp_session_info *dispif_info = (disp_session_info *) info;
 
@@ -252,7 +250,7 @@ int epd_get_dev_info(int is_sf, void *info)
 		dispif_info->vsyncFPS = extd_epd_params.fps * 100;
 		dispif_info->isHwVsyncAvailable = 1;
 
-		EPD_LOG("epd_get_dev_info lays:%d, type:%d, W:%d, H:%d\n", dispif_info->maxLayerNum,
+		EXTDINFO("epd_get_dev_info lays:%d, type:%d, W:%d, H:%d\n", dispif_info->maxLayerNum,
 			dispif_info->displayType, dispif_info->displayWidth, dispif_info->displayHeight);
 	}
 
@@ -276,7 +274,7 @@ void epd_set_layer_num(int layer_num)
 
 int epd_ioctl(unsigned int ioctl_cmd, int param1, int param2, unsigned long *params)
 {
-	EPD_LOG("epd_ioctl ioctl_cmd:%d\n", ioctl_cmd);
+	EXTDINFO("epd_ioctl ioctl_cmd:%d\n", ioctl_cmd);
 	int ret = 0;
 
 	switch (ioctl_cmd) {
@@ -290,7 +288,7 @@ int epd_ioctl(unsigned int ioctl_cmd, int param1, int param2, unsigned long *par
 		epd_set_layer_num(param1);
 		break;
 	default:
-		EPD_LOG("epd_ioctl unknown command\n");
+		EXTDERR("epd_ioctl unknown command\n");
 		break;
 	}
 
@@ -299,14 +297,14 @@ int epd_ioctl(unsigned int ioctl_cmd, int param1, int param2, unsigned long *par
 
 void epd_init(void)
 {
-	EPD_LOG("epd_init in+!\n");
+	EXTDMSG("epd_init in+!\n");
 	memset((void *)&EPD_Params, 0, sizeof(LCM_EPD_PARAMS));
 	memset((void *)&extd_epd_params, 0, sizeof(disp_ddp_path_config));
 
 	EPD_DRIVER *epd_drv = (EPD_DRIVER *) EPD_GetDriver();
 
 	if (epd_drv == NULL) {
-		EPD_ERR("[epd]%s, can not get epd driver handle\n", __func__);
+		EXTDERR("[epd]%s, can not get epd driver handle\n", __func__);
 		return;
 	}
 

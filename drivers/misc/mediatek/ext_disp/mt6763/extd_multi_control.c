@@ -12,7 +12,6 @@
  */
 
 #include <linux/kthread.h>
-/*#include <linux/rtpm_prio.h>*/
 
 #include "extd_multi_control.h"
 #include "disp_drv_platform.h"
@@ -39,7 +38,7 @@ static int get_dev_index(unsigned int session)
 	int dev_id = session & 0x0FF;
 
 	if (dev_id >= DEV_MAX_NUM) {
-		MULTI_COTRL_LOG("get_dev_index device id error:%d\n", dev_id);
+		EXTDERR("get_dev_index device id error:%d\n", dev_id);
 		return -1;
 	}
 
@@ -53,7 +52,7 @@ static int extd_create_path(enum EXT_DISP_PATH_MODE mode, unsigned int session)
 {
 	int ret = 0;
 
-	MULTI_COTRL_LOG("extd_create_path session:%08x, mode:%d\n", session, mode);
+	EXTDMSG("extd_create_path session:%08x, mode:%d\n", session, mode);
 
 	ext_disp_path_set_mode(mode, session);
 	ret = ext_disp_init(NULL, session);
@@ -69,7 +68,7 @@ static int extd_get_device_type(unsigned int session)
 	if (dev_index >= 0 &&  extd_driver[dev_index] && extd_driver[dev_index]->ioctl)
 		ret = extd_driver[dev_index]->ioctl(GET_DEV_TYPE_CMD, 0, 0, NULL);
 
-	MULTI_COTRL_LOG("device type is:%d\n", ret);
+	/* EXTDINFO("device type is:%d\n", ret); */
 	return ret;
 }
 
@@ -90,7 +89,7 @@ static int create_external_display_path(unsigned int session, int mode)
 	int has_virtual_disp = 0;
 	int has_physical_disp = 0;
 
-	MULTI_COTRL_LOG("create_external_display_path session:%08x, mode:%d\n", session, mode);
+	EXTDMSG("create_external_display_path session:%08x, mode:%d\n", session, mode);
 
 	if (DISP_SESSION_TYPE(session) == DISP_SESSION_MEMORY && EXTD_OVERLAY_CNT > 0) {
 		if (mode < DISP_SESSION_DIRECT_LINK_MIRROR_MODE
@@ -103,7 +102,7 @@ static int create_external_display_path(unsigned int session, int mode)
 				ovl2mem_init(session);
 				ovl2mem_setlayernum(MEMORY_SESSION_INPUT_LAYER_COUNT);
 			} else {
-				MULTI_COTRL_ERR("mhl path: OVL1 can not be split out!\n");
+				EXTDERR("mhl path: OVL1 can not be split out!\n");
 				ret = -1;
 			}
 		} else if (mode >= DISP_SESSION_DIRECT_LINK_MIRROR_MODE
@@ -152,7 +151,7 @@ static int create_external_display_path(unsigned int session, int mode)
 
 				extd_set_layer_num(EXTERNAL_SESSION_INPUT_LAYER_COUNT, session);
 			} else {
-				MULTI_COTRL_ERR("mhl path: OVL1 can not be split out!\n");
+				EXTDERR("mhl path: OVL1 can not be split out!\n");
 				if (path_info.old_session[device_id] != DISP_SESSION_EXTERNAL) {
 					/*insert OVL to external dispaly path*/
 					extd_create_path(EXTD_RDMA_DPI_MODE, session);
@@ -169,7 +168,7 @@ static int create_external_display_path(unsigned int session, int mode)
 			}
 		}
 	} else if (DISP_SESSION_TYPE(session) == DISP_SESSION_MEMORY && EXTD_OVERLAY_CNT == 0) {
-		MULTI_COTRL_ERR("memory session and ovl time sharing!\n");
+		EXTDERR("memory session and ovl time sharing!\n");
 		ovl2mem_setlayernum(MEMORY_SESSION_INPUT_LAYER_COUNT);
 	}
 
@@ -180,7 +179,7 @@ static void destroy_external_display_path(unsigned int session, int mode)
 {
 	int device_id = 0;
 
-	MULTI_COTRL_LOG("destroy_external_display_path session:%08x\n", session);
+	EXTDMSG("destroy_external_display_path session:%08x\n", session);
 	device_id = DISP_SESSION_DEV(session);
 	if ((DISP_SESSION_TYPE(session) == DISP_SESSION_EXTERNAL) && (device_id != DEV_LCM)) {
 		/*mhl/eink device id*/
@@ -191,7 +190,7 @@ static void destroy_external_display_path(unsigned int session, int mode)
 	|| (path_info.old_session[device_id] == DISP_SESSION_MEMORY
 	&& path_info.old_mode[device_id] >= DISP_SESSION_DIRECT_LINK_MIRROR_MODE)) {
 		/*discard for memory session in mirror mode*/
-		MULTI_COTRL_LOG("no need destroy path for session:0x%08x, mode:%d\n", path_info.old_session[device_id],
+		EXTDMSG("no need destroy path for session:0x%08x, mode:%d\n", path_info.old_session[device_id],
 										path_info.old_mode[device_id]);
 		return;
 	}
@@ -222,13 +221,13 @@ static int disp_switch_mode_kthread(void *data)
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
-	MULTI_COTRL_LOG("disp_switch_mode_kthread in!\n");
+	EXTDMSG("disp_switch_mode_kthread in!\n");
 
 	for (;;) {
 		wait_event_interruptible(switch_mode_wq, atomic_read(&switch_mode_event));
 		atomic_set(&switch_mode_event, 0);
 
-		MULTI_COTRL_LOG("switch mode, create or change path, mode:%d, session:0x%x\n",
+		EXTDMSG("switch mode, create or change path, mode:%d, session:0x%x\n",
 				path_info.cur_mode, path_info.ext_sid);
 		ret = create_external_display_path(path_info.ext_sid, path_info.cur_mode);
 		if ((ret == 0) && (path_info.switching < DEV_MAX_NUM)) {
@@ -253,8 +252,6 @@ static int path_change_without_cascade(enum DISP_MODE mode, unsigned int session
 {
 	int ret = -1;
 	unsigned int session = 0;
-
-	/*MULTI_COTRL_FUNC();*/
 
 	/*destroy external display path*/
 	if (session_id == 0 && path_info.old_session[device_id] != DISP_SESSION_PRIMARY) {
@@ -299,8 +296,6 @@ static int path_change_with_cascade(enum DISP_MODE mode, unsigned int session_id
 	int disp_type = 0;
 	unsigned int session = 0;
 
-	/*MULTI_COTRL_FUNC();*/
-
 	/*destroy external display path*/
 	if (session_id == 0 && path_info.old_session[device_id] != DISP_SESSION_PRIMARY) {
 		if (device_id == DEV_WFD) {
@@ -341,7 +336,7 @@ static int path_change_with_cascade(enum DISP_MODE mode, unsigned int session_id
 			extd_set_layer_num(1, session_id);
 		}
 
-		MULTI_COTRL_LOG("path_change_with_cascade, wake up\n");
+		EXTDMSG("path_change_with_cascade, wake up\n");
 		path_info.cur_mode  = mode;
 		path_info.ext_sid   = session_id;
 		path_info.switching = device_id;
@@ -359,7 +354,7 @@ void external_display_control_init(void)
 {
 	int i = 0;
 
-	MULTI_COTRL_FUNC();
+	EXTDFUNC();
 	memset(&path_info, 0, sizeof(struct SWITCH_MODE_INFO_STRUCT));
 	path_info.switching = DEV_MAX_NUM;
 
@@ -427,6 +422,7 @@ int external_display_suspend(unsigned int session)
 	int ret = 0;
 	unsigned int session_id = 0;
 
+	EXTDFUNC();
 	if (session == 0) {
 		for (i = DEV_MHL; i < DEV_MAX_NUM; i++) {
 			if (i <= DEV_EINK)
@@ -450,6 +446,7 @@ int external_display_resume(unsigned int session)
 	int ret = 0;
 	unsigned int session_id = 0;
 
+	EXTDFUNC();
 	if (session == 0) {
 		for (i = DEV_MHL; i < DEV_MAX_NUM; i++) {
 			if (i <= DEV_EINK)
