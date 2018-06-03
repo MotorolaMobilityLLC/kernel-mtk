@@ -170,8 +170,6 @@ struct RSC_CLK_STRUCT rsc_clk;
 /* #define RSC_WR32(addr, data)    iowrite32(data, addr) // For other projects. */
 #define RSC_WR32(addr, data)    mt_reg_sync_writel(data, addr)	/* For 89 Only.   // NEED_TUNING_BY_PROJECT */
 #define RSC_RD32(addr)          ioread32(addr)
-#define RSC_SET_BIT(reg, bit)   ((*(volatile unsigned int *)(reg)) |= (unsigned int)(1 << (bit)))
-#define RSC_CLR_BIT(reg, bit)   ((*(volatile unsigned int *)(reg)) &= ~((unsigned int)(1 << (bit))))
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -358,7 +356,7 @@ enum RSC_PROCESS_ID_ENUM {
 *
 ********************************************************************************/
 struct RSC_IRQ_INFO_STRUCT {
-	volatile unsigned int Status[RSC_IRQ_TYPE_AMOUNT];
+	unsigned int Status[RSC_IRQ_TYPE_AMOUNT];
 	signed int RscIrqCnt;
 	pid_t ProcessID[RSC_PROCESS_ID_AMOUNT];
 	unsigned int Mask[RSC_IRQ_TYPE_AMOUNT];
