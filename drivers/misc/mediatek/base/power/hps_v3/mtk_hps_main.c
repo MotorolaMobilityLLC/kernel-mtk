@@ -71,6 +71,7 @@ hps_ctxt_t hps_ctxt = {
 	.hps_hrt_ktime = {0},
 	/* enabled */
 	.enabled = 1,
+	.eas_enabled = 1,
 	.suspend_enabled = 1,
 	.cur_dump_enabled = 0,
 	.stats_dump_enabled = 0,
