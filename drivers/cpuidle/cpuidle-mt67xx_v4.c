@@ -94,8 +94,8 @@ static int mtk_soidle3_enter(struct cpuidle_device *dev,
 	return soidle3_enter(smp_processor_id());
 }
 
-static struct cpuidle_driver mt67xx_v3_cpuidle_driver = {
-	.name             = "mt67xx_v3_cpuidle",
+static struct cpuidle_driver mt67xx_v4_cpuidle_driver = {
+	.name             = "mt67xx_v4_cpuidle",
 	.owner            = THIS_MODULE,
 	.states[0] = {
 		.enter			= mtk_rgidle_enter,
@@ -149,7 +149,7 @@ static struct cpuidle_driver mt67xx_v3_cpuidle_driver = {
 		.flags			= CPUIDLE_FLAG_TIMER_STOP,
 #endif
 		.name			= "SODI3",
-		.desc			= "Screen-ON deep idle - v3",
+		.desc			= "Screen-ON deep idle",
 	},
 	.state_count = 6,
 	.safe_state_index = 0,
@@ -157,7 +157,7 @@ static struct cpuidle_driver mt67xx_v3_cpuidle_driver = {
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 
-static const struct of_device_id mt67xx_v3_idle_state_match[] __initconst = {
+static const struct of_device_id mt67xx_v4_idle_state_match[] __initconst = {
 	{ .compatible = "arm,idle-state" },
 	{ },
 };
@@ -169,10 +169,10 @@ static const struct of_device_id mt67xx_v3_idle_state_match[] __initconst = {
  * framework. It relies on core code to parse the idle states
  * and initialize them using driver data structures accordingly.
  */
-int __init mt67xx_v3_cpuidle_init(void)
+int __init mt67xx_v4_cpuidle_init(void)
 {
 	int cpu, ret;
-	struct cpuidle_driver *drv = &mt67xx_v3_cpuidle_driver;
+	struct cpuidle_driver *drv = &mt67xx_v4_cpuidle_driver;
 	struct cpuidle_device *dev;
 
 	/*
@@ -238,11 +238,11 @@ out_fail:
 	return ret;
 }
 #else
-int __init mt67xx_v3_cpuidle_init(void)
+int __init mt67xx_v4_cpuidle_init(void)
 {
-	return cpuidle_register(&mt67xx_v3_cpuidle_driver, NULL);
+	return cpuidle_register(&mt67xx_v4_cpuidle_driver, NULL);
 }
 #endif
 
-device_initcall(mt67xx_v3_cpuidle_init);
+device_initcall(mt67xx_v4_cpuidle_init);
 
