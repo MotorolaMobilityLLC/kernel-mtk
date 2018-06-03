@@ -16,6 +16,7 @@
 #include <linux/workqueue.h>
 #include <linux/unistd.h>
 #include <linux/module.h>
+#include <linux/sched.h>
 
 #include "fpsgo_common.h"
 #include "fpsgo_base.h"
