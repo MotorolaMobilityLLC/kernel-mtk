@@ -1506,7 +1506,7 @@ static void __mt_gpufreq_vsram_gpu_volt_switch(enum g_volt_switch_enum switch_wa
 	steps = (max_diff / DELAY_FACTOR) + 1;
 
 	regulator_set_voltage(g_pmic->reg_vsram_gpu, volt_new * 10, VSRAM_GPU_MAX_VOLT * 10 + 125);
-	udelay(steps * sfchg_rate);
+	udelay(steps * sfchg_rate + 52);
 
 	gpufreq_pr_debug("@%s: udelay us(%d) = steps(%d) * sfchg_rate(%d)\n",
 			__func__, steps * sfchg_rate, steps, sfchg_rate);
@@ -1528,7 +1528,7 @@ static void __mt_gpufreq_vgpu_volt_switch(enum g_volt_switch_enum switch_way, un
 	steps = (max_diff / DELAY_FACTOR) + 1;
 
 	regulator_set_voltage(g_pmic->reg_vgpu, volt_new * 10, VGPU_MAX_VOLT * 10 + 125);
-	udelay(steps * sfchg_rate);
+	udelay(steps * sfchg_rate + 52);
 
 	gpufreq_pr_debug("@%s: udelay us(%d) = steps(%d) * sfchg_rate(%d)\n",
 			__func__, steps * sfchg_rate, steps, sfchg_rate);
@@ -1722,8 +1722,7 @@ static void __mt_gpufreq_calculate_power(unsigned int idx, unsigned int freq,
  */
 static unsigned int __calculate_vgpu_sfchg_rate(bool isRising)
 {
-	unsigned int sfchg_rate_reg;
-	unsigned int sfchg_rate_vgpu = 1;
+	unsigned int sfchg_rate_vgpu;
 
 	/* [MT6358] RG_BUCK_VGPU_SFCHG_RRATE and RG_BUCK_VGPU_SFCHG_FRATE
 	 * Rising soft change rate
@@ -1731,17 +1730,16 @@ static unsigned int __calculate_vgpu_sfchg_rate(bool isRising)
 	 * Step = ( code + 1 ) * 0.038 us
 	 */
 
-	if (isRising)
-		pmic_read_interface(MT6358_BUCK_VGPU_CFG0, &sfchg_rate_reg,
-				PMIC_RG_BUCK_VGPU_SFCHG_RRATE_MASK, PMIC_RG_BUCK_VGPU_SFCHG_RRATE_SHIFT);
-	else
-		pmic_read_interface(MT6358_BUCK_VGPU_CFG0, &sfchg_rate_reg,
-				PMIC_RG_BUCK_VGPU_SFCHG_FRATE_MASK, PMIC_RG_BUCK_VGPU_SFCHG_FRATE_SHIFT);
+	if (isRising) {
+		/* sfchg_rate_reg is 19, (19+1)*0.038 = 0.76 */
+		sfchg_rate_vgpu = 1;
+	} else {
+		/* sfchg_rate_reg is 39, (39+1)*0.038 = 1.52 */
+		sfchg_rate_vgpu = 2;
+	}
 
-	gpufreq_pr_debug("@%s: isRising = %d, sfchg_rate_vgpu = %d, sfchg_rate_reg = 0x%x\n",
-			__func__, isRising, sfchg_rate_vgpu, sfchg_rate_reg);
-
-	sfchg_rate_vgpu = sfchg_rate_reg;
+	gpufreq_pr_debug("@%s: isRising = %d, sfchg_rate_vgpu = %d\n",
+			__func__, isRising, sfchg_rate_vgpu);
 
 	return sfchg_rate_vgpu;
 }
@@ -1753,8 +1751,7 @@ static unsigned int __calculate_vgpu_sfchg_rate(bool isRising)
  */
 static unsigned int __calculate_vsram_sfchg_rate(bool isRising)
 {
-	unsigned int sfchg_rate_reg;
-	unsigned int sfchg_rate_vsram = 1;
+	unsigned int sfchg_rate_vsram;
 
 	/* [MT6358] RG_LDO_VSRAM_GPU_SFCHG_RRATE and RG_LDO_VSRAM_GPU_SFCHG_FRATE
 	 *    7'd4 : 0.19us
@@ -1765,17 +1762,16 @@ static unsigned int __calculate_vsram_sfchg_rate(bool isRising)
 	 *    7'd25 : 1us
 	 */
 
-	if (isRising)
-		pmic_read_interface(MT6358_LDO_VSRAM_GPU_CFG0, &sfchg_rate_reg,
-				PMIC_RG_LDO_VSRAM_GPU_SFCHG_RRATE_MASK, PMIC_RG_LDO_VSRAM_GPU_SFCHG_RRATE_SHIFT);
-	else
-		pmic_read_interface(MT6358_LDO_VSRAM_GPU_CFG0, &sfchg_rate_reg,
-				PMIC_RG_LDO_VSRAM_GPU_SFCHG_FRATE_MASK, PMIC_RG_LDO_VSRAM_GPU_SFCHG_FRATE_SHIFT);
+	if (isRising) {
+		/* sfchg_rate_reg is 7, (7+1)*0.038 = 0.304 */
+		sfchg_rate_vsram = 1;
+	} else {
+		/* sfchg_rate_reg is 15, (15+1)*0.038 = 0.608 */
+		sfchg_rate_vsram = 1;
+	}
 
-	gpufreq_pr_debug("@%s: isRising = %d, sfchg_rate_vsram = %d, sfchg_rate_reg = 0x%x\n",
-			__func__, isRising, sfchg_rate_vsram, sfchg_rate_reg);
-
-	sfchg_rate_vsram = sfchg_rate_reg;
+	gpufreq_pr_debug("@%s: isRising = %d, sfchg_rate_vsram = %d\n",
+			__func__, isRising, sfchg_rate_vsram);
 
 	return sfchg_rate_vsram;
 }
