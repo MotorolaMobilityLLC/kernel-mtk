@@ -2159,13 +2159,10 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 #endif
 
 	DEBUGFUNC("wlanoidSetAddKey");
-	DBGLOG(REQ, LOUD, "\n");
 
 	ASSERT(prAdapter);
 	ASSERT(pvSetBuffer);
 	ASSERT(pu4SetInfoLen);
-
-	DBGLOG(RSN, INFO, "wlanoidSetAddKey\n");
 
 	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
 		DBGLOG(RSN, WARN, "Fail in set add key! (Adapter not ready). ACPI=D%d, Radio=%d\n",
@@ -2218,24 +2215,20 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 	*pu4SetInfoLen = u4SetBufferLen;
 
 	/* Dump PARAM_KEY content. */
-	DBGLOG(RSN, INFO, "Set: Dump PARAM_KEY content\n");
-	DBGLOG(RSN, INFO, "Length    : 0x%08lx\n", prNewKey->u4Length);
-	DBGLOG(RSN, INFO, "Key Index : 0x%08lx\n", prNewKey->u4KeyIndex);
-	DBGLOG(RSN, INFO, "Key Length: 0x%08lx\n", prNewKey->u4KeyLength);
-	DBGLOG(RSN, INFO, "BSSID:\n");
-	DBGLOG(RSN, INFO, MACSTR "\n", MAC2STR(prNewKey->arBSSID));
-	DBGLOG(RSN, INFO, "Cipher    : %d\n", prNewKey->ucCipher);
+	DBGLOG(RSN, INFO, "Length: 0x%x, Index: 0x%x, Length: 0x%x, BSSID: "MACSTR", Cipher: %d\n",
+		prNewKey->u4Length, prNewKey->u4KeyIndex, prNewKey->u4KeyLength,
+		MAC2STR(prNewKey->arBSSID), prNewKey->ucCipher);
 	DBGLOG(RSN, TRACE, "Key RSC:\n");
 	DBGLOG_MEM8(RSN, TRACE, &prNewKey->rKeyRSC, sizeof(PARAM_KEY_RSC));
-	DBGLOG(RSN, INFO, "Key Material:\n");
-	DBGLOG_MEM8(RSN, INFO, prNewKey->aucKeyMaterial, prNewKey->u4KeyLength);
+	DBGLOG(RSN, TRACE, "Key Material:\n");
+	DBGLOG_MEM8(RSN, TRACE, prNewKey->aucKeyMaterial, prNewKey->u4KeyLength);
 
 	prGlueInfo = prAdapter->prGlueInfo;
 	prAisSpecBssInfo = &prAdapter->rWifiVar.rAisSpecificBssInfo;
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prNewKey->ucBssIdx);
 
 	if (!prBssInfo) {
-		DBGLOG(REQ, INFO, "BSS Info not exist !!\n");
+		DBGLOG(REQ, ERROR, "BSS Info not exist !!\n");
 		return WLAN_STATUS_SUCCESS;
 	}
 
@@ -2273,7 +2266,7 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 	if ((prNewKey->u4KeyIndex & IS_UNICAST_KEY) == IS_UNICAST_KEY) {
 		prStaRec = cnmGetStaRecByAddress(prAdapter, prBssInfo->ucBssIndex, prNewKey->arBSSID);
 		if (!prStaRec) {	/* Already disconnected ? */
-			DBGLOG(REQ, INFO, "[wlan] Not set the peer key while disconnect\n");
+			DBGLOG(REQ, ERROR, "[wlan] Not set the peer key while disconnect\n");
 			return WLAN_STATUS_SUCCESS;
 		}
 	}
@@ -2330,7 +2323,7 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 		}
 	} else {
 		if (!IS_BSS_ACTIVE(prBssInfo))
-			DBGLOG(REQ, INFO, "[wlan] BSS info (%d) not active yet!", prNewKey->ucBssIdx);
+			DBGLOG(REQ, WARN, "[wlan] BSS info (%d) not active yet!", prNewKey->ucBssIdx);
 
 	}
 
@@ -2593,8 +2586,6 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 	ASSERT(prAdapter);
 	ASSERT(pu4SetInfoLen);
 
-	DBGLOG(RSN, INFO, "wlanoidSetRemoveKey\n");
-
 	*pu4SetInfoLen = sizeof(PARAM_REMOVE_KEY_T);
 
 	if (u4SetBufferLen < sizeof(PARAM_REMOVE_KEY_T))
@@ -2611,12 +2602,9 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 	prRemovedKey = (P_PARAM_REMOVE_KEY_T) pvSetBuffer;
 
 	/* Dump PARAM_REMOVE_KEY content. */
-	DBGLOG(RSN, INFO, "Set: Dump PARAM_REMOVE_KEY content\n");
-	DBGLOG(RSN, INFO, "Length    : 0x%08lx\n", prRemovedKey->u4Length);
-	DBGLOG(RSN, INFO, "Key Index : 0x%08lx\n", prRemovedKey->u4KeyIndex);
-	DBGLOG(RSN, INFO, "BSS_INDEX : %d\n", prRemovedKey->ucBssIdx);
-	DBGLOG(RSN, INFO, "BSSID:\n");
-	DBGLOG_MEM8(RSN, INFO, prRemovedKey->arBSSID, MAC_ADDR_LEN);
+	DBGLOG(RSN, INFO, "Length: 0x%x, Key Index: 0x%x, BSS_INDEX: %d, BSSID: "MACSTR"\n",
+		prRemovedKey->u4Length, prRemovedKey->u4KeyIndex, prRemovedKey->ucBssIdx,
+		MAC2STR(prRemovedKey->arBSSID));
 
 	prGlueInfo = prAdapter->prGlueInfo;
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prRemovedKey->ucBssIdx);
@@ -2630,7 +2618,7 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 #endif
 
 	if (u4KeyIndex >= 4) {
-		DBGLOG(RSN, INFO, "Remove bip key Index : 0x%08lx\n", u4KeyIndex);
+		DBGLOG(RSN, ERROR, "Remove bip key Index : 0x%08lx\n", u4KeyIndex);
 		return WLAN_STATUS_SUCCESS;
 	}
 
@@ -2683,7 +2671,7 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 	prCmdInfo = cmdBufAllocateCmdInfo(prAdapter, (CMD_HDR_SIZE + sizeof(CMD_802_11_KEY)));
 
 	if (!prCmdInfo) {
-		DBGLOG(INIT, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
+		DBGLOG(RSN, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
 		return WLAN_STATUS_FAILURE;
 	}
 
@@ -7814,13 +7802,13 @@ wlanoidSet802dot11PowerSaveProfile(IN P_ADAPTER_T prAdapter,
 	prPowerMode = (P_PARAM_POWER_MODE_T) pvSetBuffer;
 
 	if (u4SetBufferLen < sizeof(PARAM_POWER_MODE_T)) {
-		DBGLOG(REQ, WARN, "Set power mode error: Invalid length %ld\n", u4SetBufferLen);
+		DBGLOG(OID, WARN, "Set power mode error: Invalid length %ld\n", u4SetBufferLen);
 		return WLAN_STATUS_INVALID_LENGTH;
 	} else if (prPowerMode->ePowerMode >= Param_PowerModeMax) {
-		DBGLOG(REQ, WARN, "Set power mode error: Invalid power mode(%u)\n", prPowerMode->ePowerMode);
+		DBGLOG(OID, WARN, "Set power mode error: Invalid power mode(%u)\n", prPowerMode->ePowerMode);
 		return WLAN_STATUS_INVALID_DATA;
 	} else if (prPowerMode->ucBssIdx >= BSS_INFO_NUM) {
-		DBGLOG(REQ, WARN, "Set power mode error: Invalid BSS index(%u)\n", prPowerMode->ucBssIdx);
+		DBGLOG(OID, WARN, "Set power mode error: Invalid BSS index(%u)\n", prPowerMode->ucBssIdx);
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
@@ -7849,11 +7837,11 @@ wlanoidSet802dot11PowerSaveProfile(IN P_ADAPTER_T prAdapter,
 	status = nicConfigPowerSaveProfile(prAdapter, prPowerMode->ucBssIdx, prPowerMode->ePowerMode, TRUE);
 
 	if (prPowerMode->ePowerMode < Param_PowerModeMax) {
-		DBGLOG(INIT, INFO, "Set %s Network BSS(%u) PS mode to %s (%d)\n",
+		DBGLOG(OID, INFO, "Set %s Network BSS(%u) PS mode to %s (%d)\n",
 		       apucNetworkType[prBssInfo->eNetworkType],
 		       prPowerMode->ucBssIdx, apucPsMode[prPowerMode->ePowerMode], prPowerMode->ePowerMode);
 	} else {
-		DBGLOG(INIT, INFO, "Invalid PS mode setting (%d) for %s Network BSS(%u)\n",
+		DBGLOG(OID, INFO, "Invalid PS mode setting (%d) for %s Network BSS(%u)\n",
 		       prPowerMode->ePowerMode, apucNetworkType[prBssInfo->eNetworkType], prPowerMode->ucBssIdx);
 	}
 
