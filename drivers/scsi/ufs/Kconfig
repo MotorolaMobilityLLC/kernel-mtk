@@ -94,3 +94,11 @@ config MTK_UFS_BOOTING
 	  Say Y if you want to use embedded UFS as default booting device.
 
 	  If unsure, say N.
+
+config MTK_UFS_BLOCK_IO_LOG
+	bool "UFS Block IO log"
+	depends on MTK_UFS_BOOTING
+	default y
+	---help---
+	  Enable IO trace for performance analysis and application access
+	  pattern study.
