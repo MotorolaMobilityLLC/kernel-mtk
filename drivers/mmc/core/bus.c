@@ -152,9 +152,18 @@ static int mmc_bus_suspend(struct device *dev)
 
 	ret = pm_generic_suspend(dev);
 	if (ret)
-		return ret;
+		goto out;
 
 	ret = host->bus_ops->suspend(host);
+	/*
+	 * Resume subsytem when suspend failed.
+	 */
+	if (ret) {
+		pr_info("%s: error %d during suspend\n",
+			mmc_hostname(host), ret);
+		pm_generic_resume(dev);
+	}
+out:
 	return ret;
 }
 
