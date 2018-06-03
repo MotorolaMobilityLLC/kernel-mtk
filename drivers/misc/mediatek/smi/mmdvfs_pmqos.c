@@ -506,7 +506,7 @@ static struct kernel_param_ops force_step_ops = {
 module_param_cb(force_step, &force_step_ops, &force_step, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(force_step, "force mmdvfs to specified step, -1 for unset");
 
-subsys_initcall(mmdvfs_pmqos_init);
+arch_initcall(mmdvfs_pmqos_init);
 module_exit(mmdvfs_pmqos_exit);
 
 MODULE_DESCRIPTION("MTK MMDVFS driver");
