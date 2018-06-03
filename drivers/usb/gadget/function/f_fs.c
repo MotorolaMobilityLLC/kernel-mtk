@@ -698,7 +698,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 	struct ffs_epfile *epfile = file->private_data;
 	struct ffs_ep *ep;
 	char *data = NULL;
-	ssize_t ret, data_len = -EINVAL;
+	ssize_t ret, data_len = -EINVAL, original_len = -EINVAL;
 	int halt;
 
 	pr_debug("%s: len %lld, read %d\n", __func__, (u64)io_data->len, io_data->read);
@@ -768,7 +768,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 			spin_unlock_irq(&epfile->ffs->eps_lock);
 			return -ESHUTDOWN;
 		}
-		data_len = iov_iter_count(&io_data->data);
+		original_len = data_len = iov_iter_count(&io_data->data);
 		/*
 		 * Controller may require buffer size to be aligned to
 		 * maxpacketsize of an out endpoint.
@@ -915,6 +915,10 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 				spin_unlock_irq(&epfile->ffs->eps_lock);
 
 				if (io_data->read && ret > 0) {
+					if (unlikely(ret > original_len))
+						pr_err("%s(), ret<%d>, original_len<%d>\n",
+								__func__, (int)ret, (int)original_len);
+
 					ret = copy_to_iter(data, ret, &io_data->data);
 					if (!ret)
 						ret = -EFAULT;
