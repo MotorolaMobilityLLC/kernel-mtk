@@ -2018,7 +2018,13 @@
 			<&topckgen TOP_UNIVPLL_D3_D4>,
 			<&topckgen TOP_OSC_D2>,
 			<&topckgen TOP_OSC_D4>,
-			<&topckgen TOP_OSC_D16>;
+			<&topckgen TOP_OSC_D16>,
+			<&topckgen TOP_MUX_DPI0>,
+			<&topckgen TOP_TVDPLL_D2>,
+			<&topckgen TOP_TVDPLL_D4>,
+			<&topckgen TOP_TVDPLL_D8>,
+			<&topckgen TOP_TVDPLL_D16>,
+			<&topckgen TOP_TVDPLL_CK>;
 
 		clock-names = "MMSYS_MTCMOS",
 			"MMSYS_SMI_COMMON",
@@ -2050,12 +2056,22 @@
 			"TOP_UNIVPLL_D3_D4",
 			"TOP_OSC_D2",
 			"TOP_OSC_D4",
-			"TOP_OSC_D16";
+			"TOP_OSC_D16",
+			"MUX_DPI0",
+			"TVDPLL_D2",
+			"TVDPLL_D4",
+			"TVDPLL_D8",
+			"TVDPLL_D16",
+			"DPI_CK";
 	};
 
 	dsi_te: dsi_te {
 		compatible = "mediatek, DSI_TE-eint";
 		status = "disabled";
+	};
+
+	mhl:mhl@0 {
+		compatible = "mediatek,extd_dev";
 	};
 
 	disp_ovl0@14008000 {

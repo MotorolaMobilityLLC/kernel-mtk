@@ -15,12 +15,12 @@
 # Makefile for external display driver.
 #
 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/ \
-             -I$(srctree)/drivers/misc/mediatek/ext_disp/  \
-             -I$(srctree)/drivers/misc/mediatek/ext_disp/include/  \
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/  \
              -I$(srctree)/drivers/misc/mediatek/ext_disp/$(MTK_PLATFORM)/test/ \
-             -I$(srctree)/drivers/misc/mediatek/gpu/ged/include \
+             -I$(srctree)/drivers/misc/mediatek/video/   \
+             -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
              -I$(srctree)/drivers/misc/mediatek/video/include/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
              -I$(srctree)/drivers/misc/mediatek/sync/ \
@@ -28,35 +28,23 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v3/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/hdmi/inc/ \
-             -I$(srctree)/drivers/misc/mediatek/smi \
              -I$(srctree)/drivers/staging/android/ion \
-             -I$(srctree)/drivers/staging/android/ion/mtk \
-             -I$(srctree)/drivers/misc/mediatek/lcm/inc
+             -I$(srctree)/drivers/misc/mediatek/lcm/inc \
+	     -I$(srctree)/drivers/misc/mediatek/emi_bwl/mt6799/
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
+ccflags-y += -I$(srctree)/drivers/staging/android/ion \
+             -I$(srctree)/drivers/staging/android/ion/mtk
 
 ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "MT8193")
 ccflags-y +=	-DHDMI_MT8193_SUPPORT
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hdmi/mt8193/
 endif
 
-ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "Sii8348")
-ccflags-y +=	-DSII8348_SUPPORT
-endif
-ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "ANX7805")
-ccflags-y +=	-DANX7805_SUPPORT
-endif
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/$(MTK_PLATFORM)/
 
-obj-y :=  \
-    external_display.o \
-    mtk_extd_mgr.o   \
-    extd_debug.o \
-    extd_utils.o \
-    extd_hdmi.o \
-    extd_epd.o \
-    extd_lcm.o \
-    extd_multi_control.o \
-    extd_factory.o
-
-obj-$(CONFIG_MTK_HDMI_SUPPORT) += test/
+obj-y +=  \
+    dpi_dvt_test.o \
+    dpi_dvt_platform.o \
+    ddp_dpi_ext.o
