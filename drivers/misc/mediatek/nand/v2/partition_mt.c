@@ -558,7 +558,7 @@ void construct_mtd_partition(struct mtd_info *mtd)
 		PartInfo[i].type = NAND;
 		PartInfo[i].start_address = lastest_part[i].offset;
 		PartInfo[i].size = lastest_part[i].size;
-		partition_type_array[i] = lastest_part[i].part_id;
+		partition_type_array[i] = lastest_part[i].ext.type;
 
 		if (!strcmp(lastest_part[i].name, "BMTPOOL")) {
 			g_exist_Partition[i].offset = mtd->size

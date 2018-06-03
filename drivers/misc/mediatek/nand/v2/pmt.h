@@ -45,10 +45,20 @@ typedef struct {
 #define REGION_SLC_MODE 0x00534C43
 #define REGION_TLC_MODE 0x00544C43
 #endif
+
+#define PART_ATTR_FTL_IMG 0x00000001
+struct extension {
+	unsigned int type;
+	unsigned int attr;
+};
+
 typedef struct {
 	char name[MAX_PARTITION_NAME_LEN];	/* partition name */
 	unsigned long long size;	/* partition size */
-	unsigned long long part_id;	/* partition region */ /*will be used as download type on L branch. xiaolei */
+	union {
+		unsigned long long part_id;
+		struct extension ext;
+	};
 	unsigned long long offset;	/* partition start */
 	unsigned long long mask_flags;	/* partition flags */
 
