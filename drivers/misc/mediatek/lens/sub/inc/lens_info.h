@@ -85,12 +85,22 @@ struct stAF_MotorCmd {
 };
 
 /* Structures */
+#define OIS_DATA_NUM 8
+#define OIS_DATA_MASK (OIS_DATA_NUM - 1)
+struct stAF_OisPosInfo {
+	int64_t TimeStamp[OIS_DATA_NUM];
+	int i4OISHallPosX[OIS_DATA_NUM];
+	int i4OISHallPosY[OIS_DATA_NUM];
+};
+
+/* Structures */
 struct stAF_DrvList {
 	u8 uEnable;
 	u8 uDrvName[32];
 	int (*pAF_SetI2Cclient)(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
 	long (*pAF_Ioctl)(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 	int (*pAF_Release)(struct inode *a_pstInode, struct file *a_pstFile);
+	int (*pAF_OisGetHallPos)(int *PosX, int *PosY);
 };
 
 
@@ -122,5 +132,7 @@ struct stAF_DrvList {
 #define AFIOC_S_SETPOWERCTRL _IOW(AF_MAGIC, 13, u32)
 
 #define AFIOC_S_SETLENSTEST  _IOW(AF_MAGIC, 14, u32)
+
+#define AFIOC_G_OISPOSINFO _IOR(AF_MAGIC, 15, struct stAF_OisPosInfo)
 
 #endif
