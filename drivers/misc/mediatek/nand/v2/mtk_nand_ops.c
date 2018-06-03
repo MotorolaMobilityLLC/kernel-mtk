@@ -108,7 +108,7 @@ static int mtk_nand_read_pages(struct mtk_nand_chip_info *info,
 		page_size = info->data_page_size;
 		oob_size = info->log_oob_size;
 	} else {
-		nand_debug("Read SLC mode");
+		/* nand_debug("Read SLC mode"); */
 		devinfo.tlcControl.slcopmodeEn = TRUE;
 		page_size = info->log_page_size;
 		oob_size = info->log_oob_size;
@@ -203,9 +203,16 @@ static int mtk_nand_write_pages(struct mtk_nand_chip_operation *ops0,
 		}
 		if (mtk_isbad_block(ops1->block))
 			page_addr1 = 0;
-		else
-			page_addr1 = (ops1->block+data_info->bmt.start_block)*info->data_page_num
+		else {
+			if ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+				&& (ops1->block >= info->data_block_num)) {
+				page_addr1 = (ops1->block+data_info->bmt.start_block)*info->data_page_num
+						+ ops1->page*MTK_TLC_DIV;
+			} else {
+				page_addr1 = (ops1->block+data_info->bmt.start_block)*info->data_page_num
 					+ ops1->page;
+			}
+		}
 	} else {
 		page_addr1 = 0;
 	}
@@ -218,8 +225,8 @@ static int mtk_nand_write_pages(struct mtk_nand_chip_operation *ops0,
 		page_addr0 = (ops0->block+data_info->bmt.start_block)*info->data_page_num
 				+ ops0->page;
 
-	nand_debug("%s: start page_addr0= 0x%x page_addr1=0x%x",
-		__func__, page_addr0, page_addr1);
+	nand_debug("page_addr0= 0x%x page_addr1=0x%x",
+		page_addr0, page_addr1);
 #if 0
 	/* Grab the lock and see if the device is available */
 	nand_get_device(mtd, FL_WRITING);
@@ -275,6 +282,8 @@ static int mtk_nand_write_pages(struct mtk_nand_chip_operation *ops0,
 			}
 
 			if ((devinfo.advancedmode & MULTI_PLANE)  && page_addr1) {
+				nand_debug("write Multi_plane mode page_addr0:0x%x page_addr1:0x%x",
+					page_addr0, page_addr1);
 				tlc_snd_phyplane = TRUE;
 				tlc_lg_left_plane = TRUE;
 				memcpy(fdm_buf, ops1->oob_buffer, oob_size);
@@ -315,6 +324,8 @@ static int mtk_nand_write_pages(struct mtk_nand_chip_operation *ops0,
 
 			if ((devinfo.tlcControl.normaltlc)
 					&& ((devinfo.advancedmode & MULTI_PLANE) && page_addr1)) {
+				nand_debug("write Multi_plane mode page_addr0:0x%x page_addr1:0x%x",
+					page_addr0, page_addr1);
 				tlc_snd_phyplane = TRUE;
 				memcpy(fdm_buf, ops1->oob_buffer, oob_size);
 
@@ -388,7 +399,7 @@ static int mtk_nand_erase_blocks(struct mtk_nand_chip_operation *ops0,
 	int status;
 	int ret = 0;
 
-	nand_debug("%s: start block= 0x%x", __func__, ops0->block);
+	nand_debug("block0= 0x%x", ops0->block);
 
 	if (ops0 == NULL) {
 		nand_err("ops0 is NULL");
@@ -1325,11 +1336,11 @@ static void mtk_nand_dump_bbt_info(struct mtk_nand_chip_bbt_info *chip_bbt)
 #if 1
 	unsigned int i;
 
-	nand_debug("mtk_nand_dump_bbt_info bad_block_num:0x%x",
+	nand_info("mtk_nand_dump_bbt_info bad_block_num:0x%x",
 			chip_bbt->bad_block_num);
 
 	for (i = 0; i < chip_bbt->bad_block_num; i++) {
-		nand_debug("bad_index:0x%x",
+		nand_info("bad_index:0x%x",
 			chip_bbt->bad_block_table[i]);
 	}
 #endif
@@ -1373,20 +1384,26 @@ static int mtk_chip_info_init(struct mtk_nand_chip_info *chip_info)
 			page_per_block/MTK_TLC_DIV;
 		chip_info->log_block_size =
 			chip_info->data_block_size/MTK_TLC_DIV;
-		if (devinfo.advancedmode & MULTI_PLANE)
-			chip_info->data_block_num &= (int)(~0x1);
 	} else {
 
 		chip_info->log_page_num =
 			page_per_block/MTK_MLC_DIV;
 		chip_info->log_block_size =
 			chip_info->data_block_size/MTK_MLC_DIV;
-		if (devinfo.advancedmode & MULTI_PLANE)
-			chip_info->data_block_num &= (int)(~0x1);
+	}
+
+	if (devinfo.advancedmode & MULTI_PLANE) {
+		chip_info->data_block_num >>= 1;
+		chip_info->data_block_num <<= 1;
 	}
 
 	chip_info->log_block_num =
 		data_info->partition_info.total_block - chip_info->data_block_num;
+
+	if (devinfo.advancedmode & MULTI_PLANE) {
+		chip_info->log_block_num >>= 1;
+		chip_info->log_block_num <<= 1;
+	}
 
 	chip_info->data_oob_size = (devinfo.pagesize >> host->hw->nand_sec_shift)
 					* host->hw->nand_fdm_size;
@@ -1448,7 +1465,7 @@ static void mtk_nand_dump_partition_info(
 	nand_debug("start_block:0x%x", partition_info->start_block);
 	nand_debug("total_block:0x%x", partition_info->total_block);
 	nand_debug("slc_ratio:%d", partition_info->slc_ratio);
-	nand_debug("slc_ratio:%d", partition_info->slc_block);
+	nand_debug("slc_block:%d", partition_info->slc_block);
 }
 
 static void mtk_nand_dump_bmt_info(struct data_bmt_struct *data_bmt)
@@ -1689,8 +1706,8 @@ int mtk_nand_chip_erase_block(struct mtk_nand_chip_info *info,
 
 	list_ctrl = &data_info->elist_ctrl;
 
-	nand_debug("block:%d, page:%d, add(%p)",
-		block, page, &work->list);
+	nand_debug("block:%d, add(%p)",
+		block, &work->list);
 
 	add_list_node(list_ctrl, &work->list);
 
@@ -1936,14 +1953,15 @@ void mtk_chip_unit_test(void)
 	mtk_chip_mark_bad_block(0x50);
 	mtk_chip_mark_bad_block(0x78);
 	mtk_chip_mark_bad_block(0x9);
+
 	/* dump bbt info*/
-	nand_debug("dump bbt info");
+	nand_info("dump bbt info");
 	for (i = 0; i < pt_info->total_block; i++)
 		mtk_isbad_block(i);
 #endif
 
 	/*** block Erase/Write/Read ***/
-	nand_err("chip_info->data_block_num:0x%x",
+	nand_info("chip_info->data_block_num:0x%x",
 		chip_info->data_block_num);
 
 	data_flag = 0;
@@ -1961,8 +1979,12 @@ void mtk_chip_unit_test(void)
 #endif
 
 	/* for (i = 0; i < 1; i += 2) { */
+#ifdef MTK_NAND_CHIP_MULTI_PLANE_TEST
+	for (i = 0; i < chip_info->data_block_num + chip_info->log_block_num; i += 2) {
+#else
 	for (i = 0; i < chip_info->data_block_num + chip_info->log_block_num; i++) {
-
+#endif
+		nand_info("Begin to test block:0x%x", i);
 		/* block test*/
 		if (i < chip_info->data_block_num)
 			pages_per_blk = chip_info->data_page_num;
@@ -1984,6 +2006,11 @@ void mtk_chip_unit_test(void)
 			continue;
 		}
 #ifdef MTK_NAND_CHIP_MULTI_PLANE_TEST
+		if (mtk_isbad_block(i+1)) {
+			nand_err("Skip bad blk:0x%x", i);
+			continue;
+		}
+
 		ret = mtk_nand_chip_erase_block(chip_info, i+1, 1,
 			&mtk_nand_debug_callback, &userdata);
 		if (ret) {
@@ -2018,9 +2045,9 @@ void mtk_chip_unit_test(void)
 			memcpy(oob_buf, oob_buffer, chip_info->data_oob_size);
 #endif
 #ifdef MTK_NAND_CHIP_DUMP_DATA_TEST
-			nand_debug("write blk:0x%x page:0x%x data dump", i, j);
+			nand_info("write blk:0x%x page:0x%x data dump", i, j);
 			dump_buf_data(data_buffer, chip_info->data_oob_size);
-			nand_debug("oob dump here");
+			nand_info("oob dump here");
 			dump_buf_data(oob_buffer, chip_info->data_oob_size);
 #endif
 			userdata = (i*chip_info->data_page_num + j) | (1<<30);
@@ -2074,61 +2101,16 @@ void mtk_chip_unit_test(void)
 #endif
 
 #if 1
-		read_cnt = 0;
+		read_cnt = 1;
 		prandom_bytes(data_buffer, chip_info->data_page_size);
 		psequence_bytes(oob_buffer, chip_info->data_oob_size);
 READ_DISTUB:
-		nand_err("block:0x%x, read_cnt:0x%x", i, read_cnt);
+		nand_info("block:0x%x, read_cnt:0x%x", i, read_cnt);
 
 		for (j = 0; j < pages_per_blk; j++) {
 			memset(data_buffer, 0, chip_info->data_page_size);
 			memset(oob_buffer, 0, chip_info->data_oob_size);
 
-#ifdef MTK_NAND_CHIP_MULTI_PLANE_TEST
-			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
-				i, j, 0, chip_info->data_page_size/4);
-			if (ret) {
-				nand_err("bad block here block:0x%x", i);
-				break;
-			}
-
-			if (j == 0) {
-				nand_debug("read blk:0x%x page:0x%x data dump", i, j);
-				dump_buf_data(data_buffer, chip_info->data_oob_size);
-				nand_debug("oob dump here");
-				dump_buf_data(oob_buffer, chip_info->data_oob_size);
-			}
-			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer, i, j,
-				chip_info->data_page_size/4, chip_info->data_page_size/4);
-			if (ret) {
-				nand_err("bad block here block:0x%x", i);
-				break;
-			}
-
-			if (j == 0) {
-				nand_debug("read blk:0x%x page:0x%x data dump", i, j);
-				dump_buf_data(data_buffer, chip_info->data_oob_size);
-				nand_debug("oob dump here");
-				dump_buf_data(oob_buffer, chip_info->data_oob_size);
-			}
-
-			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer, i, j,
-				chip_info->data_page_size/2, chip_info->data_page_size/2);
-			if (ret) {
-				nand_err("bad block here block:0x%x", i);
-				break;
-			}
-
-#ifdef MTK_NAND_CHIP_DUMP_DATA_TEST
-			if (j == 0) {
-				nand_debug("read blk:0x%x page:0x%x data dump", i, j);
-				dump_buf_data(data_buffer, chip_info->data_oob_size);
-				nand_debug("oob dump here");
-				dump_buf_data(oob_buffer, chip_info->data_oob_size);
-			}
-#endif
-
-#endif
 			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
 				i, j, 0, chip_info->data_page_size);
 			if (ret && (ret != -ENANDFLIPS)) {
@@ -2142,14 +2124,14 @@ READ_DISTUB:
 			}
 
 #ifdef MTK_NAND_CHIP_DUMP_DATA_TEST
-			nand_err("read blk:0x%x page:0x%x data first 64 bytes dump", i, j);
+			nand_info("read blk:0x%x page:0x%x data first 64 bytes dump", i, j);
 			dump_buf_data(data_buffer, chip_info->data_oob_size);
-			nand_err("data last 64 bytes dump");
+			nand_info("data last 64 bytes dump");
 			dump_buf_data((data_buffer+chip_info->data_page_size
 					-chip_info->data_oob_size),
 					chip_info->data_oob_size);
 
-			nand_err("oob dump here");
+			nand_info("oob dump here");
 			dump_buf_data(oob_buffer, chip_info->data_oob_size);
 #endif
 
@@ -2160,6 +2142,41 @@ READ_DISTUB:
 			if (compare_data(oob_buffer, oob_buf, chip_info->data_oob_size))
 				nand_err("######check fdm failed i:0x%x j:0x%x", i, j);
 #endif
+
+#ifdef MTK_NAND_CHIP_MULTI_PLANE_TEST
+			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
+				i+1, j, 0, chip_info->data_page_size);
+			if (ret && (ret != -ENANDFLIPS)) {
+				nand_err("read block failed i:0x%x j:0x%x", i, j);
+				break;
+			}
+
+			if (check_data_empty(data_buffer, chip_info->data_page_size)) {
+				nand_err("*****Check empty page here blk:0x%x page:0x%x ", i+1, j);
+				break;
+			}
+
+#ifdef MTK_NAND_CHIP_DUMP_DATA_TEST
+			nand_info("read blk:0x%x page:0x%x data first 64 bytes dump", i+1, j);
+			dump_buf_data(data_buffer, chip_info->data_oob_size);
+			nand_info("data last 64 bytes dump");
+			dump_buf_data((data_buffer+chip_info->data_page_size
+					-chip_info->data_oob_size),
+					chip_info->data_oob_size);
+
+			nand_info("oob dump here");
+			dump_buf_data(oob_buffer, chip_info->data_oob_size);
+#endif
+
+#ifdef MTK_NAND_READ_COMPARE
+			if (compare_data(data_buffer, temp_buf, chip_info->data_page_size))
+				nand_err("$$$$$$check data failed i:0x%x j:0x%x", i+1, j);
+
+			if (compare_data(oob_buffer, oob_buf, chip_info->data_oob_size))
+				nand_err("######check fdm failed i:0x%x j:0x%x", i+1, j);
+#endif
+#endif
+
 		}
 
 		if (read_cnt++ < 1)
