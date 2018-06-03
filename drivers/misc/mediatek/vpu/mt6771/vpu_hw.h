@@ -278,9 +278,9 @@ void vpu_dump_algo_segment(int core, int algo_id, int size);
  */
 #define VPU_OFFSET_COMMAND           (0x00000000)
 #define VPU_OFFSET_LOG               (0x00002000)
-#define VPU_SIZE_LOG_BUF             (0x00002000)
+#define VPU_SIZE_LOG_BUF             (0x00010000)
 #define VPU_SIZE_LOG_SHIFT           (0x00000300)
 #define VPU_SIZE_LOG_HEADER          (0x00000010)
-#define VPU_SIZE_WORK_BUF            (0x00004000)
+#define VPU_SIZE_WORK_BUF            (0x00012000)
 
 #endif
