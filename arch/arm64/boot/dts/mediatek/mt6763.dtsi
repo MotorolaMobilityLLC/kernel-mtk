@@ -1341,6 +1341,18 @@
 			<GIC_SPI 259 IRQ_TYPE_LEVEL_LOW>,
 			<GIC_SPI 258 IRQ_TYPE_LEVEL_LOW>;
 		interrupt-names = "JOB", "MMU", "GPU";
+		clocks =
+			<&mfgcfg MFGCFG_BG3D>,
+			<&scpsys SCP_SYS_MFG_ASYNC>,
+			<&scpsys SCP_SYS_MFG>,
+			<&scpsys SCP_SYS_MFG_CORE0>,
+			<&scpsys SCP_SYS_MFG_CORE1>;
+		clock-names =
+			"subsys-mfg-cg",
+			"mtcmos-mfg-async",
+			"mtcmos-mfg",
+			"mtcmos-mfg-core0",
+			"mtcmos-mfg-core1";
 	};
 
 	mali_tb@1307f000 {
