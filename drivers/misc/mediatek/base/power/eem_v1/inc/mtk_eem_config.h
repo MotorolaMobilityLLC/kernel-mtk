@@ -51,7 +51,7 @@
 #define SET_PMIC_VOLT (1)
 #define SET_PMIC_VOLT_TO_DVFS (1)
 #define LOG_INTERVAL	(2LL * NSEC_PER_SEC)
-#define ITurbo (0)
+#define ITurbo (1)
 
 /* fake devinfo for early verification */
 /* big */
@@ -80,10 +80,10 @@
 #define DEVINFO_IDX_8 58
 #define DEVINFO_IDX_9 59
 /* soc */
-#define DEVINFO_10 0x00000000
-#define DEVINFO_11 0x00000000
-#define DEVINFO_IDX_10 62
-#define DEVINFO_IDX_11 63
+#define DEVINFO_10 0x10E097C0
+#define DEVINFO_11 0x004E0063
+#define DEVINFO_IDX_10 68 /* 62 */
+#define DEVINFO_IDX_11 69 /* 63 */
 #define DEVINFO_IDX_VOLT_BIN 122
 
 /* atever */
