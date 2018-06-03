@@ -1632,7 +1632,8 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 	if (!musb_ep->desc) {
 		DBG(2, "req %p queued to %s while ep %s\n", req, ep->name, "disabled");
 		status = -ESHUTDOWN;
-		goto cleanup;
+		unmap_dma_buffer(request, musb);
+		goto unlock;
 	}
 
 	/* add request to the list */
@@ -1674,7 +1675,7 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 				} else {
 					/* let qmu_done_tx to handle this */
 					QMU_WARN("TX ZLP sent in qmu_done_tx\n");
-					goto cleanup;
+					goto unlock;
 				}
 #endif
 			} else {
@@ -1685,7 +1686,6 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 			musb_kick_D_CmdQ(musb, request);
 		}
 	}
-	goto cleanup;
 #else
 #ifdef RX_DMA_MODE1
 	/* it this is the head of the queue, start i/o ... */
@@ -1712,7 +1712,7 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 #endif
 #endif
 
-cleanup:
+unlock:
 	spin_unlock_irqrestore(&musb->lock, lockflags);
 	return status;
 }
