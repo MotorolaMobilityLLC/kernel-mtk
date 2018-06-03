@@ -423,18 +423,20 @@ void mt_aee_dump_sched_traces(void)
 			memset(wdt_sched_mon_log_buf, 0,
 				sizeof(wdt_sched_mon_log_buf));
 		} else {
-		    snprintf(wdt_sched_mon_log_buf,
-			sizeof(wdt_sched_mon_log_buf),
-			"[In ISR]Current irq#:%d,Start:%lld (elapsed: %lld),",
-			(int)b_isr->cur_event,
-			usec_high(b_isr->cur_ts),
-			usec_high(sched_clock() - b_isr->cur_ts));
-		    snprintf(wdt_sched_mon_log_buf,
-			sizeof(wdt_sched_mon_log_buf),
-			" last irq#:%d, s:%lld, e:%lld\n\n",
-			(int)b_isr->last_event,
-			usec_high(b_isr->last_ts),
-			usec_high(b_isr->last_te));
+			ssize_t count = 0;
+
+			count = snprintf(wdt_sched_mon_log_buf,
+				sizeof(wdt_sched_mon_log_buf),
+				"[In ISR]Current irq#:%d, Start:%lld (elapsed: %lld),",
+				(int)b_isr->cur_event,
+				usec_high(b_isr->cur_ts),
+				usec_high(sched_clock() - b_isr->cur_ts));
+			snprintf(wdt_sched_mon_log_buf + count,
+				sizeof(wdt_sched_mon_log_buf) - count,
+				" last irq#:%d, s:%lld, e:%lld\n\n",
+				(int)b_isr->last_event,
+				usec_high(b_isr->last_ts),
+				usec_high(b_isr->last_te));
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_sram_fiq_log(wdt_sched_mon_log_buf);
@@ -456,12 +458,14 @@ void mt_aee_dump_sched_traces(void)
 			memset(wdt_sched_mon_log_buf, 0,
 				sizeof(wdt_sched_mon_log_buf));
 		} else {
-			snprintf(wdt_sched_mon_log_buf,
+			ssize_t count = 0;
+
+			count = snprintf(wdt_sched_mon_log_buf,
 				sizeof(wdt_sched_mon_log_buf),
 				"[In Softirq]Current softirq#:%d,",
 				(int)b_sq->cur_event);
-			snprintf(wdt_sched_mon_log_buf,
-				sizeof(wdt_sched_mon_log_buf),
+			snprintf(wdt_sched_mon_log_buf + count,
+				sizeof(wdt_sched_mon_log_buf) - count,
 				" Start:%lld(elapsed: %lld),",
 				usec_high(b_sq->cur_ts),
 				usec_high(sched_clock() - b_sq->cur_ts));
@@ -471,13 +475,13 @@ void mt_aee_dump_sched_traces(void)
 #endif
 			memset(wdt_sched_mon_log_buf, 0,
 				sizeof(wdt_sched_mon_log_buf));
-			snprintf(wdt_sched_mon_log_buf,
+			count = snprintf(wdt_sched_mon_log_buf,
 				sizeof(wdt_sched_mon_log_buf),
 				" last softirq#:%d(dur:%lld),",
 				(int)b_sq->last_event,
 				usec_high(b_sq->last_te - b_sq->last_ts));
-			snprintf(wdt_sched_mon_log_buf,
-				sizeof(wdt_sched_mon_log_buf),
+			snprintf(wdt_sched_mon_log_buf + count,
+				sizeof(wdt_sched_mon_log_buf) - count,
 				" s:%lld, e:%lld\n\n",
 				usec_high(b_sq->last_ts),
 				usec_high(b_sq->last_te));
@@ -490,13 +494,15 @@ void mt_aee_dump_sched_traces(void)
 		}
 
 		if (b_tk->cur_event == 0) {
-			snprintf(wdt_sched_mon_log_buf,
+			ssize_t count = 0;
+
+			count = snprintf(wdt_sched_mon_log_buf,
 				sizeof(wdt_sched_mon_log_buf),
 				"[Tasklet]%d/SoftIRQ\n %pS",
 				(int)b_tk->last_count,
 				(void *)b_tk->last_event);
-			snprintf(wdt_sched_mon_log_buf,
-				sizeof(wdt_sched_mon_log_buf),
+			snprintf(wdt_sched_mon_log_buf + count,
+				sizeof(wdt_sched_mon_log_buf) - count,
 				" dur:%lld s:%lld\n\n",
 				usec_high(b_tk->last_te - b_tk->last_ts),
 				usec_high(b_tk->last_ts));
@@ -507,14 +513,16 @@ void mt_aee_dump_sched_traces(void)
 			memset(wdt_sched_mon_log_buf, 0,
 				sizeof(wdt_sched_mon_log_buf));
 		} else {
-			snprintf(wdt_sched_mon_log_buf,
+			ssize_t count = 0;
+
+			count = snprintf(wdt_sched_mon_log_buf,
 				sizeof(wdt_sched_mon_log_buf),
-				"[In Tasklet]\n Occurs: cur:%d,last:%d\n",
+				"[In Tasklet]\n Occurs: cur:%d, last:%d\n",
 				(int)b_tk->cur_count,
 				(int)b_tk->last_count);
-			snprintf(wdt_sched_mon_log_buf,
-				sizeof(wdt_sched_mon_log_buf),
-				" Current:%pS,Start:%lld(elapsed: %lld),",
+			snprintf(wdt_sched_mon_log_buf + count,
+				sizeof(wdt_sched_mon_log_buf) - count,
+				" Current:%pS, Start:%lld(elapsed: %lld),",
 				(void *)b_tk->cur_event,
 				usec_high(b_tk->cur_ts),
 				usec_high(sched_clock() - b_tk->cur_ts));
@@ -524,13 +532,13 @@ void mt_aee_dump_sched_traces(void)
 #endif
 			memset(wdt_sched_mon_log_buf, 0,
 				sizeof(wdt_sched_mon_log_buf));
-			snprintf(wdt_sched_mon_log_buf,
+			count = snprintf(wdt_sched_mon_log_buf,
 				sizeof(wdt_sched_mon_log_buf),
 				" last#:%pS(dur:%lld),",
 				(void *)b_tk->last_event,
 				usec_high(b_tk->last_te - b_tk->last_ts));
-			snprintf(wdt_sched_mon_log_buf,
-				sizeof(wdt_sched_mon_log_buf),
+			snprintf(wdt_sched_mon_log_buf + count,
+				sizeof(wdt_sched_mon_log_buf) - count,
 				" last_start:%lld, last_end:%lld\n\n",
 				usec_high(b_tk->last_ts),
 				usec_high(b_tk->last_te));
@@ -556,14 +564,16 @@ void mt_aee_dump_sched_traces(void)
 			memset(wdt_sched_mon_log_buf, 0,
 				sizeof(wdt_sched_mon_log_buf));
 		} else {
-			snprintf(wdt_sched_mon_log_buf,
+			ssize_t count = 0;
+
+			count = snprintf(wdt_sched_mon_log_buf,
 				sizeof(wdt_sched_mon_log_buf),
-				"[In HRTimer]\n Occurs: cur:%d,last:%d\n",
+				"[In HRTimer]\n Occurs: cur:%d, last:%d\n",
 				(int)b_tk->cur_count,
 				(int)b_tk->last_count);
-			snprintf(wdt_sched_mon_log_buf,
-				sizeof(wdt_sched_mon_log_buf),
-				"  Current:%pS,Start:%lld(elapsed: %lld),",
+			snprintf(wdt_sched_mon_log_buf + count,
+				sizeof(wdt_sched_mon_log_buf) - count,
+				" Current:%pS, Start:%lld(elapsed: %lld),",
 				(void *)b_hrt->cur_event,
 				usec_high(b_hrt->cur_ts),
 				usec_high(sched_clock() - b_hrt->cur_ts));
@@ -573,13 +583,13 @@ void mt_aee_dump_sched_traces(void)
 #endif
 			memset(wdt_sched_mon_log_buf, 0,
 				sizeof(wdt_sched_mon_log_buf));
-			snprintf(wdt_sched_mon_log_buf,
+			count = snprintf(wdt_sched_mon_log_buf,
 				sizeof(wdt_sched_mon_log_buf),
 				" last#:%pS(dur:%lld),",
 				(void *)b_hrt->last_event,
 				usec_high(b_hrt->last_te - b_hrt->last_ts));
-			snprintf(wdt_sched_mon_log_buf,
-				sizeof(wdt_sched_mon_log_buf),
+			snprintf(wdt_sched_mon_log_buf + count,
+				sizeof(wdt_sched_mon_log_buf) - count,
 				" last_start:%lld, last_end:%lld\n\n",
 				usec_high(b_hrt->last_ts),
 				usec_high(b_hrt->last_te));
@@ -607,18 +617,19 @@ void mt_aee_dump_sched_traces(void)
 			memset(wdt_sched_mon_log_buf, 0,
 				sizeof(wdt_sched_mon_log_buf));
 		} else {
-			snprintf(wdt_sched_mon_log_buf,
-			sizeof(wdt_sched_mon_log_buf),
-			"[In SoftTimer]\n Occurs: cur:%d,last:%d\n",
-			(int)b_sft->cur_count,
-			(int)b_sft->last_count);
+			ssize_t count = 0;
 
-			snprintf(wdt_sched_mon_log_buf,
-			sizeof(wdt_sched_mon_log_buf),
-			" Current:%pS,Start:%lld(elapsed: %lld),",
-			(void *)b_sft->cur_event,
-			usec_high(b_sft->cur_ts),
-			usec_high(sched_clock() - b_sft->cur_ts));
+			count = snprintf(wdt_sched_mon_log_buf,
+				sizeof(wdt_sched_mon_log_buf),
+				"[In SoftTimer]\n Occurs: cur:%d, last:%d\n",
+				(int)b_sft->cur_count,
+				(int)b_sft->last_count);
+			snprintf(wdt_sched_mon_log_buf + count,
+				sizeof(wdt_sched_mon_log_buf) - count,
+				" Current:%pS, Start:%lld(elapsed: %lld),",
+				(void *)b_sft->cur_event,
+				usec_high(b_sft->cur_ts),
+				usec_high(sched_clock() - b_sft->cur_ts));
 
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
@@ -626,16 +637,16 @@ void mt_aee_dump_sched_traces(void)
 #endif
 			memset(wdt_sched_mon_log_buf, 0,
 				sizeof(wdt_sched_mon_log_buf));
-			snprintf(wdt_sched_mon_log_buf,
-			sizeof(wdt_sched_mon_log_buf),
-			" last#:%pS(dur:%lld), last_start:%lld,",
-			(void *)b_sft->last_event,
-			usec_high(b_sft->last_te - b_sft->last_ts),
-			usec_high(b_sft->last_ts));
-			snprintf(wdt_sched_mon_log_buf,
-			sizeof(wdt_sched_mon_log_buf),
-			" last_end:%lld\n\n",
-			usec_high(b_sft->last_te));
+			count = snprintf(wdt_sched_mon_log_buf,
+				sizeof(wdt_sched_mon_log_buf),
+				" last#:%pS(dur:%lld), last_start:%lld,",
+				(void *)b_sft->last_event,
+				usec_high(b_sft->last_te - b_sft->last_ts),
+				usec_high(b_sft->last_ts));
+			snprintf(wdt_sched_mon_log_buf + count,
+				sizeof(wdt_sched_mon_log_buf) - count,
+				" last_end:%lld\n\n",
+				usec_high(b_sft->last_te));
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_sram_fiq_log(wdt_sched_mon_log_buf);
