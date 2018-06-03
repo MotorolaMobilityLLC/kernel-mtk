@@ -959,7 +959,7 @@ int mrdump_mini_init(void)
 					  mrdump_sram_cb.start_addr);
 		mrdump_mini_add_entry((unsigned long)mrdump_cblock,
 				sizeof(struct mrdump_control_block) + 2 * PAGE_SIZE);
-		mrdump_mini_add_entry((unsigned long)mrdump_cblock->machdesc.kallsyms.start_addr +
+		mrdump_mini_add_entry((unsigned long) &kallsyms_addresses +
 				      (mrdump_cblock->machdesc.kallsyms.size / 2 - PAGE_SIZE),
 				      mrdump_cblock->machdesc.kallsyms.size + 2 * PAGE_SIZE);
 	}
