@@ -376,7 +376,7 @@ void disp_helper_option_init(void)
 
 	disp_helper_set_option(DISP_OPT_REG_PARSER_RAW_DUMP, 0);
 
-	disp_helper_set_option(DISP_OPT_AOD, 0);
+	disp_helper_set_option(DISP_OPT_AOD, 1);
 
 	/* ARR phase 1 option*/
 	disp_helper_set_option(DISP_OPT_ARR_PHASE_1, 0);
