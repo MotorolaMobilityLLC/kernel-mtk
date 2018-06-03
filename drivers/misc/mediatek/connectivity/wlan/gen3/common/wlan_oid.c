@@ -10999,3 +10999,43 @@ wlanoidDisableTdlsPs(IN P_ADAPTER_T prAdapter,
 							0);
 	return WLAN_STATUS_SUCCESS;
 }
+
+WLAN_STATUS
+wlanoidSetDrvRoamingPolicy(IN P_ADAPTER_T prAdapter,
+			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	UINT_32 u4RoamingPoily = 0;
+	P_ROAMING_INFO_T prRoamingFsmInfo;
+	P_CONNECTION_SETTINGS_T prConnSettings;
+	UINT_32 u4CurConPolicy;
+
+	ASSERT(prAdapter);
+	ASSERT(pvSetBuffer);
+
+	u4RoamingPoily = *(PUINT_32)pvSetBuffer;
+
+	prRoamingFsmInfo = (P_ROAMING_INFO_T) &(prAdapter->rWifiVar.rRoamingInfo);
+
+	prConnSettings = (P_CONNECTION_SETTINGS_T) &prAdapter->rWifiVar.rConnSettings;
+	u4CurConPolicy = prConnSettings->eConnectionPolicy;
+
+	if (u4RoamingPoily == 1) {
+		if (((prAdapter->rWifiVar.rAisFsmInfo.eCurrentState == AIS_STATE_NORMAL_TR)
+			|| (prAdapter->rWifiVar.rAisFsmInfo.eCurrentState == AIS_STATE_ONLINE_SCAN))
+			&& (prRoamingFsmInfo->eCurrentState == ROAMING_STATE_IDLE))
+			roamingFsmRunEventStart(prAdapter);
+
+		/*Change Connect by any , avoid to connect by BSSID on roaming or beacon timeout!*/
+		prConnSettings->eConnectionPolicy = CONNECT_BY_SSID_ANY;
+
+	} else {
+		if (prRoamingFsmInfo->eCurrentState != ROAMING_STATE_IDLE)
+			roamingFsmRunEventAbort(prAdapter);
+	}
+	prRoamingFsmInfo->fgDrvRoamingAllow = (BOOLEAN)u4RoamingPoily;
+
+	DBGLOG(REQ, INFO, "wlanoidSetDrvRoamingPolicy, RoamingPoily= %d, conn policy= [%d] -> [%d]\n",
+			u4RoamingPoily, u4CurConPolicy, prRoamingFsmInfo->fgDrvRoamingAllow);
+
+	return WLAN_STATUS_SUCCESS;
+}

@@ -91,6 +91,8 @@ typedef struct _ROAMING_INFO_T {
 	ENUM_ROAMING_STATE_T eCurrentState;
 
 	OS_SYSTIME rRoamingDiscoveryUpdateTime;
+
+	BOOLEAN fgDrvRoamingAllow;
 } ROAMING_INFO_T, *P_ROAMING_INFO_T;
 
 /*******************************************************************************
