@@ -1375,6 +1375,10 @@ static void __init mtk_topckgen_init(struct device_node *node)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	cksys_base = base;
+
+	clk_writel(CLK_SCP_CFG_0, clk_readl(CLK_SCP_CFG_0) | 0x3FF);
+	clk_writel(CLK_SCP_CFG_1, clk_readl(CLK_SCP_CFG_1) | 0x11);
+
 }
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,topckgen", mtk_topckgen_init);
 
