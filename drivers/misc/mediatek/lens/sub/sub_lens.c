@@ -29,11 +29,6 @@
 #include <linux/compat.h>
 #endif
 
-/* kernel standard for PMIC*/
-#if !defined(CONFIG_MTK_LEGACY)
-#include <linux/regulator/consumer.h>
-#endif
-
 #include "lens_info.h"
 
 #define AF_DRVNAME "SUBAF"
@@ -92,12 +87,6 @@ static struct cdev *g_pAF_CharDrv;
 static struct class *actuator_class;
 static struct device *lens_device;
 
-/* PMIC */
-#if !defined(CONFIG_MTK_LEGACY)
-static struct regulator *regVCAMAF;
-static int g_regVCAMAFEn;
-#endif
-
 static long AF_SetMotorName(__user struct stAF_MotorName *pstMotorName)
 {
 	long i4RetValue = -1;
@@ -106,6 +95,10 @@ static long AF_SetMotorName(__user struct stAF_MotorName *pstMotorName)
 
 	if (copy_from_user(&stMotorName, pstMotorName, sizeof(struct stAF_MotorName)))
 		LOG_INF("copy to user failed when getting motor information\n");
+
+#if !defined(CONFIG_MTK_LEGACY)
+	AFRegulatorCtrl(1);
+#endif
 
 	LOG_INF("Set Motor Name : %s\n", stMotorName.uMotorName);
 
@@ -145,73 +138,6 @@ static long AF_SetLensMotorName(struct stAF_MotorName stMotorName)
 		}
 	}
 	return i4RetValue;
-}
-#endif
-
-#if !defined(CONFIG_MTK_LEGACY)
-static void AFRegulatorCtrl(int Stage)
-{
-	if (Stage == 0) {
-		if (regVCAMAF == NULL) {
-			struct device_node *node, *kd_node;
-
-			/* check if customer camera node defined */
-			node = of_find_compatible_node(NULL, NULL, "mediatek,CAMERA_MAIN_AF");
-
-			if (node) {
-				kd_node = lens_device->of_node;
-				lens_device->of_node = node;
-
-				regVCAMAF = regulator_get(lens_device, "vcamaf");
-				LOG_INF("[Init] regulator_get %p\n", regVCAMAF);
-
-				lens_device->of_node = kd_node;
-			}
-		}
-	} else if (Stage == 1) {
-		int Status = regulator_is_enabled(regVCAMAF);
-
-		LOG_INF("regulator_is_enabled %d\n", Status);
-
-		if (!Status) {
-			Status = regulator_set_voltage(regVCAMAF, 2800000, 2800000);
-
-			LOG_INF("regulator_set_voltage %d\n", Status);
-
-			if (Status != 0)
-				LOG_INF("regulator_set_voltage fail\n");
-
-			Status = regulator_enable(regVCAMAF);
-			LOG_INF("regulator_enable %d\n", Status);
-
-			if (Status != 0)
-				LOG_INF("regulator_enable fail\n");
-
-			g_regVCAMAFEn = 1;
-			msleep(100);
-		} else {
-			LOG_INF("AF Power on\n");
-		}
-	} else {
-		if (g_regVCAMAFEn == 1) {
-			int Status = regulator_is_enabled(regVCAMAF);
-
-			LOG_INF("regulator_is_enabled %d\n", Status);
-
-			if (Status) {
-				LOG_INF("Camera Power enable\n");
-
-				Status = regulator_disable(regVCAMAF);
-				LOG_INF("regulator_disable %d\n", Status);
-				if (Status != 0)
-					LOG_INF("Fail to regulator_disable\n");
-			}
-			regulator_put(regVCAMAF);
-			LOG_INF("AFIOC_S_SETPOWERCTRL regulator_put %p\n", regVCAMAF);
-			regVCAMAF = NULL;
-			g_regVCAMAFEn = 0;
-		}
-	}
 }
 #endif
 
@@ -295,6 +221,10 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		g_s4AF_Opened = 0;
 		spin_unlock(&g_AF_SpinLock);
 	}
+
+#if !defined(CONFIG_MTK_LEGACY)
+	AFRegulatorCtrl(2);
+#endif
 
 	LOG_INF("End\n");
 
@@ -406,7 +336,6 @@ static struct i2c_driver AF_i2c_driver = {
 
 static int AF_i2c_remove(struct i2c_client *client)
 {
-	AFRegulatorCtrl(2);
 	return 0;
 }
 
@@ -432,10 +361,7 @@ static int AF_i2c_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 	spin_lock_init(&g_AF_SpinLock);
 
-	regVCAMAF = NULL;
-	g_regVCAMAFEn = 0;
-
-#if 0 /* ndef CONFIG_MTK_LEGACY */
+#if !defined(CONFIG_MTK_LEGACY)
 	AFRegulatorCtrl(0);
 #endif
 
