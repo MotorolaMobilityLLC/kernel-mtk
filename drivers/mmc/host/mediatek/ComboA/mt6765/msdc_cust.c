@@ -72,7 +72,7 @@ u32 dma_size[HOST_MAX_NUM] = {
 };
 
 u32 drv_mode[HOST_MAX_NUM] = {
-	MODE_PIO, /* using DMA or not depend on the size */
+	MODE_SIZE_DEP, /* using DMA or not depend on the size */
 	MODE_SIZE_DEP,
 	MODE_SIZE_DEP
 };
