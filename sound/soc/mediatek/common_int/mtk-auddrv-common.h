@@ -126,6 +126,7 @@ struct afe_mem_control_t {
 	bool interruptTrigger;
 	spinlock_t substream_lock;
 	bool mWaitForIRQ;
+	bool mAssignDRAM;
 };
 
 struct pcm_afe_info {
