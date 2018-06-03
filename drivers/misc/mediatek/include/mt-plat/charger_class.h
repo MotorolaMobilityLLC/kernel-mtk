@@ -159,6 +159,9 @@ extern int charger_dev_kick_direct_charging_wdt(struct charger_device *charger_d
 extern int charger_dev_get_ibus(struct charger_device *charger_dev, u32 *ibus);
 extern int charger_dev_get_temperature(struct charger_device *charger_dev, int *tchg_min,
 		int *tchg_max);
+extern int charger_dev_set_direct_charging_ibusoc(struct charger_device *charger_dev, u32 ua);
+extern int charger_dev_set_direct_charging_vbusov(struct charger_device *charger_dev, u32 uv);
+
 
 extern int register_charger_device_notifier(struct charger_device *charger_dev,
 			      struct notifier_block *nb);

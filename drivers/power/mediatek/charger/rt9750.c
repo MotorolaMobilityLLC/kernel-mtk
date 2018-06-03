@@ -52,8 +52,8 @@ static struct rt9750_desc rt9750_default_desc = {
 	.alias_name = "rt9750",
 	.chg_dev_name = "load_switch",
 	.eint_name = "rt9750_chr_1",
-	.vbat_reg = 4300000,	/* uV */
-	.vout_reg = 4400000,	/* uV */
+	.vbat_reg = 4400000,	/* uV */
+	.vout_reg = 5000000,	/* uV */
 	.wdt = 2000000,		/* us */
 };
 
@@ -772,6 +772,31 @@ static int rt9750_get_vout(struct rt9750_info *info, u32 *vout)
 	return ret;
 }
 
+static int rt9750_set_vout(struct rt9750_info *info, u32 uV)
+{
+	int ret = 0;
+	u8 reg_vout = 0;
+
+	reg_vout = rt9750_find_closest_reg_value(
+		RT9750_VOUT_MIN,
+		RT9750_VOUT_MAX,
+		RT9750_VOUT_STEP,
+		RT9750_VOUT_NUM,
+		uV
+	);
+
+	pr_info("%s: vout = %d (0x%02X)\n", __func__, uV, reg_vout);
+
+	ret = rt9750_i2c_update_bits(
+		info,
+		RT9750_REG_VOUT_REG,
+		reg_vout << RT9750_SHIFT_VOUT,
+		RT9750_MASK_VOUT
+	);
+
+	return ret;
+}
+
 static int rt9750_get_vbat(struct rt9750_info *info, u32 *vbat)
 {
 	int ret = 0;
@@ -788,6 +813,31 @@ static int rt9750_get_vbat(struct rt9750_info *info, u32 *vbat)
 	return ret;
 }
 
+static int rt9750_set_vbat(struct rt9750_info *info, u32 uV)
+{
+	int ret = 0;
+	u8 reg_vbat = 0;
+
+	reg_vbat = rt9750_find_closest_reg_value(
+		RT9750_VBAT_MIN,
+		RT9750_VBAT_MAX,
+		RT9750_VBAT_STEP,
+		RT9750_VBAT_NUM,
+		uV
+	);
+
+	pr_info("%s: vbat = %d (0x%02X)\n", __func__, uV, reg_vbat);
+
+	ret = rt9750_i2c_update_bits(
+		info,
+		RT9750_REG_VBAT_REG,
+		reg_vbat << RT9750_SHIFT_VBAT,
+		RT9750_MASK_VBAT
+	);
+
+	return ret;
+}
+
 static int rt9750_init_setting(struct rt9750_info *info)
 {
 	int ret = 0;
@@ -795,6 +845,16 @@ static int rt9750_init_setting(struct rt9750_info *info)
 	ret = rt9750_enable_all_irq(info, true);
 
 	ret = rt9750_set_wdt(info, info->desc->wdt);
+	if (ret < 0)
+		pr_err("%s: set wdt failed\n", __func__);
+
+	ret = rt9750_set_vout(info, info->desc->vout_reg);
+	if (ret < 0)
+		pr_err("%s: set vout failed\n", __func__);
+
+	ret = rt9750_set_vbat(info, info->desc->vbat_reg);
+	if (ret < 0)
+		pr_err("%s: set vbat failed\n", __func__);
 
 	return ret;
 }
@@ -1142,7 +1202,9 @@ static int rt9750_dbg_thread(void *data)
 		ret = rt9750_get_tdie_adc(info->chg_dev, &tdie_min, &tdie_max);
 		ret = rt9750_set_ibusoc(info->chg_dev, 6000000);
 		ret = rt9750_set_vbusov(info->chg_dev, 6000000);
-		ret = rt9750_is_switch_enable(info->chg_dev, &en);
+		ret = rt9750_set_vout(info, 5000000);
+		ret = rt9750_set_vbat(info, 4400000);
+		ret = rt9750_is_switch_enable(info, &en);
 		msleep(2000);
 	};
 

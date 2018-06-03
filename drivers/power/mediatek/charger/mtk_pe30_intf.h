@@ -25,6 +25,7 @@ struct mtk_pe30_cap {
 struct mtk_pe30 {
 
 	struct mutex pe30_mutex;
+	struct wake_lock pe30_wakelock;
 	struct hrtimer mtk_charger_pe30_timer;
 	struct task_struct *mtk_charger_pe30_thread;
 	bool mtk_charger_pe30_thread_flag;
@@ -63,6 +64,7 @@ extern int pe30_dc_kick_wdt(struct charger_manager *info);
 extern int pe30_dc_set_ibus_oc(struct charger_manager *info, unsigned int cur);
 extern int pe30_dc_get_temperature(struct charger_manager *info, int *min_temp, int *max_temp);
 extern int pe30_dc_enable_chip(struct charger_manager *info, unsigned char en);
+extern int pe30_dc_set_vbus_ov(struct charger_manager *info, unsigned int vol);
 
 
 extern int pe30_chr_enable_charge(struct charger_manager *info, bool charging_enable);
