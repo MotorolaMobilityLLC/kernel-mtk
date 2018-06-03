@@ -198,17 +198,14 @@ extern void OIS_Standby(void);
 
 extern int setVCMPos(unsigned short DAC_Val);
 
-#define u16 unsigned short
-#define u8 unsigned char
-
 extern void setOISMode(int Disable);
 
-extern int s4EEPROM_ReadReg_BU63169AF(u16 addr, u16 *data);
+extern int s4EEPROM_ReadReg_BU63169AF(unsigned short addr, unsigned short *data);
 
-extern int s4AF_WriteReg_BU63169AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData);
+extern int s4AF_WriteReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData, unsigned short a_sizeSendData);
 
-extern int s4AF_ReadReg_BU63169AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData,
-				   u8 *a_pRecvData, u16 a_sizeRecvData);
+extern int s4AF_ReadReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData, unsigned short a_sizeSendData,
+				   unsigned char *a_pRecvData, unsigned short a_sizeRecvData);
 
 /* #define      DEBUG_FADJ */
 #ifdef	DEBUG_FADJ
