@@ -53,6 +53,7 @@ static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 
+#define VCM_STEP 5
 
 static int s4AF_ReadReg(unsigned short *a_pu2Result)
 {
@@ -413,6 +414,15 @@ int BU6429AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	if (*g_pAF_Opened == 2) {
 		char puSendCmd[2];
+		int Step = g_u4CurrPosition;
+
+		while (Step > 0) {
+			Step -= (g_u4CurrPosition / VCM_STEP);
+			s4AF_WriteReg((unsigned short)Step);
+			mdelay(10);
+		}
+
+		g_u4CurrPosition = 0;
 
 		puSendCmd[0] = (char)(0x00);
 		puSendCmd[1] = (char)(0x00);
