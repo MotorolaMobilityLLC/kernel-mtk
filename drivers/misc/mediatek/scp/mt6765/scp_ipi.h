@@ -112,6 +112,10 @@ extern unsigned char *scp_send_buff[SCP_CORE_TOTAL];
 extern unsigned char *scp_recv_buff[SCP_CORE_TOTAL];
 extern char *core_ids[SCP_CORE_TOTAL];
 
+extern int scp_awake_lock(enum scp_core_id scp_id);
+extern int scp_awake_unlock(enum scp_core_id scp_id);
+extern void scp_awake_init(void);
+
 extern unsigned int is_scp_ready(enum scp_core_id scp_id);
 extern void scp_ipi_status_dump(void);
 extern void scp_ipi_status_dump_id(enum ipi_id id);
