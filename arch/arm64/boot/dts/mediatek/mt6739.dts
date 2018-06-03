@@ -13,9 +13,11 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <dt-bindings/clock/mt6739-clk.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6739-msdc.h>
+#include <dt-bindings/pinctrl/mt6739-pinfunc.h>
 #include <generated/autoconf.h>
 #ifdef CONFIG_MTK_DTBO_FEATURE
 /dts-v1/;
@@ -1364,14 +1366,15 @@
 
 	msdc0:msdc@11230000 {
 		compatible = "mediatek,msdc";
-		reg = <0x0 0x11230000 0x0 0x10000
-		       0x0 0x10001e84 0x0 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
+		reg = <0x0 0x11230000 0x0 0x10000>,
+		      <0x0 0x11cd0000 0x0 0x10000>;
 		interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	msdc1:msdc@11240000 {
 		compatible = "mediatek,msdc";
-		reg = <0x0 0x11240000 0x0 0x10000>;
+		reg = <0x0 0x11240000 0x0 0x10000>,
+		      <0x0 0x11c40000 0x0 0x10000>;
 		interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
 	};
 
