@@ -160,7 +160,7 @@ static int rt5081_enable(void)
 	flashlight_mode_t mode = FLASHLIGHT_MODE_TORCH;
 
 	if (!flashlight_dev_ch1 || !flashlight_dev_ch2) {
-		fl_err("Failed to enable since no flashlight device.\n");
+		fl_pr_err("Failed to enable since no flashlight device.\n");
 		return -1;
 	}
 
@@ -184,7 +184,7 @@ static int rt5081_enable(void)
 				flashlight_dev_ch2, FLASHLIGHT_MODE_OFF);
 
 	if (ret < 0)
-		fl_err("Failed to enable.\n");
+		fl_pr_err("Failed to enable.\n");
 
 	return ret;
 }
@@ -195,7 +195,7 @@ static int rt5081_disable(void)
 	int ret = 0;
 
 	if (!flashlight_dev_ch1 || !flashlight_dev_ch2) {
-		fl_err("Failed to disable since no flashlight device.\n");
+		fl_pr_err("Failed to disable since no flashlight device.\n");
 		return -1;
 	}
 
@@ -204,7 +204,7 @@ static int rt5081_disable(void)
 	ret |= flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_OFF);
 
 	if (ret < 0)
-		fl_err("Failed to disable.\n");
+		fl_pr_err("Failed to disable.\n");
 
 	return ret;
 }
@@ -216,7 +216,7 @@ static int rt5081_set_level_ch1(int level)
 	rt5081_level_ch1 = level;
 
 	if (!flashlight_dev_ch1) {
-		fl_err("Failed to set ht level since no flashlight device.\n");
+		fl_pr_err("Failed to set ht level since no flashlight device.\n");
 		return -1;
 	}
 
@@ -236,7 +236,7 @@ int rt5081_set_level_ch2(int level)
 	rt5081_level_ch2 = level;
 
 	if (!flashlight_dev_ch2) {
-		fl_err("Failed to set lt level since no flashlight device.\n");
+		fl_pr_err("Failed to set lt level since no flashlight device.\n");
 		return -1;
 	}
 
@@ -257,7 +257,7 @@ static int rt5081_set_level(int channel, int level)
 	else if (channel == RT5081_CHANNEL_CH2)
 		rt5081_set_level_ch2(level);
 	else {
-		fl_err("Error channel\n");
+		fl_pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -271,20 +271,20 @@ static int rt5081_set_scenario(int scenario)
 
 	/* notify charger to increase or decrease voltage */
 	if (!flashlight_charger_consumer) {
-		fl_err("Failed with no charger consumer handler.\n");
+		fl_pr_err("Failed with no charger consumer handler.\n");
 		return -1;
 	}
 
 	mutex_lock(&rt5081_mutex);
 	if (scenario & FLASHLIGHT_SCENARIO_CAMERA_MASK) {
 		if (!is_decrease_voltage) {
-			fl_info("Decrease voltage level.\n");
+			fl_pr_info("Decrease voltage level.\n");
 			charger_manager_enable_high_voltage_charging(flashlight_charger_consumer, false);
 			is_decrease_voltage = 1;
 		}
 	} else {
 		if (is_decrease_voltage) {
-			fl_info("Increase voltage level.\n");
+			fl_pr_info("Increase voltage level.\n");
 			charger_manager_enable_high_voltage_charging(flashlight_charger_consumer, true);
 			is_decrease_voltage = 0;
 		}
@@ -332,13 +332,13 @@ static int rt5081_uninit(void)
  *****************************************************************************/
 static void rt5081_work_disable_ch1(struct work_struct *data)
 {
-	fl_dbg("ht work queue callback\n");
+	fl_pr_debug("ht work queue callback\n");
 	rt5081_disable();
 }
 
 static void rt5081_work_disable_ch2(struct work_struct *data)
 {
-	fl_dbg("lt work queue callback\n");
+	fl_pr_debug("lt work queue callback\n");
 	rt5081_disable();
 }
 
@@ -361,7 +361,7 @@ int rt5081_timer_start(int channel, ktime_t ktime)
 	else if (channel == RT5081_CHANNEL_CH2)
 		hrtimer_start(&rt5081_timer_ch2, ktime, HRTIMER_MODE_REL);
 	else {
-		fl_err("Error channel\n");
+		fl_pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -375,7 +375,7 @@ int rt5081_timer_cancel(int channel)
 	else if (channel == RT5081_CHANNEL_CH2)
 		hrtimer_cancel(&rt5081_timer_ch2);
 	else {
-		fl_err("Error channel\n");
+		fl_pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -401,7 +401,7 @@ static int rt5081_operate(int channel, int enable)
 			if (rt5081_is_torch(rt5081_level_ch2))
 				rt5081_en_ch2 = RT5081_ENABLE_FLASH;
 	} else {
-		fl_err("Error channel\n");
+		fl_pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -457,42 +457,42 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 
 	/* verify channel */
 	if (channel < 0 || channel >= RT5081_CHANNEL_NUM) {
-		fl_err("Failed with error channel\n");
+		fl_pr_err("Failed with error channel\n");
 		return -EINVAL;
 	}
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		rt5081_timeout_ms[channel] = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		rt5081_set_level(channel, fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_SCENARIO:
-		fl_dbg("FLASH_IOC_SET_SCENARIO(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_SCENARIO(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		rt5081_set_scenario(fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		rt5081_operate(channel, fl_arg->arg);
 		break;
 
 	case FLASH_IOC_IS_CHARGER_READY:
-		fl_dbg("FLASH_IOC_IS_CHARGER_READY(%d)\n", channel);
+		fl_pr_debug("FLASH_IOC_IS_CHARGER_READY(%d)\n", channel);
 		fl_arg->arg = rt5081_is_charger_ready();
 		break;
 
 	default:
-		fl_info("No such command and arg(%d): (%d, %d)\n",
+		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
@@ -517,7 +517,7 @@ static int rt5081_release(void *pArg)
 		use_count = 0;
 	mutex_unlock(&rt5081_mutex);
 
-	fl_dbg("Release: %d\n", use_count);
+	fl_pr_debug("Release: %d\n", use_count);
 
 	return 0;
 }
@@ -533,7 +533,7 @@ static int rt5081_set_driver(void)
 	use_count++;
 	mutex_unlock(&rt5081_mutex);
 
-	fl_dbg("Set driver: %d\n", use_count);
+	fl_pr_debug("Set driver: %d\n", use_count);
 
 	return ret;
 }
@@ -573,7 +573,7 @@ static struct flashlight_operations rt5081_ops = {
  *****************************************************************************/
 static int rt5081_probe(struct platform_device *pdev)
 {
-	fl_dbg("Probe start.\n");
+	fl_pr_debug("Probe start.\n");
 
 	/* init work queue */
 	INIT_WORK(&rt5081_work_ch1, rt5081_work_disable_ch1);
@@ -598,34 +598,34 @@ static int rt5081_probe(struct platform_device *pdev)
 	/* get RTK flashlight handler */
 	flashlight_dev_ch1 = find_flashlight_by_name(RT_FLED_DEVICE_CH1);
 	if (!flashlight_dev_ch1) {
-		fl_err("Failed to get ht flashlight device.\n");
+		fl_pr_err("Failed to get ht flashlight device.\n");
 		return -EFAULT;
 	}
 	flashlight_dev_ch2 = find_flashlight_by_name(RT_FLED_DEVICE_CH2);
 	if (!flashlight_dev_ch2) {
-		fl_err("Failed to get lt flashlight device.\n");
+		fl_pr_err("Failed to get lt flashlight device.\n");
 		return -EFAULT;
 	}
 
 	/* setup strobe mode timeout */
 	if (flashlight_set_strobe_timeout(flashlight_dev_ch1, 400, 600) < 0)
-		fl_err("Failed to set strobe timeout.\n");
+		fl_pr_err("Failed to set strobe timeout.\n");
 
 	/* get charger consumer manager */
 	flashlight_charger_consumer = charger_manager_get_by_name(&flashlight_dev_ch1->dev, CHARGER_SUPPLY_NAME);
 	if (!flashlight_charger_consumer) {
-		fl_err("Failed to get charger manager.\n");
+		fl_pr_err("Failed to get charger manager.\n");
 		return -EFAULT;
 	}
 
-	fl_dbg("Probe done.\n");
+	fl_pr_debug("Probe done.\n");
 
 	return 0;
 }
 
 static int rt5081_remove(struct platform_device *pdev)
 {
-	fl_dbg("Remove start.\n");
+	fl_pr_debug("Remove start.\n");
 
 	/* flush work queue */
 	flush_work(&rt5081_work_ch1);
@@ -638,7 +638,7 @@ static int rt5081_remove(struct platform_device *pdev)
 	flashlight_dev_ch1 = NULL;
 	flashlight_dev_ch2 = NULL;
 
-	fl_dbg("Remove done.\n");
+	fl_pr_debug("Remove done.\n");
 
 	return 0;
 }
@@ -677,34 +677,34 @@ static int __init flashlight_rt5081_init(void)
 {
 	int ret;
 
-	fl_dbg("Init start.\n");
+	fl_pr_debug("Init start.\n");
 
 #ifndef CONFIG_OF
 	ret = platform_device_register(&rt5081_platform_device);
 	if (ret) {
-		fl_err("Failed to register platform device\n");
+		fl_pr_err("Failed to register platform device\n");
 		return ret;
 	}
 #endif
 
 	ret = platform_driver_register(&rt5081_platform_driver);
 	if (ret) {
-		fl_err("Failed to register platform driver\n");
+		fl_pr_err("Failed to register platform driver\n");
 		return ret;
 	}
 
-	fl_dbg("Init done.\n");
+	fl_pr_debug("Init done.\n");
 
 	return 0;
 }
 
 static void __exit flashlight_rt5081_exit(void)
 {
-	fl_dbg("Exit start.\n");
+	fl_pr_debug("Exit start.\n");
 
 	platform_driver_unregister(&rt5081_platform_driver);
 
-	fl_dbg("Exit done.\n");
+	fl_pr_debug("Exit done.\n");
 }
 
 /* replace module_init() since conflict in kernel init process */

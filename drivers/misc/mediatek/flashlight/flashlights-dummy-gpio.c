@@ -81,19 +81,19 @@ static int dummy_pinctrl_init(struct platform_device *pdev)
 	/* get pinctrl */
 	dummy_pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(dummy_pinctrl)) {
-		fl_err("Failed to get flashlight pinctrl.\n");
+		fl_pr_err("Failed to get flashlight pinctrl.\n");
 		ret = PTR_ERR(dummy_pinctrl);
 	}
 
 	/* TODO: Flashlight XXX pin initialization */
 	dummy_xxx_high = pinctrl_lookup_state(dummy_pinctrl, DUMMY_PINCTRL_STATE_XXX_HIGH);
 	if (IS_ERR(dummy_xxx_high)) {
-		fl_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_XXX_HIGH);
+		fl_pr_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_XXX_HIGH);
 		ret = PTR_ERR(dummy_xxx_high);
 	}
 	dummy_xxx_low = pinctrl_lookup_state(dummy_pinctrl, DUMMY_PINCTRL_STATE_XXX_LOW);
 	if (IS_ERR(dummy_xxx_low)) {
-		fl_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_XXX_LOW);
+		fl_pr_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_XXX_LOW);
 		ret = PTR_ERR(dummy_xxx_low);
 	}
 
@@ -105,7 +105,7 @@ static int dummy_pinctrl_set(int pin, int state)
 	int ret = 0;
 
 	if (IS_ERR(dummy_pinctrl)) {
-		fl_err("pinctrl is not available\n");
+		fl_pr_err("pinctrl is not available\n");
 		return -1;
 	}
 
@@ -116,13 +116,13 @@ static int dummy_pinctrl_set(int pin, int state)
 		else if (state == DUMMY_PINCTRL_PINSTATE_HIGH && !IS_ERR(dummy_xxx_high))
 			pinctrl_select_state(dummy_pinctrl, dummy_xxx_high);
 		else
-			fl_err("set err, pin(%d) state(%d)\n", pin, state);
+			fl_pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	default:
-		fl_err("set err, pin(%d) state(%d)\n", pin, state);
+		fl_pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	}
-	fl_dbg("pin(%d) state(%d)\n", pin, state);
+	fl_pr_debug("pin(%d) state(%d)\n", pin, state);
 
 	return ret;
 }
@@ -189,7 +189,7 @@ static unsigned int dummy_timeout_ms;
 
 static void dummy_work_disable(struct work_struct *data)
 {
-	fl_dbg("work queue callback\n");
+	fl_pr_debug("work queue callback\n");
 	dummy_disable();
 }
 
@@ -214,19 +214,19 @@ static int dummy_ioctl(unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		dummy_timeout_ms = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		dummy_set_level(fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		if (fl_arg->arg == 1) {
 			if (dummy_timeout_ms) {
@@ -241,7 +241,7 @@ static int dummy_ioctl(unsigned int cmd, unsigned long arg)
 		}
 		break;
 	default:
-		fl_info("No such command and arg(%d): (%d, %d)\n",
+		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
@@ -266,7 +266,7 @@ static int dummy_release(void *pArg)
 		use_count = 0;
 	mutex_unlock(&dummy_mutex);
 
-	fl_dbg("Release: %d\n", use_count);
+	fl_pr_debug("Release: %d\n", use_count);
 
 	return 0;
 }
@@ -280,7 +280,7 @@ static int dummy_set_driver(void)
 	use_count++;
 	mutex_unlock(&dummy_mutex);
 
-	fl_dbg("Set driver: %d\n", use_count);
+	fl_pr_debug("Set driver: %d\n", use_count);
 
 	return 0;
 }
@@ -322,11 +322,11 @@ static int dummy_probe(struct platform_device *dev)
 {
 	int err;
 
-	fl_dbg("Probe start.\n");
+	fl_pr_debug("Probe start.\n");
 
 	/* init pinctrl */
 	if (dummy_pinctrl_init(dev)) {
-		fl_dbg("Failed to init pinctrl.\n");
+		fl_pr_debug("Failed to init pinctrl.\n");
 		err = -EFAULT;
 		goto err;
 	}
@@ -351,7 +351,7 @@ static int dummy_probe(struct platform_device *dev)
 	/* clear usage count */
 	use_count = 0;
 
-	fl_dbg("Probe done.\n");
+	fl_pr_debug("Probe done.\n");
 
 	return 0;
 err:
@@ -360,7 +360,7 @@ err:
 
 static int dummy_remove(struct platform_device *dev)
 {
-	fl_dbg("Remove start.\n");
+	fl_pr_debug("Remove start.\n");
 
 	/* flush work queue */
 	flush_work(&dummy_work);
@@ -368,7 +368,7 @@ static int dummy_remove(struct platform_device *dev)
 	/* unregister flashlight operations */
 	flashlight_dev_unregister(DUMMY_NAME);
 
-	fl_dbg("Remove done.\n");
+	fl_pr_debug("Remove done.\n");
 
 	return 0;
 }
@@ -407,34 +407,34 @@ static int __init flashlight_dummy_init(void)
 {
 	int ret;
 
-	fl_dbg("Init start.\n");
+	fl_pr_debug("Init start.\n");
 
 #ifndef CONFIG_OF
 	ret = platform_device_register(&dummy_gpio_platform_device);
 	if (ret) {
-		fl_err("Failed to register platform device\n");
+		fl_pr_err("Failed to register platform device\n");
 		return ret;
 	}
 #endif
 
 	ret = platform_driver_register(&dummy_platform_driver);
 	if (ret) {
-		fl_err("Failed to register platform driver\n");
+		fl_pr_err("Failed to register platform driver\n");
 		return ret;
 	}
 
-	fl_dbg("Init done.\n");
+	fl_pr_debug("Init done.\n");
 
 	return 0;
 }
 
 static void __exit flashlight_dummy_exit(void)
 {
-	fl_dbg("Exit start.\n");
+	fl_pr_debug("Exit start.\n");
 
 	platform_driver_unregister(&dummy_platform_driver);
 
-	fl_dbg("Exit done.\n");
+	fl_pr_debug("Exit done.\n");
 }
 
 module_init(flashlight_dummy_init);

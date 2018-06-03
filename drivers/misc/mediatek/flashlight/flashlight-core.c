@@ -109,7 +109,7 @@ int fl_open(void)
 			for (k = 0; k < FLASHLIGHT_PART_MAX; k++) {
 				mutex_lock(&fl_mutex);
 				if (fl_ops[i][j][k]) {
-					fl_dbg("fl_open (%d,%d,%d)\n", i, j, k);
+					fl_pr_debug("fl_open (%d,%d,%d)\n", i, j, k);
 					fl_ops[i][j][k]->flashlight_open(NULL);
 				}
 				mutex_unlock(&fl_mutex);
@@ -129,7 +129,7 @@ int fl_release(void)
 			for (k = 0; k < FLASHLIGHT_PART_MAX; k++) {
 				mutex_lock(&fl_mutex);
 				if (fl_ops[i][j][k]) {
-					fl_dbg("fl_release (%d,%d,%d)\n", i, j, k);
+					fl_pr_debug("fl_release (%d,%d,%d)\n", i, j, k);
 					fl_ops[i][j][k]->flashlight_release(NULL);
 					fl_status[i][j][k] = 0;
 				}
@@ -148,7 +148,7 @@ static int fl_set_level(int type_index, int ct_index, int part_index, int level)
 
 	pf = fl_ops[type_index][ct_index][part_index];
 	if (!pf) {
-		fl_info("Failed with no flashlight ops\n");
+		fl_pr_info("Failed with no flashlight ops\n");
 		return -1;
 	}
 
@@ -156,7 +156,7 @@ static int fl_set_level(int type_index, int ct_index, int part_index, int level)
 	fl_dev_arg.channel = fl_channel[type_index][ct_index][part_index];
 	fl_dev_arg.arg = level;
 	if (pf->flashlight_ioctl(FLASH_IOC_SET_DUTY, (unsigned long)&fl_dev_arg)) {
-		fl_err("Failed to set level.\n");
+		fl_pr_err("Failed to set level.\n");
 		return -1;
 	}
 
@@ -170,7 +170,7 @@ static int fl_enable(int type_index, int ct_index, int part_index, int enable)
 
 	pf = fl_ops[type_index][ct_index][part_index];
 	if (!pf) {
-		fl_info("Failed with no flashlight ops\n");
+		fl_pr_info("Failed with no flashlight ops\n");
 		return -1;
 	}
 
@@ -183,7 +183,7 @@ static int fl_enable(int type_index, int ct_index, int part_index, int enable)
 		if (pt_low_bat != BATTERY_PERCENT_LEVEL_0
 				|| pt_low_vol != LOW_BATTERY_LEVEL_0
 				|| pt_over_cur != BATTERY_OC_LEVEL_0) {
-			fl_info("Pt status: (%d,%d,%d) with pt strict(%d)\n",
+			fl_pr_info("Pt status: (%d,%d,%d) with pt strict(%d)\n",
 					pt_low_vol, pt_low_bat, pt_over_cur, pt_strict);
 			if (pt_strict)
 				enable = 0;
@@ -195,7 +195,7 @@ static int fl_enable(int type_index, int ct_index, int part_index, int enable)
 	fl_dev_arg.channel = fl_channel[type_index][ct_index][part_index];
 	fl_dev_arg.arg = enable;
 	if (pf->flashlight_ioctl(FLASH_IOC_SET_ONOFF, (unsigned long)&fl_dev_arg)) {
-		fl_err("Failed to set on/off.\n");
+		fl_pr_err("Failed to set on/off.\n");
 		return -1;
 	}
 
@@ -206,7 +206,7 @@ static int fl_enable(int type_index, int ct_index, int part_index, int enable)
 int flashlight_type_index_verify(int type_index)
 {
 	if (type_index < 0 || type_index >= FLASHLIGHT_ARG_TYPE_MAX) {
-		fl_err("type index (%d) is not valid\n", type_index);
+		fl_pr_err("type index (%d) is not valid\n", type_index);
 		return -1;
 	}
 	return 0;
@@ -216,7 +216,7 @@ EXPORT_SYMBOL(flashlight_type_index_verify);
 int flashlight_ct_index_verify(int ct_index)
 {
 	if (ct_index < 0 || ct_index >= FLASHLIGHT_ARG_CT_MAX) {
-		fl_err("ct index (%d) is not valid\n", ct_index);
+		fl_pr_err("ct index (%d) is not valid\n", ct_index);
 		return -1;
 	}
 	return 0;
@@ -226,7 +226,7 @@ EXPORT_SYMBOL(flashlight_ct_index_verify);
 int flashlight_part_index_verify(int part_index)
 {
 	if (part_index < 0 || part_index >= FLASHLIGHT_ARG_PART_MAX) {
-		fl_err("part index (%d) is not valid\n", part_index);
+		fl_pr_err("part index (%d) is not valid\n", part_index);
 		return -1;
 	}
 	return 0;
@@ -248,11 +248,11 @@ static int flashlight_arg_verify(struct flashlight_arg fl_arg)
 	if (flashlight_index_verify(fl_arg.type, fl_arg.ct, fl_arg.part))
 		return -1;
 	if (fl_arg.level < -1 || fl_arg.level > FLASHLIGHT_ARG_LEVEL_MAX) {
-		fl_err("level (%d) is not valid\n", fl_arg.level);
+		fl_pr_err("level (%d) is not valid\n", fl_arg.level);
 		return -1;
 	}
 	if (fl_arg.dur < 0 || fl_arg.dur > FLASHLIGHT_ARG_DUR_MAX) {
-		fl_err("duration (%d) is not valid\n", fl_arg.dur);
+		fl_pr_err("duration (%d) is not valid\n", fl_arg.dur);
 		return -1;
 	}
 
@@ -263,7 +263,7 @@ static int flashlight_arg_verify(struct flashlight_arg fl_arg)
 int flashlight_get_type_id(int type_index)
 {
 	if (flashlight_type_index_verify(type_index)) {
-		fl_err("type index (%d) is not valid\n", type_index);
+		fl_pr_err("type index (%d) is not valid\n", type_index);
 		return -1;
 	}
 
@@ -274,7 +274,7 @@ EXPORT_SYMBOL(flashlight_get_type_id);
 int flashlight_get_ct_id(int ct_index)
 {
 	if (flashlight_ct_index_verify(ct_index)) {
-		fl_err("color temperature index (%d) is not valid\n", ct_index);
+		fl_pr_err("color temperature index (%d) is not valid\n", ct_index);
 		return -1;
 	}
 
@@ -285,7 +285,7 @@ EXPORT_SYMBOL(flashlight_get_ct_id);
 int flashlight_get_part_id(int part_index)
 {
 	if (flashlight_part_index_verify(part_index)) {
-		fl_err("part (%d) is not valid\n", part_index);
+		fl_pr_err("part (%d) is not valid\n", part_index);
 		return -1;
 	}
 
@@ -297,7 +297,7 @@ EXPORT_SYMBOL(flashlight_get_part_id);
 int flashlight_get_type_index(int type_id)
 {
 	if (type_id < 1 || type_id > FLASHLIGHT_TYPE_MAX) {
-		fl_err("type id (%d) is not valid\n", type_id);
+		fl_pr_err("type id (%d) is not valid\n", type_id);
 		return -1;
 	}
 
@@ -308,7 +308,7 @@ EXPORT_SYMBOL(flashlight_get_type_index);
 int flashlight_get_ct_index(int ct_id)
 {
 	if (ct_id < 1 || ct_id > FLASHLIGHT_CT_MAX) {
-		fl_err("color temperature id (%d) is not valid\n", ct_id);
+		fl_pr_err("color temperature id (%d) is not valid\n", ct_id);
 		return -1;
 	}
 
@@ -319,7 +319,7 @@ EXPORT_SYMBOL(flashlight_get_ct_index);
 int flashlight_get_part_index(int part_id)
 {
 	if (part_id < 1 || part_id > FLASHLIGHT_PART_MAX) {
-		fl_err("part id (%d) is not valid\n", part_id);
+		fl_pr_err("part id (%d) is not valid\n", part_id);
 		return -1;
 	}
 
@@ -340,11 +340,11 @@ int flashlight_dev_register(const char *name, struct flashlight_operations *dev_
 			part_index = flashlight_id[i].part;
 
 			if (flashlight_index_verify(type_index, ct_index, part_index)) {
-				fl_err("Failed to register device (%s)\n", flashlight_id[i].name);
+				fl_pr_err("Failed to register device (%s)\n", flashlight_id[i].name);
 				continue;
 			}
 
-			fl_dbg("%s %d %d %d\n",
+			fl_pr_debug("%s %d %d %d\n",
 					flashlight_id[i].name, type_index, ct_index, part_index);
 
 			mutex_lock(&fl_mutex);
@@ -371,11 +371,11 @@ int flashlight_dev_unregister(const char *name)
 			part_index = flashlight_id[i].part;
 
 			if (flashlight_index_verify(type_index, ct_index, part_index)) {
-				fl_err("Failed to unregister device (%s)\n", flashlight_id[i].name);
+				fl_pr_err("Failed to unregister device (%s)\n", flashlight_id[i].name);
 				continue;
 			}
 
-			fl_dbg("%s %d %d %d\n",
+			fl_pr_debug("%s %d %d %d\n",
 					flashlight_id[i].name, type_index, ct_index, part_index);
 
 			mutex_lock(&fl_mutex);
@@ -415,7 +415,7 @@ static int flashlight_update_charger_status(
 	struct flashlight_dev_arg fl_dev_arg;
 
 	if (flashlight_index_verify(type_index, ct_index, part_index)) {
-		fl_err("Failed with error index\n");
+		fl_pr_err("Failed with error index\n");
 		return -1;
 	}
 
@@ -423,14 +423,14 @@ static int flashlight_update_charger_status(
 	pf = fl_ops[type_index][ct_index][part_index];
 	mutex_unlock(&fl_mutex);
 	if (!pf) {
-		fl_info("Failed with no flashlight ops\n");
+		fl_pr_info("Failed with no flashlight ops\n");
 		return -1;
 	}
 
 	fl_dev_arg.channel = fl_channel[type_index][ct_index][part_index];
 
 	if (pf->flashlight_ioctl(FLASH_IOC_IS_CHARGER_READY, (unsigned long)&fl_dev_arg))
-		fl_info("Failed to get charger status.\n");
+		fl_pr_info("Failed to get charger status.\n");
 	else
 		charger_status[type_index][ct_index][part_index] = fl_dev_arg.arg;
 
@@ -446,17 +446,17 @@ static int pt_arg_verify(int pt_low_vol, int pt_low_bat, int pt_over_cur)
 {
 	if (pt_low_vol < LOW_BATTERY_LEVEL_0 ||
 			pt_low_vol > LOW_BATTERY_LEVEL_2) {
-		fl_err("PT low voltage (%d) is not valid\n", pt_low_vol);
+		fl_pr_err("PT low voltage (%d) is not valid\n", pt_low_vol);
 		return -1;
 	}
 	if (pt_low_bat < BATTERY_PERCENT_LEVEL_0 ||
 			pt_low_bat > BATTERY_PERCENT_LEVEL_1) {
-		fl_err("PT low battery (%d) is not valid\n", pt_low_bat);
+		fl_pr_err("PT low battery (%d) is not valid\n", pt_low_bat);
 		return -1;
 	}
 	if (pt_over_cur < BATTERY_OC_LEVEL_0 ||
 			pt_over_cur > BATTERY_OC_LEVEL_1) {
-		fl_err("PT over current (%d) is not valid\n", pt_over_cur);
+		fl_pr_err("PT over current (%d) is not valid\n", pt_over_cur);
 		return -1;
 	}
 
@@ -473,11 +473,11 @@ static int pt_trigger(void)
 				mutex_lock(&fl_mutex);
 				if (fl_status[i][j][k]) {
 					if (pt_strict) {
-						fl_info("PT disable flashlight: (%d,%d,%d)\n",
+						fl_pr_info("PT disable flashlight: (%d,%d,%d)\n",
 								pt_low_vol, pt_low_bat, pt_over_cur);
 						fl_enable(i, j, k, 0);
 					} else {
-						fl_info("PT decrease duty: (%d,%d,%d)\n",
+						fl_pr_info("PT decrease duty: (%d,%d,%d)\n",
 								pt_low_vol, pt_low_bat, pt_over_cur);
 						fl_set_level(i, j, k, fl_level_low_bat[i][j]);
 					}
@@ -555,7 +555,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 	int ret = 0;
 
 	if (copy_from_user(&fl_arg, (void __user *)arg, sizeof(struct flashlight_user_arg))) {
-		fl_err("Failed copy arguments from user.\n");
+		fl_pr_err("Failed copy arguments from user.\n");
 		return -EFAULT;
 	}
 
@@ -569,7 +569,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 	part_index = flashlight_get_part_index(1);
 
 	if (flashlight_index_verify(type_index, ct_index, part_index)) {
-		fl_err("Failed with error index\n");
+		fl_pr_err("Failed with error index\n");
 		return -EINVAL;
 	}
 
@@ -579,7 +579,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 
 	switch (cmd) {
 	case FLASH_IOC_GET_PROTOCOL_VERSION:
-		fl_dbg("FLASH_IOC_GET_PROTOCOL_VERSION(%d,%d,%d)\n",
+		fl_pr_debug("FLASH_IOC_GET_PROTOCOL_VERSION(%d,%d,%d)\n",
 				type_index, ct_index, part_index);
 		ret = FLASHLIGHT_PROTOCOL_VERSION;
 		break;
@@ -593,21 +593,21 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 			fl_arg.arg = 1;
 			if (pt_strict)
 				fl_arg.arg = 2;
-			fl_dbg("Pt status: (%d,%d,%d)\n",
+			fl_pr_debug("Pt status: (%d,%d,%d)\n",
 					pt_low_vol, pt_low_bat, pt_over_cur);
 		}
 #endif
-		fl_dbg("FLASH_IOC_IS_LOW_POWER(%d,%d,%d): %d\n",
+		fl_pr_debug("FLASH_IOC_IS_LOW_POWER(%d,%d,%d): %d\n",
 				type_index, ct_index, part_index, fl_arg.arg);
 		if (copy_to_user((void __user *)arg, (void *)&fl_arg,
 					sizeof(struct flashlight_user_arg))) {
-			fl_err("Failed to copy power status to user.\n");
+			fl_pr_err("Failed to copy power status to user.\n");
 			return -EFAULT;
 		}
 		break;
 
 	case FLASH_IOC_LOW_POWER_DETECT_START:
-		fl_dbg("FLASH_IOC_LOW_POWER_DETECT_START(%d,%d,%d)\n",
+		fl_pr_debug("FLASH_IOC_LOW_POWER_DETECT_START(%d,%d,%d)\n",
 				type_index, ct_index, part_index);
 		mutex_lock(&fl_mutex);
 		fl_level_low_bat[type_index][ct_index] = fl_arg.arg;
@@ -615,7 +615,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		break;
 
 	case FLASH_IOC_LOW_POWER_DETECT_END:
-		fl_dbg("FLASH_IOC_LOW_POWER_DETECT_END(%d,%d,%d)\n",
+		fl_pr_debug("FLASH_IOC_LOW_POWER_DETECT_END(%d,%d,%d)\n",
 				type_index, ct_index, part_index);
 		mutex_lock(&fl_mutex);
 		fl_level_low_bat[type_index][ct_index] = -1;
@@ -625,17 +625,17 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 	case FLASH_IOC_IS_CHARGER_READY:
 		flashlight_update_charger_status(type_index, ct_index, part_index);
 		fl_arg.arg = charger_status[type_index][ct_index][part_index];
-		fl_dbg("FLASH_IOC_IS_CHARGER_READY(%d,%d,%d): %d\n",
+		fl_pr_debug("FLASH_IOC_IS_CHARGER_READY(%d,%d,%d): %d\n",
 				type_index, ct_index, part_index, fl_arg.arg);
 		if (copy_to_user((void __user *)arg, (void *)&fl_arg,
 					sizeof(struct flashlight_user_arg))) {
-			fl_err("Failed to copy power status to user.\n");
+			fl_pr_err("Failed to copy power status to user.\n");
 			return -EFAULT;
 		}
 		break;
 
 	case FLASHLIGHTIOC_X_SET_DRIVER:
-		fl_dbg("FLASHLIGHTIOC_X_SET_DRIVER(%d,%d,%d): %d\n",
+		fl_pr_debug("FLASHLIGHTIOC_X_SET_DRIVER(%d,%d,%d): %d\n",
 				type_index, ct_index, part_index, fl_arg.arg);
 		mutex_lock(&fl_mutex);
 		pf = fl_ops[type_index][ct_index][part_index];
@@ -646,13 +646,13 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 			fl_status[type_index][ct_index][part_index] = 1;
 			mutex_unlock(&fl_mutex);
 		} else {
-			fl_info("Failed with no flashlight ops\n");
+			fl_pr_info("Failed with no flashlight ops\n");
 			return -EFAULT;
 		}
 		break;
 
 	case FLASH_IOC_SET_SCENARIO:
-		fl_dbg("FLASH_IOC_SET_SCENARIO(%d,%d,%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_SCENARIO(%d,%d,%d): %d\n",
 				type_index, ct_index, part_index, fl_arg.arg);
 		mutex_lock(&fl_mutex);
 		pf = fl_ops[type_index][ct_index][part_index];
@@ -663,7 +663,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 
 			ret = pf->flashlight_ioctl(cmd, (unsigned long)&fl_dev_arg);
 		} else {
-			fl_info("Failed with no flashlight ops\n");
+			fl_pr_info("Failed with no flashlight ops\n");
 			return -EFAULT;
 		}
 		break;
@@ -673,17 +673,17 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 	case FLASH_IOC_GET_SUB_PART_ID:
 	case FLASH_IOC_GET_MAIN2_PART_ID:
 		fl_arg.arg = flashlight_get_part_id(part_index);
-		fl_dbg("FLASH_IOC_GET_[TYPE]_PART_ID(%d,%d,%d): %d\n",
+		fl_pr_debug("FLASH_IOC_GET_[TYPE]_PART_ID(%d,%d,%d): %d\n",
 				type_index, ct_index, part_index, fl_arg.arg);
 		if (copy_to_user((void __user *)arg, (void *)&fl_arg,
 					sizeof(struct flashlight_user_arg))) {
-			fl_err("Failed to copy part id to user.\n");
+			fl_pr_err("Failed to copy part id to user.\n");
 			return -EFAULT;
 		}
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_dbg("FLASH_IOC_SET_DUTY(%d,%d,%d)\n",
+		fl_pr_debug("FLASH_IOC_SET_DUTY(%d,%d,%d)\n",
 				type_index, ct_index, part_index);
 		mutex_lock(&fl_mutex);
 		ret = fl_set_level(type_index, ct_index, part_index, fl_arg.arg);
@@ -693,7 +693,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_dbg("FLASH_IOC_SET_ONOFF(%d,%d,%d)\n",
+		fl_pr_debug("FLASH_IOC_SET_ONOFF(%d,%d,%d)\n",
 				type_index, ct_index, part_index);
 		mutex_lock(&fl_mutex);
 		ret = fl_enable(type_index, ct_index, part_index, fl_arg.arg);
@@ -703,7 +703,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		break;
 
 	case FLASH_IOC_UNINIT:
-		fl_dbg("FLASH_IOC_UNINIT(%d,%d,%d)\n",
+		fl_pr_debug("FLASH_IOC_UNINIT(%d,%d,%d)\n",
 				type_index, ct_index, part_index);
 		mutex_lock(&fl_mutex);
 		pf = fl_ops[type_index][ct_index][part_index];
@@ -711,11 +711,11 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		if (pf) {
 			ret = pf->flashlight_release(NULL);
 			if (ret) {
-				fl_err("Failed to uninit.\n");
+				fl_pr_err("Failed to uninit.\n");
 				return -EFAULT;
 			}
 		} else {
-			fl_info("Failed with no flashlight ops\n");
+			fl_pr_info("Failed with no flashlight ops\n");
 			return -EFAULT;
 		}
 		break;
@@ -727,7 +727,7 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		if (pf)
 			ret = pf->flashlight_ioctl(cmd, (unsigned long)&fl_dev_arg);
 		else {
-			fl_info("Failed with no flashlight ops\n");
+			fl_pr_info("Failed with no flashlight ops\n");
 			return -ENOTTY;
 		}
 		break;
@@ -788,7 +788,7 @@ static struct cdev *flashlight_cdev;
 static ssize_t flashlight_strobe_show(struct device *dev, struct device_attribute *attr,
 		char *buf)
 {
-	fl_dbg("Strobe show.\n");
+	fl_pr_debug("Strobe show.\n");
 
 	return scnprintf(buf, PAGE_SIZE,
 			"[TYPE] [CT] [PART] [LEVEL] [DURATION(ms)]\n");
@@ -805,13 +805,13 @@ static ssize_t flashlight_strobe_store(struct device *dev, struct device_attribu
 	char *token, *cur = (char *)buf;
 	int ret;
 
-	fl_dbg("Strobe store.\n");
+	fl_pr_debug("Strobe store.\n");
 
 	while (cur) {
 		token = strsep(&cur, delim);
 		ret = kstrtos32(token, 10, &num);
 		if (ret) {
-			fl_err("Error arguments.\n");
+			fl_pr_err("Error arguments.\n");
 			goto unlock;
 		}
 
@@ -835,17 +835,17 @@ static ssize_t flashlight_strobe_store(struct device *dev, struct device_attribu
 
 	/* verify data */
 	if (count != FLASHLIGHT_ARG_NUM) {
-		fl_err("Error argument number: (%d)\n", count);
+		fl_pr_err("Error argument number: (%d)\n", count);
 		ret = -1;
 		goto unlock;
 	}
 	if (flashlight_arg_verify(fl_arg)) {
-		fl_err("Error arguments.\n");
+		fl_pr_err("Error arguments.\n");
 		ret = -1;
 		goto unlock;
 	}
 
-	fl_dbg("(%d, %d, %d), (%d, %d)\n",
+	fl_pr_debug("(%d, %d, %d), (%d, %d)\n",
 			fl_arg.type, fl_arg.ct, fl_arg.part, fl_arg.level, fl_arg.dur);
 
 	/* call callback function */
@@ -855,7 +855,7 @@ static ssize_t flashlight_strobe_store(struct device *dev, struct device_attribu
 		pf->flashlight_strobe_store(fl_arg);
 		ret = size;
 	} else {
-		fl_info("Failed with no flashlight ops\n");
+		fl_pr_info("Failed with no flashlight ops\n");
 		ret = -1;
 	}
 
@@ -869,7 +869,7 @@ static DEVICE_ATTR_RW(flashlight_strobe);
 static ssize_t flashlight_pt_show(struct device *dev, struct device_attribute *attr,
 		char *buf)
 {
-	fl_dbg("Power throttling show.\n");
+	fl_pr_debug("Power throttling show.\n");
 
 #ifdef CONFIG_MTK_FLASHLIGHT_PT
 	return scnprintf(buf, PAGE_SIZE,
@@ -893,7 +893,7 @@ static ssize_t flashlight_pt_store(struct device *dev, struct device_attribute *
 	char *token, *cur = (char *)buf;
 	int ret;
 
-	fl_dbg("Power throttling store.\n");
+	fl_pr_debug("Power throttling store.\n");
 
 	mutex_lock(&flashlight_pdata.mutex);
 
@@ -901,7 +901,7 @@ static ssize_t flashlight_pt_store(struct device *dev, struct device_attribute *
 		token = strsep(&cur, delim);
 		ret = kstrtou32(token, 10, &num);
 		if (ret) {
-			fl_err("Error arguments.\n");
+			fl_pr_err("Error arguments.\n");
 			goto unlock;
 		}
 
@@ -921,18 +921,18 @@ static ssize_t flashlight_pt_store(struct device *dev, struct device_attribute *
 
 	/* verify data */
 	if (count != PT_NOTIFY_NUM) {
-		fl_err("Error argument number: (%d)\n", count);
+		fl_pr_err("Error argument number: (%d)\n", count);
 		ret = -1;
 		goto unlock;
 	}
 
 #ifdef CONFIG_MTK_FLASHLIGHT_PT
 	if (pt_arg_verify(low_vol, low_bat, over_cur)) {
-		fl_err("Error arguments.\n");
+		fl_pr_err("Error arguments.\n");
 		ret = -1;
 		goto unlock;
 	}
-	fl_dbg("(%d, %d, %d)\n", low_vol, low_bat, over_cur);
+	fl_pr_debug("(%d, %d, %d)\n", low_vol, low_bat, over_cur);
 
 	/* call callback function */
 	pt_low_vol_callback(low_vol);
@@ -956,7 +956,7 @@ static ssize_t flashlight_charger_show(
 	char status[FLASHLIGHT_CHARGER_STATUS_BUF_SIZE];
 	char status_tmp[FLASHLIGHT_CHARGER_STATUS_TMPBUF_SIZE];
 
-	fl_dbg("Charger status show.\n");
+	fl_pr_debug("Charger status show.\n");
 
 	memset(status, '\0', FLASHLIGHT_CHARGER_STATUS_BUF_SIZE);
 	for (i = 0; i < FLASHLIGHT_TYPE_MAX; i++)
@@ -984,7 +984,7 @@ static ssize_t flashlight_charger_store(struct device *dev,
 	char *token, *cur = (char *)buf;
 	int ret;
 
-	fl_dbg("Charger status store.\n");
+	fl_pr_debug("Charger status store.\n");
 
 	memset(&fl_arg, 0, sizeof(struct flashlight_arg));
 
@@ -992,7 +992,7 @@ static ssize_t flashlight_charger_store(struct device *dev,
 		token = strsep(&cur, delim);
 		ret = kstrtos32(token, 10, &num);
 		if (ret) {
-			fl_err("Error arguments.\n");
+			fl_pr_err("Error arguments.\n");
 			goto unlock;
 		}
 
@@ -1014,23 +1014,23 @@ static ssize_t flashlight_charger_store(struct device *dev,
 
 	/* verify data */
 	if (count != FLASHLIGHT_CHARGER_NUM) {
-		fl_err("Error argument number: (%d)\n", count);
+		fl_pr_err("Error argument number: (%d)\n", count);
 		ret = -1;
 		goto unlock;
 	}
 	if (flashlight_index_verify(fl_arg.type, fl_arg.ct, fl_arg.part)) {
-		fl_err("Error arguments.\n");
+		fl_pr_err("Error arguments.\n");
 		ret = -1;
 		goto unlock;
 	}
 	if (charger_status_tmp < FLASHLIGHT_CHARGER_NOT_READY ||
 			charger_status_tmp > FLASHLIGHT_CHARGER_READY) {
-		fl_err("Error arguments charger status(%d).\n", charger_status_tmp);
+		fl_pr_err("Error arguments charger status(%d).\n", charger_status_tmp);
 		ret = -1;
 		goto unlock;
 	}
 
-	fl_dbg("(%d, %d, %d), (%d)\n",
+	fl_pr_debug("(%d, %d, %d), (%d)\n",
 			fl_arg.type, fl_arg.ct, fl_arg.part, charger_status_tmp);
 
 	/* store charger status */
@@ -1045,21 +1045,21 @@ static DEVICE_ATTR_RW(flashlight_charger);
 
 static int flashlight_probe(struct platform_device *dev)
 {
-	fl_dbg("Probe start.\n");
+	fl_pr_debug("Probe start.\n");
 
 	/* allocate char device number */
 	if (alloc_chrdev_region(&flashlight_devno, 0, 1, FLASHLIGHT_DEVNAME)) {
-		fl_err("Failed to allocate char device region.\n");
+		fl_pr_err("Failed to allocate char device region.\n");
 		goto err_allocate_chrdev;
 	}
-	fl_dbg("Allocate major number and minor number: (%d, %d)\n",
+	fl_pr_debug("Allocate major number and minor number: (%d, %d)\n",
 			MAJOR(flashlight_devno),
 			MINOR(flashlight_devno));
 
 	/* allocate char device */
 	flashlight_cdev = cdev_alloc();
 	if (!flashlight_cdev) {
-		fl_err("Failed to allcoate cdev\n");
+		fl_pr_err("Failed to allcoate cdev\n");
 		goto err_allocate_cdev;
 	}
 	flashlight_cdev->ops = &flashlight_fops;
@@ -1067,14 +1067,14 @@ static int flashlight_probe(struct platform_device *dev)
 
 	/* add char device to the system */
 	if (cdev_add(flashlight_cdev, flashlight_devno, 1)) {
-		fl_err("Failed to add cdev\n");
+		fl_pr_err("Failed to add cdev\n");
 		goto err_add_cdev;
 	}
 
 	/* create class */
 	flashlight_class = class_create(THIS_MODULE, FLASHLIGHT_CORE);
 	if (IS_ERR(flashlight_class)) {
-		fl_err("Failed to create class (%d)\n", (int)PTR_ERR(flashlight_class));
+		fl_pr_err("Failed to create class (%d)\n", (int)PTR_ERR(flashlight_class));
 		goto err_create_class;
 	}
 
@@ -1082,21 +1082,21 @@ static int flashlight_probe(struct platform_device *dev)
 	flashlight_device =
 	    device_create(flashlight_class, NULL, flashlight_devno, NULL, FLASHLIGHT_DEVNAME);
 	if (!flashlight_device) {
-		fl_err("Failed to create device\n");
+		fl_pr_err("Failed to create device\n");
 		goto err_create_device;
 	}
 
 	/* create device file */
 	if (device_create_file(flashlight_device, &dev_attr_flashlight_strobe)) {
-		fl_err("Failed to create device file(strobe)\n");
+		fl_pr_err("Failed to create device file(strobe)\n");
 		goto err_create_strobe_device_file;
 	}
 	if (device_create_file(flashlight_device, &dev_attr_flashlight_pt)) {
-		fl_err("Failed to create device file(pt)\n");
+		fl_pr_err("Failed to create device file(pt)\n");
 		goto err_create_pt_device_file;
 	}
 	if (device_create_file(flashlight_device, &dev_attr_flashlight_charger)) {
-		fl_err("Failed to create device file(charger)\n");
+		fl_pr_err("Failed to create device file(charger)\n");
 		goto err_create_charger_device_file;
 	}
 
@@ -1108,7 +1108,7 @@ static int flashlight_probe(struct platform_device *dev)
 	/* init flashlight operations */
 	fl_init();
 
-	fl_dbg("Probe done.\n");
+	fl_pr_debug("Probe done.\n");
 
 	return 0;
 
@@ -1187,19 +1187,19 @@ static int __init flashlight_init(void)
 {
 	int ret;
 
-	fl_dbg("Init start.\n");
+	fl_pr_debug("Init start.\n");
 
 #ifndef CONFIG_OF
 	ret = platform_device_register(&flashlight_platform_device);
 	if (ret) {
-		fl_err("Failed to register platform device\n");
+		fl_pr_err("Failed to register platform device\n");
 		return ret;
 	}
 #endif
 
 	ret = platform_driver_register(&flashlight_platform_driver);
 	if (ret) {
-		fl_err("Failed to register platform driver\n");
+		fl_pr_err("Failed to register platform driver\n");
 		return ret;
 	}
 
@@ -1209,18 +1209,18 @@ static int __init flashlight_init(void)
 	register_battery_oc_notify(&pt_oc_callback, BATTERY_OC_PRIO_FLASHLIGHT);
 #endif
 
-	fl_dbg("Init done.\n");
+	fl_pr_debug("Init done.\n");
 
 	return 0;
 }
 
 static void __exit flashlight_exit(void)
 {
-	fl_dbg("Exit start.\n");
+	fl_pr_debug("Exit start.\n");
 
 	platform_driver_unregister(&flashlight_platform_driver);
 
-	fl_dbg("Exit done.\n");
+	fl_pr_debug("Exit done.\n");
 }
 
 module_init(flashlight_init);
