@@ -747,6 +747,13 @@ static BOOLEAN saaCheckOverLoadRN(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T pr
 {
 	static UINT_32 u4OverLoadRN;
 	P_BSS_INFO_T prAisBssInfo;
+	PARAM_SSID_T rSsid;
+	P_CONNECTION_SETTINGS_T prConnSettings;
+	P_AIS_FSM_INFO_T prAisFsmInfo;
+
+	kalMemZero(&rSsid, sizeof(PARAM_SSID_T));
+	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 
 	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 
@@ -755,8 +762,16 @@ static BOOLEAN saaCheckOverLoadRN(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T pr
 			DBGLOG(SAA, INFO, "<SAA> eFrmType: %d, u4OverLoadRN times: %d\n", eFrmType, u4OverLoadRN);
 			if (u4OverLoadRN < JOIN_MAX_RETRY_OVERLOAD_RN) {
 				P_BSS_DESC_T prBssDesc;
+				prBssDesc = prAisFsmInfo->prTargetBssDesc;
+				if (prBssDesc)
+					COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen,
+						prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
+				else
+					COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen,
+						prConnSettings->aucSSID, prConnSettings->ucSSIDLen);
 
-				prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
+				prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter,
+								prStaRec->aucMacAddr, TRUE, &rSsid);
 				if (prBssDesc) {
 					aisAddBlacklist(prAdapter, prBssDesc);
 					if (prBssDesc->prBlack)
@@ -1058,8 +1073,12 @@ static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRe
 {
 	OS_SYSTIME rCurrentTime;
 	P_CONNECTION_SETTINGS_T prConnSettings;
+	P_AIS_FSM_INFO_T prAisFsmInfo;
+	PARAM_SSID_T rSsid;
 
+	kalMemZero(&rSsid, sizeof(PARAM_SSID_T));
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	GET_CURRENT_SYSTIME(&rCurrentTime);
 
 	/*
@@ -1090,8 +1109,16 @@ static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRe
 
 			prConnSettings->fgIsConnReqIssued = TRUE;
 			prConnSettings->fgIsDisconnectedByNonRequest = FALSE;
+			prAisBssInfo->u2DeauthReason = prStaRec->u2ReasonCode;
 
-			prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
+			prBssDesc = prAisFsmInfo->prTargetBssDesc;
+			if (prBssDesc)
+				COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen, prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
+			else
+				COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen,
+						prConnSettings->aucSSID, prConnSettings->ucSSIDLen);
+
+			prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, prStaRec->aucMacAddr, TRUE, &rSsid);
 			if (prBssDesc) {
 				aisAddBlacklist(prAdapter, prBssDesc);
 				if (prStaRec->u2ReasonCode == REASON_CODE_DISASSOC_AP_OVERLOAD) {
