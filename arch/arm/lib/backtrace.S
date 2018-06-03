@@ -12,6 +12,11 @@
  */
 #include <linux/linkage.h>
 #include <asm/assembler.h>
+.extern _stext, _etext
+__stext:
+	.word _stext
+__etext:
+	.word _etext
 		.text
 
 @ fp is 0 or stack frame
@@ -67,6 +72,13 @@ for_each_frame:	tst	frame, mask		@ Check for address exceptions
 		sub	sv_pc, sv_pc, offset	@ Correct PC for prefetching
 		bic	sv_pc, sv_pc, mask	@ mask PC/LR for the mode
 
+		ldr	r0, __stext
+		cmp	sv_pc, r0
+		blt	.badpc
+		ldr	r0, __etext
+		cmp	sv_pc, r0
+		bhi	.badpc
+
 1003:		ldr	r2, [sv_pc, #-4]	@ if stmfd sp!, {args} exists,
 		ldr	r3, .Ldsi+4		@ adjust saved 'pc' back one
 		teq	r3, r2, lsr #10		@ instruction
@@ -116,6 +128,12 @@ ENDPROC(c_backtrace)
 #define reg   r5
 #define stack r6
 
+.badpc:
+		adr	r0, .Lbadpc
+		mov	r1, sv_pc
+		bl	printk
+		b	no_frame
+
 .Ldumpstm:	stmfd	sp!, {instr, reg, stack, r7, lr}
 		mov	stack, r0
 		mov	instr, r1
@@ -126,6 +144,8 @@ ENDPROC(c_backtrace)
  THUMB(		lsl	r3, reg			)
  THUMB(		tst	instr, r3		)
 		beq	2f
+		tst	stack, mask
+		bne	2f
 		add	r7, r7, #1
 		teq	r7, #6
 		moveq	r7, #0
@@ -145,6 +165,8 @@ ENDPROC(c_backtrace)
 .Lfp:		.asciz	" r%d:%08x%s"
 .Lcr:		.asciz	"\n"
 .Lbad:		.asciz	"Backtrace aborted due to bad frame pointer <%p>\n"
+		.align
+.Lbadpc:	.asciz	"Backtrace aborted due to bad pc <%p>\n"
 		.align
 .Ldsi:		.word	0xe92dd800 >> 11	@ stmfd sp!, {... fp, ip, lr, pc}
 		.word	0xe92d0000 >> 11	@ stmfd sp!, {}
