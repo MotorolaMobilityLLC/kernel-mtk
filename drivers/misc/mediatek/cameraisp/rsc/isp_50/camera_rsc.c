@@ -3711,6 +3711,8 @@ static ssize_t rsc_reg_write(struct file *file, const char __user *buffer, size_
 		return 0;
 
 	desc[len] = '\0';
+	addrSzBuf[23] = '\0';
+	valSzBuf[23] = '\0';
 
 	if (sscanf(desc, "%23s %23s", addrSzBuf, valSzBuf) == 2) {
 		pszTmp = strstr(addrSzBuf, "0x");
