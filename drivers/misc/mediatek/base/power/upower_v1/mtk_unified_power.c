@@ -599,6 +599,7 @@ static void get_original_table(void)
 
 	upower_chip_ver = mt_get_chip_sw_ver();
 	if (upower_chip_ver == CHIP_SW_VER_01) {
+		upower_enable = 1;
 		binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(UPOWER_FUNC_CODE_EFUSE_INDEX));
 		if (binLevel == 0) /* 1.6G */
 			upower_tbl_infos = &upower_tbl_infos_FY[0];
@@ -609,6 +610,7 @@ static void get_original_table(void)
 		else /* 1.6G */
 			upower_tbl_infos = &upower_tbl_infos_FY[0];
 	} else {
+		upower_enable = 1;
 		binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(UPOWER_FUNC_CODE_EFUSE_INDEX));
 		if (binLevel == 0) /* 1.6G */
 			upower_tbl_infos = &upower_tbl_infos_2_FY[0];
@@ -624,15 +626,15 @@ static void get_original_table(void)
 
 static int __init upower_init(void)
 {
-	if (upower_enable == 0) {
-		upower_error("upower is disabled\n");
-		return 0;
-	}
 	/* PTP has no efuse, so volt will be set to orig data */
 	/* before upower_init_volt(), PTP has called upower_update_volt_by_eem() */
 	get_original_table();
 	upower_debug("upower tbl orig location([0](%p)= %p\n",
 					upower_tbl_infos, upower_tbl_infos[0].p_upower_tbl);
+	if (upower_enable == 0) {
+		upower_error("upower is disabled\n");
+		return 0;
+	}
 
 	#ifdef UPOWER_UT
 	upower_debug("--------- (UT)before tbl ready--------------\n");
