@@ -2515,7 +2515,6 @@ void tscpu_workqueue_start_timer(void)
 	if (!isTimerCancelled)
 		return;
 
-	isTimerCancelled = 0;
 
 	if (down_trylock(&sem_mutex))
 		return;
@@ -2523,6 +2522,7 @@ void tscpu_workqueue_start_timer(void)
 	if (!is_worktimer_en && thz_dev != NULL && interval != 0) {
 		mod_delayed_work(system_freezable_power_efficient_wq,
 						&(thz_dev->poll_queue), 0);
+		isTimerCancelled = 0;
 
 		tscpu_dprintk("[tTimer] workqueue starting\n");
 		spin_lock(&timer_lock);
@@ -2535,17 +2535,17 @@ void tscpu_workqueue_start_timer(void)
 	if (!isTimerCancelled)
 		return;
 
-	isTimerCancelled = 0;
 
 	if (down_trylock(&sem_mutex))
 		return;
 
 	/* resume thermal framework polling when leaving deep idle */
-	if (thz_dev != NULL && interval != 0)
+	if (thz_dev != NULL && interval != 0) {
 		mod_delayed_work(system_freezable_power_efficient_wq,
 					&(thz_dev->poll_queue),
 					round_jiffies(msecs_to_jiffies(1000)));
-
+		isTimerCancelled = 0;
+	}
 	up(&sem_mutex);
 #endif
 

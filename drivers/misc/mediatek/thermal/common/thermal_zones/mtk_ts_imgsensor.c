@@ -494,16 +494,17 @@ static void mtkts_allts_start_timer(void)
 		if (!g_tsData[i].isTimerCancelled)
 			continue;
 
-		g_tsData[i].isTimerCancelled = 0;
+
 
 		if (down_trylock(&g_tsData[i].sem_mutex))
 			continue;
 
-		if (g_tsData[i].thz_dev != NULL && g_tsData[i].interval != 0)
+		if (g_tsData[i].thz_dev != NULL && g_tsData[i].interval != 0) {
 			mod_delayed_work(system_freezable_power_efficient_wq,
 				&(g_tsData[i].thz_dev->poll_queue),
 				round_jiffies(msecs_to_jiffies(1000)));
-
+			g_tsData[i].isTimerCancelled = 0;
+		}
 		up(&g_tsData[i].sem_mutex);
 		/*1000 = 1sec */
 	}
