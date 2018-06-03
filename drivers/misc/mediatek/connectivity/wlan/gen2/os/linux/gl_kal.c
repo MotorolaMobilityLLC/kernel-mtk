@@ -1710,7 +1710,13 @@ kalOidComplete(IN P_GLUE_INFO_T prGlueInfo,
 	/* if (prGlueInfo->u4TimeoutFlag != 1) { */
 	prGlueInfo->rPendStatus = rOidStatus;
 	DBGLOG(OID, TEMP, "kalOidComplete, caller: %p\n", __builtin_return_address(0));
-	complete(&prGlueInfo->rPendComp);
+
+	/* complete ONLY if there are waiters */
+	if (!completion_done(&prGlueInfo->rPendComp))
+		complete(&prGlueInfo->rPendComp);
+	else
+		DBGLOG(INIT, WARN, "SKIP multiple OID complete!\n");
+
 	prGlueInfo->u4OidCompleteFlag = 1;
 	/* } */
 	/* else let it timeout on kalIoctl entry */
@@ -1722,7 +1728,12 @@ VOID kalOidClearance(IN P_GLUE_INFO_T prGlueInfo)
 	/* clear_bit(GLUE_FLAG_OID_BIT, &prGlueInfo->u4Flag); */
 	if (prGlueInfo->u4OidCompleteFlag != 1) {
 		DBGLOG(OID, TEMP, "kalOidClearance, caller: %p\n", __builtin_return_address(0));
-		complete(&prGlueInfo->rPendComp);
+		/* complete ONLY if there are waiters */
+		if (!completion_done(&prGlueInfo->rPendComp))
+			complete(&prGlueInfo->rPendComp);
+		else
+			DBGLOG(INIT, WARN, "SKIP multiple OID complete!\n");
+
 	}
 	/* } */
 }
@@ -2206,9 +2217,12 @@ int tx_thread(void *data)
 											prIoReq->pu4QryInfoLen);
 					}
 
-					if (prIoReq->rStatus != WLAN_STATUS_PENDING) {
+					if (prIoReq->rStatus != WLAN_STATUS_PENDING
+						&& (!completion_done(&prGlueInfo->rPendComp))) {
+
 						DBGLOG(OID, TEMP, "tx_thread, complete\n");
 						complete(&prGlueInfo->rPendComp);
+
 					} else {
 						wlanoidTimeoutCheck(prGlueInfo->prAdapter, prIoReq->pfnOidHandler);
 					}

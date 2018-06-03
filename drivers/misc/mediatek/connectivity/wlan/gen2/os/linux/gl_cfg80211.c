@@ -832,6 +832,7 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 
 	if (rStatus != WLAN_STATUS_SUCCESS) {
 		prGlueInfo->prScanRequest = NULL;
+		rScanRequest.puPartialScanReq = NULL;
 		DBGLOG(REQ, ERROR, "scan error:%x\n", rStatus);
 		return -EINVAL;
 	}
