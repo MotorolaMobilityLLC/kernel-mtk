@@ -54,6 +54,8 @@ typedef enum {
 	IPC_RPC_DSP_EMI_MPU_SETTING = 0x400B,
 	/*0x400C is reserved*/
 	IPC_RPC_CCCI_LHIF_MAPPING = 0x400D,
+	IPC_RPC_DTSI_QUERY_OP = 0x400E,
+	IPC_RPC_QUERY_AP_SYS_PROPERTY = 0x400F,
 
 	IPC_RPC_IT_OP = 0x4321,
 } RPC_OP_ID;
@@ -157,6 +159,21 @@ struct ccci_rpc_dsp_emi_mpu_input {
 struct ccci_rpc_usim2nfs {
 	u8 lock_vsim1;
 } __packed;
+
+struct ccci_rpc_md_dtsi_input {
+	u8 req;
+	u8 index;
+	char strName[64];
+} __packed;
+
+struct ccci_rpc_md_dtsi_output {
+	u32 retValue;
+	char retString[64];
+} __packed;
+
+enum {
+	RPC_REQ_PROP_VALUE = 1,
+};
 
 #define RPC_REQ_BUFFER_NUM       2	/* support 2 concurrently request */
 #define RPC_MAX_ARG_NUM          6	/* parameter number */

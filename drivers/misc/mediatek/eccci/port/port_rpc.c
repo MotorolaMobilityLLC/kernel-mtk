@@ -278,6 +278,39 @@ static int get_eint_attr(int md_id, char *name, unsigned int name_len,
 	return get_eint_attr_DTSVal(md_id, name, name_len, type, result, len);
 }
 
+static void get_md_dtsi_val(struct ccci_rpc_md_dtsi_input *input, struct ccci_rpc_md_dtsi_output *output)
+{
+	int ret = -1;
+	int value = 0;
+	struct device_node *node = of_find_compatible_node(NULL, NULL, "mediatek,md_attr_node");
+
+	if (node == NULL) {
+		CCCI_INIT_LOG(-1, RPC, "get_md_dtsi_val: No node: %s\n", input->strName);
+		CCCI_NORMAL_LOG(-1, RPC, "get_md_dtsi_val: No node: %s\n", input->strName);
+		return;
+	}
+
+	switch (input->req) {
+	case RPC_REQ_PROP_VALUE:
+		ret = of_property_read_u32(node, input->strName, &value);
+		if (ret == 0)
+			output->retValue = value;
+		break;
+	}
+	CCCI_INIT_LOG(-1, RPC, "get_md_dtsi_val %d, %s -- 0x%x\n", input->req, input->strName, output->retValue);
+	CCCI_NORMAL_LOG(-1, RPC, "get_md_dtsi_val %d, %s -- 0x%x\n", input->req, input->strName, output->retValue);
+}
+
+static void get_md_dtsi_debug(void)
+{
+	struct ccci_rpc_md_dtsi_input input;
+	struct ccci_rpc_md_dtsi_output output;
+
+	input.req = RPC_REQ_PROP_VALUE;
+	snprintf(input.strName, sizeof(input.strName), "%s", "mediatek,md_drdi_rf_set_idx");
+	get_md_dtsi_val(&input, &output);
+}
+
 static void ccci_rpc_get_gpio_adc(struct ccci_rpc_gpio_adc_intput *input, struct ccci_rpc_gpio_adc_output *output)
 {
 	int num;
@@ -844,6 +877,35 @@ static void ccci_rpc_work_helper(struct port_t *port, struct rpc_pkt *pkt,
 
 			break;
 		}
+	case IPC_RPC_DTSI_QUERY_OP:
+		{
+			struct ccci_rpc_md_dtsi_input *input;
+			struct ccci_rpc_md_dtsi_output *output;
+
+			if (pkt_num != 1) {
+				CCCI_ERROR_LOG(md_id, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+					     p_rpc_buf->op_id, pkt_num);
+				tmp_data[0] = FS_PARAM_ERROR;
+				pkt_num = 0;
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+				break;
+			}
+			input = (struct ccci_rpc_md_dtsi_input *)(pkt[0].buf);
+			pkt_num = 0;
+			tmp_data[0] = 0;
+			pkt[pkt_num].len = sizeof(unsigned int);
+			pkt[pkt_num++].buf = (void *)&tmp_data[0];
+			pkt[pkt_num].len = sizeof(struct ccci_rpc_md_dtsi_output);
+			pkt[pkt_num++].buf = (void *)&tmp_data[1];
+			output = (struct ccci_rpc_md_dtsi_output *)&tmp_data[1];
+			/* 0xF for failure */
+			memset(output, 0xF, sizeof(struct ccci_rpc_md_dtsi_output));
+			get_md_dtsi_val(input, output);
+			break;
+		}
 	case IPC_RPC_IT_OP:
 		{
 			int i;
@@ -981,6 +1043,7 @@ static int port_rpc_init(struct port_t *port)
 {
 	struct cdev *dev;
 	int ret = 0;
+	static int first_init = 1;
 
 	CCCI_DEBUG_LOG(port->md_id, RPC, "rpc port %s is initializing\n", port->name);
 	port->rx_length_th = MAX_QUEUE_LENGTH;
@@ -1001,7 +1064,12 @@ static int port_rpc_init(struct port_t *port)
 		port->skb_handler = &rpc_msg_handler;
 		kthread_run(port_kthread_handler, port, "%s", port->name);
 	}
-	get_dtsi_eint_node(port->md_id);
+
+	if (first_init) {
+		get_dtsi_eint_node(port->md_id);
+		get_md_dtsi_debug();
+		first_init = 0;
+	}
 	return 0;
 }
 
@@ -1036,6 +1104,10 @@ int port_rpc_recv_match(struct port_t *port, struct sk_buff *skb)
 		case RPC_CCCI_LGE_FAC_INIT_SIM_LOCK_DATA:
 			is_userspace_msg = 1;
 #endif
+			break;
+
+		case IPC_RPC_QUERY_AP_SYS_PROPERTY:
+			is_userspace_msg = 1;
 			break;
 		default:
 			is_userspace_msg = 0;
