@@ -26,17 +26,24 @@
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
 #include "mt-plat/mtk_thermal_monitor.h"
+#include "mach/mtk_thermal.h"
 
 #define MAX_NUM_INSTANCE_MTK_COOLER_CAM  3
 
-#if 1
-#define mtk_cooler_cam_dprintk(fmt, args...) pr_debug("thermal/cooler/cam " fmt, ##args)
-#else
-#define mtk_cooler_cam_dprintk(fmt, args...)
-#endif
+
+#define mtk_cooler_cam_dprintk_always(fmt, args...) \
+pr_debug("[Thermal/TC/cam]" fmt, ##args)
+
+#define mtk_cooler_cam_dprintk(fmt, args...) \
+do { \
+	if (cl_cam_klog_on == 1) \
+		pr_debug("[Thermal/TC/cam]" fmt, ##args); \
+} while (0)
+
 
 #define MAX_LEN (256)
 
+static int cl_cam_klog_on;
 static struct thermal_cooling_device *cl_cam_dev[MAX_NUM_INSTANCE_MTK_COOLER_CAM] = { 0 };
 static unsigned long cl_cam_state[MAX_NUM_INSTANCE_MTK_COOLER_CAM] = { 0 };
 static unsigned int _cl_cam;
@@ -45,6 +52,14 @@ static struct thermal_cooling_device *cl_cam_urgent_dev;
 static unsigned long cl_cam_urgent_state;
 static unsigned int _cl_cam_urgent;
 static unsigned int _cl_cam_status;
+static unsigned int _cl_cam_dual_off;
+/* < 20C: DualCam off, >= 20C: DualCam on */
+static int dualcam_Tj_jump_threshold = 20000;
+/*single cam = 1, dual cam = 0, default = 0*/
+static int single_cam_flag;
+/*10000=>10'C*/
+static int dualcam_Tj_hysteresis = 10000;
+
 
 /*
  * The cooler status of exit camera.
@@ -55,6 +70,50 @@ enum {
 	CL_CAM_ACTIVE = 1,
 	CL_CAM_URGENT = 2
 };
+
+int cl_cam_dualcam_off(void)
+{
+
+	int tj_headroom = 0;
+	int curr_tj = mtk_thermal_get_temp(MTK_THERMAL_SENSOR_CPU);
+	int curr_ttj = get_cpu_target_tj();
+
+
+
+	/* if any error */
+	if (curr_tj < 0 || curr_ttj < 0) {
+		mtk_cooler_cam_dprintk_always("%s error: %d %d\n", __func__, curr_tj, curr_ttj);
+		return 1;
+	}
+	tj_headroom = curr_ttj - curr_tj;
+
+	mtk_cooler_cam_dprintk("%s ttj = %d, tj %d, tj_headroom %d,single_cam_flag <%d>\n",
+		__func__, curr_ttj, curr_tj, tj_headroom, single_cam_flag);
+
+
+	if ((tj_headroom <= 0) || (tj_headroom <  dualcam_Tj_jump_threshold)) {
+		single_cam_flag = 1;
+		mtk_cooler_cam_dprintk("%s tj_headroom:%d < Tj jump threshold:%d\n",
+			__func__, tj_headroom, dualcam_Tj_jump_threshold);
+		return 1; /*single cam*/
+	}
+
+
+	if ((single_cam_flag == 1) && (curr_tj < (curr_ttj - dualcam_Tj_jump_threshold - dualcam_Tj_hysteresis))) {
+		single_cam_flag = 0;
+		mtk_cooler_cam_dprintk("%s Tj:%d TTj:%d Tj jump threshold:%d Tj_hys:%d, %d\n",
+			__func__, curr_tj, curr_ttj, dualcam_Tj_jump_threshold, dualcam_Tj_hysteresis,
+			(curr_ttj - dualcam_Tj_jump_threshold - dualcam_Tj_hysteresis));
+		return 0;/*dual cam*/
+	}
+
+
+	mtk_cooler_cam_dprintk("%s tj_headroom:%d, Tj jump threshold:%d\n",
+		__func__, tj_headroom, dualcam_Tj_jump_threshold);
+
+	return 0;/*dual cam*/
+
+}
 
 static void cl_cam_status_update(void)
 {
@@ -80,7 +139,7 @@ static ssize_t _cl_cam_write(struct file *filp, const char __user *buf, size_t l
 	if (ret)
 		WARN_ON_ONCE(1);
 
-	mtk_cooler_cam_dprintk("%s %s = %d\n", __func__, tmp, _cl_cam);
+	mtk_cooler_cam_dprintk_always("%s %s = %d\n", __func__, tmp, _cl_cam);
 
 	return len;
 }
@@ -88,7 +147,6 @@ static ssize_t _cl_cam_write(struct file *filp, const char __user *buf, size_t l
 static int _cl_cam_read(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", _cl_cam);
-	mtk_cooler_cam_dprintk("%s %d\n", __func__, _cl_cam);
 
 	return 0;
 }
@@ -116,6 +174,7 @@ static int mtk_cl_cam_get_max_state(struct thermal_cooling_device *cdev, unsigne
 static int mtk_cl_cam_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
 	*state = *((unsigned long *)cdev->devdata);
+
 	return 0;
 }
 
@@ -165,7 +224,7 @@ static ssize_t _cl_cam_status_write(struct file *filp, const char __user *buf, s
 	if (ret)
 		WARN_ON_ONCE(1);
 
-	mtk_cooler_cam_dprintk("%s %s = %d\n", __func__, tmp, _cl_cam_status);
+	mtk_cooler_cam_dprintk_always("%s %s = %d\n", __func__, tmp, _cl_cam_status);
 
 	return len;
 }
@@ -173,7 +232,6 @@ static ssize_t _cl_cam_status_write(struct file *filp, const char __user *buf, s
 static int _cl_cam_status_read(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", _cl_cam_status);
-	mtk_cooler_cam_dprintk("%s %d\n", __func__, _cl_cam_status);
 
 	return 0;
 }
@@ -189,6 +247,58 @@ static const struct file_operations _cl_cam_status_fops = {
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.write = _cl_cam_status_write,
+	.release = single_release,
+};
+
+static ssize_t _cl_cam_dual_off_write(struct file *filp, const char __user *buf, size_t len, loff_t *data)
+{
+	char tmp[128] = { 0 };
+	int klog_on, tj_jump_threshold, tj_hysteresis;
+
+	len = (len < (128 - 1)) ? len : (128 - 1);
+	/* write data to the buffer */
+	if (copy_from_user(tmp, buf, len))
+		return -EFAULT;
+
+	if (data == NULL) {
+		mtk_cooler_cam_dprintk("%s null data\n", __func__);
+		return -EINVAL;
+	}
+	if (sscanf(tmp, "%d %d %d", &klog_on, &tj_jump_threshold, &tj_hysteresis) >= 1) {
+		if (klog_on == 0 || klog_on == 1)
+			cl_cam_klog_on = klog_on;
+
+		dualcam_Tj_hysteresis = tj_hysteresis;
+		dualcam_Tj_jump_threshold = tj_jump_threshold;
+
+		return len;
+	}
+
+	mtk_cooler_cam_dprintk_always("%s klog_on: %d tj_jump_threshold: %d, tj_hysteresis: %d\n",
+		__func__, klog_on, dualcam_Tj_jump_threshold, dualcam_Tj_hysteresis);
+
+	return len;
+}
+
+static int _cl_cam_dual_off_read(struct seq_file *m, void *v)
+{
+	_cl_cam_dual_off = cl_cam_dualcam_off();
+	seq_printf(m, "%d\n", _cl_cam_dual_off);
+
+	return 0;
+}
+
+static int _cl_cam_dual_off_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, _cl_cam_dual_off_read, PDE_DATA(inode));
+}
+
+static const struct file_operations _cl_cam_dual_off_fops = {
+	.owner = THIS_MODULE,
+	.open = _cl_cam_dual_off_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = _cl_cam_dual_off_write,
 	.release = single_release,
 };
 
@@ -311,6 +421,11 @@ static int __init mtk_cooler_cam_init(void)
 		entry = proc_create("driver/cl_cam_status", S_IRUGO | S_IWUSR, NULL, &_cl_cam_status_fops);
 		if (!entry)
 			mtk_cooler_cam_dprintk("%s driver/cl_cam_status creation failed\n", __func__);
+
+		entry = proc_create("driver/cl_cam_dual_off", S_IRUGO | S_IWUSR | S_IWGRP,
+			NULL, &_cl_cam_dual_off_fops);
+		if (!entry)
+			mtk_cooler_cam_dprintk("%s driver/cl_cam_dual creation failed\n", __func__);
 	}
 
 	err = mtk_cooler_cam_register_ltf();
