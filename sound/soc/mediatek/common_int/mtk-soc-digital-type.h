@@ -173,6 +173,11 @@ enum audio_usage_id {
 	AUDIO_USAGE_FM_CAPTURE,
 };
 
+enum audio_general_asrc_id {
+	AUDIO_GENERAL_ASRC_1,
+	AUDIO_GENERAL_ASRC_2,
+};
+
 enum soc_aud_memif_direction {
 	Soc_Aud_MemIF_Direction_DIRECTION_OUTPUT,
 	Soc_Aud_MemIF_Direction_DIRECTION_INPUT

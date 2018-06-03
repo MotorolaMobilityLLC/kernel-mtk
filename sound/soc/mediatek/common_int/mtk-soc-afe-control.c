@@ -1729,6 +1729,18 @@ int set_memif_pbuf_size(int aud_blk, enum memif_pbuf_size pbuf_size)
 	return 0;
 }
 
+bool set_general_asrc(enum audio_general_asrc_id id, unsigned int sample_rate_in,
+			  unsigned int sample_rate_out)
+{
+	bool ret = false;
+
+	if (s_afe_platform_ops->set_general_asrc != NULL) {
+		s_afe_platform_ops->set_general_asrc(id, sample_rate_in, sample_rate_out);
+		ret = true;
+	}
+	return ret;
+}
+
 /*****************************************************************************
  * FUNCTION
  *  AudDrv_Allocate_DL1_Buffer / AudDrv_Free_DL1_Buffer
