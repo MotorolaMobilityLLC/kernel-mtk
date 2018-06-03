@@ -35,7 +35,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 	long err = 0;
 	struct alsps_context *cxt = alsps_context_obj;
 	void __user *ptr = (void __user *) arg;
-	int dat;
+	int dat = 0;
 	uint32_t enable = 0;
 	int ps_cali = 0;
 	int threshold_data[2] = {0, 0};
