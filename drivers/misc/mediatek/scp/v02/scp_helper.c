@@ -1046,8 +1046,7 @@ static ssize_t scp_vcore_request_store(struct device *kobj, struct device_attrib
 			scp_register_feature(VCORE_TEST_FEATURE_ID);
 			pre_feature_req = 0;
 		}
-		pr_warn("[SCP] set high freq(vcore to v1.0), expect=%d, cur=%d\n",
-			scp_expected_freq, scp_current_freq);
+		pr_warn("[SCP] set expect=%d, cur=%d\n", scp_expected_freq, scp_current_freq);
 		tick_cnt = mt_get_ckgen_freq(28);
 		tick_cnt_2 = mt_get_abist_freq(3);
 		tick_cnt_3 = mt_get_abist_freq(63);
@@ -1542,10 +1541,16 @@ void scp_register_feature(feature_id_t id)
 	unsigned long spin_flags;
 
 	/*prevent from access when scp is down*/
+#if defined(CONFIG_MACH_MT6759)
+	if (!scp_ready[SCP_A_ID]) {
+		pr_err("scp_register_feature:not ready, A=%u\n", scp_ready[SCP_A_ID]);
+#else
 	if (!scp_ready[SCP_A_ID] || !scp_ready[SCP_B_ID]) {
 		pr_err("scp_register_feature:not ready, A=%u,B=%u\n", scp_ready[SCP_A_ID], scp_ready[SCP_B_ID]);
+#endif
 		return;
 	}
+
 	/* because feature_table is a global variable, use mutex lock to protect it from
 	 * accessing in the same time
 	 */
@@ -1583,9 +1588,14 @@ void scp_deregister_feature(feature_id_t id)
 	int ret = 0;
 	unsigned long spin_flags;
 
-	/*prevent from access when scp is down*/
+	/* prevent from access when scp is down */
+#if defined(CONFIG_MACH_MT6759)
+	if (!scp_ready[SCP_A_ID])
+#else
 	if (!scp_ready[SCP_A_ID] || !scp_ready[SCP_B_ID])
+#endif
 		return;
+
 	mutex_lock(&scp_feature_mutex);
 	for (i = 0; i < NUM_FEATURE_ID; i++) {
 		if (feature_table[i].feature == id)
