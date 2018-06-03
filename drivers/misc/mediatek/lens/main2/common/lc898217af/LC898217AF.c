@@ -98,6 +98,7 @@ static int s4AF_WriteReg(u8 a_uLength, u8 a_uAddr, u16 a_u2Data)
 
 static int setPosition(unsigned short UsPosition)
 {
+	unsigned short TarPos;
 	unsigned char UcPosH;
 	unsigned char UcPosL;
 	unsigned int i4RetValue = 0;
@@ -105,8 +106,15 @@ static int setPosition(unsigned short UsPosition)
 	if (g_MotorDirection > 0)
 		UsPosition = 1023 - UsPosition;
 
-	UcPosH = (unsigned char) (UsPosition >> 8);
-	UcPosL = (unsigned char) (UsPosition & 0x00FF);
+	if (UsPosition < 512)
+		TarPos = 0x800 + (UsPosition << 2);
+	else
+		TarPos = ((UsPosition - 512) << 2);
+
+	/* LOG_INF("DAC(%04d) -> %03x\n", UsPosition, TarPos); */
+
+	UcPosH = (unsigned char) (TarPos >> 8);
+	UcPosL = (unsigned char) (TarPos & 0x00FF);
 	i4RetValue = s4AF_WriteReg(0, 0x84, UcPosH);
 	if (i4RetValue != 0)
 		return -1;
