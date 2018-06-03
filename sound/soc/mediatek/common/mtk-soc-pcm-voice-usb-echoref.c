@@ -290,31 +290,6 @@ static int mtk_usb_echoref_prepare(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static void SetDL1Buffer(struct snd_pcm_substream *substream,
-			 struct snd_pcm_hw_params *hw_params)
-{
-	struct snd_pcm_runtime *runtime = substream->runtime;
-	int stream = substream->stream;
-	AFE_BLOCK_T *pblock = &Get_Mem_ControlT(usb_mem_blk[stream])->rBlock;
-
-	pblock->pucPhysBufAddr =  runtime->dma_addr;
-	pblock->pucVirtBufAddr =  runtime->dma_area;
-	pblock->u4BufferSize = runtime->dma_bytes;
-	pblock->u4SampleNumMask = 0x001f;  /* 32 byte align */
-	pblock->u4WriteIdx     = 0;
-	pblock->u4DMAReadIdx    = 0;
-	pblock->u4DataRemained  = 0;
-	pblock->u4fsyncflag     = false;
-	pblock->uResetFlag      = true;
-	pr_warn("SetDL1Buffer u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
-	       pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
-	/* set dram address top hardware */
-	Afe_Set_Reg(AFE_DL1_BASE, pblock->pucPhysBufAddr, 0xffffffff);
-	Afe_Set_Reg(AFE_DL1_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1),
-		    0xffffffff);
-	memset_io((void *)pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
-}
-
 static int mtk_usb_echoref_hw_params(struct snd_pcm_substream *substream,
 				     struct snd_pcm_hw_params *hw_params)
 {
@@ -335,8 +310,9 @@ static int mtk_usb_echoref_hw_params(struct snd_pcm_substream *substream,
 	SetHighAddr(usb_mem_blk[stream], true, substream->runtime->dma_addr);
 	AudDrv_Emi_Clk_On();
 
-	if (stream == SNDRV_PCM_STREAM_PLAYBACK)
-		SetDL1Buffer(substream, hw_params);
+	set_mem_block(substream, hw_params,
+		      Get_Mem_ControlT(usb_mem_blk[stream]),
+		      usb_mem_blk[stream]);
 
 	pr_warn("%s(), substream %p, stream %d, dma_bytes = %zu, dma_area = %p, dma_addr = 0x%lx, use_dram %d\n",
 		__func__, substream, stream,
