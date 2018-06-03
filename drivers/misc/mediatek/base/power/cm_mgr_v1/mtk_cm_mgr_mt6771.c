@@ -377,13 +377,11 @@ static int cm_mgr_is_lp_flavor(void)
 	int r = 0;
 
 #if defined(CONFIG_ARM64)
-	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, "mediatek/k71v1_64_bsp_lp", 24) == 0)
-		r = 1;
+	int len;
 
-	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, "mediatek/k71v1_64_bsp_cmd_lp", 28) == 0)
-		r = 1;
+	len = sizeof(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
 
-	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, "mediatek/evb6771_64_fhdp_lp", 27) == 0)
+	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES + len - 4, "_lp", 3) == 0)
 		r = 1;
 
 	pr_info("flavor check: %s, is_lp: %d\n", CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, r);
