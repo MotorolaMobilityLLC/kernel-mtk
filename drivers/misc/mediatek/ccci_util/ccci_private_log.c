@@ -249,9 +249,15 @@ static const struct file_operations ccci_log_fops = {
 #define CCCI_BOOT_UP_BUF		(4096*16)
 #define CCCI_NORMAL_BUF			(4096*2)
 #define CCCI_REPEAT_BUF			(4096*32)
-#define CCCI_REG_DUMP_BUF		(4096*64 * 2)
-#define CCCI_HISTORY_BUF		(4096*32)
+#define CCCI_REG_DUMP_BUF		(4096*64*2)
+#define CCCI_HISTORY_BUF		(4096*128)
 
+#define MD3_CCCI_INIT_SETTING_BUF   (4096*2)
+#define MD3_CCCI_BOOT_UP_BUF                (4096*16)
+#define MD3_CCCI_NORMAL_BUF                 (4096*2)
+#define MD3_CCCI_REPEAT_BUF                 (4096*32)
+#define MD3_CCCI_REG_DUMP_BUF               (4096*32)
+#define MD3_CCCI_HISTORY_BUF                (4096*32)
 
 struct ccci_dump_buffer {
 	void *buffer;
@@ -317,12 +323,12 @@ static struct buffer_node node_array[2][CCCI_DUMP_MAX+1] = {
 		{&history_ctlb[0], CCCI_HISTORY_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_HISTORY},
 	},
 	{
-		{&init_setting_ctlb[1], CCCI_INIT_SETTING_BUF, 0, CCCI_DUMP_INIT},
-		{&boot_up_ctlb[1], CCCI_BOOT_UP_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_BOOTUP},
-		{&normal_ctlb[1], CCCI_NORMAL_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_NORMAL},
-		{&repeat_ctlb[1], CCCI_REPEAT_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_REPEAT},
-		{&reg_dump_ctlb[1], CCCI_REG_DUMP_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_MEM_DUMP},
-		{&history_ctlb[1], CCCI_HISTORY_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_HISTORY},
+		{&init_setting_ctlb[1], MD3_CCCI_INIT_SETTING_BUF, 0, CCCI_DUMP_INIT},
+		{&boot_up_ctlb[1], MD3_CCCI_BOOT_UP_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_BOOTUP},
+		{&normal_ctlb[1], MD3_CCCI_NORMAL_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_NORMAL},
+		{&repeat_ctlb[1], MD3_CCCI_REPEAT_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_REPEAT},
+		{&reg_dump_ctlb[1], MD3_CCCI_REG_DUMP_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_MEM_DUMP},
+		{&history_ctlb[1], MD3_CCCI_HISTORY_BUF, CCCI_DUMP_ATTR_RING, CCCI_DUMP_HISTORY},
 	}
 };
 
