@@ -119,7 +119,8 @@ ged-y += \
 	src/ged_hashtable.o \
 	src/ged_thread.o \
 	src/ged_ge.o \
-	src/ged_kpi.o \
 	src/ged_dvfs.o \
+	src/ged_kpi.o \
 	src/ged_frr.o \
 	src/ged_fdvfs.o
+

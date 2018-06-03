@@ -41,16 +41,17 @@
 #include "ged_notify_sw_vsync.h"
 #include "ged_dvfs.h"
 #include "ged_kpi.h"
-#include "ged_ge.h"
 #include "ged_frr.h"
 #include "ged_fdvfs.h"
+
+#include "ged_ge.h"
 
 #define GED_DRIVER_DEVICE_NAME "ged"
 
 #ifdef GED_DEBUG
 #define GED_LOG_BUF_COMMON_GLES "GLES"
-static GED_LOG_BUF_HANDLE ghLogBuf_GLES = 0;
-GED_LOG_BUF_HANDLE ghLogBuf_GED = 0;
+static GED_LOG_BUF_HANDLE ghLogBuf_GLES;
+GED_LOG_BUF_HANDLE ghLogBuf_GED;
 #endif
 
 #define GED_LOG_BUF_COMMON_HWC "HWC"
@@ -62,9 +63,8 @@ static GED_LOG_BUF_HANDLE ghLogBuf_FENCE;
 static GED_LOG_BUF_HANDLE ghLogBuf_FWTrace;
 static GED_LOG_BUF_HANDLE ghLogBuf_ftrace;
 
-
-GED_LOG_BUF_HANDLE ghLogBuf_DVFS = 0;
-GED_LOG_BUF_HANDLE ghLogBuf_ged_srv = 0;
+GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
+GED_LOG_BUF_HANDLE ghLogBuf_ged_srv;
 
 /******************************************************************************
  * GED File operations
@@ -128,7 +128,7 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 		}
 
 		if (psBridgePackageKM->i32OutBufferSize > 0) {
-			pvOut = kmalloc(psBridgePackageKM->i32OutBufferSize, GFP_KERNEL);
+			pvOut = kzalloc(psBridgePackageKM->i32OutBufferSize, GFP_KERNEL);
 
 			if (pvOut == NULL)
 				goto dispatch_exit;
@@ -182,29 +182,14 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 		case GED_BRIDGE_COMMAND_GE_ALLOC:
 			SET_FUNC_AND_CHECK(ged_bridge_ge_alloc, GE_ALLOC);
 			break;
-		case GED_BRIDGE_COMMAND_GE_RETAIN:
-			SET_FUNC_AND_CHECK(ged_bridge_ge_retain, GE_RETAIN);
-			break;
-		case GED_BRIDGE_COMMAND_GE_RELEASE:
-			SET_FUNC_AND_CHECK(ged_bridge_ge_release, GE_RELEASE);
-			break;
 		case GED_BRIDGE_COMMAND_GE_GET:
 			SET_FUNC_AND_CHECK(ged_bridge_ge_get, GE_GET);
 			break;
 		case GED_BRIDGE_COMMAND_GE_SET:
 			SET_FUNC_AND_CHECK(ged_bridge_ge_set, GE_SET);
 			break;
-		case GED_BRIDGE_COMMAND_WAIT_HW_VSYNC:
-			SET_FUNC_AND_CHECK(ged_bridge_wait_hw_vsync, WAIT_HW_VSYNC);
-			break;
-		case GED_BRIDGE_COMMAND_GPU_TIMESTAMP:
-			SET_FUNC_AND_CHECK(ged_bridge_gpu_timestamp, GPU_TIMESTAMP);
-			break;
-		case GED_BRIDGE_COMMAND_TARGET_FPS:
-			SET_FUNC_AND_CHECK(ged_bridge_target_fps, TARGET_FPS);
-			break;
-		case GED_BRIDGE_COMMAND_QUERY_TARGET_FPS:
-			SET_FUNC_AND_CHECK(ged_bridge_query_target_fps, QUERY_TARGET_FPS);
+		case GED_BRIDGE_COMMAND_GE_INFO:
+			SET_FUNC_AND_CHECK(ged_bridge_ge_info, GE_INFO);
 			break;
 		default:
 			GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
@@ -213,40 +198,6 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 
 		if (pFunc)
 			ret = pFunc(pvIn, pvOut);
-
-		switch (GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID)) {
-		case GED_BRIDGE_COMMAND_GE_ALLOC:
-			{
-				GED_BRIDGE_OUT_GE_ALLOC *out = (GED_BRIDGE_OUT_GE_ALLOC *)pvOut;
-
-				if (out->eError == GED_OK) {
-					ged_ge_init_context(&pFile->private_data);
-					ged_ge_context_ref(pFile->private_data, out->ge_hnd);
-				}
-			}
-			break;
-		case GED_BRIDGE_COMMAND_GE_RETAIN:
-			{
-				GED_BRIDGE_IN_GE_RETAIN *in = (GED_BRIDGE_IN_GE_RETAIN *)pvIn;
-				GED_BRIDGE_OUT_GE_RETAIN *out = (GED_BRIDGE_OUT_GE_RETAIN *)pvOut;
-
-				if (out->eError == GED_OK) {
-					ged_ge_init_context(&pFile->private_data);
-					ged_ge_context_ref(pFile->private_data, in->ge_hnd);
-				}
-			}
-			break;
-		case GED_BRIDGE_COMMAND_GE_RELEASE:
-			{
-				GED_BRIDGE_IN_GE_RELEASE *in = (GED_BRIDGE_IN_GE_RELEASE *)pvIn;
-				GED_BRIDGE_OUT_GE_RELEASE *out = (GED_BRIDGE_OUT_GE_RELEASE *)pvOut;
-
-				if (out->eError == GED_OK)
-					ged_ge_context_deref(pFile->private_data, in->ge_hnd);
-
-			}
-			break;
-		}
 
 		if (psBridgePackageKM->i32OutBufferSize > 0)
 		{
