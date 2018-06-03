@@ -130,6 +130,11 @@ typedef struct _HDMI_EDID_T {
 	unsigned int ui4_sink_ID_serial_number;	/* (0cH~0fH) */
 	unsigned char ui1_sink_week_of_manufacture;	/* (10H) */
 	unsigned char ui1_sink_year_of_manufacture;	/* (11H)  base on year 1990 */
+	unsigned char b_sink_SCDC_present;
+	unsigned char b_sink_LTE_340M_sramble;
+	unsigned int ui4_sink_hdmi_4k2kvic;
+	unsigned char ui1rawdata_edid[512];
+	unsigned int  bandwidth;
 } HDMI_EDID_T;
 
 struct MHL_3D_SUPP_T {
