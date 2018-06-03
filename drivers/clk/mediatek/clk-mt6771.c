@@ -76,6 +76,7 @@ void __iomem *ipu_core1_base;
 
 /* CKSYS */
 #define CLK_CFG_0		(cksys_base + 0x040)
+#define CLK_CFG_8		(cksys_base + 0x0c0)
 #define CLK_CFG_9		(cksys_base + 0x0d0)
 #define CLK_MISC_CFG_0		(cksys_base + 0x104)
 #define CLK_DBG_CFG		(cksys_base + 0x10C)
@@ -2708,6 +2709,23 @@ void check_cam_clk_sts(void)
 	pr_notice("CAMSYS_CG_CON = 0x%08x\n", clk_readl(CAMSYS_CG_CON));
 }
 #endif
+
+void check_seninf_clk_sts(void)
+{
+	struct clk *c = __clk_lookup("seninf_sel");
+
+	if (IS_ERR_OR_NULL(c)) {
+		pr_notice("[%17s: NULL]\n", __clk_get_name(c));
+		return;
+	}
+
+	pr_notice("[%-17s: %3d]\n",
+		__clk_get_name(c),
+		__clk_get_enable_count(c));
+	/* confirm seninf clk */
+	pr_notice("CLK_CFG_8 = 0x%08x\r\n", clk_readl(CLK_CFG_8));
+}
+
 static int __init clk_mt6771_init(void)
 {
 	/*timer_ready = true;*/
