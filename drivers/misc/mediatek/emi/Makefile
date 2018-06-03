@@ -13,13 +13,5 @@
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 
-ccflags-$(CONFIG_MTK_EMI) += -I$(srctree)/drivers/misc/mediatek/emi/$(MTK_PLATFORM)
-ccflags-$(CONFIG_MTK_EMI) += -I$(srctree)/drivers/misc/mediatek/emi/submodule
-
-ifeq ($(CONFIG_MACH_MT6763), y)
-obj-$(CONFIG_MTK_EMI) += emi_ctrl_v1.o
-endif
-
-obj-$(CONFIG_MTK_EMI) += submodule/
 obj-$(CONFIG_MTK_EMI) += $(MTK_PLATFORM)/
 

@@ -14,8 +14,6 @@
 #ifndef __ELM_H__
 #define __ELM_H__
 
-#include <mt_emi.h>
-
 extern void mt_elm_init(void __iomem *elm_base);
 extern unsigned int disable_emi_dcm(void);
 extern void restore_emi_dcm(unsigned int emi_dcm_status);

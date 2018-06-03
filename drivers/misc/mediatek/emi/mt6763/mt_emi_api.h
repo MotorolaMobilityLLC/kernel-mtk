@@ -11,29 +11,31 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __EMI_CTRL_H__
-#define __EMI_CTRL_H__
+#ifndef __MT_EMI_API_H__
+#define __MT_EMI_API_H__
 
-struct emi_info_t {
-	unsigned int dram_type;
-	unsigned int ch_num;
-	unsigned int rk_num;
-	unsigned int rank_size[MAX_RK];
-};
+/* macro for MPU */
+#define EMI_MPU_DOMAIN_NUM	16
+#define EMI_MPU_REGION_NUM	32
+#define EMI_MPU_ALIGN_BITS	16
 
-extern void bwl_init(struct platform_driver *emi_ctrl);
-extern void mpu_init(
-	struct platform_driver *emi_ctrl, struct platform_device *pdev);
-extern void elm_init(
-	struct platform_driver *emi_ctrl, struct platform_device *pdev);
+/* general macro */
+#define MAX_CH		2
+#define MAX_RK		2
+#define DRAM_OFFSET	0x40000000
 
-extern unsigned int get_dram_type(void);
-extern unsigned int get_ch_num(void);
-extern unsigned int get_rk_num(void);
-extern unsigned int get_rank_size(unsigned int rank_index);
+unsigned int get_dram_type(void);
+unsigned int get_ch_num(void);
+unsigned int get_rk_num(void);
+unsigned int get_rank_size(unsigned int rank_index);
 extern void __iomem *mt_cen_emi_base_get(void);
 extern void __iomem *mt_emi_base_get(void);
 extern void __iomem *mt_chn_emi_base_get(unsigned int channel_index);
 extern void __iomem *mt_emi_mpu_base_get(void);
+extern void dump_last_bm(char *buf, unsigned int leng);
 
-#endif /* __EMI_CTRL_H__ */
+#include <mpu_v1.h>
+#include <pasr_api_v1.h>
+
+#endif /* __MT_EMI_API_H__ */
+

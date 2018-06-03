@@ -19,6 +19,8 @@
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
 
+#include <mt_emi.h>
+#include <bwl_platform.h>
 #include "bwl_v1.h"
 
 DEFINE_SEMAPHORE(bwl_sem);
@@ -160,7 +162,7 @@ static ssize_t scn_show(struct device_driver *driver, char *buf)
 
 			ret += snprintf(buf + ret, PAGE_SIZE - ret,
 				"CH%d 0x%x:0x%x\n", j, offset,
-				readl(IOMEM(CHN_EMI_BASE + offset)));
+				readl(IOMEM(CHN_EMI_BASE[j] + offset)));
 		}
 	}
 
@@ -225,5 +227,5 @@ void bwl_init(struct platform_driver *emi_ctrl)
 
 	ret = driver_create_file(&emi_ctrl->driver, &driver_attr_concurrency_scenario);
 	if (ret)
-		pr_info("[BWL] fail to create concurrency_scenario\n");
+		pr_err("[BWL] fail to create concurrency_scenario\n");
 }

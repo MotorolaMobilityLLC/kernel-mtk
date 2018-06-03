@@ -14,15 +14,6 @@
 #ifndef __MPU_PLATFORM_H__
 #define __MPU_PLATFORM_H__
 
-struct mst_tbl_entry {
-	u32 master;
-	u32 port;
-	u32 id_mask;
-	u32 id_val;
-	const char *note;
-	const char *name;
-};
-
 enum {
 	/* M0: APMCU 1 */
 	M0_AXI_MST_MCUSYS_MP0, M0_AXI_MST_MCUSYS_MP1,

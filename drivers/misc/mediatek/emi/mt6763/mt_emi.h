@@ -25,12 +25,8 @@
 #define ELM_IRQ_INDEX	1 /* Bianco uses CGM IRQ as ELM IRQ */
 
 /* macro for MPU */
-#define ENABLE_AP_REGION	0
+#define ENABLE_AP_REGION	1
 #define AP_REGION_ID		31
-#define EMI_MPU_DOMAIN_NUM	16
-#define EMI_MPU_DGROUP_NUM	(EMI_MPU_DOMAIN_NUM/8)
-#define EMI_MPU_REGION_NUM	32
-#define EMI_MPU_ALIGN_BITS	16
 
 #define EMI_MPUD0_ST		(CEN_EMI_BASE + 0x160)
 #define EMI_MPUD_ST(domain)	(EMI_MPUD0_ST + (4*domain))
@@ -47,22 +43,6 @@
 #define EMI_MPU_APC0		(0x300)
 #define EMI_MPU_APC(region, dgroup) \
 	(EMI_MPU_APC0 + (region*4) + ((dgroup)*0x100))
-
-#define SET_ACCESS_PERMISSION(apc_ary, lock, \
-	d15, d14, d13, d12, d11, d10, d9, d8, d7, d6, d5, d4, d3, d2, d1, d0) \
-do { \
-	apc_ary[1] = \
-		(((unsigned int) d15) << 21) | (((unsigned int) d14) << 18) | \
-		(((unsigned int) d13) << 15) | (((unsigned int) d12) << 12) | \
-		(((unsigned int) d11) << 9) | (((unsigned int) d10) << 6) | \
-		(((unsigned int) d9) << 3) | ((unsigned int) d8); \
-	apc_ary[0] = \
-		(((unsigned int) d7) << 21) | (((unsigned int) d6) << 18) | \
-		(((unsigned int) d5) << 15) | (((unsigned int) d4) << 12) | \
-		(((unsigned int) d3) << 9) | (((unsigned int) d2) << 6) | \
-		(((unsigned int) d1) << 3) | ((unsigned int) d0) | \
-		((unsigned int) lock << 31); \
-} while (0)
 
 /* macro for ELM */
 #define EMI_CONM	(CEN_EMI_BASE + 0x060)
@@ -94,16 +74,9 @@ do { \
 #define EMI_TTYPE1	(CEN_EMI_BASE + 0x500)
 #define EMI_TTYPE(i)	(EMI_TTYPE1 + (i*8))
 
-/* general macro */
-#define MAX_CH		2
-#define MAX_RK		2
-#define DRAM_OFFSET	0x40000000
-
-#include <emi_ctrl_v1.h>
+#include <mt_emi_api.h>
 #include <bwl_v1.h>
-#include <mpu_v1.h>
 #include <elm_v1.h>
-#include <pasr_api_v1.h>
 
 #endif /* __MT_EMI_H__ */
 

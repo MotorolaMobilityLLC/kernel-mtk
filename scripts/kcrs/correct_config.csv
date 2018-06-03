@@ -436,11 +436,12 @@ CONFIG_MTK_ECCCI_C2K,PROJECT,wenbo.ning,new config in this commit 53dd74ddebad6d
 CONFIG_MTK_ECCCI_DRIVER,PLATFORM,chao.song,,y,y,y,y,y
 CONFIG_MTK_EFUSE_DOWNGRADE,PROJECT,wn.chen,,,,,,
 CONFIG_MTK_EMBEDDED_BATTERY,PROJECT,weiching.lin,new config in this commit e4b85fb10d2ead2095830071962940c5e3554c91,,,,,
-CONFIG_MTK_EMI_BWL,COMMON,ahsin.chen,,X,X,X,X,X
+CONFIG_MTK_EMI,PLATFORM,ahsin.chen,,X,X,X,y,X
+CONFIG_MTK_EMI_BWL,PLATFORM,ahsin.chen,,X,X,X,N,X
 CONFIG_MTK_EMI_D1P,PROJECT,ahsin.chen,,,,,,
 CONFIG_MTK_EMI_D2P,PROJECT,ahsin.chen,,,,,,
-CONFIG_MTK_EMI_MBW,PLATFORM,ahsin.chen,,X,X,X,X,X
-CONFIG_MTK_EMI_MPU,COMMON,ahsin.chen,,X,X,X,X,X
+CONFIG_MTK_EMI_MBW,PLATFORM,ahsin.chen,,X,X,X,N,X
+CONFIG_MTK_EMI_MPU,PLATFORM,ahsin.chen,,X,X,X,N,X
 CONFIG_MTK_EMMC_CACHE,PROJECT,weiping.zhang,,,,,,
 CONFIG_MTK_EMMC_CQ_SUPPORT,PROJECT,sophie.wang,new config in this commit ce3bff22fb846f2fad0552280d4bd580a95d28a6,,,,,
 CONFIG_MTK_EMMC_SUPPORT,PROJECT,weiping.zhang,,,,,,

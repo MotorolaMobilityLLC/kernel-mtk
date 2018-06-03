@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/platform_device.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_io.h>
 

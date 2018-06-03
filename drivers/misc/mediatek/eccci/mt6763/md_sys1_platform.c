@@ -21,8 +21,7 @@
 #include "ccci_config.h"
 #include <linux/clk.h>
 #include <mach/mtk_pbm.h>
-#include <mach/emi_mpu.h>
-#include <emi_mbw.h>
+#include <mt_emi_api.h>
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 #include <mach/mt6605.h>

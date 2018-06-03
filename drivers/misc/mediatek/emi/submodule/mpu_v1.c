@@ -28,8 +28,9 @@
 #include <mt-plat/aee.h>
 #endif
 
-#include <mpu_platform.h>
+#include <mt_emi.h>
 #include "mpu_v1.h"
+#include <mpu_platform.h>
 
 _Static_assert(EMI_MPU_DOMAIN_NUM <= 2048, "EMI_MPU_DOMAIN_NUM is over 2048");
 _Static_assert(EMI_MPU_REGION_NUM <= 256, "EMI_MPU_REGION_NUM is over 256");
@@ -40,6 +41,7 @@ char mpu_test_buf[0x20000] __aligned(PAGE_SIZE);
 
 static void __iomem *CEN_EMI_BASE;
 
+static void (*check_violation_cb)(void);
 static const char *UNKNOWN_MASTER = "unknown";
 static unsigned int show_region;
 
@@ -85,8 +87,8 @@ static void clear_violation(void)
 	mput = readl(IOMEM(EMI_MPUT));
 
 	if (mpus) {
-		pr_info("[MPU] fail to clear violation\n");
-		pr_info("[MPU] EMI_MPUS: %x, EMI_MPUT: %x\n", mpus, mput);
+		pr_err("[MPU] fail to clear violation\n");
+		pr_err("[MPU] EMI_MPUS: %x, EMI_MPUT: %x\n", mpus, mput);
 	}
 }
 
@@ -142,9 +144,10 @@ static void check_violation(void)
 #ifdef CONFIG_MTK_AEE_FEATURE
 	if (wr_vio != 0) {
 		if (is_md_master(master_id)) {
-			char str[60] = "0";
+			char str[CCCI_STR_MAX_LEN] = "0";
 
-			sprintf(str, "EMI_MPUS = 0x%x, ADDR = 0x%llx",
+			snprintf(str, CCCI_STR_MAX_LEN,
+				"EMI_MPUS = 0x%x, ADDR = 0x%llx",
 				mpus, vio_addr);
 			exec_ccci_kern_func_by_md_id(0, ID_MD_MPU_ASSERT,
 				str, strlen(str));
@@ -171,7 +174,7 @@ static void check_violation(void)
 
 static irqreturn_t violation_irq(int irq, void *dev_id)
 {
-	check_violation();
+	check_violation_cb();
 	return IRQ_HANDLED;
 }
 
@@ -181,7 +184,7 @@ int emi_mpu_set_protection(struct emi_region_info_t *region_info)
 	int i;
 
 	if (region_info->region >= EMI_MPU_REGION_NUM) {
-		pr_info("[MPU] can not support region %u\n",
+		pr_err("[MPU] can not support region %u\n",
 			region_info->region);
 		return -1;
 	}
@@ -201,8 +204,8 @@ EXPORT_SYMBOL(emi_mpu_set_protection);
 
 int emi_mpu_clear_protection(struct emi_region_info_t *region_info)
 {
-	if (region_info->region > 255) {
-		pr_info("[MPU] can not support region %u\n",
+	if (region_info->region > EMI_MPU_REGION_NUM) {
+		pr_err("[MPU] can not support region %u\n",
 			region_info->region);
 		return -1;
 	}
@@ -211,7 +214,6 @@ int emi_mpu_clear_protection(struct emi_region_info_t *region_info)
 
 	return 0;
 }
-EXPORT_SYMBOL(emi_mpu_clear_protection);
 
 static ssize_t mpu_show(struct device_driver *driver, char *buf)
 {
@@ -231,8 +233,12 @@ static ssize_t mpu_show(struct device_driver *driver, char *buf)
 		"NONE"
 	};
 
-	for (region = show_region; region < EMI_MPU_REGION_NUM; region++) {
+#if EMI_MPU_TEST
+	i = (*((unsigned int *)(mpu_test_buf + 0x10000)));
+	pr_info("[MPU] trigger violation with read 0x%x\n", i);
+#endif
 
+	for (region = show_region; region < EMI_MPU_REGION_NUM; region++) {
 		start = (unsigned long long)emi_mpu_smc_read(
 			EMI_MPU_SA(region));
 		start = (start << EMI_MPU_ALIGN_BITS) + DRAM_OFFSET;
@@ -263,11 +269,6 @@ static ssize_t mpu_show(struct device_driver *driver, char *buf)
 				return strlen(buf);
 		}
 	}
-
-#if EMI_MPU_TEST
-	i = (*((unsigned int *)(mpu_test_buf + 0x10000)));
-	pr_info("[MPU] trigger violation with read 0x%x\n", i);
-#endif
 
 	return strlen(buf);
 }
@@ -417,9 +418,11 @@ void mpu_init(struct platform_driver *emi_ctrl, struct platform_device *pdev)
 
 	CEN_EMI_BASE = mt_cen_emi_base_get();
 
+	if (!check_violation_cb)
+		check_violation_cb = check_violation;
 	if (readl(IOMEM(EMI_MPUS))) {
 		pr_info("[MPU] detect violation in driver init\n");
-		check_violation();
+		check_violation_cb();
 	} else
 		clear_violation();
 
@@ -430,7 +433,7 @@ void mpu_init(struct platform_driver *emi_ctrl, struct platform_device *pdev)
 		ret = request_irq(mpu_irq, (irq_handler_t)violation_irq,
 			IRQF_TRIGGER_NONE, "mpu", emi_ctrl);
 		if (ret != 0) {
-			pr_info("[MPU] fail to request IRQ (%d)\n", ret);
+			pr_err("[MPU] fail to request IRQ (%d)\n", ret);
 			return;
 		}
 	}
@@ -442,7 +445,19 @@ void mpu_init(struct platform_driver *emi_ctrl, struct platform_device *pdev)
 #if !defined(USER_BUILD_KERNEL)
 	ret = driver_create_file(&emi_ctrl->driver, &driver_attr_mpu_config);
 	if (ret)
-		pr_info("[MPU] fail to create mpu_config\n");
+		pr_err("[MPU] fail to create mpu_config\n");
 #endif
 }
+
+int emi_mpu_check_register(void (*cb_func)(void))
+{
+	if (!cb_func) {
+		pr_err("%s%d: cb_func is NULL\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+
+	check_violation_cb = cb_func;
+	return 0;
+}
+EXPORT_SYMBOL(emi_mpu_check_register);
 

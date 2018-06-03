@@ -47,7 +47,7 @@
 #include "mtk_wcn_consys_hw.h"
 
 #if CONSYS_EMI_MPU_SETTING
-#include <mach/emi_mpu.h>
+#include <mt_emi_api.h>
 #endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
@@ -1004,18 +1004,22 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 
 static INT32 consys_emi_mpu_set_region_protection(VOID)
 {
+	struct emi_region_info_t region_info;
+
 #if CONSYS_EMI_MPU_SETTING
 	/*set MPU for EMI share Memory */
 	WMT_PLAT_INFO_FUNC("setting MPU for EMI share memory\n");
 
 	/* 5 = Forbidden, 0 = No_protect */
-	emi_mpu_set_region_protection(gConEmiPhyBase + SZ_1M / 2,
-			gConEmiPhyBase + gConEmiSize - 1,
-			24,
-			SET_ACCESS_PERMISSON(LOCK, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-				FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-				FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
-				FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
+	region_info.start = gConEmiPhyBase + SZ_1M / 2;
+	region_info.end = gConEmiPhyBase + gConEmiSize - 1;
+	region_info.region = 24;
+	SET_ACCESS_PERMISSION(region_info.apc, LOCK,
+		FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+		FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+		FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+		NO_PROTECTION, FORBIDDEN, NO_PROTECTION);
+	emi_mpu_set_protection(&region_info);
 #endif
 	return 0;
 }

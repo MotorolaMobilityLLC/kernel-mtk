@@ -36,7 +36,7 @@
 #include <mt-plat/sync_write.h>
 #include <mtk_spm_vcore_dvfs.h>
 
-#include "emi_bwl.h"
+#include <mt_emi_api.h>
 #include "mtk_dramc.h"
 #include "dramc.h"
 

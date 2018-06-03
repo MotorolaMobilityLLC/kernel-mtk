@@ -833,10 +833,12 @@
 	emi@10219000 {
 		compatible = "mediatek,emi";
 		reg = <0 0x10219000 0 0x1000>, /* CEN EMI */
+			<0 0x10226000 0 0x1000>, /* EMI MPU */
 			<0 0x1022d000 0 0x1000>, /* CHA EMI */
-			<0 0x10235000 0 0x1000>, /* CHB EMI */
-			<0 0x10226000 0 0x1000>; /* EMI MPU */
-		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
+			<0 0x10235000 0 0x1000>; /* CHB EMI */
+		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>, /* MPU */
+				<GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>, /* CGM */
+				<GIC_SPI 152 IRQ_TYPE_LEVEL_HIGH>; /* ELM */
 	};
 
 	sys_cirq@10204000 {

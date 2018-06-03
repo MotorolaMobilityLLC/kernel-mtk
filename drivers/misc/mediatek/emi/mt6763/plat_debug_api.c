@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/platform_device.h>
 #include <linux/of_address.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_io.h>
@@ -44,7 +45,7 @@ void plat_debug_api_init(void)
 			pr_info("[EMI DBG] INFRACFG_BASE@ %p\n",
 				INFRACFG_BASE);
 		} else
-			pr_info("[EMI DBG] no node for INFRACFG_BASE\n");
+			pr_err("[EMI DBG] no node for INFRACFG_BASE\n");
 	}
 
 	if (INFRA_AO_BASE == NULL) {
@@ -55,7 +56,7 @@ void plat_debug_api_init(void)
 			pr_info("[EMI DBG] INFRA_AO_BASE@ %p\n",
 				INFRA_AO_BASE);
 		} else
-			pr_info("[EMI DBG] no node for INFRA_AO_BASE\n");
+			pr_err("[EMI DBG] no node for INFRA_AO_BASE\n");
 	}
 
 	if (PERICFG_BASE == NULL) {
@@ -66,7 +67,7 @@ void plat_debug_api_init(void)
 			pr_info("[EMI DBG] PERICFG_BASE@ %p\n",
 				PERICFG_BASE);
 		} else
-			pr_info("[EMI DBG] no node for PERICFG_BASE\n");
+			pr_err("[EMI DBG] no node for PERICFG_BASE\n");
 	}
 }
 

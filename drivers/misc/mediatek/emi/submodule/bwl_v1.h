@@ -14,9 +14,6 @@
 #ifndef __BWL_H__
 #define __BWL_H__
 
-#include <mt_emi.h>
-#include <bwl_platform.h>
-
 struct scn_name_t {
 	char *name;
 };
