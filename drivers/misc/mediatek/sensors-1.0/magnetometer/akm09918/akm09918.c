@@ -1632,8 +1632,16 @@ static int akm09918_factory_enable_sensor(bool enabledisable, int64_t sample_per
 }
 static int akm09918_factory_get_data(int32_t data[3], int *status)
 {
+	int ret = 0;
+
 	/* get raw data */
-	return  akm09918_get_data(&data[0], &data[1], &data[2], status);
+	ret =  akm09918_get_data(&data[0], &data[1], &data[2], status);
+
+	data[0] = data[0] / CONVERT_M_DIV;
+	data[1] = data[1] / CONVERT_M_DIV;
+	data[2] = data[2] / CONVERT_M_DIV;
+
+	return 0;
 }
 static int akm09918_factory_get_raw_data(int32_t data[3])
 {
