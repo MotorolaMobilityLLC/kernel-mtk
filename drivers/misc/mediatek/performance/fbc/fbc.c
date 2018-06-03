@@ -755,11 +755,6 @@ long device_ioctl(struct file *filp,
 		fbc_op->act_switch(arg);
 		break;
 
-	/*receive touch info*/
-	case IOCTL_WRITE_TH:
-		/*notify_touch(arg);*/
-		break;
-
 	/*receive frame_time info*/
 	case IOCTL_WRITE_FC:
 		if (!is_ux_fbc_active())
