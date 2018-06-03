@@ -885,6 +885,7 @@ static void mmsys_config_dump_analysis(void)
 		}
 	}
 	DDPDUMP("%s\n", clock_on);
+
 	/* dump SMI status, when maybe SMI hang */
 	if (greq)
 		smi_debug_bus_hang_detect(
