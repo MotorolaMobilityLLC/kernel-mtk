@@ -5331,7 +5331,7 @@ static int sched_group_energy(struct energy_env *eenv)
 							sg_busy_energy, sg_idle_energy, total_energy);
 
 				if (!sd->child)
-					cpumask_xor(&visit_cpus, &visit_cpus, sched_group_cpus(sg));
+					cpumask_andnot(&visit_cpus, &visit_cpus, sched_group_cpus(sg));
 
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 				/*
