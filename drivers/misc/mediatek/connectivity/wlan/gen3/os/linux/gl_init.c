@@ -2310,7 +2310,7 @@ static VOID wlanRemove(VOID)
 	/* 4 <0> Sanity check */
 	ASSERT(u4WlanDevNum <= CFG_MAX_WLAN_DEVICES);
 	if (u4WlanDevNum == 0) {
-		DBGLOG(INIT, ERROR, "0 == u4WlanDevNum\n");
+		DBGLOG(INIT, ERROR, "u4WlanDevNum = 0\n");
 		return;
 	}
 #if (CFG_ENABLE_WIFI_DIRECT)
@@ -2322,14 +2322,14 @@ static VOID wlanRemove(VOID)
 
 	ASSERT(prDev);
 	if (prDev == NULL) {
-		DBGLOG(INIT, ERROR, "NULL == prDev\n");
+		DBGLOG(INIT, ERROR, "prDev is NULL\n");
 		return;
 	}
 
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
 	ASSERT(prGlueInfo);
 	if (prGlueInfo == NULL) {
-		DBGLOG(INIT, ERROR, "NULL == prGlueInfo\n");
+		DBGLOG(INIT, ERROR, "prGlueInfo is NULL\n");
 		free_netdev(prDev);
 		return;
 	}
@@ -2390,7 +2390,7 @@ static VOID wlanRemove(VOID)
 		show_stack(prGlueInfo->main_thread, NULL);
 	}
 
-	DBGLOG(INIT, TRACE, "mtk_sdiod stopped\n");
+	DBGLOG(INIT, INFO, "wlan thread stopped\n");
 
 	/* prGlueInfo->rHifInfo.main_thread = NULL; */
 	prGlueInfo->main_thread = NULL;

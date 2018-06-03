@@ -2206,13 +2206,20 @@ VOID bssInitForAP(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN BOOLEA
 
 		prBssInfo->aucCWminLog2ForBcast[eAci] = auCWminLog2ForBcast[eAci];	/* used to send WMM IE */
 		prBssInfo->aucCWmaxLog2ForBcast[eAci] = auCWmaxLog2ForBcast[eAci];
-
-		DBGLOG(BSS, INFO,
-		       "Bcast: eAci = %d, ACM = %d, Aifsn = %d, CWmin = %d, CWmax = %d, TxopLimit = %d\n",
-			eAci, prACQueParms[eAci].ucIsACMSet, prACQueParms[eAci].u2Aifsn,
-			prACQueParms[eAci].u2CWmin, prACQueParms[eAci].u2CWmax, prACQueParms[eAci].u2TxopLimit);
-
 	}
+
+	DBGLOG(BSS, INFO,
+	"Bcast: ACM[%d,%d,%d,%d] Aifsn[%d,%d,%d,%d] CWmin/max[%d/%d,%d/%d,%d/%d,%d/%d] TxopLimit[%d,%d,%d,%d]\n",
+		prACQueParms[0].ucIsACMSet, prACQueParms[1].ucIsACMSet,
+		prACQueParms[2].ucIsACMSet, prACQueParms[3].ucIsACMSet,
+		prACQueParms[0].u2Aifsn, prACQueParms[1].u2Aifsn,
+		prACQueParms[2].u2Aifsn, prACQueParms[3].u2Aifsn,
+		prACQueParms[0].u2CWmin, prACQueParms[0].u2CWmax,
+		prACQueParms[1].u2CWmin, prACQueParms[1].u2CWmax,
+		prACQueParms[2].u2CWmin, prACQueParms[2].u2CWmax,
+		prACQueParms[3].u2CWmin, prACQueParms[3].u2CWmax,
+		prACQueParms[0].u2TxopLimit, prACQueParms[1].u2TxopLimit,
+		prACQueParms[2].u2TxopLimit, prACQueParms[3].u2TxopLimit);
 
 	prACQueParms = prBssInfo->arACQueParms;
 
@@ -2223,17 +2230,24 @@ VOID bssInitForAP(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN BOOLEA
 		prACQueParms[eAci].u2CWmin = BIT(auCWminLog2[eAci]) - 1;
 		prACQueParms[eAci].u2CWmax = BIT(auCWmaxLog2[eAci]) - 1;
 		prACQueParms[eAci].u2TxopLimit = auTxop[eAci];
-
-		DBGLOG(BSS, INFO,
-		       "eAci = %d, ACM = %d, Aifsn = %d, CWmin = %d, CWmax = %d, TxopLimit = %d\n",
-			eAci, prACQueParms[eAci].ucIsACMSet, prACQueParms[eAci].u2Aifsn,
-			prACQueParms[eAci].u2CWmin, prACQueParms[eAci].u2CWmax, prACQueParms[eAci].u2TxopLimit);
 	}
+
+	DBGLOG(BSS, INFO,
+	       "ACM[%d,%d,%d,%d] Aifsn[%d,%d,%d,%d] CWmin/max[%d/%d,%d/%d,%d/%d,%d/%d] TxopLimit[%d,%d,%d,%d]\n",
+		prACQueParms[0].ucIsACMSet, prACQueParms[1].ucIsACMSet,
+		prACQueParms[2].ucIsACMSet, prACQueParms[3].ucIsACMSet,
+		prACQueParms[0].u2Aifsn, prACQueParms[1].u2Aifsn,
+		prACQueParms[2].u2Aifsn, prACQueParms[3].u2Aifsn,
+		prACQueParms[0].u2CWmin, prACQueParms[0].u2CWmax,
+		prACQueParms[1].u2CWmin, prACQueParms[1].u2CWmax,
+		prACQueParms[2].u2CWmin, prACQueParms[2].u2CWmax,
+		prACQueParms[3].u2CWmin, prACQueParms[3].u2CWmax,
+		prACQueParms[0].u2TxopLimit, prACQueParms[1].u2TxopLimit,
+		prACQueParms[2].u2TxopLimit, prACQueParms[3].u2TxopLimit);
 
 	/* Note: Caller should update the EDCA setting to HW by nicQmUpdateWmmParms() it there is no AIS network */
 	/* Note: In E2, only 4 HW queues. The the Edca parameters should be folow by AIS network */
 	/* Note: In E3, 8 HW queues.  the Wmm parameters should be updated to right queues  according to BSS */
-
 }				/* end of bssInitForAP() */
 
 #if 0
