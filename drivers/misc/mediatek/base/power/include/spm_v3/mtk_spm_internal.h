@@ -99,9 +99,9 @@
 #define ISRC_ALL_EXC_TWAM	ISRS_PCM_RETURN
 #define ISRC_ALL		(ISRC_ALL_EXC_TWAM | ISRC_TWAM)
 
-#define WAKE_MISC_TWAM		(1U << 22)
-#define WAKE_MISC_PCM_TIMER	(1U << 23)
-#define WAKE_MISC_CPU_WAKE	(1U << 24)
+#define WAKE_MISC_TWAM		(1U << 18)
+#define WAKE_MISC_PCM_TIMER	(1U << 19)
+#define WAKE_MISC_CPU_WAKE	(1U << 20)
 
 struct pcm_desc {
 	const char *version;	/* PCM code version */

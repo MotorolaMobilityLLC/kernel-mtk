@@ -19,9 +19,7 @@
 #include <linux/string.h>
 #include <linux/of_fdt.h>
 #include <asm/setup.h>
-#ifdef CONFIG_MTK_SPM_IN_ATF
 #include <mt-plat/mtk_secure_api.h>
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 #ifdef CONFIG_ARM64
 #include <linux/irqchip/mtk-gic.h>
@@ -64,16 +62,6 @@
 #define SPM_PCMWDT_EN           1
 #define SPM_BYPASS_SYSPWREQ     1
 #endif
-
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-#define MCUCFG_BASE		spm_mcucfg /* 0x10200000 */
-#define MP0_AXI_CONFIG		(MCUCFG_BASE + 0x2C)
-#define MP1_AXI_CONFIG		(MCUCFG_BASE + 0x22C)
-#define CPUCFG			(MCUCFG_BASE + 0x2008)
-#define MP2_AXI_CONFIG		(MCUCFG_BASE + 0x220C)
-#define ACINACTM		(1 << 4)
-#define MP2_ACINACTM		(1 << 0)
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 static int spm_dormant_sta;
 static int spm_ap_mdsrc_req_cnt;
@@ -219,9 +207,9 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	/* SPM_SRC_MASK */
 	.reg_csyspwreq_mask = 0,
-	.reg_md_srcclkena_0_infra_mask_b = 0,
+	.reg_md_srcclkena_0_infra_mask_b = 1,
 	.reg_md_srcclkena_1_infra_mask_b = 0,
-	.reg_md_apsrc_req_0_infra_mask_b = 1,
+	.reg_md_apsrc_req_0_infra_mask_b = 0,
 	.reg_md_apsrc_req_1_infra_mask_b = 0,
 	.reg_conn_srcclkena_infra_mask_b = 0,
 	.reg_conn_infra_req_mask_b = 1,
@@ -393,15 +381,9 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 			/* BUG(); */
 		}
 	} else {
-		spm_dormant_sta = -1;
-		spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) | ACINACTM);
-		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) | ACINACTM);
-		spm_write(CPUCFG, 0x1);
-		spm_write(MP2_AXI_CONFIG, spm_read(MP2_AXI_CONFIG) | MP2_ACINACTM);
-		wfi_with_sync();
-		spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) & ~ACINACTM);
-		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) & ~ACINACTM);
-		spm_write(MP2_AXI_CONFIG, spm_read(MP2_AXI_CONFIG) & ~MP2_ACINACTM);
+		spm_dormant_sta = mt_secure_call(MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
+		if (spm_dormant_sta < 0)
+			spm_crit2("dpidle(legacy) SMC ret(%d) >>\n", spm_dormant_sta);
 	}
 #else
 	if (is_cpu_pdn(pwrctrl->pcm_flags))
@@ -437,7 +419,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
+	/* spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0); */
 
 	pmic_config_interface_nolock(
 		PMIC_RG_BUCK_VCORE_HW0_OP_EN_ADDR,
@@ -734,8 +716,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	unmask_edge_trig_irqs_for_cirq();
 #endif
 
+#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
+#endif
 
 	spm_crit2("sec = %u, wakesrc = 0x%x (%u)(%u)\n",
 		  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags),
@@ -774,8 +758,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 RESTORE_IRQ:
 #endif
+#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
 	mt_cirq_flush();
 	mt_cirq_disable();
+#endif
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_restore(&mask);
@@ -800,7 +786,6 @@ RESTORE_IRQ:
 	if (usb2jtag_mode())
 		mt_usb2jtag_resume();
 #endif
-
 	spm_suspend_footprint(0);
 
 	return last_wr;
