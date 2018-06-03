@@ -32,7 +32,6 @@ obj-$(CONFIG_MTK_COMBO) += connectivity/
 obj-$(CONFIG_MTK_CONN_MD) += conn_md/
 obj-$(CONFIG_MTK_BTIF) += btif/
 obj-$(CONFIG_MTK_UNIFIED_DEBUG_INTERFACE) += udi/
-obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
 obj-$(CONFIG_MTK_SERIAL)	+= uart/
 obj-$(CONFIG_MTK_MEM) += mem/
 obj-$(CONFIG_MTK_MEMORY_LOWPOWER) += memory-lowpower/
