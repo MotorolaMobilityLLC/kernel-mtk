@@ -65,7 +65,6 @@
 #define GED_VSYNC_MISS_QUANTUM_NS 16666666
 #define TIME_3MS  3000000
 #define TIME_1MS  1000000
-#define TIME_100MS  100000000ULL
 #define TIME_1S  1000000000ULL
 #define TARGET_UNLIMITED_FPS 60
 #define FBTCPU_SEC_DIVIDER 1000000000
@@ -1203,11 +1202,6 @@ static unsigned long long fbt_get_t2wnt(long long t_cpu_target,
 
 	mutex_unlock(&fbt_mlock);
 
-	if (t2wnt > TIME_100MS) {
-		FPSGO_LOGI("ERROR %d\n", __LINE__);
-		return 0;
-	}
-
 	return t2wnt;
 }
 #endif
@@ -1291,7 +1285,7 @@ static int fbt_boost_policy(
 	t2 = nsec_to_100usec(t2);
 	t_sleep = t_cpu_slptime + thread_info->dequeue_length;
 	t_sleep = nsec_to_100usec(t_sleep);
-	if (frame_type == NON_VSYNC_ALIGNED_TYPE && (t1 > (2 * t2) || aa < 0)) {
+	if (aa < 0) {
 		mutex_lock(&blc_mlock);
 		if (thread_info->p_blc)
 			blc_wt = thread_info->p_blc->blc;
