@@ -610,7 +610,8 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 			u32 arg_b_type = p_cmd_va[1] & (1 << 22);
 			u32 arg_c_type = p_cmd_va[1] & (1 << 21);
 
-			CMDQ_MSG("replace instruction: (%d): 0x%08x 0x%08x\n", i, p_cmd_va[0], p_cmd_va[1]);
+			CMDQ_MSG("replace instruction: (%d)0x%p: 0x%08x 0x%08x\n",
+				i, p_cmd_va, p_cmd_va[0], p_cmd_va[1]);
 			if (arg_a_type != 0 && cmdq_core_is_thread_cpr(arg_a_i)) {
 				arg_a_i = thread_offset + (arg_a_i - CMDQ_THR_SPR_MAX);
 				p_cmd_va[1] = (arg_header<<16) | (arg_a_i & 0xFFFF);
@@ -1555,7 +1556,7 @@ static bool cmdq_core_task_is_valid_pa(const struct TaskStruct *pTask, dma_addr_
 	long task_pa = 0;
 
 	/* check if pc stay at end */
-	if (pa == CMDQ_GCE_END_ADDR_PA)
+	if (CMDQ_IS_END_ADDR(pa) && pTask->pCMDEnd && CMDQ_IS_END_ADDR(pTask->pCMDEnd[-1]))
 		return true;
 
 	list_for_each_entry(entry, &pTask->cmd_buffer_list, listEntry) {
@@ -3191,7 +3192,7 @@ static void cmdq_core_reorder_task_array(struct ThreadStruct *pThread, int32_t t
 			if (pThread->pCurTask[searchID] != NULL) {
 				pThread->pCurTask[nextID] = pThread->pCurTask[searchID];
 				pThread->pCurTask[searchID] = NULL;
-				CMDQ_VERBOSE("WAIT: reorder slot %d to slot 0%d.\n",
+				CMDQ_MSG("WAIT: reorder slot %d to slot 0%d.\n",
 					     searchID, nextID);
 				if ((searchLoop - loop) > reorderCount)
 					reorderCount = searchLoop - loop;
@@ -3200,7 +3201,8 @@ static void cmdq_core_reorder_task_array(struct ThreadStruct *pThread, int32_t t
 			}
 		}
 
-		if (((pThread->pCurTask[nextID]->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
+		if (!pThread->pCurTask[nextID] &&
+			((pThread->pCurTask[nextID]->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
 			CMDQ_IS_END_ADDR(pThread->pCurTask[nextID]->pCMDEnd[-1])) {
 			/* We reached the last task */
 			CMDQ_LOG("Break in last task loop: %d nextID: %d searchLoop: %d searchID: %d\n",
@@ -5430,7 +5432,7 @@ void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize)
 
 	mutex_lock(&gCmdqTaskMutex);
 
-	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4, pCmd, commandSize, false);
+	print_hex_dump(KERN_ERR, "[CMDQ]", DUMP_PREFIX_ADDRESS, 16, 4, pCmd, commandSize, false);
 	CMDQ_LOG("======TASK command buffer END\n");
 
 	for (i = 0; i < commandSize; i += CMDQ_INST_SIZE, pCmd += 2) {
@@ -5488,7 +5490,7 @@ s32 cmdqCoreDebugDumpSRAM(u32 sram_base, u32 command_size)
 	return status;
 }
 
-int32_t cmdqCoreDebugDumpCommand(struct TaskStruct *pTask)
+int32_t cmdqCoreDebugDumpCommand(const struct TaskStruct *pTask)
 {
 	struct CmdBufferStruct *cmd_buffer = NULL;
 
@@ -7023,6 +7025,12 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 		cmdq_core_dump_status("INFO");
 		cmdq_core_dump_pc(pTask, thread, "INFO");
 		cmdq_core_dump_thread(thread, "INFO");
+		CMDQ_LOG("Dump thread reg0: 0x%08x, reg1: 0x%08x\n",
+				CMDQ_REG_GET32(CMDQ_THR_SPR0(thread)),
+				CMDQ_REG_GET32(CMDQ_THR_SPR1(thread)));
+		CMDQ_LOG("Dump thread reg2: 0x%08x, reg3: 0x%08x\n",
+				CMDQ_REG_GET32(CMDQ_THR_SPR2(thread)),
+				CMDQ_REG_GET32(CMDQ_THR_SPR3(thread)));
 
 		/* HACK: check trigger thread status */
 		cmdq_core_dump_disp_trigger_loop("INFO");
@@ -7318,7 +7326,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 
 		pNextTask = NULL;
 		/* find pTask's jump destination */
-		if (pTask->pCMDEnd[0] == 0x10000001) {
+		if (pTask->pCMDEnd[0] == 0x10000001 && !CMDQ_IS_END_ADDR(pTask->pCMDEnd[-1])) {
 			pNextTask = cmdq_core_search_task_by_pc(pTask->pCMDEnd[-1], pThread, thread);
 		} else {
 			CMDQ_MSG("No next task: LAST instruction : (0x%08x, 0x%08x)\n",

@@ -1003,7 +1003,7 @@ extern "C" {
 	int32_t cmdqCoreDebugRegDumpBegin(uint32_t taskID, uint32_t *regCount,
 					  uint32_t **regAddress);
 	int32_t cmdqCoreDebugRegDumpEnd(uint32_t taskID, uint32_t regCount, uint32_t *regValues);
-	int32_t cmdqCoreDebugDumpCommand(struct TaskStruct *pTask);
+	int32_t cmdqCoreDebugDumpCommand(const struct TaskStruct *pTask);
 	s32 cmdqCoreDebugDumpSRAM(u32 sram_base, u32 command_size);
 	void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize);
 	void cmdq_delay_dump_thread(void);
