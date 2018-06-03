@@ -151,17 +151,10 @@ inline void smart_tracer(int pid, char *name, int count)
 static ssize_t mt_app_is_sports_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		if (arg == 0) {
 			app_is_sports = 0;
@@ -191,17 +184,10 @@ static int mt_app_is_sports_show(struct seq_file *m, void *v)
 static ssize_t mt_app_is_running_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		if (arg == 0)
 			app_is_running = 0;
@@ -225,17 +211,10 @@ static int mt_app_is_running_show(struct seq_file *m, void *v)
 static ssize_t mt_app_load_thresh_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		app_load_thresh = arg;
 	} else
@@ -253,17 +232,10 @@ static int mt_app_load_thresh_show(struct seq_file *m, void *v)
 static ssize_t mt_app_tlp_thresh_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		app_tlp_thresh = arg;
 	} else
@@ -281,17 +253,10 @@ static int mt_app_tlp_thresh_show(struct seq_file *m, void *v)
 static ssize_t mt_app_btask_thresh_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		app_btask_thresh = arg;
 	} else
@@ -309,17 +274,10 @@ static int mt_app_btask_thresh_show(struct seq_file *m, void *v)
 static ssize_t mt_app_up_times_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		app_up_times = arg;
 	} else
@@ -337,17 +295,10 @@ static int mt_app_up_times_show(struct seq_file *m, void *v)
 static ssize_t mt_app_down_times_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		app_down_times = arg;
 	} else
@@ -365,17 +316,10 @@ static int mt_app_down_times_show(struct seq_file *m, void *v)
 static ssize_t mt_native_is_running_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		if (arg == 0)
 			native_is_running = 0;
@@ -399,17 +343,10 @@ static int mt_native_is_running_show(struct seq_file *m, void *v)
 static ssize_t mt_native_btask_thresh_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		native_btask_thresh = arg;
 	} else
@@ -427,17 +364,10 @@ static int mt_native_btask_thresh_show(struct seq_file *m, void *v)
 static ssize_t mt_native_up_times_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		native_up_times = arg;
 	} else
@@ -455,17 +385,10 @@ static int mt_native_up_times_show(struct seq_file *m, void *v)
 static ssize_t mt_native_down_times_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		native_down_times = arg;
 	} else
@@ -483,17 +406,10 @@ static int mt_native_down_times_show(struct seq_file *m, void *v)
 static ssize_t mt_native_pid_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		native_pid = arg;
 	} else
@@ -511,17 +427,10 @@ static int mt_native_pid_show(struct seq_file *m, void *v)
 static ssize_t mt_java_btask_thresh_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		java_btask_thresh = arg;
 	} else
@@ -539,17 +448,10 @@ static int mt_java_btask_thresh_show(struct seq_file *m, void *v)
 static ssize_t mt_java_up_times_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		java_up_times = arg;
 	} else
@@ -567,17 +469,10 @@ static int mt_java_up_times_show(struct seq_file *m, void *v)
 static ssize_t mt_turbo_util_thresh_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		turbo_util_thresh = arg;
 	} else
@@ -595,17 +490,10 @@ static int mt_turbo_util_thresh_show(struct seq_file *m, void *v)
 static ssize_t mt_smart_turbo_support_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		if (arg == 0)
 			turbo_support = 0;
@@ -630,17 +518,10 @@ static int mt_smart_turbo_support_show(struct seq_file *m, void *v)
 static ssize_t mt_smart_force_isolate_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		if (arg == 0) {
 			force_isolate = 0;
@@ -673,17 +554,10 @@ static int mt_smart_force_isolate_show(struct seq_file *m, void *v)
 static ssize_t mt_smart_log_enable_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		if (arg == 0)
 			log_enable = 0;
@@ -708,17 +582,10 @@ static int mt_smart_log_enable_show(struct seq_file *m, void *v)
 static ssize_t mt_smart_trace_enable_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		if (arg == 0)
 			trace_enable = 0;
@@ -743,17 +610,10 @@ static int mt_smart_trace_enable_show(struct seq_file *m, void *v)
 static ssize_t mt_smart_uevent_enable_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret, len = 0;
+	int ret;
 	unsigned long arg;
 
-	len = (cnt < (sizeof(buf) - 1)) ? cnt : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, ubuf, len))
-		return -EFAULT;
-	buf[cnt] = '\0';
-
-	if (!kstrtoul(buf, 0, (unsigned long *)&arg)) {
+	if (!kstrtoul_from_user(ubuf, cnt, 0, &arg)) {
 		ret = 0;
 		if (arg == 0)
 			uevent_enable = 0;
