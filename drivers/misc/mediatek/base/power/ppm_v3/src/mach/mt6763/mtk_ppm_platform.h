@@ -31,6 +31,8 @@ extern "C" {
 #define PPM_5A_LIMIT_FREQ_IDX		(1)
 #endif
 
+#define PPM_THERMAL_ALLOW_ONLY_TTJ_CTRL	(1)
+
 #define DYNAMIC_TABLE2REAL_PERCENTAGE	(58)
 
 /* for COBRA algo */

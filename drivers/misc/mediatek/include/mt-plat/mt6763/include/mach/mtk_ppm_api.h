@@ -132,6 +132,8 @@ extern void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsi
 
 /* Thermal policy */
 extern void mt_ppm_cpu_thermal_protect(unsigned int limited_power);
+extern void mt_ppm_cpu_thermal_ttj_protect(unsigned int limited_power);
+extern void mt_ppm_thermal_tskin_ctrl_enable(bool enable);
 extern unsigned int mt_ppm_thermal_get_min_power(void);
 extern unsigned int mt_ppm_thermal_get_max_power(void);
 extern unsigned int mt_ppm_thermal_get_cur_power(void);
