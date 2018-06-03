@@ -17,7 +17,6 @@
 #include <mtk_dcm_common.h>
 #include "mtk_dcm_autogen.h"
 
-/* #define USE_DRAM_API_INSTEAD */
 /* #define DCM_DEFAULT_ALL_OFF */
 /* #define DCM_BRINGUP */
 
@@ -240,6 +239,8 @@ int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1, u
 
 extern DCM dcm_array[NR_DCM_TYPE];
 
+extern void *mt_dramc_chn_base_get(int channel);
+extern void *mt_ddrphy_chn_base_get(int channel);
 extern void __iomem *mt_cen_emi_base_get(void);
 extern void __iomem *mt_chn_emi_base_get(int chn);
 

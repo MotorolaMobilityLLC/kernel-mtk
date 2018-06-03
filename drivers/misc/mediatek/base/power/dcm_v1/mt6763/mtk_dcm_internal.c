@@ -21,10 +21,6 @@
 
 #include <mtk_dcm_internal.h>
 
-#ifdef USE_DRAM_API_INSTEAD
-#include <mtk_dramc.h>
-#endif /* #ifdef USE_DRAM_API_INSTEAD */
-
 static short dcm_cpu_cluster_stat;
 
 #ifdef CONFIG_HOTPLUG_CPU
@@ -47,21 +43,17 @@ unsigned int init_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE
 unsigned long dcm_infracfg_ao_base;
 unsigned long dcm_mcucfg_base;
 unsigned long dcm_mcucfg_phys_base;
-#ifndef USE_DRAM_API_INSTEAD
 unsigned long dcm_dramc0_ao_base;
 unsigned long dcm_dramc1_ao_base;
 unsigned long dcm_ddrphy0_ao_base;
 unsigned long dcm_ddrphy1_ao_base;
-#endif /* #ifndef USE_DRAM_API_INSTEAD */
 unsigned long dcm_chn0_emi_base;
 unsigned long dcm_chn1_emi_base;
 unsigned long dcm_emi_base;
 
 #define INFRACFG_AO_NODE "mediatek,infracfg_ao"
 #define MCUCFG_NODE "mediatek,mcucfg"
-#ifndef USE_DRAM_API_INSTEAD
 #define DRAMC_AO_NODE "mediatek,dramc"
-#endif /* #ifndef USE_DRAM_API_INSTEAD */
 #define CHN0_EMI_NODE "mediatek,chn0_emi"
 #define CHN1_EMI_NODE "mediatek,chn1_emi"
 #define EMI_NODE "mediatek,emi"
@@ -113,55 +105,33 @@ int mt_dcm_dts_map(void)
 	}
 
 	/* dram related */
-#ifndef USE_DRAM_API_INSTEAD
 	/* dramc0_ao */
-	node = of_find_compatible_node(NULL, NULL, DRAMC_AO_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", DRAMC_AO_NODE);
-		return -1;
-	}
-	dcm_dramc0_ao_base = (unsigned long)of_iomap(node, 0);
+	dcm_dramc0_ao_base = (unsigned long)mt_dramc_chn_base_get(0);
 	if (!dcm_dramc0_ao_base) {
 		dcm_err("error: cannot iomap %s\n", DRAMC_AO_NODE);
 		return -1;
 	}
 
 	/* dramc1_ao */
-	node = of_find_compatible_node(NULL, NULL, DRAMC_AO_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", DRAMC_AO_NODE);
-		return -1;
-	}
-	dcm_dramc1_ao_base = (unsigned long)of_iomap(node, 1);
+	dcm_dramc1_ao_base = (unsigned long)mt_dramc_chn_base_get(1);
 	if (!dcm_dramc1_ao_base) {
 		dcm_err("error: cannot iomap %s\n", DRAMC_AO_NODE);
 		return -1;
 	}
 
 	/* ddrphy0_ao */
-	node = of_find_compatible_node(NULL, NULL, DRAMC_AO_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", DRAMC_AO_NODE);
-		return -1;
-	}
-	dcm_ddrphy0_ao_base = (unsigned long)of_iomap(node, 4);
+	dcm_ddrphy0_ao_base = (unsigned long)mt_ddrphy_chn_base_get(0);
 	if (!dcm_ddrphy0_ao_base) {
 		dcm_err("error: cannot iomap %s\n", DRAMC_AO_NODE);
 		return -1;
 	}
 
 	/* ddrphy1_ao */
-	node = of_find_compatible_node(NULL, NULL, DRAMC_AO_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", DRAMC_AO_NODE);
-		return -1;
-	}
-	dcm_ddrphy1_ao_base = (unsigned long)of_iomap(node, 5);
+	dcm_ddrphy1_ao_base = (unsigned long)mt_ddrphy_chn_base_get(1);
 	if (!dcm_ddrphy1_ao_base) {
 		dcm_err("error: cannot iomap %s\n", DRAMC_AO_NODE);
 		return -1;
 	}
-#endif /* #ifndef USE_DRAM_API_INSTEAD */
 
 	dcm_chn0_emi_base = (unsigned long)mt_chn_emi_base_get(0);
 	if (!dcm_chn0_emi_base) {
