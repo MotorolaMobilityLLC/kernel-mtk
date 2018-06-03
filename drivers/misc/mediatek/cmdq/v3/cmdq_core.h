@@ -783,6 +783,12 @@ struct DumpCommandBufferStruct {
 	char *cmdqString;
 };
 
+typedef void (*cmdqStressCallback)(struct TaskStruct *task, s32 thread);
+
+struct StressContextStruct {
+	cmdqStressCallback exec_suspend;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1120,6 +1126,9 @@ extern "C" {
 	void cmdq_core_dump_mem_monitor(void);
 
 	void cmdq_core_dump_task_mem(const struct TaskStruct *pTask);
+
+	struct StressContextStruct *cmdq_core_get_stress_context(void);
+	void cmdq_core_clean_stress_context(void);
 #ifdef __cplusplus
 }
 #endif
