@@ -51,6 +51,7 @@ do { \
 enum {
 	UFS_CMDS_DUMP = 0,
 	UFS_GET_PWR_MODE = 1,
+	UFS_DUMP_HEALTH_DESCRIPTOR = 2,
 };
 
 #define UFS_PRINFO_PROC_MSG(evt, fmt, args...) \
