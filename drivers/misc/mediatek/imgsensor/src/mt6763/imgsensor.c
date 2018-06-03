@@ -1750,7 +1750,7 @@ static long imgsensor_compat_ioctl(struct file *filp, unsigned int cmd, unsigned
 		ACDK_SENSOR_FEATURECONTROL_STRUCT __user *data;
 		int err;
 
-		PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_FEATURECONCTROL\n");
+		/* PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_FEATURECONCTROL\n"); */
 
 		data32 = compat_ptr(arg);
 		data = compat_alloc_user_space(sizeof(*data));

@@ -3878,7 +3878,7 @@ static kal_uint32 get_sensor_temperature(void)
 	else
 		temperature_convert = (INT8)temperature;
 
-	LOG_INF("temp_c(%d), read_reg(%d)\n", temperature_convert, temperature);
+	/* LOG_INF("temp_c(%d), read_reg(%d)\n", temperature_convert, temperature); */
 
 	return temperature_convert;
 }
