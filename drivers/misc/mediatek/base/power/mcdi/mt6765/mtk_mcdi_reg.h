@@ -32,6 +32,12 @@ extern void __iomem *mcdi_sysram_base;
 #define Cluster_OFF_LATENCY_REG(ofs)  (SYSRAM_LATENCY_BASE_REG + 0x20 + ofs)
 #define Cluster_ON_LATENCY_REG(ofs)   (SYSRAM_LATENCY_BASE_REG + 0x30 + ofs)
 
+#define ID_OFS   (0x0)
+#define AVG_OFS  (0x4)
+#define MAX_OFS  (0x8)
+#define CNT_OFS  (0xC)
+
+#define DISTRIBUTE_NUM 4
 #define LATENCY_DISTRIBUTE_REG(ofs) (SYSRAM_PROF_BASE_REG + 0x140 + ofs)
 #define PROF_OFF_CNT_REG(idx)       (LATENCY_DISTRIBUTE_REG(idx * 4))
 #define PROF_ON_CNT_REG(idx)        (LATENCY_DISTRIBUTE_REG((idx + 4) * 4))

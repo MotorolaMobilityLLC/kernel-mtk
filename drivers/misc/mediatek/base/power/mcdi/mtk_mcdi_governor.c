@@ -18,7 +18,7 @@
 #include <linux/spinlock.h>
 #include <linux/timekeeping.h>
 
-#include <mtk_idle_mcdi.h>
+#include <mtk_idle.h>
 
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_governor.h>
