@@ -288,6 +288,7 @@ void             ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
 					u8 lun, u32 transfer_len, sector_t lba, u8 opcode);
 void             ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd, u32 flag);
 void             ufs_mtk_dbg_hang_detect_dump(void);
+void             ufs_mtk_dbg_proc_dump(struct seq_file *m);
 int              ufs_mtk_deepidle_hibern8_check(void);
 void             ufs_mtk_deepidle_leave(void);
 int              ufs_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute,

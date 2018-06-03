@@ -16,3 +16,4 @@ obj-$(CONFIG_SCSI_UFSHCD_PLATFORM) += ufshcd-pltfrm.o
 obj-$(CONFIG_MTK_UFS_BOOTING) += ufs-mtk.o
 obj-$(CONFIG_MTK_UFS_BOOTING) += mediatek/$(MTK_PLATFORM)/ufs-mtk-platform.o
 obj-$(CONFIG_MTK_UFS_BLOCK_IO_LOG) += ufs-mtk-block.o
+obj-$(CONFIG_MTK_UFS_BOOTING) += ufs-dbg.o
