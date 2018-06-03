@@ -89,6 +89,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 /* physical size in um */
 #define LCM_PHYSICAL_WIDTH									(68040)
 #define LCM_PHYSICAL_HEIGHT									(136080)
+#define LCM_DENSITY											(480)
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY	0xFFFB
@@ -608,6 +609,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
 	params->physical_width_um = LCM_PHYSICAL_WIDTH;
 	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
+	params->density            = LCM_DENSITY;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;

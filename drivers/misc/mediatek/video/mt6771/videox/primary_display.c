@@ -7546,6 +7546,7 @@ int primary_display_get_info(struct disp_session_info *info)
 	dispif_info->physicalHeight = DISP_GetActiveHeight();
 	dispif_info->physicalWidthUm = DISP_GetActiveWidthUm();
 	dispif_info->physicalHeightUm = DISP_GetActiveHeightUm();
+	dispif_info->density = DISP_GetDensity();
 
 	dispif_info->vsyncFPS = pgc->lcm_fps;
 
@@ -8108,6 +8109,21 @@ uint32_t DISP_GetActiveWidthUm(void)
 	DISPPR_ERROR("lcm_params is null!\n");
 	return 0;
 }
+
+uint32_t DISP_GetDensity(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPPR_ERROR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->density;
+
+	DISPPR_ERROR("lcm_params is null!\n");
+	return 0;
+}
+
 
 LCM_PARAMS *DISP_GetLcmPara(void)
 {
