@@ -43,6 +43,7 @@
 #endif
 #include "i2c-mtk.h"
 
+
 static struct i2c_dma_info g_dma_regs[I2C_MAX_CHANNEL];
 static struct mt_i2c *g_mt_i2c[I2C_MAX_CHANNEL];
 
@@ -303,6 +304,7 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 	spin_unlock(&i2c->cg_lock);
 #endif
 }
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 
 static int i2c_get_semaphore(struct mt_i2c *i2c)
 {
@@ -367,7 +369,7 @@ static int i2c_release_semaphore(struct mt_i2c *i2c)
 		return 0;
 	}
 }
-
+#endif
 static void free_i2c_dma_bufs(struct mt_i2c *i2c)
 {
 	dma_free_coherent(i2c->adap.dev.parent, PAGE_SIZE,
@@ -1132,19 +1134,22 @@ static int __mt_i2c_transfer(struct mt_i2c *i2c,
 				left_num--;
 			}
 		}
+		#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 
 		/* Use HW semaphore to protect device access between AP and SPM, or SCP */
 		if (i2c_get_semaphore(i2c) != 0) {
 			dev_err(i2c->dev, "get hw semaphore failed.\n");
 			return -EBUSY;
 		}
+		#endif
 		ret = mt_i2c_do_transfer(i2c);
+		#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 		/* Use HW semaphore to protect device access between AP and SPM, or SCP */
 		if (i2c_release_semaphore(i2c) != 0) {
 			dev_err(i2c->dev, "release hw semaphore failed.\n");
 			ret = -EBUSY;
 		}
-
+		#endif
 		if (ret < 0)
 			goto err_exit;
 		if (i2c->op == I2C_MASTER_WRRD)
