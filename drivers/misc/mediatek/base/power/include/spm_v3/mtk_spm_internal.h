@@ -137,16 +137,18 @@ struct pwr_ctrl {
 	u32 pcm_flags_cust;	/* can override pcm_flags */
 	u32 pcm_flags_cust_set;	/* set bit of pcm_flags, after pcm_flags_cust */
 	u32 pcm_flags_cust_clr;	/* clr bit of pcm_flags, after pcm_flags_cust */
-	u32 pcm_reserve;
+	u32 pcm_flags1;
+	u32 pcm_flags1_cust;	/* can override pcm_flags1 */
+	u32 pcm_flags1_cust_set;	/* set bit of pcm_flags1, after pcm_flags1_cust */
+	u32 pcm_flags1_cust_clr;	/* clr bit of pcm_flags1, after pcm_flags1_cust */
 	u32 timer_val;		/* @ 1T 32K */
 	u32 timer_val_cust;	/* @ 1T 32K, can override timer_val */
 	u32 timer_val_ramp_en;		/* stress for dpidle */
 	u32 timer_val_ramp_en_sec;	/* stress for suspend */
 	u32 wake_src;
 	u32 wake_src_cust;	/* can override wake_src */
-	u32 wake_src_md32;
+	u8 opp_level;
 	u8 wdt_disable;		/* disable wdt in suspend */
-	u8 dvfs_halt_src_chk;	/* vocre use */
 	u8 syspwreq_mask;	/* make 26M off when attach ICE */
 
 	/* Auto-gen Start */
@@ -347,16 +349,18 @@ enum pwr_ctrl_enum {
 	PWR_PCM_FLAGS_CUST,
 	PWR_PCM_FLAGS_CUST_SET,
 	PWR_PCM_FLAGS_CUST_CLR,
-	PWR_PCM_RESERVE,
+	PWR_PCM_FLAGS1,
+	PWR_PCM_FLAGS1_CUST,
+	PWR_PCM_FLAGS1_CUST_SET,
+	PWR_PCM_FLAGS1_CUST_CLR,
 	PWR_TIMER_VAL,
 	PWR_TIMER_VAL_CUST,
 	PWR_TIMER_VAL_RAMP_EN,
 	PWR_TIMER_VAL_RAMP_EN_SEC,
 	PWR_WAKE_SRC,
 	PWR_WAKE_SRC_CUST,
-	PWR_WAKE_SRC_MD32,
+	PWR_OPP_LEVEL,
 	PWR_WDT_DISABLE,
-	PWR_DVFS_HALT_SRC_CHK,
 	PWR_SYSPWREQ_MASK,
 	PWR_REG_SRCCLKEN0_CTL,
 	PWR_REG_SRCCLKEN1_CTL,
@@ -540,20 +544,9 @@ struct spm_data {
 			unsigned int root_id;
 		} notify;
 		struct {
-			unsigned int arg0;
-			unsigned int arg1;
-			unsigned int arg2;
-			unsigned int arg3;
-			unsigned int arg4;
-			unsigned int arg5;
-			unsigned int arg6;
-			unsigned int arg7;
-			unsigned int arg8;
-			unsigned int arg9;
-		} args;
-		struct {
 			unsigned int cpu;
 			unsigned int pcm_flags;
+			unsigned int univpll_status;
 		} sodi;
 		struct {
 			unsigned int pcm_flags;
@@ -613,6 +606,7 @@ extern struct spm_lp_scen __spm_sodi;
 extern struct spm_lp_scen __spm_mcdi;
 extern struct spm_lp_scen __spm_vcorefs;
 
+extern int __spm_check_opp_level(int ch);
 extern void __spm_set_cpu_status(int cpu);
 extern void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc);
 extern void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc);
@@ -688,9 +682,12 @@ static inline void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
 		pwrctrl->pcm_flags = pwrctrl->pcm_flags_cust;
 }
 
-static inline void set_pwrctrl_pcm_data(struct pwr_ctrl *pwrctrl, u32 data)
+static inline void set_pwrctrl_pcm_flags1(struct pwr_ctrl *pwrctrl, u32 flags)
 {
-	pwrctrl->pcm_reserve = data;
+	if (pwrctrl->pcm_flags1_cust == 0)
+		pwrctrl->pcm_flags1 = flags;
+	else
+		pwrctrl->pcm_flags1 = pwrctrl->pcm_flags1_cust;
 }
 
 #endif
