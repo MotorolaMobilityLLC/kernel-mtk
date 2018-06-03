@@ -1170,48 +1170,6 @@ out:
 }
 
 /*
- * PROCFS : show current GPU voltage enable state
- */
-static int mt_gpufreq_volt_enable_proc_show(struct seq_file *m, void *v)
-{
-	seq_printf(m, "GPU voltage enable = %d\n", g_volt_enable_state);
-	return 0;
-}
-
-/*
- * PROCFS : GPU voltage enable state setting
- * 0 : disable
- * 1 : enable
- */
-static ssize_t mt_gpufreq_volt_enable_proc_write(struct file *file,
-		const char __user *buffer, size_t count, loff_t *data)
-{
-	char buf[64];
-	char cmd[64];
-	int len = 0;
-	int value = 0;
-	int ret = -EFAULT;
-
-	len = (count < (sizeof(buf) - 1)) ? count : (sizeof(buf) - 1);
-
-	if (copy_from_user(buf, buffer, len))
-		goto out;
-
-	strcpy(cmd, buf);
-	cmd[len] = '\0';
-
-	if (!kstrtoint(cmd, 0, &value)) {
-		if (!value || !(value-1)) {
-			ret = 0;
-			mt_gpufreq_voltage_enable_set(value);
-		}
-	}
-
-out:
-	return (ret < 0) ? ret : count;
-}
-
-/*
  * PROCFS : show current fixed freq & volt state
  */
 static int mt_gpufreq_fixed_freq_volt_proc_show(struct seq_file *m, void *v)
@@ -1280,7 +1238,6 @@ PROC_FOPS_RO(gpufreq_opp_dump);
 PROC_FOPS_RO(gpufreq_power_dump);
 PROC_FOPS_RW(gpufreq_opp_freq);
 PROC_FOPS_RO(gpufreq_var_dump);
-PROC_FOPS_RW(gpufreq_volt_enable);
 PROC_FOPS_RW(gpufreq_fixed_freq_volt);
 static int __mt_gpufreq_create_procfs(void)
 {
@@ -1299,7 +1256,6 @@ static int __mt_gpufreq_create_procfs(void)
 		PROC_ENTRY(gpufreq_power_dump),
 		PROC_ENTRY(gpufreq_opp_freq),
 		PROC_ENTRY(gpufreq_var_dump),
-		PROC_ENTRY(gpufreq_volt_enable),
 		PROC_ENTRY(gpufreq_fixed_freq_volt),
 	};
 
