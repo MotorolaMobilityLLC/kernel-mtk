@@ -208,37 +208,30 @@ static void sched_update_clbstats(struct clb_env *clbenv)
  * fastest domain first.
  */
 
-static LIST_HEAD(hmp_domains);
 DEFINE_PER_CPU(struct hmp_domain *, hmp_cpu_domain);
 
 /* Setup hmp_domains */
-static int __init hmp_cpu_mask_setup(void)
+static void __init hmp_cpu_mask_setup(void)
 {
 	struct hmp_domain *domain;
 	struct list_head *pos;
-	int dc, cpu;
+	int cpu;
 
 	pr_info("Initializing HMP scheduler:\n");
 
 	/* Initialize hmp_domains using platform code */
-	arch_get_hmp_domains(&hmp_domains);
 	if (list_empty(&hmp_domains)) {
 		pr_info("HMP domain list is empty!\n");
-		return 0;
+		return;
 	}
 
 	/* Print hmp_domains */
-	dc = 0;
 	list_for_each(pos, &hmp_domains) {
 		domain = list_entry(pos, struct hmp_domain, hmp_domains);
 
-		for_each_cpu(cpu, &domain->possible_cpus) {
+		for_each_cpu(cpu, &domain->possible_cpus)
 			per_cpu(hmp_cpu_domain, cpu) = domain;
-		}
-		dc++;
 	}
-
-	return 1;
 }
 
 static struct hmp_domain *hmp_get_hmp_domain_for_cpu(int cpu)

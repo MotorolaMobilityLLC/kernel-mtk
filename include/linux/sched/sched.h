@@ -80,6 +80,21 @@ extern int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv);
 #endif
 
 
+extern void __init arch_init_hmp_domains(void);
+struct hmp_domain {
+	struct cpumask cpus;
+	struct cpumask possible_cpus;
+	struct list_head hmp_domains;
+};
+extern struct list_head hmp_domains;
+
+#define for_each_hmp_domain(hmpd) for_each_hmp_domain_B_first(hmpd)
+#define for_each_hmp_domain_B_first(hmpd) \
+		list_for_each_entry(hmpd, &hmp_domains, hmp_domains)
+
+#define for_each_hmp_domain_L_first(hmpd) \
+		list_for_each_entry_reverse(hmpd, &hmp_domains, hmp_domains)
+
 #ifdef CONFIG_SCHED_HMP
 struct clb_stats {
 	int ncpu;                  /* The number of CPU */
@@ -97,15 +112,9 @@ struct clb_stats {
 #endif
 };
 
-struct hmp_domain {
-	struct cpumask cpus;
-	struct cpumask possible_cpus;
-	struct list_head hmp_domains;
-};
+
 extern struct cpumask hmp_fast_cpu_mask;
 extern struct cpumask hmp_slow_cpu_mask;
-
-extern void __init arch_get_hmp_domains(struct list_head *hmp_domains_list);
 
 #define hmp_cpu_domain(cpu)     (per_cpu(hmp_cpu_domain, (cpu)))
 
