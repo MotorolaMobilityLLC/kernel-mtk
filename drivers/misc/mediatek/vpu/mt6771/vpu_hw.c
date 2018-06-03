@@ -295,11 +295,11 @@ static inline bool vpu_core_idle_check(void)
 		mutex_lock(&(vpu_service_cores[i].state_mutex));
 		switch (vpu_service_cores[i].state) {
 		case VCT_SHUTDOWN:
-		case VCT_BOOTUP:
 		case VCT_IDLE:
-		case VCT_NONE:
 			break;
+		case VCT_BOOTUP:
 		case VCT_EXECUTING:
+		case VCT_NONE:
 			idle = false;
 			mutex_unlock(&(vpu_service_cores[i].state_mutex));
 			goto out;
