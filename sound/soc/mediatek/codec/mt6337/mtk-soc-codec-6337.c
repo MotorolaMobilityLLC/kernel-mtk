@@ -5659,8 +5659,148 @@ static int Voice_Call_DAC_DAC_HS_Get(struct snd_kcontrol *kcontrol,
 static int Voice_Call_DAC_DAC_HS_Set(struct snd_kcontrol *kcontrol,
 				     struct snd_ctl_elem_value *ucontrol)
 {
-	/* 6752 TODO */
-	pr_warn("%s()\n", __func__);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Pmic_Test_function)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	Voice_Call_DAC_DAC_HS_flag = ucontrol->value.integer.value[0];
+	pr_aud("%s() Hardcode flag= %d\n", __func__, Voice_Call_DAC_DAC_HS_flag);
+	if (Voice_Call_DAC_DAC_HS_flag == 1) {
+		pr_aud("%s() Hardcode for voice phone call 16k\n", __func__);
+		/* Digital */
+		Ana_Set_Reg(LDO_VA25_CON0, 0x0001, 0xffff);
+		Ana_Set_Reg(LDO_VA25_OP_EN, 0x0001, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0xffff);
+		Ana_Set_Reg(TOP_CLKSQ_SET, 0x0001, 0xffff);
+		Ana_Set_Reg(TOP_CKPDN_CON0_CLR, 0x1800, 0xffff);
+		udelay(250);
+		Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x8000, 0xffff);
+		Ana_Set_Reg(AFE_NCP_CFG1, 0x1515, 0xffff);
+		Ana_Set_Reg(AFE_NCP_CFG0, 0xC801, 0xffff);
+		udelay(250);
+		Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x8000, 0xffff);
+		Ana_Set_Reg(AFE_AMIC_ARRAY_CFG, 0x00e4, 0xffff);
+		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0018, 0xffff);
+		Ana_Set_Reg(AFUNC_AUD_CON2, 0x0006, 0xffff);
+		Ana_Set_Reg(AFUNC_AUD_CON0, 0xC3A1, 0xffff);
+		Ana_Set_Reg(AFUNC_AUD_CON2, 0x0003, 0xffff);
+		Ana_Set_Reg(AFUNC_AUD_CON2, 0x000B, 0xffff);
+		Ana_Set_Reg(AFE_DL_SDM_CON1, 0x001D, 0xffff);
+		Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0xffff);
+		Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x0002, 0xffff);
+		Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0001, 0xffff);
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0, 0x3330, 0xffff);
+		Ana_Set_Reg(AFE_DL_SRC2_CON0_H, 0x3300, 0xffff);
+		Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0001, 0xffff);
+		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_SGEN_CFG0, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_SGEN_CFG1, 0x0101, 0xffff);
+		/* Analog */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0xC000, 0xffff);
+		udelay(100);
+		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x002D, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0003, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0280, 0xffff);
+		udelay(100);
+		Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0010, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x2A80, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x4900, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x2A80, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0090, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0092, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0093, 0xffff);
+		Ana_Set_Reg(ZCD_CON3, 0x0009, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0281, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0009, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x009B, 0xffff);
+
+		Ana_Set_Reg(TOP_CLKSQ, 0x0801, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON6, 0x0040, 0xffff);
+		Ana_Set_Reg(TOP_CKPDN_CON0, 0x26E0, 0xffff);
+		Ana_Set_Reg(AFE_DCCLK_CFG0, 0x0FE3, 0xffff);
+		Ana_Set_Reg(AFE_DCCLK_CFG0, 0x2061, 0xffff);
+		Ana_Set_Reg(AFE_DCCLK_CFG1, 0x1105, 0xffff);
+
+		Ana_Set_Reg(AUDENC_ANA_CON16, 0x0021, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0317, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x5317, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x53DF, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON16, 0x2121, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON6, 0x0240, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0337, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON1, 0x5337, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON1, 0x53FF, 0xffff);
+		udelay(100);
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x53DB, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON1, 0x53FB, 0xffff);
+	} else {
+		pr_aud("%s() Hardcode for pmic reset\n", __func__);
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON5, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x4900, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON11, 0xaa80, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0010, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0000, 0xffff);
+
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON2, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON3, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON4, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON5, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON6, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON7, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON8, 0x0800, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON9, 0x0800, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON10, 0x1515, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON11, 0x1515, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON12, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON13, 0x0004, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON14, 0x0004, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON15, 0x0004, 0xffff);
+		Ana_Set_Reg(AUDENC_ANA_CON16, 0x0000, 0xffff);
+
+		Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
+		Ana_Set_Reg(ZCD_CON1, 0x0f9f, 0xffff);
+		Ana_Set_Reg(ZCD_CON2, 0x0f9f, 0xffff);
+		Ana_Set_Reg(ZCD_CON3, 0x001f, 0xffff);
+		Ana_Set_Reg(ZCD_CON4, 0x0707, 0xffff);
+		Ana_Set_Reg(ZCD_CON5, 0x3f3f, 0xffff);
+
+		Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0xc000, 0xffff);
+		Ana_Set_Reg(AFE_NCP_CFG1, 0x1515, 0xffff);
+		Ana_Set_Reg(AFE_NCP_CFG0, 0x4600, 0xffff);
+		Ana_Set_Reg(AFE_AMIC_ARRAY_CFG, 0x00e4, 0xffff);
+		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0018, 0xffff);
+		Ana_Set_Reg(AFUNC_AUD_CON2, 0x0000, 0xffff);
+		Ana_Set_Reg(AFUNC_AUD_CON0, 0xd021, 0xffff);
+		Ana_Set_Reg(AFE_DL_SDM_CON1, 0x003a, 0xffff);
+		Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0, 0x9330, 0xffff);
+		Ana_Set_Reg(AFE_DL_SRC2_CON0_H, 0x0300, 0xffff);
+		Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0000, 0xffff);
+		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_SGEN_CFG0, 0x0008, 0xffff);
+		Ana_Set_Reg(AFE_SGEN_CFG1, 0x0101, 0xffff);
+		Ana_Set_Reg(AFE_DCCLK_CFG0, 0x0fe2, 0xffff);
+		Ana_Set_Reg(AFE_DCCLK_CFG1, 0x1105, 0xffff);
+	}
 	return 0;
 }
 
