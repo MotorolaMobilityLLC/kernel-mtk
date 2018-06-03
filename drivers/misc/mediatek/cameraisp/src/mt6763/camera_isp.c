@@ -6678,6 +6678,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 				break;
 			}
+
+			if (IonNode.devNode >= ISP_DEV_NODE_NUM) {
+				LOG_ERR("[ISP_ION_IMPORT]devNode should be smaller than ISP_DEV_NODE_NUM");
+				Ret = -EFAULT;
+				break;
+			}
+
 			ptbl = &gION_TBL[IonNode.devNode];
 			if (ptbl->node != IonNode.devNode) {
 				LOG_ERR("ion_import: devNode not support(%d)!\n", IonNode.devNode);
@@ -6768,6 +6775,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 				break;
 			}
+
+			if (IonNode.devNode >= ISP_DEV_NODE_NUM) {
+				LOG_ERR("[ISP_ION_FREE]devNode should be smaller than ISP_DEV_NODE_NUM");
+				Ret = -EFAULT;
+				break;
+			}
+
 			ptbl = &gION_TBL[IonNode.devNode];
 			if (ptbl->node != IonNode.devNode) {
 				LOG_ERR("ion_free: devNode not support(%d)!\n", IonNode.devNode);
