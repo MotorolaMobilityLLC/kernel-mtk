@@ -3132,7 +3132,7 @@ void eem_init01(void)
 			#endif
 		}
 		/* current banks: 00 0101 1111 */
-		if ((out == EEM_INIT01_FLAG) || (timeout == 30)) { /* 0x3B==out */
+		if (out == EEM_INIT01_FLAG) { /* 0x3B==out */
 			eem_debug("init01 finish time is %d, out=0x%x\n", timeout, out);
 			break;
 		}
