@@ -19,3 +19,4 @@ config CUSTOM_KERNEL_ACCELGYRO
 	  this config will turn on accelerometer feature.
 
 source "drivers/misc/mediatek/sensors-1.0/accelgyro/bmi160-spi/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/accelgyro/lsm6dsmtr-spi/Kconfig"

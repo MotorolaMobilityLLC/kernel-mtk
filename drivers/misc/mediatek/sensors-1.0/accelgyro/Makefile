@@ -5,3 +5,4 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensors-1.0/include
 obj-y   +=  accelgyro.o accelgyro_factory.o
 
 obj-$(CONFIG_MTK_BMI160_SPI)   +=  bmi160-spi/
+obj-$(CONFIG_MTK_LSM6DSMTR)   +=  lsm6dsmtr-spi/
