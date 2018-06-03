@@ -66,6 +66,21 @@
 #include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"
 
+static void _disable_all_charging(struct charger_manager *info)
+{
+	charger_dev_enable(info->chg1_dev, false);
+
+	if (mtk_is_pe30_running(info)) {
+		mtk_pe30_end(info);
+		mtk_pe30_set_is_enable(info, true);
+	}
+
+	if (mtk_pe20_get_is_enable(info)) {
+		mtk_pe20_set_is_enable(info, false);
+		if (mtk_pe20_get_is_connect(info))
+			mtk_pe20_reset_ta_vchr(info);
+	}
+}
 
 static void swchg_select_charging_current_limit(struct charger_manager *info)
 {
@@ -237,7 +252,10 @@ static int mtk_switch_charging_do_charging(struct charger_manager *info, bool en
 		swchgalg->disable_charging = true;
 		swchgalg->state = CHR_ERROR;
 		charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
+
+		_disable_all_charging(info);
 	}
+
 	return 0;
 }
 
@@ -294,17 +312,8 @@ int mtk_switch_chr_err(struct charger_manager *info)
 			swchgalg->state = CHR_CC;
 		}
 	}
-	charger_dev_enable(info->chg1_dev, false);
 
-	if (mtk_is_pe30_running(info))
-		mtk_pe30_end(info, true);
-
-	if (mtk_pe20_get_is_enable(info)) {
-		mtk_pe20_set_is_enable(info, false);
-		if (mtk_pe20_get_is_connect(info))
-			mtk_pe20_reset_ta_vchr(info);
-	}
-
+	_disable_all_charging(info);
 	return 0;
 }
 

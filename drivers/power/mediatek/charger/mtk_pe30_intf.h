@@ -56,7 +56,9 @@ extern bool mtk_pe30_check_charger(struct charger_manager *info);
 extern void mtk_pe30_set_pd_rdy(struct charger_manager *info, bool rdy);
 extern void mtk_pe30_set_charging_current_limit(struct charger_manager *info, int cur);
 extern int mtk_pe30_get_charging_current_limit(struct charger_manager *info);
-extern void mtk_pe30_end(struct charger_manager *info, bool retry);
+extern void mtk_pe30_end(struct charger_manager *info);
+extern bool mtk_pe30_get_is_enable(struct charger_manager *pinfo);
+extern void mtk_pe30_set_is_enable(struct charger_manager *pinfo, bool enable);
 extern void chrdet_int_handler(void);
 
 extern int pe30_dc_enable(struct charger_manager *info, unsigned char charging_enable);
