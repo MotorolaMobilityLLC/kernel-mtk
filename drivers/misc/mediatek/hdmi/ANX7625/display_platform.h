@@ -106,6 +106,9 @@ void Unmask_Slimport_Comm_Intr(void);
 int confirm_mhl_irq_level(void);
 int confirm_mhl_comm_irq_level(void);
 
+void cust_power_on(int enable);
+void cust_reset(int hwResetPeriod, int hwResetDelay, int is_power_on);
+
 #ifdef CONFIG_MACH_MT6799
 extern struct mt6336_ctrl *mt6336_ctrl;
 #endif
