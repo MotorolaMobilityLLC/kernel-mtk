@@ -177,6 +177,17 @@ static enum hrtimer_restart mt_twanted_timeout(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
+static void notify_no_render_legacy(void)
+{
+	mutex_lock(&notify_lock);
+	if (fbc_debug || is_game || !fbc_touch) {
+		mutex_unlock(&notify_lock);
+		return;
+	}
+	fbc_tracer(-1, "no_render", 1);
+	fbc_tracer(-1, "no_render", 0);
+	mutex_unlock(&notify_lock);
+}
 static void notify_twanted_timeout_legacy(void)
 {
 	mutex_lock(&notify_lock);
@@ -341,6 +352,10 @@ void notify_touch_eas(void)
 }
 mt_kernel_trace_counter("Touch", fbc_touch);
 #endif
+}
+
+static void notify_no_render_eas(void)
+{
 }
 
 void notify_frame_complete_eas(unsigned long frame_time)
@@ -537,19 +552,18 @@ ssize_t device_ioctl(struct file *filp,
 	/*receive Intended-Vsync signal*/
 	case IOCTL_WRITE_IV:
 
-
 		if (boost_method == EAS)
 			notify_intended_vsync_eas();
 		else if (boost_method == LEGACY)
 			notify_intended_vsync_legacy();
 		break;
 
-	case IOCTL_WRITE2:
-		if (!fbc_debug) {
-			if (is_game) {
-				enable_frame_twanted_timer();
-			}
-		}
+	case IOCTL_WRITE_NR:
+
+		if (boost_method == EAS)
+			notify_no_render_eas();
+		else if (boost_method == LEGACY)
+			notify_no_render_legacy();
 		break;
 
 	case IOCTL_WRITE3:
