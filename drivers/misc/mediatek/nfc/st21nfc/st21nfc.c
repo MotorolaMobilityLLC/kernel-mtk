@@ -302,7 +302,7 @@ static long st21nfc_dev_ioctl(struct file *filp, unsigned int cmd,
 		break;
 
 	case ST21NFC_PULSE_RESET:
-		pr_info("%s Pulse Request\n", __func__);
+		pr_info("%s Double Pulse Request\n", __func__);
 		if (st21nfc_dev->platform_data.reset_gpio != 0) {
 			/* pulse low for 20 millisecs */
 			pr_info("Pulse Request gpio is %d\n", st21nfc_dev->platform_data.reset_gpio);
@@ -311,7 +311,14 @@ static long st21nfc_dev_ioctl(struct file *filp, unsigned int cmd,
 			msleep(20);
 			gpio_set_value(st21nfc_dev->platform_data.reset_gpio,
 				       1);
-			pr_info("%s done Pulse Request\n", __func__);
+			msleep(20);
+			/* pulse low for 20 millisecs */
+			gpio_set_value(st21nfc_dev->platform_data.reset_gpio,
+					0);
+			msleep(20);
+			gpio_set_value(st21nfc_dev->platform_data.reset_gpio,
+					1);
+			pr_info("%s done Double Pulse Request\n", __func__);
 		}
 		break;
 
@@ -335,6 +342,39 @@ static long st21nfc_dev_ioctl(struct file *filp, unsigned int cmd,
 	case ST21NFC_GET_POLARITY:
 		ret = st21nfc_dev->platform_data.polarity_mode;
 		pr_debug("%s get polarity %d\n", __func__, ret);
+		break;
+	case ST21NFC_RECOVERY:
+		/* For ST21NFCD usage only */
+		pr_info("%s Recovery Request\n", __func__);
+		if (st21nfc_dev->platform_data.reset_gpio != 0) {
+			/* pulse low for 20 millisecs */
+			gpio_set_value(st21nfc_dev->platform_data.reset_gpio, 0);
+			msleep(20);
+			/* during the reset, force IRQ OUT as DH output instead of input in normal usage */
+			ret = gpio_direction_output(st21nfc_dev->platform_data.irq_gpio, 1);
+			if (ret) {
+				pr_err("%s : gpio_direction_output failed\n", __func__);
+				ret = -ENODEV;
+				break;
+			}
+			gpio_set_value(st21nfc_dev->platform_data.irq_gpio, 1);
+			msleep(20);
+			gpio_set_value(st21nfc_dev->platform_data.reset_gpio, 1);
+			pr_info("%s done Pulse Request\n", __func__);
+		}
+		msleep(20);
+		gpio_set_value(st21nfc_dev->platform_data.irq_gpio, 0);
+		msleep(20);
+		gpio_set_value(st21nfc_dev->platform_data.irq_gpio, 1);
+		msleep(20);
+		gpio_set_value(st21nfc_dev->platform_data.irq_gpio, 0);
+		msleep(20);
+		pr_info("%s Recovery procedure finished\n", __func__);
+		ret = gpio_direction_input(st21nfc_dev->platform_data.irq_gpio);
+		if (ret) {
+			pr_err("%s : gpio_direction_input failed\n", __func__);
+			ret = -ENODEV;
+		}
 		break;
 	default:
 		pr_err("%s bad ioctl %u\n", __func__, cmd);
