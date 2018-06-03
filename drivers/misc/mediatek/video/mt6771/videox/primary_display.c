@@ -2651,6 +2651,15 @@ static int _DC_switch_to_DL_fast(int block)
 	_cmdq_flush_config_handle(block, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
 	/* modify_path_power_off_callback((old_scenario << 16) | new_scenario); */
 
+	if (block) {
+		int layer;
+
+		dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
+		/* release output buffer */
+		layer = disp_sync_get_output_interface_timeline_id();
+		mtkfb_release_layer_fence(primary_session_id, layer);
+	}
+
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 1);
 
 	_cmdq_reset_config_handle();
