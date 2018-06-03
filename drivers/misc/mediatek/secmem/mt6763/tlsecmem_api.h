@@ -16,6 +16,8 @@
 
 #include "tci.h"
 
+#include "secmem_plat.h"
+
 /*
  * Command ID's for communication Trustlet Connector -> Trustlet.
  */
@@ -75,10 +77,19 @@ typedef struct {
 		tl_cmd_t     cmd_secmem;
 		tl_rsp_t     rsp_secmem;
 	};
+
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+	uint64_t    alignment;  /* IN */
+	uint64_t    size;       /* IN */
+	uint32_t    refcount;   /* INOUT */
+	uint64_t    sec_handle; /* OUT */
+#else
 	uint32_t    alignment;  /* IN */
 	uint32_t    size;       /* IN */
 	uint32_t    refcount;   /* INOUT */
 	uint32_t    sec_handle; /* OUT */
+#endif /* !SECMEM_64BIT_PHYS_SUPPORT */
+
 	uint32_t    ResultData;
 
 	/* Debugging purpose */
