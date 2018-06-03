@@ -255,4 +255,17 @@ extern int get_md_customer_val(unsigned char *value, unsigned int len);
 
 extern unsigned int trace_sample_time;
 
+
+/****************************************************************************************************************/
+/* API Region for kernel space notify */
+/****************************************************************************************************************/
+enum md_on_off_type {
+	MD_OFF_LVL_0, /* Full power off */
+	MD_OFF_LVL_1, /* Sleep mode */
+	MD_ON,
+};
+
+void notify_md_on(int md_id);
+void notify_md_off(int md_id, int off_level);
+
 #endif	/* __CCCI_MODEM_H__ */
