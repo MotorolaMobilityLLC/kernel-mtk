@@ -536,7 +536,7 @@ pr_err("Lomen 1\n");
     #endif
 	{
 #ifdef CONFIG_CUSTOM_LCM_X
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_MTK_FB	/*Fix build errors,as some projects  cannot support these apis while bring up*/
 		TPD_RES_X = DISP_GetScreenWidth();
 		TPD_RES_Y = DISP_GetScreenHeight();

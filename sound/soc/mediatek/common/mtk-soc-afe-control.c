@@ -3569,6 +3569,9 @@ int memif_lpbk_get_irq(void)
 
 int audio_get_auxadc_value(void)
 {
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	return 0;
+#else
 #ifdef _GIT318_PMIC_READY
 #ifdef CONFIG_MTK_AUXADC_INTF
 	return pmic_get_auxadc_value(AUXADC_LIST_HPOFS_CAL);
@@ -3577,6 +3580,7 @@ int audio_get_auxadc_value(void)
 #endif
 #else
 	return 0;
+#endif
 #endif
 }
 
