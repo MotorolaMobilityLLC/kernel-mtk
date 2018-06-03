@@ -393,6 +393,8 @@ static void get_soc_efuse(void)
 
 	soc_efuse = get_devinfo_with_index(DEVINFO_IDX_10);
 
+	soc_efuse = 0; /* Off voltage bin request by wen-wen 2017/4/5 */
+
 	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2) {
 		eem_vcore_index[0] = GET_BITS_VAL(3:0, soc_efuse) & mask_f;
 		eem_vcore_index[1] = GET_BITS_VAL(7:4, soc_efuse) & mask_7;
