@@ -293,8 +293,8 @@ void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 					__func__, on, ret);
 			devapc_check_flag = 1;
 		} else {
-			clk_disable_unprepare(clk_table[idx].clk_ref);
 			devapc_check_flag = 0;
+			clk_disable_unprepare(clk_table[idx].clk_ref);
 		}
 	}
 }

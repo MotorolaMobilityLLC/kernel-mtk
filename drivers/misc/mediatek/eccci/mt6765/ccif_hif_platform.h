@@ -17,10 +17,18 @@
 
 #include <mt-plat/sync_write.h>
 
-#define ccif_write32(b, a, v)           mt_reg_sync_writel(v, (b)+(a))
+extern unsigned int devapc_check_flag;
+#define ccif_write32(b, a, v) \
+do { \
+	if (devapc_check_flag == 1) \
+		mt_reg_sync_writel(v, (b) + (a)); \
+} while (0)
+
 #define ccif_write16(b, a, v)           mt_reg_sync_writew(v, (b)+(a))
 #define ccif_write8(b, a, v)            mt_reg_sync_writeb(v, (b)+(a))
-#define ccif_read32(b, a)               ioread32((void __iomem *)((b)+(a)))
+#define ccif_read32(b, a) \
+	((devapc_check_flag == 1) ? ioread32((void __iomem *)((b)+(a))) : 0)
+
 #define ccif_read16(b, a)               ioread16((void __iomem *)((b)+(a)))
 #define ccif_read8(b, a)                ioread8((void __iomem *)((b)+(a)))
 
