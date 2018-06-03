@@ -177,6 +177,25 @@ unsigned int sensor_event_register(unsigned char handle)
 	switch (handle) {
 	/* google continues sensor ringbuffer is 2048 for batch flow */
 	case ID_ACCELEROMETER:
+		spin_lock_init(&obj->client[handle].buffer_lock);
+		lockdep_set_class(&obj->client[handle].buffer_lock, &buffer_lock_key[handle]);
+		/*
+		 * Reserve below log if need debug LockProve
+		 * SE_PR_ERR("[Lomen]sensor_event_register: printf key handle ID=%d, key addr=%p\n",
+		 * handle, (struct lock_class_key*)&obj->client[handle].buffer_lock.rlock.dep_map.key);
+		 */
+		obj->client[handle].head = 0;
+		obj->client[handle].tail = 0;
+		obj->client[handle].bufsize = ACCELEROMETER_BUF_SIZE;
+		obj->client[handle].buffull = false;
+		obj->client[handle].buffer =
+			vzalloc(obj->client[handle].bufsize * sizeof(struct sensor_event));
+		if (!obj->client[handle].buffer) {
+			SE_PR_ERR("Alloc ringbuffer error!\n");
+			return -1;
+		}
+		init_waitqueue_head(&obj->client[handle].wait);
+		break;
 	case ID_MAGNETIC:
 	case ID_MAGNETIC_UNCALIBRATED:
 	case ID_GYROSCOPE:
