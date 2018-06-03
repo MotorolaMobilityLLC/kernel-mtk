@@ -200,8 +200,9 @@ int disp_create_session(struct disp_session_config *config)
 #ifdef MTK_FB_SHARE_WDMA0_SUPPORT
 		if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, DEV_WFD)) {
 			/* disable dynamic switch for screen idle, avoid conflict */
+			/*it need lock, if set_idlemgr.*/
 			if (idle_flag)
-				idle_flag = set_idlemgr(0, 0);
+				idle_flag = set_idlemgr(0, 1);
 			/* disable idle manager, smart ovl */
 			smartovl_flag = disp_helper_get_option(DISP_OPT_SMART_OVL);
 			disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
@@ -252,8 +253,9 @@ int disp_destroy_session(struct disp_session_config *config)
 			session_config[i] = 0;
 #ifdef MTK_FB_SHARE_WDMA0_SUPPORT
 			if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, DEV_WFD)) {
+				/*it need lock, if set_idlemgr.*/
 				if (idle_flag)
-					set_idlemgr(idle_flag, 0);
+					set_idlemgr(idle_flag, 1);
 				if (smartovl_flag)
 					disp_helper_set_option(DISP_OPT_SMART_OVL, smartovl_flag);
 				has_memory_session = 0;

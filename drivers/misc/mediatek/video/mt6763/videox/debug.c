@@ -58,6 +58,7 @@
 #include "ion_drv.h"
 #include "ion.h"
 #include "layering_rule.h"
+#include "ddp_clkmgr.h"
 
 static struct dentry *mtkfb_dbgfs;
 unsigned int g_mobilelog;
@@ -1148,6 +1149,9 @@ static void process_dbg_opt(const char *opt)
 		if (!layer_statistic_enable)
 			disp_layer_info_statistic_reset();
 	}
+
+	if (strncmp(opt, "check_clk", 9) == 0)
+		ddp_clk_check();
 }
 
 
