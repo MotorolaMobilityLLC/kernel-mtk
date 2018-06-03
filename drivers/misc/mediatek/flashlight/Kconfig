@@ -9,6 +9,30 @@ config MTK_FLASHLIGHT
 		If you have any questions about this, say Y here, only say N
 		if you know exactly what you are doing.
 
+config MTK_FLASHLIGHT_LED191
+	tristate "Mediatek flashlight led191 gpio driver"
+	depends on MTK_FLASHLIGHT
+	default n
+	help
+		This is flashlight led191 gpio driver for camera.
+
+		Say Y here if you want a dummy driver IC with GPIO interface.
+		Select this only if your board has this IC.
+
+		Say M here if you want to compile this driver as a module.
+
+config MTK_FLASHLIGHT_LM3642
+	tristate "Mediatek flashlight with driver IC (TI LM3642)"
+	depends on MTK_FLASHLIGHT
+	default n
+	help
+		This is for the flashlight driver IC (TI LM3642).
+
+		Say Y here if you want a flashlight driver IC LM3642.
+		Select this only if your board has this IC.
+
+		Say M here if you want to compile this driver as a module.
+
 config MTK_FLASHLIGHT_LM3643
 	tristate "Mediatek flashlight with driver IC (TI LM3643)"
 	depends on MTK_FLASHLIGHT

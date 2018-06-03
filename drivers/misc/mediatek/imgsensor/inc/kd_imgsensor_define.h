@@ -640,6 +640,7 @@ typedef struct {
 	MUINT8  debugSubstruct[32];
 	MUINT32 isGet;              /* 1 means get, 0 means set */
 	MUINT32 value;
+	MUINT32 sensor_index;
 } ACDK_SENSOR_DBG_IMGSENSOR_STRUCT;
 
 typedef struct {
