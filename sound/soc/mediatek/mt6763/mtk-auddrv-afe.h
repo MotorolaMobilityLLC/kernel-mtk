@@ -56,12 +56,12 @@
  *                         D A T A   T Y P E S
  *****************************************************************************/
 
-typedef enum {
+enum audio_sdm_level {
 	AUDIO_SDM_LEVEL_MUTE = 0,
 	AUDIO_SDM_LEVEL_NORMAL = 0x1d,
 	/* if you change level normal */
 	/* you need to change formula of hp impedance and dc trim too */
-} AUDIO_SDM_LEVEL;
+};
 
 /*****************************************************************************
  *                          C O N S T A N T S
