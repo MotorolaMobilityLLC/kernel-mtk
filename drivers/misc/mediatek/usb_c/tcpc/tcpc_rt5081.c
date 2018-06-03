@@ -44,7 +44,7 @@
 
 /* #define DEBUG_GPIO	66 */
 
-#define RT5081_DRV_VERSION	"1.1.7_MTK"
+#define RT5081_DRV_VERSION	"1.1.8_MTK"
 
 struct rt5081_chip {
 	struct i2c_client *client;
@@ -1114,7 +1114,7 @@ static int rt5081_get_message(struct tcpc_device *tcpc, uint32_t *payload,
 	*msg_head = *(uint16_t *)&buf[2];
 
 	/* TCPC 1.0 ==> no need to subtract the size of msg_head */
-	if (rv >= 0 && cnt > 0) {
+	if (rv >= 0 && cnt > 3) {
 		cnt -= 3; /* MSG_HDR */
 		rv = rt5081_block_read(chip->client, TCPC_V10_REG_RX_DATA, cnt,
 				(uint8_t *) payload);
@@ -1684,4 +1684,6 @@ MODULE_VERSION(RT5081_DRV_VERSION);
  *	-- sync to rt1711h pd driver v018
  * 1.1.7_MTK
  *	-- sync to rt1711h pd driver v019
+ * 1.1.8_MTK
+ *	-- sync to rt1711h pd driver v020
  */
