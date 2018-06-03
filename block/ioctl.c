@@ -465,6 +465,27 @@ static int blkdev_getgeo(struct block_device *bdev,
 	return 0;
 }
 
+#ifdef CONFIG_MTK_BLK_RW_PROFILING
+static int blkdev_rwprofilng(struct block_device *bdev,
+		struct block_rw_profiling __user *argp, enum block_rw_enum operation)
+{
+	u32 temp_buf[RW_ARRAY_SIZE];
+
+	if (!argp)
+		return -EINVAL;
+
+	if (argp->buf_byte > sizeof(temp_buf))
+		return -EINVAL;
+
+	mtk_trace_block_rq_get_rw_counter(temp_buf, operation);
+
+	if (copy_to_user(argp->buf_ptr, &temp_buf, argp->buf_byte))
+		return -EFAULT;
+
+	return 0;
+}
+#endif
+
 /* set the logical block size */
 static int blkdev_bszset(struct block_device *bdev, fmode_t mode,
 		int __user *argp)
@@ -515,6 +536,16 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
 		return blk_ioctl_zeroout(bdev, mode, arg);
 	case HDIO_GETGEO:
 		return blkdev_getgeo(bdev, argp);
+#ifdef CONFIG_MTK_BLK_RW_PROFILING
+	case BLKRNUM:
+		return blkdev_rwprofilng(bdev, argp, blockread);
+	case BLKWNUM:
+		return blkdev_rwprofilng(bdev, argp, blockwrite);
+	case BLKRWNUM:
+		return blkdev_rwprofilng(bdev, argp, blockrw);
+	case BLKRWCLR:
+		return mtk_trace_block_rq_get_rw_counter_clr();
+#endif
 	case BLKRAGET:
 	case BLKFRAGET:
 		if (!arg)
