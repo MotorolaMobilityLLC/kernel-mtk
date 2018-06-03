@@ -3291,7 +3291,8 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 
 	if (!fgDelayIndication) {
 #if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
-		prAdapter->rWifiVar.rConnSettings.ucSSIDLen = 0;
+		if (prAisBssInfo->ucReasonOfDisconnect != DISCONNECT_REASON_CODE_NEW_CONNECTION)
+			prAdapter->rWifiVar.rConnSettings.ucSSIDLen = 0;
 #endif
 		/* 4 <5> Deactivate previous AP's STA_RECORD_T or all Clients in Driver if have. */
 		if (prAisBssInfo->prStaRecOfAP) {
