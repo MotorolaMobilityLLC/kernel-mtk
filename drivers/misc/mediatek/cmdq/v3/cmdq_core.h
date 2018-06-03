@@ -363,7 +363,6 @@ enum CMDQ_CODE_ENUM {
 	CMDQ_CODE_PREFETCH_ENABLE = 0x41,	/* enable prefetch marker */
 	CMDQ_CODE_PREFETCH_DISABLE = 0x42,	/* disable prefetch marker */
 	CMDQ_CODE_READ_S = 0x80,	/* read operation (v3 only) */
-	CMDQ_CODE_READ_S_W_MASK = 0x81,	/* read with mask operation (v3 only) */
 	CMDQ_CODE_WRITE_S = 0x90,	/* write operation (v3 only) */
 	CMDQ_CODE_WRITE_S_W_MASK = 0x91,	/* write with mask operation (v3 only) */
 	CMDQ_CODE_LOGIC = 0xa0,	/* logic operation */

@@ -4350,8 +4350,6 @@ static const char *cmdq_core_parse_op(uint32_t op_code)
 		return "MARK";
 	case CMDQ_CODE_READ_S:
 		return "READ_S";
-	case CMDQ_CODE_READ_S_W_MASK:
-		return "READ_S with mask";
 	case CMDQ_CODE_WRITE_S:
 		return "WRITE_S";
 	case CMDQ_CODE_WRITE_S_W_MASK:
@@ -4742,7 +4740,8 @@ static void cmdq_core_dump_task_in_thread(const int32_t thread,
 				   &(MVABase), pDumpTask->commandSize);
 		CMDQ_ERR("	cont'd: Last Inst 0x%08x:0x%08x, 0x%08x:0x%08x, priority: %d\n",
 				   value[0], value[1], value[2], value[3], pDumpTask->priority);
-		CMDQ_ERR("** This is SRAM task: sram base:%u", pDumpTask->sram_base);
+		if (pDumpTask->sram_base > 0)
+			CMDQ_ERR("** This is SRAM task: sram base:%u", pDumpTask->sram_base);
 
 		if (dumpCmd == true) {
 			print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
@@ -4781,9 +4780,9 @@ void cmdq_core_dump_secure_metadata(struct cmdqSecDataStruct *pSecData)
 static uint32_t cmdq_core_interpret_wpr_value_data_register(const uint32_t op, uint32_t arg_value)
 {
 	uint32_t reg_id = arg_value;
-	if (CMDQ_CODE_WRITE_S == op || CMDQ_CODE_WRITE_S_W_MASK == op)
+	if (op == CMDQ_CODE_WRITE_S || op == CMDQ_CODE_WRITE_S_W_MASK)
 		reg_id = ((arg_value >> 16) & 0xFFFF);
-	else if (CMDQ_CODE_READ_S == op || CMDQ_CODE_READ_S_W_MASK == op)
+	else if (op == CMDQ_CODE_READ_S)
 		reg_id = (arg_value & 0xFFFF);
 	else
 		reg_id += CMDQ_GPR_V3_OFFSET;
@@ -4793,8 +4792,8 @@ static uint32_t cmdq_core_interpret_wpr_value_data_register(const uint32_t op, u
 static uint32_t cmdq_core_interpret_wpr_address_data_register(const uint32_t op, uint32_t arg_addr)
 {
 	uint32_t reg_id = (arg_addr >> 16) & 0x1F;
-	if (CMDQ_CODE_WRITE_S == op || CMDQ_CODE_WRITE_S_W_MASK == op
-		|| CMDQ_CODE_READ_S == op || CMDQ_CODE_READ_S_W_MASK == op)
+	if (op == CMDQ_CODE_WRITE_S || op == CMDQ_CODE_WRITE_S_W_MASK
+		|| op == CMDQ_CODE_READ_S)
 		reg_id = (arg_addr & 0xFFFF);
 	else
 		reg_id += CMDQ_GPR_V3_OFFSET;
@@ -4825,14 +4824,13 @@ int32_t cmdq_core_interpret_instruction(char *textBuf, int bufLen,
 	case CMDQ_CODE_WRITE:
 	case CMDQ_CODE_POLL:
 	case CMDQ_CODE_READ_S:
-	case CMDQ_CODE_READ_S_W_MASK:
 	case CMDQ_CODE_WRITE_S:
 	case CMDQ_CODE_WRITE_S_W_MASK:
 		reqLen = snprintf(textBuf, bufLen, "%s: ", cmdq_core_parse_op(op));
 		bufLen -= reqLen;
 		textBuf += reqLen;
 
-		if (CMDQ_CODE_READ_S == op || CMDQ_CODE_READ_S_W_MASK == op) {
+		if (op == CMDQ_CODE_READ_S) {
 			arg_addr = (arg_a & CMDQ_ARG_A_SUBSYS_MASK) | ((arg_b >> 16) & 0xFFFF);
 			arg_addr_type = arg_a & (1 << 22);
 			arg_value = arg_a & 0xFFFF;
@@ -4872,9 +4870,9 @@ int32_t cmdq_core_interpret_instruction(char *textBuf, int bufLen,
 		}
 
 		use_mask = (arg_addr & 0x1);
-		if (CMDQ_CODE_READ_S_W_MASK == op || CMDQ_CODE_WRITE_S_W_MASK == op)
+		if (op == CMDQ_CODE_WRITE_S_W_MASK)
 			use_mask = 1;
-		else if (CMDQ_CODE_READ_S == op || CMDQ_CODE_WRITE_S == op)
+		else if (op == CMDQ_CODE_READ_S || op == CMDQ_CODE_WRITE_S)
 			use_mask = 0;
 		reqLen = snprintf(textBuf, bufLen, "use_mask=%d\n", use_mask);
 		bufLen -= reqLen;
