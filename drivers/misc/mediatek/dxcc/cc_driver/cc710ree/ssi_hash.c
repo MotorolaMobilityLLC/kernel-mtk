@@ -947,9 +947,9 @@ static int ssi_hash_final(struct ahash_req_ctx *state,
 static int ssi_hash_init(struct ahash_req_ctx *state, struct ssi_hash_ctx *ctx)
 {
 	struct device *dev = &ctx->drvdata->plat_dev->dev;
-	state->xcbc_count = 0;	
+	state->xcbc_count = 0;
 
-	CHECK_AND_RETURN_UPON_FIPS_ERROR();
+	CHECK_AND_RETURN_UPON_FIPS_TEE_ERROR();
 	ssi_hash_map_request(dev, state, ctx);
 
 	return 0;
@@ -970,8 +970,8 @@ static int ssi_hash_import(struct ssi_hash_ctx *ctx, const void *in)
 }
 
 static int ssi_hash_setkey(void *hash,
-							const u8 *key, 
-							unsigned int keylen, 
+							const u8 *key,
+							unsigned int keylen,
 							bool synchronize)
 {
 	unsigned int hmacPadConst[2] = { HMAC_IPAD_CONST, HMAC_OPAD_CONST };
@@ -982,7 +982,7 @@ static int ssi_hash_setkey(void *hash,
 	int i, idx = 0, rc = 0;
 	HwDesc_s desc[SSI_MAX_AHASH_SEQ_LEN];
 	ssi_sram_addr_t larval_addr;
-	
+
 	CHECK_AND_RETURN_UPON_FIPS_ERROR();
 	if (synchronize) {
 		ctx = crypto_shash_ctx(((struct crypto_shash *)hash));
@@ -993,7 +993,7 @@ static int ssi_hash_setkey(void *hash,
 		blocksize = crypto_tfm_alg_blocksize(&((struct crypto_ahash *)hash)->base);
 		digestsize = crypto_ahash_digestsize(((struct crypto_ahash *)hash));
 	}
-	
+
 	larval_addr = ssi_ahash_get_larval_digest_sram_addr(
 					ctx->drvdata, ctx->hash_mode);
 
@@ -1031,7 +1031,7 @@ static int ssi_hash_setkey(void *hash,
 			HW_DESC_SET_FLOW_MODE(&desc[idx], S_DIN_to_HASH);
 			HW_DESC_SET_SETUP_MODE(&desc[idx], SETUP_LOAD_STATE0);
 			idx++;
-	
+
 			/* Load the hash current length*/
 			HW_DESC_INIT(&desc[idx]);
 			HW_DESC_SET_CIPHER_MODE(&desc[idx], ctx->hw_mode);
@@ -1040,17 +1040,17 @@ static int ssi_hash_setkey(void *hash,
 			HW_DESC_SET_FLOW_MODE(&desc[idx], S_DIN_to_HASH);
 			HW_DESC_SET_SETUP_MODE(&desc[idx], SETUP_LOAD_KEY0);
 			idx++;
-	
+
 			HW_DESC_INIT(&desc[idx]);
-			HW_DESC_SET_DIN_TYPE(&desc[idx], DMA_DLLI, 
-					     ctx->key_params.key_dma_addr, 
+			HW_DESC_SET_DIN_TYPE(&desc[idx], DMA_DLLI,
+					     ctx->key_params.key_dma_addr,
 					     keylen, AXI_ID, NS_BIT);
 			HW_DESC_SET_FLOW_MODE(&desc[idx], DIN_HASH);
 			idx++;
-	
+
 			/* Get hashed key */
 			HW_DESC_INIT(&desc[idx]);
-			HW_DESC_SET_CIPHER_MODE(&desc[idx], ctx->hw_mode); 
+			HW_DESC_SET_CIPHER_MODE(&desc[idx], ctx->hw_mode);
 			HW_DESC_SET_DOUT_DLLI(&desc[idx], ctx->opad_tmp_keys_dma_addr,
 					      digestsize, AXI_ID, NS_BIT, 0);
 			HW_DESC_SET_FLOW_MODE(&desc[idx], S_HASH_to_DOUT);
@@ -1058,21 +1058,21 @@ static int ssi_hash_setkey(void *hash,
 			HW_DESC_SET_CIPHER_CONFIG1(&desc[idx], HASH_PADDING_DISABLED);
 			ssi_set_hash_endianity(ctx->hash_mode,&desc[idx]);
 			idx++;
-	
+
 			HW_DESC_INIT(&desc[idx]);
 			HW_DESC_SET_DIN_CONST(&desc[idx], 0, (blocksize - digestsize));
 			HW_DESC_SET_FLOW_MODE(&desc[idx], BYPASS);
-			HW_DESC_SET_DOUT_DLLI(&desc[idx], 
+			HW_DESC_SET_DOUT_DLLI(&desc[idx],
 					      (ctx->opad_tmp_keys_dma_addr + digestsize),
 					      (blocksize - digestsize),
 					      AXI_ID, NS_BIT, 0);
 			idx++;
-	
-	
+
+
 		} else {
 			HW_DESC_INIT(&desc[idx]);
-			HW_DESC_SET_DIN_TYPE(&desc[idx], DMA_DLLI, 
-					     ctx->key_params.key_dma_addr, 
+			HW_DESC_SET_DIN_TYPE(&desc[idx], DMA_DLLI,
+					     ctx->key_params.key_dma_addr,
 					     keylen, AXI_ID, NS_BIT);
 			HW_DESC_SET_FLOW_MODE(&desc[idx], BYPASS);
 			HW_DESC_SET_DOUT_DLLI(&desc[idx],
@@ -1084,19 +1084,19 @@ static int ssi_hash_setkey(void *hash,
 				HW_DESC_INIT(&desc[idx]);
 				HW_DESC_SET_DIN_CONST(&desc[idx], 0, (blocksize - keylen));
 				HW_DESC_SET_FLOW_MODE(&desc[idx], BYPASS);
-				HW_DESC_SET_DOUT_DLLI(&desc[idx], 
+				HW_DESC_SET_DOUT_DLLI(&desc[idx],
 						      (ctx->opad_tmp_keys_dma_addr + keylen),
 						      (blocksize - keylen),
 						      AXI_ID, NS_BIT, 0);
 				idx++;
 			}
-	
+
 		}
 	} else {
 		HW_DESC_INIT(&desc[idx]);
 		HW_DESC_SET_DIN_CONST(&desc[idx], 0, blocksize);
 		HW_DESC_SET_FLOW_MODE(&desc[idx], BYPASS);
-		HW_DESC_SET_DOUT_DLLI(&desc[idx], 
+		HW_DESC_SET_DOUT_DLLI(&desc[idx],
 				      (ctx->opad_tmp_keys_dma_addr),
 				      blocksize,
 				      AXI_ID, NS_BIT, 0);
@@ -1223,7 +1223,7 @@ static int ssi_xcbc_setkey(struct crypto_ahash *ahash,
 		     "keylen=%u\n",
 		     (unsigned long long)ctx->key_params.key_dma_addr,
 		     ctx->key_params.keylen);
-	
+
 	ctx->is_hmac = true;
 	/* 1. Load the AES key */
 	HW_DESC_INIT(&desc[idx]);
@@ -1238,23 +1238,23 @@ static int ssi_xcbc_setkey(struct crypto_ahash *ahash,
 	HW_DESC_INIT(&desc[idx]);
 	HW_DESC_SET_DIN_CONST(&desc[idx], 0x01010101, SEP_AES_128_BIT_KEY_SIZE);
 	HW_DESC_SET_FLOW_MODE(&desc[idx], DIN_AES_DOUT);
-	HW_DESC_SET_DOUT_DLLI(&desc[idx], (ctx->opad_tmp_keys_dma_addr + 
-					   XCBC_MAC_K1_OFFSET), 
+	HW_DESC_SET_DOUT_DLLI(&desc[idx], (ctx->opad_tmp_keys_dma_addr +
+					   XCBC_MAC_K1_OFFSET),
 			      SEP_AES_128_BIT_KEY_SIZE, AXI_ID, NS_BIT, 0);
 	idx++;
 
 	HW_DESC_INIT(&desc[idx]);
 	HW_DESC_SET_DIN_CONST(&desc[idx], 0x02020202, SEP_AES_128_BIT_KEY_SIZE);
 	HW_DESC_SET_FLOW_MODE(&desc[idx], DIN_AES_DOUT);
-	HW_DESC_SET_DOUT_DLLI(&desc[idx], (ctx->opad_tmp_keys_dma_addr + 
-					   XCBC_MAC_K2_OFFSET), 
+	HW_DESC_SET_DOUT_DLLI(&desc[idx], (ctx->opad_tmp_keys_dma_addr +
+					   XCBC_MAC_K2_OFFSET),
 			      SEP_AES_128_BIT_KEY_SIZE, AXI_ID, NS_BIT, 0);
 	idx++;
 
 	HW_DESC_INIT(&desc[idx]);
 	HW_DESC_SET_DIN_CONST(&desc[idx], 0x03030303, SEP_AES_128_BIT_KEY_SIZE);
 	HW_DESC_SET_FLOW_MODE(&desc[idx], DIN_AES_DOUT);
-	HW_DESC_SET_DOUT_DLLI(&desc[idx], (ctx->opad_tmp_keys_dma_addr + 
+	HW_DESC_SET_DOUT_DLLI(&desc[idx], (ctx->opad_tmp_keys_dma_addr +
 					   XCBC_MAC_K3_OFFSET),
 			       SEP_AES_128_BIT_KEY_SIZE, AXI_ID, NS_BIT, 0);
 	idx++;
@@ -1298,23 +1298,23 @@ static int ssi_cmac_setkey(struct crypto_ahash *ahash,
 
 	/* STAT_PHASE_1: Copy key to ctx */
 	START_CYCLE_COUNT();
-	
+
 	SSI_RESTORE_DMA_ADDR_TO_48BIT(ctx->opad_tmp_keys_dma_addr);
 	dma_sync_single_for_cpu(&ctx->drvdata->plat_dev->dev,
-				ctx->opad_tmp_keys_dma_addr, 
+				ctx->opad_tmp_keys_dma_addr,
 				keylen, DMA_TO_DEVICE);
 
 	memcpy(ctx->opad_tmp_keys_buff, key, keylen);
 	if (keylen == 24)
 		memset(ctx->opad_tmp_keys_buff + 24, 0, SEP_AES_KEY_SIZE_MAX - 24);
-	
+
 	dma_sync_single_for_device(&ctx->drvdata->plat_dev->dev,
-				   ctx->opad_tmp_keys_dma_addr, 
+				   ctx->opad_tmp_keys_dma_addr,
 				   keylen, DMA_TO_DEVICE);
 	SSI_UPDATE_DMA_ADDR_TO_48BIT(ctx->opad_tmp_keys_dma_addr, keylen);
-		
+
 	ctx->key_params.keylen = keylen;
-	
+
 	END_CYCLE_COUNT(STAT_OP_TYPE_SETKEY, STAT_PHASE_1);
 
 	return 0;
@@ -1390,14 +1390,14 @@ fail:
 }
 
 static int ssi_shash_cra_init(struct crypto_tfm *tfm)
-{		
+{
 	struct ssi_hash_ctx *ctx = crypto_tfm_ctx(tfm);
-	struct shash_alg * shash_alg = 
+	struct shash_alg *shash_alg =
 		container_of(tfm->__crt_alg, struct shash_alg, base);
 	struct ssi_hash_alg *ssi_alg =
 			container_of(shash_alg, struct ssi_hash_alg, shash_alg);
-        	
-	CHECK_AND_RETURN_UPON_FIPS_ERROR();
+
+	CHECK_AND_RETURN_UPON_FIPS_TEE_ERROR();
 	ctx->hash_mode = ssi_alg->hash_mode;
 	ctx->hw_mode = ssi_alg->hw_mode;
 	ctx->inter_digestsize = ssi_alg->inter_digestsize;
@@ -1409,15 +1409,15 @@ static int ssi_shash_cra_init(struct crypto_tfm *tfm)
 static int ssi_ahash_cra_init(struct crypto_tfm *tfm)
 {
 	struct ssi_hash_ctx *ctx = crypto_tfm_ctx(tfm);
-	struct hash_alg_common * hash_alg_common = 
+	struct hash_alg_common *hash_alg_common =
 		container_of(tfm->__crt_alg, struct hash_alg_common, base);
-	struct ahash_alg *ahash_alg = 
+	struct ahash_alg *ahash_alg =
 		container_of(hash_alg_common, struct ahash_alg, halg);
 	struct ssi_hash_alg *ssi_alg =
 			container_of(ahash_alg, struct ssi_hash_alg, ahash_alg);
 
 
-	CHECK_AND_RETURN_UPON_FIPS_ERROR();
+	CHECK_AND_RETURN_UPON_FIPS_TEE_ERROR();
 	crypto_ahash_set_reqsize(__crypto_ahash_cast(tfm),
 				sizeof(struct ahash_req_ctx));
 

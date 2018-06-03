@@ -22,15 +22,20 @@
 struct ssi_drvdata;
 
 
+#define CHECK_AND_RETURN_UPON_FIPS_TEE_ERROR() {\
+	if (ssi_fips_check_fips_tee_error() != 0) {\
+		return -ENOEXEC;\
+	} \
+}
 #define CHECK_AND_RETURN_UPON_FIPS_ERROR() {\
-        if (ssi_fips_check_fips_error() != 0) {\
-                return -ENOEXEC;\
-        }\
+	if (ssi_fips_check_fips_error() != 0) {\
+		return -ENOEXEC;\
+	} \
 }
 #define CHECK_AND_RETURN_VOID_UPON_FIPS_ERROR() {\
-        if (ssi_fips_check_fips_error() != 0) {\
-                return;\
-        }\
+	if (ssi_fips_check_fips_error() != 0) {\
+		return;\
+	} \
 }
 #define SSI_FIPS_INIT(p_drvData)  (ssi_fips_init(p_drvData))
 #define SSI_FIPS_SET_CKSUM_ERROR() (ssi_fips_set_error(CC_REE_FIPS_ERROR_ROM_CHECKSUM))
@@ -40,11 +45,13 @@ struct ssi_drvdata;
 
 /* FIPS functions */
 int ssi_fips_init(struct ssi_drvdata *p_drvdata);
+int ssi_fips_check_fips_tee_error(void);
 int ssi_fips_check_fips_error(void);
 int ssi_fips_set_error(ssi_fips_error_t err);
 
 #else  /* SSI_SUPPORT_FIPS */
 
+#define CHECK_AND_RETURN_UPON_FIPS_TEE_ERROR()
 #define CHECK_AND_RETURN_UPON_FIPS_ERROR()
 #define CHECK_AND_RETURN_VOID_UPON_FIPS_ERROR()
 #define SSI_FIPS_INIT(p_drvData)  (0)

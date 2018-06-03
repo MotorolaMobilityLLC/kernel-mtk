@@ -1,0 +1,76 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+#ifndef __SSI_FIPS_EXT_H__
+#define __SSI_FIPS_EXT_H__
+
+#define FIPS_RETRY_LIMIT          5
+#define FIPS_RETRY_DELAY          10000
+#define FIPS_RETRY_RUNTIME_DELAY  1000
+
+/* error code */
+#define TLC_FIPS_OK                       (0x0000)
+#define TLC_FIPS_ERR_INVALID_BUF          (0x0001)
+#define TLC_FIPS_NOTIFY_TA_FAIL           (0x0002)
+#define TLC_FIPS_WAIT_TA_FAIL             (0x0003)
+#define TLC_FIPS_UNEXPECTED_REP           (0x0004)
+#define TLC_FIPS_RETURN_ERR               (0x0005)
+#define TLC_FIPS_ERR_EXCEED_MAX_DATA_SIZE (0X0006)
+
+#define SASI_SUCCESS              0UL
+#define SASI_FAIL		  1UL
+#define SASI_OK                   SASI_SUCCESS
+
+
+typedef enum CC_FipsError {
+	CC_TEE_FIPS_ERROR_OK = 0,
+	CC_TEE_FIPS_ERROR_GENERAL,
+	CC_TEE_FIPS_ERROR_FROM_REE,
+	CC_TEE_FIPS_ERROR_AES_ECB_PUT,
+	CC_TEE_FIPS_ERROR_AES_CBC_PUT,
+	CC_TEE_FIPS_ERROR_AES_OFB_PUT,
+	CC_TEE_FIPS_ERROR_AES_CTR_PUT,
+	CC_TEE_FIPS_ERROR_AES_CBC_CTS_PUT,
+	CC_TEE_FIPS_ERROR_AES_CBC_MAC_PUT,
+	CC_TEE_FIPS_ERROR_AES_CMAC_PUT,
+	CC_TEE_FIPS_ERROR_AESCCM_PUT,
+	CC_TEE_FIPS_ERROR_AES_XTS_PUT,
+	CC_TEE_FIPS_ERROR_DES_ECB_PUT,
+	CC_TEE_FIPS_ERROR_DES_CBC_PUT,
+	CC_TEE_FIPS_ERROR_SHA1_PUT,
+	CC_TEE_FIPS_ERROR_SHA256_PUT,
+	CC_TEE_FIPS_ERROR_SHA512_PUT,
+	CC_TEE_FIPS_ERROR_HMAC_SHA256_PUT,
+	CC_TEE_FIPS_ERROR_RSA_ENC_PUT,
+	CC_TEE_FIPS_ERROR_RSA_DEC_PUT,
+	CC_TEE_FIPS_ERROR_RSA_SIGN_PUT,
+	CC_TEE_FIPS_ERROR_RSA_VERIFY_PUT,
+	CC_TEE_FIPS_ERROR_ECDSA_SIGN_PUT,
+	CC_TEE_FIPS_ERROR_ECDSA_VERIFY_PUT,
+	CC_TEE_FIPS_ERROR_DH_PUT,
+	CC_TEE_FIPS_ERROR_ECDH_PUT,
+	CC_TEE_FIPS_ERROR_PRNG_PUT,
+	CC_TEE_FIPS_ERROR_RSA_ENC_COND,
+	CC_TEE_FIPS_ERROR_RSA_DEC_COND,
+	CC_TEE_FIPS_ERROR_ECDSA_SIGN_COND,
+	CC_TEE_FIPS_ERROR_ECDSA_VERIFY_COND,
+	CC_TEE_FIPS_ERROR_PRNG_CONT,
+	CC_TEE_FIPS_ERROR_RESERVE32B = INT32_MAX
+} CC_FipsError_t;
+
+typedef enum CC_FipsReeStatus {
+	CC_TEE_FIPS_REE_STATUS_OK = 0,
+	CC_TEE_FIPS_REE_STATUS_ERROR,
+	CC_TEE_FIPS_REE_STATUS_RESERVE32B = INT32_MAX
+} CC_FipsReeStatus_t;
+#endif

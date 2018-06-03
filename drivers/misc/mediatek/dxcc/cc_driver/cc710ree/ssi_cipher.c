@@ -179,10 +179,10 @@ static int ssi_blkcipher_init(struct crypto_tfm *tfm)
 	int rc = 0;
 	unsigned int max_key_buf_size = get_max_keysize(tfm);
 
-	SSI_LOG_DEBUG("Initializing context @%p for %s\n", ctx_p, 
+	SSI_LOG_DEBUG("Initializing context @%p for %s\n", ctx_p,
 						crypto_tfm_alg_name(tfm));
 
-	CHECK_AND_RETURN_UPON_FIPS_ERROR();
+	CHECK_AND_RETURN_UPON_FIPS_TEE_ERROR();
 	ctx_p->cipher_mode = ssi_alg->cipher_mode;
 	ctx_p->flow_mode = ssi_alg->flow_mode;
 	ctx_p->is_secure_key = ssi_alg->is_secure_key;
@@ -2411,7 +2411,7 @@ fail0:
 
 static int ssi_ablkcipher_giv_init(struct crypto_tfm *tfm)
 {
-	CHECK_AND_RETURN_UPON_FIPS_ERROR();
+	CHECK_AND_RETURN_UPON_FIPS_TEE_ERROR();
 	tfm->crt_ablkcipher.reqsize = sizeof(struct ablkcipher_request) + sizeof(struct blkcipher_req_ctx);
 	return skcipher_geniv_init(tfm);
 }

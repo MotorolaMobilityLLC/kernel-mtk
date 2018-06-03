@@ -30,9 +30,7 @@
 #include "ssi_hash.h"
 #include "ssi_pm.h"
 #include "ssi_pm_ext.h"
-#include <linux/clk.h>
 
-static struct clk *dxcc_pub_clk;
 
 #if defined (CONFIG_PM_RUNTIME) || defined (CONFIG_PM_SLEEP)
 
@@ -50,7 +48,7 @@ int ssi_power_mgr_runtime_suspend(struct device *dev)
 	fini_cc_regs(drvdata);
 
 	/* Specific HW suspend code */
-	ssi_pm_ext_hw_suspend(dev, dxcc_pub_clk);
+	ssi_pm_ext_hw_suspend(dev);
 	return 0;
 }
 
@@ -64,7 +62,7 @@ int ssi_power_mgr_runtime_resume(struct device *dev)
 	long timeout;
 
 	/* Specific HW resume code */
-	ssi_pm_ext_hw_resume(dev, dxcc_pub_clk);
+	ssi_pm_ext_hw_resume(dev);
 
 	init_cc_gpr7_interrupt(drvdata);
 
@@ -145,14 +143,8 @@ int ssi_power_mgr_init(struct ssi_drvdata *drvdata)
 #if defined (CONFIG_PM_RUNTIME) || defined (CONFIG_PM_SLEEP)
 	struct platform_device *plat_dev = drvdata->plat_dev;
 
-	dxcc_pub_clk = devm_clk_get(&plat_dev->dev, "dxcc-pubcore-clock");
-	if (IS_ERR(dxcc_pub_clk)) {
-		SSI_LOG_ERR("Cannot get dxcc public core clock from common clock framework in power manager.\n");
-		return PTR_ERR(dxcc_pub_clk);
-	}
-
 	/* must be before the enabling to avoid resdundent suspending */
-	pm_runtime_set_autosuspend_delay(&plat_dev->dev,SSI_SUSPEND_TIMEOUT);
+	pm_runtime_set_autosuspend_delay(&plat_dev->dev, SSI_SUSPEND_TIMEOUT);
 	pm_runtime_use_autosuspend(&plat_dev->dev);
 	/* activate the PM module */
 	rc = pm_runtime_set_active(&plat_dev->dev);
