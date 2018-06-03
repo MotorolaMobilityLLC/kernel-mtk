@@ -423,9 +423,9 @@ static unsigned short mtk_calculate_hp_impedance(int dc_init, int dc_input, shor
 
 	/* Efuse calibration */
 	if ((EfuseCurrentCalibration != 0) && (r_tmp != 0)) {
-		r_tmp = r_tmp * 128 / (128 + EfuseCurrentCalibration);
-		pr_debug("%s After Calibration from EFUSE: %d, R: %d\n",
-			__func__, EfuseCurrentCalibration, r_tmp);
+		r_tmp = (r_tmp * 128 + (128 + EfuseCurrentCalibration) / 2) / (128 + EfuseCurrentCalibration);
+		pr_aud("%s After Calibration from EFUSE: %d, R: %d\n",
+		       __func__, EfuseCurrentCalibration, r_tmp);
 	}
 
 	r_hp = (unsigned short)r_tmp;
@@ -585,7 +585,8 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 		pr_warn("Audio_HP_ImpeDance_Get just do nothing\n");
 	AudDrv_Clk_Off();
 	ucontrol->value.integer.value[0] = mhp_impedance;
-	pr_aud("- %s(), mhp_impedance = %d\n", __func__, mhp_impedance);
+	pr_debug("- %s(), mhp_impedance = %d, efuse = %d\n",
+		 __func__, mhp_impedance, EfuseCurrentCalibration);
 	return 0;
 }
 
