@@ -381,15 +381,18 @@ void usb_phy_switch_to_usb(void)
 
 void usb_rev6_setting(int value)
 {
-	DBG(0, "0x18=0x%x\n", USBPHY_READ32(0x18));
+	static int direct_return;
+
+	if (direct_return)
+		return;
 
 	/* RG_USB20_PHY_REV[7:0] = 8'b01000000 */
 	USBPHY_CLR32(0x18, (0xFF << 24));
 
 	if (value)
 		USBPHY_SET32(0x18, (value << 24));
-
-	DBG(0, "0x18=0x%x\n", USBPHY_READ32(0x18));
+	else
+		direct_return = 1;
 }
 
 /* M17_USB_PWR Sequence 20160603.xls */
@@ -616,8 +619,7 @@ void usb_phy_recover(void)
 	USBPHY_SET32(0x18, (0x1 << 20));
 
 	/* RG_USB20_PHY_REV[7:0] = 8'b01000000 */
-	USBPHY_CLR32(0x18, (0xFF << 24));
-	USBPHY_SET32(0x18, (0x40 << 24));
+	usb_rev6_setting(0x40);
 
 	/* wait 800 usec. */
 	udelay(800);
