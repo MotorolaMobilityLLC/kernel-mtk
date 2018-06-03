@@ -15,6 +15,7 @@ MTK_TOP = $(srctree)/drivers/misc/mediatek/
 ccflags-y += \
 	-I$(MTK_TOP)/base/power/include/ \
 	-I$(MTK_TOP)/base/power/$(MTK_PLATFORM)/ \
+	-I$(MTK_TOP)/dramc/$(MTK_PLATFORM)/ \
 	-I$(srctree)/drivers/misc/mediatek/performance/eas_controller/include/ \
 
 obj-$(CONFIG_MACH_MT6739) += src/platform/mt6739/eas_ctrl.o

@@ -23,6 +23,7 @@
 #include <mach/mtk_cpufreq_api.h>
 #include <mach/mtk_ppm_api.h>
 #include <fpsgo_common.h>
+#include <mtk_dramc.h>
 
 /*
  * C/M balance
@@ -30,21 +31,37 @@
  * L: 1G(1600->2400), 1.4~1.5G(2400->3200)
  */
 static long long cpi_ll_boost_threshold[2], cpi_l_boost_threshold[2];
+static int ddr_type;
 
 void update_pwd_tbl(void)
 {
 	long long max_freq;
 
+	ddr_type = get_ddr_type();
 	max_freq = mt_cpufreq_get_freq_by_idx(0, 0);
 
-	cpi_ll_boost_threshold[0] = 80600000LL;
-	do_div(cpi_ll_boost_threshold[0], max_freq);
-	cpi_ll_boost_threshold[1] = 160000000LL;
-	do_div(cpi_ll_boost_threshold[1], max_freq);
-	cpi_l_boost_threshold[0] = 100000000LL;
-	do_div(cpi_l_boost_threshold[0], max_freq);
-	cpi_l_boost_threshold[1] = 150000000LL;
-	do_div(cpi_l_boost_threshold[1], max_freq);
+	switch (ddr_type) {
+	case TYPE_LPDDR3:
+		cpi_ll_boost_threshold[0] = 160000000LL;
+		do_div(cpi_ll_boost_threshold[0], max_freq);
+		cpi_ll_boost_threshold[1] = 101;
+		cpi_l_boost_threshold[0] = 150000000LL;
+		do_div(cpi_l_boost_threshold[0], max_freq);
+		cpi_l_boost_threshold[1] = 101;
+		break;
+	case TYPE_LPDDR4:
+	case TYPE_LPDDR4X:
+	default:
+		cpi_ll_boost_threshold[0] = 80600000LL;
+		do_div(cpi_ll_boost_threshold[0], max_freq);
+		cpi_ll_boost_threshold[1] = 160000000LL;
+		do_div(cpi_ll_boost_threshold[1], max_freq);
+		cpi_l_boost_threshold[0] = 100000000LL;
+		do_div(cpi_l_boost_threshold[0], max_freq);
+		cpi_l_boost_threshold[1] = 150000000LL;
+		do_div(cpi_l_boost_threshold[1], max_freq);
+		break;
+	}
 
 	pr_debug(TAG" max_freq:%lld, ll_0:%lld, ll_1:%lld, l_0:%lld, l_1:%lld\n",
 			max_freq, cpi_ll_boost_threshold[0], cpi_ll_boost_threshold[1],
