@@ -43,7 +43,6 @@ obj-y				+= imgsensor_sensor_list.o
 #$(info -= project path  $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/ =-)
 
 mtk_project_folder = $(ARCH_MTK_PROJECT)
-$(info imgsensor drv bkbkbkbkbk $(findstring k63v1us, $(ARCH_MTK_PROJECT)))
 ifneq ($(findstring k63v1us, $(ARCH_MTK_PROJECT)),)
 mtk_project_folder = k63v1us_64_bsp
 else

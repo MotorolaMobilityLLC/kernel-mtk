@@ -65,7 +65,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = IMX258_SENSOR_ID,	/* record sensor id defined in Kd_imgsensor.h */
 
-	.checksum_value = 0x75562e7,	/* checksum value for Camera Auto Test */
+	.checksum_value = 0xfa71879b,	/* checksum value for Camera Auto Test */
 
 	.pre = {
 		.pclk = 259200000,	/* record different mode's pclk */
@@ -184,9 +184,9 @@ static imgsensor_info_struct imgsensor_info = {
 	 * linelength with Capture mode for shutter calculate
 	 */
 	.custom2 = {
-		.pclk = 208800000,
+		.pclk = 259200000,
 		.linelength = 5352,
-		.framelength = 1624,
+		.framelength = 2018,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2100,
@@ -281,7 +281,7 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3] = {
 	{
 		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
 		0x00, 0x2b, 0x1070, 0x0C30, 0x00, 0x35, 0x0280, 0x0001,
-		0x00, 0x2f, 0x00A0, 0x0780, 0x03, 0x00, 0x0000, 0x0000
+		0x00, 0x2f, 0x0000, 0x0000, 0x03, 0x00, 0x0000, 0x0000
 	},
 	/* Video mode setting */
 	{
@@ -301,7 +301,7 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4SubBlkH = 16,
 	.i4PosL = {{26, 29}, {42, 29}, {33, 48}, {49, 48} },
 	.i4PosR = {{25, 32}, {41, 32}, {34, 45}, {50, 45} },
-	.iMirrorFlip = 0,	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
+	.iMirrorFlip = 3,	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
 };
 
 /* Binning Type VC information*/
@@ -310,13 +310,13 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO_Binning[3] = {
 	{
 		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
 		0x00, 0x2b, 0x0834, 0x0618, 0x00, 0x35, 0x0280, 0x0001,
-		0x00, 0x2f, 0x00A0, 0x0602, 0x03, 0x00, 0x0000, 0x0000
+		0x00, 0x2f, 0x0000, 0x0000, 0x03, 0x00, 0x0000, 0x0000
 	},
 	/* Capture mode setting */
 	{
 		0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
 		0x00, 0x2b, 0x1070, 0x0C30, 0x00, 0x35, 0x0280, 0x0001,
-		0x00, 0x2f, 0x00A0, 0x0C02, 0x03, 0x00, 0x0000, 0x0000
+		0x00, 0x2f, 0x0000, 0x0000, 0x03, 0x00, 0x0000, 0x0000
 	},	/* 0x0780 */
 	/* Video mode setting */
 	{
@@ -2235,23 +2235,23 @@ static void custom2_setting(void)
 	write_cmos_sensor(0x0303, 0x02);
 	write_cmos_sensor(0x0305, 0x04);
 	write_cmos_sensor(0x0306, 0x00);
-	write_cmos_sensor(0x0307, 0x57);
+	write_cmos_sensor(0x0307, 0x6C);
 	write_cmos_sensor(0x0309, 0x0A);
 	write_cmos_sensor(0x030B, 0x01);
 	write_cmos_sensor(0x030D, 0x02);
 	write_cmos_sensor(0x030E, 0x00);
 	write_cmos_sensor(0x030F, 0xD8);
 	write_cmos_sensor(0x0310, 0x00);
-	write_cmos_sensor(0x0820, 0x08);
-	write_cmos_sensor(0x0821, 0x28);
+	write_cmos_sensor(0x0820, 0x0A);
+	write_cmos_sensor(0x0821, 0x20);
 	write_cmos_sensor(0x0822, 0x00);
 	write_cmos_sensor(0x0823, 0x00);
 
 	write_cmos_sensor(0x0342, 0x14);
 	write_cmos_sensor(0x0343, 0xE8);
 
-	write_cmos_sensor(0x0340, 0x06);
-	write_cmos_sensor(0x0341, 0x58);
+	write_cmos_sensor(0x0340, 0x07);
+	write_cmos_sensor(0x0341, 0xE2);
 
 	write_cmos_sensor(0x0344, 0x00);
 	write_cmos_sensor(0x0345, 0x00);
@@ -3083,12 +3083,25 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 
 static kal_uint32 get_sensor_temperature(void)
 {
-	UINT32 temperature;
-	/*TEMP_SEN_CTL */
+	UINT8 temperature;
+	INT32 temperature_convert;
+
+	/*TEMP_SEN_CTL*/
 	write_cmos_sensor(0x0138, 0x01);
 	temperature = read_cmos_sensor(0x013a);
-	LOG_INF("imx258mono_get_temperature(%d)\n", temperature);
-	return temperature;
+
+	if (temperature >= 0x0 && temperature <= 0x4F)
+		temperature_convert = temperature;
+	else if (temperature >= 0x50 && temperature <= 0x7F)
+		temperature_convert = 80;
+	else if (temperature >= 0x80 && temperature <= 0xEC)
+		temperature_convert = -20;
+	else
+		temperature_convert = (INT8)temperature;
+
+	LOG_INF("temp_c(%d), read_reg(%d)\n", temperature_convert, temperature);
+
+	return temperature_convert;
 }
 
 static kal_uint32 streaming_control(kal_bool enable)
@@ -3109,6 +3122,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT16 *feature_data_16 = (UINT16 *) feature_para;
 	UINT32 *feature_return_para_32 = (UINT32 *) feature_para;
 	UINT32 *feature_data_32 = (UINT32 *) feature_para;
+	INT32 *feature_return_para_i32 = (INT32 *) feature_para;
 	unsigned long long *feature_data = (unsigned long long *)feature_para;
 	/* unsigned long long *feature_return_para=(unsigned long long *) feature_para; */
 
@@ -3244,7 +3258,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		case MSDK_SCENARIO_ID_CUSTOM1:
-			if (imx258_type != IMX258_BINNING_TYPE)
+			if (imx258_type == IMX258_HDR_TYPE)
 				memcpy((void *)PDAFinfo, (void *)&imgsensor_pd_info,
 				       sizeof(SET_PD_BLOCK_INFO_T));
 			else
@@ -3307,21 +3321,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		case MSDK_SCENARIO_ID_CUSTOM1:
-			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 1;
-			break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 0;
-			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
-			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 0;
-			break;
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 0;
-			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		case MSDK_SCENARIO_ID_CUSTOM2:
-			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 0;
-			break;
 		default:
 			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 0;
 			break;
@@ -3335,7 +3339,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		set_shutter_frame_length((UINT16) *feature_data, (UINT16) *(feature_data + 1));
 		break;
 	case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
-		*feature_return_para_32 = get_sensor_temperature();
+			*feature_return_para_i32 = get_sensor_temperature();
 		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:

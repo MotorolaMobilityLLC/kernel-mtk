@@ -140,17 +140,17 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.hs_video = {
-		.pclk = 144000000,	/* record different mode's pclk,Pengtao Modify */
-		.linelength = 2306,	/* record different mode's linelength */
-		.framelength = 520,	/* record different mode's framelength */
+		.pclk = 144000000,	/* record different mode's pclk */
+		.linelength = 1928, /* record different mode's linelength */
+		.framelength = 2488,	/* record different mode's framelength */
 		.startx = 0,	/* record different mode's startx of grabwindow */
 		.starty = 0,	/* record different mode's starty of grabwindow */
-		.grabwindow_width = 640,	/* record different mode's width of grabwindow */
-		.grabwindow_height = 480,	/* record different mode's height of grabwindow */
-		/*       following for  MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario  */
+		.grabwindow_width = 1632,	/* record different mode's width of grabwindow */
+		.grabwindow_height = 1224,	/* record different mode's height of grabwindow */
+		/* following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario */
 		.mipi_data_lp2hs_settle_dc = 30,
-		/*       following for GetDefaultFramerateByScenario()  */
-		.max_framerate = 1200,
+		/* following for GetDefaultFramerateByScenario() */
+		.max_framerate = 300,
 	},
 	.slim_video = {
 		.pclk = 144000000,	/* record different mode's pclk */
@@ -182,7 +182,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.cap_delay_frame = 1,	/* enter capture delay frame num */
 	.pre_delay_frame = 1,	/* enter preview delay frame num */
 	.video_delay_frame = 1,	/* enter video delay frame num */
-	.hs_video_delay_frame = 3,	/* enter high speed video  delay frame num */
+	.hs_video_delay_frame = 1,	/* enter high speed video  delay frame num */
 	.slim_video_delay_frame = 3,	/* enter slim video delay frame num */
 
 	.isp_driving_current = ISP_DRIVING_4MA,	/* mclk driving current */
@@ -229,7 +229,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 	{3264, 2448, 0, 0, 3264, 2448, 1632, 1224,  0,  0, 1632, 1224, 0, 0, 1632, 1224},	/* Preview */
 	{3264, 2448, 0, 0, 3264, 2448, 3264, 2448,  0,  0, 3264, 2448, 0, 0, 3264, 2448},	/* capture */
 	{3264, 2448, 0, 0, 3264, 2448, 1632, 1224,  0,  0, 1632, 1224, 0, 0, 1632, 1224},	/* video */
-	{3264, 2448, 0, 0, 3264, 2448,  816,  612, 88, 66,  640,  480, 0, 0,  640,  480},	/* hight speed video */
+	{3264, 2448, 0, 0, 3264, 2448, 1632, 1224,  0,  0, 1632, 1224, 0, 0, 1632, 1224},	/* hight speed video */
 	{3264, 2448, 0, 0, 3264, 2448, 1632, 1224,  0,  0, 1632, 1224, 0, 0, 1632, 1224}	/* slim video */
 };
 
@@ -1873,6 +1873,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	preview_setting();
 }
 
+#if 0
 static void hs_video_setting(void)
 {
 	LOG_INF("E\n");
@@ -1980,6 +1981,7 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x382d, 0x7f);
 
 }
+#endif
 
 static void slim_video_setting(void)
 {
@@ -2392,7 +2394,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF("E! current %d fps\n", imgsensor.current_fps);
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
 	if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {
@@ -2411,13 +2413,14 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.autoflicker_en = KAL_FALSE;
 	} else {
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",
+			LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
 				imgsensor_info.cap1.max_framerate / 10, imgsensor_info.cap.max_framerate);
 		imgsensor.pclk = imgsensor_info.cap.pclk;
 		imgsensor.line_length = imgsensor_info.cap.linelength;
 		imgsensor.frame_length = imgsensor_info.cap.framelength;
 		imgsensor.min_frame_length = imgsensor_info.cap.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
+		imgsensor.current_fps = imgsensor_info.cap.max_framerate;
 	}
 	spin_unlock(&imgsensor_drv_lock);
 
@@ -2465,7 +2468,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	/* imgsensor.current_fps = 300; */
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
-	hs_video_setting();
+	preview_setting();
 	mdelay(10);
 
 	return ERROR_NONE;
