@@ -246,8 +246,7 @@ exit:
 	return ret;
 }
 
-#define DMA_BIT_MASK(n) (((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
-static u64 irtx_dma_mask = DMA_BIT_MASK((sizeof(unsigned long) << 3));	/* TODO: 3? */
+static u64 irtx_dma_mask = DMA_BIT_MASK(32);	/* just use 32 bits */
 
 static struct file_operations const char_dev_fops = {
 	.owner = THIS_MODULE,
