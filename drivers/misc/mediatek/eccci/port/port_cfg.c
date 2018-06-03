@@ -27,6 +27,9 @@
 #define DATA2_Q			5
 #define DATA2_RX_Q		5
 #define DATA_MDT_Q		7
+#define DATA_C2K_PPP_Q	1
+#define DATA_FSD_Q		1
+#define DATA_AT_CMD_Q	1
 #else
 #define	MD1_NET_HIF		CLDMA_HIF_ID
 #define MD1_NORMAL_HIF		CCIF_HIF_ID
@@ -39,6 +42,9 @@
 #define DATA2_Q			2
 #define DATA2_RX_Q		0
 #define DATA_MDT_Q		0
+#define DATA_C2K_PPP_Q	3
+#define DATA_FSD_Q		4
+#define DATA_AT_CMD_Q	5
 #endif
 
 #define SMEM_Q			AP_MD_CCB_WAKEUP
@@ -94,10 +100,10 @@ static struct port_t md1_ccci_ports[] = {
 		&char_port_ops, 1, "ccci_aud",},
 	{CCCI_UART1_TX, CCCI_UART1_RX, 1, 1, EXP_CTRL_Q, EXP_CTRL_Q, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
 		&char_port_ops, 2, "ccci_md_log_ctrl",},
-	{CCCI_UART2_TX, CCCI_UART2_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
-		&char_port_ops, 3, "ttyC0",},
-	{CCCI_FS_TX, CCCI_FS_RX, 1, 1, 1, 1, MD1_NORMAL_HIF, PORT_F_USER_HEADER | PORT_F_WITH_CHAR_NODE,
-		&char_port_ops, 4, "ccci_fs",},
+	{CCCI_UART2_TX, CCCI_UART2_RX, DATA_AT_CMD_Q, DATA_AT_CMD_Q, 0xFF, 0xFF, MD1_NORMAL_HIF,
+		PORT_F_WITH_CHAR_NODE, &char_port_ops, 3, "ttyC0",},
+	{CCCI_FS_TX, CCCI_FS_RX, DATA_FSD_Q, DATA_FSD_Q, 1, 1, MD1_NORMAL_HIF,
+		PORT_F_USER_HEADER | PORT_F_WITH_CHAR_NODE, &char_port_ops, 4, "ccci_fs",},
 	{CCCI_IPC_UART_TX, CCCI_IPC_UART_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
 		&char_port_ops, 5, "ttyC2",},
 	{CCCI_ICUSB_TX, CCCI_ICUSB_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
@@ -126,7 +132,7 @@ static struct port_t md1_ccci_ports[] = {
 		&char_port_ops, 17, "ccci_it",},
 	{CCCI_LB_IT_TX, CCCI_LB_IT_RX, 0, 0, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
 		&char_port_ops, 18, "ccci_lb_it",},
-	{CCCI_MDL_MONITOR_UL, CCCI_MDL_MONITOR_DL, 1, 1, 3, 3, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
+	{CCCI_MDL_MONITOR_UL, CCCI_MDL_MONITOR_DL, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
 		&char_port_ops, 19, "ccci_mdl_monitor",},
 	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, MD1_NORMAL_HIF, PORT_F_USER_HEADER | PORT_F_WITH_CHAR_NODE,
 		&rpc_port_ops, 20, "ccci_rpc",},
@@ -137,8 +143,8 @@ static struct port_t md1_ccci_ports[] = {
 		&char_port_ops, 22, "ccci_imsm",},
 	{CCCI_WOA_TX, CCCI_WOA_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
 		&char_port_ops, 23, "ccci_woa",},
-	{CCCI_C2K_PPP_TX, CCCI_C2K_PPP_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
-		&char_port_ops, 24, "ccci_c2k_ppp",},
+	{CCCI_C2K_PPP_TX, CCCI_C2K_PPP_RX, DATA_C2K_PPP_Q, DATA_C2K_PPP_Q, 0xFF, 0xFF,
+		MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE, &char_port_ops, 24, "ccci_c2k_ppp",},
 	{CCCI_C2K_AGPS_TX, CCCI_C2K_AGPS_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
 		&char_port_ops, 25, "ccci_c2k_agps",},
 	{CCCI_XCAP_TX, CCCI_XCAP_RX, 1, 1, 0xFF, 0xFF, MD1_NORMAL_HIF, PORT_F_WITH_CHAR_NODE,
