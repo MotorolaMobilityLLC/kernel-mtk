@@ -17,13 +17,48 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
+#include <linux/reboot.h>
+#include <linux/notifier.h>
 
 #include "inc/rt5081_pmu.h"
+#include "inc/rt5081_pmu_core.h"
 
 struct rt5081_pmu_core_data {
 	struct rt5081_pmu_chip *chip;
 	struct device *dev;
+	struct notifier_block nb;
 };
+
+static int rt5081_pmu_core_notifier_call(struct notifier_block *this,
+	unsigned long code, void *unused)
+{
+	struct rt5081_pmu_core_data *core_data =
+			container_of(this, struct rt5081_pmu_core_data, nb);
+	int ret = 0;
+
+	dev_dbg(core_data->dev, "%s: code %lu\n", __func__, code);
+	switch (code) {
+	case SYS_RESTART:
+	case SYS_HALT:
+	case SYS_POWER_OFF:
+		ret = rt5081_pmu_reg_write(core_data->chip,
+					   RT5081_PMU_REG_RSTPASCODE1, 0xA9);
+		if (ret < 0)
+			dev_err(core_data->dev, "set passcode1 fail\n");
+		ret = rt5081_pmu_reg_write(core_data->chip,
+					   RT5081_PMU_REG_RSTPASCODE2, 0x96);
+		if (ret < 0)
+			dev_err(core_data->dev, "set passcode2 fail\n");
+		/* reset all chg/fled/ldo/rgb/bl/db reg and logic */
+		ret = rt5081_pmu_reg_set_bit(core_data->chip,
+					     RT5081_PMU_REG_CORECTRL2, 0x7E);
+		break;
+	default:
+		ret = -EINVAL;
+		break;
+	}
+	return (ret < 0 ? ret : NOTIFY_DONE);
+}
 
 static irqreturn_t rt5081_pmu_otp_irq_handler(int irq, void *data)
 {
@@ -80,34 +115,127 @@ static void rt5081_pmu_core_irq_register(struct platform_device *pdev)
 	}
 }
 
+static inline int rt5081_pmu_core_init_register(
+	struct rt5081_pmu_core_data *core_data)
+{
+	struct rt5081_pmu_core_platdata *pdata =
+					dev_get_platdata(core_data->dev);
+	uint8_t reg_data = 0, reg_mask = 0;
+	int ret = 0;
+
+	reg_mask |= RT5081_I2CRST_ENMASK;
+	reg_data |= (pdata->i2cstmr_rst_en << RT5081_I2CRST_ENSHFT);
+	reg_mask |= RT5081_I2CRST_TMRMASK;
+	reg_data |= (pdata->i2cstmr_rst_tmr << RT5081_I2CRST_TMRSHFT);
+	reg_mask |= RT5081_MRSTB_ENMASK;
+	reg_data |= (pdata->mrstb_en << RT5081_MRSTB_ENSHFT);
+	reg_mask |= RT5081_MRSTB_TMRMASK;
+	reg_data |= (pdata->mrstb_tmr << RT5081_MRSTB_TMRSHFT);
+	ret = rt5081_pmu_reg_update_bits(core_data->chip,
+					 RT5081_PMU_REG_CORECTRL1, reg_mask,
+					 reg_data);
+	if (ret < 0)
+		return ret;
+
+	reg_data = reg_mask = 0;
+	reg_mask |= RT5081_INTWDT_TMRMASK;
+	reg_data |= (pdata->int_wdt << RT5081_INTWDT_TMRSHFT);
+	reg_mask |= RT5081_INTDEG_TIMEMASK;
+	reg_data |= (pdata->int_deg << RT5081_INTDEG_TIMESHFT);
+	ret = rt5081_pmu_reg_update_bits(core_data->chip, RT5081_PMU_REG_IRQSET,
+					 reg_mask, reg_data);
+	if (ret < 0)
+		return ret;
+	return 0;
+}
+
 static inline int rt_parse_dt(struct device *dev)
 {
+	struct rt5081_pmu_core_platdata *pdata = dev_get_platdata(dev);
+	struct device_node *np = dev->of_node;
+	u32 tmp = 0;
+
+	if (of_property_read_bool(np, "i2cstmr_rst_en"))
+		pdata->i2cstmr_rst_en = 1;
+	if (of_property_read_u32(np, "i2cstmr_rst_tmr", &tmp) < 0)
+		pdata->i2cstmr_rst_tmr = 0;
+	else
+		pdata->i2cstmr_rst_tmr = tmp;
+	if (of_property_read_bool(np, "mrstb_en"))
+		pdata->mrstb_en = 1;
+	if (of_property_read_u32(np, "mrstb_tmr", &tmp) < 0)
+		pdata->mrstb_tmr = 0;
+	else
+		pdata->mrstb_tmr = tmp;
+	if (of_property_read_u32(np, "int_wdt", &tmp) < 0)
+		pdata->int_wdt = 0;
+	else
+		pdata->int_wdt = tmp;
+	if (of_property_read_u32(np, "int_deg", &tmp) < 0)
+		pdata->int_deg = 0;
+	else
+		pdata->int_deg = tmp;
 	return 0;
 }
 
 static int rt5081_pmu_core_probe(struct platform_device *pdev)
 {
+	struct rt5081_pmu_core_platdata *pdata = dev_get_platdata(&pdev->dev);
 	struct rt5081_pmu_core_data *core_data;
 	bool use_dt = pdev->dev.of_node;
+	int ret = 0;
 
 	core_data = devm_kzalloc(&pdev->dev, sizeof(*core_data), GFP_KERNEL);
 	if (!core_data)
 		return -ENOMEM;
-	if (use_dt)
-		rt_parse_dt(&pdev->dev);
+	if (use_dt) {
+		/* DTS used */
+		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+		if (!pdata) {
+			ret = -ENOMEM;
+			goto out_pdata;
+		}
+		pdev->dev.platform_data = pdata;
+		ret = rt_parse_dt(&pdev->dev);
+		if (ret < 0) {
+			devm_kfree(&pdev->dev, pdata);
+			goto out_pdata;
+		}
+	} else {
+		if (!pdata) {
+			ret = -EINVAL;
+			goto out_pdata;
+		}
+	}
 	core_data->chip = dev_get_drvdata(pdev->dev.parent);
 	core_data->dev = &pdev->dev;
 	platform_set_drvdata(pdev, core_data);
 
+	ret = rt5081_pmu_core_init_register(core_data);
+	if (ret < 0)
+		goto out_init_reg;
+
+	/* register reboot/shutdown/halt related notifier */
+	core_data->nb.notifier_call = rt5081_pmu_core_notifier_call;
+	ret = register_reboot_notifier(&core_data->nb);
+	if (ret < 0)
+		goto out_notifier;
+
 	rt5081_pmu_core_irq_register(pdev);
 	dev_info(&pdev->dev, "%s successfully\n", __func__);
 	return 0;
+out_notifier:
+out_init_reg:
+out_pdata:
+	devm_kfree(&pdev->dev, core_data);
+	return ret;
 }
 
 static int rt5081_pmu_core_remove(struct platform_device *pdev)
 {
 	struct rt5081_pmu_core_data *core_data = platform_get_drvdata(pdev);
 
+	unregister_reboot_notifier(&core_data->nb);
 	dev_info(core_data->dev, "%s successfully\n", __func__);
 	return 0;
 }

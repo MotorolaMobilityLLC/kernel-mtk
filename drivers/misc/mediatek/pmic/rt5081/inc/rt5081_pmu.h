@@ -1,10 +1,6 @@
 /*
-<<<<<<< Updated upstream
- *  include/linux/mfd/rt5081_pmu.h
- *  include header file for Richtek RT5081 PMU
+ *  include header file for Richtek RT5081 Charger
  *
-=======
->>>>>>> Stashed changes
  *  Copyright (C) 2016 Richtek Technology Corp.
  *  cy_huang <cy_huang@richtek.com>
  *
@@ -28,7 +24,8 @@
 enum {
 	RT5081_PMU_COREDEV,
 	RT5081_PMU_CHGDEV,
-	RT5081_PMU_FLEDDEV,
+	RT5081_PMU_FLEDDEV1,
+	RT5081_PMU_FLEDDEV2,
 	RT5081_PMU_LDODEV,
 	RT5081_PMU_RGBLEDDEV,
 	RT5081_PMU_BLEDDEV,
@@ -72,6 +69,10 @@ struct rt5081_pmu_chip {
 #define RT5081_PMU_REG_CORECTRL2	(0x02)
 #define RT5081_PMU_REG_RSTPASCODE1	(0x03)
 #define RT5081_PMU_REG_RSTPASCODE2	(0x04)
+#define RT5081_PMU_REG_HIDDENPASCODE1	(0x07)
+#define RT5081_PMU_REG_HIDDENPASCODE2	(0x08)
+#define RT5081_PMU_REG_HIDDENPASCODE3	(0x09)
+#define RT5081_PMU_REG_HIDDENPASCODE4	(0x0A)
 #define RT5081_PMU_REG_IRQIND		(0x0B)
 #define RT5081_PMU_REG_IRQMASK		(0x0C)
 #define RT5081_PMU_REG_IRQSET		(0x0D)
@@ -110,6 +111,11 @@ struct rt5081_pmu_chip {
 #define RT5081_PMU_REG_CHGDIRCHG1	(0x2D)
 #define RT5081_PMU_REG_CHGDIRCHG2	(0x2E)
 #define RT5081_PMU_REG_CHGDIRCHG3	(0x2F)
+#define RT5081_PMU_REG_CHGHIDDENCTRL1	(0x31)
+#define RT5081_PMU_REG_CHGHIDDENCTRL6	(0x35)
+#define RT5081_PMU_REG_CHGHIDDENCTRL7	(0x36)
+#define RT5081_PMU_REG_CHGHIDDENCTRL8	(0x37)
+#define RT5081_PMU_REG_CHGHIDDENCTRL15	(0x3E)
 #define RT5081_PMU_REG_CHGSTAT		(0x4A)
 #define RT5081_PMU_REG_CHGNTC		(0x4B)
 #define RT5081_PMU_REG_ADCDATAH		(0x4C)

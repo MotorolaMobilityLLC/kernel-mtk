@@ -2,6 +2,7 @@ config MFD_RT5081_PMU
 	bool "Support for RT5081 PMU part"
 	depends on I2C
 	select MFD_CORE
+	select RT_REGMAP
 	help
 	  Select Y
 	  to enable
@@ -61,3 +62,4 @@ config RT5081_PMU_DSV
 	  enable support
 	  for
 	  RT5081 dsv device.
+

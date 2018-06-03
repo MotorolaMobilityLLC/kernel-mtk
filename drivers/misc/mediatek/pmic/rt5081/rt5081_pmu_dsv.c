@@ -49,6 +49,10 @@
 #define rt5081_dsvn_max_uV rt5081_dsv_max_uV
 #define rt5081_dsvn_step_uV rt5081_dsv_step_uV
 
+enum {
+	RT5081_DSV_POS,
+	RT5081_DSV_NEG,
+};
 
 struct rt5081_pmu_dsv_data {
 	struct rt5081_pmu_chip *chip;
@@ -114,12 +118,29 @@ static irqreturn_t rt5081_pmu_dsv_bst_ocp_irq_handler(int irq, void *data)
 
 static irqreturn_t rt5081_pmu_dsv_vneg_scp_irq_handler(int irq, void *data)
 {
+	struct rt5081_pmu_dsv_data *dsv_data = data;
+	int ret;
+
 	pr_info("%s: IRQ triggered\n", __func__);
+	ret = rt5081_pmu_reg_read(dsv_data->chip, RT5081_PMU_REG_DBSTAT);
+	if (ret&0x40)
+		regulator_notifier_call_chain(
+			dsv_data->mreg_desc[RT5081_DSV_NEG].rdev,
+			REGULATOR_EVENT_FAIL, NULL);
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t rt5081_pmu_dsv_vpos_scp_irq_handler(int irq, void *data)
 {
+	struct rt5081_pmu_dsv_data *dsv_data = data;
+	int ret;
+
+	pr_info("%s: IRQ triggered\n", __func__);
+	ret = rt5081_pmu_reg_read(dsv_data->chip, RT5081_PMU_REG_DBSTAT);
+	if (ret&0x80)
+		regulator_notifier_call_chain(
+			dsv_data->mreg_desc[RT5081_DSV_POS].rdev,
+			REGULATOR_EVENT_FAIL, NULL);
 	return IRQ_HANDLED;
 }
 
