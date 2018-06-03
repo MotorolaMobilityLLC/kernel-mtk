@@ -1248,7 +1248,6 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	dfd@10200b00 {
 		compatible = "mediatek,dfd";
 		reg = <0 0x10200b00 0 0x10000>;
-
 		mediatek,enabled = <1>;
 		mediatek,chain_length = <0xc350>;
 		mediatek,rg_dfd_timeout = <0xa0>;
@@ -1509,6 +1508,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		ver = /bits/ 8 <2>;
 		set_ltiming = /bits/ 8 <1>;
 		ext_time_config = /bits/ 16 <0x1801>;
+		cnt_constraint = /bits/ 8 <1>;
 	};
 	i2c0: i2c0@11007000 {
 		compatible = "mediatek,i2c";
@@ -1549,6 +1549,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		ch_offset_default = <0x100>;
+		ch_offset_ccu = <0x200>;
 		mediatek,hs_only;
 	};
 
@@ -1563,6 +1565,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		ch_offset_default = <0x100>;
 		mediatek,hs_only;
 	};
 
@@ -1577,6 +1580,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		ch_offset_default = <0x100>;
+		ch_offset_ccu = <0x200>;
 		mediatek,hs_only;
 	};
 
@@ -1605,6 +1610,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		ch_offset_default = <0x100>;
+		ch_offset_ccu = <0x200>;
 		mediatek,hs_only;
 	};
 
