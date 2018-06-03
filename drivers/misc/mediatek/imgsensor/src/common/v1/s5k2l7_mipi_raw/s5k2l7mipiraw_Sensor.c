@@ -52,7 +52,7 @@
 #include "s5k2l7_setting.h"
 
 /* #include "s5k2l7_otp.h" */
-
+#undef CAPTURE_WDR
 
 /* #define TEST_PATTERN_EN */
 /*WDR auto ration mode*/
@@ -319,6 +319,7 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[5] = {
 
 
 /* #define USE_OIS */
+#undef USE_OIS
 #ifdef USE_OIS
 #define OIS_I2C_WRITE_ID 0x48
 #define OIS_I2C_READ_ID 0x49

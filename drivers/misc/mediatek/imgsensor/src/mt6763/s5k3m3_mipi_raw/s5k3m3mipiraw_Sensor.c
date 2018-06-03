@@ -50,6 +50,7 @@
 #include "s5k3m3mipiraw_Sensor.h"
 #include "s5k3m3_setting.h"	/* Move defines to s5k3m3_setting.h */
 
+#undef FANPENGTAO
 
 static kal_uint16 module_id;	/* module id read from sensor */
 static kal_uint16 version_id;	/* Record current is v1 or v2 driver according to module_id */
