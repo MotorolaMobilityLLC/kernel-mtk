@@ -6926,10 +6926,10 @@ static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIR
 
 	cookie = cmdq_core_thread_exec_counter(thread);
 
-	CMDQ_ERR("IRQ: error thread=%d, irq_flag=0x%x, cookie:%d\n", thread, value, cookie);
-	CMDQ_ERR("IRQ: Thread PC: 0x%08x, End PC:0x%08x\n",
-		 CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)),
-		 CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)));
+	CMDQ_ERR("IRQ: err thread=%d,flag=0x%x,cookie:%d,PC:0x%08x,END:0x%08x\n",
+		thread, value, cookie,
+		CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)),
+		CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)));
 
 	pThread = &(gCmdqContext.thread[thread]);
 
@@ -6950,7 +6950,7 @@ static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIR
 		/* suspend HW thread failed */
 		CMDQ_ERR("IRQ: suspend HW thread failed!");
 	}
-	CMDQ_ERR("Error IRQ: always suspend thread (%d) to prevent contiuous error IRQ\n", thread);
+
 	if (pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)] != NULL) {
 		pTask = pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)];
 		pTask->gotIRQ = *pGotIRQ;
@@ -6960,14 +6960,15 @@ static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIR
 								  cookie % cmdq_core_max_task_in_thread(thread),
 								  TASK_STATE_ERR_IRQ);
 	} else {
-		CMDQ_ERR
-		    ("IRQ: can not find task in cmdqCoreHandleError, pc:0x%08x, end_pc:0x%08x\n",
-		     CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)),
-		     CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)));
 		if (pThread->taskCount <= 0) {
 			cmdq_core_disable_HW_thread(thread);
 			CMDQ_ERR("IRQ: there is no task for thread (%d) cmdqCoreHandleError\n",
 				 thread);
+		} else {
+			CMDQ_ERR
+			    ("IRQ: can not find task in cmdqCoreHandleError, pc:0x%08x, end_pc:0x%08x\n",
+			     CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)),
+			     CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)));
 		}
 	}
 
