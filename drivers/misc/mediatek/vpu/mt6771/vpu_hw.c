@@ -2220,8 +2220,10 @@ int vpu_hw_boot_sequence(int core)
 	if (ret) {
 		LOG_ERR("[vpu_%d] boot-up timeout , status(%d/%d), ret(%d)\n", core,
 			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done, ret);
+		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
+		vpu_dump_code_segment(core);
 		vpu_aee("VPU Timeout", "timeout to external boot\n");
 		goto out;
 	}
@@ -2273,6 +2275,8 @@ int vpu_hw_set_debug(int core)
 			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done, ret);
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
+		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
+		vpu_dump_code_segment(core);
 	}
 	CHECK_RET("[vpu_%d]timeout of set debug\n", core);
 
