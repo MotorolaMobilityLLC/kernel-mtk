@@ -2754,7 +2754,8 @@ static signed int WPE_ReadReg(struct WPE_REG_IO_STRUCT *pRegIo)
 		/* pData++; */
 		/*  */
 		if ((ISP_WPE_BASE + reg.Addr >= ISP_WPE_BASE)
-		    && (ISP_WPE_BASE + reg.Addr < (ISP_WPE_BASE + WPE_REG_RANGE))) {
+		    && (ISP_WPE_BASE + reg.Addr < (ISP_WPE_BASE + WPE_REG_RANGE))
+			&& ((reg.Addr & 0x3) == 0)) {
 			reg.Val = WPE_RD32(ISP_WPE_BASE + reg.Addr);
 		} else {
 			LOG_ERR("Wrong address(0x%p)", (ISP_WPE_BASE + reg.Addr));
@@ -2804,7 +2805,8 @@ static signed int WPE_WriteRegToHw(struct WPE_REG_STRUCT *pReg, unsigned int Cou
 				(unsigned int) (pReg[i].Val));
 		}
 
-		if (((ISP_WPE_BASE + pReg[i].Addr) < (ISP_WPE_BASE + WPE_REG_RANGE))) {
+		if (((ISP_WPE_BASE + pReg[i].Addr) < (ISP_WPE_BASE + WPE_REG_RANGE))
+			&& ((pReg[i].Addr & 0x3) == 0)) {
 			WPE_WR32(ISP_WPE_BASE + pReg[i].Addr, pReg[i].Val);
 		} else {
 			LOG_ERR("wrong address(0x%lx)\n",
@@ -4789,7 +4791,8 @@ static ssize_t wpe_reg_write(struct file *file, const char __user *buffer, size_
 			}
 		}
 
-		if ((addr >= WPE_BASE_HW) && (addr <= WPE_DMA_DEBUG_SEL_HW)) {
+		if ((addr >= WPE_BASE_HW) && (addr <= WPE_DMA_DEBUG_SEL_HW)
+			&& ((addr & 0x3) == 0)) {
 			LOG_INF("Write Request - addr:0x%x, value:0x%x\n", addr, val);
 			WPE_WR32((ISP_WPE_BASE + (addr - WPE_BASE_HW)), val);
 		} else {
@@ -4815,7 +4818,8 @@ static ssize_t wpe_reg_write(struct file *file, const char __user *buffer, size_
 			}
 		}
 
-		if ((addr >= WPE_BASE_HW) && (addr <= WPE_DMA_DEBUG_SEL_HW)) {
+		if ((addr >= WPE_BASE_HW) && (addr <= WPE_DMA_DEBUG_SEL_HW)
+			&& ((addr & 0x3) == 0)) {
 			val = WPE_RD32((ISP_WPE_BASE + (addr - WPE_BASE_HW)));
 			LOG_INF("Read Request - addr:0x%x,value:0x%x\n", addr, val);
 		} else {

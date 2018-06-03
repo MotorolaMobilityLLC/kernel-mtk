@@ -581,8 +581,9 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 	/* LOG_DBG("Count = %d\n", pREGIO->u4Count); */
 
 	for (i = 0; i < pREGIO->u4Count; i++) {
-		if ((FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) >= FDVT_ADDR &&
-			(pFDVTWriteBuffer.u4Addr[i]) <= FDVT_MAX_OFFSET) {
+		if (((FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) >= FDVT_ADDR) &&
+			((pFDVTWriteBuffer.u4Addr[i]) <= FDVT_MAX_OFFSET) &&
+			((pFDVTWriteBuffer.u4Addr[i] & 0x3) == 0)) {
 			/* LOG_DBG("Write: FDVT[0x%03lx](0x%08lx) = 0x%08lx\n", */
 			/* (unsigned long)pFDVTWriteBuffer.u4Addr[i], */
 			/* (unsigned long)(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]), */
@@ -627,8 +628,9 @@ static int FDVT_ReadRegHW(FDVTRegIO *a_pstCfg)
 	}
 
 	for (i = 0; i < a_pstCfg->u4Count; i++) {
-		if ((FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]) >= FDVT_ADDR &&
-			(pFDVTReadBuffer.u4Addr[i]) <= FDVT_MAX_OFFSET) {
+		if (((FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]) >= FDVT_ADDR) &&
+			((pFDVTReadBuffer.u4Addr[i]) <= FDVT_MAX_OFFSET) &&
+			((pFDVTWriteBuffer.u4Addr[i] & 0x3) == 0)) {
 			pFDVTReadBuffer.u4Data[i] = ioread32((void *)(FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]));
 			/*LOG_DBG("Read  addr/val: 0x%08x/0x%08x\n", (u32) (FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]),*/
 			/*(u32) pFDVTReadBuffer.u4Data[i]);*/

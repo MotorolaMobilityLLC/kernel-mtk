@@ -1782,7 +1782,8 @@ static signed int RSC_ReadReg(struct RSC_REG_IO_STRUCT *pRegIo)
 		/* pData++; */
 		/*  */
 		if ((ISP_RSC_BASE + reg.Addr >= ISP_RSC_BASE)
-		    && (ISP_RSC_BASE + reg.Addr < (ISP_RSC_BASE + RSC_REG_RANGE))) {
+		    && (ISP_RSC_BASE + reg.Addr < (ISP_RSC_BASE + RSC_REG_RANGE))
+			&& ((reg.Addr & 0x3) == 0)) {
 			reg.Val = RSC_RD32(ISP_RSC_BASE + reg.Addr);
 		} else {
 			LOG_ERR("Wrong address(0x%p)", (ISP_RSC_BASE + reg.Addr));
@@ -1832,7 +1833,8 @@ static signed int RSC_WriteRegToHw(struct RSC_REG_STRUCT *pReg, unsigned int Cou
 				(unsigned int) (pReg[i].Val));
 		}
 
-		if (((ISP_RSC_BASE + pReg[i].Addr) < (ISP_RSC_BASE + RSC_REG_RANGE))) {
+		if (((ISP_RSC_BASE + pReg[i].Addr) < (ISP_RSC_BASE + RSC_REG_RANGE))
+			&& ((pReg[i].Addr & 0x3) == 0)) {
 			RSC_WR32(ISP_RSC_BASE + pReg[i].Addr, pReg[i].Val);
 		} else {
 			LOG_ERR("wrong address(0x%lx)\n",
@@ -3754,7 +3756,8 @@ static ssize_t rsc_reg_write(struct file *file, const char __user *buffer, size_
 			}
 		}
 
-		if ((addr >= RSC_BASE_HW) && (addr <= RSC_DMA_RDY_STATUS_HW)) {
+		if ((addr >= RSC_BASE_HW) && (addr <= RSC_DMA_RDY_STATUS_HW)
+			&& ((addr & 0x3) == 0)) {
 			LOG_INF("Write Request - addr:0x%x, value:0x%x\n", addr, val);
 			RSC_WR32((ISP_RSC_BASE + (addr - RSC_BASE_HW)), val);
 		} else {
@@ -3782,7 +3785,8 @@ static ssize_t rsc_reg_write(struct file *file, const char __user *buffer, size_
 			}
 		}
 
-		if ((addr >= RSC_BASE_HW) && (addr <= RSC_DMA_RDY_STATUS_HW)) {
+		if ((addr >= RSC_BASE_HW) && (addr <= RSC_DMA_RDY_STATUS_HW)
+			&& ((addr & 0x3) == 0)) {
 			val = RSC_RD32((ISP_RSC_BASE + (addr - RSC_BASE_HW)));
 			LOG_INF("Read Request - addr:0x%x,value:0x%x\n", addr, val);
 		} else {
