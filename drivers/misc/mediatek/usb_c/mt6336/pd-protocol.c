@@ -2664,6 +2664,11 @@ int pd_task(void *data)
 
 			typec_write8_msk(hba, RG_EN_CLKSQ_PDTYPEC_MSK, 0, MAIN_CON4);
 
+			if (hba->is_boost) {
+				mt_ppm_sysboost_set_core_limit(BOOST_BY_USB_PD, 1, -1, -1);
+				hba->is_boost = false;
+			}
+
 			hba->power_role = PD_NO_ROLE;
 			hba->data_role = PD_NO_ROLE;
 			hba->vdm_state = VDM_STATE_DONE;
@@ -2719,6 +2724,11 @@ int pd_task(void *data)
 
 				typec_write8_msk(hba, RG_EN_CLKSQ_PDTYPEC_MSK,
 							(1<<RG_EN_CLKSQ_PDTYPEC_OFST), MAIN_CON4);
+
+				if (!hba->is_boost) {
+					mt_ppm_sysboost_set_core_limit(BOOST_BY_USB_PD, 1, 4, 4);
+					hba->is_boost = true;
+				}
 
 				if (!wake_lock_active(&hba->typec_wakelock))
 					wake_lock(&hba->typec_wakelock);
@@ -2825,6 +2835,11 @@ int pd_task(void *data)
 
 				if (wake_lock_active(&hba->typec_wakelock))
 					wake_unlock(&hba->typec_wakelock);
+
+				if (hba->is_boost) {
+					mt_ppm_sysboost_set_core_limit(BOOST_BY_USB_PD, 1, -1, -1);
+					hba->is_boost = false;
+				}
 			}
 			break;
 
@@ -3161,6 +3176,11 @@ int pd_task(void *data)
 
 			typec_write8_msk(hba, RG_EN_CLKSQ_PDTYPEC_MSK, (1<<RG_EN_CLKSQ_PDTYPEC_OFST), MAIN_CON4);
 
+			if (!hba->is_boost) {
+				mt_ppm_sysboost_set_core_limit(BOOST_BY_USB_PD, 1, 4, 4);
+				hba->is_boost = true;
+			}
+
 			if (hba->charger_det_notify)
 				hba->charger_det_notify(1);
 
@@ -3226,6 +3246,11 @@ int pd_task(void *data)
 					dev_err(hba->dev, "SRC NO SUPPORT PD");
 					typec_vbus_det_enable(hba, 1);
 					timeout = PD_T_NO_ACTIVITY;
+
+					if (hba->is_boost) {
+						mt_ppm_sysboost_set_core_limit(BOOST_BY_USB_PD, 1, -1, -1);
+						hba->is_boost = false;
+					}
 
 					if (wake_lock_active(&hba->typec_wakelock))
 						wake_unlock(&hba->typec_wakelock);
