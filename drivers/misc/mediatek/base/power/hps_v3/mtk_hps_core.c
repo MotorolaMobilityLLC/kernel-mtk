@@ -370,8 +370,12 @@ ACAO_HPS_START:
 
 	aee_rr_rec_hps_cb_footprint(2);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
-	/*Debgu message dump*/
+	/*Debug message dump*/
 	for (i = 0 ; i < 8 ; i++) {
+
+		if (cpu >= setup_max_cpus)
+			break;
+
 		if (cpumask_test_cpu(i, hps_ctxt.online_core))
 			pr_info("CPU %d ==>1\n", i);
 		else
@@ -393,6 +397,10 @@ ACAO_HPS_START:
 		aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 
 		for_each_possible_cpu(cpu) {
+
+			if (cpu >= setup_max_cpus)
+				break;
+
 			if (cpumask_test_cpu(cpu, hps_ctxt.online_core)) {
 				if (!cpu_online(cpu)) {
 					aee_rr_rec_hps_cb_footprint(5);
@@ -630,9 +638,8 @@ static void ppm_limit_callback(struct ppm_client_req req)
 int hps_core_init(void)
 {
 	int r = 0;
-
+	hps_warn("hps_core_init, setup_max_cpus ==> %d\n", setup_max_cpus);
 #ifndef CONFIG_MTK_ACAO_SUPPORT
-	hps_warn("hps_core_init\n");
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_TIMER) {
 		/*init timer */
 		init_timer(&hps_ctxt.tmr_list);
