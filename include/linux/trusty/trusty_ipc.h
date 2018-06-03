@@ -39,6 +39,18 @@ struct tipc_chan_ops {
 					   struct tipc_msg_buf *mb);
 };
 
+struct tipc_dn_chan {
+	int state;
+	struct mutex lock; /* protects rx_msg_queue list and channel state */
+	struct tipc_chan *chan;
+	wait_queue_head_t readq;
+	struct completion reply_comp;
+	struct list_head rx_msg_queue;
+#if defined(CONFIG_MTK_GZ_KREE)
+	u32 session;
+#endif
+};
+
 struct tipc_chan *tipc_create_channel(struct device *dev,
 				      const struct tipc_chan_ops *ops,
 				      void *cb_arg);

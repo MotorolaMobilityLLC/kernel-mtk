@@ -4006,3 +4006,6 @@
 #ifdef CONFIG_TCPC_CLASS
 #include "tcpc_config.dtsi"
 #endif
+#ifdef CONFIG_GZ_V2_SUPPORT
+#include "trusty.dtsi"
+#endif

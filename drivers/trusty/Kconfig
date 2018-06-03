@@ -48,6 +48,16 @@ config TRUSTY_INTERRUPT_FIQ_ONLY
 	  but just fire NOP.
 	  This is MUST for us to handle G0S IRQ for Secure OS.
 
+config GZ_V2_SUPPORT
+	tristate "GZ v2 support"
+	depends on TRUSTY
+	default n
+	help
+	  This is used for Trusty to support MTK Geniezone
+	  Irq will be masked in trusty irq handler
+	  for irq routing to GenieZone.
+	  Irq work will be put to global queue when cpu dead.
+
 config TRUSTY_WDT_FIQ_ARMV7_SUPPORT
 	tristate "Trusty WDT FIQ for arm"
 	depends on TRUSTY && MTK_NO_ATF && !MTK_KERNEL_IN_SECURE_MODE

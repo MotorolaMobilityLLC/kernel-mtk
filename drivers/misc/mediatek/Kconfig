@@ -468,6 +468,7 @@ source "drivers/misc/mediatek/reg_monitor/Kconfig"
 source "drivers/misc/mediatek/iccs/Kconfig"
 source "drivers/misc/mediatek/fiq_cache/Kconfig"
 source "drivers/misc/mediatek/base/power/mcdi/Kconfig"
+source "drivers/misc/mediatek/geniezone/Kconfig"
 
 endmenu    # Misc
 
