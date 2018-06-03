@@ -453,16 +453,16 @@ extern int wait_not_event_on_timeout(int *ptr, int value, int msecs);
 #define HOST_CMD_ENV_EXIT       0xf
 
 /* global structure */
-typedef enum {
+enum XHCI_PORT_STATUS {
 	DISCONNECTED = 0,
 	CONNECTED,
 	RESET,
 	ENABLED
-} XHCI_PORT_STATUS;
+};
 
 struct xhci_port {
 	int port_id;
-	XHCI_PORT_STATUS port_status;
+	enum XHCI_PORT_STATUS port_status;
 	int port_speed;
 	int port_reenabled;
 };
@@ -476,111 +476,111 @@ struct xhci_port {
 
 /* global parameters */
 #ifdef MTK_TEST_LIB
-volatile int g_port_connect;
-volatile int g_port_reset;
-volatile int g_port_id;
-volatile int g_slot_id;
-volatile int g_speed;
-volatile int g_cmd_status;
-volatile char g_event_full;
-volatile char g_got_event_full;
-volatile int g_device_reconnect;
+int g_port_connect;
+int g_port_reset;
+int g_port_id;
+int g_slot_id;
+int g_speed;
+int g_cmd_status;
+char g_event_full;
+char g_got_event_full;
+int g_device_reconnect;
 struct usb_device *dev_list[DEV_NUM];
 struct usb_device *hdev_list[HUB_DEV_NUM];
 struct usb_hcd *my_hcd;
 struct xhci_port *rh_port[RH_PORT_NUM];
-volatile int g_stress_status;
+int g_stress_status;
 struct ixia_dev *ix_dev_list[4];
-volatile char g_exec_done;
-volatile char g_stopped;
-volatile char g_correct;
-volatile char g_stress_start;
-volatile int g_dev_notification;
-volatile long g_dev_not_value;
-volatile long g_intr_handled;
-volatile int g_mfindex_event;
-volatile char g_port_occ;
-volatile char g_is_bei;
-volatile char g_td_to_noop;
-volatile char g_iso_frame;
-volatile char g_test_random_stop_ep;
-volatile char g_stopping_ep;
-volatile char g_port_resume;
-volatile int g_cmd_ring_pointer1;
-volatile int g_cmd_ring_pointer2;
-volatile char g_idt_transfer;
-volatile char g_port_plc;
-volatile char g_power_down_allowed;
-volatile char g_hs_block_reset;
-volatile char g_concurrent_resume;
-volatile int g_otg_test;
-volatile int g_otg_dev_B;
-volatile int g_otg_hnp_become_host;
-volatile int g_otg_hnp_become_dev;
-volatile int g_otg_srp_pend;
-volatile int g_otg_pet_status;
-volatile int g_otg_csc;
-volatile int g_otg_iddig;
-volatile int g_otg_wait_con;
-volatile int g_otg_dev_conf_len;
-volatile int g_otg_unsupported_dev;
-volatile int g_otg_slot_enabled;
-volatile int g_otg_iddig_toggled;
+char g_exec_done;
+char g_stopped;
+char g_correct;
+char g_stress_start;
+int g_dev_notification;
+long g_dev_not_value;
+long g_intr_handled;
+int g_mfindex_event;
+char g_port_occ;
+char g_is_bei;
+char g_td_to_noop;
+char g_iso_frame;
+char g_test_random_stop_ep;
+char g_stopping_ep;
+char g_port_resume;
+int g_cmd_ring_pointer1;
+int g_cmd_ring_pointer2;
+char g_idt_transfer;
+char g_port_plc;
+char g_power_down_allowed;
+char g_hs_block_reset;
+char g_concurrent_resume;
+int g_otg_test;
+int g_otg_dev_B;
+int g_otg_hnp_become_host;
+int g_otg_hnp_become_dev;
+int g_otg_srp_pend;
+int g_otg_pet_status;
+int g_otg_csc;
+int g_otg_iddig;
+int g_otg_wait_con;
+int g_otg_dev_conf_len;
+int g_otg_unsupported_dev;
+int g_otg_slot_enabled;
+int g_otg_iddig_toggled;
 #else
-extern volatile int g_port_connect;
-extern volatile int g_port_reset;
-extern volatile int g_port_id;
-extern volatile int g_slot_id;
-extern volatile int g_speed;
-extern volatile int g_cmd_status;
-extern volatile char g_event_full;
-extern volatile char g_got_event_full;
-extern volatile int g_device_reconnect;
+extern int g_port_connect;
+extern int g_port_reset;
+extern int g_port_id;
+extern int g_slot_id;
+extern int g_speed;
+extern int g_cmd_status;
+extern char g_event_full;
+extern char g_got_event_full;
+extern int g_device_reconnect;
 extern struct usb_device *dev_list[DEV_NUM];
 extern struct usb_device *hdev_list[HUB_DEV_NUM];
 extern struct usb_hcd *my_hcd;
 extern struct xhci_port *rh_port[RH_PORT_NUM];
-extern volatile int g_stress_status;
+extern int g_stress_status;
 extern struct ixia_dev *ix_dev_list[4];
-extern volatile char g_exec_done;
-extern volatile char g_stopped;
-extern volatile char g_correct;
-extern volatile char g_stress_start;
-extern volatile int g_dev_notification;
-extern volatile long g_dev_not_value;
-extern volatile long g_intr_handled;
-extern volatile int g_mfindex_event;
-extern volatile char g_port_occ;
-extern volatile char g_is_bei;
-extern volatile char g_td_to_noop;
-extern volatile char g_iso_frame;
-extern volatile char g_test_random_stop_ep;
-extern volatile char g_stopping_ep;
-extern volatile char g_port_resume;
-extern volatile int g_cmd_ring_pointer1;
-extern volatile int g_cmd_ring_pointer2;
-extern volatile char g_idt_transfer;
-extern volatile char g_port_plc;
-extern volatile char g_power_down_allowed;
-extern volatile char g_hs_block_reset;
-extern volatile char g_concurrent_resume;
-extern volatile int g_otg_test;
-extern volatile int g_otg_dev_B;
-extern volatile int g_otg_hnp_become_host;
-extern volatile int g_otg_hnp_become_dev;
-extern volatile int g_otg_srp_pend;
-extern volatile int g_otg_pet_status;
-extern volatile int g_otg_csc;
-extern volatile int g_otg_iddig;
-extern volatile int g_otg_wait_con;
-extern volatile int g_otg_dev_conf_len;
-extern volatile int g_otg_unsupported_dev;
-extern volatile int g_otg_slot_enabled;
-extern volatile int g_otg_iddig_toggled;
+extern char g_exec_done;
+extern char g_stopped;
+extern char g_correct;
+extern char g_stress_start;
+extern int g_dev_notification;
+extern long g_dev_not_value;
+extern long g_intr_handled;
+extern int g_mfindex_event;
+extern char g_port_occ;
+extern char g_is_bei;
+extern char g_td_to_noop;
+extern char g_iso_frame;
+extern char g_test_random_stop_ep;
+extern char g_stopping_ep;
+extern char g_port_resume;
+extern int g_cmd_ring_pointer1;
+extern int g_cmd_ring_pointer2;
+extern char g_idt_transfer;
+extern char g_port_plc;
+extern char g_power_down_allowed;
+extern char g_hs_block_reset;
+extern char g_concurrent_resume;
+extern int g_otg_test;
+extern int g_otg_dev_B;
+extern int g_otg_hnp_become_host;
+extern int g_otg_hnp_become_dev;
+extern int g_otg_srp_pend;
+extern int g_otg_pet_status;
+extern int g_otg_csc;
+extern int g_otg_iddig;
+extern int g_otg_wait_con;
+extern int g_otg_dev_conf_len;
+extern int g_otg_unsupported_dev;
+extern int g_otg_slot_enabled;
+extern int g_otg_iddig_toggled;
 #endif
 
 
-typedef enum {
+enum PET_STATUS {
 	OTG_DISCONNECTED = 0,
 	OTG_POLLING_STATUS,
 	OTG_SET_NHP,
@@ -589,8 +589,7 @@ typedef enum {
 	OTG_HNP_DEV,
 	OTG_HNP_DISCONNECTED,
 	OTG_DEV
-
-} PET_STATUS;
+};
 
 
 /* Billionton Definition */

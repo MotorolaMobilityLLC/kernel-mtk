@@ -154,7 +154,7 @@ int dev_polling_status(struct usb_device *dev)
 }
 
 
-int dev_reset(USB_DEV_SPEED speed, struct usb_device *dev)
+int dev_reset(enum USB_DEV_SPEED speed, struct usb_device *dev)
 {
 	struct usb_device *udev, *rhdev;
 	struct usb_ctrlrequest *dr;

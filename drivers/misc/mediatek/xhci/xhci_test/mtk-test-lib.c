@@ -175,7 +175,7 @@ int wait_event_on_timeout(int *ptr, int done, int msecs)
 	int i;
 
 	for (i = msecs; i > 0; i--) {
-		mb();
+		mb(); /* */
 		if (*ptr == done)
 			return RET_SUCCESS;
 
@@ -193,7 +193,7 @@ int wait_event_on_timeout_esc_running(int *ptr, int msecs)
 	int i;
 
 	for (i = msecs; i > 0; i--) {
-		mb();
+		mb(); /* */
 		if (*ptr != CMD_RUNNING)
 			return RET_SUCCESS;
 
@@ -253,7 +253,7 @@ int f_test_lib_init(void)
 	g_hs_block_reset = false;
 	g_concurrent_resume = false;
 /* g_con_is_enter = false; */
-	mb();
+	mb(); /* */
 	log_err("[OTG_H] f_test_lib_init, g_port_connect is %d\n", g_port_connect);
 
 	for (i = 0; i < DEV_NUM; i++)
@@ -295,11 +295,12 @@ int f_test_lib_cleanup(void)
 	struct xhci_port *port;
 
 	g_stopped = true;
-	mb();
+	mb(); /* */
 
-	while (g_exec_done == false)
+	while (g_exec_done == false) {
 		msleep(100);
-
+		cpu_relax();
+	}
 	/* wait test thread done */
 
 	for (i = 0; i < RH_PORT_NUM; i++) {
@@ -313,7 +314,7 @@ int f_test_lib_cleanup(void)
 	}
 	/* USBIF, reset this */
 	g_otg_test = false;
-	mb();
+	mb(); /* */
 	/* set host sel */
 	log_err("[OTG_H] going to set dma to host\n");
 	while ((readl(SSUSB_OTG_STS) & 0x2000) == 0x2000)
@@ -485,6 +486,7 @@ static int ring_doorbell_thread(void *data)
 		if (vdev)
 			ep = &(vdev->eps[ep_index]);
 /* xhci_err(xhci, "ep: 0x%x\n", ep); */
+		cpu_relax();
 	} while ((vdev && ep
 		 && (!(ep->ep_state & EP_HALT_PENDING) && !(ep->ep_state & SET_DEQ_PENDING)
 		     && !(ep->ep_state & EP_HALTED))) && g_stress_start);
@@ -540,7 +542,7 @@ static int stop_endpoint_thread(void *data)
 		if (!(ep->ep_state & EP_HALT_PENDING) && !(ep->ep_state & SET_DEQ_PENDING)
 			&& !(ep->ep_state & EP_HALTED)) {
 			while (g_stopping_ep)
-				msleep(20);
+				cpu_relax();
 
 			g_stopping_ep = true;
 			spin_lock_irqsave(&xhci->lock, flags);
@@ -555,6 +557,7 @@ static int stop_endpoint_thread(void *data)
 			writel(field, db_addr);
 			spin_unlock_irqrestore(&xhci->lock, flags);
 		}
+		cpu_relax();
 	} while ((vdev && ep && (!(ep->ep_state & EP_HALT_PENDING) && !(ep->ep_state & SET_DEQ_PENDING)
 			&& !(ep->ep_state & EP_HALTED))) && g_stress_start);
 	xhci_err(xhci, "stop endpoint thread stopped, slot id: %d, ep index: %d, state: 0x%x\n"
@@ -4342,7 +4345,7 @@ void SetETHEPConfig(int dev_num, char *buf, struct usb_device *udev)
 		bEndCount = pInterDes->bNumEndpoints;
 		log_err("bNumEndpoints %d\n", pInterDes->bNumEndpoints);
 		for (j = 0; j < pInterDes->bNumEndpoints; j++) {
-			USB_DIR dir;
+			enum USB_DIR dir;
 			unsigned int ep_num;
 
 			pEndDes = (struct MUSB_EndpointDescriptor *)pBuf;
@@ -5239,6 +5242,7 @@ static int transfer_thread(void *data)
 				}
 			}
 		}
+		cpu_relax();
 	} while (is_going && !g_stopped);
 	length = TRANSFER_MAX_LENGTH;
 	f_free_urb(urb, length, 0);
@@ -5463,14 +5467,14 @@ static int stress_tx_thread(void *data)
 				urb_tx->iso_frame_desc[i].actual_length = 0;
 		}
 		while (g_stopping_ep)
-			;
+			cpu_relax();
 
 		f_queue_urb(urb_tx, 0, udev);
 
 		tx_index++;
 		if (tx_index == TOTAL_URB)
 			tx_index = 0;
-
+		cpu_relax();
 	} while (is_running && g_correct);
 	xhci_err(xhci, "[ERROR] exit tx urb handler thread, dev_num %d, ep_num %d\n"
 		, str_data->dev_num, str_data->ep_num);
@@ -5529,13 +5533,13 @@ static int stress_tx_done_thread(void *data)
 				urb_rx->iso_frame_desc[i].actual_length = 0;
 		}
 		while (g_stopping_ep)
-			;
+			cpu_relax();
 
 		f_queue_urb(urb_rx, 0, udev);
 		tx_index++;
 		if (tx_index == TOTAL_URB)
 			tx_index = 0;
-
+		cpu_relax();
 	} while (is_running && g_correct);
 	xhci_err(xhci, "[STRESS][ERROR] exit tx urb done thread, dev_num %d, ep_num %d\n"
 		, str_data->dev_num, str_data->ep_num);
@@ -5644,6 +5648,7 @@ static int stress_rx_done_thread(void *data)
 			}
 			tx_index = 0;
 		}
+		cpu_relax();
 	} while (is_running && g_correct);
 	xhci_err(xhci, "[STRESS][ERROR] exit rx urb done thread, dev_num %d, ep_num %d\n"
 		, str_data->dev_num, str_data->ep_num);
@@ -5686,6 +5691,7 @@ static int stress_rdn_len_tx_thread(void *data)
 			}
 			msleep(20);
 			tx_status = urb_tx->status;
+			cpu_relax();
 		}
 		if (!g_stress_start) {
 			xhci_dbg(xhci, "stress_rdn_len_tx_thread exit");
@@ -5733,7 +5739,7 @@ static int stress_rdn_len_tx_thread(void *data)
 		}
 
 		while (g_stopping_ep)
-			;
+			cpu_relax();
 
 		urb_tx->transfer_buffer_length = this_len;
 		if (this_len > str_data->max_buffer_len[tx_index])
@@ -5744,7 +5750,7 @@ static int stress_rdn_len_tx_thread(void *data)
 		tx_index++;
 		if (tx_index == TOTAL_URB)
 			tx_index = 0;
-
+		cpu_relax();
 	} while (is_running && g_correct);
 	msleep(15000);
 	xhci_err(xhci, "[ERROR] exit tx urb handler thread, dev_num %d, ep_num %d\n"
@@ -5788,6 +5794,7 @@ static int stress_rdn_len_tx_done_thread(void *data)
 			}
 			msleep(20);
 			tx_status = urb_tx->status;
+			cpu_relax();
 		}
 		if (!g_stress_start) {
 			msleep(15000);
@@ -5835,13 +5842,13 @@ static int stress_rdn_len_tx_done_thread(void *data)
 			urb_rx->hcpriv = urb_priv;
 		}
 		while (g_stopping_ep)
-			;
+			cpu_relax();
 
 		f_queue_urb(urb_rx, 0, udev);
 		tx_index++;
 		if (tx_index == TOTAL_URB)
 			tx_index = 0;
-
+		cpu_relax();
 	} while (is_running && g_correct);
 /*	xhci_err(xhci, "[STRESS][ERROR] exit tx urb done thread, dev_num %d, ep_num %d\n"
  *		, str_data->dev_num, str_data->ep_num);
@@ -5895,6 +5902,7 @@ static int stress_rdn_len_rx_done_thread(void *data)
 			}
 			msleep(20);
 			rx_status = urb_rx->status;
+			cpu_relax();
 		}
 		if (!g_stress_start) {
 			msleep(15000);
@@ -5953,6 +5961,7 @@ static int stress_rdn_len_rx_done_thread(void *data)
 			}
 			tx_index = 0;
 		}
+		cpu_relax();
 	} while (is_running && g_correct);
 /*	xhci_err(xhci, "[STRESS][ERROR] exit rx urb done thread, dev_num %d, ep_num %d\n" */
 /*		, str_data->dev_num, str_data->ep_num); */
@@ -7280,7 +7289,7 @@ int otg_drv_vbus_on(bool on)
 
 	msleep(20);
 	temp3 = readl(SSUSB_OTG_STS);
-	mb();
+	mb(); /* */
 
 
 	if (!on) {
@@ -7787,6 +7796,7 @@ TD_4_6:
 	xhci_writel(xhci, temp, addr);
 	/* check if disconnect or resume */
 	while (1) {
+		mb(); /* */
 		if ((g_port_resume == 1) || (g_port_connect == 0))
 			break;
 
@@ -7838,6 +7848,7 @@ TD_4_6:
 			log_err("[OTG_H]force stop\n");
 			goto FAIL_RETURN;
 		}
+		mb();  /* */
 	}
 	log_err("[OTG_H]Back to become host again\n");
 	if (f_enable_port(0) != RET_SUCCESS) {
@@ -7913,6 +7924,7 @@ int otg_opt_uut_b(void *data)
 			log_err("[OTG_H]force stop\n");
 			goto FAIL_RETURN;
 		}
+		mb(); /* */
 	}
 	log_err("[OTG_H] Become host\n");
 #if 1
@@ -7923,7 +7935,8 @@ int otg_opt_uut_b(void *data)
 	log_err("[OTG_H] Device attached\n");
 #endif
 	while (!g_port_reset)
-		;
+		cpu_relax();
+
 	log_err("[OTG_H]Device reset]\n");
 	if (f_enable_slot(NULL) != RET_SUCCESS) {
 		log_err("[OTG_H][FAIL] Enable slot failed\n");
@@ -7954,9 +7967,10 @@ int otg_opt_uut_b(void *data)
 
 	/* polling dev_mode */
 	/* wait_event_on_timeout((int *)&g_otg_hnp_become_dev, true, TRANS_TIMEOUT); */
-	while (!g_otg_hnp_become_dev && !g_stopped)
+	while (!g_otg_hnp_become_dev && !g_stopped) {
 		msleep(20);
-
+		mb(); /* */
+	}
 	if (g_stopped) {
 		log_err("[OTG_H]force stop\n");
 		goto FAIL_RETURN;
@@ -8004,7 +8018,7 @@ int otg_pet_uut_a(void *data)
 	g_exec_done = false;
 	g_otg_csc = false;
 	g_port_connect = false;
-	mb();
+	mb(); /* */
 	/* enable OTG interrupt */
 	temp = readl(SSUSB_OTG_INT_EN);
 	temp = temp | SSUSB_ATTACH_A_ROLE_INT_EN | SSUSB_CHG_A_ROLE_A_INT_EN
@@ -8058,7 +8072,7 @@ int otg_pet_uut_a(void *data)
 	while (g_stopped == false) {
 		msleep(20);
 		temp3 = readl(SSUSB_OTG_STS);
-		mb();
+		mb(); /* */
 
 #if 0
 		if ((g_otg_pet_status == OTG_DISCONNECTED) && (vbus_on_timeout == 0) && vbus_on) {
@@ -8209,12 +8223,13 @@ int otg_pet_uut_a(void *data)
 		}
 		if (g_otg_csc && g_otg_pet_status != OTG_HNP_DEV) {
 			g_otg_csc = false;
-			mb();
+			mb(); /* */
 			if (g_port_connect) {
 				log_notice("[OTG_H] device attached, wait for reset done\n");
-				while (!g_port_reset && g_port_connect)
+				while (!g_port_reset && g_port_connect) {
 					msleep(20);
-
+					mb(); /* */
+				}
 				if (!g_port_connect) {
 					log_notice("[OTG_H] Device disconnected, goto DISCONNECT\n");
 					g_otg_csc = false;
@@ -8225,7 +8240,7 @@ int otg_pet_uut_a(void *data)
 				g_otg_unsupported_dev = false;
 				g_port_reset = false;
 				log_err("[OTG_H] Device reset done\n");
-				mb();
+				mb(); /* */
 				if (!g_port_connect) {
 					log_err("[OTG_H] Device disconnected\n");
 					g_otg_csc = false;
@@ -8240,7 +8255,7 @@ int otg_pet_uut_a(void *data)
 					/* goto FAIL_RETURN ; */
 				}
 				g_otg_slot_enabled = true;
-				mb();
+				mb(); /* */
 				if (!g_port_connect) {
 					log_err("[OTG_H] Device disconnected\n");
 					g_otg_csc = false;
@@ -8254,7 +8269,7 @@ int otg_pet_uut_a(void *data)
 					continue;
 				}
 				f_address_slot(true, NULL);
-				mb();
+				mb(); /* */
 				if (!g_port_connect) {
 					log_err("[OTG_H] Device disconnected\n");
 					g_otg_csc = false;
@@ -8273,7 +8288,7 @@ int otg_pet_uut_a(void *data)
 					usbif_u3h_test_send_event(USBIF_OTG_EVENT_DEV_CONN_TMOUT);
 					while (g_port_connect) {
 						msleep(20);
-						mb();
+						mb(); /* */
 					}
 					log_err("[OTG_H] Port disconnected\n");
 					ret = f_disable_slot();
@@ -8291,7 +8306,7 @@ int otg_pet_uut_a(void *data)
 					/* waiting for disconnect */
 					while (g_port_connect) {
 						msleep(20);
-						mb();
+						mb(); /* */
 					}
 					log_err("[OTG_H] Port disconnected\n");
 					ret = f_disable_slot();
@@ -8337,7 +8352,7 @@ int otg_pet_uut_a(void *data)
 				}
 				f_getdescriptor();
 				log_err("[OTG_H]Get descriptor done\n");
-				mb();
+				mb(); /* */
 				if (!g_port_connect) {
 					log_err("[OTG_H] Device disconnected\n");
 					g_otg_csc = false;
@@ -8353,7 +8368,7 @@ int otg_pet_uut_a(void *data)
 				}
 				f_getqualifierdescriptor();
 				log_err("[OTG_H]Get qualifier descriptor done\n");
-				mb();
+				mb(); /* */
 				if (!g_port_connect) {
 					log_err("[OTG_H] Device disconnected\n");
 					g_otg_csc = false;
@@ -8369,7 +8384,7 @@ int otg_pet_uut_a(void *data)
 				}
 				f_getconfiguration_desc();
 				log_err("[OTG_H]Get configuration done\n");
-				mb();
+				mb(); /* */
 				if (!g_port_connect) {
 					log_err("[OTG_H] Device disconnected\n");
 					g_otg_csc = false;
@@ -8387,7 +8402,7 @@ int otg_pet_uut_a(void *data)
 				       g_otg_dev_conf_len);
 				f_get_string_desc();
 				log_err("[OTG_H]Get string descirptor done\n");
-				mb();
+				mb(); /* */
 				if (!g_port_connect) {
 					log_err("[OTG_H] Device disconnected\n");
 					g_otg_csc = false;
@@ -8425,6 +8440,7 @@ int otg_pet_uut_a(void *data)
 					while (!g_otg_hnp_become_dev
 					       || (readl(SSUSB_OTG_STS) & SSUSB_HOST_DEV_MODE)) {
 						msleep(20);
+						mb(); /* */
 					}
 				}
 
@@ -8451,7 +8467,7 @@ int otg_pet_uut_a(void *data)
 					 */
 					g_otg_slot_enabled = false;
 				}
-				mb();
+				mb(); /* */
 			}
 		}
 		if (g_otg_pet_status == OTG_POLLING_STATUS) {
@@ -8489,7 +8505,7 @@ int otg_pet_uut_a(void *data)
 				xhci_writel(xhci, temp, addr);
 				while (g_port_connect) {
 					msleep(20);
-					mb();
+					mb(); /* */
 				}
 				log_err("[OTG_H] Device disconnected\n");
 				ret = f_disable_slot();
@@ -8510,7 +8526,7 @@ int otg_pet_uut_a(void *data)
 			g_otg_hnp_become_dev = false;
 			g_port_resume = 0;
 			g_otg_iddig_toggled = false;	/* prevent PET toggle IDDIG when in device mode */
-			mb();
+			mb(); /* */
 			/* suspend bus */
 			port_id = 1;
 			xhci = hcd_to_xhci(my_hcd);
@@ -8524,7 +8540,7 @@ int otg_pet_uut_a(void *data)
 			xhci_writel(xhci, temp, addr);
 
 			g_otg_pet_status = OTG_HNP_SUSPEND;
-			mb();
+			mb(); /* */
 			log_err("[OTG_H]suspend port\n");
 		}
 		/*
@@ -8555,14 +8571,14 @@ int otg_pet_uut_a(void *data)
 #endif
 			while (!g_port_reset && !g_otg_iddig_toggled && g_port_connect) {
 				msleep(20);
-				mb();
+				mb(); /* */
 			}
 			if (g_otg_iddig_toggled) {
 				log_err("[OTG_H] IDDIG just toggled, go to DISCONNECTED\n");
 				g_otg_csc = false;
 				g_port_reset = false;
 				g_otg_pet_status = OTG_DISCONNECTED;
-				mb();
+				mb(); /* */
 				continue;
 			}
 			if (!g_port_connect) {
@@ -8570,19 +8586,19 @@ int otg_pet_uut_a(void *data)
 				g_otg_csc = false;
 				g_port_reset = false;
 				g_otg_pet_status = OTG_DISCONNECTED;
-				mb();
+				mb(); /* */
 				continue;
 			}
 			log_err("[OTG_H]Device attached and reset\n");
 			g_otg_csc = false;
 			g_port_reset = false;
 			g_otg_unsupported_dev = false;
-			mb();
+			mb(); /* */
 			if (!g_port_connect) {
 				log_err("[OTG_H] Device disconnected\n");
 				g_otg_csc = false;
 				g_otg_pet_status = OTG_DISCONNECTED;
-				mb();
+				mb(); /* */
 				continue;
 			}
 			f_disable_slot();
@@ -8591,7 +8607,7 @@ int otg_pet_uut_a(void *data)
 				/* goto FAIL_RETURN ; */
 			}
 			g_otg_slot_enabled = true;
-			mb();
+			mb(); /* */
 			if (!g_port_connect) {
 				log_err("[OTG_H] Device disconnected\n");
 				g_otg_csc = false;
@@ -8602,7 +8618,7 @@ int otg_pet_uut_a(void *data)
 				}
 				g_otg_pet_status = OTG_DISCONNECTED;
 				g_otg_slot_enabled = false;
-				mb();
+				mb(); /* */
 				continue;
 			}
 			if (f_address_slot(true, NULL) != RET_SUCCESS) {
@@ -8619,7 +8635,7 @@ int otg_pet_uut_a(void *data)
 				}
 				g_otg_pet_status = OTG_DISCONNECTED;
 				g_otg_slot_enabled = false;
-				mb();
+				mb(); /* */
 				continue;
 			}
 			f_getdescriptor();
@@ -8633,15 +8649,16 @@ int otg_pet_uut_a(void *data)
 				}
 				g_otg_pet_status = OTG_DISCONNECTED;
 				g_otg_slot_enabled = false;
-				mb();
+				mb(); /* */
 				continue;
 			}
 			log_err("[OTG_H]Get descriptor done\n");
 			if (g_otg_unsupported_dev) {
 				/* waiting for disconnect */
-				while (g_port_connect)
+				while (g_port_connect) {
 					msleep(20);
-
+					mb(); /* */
+				}
 				log_err("[OTG_H] Port disconnected\n");
 				ret = f_disable_slot();
 				if (ret) {
@@ -8651,7 +8668,7 @@ int otg_pet_uut_a(void *data)
 				g_otg_csc = false;
 				g_otg_pet_status = OTG_DISCONNECTED;
 				g_otg_slot_enabled = false;
-				mb();
+				mb(); /* */
 				continue;
 			}
 			if (f_address_slot(false, NULL) != RET_SUCCESS) {
@@ -8668,7 +8685,7 @@ int otg_pet_uut_a(void *data)
 				}
 				g_otg_pet_status = OTG_DISCONNECTED;
 				g_otg_slot_enabled = false;
-				mb();
+				mb(); /* */
 				continue;
 			}
 			f_getdescriptor();
@@ -8683,7 +8700,7 @@ int otg_pet_uut_a(void *data)
 				}
 				g_otg_pet_status = OTG_DISCONNECTED;
 				g_otg_slot_enabled = false;
-				mb();
+				mb(); /* */
 				continue;
 			}
 			f_getconfiguration_desc();
@@ -8703,7 +8720,7 @@ int otg_pet_uut_a(void *data)
 			else
 				g_otg_pet_status = OTG_SET_NHP;
 
-			mb();
+			mb(); /* */
 			continue;
 		}
 	}
@@ -8711,7 +8728,7 @@ int otg_pet_uut_a(void *data)
 FAIL_RETURN:
 
 	g_exec_done = true;	/* let f_test_lib_cleanup to get the thread done info */
-	mb();
+	mb(); /* */
 
 	log_err("[OTG_H] Exit PET UUT A thread\n");
 
@@ -8733,7 +8750,7 @@ int otg_pet_uut_b(void *data)
 	g_otg_hnp_become_host = false;
 	g_stopped = false;
 	g_exec_done = false;
-	mb();
+	mb(); /* */
 	/* enable OTG interrupt */
 	temp = readl(SSUSB_OTG_INT_EN);
 	temp = temp | SSUSB_ATTACH_A_ROLE_INT_EN | SSUSB_CHG_A_ROLE_A_INT_EN
@@ -8759,7 +8776,7 @@ int otg_pet_uut_b(void *data)
 	}
 	/* g_hs_block_reset = true; */
 	g_hs_block_reset = false;
-	mb();
+	mb(); /* */
 	if (g_hs_block_reset)
 		writel((readl(SSUSB_U2_SYS_BASE + 0xc) | 0x100), SSUSB_U2_SYS_BASE + 0xc);
 	else
@@ -8782,15 +8799,15 @@ int otg_pet_uut_b(void *data)
 	g_otg_pet_status = OTG_DEV;
 	g_otg_hnp_become_host = false;
 	g_otg_wait_con = false;
-	mb();
+	mb(); /* */
 	while (g_stopped == false) {
 		msleep(20);
-		mb();
+		mb(); /* */
 		if (g_otg_pet_status == OTG_DEV) {
-			mb();
+			mb(); /* */
 			if (g_otg_hnp_become_host) {	/* receive SSUSB_CHG_A_ROLE_A from U3D test driver */
 				/* become host */
-				mb();
+				mb(); /* */
 				log_err(
 				       "[OTG_H] Become host , g_otg_wait_con is %d , g_port_connect is %d\n",
 				       g_otg_wait_con, g_port_connect);
@@ -8819,7 +8836,7 @@ int otg_pet_uut_b(void *data)
 
 					mtktest_disableXhciAllPortPower(xhci);
 					g_otg_hnp_become_host = false;
-					mb();
+					mb(); /* */
 #if 0
 					log_err("[OTG_H]alert device\n");
 					/* set B_role_B */
@@ -8842,7 +8859,7 @@ int otg_pet_uut_b(void *data)
 						writel(SSUSB_CHG_B_ROLE_B, SSUSB_OTG_STS);
 						mtktest_disableXhciAllPortPower(xhci);
 						g_otg_hnp_become_host = false;
-						mb();
+						mb(); /* */
 						continue;
 					}
 
@@ -8861,16 +8878,16 @@ int otg_pet_uut_b(void *data)
 					if (!g_port_connect) {
 						log_err("[OTG_H]Disconnect event, handle it\n");
 						g_otg_pet_status = OTG_HNP_DISCONNECTED;
-						mb();
+						mb(); /* */
 						continue;
 					}
 					f_address_slot(true, NULL);
 					log_err("[OTG_H] address slot with BSR done\n");
-					mb();
+					mb(); /* */
 					if (!g_port_connect) {
 						log_err("[OTG_H]Disconnect event, handle it\n");
 						g_otg_pet_status = OTG_HNP_DISCONNECTED;
-						mb();
+						mb(); /* */
 						continue;
 					}
 					f_getdescriptor();
@@ -8882,7 +8899,7 @@ int otg_pet_uut_b(void *data)
 					if (!g_port_connect) {
 						log_err("[OTG_H]Disconnect event, handle it\n");
 						g_otg_pet_status = OTG_HNP_DISCONNECTED;
-						mb();
+						mb(); /* */
 						continue;
 					}
 					f_getdescriptor();
@@ -8890,7 +8907,7 @@ int otg_pet_uut_b(void *data)
 					if (!g_port_connect) {
 						log_err("[OTG_H]Disconnect event, handle it\n");
 						g_otg_pet_status = OTG_HNP_DISCONNECTED;
-						mb();
+						mb(); /* */
 						continue;
 					}
 					f_getconfiguration_desc();
@@ -8898,7 +8915,7 @@ int otg_pet_uut_b(void *data)
 					if (!g_port_connect) {
 						log_err("[OTG_H]Disconnect event, handle it\n");
 						g_otg_pet_status = OTG_HNP_DISCONNECTED;
-						mb();
+						mb(); /* */
 						continue;
 					}
 					f_get_string_desc();
@@ -8906,7 +8923,7 @@ int otg_pet_uut_b(void *data)
 					if (!g_port_connect) {
 						log_err("[OTG_H]Disconnect event, handle it\n");
 						g_otg_pet_status = OTG_HNP_DISCONNECTED;
-						mb();
+						mb(); /* */
 						continue;
 					}
 					f_set_configuration();
@@ -8914,13 +8931,13 @@ int otg_pet_uut_b(void *data)
 					if (!g_port_connect) {
 						log_err("[OTG_H]Disconnect event, handle it\n");
 						g_otg_pet_status = OTG_HNP_DISCONNECTED;
-						mb();
+						mb(); /* */
 						continue;
 					}
 					g_otg_pet_status = OTG_POLLING_STATUS;
 					g_otg_hnp_become_dev = false;
 					g_port_resume = 0;
-					mb();
+					mb(); /* */
 
 					while (readl(SSUSB_OTG_STS) & SSUSB_XHCI_MAS_DMA_REQ) {
 						msleep(20);
@@ -8941,13 +8958,13 @@ int otg_pet_uut_b(void *data)
 					temp = (temp | (3 << 5) | PORT_LINK_STROBE);
 					xhci_writel(xhci, temp, addr);
 					g_otg_pet_status = OTG_HNP_SUSPEND;
-					mb();
+					mb(); /* */
 					log_err("[OTG_H]suspend port\n");
 					continue;
 				}
 			}
 		}
-		mb();
+		mb(); /* */
 		/* get SSUSB_CHG_B_ROLE_A, and prepare being back to device mode */
 		if ((g_otg_pet_status != OTG_DEV) && (g_otg_hnp_become_dev)) {
 			log_err("[OTG_H]Become device\n");
@@ -8963,7 +8980,7 @@ int otg_pet_uut_b(void *data)
 				g_otg_pet_status = OTG_DEV;
 				g_port_connect = false;
 				g_port_reset = false;
-				mb();
+				mb(); /* */
 				log_err("[OTG_H]alert device, g_port_connect is %d\n",
 				       g_port_connect);
 				/* set B_role_B */
@@ -8974,7 +8991,7 @@ int otg_pet_uut_b(void *data)
 
 
 		}
-		mb();
+		mb(); /* */
 		if ((g_otg_pet_status != OTG_DEV) && (!g_port_connect)) {
 			log_err("[OTG_H]Device disconnected after enumeration, back to device first\n");
 
@@ -8982,7 +8999,7 @@ int otg_pet_uut_b(void *data)
 			g_otg_hnp_become_host = false;
 			g_otg_pet_status = OTG_DEV;
 			g_port_reset = false;
-			mb();
+			mb(); /* */
 			log_err("[OTG_H]alert device, g_port_connect is %d\n",
 			       g_port_connect);
 			/* set B_role_B */
@@ -8994,7 +9011,7 @@ int otg_pet_uut_b(void *data)
 			/* } */
 			continue;
 		}
-		mb();
+		mb(); /* */
 		if (g_otg_pet_status == OTG_HNP_DISCONNECTED) {	/* disconnect during enumeration, back to device mode */
 			log_err("[OTG_H]Device disconnected when enumerating, back to device first\n");
 
@@ -9003,7 +9020,7 @@ int otg_pet_uut_b(void *data)
 			g_otg_pet_status = OTG_DEV;
 			g_port_connect = false;
 			g_port_reset = false;
-			mb();
+			mb(); /* */
 			log_err("[OTG_H]alert device, g_port_connect is %d\n",
 			       g_port_connect);
 			/* set B ROLE B to notify U3D back to device mode */
@@ -9020,7 +9037,7 @@ int otg_pet_uut_b(void *data)
 FAIL_RETURN:
 
 	g_exec_done = true;	/* let f_test_lib_cleanup to get the thread done info */
-	mb();
+	mb(); /* */
 
 	log_err("[OTG_H] Exit PET UUT A thread\n");
 	return 0;

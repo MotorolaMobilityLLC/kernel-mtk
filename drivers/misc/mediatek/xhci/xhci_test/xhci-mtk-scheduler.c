@@ -40,7 +40,7 @@ int mtktest_mtk_xhci_scheduler_init(void)
 
 static int add_sch_ep(int dev_speed, int is_in, int isTT, int ep_type, int maxp, int interval, int burst
 	, int mult, int offset, int repeat, int pkts, int cs_count, int burst_mode
-	, int bw_cost, mtk_u32 *ep, struct sch_ep *tmp_ep)
+	, int bw_cost, unsigned int *ep, struct sch_ep *tmp_ep)
 {
 
 	struct sch_ep **ep_array;
@@ -389,7 +389,7 @@ static int count_tt_intr_bw(int interval, int frame_offset)
 	return SCH_SUCCESS;
 }
 
-struct sch_ep *mtktest_mtk_xhci_scheduler_remove_ep(int dev_speed, int is_in, int isTT, int ep_type, mtk_u32 *ep)
+struct sch_ep *mtktest_mtk_xhci_scheduler_remove_ep(int dev_speed, int is_in, int isTT, int ep_type, unsigned int *ep)
 {
 	int i;
 	struct sch_ep **ep_array;
@@ -415,13 +415,13 @@ struct sch_ep *mtktest_mtk_xhci_scheduler_remove_ep(int dev_speed, int is_in, in
 }
 
 int mtktest_mtk_xhci_scheduler_add_ep(int dev_speed, int is_in, int isTT, int ep_type, int maxp, int interval, int burst
-	, int mult, mtk_u32 *ep, mtk_u32 *ep_ctx, struct sch_ep *sch_ep)
+	, int mult, unsigned int *ep, unsigned int *ep_ctx, struct sch_ep *sch_ep)
 {
-	mtk_u32 bPkts = 0;
-	mtk_u32 bCsCount = 0;
-	mtk_u32 bBm = 1;
-	mtk_u32 bOffset = 0;
-	mtk_u32 bRepeat = 0;
+	unsigned int bPkts = 0;
+	unsigned int bCsCount = 0;
+	unsigned int bBm = 1;
+	unsigned int bOffset = 0;
+	unsigned int bRepeat = 0;
 	int ret;
 	struct mtk_xhci_ep_ctx *temp_ep_ctx;
 	int td_size;

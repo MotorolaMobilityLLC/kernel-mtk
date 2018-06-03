@@ -62,14 +62,14 @@
 #define DUMMY_DATA_LENGTH 256
 #endif
 
-typedef enum {
+enum USB_DEV_SPEED {
 	DEV_SPEED_INACTIVE = 0,
 	DEV_SPEED_FULL = 1,
 	DEV_SPEED_HIGH = 3,
 	DEV_SPEED_SUPER = 4,
-} USB_DEV_SPEED;
+};
 
-typedef enum {
+enum USB_U3_TEST_CASE {
 	RESET_STATE,
 	CONFIGEP_STATE,
 	LOOPBACK_STATE,
@@ -87,21 +87,21 @@ typedef enum {
 	POWER_STATE,
 	U1U2_STATE,
 	LPM_STATE
-} USB_U3_TEST_CASE;
+};
 
-typedef enum {
+enum USB_AT_CMD {
 	AT_CMD_SET,
 	AT_CMD_ACK,
 	AT_CTRL_TEST
-} USB_AT_CMD;
+};
 
 
 
-typedef enum {
+enum USB_U3_QUERY_STATUS {
 	STATUS_READY = 0,
 	STATUS_BUSY,
 	STATUS_FAIL
-} USB_U3_QUERY_STATUS;
+};
 
 struct protocol_query {
 	__u16 header;
@@ -112,7 +112,7 @@ struct protocol_query {
 
 
 
-int dev_reset(USB_DEV_SPEED speed, struct usb_device *dev);
+int dev_reset(enum USB_DEV_SPEED speed, struct usb_device *dev);
 int dev_config_ep(char ep_num, char dir, char type, int maxp, char bInterval,
 	char slot, char burst, char mult, struct usb_device *dev);
 
