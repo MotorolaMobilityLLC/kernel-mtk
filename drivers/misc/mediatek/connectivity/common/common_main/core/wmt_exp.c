@@ -354,6 +354,12 @@ INT32 mtk_wcn_wmt_sdio_deep_sleep_flag_cb_reg(PF_WMT_SDIO_DEEP_SLEEP flag_cb)
 EXPORT_SYMBOL(mtk_wcn_wmt_sdio_deep_sleep_flag_cb_reg);
 #endif
 
+INT32 mtk_wcn_wmt_sdio_rw_cb_reg(PF_WMT_SDIO_DEBUG reg_rw_cb)
+{
+	wmt_lib_sdio_reg_rw_cb(reg_rw_cb);
+	return 0;
+}
+
 INT32 mtk_wcn_stp_wmt_sdio_host_awake(VOID)
 {
 	wmt_lib_ps_irq_cb();

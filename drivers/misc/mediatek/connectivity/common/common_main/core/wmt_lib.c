@@ -77,6 +77,7 @@ static const WMT_IC_PIN_STATE cmb_aif2pin_stat[] = {
 static UINT32 gPsIdleTime = STP_PSM_IDLE_TIME_SLEEP;
 static UINT32 gPsEnable = 1;
 static PF_WMT_SDIO_PSOP sdio_own_ctrl;
+static PF_WMT_SDIO_DEBUG sdio_reg_rw;
 #endif
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 static PF_WMT_SDIO_DEEP_SLEEP sdio_deep_sleep_flag_set;
@@ -895,6 +896,12 @@ VOID wmt_lib_sdio_deep_sleep_flag_set(PF_WMT_SDIO_DEEP_SLEEP flag_cb)
 	sdio_deep_sleep_flag_set = flag_cb;
 }
 #endif
+
+VOID wmt_lib_sdio_reg_rw_cb(PF_WMT_SDIO_DEBUG reg_rw_cb)
+{
+	sdio_reg_rw = reg_rw_cb;
+}
+
 UINT32 wmt_lib_wait_event_checker(P_OSAL_THREAD pThread)
 {
 	P_DEV_WMT pDevWmt;
@@ -2143,4 +2150,19 @@ INT32 wmt_lib_wifi_fem_cfg_report(PVOID pvInfoBuf)
 	return iRet;
 }
 
+INT32 wmt_lib_sdio_reg_rw(INT32 func_num, INT32 direction, UINT32 offset, UINT32 value)
+{
+	INT32 ret = -1;
+	ENUM_WMT_CHIP_TYPE chip_type;
 
+	chip_type = wmt_detect_get_chip_type();
+
+	if (chip_type == WMT_CHIP_TYPE_COMBO) {
+		if (sdio_reg_rw)
+			ret = sdio_reg_rw(func_num, direction, offset, value);
+		else
+			WMT_ERR_FUNC("sdio_reg_rw callback is not set, maybe the sdio funcxx write/read not used\n");
+	} else
+		WMT_ERR_FUNC("It`s soc project, this function is not used\n");
+	return ret;
+}

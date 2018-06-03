@@ -73,6 +73,7 @@
 #define CTMDPCR1	(0x00BC)
 #define CSR		(0x00D8)	/* MT6630 & MT6632 only for the moment */
 #define SWPCDBGR	(0x0154)
+#define CCCR_F8	(0X00F8)
 
 /* Common HIF register bit field address */
 /* CCCR_F0*/
@@ -282,6 +283,7 @@ extern MTK_WCN_STP_SDIO_HIF_INFO g_stp_sdio_host_info;
  * \retval < 0  error code
  */
 extern INT32 mtk_wcn_hif_sdio_client_reg(const MTK_WCN_HIF_SDIO_CLTINFO *pinfo);
+extern INT32 stp_sdio_reg_rw(INT32 func_num, INT32 direction,  UINT32 offset, UINT32 value);
 
 extern INT32 mtk_wcn_stp_sdio_do_own_clr(VOID);
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
