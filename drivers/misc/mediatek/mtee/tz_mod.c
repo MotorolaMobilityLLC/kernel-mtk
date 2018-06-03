@@ -164,7 +164,7 @@ static void mtee_pms_init(struct platform_device *pdev)
 				MODULE_NAME,
 				pm_name, PM_NAME_LEN-1, PM_NAME_LEN-1);
 		}
-		node = of_parse_phandle(pdev->dev.of_node, "pm-devs", 0);
+		node = of_parse_phandle(pdev->dev.of_node, "pm-devs", idx);
 		if (!node)
 			continue;
 
