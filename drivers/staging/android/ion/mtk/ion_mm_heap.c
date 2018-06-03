@@ -111,6 +111,8 @@ struct page_info {
 };
 
 static size_t mm_heap_total_memory;
+unsigned int caller_pid;
+unsigned int caller_tid;
 
 static struct page *alloc_buffer_page(struct ion_system_heap *heap,
 				      struct ion_buffer *buffer, unsigned long order) {
@@ -242,6 +244,10 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 
 	INIT_LIST_HEAD(&pages);
 	start = sched_clock();
+
+	caller_pid = (unsigned int)current->pid;
+	caller_tid = (unsigned int)current->tgid;
+
 	while (size_remaining > 0) {
 		info = alloc_largest_available(sys_heap, buffer, size_remaining,
 					       max_order);
@@ -310,6 +316,8 @@ map_mva_exit:
 	buffer->priv_virt = buffer_info;
 
 	mm_heap_total_memory += size;
+	caller_pid = 0;
+	caller_tid = 0;
 
 	return 0;
 err1:
@@ -323,6 +331,9 @@ err:
 		}
 	}
 	IONMSG("error: mm_alloc fail: size=%lu, flag=%lu.\n", size, flags);
+	caller_pid = 0;
+	caller_tid = 0;
+
 	return -ENOMEM;
 }
 
@@ -707,6 +718,7 @@ void ion_mm_heap_memory_detail(void)
 	size_t total_size = 0;
 	size_t total_orphaned_size = 0;
 	struct rb_node *n;
+	bool need_dev_lock = true;
 
 	/* ion_mm_heap_for_each_pool(write_mm_page_pool); */
 
@@ -715,8 +727,12 @@ void ion_mm_heap_memory_detail(void)
 	ION_PRINT_LOG_OR_SEQ(NULL, "----------------------------------------------------\n");
 
 	if (!down_read_trylock(&dev->lock)) {
-		ION_PRINT_LOG_OR_SEQ(NULL, "detail trylock fail(%16zu)\n", mm_heap_total_memory);
-		goto skip_client_entry;
+		ION_PRINT_LOG_OR_SEQ(NULL, "detail trylock fail, alloc pid(%d-%d)\n", caller_pid, caller_tid);
+		ION_PRINT_LOG_OR_SEQ(NULL, "current(%d-%d)\n", (unsigned int)current->pid, (unsigned int)current->tgid);
+		if ((caller_pid != (unsigned int)current->pid) || (caller_tid != (unsigned int)current->tgid))
+			goto skip_client_entry;
+		else
+			need_dev_lock = false;
 	}
 
 	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
@@ -737,7 +753,10 @@ void ion_mm_heap_memory_detail(void)
 					     client->name, "from_kernel", client->pid, size, client);
 		}
 	}
-	up_read(&dev->lock);
+
+	if (need_dev_lock)
+		up_read(&dev->lock);
+
 	ION_PRINT_LOG_OR_SEQ(NULL, "----------------------------------------------------\n");
 	ION_PRINT_LOG_OR_SEQ(NULL, "orphaned allocations (info is from last known client):\n");
 
