@@ -92,6 +92,11 @@ static int total_bw;
 static int cps_valid;
 static int debounce_times_up;
 static int debounce_times_down;
+static int ratio_scale[CM_MGR_CPU_CLUSTER];
+static int max_load[CM_MGR_CPU_CLUSTER];
+static int cpu_load[NR_CPUS];
+static int loading_acc[NR_CPUS];
+static int loading_cnt;
 
 /******************** MET BEGIN ********************/
 typedef void (*cm_mgr_value_handler_t) (unsigned int cnt, unsigned int *value);
@@ -123,6 +128,8 @@ CM_MGR_MET_REG_FN_VALUE(cm_mgr_valid);
 
 static void cm_mgr_update_met(void)
 {
+	int cpu;
+
 	met_data.cm_mgr_power[0] = cpu_power_up_array[0];
 	met_data.cm_mgr_power[1] = cpu_power_up_array[1];
 	met_data.cm_mgr_power[2] = cpu_power_down_array[0];
@@ -152,17 +159,23 @@ static void cm_mgr_update_met(void)
 
 	met_data.cm_mgr_loading[0] = cm_mgr_abs_load;
 	met_data.cm_mgr_loading[1] = cm_mgr_rel_load;
+	met_data.cm_mgr_loading[2] = max_load[0];
+	met_data.cm_mgr_loading[3] = max_load[1];
+	for_each_possible_cpu(cpu)
+		met_data.cm_mgr_loading[4 + cpu] = cpu_load[cpu];
 
 	met_data.cm_mgr_ratio[0] = ratio_max[0];
 	met_data.cm_mgr_ratio[1] = ratio_max[1];
-	met_data.cm_mgr_ratio[2] = ratio[0];
-	met_data.cm_mgr_ratio[3] = ratio[1];
-	met_data.cm_mgr_ratio[4] = ratio[2];
-	met_data.cm_mgr_ratio[5] = ratio[3];
-	met_data.cm_mgr_ratio[6] = ratio[4];
-	met_data.cm_mgr_ratio[7] = ratio[5];
-	met_data.cm_mgr_ratio[8] = ratio[6];
-	met_data.cm_mgr_ratio[9] = ratio[7];
+	met_data.cm_mgr_ratio[2] = ratio_scale[0];
+	met_data.cm_mgr_ratio[3] = ratio_scale[1];
+	met_data.cm_mgr_ratio[4] = ratio[0];
+	met_data.cm_mgr_ratio[5] = ratio[1];
+	met_data.cm_mgr_ratio[6] = ratio[2];
+	met_data.cm_mgr_ratio[7] = ratio[3];
+	met_data.cm_mgr_ratio[8] = ratio[4];
+	met_data.cm_mgr_ratio[9] = ratio[5];
+	met_data.cm_mgr_ratio[10] = ratio[6];
+	met_data.cm_mgr_ratio[11] = ratio[7];
 
 	met_data.cm_mgr_bw = total_bw;
 
@@ -230,6 +243,8 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		int ret;
 		int idx;
 		int max_ratio_idx[CM_MGR_CPU_CLUSTER];
+		unsigned int cpu;
+		unsigned int rel_load, abs_load;
 #ifdef PER_CPU_STALL_RATIO
 		int cpu_ratio_idx[CM_MGR_CPU_COUNT];
 #endif
@@ -244,6 +259,34 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			return;
 		}
 		cm_mgr_loop = cm_mgr_loop_count;
+
+#ifdef LIGHT_LOAD
+		cm_mgr_abs_load = 0;
+		cm_mgr_rel_load = 0;
+
+		for_each_online_cpu(cpu) {
+			int tmp;
+
+			if (cpu > CM_MGR_CPU_COUNT)
+				break;
+
+			tmp = mt_cpufreq_get_cur_phy_freq_no_lock(cpu / 4) / 100000;
+			sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
+			cm_mgr_abs_load += abs_load * tmp;
+			cm_mgr_rel_load += rel_load * tmp;
+
+			cpu_load[cpu] = rel_load;
+			loading_acc[cpu] += rel_load;
+		}
+		loading_cnt++;
+
+		if ((cm_mgr_abs_load < light_load_cps) && (vcore_dram_opp_cur == CM_MGR_EMI_OPP)) {
+			cm_mgr_update_met();
+			spin_unlock(&cm_mgr_lock);
+			return;
+		}
+		cps_valid = 1;
+#endif
 
 		now = ktime_get();
 
@@ -292,6 +335,23 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			update_v2f_table++;
 		}
 
+		/* get max loading */
+		max_load[0] = 0;
+		max_load[1] = 0;
+		for_each_possible_cpu(i) {
+			int avg_load;
+
+			if (cpu > CM_MGR_CPU_COUNT)
+				break;
+
+			if (unlikely(loading_cnt == 0))
+				break;
+			avg_load = loading_acc[i] / loading_cnt;
+			if (avg_load > max_load[i / 4])
+				max_load[i / 4] = avg_load;
+			loading_acc[i] = 0;
+		}
+
 		for (i = 0; i < CM_MGR_CPU_CLUSTER; i++) {
 #ifndef ATF_SECURE_SMC
 			count[i] = cm_mgr_get_cpu_count(i);
@@ -304,6 +364,11 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			v2f[i] = _v2f_all[cpu_opp_cur[i]][i];
 			cpu_power_up_array[i] = cpu_power_up[i] = 0;
 			cpu_power_down_array[i] = cpu_power_down[i] = 0;
+
+			/* calc scaled ratio */
+			ratio_scale[i] = (max_load[i] > 0) ? (ratio_max[i] * 100 / max_load[i]) : ratio_max[i];
+			if (ratio_scale[i] > 100)
+				ratio_scale[i] = 100;
 		}
 #ifdef DEBUG_CM_MGR
 		print_hex_dump(KERN_INFO, "cpu_opp_cur: ", DUMP_PREFIX_NONE, 16,
@@ -323,21 +388,6 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		print_hex_dump(KERN_INFO, "cpu_ratio_idx: ", DUMP_PREFIX_NONE, 16,
 				1, &cpu_ratio_idx[0], ARRAY_SIZE(cpu_ratio_idx), 0);
 #endif /* DEBUG_CM_MGR */
-
-#ifdef LIGHT_LOAD
-		cm_mgr_abs_load = 0;
-		cm_mgr_rel_load = 0;
-		cps_valid = 0;
-
-		if (cm_mgr_cps_check()) {
-			if ((cm_mgr_abs_load < light_load_cps) && (vcore_dram_opp_cur == CM_MGR_EMI_OPP)) {
-				cm_mgr_update_met();
-				spin_unlock(&cm_mgr_lock);
-				return;
-			}
-		}
-		cps_valid = 1;
-#endif
 
 		level = CM_MGR_EMI_OPP - vcore_dram_opp_cur;
 		if (vcore_dram_opp_cur != 0) {
