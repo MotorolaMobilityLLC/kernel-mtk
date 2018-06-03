@@ -399,6 +399,7 @@ enum {
 	MD_AP_MPU_ACK_MD = 0x11D,
 	LWA_CONTROL_MSG = 0x11E,
 	C2K_PPP_LINE_STATUS = 0x11F,	/*usb bypass for 93 and later*/
+	MD_DISPLAY_DYNAMIC_MIPI = 0x120, /* MIPI for TC16 */
 
 	/*c2k ctrl msg start from 0x200*/
 	C2K_STATUS_IND_MSG = 0x201, /* for usb bypass */

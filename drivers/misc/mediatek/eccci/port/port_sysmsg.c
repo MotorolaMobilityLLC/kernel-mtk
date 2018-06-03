@@ -185,6 +185,8 @@ static void sys_msg_handler(struct port_t *port, struct sk_buff *skb)
 		/* Fall through */
 	case MD_SW_MD1_TX_POWER_REQ:
 		/* Fall through */
+	case MD_DISPLAY_DYNAMIC_MIPI:
+		/* Fall through */
 	case LWA_CONTROL_MSG:
 		exec_ccci_sys_call_back(md_id, ccci_h->data[1],
 			ccci_h->reserved);

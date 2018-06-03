@@ -48,9 +48,10 @@
 #include <mt-plat/mtk_meminfo.h>
 #include "ccci_util_log.h"
 #include "ccci_util_lib_main.h"
-/**************************************************************************
-**** Local debug option for this file only ********************************
-**************************************************************************/
+/*************************************************************************
+ **** Local debug option for this file only ******************************
+ *************************************************************************
+ */
 /* #define LK_LOAD_MD_INFO_DEBUG_EN */
 
 #define CCCI_MEM_ALIGN      (SZ_32M)
@@ -301,7 +302,8 @@ static unsigned int legacy_ubin_rat_map[] = {
 	/* ulfwcg */
 	(MD_CAP_FDD_LTE|MD_CAP_WCDMA|MD_CAP_CDMA2000|MD_CAP_GSM),
 	/* ulctg */
-	(MD_CAP_FDD_LTE|MD_CAP_CDMA2000|MD_CAP_TDS_CDMA|MD_CAP_GSM),
+	(MD_CAP_FDD_LTE|MD_CAP_TDD_LTE|MD_CAP_CDMA2000|MD_CAP_TDS_CDMA
+	|MD_CAP_GSM),
 	/* ultctg */
 	(MD_CAP_TDD_LTE|MD_CAP_CDMA2000|MD_CAP_TDS_CDMA|MD_CAP_GSM),
 	/*ultwg */
@@ -748,14 +750,12 @@ static void share_memory_info_parsing(void)
 		md1_bank4_cache_offset = 0x8000000;
 	CCCI_UTIL_INF_MSG("smem cachable offset 0x%X\n",
 				md1_bank4_cache_offset);
-#if 0
 	MTK_MEMCFG_LOG_AND_PRINTK(
 		"[PHY layout]ccci_share_mem at LK:0x%llx - 0x%llx  (0x%llx)\n",
 		smem_layout.base_addr,
 		(smem_layout.base_addr
 		+ (unsigned long long)smem_layout.total_smem_size - 1LL),
 		(unsigned long long)smem_layout.total_smem_size);
-#endif
 	/* MD*_SMEM_SIZE */
 	md_resv_smem_size[MD_SYS1] = smem_layout.ap_md1_smem_size;
 	md_resv_smem_size[MD_SYS3] = smem_layout.ap_md3_smem_size;
@@ -837,7 +837,6 @@ static void md_mem_info_parsing(void)
 		CCCI_UTIL_INF_MSG("=============================\n");
 		#endif
 		md_id = (int)curr->md_id;
-		#if 0
 		if (curr->size) {
 			MTK_MEMCFG_LOG_AND_PRINTK(
 				"[PHY layout]ccci_md%d at LK:0x%llx - 0x%llx  (0x%llx)\n",
@@ -846,7 +845,6 @@ static void md_mem_info_parsing(void)
 				+ (unsigned long long)curr->size - 1LL),
 				(unsigned long long)curr->size);
 		}
-		#endif
 
 		if ((md_id < MAX_MD_NUM_AT_LK)
 				&& (md_resv_mem_size[md_id] == 0)) {
@@ -903,7 +901,8 @@ static void md_chk_hdr_info_parse(void)
 		 */
 		md1_check_hdr_info = kmalloc(1024, GFP_KERNEL);
 		if (md1_check_hdr_info == NULL) {
-			CCCI_UTIL_ERR_MSG("alloc check header memory fail(MD1)\n");
+			CCCI_UTIL_ERR_MSG(
+			"alloc check header memory fail(MD1)\n");
 			s_g_md_env_rdy_flag &= ~(1<<MD_SYS1);
 			goto _check_md3;
 		}
@@ -931,7 +930,8 @@ _check_md3:
 		md3_check_hdr_info =
 			kmalloc(sizeof(struct md_check_header), GFP_KERNEL);
 		if (md3_check_hdr_info == NULL) {
-			CCCI_UTIL_ERR_MSG("alloc check header memory fail(MD3)\n");
+			CCCI_UTIL_ERR_MSG(
+			"alloc check header memory fail(MD3)\n");
 			s_g_md_env_rdy_flag &= ~(1<<MD_SYS3);
 			return;
 		}
@@ -1045,7 +1045,8 @@ static void verify_md_enable_setting(void)
 	/* MD1 part */
 	if ((s_g_md_usage_case & (1<<MD_SYS1))
 			&& (!(s_g_md_env_rdy_flag & (1<<MD_SYS1)))) {
-		CCCI_UTIL_ERR_MSG("md1 env prepare abnormal, disable this modem\n");
+		CCCI_UTIL_ERR_MSG(
+		"md1 env prepare abnormal, disable this modem\n");
 		s_g_md_usage_case &= ~(1<<MD_SYS1);
 	} else if ((!(s_g_md_usage_case & (1<<MD_SYS1)))
 		&& (s_g_md_env_rdy_flag & (1<<MD_SYS1))) {
@@ -1062,7 +1063,8 @@ static void verify_md_enable_setting(void)
 	/* MD3 part */
 	if ((s_g_md_usage_case & (1<<MD_SYS3))
 		&& (!(s_g_md_env_rdy_flag & (1<<MD_SYS3)))) {
-		CCCI_UTIL_ERR_MSG("md3 env prepare abnormal, disable this modem\n");
+		CCCI_UTIL_ERR_MSG(
+		"md3 env prepare abnormal, disable this modem\n");
 		s_g_md_usage_case &= ~(1<<MD_SYS3);
 	} else if ((!(s_g_md_usage_case & (1<<MD_SYS3)))
 		&& (s_g_md_env_rdy_flag & (1<<MD_SYS3))) {
@@ -1157,7 +1159,7 @@ static int __init early_init_dt_get_chosen(unsigned long node,
 	return 1;
 }
 
-static int collect_lk_boot_arguments(void)
+static int __init collect_lk_boot_arguments(void)
 {
 	/* Device tree method */
 	int ret;

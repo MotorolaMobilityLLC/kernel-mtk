@@ -29,7 +29,6 @@
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
-#include <mt-plat/aee.h>
 #include "ccci_core.h"
 #include "ccci_fsm.h"
 #include "ccci_modem.h"
@@ -159,11 +158,12 @@ enum ccci_ipi_op_id {
 #define FSM_CMD_FLAG_FLIGHT_MODE (1 << 1)
 
 #define EVENT_POLL_INTEVAL 20 /* ms */
-#define BOOT_TIMEOUT (30 * 1000)
+#define BOOT_TIMEOUT (30*1000)
 #define MD_EX_CCIF_TIMEOUT 10000
 #define MD_EX_REC_OK_TIMEOUT 10000
 #define MD_EX_PASS_TIMEOUT 10000
 #define EE_DONE_TIMEOUT 30 /* s */
+#define SCP_BOOT_TIMEOUT (30*1000)
 
 #define GET_OTHER_MD_ID(a) (a == MD_SYS1 ? MD_SYS3 : MD_SYS1)
 

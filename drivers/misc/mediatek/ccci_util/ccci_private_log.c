@@ -281,8 +281,14 @@ static const struct file_operations ccci_log_fops = {
 #define CCCI_NORMAL_BUF			(4096*2)
 #define CCCI_REPEAT_BUF			(4096*32)
 #define CCCI_REG_DUMP_BUF		(4096*64 * 2)
-#define CCCI_HISTORY_BUF		(4096*32)
+#define CCCI_HISTORY_BUF		(4096*128)
 
+#define MD3_CCCI_INIT_SETTING_BUF   (4096*2)
+#define MD3_CCCI_BOOT_UP_BUF                (4096*16)
+#define MD3_CCCI_NORMAL_BUF                 (4096*2)
+#define MD3_CCCI_REPEAT_BUF                 (4096*32)
+#define MD3_CCCI_REG_DUMP_BUF               (4096*32)
+#define MD3_CCCI_HISTORY_BUF                (4096*32)
 
 struct ccci_dump_buffer {
 	void *buffer;
@@ -355,17 +361,17 @@ static struct buffer_node node_array[2][CCCI_DUMP_MAX+1] = {
 		CCCI_DUMP_ATTR_RING, CCCI_DUMP_HISTORY},
 	},
 	{
-		{&init_setting_ctlb[1], CCCI_INIT_SETTING_BUF,
+		{&init_setting_ctlb[1], MD3_CCCI_INIT_SETTING_BUF,
 		0, CCCI_DUMP_INIT},
-		{&boot_up_ctlb[1], CCCI_BOOT_UP_BUF,
+		{&boot_up_ctlb[1], MD3_CCCI_BOOT_UP_BUF,
 		CCCI_DUMP_ATTR_RING, CCCI_DUMP_BOOTUP},
-		{&normal_ctlb[1], CCCI_NORMAL_BUF,
+		{&normal_ctlb[1], MD3_CCCI_NORMAL_BUF,
 		CCCI_DUMP_ATTR_RING, CCCI_DUMP_NORMAL},
-		{&repeat_ctlb[1], CCCI_REPEAT_BUF,
+		{&repeat_ctlb[1], MD3_CCCI_REPEAT_BUF,
 		CCCI_DUMP_ATTR_RING, CCCI_DUMP_REPEAT},
-		{&reg_dump_ctlb[1], CCCI_REG_DUMP_BUF,
+		{&reg_dump_ctlb[1], MD3_CCCI_REG_DUMP_BUF,
 		CCCI_DUMP_ATTR_RING, CCCI_DUMP_MEM_DUMP},
-		{&history_ctlb[1], CCCI_HISTORY_BUF,
+		{&history_ctlb[1], MD3_CCCI_HISTORY_BUF,
 		CCCI_DUMP_ATTR_RING, CCCI_DUMP_HISTORY},
 	}
 };
@@ -591,7 +597,8 @@ static ssize_t ccci_dump_read(struct file *file, char __user *buf,
 				left -= read_len;
 				user_info->sep_cnt2[i] += read_len;
 			} else
-				pr_notice("[ccci0/util]dump copy to ser fail%d[-1]\n", ret);
+				pr_notice("[ccci0/util]dump copy to ser fail%d[-1]\n",
+					ret);
 		}
 
 		while (node_ptr->ctlb_ptr != NULL) {
@@ -619,7 +626,9 @@ static ssize_t ccci_dump_read(struct file *file, char __user *buf,
 					user_info->sep_cnt1[i][index]
 						+= read_len;
 				} else
-					pr_notice("[ccci0/util]dump copy to ser fail%d[-2]\n", ret);
+					pr_notice(
+					"[ccci0/util]dump copy to ser fail%d[-2]\n",
+						ret);
 			}
 
 			/* insert region data */
@@ -642,7 +651,9 @@ static ssize_t ccci_dump_read(struct file *file, char __user *buf,
 					user_info->read_idx[i][index]
 						+= read_len;
 				} else
-					pr_notice("[ccci0/util]dump copy to ser fail%d\n", ret);
+					pr_notice(
+					"[ccci0/util]dump copy to ser fail%d\n",
+						ret);
 			} else { /* ring buffer read */
 				if (ptr->data_size > ptr->buf_size) {
 					read_pos = ptr->write_pos

@@ -548,7 +548,7 @@ int fsm_append_command(struct ccci_fsm_ctl *ctl,
 	spin_unlock_irqrestore(&ctl->command_lock, flags);
 	CCCI_NORMAL_LOG(ctl->md_id, FSM,
 		"command %d is appended %x from %ps\n",
-		cmd->cmd_id, cmd->flag,
+		cmd_id, flag,
 		__builtin_return_address(0));
 	/* after this line, only dereference cmd
 	 * when "wait-for-complete"

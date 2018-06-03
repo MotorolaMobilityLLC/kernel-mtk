@@ -193,12 +193,6 @@ int swtp_init(int md_id)
 	u32 ints1[2] = { 0, 0 };
 	struct device_node *node = NULL;
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if ((get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) ||
-		(get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT))
-		return ret;
-#endif
-
 	swtp_data[md_id].md_id = md_id;
 	swtp_data[md_id].curr_mode = SWTP_EINT_PIN_PLUG_OUT;
 	spin_lock_init(&swtp_data[md_id].spinlock);
