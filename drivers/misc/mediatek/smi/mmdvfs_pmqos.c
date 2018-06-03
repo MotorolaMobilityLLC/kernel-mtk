@@ -19,7 +19,7 @@
 #include <linux/of.h>
 #include <linux/string.h>
 #ifdef PLL_HOPPING_READY
-#include <mach/mtk_freqhopping.h>
+#include <mt_freqhopping_drv.h>
 #endif
 
 #ifdef VCORE_READY
@@ -147,10 +147,78 @@ static void mm_apply_vcore(s32 vopp)
 	pm_qos_update_request(&vcore_request, vopp);
 }
 
-static s32 mm_apply_clk(struct mm_freq_config *config, u32 step)
+static s32 mm_set_mux_clk(struct mm_freq_config *config, u32 step)
 {
 	struct mm_freq_step_config step_config;
 	s32 ret = 0;
+	step_config = config->step_config[step];
+	if (step_config.clk_mux == NULL ||
+		step_config.clk_source == NULL) {
+		pr_notice("CCF handle can't be NULL during MMDVFS\n");
+		return -EINVAL;
+	}
+
+	ret = clk_prepare_enable(step_config.clk_mux);
+
+	if (ret) {
+		pr_notice("prepare clk(%d): %s-%u\n",
+			ret, config->prop_name, step);
+		return -EFAULT;
+	}
+
+	ret = clk_set_parent(
+		step_config.clk_mux, step_config.clk_source);
+
+	if (ret)
+		pr_notice(
+			"set parent(%d): %s-%u\n",
+			ret, config->prop_name, step);
+
+	clk_disable_unprepare(step_config.clk_mux);
+	if (ret)
+		pr_notice(
+			"unprepare clk(%d): %s-%u\n",
+			ret, config->prop_name, step);
+	return ret;
+}
+
+static s32 mm_set_freq_hopping_clk(struct mm_freq_config *config, u32 step)
+{
+	struct mm_freq_step_config step_config;
+	s32 ret = 0;
+
+	step_config = config->step_config[step];
+
+#ifdef PLL_HOPPING_READY
+	ret = mt_dfs_general_pll(
+			step_config.pll_id, step_config.pll_value);
+#endif
+
+	if (ret)
+		pr_notice("hopping rate(%d):(%u)-0x%08x, %s-%u\n",
+			ret, step_config.pll_id, step_config.pll_value,
+			config->prop_name, step);
+	return ret;
+}
+
+static s32 apply_clk_by_type(u32 clk_type,
+		struct mm_freq_config *config, s32 step)
+{
+	s32 ret = 0;
+
+	if (clk_type == CLK_TYPE_MUX)
+		ret = mm_set_mux_clk(config, step);
+	else if (clk_type == CLK_TYPE_PLL)
+		ret = mm_set_freq_hopping_clk(config, step);
+	return ret;
+}
+
+static s32 mm_apply_clk(struct mm_freq_config *config, u32 step, s32 old_step)
+{
+	struct mm_freq_step_config step_config;
+	s32 ret = 0;
+	s32 operations[2];
+	u32 i;
 
 	if (step >= MAX_FREQ_STEP) {
 		pr_notice(
@@ -179,59 +247,24 @@ static s32 mm_apply_clk(struct mm_freq_config *config, u32 step)
 				step, freq);
 	}
 
-	if (step_config.clk_type == CLK_TYPE_MUX) {
+	operations[0] = (step < old_step) ? CLK_TYPE_PLL : CLK_TYPE_MUX;
+	operations[1] = (step < old_step) ? CLK_TYPE_MUX : CLK_TYPE_PLL;
 
-		if (step_config.clk_mux == NULL ||
-			step_config.clk_source == NULL) {
-			pr_notice("CCF handle can't be NULL during MMDVFS\n");
-			return -EINVAL;
-		}
-
-		ret = clk_prepare_enable(step_config.clk_mux);
-
-		if (ret) {
-			pr_notice("prepare clk(%d): %s-%u\n",
-				ret, config->prop_name, step);
-			return -EFAULT;
-		}
-
-		ret = clk_set_parent(
-			step_config.clk_mux, step_config.clk_source);
-
-		if (ret)
-			pr_notice(
-				"set parent(%d): %s-%u\n",
-				ret, config->prop_name, step);
-
-		clk_disable_unprepare(step_config.clk_mux);
-		if (ret)
-			pr_notice(
-				"unprepare clk(%d): %s-%u\n",
-				ret, config->prop_name, step);
-	} else if (step_config.clk_type == CLK_TYPE_PLL) {
-	#ifdef PLL_HOPPING_READY
-		ret = mt_dfs_general_pll(
-				step_config.pll_id, step_config.pll_value);
-	#endif
-		pr_notice("pll hopping: (%u)-0x%08x, %s-%u\n",
-			step_config.pll_id, step_config.pll_value,
-			config->prop_name, step);
-
-		if (ret)
-			pr_notice("hopping rate(%d):(%u)-0x%08x, %s-%u\n",
-				ret, step_config.pll_id, step_config.pll_value,
-				config->prop_name, step);
+	for (i = 0; i < ARRAY_SIZE(operations); i++) {
+		if (step_config.clk_type & operations[i])
+			apply_clk_by_type(operations[i], config, step);
 	}
+
 	return ret;
 
 }
 
-static void mm_apply_clk_for_all(u32 step)
+static void mm_apply_clk_for_all(u32 step, s32 old_step)
 {
 	u32 i;
 
 	for (i = 0; i < ARRAY_SIZE(all_freqs); i++)
-		mm_apply_clk(all_freqs[i], step);
+		mm_apply_clk(all_freqs[i], step, old_step);
 }
 
 static void update_step(void)
@@ -270,7 +303,7 @@ static void update_step(void)
 			&& current_max_step < old_max_step) {
 		/* configuration for higher freq */
 		mm_apply_vcore(vopp_steps[current_max_step]);
-		mm_apply_clk_for_all(current_max_step);
+		mm_apply_clk_for_all(current_max_step, old_max_step);
 	} else {
 		/* configuration for lower freq */
 		s32 vopp_step = STEP_UNREQUEST;
@@ -281,7 +314,7 @@ static void update_step(void)
 			freq_step = current_max_step;
 		}
 		mm_apply_vcore(vopp_step);
-		mm_apply_clk_for_all(freq_step);
+		mm_apply_clk_for_all(freq_step, old_max_step);
 	}
 }
 
@@ -375,7 +408,7 @@ static void mmdvfs_get_step_node(struct device *dev,
 		of_property_read_u32_array(dev->of_node, name, step, mm_dp_max);
 	if (likely(!result)) {
 		mm_freq->freq_steps[index] = step[mm_dp_freq];
-		mm_freq->step_config[index].clk_type = step[mm_dp_clk_type];
+		mm_freq->step_config[index].clk_type |= step[mm_dp_clk_type];
 		if (step[mm_dp_clk_type] == CLK_TYPE_MUX) {
 			mm_freq->step_config[index].clk_mux_id =
 				step[mm_dp_clk_mux];
@@ -406,6 +439,7 @@ static int mmdvfs_probe(struct platform_device *pdev)
 {
 	u32 i, count, vopp;
 	const char *name;
+	char ext_name[32];
 	struct device_node *node = pdev->dev.of_node;
 	struct property *prop;
 	struct mm_freq_config *mm_freq;
@@ -453,6 +487,11 @@ static int mmdvfs_probe(struct platform_device *pdev)
 				break;
 			}
 			mmdvfs_get_step_node(&pdev->dev, name, mm_freq, count);
+			strncpy(ext_name, name, sizeof(ext_name));
+			strncat(ext_name, "_ext",
+				sizeof(ext_name)-strlen(name));
+			mmdvfs_get_step_node(&pdev->dev,
+				ext_name, mm_freq, count);
 			count++;
 		}
 		if (count != step_size)
@@ -532,7 +571,7 @@ EXPORT_SYMBOL_GPL(mmdvfs_qos_get_freq);
 
 int dump_setting(char *buf, const struct kernel_param *kp)
 {
-	u32 i, j, clk_param1, clk_param2, clk_type;
+	u32 i, j;
 	int length = 0;
 	struct mm_freq_config *mm_freq;
 
@@ -543,26 +582,14 @@ int dump_setting(char *buf, const struct kernel_param *kp)
 			mm_freq->prop_name, step_size, mm_freq->current_step,
 			mmdvfs_qos_get_freq(mm_freq->pm_qos_class));
 		for (j = 0; j < step_size; j++) {
-			clk_type = mm_freq->step_config[j].clk_type;
-			if (clk_type == CLK_TYPE_MUX) {
-				clk_param1 =
-					mm_freq->step_config[j].clk_mux_id;
-				clk_param2 =
-					mm_freq->step_config[j].clk_source_id;
-			} else if (clk_type == CLK_TYPE_PLL) {
-				clk_param1 =
-					mm_freq->step_config[j].pll_id;
-				clk_param2 =
-					mm_freq->step_config[j].pll_value;
-			} else {
-				clk_param1 = 0;
-				clk_param2 = 0;
-			}
 			length += snprintf(buf + length, PAGE_SIZE - length,
-				"  [step:%u] vopp: %d, freq: %llu, clk(%u/%u/%u)\n",
+				"  [step:%u] vopp: %d, freq: %llu, clk(%u/%u/%u/%u/0x%08x)\n",
 				j, vopp_steps[j], mm_freq->freq_steps[j],
 				mm_freq->step_config[j].clk_type,
-				clk_param1, clk_param2);
+				mm_freq->step_config[j].clk_mux_id,
+				mm_freq->step_config[j].clk_source_id,
+				mm_freq->step_config[j].pll_id,
+				mm_freq->step_config[j].pll_value);
 			if (length >= PAGE_SIZE)
 				break;
 		}
