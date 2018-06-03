@@ -611,5 +611,9 @@ initcall_debug=1";
 
 /* USB TYPEC GPIO end */
 
+&disp_aal0 {
+	aal_support = <0>;
+};
+
 #include <evb6771_64_emmc/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/

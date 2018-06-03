@@ -39,6 +39,6 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6758) $(CONFIG_MACH_M
     ccflags-y += -DNOT_SUPPORT_CABC_HW
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6757)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6771)))
     ccflags-y += -DLOAD_AAL_SUPPORT_FROM_DTS
 endif
