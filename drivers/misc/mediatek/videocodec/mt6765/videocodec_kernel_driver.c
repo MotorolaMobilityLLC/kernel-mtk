@@ -2641,7 +2641,7 @@ static int vcodec_pm_restore_noirq(struct device *device)
 #endif
 
 static const struct of_device_id vcodec_of_match[] = {
-	{ .compatible = "mediatek,vdec_top_global_con", },
+	{ .compatible = "mediatek,venc_gcon", },
 	{/* sentinel */}
 };
 
