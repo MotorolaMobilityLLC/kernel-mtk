@@ -166,7 +166,9 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 		}
 	} else if (info->pd_type == PD_CONNECT_TYPEC_ONLY_SNK &&
 		info->chr_type != STANDARD_HOST &&
-		info->chr_type != CHARGING_HOST) {
+		info->chr_type != CHARGING_HOST &&
+		mtk_pe20_get_is_connect(info) == false &&
+		mtk_pe_get_is_connect(info) == false) {
 
 		if (tcpm_inquire_typec_remote_rp_curr(info->tcpc) == 3000) {
 			pdata->input_current_limit = 3000000;
