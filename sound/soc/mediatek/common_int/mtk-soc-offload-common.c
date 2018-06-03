@@ -74,7 +74,7 @@ static struct afe_offload_service_t afe_offload_service = {
 	.enable          = false,
 	.drain           = false,
 	.ipiwait         = false,
-	.needdata        = true,
+	.needdata        = false,
 	.ipiresult       = true,
 	.volume          = 0x10000,
 };
