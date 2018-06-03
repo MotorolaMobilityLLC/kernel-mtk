@@ -28,6 +28,7 @@ obj-$(CONFIG_MACH_MT6763) += legacy_controller/
 obj-$(CONFIG_MACH_MT6739) += legacy_controller/
 obj-$(CONFIG_MACH_MT6758) += legacy_controller/
 obj-$(CONFIG_MACH_MT6771) += legacy_controller/
+obj-$(CONFIG_MACH_MT6775) += legacy_controller/
 
 
 ifeq ($(CONFIG_MTK_FPSGO), y)
