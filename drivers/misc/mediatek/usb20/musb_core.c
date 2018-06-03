@@ -112,7 +112,7 @@ void register_usb_hal_dpidle_request(void (*function)(int))
 static void (*usb_hal_disconnect_check_fptr)(void);
 void usb_hal_disconnect_check(void)
 {
-	if (usb_hal_disconnect_check_fptr)
+	if (usb_hal_disconnect_check_fptr && musb_force_on)
 		usb_hal_disconnect_check_fptr();
 }
 void register_usb_hal_disconnect_check(void (*function)(void))

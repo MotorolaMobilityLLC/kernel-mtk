@@ -319,6 +319,53 @@ static bool mu3d_hal_is_vbus_exist(void)
 
 }
 
+static struct delayed_work disconnect_check_work;
+static bool mu3d_hal_is_vbus_exist(void);
+void do_disconnect_check_work(struct work_struct *data)
+{
+	bool vbus_exist = false;
+	unsigned long flags = 0;
+	struct musb *musb = _mu3d_musb;
+
+	msleep(200);
+
+	vbus_exist = mu3d_hal_is_vbus_exist();
+	os_printk(K_INFO, "vbus_exist:<%d>\n", vbus_exist);
+	if (vbus_exist)
+		return;
+
+	spin_lock_irqsave(&musb->lock, flags);
+	os_printk(K_INFO, "speed <%d>\n", musb->g.speed);
+	/* notify gadget driver, g.speed judge is very important */
+	if (!musb->is_host && musb->g.speed != USB_SPEED_UNKNOWN) {
+		os_printk(K_INFO, "musb->gadget_driver:%p\n", musb->gadget_driver);
+		if (musb->gadget_driver && musb->gadget_driver->disconnect) {
+			os_printk(K_INFO, "musb->gadget_driver->disconnect:%p\n", musb->gadget_driver->disconnect);
+			/* align musb_g_disconnect */
+			spin_unlock(&musb->lock);
+			musb->gadget_driver->disconnect(&musb->g);
+			spin_lock(&musb->lock);
+
+		}
+		musb->g.speed = USB_SPEED_UNKNOWN;
+	}
+	os_printk(K_INFO, "speed <%d>\n", musb->g.speed);
+	spin_unlock_irqrestore(&musb->lock, flags);
+}
+void trigger_disconnect_check_work(void)
+{
+	static int inited;
+
+	if (!mu3d_force_on)
+		return;
+
+	if (!inited) {
+		INIT_DELAYED_WORK(&disconnect_check_work, do_disconnect_check_work);
+		inited = 1;
+	}
+	queue_delayed_work(_mu3d_musb->st_wq, &disconnect_check_work, 0);
+}
+
 static int mu3d_test_connect;
 static bool test_connected;
 static struct delayed_work mu3d_test_connect_work;
