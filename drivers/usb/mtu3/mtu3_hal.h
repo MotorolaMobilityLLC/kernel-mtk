@@ -15,6 +15,15 @@
 #ifndef __MTU3_HAL__
 #define __MTU3_HAL__
 
+enum {
+	USB_DPIDLE_ALLOWED = 0,
+	USB_DPIDLE_FORBIDDEN,
+	USB_DPIDLE_SRAM,
+	USB_DPIDLE_TIMER,
+	USB_DPIDLE_AUDIO,
+};
+
+
 extern int xhci_mtk_register_plat(void);
 extern void xhci_mtk_unregister_plat(void);
 
@@ -34,6 +43,8 @@ extern void phy_hal_exit(struct phy *phy);
 
 extern void usb_wakeup_enable(struct ssusb_mtk *ssusb);
 extern void usb_wakeup_disable(struct ssusb_mtk *ssusb);
+
+extern void ssusb_dpidle_request(int mode);
 
 #endif
 
