@@ -129,10 +129,12 @@ void vcorefs_update_opp_table(void)
 bool is_vcorefs_feature_enable(void)
 {
 #if 1
+#if !defined(CONFIG_MACH_MT6759) /* TODO: 6759 EP */
 	if (!dram_can_support_fh()) {
 		vcorefs_err("DISABLE DVFS DUE TO NOT SUPPORT DRAM FH\n");
 		return false;
 	}
+#endif
 #endif
 	if (!vcorefs_vcore_dvs_en() && !vcorefs_dram_dfs_en()) {
 		vcorefs_err("DISABLE DVFS DUE TO BOTH DVS & DFS DISABLE\n");
@@ -453,6 +455,7 @@ int vcorefs_module_init(void)
  */
 void governor_autok_manager(void)
 {
+#if !defined(CONFIG_MACH_MT6759) /* TODO: 6759 EP */
 	int r;
 	struct mmdvfs_prepare_action_event evt_from_vcore = {MMDVFS_EVENT_PREPARE_CALIBRATION_START};
 
@@ -467,6 +470,7 @@ void governor_autok_manager(void)
 
 	r = sdio_autok();
 	vcorefs_crit("SDIO autok done: %s\n", (r == 0) ? "Yes" : "No");
+#endif
 }
 
 bool governor_autok_check(int kicker)

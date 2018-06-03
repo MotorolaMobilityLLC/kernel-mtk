@@ -22,6 +22,10 @@
 
 #include "vcorefs_v3/mtk_vcorefs_governor.h"
 
+#elif defined(CONFIG_MACH_MT6759)
+
+#include "vcorefs_v3/mtk_vcorefs_governor_mt6759.h"
+
 #endif
 
 #endif /* _COMMON_MTK_VCOREFS_GOVERNOR_H */
