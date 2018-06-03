@@ -21,12 +21,7 @@
 #define DISABLE_PBM_FEATURE
 #endif
 
-/* #define DISABLE_PBM_MD3 */
-
 #define MD1_MAX_PW	4000	/* mW */
-#if !defined(DISABLE_PBM_MD3)
-#define MD3_MAX_PW	1000	/* mW */
-#endif
 #define POWER_FLASH	3500	/* mW */
 #define GUARDING_PATTERN	0
 
@@ -41,16 +36,10 @@ struct pbm {
 
 struct hpf {
 	bool switch_md1;
-#if !defined(DISABLE_PBM_MD3)
-	bool switch_md3;
-#endif
 	bool switch_gpu;
 	bool switch_flash;
 
 	bool md1_ccci_ready;
-#if !defined(DISABLE_PBM_MD3)
-	bool md3_ccci_ready;
-#endif
 
 	int cpu_volt;
 	int gpu_volt;
@@ -59,9 +48,6 @@ struct hpf {
 	unsigned long loading_leakage;
 	unsigned long loading_dlpt;
 	unsigned long loading_md1;
-#if !defined(DISABLE_PBM_MD3)
-	unsigned long loading_md3;
-#endif
 	unsigned long loading_cpu;
 	unsigned long loading_gpu;
 	unsigned long loading_flash;
@@ -84,16 +70,14 @@ struct mrp {
 enum pbm_kicker {
 	KR_DLPT,		/* 0 */
 	KR_MD1,			/* 1 */
-#if !defined(DISABLE_PBM_MD3)
 	KR_MD3,			/* 2 */
-#endif
 	KR_CPU,			/* 3 */
 	KR_GPU,			/* 4 */
 	KR_FLASH		/* 5 */
 };
 
 #define MD_POWER_METER_ENABLE 0
-/* #define TEST_MD_POWER */
+/*#define TEST_MD_POWER*/
 
 #define SECTION_LEN	0xFFFFFFFF	/* total 4 byte, 6 section =  11 11111 11111 11111 11111 11111 11111 */
 #define SECTION_VALUE	0x1F		/* each section is 0x1F = bit(11111) */
@@ -164,7 +148,7 @@ enum share_mem_mapping {	/* each of 4 byte */
 };
 
 /*
- * MD1/MD3 Section level (can't more than SECTION_VALUE)
+ * MD1 Section level (can't more than SECTION_VALUE)
  */
 /* Each section has only 5 bits. The range is from 0 to 31 */
 enum md1_section_level_tbl_2g {
@@ -212,17 +196,17 @@ enum md1_section_level_tbl_tdd {
 	VAL_MD1_TDD_SECTION_6 = 0
 };
 
-enum md3_section_level_tbl_c2k {
-	VAL_MD3_C2K_SECTION_1 = 23,
-	VAL_MD3_C2K_SECTION_2 = 22,
-	VAL_MD3_C2K_SECTION_3 = 20,
-	VAL_MD3_C2K_SECTION_4 = 17,
-	VAL_MD3_C2K_SECTION_5 = 16,
-	VAL_MD3_C2K_SECTION_6 = 0
+enum md1_section_level_tbl_c2k {
+	VAL_MD1_C2K_SECTION_1 = 23,
+	VAL_MD1_C2K_SECTION_2 = 22,
+	VAL_MD1_C2K_SECTION_3 = 20,
+	VAL_MD1_C2K_SECTION_4 = 17,
+	VAL_MD1_C2K_SECTION_5 = 16,
+	VAL_MD1_C2K_SECTION_6 = 0
 };
 
 /*
- * MD1/MD3 Scenario power
+ * MD1 Scenario power
  */
 enum md1_scenario_pwr_tbl {
 	PW_STANDBY = 1,
@@ -234,14 +218,8 @@ enum md1_scenario_pwr_tbl {
 	PW_4G_DL_3CC = 679
 };
 
-#if !defined(DISABLE_PBM_MD3)
-enum md3_scenario_pwr_tbl {
-	PW_MD3 = 100			/* Talking or Datalink */
-};
-#endif
-
 /*
- * MD1/MD3 PA power
+ * MD1 PA power
  */
 enum md1_pa_pwr_tbl_2g {
 	PW_MD1_PA_2G_SECTION_1 = 688,
@@ -279,17 +257,17 @@ enum md1_pa_pwr_tbl_4g_upL2 {
 	PW_MD1_PA_4G_upL2_SECTION_6 = 202
 };
 
-enum md3_pa_pwr_tbl_c2k {
-	PW_MD3_PA_C2K_SECTION_1 = 2084,
-	PW_MD3_PA_C2K_SECTION_2 = 1548,
-	PW_MD3_PA_C2K_SECTION_3 = 1146,
-	PW_MD3_PA_C2K_SECTION_4 = 767,
-	PW_MD3_PA_C2K_SECTION_5 = 535,
-	PW_MD3_PA_C2K_SECTION_6 = 329
+enum md1_pa_pwr_tbl_c2k {
+	PW_MD1_PA_C2K_SECTION_1 = 2084,
+	PW_MD1_PA_C2K_SECTION_2 = 1548,
+	PW_MD1_PA_C2K_SECTION_3 = 1146,
+	PW_MD1_PA_C2K_SECTION_4 = 767,
+	PW_MD1_PA_C2K_SECTION_5 = 535,
+	PW_MD1_PA_C2K_SECTION_6 = 329
 };
 
 /*
- * MD1/MD3 RF power
+ * MD1 RF power
  */
 enum md1_rf_pwr_tbl_2g {
 	PW_MD1_RF_2G_SECTION_1 = 32,
@@ -327,16 +305,14 @@ enum md1_rf_pwr_tbl_4g_upL2 {
 	PW_MD1_RF_4G_upL2_SECTION_6 = 201
 };
 
-#if !defined(DISABLE_PBM_MD3)
-enum md3_rf_pwr_tbl_c2k {
-	PW_MD3_RF_C2K_SECTION_1 = 310,
-	PW_MD3_RF_C2K_SECTION_2 = 310,
-	PW_MD3_RF_C2K_SECTION_3 = 310,
-	PW_MD3_RF_C2K_SECTION_4 = 310,
-	PW_MD3_RF_C2K_SECTION_5 = 310,
-	PW_MD3_RF_C2K_SECTION_6 = 310
+enum md1_rf_pwr_tbl_c2k {
+	PW_MD1_RF_C2K_SECTION_1 = 310,
+	PW_MD1_RF_C2K_SECTION_2 = 310,
+	PW_MD1_RF_C2K_SECTION_3 = 310,
+	PW_MD1_RF_C2K_SECTION_4 = 310,
+	PW_MD1_RF_C2K_SECTION_5 = 310,
+	PW_MD1_RF_C2K_SECTION_6 = 310
 };
-#endif
 
 extern void kicker_pbm_by_dlpt(unsigned int i_max);
 extern void kicker_pbm_by_md(enum pbm_kicker kicker, bool status);
