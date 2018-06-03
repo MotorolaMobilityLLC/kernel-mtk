@@ -68,6 +68,7 @@
 
 #include "mtk_charger_intf.h"
 #include <mt6336.h>
+#include <upmu_common.h>
 
 #define MTK_CHARGER_USE_POLLING
 
@@ -537,6 +538,14 @@ static int mt6336_is_powerpath_enabled(struct charger_device *chg_dev, bool *en)
 	pr_debug("%s\n", __func__);
 	val = mt6336_get_flag_register_value(MT6336_RG_EN_BUCK);
 	*en = (val == 0) ? false : true;
+
+	return 0;
+}
+
+static int pmic_enable_vbus_ovp(struct charger_device *chg_dev, bool en)
+{
+	pr_debug("%s %d\n", __func__, en);
+	pmic_set_register_value(PMIC_RG_VCDT_HV_EN, en);
 
 	return 0;
 }
@@ -1019,6 +1028,7 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.is_enabled = mt6336_is_charging_enabled,
 	.enable_powerpath = mt6336_enable_powerpath,
 	.is_powerpath_enabled = mt6336_is_powerpath_enabled,
+	.enable_vbus_ovp = pmic_enable_vbus_ovp,
 	.get_charging_current = mt6336_get_ichg,
 	.set_charging_current = mt6336_set_ichg,
 	.get_min_charging_current = mt6336_get_min_ichg,
