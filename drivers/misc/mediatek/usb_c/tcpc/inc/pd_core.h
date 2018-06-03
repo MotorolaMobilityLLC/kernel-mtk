@@ -1026,6 +1026,12 @@ struct pd_port {
 	uint8_t country_nr;
 	struct pd_country_authority *country_info;
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_AUTHORITY */
+
+#ifdef CONFIG_USB_POWER_DELIVERY
+	/* for MTK only, handle battery plug out */
+	struct notifier_block bat_nb;
+#endif /* CONFIG_USB_POWER_DELIVERY */
+
 };
 
 static inline struct dp_data *pd_get_dp_data(struct pd_port *pd_port)
