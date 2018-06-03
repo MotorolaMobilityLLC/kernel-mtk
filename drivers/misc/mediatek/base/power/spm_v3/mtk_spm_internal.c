@@ -96,31 +96,36 @@ const char *wakesrc_str[32] = {
  **************************************/
 int __spm_check_opp_level_impl(int ch)
 {
-#ifndef CONFIG_MACH_MT6759
 	int opp = vcorefs_get_sw_opp();
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	int scp_opp = scp_get_dvfs_opp();
+#endif
 
+#ifdef CONFIG_MACH_MT6759
+	opp = (opp > OPP_1) ? OPP_1 : opp;
+#endif
+
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	if (scp_opp >= 0)
 		opp = min(scp_opp, opp);
 #endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
 
 	return opp;
-#else
-	return 0;
-#endif
 }
 
 int __spm_check_opp_level(int ch)
 {
+	int opp;
+#ifdef CONFIG_MACH_MT6759
+	int level[4] = {2, 1, 0, 0};
+#else
 	int level[4] = {4, 3, 1, 0};
-	int opp = 0;
 
 	if (ch == 2)
 		level[1] = 3;
 	else
 		level[1] = 2;
-
+#endif
 	opp = __spm_check_opp_level_impl(ch);
 
 	if (opp < 0 || opp >= ARRAY_SIZE(level)) {
@@ -134,7 +139,6 @@ int __spm_check_opp_level(int ch)
 unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch)
 {
 	unsigned int vcore_volt_pmic_val = 0;
-#ifndef CONFIG_MACH_MT6759
 
 	int opp = 0;
 
@@ -146,7 +150,6 @@ unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch)
 	}
 
 	vcore_volt_pmic_val = (is_vcore_volt_lower) ? VOLT_TO_PMIC_VAL(56800) : get_vcore_ptp_volt(opp);
-#endif
 	return vcore_volt_pmic_val;
 }
 
