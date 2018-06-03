@@ -149,11 +149,6 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_SET_ADDR, 1,
-			PMIC_RG_RTC_MCLK_PDN_MASK, PMIC_RG_RTC_MCLK_PDN_SHIFT);
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_SET_ADDR, 1,
-			PMIC_RG_RTC_32K_CK_PDN_MASK, PMIC_RG_RTC_32K_CK_PDN_SHIFT);
-
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
 
@@ -202,11 +197,6 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
 			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_CLR_ADDR, 1,
-			PMIC_RG_RTC_MCLK_PDN_MASK, PMIC_RG_RTC_MCLK_PDN_SHIFT);
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_CLR_ADDR, 1,
-			PMIC_RG_RTC_32K_CK_PDN_MASK, PMIC_RG_RTC_32K_CK_PDN_SHIFT);
 }
 
 bool spm_is_md_sleep(void)
