@@ -16,6 +16,9 @@
 
 #define ENABLE_MBW		1
 #define DISABLE_FLIPPER_FUNC	0
+#ifdef CONFIG_MTK_ENG_BUILD
+#define ENABLE_RUNTIME_BM
+#endif
 
 #define EMI_BMEN	(CEN_EMI_BASE + 0x400)
 #define EMI_BCNT	(CEN_EMI_BASE + 0x408)
@@ -185,6 +188,7 @@ extern bool is_dump_latency(void);
 extern void dump_emi_latency(void);
 extern void dump_emi_outstanding(void);
 extern void dump_emi_outstanding_for_md(void);
+extern void dump_last_bm(char *buf, unsigned int leng);
 
 typedef unsigned long long (*getmembw_func)(void);
 extern void mt_getmembw_registerCB(getmembw_func pCB);
