@@ -15,7 +15,6 @@
 #define __DFD_H__
 
 #define DFD_SMC_MAGIC_SETUP (0x99716150)
-#define DFD_BASE_ADDR_MSB_IN_INFRA	(0x390)
 
 struct dfd_drv {
 	u64 base_addr;
@@ -26,5 +25,6 @@ struct dfd_drv {
 };
 
 extern unsigned int __attribute__((weak)) check_dfd_support(void);
+extern unsigned int __attribute__((weak)) dfd_infra_base(void);
 
 #endif
