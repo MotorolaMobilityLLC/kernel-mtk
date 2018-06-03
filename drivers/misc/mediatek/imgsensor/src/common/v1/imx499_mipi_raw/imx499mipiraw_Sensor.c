@@ -196,9 +196,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.temperature_support = 1,	/* 1, support; 0,not support */
 	.sensor_mode_num = 10,	/* support sensor mode num */
 
-	.cap_delay_frame = 1,	/* enter capture delay frame num */
+	.cap_delay_frame = 2,	/* enter capture delay frame num */
 	.pre_delay_frame = 2,	/* enter preview delay frame num */
-	.video_delay_frame = 1,	/* enter video delay frame num */
+	.video_delay_frame = 2,	/* enter video delay frame num */
 	.hs_video_delay_frame = 3,/* enter high speed video  delay frame num */
 	.slim_video_delay_frame = 3,/* enter slim video delay frame num */
 
@@ -1303,7 +1303,7 @@ kal_uint16 addr_data_pair_preview_imx499[] = {
 	0x0387, 0x01,
 	0x0900, 0x01,
 	0x0901, 0x22,
-	0x0902, 0x0B,
+	0x0902, 0x0A,
 	0x3F4C, 0x05,
 	0x3F4D, 0x03,
 
@@ -1590,7 +1590,7 @@ kal_uint16 addr_data_pair_hs_video_imx499[] = {	/*720 120fps */
 	0x0387, 0x01,
 	0x0900, 0x01,
 	0x0901, 0x22,
-	0x0902, 0x0B,
+	0x0902, 0x0A,
 	0x3F4C, 0x05,
 	0x3F4D, 0x03,
 
@@ -1678,7 +1678,7 @@ kal_uint16 addr_data_pair_slim_video_imx499[] = {
 	0x0387, 0x01,
 	0x0900, 0x01,
 	0x0901, 0x22,
-	0x0902, 0x0B,
+	0x0902, 0x0A,
 	0x3F4C, 0x05,
 	0x3F4D, 0x03,
 
