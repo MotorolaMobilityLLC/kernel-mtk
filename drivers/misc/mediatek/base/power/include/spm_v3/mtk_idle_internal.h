@@ -311,6 +311,7 @@ enum {
 	BY_PLL,
 	BY_PWM,
 	BY_DCS,
+	BY_UFS,
 	NR_REASONS,
 };
 
