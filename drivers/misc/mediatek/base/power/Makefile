@@ -28,4 +28,3 @@ obj-$(CONFIG_MACH_MT6758) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6758) += hps_v3/
 obj-$(CONFIG_MACH_MT6758) += cpuidle_v3/
 obj-$(CONFIG_MACH_MT6758) += power_gs_v1/
-obj-$(CONFIG_MACH_MT6758) += eem_v2/
