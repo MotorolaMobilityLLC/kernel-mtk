@@ -121,15 +121,6 @@ enum vcorefs_smc_cmd {
 	NUM_VCOREFS_SMC_CMD,
 };
 
-enum {
-	WR_NONE = 0,
-	WR_UART_BUSY = 1,
-	WR_PCM_ASSERT = 2,
-	WR_PCM_TIMER = 3,
-	WR_WAKE_SRC = 4,
-	WR_UNKNOWN = 5,
-};
-
 struct wake_status {
 	u32 assert_pc;      /* PCM_REG_DATA_INI */
 	u32 r12;            /* PCM_REG12_DATA */

@@ -40,6 +40,14 @@ int mtk_spm_init(void);
 void *mt_spm_base_get(void);
 extern int spm_load_firmware_status(void);
 
+enum {
+	WR_NONE = 0,
+	WR_UART_BUSY = 1,
+	WR_PCM_ASSERT = 2,
+	WR_PCM_TIMER = 3,
+	WR_WAKE_SRC = 4,
+	WR_UNKNOWN = 5,
+};
 
 /********************************************************************
  * sspm lock spm scenario
