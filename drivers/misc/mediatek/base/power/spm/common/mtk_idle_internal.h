@@ -112,6 +112,7 @@ int mtk_idle_enter(
  *******************************************************************/
 
 unsigned int spm_get_resource_usage(void);
+unsigned int spm_get_resource_usage_by_user(unsigned int user);
 
 
 /********************************************************************

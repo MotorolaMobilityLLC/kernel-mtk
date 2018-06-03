@@ -27,6 +27,8 @@
 
 #include <mtk_spm_internal.h>
 #include <mtk_spm_suspend_internal.h>
+#include <mtk_spm_resource_req_internal.h>
+#include <mtk_spm_resource_req.h>
 
 #include <mt-plat/mtk_ccci_common.h>
 
@@ -106,9 +108,14 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 static void spm_suspend_pcm_setup_before_wfi(u32 cpu,
 		struct pwr_ctrl *pwrctrl)
 {
+	unsigned int resource_usage = 0;
+
 #ifdef CONFIG_MTK_ICCS_SUPPORT
 	iccs_enter_low_power_state();
 #endif
+
+	/* Only get resource usage from user SCP */
+	resource_usage = spm_get_resource_usage_by_user(SPM_RESOURCE_USER_SCP);
 
 	spm_suspend_pre_process(pwrctrl);
 
@@ -116,8 +123,8 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu,
 	__spm_sync_pcm_flags(pwrctrl);
 	pwrctrl->timer_val = __spm_get_pcm_timer_val(pwrctrl);
 
-	SMC_CALL(SUSPEND_ARGS, pwrctrl->pcm_flags, pwrctrl->pcm_flags1,
-		pwrctrl->timer_val);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_SUSPEND_ARGS, pwrctrl->pcm_flags,
+		pwrctrl->pcm_flags1, pwrctrl->timer_val, resource_usage);
 }
 
 static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
