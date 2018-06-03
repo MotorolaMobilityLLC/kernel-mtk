@@ -32,4 +32,4 @@ static int __init mt_spm_init(void)
 	return 0;
 }
 
-arch_initcall(mt_spm_init);
+module_init(mt_spm_init);
