@@ -2825,6 +2825,11 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 	ASSERT(prEnc);
 	if (GLUE_CHK_PR3(prNetDev, prEnc, pcExtra) == FALSE)
 		return -EINVAL;
+
+	if (prIWEncExt == NULL) {
+		DBGLOG(REQ, ERROR, "prIWEncExt is NULL!\n");
+		return -EINVAL;
+	}
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
 	memset(keyStructBuf, 0, sizeof(keyStructBuf));
@@ -3518,18 +3523,16 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 
 			if (copy_from_user(prExtraBuf, iwr->u.encoding.pointer, u4ExtraSize))
 				ret = -EFAULT;
-		} else if (u4ExtraSize != 0) {
-			ret = -EINVAL;
-			break;
-		}
 
-		if (ret == 0)
-			ret = wext_set_encode(prDev, NULL, &iwr->u.encoding, prExtraBuf);
+			if (ret == 0)
+				ret = wext_set_encode(prDev, NULL, &iwr->u.encoding, prExtraBuf);
 
-		if (prExtraBuf) {
 			kalMemFree(prExtraBuf, VIR_MEM_TYPE, u4ExtraSize);
 			prExtraBuf = NULL;
-		}
+
+		} else if (u4ExtraSize != 0)
+			ret = -EINVAL;
+
 		break;
 
 	case SIOCGIWENCODE:	/* 0x8B2B, get encoding token & mode */

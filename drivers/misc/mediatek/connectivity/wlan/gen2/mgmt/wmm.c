@@ -158,6 +158,11 @@ wmmTxTspecFrame(P_ADAPTER_T prAdapter, UINT_8 ucTid, enum TSPEC_OP_CODE eOpCode,
 	DBGLOG(WMM, INFO, "Tspec Action to AP="MACSTR"\n", MAC2STR(prStaRec->aucMacAddr));
 
 	prMsduInfo = cnmMgtPktAlloc(prAdapter, ACTION_ADDTS_REQ_FRAME_LEN);
+
+	if (prMsduInfo == NULL) {
+		DBGLOG(WMM, ERROR, "prMsduInfo is null!");
+		return;
+	}
 	prMsduInfo->eSrc = TX_PACKET_MGMT;
 	prMsduInfo->ucPacketType = HIF_TX_PACKET_TYPE_MGMT;
 	prMsduInfo->ucStaRecIndex = prStaRec->ucIndex;
