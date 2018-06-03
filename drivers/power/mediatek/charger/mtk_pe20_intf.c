@@ -268,7 +268,7 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 
 	pr_debug("%s: starts\n", __func__);
 
-	if (pe20->vbat_orig > pinfo->data.vbat_cable_imp_threshold) {
+	if (pe20->vbat_orig > pinfo->data.vbat_cable_imp_threshold * 1000) {
 		pr_err("VBAT > %dmV, directly set aicr to %dmA\n",
 			pinfo->data.vbat_cable_imp_threshold,
 			pinfo->data.ac_charger_input_current);
@@ -338,13 +338,13 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 		pr_err("Bad cable\n");
 	}
 
-	pr_info("%s: set aicr:%dmA, vbat:%d, mivr_state:%d\n",
+	pr_info("%s: set aicr:%dmA, vbat:%dmV, mivr_state:%d\n",
 		__func__, pe20->aicr_cable_imp / 1000,
 		pe20->vbat_orig / 1000, mivr_state);
 	return;
 
 end:
-	pr_err("%s not started: set aicr:%dmA, vbat:%d, mivr_state:%d\n",
+	pr_err("%s not started: set aicr:%dmA, vbat:%dmV, mivr_state:%d\n",
 		__func__, pe20->aicr_cable_imp / 1000,
 		pe20->vbat_orig / 1000, mivr_state);
 }
