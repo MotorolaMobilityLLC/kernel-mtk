@@ -29,6 +29,7 @@
 #include <mt-plat/sync_write.h>
 
 #include "emi_bwl.h"
+#include "emi_mbw.h"
 
 DEFINE_SEMAPHORE(emi_bwl_sem);
 
@@ -88,6 +89,10 @@ static int emi_probe(struct platform_device *pdev)
 	ret = mtk_mem_bw_ctrl(CON_SCE_UI, ENABLE_CON_SCE);
 	if (ret)
 		pr_err("[EMI/BWL] fail to set EMI bandwidth limiter\n");
+
+#if ENABLE_MBW
+	mbw_init();
+#endif
 
 	return 0;
 }

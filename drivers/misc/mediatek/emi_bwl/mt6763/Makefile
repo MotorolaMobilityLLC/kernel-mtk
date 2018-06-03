@@ -12,3 +12,5 @@
 #
 
 obj-y += emi_bwl.o
+obj-y += emi_mbw.o
+obj-y += emi_mbw_api.o
