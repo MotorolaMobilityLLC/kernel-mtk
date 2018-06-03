@@ -10,7 +10,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 #
-
+ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
+obj-$(CONFIG_MACH_MT6775) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+endif
 obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_KIBOPLUS) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6799) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
