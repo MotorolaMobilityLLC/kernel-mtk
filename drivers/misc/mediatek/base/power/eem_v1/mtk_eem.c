@@ -366,6 +366,7 @@ static int get_devinfo(void)
 		val[10] = get_devinfo_with_index(62);
 		val[11] = get_devinfo_with_index(63);
 
+		#if EEM_FAKE_EFUSE
 		/* for verification */
 		val[0] = DEVINFO_0;
 		val[1] = DEVINFO_1;
@@ -379,6 +380,7 @@ static int get_devinfo(void)
 		val[9] = DEVINFO_9;
 		val[10] = DEVINFO_10;
 		val[11] = DEVINFO_11;
+		#endif
 
 		/* get binlevel from efuse */
 		#if (EEM_ENABLE_TINYSYS_SSPM)
@@ -455,6 +457,23 @@ static int get_devinfo(void)
 	#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
+	return ret;
+}
+
+/* Return turbo value to cpu dvfs
+ * It should be called after eem run get_devinfo()
+ */
+unsigned char mt_eem_get_turbo(void)
+{
+	unsigned char ret = 0x0;
+
+	#if !(EEM_ENABLE_TINYSYS_SSPM)
+	ret = eem_devinfo.BIG_TURBO;
+	#else
+	eem_error("big efuse: 0x%0x\n", eem_logs->hw_res[HW_RES_IDX_TURBO]);
+	ret = GET_BITS_VAL(4:4, eem_logs->hw_res[HW_RES_IDX_TURBO]);
+	#endif
+
 	return ret;
 }
 /*============================================================
@@ -954,10 +973,15 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 
 	case EEM_PHASE_INIT02:
 		eem_write(EEMINTEN, 0x00005f01);
+		#if EEM_FAKE_EFUSE
 		eem_write(EEM_INIT2VALS,
 			  ((det->AGEVOFFSETIN << 16) & 0xffff0000) |
 			  ((((eem_read(EEM_BASEADDR+0x5E0)>>20) & 0xF) == 0) ?
 						0 : det->DCVOFFSETIN & 0xffff));
+		#else
+		eem_write(EEM_INIT2VALS,
+			  ((det->AGEVOFFSETIN << 16) & 0xffff0000) | (det->DCVOFFSETIN & 0xffff));
+		#endif
 		/* enable EEM INIT measurement */
 		eem_write(EEMEN, 0x00000005);
 		break;
@@ -2948,7 +2972,7 @@ void eem_init01(void)
 			#endif
 		}
 		/* current banks: 00 0101 1111 */
-		if ((out == 0x5F) || (timeout == 30)) { /* 0x3B==out */
+		if ((out == EEM_INIT01_FLAG) || (timeout == 30)) { /* 0x3B==out */
 			eem_debug("init01 finish time is %d, out=0x%x\n", timeout, out);
 			break;
 		}
@@ -4264,6 +4288,7 @@ unsigned int get_vcore_ptp_volt(unsigned int seg)
 
 	return ret;
 }
+
 /* update vcore voltage by index and new volt(10uv) */
 static unsigned int  mt_eem_update_vcore_volt(unsigned int index, unsigned int newVolt)
 {
