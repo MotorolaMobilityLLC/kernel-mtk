@@ -14,12 +14,17 @@
 
 #include <linux/spinlock.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
 #include <mt-plat/aee.h>
 #include <linux/interrupt.h>
 #include <mt-plat/sync_write.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
+#include "scp_dvfs.h"
+
+/* scp awake timout count definition*/
+#define SCP_AWAKE_TIMEOUT 5000
 
 /*
  * handler for wdt irq for scp
@@ -40,6 +45,34 @@ static void scp_A_wdt_handler(void)
 irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 {
 	unsigned int reg = SCP_A_TO_HOST_REG;
+#ifdef CFG_RECOVERY_SUPPORT
+	/* if WDT and IPI triggered on the same time, ignore the IPI */
+	if (reg & SCP_IRQ_WDT) {
+		int retry;
+		unsigned long spin_flags;
+		unsigned long tmp;
+
+		scp_A_wdt_handler();
+		scp_aed_reset(EXCEP_RUNTIME, SCP_A_ID);
+		/* clr after SCP side INT trigger, or SCP may lost INT max wait 5000*40u = 200ms */
+		for (retry = SCP_AWAKE_TIMEOUT; retry > 0; retry--) {
+			spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+			tmp = readl(SCP_GPR_CM4_A_REBOOT);
+			spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+			if (tmp == CM4_A_READY_TO_REBOOT)
+				break;
+			udelay(40);
+		}
+		if (retry == 0)
+			pr_debug("[SCP] SCP_A wakeup timeout\n");
+		udelay(10);
+		SCP_A_TO_HOST_REG = SCP_IRQ_WDT;
+	} else if (reg & SCP_IRQ_SCP2HOST) {
+		/* if WDT and IPI triggered on the same time, ignore the IPI */
+		scp_A_ipi_handler();
+		SCP_A_TO_HOST_REG = SCP_IRQ_SCP2HOST;
+	}
+#else
 	scp_excep_id reset_type;
 	int reboot = 0;
 
@@ -61,7 +94,7 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 
 	if (reboot)
 		scp_aed_reset(reset_type, SCP_A_ID);
-
+#endif
 	return IRQ_HANDLED;
 }
 
@@ -93,6 +126,34 @@ static void scp_B_wdt_handler(void)
 irqreturn_t scp_B_irq_handler(int irq, void *dev_id)
 {
 	unsigned int reg = SCP_B_TO_HOST_REG;
+#ifdef CFG_RECOVERY_SUPPORT
+	/* if WDT and IPI triggered on the same time, ignore the IPI */
+	if (reg & SCP_IRQ_WDT) {
+		int retry;
+		unsigned long spin_flags;
+		unsigned long tmp;
+
+		scp_B_wdt_handler();
+		scp_aed_reset(EXCEP_RUNTIME, SCP_B_ID);
+		/* clr after SCP side INT trigger, or SCP may lost INT max wait 5000*40u = 200ms */
+		for (retry = SCP_AWAKE_TIMEOUT; retry > 0; retry--) {
+			spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+			tmp = readl(SCP_GPR_CM4_B_REBOOT);
+			spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+			if (tmp == CM4_B_READY_TO_REBOOT)
+				break;
+			udelay(40);
+		}
+		if (retry == 0)
+			pr_debug("[SCP] SCP_B wakeup timeout\n");
+		udelay(10);
+		SCP_B_TO_HOST_REG = SCP_IRQ_WDT;
+	} else if (reg & SCP_IRQ_SCP2HOST) {
+		/* if WDT and IPI triggered on the same time, ignore the IPI */
+		scp_B_ipi_handler();
+		SCP_B_TO_HOST_REG = SCP_IRQ_SCP2HOST;
+	}
+#else
 	scp_excep_id reset_type;
 	int reboot = 0;
 
@@ -114,7 +175,7 @@ irqreturn_t scp_B_irq_handler(int irq, void *dev_id)
 
 	if (reboot)
 		scp_aed_reset(reset_type, SCP_B_ID);
-
+#endif
 	return IRQ_HANDLED;
 }
 

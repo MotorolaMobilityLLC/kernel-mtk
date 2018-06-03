@@ -51,7 +51,7 @@
 #define SYNC_TIME_CYCLC		10
 #define SCP_sensorHub_DEV_NAME        "SCP_sensorHub"
 
-#undef CHRE_POWER_RESET_NOTIFY
+#define CHRE_POWER_RESET_NOTIFY
 
 static int sensor_send_timestamp_to_hub(void);
 static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp);
