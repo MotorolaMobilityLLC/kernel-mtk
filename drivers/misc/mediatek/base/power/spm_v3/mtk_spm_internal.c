@@ -36,6 +36,7 @@
 #ifdef CONFIG_MTK_DCS
 #include <mt-plat/mtk_meminfo.h>
 #endif
+#include <mt-plat/mtk_chip.h>
 
 /**************************************
  * Config and Parameter
@@ -147,6 +148,21 @@ unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch)
 	vcore_volt_pmic_val = (is_vcore_volt_lower) ? VOLT_TO_PMIC_VAL(56800) : get_vcore_ptp_volt(opp);
 #endif
 	return vcore_volt_pmic_val;
+}
+
+void __spm_update_pcm_flags_dcs_workaround(struct pwr_ctrl *pwrctrl, int ch)
+{
+#ifdef CONFIG_MACH_MT6799
+#ifdef CONFIG_MTK_DCS
+	/* dcs s0 workaround only applied when ch is 2 */
+	if (mt_get_chip_sw_ver() == CHIP_SW_VER_02 && ch == 4)
+		pwrctrl->pcm_flags |= SPM_FLAG_DIS_DCSS0_LOW;
+#else
+	/* dcs s0 work around default off */
+	if (mt_get_chip_sw_ver() == CHIP_SW_VER_02)
+		pwrctrl->pcm_flags |= SPM_FLAG_DIS_DCSS0_LOW;
+#endif
+#endif
 }
 
 int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl)
