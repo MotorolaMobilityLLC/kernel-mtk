@@ -885,7 +885,7 @@
 		reg = <0 0x10238000 0 0x1000>;
 		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_LOW>,
 				<GIC_SPI 155 IRQ_TYPE_LEVEL_LOW>;
-		disp_mutex_reg = <0x14025000 0x1000>;
+		disp_mutex_reg = <0x14016000 0x1000>;
 		g3d_config_base = <0x13000000 0 0xffff0000>;
 		mmsys_config_base = <0x14000000 1 0xffff0000>;
 		disp_dither_base = <0x14010000 2 0xffff0000>;
@@ -942,7 +942,7 @@
 		mdp_rsz0_frame_done = <27>;
 		mdp_rsz1_frame_done = <28>;
 		mdp_tdshp_frame_done = <29>;
-		mdp_wrot0_write_done = <30>;
+		mdp_wrot0_write_frame_done = <30>;
 		mdp_wdma_frame_done = <31>;
 		disp_ovl0_frame_done = <32>;
 		disp_2l_ovl0_frame_done = <33>;
