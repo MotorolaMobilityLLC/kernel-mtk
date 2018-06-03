@@ -15,7 +15,7 @@
 ifndef CONFIG_MTK_FPGA
 
 # ccci_util is build after eccci or later
-ifdef CONFIG_MTK_ECCCI_DRIVER
+# ifdef CONFIG_MTK_ECCCI_DRIVER
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccci_util
 
@@ -45,6 +45,6 @@ ifeq ($(mtkplatform_exist), y)
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
 
-endif
+# endif
 
 obj-y += ccci_util_dummy.o # avoid build error

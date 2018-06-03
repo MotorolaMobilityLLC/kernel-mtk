@@ -3048,7 +3048,7 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int tx_ch, un
 	if (md->config.load_type < modem_ultg)
 		runtime->feature_4_val[1] = 0;
 	else
-		runtime->feature_4_val[1] = get_md_wm_id_map(md->config.load_type);
+		runtime->feature_4_val[1] = get_wm_bitmap_for_ubin();
 
 	/* CCCI debug */
 #if defined(FEATURE_SEQ_CHECK_EN) || defined(FEATURE_POLL_MD_EN)

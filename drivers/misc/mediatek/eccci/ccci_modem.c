@@ -93,7 +93,7 @@ void ccci_md_config(struct ccci_modem *md)
 	unsigned int md_resv_mem_size = 0, md_resv_smem_size = 0;
 
 	/* setup config */
-	md->config.load_type = get_modem_support_cap(md->index);
+	md->config.load_type = get_md_img_type(md->index);
 	if (get_modem_is_enabled(md->index))
 		md->config.setting |= MD_SETTING_ENABLE;
 	else
@@ -751,7 +751,7 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 				if (md->config.load_type < modem_ultg)
 					rt_f_element.feature[1] = 0;
 				else
-					rt_f_element.feature[1] = get_md_wm_id_map(md->config.load_type);
+					rt_f_element.feature[1] = get_wm_bitmap_for_ubin();
 				CCCI_BOOTUP_LOG(md->index, KERN, "sbp=0x%x,wmid[%d]\n",
 					rt_f_element.feature[0], rt_f_element.feature[1]);
 				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
