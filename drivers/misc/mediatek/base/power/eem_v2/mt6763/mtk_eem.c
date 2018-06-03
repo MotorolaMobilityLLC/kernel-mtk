@@ -418,6 +418,10 @@ static int __init vcore_ptp_init(void)
 			eem_vcore[i] = det->ops->volt_2_pmic(det, *(vcore_opp[i]+eem_vcore_index[i]));
 	}
 
+	/* read efuse (0x11F107C0[8]) to patch opp-1 */
+	if (get_devinfo_with_index(138) & 0x100)
+		eem_vcore[1] = eem_vcore[0];
+
 	/* bottom up compare each volt to ensure each opp is in descending order */
 	for (i = VCORE_NR_FREQ - 2; i >= 0; i--)
 		eem_vcore[i] = (eem_vcore[i] < eem_vcore[i+1]) ? eem_vcore[i+1] : eem_vcore[i];
