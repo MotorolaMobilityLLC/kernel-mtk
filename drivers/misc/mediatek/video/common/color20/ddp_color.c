@@ -1067,6 +1067,16 @@ static int g_tdshp_flag;	/* 0: normal, 1: tuning mode */
 int ncs_tuning_mode;
 int tdshp_index_init;
 
+#if defined(DISP_COLOR_ON)
+#define COLOR_MODE			(1)
+#elif defined(MDP_COLOR_ON)
+#define COLOR_MODE			(2)
+#elif defined(DISP_MDP_COLOR_ON)
+#define COLOR_MODE			(3)
+#else
+#define COLOR_MODE			(0)	/*color feature off */
+#endif
+
 #if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
 #define TDSHP_PA_BASE   0x14009000
 #define TDSHP1_PA_BASE  0x1400A000
@@ -1118,6 +1128,35 @@ static bool g_config_color21;
 #if defined(COLOR_3_0)
 static bool g_config_color30;
 #endif
+
+#if defined(CONFIG_MACH_MT6799)
+#define COLOR_TOTAL_MODULE_NUM (2)
+#define index_of_color(module) ((module == DISP_MODULE_COLOR0) ? 0 : 1)
+#else
+#define COLOR_TOTAL_MODULE_NUM (1)
+#define index_of_color(module) (0)
+#endif
+
+static volatile bool g_color_is_clock_on[COLOR_TOTAL_MODULE_NUM];
+
+bool disp_color_reg_get(enum DISP_MODULE_ENUM module, unsigned long addr, unsigned int *value)
+{
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
+	if (COLOR_MODE == 2) {
+		COLOR_DBG("color is not in DISP path");
+		*value = 0;
+		return true;
+	}
+#endif
+
+	if (g_color_is_clock_on[index_of_color(module)] != true) {
+		COLOR_DBG("clock off .. skip reg set");
+		return false;
+	}
+
+	*value = DISP_REG_GET(addr);
+	return true;
+}
 
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
 			   unsigned int hue_upper, unsigned int hue_lower)
@@ -2494,6 +2533,8 @@ static void color_write_sw_reg(unsigned int reg_id, unsigned int value)
 
 static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
+	g_color_is_clock_on[index_of_color(module)] = true;
+
 #if defined(CONFIG_MACH_MT6755)
 	/* color is DCM , do nothing */
 	return 0;
@@ -2540,6 +2581,8 @@ static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
+	g_color_is_clock_on[index_of_color(module)] = false;
+
 #if defined(CONFIG_MACH_MT6755)
 	/* color is DCM , do nothing */
 	return 0;
@@ -2577,6 +2620,7 @@ static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 #endif
 #endif
+
 	return 0;
 #endif
 }
