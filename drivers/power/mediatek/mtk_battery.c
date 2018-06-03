@@ -314,6 +314,15 @@ static void battery_update(struct battery_data *bat_data)
 
 unsigned char bat_is_kpoc(void)
 {
+#if 0
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	battery_charging_control(CHARGING_CMD_GET_PLATFORM_BOOT_MODE, &g_platform_boot_mode);
+	if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+	    || g_platform_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+		return true;
+	}
+#endif
+#endif
 	return false;
 }
 
@@ -986,6 +995,20 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	ret_msg->fgd_cmd = msg->fgd_cmd;
 
 	switch (msg->fgd_cmd) {
+#if 0
+	case FG_DAEMON_CMD_GET_CURRENT_TIME:
+		{
+			int curr_time = 0;
+
+			battery_meter_ctrl(BATTERY_METER_CMD_GET_CURRENT_TIME, &curr_time);
+			ret_msg->fgd_data_len += sizeof(curr_time);
+			memcpy(ret_msg->fgd_data, &curr_time, sizeof(curr_time));
+
+			bm_debug("[fg_res] FG_DAEMON_CMD_GET_CURRENT_TIME = %d\n", curr_time);
+		}
+		break;
+#endif
+
 	case FG_DAEMON_CMD_IS_BAT_PLUGOUT:
 		{
 			int is_bat_plugout = 0;
@@ -1197,6 +1220,19 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		FG_status.sw_ocv = _sw_ocv;
 
 		bm_debug("[fg_res] FG_DAEMON_CMD_SET_SW_OCV = %d\n", _sw_ocv);
+	}
+	break;
+
+	case FG_DAEMON_CMD_SET_FG_VBAT2_L_INT_EN:
+	{
+		int fg_vbat2_en = 0;
+
+		memcpy(&fg_vbat2_en, &msg->fgd_data[0], sizeof(fg_vbat2_en));
+
+		battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_VBAT2_L_INT_EN, &fg_vbat2_en);
+
+		bm_err("[fg_res] FG_DAEMON_CMD_SET_FG_VBAT2_L_INT_EN = %d\n",
+			fg_vbat2_en);
 	}
 	break;
 
@@ -1958,13 +1994,39 @@ void fg_drv_update_hw_status(void)
 	tmp = tmp_new;
 }
 
-void fg_iavg_int_handler(void)
+void fg_iavg_int_ht_handler(void)
 {
+	pr_err("[FGADC_intr_end][fg_iavg_int_ht_handler]\n");
+	wakeup_fg_algo(FG_INTR_IAVG);
+}
+
+void fg_iavg_int_lt_handler(void)
+{
+	pr_err("[FGADC_intr_end][fg_iavg_int_lt_handler]\n");
 	wakeup_fg_algo(FG_INTR_IAVG);
 }
 
 void fg_cycle_int_handler(void)
 {
+#if 0
+	int ncar = 0, lth = 0;
+
+	ncar = pmic_get_register_value(PMIC_FG_NCAR_15_00);
+	ncar |= pmic_get_register_value(PMIC_FG_NCAR_31_16) << 16;
+
+	lth = pmic_get_register_value(PMIC_FG_N_CHARGE_LTH_15_14) & 0xc000;
+	lth |= pmic_get_register_value(PMIC_FG_N_CHARGE_LTH_31_16) << 16;
+
+	bm_err("[fg_n_charge_int_handler] %d %d low:0x%x 0x%x low:0x%x 0x%x\n",
+	ncar, lth,
+	pmic_get_register_value(PMIC_FG_NCAR_15_00),
+	pmic_get_register_value(PMIC_FG_NCAR_31_16),
+	pmic_get_register_value(PMIC_FG_N_CHARGE_LTH_15_14),
+	pmic_get_register_value(PMIC_FG_N_CHARGE_LTH_31_16));
+
+
+	battery_meter_ctrl(BATTERY_METER_CMD_SET_CYCLE_INTERRUPT, &bat_cycle_thr);
+#endif
 	wakeup_fg_algo(FG_INTR_BAT_CYCLE);
 }
 
@@ -2542,12 +2604,15 @@ static int battery_probe(struct platform_device *dev)
 	pmic_register_interrupt_callback(FG_BAT0_INT_L_NO, fg_bat_int2_l_handler);
 	pmic_register_interrupt_callback(FG_BAT0_INT_H_NO, fg_bat_int2_h_handler);
 
+	/* init FG_TIME_NO : register in pmic_timer_service */
+	/*pmic_register_interrupt_callback(FG_TIME_NO, fg_time_int_handler);*/
+
 	/* init  cycle int */
 	pmic_register_interrupt_callback(FG_N_CHARGE_L_NO, fg_cycle_int_handler);
 
 	/* init  IAVG int */
-	pmic_register_interrupt_callback(FG_IAVG_H_NO, fg_iavg_int_handler);
-	pmic_register_interrupt_callback(FG_IAVG_L_NO, fg_iavg_int_handler);
+	pmic_register_interrupt_callback(FG_IAVG_H_NO, fg_iavg_int_ht_handler);
+	pmic_register_interrupt_callback(FG_IAVG_L_NO, fg_iavg_int_lt_handler);
 
 	/* init ZCV INT */
 	pmic_register_interrupt_callback(FG_ZCV_NO, fg_zcv_int_handler);
