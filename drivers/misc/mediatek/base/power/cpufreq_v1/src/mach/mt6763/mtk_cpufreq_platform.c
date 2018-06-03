@@ -19,6 +19,7 @@
 #include <mt-plat/upmu_common.h>
 #include "mtk_cpufreq_platform.h"
 #include "../../mtk_cpufreq_hybrid.h"
+#include "mtk_devinfo.h"
 
 static struct regulator *regulator_proc1;
 static struct regulator *regulator_sram1;
@@ -569,12 +570,20 @@ void mt_cpufreq_turbo_action(unsigned long action,
 }
 #endif
 
+unsigned int lv;
 int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
 	unsigned int turbo_f, unsigned int turbo_v)
 {
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	if (id == MT_CPU_DVFS_L) {
+#if 0
+		if (lv == CPU_LEVEL_2)
+			cpuhvfs_set_turbo_scale(2626 * 1000, turbo_v);
+		else
+			cpuhvfs_set_turbo_scale(2457 * 1000, turbo_v);
+#else
 		cpuhvfs_set_turbo_scale(2457 * 1000, turbo_v);
+#endif
 		return 1;
 	} else
 		return 0;
@@ -639,11 +648,40 @@ int mt_cpufreq_dts_map(void)
 
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
-	unsigned int lv = CPU_LEVEL_1;
+	lv = CPU_LEVEL_1;
 
 #if 0
-	turbo_flag = mt_eem_get_turbo();
-	cpufreq_info("turbo_flag = %d\n", turbo_flag);
+#define SEG_EFUSE 30
+#define BIN_EFUSE 52 /* 588 */
+#define TURBO_EFUSE 54 /* 590 */
+
+	unsigned int bin = 0;
+
+	/* 0x588 bit[2:0] */
+	bin = get_devinfo_with_index(BIN_EFUSE);
+	bin = _GET_BITS_VAL_(2:0, bin);
+	if (get_devinfo_with_index(SEG_EFUSE) == n_seg)
+		lv = CPU_LEVEL_0;
+	else if (get_devinfo_with_index(SEG_EFUSE) == t_seg) {
+		if (bin == 1)
+			lv = CPU_LEVEL_2;
+		else
+			lv = CPU_LEVEL_1;
+	} else if (get_devinfo_with_index(SEG_EFUSE) == tt_seg) {
+		if (is_ext_buck_exist())
+			lv = CPU_LEVEL_3;
+		else {
+			if (bin == 1)
+				lv = CPU_LEVEL_2;
+			else
+				lv = CPU_LEVEL_1;
+		}
+	}
+
+	/* 0x590 bit3 */
+	turbo_flag = get_devinfo_with_index(TURBO_EFUSE);
+	turbo_flag = _GET_BITS_VAL_(3:3, turbo_flag);
+	cpufreq_info("(%d, %d, %d)\n", lv, bin, turbo_flag);
 #endif
 
 	return lv;
