@@ -61,6 +61,9 @@ signed int battery_get_bat_uisoc(void)
 		(boot_mode == ATE_FACTORY_BOOT))
 		return 75;
 
+	if (is_fg_disable() == 1)
+		return 50;
+
 	return FG_status.ui_soc;
 }
 
