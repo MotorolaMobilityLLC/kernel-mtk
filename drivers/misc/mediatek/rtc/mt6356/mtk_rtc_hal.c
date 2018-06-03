@@ -218,7 +218,11 @@ void rtc_enable_k_eosc(void)
 	/*RTC mode will have only OFF mode and FPM */
 	pmic_config_interface_nolock(PMIC_XO_EN32K_MAN_ADDR, 0, PMIC_XO_EN32K_MAN_MASK,
 		PMIC_XO_EN32K_MAN_SHIFT);
+
 	rtc_write(RTC_BBPU, rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
+	rtc_write_trigger();
+	/* Enable K EOSC mode for normal power off and then plug out battery */
+	rtc_write(RTC_AL_YEA, ((rtc_read(RTC_AL_YEA) | RTC_K_EOSC_RSV_0) & (~RTC_K_EOSC_RSV_1)) | RTC_K_EOSC_RSV_2);
 	rtc_write_trigger();
 
 	osc32 = rtc_read(RTC_OSC32CON);
