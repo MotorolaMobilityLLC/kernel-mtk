@@ -54,5 +54,67 @@ scp_feature_tb_t feature_table[NUM_FEATURE_ID] = {
 		.enable     = 0,
 	},
 
+#if SCP_VCORE_TEST_ENABLE
+	{
+		.feature    = VCORE_TEST_FEATURE_ID,
+		.freq       = 50,
+		.core       = SCP_A_ID,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST2_FEATURE_ID,
+		.freq       = 100,
+		.core       = SCP_A_ID,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST3_FEATURE_ID,
+		.freq       = 100,
+		.core       = SCP_A_ID,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST4_FEATURE_ID,
+		.freq       = 50,
+		.core       = SCP_A_ID,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST5_FEATURE_ID,
+		.freq       = 100,
+		.core       = SCP_A_ID,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST6_FEATURE_ID,
+		.freq       = 50,
+		.core       = SCP_B_ID,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST7_FEATURE_ID,
+		.freq       = 100,
+		.core       = SCP_B_ID,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST8_FEATURE_ID,
+		.freq       = 100,
+		.core       = SCP_B_ID,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST9_FEATURE_ID,
+		.freq       = 50,
+		.core       = SCP_B_ID,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST10_FEATURE_ID,
+		.freq       = 100,
+		.core       = SCP_B_ID,
+		.enable     = 0,
+	},
+#endif
 };
 
