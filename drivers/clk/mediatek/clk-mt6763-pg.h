@@ -39,6 +39,7 @@ extern struct pg_callbacks *register_pg_callback(struct pg_callbacks *pgcb);
 extern int spm_topaxi_protect(unsigned int mask_value, int en);
 extern int spm_topaxi_protect_1(unsigned int mask_value, int en);
 extern void cam_mtcmos_patch(int on);
+extern void mfg_way_en(int way_en);
 /*ram console api*/
 /*
 *[0] bus protect reg

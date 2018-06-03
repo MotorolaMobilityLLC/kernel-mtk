@@ -782,16 +782,62 @@ int spm_mtcmos_ctrl_dis(int state)
 	return err;
 }
 
+void mfg_way_en(int way_en)
+{
+	int retry = 0;
+
+	if (way_en) {
+		/* TINFO="Release bus protect" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_CLR, MFG_PROT_BIT_2ND_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		/* Note that this protect ack check after releasing protect has been ignored */
+#endif
+		/* TINFO="Release bus protect" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_1_CLR, MFG_PROT_BIT_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		/* Note that this protect ack check after releasing protect has been ignored */
+#endif
+		/* TINFO="Extra set after releasing bus protect of MFG (way_en enable)" */
+		/* *((UINT32P)(0x10001200)) |= (0x1<<7);   set bit_7=1 */
+		spm_write(INFRA_TOPAXI_SI0_CTL, spm_read(INFRA_TOPAXI_SI0_CTL) | (0x1 << 7));
+	} else {
+		/* TINFO="Start to turn off MFG" */
+		/* TINFO="Extra set before setting bus protect of MFG (way_en disable)" */
+		/* *((UINT32P)(0x10001200)) &= (0xffffff7f);   set bit_7=0 */
+		spm_write(INFRA_TOPAXI_SI0_CTL, spm_read(INFRA_TOPAXI_SI0_CTL) & (~(0x1 << 7)));
+		/* TINFO="Extra polling before setting bus protect of MFG*/
+		/* : (topaxi_si0_ctrl_updated==1) or (wr_ot_busy==rd_ot_busy==0)" */
+		while (((spm_read(INFRA_TOPAXI_SI0_STA) & CTRL_UPDATE_BIT) != CTRL_UPDATE_BIT) &&
+			!((spm_read(INFRA_TOPAXI_SI0_STA) | ~(WR_RD_OT_BUSY_BIT)) == ~(WR_RD_OT_BUSY_BIT))) {
+		}
+		/* TINFO="Set bus protect" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_1_SET, MFG_PROT_BIT_MASK);
+		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1) & MFG_PROT_BIT_ACK_MASK) != MFG_PROT_BIT_ACK_MASK) {
+			/**/
+			/**/
+		}
+		/* TINFO="Set bus protect" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_SET, MFG_PROT_BIT_2ND_MASK);
+		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1) & MFG_PROT_BIT_ACK_2ND_MASK)
+			!= MFG_PROT_BIT_ACK_2ND_MASK) {
+			retry++;
+			if (retry > 100) /*check mfg idle status[20:19]*/
+				pr_debug("%s:%08x\n", __func__, spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+		}
+	}
+}
+
 int spm_mtcmos_ctrl_mfg(int state)
 {
 	int err = 0;
-	int retry = 0;
+
 
 	/* TINFO="enable SPM register control" */
 	/*spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));*/
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG" */
+#if 0
 		/* TINFO="Extra set before setting bus protect of MFG (way_en disable)" */
 		/* *((UINT32P)(0x10001200)) &= (0xffffff7f);   set bit_7=0 */
 		spm_write(INFRA_TOPAXI_SI0_CTL, spm_read(INFRA_TOPAXI_SI0_CTL) & (~(0x1 << 7)));
@@ -819,8 +865,9 @@ int spm_mtcmos_ctrl_mfg(int state)
 			!= MFG_PROT_BIT_ACK_2ND_MASK) {
 			retry++;
 			if (retry > 100) /*check mfg idle status[20:19]*/
-				pr_err("%s:%08x\n", __func__, spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
+				pr_debug("%s:%08x\n", __func__, spm_read(INFRA_TOPAXI_PROTECTSTA0_1));
 		}
+#endif
 #endif
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) | MFG_SRAM_PDN);
@@ -895,6 +942,8 @@ int spm_mtcmos_ctrl_mfg(int state)
 				/*  */
 		}
 #endif
+
+#if 0
 		/* TINFO="Release bus protect" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_CLR, MFG_PROT_BIT_2ND_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
@@ -908,6 +957,7 @@ int spm_mtcmos_ctrl_mfg(int state)
 		/* TINFO="Extra set after releasing bus protect of MFG (way_en enable)" */
 		/* *((UINT32P)(0x10001200)) |= (0x1<<7);   set bit_7=1 */
 		spm_write(INFRA_TOPAXI_SI0_CTL, spm_read(INFRA_TOPAXI_SI0_CTL) | (0x1 << 7));
+#endif
 		/* TINFO="Finish to turn on MFG" */
 	}
 	return err;
@@ -1348,6 +1398,7 @@ int spm_mtcmos_ctrl_mfg_core1(int state)
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG_CORE1" */
+		mfg_way_en(0);
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) | MFG_CORE1_SRAM_PDN);
 #ifndef IGNORE_MTCMOS_CHECK
@@ -1405,6 +1456,7 @@ int spm_mtcmos_ctrl_mfg_core1(int state)
 				/*  */
 		}
 #endif
+		mfg_way_en(1);
 		/* TINFO="Finish to turn on MFG_CORE1" */
 	}
 	return err;
