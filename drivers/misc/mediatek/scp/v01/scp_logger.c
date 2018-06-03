@@ -138,6 +138,9 @@ static size_t scp_A_get_last_log(size_t b_len)
 		pr_debug("[SCP] b_len %zu > scp_log_buf_maxlen %d\n", b_len, scp_A_log_buf_maxlen_last);
 		b_len = scp_A_log_buf_maxlen_last;
 	}
+	/* handle sram error */
+	if (log_end_idx >= scp_A_log_buf_maxlen_last)
+		log_end_idx = 0;
 
 	if (log_end_idx >= b_len)
 		update_start_idx = log_end_idx - b_len;
@@ -434,13 +437,8 @@ static ssize_t scp_A_last_log_show(struct device *kobj, struct device_attribute 
 	scp_A_get_last_log(scp_A_log_buf_maxlen_last);
 	return sprintf(buf, "scp_A_log_buf_maxlen=%u, log=%s\n", scp_A_log_buf_maxlen_last, scp_A_last_log);
 }
-static ssize_t scp_A_last_log_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
-{
-	scp_A_get_last_log(scp_A_log_buf_maxlen_last);
-	return n;
-}
 
-DEVICE_ATTR(scp_A_get_last_log, S_IWUSR | S_IRUGO, scp_A_last_log_show, scp_A_last_log_store);
+DEVICE_ATTR(scp_A_get_last_log, S_IRUGO, scp_A_last_log_show, NULL);
 
 /*
  * logger UT test
