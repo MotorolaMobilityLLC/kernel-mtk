@@ -39,7 +39,7 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6739) $(CONFIG_MACH_M
 ccflags-y += -DGAMMA_LIGHT
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6765)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6761)))
 ccflags-y += -DGAMMA_ROUND_CORNER
 endif
 

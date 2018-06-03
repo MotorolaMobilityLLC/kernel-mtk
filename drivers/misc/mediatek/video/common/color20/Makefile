@@ -60,7 +60,7 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
     ccflags-y += -DSUPPORT_HDR
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6765)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6761)))
     ccflags-y += -DSUPPORT_WCG
 endif
 
