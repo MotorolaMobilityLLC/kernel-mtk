@@ -25,7 +25,7 @@
 	#define EEM_FAKE_EFUSE		(0)
 #define UPDATE_TO_UPOWER	(1)
 #define EEM_LOCKTIME_LIMIT	(3000)
-#define ENABLE_EEMCTL0		(0)
+#define ENABLE_EEMCTL0		(1)
 
 /* These 4 configs are reserving for sspm EEM */
 /* #define EEM_CUR_VOLT_PROC_SHOW */
@@ -227,12 +227,12 @@
 
 #if ENABLE_EEMCTL0
 /* for EEMCTL0's setting */
-#define EEM_CTL0_BIG (0x00000001)
-#define EEM_CTL0_CCI (0x02100007)
-#define EEM_CTL0_2L (0x00020001)
-#define EEM_CTL0_L (0x00010001)
-#define EEM_CTL0_GPU (0x00060001)
-#define EEM_CTL0_SOC (0x06540007)
+/* #define EEM_CTL0_BIG (0x00000001) */
+#define EEM_CTL0_2L (0x00010001)
+#define EEM_CTL0_L (0x00000001)
+#define EEM_CTL0_CCI (0x02100003)
+#define EEM_CTL0_GPU (0x00020001)
+#define EEM_CTL0_SOC (0x00540003)
 #endif
 
 /* After ATE program version 5 */
