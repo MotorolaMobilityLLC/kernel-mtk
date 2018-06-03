@@ -1363,19 +1363,25 @@ void musb_stop(struct musb *musb)
 static void musb_shutdown(struct platform_device *pdev)
 {
 	struct musb *musb = dev_to_musb(&pdev->dev);
+	#ifndef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
 	unsigned long flags;
+	#endif
 
 	DBG(0, "shut down\n");
-
+	pr_err("%s, start to shut down\n", __func__);
 	pm_runtime_get_sync(musb->controller);
 
 	/* musb_gadget_cleanup(musb); */
 
+	#ifndef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
 	spin_lock_irqsave(&musb->lock, flags);
+	#endif
 	musb_generic_disable(musb);
 	musb_platform_disable(musb);
+	pr_err("%s, musb has already disable\n", __func__);
+	#ifndef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
 	spin_unlock_irqrestore(&musb->lock, flags);
-
+	#endif
 	if (musb->is_host) {
 		pr_err("%s, line %d.\n", __func__, __LINE__);
 		musb_platform_set_vbus(mtk_musb, 0);
