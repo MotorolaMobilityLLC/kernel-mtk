@@ -553,6 +553,8 @@ void screen_logger_add_message(char *obj, enum message_mode mode,
 		struct screen_logger *logger =
 			kmalloc(sizeof(struct screen_logger), GFP_KERNEL);
 
+		if (!logger)
+			return;
 		logger->obj = kstrdup(obj, GFP_KERNEL);
 		logger->message = kstrdup(message, GFP_KERNEL);
 		list_add_tail(&logger->list, &logger_head.list);
