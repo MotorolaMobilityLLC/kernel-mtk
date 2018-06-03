@@ -61,6 +61,9 @@ static const unsigned char LCD_MODULE_ID = 0x01; /*  haobing modified 2013.07.11
 #define LCM_DSI_CMD_MODE	1
 #define FRAME_WIDTH		(1080)
 #define FRAME_HEIGHT		(1920)
+/* physical size in um */
+#define LCM_PHYSICAL_WIDTH									(74520)
+#define LCM_PHYSICAL_HEIGHT									(132480)
 
 #define GPIO_65132_EN GPIO_LCD_BIAS_ENP_PIN
 
@@ -461,6 +464,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width  = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->physical_width_um = LCM_PHYSICAL_WIDTH;
+	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
 	params->lcm_if = LCM_INTERFACE_DSI_DUAL;
 	params->lcm_cmd_if = LCM_INTERFACE_DSI0;
 	params->virtual_width = ALIGN_TO(FRAME_WIDTH, 32);
