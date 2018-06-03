@@ -6877,11 +6877,35 @@ static int cpu_util_wake(int cpu, struct task_struct *p)
 	return (util >= capacity) ? capacity : util;
 }
 
-static int start_cpu(bool boosted)
+static int start_cpu(bool boosted, int cap_min, bool *t)
 {
 	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
+	int cap_limit;
+	unsigned long capacity_curr_little;
+	unsigned long capacity_real_little;
+	bool turning = false;
 
-	return boosted ? rd->max_cap_orig_cpu : rd->min_cap_orig_cpu;
+	if (rd->min_cap_orig_cpu < 0)
+		return -1;
+
+	if (boosted)
+		return boosted ? rd->max_cap_orig_cpu : rd->min_cap_orig_cpu;
+
+	capacity_curr_little = capacity_curr_of(rd->min_cap_orig_cpu);
+	capacity_real_little = capacity_hw_of(rd->min_cap_orig_cpu);
+	cap_limit = cap_min * 1280 / 1024;
+
+	/*
+	 * favor higher cpu if hitting
+	 * power turnning point or capacity impact.
+	 */
+	if (capacity_curr_little > cpu_eff_tp ||
+			capacity_real_little < cap_limit)
+		turning = true;
+
+	*t = turning;
+
+	return turning ? rd->max_cap_orig_cpu : rd->min_cap_orig_cpu;
 }
 
 static inline int find_best_target(struct task_struct *p, int *backup_cpu,
@@ -6901,6 +6925,15 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 	int best_idle_cpu = -1;
 	int target_cpu = -1;
 	int cpu, i;
+	int cap_min;
+	int prev_cpu = task_cpu(p);
+	bool turning = false;
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	cap_min = schedtune_task_capacity_min(p);
+#else
+	cap_min = 0;
+#endif
 
 	*backup_cpu = -1;
 
@@ -6908,7 +6941,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 	schedstat_inc(this_rq()->eas_stats.fbt_attempts);
 
 	/* Find start CPU based on boost value */
-	cpu = start_cpu(boosted);
+	cpu = start_cpu(boosted, cap_min, &turning);
 	if (cpu < 0) {
 		schedstat_inc(p->se.statistics.nr_wakeups_fbt_no_cpu);
 		schedstat_inc(this_rq()->eas_stats.fbt_no_cpu);
@@ -7002,6 +7035,12 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 							cpu, best_idle_cpu,
 							best_active_cpu, i);
 
+					/* consider L1 cache */
+					if (idle_cpu(prev_cpu) &&
+						cpus_share_cache(prev_cpu, i) &&
+						prev_cpu != l_plus_cpu)
+						return prev_cpu;
+
 					return i;
 				}
 
@@ -7062,8 +7101,14 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 			if (idle_cpu(i)) {
 				int idle_idx = idle_get_state_idx(cpu_rq(i));
 
+				/* Select idle CPU with higher cap_orig */
+				if (turning &&
+					capacity_real < best_idle_min_cap_orig)
+					continue;
+
 				/* Select idle CPU with lower cap_orig */
-				if (capacity_real > best_idle_min_cap_orig)
+				if (!turning &&
+					capacity_real > best_idle_min_cap_orig)
 					continue;
 
 				/*
@@ -7103,8 +7148,12 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 			 * capacity.
 			 */
 
+			/* Favor CPUs with higher capacity hitting turning */
+			if (turning && capacity_real < target_capacity)
+				continue;
+
 			/* Favor CPUs with smaller capacity */
-			if (capacity_real > target_capacity)
+			if (!turning && capacity_real > target_capacity)
 				continue;
 
 			/* Favor CPUs with maximum spare capacity */

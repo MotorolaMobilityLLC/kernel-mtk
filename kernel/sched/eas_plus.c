@@ -15,6 +15,7 @@ static bool is_intra_domain(int prev, int target);
 static inline unsigned long task_util(struct task_struct *p);
 static int select_max_spare_capacity(struct task_struct *p, int target);
 static int __energy_diff(struct energy_env *eenv);
+int cpu_eff_tp = 1024;
 #ifdef CONFIG_SCHED_TUNE
 static inline int energy_diff(struct energy_env *eenv);
 #else
@@ -212,3 +213,31 @@ static int init_cpu_info(void)
 	return 0;
 }
 late_initcall_sync(init_cpu_info)
+
+static int __init parse_dt_eas(void)
+{
+	struct device_node *cn;
+	int ret = 0;
+	const u32 *tp;
+
+	cn = of_find_node_by_path("/eas");
+	if (!cn) {
+		pr_info("No eas information found in DT\n");
+		return 0;
+	}
+
+	tp = of_get_property(cn, "eff_turn_point", &ret);
+	if (!tp) {
+		pr_info("%s missing turning point property\n",
+			cn->full_name);
+		goto out;
+	}
+
+	cpu_eff_tp = be32_to_cpup(tp);
+
+	pr_info("eas: turning point=<%d>\n", cpu_eff_tp);
+out:
+	of_node_put(cn);
+	return ret;
+}
+core_initcall(parse_dt_eas)

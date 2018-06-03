@@ -2986,6 +2986,10 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		mediatek,clkbuf-driving-current = <1 1 1 1 1 1 1>;
 	};
 
+	eas {
+		eff_turn_point = <467>;
+	};
+
 	i2c7:i2c7{};
 	i2c8:i2c8{};
 	i2c9:i2c9{};
