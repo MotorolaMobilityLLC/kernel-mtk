@@ -891,8 +891,6 @@ static ssize_t proc_write(struct file *file, const char __user *buffer, size_t c
 
 	memset(num, 0, 10);
 
-	bm_err("proc_write %s %d\n", buffer, (int)count);
-
 	if (!count)
 		return 0;
 
