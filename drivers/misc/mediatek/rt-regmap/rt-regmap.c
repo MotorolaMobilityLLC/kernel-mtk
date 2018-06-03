@@ -1486,12 +1486,12 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 	unsigned char *reg_data;
 	int rc, size = 0;
 	char lbuf[128];
+	ssize_t res;
 
-	if (count > sizeof(lbuf) - 1)
-		return -EFAULT;
+	pr_info("%s @ %p\n", __func__, ubuf);
 
-	rc = copy_from_user(lbuf, ubuf, count);
-	if (rc)
+	res = simple_write_to_buffer(lbuf, sizeof(lbuf) - 1, ppos, ubuf, count);
+	if (res <= 0)
 		return -EFAULT;
 
 	lbuf[count] = '\0';
@@ -1534,7 +1534,7 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 				return -EINVAL;
 			}
 
-			rc = get_datas((char *)ubuf, count, reg_data, size);
+			rc = get_datas(lbuf, count, reg_data, size);
 			if (rc < 0) {
 				dev_err(&rd->dev, "get datas fail\n");
 				if (rd->error_occurred) {
@@ -1586,7 +1586,7 @@ static ssize_t general_write(struct file *file, const char __user *ubuf,
 			return -EINVAL;
 		}
 
-		rc = get_datas((char *)ubuf, count, reg_data, size);
+		rc = get_datas(lbuf, count, reg_data, size);
 		if (rc < 0) {
 			dev_err(&rd->dev, "get datas fail\n");
 			if (rd->error_occurred) {
@@ -1771,15 +1771,30 @@ static ssize_t eachreg_write(struct file *file, const char __user *ubuf,
 	const rt_register_map_t rm = rd->props.rm[st->id];
 	int rc;
 	unsigned char *pars;
-
-	pars = kcalloc(rm->size, sizeof(unsigned char), GFP_KERNEL);
+	char lbuf[128];
+	ssize_t res;
 
 	if ((rm->size - 1)*3 + 5 != count) {
 		dev_err(&rd->dev, "wrong input length\n");
 		return -EINVAL;
 	}
-	rc = get_datas((char *)ubuf, count, pars, rm->size);
+
+	pr_info("%s @ %p\n", __func__, ubuf);
+
+	res = simple_write_to_buffer(lbuf, sizeof(lbuf) - 1, ppos, ubuf, count);
+	if (res <= 0)
+		return -EFAULT;
+
+	lbuf[count] = '\0';
+
+	pars = kcalloc(rm->size, sizeof(unsigned char), GFP_KERNEL);
+	if (!pars)
+		return -ENOMEM;
+
+	rc = get_datas(lbuf, count, pars, rm->size);
+
 	if (rc < 0) {
+		kfree(pars);
 		dev_err(&rd->dev, "get datas fail\n");
 		return -EINVAL;
 	}
@@ -1789,10 +1804,12 @@ static ssize_t eachreg_write(struct file *file, const char __user *ubuf,
 					rm->size, &pars[0]);
 	up(&rd->semaphore);
 	if (rc < 0) {
+		kfree(pars);
 		dev_err(&rd->dev, "regmap block read fail\n");
 		return -EIO;
 	}
 
+	kfree(pars);
 	return count;
 }
 
