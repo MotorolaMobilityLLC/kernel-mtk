@@ -1025,15 +1025,16 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 					md_ctrl->txq[i].index,
 					md_ctrl->txq[i].tr_done->gpd_addr);
 			} else {
-				if (sizeof(dma_addr_t) > sizeof(u32)) {
+				#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 					val = cldma_reg_get_4msb_val(md_ctrl->cldma_ap_ao_base,
 							CLDMA_AP_UL_CURRENT_ADDR_BK_4MSB,
 							md_ctrl->txq[i].index);
 					/*set high bits*/
 					bk_addr = val;
 					bk_addr <<= 32;
-				} else
+				#else
 					bk_addr = 0;
+				#endif
 				/*set low bits*/
 				val = cldma_read32(md_ctrl->cldma_ap_ao_base,
 									CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index));
