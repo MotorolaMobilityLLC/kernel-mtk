@@ -3368,6 +3368,8 @@ static inline void update_load_avg(struct sched_entity *se, int flags)
 #endif
 		trace_sched_load_avg_task(task_of(se), &se->avg, ptr);
 	}
+
+	trace_sched_load_avg_cpu(cpu, cfs_rq);
 }
 
 /**
