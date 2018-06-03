@@ -703,12 +703,12 @@ int ccu_mmap_hw(struct file *filp, struct vm_area_struct *vma)
 	return 0;
 }
 
-int ccu_get_i2c_dma_buf_addr(uint32_t *mva, uint32_t *pa_h, uint32_t *pa_l)
+int ccu_get_i2c_dma_buf_addr(uint32_t *mva, uint32_t *pa_h, uint32_t *pa_l, uint32_t *i2c_id)
 {
 	int ret = 0;
 	void *va;
 
-	ret = i2c_get_dma_buffer_addr(&va, pa_h, pa_l);
+	ret = i2c_get_dma_buffer_addr(&va, pa_h, pa_l, i2c_id);
 	LOG_DBG_MUST("got i2c buf pa: %d, %d\n", *pa_l, *pa_h);
 	if (ret != 0)
 		return ret;

@@ -741,16 +741,16 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		}
 	case CCU_IOCTL_GET_I2C_DMA_BUF_ADDR:
 		{
-			uint32_t addr[3];
+			uint32_t addr[4];
 
-			ret = ccu_get_i2c_dma_buf_addr(&addr[0], &addr[1], &addr[2]);
+			ret = ccu_get_i2c_dma_buf_addr(&addr[0], &addr[1], &addr[2], &addr[4]);
 
 			if (ret != 0) {
 				LOG_DBG("ccu_get_i2c_dma_buf_addr fail: %d\n", ret);
 				break;
 			}
 
-			ret = copy_to_user((void *)arg, addr, sizeof(uint32_t) * 3);
+			ret = copy_to_user((void *)arg, addr, sizeof(uint32_t) * 4);
 
 			break;
 		}

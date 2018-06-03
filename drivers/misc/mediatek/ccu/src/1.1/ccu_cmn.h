@@ -180,7 +180,7 @@ int ccu_flushLog(int argc, int *argv);
  */
 int ccu_i2c_ctrl(unsigned char i2c_write_id, int transfer_len);
 
-int ccu_get_i2c_dma_buf_addr(uint32_t *mva, uint32_t *pa_h, uint32_t *pa_l);
+int ccu_get_i2c_dma_buf_addr(uint32_t *mva, uint32_t *pa_h, uint32_t *pa_l, uint32_t *i2c_id);
 
 int ccu_memcpy(void *dest, void *src, int length);
 
