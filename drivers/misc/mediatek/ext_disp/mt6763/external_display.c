@@ -344,22 +344,7 @@ static int _build_path_direct_link(void)
 	dst_module = DISP_MODULE_DPI;
 	dpmgr_path_set_dst_module(pgc->dpmgr_handle, dst_module);
 	/* EXT_DISP_LOG("dpmgr set dst module FINISHED(%s)\n", ddp_get_module_name(dst_module)); */
-	sPort.ePortID = M4U_PORT_DISP_OVL1;
-	sPort.Virtuality = ext_disp_use_m4u;
-	sPort.Security = 0;
-	sPort.Distance = 1;
-	sPort.Direction = 0;
-	ret = m4u_config_port(&sPort);
-	if (ret == 0) {
-		EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n",
-			ddp_get_module_name(DISP_MODULE_OVL1), ext_disp_use_m4u ? "virtual" : "physical");
-	} else {
-		EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n", ddp_get_module_name(M4U_PORT_DISP_OVL1),
-			ext_disp_use_m4u ? "virtual" : "physical", ret);
-		return -1;
-	}
-
-	sPort.ePortID = M4U_PORT_DISP_2L_OVL1;
+	sPort.ePortID = M4U_PORT_DISP_2L_OVL1_LARB0;
 	sPort.Virtuality = ext_disp_use_m4u;
 	sPort.Security = 0;
 	sPort.Distance = 1;
@@ -369,7 +354,7 @@ static int _build_path_direct_link(void)
 		EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n",
 			ddp_get_module_name(DISP_MODULE_OVL1_2L), ext_disp_use_m4u ? "virtual" : "physical");
 	} else {
-		EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n", ddp_get_module_name(DISP_MODULE_OVL1_2L),
+		EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n", "ovl1_2l",
 			ext_disp_use_m4u ? "virtual" : "physical", ret);
 		return -1;
 	}
@@ -1332,8 +1317,8 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	} else if (layer_cnt > 1) {
 		ext_disp_path_change(EXTD_OVL_INSERT_REQ, session);
 		if (ext_disp_get_ovl_req_status(session) == EXTD_OVL_INSERT_REQ) {
-			EXT_DISP_LOG("config M4U Port DISP_MODULE_OVL1\n");
-			sPort.ePortID = M4U_PORT_DISP_OVL1;
+			EXT_DISP_LOG("config M4U Port DISP_MODULE_OVL1_2L\n");
+			sPort.ePortID = M4U_PORT_DISP_2L_OVL1_LARB0;
 			sPort.Virtuality = 1;
 			sPort.Security = 0;
 			sPort.Distance = 1;
@@ -1341,16 +1326,6 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			ret = m4u_config_port(&sPort);
 			if (ret != 0)
 				EXT_DISP_LOG("config M4U Port DISP_MODULE_OVL1 FAIL\n");
-
-			EXT_DISP_LOG("config M4U Port DISP_MODULE_OVL1_2L\n");
-			sPort.ePortID = M4U_PORT_DISP_2L_OVL1;
-			sPort.Virtuality = 1;
-			sPort.Security = 0;
-			sPort.Distance = 1;
-			sPort.Direction = 0;
-			ret = m4u_config_port(&sPort);
-			if (ret != 0)
-				EXT_DISP_LOG("config M4U Port DISP_MODULE_OVL1_2L FAIL\n");
 		}
 	}
 
