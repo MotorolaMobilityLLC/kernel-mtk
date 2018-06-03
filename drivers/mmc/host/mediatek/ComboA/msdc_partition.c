@@ -76,14 +76,16 @@ int msdc_get_part_info(unsigned char *name, struct hd_struct *part)
 	struct hd_struct *l_part;
 	struct msdc_host *host;
 	struct gendisk *disk;
-	int ret = 0;
+	int ret = 0, partno;
+	dev_t devt;
 
 	host = mtk_msdc_host[0];
 
 	if (!host || !host->mmc || !host->mmc->card)
 		return 0;
 
-	disk = mmc_get_disk(host->mmc->card);
+	devt = blk_lookup_devt("mmcblk0", 0);
+	disk = get_gendisk(devt, &partno);
 
 	if (!disk)
 		return 0;
@@ -189,28 +191,6 @@ u32 msdc_get_other_capacity(struct msdc_host *host, char *name)
 }
 
 #ifdef CONFIG_PROC_FS
-struct mmc_blk_data {
-	spinlock_t lock;
-	struct gendisk *disk;
-};
-
-struct gendisk *mmc_get_disk(struct mmc_card *card)
-{
-	struct mmc_blk_data *md;
-
-	if (!card) {
-		pr_info("[%s:%d] card is NULL", __func__, __LINE__);
-		return NULL;
-	}
-	md = dev_get_drvdata(&card->dev);
-	if (!md || !md->disk) {
-		pr_info("[%s:%d] md or disk is NULL", __func__, __LINE__);
-		return NULL;
-	}
-
-	return md->disk;
-}
-
 #if defined(CONFIG_PWR_LOSS_MTK_SPOH)
 static struct proc_dir_entry *proc_emmc;
 
@@ -220,9 +200,12 @@ static int proc_emmc_show(struct seq_file *m, void *v)
 	struct hd_struct *part;
 	struct msdc_host *host;
 	struct gendisk *disk;
+	dev_t devt;
+	int partno;
 
 	host = mtk_msdc_host[0];
-	disk = mmc_get_disk(host->mmc->card);
+	devt = blk_lookup_devt("mmcblk0", 0);
+	disk = get_gendisk(devt, &partno);
 
 	if (!disk)
 		return 0;
