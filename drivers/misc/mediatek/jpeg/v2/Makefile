@@ -40,6 +40,10 @@ ifeq ($(CONFIG_ARCH_MT6753),y)
   ccflags-y += -DJPEG_DEC_IRQ_ENHANCE
 endif
 
+ifeq ($(CONFIG_MACH_MT6799),y)
+  ccflags-y += -DJPEG_DRV_MT6799
+endif
+
 #obj-$(CONFIG_MTK_JPEG) += jpeg_driver.o
 obj-y += jpeg_driver.o
 

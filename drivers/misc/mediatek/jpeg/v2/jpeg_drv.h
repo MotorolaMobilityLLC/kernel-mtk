@@ -118,13 +118,21 @@ const long jpeg_dev_get_decoder_base_VA(void);
 
 #ifndef CONFIG_MTK_CLKMGR
 typedef struct JpegClk {
-	struct clk *clk_disp_mtcmos;
-	struct clk *clk_venc_mtcmos;
-	struct clk *clk_disp_smi;
+	struct clk *clk_smi_common;
+  #ifdef JPEG_DRV_MT6799
+	struct clk *clk_gals_m0_2x;
+	struct clk *clk_gals_m1_2x;
+	struct clk *clk_upsz0;
+	struct clk *clk_upsz1;
+	struct clk *clk_fifo0;
+	struct clk *clk_fifo1;
+	struct clk *clk_smi_common_2x;
+  #endif
+	struct clk *clk_scp_sys_mm0;
+	struct clk *clk_scp_sys_ven;
 	struct clk *clk_venc_larb;
 	struct clk *clk_venc_jpgEnc;
 	struct clk *clk_venc_jpgDec;
-	struct clk *clk_venc_venc;
 } JpegClk;
 #endif				/* !defined(CONFIG_MTK_LEGACY) */
 
