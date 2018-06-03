@@ -303,7 +303,7 @@ int __attribute__((weak)) met_tag_oneshot(unsigned int class_id,
 					const char *name,
 					unsigned int value);
 
-int met_tag_userdata(char *pData);
+int __attribute__((weak)) met_tag_userdata(char *pData);
 
 int __attribute__((weak)) met_tag_dump(unsigned int class_id,
 					const char *name,
@@ -327,6 +327,7 @@ int __attribute__((weak)) met_show_clk_tree(const char *name,
 			unsigned int status);
 int __attribute__((weak)) met_reg_clk_tree(void *fp);
 
+#if 0 /* no used now */
 int __attribute__((weak)) met_ccf_clk_enable(struct clk *clk);
 int __attribute__((weak)) met_ccf_clk_disable(struct clk *clk);
 int __attribute__((weak)) met_ccf_clk_set_rate(struct clk *clk, struct clk *top);
@@ -334,6 +335,7 @@ int __attribute__((weak)) met_ccf_clk_set_parent(struct clk *clk, struct clk *pa
 
 extern unsigned int __attribute__((weak)) met_fh_dds[];
 int __attribute__((weak)) met_fh_print_dds(int pll_id, unsigned int dds_value);
+#endif /* no used now */
 
 int __attribute__((weak)) enable_met_backlight_tag(void);
 int __attribute__((weak)) output_met_backlight_tag(int level);
@@ -349,6 +351,7 @@ void __attribute__((weak)) met_show_pmic_info(unsigned int RegNum, unsigned int 
 /*
  * udmet API ( user-defined met )
  */
+#if 0 /* no support 1 */
 typedef  void (*MET_UDMET_POLLING_FUNC)(unsigned long long stamp, int cpu);
 void __attribute__((weak)) _met_udmet_register_polling(
 				char *mod_name,
@@ -360,6 +363,7 @@ void __attribute__((weak)) _met_udmet_register_polling(
 	if (_met_udmet_register_polling)\
 		_met_udmet_register_polling(mod_name, polling_func, period_multiply);\
 }
+#endif /* no support 1 */
 
 /*
  * Wrapper for DISP/MDP/GCE mmsys profiling
@@ -377,6 +381,7 @@ void __attribute__((weak)) met_mmsys_config_isp_base_addr(unsigned long *isp_reg
 void __attribute__((weak)) met_mmsys_event_isp_pass1_begin(int sensor_id);
 void __attribute__((weak)) met_mmsys_event_isp_pass1_end(int sensor_id);
 
+#if 0 /* no support 2 */
 /* ====================== SPO API ================================ */
 enum MET_SPO_MEM_MODULE {
 	MSMM_ISP_P1_IMGO,
@@ -459,21 +464,7 @@ do {						\
 		_met_spo_mem_free(__VA_ARGS__);	\
 } while (0)
 
-
-
-/* =============== MMSYS API  Wrapper for DISP/MDP/GCE mmsys profiling ========= */
-void __attribute__((weak)) met_mmsys_event_gce_thread_begin(ulong thread_no, ulong task_handle, ulong engineFlag,
-								void *pCmd, ulong size);
-void __attribute__((weak)) met_mmsys_event_gce_thread_end(ulong thread_no, ulong task_handle, ulong engineFlag);
-
-void __attribute__((weak)) met_mmsys_event_disp_sof(int mutex_id);
-void __attribute__((weak)) met_mmsys_event_disp_mutex_eof(int mutex_id);
-void __attribute__((weak)) met_mmsys_event_disp_ovl_eof(int ovl_id);
-
-void __attribute__((weak)) met_mmsys_config_isp_base_addr(unsigned long *isp_reg_list);
-void __attribute__((weak)) met_mmsys_event_isp_pass1_begin(int sensor_id);
-void __attribute__((weak)) met_mmsys_event_isp_pass1_end(int sensor_id);
-
+#endif /* no support 2 */
 
 /* ====================== MMSYS Platform Depend ================================ */
 #if defined(CONFIG_MTK_MET)
