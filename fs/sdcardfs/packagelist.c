@@ -129,6 +129,8 @@ static int insert_str_to_int_lock(struct packagelist_data *pkgl_dat, char *key,
 
 	hash_for_each_possible(pkgl_dat->package_to_appid, hash_cur, hlist, hash) {
 		if (!strcasecmp(key, hash_cur->key)) {
+			if (hash_cur->value == value)
+				return 1;
 			hash_cur->value = value;
 			return 0;
 		}
@@ -144,9 +146,7 @@ static int insert_str_to_int_lock(struct packagelist_data *pkgl_dat, char *key,
 
 static void fixup_perms(struct super_block *sb) {
 	if (sb && sb->s_magic == SDCARDFS_SUPER_MAGIC) {
-		mutex_lock(&sb->s_root->d_inode->i_mutex);
 		get_derive_permissions_recursive(sb->s_root);
-		mutex_unlock(&sb->s_root->d_inode->i_mutex);
 	}
 }
 
@@ -157,13 +157,22 @@ static int insert_str_to_int(struct packagelist_data *pkgl_dat, char *key,
 	mutex_lock(&sdcardfs_super_list_lock);
 	mutex_lock(&pkgl_dat->hashtable_lock);
 	ret = insert_str_to_int_lock(pkgl_dat, key, value);
+
 	mutex_unlock(&pkgl_dat->hashtable_lock);
+
+	/* If the key already exist and values are the same,
+	 * there's no need to fixup permissions.
+	 */
+	if (ret)
+		goto list_unlock_out;
 
 	list_for_each_entry(sbinfo, &sdcardfs_super_list, list) {
 		if (sbinfo) {
 			fixup_perms(sbinfo->sb);
 		}
 	}
+
+list_unlock_out:
 	mutex_unlock(&sdcardfs_super_list_lock);
 	return ret;
 }
@@ -179,20 +188,30 @@ static void remove_str_to_int(struct packagelist_data *pkgl_dat, const char *key
 	struct sdcardfs_sb_info *sbinfo;
 	struct hashtable_entry *hash_cur;
 	unsigned int hash = str_hash(key);
+	int exist = 0;
+
 	mutex_lock(&sdcardfs_super_list_lock);
 	mutex_lock(&pkgl_dat->hashtable_lock);
 	hash_for_each_possible(pkgl_dat->package_to_appid, hash_cur, hlist, hash) {
 		if (!strcasecmp(key, hash_cur->key)) {
 			remove_str_to_int_lock(hash_cur);
+			exist = 1;
 			break;
 		}
 	}
 	mutex_unlock(&pkgl_dat->hashtable_lock);
+
+	/* If key doesn't exist, there's no need to fixup permissions */
+	if (!exist)
+		goto list_unlock_out;
+
 	list_for_each_entry(sbinfo, &sdcardfs_super_list, list) {
 		if (sbinfo) {
 			fixup_perms(sbinfo->sb);
 		}
 	}
+
+list_unlock_out:
 	mutex_unlock(&sdcardfs_super_list_lock);
 	return;
 }

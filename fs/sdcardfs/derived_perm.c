@@ -110,26 +110,9 @@ void get_derived_permission(struct dentry *parent, struct dentry *dentry)
 	get_derived_permission_new(parent, dentry, dentry);
 }
 
-
-static void get_derive_permissions_recursive_internal(struct dentry *parent)
-{
-	struct dentry *dentry;
-	list_for_each_entry(dentry, &parent->d_subdirs, d_child) {
-		if (dentry->d_inode) {
-			mutex_lock(&d_inode(dentry)->i_mutex);
-			get_derived_permission(parent, dentry);
-			fix_derived_permission(dentry->d_inode);
-			get_derive_permissions_recursive_internal(dentry);
-			mutex_unlock(&d_inode(dentry)->i_mutex);
-		}
-	}
-}
-
 void get_derive_permissions_recursive(struct dentry *parent)
 {
-	lockdep_off();
-	get_derive_permissions_recursive_internal(parent);
-	lockdep_on();
+	sdcardfs_work_dispatch_permissions(parent);
 }
 
 /* main function for updating derived permission */
