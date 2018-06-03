@@ -1256,6 +1256,11 @@ static struct LCM_setting_table init_setting2[] = {
 	{REGFLAG_DELAY, 120, {} },
 	{0x29, 0, {} },
 	/* {0x51,1,{0xFF}},//writedisplay brightness */
+
+	{0xFF, 1, {0x24} },
+	{0xC2, 1, {0x00} },
+	{0xFB, 1, {0x01} },
+	{0xFF, 1, {0x10} }, /* Return  To CMD1 */
 };
 #if 0
 static struct LCM_setting_table lcm_set_window[] = {
@@ -1372,7 +1377,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 8;
-	params->dsi.vertical_frontporch = 10;
+	params->dsi.vertical_frontporch = 20;
+	params->dsi.vertical_frontporch_for_low_power = 620;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 10;
