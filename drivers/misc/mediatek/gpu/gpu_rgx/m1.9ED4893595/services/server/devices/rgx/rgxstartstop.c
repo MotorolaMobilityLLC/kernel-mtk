@@ -294,15 +294,15 @@ static void RGXInitMipsProcWrapper(const void *hPrivate)
 	                   ~RGX_CR_MIPS_ADDR_REMAP1_CONFIG2_ADDR_OUT_CLRMSK,
 	                   ui64RemapSettings);
 
-#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT6739)
+#if defined(FIX_HW_BRN_63553)
 	RGXCommentLog(hPrivate, "RGXStart: WA for the delay slot prefetch with TLB miss issue.");
 	RGXCodeRemapConfig(hPrivate,
-						RGX_CR_MIPS_ADDR_REMAP5_CONFIG1,
-						0x0 | RGX_CR_MIPS_ADDR_REMAP5_CONFIG1_MODE_ENABLE_EN,
-						RGX_CR_MIPS_ADDR_REMAP5_CONFIG2,
-						sPhyAddr.uiAddr,
-						~RGX_CR_MIPS_ADDR_REMAP5_CONFIG2_ADDR_OUT_CLRMSK,
-						ui64RemapSettings);
+				RGX_CR_MIPS_ADDR_REMAP5_CONFIG1,
+				0x0 | RGX_CR_MIPS_ADDR_REMAP5_CONFIG1_MODE_ENABLE_EN,
+				RGX_CR_MIPS_ADDR_REMAP5_CONFIG2,
+				sPhyAddr.uiAddr,
+				~RGX_CR_MIPS_ADDR_REMAP5_CONFIG2_ADDR_OUT_CLRMSK,
+				ui64RemapSettings);
 #endif
 
 	/*
