@@ -884,6 +884,72 @@ typedef struct _CMD_SET_PSCAN_ENABLE {
 	UINT_8 aucReserved[3];
 } CMD_SET_PSCAN_ENABLE, *P_CMD_SET_PSCAN_ENABLE;
 
+/*******************************************************************************
+*                           P R I V A T E   D A T A
+********************************************************************************
+*/
+#define MAX_PACKET_DROP_LENGTH         24
+
+typedef struct _PACKET_DROP_HEADER_T {
+	UINT_8		cmdVersion;		/*== 0*/
+	UINT_8		cmdType;		/*== 0*/
+	UINT_8		magicCode;		/*==> Magic code 0x72 */
+	UINT_8		cmdBufferLen;	/*buffer length */
+	UINT_8		buffer[MAX_PACKET_DROP_LENGTH]; /*64bit * 3*/
+} __KAL_ATTRIB_PACKED__ PACKET_DROP_T, *P_PACKET_DROP_T;
+
+typedef struct _PACKET_DROP_SETTING_V1_T {
+	union{
+			/* bit endian issue */
+		struct {
+			UINT_64    all:1;
+			UINT_64    MDNS:1;
+			UINT_64    LLMNR:1;
+			UINT_64    BROWSER:1;
+			UINT_64    CAPWAP:1;
+			UINT_64    DNS:1;
+			UINT_64    NBNS:1;
+			UINT_64    SSDP:1;
+			UINT_64    others:1;
+			UINT_64	   IGMP:1;
+			UINT_64	   DHCP:1;
+			UINT_64	   reserved:53;
+		} UDPbits;
+
+		struct {
+			UINT_64    all:1;
+		} IGMPbits;
+
+		/* byte endian issue */
+		UINT_64   bytes;
+	} Drop_IPv4;
+
+	union{
+		/* bit endian issue */
+		struct {
+			UINT_64    all:1;
+			UINT_64    Multicast:1;
+			UINT_64    reserved:62;
+		} bits;
+		/* byte endian issue */
+		UINT_64   bytes;
+	} Drop_IPv6;
+	union{
+		/* bit endian issue */
+		struct {
+			UINT_64    all:1;
+			UINT_64    CDP:1;
+			UINT_64    STP:1;
+			UINT_64    XID:1;
+			UINT_64    others:1;
+			UINT_64    reserved:59;
+		} bits;
+		/* byte endian issue */
+		UINT_64   bytes;
+	} Drop_SNAP;
+
+} __KAL_ATTRIB_PACKED__ PACKET_DROP_SETTING_V1_T, *P_PACKET_DROP_SETTING_V1_T;
+
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 /*--------------------------------------------------------------*/
 /*! \brief MTK Auto Channel Selection related Container         */
@@ -1440,6 +1506,10 @@ wlanoidQueryBT(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS
 wlanoidSetTxPower(IN P_ADAPTER_T prAdapter,
 		  IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidSetRxPacketFilterPriv(IN	P_ADAPTER_T prAdapter,
+	IN	PVOID pvSetBuffer, IN	UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
 #if CFG_SUPPORT_BUILD_DATE_CODE
 WLAN_STATUS

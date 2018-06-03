@@ -630,7 +630,8 @@ enum TestModeCmdType {
 	/* all new added test mode command should great than TESTMODE_CMD_ID_NEW_BEGIN */
 	TESTMODE_CMD_ID_NEW_BEGIN = 100,
 	TESTMODE_CMD_ID_SUSPEND = 101,
-	TESTMODE_CMD_ID_STR_CMD = 102
+	TESTMODE_CMD_ID_STR_CMD = 102,
+	TESTMODE_CMD_ID_RXFILTER = 103,
 };
 #if CFG_SUPPORT_HOTSPOT_2_0
 enum Hs20CmdType {
@@ -656,6 +657,17 @@ typedef struct _NL80211_DRIVER_SUSPEND_PARAMS {
 	NL80211_DRIVER_TEST_MODE_PARAMS hdr;
 	UINT_8 suspend;
 } NL80211_DRIVER_SUSPEND_PARAMS, *P_NL80211_DRIVER_SUSPEND_PARAMS;
+
+typedef struct _NL80211_DRIVER_RXFILTER_PARAMS {
+	NL80211_DRIVER_TEST_MODE_PARAMS hdr;
+	UINT_32		Ipv4FilterHigh;
+	UINT_32		Ipv4FilterLow;
+	UINT_32		Ipv6FilterHigh;
+	UINT_32		Ipv6FilterLow;
+	UINT_32		SnapFilterHigh;
+	UINT_32		SnapFilterLow;
+} NL80211_DRIVER_RXFILTER_PARAMS, *P_NL80211_DRIVER_RXFILTER_PARAMS;
+
 struct iw_encode_exts {
 	__u32 ext_flags;	/*!< IW_ENCODE_EXT_* */
 	__u8 tx_seq[IW_ENCODE_SEQ_MAX_SIZE];	/*!< LSB first */
