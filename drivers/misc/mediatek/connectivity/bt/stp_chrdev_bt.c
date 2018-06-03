@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2011-2014 MediaTek Inc.
+* Copyright (C) 2016 MediaTek Inc.
 *
 * This program is free software: you can redistribute it and/or modify it under the terms of the
 * GNU General Public License version 2 as published by the Free Software Foundation.
@@ -25,19 +25,16 @@
 #include <linux/poll.h>
 #include <linux/time.h>
 #include <linux/delay.h>
-#if WMT_CREATE_NODE_DYNAMIC
 #include <linux/device.h>
-#endif
 #include <linux/printk.h>
 
-#include "osal_typedef.h"
-#include "stp_exp.h"
 #include "wmt_exp.h"
+#include "stp_exp.h"
 
 MODULE_LICENSE("Dual BSD/GPL");
 
-#define BT_DRIVER_NAME "mtk_stp_BT_chrdev"
-#define BT_DEV_MAJOR 192	/* Never used number */
+#define BT_DRIVER_NAME "mtk_stp_bt_chrdev"
+#define BT_DEV_MAJOR 192
 
 #define PFX                         "[MTK-BT] "
 #define BT_LOG_DBG                  3
@@ -45,47 +42,37 @@ MODULE_LICENSE("Dual BSD/GPL");
 #define BT_LOG_WARN                 1
 #define BT_LOG_ERR                  0
 
-#define COMBO_IOC_MAGIC             0xb0
-#define COMBO_IOCTL_FW_ASSERT       _IOWR(COMBO_IOC_MAGIC, 0, int)
-#define COMBO_IOCTL_BT_IC_HW_VER    _IOWR(COMBO_IOC_MAGIC, 1, void*)
-#define COMBO_IOCTL_BT_IC_FW_VER    _IOWR(COMBO_IOC_MAGIC, 2, void*)
-#define COMBO_IOC_BT_HWVER          _IOWR(COMBO_IOC_MAGIC, 3, void*)
-
 static UINT32 gDbgLevel = BT_LOG_INFO;
 
 #define BT_DBG_FUNC(fmt, arg...)	\
-	do { if (gDbgLevel >= BT_LOG_DBG)	\
-		pr_debug(PFX "%s: "  fmt, __func__, ##arg);	\
-	} while (0)
+	do { if (gDbgLevel >= BT_LOG_DBG) pr_debug(PFX "%s: " fmt, __func__, ##arg); } while (0)
 #define BT_INFO_FUNC(fmt, arg...)	\
-	do { if (gDbgLevel >= BT_LOG_INFO)	\
-		pr_warn(PFX "%s: "  fmt, __func__, ##arg);	\
-	} while (0)
+	do { if (gDbgLevel >= BT_LOG_INFO) pr_debug(PFX "%s: " fmt, __func__, ##arg); } while (0)
 #define BT_WARN_FUNC(fmt, arg...)	\
-	do { if (gDbgLevel >= BT_LOG_WARN)	\
-		pr_err(PFX "%s: "  fmt, __func__, ##arg);	\
-	} while (0)
+	do { if (gDbgLevel >= BT_LOG_WARN) pr_warn(PFX "%s: " fmt, __func__, ##arg); } while (0)
 #define BT_ERR_FUNC(fmt, arg...)	\
-	do { if (gDbgLevel >= BT_LOG_ERR)	\
-		pr_err(PFX "%s: "   fmt, __func__, ##arg);	\
-	} while (0)
+	do { if (gDbgLevel >= BT_LOG_ERR) pr_err(PFX "%s: " fmt, __func__, ##arg); } while (0)
 
-#define VERSION "1.0"
+#define VERSION "2.0"
 
+#define COMBO_IOC_MAGIC             0xb0
+#define COMBO_IOCTL_FW_ASSERT       _IOWR(COMBO_IOC_MAGIC, 0, int)
+#define COMBO_IOCTL_BT_SET_PSM      _IOWR(COMBO_IOC_MAGIC, 1, bool)
+#define COMBO_IOCTL_BT_IC_HW_VER    _IOR(COMBO_IOC_MAGIC, 2, void*)
+#define COMBO_IOCTL_BT_IC_FW_VER    _IOR(COMBO_IOC_MAGIC, 3, void*)
 
-#if WMT_CREATE_NODE_DYNAMIC
-struct class *stpbt_class;
-struct device *stpbt_dev;
-#endif
-
-static INT32 BT_devs = 1;	/* Device count */
-static INT32 BT_major = BT_DEV_MAJOR;	/* Dynamic allocation */
+static INT32 BT_devs = 1;
+static INT32 BT_major = BT_DEV_MAJOR;
 module_param(BT_major, uint, 0);
 static struct cdev BT_cdev;
+#if CREATE_NODE_DYNAMIC
+static struct class *stpbt_class;
+static struct device *stpbt_dev;
+#endif
 
-#define BT_BUFFER_SIZE 2048
-static UINT8 i_buf[BT_BUFFER_SIZE];	/* Input buffer of read() */
-static UINT8 o_buf[BT_BUFFER_SIZE];	/* Output buffer of write() */
+#define BT_BUFFER_SIZE              2048
+static UINT8 i_buf[BT_BUFFER_SIZE]; /* Input buffer for read */
+static UINT8 o_buf[BT_BUFFER_SIZE]; /* Output buffer for write */
 
 static struct semaphore wr_mtx, rd_mtx;
 /* Wait queue for poll and read */
@@ -95,12 +82,13 @@ static INT32 flag;
 /* Reset flag for whole chip reset senario */
 static volatile INT32 rstflag;
 
+/*******************************************************************
+ * WHOLE CHIP RESET message handler
+ *******************************************************************
+*/
 static VOID bt_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 			   ENUM_WMTDRV_TYPE_T dst, ENUM_WMTMSG_TYPE_T type, PVOID buf, UINT32 sz)
 {
-	/*
-	 * Handle whole chip reset messages
-	 */
 	ENUM_WMTRSTMSG_TYPE_T rst_msg;
 
 	if (sz <= sizeof(ENUM_WMTRSTMSG_TYPE_T)) {
@@ -120,15 +108,13 @@ static VOID bt_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 				wake_up_interruptible(&inq);
 			}
 		}
-	} else {
-		/* Invalid message format */
+	} else
 		BT_WARN_FUNC("Invalid message format!\n");
-	}
 }
 
 VOID BT_event_cb(VOID)
 {
-	BT_DBG_FUNC("BT_event_cb()\n");
+	BT_DBG_FUNC("BT_event_cb\n");
 
 	flag = 1;
 
@@ -168,50 +154,48 @@ unsigned int BT_poll(struct file *filp, poll_table *wait)
 ssize_t BT_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
 	INT32 retval = 0;
-	INT32 write_size;
-	INT32 written = 0;
 
 	down(&wr_mtx);
 
-	BT_DBG_FUNC("%s: count %zd pos %lld\n", __func__, count, *f_pos);
+	BT_DBG_FUNC("count %zd pos %lld\n", count, *f_pos);
+
 	if (rstflag) {
 		if (rstflag == 1) {	/* Reset start */
 			retval = -88;
-			BT_INFO_FUNC("%s: detect whole chip reset start\n", __func__);
+			BT_INFO_FUNC("detect whole chip reset start\n");
 		} else if (rstflag == 2) {	/* Reset end */
 			retval = -99;
-			BT_INFO_FUNC("%s: detect whole chip reset end\n", __func__);
+			BT_INFO_FUNC("detect whole chip reset end\n");
 		}
 		goto OUT;
 	}
 
 	if (count > 0) {
-		if (count < BT_BUFFER_SIZE) {
-			write_size = count;
-		} else {
-			write_size = BT_BUFFER_SIZE;
-			BT_ERR_FUNC("%s: count > BT_BUFFER_SIZE\n", __func__);
+		if (count > BT_BUFFER_SIZE) {
+			count = BT_BUFFER_SIZE;
+			BT_WARN_FUNC("Shorten count %zd to BT_BUFFER_SIZE\n", count);
 		}
 
-		if (copy_from_user(&o_buf[0], &buf[0], write_size)) {
+		if (copy_from_user(o_buf, buf, count)) {
 			retval = -EFAULT;
 			goto OUT;
 		}
 
-		written = mtk_wcn_stp_send_data(&o_buf[0], write_size, BT_TASK_INDX);
-		if (written == 0) {
-			retval = -ENOSPC;
-			/* No space is available, native program should not call BT_write with no delay */
-			BT_ERR_FUNC
-			    ("Packet length %zd, sent length %d, retval = %d\n",
-			     count, written, retval);
-		} else {
-			retval = written;
-		}
+		retval = mtk_wcn_stp_send_data(o_buf, count, BT_TASK_INDX);
+		if (retval < 0)
+			BT_ERR_FUNC("mtk_wcn_stp_send_data fail, retval %d\n", retval);
+		else if (retval == 0) {
+			/* Device cannot process data in time, BT queue is full and no space is available for write,
+			 * native program should not call BT_write with no delay.
+			 */
+			BT_ERR_FUNC("Packet length %zd, sent bytes %d, no space is available!\n", count, retval);
+			retval = -EAGAIN;
+		} else
+			BT_DBG_FUNC("Packet length %zd, sent bytes %d\n", count, retval);
 
 	} else {
-		retval = -EFAULT;
-		BT_ERR_FUNC("Packet length %zd is not allowed, retval = %d\n", count, retval);
+		BT_ERR_FUNC("Packet length %zd is not allowed\n", count);
+		retval = -EINVAL;
 	}
 
 OUT:
@@ -226,16 +210,17 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 
 	down(&rd_mtx);
 
-	BT_DBG_FUNC("%s: count %zd pos %lld\n", __func__, count, *f_pos);
+	BT_DBG_FUNC("count %zd pos %lld\n", count, *f_pos);
+
 	if (rstflag) {
 		if (rstflag == 1) {	/* Reset start */
 			retval = -88;
 			if ((chip_reset_count%500) == 0)
-				BT_INFO_FUNC("%s: detect whole chip reset start, %d\n", __func__, chip_reset_count);
+				BT_INFO_FUNC("detect whole chip reset start, %d\n", chip_reset_count);
 			chip_reset_count++;
 		} else if (rstflag == 2) {	/* Reset end */
 			retval = -99;
-			BT_INFO_FUNC("%s: detect whole chip reset end\n", __func__);
+			BT_INFO_FUNC("detect whole chip reset end\n");
 			chip_reset_count = 0;
 		}
 		goto OUT;
@@ -243,10 +228,14 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 
 	if (count > BT_BUFFER_SIZE) {
 		count = BT_BUFFER_SIZE;
-		BT_ERR_FUNC("%s: count > BT_BUFFER_SIZE\n", __func__);
+		BT_WARN_FUNC("Shorten count %zd to BT_BUFFER_SIZE\n", count);
 	}
 
 	retval = mtk_wcn_stp_receive_data(i_buf, count, BT_TASK_INDX);
+	if (retval < 0) {
+		BT_ERR_FUNC("mtk_wcn_stp_receive_data fail, retval %d\n", retval);
+		goto OUT;
+	}
 
 	while (retval == 0) {	/* Got nothing, wait for STP's signal */
 		/*
@@ -254,20 +243,23 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 		* O_NONBLOCK is specified during open()
 		*/
 		if (filp->f_flags & O_NONBLOCK) {
-			BT_DBG_FUNC("Non-blocking BT_read\n");
+			BT_DBG_FUNC("Non-blocking read, return directly\n");
 			retval = -EAGAIN;
 			goto OUT;
 		}
 
-		BT_DBG_FUNC("%s: wait_event 1\n", __func__);
 		wait_event(BT_wq, flag != 0);
-		BT_DBG_FUNC("%s: wait_event 2\n", __func__);
 		flag = 0;
+
 		retval = mtk_wcn_stp_receive_data(i_buf, count, BT_TASK_INDX);
-		BT_DBG_FUNC("%s: mtk_wcn_stp_receive_data returns %d\n", __func__, retval);
+		if (retval < 0) {
+			BT_ERR_FUNC("mtk_wcn_stp_receive_data fail, retval %d\n", retval);
+			goto OUT;
+		}
 	}
 
 	/* Got something from STP driver */
+	BT_DBG_FUNC("Read bytes %d\n", retval);
 	if (copy_to_user(buf, i_buf, retval)) {
 		retval = -EFAULT;
 		goto OUT;
@@ -275,7 +267,6 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 
 OUT:
 	up(&rd_mtx);
-	BT_DBG_FUNC("%s: retval = %d\n", __func__, retval);
 	return retval;
 }
 
@@ -284,41 +275,44 @@ long BT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	INT32 retval = 0;
 	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_TRUE;
-	ENUM_WMTHWVER_TYPE_T hw_ver_sym = WMTHWVER_INVALID;
+	UINT32 ver = 0;
 
-	BT_DBG_FUNC("%s:  cmd: 0x%x\n", __func__, cmd);
+	BT_DBG_FUNC("cmd: 0x%08x\n", cmd);
 
 	switch (cmd) {
-	case COMBO_IOC_BT_HWVER:
-		/* Get combo HW version */
-		hw_ver_sym = mtk_wcn_wmt_hwver_get();
-		BT_INFO_FUNC("%s: HW version = %d, sizeof(hw_ver_sym) = %zd\n",
-			     __func__, hw_ver_sym, sizeof(hw_ver_sym));
-		if (copy_to_user((int __user *)arg, &hw_ver_sym, sizeof(hw_ver_sym)))
-			retval = -EFAULT;
-		break;
-
 	case COMBO_IOCTL_FW_ASSERT:
 		/* Trigger FW assert for debug */
-		BT_INFO_FUNC("%s: Host trigger FW assert......, reason:%lu\n", __func__, arg);
-		bRet = mtk_wcn_wmt_assert(WMTDRV_TYPE_BT, arg);
-		if (bRet == MTK_WCN_BOOL_TRUE) {
+		BT_INFO_FUNC("Host trigger FW assert......, reason: %lu\n", arg);
+		bRet = mtk_wcn_wmt_assert(WMTDRV_TYPE_BT, (UINT32)arg);
+		if (bRet == MTK_WCN_BOOL_TRUE)
 			BT_INFO_FUNC("Host trigger FW assert succeed\n");
-			retval = 0;
-		} else {
-			BT_ERR_FUNC("Host trigger FW assert Failed\n");
-			retval = (-EBUSY);
+		else {
+			BT_ERR_FUNC("Host trigger FW assert failed\n");
+			retval = -EIO;
 		}
 		break;
+	case COMBO_IOCTL_BT_SET_PSM:
+		/* BT stack may need to dynamically enable/disable Power Saving Mode
+		 * in some scenarios for performance, e.g. A2DP chopping.
+		 */
+		BT_INFO_FUNC("BT stack change PSM setting: %lu\n", arg);
+		retval = mtk_wcn_wmt_psm_ctrl((MTK_WCN_BOOL)arg);
+		break;
 	case COMBO_IOCTL_BT_IC_HW_VER:
-		retval = mtk_wcn_wmt_ic_info_get(WMTCHIN_HWVER);
+		ver = mtk_wcn_wmt_ic_info_get(WMTCHIN_HWVER);
+		BT_INFO_FUNC("HW ver: 0x%x\n", ver);
+		if (copy_to_user((UINT32 __user *)arg, &ver, sizeof(ver)))
+			retval = -EFAULT;
 		break;
 	case COMBO_IOCTL_BT_IC_FW_VER:
-		retval = mtk_wcn_wmt_ic_info_get(WMTCHIN_FWVER);
+		ver = mtk_wcn_wmt_ic_info_get(WMTCHIN_FWVER);
+		BT_INFO_FUNC("FW ver: 0x%x\n", ver);
+		if (copy_to_user((UINT32 __user *)arg, &ver, sizeof(ver)))
+			retval = -EFAULT;
 		break;
 	default:
-		retval = -EFAULT;
-		BT_ERR_FUNC("Unknown cmd (%d)\n", cmd);
+		BT_ERR_FUNC("Unknown cmd: 0x%08x\n", cmd);
+		retval = -EINVAL;
 		break;
 	}
 
@@ -332,12 +326,12 @@ long BT_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 static int BT_open(struct inode *inode, struct file *file)
 {
-	BT_INFO_FUNC("%s: major %d minor %d pid %d\n", __func__, imajor(inode), iminor(inode), current->pid);
+	BT_INFO_FUNC("major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
 
 	/* Turn on BT */
 	if (mtk_wcn_wmt_func_on(WMTDRV_TYPE_BT) == MTK_WCN_BOOL_FALSE) {
 		BT_WARN_FUNC("WMT turn on BT fail!\n");
-		return -ENODEV;
+		return -EIO;
 	}
 
 	BT_INFO_FUNC("WMT turn on BT OK!\n");
@@ -353,26 +347,23 @@ static int BT_open(struct inode *inode, struct file *file)
 		BT_DBG_FUNC("Register BT event callback!\n");
 		mtk_wcn_stp_register_event_cb(BT_TASK_INDX, BT_event_cb);
 	} else {
-		BT_ERR_FUNC("STP is not ready\n");
+		BT_ERR_FUNC("STP is not ready!\n");
 		mtk_wcn_wmt_func_off(WMTDRV_TYPE_BT);
-		return -ENODEV;
+		return -EIO;
 	}
 
 	BT_DBG_FUNC("Register BT reset callback!\n");
 	mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_BT, bt_cdev_rst_cb);
 
-	/* init_MUTEX(&wr_mtx); */
 	sema_init(&wr_mtx, 1);
-	/* init_MUTEX(&rd_mtx); */
 	sema_init(&rd_mtx, 1);
-	BT_INFO_FUNC("%s: finish\n", __func__);
 
 	return 0;
 }
 
 static int BT_close(struct inode *inode, struct file *file)
 {
-	BT_INFO_FUNC("%s: major %d minor %d pid %d\n", __func__, imajor(inode), iminor(inode), current->pid);
+	BT_INFO_FUNC("major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
 	rstflag = 0;
 	mtk_wcn_wmt_msgcb_unreg(WMTDRV_TYPE_BT);
 	mtk_wcn_stp_register_event_cb(BT_TASK_INDX, NULL);
@@ -403,10 +394,10 @@ static int BT_init(void)
 	INT32 alloc_ret = 0;
 	INT32 cdev_err = 0;
 
-	/* Static allocate char device */
-	alloc_ret = register_chrdev_region(dev, 1, BT_DRIVER_NAME);
+	/* Allocate char device */
+	alloc_ret = register_chrdev_region(dev, BT_devs, BT_DRIVER_NAME);
 	if (alloc_ret) {
-		BT_ERR_FUNC("%s: Failed to register char device\n", __func__);
+		BT_ERR_FUNC("Failed to register device numbers\n");
 		return alloc_ret;
 	}
 
@@ -417,7 +408,7 @@ static int BT_init(void)
 	if (cdev_err)
 		goto error;
 
-#if WMT_CREATE_NODE_DYNAMIC
+#if CREATE_NODE_DYNAMIC /* mknod replace */
 	stpbt_class = class_create(THIS_MODULE, "stpbt");
 	if (IS_ERR(stpbt_class))
 		goto error;
@@ -428,16 +419,18 @@ static int BT_init(void)
 
 	BT_INFO_FUNC("%s driver(major %d) installed\n", BT_DRIVER_NAME, BT_major);
 
-	/* Init wait queue */
+	/* Initialize wait queue */
 	init_waitqueue_head(&(inq));
 
 	return 0;
 
 error:
-#if WMT_CREATE_NODE_DYNAMIC
-	if (!IS_ERR(stpbt_dev))
+#if CREATE_NODE_DYNAMIC
+	if (stpbt_dev && !IS_ERR(stpbt_dev)) {
 		device_destroy(stpbt_class, dev);
-	if (!IS_ERR(stpbt_class)) {
+		stpbt_dev = NULL;
+	}
+	if (stpbt_class && !IS_ERR(stpbt_class)) {
 		class_destroy(stpbt_class);
 		stpbt_class = NULL;
 	}
@@ -455,12 +448,12 @@ static void BT_exit(void)
 {
 	dev_t dev = MKDEV(BT_major, 0);
 
-#if WMT_CREATE_NODE_DYNAMIC
-	if (stpbt_dev) {
+#if CREATE_NODE_DYNAMIC
+	if (stpbt_dev && !IS_ERR(stpbt_dev)) {
 		device_destroy(stpbt_class, dev);
 		stpbt_dev = NULL;
 	}
-	if (stpbt_class) {
+	if (stpbt_class && !IS_ERR(stpbt_class)) {
 		class_destroy(stpbt_class);
 		stpbt_class = NULL;
 	}
