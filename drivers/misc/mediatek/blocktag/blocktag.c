@@ -116,14 +116,18 @@ static void mtk_btag_pidlog_add(struct request_queue *q, struct bio *bio,
 	int rw = (bio->bi_rw & REQ_WRITE) ? 1 : 0;
 	int major = bio->bi_bdev ? MAJOR(bio->bi_bdev->bd_dev) : 0;
 
-	if (pid != 0xFFFF) {
-#ifdef CONFIG_MMC_BLOCK_IO_LOG
-		if (major == MMC_BLOCK_MAJOR)
-			mtk_btag_pidlog_add_mmc(q, pid, len, rw);
-#endif
+	if (pid != 0xFFFF && major) {
 #ifdef CONFIG_MTK_UFS_BLOCK_IO_LOG
-		if (major == SCSI_DISK0_MAJOR || major == BLOCK_EXT_MAJOR)
+		if (major == SCSI_DISK0_MAJOR || major == BLOCK_EXT_MAJOR) {
 			mtk_btag_pidlog_add_ufs(q, pid, len, rw);
+			return;
+		}
+#endif
+#ifdef CONFIG_MMC_BLOCK_IO_LOG
+		if (major == MMC_BLOCK_MAJOR || major == BLOCK_EXT_MAJOR) {
+			mtk_btag_pidlog_add_mmc(q, pid, len, rw);
+			return;
+		}
 #endif
 	}
 }
