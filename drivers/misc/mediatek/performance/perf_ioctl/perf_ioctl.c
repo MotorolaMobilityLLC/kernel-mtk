@@ -12,6 +12,9 @@
  */
 #include "perf_ioctl.h"
 #include "perfmgr.h"
+#include <mt-plat/fpsgo_common.h>
+
+#define TAG "PERF_IOCTL"
 
 static void notify_ui_update_timeout(void);
 static void notify_render_aware_timeout(void);
@@ -195,6 +198,13 @@ static long device_ioctl(struct file *filp,
 	case IOCTL_WRITE_FC:
 		notify_frame_complete(arg);
 		break;
+
+#ifdef CONFIG_MTK_FPSGO_FBT_GAME
+	case FPSGO_QUEUE:
+	case FPSGO_DEQUEUE:
+		xgf_qudeq_notify(cmd, arg);
+		break;
+#endif
 
 	default:
 		pr_debug(TAG "non-game unknown cmd %u\n", cmd);

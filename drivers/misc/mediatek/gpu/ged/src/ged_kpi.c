@@ -1275,7 +1275,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					psKPI->t_cpu_slptime = vSleepTime;
 				}
 
-				if (ged_kpi_push_app_self_fc_fp_fbt && psHead == main_head)
+				if (ged_kpi_push_app_self_fc_fp_fbt && psHead == main_head  && gx_game_mode == 1)
 					ged_kpi_push_app_self_fc_fp_fbt(1, psHead->pid);
 
 				/* is_EAS_boost_off = 0; */

@@ -37,7 +37,7 @@
 #include "legacy_controller.h"
 #include "eas_controller.h"
 #include "fpsgo_common.h"
-#include <uapi/linux/fpsgo.h>
+#include "../perf_ioctl/perf_ioctl.h"
 
 #define DEV_MAJOR 121
 #define DEV_NAME "debug"
@@ -53,18 +53,15 @@
 #define EAS 1
 #define LEGACY 2
 
-#define SEQ_printf(m, x...)\
-	do {\
-		if (m)\
-			seq_printf(m, x);\
-		else\
-			pr_debug(x);\
-	} while (0)
-#define TAG "[SOC FBC]"
-
 extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
 extern int sched_scheduler_switch(SCHED_LB_TYPE new_sched);
 extern int linear_real_boost(int);
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
 extern int vip_task_set(int pid, bool set_vip);
 #endif
+
+void switch_fbc(int);
+void switch_init_boost(int);
+void switch_twanted(int);
+void switch_ema(int);
+void switch_super_boost(int);

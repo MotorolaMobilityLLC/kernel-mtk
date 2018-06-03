@@ -23,6 +23,7 @@
 #include "fstb/fstb.h"
 #include "fbt/include/fbt_cpu.h"
 #include "fbt/include/fbt_notifier.h"
+#include "../fbc/fbc.h"
 
 uint32_t fpsgo_systrace_mask;
 int fpsgo_benchmark_hint;
@@ -118,9 +119,55 @@ int fpsgo_fstb_percentile_frametime(int ratio)
 	return switch_percentile_frametime(ratio);
 }
 
+int fpsgo_fstb_force_vag(int arg)
+{
+	return switch_force_vag(arg);
+}
+
+int fpsgo_fstb_vag_fps(int arg)
+{
+	return switch_vag_fps(arg);
+}
+
 int fpsgo_switch_fbt_game(int enable)
 {
 	return switch_fbt_game(enable);
+}
+
+void fpsgo_switch_fbt_ux(int arg)
+{
+	return switch_fbc(arg);
+}
+
+void fpsgo_game_enable(int enable)
+{
+	int off = !enable;
+
+	if (fpsgo_benchmark_hint == off || off > 1 || off < 0)
+		return;
+
+	fpsgo_benchmark_hint = off;
+	fbt_notifier_push_benchmark_hint(fpsgo_benchmark_hint);
+}
+
+void fpsgo_switch_twanted(int arg)
+{
+	return switch_twanted(arg);
+}
+
+void fpsgo_switch_init_boost(int arg)
+{
+	return switch_init_boost(arg);
+}
+
+void fpsgo_switch_ema(int arg)
+{
+	return switch_ema(arg);
+}
+
+void fpsgo_switch_super_boost(int arg)
+{
+	return switch_super_boost(arg);
 }
 
 static int fpsgo_systrace_mask_show(struct seq_file *m, void *unused)
@@ -153,24 +200,25 @@ FPSGO_DEBUGFS_ENTRY(systrace_mask);
 
 static int fpsgo_benchmark_hint_show(struct seq_file *m, void *unused)
 {
-	seq_printf(m, "%d\n", fpsgo_benchmark_hint);
+	seq_printf(m, "%d\n", !fpsgo_benchmark_hint);
 	return 0;
 }
 
 static ssize_t fpsgo_benchmark_hint_write(struct file *flip,
 			const char *ubuf, size_t cnt, loff_t *data)
 {
-	int val;
+	int val, off;
 	int ret;
 
 	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
 	if (ret)
 		return ret;
 
-	if (fpsgo_benchmark_hint == val || val > 1 || val < 0)
+	off = !val;
+	if (fpsgo_benchmark_hint == off || off > 1 || off < 0)
 		return cnt;
 
-	fpsgo_benchmark_hint = val;
+	fpsgo_benchmark_hint = off;
 	fbt_notifier_push_benchmark_hint(fpsgo_benchmark_hint);
 	return cnt;
 }
@@ -194,7 +242,7 @@ static int __init init_fpsgo_common(void)
 			    NULL,
 			    &fpsgo_systrace_mask_fops);
 
-	debugfs_create_file("benchmark_hint",
+	debugfs_create_file("fpsgo_game_enable",
 			    S_IRUGO | S_IWUSR,
 			    debugfs_common_dir,
 			    NULL,

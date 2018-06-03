@@ -69,6 +69,7 @@ extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
 extern unsigned int mt_ppm_userlimit_freq_limit_by_others(
 		unsigned int cluster);
 extern void fbc_notify_game(int game);
+extern void fstb_queue_time_update(unsigned long long ts);
 
 void fbt_cpu_set_game_hint_cb(int is_game_mode);
 
