@@ -2662,6 +2662,22 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 			}
 
 			pa = (unsigned int)wParams.reg;
+#if defined(CONFIG_MACH_MT6799)
+			if (module == DISP_MODULE_COLOR1) {
+				if ((pa & 0xFFFFF000) == ddp_reg_pa_base[DISP_REG_COLOR0])
+					pa += (ddp_reg_pa_base[DISP_REG_COLOR1] - ddp_reg_pa_base[DISP_REG_COLOR0]);
+				else if ((pa & 0xFFFFF000) == ddp_reg_pa_base[DISP_REG_CCORR0])
+					pa += (ddp_reg_pa_base[DISP_REG_CCORR1] - ddp_reg_pa_base[DISP_REG_CCORR0]);
+				else if ((pa & 0xFFFFF000) == ddp_reg_pa_base[DISP_REG_AAL0])
+					pa += (ddp_reg_pa_base[DISP_REG_AAL1] - ddp_reg_pa_base[DISP_REG_AAL0]);
+				else if ((pa & 0xFFFFF000) == ddp_reg_pa_base[DISP_REG_GAMMA0])
+					pa += (ddp_reg_pa_base[DISP_REG_GAMMA1] - ddp_reg_pa_base[DISP_REG_GAMMA0]);
+				else {
+					COLOR_DBG("DISP_IOCTL_WRITE_REG, not disp dual pipe PQ module\n");
+					break;
+				}
+			}
+#endif
 			va = color_pa2va(pa);
 
 			ret = color_is_reg_addr_valid(va);
