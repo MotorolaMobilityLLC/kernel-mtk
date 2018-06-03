@@ -14,7 +14,10 @@
 #ifndef SECMEM_H
 #define SECMEM_H
 
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) \
+	|| defined(CONFIG_BLOWFISH_TEE_SUPPORT)
 #include "secmem_plat.h"
+#endif
 
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
 #define SECMEM_NAME     "secmem64"
