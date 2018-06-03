@@ -133,7 +133,7 @@
  * 100 us, This is the EEM Detector sampling time as represented in
  * cycles of bclk_ck during INIT. 52 MHz
  */
-#define DETWINDOW_VAL		0xA28
+#define DETWINDOW_VAL		0x514
 
 /*
  * mili Volt to config value. voltage = 600mV + val * 6.25mV
@@ -143,7 +143,7 @@
 
 /* 1mV=>10uV */
 /* EEM */
-#define EEM_V_BASE	  (40625)
+#define EEM_V_BASE	  (50000)
 #define EEM_STEP		(625)
 
 /* SRAM (for vcore) */
@@ -155,7 +155,7 @@
 #define VOLT_2_RMIC(volt)	(((((volt) - SRAM_BASE) + SRAM_STEP - 1) / SRAM_STEP) + 3)
 
 /* for voltage bin vcore dvfs */
-#define VCORE_PMIC_BASE (40625)
+#define VCORE_PMIC_BASE (50000)
 #define VCORE_PMIC_STEP (625)
 #if 0
 #define VOLT_2_VCORE_PMIC(volt)   ((((volt) - VCORE_PMIC_BASE) + VCORE_PMIC_STEP - 1) / VCORE_PMIC_STEP)
