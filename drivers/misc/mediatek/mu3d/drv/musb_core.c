@@ -187,7 +187,7 @@ MODULE_PARM_DESC(debug, "USB speed configuration. default = 1, spuper speed.");
 #endif
 
 void __iomem *u3_base;
-void __iomem *u3_sif_base;
+void __iomem *u3_ippc_base;
 void __iomem *u3_sif2_base;
 void __iomem *ap_uart0_base;
 void __iomem *ap_pll_con0;
@@ -2400,7 +2400,7 @@ fail0:
 }
 
 #define USB3_BASE_REGS_ADDR_RES_NAME "ssusb_base"
-#define USB3_SIF_REGS_ADDR_RES_NAME "ssusb_sif"
+#define USB3_IPPC_REGS_ADDR_RES_NAME "ssusb_ippc"
 #define USB3_SIF2_REGS_ADDR_RES_NAME "ssusb_sif2"
 
 static void __iomem *acquire_reg_base(struct platform_device *pdev, const char *res_name)
@@ -2463,8 +2463,8 @@ static int __init musb_probe(struct platform_device *pdev)
 	if (!u3_base)
 		goto exit_regs;
 
-	u3_sif_base = acquire_reg_base(pdev, USB3_SIF_REGS_ADDR_RES_NAME);
-	if (!u3_sif_base)
+	u3_ippc_base = acquire_reg_base(pdev, USB3_IPPC_REGS_ADDR_RES_NAME);
+	if (!u3_ippc_base)
 		goto exit_regs;
 
 	u3_sif2_base = acquire_reg_base(pdev, USB3_SIF2_REGS_ADDR_RES_NAME);
@@ -2519,12 +2519,12 @@ static int __init musb_probe(struct platform_device *pdev)
 exit_regs:
 	if (u3_base)
 		iounmap(u3_base);
-	if (u3_sif_base)
-		iounmap(u3_sif_base);
+	if (u3_ippc_base)
+		iounmap(u3_ippc_base);
 	if (u3_sif2_base)
 		iounmap(u3_sif2_base);
 	u3_base = 0;
-	u3_sif_base = 0;
+	u3_ippc_base = 0;
 	u3_sif2_base = 0;
 
 	return status;

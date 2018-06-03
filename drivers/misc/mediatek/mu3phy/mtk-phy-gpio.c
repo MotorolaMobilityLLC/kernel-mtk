@@ -18,7 +18,7 @@
 /* TEST CHIP PHY define, edit this in different platform */
 #define U3_PHY_I2C_DEV			0x60
 #define U3_PHY_PAGE			0xff
-#define GPIO_BASE			(u3_sif_base + 0x700) /* 0xf0044700 */
+#define GPIO_BASE			(u3_ippc_base)
 #define SSUSB_I2C_OUT			(GPIO_BASE + 0xd0)
 #define SSUSB_I2C_IN			(GPIO_BASE + 0xd4)
 
