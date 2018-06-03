@@ -125,6 +125,13 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint41>
+            <eint183>
+                <varName>MAIN_PMIC</varName>
+                <debounce_time>0</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint183>
             <eint186>
                 <varName>SMART_PA</varName>
                 <debounce_time>0</debounce_time>
@@ -2024,6 +2031,16 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio179>
+            <gpio191>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <out_high>false</out_high>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio191>
         </module>
         <module name="i2c">
             <count>32</count>
@@ -2151,7 +2168,7 @@
                 <address>0x34</address>
             </device17>
             <device18>
-                <varName>RT5509</varName>
+                <varName>SPEAKER_AMP</varName>
                 <channel>I2C_CHANNEL_6</channel>
                 <address>0x34</address>
             </device18>
