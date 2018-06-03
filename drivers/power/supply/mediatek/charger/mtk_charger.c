@@ -239,6 +239,7 @@ struct charger_consumer *charger_manager_get_by_name(struct device *dev,
 
 	return puser;
 }
+EXPORT_SYMBOL(charger_manager_get_by_name);
 
 int charger_manager_enable_high_voltage_charging(
 			struct charger_consumer *consumer, bool en)
@@ -281,6 +282,7 @@ int charger_manager_enable_high_voltage_charging(
 
 	return 0;
 }
+EXPORT_SYMBOL(charger_manager_enable_high_voltage_charging);
 
 int charger_manager_enable_power_path(struct charger_consumer *consumer,
 	int idx, bool en)
