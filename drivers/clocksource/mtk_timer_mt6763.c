@@ -33,12 +33,16 @@
 #include <mach/mtk_gpt.h>
 #include <mt-plat/sync_write.h>
 
-#define CONFIG_MTK_TICK_BC_IRQ_FORCE_AFFINITY
+/*
+ * Always force irq affinity to cpu 0. For debugging purpose only.
+ */
 
-#define GPT_CLKEVT_ID				(GPT1)
+/* #define CONFIG_MTK_TICK_BC_IRQ_FORCE_AFFINITY */
+
+#define GPT_CLKEVT_ID       (GPT1)
 #define GPT_CLKSRC_ID       (GPT2)
 
-#define AP_XGPT_BASE				xgpt_timers.tmr_regs
+#define AP_XGPT_BASE         xgpt_timers.tmr_regs
 
 #define GPT_IRQEN           (AP_XGPT_BASE + 0x0000)
 #define GPT_IRQSTA          (AP_XGPT_BASE + 0x0004)
