@@ -427,7 +427,9 @@ static int mtk_compr_offload_open(struct snd_compr_stream *stream)
 	scp_register_feature(MP3_FEATURE_ID);
 #endif
 	offload_stream = stream;
+#if defined(OFFLOAD_DEBUG_LO)
 	pr_debug("%s()\n", __func__);
+#endif
 	return 0;
 }
 
@@ -578,12 +580,16 @@ static void offloadservice_ipicmd_received(struct ipi_msg_t *ipi_msg)
 		playback_dump_message(ipi_msg);
 		break;
 	}
+#if defined(OFFLOAD_DEBUG_LO)
 	pr_debug("%s msg_id :  %d\n", __func__, ipi_msg->msg_id);
+#endif
 }
 
 static void offloadservice_task_unloaded_handling(void)
 {
+#if defined(OFFLOAD_DEBUG_LO)
 	pr_debug("%s()\n", __func__);
+#endif
 }
 
 static void offloadservice_ipicmd_send(uint8_t data_type, uint8_t ack_type,
@@ -707,8 +713,10 @@ static int offloadservice_copydatatoram(void __user *buf, size_t count)
 #ifdef use_wake_lock
 		mtk_compr_offload_int_wakelock(false);
 #endif
+#if defined(OFFLOAD_DEBUG_LO)
 		pr_debug("%s buffer full , WIdx=%d\n", __func__,
 				   u4WriteIdx);
+#endif
 	}
 	if (afe_offload_service.needdata) {
 		transferred = u4WriteIdx - afe_offload_block.write_blocked_idx;
@@ -794,8 +802,10 @@ static int mtk_compr_offload_pointer(struct snd_compr_stream *stream,
 	tstamp->sampling_rate = afe_offload_block.samplerate;
 	tstamp->pcm_io_frames =
 		afe_offload_block.copied_total >> 2; /* DSP return 16bit data */
+#if defined(OFFLOAD_DEBUG_LO)
 	pr_debug("%s() tstamp->copied_total = %u\n", __func__,
 			   tstamp->copied_total);
+#endif
 	return ret;
 }
 

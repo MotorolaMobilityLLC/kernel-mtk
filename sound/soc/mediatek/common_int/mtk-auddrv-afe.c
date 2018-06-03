@@ -217,8 +217,10 @@ unsigned int clksys_get_reg(unsigned int offset)
 	}
 
 	value = (unsigned int *)(address);
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("%s(), offset = %x, address = %lx, value = 0x%x\n", __func__,
 	       offset, address, *value);
+#endif
 	return *value;
 #else
 	return 0;
@@ -237,9 +239,10 @@ void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
 		pr_warn("%s(), CLKSYS_ADDRESS is null\n", __func__);
 		return;
 	}
-
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("%s(), offset = %x, value = %x, mask = %x\n", __func__, offset,
 	       value, mask);
+#endif
 	spin_lock_irqsave(&clksys_set_reg_lock, flags);
 	val_tmp = clksys_get_reg(offset);
 	val_tmp &= (~mask);

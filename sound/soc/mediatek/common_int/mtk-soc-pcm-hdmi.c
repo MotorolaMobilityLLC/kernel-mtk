@@ -466,14 +466,16 @@ mtk_pcm_hdmi_pointer(struct snd_pcm_substream *substream)
 	kal_uint32 Frameidx = 0;
 	kal_int32 Afe_consumed_bytes = 0;
 	struct afe_block_t *Afe_Block = &(pMemControl->rBlock);
-
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug(" %s Afe_Block->u4DMAReadIdx = 0x%x\n", __func__,
 			Afe_Block->u4DMAReadIdx);
-
+#endif
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI) == true) {
 		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_HDMI_CUR);
 		if (HW_Cur_ReadIdx == 0) {
+#if defined(HDMI_DEBUG_LOG)
 			pr_debug("[Auddrv] HW_Cur_ReadIdx ==0\n");
+#endif
 			HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
 		}
 		HW_memory_index = (HW_Cur_ReadIdx - Afe_Block->pucPhysBufAddr);
@@ -488,10 +490,11 @@ mtk_pcm_hdmi_pointer(struct snd_pcm_substream *substream)
 		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
+#if defined(HDMI_DEBUG_LOG)
 		pr_debug(
 			"[Auddrv] HW_Cur_ReadIdx = 0x%x, HW_memory_index = 0x%x, Afe_consumed_bytes = 0x%x\n",
 			HW_Cur_ReadIdx, HW_memory_index, Afe_consumed_bytes);
-
+#endif
 		return audio_bytes_to_frame(substream, Afe_Block->u4DMAReadIdx);
 	}
 
@@ -516,10 +519,11 @@ static void SetHDMIBuffer(struct snd_pcm_substream *substream,
 	pblock->u4DataRemained = 0;
 	pblock->u4fsyncflag = false;
 	pblock->uResetFlag = true;
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("%s, dma_bytes = %d, dma_area = %p, dma_addr = 0x%x\n",
 			__func__, pblock->u4BufferSize, pblock->pucVirtBufAddr,
 			pblock->pucPhysBufAddr);
-
+#endif
 	Afe_Set_Reg(AFE_HDMI_BASE, pblock->pucPhysBufAddr, 0xffffffff);
 	Afe_Set_Reg(AFE_HDMI_END,
 		    pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1),
@@ -527,8 +531,9 @@ static void SetHDMIBuffer(struct snd_pcm_substream *substream,
 
 	u4tmpMrg1 = Afe_Get_Reg(AFE_HDMI_BASE);
 	u4tmpMrg1 &= 0x00ffffff;
-
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("SetHDMIBuffer, AFE_HDMI_BASE = 0x%x\n", u4tmpMrg1);
+#endif
 }
 
 static int mtk_pcm_hdmi_hw_params(struct snd_pcm_substream *substream,
@@ -538,14 +543,16 @@ static int mtk_pcm_hdmi_hw_params(struct snd_pcm_substream *substream,
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 	int ret = 0;
 
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
-
+#endif
 	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
 	dma_buf->dev.dev = substream->pcm->card->dev;
 	dma_buf->private_data = NULL;
 
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("[mtk_pcm_hdmi_hw_params] HDMI_dma_buf->area\n");
-
+#endif
 	HDMI_dma_buf->bytes = substream->runtime->dma_bytes =
 		params_buffer_bytes(hw_params);
 	runtime->dma_area = HDMI_dma_buf->area;
@@ -553,11 +560,12 @@ static int mtk_pcm_hdmi_hw_params(struct snd_pcm_substream *substream,
 	SetHighAddr(Soc_Aud_Digital_Block_MEM_HDMI, true, runtime->dma_addr);
 	AudDrv_Emi_Clk_On();
 
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("2 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 			substream->runtime->dma_bytes,
 			substream->runtime->dma_area,
 			(long)substream->runtime->dma_addr);
-
+#endif
 	SetHDMIBuffer(substream, hw_params);
 	return ret;
 }
@@ -608,9 +616,11 @@ static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 					 &constraints_sample_rates);
 
 	/* print for hw pcm information */
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug(
 		"mtk_pcm_hdmi_open runtime rate = %d channels = %d substream->pcm->device = %d\n",
 		runtime->rate, runtime->channels, substream->pcm->device);
+#endif
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_MMAP_VALID;
@@ -623,7 +633,9 @@ static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 
 	AudDrv_APLL1Tuner_Clk_On();
 	AudDrv_APLL2Tuner_Clk_On();
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("mtk_pcm_hdmi_open return\n");
+#endif
 	return 0;
 }
 
@@ -769,8 +781,9 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_hdmi_trigger(struct snd_pcm_substream *substream, int cmd)
 {
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("mtk_pcm_hdmi_trigger cmd = %d\n", cmd);
-
+#endif
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -798,13 +811,17 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream, int channel,
 
 	/* handle for buffer management */
 
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug(
 		"[mtk_pcm_hdmi_copy] count = %d WriteIdx=%x, ReadIdx=%x, DataRemained=%x\n",
 		(kal_uint32)count, Afe_Block->u4WriteIdx,
 		Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
+#endif
 
 	if (Afe_Block->u4BufferSize == 0) {
+#if defined(HDMI_DEBUG_LOG)
 		pr_debug("AudDrv_write: u4BufferSize=0 Error");
+#endif
 		return 0;
 	}
 
@@ -827,22 +844,27 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream, int channel,
 		if (Afe_WriteIdx_tmp + copy_size <
 		    Afe_Block->u4BufferSize) { /* copy once */
 			if (!access_ok(VERIFY_READ, data_w_ptr, copy_size)) {
+#if defined(HDMI_DEBUG_LOG)
 				pr_debug(
 					"[mtk_pcm_hdmi_copy] 0ptr invalid data_w_ptr=%p, size=%d u4BufferSize=%d, u4DataRemained=%d",
 					data_w_ptr, copy_size,
 					Afe_Block->u4BufferSize,
 					Afe_Block->u4DataRemained);
+#endif
 			} else {
-
+#if defined(HDMI_DEBUG_LOG)
 				pr_debug(
 					"[%s]WriteIdx= 0x%x data_w_ptr = %p copy_size = 0x%x\n",
 					__func__, Afe_Block->pucVirtBufAddr +
 							  Afe_WriteIdx_tmp,
 					data_w_ptr, copy_size);
+#endif
 				if (copy_from_user((Afe_Block->pucVirtBufAddr +
 						    Afe_WriteIdx_tmp),
 						   data_w_ptr, copy_size)) {
+#if defined(HDMI_DEBUG_LOG)
 					pr_debug("AudDrv_write Fail copy from user\n");
+#endif
 					return -1;
 				}
 			}
@@ -854,12 +876,13 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream, int channel,
 			spin_unlock_irqrestore(&auddrv_hdmi_lock, flags);
 			data_w_ptr += copy_size;
 			count -= copy_size;
-
+#if defined(HDMI_DEBUG_LOG)
 			pr_debug(
 				"[%s] finish1, copy_size:%x, WriteIdx:%x, ReadIdx=%x, Remained:%x \r\n",
 				__func__, copy_size, Afe_Block->u4WriteIdx,
 				Afe_Block->u4DMAReadIdx,
 				Afe_Block->u4DataRemained);
+#endif
 
 		} else { /* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
@@ -867,22 +890,26 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream, int channel,
 			size_1 = Afe_Block->u4BufferSize - Afe_WriteIdx_tmp;
 			size_2 = copy_size - size_1;
 			if (!access_ok(VERIFY_READ, data_w_ptr, size_1)) {
+#if defined(HDMI_DEBUG_LOG)
 				pr_warn("HDMI_write 1ptr invalid data_w_ptr=%p, size_1=%d u4BufferSize=%d, u4DataRemained=%d",
 					data_w_ptr, size_1,
 					Afe_Block->u4BufferSize,
 					Afe_Block->u4DataRemained);
+#endif
 			} else {
-
+#if defined(HDMI_DEBUG_LOG)
 				pr_debug(
 					"[%s]WriteIdx= %x data_w_ptr = %p size_1 = %x\n",
 					__func__, Afe_Block->pucVirtBufAddr +
 							  Afe_WriteIdx_tmp,
 					data_w_ptr, size_1);
-
+#endif
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr +
 						     Afe_WriteIdx_tmp),
 						    data_w_ptr, size_1))) {
+#if defined(HDMI_DEBUG_LOG)
 					pr_warn("HDMI_write Fail 1 copy from user");
+#endif
 					return -1;
 				}
 			}
@@ -895,24 +922,29 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream, int channel,
 
 			if (!access_ok(VERIFY_READ, data_w_ptr + size_1,
 				       size_2)) {
+#if defined(HDMI_DEBUG_LOG)
 				pr_warn(
 					"HDMI_write 2ptr invalid data_w_ptr=%p, size_1=%d, size_2=%d u4BufferSize=%d, u4DataRemained=%d",
 					data_w_ptr, size_1, size_2,
 					Afe_Block->u4BufferSize,
 					Afe_Block->u4DataRemained);
+#endif
 			} else {
-
+#if defined(HDMI_DEBUG_LOG)
 				pr_debug(
 					"[%s]WriteIdx= %x data_w_ptr+size_1 = %p size_2 = %x\n",
 					__func__, Afe_Block->pucVirtBufAddr +
 							  Afe_WriteIdx_tmp,
 					data_w_ptr + size_1, size_2);
+#endif
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr +
 						     Afe_WriteIdx_tmp),
 						    (data_w_ptr + size_1),
 						    size_2))) {
+#if defined(HDMI_DEBUG_LOG)
 					pr_warn(
 						"[mtk_pcm_hdmi_copy] Fail 2  copy from user");
+#endif
 					return -1;
 				}
 			}
@@ -924,12 +956,13 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream, int channel,
 			spin_unlock_irqrestore(&auddrv_hdmi_lock, flags);
 			count -= copy_size;
 			data_w_ptr += copy_size;
-
+#if defined(HDMI_DEBUG_LOG)
 			pr_debug(
 				"[%s] finish2, size:%x, WriteIdx:%x,ReadIdx=%x DataRemained:%x \r\n",
 				__func__, copy_size, Afe_Block->u4WriteIdx,
 				Afe_Block->u4DMAReadIdx,
 				Afe_Block->u4DataRemained);
+#endif
 		}
 	}
 
@@ -972,17 +1005,18 @@ static struct snd_soc_platform_driver mtk_hdmi_soc_platform = {
 
 static int mtk_hdmi_probe(struct platform_device *pdev)
 {
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
-
+#endif
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 	if (!pdev->dev.dma_mask)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_HDMI_PCM);
-
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-
+#endif
 	return snd_soc_register_platform(&pdev->dev, &mtk_hdmi_soc_platform);
 }
 
@@ -1002,7 +1036,9 @@ static int mtk_afe_hdmi_probe(struct snd_soc_platform *platform)
 
 static int mtk_afe_remove(struct platform_device *pdev)
 {
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -1035,8 +1071,9 @@ static struct platform_device *soc_mtkhdmi_dev;
 static int __init mtk_hdmi_soc_platform_init(void)
 {
 	int ret;
-
+#if defined(HDMI_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 #ifndef CONFIG_OF
 	soc_mtkhdmi_dev = platform_device_alloc(MT_SOC_HDMI_PCM, -1);
 	if (!soc_mtkhdmi_dev)

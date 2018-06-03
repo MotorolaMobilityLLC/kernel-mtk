@@ -2432,10 +2432,12 @@ void Auddrv_VUL2_Interrupt_Handler(void)
 		mBlock->u4DMAReadIdx += MaxCopySize;
 		mBlock->u4DMAReadIdx %= mBlock->u4BufferSize;
 		Clear_Mem_CopySize(Soc_Aud_Digital_Block_MEM_VUL2);
-		pr_debug(
-			"%s read  ReadIdx:0x%x, WriteIdx:0x%x,BufAddr:0x%x  CopySize =0x%x\n",
-			__func__, mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
-			mBlock->pucPhysBufAddr, mBlock->u4MaxCopySize);
+		/* pr_debug(
+		 * "%s read  ReadIdx:0x%x, WriteIdx:0x%x,BufAddr:0x%x
+		 * CopySize =0x%x\n",
+		 * __func__, mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
+		 * mBlock->pucPhysBufAddr, mBlock->u4MaxCopySize);
+		 */
 	}
 
 	/* HW already fill in */

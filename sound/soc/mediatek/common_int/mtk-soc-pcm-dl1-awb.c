@@ -94,7 +94,6 @@ static struct snd_pcm_hardware mtk_dl1_awb_hardware = {
 
 static void StopAudioDl1AWBHardware(struct snd_pcm_substream *substream)
 {
-	pr_debug("StopAudioDl1AWBHardware\n");
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, false);
 
@@ -117,7 +116,6 @@ static void StopAudioDl1AWBHardware(struct snd_pcm_substream *substream)
 
 static void StartAudioDl1AWBHardware(struct snd_pcm_substream *substream)
 {
-	pr_debug("StartAudioDl1AWBHardware\n");
 
 	/* here to set interrupt */
 	irq_add_user(
@@ -150,14 +148,12 @@ static void StartAudioDl1AWBHardware(struct snd_pcm_substream *substream)
 
 static int mtk_dl1_awb_pcm_prepare(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_dl1_awb_pcm_prepare substream->rate = %d  substream->channels = %d\n",
-		substream->runtime->rate, substream->runtime->channels);
 	return 0;
 }
 
 static int mtk_dl1_awb_alsa_stop(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_dl1_awb_alsa_stop\n");
+	pr_debug("%s()\n", __func__);
 	StopAudioDl1AWBHardware(substream);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
 	return 0;
@@ -183,7 +179,7 @@ static int mtk_dl1_awb_pcm_hw_params(struct snd_pcm_substream *substream,
 	dma_buf->private_data = NULL;
 
 	if (Awb_Capture_dma_buf->area) {
-		pr_debug("mtk_dl1_awb_pcm_hw_params Awb_Capture_dma_buf->area\n");
+		pr_debug("%s() Awb_Capture_dma_buf->area\n", __func__);
 		runtime->dma_bytes = params_buffer_bytes(hw_params);
 		runtime->dma_area = Awb_Capture_dma_buf->area;
 		runtime->dma_addr = Awb_Capture_dma_buf->addr;
@@ -196,15 +192,16 @@ static int mtk_dl1_awb_pcm_hw_params(struct snd_pcm_substream *substream,
 	set_mem_block(substream, hw_params, Dl1_AWB_Control_context,
 		      Soc_Aud_Digital_Block_MEM_AWB);
 
-	pr_debug("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
-		substream->runtime->dma_bytes, substream->runtime->dma_area,
-		(long)substream->runtime->dma_addr);
+	pr_debug("%s() dma_bytes = %zu dma_area = %p dma_addr = 0x%lx hw.buffer_bytes_max = %zu\n",
+		 __func__, runtime->dma_bytes, runtime->dma_area,
+		 (long)runtime->dma_addr, runtime->hw.buffer_bytes_max);
+
 	return ret;
 }
 
 static int mtk_dl1_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_dl1_capture_pcm_hw_free\n");
+	pr_debug("%s()\n", __func__);
 	if (Awb_Capture_dma_buf->area)
 		return 0;
 	else
@@ -221,7 +218,6 @@ static int mtk_dl1_awb_pcm_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
-	pr_debug("mtk_dl1_awb_pcm_open\n");
 	Dl1_AWB_Control_context =
 		Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_AWB);
 	runtime->hw = mtk_dl1_awb_hardware;
@@ -237,12 +233,11 @@ static int mtk_dl1_awb_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 
 	if (ret < 0) {
-		pr_warn("mtk_dl1_awb_pcm_close\n");
+		pr_debug("mtk_dl1_awb_pcm_close\n");
 		mtk_dl1_awb_pcm_close(substream);
 		return ret;
 	}
 	AudDrv_Emi_Clk_On();
-	pr_debug("mtk_dl1_awb_pcm_open return\n");
 	return 0;
 }
 
@@ -255,7 +250,7 @@ static int mtk_dl1_awb_pcm_close(struct snd_pcm_substream *substream)
 
 static int mtk_dl1_awb_alsa_start(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_dl1_awb_alsa_start\n");
+	pr_debug("%s()\n", __func__);
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
 	StartAudioDl1AWBHardware(substream);
 	return 0;
@@ -263,8 +258,6 @@ static int mtk_dl1_awb_alsa_start(struct snd_pcm_substream *substream)
 
 static int mtk_dl1_awb_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("mtk_dl1_awb_pcm_trigger cmd = %d\n", cmd);
-
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -336,13 +329,13 @@ static int mtk_dl1_awb_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_DL1_AWB_PCM);
 
-	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s(): dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);
 }
 
 static int mtk_afe_dl1_awb_probe(struct snd_soc_platform *platform)
 {
-	pr_debug("mtk_afe_dl1_awb_probe\n");
+	pr_debug("%s()\n", __func__);
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_AWB,
 				   AWB_MAX_BUFFER_SIZE);
 	Awb_Capture_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_AWB);
@@ -384,7 +377,7 @@ static int __init mtk_soc_dl1_awb_platform_init(void)
 {
 	int ret = 0;
 
-	pr_debug("%s\n", __func__);
+	pr_debug("%s()\n", __func__);
 #ifndef CONFIG_OF
 	soc_dl1_awb_capture_dev = platform_device_alloc(MT_SOC_DL1_AWB_PCM, -1);
 	if (!soc_dl1_awb_capture_dev)
