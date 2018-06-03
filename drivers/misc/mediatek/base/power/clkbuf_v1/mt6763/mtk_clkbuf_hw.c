@@ -82,7 +82,7 @@ static void __iomem *pwrap_base;
 /* #define TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP */
 
 /* TODO: enable BBLPM if its function is ready (set as 1) */
-static unsigned int bblpm_switch;
+static unsigned int bblpm_switch = 1;
 
 static unsigned int pwrap_dcxo_en_flag = (DCXO_CONN_ENABLE | DCXO_NFC_ENABLE);
 
