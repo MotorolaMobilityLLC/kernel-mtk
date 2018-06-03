@@ -890,7 +890,7 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb <= sizeof(smi_clk_name))
+	if (larb <= ARRAY_SIZE(smi_clk_name))
 		ret = smi_bus_enable((enum SMI_MASTER_ID)larb, smi_clk_name[larb]);
 	if (ret != 0)
 		M4UMSG("larb_clock_on error: larb %d\n", larb);
@@ -905,7 +905,7 @@ static int larb_clock_off(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb <= sizeof(smi_clk_name))
+	if (larb <= ARRAY_SIZE(smi_clk_name))
 		ret = smi_bus_disable((enum SMI_MASTER_ID)larb, smi_clk_name[larb]);
 	if (ret != 0)
 		M4UMSG("larb_clock_on error: larb %d\n", larb);

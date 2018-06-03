@@ -20,7 +20,7 @@
 #define M4U_SLAVE_NUM(m4u_id)   ((m4u_id) ? 2 : 1)      /* m4u0 has 2 slaves, iommu(m4u1) has 1 slave */
 
 /* seq range related */
-#define SEQ_NR_PER_MM_SLAVE    0
+#define SEQ_NR_PER_MM_SLAVE    8
 #define SEQ_NR_PER_PERI_SLAVE    0
 
 #define M4U0_SEQ_NR         (SEQ_NR_PER_MM_SLAVE*M4U_SLAVE_NUM(0))
