@@ -11,12 +11,12 @@
 # GNU General Public License for more details.
 #
 
-#obj-y += dip/
-#obj-y += src/
-#obj-y += owe/
-obj-y += rsc/
-#obj-y += wpe/
-obj-y += dpe/
-obj-y += tsf/
-obj-y += mfb/
-obj-y += fdvt/
+#
+# Makefile for misc devices that really don't fit anywhere else.
+#
+
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
+
+obj-y += camera_fdvt.o
+
