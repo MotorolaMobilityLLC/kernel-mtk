@@ -47,7 +47,8 @@ static struct LCM_UTIL_FUNCS lcm_util = { 0 };
 /* ------------------------------------------- */
 /* Local Functions */
 /* ------------------------------------------- */
-
+#define dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update) \
+	lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)
 #define dsi_set_cmdq_V2(cmd, count, ppara, force_update)\
 	lcm_util.dsi_set_cmdq_V2(cmd, count, ppara, force_update)
 #define dsi_set_cmdq(pdata, queue_size, force_update) \
@@ -97,6 +98,13 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{ 0x11, 0, {} },
 	{ REGFLAG_DELAY, 120, {} },
 
+	/* write pwm frequence */
+	{ 0x51, 1, {0xFF} },
+	{ 0xC9, 9, {0x13, 0x00, 0x21, 0x1E, 0x31, 0x1E, 0x00, 0x91, 0x00} },
+	{ REGFLAG_DELAY, 5, {} },
+	{ 0x53, 1, {0x2C} },
+	{ REGFLAG_DELAY, 5, {} },
+
 	/* sleep out */
 	{ 0x29, 0, {} },
 	{ REGFLAG_DELAY, 20, {} },
@@ -111,6 +119,39 @@ static struct LCM_setting_table lcm_deep_sleep_setting[] = {
 	{ REGFLAG_DELAY, 120, {} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
+
+static struct LCM_setting_table bl_level[] = {
+	{0x51, 1, {0xFF} },
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static void push_table_cmdq(void *cmdq, struct LCM_setting_table *table,
+	unsigned int count, unsigned char force_update)
+{
+	unsigned int i;
+	unsigned int cmd;
+
+	for (i = 0; i < count; i++) {
+		cmd = table[i].cmd;
+
+		switch (cmd) {
+
+		case REGFLAG_DELAY:
+			if (table[i].count <= 10)
+				MDELAY(table[i].count);
+			else
+				MDELAY(table[i].count);
+			break;
+
+		case REGFLAG_END_OF_TABLE:
+			break;
+
+		default:
+			dsi_set_cmdq_V22(cmdq, cmd, table[i].count,
+				table[i].para_list, force_update);
+		}
+	}
+}
 
 static void push_table(struct LCM_setting_table *table, unsigned int count,
 		       unsigned char force_update)
@@ -213,6 +254,18 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
 }
 
+static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
+{
+	int count = 0;
+
+	pr_debug("%s,hx8394f backlight: level = %d\n", __func__, level);
+
+	bl_level[0].para_list[0] = level;
+
+	count = sizeof(bl_level) / sizeof(struct LCM_setting_table);
+
+	push_table_cmdq(handle, bl_level, count, 1);
+}
 
 static void lcm_init(void)
 {
@@ -252,4 +305,5 @@ struct LCM_DRIVER hx8394f_hd720_dsi_vdo_tianma_lcm_drv = {
 	.init = lcm_init,
 	.suspend = lcm_suspend,
 	.resume = lcm_resume,
+	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 };
