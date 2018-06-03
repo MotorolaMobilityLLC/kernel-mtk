@@ -4847,7 +4847,7 @@ qmGetFrameAction(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex,
 	DEBUGFUNC("qmGetFrameAction");
 
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
-	prStaRec = QM_GET_STA_REC_PTR_FROM_INDEX(prAdapter, ucStaRecIdx);
+	prStaRec = (ucStaRecIdx < CFG_STA_REC_NUM) ? &prAdapter->arStaRec[ucStaRecIdx] : NULL;
 
 	do {
 		/* 4 <1> Tx, if FORCE_TX is set */
@@ -4877,7 +4877,7 @@ qmGetFrameAction(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex,
 				    prWifiVar->ucCmdRsvResource + QM_MGMT_QUEUED_THRESHOLD;
 
 				/* 4 <3.2.1> Tx, if resource is enough */
-				if (u2FreeResource > ucReqResource) {
+				if (u2FreeResource >= ucReqResource) {
 					eFrameAction = FRAME_ACTION_TX_PKT;
 					break;
 				}
@@ -4891,28 +4891,28 @@ qmGetFrameAction(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex,
 		}
 		/* 4 <4> Queue, if BSS is absent */
 		if (prBssInfo->fgIsNetAbsent) {
-			DBGLOG(QM, TRACE, "Queue packets (BSS[%u] Absent)\n", prBssInfo->ucBssIndex);
+			DBGLOG(QM, INFO, "Queue packets (BSS[%u] Absent)\n", prBssInfo->ucBssIndex);
 			eFrameAction = FRAME_ACTION_QUEUE_PKT;
 			break;
 		}
 
+		/* <5> Reserve resource for CMD & 1X */
+		if (eFrameType == FRAME_TYPE_MMPDU) {
+			ucReqResource = nicTxGetPageCount(u2FrameLength, FALSE) + prWifiVar->ucCmdRsvResource;
+
+			if (u2FreeResource < ucReqResource) {
+				eFrameAction = FRAME_ACTION_QUEUE_PKT;
+				DBGLOG(QM, INFO, "Queue MGMT (MSDU[0x%p] Req/Rsv/Free[%u/%u/%u])\n",
+				       prMsduInfo,
+				       nicTxGetPageCount(u2FrameLength, FALSE),
+				       prWifiVar->ucCmdRsvResource, u2FreeResource);
+			}
+		}
 	} while (FALSE);
 
-	/* <5> Resource CHECK! */
-	/* <5.1> Reserve resource for CMD & 1X */
-	if (eFrameType == FRAME_TYPE_MMPDU) {
-		ucReqResource = nicTxGetPageCount(u2FrameLength, FALSE) + prWifiVar->ucCmdRsvResource;
-
-		if (u2FreeResource < ucReqResource) {
-			eFrameAction = FRAME_ACTION_QUEUE_PKT;
-			DBGLOG(QM, INFO, "Queue MGMT (MSDU[0x%p] Req/Rsv/Free[%u/%u/%u])\n",
-					  prMsduInfo,
-					  nicTxGetPageCount(u2FrameLength, FALSE),
-					  prWifiVar->ucCmdRsvResource, u2FreeResource);
-		}
-
-		/* <6> Timeout check! */
 #if CFG_ENABLE_PKT_LIFETIME_PROFILE
+	/* <6> Timeout check! */
+	if (eFrameType == FRAME_TYPE_MMPDU) {
 		if ((eFrameAction == FRAME_ACTION_QUEUE_PKT) && prMsduInfo) {
 			OS_SYSTIME rCurrentTime, rEnqTime;
 
@@ -4923,11 +4923,11 @@ qmGetFrameAction(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex,
 					      MSEC_TO_SYSTIME(prWifiVar->u4MgmtQueueDelayTimeout))) {
 				eFrameAction = FRAME_ACTION_DROP_PKT;
 				DBGLOG(QM, INFO, "Drop MGMT (MSDU[0x%p] timeout[%ums])\n",
-						  prMsduInfo, prWifiVar->u4MgmtQueueDelayTimeout);
+				       prMsduInfo, prWifiVar->u4MgmtQueueDelayTimeout);
 			}
 		}
-#endif
 	}
+#endif
 
 	return eFrameAction;
 }
