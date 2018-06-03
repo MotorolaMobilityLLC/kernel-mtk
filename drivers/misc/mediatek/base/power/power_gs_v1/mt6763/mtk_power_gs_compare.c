@@ -42,13 +42,13 @@ void mt_power_gs_suspend_compare(unsigned int dump_flag)
 	if (dump_flag & GS_PMIC) {
 		if (crystal_exist_status() == true) {
 			/* 32k */
-			mt_power_gs_compare("Suspend ", "6355",
+			mt_power_gs_compare("Suspend ", "6356",
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_suspend,
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_suspend_len);
 		} else {
 			/* 32k-less */
 			pr_warn("Power_gs: %s in 32k-less\n", __func__);
-			mt_power_gs_compare("Suspend ", "6355",
+			mt_power_gs_compare("Suspend ", "6356",
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_suspend_32kless,
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_suspend_32kless_len);
 		}
@@ -74,13 +74,13 @@ void mt_power_gs_dpidle_compare(unsigned int dump_flag)
 	if (dump_flag & GS_PMIC) {
 		if (crystal_exist_status() == true) {
 			/* 32k */
-			mt_power_gs_compare("DPIdle  ", "6355",
+			mt_power_gs_compare("DPIdle  ", "6356",
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3,
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_len);
 		} else {
 			/* 32k-less */
 			pr_warn("Power_gs: %s in 32k-less\n", __func__);
-			mt_power_gs_compare("DPIdle  ", "6355",
+			mt_power_gs_compare("DPIdle  ", "6356",
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless,
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless_len);
 		}
@@ -106,13 +106,13 @@ void mt_power_gs_sodi_compare(unsigned int dump_flag)
 	if (dump_flag & GS_PMIC) {
 		if (crystal_exist_status() == true) {
 			/* 32k */
-			mt_power_gs_compare("SODI  ", "6355",
+			mt_power_gs_compare("SODI  ", "6356",
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_sodi3p0,
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_sodi3p0_len);
 		} else {
 			/* 32k-less */
 			pr_warn("Power_gs: %s in 32k-less\n", __func__);
-			mt_power_gs_compare("SODI  ", "6355",
+			mt_power_gs_compare("SODI  ", "6356",
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_sodi3p0_32kless,
 				MT6356_MT6356_PMIC_Register_Mapping_E2_gs_sodi3p0_32kless_len);
 		}
