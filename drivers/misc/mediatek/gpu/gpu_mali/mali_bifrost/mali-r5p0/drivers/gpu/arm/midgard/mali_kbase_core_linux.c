@@ -4002,6 +4002,10 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	}
 	kbdev->inited_subsys |= inited_job_fault;
 
+#ifdef ENABLE_MTK_MEMINFO
+	mtk_kbase_gpu_memory_debug_init();
+#endif /* ENABLE_MTK_MEMINFO */
+
 #ifdef CONFIG_PROC_FS
 	proc_mali_register();
 #endif /* CONFIG_PROC_FS */
