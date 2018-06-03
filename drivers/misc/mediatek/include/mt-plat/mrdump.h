@@ -37,7 +37,7 @@
 
 #define MRDUMP_ENABLE_COOKIE 0x590d2ba3
 
-#define MRDUMP_GO_DUMP "MRDUMP06"
+#define MRDUMP_GO_DUMP "MRDUMP07"
 
 #define KSYM_32        1
 #define KSYM_64        2
@@ -74,14 +74,20 @@ struct mrdump_ksyms_param {
 } __packed;
 
 struct mrdump_machdesc {
-	uint32_t crc;
-
 	uint32_t nr_cpus;
 
 	uint64_t page_offset;
 	uint64_t high_memory;
 
 	uint64_t kimage_vaddr;
+	uint64_t kimage_init_begin;
+	uint64_t kimage_init_end;
+	uint64_t kimage_stext;
+	uint64_t kimage_etext;
+	uint64_t kimage_srodata;
+	uint64_t kimage_erodata;
+	uint64_t kimage_sdata;
+	uint64_t kimage_edata;
 
 	uint64_t vmalloc_start;
 	uint64_t vmalloc_end;
@@ -103,6 +109,7 @@ struct mrdump_control_block {
 	char sig[8];
 
 	struct mrdump_machdesc machdesc;
+	uint32_t machdesc_crc;
 
 	uint32_t enabled;
 	uint32_t output_fs_lbaooo;

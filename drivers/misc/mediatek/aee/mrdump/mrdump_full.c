@@ -12,6 +12,7 @@
  */
 
 #include <stdarg.h>
+#include <linux/crc32.h>
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
