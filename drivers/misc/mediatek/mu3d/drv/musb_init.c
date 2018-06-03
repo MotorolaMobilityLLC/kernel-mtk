@@ -215,8 +215,8 @@ static inline void mtu3d_u3_ltssm_intr_handler(struct musb *musb, u32 dwLtssmVal
 	}
 
 	if (dwLtssmValue & ENTER_U3_INTR) {
-		usb_hal_dpidle_request(USB_DPIDLE_SRAM);
-		os_printk(K_INFO, "LTSSM: ENTER_U3_INTR, USB_DPIDLE_SRAM\n");
+		usb_hal_dpidle_request(USB_DPIDLE_TIMER);
+		os_printk(K_INFO, "LTSSM: ENTER_U3_INTR, USB_DPIDLE_TIMER\n");
 		mu3d_hal_pdn_ip_port(0, 0, 1, 0);
 		sts_ltssm = ENTER_U3_INTR;
 	}
@@ -351,8 +351,8 @@ static inline void mtu3d_u2_common_intr_handler(u32 dwIntrUsbValue)
 	}
 
 	if (dwIntrUsbValue & SUSPEND_INTR) {
-		usb_hal_dpidle_request(USB_DPIDLE_SRAM);
-		os_printk(K_NOTICE, "[U2 SUSPEND_INTR], USB_DPIDLE_SRAM\n");
+		usb_hal_dpidle_request(USB_DPIDLE_TIMER);
+		os_printk(K_NOTICE, "[U2 SUSPEND_INTR], USB_DPIDLE_TIMER\n");
 		mu3d_hal_pdn_ip_port(0, 0, 0, 1);
 	}
 
@@ -362,8 +362,10 @@ static inline void mtu3d_u2_common_intr_handler(u32 dwIntrUsbValue)
 		mu3d_hal_pdn_ip_port(1, 0, 0, 1);
 	}
 
-	if (dwIntrUsbValue & RESET_INTR)
-		os_printk(K_NOTICE, "[U2 RESET_INTR]\n");
+	if (dwIntrUsbValue & RESET_INTR) {
+		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
+		os_printk(K_NOTICE, "[U2 RESET_INTR], USB_DPIDLE_FORBIDDEN\n");
+	}
 
 }
 
