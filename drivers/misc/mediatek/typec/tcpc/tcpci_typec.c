@@ -2128,6 +2128,14 @@ int tcpc_typec_handle_timeout(struct tcpc_device *tcpc_dev, uint32_t timer_id)
 		return typec_handle_drp_try_timeout(tcpc_dev);
 #endif	/* CONFIG_TYPEC_CAP_TRY_STATE */
 
+#ifdef CONFIG_TYPEC_CHECK_LEGACY_CABLE
+	if (timer_id == TYPEC_TIMER_DRP_SRC_TOGGLE &&
+		(tcpc_dev->typec_state != typec_unattached_src)) {
+		TCPC_DBG("Dummy SRC_TOGGLE\r\n");
+		return 0;
+	}
+#endif /* CONFIG_TYPEC_CHECK_LEGACY_CABLE */
+
 	if (timer_id >= TYPEC_TIMER_START_ID)
 		tcpc_reset_typec_debounce_timer(tcpc_dev);
 	else if (timer_id >= TYPEC_RT_TIMER_START_ID)

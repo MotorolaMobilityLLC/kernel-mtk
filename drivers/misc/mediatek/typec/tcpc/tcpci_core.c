@@ -31,7 +31,7 @@
 #include "mtk_battery.h"
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
-#define TCPC_CORE_VERSION		"2.0.8_MTK"
+#define TCPC_CORE_VERSION		"2.0.9_MTK"
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 static struct tcpc_device *tcpc_dev;
@@ -914,6 +914,10 @@ MODULE_VERSION(TCPC_CORE_VERSION);
 MODULE_LICENSE("GPL");
 
 /* Release Version
+ * 2.0.9_MTK
+ * (1) fix 10k A-to-C legacy cable workaround side effect when
+ *     cable plug in at worakround flow.
+ *
  * 2.0.8_MTK
  * (1) fix timeout thread flow for wakeup pd event thread
  *     after disable timer first.
