@@ -121,3 +121,4 @@ obj-$(CONFIG_THERMAL)   += thermal/
 obj-$(CONFIG_ZONE_MOVABLE_CMA) += zone_movable_cma/
 obj-$(CONFIG_MTK_SYSTRACKER)   += systracker/
 obj-$(CONFIG_MEDIATEK_SOLUTION) += cmo/
+obj-$(CONFIG_NFC_CHIP_SUPPORT) += nfc/
