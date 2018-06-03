@@ -35,6 +35,7 @@
 #include <m4u.h>
 #include "vpu_drv.h"
 #include "vpu_cmn.h"
+#include "vpu_dbg.h"
 
 #ifdef CONFIG_COMPAT
 /* 64 bit */
@@ -410,7 +411,8 @@ int vpu_get_request_from_queue(struct vpu_user *user, uint64_t request_id, struc
 			}
 		}
 
-		LOG_DBG("[vpu] testtest...\n");
+		if (g_vpu_log_level > 1)
+			LOG_INF("[vpu] vpu_get_request_from_queue (%d)\n", get);
 		if (get)
 			list_del_init(vlist_link(req, struct vpu_request));
 
@@ -595,7 +597,8 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		struct vpu_request *req;
 		struct vpu_request *u_req;
 
-		LOG_DBG("[vpu] VPU_IOCTL_ENQUE_REQUEST +\n");
+		if (g_vpu_log_level > 1)
+			LOG_INF("[vpu] VPU_IOCTL_ENQUE_REQUEST +\n");
 
 		ret = vpu_alloc_request(&req);
 		CHECK_RET("[ENQUE alloc request failed, ret=%d\n", ret);
@@ -644,7 +647,8 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		/* free the request, error happened here*/
 		vpu_free_request(req);
-		LOG_DBG("[vpu] VPU_IOCTL_ENQUE_REQUEST - ");
+		if (g_vpu_log_level > 1)
+			LOG_INF("[vpu] VPU_IOCTL_ENQUE_REQUEST - ");
 		ret = -EFAULT;
 		break;
 	}
@@ -654,7 +658,8 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		uint64_t kernel_request_id;
 		struct vpu_request *u_req;
 
-		LOG_DBG("[vpu] VPU_IOCTL_DEQUE_REQUEST + ");
+		if (g_vpu_log_level > 1)
+			LOG_INF("[vpu] VPU_IOCTL_DEQUE_REQUEST + ");
 
 		u_req = (struct vpu_request *) arg;
 		#if 1
@@ -680,7 +685,8 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		ret = vpu_free_request(req);
 		CHECK_RET("[DEQUE] free request, ret=%d\n", ret);
-		LOG_DBG("[vpu] VPU_IOCTL_DEQUE_REQUEST - ");
+		if (g_vpu_log_level > 1)
+			LOG_INF("[vpu] VPU_IOCTL_DEQUE_REQUEST - ");
 		break;
 	}
 	case VPU_IOCTL_FLUSH_REQUEST:
