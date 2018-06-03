@@ -39,7 +39,6 @@
 #define MTK_MEMCFG_SIMPLE_BUFFER_LEN 16
 #define MTK_MEMCFG_LARGE_BUFFER_LEN (2048)
 
-
 struct mtk_memcfg_info_buf {
 	unsigned long max_len;
 	unsigned long curr_pos;
@@ -68,102 +67,12 @@ struct mtk_memcfg_layout_info {
 	unsigned long long size;
 };
 
-#define RESERVED_NO_MAP 1
-#define RESERVED_MAP 0
-
-struct reserved_mem_ext {
-	const char	*name;
-	unsigned long long base;
-	unsigned long long size;
-	int		nomap;
-};
-
 #define MAX_LAYOUT_INFO 30
 static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_phy[MAX_LAYOUT_INFO];
-
-#define MAX_RESERVED_REGIONS	40
-static int mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved_mem_ext
-		*reserved_mem, int *reserved_mem_count)
-{
-	int page_num, reserved_count = *reserved_mem_count;
-	int index;
-	unsigned long start_pfn, end_pfn, start, end, page_count;
-	struct page *page;
-	struct reserved_mem_ext *rmem;
-
-	for (index = 0; index < *reserved_mem_count; index++) {
-		rmem = &reserved_mem[index];
-		start_pfn = __phys_to_pfn(rmem->base);
-		end_pfn = __phys_to_pfn(rmem->base + rmem->size);
-
-		if (start_pfn > end_pfn) {
-			pr_err("start_pfn %lu > end_pfn %lu\n", start_pfn, end_pfn);
-			pr_err("reserved_mem: %s, base: %llu, size: %llu, nomap: %d\n",
-					rmem->name,
-					rmem->base,
-					rmem->size,
-					rmem->nomap);
-			BUG();
-		}
-
-		page_count = end_pfn - start_pfn;
-		start = 0;
-		end = 0;
-
-		if (!pfn_valid(start_pfn)) {
-			reserved_mem[index].nomap =
-				RESERVED_NO_MAP;
-			continue;
-		}
-
-		for (page_num = 0; page_num < page_count; page_num++) {
-			page = pfn_to_page(start_pfn + page_num);
-			if (PageReserved(page)) {
-				if (start == 0)
-					start = start_pfn + page_num;
-			} else {
-				if (start != 0) {
-					struct reserved_mem_ext *tmp =
-						&reserved_mem[reserved_count];
-
-					reserved_count += 1;
-					*reserved_mem_count = reserved_count;
-
-					if (reserved_count > MAX_RESERVED_REGIONS)
-						return -1;
-
-					end = start_pfn + page_num;
-					tmp->base =
-						page_to_phys(pfn_to_page(start));
-					tmp->size = page_to_phys(pfn_to_page(end)) -
-						page_to_phys(pfn_to_page(start));
-					tmp->name = rmem->name;
-					tmp->nomap = RESERVED_MAP;
-					end = 0;
-					start = 0;
-
-					tmp = &reserved_mem[index];
-					tmp->base = 0;
-					tmp->size = 0;
-				}
-			}
-		}
-		if (start != 0)
-			end = start_pfn + page_count;
-	}
-	return 0;
-}
 
 int mtk_memcfg_memory_layout_info_compare(const void *p1, const void *p2)
 {
 	if (((struct mtk_memcfg_layout_info *)p1)->start > ((struct mtk_memcfg_layout_info *)p2)->start)
-		return 1;
-	return -1;
-}
-
-int reserved_mem_ext_compare(const void *p1, const void *p2)
-{
-	if (((struct reserved_mem_ext *)p1)->base > ((struct reserved_mem_ext *)p2)->base)
 		return 1;
 	return -1;
 }
@@ -230,10 +139,8 @@ void mtk_memcfg_late_warning(unsigned long flag)
 static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 {
 	int i = 0;
-	int reserved_mem_count;
-	int ret = 0;
+	int reserved_count;
 	phys_addr_t dram_end = 0;
-	struct reserved_mem tmp;
 	struct reserved_mem_ext *reserved_mem = NULL;
 	struct reserved_mem_ext *rmem, *prmem;
 	char *path = "/memory";
@@ -252,48 +159,38 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 		goto debug_info;
 	}
 
-	reserved_mem_count = get_reserved_mem_count();
-	pr_info("reserved_mem_count: %d\n", reserved_mem_count);
 	reserved_mem = kcalloc(MAX_RESERVED_REGIONS,
 				sizeof(struct reserved_mem_ext),
 				GFP_KERNEL);
-
-	if (reserved_mem_count > MAX_RESERVED_REGIONS)
-		pr_err("reserved_mem_count: %d, over limit MAX_RESERVED_REGIONS : %d\n",
-				reserved_mem_count, MAX_RESERVED_REGIONS);
-
-
-	for (i = 0; i < reserved_mem_count; i++) {
-		tmp = get_reserved_mem(i);
-		reserved_mem[i].name = tmp.name;
-		reserved_mem[i].base = tmp.base;
-		reserved_mem[i].size = tmp.size;
-		reserved_mem[i].nomap = RESERVED_MAP;
+	if (!reserved_mem) {
+		seq_puts(m, "Can't get memory to parse reserve memory.(Is it OOM?)\n");
+		return 0;
 	}
 
-	ret = mtk_memcfg_pares_reserved_memory(m, reserved_mem, &reserved_mem_count);
-
-	if (ret) {
-		seq_printf(m, "reserved_mem_cout(%d) over limit after parsing!\n",
-				reserved_mem_count);
+	reserved_count = mtk_memcfg_get_reserved_memory(reserved_mem);
+	if (reserved_count == 0) {
+		pr_info("Can't get reserve memory.\n");
 		kfree(reserved_mem);
 		goto debug_info;
 	}
 
-	for (i = 0; i < reserved_mem_count; i++) {
-		if (strcmp("zone-movable-cma-memory", (const char *)reserved_mem[i].name) == 0) {
-			reserved_mem[i].size = 0;
-			reserved_mem[i].base = 0;
-		}
+	reserved_count = mtk_memcfg_pares_reserved_memory(reserved_mem, reserved_count);
+	if (reserved_count <= 0 || reserved_count > MAX_RESERVED_REGIONS) {
+		seq_printf(m, "reserved_count(%d) over limit after parsing!\n",
+				reserved_count);
+		kfree(reserved_mem);
+		goto debug_info;
 	}
 
-	sort(reserved_mem, reserved_mem_count,
+	clean_reserved_mem_by_name(reserved_mem, reserved_count, "zone-movable-cma-memory");
+
+	sort(reserved_mem, reserved_count,
 			sizeof(struct reserved_mem_ext),
 			reserved_mem_ext_compare, NULL);
 
 	seq_puts(m, "Reserve Memory Layout (prefix with \"*\" is no-map)\n");
 
-	i = reserved_mem_count - 1;
+	i = reserved_count - 1;
 	rmem = &reserved_mem[i];
 	dram_end = memblock_end_of_DRAM();
 
@@ -302,7 +199,7 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 		dram_end - (rmem->base + rmem->size));
 	}
 
-	for (i = reserved_mem_count - 1; i >= 0; i--) {
+	for (i = reserved_count - 1; i >= 0; i--) {
 		rmem = &reserved_mem[i];
 
 		if (i == 0)
@@ -340,20 +237,20 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 debug_info:
 	seq_puts(m, "\n");
 	seq_puts(m, "Debug Info:\n");
-	seq_printf(m, "Memory: %luK/%luK available, %luK kernel code, %luK rwdata, %luK rodata, %luK init, %luK bss, %luK reserved"
+	seq_printf(m, "Memory: %lluK/%lluK available, %lluK kernel code, %lluK rwdata, %lluK rodata, %lluK init, %lluK bss, %lluK reserved"
 #ifdef CONFIG_HIGHMEM
-		", %luK highmem"
+		", %lluK highmem"
 #endif
-		, kernel_reserve_meminfo.available
-		, kernel_reserve_meminfo.total
-		, kernel_reserve_meminfo.kernel_code
-		, kernel_reserve_meminfo.rwdata
-		, kernel_reserve_meminfo.rodata
-		, kernel_reserve_meminfo.init
-		, kernel_reserve_meminfo.bss
-		, kernel_reserve_meminfo.reserved
+		, kernel_reserve_meminfo.available >> 10
+		, kernel_reserve_meminfo.total >> 10
+		, kernel_reserve_meminfo.kernel_code >> 10
+		, kernel_reserve_meminfo.rwdata >> 10
+		, kernel_reserve_meminfo.rodata >> 10
+		, kernel_reserve_meminfo.init >> 10
+		, kernel_reserve_meminfo.bss >> 10
+		, kernel_reserve_meminfo.reserved >> 10
 #ifdef CONFIG_HIGHMEM
-		, kernel_reserve_meminfo.highmem
+		, kernel_reserve_meminfo.highmem >> 10
 #endif
 		);
 	seq_puts(m, "\n");
@@ -369,7 +266,7 @@ debug_info:
 	seq_printf(m, "memmap : %lu MB\n", mem_map_size >> 20);
 #endif
 #endif
-	return ret;
+	return 0;
 }
 
 static void mtk_memcfg_show_layout_region(struct seq_file *m, const char *name,
