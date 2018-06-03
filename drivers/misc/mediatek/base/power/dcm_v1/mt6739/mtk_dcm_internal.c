@@ -129,12 +129,16 @@ int mt_dcm_dts_map(void)
 		return -1;
 	}
 
+#if 0
 	node = of_find_compatible_node(NULL, NULL, CHN0_EMI_NODE);
 	if (!node) {
 		dcm_pr_err("error: cannot find node %s\n", CHN0_EMI_NODE);
 		return -1;
 	}
 	dcm_chn0_emi_base = (unsigned long)of_iomap(node, 0);
+#else
+	dcm_chn0_emi_base = (unsigned long)of_iomap(node, 1);
+#endif
 	if (!dcm_chn0_emi_base) {
 		dcm_pr_err("error: cannot iomap %s\n", CHN0_EMI_NODE);
 		return -1;
