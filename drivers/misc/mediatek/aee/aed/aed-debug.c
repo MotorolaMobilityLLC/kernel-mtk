@@ -36,11 +36,6 @@ static int test_case;
 static int test_cpu;
 static struct task_struct *wk_tsk[NR_CPUS];
 
-#ifdef __aarch64__
-#undef BUG
-#define BUG() (*((unsigned *)0xaed) = 0xDEAD)
-#endif
-
 static int force_panic_hang(struct notifier_block *this, unsigned long event, void *ptr)
 {
 	LOGW("\n ==> force panic flow hang\n");
