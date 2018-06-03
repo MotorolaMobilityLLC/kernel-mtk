@@ -24,6 +24,8 @@ extern phys_addr_t get_memory_size(void);
 extern phys_addr_t mtk_get_max_DRAM_size(void);
 extern phys_addr_t get_zone_movable_cma_base(void);
 extern phys_addr_t get_zone_movable_cma_size(void);
+extern void *vmap_reserved_mem(phys_addr_t start, phys_addr_t size,
+		pgprot_t prot);
 #ifdef CONFIG_MTK_MEMORY_LOWPOWER
 extern phys_addr_t memory_lowpower_base(void);
 extern phys_addr_t memory_lowpower_size(void);
