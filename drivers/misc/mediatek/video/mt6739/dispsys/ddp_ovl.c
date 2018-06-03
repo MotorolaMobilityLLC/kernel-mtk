@@ -45,7 +45,7 @@ static enum DISP_MODULE_ENUM ovl_index_module[OVL_NUM] = {
 	DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL1_2L
 };
 
-static unsigned int gOVLBackground = 0xFF0000FF;
+static unsigned int gOVLBackground = 0xFF000000;
 
 static inline int is_module_ovl(enum DISP_MODULE_ENUM module)
 {
@@ -985,7 +985,6 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 			enabled_layers |= enable << ovl_cfg->phy_layer;
 		}
 	}
-	enabled_layers = 0;
 	DDPDBG("ovl%d enabled_layers=0x%01x, enabled_ext_layers=0x%01x, ext_sel_layers=0x%04x\n",
 		module, enabled_layers, enabled_ext_layers, ext_sel_layers>>16);
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, enabled_layers);

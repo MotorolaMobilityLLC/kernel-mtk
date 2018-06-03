@@ -2317,7 +2317,7 @@ int pan_display_test(int frame_num, int bpp)
 	return 0;
 }
 
-#define FPGA_DEBUG_PAN
+/*#define FPGA_DEBUG_PAN */
 #ifdef FPGA_DEBUG_PAN
 static struct task_struct *test_task;
 static int update_test_kthread(void *data)

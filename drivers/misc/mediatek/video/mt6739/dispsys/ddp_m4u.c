@@ -23,12 +23,9 @@
  * -- by chip
  */
 static struct module_to_m4u_port_t module_to_m4u_port_mapping[] = {
-#if 0
+#if 1
 	{DISP_MODULE_OVL0, DISP_M4U_PORT_DISP_OVL0},
-	{DISP_MODULE_OVL0_2L, DISP_M4U_PORT_DISP_OVL0_2L},
-	{DISP_MODULE_OVL1_2L, DISP_M4U_PORT_DISP_OVL1_2L},
 	{DISP_MODULE_RDMA0, DISP_M4U_PORT_DISP_RDMA0},
-	{DISP_MODULE_RDMA1, DISP_M4U_PORT_DISP_RDMA1},
 	{DISP_MODULE_WDMA0, DISP_M4U_PORT_DISP_WDMA0},
 #endif
 };
@@ -103,7 +100,7 @@ int config_display_m4u_port(void)
 	char *m4u_usage = disp_helper_get_option(DISP_OPT_USE_M4U) ? "virtual" : "physical";
 
 	DISPERR("config_display_m4u_port enter\n");
-	sPort.ePortID = M4U_PORT_NR;
+	sPort.ePortID = DISP_M4U_PORT_DISP_OVL0;
 	sPort.Virtuality = disp_helper_get_option(DISP_OPT_USE_M4U);
 	sPort.Security = 0;
 	sPort.Distance = 1;
