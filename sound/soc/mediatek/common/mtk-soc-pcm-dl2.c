@@ -111,6 +111,15 @@ static struct snd_pcm_hardware mtk_pcm_dl2_hardware = {
 static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 {
 	PRINTK_AUD_DL2("%s\n", __func__);
+
+	if (get_LowLatencyDebug()) {
+		pr_warn("mtk_pcm_dl2_stop - dl2 underflow");
+		aee_kernel_warning_api(__FILE__, __LINE__,
+							DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE,
+							"mtk_pcm_dl2_stop",
+							"dl2 underflow");
+	}
+
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
 
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
