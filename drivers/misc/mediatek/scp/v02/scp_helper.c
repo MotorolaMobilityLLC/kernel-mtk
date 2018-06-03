@@ -78,10 +78,10 @@ phys_addr_t scp_mem_base_phys;
 phys_addr_t scp_mem_base_virt;
 phys_addr_t scp_mem_size;
 struct scp_regs scpreg;
-unsigned char *scp_A_send_buff;
-unsigned char *scp_A_recv_buff;
-unsigned char *scp_B_send_buff;
-unsigned char *scp_B_recv_buff;
+
+unsigned char *scp_send_buff[SCP_CORE_TOTAL];
+unsigned char *scp_recv_buff[SCP_CORE_TOTAL];
+
 static struct workqueue_struct *scp_workqueue;
 static struct timer_list scp_ready_timer;
 static struct scp_work_struct scp_A_notify_work;
@@ -1707,20 +1707,20 @@ static int __init scp_init(void)
 
 	/* scp ipi initialise */
 	pr_debug("[SCP] ipi irq init\n");
-	scp_A_send_buff = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
-	if (!scp_A_send_buff)
+	scp_send_buff[SCP_A_ID] = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
+	if (!scp_send_buff[SCP_A_ID])
 		return -1;
 
-	scp_A_recv_buff = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
-	if (!scp_A_recv_buff)
+	scp_recv_buff[SCP_A_ID] = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
+	if (!scp_recv_buff[SCP_A_ID])
 		return -1;
 
-	scp_B_send_buff = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
-	if (!scp_B_send_buff)
+	scp_send_buff[SCP_B_ID] = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
+	if (!scp_send_buff[SCP_B_ID])
 		return -1;
 
-	scp_B_recv_buff = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
-	if (!scp_B_recv_buff)
+	scp_recv_buff[SCP_B_ID] = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
+	if (!scp_recv_buff[SCP_B_ID])
 		return -1;
 
 	INIT_WORK(&scp_A_notify_work.work, scp_A_notify_ws);
