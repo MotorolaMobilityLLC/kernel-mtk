@@ -471,8 +471,10 @@ mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 		if (state) {
 			pr_alert("oom test, trying to kill system under oom scenario\n");
 			/* exhaust all memory */
-			for (;;)
+			for (;;) {
+				alloc_pages(GFP_HIGHUSER_MOVABLE, 0);
 				alloc_pages(GFP_KERNEL, 0);
+			}
 		}
 	}
 	return count;
