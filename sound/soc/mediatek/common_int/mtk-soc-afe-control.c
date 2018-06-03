@@ -1390,9 +1390,6 @@ bool SetMemoryPathEnable(unsigned int Aud_block, bool bEnable)
 
 	if (Aud_block >= Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE)
 		return true;
-	/*Let DSP enable DL3*/
-	if (Aud_block == Soc_Aud_Digital_Block_MEM_DL3)
-		return true;
 
 	if ((bEnable == true) && (mAudioMEMIF[Aud_block]->mUserCount == 1))
 		SetMemoryPathEnableReg(Aud_block, bEnable);

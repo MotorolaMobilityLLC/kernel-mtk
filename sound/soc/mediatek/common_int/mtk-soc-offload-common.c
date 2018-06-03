@@ -224,7 +224,6 @@ static int mtk_offload_dl3_start(void)
 	}
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3,  afe_offload_block.samplerate);
 	SetChannels(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.channels);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, true);
 	EnableAfe(true);
 	return 0;
 }
@@ -236,7 +235,6 @@ static int mtk_offload_dl3_stop(void)
 		irq_remove_user(&irq7_user, Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE);
 		irq7_user = false;
 	}
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, false);
 	/* here start digital part */
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 			  Soc_Aud_AFE_IO_Block_MEM_DL3, Soc_Aud_AFE_IO_Block_I2S1_DAC);
@@ -816,7 +814,6 @@ static int mtk_compr_offload_resume(struct snd_compr_stream *stream)
 		irq7_user = true;
 	}
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.samplerate);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, true);
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	if ((afe_offload_block.transferred > 8 * USE_PERIODS_MAX) ||
 	    (afe_offload_block.transferred < 8 * USE_PERIODS_MAX &&
@@ -845,7 +842,6 @@ static int mtk_compr_offload_pause(struct snd_compr_stream *stream)
 		irq_remove_user(&irq7_user, Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE);
 	}
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.samplerate);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, false);
 	SetOffloadEnableFlag(false);
 	offloadservice_releasewriteblocked();
 #ifdef use_wake_lock
