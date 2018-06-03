@@ -188,7 +188,7 @@ class Md1EintObj(ModuleObj):
     def get_srcPinEnable(self):
         return self.__bSrcPinEnable
 
-class Md1EintObj_MT6758(Md1EintObj):
+class Md1EintObj_MT6739(Md1EintObj):
     def __init__(self):
         Md1EintObj.__init__(self)
 

@@ -132,7 +132,7 @@ class GpioData:
 
     @staticmethod
     def set_eint_map_table(map_table):
-        GpioData._map_table = map_table;
+        GpioData._map_table = map_table
 
     @staticmethod
     def get_modeName(key, idx):
