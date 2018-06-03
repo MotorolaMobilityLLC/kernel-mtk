@@ -29,6 +29,13 @@ ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/drrpmb_gp/public
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/tlrpmb/public
 endif
 
+#
+# Attention:
+# Enabling/using CFG_RPMB_KEY_PROGRAMED_IN_KERNEL means accepting the risk of revealing key in
+# Linux Kernel. Mediatek won¡¦t take the responsibility for loss incurred by the key revealing.
+#
+#ccflags-y += -DCFG_RPMB_KEY_PROGRAMED_IN_KERNEL
+
 ifeq ($(CONFIG_MTK_HW_FDE_AES),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/fde_aes/$(MTK_PLATFORM)
 endif

@@ -107,11 +107,12 @@ static void msdc_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 	struct mmc_command *cmd = mrq->cmd;
-	struct mmc_blk_request *brq;
-	struct mmc_queue_req *mq_rq;
 	u32 dir = DMA_FROM_DEVICE;
 	u32 blk_addr;
+	u32 is_fde = 0;
+	unsigned int key_idx;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_queue_req *mq_rq;
 	u32 cq_on = 0;
 	struct mmc_async_req *areq;
 	unsigned int task_id;
@@ -130,6 +131,10 @@ static void msdc_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 		task_id = (cmd->arg >> 16) & 0x1f;
 		areq = mmc->areq_que[task_id];
 		mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
+		if (mq_rq && mq_rq->req->bio && mq_rq->req->bio->bi_hw_fde) {
+			is_fde = 1;
+			key_idx = mq_rq->req->bio->bi_key_idx;
+		}
 		cq_on = 1;
 		goto check_hw_fde;
 	}
@@ -137,19 +142,21 @@ static void msdc_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	/* Normal Read Write Command */
 	if (check_mmc_cmd1718(cmd->opcode) || check_mmc_cmd2425(cmd->opcode)) {
-		brq = container_of(mrq, struct mmc_blk_request, mrq);
-		mq_rq = container_of(brq, struct mmc_queue_req, brq);
+		if (mrq->bi_hw_fde) {
+			is_fde = 2;
+			key_idx = mrq->bi_key_idx;
+		}
 		goto check_hw_fde;
 	}
 	return;
 
 check_hw_fde:
-	if (mq_rq && mq_rq->req->bio && mq_rq->req->bio->bi_hw_fde) {
-		if (!host->is_fde_init || (host->key_idx != mq_rq->req->bio->bi_key_idx)) {
+		if (is_fde) {
+		if (!host->is_fde_init || (host->key_idx != key_idx)) {
 			/* fde init */
 			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL, (1 << 3), 4, 1);
 			host->is_fde_init = true;
-			host->key_idx = mq_rq->req->bio->bi_key_idx;
+			host->key_idx = key_idx;
 		}
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT

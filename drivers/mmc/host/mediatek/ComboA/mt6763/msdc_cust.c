@@ -683,6 +683,12 @@ int msdc_io_check(struct msdc_host *host)
 		polling_tmo = jiffies + POLLING_PINS;
 		while ((MSDC_READ32(MSDC_PS) & 0xF0000) != check_patterns[i]) {
 			if (time_after(jiffies, polling_tmo)) {
+				/* Exception handling for some good card with
+				 * pull up strength greater than pull up strength
+				 * of gpio.
+				 */
+				if ((MSDC_READ32(MSDC_PS) & 0xF0000) == 0xF0000)
+					break;
 				pr_notice("msdc%d DAT%d pin get wrong, ps = 0x%x!\n",
 					host->id, i, MSDC_READ32(MSDC_PS));
 				goto SET_BAD_CARD;
