@@ -28,7 +28,6 @@
 
 #include <linux/platform_device.h>
 #include "legacy_controller.h"
-#include <mach/mtk_ppm_api.h>
 
 #define TAG "[boost_controller]"
 
@@ -48,6 +47,29 @@ static int log_enable;
 		if (enable)\
 			pr_debug(fmt, ##x);\
 	} while (0)
+
+static char *lbc_copy_from_user_for_proc(const char __user *buffer, size_t count)
+{
+	char *buf = (char *)__get_free_page(GFP_USER);
+
+	if (!buf)
+		return NULL;
+
+	if (count >= PAGE_SIZE)
+		goto out;
+
+	if (copy_from_user(buf, buffer, count))
+		goto out;
+
+	buf[count] = '\0';
+
+	return buf;
+
+out:
+	free_page((unsigned long)buf);
+
+	return NULL;
+}
 
 /*************************************************************************************/
 int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data *core_limit)
@@ -194,7 +216,7 @@ static ssize_t perfmgr_perfserv_core_write(struct file *filp, const char __user 
 	struct ppm_limit_data *core_limit;
 	unsigned int arg_num = nr_ppm_clusters * 2; /* for min and max */
 	char *tok, *tmp;
-	char *buf = ppm_copy_from_user_for_proc(ubuf, cnt);
+	char *buf = lbc_copy_from_user_for_proc(ubuf, cnt);
 
 	core_limit = kcalloc(nr_ppm_clusters, sizeof(struct ppm_limit_data), GFP_KERNEL);
 	if (!core_limit)
@@ -263,7 +285,7 @@ static ssize_t perfmgr_perfserv_freq_write(struct file *filp, const char __user 
 	struct ppm_limit_data *freq_limit;
 	unsigned int arg_num = nr_ppm_clusters * 2; /* for min and max */
 	char *tok, *tmp;
-	char *buf = ppm_copy_from_user_for_proc(ubuf, cnt);
+	char *buf = lbc_copy_from_user_for_proc(ubuf, cnt);
 
 	freq_limit = kcalloc(nr_ppm_clusters, sizeof(struct ppm_limit_data), GFP_KERNEL);
 	if (!freq_limit)
