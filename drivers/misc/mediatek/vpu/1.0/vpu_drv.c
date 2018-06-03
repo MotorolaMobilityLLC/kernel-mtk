@@ -183,6 +183,7 @@ int vpu_create_user(struct vpu_user **user)
 	list_add_tail(vlist_link(u, struct vpu_user), &vpu_device->user_list);
 	mutex_unlock(&vpu_device->user_mutex);
 
+	LOG_DBG("created user[%d]\n", u->id);
 	*user = u;
 	return 0;
 }
@@ -212,6 +213,7 @@ static int vpu_renew_power_operation(void)
 	ret = vpu_change_power_mode(power_mode);
 	CHECK_RET("fail to renew power mode:%d\n", power_mode);
 
+	LOG_DBG("changed power mode:%d opp:%d\n", power_mode, power_opp);
 out:
 	return ret;
 
@@ -236,8 +238,13 @@ static int vpu_write_register(struct vpu_reg_values *regs)
 int vpu_push_request_to_queue(struct vpu_user *user, struct vpu_request *req)
 {
 	if (!user) {
-		LOG_ERR("empty user");
+		LOG_ERR("empty user\n");
 		return -EINVAL;
+	}
+
+	if (user->deleting) {
+		LOG_WRN("push a request while deleting the user\n");
+		return -ENONET;
 	}
 
 	mutex_lock(&user->data_mutex);
@@ -261,11 +268,14 @@ int vpu_flush_requests_from_queue(struct vpu_user *user)
 		return 0;
 	}
 
-	user->flush = true;
+	user->flushing = true;
 	mutex_unlock(&user->data_mutex);
 
 	/* the running request will add to the deque before interrupt */
 	wait_event_interruptible(user->deque_wait, !user->running);
+
+	while (user->running)
+		ndelay(1000);
 
 	mutex_lock(&user->data_mutex);
 	/* push the remaining enque to the deque */
@@ -276,7 +286,9 @@ int vpu_flush_requests_from_queue(struct vpu_user *user)
 		list_add_tail(head, &user->deque_list);
 	}
 
-	user->flush = false;
+	user->flushing = false;
+	LOG_DBG("flushed queue, user:%d\n", user->id);
+
 	mutex_unlock(&user->data_mutex);
 
 	return 0;
@@ -329,6 +341,7 @@ int vpu_delete_user(struct vpu_user *user)
 		return -EINVAL;
 	}
 
+	user->deleting = true;
 	vpu_flush_requests_from_queue(user);
 
 	/* clear the list of deque */
@@ -350,6 +363,7 @@ int vpu_delete_user(struct vpu_user *user)
 
 	vpu_renew_power_operation();
 
+	LOG_DBG("deleted user[%d]\n", user->id);
 	kfree(user);
 
 	return 0;
