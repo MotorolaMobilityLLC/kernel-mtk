@@ -526,15 +526,26 @@ static int mt_gpt_clkevt_next_event(unsigned long cycles,
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
 	/*
+	 * disable irq first because we do not expect interrupt is triggered
+	 * by old compare value.
+	 */
+	__gpt_disable_irq(dev);
+
+	/*
 	 * Configure gpt1 to use 13MHz clock during re-configuration.
 	 *
 	 * Reason: Clock synchronization issue may happen if gpt is in 32KHz domain
-	 *         during re-configuration.
+	 *         during re-configuration. For example: Updating cmp value may need
+	 *         to wait a period of time (e.g., 3.5T) to let gpt hw finish jobs:
+	 *         gpt hw will clear counter value automatically while setting new
+	 *         cmp value.
 	 *
-	 *         For example: Updating cmp value may need to wait a period of time
-	 *         (e.g., 3T) to let gpt hw finish jobs. because gpt hw will clear
-	 *         counter value during this time, and GPT_EN shall be enabled after
-	 *         gpt hw done this job.
+	 *         GPT_EN shall be enabled after gpt hw finishes above job,
+	 *         otherwise gpt may work abnormally, e.g., wrong cmp value is latched
+	 *         or counter value is not reset.
+	 *
+	 *         If gpt is running under 13MHz, above waiting is not required since
+	 *         gpt hw guarantees that GPT_EN is applied after above job is done.
 	 */
 	__gpt_set_clk(dev, GPT_CLK_SRC_SYS & GPT_CLKSRC_MASK, GPT_CLK_DIV_1 & GPT_CLKDIV_MASK);
 
