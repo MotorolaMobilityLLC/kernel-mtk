@@ -3512,6 +3512,38 @@ static ssize_t store_FG_daemon_log_level(struct device *dev, struct device_attri
 }
 static DEVICE_ATTR(FG_daemon_log_level, 0664, show_FG_daemon_log_level, store_FG_daemon_log_level);
 
+static ssize_t show_shutdown_cond_enable(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_trace("[FG] show_shutdown_cond_enable : %d\n", is_shutdown_cond_enabled());
+	return sprintf(buf, "%d\n", is_shutdown_cond_enabled());
+}
+
+static ssize_t store_shutdown_cond_enable(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	unsigned long val = 0;
+	int ret;
+
+	bm_err("[store_shutdown_cond_enable]\n");
+	if (buf != NULL && size != 0) {
+		bm_err("[store_shutdown_cond_enable] buf is %s\n", buf);
+		ret = kstrtoul(buf, 10, &val);
+		if (val < 0) {
+			bm_err("[store_shutdown_cond_enable] val is %d ??\n", (int)val);
+			val = 0;
+		}
+		if (val == 0)
+			enable_shutdown_cond(false);
+		else
+			enable_shutdown_cond(true);
+
+		bm_err("[store_shutdown_cond_enable] shutdown_cond_enabled=%d\n", is_shutdown_cond_enabled());
+	}
+
+	return size;
+}
+static DEVICE_ATTR(shutdown_condition_enable, 0664, show_shutdown_cond_enable, store_shutdown_cond_enable);
+
 static ssize_t show_BAT_EC(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	bm_err("[FG_IT] show_BAT_EC\n");
@@ -4041,6 +4073,7 @@ static int battery_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Battery_CurrentConsumption);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_On_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_Off_Voltage);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_shutdown_condition_enable);
 
 	fgtimer_service_init();
 
