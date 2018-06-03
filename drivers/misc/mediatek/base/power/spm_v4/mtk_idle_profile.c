@@ -120,13 +120,13 @@ static struct mtk_idle_prof idle_prof[NR_TYPES] = {
 
 idle_twam_t idle_twam;
 
-#if SPM_MET_TAGGING
 #define idle_get_current_time_us(x) do {\
 		struct timeval t;\
 		do_gettimeofday(&t);\
 		(x) = ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec);\
 	} while (0)
 
+#if SPM_MET_TAGGING
 static unsigned long long idle_met_timestamp[NR_TYPES];
 static unsigned long long idle_met_prev_tag[NR_TYPES];
 static const char *idle_met_label[NR_TYPES] = {
@@ -186,7 +186,7 @@ void mtk_idle_ratio_calc_start(int type, int cpu)
 {
 	unsigned long flags;
 
-	if (idle_ratio_en && type >= 0 && type < NR_TYPES && (cpu == 0 || cpu == 4))
+	if (idle_ratio_en && type >= 0 && type < NR_TYPES)
 		idle_prof[type].ratio.start = idle_get_current_time_ms();
 
 	if (type < IDLE_TYPE_MC) {
@@ -205,7 +205,7 @@ void mtk_idle_ratio_calc_start(int type, int cpu)
 
 void mtk_idle_ratio_calc_stop(int type, int cpu)
 {
-	if (idle_ratio_en && type >= 0 && type < NR_TYPES && (cpu == 0 || cpu == 4))
+	if (idle_ratio_en && type >= 0 && type < NR_TYPES)
 		idle_prof[type].ratio.value += idle_get_current_time_ms() - idle_prof[type].ratio.start;
 
 	if (type < IDLE_TYPE_MC) {
@@ -532,6 +532,9 @@ static unsigned int dpidle_profile_seg[NB_DPIDLE_PROFILE - 1];
 static unsigned int dpidle_profile_sampling;
 static unsigned int dpidle_profile_cnt;
 static char *dpidle_profile_tags[NB_DPIDLE_PROFILE - 1] = {
+	"DPIDLE_IDLE_SELECT_TO_CAN_ENTER",
+	"DPIDLE_CAN_ENTER",
+	"DPIDLE_IDLE_SELECT_END",
 	"DPIDLE_ENTER",
 	"DPIDLE_ENTER_UFS_CB_BEFORE_XXIDLE_START",
 	"DPIDLE_ENTER_UFS_CB_BEFORE_XXIDLE_END",
@@ -606,7 +609,7 @@ void dpidle_show_profile_time(void)
 			mt_cpufreq_get_cur_freq(0),
 			mt_cpufreq_get_cur_freq(1));
 
-		idle_prof_info("%s", get_idle_buf(latency_profile_log));
+		idle_prof_crit("%s", get_idle_buf(latency_profile_log));
 	}
 }
 
@@ -625,3 +628,16 @@ void dpidle_show_profile_result(void)
 				(dpidle_profile_seg[i] / sample / IDLE_PROFILE_GPT_TIMER_UNIT));
 	}
 }
+
+#if 0
+void idle_profile_delay(unsigned int us_time)
+{
+	unsigned long long idle_delay_start, idle_delay_curr;
+
+	idle_get_current_time_us(idle_delay_start);
+
+	do {
+		idle_get_current_time_us(idle_delay_curr);
+	} while (idle_delay_curr < (idle_delay_start + us_time));
+}
+#endif

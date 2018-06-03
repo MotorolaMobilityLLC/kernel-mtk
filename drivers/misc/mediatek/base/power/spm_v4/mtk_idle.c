@@ -845,7 +845,7 @@ static void disable_dpidle_by_bit(int id)
 
 static bool dpidle_can_enter(int cpu, int reason)
 {
-	dpidle_profile_time(DPIDLE_PROFILE_CAN_ENTER);
+	dpidle_profile_time(DPIDLE_PROFILE_CAN_ENTER_START);
 
 	/* check previous common criterion */
 	if (reason == BY_CLK) {
@@ -867,6 +867,8 @@ static bool dpidle_can_enter(int cpu, int reason)
 	}
 
 out:
+	dpidle_profile_time(DPIDLE_PROFILE_CAN_ENTER_END);
+
 	return mtk_idle_select_state(IDLE_TYPE_DP, reason);
 }
 
@@ -1198,6 +1200,7 @@ int mtk_idle_select(int cpu)
 
 	profile_so_start(PIDX_SELECT);
 	profile_so3_start(PIDX_SELECT);
+	dpidle_profile_time(DPIDLE_PROFILE_IDLE_SELECT_START);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* check if firmware loaded or not */
@@ -1309,6 +1312,7 @@ get_idle_idx_2:
 
 	profile_so_end(PIDX_SELECT);
 	profile_so3_end(PIDX_SELECT);
+	dpidle_profile_time(DPIDLE_PROFILE_IDLE_SELECT_END);
 
 	profile_so_start(PIDX_SELECT_TO_ENTER);
 	profile_so3_start(PIDX_SELECT_TO_ENTER);
@@ -1770,6 +1774,17 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 
 	mt_idle_log("dpidle pg_stat=0x%08x\n", idle_block_mask[IDLE_TYPE_DP][NR_GRPS + 1]);
 
+	mt_idle_log("dpidle_blocking_stat=\n");
+
+	for (i = 0; i < NR_GRPS; i++) {
+		mt_idle_log("[%-8s] - ", mtk_get_cg_group_name(i));
+
+		for (k = 0; k < 32; k++) {
+			if (dpidle_blocking_stat[i][k] != 0)
+				mt_idle_log("%-2d: %d", k, dpidle_blocking_stat[i][k]);
+		}
+		mt_idle_log("\n");
+	}
 	for (i = 0; i < NR_GRPS; i++)
 		for (k = 0; k < 32; k++)
 			dpidle_blocking_stat[i][k] = 0;
