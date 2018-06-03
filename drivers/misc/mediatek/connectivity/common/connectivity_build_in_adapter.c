@@ -42,7 +42,7 @@
 #endif
 
 /* PMIC */
-#ifdef CONNADP_HAS_PMIC_API
+#if defined(CONNADP_HAS_PMIC_API) || defined(CONNADP_HAS_UPMU_VCN_CTRL)
 #include <upmu_common.h>
 #endif
 
@@ -181,6 +181,31 @@ void connectivity_export_pmic_set_register_value(/*PMU_FLAGS_LIST_ENUM*/ int fla
 	pmic_set_register_value(flagname, val);
 }
 EXPORT_SYMBOL(connectivity_export_pmic_set_register_value);
+
+unsigned short connectivity_export_pmic_get_register_value(/*PMU_FLAGS_LIST_ENUM*/ int flagname)
+{
+	return pmic_get_register_value(flagname);
+}
+EXPORT_SYMBOL(connectivity_export_pmic_get_register_value);
+
+void connectivity_export_upmu_set_reg_value(unsigned int reg, unsigned int reg_val)
+{
+	upmu_set_reg_value(reg, reg_val);
+}
+EXPORT_SYMBOL(connectivity_export_upmu_set_reg_value);
+#endif
+#ifdef CONNADP_HAS_UPMU_VCN_CTRL
+void connectivity_export_upmu_set_vcn35_on_ctrl_bt(unsigned int val)
+{
+	upmu_set_vcn35_on_ctrl_bt(val);
+}
+EXPORT_SYMBOL(connectivity_export_upmu_set_vcn35_on_ctrl_bt);
+
+void connectivity_export_upmu_set_vcn35_on_ctrl_wifi(unsigned int val)
+{
+	upmu_set_vcn35_on_ctrl_wifi(val);
+}
+EXPORT_SYMBOL(connectivity_export_upmu_set_vcn35_on_ctrl_wifi);
 #endif
 
 /*******************************************************************************
