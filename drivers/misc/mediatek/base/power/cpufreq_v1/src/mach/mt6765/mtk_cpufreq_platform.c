@@ -557,7 +557,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	unsigned int lv = CPU_LEVEL_3;
 	int val = get_devinfo_with_index(30);
 
-#if 0
+#if 1
 	if ((val == 0x2) || (val == 0x5))
 		lv = CPU_LEVEL_2;
 	else if ((val == 0x4) || (val == 0x3))
