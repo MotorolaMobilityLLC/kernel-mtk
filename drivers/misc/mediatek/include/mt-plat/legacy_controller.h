@@ -17,6 +17,12 @@
 #define KIR_FBC 1
 #define MAX_KIR 2
 
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6759)
+#define NR_PPM_CLUSTERS 3
+#else
+#define NR_PPM_CLUSTERS 2
+#endif
+
 extern char *ppm_copy_from_user_for_proc(const char __user *buffer, size_t count);
 int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data *freq_limit);
 int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data *core_limit);
