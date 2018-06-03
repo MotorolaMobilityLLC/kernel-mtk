@@ -381,7 +381,11 @@ static void __iomem *csram_base;
 #define OFFS_WFI_S		0x037c
 #define OFFS_WFI_E		0x03a0
 
-#define OFFS_STRESS_EN	0x035c
+#define OFFS_STRESS_EN	0x035c /* 215 */
+#define OFFS_SCHED_EN	0x0358 /* 214 */
+
+#define OFFS_CUR_FREQ_S  0x034c /* 211 */
+#define OFFS_CUR_FREQ_E  0x0354 /* 213 */
 
 #define NR_FREQ       16
 
@@ -467,6 +471,21 @@ int cpuhvfs_set_dvfs_stress(unsigned int en)
 {
 	csram_write(OFFS_STRESS_EN, en);
 	return 0;
+}
+
+int cpuhvfs_set_sched_dvfs_disable(unsigned int disable)
+{
+	csram_write(OFFS_SCHED_EN, disable);
+	return 0;
+}
+
+int cpuhvfs_get_cur_dvfs_freq_idx(int cluster_id)
+{
+	int idx = 0;
+
+	idx = csram_read(OFFS_CUR_FREQ_S + (cluster_id * 4));
+
+	return idx;
 }
 
 int cpuhvfs_set_dvfs(int cluster_id, unsigned int freq)
