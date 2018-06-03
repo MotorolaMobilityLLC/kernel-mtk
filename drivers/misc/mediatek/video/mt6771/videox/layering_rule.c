@@ -102,7 +102,7 @@ static int layer_mapping_table[HRT_TB_NUM][TOTAL_OVL_LAYER_NUM] = {
  * The larb mapping table represent the relation between LARB and OVL.
  */
 static int larb_mapping_table[HRT_TB_NUM] = {
-	0x00010010,
+	0x00010010, 0x00010010,
 };
 
 /**
@@ -111,11 +111,11 @@ static int larb_mapping_table[HRT_TB_NUM] = {
  */
 #ifndef CONFIG_MTK_ROUND_CORNER_SUPPORT
 static int ovl_mapping_table[HRT_TB_NUM] = {
-	0x00020022,
+	0x00020022, 0x00020022,
 };
 #else
 static int ovl_mapping_table[HRT_TB_NUM] = {
-	0x00020012,
+	0x00020012, 0x00020012,
 };
 #endif
 #define GET_SYS_STATE(sys_state) ((l_rule_info.hrt_sys_state >> sys_state) & 0x1)
@@ -145,6 +145,8 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 	int i = 0;
 	struct layer_config *c = NULL;
 	int gpu_rsz_idx = 0;
+	unsigned int lcm_w = 0, lcm_h = 0;
+	unsigned int rsz_in_w = 0, rsz_in_h = 0;
 
 	if (disp_info->gles_head[disp_idx] == 0 ||
 	    disp_info->layer_num[disp_idx] <= 0)
@@ -158,7 +160,13 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 	if (c->src_width > c->dst_width || c->src_height > c->dst_height)
 		return false;
 
-	if (c->src_width > RSZ_TILE_LENGTH - RSZ_ALIGNMENT_MARGIN)
+	lcm_w = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+	lcm_h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+	rsz_in_w = lcm_w * c->src_width / c->dst_width;
+	rsz_in_h = lcm_h * c->src_height / c->dst_height;
+
+	if (rsz_in_w > RSZ_TILE_LENGTH - RSZ_ALIGNMENT_MARGIN ||
+	    rsz_in_h > RSZ_IN_MAX_HEIGHT)
 		return false;
 
 	c->layer_caps |= DISP_RSZ_LAYER;
