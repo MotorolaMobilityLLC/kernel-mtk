@@ -271,6 +271,12 @@ initcall_debug=1 maxcpus=1";
 };
 /* FINGERPRINT end */
 
+/* battery end */
+&bat_gm30 {
+	EMBEDDED_SEL = <(0)>;
+};
+/* battery end */
+
 /* IRTX GPIO end */
 &irtx_pwm {
 	pinctrl-names = "irtx_gpio_led_default", "irtx_gpio_led_set";
