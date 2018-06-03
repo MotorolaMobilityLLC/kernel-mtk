@@ -279,7 +279,7 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_dqssoc_req_mask_b = 0,
 
 	/* SPM_SRC3_MASK */
-	.reg_mpwfi_op = 0,
+	.reg_mpwfi_op = 1,
 	.reg_spm_resource_req_rsv1_4_mask_b = 0,
 	.reg_spm_resource_req_rsv1_3_mask_b = 0,
 	.reg_spm_resource_req_rsv1_2_mask_b = 0,
@@ -313,7 +313,7 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
 
 	/* SPM_WAKEUP_EVENT_MASK */
-	.reg_wakeup_event_mask = 0xF0F92218,
+	.reg_wakeup_event_mask = 0xF1F92218,
 
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
@@ -442,7 +442,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	dvfsrc_md_scenario_update(1);
 #endif
 
-	if (--mt_power_gs_dump_suspend_count >= 0)
+	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
 #endif
 }

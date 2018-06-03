@@ -30,6 +30,7 @@
 #include <mtk_spm_misc.h>
 #include <mt-plat/mtk_gpio.h>
 #include <mtk_hps_internal.h>
+#include <mt-plat/mtk_chip.h>
 
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 #include <mtk-soc-afe-control.h>
@@ -68,6 +69,7 @@ static wake_reason_t slp_wake_reason = WR_NONE;
 
 static bool slp_ck26m_on;
 bool slp_dump_gpio;
+bool slp_dump_golden_setting;
 
 static u32 slp_spm_flags = {
 #if !(CPU_BUCK_CTRL)
@@ -105,6 +107,13 @@ static int slp_suspend_ops_valid(suspend_state_t state)
 
 static int slp_suspend_ops_begin(suspend_state_t state)
 {
+#ifdef CONFIG_MACH_MT6799
+	if (mt_get_chip_sw_ver() == (unsigned int)CHIP_SW_VER_02) {
+		slp_spm_flags &= ~SPM_FLAG_DIS_VCORE_NORMAL_0P65;
+		slp_spm_flags |= SPM_FLAG_DIS_DCSS0_LOW;
+	}
+#endif
+
 	/* legacy log */
 	slp_notice("@@@@@@@@@@@@@@@@@@@@\tChip_pm_begin(%u)(%u)\t@@@@@@@@@@@@@@@@@@@@\n",
 			is_cpu_pdn(slp_spm_flags), is_infra_pdn(slp_spm_flags));
@@ -197,11 +206,13 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		goto LEAVE_SLEEP;
 	}
 #ifndef CONFIG_MACH_MT6759
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	if (is_sspm_ipi_lock_spm()) {
 		slp_error("CANNOT SLEEP DUE TO SSPM IPI\n");
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 #endif
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!spm_load_firmware_status()) {
@@ -325,5 +336,6 @@ module_param(slp_ck26m_on, bool, 0644);
 module_param(slp_spm_flags, uint, 0644);
 
 module_param(slp_dump_gpio, bool, 0644);
+module_param(slp_dump_golden_setting, bool, 0644);
 
 MODULE_DESCRIPTION("Sleep Driver v0.1");

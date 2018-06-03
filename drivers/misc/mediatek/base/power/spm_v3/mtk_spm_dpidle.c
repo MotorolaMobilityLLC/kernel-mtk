@@ -643,7 +643,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 #endif
 
 	/* SPM_SRC3_MASK */
-	.reg_mpwfi_op = 0,
+	.reg_mpwfi_op = 1,
 	.reg_spm_resource_req_rsv1_4_mask_b = 0,
 	.reg_spm_resource_req_rsv1_3_mask_b = 0,
 	.reg_spm_resource_req_rsv1_2_mask_b = 0,
@@ -699,7 +699,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 
 	/* SPM_WAKEUP_EVENT_MASK */
 #if defined(CONFIG_MACH_MT6799)
-	.reg_wakeup_event_mask = 0xF0F92218,
+	.reg_wakeup_event_mask = 0xF1F92218,
 #elif defined(CONFIG_MACH_MT6759)
 	.reg_wakeup_event_mask = 0xF0682208,
 #endif
