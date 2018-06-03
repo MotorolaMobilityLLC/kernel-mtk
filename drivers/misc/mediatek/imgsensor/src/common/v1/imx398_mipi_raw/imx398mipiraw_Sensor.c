@@ -90,7 +90,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/* following for MIPIDataLowPwr2HighSpeedSettleDelayCount
 		 * by different scenario
 		 */
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		/* following for GetDefaultFramerateByScenario() */
 		.max_framerate = 300,
 	},
@@ -102,7 +102,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.starty = 0,
 		.grabwindow_width = 4656,	/* 4192, */
 		.grabwindow_height = 3496,	/* 3104, */
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 	},
 	.cap1 = {		/* 24 fps  capture */
@@ -113,7 +113,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.starty = 0,
 		.grabwindow_width = 4656,	/* 4192, */
 		.grabwindow_height = 3496,	/* 3104, */
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 150,
 	},
 	.normal_video = {	/* 30  fps  capture */
@@ -124,7 +124,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.starty = 0,
 		.grabwindow_width = 4656,	/* 4192, */
 		.grabwindow_height = 2608,	/* 3104, */
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 	},
 	.hs_video = {		/* 120 fps */
@@ -135,7 +135,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.starty = 0,
 		.grabwindow_width = 2216,
 		.grabwindow_height = 834,
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
 	},
 	.slim_video = {
@@ -146,7 +146,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.starty = 0,
 		.grabwindow_width = 2216,
 		.grabwindow_height = 834,
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 	},
 	.custom1 = {
@@ -165,7 +165,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/*   following for MIPIDataLowPwr2HighSpeedSettleDelayCount
 		 * by different scenario
 		 */
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		/*   following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
 	},
@@ -185,7 +185,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/* following for MIPIDataLowPwr2HighSpeedSettleDelayCount
 		 * by different scenario
 		 */
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		/*   following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
 	},
@@ -205,7 +205,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/* following for MIPIDataLowPwr2HighSpeedSettleDelayCount
 		 * by different scenario
 		 */
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		/*   following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
 	},
@@ -225,7 +225,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/* following for MIPIDataLowPwr2HighSpeedSettleDelayCount
 		 * by different scenario
 		 */
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		/*   following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
 	},
@@ -245,7 +245,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/* following for MIPIDataLowPwr2HighSpeedSettleDelayCount
 		 * by different scenario
 		 */
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		/*   following for GetDefaultFramerateByScenario()  */
 		.max_framerate = 300,
 	},

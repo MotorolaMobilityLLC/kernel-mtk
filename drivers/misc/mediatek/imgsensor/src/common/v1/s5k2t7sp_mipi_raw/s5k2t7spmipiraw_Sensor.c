@@ -73,7 +73,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592, /*//0x0A20*/
 		.grabwindow_height = 1940, /*//0x0794*/
 		//grabwindow_height should be 16's N times
-		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_data_lp2hs_settle_dc = 0x22,
 		.max_framerate = 300,
 	},
 	.cap = {
