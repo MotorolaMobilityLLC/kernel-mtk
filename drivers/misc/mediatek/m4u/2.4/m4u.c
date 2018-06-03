@@ -2075,6 +2075,8 @@ static DEFINE_MUTEX(gM4u_sec_init);
 static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
+	int MVA_MAX_BLOCK_NR = 4095;
+	int MVA_BLOCK_SIZE_ORDER = 20;
 	struct M4U_MOUDLE_STRUCT m4u_module;
 	M4U_PORT_STRUCT m4u_port;
 	M4U_PORT_ID PortID;
@@ -2146,6 +2148,11 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 				M4UMSG("MTK_M4U_T_DEALLOC_MVA, port%d is invalid\n", m4u_module.port);
 				return -EFAULT;
 			}
+			if (m4u_module.MVAStart < 0 ||
+				(m4u_module.MVAStart >> MVA_BLOCK_SIZE_ORDER) > MVA_MAX_BLOCK_NR) {
+				M4UMSG("MTK_M4U_T_DEALLOC_MVA, mva %d is invalid\n", m4u_module.MVAStart);
+				return -EFAULT;
+			}
 			ret = m4u_dealloc_mva(client, m4u_module.port, m4u_module.MVAStart);
 			if (ret)
 				return ret;
@@ -2174,6 +2181,10 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 			M4UMSG("MTK_M4U_T_CACHE_SYNC, port%d is invalid\n", m4u_cache_data.port);
 			return -EFAULT;
 		}
+		if (m4u_cache_data.mva < 0 || (m4u_cache_data.mva >> MVA_BLOCK_SIZE_ORDER) > MVA_MAX_BLOCK_NR) {
+			M4UMSG("MTK_M4U_T_CACHE_SYNC, mva %d is invalid\n", m4u_cache_data.mva);
+			return -EFAULT;
+		}
 
 		ret = m4u_cache_sync(client, m4u_cache_data.port, m4u_cache_data.va,
 				     m4u_cache_data.size, m4u_cache_data.mva,
@@ -2189,6 +2200,10 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		}
 		if (m4u_dma_data.port < 0 || m4u_dma_data.port >= M4U_PORT_UNKNOWN) {
 			M4UMSG("MTK_M4U_T_DMA_OP, port%d is invalid\n", m4u_dma_data.port);
+			return -EFAULT;
+		}
+		if (m4u_dma_data.mva < 0 || (m4u_dma_data.mva >> MVA_BLOCK_SIZE_ORDER) > MVA_MAX_BLOCK_NR) {
+			M4UMSG("MTK_M4U_T_DMA_OP, mva %d is invalid\n", m4u_dma_data.mva);
 			return -EFAULT;
 		}
 
