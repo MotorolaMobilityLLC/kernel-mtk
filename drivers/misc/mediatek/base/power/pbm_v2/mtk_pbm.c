@@ -61,6 +61,13 @@
 
 static bool mt_pbm_debug;
 
+#if MD_POWER_METER_ENABLE
+static int mt_pbm_log_divisor;
+static int mt_pbm_log_counter;
+char log_buffer[128];
+int usedBytes;
+#endif
+
 #define pbm_emerg(fmt, args...)		pr_emerg(fmt, ##args)
 #define pbm_alert(fmt, args...)		pr_alert(fmt, ##args)
 #define pbm_crit(fmt, args...)		pr_crit(fmt, ##args)
@@ -709,8 +716,16 @@ static int get_md3_dBm_power(void)
 	 * If the shared memory start addresses of MD1 and MD3 are different.
 	 */
 	pbm_debug("[%s] share mem addr: 0x%p\n", __func__, share_mem);
-	for (i = 0; i < SHARE_MEM_BLOCK_NUM; i++)
-		pbm_debug("section: %d, value: 0x%x\n", i, share_mem[i]);
+
+	usedBytes = 0;
+	for (i = 0; i < SHARE_MEM_BLOCK_NUM; i++) {
+		usedBytes += sprintf(log_buffer + usedBytes, "0x%x ", share_mem[i]);
+
+		if ((i + 1) % 10 == 0) {
+			usedBytes = 0;
+			pbm_debug("%s\n", log_buffer);
+		}
+	}
 
 	if (share_mem[DBM_C2K_1_TABLE] == bef_share_mem) {
 		pbm_debug("MD3 dBm, no TX power, reg: 0x%x(0x%x) return 0, pa: %d, rf: %d\n",
@@ -760,8 +775,16 @@ static int get_md1_dBm_power(int scenario)
 	}
 
 	pbm_debug("[%s] share mem addr: 0x%p\n", __func__, share_mem);
-	for (i = 0; i < SHARE_MEM_BLOCK_NUM; i++)
-		pbm_debug("section: %d, value: 0x%x\n", i, share_mem[i]);
+
+	usedBytes = 0;
+	for (i = 0; i < SHARE_MEM_BLOCK_NUM; i++) {
+		usedBytes += sprintf(log_buffer + usedBytes, "0x%x ", share_mem[i]);
+
+		if ((i + 1) % 10 == 0) {
+			usedBytes = 0;
+			pbm_debug("%s\n", log_buffer);
+		}
+	}
 
 	if (scenario == S_2G_TALKING_OR_DATALINK) {
 		dbm_power = get_md1_2g_dbm_power(share_mem);
@@ -893,6 +916,16 @@ static void pbm_allocate_budget_manager(void)
 	cpu = hpf_get_power_cpu();
 	gpu = hpf_get_power_gpu();
 	flash = hpf_get_power_flash();
+#if MD_POWER_METER_ENABLE
+	if (mt_pbm_log_divisor) {
+		mt_pbm_log_counter = (mt_pbm_log_counter + 1) % mt_pbm_log_divisor;
+
+		if (mt_pbm_log_counter == 1)
+			mt_pbm_debug = 1;
+		else
+			mt_pbm_debug = 0;
+	}
+#endif
 	mutex_unlock(&pbm_table_lock);
 
 	/* no any resource can allocate */
@@ -1277,6 +1310,50 @@ static ssize_t mt_pbm_debug_proc_write(struct file *file, const char __user *buf
 	return count;
 }
 
+#if MD_POWER_METER_ENABLE
+static int mt_pbm_debug_log_reduc_proc_show(struct seq_file *m, void *v)
+{
+	if (mt_pbm_log_divisor) {
+		seq_puts(m, "pbm debug enabled\n");
+		seq_printf(m, "The divisor number is :%d\n", mt_pbm_log_divisor);
+	} else {
+		seq_puts(m, "Log reduction disabled\n");
+	}
+
+	return 0;
+}
+
+static ssize_t mt_pbm_debug_log_reduc_proc_write(struct file *file, const char __user *buffer,
+					   size_t count, loff_t *data)
+{
+	char desc[32];
+	int len = 0;
+	int debug = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+	desc[len] = '\0';
+
+	/* if (sscanf(desc, "%d", &debug) == 1) { */
+	if (kstrtoint(desc, 10, &debug) == 0) {
+		if (debug == 0) {
+			mt_pbm_log_divisor = 0;
+			mt_pbm_debug = 0;
+		} else if (debug > 0) {
+			mt_pbm_log_divisor = debug;
+			mt_pbm_debug = 1;
+			mt_pbm_log_counter = 0;
+		} else {
+			pbm_warn("bad argument!! should be 0 or larger than 0 [0: disable, other: enable, a divisor number]\n");
+		}
+	} else
+		pbm_warn("bad argument!! should be 0 or larger than 0 [0: disable, other: enable, a divisor number]\n");
+
+	return count;
+}
+#endif
+
 #define PROC_FOPS_RW(name)							\
 	static int mt_ ## name ## _proc_open(struct inode *inode, struct file *file)	\
 {									\
@@ -1308,6 +1385,10 @@ static const struct file_operations mt_ ## name ## _proc_fops = {		\
 
 PROC_FOPS_RW(pbm_debug);
 
+#if MD_POWER_METER_ENABLE
+PROC_FOPS_RW(pbm_debug_log_reduc);
+#endif
+
 static int mt_pbm_create_procfs(void)
 {
 	struct proc_dir_entry *dir = NULL;
@@ -1320,6 +1401,9 @@ static int mt_pbm_create_procfs(void)
 
 	const struct pentry entries[] = {
 		PROC_ENTRY(pbm_debug),
+#if MD_POWER_METER_ENABLE
+		PROC_ENTRY(pbm_debug_log_reduc),
+#endif
 	};
 
 	dir = proc_mkdir("pbm", NULL);
