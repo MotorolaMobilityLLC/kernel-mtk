@@ -208,8 +208,9 @@ extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int va
 #endif
 
 #include <mtk_smi.h>
-#define DVFS_LOW_LOW MMDVFS_VOLTAGE_LOW_LOW
-#define DVFS_DEFAULT MMDVFS_VOLTAGE_DEFAULT_STEP
+#include <mmdvfs_config_util.h>
+#define DVFS_UNREQUEST (-1)
+#define DVFS_DEFAULT MMDVFS_VOLTAGE_LOW
 
 /* raise/drop voltage */
 void SendDvfsRequest(int level)
@@ -217,17 +218,23 @@ void SendDvfsRequest(int level)
 #ifndef VCODEC_FPGAPORTING
 	int ret = 0;
 
-	if (level == MMDVFS_VOLTAGE_LOW_LOW) {
-		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW_LOW)");
-		/* ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW_LOW); */
+	if (level == MMDVFS_VOLTAGE_LOW) {
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_FINE_STEP_OPP3)");
+#ifdef CONFIG_MTK_SMI_EXT
+		ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VP, MMDVFS_FINE_STEP_OPP3);
+#endif
+	}  else if (level == DVFS_UNREQUEST) {
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_FINE_STEP_UNREQUEST)");
+#ifdef CONFIG_MTK_SMI_EXT
+		ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VP, MMDVFS_FINE_STEP_UNREQUEST);
+#endif
 	} else {
-		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_DEFAULT_STEP)");
-		/* ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_DEFAULT_STEP); */
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
 	}
 
 	if (ret != 0) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: mmdvfs_set_step error!");
+		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: mmdvfs_set_fine_step error!");
 	}
 #endif
 }
@@ -1253,7 +1260,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		gu4DecEMICounter++;
 		if (gu4DecEMICounter == 1) {
 			/* VP runs at ULPM mode */
-			SendDvfsRequest(DVFS_LOW_LOW);
+			SendDvfsRequest(DVFS_DEFAULT);
 		}
 		MODULE_MFV_LOGD("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
@@ -1277,7 +1284,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		gu4DecEMICounter--;
 		if (gu4DecEMICounter == 0) {
 			/* Restore to default when no decoder */
-			SendDvfsRequest(DVFS_DEFAULT);
+			SendDvfsRequest(DVFS_UNREQUEST);
 		}
 		MODULE_MFV_LOGD("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
@@ -2075,7 +2082,7 @@ static int vcodec_release(struct inode *inode, struct file *file)
 		mutex_lock(&DecEMILock);
 		if (gu4DecEMICounter > 0) {
 			/* Only reset default at exception case */
-			SendDvfsRequest(DVFS_DEFAULT);
+			SendDvfsRequest(DVFS_UNREQUEST);
 		}
 		gu4DecEMICounter = 0;
 		mutex_unlock(&DecEMILock);
@@ -2117,7 +2124,6 @@ static int vcodec_release(struct inode *inode, struct file *file)
 		gu4EncISRCount = 0;
 		spin_unlock_irqrestore(&EncISRCountLock, ulFlagsISR);
 	}
-
 	mutex_unlock(&DriverOpenCountLock);
 
 	return 0;
