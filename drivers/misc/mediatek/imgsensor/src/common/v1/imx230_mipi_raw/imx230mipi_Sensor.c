@@ -43,7 +43,7 @@
 
 #define BYTE               unsigned char
 
-static BOOL read_spc_flag = FALSE;
+
 
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -539,19 +539,20 @@ static void imx230_set_pdaf_reg_setting(MUINT32 regNum, kal_uint16 *regDa)
 static void imx230_apply_SPC(void)
 {
 	unsigned int start_reg = 0x7c00;
-	int i;
+	char puSendCmd[355];
+	kal_uint32 tosend = 0;
 
-	if (read_spc_flag == FALSE) {
-		read_imx230_SPC(imx230_SPC_data);
-		read_spc_flag = TRUE;
-		return;
-	}
-
-	for (i = 0; i < 352; i++) {
-		write_cmos_sensor(start_reg, imx230_SPC_data[i]);
-		/* pr_info("SPC[%3d]= %x\n", i , imx230_SPC_data[i]);*/
-		start_reg++;
-	}
+	tosend = 0;
+	puSendCmd[tosend++] = (char)(start_reg >> 8);
+	puSendCmd[tosend++] = (char)(start_reg & 0xFF);
+	memcpy((void *)&puSendCmd[tosend], imx230_SPC_data, 352);
+	tosend += 352;
+	iBurstWriteReg_multi(
+	    puSendCmd,
+	    tosend,
+	    imgsensor.i2c_write_id,
+	    tosend,
+	    imgsensor_info.i2c_speed);
 
 #if 0
     /* for verify */
@@ -2934,7 +2935,7 @@ static kal_uint32 open(void)
 
 	/* initail sequence write in  */
 	sensor_init();
-	imx230_apply_SPC();
+	read_imx230_SPC(imx230_SPC_data);
 
 	spin_lock(&imgsensor_drv_lock);
 
