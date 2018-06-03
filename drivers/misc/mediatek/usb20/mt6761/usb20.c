@@ -81,7 +81,7 @@ static void issue_dpidle_timer(void)
 	add_timer(timer);
 }
 
-static void usb_6765_dpidle_request(int mode)
+static void usb_6761_dpidle_request(int mode)
 {
 	unsigned long flags;
 
@@ -1691,20 +1691,20 @@ static int mt_usb_probe(struct platform_device *pdev)
 
 	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
 	if (!glue) {
-		/* dev_err(&pdev->dev, "failed to allocate glue context\n"); */
+		DBG(0, "failed to allocate glue context\n");
 		goto err0;
 	}
 
 	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_NONE);
 	if (!musb) {
-		dev_err(&pdev->dev, "failed to allocate musb device\n");
+		DBG(0, "failed to allocate musb device\n");
 		goto err1;
 	}
 
 	usb_phy_base = of_iomap(np, 1);
 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
 	if (!pdata) {
-		dev_err(&pdev->dev, "failed to allocate musb platform data\n");
+		DBG(0, "failed to allocate musb platform data\n");
 		goto err2;
 	}
 
@@ -1792,7 +1792,7 @@ static int mt_usb_probe(struct platform_device *pdev)
 	mtk_host_qmu_force_isoc_restart = 0;
 #endif
 #ifndef FPGA_PLATFORM
-	register_usb_hal_dpidle_request(usb_6765_dpidle_request);
+	register_usb_hal_dpidle_request(usb_6761_dpidle_request);
 #endif
 	register_usb_hal_disconnect_check(trigger_disconnect_check_work);
 
