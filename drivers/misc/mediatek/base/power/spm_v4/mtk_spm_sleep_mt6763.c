@@ -52,7 +52,7 @@
 #include <sspm_timesync.h>
 #endif
 
-/* #include <mtk_power_gs_api.h> */
+#include <mtk_power_gs_api.h>
 
 #ifdef CONFIG_MTK_ICCS_SUPPORT
 #include <mtk_hps_internal.h>
@@ -91,7 +91,7 @@ void spm_set_sysclk_settle(void)
 	spm_crit2("md_settle = %u, settle = %u\n", SPM_SYSCLK_SETTLE, settle);
 }
 
-/* static int mt_power_gs_dump_suspend_count = 2; */
+static int mt_power_gs_dump_suspend_count = 2;
 void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -133,10 +133,8 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-#if 0
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(GS_PMIC);
-#endif
 }
 
 void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
