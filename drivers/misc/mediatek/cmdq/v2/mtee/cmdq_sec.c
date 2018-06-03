@@ -1326,15 +1326,15 @@ int32_t cmdq_sec_get_log_level(void)
 	int32_t loglevel = cmdq_core_get_log_level();
 
 	if (loglevel == CMDQ_LOG_LEVEL_NORMAL)
-		loglevel = LOG_LEVEL_LOG;
+		return LOG_LEVEL_LOG;
 	else if (cmdq_core_should_print_msg())
-		loglevel = LOG_LEVEL_MSG;
+		return LOG_LEVEL_MSG;
 	else if (cmdq_core_should_full_error())
-		loglevel = LOG_LEVEL_LOG;
+		return LOG_LEVEL_LOG;
 	else if (loglevel & (1<<3))
-		loglevel = LOG_LEVEL_MSG;
+		return LOG_LEVEL_MSG;
 
-	return loglevel;
+	return LOG_LEVEL_LOG;
 }
 
 #endif
