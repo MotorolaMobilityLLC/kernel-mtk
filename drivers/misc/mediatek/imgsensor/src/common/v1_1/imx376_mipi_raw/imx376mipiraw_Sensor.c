@@ -85,6 +85,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592,
 		.grabwindow_height = 1940,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 250000000,
 		.max_framerate = 300,
 	},
 	.cap = {
@@ -97,6 +98,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 5184,
 		.grabwindow_height = 3880,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 720000000,
 		.max_framerate = 240,
 
 #else
@@ -120,6 +122,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592,
 		.grabwindow_height = 1940,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 250000000,
 		.max_framerate = 300,
 	},
 	.hs_video = {
@@ -131,6 +134,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592,
 		.grabwindow_height = 1940,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 250000000,
 		.max_framerate = 300,
 	},
 	.slim_video = {
@@ -142,6 +146,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2592,
 		.grabwindow_height = 1940,
 		.mipi_data_lp2hs_settle_dc = 85,
+		.mipi_pixel_rate = 250000000,
 		.max_framerate = 300,
 	},
 	.margin = 5,
@@ -2045,6 +2050,31 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				default:
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 					break;
+			}
+			break;
+		case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
+			{
+				kal_uint32 rate;
+
+				switch (*feature_data) {
+				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+					rate = imgsensor_info.cap.mipi_pixel_rate;
+					break;
+				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+					rate = imgsensor_info.normal_video.mipi_pixel_rate;
+					break;
+				case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+					rate = imgsensor_info.hs_video.mipi_pixel_rate;
+					break;
+				case MSDK_SCENARIO_ID_SLIM_VIDEO:
+					rate = imgsensor_info.slim_video.mipi_pixel_rate;
+					break;
+				case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+				default:
+					rate = imgsensor_info.pre.mipi_pixel_rate;
+					break;
+				}
+				*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = rate;
 			}
 			break;
 
