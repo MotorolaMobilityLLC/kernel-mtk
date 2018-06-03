@@ -54,6 +54,7 @@ para_map = {'adc':['adc_h', 'adc_dtsi'],\
 
 class ChipObj:
     def __init__(self, path, dest):
+        self.__epFlag = False
         self.__path = path
         ModuleObj.set_genPath(dest)
         self.__objs = collections.OrderedDict()
@@ -116,6 +117,11 @@ class ChipObj:
         node = root.getElementsByTagName('general')
         # get chip name and project name
         ModuleObj.set_chipId(node[0].getAttribute('chip'))
+
+        # get early porting flag
+        epNode = node[0].getElementsByTagName('ep')
+        if len(epNode) != 0 and epNode[0].childNodes[0].nodeValue=="True":
+            self.__epFlag = True
 
         msg = 'Chip ID : %s' %(node[0].getAttribute('chip'))
         log(LogLevel.info, msg)
@@ -191,6 +197,12 @@ class ChipObj:
         log(LogLevel.info, 'Start to generate cust_dtsi file...')
         fp = open(os.path.join(ModuleObj.get_genPath(), 'cust.dtsi'), 'w')
         gen_str = ModuleObj.writeComment()
+
+        # if early porting, gen empty dtsi file for kernel
+        if self.__epFlag:
+            fp.write(gen_str)
+            fp.close()
+            return
 
         #sorted_list = sorted(self.__objs.keys())
         #for tag in sorted_list:
