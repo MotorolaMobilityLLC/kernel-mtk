@@ -259,7 +259,7 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 											&BT_CVSD_Mem.pucRXPhysBufAddr,
 											GFP_KERNEL);
 			if ((BT_CVSD_Mem.pucRXPhysBufAddr == 0) || (BT_CVSD_Mem.pucRXVirtBufAddr == NULL)) {
-				pr_debug("AudDrv_btcvsd_Allocate_Buffer dma_alloc_coherent RX fail\n");
+				pr_warn("AudDrv_btcvsd_Allocate_Buffer dma_alloc_coherent RX fail\n");
 				return -1;
 			}
 
@@ -290,7 +290,7 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 											&BT_CVSD_Mem.pucTXPhysBufAddr,
 											GFP_KERNEL);
 			if ((BT_CVSD_Mem.pucTXPhysBufAddr == 0) || (BT_CVSD_Mem.pucTXVirtBufAddr) == NULL) {
-				pr_debug("AudDrv_btcvsd_Allocate_Buffer dma_alloc_coherent TX fail\n");
+				pr_warn("AudDrv_btcvsd_Allocate_Buffer dma_alloc_coherent TX fail\n");
 				return -1;
 			}
 			memset((void *)BT_CVSD_Mem.pucTXVirtBufAddr, 0, BT_CVSD_Mem.u4TXBufferSize);
