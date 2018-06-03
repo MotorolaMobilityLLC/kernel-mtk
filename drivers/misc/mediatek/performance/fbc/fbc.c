@@ -65,6 +65,7 @@ static struct ppm_limit_data *target_freq, *reset_freq;
 static int nr_ppm_clusters;
 static int touch_boost_duration;
 static int prev_boost_pid;
+static long long active_time;
 #endif
 
 struct fbc_operation_locked {
@@ -124,6 +125,10 @@ void switch_init_opp(int boost_opp)
 void switch_init_duration(int duration)
 {
 		touch_boost_duration = duration;
+}
+void switch_active_time(int duration)
+{
+		active_time = duration;
 }
 #endif
 
@@ -269,7 +274,7 @@ static int notify_touch(int action)
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
 #ifdef CONFIG_MTK_FPSGO_V2
-	if (is_fstb_active() || fbc_debug)
+	if (is_fstb_active(active_time) || fbc_debug)
 		return ret;
 
 	/*action 1: touch down 2: touch up*/
@@ -802,10 +807,15 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 	else if (strncmp(cmd, "trace", 5) == 0)
 		fbc_trace = arg;
 #ifdef CONFIG_MTK_FPSGO_V2
-	else if (strncmp(cmd, "touch_opp", 9) == 0)
-		switch_init_opp(arg);
-	else if (strncmp(cmd, "duration", 8) == 0)
+	else if (strncmp(cmd, "touch_opp", 9) == 0) {
+		if (arg >= 0 && arg <= 15)
+			switch_init_opp(arg);
+	} else if (strncmp(cmd, "duration", 8) == 0) {
 		switch_init_duration(arg);
+	} else if (strncmp(cmd, "active_time", 11) == 0) {
+		if (arg > 0)
+			switch_active_time(arg);
+	}
 #endif
 	return cnt;
 }
@@ -825,6 +835,7 @@ static int device_show(struct seq_file *m, void *v)
 #ifdef CONFIG_MTK_FPSGO_V2
 	SEQ_printf(m, "touch_opp:\t%d\n", touch_boost_opp);
 	SEQ_printf(m, "duration:\t%d\n", touch_boost_duration);
+	SEQ_printf(m, "active_time:\t%d\n", (int)active_time);
 #endif
 	SEQ_printf(m, "-----------------------------------------------------\n");
 	return 0;
@@ -994,6 +1005,7 @@ int init_fbc(void)
 #ifdef CONFIG_MTK_FPSGO_V2
 	touch_boost_opp = TOUCH_BOOST_OPP;
 	touch_boost_duration = TOUCH_TIMEOUT_NSEC;
+	active_time = TOUCH_FSTB_ACTIVE_US;
 	nr_ppm_clusters = arch_get_nr_clusters();
 
 	target_freq = kcalloc(nr_ppm_clusters, sizeof(struct ppm_limit_data), GFP_KERNEL);

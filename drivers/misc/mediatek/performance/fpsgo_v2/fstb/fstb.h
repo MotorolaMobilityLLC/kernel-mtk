@@ -29,7 +29,7 @@ int fpsgo_comp2fstb_bypass(int pid);
 #ifdef CONFIG_MTK_FPSGO_FSTB
 int fpsgo_fstb2fbt_reset_asfc(int);
 int is_fstb_enable(void);
-int is_fstb_active(void);
+int is_fstb_active(long long time_diff);
 int fpsgo_ctrl2fstb_switch_fstb(int);
 int switch_sample_window(long long time_usec);
 int switch_fps_range(int nr_level, struct fps_level *level);
