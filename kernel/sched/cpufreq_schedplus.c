@@ -33,7 +33,7 @@
 #include <trace/events/sched.h>
 
 #include "sched.h"
-#include "cpufreq_sched.h"
+#include "cpufreq_schedplus.h"
 
 /* next throttling period expiry if increasing OPP */
 #define THROTTLE_DOWN_NSEC     2000000 /* 2ms default */
