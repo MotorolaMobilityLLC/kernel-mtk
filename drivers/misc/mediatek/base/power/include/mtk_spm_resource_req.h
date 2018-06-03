@@ -18,10 +18,6 @@
 
 #if defined(CONFIG_MACH_MT6757)
 
-#elif defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
-
-#elif defined(CONFIG_ARCH_MT6580)
-
 #elif defined(CONFIG_MACH_KIBOPLUS)
 
 #include "spm_v2/mtk_spm_resource_req.h"
