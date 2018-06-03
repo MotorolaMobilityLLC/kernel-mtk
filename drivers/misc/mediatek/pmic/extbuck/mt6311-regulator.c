@@ -16,9 +16,9 @@
 #include <linux/regulator/driver.h>
 #include <linux/regulator/of_regulator.h>
 #include <linux/regulator/mediatek/mtk_regulator_core.h>
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef IPIMB_MT6311
 #include <mach/mtk_pmic_ipi.h>
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#endif /* IPIMB */
 #include <linux/delay.h>
 
 #define MT6311_MIN_VOLTAGE   (600000)
