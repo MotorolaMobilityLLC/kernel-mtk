@@ -31,6 +31,7 @@
 #include <mt-plat/mtk_boot_common.h>
 #endif
 
+#include <mtk_auxadc_intf.h>
 #include <mt6336/mt6336.h>
 
 #include "typec-ioctl.h"
@@ -380,6 +381,20 @@ void typec_clear(struct typec_hba *hba, uint16_t val, unsigned int reg)
 
 }
 
+void typec_enable_lowq(struct typec_hba *hba)
+{
+#if !COMPLIANCE
+	mt6336_ctrl_disable(hba->core_ctrl);
+#endif
+}
+
+void typec_disable_lowq(struct typec_hba *hba)
+{
+#if !COMPLIANCE
+	mt6336_ctrl_enable(hba->core_ctrl);
+#endif
+}
+
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 int register_charger_det_callback(int (*func)(int))
 {
@@ -726,12 +741,14 @@ unsigned int vbus_val(struct typec_hba *hba)
 #define AUXADC_ADC_RDY_CH2 (0x1<<7)
 
 /*MT6336_E2_AuxADC_setting_all_channel.txt from Jyun-Jia Huang (MTK_ADCT_ACD1_DE6)*/
-unsigned int vbus_val(struct typec_hba *hba)
+unsigned int vbus_val_self(struct typec_hba *hba)
 {
 	static int is_global_setting;
 	int vbus_val_h = 0;
 	int vbus_val = 0;
 	int val = 0;
+
+	typec_disable_lowq(hba);
 
 	if (!is_global_setting) {
 		/*
@@ -796,6 +813,8 @@ unsigned int vbus_val(struct typec_hba *hba)
 		mdelay(2);
 	}
 
+	typec_enable_lowq(hba);
+
 	/*vbus_val_h = typec_read8(hba, AUXADC_ADC2_H) & 0x7F;*/
 	/*vbus_val_l = typec_read8(hba, AUXADC_ADC2);*/
 	/*vbus_val = (vbus_val_h<<8) | vbus_val_h;*/
@@ -814,6 +833,18 @@ unsigned int vbus_val(struct typec_hba *hba)
 
 	return vbus_val;
 }
+
+unsigned int vbus_val(struct typec_hba *hba)
+{
+	int val = 0;
+
+	typec_disable_lowq(hba);
+	val = (pmic_get_auxadc_value(AUXADC_LIST_VBUS) >> 3);
+	typec_enable_lowq(hba);
+
+	return val;
+}
+#endif
 
 int typec_vbus(struct typec_hba *hba)
 {
@@ -1281,7 +1312,6 @@ void typec_drive_vconn(struct typec_hba *hba, uint8_t on)
 	hba->vconn_en = (on ? 1 : 0);
 }
 #endif
-#endif
 
 #define CORE_ANA_CON109 (0x566)
 #define RG_A_ANABASE_RSV (0xFF<<0)
@@ -1584,10 +1614,12 @@ static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 
 		if (hba->vbus_det_en && (val < hba->vsafe_5v)) {
 
+#if COMPLIANCE
 			if (val > PD_VSAFE0V_HIGH) {
 				typec_set(hba, TYPE_C_SW_CC_DET_DIS, TYPE_C_CC_SW_CTRL);
 				queue_work(hba->pd_wq, &hba->wait_vsafe0v);
 			}
+#endif
 			/* disable RX */
 			if (hba->mode == 2)
 				pd_rx_enable(hba, 0);
@@ -1816,23 +1848,14 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 
 		typec_vbus_present(hba, 0);
 		typec_drive_vbus(hba, 0);
-#if !COMPLIANCE
-		if (!hba->is_lowq) {
-			mt6336_ctrl_disable(hba->core_ctrl);
-			hba->is_lowq = true;
-			dev_err(hba->dev, "Enable LowQ\n");
-		}
-#endif
+
+		if (hba->mode == 1)
+			typec_enable_lowq(hba);
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_WAIT_SNK_INTR) {
-#if !COMPLIANCE
-		if (hba->is_lowq) {
-			mt6336_ctrl_enable(hba->core_ctrl);
-			hba->is_lowq = false;
-			dev_err(hba->dev, "Disable LowQ\n");
-		}
-#endif
+		typec_disable_lowq(hba);
+
 		/* At AttachWait.SNK, continue checking vSafe5V is presented or not?
 		 * If Vbus detected, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 1
 		 * to notify MAC layer.
@@ -1854,13 +1877,8 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		else
 #endif
 			typec_int_enable(hba, TYPE_C_INTR_DRP_TOGGLE, TYPE_C_INTR_SRC_ADVERTISE);
-#if !COMPLIANCE
-		if (hba->is_lowq) {
-			mt6336_ctrl_enable(hba->core_ctrl);
-			hba->is_lowq = false;
-			dev_err(hba->dev, "Disable LowQ\n");
-		}
-#endif
+
+		typec_disable_lowq(hba);
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
@@ -2167,28 +2185,6 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	/*trigger usb device/host driver*/
 	INIT_WORK(&hba->usb_work, trigger_driver);
 
-#ifdef MT6336_E1
-	/*INT_STATUS5 8th*/
-#define TYPE_C_CC_IRQ_NUM (5*8+7)
-#else
-	/*INT_STATUS5 5th*/
-#define TYPE_C_CC_IRQ_NUM (5*8+4)
-#endif
-	mt6336_enable_interrupt(TYPE_C_CC_IRQ_NUM, "TYPE_C_CC_IRQ");
-	mt6336_register_interrupt_callback(TYPE_C_CC_IRQ_NUM, typec_hanlder);
-
-#if SUPPORT_PD
-#ifdef MT6336_E1
-	/*INT_STATUS6 1st*/
-#define TYPE_C_PD_IRQ_NUM (6*8)
-#else
-	/*INT_STATUS5 6th*/
-#define TYPE_C_PD_IRQ_NUM (5*8+5)
-#endif
-	mt6336_enable_interrupt(TYPE_C_PD_IRQ_NUM, "TYPE_C_PD_IRQ");
-	mt6336_register_interrupt_callback(TYPE_C_PD_IRQ_NUM, typec_hanlder);
-#endif
-
 #if USE_AUXADC
 #ifdef MT6336_E1
 	/*INT_STATUS5 4th*/
@@ -2269,6 +2265,28 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	/*initialization completes*/
 	*hba_handle = hba;
 
+#ifdef MT6336_E1
+		/*INT_STATUS5 8th*/
+#define TYPE_C_CC_IRQ_NUM (5*8+7)
+#else
+		/*INT_STATUS5 5th*/
+#define TYPE_C_CC_IRQ_NUM (5*8+4)
+#endif
+		mt6336_enable_interrupt(TYPE_C_CC_IRQ_NUM, "TYPE_C_CC_IRQ");
+		mt6336_register_interrupt_callback(TYPE_C_CC_IRQ_NUM, typec_hanlder);
+
+#if SUPPORT_PD
+#ifdef MT6336_E1
+		/*INT_STATUS6 1st*/
+#define TYPE_C_PD_IRQ_NUM (6*8)
+#else
+		/*INT_STATUS5 6th*/
+#define TYPE_C_PD_IRQ_NUM (5*8+5)
+#endif
+		mt6336_enable_interrupt(TYPE_C_PD_IRQ_NUM, "TYPE_C_PD_IRQ");
+		mt6336_register_interrupt_callback(TYPE_C_PD_IRQ_NUM, typec_hanlder);
+#endif
+
 	if (hba->mode > 0) {
 		typec_int_enable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
 
@@ -2279,6 +2297,9 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	} else {
 		typec_enable(hba, 0);
 	}
+
+	typec_enable_lowq(hba);
+
 next:
 	return 0;
 

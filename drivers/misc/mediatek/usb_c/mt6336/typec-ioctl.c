@@ -477,7 +477,8 @@ static ssize_t vbus_show(struct device *pdev, struct device_attribute *attr,
 {
 	struct typec_hba *hba = dev_get_drvdata(pdev);
 
-	return snprintf(buf, PAGE_SIZE, "Vbus is %dmV, vbus_en=%d\n", vbus_val(hba), hba->vbus_en);
+	return snprintf(buf, PAGE_SIZE, "Vbus is %dmV %dmV, vbus_en=%d\n",
+				vbus_val(hba), vbus_val_self(hba), hba->vbus_en);
 }
 
 static ssize_t vbus_store(struct device *pdev, struct device_attribute *attr,

@@ -534,6 +534,7 @@ extern int typec_vbus(struct typec_hba *hba);
 extern void typec_vbus_present(struct typec_hba *hba, uint8_t enable);
 extern void typec_vbus_det_enable(struct typec_hba *hba, uint8_t enable);
 extern unsigned int vbus_val(struct typec_hba *hba);
+extern unsigned int vbus_val_self(struct typec_hba *hba);
 extern void typec_drive_vbus(struct typec_hba *hba, uint8_t on);
 extern void typec_drive_vconn(struct typec_hba *hba, uint8_t enable);
 extern void typec_int_enable(struct typec_hba *hba, uint16_t msk0, uint16_t msk2);
@@ -542,6 +543,8 @@ extern void typec_select_rp(struct typec_hba *hba, enum enum_typec_rp rp_val);
 extern int typec_enable(struct typec_hba *hba, int enable);
 extern int typec_set_mode(struct typec_hba *hba, enum enum_typec_role role, int param1, int param2);
 extern void typec_set_vsafe5v(struct typec_hba *hba, int val);
+extern void typec_enable_lowq(struct typec_hba *hba);
+extern void typec_disable_lowq(struct typec_hba *hba);
 
 extern struct typec_hba *get_hba(void);
 
