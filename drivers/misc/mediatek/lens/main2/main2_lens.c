@@ -112,11 +112,14 @@ static struct cdev *g_pAF_CharDrv;
 static struct class *actuator_class;
 static struct device *lens_device;
 
+#ifdef CONFIG_MACH_MT6765
+static int DrvPwrDn1 = 1;
+#endif
+
+
 void MAIN2AF_PowerDown(void)
 {
 	if (g_pstAF_I2Cclient != NULL) {
-		LOG_INF("CONFIG_MTK_PLATFORM : %s\n", CONFIG_MTK_PLATFORM);
-
 #if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 		LC898217AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock,
 					&g_s4AF_Opened);
@@ -130,9 +133,20 @@ void MAIN2AF_PowerDown(void)
 #endif
 
 #ifdef CONFIG_MACH_MT6765
+		int Ret1 = 0;
+
+		if (DrvPwrDn1) {
 		bu64748af_SetI2Cclient_Main2(g_pstAF_I2Cclient, &g_AF_SpinLock,
 				       &g_s4AF_Opened);
-		bu64748af_PowerDown_Main2();
+		Ret1 = bu64748af_PowerDown_Main2();
+		}
+
+		if (DrvPwrDn1) {
+			if (Ret1 < 0)
+				DrvPwrDn1 = 0;
+
+			LOG_INF("%d/%d\n", Ret1, DrvPwrDn1);
+		}
 #endif
 	}
 }

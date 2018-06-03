@@ -31,7 +31,7 @@
 #define AF_DEBUG
 #ifdef AF_DEBUG
 #define LOG_INF(format, args...)                                               \
-	pr_debug(AF_DRVNAME " [%s] " format, __func__, ##args)
+	pr_info(AF_DRVNAME " [%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
 #endif
@@ -51,6 +51,10 @@ static unsigned int  g_MotorDirection;
 static unsigned int  g_MotorResolution;
 #define Min_Pos 0
 #define Max_Pos 1023
+
+static struct timespec g_TSAFOpen;
+static struct timespec g_TSAFClose;
+static unsigned int g_SkipAFUninit;
 
 static int s4AF_ReadReg(u8 a_uAddr, u8 *a_uData)
 {
@@ -157,6 +161,12 @@ static inline int initdrv(void)
 	int cnt = 0;
 
 	unsigned char Temp;
+
+	if (g_SkipAFUninit == 1) {
+		LOG_INF("Skip init driver\n");
+		g_SkipAFUninit = 0;
+		return 1;
+	}
 
 	s4AF_WriteReg(0, 0xF6, 0x00);
 	s4AF_WriteReg(0, 0x96, 0x20);
@@ -282,13 +292,34 @@ long LC898217AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 /* Q1 : Try release multiple times. */
 int LC898217AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
+	int Ret = 0;
+
 	LOG_INF("Start\n");
 
 	if (*g_pAF_Opened == 2) {
-		LOG_INF("Wait\n");
-		s4AF_WriteReg(0, 0x98, 0xC0);
-		s4AF_WriteReg(0, 0x96, 0x28);
-		s4AF_WriteReg(0, 0xF6, 0x80);
+		unsigned long long start_ms, end_ms;
+		unsigned int diff_ms;
+
+		g_TSAFClose = CURRENT_TIME;
+		start_ms = (g_TSAFOpen.tv_sec * NSEC_PER_SEC +
+				g_TSAFOpen.tv_nsec) / 1000000;
+		end_ms = (g_TSAFClose.tv_sec * NSEC_PER_SEC +
+				g_TSAFClose.tv_nsec) / 1000000;
+		diff_ms = end_ms - start_ms;
+
+		LOG_INF("Wait - Excute Time %d\n", diff_ms);
+
+		if (diff_ms < 600) {
+			g_SkipAFUninit = 1;
+			LOG_INF("Wait - skip uninit\n");
+		} else {
+			Ret = s4AF_WriteReg(0, 0x98, 0xC0);
+			if (Ret == 0)
+				Ret = s4AF_WriteReg(0, 0x96, 0x28);
+			if (Ret == 0)
+				Ret = s4AF_WriteReg(0, 0xF6, 0x80);
+			LOG_INF("Wait - power down\n");
+		}
 		LOG_INF("Close\n");
 	}
 
@@ -302,7 +333,7 @@ int LC898217AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	LOG_INF("End\n");
 
-	return 0;
+	return Ret;
 }
 
 int LC898217AF_PowerDown(void)
@@ -326,6 +357,7 @@ int LC898217AF_PowerDown(void)
 			if (Ret < 0) {
 				g_PreTime = CurTime;
 				g_TimeOutChk = 1;
+				return -1;
 			}
 
 			LOG_INF("LC898217AF Power Down = %d\n", CurTime);
@@ -344,6 +376,7 @@ int LC898217AF_PowerDown(void)
 int LC898217AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 			    spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
+	g_TSAFOpen = CURRENT_TIME;
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
@@ -357,6 +390,7 @@ int LC898217AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 int LC898217AFA_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 			     spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
+	g_TSAFOpen = CURRENT_TIME;
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
@@ -370,6 +404,7 @@ int LC898217AFA_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 int LC898217AFB_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 			     spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
+	g_TSAFOpen = CURRENT_TIME;
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
@@ -383,6 +418,7 @@ int LC898217AFB_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 int LC898217AFC_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 			     spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
+	g_TSAFOpen = CURRENT_TIME;
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;

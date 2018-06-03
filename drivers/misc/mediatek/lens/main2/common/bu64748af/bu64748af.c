@@ -31,7 +31,7 @@
 #define AF_DEBUG
 #ifdef AF_DEBUG
 #define LOG_INF(format, args...)                                               \
-	pr_debug(AF_DRVNAME " [%s] " format, __func__, ##args)
+	pr_info(AF_DRVNAME " [%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
 #endif
@@ -225,15 +225,20 @@ int bu64748af_Release_Main2(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
+static int PowerDown = 1;
+
 int bu64748af_PowerDown_Main2(void)
 {
 	LOG_INF("+\n");
+
+	if (PowerDown == 0)
+		return -1;
+
 	if (*g_pAF_Opened == 0) {
 		BU64748_main2_soft_power_ctrl(0);
 		LOG_INF("apply\n");
 	}
 	LOG_INF("-\n");
-
 
 	return 0;
 }
@@ -242,7 +247,7 @@ int bu64748af_SetI2Cclient_Main2(struct i2c_client *pstAF_I2Cclient,
 				 spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	u8 out[4] = {0};
-	u32 ret;
+	int ret;
 
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
@@ -252,6 +257,10 @@ int bu64748af_SetI2Cclient_Main2(struct i2c_client *pstAF_I2Cclient,
 	out[2] = 0;
 	out[3] = 0;
 	ret = main2_SOutEx(_SLV_FBAF_, out, 4);
+
+	if (ret < 0 && *g_pAF_Opened == 0)
+		PowerDown = 0;
+
 	LOG_INF("SetI2Cclient value(0x%x)\n", ret);
 	return (ret == 0);
 }

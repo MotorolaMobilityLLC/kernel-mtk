@@ -235,11 +235,15 @@ void AFRegulatorCtrl(int Stage)
 }
 #endif
 
+#ifdef CONFIG_MACH_MT6765
+static int DrvPwrDn1 = 1;
+static int DrvPwrDn2 = 1;
+static int DrvPwrDn3 = 1;
+#endif
+
 void AF_PowerDown(void)
 {
 	if (g_pstAF_I2Cclient != NULL) {
-		LOG_INF("CONFIG_MTK_PLATFORM : %s\n", CONFIG_MTK_PLATFORM);
-
 #if defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6771) ||              \
 	defined(CONFIG_MACH_MT6775)
 		LC898217AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock,
@@ -264,17 +268,37 @@ void AF_PowerDown(void)
 #endif
 
 #ifdef CONFIG_MACH_MT6765
+		int Ret1 = 0, Ret2 = 0, Ret3 = 0;
+
+		if (DrvPwrDn1) {
 		LC898217AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock,
 					&g_s4AF_Opened);
-		LC898217AF_PowerDown();
+		Ret1 = LC898217AF_PowerDown();
+		}
 
+		if (DrvPwrDn2) {
 		DW9718SAF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock,
 				      &g_s4AF_Opened);
-		DW9718SAF_PowerDown();
+		Ret2 = DW9718SAF_PowerDown();
+		}
 
+		if (DrvPwrDn3) {
 		bu64748af_SetI2Cclient_Main(g_pstAF_I2Cclient, &g_AF_SpinLock,
 				       &g_s4AF_Opened);
-		bu64748af_PowerDown_Main();
+		Ret3 = bu64748af_PowerDown_Main();
+		}
+
+		if (DrvPwrDn1 && DrvPwrDn2 && DrvPwrDn3) {
+			if (Ret1 < 0)
+				DrvPwrDn1 = 0;
+			if (Ret2 < 0)
+				DrvPwrDn2 = 0;
+			if (Ret3 < 0)
+				DrvPwrDn3 = 0;
+
+		}
+			LOG_INF("%d/%d , %d/%d, %d/%d\n", Ret1, DrvPwrDn1,
+				Ret2, DrvPwrDn2, Ret3, DrvPwrDn3);
 #endif
 	}
 	MAIN2AF_PowerDown();
