@@ -125,5 +125,7 @@ struct pin_node {
 	u32 gpio_pin;
 	u32 eint_pin;
 };
-
+#ifdef CONFIG_MTK_GPIOLIB_STAND
+extern int mtk_pinctrl_get_gpio_mode_for_eint(int pin);
+#endif
 #endif
