@@ -30,7 +30,7 @@
 #endif
 
 
-unsigned int __attribute__((weak)) mt_cpufreq_get_cur_volt(enum mt_cpu_dvfs_id id)
+unsigned int __attribute__((weak)) mt_cpufreq_get_cur_volt(unsigned int id)
 {
 	return 0;
 }
@@ -306,7 +306,7 @@ unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 #else
 			temp = 85;
 #endif
-			volt = mt_cpufreq_get_cur_volt((enum mt_cpu_dvfs_id)i) / 100;
+			volt = mt_cpufreq_get_cur_volt(i) / 100;
 			dev_id = ppm_get_spower_devid((enum ppm_cluster)i);
 			if (dev_id < 0)
 				return 0;
@@ -319,7 +319,7 @@ unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 #else
 		temp = 85;
 #endif
-		volt = mt_cpufreq_get_cur_volt((enum mt_cpu_dvfs_id)cluster) / 100;
+		volt = mt_cpufreq_get_cur_volt(cluster) / 100;
 		dev_id = ppm_get_spower_devid((enum ppm_cluster)cluster);
 		if (dev_id < 0)
 			return 0;
