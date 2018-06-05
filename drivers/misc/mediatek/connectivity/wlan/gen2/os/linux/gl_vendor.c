@@ -296,6 +296,7 @@ int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wde
 	struct nlattr *pbucket, *pchannel;
 	UINT_32 len_basic, len_bucket, len_channel;
 	int i, j, k;
+	UINT_32 u4ArySize;
 
 	ASSERT(wiphy);
 	ASSERT(wdev);
@@ -323,7 +324,10 @@ int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wde
 				len_basic += NLA_ALIGN(attr[k]->nla_len);
 				break;
 			case GSCAN_ATTRIBUTE_NUM_BUCKETS:
-				prWifiScanCmd->num_buckets = nla_get_u32(attr[k]);
+				u4ArySize = nla_get_u32(attr[k]);
+				prWifiScanCmd->num_buckets =
+					(u4ArySize <= GSCAN_MAX_BUCKETS)
+					? u4ArySize : GSCAN_MAX_BUCKETS;
 				len_basic += NLA_ALIGN(attr[k]->nla_len);
 				DBGLOG(REQ, TRACE, "attr=0x%x, num_buckets=%d nla_len=%d,\r\n",
 				       *(UINT_32 *) attr[k], prWifiScanCmd->num_buckets, attr[k]->nla_len);
@@ -1137,6 +1141,7 @@ int mtk_cfg80211_vendor_packet_keep_alive_start(struct wiphy *wiphy, struct wire
 						const void *data, int data_len)
 {
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	UINT_16 u2IpPktLen = 0;
 	UINT_32 u4BufLen = 0;
 	P_GLUE_INFO_T prGlueInfo = NULL;
 
@@ -1176,7 +1181,8 @@ int mtk_cfg80211_vendor_packet_keep_alive_start(struct wiphy *wiphy, struct wire
 				prPkt->u2IpPktLen = nla_get_u16(attr[i]);
 				break;
 			case MKEEP_ALIVE_ATTRIBUTE_IP_PKT:
-				kalMemCopy(prPkt->pIpPkt, nla_data(attr[i]), prPkt->u2IpPktLen);
+				u2IpPktLen = prPkt->u2IpPktLen <= 256 ? prPkt->u2IpPktLen : 256;
+				kalMemCopy(prPkt->pIpPkt, nla_data(attr[i]), u2IpPktLen);
 				break;
 			case MKEEP_ALIVE_ATTRIBUTE_SRC_MAC_ADDR:
 				kalMemCopy(prPkt->ucSrcMacAddr, nla_data(attr[i]), sizeof(mac_addr));

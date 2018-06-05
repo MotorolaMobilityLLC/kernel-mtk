@@ -287,6 +287,9 @@ static ssize_t gt1x_tool_write(struct file *filp, const char __user *buff, size_
 		return cmd_head.data_len + CMD_HEAD_LENGTH;
 	} else if (3 == cmd_head.wr) {	/*gt1x unused*/
 
+		cmd_head.data_len =
+			cmd_head.data_len > sizeof(IC_TYPE) ?
+				sizeof(IC_TYPE) : cmd_head.data_len;
 		memcpy(IC_TYPE, cmd_head.data, cmd_head.data_len);
 		return cmd_head.data_len + CMD_HEAD_LENGTH;
 	} else if (5 == cmd_head.wr) {

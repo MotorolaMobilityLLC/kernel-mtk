@@ -1354,9 +1354,7 @@ static int
 _priv_set_ints(IN struct net_device *prNetDev,
 	      IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
 {
-	UINT_16 i = 0;
 	UINT_32 u4SubCmd, u4BufLen, u4CmdLen;
-	INT_32  setting[4] = {0};
 	P_GLUE_INFO_T prGlueInfo;
 	int status = 0;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
@@ -1376,12 +1374,15 @@ _priv_set_ints(IN struct net_device *prNetDev,
 
 	switch (u4SubCmd) {
 	case PRIV_CMD_SET_TX_POWER:
-#if !(CFG_SUPPORT_TX_BACKOFF)
 	{
+		UINT_16 i;
+		INT_32  setting[4] = {0};
+
 		if (u4CmdLen > 4)
 			return -EINVAL;
 		if (copy_from_user(setting, prIwReqData->data.pointer, u4CmdLen))
 			return -EFAULT;
+#if !(CFG_SUPPORT_TX_BACKOFF)
 		prTxpwr = &prGlueInfo->rTxPwr;
 		if (setting[0] == 0 && prIwReqData->data.length == 4 /* argc num */) {
 			/* 0 (All networks), 1 (legacy STA), 2 (Hotspot AP), 3 (P2P), 4 (BT over Wi-Fi) */
@@ -1432,11 +1433,7 @@ _priv_set_ints(IN struct net_device *prNetDev,
 					   sizeof(SET_TXPWR_CTRL_T), TRUE, FALSE, FALSE, FALSE, &u4BufLen);
 		} else
 			return -EFAULT;
-	}
 #else
-	{
-		INT_32 *setting = prIwReqData->data.pointer;
-		UINT_16 i, j;
 
 #if 0
 		DBGLOG(REQ, INFO, "Tx power num = %d\n", prIwReqData->data.length);
@@ -1497,8 +1494,8 @@ _priv_set_ints(IN struct net_device *prNetDev,
 			UINT_8 modulation = setting[2];
 			INT_8 offset = setting[3];
 			P_MITIGATED_PWR_BY_CH_BY_MODE pOffsetEntry;
+			UINT_16 j = 0;
 
-			j = 0;
 			do {
 				pOffsetEntry = &(prTxpwr->arRlmMitigatedPwrByChByMode[j++]);
 				if (ch == 0)
@@ -1531,8 +1528,8 @@ _priv_set_ints(IN struct net_device *prNetDev,
 			} while (j < 40);
 		} else
 			return -EFAULT;
-	}
 #endif
+	}
 
 	return status;
 	default:
@@ -1812,8 +1809,17 @@ _priv_set_struct(IN struct net_device *prNetDev,
 
 			ULONG TxPwrBackOffParam = 0;
 
-			DBGLOG(REQ, INFO, "Entered case PRIV_CMD_SET_TX_POWER\n");
-			prTestStruct = prIwReqData->data.pointer;
+			u4CmdLen = prIwReqData->data.length;
+			prTestStruct = (P_PARAM_MTK_WIFI_TEST_STRUCT_T)&aucOidBuf[0];
+
+			if (u4CmdLen > sizeof(aucOidBuf)) {
+				DBGLOG(REQ, ERROR, "SET_TX_POWER: Input data length is invalid %u\n", u4CmdLen);
+				return -EINVAL;
+			}
+			if (copy_from_user(prTestStruct, prIwReqData->data.pointer, u4CmdLen)) {
+				DBGLOG(REQ, INFO, "SET_TX_POWER: copy from user failed\n");
+				return -EFAULT;
+			}
 #if 1
 			DBGLOG(REQ, INFO, "prTestStruct->u4FuncIndex = %u, prTestStruct->u4FuncData = %u[0x%x]\n",
 				prTestStruct->u4FuncIndex, prTestStruct->u4FuncData, prTestStruct->u4FuncData);

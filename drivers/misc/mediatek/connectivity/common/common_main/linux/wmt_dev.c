@@ -1134,6 +1134,13 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 				break;
 			}
 
+			if (wMtPatchInfo.dowloadSeq > pAtchNum || wMtPatchInfo.dowloadSeq == 0) {
+				WMT_ERR_FUNC("dowloadSeq num(%u) > %u or == 0!\n", wMtPatchInfo.dowloadSeq, pAtchNum);
+				iRet = -EFAULT;
+				counter = 0;
+				break;
+			}
+
 			dWloadSeq = wMtPatchInfo.dowloadSeq;
 			WMT_DBG_FUNC(
 				"patch dl seq %d,name %s,address info 0x%02x,0x%02x,0x%02x,0x%02x\n",
@@ -1245,11 +1252,11 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			pBuf[DYNAMIC_DUMP_BUF] = '\0';
 			WMT_INFO_FUNC("get dynamic dump data from property(%s)\n", pBuf);
 			memset(Buffer, 0, 10*11);
-			for (i = 0; i < DYNAMIC_DUMP_BUF; i++) {
+			for (i = 0; i < DYNAMIC_DUMP_BUF && j <= 9; i++) {
 				if (pBuf[i] == '/') {
 					k = 0;
 					j++;
-				} else {
+				} else if (k <= 10) {
 					Buffer[j][k] = pBuf[i];
 					k++;
 				}

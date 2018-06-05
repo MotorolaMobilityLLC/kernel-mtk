@@ -180,7 +180,7 @@ static ssize_t gt1x_debug_write_proc(struct file *file, const char __user *buffe
 		return count;
 	}
 
-	ret = sscanf(buf, "%s %d", (char *)&mode_str, &mode);
+	ret = sscanf(buf, "%49s %d", (char *)&mode_str, &mode);
 	if (ret < 0) {
 		GTP_ERROR("Sscanf buf ERROR1");
 		return ret;
@@ -237,7 +237,7 @@ static ssize_t gt1x_debug_write_proc(struct file *file, const char __user *buffe
 		return count;
 	}
 #endif
-	ret = sscanf(buf, "%s %s", (char *)&mode_str, (char *)&arg1);
+	ret = sscanf(buf, "%49s %49s", (char *)&mode_str, (char *)&arg1);
 	if (ret < 0) {
 		GTP_ERROR("Sscanf buf ERROR2");
 		return ret;
