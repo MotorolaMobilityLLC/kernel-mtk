@@ -28,7 +28,6 @@ ccflags-y += \
 	-I$(src)/../common/common_main/core/include
 
 obj-$(CONFIG_MTK_COMBO_GPS)	+= stp_chrdev_gps.o
-obj-$(CONFIG_MTK_GPS)		+= gps.o
 obj-$(CONFIG_MTK_GPS_EMI)	+= gps_emi.o
 
 # EOF
