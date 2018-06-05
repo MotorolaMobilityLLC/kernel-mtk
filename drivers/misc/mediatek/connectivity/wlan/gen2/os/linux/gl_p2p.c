@@ -592,8 +592,8 @@ BOOLEAN p2pNetRegister(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgIsRtnlLockAcquired)
 	/* register for net device */
 	if (register_netdev(prGlueInfo->prP2PInfo->prDevHandler) < 0) {
 		DBGLOG(P2P, WARN, "unable to register netdevice for p2p\n");
-
-		free_netdev(prGlueInfo->prP2PInfo->prDevHandler);
+		/* free dev in glUnregisterP2P() */
+		/* free_netdev(prGlueInfo->prP2PInfo->prDevHandler); */
 
 		ret = FALSE;
 	} else {
@@ -925,7 +925,8 @@ BOOLEAN glUnregisterP2P(P_GLUE_INFO_T prGlueInfo)
 #if CFG_SUPPORT_PERSIST_NETDEV
 	dev_close(prGlueInfo->prP2PInfo->prDevHandler);
 #else
-	free_netdev(prGlueInfo->prP2PInfo->prDevHandler);
+	if (prGlueInfo->prP2PInfo->prDevHandler != NULL)
+		free_netdev(prGlueInfo->prP2PInfo->prDevHandler);
 	prGlueInfo->prP2PInfo->prDevHandler = NULL;
 #endif
 	/* Free p2p memory */
@@ -2171,6 +2172,10 @@ mtk_p2p_wext_set_key(IN struct net_device *prDev,
 
 					/* BSSID */
 					memcpy(prKey->arBSSID, prIWEncExt->addr.sa_data, 6);
+					if (prIWEncExt->key_len >= 32) {
+						ret = -EINVAL;
+						break;
+					}
 					memcpy(prKey->aucKeyMaterial, prIWEncExt->key, prIWEncExt->key_len);
 
 					prKey->u4KeyLength = prIWEncExt->key_len;
