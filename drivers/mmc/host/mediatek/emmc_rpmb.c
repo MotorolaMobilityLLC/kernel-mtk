@@ -89,8 +89,8 @@ do {\
 } while (0)
 
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
-#define RPMB_DATA_BUFF_SIZE (1024 * 24)
-#define RPMB_ONE_FRAME_SIZE (512)
+#define RPMB_DATA_BUFF_SIZE (1024 * 33)
+#define RPMB_ONE_FRAME_SIZE (1024)
 static unsigned char *rpmb_buffer;
 #endif
 
