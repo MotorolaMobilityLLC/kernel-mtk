@@ -219,8 +219,8 @@ struct mtk_pll_data {
 	int pcwibits;
 	uint32_t pcw_reg;
 	int pcw_shift;
-	int analog_div;
 	const struct mtk_pll_div_table *div_table;
+	const char *parent_name;
 };
 
 void mtk_clk_register_plls(struct device_node *node,
@@ -239,8 +239,5 @@ static inline void mtk_register_reset_controller(struct device_node *np,
 {
 }
 #endif
-
-int mtk_is_pll_enable(void);
-int mtk_is_cg_enable(void);
 
 #endif /* __DRV_CLK_MTK_H */
