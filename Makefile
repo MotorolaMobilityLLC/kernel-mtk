@@ -834,6 +834,10 @@ KBUILD_CFLAGS   += $(call cc-option,-Werror=strict-prototypes)
 # Prohibit date/time macros, which would make the build non-deterministic
 KBUILD_CFLAGS   += $(call cc-option,-Werror=date-time)
 
+# temporary workaround clang build errors
+KBUILD_CFLAGS   += $(call cc-option,-Wno-error=section)
+KBUILD_CFLAGS   += $(call cc-disable-warning,enum-conversion,)
+
 # use the deterministic mode of AR if available
 KBUILD_ARFLAGS := $(call ar-option,D)
 
