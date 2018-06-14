@@ -637,6 +637,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 
 	/* 3. Bus status */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_BUS)) {
+#if defined(CONFIG_MACH_MT6765)
 		CCCI_MEM_LOG_TAG(md->index, TAG,
 			"Dump MD Bus status: [0]0x%X, [1]0x%X, [2]0x%X, [3]0x%X\n",
 			MD_BUS_REG_BASE0, MD_BUS_REG_BASE1,
@@ -645,6 +646,12 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		ccci_util_mem_dump(md->index,
 			CCCI_DUMP_MEM_DUMP, dump_reg0, MD_BUS_REG_LEN0);
 		iounmap(dump_reg0);
+#elif defined(CONFIG_MACH_MT6761)
+		CCCI_MEM_LOG_TAG(md->index, TAG,
+			"Dump MD Bus status: [0]0x%X, [1]0x%X, [2]0x%X\n",
+			MD_BUS_REG_BASE1, MD_BUS_REG_BASE2,
+			MD_BUS_REG_BASE3);
+#endif
 		dump_reg0 = ioremap_nocache(MD_BUS_REG_BASE1, MD_BUS_REG_LEN1);
 		ccci_util_mem_dump(md->index,
 			CCCI_DUMP_MEM_DUMP, dump_reg0, MD_BUS_REG_LEN1);
@@ -661,10 +668,16 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 
 	/* 4. Bus REC */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_BUSREC)) {
+#if defined(CONFIG_MACH_MT6765)
 		CCCI_MEM_LOG_TAG(md->index, TAG,
 			"Dump MD Bus REC: [0]0x%X, [1]0x%X, [2]0x%X\n",
 			MD_MCU_MO_BUSREC_BASE, MD_INFRA_BUSREC_BASE,
 			MD_BUSREC_LAY_BASE);
+#elif defined(CONFIG_MACH_MT6761)
+		CCCI_MEM_LOG_TAG(md->index, TAG,
+			"Dump MD Bus REC: [0]0x%X, [1]0x%X\n",
+			MD_MCU_MO_BUSREC_BASE, MD_INFRA_BUSREC_BASE);
+#endif
 		dump_reg0 =
 		 ioremap_nocache(MD_MCU_MO_BUSREC_BASE, MD_MCU_MO_BUSREC_LEN);
 		ccci_write32(dump_reg0, 0x10, 0x0); /* stop */
@@ -699,11 +712,13 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 			CCCI_DUMP_MEM_DUMP, (dump_reg0 + 0x700), 0x51C);
 		ccci_write32(dump_reg0, 0x10, 0x1);/* re-start */
 		iounmap(dump_reg0);
+#if defined(CONFIG_ARCH_MT6765)
 		dump_reg0 =
 		 ioremap_nocache(MD_BUSREC_LAY_BASE, MD_BUSREC_LAY_LEN);
 		ccci_util_mem_dump(md->index,
 			CCCI_DUMP_MEM_DUMP, dump_reg0, 0x8);
 		iounmap(dump_reg0);
+#endif
 	}
 
 	/* 5. ECT */
@@ -1070,7 +1085,9 @@ void md1_pll_init(struct ccci_modem *md)
 
 	RAnd2W(md_pll->md_top_Pll, 0x64, ~(0x80));
 
+#if defined(CONFIG_ARCH_MT6765)
 	cldma_write32(md_pll->md_top_Pll, 0x104, 0x4C43100);
+#endif
 	cldma_write32(md_pll->md_top_Pll, 0x10, 0x100010);
 	do {
 		reg_val = cldma_read32(md_pll->md_top_Pll, 0x10);

@@ -17,7 +17,11 @@
 /* platform info */
 #define MD_GENERATION       (6293)
 #define MD_PLATFORM_INFO    "6293"
-#define AP_PLATFORM_INFO    "MT6765"
+#if defined(CONFIG_MACH_MT6765)
+	#define AP_PLATFORM_INFO    "MT6765"
+#elif defined(CONFIG_MACH_MT6761)
+	#define AP_PLATFORM_INFO    "MT6761"
+#endif
 #define CCCI_DRIVER_VER     0x20110118
 
 /* buffer management customization */
