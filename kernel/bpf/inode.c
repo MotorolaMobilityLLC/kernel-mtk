@@ -377,7 +377,7 @@ static const struct super_operations bpf_super_ops = {
 
 static int bpf_fill_super(struct super_block *sb, void *data, int silent)
 {
-	static struct tree_descr bpf_rfiles[] = { { "" } };
+	static const struct tree_descr bpf_rfiles[] = { { "" } };
 	struct inode *inode;
 	int ret;
 
