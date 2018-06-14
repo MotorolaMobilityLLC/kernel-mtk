@@ -37,6 +37,7 @@
 #endif
 #include "aee-common.h"
 #include <ipanic.h>
+#include <mt-plat/mtk_ram_console.h>
 #include <mrdump_private.h>
 
 #undef WDT_DEBUG_VERBOSE
@@ -492,7 +493,7 @@ void aee_wdt_irq_info(void)
 	/* avoid lock prove to dump_stack in __debug_locks_off() */
 	xchg(&debug_locks, 0);
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_DONE);
-	aee_rr_rec_exp_type(1);
+	aee_rr_rec_exp_type(AEE_EXP_TYPE_HWT);
 	aee_exception_reboot();
 }
 
