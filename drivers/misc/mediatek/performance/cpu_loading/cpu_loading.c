@@ -684,6 +684,7 @@ PROC_FOPS_RO(prev_cpu_loading);
 static int init_cpu_loading_kobj(void)
 {
 	int ret;
+
 	cpu_loading_object =
 		kzalloc(sizeof(struct cpu_loading_context), GFP_KERNEL);
 
