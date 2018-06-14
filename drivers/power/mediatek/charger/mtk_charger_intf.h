@@ -26,6 +26,7 @@
 #include <linux/wakelock.h>
 #include <linux/spinlock.h>
 #include <mt-plat/mtk_battery.h>
+#include <mtk_gauge_time_service.h>
 
 /* PD */
 #include <tcpm.h>
@@ -423,6 +424,23 @@ extern int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv);
 extern bool is_dual_charger_supported(struct charger_manager *info);
 extern int charger_enable_vbus_ovp(struct charger_manager *pinfo, bool enable);
 extern bool is_typec_adapter(struct charger_manager *info);
+
+/* pmic API */
+extern unsigned int upmu_get_rgs_chrdet(void);
+extern int pmic_get_vbus(void);
+extern int pmic_get_charging_current(void);
+extern int pmic_get_battery_voltage(void);
+extern int pmic_get_bif_battery_voltage(int *vbat);
+extern int pmic_is_bif_exist(void);
+extern int pmic_enable_hw_vbus_ovp(bool enable);
+extern bool pmic_is_battery_exist(void);
+
+/* add legacy battery API */
+extern unsigned int battery_get_bat_soc(void);
+extern signed int battery_meter_get_battery_temperature(void);
+extern bool battery_get_bat_current_sign(void);
+extern signed int battery_get_bat_uisoc(void);
+extern int get_ui_soc(void);
 
 /* procfs */
 #define PROC_FOPS_RW(name)							\

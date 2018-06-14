@@ -1,25 +1,27 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
-#include <mt-plat/upmu_common.h>
-#include <mt-plat/mtk_battery.h>
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+#include <linux/init.h>		/* For init/exit macros */
+#include <linux/module.h>	/* For MODULE_ marcros  */
 #include <linux/list.h>
 #include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/kthread.h>
-#include <linux/wakelock.h>
 #include <linux/suspend.h>
+#include <linux/platform_device.h>
+#include <linux/pm_wakeup.h>
+#include "mtk_gauge_time_service.h"
 
-#include <mtk_gauge_class.h>
 
 static struct list_head gtimer_head = LIST_HEAD_INIT(gtimer_head);
 
@@ -28,7 +30,7 @@ static int ftlog_level;
 
 static struct mutex gtimer_lock;
 static spinlock_t slock;
-static struct wake_lock wlock;
+static struct wakeup_source wlock;
 static wait_queue_head_t wait_que;
 static struct hrtimer gtimer_kthread_timer;
 static struct timespec gtimer_suspend_time;
@@ -104,8 +106,8 @@ void wake_up_gtimer(void)
 	unsigned long flags;
 
 	spin_lock_irqsave(&slock, flags);
-	if (wake_lock_active(&wlock) == 0)
-		wake_lock(&wlock);
+	if (wlock.active == 0)
+		__pm_stay_awake(&wlock);
 	spin_unlock_irqrestore(&slock, flags);
 
 	gtimer_thread_timeout = true;
@@ -217,7 +219,8 @@ static void gtimer_handler(void)
 
 		ft_info("gtimer_handler name:%s %ld %ld %d %d\n",
 		ptr->name, time.tv_sec,
-		ptr->endtime.tv_sec, ptr->interval, timespec_compare(&time, &ptr->endtime));
+		ptr->endtime.tv_sec, ptr->interval,
+		timespec_compare(&time, &ptr->endtime));
 
 		if (timespec_compare(&time, &ptr->endtime) >= 0) {
 			ptmp = pos;
@@ -264,7 +267,7 @@ static int gtimer_thread(void *arg)
 		gtimer_handler();
 
 		spin_lock_irqsave(&slock, flags);
-		wake_unlock(&wlock);
+		__pm_relax(&wlock);
 		spin_unlock_irqrestore(&slock, flags);
 
 		mutex_gtimer_unlock();
@@ -314,14 +317,17 @@ static void gtimer_resume(void)
 
 }
 
-static int gtimer_pm_event(struct notifier_block *notifier, unsigned long pm_event, void *unused)
+static int gtimer_pm_event(
+	struct notifier_block *notifier, unsigned long pm_event, void *unused)
 {
 	switch (pm_event) {
 	case PM_HIBERNATION_PREPARE:	/* Going to hibernate */
 	case PM_RESTORE_PREPARE:	/* Going to restore a saved image */
 	case PM_SUSPEND_PREPARE:	/* Going to suspend the system */
 		get_monotonic_boottime(&gtimer_suspend_time);
-		ft_err("[%s] pm_event %lu %ld\n", __func__, pm_event, gtimer_suspend_time.tv_sec);
+		ft_err("[%s] pm_event %lu %ld\n",
+			__func__, pm_event,
+			gtimer_suspend_time.tv_sec);
 		gtimer_suspend();
 		return NOTIFY_DONE;
 
@@ -351,7 +357,8 @@ enum hrtimer_restart gtimer_kthread_hrtimer_func(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
-signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_capacity_level)
+signed int get_dynamic_period(
+	int first_use, int first_wakeup_time, int battery_capacity_level)
 {
 	struct timespec duraction;
 	struct list_head *pos = gtimer_head.next;
@@ -379,7 +386,7 @@ static int gauge_timer_service_probe(struct platform_device *pdev)
 {
 	mutex_init(&gtimer_lock);
 	spin_lock_init(&slock);
-	wake_lock_init(&wlock, WAKE_LOCK_SUSPEND, "gtime timer wakelock");
+	wakeup_source_init(&wlock, "gtime timer wakelock");
 	init_waitqueue_head(&wait_que);
 
 

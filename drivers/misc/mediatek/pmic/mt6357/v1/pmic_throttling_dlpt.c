@@ -426,7 +426,7 @@ int bat_percent_notify_handler(void *unused)
 		mutex_lock(&bat_percent_notify_mutex);
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-		bat_per_val = bat_get_ui_percentage();
+		bat_per_val = battery_get_uisoc();
 #endif
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 		if ((upmu_get_rgs_chrdet() == 0) && (g_battery_percent_level == 0)
@@ -782,7 +782,7 @@ int get_dlpt_imix_spm(void)
 	static unsigned int pre_ui_soc = 101;
 	unsigned int ui_soc;
 
-	ui_soc = bat_get_ui_percentage();
+	ui_soc = battery_get_uisoc();
 
 	if (ui_soc != pre_ui_soc) {
 		pre_ui_soc = ui_soc;
@@ -904,7 +904,7 @@ int get_dlpt_imix(void)
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	pr_info("[get_dlpt_imix] %d,%d,%d,%d,%d,%d,%d\n", volt_avg, curr_avg, g_lbatInt1,
-		ptim_rac_val_avg, imix, BMT_status.SOC, bat_get_ui_percentage());
+		ptim_rac_val_avg, imix, battery_get_soc(), battery_get_uisoc());
 #endif
 
 	if (imix < 0) {
@@ -982,7 +982,7 @@ int dlpt_notify_handler(void *unused)
 	int diff_ui_soc = 1;
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-	pre_ui_soc = bat_get_ui_percentage();
+	pre_ui_soc = battery_get_uisoc();
 #endif
 	cur_ui_soc = pre_ui_soc;
 
@@ -999,7 +999,7 @@ int dlpt_notify_handler(void *unused)
 		/*---------------------------------*/
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-		cur_ui_soc = bat_get_ui_percentage();
+		cur_ui_soc = battery_get_uisoc();
 #endif
 
 		if (cur_ui_soc <= 1) {

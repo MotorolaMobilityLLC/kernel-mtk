@@ -29,6 +29,7 @@ extern kal_bool upmu_is_chr_det(void);
 
 extern void BATTERY_SetUSBState(int usb_state);
 extern void upmu_interrupt_chrdet_int_en(unsigned int val);
+extern int pmic_get_vbus(void);
 
 /* specific USB fuctnion */
 enum CABLE_MODE {

@@ -49,6 +49,7 @@
 
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 #include <mt-plat/mtk_battery.h>
+#include <mtk_battery_internal.h>
 #endif
 
 #define AEE_DBG 0
@@ -83,6 +84,13 @@ unsigned int __attribute__ ((weak)) pmic_get_vbif28_volt(void)
 {
 	return 0;
 }
+
+bool is_isense_supported(void)
+{
+	/* PMIC MT6357 supports ISENSE */
+	return true;
+}
+
 
 void wk_auxadc_bgd_ctrl(unsigned char en)
 {
@@ -520,7 +528,9 @@ int mt6357_get_auxadc_value(u8 channel)
 	    channel != AUXADC_LIST_MT6357_BUCK2_TEMP &&
 	    __ratelimit(&ratelimit)) {
 		if (channel == AUXADC_LIST_BATTEMP) {
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
 			is_charging = gauge_get_current(&bat_cur);
+#endif
 			if (is_charging == 0)
 				bat_cur = 0 - bat_cur;
 			pr_notice("[%s] ch_idx = %d, channel = %d, bat_cur = %d, reg_val = 0x%x, adc_result = %d\n",
