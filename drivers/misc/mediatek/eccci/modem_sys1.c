@@ -1176,7 +1176,7 @@ static struct syscore_ops md_cldma_sysops = {
 };
 
 #define DMA_BIT_MASK(n) (((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
-static u64 cldma_dmamask = DMA_BIT_MASK((sizeof(unsigned long) << 3));
+static u64 cldma_dmamask = DMA_BIT_MASK(36);
 static int ccci_modem_probe(struct platform_device *plat_dev)
 {
 	struct ccci_modem *md;

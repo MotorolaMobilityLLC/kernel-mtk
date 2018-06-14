@@ -66,7 +66,7 @@ static struct c2k_port c2k_ports[] = {
 	/* c2k control channel mapping to 2 pairs of CCCI channels,
 	 * please mind the order in this array, make sure CCCI_CONTROL_TX/RX be first.
 	 */
-	{CTRL_CH_C2K, CCCI_CONTROL_TX, CCCI_CONTROL_TX, CCCI_CONTROL_RX,},	/*control channel */
+	{CTRL_CH_C2K, CTRL_CH_C2K_EXCP, CCCI_CONTROL_TX, CCCI_CONTROL_RX,},	/*control channel */
 	{CTRL_CH_C2K, CTRL_CH_C2K, CCCI_STATUS_TX, CCCI_STATUS_RX,},	/*control channel */
 	{AUDIO_CH_C2K, AUDIO_CH_C2K, CCCI_PCM_TX, CCCI_PCM_RX,},	/*audio channel */
 	{NET1_CH_C2K, NET1_CH_C2K, CCCI_CCMNI1_TX, CCCI_CCMNI1_RX,},	/*network channel for CCMNI1 */
