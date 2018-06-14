@@ -253,7 +253,7 @@ static int mt6357tsbuck2_sysrst_set_cur_state(struct thermal_cooling_device *cde
 		mtktspmic_info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
 #if 0	/* temp marked off to check temperature correctness. */
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+		BUG();
 #endif
 	}
 	return 0;

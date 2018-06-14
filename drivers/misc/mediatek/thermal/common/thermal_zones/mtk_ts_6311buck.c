@@ -298,7 +298,7 @@ static int ts6311_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsi
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
 
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+		BUG();
 	}
 	return 0;
 }

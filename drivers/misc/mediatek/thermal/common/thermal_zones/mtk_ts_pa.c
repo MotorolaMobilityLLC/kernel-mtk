@@ -404,7 +404,7 @@ static int tspa_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsign
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
 		/* To trigger data abort to reset the system for thermal protection. */
-		*(unsigned int *)0x0 = 0xdead;
+		BUG();
 	}
 	return 0;
 }

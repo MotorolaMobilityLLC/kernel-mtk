@@ -724,7 +724,7 @@ static int wmt_cl_set_cur_state(struct thermal_cooling_device *cool_dev, unsigne
 	if (cl_dev_state == 1) {
 		wmt_tm_printk("wmt_cl_set_cur_state = 1\n");
 		/* the temperature is over than the critical, system reboot. */
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+		BUG();
 	}
 
 	return 0;
