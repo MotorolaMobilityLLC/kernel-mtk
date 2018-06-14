@@ -1123,7 +1123,10 @@ void ged_log_perf_trace_counter(char *name, long long count, int pid, unsigned l
 	if (ged_log_perf_trace_enable) {
 		__mt_update_tracing_mark_write_addr();
 		preempt_disable();
-		event_trace_printk(tracing_mark_write_addr, "C|%d|%lu|%s|%lld\n", pid, frameID, name, count);
+		event_trace_printk(tracing_mark_write_addr,
+			"C|%d|%s|%lld|%lu\n", pid,
+			name, count, frameID);
+
 		preempt_enable();
 	}
 }

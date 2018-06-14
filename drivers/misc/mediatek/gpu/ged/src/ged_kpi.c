@@ -133,6 +133,7 @@ typedef struct GED_KPI_TAG {
 	unsigned long long ullTimeStampS;
 	unsigned long long ullTimeStampH;
 	unsigned int gpu_freq; /* in MHz*/
+	unsigned int gpu_freq_max; /* in MHz*/
 	unsigned int gpu_loading;
 	struct list_head sList;
 	long long t_cpu_remained;
@@ -657,6 +658,8 @@ static inline void ged_kpi_calc_kpi_info(u64 ulID, GED_KPI *psKPI, GED_KPI_HEAD 
 #define GED_KPI_FRC_MODE_MASK 0x7
 #define GED_KPI_FRC_CLIENT_SHIFT 13
 #define GED_KPI_FRC_CLIENT_MASK 0xF
+#define GED_KPI_GPU_FREQ_MAX_INFO_SHIFT 19
+#define GED_KPI_GPU_FREQ_MAX_INFO_MASK 0xFFF /* max @ 4096 MHz */
 #define GED_KPI_GPU_FREQ_INFO_SHIFT 7
 #define GED_KPI_GPU_FREQ_INFO_MASK 0xFFF /* max @ 4096 MHz */
 #define GED_KPI_GPU_LOADING_INFO_SHIFT 0
@@ -678,6 +681,9 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 	frame_attr |= ((psHead->frc_client & GED_KPI_FRC_CLIENT_MASK) << GED_KPI_FRC_CLIENT_SHIFT);
 	gpu_info |= ((psKPI->gpu_freq & GED_KPI_GPU_FREQ_INFO_MASK) << GED_KPI_GPU_FREQ_INFO_SHIFT);
 	gpu_info |= ((psKPI->gpu_loading & GED_KPI_GPU_LOADING_INFO_MASK) << GED_KPI_GPU_LOADING_INFO_SHIFT);
+	gpu_info |=
+		((psKPI->gpu_freq_max & GED_KPI_GPU_FREQ_MAX_INFO_MASK)
+		<< GED_KPI_GPU_FREQ_MAX_INFO_SHIFT);
 	psKPI->frame_attr = frame_attr;
 
 	/* statistics */
@@ -1313,6 +1319,14 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				ged_log_perf_trace_counter("t_gpu",
 					psKPI->t_gpu, psTimeStamp->pid, psTimeStamp->i32FrameID);
 				psKPI->gpu_freq = mt_gpufreq_get_cur_freq() / 1000;
+				psKPI->gpu_freq_max =
+					mt_gpufreq_get_freq_by_idx(
+					mt_gpufreq_get_cur_ceiling_idx())
+					/ 1000;
+				ged_log_perf_trace_counter("gpu_freq_max",
+					(long long)psKPI->gpu_freq_max,
+					psTimeStamp->pid,
+					psTimeStamp->i32FrameID);
 				ged_log_perf_trace_counter("gpu_freq",
 					(long long)psKPI->gpu_freq, psTimeStamp->pid, psTimeStamp->i32FrameID);
 				psHead->last_TimeStamp2 = psTimeStamp->ullTimeStamp;
@@ -1380,9 +1394,9 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					ged_kpi_set_gpu_dvfs_hint(((int)vsync_period / 1000), 100);
 				}
 				ged_kpi_output_gfx_info(psHead->t_gpu_latest, psKPI->gpu_freq * 1000,
-					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()));
+					psKPI->gpu_freq_max * 1000);
 				ged_kpi_output_gfx_info2(psHead->t_gpu_latest, psKPI->gpu_freq * 1000,
-					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()), ulID);
+					psKPI->gpu_freq_max * 1000, ulID);
 				if (psKPI && (psKPI->ulMask & GED_TIMESTAMP_TYPE_S))
 					ged_kpi_statistics_and_remove(psHead, psKPI);
 			} else {
