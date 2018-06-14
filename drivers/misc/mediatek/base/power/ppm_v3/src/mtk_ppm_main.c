@@ -371,9 +371,6 @@ static void ppm_main_calc_new_limit(void)
 {
 	struct ppm_policy_data *pos;
 	int i;
-#if defined(CONFIG_ARM64)
-	int len;
-#endif
 	unsigned int max_freq_limit[NR_PPM_CLUSTERS] = {0};
 	bool is_ptp_activate = false, is_all_cluster_zero = true;
 	struct ppm_client_req *c_req = &(ppm_main_info.client_req);
@@ -471,23 +468,6 @@ static void ppm_main_calc_new_limit(void)
 			c_req->cpu_limit[i].advise_cpu_core
 		);
 	}
-
-#if defined(CONFIG_ARM64)
-	len = sizeof(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
-	if (strncmp(
-	    CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES + len - 8,
-	    "_x9125v", 7) == 0) {
-		if (!is_ptp_activate) {
-			c_req->cpu_limit[0].min_cpufreq_idx = 4;
-			c_req->cpu_limit[0].max_cpufreq_idx = 4;
-			c_req->cpu_limit[0].has_advise_freq = false;
-			pr_info_once("fix at OPP4-0.9125V for %s\n",
-				CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
-		} else {
-			pr_info("skip OPP fix for ptpod\n");
-		}
-	}
-#endif
 
 	/* always = 0 for ACAO */
 	c_req->root_cluster = 0;
