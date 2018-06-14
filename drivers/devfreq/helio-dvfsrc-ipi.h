@@ -29,6 +29,7 @@ enum {
 	QOS_IPI_UPOWER_DATA_TRANSFER,
 	QOS_IPI_UPOWER_DUMP_TABLE,
 	QOS_IPI_GET_GPU_BW,
+	QOS_IPI_SWPM_ENABLE,
 
 	NR_QOS_IPI,
 };
@@ -63,6 +64,10 @@ struct qos_ipi_data {
 			unsigned int dram_size;
 			unsigned int dram_ch_num;
 		} swpm_init;
+		struct {
+			unsigned int type;
+			unsigned int enable;
+		} swpm_enable;
 		struct {
 			unsigned int arg[3];
 		} upower_data;
