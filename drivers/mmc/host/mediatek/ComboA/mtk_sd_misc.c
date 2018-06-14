@@ -737,6 +737,7 @@ end:
 	return 0;
 }
 
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
 /* These definitiona and functions are coded by reference to
  * mmc_blk_issue_discard_rq()@block.c
  */
@@ -805,6 +806,7 @@ out:
 	return msdc_ctl->result;
 
 }
+#endif
 
 static int simple_mmc_erase_partition(unsigned char *name)
 {
@@ -932,10 +934,12 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 		msdc_ctl.result =
 			simple_mmc_erase_partition_wrap(&msdc_ctl);
 		break;
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
 	case MSDC_ERASE_SELECTED_AREA:
 		msdc_ctl.result = simple_sd_ioctl_erase_selected_area(
 			&msdc_ctl);
 		break;
+#endif
 	case MSDC_SD30_MODE_SWITCH:
 		pr_notice("obsolete opcode!!\n");
 		return -EINVAL;
