@@ -77,7 +77,7 @@ static unsigned int detid_to_dvfsid(struct eem_det *det)
 int get_volt_cpu(struct eem_det *det)
 {
 	unsigned int value = 0;
-	enum eem_det_id cpudvfsindex;
+	enum mt_cpu_dvfs_id cpudvfsindex;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 	/* unit mv * 100 = 10uv */
@@ -92,7 +92,7 @@ int get_volt_cpu(struct eem_det *det)
 int set_volt_cpu(struct eem_det *det)
 {
 	int value = 0;
-	enum eem_det_id cpudvfsindex;
+	enum mt_cpu_dvfs_id cpudvfsindex;
 #ifdef DRCC_SUPPORT
 	unsigned long flags;
 #endif
