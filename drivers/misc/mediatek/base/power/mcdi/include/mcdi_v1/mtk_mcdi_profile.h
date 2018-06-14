@@ -15,10 +15,13 @@
 #define __MTK_MCDI_PROFILE_H__
 
 #include <linux/proc_fs.h>
+#include <linux/cpuidle.h>
+
 #include <mtk_mcdi_plat.h>
 
-/* #define MCDI_PROFILE_BREAKDOWN */
 /* #define MCDI_PWR_SEQ_PROF_BREAKDOWN */
+
+#define MCDI_LAT_NAME_SIZE 36
 
 enum {
 	MCDI_PROF_FLAG_STOP,
@@ -27,36 +30,67 @@ enum {
 	NF_MCDI_PROF_FLAG
 };
 
-#ifdef MCDI_PROFILE_BREAKDOWN
 enum {
-	MCDI_PROFILE_GOV_SEL_ENTER = 0,
-	MCDI_PROFILE_GOV_SEL_BOOT_CHK,
-	MCDI_PROFILE_GOV_SEL_LOCK,
-	MCDI_PROFILE_GOV_SEL_UPT_RES,
-	MCDI_PROFILE_GOV_SEL_ANY_CORE,
-	MCDI_PROFILE_GOV_SEL_CLUSTER,
-	MCDI_PROFILE_GOV_SEL_LEAVE,
+	MCDI_PROFILE_ENTER = 0,
 	MCDI_PROFILE_CPU_DORMANT_ENTER,
 	MCDI_PROFILE_CPU_DORMANT_LEAVE,
 	MCDI_PROFILE_LEAVE,
-	NF_MCDI_PROFILE,
-};
-#else
-enum {
-	MCDI_PROFILE_GOV_SEL_ENTER = 0,
-	MCDI_PROFILE_GOV_SEL_LEAVE,
-	MCDI_PROFILE_CPU_DORMANT_ENTER,
-	MCDI_PROFILE_CPU_DORMANT_LEAVE,
-	MCDI_PROFILE_LEAVE,
-	NF_MCDI_PROFILE,
 
-	MCDI_PROFILE_GOV_SEL_BOOT_CHK,
-	MCDI_PROFILE_GOV_SEL_LOCK,
-	MCDI_PROFILE_GOV_SEL_UPT_RES,
-	MCDI_PROFILE_GOV_SEL_ANY_CORE,
-	MCDI_PROFILE_GOV_SEL_CLUSTER,
+	MCDI_PROFILE_RSV0,
+	MCDI_PROFILE_RSV1,
+
+	NF_MCDI_PROFILE,
 };
-#endif
+
+struct mcdi_prof_lat_raw {
+	unsigned int cnt;
+	unsigned int max;
+	union {
+		unsigned long long avg;
+		unsigned long long sum;
+	};
+};
+
+struct mcdi_prof_lat_data {
+	const char *name;
+	bool valid;
+	int start;
+	int end;
+	unsigned long long *start_ts;
+	unsigned long long *end_ts;
+	struct mcdi_prof_lat_raw curr[NF_CPU_TYPE];
+	struct mcdi_prof_lat_raw result[NF_CPU_TYPE];
+	unsigned long long ts[NF_CPU];
+};
+
+struct mcdi_prof_lat {
+	bool enable;
+	bool pause;
+	struct mcdi_prof_lat_data section[NF_MCDI_PROFILE];
+};
+
+struct mcdi_prof_dev {
+	int cpu;
+	int last_residency;
+	int last_state_idx;
+	int actual_state;
+	unsigned long long enter;
+	unsigned long long leave;
+	struct {
+		unsigned int cnt;
+		unsigned long long dur;
+	} state[CPUIDLE_STATE_MAX];
+};
+
+struct mcdi_prof_usage {
+	bool enable;
+	bool pause;
+	unsigned int cpu_valid;
+	unsigned long long start;
+	unsigned long long prof_dur;
+	int last_id[NF_CLUSTER];
+	struct mcdi_prof_dev dev[NF_CPU];
+};
 
 /* this define should sync with mcdi in sspm */
 #ifdef MCDI_PWR_SEQ_PROF_BREAKDOWN
@@ -85,15 +119,18 @@ struct mcdi_prof_breakdown {
 };
 #endif
 
-void set_mcdi_profile_target_cpu(int cpu);
-void set_mcdi_profile_sampling(int count);
-void mcdi_profile_ts(unsigned int idx);
-void mcdi_profile_calc(void);
+unsigned int mcdi_usage_get_cnt(int cpu, int state_idx);
+void mcdi_usage_time_start(int cpu);
+void mcdi_usage_time_stop(int cpu);
+void mcdi_usage_calc(int cpu);
+bool mcdi_usage_cpu_valid(int cpu);
 
-int get_mcdi_profile_cpu(void);
-unsigned int get_mcdi_profile_cnt(void);
-unsigned int get_mcdi_profile_sum_us(int idx);
-unsigned int get_mcdi_profile_state(void);
+void mcdi_profile_ts(int cpu_idx, unsigned int prof_idx);
+void mcdi_profile_calc(int cpu);
 
+void mcdi_prof_core_cluster_off_token(int cpu);
+void mcdi_prof_set_idle_state(int cpu, int state);
+void mcdi_prof_init(void);
 void mcdi_procfs_profile_init(struct proc_dir_entry *mcdi_dir);
+
 #endif /* __MTK_MCDI_PROFILE_H__ */

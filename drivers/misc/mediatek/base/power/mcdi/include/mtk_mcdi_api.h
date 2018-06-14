@@ -46,12 +46,6 @@ system_idle_hint_request(unsigned int id, bool value)
 	return false;
 }
 
-bool __attribute__((weak))
-mcdi_is_buck_off(int cluster_idx)
-{
-	return false;
-}
-
 void __attribute__((weak))
 mcdi_pause(unsigned int id, bool paused)
 {

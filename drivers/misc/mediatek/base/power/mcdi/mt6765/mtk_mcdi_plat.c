@@ -30,6 +30,17 @@ static int cluster_idx_map[NF_CPU] = {
 	1
 };
 
+static int cpu_type_idx_map[NF_CPU] = {
+	CPU_TYPE_L,
+	CPU_TYPE_L,
+	CPU_TYPE_L,
+	CPU_TYPE_L,
+	CPU_TYPE_LL,
+	CPU_TYPE_LL,
+	CPU_TYPE_LL,
+	CPU_TYPE_LL
+};
+
 static unsigned int cpu_cluster_pwr_stat_map[NF_PWR_STAT_MAP_TYPE][NF_CPU] = {
 	[ALL_CPU_IN_CLUSTER] = {
 		0x000F,     /* Cluster 0 */
@@ -68,7 +79,7 @@ unsigned int get_pwr_stat_check_map(int type, int idx)
 	if (!(type >= 0 && type < NF_PWR_STAT_MAP_TYPE))
 		return 0;
 
-	if (!(idx >= 0 && idx < NF_CPU))
+	if (cpu_is_invalid(idx))
 		return 0;
 
 	return cpu_cluster_pwr_stat_map[type][idx];
@@ -76,8 +87,8 @@ unsigned int get_pwr_stat_check_map(int type, int idx)
 
 int cluster_idx_get(int cpu)
 {
-	if (!(cpu >= 0 && cpu < NF_CPU)) {
-		WARN_ON(!(cpu >= 0 && cpu < NF_CPU));
+	if (cpu_is_invalid(cpu)) {
+		WARN_ON(cpu_is_invalid(cpu));
 
 		return 0;
 	}
@@ -85,16 +96,17 @@ int cluster_idx_get(int cpu)
 	return cluster_idx_map[cpu];
 }
 
-/* can't control buck */
-unsigned int mcdi_get_buck_ctrl_mask(void)
+int cpu_type_idx_get(int cpu)
 {
-	return 0;
+	if (unlikely(cpu_is_invalid(cpu)))
+		return 0;
+
+	return cpu_type_idx_map[cpu];
 }
 
 void mcdi_status_init(void)
 {
 	set_mcdi_enable_status(true);
-	set_mcdi_buck_off_mask(0);
 }
 
 void mcdi_of_init(void **base)

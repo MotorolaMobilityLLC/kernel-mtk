@@ -22,3 +22,4 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/$(CONFIG_MTK_PLA
 obj-y += mtk_mcdi_main.o
 obj-y += mtk_mcdi_util.o
 obj-y += mtk_mcdi_profile.o
+obj-y += mtk_mcdi_cpc.o

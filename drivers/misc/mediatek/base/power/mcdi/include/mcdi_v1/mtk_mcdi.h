@@ -16,6 +16,9 @@
 
 enum {
 	MCDI_SMC_EVENT_ASYNC_WAKEUP_EN = 0,
+	MCDI_SMC_EVENT_DUMP_TRACE_DATA,
+	MCDI_SMC_EVENT_LAST_CORE_REQ,
+	MCDI_SMC_EVENT_LAST_CORE_CLR,
 
 	NF_MCDI_SMC_EVENT
 };
@@ -30,7 +33,6 @@ int wfi_enter(int cpu);
 int mcdi_enter(int cpu);
 bool _mcdi_task_pause(bool paused);
 void mcdi_avail_cpu_mask(unsigned int cpu_mask);
-bool is_cpu_pwr_on_event_pending(void);
 void _mcdi_cpu_iso_mask(unsigned int iso_mask);
 void mcdi_wakeup_all_cpu(void);
 bool __mcdi_pause(unsigned int id, bool paused);
