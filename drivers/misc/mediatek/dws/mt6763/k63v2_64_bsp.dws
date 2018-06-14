@@ -1851,7 +1851,7 @@
                 <in>true</in>
                 <out>false</out>
                 <out_high>false</out_high>
-                <smt>false</smt>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio134>
             <gpio135>
