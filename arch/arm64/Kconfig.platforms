@@ -159,7 +159,6 @@ config MACH_MT6765
 	select MTK_DFD_INTERNAL_DUMP
 	select MTK_PLAT_SRAM_FLAG
 	select MTK_L2C_PARITY_CHECK
-	select DEBUG_TIMEKEEPING
 	help
 	  This enables support for MediaTek MT6765
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
@@ -203,7 +202,6 @@ config MACH_MT6761
 	select MTK_PLAT_SRAM_FLAG
 	select MTK_SYSTRACKER_V2
 	select MTK_L2C_PARITY_CHECK
-	select DEBUG_TIMEKEEPING
 	help
 	  This enables support for MediaTek MT6761
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
