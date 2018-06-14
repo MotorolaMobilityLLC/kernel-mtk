@@ -197,10 +197,13 @@
 
 
 
-extern	int main_SOutEx(u8 slaveAddress, u8 *dat, int size);
-extern	int main_SInEx(u8 slaveAddress, u8 *dat, int size, u8 *ret, int ret_size);
+extern int main_SOutEx(unsigned char slaveAddress,
+		unsigned char *dat, int size);
+extern int main_SInEx(unsigned char slaveAddress,
+		unsigned char *dat, int size,
+		unsigned char *ret, int ret_size);
 
-void main_AF_TARGET(u16 target);
+void main_AF_TARGET(unsigned short target);
 int BU64748_main_Initial(void);
-u16 bu64748_main_af_cur_pos(void);
+unsigned short bu64748_main_af_cur_pos(void);
 #endif

@@ -196,10 +196,13 @@
 #define _M_F6_FIRMVER  0xF6
 #define _M_F7_FBAF_STS  0xF7
 
-extern	int main2_SOutEx(u8 slaveAddress, u8 *dat, int size);
-extern	int main2_SInEx(u8 slaveAddress, u8 *dat, int size, u8 *ret, int ret_size);
+extern int main2_SOutEx(unsigned char slaveAddress,
+		unsigned char *dat, int size);
+extern int main2_SInEx(unsigned char slaveAddress,
+		unsigned char *dat, int size,
+		unsigned char *ret, int ret_size);
 
-void main2_AF_TARGET(u16 target);
+void main2_AF_TARGET(unsigned short target);
 int BU64748_main2_Initial(void);
-u16 bu64748_main2_af_cur_pos(void);
+unsigned short bu64748_main2_af_cur_pos(void);
 #endif
