@@ -5731,6 +5731,11 @@ static int __init battery_probe(struct platform_device *dev)
 			lbat_user_register(&lowbat_service, "fuel gauge",
 				fg_cust_data.vbat2_det_voltage3 / 10, fg_cust_data.vbat2_det_voltage1 / 10,
 				fg_cust_data.vbat2_det_voltage2 / 10, fg_update_sw_low_battery_check);
+			lbat_user_set_debounce(&lowbat_service,
+				fg_cust_data.vbat2_det_time * 1000,
+				fg_cust_data.vbat2_det_counter,
+				fg_cust_data.vbat2_det_time * 1000,
+				fg_cust_data.vbat2_det_counter);
 		}
 	}
 
