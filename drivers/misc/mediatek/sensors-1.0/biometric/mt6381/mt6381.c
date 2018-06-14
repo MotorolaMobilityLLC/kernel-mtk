@@ -530,18 +530,22 @@ static int bio_thread_stress(void *arg)
 				}
 			}
 			raw_data = kzalloc(sizeof(int) * VSM_SRAM_LEN, GFP_KERNEL);
-			vsm_driver_read_sram(VSM_SRAM_EKG, raw_data, NULL, &length);
-			for (i = 0; i < length; i++) {
-				len = sprintf(str_buf, "%d\n",
-					raw_data[i] >= 0x400000 ? raw_data[i] - 0x800000 : raw_data[i]);
-				size = bio_file_write(ekg_filp, 0, str_buf, len);
-			}
-			vsm_driver_read_sram(VSM_SRAM_PPG2, raw_data, NULL, &length);
-			for (i = 0; i < length; i += 2) {
-				len = sprintf(str_buf, "%d, %d\n",
-					raw_data[i] >= 0x400000 ? raw_data[i] - 0x800000 : raw_data[i],
-					raw_data[i + 1] >= 0x400000 ? raw_data[i + 1] - 0x800000 : raw_data[i + 1]);
-				size = bio_file_write(ppg_filp, 0, str_buf, len);
+			if (raw_data != NULL) {
+				vsm_driver_read_sram(VSM_SRAM_EKG, raw_data, NULL, &length);
+				for (i = 0; i < length; i++) {
+					len = sprintf(str_buf, "%d\n",
+						raw_data[i] >= 0x400000 ? raw_data[i] - 0x800000 : raw_data[i]);
+					size = bio_file_write(ekg_filp, 0, str_buf, len);
+				}
+				vsm_driver_read_sram(VSM_SRAM_PPG2, raw_data, NULL, &length);
+				for (i = 0; i < length; i += 2) {
+					len = sprintf(str_buf, "%d, %d\n",
+						raw_data[i] >= 0x400000 ? raw_data[i] - 0x800000 : raw_data[i],
+						raw_data[i + 1] >= 0x400000 ?
+						raw_data[i + 1] - 0x800000 : raw_data[i + 1]);
+					size = bio_file_write(ppg_filp, 0, str_buf, len);
+				}
+				kfree(raw_data);
 			}
 		} else {
 			if (ekg_filp != NULL) {
