@@ -95,6 +95,56 @@
 
 static struct usb_host_endpoint pre_hep;
 static u8 dynamic_fifo_total_slot = 15;
+
+enum {
+	TX_OPS_PIO,
+	TX_OPS_DMAMODE0,
+	TX_OPS_DMAMODE1,
+	TX_OPS_DMAMODE1_SHORT,
+};
+static int last_tx_ops;
+static int last_tx_len;
+static u8 last_c_size;
+void dump_tx_ops(u8 ep_num)
+{
+	u8 c_size;
+	void __iomem *mbase = mtk_musb->mregs;
+
+	musb_writeb(mbase, MUSB_INDEX, ep_num);
+	c_size = musb_read_txfifosz(mbase);
+	DBG(0, "last_tx_ops<%d>, last_tx_len<%d> c_size<%x, %x>\n",
+			last_tx_ops, last_tx_len, last_c_size, c_size);
+}
+void musb_host_tx_db_enable(struct musb *musb,
+		u8 epnum, bool enable, int ops, int len)
+{
+	u8 c_size;
+	void __iomem *mbase = musb->mregs;
+	bool cur_dpb;
+	bool need_update;
+
+	musb_writeb(musb->mregs, MUSB_INDEX, epnum);
+	c_size = musb_read_txfifosz(mbase);
+	cur_dpb = c_size & MUSB_FIFOSZ_DPB;
+
+	if (enable && !cur_dpb) {
+		c_size |= MUSB_FIFOSZ_DPB;
+		need_update = true;
+	} else if (!enable && cur_dpb) {
+		c_size &= ~(MUSB_FIFOSZ_DPB);
+		need_update = true;
+	}
+
+	if (need_update) {
+		DBG(1, "new c_size<%x>\n", c_size);
+		musb_write_txfifosz(mbase, c_size);
+	}
+
+	last_tx_ops = ops;
+	last_tx_len = len;
+	last_c_size = c_size;
+}
+
 int musb_host_alloc_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 {
 	void __iomem *mbase = musb->mregs;
@@ -120,7 +170,9 @@ int musb_host_alloc_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 		if (musb_host_db_enable && qh->type == USB_ENDPOINT_XFER_BULK) {
 			request_fifo_sz = 1024;
 			fifo_unit_nr = 2;
-			c_size = 6 | MUSB_FIFOSZ_DPB;
+			c_size = 6;
+			/* mark double buffer used */
+			qh->db_used = true;
 		} else {
 		request_fifo_sz = 512;
 		fifo_unit_nr = 1;
@@ -335,7 +387,7 @@ static void musb_h_ep0_flush_fifo(struct musb_hw_ep *ep)
  * Start transmit. Caller is responsible for locking shared resources.
  * musb must be locked.
  */
-void wait_tx_done(u8 epnum, int timeout_ns)
+void wait_tx_done(u8 epnum, unsigned int timeout_ns)
 {
 	u16 txcsr;
 	u16 int_tx;
@@ -395,8 +447,8 @@ static inline void musb_h_tx_start(struct musb_hw_ep *ep)
 				| MUSB_TXCSR_H_WZC_BITS;
 		musb_writew(ep->regs, MUSB_TXCSR, txcsr);
 
-		if (musb_host_db_workaround)
-			wait_tx_done(ep->epnum, 5000000);
+		if (musb_host_db_workaround2)
+			wait_tx_done(ep->epnum, 2000000000);
 	} else {
 		txcsr = MUSB_CSR0_H_DIS_PING
 				| MUSB_CSR0_H_SETUPPKT
@@ -994,6 +1046,7 @@ static bool musb_tx_dma_program(struct dma_controller *dma,
 	u16 pkt_size = qh->maxpacket;
 	u16 csr;
 	u8 mode;
+	bool is_short = !!(length % pkt_size);
 
 #if 1
 	if (length > channel->max_len)
@@ -1025,6 +1078,29 @@ static bool musb_tx_dma_program(struct dma_controller *dma,
 	 */
 	mode = (urb->transfer_flags & URB_ZERO_PACKET) ? 1 : 0;
 #endif
+
+	if (qh->db_used) {
+		switch (mode) {
+		case 0:
+			musb_host_tx_db_enable(mtk_musb, hw_ep->epnum,
+					false, TX_OPS_DMAMODE0, length);
+			break;
+		case 1:
+			musb_host_tx_db_enable(mtk_musb, hw_ep->epnum,
+					true, TX_OPS_DMAMODE1, length);
+			break;
+		default:
+			break;
+		}
+	}
+
+	/* to avoid unexpected tx irq */
+	if (musb_host_db_workaround1
+			&& qh->db_used
+			&& mode == 1
+			&& is_short)
+		musb_host_tx_db_enable(mtk_musb, hw_ep->epnum,
+				false, TX_OPS_DMAMODE1_SHORT, length);
 
 	DBG(4, "musb_tx_dma_program,TXCSR=0x%x\r\n"
 		, musb_readw(epio, MUSB_TXCSR));
@@ -1077,6 +1153,14 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 				qh->h_addr_reg, qh->h_port_reg, len);
 
 	musb_ep_select(mbase, epnum);
+
+	if (epnum && is_out) {
+		csr = musb_readw(epio, MUSB_TXCSR);
+		if (csr & (MUSB_TXCSR_FIFONOTEMPTY |
+					MUSB_TXCSR_TXPKTRDY))
+			DBG(0, "ERROR!packet still in FIFO, CSR %04x\n",
+					csr);
+	}
 
 	if (is_out && !len) {
 		use_dma = 0;
@@ -1197,7 +1281,12 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 				(dma_controller, hw_ep, qh, urb, offset, len))
 			load_count = 0;
 
+		if (load_count && qh->db_used)
+			musb_host_tx_db_enable(musb, epnum,
+					false, TX_OPS_PIO, len);
+
 		if (load_count) {
+
 			/* PIO to load FIFO */
 			qh->segsize = load_count;
 			if (!buf) {
@@ -2017,10 +2106,15 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 	musb_write_fifo(hw_ep, length, urb->transfer_buffer + offset);
 	qh->segsize = length;
 
+	host_tx_refcnt_inc(epnum);
+
 	musb_ep_select(mbase, epnum);
 	musb_writew(epio,
 		MUSB_TXCSR, MUSB_TXCSR_H_WZC_BITS
 		| MUSB_TXCSR_TXPKTRDY);
+
+	if (musb_host_db_workaround2)
+		wait_tx_done(epnum, 2000000000);
 }
 
 
