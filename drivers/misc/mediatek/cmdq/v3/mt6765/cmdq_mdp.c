@@ -502,6 +502,12 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 			smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "MDPSRAM",
 				true);
 #endif
+#if defined(CONFIG_MACH_MT6761)
+		/* Set WROT SRAM DELSEL */
+		CMDQ_REG_SET32(MMSYS_CONFIG_BASE + 0x8C0, 0xFFFFFFFE);
+		CMDQ_REG_SET32(MMSYS_CONFIG_BASE + 0x860, 0x2D5B24F3);
+		CMDQ_REG_SET32(MMSYS_CONFIG_BASE + 0x864, 0x0000002B);
+#endif
 		cmdq_mdp_enable_clock_MDP_WROT0(enable);
 		if (enable) {
 			/* Set MDP_WROT0 DCM enable */
@@ -1131,6 +1137,45 @@ static void cmdq_mdp_enable_common_clock(bool enable)
 #endif	/* CMDQ_PWR_AWARE */
 }
 
+#if defined(CONFIG_MACH_MT6761)
+static void cmdq_mdp_check_hw_status(struct cmdqRecStruct *handle)
+{
+	unsigned long register_address;
+	uint32_t register_value;
+	uint64_t engineFlag;
+
+	if (!handle) {
+		CMDQ_ERR("handle is NULL\n");
+		return;
+	}
+
+	engineFlag = handle->engineFlag;
+
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_WROT0)) {
+		register_address = MMSYS_CONFIG_BASE + 0x8C0;
+		register_value = CMDQ_REG_GET32(register_address);
+		if (register_value != 0xFFFFFFFE)
+			CMDQ_ERR(
+				"0x140008C0 = 0x%08x, needs to be 0xFFFFFFFE\n",
+				register_value);
+
+		register_address = MMSYS_CONFIG_BASE + 0x860;
+		register_value = CMDQ_REG_GET32(register_address);
+		if (register_value != 0x2D5B24F3)
+			CMDQ_ERR(
+				"0x14000860 = 0x%08x, needs to be 0x2D5B24F3\n",
+				register_value);
+
+		register_address = MMSYS_CONFIG_BASE + 0x864;
+		register_value = CMDQ_REG_GET32(register_address);
+		if (register_value != 0x0000002B)
+			CMDQ_ERR(
+				"0x14000864 = 0x%08x, needs to be 0x0000002B\n",
+				register_value);
+	}
+}
+#endif
+
 void cmdq_mdp_platform_function_setting(void)
 {
 	struct cmdqMDPFuncStruct *pFunc = cmdq_mdp_get_func();
@@ -1161,4 +1206,7 @@ void cmdq_mdp_platform_function_setting(void)
 	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits;
 	pFunc->testcaseClkmgrMdp = testcase_clkmgr_mdp;
 	pFunc->mdpEnableCommonClock = cmdq_mdp_enable_common_clock;
+#if defined(CONFIG_MACH_MT6761)
+	pFunc->CheckHwStatus = cmdq_mdp_check_hw_status;
+#endif
 }
