@@ -106,6 +106,7 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	if (cgroup_idx >= NR_CGROUP) {
 		mutex_unlock(&boost_eas);
 		pr_debug(" cgroup_idx >= NR_CGROUP, error\n");
+		perfmgr_trace_printk("cpu_ctrl", "cgroup_idx >= NR_CGROUP\n");
 		return -1;
 	}
 
@@ -114,9 +115,10 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 			kicker, cgroup_idx, value);
 
 	/*ptr return error EIO:I/O error */
-	if (len < 0)
+	if (len < 0) {
+		perfmgr_trace_printk("cpu_ctrl", "return -EIO 1\n");
 		return -EIO;
-
+	}
 	for (i = 0; i < EAS_MAX_KIR; i++) {
 		if (boost_value[cgroup_idx][i] == 0) {
 			clear_bit(i, &policy_mask[cgroup_idx]);
@@ -154,15 +156,17 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	len += snprintf(msg + len, sizeof(msg) - len, "{%d} ",
 			final_boost_value);
 	/*ptr return error EIO:I/O error */
-	if (len < 0)
+	if (len < 0) {
+		perfmgr_trace_printk("cpu_ctrl", "return -EIO 2\n");
 		return -EIO;
-
+	}
 	len1 += snprintf(msg1 + len1, sizeof(msg1) - len1, "[0x %lx] ",
 			policy_mask[cgroup_idx]);
 
-	if (len1 < 0)
+	if (len1 < 0) {
+		perfmgr_trace_printk("cpu_ctrl", "return -EIO 3\n");
 		return -EIO;
-
+	}
 	if (!debug)
 		boost_write_for_perf_idx(cgroup_idx,
 				current_boost_value[cgroup_idx]);
