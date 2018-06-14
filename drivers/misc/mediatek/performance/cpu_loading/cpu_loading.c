@@ -291,13 +291,13 @@ static const struct file_operations cpu_loading_ ## name ## _proc_fops = { \
 
 #define PROC_ENTRY(name) {__stringify(name), &cpu_loading_ ## name ## _proc_fops}
 
-static int cpu_loading_onof_proc_show(struct seq_file *m, void *v)
+static int cpu_loading_onoff_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", onoff);
 	return 0;
 }
 
-static ssize_t cpu_loading_onof_proc_write(struct file *filp, const char *ubuf,
+static ssize_t cpu_loading_onoff_proc_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
 	int val;
@@ -507,7 +507,7 @@ static int cpu_loading_prev_cpu_loading_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "%d\n", prev_cpu_loading);
 	return 0;
 }
-PROC_FOPS_RW(onof);
+PROC_FOPS_RW(onoff);
 PROC_FOPS_RW(poltime_secs);
 PROC_FOPS_RW(poltime_nsecs);
 PROC_FOPS_RW(overThrhld);
@@ -552,7 +552,7 @@ static int __init init_cpu_loading(void)
 
 
 	const struct pentry entries[] = {
-		PROC_ENTRY(onof),
+		PROC_ENTRY(onoff),
 		PROC_ENTRY(poltime_secs),
 		PROC_ENTRY(poltime_nsecs),
 		PROC_ENTRY(overThrhld),
