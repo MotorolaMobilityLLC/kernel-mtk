@@ -28,6 +28,11 @@
 
 #define KPD_NAME	"mtk-kpd"
 
+#ifdef CONFIG_LONG_PRESS_MODE_EN
+struct timer_list Long_press_key_timer;
+atomic_t vol_down_long_press_flag = ATOMIC_INIT(0);
+#endif
+
 int kpd_klog_en;
 void __iomem *kp_base;
 static unsigned int kp_irqnr;
@@ -140,6 +145,14 @@ static int kpd_delete_attr(struct device_driver *driver)
 
 	return err;
 }
+/****************************************/
+#ifdef CONFIG_LONG_PRESS_MODE_EN
+void vol_down_long_press(unsigned long pressed)
+{
+	atomic_set(&vol_down_long_press_flag, 1);
+}
+#endif
+/*****************************************/
 
 #ifdef CONFIG_KPD_PWRKEY_USE_PMIC
 void kpd_pwrkey_pmic_handler(unsigned long pressed)
@@ -204,6 +217,24 @@ static void kpd_keymap_handler(unsigned long data)
 			input_report_key(kpd_input_dev, linux_keycode, pressed);
 			input_sync(kpd_input_dev);
 			kpd_print("report Linux keycode = %d\n", linux_keycode);
+
+#ifdef CONFIG_LONG_PRESS_MODE_EN
+			if (pressed) {
+				init_timer(&Long_press_key_timer);
+				Long_press_key_timer.expires = jiffies + 5*HZ;
+				Long_press_key_timer.data =
+					(unsigned long)pressed;
+				Long_press_key_timer.function =
+					vol_down_long_press;
+				add_timer(&Long_press_key_timer);
+			} else {
+				del_timer_sync(&Long_press_key_timer);
+			}
+			if (!pressed &&
+				atomic_read(&vol_down_long_press_flag)) {
+				atomic_set(&vol_down_long_press_flag, 0);
+			}
+#endif
 		}
 	}
 

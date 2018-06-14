@@ -80,3 +80,15 @@ config MTK_MRDUMP_KEY
 	  The memory dump key is implemented via eint-rst-key,
 	  and used for debug purpose. The circuit layout must
 	  have phyiscal eint-rst-key key on the main board.
+
+
+config LONG_PRESS_MODE_EN
+	bool "MediaTek dump reset key support"
+	default n
+	help
+	  Say Y if you want to enable mrdump key SMT item support.
+
+	  If you don't know what to do here, say N.
+
+	  The memory dump key includes power key,homerst key and
+	  volume down key,and used for debug purpose.
