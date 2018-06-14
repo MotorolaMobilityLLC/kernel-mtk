@@ -2419,15 +2419,15 @@ static unsigned long migrate_lru_pages(unsigned long *nr, enum lru_list lru,
 
 	/* Migrate active anon LRU when inactive < active */
 	src_zone = &pgdat->node_zones[sc->reclaim_idx];
-	if (zone_page_state(src_zone, NR_INACTIVE_ANON) <
-			zone_page_state(src_zone, NR_ACTIVE_ANON))
+	if (zone_page_state(src_zone, NR_ZONE_INACTIVE_ANON) <
+			zone_page_state(src_zone, NR_ZONE_ACTIVE_ANON))
 		lru = LRU_ACTIVE_ANON;
 
 	/* If no available swap space, double the number of page migration */
 	if (get_nr_swap_pages() == 0)
 		nr_to_scan = SWAP_CLUSTER_MAX << 1;
 
-	nr_to_scan = min(zone_page_state(src_zone, NR_LRU_BASE + lru),
+	nr_to_scan = min(zone_page_state(src_zone, NR_ZONE_LRU_BASE + lru),
 			nr_to_scan);
 
 	/* No pages for scanning */
