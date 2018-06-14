@@ -101,6 +101,7 @@ static void mdee_dumper_info_dump_v1(struct ccci_fsm_ee *mdee)
 	struct mdee_dumper_v1 *dumper = mdee->dumper_obj;
 	int md_id = mdee->md_id;
 	char *ex_info;/* [EE_BUF_LEN] = ""; */
+	char *ex_info_temp = NULL;
 	/* [EE_BUF_LEN] = "\n[Others] May I-Bit dis too long\n"; */
 	char *i_bit_ex_info = NULL;
 	char buf_fail[] = "Fail alloc mem for exception\n";
@@ -272,13 +273,20 @@ static void mdee_dumper_info_dump_v1(struct ccci_fsm_ee *mdee)
 	}
 
 	/* Add additional info */
+	ex_info_temp = kmalloc(EE_BUF_LEN, GFP_ATOMIC);
+	if (ex_info_temp == NULL) {
+		CCCI_ERROR_LOG(md_id, FSM,
+			"Fail alloc Mem for ex_info_temp!\n");
+		goto err_exit;
+	}
+	snprintf(ex_info_temp, EE_BUF_LEN, "%s", ex_info);
 	switch (dumper->more_info) {
 	case MD_EE_CASE_ONLY_SWINT:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info,
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info_temp,
 			"\nOnly SWINT case\n");
 		break;
 	case MD_EE_CASE_ONLY_EX:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info,
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info_temp,
 			"\nOnly EX case\n");
 		break;
 	case MD_EE_CASE_NO_RESPONSE:
@@ -298,23 +306,24 @@ static void mdee_dumper_info_dump_v1(struct ccci_fsm_ee *mdee)
 	}
 
 	/* get ELM_status field from MD side */
+	snprintf(ex_info_temp, EE_BUF_LEN, "%s", ex_info);
 	c = dumper->ex_info.envinfo.ELM_status;
 	CCCI_ERROR_LOG(md_id, FSM, "ELM_status: %x\n", c);
 	switch (c) {
 	case 0xFF:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info,
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info_temp,
 			"\nno ELM info\n");
 		break;
 	case 0xAE:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info,
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info_temp,
 			"\nELM rlat:FAIL\n");
 		break;
 	case 0xBE:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info,
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info_temp,
 			"\nELM wlat:FAIL\n");
 		break;
 	case 0xDE:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info,
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info_temp,
 			"\nELM r/wlat:PASS\n");
 		break;
 	default:
@@ -364,6 +373,7 @@ err_exit:
 	else
 		ccci_aed_v1(mdee, dump_flag, ex_info, db_opt);
 	kfree(ex_info);
+	kfree(ex_info_temp);
 	kfree(i_bit_ex_info);
 }
 

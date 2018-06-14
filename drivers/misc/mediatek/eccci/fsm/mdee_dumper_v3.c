@@ -112,6 +112,7 @@ static void mdee_output_debug_info_to_buf(struct ccci_fsm_ee *mdee,
 {
 	int md_id = mdee->md_id;
 	struct ccci_mem_layout *mem_layout;
+	char *ex_info_temp;
 
 	switch (debug_info->type) {
 	case MD_EX_CLASS_ASSET:
@@ -146,10 +147,17 @@ static void mdee_output_debug_info_to_buf(struct ccci_fsm_ee *mdee,
 			debug_info->dump_fatal.offender,
 			debug_info->dump_fatal.ExStr,
 			debug_info->dump_fatal.fatal_fname);
+		ex_info_temp = kmalloc(EE_BUF_LEN_UMOLY, GFP_ATOMIC);
+		if (ex_info_temp == NULL) {
+			CCCI_ERROR_LOG(md_id, FSM,
+				"Fail alloc Mem for ex_info_temp!\n");
+			break;
+		}
+		snprintf(ex_info_temp, EE_BUF_LEN_UMOLY, "%s", ex_info);
 		if (debug_info->dump_fatal.err_code1 == 0x3104) {
 			mem_layout = ccci_md_get_mem(mdee->md_id);
 			snprintf(ex_info, EE_BUF_LEN_UMOLY,
-			"%s%s, MD base = 0x%08X\n\n", ex_info,
+			"%s%s, MD base = 0x%08X\n\n", ex_info_temp,
 			mdee->ex_mpu_string,
 			(unsigned int)mem_layout->md_bank0.base_ap_view_phy);
 			memset(mdee->ex_mpu_string, 0x0,
@@ -161,6 +169,7 @@ static void mdee_output_debug_info_to_buf(struct ccci_fsm_ee *mdee,
 			debug_info->dump_fatal.err_code2,
 			debug_info->dump_fatal.err_code3,
 			debug_info->dump_fatal.offender);
+		kfree(ex_info_temp);
 		break;
 	default:
 		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s\n[%s]\n",
@@ -175,6 +184,7 @@ static void mdee_info_dump_v3(struct ccci_fsm_ee *mdee)
 {
 	int md_id = mdee->md_id;
 	char *ex_info; /* aed api par4 */
+	char *ex_info_temp = NULL;
 	int db_opt = (DB_OPT_DEFAULT | DB_OPT_FTRACE); /* aed api par5 */
 	int dump_flag = 0;
 	char *i_bit_ex_info = NULL;
@@ -196,12 +206,19 @@ static void mdee_info_dump_v3(struct ccci_fsm_ee *mdee)
 		CCCI_ERROR_LOG(md_id, FSM, "Fail alloc Mem for ex_info!\n");
 		goto err_exit;
 	}
+	ex_info_temp = kzalloc(AED_STR_LEN, GFP_ATOMIC);
+	if (ex_info_temp == NULL) {
+		CCCI_ERROR_LOG(md_id, FSM,
+			"Fail alloc Mem for ex_info_temp!\n");
+		goto err_exit;
+	}
 
 	switch (dumper->more_info) {
 	case MD_EE_CASE_ONLY_EX:
 	case MD_EE_CASE_ONLY_SWINT:
 		mdee_output_debug_info_to_buf(mdee, debug_info, ex_info);
-		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info,
+		snprintf(ex_info_temp, EE_BUF_LEN_UMOLY, "%s", ex_info);
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info_temp,
 			mdee_more_inf_str[dumper->more_info]);
 		break;
 	case MD_EE_CASE_NO_RESPONSE:
@@ -219,9 +236,11 @@ static void mdee_info_dump_v3(struct ccci_fsm_ee *mdee)
 		break;
 	}
 
-	if (debug_info->ELM_status != NULL)
-		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info,
+	if (debug_info->ELM_status != NULL) {
+		snprintf(ex_info_temp, EE_BUF_LEN_UMOLY, "%s", ex_info);
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info_temp,
 			debug_info->ELM_status);/* ELM status */
+	}
 
 	CCCI_MEM_LOG_TAG(md_id, FSM, "Dump MD EX log, 0x%x, 0x%x\n",
 		dumper->more_info, debug_info->par_data_source);
@@ -252,6 +271,7 @@ err_exit:
 		ccci_aed_v3(mdee, dump_flag, ex_info, db_opt);
 
 	kfree(ex_info);
+	kfree(ex_info_temp);
 	kfree(i_bit_ex_info);
 
 }
@@ -306,6 +326,7 @@ static int mdee_set_core_name(int md_id, char *core_name,
 	int core_id;
 	u8 temp_sys_inf_1, temp_sys_inf_2;
 	EX_BRIEF_MAININFO_T *brief_info;
+	char core_name_temp[MD_CORE_NAME_DEBUG];
 
 	for (core_id = 0; core_id < ex_overview->core_num; core_id++) {
 		if (ex_overview->main_reson[core_id].is_offender) {
@@ -321,8 +342,10 @@ static int mdee_set_core_name(int md_id, char *core_name,
 		brief_info =  &ex_overview->ex_info;
 		temp_sys_inf_1 = brief_info->system_info1;
 		temp_sys_inf_2 = brief_info->system_info2;
+		snprintf(core_name_temp,
+			MD_CORE_NAME_DEBUG, "%s", core_name);
 		snprintf(core_name, MD_CORE_NAME_DEBUG,
-		"%s_core%d,vpe%d,tc%d(VPE%d)", core_name,
+		"%s_core%d,vpe%d,tc%d(VPE%d)", core_name_temp,
 		(temp_sys_inf_1>>1), (temp_sys_inf_1&0x1),
 		temp_sys_inf_2, temp_sys_inf_1);
 	}
