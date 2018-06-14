@@ -1,6 +1,5 @@
 /*
- tatus.soc;
-71} Copyright (C) 2017 MediaTek Inc.
+ * Copyright (C) 2018 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -74,6 +73,11 @@ signed int battery_get_bat_avg_current(void)
 #else
 
 /* 4.9 already remove, only leave in 4.4 */
+signed int battery_get_bat_uisoc(void)
+{
+	return battery_get_uisoc();
+}
+
 signed int battery_get_bat_soc(void)
 {
 	return battery_get_soc();
