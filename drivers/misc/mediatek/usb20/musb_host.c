@@ -2868,11 +2868,6 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 
 
 	spin_lock_irqsave(&musb->lock, flags);
-	DBG(0, "urb=%p, dev%d ep%d%s\n",
-			urb,
-			usb_pipedevice(urb->pipe),
-			usb_pipeendpoint(urb->pipe),
-			is_in ? "in" : "out");
 	ret = usb_hcd_check_unlink_urb(hcd, urb, status);
 	if (ret) {
 		DBG(0, "ret<%d>\n", ret);
@@ -2885,7 +2880,11 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 		goto done;
 	}
 
-	DBG(0, "qh<%p>, ready<%d>, prev_condition<%d>, cur_qh<%d>\n",
+	DBG(0, "urb<%p>,dev<%d>,ep<%d%s>,qh<%p>,rdy<%d>,prev<%d>,cur<%d>\n",
+			urb,
+			usb_pipedevice(urb->pipe),
+			usb_pipeendpoint(urb->pipe),
+			is_in ? "in" : "out",
 			qh,
 			qh->is_ready,
 			urb->urb_list.prev != &qh->hep->urb_list,

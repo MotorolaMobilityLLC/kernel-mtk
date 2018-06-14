@@ -1966,7 +1966,7 @@ irqreturn_t musb_interrupt(struct musb *musb)
 
 					musb_host_db_workaround_cnt++;
 					ref_cnt = host_tx_refcnt_inc(ep_num);
-					DBG(0, "unexpect TX<%d> got, ref_cnt<%d>\n",
+					DBG_LIMIT(2, "unexpect TX<%d,%d>",
 							ep_num, ref_cnt);
 					skip_tx = true;
 

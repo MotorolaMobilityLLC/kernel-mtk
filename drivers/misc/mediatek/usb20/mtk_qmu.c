@@ -708,16 +708,16 @@ void mtk_qmu_stop(u8 ep_num, u8 isRx)
 	if (!isRx) {
 		if (MGC_ReadQMU16(base, MGC_O_QMU_TQCSR(ep_num)) & DQMU_QUE_ACTIVE) {
 			MGC_WriteQMU32(base, MGC_O_QMU_TQCSR(ep_num), DQMU_QUE_STOP);
-			QMU_WARN("Stop TQ %d\n", ep_num);
+			QMU_INFO("Stop TQ %d\n", ep_num);
 		} else {
-			QMU_WARN("TQ %d already inactive\n", ep_num);
+			QMU_INFO("TQ %d already inactive\n", ep_num);
 		}
 	} else {
 		if (MGC_ReadQMU16(base, MGC_O_QMU_RQCSR(ep_num)) & DQMU_QUE_ACTIVE) {
 			MGC_WriteQMU32(base, MGC_O_QMU_RQCSR(ep_num), DQMU_QUE_STOP);
-			QMU_WARN("Stop RQ %d\n", ep_num);
+			QMU_INFO("Stop RQ %d\n", ep_num);
 		} else {
-			QMU_WARN("RQ %d already inactive\n", ep_num);
+			QMU_INFO("RQ %d already inactive\n", ep_num);
 		}
 	}
 }
