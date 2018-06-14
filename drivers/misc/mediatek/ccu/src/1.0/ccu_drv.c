@@ -823,7 +823,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 			return ccu_read_info_reg(regToRead);
 		}
 	default:
-		LOG_WRN("ioctl:No such command!\n");
+		LOG_WRN("ioctl:No such command: %d!\n", cmd);
 		ret = -EINVAL;
 		break;
 	}
