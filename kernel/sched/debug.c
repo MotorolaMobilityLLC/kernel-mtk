@@ -483,13 +483,9 @@ static void sched_debug_header(struct seq_file *m)
 static int sched_debug_show(struct seq_file *m, void *v)
 {
 	int cpu = (unsigned long)(v - 2);
-	unsigned long flags;
 
 	if (cpu != -1) {
-		/* sched: add lock */
-		read_lock_irqsave(&tasklist_lock, flags);
 		print_cpu(m, cpu);
-		read_unlock_irqrestore(&tasklist_lock, flags);
 		SEQ_printf(m, "\n");
 	} else
 		sched_debug_header(m);
@@ -500,15 +496,11 @@ static int sched_debug_show(struct seq_file *m, void *v)
 void sysrq_sched_debug_show(void)
 {
 	int cpu;
-	unsigned long flags;
 
 	sched_debug_header(NULL);
-	/* sched: add lock */
-	read_lock_irqsave(&tasklist_lock, flags);
 	/* for_each_online_cpu(cpu) */
 	for_each_possible_cpu(cpu)
 		print_cpu(NULL, cpu);
-	read_unlock_irqrestore(&tasklist_lock, flags);
 }
 
 /*
