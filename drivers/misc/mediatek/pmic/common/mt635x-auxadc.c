@@ -1,10 +1,10 @@
 /*
  * Copyright (C) 2018 MediaTek Inc.
-
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -148,13 +148,21 @@ int auxadc_priv_read_channel(int channel)
 	return val;
 }
 
+#if defined CONFIG_MTK_PMIC_WRAP
+#define AUXADC_MAP(_adc_channel_label)				\
+	{							\
+		.adc_channel_label = _adc_channel_label,	\
+		.consumer_dev_name = "1000d000.pwrap:mt-pmic:mt635x-auxadc",\
+		.consumer_channel = "AUXADC_"_adc_channel_label,\
+	}
+#else
 #define AUXADC_MAP(_adc_channel_label)				\
 	{							\
 		.adc_channel_label = _adc_channel_label,	\
 		.consumer_dev_name = "mt-pmic:mt635x-auxadc",	\
 		.consumer_channel = "AUXADC_"_adc_channel_label,\
 	}
-
+#endif
 /* for consumer drivers */
 static struct iio_map mt635x_auxadc_default_maps[] = {
 	AUXADC_MAP("BATADC"),

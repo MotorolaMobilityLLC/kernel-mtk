@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
-
+ * Copyright (C) 2018 MediaTek Inc.
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -46,6 +46,14 @@
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6357
 #include "mt6357/mtk_regulator_codegen.h"
+#endif
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6358
+#include "mt6358/mtk_regulator_codegen.h"
+#endif
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6359
+#include "mt6359/mtk_regulator_codegen.h"
 #endif
 
 /*****************************************************************************
