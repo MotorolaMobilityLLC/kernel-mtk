@@ -2457,7 +2457,7 @@ struct rt6_info *rt6_get_dflt_router_expires(struct net_device *dev)
 	read_lock_bh(&table->tb6_lock);
 	for (rt = table->tb6_root.leaf; rt; rt = rt->dst.rt6_next) {
 		if (dev == rt->dst.dev &&
-		    ((rt->rt6i_flags & RFT_ADGE) == RTF_ADGE))
+		    ((rt->rt6i_flags & RTF_ADGE) == RTF_ADGE))
 			break;
 	}
 	if (rt)
