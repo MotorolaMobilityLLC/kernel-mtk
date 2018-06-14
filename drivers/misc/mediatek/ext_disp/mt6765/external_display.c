@@ -982,7 +982,7 @@ static int ext_disp_init_hdmi(unsigned int session)
 		init_roi = 0;
 		ret =
 		    dpmgr_path_config(pgc->dpmgr_handle, data_config,
-				      CMDQ_DISABLE);
+				      NULL);
 		EXTDMSG("ext_disp_init roi w:%d, h:%d\n",
 			data_config->dst_w, data_config->dst_h);
 	} else
