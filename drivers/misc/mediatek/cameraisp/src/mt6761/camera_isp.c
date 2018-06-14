@@ -729,6 +729,8 @@ static spinlock_t SpinLock_UserKey;
 /* ISP_M4U_TF_callback \*/
 /* (int port, unsigned int mva, void *data);*/
 
+static bool dump_smi_debug = MFALSE;
+
 /*********************************************************************
  *
  **********************************************************************/
@@ -10944,6 +10946,12 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 		if (IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] & (~STATUSX_WARNING)) {
 			log_err("ISP INT ERR_P1	0x%x\n",
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUSX]);
+			// cq_over_vsync error, smi debug
+			if (IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] &
+					ISP_IRQ_STATUSX_CQ0_VS_ERR_ST) {
+				log_err("CQ0 over vsync!\n");
+				dump_smi_debug = MTRUE;
+			}
 			g_ISPIntErr[_IRQ] |=
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUSX];
 			ISP_chkModuleSetting();
@@ -10952,6 +10960,12 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 		if (IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X] & (~STATUSX_WARNING)) {
 			log_err("ISP INT ERR_P1_D 0x%x\n",
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X]);
+
+			if (IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] &
+					ISP_IRQ_STATUSX_CQ0_VS_ERR_ST) {
+				log_err("CQ0_d over vsync!\n");
+				dump_smi_debug = MTRUE;
+			}
 			g_ISPIntErr[_IRQ_D] |=
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X];
 			log_err("tick=%u\n", (u32) arch_counter_get_cntvct());
@@ -11689,6 +11703,16 @@ static void ISP_TaskletFunc(unsigned long data)
 			IRQ_LOG_PRINTER(_IRQ, m_CurrentPPB, _LOG_INF);
 			ISP_PM_QOS_CTRL_FUNC(1, ISP_PASS1_PATH_TYPE_RAW);
 
+			if (dump_smi_debug) {
+				smi_debug_bus_hang_detect(
+					SMI_PARAM_BUS_OPTIMIZATION,
+					true,
+					false,
+					true);
+				dump_smi_debug = MFALSE;
+			}
+
+
 			/*log_inf("tke_%d",
 			 *	(sof_count[_PASS1]) ? (sof_count[_PASS1] -
 			 *			       1) :
@@ -11703,6 +11727,15 @@ static void ISP_TaskletFunc(unsigned long data)
 			 */
 			IRQ_LOG_PRINTER(_IRQ_D, m_CurrentPPB, _LOG_INF);
 			ISP_PM_QOS_CTRL_FUNC(1, ISP_PASS1_PATH_TYPE_RAW_D);
+
+			if (dump_smi_debug) {
+				smi_debug_bus_hang_detect(
+					SMI_PARAM_BUS_OPTIMIZATION,
+					true,
+					false,
+					true);
+				dump_smi_debug = MFALSE;
+			}
 			/*log_inf("dtke_%d",
 			 *	(sof_count[_PASS1_D]) ? (sof_count[_PASS1_D] -
 			 *				 1) :
