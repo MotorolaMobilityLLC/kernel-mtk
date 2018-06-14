@@ -1431,6 +1431,8 @@ static int __init init_mtsched_mon(void)
 	if (!pe)
 		return -ENOMEM;
 
+	mt_sched_monitor_test_init();
+
 	sched_mon_warn_enable = 0;
 	sched_mon_func = evt_HARDIRQ;
 	sched_mon_aee_cnt = 3;
