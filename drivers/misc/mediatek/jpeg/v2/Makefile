@@ -25,10 +25,12 @@ endif
 
 ifeq ($(CONFIG_MACH_MT6765),y)
   ccflags-y += -DSMI_CG_SUPPORT
+  ccflags-y += -DQOS_MT6765_SUPPORT
 endif
 
 ifeq ($(CONFIG_MACH_MT6761),y)
   ccflags-y += -DSMI_CG_SUPPORT
+  ccflags-y += -DQOS_MT6761_SUPPORT
 endif
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
