@@ -114,7 +114,8 @@ static snd_pcm_uframes_t snd_usb_pcm_pointer(struct snd_pcm_substream *substream
 			avail = snd_pcm_capture_avail(runtime);
 
 		if (avail >= runtime->buffer_size)
-			MTK_SND_USB_DBG_LIMIT(40, "avail<%ld>, stop_threshold<%ld>, buf_sz<%ld>, bound<%ld>",
+			MTK_SND_USB_DBG_LIMIT(3, "dir<%s>,avail<%ld>,thld<%ld>,sz<%ld>,bound<%ld>",
+					substream->stream == SNDRV_PCM_STREAM_PLAYBACK ? "out":"in",
 					avail,
 					runtime->stop_threshold,
 					runtime->buffer_size,

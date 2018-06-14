@@ -1962,15 +1962,22 @@ irqreturn_t musb_interrupt(struct musb *musb)
 				bool skip_tx = false;
 
 				if (host_tx_refcnt_dec(ep_num) < 0) {
+					static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 2);
+					static int skip_cnt;
 					int ref_cnt;
 
 					musb_host_db_workaround_cnt++;
 					ref_cnt = host_tx_refcnt_inc(ep_num);
-					DBG_LIMIT(2, "unexpect TX<%d,%d>",
-							ep_num, ref_cnt);
-					skip_tx = true;
 
-					dump_tx_ops(ep_num);
+					if (__ratelimit(&ratelimit)) {
+						DBG(0, "unexpect TX<%d,%d><%d>\n",
+								ep_num, ref_cnt, skip_cnt);
+						dump_tx_ops(ep_num);
+						skip_cnt = 0;
+					} else
+						skip_cnt++;
+
+					skip_tx = true;
 				}
 
 				if (likely(!skip_tx))
