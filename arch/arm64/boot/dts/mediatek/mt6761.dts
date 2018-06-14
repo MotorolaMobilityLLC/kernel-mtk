@@ -2733,7 +2733,11 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 #ifdef CONFIG_MTK_AVB20_SUPPORT
 			vbmeta {
 				compatible = "android,vbmeta";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
+				parts = "vbmeta,boot,system,vendor,recovery";
+#else
 				parts = "vbmeta,boot,system,vendor";
+#endif
 			};
 #endif
 			fstab {
