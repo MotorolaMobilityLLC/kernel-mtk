@@ -1007,6 +1007,7 @@ CONFIG_RT7207_ADAPTER,PROJECT,vend_jeff_chang001,new config at this commit ebc85
 CONFIG_RT9465_PWR_EN_TO_MT6336,PROJECT,,,,,,O,,O,,O
 CONFIG_RTC_CLASS,COMMON,,,y,y,y,y,y,y,y,y
 CONFIG_RTC_SYSTOHC,COMMON,,,N,N,N,N,N,N,N,N
+CONFIG_SCHED_DEBUG,USER,yt.chang,,N,N,N,N,N,N,N,N
 CONFIG_SCHED_HMP,PLATFORM,Lucas-sr.wei,,y,y,y,y,y,y,y,y
 CONFIG_SCHED_HMP_PLUS,PLATFORM,Lucas-sr.wei,,y,y,y,y,y,y,y,y
 CONFIG_SCHED_HMP_PRIO_FILTER,PLATFORM,Lucas-sr.wei,,y,y,y,y,y,y,y,y
