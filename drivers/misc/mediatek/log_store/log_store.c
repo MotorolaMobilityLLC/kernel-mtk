@@ -164,7 +164,7 @@ static int __init log_store_late_init(void)
 			+ sram_dram_buff->buf_size - 1,
 			(unsigned long long)sram_dram_buff->buf_size);
 	if (pbuff == NULL) {
-		pr_notice("log_store: ioremap failed.\n");
+		pr_notice("log_store: ioremap_wc failed.\n");
 		dram_log_store_status = BUFF_ERROR;
 		return -1;
 	}
@@ -238,7 +238,7 @@ void disable_early_log(void)
 static int __init log_store_early_init(void)
 {
 
-	sram_header = ioremap(CONFIG_MTK_DRAM_LOG_STORE_ADDR,
+	sram_header = ioremap_wc(CONFIG_MTK_DRAM_LOG_STORE_ADDR,
 		CONFIG_MTK_DRAM_LOG_STORE_SIZE);
 	dram_curlog_header = &(sram_header->dram_curlog_header);
 
