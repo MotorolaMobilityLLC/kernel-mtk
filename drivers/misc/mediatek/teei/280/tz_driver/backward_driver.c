@@ -33,6 +33,9 @@
 #define IMSG_TAG "[tz_driver]"
 #include <imsg_log.h>
 
+#define		GET_UPTIME	(1)
+#define		GET_SYSTIME	(0)
+
 struct bdrv_call_struct {
 	int bdrv_call_type;
 	struct service_handler *handler;
@@ -193,13 +196,26 @@ int __reetime_handle(struct service_handler *handler)
 	int tv_sec;
 	int tv_usec;
 	unsigned long smc_type = 2;
+	struct timespec tp;
+	int time_type = 0;
 
-	do_gettimeofday(&tv);
 	ptr = handler->param_buf;
-	tv_sec = tv.tv_sec;
-	*((int *)ptr) = tv_sec;
-	tv_usec = tv.tv_usec;
-	*((int *)ptr + 1) = tv_usec;
+	Invalidate_Dcache_By_Area((unsigned long)ptr, ptr + 4);
+	time_type = *((int *)ptr);
+	if (time_type == GET_UPTIME) {
+		get_monotonic_boottime(&tp);
+		tv_sec = tp.tv_sec;
+		*((int *)ptr) = tv_sec;
+		tv_usec = tp.tv_nsec/1000;
+		*((int *)ptr + 1) = tv_usec;
+	} else if (time_type == GET_SYSTIME) {
+		do_gettimeofday(&tv);
+		tv_sec = tv.tv_sec;
+		*((int *)ptr) = tv_sec;
+		tv_usec = tv.tv_usec;
+		*((int *)ptr + 1) = tv_usec;
+	}
+
 
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf,
 			(unsigned long)handler->param_buf + handler->size);

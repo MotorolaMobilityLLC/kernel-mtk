@@ -112,7 +112,7 @@ int fp_release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
+static long fp_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	unsigned int args_len = 0;
 	unsigned char args[16] = {0};
@@ -277,7 +277,7 @@ void fp_exit(void)
 MODULE_AUTHOR("Microtrust");
 MODULE_LICENSE("Dual BSD/GPL");
 
-module_param(fp_major, int, S_IRUGO);
+module_param(fp_major, int, 0444);
 
 module_init(fp_init);
 module_exit(fp_exit);

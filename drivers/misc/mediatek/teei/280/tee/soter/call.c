@@ -25,6 +25,7 @@
 
 #include "soter_private.h"
 #include "soter_smc.h"
+#include <teei_cancel_cmd.h>
 
 static struct tee_shm *get_msg_arg(struct tee_context *ctx, size_t num_params,
 				   struct optee_msg_arg **msg_arg,
@@ -350,4 +351,39 @@ int soter_invoke_func(struct tee_context *ctx, struct tee_ioctl_invoke_arg *arg,
 out:
 	tee_shm_free(shm);
 	return rc;
+}
+
+struct soter_cancel_struct {
+	u32 session_id;
+	u32 cancel_id;
+};
+
+int soter_cancel_func(struct tee_context *ctx, u32 cancel_id, u32 session)
+{
+	struct soter_context_data *ctxdata = ctx->data;
+	struct soter_cancel_struct cancel_param;
+	struct soter_session *sess = NULL;
+
+	if ((void *)cancel_message_buff == NULL) {
+		IMSG_ERROR("[%s][%d]cancel_message_buff is NULL!\n",
+				__func__, __LINE__);
+		return -EINVAL;
+	}
+
+	mutex_lock(&ctxdata->mutex);
+	sess = find_session(ctxdata, session);
+	mutex_unlock(&ctxdata->mutex);
+	if (sess == NULL) {
+		IMSG_ERROR("[%s][%d]session is NULL!\n",
+				__func__, __LINE__);
+		return -EINVAL;
+	}
+
+	cancel_param.session_id = session;
+	cancel_param.cancel_id = cancel_id;
+	memcpy((void *)cancel_message_buff,
+			   (void *)&cancel_param,
+			   sizeof(struct soter_cancel_struct));
+
+	return send_cancel_command(0);
 }

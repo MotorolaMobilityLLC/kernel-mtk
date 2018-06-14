@@ -364,7 +364,7 @@ void vfs_exit(void)
 MODULE_AUTHOR("MicroTrust");
 MODULE_LICENSE("Dual BSD/GPL");
 
-module_param(vfs_major, int, S_IRUGO);
+module_param(vfs_major, int, 0444);
 
 module_init(vfs_init);
 module_exit(vfs_exit);

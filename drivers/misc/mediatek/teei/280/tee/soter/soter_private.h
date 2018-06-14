@@ -57,5 +57,5 @@ int soter_open_session(struct tee_context *ctx,
 int soter_close_session(struct tee_context *ctx, u32 session);
 int soter_invoke_func(struct tee_context *ctx, struct tee_ioctl_invoke_arg *arg,
 		      struct tee_param *param);
-
+int soter_cancel_func(struct tee_context *ctx, u32 cancel_id, u32 session);
 #endif
