@@ -38,9 +38,10 @@ static DEFINE_PER_CPU(unsigned long long,  pmu_e8_count);
 
 static bool is_cpi_enabled;
 static DEFINE_MUTEX(cpi_lock);
+/* use raw type to avoid CTS simpleperf testcase fail */
 static struct perf_event_attr cpu_cycle_event_attr = {
-	.type           = PERF_TYPE_HARDWARE,
-	.config         = PERF_COUNT_HW_CPU_CYCLES,
+	.type           = PERF_TYPE_RAW,
+	.config         = 0x11,
 	.size           = sizeof(struct perf_event_attr),
 	.pinned         = 1,
 /*	.disabled       = 1, */
