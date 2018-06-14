@@ -1559,7 +1559,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <smt>false</smt>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio134>
             <gpio135>
