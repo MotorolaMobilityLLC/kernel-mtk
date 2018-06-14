@@ -1308,7 +1308,7 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 
 			config_larb[larb] |= (1 << larb_port);
 			regNew[larb][larb_port] = value =
-				(!!(port_array->ports[port] && M4U_PORT_ATTR_VIRTUAL));
+				!!port_array->ports[port] && !!M4U_PORT_ATTR_VIRTUAL;
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 			{
