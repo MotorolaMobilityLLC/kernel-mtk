@@ -3038,7 +3038,7 @@ static int32_t cmdq_core_insert_read_reg_command(struct TaskStruct *pTask,
 	 * Backup end and append cmd
 	 */
 
-	if (pTask->regCount) {
+	if (pTask->regCount && pTask->regCount <= CMDQ_MAX_DUMP_REG_COUNT) {
 		CMDQ_VERBOSE("COMMAND: allocate register output section\n");
 		/* allocate register output section */
 		if (pTask->regResults)
