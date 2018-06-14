@@ -33,6 +33,9 @@
 
 /* define device tree */
 /* TODO: modify temp device tree name */
+#ifndef DUMMY_DTNAME
+#define DUMMY_DTNAME "mediatek,flashlights_dummy"
+#endif
 #ifndef DUMMY_DTNAME_I2C
 #define DUMMY_DTNAME_I2C "mediatek,flashlights_dummy_i2c"
 #endif
@@ -47,7 +50,7 @@
 /* TODO: define brightness level and hardware timeout */
 #define DUMMY_LEVEL_NUM 2
 #define DUMMY_LEVEL_TORCH 1
-#define DUMMY_HW_TIMEOUT 800 /* ms */
+#define DUMMY_HW_TIMEOUT 100 /* ms */
 
 /* define mutex and work queue */
 static DEFINE_MUTEX(dummy_mutex);
@@ -403,10 +406,8 @@ err_node_put:
 static int dummy_i2c_probe(
 		struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct dummy_platform_data *pdata = dev_get_platdata(&client->dev);
 	struct dummy_chip_data *chip;
 	int err;
-	int i;
 
 	pr_debug("Probe start.\n");
 
@@ -425,86 +426,30 @@ static int dummy_i2c_probe(
 	}
 	chip->client = client;
 
-	/* init platform data */
-	if (!pdata) {
-		pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
-		if (!pdata) {
-			err = -ENOMEM;
-			goto err_free;
-		}
-		client->dev.platform_data = pdata;
-		err = dummy_parse_dt(&client->dev, pdata);
-		if (err)
-			goto err_free;
-	}
-	chip->pdata = pdata;
 	i2c_set_clientdata(client, chip);
 	dummy_i2c_client = client;
 
 	/* init mutex and spinlock */
 	mutex_init(&chip->lock);
 
-	/* init work queue */
-	INIT_WORK(&dummy_work, dummy_work_disable);
-
-	/* init timer */
-	hrtimer_init(&dummy_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	dummy_timer.function = dummy_timer_func;
-	dummy_timeout_ms = 100;
-
 	/* init chip hw */
 	dummy_chip_init(chip);
-
-	/* clear usage count */
-	use_count = 0;
-
-	/* register flashlight device */
-	if (pdata->channel_num) {
-		for (i = 0; i < pdata->channel_num; i++)
-			if (flashlight_dev_register_by_device_id(
-						&pdata->dev_id[i],
-						&dummy_ops)) {
-				err = -EFAULT;
-				goto err_free;
-			}
-	} else {
-		if (flashlight_dev_register(DUMMY_NAME, &dummy_ops)) {
-			err = -EFAULT;
-			goto err_free;
-		}
-	}
 
 	pr_debug("Probe done.\n");
 
 	return 0;
 
-err_free:
-	i2c_set_clientdata(client, NULL);
-	kfree(chip);
 err_out:
 	return err;
 }
 
 static int dummy_i2c_remove(struct i2c_client *client)
 {
-	struct dummy_platform_data *pdata = dev_get_platdata(&client->dev);
 	struct dummy_chip_data *chip = i2c_get_clientdata(client);
-	int i;
 
 	pr_debug("Remove start.\n");
 
 	client->dev.platform_data = NULL;
-
-	/* unregister flashlight device */
-	if (pdata && pdata->channel_num)
-		for (i = 0; i < pdata->channel_num; i++)
-			flashlight_dev_unregister_by_device_id(
-					&pdata->dev_id[i]);
-	else
-		flashlight_dev_unregister(DUMMY_NAME);
-
-	/* flush work queue */
-	flush_work(&dummy_work);
 
 	/* free resource */
 	kfree(chip);
@@ -540,7 +485,166 @@ static struct i2c_driver dummy_i2c_driver = {
 	.id_table = dummy_i2c_id,
 };
 
-module_i2c_driver(dummy_i2c_driver);
+/******************************************************************************
+ * Platform device and driver
+ *****************************************************************************/
+static int dummy_probe(struct platform_device *pdev)
+{
+	struct dummy_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	struct dummy_chip_data *chip = NULL;
+	int err;
+	int i;
+
+	pr_debug("Probe start.\n");
+
+	if (i2c_add_driver(&dummy_i2c_driver)) {
+		pr_debug("Failed to add i2c driver.\n");
+		return -1;
+	}
+
+	/* init platform data */
+	if (!pdata) {
+		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+		if (!pdata) {
+			err = -ENOMEM;
+			goto err_free;
+		}
+		pdev->dev.platform_data = pdata;
+		err = dummy_parse_dt(&pdev->dev, pdata);
+		if (err)
+			goto err_free;
+	}
+
+	/* init work queue */
+	INIT_WORK(&dummy_work, dummy_work_disable);
+
+	/* init timer */
+	hrtimer_init(&dummy_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	dummy_timer.function = dummy_timer_func;
+	dummy_timeout_ms = 100;
+
+	/* clear usage count */
+	use_count = 0;
+
+	/* register flashlight device */
+	if (pdata->channel_num) {
+		for (i = 0; i < pdata->channel_num; i++)
+			if (flashlight_dev_register_by_device_id(
+						&pdata->dev_id[i],
+						&dummy_ops)) {
+				err = -EFAULT;
+				goto err_free;
+			}
+	} else {
+		if (flashlight_dev_register(DUMMY_NAME, &dummy_ops)) {
+			err = -EFAULT;
+			goto err_free;
+		}
+	}
+
+	pr_debug("Probe done.\n");
+
+	return 0;
+err_free:
+	chip = i2c_get_clientdata(dummy_i2c_client);
+	i2c_set_clientdata(dummy_i2c_client, NULL);
+	kfree(chip);
+	return err;
+}
+
+static int dummy_remove(struct platform_device *pdev)
+{
+	struct dummy_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	int i;
+
+	pr_debug("Remove start.\n");
+
+	i2c_del_driver(&dummy_i2c_driver);
+
+	pdev->dev.platform_data = NULL;
+
+	/* unregister flashlight device */
+	if (pdata && pdata->channel_num)
+		for (i = 0; i < pdata->channel_num; i++)
+			flashlight_dev_unregister_by_device_id(
+					&pdata->dev_id[i]);
+	else
+		flashlight_dev_unregister(DUMMY_NAME);
+
+	/* flush work queue */
+	flush_work(&dummy_work);
+
+	pr_debug("Remove done.\n");
+
+	return 0;
+}
+
+#ifdef CONFIG_OF
+static const struct of_device_id dummy_of_match[] = {
+	{.compatible = DUMMY_DTNAME},
+	{},
+};
+MODULE_DEVICE_TABLE(of, dummy_of_match);
+#else
+static struct platform_device dummy_platform_device[] = {
+	{
+		.name = DUMMY_NAME,
+		.id = 0,
+		.dev = {}
+	},
+	{}
+};
+MODULE_DEVICE_TABLE(platform, dummy_platform_device);
+#endif
+
+static struct platform_driver dummy_platform_driver = {
+	.probe = dummy_probe,
+	.remove = dummy_remove,
+	.driver = {
+		.name = DUMMY_NAME,
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = dummy_of_match,
+#endif
+	},
+};
+
+static int __init flashlight_dummy_init(void)
+{
+	int ret;
+
+	pr_debug("Init start.\n");
+
+#ifndef CONFIG_OF
+	ret = platform_device_register(&dummy_platform_device);
+	if (ret) {
+		pr_info("Failed to register platform device\n");
+		return ret;
+	}
+#endif
+
+	ret = platform_driver_register(&dummy_platform_driver);
+	if (ret) {
+		pr_info("Failed to register platform driver\n");
+		return ret;
+	}
+
+	pr_debug("Init done.\n");
+
+	return 0;
+}
+
+static void __exit flashlight_dummy_exit(void)
+{
+	pr_debug("Exit start.\n");
+
+	platform_driver_unregister(&dummy_platform_driver);
+
+	pr_debug("Exit done.\n");
+}
+
+module_init(flashlight_dummy_init);
+module_exit(flashlight_dummy_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Simon Wang <Simon-TCH.Wang@mediatek.com>");

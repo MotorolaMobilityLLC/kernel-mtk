@@ -32,8 +32,8 @@
 
 /* define device tree */
 /* TODO: modify temp device tree name */
-#ifndef DUMMY_DTNAME
-#define DUMMY_DTNAME "mediatek,flashlights_dummy_gpio"
+#ifndef DUMMY_GPIO_DTNAME
+#define DUMMY_GPIO_DTNAME "mediatek,flashlights_dummy_gpio"
 #endif
 
 /* TODO: define driver name */
@@ -79,6 +79,7 @@ static int dummy_pinctrl_init(struct platform_device *pdev)
 	if (IS_ERR(dummy_pinctrl)) {
 		pr_err("Failed to get flashlight pinctrl.\n");
 		ret = PTR_ERR(dummy_pinctrl);
+		return ret;
 	}
 
 	/* TODO: Flashlight XXX pin initialization */
@@ -471,7 +472,7 @@ static int dummy_remove(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id dummy_gpio_of_match[] = {
-	{.compatible = DUMMY_DTNAME},
+	{.compatible = DUMMY_GPIO_DTNAME},
 	{},
 };
 MODULE_DEVICE_TABLE(of, dummy_gpio_of_match);
