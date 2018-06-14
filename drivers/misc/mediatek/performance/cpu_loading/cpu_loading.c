@@ -38,6 +38,7 @@
 static unsigned long poltime_nsecs; /*set nanoseconds to polling time*/
 static int poltime_secs; /*set seconds to polling time*/
 static int onoff; /*master switch*/
+static bool debug_enable; /*master switch*/
 static int over_threshold; /*threshold value for sent uevent*/
 static int under_threshold; /*threshold value for sent uevent*/
 static int uevent_enable; /*sent uevent switch*/
@@ -160,9 +161,15 @@ bool sentuevent(const char *src)
 				KOBJ_CHANGE, envp);
 		if (ret != 0) {
 			trace_cpu_loading_log("cpu_loading", "uevent failed");
+			if (debug_enable)
+				pr_debug("uevent failed");
 			return false;
 		}
-		trace_cpu_loading_log("cpu_loading", "sent uevent success");
+		if (debug_enable)
+			pr_debug("sent uevent success:%s", src);
+
+		trace_cpu_loading_log("cpu_loading",
+			 "sent uevent success:%s", src);
 	}
 
 	return true;
@@ -179,14 +186,16 @@ int update_cpu_loading(void)
 
 	trace_cpu_loading_log("cpu_loading", "update cpu_loading");
 
+	if (debug_enable)
+		pr_debug("update cpu_loading");
 	for_each_possible_cpu(j) {
 		/*idle time include iowait time*/
 		cur_idle_time[j].time = get_cpu_idle_time(j,
 				&cur_wall_time[j].time, 1);
 
 		trace_cpu_loading_log("cpu_loading",
-		"cur_idle_time[%d].time:%llu cur_wall_time[%d].time:%llu\n",
-		j, cur_idle_time[j].time, j, cur_wall_time[j].time);
+			"cur_idle_time[%d].time:%llu cur_wall_time[%d].time:%llu\n",
+			j, cur_idle_time[j].time, j, cur_wall_time[j].time);
 	}
 
 	if (reset_flag) {
@@ -205,8 +214,8 @@ int update_cpu_loading(void)
 		idle_time += cur_idle_time[i].time - prev_idle_time[i].time;
 
 		trace_cpu_loading_log("cpu_loading",
-		"cur_idle_time[%d].time:%llu cur_wall_time[%d].time:%llu\n",
-		i, cur_idle_time[i].time, i, cur_wall_time[i].time);
+			"cur_idle_time[%d].time:%llu cur_wall_time[%d].time:%llu\n",
+			i, cur_idle_time[i].time, i, cur_wall_time[i].time);
 	}
 
 	tmp_cpu_loading = div_u64((100 * (wall_time - idle_time)), wall_time);
@@ -215,7 +224,9 @@ int update_cpu_loading(void)
 	trace_cpu_loading_log("cpu_loading",
 			"tmp_cpu_loading:%d prev_cpu_loading:%d previous state:%d\n",
 			tmp_cpu_loading, prev_cpu_loading, state);
-
+	if (debug_enable)
+		pr_debug("tmp_cpu_loading:%d prev_cpu_loading:%d previous state:%d\n",
+			tmp_cpu_loading, prev_cpu_loading, state);
 	if (state == high) {
 		if (under_threshold > tmp_cpu_loading) {
 			state = low;
@@ -248,7 +259,8 @@ int update_cpu_loading(void)
 			sentuevent("lower=2");
 		}
 	}
-
+	if (debug_enable)
+		pr_debug("current state:%d\n", state);
 	trace_cpu_loading_log("cpu_loading", "current state:%d\n", state);
 	prev_cpu_loading = tmp_cpu_loading;
 	mutex_unlock(&cpu_loading_lock);
@@ -301,6 +313,7 @@ void init_cpu_loading_value(void)
 	poltime_nsecs = 0;
 	onoff = 0;
 	uevent_enable = 1;
+	debug_enable = 0;
 	prev_cpu_loading = 0;
 	reset_flag = true;
 
@@ -621,14 +634,52 @@ static int cpu_loading_prev_cpu_loading_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "%d\n", prev_cpu_loading);
 	return 0;
 }
+static int cpu_loading_debug_enable_proc_show(
+		struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", debug_enable);
+	return 0;
+}
+static ssize_t cpu_loading_debug_enable_proc_write(
+		struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	int val;
+	int ret;
+	char buf[64];
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(buf, ubuf, cnt))
+		return -EFAULT;
+
+	buf[cnt] = 0;
+	ret = kstrtoint(buf, 10, &val);
+
+	if (ret < 0)
+		return ret;
+
+	if (val > 1 || 0 > val)
+		return -EINVAL;
+
+	mutex_lock(&cpu_loading_lock);
+
+	debug_enable = val;
+
+	mutex_unlock(&cpu_loading_lock);
+
+	return cnt;
+
+}
 PROC_FOPS_RW(onoff);
 PROC_FOPS_RW(poltime_secs);
 PROC_FOPS_RW(poltime_nsecs);
 PROC_FOPS_RW(overThrhld);
 PROC_FOPS_RW(underThrhld);
 PROC_FOPS_RW(uevent_enable);
+PROC_FOPS_RW(debug_enable);
 PROC_FOPS_RO(prev_cpu_loading);
-
 /*--------------------INIT------------------------*/
 static int init_cpu_loading_kobj(void)
 {
@@ -676,6 +727,7 @@ static int __init init_cpu_loading(void)
 		PROC_ENTRY(underThrhld),
 		PROC_ENTRY(uevent_enable),
 		PROC_ENTRY(prev_cpu_loading),
+		PROC_ENTRY(debug_enable),
 	};
 	cpu_loading_dir = proc_mkdir("cpu_loading", NULL);
 
