@@ -234,22 +234,22 @@ void mtk_btag_pidlog_set_pid(struct page *p)
 }
 EXPORT_SYMBOL_GPL(mtk_btag_pidlog_set_pid);
 
-
-/* evaluate vmstat trace from global_page_state() */
+/* evaluate vmstat trace from global_node_page_state() */
 void mtk_btag_vmstat_eval(struct mtk_btag_vmstat *vm)
 {
 	int cpu;
 	struct vm_event_state *this;
 
-	vm->file_pages = ((global_page_state(NR_FILE_PAGES))
+	vm->file_pages = ((global_node_page_state(NR_FILE_PAGES))
 		<< (PAGE_SHIFT - 10));
-	vm->file_dirty = ((global_page_state(NR_FILE_DIRTY))
+	vm->file_dirty = ((global_node_page_state(NR_FILE_DIRTY))
 		<< (PAGE_SHIFT - 10));
-	vm->dirtied = ((global_page_state(NR_DIRTIED))
+	vm->dirtied = ((global_node_page_state(NR_DIRTIED))
 		<< (PAGE_SHIFT - 10));
-	vm->writeback = ((global_page_state(NR_WRITEBACK))
+	vm->writeback = ((global_node_page_state(NR_WRITEBACK))
 		<< (PAGE_SHIFT - 10));
-	vm->written = ((global_page_state(NR_WRITTEN))	<< (PAGE_SHIFT - 10));
+	vm->written = ((global_node_page_state(NR_WRITTEN))
+		<< (PAGE_SHIFT - 10));
 
 	/* file map fault */
 	vm->fmflt = 0;
