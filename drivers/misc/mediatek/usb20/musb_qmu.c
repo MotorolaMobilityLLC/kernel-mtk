@@ -508,7 +508,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 	}
 
 	if (!mtk_is_qmu_enabled(hw_ep->epnum, isRx)) {
-		DBG(0, "! mtk_is_qmu_enabled<%d,%s>\n",
+		DBG(1, "! mtk_is_qmu_enabled<%d,%s>\n",
 			hw_ep->epnum, isRx?"RXQ":"TXQ");
 
 		musb_ep_select(mbase, hw_ep->epnum);
@@ -589,8 +589,6 @@ int mtk_kick_CmdQ(struct musb *musb,
 			musb_writew(musb->mregs, MUSB_INTRTXE, intr_e);
 		}
 
-		DBG(0, "mtk_qmu_enable<%d,%s>\n",
-			hw_ep->epnum, isRx?"RXQ":"TXQ");
 		mtk_qmu_enable(musb, hw_ep->epnum, isRx);
 	}
 
