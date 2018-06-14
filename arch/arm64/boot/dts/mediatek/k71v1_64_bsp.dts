@@ -9,7 +9,7 @@
 	#size-cells = <2>;
 	ranges;
 
-	zone-movable-cma-memory {
+	zmc-temp {
 		compatible = "mediatek,zone_movable_cma";
 		size = <0 0xffc00000>;
 		alignment = <0 0x10000000>;
