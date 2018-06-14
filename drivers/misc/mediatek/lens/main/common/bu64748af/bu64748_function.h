@@ -14,9 +14,6 @@
 #ifndef __BU64748_FUNCTION_H
 #define __BU64748_FUNCTION_H
 
-typedef unsigned short u16;
-typedef unsigned char u8;
-
 #define _SLV_FBAF_ 0x76
 
 #define ADJ_OK 0
@@ -197,13 +194,15 @@ typedef unsigned char u8;
 #define _M_F6_FIRMVER 0xF6
 #define _M_F7_FBAF_STS 0xF7
 
-extern int main_SOutEx(u8 slaveAddress, u8 *dat, int size);
-extern int main_SInEx(u8 slaveAddress, u8 *dat, int size, u8 *ret,
-		      int ret_size);
+extern int main_SOutEx(unsigned char slaveAddress,
+		unsigned char *dat, int size);
+extern int main_SInEx(unsigned char slaveAddress,
+		unsigned char *dat, int size,
+		unsigned char *ret, int ret_size);
 
-void main_AF_TARGET(u16 target);
+void main_AF_TARGET(unsigned short target);
 int BU64748_main_Initial(void);
-u16 bu64748_main_af_cur_pos(void);
+unsigned short bu64748_main_af_cur_pos(void);
 void BU64748_main_soft_power_ctrl(int On);
 
 #endif

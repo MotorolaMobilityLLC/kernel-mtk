@@ -17,9 +17,10 @@
 #include <linux/delay.h>
 #include <linux/fs.h>
 
-static void I2C_func_PER_WRITE(u8 u08_adr, u16 u16_dat)
+static void I2C_func_PER_WRITE(unsigned char u08_adr,
+			unsigned short u16_dat)
 {
-	u8 out[4] = {0};
+	unsigned char out[4] = {0};
 
 	out[0] = _OP_Periphe_RW;
 	out[1] = u08_adr;
@@ -29,11 +30,11 @@ static void I2C_func_PER_WRITE(u8 u08_adr, u16 u16_dat)
 	main_SOutEx(_SLV_FBAF_, out, 4);
 }
 
-static u16 I2C_func_PER_READ(u8 u08_adr)
+static unsigned short I2C_func_PER_READ(unsigned char u08_adr)
 {
-	u8 in[2] = {0};
-	u8 read[2] = {0};
-	u16 u16_dat;
+	unsigned char in[2] = {0};
+	unsigned char read[2] = {0};
+	unsigned short u16_dat;
 
 	in[0] = _OP_Periphe_RW;
 	in[1] = u08_adr;
@@ -44,9 +45,10 @@ static u16 I2C_func_PER_READ(u8 u08_adr)
 	return u16_dat;
 }
 
-static void I2C_func_MEM_WRITE(u8 u08_adr, u16 u16_dat)
+static void I2C_func_MEM_WRITE(unsigned char u08_adr,
+			unsigned short u16_dat)
 {
-	u8 out[4];
+	unsigned char out[4];
 
 	out[0] = _OP_Memory__RW;
 	out[1] = u08_adr;
@@ -56,11 +58,11 @@ static void I2C_func_MEM_WRITE(u8 u08_adr, u16 u16_dat)
 	main_SOutEx(_SLV_FBAF_, out, 4);
 }
 
-static u16 I2C_func_MEM_READ(u8 u08_adr)
+static unsigned short I2C_func_MEM_READ(unsigned char u08_adr)
 {
-	u8 in[2] = {0};
-	u8 read[2] = {0};
-	u16 u16_dat;
+	unsigned char in[2] = {0};
+	unsigned char read[2] = {0};
+	unsigned short u16_dat;
 
 	in[0] = _OP_Memory__RW;
 	in[1] = u08_adr;
@@ -83,7 +85,7 @@ static void I2C_func_POFF_____(void)
 
 static void func_CHK_VERSION(void)
 {
-	u16 u16_dat = 0;
+	unsigned short u16_dat = 0;
 
 	u16_dat = I2C_func_PER_READ(0x5F);
 	pr_debug("[bu64748af]IC Version : 0x%x.\n", u16_dat);
@@ -156,7 +158,7 @@ static int func_PROGRAM_DOWNLOAD(void)
 {
 	int sts = ADJ_OK;
 	int ver_check = 0;
-	u16 u16_dat;
+	unsigned short u16_dat;
 
 	download(0);
 
@@ -178,7 +180,7 @@ static int func_PROGRAM_DOWNLOAD(void)
 static int func_COEF_DOWNLOAD(void)
 {
 	int sts = ADJ_OK;
-	u16 u16_dat;
+	unsigned short u16_dat;
 
 	download(1);
 
@@ -191,7 +193,7 @@ static int func_COEF_DOWNLOAD(void)
 
 static void I2C_func_DSP_START(void)
 {
-	u8 out[2] = {0};
+	unsigned char out[2] = {0};
 
 	out[0] = _OP_SpecialCMD;
 	out[1] = _cmd_8C_EI;
@@ -199,9 +201,9 @@ static void I2C_func_DSP_START(void)
 	main_SOutEx(_SLV_FBAF_, out, 2);
 }
 
-void main_AF_TARGET(u16 target)
+void main_AF_TARGET(unsigned short target)
 {
-	u8 out[3] = {0};
+	unsigned char out[3] = {0};
 
 	out[0] = 0xF2;
 	out[1] = (target >> 8) & 0xFF;
@@ -236,11 +238,11 @@ int BU64748_main_Initial(void)
 	return str;
 }
 
-u16 bu64748_main_af_cur_pos(void)
+unsigned short bu64748_main_af_cur_pos(void)
 {
-	u8 in[2] = {0};
-	u8 read[2] = {0};
-	u16 u16_dat;
+	unsigned char in[2] = {0};
+	unsigned char read[2] = {0};
+	unsigned short u16_dat;
 
 	in[0] = 0x84;
 	in[1] = 0x23;
