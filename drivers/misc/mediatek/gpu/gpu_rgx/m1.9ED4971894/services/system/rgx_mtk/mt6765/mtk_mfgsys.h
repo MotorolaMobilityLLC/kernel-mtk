@@ -87,21 +87,21 @@ typedef void (*gpufreq_power_limit_notify)(unsigned int);
 extern void INPUT_BOOST_CB(gpufreq_input_boost_notify pCB);
 extern void POWER_LIMIT_CB(gpufreq_power_limit_notify pCB);
 
-extern unsigned int (*mtk_get_gpu_loading_fp)(void arg);
-extern unsigned int (*mtk_get_gpu_block_fp)(void arg);
-extern unsigned int (*mtk_get_gpu_idle_fp)(void arg);
-extern unsigned int (*mtk_get_gpu_power_loading_fp)(void arg);
+extern unsigned int (*mtk_get_gpu_loading_fp)(void);
+extern unsigned int (*mtk_get_gpu_block_fp)(void);
+extern unsigned int (*mtk_get_gpu_idle_fp)(void);
+extern unsigned int (*mtk_get_gpu_power_loading_fp)(void);
 extern void (*mtk_enable_gpu_dvfs_timer_fp)(bool bEnable);
-extern void (*mtk_boost_gpu_freq_fp)(void arg);
+extern void (*mtk_boost_gpu_freq_fp)(void);
 extern void (*mtk_set_bottom_gpu_freq_fp)(unsigned int);
 
-extern unsigned int (*mtk_custom_get_gpu_freq_level_count_fp)(void arg);
+extern unsigned int (*mtk_custom_get_gpu_freq_level_count_fp)(void);
 extern void (*mtk_custom_boost_gpu_freq_fp)(unsigned int ui32FreqLevel);
 extern void (*mtk_custom_upbound_gpu_freq_fp)(unsigned int ui32FreqLevel);
-extern unsigned int (*mtk_get_custom_boost_gpu_freq_fp)(void arg);
-extern unsigned int (*mtk_get_custom_upbound_gpu_freq_fp)(void arg);
+extern unsigned int (*mtk_get_custom_boost_gpu_freq_fp)(void);
+extern unsigned int (*mtk_get_custom_upbound_gpu_freq_fp)(void);
 
-extern int* (*mtk_get_gpu_cur_owner_fp)(void arg);
+extern int* (*mtk_get_gpu_cur_owner_fp)(void);
 
 #ifdef SUPPORT_PDVFS
 extern unsigned int mt_gpufreq_get_volt_by_idx(unsigned int idx);
