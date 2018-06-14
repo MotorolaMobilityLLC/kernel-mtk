@@ -592,6 +592,7 @@ void register_all_oc_interrupts(void)
 		case INT_VSIM1_OC:
 		case INT_VSIM2_OC:
 		case INT_VMCH_OC:
+		case INT_VCAMIO_OC:
 			PMICLOG("[PMIC_INT] non-enabled OC: %d\n", oc_interrupt);
 			break;
 		case INT_VCAMA_OC:
