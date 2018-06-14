@@ -3650,6 +3650,35 @@ void cmdq_core_release_thread(s32 scenario, s32 thread)
 	mutex_unlock(&cmdq_thread_mutex);
 }
 
+static void cmdq_core_group_reset_hw(u64 engine_flag)
+{
+	struct CmdqCBkStruct *callback = cmdq_group_cb;
+	s32 status;
+	u32 i;
+
+	CMDQ_LOG("%s engine:0x%llx\n", __func__, engine_flag);
+
+	for (i = 0; i < CMDQ_MAX_GROUP_COUNT; i++) {
+		if (cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM)i,
+			engine_flag)) {
+			if (!callback[i].resetEng) {
+				CMDQ_ERR(
+					"no reset func to reset engine group:%u\n",
+					i);
+				continue;
+			}
+			status = callback[i].resetEng(
+				cmdq_mdp_get_func()->getEngineGroupBits(i) &
+				engine_flag);
+			if (status < 0) {
+				/* Error status print */
+				CMDQ_ERR("Reset engine group %d failed:%d\n",
+					i, status);
+			}
+		}
+	}
+}
+
 static void cmdq_core_group_clk_on(enum CMDQ_GROUP_ENUM group,
 	u64 engine_flag)
 {
@@ -4926,6 +4955,9 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 		/* success done */
 		handle->state = TASK_STATE_DONE;
 	}
+
+	if (handle->state != TASK_STATE_DONE)
+		cmdq_core_group_reset_hw(handle->engineFlag);
 
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->CMDQ_IRQ, MMPROFILE_FLAG_PULSE,
 		(unsigned long)handle, handle->thread);
