@@ -91,6 +91,7 @@ extern void cm_mgr_perf_platform_set_status(int enable);
 extern void cm_mgr_perf_platform_set_force_status(int enable);
 extern int cm_mgr_register_init(void);
 extern int cm_mgr_platform_init(void);
-extern int cm_mgr_get_gpu_power(int level, int up);
+extern void cm_mgr_set_dram_level(int level);
+extern int cm_mgr_get_dram_opp(void);
 
 #endif	/* __MTK_CM_MGR_PLATFORM_H__ */
