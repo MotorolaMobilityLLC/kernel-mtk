@@ -269,7 +269,7 @@ static int mt6357tsbuck1_sysrst_set_cur_state(
 
 #if 0	/* temp marked off to check temperature correctness. */
 
-		*(unsigned int *)0x0 = 0xdead;
+		BUG();
 		/*
 		 *To trigger data abort to reset the system for thermal
 		 *protection.

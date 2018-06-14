@@ -794,7 +794,7 @@ struct thermal_cooling_device *cool_dev, unsigned long v)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
-		*(unsigned int *)0x0 = 0xdead;
+		BUG();
 	}
 
 	return 0;
