@@ -161,3 +161,10 @@ obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_NR.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_VR_FPS.o
 endif
+
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt3967"))
+obj-$(CONFIG_THERMAL) += mtk_cooler_atm.o
+obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
+obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
+#obj-$(CONFIG_THERMAL) += mtk_cooler_mutt.o
+endif
