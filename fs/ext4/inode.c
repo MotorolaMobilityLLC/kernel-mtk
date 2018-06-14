@@ -1149,8 +1149,7 @@ retry_journal:
 		return ret;
 	}
 	*pagep = page;
-	mtk_btag_pidlog_write_begin(*pagep);
-
+	mtk_btag_pidlog_set_pid(*pagep);
 	return ret;
 }
 
