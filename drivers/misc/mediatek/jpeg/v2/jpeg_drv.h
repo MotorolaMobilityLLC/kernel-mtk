@@ -587,42 +587,9 @@ typedef struct {
 
 #endif
 
-/* typedef struct */
-/* { */
-/* unsigned int srcBufferAddr; YUV420: Luma */
-/* unsigned int srcChromaAddr; */
-/* unsigned int dstBufferAddr; */
-/* unsigned int dstBufferSize; */
-/*  */
-/* unsigned int srcWidth; */
-/* unsigned int srcHeight; */
-/*  */
-/* unsigned char enableEXIF; */
-/* unsigned char disableGMC; not support */
-/*  */
-/* unsigned int restartInterval; */
-/* unsigned int quality; */
-/* unsigned int yuvFormat; */
-/*  */
-/* } JpegDrvEncParam; */
-
-
-
 /* ====================================================================================== */
 
-
 #define JPEG_IOCTL_MAGIC        'x'
-
-#if 0
-#define JPEG_DEC_IOCTL_INIT     _IO(JPEG_IOCTL_MAGIC, 1)
-  /* #define JPEG_DEC_IOCTL_CONFIG   _IOW (JPEG_IOCTL_MAGIC, 2, JPEG_DEC_DRV_IN) */
-#define JPEG_DEC_IOCTL_START    _IO(JPEG_IOCTL_MAGIC, 3)
-#define JPEG_DEC_IOCTL_WAIT     _IOWR(JPEG_IOCTL_MAGIC, 6, JPEG_DEC_DRV_OUT)
-#define JPEG_DEC_IOCTL_DEINIT   _IO(JPEG_IOCTL_MAGIC, 8)
-  /* #define JPEG_DEC_IOCTL_RESUME   _IOW(JPEG_IOCTL_MAGIC, 4, JPEG_DEC_RESUME_IN) */
-  /* #define JPEG_DEC_IOCTL_RANGE    _IOWR(JPEG_IOCTL_MAGIC, 5, JPEG_DEC_RANGE_IN) */
-  /* #define JPEG_DEC_IOCTL_COPY     _IOWR(JPEG_IOCTL_MAGIC, 7, int) */
-#endif
 
 /* /////////////////// JPEG DEC IOCTL ///////////////////////////////////// */
 
@@ -632,17 +599,13 @@ typedef struct {
 #define JPEG_DEC_IOCTL_START        _IO(JPEG_IOCTL_MAGIC,  4)
 #define JPEG_DEC_IOCTL_WAIT         _IOWR(JPEG_IOCTL_MAGIC,  5, JPEG_DEC_DRV_OUT)
 #define JPEG_DEC_IOCTL_DEINIT       _IO(JPEG_IOCTL_MAGIC,  6)
-
 #define JPEG_DEC_IOCTL_RESET        _IO(JPEG_IOCTL_MAGIC,  7)
 #define JPEG_DEC_IOCTL_CHKSUM       _IOWR(JPEG_IOCTL_MAGIC,  8, JpegDrvDecResult)
 #define JPEG_DEC_IOCTL_BREAK        _IO(JPEG_IOCTL_MAGIC,  9)
 #define JPEG_DEC_IOCTL_RW_REG       _IO(JPEG_IOCTL_MAGIC, 10)
 #define JPEG_DEC_IOCTL_RESUME       _IOW(JPEG_IOCTL_MAGIC, 11, JPEG_DEC_CONFIG_ROW)
-
 #define JPEG_DEC_IOCTL_FLUSH_CMDQ   _IOW(JPEG_IOCTL_MAGIC, 17, JPEG_DEC_CONFIG_CMDQ)
-
 #define JPEG_DEC_IOCTL_DUMP_REG     _IO(JPEG_IOCTL_MAGIC, 30)
-/* #define JPEG_DEC_IOCTL_MAN_GDMA _IOW (JPEG_IOCTL_MAGIC, 31, unsigned char) */
 
 /* /////////////////// JPEG ENC IOCTL ///////////////////////////////////// */
 
