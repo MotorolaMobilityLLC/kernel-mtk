@@ -970,13 +970,20 @@ void MT_trace_irq_on(void)
 	e->last_te = sched_clock();
 }
 
-void mt_dump_irq_off_traces(int mode)
+static const char * const list_irq_disable[] = {
+	"print_cpu" /* debug purpose: used by sched_debug_show, sysrq_sched_debug_show */
+};
+
+bool mt_dump_irq_off_traces(int mode)
 {
-	int i;
-	char buf[128];
+	int i, j;
+	char buf[128], func[64];
 	struct stack_trace *trace;
+	bool in_list = 0;
+	int list_num = ARRAY_SIZE(list_irq_disable);
 
 	trace = &__raw_get_cpu_var(MT_stack_trace);
+	list_num = ARRAY_SIZE(list_irq_disable);
 
 	snprintf(buf, sizeof(buf),
 		"irq off backtraces:");
@@ -987,7 +994,19 @@ void mt_dump_irq_off_traces(int mode)
 			(void *)trace->entries[i],
 			(void *)trace->entries[i]);
 		sched_mon_msg(buf, mode);
+		/* check white list */
+		snprintf(func, sizeof(func),
+			"%ps", (void *)trace->entries[i]);
+		for (j = 0; j < list_num; j++) {
+			if (!strcmp(func, list_irq_disable[j])) {
+				in_list = 1;
+				snprintf(buf, sizeof(buf),
+					"... %s is in white list\n", func);
+				sched_mon_msg(buf, mode);
+			}
+		}
 	}
+	return in_list;
 }
 
 void MT_trace_hardirqs_on(void)
@@ -1018,6 +1037,7 @@ void MT_trace_hardirqs_on(void)
 			__raw_get_cpu_var(t_irq_on) = t_on;
 			if (t_dur > WARN_IRQ_DISABLE_DUR) {
 				char buf[144], buf2[64];
+				bool skip_aee = 0;
 				struct lock_block_event *b;
 
 				snprintf(buf, sizeof(buf),
@@ -1054,9 +1074,9 @@ void MT_trace_hardirqs_on(void)
 						sec_low(b->last_spinning_e));
 					sched_mon_msg(buf, output);
 				}
-				mt_dump_irq_off_traces(output);
+				skip_aee = mt_dump_irq_off_traces(output);
 
-				if (t_dur > AEE_IRQ_DISABLE_DUR) {
+				if (t_dur > AEE_IRQ_DISABLE_DUR && !skip_aee) {
 					snprintf(buf, sizeof(buf),
 					"IRQ disable [%llu ms, %lld.%06lu ~ %lld.%06lu] at %s",
 					msec_high(t_dur),
