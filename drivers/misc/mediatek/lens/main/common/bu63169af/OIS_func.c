@@ -355,7 +355,7 @@ short int func_SET_SCENE_PARAM(unsigned char u16_scene, unsigned char u16_mode,
 
 	/* <== RHM_HT 2013/11/25        Modified */
 	/* Enable OIS (if u16_mode = 1) */
-	if ((u16_mode == 1)) {
+	if (u16_mode == 1) {
 		u16_dat = I2C_OIS_mem__read(_M_EQCTL);
 		u16_dat = (u16_dat | 0x0101);
 		I2C_OIS_mem_write(_M_EQCTL, u16_dat);
@@ -526,7 +526,7 @@ short int func_SET_SCENE_PARAM_for_NewGYRO_Fil(unsigned char u16_scene,
 	/* <== RHM_HT 2013/11/25        Modified */
 
 	/* Enable OIS (if u16_mode = 1) */
-	if ((u16_mode == 1)) { /* OIS ON */
+	if (u16_mode == 1) { /* OIS ON */
 		u16_dat = I2C_OIS_mem__read(_M_EQCTL);
 		u16_dat = (u16_dat & 0xEFFF); /* Clear Halfshutter mode */
 		u16_dat = (u16_dat | 0x0101);
