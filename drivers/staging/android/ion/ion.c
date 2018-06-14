@@ -900,7 +900,7 @@ void ion_client_destroy(struct ion_client *client)
 		IONMSG("%s:client=%s,disp=%s,dbg=%s\n",
 		       __func__, client->name ? client->name : NULL,
 		       client->display_name ? client->display_name : NULL,
-		       client->dbg_name ? client->dbg_name : NULL);
+		       client->dbg_name);
 		ion_handle_destroy(&handle->ref);
 		mutex_unlock(&client->lock);
 	}
