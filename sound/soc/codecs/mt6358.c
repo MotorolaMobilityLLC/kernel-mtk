@@ -825,14 +825,11 @@ enum {
 			x == MIC_TYPE_MUX_DCC_ECM_DIFF || \
 			x == MIC_TYPE_MUX_DCC_ECM_SINGLE)
 
-#define IS_VOW_AMIC_BASE(x) (x == MIC_TYPE_MUX_VOW_ACC || \
-			     x == MIC_TYPE_MUX_VOW_DCC || \
-			     x == MIC_TYPE_MUX_VOW_DCC_ECM_DIFF || \
-			     x == MIC_TYPE_MUX_VOW_DCC_ECM_SINGLE)
-
 #define IS_VOW_DCC_BASE(x) (x == MIC_TYPE_MUX_VOW_DCC || \
 			    x == MIC_TYPE_MUX_VOW_DCC_ECM_DIFF || \
 			    x == MIC_TYPE_MUX_VOW_DCC_ECM_SINGLE)
+
+#define IS_VOW_AMIC_BASE(x) (x == MIC_TYPE_MUX_VOW_ACC || IS_VOW_DCC_BASE(x))
 
 static const char * const mic_type_mux_map[] = {
 	"Idle",
@@ -983,8 +980,8 @@ static int mt_clksq_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
-static int mt_vow_clksq_audio_connect(struct snd_soc_dapm_widget *source,
-				      struct snd_soc_dapm_widget *sink)
+static int mt_vow_amic_dcc_connect(struct snd_soc_dapm_widget *source,
+				   struct snd_soc_dapm_widget *sink)
 {
 	struct snd_soc_dapm_widget *w = sink;
 	struct snd_soc_component *cmpnt = snd_soc_dapm_to_component(w->dapm);
@@ -992,6 +989,17 @@ static int mt_vow_clksq_audio_connect(struct snd_soc_dapm_widget *source,
 	unsigned int mic_type = priv->mux_select[MUX_MIC_TYPE];
 
 	return (IS_VOW_DCC_BASE(mic_type)) ? 1 : 0;
+}
+
+static int mt_vow_amic_connect(struct snd_soc_dapm_widget *source,
+			       struct snd_soc_dapm_widget *sink)
+{
+	struct snd_soc_dapm_widget *w = sink;
+	struct snd_soc_component *cmpnt = snd_soc_dapm_to_component(w->dapm);
+	struct mt6358_priv *priv = snd_soc_component_get_drvdata(cmpnt);
+	unsigned int mic_type = priv->mux_select[MUX_MIC_TYPE];
+
+	return (IS_VOW_AMIC_BASE(mic_type)) ? 1 : 0;
 }
 
 static int mt_sgen_event(struct snd_soc_dapm_widget *w,
@@ -2416,12 +2424,25 @@ static int mt6358_vow_amic_disable(struct mt6358_priv *priv)
 static int mt6358_vow_dmic_enable(struct mt6358_priv *priv)
 {
 	dev_info(priv->dev, "%s()\n", __func__);
+	/* mic bias */
+	/* Enable MICBIAS0, MISBIAS0 = 1P9V */
+	regmap_write(priv->regmap, MT6358_AUDENC_ANA_CON9, 0x0025);
+
+	/* DMIC enable */
+	regmap_write(priv->regmap, MT6358_AUDENC_ANA_CON8, 0x0005);
+
 	return 0;
 }
 
 static int mt6358_vow_dmic_disable(struct mt6358_priv *priv)
 {
 	dev_info(priv->dev, "%s()\n", __func__);
+	/* DMIC disable */
+	regmap_write(priv->regmap, MT6358_AUDENC_ANA_CON8, 0x0004);
+
+	/* mic bias */
+	/* MISBIAS0 = 1P7V */
+	regmap_write(priv->regmap, MT6358_AUDENC_ANA_CON9, 0x0000);
 	return 0;
 }
 
@@ -2446,6 +2467,7 @@ static int mt_mic_type_event(struct snd_soc_dapm_widget *w,
 			mt6358_dmic_enable(priv);
 			break;
 		case MIC_TYPE_MUX_VOW_DMIC:
+		case MIC_TYPE_MUX_VOW_DMIC_LP:
 			mt6358_vow_dmic_enable(priv);
 			mt6358_vow_cfg_enable(priv);
 			break;
@@ -2468,6 +2490,7 @@ static int mt_mic_type_event(struct snd_soc_dapm_widget *w,
 			mt6358_dmic_disable(priv);
 			break;
 		case MIC_TYPE_MUX_VOW_DMIC:
+		case MIC_TYPE_MUX_VOW_DMIC_LP:
 			mt6358_vow_cfg_disable(priv);
 			mt6358_vow_dmic_disable(priv);
 			break;
@@ -2916,12 +2939,12 @@ static const struct snd_soc_dapm_route mt6358_dapm_routes[] = {
 	{"VOW TX", NULL, "Mic Type Mux"},
 		{"VOW TX", NULL, "CLK_BUF"},
 		{"VOW TX", NULL, "AUDGLB"},
-		{"VOW TX", NULL, "AUD_CK"},
-		{"VOW TX", NULL, "CLKSQ Audio", mt_vow_clksq_audio_connect},
-		{"VOW TX", NULL, "VOW_AUD_LPW"},
+		{"VOW TX", NULL, "AUD_CK", mt_vow_amic_connect},
+		{"VOW TX", NULL, "CLKSQ Audio", mt_vow_amic_dcc_connect},
+		{"VOW TX", NULL, "VOW_AUD_LPW", mt_vow_amic_connect},
 		{"VOW TX", NULL, "VOW_CLK"},
 		{"VOW TX", NULL, "AUD_VOW"},
-		{"VOW TX", NULL, "VOW_LDO"},
+		{"VOW TX", NULL, "VOW_LDO", mt_vow_amic_connect},
 	{"VOW TX", NULL, "Mic Type Mux"},
 
 	{"Mic Type Mux", "VOW_ACC", "ADC L"},
