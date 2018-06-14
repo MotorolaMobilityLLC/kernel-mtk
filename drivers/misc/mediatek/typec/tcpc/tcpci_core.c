@@ -28,14 +28,12 @@
 #ifdef CONFIG_USB_POWER_DELIVERY
 #include "pd_dpm_prv.h"
 #include "inc/tcpm.h"
+#ifdef CONFIG_RECV_BAT_ABSENT_NOTIFY
 #include "mtk_battery.h"
+#endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
-#define TCPC_CORE_VERSION		"2.0.9_MTK"
-
-#ifdef CONFIG_USB_POWER_DELIVERY
-static struct tcpc_device *tcpc_dev;
-#endif
+#define TCPC_CORE_VERSION		"2.0.10_MTK"
 
 static ssize_t tcpc_show_property(struct device *dev,
 				  struct device_attribute *attr, char *buf);
@@ -840,33 +838,36 @@ static void __exit tcpc_class_exit(void)
 subsys_initcall(tcpc_class_init);
 module_exit(tcpc_class_exit);
 
-#ifdef CONFIG_USB_POWER_DELIVERY
-static int bat_notifier_call(struct notifier_block *nb,
+
+#ifdef CONFIG_TCPC_NOTIFIER_LATE_SYNC
+#ifdef CONFIG_RECV_BAT_ABSENT_NOTIFY
+static int fg_bat_notifier_call(struct notifier_block *nb,
 				unsigned long event, void *data)
 {
-	int ret;
+	struct pd_port *pd_port = container_of(nb, struct pd_port, fg_bat_nb);
+	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
 	switch (event) {
 	case EVENT_BATTERY_PLUG_OUT:
-		ret = tcpm_shutdown(tcpc_dev);
-		if (ret < 0)
-			pr_notice("%s: tcpm shutdown fail\n", __func__);
+		dev_info(&tcpc_dev->dev, "%s: fg battery absent\n", __func__);
+		schedule_work(&pd_port->fg_bat_work);
 		break;
 	default:
 		break;
 	}
 	return NOTIFY_OK;
 }
-#endif
+#endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
+#endif /* CONFIG_TCPC_NOTIFIER_LATE_SYNC */
 
 #ifdef CONFIG_TCPC_NOTIFIER_LATE_SYNC
 static int __tcpc_class_complete_work(struct device *dev, void *data)
 {
 	struct tcpc_device *tcpc = dev_get_drvdata(dev);
-#ifdef CONFIG_USB_POWER_DELIVERY
-	struct notifier_block *bat_nb = &tcpc->pd_port.bat_nb;
-	int ret;
-#endif
+#ifdef CONFIG_RECV_BAT_ABSENT_NOTIFY
+	struct notifier_block *fg_bat_nb = &tcpc->pd_port.fg_bat_nb;
+	int ret = 0;
+#endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
 
 	if (tcpc != NULL) {
 		pr_info("%s = %s\n", __func__, dev_name(dev));
@@ -877,22 +878,14 @@ static int __tcpc_class_complete_work(struct device *dev, void *data)
 			msecs_to_jiffies(1000));
 #endif
 
-#ifdef CONFIG_USB_POWER_DELIVERY
-		tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
-		if (!tcpc_dev) {
-			pr_notice("%s get tcpc device type_c_port0 fail\n",
-				__func__);
-			return -ENODEV;
-		}
-
-		bat_nb->notifier_call = bat_notifier_call;
-		ret = register_battery_notifier(bat_nb);
+#ifdef CONFIG_RECV_BAT_ABSENT_NOTIFY
+		fg_bat_nb->notifier_call = fg_bat_notifier_call;
+		ret = register_battery_notifier(fg_bat_nb);
 		if (ret < 0) {
 			pr_notice("%s: register bat notifier fail\n", __func__);
 			return -EINVAL;
 		}
-#endif
-
+#endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
 	}
 	return 0;
 }
@@ -906,7 +899,7 @@ static int __init tcpc_class_complete_init(void)
 	return 0;
 }
 late_initcall_sync(tcpc_class_complete_init);
-#endif
+#endif /* CONFIG_TCPC_NOTIFIER_LATE_SYNC */
 
 MODULE_DESCRIPTION("Richtek TypeC Port Control Core");
 MODULE_AUTHOR("Jeff Chang <jeff_chang@richtek.com>");
@@ -914,6 +907,10 @@ MODULE_VERSION(TCPC_CORE_VERSION);
 MODULE_LICENSE("GPL");
 
 /* Release Version
+ * 2.0.10_MTK
+ * (1) fix battery noitifier plug out cause recursive locking detected in
+ *     nh->srcu.
+ *
  * 2.0.9_MTK
  * (1) fix 10k A-to-C legacy cable workaround side effect when
  *     cable plug in at worakround flow.
