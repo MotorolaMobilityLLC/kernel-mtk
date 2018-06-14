@@ -117,12 +117,13 @@ static snd_pcm_uframes_t snd_usb_pcm_pointer(struct snd_pcm_substream *substream
 			avail = snd_pcm_capture_avail(runtime);
 
 		if (avail >= runtime->buffer_size)
-			mtk_pr_info(40, "avail<%ld>, stop_threshold<%ld>, buf_sz<%ld>, bound<%ld>",
-					avail,
-					runtime->stop_threshold,
-					runtime->buffer_size,
-					runtime->boundary
-					);
+			mtk_pr_info(3, "dir<%d>,avail<%ld>,thld<%ld>,sz<%ld>,bound<%ld>",
+			substream->stream,
+			avail,
+			runtime->stop_threshold,
+			runtime->buffer_size,
+			runtime->boundary
+			);
 	}
 
 	spin_unlock(&subs->lock);

@@ -2103,6 +2103,8 @@ irqreturn_t musb_interrupt(struct musb *musb)
 			retval = IRQ_HANDLED;
 			if (devctl & MUSB_DEVCTL_HM) {
 				bool skip_tx = false;
+				static DEFINE_RATELIMIT_STATE(rlmt, HZ, 2);
+				static int skip_cnt;
 
 				if (host_tx_refcnt_dec(ep_num) < 0) {
 					int ref_cnt;
@@ -2110,11 +2112,16 @@ irqreturn_t musb_interrupt(struct musb *musb)
 					musb_host_db_workaround_cnt++;
 					ref_cnt = host_tx_refcnt_inc(ep_num);
 
-					DBG_LIMIT(2, "unexpect TX<%d,%d>",
-						ep_num, ref_cnt);
-					skip_tx = true;
-
+					if (__ratelimit(&rlmt)) {
+					DBG(0, "unexpect TX<%d,%d,%d>\n",
+							ep_num, ref_cnt,
+							skip_cnt);
 					dump_tx_ops(ep_num);
+					skip_cnt = 0;
+					} else
+						skip_cnt++;
+
+					skip_tx = true;
 				}
 
 				if (likely(!skip_tx))
