@@ -88,10 +88,10 @@ static int mdinfoex_threshold[MAX_MDINFOEX_OPCODE] = { 0 };
 
 struct md_info g_pinfo_list[6] = { {"TXPWR_MD1", -127, "db", -127, 0},
 {"TXPWR_MD2", -127, "db", -127, 1},
-{"RFTEMP_2G_MD1", -127000, "m¢XC", -127000, 2},
-{"RFTEMP_2G_MD2", -127000, "m¢XC", -127000, 3},
-{"RFTEMP_3G_MD1", -127000, "m¢XC", -127000, 4},
-{"RFTEMP_3G_MD2", -127000, "m¢XC", -127000, 5}
+{"RFTEMP_2G_MD1", -127000, "mC", -127000, 2},
+{"RFTEMP_2G_MD2", -127000, "mC", -127000, 3},
+{"RFTEMP_3G_MD1", -127000, "mC", -127000, 4},
+{"RFTEMP_3G_MD2", -127000, "mC", -127000, 5}
 };
 
 int mtk_mdm_get_tx_power(void)
