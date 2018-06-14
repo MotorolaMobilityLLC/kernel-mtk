@@ -487,6 +487,47 @@ TRACE_EVENT(sched_hmp_migrate,
 		__entry->comm, __entry->pid,
 		__entry->dest, __entry->force)
 );
+
+/*
+ * Tracepoint for accounting sched group energy
+ */
+TRACE_EVENT(sched_energy_diff,
+
+	TP_PROTO(struct task_struct *tsk, int scpu, int dcpu, int udelta,
+		int nrgb, int nrga, int nrgd),
+
+	TP_ARGS(tsk, scpu, dcpu, udelta,
+		nrgb, nrga, nrgd),
+
+	TP_STRUCT__entry(
+		__array(char,  comm,   TASK_COMM_LEN)
+		__field(pid_t, pid)
+		__field(int,   scpu)
+		__field(int,   dcpu)
+		__field(int,   udelta)
+		__field(int,   nrgb)
+		__field(int,   nrga)
+		__field(int,   nrgd)
+	),
+
+	TP_fast_assign(
+		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+		__entry->pid            = tsk->pid;
+		__entry->scpu           = scpu;
+		__entry->dcpu           = dcpu;
+		__entry->udelta         = udelta;
+		__entry->nrgb           = nrgb;
+		__entry->nrga           = nrga;
+		__entry->nrgd           = nrgd;
+	),
+
+	TP_printk("pid=%d comm=%s src_cpu=%d dst_cpu=%d usage_delta=%d nrg_before=%d nrg_after=%d nrg_diff=%d",
+		__entry->pid, __entry->comm,
+		__entry->scpu, __entry->dcpu, __entry->udelta,
+		__entry->nrgb, __entry->nrga, __entry->nrgd)
+);
+
+
 /*
  * Tracepoint for showing the result of task runqueue selection
  */

@@ -66,6 +66,7 @@ struct lb_env {
 
 extern bool sched_boost(void);
 extern void unthrottle_offline_rt_rqs(struct rq *rq);
+extern void mtk_update_new_capacity(struct energy_env *eenv);
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
 #define LB_POLICY_SHIFT 16
@@ -82,7 +83,5 @@ extern void unthrottle_offline_rt_rqs(struct rq *rq);
 #define LB_HMP			(0)
 #define LB_EAS			(0)
 #endif
-
-
 
 #include "rt_enh.h"
