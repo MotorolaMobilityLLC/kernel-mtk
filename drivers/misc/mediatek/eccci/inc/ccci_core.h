@@ -518,6 +518,7 @@ typedef enum {
 
 enum c2k_channel {
 	CTRL_CH_C2K = 0,
+	CTRL_CH_C2K_EXCP = 1,
 	AUDIO_CH_C2K = 1,
 	DATA_PPP_CH_C2K = 2,
 	MDLOG_CTRL_CH_C2K = 3,

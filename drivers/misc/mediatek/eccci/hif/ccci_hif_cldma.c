@@ -496,7 +496,7 @@ static void cldma_dump_queue_history(struct md_cd_ctrl *md_ctrl,
 }
 
 static int cldma_queue_broadcast_state(struct md_cd_ctrl *md_ctrl,
-	enum MD_STATE state, DIRECTION dir, int index)
+	enum HIF_STATE state, DIRECTION dir, int index)
 {
 	ccci_port_queue_status_notify(md_ctrl->md_id,
 		md_ctrl->hif_id, index, dir, state);

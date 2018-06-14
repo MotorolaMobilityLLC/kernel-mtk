@@ -68,7 +68,7 @@ static struct c2k_port c2k_ports[] = {
 	 * make sure CCCI_CONTROL_TX/RX be first.
 	 */
 	/*control channel */
-	{CTRL_CH_C2K, CCCI_CONTROL_TX, CCCI_CONTROL_TX, CCCI_CONTROL_RX,},
+	{CTRL_CH_C2K, CTRL_CH_C2K_EXCP, CCCI_CONTROL_TX, CCCI_CONTROL_RX,},
 	/*control channel */
 	{CTRL_CH_C2K, CTRL_CH_C2K, CCCI_STATUS_TX, CCCI_STATUS_RX,},
 	/*audio channel */
