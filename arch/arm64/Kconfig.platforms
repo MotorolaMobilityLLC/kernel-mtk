@@ -226,7 +226,6 @@ config MACH_MT3967
 	select PINCTRL_MT3967
 	select MFD_SYSCON
 	select CPU_IDLE
-	select PINCTRL
 	select SDCARD_FS
 	select MTK_GIC_V3_EXT
 	select MTK_SYSIRQ
