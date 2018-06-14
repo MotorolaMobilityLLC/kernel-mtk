@@ -197,9 +197,8 @@ static int is_efuse_bypass_flavor(void)
 
 	len = sizeof(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
 
-	if (strncmp(
-	    CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES + len - 4,
-	    "_lp", 3) == 0)
+	if (strncmp(&CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES[len - 4],
+				"_lp", 3) == 0)
 		r = 1;
 
 	pr_info("flavor check: %s, is_bypass: %d\n",
