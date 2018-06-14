@@ -957,6 +957,9 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 #if defined(THERMAL_VPU_SUPPORT)
 	static int vpu_power, last_vpu_power;
 #endif
+#if defined(DDR_STRESS_WORKAROUND)
+	static int opp0_cool;
+#endif
 
 	last_cpu_power = cpu_power;
 	last_gpu_power = gpu_power;
@@ -1049,6 +1052,17 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 
 		cpu_power = MIN((total_power - gpu_power), MAXIMUM_CPU_POWER);
 	}
+
+#if defined(DDR_STRESS_WORKAROUND)
+	if (tscpu_g_curr_temp > 70000) {
+		if (mt_ppm_thermal_get_cur_power() >= mt_ppm_thermal_get_max_power())
+			opp0_cool = 1;
+	} else if (tscpu_g_curr_temp < 65000)
+		opp0_cool = 0;
+
+	if (opp0_cool)
+		cpu_power -= 5;
+#endif
 
 #if defined(THERMAL_VPU_SUPPORT)
 	if (total_power <= MINIMUM_TOTAL_POWER)
