@@ -15,8 +15,6 @@
 #define	__BU64748_FUNCTION_H
 
 
-typedef unsigned short     u16;
-typedef unsigned char     u8;
 
 #define _SLV_FBAF_	0x76
 
