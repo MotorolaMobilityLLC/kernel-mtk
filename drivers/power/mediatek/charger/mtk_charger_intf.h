@@ -325,7 +325,7 @@ struct charger_manager {
 	struct notifier_block chg2_nb;
 	struct charger_data chg2_data;
 
-	CHARGER_TYPE chr_type;
+	enum charger_type chr_type;
 	bool can_charging;
 
 	int (*do_algorithm)(struct charger_manager *);

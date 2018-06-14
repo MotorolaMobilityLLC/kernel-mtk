@@ -34,7 +34,7 @@
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 #else
-static CHARGER_TYPE g_charger_type = CHARGER_UNKNOWN;
+static enum charger_type g_charger_type = CHARGER_UNKNOWN;
 #endif
 
 unsigned char charging_type_det_done = KAL_TRUE;
@@ -551,19 +551,19 @@ static int charging_get_charger_type(void *data)
 	int status = STATUS_OK;
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
-	*(CHARGER_TYPE *) (data) = STANDARD_HOST;
+	*(enum charger_type *) (data) = STANDARD_HOST;
 #else
 	if (is_chr_det() == 0) {
 		g_charger_type = CHARGER_UNKNOWN;
-		*(CHARGER_TYPE *) (data) = CHARGER_UNKNOWN;
+		*(enum charger_type *) (data) = CHARGER_UNKNOWN;
 		battery_log(BAT_LOG_CRTI, "[charging_get_charger_type] return CHARGER_UNKNOWN\n");
 		return status;
 	}
 
 	charging_type_det_done = KAL_FALSE;
-	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
+	*(enum charger_type *) (data) = hw_charging_get_charger_type();
 	charging_type_det_done = KAL_TRUE;
-	g_charger_type = *(CHARGER_TYPE *) (data);
+	g_charger_type = *(enum charger_type *) (data);
 
 #endif
 

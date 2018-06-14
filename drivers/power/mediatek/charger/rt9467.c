@@ -286,7 +286,7 @@ struct rt9467_info {
 	u32 hidden_mode_cnt;
 	bool bc12_en;
 	bool pwr_rdy;
-	CHARGER_TYPE chg_type;
+	enum charger_type chg_type;
 	u32 ieoc;
 	u32 ichg;
 	bool ieoc_wkard;

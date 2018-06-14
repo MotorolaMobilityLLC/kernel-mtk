@@ -50,7 +50,7 @@
 /* #define __FORCE_USB_TYPE__ */
 #define __SW_CHRDET_IN_PROBE_PHASE__
 
-static CHARGER_TYPE g_chr_type;
+static enum charger_type g_chr_type;
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
 static struct work_struct chr_work;
 #endif
@@ -62,7 +62,7 @@ static bool first_connect = true;
 #endif
 
 static struct power_supply *chrdet_psy;
-static int chrdet_inform_psy_changed(CHARGER_TYPE chg_type, bool chg_online)
+static int chrdet_inform_psy_changed(enum charger_type chg_type, bool chg_online)
 {
 	int ret = 0;
 	union power_supply_propval propval;
@@ -271,7 +271,7 @@ static void hw_bc11_done(void)
 	Charger_Detect_Release();
 }
 
-static void dump_charger_name(CHARGER_TYPE type)
+static void dump_charger_name(enum charger_type type)
 {
 	switch (type) {
 	case CHARGER_UNKNOWN:
@@ -306,7 +306,7 @@ static void dump_charger_name(CHARGER_TYPE type)
 
 int hw_charging_get_charger_type(void)
 {
-	CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
+	enum charger_type CHR_Type_num = CHARGER_UNKNOWN;
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 	if (usb2jtag_mode()) {

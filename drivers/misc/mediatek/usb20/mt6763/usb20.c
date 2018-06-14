@@ -524,9 +524,9 @@ void mt_usb_disconnect(void)
 #ifndef CONFIG_MTK_SMART_BATTERY
 #define BYPASS_PMIC_LINKAGE
 #endif
-static CHARGER_TYPE musb_hal_get_charger_type(void)
+static enum charger_type musb_hal_get_charger_type(void)
 {
-	CHARGER_TYPE chg_type;
+	enum charger_type chg_type;
 #ifdef BYPASS_PMIC_LINKAGE
 	DBG(0, "force on");
 	chg_type = STANDARD_HOST;
@@ -608,7 +608,7 @@ DEFINE_MUTEX(cable_connected_lock);
 /* be aware this could not be used in non-sleep context */
 bool usb_cable_connected(void)
 {
-	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
+	enum charger_type chg_type = CHARGER_UNKNOWN;
 	bool connected = false, vbus_exist = false;
 
 	if (usb20_test_connect) {

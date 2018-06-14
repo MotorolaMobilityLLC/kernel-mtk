@@ -41,7 +41,7 @@
 #define TURN_ON_RDM_DWM
 /*#define __CHRDET_RG_DUMP__*/
 
-CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
+enum charger_type CHR_Type_num = CHARGER_UNKNOWN;
 #if !defined(CONFIG_POWER_EXT) && !defined(CONFIG_MTK_FPGA)
 static struct mt6336_ctrl *core_ctrl;
 static bool first_connect = true;
@@ -439,7 +439,7 @@ static void hw_bc12_done(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
 }
 
-static void dump_charger_name(CHARGER_TYPE type)
+static void dump_charger_name(enum charger_type type)
 {
 	switch (type) {
 	case CHARGER_UNKNOWN:

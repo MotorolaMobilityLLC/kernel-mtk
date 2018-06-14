@@ -157,7 +157,7 @@ typedef enum {
 } CHARGING_CTRL_CMD;
 
 
-typedef enum {
+enum charger_type {
 	CHARGER_UNKNOWN = 0,
 	STANDARD_HOST,		/* USB : 450mA */
 	CHARGING_HOST,
@@ -167,7 +167,7 @@ typedef enum {
 	APPLE_1_0A_CHARGER,	/* 1A apple charger */
 	APPLE_0_5A_CHARGER,	/* 0.5A apple charger */
 	WIRELESS_CHARGER,
-} CHARGER_TYPE;
+};
 
 
 /* Enum of Voltage List */

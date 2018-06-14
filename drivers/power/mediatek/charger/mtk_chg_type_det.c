@@ -54,7 +54,7 @@ void __attribute__((weak)) fg_charger_in_handler(void)
 	pr_notice("%s not defined\n", __func__);
 }
 
-static CHARGER_TYPE g_chr_type;
+static enum charger_type g_chr_type;
 
 #ifdef CONFIG_MTK_FPGA
 /*****************************************************************************
@@ -82,7 +82,7 @@ static const char * const mtk_chg_type_name[] = {
 	"Wireless Charger",
 };
 
-static void dump_charger_name(CHARGER_TYPE type)
+static void dump_charger_name(enum charger_type type)
 {
 	switch (type) {
 	case CHARGER_UNKNOWN:
@@ -119,7 +119,7 @@ struct mt_charger {
 	struct power_supply_config usb_cfg;
 	struct power_supply *usb_psy;
 	bool chg_online; /* Has charger in or not */
-	CHARGER_TYPE chg_type;
+	enum charger_type chg_type;
 };
 
 static int mt_charger_online(struct mt_charger *mtk_chg)
@@ -413,7 +413,7 @@ bool pmic_chrdet_status(void)
 	return false;
 }
 
-CHARGER_TYPE mt_get_charger_type(void)
+enum charger_type mt_get_charger_type(void)
 {
 	return g_chr_type;
 }

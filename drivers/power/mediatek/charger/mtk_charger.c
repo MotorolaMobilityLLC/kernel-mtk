@@ -1133,7 +1133,7 @@ void mtk_charger_int_handler(void)
 	_wake_up_charger(pinfo);
 }
 
-static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_type)
+static int mtk_charger_plug_in(struct charger_manager *info, enum charger_type chr_type)
 {
 	info->chr_type = chr_type;
 	info->charger_thread_polling = true;
@@ -1174,7 +1174,7 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 
 static bool mtk_is_charger_on(struct charger_manager *info)
 {
-	CHARGER_TYPE chr_type;
+	enum charger_type chr_type;
 
 	chr_type = mt_get_charger_type();
 	if (chr_type == CHARGER_UNKNOWN) {

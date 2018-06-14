@@ -32,7 +32,7 @@ extern bool upmu_is_chr_det(void);
 extern kal_bool upmu_is_chr_det(void);
 #endif
 
-extern CHARGER_TYPE mt_charger_type_detection(void);
+extern enum charger_type mt_charger_type_detection(void);
 extern void BATTERY_SetUSBState(int usb_state);
 extern void upmu_interrupt_chrdet_int_en(unsigned int val);
 
@@ -75,7 +75,7 @@ extern void __iomem *ap_gpio_base;
 extern bool in_uart_mode;
 #endif
 extern int usb20_phy_init_debugfs(void);
-extern CHARGER_TYPE mt_get_charger_type(void);
+extern enum charger_type mt_get_charger_type(void);
 #include <upmu_common.h>
 
 #define PHY_IDLE_MODE       0

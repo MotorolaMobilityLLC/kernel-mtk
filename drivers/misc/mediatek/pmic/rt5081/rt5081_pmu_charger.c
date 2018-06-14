@@ -113,7 +113,7 @@ struct rt5081_pmu_charger_data {
 	struct device *dev;
 	struct power_supply *psy;
 	wait_queue_head_t wait_queue;
-	CHARGER_TYPE chg_type;
+	enum charger_type chg_type;
 	bool pwr_rdy;
 	u8 irq_flag[RT5081_CHG_IRQIDX_MAX];
 	int aicr_limit;

@@ -288,9 +288,9 @@ EXPORT_SYMBOL_GPL(mt_usb_disconnect);
 #define BYPASS_PMIC_LINKAGE
 #endif
 
-static CHARGER_TYPE mu3d_hal_get_charger_type(void)
+static enum charger_type mu3d_hal_get_charger_type(void)
 {
-	CHARGER_TYPE chg_type;
+	enum charger_type chg_type;
 #ifdef BYPASS_PMIC_LINKAGE
 	os_printk(K_INFO, "force on");
 	chg_type = STANDARD_HOST;
@@ -418,7 +418,7 @@ void mt_usb_connect_test(int start)
 
 bool usb_cable_connected(void)
 {
-	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
+	enum charger_type chg_type = CHARGER_UNKNOWN;
 	bool connected = false, vbus_exist = false;
 
 	if (mu3d_test_connect) {
