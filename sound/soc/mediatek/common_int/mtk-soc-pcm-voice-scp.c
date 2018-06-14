@@ -286,7 +286,10 @@ static bool scp_voice_service_ipicmd_wait(int id)
 static int voice_scp_pcm_dump_set(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s = %d\n", __func__, scpvoice_pcmdump);
+	pr_debug("%s(), value = %d, scpvoice_pcmdump = %d\n",
+		 __func__,
+		 ucontrol->value.integer.value[0],
+		 scpvoice_pcmdump);
 
 	if (scpvoice_pcmdump == false &&
 	    ucontrol->value.integer.value[0] == true) {
