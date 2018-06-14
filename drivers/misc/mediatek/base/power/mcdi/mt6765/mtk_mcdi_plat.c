@@ -93,7 +93,7 @@ unsigned int mcdi_get_buck_ctrl_mask(void)
 
 void mcdi_status_init(void)
 {
-	set_mcdi_enable_status(false);
+	set_mcdi_enable_status(true);
 	set_mcdi_buck_off_mask(0);
 }
 
