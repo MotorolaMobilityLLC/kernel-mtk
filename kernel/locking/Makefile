@@ -19,7 +19,7 @@ endif
 obj-$(CONFIG_DEBUG_MUTEXES) += mutex-debug.o
 obj-$(CONFIG_LOCKDEP) += lockdep.o
 ifeq ($(CONFIG_PROC_FS),y)
-obj-$(CONFIG_LOCKDEP) += lockdep_proc.o
+obj-$(CONFIG_LOCKDEP) += lockdep_proc.o lockdep_test.o
 endif
 obj-$(CONFIG_SMP) += spinlock.o
 obj-$(CONFIG_LOCK_SPIN_ON_OWNER) += osq_lock.o
