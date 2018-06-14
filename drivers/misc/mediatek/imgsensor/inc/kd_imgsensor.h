@@ -334,6 +334,7 @@
 /* SENSOR DEVICE DRIVER NAME */
 /*IMX*/
 #define SENSOR_DRVNAME_IMX499_MIPI_RAW          "imx499_mipi_raw"
+#define SENSOR_DRVNAME_IMX499_MIPI_RAW_13M      "imx499_mipi_raw_13m"
 #define SENSOR_DRVNAME_IMX486_MIPI_RAW          "imx486_mipi_raw"
 #define SENSOR_DRVNAME_IMX576_MIPI_RAW          "imx576_mipi_raw"
 #define SENSOR_DRVNAME_IMX350_MIPI_RAW          "imx350_mipi_raw"
@@ -417,6 +418,7 @@
 #define SENSOR_DRVNAME_S5K2T7SP_MIPI_RAW        "s5k2t7sp_mipi_raw"
 #define SENSOR_DRVNAME_S5K3P8SP_MIPI_RAW        "s5k3p8sp_mipi_raw"
 #define SENSOR_DRVNAME_S5K2T7SP_MIPI_RAW        "s5k2t7sp_mipi_raw"
+#define SENSOR_DRVNAME_S5K2T7SP_MIPI_RAW_5M     "s5k2t7sp_mipi_raw_5m"
 #define SENSOR_DRVNAME_S5K3P8SX_MIPI_RAW        "s5k3p8sx_mipi_raw"
 #define SENSOR_DRVNAME_S5K2L7_MIPI_RAW          "s5k2l7_mipi_raw"
 #define SENSOR_DRVNAME_S5K3L8_MIPI_RAW          "s5k3l8_mipi_raw"
