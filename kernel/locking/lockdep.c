@@ -1182,8 +1182,7 @@ print_circular_bug_header(struct lock_list *entry, unsigned int depth,
 		return 0;
 
 	/* Add by Mtk */
-	if (depth < 5)
-		lockdep_aee();
+	lockdep_aee();
 
 	printk("\n");
 	printk("======================================================\n");
@@ -4497,7 +4496,7 @@ void lockdep_rcu_suspicious(const char *file, const int line, const char *s)
 	/* Note: the following can be executed concurrently, so be careful. */
 
 	/* Add by Mtk */
-	/*lockdep_aee();*/
+	lockdep_aee();
 
 	printk("\n");
 	printk("===============================\n");
