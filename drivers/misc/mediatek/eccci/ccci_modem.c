@@ -294,7 +294,7 @@ void ccci_md_config(struct ccci_modem *md)
 	base_ap_view_phy &= PAGE_MASK;
 	if (!pfn_valid(__phys_to_pfn(base_ap_view_phy)))
 		md->mem_layout.md_bank0.base_ap_view_vir =
-			ioremap_nocache(md->mem_layout.md_bank0.base_ap_view_phy, MD_IMG_DUMP_SIZE);
+			ioremap_wc(md->mem_layout.md_bank0.base_ap_view_phy, MD_IMG_DUMP_SIZE);
 	else {
 		prot = pgprot_noncached(PAGE_KERNEL);
 		md->mem_layout.md_bank0.base_ap_view_vir =
@@ -319,7 +319,7 @@ void ccci_md_config(struct ccci_modem *md)
 		md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy = md1_md3_smem_phy;
 	md->mem_layout.md_bank4_noncacheable_total.size = md_resv_smem_size + md1_md3_smem_size;
 	md->mem_layout.md_bank4_noncacheable_total.base_ap_view_vir =
-		ioremap_nocache(md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy,
+		ioremap_wc(md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy,
 			md->mem_layout.md_bank4_noncacheable_total.size);
 	md->mem_layout.md_bank4_noncacheable_total.base_md_view_phy =
 		0x40000000 + md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy -
@@ -332,7 +332,7 @@ void ccci_md_config(struct ccci_modem *md)
 	if (md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy &&
 		md->mem_layout.md_bank4_cacheable_total.size)
 		md->mem_layout.md_bank4_cacheable_total.base_ap_view_vir =
-			ioremap_nocache(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
+			ioremap_wc(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
 				md->mem_layout.md_bank4_cacheable_total.size);
 	else
 		CCCI_ERROR_LOG(md->index, TAG, "get ccb info base:%lx size:%x\n",
