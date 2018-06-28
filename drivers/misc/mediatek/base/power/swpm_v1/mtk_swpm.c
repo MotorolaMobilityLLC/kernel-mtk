@@ -31,7 +31,7 @@
  *  Macro Definitions
  ****************************************************************************/
 #define DEFAULT_AVG_WINDOW		(50)
-/* #define BRINGUP_DISABLE */
+#define BRINGUP_DISABLE
 
 #define MAX(a, b)			((a) >= (b) ? (a) : (b))
 #define MIN(a, b)			((a) >= (b) ? (b) : (a))
@@ -342,12 +342,12 @@ static int __init swpm_init(void)
 {
 #ifdef BRINGUP_DISABLE
 	swpm_err("swpm is disabled\n");
-	return 0;
-#else
+	goto end;
+#endif
 	get_rec_addr();
 	if (!swpm_info_ref) {
 		swpm_err("get sspm dram addr failed\n");
-		return 0;
+		goto end;
 	}
 	create_procfs();
 
@@ -365,10 +365,10 @@ static int __init swpm_init(void)
 
 	swpm_info("SWPM init done!\n");
 
+end:
 	return 0;
-#endif
 }
-/* late_initcall(swpm_init); */
+late_initcall(swpm_init);
 
 /***************************************************************************
  *  API
