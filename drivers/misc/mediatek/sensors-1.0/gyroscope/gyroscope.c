@@ -783,9 +783,6 @@ int gyro_data_report(struct gyro_data *data)
 		mark_timestamp(ID_GYROSCOPE, DATA_REPORT, ktime_get_boot_ns(),
 			       event.time_stamp);
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited(
-			"gyro_data_report failed due to event buffer full\n");
 	return err;
 }
 
@@ -802,9 +799,6 @@ int gyro_bias_report(struct gyro_data *data)
 	event.word[2] = data->z;
 
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited(
-			"gyro_bias_report failed due to event buffer full\n");
 	return err;
 }
 
@@ -821,9 +815,6 @@ int gyro_cali_report(struct gyro_data *data)
 	event.word[2] = data->z;
 
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err(
-			"gyro_bias_report failed due to event buffer full\n");
 	return err;
 }
 
@@ -843,9 +834,6 @@ int gyro_temp_report(int32_t *temp)
 	event.word[5] = temp[5];
 
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err(
-			"gyro_bias_report failed due to event buffer full\n");
 	return err;
 }
 
@@ -856,12 +844,9 @@ int gyro_flush_report(void)
 
 	memset(&event, 0, sizeof(struct sensor_event));
 
-	pr_debug("flush\n");
+	pr_debug_ratelimited("flush\n");
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited(
-			"gyro_flush_report failed due to event buffer full\n");
 	return err;
 }
 

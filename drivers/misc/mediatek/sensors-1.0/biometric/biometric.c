@@ -117,8 +117,6 @@ int data_report(int handle)
 
 		err = sensor_input_event(biometric_context_obj->mdev.minor,
 			&event);
-		if (err < 0)
-			pr_err_ratelimited("failed due to event buffer full\n");
 	}
 	return err;
 }
@@ -128,12 +126,10 @@ int biometric_flush_report(int handle)
 	struct sensor_event event;
 	int err = 0;
 
-	pr_debug("flush, handle:%d\n", handle);
+	pr_debug_ratelimited("flush, handle:%d\n", handle);
 	event.handle = handle;
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(biometric_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
