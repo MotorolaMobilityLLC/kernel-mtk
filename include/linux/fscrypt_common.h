@@ -17,6 +17,7 @@
 #include <linux/dcache.h>
 #include <crypto/skcipher.h>
 #include <uapi/linux/fs.h>
+#include <linux/blk_types.h>
 
 #define FS_CRYPTO_BLOCK_SIZE		16
 
@@ -99,6 +100,10 @@ static inline bool fscrypt_valid_enc_modes(u32 contents_mode,
 		return true;
 
 	if (contents_mode == FS_ENCRYPTION_MODE_AES_256_XTS &&
+	    filenames_mode == FS_ENCRYPTION_MODE_AES_256_CTS)
+		return true;
+
+	if (contents_mode == FS_ENCRYPTION_MODE_PRIVATE &&
 	    filenames_mode == FS_ENCRYPTION_MODE_AES_256_CTS)
 		return true;
 
