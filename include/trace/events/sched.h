@@ -1685,6 +1685,27 @@ TRACE_EVENT(sched_overutilized,
 	TP_printk("overutilized=%d",
 		__entry->overutilized ? 1 : 0)
 );
+
+/*
+ * MT: Tracepoint for system overutilized indicator
+ */
+TRACE_EVENT(sched_system_overutilized,
+
+	TP_PROTO(bool overutilized),
+
+	TP_ARGS(overutilized),
+
+	TP_STRUCT__entry(
+		__field(bool, overutilized)
+	),
+
+	TP_fast_assign(
+		__entry->overutilized = overutilized;
+	),
+
+	TP_printk("system overutilized=%d",
+		__entry->overutilized ? 1 : 0)
+);
 #ifdef CONFIG_SCHED_WALT
 struct rq;
 

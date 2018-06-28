@@ -107,3 +107,10 @@ SCHED_FEAT(MIN_CAPACITY_CAPPING, false)
  * OFF: Use whichever of target or backup saves most.
  */
 SCHED_FEAT(FBT_STRICT_ORDER, true)
+
+/*
+ * Assign newly forked task util. New value designed from task's
+ * priority and cfs rq's current average of util/weight
+ * in post_init_entity_util_avg.
+ */
+SCHED_FEAT(POST_INIT_UTIL, false)
