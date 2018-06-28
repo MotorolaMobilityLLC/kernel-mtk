@@ -2507,7 +2507,7 @@ int32_t cmdq_core_is_group_flag(enum CMDQ_GROUP_ENUM engGroup, uint64_t engineFl
 	return false;
 }
 
-static void cmdq_core_group_begin_task(struct TaskStruct *task, struct TaskStruct *task_list[], u32 size)
+void cmdq_core_group_begin_task(struct TaskStruct *task, struct TaskStruct *task_list[], u32 size)
 {
 	enum CMDQ_GROUP_ENUM group = 0;
 
@@ -7424,7 +7424,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 	return status;
 }
 
-static s32 cmdq_core_get_pmqos_task_list(struct TaskStruct *pTask, struct ThreadStruct *pThread,
+s32 cmdq_core_get_pmqos_task_list(struct TaskStruct *pTask, struct ThreadStruct *pThread,
 	struct TaskStruct **task_list_out, u32 *task_list_count_out, u32 task_list_max_size)
 {
 	u32 hw_cookie = 0;

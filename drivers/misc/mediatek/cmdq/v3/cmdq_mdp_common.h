@@ -146,6 +146,11 @@ struct mdp_pmqos_record {
 #define MDP_BUF_INFO_STR_LEN 8 /* each buf info length */
 #define MDP_DISPATCH_KEY_STR_LEN (TASK_COMM_LEN + 5) /* dispatch key format is MDP_(ThreadName) */
 #define MDP_TOTAL_THREAD 8
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+#define MDP_THREAD_START (CMDQ_MIN_SECURE_THREAD_ID + 2)
+#else
+#define MDP_THREAD_START CMDQ_DYNAMIC_THREAD_ID_START
+#endif
 
 struct cmdqMDPTaskStruct {
 	char callerName[TASK_COMM_LEN];

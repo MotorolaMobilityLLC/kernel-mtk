@@ -1109,6 +1109,8 @@ static s32 cmdq_sec_exec_task_async_impl(struct TaskStruct *task,
 	u32 msg_offset;
 	s32 msg_max_size;
 	unsigned long flags;
+	struct TaskStruct *task_list[CMDQ_MAX_TASK_IN_THREAD] = { NULL };
+	u32 task_list_count = 0;
 
 	cmdq_long_string_init(false, long_msg, &msg_offset, &msg_max_size);
 	cmdq_long_string(long_msg, &msg_offset, &msg_max_size,
@@ -1134,6 +1136,19 @@ static s32 cmdq_sec_exec_task_async_impl(struct TaskStruct *task,
 		task->thread = thread_id;
 		task->irqFlag = 0;
 		task->taskState = TASK_STATE_BUSY;
+
+		if (thread->taskCount > 0)
+			cmdq_core_get_pmqos_task_list(task, thread, task_list,
+				&task_list_count, ARRAY_SIZE(task_list));
+
+		/* add coming task to last */
+		if (task_list_count < ARRAY_SIZE(task_list)) {
+			task_list[task_list_count] = task;
+			task_list_count++;
+		}
+
+		/* update group before submit to HW */
+		cmdq_core_group_begin_task(task, task_list, task_list_count);
 
 		cmdq_core_lock_exec_path(&flags);
 		/* insert task to pThread's task lsit, and */

@@ -63,7 +63,7 @@ s32 cmdq_sec_allocate_wsm(struct cmdq_sec_tee_context *tee,
 		return -EINVAL;
 
 	tee->shared_mem.size = size;
-	tee->shared_mem.flags = TEEC_MEM_INPUT;
+	tee->shared_mem.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
 	status = TEEC_AllocateSharedMemory(&tee->gp_context,
 		&tee->shared_mem);
 	if (status != TEEC_SUCCESS) {
@@ -128,10 +128,10 @@ s32 cmdq_sec_execute_session(struct cmdq_sec_tee_context *tee,
 
 	memset(&operation, 0, sizeof(struct TEEC_Operation));
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
-	operation.param_types = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INPUT,
+	operation.param_types = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INOUT,
 		TEEC_NONE, TEEC_NONE, TEEC_NONE);
 #else
-	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INPUT,
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INOUT,
 		TEEC_NONE, TEEC_NONE, TEEC_NONE);
 #endif
 	operation.params[0].memref.parent = &tee->shared_mem;
