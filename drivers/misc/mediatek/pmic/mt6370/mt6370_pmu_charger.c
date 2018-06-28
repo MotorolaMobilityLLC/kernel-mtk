@@ -1486,7 +1486,7 @@ static int __mt6370_set_ichg(struct mt6370_pmu_charger_data *chg_data, u32 uA)
 
 	uA = (uA < 500000) ? 500000 : uA;
 
-	if (chg_data->chip->chip_vid == 0xe0) {
+	if (chg_data->chip->chip_vid != 0xf0) {
 		ret = mt6370_ichg_workaround(chg_data, uA);
 		if (ret < 0)
 			dev_info(chg_data->dev, "%s: workaround fail\n",
