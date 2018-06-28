@@ -130,6 +130,11 @@ static int fl_enable(struct flashlight_dev *fdev, int enable)
 		}
 #endif
 
+	if (fdev->sw_disable_status == FLASHLIGHT_SW_DISABLE_ON) {
+		pr_info("Sw disable on\n");
+		return 0;
+	}
+
 	/* ioctl */
 	fl_dev_arg.channel = fdev->dev_id.channel;
 	fl_dev_arg.arg = enable;
@@ -1396,6 +1401,107 @@ static ssize_t flashlight_fault_show(
 }
 static DEVICE_ATTR_RO(flashlight_fault);
 
+/* sw disable sysfs */
+static ssize_t flashlight_sw_disable_show(
+		struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct flashlight_dev *fdev;
+	char status[FLASHLIGHT_SW_DISABLE_STATUS_BUF_SIZE];
+	char status_tmp[FLASHLIGHT_SW_DISABLE_STATUS_TMPBUF_SIZE];
+
+	pr_debug("Charger status show\n");
+
+	memset(status, '\0', FLASHLIGHT_SW_DISABLE_STATUS_BUF_SIZE);
+
+	mutex_lock(&fl_mutex);
+	list_for_each_entry(fdev, &flashlight_list, node) {
+		if (!fdev->ops)
+			continue;
+
+		snprintf(status_tmp,
+				FLASHLIGHT_SW_DISABLE_STATUS_TMPBUF_SIZE,
+				"%d %d\n", fdev->dev_id.type,
+				fdev->sw_disable_status);
+		strncat(status, status_tmp,
+				FLASHLIGHT_SW_DISABLE_STATUS_TMPBUF_SIZE);
+	}
+	mutex_unlock(&fl_mutex);
+
+	return scnprintf(buf, PAGE_SIZE,
+			"[TYPE] [SW_DISABLE_STATUS]\n%s\n", status);
+}
+
+static ssize_t flashlight_sw_disable_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct flashlight_dev *fdev;
+	struct flashlight_arg fl_arg;
+	int sw_disable_status_tmp = 0;
+	s32 num;
+	int count = 0;
+	char delim[] = " ";
+	char *token, *cur = (char *)buf;
+	int ret;
+
+	pr_debug("Sw disable store\n");
+
+	memset(&fl_arg, 0, sizeof(struct flashlight_arg));
+
+	while (cur) {
+		token = strsep(&cur, delim);
+		ret = kstrtos32(token, 10, &num);
+		if (ret) {
+			pr_info("Error arguments\n");
+			goto unlock;
+		}
+
+		if (count == FLASHLIGHT_SW_DISABLE_TYPE)
+			fl_arg.type = (int)num;
+		else if (count == FLASHLIGHT_SW_DISABLE_STATUS)
+			sw_disable_status_tmp = (int)num;
+		else {
+			count++;
+			break;
+		}
+
+		count++;
+	}
+
+	/* verify data */
+	if (count != FLASHLIGHT_SW_DISABLE_NUM) {
+		pr_info("Error argument number: (%d)\n", count);
+		ret = -1;
+		goto unlock;
+	}
+	if (sw_disable_status_tmp < FLASHLIGHT_SW_DISABLE_OFF ||
+			sw_disable_status_tmp > FLASHLIGHT_SW_DISABLE_ON) {
+		pr_info("Error arguments sw disable status(%d)\n",
+				sw_disable_status_tmp);
+		ret = -1;
+		goto unlock;
+	}
+
+	pr_debug("(%d), (%d)\n", fl_arg.type, sw_disable_status_tmp);
+
+	/* store sw_disable status */
+	mutex_lock(&fl_mutex);
+	list_for_each_entry(fdev, &flashlight_list, node) {
+		if (!fdev->ops)
+			continue;
+		if (fl_arg.type == fdev->dev_id.type) {
+			if (sw_disable_status_tmp == FLASHLIGHT_SW_DISABLE_ON)
+				fl_enable(fdev, 0);
+
+			fdev->sw_disable_status = sw_disable_status_tmp;
+		}
+	}
+	mutex_unlock(&fl_mutex);
+	ret = size;
+unlock:
+	return ret;
+}
+static DEVICE_ATTR_RW(flashlight_sw_disable);
+
 /******************************************************************************
  * Platform device and driver
  *****************************************************************************/
@@ -1506,7 +1612,12 @@ static int flashlight_probe(struct platform_device *dev)
 	}
 	if (device_create_file(flashlight_device, &dev_attr_flashlight_fault)) {
 		pr_info("Failed to create device file(fault)\n");
-		goto err_create_current_device_file;
+		goto err_create_fault_device_file;
+	}
+	if (device_create_file(flashlight_device,
+				&dev_attr_flashlight_sw_disable)) {
+		pr_info("Failed to create device file(sw_disable)\n");
+		goto err_create_sw_disable_device_file;
 	}
 
 	/* init flashlight */
@@ -1516,6 +1627,10 @@ static int flashlight_probe(struct platform_device *dev)
 
 	return 0;
 
+err_create_sw_disable_device_file:
+	device_remove_file(flashlight_device, &dev_attr_flashlight_sw_disable);
+err_create_fault_device_file:
+	device_remove_file(flashlight_device, &dev_attr_flashlight_fault);
 err_create_current_device_file:
 	device_remove_file(flashlight_device, &dev_attr_flashlight_capability);
 err_create_capability_device_file:
@@ -1542,6 +1657,8 @@ static int flashlight_remove(struct platform_device *dev)
 	fl_uninit();
 
 	/* remove device file */
+	device_remove_file(flashlight_device, &dev_attr_flashlight_sw_disable);
+	device_remove_file(flashlight_device, &dev_attr_flashlight_fault);
 	device_remove_file(flashlight_device, &dev_attr_flashlight_current);
 	device_remove_file(flashlight_device, &dev_attr_flashlight_capability);
 	device_remove_file(flashlight_device, &dev_attr_flashlight_charger);
