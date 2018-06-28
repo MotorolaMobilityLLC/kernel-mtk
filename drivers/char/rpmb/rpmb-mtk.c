@@ -512,9 +512,9 @@ int emmc_rpmb_req_set_key(struct mmc_card *card, u8 *key)
 	struct emmc_rpmb_req rpmb_req;
 	struct s_rpmb *rpmb_frame;
 	int ret;
-	u8 user_key;
+	u8 user_key[RPMB_SZ_MAC];
 
-	if (get_user(user_key, key))
+	if (copy_from_user(user_key, key, RPMB_SZ_MAC))
 		return -EFAULT;
 
 	MSG(INFO, "%s start!!!\n", __func__);
@@ -523,7 +523,7 @@ int emmc_rpmb_req_set_key(struct mmc_card *card, u8 *key)
 	if (rpmb_frame == NULL)
 		return RPMB_ALLOC_ERROR;
 
-	memcpy(rpmb_frame->mac, key, RPMB_SZ_MAC);
+	memcpy(rpmb_frame->mac, user_key, RPMB_SZ_MAC);
 
 	rpmb_req.type = RPMB_PROGRAM_KEY;
 	rpmb_req.blk_cnt = 1;
