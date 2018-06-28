@@ -15,6 +15,16 @@
 
 #define AUTOK_VERSION                   (0x17122120)
 
+#if defined(CONFIG_MACH_MT6761)
+#define MSDC1_CLKTX       4
+#define CHK_CNT_HS400     6
+#define SWITCH_CNT_HS400  4
+#else
+#define MSDC1_CLKTX       0
+#define CHK_CNT_HS400     3
+#define SWITCH_CNT_HS400  5
+#endif
+
 struct AUTOK_PLAT_PARA_TX {
 	/* chip_hw_ver:  in case E2's tune values
 	 * are different, no use if no E2
@@ -183,8 +193,8 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_tx.msdc0_dat6tx = 0; \
 		autok_para_tx.msdc0_dat7tx = 0; \
 		autok_para_tx.msdc0_txskew = 0; \
-		autok_para_tx.msdc1_clktx = 0; \
-		autok_para_tx.msdc1_sdr104_clktx = 0; \
+		autok_para_tx.msdc1_clktx = MSDC1_CLKTX; \
+		autok_para_tx.msdc1_sdr104_clktx = MSDC1_CLKTX; \
 		autok_para_tx.msdc2_clktx = 0; \
 		autok_para_tx.sdio30_plus_clktx = 0; \
 		autok_para_tx.sdio30_plus_cmdtx = 0; \
@@ -240,9 +250,9 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_rx.old_stop_hs = 3; \
 		autok_para_rx.read_dat_cnt_hs400 = 1; \
 		autok_para_rx.read_dat_cnt_ddr208 = 1; \
-		autok_para_rx.end_bit_chk_cnt_hs400 = 3; \
+		autok_para_rx.end_bit_chk_cnt_hs400 = CHK_CNT_HS400; \
 		autok_para_rx.end_bit_chk_cnt_ddr208 = 3; \
-		autok_para_rx.latchck_switch_cnt_hs400 = 5; \
+		autok_para_rx.latchck_switch_cnt_hs400 = SWITCH_CNT_HS400; \
 		autok_para_rx.latchck_switch_cnt_ddr208 = 3; \
 		autok_para_rx.ds_dly3_hs400 = 20; \
 		autok_para_rx.ds_dly3_ddr208 = 20; \

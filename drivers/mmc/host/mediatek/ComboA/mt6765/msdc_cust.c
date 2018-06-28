@@ -974,16 +974,6 @@ void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 
 void msdc_set_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 {
-#ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
-	pr_notice("msdc%d set driving: clk_drv=%d, cmd_drv=%d, dat_drv=%d, rst_drv=%d, ds_drv=%d\n",
-		id,
-		driving->clk_drv,
-		driving->cmd_drv,
-		driving->dat_drv,
-		driving->rst_drv,
-		driving->ds_drv);
-#endif
-
 	if (id == 0) {
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV, 0x7 << 15,
 			driving->ds_drv);
