@@ -550,6 +550,7 @@ enum SMEM_USER_ID {
 	SMEM_USER_SMART_LOGGING,
 	SMEM_USER_RAW_MD_CONSYS,
 	SMEM_USER_RAW_PHY_CAP,
+	SMEM_USER_RAW_USIP,
 	SMEM_USER_MAX,
 };
 
@@ -565,6 +566,15 @@ struct ccci_sys_cb_func_info {
 };
 
 #define MAX_KERN_API 64
+
+enum MD_WAKEUP_SOURCE {
+	WAKE_SRC_MD_WDT = 0,
+	WAKE_SRC_HIF_CCIF0 = 1,
+	WAKE_SRC_HIF_CCIF1 = 2,
+	WAKE_SRC_HIF_CLDMA = 3,
+	WAKE_SRC_HIF_DPMAIF = 4,
+	WAKE_SRC_MD_MAX,
+};
 
 /* ========================================================================== */
 /* Export API */
@@ -592,6 +602,8 @@ int get_md1_md3_resv_smem_info(int md_id, phys_addr_t *rw_base,
 	unsigned int *rw_size);
 unsigned int get_md_resv_phy_cap_size(int md_id);
 unsigned int get_md_smem_cachable_offset(int md_id);
+phys_addr_t get_smem_phy_start_addr(int md_id,
+	enum SMEM_USER_ID user_id, int *size_o);
 
 unsigned long ccci_get_md_boot_count(int md_id); /* Export by ccci fsm */
 int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
@@ -670,4 +682,8 @@ int get_md_img_type(int md_id);
 int get_legacy_md_type(int md_id);
 int check_md_type(int data);
 
+int get_md_resv_csmem_info(int md_id, phys_addr_t *buf_base,
+	unsigned int *buf_size);
+int get_md_cache_region_info(int region_id, unsigned int *buf_base,
+	unsigned int *buf_size);
 #endif

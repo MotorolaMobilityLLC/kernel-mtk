@@ -345,12 +345,6 @@ struct cldma_rbd {
 	u8 non_used2;
 } __packed;
 
-typedef enum {
-	ONCE_MORE,
-	ALL_CLEAR,
-	LOW_MEMORY,
-} RX_COLLECT_RESULT;
-
 enum {
 	CCCI_TRACE_TX_IRQ = 0,
 	CCCI_TRACE_RX_IRQ = 1,
@@ -372,8 +366,6 @@ static inline void md_cd_queue_struct_init(struct md_cd_queue *queue,
 	queue->fast_hdr.gpd_count = 0;
 #endif
 }
-
-int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id);
 
 static inline int ccci_cldma_hif_send_skb(unsigned char hif_id, int tx_qno,
 	struct sk_buff *skb, int from_pool, int blocking)
@@ -438,28 +430,22 @@ static inline int ccci_cldma_hif_set_wakeup_src(unsigned char hif_id,
 
 }
 
+int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id);
+int md_cd_late_init(unsigned char hif_id);
 /*API for modem sys1*/
 void cldma_start(unsigned char hif_id);
 void cldma_stop(unsigned char hif_id);
 void cldma_stop_for_ee(unsigned char hif_id);
 void md_cldma_clear(unsigned char hif_id);
 void cldma_reset(unsigned char hif_id);
-int md_cd_late_init(unsigned char hif_id);
 void md_cd_clear_all_queue(unsigned char hif_id, DIRECTION dir);
 void md_cd_ccif_allQreset_work(unsigned char hif_id);
 
 extern void mt_irq_dump_status(int irq);
 extern unsigned int ccci_get_md_debug_mode(struct ccci_modem *md);
 
-extern u32 mt_irq_get_pending(unsigned int irq);
 /* used for throttling feature - start */
 extern unsigned long ccci_modem_boot_count[];
 /* used for throttling feature - end */
 
-#define GF_PORT_LIST_MAX 128
-extern int gf_port_list_reg[GF_PORT_LIST_MAX];
-extern int gf_port_list_unreg[GF_PORT_LIST_MAX];
-extern int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg);
-extern bool spm_is_md1_sleep(void);
-extern void spm_ap_mdsrc_req(u8 lock);
 #endif				/* __MODEM_CD_H__ */

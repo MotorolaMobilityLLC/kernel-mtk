@@ -139,6 +139,12 @@ do { \
 	ccci_dump_write(idx, CCCI_DUMP_HISTORY, 0, fmt, ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
+#define CCCI_HISTORY_TAG_LOG(idx, tag, fmt, args...) \
+do { \
+	ccci_dump_write(idx, CCCI_DUMP_HISTORY, \
+		CCCI_DUMP_TIME_FLAG, fmt, ##args); \
+	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
+} while (0)
 /****************************************************************************
  ** CCCI dump log define end ****************
  ****************************************************************************/

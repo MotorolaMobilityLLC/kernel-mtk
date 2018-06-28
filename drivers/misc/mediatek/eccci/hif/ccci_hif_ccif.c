@@ -459,9 +459,13 @@ static int ccif_check_flow_ctrl(struct md_ccif_ctrl *md_ctrl,
 	return ret;
 }
 
-static void md_ccif_traffic_monitor_func(unsigned long data)
+static void md_ccif_traffic_work_func(struct work_struct *work)
 {
-	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)data;
+	struct ccci_hif_traffic *traffic_inf =
+		container_of(work, struct ccci_hif_traffic,
+			traffic_work_struct);
+	struct md_ccif_ctrl *md_ctrl =
+		container_of(traffic_inf, struct md_ccif_ctrl, traffic_info);
 
 	ccci_port_dump_status(md_ctrl->md_id);
 	ccci_channel_dump_packet_counter(md_ctrl->md_id,
@@ -507,6 +511,13 @@ static void md_ccif_traffic_monitor_func(unsigned long data)
 	}
 	mod_timer(&md_ctrl->traffic_monitor,
 		jiffies + CCIF_TRAFFIC_MONITOR_INTERVAL * HZ);
+}
+
+static void md_ccif_traffic_monitor_func(unsigned long data)
+{
+	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)data;
+
+	schedule_work(&md_ctrl->traffic_info.traffic_work_struct);
 }
 
 atomic_t lb_dl_q;
@@ -799,6 +810,16 @@ static void md_ccif_queue_dump(unsigned char hif_id)
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
 		"Dump CCIF latest isr %5llu.%06lu\n", ts,
 		nsec_rem / 1000);
+#ifdef DEBUG_FOR_CCB
+	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
+		"Dump CCIF latest r_ch: 0x%x\n",
+		md_ctrl->traffic_info.last_ccif_r_ch);
+	ts = md_ctrl->traffic_info.latest_ccb_isr_time;
+	nsec_rem = do_div(ts, NSEC_PER_SEC);
+	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
+		"Dump CCIF latest ccb_isr %5llu.%06lu\n", ts,
+		nsec_rem / 1000);
+#endif
 
 	for (idx = 0; idx < QUEUE_NUM; idx++) {
 		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
@@ -967,6 +988,10 @@ static void md_ccif_launch_work(struct md_ccif_ctrl *md_ctrl)
 			"CCIF_MD wakeup source:(CCB)(%u)\n",
 			md_ctrl->wakeup_count);
 		}
+#ifdef DEBUG_FOR_CCB
+		md_ctrl->traffic_info.latest_ccb_isr_time
+			= local_clock();
+#endif
 		ccci_port_queue_status_notify(md_ctrl->md_id, CCIF_HIF_ID,
 			AP_MD_CCB_WAKEUP, -1, RX_IRQ);
 	}
@@ -1012,6 +1037,10 @@ static irqreturn_t md_ccif_isr(int irq, void *data)
 	if (ch_id >> RINGQ_BASE) {
 		md_ctrl->traffic_info.latest_isr_time
 			= local_clock();
+#ifdef DEBUG_FOR_CCB
+	/* infactly, maybe md_ctrl->channel_id is, which maybe cleared */
+		md_ctrl->traffic_info.last_ccif_r_ch = ch_id;
+#endif
 		md_ccif_launch_work(md_ctrl);
 	} else
 		md_ccif_handle_exception(md_ctrl);
@@ -1479,6 +1508,8 @@ int ccci_ccif_hif_init(unsigned char hif_id, unsigned char md_id)
 	md_ctrl->traffic_monitor.function = md_ccif_traffic_monitor_func;
 	md_ctrl->traffic_monitor.data = (unsigned long)md_ctrl;
 	md_ctrl->heart_beat_counter = 0;
+	INIT_WORK(&md_ctrl->traffic_info.traffic_work_struct,
+		md_ccif_traffic_work_func);
 
 	md_ctrl->channel_id = 0;
 	md_ctrl->md_id = md_id;

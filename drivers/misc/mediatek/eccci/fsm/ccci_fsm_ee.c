@@ -325,7 +325,7 @@ int fsm_check_ee_done(struct ccci_fsm_ee *ee_ctl, int timeout)
 		if (ccci_port_get_critical_user(ee_ctl->md_id,
 				CRIT_USR_MDLOG)) {
 			CCCI_DEBUG_LOG(ee_ctl->md_id, FSM,
-			"MD logger is running, waiting for EE dump done\n");
+				"MD logger is running, waiting for EE dump done\n");
 			is_ee_done = !(ee_ctl->ee_info_flag & MD_EE_FLOW_START)
 				&& ee_ctl->mdlog_dump_done;
 		} else
@@ -339,6 +339,21 @@ int fsm_check_ee_done(struct ccci_fsm_ee *ee_ctl, int timeout)
 		if (loop_max && (count > loop_max)) {
 			CCCI_ERROR_LOG(ee_ctl->md_id, FSM,
 				"wait EE done timeout\n");
+#ifdef DEBUG_FOR_CCB
+			/* Dump CCB memory */
+			ccci_port_dump_status(ee_ctl->md_id);
+			ccci_md_dump_info(ee_ctl->md_id, DUMP_FLAG_CCIF |
+				DUMP_FLAG_CCIF_REG | DUMP_FLAG_IRQ_STATUS |
+				DUMP_FLAG_SMEM_CCB_CTRL |
+				DUMP_FLAG_SMEM_CCB_DATA,
+				NULL, 0);
+#if defined(CONFIG_MTK_AEE_FEATURE)
+			/*
+			 * aee_kernel_warning("ccci_EE_timeout",
+			 *	"MD EE debug: wait dump done timeout");
+			 */
+#endif
+#endif
 			return -1;
 		}
 	}

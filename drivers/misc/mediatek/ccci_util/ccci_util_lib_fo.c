@@ -701,6 +701,67 @@ static struct _ccb_layout ccb_info;
 static unsigned int md1_phy_cap_size;
 static unsigned int md1_bank4_cache_offset;
 
+/* cacheable share memory */
+struct _csmem_item {
+	unsigned long long csmem_buffer_addr;
+	unsigned int md_offset;
+	unsigned int csmem_buffer_size;
+	unsigned int item_cnt;
+};
+static struct _csmem_item csmem_info;
+static struct _csmem_item *csmem_layout;
+
+static void cshare_memory_info_parsing(void)
+{
+	unsigned int size;
+
+	memset(&csmem_info, 0, sizeof(struct _csmem_item));
+	if (find_ccci_tag_inf("md1_bank4_cache_info", (char *)&csmem_info,
+		sizeof(struct _csmem_item)) != sizeof(struct _csmem_item)) {
+		CCCI_UTIL_ERR_MSG("Invalid csmem_info dt para\n");
+		if (ccb_info.ccb_data_buffer_addr != 0)
+			goto OLD_LK_CSMEM;
+		return;
+	}
+	size = csmem_info.item_cnt * sizeof(struct _csmem_item);
+	csmem_layout = kzalloc(size, GFP_KERNEL);
+	if (csmem_layout == NULL) {
+		CCCI_UTIL_ERR_MSG("csmem_layout:alloc csmem_layout fail\n");
+		return;
+	}
+	if (find_ccci_tag_inf("md1_bank4_cache_layout", (char *)csmem_layout,
+		size) != size) {
+		CCCI_UTIL_ERR_MSG("Invalid csmem_layout dt para\n");
+		return;
+	}
+	return;
+
+OLD_LK_CSMEM:
+	/* old LK config compatibility: create ccb item. */
+	csmem_info.csmem_buffer_addr = ccb_info.ccb_data_buffer_addr;
+	csmem_info.csmem_buffer_size = ccb_info.ccb_data_buffer_size;
+	csmem_info.item_cnt = 1;
+
+	size = csmem_info.item_cnt * sizeof(struct _csmem_item);
+	csmem_layout = kzalloc(size, GFP_KERNEL);
+	if (csmem_layout == NULL) {
+		CCCI_UTIL_ERR_MSG("csmem_layout:alloc csmem_layout fail\n");
+		return;
+	}
+	csmem_layout[0].csmem_buffer_addr = csmem_info.csmem_buffer_addr;
+	csmem_layout[0].csmem_buffer_size = csmem_info.csmem_buffer_size;
+	csmem_layout[0].md_offset = 0;
+	csmem_layout[0].item_cnt = SMEM_USER_CCB_START;
+#ifndef mtk09077
+	CCCI_UTIL_ERR_MSG("ccci_util get csmem: data:%llx data_size:%d\n",
+		csmem_info.csmem_buffer_addr,
+		csmem_info.csmem_buffer_size);
+#endif
+	CCCI_UTIL_INF_MSG("ccci_util get csmem: data:%llx data_size:%d\n",
+		csmem_info.csmem_buffer_addr,
+		csmem_info.csmem_buffer_size);
+}
+
 static void share_memory_info_parsing(void)
 {
 	struct _smem_layout smem_layout;
@@ -802,6 +863,18 @@ static void share_memory_info_parsing(void)
 				(md_resv_smem_addr[MD_SYS3] +
 				 md_resv_smem_size[MD_SYS3]));
 #endif
+	cshare_memory_info_parsing();
+{
+	int i;
+
+	for (i = 0; i < csmem_info.item_cnt; i++) {
+		CCCI_UTIL_INF_MSG(
+			"csmem_region[%d][%d]: data_offset:%x data_size:%d\n",
+			i, csmem_layout[i].item_cnt,
+			csmem_layout[i].md_offset,
+			csmem_layout[i].csmem_buffer_size);
+	}
+}
 }
 
 static void md_mem_info_parsing(void)
@@ -1356,6 +1429,34 @@ unsigned int get_md_smem_cachable_offset(int md_id)
 	return 0;
 }
 
+int get_md_resv_csmem_info(int md_id, phys_addr_t *buf_base,
+	unsigned int *buf_size)
+{
+	*buf_base = csmem_info.csmem_buffer_addr;
+	*buf_size = csmem_info.csmem_buffer_size;
+
+	return 0;
+}
+
+int get_md_cache_region_info(int region_id, unsigned int *buf_base,
+	unsigned int *buf_size)
+{
+	int i;
+
+	*buf_base = 0;
+	*buf_size = 0;
+	if (csmem_layout == NULL || csmem_info.item_cnt == 0)
+		return 0;
+
+	for (i = 0; i < csmem_info.item_cnt; i++) {
+		if (csmem_layout[i].item_cnt == region_id) {
+			*buf_base = csmem_layout[i].md_offset;
+			*buf_size = csmem_layout[i].csmem_buffer_size;
+			break;
+		}
+	}
+	return 0;
+}
 
 int get_md_resv_mem_info(int md_id, phys_addr_t *r_rw_base,
 	unsigned int *r_rw_size, phys_addr_t *srw_base,

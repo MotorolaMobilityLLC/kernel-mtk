@@ -233,7 +233,7 @@ static inline int ccci_md_recv_skb(unsigned char md_id,
 	int flag = NORMAL_DATA;
 
 #if MD_GENERATION >= (6293)
-	if (hif_id == CLDMA_HIF_ID)
+	if (hif_id == MD1_NET_HIF)
 		flag = CLDMA_NET_DATA;
 #endif
 	return ccci_port_recv_skb(md_id, hif_id, skb, flag);
@@ -260,7 +260,15 @@ extern unsigned char tc1_read_meid_syncform(unsigned char *meid, int leng);
 #if defined(FEATURE_TC1_CUSTOMER_VAL)
 extern int get_md_customer_val(unsigned char *value, unsigned int len);
 #endif
+extern bool spm_is_md1_sleep(void);
 
 extern unsigned int trace_sample_time;
 
+extern u32 mt_irq_get_pending(unsigned int irq);
+
+#define GF_PORT_LIST_MAX 128
+extern int gf_port_list_reg[GF_PORT_LIST_MAX];
+extern int gf_port_list_unreg[GF_PORT_LIST_MAX];
+extern int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg);
+extern void spm_ap_mdsrc_req(u8 lock);
 #endif	/* __CCCI_MODEM_H__ */

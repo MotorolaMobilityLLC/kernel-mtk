@@ -1627,6 +1627,11 @@ static void cldma_rx_worker_start(struct md_cd_ctrl *md_ctrl, int qno)
 	tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
 #endif
 }
+
+void __weak md_cd_check_md_DCM(struct md_cd_ctrl *md_ctrl)
+{
+}
+
 static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 {
 	int i, ret;
@@ -1807,6 +1812,11 @@ void __weak dump_emi_latency(void)
 {
 	pr_notice("[ccci/dummy] %s is not supported!\n", __func__);
 }
+
+void __weak cldma_dump_register(struct md_cd_ctrl *md_ctrl)
+{
+}
+
 
 void cldma_stop(unsigned char hif_id)
 {
@@ -3117,11 +3127,14 @@ static struct ccci_hif_ops ccci_hif_cldma_ops = {
 
 int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id)
 {
+	struct device_node *node = NULL;
 	struct md_cd_ctrl *md_ctrl;
+#if MD_GENERATION <= (6292)
 	struct md_hw_info *md_info =
 		(struct md_hw_info *)ccci_md_get_hw_info(md_id);
 	struct cldma_hw_info *hw_info =
 		(struct cldma_hw_info *)md_info->hif_hw_info;
+#endif
 	int i;
 
 	md_ctrl = kzalloc(sizeof(struct md_cd_ctrl), GFP_KERNEL);
@@ -3135,17 +3148,43 @@ int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id)
 	md_ctrl->ops = &ccci_hif_cldma_ops;
 	md_ctrl->md_id = md_id;
 	md_ctrl->hif_id = hif_id;
-	ccci_hif[hif_id] = (void *)md_ctrl;
 
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdcldma");
+	if (node == NULL) {
+		CCCI_BOOTUP_LOG(md_id, TAG,
+			"warning: no mediatek,mdcldma in dts\n");
+		return -1;
+	}
+	md_ctrl->cldma_irq_flags = IRQF_TRIGGER_NONE;
+	md_ctrl->cldma_irq_id = irq_of_parse_and_map(node, 0);
+	if (md_ctrl->cldma_irq_id == 0) {
+		CCCI_ERROR_LOG(md_id, TAG, "no cldma irq id set in dts\n");
+		return -1;
+	}
+#if MD_GENERATION <= (6292)
 	md_ctrl->cldma_ap_pdn_base =
 		(void __iomem *)(hw_info->cldma_ap_pdn_base);
 	md_ctrl->cldma_ap_ao_base =
 		(void __iomem *)(hw_info->cldma_ap_ao_base);
-#if MD_GENERATION <= (6292)
 	md_ctrl->cldma_md_pdn_base =
 		(void __iomem *)(hw_info->cldma_md_pdn_base);
 	md_ctrl->cldma_md_ao_base =
 		(void __iomem *)(hw_info->cldma_md_ao_base);
+	if (md_ctrl->cldma_ap_pdn_base == NULL ||
+		md_ctrl->cldma_ap_ao_base == NULL ||
+		md_ctrl->cldma_md_pdn_base == NULL ||
+		md_ctrl->cldma_md_ao_base == NULL) {
+		CCCI_ERROR_LOG(md_id, TAG, "no cldma register set in dts\n");
+		return -1;
+	}
+#else
+	md_ctrl->cldma_ap_ao_base = of_iomap(node, 0);
+	md_ctrl->cldma_ap_pdn_base = of_iomap(node, 1);
+	if (md_ctrl->cldma_ap_pdn_base == NULL ||
+		md_ctrl->cldma_ap_ao_base == NULL) {
+		CCCI_ERROR_LOG(md_id, TAG, "no cldma register set in dts\n");
+		return -1;
+	}
 #endif
 	md_ctrl->txq_active = 0;
 	md_ctrl->rxq_active = 0;
@@ -3160,7 +3199,6 @@ int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id)
 		md_cd_queue_struct_init(&md_ctrl->rxq[i],
 			md_ctrl->hif_id, IN, i);
 
-	md_ctrl->cldma_irq_id = hw_info->cldma_irq_id;
 	md_ctrl->cldma_irq_worker =
 	    alloc_workqueue("md%d_cldma_worker",
 			WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI,
@@ -3176,6 +3214,7 @@ int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id)
 #endif
 	md_ctrl->tx_busy_warn_cnt = 0;
 
+	ccci_hif[hif_id] = (void *)md_ctrl;
 	return 0;
 }
 
