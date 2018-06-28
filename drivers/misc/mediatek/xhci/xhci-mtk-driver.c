@@ -486,6 +486,9 @@ int mtk_xhci_driver_load(bool vbus_on)
 	static int host_plug_test_work_inited;
 
 	host_req = 1;
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+	mt_usb_dual_role_to_host();
+#endif
 
 	if (!host_plug_test_work_inited) {
 		INIT_DELAYED_WORK(&host_plug_test_work, do_host_plug_test_work);
@@ -500,6 +503,9 @@ int mtk_xhci_driver_load(bool vbus_on)
 void mtk_xhci_driver_unload(bool vbus_off)
 {
 	host_req = 0;
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+	mt_usb_dual_role_to_none();
+#endif
 
 	if (host_plug_test_triggered)
 		return;
