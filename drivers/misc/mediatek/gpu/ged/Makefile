@@ -83,8 +83,13 @@ ccflags-y += \
 else
 #$(info *CONFIG_MTK_PLATFORM 1 = $(word 1,$(CONFIG_MTK_PLATFORM)))
 ccflags-y += \
-		 -I$(srctree)/drivers/misc/mediatek/cmdq/v3 \
-		 -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(subst ",,$(CONFIG_MTK_PLATFORM))
+		 -I$(srctree)/drivers/misc/mediatek/cmdq/v3
+
+ifeq ($(CONFIG_MACH_MT6761),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6765/
+else
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(subst ",,$(CONFIG_MTK_PLATFORM))
+endif
 endif
 
 #$(info $$CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT is [${CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT}])

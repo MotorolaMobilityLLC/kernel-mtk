@@ -20,7 +20,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach/
@@ -31,6 +30,12 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/devfreq/
 ccflags-y += -Wno-unused-variable
 ccflags-y += -Wno-unused-function
+
+ifeq ($(CONFIG_MACH_MT6761),y)
+    ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6765/
+else
+    ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+endif
 
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 #ccflags-$(CONFIG_MTK_FREQ_HOPPING) += -DFHCTL_READY

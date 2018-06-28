@@ -13,16 +13,18 @@
 
 # common driver code for CMDQ
 
+ifeq ($(CONFIG_MACH_MT6761),y)
+MTK_PLATFORM := mt6765
+else
+MTK_PLATFORM := CONFIG_MTK_PLATFORM
+endif
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/ \
              -I$(srctree)/drivers/misc/mediatek/mmp/ \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include
 
 # mdp platform code
-ifneq (,$(filter $(strip $(MTK_PLATFORM)), mt6765 mt6761))
-    MDP_PLATFORM_DIR=$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6765
-else
-    MDP_PLATFORM_DIR=$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)
-endif
+MDP_PLATFORM_DIR=$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)
 
 platformdir_exists=$(shell if [ -d ${MDP_PLATFORM_DIR} ]; then echo "y"; else echo "n"; fi;)
 ifeq ($(platformdir_exists), y)
@@ -87,7 +89,7 @@ obj-y += cmdq_subsys_common.o
 obj-y += cmdq_helper_ext.o
 
 ifeq ($(platformdir_exists), y)
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-y += $(subst ",,$(MTK_PLATFORM))/
 endif
 
 ifeq ($(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)),y)

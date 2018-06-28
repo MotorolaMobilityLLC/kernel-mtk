@@ -20,9 +20,14 @@ BUILD_ALL_FILES := true
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/$(MTK_PLATFORM)/
+
+ifeq ($(CONFIG_MACH_MT6761),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6765/
+else
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+endif
 
 obj-y += smi_legacy.o
 SUPPORT_QOS := true

@@ -22,7 +22,10 @@ ccflags-y += \
                                 -I$(srctree)/drivers/misc/mediatek/lcm/inc/ \
 
 ccflags-y += \
-                                -I$(srctree)/drivers/misc/mediatek/cmdq/v3/ \
-                                -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+                                -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 
-
+ifeq ($(CONFIG_MACH_MT6761),y)
+    ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6765/
+else
+    ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+endif
