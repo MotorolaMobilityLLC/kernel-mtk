@@ -92,9 +92,9 @@ struct mtu3_request;
 		SS_INACTIVE_INTR | VBUS_RISE_INTR | \
 		VBUS_FALL_INTR)
 /*Set the debug level at musb_core.c*/
-extern u32 debug_level;
+extern u32 mtu3_debug_level;
 #define mtu3_printk(level, fmt, args...) do { \
-			if (debug_level >= level) { \
+			if (mtu3_debug_level >= level) { \
 				pr_notice("[MTU3]" fmt, ## args); \
 			} \
 		} while (0)

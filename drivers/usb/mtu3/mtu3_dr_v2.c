@@ -47,6 +47,7 @@ static void toggle_opstate(struct ssusb_mtk *ssusb)
 }
 
 
+#ifdef NEVER
 bool usb_cable_connected(void)
 {
 	if (g_otg_sx)
@@ -54,6 +55,7 @@ bool usb_cable_connected(void)
 	else
 		return false;
 }
+#endif /* NEVER */
 
 static void ssusb_ip_sw_reset(struct ssusb_mtk *ssusb)
 {
@@ -150,7 +152,7 @@ static void switch_port_to_host(struct ssusb_mtk *ssusb)
 		check_clk = SSUSB_U3_MAC_RST_B_STS;
 	}
 
-	ssusb_check_clocks(ssusb, check_clk);
+	/*ssusb_check_clocks(ssusb, check_clk);*/
 	ssusb_host_enable(ssusb);
 	retval = xhci_mtk_register_plat();
 	if (retval < 0)
@@ -232,6 +234,7 @@ static void ssusb_set_mode(struct work_struct *work)
 		case DUAL_PROP_DEVICE:
 			/* avoid suspend when works as device */
 			switch_port_to_device(ssusb);
+			pm_stay_awake(ssusb->dev);
 			mtu3_start(mtu);
 			break;
 		case DUAL_PROP_NONE:
@@ -241,6 +244,7 @@ static void ssusb_set_mode(struct work_struct *work)
 				ssusb_gadget_disconnect(mtu);
 			}
 			switch_port_to_none(ssusb);
+			pm_relax(ssusb->dev);
 			break;
 		default:
 			dev_err(ssusb->dev, "invalid state\n");
@@ -361,13 +365,13 @@ int ssusb_otg_switch_init(struct ssusb_mtk *ssusb)
 	struct otg_switch_mtk *otg_sx = &ssusb->otg_switch;
 
 	otg_sx->usb_mode = DUAL_PROP_NONE;
-	switch_port_to_none(ssusb);
+	/*switch_port_to_none(ssusb);*/
 
 	spin_lock_init(&otg_sx->dr_lock);
 
 	INIT_DELAYED_WORK(&otg_sx->extcon_reg_dwork, extcon_register_dwork);
 
-	ssusb_debugfs_init(ssusb);
+	/*ssusb_debugfs_init(ssusb);*/
 
 	/* It is enough to delay 1s for waiting for host initialization */
 	schedule_delayed_work(&otg_sx->extcon_reg_dwork, HZ);

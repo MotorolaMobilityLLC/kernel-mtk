@@ -20,17 +20,15 @@
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
 
-#ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
 #include <mtk_gauge_time_service.h>
 #include <mt-plat/charger_class.h>
-#endif
+
 #endif
 
 struct usbotg_boost {
 	struct platform_device *pdev;
 	struct charger_device *primary_charger;
-#ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
 	struct gtimer otg_kthread_gtimer;
 	struct workqueue_struct *boost_workq;
@@ -38,13 +36,9 @@ struct usbotg_boost {
 	unsigned int polling_interval;
 	bool polling_enabled;
 #endif
-#endif
 };
 static struct usbotg_boost *g_info;
-static struct mutex otg_pwr_lock;
-static bool vbus_on;
 
-#ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
 static void enable_boost_polling(bool poll_en)
 {
@@ -87,46 +81,40 @@ static int usbotg_gtimer_func(struct gtimer *data)
 	return 0;
 }
 #endif
-#endif
 
 int usb_otg_set_vbus(int is_on)
 {
 	if (!g_info)
 		return -1;
 
-	mutex_lock(&otg_pwr_lock);
-	if (is_on && !vbus_on) {
-		vbus_on = true;
-#ifdef CONFIG_MTK_CHARGER
+#if CONFIG_MTK_GAUGE_VERSION == 30
+	if (is_on) {
 		charger_dev_enable_otg(g_info->primary_charger, true);
 		charger_dev_set_boost_current_limit(g_info->primary_charger,
 			1500000);
-#if CONFIG_MTK_GAUGE_VERSION == 30
 		charger_dev_kick_wdt(g_info->primary_charger);
 		enable_boost_polling(true);
-#endif
-#endif
-	} else if (!is_on && vbus_on) {
-#ifdef CONFIG_MTK_CHARGER
+	} else {
 		charger_dev_enable_otg(g_info->primary_charger, false);
-#if CONFIG_MTK_GAUGE_VERSION == 30
 		enable_boost_polling(false);
-#endif
-#endif
-		vbus_on = false;
 	}
-	mutex_unlock(&otg_pwr_lock);
-
+#else
+	if (is_on) {
+		charger_dev_enable_otg(g_info->primary_charger, true);
+		charger_dev_set_boost_current_limit(g_info->primary_charger,
+			1500000);
+	} else {
+		charger_dev_enable_otg(primary_charger, false);
+	}
+#endif
 	return 0;
 }
 
 static int usbotg_boost_probe(struct platform_device *pdev)
 {
 	struct usbotg_boost *info = NULL;
-#ifdef CONFIG_MTK_CHARGER
 	struct device *dev = &pdev->dev;
 	struct device_node *node = dev->of_node;
-#endif
 
 	info = devm_kzalloc(&pdev->dev, sizeof(struct usbotg_boost),
 		GFP_KERNEL);
@@ -135,7 +123,6 @@ static int usbotg_boost_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, info);
 	info->pdev = pdev;
-#ifdef CONFIG_MTK_CHARGER
 	info->primary_charger = get_charger_by_name("primary_chg");
 	if (!info->primary_charger) {
 		pr_info("%s: get primary charger device failed\n", __func__);
@@ -153,25 +140,14 @@ static int usbotg_boost_probe(struct platform_device *pdev)
 	info->boost_workq = create_singlethread_workqueue("boost_workq");
 	INIT_WORK(&info->kick_work, usbotg_boost_kick_work);
 #endif
-#endif
-	mutex_init(&otg_pwr_lock);
-
 	g_info = info;
 	return 0;
 }
 
 static int usbotg_boost_remove(struct platform_device *pdev)
 {
-	usb_otg_set_vbus(false);
-
 	return 0;
 }
-
-static void usbotg_boost_shutdown(struct platform_device *pdev)
-{
-	usb_otg_set_vbus(false);
-}
-
 
 static const struct of_device_id usb_boost_of_match[] = {
 	{.compatible = "mediatek,usb_boost"},
@@ -182,7 +158,6 @@ MODULE_DEVICE_TABLE(of, usb_boost_of_match);
 static struct platform_driver usb_boost_driver = {
 	.remove = usbotg_boost_remove,
 	.probe = usbotg_boost_probe,
-	.shutdown = usbotg_boost_shutdown,
 	.driver = {
 		   .name = "mediatek,usb_boost",
 		   .of_match_table = usb_boost_of_match,

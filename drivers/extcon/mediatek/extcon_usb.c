@@ -94,6 +94,8 @@ static void usb_extcon_detect_cable(struct work_struct *work)
 	}
 }
 
+/*Fix build error "multiplie definition"*/
+#ifdef NEVER
 void mt_usb_connect(void)
 {
 	curr_dr = DUAL_PROP_DR_DEVICE;
@@ -115,6 +117,7 @@ void mt_usb_disconnect(void)
 	}
 }
 EXPORT_SYMBOL_GPL(mt_usb_disconnect);
+#endif
 
 void mt_usbhost_connect(void)
 {
