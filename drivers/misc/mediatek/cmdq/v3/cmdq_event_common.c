@@ -536,14 +536,6 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR21, sw_token)
 	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR22, sw_token)
 	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR23, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR24, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR25, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR26, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR27, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR28, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR29, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR30, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_APPEND_THR31, sw_token)
 
 	/* GPR access tokens (for HW register backup)
 	 * There are 15 32-bit GPR, 3 GPR form a set
@@ -558,15 +550,6 @@ static struct cmdq_event_table cmdq_events[] = {
 	/* Resource lock event to control resource in GCE thread */
 	DECLAR_EVENT(CMDQ_SYNC_RESOURCE_WROT0, sw_token)
 	DECLAR_EVENT(CMDQ_SYNC_RESOURCE_WROT1, sw_token)
-
-	/*
-	 * Event for CMDQ delay implement
-	 * Plz sync CMDQ_SYNC_TOKEN_DELAY_THR(id) in cmdq_core source file.
-	 */
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_TIMER, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_DELAY_SET0, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_DELAY_SET1, sw_token)
-	DECLAR_EVENT(CMDQ_SYNC_TOKEN_DELAY_SET2, sw_token)
 
 	/* GCE HW TPR Event*/
 	DECLAR_EVENT(CMDQ_EVENT_TIMER_00, sw_token)

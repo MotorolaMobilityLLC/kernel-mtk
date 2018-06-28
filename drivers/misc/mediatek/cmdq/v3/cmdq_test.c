@@ -7234,7 +7234,10 @@ static void testmbox_poll_run(u32 poll_value, u32 poll_mask,
 		use_mmsys_dummy ? "true" : "false");
 
 	cmdq_pkt_cl_create(&pkt, clt);
-	cmdq_pkt_poll(pkt, clt_base, poll_value, dst_reg_pa, poll_mask);
+	cmdq_pkt_wfe(pkt, CMDQ_SYNC_TOKEN_GPR_SET_4);
+	cmdq_pkt_poll(pkt, clt_base, poll_value, dst_reg_pa, poll_mask,
+		CMDQ_DATA_REG_DEBUG);
+	cmdq_pkt_set_event(pkt, CMDQ_SYNC_TOKEN_GPR_SET_4);
 	init_completion(&cmplt.cmplt);
 	cmplt.pkt = pkt;
 	cmdq_pkt_flush_async(clt, pkt, testmbox_cmplt_cb, &cmplt);

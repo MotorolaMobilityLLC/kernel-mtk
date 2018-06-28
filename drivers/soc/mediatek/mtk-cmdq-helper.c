@@ -801,11 +801,10 @@ int cmdq_pkt_cond_jump(struct cmdq_pkt *pkt,
 }
 EXPORT_SYMBOL(cmdq_pkt_cond_jump);
 
-s32 cmdq_pkt_poll_addr(struct cmdq_pkt *pkt, u32 value, u32 addr, u32 mask)
+s32 cmdq_pkt_poll_addr(struct cmdq_pkt *pkt, u32 value, u32 addr, u32 mask,
+	u8 reg_gpr)
 {
 	s32 err;
-
-	cmdq_pkt_wfe(pkt, CMDQ_SYNC_TOKEN_GPR_SET_4);
 
 	if (mask != 0xffffffff) {
 		err = cmdq_pkt_append_command(pkt, CMDQ_GET_ARG_C(~mask),
@@ -818,20 +817,18 @@ s32 cmdq_pkt_poll_addr(struct cmdq_pkt *pkt, u32 value, u32 addr, u32 mask)
 
 	/* Move extra handle APB address to GPR */
 	err = cmdq_pkt_append_command(pkt, CMDQ_GET_ARG_C(addr),
-		CMDQ_GET_ARG_B(addr), 0, CMDQ_DATA_REG_DEBUG,
+		CMDQ_GET_ARG_B(addr), 0, reg_gpr,
 		0, 0, 1, CMDQ_CODE_MOVE);
 	if (err != 0)
 		cmdq_err("%s fail append command move addr to reg err:%d",
 			__func__, err);
 
 	err = cmdq_pkt_append_command(pkt, CMDQ_GET_ARG_C(value),
-		CMDQ_GET_ARG_B(value), 0, CMDQ_DATA_REG_DEBUG,
+		CMDQ_GET_ARG_B(value), 0, reg_gpr,
 		0, 0, 1, CMDQ_CODE_POLL);
 	if (err != 0)
 		cmdq_err("%s fail append command poll err:%d",
 			__func__, err);
-
-	cmdq_pkt_set_event(pkt, CMDQ_SYNC_TOKEN_GPR_SET_4);
 
 	return err;
 }
@@ -857,7 +854,7 @@ s32 cmdq_pkt_poll_reg(struct cmdq_pkt *pkt, u32 value, u8 subsys,
 EXPORT_SYMBOL(cmdq_pkt_poll_reg);
 
 s32 cmdq_pkt_poll(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
-	u32 value, u32 addr, u32 mask)
+	u32 value, u32 addr, u32 mask, u8 reg_gpr)
 {
 	const u32 base = addr & 0xFFFF0000;
 	s8 subsys;
@@ -867,7 +864,7 @@ s32 cmdq_pkt_poll(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
 		return cmdq_pkt_poll_reg(pkt, value, subsys,
 			(addr & 0xFFFF), mask);
 
-	return cmdq_pkt_poll_addr(pkt, value, addr, mask);
+	return cmdq_pkt_poll_addr(pkt, value, addr, mask, reg_gpr);
 }
 EXPORT_SYMBOL(cmdq_pkt_poll);
 
@@ -876,7 +873,7 @@ int cmdq_pkt_wfe(struct cmdq_pkt *pkt, u16 event)
 {
 	u32 arg_b;
 
-	if (event >= CMDQ_SYNC_TOKEN_MAX)
+	if (event >= CMDQ_EVENT_MAX)
 		return -EINVAL;
 
 	/*
@@ -897,7 +894,7 @@ int cmdq_pkt_wait_no_clear(struct cmdq_pkt *pkt, u16 event)
 {
 	u32 arg_b;
 
-	if (event >= CMDQ_SYNC_TOKEN_MAX)
+	if (event >= CMDQ_EVENT_MAX)
 		return -EINVAL;
 
 	/*
@@ -916,7 +913,7 @@ EXPORT_SYMBOL(cmdq_pkt_wait_no_clear);
 
 s32 cmdq_pkt_clear_event(struct cmdq_pkt *pkt, u16 event)
 {
-	if (event >= CMDQ_SYNC_TOKEN_MAX)
+	if (event >= CMDQ_EVENT_MAX)
 		return -EINVAL;
 
 	return cmdq_pkt_append_command(pkt, CMDQ_GET_ARG_C(CMDQ_WFE_UPDATE),
@@ -929,7 +926,7 @@ s32 cmdq_pkt_set_event(struct cmdq_pkt *pkt, u16 event)
 {
 	u32 arg_b;
 
-	if (event >= CMDQ_SYNC_TOKEN_MAX)
+	if (event >= CMDQ_EVENT_MAX)
 		return -EINVAL;
 
 	arg_b = CMDQ_WFE_UPDATE | CMDQ_WFE_UPDATE_VALUE;
