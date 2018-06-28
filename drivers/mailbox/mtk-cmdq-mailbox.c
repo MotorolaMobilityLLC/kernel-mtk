@@ -426,9 +426,8 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		curr_pa = cmdq_thread_get_pc(thread);
 		end_pa = cmdq_thread_get_end(thread);
 
-		cmdq_log("curr task %p~%p, thread->base:0x%p thread:%u",
-			(void *)curr_pa, (void *)end_pa, thread->base,
-			thread->idx);
+		cmdq_log("curr task %pa~%pa thread->base:0x%p thread:%u",
+			&curr_pa, &end_pa, thread->base, thread->idx);
 
 		/* check boundary */
 		if (curr_pa == end_pa - CMDQ_INST_SIZE || curr_pa == end_pa) {
