@@ -285,7 +285,7 @@ struct trusted_mem_device *create_and_register_shared_trusted_mem_device(
 
 	memcpy(t_shared_device, tmem_device, sizeof(struct trusted_mem_device));
 	t_shared_device->ssmr_feature_id = SSMR_FEAT_INVALID_ID;
-	sprintf(t_shared_device->name, "%s", dev_name);
+	snprintf(t_shared_device->name, MAX_DEVICE_NAME_LEN, "%s", dev_name);
 
 	ret = register_trusted_mem_device(mem_type, t_shared_device);
 	if (ret) {
