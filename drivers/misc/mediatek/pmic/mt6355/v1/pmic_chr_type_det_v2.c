@@ -97,7 +97,6 @@ int hw_charging_get_charger_type(void)
 {
 	/* Force Standard USB Host */
 	g_chr_type = STANDARD_HOST;
-	chrdet_inform_psy_changed(g_chr_type, 1);
 	return g_chr_type;
 }
 
