@@ -117,7 +117,7 @@ void musb_host_tx_db_enable(struct musb *musb, u8 epnum, bool enable, int ops, i
 	u8 c_size;
 	void __iomem *mbase = musb->mregs;
 	bool cur_dpb;
-	bool need_update;
+	bool need_update = false;
 
 	musb_writeb(musb->mregs, MUSB_INDEX, epnum);
 	c_size = musb_read_txfifosz(mbase);
