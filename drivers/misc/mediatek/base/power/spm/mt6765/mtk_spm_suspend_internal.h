@@ -36,7 +36,9 @@ enum spm_suspend_step {
 int spm_set_sleep_wakesrc(u32 wakesrc, bool enable, bool replace);
 u32 spm_get_sleep_wakesrc(void);
 bool spm_is_enable_sleep(void);
-unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data);
+bool spm_get_is_cpu_pdn(void);
+bool spm_get_is_infra_pdn(void);
+unsigned int spm_go_to_sleep(void);
 
 bool spm_is_md_sleep(void);
 bool spm_is_md1_sleep(void);

@@ -41,23 +41,6 @@ bool slp_dump_gpio;
 bool slp_dump_golden_setting;
 int slp_dump_golden_setting_type = GS_PMIC;
 
-/* FIXME: */
-static u32 slp_spm_flags = {
-	/* SPM_FLAG_DIS_CPU_PDN | */
-	/* SPM_FLAG_DIS_INFRA_PDN | */
-	/* SPM_FLAG_DIS_DDRPHY_PDN | */
-	SPM_FLAG_DIS_VCORE_DVS |
-	SPM_FLAG_DIS_VCORE_DFS |
-	/* SPM_FLAG_DIS_VPROC_VSRAM_DVS | */
-	SPM_FLAG_DIS_ATF_ABORT |
-	SPM_FLAG_SUSPEND_OPTION
-};
-
-static u32 slp_spm_flags1 = {
-	0
-};
-
-static u32 slp_spm_flags1;
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
 	if (slp_suspend_ops_valid_on)
@@ -70,7 +53,7 @@ static int slp_suspend_ops_begin(suspend_state_t state)
 {
 	/* legacy log */
 	pr_info("[SLP] @@@@@@@@@@@@@@@@\tChip_pm_begin(%u)(%u)\t@@@@@@@@@@@@@@@@\n",
-			is_cpu_pdn(slp_spm_flags), is_infra_pdn(slp_spm_flags));
+			spm_get_is_cpu_pdn(), spm_get_is_infra_pdn());
 
 	slp_wake_reason = WR_NONE;
 
@@ -143,9 +126,23 @@ bool __attribute__((weak)) spm_is_enable_sleep(void)
 }
 
 unsigned int __attribute__((weak))
-spm_go_to_sleep(u32 spm_flags, u32 spm_data)
+spm_go_to_sleep(void)
 {
 	return 0;
+}
+
+bool __attribute__((weak))
+spm_get_is_cpu_pdn(void)
+{
+	pr_info("NO %s !!!\n", __func__);
+	return false;
+}
+
+bool __attribute__((weak))
+spm_get_is_infra_pdn(void)
+{
+	pr_info("NO %s !!!\n", __func__);
+	return false;
 }
 
 static int slp_suspend_ops_enter(suspend_state_t state)
@@ -178,8 +175,8 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	subsys_if_on();
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
-	if (is_infra_pdn(slp_spm_flags) && !is_cpu_pdn(slp_spm_flags)) {
-		pr_info("[SLP] CANNOT SLEEP DUE TO INFRA PDN BUT CPU PON\n");
+	if (spm_get_is_infra_pdn() && !spm_get_is_cpu_pdn()) {
+		pr_info("[SLP] CANNOT SLEEP DUE TO INFRA PDN BUT CPU PDN\n");
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
@@ -216,8 +213,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	} else
 #endif
 
-		slp_wake_reason = spm_go_to_sleep(slp_spm_flags,
-			slp_spm_flags1);
+		slp_wake_reason = spm_go_to_sleep();
 
 	mcdi_task_pause(false);
 
@@ -394,7 +390,6 @@ void slp_module_init(void)
 }
 
 module_param(slp_ck26m_on, bool, 0644);
-module_param(slp_spm_flags, uint, 0644);
 
 module_param(slp_dump_gpio, bool, 0644);
 module_param(slp_dump_golden_setting, bool, 0644);
