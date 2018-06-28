@@ -173,7 +173,6 @@ extern struct ccci_ccb_config ccb_configs[];
 #define CCCI_IOC_GET_CCB_CONFIG_LENGTH		_IOR(CCCI_IOC_MAGIC, 63, unsigned int)
 #define CCCI_IOC_GET_CCB_CONFIG			_IOWR(CCCI_IOC_MAGIC, 64, struct ccci_ccb_config)
 #define CCCI_IOC_CCB_CTRL_OFFSET		_IOR(CCCI_IOC_MAGIC, 65, unsigned int)
-#define CCCI_IOC_MB				_IO(CCCI_IOC_MAGIC, 66)
 #define CCCI_IOC_GET_CCB_DEBUG_VAL		_IOWR(CCCI_IOC_MAGIC, 67, struct ccci_ccb_debug)
 
 #define CCCI_IOC_ENTER_UPLOAD			_IO(CCCI_IOC_MAGIC, 68) /* modem log for S */
