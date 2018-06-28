@@ -89,16 +89,15 @@ static int uncali_gyro_recv_data(struct data_unit_t *event, void *reserved)
 	value_temp[0] = event->uncalibrated_gyro_t.temperature;
 	value_temp[1] = event->uncalibrated_gyro_t.temp_result;
 #endif
-	if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION) {
 		err = uncali_gyro_data_report(value,
 			event->uncalibrated_gyro_t.status,
 			(int64_t)event->time_stamp);
 		if (value_temp[0] != 0)
 			uncali_gyro_temperature_data_report(value_temp,
-				event->uncalibrated_gyro_t.status,
-					(int64_t)event->time_stamp);
-	}
-	else if (event->flush_action == FLUSH_ACTION)
+			event->uncalibrated_gyro_t.status,
+			(int64_t)event->time_stamp);
+	} else if (event->flush_action == FLUSH_ACTION)
 		err = uncali_gyro_flush_report();
 
 	return err;
