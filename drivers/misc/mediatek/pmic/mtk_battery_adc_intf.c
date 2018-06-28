@@ -20,7 +20,6 @@
 #include <mach/mtk_pmic.h>
 
 #include <mtk_battery_internal.h>
-#include <mach/mtk_charger_init.h>
 #include <mtk_charger.h>
 #include "include/pmic_auxadc.h"
 
@@ -115,6 +114,14 @@ int pmic_get_ibus(void)
 	return 0;
 }
 
+int __attribute__ ((weak))
+	charger_get_rsense(void)
+{
+	pr_notice_once("%s: do not define r_sense\n", __func__);
+	return 56;
+}
+
+
 int pmic_get_charging_current(void)
 {
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
@@ -126,7 +133,7 @@ int pmic_get_charging_current(void)
 		v_isense = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
 		v_batsns = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 
-		return (v_isense - v_batsns) * 1000 / R_SENSE;
+		return (v_isense - v_batsns) * 1000 / charger_get_rsense();
 	}
 
 	return 0;
