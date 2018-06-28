@@ -48,9 +48,17 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/scp/$(MTK_PLATFORM)/
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(MTK_PLATFORM)/
+
+ifeq ($(CONFIG_MACH_MT6761),y)
+AUDIO_PLATFORM := mt6765
+else
+AUDIO_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+endif
+
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/scp/$(AUDIO_PLATFORM)/
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(AUDIO_PLATFORM)/
+
 
 # Common include path
 subdir-ccflags-y += -Werror -I$(src)/common_int
@@ -76,9 +84,9 @@ ifeq ($(MTK_PLATFORM),mt6758)
   obj-y += mt6758_int/
   subdir-ccflags-y += -Werror -I$(src)/mt6758_int
 else
-  obj-y += $(MTK_PLATFORM)/
+  obj-y += $(AUDIO_PLATFORM)/
 
 # AP include path
-  subdir-ccflags-y += -Werror -I$(src)/$(MTK_PLATFORM)
+  subdir-ccflags-y += -Werror -I$(src)/$(AUDIO_PLATFORM)
 endif
 endif

@@ -23,7 +23,11 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1/
 # Include soc header mtk-soc-afe-control.h
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH), y)
+ifeq ($(CONFIG_MACH_MT6761),y)
+ccflags-y += -I$(srctree)/sound/soc/mediatek/mt6765/
+else
 ccflags-y += -I$(srctree)/sound/soc/mediatek/$(MTK_PLATFORM)/
+endif
 ccflags-y += -I$(srctree)/sound/soc/mediatek/common_int/
 endif
 # Include thermal header mtk_thermal.h
