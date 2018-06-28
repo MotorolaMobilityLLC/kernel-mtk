@@ -1671,8 +1671,8 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		}
 
 		Bpp = ufmt_get_Bpp(ovl_cfg->fmt);
-		tmp_bw = (unsigned long long)ovl_cfg->dst_h *
-			ovl_cfg->dst_w * fps * Bpp;
+		tmp_bw = (unsigned long long)ovl_cfg->src_h *
+			ovl_cfg->src_w * fps * Bpp;
 		do_div(tmp_bw, 1000);
 		tmp_bw *= 1250;
 		do_div(tmp_bw, fps * 1000);
