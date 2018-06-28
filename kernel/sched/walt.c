@@ -20,6 +20,7 @@
  */
 
 #include <linux/syscore_ops.h>
+#include <linux/cpufreq.h>
 #include <trace/events/sched.h>
 #include "sched.h"
 #include "walt.h"
@@ -43,6 +44,29 @@ unsigned int sysctl_sched_walt_init_task_load_pct = 15;
 
 /* true -> use PELT based load stats, false -> use window-based load stats */
 bool __read_mostly walt_disabled = false;
+
+static unsigned int max_possible_efficiency = 1024;
+static unsigned int min_possible_efficiency = 1024;
+
+/*
+ * Maximum possible frequency across all cpus. Task demand and cpu
+ * capacity (cpu_power) metrics are scaled in reference to it.
+ */
+static unsigned int max_possible_freq = 1;
+
+/*
+ * Minimum possible max_freq across all cpus. This will be same as
+ * max_possible_freq on homogeneous systems and could be different from
+ * max_possible_freq on heterogenous systems. min_max_freq is used to derive
+ * capacity (cpu_power) of cpus.
+ */
+static unsigned int min_max_freq = 1;
+
+static unsigned int max_load_scale_factor = 1024;
+static unsigned int max_possible_capacity = 1024;
+
+/* Mask of all CPUs that have  max_possible_capacity */
+static cpumask_t mpc_mask = CPU_MASK_ALL;
 
 /*
  * Window size (in ns). Adjust for the tick size so that the window
