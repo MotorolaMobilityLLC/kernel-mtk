@@ -63,7 +63,6 @@ void ccci_reset_ccif_hw(unsigned char md_id,
 void ccci_set_clk_cg(struct ccci_modem *md, unsigned int is_on);
 #ifdef ENABLE_DRAM_API
 extern phys_addr_t get_max_DRAM_size(void);
-extern unsigned int get_phys_offset(void);
 #endif
 int Is_MD_EMI_voilation(void);
 /* ((ccci_get_md_debug_mode(md)&(DBG_FLAG_JTAG|DBG_FLAG_DEBUG)) != 0) */

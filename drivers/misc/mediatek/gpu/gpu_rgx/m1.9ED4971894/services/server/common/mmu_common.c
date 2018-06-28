@@ -93,6 +93,7 @@ Let's keep this graph up-to-date:
 
 #include "mtk_meminfo.h"
 #include "ged_log.h"
+#include <linux/memblock.h>
 
 // #define MMU_OBJECT_REFCOUNT_DEBUGING 1
 #if defined (MMU_OBJECT_REFCOUNT_DEBUGING)
@@ -2960,8 +2961,8 @@ MMU_MapPages(MMU_CONTEXT *psMMUContext,
 			ged_log_buf_print2(_mpu_ged_log,
 GED_LOG_ATTR_TIME, "[0]PAddr=0x%llx", sDevPAddr.uiAddr);
 
-			if ((sDevPAddr.uiAddr < get_phys_offset()) ||
-(sDevPAddr.uiAddr > get_phys_offset() + get_memory_size() - 1)) {
+			if ((sDevPAddr.uiAddr < memblock_start_of_DRAM()) ||
+(sDevPAddr.uiAddr > memblock_end_of_DRAM() - 1)) {
 				ged_log_buf_print2(_mpu_ged_log,
 GED_LOG_ATTR_TIME, "[0]PAddr=0x%llx", sDevPAddr.uiAddr);
 				PVR_DPF((PVR_DBG_ERROR,
@@ -3391,8 +3392,8 @@ MMU_MapPMRFast (MMU_CONTEXT *psMMUContext,
 			ged_log_buf_print2(_mpu_ged_log,
 GED_LOG_ATTR_TIME, "[1]PAddr=0x%llx", psDevPAddr[i].uiAddr);
 
-		if ((psDevPAddr[i].uiAddr < get_phys_offset()) ||
-(psDevPAddr[i].uiAddr > get_phys_offset() + get_memory_size() - 1)) {
+		if ((psDevPAddr[i].uiAddr < memblock_start_of_DRAM()) ||
+(psDevPAddr[i].uiAddr > memblock_end_of_DRAM() - 1)) {
 			ged_log_buf_print2(_mpu_ged_log,
 GED_LOG_ATTR_TIME, "[1]PAddr=0x%llx", psDevPAddr[i].uiAddr);
 			PVR_DPF((PVR_DBG_ERROR,
