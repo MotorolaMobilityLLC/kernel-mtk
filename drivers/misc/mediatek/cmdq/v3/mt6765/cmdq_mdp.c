@@ -36,6 +36,7 @@ struct CmdqMdpModuleBaseVA {
 	long MDP_WROT0;
 	long MDP_WDMA;
 	long VENC;
+	long MM_MUTEX;
 };
 static struct CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
 
@@ -149,6 +150,11 @@ long cmdq_mdp_get_module_base_VA_VENC(void)
 	return gCmdqMdpModuleBaseVA.VENC;
 }
 
+long cmdq_mdp_get_module_base_VA_MM_MUTEX(void)
+{
+	return gCmdqMdpModuleBaseVA.MM_MUTEX;
+}
+
 #define MMSYS_CONFIG_BASE	cmdq_mdp_get_module_base_VA_MMSYS_CONFIG()
 #define MDP_RDMA0_BASE		cmdq_mdp_get_module_base_VA_MDP_RDMA0()
 #define MDP_CCORR_BASE		cmdq_mdp_get_module_base_VA_MDP_CCORR()
@@ -159,6 +165,7 @@ long cmdq_mdp_get_module_base_VA_VENC(void)
 #define MDP_WROT0_BASE		cmdq_mdp_get_module_base_VA_MDP_WROT0()
 #define MDP_WDMA_BASE		cmdq_mdp_get_module_base_VA_MDP_WDMA()
 #define VENC_BASE			cmdq_mdp_get_module_base_VA_VENC()
+#define MM_MUTEX_BASE		cmdq_mdp_get_module_base_VA_MM_MUTEX()
 
 struct RegDef {
 	int offset;
@@ -195,6 +202,7 @@ void cmdq_mdp_dump_mmsys_config(void)
 		{0xFC0, "MDP_DL_READY_0"},
 		{0xFC4, "MDP_DL_READY_1"},
 		{0xFC8, "MDP_DL_READY_2"},
+		{0x934, "MDP_ASYNC_CFG_WD"},
 		{0x938, "MDP_DL_CFG_RD"},
 		{0x940, "MDP_DL_ASYNC_CFG_RD0"},
 		{0x94C, "MDP_DL_ASYNC_CFG_RD1"},
@@ -242,6 +250,10 @@ void cmdq_mdp_dump_mmsys_config(void)
 			configRegisters[i].offset);
 		CMDQ_ERR("%s: 0x%08x\n", configRegisters[i].name, value);
 	}
+
+	/*DISP_MUTEX MOD*/
+	value = CMDQ_REG_GET32(MM_MUTEX_BASE + 0x0D0);
+	CMDQ_ERR("%s: 0x%08x\n", "DISP_MUTEX5_MOD0", value);
 }
 
 int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
@@ -411,6 +423,8 @@ void cmdq_mdp_init_module_base_VA(void)
 		cmdq_dev_alloc_reference_VA_by_name("mdp_ccorr0");
 	gCmdqMdpModuleBaseVA.VENC =
 		cmdq_dev_alloc_reference_VA_by_name("venc");
+	gCmdqMdpModuleBaseVA.MM_MUTEX =
+		cmdq_dev_alloc_reference_VA_by_name("mm_mutex");
 }
 
 void cmdq_mdp_deinit_module_base_VA(void)
