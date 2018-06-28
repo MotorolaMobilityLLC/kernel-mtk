@@ -64,14 +64,20 @@ static inline bool hie_request_crypted(struct request *req)
 
 #ifdef CONFIG_HIE
 int hie_is_ready(void);
+int hie_is_dummy(void);
+int hie_is_nocrypt(void);
 int hie_register_fs(struct hie_fs *fs);
 int hie_register_device(struct hie_dev *dev);
 int hie_decrypt(struct hie_dev *dev, struct request *req, void *priv);
 int hie_encrypt(struct hie_dev *dev, struct request *req, void *priv);
 int hie_set_bio_crypt_context(struct inode *inode, struct bio *bio);
+int hie_set_dio_crypt_context(struct inode *inode, struct bio *bio,
+	loff_t fs_offset);
+u64 hie_get_iv(struct request *req);
+
 int hie_debug(unsigned mask);
 int hie_debug_ino(unsigned long ino);
-int hie_req_end(struct request *req);
+int hie_req_end_size(struct request *req, unsigned long bytes);
 int hie_dump_req(struct request *req, const char *prefix);
 int hie_kh_get_hint(struct hie_dev *dev, const char *key, int *need_update);
 int hie_kh_register(struct hie_dev *dev, unsigned int key_bits, unsigned int key_slot);
@@ -79,6 +85,18 @@ int hie_kh_reset(struct hie_dev *dev);
 #else
 static inline
 int hie_is_ready(void)
+{
+	return 0;
+}
+
+static inline
+int hie_is_dummy(void)
+{
+	return 0;
+}
+
+static inline
+int hie_is_nocrypt(void)
 {
 	return 0;
 }
@@ -114,6 +132,19 @@ int hie_set_bio_crypt_context(struct inode *inode, struct bio *bio)
 }
 
 static inline
+int hie_set_dio_crypt_context(struct inode *inode, struct bio *bio,
+	loff_t fs_offset)
+{
+	return 0;
+}
+
+static inline
+u64 hie_get_iv(struct request *req)
+{
+	return 0;
+}
+
+static inline
 int hie_debug(unsigned mask)
 {
 	return 0;
@@ -126,7 +157,7 @@ int hie_debug_ino(unsigned long ino)
 }
 
 static inline
-int hie_req_end(struct request *req)
+int hie_req_end_size(struct request *req, unsigned long bytes)
 {
 	return 0;
 }
@@ -158,6 +189,12 @@ static inline int hie_kh_reset(struct hie_dev *dev)
 	return 0;
 }
 #endif
+
+static inline
+int hie_req_end(struct request *req)
+{
+	return hie_req_end_size(req, 0);
+}
 
 #endif
 

@@ -375,9 +375,10 @@ dio_bio_alloc(struct dio *dio, struct dio_submit *sdio,
 	else
 		bio->bi_end_io = dio_bio_end_io;
 
-	hie_set_bio_crypt_context(dio->inode, bio);
 	sdio->bio = bio;
 	sdio->logical_offset_in_bio = sdio->cur_page_fs_offset;
+
+	hie_set_dio_crypt_context(dio->inode, bio, sdio->cur_page_fs_offset);
 }
 
 /*
