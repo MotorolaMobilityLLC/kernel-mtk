@@ -11,8 +11,6 @@
 
 /* chosen */
 &chosen {
-	bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram initrd=0x44000000,\
-0x1000000 loglevel=8 androidboot.selinux=permissive androidboot.hardware=mt6739 initcall_debug=1";
 	/* fpga may has no lk, we need to specify display info here */
 	/* fb buffer is reserved using this dts by memory node above */
 
