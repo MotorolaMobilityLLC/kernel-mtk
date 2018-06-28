@@ -1254,8 +1254,10 @@ void scp_sys_reset_ws(struct work_struct *ws)
 	unsigned int scp_reset_type = sws->flags;
 	/* scp cfg reg,*/
 	unsigned int *scp_reset_reg;
+	unsigned long spin_flags;
 	/* make sure scp is in idle state */
 	int timeout = 50; /* max wait 1s */
+
 
 	scp_reset_reg = (unsigned int *)scpreg.cfg;
 
@@ -1340,6 +1342,10 @@ void scp_sys_reset_ws(struct work_struct *ws)
 
 	/*scp reset*/
 	scp_sys_full_reset();
+
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+	scp_reset_awake_counts();
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
 	/*start scp*/
 	pr_debug("[SCP]start scp\n");
