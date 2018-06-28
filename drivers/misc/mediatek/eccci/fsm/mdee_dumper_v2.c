@@ -106,7 +106,7 @@ static void mdee_output_debug_info_to_buf(struct ccci_fsm_ee *mdee,
 {
 	int md_id = mdee->md_id;
 	struct ccci_mem_layout *mem_layout;
-	char *ex_info_temp;
+	char *ex_info_temp = NULL;
 
 	switch (debug_info->type) {
 	case MD_EX_DUMP_ASSERT:
