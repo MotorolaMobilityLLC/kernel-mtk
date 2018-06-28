@@ -31,28 +31,28 @@ static inline void m4u_set_pgd_val(imu_pgd_t *pgd, unsigned int val)
 	COM_WriteReg32((unsigned long)&(imu_pgd_val(*pgd)), val);
 }
 
-static inline void read_lock_domain(m4u_domain_t *domain)
+static inline void read_lock_domain(struct m4u_domain_t *domain)
 {
 	mutex_lock(&domain->pgtable_mutex);
 }
 
-static inline void read_unlock_domain(m4u_domain_t *domain)
+static inline void read_unlock_domain(struct m4u_domain_t *domain)
 {
 	mutex_unlock(&domain->pgtable_mutex);
 }
 
-static inline void write_lock_domain(m4u_domain_t *domain)
+static inline void write_lock_domain(struct m4u_domain_t *domain)
 {
 	mutex_lock(&domain->pgtable_mutex);
 }
 
-static inline void write_unlock_domain(m4u_domain_t *domain)
+static inline void write_unlock_domain(struct m4u_domain_t *domain)
 {
 	mutex_unlock(&domain->pgtable_mutex);
 }
 
 /* should not hold pg_lock when call this func. */
-inline int m4u_get_pt_type(m4u_domain_t *domain, unsigned int mva)
+inline int m4u_get_pt_type(struct m4u_domain_t *domain, unsigned int mva)
 {
 	imu_pgd_t *pgd;
 	imu_pte_t *pte;
@@ -114,34 +114,34 @@ static inline unsigned int m4u_get_pt_type_size(int type)
 void *__m4u_print_pte(struct m4u_pte_info_t *info, void *data)
 {
 	if (info->valid == 0) {
-		M4U_PRINT_SEQ(data, "va(0x%x)", info->mva);
-		M4U_PRINT_SEQ(data, "-->pgd(0x%x)",
+		M4U_PRINT_LOG_OR_SEQ(data, "va(0x%x)", info->mva);
+		M4U_PRINT_LOG_OR_SEQ(data, "-->pgd(0x%x)",
 				     imu_pgd_val(*info->pgd));
 		if (info->pte)
-			M4U_PRINT_SEQ(data, "-->pte(0x%x)",
+			M4U_PRINT_LOG_OR_SEQ(data, "-->pte(0x%x)",
 					     imu_pte_val(*info->pte));
-		M4U_PRINT_SEQ(data, " invalid\n");
+		M4U_PRINT_LOG_OR_SEQ(data, " invalid\n");
 
 		return NULL;
 	}
 
 	if (info->size == SZ_4K) {
-		M4U_PRINT_SEQ(data, "mva(0x%x)-->pgd(0x%x)-->",
+		M4U_PRINT_LOG_OR_SEQ(data, "mva(0x%x)-->pgd(0x%x)-->",
 			      info->mva, imu_pgd_val(*info->pgd));
-		M4U_PRINT_SEQ(data, "pte(0x%x)-->pa(0x%lx) small\n",
+		M4U_PRINT_LOG_OR_SEQ(data, "pte(0x%x)-->pa(0x%lx) small\n",
 			      imu_pte_val(*info->pte), info->pa);
 	} else if (info->size == SZ_64K) {
-		M4U_PRINT_SEQ(data, "mva(0x%x)-->pgd(0x%x)-->",
+		M4U_PRINT_LOG_OR_SEQ(data, "mva(0x%x)-->pgd(0x%x)-->",
 			      info->mva, imu_pgd_val(*info->pgd));
-		M4U_PRINT_SEQ(data, "pte(0x%x)-->pa(0x%lx) large\n",
+		M4U_PRINT_LOG_OR_SEQ(data, "pte(0x%x)-->pa(0x%lx) large\n",
 			      imu_pte_val(*info->pte), info->pa);
 	} else if (info->size == SZ_1M) {
-		M4U_PRINT_SEQ(data,
+		M4U_PRINT_LOG_OR_SEQ(data,
 			      "mva(0x%x)-->pgd(0x%x)-->pa(0x%lx) section\n",
 			      info->mva, imu_pgd_val(*info->pgd),
 			      info->pa);
 	} else if (info->size == SZ_16M) {
-		M4U_PRINT_SEQ(data,
+		M4U_PRINT_LOG_OR_SEQ(data,
 			      "mva(0x%x)-->pgd(0x%x)-->pa(0x%lx) super\n",
 			      info->mva, imu_pgd_val(*info->pgd),
 			      info->pa);
@@ -151,7 +151,7 @@ void *__m4u_print_pte(struct m4u_pte_info_t *info, void *data)
 }
 
 /* domain->pgtable_mutex should be held */
-int m4u_get_pte_info(m4u_domain_t *domain, unsigned int mva,
+int m4u_get_pte_info(struct m4u_domain_t *domain, unsigned int mva,
 		     struct m4u_pte_info_t *pte_info)
 {
 	imu_pgd_t *pgd;
@@ -237,7 +237,8 @@ typedef void *(m4u_pte_fn_t) (struct m4u_pte_info_t *pte_info, void *data);
 /** @see*/
 /** @author K Zhang      @date 2013/11/18*/
 /*************************************************************/
-void *m4u_for_each_pte(m4u_domain_t *domain, m4u_pte_fn_t *fn, void *data)
+void *m4u_for_each_pte(struct m4u_domain_t *domain, m4u_pte_fn_t *fn,
+			void *data)
 {
 	unsigned int mva = 0;
 	void *ret;
@@ -266,7 +267,7 @@ void *m4u_for_each_pte(m4u_domain_t *domain, m4u_pte_fn_t *fn, void *data)
 
 /* dump pte info for mva, no matter it's valid or not */
 /* this function doesn't lock pgtable lock. */
-void m4u_dump_pte_nolock(m4u_domain_t *domain, unsigned int mva)
+void m4u_dump_pte_nolock(struct m4u_domain_t *domain, unsigned int mva)
 {
 	struct m4u_pte_info_t pte_info;
 
@@ -275,14 +276,14 @@ void m4u_dump_pte_nolock(m4u_domain_t *domain, unsigned int mva)
 	__m4u_print_pte(&pte_info, NULL);
 }
 
-void m4u_dump_pte(m4u_domain_t *domain, unsigned int mva)
+void m4u_dump_pte(struct m4u_domain_t *domain, unsigned int mva)
 {
 	read_lock_domain(domain);
 	m4u_dump_pte_nolock(domain, mva);
 	read_unlock_domain(domain);
 }
 
-unsigned long m4u_get_pte(m4u_domain_t *domain, unsigned int mva)
+unsigned long m4u_get_pte(struct m4u_domain_t *domain, unsigned int mva)
 {
 	struct m4u_pte_info_t pte_info;
 
@@ -301,11 +302,11 @@ unsigned long m4u_get_pte(m4u_domain_t *domain, unsigned int mva)
 /** @remark  this func will lock pgtable_lock, it may sleep.*/
 /** @author K Zhang      @date 2013/11/18*/
 /*************************************************************/
-void m4u_dump_pgtable(m4u_domain_t *domain, struct seq_file *seq)
+void m4u_dump_pgtable(struct m4u_domain_t *domain, struct seq_file *seq)
 {
-	M4U_PRINT_SEQ(seq, "m4u dump pgtable start ==============>\n");
+	M4U_PRINT_LOG_OR_SEQ(seq, "m4u dump pgtable start ==============>\n");
 	m4u_for_each_pte(domain, __m4u_print_pte, seq);
-	M4U_PRINT_SEQ(seq, "m4u dump pgtable done ==============>\n");
+	M4U_PRINT_LOG_OR_SEQ(seq, "m4u dump pgtable done ==============>\n");
 }
 
 /* M4U_PROT_CACHE indicates M4U_PROT_SHARE, which route transaction to CCI*/
@@ -399,7 +400,8 @@ static inline unsigned int __m4u_get_pte_attr_4K(unsigned int prot)
 /***/
 /** @author K Zhang      @date 2013/11/18*/
 /*************************************************************/
-int m4u_clean_pte(m4u_domain_t *domain, unsigned int mva, unsigned int size)
+int m4u_clean_pte(struct m4u_domain_t *domain, unsigned int mva,
+			unsigned int size)
 {
 	imu_pgd_t *pgd;
 	unsigned long long tmp_mva = (unsigned long long)mva;
@@ -483,7 +485,8 @@ int m4u_pte_allocator_init(void)
 /** @see*/
 /** @author K Zhang      @date 2013/11/18*/
 /*************************************************************/
-int m4u_alloc_pte(m4u_domain_t *domain, imu_pgd_t *pgd, unsigned int pgprot)
+int m4u_alloc_pte(struct m4u_domain_t *domain, imu_pgd_t *pgd,
+			unsigned int pgprot)
 {
 	void *pte_new_va;
 	phys_addr_t pte_new;
@@ -519,7 +522,7 @@ int m4u_alloc_pte(m4u_domain_t *domain, imu_pgd_t *pgd, unsigned int pgprot)
 	}
 }
 
-int m4u_free_pte(m4u_domain_t *domain, imu_pgd_t *pgd)
+int m4u_free_pte(struct m4u_domain_t *domain, imu_pgd_t *pgd)
 {
 	imu_pte_t *pte_old;
 
@@ -542,7 +545,8 @@ int m4u_free_pte(m4u_domain_t *domain, imu_pgd_t *pgd)
 /***/
 /** @author K Zhang      @date 2013/11/19*/
 /*************************************************************/
-int m4u_map_16M(m4u_domain_t *m4u_domain, unsigned int mva, phys_addr_t pa,
+int m4u_map_16M(struct m4u_domain_t *m4u_domain, unsigned int mva,
+		phys_addr_t pa,
 		unsigned int prot)
 {
 	int i;
@@ -603,7 +607,8 @@ err_out:
 	return -1;
 }
 
-int m4u_map_1M(m4u_domain_t *m4u_domain, unsigned int mva, phys_addr_t pa,
+int m4u_map_1M(struct m4u_domain_t *m4u_domain, unsigned int mva,
+		phys_addr_t pa,
 	       unsigned int prot)
 {
 	imu_pgd_t *pgd;
@@ -651,7 +656,8 @@ int m4u_map_1M(m4u_domain_t *m4u_domain, unsigned int mva, phys_addr_t pa,
 	return 0;
 }
 
-int m4u_map_64K(m4u_domain_t *m4u_domain, unsigned int mva, phys_addr_t pa,
+int m4u_map_64K(struct m4u_domain_t *m4u_domain, unsigned int mva,
+		phys_addr_t pa,
 		unsigned int prot)
 {
 	int ret, i;
@@ -737,7 +743,8 @@ err_out:
 	return -1;
 }
 
-int m4u_map_4K(m4u_domain_t *m4u_domain, unsigned int mva, phys_addr_t pa,
+int m4u_map_4K(struct m4u_domain_t *m4u_domain, unsigned int mva,
+		phys_addr_t pa,
 	       unsigned int prot)
 {
 	int ret, pte_new;
@@ -820,7 +827,7 @@ err_out:
 }
 
 /* notes: both iova & paddr should be aligned. */
-static inline int m4u_map_phys_align(m4u_domain_t *m4u_domain,
+static inline int m4u_map_phys_align(struct m4u_domain_t *m4u_domain,
 				     unsigned int iova, phys_addr_t paddr,
 				     unsigned int size, unsigned int prot)
 {
@@ -855,7 +862,7 @@ static inline int m4u_map_phys_align(m4u_domain_t *m4u_domain,
 /** @see     refer to kernel/drivers/iommu/iommu.c iommu_map()*/
 /** @author K Zhang      @date 2013/11/19*/
 /*************************************************************/
-int m4u_map_phys_range(m4u_domain_t *m4u_domain, unsigned int iova,
+int m4u_map_phys_range(struct m4u_domain_t *m4u_domain, unsigned int iova,
 		       phys_addr_t paddr, unsigned int size, unsigned int prot)
 {
 	unsigned int min_pagesz;
@@ -942,7 +949,7 @@ int m4u_map_phys_range(m4u_domain_t *m4u_domain, unsigned int iova,
 	return ret;
 }
 
-int m4u_map_sgtable(m4u_domain_t *m4u_domain, unsigned int mva,
+int m4u_map_sgtable(struct m4u_domain_t *m4u_domain, unsigned int mva,
 		    struct sg_table *sg_table, unsigned int size,
 		    unsigned int prot)
 {
@@ -1017,7 +1024,7 @@ err_out:
 
 
 
-int m4u_check_free_pte(m4u_domain_t *domain, imu_pgd_t *pgd)
+int m4u_check_free_pte(struct m4u_domain_t *domain, imu_pgd_t *pgd)
 {
 	imu_pte_t *pte;
 	int i;
@@ -1036,7 +1043,7 @@ int m4u_check_free_pte(m4u_domain_t *domain, imu_pgd_t *pgd)
 	}
 }
 
-int m4u_unmap(m4u_domain_t *domain, unsigned int mva, unsigned int size)
+int m4u_unmap(struct m4u_domain_t *domain, unsigned int mva, unsigned int size)
 {
 	imu_pgd_t *pgd;
 	int i, ret;
@@ -1118,12 +1125,13 @@ const struct file_operations m4u_debug_pgtable_fops = {
 	.release = single_release,
 };
 
-int m4u_pgtable_init(struct m4u_device *m4u_dev, m4u_domain_t *m4u_domain)
+int m4u_pgtable_init(struct m4u_device *m4u_dev,
+		struct m4u_domain_t *m4u_domain)
 {
 	/* ======= alloc pagetable======================= */
 	m4u_domain->pgd =
 	    dma_alloc_coherent(m4u_dev->pDev[0], M4U_PGD_SIZE,
-			       &(m4u_domain->pgd_pa), GFP_KERNEL);
+			&(m4u_domain->pgd_pa), GFP_KERNEL);
 
 	if (!(m4u_domain->pgd)) {
 		M4UMSG
