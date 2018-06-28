@@ -15,7 +15,8 @@
 #include <mt-plat/mtk_boot.h>
 #include <mtk_gauge_class.h>
 #include <mtk_battery_internal.h>
-
+#include <mt-plat/upmu_common.h>
+#include <mt-plat/mt6739/include/mach/upmu_sw.h>
 
 #if (CONFIG_MTK_GAUGE_VERSION != 30)
 signed int battery_get_bat_voltage(void)
@@ -72,7 +73,45 @@ signed int battery_get_bat_avg_current(void)
 }
 #else
 
+signed int battery_get_bat_current(void)
+{
+	int curr_val;
+	bool is_charging;
+
+	is_charging = gauge_get_current(&curr_val);
+	if (is_charging == false)
+		curr_val = 0 - curr_val;
+	return curr_val;
+}
+
+signed int battery_get_vbus(void)
+{
+	return pmic_get_vbus();
+}
+
 /* 4.9 already remove, only leave in 4.4 */
+unsigned int bat_get_ui_percentage(void)
+{
+	return battery_get_uisoc();
+}
+
+signed int battery_meter_get_battery_current(void)
+{
+	return battery_get_bat_current();
+}
+
+bool battery_get_bat_current_sign(void)
+{
+	int curr_val;
+
+	return gauge_get_current(&curr_val);
+}
+
+bool battery_meter_get_battery_current_sign(void)
+{
+	return battery_get_bat_current_sign();
+}
+
 signed int battery_get_bat_uisoc(void)
 {
 	return battery_get_uisoc();
@@ -81,13 +120,6 @@ signed int battery_get_bat_uisoc(void)
 signed int battery_get_bat_soc(void)
 {
 	return battery_get_soc();
-}
-
-bool battery_get_bat_current_sign(void)
-{
-	int curr_val;
-
-	return gauge_get_current(&curr_val);
 }
 
 int get_ui_soc(void)
@@ -100,6 +132,11 @@ signed int battery_meter_get_battery_temperature(void)
 	return battery_get_bat_temperature();
 }
 
+signed int battery_meter_get_charger_voltage(void)
+{
+	return battery_get_vbus();
+}
+
 void wake_up_bat(void)
 {
 }
@@ -109,17 +146,6 @@ EXPORT_SYMBOL(wake_up_bat);
 signed int battery_get_bat_voltage(void)
 {
 	return pmic_get_battery_voltage();
-}
-
-signed int battery_get_bat_current(void)
-{
-	int curr_val;
-	bool is_charging;
-
-	is_charging = gauge_get_current(&curr_val);
-	if (is_charging == false)
-		curr_val = 0 - curr_val;
-	return curr_val;
 }
 
 signed int battery_get_bat_current_mA(void)
@@ -159,16 +185,24 @@ signed int battery_get_ibus(void)
 	return pmic_get_ibus();
 }
 
-signed int battery_get_vbus(void)
-{
-	return pmic_get_vbus();
-}
-
 signed int battery_get_bat_avg_current(void)
 {
 	bool valid;
 
 	return gauge_get_average_current(&valid);
+}
+
+/* GM25 only */
+int en_intr_VBATON_UNDET(int en)
+{
+	pmic_enable_interrupt(INT_VBATON_UNDET, en, "VBATON_UNDET");
+	return 0;
+}
+
+int reg_VBATON_UNDET(void (*callback)(void))
+{
+	pmic_register_interrupt_callback(INT_VBATON_UNDET, callback);
+	return 0;
 }
 
 #endif
