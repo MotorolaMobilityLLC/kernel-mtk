@@ -4662,12 +4662,12 @@ int primary_display_suspend(void)
 				LCM_ON_LOW_POWER);
 		}
 	} else if (primary_display_get_power_mode_nolock() == FB_SUSPEND) {
-		DISPINFO("[POWER]lcm suspend[begin]\n");
+		DISPCHECK("[POWER]lcm suspend[begin]\n");
 		disp_lcm_suspend(pgc->plcm);
 		DISPCHECK("[POWER]lcm suspend[end]\n");
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend,
 			MMPROFILE_FLAG_PULSE, 0, 6);
-		DISPDBG("[POWER]primary display path Release Fence[begin]\n");
+		DISPINFO("[POWER]primary display path Release Fence[begin]\n");
 		primary_suspend_release_fence();
 		DISPINFO("[POWER]primary display path Release Fence[end]\n");
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend,
@@ -4973,7 +4973,7 @@ int primary_display_resume(void)
 		}
 	} else if (primary_display_get_power_mode_nolock() == FB_RESUME) {
 		if (primary_display_get_lcm_power_state_nolock() != LCM_ON) {
-			DISPDBG("[POWER]lcm resume[begin]\n");
+			DISPCHECK("[POWER]lcm resume[begin]\n");
 			if (primary_display_get_lcm_power_state_nolock() !=
 				LCM_ON_LOW_POWER) {
 				disp_lcm_resume(pgc->plcm);

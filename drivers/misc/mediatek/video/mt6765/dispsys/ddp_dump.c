@@ -1446,8 +1446,8 @@ static void ccorr_dump_analyze(enum DISP_MODULE_ENUM module)
 	ccorr_out_cnt = DISP_REG_GET(DISP_REG_CCORR_OUT_CNT + i * offset);
 
 	DDPDUMP("ccorr: en=%d, config=%d, w=%d, h=%d\n",
-		ccorr_en, ccorr_cfg, (ccorr_cfg >> 16) & 0x1fff,
-		ccorr_cfg & 0x1fff);
+		ccorr_en, ccorr_cfg, (ccorr_size >> 16) & 0x1fff,
+		ccorr_size & 0x1fff);
 	DDPDUMP("ccorr: in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d\n",
 		ccorr_in_cnt & 0x1fff,
 		(ccorr_in_cnt >> 16) & 0x1fff,	ccorr_out_cnt & 0x1fff,
