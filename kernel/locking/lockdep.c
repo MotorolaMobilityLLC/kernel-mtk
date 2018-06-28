@@ -1204,8 +1204,7 @@ print_circular_bug_header(struct lock_list *entry, unsigned int depth,
 		return 0;
 
 	/* Add by Mtk */
-	if (depth < 5)
-		lockdep_aee();
+	lockdep_aee();
 
 	printk("\n");
 	printk("======================================================\n");
