@@ -373,15 +373,16 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 6;
-	params->dsi.vertical_frontporch = 50;
-	params->dsi.vertical_frontporch_for_low_power = 470;
+	params->dsi.vertical_frontporch = 85;
+	params->dsi.vertical_frontporch_for_low_power = 540;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 50;
 	params->dsi.horizontal_backporch = 50;
 	params->dsi.horizontal_frontporch = 50;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.ssc_disable = 0;
+	params->dsi.ssc_disable = 1;
+	params->dsi.ssc_range = 5;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 220;

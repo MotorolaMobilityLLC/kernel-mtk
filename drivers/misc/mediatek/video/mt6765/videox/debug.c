@@ -1484,6 +1484,11 @@ static void process_dbg_opt(const char *opt)
 			round_corner_offset_enable = 1;
 		else if (strncmp(opt + 26, "off", 3) == 0)
 			round_corner_offset_enable = 0;
+	} else if (strncmp(opt, "MIPI_CLK:", 9) == 0) {
+		if (strncmp(opt + 9, "on", 2) == 0)
+			mipi_clk_change(0, 1);
+		else if (strncmp(opt + 9, "off", 3) == 0)
+			mipi_clk_change(0, 0);
 	} else if (strncmp(opt, "dump_output:", 12) == 0) {
 		if (strncmp(opt + 12, "on", 2) == 0)
 			dump_output = 1;

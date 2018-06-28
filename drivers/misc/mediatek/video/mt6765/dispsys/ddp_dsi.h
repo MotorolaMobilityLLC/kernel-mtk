@@ -175,6 +175,8 @@ enum DSI_PORCH_TYPE {
 extern const struct LCM_UTIL_FUNCS PM_lcm_utils_dsi0;
 /* defined in mtkfb.c */
 extern bool is_ipoh_bootup;
+extern char mtkfb_lcm_name[];
+
 
 int DSI_enable_checksum(enum DISP_MODULE_ENUM module,
 	struct cmdqRecStruct *cmdq);
@@ -214,6 +216,9 @@ int dsi_enable_irq(enum DISP_MODULE_ENUM module, void *handle,
 	unsigned int enable);
 int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle);
 int dsi_basic_irq_enable(enum DISP_MODULE_ENUM module, void *cmdq);
+extern int mipi_clk_change(int msg, int en);
+unsigned int _is_power_on_status(enum DISP_MODULE_ENUM module);
+
 
 #ifdef __cplusplus
 }

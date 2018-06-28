@@ -74,6 +74,9 @@
 #include "external_display.h"
 #endif
 
+#include <mt-plat/mtk_ccci_common.h>
+#include "ddp_dsi.h"
+
 /* static variable */
 static u32 MTK_FB_XRES;
 static u32 MTK_FB_YRES;
@@ -2162,7 +2165,7 @@ int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
 }
 
 #ifdef CONFIG_OF
-struct tag_videolfb {
+struct tag_video_lfb {
 	u64 fb_base;
 	u32 islcmfound;
 	u32 fps;
@@ -2264,10 +2267,10 @@ static int __parse_tag_videolfb_extra(struct device_node *node)
 
 static int __parse_tag_videolfb(struct device_node *node)
 {
-	struct tag_videolfb *videolfb_tag = NULL;
+	struct tag_video_lfb *videolfb_tag = NULL;
 	unsigned long size = 0;
 
-	videolfb_tag = (struct tag_videolfb *)of_get_property(node,
+	videolfb_tag = (struct tag_video_lfb *)of_get_property(node,
 		"atag,videolfb", (int *)&size);
 	if (videolfb_tag) {
 		memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
@@ -2693,6 +2696,12 @@ static int mtkfb_probe(struct platform_device *pdev)
 	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size());
 #endif
 	fbdev->state = MTKFB_ACTIVE;
+
+	if (!strcmp(mtkfb_find_lcm_driver(),
+		"nt35521_hd_dsi_vdo_truly_rt5081_drv")) {
+		register_ccci_sys_call_back(MD_SYS1,
+			MD_DISPLAY_DYNAMIC_MIPI, mipi_clk_change);
+	}
 
 	MSG_FUNC_LEAVE();
 	pr_info("disp driver(2) mtkfb_probe end\n");
