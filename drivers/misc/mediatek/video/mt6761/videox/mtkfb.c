@@ -74,6 +74,9 @@
 #include "external_display.h"
 #endif
 
+#include <mt-plat/mtk_ccci_common.h>
+#include "ddp_dsi.h"
+
 /* static variable */
 static u32 MTK_FB_XRES;
 static u32 MTK_FB_YRES;
@@ -171,7 +174,6 @@ unsigned long ext_fb_pa;
 unsigned int ext_lcd_fps = 6000;
 char ext_mtkfb_lcm_name[256] = { 0 };
 #endif
-static int slt_test;
 
 DEFINE_SEMAPHORE(sem_flipping);
 DEFINE_SEMAPHORE(sem_early_suspend);
@@ -307,17 +309,6 @@ static int mtkfb1_blank(int blank_mode, struct fb_info *info)
 	return 0;
 }
 #endif
-
-void set_slt_test(int enable)
-{
-	slt_test = enable;
-}
-
-int is_slt_test(void)
-{
-	return slt_test;
-}
-
 
 static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
@@ -507,6 +498,7 @@ static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src,
 	case MTK_FB_FORMAT_ABGR8888:
 		dst->src_fmt = DISP_FORMAT_ABGR8888;
 		break;
+
 	case MTK_FB_FORMAT_BGRA8888:
 		dst->src_fmt = DISP_FORMAT_BGRA8888;
 		break;
@@ -1046,8 +1038,7 @@ unsigned int mtkfb_fm_auto_test(void)
 	mtkfb_pan_display_impl(&mtkfb_fbi->var, mtkfb_fbi);
 	msleep(100);
 
-	/*result = primary_display_lcm_ATA();*/
-	result = 1;
+	result = primary_display_lcm_ATA();
 
 	if (idle_state_backup)
 		disp_helper_set_option(DISP_OPT_IDLE_MGR, idle_state_backup);
@@ -1318,10 +1309,9 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 				__LINE__);
 			return -EFAULT;
 		}
-		set_slt_test(1);
+
 		r = primary_display_capture_framebuffer_ovl(
 				(unsigned long)src_pbuf, format);
-		set_slt_test(0);
 		if (r < 0)
 			DISPERR(
 			"primary display capture framebuffer failed!\n");
@@ -2175,7 +2165,7 @@ int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
 }
 
 #ifdef CONFIG_OF
-struct tag_videolfb {
+struct tag_video_lfb {
 	u64 fb_base;
 	u32 islcmfound;
 	u32 fps;
@@ -2277,10 +2267,10 @@ static int __parse_tag_videolfb_extra(struct device_node *node)
 
 static int __parse_tag_videolfb(struct device_node *node)
 {
-	struct tag_videolfb *videolfb_tag = NULL;
+	struct tag_video_lfb *videolfb_tag = NULL;
 	unsigned long size = 0;
 
-	videolfb_tag = (struct tag_videolfb *)of_get_property(node,
+	videolfb_tag = (struct tag_video_lfb *)of_get_property(node,
 		"atag,videolfb", (int *)&size);
 	if (videolfb_tag) {
 		memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
@@ -2707,6 +2697,12 @@ static int mtkfb_probe(struct platform_device *pdev)
 #endif
 	fbdev->state = MTKFB_ACTIVE;
 
+	if (!strcmp(mtkfb_find_lcm_driver(),
+		"nt35521_hd_dsi_vdo_truly_rt5081_drv")) {
+		register_ccci_sys_call_back(MD_SYS1,
+			MD_DISPLAY_DYNAMIC_MIPI, mipi_clk_change);
+	}
+
 	MSG_FUNC_LEAVE();
 	pr_info("disp driver(2) mtkfb_probe end\n");
 	return 0;
@@ -2742,8 +2738,7 @@ static int mtkfb_suspend(struct platform_device *pdev, pm_message_t mesg)
 	NOT_REFERENCED(pdev);
 	MSG_FUNC_ENTER();
 	MTKFB_LOG("[FB Driver] mtkfb_suspend(): 0x%x\n", mesg.event);
-	/* memory session suspend */
-	ovl2mem_suspend();
+	ovl2mem_wait_done();
 	MSG_FUNC_LEAVE();
 	return 0;
 }
@@ -2755,8 +2750,6 @@ static int mtkfb_resume(struct platform_device *pdev)
 	NOT_REFERENCED(pdev);
 	MSG_FUNC_ENTER();
 	MTKFB_LOG("[FB Driver] mtkfb_resume()\n");
-	/* memory session resume */
-	ovl2mem_resume();
 	MSG_FUNC_LEAVE();
 	return 0;
 }

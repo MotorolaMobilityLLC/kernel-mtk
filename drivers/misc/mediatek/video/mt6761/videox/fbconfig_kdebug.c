@@ -254,6 +254,9 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd,
 	uint32_t dsi_id = pm->dsi_id;
 	struct LCM_DSI_PARAMS *pParams = get_dsi_params_handle(dsi_id);
 
+	if (primary_display_is_sleepd())
+		return -EFAULT;
+
 #ifdef FBCONFIG_SHOULD_KICK_IDLEMGR
 	primary_display_idlemgr_kick(__func__, 1);
 #endif

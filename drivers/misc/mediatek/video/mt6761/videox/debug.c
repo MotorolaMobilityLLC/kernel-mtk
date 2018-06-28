@@ -914,6 +914,7 @@ struct completion dump_buf_comp;
 static void process_dbg_opt(const char *opt)
 {
 	int ret;
+
 	DISPWARN("disp debug cmd %s\n", opt);
 
 	if (strncmp(opt, "helper", 6) == 0) {
@@ -1360,7 +1361,6 @@ static void process_dbg_opt(const char *opt)
 			"Display debug command: disp_get_fps done, disp_fps=%d\n",
 			disp_fps);
 	} else if (strncmp(opt, "set_emi_bound_tb:", 17) == 0) {
-
 		do_set_emi_bound_tb_opt(opt);
 	} else if (strncmp(opt, "primary_basic_test:", 19) == 0) {
 		unsigned int layer_num, w, h, fmt, frame_num;
@@ -1484,6 +1484,11 @@ static void process_dbg_opt(const char *opt)
 			round_corner_offset_enable = 1;
 		else if (strncmp(opt + 26, "off", 3) == 0)
 			round_corner_offset_enable = 0;
+	} else if (strncmp(opt, "MIPI_CLK:", 9) == 0) {
+		if (strncmp(opt + 9, "on", 2) == 0)
+			mipi_clk_change(0, 1);
+		else if (strncmp(opt + 9, "off", 3) == 0)
+			mipi_clk_change(0, 0);
 	} else if (strncmp(opt, "dump_output:", 12) == 0) {
 		if (strncmp(opt + 12, "on", 2) == 0)
 			dump_output = 1;

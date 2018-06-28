@@ -669,7 +669,6 @@ struct disp_iommu_device *disp_get_iommu_dev(void)
 
 		disp_iommu.larb_pdev[larb_idx] = larb_pdev[larb_idx];
 	}
-
 	/* add for mmp dump mva->pa */
 	np = of_find_compatible_node(NULL, NULL, "mediatek,mt-pseudo_m4u-port");
 	if (np == NULL) {
@@ -680,7 +679,6 @@ struct disp_iommu_device *disp_get_iommu_dev(void)
 		if (!disp_iommu.iommu_pdev)
 			DDPERR("get iommu device failed\n");
 	}
-
 	disp_iommu.inited = 1;
 	return &disp_iommu;
 }
@@ -826,7 +824,7 @@ static int __init disp_probe_1(void)
 			ddp_module_irq_disable(i);
 			continue;
 		}
-
+#if 0
 		if (ddp_get_module_checkirq(i) !=
 			virq_to_hwirq(ddp_get_module_irq(i))) {
 			DDPERR("DT, i=%d, %s, virq=%d, v2h_irq=%d, cirq=%d\n",
@@ -838,7 +836,7 @@ static int __init disp_probe_1(void)
 			ddp_module_irq_disable(i);
 			continue;
 		}
-
+#endif
 		/* IRQF_TRIGGER_NONE dose not take effect here,
 		 * real trigger mode set in dts file
 		 */

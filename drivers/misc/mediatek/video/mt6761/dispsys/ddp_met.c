@@ -183,8 +183,10 @@ static void ddp_err_irq_met_tag(const char *name)
 
 	met_tag_oneshot_symbol =
 		(void *)symbol_get(met_tag_oneshot_real);
-	if (met_tag_oneshot_symbol)
+	if (met_tag_oneshot_symbol) {
+		met_tag_oneshot_symbol(DDP_IRQ_EER_ID, name, 1);
 		met_tag_oneshot_symbol(DDP_IRQ_EER_ID, name, 0);
+	}
 #endif
 }
 

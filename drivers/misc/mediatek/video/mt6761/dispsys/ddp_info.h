@@ -164,6 +164,7 @@ struct sbch {
 	enum UNIFIED_COLOR_FMT fmt;
 	unsigned long long sbch_en_cnt;
 	int full_trans_en;
+	unsigned int layer_disable_by_partial_update;
 };
 
 struct disp_rect {
@@ -177,6 +178,7 @@ struct OVL_CONFIG_STRUCT {
 	unsigned int ovl_index;
 	unsigned int layer;
 	unsigned int layer_en;
+	unsigned int layer_disable_by_partial_update;
 	enum OVL_LAYER_SOURCE source;
 	enum UNIFIED_COLOR_FMT fmt;
 	unsigned long addr;
@@ -199,6 +201,7 @@ struct OVL_CONFIG_STRUCT {
 	unsigned int key;
 	unsigned int aen;
 	unsigned char alpha;
+	unsigned int dim_color;
 
 	unsigned int sur_aen;
 	unsigned int src_alpha;

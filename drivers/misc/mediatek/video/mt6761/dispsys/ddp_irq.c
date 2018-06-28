@@ -483,7 +483,9 @@ static void disp_irq_rdma_underflow_aee_trigger(void)
 	if (disp_irq_rdma_underflow) {
 		/* Request highest dvfs */
 		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE,
-				HRT_LEVEL_LEVEL2);
+				HRT_LEVEL_LEVEL2,
+				layering_rule_get_mm_freq_table
+					(HRT_OPP_LEVEL_LEVEL0));
 
 		if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE)) {
 			/* Just count underflow which happens more frequently */
