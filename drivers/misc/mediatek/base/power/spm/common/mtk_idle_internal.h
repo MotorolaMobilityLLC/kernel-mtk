@@ -14,6 +14,7 @@
 #ifndef __MTK_IDLE_INTERNAL_H__
 #define __MTK_IDLE_INTERNAL_H__
 
+#include "mtk_lp_dts_def.h"
 
 /********************************************************************
  * Change idle condition check order (1:SO3,DP,SO, 0:DP,SO3,SO)
@@ -69,6 +70,49 @@ enum {
 	NR_REASONS,
 };
 
+#define MTK_OF_PROPERTY_STATUS_FOUND	(1<<0U)
+#define MTK_OF_PROPERTY_VALUE_FOUND		(1<<1U)
+
+/*mtk idle initial data*/
+struct mtk_idle_init_data {
+	int dts_state;
+	int dts_value;
+};
+#define IS_MTK_LP_DTS_FEATURE_AVAILABLE(p, _f)\
+			(p->dts_state & (1<<_f))
+#define GET_MTK_LP_DTS_VALUE(p, _f)\
+	({int ret = 0;\
+		ret = (p->dts_value & (1<<_f))?1:0;\
+	ret; })
+
+/*Check the mtk idle node which in dts exist or not*/
+#define IS_MTK_LP_DTS_AVAILABLE_SODI(p)\
+	IS_MTK_LP_DTS_FEATURE_AVAILABLE(p, MTK_LP_FEATURE_DTS_SODI)
+#define IS_MTK_LP_DTS_AVAILABLE_SODI3(p)\
+	IS_MTK_LP_DTS_FEATURE_AVAILABLE(p, MTK_LP_FEATURE_DTS_SODI3)
+#define IS_MTK_LP_DTS_AVAILABLE_DP(p)\
+	IS_MTK_LP_DTS_FEATURE_AVAILABLE(p, MTK_LP_FEATURE_DTS_DP)
+
+/*Get the mtk idle dts node status value*/
+#define GET_MTK_LP_DTS_VALUE_SODI(p)\
+	GET_MTK_LP_DTS_VALUE(p, MTK_LP_FEATURE_DTS_SODI)
+#define GET_MTK_LP_DTS_VALUE_SODI3(p)\
+	GET_MTK_LP_DTS_VALUE(p, MTK_LP_FEATURE_DTS_SODI3)
+#define GET_MTK_LP_DTS_VALUE_DP(p)\
+	GET_MTK_LP_DTS_VALUE(p, MTK_LP_FEATURE_DTS_DP)
+
+/* Check the dts status result and set it to mtk_idle_init_data*/
+#define MTK_IDLE_FEATURE_DTS_STATE_CHECK(_f, _s, _d) {\
+	if (_s & MTK_OF_PROPERTY_STATUS_FOUND) {\
+		_d.dts_state |= (1<<_f);\
+		if (_s & MTK_OF_PROPERTY_VALUE_FOUND)\
+			_d.dts_value |= (1<<_f);\
+		else\
+			_d.dts_value &= ~(1<<_f);\
+	} else {\
+		_d.dts_state &= ~(1<<_f);\
+		_d.dts_value &= ~(1<<_f); } }
+
 const char*
 	mtk_idle_block_reason_name(int reason);
 
@@ -83,17 +127,17 @@ extern unsigned long so_cnt[NR_CPUS];
 extern unsigned long so3_cnt[NR_CPUS];
 extern bool mtk_idle_screen_off_sodi3;
 
-void mtk_dpidle_init(void);
+void mtk_dpidle_init(struct mtk_idle_init_data *pData);
 void mtk_dpidle_disable(void);
 bool mtk_dpidle_enabled(void);
 bool dpidle_can_enter(int reason);
 
-void mtk_sodi3_init(void);
+void mtk_sodi3_init(struct mtk_idle_init_data *pData);
 void mtk_sodi3_disable(void);
 bool mtk_sodi3_enabled(void);
 bool sodi3_can_enter(int reason);
 
-void mtk_sodi_init(void);
+void mtk_sodi_init(struct mtk_idle_init_data *pData);
 void mtk_sodi_disable(void);
 bool mtk_sodi_enabled(void);
 bool sodi_can_enter(int reason);

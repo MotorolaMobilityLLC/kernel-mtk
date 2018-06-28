@@ -190,8 +190,15 @@ static const struct mtk_idle_sysfs_op dpidle_state_fops = {
 	.fs_write = dpidle_state_write,
 };
 
-void mtk_dpidle_init(void)
+void mtk_dpidle_init(struct mtk_idle_init_data *pData)
 {
+	/*If dts node have status information then set state to dp*/
+	if (pData) {
+		if (IS_MTK_LP_DTS_AVAILABLE_DP(pData)) {
+			dpidle_feature_enable =
+				GET_MTK_LP_DTS_VALUE_DP(pData);
+		}
+	}
 	dpidle_bypass_idle_cond = false;
 	dpidle_force_vcore_lp_mode = false;
 	mtk_idle_sysfs_entry_node_add("dpidle_state"

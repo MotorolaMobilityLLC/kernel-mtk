@@ -382,8 +382,15 @@ static const struct mtk_idle_sysfs_op sodi3_state_fops = {
 	.fs_write = soidle3_state_write,
 };
 
-void mtk_sodi_init(void)
+void mtk_sodi_init(struct mtk_idle_init_data *pData)
 {
+	/*If dts node have status information then set state to sodi*/
+	if (pData) {
+		if (IS_MTK_LP_DTS_AVAILABLE_SODI(pData)) {
+			sodi_feature_enable =
+				GET_MTK_LP_DTS_VALUE_SODI(pData);
+		}
+	}
 	sodi_uptime_block_count = 0;
 	sodi_bypass_idle_cond = false;
 	sodi_bypass_dis_check = false;
@@ -394,8 +401,15 @@ void mtk_sodi_init(void)
 
 	mtk_idle_block_setting(IDLE_TYPE_SO, so_cnt, so_block_cnt);
 }
-void mtk_sodi3_init(void)
+void mtk_sodi3_init(struct mtk_idle_init_data *pData)
 {
+	/*If dts node have status information then set state to sodi3*/
+	if (pData) {
+		if (IS_MTK_LP_DTS_AVAILABLE_SODI3(pData)) {
+			sodi3_feature_enable =
+				GET_MTK_LP_DTS_VALUE_SODI3(pData);
+		}
+	}
 	sodi3_uptime_block_count = 0;
 
 	sodi3_bypass_idle_cond = false;

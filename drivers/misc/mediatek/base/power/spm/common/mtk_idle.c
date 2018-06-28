@@ -27,6 +27,7 @@
 #include <mtk_spm_resource_req_internal.h>
 #include "mtk_idle_sysfs.h"
 
+#include "mtk_lp_dts.h"
 /* Change sodi3 */
 bool mtk_idle_screen_off_sodi3 = MTK_IDLE_ADJUST_CHECK_ORDER ? 1 : 0;
 
@@ -147,13 +148,38 @@ static void mtk_idle_init(void)
 
 void __init mtk_cpuidle_framework_init(void)
 {
+	struct mtk_idle_init_data pInitData = {0, 0};
+	struct device_node *idle_node = NULL;
 
+	/* Get dts of cpu's idle-state*/
+	idle_node = GET_MTK_IDLE_STATES_DTS_NODE();
+
+	if (idle_node) {
+		int state = 0;
+
+		/* Get dts of SODI*/
+		state = GET_MTK_OF_PROPERTY_STATUS_SODI(idle_node);
+		MTK_IDLE_FEATURE_DTS_STATE_CHECK(MTK_LP_FEATURE_DTS_SODI
+						, state, pInitData);
+
+		/* Get dts of SODI3*/
+		state = GET_MTK_OF_PROPERTY_STATUS_SODI3(idle_node);
+		MTK_IDLE_FEATURE_DTS_STATE_CHECK(MTK_LP_FEATURE_DTS_SODI3
+						, state, pInitData);
+
+		/* Get dts of DeepIdle*/
+		state = GET_MTK_OF_PROPERTY_STATUS_DP(idle_node);
+		MTK_IDLE_FEATURE_DTS_STATE_CHECK(MTK_LP_FEATURE_DTS_DP
+						, state, pInitData);
+
+		of_node_put(idle_node);
+	}
 	mtk_idle_sysfs_entry_create();
 
 	mtk_idle_init();
-	mtk_dpidle_init();
-	mtk_sodi_init();
-	mtk_sodi3_init();
+	mtk_dpidle_init(&pInitData);
+	mtk_sodi_init(&pInitData);
+	mtk_sodi3_init(&pInitData);
 	spm_resource_req_debugfs_init();
 
 	spm_resource_req_init();
