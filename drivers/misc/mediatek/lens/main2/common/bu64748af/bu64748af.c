@@ -42,7 +42,6 @@ static spinlock_t *g_pAF_SpinLock;
 
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
-static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 
 int main2_SOutEx(unsigned char slaveAddress,
@@ -114,25 +113,20 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 	return 0;
 }
 
-static inline int moveAF(unsigned long a_u4Position)
+/* initAF include driver initialization and standby mode */
+static int initAF(void)
 {
-	int ret = 0;
-
-	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
-		LOG_INF("out of range\n");
-		return -EINVAL;
-	}
+	LOG_INF("+\n");
 
 	if (*g_pAF_Opened == 1) {
-		spin_lock(g_pAF_SpinLock);
-		g_u4CurrPosition = 0;
-		spin_unlock(g_pAF_SpinLock);
+
+		int ret = 0;
 
 		BU64748_main2_soft_power_ctrl(1);
 
 		ret = BU64748_main2_Initial();
 		if (ret) {
-			LOG_INF("bu64748af_main2 init failed.line:%d.\n",
+			LOG_INF("bu64748af_main init failed.line:%d.\n",
 				__LINE__);
 			return -EINVAL;
 		}
@@ -142,19 +136,18 @@ static inline int moveAF(unsigned long a_u4Position)
 		spin_unlock(g_pAF_SpinLock);
 	}
 
-	if (g_u4CurrPosition == a_u4Position)
-		return 0;
-
-	spin_lock(g_pAF_SpinLock);
-	g_u4TargetPosition = a_u4Position;
-	spin_unlock(g_pAF_SpinLock);
-
-	main2_AF_TARGET(g_u4TargetPosition);
-	spin_lock(g_pAF_SpinLock);
-	g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
-	spin_unlock(g_pAF_SpinLock);
+	LOG_INF("-\n");
 
 	return 0;
+}
+
+static inline int moveAF(unsigned long a_u4Position)
+{
+	int ret = 0;
+
+	main2_AF_TARGET(a_u4Position);
+
+	return ret;
 }
 
 static inline int setAFInf(unsigned long a_u4Position)
@@ -264,5 +257,20 @@ int bu64748af_SetI2Cclient_Main2(struct i2c_client *pstAF_I2Cclient,
 		PowerDown = 0;
 
 	LOG_INF("SetI2Cclient value(0x%x)\n", ret);
+
+	initAF();
+
 	return (ret == 0);
+}
+
+int bu64748af_GetFileName_Main2(unsigned char *pFileName)
+{
+	char *FileString = (strrchr(__FILE__, '/') + 1);
+
+	strcpy(pFileName, FileString);
+	FileString = strchr(pFileName, '.');
+	*FileString = '\0';
+	LOG_INF("FileName : %s\n", pFileName);
+
+	return 1;
 }

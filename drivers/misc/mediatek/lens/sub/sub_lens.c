@@ -82,17 +82,17 @@ static struct stAF_OisPosInfo OisPosInfo;
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl,
-	 BU6424AF_Release, NULL},
+	 BU6424AF_Release, BU6424AF_GetFileName, NULL},
 	{1, AFDRV_BU6429AF, BU6429AF_SetI2Cclient, BU6429AF_Ioctl,
-	 BU6429AF_Release, NULL},
+	 BU6429AF_Release, BU6429AF_GetFileName, NULL},
 	{1, AFDRV_DW9714AF, DW9714AF_SetI2Cclient, DW9714AF_Ioctl,
-	 DW9714AF_Release, NULL},
+	 DW9714AF_Release, DW9714AF_GetFileName, NULL},
 	{1, AFDRV_DW9718AF, DW9718AF_SetI2Cclient, DW9718AF_Ioctl,
-	 DW9718AF_Release, NULL},
+	 DW9718AF_Release, DW9718AF_GetFileName, NULL},
 	{1, AFDRV_LC898212AF, LC898212AF_SetI2Cclient, LC898212AF_Ioctl,
-	 LC898212AF_Release, NULL},
+	 LC898212AF_Release, LC898212AF_GetFileName, NULL},
 	{1, AFDRV_FM50AF, FM50AF_SetI2Cclient, FM50AF_Ioctl, FM50AF_Release,
-	 NULL},
+	 FM50AF_GetFileName, NULL},
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;
@@ -194,6 +194,26 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 	case AFIOC_S_SETDRVNAME:
 		i4RetValue = AF_SetMotorName(
 			(__user struct stAF_MotorName *)(a_u4Param));
+		break;
+
+	case AFIOC_G_GETDRVNAME:
+		{
+	if (g_pstAF_CurDrv) {
+		if (g_pstAF_CurDrv->pAF_GetFileName) {
+			__user struct stAF_MotorName *pstMotorName =
+			(__user struct stAF_MotorName *)a_u4Param;
+			struct stAF_MotorName MotorFileName;
+
+			g_pstAF_CurDrv->pAF_GetFileName(
+					MotorFileName.uMotorName);
+
+			if (copy_to_user(
+				    pstMotorName, &MotorFileName,
+				    sizeof(struct stAF_MotorName)))
+				LOG_INF("copy to user failed\n");
+		}
+	}
+		}
 		break;
 
 	case AFIOC_S_SETDRVINIT:

@@ -43,9 +43,7 @@ static spinlock_t *g_pAF_SpinLock;
 
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
-static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
-static unsigned int g_u4CheckDrvStatus;
 
 int s4EEPROM_ReadReg_BU63165AF(u16 addr, u16 *data)
 {
@@ -74,9 +72,6 @@ int s4AF_WriteReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData)
 {
 	int i4RetValue = 0;
 
-	if (g_u4CheckDrvStatus > 1)
-		return -1;
-
 	spin_lock(g_pAF_SpinLock);
 	g_pstAF_I2Cclient->addr = i2c_id >> 1;
 	spin_unlock(g_pAF_SpinLock);
@@ -85,7 +80,6 @@ int s4AF_WriteReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData)
 		i2c_master_send(g_pstAF_I2Cclient, a_pSendData, a_sizeSendData);
 
 	if (i4RetValue != a_sizeSendData) {
-		g_u4CheckDrvStatus++;
 		LOG_INF("I2C send failed!!, Addr = 0x%x, Data = 0x%x\n",
 			a_pSendData[0], a_pSendData[1]);
 		return -1;
@@ -99,9 +93,6 @@ int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData,
 {
 	int i4RetValue;
 	struct i2c_msg msg[2];
-
-	if (g_u4CheckDrvStatus > 1)
-		return -1;
 
 	spin_lock(g_pAF_SpinLock);
 	g_pstAF_I2Cclient->addr = i2c_id >> 1;
@@ -121,7 +112,6 @@ int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData,
 		i2c_transfer(g_pstAF_I2Cclient->adapter, msg, ARRAY_SIZE(msg));
 
 	if (i4RetValue != 2) {
-		g_u4CheckDrvStatus++;
 		LOG_INF("I2C Read failed!!\n");
 		return -1;
 	}
@@ -151,12 +141,10 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 	return 0;
 }
 
-static inline int moveAF(unsigned long a_u4Position)
+/* initAF include driver initialization and standby mode */
+static int initAF(void)
 {
-	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
-		LOG_INF("out of range\n");
-		return -EINVAL;
-	}
+	LOG_INF("+\n");
 
 	if (*g_pAF_Opened == 1) {
 		Main_OIS();
@@ -165,23 +153,24 @@ static inline int moveAF(unsigned long a_u4Position)
 		spin_unlock(g_pAF_SpinLock);
 	}
 
-	if (g_u4CurrPosition == a_u4Position)
-		return 0;
-
-	spin_lock(g_pAF_SpinLock);
-	g_u4TargetPosition = a_u4Position;
-	spin_unlock(g_pAF_SpinLock);
-
-	if (setVCMPos((unsigned short)g_u4TargetPosition) == 0) {
-		spin_lock(g_pAF_SpinLock);
-		g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
-		spin_unlock(g_pAF_SpinLock);
-	} else {
-		LOG_INF("set I2C failed when moving the motor\n");
-		return -1;
-	}
+	LOG_INF("-\n");
 
 	return 0;
+}
+
+/* moveAF only use to control moving the motor */
+static inline int moveAF(unsigned long a_u4Position)
+{
+	int ret = 0;
+
+	if (setVCMPos((unsigned short)a_u4Position) == 0) {
+		ret = 0;
+	} else {
+		LOG_INF("set I2C failed when moving the motor\n");
+		ret = -1;
+	}
+
+	return ret;
 }
 
 static inline int setAFInf(unsigned long a_u4Position)
@@ -273,8 +262,6 @@ int BU63165AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		msleep(20);
 	}
 
-	g_u4CheckDrvStatus = 0;
-
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
 
@@ -296,6 +283,20 @@ int BU63165AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	g_pAF_Opened = pAF_Opened;
 
 	LOG_INF("SetI2Cclient\n");
+
+	initAF();
+
+	return 1;
+}
+
+int BU63165AF_GetFileName(unsigned char *pFileName)
+{
+	char *FileString = (strrchr(__FILE__, '/') + 1);
+
+	strcpy(pFileName, FileString);
+	FileString = strchr(pFileName, '.');
+	*FileString = '\0';
+	LOG_INF("FileName : %s\n", pFileName);
 
 	return 1;
 }

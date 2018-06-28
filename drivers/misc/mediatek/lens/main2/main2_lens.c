@@ -84,19 +84,21 @@ static struct stAF_OisPosInfo OisPosInfo;
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_LC898212XDAF_F, LC898212XDAF_F_SetI2Cclient,
-	 LC898212XDAF_F_Ioctl, LC898212XDAF_F_Release, NULL},
+	 LC898212XDAF_F_Ioctl, LC898212XDAF_F_Release,
+	 LC898212XDAF_F_GetFileName, NULL},
 	{1, AFDRV_LC898217AF, LC898217AF_SetI2Cclient, LC898217AF_Ioctl,
-	 LC898217AF_Release, NULL},
+	 LC898217AF_Release, LC898217AF_GetFileName, NULL},
 	{1, AFDRV_LC898217AFA, LC898217AFA_SetI2Cclient, LC898217AF_Ioctl,
-	 LC898217AF_Release, NULL},
+	 LC898217AF_Release, LC898217AF_GetFileName, NULL},
 	{1, AFDRV_LC898217AFB, LC898217AFB_SetI2Cclient, LC898217AF_Ioctl,
-	 LC898217AF_Release, NULL},
+	 LC898217AF_Release, LC898217AF_GetFileName, NULL},
 	{1, AFDRV_LC898217AFC, LC898217AFC_SetI2Cclient, LC898217AF_Ioctl,
-	 LC898217AF_Release, NULL},
+	 LC898217AF_Release, LC898217AF_GetFileName, NULL},
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl,
-	 AK7371AF_Release, NULL},
+	 AK7371AF_Release, AK7371AF_GetFileName, NULL},
 	{1, AFDRV_BU64748AF, bu64748af_SetI2Cclient_Main2,
-	 bu64748af_Ioctl_Main2, bu64748af_Release_Main2, NULL},
+	 bu64748af_Ioctl_Main2, bu64748af_Release_Main2,
+	 bu64748af_GetFileName_Main2, NULL},
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;
@@ -237,6 +239,26 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 	case AFIOC_S_SETDRVNAME:
 		i4RetValue = AF_SetMotorName(
 			(__user struct stAF_MotorName *)(a_u4Param));
+		break;
+
+	case AFIOC_G_GETDRVNAME:
+		{
+	if (g_pstAF_CurDrv) {
+		if (g_pstAF_CurDrv->pAF_GetFileName) {
+			__user struct stAF_MotorName *pstMotorName =
+			(__user struct stAF_MotorName *)a_u4Param;
+			struct stAF_MotorName MotorFileName;
+
+			g_pstAF_CurDrv->pAF_GetFileName(
+					MotorFileName.uMotorName);
+
+			if (copy_to_user(
+				    pstMotorName, &MotorFileName,
+				    sizeof(struct stAF_MotorName)))
+				LOG_INF("copy to user failed\n");
+		}
+	}
+		}
 		break;
 
 	case AFIOC_S_SETDRVINIT:

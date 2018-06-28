@@ -41,7 +41,6 @@ static spinlock_t *g_pAF_SpinLock;
 
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
-static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 
 static int s4AF_ReadReg(u8 a_uAddr, u16 *a_pu2Result)
@@ -117,6 +116,28 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 	return 0;
 }
 
+/* initAF include driver initialization and standby mode */
+static int initAF(void)
+{
+	LOG_INF("+\n");
+
+	if (*g_pAF_Opened == 1) {
+
+		int ret = 0;
+
+		/* 00:active mode , 10:Standby mode , x1:Sleep mode */
+		ret = s4AF_WriteReg(0x02, 0x00);
+
+		spin_lock(g_pAF_SpinLock);
+		*g_pAF_Opened = 2;
+		spin_unlock(g_pAF_SpinLock);
+	}
+
+	LOG_INF("-\n");
+
+	return 0;
+}
+
 static inline int setVCMPos(unsigned long a_u4Position)
 {
 	int i4RetValue = 0;
@@ -126,65 +147,18 @@ static inline int setVCMPos(unsigned long a_u4Position)
 	if (i4RetValue < 0)
 		return -1;
 
-	i4RetValue = s4AF_WriteReg(0x1, (u16)((g_u4TargetPosition & 0x3) << 6));
+	i4RetValue = s4AF_WriteReg(0x1, (u16)((a_u4Position & 0x3) << 6));
 
 	return i4RetValue;
 }
 
+/* moveAF only use to control moving the motor */
 static inline int moveAF(unsigned long a_u4Position)
 {
 	int ret = 0;
 
-	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
-		LOG_INF("out of range\n");
-		return -EINVAL;
-	}
-
-	if (*g_pAF_Opened == 1) {
-		unsigned short InitPos, InitPosM, InitPosL, data;
-
-		s4AF_ReadReg(0x02, &data);
-
-		LOG_INF("Addr : 0x02 , Data : %x\n", data);
-
-		/* 00:active mode        10:Standby mode    x1:Sleep mode */
-		s4AF_WriteReg(0x02, 0x00);
-		msleep(20);
-		s4AF_ReadReg(0x0, &InitPosM);
-		ret = s4AF_ReadReg(0x1, &InitPosL);
-		InitPos = ((InitPosM & 0xFF) << 2) + ((InitPosL >> 6) & 0x3);
-
-		if (ret == 0) {
-			LOG_INF("Init Pos %6d\n", InitPos);
-
-			spin_lock(g_pAF_SpinLock);
-			g_u4CurrPosition = (unsigned long)InitPos;
-			spin_unlock(g_pAF_SpinLock);
-
-		} else {
-			spin_lock(g_pAF_SpinLock);
-			g_u4CurrPosition = 0;
-			spin_unlock(g_pAF_SpinLock);
-		}
-
-		spin_lock(g_pAF_SpinLock);
-		*g_pAF_Opened = 2;
-		spin_unlock(g_pAF_SpinLock);
-	}
-
-	if (g_u4CurrPosition == a_u4Position)
-		return 0;
-
-	spin_lock(g_pAF_SpinLock);
-	g_u4TargetPosition = a_u4Position;
-	spin_unlock(g_pAF_SpinLock);
-
-	/* s4AF_WriteReg(0x02, 0x00); */
-
-	if (setVCMPos(g_u4TargetPosition) == 0) {
-		spin_lock(g_pAF_SpinLock);
-		g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
-		spin_unlock(g_pAF_SpinLock);
+	if (setVCMPos(a_u4Position) == 0) {
+		ret = 0;
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
 		ret = -1;
@@ -303,6 +277,20 @@ int AK7371AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+
+	initAF();
+
+	return 1;
+}
+
+int AK7371AF_GetFileName(unsigned char *pFileName)
+{
+	char *FileString = (strrchr(__FILE__, '/') + 1);
+
+	strcpy(pFileName, FileString);
+	FileString = strchr(pFileName, '.');
+	*FileString = '\0';
+	LOG_INF("FileName : %s\n", pFileName);
 
 	return 1;
 }

@@ -41,7 +41,6 @@ static spinlock_t *g_pAF_SpinLock;
 
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
-static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 
 static int s4AF_ReadReg(unsigned short *a_pu2Result)
@@ -137,8 +136,13 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 	return 0;
 }
 
-static int AD5823_Mode_Init(void)
+/* initAF include driver initialization and standby mode */
+static int initAF(void)
 {
+	LOG_INF("+\n");
+
+	if (*g_pAF_Opened == 1) {
+
 	int i4RetValue = 0;
 
 	char Mode[2] = {(char)(0x02), (char)(0x01)};
@@ -159,54 +163,23 @@ static int AD5823_Mode_Init(void)
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, VCMLSB, 2);
 #endif
 
-	return 0;
-}
-
-static inline int moveAF(unsigned long a_u4Position)
-{
-	int ret = 0;
-
-	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
-		LOG_INF("out of range\n");
-		return -EINVAL;
-	}
-
-	if (*g_pAF_Opened == 1) {
-		unsigned short InitPos;
-
-		AD5823_Mode_Init();
-
-		ret = s4AF_ReadReg(&InitPos);
-
-		if (ret == 0) {
-			LOG_INF("Init Pos %6d\n", InitPos);
-
-			spin_lock(g_pAF_SpinLock);
-			g_u4CurrPosition = (unsigned long)InitPos;
-			spin_unlock(g_pAF_SpinLock);
-
-		} else {
-			spin_lock(g_pAF_SpinLock);
-			g_u4CurrPosition = 0;
-			spin_unlock(g_pAF_SpinLock);
-		}
-
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
 	}
 
-	if (g_u4CurrPosition == a_u4Position)
-		return 0;
+	LOG_INF("-\n");
 
-	spin_lock(g_pAF_SpinLock);
-	g_u4TargetPosition = a_u4Position;
-	spin_unlock(g_pAF_SpinLock);
+	return 0;
+}
 
-	if (s4AF_WriteReg((unsigned short)g_u4TargetPosition) == 0) {
-		spin_lock(g_pAF_SpinLock);
-		g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
-		spin_unlock(g_pAF_SpinLock);
+/* moveAF only use to control moving the motor */
+static inline int moveAF(unsigned long a_u4Position)
+{
+	int ret = 0;
+
+	if (s4AF_WriteReg((unsigned short)a_u4Position) == 0) {
+		ret = 0;
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
 		ret = -1;
@@ -300,6 +273,20 @@ int AD5823AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+
+	initAF();
+
+	return 1;
+}
+
+int AD5823AF_GetFileName(unsigned char *pFileName)
+{
+	char *FileString = (strrchr(__FILE__, '/') + 1);
+
+	strcpy(pFileName, FileString);
+	FileString = strchr(pFileName, '.');
+	*FileString = '\0';
+	LOG_INF("FileName : %s\n", pFileName);
 
 	return 1;
 }
