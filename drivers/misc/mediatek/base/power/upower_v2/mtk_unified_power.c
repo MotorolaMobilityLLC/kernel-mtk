@@ -303,13 +303,13 @@ static void upower_update_lkg_pwr(void)
 	int j, k;
 	unsigned int spower_bank_id;
 /*
-#ifdef EARLY_PORTING_SPOWER
-	int j, k;
-#else
-
-	unsigned int spower_bank_id;
-#endif
-*/
+ *#ifdef EARLY_PORTING_SPOWER
+ *	int j, k;
+ *#else
+ *
+ *	unsigned int spower_bank_id;
+ *#endif
+ */
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		tbl = upower_tbl_infos[i].p_upower_tbl;
 		/* modify mt3967 */
