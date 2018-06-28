@@ -6325,9 +6325,10 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p,
 static inline unsigned long task_util(struct task_struct *p)
 {
 #ifdef CONFIG_SCHED_WALT
-	if (!walt_disabled && sysctl_sched_use_walt_task_util) {
+	if (!walt_disabled && (sysctl_sched_use_walt_task_util ||
+				p->prio < sched_use_walt_nice)) {
 		unsigned long demand = p->ravg.demand;
-		return (demand << 10) / walt_ravg_window;
+		return (demand << SCHED_CAPACITY_SHIFT) / walt_ravg_window;
 	}
 #endif
 	return p->se.avg.util_avg;
