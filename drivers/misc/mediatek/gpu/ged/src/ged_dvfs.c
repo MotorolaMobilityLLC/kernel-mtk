@@ -125,7 +125,6 @@ static int g_VsyncOffsetLevel;
 static int g_probe_pid = GED_NO_UM_SERVICE;
 
 typedef void (*gpufreq_input_boost_notify)(unsigned int);
-typedef void (*gpufreq_power_limit_notify)(unsigned int);
 
 extern void mt_gpufreq_input_boost_notify_registerCB(gpufreq_input_boost_notify pCB);
 extern void mt_gpufreq_power_limit_notify_registerCB(gpufreq_power_limit_notify pCB);
