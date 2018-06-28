@@ -5136,6 +5136,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 									/*   base_vAddr); */
 									/* spin_lock_irqsave(*/
 									/*&(IspInfo.SpinLockIrq[irqT]), flags); */
+#if (HAL3_IPBASE == 1)
+				/* update vAddr for deciding which buffer had been changed to dummy frame. */
+					pstRTBuf->ring_buf[rt_dma].data[i].base_vAddr = rt_buf_info.base_vAddr;
+#endif
 						pstRTBuf->ring_buf[rt_dma].data[i].bFilled =
 										ISP_RTBC_BUF_EMPTY;
 						pstRTBuf->ring_buf[rt_dma].
