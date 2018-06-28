@@ -15,7 +15,8 @@
 #include <mt-plat/mtk_boot.h>
 #include <mtk_gauge_class.h>
 #include <mtk_battery_internal.h>
-
+#include <mt-plat/upmu_common.h>
+#include <mach/upmu_sw.h>
 
 #if (CONFIG_MTK_GAUGE_VERSION != 30)
 signed int battery_get_bat_voltage(void)
@@ -134,6 +135,19 @@ signed int battery_get_bat_avg_current(void)
 	bool valid;
 
 	return gauge_get_average_current(&valid);
+}
+
+/* GM25 only */
+int en_intr_VBATON_UNDET(int en)
+{
+	pmic_enable_interrupt(INT_VBATON_UNDET, en, "VBATON_UNDET");
+	return 0;
+}
+
+int reg_VBATON_UNDET(void (*callback)(void))
+{
+	pmic_register_interrupt_callback(INT_VBATON_UNDET, callback);
+	return 0;
 }
 
 #endif

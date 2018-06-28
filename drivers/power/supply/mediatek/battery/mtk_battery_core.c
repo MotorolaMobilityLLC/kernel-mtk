@@ -1924,7 +1924,7 @@ void fg_bat_plugout_int_handler_gm25(void)
 
 	if (is_bat_exist == false) {
 		gauge_dev_set_info(gm.gdev, GAUGE_BAT_PLUG_STATUS, 0);
-		pmic_enable_interrupt(INT_VBATON_UNDET, 0, "VBATON_UNDET");
+		en_intr_VBATON_UNDET(0);
 		battery_notifier(EVENT_BATTERY_PLUG_OUT);
 		kernel_power_off();
 	}
@@ -3818,18 +3818,11 @@ void mtk_battery_last_init(struct platform_device *dev)
 	int fgv;
 
 	fgv = gauge_get_hw_version();
-
 		if (fgv >= GAUGE_HW_V1000
 		&& fgv < GAUGE_HW_V2000
 		&& gm.disableGM30 == 0) {
-			pmic_register_interrupt_callback(
-				INT_VBATON_UNDET,
-				fg_bat_plugout_int_handler_gm25);
-
-			pmic_enable_interrupt(
-				INT_VBATON_UNDET,
-				1,
-				"VBATON_UNDET");
+			reg_VBATON_UNDET(fg_bat_plugout_int_handler_gm25);
+			en_intr_VBATON_UNDET(1);
 		}
 }
 
