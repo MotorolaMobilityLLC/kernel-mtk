@@ -4706,7 +4706,11 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 		handle->state = TASK_STATE_DONE;
 	}
 
-	if (handle->state != TASK_STATE_DONE)
+	/* reset hardware in timeout or error irq case,
+	 * so that hardware may work again on next task.
+	 */
+	if (handle->state == TASK_STATE_TIMEOUT ||
+		handle->state == TASK_STATE_ERR_IRQ)
 		cmdq_core_group_reset_hw(handle->engineFlag);
 
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->CMDQ_IRQ, MMPROFILE_FLAG_PULSE,
