@@ -402,6 +402,8 @@ void chrdet_int_handler(void)
 		}
 	}
 #endif
+	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
+
 	do_charger_detect();
 }
 
