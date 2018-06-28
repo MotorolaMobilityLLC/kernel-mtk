@@ -16,7 +16,7 @@
 ifeq ($(CONFIG_MACH_MT6761),y)
 MTK_PLATFORM := mt6765
 else
-MTK_PLATFORM := CONFIG_MTK_PLATFORM
+MTK_PLATFORM := $(CONFIG_MTK_PLATFORM)
 endif
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/ \
