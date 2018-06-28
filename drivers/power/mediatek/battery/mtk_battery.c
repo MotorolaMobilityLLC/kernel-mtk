@@ -147,13 +147,11 @@ void __attribute__ ((weak))
 {
 }
 
-
 enum charger_type __attribute__ ((weak))
 	mt_get_charger_type(void)
 {
 	return CHARGER_UNKNOWN;
 }
-
 
 int __attribute__ ((weak))
 	charger_manager_get_zcv(

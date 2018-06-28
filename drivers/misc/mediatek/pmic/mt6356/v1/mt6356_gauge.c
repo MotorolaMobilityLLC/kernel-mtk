@@ -29,7 +29,7 @@
 #include <linux/proc_fs.h>
 #include <linux/math64.h>
 
-#include "include/mtk_gauge_class.h"
+#include <mtk_gauge_class.h>
 #include <mtk_battery_internal.h>
 
 
@@ -407,8 +407,8 @@ static signed int fg_set_iavg_intr(struct gauge_device *gauge_dev, void *data)
 	if (iavg_lt <= 0)
 		iavg_lt = 0;
 
-	gauge_dev->fg_hw_info.iavg_ht = iavg_ht;
-	gauge_dev->fg_hw_info.iavg_lt = iavg_lt;
+	get_mtk_battery()->hw_status.iavg_ht = iavg_ht;
+	get_mtk_battery()->hw_status.iavg_lt = iavg_lt;
 
 	fg_iavg_reg_ht = iavg_ht * 1000 * 1000 * gauge_dev->fg_cust_data->r_fg_value;
 	if (fg_iavg_reg_ht < 0) {
@@ -1158,7 +1158,7 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 		g_fg_is_charger_exist = 0;
 
 	_hw_ocv = _hw_ocv_35_pon;
-	_sw_ocv = get_sw_ocv();
+	_sw_ocv = get_mtk_battery()->hw_status.sw_ocv;
 	_hw_ocv_src = FROM_6356_PON_ON;
 	_prev_hw_ocv = _hw_ocv;
 	_prev_hw_ocv_src = FROM_6356_PON_ON;
