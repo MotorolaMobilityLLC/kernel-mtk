@@ -85,7 +85,7 @@ void OSCPUCacheFlushRangeKM(PVRSRV_DEVICE_NODE *psDevNode,
 	PVR_UNREFERENCED_PARAMETER(sCPUPhysStart);
 	PVR_UNREFERENCED_PARAMETER(sCPUPhysEnd);
 
-	PVR_ASSERT((uintptr_t) pvVirtEnd >= (uintptr_t) pvVirtEnd);
+	PVR_ASSERT((uintptr_t) pvVirtEnd >= (uintptr_t) pvVirtStart);
 
 	len = (unsigned long) pvVirtEnd - (unsigned long) pvVirtStart;
 	dma_cache_sync(psDevNode->psDevConfig->pvOSDevice, (void *)pvVirtStart, len, DMA_BIDIRECTIONAL);
@@ -101,7 +101,7 @@ void OSCPUCacheCleanRangeKM(PVRSRV_DEVICE_NODE *psDevNode,
 	PVR_UNREFERENCED_PARAMETER(sCPUPhysStart);
 	PVR_UNREFERENCED_PARAMETER(sCPUPhysEnd);
 
-	PVR_ASSERT((uintptr_t) pvVirtEnd >= (uintptr_t) pvVirtEnd);
+	PVR_ASSERT((uintptr_t) pvVirtEnd >= (uintptr_t) pvVirtStart);
 
 	len = (unsigned long) pvVirtEnd - (unsigned long) pvVirtStart;
 	dma_cache_sync(psDevNode->psDevConfig->pvOSDevice, (void *)pvVirtStart, len, DMA_TO_DEVICE);
@@ -117,7 +117,7 @@ void OSCPUCacheInvalidateRangeKM(PVRSRV_DEVICE_NODE *psDevNode,
 	PVR_UNREFERENCED_PARAMETER(sCPUPhysStart);
 	PVR_UNREFERENCED_PARAMETER(sCPUPhysEnd);
 
-	PVR_ASSERT((uintptr_t) pvVirtEnd >= (uintptr_t) pvVirtEnd);
+	PVR_ASSERT((uintptr_t) pvVirtEnd >= (uintptr_t) pvVirtStart);
 
 	len = (unsigned long) pvVirtEnd - (unsigned long) pvVirtStart;
 	dma_cache_sync(psDevNode->psDevConfig->pvOSDevice, (void *)pvVirtStart, len, DMA_FROM_DEVICE);
