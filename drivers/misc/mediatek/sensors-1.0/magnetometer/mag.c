@@ -745,8 +745,6 @@ int mag_cali_report(int32_t *param)
 	event.word[5] = param[5];
 
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
