@@ -42,6 +42,7 @@ subdir-ccflags-y += -DAUDIO_USING_WRAP_DRIVER
 subdir-ccflags-y += -D_MT_IDLE_HEADER
 
 # include path
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/accdet/mt6358
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
