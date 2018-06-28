@@ -183,6 +183,7 @@ static void mtklmk_uevent(int oom_score_adj, int minfree)
 
 static void dump_memory_status(void)
 {
+	show_task_mem();
 	show_free_areas(0);
 #ifdef CONFIG_MTK_ION
 	/* Show ION status */

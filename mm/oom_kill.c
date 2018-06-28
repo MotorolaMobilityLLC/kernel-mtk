@@ -387,6 +387,12 @@ static void dump_tasks(struct mem_cgroup *memcg, const nodemask_t *nodemask)
 	rcu_read_unlock();
 }
 
+/* show tasks' memory usage */
+void show_task_mem(void)
+{
+	dump_tasks(NULL, NULL);
+}
+
 static void dump_header(struct oom_control *oc, struct task_struct *p,
 			struct mem_cgroup *memcg)
 {
