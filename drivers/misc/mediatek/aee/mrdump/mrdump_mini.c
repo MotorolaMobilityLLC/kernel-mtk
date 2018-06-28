@@ -871,40 +871,6 @@ static void mrdump_mini_clear_loads(void)
 	}
 }
 
-static void mrdump_mini_dump_loads(loff_t offset, mrdump_write write)
-{
-	int errno;
-	unsigned long start, size;
-	int i;
-	struct elf_phdr *phdr;
-	loff_t pos = MRDUMP_MINI_HEADER_SIZE;
-
-	for (i = 0; i < MRDUMP_MINI_NR_SECTION; i++) {
-		phdr = &mrdump_mini_ehdr->phdrs[i];
-		if (phdr->p_type == PT_NULL)
-			break;
-		if (phdr->p_type == PT_LOAD) {
-			/* mrdump_mini_dump_phdr(phdr, &pos); */
-			start = phdr->p_vaddr;
-			size = ALIGN(phdr->p_filesz, SZ_512);
-			phdr->p_offset = pos;
-			errno = write((void *)start, pos + offset, size, 1);
-			pos += size;
-			if (IS_ERR(ERR_PTR(errno)))
-				LOGD("mirdump: write fail");
-		}
-	}
-}
-
-int mrdump_mini_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode, mrdump_write write,
-				 loff_t sd_offset, const char *msg, va_list ap)
-{
-	mrdump_mini_dump_loads(sd_offset, write);
-	write((void *)mrdump_mini_ehdr, sd_offset, MRDUMP_MINI_HEADER_SIZE, 1);
-	return MRDUMP_MINI_BUF_SIZE;
-}
-EXPORT_SYMBOL(mrdump_mini_create_oops_dump);
-
 void mrdump_mini_ipanic_done(void)
 {
 	mrdump_mini_ehdr->ehdr.e_ident[0] = 0;

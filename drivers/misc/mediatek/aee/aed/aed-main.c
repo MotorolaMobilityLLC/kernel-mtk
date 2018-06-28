@@ -616,10 +616,7 @@ static void ke_destroy_log(void)
 
 	if (aed_dev.kerec.lastlog) {
 		aed_dev.kerec.lastlog = NULL;
-		if (strncmp(lastlog->module, IPANIC_MODULE_TAG, strlen(IPANIC_MODULE_TAG)) == 0)
-			ipanic_oops_free(lastlog, 0);
-		else
-			aee_oops_free(lastlog);
+		aee_oops_free(lastlog);
 	}
 }
 
@@ -1090,20 +1087,11 @@ static ssize_t aed_ee_write(struct file *filp, const char __user *buf, size_t co
  *****************************************************************************/
 static int aed_ke_open(struct inode *inode, struct file *filp)
 {
-	struct aee_oops *oops_open = NULL;
 	int major = MAJOR(inode->i_rdev);
 	int minor = MINOR(inode->i_rdev);
 	unsigned char *devname = filp->f_path.dentry->d_iname;
 
 	LOGD("%s:(%s)%d:%d\n", __func__, devname, major, minor);
-
-	if (strstr(devname, "aed1")) {	/* aed_ke_open is also used by other device */
-		oops_open = ipanic_oops_copy();
-		if (oops_open == NULL)
-			return 0;
-		/* The panic log only occur on system startup, so check it now */
-		ke_queue_request(oops_open);
-	}
 	return 0;
 }
 
