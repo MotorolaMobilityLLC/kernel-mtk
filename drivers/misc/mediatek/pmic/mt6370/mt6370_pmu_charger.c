@@ -308,6 +308,9 @@ static int mt6370_get_aicr(struct charger_device *chg_dev, u32 *uA);
 static int mt6370_set_ichg(struct charger_device *chg_dev, u32 uA);
 static int mt6370_get_ichg(struct charger_device *chg_dev, u32 *uA);
 static int mt6370_enable_charging(struct charger_device *chg_dev, bool en);
+#ifdef CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT
+static int mt6370_inform_psy_changed(struct mt6370_pmu_charger_data *chg_data);
+#endif
 
 static inline void mt6370_chg_irq_set_flag(
 	struct mt6370_pmu_charger_data *chg_data, u8 *irq, u8 mask)
