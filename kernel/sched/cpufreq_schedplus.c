@@ -654,13 +654,8 @@ static void update_fdomain_capacity_request(int cpu, int type)
 
 	gd->last_freq_update_time = time;
 
-	mt_sched_printf(sched_dvfs,
-	"cpu=%d type=%d cur=%d new=%d thro_type=%s now=%lld thro_time=%lld",
-			gd->target_cpu, sched_dvfs_type,
-			cur_freq, freq_new,
-			(gd->thro_type == DVFS_THROTTLE_UP) ? "up":"dw",
-			now.tv64, throttle.tv64
-		       );
+	trace_sched_dvfs(cpu, cid, type, cur_freq, freq_new,
+			gd->thro_type, throttle.tv64);
 
 	/*
 	 * Throttling is not yet supported on platforms with fast cpufreq
