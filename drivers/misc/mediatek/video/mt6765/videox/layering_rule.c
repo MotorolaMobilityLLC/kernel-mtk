@@ -84,12 +84,21 @@ int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 };
 
 int mm_freq_table[HRT_DRAMC_TYPE_NUM][HRT_OPP_LEVEL_NUM] = {
+#if defined(CONFIG_MACH_MT6765)
 	/* HRT_DRAMC_TYPE_LP4_3733 */
 	{457, 312, 228},
 	/* HRT_DRAMC_TYPE_LP4_3200 */
 	{457, 312, 228},
 	/* HRT_DRAMC_TYPE_LP3 */
 	{457, 312, 228},
+#elif defined(CONFIG_MACH_MT6761)
+	/* HRT_DRAMC_TYPE_LP4_3733 */
+	{436, 312, 227},
+	/* HRT_DRAMC_TYPE_LP4_3200 */
+	{436, 312, 227},
+	/* HRT_DRAMC_TYPE_LP3 */
+	{436, 312, 227},
+#endif
 };
 
 /**
