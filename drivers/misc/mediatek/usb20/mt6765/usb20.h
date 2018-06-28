@@ -95,7 +95,7 @@ extern enum charger_type mt_get_charger_type(void);
 void set_usb_phy_mode(int mode);
 #ifdef CONFIG_USB_MTK_OTG
 extern bool usb20_check_vbus_on(void);
+#endif
 extern bool usb_prepare_clock(bool enable);
 extern void usb_prepare_enable_clock(bool enable);
-#endif
 #endif
