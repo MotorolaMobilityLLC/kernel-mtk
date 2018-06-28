@@ -321,7 +321,8 @@ static int pmem_release(struct inode *inode, struct file *file)
 	return TMEM_OK;
 }
 
-static char register_core_ops_str[32];
+#define REG_CORE_OPS_STR_LEN (32)
+static char register_core_ops_str[REG_CORE_OPS_STR_LEN];
 static char *get_registered_core_ops(void)
 {
 	return register_core_ops_str;
@@ -347,13 +348,13 @@ static void pmem_create_proc_entry(void)
 {
 #if defined(PMEM_MOCK_MTEE) && defined(PMEM_MOCK_SSMR)
 	pr_info("PMEM_MOCK_ALL\n");
-	sprintf(register_core_ops_str, "PMEM_MOCK_ALL");
+	snprintf(register_core_ops_str, REG_CORE_OPS_STR_LEN, "PMEM_MOCK_ALL");
 #elif defined(PMEM_MOCK_MTEE)
 	pr_info("PMEM_MOCK_MTEE\n");
-	sprintf(register_core_ops_str, "PMEM_MOCK_MTEE");
+	snprintf(register_core_ops_str, REG_CORE_OPS_STR_LEN, "PMEM_MOCK_MTEE");
 #else
 	pr_info("PMEM_CORE_OPS\n");
-	sprintf(register_core_ops_str, "PMEM_CORE_OPS");
+	snprintf(register_core_ops_str, REG_CORE_OPS_STR_LEN, "PMEM_CORE_OPS");
 #endif
 
 	proc_create("pmem0", 0664, NULL, &pmem_proc_fops);
@@ -381,7 +382,7 @@ static int __init pmem_init(void)
 #endif
 	t_device->peer_ops = &pmem_driver_ops;
 
-	sprintf(t_device->name, "%s", PMEM_DEVICE_NAME);
+	snprintf(t_device->name, MAX_DEVICE_NAME_LEN, "%s", PMEM_DEVICE_NAME);
 #if defined(CONFIG_MTK_SSMR) || (defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP))
 	t_device->ssmr_feature_id = SSMR_FEAT_PROT_SHAREDMEM;
 #endif
