@@ -70,4 +70,16 @@ extern void aee_rr_rec_gpu_dvfs_status(u8 val);
 extern u8 aee_rr_curr_gpu_dvfs_status(void);
 #endif /* CONFIG_MTK_RAM_CONSOLE */
 
+/*****************
+ * power limit notification
+ ******************/
+typedef void (*gpufreq_power_limit_notify)(unsigned int);
+extern void mt_gpufreq_power_limit_notify_registerCB(gpufreq_power_limit_notify pCB);
+
+/*****************
+ * input boost notification
+ ******************/
+typedef void (*gpufreq_input_boost_notify)(unsigned int);
+extern void mt_gpufreq_input_boost_notify_registerCB(gpufreq_input_boost_notify pCB);
+
 #endif /* _MT_GPUFREQ_H_ */
