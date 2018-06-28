@@ -810,10 +810,9 @@ void post_init_entity_util_avg(struct sched_entity *se)
 	struct sched_avg *sa = &se->avg;
 	long cap = (long)(SCHED_CAPACITY_SCALE - cfs_rq->avg.util_avg) / 2;
 
-	if (sched_feat(POST_INIT_UTIL) && cap > 0) {
+	if (cap > 0) {
 		if (cfs_rq->avg.util_avg != 0) {
-			sa->util_avg  = cfs_rq->avg.util_avg *
-				scale_load_down(se->load.weight);
+			sa->util_avg  = cfs_rq->avg.util_avg * se->load.weight;
 			sa->util_avg /= (cfs_rq->avg.load_avg + 1);
 
 			if (sa->util_avg > cap)
@@ -4972,11 +4971,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 			rq->rd->overutilized = true;
 
 			/* Little.cpu */
-			if (capacity_orig_of(cpu_of(rq)) <
-					(rq->rd->max_cpu_capacity.val)) {
+			if (capacity_orig_of(cpu_of(rq)) < (rq->rd->max_cpu_capacity.val))
 				system_overutil = true;
-				trace_sched_system_overutilized(true);
-			}
+
 			trace_sched_overutilized(true);
 		}
 
@@ -6331,14 +6328,15 @@ schedtune_margin(int cpu, unsigned long signal, long boost)
 		if (boost >= 0) {
 			margin  = capacity_orig_of(cpu) - signal;
 			margin *= boost;
-		} else
+		} else {
 			margin = -signal * boost;
+		}
 	}
 
 	margin  = reciprocal_divide(margin, schedtune_spc_rdiv);
-
 	if (boost < 0)
 		margin *= -1;
+
 	return margin;
 }
 
@@ -9406,10 +9404,8 @@ next_group:
 		}
 
 		/* Update system-wide over-utilization indicator */
-		if (system_overutil != tmp_sys_overutil) {
+		if (system_overutil != tmp_sys_overutil)
 			system_overutil = tmp_sys_overutil;
-			trace_sched_system_overutilized(system_overutil);
-		}
 
 		update_sched_hint(sys_util, sys_cap);
 		// met_tag_oneshot(0, "sched_sys_util", sys_util);
@@ -11018,11 +11014,8 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
 		rq->rd->overutilized = true;
 
 		/* Little.cpu */
-		if (capacity_orig_of(cpu_of(rq)) <
-				(rq->rd->max_cpu_capacity.val)) {
+		if (capacity_orig_of(cpu_of(rq)) < (rq->rd->max_cpu_capacity.val))
 			system_overutil = true;
-			trace_sched_system_overutilized(true);
-		}
 		trace_sched_overutilized(true);
 	}
 
