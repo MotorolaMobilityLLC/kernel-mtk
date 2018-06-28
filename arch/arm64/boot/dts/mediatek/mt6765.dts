@@ -3125,6 +3125,10 @@ firmware_class.path=/vendor/firmware";
 		compatible = "mediatek,radio_md_cfg";
 	};
 
+	dynamic_options: dynamic_options {
+		compatible = "mediatek,dynamic_options";
+	};
+
 };
 
 #include "cust_mt6765_msdc.dtsi"
