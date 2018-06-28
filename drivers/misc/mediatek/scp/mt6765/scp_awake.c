@@ -45,7 +45,6 @@
 #include "scp_dvfs.h"
 
 struct mutex scp_awake_mutexs[SCP_CORE_TOTAL];
-int scp_awake_counts[SCP_CORE_TOTAL];
 
 
 /*
@@ -198,23 +197,6 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_awake_unlock);
-
-void scp_reset_awake_counts(void)
-{
-	int i = 0;
-
-	/* scp ready static flag initialise */
-	for (i = 0; i < SCP_CORE_TOTAL ; i++)
-		scp_awake_counts[i] = 0;
-}
-
-void scp_awake_init(void)
-{
-	int i = 0;
-	/* scp ready static flag initialise */
-	for (i = 0; i < SCP_CORE_TOTAL ; i++)
-		scp_awake_counts[i] = 0;
-}
 
 void scp_enable_sram(void)
 {

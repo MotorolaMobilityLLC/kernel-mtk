@@ -74,6 +74,9 @@ unsigned int scp_enable[SCP_CORE_TOTAL];
 unsigned int scp_expected_freq;
 unsigned int scp_current_freq;
 
+/*scp awake variable*/
+int scp_awake_counts[SCP_CORE_TOTAL];
+
 #if SCP_RECOVERY_SUPPORT
 unsigned int scp_recovery_flag[SCP_CORE_TOTAL];
 #define SCP_A_RECOVERY_OK	0x44
@@ -1218,6 +1221,26 @@ void scp_extern_notify(enum SCP_NOTIFY_EVENT notify_status)
 	blocking_notifier_call_chain(&scp_A_notifier_list, notify_status, NULL);
 }
 
+/*
+ * reset awake counter
+ */
+void scp_reset_awake_counts(void)
+{
+	int i = 0;
+
+	/* scp ready static flag initialise */
+	for (i = 0; i < SCP_CORE_TOTAL ; i++)
+		scp_awake_counts[i] = 0;
+}
+
+void scp_awake_init(void)
+{
+	int i = 0;
+	/* scp ready static flag initialise */
+	for (i = 0; i < SCP_CORE_TOTAL ; i++)
+		scp_awake_counts[i] = 0;
+
+}
 
 #if SCP_RECOVERY_SUPPORT
 /*
