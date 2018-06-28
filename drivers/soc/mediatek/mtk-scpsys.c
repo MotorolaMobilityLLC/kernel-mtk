@@ -233,11 +233,14 @@ static int scpsys_power_on(struct generic_pm_domain *genpd)
 	}
 
 	if (scpd->data->bus_prot_mask) {
-		if (((scpd->data->bp_ext.set_ofs && scpd->data->bp_ext.clr_ofs) || scpd->data->bp_ext.en_ofs) &&
-				scpd->data->bp_ext.sta_ofs)
+		if (((scpd->data->bp_ext.set_ofs && scpd->data->bp_ext.clr_ofs)
+			|| scpd->data->bp_ext.en_ofs)
+			&& scpd->data->bp_ext.sta_ofs)
 			ret = mtk_infracfg_clear_bus_protection_ext(scp->infracfg,
-					scpd->data->bus_prot_mask, scpd->data->bp_ext.clr_ofs,
-					scpd->data->bp_ext.sta_ofs, scpd->data->bp_ext.en_ofs);
+					scpd->data->bus_prot_mask,
+					scpd->data->bp_ext.clr_ofs,
+					scpd->data->bp_ext.sta_ofs,
+					scpd->data->bp_ext.en_ofs);
 		else
 			ret = mtk_infracfg_clear_bus_protection(scp->infracfg,
 					scpd->data->bus_prot_mask);
@@ -274,11 +277,14 @@ static int scpsys_power_off(struct generic_pm_domain *genpd)
 	int i;
 
 	if (scpd->data->bus_prot_mask) {
-		if (((scpd->data->bp_ext.set_ofs && scpd->data->bp_ext.clr_ofs) || scpd->data->bp_ext.en_ofs) &&
-				scpd->data->bp_ext.sta_ofs)
+		if (((scpd->data->bp_ext.set_ofs && scpd->data->bp_ext.clr_ofs)
+			|| scpd->data->bp_ext.en_ofs)
+			&& scpd->data->bp_ext.sta_ofs)
 			ret = mtk_infracfg_set_bus_protection_ext(scp->infracfg,
-					scpd->data->bus_prot_mask, scpd->data->bp_ext.set_ofs,
-					scpd->data->bp_ext.sta_ofs, scpd->data->bp_ext.en_ofs);
+					scpd->data->bus_prot_mask,
+					scpd->data->bp_ext.set_ofs,
+					scpd->data->bp_ext.sta_ofs,
+					scpd->data->bp_ext.en_ofs);
 		else
 			ret = mtk_infracfg_set_bus_protection(scp->infracfg,
 					scpd->data->bus_prot_mask);
@@ -416,7 +422,8 @@ static struct scp *init_scp(struct platform_device *pdev,
 		struct scp_domain *scpd = &scp->domains[i];
 		const struct scp_domain_data *data = &scp_domain_data[i];
 
-		scpd->supply = devm_regulator_get_optional(&pdev->dev, data->name);
+		scpd->supply = devm_regulator_get_optional(&pdev->dev,
+					data->name);
 		if (IS_ERR(scpd->supply)) {
 			if (PTR_ERR(scpd->supply) == -ENODEV)
 				scpd->supply = NULL;
@@ -803,12 +810,14 @@ static int __init scpsys_probe_mt8173(struct platform_device *pdev)
 
 	pd_data = &scp->pd_data;
 
-	ret = pm_genpd_add_subdomain(pd_data->domains[MT8173_POWER_DOMAIN_MFG_ASYNC],
+	ret = pm_genpd_add_subdomain(
+		pd_data->domains[MT8173_POWER_DOMAIN_MFG_ASYNC],
 		pd_data->domains[MT8173_POWER_DOMAIN_MFG_2D]);
 	if (ret && IS_ENABLED(CONFIG_PM))
 		dev_err(&pdev->dev, "Failed to add subdomain: %d\n", ret);
 
-	ret = pm_genpd_add_subdomain(pd_data->domains[MT8173_POWER_DOMAIN_MFG_2D],
+	ret = pm_genpd_add_subdomain(
+		pd_data->domains[MT8173_POWER_DOMAIN_MFG_2D],
 		pd_data->domains[MT8173_POWER_DOMAIN_MFG]);
 	if (ret && IS_ENABLED(CONFIG_PM))
 		dev_err(&pdev->dev, "Failed to add subdomain: %d\n", ret);
