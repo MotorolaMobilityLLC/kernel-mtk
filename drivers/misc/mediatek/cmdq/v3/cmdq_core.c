@@ -1610,7 +1610,7 @@ static void cmdq_core_dump_task(const struct TaskStruct *pTask)
 
 	/* dump last Inst only when VALID command buffer */
 	/* otherwise data abort is happened */
-	if (!list_empty(&pTask->cmd_buffer_list)) {
+	if (!list_empty(&pTask->cmd_buffer_list) && pTask->pCMDEnd) {
 		CMDQ_ERR
 		    ("CMDEnd: 0x%p, Command Size: %d, Last Inst: 0x%08x:0x%08x, 0x%08x:0x%08x\n",
 		     pTask->pCMDEnd, pTask->commandSize, pTask->pCMDEnd[-3],
