@@ -58,6 +58,17 @@ static void __iomem *apmixedsys_base;  /* APMIXEDSYS */
 #define DISP_CG_CON_0       MM_REG(0x100)
 #define DISP_CG_CON_1       MM_REG(0x110)
 
+/* SPM_PWR_STATUS bit definition */
+#define PWRSTA_BIT_MD       (1U << 0)
+#define PWRSTA_BIT_CONN     (1U << 1)
+#define PWRSTA_BIT_DISP     (1U << 3)
+#define PWRSTA_BIT_MFG      (1U << 4)
+#define PWRSTA_BIT_INFRA    (1U << 6)
+#define PWRSTA_BIT_ALL		(0xffffffff)
+
+/***********************************************************
+ * Functions for external modules
+ ***********************************************************/
 
 /***********************************************************
  * Check clkmux registers

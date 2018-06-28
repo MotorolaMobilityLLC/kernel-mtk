@@ -250,7 +250,7 @@ void clk_buf_control_bblpm(bool on)
  */
 u32 clk_buf_bblpm_enter_cond(void)
 {
-	u32 bblpm_cond = 0, pwr_sta = 0;
+	u32 bblpm_cond = 0;
 
 #ifdef CLKBUF_USE_BBLPM
 	if (!is_clkbuf_initiated || !is_pmic_clkbuf || !bblpm_switch) {
@@ -258,17 +258,11 @@ u32 clk_buf_bblpm_enter_cond(void)
 		return bblpm_cond;
 	}
 
-#ifndef CLKBUF_BRINGUP
-	pwr_sta = clkbuf_readl(PWR_STATUS);
-#else
-	pwr_sta = 0;
-#endif
-
-	if (pwr_sta & CLKBUF_PWR_STATUS_MD)
+	if (mtk_spm_read_register(SPM_PWRSTA) & PWR_STATUS_MD)
 		bblpm_cond |= BBLPM_COND_CEL;
 
 	if ((pmic_clk_buf_swctrl[XO_WCN] == CLK_BUF_SW_ENABLE) ||
-	    (pwr_sta & CLKBUF_PWR_STATUS_CONN))
+		(mtk_spm_read_register(SPM_PWRSTA) & PWR_STATUS_CONN))
 		bblpm_cond |= BBLPM_COND_WCN;
 
 	if (pmic_clk_buf_swctrl[XO_NFC] == CLK_BUF_SW_ENABLE)
@@ -701,10 +695,10 @@ void clk_buf_dump_clkbuf_log(void)
 #ifndef CLKBUF_BRINGUP /* FIXME: bringup */
 		pr_info("%s MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, SPARE_ACK_MASK=0x%x\n",
 				__func__,
-				clkbuf_readl(MD1_PWR_CON),
-				clkbuf_readl(PWR_STATUS),
-				clkbuf_readl(PCM_REG13_DATA),
-				clkbuf_readl(SPARE_ACK_MASK));
+				mtk_spm_read_register(SPM_MD1_PWR_CON),
+				mtk_spm_read_register(SPM_PWRSTA),
+				mtk_spm_read_register(SPM_REG13),
+				mtk_spm_read_register(SPM_SPARE_ACK_MASK));
 #endif
 	}
 }
@@ -921,10 +915,10 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj,
 #ifndef CLKBUF_BRINGUP /* FIXME: bringup */
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, SPARE_ACK_MASK=0x%x\n",
-			clkbuf_readl(MD1_PWR_CON),
-			clkbuf_readl(PWR_STATUS),
-			clkbuf_readl(PCM_REG13_DATA),
-			clkbuf_readl(SPARE_ACK_MASK));
+			mtk_spm_read_register(SPM_MD1_PWR_CON),
+			mtk_spm_read_register(SPM_PWRSTA),
+			mtk_spm_read_register(SPM_REG13),
+			mtk_spm_read_register(SPM_SPARE_ACK_MASK));
 #endif
 	return len;
 }

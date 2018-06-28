@@ -324,4 +324,23 @@ int mtk_spm_init(void)
 	return ret;
 }
 
+bool mtk_spm_base_ready(void)
+{
+	return spm_base != 0;
+}
+
+unsigned int mtk_spm_read_register(int register_index)
+{
+	if (register_index == SPM_PWRSTA)
+		return spm_read(PWR_STATUS);
+	else if (register_index == SPM_MD1_PWR_CON)
+		return spm_read(MD1_PWR_CON);
+	else if (register_index == SPM_REG13)
+		return spm_read(PCM_REG13_DATA);
+	else if (register_index == SPM_SPARE_ACK_MASK)
+		return spm_read(SPARE_ACK_MASK);
+	else
+		return 0;
+}
+
 MODULE_DESCRIPTION("SPM Driver v0.1");

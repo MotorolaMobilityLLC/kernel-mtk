@@ -14,6 +14,7 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/cpu_pm.h>
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
@@ -117,6 +118,29 @@ static void mtk_spm_unmask_edge_trig_irqs_for_cirq(void)
 		}
 	}
 }
+
+static bool spm_in_idle;
+static int cpu_pm_callback_wakeup_src_restore(
+	struct notifier_block *self, unsigned long cmd, void *v)
+{
+	int i;
+
+	/* Note: cmd will be CPU_PM_ENTER/CPU_PM_EXIT/CPU_PM_ENTER_FAILED.
+	 * Set edge trigger interrupt pending only in case CPU_PM_EXIT
+	 */
+	if (cmd == CPU_PM_EXIT && spm_in_idle) {
+		for (i = 0; i < IRQ_NUMBER; i++) {
+			if (spm_read(SPM_SW_RSV_0) & list[i].wakesrc)
+				mt_irq_set_pending(edge_trig_irqs[i]);
+		}
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block mtk_spm_cpu_pm_notifier_block = {
+	.notifier_call = cpu_pm_callback_wakeup_src_restore,
+};
 #endif
 
 static unsigned int spm_irq_0;
@@ -127,6 +151,7 @@ static struct mtk_irq_mask irq_mask;
 void mtk_spm_irq_backup(void)
 {
 #if defined(CONFIG_MTK_GIC_V3_EXT)
+	spm_in_idle = true;
 	mt_irq_mask_all(&irq_mask);
 	mt_irq_unmask_for_sleep_ex(spm_irq_0);
 	mtk_spm_unmask_edge_trig_irqs_for_cirq();
@@ -147,6 +172,7 @@ void mtk_spm_irq_restore(void)
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_restore(&irq_mask);
+	spm_in_idle = false;
 #endif
 }
 
@@ -232,6 +258,10 @@ int mtk_spm_irq_register(unsigned int spmirq0)
 	spm_irq_0 = spmirq0;
 
 	mtk_spm_get_edge_trigger_irq();
+
+	#if defined(CONFIG_MTK_GIC_V3_EXT)
+	cpu_pm_register_notifier(&mtk_spm_cpu_pm_notifier_block);
+	#endif
 
 	return r;
 }

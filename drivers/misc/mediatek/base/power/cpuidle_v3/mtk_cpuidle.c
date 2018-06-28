@@ -31,9 +31,6 @@
 
 static ulong dbg_data[40];
 static int mtk_cpuidle_initialized;
-#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
-static struct spm_wakeup_source spm_wakeup_src[MAX_SPM_WAKEUP_SRC];
-#endif
 
 #ifdef CPUIDLE_PROFILE
 
@@ -250,73 +247,6 @@ static inline void cpuidle_fp_reset(int cpu)
 
 #endif /* CONFIG_MTK_RAM_CONSOLE */
 
-#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
-static void mtk_spm_wakeup_src_restore(void)
-{
-	int i;
-
-	for (i = 0; i < MAX_SPM_WAKEUP_SRC; i++) {
-		if (!spm_wakeup_src[i].irq_nr)
-			return;
-
-		if (readl_relaxed(SPM_SW_RSV_0) & spm_wakeup_src[i].irq_pending)
-			mt_irq_set_pending(spm_wakeup_src[i].irq_nr);
-	}
-}
-
-/*
- * Look up the wake up source wired to the SPM. These wake up sources
- * were used to trigger the SPM to power on the MCUSYS/GIC.
- *
- * Once the GIC has been powered on, set up these wake up sources as
- * pending in the GIC to interrupt the CPU to serve these wake up devices.
- */
-static int wakeup_source_lookup(void)
-{
-	struct device_node *np;
-	struct of_phandle_args of_args;
-	int i, rc, irq_nr;
-
-	np = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
-	if (!np)
-		return -ENOENT;
-
-	/*
-	 * Iterate over the property "wakeup-source" with the node "spm" to
-	 * get the wake up source connected to spm device.
-	 *
-	 * the format of property value "wakeup-source" is
-	 * <phandle-to-wakeup-device the-irq-index its-spm-irq-state-bit>
-	 * e.g.
-	 * <keypad 0 (1 << 2)>
-	 */
-	for (i = 0; i < MAX_SPM_WAKEUP_SRC; i++) {
-		rc = of_parse_phandle_with_fixed_args(np, "wakeup-source",
-						      2, i, &of_args);
-		if (rc)
-			break;
-
-		pr_debug("cpuidle: of-args[0]=%d of-args[1]=%d\n",
-			 of_args.args[0], of_args.args[1]);
-
-		irq_nr = of_irq_get(of_args.np, of_args.args[0]);
-		if (irq_nr <= 0) {
-			pr_notice("cpuidle: wake up IRQ not found: %d\n",
-				  irq_nr);
-			goto fail;
-		}
-
-		spm_wakeup_src[i].irq_nr = irq_nr;
-		spm_wakeup_src[i].irq_pending = of_args.args[1];
-fail:
-		of_node_put(of_args.np);
-	}
-
-	of_node_put(np);
-	return 0;
-}
-#endif
-
 static void mtk_platform_save(int cpu)
 {
 	mt_save_dbg_regs(dbg_data, cpu);
@@ -360,11 +290,6 @@ int mtk_enter_idle_state(int mode)
 
 		mtk_platform_restore(cpu);
 
-#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
-		if (mode > MTK_MCDI_CLUSTER_MODE)
-			mtk_spm_wakeup_src_restore();
-#endif
-
 		cpu_pm_exit();
 
 		cpuidle_fp_reset(cpu);
@@ -380,10 +305,6 @@ int mtk_cpuidle_init(void)
 {
 	if (mtk_cpuidle_initialized == 1)
 		return 0;
-
-#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
-	wakeup_source_lookup();
-#endif
 
 	/* cpuidle footprint init */
 	cpuidle_fp_init();
