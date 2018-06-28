@@ -55,6 +55,8 @@ enum mt_cpu_dvfs_id {
 #define DEVINFO_IDX_16 66	/* 105C0 */
 #define DEVINFO_IDX_17 67	/* 105C4 */
 #define DEVINFO_IDX_18 68	/* 105C8 */
+#define CPUFREQ_SEG_CODE_IDX_0		7
+#define TURBO_BIN_CODE_IDX_0		65
 
 #if 0
 /* Fake EFUSE */
@@ -171,6 +173,7 @@ enum mt_cpu_dvfs_id {
 #define VMAX_VAL_GPU		(0x40) /* eem domain: 0x60, volt domain: 1.0v */
 #define DVTFIXED_VAL_GPU	(0x3)
 
+
 /* use in base_ops_mon_mode */
 #define MTS_VAL			(0x1fb)
 #define BTS_VAL			(0x6d1)
@@ -184,9 +187,10 @@ enum mt_cpu_dvfs_id {
 
 #define LOW_TEMP_OFF_DEFAULT	(0)
 #define LOW_TEMP_OFF_DEFAULT_GPU	(3)
-#define MARGIN_ADD_OFF_VER3			(8)	/* Add 50mv */
-#define MARGIN_ADD_OFF_VER4			(5)	/* Add 31.25mv */
-
+#define MARGIN_2L_ADD_OFF_VER3			(8)	/* Add 50mv */
+#define MARGIN_L_ADD_OFF_VER3			(13)	/* Add 81mv */
+#define MARGIN_ADD_OFF_VER4				(10) /* Add 62.5mv */
+#define LCPU_VMAX1050_PMIC_VAL		(0x58) /* volt domain: 1.05v */
 
 #if ENABLE_EEMCTL0
 #define EEM_CTL0_2L (0x00010001)

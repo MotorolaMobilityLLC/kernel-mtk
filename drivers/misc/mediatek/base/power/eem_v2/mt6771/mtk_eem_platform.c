@@ -109,28 +109,14 @@ int set_volt_cpu(struct eem_det *det)
 {
 	int value = 0;
 	enum eem_det_id cpudvfsindex;
-#ifdef DRCC_SUPPORT
-	unsigned long flags;
-#endif
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	/* eem_debug("init02_vop_30 = 0x%x\n", det->vop30[EEM_PHASE_INIT02]); */
-
-#ifdef DRCC_SUPPORT
-	mt_record_lock(&flags);
-
-	for (value = 0; value < NR_FREQ; value++)
-		record_tbl_locked[value] = min(
-		(unsigned int)(det->volt_tbl_pmic[value] +
-			det->volt_offset_drcc[value]),
-		det->volt_tbl_orig[value]);
-#else
 	mutex_lock(&record_mutex);
 
 	for (value = 0; value < NR_FREQ; value++)
 		record_tbl_locked[value] = det->volt_tbl_pmic[value];
-#endif
 
 	cpudvfsindex = detid_to_dvfsid(det);
 	value = mt_cpufreq_update_volt(cpudvfsindex, record_tbl_locked, det->num_freq_tbl);
@@ -149,12 +135,7 @@ int set_volt_cpu(struct eem_det *det)
 		det->volt_tbl_pmic[8], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[8]));
 #endif
 
-#ifdef DRCC_SUPPORT
-	mt_record_unlock(&flags);
-#else
 	mutex_unlock(&record_mutex);
-#endif
-
 	FUNC_EXIT(FUNC_LV_HELP);
 
 	return value;
