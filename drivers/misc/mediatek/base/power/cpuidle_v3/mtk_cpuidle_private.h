@@ -14,12 +14,14 @@
 #ifndef _MTK_CPUIDLE_PRIVATE_H_
 #define _MTK_CPUIDLE_PRIVATE_H_
 
+#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
 #define MAX_SPM_WAKEUP_SRC 5
 
 struct spm_wakeup_source {
 	int irq_nr;
 	int irq_pending;
 };
+#endif
 
 unsigned long *aee_rr_rec_mtk_cpuidle_footprint_va(void);
 unsigned long *aee_rr_rec_mtk_cpuidle_footprint_pa(void);
