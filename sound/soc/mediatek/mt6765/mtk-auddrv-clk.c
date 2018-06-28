@@ -904,7 +904,7 @@ void AudDrv_APLL24M_Clk_On(void)
 #ifdef PM_MANAGER_API
 		if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
 			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock,
-					   196607999);
+					   196608000);
 			if (ret) {
 				pr_debug("%s clk_set_rate %s-196607999 fail %d\n",
 					 __func__,
