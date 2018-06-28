@@ -1581,6 +1581,26 @@ int get_md_img_type(int md_id)
 	return 0;
 }
 
+int check_md_type(int data)
+{
+	unsigned int val = (unsigned int)data;
+	int i;
+
+	/* check ap view md type */
+	if (val >= LEGACY_UBIN_START_ID && val <= LEGACY_UBIN_END_ID)
+		return val;
+	/* check md view md type */
+	if ((val >> 8) == (MD_CAP_ENHANCE >> 8)) {
+		val &= MD_CAP_MASK;
+		val = compatible_convert(val);
+		for (i = 0; i < (sizeof(legacy_ubin_rat_map)/sizeof(unsigned int)); i++) {
+			if (val == legacy_ubin_rat_map[i])
+				return LEGACY_UBIN_START_ID + i;
+		}
+	}
+	return 0;
+}
+
 int get_legacy_md_type(int md_id)
 {
 	int img_type;
