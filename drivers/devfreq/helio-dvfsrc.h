@@ -22,6 +22,8 @@
 #include <helio-dvfsrc-mt6765.h>
 #elif defined(CONFIG_MACH_MT6761)
 #include <helio-dvfsrc-mt6761.h>
+#elif defined(CONFIG_MACH_MT3967)
+#include <helio-dvfsrc-mt3967.h>
 #else
 #include <helio-dvfsrc-mt67xx.h>
 #endif
@@ -35,7 +37,7 @@ struct reg_config {
 
 struct helio_dvfsrc {
 	struct devfreq		*devfreq;
-
+	struct device *dev;
 	bool qos_enabled;
 	bool dvfsrc_enabled;
 	int dvfsrc_flag;

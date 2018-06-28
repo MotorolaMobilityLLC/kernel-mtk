@@ -18,6 +18,8 @@
 #include <helio-dvfsrc-opp-mt6765.h>
 #elif defined(CONFIG_MACH_MT6761)
 #include <helio-dvfsrc-opp-mt6761.h>
+#elif defined(CONFIG_MACH_MT3967)
+#include <helio-dvfsrc-opp-mt3967.h>
 #else
 #include <helio-dvfsrc-opp-mt67xx.h>
 #endif
