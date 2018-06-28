@@ -244,7 +244,8 @@ int ccci_ringbuf_write(int md_id, struct ccci_ringbuf *ringbuf, unsigned char *d
 		     "rbw: rbf=0x%p,tx_buf=0x%p,o_write=%d,n_write=%d,datalen=%d,algined_data_len=%d,HLEN=%d,LEN=%d,read=%d\n",
 		     ringbuf, tx_buffer, ringbuf->tx_control.write, write,
 		     data_len, aligned_data_len, 16, length, ringbuf->tx_control.read);
-
+	/* flush data before updating write pointer */
+	mb();
 	ringbuf->tx_control.write = write;
 
 	return data_len;
