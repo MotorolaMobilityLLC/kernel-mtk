@@ -2552,7 +2552,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 	/* repo call DTS gpio module, if not necessary, invoke nothing */
 	dts_gpio_state = disp_dts_gpio_init_repo(pdev);
 	if (dts_gpio_state != 0)
-		DISPERR("retrieve GPIO DTS failed.");
+		DISPMSG("retrieve GPIO DTS failed.");
 
 	fbi = framebuffer_alloc(sizeof(struct mtkfb_device), &(pdev->dev));
 	if (!fbi) {
