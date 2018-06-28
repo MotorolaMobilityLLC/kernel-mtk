@@ -103,7 +103,7 @@ static void mdee_output_debug_info_to_buf(struct ccci_fsm_ee *mdee, DEBUG_INFO_T
 {
 	int md_id = mdee->md_id;
 	struct ccci_mem_layout *mem_layout;
-	char *ex_info_temp;
+	char *ex_info_temp = NULL;
 
 	switch (debug_info->type) {
 	case MD_EX_CLASS_ASSET:
@@ -157,7 +157,7 @@ static void mdee_info_dump_v3(struct ccci_fsm_ee *mdee)
 {
 	int md_id = mdee->md_id;
 	char *ex_info; /* aed api par4 */
-	char *ex_info_temp;
+	char *ex_info_temp = NULL;
 	int db_opt = (DB_OPT_DEFAULT | DB_OPT_FTRACE); /* aed api par5 */
 	int dump_flag = 0;
 	char *i_bit_ex_info = NULL;
