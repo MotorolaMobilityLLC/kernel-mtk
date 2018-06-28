@@ -52,6 +52,11 @@ struct spower_raw_t {
 #include "mtk_spower_data_mt6761.h"
 #endif
 
+#if defined(CONFIG_MACH_MT3967)
+#include "mtk_spower_data_mt3967.h"
+#endif
+
+
 
 struct voltage_row_s {
 	int mV[VSIZE];

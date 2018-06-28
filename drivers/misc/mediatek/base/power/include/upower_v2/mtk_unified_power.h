@@ -31,8 +31,13 @@ extern "C" {
 #include "mtk_unified_power_mt6761.h"
 #endif
 
+#if defined(CONFIG_MACH_MT3967)
+#include "mtk_unified_power_mt3967.h"
+#endif
 
 #define UPOWER_TAG "[UPOWER]"
+
+#define upower_error(fmt, args...) pr_debug(UPOWER_TAG fmt, ##args)
 
 #if UPOWER_LOG
 	#define upower_debug(fmt, args...) pr_debug(UPOWER_TAG fmt, ##args)
@@ -90,6 +95,8 @@ extern unsigned int upower_get_power(enum upower_bank bank, unsigned int opp,
 extern struct upower_tbl_info **upower_get_tbl(void);
 extern struct upower_tbl *upower_get_core_tbl(unsigned int cpu);
 /* EEM */
+
+
 extern void upower_update_volt_by_eem(enum upower_bank bank,
 	unsigned int *volt, unsigned int opp_num);
 extern void upower_update_degree_by_eem(enum upower_bank bank, int deg);

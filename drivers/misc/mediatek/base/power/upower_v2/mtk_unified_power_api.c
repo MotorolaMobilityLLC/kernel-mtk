@@ -14,9 +14,10 @@
 #include <linux/module.h>
 #include "mtk_upower.h"
 
+
 /* PTP will update volt in init2 isr handler */
-void upower_update_volt_by_eem(enum upower_bank bank, unsigned int *volt,
-				unsigned int opp_num)
+void upower_update_volt_by_eem(enum upower_bank bank,
+	unsigned int *volt, unsigned int opp_num)
 {
 	int i, j;
 	int index = opp_num;
@@ -40,6 +41,8 @@ void upower_update_volt_by_eem(enum upower_bank bank, unsigned int *volt,
 				bank, volt[0]);
 		}
 	}
+	//upower_update_dyn_pwr();
+	//upower_update_lkg_pwr();
 }
 EXPORT_SYMBOL(upower_update_volt_by_eem);
 
@@ -187,3 +190,4 @@ upower_dtype type)
 	return ret;
 }
 EXPORT_SYMBOL(upower_get_power);
+

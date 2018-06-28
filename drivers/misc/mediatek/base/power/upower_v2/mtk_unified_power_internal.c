@@ -83,9 +83,12 @@ void print_diff_results(unsigned int type)
 	unsigned int idx = upower_counter[type];
 
 	if (idx >= TEST_TIMES) {
-		for (i = 0; i < TEST_TIMES; i++)
+		for (i = 0; i < TEST_TIMES; i++) {
+			/* upower_debug("type=%d (%d) diff=%u\n", type, i,
+			 * upower_diff[type][i]);
+			 */
 			sum += upower_diff[type][i];
-
+		}
 		avg = (sum+(TEST_TIMES-1)) / TEST_TIMES;
 		upower_debug("type=%d, avg=%u\n", type, avg);
 		upower_counter[type] = 0;
