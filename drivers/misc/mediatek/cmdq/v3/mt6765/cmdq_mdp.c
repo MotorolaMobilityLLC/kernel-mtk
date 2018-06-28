@@ -498,15 +498,16 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 		break;
 	case CMDQ_ENG_MDP_WROT0:
 #ifdef CONFIG_MTK_SMI_EXT
-		if (enable)
+		if (enable) {
 			smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "MDPSRAM",
 				true);
-#endif
 #if defined(CONFIG_MACH_MT6761)
-		/* Set WROT SRAM DELSEL */
-		CMDQ_REG_SET32(MMSYS_CONFIG_BASE + 0x8C0, 0xFFFFFFFE);
-		CMDQ_REG_SET32(MMSYS_CONFIG_BASE + 0x860, 0x2D5B24F3);
-		CMDQ_REG_SET32(MMSYS_CONFIG_BASE + 0x864, 0x0000002B);
+			/* Set WROT SRAM DELSEL */
+			CMDQ_REG_SET32(MMSYS_CONFIG_BASE + 0x8C0, 0xFFFFFFFE);
+			CMDQ_REG_SET32(MMSYS_CONFIG_BASE + 0x860, 0x2D5B24F3);
+			CMDQ_REG_SET32(MMSYS_CONFIG_BASE + 0x864, 0x0000002B);
+#endif
+		}
 #endif
 		cmdq_mdp_enable_clock_MDP_WROT0(enable);
 		if (enable) {
@@ -1137,9 +1138,10 @@ static void cmdq_mdp_enable_common_clock(bool enable)
 #endif	/* CMDQ_PWR_AWARE */
 }
 
-#if defined(CONFIG_MACH_MT6761)
+
 static void cmdq_mdp_check_hw_status(struct cmdqRecStruct *handle)
 {
+#if defined(CONFIG_MACH_MT6761)
 	unsigned long register_address;
 	uint32_t register_value;
 	uint64_t engineFlag;
@@ -1173,8 +1175,9 @@ static void cmdq_mdp_check_hw_status(struct cmdqRecStruct *handle)
 				"0x14000864 = 0x%08x, needs to be 0x0000002B\n",
 				register_value);
 	}
-}
 #endif
+}
+
 
 void cmdq_mdp_platform_function_setting(void)
 {
@@ -1206,7 +1209,5 @@ void cmdq_mdp_platform_function_setting(void)
 	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits;
 	pFunc->testcaseClkmgrMdp = testcase_clkmgr_mdp;
 	pFunc->mdpEnableCommonClock = cmdq_mdp_enable_common_clock;
-#if defined(CONFIG_MACH_MT6761)
 	pFunc->CheckHwStatus = cmdq_mdp_check_hw_status;
-#endif
 }
