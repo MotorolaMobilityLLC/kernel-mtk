@@ -209,7 +209,7 @@ static irqreturn_t rt5081_pmu_irq_handler(int irq, void *priv)
 	u8 valid_chg[16] = {0};
 	int i = 0, j = 0, ret = 0;
 
-	dev_dbg(chip->dev, "%s\n", __func__);
+	pr_info_ratelimited("%s\n", __func__);
 	pm_runtime_get_sync(chip->dev);
 	ret = rt5081_pmu_reg_write(chip, RT5081_PMU_REG_IRQMASK, 0xfe);
 	if (ret < 0) {
