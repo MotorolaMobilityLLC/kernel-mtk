@@ -35,7 +35,6 @@ obj-$(CONFIG_MTK_BTIF) += btif/
 obj-$(CONFIG_MTK_UNIFIED_DEBUG_INTERFACE) += udi/
 obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
 obj-$(CONFIG_MTK_TRNG_DRIVER) += trng/
-obj-$(CONFIG_MTK_SERIAL)	+= uart/
 obj-$(CONFIG_MTK_MEM) += mem/
 obj-$(CONFIG_MTK_MEMORY_LOWPOWER) += memory-lowpower/
 obj-y += memory-amms/
