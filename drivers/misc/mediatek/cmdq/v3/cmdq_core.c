@@ -9332,7 +9332,8 @@ void cmdqCoreDeInitialize(void)
 	gCmdWaitQueue = NULL;
 }
 
-int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart)
+int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart,
+	void *node)
 {
 	unsigned long flagsWriteAddr = 0L;
 	struct WriteAddrStruct *pWriteAddr = NULL;
@@ -9372,6 +9373,7 @@ int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart)
 		    cmdq_core_alloc_hw_buffer(cmdq_dev_get(),
 					      count * sizeof(uint32_t), &(pWriteAddr->pa),
 					      GFP_KERNEL);
+		pWriteAddr->file_node = node;
 		if (current)
 			pWriteAddr->user = current->pid;
 
@@ -9461,6 +9463,42 @@ uint32_t cmdqCoreReadWriteAddress(dma_addr_t pa)
 	return value;
 }
 
+void cmdqCoreReadWriteAddressBatch(u32 *addrs, u32 count, u32 *val_out)
+{
+	struct WriteAddrStruct *waddr, *cur_waddr = NULL;
+	unsigned long flags = 0L;
+	u32 i;
+	dma_addr_t pa;
+
+	/* search for the entry */
+	CMDQ_PROF_SPIN_LOCK(gCmdqWriteAddrLock, flags, read_write_addr);
+
+	for (i = 0; i < count; i++) {
+		pa = addrs[i];
+
+		if (!cur_waddr || pa < cur_waddr->pa ||
+			pa >= cur_waddr->pa + cur_waddr->count * sizeof(u32)) {
+			cur_waddr = NULL;
+			list_for_each_entry(waddr, &gCmdqContext.writeAddrList,
+				list_node) {
+
+				if (pa < waddr->pa || pa >= waddr->pa +
+					waddr->count * sizeof(u32))
+					continue;
+				cur_waddr = waddr;
+				break;
+			}
+		}
+
+		if (cur_waddr)
+			val_out[i] = *((u32 *)(cur_waddr->va +
+				(pa - cur_waddr->pa)));
+		else
+			val_out[i] = 0;
+	}
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqWriteAddrLock, flags, read_write_addr);
+}
+
 uint32_t cmdqCoreWriteWriteAddress(dma_addr_t pa, uint32_t value)
 {
 	struct list_head *p = NULL;
@@ -9542,6 +9580,33 @@ int cmdqCoreFreeWriteAddress(dma_addr_t paStart)
 	pWriteAddr = NULL;
 
 	return 0;
+}
+
+void cmdqCoreFreeWriteAddressNode(void *node)
+{
+	struct list_head *p, *n;
+	struct WriteAddrStruct *waddr;
+	bool foundEntry;
+	unsigned long flagsWriteAddr = 0L;
+
+	foundEntry = false;
+
+	/* search for the entry */
+	CMDQ_PROF_SPIN_LOCK(gCmdqWriteAddrLock, flagsWriteAddr, free_write_addr_node);
+	list_for_each_safe(p, n, &gCmdqContext.writeAddrList) {
+		waddr = list_entry(p, struct WriteAddrStruct, list_node);
+		if (waddr->file_node != node)
+			continue;
+
+		list_del(&(waddr->list_node));
+		if (waddr->va) {
+			cmdq_core_free_hw_buffer(cmdq_dev_get(),
+				sizeof(u32) * waddr->count,
+				waddr->va, waddr->pa);
+			kfree(waddr);
+		}
+	}
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqWriteAddrLock, flagsWriteAddr, free_write_addr_node);
 }
 
 int32_t cmdqCoreDebugRegDumpBegin(uint32_t taskID, uint32_t *regCount, uint32_t **regAddress)

@@ -1174,7 +1174,7 @@ int32_t cmdq_alloc_mem(cmdqBackupSlotHandle *p_h_backup_slot, uint32_t slotCount
 	if (p_h_backup_slot == NULL)
 		return -EINVAL;
 
-	status = cmdqCoreAllocWriteAddress(slotCount, &paStart);
+	status = cmdqCoreAllocWriteAddress(slotCount, &paStart, NULL);
 	*p_h_backup_slot = paStart;
 
 	return status;
@@ -1764,7 +1764,7 @@ int32_t cmdq_op_profile_marker(struct cmdqRecStruct *handle, const char *tag)
 		if ((handle->profileMarker.count == 0) && (handle->profileMarker.hSlot == 0)) {
 			status =
 			    cmdqCoreAllocWriteAddress(CMDQ_MAX_PROFILE_MARKER_IN_TASK,
-						      &allocatedStartPA);
+						      &allocatedStartPA, NULL);
 			if (status < 0) {
 				CMDQ_ERR("[REC][PROF_MARKER]allocate failed, status:%d\n", status);
 				break;
