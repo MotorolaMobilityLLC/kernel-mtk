@@ -81,7 +81,7 @@ enum vow_eint_status_t {
 	VOW_EINT_FAIL = -1,
 	VOW_EINT_PASS = 0,
 	VOW_EINT_RETRY = 1,
-	NUM_OF_VOW_EINT_STATUS
+	NUM_OF_VOW_EINT_STATUS = 4
 };
 
 enum vow_flag_type_t {
