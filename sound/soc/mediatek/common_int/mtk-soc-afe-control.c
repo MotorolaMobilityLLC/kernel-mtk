@@ -1211,16 +1211,16 @@ bool set_adc_enable(bool enable)
 		*/
 		set_ul_src_enable(false);
 		SetADDAEnable(false);
-		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000)
-			AudDrv_ADC_Hires_Clk_Off();
-		else
-			AudDrv_ADC_Clk_Off();
 #ifdef CONFIG_FPGA_EARLY_PORTING
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
 		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);
 #endif
 		/* should delayed 1/fs(smallest is 8k) = 125us before afe off */
 		usleep_range(125, 150);
+		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000)
+			AudDrv_ADC_Hires_Clk_Off();
+		else
+			AudDrv_ADC_Clk_Off();
 	}
 	AudDrv_GPIO_Request(enable, Soc_Aud_Digital_Block_ADDA_UL);
 
@@ -1254,16 +1254,16 @@ bool set_adc2_enable(bool enable)
 		*/
 		set_ul2_src_enable(false);
 		SetADDAEnable(false);
-		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL2].sample_rate > 48000)
-			AudDrv_ADC2_Hires_Clk_Off();
-		else
-			AudDrv_ADC2_Clk_Off();
 #ifdef CONFIG_FPGA_EARLY_PORTING
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
 		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);
 #endif
 		/* should delayed 1/fs(smallest is 8k) = 125us before afe off */
 		usleep_range(125, 150);
+		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL2].sample_rate > 48000)
+			AudDrv_ADC2_Hires_Clk_Off();
+		else
+			AudDrv_ADC2_Clk_Off();
 	}
 	AudDrv_GPIO_Request(enable, Soc_Aud_Digital_Block_ADDA_UL2);
 
