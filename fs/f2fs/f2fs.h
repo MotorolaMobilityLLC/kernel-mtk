@@ -2785,6 +2785,8 @@ int f2fs_sync_fs(struct super_block *sb, int sync);
 extern __printf(3, 4)
 void f2fs_msg(struct super_block *sb, const char *level, const char *fmt, ...);
 int sanity_check_ckpt(struct f2fs_sb_info *sbi);
+int f2fs_set_bio_ctx(struct inode *inode, struct bio *bio);
+int f2fs_set_bio_ctx_fio(struct f2fs_io_info *fio, struct bio *bio);
 
 /*
  * hash.c
@@ -3369,7 +3371,8 @@ static inline bool f2fs_may_encrypt(struct inode *inode)
 
 static inline bool f2fs_force_buffered_io(struct inode *inode, int rw)
 {
-	return (f2fs_post_read_required(inode) ||
+	return ((f2fs_post_read_required(inode) &&
+			fscrypt_is_sw_encrypt(inode)) ||
 			(rw == WRITE && test_opt(F2FS_I_SB(inode), LFS)) ||
 			F2FS_I_SB(inode)->s_ndevs);
 }
