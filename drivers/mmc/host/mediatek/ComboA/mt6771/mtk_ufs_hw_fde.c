@@ -221,13 +221,27 @@ check_hw_crypto:
 			}
 			if (dir == DMA_TO_DEVICE)
 				err = hie_encrypt(msdc_hie_get_dev(), mq_rq->req, host);
-		else
+			else
 				err = hie_decrypt(msdc_hie_get_dev(), mq_rq->req, host);
 			if (err) {
 				err = -EIO;
 				ERR_MSG("%s: fail in crypto hook, req: %p, err %d\n",
 					__func__, mq_rq->req, err);
 				WARN_ON(1);
+				return;
+			}
+			if (hie_is_nocrypt())
+				return;
+			if (hie_is_dummy()) {
+				struct mmc_data *data = cmd->data;
+
+				if (dir == DMA_TO_DEVICE &&
+				    msdc_use_async_dma(data->host_cookie)) {
+					dma_unmap_sg(mmc_dev(mmc), data->sg,
+						data->sg_len, dir);
+					dma_map_sg(mmc_dev(mmc), data->sg,
+						data->sg_len, dir);
+				}
 				return;
 			}
 		}
