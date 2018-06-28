@@ -1859,6 +1859,11 @@ static int _DC_switch_to_DL_fast(void)
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
 	pgc->ovl2mem_path_handle = NULL;
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	if (dvfs_last_ovl_req > HRT_LEVEL_HPM)
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_UHPM);
+#endif
+
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 1);
 
