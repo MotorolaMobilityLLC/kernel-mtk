@@ -154,7 +154,13 @@ int disp_mva_map_kernel(enum DISP_MODULE_ENUM module, unsigned int mva,
 	unsigned int size, unsigned long *map_va, unsigned int *map_size)
 {
 #ifdef CONFIG_MTK_IOMMU_V2
-	map_va = mtk_iommu_iova_to_va(NULL, mva, size);
+	struct disp_iommu_device *disp_dev = disp_get_iommu_dev();
+
+	if ((disp_dev != NULL) && (disp_dev->iommu_pdev != NULL))
+		mtk_iommu_iova_to_va(&(disp_dev->iommu_pdev->dev),
+					      mva, map_va, size);
+	else
+		pr_info("disp_mva_map_kernel is null\n");
 #elif defined(CONFIG_MTK_M4U)
 	m4u_mva_map_kernel(mva, size, map_va, map_size);
 #endif
