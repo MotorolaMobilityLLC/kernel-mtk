@@ -89,6 +89,31 @@ $(DTB_OVERLAY_IMAGE_TAGERT) : $(PRIVATE_MULTIPLE_DTB_OVERLAY_OBJ) dtbs apply_dtb
 	$(PRIVATE_MKIMAGE_TOOL) $(PRIVATE_MULTIPLE_DTB_OVERLAY_IMG) $(PRIVATE_MKIMAGE_CFG)  > $@
 .PHONY: odmdtboimage
 odmdtboimage : $(DTB_OVERLAY_IMAGE_TAGERT) dtbs
+
+ifeq ($(strip $(CONFIG_ARM64)), y)
+my_dtbo_names := $(subst ",,$(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES))
+else
+my_dtbo_names := $(subst ",,$(CONFIG_BUILD_ARM_DTB_OVERLAY_IMAGE_NAMES))
+endif
+my_dtbo_files := $(abspath $(addsuffix .dtb,$(addprefix $(objtree)/arch/$(SRCARCH)/boot/dts/,$(my_dtbo_names))))
+my_dtbo_id := 0
+
+define mk_dtboimg_cfg
+echo $(1) >>$(2);\
+echo " id=$(my_dtbo_id)" >>$(2);\
+$(eval my_dtbo_id:=$(shell echo $$(($(my_dtbo_id)+1))))
+endef
+
+dtbs: $(objtree)/dtboimg.cfg
+$(objtree)/dtboimg.cfg: FORCE
+	rm -f $@.tmp
+	$(foreach f,$(my_dtbo_files),$(call mk_dtboimg_cfg,$(f),$@.tmp))
+	if ! cmp -s $@.tmp $@; then \
+		mv $@.tmp $@; \
+	else \
+		rm $@.tmp; \
+	fi
+
 endif
 
 endif#MTK_PLATFORM
