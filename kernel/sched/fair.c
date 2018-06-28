@@ -132,10 +132,10 @@ unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
 
 #ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
 /* shorten the schedule migration cost and let the idle balance more aggregative */
-__read_mostly unsigned int sysctl_sched_migration_cost = 33000UL;
+const_debug unsigned int sysctl_sched_migration_cost = 33000UL;
 const_debug unsigned int sched_cache_hot_migration_cost = 500000UL;
 #else
-__read_mostly unsigned int sysctl_sched_migration_cost = 500000UL;
+const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
 #endif
 
 /*
