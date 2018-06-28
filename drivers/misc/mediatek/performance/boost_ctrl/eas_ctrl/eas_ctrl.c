@@ -117,6 +117,7 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	/*ptr return error EIO:I/O error */
 	if (len < 0) {
 		perfmgr_trace_printk("cpu_ctrl", "return -EIO 1\n");
+		mutex_unlock(&boost_eas);
 		return -EIO;
 	}
 	for (i = 0; i < EAS_MAX_KIR; i++) {
@@ -158,6 +159,7 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	/*ptr return error EIO:I/O error */
 	if (len < 0) {
 		perfmgr_trace_printk("cpu_ctrl", "return -EIO 2\n");
+		mutex_unlock(&boost_eas);
 		return -EIO;
 	}
 	len1 += snprintf(msg1 + len1, sizeof(msg1) - len1, "[0x %lx] ",
@@ -165,6 +167,7 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 
 	if (len1 < 0) {
 		perfmgr_trace_printk("cpu_ctrl", "return -EIO 3\n");
+		mutex_unlock(&boost_eas);
 		return -EIO;
 	}
 	if (!debug)
