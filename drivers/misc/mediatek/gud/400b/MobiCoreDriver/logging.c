@@ -19,12 +19,11 @@
 #include <linux/debugfs.h>
 #include <linux/version.h>
 
-#include "public/mc_linux_api.h"
-
-#include "platform.h"	/* TBASE_CORE_SWITCHER */
 #include "main.h"
 #include "fastcall.h"
 #include "logging.h"
+#include "platform.h" /* TBASE_CORE_SWITCHER */
+#include "public/mc_linux_api.h" /* to use mc_active_core() */
 
 /* Supported log buffer version */
 #define MC_LOG_VERSION			2
@@ -91,7 +90,7 @@ static inline void log_eol(u16 source)
 	if (log_ctx.prev_source)
 		/* TEE user-space */
 #ifdef TBASE_CORE_SWITCHER
-		dev_info(g_ctx.mcd, "%03x(%d)|%s\n", log_ctx.prev_source,
+		dev_info(g_ctx.mcd, "%03x(%u)|%s\n", log_ctx.prev_source,
 			mc_active_core(), log_ctx.line);
 #else
 		dev_info(g_ctx.mcd, "%03x|%s\n", log_ctx.prev_source,
@@ -100,7 +99,7 @@ static inline void log_eol(u16 source)
 	else
 		/* TEE kernel */
 #ifdef TBASE_CORE_SWITCHER
-		dev_info(g_ctx.mcd, "mtk(%d)|%s\n",
+		dev_info(g_ctx.mcd, "mtk(%u)|%s\n",
 			mc_active_core(), log_ctx.line);
 #else
 		dev_info(g_ctx.mcd, "mtk|%s\n", log_ctx.line);
