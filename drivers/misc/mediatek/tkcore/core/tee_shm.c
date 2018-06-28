@@ -961,8 +961,13 @@ void tee_shm_put(struct tee_context *ctx, struct tee_shm *shm)
 	pr_debug("> shm=%p flags=%08x\n",
 		(void *) shm, shm->flags);
 
+	WARN_ON(!tee);
 	WARN_ON(!shm);
 	WARN_ON(!(shm->flags & TEE_SHM_MEMREF));
+
+	if (!tee) {
+		return;
+	}
 
 	if (shm_test_nonsecure(shm->flags)) {
 		pr_warn("invalid shared memory flags: 0x%x\n",

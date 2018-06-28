@@ -30,10 +30,9 @@ static struct mutex mutex_inst_ta;
 int tee_install_sp_ta(struct tee_context *ctx,
 				void __user *__tee_spta_inst_desc)
 {
+	struct tee *tee;
 	struct tee_shm *shm_in = NULL;
 	struct tee_shm *shm_out = NULL;
-
-	struct tee *tee = ctx->tee;
 
 	struct tee_rpc_invoke request;
 	struct tee_spta_inst_desc ta;
@@ -47,6 +46,8 @@ int tee_install_sp_ta(struct tee_context *ctx,
 		pr_err("invalid param\n");
 		return -EINVAL;
 	}
+
+	tee = ctx->tee;
 
 	if (copy_from_user(&ta, (void *) __tee_spta_inst_desc,
 			sizeof(struct tee_spta_inst_desc))) {
@@ -156,7 +157,7 @@ int tee_install_sp_ta_response(struct tee_context *ctx, void __user *u_arg)
 int tee_delete_sp_ta(struct tee_context *ctx, void __user *uuid)
 {
 	int ret = 0;
-	struct tee *tee = ctx->tee;
+	struct tee *tee;
 	struct tee_rpc_invoke request;
 	struct tee_shm *shm_uuid;
 
@@ -164,6 +165,8 @@ int tee_delete_sp_ta(struct tee_context *ctx, void __user *uuid)
 		pr_err("invalid param\n");
 		return -EINVAL;
 	}
+
+	tee = ctx->tee;
 
 	shm_uuid = tee_shm_alloc_from_rpc(tee, sizeof(struct TEEC_UUID), 0);
 	if (IS_ERR_OR_NULL(shm_uuid)) {
