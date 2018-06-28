@@ -17,9 +17,6 @@
 /* #include <sys/types.h> */
 /* #include <linux/ion.h> */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define IRQ_STATUS_MAX_NUM 16                   /* /< support max 16 return register values when HW done */
 
@@ -616,8 +613,5 @@ struct VAL_FRAME_INFO_T {
 	VAL_UINT32_T is_compressed; /* is output buffer compressed */
 };
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* #ifndef _VAL_TYPES_PUBLIC_H_ */
