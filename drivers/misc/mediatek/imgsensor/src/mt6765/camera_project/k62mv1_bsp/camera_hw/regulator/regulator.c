@@ -71,7 +71,8 @@ static void imgsensor_oc_handler3(void)
 }
 
 
-enum IMGSENSOR_RETURN imgsensor_oc_interrupt(bool enable)
+enum IMGSENSOR_RETURN imgsensor_oc_interrupt(
+	enum IMGSENSOR_SENSOR_IDX sensor_idx, bool enable)
 {
 	pr_debug("[regulator] %s %d\n", __func__, enable);
 

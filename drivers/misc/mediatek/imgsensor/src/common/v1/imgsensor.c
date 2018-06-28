@@ -181,7 +181,8 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 		/* turn on power */
 		IMGSENSOR_PROFILE_INIT(&psensor_inst->profile_time);
 		if (pgimgsensor->imgsensor_oc_irq_enable != NULL)
-			pgimgsensor->imgsensor_oc_irq_enable(false);
+			pgimgsensor->imgsensor_oc_irq_enable(
+					psensor->inst.sensor_idx, false);
 
 		ret = imgsensor_hw_power(&pgimgsensor->hw,
 		    psensor,
@@ -221,7 +222,8 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 			ccu_set_sensor_info(sensor_idx, &ccuSensorInfo);
 #endif
 			if (pgimgsensor->imgsensor_oc_irq_enable != NULL)
-				pgimgsensor->imgsensor_oc_irq_enable(true);
+				pgimgsensor->imgsensor_oc_irq_enable(
+						psensor->inst.sensor_idx, true);
 
 		}
 
@@ -451,7 +453,6 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 		err = ERROR_SENSOR_CONNECT_FAIL;
 	} else {
 		pr_info(" Sensor found ID = 0x%x\n", sensorID);
-
 		err = ERROR_NONE;
 	}
 
@@ -2497,12 +2498,15 @@ static int imgsensor_open(struct inode *a_pstInode, struct file *a_pstFile)
 
 static int imgsensor_release(struct inode *a_pstInode, struct file *a_pstFile)
 {
+	enum IMGSENSOR_SENSOR_IDX i = IMGSENSOR_SENSOR_IDX_MIN_NUM;
 	atomic_dec(&pgimgsensor->imgsensor_open_cnt);
 	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0) {
 		imgsensor_clk_disable_all(&pgimgsensor->clk);
 
-		if (pgimgsensor->imgsensor_oc_irq_enable != NULL)
-			pgimgsensor->imgsensor_oc_irq_enable(false);
+		if (pgimgsensor->imgsensor_oc_irq_enable != NULL) {
+			for (; i < IMGSENSOR_SENSOR_IDX_MAX_NUM; i++)
+				pgimgsensor->imgsensor_oc_irq_enable(i, false);
+		}
 
 		imgsensor_hw_release_all(&pgimgsensor->hw);
 #ifdef IMGSENSOR_DFS_CTRL_ENABLE

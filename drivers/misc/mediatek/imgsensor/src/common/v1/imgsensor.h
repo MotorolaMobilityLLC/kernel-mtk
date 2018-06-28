@@ -30,7 +30,8 @@ struct IMGSENSOR {
 	struct IMGSENSOR_CLK    clk;
 	struct IMGSENSOR_SENSOR sensor[IMGSENSOR_SENSOR_IDX_MAX_NUM];
 	atomic_t imgsensor_open_cnt;
-	enum IMGSENSOR_RETURN (*imgsensor_oc_irq_enable)(bool enable);
+	enum IMGSENSOR_RETURN (*imgsensor_oc_irq_enable)
+			(enum IMGSENSOR_SENSOR_IDX sensor_idx, bool enable);
 };
 
 MINT32
