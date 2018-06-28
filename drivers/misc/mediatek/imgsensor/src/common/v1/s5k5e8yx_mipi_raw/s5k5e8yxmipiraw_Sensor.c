@@ -58,7 +58,7 @@ LOG_INF("preview 1280*960@30fps,864Mbps/lane; video 1280*960@30fps,864Mbps/lane;
 static int first_flag = 1;
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-static MUINT32 g_sync_mode = SENSOR_MASTER_SYNC_MODE;
+static MUINT32 g_sync_mode = SENSOR_NO_SYNC_MODE;
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K5E8YX_SENSOR_ID,
@@ -517,6 +517,8 @@ static void sensor_set_sync_mode(void)
 		LOG_INF("set to master mode\n");
 		/* master mode */
 		write_cmos_sensor(0x3C02, 0x0F);
+	} else {
+		LOG_INF("set to no sync mode\n");
 	}
 
 	/* streaming on */
