@@ -156,12 +156,16 @@ static IMG_BOOL gbLockInitialised = IMG_FALSE;
 
 void LockHandle(void)
 {
+	lockdep_off();
 	OSLockAcquire(gHandleLock);
+	lockdep_on();
 }
 
 void UnlockHandle(void)
 {
+	lockdep_off();
 	OSLockRelease(gHandleLock);
+	lockdep_on();
 }
 
 /*
