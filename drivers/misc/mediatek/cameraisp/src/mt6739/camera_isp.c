@@ -94,7 +94,6 @@
 #define MyTag "[ISP]"
 #define IRQTag "KEEPER"
 
-#define LOG_VRB(format, args...)    pr_debug(MyTag format, ##args)
 
 #ifdef ISP_DEBUG
 #define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
@@ -7878,7 +7877,7 @@ static signed int ISP_MARK_IRQ(struct ISP_WAIT_IRQ_STRUCT irqinfo)
 	IspInfo.IrqInfo.PassedBySigCnt[irqinfo.UserInfo.UserKey][irqinfo.UserInfo.Type][idx] = 0;
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
 
-	LOG_VRB("[MARK]	 key/type/sts/idx (%d/%d/0x%x/%d), t(%d/%d)\n",
+	LOG_DBG("[MARK]	 key/type/sts/idx (%d/%d/0x%x/%d), t(%d/%d)\n",
 		irqinfo.UserInfo.UserKey, irqinfo.UserInfo.Type, irqinfo.UserInfo.Status, idx,
 		(int)sec, (int)usec);
 
@@ -7996,14 +7995,14 @@ static signed int ISP_GET_MARKtoQEURY_TIME(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
 		Ret = -EFAULT;
 	}
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
-	LOG_VRB
+	LOG_DBG
 	(" [ISP_GET_MARKtoQEURY_TIME] user/type/idx(%d/%d/%d),mark sec/usec (%d/%d),",
 	 irqinfo->UserInfo.UserKey, irqinfo->UserInfo.Type, idx,
 	 IspInfo.IrqInfo.MarkedTime_sec[irqinfo->UserInfo.UserKey][irqinfo->UserInfo.
 								   Type][idx],
 	 IspInfo.IrqInfo.MarkedTime_usec[irqinfo->UserInfo.UserKey][irqinfo->UserInfo.
 								    Type][idx]);
-	LOG_VRB
+	LOG_DBG
 	("irq sec/usec (%d/%d),query sec/usec(%d/%d),sig(%d)\n",
 	 IspInfo.IrqInfo.LastestSigTime_sec[irqinfo->UserInfo.Type][idx],
 	 IspInfo.IrqInfo.LastestSigTime_usec[irqinfo->UserInfo.Type][idx],
@@ -8568,7 +8567,7 @@ static signed int ISP_WaitIrq_v3(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 				IspInfo.IrqInfo.Eismeta[WaitIrq->UserInfo.Type][gEismetaRIdx_D].
 				tLastSOF2P1done_usec;
 		}
-		LOG_VRB(" [WAITIRQv3](%d) EisMeta.tLastSOF2P1done_sec(%d)\n",
+		LOG_DBG(" [WAITIRQv3](%d) EisMeta.tLastSOF2P1done_sec(%d)\n",
 			WaitIrq->UserInfo.Type, WaitIrq->EisMeta.tLastSOF2P1done_sec);
 	}
 	/* time period for 3A */
@@ -8628,7 +8627,7 @@ static signed int ISP_WaitIrq_v3(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	/* clear the status     if someone get the irq */
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
 	if (WaitIrq->UserInfo.UserKey > 0) {
-		LOG_VRB
+		LOG_DBG
 		("[WAITIRQv3]user(%d) mark sec/usec(%d/%d),last irq sec/usec(%d/%d),enterwait(%d/%d),getIRQ(%d/%d)\n",
 			WaitIrq->UserInfo.UserKey,
 			IspInfo.IrqInfo.MarkedTime_sec[WaitIrq->UserInfo.UserKey][WaitIrq->
@@ -8639,7 +8638,7 @@ static signed int ISP_WaitIrq_v3(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 		 IspInfo.IrqInfo.LastestSigTime_usec[WaitIrq->UserInfo.Type][idx],
 		 (int)(time_getrequest.tv_sec), (int)(time_getrequest.tv_usec),
 		 (int)(time_ready2return.tv_sec), (int)(time_ready2return.tv_usec));
-		LOG_VRB
+		LOG_DBG
 		("[WAITIRQv3]user(%d) sigNum(%d/%d),mark sec/usec(%d/%d),irq sec/usec (%d/%d),user(0x%x)\n",
 		 WaitIrq->UserInfo.UserKey,
 		 IspInfo.IrqInfo.PassedBySigCnt[WaitIrq->UserInfo.UserKey][WaitIrq->
