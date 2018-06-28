@@ -2024,6 +2024,8 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, u
 			DSI_EnableVM_CMD(module, cmdq);
 	} else {
 		if (force_update) {
+			/*enable CMD_DONE irq*/
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTEN, CMD_DONE, 1);
 			DSI_Start(module, cmdq);
 			dsi_wait_not_busy(module, cmdq);
 		}
