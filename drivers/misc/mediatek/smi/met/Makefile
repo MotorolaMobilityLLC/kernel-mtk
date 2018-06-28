@@ -17,5 +17,6 @@ obj-y += met_smi.o
 obj-$(CONFIG_MACH_MT6758) += met_smi_config_mt6758.o
 obj-$(CONFIG_MACH_MT6765) += met_smi_config_mt6765.o
 obj-$(CONFIG_MACH_MT6761) += met_smi_config_mt6761.o
+obj-$(CONFIG_MACH_MT3967) += met_smi_config_mt3967.o
 endif
 endif
