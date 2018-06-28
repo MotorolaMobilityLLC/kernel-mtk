@@ -4,6 +4,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/common/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/$(MTK_PLATFORM)/
+ifeq ($(CONFIG_MTK_UFS_SUPPORT), y)
+ccflags-y += -I$(srctree)/drivers/scsi/ufs/
+endif
 
 # Include cpu dvfs header cpufreq_api.h
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach/
