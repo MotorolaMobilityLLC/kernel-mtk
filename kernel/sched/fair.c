@@ -7435,9 +7435,27 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync
 	/* sched: no need energy calculation if the same domain */
 	if (is_intra_domain(task_cpu(p), target_cpu) &&
 		target_cpu != l_plus_cpu) {
-		target_cpu = next_cpu;
+
+		if (idle_cpu(prev_cpu) && idle_cpu(target_cpu)) {
+			struct rq *prev_rq, *target_rq;
+			int prev_idle_idx;
+			int target_idle_idx;
+
+			prev_rq = cpu_rq(prev_cpu);
+			target_rq = cpu_rq(target_cpu);
+
+			prev_idle_idx = idle_get_state_idx(prev_rq);
+			target_idle_idx = idle_get_state_idx(target_rq);
+
+			/* favoring shallowest idle states */
+			if ((prev_idle_idx <= target_idle_idx) ||
+					target_idle_idx == -1)
+				target_cpu = prev_cpu;
+		}
+
 		goto unlock;
 	}
+
 	if ((is_intra_domain(task_cpu(p), backup_cpu) ||
 		is_intra_domain(target_cpu, backup_cpu)) &&
 		backup_cpu != l_plus_cpu) {
