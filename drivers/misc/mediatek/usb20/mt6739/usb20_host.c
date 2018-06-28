@@ -1007,7 +1007,7 @@ static struct kernel_param_ops option_param_ops = {
 	.set = set_option,
 	.get = param_get_int,
 };
-module_param_cb(option, &option_param_ops, &option, 0660);
+module_param_cb(option, &option_param_ops, &option, 0400);
 #else
 #include "musb_core.h"
 /* for not define CONFIG_USB_MTK_OTG */
