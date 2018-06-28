@@ -232,9 +232,7 @@ PROC_FOPS_RW(dlpt_budget_trans_percentage);
 
 static int __init ppm_dlpt_policy_init(void)
 {
-	int ret = 0;
-#ifndef DISABLE_DLPT_FEATURE
-	int i;
+	int i, ret = 0;
 
 	struct pentry {
 		const char *name;
@@ -247,6 +245,10 @@ static int __init ppm_dlpt_policy_init(void)
 	};
 
 	FUNC_ENTER(FUNC_LV_POLICY);
+
+#ifdef DISABLE_DLPT_FEATURE
+	goto out;
+#endif
 
 	/* create procfs */
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
@@ -269,7 +271,6 @@ static int __init ppm_dlpt_policy_init(void)
 
 out:
 	FUNC_EXIT(FUNC_LV_POLICY);
-#endif
 
 	return ret;
 }

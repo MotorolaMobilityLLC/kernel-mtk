@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 MediaTek Inc.
+# Copyright (C) 2018 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -24,9 +24,6 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
 endif
 
-#ifeq ($(CONFIG_MACH_MT6761), y)
-#obj-y := mtk_ppm_dummy.o
-#else ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 # main
 obj-y := mtk_ppm_main.o

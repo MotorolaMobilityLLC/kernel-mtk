@@ -25,6 +25,7 @@ obj-$(CONFIG_MACH_MT6758) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6765) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6761) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT3967) += leakage_table_v2/
+obj-$(CONFIG_MACH_MT3967) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6758) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6765) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6761) += cpufreq_v1/
@@ -40,6 +41,7 @@ obj-$(CONFIG_MACH_MT6765) += upower_v2/
 obj-$(CONFIG_MACH_MT6761) += upower_v2/
 obj-$(CONFIG_MACH_MT3967) += upower_v2/
 endif
+obj-$(CONFIG_MACH_MT3967) += ppm_v3/
 obj-$(CONFIG_MACH_MT6761) += ppm_v3/
 obj-$(CONFIG_MACH_MT6758) += ppm_v3/
 obj-$(CONFIG_MACH_MT6765) += ppm_v3/
@@ -59,6 +61,7 @@ obj-$(CONFIG_MACH_MT3967) += pbm_v4/
 obj-$(CONFIG_MACH_MT6765) += mdpm_v1/
 obj-$(CONFIG_MACH_MT6761) += mdpm_v1/
 obj-$(CONFIG_MACH_MT3967) += mdpm_v2/
+obj-$(CONFIG_MACH_MT3967) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6765) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6761) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
