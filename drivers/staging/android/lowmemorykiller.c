@@ -44,7 +44,7 @@
 #include <linux/notifier.h>
 #include <linux/freezer.h>
 
-#define MTK_LMK_USER_EVENT
+/* #define MTK_LMK_USER_EVENT */
 
 #ifdef MTK_LMK_USER_EVENT
 #include <linux/miscdevice.h>
@@ -373,12 +373,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 	selected_oom_score_adj = min_score_adj;
 
-#ifdef MTK_LMK_USER_EVENT
-	/* Send uevent if needed */
-	if (mtklmk_uevent_timeout)
-		mtklmk_uevent(min_score_adj, minfree);
-#endif
-
 	/* More debug log */
 	if (output_expect(enable_candidate_log)) {
 		if (min_score_adj <= lowmem_debug_adj) {
@@ -631,6 +625,12 @@ log_again:
 	if (selected && output_expect(enable_candidate_log))
 		if (print_extra_info)
 			dump_memory_status();
+
+#ifdef MTK_LMK_USER_EVENT
+	/* Send uevent if needed */
+	if (mtklmk_uevent_timeout)
+		mtklmk_uevent(min_score_adj, minfree);
+#endif
 
 	return rem;
 
