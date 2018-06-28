@@ -31,6 +31,7 @@
 #define CMDQ_THR_EXEC_CYCLES	(GCE_BASE_VA + 0x034)
 #define CMDQ_THR_TIMEOUT_TIMER	(GCE_BASE_VA + 0x038)
 #define CMDQ_BUS_CONTROL_TYPE	(GCE_BASE_VA + 0x040)
+#define CMDQ_H_SPEED_BUSY	(GCE_BASE_VA + 0x048)
 #define CMDQ_CURR_INST_ABORT	(GCE_BASE_VA + 0x020)
 #define CMDQ_CURR_REG_ABORT	(GCE_BASE_VA + 0x050)
 
@@ -84,6 +85,7 @@
 #define CMDQ_IS_END_ADDR(addr)		(addr == 0)
 #define CMDQ_IS_END_INSTR(p_cmd_end)	\
 	(p_cmd_end[0] == 0 && p_cmd_end[-1] == 0)
+#define CMDQ_IS_SRAM_ADDR(addr)		(((addr) & 0xFFFF) == (addr))
 
 #define CMDQ_REG_GET32(addr)		(readl((void *)addr) & 0xFFFFFFFF)
 #define CMDQ_REG_GET16(addr)		(readl((void *)addr) & 0x0000FFFF)

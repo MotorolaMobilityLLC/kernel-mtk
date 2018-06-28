@@ -213,8 +213,7 @@ u64 cmdq_virtual_flag_from_scenario_legacy(enum CMDQ_SCENARIO_ENUM scn)
 	case CMDQ_SCENARIO_MHL_DISP:
 		flag = ((1LL << CMDQ_ENG_DISP_OVL1) |
 			(1LL << CMDQ_ENG_DISP_GAMMA) |
-			(1LL << CMDQ_ENG_DISP_RDMA1) |
-			(1LL << CMDQ_ENG_DISP_DPI));
+			(1LL << CMDQ_ENG_DISP_RDMA1));
 		break;
 	case CMDQ_SCENARIO_RDMA0_DISP:
 		flag = ((1LL << CMDQ_ENG_DISP_RDMA0) |
@@ -378,15 +377,7 @@ int cmdq_virtual_disp_thread(enum CMDQ_SCENARIO_ENUM scenario)
 	case CMDQ_SCENARIO_DISP_CONFIG_SUB_PQ:
 	case CMDQ_SCENARIO_DISP_CONFIG_SUB_PWM:
 	case CMDQ_SCENARIO_SUB_MEMOUT:
-#ifdef CMDQ_DISP_LEGACY_SUB_SCENARIO
-		/* when HW thread 0 enables pre-fetch,
-		 * any thread 1 operation will let HW thread 0's behavior
-		 * abnormally forbid thread 1
-		 */
-		return 5;
-#else
 		return 1;
-#endif
 
 	case CMDQ_SCENARIO_MHL_DISP:
 		return 5;
@@ -406,6 +397,8 @@ int cmdq_virtual_disp_thread(enum CMDQ_SCENARIO_ENUM scenario)
 	case CMDQ_SCENARIO_USER_DISP_COLOR:
 	case CMDQ_SCENARIO_PRIMARY_MEMOUT:
 		return 4;
+	case CMDQ_SCENARIO_TRIGGER_LOOP:
+		return 7;
 	default:
 		/* freely dispatch */
 		return CMDQ_INVALID_THREAD;
@@ -566,8 +559,7 @@ void cmdq_virtual_get_reg_id_from_hwflag(u64 hwflag,
 		*valueRegId = CMDQ_DATA_REG_2D_SHARPNESS_1;
 		*destRegId = CMDQ_DATA_REG_2D_SHARPNESS_1_DST;
 		*regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_2;
-	} else if (hwflag & ((1LL << CMDQ_ENG_DISP_COLOR0 |
-		(1LL << CMDQ_ENG_DISP_COLOR1)))) {
+	} else if (hwflag & (1LL << CMDQ_ENG_DISP_COLOR0)) {
 		*valueRegId = CMDQ_DATA_REG_PQ_COLOR;
 		*destRegId = CMDQ_DATA_REG_PQ_COLOR_DST;
 		*regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_3;
@@ -891,7 +883,7 @@ int cmdq_virtual_dump_smi(const int showSmiDump)
 {
 	int isSMIHang = 0;
 
-#if defined(CONFIG_MTK_SMI_EXT) && !defined(CONFIG_MTK_FPGA) && \
+#if defined(CONFIG_MTK_SMI_EXT) && !defined(CONFIG_FPGA_EARLY_PORTING) && \
 	!defined(CONFIG_MTK_SMI_VARIANT)
 	isSMIHang = smi_debug_bus_hang_detect(SMI_PARAM_BUS_OPTIMIZATION,
 		showSmiDump, showSmiDump, showSmiDump);

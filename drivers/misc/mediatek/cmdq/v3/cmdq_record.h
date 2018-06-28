@@ -16,7 +16,6 @@
 
 #include <linux/types.h>
 #include <linux/soc/mediatek/mtk-cmdq.h>
-#include <linux/mailbox/mtk-cmdq-mailbox.h>
 
 #include "cmdq_def.h"
 #include "cmdq_helper_ext.h"

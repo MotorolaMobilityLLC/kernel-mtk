@@ -42,7 +42,7 @@
 #include <linux/sched.h>
 #include <linux/pm.h>
 #include <linux/suspend.h>
-#include <linux/mailbox/mtk-cmdq-mailbox.h>
+#include <linux/soc/mediatek/mtk-cmdq.h>
 #ifdef CMDQ_USE_LEGACY
 #include <mach/mt_boot.h>
 #endif
@@ -1207,7 +1207,7 @@ static int __init cmdq_init(void)
 	int status;
 	struct cmdqMDPFuncStruct *mdp_func = cmdq_mdp_get_func();
 
-	CMDQ_LOG("CMDQ driver init begin\n");
+	CMDQ_LOG("%s CMDQ driver init begin\n", __func__);
 
 	/* MDP function link */
 	cmdq_mdp_virtual_function_setting();
