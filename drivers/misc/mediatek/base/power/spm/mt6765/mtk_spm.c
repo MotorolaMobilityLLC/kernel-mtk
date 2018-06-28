@@ -41,13 +41,6 @@ void __attribute__ ((weak)) mtk_idle_cond_check_init(void)
 	pr_info("[SPM] NO %s !!!\n", __func__);
 }
 
-/* Note: implemented in mtk_spm_vcorefs.c */
-void  __attribute__ ((weak)) spm_vcorefs_init(void)
-{
-	aee_sram_printk("NO %s !!!\n", __func__);
-	pr_info("[SPM] NO %s !!!\n", __func__);
-}
-
 /* Note: implemented in mtk_spm_dram.c */
 int __attribute__ ((weak)) spm_get_spmfw_idx(void)
 {
@@ -312,8 +305,6 @@ static int spm_module_init(void)
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 	SMC_CALL(ARGS, SPM_ARGS_SPMFW_IDX, spm_get_spmfw_idx(), 0);
-
-	spm_vcorefs_init();
 
 	return 0;
 }
