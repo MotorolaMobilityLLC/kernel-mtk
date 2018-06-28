@@ -68,6 +68,10 @@ __weak void mtk_wdt_cpu_callback(struct task_struct *wk_tsk,
 {
 }
 
+__weak void mtk_timer_clkevt_aee_dump(void)
+{
+}
+
 static int kwdt_thread(void *arg);
 static int start_kicker(void);
 
@@ -356,8 +360,7 @@ void dump_wdk_bind_info(void)
 #ifdef CONFIG_MTK_AEE_IPANIC
 	aee_sram_fiq_log("\n");
 #endif
-
-	mt_gpt_clkevt_aee_dump();
+	mtk_timer_clkevt_aee_dump();
 	tick_broadcast_mtk_aee_dump();
 }
 
