@@ -409,6 +409,7 @@ static ssize_t gt1x_tool_read(struct file *filp, char __user *buffer,
 					size_t count, loff_t *ppos)
 {
 	u64 ret;
+
 	GTP_DEBUG_FUNC();
 	if (*ppos) {
 		GTP_DEBUG("[PARAM]size: %d, *ppos: %d", (int)count, (int)*ppos);
