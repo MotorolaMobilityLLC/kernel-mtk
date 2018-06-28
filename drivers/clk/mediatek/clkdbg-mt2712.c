@@ -458,22 +458,28 @@ static u32 fmeter_freq(enum FMETER_TYPE type, int k1, int clk)
 	/* setup fmeter */
 	clk_setl(CLK26CALI_0, BIT(7));	/* enable fmeter_en */
 	clk_clrl(CLK26CALI_0, clk_exc);	/* set clk_exc */
-	clk_writel_mask(cnt_reg, GENMASK(25, 16), RG_FRMTR_WINDOW << 16);	/* load_cnt */
+	/* load_cnt */
+	clk_writel_mask(cnt_reg, GENMASK(25, 16), RG_FRMTR_WINDOW << 16);
 
-	clk_misc_cfg_1 = clk_readl(CLK_MISC_CFG_1);	/* backup CLK_MISC_CFG_1 value */
-	clk_misc_cfg_2 = clk_readl(CLK_MISC_CFG_2);	/* backup CLK_MISC_CFG_2 value */
-	clk_cfg_val = clk_readl(clk_cfg_reg);		/* backup clk_cfg_reg value */
+	/* backup CLK_MISC_CFG_1 value */
+	clk_misc_cfg_1 = clk_readl(CLK_MISC_CFG_1);
+	/* backup CLK_MISC_CFG_2 value */
+	clk_misc_cfg_2 = clk_readl(CLK_MISC_CFG_2);
+	/* backup clk_cfg_reg value */
+	clk_cfg_val = clk_readl(clk_cfg_reg);
 
 	set_fmeter_divider(k1);			/* set divider (0 = /1) */
 	set_fmeter_divider_ca35(k1);
 	set_fmeter_divider_ca72(k1);
-	clk_writel_mask(clk_cfg_reg, cksw_mask, cksw_val);	/* select cksw */
+	/* select cksw */
+	clk_writel_mask(clk_cfg_reg, cksw_mask, cksw_val);
 
 	clk_setl(CLK26CALI_0, tri_bit);	/* start fmeter */
 
 	if (wait_fmeter_done(tri_bit)) {
 		cnt = clk_readl(cnt_reg) & 0xFFFF;
-		freq = (cnt * 26000) * (k1 + 1) / (RG_FRMTR_WINDOW + 1); /* (KHz) ; freq = counter * 26M / 1024 */
+		/* (KHz) ; freq = counter * 26M / 1024 */
+		freq = (cnt * 26000) * (k1 + 1) / (RG_FRMTR_WINDOW + 1);
 	}
 
 	/* restore register settings */
@@ -520,8 +526,10 @@ static void *prepare_fmeter(void)
 	udelay(10);
 
 	/* use AD_PLLGP_TST_CK_CKSYS to measure CVBSPLL */
-	clk_setl(PLL_TEST_CON0, 0x30F); /* [9:8]:TST_SEL, [3:0]:TSTOD_EN, A2DCK_EN, TSTCK_EN, TST_EN */
-	clk_setl(CVBSREFPLL_CON1, 0x11); /* [4]:CVBS_MONCK_EN, [3:0]:CVBSREFPLL_TESTMUX */
+	/* [9:8]:TST_SEL, [3:0]:TSTOD_EN, A2DCK_EN, TSTCK_EN, TST_EN */
+	clk_setl(PLL_TEST_CON0, 0x30F);
+	/* [4]:CVBS_MONCK_EN, [3:0]:CVBSREFPLL_TESTMUX */
+	clk_setl(CVBSREFPLL_CON1, 0x11);
 	clk_setl(CVBSPLL_CON1, 0x20); /* [5]: CVBSPLL_MONCK_EN */
 
 	return &regs;
@@ -531,8 +539,10 @@ static void unprepare_fmeter(void *data)
 {
 	struct bak *regs = data;
 
-	clk_clrl(PLL_TEST_CON0, 0x30F); /* [9:8]:TST_SEL, [3:0]:TSTOD_EN, A2DCK_EN, TSTCK_EN, TST_EN */
-	clk_clrl(CVBSREFPLL_CON1, 0x11); /* [4]:CVBS_MONCK_EN, [3:0]:CVBSREFPLL_TESTMUX */
+	/* [9:8]:TST_SEL, [3:0]:TSTOD_EN, A2DCK_EN, TSTCK_EN, TST_EN */
+	clk_clrl(PLL_TEST_CON0, 0x30F);
+	/* [4]:CVBS_MONCK_EN, [3:0]:CVBSREFPLL_TESTMUX */
+	clk_clrl(CVBSREFPLL_CON1, 0x11);
 	clk_clrl(CVBSPLL_CON1, 0x20); /* [5]: CVBSPLL_MONCK_EN */
 
 	/* restore old setting */

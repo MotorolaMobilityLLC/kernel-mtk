@@ -49,7 +49,8 @@ static int clk_mt2712_venc_probe(struct platform_device *pdev)
 
 	clk_data = mtk_alloc_clk_data(CLK_VENC_NR_CLK);
 
-	mtk_clk_register_gates(node, venc_clks, ARRAY_SIZE(venc_clks), clk_data);
+	mtk_clk_register_gates(node, venc_clks, ARRAY_SIZE(venc_clks),
+		clk_data);
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 

@@ -44,8 +44,10 @@ static const struct mtk_fixed_clk top_fixed_clks[] = {
 
 static const struct mtk_fixed_factor top_divs[] = {
 	FACTOR(CLK_TOP_ARMCA35PLL, "armca35pll_ck", "armca35pll", 1, 1),
-	FACTOR(CLK_TOP_ARMCA35PLL_600M, "armca35pll_600m", "armca35pll_ck", 1, 2),
-	FACTOR(CLK_TOP_ARMCA35PLL_400M, "armca35pll_400m", "armca35pll_ck", 1, 3),
+	FACTOR(CLK_TOP_ARMCA35PLL_600M, "armca35pll_600m", "armca35pll_ck", 1,
+		2),
+	FACTOR(CLK_TOP_ARMCA35PLL_400M, "armca35pll_400m", "armca35pll_ck", 1,
+		3),
 	FACTOR(CLK_TOP_ARMCA72PLL, "armca72pll_ck", "armca72pll", 1, 1),
 	FACTOR(CLK_TOP_SYSPLL, "syspll_ck", "mainpll", 1, 1),
 	FACTOR(CLK_TOP_SYSPLL_D2, "syspll_d2", "syspll_ck", 1, 2),
@@ -635,95 +637,166 @@ static const char * const audull_vtx_parents[] = {
 
 static struct mtk_composite top_muxes[] = {
 	/* CLK_CFG_0 */
-	MUX_GATE_FLAGS(CLK_TOP_AXI_SEL, "axi_sel", axi_parents, 0x040, 0, 3, 7, CLK_IS_CRITICAL),
-	MUX_GATE_FLAGS(CLK_TOP_MEM_SEL, "mem_sel", mem_parents, 0x040, 8, 1, 15, CLK_IS_CRITICAL),
-	MUX_GATE(CLK_TOP_MM_SEL, "mm_sel", mm_parents, 0x040, 24, 3, 31),
+	MUX_GATE_FLAGS(CLK_TOP_AXI_SEL, "axi_sel",
+		axi_parents, 0x040, 0, 3, 7, CLK_IS_CRITICAL),
+	MUX_GATE_FLAGS(CLK_TOP_MEM_SEL, "mem_sel",
+		mem_parents, 0x040, 8, 1, 15, CLK_IS_CRITICAL),
+	MUX_GATE(CLK_TOP_MM_SEL, "mm_sel",
+		mm_parents, 0x040, 24, 3, 31),
 	/* CLK_CFG_1 */
-	MUX_GATE(CLK_TOP_PWM_SEL, "pwm_sel", pwm_parents, 0x050, 0, 2, 7),
-	MUX_GATE(CLK_TOP_VDEC_SEL, "vdec_sel", vdec_parents, 0x050, 8, 4, 15),
-	MUX_GATE(CLK_TOP_VENC_SEL, "venc_sel", venc_parents, 0x050, 16, 4, 23),
-	MUX_GATE(CLK_TOP_MFG_SEL, "mfg_sel", mfg_parents, 0x050, 24, 4, 31),
+	MUX_GATE(CLK_TOP_PWM_SEL, "pwm_sel",
+		pwm_parents, 0x050, 0, 2, 7),
+	MUX_GATE(CLK_TOP_VDEC_SEL, "vdec_sel",
+		vdec_parents, 0x050, 8, 4, 15),
+	MUX_GATE(CLK_TOP_VENC_SEL, "venc_sel",
+		venc_parents, 0x050, 16, 4, 23),
+	MUX_GATE(CLK_TOP_MFG_SEL, "mfg_sel",
+		mfg_parents, 0x050, 24, 4, 31),
 	/* CLK_CFG_2 */
-	MUX_GATE(CLK_TOP_CAMTG_SEL, "camtg_sel", camtg_parents, 0x060, 0, 4, 7),
-	MUX_GATE(CLK_TOP_UART_SEL, "uart_sel", uart_parents, 0x060, 8, 1, 15),
-	MUX_GATE(CLK_TOP_SPI_SEL, "spi_sel", spi_parents, 0x060, 16, 3, 23),
-	MUX_GATE(CLK_TOP_USB20_SEL, "usb20_sel", usb20_parents, 0x060, 24, 2, 31),
+	MUX_GATE(CLK_TOP_CAMTG_SEL, "camtg_sel",
+		camtg_parents, 0x060, 0, 4, 7),
+	MUX_GATE(CLK_TOP_UART_SEL, "uart_sel",
+		uart_parents, 0x060, 8, 1, 15),
+	MUX_GATE(CLK_TOP_SPI_SEL, "spi_sel",
+		spi_parents, 0x060, 16, 3, 23),
+	MUX_GATE(CLK_TOP_USB20_SEL, "usb20_sel",
+		usb20_parents, 0x060, 24, 2, 31),
 	/* CLK_CFG_3 */
-	MUX_GATE(CLK_TOP_USB30_SEL, "usb30_sel", usb30_parents, 0x070, 0, 2, 7),
-	MUX_GATE(CLK_TOP_MSDC50_0_HCLK_SEL, "msdc50_0_h_sel", msdc50_0_h_parents, 0x070, 8, 3, 15),
-	MUX_GATE(CLK_TOP_MSDC50_0_SEL, "msdc50_0_sel", msdc50_0_parents, 0x070, 16, 4, 23),
-	MUX_GATE(CLK_TOP_MSDC30_1_SEL, "msdc30_1_sel", msdc30_1_parents, 0x070, 24, 3, 31),
+	MUX_GATE(CLK_TOP_USB30_SEL, "usb30_sel",
+		usb30_parents, 0x070, 0, 2, 7),
+	MUX_GATE(CLK_TOP_MSDC50_0_HCLK_SEL, "msdc50_0_h_sel",
+		msdc50_0_h_parents, 0x070, 8, 3, 15),
+	MUX_GATE(CLK_TOP_MSDC50_0_SEL, "msdc50_0_sel",
+		msdc50_0_parents, 0x070, 16, 4, 23),
+	MUX_GATE(CLK_TOP_MSDC30_1_SEL, "msdc30_1_sel",
+		msdc30_1_parents, 0x070, 24, 3, 31),
 	/* CLK_CFG_4 */
-	MUX_GATE(CLK_TOP_MSDC30_2_SEL, "msdc30_2_sel", msdc30_1_parents, 0x080, 0, 3, 7),
-	MUX_GATE(CLK_TOP_MSDC30_3_SEL, "msdc30_3_sel", msdc30_3_parents, 0x080, 8, 4, 15),
-	MUX_GATE(CLK_TOP_AUDIO_SEL, "audio_sel", audio_parents, 0x080, 16, 2, 23),
-	MUX_GATE(CLK_TOP_AUD_INTBUS_SEL, "aud_intbus_sel", aud_intbus_parents, 0x080, 24, 3, 31),
+	MUX_GATE(CLK_TOP_MSDC30_2_SEL, "msdc30_2_sel",
+		msdc30_1_parents, 0x080, 0, 3, 7),
+	MUX_GATE(CLK_TOP_MSDC30_3_SEL, "msdc30_3_sel",
+		msdc30_3_parents, 0x080, 8, 4, 15),
+	MUX_GATE(CLK_TOP_AUDIO_SEL, "audio_sel",
+		audio_parents, 0x080, 16, 2, 23),
+	MUX_GATE(CLK_TOP_AUD_INTBUS_SEL, "aud_intbus_sel",
+		aud_intbus_parents, 0x080, 24, 3, 31),
 	/* CLK_CFG_5 */
-	MUX_GATE(CLK_TOP_PMICSPI_SEL, "pmicspi_sel", pmicspi_parents, 0x090, 0, 3, 7),
-	MUX_GATE(CLK_TOP_DPILVDS1_SEL, "dpilvds1_sel", dpilvds1_parents, 0x090, 8, 3, 15),
-	MUX_GATE(CLK_TOP_ATB_SEL, "atb_sel", atb_parents, 0x090, 16, 2, 23),
-	MUX_GATE(CLK_TOP_NR_SEL, "nr_sel", nr_parents, 0x090, 24, 3, 31),
+	MUX_GATE(CLK_TOP_PMICSPI_SEL, "pmicspi_sel",
+		pmicspi_parents, 0x090, 0, 3, 7),
+	MUX_GATE(CLK_TOP_DPILVDS1_SEL, "dpilvds1_sel",
+		dpilvds1_parents, 0x090, 8, 3, 15),
+	MUX_GATE(CLK_TOP_ATB_SEL, "atb_sel",
+		atb_parents, 0x090, 16, 2, 23),
+	MUX_GATE(CLK_TOP_NR_SEL, "nr_sel",
+		nr_parents, 0x090, 24, 3, 31),
 	/* CLK_CFG_6 */
-	MUX_GATE(CLK_TOP_NFI2X_SEL, "nfi2x_sel", nfi2x_parents, 0x0a0, 0, 4, 7),
-	MUX_GATE(CLK_TOP_IRDA_SEL, "irda_sel", irda_parents, 0x0a0, 8, 2, 15),
-	MUX_GATE(CLK_TOP_CCI400_SEL, "cci400_sel", cci400_parents, 0x0a0, 16, 3, 23),
-	MUX_GATE(CLK_TOP_AUD_1_SEL, "aud_1_sel", aud_1_parents, 0x0a0, 24, 2, 31),
+	MUX_GATE(CLK_TOP_NFI2X_SEL, "nfi2x_sel",
+		nfi2x_parents, 0x0a0, 0, 4, 7),
+	MUX_GATE(CLK_TOP_IRDA_SEL, "irda_sel",
+		irda_parents, 0x0a0, 8, 2, 15),
+	MUX_GATE(CLK_TOP_CCI400_SEL, "cci400_sel",
+		cci400_parents, 0x0a0, 16, 3, 23),
+	MUX_GATE(CLK_TOP_AUD_1_SEL, "aud_1_sel",
+		aud_1_parents, 0x0a0, 24, 2, 31),
 	/* CLK_CFG_7 */
-	MUX_GATE(CLK_TOP_AUD_2_SEL, "aud_2_sel", aud_2_parents, 0x0b0, 0, 2, 7),
-	MUX_GATE(CLK_TOP_MEM_MFG_IN_AS_SEL, "mem_mfg_sel", mem_mfg_parents, 0x0b0, 8, 2, 15),
-	MUX_GATE(CLK_TOP_AXI_MFG_IN_AS_SEL, "axi_mfg_sel", axi_mfg_parents, 0x0b0, 16, 2, 23),
-	MUX_GATE(CLK_TOP_SCAM_SEL, "scam_sel", scam_parents, 0x0b0, 24, 2, 31),
+	MUX_GATE(CLK_TOP_AUD_2_SEL, "aud_2_sel",
+		aud_2_parents, 0x0b0, 0, 2, 7),
+	MUX_GATE(CLK_TOP_MEM_MFG_IN_AS_SEL, "mem_mfg_sel",
+		mem_mfg_parents, 0x0b0, 8, 2, 15),
+	MUX_GATE(CLK_TOP_AXI_MFG_IN_AS_SEL, "axi_mfg_sel",
+		axi_mfg_parents, 0x0b0, 16, 2, 23),
+	MUX_GATE(CLK_TOP_SCAM_SEL, "scam_sel",
+		scam_parents, 0x0b0, 24, 2, 31),
 	/* CLK_CFG_8 */
-	MUX_GATE(CLK_TOP_NFIECC_SEL, "nfiecc_sel", nfiecc_parents, 0x0c0, 0, 3, 7),
-	MUX_GATE(CLK_TOP_PE2_MAC_P0_SEL, "pe2_mac_p0_sel", pe2_mac_p0_parents, 0x0c0, 8, 3, 15),
-	MUX_GATE(CLK_TOP_PE2_MAC_P1_SEL, "pe2_mac_p1_sel", pe2_mac_p0_parents, 0x0c0, 16, 3, 23),
-	MUX_GATE(CLK_TOP_DPILVDS_SEL, "dpilvds_sel", dpilvds_parents, 0x0c0, 24, 3, 31),
+	MUX_GATE(CLK_TOP_NFIECC_SEL, "nfiecc_sel",
+		nfiecc_parents, 0x0c0, 0, 3, 7),
+	MUX_GATE(CLK_TOP_PE2_MAC_P0_SEL, "pe2_mac_p0_sel",
+		pe2_mac_p0_parents, 0x0c0, 8, 3, 15),
+	MUX_GATE(CLK_TOP_PE2_MAC_P1_SEL, "pe2_mac_p1_sel",
+		pe2_mac_p0_parents, 0x0c0, 16, 3, 23),
+	MUX_GATE(CLK_TOP_DPILVDS_SEL, "dpilvds_sel",
+		dpilvds_parents, 0x0c0, 24, 3, 31),
 	/* CLK_CFG_9 */
-	MUX_GATE(CLK_TOP_MSDC50_3_HCLK_SEL, "msdc50_3_h_sel", msdc50_0_h_parents, 0x0d0, 0, 3, 7),
-	MUX_GATE(CLK_TOP_HDCP_SEL, "hdcp_sel", hdcp_parents, 0x0d0, 8, 2, 15),
-	MUX_GATE(CLK_TOP_HDCP_24M_SEL, "hdcp_24m_sel", hdcp_24m_parents, 0x0d0, 16, 2, 23),
-	MUX_GATE_FLAGS(CLK_TOP_RTC_SEL, "rtc_sel", rtc_parents, 0x0d0, 24, 2, 31, CLK_IS_CRITICAL),
+	MUX_GATE(CLK_TOP_MSDC50_3_HCLK_SEL, "msdc50_3_h_sel",
+		msdc50_0_h_parents, 0x0d0, 0, 3, 7),
+	MUX_GATE(CLK_TOP_HDCP_SEL, "hdcp_sel",
+		hdcp_parents, 0x0d0, 8, 2, 15),
+	MUX_GATE(CLK_TOP_HDCP_24M_SEL, "hdcp_24m_sel",
+		hdcp_24m_parents, 0x0d0, 16, 2, 23),
+	MUX_GATE_FLAGS(CLK_TOP_RTC_SEL, "rtc_sel",
+		rtc_parents, 0x0d0, 24, 2, 31, CLK_IS_CRITICAL),
 	/* CLK_CFG_10 */
-	MUX_GATE(CLK_TOP_SPINOR_SEL, "spinor_sel", spinor_parents, 0x500, 0, 4, 7),
-	MUX_GATE(CLK_TOP_APLL_SEL, "apll_sel", apll_parents, 0x500, 8, 4, 15),
-	MUX_GATE(CLK_TOP_APLL2_SEL, "apll2_sel", apll_parents, 0x500, 16, 4, 23),
-	MUX_GATE(CLK_TOP_A1SYS_HP_SEL, "a1sys_hp_sel", a1sys_hp_parents, 0x500, 24, 3, 31),
+	MUX_GATE(CLK_TOP_SPINOR_SEL, "spinor_sel",
+		spinor_parents, 0x500, 0, 4, 7),
+	MUX_GATE(CLK_TOP_APLL_SEL, "apll_sel",
+		apll_parents, 0x500, 8, 4, 15),
+	MUX_GATE(CLK_TOP_APLL2_SEL, "apll2_sel",
+		apll_parents, 0x500, 16, 4, 23),
+	MUX_GATE(CLK_TOP_A1SYS_HP_SEL, "a1sys_hp_sel",
+		a1sys_hp_parents, 0x500, 24, 3, 31),
 	/* CLK_CFG_11 */
-	MUX_GATE(CLK_TOP_A2SYS_HP_SEL, "a2sys_hp_sel", a2sys_hp_parents, 0x510, 0, 3, 7),
-	MUX_GATE(CLK_TOP_ASM_L_SEL, "asm_l_sel", asm_l_parents, 0x510, 8, 2, 15),
-	MUX_GATE(CLK_TOP_ASM_M_SEL, "asm_m_sel", asm_l_parents, 0x510, 16, 2, 23),
-	MUX_GATE(CLK_TOP_ASM_H_SEL, "asm_h_sel", asm_l_parents, 0x510, 24, 2, 31),
+	MUX_GATE(CLK_TOP_A2SYS_HP_SEL, "a2sys_hp_sel",
+		a2sys_hp_parents, 0x510, 0, 3, 7),
+	MUX_GATE(CLK_TOP_ASM_L_SEL, "asm_l_sel",
+		asm_l_parents, 0x510, 8, 2, 15),
+	MUX_GATE(CLK_TOP_ASM_M_SEL, "asm_m_sel",
+		asm_l_parents, 0x510, 16, 2, 23),
+	MUX_GATE(CLK_TOP_ASM_H_SEL, "asm_h_sel",
+		asm_l_parents, 0x510, 24, 2, 31),
 	/* CLK_CFG_12 */
-	MUX_GATE(CLK_TOP_I2SO1_SEL, "i2so1_sel", i2so1_parents, 0x520, 0, 2, 7),
-	MUX_GATE(CLK_TOP_I2SO2_SEL, "i2so2_sel", i2so1_parents, 0x520, 8, 2, 15),
-	MUX_GATE(CLK_TOP_I2SO3_SEL, "i2so3_sel", i2so1_parents, 0x520, 16, 2, 23),
-	MUX_GATE(CLK_TOP_TDMO0_SEL, "tdmo0_sel", i2so1_parents, 0x520, 24, 2, 31),
+	MUX_GATE(CLK_TOP_I2SO1_SEL, "i2so1_sel",
+		i2so1_parents, 0x520, 0, 2, 7),
+	MUX_GATE(CLK_TOP_I2SO2_SEL, "i2so2_sel",
+		i2so1_parents, 0x520, 8, 2, 15),
+	MUX_GATE(CLK_TOP_I2SO3_SEL, "i2so3_sel",
+		i2so1_parents, 0x520, 16, 2, 23),
+	MUX_GATE(CLK_TOP_TDMO0_SEL, "tdmo0_sel",
+		i2so1_parents, 0x520, 24, 2, 31),
 	/* CLK_CFG_13 */
-	MUX_GATE(CLK_TOP_TDMO1_SEL, "tdmo1_sel", i2so1_parents, 0x530, 0, 2, 7),
-	MUX_GATE(CLK_TOP_I2SI1_SEL, "i2si1_sel", i2so1_parents, 0x530, 8, 2, 15),
-	MUX_GATE(CLK_TOP_I2SI2_SEL, "i2si2_sel", i2so1_parents, 0x530, 16, 2, 23),
-	MUX_GATE(CLK_TOP_I2SI3_SEL, "i2si3_sel", i2so1_parents, 0x530, 24, 2, 31),
+	MUX_GATE(CLK_TOP_TDMO1_SEL, "tdmo1_sel",
+		i2so1_parents, 0x530, 0, 2, 7),
+	MUX_GATE(CLK_TOP_I2SI1_SEL, "i2si1_sel",
+		i2so1_parents, 0x530, 8, 2, 15),
+	MUX_GATE(CLK_TOP_I2SI2_SEL, "i2si2_sel",
+		i2so1_parents, 0x530, 16, 2, 23),
+	MUX_GATE(CLK_TOP_I2SI3_SEL, "i2si3_sel",
+		i2so1_parents, 0x530, 24, 2, 31),
 	/* CLK_CFG_14 */
-	MUX_GATE(CLK_TOP_ETHER_125M_SEL, "ether_125m_sel", ether_125m_parents, 0x540, 0, 2, 7),
-	MUX_GATE(CLK_TOP_ETHER_50M_SEL, "ether_50m_sel", ether_50m_parents, 0x540, 8, 2, 15),
-	MUX_GATE(CLK_TOP_JPGDEC_SEL, "jpgdec_sel", jpgdec_parents, 0x540, 16, 4, 23),
-	MUX_GATE(CLK_TOP_SPISLV_SEL, "spislv_sel", spislv_parents, 0x540, 24, 3, 31),
+	MUX_GATE(CLK_TOP_ETHER_125M_SEL, "ether_125m_sel",
+		ether_125m_parents, 0x540, 0, 2, 7),
+	MUX_GATE(CLK_TOP_ETHER_50M_SEL, "ether_50m_sel",
+		ether_50m_parents, 0x540, 8, 2, 15),
+	MUX_GATE(CLK_TOP_JPGDEC_SEL, "jpgdec_sel",
+		jpgdec_parents, 0x540, 16, 4, 23),
+	MUX_GATE(CLK_TOP_SPISLV_SEL, "spislv_sel",
+		spislv_parents, 0x540, 24, 3, 31),
 	/* CLK_CFG_15 */
-	MUX_GATE(CLK_TOP_ETHER_50M_RMII_SEL, "ether_sel", ether_parents, 0x550, 0, 2, 7),
-	MUX_GATE(CLK_TOP_CAM2TG_SEL, "cam2tg_sel", camtg_parents, 0x550, 8, 4, 15),
-	MUX_GATE(CLK_TOP_DI_SEL, "di_sel", di_parents, 0x550, 16, 3, 23),
-	MUX_GATE(CLK_TOP_TVD_SEL, "tvd_sel", tvd_parents, 0x550, 24, 2, 31),
+	MUX_GATE(CLK_TOP_ETHER_50M_RMII_SEL, "ether_sel",
+		ether_parents, 0x550, 0, 2, 7),
+	MUX_GATE(CLK_TOP_CAM2TG_SEL, "cam2tg_sel",
+		camtg_parents, 0x550, 8, 4, 15),
+	MUX_GATE(CLK_TOP_DI_SEL, "di_sel",
+		di_parents, 0x550, 16, 3, 23),
+	MUX_GATE(CLK_TOP_TVD_SEL, "tvd_sel",
+		tvd_parents, 0x550, 24, 2, 31),
 	/* CLK_CFG_16 */
-	MUX_GATE(CLK_TOP_I2C_SEL, "i2c_sel", i2c_parents, 0x560, 0, 3, 7),
-	MUX_GATE(CLK_TOP_PWM_INFRA_SEL, "pwm_infra_sel", pwm_parents, 0x560, 8, 2, 15),
-	MUX_GATE(CLK_TOP_MSDC0P_AES_SEL, "msdc0p_aes_sel", msdc0p_aes_parents, 0x560, 16, 2, 23),
-	MUX_GATE(CLK_TOP_CMSYS_SEL, "cmsys_sel", cmsys_parents, 0x560, 24, 3, 31),
+	MUX_GATE(CLK_TOP_I2C_SEL, "i2c_sel",
+		i2c_parents, 0x560, 0, 3, 7),
+	MUX_GATE(CLK_TOP_PWM_INFRA_SEL, "pwm_infra_sel",
+		pwm_parents, 0x560, 8, 2, 15),
+	MUX_GATE(CLK_TOP_MSDC0P_AES_SEL, "msdc0p_aes_sel",
+		msdc0p_aes_parents, 0x560, 16, 2, 23),
+	MUX_GATE(CLK_TOP_CMSYS_SEL, "cmsys_sel",
+		cmsys_parents, 0x560, 24, 3, 31),
 	/* CLK_CFG_17 */
-	MUX_GATE(CLK_TOP_GCPU_SEL, "gcpu_sel", gcpu_parents, 0x570, 0, 3, 7),
+	MUX_GATE(CLK_TOP_GCPU_SEL, "gcpu_sel",
+		gcpu_parents, 0x570, 0, 3, 7),
 	/* CLK_AUDDIV_4 */
-	MUX(CLK_TOP_AUD_APLL1_SEL, "aud_apll1_sel", aud_apll1_parents, 0x134, 0, 1),
-	MUX(CLK_TOP_AUD_APLL2_SEL, "aud_apll2_sel", aud_apll2_parents, 0x134, 1, 1),
-	MUX(CLK_TOP_DA_AUDULL_VTX_6P5M_SEL, "audull_vtx_sel", audull_vtx_parents, 0x134, 31, 1),
+	MUX(CLK_TOP_AUD_APLL1_SEL, "aud_apll1_sel",
+		aud_apll1_parents, 0x134, 0, 1),
+	MUX(CLK_TOP_AUD_APLL2_SEL, "aud_apll2_sel",
+		aud_apll2_parents, 0x134, 1, 1),
+	MUX(CLK_TOP_DA_AUDULL_VTX_6P5M_SEL, "audull_vtx_sel",
+		audull_vtx_parents, 0x134, 31, 1),
 };
 
 static const char * const mcu_mp0_parents[] = {
@@ -749,11 +822,14 @@ static const char * const mcu_bus_parents[] = {
 
 static struct mtk_composite mcu_muxes[] = {
 	/* mp0_pll_divider_cfg */
-	MUX_GATE_FLAGS(CLK_MCU_MP0_SEL, "mcu_mp0_sel", mcu_mp0_parents, 0x7A0, 9, 2, -1, CLK_IS_CRITICAL),
+	MUX_GATE_FLAGS(CLK_MCU_MP0_SEL, "mcu_mp0_sel", mcu_mp0_parents, 0x7A0,
+		9, 2, -1, CLK_IS_CRITICAL),
 	/* mp2_pll_divider_cfg */
-	MUX_GATE_FLAGS(CLK_MCU_MP2_SEL, "mcu_mp2_sel", mcu_mp2_parents, 0x7A8, 9, 2, -1, CLK_IS_CRITICAL),
+	MUX_GATE_FLAGS(CLK_MCU_MP2_SEL, "mcu_mp2_sel", mcu_mp2_parents, 0x7A8,
+		9, 2, -1, CLK_IS_CRITICAL),
 	/* bus_pll_divider_cfg */
-	MUX_GATE_FLAGS(CLK_MCU_BUS_SEL, "mcu_bus_sel", mcu_bus_parents, 0x7C0, 9, 2, -1, CLK_IS_CRITICAL),
+	MUX_GATE_FLAGS(CLK_MCU_BUS_SEL, "mcu_bus_sel", mcu_bus_parents, 0x7C0,
+		9, 2, -1, CLK_IS_CRITICAL),
 };
 
 static const struct mtk_clk_divider top_adj_divs[] = {
@@ -909,8 +985,10 @@ static const struct mtk_gate peri_clks[] = {
 	GATE_PERI2(CLK_PERI_MSDC30_1_EN, "per_msdc30_1_en", "msdc30_1_sel", 1),
 	GATE_PERI2(CLK_PERI_MSDC30_2_EN, "per_msdc30_2_en", "msdc30_2_sel", 2),
 	GATE_PERI2(CLK_PERI_MSDC30_3_EN, "per_msdc30_3_en", "msdc30_3_sel", 3),
-	GATE_PERI2(CLK_PERI_MSDC50_0_HCLK_EN, "per_msdc50_0_h", "msdc50_0_h_sel", 4),
-	GATE_PERI2(CLK_PERI_MSDC50_3_HCLK_EN, "per_msdc50_3_h", "msdc50_3_h_sel", 5),
+	GATE_PERI2(CLK_PERI_MSDC50_0_HCLK_EN, "per_msdc50_0_h",
+		"msdc50_0_h_sel", 4),
+	GATE_PERI2(CLK_PERI_MSDC50_3_HCLK_EN, "per_msdc50_3_h",
+		"msdc50_3_h_sel", 5),
 };
 
 #define BGR_PI_PWD			BIT(5)
@@ -1052,10 +1130,14 @@ static const struct clk_ops mtk_cvbspll_ops = {
 };
 
 struct clk *mtk_clk_register_cvbspll(const char *name,
-			const char *parent_name, void __iomem *reg_ts_con0,
-			void __iomem *reg_cvbspll_con0, void __iomem *reg_cvbspll_con1,
-			void __iomem *reg_cvbsrefpll_con0, void __iomem *reg_cvbsrefpll_con1,
-			void __iomem *reg_cvbs_con1, void __iomem *reg_cvbs_con2,
+			const char *parent_name,
+			void __iomem *reg_ts_con0,
+			void __iomem *reg_cvbspll_con0,
+			void __iomem *reg_cvbspll_con1,
+			void __iomem *reg_cvbsrefpll_con0,
+			void __iomem *reg_cvbsrefpll_con1,
+			void __iomem *reg_cvbs_con1,
+			void __iomem *reg_cvbs_con2,
 			void __iomem *reg_cvbs_con3)
 {
 	struct mtk_cvbspll *cp;
@@ -1107,7 +1189,8 @@ void mtk_clk_register_apmixedsys_special_clks(void __iomem *base,
 				base + 0x93C);
 
 	if (IS_ERR(clk))
-		pr_err("Failed to register clk %s: %ld\n", "cvbspll", PTR_ERR(clk));
+		pr_err("Failed to register clk %s: %ld\n", "cvbspll",
+				PTR_ERR(clk));
 
 	clk_data->clks[CLK_APMIXED_CVBSPLL] = clk;
 
@@ -1115,7 +1198,8 @@ void mtk_clk_register_apmixedsys_special_clks(void __iomem *base,
 				base + 0x8);
 
 	if (IS_ERR(clk))
-		pr_err("Failed to register clk %s: %ld\n", "ref2usb_tx", PTR_ERR(clk));
+		pr_err("Failed to register clk %s: %ld\n", "ref2usb_tx",
+				PTR_ERR(clk));
 
 	clk_data->clks[CLK_APMIXED_REF2USB_TX] = clk;
 }
@@ -1125,8 +1209,9 @@ void mtk_clk_register_apmixedsys_special_clks(void __iomem *base,
 #define CON0_MT2712_RST_BAR	BIT(24)
 
 #define PLL_B(_id, _name, _reg, _pwr_reg, _en_mask, _flags, _pcwbits,	\
-			_pd_reg, _pd_shift, _tuner_reg, _tuner_en_reg, _tuner_en_bit,	\
-			_pcw_reg, _pcw_shift, _div_table) {		\
+			_pd_reg, _pd_shift, _tuner_reg, _tuner_en_reg,	\
+			_tuner_en_bit, _pcw_reg, _pcw_shift,		\
+			_div_table) {					\
 		.id = _id,						\
 		.name = _name,						\
 		.reg = _reg,						\
@@ -1147,11 +1232,12 @@ void mtk_clk_register_apmixedsys_special_clks(void __iomem *base,
 	}
 
 #define PLL(_id, _name, _reg, _pwr_reg, _en_mask, _flags, _pcwbits,	\
-			_pd_reg, _pd_shift, _tuner_reg, _tuner_en_reg, _tuner_en_bit,	\
-			_pcw_reg, _pcw_shift)				\
-		PLL_B(_id, _name, _reg, _pwr_reg, _en_mask, _flags, _pcwbits,		\
-			_pd_reg, _pd_shift, _tuner_reg, _tuner_en_reg, _tuner_en_bit,	\
-			_pcw_reg, _pcw_shift, NULL)
+			_pd_reg, _pd_shift, _tuner_reg, _tuner_en_reg,	\
+			_tuner_en_bit, _pcw_reg, _pcw_shift)		\
+		PLL_B(_id, _name, _reg, _pwr_reg, _en_mask, _flags,	\
+			_pcwbits, _pd_reg, _pd_shift, _tuner_reg,	\
+			_tuner_en_reg, _tuner_en_bit, _pcw_reg,		\
+			_pcw_shift, NULL)
 
 static const struct mtk_pll_div_table armca35pll_div_table[] = {
 	{ .div = 0, .freq = MT2712_PLL_FMAX },
@@ -1181,36 +1267,37 @@ static const struct mtk_pll_div_table mmpll_div_table[] = {
 };
 
 static const struct mtk_pll_data plls[] = {
-	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x0230, 0x023C, 0xf0000101, HAVE_RST_BAR, 31, 0x0230, 4, 0, 0, 0,
-		0x0234, 0),
-	PLL(CLK_APMIXED_UNIVPLL, "univpll", 0x0240, 0x024C, 0xfe000101, HAVE_RST_BAR, 31, 0x0240, 4, 0, 0, 0,
-		0x0244, 0),
-	PLL(CLK_APMIXED_VCODECPLL, "vcodecpll", 0x0320, 0x032C, 0xc0000101, 0, 31, 0x0320, 4, 0, 0, 0,
-		0x0324, 0),
-	PLL(CLK_APMIXED_VENCPLL, "vencpll", 0x0280, 0x028C, 0x00000101, 0, 31, 0x0280, 4, 0, 0, 0,
-		0x0284, 0),
-	PLL(CLK_APMIXED_APLL1, "apll1", 0x0330, 0x0340, 0x00000101, 0, 31, 0x0330, 4, 0x0338, 0x0014, 0,
-		0x0334, 0),
-	PLL(CLK_APMIXED_APLL2, "apll2", 0x0350, 0x0360, 0x00000101, 0, 31, 0x0350, 4, 0x0358, 0x0014, 1,
-		0x0354, 0),
-	PLL(CLK_APMIXED_LVDSPLL, "lvdspll", 0x0370, 0x037c, 0x00000101, 0, 31, 0x0370, 4, 0, 0, 0,
-		0x0374, 0),
-	PLL(CLK_APMIXED_LVDSPLL2, "lvdspll2", 0x0390, 0x039C, 0x00000101, 0, 31, 0x0390, 4, 0, 0, 0,
-		0x0394, 0),
-	PLL(CLK_APMIXED_MSDCPLL, "msdcpll", 0x0270, 0x027C, 0x00000101, 0, 31, 0x0270, 4, 0, 0, 0,
-		0x0274, 0),
-	PLL(CLK_APMIXED_MSDCPLL2, "msdcpll2", 0x0410, 0x041C, 0x00000101, 0, 31, 0x0410, 4, 0, 0, 0,
-		0x0414, 0),
-	PLL(CLK_APMIXED_TVDPLL, "tvdpll", 0x0290, 0x029C, 0xc0000101, 0, 31, 0x0290, 4, 0, 0, 0,
-		0x0294, 0),
-	PLL_B(CLK_APMIXED_MMPLL, "mmpll", 0x0250, 0x0260, 0x00000101, 0, 31, 0x0250, 4, 0, 0, 0,
-		0x0254, 0, mmpll_div_table),
-	PLL_B(CLK_APMIXED_ARMCA35PLL, "armca35pll", 0x0100, 0x0110, 0xf0000101, HAVE_RST_BAR, 31, 0x0100, 4, 0, 0, 0,
-		0x0104, 0, armca35pll_div_table),
-	PLL_B(CLK_APMIXED_ARMCA72PLL, "armca72pll", 0x0210, 0x0220, 0x00000101, 0, 31, 0x0210, 4, 0, 0, 0,
-		0x0214, 0, armca72pll_div_table),
-	PLL(CLK_APMIXED_ETHERPLL, "etherpll", 0x0300, 0x030C, 0xc0000101, 0, 31, 0x0300, 4, 0, 0, 0,
-		0x0304, 0),
+	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x0230, 0x023C, 0xf0000101,
+		HAVE_RST_BAR, 31, 0x0230, 4, 0, 0, 0, 0x0234, 0),
+	PLL(CLK_APMIXED_UNIVPLL, "univpll", 0x0240, 0x024C, 0xfe000101,
+		HAVE_RST_BAR, 31, 0x0240, 4, 0, 0, 0, 0x0244, 0),
+	PLL(CLK_APMIXED_VCODECPLL, "vcodecpll", 0x0320, 0x032C, 0xc0000101,
+		0, 31, 0x0320, 4, 0, 0, 0, 0x0324, 0),
+	PLL(CLK_APMIXED_VENCPLL, "vencpll", 0x0280, 0x028C, 0x00000101,
+		0, 31, 0x0280, 4, 0, 0, 0, 0x0284, 0),
+	PLL(CLK_APMIXED_APLL1, "apll1", 0x0330, 0x0340, 0x00000101,
+		0, 31, 0x0330, 4, 0x0338, 0x0014, 0, 0x0334, 0),
+	PLL(CLK_APMIXED_APLL2, "apll2", 0x0350, 0x0360, 0x00000101,
+		0, 31, 0x0350, 4, 0x0358, 0x0014, 1, 0x0354, 0),
+	PLL(CLK_APMIXED_LVDSPLL, "lvdspll", 0x0370, 0x037c, 0x00000101,
+		0, 31, 0x0370, 4, 0, 0, 0, 0x0374, 0),
+	PLL(CLK_APMIXED_LVDSPLL2, "lvdspll2", 0x0390, 0x039C, 0x00000101,
+		0, 31, 0x0390, 4, 0, 0, 0, 0x0394, 0),
+	PLL(CLK_APMIXED_MSDCPLL, "msdcpll", 0x0270, 0x027C, 0x00000101,
+		0, 31, 0x0270, 4, 0, 0, 0, 0x0274, 0),
+	PLL(CLK_APMIXED_MSDCPLL2, "msdcpll2", 0x0410, 0x041C, 0x00000101,
+		0, 31, 0x0410, 4, 0, 0, 0, 0x0414, 0),
+	PLL(CLK_APMIXED_TVDPLL, "tvdpll", 0x0290, 0x029C, 0xc0000101,
+		0, 31, 0x0290, 4, 0, 0, 0, 0x0294, 0),
+	PLL_B(CLK_APMIXED_MMPLL, "mmpll", 0x0250, 0x0260, 0x00000101,
+		0, 31, 0x0250, 4, 0, 0, 0, 0x0254, 0, mmpll_div_table),
+	PLL_B(CLK_APMIXED_ARMCA35PLL, "armca35pll", 0x0100, 0x0110, 0xf0000101,
+		HAVE_RST_BAR, 31, 0x0100, 4, 0, 0, 0, 0x0104, 0,
+		armca35pll_div_table),
+	PLL_B(CLK_APMIXED_ARMCA72PLL, "armca72pll", 0x0210, 0x0220, 0x00000101,
+		0, 31, 0x0210, 4, 0, 0, 0, 0x0214, 0, armca72pll_div_table),
+	PLL(CLK_APMIXED_ETHERPLL, "etherpll", 0x0300, 0x030C, 0xc0000101,
+		0, 31, 0x0300, 4, 0, 0, 0, 0x0304, 0),
 };
 
 static int clk_mt2712_apmixed_probe(struct platform_device *pdev)
@@ -1258,10 +1345,13 @@ static int clk_mt2712_top_probe(struct platform_device *pdev)
 
 	clk_data = mtk_alloc_clk_data(CLK_TOP_NR_CLK);
 
-	mtk_clk_register_fixed_clks(top_fixed_clks, ARRAY_SIZE(top_fixed_clks), clk_data);
+	mtk_clk_register_fixed_clks(top_fixed_clks, ARRAY_SIZE(top_fixed_clks),
+		clk_data);
 	mtk_clk_register_factors(top_divs, ARRAY_SIZE(top_divs), clk_data);
-	mtk_clk_register_composites(top_muxes, ARRAY_SIZE(top_muxes), base, &mt2712_clk_lock, clk_data);
-	mtk_clk_register_dividers(top_adj_divs, ARRAY_SIZE(top_adj_divs), base, &mt2712_clk_lock, clk_data);
+	mtk_clk_register_composites(top_muxes, ARRAY_SIZE(top_muxes), base,
+		&mt2712_clk_lock, clk_data);
+	mtk_clk_register_dividers(top_adj_divs, ARRAY_SIZE(top_adj_divs), base,
+		&mt2712_clk_lock, clk_data);
 	mtk_clk_register_gates(node, top_clks, ARRAY_SIZE(top_clks), clk_data);
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
@@ -1281,7 +1371,8 @@ static int clk_mt2712_infra_probe(struct platform_device *pdev)
 
 	clk_data = mtk_alloc_clk_data(CLK_INFRA_NR_CLK);
 
-	mtk_clk_register_gates(node, infra_clks, ARRAY_SIZE(infra_clks), clk_data);
+	mtk_clk_register_gates(node, infra_clks, ARRAY_SIZE(infra_clks),
+		clk_data);
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 
@@ -1302,7 +1393,8 @@ static int clk_mt2712_peri_probe(struct platform_device *pdev)
 
 	clk_data = mtk_alloc_clk_data(CLK_PERI_NR_CLK);
 
-	mtk_clk_register_gates(node, peri_clks, ARRAY_SIZE(peri_clks), clk_data);
+	mtk_clk_register_gates(node, peri_clks, ARRAY_SIZE(peri_clks),
+		clk_data);
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 
@@ -1331,7 +1423,8 @@ static int clk_mt2712_mcu_probe(struct platform_device *pdev)
 
 	clk_data = mtk_alloc_clk_data(CLK_MCU_NR_CLK);
 
-	mtk_clk_register_composites(mcu_muxes, ARRAY_SIZE(mcu_muxes), base, &mt2712_clk_lock, clk_data);
+	mtk_clk_register_composites(mcu_muxes, ARRAY_SIZE(mcu_muxes), base,
+		&mt2712_clk_lock, clk_data);
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 
