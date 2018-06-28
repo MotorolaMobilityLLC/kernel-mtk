@@ -148,7 +148,6 @@ unsigned long int cap_min_freq[3] = {0};   /* boost4xxx */
 void (*cpufreq_notifier_fp)(int cluster_id, unsigned long freq);
 EXPORT_SYMBOL(cpufreq_notifier_fp);
 
-unsigned int capacity_margin_dvfs = DEFAULT_CAP_MARGIN_DVFS;
 int dbg_id = DEBUG_FREQ_DISABLED;
 
 /**

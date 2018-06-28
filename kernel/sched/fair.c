@@ -188,6 +188,7 @@ unsigned int sysctl_sched_cfs_bandwidth_slice = 5000UL;
  * util * margin < capacity * 1024
  */
 unsigned int capacity_margin = 1280; /* ~20% */
+unsigned int capacity_margin_dvfs = DEFAULT_CAP_MARGIN_DVFS;
 
 static inline void update_load_add(struct load_weight *lw, unsigned long inc)
 {
