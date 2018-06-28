@@ -1731,7 +1731,7 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 		spin_unlock_irqrestore(&host->reg_lock, flags);
 	}
 
-	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
+	mmc_cmd_log(host->mmc, 0, cmd->opcode, cmd->arg, sbc);
 
 	sdc_send_cmd(rawcmd, cmd->arg);
 
@@ -1757,9 +1757,9 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 	bool use_cmd_intr;
 
 	u32 cmdsts = MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO;
-#ifdef MTK_MSDC_USE_CMD23
 	struct mmc_command *sbc = NULL;
 
+#ifdef MTK_MSDC_USE_CMD23
 	if (host->autocmd & MSDC_AUTOCMD23) {
 		if (host->data && host->data->mrq && host->data->mrq->sbc)
 			sbc = host->data->mrq->sbc;
@@ -1867,7 +1867,7 @@ skip_cmd_resp_polling:
 #endif
 			break;
 		}
-		dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
+		mmc_cmd_log(host->mmc, 1, cmd->opcode, cmd->resp[0], sbc);
 	} else if (intsts & MSDC_INT_RSPCRCERR) {
 		cmd->error = (unsigned int)-EILSEQ;
 		if ((cmd->opcode != 19) && (cmd->opcode != 21)) {
@@ -2069,12 +2069,12 @@ static unsigned int msdc_cmdq_command_start(struct msdc_host *host,
 	} else
 #endif
 	{
-	/* use polling way */
+		/* use polling way */
 		spin_lock_irqsave(&host->reg_lock, flags);
-	MSDC_CLR_BIT32(MSDC_INTEN, wints_cq_cmd);
+		MSDC_CLR_BIT32(MSDC_INTEN, wints_cq_cmd);
 		spin_unlock_irqrestore(&host->reg_lock, flags);
 	}
-	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
+	mmc_cmd_log(host->mmc, 0, cmd->opcode, cmd->arg, NULL);
 	sdc_send_cmdq_cmd(cmd->opcode, cmd->arg);
 
 	return 0;
@@ -2171,8 +2171,8 @@ skip_cmdq_resp_polling:
 				*rsp = MSDC_READ32(SDC_RESP0);
 				break;
 			}
-			dbg_add_host_log(host->mmc, 1, cmd->opcode,
-				cmd->resp[0]);
+			mmc_cmd_log(host->mmc, 1, cmd->opcode,
+				cmd->resp[0], NULL);
 		} else if (intsts & MSDC_INT_RSPCRCERR) {
 			cmd->error = (unsigned int)-EILSEQ;
 			pr_notice("[%s]: msdc%d XXX CMD<%d> MSDC_INT_RSPCRCERR Arg<0x%.8x>",

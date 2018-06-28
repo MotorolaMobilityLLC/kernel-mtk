@@ -436,8 +436,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 			pr_info("[AUTOK]eMMC HS200 Tune\n");
 			ret = hs200_execute_tuning(host, res);
 		}
-		if (host->mmc->card &&
-		  !(host->mmc->card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS400)) {
+		if (host->hs400_mode == false) {
 			host->is_autok_done = 1;
 			complete(&host->autok_done);
 		}
