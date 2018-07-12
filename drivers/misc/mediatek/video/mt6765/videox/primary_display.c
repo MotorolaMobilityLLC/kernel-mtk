@@ -2091,6 +2091,19 @@ static int _DL_switch_to_DC_fast(int block)
 	/* move ovl config info from dl to dc */
 	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,
 	       sizeof(data_config_dl->ovl_config));
+
+	/* when entering idle , the path will switch from DL to DC.
+	 *  OVL0_2L->RSZ -> OVL0 wil be configed again, even there
+	 * is not be triggered. Howerver, there miss to sync rsz roi information
+	 */
+
+	memcpy(&data_config_dc->rsz_enable, &data_config_dl->rsz_enable,
+	       sizeof(data_config_dl->rsz_enable));
+	memcpy(&data_config_dc->rsz_src_roi, &data_config_dl->rsz_src_roi,
+			sizeof(data_config_dl->rsz_src_roi));
+	memcpy(&data_config_dc->rsz_dst_roi, &data_config_dl->rsz_dst_roi,
+			sizeof(data_config_dl->rsz_dst_roi));
+
 	data_config_dc->ovl_dirty = 1;
 	data_config_dc->p_golden_setting_context =
 		data_config_dl->p_golden_setting_context;
@@ -5897,7 +5910,7 @@ static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
 	}
 
 	path = HRT_GET_PATH_ID(HRT_GET_PATH_SCENARIO(cfg->overlap_layer_num));
-	if ((path != 2 && path != 3) && (rsz == true)) {
+	if ((path != 2 && path != 3 && path != 4) && (rsz == true)) {
 		struct disp_input_config *c = &cfg->input_cfg[i];
 
 		DISPERR("not RPO but L%d(%u,%u,%ux%u)->(%u,%u,%ux%u)\n",
@@ -5907,6 +5920,69 @@ static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
 	}
 
 	return rsz;
+}
+
+static void rsz_in_out_roi(struct disp_frame_cfg_t *cfg,
+				struct disp_ddp_path_config *data_config)
+{
+	int i = 0;
+	struct disp_rect dst_layer_roi = {0, 0, 0, 0};
+	struct disp_rect dst_total_roi = {0, 0, 0, 0};
+	struct disp_rect src_layer_roi = {0, 0, 0, 0};
+	struct disp_rect src_total_roi = {0, 0, 0, 0};
+	struct disp_input_config *input_cfg = NULL;
+
+	data_config->rsz_enable = FALSE;
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+
+		input_cfg = &cfg->input_cfg[i];
+
+		if (input_cfg->layer_enable) {
+
+			if (i == 0 &&
+				input_cfg->buffer_source == DISP_BUFFER_ALPHA)
+				continue;
+
+			if (input_cfg->src_width < input_cfg->tgt_width ||
+				input_cfg->src_height < input_cfg->tgt_height) {
+				rect_make(&src_layer_roi,
+					(input_cfg->tgt_offset_x
+					* input_cfg->src_width)
+					/ input_cfg->tgt_width,
+					(input_cfg->tgt_offset_y
+					* input_cfg->src_height)
+					/ input_cfg->tgt_height,
+					input_cfg->src_width,
+					input_cfg->src_height);
+				rect_make(&dst_layer_roi,
+					input_cfg->tgt_offset_x,
+					input_cfg->tgt_offset_y,
+					input_cfg->tgt_width,
+					input_cfg->tgt_height);
+				rect_join(&src_layer_roi,
+					&src_total_roi, &src_total_roi);
+				rect_join(&dst_layer_roi,
+					&dst_total_roi, &dst_total_roi);
+				data_config->rsz_enable = TRUE;
+			} else
+				break;
+		}
+	}
+
+	data_config->rsz_src_roi = src_total_roi;
+	data_config->rsz_dst_roi = dst_total_roi;
+
+	DISPINFO("RPO] rsz_src(x,y,w,h)=(%d,%d,%d,%d)\n",
+		data_config->rsz_src_roi.x,
+		data_config->rsz_src_roi.y,
+		data_config->rsz_src_roi.width,
+		data_config->rsz_src_roi.height);
+	DISPINFO("[RPO] rsz_dst(x,y,w,h)=(%d,%d,%d,%d)\n",
+		data_config->rsz_dst_roi.x,
+		data_config->rsz_dst_roi.y,
+		data_config->rsz_dst_roi.width,
+		data_config->rsz_dst_roi.height);
 }
 
 static int _is_overlap(struct disp_input_config *src,
@@ -6086,6 +6162,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 	if (disp_rsz_frame_has_rsz_layer(cfg))
 		assign_full_lcm_roi(&total_dirty_roi);
+
+	rsz_in_out_roi(cfg, data_config);
 
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		struct disp_input_config *input_cfg = &cfg->input_cfg[i];
