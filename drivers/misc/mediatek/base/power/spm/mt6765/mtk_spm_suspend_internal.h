@@ -83,7 +83,7 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl);
 /**************************************
  * External functions and variable
  **************************************/
-#if defined(CONFIG_MTK_EIC) || defined(CONFIG_PINCTRL_MTK_COMMON)
+#if defined(CONFIG_MTK_EIC) || defined(CONFIG_PINCTRL_MTK)
 extern void mt_eint_print_status(void);
 #endif
 

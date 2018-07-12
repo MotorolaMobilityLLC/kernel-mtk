@@ -2258,7 +2258,6 @@ mtk_eint_debounce_process(struct mtk_pinctrl *pctl, int index)
  */
 void mt_eint_print_status(void)
 {
-#if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	unsigned int status, eint_num;
 	unsigned int offset;
 	const struct mtk_eint_offsets *eint_offsets =
@@ -2285,7 +2284,6 @@ void mt_eint_print_status(void)
 			status &= ~BIT(offset);
 		}
 	}
-#endif
 	pr_notice("\n");
 }
 EXPORT_SYMBOL(mt_eint_print_status);
