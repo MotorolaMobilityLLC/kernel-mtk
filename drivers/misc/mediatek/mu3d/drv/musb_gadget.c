@@ -1970,6 +1970,7 @@ err:
 	return retval;
 }
 
+#ifdef CONFIG_USB_G_ANDROID
 static void stop_activity(struct musb *musb, struct usb_gadget_driver *driver)
 {
 	int i;
@@ -2004,6 +2005,7 @@ static void stop_activity(struct musb *musb, struct usb_gadget_driver *driver)
 		}
 	}
 }
+#endif
 
 /*
  * Unregister the gadget driver. Used by gadget drivers when
@@ -2015,7 +2017,6 @@ static int musb_gadget_stop(struct usb_gadget *g)
 {
 	struct musb *musb = gadget_to_musb(g);
 	unsigned long flags;
-	struct usb_gadget_driver *driver = musb->gadget_driver;
 
 	if (musb->xceiv->last_event == USB_EVENT_NONE)
 		pm_runtime_get_sync(musb->controller);
@@ -2032,11 +2033,13 @@ static int musb_gadget_stop(struct usb_gadget *g)
 	(void)musb_gadget_vbus_draw(&musb->g, 0);
 
 	musb->xceiv->otg->state = OTG_STATE_UNDEFINED;
-	stop_activity(musb, driver);
+#ifdef CONFIG_USB_G_ANDROID
+	stop_activity(musb, musb->gadget_driver);
+#endif
 	otg_set_peripheral(musb->xceiv->otg, NULL);
 
-
 	musb->is_active = 0;
+	musb->gadget_driver = NULL;
 	musb_platform_try_idle(musb, 0);
 	spin_unlock_irqrestore(&musb->lock, flags);
 
@@ -2048,8 +2051,10 @@ static int musb_gadget_stop(struct usb_gadget *g)
 		 */
 	}
 
+#ifdef CONFIG_USB_G_ANDROID
 	if (!is_otg_enabled(musb))
 		musb_stop(musb);
+#endif
 
 	pm_runtime_put(musb->controller);
 
@@ -2221,6 +2226,20 @@ void musb_g_reset(struct musb *musb) __releases(musb->lock) __acquires(musb->loc
 	musb->g.b_hnp_enable = 0;
 	musb->g.a_alt_hnp_support = 0;
 	musb->g.a_hnp_support = 0;
+
+#ifndef CONFIG_USB_G_ANDROID
+	{
+		struct musb_ep		*ep;
+
+		ep = &musb->endpoints[0].ep_in;
+		if (!list_empty(&ep->req_list)) {
+			os_printk(K_NOTICE, "%s reinit EP[0] req_list\n",
+				 __func__);
+			INIT_LIST_HEAD(&ep->req_list);
+		}
+	}
+#endif
+
 
 	/* Normal reset, as B-Device;
 	 * or else after HNP, as A-Device
