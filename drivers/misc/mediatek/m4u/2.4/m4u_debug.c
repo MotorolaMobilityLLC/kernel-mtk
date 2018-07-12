@@ -27,8 +27,9 @@
 #include "trustzone/kree/mem.h"
 #endif
 
-#if defined(CONFIG_MTK_SECURE_MEM_SUPPORT) && \
-		defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if defined(CONFIG_MTK_LEGACY_SECMEM_SUPPORT)
+#include "secmem.h"
+#elif defined(CONFIG_MTK_SECURE_MEM_SUPPORT)
 #include "secmem_api.h"
 #endif
 

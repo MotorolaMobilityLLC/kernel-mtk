@@ -28,7 +28,7 @@
 #define M4UINFO(string, args...)	pr_debug("[M4U] "string, ##args)
 
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_TEE_GP_SUPPORT)
 #define M4U_TEE_SERVICE_ENABLE
 #endif
 

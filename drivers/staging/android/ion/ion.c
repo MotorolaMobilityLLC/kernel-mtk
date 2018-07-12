@@ -41,7 +41,6 @@
 #include "compat_ion.h"
 #include "ion_profile.h"
 #include "mtk/mtk_ion.h"
-#include "mtk/ion_sec_heap.h"
 #include "mtk/ion_drv_priv.h"
 
 #define DEBUG_HEAP_SHRINKER
