@@ -560,6 +560,9 @@ firmware_class.path=/vendor/firmware";
 			<0 0x10017000 0 0x1000>,
 			/* sysram base for transformation between kernel time (sched_clock) and sys_timer tick */
 			<0 0x10218da0 0 0x14>;
+		reg-names =
+			"sys_timer_base",
+			"sysram_base";
 		interrupts = <GIC_SPI 186 IRQ_TYPE_LEVEL_HIGH>;
 		mediatek,sysram-size = <0x14>;
 	};
