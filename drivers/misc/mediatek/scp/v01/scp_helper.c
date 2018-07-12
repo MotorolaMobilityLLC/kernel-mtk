@@ -452,21 +452,6 @@ static void scp_A_ready_ipi_handler(int id, void *data, unsigned int len)
 }
 
 
-// #define DUMMY_ERROR_REPORT_API
-#ifdef DUMMY_ERROR_REPORT_API
-/******************************************************************************
- ******************************************************************************/
-void report_hub_dmd(uint32_t case_id, uint32_t sensor_id, char *context)
-{
-	pr_notice("[SCP] Error_info: case id: %u\n", case_id);
-	pr_notice("[SCP] Error_info: sensor id: %u\n", sensor_id);
-	pr_notiec("[SCP] Error_info: context: %s\n", context);
-}
-/******************************************************************************
- ******************************************************************************/
-#endif  // DUMMY_ERROR_REPORT_API
-
-
 /*
  * Handle notification from scp.
  * Report error from SCP to other kernel driver.
@@ -484,6 +469,12 @@ static void scp_err_info_handler(int id, void *data, unsigned int len)
 		WARN_ON(1);
 		return;
 	}
+
+	/* Ensure the context[] is terminated by the NULL character. */
+	info->context[ERR_MAX_CONTEXT_LEN - 1] = '\0';
+	pr_notice("[SCP] Error_info: case id: %u\n", info->case_id);
+	pr_notice("[SCP] Error_info: sensor id: %u\n", info->sensor_id);
+	pr_notice("[SCP] Error_info: context: %s\n", info->context);
 
 	if (report_hub_dmd)
 		report_hub_dmd(info->case_id, info->sensor_id, info->context);
