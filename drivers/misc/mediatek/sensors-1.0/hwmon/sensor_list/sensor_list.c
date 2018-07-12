@@ -160,12 +160,13 @@ int sensorlist_register_deviceinfo(int sensor,
 
 	handle = sensor_to_handle(sensor);
 	if (handle < 0)
-		return 0;
+		return -1;
 	spin_lock(&sensorlist_info_lock);
 	strlcpy(sensorlist_info[handle].name,
 		devinfo->name,
 		sizeof(sensorlist_info[handle].name));
 	spin_unlock(&sensorlist_info_lock);
+	return 0;
 }
 #endif
 
