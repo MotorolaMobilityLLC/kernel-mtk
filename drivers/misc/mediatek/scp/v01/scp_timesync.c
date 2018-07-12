@@ -50,7 +50,8 @@ struct timesync_ctrl_s {
 	unsigned int clk_l;
 };
 static struct timesync_ctrl_s ts_ctl;
-static void scp_timesync_timestamp(unsigned long long src, unsigned int *ts_h, unsigned int *ts_l)
+static void scp_timesync_timestamp(unsigned long long src, unsigned int *ts_h
+							, unsigned int *ts_l)
 {
 	*ts_l = (unsigned int)(src & 0x00000000FFFFFFFF);
 	*ts_h = (unsigned int)((src & 0xFFFFFFFF00000000) >> 32);
@@ -81,7 +82,8 @@ static void tinysys_time_sync(void)
 	do {
 		scp_timesync_ts_get(&ts_ctl.ts_h, &ts_ctl.ts_l);
 		scp_timesync_clk_get(&ts_ctl.clk_h, &ts_ctl.clk_l);
-		ret = scp_ipi_send(IPI_SCP_TIMER, &ts_ctl, sizeof(struct timesync_ctrl_s), 0, SCP_A_ID);
+		ret = scp_ipi_send(IPI_SCP_TIMER, &ts_ctl,
+				sizeof(struct timesync_ctrl_s), 0, SCP_A_ID);
 
 		if (ret == DONE)
 			break;
@@ -89,9 +91,9 @@ static void tinysys_time_sync(void)
 		mdelay(5);
 	} while (timeout > 0);
 #if 0
-	pr_err("SCP: timer sync log:%d, %u, %u\n", ret, ts_ctl.ts_h,
+	pr_notice("SCP: timer sync log:%d, %u, %u\n", ret, ts_ctl.ts_h,
 			ts_ctl.ts_l);
-	pr_err("SCP: timer sync log:%d, %u, %u\n", ret, ts_ctl.clk_h,
+	pr_notice("SCP: timer sync log:%d, %u, %u\n", ret, ts_ctl.clk_h,
 			ts_ctl.clk_l);
 #endif
 
@@ -100,7 +102,8 @@ static void tinysys_time_sync(void)
 /*
  * TODO: what should we do when hibernation ?
  */
-static int scp_pm_event(struct notifier_block *notifier, unsigned long pm_event, void *unused)
+static int scp_pm_event(struct notifier_block *notifier
+			, unsigned long pm_event, void *unused)
 {
 	switch (pm_event) {
 	case PM_SUSPEND_PREPARE:
@@ -118,7 +121,8 @@ static struct notifier_block scp_pm_notifier_block = {
 	.priority = 0,
 };
 
-static int timesync_event(struct notifier_block *this, unsigned long event, void *ptr)
+static int timesync_event(struct notifier_block *this
+			, unsigned long event, void *ptr)
 {
 	switch (event) {
 	case SCP_EVENT_READY:
@@ -145,7 +149,8 @@ static void timesync_ws(struct work_struct *ws)
 {
 	/*
 	 * static unsigned int scp_sync_cnt = 0;
-	 * pr_debug("resync time about %d sec (%d)\n", TIMESYNC_TIMEOUT, scp_sync_cnt++);
+	 * pr_debug("resync time about %d sec (%d)\n",
+	 * TIMESYNC_TIMEOUT, scp_sync_cnt++);
 	 */
 	tinysys_time_sync();
 }

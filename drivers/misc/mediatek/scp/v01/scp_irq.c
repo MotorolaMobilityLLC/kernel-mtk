@@ -52,11 +52,14 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 
 		scp_A_wdt_handler();
 		if (scp_set_reset_status() == RESET_STATUS_STOP) {
-			pr_err("[SCP] CM4 WDT handler start to reset scp...\n");
+			pr_debug("[SCP] CM4 WDT handler start to reset scp...\n");
 			scp_send_reset_wq(RESET_TYPE_WDT);
 		} else
 			pr_notice("scp_A_wdt_handler: scp resetting\n");
-		/* clr after SCP side INT trigger, or SCP may lost INT max wait 5000*40u = 200ms */
+
+		/* clr after SCP side INT trigger,
+		 * or SCP may lost INT max wait 5000*40u = 200ms
+		 */
 		for (retry = SCP_AWAKE_TIMEOUT; retry > 0; retry--) {
 			spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 			tmp = readl(SCP_GPR_CM4_A_REBOOT);
@@ -66,7 +69,7 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 			udelay(40);
 		}
 		if (retry == 0)
-			pr_err("[SCP] SCP_A wakeup timeout\n");
+			pr_debug("[SCP] SCP_A wakeup timeout\n");
 		udelay(10);
 		writel(SCP_IRQ_WDT, SCP_A_TO_HOST_REG);
 	} else if (reg & SCP_IRQ_SCP2HOST) {

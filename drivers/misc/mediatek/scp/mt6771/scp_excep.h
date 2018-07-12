@@ -15,6 +15,7 @@
 #define __SCP_EXCEP_H__
 
 #include <linux/sizes.h>
+#include "scp_helper.h"
 
 #define AED_LOG_PRINT_SIZE	SZ_16K
 #define SCP_LOCK_OFS	0xE0
@@ -30,14 +31,16 @@ enum scp_excep_id {
 
 extern void scp_aed(enum scp_excep_id type, enum scp_core_id id);
 extern void scp_aed_reset(enum scp_excep_id type, enum scp_core_id id);
-extern void scp_aed_reset_inplace(enum scp_excep_id type, enum scp_core_id id);
+extern void scp_aed_reset_inplace(enum scp_excep_id type,
+		enum scp_core_id id);
 extern void scp_get_log(enum scp_core_id id);
 extern char *scp_get_last_log(enum scp_core_id id);
 extern void scp_A_dump_regs(void);
 extern uint32_t scp_dump_pc(void);
 extern uint32_t scp_dump_lr(void);
-extern void aed_scp_exception_api(const int *log, int log_size, const int *phy,
-		int phy_size, const char *detail, const int db_opt);
+extern void aed_scp_exception_api(const int *log, int log_size,
+		const int *phy, int phy_size, const char *detail,
+		const int db_opt);
 extern void scp_excep_cleanup(void);
 enum { r0, r1, r2, r3, r12, lr, pc, psr};
 extern int scp_ee_force_ke_enable;
@@ -57,19 +60,20 @@ struct TaskContextType {
 	unsigned int r10;
 	unsigned int r11;
 	unsigned int r12;
-	unsigned int sp;              /* after pop r0-r3, lr, pc, xpsr                   */
-	unsigned int lr;              /* lr before exception                             */
-	unsigned int pc;              /* pc before exception                             */
-	unsigned int psr;             /* xpsr before exeption                            */
-	unsigned int control;         /* nPRIV bit & FPCA bit meaningful, SPSEL bit = 0  */
-	unsigned int exc_return;      /* current lr                                      */
-	unsigned int msp;             /* msp                                             */
+	unsigned int sp;         /* after pop r0-r3, lr, pc, xpsr */
+	unsigned int lr;         /* lr before exception           */
+	unsigned int pc;         /* pc before exception           */
+	unsigned int psr;        /* xpsr before exeption          */
+	unsigned int control;/*nPRIV bit & FPCA bit, SPSEL bit = 0*/
+	unsigned int exc_return; /* current lr                    */
+	unsigned int msp;        /* msp                           */
 };
 
 #define CRASH_SUMMARY_LENGTH 12
 #define CRASH_MEMORY_HEADER_SIZE  (8 * 1024)
-#define CRASH_MEMORY_LENGTH  (512 * 1024)
 #define CRASH_MEMORY_OFFSET  (0x800)
+#define CRASH_MEMORY_LENGTH  (512 * 1024 - CRASH_MEMORY_OFFSET)
+
 #define CRASH_REG_SIZE  (9 * 32)
 
 #include <linux/elf.h>
@@ -78,7 +82,8 @@ struct TaskContextType {
 #define ELF_PRARGSZ 80
 #define ELF_CORE_EFLAGS	0
 #define EM_ARM 40
-static inline void elf_setup_eident(unsigned char e_ident[EI_NIDENT], unsigned char elfclasz)
+static inline void elf_setup_eident(unsigned char e_ident[EI_NIDENT],
+		unsigned char elfclasz)
 {
 	memcpy(e_ident, ELFMAG, SELFMAG);
 	e_ident[EI_CLASS] = elfclasz;
@@ -165,7 +170,17 @@ struct scp_reg_dump_list {
 	uint32_t debug_addr_spi2;
 	uint32_t debug_bus_status;
 	uint32_t debug_infra_mon;
+	uint32_t infra_addr_latch;
+	uint32_t ddebug_latch;
+	uint32_t pdebug_latch;
+	uint32_t pc_value;
 	uint32_t scp_reg_magic_end;
+};
+
+struct scp_dump_header_list {
+	uint32_t scp_head_magic;
+	struct scp_region_info_st scp_region_info;
+	uint32_t scp_head_magic_end;
 };
 
 struct MemoryDump {
@@ -173,8 +188,12 @@ struct MemoryDump {
 	struct elf32_phdr nhdr;
 	struct elf32_phdr phdr;
 	char notes[CRASH_MEMORY_HEADER_SIZE-sizeof(struct elf32_hdr)
-		-sizeof(struct elf32_phdr)-sizeof(struct elf32_phdr)];
-	/*ram dump total header size (elf+nhdr+phdr) must be fixed at CRASH_MEMORY_HEADER_SIZE */
+		-sizeof(struct elf32_phdr)-sizeof(struct elf32_phdr)
+		-sizeof(struct scp_dump_header_list)];
+	/* ram dump total header size(elf+nhdr+phdr+header)
+	 * must be fixed at CRASH_MEMORY_HEADER_SIZE
+	 */
+	struct scp_dump_header_list scp_dump_header;
 	/*scp sram*/
 	char memory[CRASH_MEMORY_LENGTH];
 	/*scp reg*/

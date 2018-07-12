@@ -35,7 +35,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_fdt.h>
 #include <linux/ioport.h>
-#include <linux/wakelock.h>
 #include <linux/io.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/aee.h>
@@ -48,7 +47,7 @@
 
 struct mutex scp_awake_mutexs[SCP_CORE_TOTAL];
 int scp_awake_counts[SCP_CORE_TOTAL];
-struct wake_lock scp_awake_wakelock[SCP_CORE_TOTAL];
+
 
 /*
  * acquire scp lock flag, keep scp awake
@@ -64,6 +63,7 @@ int scp_awake_lock(enum scp_core_id scp_id)
 	int *scp_awake_count;
 	int count = 0;
 	int ret = -1;
+	unsigned int tmp;
 
 	if (scp_id >= SCP_CORE_TOTAL) {
 		pr_notice("scp_awake_lock: SCP ID >= SCP_CORE_TOTAL\n");
@@ -95,16 +95,23 @@ int scp_awake_lock(enum scp_core_id scp_id)
 
 	/*set a direct IPI to awake SCP */
 	/*pr_debug("scp_awake_lock: try to awake %s\n", core_id);*/
-	writel((1 << AP_AWAKE_LOCK), INFRA_IRQ_SET);
+	writel(0xA0 | (1 << AP_AWAKE_LOCK), INFRA_IRQ_SET);
 
 	count = 0;
 	while (++count != SCP_AWAKE_TIMEOUT) {
-		if (!(readl(INFRA_IRQ_SET) & (1 << AP_AWAKE_LOCK))) {
+		tmp = readl(INFRA_IRQ_SET);
+		if ((tmp & 0xf0) != 0xA0) {
+			pr_notice("scp_awake_lock: INFRA_IRQ_SET %x\n", tmp);
+			break;
+		}
+		if (!((tmp & 0x0f) & (1 << AP_AWAKE_LOCK))) {
 			ret = 0;
 			break;
 		}
 		udelay(10);
 	}
+	/* clear status */
+	writel(0xA0 | (1 << AP_AWAKE_LOCK), INFRA_IRQ_CLEAR);
 
 	/* scp lock awake success*/
 	if (ret != -1)
@@ -127,7 +134,6 @@ int scp_awake_lock(enum scp_core_id scp_id)
 
 	/* scp awake */
 	mutex_unlock(scp_awake_mutex);
-	/*pr_debug("scp_awake_lock: %s lock, count=%d\n", core_id, *scp_awake_count);*/
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_awake_lock);
@@ -146,10 +152,11 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 	char *core_id;
 	int count = 0;
 	int ret = -1;
+	unsigned int tmp;
 
 	if (scp_id >= SCP_CORE_TOTAL) {
 		pr_notice("scp_awake_unlock: SCP ID >= SCP_CORE_TOTAL\n");
-		return ret;
+		return -1;
 	}
 
 	scp_awake_mutex = &scp_awake_mutexs[scp_id];
@@ -158,7 +165,7 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 
 	if (is_scp_ready(scp_id) == 0) {
 		pr_notice("scp_awake_unlock: %s not enabled\n", core_id);
-		return ret;
+		return -1;
 	}
 
 	/* scp unlock awake */
@@ -172,37 +179,43 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 
 	mutex_lock(scp_awake_mutex);
 
-	ret = 0;
-
 	/* spinlock context safe */
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 
 	/* WE1: set a direct IPI to release awake SCP */
 	/*pr_debug("scp_awake_lock: try to awake %s\n", core_id);*/
-	writel((1 << AP_AWAKE_UNLOCK), INFRA_IRQ_SET);
+	writel(0xA0 | (1 << AP_AWAKE_UNLOCK), INFRA_IRQ_SET);
 
 	count = 0;
 	while (++count != SCP_AWAKE_TIMEOUT) {
-		if (!(readl(INFRA_IRQ_SET) & (1 << AP_AWAKE_UNLOCK))) {
+		tmp = readl(INFRA_IRQ_SET);
+		if ((tmp & 0xf0) != 0xA0) {
+			pr_notice("scp_awake_unlock: INFRA_IRQ_SET %x\n", tmp);
+			break;
+		}
+		if (!((tmp & 0x0f) & (1 << AP_AWAKE_UNLOCK))) {
 			ret = 0;
 			break;
 		}
 		udelay(10);
 	}
+	/* clear status */
+	writel(0xA0 | (1 << AP_AWAKE_UNLOCK), INFRA_IRQ_CLEAR);
+
 	/* scp unlock awake success*/
 	if (ret != -1) {
-		*scp_awake_count = *scp_awake_count - 1;
-		if (*scp_awake_count < 0) {
-			pr_notice("scp_awake_unlock:%s scp_awake_count=%d NOT SYNC!\n", core_id, *scp_awake_count);
-			*scp_awake_count = 0;
-		}
+		if (*scp_awake_count <= 0)
+			pr_err("scp_awake_unlock:%sawake_count=%d NOT SYNC!\n",
+						 core_id, *scp_awake_count);
+
+		if (*scp_awake_count > 0)
+			*scp_awake_count = *scp_awake_count - 1;
 	}
 
 	/* spinlock context safe */
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
 	mutex_unlock(scp_awake_mutex);
-	/*pr_debug("scp_awake_unlock: %s unlock, count=%d\n", core_id, *scp_awake_count);*/
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_awake_unlock);
@@ -214,10 +227,9 @@ void scp_awake_init(void)
 	for (i = 0; i < SCP_CORE_TOTAL ; i++)
 		scp_awake_counts[i] = 0;
 
-	for (i = 0; i < SCP_CORE_TOTAL ; i++) {
+	for (i = 0; i < SCP_CORE_TOTAL ; i++)
 		mutex_init(&scp_awake_mutexs[i]);
-		wake_lock_init(&scp_awake_wakelock[i], WAKE_LOCK_SUSPEND, "scp awakelock");
-	}
+
 }
 
 void scp_enable_sram(void)
@@ -240,14 +252,12 @@ void scp_enable_sram(void)
 int scp_sys_full_reset(void)
 {
 	pr_debug("[SCP]reset\n");
-
 	/*copy loader to scp sram*/
-	pr_debug("[SCP]copy to sram\n");
-	memcpy_to_scp(SCP_TCM, (const void *)(size_t)scp_loader_base_virt, scp_loader_size);
+	memcpy_to_scp(SCP_TCM, (const void *)(size_t)scp_loader_base_virt
+		, scp_region_info_copy.ap_loader_size);
 	/*set info to sram*/
-	pr_debug("[SCP]set firmware info to sram\n");
-	writel(scp_fw_base_phys, SCP_TCM + 0x408);
-	writel(scp_fw_size, SCP_TCM + 0x40C);
-
+	memcpy_to_scp(scp_region_info, (const void *)&scp_region_info_copy
+			, sizeof(scp_region_info_copy));
 	return 0;
 }
+

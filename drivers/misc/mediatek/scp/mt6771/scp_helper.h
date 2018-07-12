@@ -22,14 +22,15 @@
 /* scp config reg. definition*/
 #define SCP_TCM_SIZE		(scpreg.total_tcmsize)
 #define SCP_A_TCM_SIZE		(scpreg.scp_tcmsize)
-#define SCP_TCM				(scpreg.sram)
-#define SCP_A_SHARE_BUFFER	(scpreg.sram + SCP_A_TCM_SIZE -  SHARE_BUF_SIZE*2)
-
-
+#define SCP_TCM			(scpreg.sram)
+#define SCP_REGION_INFO_OFFSET 0x400
+#define SCP_RTOS_START		(0x800)
+#define SCP_A_SHARE_BUFFER	(scpreg.sram + \
+					SCP_RTOS_START -  SHARE_BUF_SIZE*2)
 
 /* scp dvfs return status flag */
 #define SET_PLL_FAIL		(1)
-#define SET_PMIC_VOLT_FAIL		(2)
+#define SET_PMIC_VOLT_FAIL	(2)
 
 /* This structre need to sync with SCP-side */
 struct SCP_IRQ_AST_INFO {
@@ -86,6 +87,7 @@ struct scp_regs {
 	void __iomem *sram;
 	void __iomem *cfg;
 	void __iomem *clkctrl;
+	void __iomem *l1cctrl;
 	int irq;
 	unsigned int total_tcmsize;
 	unsigned int cfgregsize;
@@ -130,9 +132,20 @@ struct scp_region_info_st {
 	uint32_t ap_loader_size;
 	uint32_t ap_firmware_start;
 	uint32_t ap_firmware_size;
-	uint32_t ap_cached_start;
-	uint32_t ap_cached_size;
-	uint32_t ap_cached_backup_start;
+	uint32_t ap_dram_start;
+	uint32_t ap_dram_size;
+	uint32_t ap_dram_backup_start;
+	/*	This is the size of the structure.
+	 *	It can act as a version number if entries can only be
+	 *	added to (not deleted from) the structure.
+	 *	It should be the first entry of the structure, but for
+	 *	compatibility reason, it is appended here.
+	 */
+	uint32_t struct_size;
+	uint32_t scp_log_thru_ap_uart;
+	uint32_t TaskContext_ptr;
+	uint32_t Il1c_con;
+	uint32_t Dl1c_con;
 };
 
 /* scp device attribute */
@@ -147,7 +160,7 @@ extern struct device_attribute dev_attr_scp_A_status;
 extern struct bin_attribute bin_attr_scp_dump;
 
 /* scp loggger */
-extern int scp_logger_init(phys_addr_t, phys_addr_t);
+extern int scp_logger_init(phys_addr_t start, phys_addr_t limit);
 extern void scp_logger_uninit(void);
 
 extern void scp_logger_stop(void);
@@ -174,8 +187,10 @@ extern int release_scp_semaphore(int flag);
 extern int scp_get_semaphore_3way(int flag);
 extern int scp_release_semaphore_3way(int flag);
 
-extern void memcpy_to_scp(void __iomem *trg, const void *src, int size);
-extern void memcpy_from_scp(void *trg, const void __iomem *src, int size);
+extern void memcpy_to_scp(void __iomem *trg,
+		const void *src, int size);
+extern void memcpy_from_scp(void *trg, const void __iomem *src,
+		int size);
 extern int reset_scp(int reset);
 
 extern phys_addr_t scp_get_reserve_mem_phys(enum scp_reserve_mem_id_t id);
@@ -203,12 +218,11 @@ extern unsigned int scp_set_reset_status(void);
 extern void scp_enable_sram(void);
 extern int scp_sys_full_reset(void);
 #if SCP_RECOVERY_SUPPORT
-extern phys_addr_t scp_loader_base_phys;
 extern phys_addr_t scp_loader_base_virt;
-extern phys_addr_t scp_fw_base_phys;
-extern uint32_t scp_loader_size;
-extern uint32_t scp_fw_size;
 extern unsigned int scp_reset_by_cmd;
+extern struct scp_region_info_st scp_region_info_copy;
 extern struct scp_region_info_st *scp_region_info;
+extern void __iomem *scp_l1c_start_virt;
+
 #endif
 #endif

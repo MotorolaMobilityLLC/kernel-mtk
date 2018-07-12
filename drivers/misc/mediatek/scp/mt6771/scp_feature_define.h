@@ -132,7 +132,9 @@ extern struct scp_feature_tb feature_table[NUM_FEATURE_ID];
 extern struct scp_sub_feature_tb sensor_type_table[NUM_SENSOR_TYPE];
 extern void scp_register_feature(enum feature_id id);
 extern void scp_deregister_feature(enum feature_id id);
-extern void scp_register_sensor(enum feature_id id, enum scp_sensor_id sensor_id);
-extern void scp_deregister_sensor(enum feature_id id, enum scp_sensor_id sensor_id);
+extern void scp_register_sensor(enum feature_id id,
+		enum scp_sensor_id sensor_id);
+extern void scp_deregister_sensor(enum feature_id id,
+		enum scp_sensor_id sensor_id);
 
 #endif
