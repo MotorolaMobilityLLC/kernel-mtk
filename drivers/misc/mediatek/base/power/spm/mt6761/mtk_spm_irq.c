@@ -26,6 +26,7 @@
 #include <mtk_spm.h>
 #include <mtk_spm_irq.h>
 #include <mtk_spm_internal.h>
+#include <mt-plat/mtk_cirq.h>
 
 #if 0 //FIXME
 #include <mtk_spm_vcore_dvfs.h>
@@ -61,6 +62,11 @@ void __attribute__((weak)) mt_cirq_flush(void)
 void __attribute__((weak)) mt_cirq_disable(void)
 {
 	pr_info("[SPM] NO %s !!!\n", __func__);
+}
+
+void __attribute__((weak)) set_wakeup_sources(u32 *list, u32 num_events)
+{
+	pr_info("NO %s !!!\n", __func__);
 }
 
 /***************************************************
@@ -258,6 +264,10 @@ int mtk_spm_irq_register(unsigned int spmirq0)
 	spm_irq_0 = spmirq0;
 
 	mtk_spm_get_edge_trigger_irq();
+
+#ifdef CONFIG_FAST_CIRQ_CLONE_FLUSH
+	set_wakeup_sources(edge_trig_irqs, IRQ_NUMBER);
+#endif
 
 	#if defined(CONFIG_MTK_GIC_V3_EXT)
 	cpu_pm_register_notifier(&mtk_spm_cpu_pm_notifier_block);
