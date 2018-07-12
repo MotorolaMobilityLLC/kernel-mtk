@@ -532,6 +532,11 @@ firmware_class.path=/vendor/firmware";
 		interrupts = <GIC_SPI 271 IRQ_TYPE_EDGE_RISING>;
 	};
 
+	tkcore {
+	    compatible = "trustkernel,tkcore";
+	    interrupts = <GIC_SPI 250 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	timer {
 		compatible = "arm,armv8-timer";
 		interrupt-parent = <&gic>;
