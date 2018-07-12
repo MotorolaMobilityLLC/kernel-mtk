@@ -456,6 +456,9 @@ void usb_phy_switch_to_uart(void)
 	/* Set RG_USB20_DM_100K_EN to 1 */
 	USBPHY_SET32(0x20, (0x1 << 17));
 
+	/* RG_DPPULLDOWN, 1'b0, RG_DMPULLDOWN, 1'b0 */
+	USBPHY_CLR32(0x68, ((0x1 << 6) | (0x1 << 7)));
+
 	/* GPIO Selection */
 	val = readl(ap_gpio_base);
 	writel(val & (~(GPIO_SEL_MASK)), ap_gpio_base);
