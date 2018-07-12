@@ -27,6 +27,7 @@ extern void aee_rr_rec_mcdi_val(int id, unsigned int val);
 
 /* mtk_menu */
 unsigned int get_menu_predict_us(void);
+unsigned int get_menu_next_timer_us(void);
 
 /* main */
 int wfi_enter(int cpu);

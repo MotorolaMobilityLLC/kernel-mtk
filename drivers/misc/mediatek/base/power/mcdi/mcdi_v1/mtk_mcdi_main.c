@@ -188,6 +188,23 @@ static void mcdi_stress_stop(void)
 	msleep(20);
 }
 
+static void mcdi_idle_state_setting(unsigned long idx, bool enable)
+{
+	struct cpuidle_driver *tbl = NULL;
+	int cpu;
+
+	if (idx >= NF_MCDI_STATE)
+		return;
+
+	for (cpu = 0; cpu < NF_CPU; cpu++) {
+
+		if (tbl == mcdi_state_tbl_get(cpu))
+			continue;
+
+		tbl->states[idx].disabled = !enable;
+	}
+}
+
 /* debugfs */
 static char dbg_buf[4096] = { 0 };
 static char cmd_buf[512] = { 0 };
@@ -335,16 +352,39 @@ static ssize_t mcdi_info_read(struct file *filp,
 		}
 		mcdi_log("CPU Type = %d : cpu %d", cpu_type_idx_get(cpu), cpu);
 	}
+	mcdi_log("\n\ncheck cluster residnecy each core : %s",
+			get_mcdi_cluster_dev()->chk_res_each_core ?
+				"yes" : "no");
+	mcdi_log("\ncluster residency check fail rate : %d%% (%d/%d)",
+			(!get_mcdi_cluster_dev()->chk_res_cnt) ? 0 :
+				(100 * get_mcdi_cluster_dev()->chk_res_fail)
+				/ get_mcdi_cluster_dev()->chk_res_cnt,
+			get_mcdi_cluster_dev()->chk_res_fail,
+			get_mcdi_cluster_dev()->chk_res_cnt);
+
+	get_mcdi_cluster_dev()->chk_res_fail = 0;
+	get_mcdi_cluster_dev()->chk_res_cnt = 0;
+
+	mcdi_log("\ncluster timer enable : %s",
+			get_mcdi_cluster_dev()->tmr_en ? "yes" : "no");
 	mcdi_log("\n\n");
 
-	mcdi_log("==== usage ====\n");
-	mcdi_log("echo [%s] [%s] [%s] [%s] > /proc/mcdi/info\n",
-			"latency|residency",
-			"CPU Type",
-			"idle state",
-			"val(dec)");
-	mcdi_log("echo stress [0|1] > /proc/mcdi/info\n");
-	mcdi_log("echo timer [time_us(dec)] > /proc/mcdi/info\n");
+	mcdi_log("Usage: echo [command line] > /proc/mcdi/info\n");
+	mcdi_log("command line:\n");
+	mcdi_log("  %-40s : set idle state latency value\n",
+				"latency [CPU Type] [state] [val(dec)]");
+	mcdi_log("  %-40s : set idle state residency value\n",
+				"residency [CPU Type] [state] [val(dec)]");
+	mcdi_log("  %-40s : enable/disable idle state\n",
+				"state [idle state] [0|1]");
+	mcdi_log("  %-40s : enable disable stress test\n",
+				"stress[0|1]");
+	mcdi_log("  %-40s : set stress timer interval\n",
+				"timer [time_us(dec)]");
+	mcdi_log("  %-40s : check cluster residency cores each (CPC mode)\n",
+				"cluster_res [0|1]");
+	mcdi_log("  %-40s : enable/disable timer when enter cluster off\n",
+				"hrtimer [0|1]");
 
 	len = p - dbg_buf;
 
@@ -427,6 +467,13 @@ parse_cmd:
 
 		return count;
 
+	} else if (!strncmp(cmd_str, "state", sizeof("state"))) {
+
+		if (param_cnt == 2)
+			mcdi_idle_state_setting(param_0, !!param_2);
+
+		return count;
+
 	} else if (!strncmp(cmd_str, "stress", sizeof("stress"))) {
 
 		if (param_cnt == 1) {
@@ -435,6 +482,20 @@ parse_cmd:
 			else
 				mcdi_stress_stop();
 		}
+
+		return count;
+
+	} else if (!strncmp(cmd_str, "cluster_res", sizeof("cluster_res"))) {
+
+		if (param_cnt == 1)
+			get_mcdi_cluster_dev()->chk_res_each_core = !!param_0;
+
+		return count;
+
+	} else if (!strncmp(cmd_str, "hrtimer", sizeof("hrtimer"))) {
+
+		if (param_cnt == 1)
+			get_mcdi_cluster_dev()->tmr_en = !!param_0;
 
 		return count;
 
