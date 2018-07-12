@@ -126,11 +126,11 @@ struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK]
 	},
 	/* V5_1_T */
 	[6] = {
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_l_FY6),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_l_FY2),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_b_FY6),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_l_FY6),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_l_FY2),
 		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_b_FY6),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY6),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY2),
 	},
 };
 /* Upower will know how to apply voltage that comes from EEM */
