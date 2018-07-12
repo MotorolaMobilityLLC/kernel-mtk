@@ -35,6 +35,7 @@
 /*#include <mach/hardware.h>*/
 /* #include <mach/mt6593_pll.h> */
 #include "camera_owe.h"
+#include "engine_request.h"
 /*#include <mach/irqs.h>*/
 /* #include <mach/mt_reg_base.h> */
 
@@ -117,7 +118,7 @@ struct OWE_CLK_STRUCT owe_clk;
 
 /* #define OWE_WAITIRQ_LOG  */
 #define OWE_USE_GCE
-/* #define OWE_DEBUG_USE  */
+/* #define OWE_DEBUG_USE */
 /* #define OWE_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA, because the velocity of FPGA is so slow. */
 #define MyTag "[OWE]"
@@ -126,7 +127,7 @@ struct OWE_CLK_STRUCT owe_clk;
 #define LOG_VRB(format,	args...)    pr_debug(MyTag format, ##args)
 
 #ifdef OWE_DEBUG_USE
-#define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
+#define LOG_DBG(format, args...)    pr_info(MyTag format, ##args)
 #else
 #define LOG_DBG(format, args...)
 #endif
@@ -183,12 +184,15 @@ struct OWE_CLK_STRUCT owe_clk;
 #define OCC_IS_BUSY     0x1
 #define WMFE_IS_BUSY    0x2
 
+#define ENGINE
 
 /* static irqreturn_t OWE_Irq_CAM_A(signed int  Irq,void *DeviceId); */
 static irqreturn_t ISP_Irq_OWE(signed int Irq, void *DeviceId);
 #ifdef OWE_USE_GCE
 static signed int ConfigOCCHW(struct OWE_OCCConfig *pOccConfig);
+#ifndef ENGINE
 static signed int ConfigWMFEHW(struct OWE_WMFEConfig *pWmfeConfig);
+#endif
 #endif
 static void OWE_ScheduleOccWork(struct work_struct *data);
 static void OWE_ScheduleWmfeWork(struct work_struct *data);
@@ -346,6 +350,10 @@ struct WMFE_CONFIG_STRUCT {
 static struct WMFE_REQUEST_RING_STRUCT g_WMFE_ReqRing;
 static struct WMFE_CONFIG_STRUCT g_WmfeEnqueReq_Struct;
 static struct WMFE_CONFIG_STRUCT g_WmfeDequeReq_Struct;
+#ifdef ENGINE
+static struct engine_requests wmfe_reqs;
+static struct OWE_WMFERequest kWmfeReq;
+#endif
 
 
 /*******************************************************************************
@@ -382,6 +390,7 @@ struct OWE_INFO_STRUCT {
 	wait_queue_head_t WaitQueueHead;
 	struct work_struct ScheduleOccWork;
 	struct work_struct ScheduleWmfeWork;
+	struct workqueue_struct *wkqueue;
 	unsigned int UserCount;	/* User Count */
 	unsigned int DebugMask;	/* Debug Mask */
 	signed int IrqNum;
@@ -980,7 +989,7 @@ static bool UpdateOCC(pid_t *ProcessID)
 	return bFinishRequest;
 }
 
-
+#ifndef ENGINE
 static bool ConfigWMFERequest(signed int ReqIdx)
 {
 	unsigned int j;
@@ -1014,6 +1023,7 @@ static bool ConfigWMFERequest(signed int ReqIdx)
 
 	return MTRUE;
 }
+#endif
 
 #ifdef OWE_USE_GCE
 static signed int ConfigOCCHW(struct OWE_OCCConfig *pOccConfig)
@@ -1098,6 +1108,7 @@ static signed int ConfigOCCHW(struct OWE_OCCConfig *pOccConfig)
 }
 #endif
 
+#ifndef ENGINE
 static bool UpdateWMFE(pid_t *ProcessID)
 {
 	unsigned int i, j, next_idx;
@@ -1159,8 +1170,152 @@ static bool UpdateWMFE(pid_t *ProcessID)
 
 	return bFinishRequest;
 }
+#endif
+
+signed int wmfe_enque_cb(struct frame *frames, void *req)
+{
+	unsigned int f, fcnt;
+	/*TODO: define engine request struct */
+	struct OWE_WMFERequest *_req;
+	struct OWE_WMFEConfig *pcfg;
+
+	_req = (struct OWE_WMFERequest *) req;
+
+	if (frames == NULL || _req == NULL)
+		return -1;
+
+	/*TODO: m_ReqNum is FrmNum; FIFO only thus f starts from 0 */
+	fcnt = _req->m_ReqNum;
+	for (f = 0; f < fcnt; f++) {
+		memcpy(frames[f].data, &_req->m_pWmfeConfig[f], sizeof(struct OWE_WMFEConfig));
+		pcfg = &_req->m_pWmfeConfig[f];
+	}
+
+	return 0;
+}
+
+signed int wmfe_deque_cb(struct frame *frames, void *req)
+{
+	unsigned int f, fcnt;
+	struct OWE_WMFERequest *_req;
+	struct OWE_WMFEConfig *pcfg;
+
+	_req = (struct OWE_WMFERequest *) req;
+
+	if (frames == NULL || _req == NULL)
+		return -1;
+
+	/*TODO: m_ReqNum is FrmNum; FIFO only thus f starts from 0 */
+	fcnt = _req->m_ReqNum;
+	for (f = 0; f < fcnt; f++) {
+		memcpy(&_req->m_pWmfeConfig[f], frames[f].data, sizeof(struct OWE_WMFEConfig));
+		LOG_DBG("[%s]request dequeued frame(%d/%d).", __func__, f, fcnt);
+		pcfg = &_req->m_pWmfeConfig[f];
+	}
+
+	return 0;
+}
+
+signed int CmdqWMFEHW(struct frame *frame)
+{
+	struct OWE_WMFEConfig *pWmfeCfg;
+	struct cmdqRecStruct *handle;
+	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_OWE);
+	unsigned int i = 0;
+
+	if (frame == NULL || frame->data == NULL)
+		return -1;
+
+	LOG_DBG("%s request sent to CMDQ driver", __func__);
+	pWmfeCfg = (struct OWE_WMFEConfig *) frame->data;
+
+	if (OWE_DBG_DBGLOG == (OWE_DBG_DBGLOG & OWEInfo.DebugMask)) {
+
+		LOG_DBG("ConfigWMFEHW Start!\n");
+		for (i = 0; i < pWmfeCfg->WmfeCtrlSize; i++) {
+			LOG_DBG("WMFE_CTRL_%d_REG:0x%x!\n", i, pWmfeCfg->WmfeCtrl[i].WMFE_CTRL);
+			LOG_DBG("WMFE_SIZE_%d_REG:0x%x!\n", i, pWmfeCfg->WmfeCtrl[i].WMFE_SIZE);
+			LOG_DBG("WMFE_IMGI_BASE_ADDR_%d_REG:0x%x!\n",
+				i, pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_BASE_ADDR);
+			LOG_DBG("WMFE_IMGI_STRIDE_%d_REG:0x%x!\n", i, pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_STRIDE);
+			LOG_DBG("WMFE_DPI_BASE_ADDR_%d_REG:0x%x!\n",
+				i, pWmfeCfg->WmfeCtrl[i].WMFE_DPI_BASE_ADDR);
+			LOG_DBG("WMFE_DPI_STRIDE_%d_REG:0x%x!\n", i, pWmfeCfg->WmfeCtrl[i].WMFE_DPI_STRIDE);
+			LOG_DBG("WMFE_TBLI_BASE_ADDR_%d_REG:0x%x!\n",
+				i, pWmfeCfg->WmfeCtrl[i].WMFE_TBLI_BASE_ADDR);
+			LOG_DBG("WMFE_TBLI_STRIDE_%d_REG:0x%x!\n", i, pWmfeCfg->WmfeCtrl[i].WMFE_TBLI_STRIDE);
+			LOG_DBG("WMFE_MASKI_BASE_ADDR_%d_REG:0x%x!\n",
+				i, pWmfeCfg->WmfeCtrl[i].WMFE_MASKI_BASE_ADDR);
+			LOG_DBG("WMFE_MASKI_STRIDE_%d_REG:0x%x!\n", i, pWmfeCfg->WmfeCtrl[i].WMFE_MASKI_STRIDE);
+			LOG_DBG("WMFE_DPO_BASE_ADDR_%d_REG:0x%x!\n",
+				i, pWmfeCfg->WmfeCtrl[i].WMFE_DPO_BASE_ADDR);
+			LOG_DBG("WMFE_DPO_STRIDE_%d_REG:0x%x!\n", i, pWmfeCfg->WmfeCtrl[i].WMFE_DPO_STRIDE);
+		}
+	}
+
+	cmdqRecCreate(CMDQ_SCENARIO_KERNEL_CONFIG_GENERAL, &handle);
+	/* CMDQ driver dispatches CMDQ HW thread and HW thread's priority according to scenario */
+
+	cmdqRecSetEngine(handle, engineFlag);
+
+	cmdqRecReset(handle);
+#ifndef BYPASS_REG
+	/* Use command queue to write register */
+	cmdqRecWrite(handle, OWE_INT_CTL_HW, 0x1, CMDQ_REG_MASK);	/* OWE Interrupt read-clear mode */
+	cmdqRecWrite(handle, OWE_WMFE_INT_CTRL_HW, 0x1, CMDQ_REG_MASK);	/* WMFE Interrupt read-clear mode */
+
+	for (i = 0; i < pWmfeCfg->WmfeCtrlSize; i++) {
+		LOG_DBG("OWE_WMFE_CTRL_%d_REG:0x%x!\n", i, pWmfeCfg->WmfeCtrl[i].WMFE_CTRL);
+
+		if (WMFE_ENABLE == (pWmfeCfg->WmfeCtrl[i].WMFE_CTRL & WMFE_ENABLE)) {
+			cmdqRecWrite(handle, OWE_WMFE_CTRL_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_CTRL, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_SIZE_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_SIZE, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_IMGI_BASE_ADDR_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_BASE_ADDR, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_IMGI_STRIDE_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_STRIDE, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_DPI_BASE_ADDR_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_DPI_BASE_ADDR, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_DPI_STRIDE_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_DPI_STRIDE, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_TBLI_BASE_ADDR_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_TBLI_BASE_ADDR, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_TBLI_STRIDE_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_TBLI_STRIDE, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_MASKI_BASE_ADDR_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_MASKI_BASE_ADDR, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_MASKI_STRIDE_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_MASKI_STRIDE, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_DPO_BASE_ADDR_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_DPO_BASE_ADDR, CMDQ_REG_MASK);
+			cmdqRecWrite(handle, OWE_WMFE_DPO_STRIDE_0_HW + (i*0x40),
+				pWmfeCfg->WmfeCtrl[i].WMFE_DPO_STRIDE, CMDQ_REG_MASK);
+		}
+	}
+#endif
+	cmdqRecWrite(handle, OWE_WMFE_START_HW, 0x1, CMDQ_REG_MASK);	/* OWE Interrupt read-clear mode */
+
+	cmdqRecWait(handle, CMDQ_EVENT_WMF_EOF);
+	cmdqRecWrite(handle, OWE_WMFE_START_HW, 0x0, CMDQ_REG_MASK);	/* OWE Interrupt read-clear mode */
+	/* non-blocking API, Please  use cmdqRecFlushAsync() */
+	cmdqRecFlushAsync(handle);
+	cmdqRecReset(handle);	/* if you want to re-use the handle, please reset the handle */
+	cmdqRecDestroy(handle);	/* recycle the memory */
+
+	return 0;
+}
+static const struct engine_ops wmfe_ops = {
+	.req_enque_cb = wmfe_enque_cb,
+	.req_deque_cb = wmfe_deque_cb,
+	.frame_handler = CmdqWMFEHW,
+	.req_feedback_cb = NULL,
+};
+
 
 #ifdef OWE_USE_GCE
+#ifndef ENGINE
 static signed int ConfigWMFEHW(struct OWE_WMFEConfig *pWmfeCfg)
 {
 	struct cmdqRecStruct *handle;
@@ -1253,7 +1408,7 @@ static signed int ConfigWMFEHW(struct OWE_WMFEConfig *pWmfeCfg)
 	return 0;
 }
 #endif
-
+#endif
 /*
  *
  */
@@ -1480,6 +1635,9 @@ static signed int OWE_DumpReg(void)
 		}
 	}
 
+#ifdef ENGINE
+	request_dump(&wmfe_reqs);
+#else
 	LOG_INF("WMFE:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n", g_WMFE_ReqRing.HWProcessIdx,
 		g_WMFE_ReqRing.WriteIdx, g_WMFE_ReqRing.ReadIdx);
 
@@ -1503,7 +1661,7 @@ static signed int OWE_DumpReg(void)
 		}
 
 	}
-
+#endif
 
 
 	LOG_INF("- X.");
@@ -1903,7 +2061,7 @@ static signed int OWE_WaitIrq(struct OWE_WAIT_IRQ_STRUCT *WaitIrq)
 	    &&
 	    (!OWE_GetIRQState
 	     (WaitIrq->Type, WaitIrq->UserKey, WaitIrq->Status, whichReq, WaitIrq->ProcessID))) {
-		LOG_DBG("waked up by sys. signal,ret(%d),irq Type/User/Sts/whReq/Pid(0x%x/%d/0x%x/%d/%d)\n",
+		LOG_INF("waked up by sys. signal,ret(%d),irq Type/User/Sts/whReq/Pid(0x%x/%d/0x%x/%d/%d)\n",
 		     Timeout, WaitIrq->Type, WaitIrq->UserKey, WaitIrq->Status, whichReq,
 		     WaitIrq->ProcessID);
 		Ret = -ERESTARTSYS;	/* actually it should be -ERESTARTSYS */
@@ -1998,7 +2156,9 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	struct OWE_OCCRequest owe_OccReq;
 	struct OWE_WMFERequest owe_WmfeReq;
 	signed int OccWriteIdx = 0;
+#ifndef ENGINE
 	signed int WmfeWriteIdx = 0;
+#endif
 	int idx;
 	struct OWE_USER_INFO_STRUCT *pUserInfo;
 	int dequeNum;
@@ -2086,8 +2246,11 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				    ("IRQ clear(%d), type(%d), userKey(%d), timeout(%d), status(%d)\n",
 				     IrqInfo.Clear, IrqInfo.Type, IrqInfo.UserKey, IrqInfo.Timeout,
 				     IrqInfo.Status);
+
 				IrqInfo.ProcessID = pUserInfo->Pid;
 				Ret = OWE_WaitIrq(&IrqInfo);
+				if (Ret < 0)
+					OWE_DumpReg();
 
 				if (copy_to_user
 				    ((void *)Param, &IrqInfo, sizeof(struct OWE_WAIT_IRQ_STRUCT)) != 0) {
@@ -2284,9 +2447,10 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case OWE_WMFE_ENQUE_REQ:
 		{
-			signed int WIdx;
-			signed int FWRIdx;
-
+#ifndef ENGINE
+		signed int WIdx;
+		signed int FWRIdx;
+#endif
 		if (copy_from_user(&owe_WmfeReq, (void *)Param, sizeof(struct OWE_WMFERequest)) ==
 		    0) {
 			LOG_DBG("WMFE_ENQNUE_NUM:%d, pid:%d\n", owe_WmfeReq.m_ReqNum,
@@ -2317,6 +2481,7 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 			spin_lock_irqsave(&(OWEInfo.SpinLockIrq[OWE_IRQ_TYPE_INT_OWE_ST]),
 					  flags);
+#ifndef ENGINE
 			WIdx = g_WMFE_ReqRing.WriteIdx;
 			FWRIdx = g_WMFE_ReqRing.WMFEReq_Struct[WIdx].FrameWRIdx;
 			if (OWE_REQUEST_STATE_EMPTY ==
@@ -2343,13 +2508,26 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				     g_WMFE_ReqRing.WMFEReq_Struct[WIdx].enqueReqNum);
 			}
 			g_WMFE_ReqRing.WMFEReq_Struct[WIdx].FrameWRIdx = FWRIdx;
+#else
+			kWmfeReq.m_ReqNum = owe_WmfeReq.m_ReqNum;
+			kWmfeReq.m_pWmfeConfig = g_WmfeEnqueReq_Struct.WmfeFrameConfig;
+			enque_request(&wmfe_reqs, kWmfeReq.m_ReqNum, &kWmfeReq, pUserInfo->Pid);
+#endif
+
 			spin_unlock_irqrestore(&
 					       (OWEInfo.
 						SpinLockIrq[OWE_IRQ_TYPE_INT_OWE_ST]),
 					       flags);
 			LOG_DBG("ConfigWMFE Request!!\n");
+#ifndef ENGINE
 			ConfigWMFERequest(WmfeWriteIdx);
-
+#else
+			if (!request_running(&wmfe_reqs)) {
+				LOG_DBG("direct request_handler\n");
+				request_handler(&wmfe_reqs,
+						&(OWEInfo.SpinLockIrq[OWE_IRQ_TYPE_INT_OWE_ST]));
+			}
+#endif
 			mutex_unlock(&gOweWmfeMutex);
 		} else {
 			LOG_ERR("OWE_OCC_ENQUE copy_from_user failed\n");
@@ -2360,15 +2538,17 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 	case OWE_WMFE_DEQUE_REQ:
 		{
+#ifndef ENGINE
 			signed int FrameRDIdx;
 			signed int ReadIdx;
-
+#endif
 			if (copy_from_user(&owe_WmfeReq, (void *)Param, sizeof(struct OWE_WMFERequest)) ==
 			    0) {
 				mutex_lock(&gOweWmfeDequeMutex);	/* Protect the Multi Process */
 
 				spin_lock_irqsave(&(OWEInfo.SpinLockIrq[OWE_IRQ_TYPE_INT_OWE_ST]),
 						  flags);
+#ifndef ENGINE
 				ReadIdx = g_WMFE_ReqRing.ReadIdx;
 				FrameRDIdx = g_WMFE_ReqRing.WMFEReq_Struct[ReadIdx].FrameRDIdx;
 				if (OWE_REQUEST_STATE_FINISHED ==
@@ -2405,6 +2585,12 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_WMFE_ReqRing.WMFEReq_Struct[ReadIdx].enqueReqNum = 0;
 				g_WMFE_ReqRing.ReadIdx = (ReadIdx + 1) % _SUPPORT_MAX_OWE_REQUEST_RING_SIZE_;
 				LOG_INF("WMFE deq %d done\n", ReadIdx);
+#else
+				kWmfeReq.m_pWmfeConfig = g_WmfeDequeReq_Struct.WmfeFrameConfig;
+				deque_request(&wmfe_reqs, &kWmfeReq.m_ReqNum, &kWmfeReq);
+				dequeNum = kWmfeReq.m_ReqNum;
+				owe_WmfeReq.m_ReqNum = dequeNum;
+#endif
 
 				spin_unlock_irqrestore(&
 						       (OWEInfo.
@@ -2880,12 +3066,16 @@ static signed int OWE_open(struct inode *pInode, struct file *pFile)
 	OWEInfo.IrqInfo.OccIrqCnt = 0;
 	OWEInfo.IrqInfo.WmfeIrqCnt = 0;
 
-
 #ifdef KERNEL_LOG
     /* In EP, Add OWE_DBG_WRITE_REG for debug. Should remove it after EP */
 	OWEInfo.DebugMask = (OWE_DBG_INT | OWE_DBG_DBGLOG | OWE_DBG_WRITE_REG);
 #endif
 	/*  */
+#ifdef ENGINE
+	register_requests(&wmfe_reqs, sizeof(struct OWE_WMFEConfig));
+	set_engine_ops(&wmfe_reqs, &wmfe_ops);
+#endif
+
 EXIT:
 
 
@@ -2933,8 +3123,11 @@ static signed int OWE_release(struct inode *pInode, struct file *pFile)
 	LOG_INF("OWE release g_u4EnableClockCount: %d", g_u4EnableClockCount);
 
 	/*  */
-EXIT:
+#ifdef ENGINE
+	unregister_requests(&wmfe_reqs);
+#endif
 
+EXIT:
 
 	LOG_DBG("- X. UserCount: %d.", OWEInfo.UserCount);
 	return 0;
@@ -3207,6 +3400,9 @@ static signed int OWE_probe(struct platform_device *pDev)
 		init_waitqueue_head(&OWEInfo.WaitQueueHead);
 		INIT_WORK(&OWEInfo.ScheduleOccWork, OWE_ScheduleOccWork);
 		INIT_WORK(&OWEInfo.ScheduleWmfeWork, OWE_ScheduleWmfeWork);
+		OWEInfo.wkqueue = create_singlethread_workqueue("WMFE-CMDQ-WQ");
+		if (!OWEInfo.wkqueue)
+			LOG_ERR("NULL WMFE-CMDQ-WQ\n");
 
 		wake_lock_init(&OWE_wake_lock, WAKE_LOCK_SUSPEND, "owe_lock_wakelock");
 
@@ -3242,6 +3438,10 @@ static signed int OWE_remove(struct platform_device *pDev)
 	int i;
 	/*  */
 	LOG_DBG("- E.");
+
+	destroy_workqueue(OWEInfo.wkqueue);
+	OWEInfo.wkqueue = NULL;
+
 	/* unregister char driver. */
 	OWE_UnregCharDev();
 
@@ -3836,6 +4036,12 @@ static void OWE_ScheduleWmfeWork(struct work_struct *data)
 {
 	if (OWE_DBG_DBGLOG & OWEInfo.DebugMask)
 		LOG_DBG("- E.");
+#ifdef ENGINE
+	request_handler(&wmfe_reqs, &(OWEInfo.SpinLockIrq[OWE_IRQ_TYPE_INT_OWE_ST]));
+	if (!request_running(&wmfe_reqs))
+		LOG_DBG("[%s]no more requests", __func__);
+#endif
+
 }
 
 
@@ -3886,9 +4092,24 @@ static irqreturn_t ISP_Irq_OWE(signed int Irq, void *DeviceId)
 #ifdef __OWE_KERNEL_PERFORMANCE_MEASURE__
 		mt_kernel_trace_begin("owe_wmfe_irq");
 #endif
+
+#ifndef ENGINE
 		bResulst = UpdateWMFE(&ProcessID);
+#else
+		if (update_request(&wmfe_reqs, &ProcessID) == 0)
+			bResulst = MTRUE;
+#endif
 		if (bResulst == MTRUE) {
-			schedule_work(&OWEInfo.ScheduleWmfeWork);
+			#ifndef ENGINE
+			/* schedule_work(&OWEInfo.ScheduleWmfeWork); */
+			queue_work(OWEInfo.wkqueue, &OWEInfo.ScheduleWmfeWork);
+			#else
+			#if REQUEST_REGULATION == REQUEST_BASE_REGULATION
+			/* schedule_work(&&OWEInfo.ScheduleWmfeWork); */
+			queue_work(OWEInfo.wkqueue, &OWEInfo.ScheduleWmfeWork);
+			#endif
+			#endif
+
 			OWEInfo.IrqInfo.Status[OWE_IRQ_TYPE_INT_OWE_ST] |= OWE_WMFE_INT_ST;
 			OWEInfo.IrqInfo.ProcessID[OWE_PROCESS_ID_WMFE] = ProcessID;
 			OWEInfo.IrqInfo.WmfeIrqCnt++;
@@ -3920,6 +4141,11 @@ static irqreturn_t ISP_Irq_OWE(signed int Irq, void *DeviceId)
 		       Irq, OWE_INT_STATUS_HW, OweIntStatus, bResulst, OccStatus, WmfeStatus,
 		       OWEInfo.IrqInfo.OccIrqCnt, OWEInfo.IrqInfo.WmfeIrqCnt,
 		       OWEInfo.WriteReqIdx, OWEInfo.ReadReqIdx);
+
+	#if defined(ENGINE) && (REQUEST_REGULATION == FRAME_BASE_REGULATION)
+	/* schedule_work(&OWEInfo.ScheduleWmfeWork); */
+	queue_work(OWEInfo.wkqueue, &OWEInfo.ScheduleWmfeWork);
+	#endif
 
 	if (OweIntStatus & OWE_INT_ST)
 		tasklet_schedule(OWE_tasklet[OWE_IRQ_TYPE_INT_OWE_ST].pOWE_tkt);
