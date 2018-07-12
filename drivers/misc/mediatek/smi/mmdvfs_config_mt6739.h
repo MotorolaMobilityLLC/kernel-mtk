@@ -96,12 +96,13 @@ struct mmdvfs_clk_hw_map mt6739_mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = 
 #define MT6739_MMDVFS_SENSOR_MIN (8000000)
 /* A.1 [LP4 2-ch] Scenarios of each MM DVFS Step (force kicker) */
 /* OPP 0 scenarios */
-#define MT6739_MMDVFS_OPP0_NUM 10
+#define MT6739_MMDVFS_OPP0_NUM 11
 struct mmdvfs_profile mt6739_mmdvfs_opp0_profiles[MT6739_MMDVFS_OPP0_NUM] = {
 	{"ICFP", SMI_BWC_SCEN_ICFP, {0, 0, 0}, {0, 0, 0 } },
 	{"Full Sensor Preview (ZSD)", SMI_BWC_SCEN_CAM_PV, {MT6739_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 	{"Full Sensor Capture (ZSD)", SMI_BWC_SCEN_CAM_CP, {MT6739_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 	{"Full Sensor Camera Recording", SMI_BWC_SCEN_VR, {MT6739_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
+	{"VSS", SMI_BWC_SCEN_VSS, {MT6739_MMDVFS_SENSOR_MIN, 0, 0}, {0, 0, 0 } },
 	{"PIP Feature Preview", SMI_BWC_SCEN_CAM_PV, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
 	{"PIP Feature Capture", SMI_BWC_SCEN_CAM_CP, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
 	{"PIP Feature Recording", SMI_BWC_SCEN_VR, {0, MMDVFS_CAMERA_MODE_FLAG_PIP, 0}, {0, 0, 0 } },
