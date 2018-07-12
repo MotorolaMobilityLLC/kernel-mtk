@@ -1176,12 +1176,17 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module,
 	return 1;
 }
 
-static void sBCH_enable(struct OVL_CONFIG_STRUCT *cfg, int *set_reg,
-			struct sbch *data)
+static void sBCH_enable(enum DISP_MODULE_ENUM module,
+			struct OVL_CONFIG_STRUCT *cfg, int *set_reg,
+			struct sbch *data,
+			struct disp_ddp_path_config *pConfig)
 {
 	int update = 0;
 	int cnst_en = 1;
 	int trans_en = 0;
+	int is_PRBGA_format = 0;
+	unsigned int status = 0;
+	unsigned int trans_invalid_val = 0;
 
 	switch (cfg->fmt) {
 	case UFMT_RGBA4444:
@@ -1190,15 +1195,73 @@ static void sBCH_enable(struct OVL_CONFIG_STRUCT *cfg, int *set_reg,
 	case UFMT_BGRA8888:
 	case UFMT_ARGB8888:
 	case UFMT_ABGR8888:
+		trans_en = cfg->aen ? 1 : 0;
+		break;
 	case UFMT_PARGB8888:
 	case UFMT_PABGR8888:
 	case UFMT_PRGBA8888:
 	case UFMT_PBGRA8888:
-		trans_en = cfg->aen ? 1 : 0;
+		is_PRBGA_format = 1;
 		break;
 	default:
 		trans_en = 0;
 		break;
+	}
+
+	/* RGBX format, can't set sbch_trans_en to 1 */
+	if (cfg->const_bld)
+		trans_en = 0;
+
+	/* PRGBA format */
+	if (is_PRBGA_format == 1) {
+		if (data->sbch_en_cnt == SBCH_EN_NUM) {
+			pConfig->read_dum_reg[module] = 1;
+		} else if (data->sbch_en_cnt == SBCH_EN_NUM + 1) {
+
+			if (primary_display_is_video_mode())
+				cmdqBackupReadSlot(pgc->ovl_status_info,
+						0, &status);
+			if (!(0x01 & status)) {
+				cmdqBackupReadSlot(pgc->ovl_sbch_trans_invalid,
+					module, &trans_invalid_val);
+
+				if (cfg->ext_layer == -1) {
+					data->trans_invalid =
+						((0x01 << (cfg->phy_layer + 16))
+							& trans_invalid_val);
+
+					DDPDBG(
+						"sbch phy trans_invalid = %x\n",
+						trans_invalid_val);
+
+					if (data->trans_invalid)
+						DDPDBG(
+							"sbch trans phy %d invalid\n",
+							cfg->phy_layer);
+				} else {
+					data->trans_invalid =
+						((0x01 << (cfg->ext_layer + 20))
+							& trans_invalid_val);
+
+					DDPDBG(
+						"sbch ext trans_invalid = %x\n",
+						trans_invalid_val);
+
+
+					if (data->trans_invalid)
+						DDPDBG(
+							"sbch trans ext %d invalid\n",
+							cfg->phy_layer);
+				}
+
+			}
+		}
+
+		/* config sbch_trans_en */
+		if (data->trans_invalid)
+			trans_en = 0;
+		else
+			trans_en = 1;
 	}
 
 	if (cfg->layer_disable_by_partial_update) {
@@ -1245,8 +1308,10 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	data->fmt = cfg->fmt;
 	data->ext_layer_num = ext_layer_num;
 	data->phy_layer = cfg->phy_layer;
+	data->const_bld = cfg->const_bld;
 	data->sbch_en_cnt = 0;
 	data->full_trans_en = 0;
+	data->trans_invalid = 1;
 	data->layer_disable_by_partial_update =
 		cfg->layer_disable_by_partial_update;
 
@@ -1285,7 +1350,8 @@ static unsigned long long full_trans_bw_calc(struct sbch *data,
 				((0x01 << cfg->phy_layer) & dum_val);
 
 			if (data->full_trans_en)
-				DISPMSG("trans layer %d\n", cfg->phy_layer);
+				DISPINFO("layer %d is full transparent\n",
+					cfg->phy_layer);
 		}
 	}
 
@@ -1297,6 +1363,7 @@ static unsigned long long full_trans_bw_calc(struct sbch *data,
 
 	return bw_sum;
 }
+
 static void check_bch_reg(enum DISP_MODULE_ENUM module, int *phy_reg,
 		int *ext_reg, struct disp_ddp_path_config *pConfig)
 {
@@ -1325,8 +1392,8 @@ static void check_bch_reg(enum DISP_MODULE_ENUM module, int *phy_reg,
 	ext_bit_dbg[module] =
 		(ext_reg[UPDATE]|ext_reg[TRANS_EN]|ext_reg[CNST_EN]);
 
-	DDPDBG("set bch%d reg phy:%x -- %x, ext:%x -- %x\n",
-				module,
+	DDPDBG("set bch %s reg phy:%x -- %x, ext:%x -- %x\n",
+				ddp_get_module_name(module),
 				phy_bit_dbg[module], phy_value,
 				ext_bit_dbg[module], ext_value);
 
@@ -1395,7 +1462,8 @@ static int check_ext_update(struct sbch *sbch_data, int ext_num,
 	return 0;
 }
 
-static void ext_layer_bch_en(int *ext_reg, int ext_num,
+static void ext_layer_bch_en(enum DISP_MODULE_ENUM module,
+		int *ext_reg, int ext_num,
 		struct disp_ddp_path_config *pConfig, int *layer,
 		struct sbch *data)
 {
@@ -1406,7 +1474,8 @@ static void ext_layer_bch_en(int *ext_reg, int ext_num,
 					&pConfig->ovl_config[*layer + 1];
 
 		(*layer)++;
-		sBCH_enable(ext_cfg, ext_reg, &data[*layer + 1]);
+		sBCH_enable(module, ext_cfg, ext_reg,
+			&data[*layer + 1], pConfig);
 	}
 }
 
@@ -1437,10 +1506,11 @@ static void ext_layer_compare(struct sbch *sbch_data, int *phy_reg,
 		ext_update = check_ext_update(sbch_data, ext_num, (*layer),
 							pConfig);
 		if (!ext_update) {
-			sBCH_enable(ovl_cfg, phy_reg, &sbch_data[*layer]);
+			sBCH_enable(module, ovl_cfg, phy_reg,
+				&sbch_data[*layer], pConfig);
 
 			/* enable ext layer BCH on this phy */
-			ext_layer_bch_en(ext_reg, ext_num, pConfig,
+			ext_layer_bch_en(module, ext_reg, ext_num, pConfig,
 						layer, &sbch_data[*layer]);
 			return;
 		}
@@ -1466,7 +1536,8 @@ static void layer_no_update(struct sbch *sbch_data, int *phy_reg,
 
 	/*  the phy layer don't have ext layer, it can use BCH */
 	if (!ext_num && !sbch_data[*layer].ext_layer_num) {
-		sBCH_enable(ovl_cfg, phy_reg, &sbch_data[*layer]);
+		sBCH_enable(module, ovl_cfg, phy_reg,
+			&sbch_data[*layer], pConfig);
 		*bw_sum += full_trans_bw_calc(&sbch_data[*layer],
 					module, ovl_cfg, pConfig);
 	} else if (!ext_num && sbch_data[*layer].ext_layer_num) {
@@ -1525,7 +1596,25 @@ static unsigned long long sbch_calc(enum DISP_MODULE_ENUM module,
 			i == primary_display_get_option("ASSERT_LAYER"))
 			continue;
 
-		/* the layer address,height,fmt all don't change,
+		DDPDBG(
+			"sbch pre L%d, %lx, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+			i, sbch_data[i].pre_addr,
+			sbch_data[i].dst_x, sbch_data[i].dst_y,
+			sbch_data[i].dst_w, sbch_data[i].dst_h,
+			sbch_data[i].height, sbch_data[i].width,
+			sbch_data[i].fmt, sbch_data[i].phy_layer,
+			sbch_data[i].const_bld);
+
+		DDPDBG(
+			"sbch now L%d, %lx, %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+			i, ovl_cfg->real_addr,
+			ovl_cfg->real_dst_x, ovl_cfg->real_dst_y,
+			ovl_cfg->real_dst_w, ovl_cfg->real_dst_h,
+			ovl_cfg->src_h, ovl_cfg->src_w,
+			ovl_cfg->fmt, ovl_cfg->phy_layer,
+			ovl_cfg->const_bld);
+
+		/* the layer address,height,fmt,const bld all don't change,
 		 * maybe use BCH.
 		 */
 		if (sbch_data[i].pre_addr == ovl_cfg->real_addr &&
@@ -1538,7 +1627,8 @@ static unsigned long long sbch_calc(enum DISP_MODULE_ENUM module,
 			sbch_data[i].fmt == ovl_cfg->fmt &&
 			sbch_data[i].phy_layer == ovl_cfg->phy_layer &&
 			sbch_data[i].layer_disable_by_partial_update ==
-			ovl_cfg->layer_disable_by_partial_update) {
+			ovl_cfg->layer_disable_by_partial_update &&
+			sbch_data[i].const_bld == ovl_cfg->const_bld) {
 			if (ovl_cfg->ext_layer == -1)
 				layer_no_update(sbch_data, phy_bit, ext_bit,
 					pConfig, ovl_cfg, &i,
