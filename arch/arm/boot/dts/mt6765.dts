@@ -274,7 +274,7 @@ firmware_class.path=/vendor/firmware";
 		reserve-memory-scp_share {
 			compatible = "mediatek,reserve-memory-scp_share";
 			no-map;
-			size = <0 0x01400000>;
+			size = <0 0x00380000>;
 			alignment = <0 0x1000000>;
 			alloc-ranges = <0 0x40000000 0 0x50000000>;
 		};
