@@ -1122,29 +1122,22 @@ static void crypt_endio(struct bio *clone)
 	unsigned rw = bio_data_dir(clone);
 	int error;
 
-#if defined(CONFIG_MTK_HW_FDE)
-	if (cc->hw_fde == 1)
-		bio_put(clone);
-	else
-#endif
-	{
-		/*
-		 * free the processed pages
-		 */
-		if (rw == WRITE)
-			crypt_free_buffer_pages(cc, clone);
+	/*
+	 * free the processed pages
+	 */
+	if (rw == WRITE)
+		crypt_free_buffer_pages(cc, clone);
 
-		error = clone->bi_error;
-		bio_put(clone);
+	error = clone->bi_error;
+	bio_put(clone);
 
-		if (rw == READ && !error) {
-			kcryptd_queue_crypt(io);
-			return;
-		}
-
-		if (unlikely(error))
-			io->error = error;
+	if (rw == READ && !error) {
+		kcryptd_queue_crypt(io);
+		return;
 	}
+
+	if (unlikely(error))
+		io->error = error;
 
 	crypt_dec_pending(io);
 }
@@ -1178,14 +1171,6 @@ static int kcryptd_io_read(struct dm_crypt_io *io, gfp_t gfp)
 
 	clone_init(io, clone);
 	clone->bi_iter.bi_sector = cc->start + io->sector;
-
-#if defined(CONFIG_MTK_HW_FDE)
-	if (cc->hw_fde == 1) {
-		clone->bi_hw_fde = 1;
-		clone->bi_iter.bi_sector = cc->start + io->sector;
-		clone->bi_key_idx = key_idx;
-	}
-#endif
 
 	generic_make_request(clone);
 	return 0;
@@ -2100,31 +2085,31 @@ static int crypt_map(struct dm_target *ti, struct bio *bio)
 		return DM_MAPIO_REMAPPED;
 	}
 
-	/*
-	 * Check if bio is too large, split as needed.
-	 */
-	if (unlikely(bio->bi_iter.bi_size > (BIO_MAX_PAGES << PAGE_SHIFT)) &&
-	    bio_data_dir(bio) == WRITE)
-		dm_accept_partial_bio(bio, ((BIO_MAX_PAGES << PAGE_SHIFT) >> SECTOR_SHIFT));
-
-	io = dm_per_bio_data(bio, cc->per_bio_data_size);
-	crypt_io_init(io, cc, bio, dm_target_offset(ti, bio->bi_iter.bi_sector));
-	io->ctx.req = (struct ablkcipher_request *)(io + 1);
-
 #if defined(CONFIG_MTK_HW_FDE)
 	if (cc->hw_fde == 1) {
 		/*
 		 * Do what kcryptd_io_read_work() do here directly to
 		 * avoid kworker overhead.
 		 */
-		crypt_inc_pending(io);
-		if (kcryptd_io_read(io, GFP_NOIO)) /* For Read/Write */
-			io->error = -ENOMEM;
-		crypt_dec_pending(io);
+		bio->bi_bdev = cc->dev->bdev;
+		bio->bi_hw_fde = 1;
+		bio->bi_key_idx = key_idx;
+		generic_make_request(bio); /* For Read/Write */
 	}
 	else
 #endif
 	{
+		/*
+		 * Check if bio is too large, split as needed.
+		 */
+		if (unlikely(bio->bi_iter.bi_size > (BIO_MAX_PAGES << PAGE_SHIFT)) &&
+		    bio_data_dir(bio) == WRITE)
+			dm_accept_partial_bio(bio, ((BIO_MAX_PAGES << PAGE_SHIFT) >> SECTOR_SHIFT));
+
+		io = dm_per_bio_data(bio, cc->per_bio_data_size);
+		crypt_io_init(io, cc, bio, dm_target_offset(ti, bio->bi_iter.bi_sector));
+		io->ctx.req = (struct ablkcipher_request *)(io + 1);
+
 		if (bio_data_dir(io->base_bio) == READ) {
 			if (kcryptd_io_read(io, GFP_NOWAIT))
 				kcryptd_queue_read(io);
