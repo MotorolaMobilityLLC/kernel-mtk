@@ -115,9 +115,12 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_HEALTH,
 	POWER_SUPPLY_PROP_PRESENT,
 	POWER_SUPPLY_PROP_TECHNOLOGY,
+	POWER_SUPPLY_PROP_CYCLE_COUNT,
 	POWER_SUPPLY_PROP_CAPACITY,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
+	POWER_SUPPLY_PROP_CURRENT_AVG,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+	POWER_SUPPLY_PROP_CHARGE_FULL,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 	POWER_SUPPLY_PROP_TEMP,
 };
@@ -357,6 +360,9 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
 		val->intval = data->BAT_TECHNOLOGY;
 		break;
+	case POWER_SUPPLY_PROP_CYCLE_COUNT:
+		val->intval = gm.bat_cycle;
+		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		if (gm.fixed_uisoc != 0xffff)
 			val->intval = gm.fixed_uisoc;
@@ -370,9 +376,18 @@ static int battery_get_property(struct power_supply *psy,
 
 		val->intval = fgcurrent * 100;
 		break;
+	case POWER_SUPPLY_PROP_CURRENT_AVG:
+		val->intval = battery_get_bat_avg_current() * 100;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
+		val->intval =
+			fg_table_cust_data.fg_profile[gm.battery_id].q_max
+			* 1000;
+		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-		val->intval = gm.soc;
-		/* using soc as charge_counter */
+		val->intval = gm.ui_soc *
+			fg_table_cust_data.fg_profile[gm.battery_id].q_max
+			* 1000 / 100;
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		val->intval = data->BAT_batt_vol * 1000;
