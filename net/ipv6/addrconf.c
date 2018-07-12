@@ -5447,11 +5447,10 @@ static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
 	addr.in6_u.u6_addr32[0] = 0x000080FE;
 	addr.in6_u.u6_addr32[1] = 0x0;
 	addr.in6_u.u6_addr32[2] = 0x5A005A00;
-	if (flag == 0)
-		addr.in6_u.u6_addr32[3] = 0x22005A00;
-	else
+	if (flag)
 		addr.in6_u.u6_addr32[3] = 0x23005A00;
-
+	else
+		addr.in6_u.u6_addr32[3] = 0x22005A00;
 	if (nla_put_in6_addr(skb, IFA_ADDRESS, &addr) < 0)
 		return -EMSGSIZE;
 
