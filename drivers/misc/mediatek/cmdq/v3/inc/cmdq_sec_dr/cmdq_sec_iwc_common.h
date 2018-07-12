@@ -14,8 +14,10 @@
 #ifndef __CMDQ_SEC_IWC_COMMON_H__
 #define __CMDQ_SEC_IWC_COMMON_H__
 
-/* shared DRAM */
-#define CMDQ_SEC_SHARED_IRQ_RAISED_OFFSET    (0x0) /* bit x = 1 means thread x raise IRQ */
+/* shared DRAM
+ * bit x = 1 means thread x raise IRQ
+ */
+#define CMDQ_SEC_SHARED_IRQ_RAISED_OFFSET (0x0)
 #define CMDQ_SEC_SHARED_THR_CNT_OFFSET (0x100)
 #define CMDQ_SEC_SHARED_TASK_VA_OFFSET (0x200)
 #define CMDQ_SEC_SHARED_OP_OFFSET (0x300)
@@ -32,10 +34,21 @@
 #define CMDQ_SEC_MESSAGE_INST_LEN (8)
 #define CMDQ_SEC_DISPATCH_LEN (8)
 
+#define CMDQ_SEC_ISP_CQ_SIZE	(0x1000)	/* 4k */
+#define CMDQ_SEC_ISP_VIRT_SIZE	(0x6000)	/* 24k */
+#define CMDQ_SEC_ISP_TILE_SIZE	(0x10000)	/* 64k */
+#define CMDQ_SEC_ISP_BPCI_SIZE	(64)		/* 64 byte */
+#define CMDQ_SEC_ISP_LSCI_SIZE	(24576)		/* 24576 byte */
+#define CMDQ_SEC_ISP_LCEI_SIZE	(294912)	/* 384x384x2 byte */
+#define CMDQ_SEC_ISP_DEPI_SIZE	(294912)	/* 384x384x2 byte */
+#define CMDQ_SEC_ISP_DMGI_SIZE	(130560)	/* For Bokeh 480x272 byte */
+#define CMDQ_IWC_ISP_META_CNT	8
+
 enum CMDQ_IWC_ADDR_METADATA_TYPE {
 	CMDQ_IWC_H_2_PA = 0, /* sec handle to sec PA */
 	CMDQ_IWC_H_2_MVA = 1, /* sec handle to sec MVA */
 	CMDQ_IWC_NMVA_2_MVA = 2, /* map normal MVA to secure world */
+	CMDQ_IWC_PH_2_MVA = 3, /* protected handle to sec MVA */
 };
 
 enum CMDQ_SEC_ENG_ENUM {
@@ -58,14 +71,30 @@ enum CMDQ_SEC_ENG_ENUM {
 	CMDQ_SEC_DISP_2L_OVL1,	/* 13 */
 	CMDQ_SEC_DISP_2L_OVL2,	/* 14 */
 
-	CMDQ_SEC_MAX_ENG_COUNT	/* 15 */
+	/* ISP */
+	CMDQ_SEC_ISP_IMGI,	/* 15 */
+	CMDQ_SEC_ISP_VIPI,	/* 16 */
+	CMDQ_SEC_ISP_LCEI,	/* 17 */
+	CMDQ_SEC_ISP_IMG2O,	/* 18 */
+	CMDQ_SEC_ISP_IMG3O,	/* 19 */
+	CMDQ_SEC_ISP_SMXIO,	/* 20 */
+	CMDQ_SEC_DPE,		/* 21 */
+	CMDQ_SEC_OWE,		/* 22 */
+	CMDQ_SEC_WPEI,		/* 23 */
+	CMDQ_SEC_WPEO,		/* 24 */
+	CMDQ_SEC_WPEI2,		/* 25 */
+	CMDQ_SEC_WPEO2,		/* 26 */
+
+	CMDQ_SEC_MAX_ENG_COUNT	/* ALWAYS keep at the end */
 };
 
 /*  */
 /* IWC message */
 /*  */
 struct iwcCmdqAddrMetadata_t {
-	/* [IN]_d, index of instruction. Update its arg_b value to real PA/MVA in secure world */
+	/* [IN]_d, index of instruction. Update its arg_b value to real
+	 * PA/MVA in secure world
+	 */
 	uint32_t instrIndex;
 
 	/*
@@ -85,7 +114,9 @@ struct iwcCmdqAddrMetadata_t {
 
 	uint32_t type;		/* [IN] addr handle type*/
 	uint64_t baseHandle;	/* [IN]_h, secure address handle */
-	uint32_t blockOffset;	/* [IN]_b, block offset from handle(PA) to current block(plane) */
+	uint32_t blockOffset;	/* [IN]_b, block offset from handle(PA) to
+				 * current block(plane)
+				 */
 	uint32_t offset;	/* [IN]_b, buffser offset to secure handle */
 	uint32_t size;		/* buffer size */
 	uint32_t port;		/* hw port id (i.e. M4U port id)*/
@@ -124,9 +155,10 @@ struct iwcCmdqSectraceBuffer_t {
 };
 
 struct iwcCmdqPathResource_t {
-	long long shareMemoyPA; /* use long long for 64 bit compatible support */
+	/* use long long for 64 bit compatible support */
+	long long shareMemoyPA;
 	uint32_t size;
-	bool useNormalIRQ;		/* use normal IRQ in SWd */
+	bool useNormalIRQ; /* use normal IRQ in SWd */
 };
 
 struct iwcCmdqCancelTask_t {
@@ -144,6 +176,28 @@ struct iwcCmdqCancelTask_t {
 	uint32_t pc;
 };
 
+struct iwcCmdqMetaBuf {
+	uint64_t va;
+	uint64_t size;
+};
+
+struct iwcCmdqSecIspMeta {
+	/* ISP share memory buffer */
+	struct iwcCmdqMetaBuf ispBufs[CMDQ_IWC_ISP_META_CNT];
+	uint64_t CqSecHandle;
+	uint32_t CqSecSize;
+	uint32_t CqDesOft;
+	uint32_t CqVirtOft;
+	uint64_t TpipeSecHandle;
+	uint32_t TpipeSecSize;
+	uint32_t TpipeOft;
+	uint64_t BpciHandle;
+	uint64_t LsciHandle;
+	uint64_t LceiHandle;
+	uint64_t DepiHandle;
+	uint64_t DmgiHandle;
+};
+
 struct iwcCmdqCommand_t {
 	/* basic execution data */
 	uint32_t thread;
@@ -154,7 +208,9 @@ struct iwcCmdqCommand_t {
 	uint32_t pVABase[CMDQ_IWC_MAX_CMD_LENGTH];
 
 	/* exec order data */
-	uint32_t waitCookie; /* [IN] index in thread's task list, it should be (nextCookie - 1) */
+	uint32_t waitCookie; /* [IN] index in thread's task list,
+			      * it should be (nextCookie - 1)
+			      */
 	bool resetExecCnt;   /* [IN] reset HW thread */
 
 	/* client info */
@@ -163,21 +219,40 @@ struct iwcCmdqCommand_t {
 
 	/* metadata */
 	struct iwcCmdqMetadata_t metadata;
+	struct iwcCmdqSecIspMeta isp_metadata;
+
+	/* ISP share memory buffer */
+	uint32_t isp_cq_desc[CMDQ_SEC_ISP_CQ_SIZE / sizeof(uint32_t)];
+	uint32_t isp_cq_desc_size;
+	uint32_t isp_cq_virt[CMDQ_SEC_ISP_VIRT_SIZE / sizeof(uint32_t)];
+	uint32_t isp_cq_virt_size;
+	uint32_t isp_tile[CMDQ_SEC_ISP_TILE_SIZE / sizeof(uint32_t)];
+	uint32_t isp_tile_size;
+	uint32_t isp_bpci[CMDQ_SEC_ISP_BPCI_SIZE / sizeof(uint32_t)];
+	uint32_t isp_bpci_size;
+	uint32_t isp_lsci[CMDQ_SEC_ISP_LSCI_SIZE / sizeof(uint32_t)];
+	uint32_t isp_lsci_size;
+	uint32_t isp_lcei[CMDQ_SEC_ISP_LCEI_SIZE / sizeof(uint32_t)];
+	uint32_t isp_lcei_size;
+	uint32_t isp_depi[CMDQ_SEC_ISP_DEPI_SIZE / sizeof(uint32_t)];
+	uint32_t isp_depi_size;
+	uint32_t isp_dmgi[CMDQ_SEC_ISP_DMGI_SIZE / sizeof(uint32_t)];
+	uint32_t isp_dmgi_size;
 
 	/* debug */
 	uint64_t hNormalTask; /* handle to reference task in normal world*/
 };
 
-/*  */
-/* linex kernel and mobicore has their own MMU tables, */
-/* the latter's is used to map world shared memory and physical address */
-/* so mobicore dose not understand linux virtual address mapping. */
-/*  */
-/* if we want to transact a large buffer in TCI/DCI, there are 2 method (both need 1 copy): */
-/* 1. use mc_map, to map normal world buffer to WSM, and pass secure_virt_addr in TCI/DCI buffer */
-/* note mc_map implies a memcopy to copy content from normal world to WSM */
-/* 2. declare a fixed length array in TCI/DCI struct, and its size must be < 1M */
-/*  */
+/* linex kernel and mobicore has their own MMU tables,
+ * the latter's is used to map world shared memory and physical address
+ * so mobicore dose not understand linux virtual address mapping.
+ * if we want to transact a large buffer in TCI/DCI, there are 2 method
+ * (both need 1 copy):
+ * 1. use mc_map, to map normal world buffer to WSM, and pass secure_virt_addr
+ *    in TCI/DCI buffer
+ * note mc_map implies a memcopy to copy content from normal world to WSM
+ * 2. declare a fixed length array in TCI/DCI struct, and its size must be < 1M
+ */
 struct iwcCmdqMessage_t {
 	union {
 		uint32_t cmd;	/* [IN] command id */
@@ -220,6 +295,11 @@ struct iwcCmdqMessage_t {
 #define CMDQ_ERR_INVALID_SECURITY_THREAD (1505)
 #define CMDQ_ERR_PATH_RESOURCE_NOT_READY (1506)
 #define CMDQ_ERR_NULL_TASK (1507)
+#define CMDQ_ERR_HDCP_NOT_ALLOW_ENGINE (1508)
+#define CMDQ_ERR_HDCP_NOT_ALLOW_PATH (1509)
+#define CMDQ_ERR_HDCP_NOT_DISP_REG_PATH (1510)
+#define CMDQ_ERR_SECURITY_INVALID_SEC_PORT_FALG (1511)
+
 /* msee error */
 #define CMDQ_ERR_OPEN_IOCTL_FAILED (1600)
 /* secure access error */

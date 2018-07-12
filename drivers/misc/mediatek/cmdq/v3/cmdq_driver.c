@@ -299,33 +299,80 @@ static void cmdq_driver_process_read_address_request(struct cmdqReadAddressStruc
 
 }
 
+#define CMDQ_PTR_FREE_NULL(ptr) \
+do { \
+	vfree(CMDQ_U32_PTR((ptr))); \
+	(ptr) = 0; \
+} while (0)
+
 static long cmdq_driver_destroy_secure_medadata(struct cmdqCommandStruct *pCommand)
 {
-	if (pCommand->secData.addrMetadatas) {
-		kfree(CMDQ_U32_PTR(pCommand->secData.addrMetadatas));
-		pCommand->secData.addrMetadatas = (cmdqU32Ptr_t) (unsigned long)NULL;
-	}
+	u32 i;
+
+	kfree(CMDQ_U32_PTR(pCommand->secData.addrMetadatas));
+	pCommand->secData.addrMetadatas = 0;
+
+	for (i = 0; i < ARRAY_SIZE(pCommand->secData.ispMeta.ispBufs); i++)
+		CMDQ_PTR_FREE_NULL(pCommand->secData.ispMeta.ispBufs[i].va);
 
 	return 0;
 }
 
-static long cmdq_driver_create_secure_medadata(struct cmdqCommandStruct *pCommand)
-{
 #ifdef CMDQ_SECURE_PATH_SUPPORT
-	void *pAddrMetadatas = NULL;
-	u32 length;
+static s32 cmdq_driver_copy_meta(void *src, void **dest, size_t copy_size,
+	size_t max_size, bool vm)
+{
+	void *meta_buf;
 
-	if (pCommand->secData.addrMetadataCount >= CMDQ_IWC_MAX_ADDR_LIST_LENGTH) {
-		CMDQ_ERR("Metadata %u reach the max allowed number = %u\n",
-			 pCommand->secData.addrMetadataCount, CMDQ_IWC_MAX_ADDR_LIST_LENGTH);
+	if (!copy_size)
+		return -EINVAL;
+
+	if (copy_size > max_size) {
+		CMDQ_ERR("source size exceed:%zu > %zu", copy_size, max_size);
 		return -EFAULT;
 	}
 
+	if (vm)
+		meta_buf = vzalloc(copy_size);
+	else
+		meta_buf = kzalloc(copy_size, GFP_KERNEL);
+	if (!meta_buf) {
+		CMDQ_ERR("allocate size fail:%zu\n", copy_size);
+		return -ENOMEM;
+	}
+	*dest = meta_buf;
+
+	if (copy_from_user(meta_buf, src, copy_size)) {
+		CMDQ_ERR("fail to copy user data\n");
+		return -EFAULT;
+	}
+
+	return 0;
+}
+#endif
+
+static long cmdq_driver_create_secure_medadata(struct cmdqCommandStruct *pCommand)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	u32 length, max_length;
+	void *meta_buf;
+	s32 ret;
+	void *addr_meta = CMDQ_U32_PTR(pCommand->secData.addrMetadatas);
+	void *isp_bufs[ARRAY_SIZE(pCommand->secData.ispMeta.ispBufs)] = {0};
+	u32 i;
+
+	max_length = CMDQ_IWC_MAX_ADDR_LIST_LENGTH * sizeof(struct cmdqSecAddrMetadataStruct);
 	length = pCommand->secData.addrMetadataCount * sizeof(struct cmdqSecAddrMetadataStruct);
 
-	/* verify parameter */
-	if ((pCommand->secData.is_secure == false) && (pCommand->secData.addrMetadataCount != 0)) {
+	/* always clear to prevent free unknown memory */
+	pCommand->secData.addrMetadatas = 0;
+	for (i = 0; i < ARRAY_SIZE(pCommand->secData.ispMeta.ispBufs); i++) {
+		isp_bufs[i] = (void *)pCommand->secData.ispMeta.ispBufs[i].va;
+		pCommand->secData.ispMeta.ispBufs[i].va = 0;
+	}
 
+	/* verify parameter */
+	if (!pCommand->secData.is_secure && pCommand->secData.addrMetadataCount) {
 		/* normal path with non-zero secure metadata */
 		CMDQ_ERR
 		    ("[secData]mismatch secData.is_secure(%d) and secData.addrMetadataCount(%d)\n",
@@ -337,34 +384,48 @@ static long cmdq_driver_create_secure_medadata(struct cmdqCommandStruct *pComman
 	pCommand->secData.addrMetadataMaxCount = pCommand->secData.addrMetadataCount;
 
 	/* bypass 0 metadata case */
-	if (pCommand->secData.addrMetadataCount == 0) {
-		pCommand->secData.addrMetadatas = (cmdqU32Ptr_t) (unsigned long)NULL;
+	if (!pCommand->secData.addrMetadataCount)
 		return 0;
-	}
 
 	/* create kernel-space buffer for working */
-	pAddrMetadatas = kzalloc(length, GFP_KERNEL);
-	if (pAddrMetadatas == NULL) {
-		CMDQ_ERR("[secData]kzalloc for addrMetadatas failed, count:%d, alloacted_size:%d\n",
-			 pCommand->secData.addrMetadataCount, length);
-		return -ENOMEM;
-	}
-
-	/* copy from user */
-	if (copy_from_user(pAddrMetadatas, CMDQ_U32_PTR(pCommand->secData.addrMetadatas), length)) {
-
-		CMDQ_ERR("[secData]fail to copy user addrMetadatas\n");
-
-		/* replace buffer first to ensure that */
-		/* addrMetadatas is valid kernel space buffer address when free it */
-		pCommand->secData.addrMetadatas = (cmdqU32Ptr_t) (unsigned long)pAddrMetadatas;
+	meta_buf = NULL;
+	ret = cmdq_driver_copy_meta(addr_meta, &meta_buf, length, max_length,
+		false);
+	if (ret < 0) {
+		CMDQ_ERR("[secData]copy meta fail count:%d alloacted size:%d ret:%d\n",
+			 pCommand->secData.addrMetadataCount, length, ret);
+		/* replace buffer first to ensure that
+		 * meta_buf is valid kernel space buffer address when free it
+		 * crazy casting to cast 64bit int to 32/64 bit pointer
+		 */
+		pCommand->secData.addrMetadatas = (cmdqU32Ptr_t)(unsigned long)meta_buf;
 		/* free secure path metadata */
 		cmdq_driver_destroy_secure_medadata(pCommand);
-		return -EFAULT;
+		return ret;
 	}
+	/* replace buffer with kernel buffer */
+	pCommand->secData.addrMetadatas = (cmdqU32Ptr_t)(unsigned long)meta_buf;
 
-	/* replace buffer */
-	pCommand->secData.addrMetadatas = (cmdqU32Ptr_t) (unsigned long)pAddrMetadatas;
+	/* check isp data valid */
+
+	for (i = 0; i < ARRAY_SIZE(pCommand->secData.ispMeta.ispBufs); i++) {
+		if (!isp_bufs[i])
+			continue;
+		meta_buf = NULL;
+		ret = cmdq_driver_copy_meta(isp_bufs[i], &meta_buf,
+			pCommand->secData.ispMeta.ispBufs[i].size,
+			isp_iwc_buf_size[i], true);
+		pCommand->secData.ispMeta.ispBufs[i].va =
+			(cmdqU32Ptr_t)(unsigned long)meta_buf;
+		if (ret < 0) {
+			CMDQ_ERR(
+				"[secData]copy meta %u size:%llu va:0x%llx ret:%d\n",
+				i, pCommand->secData.ispMeta.ispBufs[i].size,
+				pCommand->secData.ispMeta.ispBufs[i].va,
+				ret);
+			pCommand->secData.ispMeta.ispBufs[i].size = 0;
+		}
+	}
 
 #if 0
 	cmdq_core_dump_secure_metadata(&(pCommand->secData));

@@ -14,6 +14,7 @@
 #include "cmdq_reg.h"
 #include "cmdq_mdp_common.h"
 #include "cmdq_mdp_pmqos.h"
+#include "cmdq_sec_iwc_common.h"
 #ifdef CMDQ_MET_READY
 #include <linux/met_drv.h>
 #endif
@@ -27,7 +28,6 @@
 #include "smi_debug.h"
 #include <linux/uaccess.h>
 #include <linux/delay.h>
-
 
 #define CREATE_TRACE_POINTS
 #include "mdp_events.h"
@@ -1194,6 +1194,34 @@ void cmdq_mdp_finish_task_atomic(const struct TaskStruct *task, u32 instr_size)
 		break;
 	}
 }
+
+#define CMDQ_ENGINE_TRANS(eng_flags, eng_flags_sec, ENGINE) \
+	do {	\
+		if ((1LL << CMDQ_ENG_##ENGINE) & (eng_flags)) \
+		(eng_flags_sec) |= (1LL << CMDQ_SEC_##ENGINE); \
+	} while (0)
+
+u64 cmdq_mdp_get_secure_engine(u64 engine_flags)
+{
+	u64 sec_eng_flag = 0;
+
+	/* ISP */
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, ISP_IMGI);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, ISP_VIPI);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, ISP_LCEI);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, ISP_IMG2O);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, ISP_IMG3O);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, ISP_SMXIO);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, DPE);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, OWE);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, WPEI);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, WPEO);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, WPEI2);
+	CMDQ_ENGINE_TRANS(engine_flags, sec_eng_flag, WPEO2);
+
+	return sec_eng_flag;
+}
+
 void cmdq_mdp_platform_function_setting(void)
 {
 	struct cmdqMDPFuncStruct *pFunc = cmdq_mdp_get_func();
@@ -1219,4 +1247,5 @@ void cmdq_mdp_platform_function_setting(void)
 	pFunc->testcaseClkmgrMdp = testcase_clkmgr_mdp;
 	pFunc->startTask_atomic = cmdq_mdp_start_task_atomic;
 	pFunc->finishTask_atomic = cmdq_mdp_finish_task_atomic;
+	pFunc->mdpGetSecEngine = cmdq_mdp_get_secure_engine;
 }
