@@ -814,6 +814,12 @@ static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
 		return err;
 	}
 
+#ifdef CONFIG_MMC_FFU
+	if (cmd.opcode == MMC_FFU_DOWNLOAD_OP
+		|| cmd.opcode == MMC_FFU_INSTALL_OP) {
+		mmc_wait_for_ffu_req(card->host, &mrq);
+	} else
+#endif
 	mmc_wait_for_req(card->host, &mrq);
 
 	if (cmd.error) {
@@ -851,168 +857,6 @@ static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
 
 	return err;
 }
-
-#ifdef CONFIG_MMC_FFU
-/* This function is modified by from mmc_blk_ioctl() */
-static int mmc_ffu_ioctl(struct block_device *bdev,
-	struct mmc_ioc_cmd __user *ic_ptr)
-{
-	struct mmc_blk_ioc_data *idata;
-	struct mmc_blk_data *md;
-	struct mmc_card *card;
-	struct mmc_command cmd = {0};
-	struct mmc_data data = {0};
-	struct mmc_request mrq = {NULL};
-	struct scatterlist sg;
-	int err = 0;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	u8 cmdq_en;
-#endif
-
-	idata = mmc_ffu_ioctl_copy_from_user(ic_ptr);
-	if (IS_ERR(idata))
-		return PTR_ERR(idata);
-
-	md = mmc_blk_get(bdev->bd_disk);
-	if (!md) {
-		err = -EINVAL;
-		goto cmd_err;
-	}
-
-	card = md->queue.card;
-	if (IS_ERR(card)) {
-		err = PTR_ERR(card);
-		goto cmd_done;
-	}
-
-	cmd.opcode = idata->ic.opcode;
-	cmd.arg = idata->ic.arg;
-	cmd.flags = idata->ic.flags;
-
-	if (idata->buf_bytes) {
-		data.sg = &sg;
-		data.sg_len = 1;
-		data.blksz = idata->ic.blksz;
-		data.blocks = idata->ic.blocks;
-
-		sg_init_one(data.sg, idata->buf, idata->buf_bytes);
-
-		if (idata->ic.write_flag)
-			data.flags = MMC_DATA_WRITE;
-		else
-			data.flags = MMC_DATA_READ;
-
-		/* data.flags must already be set before doing this. */
-		mmc_set_data_timeout(&data, card);
-
-		/* Allow overriding the timeout_ns for empirical tuning. */
-		if (idata->ic.data_timeout_ns)
-			data.timeout_ns = idata->ic.data_timeout_ns;
-
-		if ((cmd.flags & MMC_RSP_R1B) == MMC_RSP_R1B) {
-			/*
-			 * Pretend this is a data transfer and rely on the
-			 * host driver to compute timeout.  When all host
-			 * drivers support cmd.cmd_timeout for R1B, this
-			 * can be changed to:
-			 *
-			 *     mrq.data = NULL;
-			 *     cmd.cmd_timeout = idata->ic.cmd_timeout_ms;
-			 */
-			data.timeout_ns = idata->ic.cmd_timeout_ms * 1000000;
-		}
-
-		mrq.data = &data;
-	}
-
-	mrq.cmd = &cmd;
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	cmdq_en = card->ext_csd.cmdq_mode_en;
-	if (cmdq_en) {
-		atomic_set(&card->host->stop_queue, 1);
-		mmc_wait_cmdq_empty(card->host);
-		mmc_get_card(card);
-
-		err = mmc_blk_cmdq_switch(card, 0);
-		if (err) {
-			pr_err("FFU: %s: disable cmdq error %d\n",
-				mmc_hostname(card->host), err);
-			atomic_set(&card->host->stop_queue, 0);
-			mmc_put_card(card);
-			goto cmd_done;
-		}
-	} else
-#endif
-		mmc_get_card(card);
-
-	if (cmd.opcode == MMC_FFU_DOWNLOAD_OP) {
-		pr_notice("FFU Download start\n");
-		err = mmc_ffu_download(card, &cmd, idata->buf,
-			idata->buf_bytes);
-
-		if (err) {
-			pr_err("FFU: %s: error %d FFU download:\n",
-				mmc_hostname(card->host), err);
-		}
-
-	}
-
-	if (cmd.opcode == MMC_SEND_EXT_CSD) {
-
-		mmc_wait_for_req(card->host, &mrq);
-
-		if (cmd.error) {
-			dev_err(mmc_dev(card->host), "%s: cmd error %d\n",
-				__func__, cmd.error);
-			err = cmd.error;
-			goto cmd_rel_host;
-		}
-		if (data.error) {
-			dev_err(mmc_dev(card->host), "%s: data error %d\n",
-				__func__, data.error);
-			err = data.error;
-			goto cmd_rel_host;
-		}
-
-		if (copy_to_user(&(ic_ptr->response), cmd.resp,
-		sizeof(cmd.resp))) {
-			err = -EFAULT;
-			goto cmd_rel_host;
-		}
-
-		if (!idata->ic.write_flag) {
-			if (copy_to_user(
-			(void __user *)(unsigned long) idata->ic.data_ptr,
-				idata->buf, idata->buf_bytes)) {
-				err = -EFAULT;
-				goto cmd_rel_host;
-			}
-		}
-
-	}
-
-cmd_rel_host:
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (cmdq_en) {
-		err = mmc_blk_cmdq_switch(card, 1);
-		if (err)
-			pr_err("FFU: %s: enable cmdq error %d\n",
-				mmc_hostname(card->host), err);
-		atomic_set(&card->host->stop_queue, 0);
-	}
-#endif
-	mmc_put_card(card);
-
-cmd_done:
-	mmc_blk_put(md);
-cmd_err:
-	kfree(idata->buf);
-	kfree(idata);
-	return err;
-
-}
-#endif
 
 #ifdef CONFIG_MTK_MMC_PWR_WP
 static int mmc_pwr_wp_ioctl(struct block_device *bdev, unsigned long arg)
@@ -1101,6 +945,38 @@ int mmc_otp_ops_check(struct block_device *bdev,
 }
 #endif
 
+#ifdef CONFIG_MMC_FFU
+int mmc_ffu_ops_check_bdev(struct block_device *bdev,
+	struct mmc_ioc_cmd __user *ic_ptr)
+{
+	u32 opcode;
+	struct mmc_blk_data *md;
+	struct mmc_card *card;
+
+	md = mmc_blk_get(bdev->bd_disk);
+	if (!md)
+		return 0;
+
+	card = md->queue.card;
+	if (IS_ERR(card) || !mmc_card_mmc(card)) {
+		mmc_blk_put(md);
+		return 0;
+	}
+
+	if (get_user(opcode, &ic_ptr->opcode) == 0) {
+		if (opcode == MMC_FFU_DOWNLOAD_OP
+				|| opcode == MMC_FFU_INSTALL_OP
+				|| opcode == MMC_SEND_EXT_CSD) {
+			mmc_blk_put(md);
+			return 1;
+		}
+	}
+
+	mmc_blk_put(md);
+	return 0;
+}
+#endif
+
 static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 			     struct mmc_ioc_cmd __user *ic_ptr)
 {
@@ -1125,7 +1001,11 @@ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 	if (!otp_dev)
 #endif
 
-	if ((!capable(CAP_SYS_RAWIO)) || (bdev != bdev->bd_contains))
+	if ((
+#ifdef CONFIG_MMC_FFU
+	!mmc_ffu_ops_check_bdev(bdev, ic_ptr) &&
+#endif
+	!capable(CAP_SYS_RAWIO)) || (bdev != bdev->bd_contains))
 		return -EPERM;
 
 	idata = mmc_blk_ioctl_copy_from_user(ic_ptr);
@@ -1308,11 +1188,6 @@ static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
 	case MMC_IOC_MULTI_CMD:
 		return mmc_blk_ioctl_multi_cmd(bdev,
 				(struct mmc_ioc_multi_cmd __user *)arg);
-#ifdef CONFIG_MMC_FFU
-	case MMC_IOC_FFU_CMD:
-		return mmc_ffu_ioctl(bdev, (struct mmc_ioc_cmd __user *)arg);
-#endif
-
 #ifdef CONFIG_MTK_MMC_PWR_WP
 	case MMC_IOC_WP_CMD:
 		return mmc_pwr_wp_ioctl(bdev, arg);
