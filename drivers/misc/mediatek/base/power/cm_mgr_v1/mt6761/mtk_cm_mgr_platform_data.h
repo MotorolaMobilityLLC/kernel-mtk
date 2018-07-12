@@ -64,7 +64,7 @@ int vcore_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};
 int vcore_power_ratio_down[CM_MGR_EMI_OPP] = {100, 100};
 int debounce_times_up_adb[CM_MGR_EMI_OPP] = {0, 3};
 int debounce_times_down_adb[CM_MGR_EMI_OPP] = {0, 3};
-static int debounce_times_reset_adb;
+int debounce_times_reset_adb;
 int debounce_times_perf_down = 50;
 int debounce_times_perf_force_down = 100;
 static int update;
