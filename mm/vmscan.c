@@ -344,8 +344,14 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
 	do_div(delta, nr_eligible + 1);
 	total_scan += delta;
 	if (total_scan < 0) {
+#if BITS_PER_LONG == 64
 		pr_err("shrink_slab: %pF negative objects to delete nr=%ld\n",
 		       shrinker->scan_objects, total_scan);
+#else
+		pr_info_ratelimited("shrink_slab: %pF negative objects to delete nr=%ld delta=%llu nr_scanned=%lu nr_eligible=%lu nr_deferred=%ld\n",
+				    shrinker->scan_objects, total_scan,
+				    delta, nr_scanned, nr_eligible, nr);
+#endif
 		total_scan = freeable;
 		next_deferred = nr;
 	} else
