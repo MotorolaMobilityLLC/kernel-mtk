@@ -1645,6 +1645,33 @@ TRACE_EVENT(sched_tune_filter,
 			__entry->payoff, __entry->region)
 );
 
+/*
+ * Tracepoint for showing tracked cfs runqueue runnable load.
+ */
+TRACE_EVENT(sched_cfs_runnable_load,
+
+		TP_PROTO(int cpu_id, int cpu_load, int cpu_ntask),
+
+		TP_ARGS(cpu_id, cpu_load, cpu_ntask),
+
+		TP_STRUCT__entry(
+			__field(int, cpu_id)
+			__field(int, cpu_load)
+			__field(int, cpu_ntask)
+			),
+
+		TP_fast_assign(
+			__entry->cpu_id = cpu_id;
+			__entry->cpu_load = cpu_load;
+			__entry->cpu_ntask = cpu_ntask;
+			),
+
+		TP_printk("cpu-id=%d cfs-load=%4d, cfs-ntask=%2d",
+			__entry->cpu_id,
+			__entry->cpu_load,
+			__entry->cpu_ntask)
+		);
+
 #ifdef CONFIG_HMP_TRACER
 /*
  * Tracepoint for showing tracked migration information
@@ -1921,33 +1948,6 @@ TRACE_EVENT(sched_cfs_load_update,
 				__entry->tsk_load,
 				__entry->tsk_delta,
 				__entry->comm)
-		);
-
-/*
- * Tracepoint for showing tracked cfs runqueue runnable load.
- */
-TRACE_EVENT(sched_cfs_runnable_load,
-
-		TP_PROTO(int cpu_id, int cpu_load, int cpu_ntask),
-
-		TP_ARGS(cpu_id, cpu_load, cpu_ntask),
-
-		TP_STRUCT__entry(
-			__field(int, cpu_id)
-			__field(int, cpu_load)
-			__field(int, cpu_ntask)
-			),
-
-		TP_fast_assign(
-			__entry->cpu_id = cpu_id;
-			__entry->cpu_load = cpu_load;
-			__entry->cpu_ntask = cpu_ntask;
-			),
-
-		TP_printk("cpu-id=%d cfs-load=%4d, cfs-ntask=%2d",
-			__entry->cpu_id,
-			__entry->cpu_load,
-			__entry->cpu_ntask)
 		);
 
 /*
