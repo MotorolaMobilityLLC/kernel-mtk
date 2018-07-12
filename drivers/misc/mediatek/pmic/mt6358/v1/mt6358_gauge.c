@@ -648,6 +648,13 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 {
 	int bat_flag = 0;
 	int is_charger_exist;
+	unsigned int temps = 0;
+
+	temps = pmic_get_register_value(PMIC_RG_FG_OFFSET_SWAP);
+	pmic_set_register_value(PMIC_RG_FG_OFFSET_SWAP, 0);
+
+	bm_err("set RG_FG_OFFSET_SWAP orig %d,new %d\n",
+		temps, pmic_get_register_value(PMIC_RG_FG_OFFSET_SWAP));
 
 	/* for bat plugout */
 	/* set BATON_DEBOUNCE_THD to 0x0, set BATON_DEBOUNCE_WND to 0x10 */
