@@ -5632,7 +5632,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					    || (m_LastMNum[rt_dma] > _magic)) {
 
 					if ((_DUMMY_MAGIC_ & deque_buf.data[i].image.
-						m_num_0) == 0)
+						m_num_0) == 0) {
 						deque_buf.data[i].image.m_num_0 |=
 						_UNCERTAIN_MAGIC_NUM_FLAG_;
 						/*      */
@@ -5642,6 +5642,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 							       deque_buf.data[i].image.m_num_0,
 							       deque_buf.data[i].image.frm_cnt,
 							       m_LastMNum[rt_dma]);
+					}
 #ifdef T_STAMP_2_0
 					if (m_T_STAMP.fps > SlowMotion) {
 						/*      patch here is because of that uncertain should*/
@@ -8867,7 +8868,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 		if (pstRTBuf->ring_buf[_camsv_imgo_].active)
 			rt_dma = _camsv_imgo_;
 		else
-			LOG_INF("no main dma port opened at CAMSV SOF\n");
+			LOG_DBG("no main dma port opened at CAMSV SOF\n");
 		buf_idx = (pstRTBuf->ring_buf[_camsv_imgo_].start + 1) %
 			pstRTBuf->ring_buf[_camsv_imgo_].total_count;
 		/* chk this frame have EOF or not */
@@ -9099,7 +9100,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		if (pstRTBuf->ring_buf[_camsv2_imgo_].active)
 			rt_dma = _camsv2_imgo_;
 		else
-			LOG_INF("no main dma port opened at CAMSV2 SOF\n");
+			LOG_DBG("no main dma port opened at CAMSV2 SOF\n");
 
 		buf_idx = (pstRTBuf->ring_buf[_camsv2_imgo_].start + 1) %
 			pstRTBuf->ring_buf[_camsv2_imgo_].total_count;
