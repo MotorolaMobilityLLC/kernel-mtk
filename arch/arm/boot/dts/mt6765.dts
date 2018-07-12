@@ -1759,7 +1759,9 @@ firmware_class.path=/vendor/firmware";
 			/*CONN_MCU_CIRQ_BASE */
 		    <0 0x180a5000 0 0x800>,
 			/*CONN_TOP_MISC_ON_BASE */
-		    <0 0x180c1000 0 0x1000>;
+		    <0 0x180c1000 0 0x1000>,
+			/*CONN_HIF_PDMA_BASE */
+		    <0 0x18004000 0 0x1000>;
 			/*BGF_EINT */
 		interrupts = <GIC_SPI 267 IRQ_TYPE_LEVEL_LOW>,
 			/*WDT_EINT */
