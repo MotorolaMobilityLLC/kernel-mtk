@@ -144,6 +144,12 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_UFOD_RAMA1_L2_EOF, ufod_rdma1_l2_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_UFOD_RAMA1_L3_EOF, ufod_rdma1_l3_frame_done)
 
+	DECLAR_EVENT(CMDQ_EVENT_DISP_POSTMASK0_SOF, disp_postmask0_sof)
+	DECLAR_EVENT(CMDQ_EVENT_DISP_POSTMASK0_FRAME_DONE,
+		disp_postmask0_frame_done)
+	DECLAR_EVENT(CMDQ_EVENT_DISP_POSTMASK0_FRAME_RST_DONE_PULSE,
+		disp_postmask0_frame_rst_done_pulse)
+
 	/* Mutex frame done */
 	/* DISPSYS */
 	DECLAR_EVENT(CMDQ_EVENT_MUTEX0_STREAM_EOF, stream_done_0)
@@ -176,6 +182,7 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_DISP_RDMA0_UNDERRUN, buf_underrun_event_0)
 	DECLAR_EVENT(CMDQ_EVENT_DISP_RDMA1_UNDERRUN, buf_underrun_event_1)
 	DECLAR_EVENT(CMDQ_EVENT_DISP_RDMA2_UNDERRUN, buf_underrun_event_2)
+	DECLAR_EVENT(CMDQ_EVENT_DISP_RDMA3_UNDERRUN, buf_underrun_event_3)
 
 	/* Display TE */
 	DECLAR_EVENT(CMDQ_EVENT_DSI_TE, dsi0_te_event)
@@ -357,6 +364,7 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_GEPF_TEMP_EOF, gepf_temp_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_GEPF_BYPASS_EOF, gepf_bypass_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_RSC_EOF, rsc_frame_done)
+	DECLAR_EVENT(CMDQ_EVENT_DIP_DMA_ERR_EVENT, dip_dma_err_event)
 
 	/* ISP (IMGSYS) engine events */
 	DECLAR_EVENT(CMDQ_EVENT_ISP_SENINF_CAM1_2_3_FULL,
@@ -365,6 +373,7 @@ static struct cmdq_event_table cmdq_events[] = {
 
 	/* VENC frame done */
 	DECLAR_EVENT(CMDQ_EVENT_VENC_EOF, venc_done)
+	DECLAR_EVENT(CMDQ_EVENT_VENC_CMDQ_PAUSE_DONE, venc_cmdq_pause_done)
 
 	/* JPEG frame done */
 	DECLAR_EVENT(CMDQ_EVENT_JPEG_ENC_EOF, jpgenc_done)
@@ -379,10 +388,16 @@ static struct cmdq_event_table cmdq_events[] = {
 	/* ISP (CAMSYS) frame done */
 	DECLAR_EVENT(CMDQ_EVENT_ISP_FRAME_DONE_A, isp_frame_done_a)
 	DECLAR_EVENT(CMDQ_EVENT_ISP_FRAME_DONE_B, isp_frame_done_b)
+	DECLAR_EVENT(CMDQ_EVENT_ISP_FRAME_DONE_C, isp_frame_done_c)
 	DECLAR_EVENT(CMDQ_EVENT_ISP_CAMSV_0_PASS1_DONE, camsv_0_pass1_done)
+	DECLAR_EVENT(CMDQ_EVENT_ISP_CAMSV_0_2_PASS1_DONE, camsv_0_2_pass1_done)
 	DECLAR_EVENT(CMDQ_EVENT_ISP_CAMSV_1_PASS1_DONE, camsv_1_pass1_done)
 	DECLAR_EVENT(CMDQ_EVENT_ISP_CAMSV_2_PASS1_DONE, camsv_2_pass1_done)
+	DECLAR_EVENT(CMDQ_EVENT_ISP_CAMSV_3_PASS1_DONE, camsv_3_pass1_done)
 	DECLAR_EVENT(CMDQ_EVENT_ISP_TSF_DONE, tsf_done)
+
+	DECLAR_EVENT(CMDQ_EVENT_ISP_RELAY_SOF, isp_relay_sof)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_RELAY_SOF, ipu_relay_sof)
 
 	/* ISP (CAMSYS) engine events */
 	DECLAR_EVENT(CMDQ_EVENT_SENINF_0_FIFO_FULL, seninf_0_fifo_full)
@@ -393,6 +408,17 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_SENINF_5_FIFO_FULL, seninf_5_fifo_full)
 	DECLAR_EVENT(CMDQ_EVENT_SENINF_6_FIFO_FULL, seninf_6_fifo_full)
 	DECLAR_EVENT(CMDQ_EVENT_SENINF_7_FIFO_FULL, seninf_7_fifo_full)
+
+	DECLAR_EVENT(CMDQ_EVENT_TG_OVRUN_A_INT_DLY, tg_ovrun_a_int_dly)
+	DECLAR_EVENT(CMDQ_EVENT_TG_OVRUN_B_INT_DLY, tg_ovrun_b_int_dly)
+	DECLAR_EVENT(CMDQ_EVENT_TG_OVRUN_C_INT, tg_ovrun_c_int)
+	DECLAR_EVENT(CMDQ_EVENT_TG_GRABERR_A_INT_DLY, tg_graberr_a_int_dly)
+	DECLAR_EVENT(CMDQ_EVENT_TG_GRABERR_B_INT_DLY, tg_graberr_b_int_dly)
+	DECLAR_EVENT(CMDQ_EVENT_TG_GRABERR_C_INT, tg_graberr_c_int)
+
+	DECLAR_EVENT(CMDQ_EVENT_CQ_VR_SNAP_A_INT_DLY, cq_vr_snap_a_int_dly)
+	DECLAR_EVENT(CMDQ_EVENT_CQ_VR_SNAP_B_INT_DLY, cq_vr_snap_b_int_dly)
+	DECLAR_EVENT(CMDQ_EVENT_CQ_VR_SNAP_C_INT, cq_vr_snap_c_int)
 
 	/* 6799 New Event */
 	DECLAR_EVENT(CMDQ_EVENT_DISP_DSC1_SOF, disp_dsc_sof_1)
@@ -459,6 +485,42 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR0_SOF, mdp_ccorr0_sof)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR0_FRAME_DONE, mdp_ccorr0_frame_done)
 	DECLAR_EVENT(CMDQ_EVENT_IMG_DL_RELAY_SOF, img_dl_relay_sof)
+
+	/* 6779 New Event */
+	DECLAR_EVENT(CMDQ_EVENT_DMA_R1_ERROR_A_INT_DLY, dma_r1_error_a_int_dly)
+	DECLAR_EVENT(CMDQ_EVENT_DMA_R1_ERROR_B_INT_DLY, dma_r1_error_b_int_dly)
+	DECLAR_EVENT(CMDQ_EVENT_DMA_R1_ERROR_C_INT, dma_r1_error_c_int)
+
+	DECLAR_EVENT(CMDQ_EVENT_APU_GCE_CORE0_EVENT_0, apu_gce_core0_event_0)
+	DECLAR_EVENT(CMDQ_EVENT_APU_GCE_CORE0_EVENT_1, apu_gce_core0_event_1)
+	DECLAR_EVENT(CMDQ_EVENT_APU_GCE_CORE0_EVENT_2, apu_gce_core0_event_2)
+	DECLAR_EVENT(CMDQ_EVENT_APU_GCE_CORE0_EVENT_3, apu_gce_core0_event_3)
+	DECLAR_EVENT(CMDQ_EVENT_APU_GCE_CORE1_EVENT_0, apu_gce_core1_event_0)
+	DECLAR_EVENT(CMDQ_EVENT_APU_GCE_CORE1_EVENT_1, apu_gce_core1_event_1)
+	DECLAR_EVENT(CMDQ_EVENT_APU_GCE_CORE1_EVENT_2, apu_gce_core1_event_2)
+	DECLAR_EVENT(CMDQ_EVENT_APU_GCE_CORE1_EVENT_3, apu_gce_core1_event_3)
+
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_0, vdec_event_0)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_1, vdec_event_1)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_2, vdec_event_2)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_3, vdec_event_3)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_4, vdec_event_4)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_5, vdec_event_5)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_6, vdec_event_6)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_7, vdec_event_7)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_8, vdec_event_8)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_9, vdec_event_9)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_10, vdec_event_10)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_11, vdec_event_11)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_12, vdec_event_12)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_13, vdec_event_13)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_14, vdec_event_14)
+	DECLAR_EVENT(CMDQ_EVENT_VDEC_EVENT_15, vdec_event_15)
+
+	DECLAR_EVENT(CMDQ_EVENT_FDVT_DONE, fdvt_done)
+	DECLAR_EVENT(CMDQ_EVENT_FE_DONE, fe_done)
+	DECLAR_EVENT(CMDQ_EVENT_DVS_DONE_ASYNC_SHOT, dvs_done_async_shot)
+	DECLAR_EVENT(CMDQ_EVENT_DVP_DONE_ASYNC_SHOT, dvp_done_async_shot)
 
 	/* Keep this at the end of HW events */
 	DECLAR_EVENT(CMDQ_MAX_HW_EVENT_COUNT, hw_event_conunt)

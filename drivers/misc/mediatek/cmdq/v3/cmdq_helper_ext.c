@@ -2247,6 +2247,28 @@ static void cmdq_core_reset_hw_events(void)
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_APPEND_THR(index));
 }
 
+void cmdq_core_reset_gce(void)
+{
+	/* CMDQ init flow:
+	 * 1. clock-on
+	 * 2. reset all events
+	 */
+	cmdq_get_func()->enableGCEClockLocked(true);
+	cmdq_core_reset_hw_events();
+	cmdq_core_config_prefetch_gsize();
+#ifdef CMDQ_ENABLE_BUS_ULTRA
+	CMDQ_LOG("Enable GCE Ultra ability");
+	CMDQ_REG_SET32(CMDQ_BUS_CONTROL_TYPE, 0x3);
+#endif
+	if (cmdq_dts.ctl_int0 > 0) {
+		CMDQ_REG_SET32(CMDQ_CTL_INT0, cmdq_dts.ctl_int0);
+		CMDQ_MSG("[CTL_INT0] set %d\n",
+			cmdq_dts.ctl_int0);
+	}
+	/* Restore event */
+	cmdq_get_func()->eventRestore();
+}
+
 void cmdq_core_set_addon_subsys(u32 msb, s32 subsys_id, u32 mask)
 {
 	cmdq_adds_subsys.msb = msb;
@@ -3672,25 +3694,8 @@ static void cmdq_core_clk_enable(struct cmdqRecStruct *handle)
 	CMDQ_MSG("[CLOCK]enable usage:%d scenario:%d\n",
 		clock_count, handle->scenario);
 
-	if (clock_count == 1) {
-		/* CMDQ init flow: */
-		/* 1. clock-on */
-		/* 2. reset all events */
-		cmdq_get_func()->enableGCEClockLocked(true);
-		cmdq_core_reset_hw_events();
-		cmdq_core_config_prefetch_gsize();
-#ifdef CMDQ_ENABLE_BUS_ULTRA
-		CMDQ_LOG("Enable GCE Ultra ability");
-		CMDQ_REG_SET32(CMDQ_BUS_CONTROL_TYPE, 0x3);
-#endif
-		if (cmdq_dts.ctl_int0 > 0) {
-			CMDQ_REG_SET32(CMDQ_CTL_INT0, cmdq_dts.ctl_int0);
-			CMDQ_MSG("[CTL_INT0] set %d\n",
-				cmdq_dts.ctl_int0);
-		}
-		/* Restore event */
-		cmdq_get_func()->eventRestore();
-	}
+	if (clock_count == 1)
+		cmdq_core_reset_gce();
 
 	cmdq_core_group_clk_cb(true, handle->engineFlag, handle->engine_clk);
 }
@@ -5066,7 +5071,7 @@ s32 cmdq_pkt_stop(struct cmdqRecStruct *handle)
 {
 	struct cmdq_client *client = NULL;
 
-	CMDQ_LOG("%s handle:0x%p state:%d thread:%d\n",
+	CMDQ_MSG("%s handle:0x%p state:%d thread:%d\n",
 		__func__, handle, handle->state, handle->thread);
 
 	if (handle->thread == CMDQ_INVALID_THREAD) {

@@ -1916,7 +1916,7 @@ s32 _cmdq_task_start_loop_callback(struct cmdqRecStruct *handle,
 {
 	s32 status;
 
-	CMDQ_LOG("%s handle:0x%p state:%d\n",
+	CMDQ_MSG("%s handle:0x%p state:%d\n",
 		__func__, handle, handle->state);
 	status = cmdq_op_finalize_command(handle, true);
 	if (status < 0)

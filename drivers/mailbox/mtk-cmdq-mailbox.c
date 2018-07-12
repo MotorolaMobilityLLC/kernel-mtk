@@ -111,6 +111,7 @@ struct cmdq_buf_dump {
 struct cmdq {
 	struct mbox_controller	mbox;
 	void __iomem		*base;
+	phys_addr_t		base_pa;
 	u32			irq;
 	struct workqueue_struct	*buf_dump_wq;
 	struct cmdq_thread	thread[CMDQ_THR_MAX_COUNT];
@@ -1132,6 +1133,7 @@ static int cmdq_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	cmdq->base = devm_ioremap_resource(dev, res);
+	cmdq->base_pa = res->start;
 	if (IS_ERR(cmdq->base)) {
 		cmdq_err("failed to ioremap gce");
 		return PTR_ERR(cmdq->base);
@@ -1183,6 +1185,7 @@ static int cmdq_probe(struct platform_device *pdev)
 	for (i = 0; i < ARRAY_SIZE(cmdq->thread); i++) {
 		cmdq->thread[i].base = cmdq->base + CMDQ_THR_BASE +
 				CMDQ_THR_SIZE * i;
+		cmdq->thread[i].gce_pa = cmdq->base_pa;
 		INIT_LIST_HEAD(&cmdq->thread[i].task_busy_list);
 		init_timer(&cmdq->thread[i].timeout);
 		cmdq->thread[i].timeout.function = cmdq_thread_handle_timeout;
