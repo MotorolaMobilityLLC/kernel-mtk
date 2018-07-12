@@ -216,7 +216,7 @@ static int mtk_usb_echoref_open(struct snd_pcm_substream *substream)
 
 	AudDrv_Clk_On();
 
-	pr_warn("%s()\n", __func__);
+	pr_debug("%s()\n", __func__);
 
 	runtime->hw = mtk_pcm_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_pcm_hardware, sizeof(struct snd_pcm_hardware));
@@ -227,11 +227,12 @@ static int mtk_usb_echoref_open(struct snd_pcm_substream *substream)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
 	if (ret < 0) {
+		pr_debug("%s(), mtk_usb_echoref_close\n", __func__);
 		mtk_usb_echoref_close(substream);
 		return ret;
 	}
 
-	pr_warn("%s(), return\n", __func__);
+	pr_aud("%s(), return\n", __func__);
 	return 0;
 }
 

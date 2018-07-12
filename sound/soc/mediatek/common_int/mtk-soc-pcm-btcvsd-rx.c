@@ -491,8 +491,10 @@ static int btcvsd_rx_irq_received_set(struct snd_kcontrol *kcontrol,
 static int btcvsd_rx_timeout_get(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s(), btcvsd rx timeout %d\n",
-		 __func__, btcvsd_rx_timeout() ? 1 : 0);
+
+	if (btcvsd_rx_timeout())
+		pr_debug("%s(), btcvsd rx timeout\n", __func__);
+
 	ucontrol->value.integer.value[0] = btcvsd_rx_timeout() ? 1 : 0;
 	btcvsd_rx_reset_timeout();
 	return 0;
@@ -542,8 +544,9 @@ static int btcvsd_rx_timestamp_set(const unsigned int __user *data, unsigned int
 static int btcvsd_tx_timeout_get(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	LOGBT("%s(), btcvsd tx timeout %d\n",
-		 __func__, btcvsd_tx_timeout() ? 1 : 0);
+	if (btcvsd_tx_timeout())
+		pr_debug("%s(), btcvsd tx timeout\n", __func__);
+
 	ucontrol->value.integer.value[0] = btcvsd_tx_timeout() ? 1 : 0;
 	/*btcvsd_tx_reset_timeout();*/
 	return 0;

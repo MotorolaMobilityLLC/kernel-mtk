@@ -226,8 +226,8 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
 	/* print for hw pcm information */
-	pr_warn("mtk_uldlloopback_open runtime rate = %d channels = %d\n",
-	       runtime->rate, runtime->channels);
+	pr_debug("%s, runtime rate = %d channels = %d\n",
+		__func__, runtime->rate, runtime->channels);
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 
@@ -242,12 +242,13 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 
 static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 {
-	pr_warn("%s\n", __func__);
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 		AudDrv_Clk_Off();
 		return 0;
 	}
+
+	pr_debug("%s\n", __func__);
 
 	/* interconnection setting */
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,

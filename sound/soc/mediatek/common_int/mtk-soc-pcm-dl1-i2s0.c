@@ -473,7 +473,7 @@ static int mtk_pcm_i2s0_open(struct snd_pcm_substream *substream)
 	AfeControlSramUnLock();
 	runtime->hw = mtk_i2s0_hardware;
 
-	pr_debug("mtk_pcm_i2s0_open\n");
+	pr_debug("%s\n", __func__);
 
 	AudDrv_Clk_On();
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_i2s0_hardware,
@@ -489,15 +489,14 @@ static int mtk_pcm_i2s0_open(struct snd_pcm_substream *substream)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
 	/* print for hw pcm information */
-	pr_debug("mtk_pcm_i2s0_open runtime rate = %d channels = %d substream->pcm->device = %d\n",
-		 runtime->rate, runtime->channels, substream->pcm->device);
+	pr_debug("%s, runtime rate = %d channels = %d substream->pcm->device = %d\n",
+		 __func__, runtime->rate, runtime->channels, substream->pcm->device);
 
 	 if (ret < 0) {
 		pr_err("mtk_pcm_i2s0_close\n");
 		mtk_pcm_i2s0_close(substream);
 		return ret;
 	}
-	pr_debug("mtk_pcm_i2s0_open return\n");
 	return 0;
 }
 

@@ -244,7 +244,7 @@ void AudDrv_BTCVSD_WriteToBT(enum bt_sco_packet_len uLen,
 
 int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 {
-	pr_debug("%s(+) isRX=%d\n", __func__, isRX);
+	LOGBT("%s(+) isRX=%d\n", __func__, isRX);
 
 	if (isRX == 1) {
 		readFromBT_cnt = 0;
@@ -306,7 +306,7 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 		BT_CVSD_Mem.TX_btcvsd_dma_buf.addr = BT_CVSD_Mem.pucTXPhysBufAddr;
 		BT_CVSD_Mem.TX_btcvsd_dma_buf.bytes = BT_CVSD_Mem.u4TXBufferSize;
 	}
-	pr_debug("%s(-)\n", __func__);
+	LOGBT("%s(-)\n", __func__);
 	return 0;
 }
 
