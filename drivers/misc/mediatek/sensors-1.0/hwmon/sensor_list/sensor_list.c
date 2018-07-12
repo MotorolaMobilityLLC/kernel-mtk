@@ -152,6 +152,21 @@ static struct scp_power_monitor scp_ready_notifier = {
 	.name = "sensorlist",
 	.notifier_call = scp_ready_event,
 };
+#else
+int sensorlist_register_deviceinfo(int sensor,
+		struct sensorInfo_t *devinfo)
+{
+	int handle = -1;
+
+	handle = sensor_to_handle(sensor);
+	if (handle < 0)
+		return 0;
+	spin_lock(&sensorlist_info_lock);
+	strlcpy(sensorlist_info[handle].name,
+		devinfo->name,
+		sizeof(sensorlist_info[handle].name));
+	spin_unlock(&sensorlist_info_lock);
+}
 #endif
 
 static int sensorlist_open(struct inode *inode, struct file *file)
