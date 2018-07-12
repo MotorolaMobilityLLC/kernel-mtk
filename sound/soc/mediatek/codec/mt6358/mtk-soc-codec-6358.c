@@ -3119,7 +3119,6 @@ static void Audio_Amp_Change(int channels, bool enable)
 		 mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR]);
 
 #ifdef ANALOG_HPTRIM
-	mic_vinp_mv = get_accdet_auxadc();
 	pr_debug("%s(), mic_vinp_mv %d\n", __func__, mic_vinp_mv);
 	pr_debug("%s(), Result AUDDEC_ELR_0 = 0x%x\n", __func__, Ana_Get_Reg(AUDDEC_ELR_0));
 
@@ -3978,7 +3977,6 @@ static void Headset_Speaker_Amp_Change(bool enable)
 {
 #ifdef ANALOG_HPTRIM
 	if (apply_n12db_gain) {
-		mic_vinp_mv = get_accdet_auxadc();
 		pr_debug("%s(), current AUDDEC_ELR_0 = 0x%x, mic_vinp_mv %d\n",
 			 __func__, Ana_Get_Reg(AUDDEC_ELR_0), mic_vinp_mv);
 
