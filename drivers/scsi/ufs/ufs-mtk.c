@@ -203,7 +203,8 @@ static void ufs_mtk_advertise_hci_quirks(struct ufs_hba *hba)
 void ufs_mtk_hwfde_cfg_cmd(struct ufs_hba *hba,
 	struct scsi_cmnd *cmd)
 {
-	u32 dunl, dunu, lba;
+	u64 lba;
+	u32 dunl, dunu;
 	unsigned long flags;
 	int hwfde_key_idx_old;
 	struct ufshcd_lrb *lrbp;
@@ -1755,15 +1756,14 @@ void ufs_mtk_dump_asc_ascq(struct ufs_hba *hba, u8 asc, u8 ascq)
 }
 #endif
 
-void ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu)
+void ufs_mtk_crypto_cal_dun(u32 alg_id, u64 iv, u32 *dunl, u32 *dunu)
 {
-	if (alg_id != UFS_CRYPTO_ALGO_BITLOCKER_AES_CBC) {
-		*dunl = lba;
-		*dunu = 0;
-	} else {                             /* bitlocker dun use byte address */
-		*dunl = (lba & 0x7FFFF) << 12;   /* byte address for lower 32 bit */
-		*dunu = (lba >> (32 - 12)) << 12;  /* byte address for higher 32 bit */
-	}
+	/* bitlocker dun use byte address */
+	if (alg_id == UFS_CRYPTO_ALGO_BITLOCKER_AES_CBC)
+		iv = iv << 12;
+
+	*dunl = iv & 0xffffffff;
+	*dunu = (iv >> 32) & 0xffffffff;
 }
 
 bool ufs_mtk_is_data_write_cmd(char cmd_op)
@@ -1907,7 +1907,8 @@ static int ufs_mtk_hie_cfg_request(unsigned int mode, const char *key, int len, 
 	u32 hie_para, i;
 	u32 *key_ptr;
 	unsigned long flags;
-	u32 lba, dunl, dunu;
+	u64 iv, lba;
+	u32 dunl, dunu;
 	struct scsi_cmnd *cmd;
 	int need_update = 1;
 	int key_idx;
@@ -1949,7 +1950,14 @@ static int ufs_mtk_hie_cfg_request(unsigned int mode, const char *key, int len, 
 	lba = ((cmd->cmnd[2]) << 24) | ((cmd->cmnd[3]) << 16) |
 			((cmd->cmnd[4]) << 8) | (cmd->cmnd[5]);
 
-	ufs_mtk_crypto_cal_dun(UFS_CRYPTO_ALGO_AES_XTS, lba, &dunl, &dunu);
+	/* Get iv from hie */
+	iv = hie_get_iv(req);
+
+	/* If hie not assign iv, then use lba as iv */
+	if (!iv)
+		iv = lba;
+
+	ufs_mtk_crypto_cal_dun(UFS_CRYPTO_ALGO_AES_XTS, iv, &dunl, &dunu);
 
 	/* setup LRB for UTPRD's crypto fields */
 	lrbp = &info->hba->lrb[req->tag];
