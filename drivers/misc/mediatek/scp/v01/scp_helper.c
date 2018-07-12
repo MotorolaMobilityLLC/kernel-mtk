@@ -474,12 +474,6 @@ EXPORT_SYMBOL_GPL(is_scp_ready);
 int reset_scp(int reset)
 {
 	unsigned int *reg;
-#if SCP_BOOT_TIME_OUT_MONITOR
-	int i;
-
-	for (i = 0; i < SCP_CORE_TOTAL ; i++)
-		del_timer(&scp_ready_timer[i]);
-#endif
 	/*scp_logger_stop();*/
 	if (((reset & 0xf0) == 0x10) ||
 				((reset & 0xf0) == 0x00)) { /* reset A or All*/
@@ -534,11 +528,7 @@ int reset_scp(int reset)
 		*(unsigned int *)reg = 0x1;
 		dsb(SY);
 #if SCP_BOOT_TIME_OUT_MONITOR
-		init_timer(&scp_ready_timer[SCP_A_ID]);
 		scp_ready_timer[SCP_A_ID].expires = jiffies + SCP_READY_TIMEOUT;
-		scp_ready_timer[SCP_A_ID].function = &scp_wait_ready_timeout;
-		scp_ready_timer[SCP_A_ID].data = (unsigned long) SCP_A_TIMER;
-		/*data=0: SCP A    1: SCP B*/
 		add_timer(&scp_ready_timer[SCP_A_ID]);
 #endif
 		}
@@ -1369,11 +1359,7 @@ void scp_sys_reset_ws(struct work_struct *ws)
 	*(unsigned int *)scp_reset_reg = 0x1;
 	dsb(SY);
 #if SCP_BOOT_TIME_OUT_MONITOR
-	init_timer(&scp_ready_timer[SCP_A_ID]);
 	scp_ready_timer[SCP_A_ID].expires = jiffies + SCP_READY_TIMEOUT;
-	scp_ready_timer[SCP_A_ID].function = &scp_wait_ready_timeout;
-	/* 0: SCP A, 1: SCP B */
-	scp_ready_timer[SCP_A_ID].data = (unsigned long) SCP_A_TIMER;
 	add_timer(&scp_ready_timer[SCP_A_ID]);
 #endif
 	/* clear scp reset by cmd flag*/
@@ -1432,7 +1418,7 @@ void scp_recovery_init(void)
 {
 #if SCP_RECOVERY_SUPPORT
 	/*create wq for scp reset*/
-	scp_reset_workqueue = create_workqueue("SCP_RESET_WQ");
+	scp_reset_workqueue = create_singlethread_workqueue("SCP_RESET_WQ");
 	/*init reset work*/
 	INIT_WORK(&scp_sys_reset_work.work, scp_sys_reset_ws);
 	/*init completion for identify scp aed finished*/
@@ -1593,7 +1579,11 @@ static int __init scp_init(void)
 {
 	int ret = 0;
 	int i = 0;
-
+#if SCP_BOOT_TIME_OUT_MONITOR
+	init_timer(&scp_ready_timer[SCP_A_ID]);
+	scp_ready_timer[SCP_A_ID].function = &scp_wait_ready_timeout;
+	scp_ready_timer[SCP_A_ID].data = (unsigned long) SCP_A_TIMER;/*0: SCP A    1: SCP B*/
+#endif
     /* scp platform initialise */
 	pr_debug("[SCP] platform init, scp_init\n");
 
@@ -1632,7 +1622,7 @@ static int __init scp_init(void)
 	scp_region_info_init();
 	pr_debug("[SCP] platform init\n");
 	scp_awake_init();
-	scp_workqueue = create_workqueue("SCP_WQ");
+	scp_workqueue = create_singlethread_workqueue("SCP_WQ");
 	ret = scp_excep_init();
 	if (ret) {
 		pr_debug("[SCP]Excep Init Fail\n");
@@ -1696,7 +1686,7 @@ static int __init scp_init(void)
 	/* scp logger initialise */
 	pr_debug("[SCP] logger init\n");
 	/*create wq for scp logger*/
-	scp_logger_workqueue = create_workqueue("SCP_LOG_WQ");
+	scp_logger_workqueue = create_singlethread_workqueue("SCP_LOG_WQ");
 	if (scp_logger_init(scp_get_reserve_mem_virt(SCP_A_LOGGER_MEM_ID),
 			scp_get_reserve_mem_size(SCP_A_LOGGER_MEM_ID)) == -1) {
 		pr_err("[SCP] scp_logger_init_fail\n");
