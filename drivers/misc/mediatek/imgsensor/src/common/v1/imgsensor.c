@@ -411,6 +411,8 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 		err = ERROR_SENSOR_CONNECT_FAIL;
 	} else {
 		PK_DBG(" Sensor found ID = 0x%x\n", sensorID);
+		snprintf(mtk_ccm_name, sizeof(mtk_ccm_name), "%s CAM[%d]:%s;",
+					mtk_ccm_name, psensor->inst.sensor_idx, psensor_inst->psensor_name);
 		err = ERROR_NONE;
 	}
 
@@ -690,11 +692,10 @@ static void cam_temperature_report_wq_routine(struct work_struct *data)
 
 }
 #endif
-char mtk_ccm_temp[camera_info_size] = { 0 };
+
 static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 {
 	int ret = 0;
-	int str_len = 0;
 	IMAGESENSOR_GETINFO_STRUCT *pSensorGetInfo;
 	struct IMGSENSOR_SENSOR    *psensor;
 
@@ -897,88 +898,79 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 				psensorResolution->SensorVideoHeight);
 
 	/* Add info to proc: camera_info */
-	str_len = sprintf(mtk_ccm_temp, "\nCAM_Info[%d]:%s;",
+	snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
+				"%s\n\nCAM_Info[%d]:%s;",
+				mtk_ccm_name,
 				pSensorGetInfo->SensorId,
 				psensor->inst.psensor_name);
-	strncat(mtk_ccm_name, mtk_ccm_temp, str_len);
-	memset(mtk_ccm_temp, 0x0, sizeof(mtk_ccm_temp));
 
-	str_len = sprintf(mtk_ccm_temp,
-		"\nPre: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+	snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
+		"%s\nPre: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+		mtk_ccm_name,
 		psensorResolution->SensorPreviewWidth,
 		psensorResolution->SensorPreviewHeight,
 		pSensorInfo->SensorGrabStartX_PRV,
 		pSensorInfo->SensorGrabStartY_PRV,
 		pSensorInfo->PreviewDelayFrame);
-	strncat(mtk_ccm_name, mtk_ccm_temp, str_len);
-	memset(mtk_ccm_temp, 0x0, sizeof(mtk_ccm_temp));
 
-	str_len = sprintf(mtk_ccm_temp,
-		"\nCap: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+	snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
+		"%s\nCap: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+		mtk_ccm_name,
 		psensorResolution->SensorFullWidth,
 		psensorResolution->SensorFullHeight,
 		pSensorInfo->SensorGrabStartX_CAP,
 		pSensorInfo->SensorGrabStartY_CAP,
 		pSensorInfo->CaptureDelayFrame);
-	strncat(mtk_ccm_name, mtk_ccm_temp, str_len);
-	memset(mtk_ccm_temp, 0x0, sizeof(mtk_ccm_temp));
 
-	str_len = sprintf(mtk_ccm_temp,
-		"\nVid: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+	snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
+		"%s\nVid: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+		mtk_ccm_name,
 		psensorResolution->SensorVideoWidth,
 		psensorResolution->SensorVideoHeight,
 		pSensorInfo->SensorGrabStartX_VD,
 		pSensorInfo->SensorGrabStartY_VD,
 		pSensorInfo->VideoDelayFrame);
-	strncat(mtk_ccm_name, mtk_ccm_temp, str_len);
-	memset(mtk_ccm_temp, 0x0, sizeof(mtk_ccm_temp));
 
-	str_len = sprintf(mtk_ccm_temp,
-		"\nHSV: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+	snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
+		"%s\nHSV: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+		mtk_ccm_name,
 		psensorResolution->SensorHighSpeedVideoWidth,
 		psensorResolution->SensorHighSpeedVideoHeight,
 		pSensorInfo->SensorGrabStartX_VD1,
 		pSensorInfo->SensorGrabStartY_VD1,
 		pSensorInfo->HighSpeedVideoDelayFrame);
-	strncat(mtk_ccm_name, mtk_ccm_temp, str_len);
-	memset(mtk_ccm_temp, 0x0, sizeof(mtk_ccm_temp));
 
-	str_len = sprintf(mtk_ccm_temp,
-		"\nSLV: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+	snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
+		"%s\nSLV: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+		mtk_ccm_name,
 		psensorResolution->SensorSlimVideoWidth,
 		psensorResolution->SensorSlimVideoHeight,
 		pSensorInfo->SensorGrabStartX_VD2,
 		pSensorInfo->SensorGrabStartY_VD2,
 		pSensorInfo->SlimVideoDelayFrame);
-	strncat(mtk_ccm_name, mtk_ccm_temp, str_len);
-	memset(mtk_ccm_temp, 0x0, sizeof(mtk_ccm_temp));
 
-	str_len = sprintf(mtk_ccm_temp,
-		"\nSeninf_Type(0:parallel,1:mipi,2:serial)=%d, output_format(0:B,1:Gb,2:Gr,3:R)=%2d",
+	snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
+		"%s\nSeninf_Type(0:parallel,1:mipi,2:serial)=%d, output_format(0:B,1:Gb,2:Gr,3:R)=%2d",
+		mtk_ccm_name,
 		pSensorInfo->SensroInterfaceType,
 		pSensorInfo->SensorOutputDataFormat);
-	strncat(mtk_ccm_name, mtk_ccm_temp, str_len);
-	memset(mtk_ccm_temp, 0x0, sizeof(mtk_ccm_temp));
 
-	str_len = sprintf(mtk_ccm_temp,
-		"\nDriving_Current(0:2mA,1:4mA,2:6mA,3:8mA)=%d, mclk_freq=%2d, mipi_lane=%d",
+	snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
+		"%s\nDriving_Current(0:2mA,1:4mA,2:6mA,3:8mA)=%d, mclk_freq=%2d, mipi_lane=%d",
+		mtk_ccm_name,
 		pSensorInfo->SensorDrivingCurrent,
 		pSensorInfo->SensorClockFreq,
 		pSensorInfo->SensorMIPILaneNumber + 1);
-	strncat(mtk_ccm_name, mtk_ccm_temp, str_len);
-	memset(mtk_ccm_temp, 0x0, sizeof(mtk_ccm_temp));
 
-	str_len = sprintf(mtk_ccm_temp,
-		"\nPDAF_Support(0:No PD,1:PD RAW,2:VC(Full),3:VC(Bin),4:Dual Raw,5:Dual VC=%2d",
+	snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
+		"%s\nPDAF_Support(0:No PD,1:PD RAW,2:VC(Full),3:VC(Bin),4:Dual Raw,5:Dual VC=%2d",
+		mtk_ccm_name,
 		pSensorInfo->PDAF_Support);
-	strncat(mtk_ccm_name, mtk_ccm_temp, str_len);
-	memset(mtk_ccm_temp, 0x0, sizeof(mtk_ccm_temp));
 
-	str_len = sprintf(mtk_ccm_temp,
-		"\nHDR_Support(0:NO HDR,1: iHDR,2:mvHDR,3:zHDR)=%2d",
+	snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
+		"%s\nHDR_Support(0:NO HDR,1: iHDR,2:mvHDR,3:zHDR)=%2d",
+		mtk_ccm_name,
 		pSensorInfo->HDR_Support);
-	strncat(mtk_ccm_name, mtk_ccm_temp, str_len);
-	memset(mtk_ccm_temp, 0x0, sizeof(mtk_ccm_temp));
 
 	/* Resolution */
 	if (copy_to_user((void __user *) (pSensorGetInfo->pSensorResolution),
