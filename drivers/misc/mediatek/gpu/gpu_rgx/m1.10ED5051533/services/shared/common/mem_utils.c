@@ -222,7 +222,6 @@ __attribute__((visibility("hidden")))
 void DeviceMemSet(void *pvDst, unsigned char ui8Value, size_t uSize)
 {
 	volatile char *pcDst = pvDst;
-#if defined(CLANG_WORKAROUND)
 	size_t uPreambleBytes;
 
 	size_t uDstUnaligned = (size_t)pcDst % sizeof(block_t);
@@ -274,7 +273,6 @@ void DeviceMemSet(void *pvDst, unsigned char ui8Value, size_t uSize)
 
 		pcDst = (char *)pDst;
 	}
-#endif
 
 	while (uSize)
 	{
