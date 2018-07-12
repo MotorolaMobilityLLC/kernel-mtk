@@ -1141,6 +1141,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(SSD2858_KD097D05_QXGA_DSI_VDO)
 	&ssd2858_kd097d05_qxga_dsi_vdo_lcm_drv,
 #endif
+
+#if defined(ES6311_ANX6585_ZIGZAG_WXGA)
+	&es6311_anx6585_zigzag_wxga_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
