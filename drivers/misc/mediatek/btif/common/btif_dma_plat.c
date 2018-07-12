@@ -1257,8 +1257,9 @@ static int hal_rx_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info,
 int hal_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info, ENUM_BTIF_REG_ID flag)
 {
 	unsigned int i_ret = -1;
-
+#ifdef CONFIG_MTK_GIC_V3_EXT
 	mt_irq_dump_status(p_dma_info->p_irq->irq_id);
+#endif
 	if (p_dma_info->dir == DMA_DIR_TX)
 		i_ret = hal_tx_dma_dump_reg(p_dma_info, flag);
 	else if (p_dma_info->dir == DMA_DIR_RX)
