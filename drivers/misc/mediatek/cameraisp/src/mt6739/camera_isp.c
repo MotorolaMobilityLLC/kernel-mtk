@@ -3626,10 +3626,12 @@ static void ISP_BufWrite_Free(void)
 	for (i = 0; i < ISP_BUF_WRITE_AMOUNT; i++) {
 		IspInfo.BufInfo.Write[i].Status = ISP_BUF_STATUS_EMPTY;
 		IspInfo.BufInfo.Write[i].Size = 0;
+		spin_lock(&(IspInfo.SpinLockIspRef));
 		if (IspInfo.BufInfo.Write[i].pData != NULL) {
 			kfree(IspInfo.BufInfo.Write[i].pData);
 			IspInfo.BufInfo.Write[i].pData = NULL;
 		}
+		spin_unlock(&(IspInfo.SpinLockIspRef));
 	}
 }
 
@@ -3645,12 +3647,16 @@ static bool ISP_BufWrite_Alloc(void)
 
 	/*      */
 	for (i = 0; i < ISP_BUF_WRITE_AMOUNT; i++) {
+		spin_lock(&(IspInfo.SpinLockIspRef));
 		IspInfo.BufInfo.Write[i].Status = ISP_BUF_STATUS_EMPTY;
 		IspInfo.BufInfo.Write[i].Size = 0;
 		IspInfo.BufInfo.Write[i].pData =
 			kmalloc(ISP_BUF_SIZE_WRITE * sizeof(unsigned char), GFP_ATOMIC);
-		if (IspInfo.BufInfo.Write[i].pData == NULL) {
-			LOG_DBG("ERROR:	i =	%d,	pData is NULL", i);
+		if (IspInfo.BufInfo.Write[i].pData != NULL)
+			spin_unlock(&(IspInfo.SpinLockIspRef));
+		else {
+			spin_unlock(&(IspInfo.SpinLockIspRef));
+			LOG_DBG("ERROR:	i = %d, pData is NULL", i);
 			ISP_BufWrite_Free();
 			return false;
 		}
@@ -11304,14 +11310,17 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 	g_regScen = 0xa5a5a5a5;
 	spin_unlock((spinlock_t *)(&SpinLockRegScen));
 	/*      */
+	spin_lock(&(IspInfo.SpinLockIspRef));
 	IspInfo.BufInfo.Read.pData = kmalloc(ISP_BUF_SIZE, GFP_ATOMIC);
 	IspInfo.BufInfo.Read.Size = ISP_BUF_SIZE;
 	IspInfo.BufInfo.Read.Status = ISP_BUF_STATUS_EMPTY;
 	if (IspInfo.BufInfo.Read.pData == NULL) {
 		LOG_DBG("ERROR:	BufRead	kmalloc	failed");
 		Ret = -ENOMEM;
+		spin_unlock(&(IspInfo.SpinLockIspRef));
 		goto EXIT;
 	}
+	spin_unlock(&(IspInfo.SpinLockIspRef));
 	/*      */
 	if (!ISP_BufWrite_Alloc()) {
 		LOG_DBG("ERROR:	BufWrite kmalloc failed");
@@ -11361,10 +11370,12 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 	/*      */
 EXIT:
 	if (Ret < 0) {
+		spin_lock(&(IspInfo.SpinLockIspRef));
 		if (IspInfo.BufInfo.Read.pData != NULL) {
 			kfree(IspInfo.BufInfo.Read.pData);
 			IspInfo.BufInfo.Read.pData = NULL;
 		}
+		spin_unlock(&(IspInfo.SpinLockIspRef));
 		ISP_BufWrite_Free();
 	} else {
 		/* Enable clock.
@@ -11450,12 +11461,14 @@ static signed int ISP_release(struct inode *pInode, struct file *pFile)
 		memset((void *)IrqUserKey_UserInfo[i].userName, '\0', USERKEY_STR_LEN);
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
+	spin_lock(&(IspInfo.SpinLockIspRef));
 	if (IspInfo.BufInfo.Read.pData != NULL) {
 		kfree(IspInfo.BufInfo.Read.pData);
 		IspInfo.BufInfo.Read.pData = NULL;
 		IspInfo.BufInfo.Read.Size = 0;
 		IspInfo.BufInfo.Read.Status = ISP_BUF_STATUS_EMPTY;
 	}
+	spin_unlock(&(IspInfo.SpinLockIspRef));
 	/* Reset MCLK   */
 	mMclk1User = 0;
 	mMclk2User = 0;
