@@ -206,7 +206,9 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(charge_enabled),
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
-#if 0
+#if CONFIG_MTK_GAUGE_VERSION == 10
+	POWER_SUPPLY_ATTR(batt_vol),
+	POWER_SUPPLY_ATTR(batt_temp),
 	/* 20100405 Add for EM */
 	POWER_SUPPLY_ATTR(TemperatureR),
 	POWER_SUPPLY_ATTR(TempBattVoltage),
