@@ -219,10 +219,19 @@ void wakeup_all_cpu(void)
 {
 	int cpu = 0;
 
+	/*
+	 * smp_proccessor_id() will be called in the flow of
+	 * smp_send_reschedule(), hence disable preemtion to
+	 * avoid being scheduled out.
+	 */
+	preempt_disable();
+
 	for (cpu = 0; cpu < NF_CPU; cpu++) {
 		if (cpu_online(cpu))
 			smp_send_reschedule(cpu);
 	}
+
+	preempt_enable();
 }
 
 void wait_until_all_cpu_powered_on(void)
