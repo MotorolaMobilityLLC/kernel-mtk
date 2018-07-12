@@ -68,7 +68,7 @@ pvrsrvkm-y += \
 	generated/dmabuf_bridge/server_dmabuf_bridge.o \
 	services/system/rgx_mtk/ion_support.o \
 	services/system/rgx_mtk/sysconfig.o \
-	services/system/rgx_mtk/mt6765/mtk_mfgsys.o \
+	services/system/rgx_mtk/$(MTK_PLATFORM)/mtk_mfgsys.o \
 	services/system/rgx_mtk/mtk_pp.o \
 	services/system/common/vz_vmm_pvz.o \
 	services/system/common/vz_vmm_vm.o \
@@ -150,7 +150,6 @@ pvrsrvkm-y += \
 	services/server/env/linux/pvr_bridge_k.o \
 	services/server/env/linux/physmem_dmabuf.o \
 	services/server/env/linux/pmr_os.o \
-	services/server/env/linux/osfunc_arm64.o \
 	services/server/env/linux/module_common.o \
 	services/server/env/linux/dma_fence_sync_native_server.o \
 	services/server/env/linux/pvr_debugfs.o \
@@ -231,10 +230,6 @@ ccflags-y += \
 	-I$(RGX_TOP)/services/system/rgx_mtk \
 	-I$(RGX_TOP)/services/system/rgx_mtk/$(MTK_PLATFORM)
 
-ifeq ($(MTK_PLATFORM),mt6765)
-ccflags-y += \
-	-I$(RGX_TOP)/../m1.9ED4940716/include
-endif
 
 ccflags-y += \
 	-I$(srctree)/drivers/staging/android/ion \
