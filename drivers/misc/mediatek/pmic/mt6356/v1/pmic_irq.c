@@ -592,14 +592,19 @@ void register_all_oc_interrupts(void)
 		case INT_VSIM1_OC:
 		case INT_VSIM2_OC:
 		case INT_VMCH_OC:
+		case INT_VCAMA_OC:
+		case INT_VCAMD_OC:
 		case INT_VCAMIO_OC:
+		case INT_VIBR_OC:
 			PMICLOG("[PMIC_INT] non-enabled OC: %d\n", oc_interrupt);
 			break;
+#if 0
 		case INT_VCAMA_OC:
 		case INT_VCAMD_OC:
 			PMICLOG("[PMIC_INT] OC:%d should be enabled after power on\n", oc_interrupt);
 			pmic_register_oc_interrupt_callback(oc_interrupt);
 			break;
+#endif
 		default:
 			pmic_register_oc_interrupt_callback(oc_interrupt);
 			pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
