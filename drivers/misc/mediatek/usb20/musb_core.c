@@ -2618,7 +2618,7 @@ static int musb_init_controller
 	status = musb_gadget_setup(musb);
 
 	/* only enable on iddig mode */
-#ifndef CONFIG_USB_C_SWITCH
+#ifndef CONFIG_MTK_USB_TYPEC
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 	mt_usb_dual_role_init(musb);
 #endif
