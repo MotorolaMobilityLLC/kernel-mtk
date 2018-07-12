@@ -24,7 +24,8 @@
 #define MCDI_DEBUG_INFO_MAGIC_NUM           0x1eef9487
 #define MCDI_DEBUG_INFO_NON_REPLACE_OFFSET  0x0008
 
-extern u32 aee_rr_rec_mcdi_val(int id, u32 val);
+extern void aee_rr_rec_mcdi_val(int id, u32 val);
+extern void aee_rr_rec_mcdi_r15_val(u32 val);
 
 int cluster_idx_get(int cpu);
 unsigned int get_menu_predict_us(void);
@@ -41,5 +42,6 @@ unsigned int get_pwr_stat_check_map(int type, int idx);
 bool mcdi_pause(bool paused);
 void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask);
 void mcdi_wakeup_all_cpu(void);
+bool mcdi_fw_is_ready(void);
 
 #endif /* __MTK_MCDI_H__ */
