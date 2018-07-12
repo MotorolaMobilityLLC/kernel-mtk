@@ -539,6 +539,13 @@ unsigned int fbt_get_new_base_blc(void)
 
 	spin_lock_irqsave(&xgf_slock, flags);
 
+	if (target_cluster == cluster_num) {
+		spin_unlock_irqrestore(&xgf_slock, flags);
+		kfree(pld);
+		kfree(clus_opp);
+		return 0;
+	}
+
 	blc_wt = base_blc;
 	blc_freq = base_freq;
 
@@ -610,7 +617,8 @@ static void fbt_do_jerk(struct work_struct *work)
 		unsigned int blc_wt;
 
 		blc_wt = fbt_get_new_base_blc();
-		fbt_set_boost_value(target_cluster, blc_wt);
+		if (blc_wt != 0)
+			fbt_set_boost_value(target_cluster, blc_wt);
 		xgf_trace("boost jerk %d proc.id %d", jerk->id, proc.active_jerk_id);
 	} else
 		xgf_trace("skip jerk %d proc.id %d", jerk->id, proc.active_jerk_id);
