@@ -991,7 +991,7 @@ firmware_class.path=/vendor/firmware";
 		disp_ovl0 = <&disp_ovl0>;
 		sram_share_cnt = <1>;
 		sram_share_engine = <8>;
-		sram_share_event = <480>;
+		sram_share_event = <710>;
 		clocks = <&infracfg_ao CLK_INFRA_GCE>, <&infracfg_ao CLK_INFRA_GCE_26M>;
 		clock-names = "GCE", "GCE_TIMER";
 	};
