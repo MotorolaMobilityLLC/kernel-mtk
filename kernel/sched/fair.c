@@ -2822,6 +2822,12 @@ __update_load_avg(u64 now, int cpu, struct sched_avg *sa,
 	u32 contrib;
 	unsigned int delta_w, scaled_delta_w, decayed = 0;
 	unsigned long scale_freq, scale_cpu;
+	unsigned long hmp_weight;
+
+	if (cfs_rq)
+		hmp_weight = NICE_0_LOAD * cfs_rq->nr_running;
+	else
+		hmp_weight = NICE_0_LOAD;
 
 	delta = now - sa->last_update_time;
 	/*
@@ -2863,12 +2869,10 @@ __update_load_avg(u64 now, int cpu, struct sched_avg *sa,
 		scaled_delta_w = cap_scale(delta_w, scale_freq);
 		if (weight) {
 			sa->load_sum += weight * scaled_delta_w;
-			sa->loadwop_sum += NICE_0_LOAD * scaled_delta_w;
+			sa->loadwop_sum += hmp_weight * scaled_delta_w;
 			if (cfs_rq) {
 				cfs_rq->runnable_load_sum +=
 						weight * scaled_delta_w;
-				cfs_rq->avg.loadwop_sum +=
-						NICE_0_LOAD * scaled_delta_w;
 			}
 		}
 		if (running)
@@ -2885,8 +2889,6 @@ __update_load_avg(u64 now, int cpu, struct sched_avg *sa,
 		if (cfs_rq) {
 			cfs_rq->runnable_load_sum =
 				decay_load(cfs_rq->runnable_load_sum, periods + 1);
-			cfs_rq->avg.loadwop_sum =
-				decay_load(cfs_rq->avg.loadwop_sum, periods + 1);
 		}
 		sa->util_sum = decay_load((u64)(sa->util_sum), periods + 1);
 
@@ -2895,11 +2897,9 @@ __update_load_avg(u64 now, int cpu, struct sched_avg *sa,
 		contrib = cap_scale(contrib, scale_freq);
 		if (weight) {
 			sa->load_sum += weight * contrib;
-			sa->loadwop_sum += NICE_0_LOAD * contrib;
+			sa->loadwop_sum += hmp_weight * contrib;
 			if (cfs_rq) {
 				cfs_rq->runnable_load_sum += weight * contrib;
-				cfs_rq->avg.loadwop_sum +=
-						NICE_0_LOAD * contrib;
 			}
 		}
 		if (running)
@@ -2910,11 +2910,9 @@ __update_load_avg(u64 now, int cpu, struct sched_avg *sa,
 	scaled_delta = cap_scale(delta, scale_freq);
 	if (weight) {
 		sa->load_sum += weight * scaled_delta;
-		sa->loadwop_sum += NICE_0_LOAD * scaled_delta;
+		sa->loadwop_sum += hmp_weight * scaled_delta;
 		if (cfs_rq) {
 			cfs_rq->runnable_load_sum += weight * scaled_delta;
-			cfs_rq->avg.loadwop_sum +=
-				NICE_0_LOAD * scaled_delta;
 		}
 	}
 	if (running)
@@ -2929,8 +2927,6 @@ __update_load_avg(u64 now, int cpu, struct sched_avg *sa,
 		if (cfs_rq) {
 			cfs_rq->runnable_load_avg =
 				div_u64(cfs_rq->runnable_load_sum, LOAD_AVG_MAX);
-			cfs_rq->avg.loadwop_avg =
-				div_u64(cfs_rq->avg.loadwop_sum, LOAD_AVG_MAX);
 		}
 		sa->util_avg = sa->util_sum / LOAD_AVG_MAX;
 	}
@@ -3240,13 +3236,6 @@ update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq, bool update_freq)
 		set_tg_cfs_propagate(cfs_rq);
 	}
 
-	if (atomic_long_read(&cfs_rq->removed_loadwop_avg)) {
-		s64 r = atomic_long_xchg(&cfs_rq->removed_loadwop_avg, 0);
-
-		sa->loadwop_avg = max_t(long, sa->loadwop_avg - r, 0);
-		sa->loadwop_sum = max_t(s64, sa->loadwop_sum - r * LOAD_AVG_MAX, 0);
-	}
-
 	if (atomic_long_read(&cfs_rq->removed_util_avg)) {
 		long r = atomic_long_xchg(&cfs_rq->removed_util_avg, 0);
 		sub_positive(&sa->util_avg, r);
@@ -3257,6 +3246,7 @@ update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq, bool update_freq)
 
 	decayed = __update_load_avg(now, cpu_of(rq_of(cfs_rq)), sa,
 		scale_load_down(cfs_rq->load.weight), cfs_rq->curr != NULL, cfs_rq);
+	trace_sched_cfs_runnable_load(cpu_of(cfs_rq->rq), cfs_rq->avg.loadwop_avg, cfs_rq->h_nr_running);
 
 #ifndef CONFIG_64BIT
 	smp_wmb();
@@ -3401,6 +3391,7 @@ enqueue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
 		if (!task_low_priority(task_of(se)->prio))
 			cfs_nr_normal_prio(cpu)++;
 #endif
+
 #ifdef CONFIG_HMP_TRACER
 		trace_sched_cfs_enqueue_task(task_of(se), se_load(se), cpu);
 #endif
@@ -3429,7 +3420,6 @@ dequeue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
 			max_t(long, cfs_rq->avg.loadwop_avg - se->avg.loadwop_avg, 0);
 		cfs_rq->avg.loadwop_sum =
 			max_t(s64, cfs_rq->avg.loadwop_sum - se->avg.loadwop_sum, 0);
-
 #ifdef CONFIG_HMP_TRACER
 		trace_sched_cfs_dequeue_task(task_of(se), se_load(se), cfs_rq->rq->cpu);
 #endif
@@ -3489,7 +3479,6 @@ void remove_entity_load_avg(struct sched_entity *se)
 
 	sync_entity_load_avg(se);
 	atomic_long_add(se->avg.load_avg, &cfs_rq->removed_load_avg);
-	atomic_long_add(se->avg.loadwop_avg, &cfs_rq->removed_loadwop_avg);
 	atomic_long_add(se->avg.util_avg, &cfs_rq->removed_util_avg);
 }
 
@@ -10547,7 +10536,6 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
 	cfs_rq->propagate_avg = 0;
 #endif
 	atomic_long_set(&cfs_rq->removed_load_avg, 0);
-	atomic_long_set(&cfs_rq->removed_loadwop_avg, 0);
 	atomic_long_set(&cfs_rq->removed_util_avg, 0);
 #endif
 }

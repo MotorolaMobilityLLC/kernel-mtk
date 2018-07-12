@@ -141,9 +141,10 @@ static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluste
 	 * reasonable value.
 	 */
 	clbs->load_avg /= clbs->ncpu;
-	clbs->acap = clbs->cpu_capacity - cpu_rq(target)->cfs.avg.loadwop_avg;
+	clbs->acap = clbs->cpu_capacity -
+		cpu_rq(target)->cfs.avg.loadwop_avg;
 	clbs->scaled_acap = hmp_scale_down(clbs->acap);
-	clbs->scaled_atask = cpu_rq(target)->cfs.h_nr_running * cpu_rq(target)->cfs.avg.loadwop_avg;
+	clbs->scaled_atask = cpu_rq(target)->cfs.avg.loadwop_avg;
 	clbs->scaled_atask = clbs->cpu_capacity - clbs->scaled_atask;
 	clbs->scaled_atask = hmp_scale_down(clbs->scaled_atask);
 
@@ -597,12 +598,6 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	struct sched_entity *se = &p->se;
 	struct cpumask fast_cpu_mask, slow_cpu_mask;
 
-#ifdef CONFIG_HMP_TRACER
-	int cpu = 0;
-
-	for_each_online_cpu(cpu)
-		trace_sched_cfs_runnable_load(cpu, cfs_load(cpu), cfs_length(cpu));
-#endif
 
 	if (sched_boost() && idle_cpu(new_cpu) && hmp_cpu_is_fastest(new_cpu))
 		return new_cpu;
@@ -1250,11 +1245,6 @@ static void hmp_force_up_migration(int this_cpu)
 
 	if (!spin_trylock(&hmp_force_migration))
 		return;
-
-#ifdef CONFIG_HMP_TRACER
-	for_each_online_cpu(curr_cpu)
-		trace_sched_cfs_runnable_load(curr_cpu, cfs_load(curr_cpu), cfs_length(curr_cpu));
-#endif
 
 	/* Migrate heavy task from LITTLE to big */
 	for_each_online_cpu(curr_cpu) {
