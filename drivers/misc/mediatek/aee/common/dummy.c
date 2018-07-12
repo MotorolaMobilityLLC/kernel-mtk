@@ -150,18 +150,6 @@ __weak void aee_wdt_printf(const char *fmt, ...)
 {
 }
 
-__weak void aee_kdump_reboot(enum AEE_REBOOT_MODE reboot_mode,
-		const char *msg, ...)
-{
-	char str[80];
-	va_list ap;
-
-	va_start(ap, msg);
-	vsnprintf(str, 80, msg, ap);
-	pr_notice("%s", str);
-	va_end(ap);
-}
-
 __weak int aed_proc_debug_init(struct proc_dir_entry *aed_proc_dir)
 {
 	return 0;
