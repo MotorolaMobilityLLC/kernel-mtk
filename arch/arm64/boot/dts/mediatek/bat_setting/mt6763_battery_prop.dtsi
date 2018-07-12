@@ -11,7 +11,7 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-bat_gm30: bat_gm30{
+bat_gm30: battery{
 	compatible = "mediatek,bat_gm30";
 	DIFFERENCE_FULLOCV_ITH = <(200)>;	/*	Charging termination current.*/
 	SHUTDOWN_1_TIME = <(60)>;	/*	If ui_soc shows 1% more than X minites, system will shutdown.*/
