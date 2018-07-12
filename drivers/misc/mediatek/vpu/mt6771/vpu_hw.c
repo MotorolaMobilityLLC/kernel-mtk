@@ -54,7 +54,7 @@ struct wakeup_source vpu_wake_lock[MTK_VPU_CORE];
 struct wake_lock vpu_wake_lock[MTK_VPU_CORE];
 #endif
 
-/* #define ENABLE_VER_CHECK */
+#define ENABLE_VER_CHECK
 
 #include "vpu_dvfs.h"
 
