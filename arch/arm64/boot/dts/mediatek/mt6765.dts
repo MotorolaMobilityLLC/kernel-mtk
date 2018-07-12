@@ -1203,7 +1203,7 @@ firmware_class.path=/vendor/firmware";
 		mm_mutex = <&disp_mutex0>;
 		sram_share_cnt = <1>;
 		sram_share_engine = <10>;
-		sram_share_event = <480>;
+		sram_share_event = <710>;
 		clocks = <&infracfg_ao CLK_IFR_GCE>,
 			<&infracfg_ao CLK_IFR_GCE_26M>;
 		clock-names = "GCE", "GCE_TIMER";
