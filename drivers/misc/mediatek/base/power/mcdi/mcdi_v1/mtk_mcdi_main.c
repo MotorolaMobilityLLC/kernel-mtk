@@ -352,21 +352,24 @@ static ssize_t mcdi_info_read(struct file *filp,
 		}
 		mcdi_log("CPU Type = %d : cpu %d", cpu_type_idx_get(cpu), cpu);
 	}
-	mcdi_log("\n\ncheck cluster residnecy each core : %s",
-			get_mcdi_cluster_dev()->chk_res_each_core ?
-				"yes" : "no");
-	mcdi_log("\ncluster residency check fail rate : %d%% (%d/%d)",
-			(!get_mcdi_cluster_dev()->chk_res_cnt) ? 0 :
-				(100 * get_mcdi_cluster_dev()->chk_res_fail)
-				/ get_mcdi_cluster_dev()->chk_res_cnt,
-			get_mcdi_cluster_dev()->chk_res_fail,
-			get_mcdi_cluster_dev()->chk_res_cnt);
 
-	get_mcdi_cluster_dev()->chk_res_fail = 0;
-	get_mcdi_cluster_dev()->chk_res_cnt = 0;
+	if (mcdi_is_cpc_mode()) {
+		unsigned int fail, cnt;
 
-	mcdi_log("\ncluster timer enable : %s",
-			get_mcdi_cluster_dev()->tmr_en ? "yes" : "no");
+		fail = get_mcdi_cluster_dev()->chk_res_fail;
+		cnt = get_mcdi_cluster_dev()->chk_res_cnt;
+		get_mcdi_cluster_dev()->chk_res_fail = 0;
+		get_mcdi_cluster_dev()->chk_res_cnt = 0;
+
+		mcdi_log("\n\ncheck cluster residnecy each core : %s\n",
+				get_mcdi_cluster_dev()->chk_res_each_core ?
+					"yes" : "no");
+		mcdi_log("cluster residency check fail rate : %d%% (%d/%d)\n",
+				(!cnt) ? 0 : (100 * fail) / cnt, fail, cnt);
+
+		mcdi_log("cluster timer enable : %s\n",
+				get_mcdi_cluster_dev()->tmr_en ? "yes" : "no");
+	}
 	mcdi_log("\n\n");
 
 	mcdi_log("Usage: echo [command line] > /proc/mcdi/info\n");
@@ -375,8 +378,6 @@ static ssize_t mcdi_info_read(struct file *filp,
 				"latency [CPU Type] [state] [val(dec)]");
 	mcdi_log("  %-40s : set idle state residency value\n",
 				"residency [CPU Type] [state] [val(dec)]");
-	mcdi_log("  %-40s : enable/disable idle state\n",
-				"state [idle state] [0|1]");
 	mcdi_log("  %-40s : enable disable stress test\n",
 				"stress[0|1]");
 	mcdi_log("  %-40s : set stress timer interval\n",
@@ -492,14 +493,14 @@ parse_cmd:
 
 		return count;
 
-	} else if (!strncmp(cmd_str, "hrtimer", sizeof("hrtimer"))) {
+	} else if (!strncmp(cmd_str, "mcdi_timer", sizeof("mcdi_timer"))) {
 
-		if (param_cnt == 1)
+		if (param_cnt == 1 && mcdi_is_cpc_mode())
 			get_mcdi_cluster_dev()->tmr_en = !!param_0;
 
 		return count;
 
-	} else if (!strncmp(cmd_str, "timer", sizeof("timer"))) {
+	} else if (!strncmp(cmd_str, "stress_timer", sizeof("stress_timer"))) {
 
 		if (param_cnt == 1)
 			mcdi_stress_us = clamp_val(param_0, 100, 20000);
@@ -549,7 +550,7 @@ static void __go_to_wfi(int cpu)
 	isb();
 	/* memory barrier before WFI */
 	mb();
-	__asm__ __volatile__("wfi" : : : "memory");
+	wfi();
 
 	trace_rgidle_rcuidle(cpu, 0);
 

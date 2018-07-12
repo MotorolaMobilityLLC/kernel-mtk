@@ -34,14 +34,15 @@ struct mcdi_feature_status {
 };
 
 struct mcdi_cluster_dev {
-	bool tmr_en;
+	int cpu;
+
 	bool chk_res_each_core;
 	bool use_max_remain;
-	bool tmr_running;
-
-	int cpu;
 	unsigned int chk_res_cnt;
 	unsigned int chk_res_fail;
+
+	bool tmr_en;
+	bool tmr_running;
 	struct hrtimer timer;
 };
 
