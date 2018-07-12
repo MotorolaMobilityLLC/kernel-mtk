@@ -458,7 +458,7 @@ static void hp_pull_down(struct mt6358_priv *priv, bool enable)
 			udelay(600);
 		}
 	} else {
-		for (i = 0x6; i >= 0x1; i--) {
+		for (i = 0x6; i >= 0x0; i--) {
 			regmap_update_bits(priv->regmap, MT6358_AUDDEC_ANA_CON4,
 					   0x7, i);
 			udelay(600);
