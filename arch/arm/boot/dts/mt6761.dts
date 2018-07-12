@@ -2595,6 +2595,10 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		/* reserved for overlay by odm */
 	};
 
+	radio_md_cfg: radio_md_cfg {
+		compatible = "mediatek,radio_md_cfg";
+	};
+
 	audio_snd_card {
 		compatible = "mediatek,audio_snd_card";
 	};
