@@ -150,8 +150,7 @@ bool sentuevent(const char *src)
 	/*send uevent*/
 	if (uevent_enable) {
 		strlcpy(event_string, src, string_size);
-		if (event_string == '\0') { /*string is null*/
-
+		if (event_string[0] == '\0') { /*string is null*/
 			trace_cpu_loading_log("cpu_loading", "string is null");
 			return false;
 		}
@@ -218,8 +217,9 @@ int update_cpu_loading(void)
 			i, cur_idle_time[i].time, i, cur_wall_time[i].time);
 	}
 
-	tmp_cpu_loading = div_u64((100 * (wall_time - idle_time)), wall_time);
-
+	if (wall_time > 0 && wall_time > idle_time)
+		tmp_cpu_loading = div_u64((100 * (wall_time - idle_time)),
+			wall_time);
 
 	trace_cpu_loading_log("cpu_loading",
 			"tmp_cpu_loading:%d prev_cpu_loading:%d previous state:%d\n",
@@ -425,7 +425,7 @@ static ssize_t cpu_loading_poltime_secs_proc_write(
 	if (ret < 0)
 		return ret;
 
-	if (val > INT_MAX || val < 0) {
+	if (val < 0) {
 
 		trace_cpu_loading_log("cpu_loading",
 				"out of range val:%d", val);
