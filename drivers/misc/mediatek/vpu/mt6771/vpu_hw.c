@@ -1607,7 +1607,9 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 	uint64_t binpa_main_program;
 	uint64_t binpa_iram_data;
 	struct sg_table *sg;
-	const uint64_t size_algos = VPU_SIZE_ALGO_AREA + VPU_SIZE_ALGO_AREA + VPU_SIZE_ALGO_AREA;
+	/*const uint64_t size_algos = VPU_SIZE_ALGO_AREA + VPU_SIZE_ALGO_AREA + VPU_SIZE_ALGO_AREA;*/
+	const uint64_t size_algos = VPU_SIZE_BINARY_CODE - VPU_OFFSET_ALGO_AREA -
+		(VPU_SIZE_BINARY_CODE - VPU_OFFSET_MAIN_PROGRAM_IMEM);
 
 	LOG_DBG("vpu_map_mva_of_bin, bin_pa(0x%lx)\n", (unsigned long)bin_pa);
 
