@@ -2130,7 +2130,7 @@ static void __init mtk_camsys_init(struct device_node *node)
 	cam_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(CAMSYS_CG_CLR, CAMSYS_CG);
+	/*clk_writel(CAMSYS_CG_CLR, CAMSYS_CG);*/
 #else
 	clk_writel(CAMSYS_CG_SET, CAMSYS_CG);
 #endif
@@ -2160,7 +2160,7 @@ static void __init mtk_imgsys_init(struct device_node *node)
 	img_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(IMG_CG_CLR, IMG_CG);
+	/*clk_writel(IMG_CG_CLR, IMG_CG);*/
 #else
 	clk_writel(IMG_CG_SET, IMG_CG);
 #endif
@@ -2191,7 +2191,7 @@ static void __init mtk_mfg_cfg_init(struct device_node *node)
 	mfgcfg_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(MFG_CG_CLR, MFG_CG);
+	/*clk_writel(MFG_CG_CLR, MFG_CG);*/
 #else
 	clk_writel(MFG_CG_SET, MFG_CG);
 #endif
@@ -2252,8 +2252,8 @@ static void __init mtk_vdec_top_global_con_init(struct device_node *node)
 	vdec_gcon_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(VDEC_CKEN_SET, VDEC_CG);
-	clk_writel(LARB1_CKEN_SET, VDEC_LARB1_CG);
+	/*clk_writel(VDEC_CKEN_SET, VDEC_CG);*/
+	/*clk_writel(LARB1_CKEN_SET, VDEC_LARB1_CG);*/
 #endif
 }
 CLK_OF_DECLARE(mtk_vdec_top_global_con, "mediatek,vdec_gcon", mtk_vdec_top_global_con_init);
@@ -2281,7 +2281,7 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 	venc_gcon_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(VENC_CG_SET, VENC_CG);
+	/*clk_writel(VENC_CG_SET, VENC_CG);*/
 #else
 	clk_writel(VENC_CG_CLR, VENC_CG);
 #endif
@@ -2312,7 +2312,7 @@ static void __init mtk_ipu_conn_init(struct device_node *node)
 	ipu_conn_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(IPU_CONN_CG_CLR, IPU_CONN_CG);
+	/*clk_writel(IPU_CONN_CG_CLR, IPU_CONN_CG);*/
 #else
 	clk_writel(IPU_CONN_CG_SET, IPU_CONN_CG);
 #endif
@@ -2366,7 +2366,7 @@ static void __init mtk_ipu_core0_init(struct device_node *node)
 	ipu_core0_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(IPU_CORE0_CG_CLR, IPU_CORE0_CG);
+	/*clk_writel(IPU_CORE0_CG_CLR, IPU_CORE0_CG);*/
 #else
 	clk_writel(IPU_CORE0_CG_SET, IPU_CORE0_CG);
 #endif
@@ -2396,7 +2396,7 @@ static void __init mtk_ipu_core1_init(struct device_node *node)
 	ipu_core1_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(IPU_CORE1_CG_CLR, IPU_CORE1_CG);
+	/*clk_writel(IPU_CORE1_CG_CLR, IPU_CORE1_CG);*/
 #else
 	clk_writel(IPU_CORE1_CG_SET, IPU_CORE1_CG);
 #endif
