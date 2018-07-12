@@ -56,6 +56,8 @@
 
 static struct vpu_device *vpu_device;
 static struct wakeup_source vpu_wake_lock;
+static struct list_head device_debug_list;
+static struct mutex debug_list_mutex;
 struct ion_client *my_ion_client;
 unsigned int efuse_data;
 
@@ -191,7 +193,9 @@ int vpu_create_user(struct vpu_user **user)
 		return -ENOMEM;
 
 	mutex_init(&u->data_mutex);
+	mutex_lock(&debug_list_mutex);
 	vpu_num_users++;
+	mutex_unlock(&debug_list_mutex);
 	u->id = NULL;
 	u->open_pid = current->pid;
 	u->open_tgid = current->tgid;
@@ -615,6 +619,54 @@ int vpu_dump_user(struct seq_file *s)
 }
 
 
+int vpu_alloc_debug_info(struct vpu_dev_debug_info **rdbginfo)
+{
+	struct vpu_dev_debug_info *dbginfo;
+
+	dbginfo = kzalloc(sizeof(vlist_type(struct vpu_dev_debug_info)), GFP_KERNEL);
+	if (dbginfo == NULL) {
+		LOG_ERR("vpu_alloc_debug_info(), node=0x%p\n", dbginfo);
+		return -ENOMEM;
+	}
+
+	*rdbginfo = dbginfo;
+
+	return 0;
+}
+
+int vpu_free_debug_info(struct vpu_dev_debug_info *dbginfo)
+{
+	if (dbginfo != NULL)
+		kfree(dbginfo);
+	return 0;
+}
+
+int vpu_dump_device_dbg(struct seq_file *s)
+{
+	struct list_head *head = NULL;
+	struct vpu_dev_debug_info *dbg_info;
+
+#define LINE_BAR "  +-------+-------+-------+--------------------------------+\n"
+
+	vpu_print_seq(s, "================= vpu device debug info dump ====================\n");
+	vpu_print_seq(s, LINE_BAR);
+	vpu_print_seq(s, "  |%-7s|%-7s|%-7s|%-32s|\n",
+				  "PID", "TGID", "OPENFD", "USER");
+	vpu_print_seq(s, LINE_BAR);
+
+	mutex_lock(&debug_list_mutex);
+	list_for_each(head, &device_debug_list)
+	{
+		dbg_info = vlist_node_of(head, struct vpu_dev_debug_info);
+		vpu_print_seq(s, "  |%-7d|%-7d|%-7d|%-32s|\n",
+				  dbg_info->open_pid, dbg_info->open_tgid, dbg_info->dev_fd,
+				  dbg_info->callername);
+	}
+	mutex_unlock(&debug_list_mutex);
+	vpu_print_seq(s, LINE_BAR);
+#undef LINE_BAR
+	return 0;
+}
 
 
 /*---------------------------------------------------------------------------*/
@@ -647,7 +699,9 @@ static int vpu_open(struct inode *inode, struct file *flip)
 	}
 
 	user->id = (unsigned long *)user;
-	LOG_INF("vpu_open user->id : 0x%lx\n", (unsigned long)(user->id));
+	LOG_INF("vpu_open cnt(%d) user->id : 0x%lx, tids(%d/%d)\n", vpu_num_users,
+		(unsigned long)(user->id),
+		user->open_pid, user->open_tgid);
 	flip->private_data = user;
 
 	return ret;
@@ -664,6 +718,8 @@ static long vpu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long 
 	case VPU_IOCTL_REG_READ:
 	case VPU_IOCTL_LOAD_ALG_TO_POOL:
 	case VPU_IOCTL_GET_CORE_STATUS:
+	case VPU_IOCTL_OPEN_DEV_NOTICE:
+	case VPU_IOCTL_CLOSE_DEV_NOTICE:
 	{
 		/*void *ptr = compat_ptr(arg);*/
 
@@ -946,6 +1002,86 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		break;
 	}
+	case VPU_IOCTL_OPEN_DEV_NOTICE:
+	{
+		struct vpu_dev_debug_info *dev_debug_info;
+		struct vpu_dev_debug_info *u_dev_debug_info;
+
+		ret = vpu_alloc_debug_info(&dev_debug_info);
+		CHECK_RET("[OPEN_DEV_NOTICE] alloc debug_info failed, ret=%d\n", ret);
+
+		u_dev_debug_info = (struct vpu_dev_debug_info *) arg;
+		ret = get_user(dev_debug_info->dev_fd, &u_dev_debug_info->dev_fd);
+		if (ret)
+			LOG_ERR("[VPU_IOCTL_OPEN_DEV_NOTICE] copy 'dev_fd' failed, ret=%d\n", ret);
+
+		ret |= copy_from_user(dev_debug_info->callername,
+			u_dev_debug_info->callername, sizeof(vpu_name_t));
+		dev_debug_info->callername[sizeof(vpu_name_t) - 1] = '\0';
+		if (ret)
+			LOG_ERR("[VPU_IOCTL_OPEN_DEV_NOTICE] copy 'callname' failed, ret=%d\n", ret);
+
+		dev_debug_info->open_pid = user->open_pid;
+		dev_debug_info->open_tgid = user->open_tgid;
+
+		if (g_vpu_log_level > VpuLogThre_ALGO_OPP_INFO)
+			LOG_INF("[VPU_IOCTL_OPEN_DEV_NOTICE] user:%s/%d. pid(%d/%d)\n",
+				dev_debug_info->callername, dev_debug_info->dev_fd,
+				dev_debug_info->open_pid, dev_debug_info->open_tgid);
+
+		if (ret) {
+			/* error handle, free memory */
+			vpu_free_debug_info(dev_debug_info);
+		} else {
+			mutex_lock(&debug_list_mutex);
+			list_add_tail(vlist_link(dev_debug_info, struct vpu_dev_debug_info), &device_debug_list);
+			mutex_unlock(&debug_list_mutex);
+		}
+
+		break;
+	}
+	case VPU_IOCTL_CLOSE_DEV_NOTICE:
+	{
+		int dev_fd;
+		struct list_head *head = NULL;
+		struct vpu_dev_debug_info *dbg_info;
+		bool get = false;
+
+		ret = copy_from_user(&dev_fd, (void *) arg, sizeof(int));
+		CHECK_RET("[CLOSE_DEV_NOTICE] copy 'dev_fd' failed, ret=%d\n", ret);
+
+		mutex_lock(&debug_list_mutex);
+		list_for_each(head, &device_debug_list)
+		{
+			dbg_info = vlist_node_of(head, struct vpu_dev_debug_info);
+			if (g_vpu_log_level > VpuLogThre_ALGO_OPP_INFO)
+				LOG_INF("[VPU_IOCTL_CLOSE_DEV_NOTICE] req_user-> = %s/%d, %d/%d\n",
+					dbg_info->callername,
+					dbg_info->dev_fd, dbg_info->open_pid, dbg_info->open_tgid);
+			if (dbg_info->dev_fd == dev_fd) {
+				LOG_DBG("[VPU_IOCTL_CLOSE_DEV_NOTICE] get fd(%d) to close\n", dev_fd);
+				get = true;
+				break;
+			}
+		}
+
+		if (g_vpu_log_level > VpuLogThre_ALGO_OPP_INFO)
+			LOG_INF("[VPU_IOCTL_CLOSE_DEV_NOTICE] user:%d. pid(%d/%d), get(%d)\n",
+				dev_fd, user->open_pid, user->open_tgid, get);
+
+		if (get) {
+			list_del_init(vlist_link(dbg_info, struct vpu_dev_debug_info));
+			vpu_free_debug_info(dbg_info);
+			mutex_unlock(&debug_list_mutex);
+		} else {
+			mutex_unlock(&debug_list_mutex);
+			LOG_ERR("[VPU_IOCTL_CLOSE_DEV_NOTICE] want to close wrong fd(%d)\n", dev_fd);
+			ret = -ESPIPE;
+			goto out;
+		}
+
+		break;
+	}
 	default:
 		LOG_WRN("ioctl: no such command!\n");
 		ret = -EINVAL;
@@ -967,7 +1103,17 @@ static int vpu_release(struct inode *inode, struct file *flip)
 {
 	struct vpu_user *user = flip->private_data;
 
+	LOG_INF("vpu_release cnt(%d) user->id : 0x%lx, tids(%d/%d)\n", vpu_num_users,
+		(unsigned long)(user->id),
+		user->open_pid, user->open_tgid);
+
 	vpu_delete_user(user);
+	mutex_lock(&debug_list_mutex);
+	vpu_num_users--;
+	mutex_unlock(&debug_list_mutex);
+
+	if (vpu_num_users > 10)
+		vpu_dump_device_dbg(NULL);
 
 	return 0;
 }
@@ -1281,6 +1427,8 @@ static int __init VPU_INIT(void)
 	mutex_init(&vpu_device->commonpool_mutex);
 	vpu_device->commonpool_list_size = 0;
 	init_waitqueue_head(&vpu_device->req_wait);
+	INIT_LIST_HEAD(&device_debug_list);
+	mutex_init(&debug_list_mutex);
 
 	/* Register M4U callback */
 	LOG_DBG("register m4u callback");

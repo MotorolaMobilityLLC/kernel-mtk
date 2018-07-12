@@ -54,6 +54,7 @@ struct wakeup_source vpu_wake_lock[MTK_VPU_CORE];
 struct wake_lock vpu_wake_lock[MTK_VPU_CORE];
 #endif
 
+/* #define ENABLE_VER_CHECK */
 
 #include "vpu_dvfs.h"
 
@@ -79,7 +80,7 @@ struct VPU_OPP_INFO vpu_power_table[VPU_OPP_NUM] = {
 #define POWER_ON_MAGIC		(2)
 #define OPPTYPE_VCORE		(0)
 #define OPPTYPE_DSPFREQ		(1)
-
+#define HOST_VERSION		(0x18032300) /* 20180323, 00:00 : exception isr handle */
 
 /* ion & m4u */
 static m4u_client_t *m4u_client;
@@ -108,7 +109,7 @@ struct vup_service_info {
 };
 static struct vup_service_info vpu_service_cores[MTK_VPU_CORE];
 struct vpu_shared_memory *core_shared_data; /* shared data for all cores */
-
+bool exception_isr_check[MTK_VPU_CORE];
 
 #ifndef MTK_VPU_FPGA_PORTING
 
@@ -744,9 +745,15 @@ static bool vpu_change_opp(int core, int type)
 		ret = vpu_set_clock_source(clk_top_dsp_sel, opps.dsp.index);
 		CHECK_RET("[vpu_%d]fail to set dsp freq, step=%d, ret=%d\n", core, opps.dsp.index, ret);
 
+		if (core == 0) {
 		ret = vpu_set_clock_source(clk_top_dsp1_sel, opps.dspcore[core].index);
 		CHECK_RET("[vpu_%d]fail to set dsp_%d freq, step=%d, ret=%d\n",
 			core, core, opps.dspcore[core].index, ret);
+		} else if (core == 1) {
+			ret = vpu_set_clock_source(clk_top_dsp2_sel, opps.dspcore[core].index);
+			CHECK_RET("[vpu_%d]fail to set dsp_%d freq, step=%d, ret=%d\n",
+				core, core, opps.dspcore[core].index, ret);
+		}
 
 		ret = vpu_set_clock_source(clk_top_ipu_if_sel, opps.ipu_if.index);
 		CHECK_RET("[vpu_%d]fail to set ipu_if freq, step=%d, ret=%d\n", core, opps.ipu_if.index, ret);
@@ -1507,10 +1514,12 @@ static int vpu_service_routine(void *arg)
 			#else
 			wake_lock(&(vpu_wake_lock[service_core]));
 			#endif
+			exception_isr_check[service_core] = true;
 			if (vpu_hw_processing_request(service_core, req)) {
 				LOG_WRN("[vpu_%d] ==============================================\n", service_core);
 				LOG_WRN("[vpu_%d] hw_processing_request failed first, retry once\n", service_core);
 				LOG_WRN("[vpu_%d] ==============================================\n", service_core);
+				exception_isr_check[service_core] = true;
 				if (vpu_hw_processing_request(service_core, req)) {
 				LOG_ERR("[vpu_%d] hw_processing_request failed, while enque\n", service_core);
 				req->status = VPU_REQ_STATUS_FAILURE;
@@ -1885,7 +1894,7 @@ static void vpu_power_counter_routine(struct work_struct *work)
 
 int vpu_quick_suspend(int core)
 {
-	LOG_INF("[vpu_%d] q_suspend +\n", core);
+	LOG_DBG("[vpu_%d] q_suspend +\n", core);
 	mutex_lock(&power_counter_mutex[core]);
 	LOG_INF("[vpu_%d] q_suspend (%d/%d)\n", core,
 		power_counter[core], vpu_service_cores[core].state);
@@ -1996,6 +2005,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 			force_change_vcore_opp[i] = false;
 			force_change_dsp_freq[i] = false;
 			change_freq_first[i] = false;
+			exception_isr_check[i] = false;
 			INIT_DELAYED_WORK(&(power_counter_work[i].my_work), vpu_power_counter_routine);
 			#ifdef CONFIG_PM_WAKELOCKS
 			if (i == 0)
@@ -2258,8 +2268,12 @@ static int vpu_check_postcond(int core)
 	case VPU_STATE_IDLE:
 		return 0;
 	case VPU_STATE_NOT_READY:
-	case VPU_STATE_BUSY:
+	case VPU_STATE_ERROR:
 		return -EIO;
+	case VPU_STATE_BUSY:
+		return -EBUSY;
+	case VPU_STATE_TERMINATED:
+		return -EBADFD;
 	default:
 		return -EINVAL;
 	}
@@ -2386,6 +2400,7 @@ int vpu_hw_boot_sequence(int core)
 
 	/* 3. wait until done */
 	ret = wait_command(core);
+	ret |= vpu_check_postcond(core);  /* handle for err/exception isr */
 	VPU_SET_BIT(ptr_ctrl, 23);      /* RUN_STALL pull up to avoid fake cmd */
 	vpu_trace_end();
 	if (ret) {
@@ -2414,7 +2429,9 @@ int vpu_hw_set_debug(int core)
 {
 	int ret;
 	struct timespec now;
-
+#ifdef ENABLE_VER_CHECK
+	unsigned int device_version = 0x0;
+#endif
 	LOG_DBG("vpu_hw_set_debug (%d)+", core);
 	vpu_trace_begin("vpu_hw_set_debug");
 
@@ -2427,8 +2444,10 @@ int vpu_hw_set_debug(int core)
 	vpu_write_field(core, FLD_XTENSA_INFO21, vpu_service_cores[core].work_buf->pa + VPU_OFFSET_LOG);
 	vpu_write_field(core, FLD_XTENSA_INFO22, VPU_SIZE_LOG_BUF);
 	vpu_write_field(core, FLD_XTENSA_INFO23, now.tv_sec * 1000000 + now.tv_nsec / 1000);
-	LOG_INF("[vpu_%d] work_buf->pa + VPU_OFFSET_LOG (0x%lx)\n",
-		core, (unsigned long)(vpu_service_cores[core].work_buf->pa + VPU_OFFSET_LOG));
+	vpu_write_field(core, FLD_XTENSA_INFO29, HOST_VERSION);
+	LOG_INF("[vpu_%d] work_buf->pa + VPU_OFFSET_LOG (0x%lx), INFO01(0x%x), 23(%d)\n",
+		core, (unsigned long)(vpu_service_cores[core].work_buf->pa + VPU_OFFSET_LOG),
+		vpu_read_field(core, FLD_XTENSA_INFO01), vpu_read_field(core, FLD_XTENSA_INFO23));
 	LOG_DBG("vpu_set ok, running");
 
 	/* 2. trigger interrupt */
@@ -2439,15 +2458,30 @@ int vpu_hw_set_debug(int core)
 			(now.tv_sec / 60) % (60), now.tv_sec % 60, now.tv_nsec / 1000);
 	/* 3. wait until done */
 	ret = wait_command(core);
+	ret |= vpu_check_postcond(core);  /* handle for err/exception isr */
 	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 	vpu_trace_end();
+
+	/*3-additional. check vpu device/host version is matched or not*/
+#ifdef ENABLE_VER_CHECK
+	device_version = vpu_read_field(core, FLD_XTENSA_INFO20);
+	if ((int)device_version < (int)HOST_VERSION) {
+		LOG_ERR("[vpu_%d] wrong vpu version device(0x%x) v.s host(0x%x)\n",
+			core, vpu_read_field(core, FLD_XTENSA_INFO20),
+			vpu_read_field(core, FLD_XTENSA_INFO29));
+		ret = -EIO;
+	}
+#endif
+
 	if (ret) {
-		LOG_ERR("[vpu_%d] set-debug timeout , status(%d/%d), ret(%d)\n", core,
+		LOG_ERR("[vpu_%d] set-debug timeout/fail , status(%d/%d), ret(%d)\n", core,
 			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done, ret);
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		vpu_dump_debug_stack(core, DEBUG_STACK_SIZE);
 		vpu_dump_code_segment(core);
+		vpu_aee("VPU Timeout", "core_%d timeout to do set_debug, status(%d/%d), ret(%d)\n", core,
+				vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done, ret);
 	}
 	CHECK_RET("[vpu_%d]timeout of set debug\n", core);
 
@@ -2458,7 +2492,8 @@ int vpu_hw_set_debug(int core)
 out:
 	unlock_command(core);
 	vpu_trace_end();
-	LOG_INF("[vpu_%d] hw_set_debug -\n", core);
+	LOG_INF("[vpu_%d] hw_set_debug - version check(0x%x/0x%x)\n", core,
+		vpu_read_field(core, FLD_XTENSA_INFO20), vpu_read_field(core, FLD_XTENSA_INFO29));
 	return ret;
 }
 
@@ -2508,10 +2543,10 @@ int vpu_get_entry_of_algo(int core, char *name, int *id, unsigned int *mva, int 
 			/* CHRISTODO */
 			if ((strcmp(name, algo_info->name) == 0) &&
 				(algo_info->vpu_core & coreMagicNum)) {
-				LOG_DBG("algo_info->offset(0x%x)/0x%x",
+				LOG_INF("[%d] algo_info->offset(0x%x)/0x%x", core,
 					algo_info->offset, (unsigned int)(vpu_service_cores[core].algo_data_mva));
 				*mva = algo_info->offset - VPU_OFFSET_ALGO_AREA + vpu_service_cores[core].algo_data_mva;
-				LOG_DBG("*mva(0x%x/0x%lx), s(%d)", *mva, (unsigned long)(*mva), s);
+				LOG_INF("[%d] *mva(0x%x/0x%lx), s(%d)", core, *mva, (unsigned long)(*mva), s);
 				*length = algo_info->length;
 				*id = s;
 				return 0;
@@ -2932,11 +2967,19 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 
 		/* 3. wait until done */
 		ret = wait_command(core);
+		if (exception_isr_check[core])
+			ret |= vpu_check_postcond(core);  /* handle for err/exception isr */
 		/*if (g_vpu_log_level > VpuLogThre_ALGO_OPP_INFO)*/
-		LOG_INF("[vpu_%d] algo_%d(0x%lx) done(%d), ret(%d)\n", core, algo->id[core],
-			(unsigned long)algo->bin_ptr, vpu_service_cores[core].is_cmd_done, ret);
+		LOG_INF("[vpu_%d] algo_%d(0x%lx) done(%d), ret(%d), info00(%d), (%d)\n",
+			core, algo->id[core],
+			(unsigned long)algo->bin_ptr, vpu_service_cores[core].is_cmd_done, ret,
+			vpu_read_field(core, FLD_XTENSA_INFO00),
+			exception_isr_check[core]);
 		if (ret) {
-			LOG_INF("[vpu_%d] temp test1.1\n", core);
+			exception_isr_check[core] = false;
+			LOG_ERR("[vpu_%d] pr load_algo err , status(%d/%d), ret(%d), %d\n", core,
+				vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done,
+				ret, exception_isr_check[core]);
 		} else {
 			LOG_DBG("[vpu_%d] temp test1.2\n", core);
 			vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
@@ -2945,7 +2988,7 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 
 		if (ret) {
 			request->status = VPU_REQ_STATUS_TIMEOUT;
-			LOG_ERR("[vpu_%d] pr_load_algo timeout , status(%d/%d), ret(%d)\n", core,
+			LOG_ERR("[vpu_%d] pr_load_algo timeout/fail , status(%d/%d), ret(%d)\n", core,
 				vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done,
 				ret);
 			vpu_dump_mesg(NULL);
@@ -3012,11 +3055,18 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 
 	/* 3. wait until done */
 	ret = wait_command(core);
+	if (exception_isr_check[core])
+		ret |= vpu_check_postcond(core);  /* handle for err/exception isr */
 	if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
-		LOG_INF("[vpu_%d] end d2d, done(%d), ret(%d)\n", core,
-			vpu_service_cores[core].is_cmd_done, ret);
+		LOG_INF("[vpu_%d] end d2d, done(%d), ret(%d), info00(%d), %d\n", core,
+			vpu_service_cores[core].is_cmd_done, ret,
+			vpu_read_field(core, FLD_XTENSA_INFO00),
+			exception_isr_check[core]);
 	if (ret) {
-		LOG_INF("[vpu_%d] temp test2.1\n", core);
+		exception_isr_check[core] = false;
+		LOG_ERR("[vpu_%d] pr hw_d2d err , status(%d/%d), ret(%d), %d\n", core,
+			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done,
+			ret, exception_isr_check[core]);
 	} else {
 		LOG_DBG("[vpu_%d] temp test2.2\n", core);
 		vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
@@ -3034,7 +3084,7 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done, ret);
 	if (ret) {
 		request->status = VPU_REQ_STATUS_TIMEOUT;
-		LOG_ERR("[vpu_%d] pr hw_d2d timeout , status(%d/%d), ret(%d)\n", core,
+		LOG_ERR("[vpu_%d] pr hw_d2d timeout/fail , status(%d/%d), ret(%d)\n", core,
 			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done,
 			ret);
 		vpu_dump_buffer_mva(request);

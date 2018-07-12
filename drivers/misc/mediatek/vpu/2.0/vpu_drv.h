@@ -339,6 +339,13 @@ struct vpu_status {
 	int pool_list_size;
 };
 
+struct vpu_dev_debug_info {
+	int dev_fd;
+	vpu_name_t callername;
+	pid_t open_pid;
+	pid_t open_tgid;
+};
+
 /*---------------------------------------------------------------------------*/
 /*  IOCTL Command                                                            */
 /*---------------------------------------------------------------------------*/
@@ -354,6 +361,8 @@ struct vpu_status {
 #define VPU_IOCTL_REG_WRITE         _IOW(VPU_MAGICNO,   8, int)
 #define VPU_IOCTL_REG_READ          _IOWR(VPU_MAGICNO,  9, int)
 #define VPU_IOCTL_GET_CORE_STATUS   _IOWR(VPU_MAGICNO,  10, int)
+#define VPU_IOCTL_OPEN_DEV_NOTICE   _IOWR(VPU_MAGICNO,  11, int)
+#define VPU_IOCTL_CLOSE_DEV_NOTICE  _IOWR(VPU_MAGICNO,  12, int)
 
 
 #endif

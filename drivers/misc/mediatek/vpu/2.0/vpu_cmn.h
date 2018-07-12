@@ -155,6 +155,7 @@ struct type ## _list { \
 DECLARE_VLIST(vpu_user);
 DECLARE_VLIST(vpu_algo);
 DECLARE_VLIST(vpu_request);
+DECLARE_VLIST(vpu_dev_debug_info);
 
 
 /* =============================== define in vpu_emu.c  =============================== */
@@ -324,6 +325,12 @@ int vpu_dump_power(struct seq_file *s);
  * @s:          the pointer to seq_file.
  */
 int vpu_dump_vpu(struct seq_file *s);
+
+/**
+ * vpu_dump_device_dbg - dump the remaining user information to debug fd leak
+ * @s:          the pointer to seq_file.
+ */
+int vpu_dump_device_dbg(struct seq_file *s);
 
 /**
  * vpu_set_power_parameter - set the specific power parameter

@@ -601,6 +601,8 @@ IMPLEMENT_VPU_DEBUGFS(vpu);
 IMPLEMENT_VPU_DEBUGFS(image_file);
 IMPLEMENT_VPU_DEBUGFS(mesg);
 IMPLEMENT_VPU_DEBUGFS(opp_table);
+IMPLEMENT_VPU_DEBUGFS(device_dbg);
+
 
 #undef IMPLEMENT_VPU_DEBUGFS
 
@@ -764,6 +766,7 @@ int vpu_init_debug(struct vpu_device *vpu_dev)
 	CREATE_VPU_DEBUGFS(vpu);
 	CREATE_VPU_DEBUGFS(opp_table);
 	CREATE_VPU_DEBUGFS(power);
+	CREATE_VPU_DEBUGFS(device_dbg);
 
 #ifdef MTK_VPU_DVT
 	CREATE_VPU_DEBUGFS(test);
