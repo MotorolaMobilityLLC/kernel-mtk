@@ -113,4 +113,8 @@ extern void switch_int_to_host_and_mask(struct musb *musb);
 extern void musb_disable_host(struct musb *musb);
 extern void musb_enable_host(struct musb *musb);
 extern void musb_session_restart(struct musb *musb);
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+extern int mt_usb_dual_role_init(struct musb *musb);
+extern int mt_usb_dual_role_changed(struct musb *musb);
+#endif /* CONFIG_DUAL_ROLE_USB_INTF */
 #endif
