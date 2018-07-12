@@ -604,8 +604,6 @@ int ip6_fragment(struct net *net, struct sock *sk, struct sk_buff *skb,
 	if (ignore_double_fragment(skb) && skb->len > mtu) {
 		pr_info_ratelimited("[mtk_net] ip6_fragment ignore to avoid double fragment\n");
 		err = output(net, sk, skb);
-		if (err)
-			goto fail;
 		return err;
 	}
 
