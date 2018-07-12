@@ -212,6 +212,11 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 			NULL, 0);
 #endif
 
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	if (wakesta->r12 & R12_SCP_SPM_IRQ_B)
+		mt_print_scp_ipi_id();
+#endif
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_ECCCI_DRIVER
 	if (wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)
