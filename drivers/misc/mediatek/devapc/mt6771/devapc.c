@@ -225,7 +225,7 @@ static struct DEVICE_INFO devapc_infra_devices[] = {
 	{"PERISYS_I2C6",                          true    },
 	{"PERISYS_PWM",                           true    },
 	{"PERISYS_I2C0",                          true    },
-	{"PERISYS_I2C1",                          true    },
+	{"PERISYS_I2C4",                          true    },
 	{"PERISYS_I2C2",                          true    },
 
 	/* 100 */
@@ -236,7 +236,7 @@ static struct DEVICE_INFO devapc_infra_devices[] = {
 	{"PERISYS_DISP_PWM",                      true    },
 	{"PERISYS_I2C3",                          true    },
 	{"PERISYS_SPI1",                          true    },
-	{"PERISYS_I2C4",                          true    },
+	{"PERISYS_I2C1",                          true    },
 	{"PERISYS_SPI2",                          true    },
 	{"PERISYS_SPI3",                          true    },
 
