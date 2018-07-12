@@ -378,7 +378,13 @@ static void sync_fill_fence_info(struct fence *fence,
 		sizeof(info->driver_name));
 
 	info->status = fence_get_status(fence);
-	info->timestamp_ns = ktime_to_ns(fence->timestamp);
+	while (test_bit(FENCE_FLAG_SIGNALED_BIT, &fence->flags) &&
+	       !test_bit(FENCE_FLAG_TIMESTAMP_BIT, &fence->flags))
+		cpu_relax();
+	info->timestamp_ns =
+		test_bit(FENCE_FLAG_TIMESTAMP_BIT, &fence->flags) ?
+		ktime_to_ns(fence->timestamp) :
+		ktime_to_ns(ktime_set(0, 0));
 }
 
 static long sync_file_ioctl_fence_info(struct sync_file *sync_file,
