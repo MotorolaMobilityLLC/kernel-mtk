@@ -53,7 +53,7 @@
 #define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 #endif /* PROC_ENTRY */
 
-static int light_load_cps = 1000;
+int light_load_cps = 1000;
 static int cm_mgr_loop_count = 15;
 static int cm_mgr_dram_level;
 static int cm_mgr_loop;
@@ -83,6 +83,8 @@ int cm_mgr_blank_status;
 int cm_mgr_perf_enable = 1;
 int cm_mgr_perf_timer_enable;
 int cm_mgr_perf_force_enable;
+int cm_mgr_loading_level;
+int cm_mgr_loading_enable;
 
 static int vcore_power_gain_0[][VCORE_ARRAY_SIZE] = {
 	{64, 165},
