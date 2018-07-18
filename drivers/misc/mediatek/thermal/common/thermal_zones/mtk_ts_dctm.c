@@ -147,8 +147,8 @@ static int tskinInit(int tpcbInit)
 		tpcbInit = tpcbinit;
 
 	mutex_lock(&dctm_mutex);
-	rhs[TSKINNODE] = tamb_coef * tamb; // 10^3
-	rhs[TPCBNODE]  = tpcb_coef * tpcbInit; //10^3
+	rhs[TSKINNODE] = (long long)tamb_coef * tamb; // 10^3
+	rhs[TPCBNODE]  = (long long)tpcb_coef * tpcbInit; //10^3
 
 	for (i = 0; i < NUMNODE; i++) {
 		tInit = 0;
