@@ -236,14 +236,14 @@ static char *m4u_get_module_name(int portID)
 static struct pseudo_device larbdev[MTK_IOMMU_LARB_NR];
 struct device *pseudo_get_larbdev(int portid)
 {
-	int larbid;
 	struct pseudo_device *pseudo;
 
-	larbid = m4u_get_larbid(portid);
 	pseudo = &larbdev[0];
 
-	if (pseudo && pseudo->dev)
+	if (pseudo && pseudo->dev) {
+		pseudo->larbid = m4u_get_larbid(portid);
 		return pseudo->dev;
+	}
 
 	M4U_MSG("could not get larbdev\n");
 	return NULL;
@@ -1243,7 +1243,7 @@ static dma_addr_t _alloc_iova(struct dma_iommu_mapping *mapping,
 	spin_lock_irqsave(&mapping->lock, flags);
 	for (i = 0; i < mapping->nr_bitmaps; i++) {
 		start = bitmap_find_next_zero_area(mapping->bitmaps[i],
-				mapping->bits, 0, count, align);
+				mapping->bits, 1, count, align);
 
 		if (start > mapping->bits)
 			continue;
