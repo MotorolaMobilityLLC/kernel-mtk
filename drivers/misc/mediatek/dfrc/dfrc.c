@@ -28,6 +28,7 @@
 #ifdef PLATFORM_SUPPORT_ARR
 #include <primary_display_arr.h>
 #endif
+#include <primary_display.h>
 
 #include "dfrc_drv.h"
 
@@ -1766,6 +1767,11 @@ static int dfrc_probe(struct platform_device *pdev)
 {
 	struct class_device *class_dev = NULL;
 	int ret = 0;
+
+	if (primary_get_dpmgr_handle() == NULL) {
+		pr_info("Display does not start probe\n");
+		return -EPROBE_DEFER;
+	}
 
 	ret = alloc_chrdev_region(&dfrc_devno, 0, 1, DFRC_DEVNAME);
 	if (ret)
