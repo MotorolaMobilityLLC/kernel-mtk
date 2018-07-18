@@ -565,6 +565,7 @@ static unsigned int *_cpu_power_gain_ptr(int isUP, int isLow, int idx)
 			case 1:
 				return CPU_POWER_GAIN(Down, High, 1);
 			}
+			break;
 		case 1:
 			switch (idx) {
 			case 0:
@@ -572,7 +573,9 @@ static unsigned int *_cpu_power_gain_ptr(int isUP, int isLow, int idx)
 			case 1:
 				return CPU_POWER_GAIN(Down, Low, 1);
 			}
+			break;
 		}
+		break;
 	case 1:
 		switch (isLow) {
 		case 0:
@@ -582,6 +585,7 @@ static unsigned int *_cpu_power_gain_ptr(int isUP, int isLow, int idx)
 			case 1:
 				return CPU_POWER_GAIN(Up, High, 1);
 			}
+			break;
 		case 1:
 			switch (idx) {
 			case 0:
@@ -589,7 +593,9 @@ static unsigned int *_cpu_power_gain_ptr(int isUP, int isLow, int idx)
 			case 1:
 				return CPU_POWER_GAIN(Up, Low, 1);
 			}
+			break;
 		}
+		break;
 	}
 
 	pr_info("#@# %s(%d) warning value %d\n", __func__, __LINE__, idx);
