@@ -479,14 +479,11 @@ void trigger_disconnect_check_work(void)
 }
 
 #define CONN_WORK_DELAY 50
-#define USB_PROPERTY_GAP_MS 3000
 static struct delayed_work connection_work;
 void do_connection_work(struct work_struct *data)
 {
 	unsigned long flags = 0;
 	bool usb_in = false;
-	/* 0 to enable, 1 to disable, disable currently */
-	static int exceed_gap = 1;
 	int usb_clk_state = NO_CHANGE;
 
 	if (!mtk_musb->is_ready) {
@@ -500,34 +497,6 @@ void do_connection_work(struct work_struct *data)
 			&connection_work,
 			msecs_to_jiffies(CONN_WORK_DELAY));
 		return;
-	} else if (!exceed_gap) {
-#ifndef FPGA_PLATFORM
-		s64 diff_time;
-		ktime_t ktime_now;
-
-		ktime_now = ktime_get();
-		diff_time = ktime_to_ms(ktime_sub(ktime_now, ktime_ready));
-
-		/* only normal mode could suffer
-		 * rapid config switch at boot time
-		 */
-		if (get_boot_mode() == NORMAL_BOOT
-				&& diff_time < USB_PROPERTY_GAP_MS) {
-			/* re issue work */
-			DBG_LIMIT(3,
-				"diff<%lld>,retrigger after %d ms, is_host<%d>, power<%d>",
-				diff_time,
-				CONN_WORK_DELAY,
-				mtk_musb->is_host,
-				mtk_musb->power);
-			queue_delayed_work(mtk_musb->st_wq,
-				&connection_work,
-				msecs_to_jiffies(CONN_WORK_DELAY));
-			return;
-		}
-		DBG(0, "exceed_gap to 1, diff_time<%lld>\n", diff_time);
-#endif
-		exceed_gap = 1;
 	}
 
 	DBG(0, "is_host<%d>, power<%d>\n",
@@ -951,32 +920,11 @@ static ssize_t mt_usb_store_cmode(struct device *dev,
 			cmode = CABLE_MODE_NORMAL;
 
 		if (cable_mode != cmode) {
-			/* IPO shutdown, disable USB */
-			if (cmode == CABLE_MODE_CHRG_ONLY) {
-				if (mtk_musb) {
-					mtk_musb->in_ipo_off = true;
-					DBG(0, "in_ipo_off is set\n");
-				}
-
-			} else {	/* IPO bootup, enable USB */
-				if (mtk_musb) {
-					mtk_musb->in_ipo_off = false;
-					DBG(0, "in_ipo_off is clr\n");
-				}
-			}
-
 			cable_mode = cmode;
 			usb_reconnect();
 
 			/* let conection work do its job */
 			msleep(50);
-
-#ifdef CONFIG_USB_MTK_OTG
-			if (cmode == CABLE_MODE_CHRG_ONLY)
-				musb_disable_host(mtk_musb);
-			else
-				musb_enable_host(mtk_musb);
-#endif
 		}
 		if (mtk_musb)
 			up(&mtk_musb->musb_lock);
