@@ -145,8 +145,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
 	},
-	.margin = 5,		/* sensor framelength & shutter margin */
-	.min_shutter = 4,	/* min shutter */
+	.margin = 36,		/* sensor framelength & shutter margin */
+	.min_shutter = 8,	/* min shutter */
 	.max_frame_length = 0xFFFF,	/* REG0x0202 <=REG0x0340-5//max framelength by sensor register's limitation */
 	.ae_shut_delay_frame = 0,	/* shutter delay frame for AE cycle,
 					 * 2 frame with ispGain_delay-shut_delay=2-0=2
@@ -473,40 +473,77 @@ static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length
 }	/* write_shutter */
 
 
-static void set_shutter(kal_uint16 shutter)
+static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
+	kal_uint32 line_length = 0;
+	kal_uint16 long_exp_times = 1;
+	kal_uint32 long_exp_remind = 0;
 
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	spin_lock(&imgsensor_drv_lock);
-	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
-		imgsensor.frame_length = shutter + imgsensor_info.margin;
-	else
-		imgsensor.frame_length = imgsensor.min_frame_length;
-	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-		imgsensor.frame_length = imgsensor_info.max_frame_length;
-	spin_unlock(&imgsensor_drv_lock);
-	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
-	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin))
-		? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+	if (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) {
+		/* long expsoure */
+		LOG_INF("Long exposure, shutter = %d\n", shutter);
 
-	if (imgsensor.autoflicker_en) {
-		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
-		if (realtime_fps >= 297 && realtime_fps <= 305)
-			set_max_framerate(296, 0);
-		else if (realtime_fps >= 147 && realtime_fps <= 150)
-			set_max_framerate(146, 0);
-		else {
+		long_exp_times = shutter / (imgsensor_info.max_frame_length - imgsensor_info.margin);
+		long_exp_remind = shutter % (imgsensor_info.max_frame_length - imgsensor_info.margin);
+		line_length = long_exp_times * imgsensor.line_length;
+		line_length += (long_exp_remind * imgsensor.line_length /
+				(imgsensor_info.max_frame_length - imgsensor_info.margin));
+		if (line_length > 0xffff)
+			line_length = 0xffff;
+
+		/* Adjust line length */
+		write_cmos_sensor_byte(0x380c, line_length >> 8);
+		write_cmos_sensor_byte(0x380d, line_length & 0xFF);
+
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.frame_length = imgsensor_info.max_frame_length;
+		spin_unlock(&imgsensor_drv_lock);
+
+		shutter = imgsensor_info.max_frame_length - imgsensor_info.margin;
+
+		/* Extend frame length */
+		write_cmos_sensor(0x380e, imgsensor.frame_length & 0xFFFF);
+
+		LOG_INF("new shutter = %u, new line length = %u\n", shutter, line_length);
+	} else {
+		/* normal expsoure */
+		LOG_INF("Normal exposure, shutter = %d\n", shutter);
+
+		spin_lock(&imgsensor_drv_lock);
+		if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
+			imgsensor.frame_length = shutter + imgsensor_info.margin;
+		else
+			imgsensor.frame_length = imgsensor.min_frame_length;
+		if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+			imgsensor.frame_length = imgsensor_info.max_frame_length;
+		spin_unlock(&imgsensor_drv_lock);
+
+		shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
+
+		/* restore line length */
+		write_cmos_sensor_byte(0x380c, imgsensor.line_length >> 8);
+		write_cmos_sensor_byte(0x380d, imgsensor.line_length & 0xFF);
+
+		if (imgsensor.autoflicker_en) {
+			realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+			if (realtime_fps >= 297 && realtime_fps <= 305)
+				set_max_framerate(296, 0);
+			else if (realtime_fps >= 147 && realtime_fps <= 150)
+				set_max_framerate(146, 0);
+			else {
+				/* Extend frame length */
+				write_cmos_sensor(0x380e, imgsensor.frame_length & 0xFFFF);
+			}
+		} else {
 			/* Extend frame length */
 			write_cmos_sensor(0x380e, imgsensor.frame_length & 0xFFFF);
 		}
-	} else {
-		/* Extend frame length */
-		write_cmos_sensor(0x380e, imgsensor.frame_length & 0xFFFF);
 	}
 
 	/* Update Shutter */
