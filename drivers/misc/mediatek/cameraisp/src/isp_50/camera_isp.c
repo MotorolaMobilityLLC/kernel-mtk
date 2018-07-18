@@ -2884,13 +2884,21 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_GET_GLOBAL_TIME:
 		{
-			u64 hwTickCnt, globalTime;
+#ifdef TS_BOOT_T
+			#define TS_TYPE	(2)
+#else
+			#define TS_TYPE	(1)
+#endif
+			u64 hwTickCnt[TS_TYPE], globalTime[TS_TYPE];
 
-			if (copy_from_user(&hwTickCnt, (void *)Param, sizeof(u64)) == 0) {
-				globalTime = archcounter_timesync_to_monotonic(hwTickCnt); /* ns */
-				do_div(globalTime, 1000); /* ns to us */
-
-				if (copy_to_user((void *)Param, &globalTime, sizeof(u64)) != 0) {
+			if (copy_from_user(hwTickCnt, (void *)Param, sizeof(u64)*TS_TYPE) == 0) {
+				globalTime[0] = archcounter_timesync_to_monotonic(hwTickCnt[0]); /* ns */
+				do_div(globalTime[0], 1000); /* ns to us */
+#ifdef TS_BOOT_T
+				globalTime[1] = archcounter_timesync_to_boot(hwTickCnt[0]); /* ns */
+				do_div(globalTime[1], 1000); /* ns to us */
+#endif
+				if (copy_to_user((void *)Param, globalTime, sizeof(u64)*TS_TYPE) != 0) {
 					LOG_NOTICE("ISP_GET_GLOBAL_TIME copy_to_user failed");
 					Ret = -EFAULT;
 				}

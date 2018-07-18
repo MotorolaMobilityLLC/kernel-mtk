@@ -16,6 +16,12 @@
 
 #include <linux/ioctl.h>
 
+/**
+*boot-T timestamp is supported or not.
+*	undef: not supported
+*/
+#define TS_BOOT_T
+
 #ifndef CONFIG_OF
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
