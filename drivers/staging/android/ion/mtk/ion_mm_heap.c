@@ -761,7 +761,12 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 			continue;
 		bug_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
 		pdbg = &bug_info->dbg_info;
-
+		if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA) &&
+		    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
+			continue;
+		if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) &&
+		    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))
+			continue;
 		ION_PRINT_LOG_OR_SEQ(s,
 				     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %5d(%5d) %16s 0x%x 0x%x 0x%x 0x%x %s\n",
 				     buffer, buffer->size, buffer->kmap_cnt,
