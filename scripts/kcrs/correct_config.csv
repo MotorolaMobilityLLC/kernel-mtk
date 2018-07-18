@@ -707,7 +707,7 @@ CONFIG_MTK_MPU6515G,PLATFORM,lomen.wu,new config in this commit 4486d5ee565d38da
 CONFIG_MTK_MRDUMP_KEY,PROJECT,zh.chen,new config in this commit 64f3538db65d13898589d3462f61289152852490,,,,,,,,
 CONFIG_MTK_MT6306_GPIO_SUPPORT,PROJECT,,,y,,,O,,O,,O
 CONFIG_MTK_MTD_NAND,PROJECT,chienwei.chang,,,,,,,,,
-CONFIG_MTK_MUSB_DRV_36BIT,PLATFORM,justin.hsieh,,X,y,X,y,X,y,X,y
+CONFIG_MTK_MUSB_DRV_36BIT,PLATFORM,justin.hsieh,,X,y,N,y,N,y,X,y
 CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT,PLATFORM,justin.hsieh,new config in this commit b70141ee8aac3a3af31b207ed2efb82611800204,X,X,y,y,y,y,y,y
 CONFIG_MTK_MUSB_QMU_SUPPORT,PLATFORM,Yu-Chang.Wang,,X,X,y,y,y,y,y,y
 CONFIG_MTK_NAND_BITFLIP,PROJECT,chienwei.chang,,X,O,O,X,O,X,O,X
