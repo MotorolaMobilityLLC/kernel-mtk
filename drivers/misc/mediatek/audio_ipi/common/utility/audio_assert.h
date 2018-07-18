@@ -39,5 +39,14 @@
 	} while (0)
 #endif
 
+#define AUD_WARNING(string) \
+	do { \
+		pr_notice("AUD_WARNING(" string"): \""  __FILE__ "\", %uL\n", \
+			  __LINE__); \
+		WARN_ON(1); \
+	} while (0)
+
+
+
 #endif /* end of AUDIO_ASSERT_H */
 

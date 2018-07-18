@@ -35,7 +35,7 @@
 #include <linux/of_fdt.h>
 #include <linux/ioport.h>
 #include <linux/kthread.h>
-#include <linux/wakelock.h>
+//#include <linux/wakelock.h>
 
 
 #include <linux/io.h>
@@ -48,12 +48,12 @@
 
 #include "audio_task_manager.h"
 
-#include "audio_dma_buf_control.h"
+#include <audio_ipi_dma.h>
 #include "audio_speech_msg_id.h"
 
 
 #define DUMP_DSP_PCM_DATA_PATH "/sdcard/mtklog/aurisys_dump"
-static struct wake_lock call_pcm_dump_wake_lock;
+//static struct wake_lock call_pcm_dump_wake_lock;
 
 
 enum { /* dump_data_t */
@@ -66,13 +66,15 @@ enum { /* dump_data_t */
 
 struct dump_work_t {
 	struct work_struct work;
-	char *dma_addr;
+	uint32_t rw_idx;
+	uint32_t data_size;
 };
 
 
 struct dump_package_t {
 	uint8_t dump_data_type;
-	char *data_addr;
+	uint32_t rw_idx;
+	uint32_t data_size;
 };
 
 
@@ -122,8 +124,6 @@ struct pcm_dump_dl_t {
 };
 
 
-static struct audio_resv_dram_t *p_resv_dram;
-
 struct file *file_ul_in_ch1;
 struct file *file_ul_in_ch2;
 struct file *file_ul_in_ch3;
@@ -156,7 +156,7 @@ void open_dump_file(void)
 
 
 	/* only enable when debug pcm dump on */
-	wake_lock(&call_pcm_dump_wake_lock);
+	//wake_lock(&call_pcm_dump_wake_lock);
 
 	getnstimeofday(&curr_tm);
 
@@ -298,7 +298,7 @@ void close_dump_file(void)
 		file_dl_out = NULL;
 	}
 
-	wake_unlock(&call_pcm_dump_wake_lock);
+	//wake_unlock(&call_pcm_dump_wake_lock);
 }
 
 
@@ -313,7 +313,8 @@ void phone_call_recv_message(struct ipi_msg_t *p_ipi_msg)
 		idx = (uint8_t)p_ipi_msg->param2;
 
 		irq_cnt[idx]++;
-		dump_work[idx].dma_addr = p_ipi_msg->dma_addr;
+		dump_work[idx].rw_idx = p_ipi_msg->dma_info.rw_idx;
+		dump_work[idx].data_size = p_ipi_msg->dma_info.data_size;
 
 		ret = queue_work(dump_workqueue[idx], &dump_work[idx].work);
 		if (ret == 0)
@@ -332,21 +333,21 @@ void phone_call_task_unloaded(void)
 static void dump_data_routine_ul(struct work_struct *ws)
 {
 	struct dump_work_t *dump_work = NULL;
-	char *data_addr = NULL;
+	uint32_t rw_idx = 0;
+	uint32_t data_size = 0;
 
 	unsigned long flags = 0;
 
 	irq_cnt_w[DUMP_UL]++;
 
 	dump_work = container_of(ws, struct dump_work_t, work);
-	data_addr = get_resv_dram_vir_addr(dump_work->dma_addr);
-	AUD_LOG_V("data %p, dma %p, vp %p, pp %p\n",
-		  data_addr, dump_work->dma_addr,
-		  p_resv_dram->vir_addr, p_resv_dram->phy_addr);
+	rw_idx = dump_work->rw_idx;
+	data_size = dump_work->data_size;
 
 	spin_lock_irqsave(&dump_queue_lock, flags);
 	dump_queue->dump_package[dump_queue->idx_w].dump_data_type = DUMP_UL;
-	dump_queue->dump_package[dump_queue->idx_w].data_addr = data_addr;
+	dump_queue->dump_package[dump_queue->idx_w].rw_idx = rw_idx;
+	dump_queue->dump_package[dump_queue->idx_w].data_size = data_size;
 	dump_queue->idx_w++;
 	spin_unlock_irqrestore(&dump_queue_lock, flags);
 
@@ -357,21 +358,21 @@ static void dump_data_routine_ul(struct work_struct *ws)
 static void dump_data_routine_dl(struct work_struct *ws)
 {
 	struct dump_work_t *dump_work = NULL;
-	char *data_addr = NULL;
+	uint32_t rw_idx = 0;
+	uint32_t data_size = 0;
 
 	unsigned long flags = 0;
 
 	irq_cnt_w[DUMP_DL]++;
 
 	dump_work = container_of(ws, struct dump_work_t, work);
-	data_addr = get_resv_dram_vir_addr(dump_work->dma_addr);
-	AUD_LOG_V("data %p, dma %p, vp %p, pp %p\n",
-		  data_addr, dump_work->dma_addr,
-		  p_resv_dram->vir_addr, p_resv_dram->phy_addr);
+	rw_idx = dump_work->rw_idx;
+	data_size = dump_work->data_size;
 
 	spin_lock_irqsave(&dump_queue_lock, flags);
 	dump_queue->dump_package[dump_queue->idx_w].dump_data_type = DUMP_DL;
-	dump_queue->dump_package[dump_queue->idx_w].data_addr = data_addr;
+	dump_queue->dump_package[dump_queue->idx_w].rw_idx = rw_idx;
+	dump_queue->dump_package[dump_queue->idx_w].data_size = data_size;
 	dump_queue->idx_w++;
 	spin_unlock_irqrestore(&dump_queue_lock, flags);
 
@@ -398,6 +399,11 @@ static int dump_kthread(void *data)
 
 
 	pr_debug("dump_queue = %p\n", dump_queue);
+
+	pcm_dump_ul = (struct pcm_dump_ul_t *)
+		      kmalloc(sizeof(pcm_dump_ul), GFP_KERNEL);
+	pcm_dump_dl = (struct pcm_dump_dl_t *)
+		      kmalloc(sizeof(pcm_dump_dl), GFP_KERNEL);
 
 	while (b_enable_dump && !kthread_should_stop()) {
 		spin_lock_irqsave(&dump_queue_lock, flags);
@@ -428,9 +434,23 @@ static int dump_kthread(void *data)
 
 		switch (dump_package->dump_data_type) {
 		case DUMP_UL: {
-			pcm_dump_ul =
-				(struct pcm_dump_ul_t *)dump_package->data_addr;
-			AUD_LOG_V("pcm_dump_ul = %p\n", pcm_dump_ul);
+			irq_cnt_k[DUMP_UL]++;
+
+			if (dump_package->data_size != sizeof(pcm_dump_ul)) {
+				pr_notice("%s(), UL size %u != %lu!!\n",
+					  __func__,
+					  dump_package->data_size,
+					  sizeof(pcm_dump_ul));
+				audio_ipi_dma_drop_region(
+					TASK_SCENE_PHONE_CALL,
+					dump_package->data_size,
+					dump_package->rw_idx);
+				break;
+			}
+			audio_ipi_dma_read_region(TASK_SCENE_PHONE_CALL,
+						  pcm_dump_ul,
+						  dump_package->data_size,
+						  dump_package->rw_idx);
 			if (!IS_ERR(file_ul_in_ch1)) {
 				ret = file_ul_in_ch1->f_op->write(
 					      file_ul_in_ch1,
@@ -466,13 +486,26 @@ static int dump_kthread(void *data)
 					      pcm_dump_ul->frame_buf_size,
 					      &file_ul_out->f_pos);
 			}
-			irq_cnt_k[DUMP_UL]++;
 			break;
 		}
 		case DUMP_DL: {
-			pcm_dump_dl =
-				(struct pcm_dump_dl_t *)dump_package->data_addr;
-			AUD_LOG_V("pcm_dump_sl = %p\n", pcm_dump_dl);
+			irq_cnt_k[DUMP_DL]++;
+
+			if (dump_package->data_size != sizeof(pcm_dump_dl)) {
+				pr_notice("%s(), DL size %u != %lu!!\n",
+					  __func__,
+					  dump_package->data_size,
+					  sizeof(pcm_dump_dl));
+				audio_ipi_dma_drop_region(
+					TASK_SCENE_PHONE_CALL,
+					dump_package->data_size,
+					dump_package->rw_idx);
+				break;
+			}
+			audio_ipi_dma_read_region(TASK_SCENE_PHONE_CALL,
+						  pcm_dump_dl,
+						  dump_package->data_size,
+						  dump_package->rw_idx);
 			if (!IS_ERR(file_dl_in)) {
 				ret = file_dl_in->f_op->write(
 					      file_dl_in,
@@ -487,7 +520,6 @@ static int dump_kthread(void *data)
 					      pcm_dump_dl->frame_buf_size,
 					      &file_dl_out->f_pos);
 			}
-			irq_cnt_k[DUMP_DL]++;
 			break;
 		}
 		default: {
@@ -500,23 +532,25 @@ static int dump_kthread(void *data)
 		}
 	}
 
-	pr_debug("dump_kthread exit\n");
-	return 0;
-}
 
+	if (pcm_dump_ul != NULL) {
+		kfree(pcm_dump_ul);
+		pcm_dump_ul = NULL;
+	}
+	if (pcm_dump_dl != NULL) {
+		kfree(pcm_dump_dl);
+		pcm_dump_dl = NULL;
+	}
 
-
-ssize_t audio_ipi_client_phone_call_read(
-	struct file *file, char *buf, size_t count, loff_t *ppos)
-{
+	pr_debug("%s(), exit\n", __func__);
 	return 0;
 }
 
 
 void audio_ipi_client_phone_call_init(void)
 {
-	wake_lock_init(&call_pcm_dump_wake_lock, WAKE_LOCK_SUSPEND,
-		       "call_pcm_dump_wake_lock");
+	//wake_lock_init(&call_pcm_dump_wake_lock, WAKE_LOCK_SUSPEND,
+	//	       "call_pcm_dump_wake_lock");
 
 	audio_task_register_callback(
 		TASK_SCENE_PHONE_CALL,
@@ -541,10 +575,6 @@ void audio_ipi_client_phone_call_init(void)
 	init_waitqueue_head(&wq_dump_pcm);
 
 	dump_task = NULL;
-
-	/* TODO: ring buf */
-	p_resv_dram = get_reserved_dram();
-	AUD_ASSERT(p_resv_dram != NULL);
 }
 
 

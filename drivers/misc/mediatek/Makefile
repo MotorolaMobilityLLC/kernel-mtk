@@ -60,6 +60,8 @@ ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 obj-y += power/
 endif
 obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
+obj-$(CONFIG_MTK_AUDIODSP_SUPPORT) += adsp/
+obj-$(CONFIG_MTK_AUDIODSP_SUPPORT) += audio_ipi/
 obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
 obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += audio_ipi/
 obj-$(CONFIG_MTK_SENSORS_1_0) += sensors-1.0/

@@ -32,11 +32,11 @@
 #include "audio_log.h"
 #include "audio_assert.h"
 
+#include <audio_ipi_dma.h>
+
 #include "audio_ipi_queue.h"
 #include "audio_messenger_ipi.h"
 
-/* using for filter ipi message*/
-#include <audio_spkprotect_msg_id.h>
 
 #ifdef CONFIG_MTK_DO /* with DO */
 static DEFINE_MUTEX(audio_load_task_mutex);
@@ -68,7 +68,7 @@ static char *g_current_do_name;
 
 
 #ifdef CONFIG_MTK_DO /* with DO */
-static char *get_feature_name(const task_scene_t task_scene)
+static char *get_feature_name(const uint8_t task_scene)
 {
 	/*
 	 * feature name defined in:
@@ -101,7 +101,7 @@ static char *get_feature_name(const task_scene_t task_scene)
 	return feature_name;
 }
 
-static char *get_do_name(const task_scene_t task_scene)
+static char *get_do_name(const uint8_t task_scene)
 {
 #if 1
 	/*
@@ -172,7 +172,7 @@ static char *get_do_name(const task_scene_t task_scene)
 
 
 int audio_task_register_callback(
-	const task_scene_t task_scene,
+	const uint8_t task_scene,
 	recv_message_t  recv_message,
 	task_unloaded_t task_unloaded)
 {
@@ -249,7 +249,7 @@ static void unload_current_tasks(void)
 #endif
 
 
-int audio_load_task(const task_scene_t task_scene)
+int audio_load_task(const uint8_t task_scene)
 {
 #ifndef CONFIG_MTK_DO /* without DO, do nothing */
 	return -1;
@@ -300,97 +300,11 @@ audio_load_task_exit:
 }
 
 
-static bool check_print_msg_info(const struct ipi_msg_t *p_ipi_msg)
-{
-	if (p_ipi_msg->task_scene == TASK_SCENE_SPEAKER_PROTECTION &&
-	    p_ipi_msg->msg_id == SPK_PROTECT_DLCOPY)
-		return false;
-	else
-		return true;
-}
-
-
-int audio_send_ipi_msg(
-	struct ipi_msg_t *p_ipi_msg,
-	uint8_t task_scene, /* task_scene_t */
-	uint8_t msg_layer, /* audio_ipi_msg_layer_t */
-	uint8_t data_type, /* audio_ipi_msg_data_t */
-	uint8_t ack_type, /* audio_ipi_msg_ack_t */
-	uint16_t msg_id,
-	uint32_t param1,
-	uint32_t param2,
-	char    *data_buffer)
-{
-	struct ipi_queue_handler_t *handler = NULL;
-	uint32_t ipi_msg_len = 0;
-
-	if (p_ipi_msg == NULL) {
-		pr_notice("%s(), p_ipi_msg = NULL, return\n", __func__);
-		return -1;
-	}
-
-	memset_io(p_ipi_msg, 0, MAX_IPI_MSG_BUF_SIZE);
-
-	p_ipi_msg->magic      = IPI_MSG_MAGIC_NUMBER;
-	p_ipi_msg->task_scene = task_scene;
-	p_ipi_msg->msg_layer  = msg_layer;
-	p_ipi_msg->data_type  = data_type;
-	p_ipi_msg->ack_type   = ack_type;
-	p_ipi_msg->msg_id     = msg_id;
-	p_ipi_msg->param1     = param1;
-	p_ipi_msg->param2     = param2;
-
-	if (p_ipi_msg->data_type == AUDIO_IPI_PAYLOAD) {
-		AUD_ASSERT(data_buffer != NULL);
-		AUD_ASSERT(p_ipi_msg->param1 <= MAX_IPI_MSG_PAYLOAD_SIZE);
-		memcpy(p_ipi_msg->payload, data_buffer, p_ipi_msg->param1);
-	} else if (p_ipi_msg->data_type == AUDIO_IPI_DMA) {
-		AUD_ASSERT(data_buffer != NULL);
-		p_ipi_msg->dma_addr = data_buffer;
-	}
-
-	ipi_msg_len = get_message_buf_size(p_ipi_msg);
-	check_msg_format(p_ipi_msg, ipi_msg_len);
-
-	/* if need atomic , direct call send_message_to_scp*/
-	if (msg_layer == AUDIO_IPI_LAYER_KERNEL_TO_SCP_ATOMIC) {
-		if (check_print_msg_info(p_ipi_msg) == true)
-			print_msg_info(__func__, "p_ipi_msg", p_ipi_msg);
-		return send_message_to_scp(p_ipi_msg);
-	}
-
-	handler = get_ipi_queue_handler(p_ipi_msg->task_scene);
-	if (handler == NULL) {
-		pr_notice("%s(), handler = NULL, return\n", __func__);
-		return -1;
-	}
-
-	return send_message(handler, p_ipi_msg);
-}
-
-
-int audio_send_ipi_filled_msg(struct ipi_msg_t *p_ipi_msg)
-{
-	struct ipi_queue_handler_t *handler = NULL;
-
-	handler = get_ipi_queue_handler(p_ipi_msg->task_scene);
-	if (handler == NULL) {
-		pr_notice("%s(), handler = NULL, return\n", __func__);
-		return -1;
-	}
-
-	return send_message(handler, p_ipi_msg);
-}
-
-
 void audio_task_manager_init(void)
 {
 	g_current_do_name = NULL;
 
 	memset(g_audio_task_array, 0, sizeof(g_audio_task_array));
-
-	audio_messenger_ipi_init();
-
 }
 
 
