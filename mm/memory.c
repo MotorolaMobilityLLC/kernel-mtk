@@ -2553,7 +2553,8 @@ int do_swap_page(struct fault_env *fe, pte_t orig_pte)
 	page = lookup_swap_cache(entry);
 	if (!page) {
 		page = swapin_readahead(entry,
-					GFP_HIGHUSER_MOVABLE, vma, fe->address);
+					GFP_HIGHUSER_MOVABLE | __GFP_CMA,
+					vma, fe->address);
 		if (!page) {
 			/*
 			 * Back out if somebody else faulted in this pte
