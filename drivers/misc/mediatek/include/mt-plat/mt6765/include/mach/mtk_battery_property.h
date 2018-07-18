@@ -157,7 +157,7 @@
 #define DIFF_IAVG_TH 3000
 
 /* ZCV INTR */
-#define ZCV_SUSPEND_TIME 6
+#define ZCV_SUSPEND_TIME 29
 #define SLEEP_CURRENT_AVG 100 /*0.1mA*/
 #define ZCV_CAR_GAP_PERCENTAGE 5
 
@@ -177,22 +177,6 @@
 #define UI_FAST_TRACKING_GAP 300
 #define KEEP_100_PERCENT_MINSOC 9000
 
-/* mt6357 314.331 uA */
-#define UNIT_FGCURRENT     (314331)
-/* charge_lsb 19646 * 2^11 / 3600 */
-#define UNIT_FGCAR         (11176)
-/* MT6335 use 3, old chip use 4 */
-#define R_VAL_TEMP_2         (1)
-/* MT6335 use 3, old chip use 4 */
-#define R_VAL_TEMP_3         (3)
-#define UNIT_TIME          (50)
-/* unit 2^0 LSB */
-#define UNIT_FGCAR_ZCV     (157166)
-#define UNIT_FG_IAVG		(157166)
-/* 3600 * 1000 * 1000 / 157166 , for coulomb interrupt */
-#define CAR_TO_REG_FACTOR  (0x5c2a)
-/*coulomb interrupt lsb might be different with coulomb lsb */
-#define CAR_TO_REG_SHIFT (3)
 
 #define SHUTDOWN_CONDITION_LOW_BAT_VOLT
 #define LOW_TEMP_DISABLE_LOW_BAT_SHUTDOWN 1
