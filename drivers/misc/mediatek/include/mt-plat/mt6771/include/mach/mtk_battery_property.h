@@ -177,16 +177,6 @@
 #define UI_FAST_TRACKING_GAP 300
 #define KEEP_100_PERCENT_MINSOC 9000
 
-#define UNIT_FGCURRENT     (381470)		/* mt6355 381.470 uA */
-#define UNIT_FGCAR         (108507)		/* CHARGE_LSB 190735 * 2^11 / 3600 */
-#define R_VAL_TEMP_2         (2)		/* MT6335 use 3, old chip use 4 */
-#define R_VAL_TEMP_3         (3)		/* MT6335 use 3, old chip use 4 */
-#define UNIT_TIME          (50)
-#define UNIT_FGCAR_ZCV     (190735)		/* CHARGE_LSB = 190.735 uAs ,unit 2^0 LSB */
-#define UNIT_FG_IAVG		(190735)	/* IAVG LSB: 190.735 uA */
-#define CAR_TO_REG_FACTOR  (0x49BA)		/* 3600 * 1000 * 1000 / CHARGE_LSB */
-#define CAR_TO_REG_SHIFT (5)	/*coulomb interrupt lsb might be different with coulomb lsb */
-
 #define SHUTDOWN_CONDITION_LOW_BAT_VOLT
 #define LOW_TEMP_DISABLE_LOW_BAT_SHUTDOWN 1
 #define LOW_TEMP_THRESHOLD 5

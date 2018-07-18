@@ -34,6 +34,17 @@
 
 #define SWCHR_POWER_PATH
 
+#define UNIT_FGCURRENT     (381470)
+#define UNIT_FGCAR         (108507)
+#define R_VAL_TEMP_2         (2)
+#define R_VAL_TEMP_3         (3)
+#define UNIT_TIME          (50)
+#define UNIT_FGCAR_ZCV     (90735)
+/* unit 2^0 LSB */
+#define UNIT_FG_IAVG		(190735)
+#define CAR_TO_REG_FACTOR  (0x49BA)
+
+
 static signed int g_hw_ocv_tune_value;
 static bool g_fg_is_charger_exist;
 
