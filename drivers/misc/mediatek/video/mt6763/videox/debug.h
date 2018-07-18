@@ -18,6 +18,7 @@ void DBG_Init(void);
 void DBG_Deinit(void);
 
 #include "mmprofile.h"
+#include "mmprofile_function.h"
 extern int bypass_blank;
 extern int lcm_mode_status;
 extern enum UNIFIED_COLOR_FMT force_dc_buf_fmt;

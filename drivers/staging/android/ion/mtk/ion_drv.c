@@ -27,6 +27,7 @@
 #include "mm/dma.h"
 #endif
 #include <mmprofile.h>
+#include <mmprofile_function.h>
 #include <linux/vmalloc.h>
 #include "ion_profile.h"
 #include <linux/debugfs.h>
