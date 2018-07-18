@@ -2898,7 +2898,13 @@ static int pseudo_probe(struct platform_device *pdev)
 	///struct device *dev = &pdev->dev;
 	///struct device_node *node = dev->of_node;
 	struct platform_device *pimudev;
-
+#if defined(CONFIG_MTK_SMI_EXT)
+	M4UMSG("%s: %d\n", __func__, smi_mm_clk_first_get());
+	if (!smi_mm_clk_first_get()) {
+		M4UMSG("SMI not start probe\n");
+		return -EPROBE_DEFER;
+	}
+#endif
 	node = of_parse_phandle(pdev->dev.of_node, "iommus", 0);
 	if (!node)
 		return 0;
@@ -2911,7 +2917,13 @@ static int pseudo_probe(struct platform_device *pdev)
 	dmapping = pimudev->dev.archdata.iommu;
 	///WARN_ON(!dmapping);
 #endif
-
+#if defined(CONFIG_MTK_SMI_EXT)
+	M4UMSG("%s: %d\n", __func__, smi_mm_clk_first_get());
+	if (!smi_mm_clk_first_get()) {
+		M4UMSG("SMI not start probe\n");
+		return -EPROBE_DEFER;
+	}
+#endif
 	for (i = 0; i < 3; i++) {
 		/* wait for larb probe done. */
 		/* if (mtk_smi_larb_ready(i) == 0) {
