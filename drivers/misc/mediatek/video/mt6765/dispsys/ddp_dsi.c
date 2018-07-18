@@ -4002,10 +4002,17 @@ void ddp_dsi_update_partial(enum DISP_MODULE_ENUM module, void *cmdq,
 	void *params)
 {
 	struct disp_rect *roi = (struct disp_rect *)params;
+	unsigned int x = roi->x, y = roi->y;
 
 	DSI_PS_Control(module, cmdq, &(_dsi_context[0].dsi_params),
 			roi->width, roi->height);
-	DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, roi->x, roi->y,
+
+#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
+	x = _dsi_context[0].lcm_width - (x + roi->width);
+	y = _dsi_context[0].lcm_height - (y + roi->height);
+#endif
+
+	DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, x, y,
 		roi->width, roi->height);
 }
 
