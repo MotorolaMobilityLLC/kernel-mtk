@@ -24,18 +24,11 @@ enum mmp_static_events {
 };
 
 #ifdef MMPROFILE_INTERNAL
-
 struct mmp_static_event_t {
 	enum mmp_static_events event;
 	char *name;
 	enum mmp_static_events parent;
 };
-
-static struct mmp_static_event_t mmprofile_static_events[] = {
-	{MMP_ROOT_EVENT, "Root_Event", MMP_INVALID_EVENT},
-	{MMP_TOUCH_PANEL_EVENT, "TouchPanel_Event", MMP_ROOT_EVENT},
-};
-
 #endif
 
 #endif

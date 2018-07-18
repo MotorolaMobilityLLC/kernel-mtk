@@ -49,6 +49,7 @@ enum ION_PROFILE_TYPE {
 
 #else
 #include <mmprofile.h>
+#include <mmprofile_function.h>
 
 void mmprofile_enable(int enable);
 void mmprofile_start(int start);

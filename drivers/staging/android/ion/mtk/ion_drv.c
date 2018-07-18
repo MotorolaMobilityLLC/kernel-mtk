@@ -35,6 +35,7 @@
 #endif
 
 #include <mmprofile.h>
+#include <mmprofile_function.h>
 
 #define ION_FUNC_ENTER
 #define ION_FUNC_LEAVE

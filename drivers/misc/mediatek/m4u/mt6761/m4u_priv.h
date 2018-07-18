@@ -49,6 +49,7 @@
 #define mmp_event unsigned int
 #else
 #include <mmprofile.h>
+#include <mmprofile_function.h>
 #endif
 
 #ifdef CONFIG_PM
