@@ -13,8 +13,7 @@ config TRUSTONIC_TEE_SUPPORT
 config TRUSTONIC_TEE_VERSION
 	string "TRUSTONIC TEE Version"
 	depends on TRUSTONIC_TEE_SUPPORT
-	default "400b" if (MACH_MT6771 || MACH_6775)
-	default "311c"
+	default "400b"
 
 #config MT_TRUSTONIC_TEE_DEBUGFS
 #	bool "Enable Trustonic TEE debugfs"
