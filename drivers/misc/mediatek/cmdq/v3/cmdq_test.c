@@ -7647,10 +7647,8 @@ enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_END,	/* always at the end */
 };
 
-static void testcase_general_handling(s32 testID)
+static void testcase_general_handling_mbox(s32 testID)
 {
-	u32 i = 0;
-
 	switch (testID) {
 	case 510:
 		testmbox_gpr_timer();
@@ -7696,6 +7694,17 @@ static void testcase_general_handling(s32 testID)
 		testmbox_poll();
 		testmbox_verify_cpr();
 		break;
+	default:
+		CMDQ_LOG(
+			"[TESTCASE]CONFIG Not Found: gCmdqTestSecure:%d testType:%lld\n",
+			 gCmdqTestSecure, gCmdqTestConfig[0]);
+		break;
+	}
+}
+
+static void testcase_general_handling_stress(s32 testID)
+{
+	switch (testID) {
 	case 304:
 		testcase_stress_reorder();
 		break;
@@ -7711,6 +7720,19 @@ static void testcase_general_handling(s32 testID)
 	case 300:
 		testcase_stress_basic();
 		break;
+	default:
+		CMDQ_LOG(
+			"[TESTCASE]CONFIG Not Found: gCmdqTestSecure:%d testType:%lld\n",
+			 gCmdqTestSecure, gCmdqTestConfig[0]);
+		break;
+	}
+}
+
+static void testcase_general_handling_case(s32 testID)
+{
+	u32 i = 0;
+
+	switch (testID) {
 	case 158:
 		testcase_verify_cpr();
 		break;
@@ -7953,6 +7975,32 @@ static void testcase_general_handling(s32 testID)
 	case 70:
 		testcase_write_reg_from_slot();
 		break;
+	default:
+		CMDQ_LOG(
+			"[TESTCASE]CONFIG Not Found: gCmdqTestSecure:%d testType:%lld\n",
+			 gCmdqTestSecure, gCmdqTestConfig[0]);
+		break;
+	}
+}
+
+static void testcase_general_handling(s32 testID)
+{
+	if (testID >= 500) {
+		testcase_general_handling_mbox(testID);
+		return;
+	}
+
+	if (testID >= 300) {
+		testcase_general_handling_stress(testID);
+		return;
+	}
+
+	if (testID >= CMDQ_TESTCASE_END) {
+		testcase_general_handling_case(testID);
+		return;
+	}
+
+	switch (testID) {
 	case CMDQ_TESTCASE_FPGA:
 		CMDQ_LOG("FPGA Verify Start!\n");
 		testcase_write();
