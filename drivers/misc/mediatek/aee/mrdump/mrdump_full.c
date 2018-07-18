@@ -56,8 +56,6 @@ static note_buf_t __percpu *crash_notes;
 
 static unsigned long mrdump_output_lbaooo;
 
-static const struct mrdump_platform *mrdump_plat;
-
 static char mrdump_lk[12];
 
 static u32 *append_elf_note(u32 *buf, char *name, unsigned int type,
