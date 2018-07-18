@@ -108,10 +108,10 @@ extern
 const struct sched_group_energy * const cpu_cluster_energy(int cpu);
 
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-extern inline int
+extern int
 mtk_idle_power(int cpu_idx, int idle_state, int cpu, void *argu, int sd_level);
 
-extern inline
+extern
 int mtk_busy_power(int cpu_idx, int cpu, void *argu, int sd_level);
 
 extern void

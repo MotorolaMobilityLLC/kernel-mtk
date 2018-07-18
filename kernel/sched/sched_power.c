@@ -194,7 +194,7 @@ void mtk_update_new_capacity(struct energy_env *eenv)
 	}
 }
 
-inline int
+int
 mtk_idle_power(int cpu_idx, int idle_state, int cpu, void *argu, int sd_level)
 {
 	int energy_cost = 0;
@@ -331,7 +331,6 @@ mtk_idle_power(int cpu_idx, int idle_state, int cpu, void *argu, int sd_level)
 	return energy_cost;
 }
 
-inline
 int mtk_busy_power(int cpu_idx, int cpu, void *argu, int sd_level)
 {
 	struct energy_env *eenv = (struct energy_env *)argu;
