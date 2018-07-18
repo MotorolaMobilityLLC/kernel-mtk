@@ -42,7 +42,7 @@
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/aee.h>
-#include <trace/events/mtk_events.h>
+/* #include <trace/events/mtk_events.h> */
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include "sspm_ipi.h"
@@ -74,7 +74,11 @@ static void __iomem *csram_base;
 #define OFFS_LOG_S	0x03d0
 #define OFFS_LOG_E	(OFFS_LOG_S + DVFS_LOG_NUM * ENTRY_EACH_LOG * 4)
 
+#ifdef REPORT_IDLE_FREQ
+#define MAX_LOG_FETCH 80
+#else
 #define MAX_LOG_FETCH 40
+#endif
 /* log_box_parsed[MAX_LOG_FETCH] is also used to save last log entry */
 static struct cpu_dvfs_log_box log_box_parsed[1 + MAX_LOG_FETCH];
 
@@ -154,7 +158,12 @@ int Ripi_cpu_dvfs_thread(void *data)
 
 		bk_log_offs = pwdata[0];
 		num_log = 0;
+#ifdef REPORT_IDLE_FREQ
+		while ((bk_log_offs != pwdata[1]) &&
+			(num_log < MAX_LOG_FETCH)) {
+#else
 		while (bk_log_offs != pwdata[1]) {
+#endif
 			buf[0] = csram_read(bk_log_offs);
 			bk_log_offs += 4;
 			if (bk_log_offs >= OFFS_LOG_E)
@@ -241,7 +250,14 @@ int Ripi_cpu_dvfs_thread(void *data)
 					cpu_dvfs_get_freq_by_idx(p,
 					p->idx_opp_ppm_limit);
 
-				cid = arch_get_cluster_id(p->mt_policy->cpu);
+#ifdef SINGLE_CLUSTER
+				cid =
+	cpufreq_get_cluster_id(p->mt_policy->cpu);
+#else
+				cid =
+	arch_get_cluster_id(p->mt_policy->cpu);
+#endif
+
 				if (cid == 0) {
 					met_tag_oneshot(0, "sched_dvfs_max_c0",
 							p->mt_policy->max);
@@ -838,9 +854,9 @@ int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 	csram_write((OFFS_SCHED_S + (cluster * 4)), buf);
 
 	cpufreq_ver("sched: buf = 0x%x\n", buf);
-
+#if 0
 	trace_sched_update(cluster, csram_read(OFFS_SCHED_S + (cluster * 4)));
-
+#endif
 	return 0;
 }
 
