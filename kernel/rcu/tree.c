@@ -73,12 +73,6 @@ static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
 static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
 static struct lock_class_key rcu_exp_class[RCU_NUM_LVLS];
 
-#ifdef CONFIG_RCU_TRACE
-#define is_cpu_online cpu_online(smp_processor_id())
-#else
-#define is_cpu_online 0
-#endif
-
 /*
  * In order to export the rcu_state name to the tracing tools, it
  * needs to be added in the __tracepoint_string section.
@@ -646,17 +640,13 @@ static void rcu_eqs_enter_common(long long oldval, bool user)
 	struct rcu_data *rdp;
 	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
 
-	if (is_cpu_online)
-		trace_rcu_dyntick(TPS("Start"),
-			oldval, rdtp->dynticks_nesting);
+	trace_rcu_dyntick(TPS("Start"), oldval, rdtp->dynticks_nesting);
 	if (IS_ENABLED(CONFIG_RCU_EQS_DEBUG) &&
 	    !user && !is_idle_task(current)) {
 		struct task_struct *idle __maybe_unused =
 			idle_task(smp_processor_id());
 
-		if (is_cpu_online)
-			trace_rcu_dyntick(TPS("Error on entry: not idle task"),
-				oldval, 0);
+		trace_rcu_dyntick(TPS("Error on entry: not idle task"), oldval, 0);
 		ftrace_dump(DUMP_ORIG);
 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
 			  current->pid, current->comm,
@@ -780,7 +770,7 @@ void rcu_irq_exit(void)
 	rdtp->dynticks_nesting--;
 	WARN_ON_ONCE(IS_ENABLED(CONFIG_RCU_EQS_DEBUG) &&
 		     rdtp->dynticks_nesting < 0);
-	if (rdtp->dynticks_nesting && is_cpu_online)
+	if (rdtp->dynticks_nesting)
 		trace_rcu_dyntick(TPS("--="), oldval, rdtp->dynticks_nesting);
 	else
 		rcu_eqs_enter_common(oldval, true);
@@ -807,15 +797,13 @@ static void rcu_eqs_exit_common(long long oldval, int user)
 	WARN_ON_ONCE(IS_ENABLED(CONFIG_RCU_EQS_DEBUG) &&
 		     !(atomic_read(&rdtp->dynticks) & 0x1));
 	rcu_cleanup_after_idle();
-	if (is_cpu_online)
-		trace_rcu_dyntick(TPS("End"), oldval, rdtp->dynticks_nesting);
+	trace_rcu_dyntick(TPS("End"), oldval, rdtp->dynticks_nesting);
 	if (IS_ENABLED(CONFIG_RCU_EQS_DEBUG) &&
 	    !user && !is_idle_task(current)) {
 		struct task_struct *idle __maybe_unused =
 			idle_task(smp_processor_id());
 
-		if (is_cpu_online)
-			trace_rcu_dyntick(TPS("Error on exit: not idle task"),
+		trace_rcu_dyntick(TPS("Error on exit: not idle task"),
 				  oldval, rdtp->dynticks_nesting);
 		ftrace_dump(DUMP_ORIG);
 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
@@ -916,7 +904,7 @@ void rcu_irq_enter(void)
 	rdtp->dynticks_nesting++;
 	WARN_ON_ONCE(IS_ENABLED(CONFIG_RCU_EQS_DEBUG) &&
 		     rdtp->dynticks_nesting == 0);
-	if (oldval && is_cpu_online)
+	if (oldval)
 		trace_rcu_dyntick(TPS("++="), oldval, rdtp->dynticks_nesting);
 	else
 		rcu_eqs_exit_common(oldval, true);
