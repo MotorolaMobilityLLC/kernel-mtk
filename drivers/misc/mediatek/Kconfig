@@ -260,6 +260,15 @@ source "drivers/misc/mediatek/video/Kconfig"
 source "drivers/misc/mediatek/vpu/Kconfig"
 source "drivers/misc/mediatek/dfrc/Kconfig"
 
+config MTK_CAM_SECURITY_SUPPORT
+	bool "Secure Camera Infrastructure Support"
+	default n
+	help
+	  This is an option for MTK secure camera infrastructure.
+	  It provides hardware-based security that guarantees the data integrity
+	  form image sensor, ISP DMA port access to secure memory.
+	  If you are not sure about this, do not set it to y.
+
 endmenu  # MM
 
 menu "Sensors"
