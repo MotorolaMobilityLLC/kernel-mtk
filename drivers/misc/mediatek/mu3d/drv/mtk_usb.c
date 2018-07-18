@@ -85,13 +85,16 @@ struct timespec get_connect_timestamp(void)
 }
 #endif
 
+static bool __usb_cable_connected(int ops);
 void connection_work(struct work_struct *data)
 {
-	struct musb *musb = container_of(to_delayed_work(data), struct musb, connection_work);
+	struct musb *musb = _mu3d_musb;
 #ifndef CONFIG_USBIF_COMPLIANCE
 	static enum status connection_work_dev_status = INIT;
 #endif
 	bool is_usb_cable;
+	struct mt_usb_work *work =
+		container_of(data, struct mt_usb_work, dwork.work);
 
 	/* delay 100ms if user space is not ready to set usb function */
 	if (!is_usb_rdy()) {
@@ -105,13 +108,13 @@ void connection_work(struct work_struct *data)
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 		if (in_uart_mode) {
 			os_printk(K_INFO, "%s, Uart mode. directly return\n", __func__);
-			return;
+			goto exit;
 		}
 #endif
 #ifndef CONFIG_FPGA_EARLY_PORTING
 		if (!mt_usb_is_device()) {
 			os_printk(K_INFO, "%s, Host mode. directly return\n", __func__);
-			return;
+			goto exit;
 		}
 #endif
 
@@ -135,7 +138,7 @@ void connection_work(struct work_struct *data)
 			os_printk(K_INFO, "%s ----Disconnect----\n", __func__);
 		}
 
-		queue_delayed_work(musb->st_wq, &musb->connection_work,
+		queue_delayed_work(musb->st_wq, &work->dwork,
 				msecs_to_jiffies(delay));
 		return;
 	}
@@ -155,11 +158,11 @@ void connection_work(struct work_struct *data)
 #endif
 			musb->is_clk_on = 0;
 			os_printk(K_INFO, "%s, Host mode. directly return\n", __func__);
-			return;
+			goto exit;
 		}
 #endif
 
-		is_usb_cable = usb_cable_connected();
+		is_usb_cable = __usb_cable_connected(work->ops);
 
 		os_printk(K_INFO, "%s musb %s, cable %s\n", __func__,
 			  ((connection_work_dev_status ==
@@ -228,6 +231,10 @@ void connection_work(struct work_struct *data)
 #endif
 	}
 #endif
+
+exit:
+	/* free mt_usb_work */
+	kfree(work);
 }
 
 bool mt_usb_is_ready(void)
@@ -242,38 +249,41 @@ bool mt_usb_is_ready(void)
 	return true;
 }
 
+static void issue_connection_work(int ops)
+{
+	struct mt_usb_work *work;
+
+	if (!_mu3d_musb) {
+		os_printk(K_INFO, "_mu3d_musb = NULL\n");
+		return;
+	}
+	/* create and prepare worker */
+	work = kzalloc(sizeof(struct mt_usb_work), GFP_ATOMIC);
+	if (!work)
+		return;
+
+	work->ops = ops;
+	INIT_DELAYED_WORK(&work->dwork, connection_work);
+	/* issue connection work */
+	os_printk(K_INFO, "issue work, ops<%d>\n", ops);
+	queue_delayed_work(_mu3d_musb->st_wq, &work->dwork, 0);
+}
+
 void mt_usb_connect(void)
 {
-	os_printk(K_INFO, "%s+\n", __func__);
-	if (_mu3d_musb) {
-		struct delayed_work *work;
-
-		work = &_mu3d_musb->connection_work;
-
-		queue_delayed_work(_mu3d_musb->st_wq, work, 0);
-	} else {
-		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
-	}
-	os_printk(K_INFO, "%s-\n", __func__);
+	os_printk(K_INFO, "%s\n", __func__);
+	issue_connection_work(CONNECTION_OPS_CONN);
 }
-EXPORT_SYMBOL_GPL(mt_usb_connect);
-
 void mt_usb_disconnect(void)
 {
-	os_printk(K_INFO, "%s+\n", __func__);
-
-	if (_mu3d_musb) {
-		struct delayed_work *work;
-
-		work = &_mu3d_musb->connection_work;
-
-		queue_delayed_work(_mu3d_musb->st_wq, work, 0);
-	} else {
-		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
-	}
-	os_printk(K_INFO, "%s-\n", __func__);
+	os_printk(K_INFO, "%s\n", __func__);
+	issue_connection_work(CONNECTION_OPS_DISC);
 }
-EXPORT_SYMBOL_GPL(mt_usb_disconnect);
+void mt_usb_reconnect(void)
+{
+	os_printk(K_INFO, "%s\n", __func__);
+	issue_connection_work(CONNECTION_OPS_CHECK);
+}
 
 /* build time force on */
 #if defined(CONFIG_FPGA_EARLY_PORTING)
@@ -364,7 +374,6 @@ void trigger_disconnect_check_work(void)
 }
 
 static int mu3d_test_connect;
-static bool test_connected;
 static struct delayed_work mu3d_test_connect_work;
 #define TEST_CONNECT_BASE_MS 3000
 #define TEST_CONNECT_BIAS_MS 5000
@@ -373,6 +382,7 @@ static void do_mu3d_test_connect_work(struct work_struct *work)
 	static ktime_t ktime;
 	static unsigned long int ktime_us;
 	unsigned int delay_time_ms;
+	static bool test_connected;
 
 	if (!mu3d_test_connect) {
 		test_connected = false;
@@ -380,7 +390,11 @@ static void do_mu3d_test_connect_work(struct work_struct *work)
 		mt_usb_connect();
 		return;
 	}
-	mt_usb_connect();
+
+	if (test_connected)
+		mt_usb_connect();
+	else
+		mt_usb_disconnect();
 
 	ktime = ktime_get();
 	ktime_us = ktime_to_us(ktime);
@@ -412,16 +426,15 @@ void mt_usb_connect_test(int start)
 	}
 }
 
-
 bool usb_cable_connected(void)
+{
+	return __usb_cable_connected(CONNECTION_OPS_CHECK);
+}
+
+static bool __usb_cable_connected(int ops)
 {
 	enum charger_type chg_type = CHARGER_UNKNOWN;
 	bool connected = false, vbus_exist = false;
-
-	if (mu3d_test_connect) {
-		os_printk(K_INFO, "%s, return test_connected<%d>\n", __func__, test_connected);
-		return test_connected;
-	}
 
 	if (mu3d_force_on) {
 		/* FORCE USB ON */
@@ -440,9 +453,14 @@ bool usb_cable_connected(void)
 		if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
 			connected = true;
 
+		/* connected according to CONNECTION_OPS */
+		if (ops != CONNECTION_OPS_CHECK)
+			connected = CONNECTION_OPS_CONN ? true : false;
+
 		/* VBUS CHECK to avoid type miss-judge */
 		vbus_exist = mu3d_hal_is_vbus_exist();
-		os_printk(K_INFO, "%s vbus_exist=%d type=%d\n", __func__, vbus_exist, chg_type);
+		os_printk(K_INFO, "%s vbus_exist=%d type=%d ops=%d\n",
+				__func__, vbus_exist, chg_type, ops);
 		if (!vbus_exist)
 			connected = false;
 	}
@@ -530,19 +548,21 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 			if (cmode == CABLE_MODE_CHRG_ONLY) {
 				if (musb) {
 					musb->usb_mode = CABLE_MODE_CHRG_ONLY;
-					mt_usb_disconnect();
+					mt_usb_reconnect();
 				}
 			} else if (cmode == CABLE_MODE_HOST_ONLY) {
 				if (musb) {
 					musb->usb_mode = CABLE_MODE_HOST_ONLY;
-					mt_usb_disconnect();
+					mt_usb_reconnect();
 				}
 			} else {
 				if (musb) {
 					musb->usb_mode = CABLE_MODE_NORMAL;
-					mt_usb_connect();
+					mt_usb_reconnect();
 				}
 			}
+			/* let work do it's job */
+			msleep(50);
 			if (_mu3d_musb)
 				up(&_mu3d_musb->musb_lock);
 		}
