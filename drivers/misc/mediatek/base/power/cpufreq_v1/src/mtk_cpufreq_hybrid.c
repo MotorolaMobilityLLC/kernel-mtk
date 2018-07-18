@@ -869,6 +869,15 @@ int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl,
 #ifdef EEM_AP_SIDE
 	int i;
 	int index;
+	int checkFlag = 0;
+
+	for (i = 0; i < nr_volt_tbl; i++) {
+		if (volt_tbl[i] == 0)
+			checkFlag = 1;
+	}
+
+	if (checkFlag == 1)
+		return 0;
 
 	for (i = 0; i < nr_volt_tbl; i++) {
 		index = (cluster_id * 36) + i;
