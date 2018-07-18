@@ -146,15 +146,17 @@ struct tpd_debug_log_buf tpd_buf;
 
 static int tpd_debug_log_open(struct inode *inode, struct file *file)
 {
-	memset(&tpd_buf, 0, sizeof(struct tpd_debug_log_buf));
-	tpd_buf.buffer = vmalloc(tpd_log_line_cnt * tpd_log_line_buffer);
+
+	if (tpd_buf.buffer == NULL)
+		tpd_buf.buffer =
+			vmalloc(tpd_log_line_cnt * tpd_log_line_buffer);
 	if (tpd_buf.buffer == NULL) {
 		pr_info("tpd_log: nomem for tpd_buf->buffer\n");
 		return -ENOMEM;
 	}
-	spin_lock_init(&tpd_buf.buffer_lock);
 	spin_lock(&tpd_buf.buffer_lock);
 	tpd_buf.head = tpd_buf.tail = 0;
+	tpd_buf.cnt = 0;
 	spin_unlock(&tpd_buf.buffer_lock);
 
 
@@ -426,6 +428,7 @@ static int __init tpd_log_init(void)
 		return -1;
 	}
 	pr_info("[tpd_em_log] :register device successfully\n");
+	spin_lock_init(&tpd_buf.buffer_lock);
 	return 0;
 }
 
