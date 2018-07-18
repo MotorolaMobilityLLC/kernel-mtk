@@ -270,7 +270,7 @@ int FP5510E2AF_GetFileName(unsigned char *pFileName)
 {
 	char *FileString = (strrchr(__FILE__, '/') + 1);
 
-	strcpy(pFileName, FileString);
+	strncpy(pFileName, FileString, AF_MOTOR_NAME);
 	FileString = strchr(pFileName, '.');
 	*FileString = '\0';
 	LOG_INF("FileName : %s\n", pFileName);

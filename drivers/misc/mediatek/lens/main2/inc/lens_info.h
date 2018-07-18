@@ -78,9 +78,12 @@ struct stAF_MotorCalPos {
 	u32 u4InfPos;
 };
 
+#define STRUCT_MOTOR_NAME 32
+#define AF_MOTOR_NAME 31
+
 /* Structures */
 struct stAF_MotorName {
-	u8 uMotorName[32];
+	u8 uMotorName[STRUCT_MOTOR_NAME];
 };
 
 /* Structures */
