@@ -11,6 +11,8 @@
 # See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 #
 
+subdir-ccflags-y += -Idrivers/misc/mediatek/mtprof/
+
 obj-$(CONFIG_MTK_AEE_FEATURE)	+= mrdump_hw.o mrdump_key_setup.o
 
 ccflags-$(CONFIG_MTK_AEE_IPANIC) += -DTEXT_OFFSET=$(TEXT_OFFSET)
@@ -20,11 +22,15 @@ mrdump-objs-y := \
 	mrdump_control.o \
 	mrdump_full.o \
 	mrdump_mini.o \
-	mrdump_setup.o \
 	mrdump_panic.o
 
 mrdump-objs-$(CONFIG_ARM) += mrdump_arm.o
-mrdump-objs-$(CONFIG_ARM64) += mrdump_arm64.o
+mrdump-objs-$(CONFIG_ARM_PSCI) += mrdump_panic_wdt.o
+
+mrdump-objs-$(CONFIG_ARM64) += \
+	mrdump_arm64.o \
+	mrdump_panic_wdt.o
+
 mrdump-objs := $(mrdump-objs-y)
 
 KASAN_SANITIZE := n

@@ -23,12 +23,6 @@
 extern void aee_wdt_dump_info(void);
 void aee_disable_api(void);
 
-/* User space process support functions */
-#define MAX_NATIVEINFO  (32 * 1024)
-#define MAX_NATIVEHEAP  2048
-extern char NativeInfo[MAX_NATIVEINFO];	/* check that 32k is enought?? */
-extern unsigned long User_Stack[MAX_NATIVEHEAP];	/* 8K Heap */
-int DumpNativeInfo(void);
 extern int ipanic_atflog_buffer(void *data, unsigned char *buffer,
 		size_t sz_buf);
 extern void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs,
@@ -58,8 +52,5 @@ extern void wq_debug_dump(void);
 #endif
 extern void dis_D_inner_fL1L2(void);
 extern int console_trylock(void);
-
-/* dedicated reboot flow for exception */
-extern void aee_exception_reboot(void);
 
 #endif

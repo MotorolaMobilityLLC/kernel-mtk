@@ -40,7 +40,6 @@
 #include <mtk_wd_api.h>
 #include <ext_wd_drv.h>
 #endif
-#include "aee-common.h"
 #include <mrdump_panic.h>
 #include <mt-plat/mtk_secure_api.h>
 #ifdef CONFIG_MTK_EIC_HISTORY_DUMP
@@ -471,11 +470,6 @@ static void aee_save_reg_stack_sram(int cpu)
 	mrdump_save_per_cpu_reg(cpu, &regs_buffer_bin[cpu].regs);
 }
 
-void aee_wdt_irq_info(void)
-{
-	/* obsolete, to be removed */
-	pr_notice("%s:wrong function? at %s\n", __func__, __FILE__);
-}
 __weak void aee_wdt_zap_locks(void)
 {
 	pr_notice("%s:weak function\n", __func__);
@@ -590,13 +584,6 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	mrdump_mini_add_entry((unsigned long)__per_cpu_offset,
 			MRDUMP_MINI_SECTION_SIZE);
 
-#ifdef CONFIG_MTK_RAM_CONSOLE
-	/* add info for minidump */
-	if (aee_rr_curr_exp_type() == AEE_EXP_TYPE_HWT ||
-		aee_rr_curr_exp_type() == AEE_EXP_TYPE_SMART_RESET)
-		mrdump_mini_ke_cpu_regs(regs);
-#endif
-
 #ifdef CONFIG_MTK_SCHED_MONITOR
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_SCHED);
@@ -616,16 +603,14 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 
 	dump_emi_outstanding();
 
-#ifdef CONFIG_MTK_WATCHDOG
-	if ((mtk_rgu_status_is_sysrst() || mtk_rgu_status_is_eintrst())) {
-		aee_sram_fiq_log("\nreboot by MRDUMP_KEY\n");
-		__mrdump_create_oops_dump(AEE_REBOOT_MODE_MRDUMP_KEY, regs,
-				"MRDUMP_KEY");
-	} else
-#endif
-		__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, regs, "WDT/HWT");
-
-	aee_exception_reboot();
+	if (aee_rr_curr_exp_type() == AEE_EXP_TYPE_HWT)
+		mrdump_common_die(AEE_FIQ_STEP_WDT_IRQ_DONE,
+				  AEE_REBOOT_MODE_WDT,
+				  "WDT/HWT", regs);
+	else
+		mrdump_common_die(AEE_FIQ_STEP_WDT_IRQ_DONE,
+				  AEE_REBOOT_MODE_MRDUMP_KEY,
+				  "MRDUMP_KEY", regs);
 }
 
 void notrace aee_wdt_atf_entry(void)
