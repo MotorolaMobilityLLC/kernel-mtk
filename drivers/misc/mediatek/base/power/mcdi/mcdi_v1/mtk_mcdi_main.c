@@ -188,7 +188,7 @@ static void mcdi_stress_stop(void)
 	msleep(20);
 }
 
-static void mcdi_idle_state_setting(unsigned long idx, bool enable)
+static void mcdi_idle_state_setting(unsigned long idx, unsigned long enable)
 {
 	struct cpuidle_driver *tbl = NULL;
 	int cpu;
@@ -197,11 +197,9 @@ static void mcdi_idle_state_setting(unsigned long idx, bool enable)
 		return;
 
 	for (cpu = 0; cpu < NF_CPU; cpu++) {
-
-		if (tbl == mcdi_state_tbl_get(cpu))
-			continue;
-
-		tbl->states[idx].disabled = !enable;
+		tbl = mcdi_state_tbl_get(cpu);
+		if (tbl->states[idx].disabled != (!enable))
+			tbl->states[idx].disabled = !enable;
 	}
 }
 
@@ -471,7 +469,7 @@ parse_cmd:
 	} else if (!strncmp(cmd_str, "state", sizeof("state"))) {
 
 		if (param_cnt == 2)
-			mcdi_idle_state_setting(param_0, !!param_2);
+			mcdi_idle_state_setting(param_0, !!param_1);
 
 		return count;
 
