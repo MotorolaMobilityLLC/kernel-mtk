@@ -36,6 +36,8 @@
 #include "seninf_common.h"
 #include "seninf_clk.h"
 #include "seninf.h"
+#include "kd_imgsensor_errcode.h"
+#include "imgsensor_ca.h"
 
 #define SENINF_WR32(addr, data)    mt_reg_sync_writel(data, addr)
 #define SENINF_RD32(addr)          ioread32((void *)addr)
@@ -189,6 +191,10 @@ static long seninf_ioctl(struct file *pfile, unsigned int cmd, unsigned long arg
 	void *pbuff = NULL;
 	struct SENINF *pseninf = &gseninf;
 
+#ifdef CONFIG_MTK_CAM_SECURITY_SUPPORT
+	struct command_params c_params;
+#endif
+
 	if (_IOC_DIR(cmd) != _IOC_NONE) {
 		pbuff = kmalloc(_IOC_SIZE(cmd), GFP_KERNEL);
 		if (pbuff == NULL) {
@@ -205,9 +211,6 @@ static long seninf_ioctl(struct file *pfile, unsigned int cmd, unsigned long arg
 				goto SENINF_IOCTL_EXIT;
 			}
 		}
-	} else {
-		ret = -EFAULT;
-		goto SENINF_IOCTL_EXIT;
 	}
 
 	switch (cmd) {
@@ -233,6 +236,13 @@ static long seninf_ioctl(struct file *pfile, unsigned int cmd, unsigned long arg
 		*(unsigned int *)pbuff =
 			seninf_clk_get_meter(&pseninf->clk, *(unsigned int *)pbuff);
 		break;
+
+#ifdef CONFIG_MTK_CAM_SECURITY_SUPPORT
+	case KDSENINFIOC_X_SECURE_DUMP:
+		if (imgsensor_ca_invoke_command(IMGSENSOR_TEE_CMD_DUMP_REG, c_params, &ret) != 0)
+		ret = ERROR_TEE_CA_TA_FAIL;
+		break;
+#endif
 
 	default:
 		PK_DBG("No such command %d\n", cmd);

@@ -14,8 +14,6 @@
 #ifndef _CAMERA_TYPEDEFS_H
 #define _CAMERA_TYPEDEFS_H
 
-#include <linux/bug.h>
-
 /* ------------------------*/
 /* Basic Type Definitions */
 /* -----------------------*/
