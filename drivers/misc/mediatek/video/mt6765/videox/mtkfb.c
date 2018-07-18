@@ -77,6 +77,10 @@
 #include <mt-plat/mtk_ccci_common.h>
 #include "ddp_dsi.h"
 
+#ifdef CONFIG_MTK_SMI_EXT
+#include "smi_public.h"
+#endif
+
 /* static variable */
 static u32 MTK_FB_XRES;
 static u32 MTK_FB_YRES;
@@ -2543,6 +2547,11 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 	DISPMSG("mtkfb_probe name [%s]  = [%s][%p]\n",
 		pdev->name, pdev->dev.init_name, (void *)&pdev->dev);
+
+	if (!smi_mm_clk_first_get()) {
+		DISPMSG("SMI not start probe\n");
+		return -EPROBE_DEFER;
+	}
 
 	_parse_tag_videolfb();
 
