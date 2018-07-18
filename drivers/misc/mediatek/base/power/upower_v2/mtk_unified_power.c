@@ -407,7 +407,6 @@ static void upower_wait_for_eem_volt_done_upn_larger(void)
 	unsigned char eem_volt_not_ready = 0;
 	int i;
 
-	iter = NR_UPOWER_BANK;
 	/* ensure upower bank num does not larger than eem det num */
 	iter =
 	(int)NR_EEM_DET < (int)NR_UPOWER_BANK ? NR_EEM_DET:NR_UPOWER_BANK;

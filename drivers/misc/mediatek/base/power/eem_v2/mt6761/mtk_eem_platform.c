@@ -60,7 +60,7 @@ struct eem_det_ops cci_det_ops = {
 #ifndef EARLY_PORTING_CPU
 static unsigned int detid_to_dvfsid(struct eem_det *det)
 {
-	unsigned int cpudvfsindex;
+	unsigned int cpudvfsindex = 0;
 	enum eem_det_id detid = det_to_id(det);
 
 //	if (detid == EEM_DET_L)

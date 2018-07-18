@@ -1127,7 +1127,6 @@ static int eem_volt_thread_handler(void *data)
 static int eem_init1stress_thread_handler(void *data)
 {
 	struct eem_det *det;
-	struct eem_ctrl *ctrl;
 	unsigned long flag;
 	unsigned int out = 0, timeout = 0;
 
@@ -1161,7 +1160,7 @@ static int eem_init1stress_thread_handler(void *data)
 				eem_error
 ("eem_init1stress_thread_handler, test counter:%d\n", testCnt);
 
-			for_each_det_ctrl(det, ctrl) {
+			for_each_det(det) {
 				if (HAS_FEATURE(det, FEA_INIT01)) {
 
 					mt_ptp_lock(&flag); /* <-XXX */
@@ -2448,12 +2447,11 @@ static irqreturn_t eem_isr(int irq, void *dev_id)
 void eem_init02(const char *str)
 {
 	struct eem_det *det;
-	struct eem_ctrl *ctrl;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 	eem_debug("eem_init02 called by [%s]\n", str);
 
-	for_each_det_ctrl(det, ctrl) {
+	for_each_det(det) {
 		if (HAS_FEATURE(det, FEA_INIT02)) {
 			unsigned long flag;
 
@@ -2493,12 +2491,11 @@ static void eem_buck_set_mode(unsigned int mode)
 void eem_init01(void)
 {
 	struct eem_det *det;
-	struct eem_ctrl *ctrl;
 	unsigned int out = 0, timeout = 0;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
-	for_each_det_ctrl(det, ctrl) {
+	for_each_det(det) {
 		unsigned long flag;
 
 		if (HAS_FEATURE(det, FEA_INIT01)) {
