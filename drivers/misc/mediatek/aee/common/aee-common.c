@@ -136,19 +136,6 @@ struct aee_oops *aee_oops_create(enum AE_DEFECT_ATTR attr,
 }
 EXPORT_SYMBOL(aee_oops_create);
 
-void aee_oops_set_process_path(struct aee_oops *oops, const char *process_path)
-{
-	if (process_path != NULL)
-		strlcpy(oops->process_path, process_path,
-				sizeof(oops->process_path));
-}
-
-void aee_oops_set_backtrace(struct aee_oops *oops, const char *backtrace)
-{
-	if (backtrace != NULL)
-		strlcpy(oops->backtrace, backtrace, sizeof(oops->backtrace));
-}
-
 void aee_oops_free(struct aee_oops *oops)
 {
 	kfree(oops->console);
