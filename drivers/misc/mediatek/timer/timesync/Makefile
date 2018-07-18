@@ -20,5 +20,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
 endif
 
+ifeq ($(CONFIG_MTK_AUDIODSP_SUPPORT), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/adsp/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/adsp/$(MTK_PLATFORM)/
+endif
+
 obj-$(CONFIG_MTK_TIMER_TIMESYNC)	+= mtk_sys_timer.o
 obj-$(CONFIG_MTK_ARCHCOUNTER_TIMESYNC)	+= archcounter_timesync.o
