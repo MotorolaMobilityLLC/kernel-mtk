@@ -113,6 +113,7 @@ static void ipi_monitor_dump_timeout(int mid, int opts)
 #endif /* IPI_MONITOR_TIMESTAMP */
 	spin_unlock_irqrestore(&lock_monitor, flags);
 	pr_err("Error: SSPM IPI=%d timeout\n", mid);
+	sspm_ipi_timeout_cb(mid);
 	BUG_ON(1);
 }
 #endif
