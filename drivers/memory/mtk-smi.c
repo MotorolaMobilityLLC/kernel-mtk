@@ -813,7 +813,8 @@ static void __exit mtk_smi_exit(void)
 #endif
 }
 
-#if IS_ENABLED(CONFIG_MTK_SMI_EXT)
+#if IS_ENABLED(CONFIG_MTK_SMI_EXT) \
+	&& !(IS_ENABLED(CONFIG_MACH_MT6765) || IS_ENABLED(CONFIG_MACH_MT6761))
 arch_initcall_sync(mtk_smi_init);
 #else
 module_init(mtk_smi_init);
