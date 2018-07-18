@@ -53,7 +53,8 @@ static void do_register_otg_work(struct work_struct *data)
 
 	otg_nb.notifier_call = otg_tcp_notifier_call;
 	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb,
-		TCP_NOTIFY_TYPE_VBUS|TCP_NOTIFY_TYPE_USB);
+		TCP_NOTIFY_TYPE_VBUS | TCP_NOTIFY_TYPE_USB |
+		TCP_NOTIFY_TYPE_MISC);
 	if (ret < 0) {
 		DBG(0, "register OTG <%p> fail\n", otg_tcpc_dev);
 		queue_delayed_work(mtk_musb->st_wq, &register_otg_work,
@@ -357,6 +358,21 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 					"Switch to USB mode.\n", __func__);
 			usb_phy_switch_to_usb();
 #endif
+		}
+		break;
+	case TCP_NOTIFY_DR_SWAP:
+		DBG(0, "TCP_NOTIFY_DR_SWAP, new role=%d\n",
+				noti->swap_state.new_role);
+		if (is_host_active(mtk_musb) &&
+			noti->swap_state.new_role == PD_ROLE_UFP) {
+			DBG(0, "switch role to device\n");
+			mt_usb_host_disconnect(0);
+			mt_usb_connect();
+		} else if (is_peripheral_active(mtk_musb) &&
+			noti->swap_state.new_role == PD_ROLE_DFP) {
+			DBG(0, "switch role to host\n");
+			mt_usb_disconnect();
+			mt_usb_host_connect(0);
 		}
 		break;
 	}
