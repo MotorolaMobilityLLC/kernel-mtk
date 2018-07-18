@@ -2556,7 +2556,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
 		trace_mm_swap_op_rd(swp_type(entry));
 
 		page = swapin_readahead(entry,
-					GFP_HIGHUSER_MOVABLE, vma, address);
+					GFP_HIGHUSER_MOVABLE | __GFP_CMA, vma, address);
 		if (!page) {
 			/*
 			 * Back out if somebody else faulted in this pte
