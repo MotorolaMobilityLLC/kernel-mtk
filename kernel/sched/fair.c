@@ -3325,8 +3325,6 @@ update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq, bool update_freq)
 		removed_load = 1;
 		set_tg_cfs_propagate(cfs_rq);
 	}
-	if (sched_feat(SCHED_HMP))
-		hmp_update_cfs_rq_load_avg(cfs_rq, sa);
 
 	if (atomic_long_read(&cfs_rq->removed_util_avg)) {
 		long r = atomic_long_xchg(&cfs_rq->removed_util_avg, 0);
@@ -3534,9 +3532,6 @@ void remove_entity_load_avg(struct sched_entity *se)
 
 	sync_entity_load_avg(se);
 	atomic_long_add(se->avg.load_avg, &cfs_rq->removed_load_avg);
-#ifdef CONFIG_SCHED_HMP
-	atomic_long_add(se->avg.loadwop_avg, &cfs_rq->removed_loadwop_avg);
-#endif
 	atomic_long_add(se->avg.util_avg, &cfs_rq->removed_util_avg);
 }
 
