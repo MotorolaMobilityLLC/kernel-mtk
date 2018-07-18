@@ -46,11 +46,29 @@ static enum DISP_MODULE_ENUM ovl_index_module[OVL_NUM] = {
 	DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL1_2L
 };
 
-unsigned int gOVLBackground = 0xFF000000;
-unsigned int govldimcolor = 0xFF000000;
+static unsigned int gOVL_bg_color = 0xFF000000;
+static unsigned int gOVL_dim_color = 0xFF000000;
 
 static unsigned int ovl_bg_w[OVL_NUM];
 static unsigned int ovl_bg_h[OVL_NUM];
+
+unsigned int ovl_set_bg_color(unsigned int bg_color)
+{
+	unsigned int old = gOVL_bg_color;
+
+	gOVL_bg_color = bg_color;
+
+	return old;
+}
+
+unsigned int ovl_set_dim_color(unsigned int dim_color)
+{
+	unsigned int old = gOVL_dim_color;
+
+	gOVL_dim_color = dim_color;
+
+	return old;
+}
 
 static inline int is_module_ovl(enum DISP_MODULE_ENUM module)
 {
@@ -539,7 +557,7 @@ static int _ovl_set_rsz_roi(enum DISP_MODULE_ENUM module,
 	u32 bg_w = pconfig->dst_w, bg_h = pconfig->dst_h;
 
 	_ovl_get_rsz_roi(module, pconfig, &bg_w, &bg_h);
-	ovl_roi(module, bg_w, bg_h, gOVLBackground, handle);
+	ovl_roi(module, bg_w, bg_h, gOVL_bg_color, handle);
 
 	return 0;
 }
@@ -790,8 +808,12 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 
 	if (cfg->source != OVL_LAYER_SOURCE_RESERVED)
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + layer_offset_clr, 0xff000000);
-	else
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + layer_offset_clr, govldimcolor);
+	else {
+		unsigned int dim_color;
+
+		dim_color = (gOVL_dim_color == 0xff000000) ? cfg->dim_color : gOVL_dim_color;
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + layer_offset_clr, 0xff000000 | dim_color);
+	}
 
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRC_SIZE + layer_offset, dst_h << 16 | dst_w);
 
@@ -1349,7 +1371,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 #endif
 
 	if (pConfig->dst_dirty)
-		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVLBackground, handle);
+		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVL_bg_color, handle);
 
 	if (!pConfig->ovl_dirty)
 		return 0;
