@@ -228,7 +228,7 @@ static bool vow_IPICmd_Send(uint8_t data_type,
 	unsigned int retry_cnt;
 
 	for (retry_cnt = 0; retry_cnt <= retry_time; retry_cnt++) {
-		ipi_result = audio_send_ipi_msg(&ipi_msg, TASK_SCENE_VOW, AUDIO_IPI_LAYER_KERNEL_TO_SCP,
+		ipi_result = audio_send_ipi_msg(&ipi_msg, TASK_SCENE_VOW, AUDIO_IPI_LAYER_TO_DSP,
 						data_type, ack_type, msg_id, param1, param2, payload);
 		if (ipi_result == 0)
 			break;

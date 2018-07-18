@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #include "audio_ipi_client_phone_call.h"
 
@@ -35,8 +35,10 @@
 #include <linux/of_fdt.h>
 #include <linux/ioport.h>
 #include <linux/kthread.h>
-#include <linux/wakelock.h>
 
+#ifdef wake_lock_call
+#include <linux/wakelock.h>
+#endif
 
 #include <linux/io.h>
 
@@ -48,12 +50,14 @@
 
 #include "audio_task_manager.h"
 
-#include "audio_dma_buf_control.h"
+#include <audio_ipi_dma.h>
 #include "audio_speech_msg_id.h"
 
 
 #define DUMP_DSP_PCM_DATA_PATH "/sdcard/mtklog/aurisys_dump"
+#ifdef wake_lock_call
 static struct wake_lock call_pcm_dump_wake_lock;
+#endif
 
 
 enum { /* dump_data_t */
@@ -66,13 +70,15 @@ enum { /* dump_data_t */
 
 struct dump_work_t {
 	struct work_struct work;
-	char *dma_addr;
+	uint32_t rw_idx;
+	uint32_t data_size;
 };
 
 
 struct dump_package_t {
 	uint8_t dump_data_type;
-	char *data_addr;
+	uint32_t rw_idx;
+	uint32_t data_size;
 };
 
 
@@ -122,8 +128,6 @@ struct pcm_dump_dl_t {
 };
 
 
-static struct audio_resv_dram_t *p_resv_dram;
-
 struct file *file_ul_in_ch1;
 struct file *file_ul_in_ch2;
 struct file *file_ul_in_ch3;
@@ -154,10 +158,10 @@ void open_dump_file(void)
 	char path_dl_in[64];
 	char path_dl_out[64];
 
-
+#ifdef wake_lock_call
 	/* only enable when debug pcm dump on */
 	wake_lock(&call_pcm_dump_wake_lock);
-
+#endif
 	getnstimeofday(&curr_tm);
 
 	memset(string_time, '\0', 16);
@@ -183,43 +187,43 @@ void open_dump_file(void)
 
 	file_ul_in_ch1 = filp_open(path_ul_in_ch1, O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_ul_in_ch1)) {
-		AUD_LOG_W("file_ul_in_ch1 < 0\n");
+		pr_info("file_ul_in_ch1 < 0\n");
 		return;
 	}
 
 	file_ul_in_ch2 = filp_open(path_ul_in_ch2, O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_ul_in_ch2)) {
-		AUD_LOG_W("file_ul_in_ch2 < 0\n");
+		pr_info("file_ul_in_ch2 < 0\n");
 		return;
 	}
 
 	file_ul_in_ch3 = filp_open(path_ul_in_ch3, O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_ul_in_ch3)) {
-		AUD_LOG_W("file_ul_in_ch3 < 0\n");
+		pr_info("file_ul_in_ch3 < 0\n");
 		return;
 	}
 
 	file_aec_in = filp_open(path_aec_in, O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_aec_in)) {
-		AUD_LOG_W("file_aec_in < 0\n");
+		pr_info("file_aec_in < 0\n");
 		return;
 	}
 
 	file_ul_out = filp_open(path_ul_out, O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_ul_out)) {
-		AUD_LOG_W("file_ul_out < 0\n");
+		pr_info("file_ul_out < 0\n");
 		return;
 	}
 
 	file_dl_in = filp_open(path_dl_in, O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_dl_in)) {
-		AUD_LOG_W("file_dl_in < 0\n");
+		pr_info("file_dl_in < 0\n");
 		return;
 	}
 
 	file_dl_out = filp_open(path_dl_out, O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_dl_out)) {
-		AUD_LOG_W("file_dl_out < 0\n");
+		pr_info("file_dl_out < 0\n");
 		return;
 	}
 
@@ -232,7 +236,7 @@ void open_dump_file(void)
 	if (!dump_task) {
 		dump_task = kthread_create(dump_kthread, NULL, "dump_kthread");
 		if (IS_ERR(dump_task))
-			AUD_LOG_E("can not create dump_task kthread\n");
+			pr_notice("can not create dump_task kthread\n");
 
 		b_enable_dump = true;
 		wake_up_process(dump_task);
@@ -256,16 +260,16 @@ void close_dump_file(void)
 
 	b_enable_dump = false;
 
-	AUD_LOG_D("UL: %d %d %d. DL: %d %d %d. pass: %d\n",
-		  irq_cnt[DUMP_UL], irq_cnt_w[DUMP_UL], irq_cnt_k[DUMP_UL],
-		  irq_cnt[DUMP_DL], irq_cnt_w[DUMP_DL], irq_cnt_k[DUMP_DL],
-		  dump_data_routine_cnt_pass);
+	pr_debug("UL: %d %d %d. DL: %d %d %d. pass: %d\n",
+		 irq_cnt[DUMP_UL], irq_cnt_w[DUMP_UL], irq_cnt_k[DUMP_UL],
+		 irq_cnt[DUMP_DL], irq_cnt_w[DUMP_DL], irq_cnt_k[DUMP_DL],
+		 dump_data_routine_cnt_pass);
 
 	if (dump_task) {
 		kthread_stop(dump_task);
 		dump_task = NULL;
 	}
-	AUD_LOG_D("dump_queue = %p\n", dump_queue);
+	pr_debug("dump_queue = %p\n", dump_queue);
 	kfree(dump_queue);
 	dump_queue = NULL;
 
@@ -297,8 +301,9 @@ void close_dump_file(void)
 		filp_close(file_dl_out, NULL);
 		file_dl_out = NULL;
 	}
-
+#ifdef wake_lock_call
 	wake_unlock(&call_pcm_dump_wake_lock);
+#endif
 }
 
 
@@ -313,7 +318,8 @@ void phone_call_recv_message(struct ipi_msg_t *p_ipi_msg)
 		idx = (uint8_t)p_ipi_msg->param2;
 
 		irq_cnt[idx]++;
-		dump_work[idx].dma_addr = p_ipi_msg->dma_addr;
+		dump_work[idx].rw_idx = p_ipi_msg->dma_info.rw_idx;
+		dump_work[idx].data_size = p_ipi_msg->dma_info.data_size;
 
 		ret = queue_work(dump_workqueue[idx], &dump_work[idx].work);
 		if (ret == 0)
@@ -325,28 +331,28 @@ void phone_call_recv_message(struct ipi_msg_t *p_ipi_msg)
 
 void phone_call_task_unloaded(void)
 {
-	AUD_LOG_D("%s()\n", __func__);
+	pr_debug("%s()\n", __func__);
 }
 
 
 static void dump_data_routine_ul(struct work_struct *ws)
 {
 	struct dump_work_t *dump_work = NULL;
-	char *data_addr = NULL;
+	uint32_t rw_idx = 0;
+	uint32_t data_size = 0;
 
 	unsigned long flags = 0;
 
 	irq_cnt_w[DUMP_UL]++;
 
 	dump_work = container_of(ws, struct dump_work_t, work);
-	data_addr = get_resv_dram_vir_addr(dump_work->dma_addr);
-	AUD_LOG_V("data %p, dma %p, vp %p, pp %p\n",
-		  data_addr, dump_work->dma_addr,
-		  p_resv_dram->vir_addr, p_resv_dram->phy_addr);
+	rw_idx = dump_work->rw_idx;
+	data_size = dump_work->data_size;
 
 	spin_lock_irqsave(&dump_queue_lock, flags);
 	dump_queue->dump_package[dump_queue->idx_w].dump_data_type = DUMP_UL;
-	dump_queue->dump_package[dump_queue->idx_w].data_addr = data_addr;
+	dump_queue->dump_package[dump_queue->idx_w].rw_idx = rw_idx;
+	dump_queue->dump_package[dump_queue->idx_w].data_size = data_size;
 	dump_queue->idx_w++;
 	spin_unlock_irqrestore(&dump_queue_lock, flags);
 
@@ -357,21 +363,21 @@ static void dump_data_routine_ul(struct work_struct *ws)
 static void dump_data_routine_dl(struct work_struct *ws)
 {
 	struct dump_work_t *dump_work = NULL;
-	char *data_addr = NULL;
+	uint32_t rw_idx = 0;
+	uint32_t data_size = 0;
 
 	unsigned long flags = 0;
 
 	irq_cnt_w[DUMP_DL]++;
 
 	dump_work = container_of(ws, struct dump_work_t, work);
-	data_addr = get_resv_dram_vir_addr(dump_work->dma_addr);
-	AUD_LOG_V("data %p, dma %p, vp %p, pp %p\n",
-		  data_addr, dump_work->dma_addr,
-		  p_resv_dram->vir_addr, p_resv_dram->phy_addr);
+	rw_idx = dump_work->rw_idx;
+	data_size = dump_work->data_size;
 
 	spin_lock_irqsave(&dump_queue_lock, flags);
 	dump_queue->dump_package[dump_queue->idx_w].dump_data_type = DUMP_DL;
-	dump_queue->dump_package[dump_queue->idx_w].data_addr = data_addr;
+	dump_queue->dump_package[dump_queue->idx_w].rw_idx = rw_idx;
+	dump_queue->dump_package[dump_queue->idx_w].data_size = data_size;
 	dump_queue->idx_w++;
 	spin_unlock_irqrestore(&dump_queue_lock, flags);
 
@@ -389,12 +395,20 @@ static int dump_kthread(void *data)
 	struct pcm_dump_ul_t *pcm_dump_ul = NULL;
 	struct pcm_dump_dl_t *pcm_dump_dl = NULL;
 
-	struct sched_param param = {.sched_priority = 85 }; /* RTPM_PRIO_AUDIO_PLAYBACK */
+	struct dump_package_t *dump_package = NULL;
+
+	/* RTPM_PRIO_AUDIO_PLAYBACK */
+	struct sched_param param = {.sched_priority = 85 };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
 
-	AUD_LOG_D("dump_queue = %p\n", dump_queue);
+	pr_debug("dump_queue = %p\n", dump_queue);
+
+	pcm_dump_ul = (struct pcm_dump_ul_t *)
+		      kmalloc(sizeof(pcm_dump_ul), GFP_KERNEL);
+	pcm_dump_dl = (struct pcm_dump_dl_t *)
+		      kmalloc(sizeof(pcm_dump_dl), GFP_KERNEL);
 
 	while (b_enable_dump && !kthread_should_stop()) {
 		spin_lock_irqsave(&dump_queue_lock, flags);
@@ -406,7 +420,8 @@ static int dump_kthread(void *data)
 			spin_unlock_irqrestore(&dump_queue_lock, flags);
 			ret = wait_event_interruptible(
 				      wq_dump_pcm,
-				      (dump_queue->idx_r != dump_queue->idx_w) || b_enable_dump == false);
+				      (dump_queue->idx_r != dump_queue->idx_w)
+				      || b_enable_dump == false);
 			if (ret == -ERESTARTSYS) {
 				ret = -EINTR;
 				break;
@@ -420,11 +435,27 @@ static int dump_kthread(void *data)
 
 		AUD_LOG_V("current_idx = %d\n", current_idx);
 
-		switch (dump_queue->dump_package[current_idx].dump_data_type) {
+		dump_package = &dump_queue->dump_package[current_idx];
+
+		switch (dump_package->dump_data_type) {
 		case DUMP_UL: {
-			pcm_dump_ul =
-				(struct pcm_dump_ul_t *)dump_queue->dump_package[current_idx].data_addr;
-			AUD_LOG_V("pcm_dump_ul = %p\n", pcm_dump_ul);
+			irq_cnt_k[DUMP_UL]++;
+
+			if (dump_package->data_size != sizeof(pcm_dump_ul)) {
+				pr_notice("%s(), UL size %u != %lu!!\n",
+					  __func__,
+					  dump_package->data_size,
+					  sizeof(pcm_dump_ul));
+				audio_ipi_dma_drop_region(
+					TASK_SCENE_PHONE_CALL,
+					dump_package->data_size,
+					dump_package->rw_idx);
+				break;
+			}
+			audio_ipi_dma_read_region(TASK_SCENE_PHONE_CALL,
+						  pcm_dump_ul,
+						  dump_package->data_size,
+						  dump_package->rw_idx);
 			if (!IS_ERR(file_ul_in_ch1)) {
 				ret = file_ul_in_ch1->f_op->write(
 					      file_ul_in_ch1,
@@ -460,13 +491,26 @@ static int dump_kthread(void *data)
 					      pcm_dump_ul->frame_buf_size,
 					      &file_ul_out->f_pos);
 			}
-			irq_cnt_k[DUMP_UL]++;
 			break;
 		}
 		case DUMP_DL: {
-			pcm_dump_dl =
-				(struct pcm_dump_dl_t *)dump_queue->dump_package[current_idx].data_addr;
-			AUD_LOG_V("pcm_dump_sl = %p\n", pcm_dump_dl);
+			irq_cnt_k[DUMP_DL]++;
+
+			if (dump_package->data_size != sizeof(pcm_dump_dl)) {
+				pr_notice("%s(), DL size %u != %lu!!\n",
+					  __func__,
+					  dump_package->data_size,
+					  sizeof(pcm_dump_dl));
+				audio_ipi_dma_drop_region(
+					TASK_SCENE_PHONE_CALL,
+					dump_package->data_size,
+					dump_package->rw_idx);
+				break;
+			}
+			audio_ipi_dma_read_region(TASK_SCENE_PHONE_CALL,
+						  pcm_dump_dl,
+						  dump_package->data_size,
+						  dump_package->rw_idx);
 			if (!IS_ERR(file_dl_in)) {
 				ret = file_dl_in->f_op->write(
 					      file_dl_in,
@@ -481,35 +525,39 @@ static int dump_kthread(void *data)
 					      pcm_dump_dl->frame_buf_size,
 					      &file_dl_out->f_pos);
 			}
-			irq_cnt_k[DUMP_DL]++;
 			break;
 		}
 		default: {
-			AUD_LOG_W("current_idx = %d, idx_r = %d, idx_w = %d, type = %d\n",
-				  current_idx, dump_queue->idx_r, dump_queue->idx_w,
-				  dump_queue->dump_package[current_idx].dump_data_type);
+			pr_info("current_idx = %d, idx_r = %d, idx_w = %d, type = %d\n",
+				current_idx,
+				dump_queue->idx_r, dump_queue->idx_w,
+				dump_package->dump_data_type);
 			break;
 		}
 		}
 	}
 
-	AUD_LOG_D("dump_kthread exit\n");
-	return 0;
-}
 
+	if (pcm_dump_ul != NULL) {
+		kfree(pcm_dump_ul);
+		pcm_dump_ul = NULL;
+	}
+	if (pcm_dump_dl != NULL) {
+		kfree(pcm_dump_dl);
+		pcm_dump_dl = NULL;
+	}
 
-
-ssize_t audio_ipi_client_phone_call_read(
-	struct file *file, char *buf, size_t count, loff_t *ppos)
-{
+	pr_debug("%s(), exit\n", __func__);
 	return 0;
 }
 
 
 void audio_ipi_client_phone_call_init(void)
 {
+#ifdef wake_lock_call
 	wake_lock_init(&call_pcm_dump_wake_lock, WAKE_LOCK_SUSPEND,
 		       "call_pcm_dump_wake_lock");
+#endif
 
 	audio_task_register_callback(
 		TASK_SCENE_PHONE_CALL,
@@ -518,12 +566,14 @@ void audio_ipi_client_phone_call_init(void)
 
 	dump_workqueue[DUMP_UL] = create_workqueue("dump_pcm_ul");
 	if (dump_workqueue[DUMP_UL] == NULL)
-		AUD_LOG_E("dump_workqueue[DUMP_UL] = %p\n", dump_workqueue[DUMP_UL]);
+		pr_notice("dump_workqueue[DUMP_UL] = %p\n",
+			  dump_workqueue[DUMP_UL]);
 	AUD_ASSERT(dump_workqueue[DUMP_UL] != NULL);
 
 	dump_workqueue[DUMP_DL] = create_workqueue("dump_pcm_dl");
 	if (dump_workqueue[DUMP_DL] == NULL)
-		AUD_LOG_E("dump_workqueue[DUMP_DL] = %p\n", dump_workqueue[DUMP_DL]);
+		pr_notice("dump_workqueue[DUMP_DL] = %p\n",
+			  dump_workqueue[DUMP_DL]);
 	AUD_ASSERT(dump_workqueue[DUMP_DL] != NULL);
 
 	INIT_WORK(&dump_work[DUMP_UL].work, dump_data_routine_ul);
@@ -532,10 +582,6 @@ void audio_ipi_client_phone_call_init(void)
 	init_waitqueue_head(&wq_dump_pcm);
 
 	dump_task = NULL;
-
-	/* TODO: ring buf */
-	p_resv_dram = get_reserved_dram();
-	AUD_ASSERT(p_resv_dram != NULL);
 }
 
 
