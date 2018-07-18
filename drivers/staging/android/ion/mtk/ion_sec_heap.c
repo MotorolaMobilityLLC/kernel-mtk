@@ -421,12 +421,6 @@ skip_client_entry:
 	}
 }
 
-static int ion_sec_heap_debug_show(struct ion_heap *heap, struct seq_file *s, void *unused)
-{
-	ion_heap_debug_show(heap, s, unused);
-	return 0;
-}
-
 struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 {
 #if (defined(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM) || defined(CONFIG_MTK_SECURE_MEM_SUPPORT)) || \
@@ -444,7 +438,7 @@ struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 	heap->heap.ops = &mm_sec_heap_ops;
 	heap->heap.type = ION_HEAP_TYPE_MULTIMEDIA_SEC;
 	heap->heap.flags &= ~ION_HEAP_FLAG_DEFER_FREE;
-	heap->heap.debug_show = ion_sec_heap_debug_show;
+	heap->heap.debug_show = ion_heap_debug_show;
 
 	return &heap->heap;
 
@@ -452,7 +446,7 @@ struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 	struct ion_sec_heap heap;
 
 	heap.heap.ops = &mm_sec_heap_ops;
-	heap.heap.debug_show = ion_sec_heap_debug_show;
+	heap.heap.debug_show = ion_heap_debug_show;
 	IONMSG("%s error: not support\n", __func__);
 	return NULL;
 #endif

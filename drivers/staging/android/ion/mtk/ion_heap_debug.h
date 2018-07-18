@@ -38,6 +38,10 @@ struct ion_mm_buffer_info {
 	pid_t pid;
 };
 
+static const unsigned int orders[] = {4, 1, 0 };
+/* static const unsigned int orders[] = {8, 4, 0}; */
+static const int num_orders = ARRAY_SIZE(orders);
+
 int ion_heap_debug_show(struct ion_heap *heap, struct seq_file *s, void *unused);
 #endif
 /* WARNING: DO NOT EDIT, AUTO-GENERATED CODE - SEE TOP FOR INSTRUCTIONS */

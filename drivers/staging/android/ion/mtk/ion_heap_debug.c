@@ -37,6 +37,12 @@ struct dump_fd_data {
 	struct seq_file *s;
 };
 
+struct ion_system_heap {
+	struct ion_heap heap;
+	struct ion_page_pool **pools;
+	struct ion_page_pool **cached_pools;
+};
+
 static int __do_dump_share_fd(const void *data, struct file *file, unsigned fd)
 {
 	const struct dump_fd_data *d = data;
@@ -100,6 +106,42 @@ int ion_heap_debug_show(struct ion_heap *heap, struct seq_file *s, void *unused)
 	size_t va2mva_sz = 0;
 	size_t mm_sz = 0;
 
+	if (heap->type == (int)ION_HEAP_TYPE_MULTIMEDIA) {
+		int i;
+		struct ion_system_heap
+		*sys_heap = container_of(heap, struct ion_system_heap, heap);
+
+		for (i = 0; i < num_orders; i++) {
+			struct ion_page_pool *pool = sys_heap->pools[i];
+
+			ION_PRINT_LOG_OR_SEQ(s,
+					     "%d order %u highmem pages in pool = %lu total, dev, 0x%p, heap id: %d\n",
+					     pool->high_count, pool->order,
+					     (1 << pool->order) * PAGE_SIZE *
+					     pool->high_count, dev, heap->id);
+			ION_PRINT_LOG_OR_SEQ(s,
+					     "%d order %u lowmem pages in pool = %lu total\n",
+					     pool->low_count, pool->order,
+					     (1 << pool->order) * PAGE_SIZE *
+					     pool->low_count);
+			pool = sys_heap->cached_pools[i];
+			ION_PRINT_LOG_OR_SEQ(s,
+					     "%d order %u highmem pages in cached_pool = %lu total\n",
+					     pool->high_count, pool->order,
+					     (1 << pool->order) * PAGE_SIZE *
+					     pool->high_count);
+			ION_PRINT_LOG_OR_SEQ(s,
+					     "%d order %u lowmem pages in cached_pool = %lu total\n",
+					     pool->low_count, pool->order,
+					     (1 << pool->order) * PAGE_SIZE *
+					     pool->low_count);
+		}
+		if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
+			ION_PRINT_LOG_OR_SEQ(s, "mm_heap_freelist total_size=%zu\n",
+					     ion_heap_freelist_size(heap));
+		else
+			ION_PRINT_LOG_OR_SEQ(s, "mm_heap defer free disabled\n");
+	}
 	ION_PRINT_LOG_OR_SEQ(s, "----------------------------------------------------\n");
 	ION_PRINT_LOG_OR_SEQ(s,
 			     "%18.s %8.s %4.s %3.s %3.s %3.s %7.s %3.s %4.s %4.s %s %s %4.s %4.s %4.s %4.s %s\n",
