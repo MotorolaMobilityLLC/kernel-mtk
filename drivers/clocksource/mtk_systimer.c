@@ -28,6 +28,36 @@
 #include <linux/sched_clock.h>
 #include <linux/spinlock.h>
 #include <clocksource/arm_arch_timer.h>
+#include <mt-plat/sync_write.h>
+
+#ifdef CONFIG_MTK_TIMER_SYSTIMER
+
+#define MTK_TIMER_DBG_AEE_DUMP
+
+#ifdef MTK_TIMER_DBG_AEE_DUMP
+#ifdef CONFIG_MTK_RAM_CONSOLE
+
+#include <linux/irqchip/mtk-gic-extend.h>
+#include <mt-plat/mtk_ram_console.h>
+
+static char         dbg_buf[128];
+static unsigned int dbg_setevt_cpu;
+static uint64_t     t_clkevt_in;
+static uint64_t     t_clkevt_out;
+static uint64_t     t_setevt_in;
+static uint64_t     t_setevt_out;
+static uint64_t     t_hdl_in;
+static uint64_t     t_hdl_out;
+
+#define aee_log(fmt, ...) \
+do { \
+	memset(dbg_buf, 0, sizeof(dbg_buf)); \
+	snprintf(dbg_buf, sizeof(dbg_buf), fmt, ##__VA_ARGS__); \
+	aee_sram_fiq_log(dbg_buf); \
+} while (0)
+
+#endif
+#endif
 
 #define STMR0             (0)
 #define NR_STMRS          (1)
@@ -46,6 +76,17 @@
 #define STMR_CON_EN       (1 << 0)
 #define STMR_CON_IRQ_EN   (1 << 1)
 #define STMR_CON_IRQ_CLR  (1 << 4)
+
+/* STMR_VAL */
+#define STMR_VAL_MAX      (0xFFFFFFFF)
+
+/* apxgpt */
+#define APXGPT_IRQEN      (0x0)
+#define APXGPT_IRQACK     (0x8)
+#define APXGPT_TMR_START  (0x10)
+#define APXGPT_TMR_SIZE   (0x10)
+#define APXGPT_TMR_CNT    (6)
+#define APXGPT_TMR_MASK   (0x3F)
 
 struct mtk_stmrs {
 	int tmr_irq;
@@ -109,14 +150,68 @@ static struct irqaction mtk_stmr_irq = {
 	.dev_id = &mtk_stmr_clkevt,
 };
 
+void mtk_timer_clkevt_aee_dump(void)
+{
+#ifdef MTK_TIMER_DBG_AEE_DUMP
+	/*
+	 * Notice: print function cannot be used during AEE
+	 * flow to avoid lock issues.
+	 */
+	int cpu_bound;
+	struct mtk_stmr_device *dev =
+		mtk_stmr_id_to_dev(STMR_CLKEVT_ID);
+
+	/* interrupt, clkevt handler and set next time */
+
+	aee_log("[timer-mtk]\n");
+
+	aee_log("int handler entry:    %llu\n",
+		t_hdl_in);
+
+	aee_log("clkevt handler entry: %llu\n",
+		t_clkevt_in);
+
+	aee_log("set next event entry: %llu\n",
+		t_setevt_in);
+
+	aee_log("set next event exit:  %llu\n",
+		t_setevt_out);
+
+	aee_log("clkevt handler exit:  %llu\n",
+		t_clkevt_out);
+
+	aee_log("int handler exit:     %llu\n",
+		t_hdl_out);
+
+	aee_log("set next event cpu:   %u\n",
+		dbg_setevt_cpu);
+
+	aee_log("CON: 0x%x\n",
+		__raw_readl(dev->base_addr + STMR_CON));
+
+	aee_log("VAL: 0x%x\n",
+		__raw_readl(dev->base_addr + STMR_VAL));
+
+	cpu_bound = mt_irq_dump_cpu(mtk_stmr_clkevt.irq);
+
+	aee_log("irq affinity (bc, gic): %d, %d\n",
+		mtk_stmr_clkevt.irq_affinity_on, cpu_bound);
+#endif
+}
+
 /*
  * mtk_stmr_handler users are listed as below,
- * STMR0: SOC timer for tick-broadcasting (oneshot)
+ *
+ * STMR0: SoC timer for tick-broadcasting (oneshot)
  */
 static irqreturn_t mtk_stmr_handler(int irq, void *dev_id)
 {
 	unsigned int id = STMR_CLKEVT_ID;
 	struct mtk_stmr_device *dev;
+
+#ifdef MTK_TIMER_DBG_AEE_DUMP
+	t_hdl_in = sched_clock();
+#endif
 
 	dev = mtk_stmr_id_to_dev(id);
 
@@ -131,20 +226,24 @@ static irqreturn_t mtk_stmr_handler(int irq, void *dev_id)
 	} else
 		pr_info("timer_mtk: invalid interrupt %d\n", irq);
 
+#ifdef MTK_TIMER_DBG_AEE_DUMP
+	t_hdl_out = sched_clock();
+#endif
+
 	return IRQ_HANDLED;
 }
 
 static void mtk_stmr_reset(struct mtk_stmr_device *dev)
 {
 	/* Clear IRQ */
-	writel(STMR_CON_IRQ_CLR | STMR_CON_EN,
+	mt_reg_sync_writel(STMR_CON_IRQ_CLR | STMR_CON_EN,
 		dev->base_addr + STMR_CON);
 
 	/* Reset counter */
-	writel(0, dev->base_addr + STMR_VAL);
+	mt_reg_sync_writel(0, dev->base_addr + STMR_VAL);
 
 	/* Disable timer */
-	writel(0, dev->base_addr + STMR_CON);
+	mt_reg_sync_writel(0, dev->base_addr + STMR_CON);
 }
 
 static void mtk_stmr_ack_irq(struct mtk_stmr_device *dev)
@@ -185,21 +284,32 @@ static int mtk_stmr_clkevt_next_event(unsigned long ticks,
 {
 	struct mtk_stmr_device *dev = mtk_stmr_id_to_dev(STMR_CLKEVT_ID);
 
+#ifdef MTK_TIMER_DBG_AEE_DUMP
+	t_setevt_in = sched_clock();
+#endif
+
 	/*
 	 * stmr spinlock is not required here since spinlock
 	 * "tick_broadcast_lock" shall be held before.
-	 *
+	 */
+
+	/*
 	 * reset timer first because we do not expect interrupt is triggered
 	 * by old compare value.
 	 */
 	mtk_stmr_reset(dev);
 
-	writel(STMR_CON_EN, dev->base_addr + STMR_CON);
+	mt_reg_sync_writel(STMR_CON_EN, dev->base_addr + STMR_CON);
 
-	writel(ticks, dev->base_addr + STMR_VAL);
+	mt_reg_sync_writel(ticks, dev->base_addr + STMR_VAL);
 
-	writel(STMR_CON_EN | STMR_CON_IRQ_EN,
+	mt_reg_sync_writel(STMR_CON_EN | STMR_CON_IRQ_EN,
 		dev->base_addr + STMR_CON);
+
+#ifdef MTK_TIMER_DBG_AEE_DUMP
+	t_setevt_out = sched_clock();
+	dbg_setevt_cpu = smp_processor_id();
+#endif
 
 	return 0;
 }
@@ -227,7 +337,15 @@ static void mtk_stmr_clkevt_handler(unsigned long data)
 {
 	struct clock_event_device *evt = (struct clock_event_device *)data;
 
+#ifdef MTK_TIMER_DBG_AEE_DUMP
+	t_clkevt_in = sched_clock();
+#endif
+
 	evt->event_handler(evt);
+
+#ifdef MTK_TIMER_DBG_AEE_DUMP
+	t_clkevt_out = sched_clock();
+#endif
 }
 
 static inline void mtk_stmr_setup_clkevt(u32 freq, int irq)
@@ -310,6 +428,9 @@ static int __init mtk_stmr_init(struct device_node *node)
 
 CLOCKSOURCE_OF_DECLARE(mtk_timer_systimer, "mediatek,sys_timer", mtk_stmr_init);
 MODULE_AUTHOR("Stanley Chu <stanley.chu@mediatek.com>");
+
+#endif /* CONFIG_MTK_TIMER_SYSTIMER */
+
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Mediatek Clock Event Timer");
 
