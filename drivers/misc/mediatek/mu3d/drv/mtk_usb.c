@@ -17,9 +17,6 @@
 #include <linux/usb/gadget.h>
 /*#include "mach/emi_mpu.h"*/
 
-#ifdef CONFIG_TCPC_CLASS
-#include "tcpm.h"
-#endif /* CONFIG_TCPC_CLASS */
 #include "mu3d_hal_osal.h"
 #include "musb_core.h"
 #if defined(CONFIG_MTK_UART_USB_SWITCH) || defined(CONFIG_MTK_SIB_USB_SWITCH)
@@ -459,48 +456,6 @@ bool usb_cable_connected(void)
 }
 EXPORT_SYMBOL_GPL(usb_cable_connected);
 
-#ifdef CONFIG_USB_C_SWITCH
-int typec_switch_usb_connect(void *data)
-{
-	struct musb *musb = data;
-
-	os_printk(K_INFO, "%s+\n", __func__);
-
-	if (musb && musb->gadget_driver) {
-		struct delayed_work *work;
-
-		work = &musb->connection_work;
-
-		queue_delayed_work(_mu3d_musb->st_wq, work, 0);
-	} else {
-		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
-	}
-	os_printk(K_INFO, "%s-\n", __func__);
-
-	return 0;
-}
-
-int typec_switch_usb_disconnect(void *data)
-{
-	struct musb *musb = data;
-
-	os_printk(K_INFO, "%s+\n", __func__);
-
-	if (musb && musb->gadget_driver) {
-		struct delayed_work *work;
-
-		work = &musb->connection_work;
-
-		queue_delayed_work(_mu3d_musb->st_wq, work, 0);
-	} else {
-		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
-	}
-	os_printk(K_INFO, "%s-\n", __func__);
-
-	return 0;
-}
-#endif
-
 #ifdef NEVER
 void musb_platform_reset(struct musb *musb)
 {
@@ -528,20 +483,6 @@ void musb_sync_with_bat(struct musb *musb, int usb_state)
 }
 EXPORT_SYMBOL_GPL(musb_sync_with_bat);
 
-
-#ifdef CONFIG_USB_MTK_DUALMODE
-bool musb_check_ipo_state(void)
-{
-	bool ipo_off;
-
-	down(&_mu3d_musb->musb_lock);
-	ipo_off = _mu3d_musb->in_ipo_off;
-	os_printk(K_INFO, "IPO State is %s\n", (ipo_off ? "true" : "false"));
-	up(&_mu3d_musb->musb_lock);
-	return ipo_off;
-}
-#endif
-
 /*--FOR INSTANT POWER ON USAGE--------------------------------------------------*/
 static inline struct musb *dev_to_musb(struct device *dev)
 {
@@ -564,22 +505,12 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 {
 	unsigned int cmode;
 	struct musb *musb;
-#ifdef CONFIG_TCPC_CLASS
-	struct tcpc_device *tcpc;
-#endif /* CONFIG_TCPC_CLASS */
 
 	if (!dev) {
 		os_printk(K_ERR, "dev is null!!\n");
 		return count;
 	}
 
-#ifdef CONFIG_TCPC_CLASS
-	tcpc = tcpc_dev_get_by_name("type_c_port0");
-	if (!tcpc) {
-		pr_err("%s get tcpc device type_c_port0 fail\n", __func__);
-		return -ENODEV;
-	}
-#endif /* CONFIG_TCPC_CLASS */
 	musb = dev_to_musb(dev);
 
 	if (sscanf(buf, "%ud", &cmode) == 1) {
@@ -595,15 +526,8 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 				if (down_interruptible(&_mu3d_musb->musb_lock))
 					os_printk(K_INFO, "%s: busy, Couldn't get musb_lock\n", __func__);
 			}
-			if (cmode == CABLE_MODE_CHRG_ONLY) {	/* IPO shutdown, disable USB */
-				if (_mu3d_musb)
-					_mu3d_musb->in_ipo_off = true;
-			} else {	/* IPO bootup, enable USB */
-				if (_mu3d_musb)
-					_mu3d_musb->in_ipo_off = false;
-			}
 
-			if (cmode == CABLE_MODE_CHRG_ONLY) {	/* IPO shutdown, disable USB */
+			if (cmode == CABLE_MODE_CHRG_ONLY) {
 				if (musb) {
 					musb->usb_mode = CABLE_MODE_CHRG_ONLY;
 					mt_usb_disconnect();
@@ -613,31 +537,12 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 					musb->usb_mode = CABLE_MODE_HOST_ONLY;
 					mt_usb_disconnect();
 				}
-			} else {	/* IPO bootup, enable USB */
+			} else {
 				if (musb) {
 					musb->usb_mode = CABLE_MODE_NORMAL;
-#ifndef CONFIG_USB_C_SWITCH
 					mt_usb_connect();
-#else
-					typec_switch_usb_connect(musb);
-#endif
 				}
 			}
-#ifdef CONFIG_USB_MTK_DUALMODE
-			if (cmode == CABLE_MODE_CHRG_ONLY) {
-				#ifdef CONFIG_TCPC_CLASS
-				tcpm_typec_change_role(tcpc, TYPEC_ROLE_SNK);
-				#elif defined(CONFIG_USB_MTK_IDDIG)
-				mtk_disable_host();
-				#endif /* CONFIG_TCPC_CLASS */
-			} else {
-				#ifdef CONFIG_TCPC_CLASS
-				tcpm_typec_change_role(tcpc, TYPEC_ROLE_DRP);
-				#elif defined(CONFIG_USB_MTK_IDDIG)
-				mtk_enable_host();
-				#endif /* CONFIG_TCPC_CLASS */
-			}
-#endif
 			if (_mu3d_musb)
 				up(&_mu3d_musb->musb_lock);
 		}

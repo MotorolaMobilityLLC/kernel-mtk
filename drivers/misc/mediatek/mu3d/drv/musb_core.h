@@ -576,7 +576,6 @@ struct musb {
 
 	u8 address;
 	u8 test_mode_nr;
-	bool in_ipo_off;
 	u32 ackpend;		/* ep0 *//*We don't maintain Max Packet size in it. */
 	enum musb_g_ep0_state ep0_state;
 	struct usb_gadget g;	/* the gadget */
@@ -837,18 +836,12 @@ extern u32 upmu_get_rgs_chrdet(void);
 
 #ifdef CONFIG_USB_MTK_DUALMODE
 extern bool mtk_is_host_mode(void);
-extern void mtk_enable_host(void);
-extern void mtk_disable_host(void);
 
 #else
 static inline int mtk_is_host_mode(void)
 {
 	return 0;
 }
-#endif
-#ifdef CONFIG_USB_C_SWITCH
-extern int typec_switch_usb_disconnect(void *data);
-extern int typec_switch_usb_connect(void *data);
 #endif
 extern int mu3d_force_on;
 extern void mt_usb_connect(void);
