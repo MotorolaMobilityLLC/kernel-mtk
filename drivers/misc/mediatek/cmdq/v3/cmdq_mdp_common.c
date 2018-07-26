@@ -1197,7 +1197,7 @@ void cmdq_mdp_resume(void)
 
 void cmdq_mdp_release_task_by_file_node(void *file_node)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle, *temp;
 
 	/* Since the file node is closed, there is no way
 	 * user space can issue further "wait_and_close" request,
@@ -1208,7 +1208,8 @@ void cmdq_mdp_release_task_by_file_node(void *file_node)
 	/* walk through active and waiting lists and release them */
 	mutex_lock(&mdp_task_mutex);
 
-	list_for_each_entry(handle, &mdp_ctx.tasks_wait, list_entry) {
+	list_for_each_entry_safe(handle, temp, &mdp_ctx.tasks_wait,
+		list_entry) {
 		if (!(handle->state != TASK_STATE_IDLE &&
 			handle->node_private == file_node &&
 			cmdq_mdp_is_request_from_user_space(
