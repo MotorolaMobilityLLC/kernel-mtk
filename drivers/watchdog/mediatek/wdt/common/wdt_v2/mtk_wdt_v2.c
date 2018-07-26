@@ -108,16 +108,16 @@ void mtk_wdt_set_time_out_value(unsigned int value)
 	 */
 	spin_lock(&rgu_reg_operation_spinlock);
 
-    #ifdef CONFIG_KICK_SPM_WDT
+	#ifdef CONFIG_KICK_SPM_WDT
 	spm_wdt_set_timeout(value);
-    #else
+	#else
 
 	/* 1 tick means 512 * T32K -> 1s = T32/512 tick = 64 */
 	/* --> value * (1<<6) */
 	timeout = (unsigned int)(value * (1 << 6));
 	timeout = timeout << 5;
 	mt_reg_sync_writel((timeout | MTK_WDT_LENGTH_KEY), MTK_WDT_LENGTH);
-    #endif
+	#endif
 	spin_unlock(&rgu_reg_operation_spinlock);
 }
 /*
@@ -146,7 +146,7 @@ void mtk_wdt_mode_config(bool dual_mode_en,
 		pr_debug("wdt disable spm timer.....\n");
 		spm_wdt_disable_timer();
 	}
-    #else
+	#else
 	tmp = __raw_readl(MTK_WDT_MODE);
 	tmp |= MTK_WDT_MODE_KEY;
 
@@ -191,7 +191,7 @@ void mtk_wdt_mode_config(bool dual_mode_en,
 	/* mdelay(100); */
 	pr_debug("mode change to 0x%x (write 0x%x), pid: %d\n",
 		__raw_readl(MTK_WDT_MODE), tmp, current->pid);
-    #endif
+	#endif
 	spin_unlock(&rgu_reg_operation_spinlock);
 }
 /* EXPORT_SYMBOL(mtk_wdt_mode_config); */
@@ -201,7 +201,7 @@ int mtk_wdt_enable(enum wk_wdt_en en)
 	unsigned int tmp = 0;
 
 	spin_lock(&rgu_reg_operation_spinlock);
-    #ifdef CONFIG_KICK_SPM_WDT
+	#ifdef CONFIG_KICK_SPM_WDT
 	if (en == WK_WDT_EN) {
 		spm_wdt_enable_timer();
 		pr_debug("wdt enable spm timer\n");
@@ -221,7 +221,7 @@ int mtk_wdt_enable(enum wk_wdt_en en)
 		mt_reg_sync_writel(tmp, MTK_WDT_REQ_MODE);
 		wdt_enable = 0;
 	}
-    #else
+	#else
 
 	tmp = __raw_readl(MTK_WDT_MODE);
 
@@ -242,8 +242,8 @@ int mtk_wdt_enable(enum wk_wdt_en en)
 }
 int  mtk_wdt_confirm_hwreboot(void)
 {
-    /* aee need confirm wd can hw reboot */
-    /* pr_debug("mtk_wdt_probe : Initialize to dual mode\n"); */
+	/* aee need confirm wd can hw reboot */
+	/* pr_debug("mtk_wdt_probe : Initialize to dual mode\n"); */
 	mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, TRUE);
 	return 0;
 }
@@ -252,10 +252,12 @@ void mtk_wdt_restart(enum wd_restart_type type)
 {
 	struct device_node *np_rgu;
 
-	np_rgu = of_find_compatible_node(NULL, NULL,
-		rgu_of_match[0].compatible);
-
 	if (!toprgu_base) {
+		for_each_matching_node(np_rgu, rgu_of_match) {
+			pr_info("%s: compatible node found: %s\n",
+				__func__, np_rgu->name);
+			break;
+		}
 		toprgu_base = of_iomap(np_rgu, 0);
 		if (!toprgu_base)
 			pr_debug("RGU iomap failed\n");
@@ -355,10 +357,13 @@ void wdt_arch_reset(char mode)
 	struct device_node *np_rgu;
 
 	pr_debug("%s: mode=0x%x\n", __func__, mode);
-	np_rgu = of_find_compatible_node(NULL, NULL,
-		rgu_of_match[0].compatible);
 
 	if (!toprgu_base) {
+		for_each_matching_node(np_rgu, rgu_of_match) {
+			pr_info("%s: compatible node found: %s\n",
+				__func__, np_rgu->name);
+			break;
+		}
 		toprgu_base = of_iomap(np_rgu, 0);
 		if (!toprgu_base)
 			pr_info("RGU iomap failed\n");
@@ -637,8 +642,11 @@ int mtk_wdt_request_en_set(int mark_bit, enum wk_req_en en)
 	struct device_node *np_rgu;
 
 	if (!toprgu_base) {
-		np_rgu = of_find_compatible_node(NULL, NULL,
-				rgu_of_match[0].compatible);
+		for_each_matching_node(np_rgu, rgu_of_match) {
+			pr_info("%s: compatible node found: %s\n",
+				__func__, np_rgu->name);
+			break;
+		}
 		toprgu_base = of_iomap(np_rgu, 0);
 
 		if (!toprgu_base)
@@ -704,8 +712,11 @@ int mtk_wdt_request_mode_set(int mark_bit, enum wk_req_mode mode)
 	struct device_node *np_rgu;
 
 	if (!toprgu_base) {
-		np_rgu = of_find_compatible_node(NULL, NULL,
-				rgu_of_match[0].compatible);
+		for_each_matching_node(np_rgu, rgu_of_match) {
+			pr_info("%s: compatible node found: %s\n",
+				__func__, np_rgu->name);
+			break;
+		}
 		toprgu_base = of_iomap(np_rgu, 0);
 		if (!toprgu_base)
 			pr_info("RGU iomap failed\n");
@@ -753,10 +764,13 @@ void mtk_wdt_set_c2k_sysrst(unsigned int flag, unsigned int shift)
 	struct device_node *np_rgu;
 	unsigned int ret;
 
-	np_rgu = of_find_compatible_node(NULL, NULL,
-			rgu_of_match[0].compatible);
-
 	if (!toprgu_base) {
+		for_each_matching_node(np_rgu, rgu_of_match) {
+			pr_info("%s: compatible node found: %s\n",
+				__func__, np_rgu->name);
+			break;
+		}
+
 		toprgu_base = of_iomap(np_rgu, 0);
 		if (!toprgu_base)
 			pr_info("mtk_wdt_set_c2k_sysrst RGU iomap failed\n");
@@ -893,15 +907,16 @@ static void wdt_fiq(void *arg, void *regs, void *svc_sp)
 {
 	unsigned int wdt_mode_val;
 	struct wd_api *wd_api = NULL;
-get_wd_api(&wd_api);
+
+	get_wd_api(&wd_api);
 	wdt_mode_val = __raw_readl(MTK_WDT_STATUS);
 	mt_reg_sync_writel(wdt_mode_val, MTK_WDT_NONRST_REG);
-    #ifdef	CONFIG_MTK_WD_KICKER
+	#ifdef	CONFIG_MTK_WD_KICKER
 	aee_wdt_printf("\n kick=0x%08x,check=0x%08x,STA=%x\n",
 		wd_api->wd_get_kick_bit(),
 		wd_api->wd_get_check_bit(), wdt_mode_val);
 	aee_wdt_dump_reg();
-    #endif
+	#endif
 
 	aee_wdt_fiq_info(arg, regs, svc_sp);
 }
@@ -1037,20 +1052,20 @@ static int mtk_wdt_probe(struct platform_device *dev)
 
 #ifndef CONFIG_FIQ_GLUE
 	pr_debug("!CONFIG_FIQ_GLUE: request IRQ\n");
-    #ifdef CONFIG_KICK_SPM_WDT
+	#ifdef CONFIG_KICK_SPM_WDT
 	ret = spm_wdt_register_irq((irq_handler_t)mtk_wdt_isr);
-    #else
+	#else
 	ret = request_irq(AP_RGU_WDT_IRQ_ID, (irq_handler_t)mtk_wdt_isr,
 			IRQF_TRIGGER_NONE, "mt_wdt", NULL);
-    #endif		/* CONFIG_KICK_SPM_WDT */
+	#endif		/* CONFIG_KICK_SPM_WDT */
 #else
 	pr_debug("CONFIG_FIQ_GLUE: request FIQ\n");
-    #ifdef CONFIG_KICK_SPM_WDT
+	#ifdef CONFIG_KICK_SPM_WDT
 	ret = spm_wdt_register_fiq(wdt_fiq);
-    #else
+	#else
 	ret = request_fiq(AP_RGU_WDT_IRQ_ID, wdt_fiq,
 			IRQF_TRIGGER_FALLING, NULL);
-    #endif		/* CONFIG_KICK_SPM_WDT */
+	#endif		/* CONFIG_KICK_SPM_WDT */
 #endif
 
 	if (ret != 0) {
@@ -1074,9 +1089,9 @@ static int mtk_wdt_probe(struct platform_device *dev)
 		}
 	}
 
-    #ifdef CONFIG_KICK_SPM_WDT
+	#ifdef CONFIG_KICK_SPM_WDT
 	spm_wdt_init();
-    #endif
+	#endif
 
 	/* Set timeout vale and restart counter */
 	wdt_last_timeout_val = 30;
@@ -1084,7 +1099,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
 
 	mtk_wdt_restart(WD_TYPE_NORMAL);
 
-    #ifdef CONFIG_MTK_WD_KICKER	/* Initialize to dual mode */
+	#ifdef CONFIG_MTK_WD_KICKER	/* Initialize to dual mode */
 	pr_debug("WDT (dual mode) enabled.\n");
 	mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, TRUE);
 	#else				/* Initialize to disable wdt */
