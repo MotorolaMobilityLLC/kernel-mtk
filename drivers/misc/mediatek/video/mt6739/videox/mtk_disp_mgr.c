@@ -163,6 +163,7 @@ int disp_create_session(struct disp_session_config *config)
 	int is_session_inited = 0;
 	unsigned int session = MAKE_DISP_SESSION(config->type, config->device_id);
 	int i, idx = -1;
+	static DEFINE_RATELIMIT_STATE(ioctl_ratelimit, 1 * HZ, 10);
 	/* 1.To check if this session exists already */
 	mutex_lock(&disp_session_lock);
 	for (i = 0; i < MAX_SESSION_COUNT; i++) {
@@ -171,6 +172,19 @@ int disp_create_session(struct disp_session_config *config)
 			idx = i;
 			DISPDBG("create session is exited:0x%x\n", session);
 			break;
+		}
+		if ((DISP_SESSION_TYPE(session_config[i]) == config->type)
+			&& __ratelimit(&ioctl_ratelimit)) {
+			DISPERR("session(0x%x) type(%s) existed!\n",
+				session, disp_session_mode_spy(session));
+			ret = -1;
+			goto done;
+		}
+		if (config->type > DISP_SESSION_MEMORY &&
+			__ratelimit(&ioctl_ratelimit)) {
+			DISPERR("Invalid session(0x%x) creation request\n", session);
+			ret = -1;
+			goto done;
 		}
 	}
 
@@ -192,7 +206,7 @@ int disp_create_session(struct disp_session_config *config)
 		session_config[idx] = session;
 		DISPDBG("New session(0x%x)\n", session);
 	} else {
-		DISPERR("Invalid session creation request\n");
+		DISPERR("Invalid session(0x%x) creation request\n", session);
 		ret = -1;
 	}
 done:
