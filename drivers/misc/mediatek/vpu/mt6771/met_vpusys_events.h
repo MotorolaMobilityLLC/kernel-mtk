@@ -25,35 +25,54 @@
 #define _TRACE_MET_VPUSYS_EVENTS_H
 #include <linux/tracepoint.h>
 
+#define MX_LEN_STR_DESC (128)
+TRACE_EVENT(__MET_PACKET__,
+	TP_PROTO(unsigned long long wclk, char action, int core, int pid,
+		int sessid, char *str_desc, int val),
+	TP_ARGS(wclk, action, core, pid, sessid, str_desc, val),
+	TP_STRUCT__entry(
+		__field(unsigned long long, wclk)
+		__field(int, action)
+		__field(int, core)
+		__field(int, pid)
+		__field(int, sessid)
+		__array(char, str_desc, MX_LEN_STR_DESC)
+		__field(int, val)
+		),
+	TP_fast_assign(
+		__entry->wclk = wclk;
+		__entry->action = action;
+		__entry->core = core;
+		__entry->pid = pid;
+		__entry->sessid = sessid;
+		strncpy(__entry->str_desc, str_desc, MX_LEN_STR_DESC);
+		__entry->val = val;
+	),
+	TP_printk("WCLK=%llu,ACTION=%c,TASK=VPU.internal.core%d,PID=%d,SESS=%d,DESC=%s,VAL=%d,",
+		__entry->wclk,
+		__entry->action,
+		__entry->core,
+		__entry->pid,
+		__entry->sessid,
+		__entry->str_desc,
+		__entry->val)
+);
+
+
 TRACE_EVENT(VPU__D2D_enter,
-	TP_PROTO(int core, int algo_id, int vcore_opp, int dsp_freq, int ipu_if_freq, int dsp1_freq, int dsp2_freq),
-	TP_ARGS(core, algo_id, vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq),
+	TP_PROTO(int core, int algo_id, int dsp_freq),
+	TP_ARGS(core, algo_id, dsp_freq),
 	TP_STRUCT__entry(
 		__field(int, core)
 		__field(int, algo_id)
-		__field(int, vcore_opp)
 		__field(int, dsp_freq)
-		__field(int, ipu_if_freq)
-		__field(int, dsp1_freq)
-		__field(int, dsp2_freq)
 		),
 	TP_fast_assign(
 		__entry->core = core;
 		__entry->algo_id = algo_id;
-		__entry->vcore_opp = vcore_opp;
 		__entry->dsp_freq = dsp_freq;
-		__entry->ipu_if_freq = ipu_if_freq;
-		__entry->dsp1_freq = dsp1_freq;
-		__entry->dsp2_freq = dsp2_freq;
 	),
-	TP_printk("_id=c%da%d, vcore_opp=%d, dsp_freq=%d, ipu_if_freq=%d, dsp1_freq=%d, dsp2_freq=%d",
-					__entry->core,
-					__entry->algo_id,
-					__entry->vcore_opp,
-					__entry->dsp_freq,
-					__entry->ipu_if_freq,
-					__entry->dsp1_freq,
-					__entry->dsp2_freq)
+	TP_printk("_id=c%da%d, dsp%d_freq=%d", __entry->core, __entry->algo_id, __entry->core, __entry->dsp_freq)
 );
 
 TRACE_EVENT(VPU__D2D_leave,
@@ -89,12 +108,37 @@ TRACE_EVENT(VPU__polling,
 		__entry->value3 = value3;
 		__entry->value4 = value4;
 	),
-	TP_printk("_id=c%d, value1=%d, value2=%d, value3=%d, value4=%d",
+	TP_printk("_id=c%d, instruction_cnt=%d, idma_active=%d, uncached_data_stall=%d, icache_miss_stall=%d",
 					__entry->core,
 					__entry->value1,
 					__entry->value2,
 					__entry->value3,
 					__entry->value4)
+);
+
+TRACE_EVENT(VPU__DVFS,
+	TP_PROTO(int vcore_opp, int dsp_freq, int ipu_if_freq, int dsp1_freq, int dsp2_freq),
+	TP_ARGS(vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq),
+	TP_STRUCT__entry(
+		__field(int, vcore_opp)
+		__field(int, dsp_freq)
+		__field(int, ipu_if_freq)
+		__field(int, dsp1_freq)
+		__field(int, dsp2_freq)
+		),
+	TP_fast_assign(
+		__entry->vcore_opp = vcore_opp;
+		__entry->dsp_freq = dsp_freq;
+		__entry->ipu_if_freq = ipu_if_freq;
+		__entry->dsp1_freq = dsp1_freq;
+		__entry->dsp2_freq = dsp2_freq;
+	),
+	TP_printk("vcore_opp=%d, dsp_freq=%d, ipu_if_freq=%d, dsp1_freq=%d, dsp2_freq=%d",
+			__entry->vcore_opp,
+			__entry->dsp_freq,
+			__entry->ipu_if_freq,
+			__entry->dsp1_freq,
+			__entry->dsp2_freq)
 );
 
 
