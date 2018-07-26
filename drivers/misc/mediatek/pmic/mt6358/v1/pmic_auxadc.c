@@ -366,7 +366,7 @@ struct pmic_auxadc_channel_new mt6358_auxadc_channel[] = {
 		PMIC_AUXADC_ADC_RDY_CH4_BY_THR2, PMIC_AUXADC_ADC_OUT_CH4_BY_THR2},
 	{12, 1, 4, PMIC_AUXADC_RQST_CH4_BY_THR3, /* VGPU_TEMP */
 		PMIC_AUXADC_ADC_RDY_CH4_BY_THR3, PMIC_AUXADC_ADC_OUT_CH4_BY_THR3},
-	{12, 1.5, 6, PMIC_AUXADC_RQST_CH6, /* DCXO voltage */
+	{12, 3, 6, PMIC_AUXADC_RQST_CH6, /* DCXO voltage */
 		PMIC_AUXADC_ADC_RDY_CH6, PMIC_AUXADC_ADC_OUT_CH6},
 };
 
@@ -662,6 +662,8 @@ int mt6358_get_auxadc_value(u8 channel)
 	else if (auxadc_channel->resolution == 15)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
+	if (channel == AUXADC_LIST_DCXO_VOLT)
+		adc_result /= 2;
 
 	if (channel != AUXADC_LIST_VCORE_TEMP &&
 	    channel != AUXADC_LIST_VPROC_TEMP &&
