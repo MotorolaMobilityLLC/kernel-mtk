@@ -152,9 +152,8 @@ static int initAF(void)
 
 	if (*g_s4AF_Opened == 1) {
 
-		g_sr = 3;
-
 		spin_lock(g_AF_SpinLock);
+		g_sr = 3;
 		*g_s4AF_Opened = 2;
 		spin_unlock(g_AF_SpinLock);
 	}
