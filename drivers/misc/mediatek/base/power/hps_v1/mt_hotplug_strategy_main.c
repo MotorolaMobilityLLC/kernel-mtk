@@ -24,6 +24,10 @@
 
 #include "mt_hotplug_strategy_internal.h"
 
+#ifndef DEF_LOG_MASK
+#define DEF_LOG_MASK		0
+#endif
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void hps_early_suspend(struct early_suspend *h);
 static void hps_late_resume(struct early_suspend *h);
@@ -52,7 +56,7 @@ struct hps_ctxt_struct hps_ctxt = {
 	.enabled = EN_HPS,
 	.early_suspend_enabled = 1,
 	.suspend_enabled = 1,
-	.log_mask = 0,
+	.log_mask = DEF_LOG_MASK,
 
 	/* core */
 	.lock = __MUTEX_INITIALIZER(hps_ctxt.lock),
