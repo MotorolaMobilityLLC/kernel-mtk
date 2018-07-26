@@ -74,7 +74,7 @@ ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
 dtbo_check: $(MAIN_DTB_NAMES) $(PROJ_DTB_NAMES)
 	for i in $(PROJ_DTB_FILES); do \
 		$(srctree)/scripts/dtc/ufdt_apply_overlay $(MAIN_DTB_FILES) $$i $$i.merge;\
-        done
+	done
 
 my_dtbo_id := 0
 define mk_dtboimg_cfg
