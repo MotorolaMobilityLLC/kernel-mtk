@@ -4,3 +4,6 @@ config MTK_AUDIODSP_SUPPORT
 	help
 	  AUDIO_DSP is a MediaTek in-house DSP which can do
 	  different audio process.
+	  Set Y to enable this feature.
+	  If unsure,
+	  Set N to stay with legancy feature.
