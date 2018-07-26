@@ -18,6 +18,7 @@
 #include <linux/proc_fs.h>
 #include <mach/mtk_pbm.h>
 #include "mtk_mdpm.h"
+#include <helio-dvfsrc.h>
 
 #if MD_POWER_METER_ENABLE
 #include "mtk_vcore_dvfs.h"
@@ -25,7 +26,7 @@
 #endif
 
 int mt_mdpm_debug;
-struct md_power_status dbm_power_sta;
+struct md_power_status mdpm_power_sta;
 
 #ifdef MD_POWER_UT
 u32 fake_share_reg;
@@ -59,16 +60,17 @@ void init_md_section_level(enum pbm_kicker kicker)
 
 	if (kicker == KR_MD1) {
 		init_md1_section_level(share_mem);
+		init_version_check(share_mem);
 		md1_ccci_ready = 1;
 	} else
 		pr_warn("unknown MD kicker: %d\n", kicker);
 }
 
-int get_md1_power(enum dbm_power_type power_type, bool need_update)
+int get_md1_power(enum mdpm_power_type power_type, bool need_update)
 {
 	u32 share_reg, *share_mem;
 	enum md_scenario scenario;
-	int scenario_power, dbm_power;
+	int scenario_power, tx_power;
 
 #if !defined(CONFIG_MTK_ECCCI_DRIVER)
 	return 0;
@@ -82,9 +84,9 @@ int get_md1_power(enum dbm_power_type power_type, bool need_update)
 	}
 
 	if (need_update == false)
-		return dbm_power_sta.total_power;
+		return mdpm_power_sta.total_power;
 
-	memset((void *)&dbm_power_sta, 0, sizeof(struct md_power_status));
+	memset((void *)&mdpm_power_sta, 0, sizeof(struct md_power_status));
 
 #ifdef MD_POWER_UT
 	share_reg = fake_share_reg;
@@ -94,6 +96,7 @@ int get_md1_power(enum dbm_power_type power_type, bool need_update)
 
 #if 0 /* FIXME: bringup */
 	share_reg = spm_vcorefs_get_MD_status();
+	/*share_reg = get_dvfsrc_debug_sta0();*/
 #else
 	share_reg = 0;
 #endif
@@ -107,13 +110,13 @@ int get_md1_power(enum dbm_power_type power_type, bool need_update)
 #else
 	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, 0, NULL);
 #endif
-	dbm_power = get_md1_dBm_power(scenario, share_mem, power_type);
+	tx_power = get_md1_tx_power(scenario, share_mem, power_type);
 
 	if (mt_mdpm_debug)
-		pr_info("[md1_power] scenario_power=%d dbm_power=%d total=%d\n",
-			scenario_power, dbm_power, scenario_power + dbm_power);
+		pr_info("[md1_power] scenario_power=%d tx_power=%d total=%d\n",
+			scenario_power, tx_power, scenario_power + tx_power);
 
-	return scenario_power + dbm_power;
+	return scenario_power + tx_power;
 }
 
 static int mt_mdpm_debug_proc_show(struct seq_file *m, void *v)
@@ -157,11 +160,11 @@ static ssize_t mt_mdpm_debug_proc_write
 static int mt_mdpm_power_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "MAX power: scenario=%dmW dbm=%dmW total=%dmW\n scenario name=%s(%d) section=%d, rat=%d, power_type=%d\n",
-		dbm_power_sta.scanario_power, dbm_power_sta.dbm_power,
-		dbm_power_sta.total_power,
-		dbm_power_sta.scenario_name, dbm_power_sta.scenario_id,
-		dbm_power_sta.dbm_section, dbm_power_sta.rat,
-		dbm_power_sta.power_type);
+		mdpm_power_sta.scanario_power, mdpm_power_sta.tx_power,
+		mdpm_power_sta.total_power,
+		mdpm_power_sta.scenario_name, mdpm_power_sta.scenario_id,
+		mdpm_power_sta.dbm_section, mdpm_power_sta.rat,
+		mdpm_power_sta.power_type);
 
 	return 0;
 }
@@ -236,7 +239,7 @@ void init_md_section_level(enum pbm_kicker kicker)
 	pr_notice("MD_POWER_METER_ENABLE:0\n");
 }
 
-int get_md1_power(enum dbm_power_type power_type, bool need_update)
+int get_md1_power(enum mdpm_power_type power_type, bool need_update)
 {
 #if defined(CONFIG_MTK_ECCCI_DRIVER)
 	return MAX_MD1_POWER;
@@ -255,6 +258,7 @@ static int __init mdpm_module_init(void)
 #ifdef MD_POWER_UT
 	mt_mdpm_debug = 1;
 	init_md1_section_level(fake_share_mem);
+	init_version_check(fake_share_mem);
 	md_power_meter_ut();
 #endif
 #endif /* MD_POWER_METER_ENABLE */
