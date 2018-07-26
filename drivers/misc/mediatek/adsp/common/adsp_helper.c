@@ -429,7 +429,7 @@ EXPORT_SYMBOL_GPL(is_adsp_ready);
 
 uint32_t adsp_power_on(uint32_t enable)
 {
-	pr_debug("%s (%x)\n", __func__, enable);
+	pr_debug("+%s (%x)\n", __func__, enable);
 	if (enable) {
 		adsp_enable_clock();
 
@@ -446,6 +446,7 @@ uint32_t adsp_power_on(uint32_t enable)
 	} else {
 		adsp_set_top_mux(1, CLK_CLK26M);
 	}
+	pr_debug("-%s (%x)\n", __func__, enable);
 	return 1;
 }
 EXPORT_SYMBOL_GPL(adsp_power_on);
