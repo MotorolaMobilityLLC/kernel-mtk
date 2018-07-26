@@ -41,7 +41,7 @@
 #if GCPU_TEE_ENABLE
 static int gcpu_tee_call(uint32_t cmd)
 {
-	TZ_RESULT l_ret = TZ_RESULT_SUCCESS;
+	int l_ret = TZ_RESULT_SUCCESS;
 	int ret = 0;
 	KREE_SESSION_HANDLE test_session;
 	/* MTEEC_PARAM param[4]; */

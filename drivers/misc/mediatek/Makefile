@@ -83,6 +83,7 @@ obj-$(CONFIG_MTK_NET_CCMNI) +=  ccmni/
 obj-$(CONFIG_MTK_ECCCI_DRIVER) +=  eccci/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
 obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += gcpu/
+obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += mtee/
 ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
 obj-$(CONFIG_TRUSTY) += gcpu/
 endif
