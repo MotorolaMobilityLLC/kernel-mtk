@@ -80,17 +80,6 @@ config MTK_ENG_BUILD
 	  user load for this build.
 	  If you are not sure about this, set n
 
-config MTK_ROOT_DEVICE
-	bool "Support to root the device with Android user build load"
-	depends on BLOCK && SYSTEM_AS_ROOT && !MTK_ENG_BUILD
-	default n
-	help
-	  Y means support to root the device with Android user build load, on
-	  which system-as-root is enabled.
-	  This option will run special init process.
-	  If you want to root device with Android user build load, set y,
-	  If you are not sure about this, set n.
-
 config EXTREME_LOW_RAM
 	bool "Support the device with memory smaller than 512M"
 	default n
