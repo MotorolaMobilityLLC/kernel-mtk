@@ -11,8 +11,6 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MACH_MT6758) += eem_v2/
-obj-$(CONFIG_MACH_MT3967) += eem_v2/
 
 obj-$(CONFIG_MACH_MT3967) += drcc_v1/
 
@@ -33,6 +31,7 @@ ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_MACH_MT6758) += eem_v2/
 obj-$(CONFIG_MACH_MT6765) += eem_v2/
 obj-$(CONFIG_MACH_MT6761) += eem_v2/
+obj-$(CONFIG_MACH_MT3967) += eem_v2/
 endif
 obj-$(CONFIG_MACH_MT6761) += upower_v2/
 ifeq ($(CONFIG_MTK_UNIFY_POWER), y)
