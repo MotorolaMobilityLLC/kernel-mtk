@@ -215,6 +215,7 @@ static int mtk_memcfg_memory_layout_open(struct inode *inode, struct file *file)
 	return single_open(file, mtk_memcfg_memory_layout_show, NULL);
 }
 
+#ifdef CONFIG_MTK_ENG_BUILD
 /* memblock reserve information */
 static int mtk_memcfg_memblock_reserved_show(struct seq_file *m, void *v)
 {
@@ -271,6 +272,14 @@ static int mtk_memcfg_memblock_reserved_open(struct inode *inode,
 {
 	return single_open(file, mtk_memcfg_memblock_reserved_show, NULL);
 }
+
+static const struct file_operations mtk_memcfg_memblock_reserved_operations = {
+	.open = mtk_memcfg_memblock_reserved_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+#endif
 /* end of memblock reserve information */
 
 static const struct file_operations mtk_memcfg_memory_layout_operations = {
@@ -462,12 +471,6 @@ mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 	return count;
 }
 
-static const struct file_operations mtk_memcfg_memblock_reserved_operations = {
-	.open = mtk_memcfg_memblock_reserved_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
 static const struct file_operations mtk_memcfg_oom_operations = {
 	.open = mtk_memcfg_oom_open,
 	.write = mtk_memcfg_oom_write,
