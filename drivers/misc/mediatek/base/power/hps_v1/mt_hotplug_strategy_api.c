@@ -12,9 +12,9 @@
  */
 
 /**
-* @file    mt_hotplug_strategy_api.c
-* @brief   hotplug strategy(hps) - api
-*/
+ * @file    mt_hotplug_strategy_api.c
+ * @brief   hotplug strategy(hps) - api
+ */
 
 #include <linux/kernel.h>	/* printk */
 #include <linux/module.h>	/* MODULE_DESCRIPTION, MODULE_LICENSE */

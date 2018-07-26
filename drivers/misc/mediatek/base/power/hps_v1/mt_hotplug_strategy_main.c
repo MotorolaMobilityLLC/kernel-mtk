@@ -12,15 +12,14 @@
  */
 
 /**
-* @file    mt_hotplug_strategy_main.c
-* @brief   hotplug strategy(hps) - main
-*/
+ * @file    mt_hotplug_strategy_main.c
+ * @brief   hotplug strategy(hps) - main
+ */
 
 #include <linux/kernel.h>		/* printk */
 #include <linux/module.h>		/* MODULE_DESCRIPTION, MODULE_LICENSE */
 #include <linux/init.h>			/* module_init, module_exit */
 #include <linux/platform_device.h>	/* platform_driver_register */
-#include <linux/wakelock.h>		/* wake_lock_init */
 
 #include "mt_hotplug_strategy_internal.h"
 

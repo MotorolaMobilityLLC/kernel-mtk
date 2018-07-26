@@ -481,10 +481,10 @@ static ssize_t hps_num_limit_thermal_proc_write(
 PROC_FOPS_RW(num_limit_thermal);
 
 /***********************************************************
-* procfs callback - algo bound series
-*                     - little_num_limit_low_battery
-*                     - big_num_limit_low_battery
-***********************************************************/
+ * procfs callback - algo bound series
+ *                     - little_num_limit_low_battery
+ *                     - big_num_limit_low_battery
+ ***********************************************************/
 static int hps_num_limit_low_battery_proc_show(struct seq_file *m, void *v)
 {
 	return hps_num_limit_proc_show(
@@ -508,10 +508,10 @@ static ssize_t hps_num_limit_low_battery_proc_write(
 PROC_FOPS_RW(num_limit_low_battery);
 
 /***********************************************************
-* procfs callback - algo bound series
-*                     - little_num_limit_ultra_power_saving
-*                     - big_num_limit_ultra_power_saving
-***********************************************************/
+ * procfs callback - algo bound series
+ *                     - little_num_limit_ultra_power_saving
+ *                     - big_num_limit_ultra_power_saving
+ ***********************************************************/
 static int hps_num_limit_ultra_power_saving_proc_show(
 			struct seq_file *m, void *v)
 {
@@ -536,10 +536,10 @@ static ssize_t hps_num_limit_ultra_power_saving_proc_write(
 PROC_FOPS_RW(num_limit_ultra_power_saving);
 
 /***********************************************************
-* procfs callback - algo bound series
-*                     - little_num_limit_power_serv
-*                     - big_num_limit_power_serv
-***********************************************************/
+ * procfs callback - algo bound series
+ *                     - little_num_limit_power_serv
+ *                     - big_num_limit_power_serv
+ ***********************************************************/
 static int hps_num_limit_power_serv_proc_show(struct seq_file *m, void *v)
 {
 	return hps_num_limit_proc_show(
@@ -661,7 +661,7 @@ int hps_procfs_init(void)
 
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
 		if (!proc_create(entries[i].name,
-			S_IRUGO | S_IWUSR | S_IWGRP,
+			0664,
 			hps_dir, entries[i].fops))
 			hps_err("create /proc/hps/%s failed\n",
 				entries[i].name);

@@ -12,9 +12,9 @@
  */
 
 /**
-* @file    mt_hotplug_strategy_cpu.c
-* @brief   hotplug strategy(hps) - cpu
-*/
+ * @file    mt_hotplug_strategy_cpu.c
+ * @brief   hotplug strategy(hps) - cpu
+ */
 
 #include <linux/kernel.h>	/* printk */
 #include <linux/module.h>	/* MODULE_DESCRIPTION, MODULE_LICENSE */
