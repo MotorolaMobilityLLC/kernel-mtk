@@ -557,6 +557,15 @@ struct SRAMChunk {
 	char owner[CMDQ_MAX_SRAM_OWNER_NAME];
 };
 
+/**
+ * shared memory between normal and secure world
+ */
+struct cmdqSecSharedMemoryStruct {
+	void *pVABase;		/* virtual address of command buffer */
+	dma_addr_t MVABase;	/* physical address of command buffer */
+	uint32_t size;		/* buffer size */
+};
+
 struct ContextStruct {
 	/* handle information */
 	struct list_head handle_active;
@@ -720,6 +729,8 @@ struct cmdqRecStruct {
 	CMDQ_TIME beginWait;
 	CMDQ_TIME gotIRQ;
 	CMDQ_TIME wakedUp;
+	CMDQ_TIME entrySec;	/* time stamp of entry secure world */
+	CMDQ_TIME exitSec;	/* time stamp of exit secure world */
 	u32 durAlloc;	/* allocae time duration */
 	u32 durReclaim;	/* allocae time duration */
 	u32 durRelease;	/* release time duration */
@@ -727,6 +738,10 @@ struct cmdqRecStruct {
 	/* PMQoS information */
 	void *prop_addr;
 	u32 prop_size;
+
+	/* secure world */
+	struct iwcCmdqSecStatus_t *secStatus;
+	u32 irq;
 };
 
 /* TODO: add controller support */
@@ -738,6 +753,7 @@ struct cmdq_controller {
 		struct TaskStruct *task);
 #endif
 	s32 (*get_thread_id)(s32 scenario);
+	s32 (*handle_wait_result)(struct cmdqRecStruct *handle, s32 thread);
 #if 0
 	s32 (*execute_prepare)(struct TaskStruct *task, s32 thread);
 	s32 (*execute)(struct TaskStruct *task, s32 thread);
@@ -979,4 +995,7 @@ void cmdq_core_initialize(void);
 void cmdq_core_deinitialize(void);
 void cmdq_helper_ext_deinit(void);
 
+struct cmdqSecSharedMemoryStruct *cmdq_core_get_secure_shared_memory(void);
+void cmdq_core_attach_error_handle(const struct cmdqRecStruct *handle,
+	s32 thread);
 #endif

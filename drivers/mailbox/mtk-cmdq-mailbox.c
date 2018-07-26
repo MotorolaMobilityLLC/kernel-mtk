@@ -609,6 +609,7 @@ static irqreturn_t cmdq_irq_handler(int irq, void *dev)
 	struct cmdq *cmdq = dev;
 	unsigned long irq_status, flags = 0L;
 	int bit;
+	bool secure_irq = false;
 
 	if (atomic_read(&cmdq->usage) <= 0) {
 		cmdq_msg("cmdq not enable");
@@ -625,11 +626,17 @@ static irqreturn_t cmdq_irq_handler(int irq, void *dev)
 		struct cmdq_thread *thread = &cmdq->thread[bit];
 
 		cmdq_log("bit=%d, thread->base=%p", bit, thread->base);
+		if (!thread->occupied) {
+			secure_irq = true;
+			continue;
+		}
+
 		spin_lock_irqsave(&thread->chan->lock, flags);
 		cmdq_thread_irq_handler(cmdq, thread);
 		spin_unlock_irqrestore(&thread->chan->lock, flags);
 	}
-	return IRQ_HANDLED;
+
+	return secure_irq ? IRQ_NONE : IRQ_HANDLED;
 }
 
 static bool cmdq_thread_timeout_excceed(struct cmdq_thread *thread)
@@ -1047,12 +1054,18 @@ static int cmdq_mbox_send_data(struct mbox_chan *chan, void *data)
 
 static int cmdq_mbox_startup(struct mbox_chan *chan)
 {
+	struct cmdq_thread *thread = chan->con_priv;
+
+	thread->occupied = true;
 	return 0;
 }
 
 static void cmdq_mbox_shutdown(struct mbox_chan *chan)
 {
+	struct cmdq_thread *thread = chan->con_priv;
+
 	cmdq_mbox_thread_stop(chan->con_priv);
+	thread->occupied = false;
 }
 
 static bool cmdq_mbox_last_tx_done(struct mbox_chan *chan)

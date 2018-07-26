@@ -410,8 +410,10 @@ int cmdq_virtual_disp_thread(enum CMDQ_SCENARIO_ENUM scenario)
 int cmdq_virtual_get_thread_index(enum CMDQ_SCENARIO_ENUM scenario,
 	const bool secure)
 {
+#ifdef CMDQ_TIMER_ENABLE
 	if (scenario == CMDQ_SCENARIO_TIMER_LOOP)
 		return CMDQ_DELAY_THREAD_ID;
+#endif
 
 	if (!secure)
 		return cmdq_get_func()->dispThread(scenario);
@@ -439,6 +441,7 @@ int cmdq_virtual_get_thread_index(enum CMDQ_SCENARIO_ENUM scenario,
 	case CMDQ_SCENARIO_USER_MDP:
 	case CMDQ_SCENARIO_USER_SPACE:
 	case CMDQ_SCENARIO_DEBUG:
+	case CMDQ_SCENARIO_DEBUG_MDP:
 		/* because there is one input engine for MDP, reserve one
 		 * secure thread is enough
 		 */

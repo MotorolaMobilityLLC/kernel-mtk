@@ -132,6 +132,7 @@ struct cmdq_thread {
 	u32			priority;
 	u32			idx;
 	bool			dirty;
+	bool			occupied;
 };
 
 extern int mtk_cmdq_log;

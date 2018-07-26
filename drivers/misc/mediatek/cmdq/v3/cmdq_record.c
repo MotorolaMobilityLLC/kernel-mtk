@@ -19,6 +19,11 @@
 #include "cmdq_helper_ext.h"
 #include "cmdq_device.h"
 #include "cmdq_mmp.h"
+#include "cmdq_sec.h"
+
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+#include "cmdq_sec_iwc_common.h"
+#endif
 
 #define CMDQ_DATA_VAR		(CMDQ_BIT_VAR<<CMDQ_DATA_BIT)
 #define CMDQ_TASK_TPR_VAR	(CMDQ_DATA_VAR | CMDQ_TPR_ID)
@@ -304,8 +309,12 @@ s32 cmdq_rec_realloc_addr_metadata_buffer(struct cmdqRecStruct *handle,
 
 static void cmdq_task_reset_thread(struct cmdqRecStruct *handle)
 {
-	/* for dynamic dispatch scenario (MDP) no need acquire at create */
-	if (cmdq_get_func()->isDynamic(handle->scenario)) {
+	/*
+	 * for dynamic dispatch scenario (MDP) no need acquire at create
+	 * static dispath in secure path
+	 */
+	if (cmdq_get_func()->isDynamic(handle->scenario) &&
+		!handle->secData.is_secure) {
 		/* mark as client dispatch */
 		handle->thd_dispatch = CMDQ_THREAD_DYNAMIC;
 		return;
@@ -479,6 +488,34 @@ s32 cmdq_task_duplicate(struct cmdqRecStruct *handle,
 	handle_new->res_flag_acquire = handle->res_flag_acquire;
 	handle_new->res_flag_release = handle->res_flag_release;
 	handle_new->ctrl = handle->ctrl;
+
+	if (handle->secData.is_secure) {
+		handle_new->secData = handle->secData;
+		cmdq_task_set_secure(handle_new,
+			handle_new->secData.is_secure);
+
+		if (handle_new->secData.addrMetadataCount) {
+			u32 buf_size = handle->secData.addrMetadataCount *
+				sizeof(struct cmdqSecAddrMetadataStruct);
+			void *new_buf;
+
+			/* copy metadata array */
+			new_buf = kzalloc(buf_size, GFP_KERNEL);
+			if (!new_buf) {
+				CMDQ_ERR(
+					"unable to allocate buffer for secure metadata\n");
+				return -ENOMEM;
+			}
+
+			memcpy(new_buf,
+				(void *)CMDQ_U32_PTR(
+				handle->secData.addrMetadatas),
+				buf_size);
+
+			handle_new->secData.addrMetadatas =
+				(cmdqU32Ptr_t)(unsigned long)new_buf;
+		}
+	}
 
 	/* copy replace instr data */
 	if (handle->replace_instr.number) {
@@ -1041,6 +1078,9 @@ static void cmdq_task_release_buffer(struct cmdqRecStruct *handle)
 	/* user data */
 	kfree(handle->user_debug_str);
 	handle->user_debug_str = NULL;
+
+	kfree(handle->secStatus);
+	handle->secStatus = NULL;
 }
 
 s32 cmdq_task_reset(struct cmdqRecStruct *handle)
@@ -1674,6 +1714,20 @@ s32 cmdq_op_finalize_command(struct cmdqRecStruct *handle, bool loop)
 		if (handle->scenario == CMDQ_SCENARIO_TIMER_LOOP)
 			arg_b = 0x0;
 
+#ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
+		if (handle->secData.is_secure) {
+			status = cmdq_sec_insert_backup_cookie_instr(handle,
+				handle->thread);
+			if (status < 0) {
+				CMDQ_ERR(
+					"insert backup cookie fail task:%p status:%d size:%zu thread:%d\n",
+					handle, status,
+					handle->pkt->cmd_buf_size,
+					handle->thread);
+				return status;
+			}
+		}
+#endif
 		status = cmdq_append_command(handle, CMDQ_CODE_EOC,
 			0, arg_b, 0, 0);
 

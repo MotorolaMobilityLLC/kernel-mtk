@@ -83,7 +83,6 @@ obj-y += cmdq_mmp.o
 obj-y += cmdq_mdp_common.o
 #obj-y += cmdq_prof.o
 obj-y += cmdq_test.o
-#obj-y += cmdq_sec.o
 obj-y += cmdq_event_common.o
 obj-y += cmdq_subsys_common.o
 obj-y += cmdq_helper_ext.o
@@ -93,7 +92,7 @@ obj-y += $(subst ",,$(MTK_PLATFORM))/
 endif
 
 ifeq ($(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)),y)
-
+obj-y += cmdq_sec.o
 ifeq ($(strip $(CONFIG_MTK_TEE_GP_SUPPORT)),y)
 obj-y += cmdq_sec_gp.o
 else ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)

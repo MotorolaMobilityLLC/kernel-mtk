@@ -26,6 +26,9 @@
 #include "cmdq_virtual.h"
 #include "cmdq_reg.h"
 #include "cmdq_mdp_common.h"
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+#include "cmdq_sec.h"
+#endif
 #ifdef CMDQ_PROFILE_MMP
 #include "cmdq_mmp.h"
 #endif
@@ -1168,6 +1171,11 @@ static s32 cmdq_core_thread_exec_counter(const s32 thread)
 static s32 cmdq_core_get_thread_id(s32 scenario)
 {
 	return cmdq_get_func()->getThreadID(scenario, false);
+}
+
+struct cmdqSecSharedMemoryStruct *cmdq_core_get_secure_shared_memory(void)
+{
+	return cmdq_ctx.hSecSharedMem;
 }
 
 static void cmdq_core_dump_thread(const struct cmdqRecStruct *handle,
@@ -3469,8 +3477,15 @@ static void cmdq_core_attach_error_handle_detail(
 	*aee_out = true;
 }
 
-static void cmdq_core_attach_error_handle(const struct cmdqRecStruct *handle,
-	enum TASK_STATE_ENUM state)
+void cmdq_core_attach_error_handle(const struct cmdqRecStruct *handle,
+	s32 thread)
+{
+	cmdq_core_attach_error_handle_detail(handle, thread, NULL, NULL, NULL,
+		NULL, NULL, NULL);
+}
+
+static void cmdq_core_attach_error_handle_by_state(
+	const struct cmdqRecStruct *handle, enum TASK_STATE_ENUM state)
 {
 	const struct cmdqRecStruct *nghandle = NULL;
 	const char *module = NULL;
@@ -4254,6 +4269,28 @@ unsigned long cmdq_get_tracing_mark(void)
 	return tracing_mark_write_addr;
 }
 
+static s32 cmdq_pkt_handle_wait_result(struct cmdqRecStruct *handle, s32 thread)
+{
+	s32 ret = 0;
+
+	/* set to timeout if state change to */
+	if (handle->state == TASK_STATE_TIMEOUT) {
+		/* timeout info already dump during callback */
+		ret = -ETIMEDOUT;
+	} else if (handle->state == TASK_STATE_ERR_IRQ) {
+		/* dump current buffer for trace */
+		ret = -EINVAL;
+		CMDQ_ERR("dump error irq handle:0x%p pc:0x%08x\n",
+			handle, handle->error_irq_pc);
+		cmdq_core_dump_error_buffer(handle, NULL,
+			handle->error_irq_pc);
+		CMDQ_AEE("CMDQ", "Error IRQ\n");
+
+	}
+
+	return ret;
+}
+
 /* core controller function */
 static const struct cmdq_controller g_cmdq_core_ctrl = {
 #if 0
@@ -4270,6 +4307,7 @@ static const struct cmdq_controller g_cmdq_core_ctrl = {
 	.dump_err_buffer = cmdq_core_dump_err_buffer,
 	.dump_summary = cmdq_core_dump_summary,
 #endif
+	.handle_wait_result = cmdq_pkt_handle_wait_result,
 	.change_jump = true,
 };
 
@@ -4629,7 +4667,10 @@ static void cmdq_pkt_err_dump_handler(struct cmdq_cb_data data)
 
 	if (data.err == -ETIMEDOUT) {
 		atomic_inc(&handle->exec);
-		cmdq_core_attach_error_handle(handle, TASK_STATE_TIMEOUT);
+		if (handle->secData.is_secure)
+			CMDQ_LOG("secure handle=%p timeout\n", handle);
+		cmdq_core_attach_error_handle_by_state(handle,
+			TASK_STATE_TIMEOUT);
 		atomic_dec(&handle->exec);
 	} else if (data.err == -EINVAL) {
 		/* store PC for later dump buffer */
@@ -4778,6 +4819,7 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 	s32 waitq;
 	s32 status = 0;
 	u32 count = 0;
+	const struct cmdq_controller *ctrl = handle->ctrl;
 
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->wait_task,
 		MMPROFILE_FLAG_PULSE, ((unsigned long)handle), handle->thread);
@@ -4830,24 +4872,12 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 	handle->wakedUp = sched_clock();
 	CMDQ_SYSTRACE_END();
 
-	/* set to timeout if state change to */
-	if (handle->state == TASK_STATE_TIMEOUT) {
-		/* timeout info already dump during callback */
-		status = -ETIMEDOUT;
-	} else if (handle->state == TASK_STATE_ERR_IRQ) {
-		/* dump current buffer for trace */
-		status = -EINVAL;
-		CMDQ_ERR("dump error irq handle:0x%p pc:0x%08x\n",
-			handle, handle->error_irq_pc);
-		cmdq_core_dump_error_buffer(handle, NULL,
-			handle->error_irq_pc);
-		CMDQ_AEE("CMDQ", "Error IRQ\n");
-	}
-
+	status = ctrl->handle_wait_result(handle, handle->thread);
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->wait_task_done,
 		MMPROFILE_FLAG_PULSE, ((unsigned long)handle),
 		handle->wakedUp - handle->beginWait);
 
+	cmdq_core_track_handle_record(handle, handle->thread);
 	cmdq_pkt_release_handle(handle);
 
 	return status;
