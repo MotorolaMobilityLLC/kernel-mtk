@@ -119,7 +119,7 @@ static int _hps_task_main(void *data)
 			break;
 	}
 
-	log_info("leave _hps_task_main\n");
+	log_info("leave %s\n", __func__);
 	return 0;
 }
 
@@ -147,7 +147,7 @@ int hps_task_start(void)
 
 		get_task_struct(hps_ctxt.tsk_struct_ptr);
 		wake_up_process(hps_ctxt.tsk_struct_ptr);
-		log_info("hps_task_start success, ptr: %p, pid: %d\n",
+		log_info("%s success, ptr: %p, pid: %d\n", __func__,
 			hps_ctxt.tsk_struct_ptr, hps_ctxt.tsk_struct_ptr->pid);
 	} else
 		log_info("hps task already exist, ptr: %p, pid: %d\n",
@@ -195,7 +195,7 @@ int hps_core_init(void)
 {
 	int r = 0;
 
-	log_info("hps_core_init\n");
+	log_info("%s\n", __func__);
 
 #if HPS_PERIODICAL_BY_TIMER
 	init_timer_deferrable(&hps_ctxt.hps_tmr_dfr);
@@ -227,7 +227,7 @@ int hps_core_deinit(void)
 {
 	int r = 0;
 
-	log_info("hps_core_deinit\n");
+	log_info("%s\n", __func__);
 
 	hps_task_stop();
 

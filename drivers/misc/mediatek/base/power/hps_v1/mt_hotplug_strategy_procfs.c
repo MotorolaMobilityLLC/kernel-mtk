@@ -651,7 +651,7 @@ int hps_procfs_init(void)
 		PROC_ENTRY(num_limit_power_serv),
 	};
 
-	log_info("hps_procfs_init\n");
+	log_info("%s\n", __func__);
 
 	hps_dir = proc_mkdir("hps", NULL);
 	if (hps_dir == NULL) {

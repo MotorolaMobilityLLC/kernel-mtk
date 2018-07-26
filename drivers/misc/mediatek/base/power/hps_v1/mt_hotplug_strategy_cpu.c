@@ -232,7 +232,7 @@ int hps_cpu_init(void)
 	char str1[32];
 #endif
 
-	log_info("hps_cpu_init\n");
+	log_info("%s\n", __func__);
 
 	/* init cpu arch in hps_ctxt */
 	/* init cpumask */
@@ -321,7 +321,7 @@ int hps_cpu_deinit(void)
 {
 	int r = 0;
 
-	log_info("hps_cpu_deinit\n");
+	log_info("%s\n", __func__);
 
 	return r;
 }
