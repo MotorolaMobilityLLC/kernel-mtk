@@ -229,10 +229,10 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 		trusted_mem_api_unref(TRUSTED_MEM_REQ_PROT, sec_handle, (uint8_t *)buffer->heap->name,
 				      buffer->heap->id);
 	else if (buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_2D_FR)
-		trusted_mem_api_unref(TRUSTED_MEM_REQ_PROT, sec_handle, (uint8_t *)buffer->heap->name,
+		trusted_mem_api_unref(TRUSTED_MEM_REQ_2D_FR, sec_handle, (uint8_t *)buffer->heap->name,
 				      buffer->heap->id);
 	else if (buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_WFD)
-		trusted_mem_api_unref(TRUSTED_MEM_REQ_PROT, sec_handle, (uint8_t *)buffer->heap->name,
+		trusted_mem_api_unref(TRUSTED_MEM_REQ_WFD, sec_handle, (uint8_t *)buffer->heap->name,
 				      buffer->heap->id);
 	else if (buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_SEC)
 		trusted_mem_api_unref(TRUSTED_MEM_REQ_SVP, sec_handle, (uint8_t *)buffer->heap->name,
