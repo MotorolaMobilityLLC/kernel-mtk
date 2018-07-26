@@ -180,7 +180,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.i2c_addr_table = {0x20, 0x6c, 0xff},	/* record sensor support all write id addr,
 						 * only supprt 4, must end with 0xff
 						 */
-	.i2c_speed = 300,	/* i2c read/write speed */
+	.i2c_speed = 400,	/* i2c read/write speed */
 };
 
 
