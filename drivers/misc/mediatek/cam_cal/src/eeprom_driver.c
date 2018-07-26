@@ -694,6 +694,8 @@ static long EEPROM_drv_ioctl(struct file *file,
 							  ptempbuf->u4Length);
 			else {
 				pr_debug("pcmdInf->readCMDFunc == NULL\n");
+				kfree(pBuff);
+				kfree(pu1Params);
 				return -EFAULT;
 			}
 		}
