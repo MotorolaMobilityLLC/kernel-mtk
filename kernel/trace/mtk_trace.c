@@ -274,6 +274,9 @@ static __init int boot_ftrace(void)
 		ret = tracing_update_buffers();
 		if (ret != 0)
 			pr_debug("unable to expand buffer, ret=%d\n", ret);
+#ifdef CONFIG_SCHEDSTATS
+		force_schedstat_enabled();
+#endif
 		ftrace_events_enable(1);
 		set_tracer_flag(tr, TRACE_ITER_OVERWRITE, 0);
 		pr_debug("[ftrace]boot-time profiling...\n");
