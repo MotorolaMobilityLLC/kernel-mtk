@@ -1117,7 +1117,7 @@ static void ged_dvfs_set_bottom_gpu_freq(unsigned int ui32FreqLevel)
 			GED_DVFS_SET_BOTTOM_COMMIT);
 	} else {
 	/* if current id is larger, ie lower freq, reflect immedately */
-		if (g_bottom_freq_id < mt_gpufreq_get_cur_freq_index())
+		if (s_bottom_freq_id < mt_gpufreq_get_cur_freq_index())
 			ged_dvfs_gpu_freq_commit(s_bottom_freq_id,
 			gpu_bottom_freq,
 			GED_DVFS_SET_BOTTOM_COMMIT);
