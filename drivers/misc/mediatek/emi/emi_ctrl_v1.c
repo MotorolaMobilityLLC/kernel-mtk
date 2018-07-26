@@ -18,6 +18,8 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/printk.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 
 #include <mt_emi.h>
 #include "emi_ctrl_v1.h"
@@ -29,6 +31,44 @@ static void __iomem *EMI_MPU_BASE;
 static struct emi_info_t emi_info;
 
 static int emi_probe(struct platform_device *pdev);
+
+static int ddr_info_show(struct seq_file *m, void *v)
+{
+	unsigned char buf[128];
+	ssize_t ret;
+	unsigned int density, rank, ddr_info;
+
+	ret = 0;
+
+	for (rank = 0, density = 0; rank < get_rk_num(); rank++)
+		density += get_rank_size(rank);
+	density *= 128;
+
+	ddr_info = ((density >> 2) & 0xF00) | get_dram_mr(5);
+
+	ret += snprintf(buf + ret, sizeof(buf) - ret,
+		"ddr_info:     0x%x\n", ddr_info);
+	ret += snprintf(buf + ret, sizeof(buf) - ret,
+		"DRAM density: %d MB\n", density);
+	ret += snprintf(buf + ret, sizeof(buf) - ret,
+		"vendor ID:    0x%x\n", get_dram_mr(5));
+
+	seq_write(m, buf, ret);
+
+	return 0;
+}
+
+static int ddr_info_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, ddr_info_show, NULL);
+}
+
+static const struct file_operations ddr_info_proc_fops = {
+	.open = ddr_info_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
 
 static int emi_remove(struct platform_device *dev)
 {
@@ -98,6 +138,7 @@ __weak void plat_debug_api_init(void)
 static int emi_probe(struct platform_device *pdev)
 {
 	struct resource *res;
+	struct proc_dir_entry *proc_entry;
 	int i;
 
 	pr_info("[EMI] module probe.\n");
@@ -132,6 +173,8 @@ static int emi_probe(struct platform_device *pdev)
 	for (i = 0; i < MAX_CH; i++)
 		pr_info("[EMI] get CH%d_EMI_BASE @ %p\n",
 			i, mt_chn_emi_base_get(i));
+
+	proc_entry = proc_create("ddr_info", 0444, NULL, &ddr_info_proc_fops);
 
 #if ENABLE_BWL
 	bwl_init(&emi_ctrl);
