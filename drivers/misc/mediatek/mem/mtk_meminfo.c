@@ -26,8 +26,11 @@
 /* return the actual physical DRAM size */
 static u64 kernel_mem_sz;
 static u64 phone_dram_sz;	/* original phone DRAM size */
+#ifdef CONFIG_MNTL_SUPPORT
 static u64 mntl_base;
 static u64 mntl_size;
+#endif /* end of CONFIG_MNTL_SUPPORT */
+
 static int __init dt_scan_memory(unsigned long node, const char *uname,
 				int depth, void *data)
 {
@@ -109,6 +112,7 @@ phys_addr_t get_max_DRAM_size(void)
 }
 early_initcall(init_get_max_DRAM_size);
 
+#ifdef CONFIG_MNTL_SUPPORT
 static int __init __fdt_scan_reserved_mem(unsigned long node, const char *uname,
 					  int depth, void *data)
 {
@@ -159,6 +163,7 @@ int get_mntl_buf(u64 *base, u64 *size)
 
 	return 0;
 }
+#endif /* end of CONFIG_MNTL_SUPPORT */
 
 #else
 phys_addr_t get_max_DRAM_size(void)
