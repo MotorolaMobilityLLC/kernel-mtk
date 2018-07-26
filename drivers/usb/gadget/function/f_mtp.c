@@ -592,6 +592,8 @@ static int64_t vfs_wcnt;
 static bool rx_cont_abort;
 static bool mtp_rx_cont = true;
 module_param(mtp_rx_cont, bool, 0644);
+static bool mtp_rx_boost = true;
+module_param(mtp_rx_boost, bool, 0644);
 static void mtp_complete_out(struct usb_ep *ep, struct usb_request *req)
 {
 	struct mtp_dev *dev = _mtp_dev;
@@ -601,6 +603,9 @@ static void mtp_complete_out(struct usb_ep *ep, struct usb_request *req)
 		dev->state = STATE_ERROR;
 		rx_cont_abort = true;
 	}
+
+	if (mtp_rx_boost)
+		usb_boost();
 
 	wake_up(&dev->read_wq);
 	atomic_inc(&usb_rdone);
