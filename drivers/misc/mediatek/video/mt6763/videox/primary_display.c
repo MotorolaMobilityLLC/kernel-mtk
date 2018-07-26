@@ -8409,7 +8409,7 @@ int primary_display_resolution_test(void)
 
 		dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 
-		dpmgr_path_config(pgc->dpmgr_handle, &data_config2, CMDQ_DISABLE);
+		dpmgr_path_config(pgc->dpmgr_handle, &data_config2, NULL);
 		data_config2.dst_dirty = 0;
 		data_config2.ovl_dirty = 0;
 
@@ -8450,7 +8450,7 @@ int primary_display_resolution_test(void)
 	data_config2.dst_dirty = 1;
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 	dpmgr_path_connect(pgc->dpmgr_handle, CMDQ_DISABLE);
-	dpmgr_path_config(pgc->dpmgr_handle, &data_config2, CMDQ_DISABLE);
+	dpmgr_path_config(pgc->dpmgr_handle, &data_config2, NULL);
 	data_config2.dst_dirty = 0;
 	DSI_ForceConfig(0);
 	return ret;
