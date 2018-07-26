@@ -40,6 +40,7 @@ static void ccci_aed_v2(struct ccci_fsm_ee *mdee, unsigned int dump_flag, char *
 	int info_str_len = 0;
 	char *buff;		/*[AED_STR_LEN]; */
 	char *img_inf;
+	char buf_fail[] = "Fail alloc mem for exception\n";
 	struct mdee_dumper_v2 *dumper = mdee->dumper_obj;
 	int md_id = mdee->md_id;
 	struct ccci_smem_region *mdss_dbg = ccci_md_get_smem_by_user_id(mdee->md_id, SMEM_USER_RAW_MDSS_DBG);
@@ -83,13 +84,22 @@ static void ccci_aed_v2(struct ccci_fsm_ee *mdee, unsigned int dump_flag, char *
 		md_img_addr = (void *)mem_layout->md_bank0.base_ap_view_vir;
 		md_img_len = MD_IMG_DUMP_SIZE;
 	}
+	if (buff == NULL) {
 #if defined(CONFIG_MTK_AEE_FEATURE)
-	if (md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
-		aed_md_exception_api(ex_log_addr, ex_log_len, md_img_addr, md_img_len, buff, db_opt);
-	else
-		aed_md_exception_api(NULL, 0, md_img_addr, md_img_len, buff, db_opt);
+		if (md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
+			aed_md_exception_api(ex_log_addr, ex_log_len, md_img_addr, md_img_len, buf_fail, db_opt);
+		else
+			aed_md_exception_api(NULL, 0, md_img_addr, md_img_len, buf_fail, db_opt);
 #endif
-	kfree(buff);
+	} else {
+#if defined(CONFIG_MTK_AEE_FEATURE)
+		if (md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
+			aed_md_exception_api(ex_log_addr, ex_log_len, md_img_addr, md_img_len, buff, db_opt);
+		else
+			aed_md_exception_api(NULL, 0, md_img_addr, md_img_len, buff, db_opt);
+#endif
+		kfree(buff);
+	}
 }
 
 static void mdee_output_debug_info_to_buf(struct ccci_fsm_ee *mdee, DEBUG_INFO_T *debug_info, char *ex_info)
