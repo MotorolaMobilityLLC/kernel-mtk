@@ -526,7 +526,7 @@ static int _ovl_set_rsz_roi(enum DISP_MODULE_ENUM module,
 	}
 
 	ovl_roi(module, bg_w, bg_h, gOVL_bg_color, handle);
-	DISPMSG("[RPO] module=%s, bg(w,h)=(%d,%d)\n",
+	DDPDBG("[RPO] module=%s, bg(w,h)=(%d,%d)\n",
 			ddp_get_module_name(module), bg_w, bg_h);
 
 	return 0;
@@ -560,7 +560,7 @@ static int _ovl_lc_config(enum DISP_MODULE_ENUM module,
 	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_SRC_H,
 			   ovl_base + DISP_REG_OVL_LC_SRC_SIZE, lc_h);
 
-	DISPMSG("[RPO] module=%s,lc(x,y,w,h)=(%d,%d,%d,%d)\n",
+	DDPDBG("[RPO] module=%s,lc(x,y,w,h)=(%d,%d,%d,%d)\n",
 			ddp_get_module_name(module), lc_x, lc_y, lc_w, lc_h);
 
 	return 0;

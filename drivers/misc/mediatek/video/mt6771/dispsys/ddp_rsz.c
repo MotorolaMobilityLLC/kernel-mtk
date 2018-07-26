@@ -162,7 +162,7 @@ static int rsz_get_in_out_roi(struct disp_ddp_path_config *pconfig,
 		*out_h = rsz_dst_roi.height;
 	}
 
-	DISPMSG("[RPO] module=%s,in(w,h)=(%d,%d),out(w,h)=(%d,%d)\n",
+	DDPDBG("[RPO] module=%s,in(w,h)=(%d,%d),out(w,h)=(%d,%d)\n",
 			ddp_get_module_name(DISP_MODULE_RSZ0),
 			*in_w, *in_h, *out_w, *out_h);
 
