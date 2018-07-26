@@ -167,6 +167,11 @@ static void _set_vbus(int is_on)
 #endif
 #endif
 	} else if (!is_on && vbus_on) {
+		/* disable VBUS 1st then update flag
+		 * to make host mode correct used by PMIC
+		 */
+		vbus_on = false;
+
 #ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
 		charger_dev_enable_otg(primary_charger, false);
@@ -174,11 +179,6 @@ static void _set_vbus(int is_on)
 		set_chr_enable_otg(0x0);
 #endif
 #endif
-
-		/* disable VBUS 1st then update flag
-		 * to make host mode correct used by PMIC
-		 */
-		vbus_on = false;
 	}
 }
 
@@ -343,7 +343,7 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 			DBG(0, "OTG Plug in\n");
 			mt_usb_host_connect(0);
 		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
-			noti->typec_state.new_state != TYPEC_ATTACHED_SRC) {
+			noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			DBG(0, "OTG Plug out\n");
 			mt_usb_host_disconnect(0);
 #ifdef CONFIG_MTK_UART_USB_SWITCH
