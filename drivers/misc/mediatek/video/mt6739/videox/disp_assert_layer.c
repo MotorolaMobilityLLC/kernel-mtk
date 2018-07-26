@@ -221,6 +221,7 @@ static int show_dal_layer(int enable)
 	input->src_fmt = DAL_FORMAT;
 	input->next_buff_idx = -1;
 	input->dirty_roi_num = 0;
+	input->ext_sel_layer = -1;
 
 	ret = primary_display_config_input_multiple(session_input);
 	kfree(session_input);
