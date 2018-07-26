@@ -317,6 +317,11 @@ void cm_mgr_perf_set_status(int enable)
 	if (enable != cm_mgr_perf_timer_enable) {
 		cm_mgr_perf_timer_enable = enable;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
+		if (cm_mgr_sspm_enable == 1)
+			return;
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
 		if (enable == 1) {
 			unsigned long expires;
 
