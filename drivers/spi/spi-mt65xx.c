@@ -131,12 +131,14 @@ static const struct mtk_spi_compatible mt6758_compat = {
 	.need_pad_sel = true,
 	.enhance_timing = true,
 	.dma8g_peri_ext = true,
+	.must_tx = true,
 };
 
 static const struct mtk_spi_compatible mt6765_compat = {
 	.need_pad_sel = true,
 	.enhance_timing = true,
 	.dma8g_spi_ext = true,
+	.must_tx = true,
 };
 
 static const struct mtk_spi_compatible mt7622_compat = {
@@ -224,7 +226,7 @@ static ssize_t spi_log_store(struct device *dev, struct device_attribute *attr,
 		return -EINVAL;
 	}
 
-	pr_info("[spi]%s buflen:%d buf:%s\n", __func__, (u32)strlen(buf), buf);
+	pr_info("[spi]%s buflen:%zu buf:%s\n", __func__, strlen(buf), buf);
 	if (!strncmp(buf, "1", 1)) {
 		pr_info("[spi]%s Now enable spi log\n", __func__);
 		spi_log_status = LOG_OPEN;
