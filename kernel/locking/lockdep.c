@@ -95,7 +95,7 @@ static void lockdep_aee(void)
 	int cpu;
 	struct rq *rq;
 
-	cpu = smp_processor_id();
+	cpu = raw_smp_processor_id();
 	rq = cpu_rq(cpu);
 
 	if (!raw_spin_is_locked(&rq->lock)) {
@@ -4576,6 +4576,8 @@ void lockdep_rcu_suspicious(const char *file, const int line, const char *s)
 				? "RCU used illegally from idle CPU!\n"
 				: "",
 	       rcu_scheduler_active, debug_locks);
+	pr_info("cpu_id = %d, cpu_is_offline = %ld\n",
+		raw_smp_processor_id(), cpu_is_offline(raw_smp_processor_id()));
 
 	/*
 	 * If a CPU is in the RCU-free window in idle (ie: in the section
