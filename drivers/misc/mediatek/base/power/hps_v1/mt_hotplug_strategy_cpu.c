@@ -27,6 +27,31 @@
 #define HP_HAVE_SCHED_TPLG		0
 #define LOG_CPUMASK			0
 
+#ifndef L_NUM_BASE_CUSTOM1
+#define L_NUM_BASE_CUSTOM1		1
+#endif
+#ifndef L_NUM_BASE_CUSTOM2
+#define L_NUM_BASE_CUSTOM2		1
+#endif
+#ifndef B_NUM_BASE_CUSTOM1
+#define B_NUM_BASE_CUSTOM1		0
+#endif
+#ifndef B_NUM_BASE_CUSTOM2
+#define B_NUM_BASE_CUSTOM2		0
+#endif
+#ifndef L_NUM_LIMIT_CUSTOM1
+#define L_NUM_LIMIT_CUSTOM1		8
+#endif
+#ifndef L_NUM_LIMIT_CUSTOM2
+#define L_NUM_LIMIT_CUSTOM2		8
+#endif
+#ifndef B_NUM_LIMIT_CUSTOM1
+#define B_NUM_LIMIT_CUSTOM1		8
+#endif
+#ifndef B_NUM_LIMIT_CUSTOM2
+#define B_NUM_LIMIT_CUSTOM2		8
+#endif
+
 #if !HP_HAVE_SCHED_TPLG
 #include <linux/cpumask.h>
 #include <linux/topology.h>
@@ -71,6 +96,56 @@ unsigned int num_online_big_cpus(void)
 
 	cpumask_and(&dst_cpumask, &hps_ctxt.big_cpumask, cpu_online_mask);
 	return cpumask_weight(&dst_cpumask);
+}
+
+static unsigned int min_of_all(unsigned int *v[], size_t n)
+{
+	unsigned int m = *v[0];
+	size_t i;
+
+	for (i = 1; i < n; i++)
+		m = min(m, *v[i]);
+
+	return m;
+}
+
+static unsigned int max_of_all(unsigned int *v[], size_t n)
+{
+	unsigned int m = *v[0];
+	size_t i;
+
+	for (i = 1; i < n; i++)
+		m = max(m, *v[i]);
+
+	return m;
+}
+
+unsigned int num_limit_little_cpus(void)
+{
+	unsigned int *v[] = NUM_LIMIT_LITTLE_LIST;
+
+	return min_of_all(v, ARRAY_SIZE(v));
+}
+
+unsigned int num_limit_big_cpus(void)
+{
+	unsigned int *v[] = NUM_LIMIT_BIG_LIST;
+
+	return min_of_all(v, ARRAY_SIZE(v));
+}
+
+unsigned int num_base_little_cpus(void)
+{
+	unsigned int *v[] = NUM_BASE_LITTLE_LIST;
+
+	return max_of_all(v, ARRAY_SIZE(v));
+}
+
+unsigned int num_base_big_cpus(void)
+{
+	unsigned int *v[] = NUM_BASE_BIG_LIST;
+
+	return max_of_all(v, ARRAY_SIZE(v));
 }
 
 /*
@@ -152,6 +227,7 @@ int hps_cpu_down(unsigned int cpu)
 int hps_cpu_init(void)
 {
 	int r = 0;
+	int nl = 0, nb = 0;
 #if LOG_CPUMASK
 	char str1[32];
 #endif
@@ -177,6 +253,9 @@ int hps_cpu_init(void)
 		cpumask_copy(&hps_ctxt.little_cpumask, &hps_ctxt.big_cpumask);
 		cpumask_clear(&hps_ctxt.big_cpumask);
 	}
+
+	nl = cpumask_weight(&hps_ctxt.little_cpumask);
+	nb = cpumask_weight(&hps_ctxt.big_cpumask);
 
 	/* verify arch is hmp or smp */
 	if (!cpumask_empty(&hps_ctxt.little_cpumask) &&
@@ -208,22 +287,23 @@ int hps_cpu_init(void)
 
 	/* init bound in hps_ctxt */
 	hps_ctxt.little_num_base_perf_serv = 1;
-	hps_ctxt.little_num_limit_thermal =
-		cpumask_weight(&hps_ctxt.little_cpumask);
-	hps_ctxt.little_num_limit_low_battery =
-		cpumask_weight(&hps_ctxt.little_cpumask);
-	hps_ctxt.little_num_limit_ultra_power_saving =
-		cpumask_weight(&hps_ctxt.little_cpumask);
-	hps_ctxt.little_num_limit_power_serv =
-		cpumask_weight(&hps_ctxt.little_cpumask);
+	hps_ctxt.little_num_base_custom1 = min(nl, L_NUM_BASE_CUSTOM1);
+	hps_ctxt.little_num_base_custom2 = min(nl, L_NUM_BASE_CUSTOM2);
+	hps_ctxt.little_num_limit_thermal = nl;
+	hps_ctxt.little_num_limit_low_battery = nl;
+	hps_ctxt.little_num_limit_ultra_power_saving = nl;
+	hps_ctxt.little_num_limit_power_serv = nl;
+	hps_ctxt.little_num_limit_custom1 = min(nl, L_NUM_LIMIT_CUSTOM1);
+	hps_ctxt.little_num_limit_custom2 = min(nl, L_NUM_LIMIT_CUSTOM2);
 	hps_ctxt.big_num_base_perf_serv = 0;
-	hps_ctxt.big_num_limit_thermal = cpumask_weight(&hps_ctxt.big_cpumask);
-	hps_ctxt.big_num_limit_low_battery =
-		cpumask_weight(&hps_ctxt.big_cpumask);
-	hps_ctxt.big_num_limit_ultra_power_saving =
-		cpumask_weight(&hps_ctxt.big_cpumask);
-	hps_ctxt.big_num_limit_power_serv =
-		cpumask_weight(&hps_ctxt.big_cpumask);
+	hps_ctxt.big_num_base_custom1 = min(nb, B_NUM_BASE_CUSTOM1);
+	hps_ctxt.big_num_base_custom2 = min(nb, B_NUM_BASE_CUSTOM2);
+	hps_ctxt.big_num_limit_thermal = nb;
+	hps_ctxt.big_num_limit_low_battery = nb;
+	hps_ctxt.big_num_limit_ultra_power_saving = nb;
+	hps_ctxt.big_num_limit_power_serv = nb;
+	hps_ctxt.big_num_limit_custom1 = min(nb, B_NUM_LIMIT_CUSTOM1);
+	hps_ctxt.big_num_limit_custom2 = min(nb, B_NUM_LIMIT_CUSTOM2);
 
 	log_info(
 		"%s: little_cpu_id_min: %u, little_cpu_id_max: %u, big_cpu_id_min: %u, big_cpu_id_max: %u\n",

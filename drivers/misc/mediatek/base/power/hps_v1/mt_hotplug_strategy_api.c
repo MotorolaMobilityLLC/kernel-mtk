@@ -30,7 +30,8 @@
 int hps_set_cpu_num_base(enum hps_base_type_e type,
 		unsigned int little_cpu, unsigned int big_cpu)
 {
-	unsigned int num_online;
+	unsigned int nll, nlb;
+	unsigned int lo, bo;
 
 	if (hps_ctxt.init_state != INIT_STATE_DONE)
 		return -1;
@@ -53,41 +54,33 @@ int hps_set_cpu_num_base(enum hps_base_type_e type,
 		if (hps_ctxt.is_hmp)
 			hps_ctxt.big_num_base_perf_serv = big_cpu;
 		break;
+	case BASE_CUSTOM1:
+		hps_ctxt.little_num_base_custom1 = little_cpu;
+		if (hps_ctxt.is_hmp)
+			hps_ctxt.big_num_base_custom1 = big_cpu;
+		break;
+	case BASE_CUSTOM2:
+		hps_ctxt.little_num_base_custom2 = little_cpu;
+		if (hps_ctxt.is_hmp)
+			hps_ctxt.big_num_base_custom2 = big_cpu;
+		break;
 	default:
 		break;
 	}
 
 	if (hps_ctxt.is_hmp) {
-		num_online = num_online_big_cpus();
-		if ((num_online < big_cpu) &&
-			(num_online < min(hps_ctxt.big_num_limit_thermal,
-				hps_ctxt.big_num_limit_low_battery)) &&
-			(num_online <
-				min(hps_ctxt.big_num_limit_ultra_power_saving,
-					hps_ctxt.big_num_limit_power_serv)))
+		nll = num_limit_little_cpus();
+		nlb = num_limit_big_cpus();
+		lo = num_online_little_cpus();
+		bo = num_online_big_cpus();
+
+		if ((bo < big_cpu && bo < nlb) || (lo < little_cpu && lo < nll))
 			hps_task_wakeup_nolock();
-		else {
-			num_online = num_online_little_cpus();
-			if ((num_online < little_cpu) &&
-				(num_online <
-				 min(hps_ctxt.little_num_limit_thermal,
-				     hps_ctxt.little_num_limit_low_battery)) &&
-				(num_online <
-				 min(
-				  hps_ctxt.little_num_limit_ultra_power_saving,
-				  hps_ctxt.little_num_limit_power_serv)) &&
-				(num_online_cpus() < (little_cpu + big_cpu)))
-				hps_task_wakeup_nolock();
-		}
 	} else {
-		num_online = num_online_little_cpus();
-		if ((num_online < little_cpu) &&
-			(num_online <
-			 min(hps_ctxt.little_num_limit_thermal,
-				hps_ctxt.little_num_limit_low_battery)) &&
-			(num_online <
-			 min(hps_ctxt.little_num_limit_ultra_power_saving,
-				hps_ctxt.little_num_limit_power_serv)))
+		nll = num_limit_little_cpus();
+		lo = num_online_little_cpus();
+
+		if (lo < little_cpu && lo < nll)
 			hps_task_wakeup_nolock();
 	}
 
@@ -112,6 +105,14 @@ int hps_get_cpu_num_base(enum hps_base_type_e type,
 	case BASE_PERF_SERV:
 		*little_cpu_ptr = hps_ctxt.little_num_base_perf_serv;
 		*big_cpu_ptr = hps_ctxt.big_num_base_perf_serv;
+		break;
+	case BASE_CUSTOM1:
+		*little_cpu_ptr = hps_ctxt.little_num_base_custom1;
+		*big_cpu_ptr = hps_ctxt.big_num_base_custom1;
+		break;
+	case BASE_CUSTOM2:
+		*little_cpu_ptr = hps_ctxt.little_num_base_custom2;
+		*big_cpu_ptr = hps_ctxt.big_num_base_custom2;
 		break;
 	default:
 		break;
@@ -161,6 +162,16 @@ int hps_set_cpu_num_limit(enum hps_limit_type_e type,
 		if (hps_ctxt.is_hmp)
 			hps_ctxt.big_num_limit_power_serv = big_cpu;
 		break;
+	case LIMIT_CUSTOM1:
+		hps_ctxt.little_num_limit_custom1 = little_cpu;
+		if (hps_ctxt.is_hmp)
+			hps_ctxt.big_num_limit_custom1 = big_cpu;
+		break;
+	case LIMIT_CUSTOM2:
+		hps_ctxt.little_num_limit_custom2 = little_cpu;
+		if (hps_ctxt.is_hmp)
+			hps_ctxt.big_num_limit_custom2 = big_cpu;
+		break;
 	default:
 		break;
 	}
@@ -208,6 +219,14 @@ int hps_get_cpu_num_limit(enum hps_limit_type_e type,
 	case LIMIT_POWER_SERV:
 		*little_cpu_ptr = hps_ctxt.little_num_limit_power_serv;
 		*big_cpu_ptr = hps_ctxt.big_num_limit_power_serv;
+		break;
+	case LIMIT_CUSTOM1:
+		*little_cpu_ptr = hps_ctxt.little_num_limit_custom1;
+		*big_cpu_ptr = hps_ctxt.big_num_limit_custom1;
+		break;
+	case LIMIT_CUSTOM2:
+		*little_cpu_ptr = hps_ctxt.little_num_limit_custom2;
+		*big_cpu_ptr = hps_ctxt.big_num_limit_custom2;
 		break;
 	default:
 		break;

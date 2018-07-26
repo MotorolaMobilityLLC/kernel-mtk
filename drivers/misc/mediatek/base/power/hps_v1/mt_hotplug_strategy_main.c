@@ -192,6 +192,10 @@ void hps_ctxt_print_algo_bound(int toUart)
 {
 	log_info("hps_ctxt.little_num_base_perf_serv: %u\n",
 		hps_ctxt.little_num_base_perf_serv);
+	log_info("hps_ctxt.little_num_base_custom1: %u\n",
+		hps_ctxt.little_num_base_custom1);
+	log_info("hps_ctxt.little_num_base_custom2: %u\n",
+		hps_ctxt.little_num_base_custom2);
 	log_info("hps_ctxt.little_num_limit_thermal: %u\n",
 		hps_ctxt.little_num_limit_thermal);
 	log_info("hps_ctxt.little_num_limit_low_battery: %u\n",
@@ -202,6 +206,10 @@ void hps_ctxt_print_algo_bound(int toUart)
 		hps_ctxt.little_num_limit_power_serv);
 	log_info("hps_ctxt.big_num_base_perf_serv: %u\n",
 		hps_ctxt.big_num_base_perf_serv);
+	log_info("hps_ctxt.big_num_base_custom1: %u\n",
+		hps_ctxt.big_num_base_custom1);
+	log_info("hps_ctxt.big_num_base_custom2: %u\n",
+		hps_ctxt.big_num_base_custom2);
 	log_info("hps_ctxt.big_num_limit_thermal: %u\n",
 		hps_ctxt.big_num_limit_thermal);
 	log_info("hps_ctxt.big_num_limit_low_battery: %u\n",

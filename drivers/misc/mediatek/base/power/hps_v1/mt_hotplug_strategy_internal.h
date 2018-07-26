@@ -150,11 +150,19 @@ struct hps_ctxt_struct {
 
 	/* algo bound */
 	unsigned int little_num_base_perf_serv;
+	unsigned int little_num_base_custom1;
+	unsigned int little_num_base_custom2;
+	unsigned int little_num_limit_custom1;
+	unsigned int little_num_limit_custom2;
 	unsigned int little_num_limit_thermal;
 	unsigned int little_num_limit_low_battery;
 	unsigned int little_num_limit_ultra_power_saving;
 	unsigned int little_num_limit_power_serv;
 	unsigned int big_num_base_perf_serv;
+	unsigned int big_num_base_custom1;
+	unsigned int big_num_base_custom2;
+	unsigned int big_num_limit_custom1;
+	unsigned int big_num_limit_custom2;
 	unsigned int big_num_limit_thermal;
 	unsigned int big_num_limit_low_battery;
 	unsigned int big_num_limit_ultra_power_saving;
@@ -184,6 +192,36 @@ struct hps_ctxt_struct {
 	unsigned int action;
 	atomic_t is_ondemand;
 };
+
+#define NUM_LIMIT_LITTLE_LIST	{				\
+		&hps_ctxt.little_num_limit_thermal,		\
+		&hps_ctxt.little_num_limit_low_battery,		\
+		&hps_ctxt.little_num_limit_ultra_power_saving,	\
+		&hps_ctxt.little_num_limit_power_serv,		\
+		&hps_ctxt.little_num_limit_custom1,		\
+		&hps_ctxt.little_num_limit_custom2		\
+	}
+
+#define NUM_LIMIT_BIG_LIST	{				\
+		&hps_ctxt.big_num_limit_thermal,		\
+		&hps_ctxt.big_num_limit_low_battery,		\
+		&hps_ctxt.big_num_limit_ultra_power_saving,	\
+		&hps_ctxt.big_num_limit_power_serv,		\
+		&hps_ctxt.big_num_limit_custom1,		\
+		&hps_ctxt.big_num_limit_custom2			\
+	}
+
+#define NUM_BASE_LITTLE_LIST	{				\
+		&hps_ctxt.little_num_base_perf_serv,		\
+		&hps_ctxt.little_num_base_custom1,		\
+		&hps_ctxt.little_num_base_custom2		\
+	}
+
+#define NUM_BASE_BIG_LIST	{				\
+		&hps_ctxt.big_num_base_perf_serv,		\
+		&hps_ctxt.big_num_base_custom1,			\
+		&hps_ctxt.big_num_base_custom2			\
+	}
 
 struct hps_cpu_ctxt_struct {
 	unsigned int load;
@@ -246,6 +284,11 @@ extern int hps_procfs_init(void);
  */
 #define num_possible_little_cpus()	cpumask_weight(&hps_ctxt.little_cpumask)
 #define num_possible_big_cpus()		cpumask_weight(&hps_ctxt.big_cpumask)
+
+extern unsigned int num_limit_little_cpus(void);
+extern unsigned int num_limit_big_cpus(void);
+extern unsigned int num_base_little_cpus(void);
+extern unsigned int num_base_big_cpus(void);
 
 extern int hps_cpu_up(unsigned int cpu);
 extern int hps_cpu_down(unsigned int cpu);

@@ -25,6 +25,8 @@ extern "C" {
 
 enum hps_base_type_e {
 	BASE_PERF_SERV = 0,
+	BASE_CUSTOM1,
+	BASE_CUSTOM2,
 	BASE_COUNT
 };
 
@@ -33,6 +35,8 @@ enum hps_limit_type_e {
 	LIMIT_LOW_BATTERY,
 	LIMIT_ULTRA_POWER_SAVING,
 	LIMIT_POWER_SERV,
+	LIMIT_CUSTOM1,
+	LIMIT_CUSTOM2,
 	LIMIT_COUNT
 };
 
