@@ -768,6 +768,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 	struct zram_meta *meta = zram->meta;
 	struct zcomp_strm *zstrm = NULL;
 	unsigned long alloced_pages;
+#ifdef CONFIG_MTK_ENG_BUILD
+	bool need_update_len = true;
+#endif
 
 	page = bvec->bv_page;
 	if (is_partial_io(bvec)) {
@@ -831,8 +834,10 @@ compress_again:
 	}
 
 #ifdef CONFIG_MTK_ENG_BUILD
-	if (!handle && clen != PAGE_SIZE)
+	if (need_update_len && clen != PAGE_SIZE) {
 		clen += GUARD_BYTES_LENGTH;
+		need_update_len = false;
+	}
 #endif
 
 	/*
@@ -863,8 +868,15 @@ compress_again:
 		handle = zs_malloc(meta->mem_pool, clen,
 				GFP_NOIO | __GFP_HIGHMEM |
 				__GFP_MOVABLE);
+#ifdef CONFIG_MTK_ENG_BUILD
+		if (handle) {
+			need_update_len = true;
+			goto compress_again;
+		}
+#else
 		if (handle)
 			goto compress_again;
+#endif
 
 		pr_err("Error allocating memory for compressed page: %u, size=%u\n",
 			index, clen);
