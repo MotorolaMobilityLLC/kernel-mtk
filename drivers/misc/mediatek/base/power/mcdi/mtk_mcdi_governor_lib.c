@@ -95,7 +95,7 @@ int acquire_cluster_last_core_prot(int cpu)
 
 		udelay_and_update_wait_time(dur_us, 2);
 
-		if (!is_last_core_in_this_cluster(cpu) || dur_us > 1000) {
+		if (!is_last_core_in_cluster(cpu) || dur_us > 1000) {
 			ret = CPC_RET_GIVE_UP;
 			break;
 		}

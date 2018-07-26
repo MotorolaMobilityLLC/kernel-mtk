@@ -35,6 +35,7 @@
 #include <trace/events/mtk_idle_event.h>
 
 #define BOOT_TIME_LIMIT             10      /* sec */
+#define TMR_RESIDENCY_US           200
 
 #define GET_STATE_RES(cpu, state) ({					\
 		unsigned int res = 0;					\
@@ -47,8 +48,8 @@
 
 static int last_core_token = -1;
 static int core_cluster_off_token[NF_CLUSTER];
-static int last_cpu_off;
-static int last_cpu_off_in_cluster[NF_CLUSTER];
+static int last_cpu_enter;
+static int last_cpu_enter_in_cluster[NF_CLUSTER];
 static int boot_time_check;
 
 struct mcdi_status {
@@ -91,7 +92,7 @@ static struct mcdi_gov mcdi_gov_data;
 
 static DEFINE_SPINLOCK(mcdi_gov_spin_lock);
 
-static int mcdi_residency_latency[NF_CPU];
+static int mcdi_latency[NF_CPU];
 
 static struct pm_qos_request mcdi_qos_request;
 
@@ -187,11 +188,10 @@ void set_mcdi_idle_state(int cpu, int state)
 	mcdi_prof_set_idle_state(cpu, state);
 }
 
-void set_residency_latency_result(int cpu)
+void set_latency_result(int cpu)
 {
 	struct cpuidle_driver *tbl = mcdi_state_tbl_get(cpu);
 	int i;
-	unsigned int predict_us = get_menu_predict_us();
 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
 	int state = 0;
 
@@ -202,18 +202,16 @@ void set_residency_latency_result(int cpu)
 			continue;
 		if (s->exit_latency > latency_req)
 			break;
-		if (s->target_residency > predict_us)
-			continue;
 
 		state = i;
 	}
 
-	mcdi_residency_latency[cpu] = state;
+	mcdi_latency[cpu] = state;
 }
 
-int get_residency_latency_result(int cpu)
+int get_latency_result(int cpu)
 {
-	return mcdi_residency_latency[cpu];
+	return mcdi_latency[cpu];
 }
 
 int get_cluster_off_token(cpu)
@@ -240,63 +238,86 @@ static enum hrtimer_restart mcdi_hrtimer_func(struct hrtimer *timer)
 	spin_lock_irqsave(&mcdi_cluster_spin_lock, flags);
 
 	mcdi_cluster.tmr_running = false;
+	mcdi_cluster.owner = -1;
 
 	spin_unlock_irqrestore(&mcdi_cluster_spin_lock, flags);
 
 	return HRTIMER_NORESTART;
 }
 
-static void mcdi_set_timer(unsigned int time_us)
+static void mcdi_set_timer(int cpu)
+{
+	unsigned int time_us, thresh;
+	unsigned long flags;
+
+	if (!mcdi_cluster.tmr_en)
+		return;
+
+	if (!tick_nohz_tick_stopped())
+		return;
+
+	thresh = get_mcdi_status(cpu)->next_timer_us
+			- get_mcdi_status(cpu)->predict_us;
+
+	if (thresh < GET_STATE_RES(cpu, MCDI_STATE_CPU_OFF))
+		return;
+
+	time_us = GET_STATE_RES(cpu, MCDI_STATE_CLUSTER_OFF)
+			+ TMR_RESIDENCY_US;
+
+	if (time_us > get_mcdi_status(cpu)->next_timer_us)
+		return;
+
+	tick_broadcast_exit();
+
+	spin_lock_irqsave(&mcdi_cluster_spin_lock, flags);
+
+	mcdi_cluster.tmr_running = true;
+	mcdi_cluster.owner = cpu;
+
+	hrtimer_start(&mcdi_cluster.timer,
+			ns_to_ktime(time_us * NSEC_PER_USEC),
+			HRTIMER_MODE_REL_PINNED);
+
+	spin_unlock_irqrestore(&mcdi_cluster_spin_lock, flags);
+
+	tick_broadcast_enter();
+}
+
+static void mcdi_cancel_timer(int cpu)
 {
 	unsigned long flags;
 
 	if (!mcdi_cluster.tmr_en)
 		return;
 
-	spin_lock_irqsave(&mcdi_cluster_spin_lock, flags);
-
-	hrtimer_start(&mcdi_cluster.timer,
-			ns_to_ktime(time_us * NSEC_PER_USEC),
-			HRTIMER_MODE_REL_PINNED);
-	mcdi_cluster.tmr_running = true;
-	mcdi_cluster.cpu = -1;
-
-	spin_unlock_irqrestore(&mcdi_cluster_spin_lock, flags);
-}
-
-static void mcdi_cancel_timer(void)
-{
-	unsigned long flags;
+	if (mcdi_cluster.owner != cpu)
+		return;
 
 	spin_lock_irqsave(&mcdi_cluster_spin_lock, flags);
 
 	if (mcdi_cluster.tmr_running) {
 		mcdi_cluster.tmr_running = false;
-		mcdi_cluster.cpu = -1;
+		mcdi_cluster.owner = -1;
 		hrtimer_try_to_cancel(&mcdi_cluster.timer);
 	}
 
 	spin_unlock_irqrestore(&mcdi_cluster_spin_lock, flags);
 }
 
-static bool cluster_residency_check(int cpu)
+static bool remain_sleep_residency_allowable(unsigned int cpu_mask, int state)
 {
 	int i;
 	unsigned long long curr_time_us;
 	unsigned long long remain_sleep_us;
-	unsigned int cpu_mask = 0;
 	unsigned int target_residency;
 	unsigned long flags;
 	struct mcdi_status *sta = NULL;
 
-	if (!mcdi_is_cpc_mode() || !mcdi_cluster.chk_res_each_core)
+	if (!mcdi_cluster.chk_res_each_core)
 		return true;
 
 	mcdi_cluster.chk_res_cnt++;
-
-	cpu_mask = get_pwr_stat_check_map(ALL_CPU_IN_CLUSTER,
-						cluster_idx_get(cpu));
-	cpu_mask &= (mcdi_gov_data.avail_cpu_mask & ~(1 << cpu));
 
 	curr_time_us = idle_get_current_time_us();
 
@@ -307,7 +328,7 @@ static bool cluster_residency_check(int cpu)
 		if (!(cpu_mask & (1 << i)))
 			continue;
 
-		target_residency = GET_STATE_RES(cpu, MCDI_STATE_CLUSTER_OFF);
+		target_residency = GET_STATE_RES(i, state);
 		sta = &mcdi_gov_data.status[i];
 
 		if (mcdi_cluster.use_max_remain) {
@@ -346,14 +367,12 @@ static bool cluster_residency_check(int cpu)
 	return true;
 }
 
-void cluster_off_check(int cpu, int *state)
+static bool other_core_idle_state_allowable(int cpu,
+		unsigned int cpu_mask, bool (*is_last_core)(int))
 {
-	int  i;
-	unsigned int cpu_mask = 0;
+	int i, state;
 
-	cpu_mask = get_pwr_stat_check_map(ALL_CPU_IN_CLUSTER,
-						cluster_idx_get(cpu));
-	cpu_mask &= (mcdi_gov_data.avail_cpu_mask & ~(1 << cpu));
+again:
 
 	/* Check each CPU available controlled by MCDI */
 	for (i = 0; i < NF_CPU; i++) {
@@ -361,17 +380,88 @@ void cluster_off_check(int cpu, int *state)
 		if (!(cpu_mask & (1 << i)))
 			continue;
 
-		if (get_residency_latency_result(cpu) < MCDI_STATE_CLUSTER_OFF)
-			return;
+		state = get_mcdi_status(i)->state;
+
+		/* Check CPU has decided entered state */
+		if (state == -1)
+			break;
+
+		if (state < MCDI_STATE_CLUSTER_OFF)
+			return false;
 	}
 
-	if (!cluster_residency_check(cpu)) {
+	if (i != NF_CPU) {
 
-		mcdi_set_timer(GET_STATE_RES(cpu, MCDI_STATE_CPU_OFF));
-		mcdi_cluster.cpu = cpu;
+		udelay(1);
+
+		if (is_last_core(cpu))
+			goto again;
+		else
+			return false;
+	}
+
+	return true;
+}
+
+bool is_last_core_in_mcusys(int cpu)
+{
+	int num_mcusys;
+	int avail_cnt_mcusys;
+
+	if (last_cpu_enter != cpu)
+		return false;
+
+	/* if other CPU(s) leave MCDI, means more than 1 CPU powered ON */
+	num_mcusys = mcdi_gov_data.num_mcusys;
+	avail_cnt_mcusys = mcdi_gov_data.avail_cnt_mcusys;
+
+	return num_mcusys == avail_cnt_mcusys;
+}
+
+bool is_last_core_in_cluster(int cpu)
+{
+	int num_cluster;
+	int avail_cnt_cluster;
+	int cluster = cluster_idx_get(cpu);
+
+	if (last_cpu_enter_in_cluster[cluster] != cpu)
+		return false;
+
+	/* if other CPU(s) leave MCDI, means more than 1 CPU powered ON */
+	num_cluster = mcdi_gov_data.num_cluster[cluster];
+	avail_cnt_cluster = mcdi_gov_data.avail_cnt_cluster[cluster];
+
+	return num_cluster == avail_cnt_cluster;
+}
+
+void cluster_off_check(int cpu, int *state)
+{
+	unsigned int cpu_mask = 0;
+
+	/* Check residency */
+	if (get_mcdi_status(cpu)->predict_us
+		< GET_STATE_RES(cpu, MCDI_STATE_CLUSTER_OFF)) {
 
 		*state = MCDI_STATE_CPU_OFF;
-		mcdi_residency_latency[cpu] = MCDI_STATE_CPU_OFF;
+		mcdi_set_timer(cpu);
+
+		return;
+	}
+
+	cpu_mask = get_pwr_stat_check_map(ALL_CPU_IN_CLUSTER,
+						cluster_idx_get(cpu));
+	cpu_mask &= (mcdi_gov_data.avail_cpu_mask & ~(1 << cpu));
+
+	if (!other_core_idle_state_allowable(
+				cpu, cpu_mask, is_last_core_in_cluster))
+		return;
+
+
+	if (!remain_sleep_residency_allowable(
+				cpu_mask, MCDI_STATE_CLUSTER_OFF)) {
+
+		*state = MCDI_STATE_CPU_OFF;
+		mcdi_set_timer(cpu);
 
 		return;
 	}
@@ -386,65 +476,27 @@ void cluster_off_check(int cpu, int *state)
 	}
 }
 
-bool is_last_core_in_mcusys(int cpu)
-{
-	int num_mcusys;
-	int avail_cnt_mcusys;
-
-	if (last_cpu_off != cpu)
-		return false;
-
-	/* if other CPU(s) leave MCDI, means more than 1 CPU powered ON */
-	num_mcusys = mcdi_gov_data.num_mcusys;
-	avail_cnt_mcusys = mcdi_gov_data.avail_cnt_mcusys;
-
-	return num_mcusys == avail_cnt_mcusys;
-}
-
-bool is_last_core_in_this_cluster(int cpu)
-{
-	int num_cluster;
-	int avail_cnt_cluster;
-	int cluster = cluster_idx_get(cpu);
-
-	if (last_cpu_off_in_cluster[cluster] != cpu)
-		return false;
-
-	/* if other CPU(s) leave MCDI, means more than 1 CPU powered ON */
-	num_cluster = mcdi_gov_data.num_cluster[cluster];
-	avail_cnt_cluster = mcdi_gov_data.avail_cnt_cluster[cluster];
-
-	return num_cluster == avail_cnt_cluster;
-}
-
 bool any_core_deepidle_sodi_residency_check(int cpu)
 {
-	bool ret = true;
-	int  i   = 0;
+	int spm_state;
 	unsigned int cpu_mask = 0;
-	unsigned long flags;
 
-	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
+	spm_state = MCDI_STATE_CLUSTER_OFF + 1;
 
-	cpu_mask = mcdi_gov_data.avail_cpu_mask;
+	if (get_mcdi_status(cpu)->predict_us
+		< GET_STATE_RES(cpu, spm_state))
+		return false;
 
-	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
+	cpu_mask = mcdi_gov_data.avail_cpu_mask & ~(1 << cpu);
 
-	/* Check each CPU available controlled by MCDI */
-	for (i = 0; i < NF_CPU; i++) {
-		if (i == cpu)
-			continue;
+	if (!other_core_idle_state_allowable(
+				cpu, cpu_mask, is_last_core_in_mcusys))
+		return false;
 
-		if (!(cpu_mask & (1 << i)))
-			continue;
+	if (!remain_sleep_residency_allowable(cpu_mask, spm_state))
+		return false;
 
-		if (get_residency_latency_result(i) <= MCDI_STATE_CLUSTER_OFF) {
-			ret = false;
-			break;
-		}
-	}
-
-	return ret;
+	return true;
 }
 
 int any_core_deepidle_sodi_check(int cpu)
@@ -453,6 +505,14 @@ int any_core_deepidle_sodi_check(int cpu)
 	int mtk_idle_state;
 
 	state = MCDI_STATE_CPU_OFF;
+
+	/* Check latency */
+	if (get_latency_result(cpu) <= MCDI_STATE_CLUSTER_OFF) {
+
+		any_core_cpu_cond_inc(LATENCY_CNT);
+
+		return state;
+	}
 
 	/* Check residency */
 	if (!any_core_deepidle_sodi_residency_check(cpu)) {
@@ -530,8 +590,8 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
 
 	/* Need to update first for last core check */
-	last_cpu_off_in_cluster[cluster_idx] = cpu;
-	last_cpu_off = cpu;
+	last_cpu_enter_in_cluster[cluster_idx] = cpu;
+	last_cpu_enter = cpu;
 
 	/* increase MCDI num (MCUSYS/cluster) */
 	mcdi_gov_data.num_mcusys++;
@@ -553,14 +613,13 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 		last_core_token_get  = true;
 	}
 
+	/* latency check of current CPU */
+	set_latency_result(cpu);
+
 	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
 
-	/* residency latency check of current CPU */
-	set_residency_latency_result(cpu);
-
 	/* Check if any core deepidle/SODI can entered */
-	if (get_residency_latency_result(cpu) > MCDI_STATE_CLUSTER_OFF
-		&& mcdi_feature_stat.any_core && last_core_token_get) {
+	if (mcdi_feature_stat.any_core && last_core_token_get) {
 
 		trace_check_anycore_rcuidle(cpu, 1, -1);
 
@@ -582,15 +641,15 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 			spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
 		}
 
-		select_state = MCDI_STATE_CPU_OFF;
-
-		if (get_residency_latency_result(cpu) > MCDI_STATE_CPU_OFF
-				&& mcdi_feature_stat.cluster_off) {
+		if (get_latency_result(cpu) > MCDI_STATE_CPU_OFF
+			&& mcdi_feature_stat.cluster_off) {
 
 			select_state = MCDI_STATE_CLUSTER_OFF;
 
-			if (is_last_core_in_this_cluster(cpu))
+			if (is_last_core_in_cluster(cpu))
 				cluster_off_check(cpu, &select_state);
+		} else {
+			select_state = MCDI_STATE_CPU_OFF;
 		}
 	}
 
@@ -618,7 +677,7 @@ void mcdi_governor_reflect(int cpu, int state)
 		mcdi_gov_data.num_cluster[cluster_idx]--;
 	}
 
-	mcdi_residency_latency[cpu] = MCDI_STATE_WFI;
+	mcdi_latency[cpu] = MCDI_STATE_WFI;
 
 	mcdi_sta = get_mcdi_status(cpu);
 
@@ -637,8 +696,7 @@ void mcdi_governor_reflect(int cpu, int state)
 	else if (state == MCDI_STATE_CLUSTER_OFF)
 		release_cluster_last_core_prot();
 
-	if (mcdi_cluster.tmr_en && mcdi_cluster.cpu == cpu)
-		mcdi_cancel_timer();
+	mcdi_cancel_timer(cpu);
 }
 
 void mcdi_avail_cpu_cluster_update(void)
@@ -751,11 +809,18 @@ void set_mcdi_s_state(int state)
 
 static void mcdi_cluster_init(void)
 {
-	hrtimer_init(&mcdi_cluster.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	mcdi_cluster.timer.function = mcdi_hrtimer_func;
-	mcdi_cluster.cpu = -1;
-	mcdi_cluster.chk_res_each_core = false;
 	mcdi_cluster.use_max_remain = true;
+	mcdi_cluster.owner = -1;
+	mcdi_cluster.chk_res_each_core = false;
+
+	if (mcdi_is_cpc_mode())
+		mcdi_cluster.tmr_en = true;
+	else
+		mcdi_cluster.tmr_en = false;
+
+	hrtimer_init(&mcdi_cluster.timer,
+			CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 }
 
 void mcdi_governor_init(void)
@@ -774,7 +839,7 @@ void mcdi_governor_init(void)
 
 	for (i = 0; i < NF_CLUSTER; i++) {
 		mcdi_gov_data.num_cluster[i] = 0;
-		last_cpu_off_in_cluster[i] = -1;
+		last_cpu_enter_in_cluster[i] = -1;
 		core_cluster_off_token[i] = -1;
 	}
 
@@ -797,8 +862,7 @@ void mcdi_governor_init(void)
 	set_mcdi_enable_by_pm_qos(true);
 	#endif
 
-	if (mcdi_is_cpc_mode())
-		mcdi_cluster_init();
+	mcdi_cluster_init();
 }
 
 const struct mcdi_feature_status *get_mcdi_feature_stat(void)

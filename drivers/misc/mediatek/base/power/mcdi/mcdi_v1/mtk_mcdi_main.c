@@ -63,6 +63,7 @@ static unsigned long ac_cpu_cond_info_last[NF_ANY_CORE_CPU_COND_INFO];
 static const char *ac_cpu_cond_name[NF_ANY_CORE_CPU_COND_INFO] = {
 	"pause",
 	"multi core",
+	"latency",
 	"residency",
 	"last core"
 };
@@ -260,6 +261,8 @@ static ssize_t mcdi_state_read(struct file *filp,
 
 	mcdi_log("system_idle_hint = %08x\n", system_idle_hint_result_raw());
 
+	mcdi_log("\n");
+
 	len = p - dbg_buf;
 
 	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
@@ -359,13 +362,13 @@ static ssize_t mcdi_info_read(struct file *filp,
 		get_mcdi_cluster_dev()->chk_res_fail = 0;
 		get_mcdi_cluster_dev()->chk_res_cnt = 0;
 
-		mcdi_log("\n\ncheck cluster residnecy each core : %s\n",
+		mcdi_log("\n\ncheck remain sleep time each core : %s\n",
 				get_mcdi_cluster_dev()->chk_res_each_core ?
 					"yes" : "no");
-		mcdi_log("cluster residency check fail rate : %d%% (%d/%d)\n",
+		mcdi_log("Each core residency check fail rate : %d%% (%d/%d)\n",
 				(!cnt) ? 0 : (100 * fail) / cnt, fail, cnt);
 
-		mcdi_log("cluster timer enable : %s\n",
+		mcdi_log("cluster timer enable : %s",
 				get_mcdi_cluster_dev()->tmr_en ? "yes" : "no");
 	}
 	mcdi_log("\n\n");
@@ -379,11 +382,13 @@ static ssize_t mcdi_info_read(struct file *filp,
 	mcdi_log("  %-40s : enable disable stress test\n",
 				"stress[0|1]");
 	mcdi_log("  %-40s : set stress timer interval\n",
-				"timer [time_us(dec)]");
-	mcdi_log("  %-40s : check cluster residency cores each (CPC mode)\n",
-				"cluster_res [0|1]");
+				"stress_timer [time_us(dec)]");
+	mcdi_log("  %-40s : check remain sleep each core(CPC mode)\n",
+				"remain [0|1]");
 	mcdi_log("  %-40s : enable/disable timer when enter cluster off\n",
-				"hrtimer [0|1]");
+				"mcdi_timer [0|1]");
+
+	mcdi_log("\n");
 
 	len = p - dbg_buf;
 
@@ -484,9 +489,9 @@ parse_cmd:
 
 		return count;
 
-	} else if (!strncmp(cmd_str, "cluster_res", sizeof("cluster_res"))) {
+	} else if (!strncmp(cmd_str, "remain", sizeof("remain"))) {
 
-		if (param_cnt == 1)
+		if (param_cnt == 1 && mcdi_is_cpc_mode())
 			get_mcdi_cluster_dev()->chk_res_each_core = !!param_0;
 
 		return count;
@@ -699,7 +704,7 @@ int mcdi_enter(int cpu)
 
 		trace_mcdi_rcuidle(cpu, 1);
 
-		aee_rr_rec_mcdi_val(cpu, 0xff);
+		aee_rr_rec_mcdi_val(cpu, MCDI_STATE_CPU_OFF << 16 | 0xff);
 
 		mtk_enter_idle_state(MTK_MCDI_CPU_MODE);
 
@@ -714,7 +719,7 @@ int mcdi_enter(int cpu)
 
 		trace_mcdi_rcuidle(cpu, 1);
 
-		aee_rr_rec_mcdi_val(cpu, 0xff);
+		aee_rr_rec_mcdi_val(cpu, MCDI_STATE_CLUSTER_OFF << 16 | 0xff);
 
 		mtk_enter_idle_state(MTK_MCDI_CLUSTER_MODE);
 
