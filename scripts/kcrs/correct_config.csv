@@ -947,3 +947,4 @@ CONFIG_ZRAM_LZ4K_COMPRESS,PROJECT,Chinwen.Chang,,O,O,O,,,,,,,
 CONFIG_ZRAM,PROJECT,Chinwen.Chang,,O,y,y,,,,,,,
 CONFIG_ZSMALLOC,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_ZSM,PROJECT,Robbin.Chiu,new config 84a52cb60725192d8ae0c80b58c363c35484cfd4,,,,,,,,,,
+CONFIG_MTK_ENABLE_GENIEZONE,PROJECT,coboy.chen,,,,,,,,,,,
