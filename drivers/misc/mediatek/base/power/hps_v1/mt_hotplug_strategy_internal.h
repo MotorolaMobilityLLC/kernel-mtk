@@ -28,12 +28,6 @@ extern "C" {
 
 #include <mt_hotplug_strategy_platform.h>	/* platform defines */
 
-#define HP_HAVE_EARLYSUSPEND		0
-
-#if HP_HAVE_EARLYSUSPEND
-#include <linux/earlysuspend.h>		/* struct early_suspend */
-#endif
-
 /*
  * LOG
  */
@@ -63,19 +57,11 @@ enum hps_init_state_e {
 	INIT_STATE_DONE
 };
 
-enum hps_ctxt_state_e {
-	STATE_LATE_RESUME = 0,
-	STATE_EARLY_SUSPEND,
-	STATE_SUSPEND,
-	STATE_COUNT
-};
-
 #if !defined(HPS_PERIODICAL_BY_WAIT_QUEUE) && !defined(HPS_PERIODICAL_BY_TIMER)
 #define HPS_PERIODICAL_BY_WAIT_QUEUE	0
 #define HPS_PERIODICAL_BY_TIMER		1
 #endif
 
-/* TODO: verify do you need action? no use now */
 enum hps_ctxt_action_e {
 	ACTION_NONE = 0,
 	ACTION_BASE_LITTLE,		/* bit  1, 0x0002 */
@@ -96,14 +82,9 @@ enum hps_ctxt_action_e {
 struct hps_ctxt_struct {
 	/* state */
 	unsigned int init_state;
-	unsigned int state;
 
 	/* enabled */
 	unsigned int enabled;
-	unsigned int early_suspend_enabled;
-		/* default 1, disable all big cores if is_hmp afterscreen off */
-	unsigned int suspend_enabled;
-		/* default 1, disable hotplug strategy in suspend flow */
 	unsigned int log_mask;
 
 	/* core */
@@ -117,15 +98,6 @@ struct hps_ctxt_struct {
 	struct timer_list hps_tmr;
 	struct timer_list *active_hps_tmr;
 #endif
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	struct early_suspend es_handler;
-#endif
-	struct platform_driver pdrv;
-
-	/* backup */
-	unsigned int enabled_backup;
-	unsigned int rush_boost_enabled_backup;
 
 	/* cpu arch */
 	unsigned int is_hmp;
@@ -141,8 +113,6 @@ struct hps_ctxt_struct {
 	unsigned int up_times;
 	unsigned int down_threshold;
 	unsigned int down_times;
-	unsigned int input_boost_enabled;
-	unsigned int input_boost_cpu_num;
 	unsigned int rush_boost_enabled;
 	unsigned int rush_boost_threshold;
 	unsigned int rush_boost_times;

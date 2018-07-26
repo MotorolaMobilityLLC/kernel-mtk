@@ -95,7 +95,7 @@ static void algo_hmp_base(
 	WARN_ON(bo > bl);
 	WARN_ON(lo > ll);
 
-	if (bo < bb && bo < bl && hps_ctxt.state == STATE_LATE_RESUME) {
+	if (bo < bb && bo < bl) {
 		val = min(bb, bl) - bo;
 		for (cpu = hps_ctxt.big_cpu_id_min;
 			cpu <= hps_ctxt.big_cpu_id_max; ++cpu) {
@@ -181,8 +181,7 @@ static void algo_hmp_rush_boost(
 				break;
 		}
 		hps_ctxt.action |= BIT(ACTION_RUSH_BOOST_LITTLE);
-	} else if (val && big_num_online < big_num_limit &&
-			hps_ctxt.state == STATE_LATE_RESUME) {
+	} else if (val && big_num_online < big_num_limit) {
 		for (cpu = hps_ctxt.big_cpu_id_min;
 			cpu <= hps_ctxt.big_cpu_id_max; ++cpu) {
 			if (cpumask_test_cpu(cpu, big_online_cpumask))
@@ -253,8 +252,7 @@ static void algo_hmp_up(
 			}
 		}
 		hps_ctxt.action |= BIT(ACTION_UP_LITTLE);
-	} else if (big_num_online < big_num_limit &&
-			hps_ctxt.state == STATE_LATE_RESUME) {
+	} else if (big_num_online < big_num_limit) {
 		for (cpu = hps_ctxt.big_cpu_id_min;
 			cpu <= hps_ctxt.big_cpu_id_max; ++cpu) {
 			if (!cpumask_test_cpu(cpu, big_online_cpumask)) {
