@@ -296,6 +296,14 @@ int gauge_enable_iavg_interrupt(bool ht_en, int ht_th,
 		gm.gdev, ht_en, ht_th, lt_en, lt_th);
 }
 
+int gauge_get_nag_vbat(void)
+{
+	int nafg_vbat;
+
+	gauge_dev_get_nag_vbat(gm.gdev, &nafg_vbat);
+	return nafg_vbat;
+}
+
 
 /* ============================================================ */
 /* custom setting */
@@ -3232,7 +3240,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	{
 		int nafg_vbat;
 
-		gauge_dev_get_nag_vbat(gm.gdev, &nafg_vbat);
+		nafg_vbat = gauge_get_nag_vbat();
 		ret_msg->fgd_data_len += sizeof(nafg_vbat);
 		memcpy(ret_msg->fgd_data, &nafg_vbat, sizeof(nafg_vbat));
 		bm_debug(

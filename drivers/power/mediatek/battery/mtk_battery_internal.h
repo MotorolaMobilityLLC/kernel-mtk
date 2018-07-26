@@ -832,6 +832,7 @@ extern int gauge_set_coulomb_interrupt1_lt(int car);
 extern int gauge_get_ptim_current(int *ptim_current, bool *is_charging);
 extern int gauge_get_hw_version(void);
 extern int gauge_set_nag_en(int nafg_zcv_en);
+extern int gauge_get_nag_vbat(void);
 
 /* mtk_battery_recovery.c */
 extern void battery_recovery_init(void);
