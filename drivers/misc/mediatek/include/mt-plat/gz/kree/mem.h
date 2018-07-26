@@ -52,6 +52,8 @@ typedef uint32_t KREE_SECURECM_HANDLE;
 /* Release Secure chunk memory handle define */
 typedef uint32_t KREE_RELEASECM_HANDLE;
 
+/* ION memory handle define */
+typedef uint32_t KREE_ION_HANDLE;
 /**
  * Shared memory parameter
  *
@@ -91,7 +93,7 @@ struct KREE_SHM_RUNLENGTH_LIST {
 /* map_p: 0 = no remap, 1 = remap */
 TZ_RESULT kree_register_sharedmem(KREE_SESSION_HANDLE session,
 		KREE_SHAREDMEM_HANDLE *mem_handle, void *start,
-		uint32_t size, void *map_p);
+		uint32_t size, void *map_p, uint32_t cmd);
 
 TZ_RESULT kree_unregister_sharedmem(KREE_SESSION_HANDLE session,
 					KREE_SHAREDMEM_HANDLE mem_handle);
@@ -144,6 +146,27 @@ TZ_RESULT KREE_UnregisterSharedmem(KREE_SESSION_HANDLE session,
 					KREE_SHAREDMEM_HANDLE shm_handle);
 
 /**
+ * Allocate (i.e., register) chunk memory
+ *
+ * @param session	The session handle.
+ * @param shm_handle	[out] A pointer to chunk memory handle.
+ * @param param	A pointer to chunk memory parameters.
+ * @return	return code.
+ */
+TZ_RESULT KREE_AllocChunkmem(KREE_SESSION_HANDLE session,
+		KREE_SHAREDMEM_HANDLE *cm_handle, KREE_SHAREDMEM_PARAM *param);
+
+/**
+ * Unregister chunk memory
+ *
+ * @param session	The session handle.
+ * @param shm_handle	The chunk memory handle.
+ * @return	return code.
+ */
+TZ_RESULT KREE_UnregisterChunkmem(KREE_SESSION_HANDLE session,
+					KREE_SHAREDMEM_HANDLE cm_handle);
+
+/**
  * Secure memory
  *
  * A secure memory can be seen only in Secure world.
@@ -185,6 +208,23 @@ TZ_RESULT KREE_UnregisterSharedmem(KREE_SESSION_HANDLE session,
  */
 TZ_RESULT KREE_AllocSecuremem(KREE_SESSION_HANDLE session,
 	KREE_SECUREMEM_HANDLE *mem_handle, uint32_t alignment, uint32_t size);
+
+/**
+ * Secure memory allocation With Tag
+ *
+ * Same as KREE_AllocSecuremem() but with one additional tag for debugging.
+ *
+ * @param session    The session handle.
+ * @param mem_handle    [out] A pointer to secure memory handle.
+ * @param alignment    Memory alignment in bytes.
+ * @param size    The size of the buffer to be allocated in bytes.
+ & @param tag     The string for marking the allocation
+ * @return    return code.
+ */
+ /*fix mtee sync*/
+TZ_RESULT KREE_AllocSecurememWithTag(KREE_SESSION_HANDLE session,
+	KREE_SECUREMEM_HANDLE *mem_handle, uint32_t alignment, uint32_t size,
+	const char *tag);
 
 /**
  * Zeroed secure memory allocation
@@ -231,6 +271,148 @@ TZ_RESULT KREE_ReferenceSecuremem(KREE_SESSION_HANDLE session,
  */
 TZ_RESULT KREE_UnreferenceSecuremem(KREE_SESSION_HANDLE session,
 					KREE_SECUREMEM_HANDLE mem_handle);
+
+/**
+ * Secure chunk memory release
+ *
+ * Release secure chunk memory for normal world usage.
+ *
+ * @param session    The session handle.
+ * @param size    [out] The pointer to released size in bytes.
+ * @param return    return code.
+ */
+TZ_RESULT KREE_ReleaseSecurechunkmem(KREE_SESSION_HANDLE session, uint32_t *size);
+TZ_RESULT KREE_ReleaseSecureMultichunkmem(KREE_SESSION_HANDLE session,
+					KREE_SHAREDMEM_HANDLE cm_handle);
+
+
+
+/**
+ * Secure chunk memory append
+ *
+ * Append secure chunk memory back to secure world.
+ *
+ * @param session    The session handle.
+ * @param return    return code.
+ */
+TZ_RESULT KREE_AppendSecurechunkmem(KREE_SESSION_HANDLE session);
+TZ_RESULT KREE_AppendSecureMultichunkmem(KREE_SESSION_HANDLE session,
+					KREE_SHAREDMEM_HANDLE *cm_handle,
+					KREE_SHAREDMEM_PARAM *param);
+
+#if 0
+TZ_RESULT KREE_AllocSecureMultichunkmem(KREE_SESSION_HANDLE session,
+				KREE_SHAREDMEM_HANDLE chm_handle,
+				KREE_SECUREMEM_HANDLE *mem_handle,
+				uint32_t alignment, uint32_t size);
+
+TZ_RESULT KREE_ZallocSecureMultichunkmem(KREE_SESSION_HANDLE session,
+				KREE_SHAREDMEM_HANDLE chm_handle,
+				KREE_SECUREMEM_HANDLE *mem_handle,
+				uint32_t alignment, uint32_t size);
+
+TZ_RESULT KREE_ReferenceSecureMultichunkmem(KREE_SESSION_HANDLE session,
+					KREE_SECUREMEM_HANDLE mem_handle);
+
+TZ_RESULT KREE_UnreferenceSecureMultichunkmem(KREE_SESSION_HANDLE session,
+					KREE_SECUREMEM_HANDLE mem_handle);
+#endif
+
+TZ_RESULT KREE_ION_AllocChunkmem(KREE_SESSION_HANDLE session,
+				KREE_SHAREDMEM_HANDLE chm_handle,
+				KREE_ION_HANDLE * IONHandle,
+				uint32_t alignment, uint32_t size);
+
+TZ_RESULT KREE_ION_ZallocChunkmem(KREE_SESSION_HANDLE session,
+				KREE_SHAREDMEM_HANDLE chm_handle,
+				KREE_ION_HANDLE *IONHandle,
+				uint32_t alignment, uint32_t size);
+
+TZ_RESULT KREE_ION_ReferenceChunkmem(KREE_SESSION_HANDLE session,
+					KREE_ION_HANDLE IONHandle);
+
+TZ_RESULT KREE_ION_UnreferenceChunkmem(KREE_SESSION_HANDLE session,
+					KREE_ION_HANDLE IONHandle);
+
+/*only for test*/
+TZ_RESULT KREE_ION_QueryChunkmem_TEST(KREE_SESSION_HANDLE session,
+					KREE_ION_HANDLE IONHandle, uint32_t cmd);
+
+
+TZ_RESULT KREE_ION_AccessChunkmem(KREE_SESSION_HANDLE session,
+						union MTEEC_PARAM param[4], uint32_t cmd);
+
+TZ_RESULT KREE_ION_CP_Chm2Shm(KREE_SESSION_HANDLE session,
+						KREE_ION_HANDLE ION_Handle,
+						KREE_SECUREMEM_HANDLE shm_handle,
+						uint32_t size);
+
+uint32_t _IONHandle2MemHandle(KREE_ION_HANDLE IONHandle,
+						KREE_SECUREMEM_HANDLE *mem_handle);
+
+/**
+ * Secure chunk memory allocation
+ *
+ * Allocate one memory.
+ * If memory is allocated successfully, a handle will be provided.
+ *
+ * Memory lifetime:
+ * 1. Allocate memory, and get the handle.
+ * 2. If other process wants to use the same memory, reference it.
+ * 3. If they stop to use it, unreference it.
+ * 4. Free it (by unreference), if it is not used.
+ *
+ * Simple rules:
+ * 1. start by allocate, end by unreference (for free).
+ * 2. start by reference, end by unreference.
+ *
+ * @param session    The session handle.
+ * @param cm_handle    [out] A pointer to secure chunk memory handle.
+ * @param alignment    Memory alignment in bytes.
+ * @param size    The size of the buffer to be allocated in bytes.
+
+ * @return    return code.
+ */
+/*fix mtee sync*/
+TZ_RESULT KREE_AllocSecurechunkmem(KREE_SESSION_HANDLE session,
+	KREE_SECURECM_HANDLE *cm_handle, uint32_t alignment, uint32_t size);
+
+/**
+ * Secure chunk memory allocation with tag
+ *
+ * Same as KREE_AllocSecuremem() but with one additional tag for debugging.
+ *
+ * @param session    The session handle.
+ * @param cm_handle    [out] A pointer to secure chunk memory handle.
+ * @param alignment    Memory alignment in bytes.
+ * @param size    The size of the buffer to be allocated in bytes.
+ * @param tag     The string for marking the allocation
+
+ * @return    return code.
+ */
+/*fix mtee sync*/
+TZ_RESULT KREE_AllocSecurechunkmemWithTag(KREE_SESSION_HANDLE session,
+	KREE_SECURECM_HANDLE *cm_handle, uint32_t alignment, uint32_t size,
+	const char *tag);
+
+
+/**
+ * Zeroed secure chunk memory allocation with tag
+ *
+ * Same as KREE_AllocSecurememWithTag() but the context is initilaized as zero.
+ *
+ * @param session    The session handle.
+ * @param cm_handle    [out] A pointer to secure chunk memory handle.
+ * @param alignment    Memory alignment in bytes.
+ * @param size    The size of the buffer to be allocated in bytes.
+ * @param tag     The string for marking the allocation
+
+ * @return    return code.
+ */
+/*fix mtee sync*/
+TZ_RESULT KREE_ZallocSecurechunkmemWithTag(KREE_SESSION_HANDLE session,
+	KREE_SECURECM_HANDLE *cm_handle, uint32_t alignment, uint32_t size,
+	const char *tag);
 
 #if (GZ_API_MAIN_VERSION > 2)
 /**
@@ -346,6 +528,79 @@ TZ_RESULT KREE_WriteSecurechunkmem(KREE_SESSION_HANDLE session,
  */
 TZ_RESULT KREE_GetSecurechunkReleaseSize(KREE_SESSION_HANDLE session,
 					uint32_t *size);
+
+/**
+ * Start chunk memory allocation service in TEE
+ *
+ * Pass the reserve the buffer for secure chunk memory usage
+ *
+ * @param session    The session handle.
+ * @param start_pa   The physical address of chunk memory buffer.
+ * @param size       The size in bytes of chunk memory buffer.
+ * @param return    return code.
+ */
+/*fix mtee sync*/
+TZ_RESULT KREE_StartSecurechunkmemSvc(KREE_SESSION_HANDLE session,
+				unsigned long start_pa, uint32_t size);
+
+/**
+ * Stop chunk memory allocation service in TEE
+ *
+ * reclaim the secure chunk memory used in TEE
+ *
+ * @param session    The session handle.
+ * @param cm_pa      The physical address of chunk memory buffer.
+ * @param size       The size in bytes of chunk memory buffer.
+ * @param return    return code.
+ */
+/*fix mtee sync*/
+TZ_RESULT KREE_StopSecurechunkmemSvc(KREE_SESSION_HANDLE session,
+					unsigned long *cm_pa, uint32_t *size);
+
+/**
+ * Query chunk memory physical location / size in TEE
+ *
+ * Query the secure chunk memory information in TEE
+ *
+ * @param session    The session handle.
+ * @param cm_pa      The physical address of chunk memory buffer.
+ * @param size       The size in bytes of chunk memory buffer.
+ * @param return    return code.
+ */
+/*fix mtee sync*/
+TZ_RESULT KREE_QuerySecurechunkmem(KREE_SESSION_HANDLE session,
+				unsigned long *cm_pa, uint32_t *size);
+
 #endif /* end of chunk mem API */
+
+/*fix mtee sync*/
+#ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
+/**
+ * REE service call to allocate chunk memory
+ *
+ * Allocate the continuouse memory for TEE secure chunk memory
+ *
+ * @param op         will be KREE_SERV_GET_CHUNK_MEMPOOL.
+ * @param uparam     the exchange buffer for parameters.
+ * @param return     return code.
+ */
+/*fix mtee sync*/
+TZ_RESULT KREE_ServGetChunkmemPool(u32 op,
+				   u8 uparam[REE_SERVICE_BUFFER_SIZE]);
+
+/**
+ * REE service call to release cma memory
+ *
+ * Release the continuouse memory from TEE secure chunk memory
+ *
+ * @param op         will be KREE_SERV_GET_CHUNK_MEMPOOL.
+ * @param uparam     the exchange buffer for parameters.
+ * @param return     return code.
+ */
+/*fix mtee sync*/
+TZ_RESULT KREE_ServReleaseChunkmemPool(u32 op,
+				       u8 uparam[REE_SERVICE_BUFFER_SIZE]);
+#endif  /* CONFIG_MTEE_CMA_SECURE_MEMORY */
+
 #endif				/* CONFIG_MTK_IN_HOUSE_TEE_SUPPORT || CONFIG_TRUSTY*/
 #endif				/* __KREE_MEM_H__ */

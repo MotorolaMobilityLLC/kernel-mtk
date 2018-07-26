@@ -36,7 +36,24 @@
 		_IOWR(MTEE_IOC_MAGIC,  4, struct kree_tee_service_cmd_param)
 #define MTEE_CMD_SHM_UNREG \
 		_IOWR(MTEE_IOC_MAGIC,  5, struct kree_tee_service_cmd_param)
-
+#define MTEE_CMD_SC_TEST_CP_CHM2SHM \
+		_IOWR(MTEE_IOC_MAGIC,  6, struct kree_user_sc_param)
+#define MTEE_CMD_SC_TEST_UPT_CHMDATA \
+		_IOWR(MTEE_IOC_MAGIC,  7, struct kree_user_sc_param)
+#define MTEE_CMD_APPEND_CHMEM \
+		_IOWR(MTEE_IOC_MAGIC,  8, struct kree_user_sc_param)
+#define MTEE_CMD_RELEASE_CHMEM \
+		_IOWR(MTEE_IOC_MAGIC,  9, struct kree_user_sc_param)
+#define MTEE_CMD_ALLOC_CHMEM \
+		_IOWR(MTEE_IOC_MAGIC,  10, struct kree_user_sc_param)
+#define MTEE_CMD_ZALLOC_CHMEM \
+		_IOWR(MTEE_IOC_MAGIC,  11, struct kree_user_sc_param)
+#define MTEE_CMD_REF_CHMEM \
+		_IOWR(MTEE_IOC_MAGIC,  12, struct kree_user_sc_param)
+#define MTEE_CMD_UNREF_CHMEM \
+		_IOWR(MTEE_IOC_MAGIC,  13, struct kree_user_sc_param)
+#define MTEE_CMD_SC_CHMEM_HANDLE \
+		_IOWR(MTEE_IOC_MAGIC,  14, struct kree_user_sc_param)
 
 #define DEV_IOC_MAXNR       (10)
 
@@ -80,5 +97,20 @@ struct MTIOMMU_PIN_RANGE_T {
 long _map_user_pages(struct MTIOMMU_PIN_RANGE_T *pinRange,
 				unsigned long uaddr, uint32_t size,
 				uint32_t control);
+
+struct kree_user_test_chm_param {
+	uint32_t append_chm_session;
+	uint32_t alloc_chm_session;
+	uint32_t append_chm_handle;
+};
+
+struct kree_user_sc_param {
+	uint32_t size;	/*alloc chm size*/
+	uint32_t alignment;	/*alloc alignment size*/
+	uint32_t ION_handle;
+	uint32_t other_handle; /*shm handle*/
+	struct kree_user_test_chm_param chmp;
+};
+
 
 #endif				/* end of DEVFINO_H */
