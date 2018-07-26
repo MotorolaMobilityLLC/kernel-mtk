@@ -829,6 +829,8 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 	ap_side_md_feature->feature_set[MISC_INFO_C2K_MEID].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 #endif
 	ap_side_md_feature->feature_set[SMART_LOGGING_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+
+	ap_side_md_feature->feature_set[MD_MTEE_SMEM_ENABLE].support_mask = CCCI_FEATURE_OPTIONAL_SUPPORT;
 }
 
 unsigned int align_to_2_power(unsigned int n)
@@ -1146,6 +1148,12 @@ int ccci_md_prepare_runtime_data(unsigned char md_id, unsigned char *data, int l
 				rt_shm.addr = region->base_md_view_phy;
 				rt_shm.size = region->size;
 				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+			case MD_MTEE_SMEM_ENABLE:
+				rt_feature.data_len = sizeof(unsigned int);
+				/* use the random_seed as temp_u32 value */
+				random_seed = get_mtee_is_enabled();
+				append_runtime_feature(&rt_data, &rt_feature, &random_seed);
 				break;
 			default:
 				break;
