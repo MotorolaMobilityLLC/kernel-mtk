@@ -42,6 +42,7 @@
 #include <linux/ftrace.h>
 #include <linux/trace_events.h>
 #include <linux/bug.h>
+#include "mt-plat/aee.h"
 
 #define MMPROFILE_INTERNAL
 #include "mmprofile_internal.h"
@@ -87,6 +88,15 @@ static bool mmp_trace_log_on;
 
 #define MMP_MSG(fmt, arg...) pr_info("MMP: %s(): "fmt"\n", __func__, ##arg)
 
+#define mmp_aee(string, args...) do {	\
+	char disp_name[100];						\
+	snprintf(disp_name, 100, "[MMP]"string, ##args); \
+	aee_kernel_warning_api(__FILE__, __LINE__, \
+		DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | \
+		DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY, \
+		disp_name, "[MMP] error"string, ##args);		\
+	pr_info("MMP error: "string, ##args);				\
+} while (0)
 struct mmprofile_regtable_t {
 	struct mmprofile_eventinfo_t event_info;
 	struct list_head list;
@@ -262,6 +272,14 @@ void mmprofile_get_dump_buffer(unsigned int start, unsigned long *p_addr,
 					src_pos = region_pos - pos;
 				else
 					src_pos = 0;
+				if (!virt_addr_valid(
+					&(p_regtable->event_info))) {
+					mmp_aee("pos=0x%x, src_pos=0x%x\n",
+						pos, src_pos);
+					pr_info("region_pos=0x%x, block_pos=0x%x\n",
+						region_pos, block_pos);
+					return;
+				}
 				copy_size =
 				    mmprofile_fill_dump_block(
 				    &(p_regtable->event_info),
@@ -780,8 +798,22 @@ static void mmprofile_log_int(mmp_event event, enum mmp_log_type type,
 	index = (atomic_inc_return((atomic_t *)
 			&(mmprofile_globals.write_pointer)) - 1)
 	    % (mmprofile_globals.buffer_size_record);
+	/*check vmalloc address is valid or not*/
+	if (!pfn_valid(vmalloc_to_pfn((struct mmprofile_event_t *)
+		&(p_mmprofile_ring_buffer[index])))) {
+		mmp_aee("write_pointer:0x%x,index:0x%x,line:%d\n",
+			mmprofile_globals.write_pointer, index, __LINE__);
+		pr_info("buffer_size_record:0x%x,new_buffer_size_record:0x%x\n",
+			mmprofile_globals.buffer_size_record,
+			mmprofile_globals.new_buffer_size_record);
+		return;
+	}
 	lock = atomic_inc_return((atomic_t *)
 		&(p_mmprofile_ring_buffer[index].lock));
+	/*atomic_t is INT, write_pointer is UINT, avoid convert error*/
+	if (mmprofile_globals.write_pointer ==
+		mmprofile_globals.buffer_size_record)
+		mmprofile_globals.write_pointer = 0;
 	if (unlikely(lock > 1)) {
 		/* Do not reduce lock count since it need
 		 * to be marked as invalid.
@@ -791,9 +823,24 @@ static void mmprofile_log_int(mmp_event event, enum mmp_log_type type,
 				(atomic_inc_return((atomic_t *)
 				&(mmprofile_globals.write_pointer)) - 1) %
 				(mmprofile_globals.buffer_size_record);
+			if (!pfn_valid(vmalloc_to_pfn
+				((struct mmprofile_event_t *)
+					&(p_mmprofile_ring_buffer[index])))) {
+				mmp_aee("write_pt:0x%x,index:0x%x,line:%d\n",
+					mmprofile_globals.write_pointer,
+					index, __LINE__);
+				pr_info("buf_size:0x%x,new_buf_size:0x%x\n",
+					mmprofile_globals.buffer_size_record,
+				mmprofile_globals.new_buffer_size_record);
+				return;
+			}
 			lock =
 			    atomic_inc_return((atomic_t *) &
 					(p_mmprofile_ring_buffer[index].lock));
+			/*avoid convert error*/
+			if (mmprofile_globals.write_pointer ==
+				mmprofile_globals.buffer_size_record)
+				mmprofile_globals.write_pointer = 0;
 			/* Do not reduce lock count since it need to be
 			 * marked as invalid.
 			 */
