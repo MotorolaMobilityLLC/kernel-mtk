@@ -116,6 +116,7 @@ struct hps_ctxt_struct {
 	unsigned int rush_boost_enabled;
 	unsigned int rush_boost_threshold;
 	unsigned int rush_boost_times;
+	unsigned int quick_landing_enabled;
 	unsigned int tlp_times;
 
 	/* algo bound */

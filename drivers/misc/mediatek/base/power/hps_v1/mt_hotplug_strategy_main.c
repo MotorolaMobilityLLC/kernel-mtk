@@ -27,6 +27,9 @@
 #ifndef DEF_LOG_MASK
 #define DEF_LOG_MASK		0
 #endif
+#ifndef EN_CPU_QUICK_LANDING
+#define EN_CPU_QUICK_LANDING	1
+#endif
 
 struct hps_ctxt_struct hps_ctxt = {
 	/* state */
@@ -53,6 +56,7 @@ struct hps_ctxt_struct hps_ctxt = {
 	.rush_boost_enabled = EN_CPU_RUSH_BOOST,
 	.rush_boost_threshold = DEF_CPU_RUSH_BOOST_THRESHOLD,
 	.rush_boost_times = DEF_CPU_RUSH_BOOST_TIMES,
+	.quick_landing_enabled = EN_CPU_QUICK_LANDING,
 	.tlp_times = DEF_TLP_TIMES,
 
 	/* algo statistics */
@@ -139,6 +143,8 @@ void hps_ctxt_print_algo_config(int toUart)
 		hps_ctxt.rush_boost_threshold);
 	log_info("hps_ctxt.rush_boost_times: %u\n",
 		hps_ctxt.rush_boost_times);
+	log_info("hps_ctxt.quick_landing_enabled: %u\n",
+		hps_ctxt.quick_landing_enabled);
 	log_info("hps_ctxt.tlp_times: %u\n", hps_ctxt.tlp_times);
 }
 

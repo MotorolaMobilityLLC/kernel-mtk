@@ -167,6 +167,7 @@ PROC_FOPS_RW_UINT(
  *                     - rush_boost_enabled
  *                     - rush_boost_threshold
  *                     - rush_boost_times
+ *                     - quick_landing_enabled
  *                     - tlp_times
  ***********************************************************/
 PROC_FOPS_RW_UINT(
@@ -197,6 +198,10 @@ PROC_FOPS_RW_UINT(
 	rush_boost_times,
 	hps_ctxt.rush_boost_times,
 	hps_proc_uint_write_with_lock_reset);
+PROC_FOPS_RW_UINT(
+	quick_landing_enabled,
+	hps_ctxt.quick_landing_enabled,
+	hps_proc_uint_write_with_lock);
 PROC_FOPS_RW_UINT(
 	tlp_times,
 	hps_ctxt.tlp_times,
@@ -633,6 +638,7 @@ int hps_procfs_init(void)
 		PROC_ENTRY(rush_boost_enabled),
 		PROC_ENTRY(rush_boost_threshold),
 		PROC_ENTRY(rush_boost_times),
+		PROC_ENTRY(quick_landing_enabled),
 		PROC_ENTRY(tlp_times),
 		PROC_ENTRY(num_base_perf_serv),
 		PROC_ENTRY(num_base_custom1),

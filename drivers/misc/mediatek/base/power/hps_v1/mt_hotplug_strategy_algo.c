@@ -313,6 +313,9 @@ static void algo_hmp_down(
 		--val;
 	val = num_online - val;
 
+	if (val > 1 && !hps_ctxt.quick_landing_enabled)
+		val = 1;
+
 	if (val && big_num_online > big_num_base) {
 		for (cpu = hps_ctxt.big_cpu_id_max;
 			cpu >= hps_ctxt.big_cpu_id_min; --cpu) {
@@ -825,6 +828,9 @@ static void algo_smp_down(
 	while (hps_ctxt.down_loads_sum < down_threshold * (val - 1))
 		--val;
 	val = little_num_online - val;
+
+	if (val > 1 && !hps_ctxt.quick_landing_enabled)
+		val = 1;
 
 	if (!val || little_num_online <= little_num_base)
 		return;
