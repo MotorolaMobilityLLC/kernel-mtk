@@ -55,24 +55,26 @@ struct _mtk_btif_ *btif_exp_srh_id(unsigned long u_id)
 /*-----Normal Mode API declearation-------*/
 
 /*****************************************************************************
-* FUNCTION
-*  mtk_wcn_btif_open
-* DESCRIPTION
-*  open BTIF interface, will do BTIF module HW and SW initialization
-* PARAMETERS
-*  p_owner      [IN] pointer to owner who call this API,
-*                    currently there are 2 owner ("stp" or "btif_tester")
-*                    may use this module
-*  for "stp", BTIF will call rx callback function to route rx data to STP module
-*  for "stp_tester", BTIF will save rx data and wait for native process to access
-*  p_id            [IN] BTIF's user id will be put to this address
-* RETURNS
-*  int  0 = BTIF module initialization fail; negative = BTIF module initialization success
-*       if open success, value p_id will be the only identifier
-*       for user to access BTIF's other operations
-*       including read/write/dpidle_ctrl/rx_cb_retister
-*       this user id is only an identifier used for owner identification
-*****************************************************************************/
+ * FUNCTION
+ *  mtk_wcn_btif_open
+ * DESCRIPTION
+ *  open BTIF interface, will do BTIF module HW and SW initialization
+ * PARAMETERS
+ *  p_owner      [IN] pointer to owner who call this API,
+ *                    currently there are 2 owner ("stp" or "btif_tester")
+ *                    may use this module
+ *  for "stp", BTIF will call rx callback function to route rx data to STP
+ *  for "stp_tester", BTIF will save rx data and wait for native process
+ *                    to access
+ *  p_id            [IN] BTIF's user id will be put to this address
+ * RETURNS
+ *  int  0 = BTIF module initialization fail;
+ *       negative = BTIF module initialization success
+ *       if open success, value p_id will be the only identifier
+ *       for user to access BTIF's other operations
+ *       including read/write/dpidle_ctrl/rx_cb_retister
+ *       this user id is only an identifier used for owner identification
+ *****************************************************************************/
 int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id)
 {
 	int i_ret = -1;
@@ -121,7 +123,8 @@ int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id)
 		p_new_user->enable = false;
 		p_new_user->p_btif = p_btif;
 		p_new_user->u_id = (unsigned long)p_new_user;
-		strncpy(p_new_user->u_name, p_owner, sizeof(p_new_user->u_name) - 1);
+		strncpy(p_new_user->u_name, p_owner,
+				sizeof(p_new_user->u_name) - 1);
 		p_new_user->u_name[sizeof(p_new_user->u_name) - 1] = '\0';
 		BTIF_DBG_FUNC("owner name:%s, recorded name:%s\n",
 			       p_owner, p_new_user->u_name);
@@ -153,18 +156,18 @@ int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id)
 EXPORT_SYMBOL(mtk_wcn_btif_open);
 
 /*****************************************************************************
-* FUNCTION
-*  mtk_wcn_btif_close
-* DESCRIPTION
-*  close BTIF interface, will do BTIF module HW and SW de-initialization
-*  once this API is called, p_btif should never be used by BTIF's user again
-* PARAMETERS
-*  u_id        [IN] BTIF's user id
-* RETURNS
-*  int     0 = succeed;
-*          others = fail,
-*          for detailed information, please see ENUM_BTIF_OP_ERROR_CODE
-*****************************************************************************/
+ * FUNCTION
+ *  mtk_wcn_btif_close
+ * DESCRIPTION
+ *  close BTIF interface, will do BTIF module HW and SW de-initialization
+ *  once this API is called, p_btif should never be used by BTIF's user again
+ * PARAMETERS
+ *  u_id        [IN] BTIF's user id
+ * RETURNS
+ *  int     0 = succeed;
+ *          others = fail,
+ *          for detailed information, please see ENUM_BTIF_OP_ERROR_CODE
+ *****************************************************************************/
 int mtk_wcn_btif_close(unsigned long u_id)
 {
 	int i_ret = -1;
@@ -207,39 +210,39 @@ EXPORT_SYMBOL(mtk_wcn_btif_close);
 
 
 /*****************************************************************************
-* FUNCTION
-*  mtk_wcn_btif_write
-* DESCRIPTION
-*  send data throuth BTIF module
-*  there's no internal buffer to cache STP data in BTIF driver,
-*  if in DMA mode
-*  btif driver will check if there's enough space in vFIFO for data to send in DMA mode
-*    if yes, put data to vFIFO and return corresponding data length to caller
-*    if no, corresponding error code will be returned to called
-* PARAMETERS
-*  p_btif      [IN] pointer returned by mtk_wcn_btif_open
-*  p_buf       [IN] pointer to target data to send
-*  len         [IN] data length (should be less than 2014 bytes per STP package)
-*
-*  if in non-DMA mode, BTIF driver will try to write to THR of BTIF controller
-*  if btif driver detected that no space is available in Tx FIFO,
-*  will return E_BTIF_NO_SPACE, mostly something is wrong with BTIF or
-*  consys when this return value is returned
-* RETURNS
-*  int  positive: data length send through BTIF;
-*       negative: please see ENUM_BTIF_OP_ERROR_CODE
-*       E_BTIF_AGAIN (0) will be returned to caller
-*       if btif does not have enough vFIFO to send data,
-*       when caller get 0, he should wait for a moment
-*       (5~10ms maybe) and try a few times (maybe 10~20)
-*        if still get E_BTIF_AGAIN,
-*        should call BTIF's debug API and dump BTIF driver
-*        and BTIF/DMA register information to kernel log for debug
-*        E_BTIF_BAD_POINTER will be returned to caller
-*        if btif is not opened successfully before call this API
-*        E_BTIF_INVAL_PARAM will be returned if parameter is not valid
-
-*****************************************************************************/
+ * FUNCTION
+ *  mtk_wcn_btif_write
+ * DESCRIPTION
+ *  send data throuth BTIF module
+ *  there's no internal buffer to cache STP data in BTIF driver,
+ *  if in DMA mode
+ *  btif driver will check if there's enough space in vFIFO for data to send
+ *  in DMA mode
+ *    if yes, put data to vFIFO and return corresponding data length to caller
+ *    if no, corresponding error code will be returned to called
+ * PARAMETERS
+ *  p_btif      [IN] pointer returned by mtk_wcn_btif_open
+ *  p_buf       [IN] pointer to target data to send
+ *  len         [IN] data length (less than 2014 bytes per STP package)
+ *
+ *  if in non-DMA mode, BTIF driver will try to write to THR of BTIF controller
+ *  if btif driver detected that no space is available in Tx FIFO,
+ *  will return E_BTIF_NO_SPACE, mostly something is wrong with BTIF or
+ *  consys when this return value is returned
+ * RETURNS
+ *  int  positive: data length send through BTIF;
+ *       negative: please see ENUM_BTIF_OP_ERROR_CODE
+ *       E_BTIF_AGAIN (0) will be returned to caller
+ *       if btif does not have enough vFIFO to send data,
+ *       when caller get 0, he should wait for a moment
+ *       (5~10ms maybe) and try a few times (maybe 10~20)
+ *        if still get E_BTIF_AGAIN,
+ *        should call BTIF's debug API and dump BTIF driver
+ *        and BTIF/DMA register information to kernel log for debug
+ *        E_BTIF_BAD_POINTER will be returned to caller
+ *        if btif is not opened successfully before call this API
+ *        E_BTIF_INVAL_PARAM will be returned if parameter is not valid
+ *****************************************************************************/
 int mtk_wcn_btif_write(unsigned long u_id,
 		       const unsigned char *p_buf, unsigned int len)
 {
@@ -268,18 +271,18 @@ EXPORT_SYMBOL(mtk_wcn_btif_write);
 
 
 /*****************************************************************************
-* FUNCTION
-*  mtk_wcn_btif_read
-* DESCRIPTION
-*  read data from BTIF module
-* PARAMETERS
-*  p_btif     [IN] pointer returned by mtk_wcn_btif_open
-*  p_buf      [IN/OUT] pointer to buffer where rx data will be put
-*  max_len    [IN] max buffer length
-* RETURNS
-*  int   positive: data length read from BTIF;
-*        negative: please see ENUM_BTIF_OP_ERROR_CODE
-*****************************************************************************/
+ * FUNCTION
+ *  mtk_wcn_btif_read
+ * DESCRIPTION
+ *  read data from BTIF module
+ * PARAMETERS
+ *  p_btif     [IN] pointer returned by mtk_wcn_btif_open
+ *  p_buf      [IN/OUT] pointer to buffer where rx data will be put
+ *  max_len    [IN] max buffer length
+ * RETURNS
+ *  int   positive: data length read from BTIF;
+ *        negative: please see ENUM_BTIF_OP_ERROR_CODE
+ *****************************************************************************/
 int mtk_wcn_btif_read(unsigned long u_id,
 		      unsigned char *p_buf, unsigned int max_len)
 {
@@ -287,16 +290,16 @@ int mtk_wcn_btif_read(unsigned long u_id,
 }
 
 /*****************************************************************************
-* FUNCTION
-*  mtk_wcn_btif_dpidle_ctrl
-* DESCRIPTION
-*  control if BTIF module allow system enter deepidle state or not
-* PARAMETERS
-*  p_btif      [IN] pointer returned by mtk_wcn_btif_open
-*  en_flag    [IN] one of enum _ENUM_BTIF_DPIDLE_
-* RETURNS
-*  int          always return 0
-*****************************************************************************/
+ * FUNCTION
+ *  mtk_wcn_btif_dpidle_ctrl
+ * DESCRIPTION
+ *  control if BTIF module allow system enter deepidle state or not
+ * PARAMETERS
+ *  p_btif      [IN] pointer returned by mtk_wcn_btif_open
+ *  en_flag     [IN] one of enum _ENUM_BTIF_DPIDLE_
+ * RETURNS
+ *  int          always return 0
+ *****************************************************************************/
 int mtk_wcn_btif_dpidle_ctrl(unsigned long u_id,
 			     enum _ENUM_BTIF_DPIDLE_ en_flag)
 {
@@ -319,19 +322,19 @@ EXPORT_SYMBOL(mtk_wcn_btif_dpidle_ctrl);
 
 
 /*****************************************************************************
-* FUNCTION
-*  mtk_wcn_btif_rx_cb_register
-* DESCRIPTION
-*  register rx callback function to BTIF module by btif user
-* PARAMETERS
-*  p_btif  [IN] pointer returned by mtk_wcn_btif_open
-*  rx_cb  [IN] pointer to stp rx handler callback function,
-*            should be comply with MTK_WCN_BTIF_RX_CB
-* RETURNS
-*  int      0 = succeed;
-*           others = fail, for detailed information,
-*           please see ENUM_BTIF_OP_ERROR_CODE
-*****************************************************************************/
+ * FUNCTION
+ *  mtk_wcn_btif_rx_cb_register
+ * DESCRIPTION
+ *  register rx callback function to BTIF module by btif user
+ * PARAMETERS
+ *  p_btif  [IN] pointer returned by mtk_wcn_btif_open
+ *  rx_cb   [IN] pointer to stp rx handler callback function,
+ *               should be comply with MTK_WCN_BTIF_RX_CB
+ * RETURNS
+ *  int      0 = succeed;
+ *           others = fail, for detailed information,
+ *           please see ENUM_BTIF_OP_ERROR_CODE
+ *****************************************************************************/
 int mtk_wcn_btif_rx_cb_register(unsigned long u_id, MTK_WCN_BTIF_RX_CB rx_cb)
 {
 	int i_ret = -1;
@@ -349,17 +352,18 @@ int mtk_wcn_btif_rx_cb_register(unsigned long u_id, MTK_WCN_BTIF_RX_CB rx_cb)
 EXPORT_SYMBOL(mtk_wcn_btif_rx_cb_register);
 
 /*****************************************************************************
-* FUNCTION
-*  mtk_wcn_btif_wakeup_consys
-* DESCRIPTION
-*  once sleep command is sent to con sys,
-*  should call this API before send wakeup command
-*  to make con sys aware host want to send data to consys
-* PARAMETERS
-*  p_btif      [IN] pointer returned by mtk_wcn_btif_open
-* RETURNS
-*  int          0 = succeed; others = fail, for detailed information, please see ENUM_BTIF_OP_ERROR_CODE
-*****************************************************************************/
+ * FUNCTION
+ *  mtk_wcn_btif_wakeup_consys
+ * DESCRIPTION
+ *  once sleep command is sent to con sys,
+ *  should call this API before send wakeup command
+ *  to make con sys aware host want to send data to consys
+ * PARAMETERS
+ *  p_btif      [IN] pointer returned by mtk_wcn_btif_open
+ * RETURNS
+ *  int          0 = succeed; others = fail, for detailed information,
+ *                                           please see ENUM_BTIF_OP_ERROR_CODE
+ *****************************************************************************/
 int mtk_wcn_btif_wakeup_consys(unsigned long u_id)
 {
 	int i_ret = -1;
@@ -383,21 +387,21 @@ EXPORT_SYMBOL(mtk_wcn_btif_wakeup_consys);
 /***************Debug Purpose API declearation**********/
 
 /*****************************************************************************
-* FUNCTION
-*  mtk_wcn_btif_loopback_ctrl
-* DESCRIPTION
-*  enable/disable BTIF internal loopback function,
-*  when this function is enabled data send to btif
-*  will be received by btif itself
-*  only for debug purpose, should never use this function in normal mode
-* PARAMETERS
-*  p_btif      [IN] pointer returned by mtk_wcn_btif_open
-*  enable     [IN] loopback mode control flag, enable or disable,
-*  shou be one of enum _ENUM_BTIF_LPBK_MODE_
-* RETURNS
-*  int          0 = succeed;
-*  others = fail, for detailed information, please see ENUM_BTIF_OP_ERROR_CODE
-*****************************************************************************/
+ * FUNCTION
+ *  mtk_wcn_btif_loopback_ctrl
+ * DESCRIPTION
+ *  enable/disable BTIF internal loopback function,
+ *  when this function is enabled data send to btif
+ *  will be received by btif itself
+ *  only for debug purpose, should never use this function in normal mode
+ * PARAMETERS
+ *  p_btif      [IN] pointer returned by mtk_wcn_btif_open
+ *  enable      [IN] loopback mode control flag, enable or disable,
+ *  shou be one of enum _ENUM_BTIF_LPBK_MODE_
+ * RETURNS
+ *  int          0 = succeed;
+ *  others = fail, for detailed information, please see ENUM_BTIF_OP_ERROR_CODE
+ *****************************************************************************/
 int mtk_wcn_btif_loopback_ctrl(unsigned long u_id,
 			       enum _ENUM_BTIF_LPBK_MODE_ enable)
 {
@@ -416,22 +420,23 @@ int mtk_wcn_btif_loopback_ctrl(unsigned long u_id,
 EXPORT_SYMBOL(mtk_wcn_btif_loopback_ctrl);
 
 /*****************************************************************************
-* FUNCTION
-*  mtk_wcn_btif_logger_ctrl
-* DESCRIPTION
-*  control BTIF logger function's behavior
-* PARAMETERS
-*  p_btif      [IN] pointer returned by mtk_wcn_btif_open
-*  flag         [IN] should be one of enum _ENUM_BTIF_DBG_ID_
-*                      BTIF_DISABLE_LOGGER  - disable btif logger
-*                      BTIF_ENABLE_LOGGER   - enable btif logger
-*                      BTIF_DUMP_LOG           - dump log logged by btif
-*                      BTIF_CLR_LOG             - clear btif log buffer
-*                      BTIF_DUMP_BTIF_REG   - dump btif controller's register
-*                      BTIF_DUMP_DMA_REG   - dump DMA controller's register
-* RETURNS
-*  int          0 = succeed; others = fail, for detailed information, please see ENUM_BTIF_OP_ERROR_CODE
-*****************************************************************************/
+ * FUNCTION
+ *  mtk_wcn_btif_logger_ctrl
+ * DESCRIPTION
+ *  control BTIF logger function's behavior
+ * PARAMETERS
+ *  p_btif      [IN] pointer returned by mtk_wcn_btif_open
+ *  flag        [IN] should be one of enum _ENUM_BTIF_DBG_ID_
+ *                      BTIF_DISABLE_LOGGER  - disable btif logger
+ *                      BTIF_ENABLE_LOGGER   - enable btif logger
+ *                      BTIF_DUMP_LOG           - dump log logged by btif
+ *                      BTIF_CLR_LOG             - clear btif log buffer
+ *                      BTIF_DUMP_BTIF_REG   - dump btif controller's register
+ *                      BTIF_DUMP_DMA_REG   - dump DMA controller's register
+ * RETURNS
+ *  int          0 = succeed; others = fail, for detailed information,
+ *                                           please see ENUM_BTIF_OP_ERROR_CODE
+ *****************************************************************************/
 int mtk_wcn_btif_dbg_ctrl(unsigned long u_id, enum _ENUM_BTIF_DBG_ID_ flag)
 {
 	int i_ret = -1;
@@ -724,9 +729,8 @@ int mtk_btif_exp_write_stress_test(unsigned int length, unsigned int max_loop)
 		BTIF_INFO_FUNC("mtk_wcn_btif_write left loop:%d, i_ret:%d\n",
 				   loop, i_ret);
 		if (i_ret != buf_len) {
-			BTIF_INFO_FUNC
-				("mtk_wcn_btif_write failed, target len %d, sent len: %d\n",
-				 buf_len, i_ret);
+			BTIF_INFO_FUNC("target len %d, sent len: %d\n",
+					buf_len, i_ret);
 			break;
 		}
 		buf_len--;

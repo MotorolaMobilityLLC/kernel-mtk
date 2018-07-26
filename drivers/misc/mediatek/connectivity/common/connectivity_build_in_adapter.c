@@ -227,8 +227,8 @@ EXPORT_SYMBOL(connectivity_export_upmu_set_reg_value);
  * MMC
  ******************************************************************************/
 int connectivity_export_mmc_io_rw_direct(struct mmc_card *card,
-				int write, unsigned fn,
-				unsigned addr, u8 in, u8 *out)
+				int write, unsigned int fn,
+				unsigned int addr, u8 in, u8 *out)
 {
 	return mmc_io_rw_direct(card, write, fn, addr, in, out);
 }

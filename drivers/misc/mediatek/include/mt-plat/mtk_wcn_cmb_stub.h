@@ -14,8 +14,9 @@
 /*! \file
  *   \brief  Declaration of library functions
  *
- *   Any definitions in this file will be shared among GLUE Layer and internal Driver Stack.
-*/
+ *   Any definitions in this file will be shared among GLUE Layer
+ *   and internal Driver Stack.
+ */
 
 #ifndef _MTK_WCN_CMB_STUB_H_
 #define _MTK_WCN_CMB_STUB_H_
@@ -23,14 +24,14 @@
 #include <linux/pm.h>
 
 /*******************************************************************************
-*                         C O M P I L E R   F L A G S
-********************************************************************************
-*/
+ *                        C O M P I L E R   F L A G S
+ *******************************************************************************
+ */
 
 /*******************************************************************************
-*                                 M A C R O S
-********************************************************************************
-*/
+ *                                M A C R O S
+ *******************************************************************************
+ */
 /* Audio GPIO naming style for 73/75/77 */
 /* #define MTK_WCN_CMB_AUD_IO_NAMING_STYLE_0 1 */
 /* Audio GPIO naming style for 89/8135 */
@@ -42,25 +43,27 @@
 #define MTK_WCN_CMB_FOR_SDIO_1V_AUTOK 1
 
 /*******************************************************************************
-*                    E X T E R N A L   R E F E R E N C E S
-********************************************************************************
-*/
+ *                   E X T E R N A L   R E F E R E N C E S
+ *******************************************************************************
+ */
 
 /*******************************************************************************
-*                              C O N S T A N T S
-********************************************************************************
-*/
+ *                             C O N S T A N T S
+ *******************************************************************************
+ */
 
 /*******************************************************************************
-*                             D A T A   T Y P E S
-********************************************************************************
-*/
+ *                            D A T A   T Y P E S
+ *******************************************************************************
+ */
 enum CMB_STUB_AIF_X {
 	CMB_STUB_AIF_0 = 0,	/* 0000: BT_PCM_OFF & FM analog (line in/out) */
 	CMB_STUB_AIF_1 = 1,	/* 0001: BT_PCM_ON & FM analog (in/out) */
 	CMB_STUB_AIF_2 = 2,	/* 0010: BT_PCM_OFF & FM digital (I2S) */
-	CMB_STUB_AIF_3 = 3,	/* 0011: BT_PCM_ON & FM digital (I2S) (invalid in 73evb & 1.2 phone configuration) */
-	CMB_STUB_AIF_4 = 4, /* 0100: BT_I2S & FM disable in special projects, e.g. protea*/
+	CMB_STUB_AIF_3 = 3,	/* 0011: BT_PCM_ON & FM digital (I2S) */
+				/* invalid in 73evb & 1.2 phone configuration */
+	CMB_STUB_AIF_4 = 4,	/* 0100: BT_I2S & FM disable */
+				/* in special projects, e.g. protea */
 	CMB_STUB_AIF_MAX = 5,
 };
 
@@ -101,11 +104,12 @@ typedef unsigned int (*wmt_get_drv_status)(unsigned int);
 #endif
 typedef void (*wmt_clock_fail_dump_cb) (void);
 
-typedef void (*msdc_sdio_irq_handler_t) (void *);	/* external irq handler */
+typedef void (*msdc_sdio_irq_handler_t) (void *); /* external irq handler */
 typedef void (*pm_callback_t) (pm_message_t state, void *data);
 
 struct sdio_ops {
-	void (*sdio_request_eirq)(msdc_sdio_irq_handler_t irq_handler, void *data);
+	void (*sdio_request_eirq)(msdc_sdio_irq_handler_t irq_handler,
+			void *data);
 	void (*sdio_enable_eirq)(void);
 	void (*sdio_disable_eirq)(void);
 	void (*sdio_register_pm)(pm_callback_t pm_cb, void *data);
@@ -113,7 +117,8 @@ struct sdio_ops {
 
 struct _CMB_STUB_CB_ {
 	unsigned int size;	/* structure size */
-	/*wmt_bgf_eirq_cb bgf_eirq_cb; *//* remove bgf_eirq_cb from stub. handle it in platform */
+	/*wmt_bgf_eirq_cb bgf_eirq_cb; */
+	/* remove bgf_eirq_cb from stub. handle it in platform */
 	wmt_aif_ctrl_cb aif_ctrl_cb;
 	wmt_func_ctrl_cb func_ctrl_cb;
 	wmt_thermal_query_cb thermal_query_cb;
@@ -126,26 +131,27 @@ struct _CMB_STUB_CB_ {
 };
 
 /*******************************************************************************
-*                            P U B L I C   D A T A
-********************************************************************************
-*/
+ *                           P U B L I C   D A T A
+ *******************************************************************************
+ */
 
 /*******************************************************************************
-*                           P R I V A T E   D A T A
-********************************************************************************
-*/
+ *                          P R I V A T E   D A T A
+ *******************************************************************************
+ */
 
 /*******************************************************************************
-*                  F U N C T I O N   D E C L A R A T I O N S
-********************************************************************************
-*/
+ *                 F U N C T I O N   D E C L A R A T I O N S
+ *******************************************************************************
+ */
 
 extern struct sdio_ops mt_sdio_ops[4];
 
 extern int mtk_wcn_cmb_stub_reg(struct _CMB_STUB_CB_ *p_stub_cb);
 extern int mtk_wcn_cmb_stub_unreg(void);
 
-extern int mtk_wcn_cmb_stub_aif_ctrl(enum CMB_STUB_AIF_X state, enum CMB_STUB_AIF_CTRL ctrl);
+extern int mtk_wcn_cmb_stub_aif_ctrl(enum CMB_STUB_AIF_X state,
+		enum CMB_STUB_AIF_CTRL ctrl);
 
 static inline int mtk_wcn_cmb_stub_audio_ctrl(enum CMB_STUB_AIF_X state)
 {
@@ -172,7 +178,8 @@ extern int mtk_wcn_cmb_stub_1vautok_for_dvfs(void);
 extern int mtk_wcn_wmt_chipid_query(void);
 extern void mtk_wcn_wmt_set_chipid(int chipid);
 
-/* mtk_uart_pdn_enable -- request uart port enter/exit deep idle mode, this API is defined in uart driver
+/* mtk_uart_pdn_enable -- request uart port enter/exit deep idle mode,
+ * this API is defined in uart driver
  *
  * @ port - uart port name, Eg: "ttyMT0", "ttyMT1", "ttyMT2"
  * @ enable - "1", enable deep idle; "0", disable deep idle
@@ -181,8 +188,8 @@ extern void mtk_wcn_wmt_set_chipid(int chipid);
  */
 extern unsigned int mtk_uart_pdn_enable(char *port, int enable);
 /*******************************************************************************
-*                              F U N C T I O N S
-********************************************************************************
-*/
+ *                             F U N C T I O N S
+ *******************************************************************************
+ */
 
 #endif /* _MTK_WCN_CMB_STUB_H_ */

@@ -21,7 +21,11 @@
 #if defined(CONFIG_MTK_CLKMGR)
 #if defined(CONFIG_ARCH_MT6580)
 #define MTK_BTIF_CG_BIT MT_CG_BTIF_SW_CG
-#elif defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+#elif defined(CONFIG_ARCH_MT6735)
+#define MTK_BTIF_CG_BIT MT_CG_PERI_BTIF
+#elif defined(CONFIG_ARCH_MT6735M)
+#define MTK_BTIF_CG_BIT MT_CG_PERI_BTIF
+#elif defined(CONFIG_ARCH_MT6753)
 #define MTK_BTIF_CG_BIT MT_CG_PERI_BTIF
 #endif
 #else
@@ -29,20 +33,34 @@ struct clk *clk_btif_apdma; /*btif apdma clock*/
 struct clk *clk_btif; /*btif  clock*/
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
-#define BTIF_RBR(base)         (unsigned long)(base + 0x0)	/*RX Buffer Register: read only */
-#define BTIF_THR(base)         (unsigned long)(base + 0x0) /*Rx Holding Register: write only */
-#define BTIF_IER(base)         (unsigned long)(base + 0x4) /*Interrupt Enable Register: read/write */
-#define BTIF_IIR(base)         (unsigned long)(base + 0x8)	/*Interrupt Identification Register: read only */
-#define BTIF_FIFOCTRL(base)    (unsigned long)(base + 0x8)	/*FIFO Control Register: write only */
-#define BTIF_FAKELCR(base)     (unsigned long)(base + 0xC)	/*FAKE LCR Register: read/write */
-#define BTIF_LSR(base)         (unsigned long)(base + 0x14)	/*Line Status Register: read only */
-#define BTIF_SLEEP_EN(base)    (unsigned long)(base + 0x48)	/*Sleep Enable Register: read/write */
-#define BTIF_DMA_EN(base)      (unsigned long)(base + 0x4C)	/*DMA Enable Register: read/write */
-#define BTIF_RTOCNT(base)      (unsigned long)(base + 0x54)	/*Rx Timeout Count Register: read/write */
-#define BTIF_TRI_LVL(base)     (unsigned long)(base + 0x60)	/*Tx/Rx Trigger Level Control Register: read/write */
-#define BTIF_WAK(base)         (unsigned long)(base + 0x64)	/*BTIF module wakeup Register: write only */
-#define BTIF_WAT_TIME(base)    (unsigned long)(base + 0x68)	/*BTIF ASYNC Wait Time Control Register: read/write */
-#define BTIF_HANDSHAKE(base)   (unsigned long)(base + 0x6C)	/*BTIF New Handshake Control Register: read/write */
+#define BTIF_RBR(base)         (unsigned long)(base + 0x0)
+		/*RX Buffer Register: read only */
+#define BTIF_THR(base)         (unsigned long)(base + 0x0)
+		/*Rx Holding Register: write only */
+#define BTIF_IER(base)         (unsigned long)(base + 0x4)
+		/*Interrupt Enable Register: read/write */
+#define BTIF_IIR(base)         (unsigned long)(base + 0x8)
+		/*Interrupt Identification Register: read only */
+#define BTIF_FIFOCTRL(base)    (unsigned long)(base + 0x8)
+		/*FIFO Control Register: write only */
+#define BTIF_FAKELCR(base)     (unsigned long)(base + 0xC)
+		/*FAKE LCR Register: read/write */
+#define BTIF_LSR(base)         (unsigned long)(base + 0x14)
+		/*Line Status Register: read only */
+#define BTIF_SLEEP_EN(base)    (unsigned long)(base + 0x48)
+		/*Sleep Enable Register: read/write */
+#define BTIF_DMA_EN(base)      (unsigned long)(base + 0x4C)
+		/*DMA Enable Register: read/write */
+#define BTIF_RTOCNT(base)      (unsigned long)(base + 0x54)
+		/*Rx Timeout Count Register: read/write */
+#define BTIF_TRI_LVL(base)     (unsigned long)(base + 0x60)
+		/*Tx/Rx Trigger Level Control Register: read/write */
+#define BTIF_WAK(base)         (unsigned long)(base + 0x64)
+		/*BTIF module wakeup Register: write only */
+#define BTIF_WAT_TIME(base)    (unsigned long)(base + 0x68)
+		/*BTIF ASYNC Wait Time Control Register: read/write */
+#define BTIF_HANDSHAKE(base)   (unsigned long)(base + 0x6C)
+		/*BTIF New Handshake Control Register: read/write */
 
 /*BTIF_IER bits*/
 #define BTIF_IER_TXEEN (0x1 << 1)	/*1: Tx holding register is empty */
@@ -73,11 +91,11 @@ struct clk *clk_btif; /*btif  clock*/
 /*BTIF_DMA_EN bits*/
 #define BTIF_DMA_EN_RX  (0x1 << 0)	/*Enable Rx DMA */
 #define BTIF_DMA_EN_TX  (0x1 << 1)	/*Enable Tx DMA */
-#define BTIF_DMA_EN_AUTORST_EN  (0x1 << 2)	/*1: timeout counter will be auto reset */
-#define BTIF_DMA_EN_AUTORST_DIS  (0x0 << 2)	/*
-						 * 0: after Rx timeout happens,
-						 * SW shall reset the interrupt by reading BTIF 0x4C
-						 */
+#define BTIF_DMA_EN_AUTORST_EN  (0x1 << 2)
+		/*1: timeout counter will be auto reset */
+#define BTIF_DMA_EN_AUTORST_DIS  (0x0 << 2)
+		/* 0: after Rx timeout happens, */
+		/* SW shall reset the interrupt by reading BTIF 0x4C */
 
 /*BTIF_TRI_LVL bits*/
 #define BTIF_TRI_LVL_TX_MASK ((0xf) << 0)
