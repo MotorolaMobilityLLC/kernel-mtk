@@ -55,6 +55,16 @@ do { \
 	} \
 } while (0)
 
+#define mtk_btag_pidlog_index(p) \
+	((unsigned long)(__page_to_pfn(p)) - \
+	(memblock_start_of_DRAM() >> PAGE_SHIFT))
+
+#define mtk_btag_pidlog_max_entry() \
+	(mtk_btag_system_dram_size >> PAGE_SHIFT)
+
+#define mtk_btag_pidlog_entry(idx) \
+	(((struct page_pid_logger *)mtk_btag_pagelogger) + idx)
+
 /* max dump size is 300KB whitch can be adjusted */
 #define BLOCKIO_AEE_BUFFER_SIZE (300 * 1024)
 char blockio_aee_buffer[BLOCKIO_AEE_BUFFER_SIZE];
@@ -166,14 +176,13 @@ void mtk_btag_pidlog_map_sg(struct request_queue *q, struct bio *bio,
 	struct bio_vec *bvec)
 {
 	struct page_pid_logger *ppl, tmp;
-	unsigned long page_offset;
+	unsigned long idx;
 
 	if (!mtk_btag_pagelogger || !bio || !bvec)
 		return;
 
-	page_offset = (unsigned long)(__page_to_pfn(bvec->bv_page))
-		- (memblock_start_of_DRAM() >> PAGE_SHIFT);
-	ppl = ((struct page_pid_logger *)mtk_btag_pagelogger) + page_offset;
+	idx = mtk_btag_pidlog_index(bvec->bv_page);
+	ppl = mtk_btag_pidlog_entry(idx);
 
 	tmp.pid = ppl->pid;
 	ppl->pid = 0xFFFF;
@@ -185,27 +194,47 @@ EXPORT_SYMBOL_GPL(mtk_btag_pidlog_map_sg);
 static void _mtk_btag_pidlog_set_pid(struct page *p, int mode)
 {
 	struct page_pid_logger *ppl;
-	unsigned long page_index;
+	unsigned long idx;
 
-	page_index = (unsigned long)(__page_to_pfn(p))
-			- (memblock_start_of_DRAM() >> PAGE_SHIFT);
-	ppl = ((struct page_pid_logger *)mtk_btag_pagelogger) + page_index;
+	idx = mtk_btag_pidlog_index(p);
+	ppl = mtk_btag_pidlog_entry(idx);
+
+	if (idx >= mtk_btag_pidlog_max_entry())
+		return;
 
 	/* we do lockless operation here to favor performance */
 
-	if (page_index < (mtk_btag_system_dram_size >> PAGE_SHIFT)) {
-		if (mode == PIDLOG_MODE_BLK_SUBMIT_BIO) {
-			/*
-			 * do not overwrite the real owner set by
-			 * mm or file system layer
-			 */
-			if (ppl->pid == 0xFFFF)
-				ppl->pid = current->pid;
-		} else {
-			/* the latest owner will be counted */
+	if (mode == PIDLOG_MODE_BLK_SUBMIT_BIO) {
+		/*
+		 * do not overwrite the real owner set by
+		 * mm or file system layer
+		 */
+		if (ppl->pid == 0xFFFF)
 			ppl->pid = current->pid;
-		}
+	} else {
+		/* the latest owner will be counted */
+		ppl->pid = current->pid;
 	}
+}
+
+void mtk_btag_pidlog_copy_pid(struct page *src, struct page *dst)
+{
+	struct page_pid_logger *ppl_src, *ppl_dst;
+	unsigned long idx_src, idx_dst;
+
+	idx_src = mtk_btag_pidlog_index(src);
+
+	if (idx_src >= mtk_btag_pidlog_max_entry())
+		return;
+
+	idx_dst = mtk_btag_pidlog_index(dst);
+
+	if (idx_dst >= mtk_btag_pidlog_max_entry())
+		return;
+
+	ppl_src = mtk_btag_pidlog_entry(idx_src);
+	ppl_dst = mtk_btag_pidlog_entry(idx_dst);
+	ppl_dst->pid = ppl_src->pid;
 }
 
 /* pidlog: hook function for submit_bio() */

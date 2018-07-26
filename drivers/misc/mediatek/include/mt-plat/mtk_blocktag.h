@@ -174,12 +174,13 @@ void mtk_btag_klog(struct mtk_blocktag *btag, struct mtk_btag_trace *tr);
 
 void mtk_btag_pidlog_map_sg(struct request_queue *q, struct bio *bio,
 	struct bio_vec *bvec);
+void mtk_btag_pidlog_copy_pid(struct page *src, struct page *dst);
 void mtk_btag_pidlog_submit_bio(struct bio *bio);
 void mtk_btag_pidlog_set_pid(struct page *p);
 
-
 #else
 
+#define mtk_btag_pidlog_copy_pid(...)
 #define mtk_btag_pidlog_map_sg(...)
 #define mtk_btag_pidlog_submit_bio(...)
 #define mtk_btag_pidlog_set_pid(...)
