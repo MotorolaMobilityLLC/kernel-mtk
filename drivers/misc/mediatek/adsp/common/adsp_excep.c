@@ -26,6 +26,7 @@
 #include <linux/ratelimit.h>
 #include "adsp_ipi.h"
 #include "adsp_helper.h"
+#include "adsp_clk.h"
 #include "adsp_excep.h"
 #include "adsp_feature_define.h"
 
@@ -236,21 +237,6 @@ uint32_t adsp_dump_pc(void)
 		return readl(ADSP_A_WDT_DEBUG_PC_REG);
 	else
 		return 0xFFFFFFFF;
-}
-/*
- * dump adsp register for debugging
- */
-void adsp_A_dump_regs(void)
-{
-	if (is_adsp_ready(ADSP_A_ID)) {
-		pr_info("[ADSP] ADSP ready PC:0x%x, SP:0x%x\n",
-			 readl(ADSP_A_WDT_DEBUG_PC_REG),
-			 readl(ADSP_A_WDT_DEBUG_SP_REG));
-	} else {
-		pr_info("[ADSP] ADSP not ready PC:0x%x, SP:0x%x\n",
-			 readl(ADSP_A_WDT_DEBUG_PC_REG),
-			 readl(ADSP_A_WDT_DEBUG_SP_REG));
-	}
 }
 
 /*
@@ -483,8 +469,19 @@ void adsp_aed(enum adsp_excep_id type, enum adsp_core_id id)
 	/*print adsp message*/
 	pr_debug("adsp_aed_title=%s", adsp_aed_title);
 
-	if (type != EXCEP_LOAD_FIRMWARE)
+	if (type != EXCEP_LOAD_FIRMWARE) {
+		if (is_adsp_ready(ADSP_A_ID) == 0) {
+			adsp_enable_clock();
+			adsp_set_top_mux(1, CLK_TOP_ADSPPLL_CK);
+		}
+
 		adsp_prepare_aed_dump(adsp_aed_title, &aed, id);
+
+		if (is_adsp_ready(ADSP_A_ID) == 0) {
+			adsp_set_top_mux(0, CLK_TOP_ADSPPLL_CK);
+			adsp_disable_clock();
+		}
+	}
 	/*print detail info. in kernel*/
 	pr_debug("%s", aed.detail);
 
@@ -613,6 +610,11 @@ static ssize_t adsp_A_dump_show(struct file *filep, struct kobject *kobj,
 
 	mutex_lock(&adsp_A_excep_dump_mutex);
 
+	/* IF ADSP in suspend enable clk to dump*/
+	if (is_adsp_ready(ADSP_A_ID) == 0) {
+		adsp_enable_clock();
+		adsp_set_top_mux(1, CLK_TOP_ADSPPLL_CK);
+	}
 	/* CRASH_MEMORY_HEADER_SIZE + ADSP_A_TCM_SIZE + CRASH_REG_SIZE */
 	if (offset >= 0 && offset < threshold1) {
 		if ((offset + size) > threshold1)
@@ -695,6 +697,10 @@ static ssize_t adsp_A_dump_show(struct file *filep, struct kobject *kobj,
 		length = size;
 	}
 
+	if (is_adsp_ready(ADSP_A_ID) == 0) {
+		adsp_set_top_mux(0, CLK_TOP_ADSPPLL_CK);
+		adsp_disable_clock();
+	}
 	mutex_unlock(&adsp_A_excep_dump_mutex);
 
 	return length;

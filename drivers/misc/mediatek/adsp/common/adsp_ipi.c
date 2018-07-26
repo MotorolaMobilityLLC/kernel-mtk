@@ -265,8 +265,6 @@ enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 			pr_debug("adsp_ipi_send: %s %d host to adsp busy, ipi last time = %d\n",
 			       adsp_core_ids[adsp_id], id,
 			       adsp_ipi_owner[adsp_id]);
-			adsp_A_dump_regs();
-
 		}
 #ifdef Liang_Check
 		if (adsp_awake_unlock(adsp_id) == -1)
