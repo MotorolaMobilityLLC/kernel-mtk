@@ -2567,6 +2567,9 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorHightSampling = 0;	/* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
 	sensor_info->PDAF_Support = 2;
+
+	sensor_info->SensorHorFOV = 67;
+
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
