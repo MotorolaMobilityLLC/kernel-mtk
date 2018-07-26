@@ -852,7 +852,7 @@ static int simple_mmc_erase_partition_wrap(struct msdc_ioctl *msdc_ctl)
 static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 	unsigned long arg)
 {
-	struct msdc_ioctl msdc_ctl;
+	struct msdc_ioctl *msdc_ctl;
 	struct msdc_host *host;
 	int ret = 0;
 
@@ -896,76 +896,87 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 		return ret;
 	}
 
-	if (copy_from_user(&msdc_ctl, (struct msdc_ioctl *)arg,
+	msdc_ctl = kmalloc(sizeof(*msdc_ctl), GFP_KERNEL);
+	if (!msdc_ctl)
+		return -ENOMEM;
+
+	if (copy_from_user(msdc_ctl, (struct msdc_ioctl *)arg,
 		sizeof(struct msdc_ioctl))) {
+		kfree(msdc_ctl);
 		return -EFAULT;
 	}
 
-	if (msdc_ctl.opcode != MSDC_ERASE_PARTITION) {
-		if ((msdc_ctl.host_num < 0)
-		 || (msdc_ctl.host_num >= HOST_MAX_NUM)) {
-			pr_notice("invalid host num: %d\n", msdc_ctl.host_num);
+	if (msdc_ctl->opcode != MSDC_ERASE_PARTITION) {
+		if ((msdc_ctl->host_num < 0)
+		 || (msdc_ctl->host_num >= HOST_MAX_NUM)) {
+			pr_notice("invalid host num: %d\n", msdc_ctl->host_num);
+			kfree(msdc_ctl);
 			return -EINVAL;
 		}
 	}
 
-	switch (msdc_ctl.opcode) {
+	switch (msdc_ctl->opcode) {
 	case MSDC_SINGLE_READ_WRITE:
 	case MSDC_MULTIPLE_READ_WRITE:
-		msdc_ctl.result = simple_sd_ioctl_rw(&msdc_ctl);
+		msdc_ctl->result = simple_sd_ioctl_rw(msdc_ctl);
 		break;
 	case MSDC_GET_CID:
-		msdc_ctl.result = simple_sd_ioctl_get_cid(&msdc_ctl);
+		msdc_ctl->result = simple_sd_ioctl_get_cid(msdc_ctl);
 		break;
 	case MSDC_GET_CSD:
-		msdc_ctl.result = simple_sd_ioctl_get_csd(&msdc_ctl);
+		msdc_ctl->result = simple_sd_ioctl_get_csd(msdc_ctl);
 		break;
 	case MSDC_DRIVING_SETTING:
-		if (msdc_ctl.iswrite == 1) {
-			msdc_ctl.result =
-				simple_sd_ioctl_set_driving(&msdc_ctl);
+		if (msdc_ctl->iswrite == 1) {
+			msdc_ctl->result =
+				simple_sd_ioctl_set_driving(msdc_ctl);
 		} else {
-			msdc_ctl.result =
-				simple_sd_ioctl_get_driving(&msdc_ctl);
+			msdc_ctl->result =
+				simple_sd_ioctl_get_driving(msdc_ctl);
 		}
 		break;
 	case MSDC_ERASE_PARTITION:
 		/* Used by ftp_emmc.c of factory and roots.cpp of recovery */
-		msdc_ctl.result =
-			simple_mmc_erase_partition_wrap(&msdc_ctl);
+		msdc_ctl->result =
+			simple_mmc_erase_partition_wrap(msdc_ctl);
 		break;
 #ifdef CONFIG_PWR_LOSS_MTK_TEST
 	case MSDC_ERASE_SELECTED_AREA:
-		msdc_ctl.result = simple_sd_ioctl_erase_selected_area(
-			&msdc_ctl);
+		msdc_ctl->result = simple_sd_ioctl_erase_selected_area(
+			msdc_ctl);
 		break;
 #endif
 	case MSDC_SD30_MODE_SWITCH:
 		pr_notice("obsolete opcode!!\n");
+		kfree(msdc_ctl);
 		return -EINVAL;
 	case MSDC_GET_BOOTPART:
-		msdc_ctl.result =
-			simple_sd_ioctl_get_bootpart(&msdc_ctl);
+		msdc_ctl->result =
+			simple_sd_ioctl_get_bootpart(msdc_ctl);
 		break;
 	case MSDC_SET_BOOTPART:
-		msdc_ctl.result =
-			simple_sd_ioctl_set_bootpart(&msdc_ctl);
+		msdc_ctl->result =
+			simple_sd_ioctl_set_bootpart(msdc_ctl);
 		break;
 	case MSDC_GET_PARTSIZE:
-		msdc_ctl.result =
-			simple_sd_ioctl_get_partition_size(&msdc_ctl);
+		msdc_ctl->result =
+			simple_sd_ioctl_get_partition_size(msdc_ctl);
 		break;
 	default:
 		pr_notice("simple_sd_ioctl:invlalid opcode!!\n");
+		kfree(msdc_ctl);
 		return -EINVAL;
 	}
 
-	if (copy_to_user((struct msdc_ioctl *)arg, &msdc_ctl,
+	if (copy_to_user((struct msdc_ioctl *)arg, msdc_ctl,
 		sizeof(struct msdc_ioctl))) {
+		kfree(msdc_ctl);
 		return -EFAULT;
 	}
 
-	return msdc_ctl.result;
+	ret = msdc_ctl->result;
+	kfree(msdc_ctl);
+	return ret;
 }
 
 #ifdef CONFIG_COMPAT
