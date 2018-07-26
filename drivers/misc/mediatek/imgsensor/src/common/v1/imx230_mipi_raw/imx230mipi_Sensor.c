@@ -3076,8 +3076,8 @@ static kal_uint32 open(void)
 		return ERROR_SENSOR_CONNECT_FAIL;
 
 	/* initail sequence write in  */
-	sensor_init();
 	read_imx230_SPC(imx230_SPC_data);
+	sensor_init();
 
 	spin_lock(&imgsensor_drv_lock);
 
