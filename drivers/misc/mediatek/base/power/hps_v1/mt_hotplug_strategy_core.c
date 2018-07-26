@@ -26,6 +26,13 @@
 
 #include "mt_hotplug_strategy_internal.h"
 
+#ifndef HPS_TASK_RT
+#define HPS_TASK_RT			0
+#endif
+#ifndef HPS_TASK_NICE
+#define HPS_TASK_NICE			MIN_NICE
+#endif
+
 #if HPS_PERIODICAL_BY_WAIT_QUEUE
 
 static void hps_periodical_by_wait_queue(void)
@@ -122,7 +129,9 @@ static int _hps_task_main(void *data)
  */
 int hps_task_start(void)
 {
+#if HPS_TASK_RT
 	struct sched_param param = { .sched_priority = HPS_TASK_PRIORITY };
+#endif
 
 	if (hps_ctxt.tsk_struct_ptr == NULL) {
 		hps_ctxt.tsk_struct_ptr =
@@ -130,8 +139,13 @@ int hps_task_start(void)
 		if (IS_ERR(hps_ctxt.tsk_struct_ptr))
 			return PTR_ERR(hps_ctxt.tsk_struct_ptr);
 
+#if HPS_TASK_RT
 		sched_setscheduler_nocheck(
 			hps_ctxt.tsk_struct_ptr, SCHED_FIFO, &param);
+#else
+		set_user_nice(hps_ctxt.tsk_struct_ptr, HPS_TASK_NICE);
+#endif
+
 		get_task_struct(hps_ctxt.tsk_struct_ptr);
 		wake_up_process(hps_ctxt.tsk_struct_ptr);
 		log_info("hps_task_start success, ptr: %p, pid: %d\n",
