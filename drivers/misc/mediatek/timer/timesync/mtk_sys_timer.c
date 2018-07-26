@@ -425,8 +425,7 @@ static int sys_timer_timesync_init(struct platform_device *pdev)
 
 		/* ensure sysram support is disabled */
 		timesync_cxt.support_sysram = 0;
-	}
-	else {
+	} else {
 		/* get sysram size */
 
 		if (of_property_read_u32(node,
