@@ -27,6 +27,11 @@
 #include <linux/trusty/smcall.h>
 #include <linux/trusty/sm_err.h>
 #include <linux/trusty/trusty.h>
+#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_RAM_CONSOLE
+#include "trusty-ramconsole.h"
+#endif
+#endif
 
 struct trusty_state {
 	struct mutex smc_lock;
@@ -261,6 +266,31 @@ ssize_t trusty_version_show(struct device *dev, struct device_attribute *attr,
 }
 
 DEVICE_ATTR(trusty_version, S_IRUSR, trusty_version_show, NULL);
+
+#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_RAM_CONSOLE
+static void init_gz_ramconsole(struct device *dev)
+{
+	u32 low, high;
+#ifdef SRAM_TEST
+
+	low = 0x0011E000;
+	high = 0x00000000;
+#else
+	unsigned long *gz_irq_pa;
+
+	gz_irq_pa = aee_rr_rec_gz_irq_pa();
+	dev_info(dev, "ram console: get PA %p\n", gz_irq_pa);
+
+	low = (u32)(((u64)gz_irq_pa << 32) >> 32);
+	high = (u32)((u64)gz_irq_pa >> 32);
+#endif
+
+	dev_info(dev, "ram console: send ram console PA from kernel to GZ\n");
+	trusty_std_call32(dev, MT_SMC_SC_SET_RAMCONSOLE, low, high, 0);
+}
+#endif
+#endif
 
 #ifdef CONFIG_MT_TRUSTY_DEBUGFS
 ssize_t trusty_add(struct device *dev, struct device_attribute *attr,
@@ -511,6 +541,12 @@ static int trusty_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_MT_TRUSTY_DEBUGFS
 	trusty_create_debugfs(s, &pdev->dev);
+#endif
+
+#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	init_gz_ramconsole(&pdev->dev);
+#endif
 #endif
 
 	return 0;
