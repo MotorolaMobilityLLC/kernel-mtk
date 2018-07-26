@@ -1041,8 +1041,6 @@ int mrdump_mini_init(void)
 	return 0;
 }
 
-arch_initcall(mrdump_mini_init);
-
 void mrdump_mini_reserve_memory(void)
 {
 	if (MRDUMP_MINI_BUF_PADDR)
