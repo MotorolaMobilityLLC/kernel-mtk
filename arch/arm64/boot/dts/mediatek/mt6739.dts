@@ -2428,6 +2428,14 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		compatible = "simple-bus";
 		/* reserved for overlay by odm */
 	};
+
+	radio_md_cfg: radio_md_cfg {
+		compatible = "mediatek,radio_md_cfg";
+	};
+
+	dynamic_options: dynamic_options {
+		compatible = "mediatek,dynamic_options";
+	};
 };
 
 #include "cust_mt6739_msdc.dtsi"
