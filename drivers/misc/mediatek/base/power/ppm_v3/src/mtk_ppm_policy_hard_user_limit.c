@@ -94,7 +94,7 @@ static void ppm_hard_userlimit_status_change_cb(bool enable)
 {
 	FUNC_ENTER(FUNC_LV_POLICY);
 
-	ppm_ver("userlimit policy status changed to %d\n", enable);
+	ppm_ver("hard userlimit policy status changed to %d\n", enable);
 
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
@@ -127,7 +127,7 @@ unsigned int mt_ppm_hard_userlimit_cpu_freq(
 
 	ppm_lock(&hard_userlimit_policy.lock);
 	if (!hard_userlimit_policy.is_enabled) {
-		ppm_warn("userlimit policy is not enabled!\n");
+		ppm_warn("hard userlimit policy is not enabled!\n");
 		ppm_unlock(&hard_userlimit_policy.lock);
 		return -1;
 	}
@@ -162,8 +162,8 @@ unsigned int mt_ppm_hard_userlimit_cpu_freq(
 				min_freq_idx;
 			hard_userlimit_data.limit[i].max_freq_idx =
 				max_freq_idx;
-			ppm_dbg(USER_LIMIT,
-				"%d:user limit min/max freq = %d(%d)/%d(%d)\n",
+			ppm_dbg(HARD_USER_LIMIT,
+				"%d:hard user limit min/max freq = %d(%d)/%d(%d)\n",
 				i, min_freq, min_freq_idx,
 				max_freq, max_freq_idx);
 		}
@@ -223,7 +223,7 @@ static ssize_t ppm_hard_userlimit_min_cpu_freq_proc_write(struct file *file,
 		ppm_lock(&hard_userlimit_policy.lock);
 
 		if (!hard_userlimit_policy.is_enabled) {
-			ppm_warn("userlimit policy is not enabled!\n");
+			ppm_warn("hard userlimit policy is not enabled!\n");
 			ppm_unlock(&hard_userlimit_policy.lock);
 			goto out;
 		}
@@ -240,8 +240,8 @@ static ssize_t ppm_hard_userlimit_min_cpu_freq_proc_write(struct file *file,
 
 		if (idx != hard_userlimit_data.limit[id].min_freq_idx) {
 			hard_userlimit_data.limit[id].min_freq_idx = idx;
-			ppm_dbg(USER_LIMIT,
-				"%d: userlimit min_freq= %d KHz(%d)\n",
+			ppm_dbg(HARD_USER_LIMIT,
+				"%d:hard userlimit min_freq= %d KHz(%d)\n",
 				id, min_freq, idx);
 		}
 
@@ -302,7 +302,7 @@ static ssize_t ppm_hard_userlimit_max_cpu_freq_proc_write(
 		ppm_lock(&hard_userlimit_policy.lock);
 
 		if (!hard_userlimit_policy.is_enabled) {
-			ppm_warn("userlimit policy is not enabled!\n");
+			ppm_warn("hard userlimit policy is not enabled!\n");
 			ppm_unlock(&hard_userlimit_policy.lock);
 			goto out;
 		}
@@ -319,8 +319,8 @@ static ssize_t ppm_hard_userlimit_max_cpu_freq_proc_write(
 
 		if (idx != hard_userlimit_data.limit[id].max_freq_idx) {
 			hard_userlimit_data.limit[id].max_freq_idx = idx;
-			ppm_dbg(USER_LIMIT,
-				"%d:user limit max_freq = %d KHz(idx = %d)\n",
+			ppm_dbg(HARD_USER_LIMIT,
+				"%d:hard user limit max_freq = %d KHz(idx = %d)\n",
 				id, max_freq, idx);
 		}
 
@@ -466,7 +466,8 @@ static int __init ppm_hard_userlimit_policy_init(void)
 	}
 
 	if (ppm_main_register_policy(&hard_userlimit_policy)) {
-		ppm_err("@%s: userlimit policy register failed\n", __func__);
+		ppm_err("@%s:hard userlimit policy register failed\n",
+		 __func__);
 		kfree(hard_userlimit_data.limit);
 		ret = -EINVAL;
 		goto out;
