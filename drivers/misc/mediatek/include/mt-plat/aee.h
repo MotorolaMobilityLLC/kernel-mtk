@@ -296,7 +296,6 @@ void aee_register_api(struct aee_kernel_api *aee_api);
 int aee_in_nested_panic(void);
 void aee_save_excp_regs(struct pt_regs *regs);
 void aee_stop_nested_panic(struct pt_regs *regs);
-void aee_wdt_dump_info(void);
 void aee_wdt_printf(const char *fmt, ...);
 
 void aee_fiq_ipi_cpu_stop(void *arg, void *regs, void *svc_sp);
