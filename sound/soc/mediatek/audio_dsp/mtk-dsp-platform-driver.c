@@ -94,10 +94,17 @@ static snd_pcm_uframes_t mtk_dsphw_pcm_pointer
 			pcm_ptr_bytes);
 	pcm_remap_ptr_bytes = dsp_word_size_align(pcm_remap_ptr_bytes);
 
+	if (pcm_remap_ptr_bytes >=
+	    dsp_mem->adsp_buf.aud_buffer.buf_bridge.bufLen)
+		pr_info("%s pcm_remap_ptr_bytes = %d",
+			__func__,
+			pcm_remap_ptr_bytes);
+	else
+		dsp_mem->adsp_buf.aud_buffer.buf_bridge.pRead =
+			(dsp_mem->adsp_buf.aud_buffer.buf_bridge.pBufBase +
+			 pcm_remap_ptr_bytes);
+
 	spin_lock_irqsave(&dsp_ringbuf_lock, flags);
-	dsp_mem->adsp_buf.aud_buffer.buf_bridge.pRead =
-		(dsp_mem->adsp_buf.aud_buffer.buf_bridge.pBufBase
-		 + pcm_remap_ptr_bytes);
 
 #ifdef DEBUG_VERBOSE
 	dump_rbuf_bridge_s("1 mtk_dsp_dl_handler",
