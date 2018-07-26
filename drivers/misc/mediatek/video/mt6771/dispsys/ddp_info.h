@@ -323,6 +323,8 @@ struct disp_ddp_path_config {
 	unsigned int lcm_bpp;
 	unsigned int dst_w;
 	unsigned int dst_h;
+	struct disp_rect rsz_src_roi;
+	struct disp_rect rsz_dst_roi;
 	unsigned int fps;
 	struct golden_setting_context *p_golden_setting_context;
 	void *path_handle;

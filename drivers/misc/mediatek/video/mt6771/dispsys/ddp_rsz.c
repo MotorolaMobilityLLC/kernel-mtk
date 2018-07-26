@@ -23,6 +23,7 @@
 #include <linux/delay.h>
 #include "ddp_rsz.h"
 #include "primary_display.h"
+#include "disp_rect.h"
 
 #define UNIT 32768
 #define TILE_LOSS 4
@@ -151,28 +152,19 @@ static int rsz_power_off(enum DISP_MODULE_ENUM module, void *qhandle)
 static int rsz_get_in_out_roi(struct disp_ddp_path_config *pconfig,
 			     u32 *in_w, u32 *in_h, u32 *out_w, u32 *out_h)
 {
-	struct OVL_CONFIG_STRUCT *oc = NULL;
+	struct disp_rect rsz_src_roi = pconfig->rsz_src_roi;
+	struct disp_rect rsz_dst_roi = pconfig->rsz_dst_roi;
 
-	oc = &pconfig->ovl_config[0];
-	if (oc->layer_en && oc->source == OVL_LAYER_SOURCE_RESERVED)
-		oc = &pconfig->ovl_config[1];
-
-	if (oc->src_w > oc->dst_w || oc->src_h > oc->dst_h) {
-		DDPERR("%s:L%d:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
-		       oc->src_w, oc->src_h, oc->dst_w, oc->dst_h);
-		return -EINVAL;
+	if (pconfig->rsz_enable) {
+		*in_w = rsz_src_roi.width;
+		*in_h = rsz_src_roi.height;
+		*out_w = rsz_dst_roi.width;
+		*out_h = rsz_dst_roi.height;
 	}
 
-	do {
-		if (!oc->layer_en)
-			break;
-		if (oc->src_w < oc->dst_w || oc->src_h < oc->dst_h) {
-			*in_w = oc->src_w;
-			*in_h = oc->src_h;
-			*out_w = oc->dst_w;
-			*out_h = oc->dst_h;
-		}
-	} while (0);
+	DISPMSG("[RPO] module=%s,in(w,h)=(%d,%d),out(w,h)=(%d,%d)\n",
+			ddp_get_module_name(DISP_MODULE_RSZ0),
+			*in_w, *in_h, *out_w, *out_h);
 
 	return 0;
 }
@@ -237,8 +229,10 @@ static int rsz_config(enum DISP_MODULE_ENUM module,
 		rsz_config->frm_out_h = pconfig->dst_h;
 	}
 
+
 	rsz_get_in_out_roi(pconfig, &frm_in_w, &frm_in_h,
-			   &frm_out_w, &frm_out_h);
+						&frm_out_w, &frm_out_h);
+
 	rsz_config->frm_in_w = frm_in_w;
 	rsz_config->frm_in_h = frm_in_h;
 	rsz_config->frm_out_w = frm_out_w;
