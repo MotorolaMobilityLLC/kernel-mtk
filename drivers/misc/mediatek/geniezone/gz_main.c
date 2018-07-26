@@ -4406,8 +4406,8 @@ static long _gz_ioctl(struct file *filep, unsigned int cmd, unsigned long arg, u
 				KREE_ERR("[%s] ====> shm_mem_service_process() returns Fail. [Stop!]. ret=0x%x\n",
 					__func__, ret);
 		}
-		if (map_p != NULL)
-			kfree(map_p);
+		if (shm_param.mapAry != NULL)
+			kfree(shm_param.mapAry);
 
 		if (ret != TZ_RESULT_SUCCESS) {
 			KREE_ERR("%s: KREE API failed(0x%x)\n", __func__, ret);
