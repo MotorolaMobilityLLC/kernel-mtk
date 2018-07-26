@@ -6542,6 +6542,13 @@ static signed int ISP_WaitIrq(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	int idx;
 	bool freeze_passbysigcnt = false;
 
+	if ((WaitIrq->EventInfo.St_type >= ISP_IRQ_ST_AMOUNT) ||
+	    (WaitIrq->EventInfo.St_type < 0)) {
+		pr_info("invalid St_type(%d), max(%d)\n",
+			WaitIrq->EventInfo.St_type, ISP_IRQ_ST_AMOUNT);
+		return -EINVAL;
+	}
+
 #ifdef ENABLE_WAITIRQ_LOG
 	/* Debug interrupt */
 	if (IspInfo.DebugMask & ISP_DBG_INT) {
