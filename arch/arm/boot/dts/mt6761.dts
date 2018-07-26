@@ -2949,6 +2949,11 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		pe40_dual_charger_chg2_current = <2000000>;
 		pe40_stop_battery_soc = <80>;
 
+		/* PE 4.0 cable impedance (mohm) */
+		pe40_r_cable_1a_lower = <530>;
+		pe40_r_cable_2a_lower = <390>;
+		pe40_r_cable_3a_lower = <252>;
+
 		/* dual charger */
 		chg1_ta_ac_charger_current = <1500000>;
 		chg2_ta_ac_charger_current = <1500000>;
