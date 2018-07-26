@@ -478,6 +478,12 @@ char *met_src_name[SRC_MAX] = {
 };
 
 /* met profile function */
+int vcorefs_get_num_opp(void)
+{
+	return VCORE_DVFS_OPP_NUM;
+}
+EXPORT_SYMBOL(vcorefs_get_num_opp);
+
 int vcorefs_get_opp_info_num(void)
 {
 	return INFO_MAX;
