@@ -155,6 +155,7 @@ enum {
 	SYS_BOOST = 1 << 7,
 	IPI	= 1 << 8,
 	CPI	= 1 << 9,
+	HARD_USER_LIMIT = 1 << 10,
 };
 
 enum ppm_policy {
@@ -164,6 +165,7 @@ enum ppm_policy {
 	PPM_POLICY_PWR_THRO,
 	PPM_POLICY_THERMAL,
 	PPM_POLICY_DLPT,
+	PPM_POLICY_HARD_USER_LIMIT,
 	PPM_POLICY_USER_LIMIT,
 	PPM_POLICY_LCM_OFF,
 	PPM_POLICY_SYS_BOOST,

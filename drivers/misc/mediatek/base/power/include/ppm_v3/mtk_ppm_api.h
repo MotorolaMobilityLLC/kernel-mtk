@@ -145,6 +145,10 @@ extern unsigned int mt_ppm_userlimit_freq_limit_by_others(
 	unsigned int cluster);
 extern void ppm_game_mode_change_cb(int is_game_mode);
 
+/*Hard User limit policy */
+extern unsigned int mt_ppm_hard_userlimit_cpu_freq(unsigned int cluster_num,
+	struct ppm_limit_data *data);
+
 /* Force limit policy */
 extern unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num,
 	struct ppm_limit_data *data);
