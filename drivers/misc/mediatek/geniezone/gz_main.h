@@ -21,5 +21,3 @@ static ssize_t gz_dev_write(struct file *filp, const char __user *buf, size_t co
 
 static long gz_ioctl(struct file *filep, unsigned int cmd, unsigned long arg);
 static long gz_compat_ioctl(struct file *filep, unsigned int cmd, unsigned long arg);
-
-
