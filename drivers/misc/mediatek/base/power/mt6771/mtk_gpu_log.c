@@ -24,9 +24,6 @@ static int aee_dumping;
 
 static void aee_Handle(struct work_struct *_psWork)
 {
-	/* avoid the build warnning */
-	_psWork = _psWork;
-
 	GPULOG2("trigger aee, call aee_kernel_exception");
 
 	aee_kernel_exception("gpulog", "aee dump gpulog");
