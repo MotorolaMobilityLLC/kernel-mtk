@@ -326,6 +326,7 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 	enum MD_STATE_FOR_USER state_for_user;
 	struct siginfo sig_info;
 	unsigned int data, sig, pid;
+	char *VALID_USER = "ccci_mdinit";
 
 	if (!ctl)
 		return -EINVAL;
@@ -373,8 +374,13 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 		inject_md_status_event(md_id, MD_STA_EV_START_REQUEST, current->comm);
 		break;
 	case CCCI_IOC_DO_START_MD:
-		CCCI_NORMAL_LOG(md_id, FSM, "MD start ioctl called by %s\n", current->comm);
-		ret = fsm_append_command(ctl, CCCI_COMMAND_START, FSM_CMD_FLAG_WAIT_FOR_COMPLETE);
+		/* add check whether the user call md start ioctl is valid */
+		if (strncmp(current->comm, VALID_USER, strlen(VALID_USER)) == 0) {
+			CCCI_NORMAL_LOG(md_id, FSM, "MD start ioctl called by %s\n", current->comm);
+			ret = fsm_append_command(ctl, CCCI_COMMAND_START, FSM_CMD_FLAG_WAIT_FOR_COMPLETE);
+		} else {
+			CCCI_ERROR_LOG(md_id, FSM, "drop invalid user:%s call MD start ioctl\n", current->comm);
+		}
 		break;
 	case CCCI_IOC_DO_STOP_MD:
 		if (copy_from_user(&data, (void __user *)arg, sizeof(unsigned int))) {
