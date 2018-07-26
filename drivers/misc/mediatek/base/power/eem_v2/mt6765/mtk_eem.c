@@ -1448,6 +1448,7 @@ det_to_id(det), bank);
 }
 #endif
 
+#define MARGIN_ADD_OFF				(10) /* Add 62.5mv */
 static void eem_set_eem_volt(struct eem_det *det)
 {
 #if SET_PMIC_VOLT
@@ -1522,23 +1523,39 @@ static void eem_set_eem_volt(struct eem_det *det)
 	for (i = 0; i < det->num_freq_tbl; i++) {
 		switch (det->ctrl_id) {
 		case EEM_CTRL_L:
-			det->volt_tbl_pmic[i] = min(
-			(unsigned int)(clamp(
+				det->volt_tbl_pmic[i] = min(
+				(unsigned int)clamp(
 				det->ops->eem_2_pmic(det,
-		(det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
+					det->volt_tbl[i] +
+					det->volt_offset +
+					low_temp_offset),
 				det->ops->eem_2_pmic(det, det->VMIN),
-				det->ops->eem_2_pmic(det, det->VMAX))),
-				det->volt_tbl_orig[i]);
+				det->ops->eem_2_pmic(det, det->VMAX)),
+				clamp(
+				det->volt_tbl_orig[i] + MARGIN_ADD_OFF,
+				(unsigned int)det->ops->eem_2_pmic(det,
+					det->VMIN),
+				(unsigned int)det->ops->eem_2_pmic(det,
+					det->VMAX))
+				);
 			break;
 
 		case EEM_CTRL_2L:
-			det->volt_tbl_pmic[i] = min(
-			(unsigned int)(clamp(
+				det->volt_tbl_pmic[i] = min(
+				(unsigned int)clamp(
 				det->ops->eem_2_pmic(det,
-		(det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
+					det->volt_tbl[i] +
+					det->volt_offset +
+					low_temp_offset),
 				det->ops->eem_2_pmic(det, det->VMIN),
-				det->ops->eem_2_pmic(det, det->VMAX))),
-				det->volt_tbl_orig[i]);
+				det->ops->eem_2_pmic(det, det->VMAX)),
+				clamp(
+				det->volt_tbl_orig[i] + MARGIN_ADD_OFF,
+				(unsigned int)det->ops->eem_2_pmic(det,
+					det->VMIN),
+				(unsigned int)det->ops->eem_2_pmic(det,
+					det->VMAX))
+				);
 			break;
 
 		case EEM_CTRL_CCI:
