@@ -275,6 +275,20 @@ config MACH_MT3887
 	  thin-design smartphones. MT3887 also offers significant multitasking and
 	  multimedia improvements.
 
+config MACH_MT8163
+	bool "MediaTek MT8163"
+	select ARCH_MEDIATEK
+	select MTK_BASE_POWER
+	select MTK_SYS_CIRQ
+	select MTK_GIC_EXT
+	select CPU_IDLE
+	select CPU_IDLE_GOV_MTK
+	help
+	  This enable support for MediaTek MT8163. If you need support
+	  for MediaTek MT8163, say Y here.
+	  Please note this also select ARCH_MEDIATEK, so driver depends
+	  on it can be selected.
+
 config MACH_MT8173
 	bool "MediaTek MT8173"
 	select ARCH_MEDIATEK
