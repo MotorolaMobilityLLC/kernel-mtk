@@ -350,6 +350,17 @@ int SMI_MET_get_header(unsigned int parallel_mode, char *buf,
 }
 EXPORT_SYMBOL(SMI_MET_get_header);
 
+int SMI_MET_get_header_ext(unsigned int parallel_mode, char *buf,
+	unsigned int *larb_number, unsigned int *comm_number,
+	unsigned int *larb_monitor_number, unsigned int *comm_monitor_number)
+{
+	*comm_number = MET_SMI_COMM_NUM;
+	*larb_monitor_number = 1;
+	*comm_monitor_number = 1;
+	return SMI_MET_get_header(parallel_mode, buf, larb_number);
+}
+EXPORT_SYMBOL(SMI_MET_get_header_ext);
+
 int SMI_MET_type_check(unsigned int parallel_mode, struct met_smi_conf *config)
 {
 	int ret = MET_SMI_SUCCESS;
