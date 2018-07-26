@@ -27,12 +27,18 @@
 #include <linux/mm.h>
 #include <linux/memory.h>
 #include <linux/memblock.h>
+#include <linux/oom.h>
+#include <linux/swap.h>
 #include <linux/sort.h>
 
 #include <asm/setup.h>
 
 #include <mt-plat/mtk_memcfg.h>
 #include <mt-plat/mtk_memcfg_reserve_info.h>
+
+#ifdef CONFIG_MTK_AEE_FEATURE
+#include <mt-plat/aee.h>
+#endif
 
 /* kenerl memory fragmentation trigger */
 
@@ -480,6 +486,99 @@ static const struct file_operations mtk_memcfg_oom_operations = {
 };
 
 /* end of kenerl out-of-memory(oom) trigger */
+
+#ifndef CONFIG_MTK_GMO_RAM_OPTIMIZE
+static bool vmpressure_no_trigger_warning(void) { return true; }
+#else
+static bool vmpressure_no_trigger_warning(void)
+{
+#define VMPRESSURE_CRITICAL	(40)
+
+	unsigned long memory, memsw;
+
+	memory = global_node_page_state(NR_INACTIVE_ANON) +
+		 global_node_page_state(NR_ACTIVE_ANON) +
+		 global_node_page_state(NR_INACTIVE_FILE) +
+		 global_node_page_state(NR_ACTIVE_FILE) +
+		 global_node_page_state(NR_UNEVICTABLE);
+
+	memsw = memory + total_swap_pages -
+		get_nr_swap_pages() -
+		total_swapcache_pages();
+
+	memory *= 100;
+	memsw *= VMPRESSURE_CRITICAL;
+
+	/* should trigger */
+	if (memory < memsw)
+		return false;
+
+	return true;
+
+#undef VMPRESSURE_CRITICAL
+}
+#endif
+
+static unsigned long vmpressure_warn_timeout;
+/* Inform system about vmpressure level */
+void mtk_memcfg_inform_vmpressure(void)
+{
+#define OOM_SCORE_ADJ_NO_TRIGGER	(0)
+
+	bool all_native = true;
+	struct task_struct *p;
+
+	if (vmpressure_no_trigger_warning())
+		return;
+
+	rcu_read_lock();
+	for_each_process(p) {
+		long adj;
+
+		if (p->flags & PF_KTHREAD)
+			continue;
+
+		if (p->state & TASK_UNINTERRUPTIBLE)
+			continue;
+
+		get_task_struct(p);
+		adj = (long)p->signal->oom_score_adj;
+		put_task_struct(p);
+
+		if (adj > OOM_SCORE_ADJ_NO_TRIGGER) {
+			rcu_read_unlock();
+			return;
+		}
+
+		if (adj == OOM_SCORE_ADJ_NO_TRIGGER)
+			all_native = false;
+	}
+	rcu_read_unlock();
+
+	if (all_native)
+		return;
+
+	if (time_before_eq(jiffies, vmpressure_warn_timeout))
+		return;
+
+	/* Trigger AEE warning */
+	pr_info("%s: vmpressure trigger kernel warning\n", __func__);
+
+#ifdef CONFIG_MTK_AEE_FEATURE
+	aee_kernel_warning_api("LMK", 0,
+			DB_OPT_DEFAULT | DB_OPT_DUMPSYS_ACTIVITY |
+			DB_OPT_LOW_MEMORY_KILLER | DB_OPT_PID_MEMORY_INFO |
+			DB_OPT_PROCESS_COREDUMP |
+			DB_OPT_DUMPSYS_SURFACEFLINGER |
+			DB_OPT_DUMPSYS_GFXINFO | DB_OPT_DUMPSYS_PROCSTATS,
+			"Framework low memory\nCRDISPATCH_KEY:FLM_APAF",
+			"please contact AP/AF memory module owner\n");
+#endif
+
+	vmpressure_warn_timeout = jiffies + 10 * HZ;
+
+#undef OOM_SCORE_ADJ_NO_TRIGGER
+}
 
 #ifdef CONFIG_SLUB_DEBUG
 /* kenerl slabtrace  */
