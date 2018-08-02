@@ -91,53 +91,47 @@ TRACE_EVENT(ccci_skb_rx,
 );
 #endif
 
-static void dpmaif_dump_register(struct hif_dpmaif_ctrl *hif_ctrl, int buf_type)
+static void dpmaif_dump_register(struct hif_dpmaif_ctrl *hif_ctrl)
 {
-	CCCI_BUF_LOG_TAG(hif_ctrl->md_id, buf_type, TAG,
+	CCCI_MEM_LOG_TAG(hif_ctrl->md_id, TAG,
 		"dump AP DPMAIF Tx pdn register\n");
-	ccci_util_mem_dump(hif_ctrl->md_id, buf_type,
+	ccci_util_mem_dump(hif_ctrl->md_id, CCCI_DUMP_MEM_DUMP,
 		hif_ctrl->dpmaif_pd_ul_base + DPMAIF_PD_UL_ADD_DESC,
 		DPMAIF_PD_UL_ADD_DESC_CH - DPMAIF_PD_UL_ADD_DESC + 4);
-	CCCI_BUF_LOG_TAG(hif_ctrl->md_id, buf_type, TAG,
+	CCCI_MEM_LOG_TAG(hif_ctrl->md_id, TAG,
 		"dump AP DPMAIF Tx ao register\n");
-	ccci_util_mem_dump(hif_ctrl->md_id, buf_type,
+	ccci_util_mem_dump(hif_ctrl->md_id, CCCI_DUMP_MEM_DUMP,
 		hif_ctrl->dpmaif_ao_ul_base + DPMAIF_AO_UL_CHNL0_STA,
 		DPMAIF_AO_UL_CHNL3_STA - DPMAIF_AO_UL_CHNL0_STA + 4);
 
-	CCCI_BUF_LOG_TAG(hif_ctrl->md_id, buf_type, TAG,
+	CCCI_MEM_LOG_TAG(hif_ctrl->md_id, TAG,
 		"dump AP DPMAIF Rx pdn register\n");
-	ccci_util_mem_dump(hif_ctrl->md_id, buf_type,
+	ccci_util_mem_dump(hif_ctrl->md_id, CCCI_DUMP_MEM_DUMP,
 		hif_ctrl->dpmaif_pd_dl_base + DPMAIF_PD_DL_BAT_INIT,
 		DPMAIF_PD_DL_MISC_CON0 - DPMAIF_PD_DL_BAT_INIT + 4);
-	ccci_util_mem_dump(hif_ctrl->md_id, buf_type,
+	ccci_util_mem_dump(hif_ctrl->md_id, CCCI_DUMP_MEM_DUMP,
 		hif_ctrl->dpmaif_pd_dl_base + DPMAIF_PD_DL_STA0,
 		DPMAIF_PD_DL_DBG_STA14 - DPMAIF_PD_DL_STA0 + 4);
-	CCCI_BUF_LOG_TAG(hif_ctrl->md_id, buf_type, TAG,
+	CCCI_MEM_LOG_TAG(hif_ctrl->md_id, TAG,
 		"dump AP DPMAIF dma_rd config register\n");
-	ccci_util_mem_dump(hif_ctrl->md_id, buf_type,
+	ccci_util_mem_dump(hif_ctrl->md_id, CCCI_DUMP_MEM_DUMP,
 		hif_ctrl->dpmaif_pd_dl_base + 0x100, 0xC8);
-	CCCI_BUF_LOG_TAG(hif_ctrl->md_id, buf_type, TAG,
+	CCCI_MEM_LOG_TAG(hif_ctrl->md_id, TAG,
 		"dump AP DPMAIF dma_wr config register\n");
-	ccci_util_mem_dump(hif_ctrl->md_id, buf_type,
+	ccci_util_mem_dump(hif_ctrl->md_id, CCCI_DUMP_MEM_DUMP,
 		hif_ctrl->dpmaif_pd_dl_base + 0x200, 0x58 + 4);
-	CCCI_BUF_LOG_TAG(hif_ctrl->md_id, buf_type, TAG,
+	CCCI_MEM_LOG_TAG(hif_ctrl->md_id, TAG,
 		"dump AP DPMAIF Rx ao register\n");
-	ccci_util_mem_dump(hif_ctrl->md_id, buf_type,
+	ccci_util_mem_dump(hif_ctrl->md_id, CCCI_DUMP_MEM_DUMP,
 		hif_ctrl->dpmaif_ao_dl_base + DPMAIF_AO_DL_PKTINFO_CONO,
 		DPMAIF_AO_DL_PIT_STA3 - DPMAIF_AO_DL_PKTINFO_CONO + 4);
 
-	CCCI_BUF_LOG_TAG(hif_ctrl->md_id, buf_type, TAG,
+	CCCI_MEM_LOG_TAG(hif_ctrl->md_id, TAG,
 		"dump AP DPMAIF MISC pdn register\n");
-	ccci_util_mem_dump(hif_ctrl->md_id, buf_type,
+	ccci_util_mem_dump(hif_ctrl->md_id, CCCI_DUMP_MEM_DUMP,
 		hif_ctrl->dpmaif_pd_misc_base + DPMAIF_PD_AP_UL_L2TISAR0,
 		DPMAIF_PD_AP_CODA_VER - DPMAIF_PD_AP_UL_L2TISAR0 + 4);
 }
-
-void dpmaif_dump_reg(void)
-{
-	dpmaif_dump_register(dpmaif_ctrl, CCCI_DUMP_REGISTER);
-}
-EXPORT_SYMBOL(dpmaif_dump_reg);
 
 static void dpmaif_dump_rxq_history(struct hif_dpmaif_ctrl *hif_ctrl,
 	unsigned int qno, int dump_multi)
@@ -286,7 +280,7 @@ static int dpmaif_dump_status(unsigned char hif_id,
 	unsigned int dir = 1 << OUT | 1 << IN;
 
 	if (flag & DUMP_FLAG_REG) {
-		dpmaif_dump_register(hif_ctrl, CCCI_DUMP_MEM_DUMP);
+		dpmaif_dump_register(hif_ctrl);
 		q_bitmap = length;
 	}
 	if (flag & DUMP_FLAG_QUEUE_0)
@@ -313,9 +307,7 @@ static int dpmaif_dump_status(unsigned char hif_id,
 			q_bitmap &= ~(1 << i);
 		}
 	}
-	if (flag & DUMP_FLAG_REG) {
-		dpmaif_dump_register(hif_ctrl, CCCI_DUMP_REGISTER);
-	}
+
 	if (flag & DUMP_FLAG_IRQ_STATUS) {
 		CCCI_NORMAL_LOG(hif_ctrl->md_id, TAG,
 			"Dump AP DPMAIF IRQ status\n");
@@ -1364,8 +1356,7 @@ static unsigned short dpmaif_relase_tx_buffer(unsigned char q_num,
 					txq->drb_wr_idx,
 					txq->drb_rd_idx,
 					txq->drb_rel_rd_idx);
-				dpmaif_dump_register(dpmaif_ctrl,
-					CCCI_DUMP_MEM_DUMP);
+				dpmaif_dump_register(dpmaif_ctrl);
 				dpmaif_dump_txq_remain(dpmaif_ctrl,
 					txq->index, 0);
 				/* force dump */
