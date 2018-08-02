@@ -299,7 +299,7 @@ struct flashlight_device *flashlight_device_register(const char *name,
 	struct flashlight_device *flashlight_dev;
 	int rc;
 
-	pr_debug("flashlight_device_register: name=%s\n", name);
+	pr_debug("%s: name=%s\n", __func__, name);
 	flashlight_dev = kzalloc(sizeof(*flashlight_dev), GFP_KERNEL);
 	if (!flashlight_dev)
 		return ERR_PTR(-ENOMEM);
