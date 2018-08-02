@@ -62,6 +62,7 @@
 #endif
 
 #include <mt-plat/fpsgo_common.h>
+#include <mt-plat/aee.h>
 
 /*
  * The timer bases:
@@ -345,6 +346,10 @@ static bool hrtimer_fixup_init(void *addr, enum debug_obj_state state)
 
 	switch (state) {
 	case ODEBUG_STATE_ACTIVE:
+		aee_kernel_warning_api(__FILE__, __LINE__,
+			DB_OPT_DEFAULT,
+			"re-init active hrtimer",
+			"[wrong timer usage]");
 		hrtimer_cancel(timer);
 		debug_object_init(timer, &hrtimer_debug_descr);
 		return true;
@@ -363,6 +368,10 @@ static bool hrtimer_fixup_activate(void *addr, enum debug_obj_state state)
 	switch (state) {
 	case ODEBUG_STATE_ACTIVE:
 		WARN_ON(1);
+		aee_kernel_warning_api(__FILE__, __LINE__,
+			DB_OPT_DEFAULT,
+			"activate an active hrtimer",
+			"[wrong timer usage]");
 
 	default:
 		return false;
@@ -381,6 +390,10 @@ static bool hrtimer_fixup_free(void *addr, enum debug_obj_state state)
 	case ODEBUG_STATE_ACTIVE:
 		hrtimer_cancel(timer);
 		debug_object_free(timer, &hrtimer_debug_descr);
+		aee_kernel_warning_api(__FILE__, __LINE__,
+			DB_OPT_DEFAULT,
+			"free an active hrtimer",
+			"[wrong timer usage]");
 		return true;
 	default:
 		return false;
