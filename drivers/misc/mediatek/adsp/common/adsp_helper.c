@@ -432,13 +432,7 @@ uint32_t adsp_power_on(uint32_t enable)
 	pr_debug("+%s (%x)\n", __func__, enable);
 	if (enable) {
 		adsp_enable_clock();
-
-		//sw reset: hold and release, delay 1ms is enough
-		writel(0, ADSP_A_REBOOT);
-		udelay(10);
-		writel((ADSP_A_SW_RSTN | ADSP_A_SW_DBG_RSTN), ADSP_A_REBOOT);
-		pr_debug("ADSP_A_REBOOT=%x", readl(ADSP_A_REBOOT));
-
+		adsp_sw_reset();
 		//enable ADSPPLL
 		adsp_set_top_mux(1, CLK_TOP_ADSPPLL_CK);
 		adsp_A_send_spm_request(true);
@@ -614,12 +608,6 @@ static inline ssize_t adsp_A_reg_status_show(struct device *kobj,
 		len += scnprintf(buf + len, PAGE_SIZE - len,
 				 "[ADSP] ADSP_A_WDT_DEBUG_SP_REG:0x%x\n",
 				 readl(ADSP_A_WDT_DEBUG_SP_REG));
-		len += scnprintf(buf + len, PAGE_SIZE - len,
-				 "[ADSP] ADSP_EXPECTED_FREQ_REG:0x%x\n",
-				 readl(ADSP_EXPECTED_FREQ_REG));
-		len += scnprintf(buf + len, PAGE_SIZE - len,
-				 "[ADSP] ADSP_CURRENT_FREQ_REG:0x%x\n",
-				 readl(ADSP_CURRENT_FREQ_REG));
 		len += scnprintf(buf + len, PAGE_SIZE - len,
 				 "[ADSP] ADSP_CFGREG_RSV_RW_REG0:0x%x\n",
 				 readl(ADSP_CFGREG_RSV_RW_REG0));
@@ -903,12 +891,27 @@ DEVICE_ATTR(adsp_suspend_cmd, 0644, adsp_suspend_cmd_show,
 
 #endif
 
-#ifdef CFG_RECOVERY_SUPPORT
-void adsp_wdt_reset(enum adsp_core_id cpu_id)
+
+/*
+ * trigger wdt manually
+ * debug use
+ */
+#define ENABLE_WDT  (1 << 31)
+#define DISABLE_WDT (0 << 31)
+
+void adsp_wdt_reset(enum adsp_core_id cpu_id, int interval)
 {
+	int wdt_reg = 0;
+
+	if (!is_adsp_ready(cpu_id))
+		return;
+
 	switch (cpu_id) {
 	case ADSP_A_ID:
-			writel(0x8000000f, ADSP_A_WDT_REG);
+		writel(DISABLE_WDT, ADSP_A_WDT_REG);
+		writel(interval, ADSP_WDT_TRIGGER);
+		wdt_reg = readl(ADSP_A_WDT_REG);
+		writel((ENABLE_WDT | wdt_reg), ADSP_A_WDT_REG);
 		break;
 	default:
 		break;
@@ -916,25 +919,23 @@ void adsp_wdt_reset(enum adsp_core_id cpu_id)
 }
 EXPORT_SYMBOL(adsp_wdt_reset);
 
-/*
- * trigger wdt manually
- * debug use
- */
 static ssize_t adsp_wdt_trigger(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
-	pr_debug("adsp_wdt_trigger: %s\n", buf);
-	adsp_wdt_reset(ADSP_A_ID);
+	int interval = 0;
+
+	if (kstrtoint(buf, 10, &interval))
+		return -EINVAL;
+	pr_debug("adsp_wdt_trigger: %d\n", interval);
+	adsp_wdt_reset(ADSP_A_ID, interval);
 	return count;
 }
 
 DEVICE_ATTR(wdt_reset, 0200, NULL, adsp_wdt_trigger);
 
-/*
- * trigger wdt manually
- * debug use
- */
+
+#ifdef CFG_RECOVERY_SUPPORT
 
 static ssize_t adsp_recovery_flag_r(struct device *dev,
 				    struct device_attribute *attr, char *buf)
@@ -1527,9 +1528,6 @@ static int __init adsp_init(void)
 	/* Liang temp add here to release Run stall */
 	adsp_release_runstall(true);
 
-#ifdef Liang_Check
-	reset_adsp();
-#endif
 
 #if ADSP_BOOT_TIME_OUT_MONITOR
 	init_timer(&adsp_ready_timer[ADSP_A_ID]);

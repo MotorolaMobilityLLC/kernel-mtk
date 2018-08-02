@@ -221,7 +221,7 @@ ssize_t adsp_A_log_read(char __user *data, size_t len)
 	adsp_r_pos_debug = r_pos;
 	adsp_log_ctl_debug = ADSP_A_log_ctl->buff_ofs;
 	if (r_pos >= dram_buf_len) {
-		pr_wran("[ADSP] %s(): r_pos >= dram_buf_len,%x,%x\n", __func__,
+		pr_info("[ADSP] %s(): r_pos >= dram_buf_len,%x,%x\n", __func__,
 		       adsp_r_pos_debug, adsp_log_ctl_debug);
 		return 0;
 	}
