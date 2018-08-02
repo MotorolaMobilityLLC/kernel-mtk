@@ -315,6 +315,7 @@ static unsigned int adsp_A_log_enable_set(unsigned int enable)
 		/*
 		 *send ipi to invoke adsp logger
 		 */
+		adsp_register_feature(ADSP_LOGGER_FEATURE_ID);
 		ret = 0;
 		enable = (enable) ? 1 : 0;
 		retrytimes = ADSP_IPI_RETRY_TIMES;
@@ -336,6 +337,7 @@ static unsigned int adsp_A_log_enable_set(unsigned int enable)
 		else if ((ret == ADSP_IPI_DONE) && (enable == 0))
 			ADSP_A_log_ctl->enable = 0;
 
+		adsp_deregister_feature(ADSP_LOGGER_FEATURE_ID);
 		if (ret != ADSP_IPI_DONE) {
 			pr_err("[ADSP] adsp_A_log_enable_set fail ret=%d\n",
 			       ret);
@@ -358,6 +360,7 @@ static unsigned int adsp_A_trax_enable_set(unsigned int enable)
 		/*
 		 *send ipi to enable adsp trax
 		 */
+		adsp_register_feature(ADSP_LOGGER_FEATURE_ID);
 		ret = 0;
 		enable = (enable) ? 1 : 0;
 		retrytimes = ADSP_IPI_RETRY_TIMES;
@@ -382,6 +385,7 @@ static unsigned int adsp_A_trax_enable_set(unsigned int enable)
 		pr_info("[ADSP] adsp_A_trax_enable_set enable=%d, done=%d\n",
 			pADSP_A_trax_ctl->enable, pADSP_A_trax_ctl->done);
 
+		adsp_deregister_feature(ADSP_LOGGER_FEATURE_ID);
 		if (ret != ADSP_IPI_DONE) {
 			pr_err("[ADSP] adsp_A_trax_enable_set fail ret=%d\n",
 			       ret);
@@ -406,6 +410,7 @@ static unsigned int adsp_A_log_wakeup_set(unsigned int enable)
 		/*
 		 *send ipi to invoke adsp logger
 		 */
+		adsp_register_feature(ADSP_LOGGER_FEATURE_ID);
 		ret = 0;
 		enable = (enable) ? 1 : 0;
 		retrytimes = ADSP_IPI_RETRY_TIMES;
@@ -425,6 +430,7 @@ static unsigned int adsp_A_log_wakeup_set(unsigned int enable)
 		else if ((ret == ADSP_IPI_DONE) && (enable == 0))
 			adsp_A_logger_wakeup_ap = 0;
 
+		adsp_deregister_feature(ADSP_LOGGER_FEATURE_ID);
 		if (ret != ADSP_IPI_DONE) {
 			pr_err("[ADSP] adsp_A_log_wakeup_set fail ret=%d\n",
 			       ret);
