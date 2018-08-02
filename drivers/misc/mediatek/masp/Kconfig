@@ -26,3 +26,12 @@ config MTK_AVB20_SUPPORT
 	  for protected partitions(system/vendor, etc.) through vbmeta struct
 	  instead of original dm-verity metadata.
 
+config MTK_MAIN_VBMETA_IN_BOOT
+	bool "Boot Image With Main VBMETA Support"
+	default n
+	depends on MTK_AVB20_SUPPORT
+	help
+	  This option is for OTA projects without AVB2.0. For SYSTEM_AS_ROOT,
+	  AVB2.0 is mandatory on kernel-4.9+. But it's not possible to add
+	  vbmeta partition for OTA projects. This is an alternative feature that
+	  embeds main vbmeta, which should be in vbmeta partition, into boot image.

@@ -2998,9 +2998,17 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			vbmeta {
 				compatible = "android,vbmeta";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
+#ifdef CONFIG_MTK_MAIN_VBMETA_IN_BOOT
+				parts = "boot,system,vendor,recovery";
+#else
 				parts = "vbmeta,boot,system,vendor,recovery";
+#endif
+#else
+#ifdef CONFIG_MTK_MAIN_VBMETA_IN_BOOT
+				parts = "boot,system,vendor";
 #else
 				parts = "vbmeta,boot,system,vendor";
+#endif
 #endif
 			};
 #endif
