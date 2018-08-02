@@ -477,7 +477,7 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	int cid = arch_get_cluster_id(cpu);
 	struct cpumask cls_cpus;
 	s64 delta_ns;
-	unsigned long arch_max_freq = arch_scale_get_max_freq(cpu);
+	unsigned long cpu_max_freq = 0;
 	u64 time = cpu_rq(cpu)->clock;
 	struct cpufreq_policy *policy = NULL;
 	ktime_t throttle, now;
@@ -509,6 +509,7 @@ static void update_fdomain_capacity_request(int cpu, int type)
 		 !policy->governor_data)
 		goto out;
 #endif
+	cpu_max_freq = policy->cpuinfo.max_freq;
 	arch_get_cluster_cpus(&cls_cpus, cid);
 
 	/* find max capacity requested by cpus in this policy */
@@ -522,7 +523,7 @@ static void update_fdomain_capacity_request(int cpu, int type)
 
 		/* convert IO boosted freq to capacity */
 		boosted_util = (sg_cpu->iowait_boost << SCHED_CAPACITY_SHIFT) /
-					arch_max_freq;
+					cpu_max_freq;
 
 		/* iowait boost */
 		if (cpu_tmp == cpu) {
@@ -535,7 +536,7 @@ static void update_fdomain_capacity_request(int cpu, int type)
 				 /* convert IO boosted freq to capacity */
 				boosted_util = (sg_cpu->iowait_boost <<
 						SCHED_CAPACITY_SHIFT) /
-						arch_max_freq;
+						cpu_max_freq;
 
 				met_tag_oneshot(0, met_iowait_info[cpu_tmp],
 						sg_cpu->iowait_boost);
@@ -581,7 +582,7 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	}
 
 	/* get real world frequency */
-	freq_new = capacity * arch_max_freq >> SCHED_CAPACITY_SHIFT;
+	freq_new = capacity * cpu_max_freq >> SCHED_CAPACITY_SHIFT;
 
 	/* clamp frequency for governor limit */
 	max = arch_scale_get_max_freq(cpu);
