@@ -1902,9 +1902,8 @@ irqreturn_t musb_interrupt(struct musb *musb)
 
 	dumpTime(funcInterrupt, 0);
 
-	if (unlikely(!musb->softconnect)) {
-		DBG(0, "!softconnect, IRQ %s usb%04x tx%04x rx%04x\n",
-			(devctl & MUSB_DEVCTL_HM) ? "host" : "peripheral",
+	if (unlikely(!musb->softconnect && !(devctl & MUSB_DEVCTL_HM))) {
+		DBG(0, "!softconnect, IRQ usb%04x tx%04x rx%04x\n",
 			musb->int_usb, musb->int_tx, musb->int_rx);
 		return IRQ_HANDLED;
 	}
