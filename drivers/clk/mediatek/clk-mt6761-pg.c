@@ -513,6 +513,7 @@ static void ram_console_update(void)
 	else if (pre_data != data[0]) {
 		k = 0;
 		pre_data = data[0];
+		print_once = true;
 	}
 
 	if (k > 5000 && print_once) {
