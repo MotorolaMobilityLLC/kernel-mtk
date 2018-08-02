@@ -121,6 +121,7 @@ enum {
 	SPM_PWR_CTRL_SODI,
 	SPM_PWR_CTRL_SODI3,
 	SPM_PWR_CTRL_VCOREFS,
+	SPM_TWAM_ENABLE,
 };
 
 enum vcorefs_smc_cmd {
@@ -231,11 +232,13 @@ unsigned int __spm_get_wake_period(int pwake_time, unsigned int last_wr);
 
 void spm_twam_register_handler(twam_handler_t handler);
 twam_handler_t spm_twam_handler_get(void);
-void spm_twam_enable_monitor(const struct twam_sig *twamsig, bool speed_mode);
-void spm_twam_disable_monitor(void);
+void spm_twam_register_handler(twam_handler_t handler);
+void spm_twam_enable_monitor(bool en_monitor, bool debug_signal,
+			twam_handler_t cb_handler);
+void spm_twam_config_channel(struct twam_cfg *cfg, bool speed_mode,
+			unsigned int window_len_hz);
+bool spm_twam_met_enable(void);
 void spm_twam_set_idle_select(unsigned int sel);
-void spm_twam_set_window_length(unsigned int len);
-void spm_twam_set_mon_type(struct twam_sig *mon);
 
 /***********************************************************
  * mtk_spm_dram.c

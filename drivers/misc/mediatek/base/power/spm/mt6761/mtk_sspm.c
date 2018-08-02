@@ -159,6 +159,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_SODI_PREPARE:
 	case SPM_POST_SODI:
+	case SPM_TWAM_ENABLE:
 		spm_d->cmd = cmd;
 		ret = sspm_ipi_send_sync(
 			IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN,
