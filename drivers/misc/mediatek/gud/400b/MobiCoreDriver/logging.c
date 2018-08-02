@@ -22,8 +22,7 @@
 #include "main.h"
 #include "fastcall.h"
 #include "logging.h"
-#include "platform.h" /* TBASE_CORE_SWITCHER */
-#include "public/mc_linux_api.h" /* to use mc_active_core() */
+#include "platform.h"
 
 /* Supported log buffer version */
 #define MC_LOG_VERSION			2
@@ -47,6 +46,10 @@
 #define LOG_EOL				(0x0100)
 #define LOG_INTEGER_DECIMAL		(0x0200)
 #define LOG_INTEGER_SIGNED		(0x0400)
+
+/* active cpu id */
+#define LOG_CPUID_MASK            (0xF000)
+#define LOG_CPUID_SHIFT           12
 
 struct mc_logmsg {
 	u16	ctrl;		/* Type and format of data */
@@ -82,7 +85,7 @@ static struct logging_ctx {
 	bool	dead;
 } log_ctx;
 
-static inline void log_eol(u16 source)
+static inline void log_eol(u16 source, u32 cpuid)
 {
 	if (!log_ctx.line_len)
 		return;
@@ -91,7 +94,7 @@ static inline void log_eol(u16 source)
 		/* TEE user-space */
 #ifdef TBASE_CORE_SWITCHER
 		dev_info(g_ctx.mcd, "%03x(%u)|%s\n", log_ctx.prev_source,
-			mc_active_core(), log_ctx.line);
+			 cpuid, log_ctx.line);
 #else
 		dev_info(g_ctx.mcd, "%03x|%s\n", log_ctx.prev_source,
 			 log_ctx.line);
@@ -99,8 +102,7 @@ static inline void log_eol(u16 source)
 	else
 		/* TEE kernel */
 #ifdef TBASE_CORE_SWITCHER
-		dev_info(g_ctx.mcd, "mtk(%u)|%s\n",
-			mc_active_core(), log_ctx.line);
+		dev_info(g_ctx.mcd, "mtk(%u)|%s\n", cpuid, log_ctx.line);
 #else
 		dev_info(g_ctx.mcd, "mtk|%s\n", log_ctx.line);
 #endif
@@ -113,33 +115,33 @@ static inline void log_eol(u16 source)
  * Collect chars in log_ctx.line buffer and output the buffer when it is full.
  * No locking needed because only "mobicore_log" thread updates this buffer.
  */
-static inline void log_char(char ch, u16 source)
+static inline void log_char(char ch, u16 source, u32 cpuid)
 {
 	if (ch == '\0')
 		return;
 
 	if (ch == '\n' || ch == '\r') {
-		log_eol(source);
+		log_eol(source, cpuid);
 		return;
 	}
 
 	if (log_ctx.line_len >= LOG_LINE_SIZE || source != log_ctx.prev_source)
-		log_eol(source);
+		log_eol(source, cpuid);
 
 	log_ctx.line[log_ctx.line_len++] = ch;
 	log_ctx.line[log_ctx.line_len] = 0;
 	log_ctx.prev_source = source;
 }
 
-static inline void log_string(u32 ch, u16 source)
+static inline void log_string(u32 ch, u16 source, u32 cpuid)
 {
 	while (ch) {
-		log_char(ch & 0xFF, source);
+		log_char(ch & 0xFF, source, cpuid);
 		ch >>= 8;
 	}
 }
 
-static inline void log_number(u32 format, u32 value, u16 source)
+static inline void log_number(u32 format, u32 value, u16 source, u32 cpuid)
 {
 	int width = (format & LOG_LENGTH_MASK) >> LOG_LENGTH_SHIFT;
 	char fmt[16];
@@ -156,24 +158,25 @@ static inline void log_number(u32 format, u32 value, u16 source)
 
 	snprintf(buffer, sizeof(buffer), fmt, value);
 	while (*reader)
-		log_char(*reader++, source);
+		log_char(*reader++, source, cpuid);
 }
 
 static inline int log_msg(void *data)
 {
 	struct mc_logmsg *msg = (struct mc_logmsg *)data;
 	int log_type = msg->ctrl & LOG_TYPE_MASK;
+	int cpuid = ((msg->ctrl & LOG_CPUID_MASK) >> LOG_CPUID_SHIFT);
 
 	switch (log_type) {
 	case LOG_TYPE_CHAR:
-		log_string(msg->log_data, msg->source);
+		log_string(msg->log_data, msg->source, cpuid);
 		break;
 	case LOG_TYPE_INTEGER:
-		log_number(msg->ctrl, msg->log_data, msg->source);
+		log_number(msg->ctrl, msg->log_data, msg->source, cpuid);
 		break;
 	}
 	if (msg->ctrl & LOG_EOL)
-		log_eol(msg->source);
+		log_eol(msg->source, cpuid);
 
 	return sizeof(*msg);
 }

@@ -431,11 +431,11 @@ int mc_fastcall_init(void)
 #ifdef TEE_FASTCALL_RT
 	struct sched_param param = {.sched_priority = 1};
 
-	ret = sched_setscheduler(fastcall_thread, SCHED_FIFO, &param);
+	ret = sched_setscheduler(fastcall_thread, SCHED_RR, &param);
 	if (ret)
 		mc_dev_info("cannot set tee_fastcall priority: %d\n", ret);
 #else
-	set_user_nice(fastcall_thread, -20);
+	set_user_nice(fastcall_thread, MIN_NICE);
 #endif
 	/* this thread MUST run on CPU 0 at startup */
 	nq_set_cpus_allowed(fastcall_thread, CPU_MASK_CPU0);
