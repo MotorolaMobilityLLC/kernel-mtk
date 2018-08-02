@@ -1207,6 +1207,9 @@ int Get_dma_channel_memid(unsigned int mem_id)
 	case DEEPBUFFER_MEM_ID:
 		dma_id = DEEPBUFFER_DMA_ID;
 		break;
+	case VOIP_MEM_ID:
+		dma_id = VOIP_DMA_ID;
+		break;
 	case USB_AUDIO_MEM_ID:
 		dma_id = USB_AUDIO_DMA_ID;
 		break;
