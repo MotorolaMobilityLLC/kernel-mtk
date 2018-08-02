@@ -690,6 +690,7 @@ static int dpmaif_alloc_rx_buf(struct dpmaif_bat_request *bat_req,
 			CCCI_ERROR_LOG(dpmaif_ctrl->md_id, TAG,
 				"error dma mapping\n");
 			ret = DMA_MAPPING_ERR;
+			ccci_free_skb(new_skb);
 			break;
 		}
 
