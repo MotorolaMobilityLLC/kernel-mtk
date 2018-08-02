@@ -803,7 +803,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 
 		size = (dst_h - 1) * cfg->src_pitch + dst_w * Bpp;
 		m4u_port = module_to_m4u_port(module);
-#ifdef MTKFB_CMDQ_SUPPORT
 		if (cfg->security != DISP_SECURE_BUFFER) {
 			/*
 			 * ovl is sec but this layer is non-sec
@@ -823,7 +822,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 					   disp_addr_convert(DISP_REG_OVL_L0_ADDR + layer_offset_addr),
 					   CMDQ_SAM_H_2_MVA, cfg->addr, offset, size, m4u_port);
 		}
-#endif
 #endif
 	}
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRCKEY + layer_offset, cfg->key);
