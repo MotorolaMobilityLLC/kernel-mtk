@@ -177,6 +177,7 @@ void __attribute__((weak)) arch_reset(char mode, const char *cmd)
 
 static int rtc_show_time;
 static int rtc_show_alarm = 1;
+static int alarm1m15s;
 
 #if 1
 unsigned long rtc_read_hw_time(void)
@@ -406,6 +407,11 @@ void rtc_bbpu_power_down(void)
 {
 	unsigned long flags;
 	bool charger_status = false;
+	struct rtc_time rtc_time_now;
+	struct rtc_time rtc_time_alarm;
+	ktime_t ktime_now;
+	ktime_t ktime_alarm;
+	bool is_pwron_alarm;
 #ifdef CONFIG_MTK_CHARGER
 	unsigned char exist;
 
@@ -416,6 +422,60 @@ void rtc_bbpu_power_down(void)
 		charger_status = false;
 	rtc_xinfo("charger_status = %d\n", charger_status);
 #endif
+
+	if (alarm1m15s == 1) {
+		is_pwron_alarm = hal_rtc_is_pwron_alarm(&rtc_time_now,
+			&rtc_time_alarm);
+		if (is_pwron_alarm) {
+			rtc_time_now.tm_year += RTC_MIN_YEAR_OFFSET;
+			rtc_time_now.tm_mon--;
+			rtc_time_alarm.tm_year += RTC_MIN_YEAR_OFFSET;
+			rtc_time_alarm.tm_mon--;
+			pr_notice("now = %04d/%02d/%02d %02d:%02d:%02d\n",
+				rtc_time_now.tm_year + 1900,
+				rtc_time_now.tm_mon + 1,
+				rtc_time_now.tm_mday,
+				rtc_time_now.tm_hour,
+				rtc_time_now.tm_min,
+				rtc_time_now.tm_sec);
+			pr_notice("alarm = %04d/%02d/%02d %02d:%02d:%02d\n",
+				rtc_time_alarm.tm_year + 1900,
+				rtc_time_alarm.tm_mon + 1,
+				rtc_time_alarm.tm_mday,
+				rtc_time_alarm.tm_hour,
+				rtc_time_alarm.tm_min,
+				rtc_time_alarm.tm_sec);
+			ktime_now = rtc_tm_to_ktime(rtc_time_now);
+			ktime_alarm = rtc_tm_to_ktime(rtc_time_alarm);
+			if (ktime_after(ktime_alarm, ktime_now)) {
+				/* alarm has not happened */
+				ktime_alarm = ktime_sub_ms(ktime_alarm,
+					MSEC_PER_SEC * 60);
+				if (ktime_after(ktime_alarm, ktime_now))
+					pr_notice("Alarm will happen after 1 minute\n");
+				else {
+					ktime_alarm = ktime_add_ms(ktime_now,
+						MSEC_PER_SEC * 15);
+					pr_notice("Alarm will happen in 15 seconds\n");
+				}
+				rtc_time_alarm = rtc_ktime_to_tm(ktime_alarm);
+				pr_notice("new alarm = %04d/%02d/%02d %02d:%02d:%02d\n",
+					rtc_time_alarm.tm_year + 1900,
+					rtc_time_alarm.tm_mon + 1,
+					rtc_time_alarm.tm_mday,
+					rtc_time_alarm.tm_hour,
+					rtc_time_alarm.tm_min,
+					rtc_time_alarm.tm_sec);
+				rtc_time_alarm.tm_year -= RTC_MIN_YEAR_OFFSET;
+				rtc_time_alarm.tm_mon++;
+				hal_rtc_set_pwron_alarm_time(&rtc_time_alarm);
+				hal_rtc_set_alarm(&rtc_time_alarm);
+			} else
+				pr_notice("Alarm has happened before\n");
+		} else
+			pr_notice("No power-off alarm is set\n");
+	}
+
 	spin_lock_irqsave(&rtc_lock, flags);
 	hal_rtc_bbpu_pwdn(charger_status);
 	spin_unlock_irqrestore(&rtc_lock, flags);
@@ -685,6 +745,9 @@ static int rtc_ops_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 		target = rtc_tm_to_ktime(tm);
 		target = ktime_add_ns(target, NSEC_PER_SEC);
 		tm = rtc_ktime_to_tm(target);
+	} else if (alm->enabled == 5) {
+		/* Power on system 1 minute earlier */
+		alarm1m15s = 1;
 	}
 
 	tm.tm_year -= RTC_MIN_YEAR_OFFSET;
@@ -697,11 +760,13 @@ static int rtc_ops_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 	spin_lock_irqsave(&rtc_lock, flags);
 	if (alm->enabled == 2) {	/* enable power-on alarm */
 		rtc_save_pwron_time(true, &tm, false);
-	} else if (alm->enabled == 3) {	/* enable power-on alarm with logo */
+	} else if (alm->enabled == 3 || alm->enabled == 5) {
+		/* enable power-on alarm with logo */
 		rtc_save_pwron_time(true, &tm, true);
 	} else if (alm->enabled == 4) {	/* disable power-on alarm */
 		/* alm->enabled = 0; */
 		rtc_save_pwron_time(false, &tm, false);
+		alarm1m15s = 0;
 	}
 
 	/* disable alarm and clear Power-On Alarm bit */
