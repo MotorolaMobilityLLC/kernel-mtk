@@ -619,6 +619,7 @@ void do_coredump(const siginfo_t *siginfo)
 	};
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
+	siginfo_t tmp_si;
 	atomic_inc(&coredump_request_count);
 #endif
 
@@ -657,9 +658,6 @@ void do_coredump(const siginfo_t *siginfo)
 		int dump_count;
 		char **helper_argv;
 		struct subprocess_info *sub_info;
-	#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
-		siginfo_t tmp_si;
-	#endif
 
 		if (ispipe < 0) {
 			printk(KERN_WARNING "format_corename failed\n");
