@@ -273,3 +273,8 @@ ENTRY(dis_D_inner_fL1L2)
 	mov	x30, x13
 	__inner_dcache_L2 #DCCSW
 ENDPROC(dis_D_inner_fL1L2)
+
+ENTRY(dis_D_inner_flush_all)
+	__dis_D
+	__inner_dcache_all #DCCISW
+ENDPROC(dis_D_inner_flush_all)
