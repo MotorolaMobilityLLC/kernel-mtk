@@ -97,14 +97,16 @@ int get_md1_power(enum mdpm_power_type power_type, bool need_update)
 #endif
 
 	scenario = get_md1_scenario(share_reg, power_type);
-	scenario_power = get_md1_scenario_power(scenario, power_type);
+	scenario_power = get_md1_scenario_power(scenario, power_type,
+		&mdpm_power_sta);
 
 #ifdef MD_POWER_UT
 	share_mem = fake_share_mem;
 #else
 	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, 0, NULL);
 #endif
-	tx_power = get_md1_tx_power(scenario, share_mem, power_type);
+	tx_power = get_md1_tx_power(scenario, share_mem, power_type,
+		&mdpm_power_sta);
 
 	if (mt_mdpm_debug)
 		pr_info("[md1_power] scenario_power=%d tx_power=%d total=%d\n",
