@@ -128,6 +128,7 @@ extern int get_mmdvfs_clk_mux_mask(void);
 #define MMDVFS_PROFILE_VIN (1)
 #define MMDVFS_PROFILE_CER (2)
 #define MMDVFS_PROFILE_MER (3)
+#define MMDVFS_PROFILE_EIG (4)
 
 /* Macro used to resovling step setting ioctl command */
 #define MMDVFS_CMD_STEP_LEN (8)
