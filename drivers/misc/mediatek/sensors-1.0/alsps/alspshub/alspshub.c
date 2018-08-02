@@ -466,8 +466,8 @@ static int pshub_factory_clear_cali(void)
 	int err = 0;
 #endif
 	struct alspshub_ipi_data *obj = obj_ipi_data;
-#ifdef MTK_OLD_FACTORY_CALIBRATION
 	obj->ps_cali = 0;
+#ifdef MTK_OLD_FACTORY_CALIBRATION
 	err = sensor_set_cmd_to_hub(ID_PROXIMITY, CUST_ACTION_RESET_CALI, &obj->ps_cali);
 	if (err < 0) {
 		APS_PR_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n",
