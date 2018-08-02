@@ -53,8 +53,6 @@ struct flashlight_ops {
 	int (*is_ready)(struct flashlight_device *);
 	int (*suspend)(struct flashlight_device *, pm_message_t);
 	int (*resume)(struct flashlight_device *);
-	int (*get_irq1)(struct flashlight_device *);
-	int (*get_irq2)(struct flashlight_device *);
 };
 
 struct flashlight_properties {
@@ -116,8 +114,6 @@ extern int flashlight_strobe(struct flashlight_device *flashlight_dev);
  *	    for the negative value, see definitions in errno.h
  */
 extern int flashlight_is_ready(struct flashlight_device *flashlight_dev);
-extern int flashlight_get_irq1(struct flashlight_device *flashlight_dev);
-extern int flashlight_get_irq2(struct flashlight_device *flashlight_dev);
 
 /* flashlight_charge_event_cb(void *data, int remains)
  * description :
