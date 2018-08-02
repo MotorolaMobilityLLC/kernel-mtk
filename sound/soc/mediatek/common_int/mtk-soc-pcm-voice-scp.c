@@ -46,7 +46,6 @@
  *                E X T E R N A L   R E F E R E N C E S
  *****************************************************************************/
 
-#include "audio_dma_buf_control.h"
 #include "audio_ipi_client_spkprotect.h"
 #include "mtk-auddrv-afe.h"
 #include "mtk-auddrv-clk.h"
@@ -61,7 +60,6 @@
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 #include "scp_helper.h"
-#include <audio_dma_buf_control.h>
 #include <audio_ipi_client_spkprotect.h>
 #include <audio_task_manager.h>
 #endif
@@ -99,9 +97,7 @@ static struct snd_dma_buffer scp_voice_runtime_feedback_dma_buf;
 static struct snd_dma_buffer scp_voice_DL1Buffer;
 
 static struct SPK_PROTECT_SERVICE scp_voice_protect_service;
-static struct audio_resv_dram_t *p_scp_voice_resv_dram;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-static struct audio_resv_dram_t *p_scp_voice_resv_dram_normal;
 static struct scp_reserve_mblock scp_voiceReserveBuffer;
 static struct snd_dma_buffer PlatformBuffer;
 static const int scpvoiceDL1BufferOffset = SOC_NORMAL_USE_BUFFERSIZE_MAX;
@@ -401,7 +397,6 @@ static int scp_voice_get_scpdram_buffer(void)
 {
 	memset(&scp_voiceReserveBuffer, 0, sizeof(scp_voiceReserveBuffer));
 	scp_voiceReserveBuffer.num = SPK_PROTECT_MEM_ID;
-	p_scp_voice_resv_dram_normal = get_reserved_dram();
 	scp_voiceReserveBuffer.start_phys =
 		scp_get_reserve_mem_phys(scp_voiceReserveBuffer.num);
 	scp_voiceReserveBuffer.start_virt =
@@ -716,7 +711,6 @@ static int mtk_pcm_scp_voice_open(struct snd_pcm_substream *substream)
 
 	pr_debug("+%s\n", __func__);
 	mscp_voice_PlaybackDramState = false;
-	p_scp_voice_resv_dram = get_reserved_dram();
 	runtime->hw = mtk_scp_voice_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_scp_voice_hardware,
 	       sizeof(struct snd_pcm_hardware));
