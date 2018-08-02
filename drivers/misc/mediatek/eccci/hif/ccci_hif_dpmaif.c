@@ -1602,7 +1602,7 @@ static int dpmaif_tx_send_skb(unsigned char hif_id, int qno,
 	/* 1. parameters check*/
 	if (!skb)
 		return 0;
-	if (qno > DPMAIF_TXQ_NUM) {
+	if (qno >= DPMAIF_TXQ_NUM) {
 		CCCI_ERROR_LOG(dpmaif_ctrl->md_id, TAG,
 			"txq(%d) > %d\n", qno, DPMAIF_TXQ_NUM);
 		ret = -CCCI_ERR_INVALID_QUEUE_INDEX;
