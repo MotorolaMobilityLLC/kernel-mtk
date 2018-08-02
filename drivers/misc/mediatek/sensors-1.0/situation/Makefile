@@ -13,3 +13,4 @@ obj-$(CONFIG_MTK_DEVICE_ORIENTATION_HUB)	+=	device_orientation/
 obj-$(CONFIG_MTK_MOTION_DETECT_HUB)			+=	motion_detect/
 obj-$(CONFIG_MTK_TILTDETECTHUB)				+=	tilt_detector/
 obj-$(CONFIG_MTK_FLAT_HUB)				+=	flat/
+obj-$(CONFIG_MTK_SAR_HUB)				+=	sar/
