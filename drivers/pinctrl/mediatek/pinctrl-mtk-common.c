@@ -1730,6 +1730,111 @@ static ssize_t mtk_gpio_show_pin(struct device *dev,
 	return len;
 }
 
+#if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
+#define PULL_DELAY 50 /* in ms */
+int gpio_get_tristate_input(unsigned int pin)
+{
+	struct gpio_chip *chip;
+	int val, val_up, val_down, ret;
+	bool restore_pullsel;
+	u32 arg;
+
+	if (!pctl || !pctl->chip) {
+		pr_notice("gpio_get_value_tristate: NULL pctl or chip\n");
+		return -EINVAL;
+	}
+
+	if (pin < pctl->chip->base) {
+		pr_notice("gpio_get_value_tristate: please use virtual pin number\n");
+		return -EINVAL;
+	}
+
+	pin -= pctl->chip->base;
+	if (pin >= pctl->devdata->type1_start) {
+		pr_notice("gpio_get_value_tristate: invalid pin number: %u\n",
+			pin);
+		return -EINVAL;
+	}
+
+	if (!pctl->devdata || !pctl->devdata->mtk_pctl_set_pull_sel) {
+		pr_notice("gpio_get_value_tristate: NULL devdta or pull_sel\n");
+		return -EINVAL;
+	}
+
+	chip = pctl->chip;
+
+	val = mtk_pinmux_get(chip, pin);
+	if (val != 0) {
+		pr_notice("GPIO%d in mode %d, not GPIO mode\n",
+			pin, val);
+		return -EINVAL;
+	}
+
+	val = mtk_pullen_get(chip, pin);
+	if (val != 1) {
+		pr_notice("GPIO%d pullen not set\n",
+			pin);
+		return -EINVAL;
+	}
+
+	/* backup original pullsel */
+	val = mtk_pullsel_get(chip, pin);
+
+	/* set pullsel as pull-up and get input value */
+	pr_notice("gpio_get_tristate_input pull up GPIO%d\n", pin);
+	pctl->devdata->mtk_pctl_set_pull_sel(pctl, pin, true, true,
+		MTK_PUPD_SET_R1R0_01);
+	mdelay(PULL_DELAY);
+	val_up = mtk_gpio_get_in(chip, pin);
+	pr_notice("gpio_get_tristate_input GPIO%d input %d\n", pin, val_up);
+
+	/* set pullsel as pull-down and get input value */
+	pr_notice("gpio_get_tristate_input pull down GPIO%d\n", pin);
+	pctl->devdata->mtk_pctl_set_pull_sel(pctl, pin, true, false,
+		MTK_PUPD_SET_R1R0_01);
+	mdelay(PULL_DELAY);
+	val_down = mtk_gpio_get_in(chip, pin);
+	pr_notice("gpio_get_tristate_input GPIO%d input %d\n", pin, val_down);
+
+	if (val_up && val_down)
+		ret = 1;
+	else if (!val_up && !val_down)
+		ret = 0;
+	else if (val_up && !val_down)
+		ret = 2;
+	else {
+		pr_notice("GPIO%d pull HW is abnormal\n", pin);
+		ret = -EINVAL;
+	}
+
+	/* restore pullsel */
+	if (val & 0x08) {
+		restore_pullsel = (val & 0x1) ? true : false;
+		if (val == (0x1 << 1))
+			arg = MTK_PUPD_SET_R1R0_01;
+		else if (val == (0x2 << 1))
+			arg = MTK_PUPD_SET_R1R0_10;
+		else if (val == (0x3 << 1))
+			arg = MTK_PUPD_SET_R1R0_11;
+		else
+			arg = MTK_PUPD_SET_R1R0_00;
+	} else {
+		arg = 1;
+		if (val == GPIO_PULL_UP)
+			restore_pullsel = true;
+		else if (val == GPIO_PULL_DOWN)
+			restore_pullsel = false;
+		else
+			goto out;
+	}
+	pctl->devdata->mtk_pctl_set_pull_sel(pctl, pin, true,
+			restore_pullsel, arg);
+
+out:
+	return ret;
+}
+#endif
+
 void gpio_dump_regs_range(int start, int end)
 {
 	struct gpio_chip *chip;
