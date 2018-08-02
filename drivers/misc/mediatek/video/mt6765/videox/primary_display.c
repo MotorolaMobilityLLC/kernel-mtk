@@ -3720,7 +3720,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	init_cmdq_slots(&(pgc->dsi_vfp_line), 1, 0);
 	init_cmdq_slots(&(pgc->night_light_params), 17, 0);
 	init_cmdq_slots(&(pgc->ovl_dummy_info), OVL_NUM, 0);
-	init_cmdq_slots(&(pgc->ovl_sbch_trans_invalid), OVL_NUM, 0);
 
 	/* init night light related variable */
 	mem_config.m_ccorr_config.is_dirty = 1;
@@ -6123,6 +6122,68 @@ static void _ovl_yuv_throughput_freq_request
 	}
 }
 
+static void _ovl_sbch_invalid_config(struct cmdqRecStruct *cmdq_handle)
+{
+	int i = 0;
+	CMDQ_VARIABLE sbch_invalid_status;
+	CMDQ_VARIABLE result;
+	CMDQ_VARIABLE shift;
+
+	cmdq_op_init_variable(&sbch_invalid_status);
+	cmdq_op_init_variable(&result);
+	cmdq_op_init_variable(&shift);
+
+	for (i = 0; i < OVL_NUM; i++) {
+		unsigned long ovl_base = ovl_base_addr(i);
+
+		if (ovl_base == 0)
+			continue;
+
+		/* Read SBCH invalid status */
+		cmdq_op_read_reg(cmdq_handle,
+				disp_addr_convert(DISP_REG_OVL_SBCH_CON
+					+ ovl_base),
+				&sbch_invalid_status, ~0x0);
+
+		/* If SBCH layer status is invalid, disable sbch_tran_en */
+
+		/* SBCH phy invalid status judgement */
+		for (i = 0; i < OVL_MODULE_MAX_PHY_LAYER; i++) {
+			cmdq_op_assign(cmdq_handle, &shift, (1 << (16 + i)));
+
+			cmdq_op_and(cmdq_handle, &result,
+						sbch_invalid_status, shift);
+
+			cmdq_op_if(cmdq_handle, result, CMDQ_NOT_EQUAL, 0);
+
+			cmdq_op_write_reg(cmdq_handle,
+				disp_addr_convert(DISP_REG_OVL_SBCH
+					+ ovl_base),
+				0, (1 << (16 + (i * 4))));
+
+			cmdq_op_end_if(cmdq_handle);
+
+		}
+
+		/* SBCH ext invalid status judgement */
+		for (i = 0; i < OVL_MODULE_MAX_EXT_LAYER; i++) {
+			cmdq_op_assign(cmdq_handle, &shift, (1 << (20 + i)));
+
+			cmdq_op_and(cmdq_handle, &result,
+						sbch_invalid_status, shift);
+
+			cmdq_op_if(cmdq_handle, result, CMDQ_NOT_EQUAL, 0);
+
+			cmdq_op_write_reg(cmdq_handle,
+				disp_addr_convert(DISP_REG_OVL_SBCH_EXT
+					+ ovl_base),
+				0, (1 << (16 + (i * 4))));
+
+			cmdq_op_end_if(cmdq_handle);
+		}
+	}
+}
+
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle,
 			     struct cmdqRecStruct *cmdq_handle)
@@ -6586,20 +6647,16 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			pgc->subtractor_when_free, layer, sub);
 	}
 
-	/* GCE read ovl register about
-	 * full transparent layer & trans invalid status
-	 */
+	/* SBCH invalid status judge and handle */
+	if (disp_helper_get_option(DISP_OPT_OVL_SBCH))
+		_ovl_sbch_invalid_config(cmdq_handle);
+
+	/* GCE read ovl register about full transparent layer */
 	for (i = 0; i < OVL_NUM; i++) {
 		if (data_config->read_dum_reg[i]) {
 			unsigned long ovl_base = ovl_base_addr(i);
 
 			data_config->read_dum_reg[i] = 0;
-
-			/* trans invalid status */
-			cmdqRecBackupRegisterToSlot(cmdq_handle,
-				pgc->ovl_sbch_trans_invalid, i,
-				disp_addr_convert
-				(DISP_REG_OVL_SBCH_CON + ovl_base));
 
 			/* full transparent layer */
 			cmdqRecBackupRegisterToSlot(cmdq_handle,

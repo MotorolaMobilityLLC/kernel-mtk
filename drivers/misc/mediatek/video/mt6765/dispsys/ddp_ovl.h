@@ -33,6 +33,9 @@
 #endif
 #define TOTAL_REAL_OVL_LAYER_NUM (4+3+2+3)
 #define OVL_NUM			(3)
+#define OVL_MODULE_MAX_PHY_LAYER (4)
+#define OVL_MODULE_MAX_EXT_LAYER (3)
+
 #define PRIMARY_THREE_OVL_CASCADE
 
 /* start overlay module */

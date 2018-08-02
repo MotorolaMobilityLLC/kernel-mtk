@@ -1161,9 +1161,6 @@ static void sBCH_enable(enum DISP_MODULE_ENUM module,
 	int update = 0;
 	int cnst_en = 1;
 	int trans_en = 0;
-	int is_PRBGA_format = 0;
-	unsigned int status = 0;
-	unsigned int trans_invalid_val = 0;
 
 	switch (cfg->fmt) {
 	case UFMT_RGBA4444:
@@ -1172,13 +1169,11 @@ static void sBCH_enable(enum DISP_MODULE_ENUM module,
 	case UFMT_BGRA8888:
 	case UFMT_ARGB8888:
 	case UFMT_ABGR8888:
-		trans_en = cfg->aen ? 1 : 0;
-		break;
 	case UFMT_PARGB8888:
 	case UFMT_PABGR8888:
 	case UFMT_PRGBA8888:
 	case UFMT_PBGRA8888:
-		is_PRBGA_format = 1;
+		trans_en = cfg->aen ? 1 : 0;
 		break;
 	default:
 		trans_en = 0;
@@ -1188,58 +1183,6 @@ static void sBCH_enable(enum DISP_MODULE_ENUM module,
 	/* RGBX format, can't set sbch_trans_en to 1 */
 	if (cfg->const_bld)
 		trans_en = 0;
-
-	/* PRGBA format */
-	if (is_PRBGA_format == 1) {
-		if (data->sbch_en_cnt == SBCH_EN_NUM) {
-			pConfig->read_dum_reg[module] = 1;
-		} else if (data->sbch_en_cnt == SBCH_EN_NUM + 1) {
-
-			if (primary_display_is_video_mode())
-				cmdqBackupReadSlot(pgc->ovl_status_info,
-						0, &status);
-			if (!(0x01 & status)) {
-				cmdqBackupReadSlot(pgc->ovl_sbch_trans_invalid,
-					module, &trans_invalid_val);
-
-				if (cfg->ext_layer == -1) {
-					data->trans_invalid =
-						((0x01 << (cfg->phy_layer + 16))
-							& trans_invalid_val);
-
-					DDPDBG(
-						"sbch phy trans_invalid = %x\n",
-						trans_invalid_val);
-
-					if (data->trans_invalid)
-						DDPDBG(
-							"sbch trans phy %d invalid\n",
-							cfg->phy_layer);
-				} else {
-					data->trans_invalid =
-						((0x01 << (cfg->ext_layer + 20))
-							& trans_invalid_val);
-
-					DDPDBG(
-						"sbch ext trans_invalid = %x\n",
-						trans_invalid_val);
-
-
-					if (data->trans_invalid)
-						DDPDBG(
-							"sbch trans ext %d invalid\n",
-							cfg->phy_layer);
-				}
-
-			}
-		}
-
-		/* config sbch_trans_en */
-		if (data->trans_invalid)
-			trans_en = 0;
-		else
-			trans_en = 1;
-	}
 
 	if (cfg->layer_disable_by_partial_update) {
 		update = 0;
@@ -1288,7 +1231,6 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	data->const_bld = cfg->const_bld;
 	data->sbch_en_cnt = 0;
 	data->full_trans_en = 0;
-	data->trans_invalid = 1;
 	data->layer_disable_by_partial_update =
 		cfg->layer_disable_by_partial_update;
 
