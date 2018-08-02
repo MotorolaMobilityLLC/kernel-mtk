@@ -1345,7 +1345,7 @@ enum vsm_status_t vsm_driver_read_register(struct bus_data_t *data)
 	}
 
 	if (ret < 0) {
-		pr_err("vsm_driver_read_register error (%d)\r\n", ret);
+		pr_err("%s error (%d)\r\n", __func__, ret);
 		return VSM_STATUS_ERROR;
 	} else {
 		return VSM_STATUS_OK;
@@ -1586,7 +1586,7 @@ static enum vsm_status_t vsm_driver_set_read_counter(
 	err = vsm_driver_write_register(&data);
 
 	if (err != VSM_STATUS_OK)
-		pr_err("vsm_driver_set_read_counter fail : %d\n", err);
+		pr_err("%s fail : %d\n", __func__, err);
 
 	return err;
 }
@@ -1635,7 +1635,7 @@ static enum vsm_status_t vsm_driver_get_read_counter(
 		    ((*counter & 0x01ff0000) >> 16) >
 		    VSM_SRAM_LEN ? 0 : ((*counter & 0x01ff0000) >> 16);
 		if (DBG)
-			pr_debug("vsm_driver_get_read_counter 0x%x \r\n",
+			pr_debug("%s 0x%x \r\n", __func__,
 				*counter);
 	}
 	return err;
@@ -1687,7 +1687,7 @@ vsm_driver_write_counter(
 	if (err == VSM_STATUS_OK) {
 		counter = (counter & 0x01ff0000) >> 16;
 		if (DBG)
-			pr_debug("vsm_driver_write_counter 0x%x \r\n", counter);
+			pr_debug("%s 0x%x \r\n", __func__, counter);
 	}
 	*write_counter = counter;
 
