@@ -5686,7 +5686,9 @@ static int find_new_capacity(struct energy_env *eenv, int cpu_idx)
 	const struct sched_group_energy *sge = eenv->sg->sge;
 	int idx, max_idx = sge->nr_cap_states - 1;
 	unsigned long util = group_max_util(eenv, cpu_idx);
+	unsigned long max_util = SCHED_CAPACITY_SCALE;
 
+	util = min(util, max_util);
 	/* default is max_cap if we don't find a match */
 	eenv->cpu[cpu_idx].cap_idx = max_idx;
 	eenv->cpu[cpu_idx].cap = sge->cap_states[max_idx].cap;
@@ -7024,6 +7026,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 {
 	unsigned long best_idle_min_cap_orig = ULONG_MAX;
 	unsigned long min_util = boosted_task_util(p);
+	unsigned long max_util = SCHED_CAPACITY_SCALE;
 	unsigned long target_capacity = ULONG_MAX;
 	unsigned long min_wake_util = ULONG_MAX;
 	unsigned long target_max_spare_cap = 0;
@@ -7104,6 +7107,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 			 * than the one required to boost the task.
 			 */
 			new_util = max(min_util, new_util);
+			new_util = min(new_util, max_util);
 
 			/*
 			 * Include minimum capacity constraint:
