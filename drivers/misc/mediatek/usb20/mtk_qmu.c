@@ -1618,6 +1618,7 @@ finished:
 			/* filter specific value to prevent false alarm */
 			switch (val) {
 			case 0x2020:
+			case 0x2003:
 				val = 0;
 				QMU_ERR("force val to 0 for bypass AEE\n");
 				break;
