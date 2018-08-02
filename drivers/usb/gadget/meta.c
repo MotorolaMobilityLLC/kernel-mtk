@@ -1325,6 +1325,10 @@ int acm_shortcut(void)
 	char *ptr;
 	char mode = 0;
 
+#ifdef CONFIG_MTK_TC1_FEATURE
+	return 0;
+#endif
+
 	if (get_boot_mode() != META_BOOT)
 		return 0;
 
