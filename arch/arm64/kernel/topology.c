@@ -204,9 +204,12 @@ static int __init parse_dt_topology(void)
 	 * When topology is provided cpu-map is essentially a root
 	 * cluster with restricted subnodes.
 	 */
-	map = of_get_child_by_name(cn, "cpu-map");
-	if (!map)
-		goto out;
+	map = of_get_child_by_name(cn, "virtual-cpu-map");
+	if (!map) {
+		map = of_get_child_by_name(cn, "cpu-map");
+		if (!map)
+			goto out;
+	}
 
 	ret = parse_cluster(map, 0);
 	if (ret != 0)
