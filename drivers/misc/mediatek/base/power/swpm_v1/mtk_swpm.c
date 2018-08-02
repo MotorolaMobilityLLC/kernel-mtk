@@ -31,7 +31,7 @@
  *  Macro Definitions
  ****************************************************************************/
 #define DEFAULT_AVG_WINDOW		(50)
-#define BRINGUP_DISABLE
+/* #define BRINGUP_DISABLE */
 
 #define MAX(a, b)			((a) >= (b) ? (a) : (b))
 #define MIN(a, b)			((a) >= (b) ? (b) : (a))
@@ -202,19 +202,19 @@ static ssize_t enable_proc_write(struct file *file,
 
 static int profile_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "monitor time avg/max = %lluus/%lluus, cnt = %llu\n",
+	seq_printf(m, "monitor time avg/max = %llu/%llu ns, cnt = %llu\n",
 		swpm_info_ref->avg_latency[MON_TIME],
 		swpm_info_ref->max_latency[MON_TIME],
 		swpm_info_ref->prof_cnt[MON_TIME]);
-	seq_printf(m, "calculate time avg/max = %lluus/%lluus, cnt = %llu\n",
+	seq_printf(m, "calculate time avg/max = %llu/%llu ns, cnt = %llu\n",
 		swpm_info_ref->avg_latency[CALC_TIME],
 		swpm_info_ref->max_latency[CALC_TIME],
 		swpm_info_ref->prof_cnt[CALC_TIME]);
-	seq_printf(m, "proc record time avg/max = %lluus/%lluus, cnt = %llu\n",
+	seq_printf(m, "proc record time avg/max = %llu/%llu ns, cnt = %llu\n",
 		swpm_info_ref->avg_latency[REC_TIME],
 		swpm_info_ref->max_latency[REC_TIME],
 		swpm_info_ref->prof_cnt[REC_TIME]);
-	seq_printf(m, "total time avg/max = %lluus/%lluus, cnt = %llu\n",
+	seq_printf(m, "total time avg/max = %llu/%llu ns, cnt = %llu\n",
 		swpm_info_ref->avg_latency[TOTAL_TIME],
 		swpm_info_ref->max_latency[TOTAL_TIME],
 		swpm_info_ref->prof_cnt[TOTAL_TIME]);
