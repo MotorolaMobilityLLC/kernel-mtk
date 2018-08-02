@@ -73,6 +73,7 @@ static const struct codec_reg_val e2_reg_inits[] = {
 	{ MT6660_REG_RESV23, 0xffff, 0x1ff8 },
 	{ MT6660_REG_RESV12, 0x0c, 0x08 },
 	{ MT6660_REG_RESV16, 0x01, 0x01 },
+	{ MT6660_REG_TDM_CFG3, 0x1800, 0x1800 },
 };
 
 static unsigned int mt6660_codec_io_read(struct snd_soc_codec *codec,
