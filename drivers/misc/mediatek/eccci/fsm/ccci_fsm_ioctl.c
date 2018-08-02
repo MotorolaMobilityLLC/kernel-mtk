@@ -471,12 +471,16 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 			CCCI_MD_MSG_RESET_REQUEST, 0);
 		fsm_monitor_send_message(GET_OTHER_MD_ID(ctl->md_id),
 			CCCI_MD_MSG_RESET_REQUEST, 0);
+		inject_md_status_event(md_id, MD_STA_EV_RESET_REQUEST,
+					current->comm);
 		break;
 	case CCCI_IOC_FORCE_MD_ASSERT:
 		CCCI_NORMAL_LOG(md_id, FSM,
 			"MD force assert ioctl called by %s\n", current->comm);
 		ret = ccci_md_force_assert(md_id,
 			MD_FORCE_ASSERT_BY_USER_TRIGGER, NULL, 0);
+		inject_md_status_event(md_id, MD_STA_EV_F_ASSERT_REQUEST,
+					current->comm);
 		break;
 	case CCCI_IOC_SEND_STOP_MD_REQUEST:
 		CCCI_NORMAL_LOG(md_id, FSM,
@@ -485,6 +489,8 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 			CCCI_MD_MSG_FORCE_STOP_REQUEST, 0);
 		fsm_monitor_send_message(GET_OTHER_MD_ID(ctl->md_id),
 			CCCI_MD_MSG_FORCE_STOP_REQUEST, 0);
+		inject_md_status_event(md_id, MD_STA_EV_STOP_REQUEST,
+					current->comm);
 		break;
 	case CCCI_IOC_SEND_START_MD_REQUEST:
 		CCCI_NORMAL_LOG(md_id, FSM,
@@ -493,6 +499,8 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 			CCCI_MD_MSG_FORCE_START_REQUEST, 0);
 		fsm_monitor_send_message(GET_OTHER_MD_ID(ctl->md_id),
 			CCCI_MD_MSG_FORCE_START_REQUEST, 0);
+		inject_md_status_event(md_id, MD_STA_EV_START_REQUEST,
+					current->comm);
 		break;
 	case CCCI_IOC_DO_START_MD:
 		/* add check whether the user call md start ioctl is valid */
@@ -531,6 +539,8 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 		"MD enter flight mode ioctl called by %s\n", current->comm);
 		ret = fsm_monitor_send_message(ctl->md_id,
 				CCCI_MD_MSG_FLIGHT_STOP_REQUEST, 0);
+		inject_md_status_event(md_id, MD_STA_EV_ENTER_FLIGHT_REQUEST,
+					current->comm);
 		break;
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT:
 		CCCI_NORMAL_LOG(md_id, FSM,
@@ -538,6 +548,8 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 		__pm_wakeup_event(&ctl->wakelock, jiffies_to_msecs(10 * HZ));
 		ret = fsm_monitor_send_message(ctl->md_id,
 				CCCI_MD_MSG_FLIGHT_START_REQUEST, 0);
+		inject_md_status_event(md_id, MD_STA_EV_LEAVE_FLIGHT_REQUEST,
+					current->comm);
 		break;
 	case CCCI_IOC_ENTER_DEEP_FLIGHT_ENHANCED:
 		CCCI_NORMAL_LOG(md_id, FSM,
@@ -547,6 +559,8 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 				CCCI_MD_MSG_FLIGHT_STOP_REQUEST, 0);
 		fsm_monitor_send_message(GET_OTHER_MD_ID(ctl->md_id),
 			CCCI_MD_MSG_FLIGHT_STOP_REQUEST, 0);
+		inject_md_status_event(md_id, MD_STA_EV_ENTER_FLIGHT_E_REQUEST,
+					current->comm);
 		break;
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT_ENHANCED:
 		CCCI_NORMAL_LOG(md_id, FSM,
@@ -557,6 +571,8 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 				CCCI_MD_MSG_FLIGHT_START_REQUEST, 0);
 		fsm_monitor_send_message(GET_OTHER_MD_ID(ctl->md_id),
 			CCCI_MD_MSG_FLIGHT_START_REQUEST, 0);
+		inject_md_status_event(md_id, MD_STA_EV_LEAVE_FLIGHT_E_REQUEST,
+					current->comm);
 		break;
 	case CCCI_IOC_SET_EFUN:
 		if (copy_from_user(&data, (void __user *)arg,

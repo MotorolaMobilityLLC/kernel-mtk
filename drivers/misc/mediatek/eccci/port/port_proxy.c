@@ -1379,6 +1379,36 @@ void ccci_port_dump_status(int md_id)
 	proxy_dump_status(proxy_p);
 }
 
+static inline void user_broadcast_wrapper(int md_id, unsigned int state)
+{
+	int mapped_event = -1;
+
+	switch (state) {
+	case GATED:
+		break;
+	case BOOT_WAITING_FOR_HS1:
+		break;
+	case BOOT_WAITING_FOR_HS2:
+		mapped_event = MD_STA_EV_HS1;
+		break;
+	case READY:
+		mapped_event = MD_STA_EV_READY;
+		break;
+	case EXCEPTION:
+		mapped_event = MD_STA_EV_EXCEPTION;
+		break;
+	case RESET:
+		break;
+	case WAITING_TO_STOP:
+		break;
+	default:
+		break;
+	}
+
+	if (mapped_event >= 0)
+		inject_md_status_event(md_id, mapped_event, NULL);
+}
+
 /*
  * This API is called by ccci_fsm,
  * and used to dispatch modem status for all ports,
