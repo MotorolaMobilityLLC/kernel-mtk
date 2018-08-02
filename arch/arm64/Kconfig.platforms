@@ -224,6 +224,8 @@ config MACH_MT3967
 	select F2FS_FS_ENCRYPTION
 	select F2FS_FS_SECURITY
 	select F2FS_FS_XATTR
+	select HIE
+	select HIE_DEBUG
 	select NEED_MACH_MEMORY_H
 	select IRQ_DOMAIN
 	select IRQ_DOMAIN_DEBUG
