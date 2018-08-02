@@ -2386,6 +2386,7 @@ int dpmaif_late_init(unsigned char hif_id)
 	/* wakeup source init */
 	reg_val = ccci_read32(infra_ao_base, INFRA_DPMAIF_CTRL_REG);
 	reg_val |= DPMAIF_IP_BUSY_MASK;
+	reg_val &= ~(1 << 13); /* MD to AP wakeup event */
 	ccci_write32(infra_ao_base, INFRA_DPMAIF_CTRL_REG, reg_val);
 
 #ifdef DPMAIF_DEBUG_LOG
