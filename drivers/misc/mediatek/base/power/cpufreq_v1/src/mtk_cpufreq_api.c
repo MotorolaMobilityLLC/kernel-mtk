@@ -99,6 +99,14 @@ unsigned int mt_cpufreq_find_Vboot_idx(unsigned int cluster_id)
 #endif
 }
 
+void mt_cpufreq_ctrl_cci_volt(unsigned int volt)
+{
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	/* 10uv */
+	cpuhvfs_set_set_cci_volt(volt);
+#endif
+}
+
 int mt_cpufreq_set_iccs_frequency_by_cluster(int en, unsigned int cluster_id,
 	unsigned int freq)
 {
