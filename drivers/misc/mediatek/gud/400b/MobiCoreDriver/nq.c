@@ -666,7 +666,7 @@ int nq_start(void)
 		mc_dev_notice("irq_bh_worker thread creation failed");
 		return PTR_ERR(l_ctx.irq_bh_thread);
 	}
-	set_user_nice(l_ctx.irq_bh_thread, -20);
+	set_user_nice(l_ctx.irq_bh_thread, MIN_NICE);
 	return request_irq(l_ctx.irq, irq_handler, IRQF_TRIGGER_RISING,
 			   "trustonic", NULL);
 }

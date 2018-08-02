@@ -220,7 +220,7 @@ int mc_scheduler_start(void)
 		mc_dev_notice("tee_scheduler thread creation failed");
 		return PTR_ERR(sched_ctx.thread);
 	}
-	set_user_nice(sched_ctx.thread, -20);
+	set_user_nice(sched_ctx.thread, MIN_NICE);
 	nq_register_scheduler(mc_dev_command);
 	complete(&sched_ctx.idle_complete);
 	return 0;
