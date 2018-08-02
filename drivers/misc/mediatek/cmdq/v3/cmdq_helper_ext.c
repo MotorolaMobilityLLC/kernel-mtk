@@ -3935,6 +3935,7 @@ static void cmdq_core_v3_replace_jumpc(struct cmdqRecStruct *handle,
 {
 	u32 *p_cmd_logic = (u32 *)cmdq_pkt_get_va_by_offset(handle->pkt,
 		(inst_idx - 1) * CMDQ_INST_SIZE);
+	bool revise_offset = false;
 
 	/* logic and jump relative maybe separate by jump cross buffer */
 	if (p_cmd_logic[1] == ((CMDQ_CODE_JUMP << 24) | 1)) {
@@ -3943,13 +3944,17 @@ static void cmdq_core_v3_replace_jumpc(struct cmdqRecStruct *handle,
 			inst_idx);
 		p_cmd_logic = (u32 *)cmdq_pkt_get_va_by_offset(
 			handle->pkt, (inst_idx - 2) * CMDQ_INST_SIZE);
+		revise_offset = true;
 	}
 
 	if ((p_cmd_logic[1] >> 24) == CMDQ_CODE_LOGIC &&
 		((p_cmd_logic[1] >> 16) & 0x1F) == CMDQ_LOGIC_ASSIGN) {
 		u32 jump_op = CMDQ_CODE_JUMP_C_ABSOLUTE << 24;
 		u32 jump_op_header = va[1] & 0xFFFFFF;
-		u32 offset_target = inst_pos * CMDQ_INST_SIZE + p_cmd_logic[0];
+		u32 jump_offset = p_cmd_logic[0];
+		u32 offset_target = (revise_offset) ?
+			(inst_pos - 1) * CMDQ_INST_SIZE + jump_offset :
+			inst_pos * CMDQ_INST_SIZE + jump_offset;
 		dma_addr_t dest_addr_pa;
 
 		dest_addr_pa = cmdq_pkt_get_pa_by_offset(
