@@ -8531,8 +8531,8 @@ int primary_display_lcm_ATA(void)
 	enum DISP_STATUS ret = DISP_STATUS_OK;
 
 	DISPFUNC();
-	primary_display_esd_check_enable(0);
 	_primary_path_switch_dst_lock();
+	primary_display_esd_check_enable(0);
 	_primary_path_lock(__func__);
 	disp_irq_esd_cust_bycmdq(0);
 	if (pgc->state == 0) {
@@ -8561,8 +8561,8 @@ int primary_display_lcm_ATA(void)
 done:
 	disp_irq_esd_cust_bycmdq(1);
 	_primary_path_unlock(__func__);
-	_primary_path_switch_dst_unlock();
 	primary_display_esd_check_enable(1);
+	_primary_path_switch_dst_unlock();
 	return ret;
 }
 
