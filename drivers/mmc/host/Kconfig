@@ -859,3 +859,5 @@ config MMC_MTK_SDIO
 	  If you have a machine with a integrated SDIO card reader, say Y or M here.
 	  This is needed if support for any SDIO devices is required.
 	  If unsure, say N.
+
+source "drivers/mmc/host/mediatek/Kconfig"
