@@ -1015,7 +1015,7 @@ unsigned int drv_dpmaif_ul_idle_check(void)
 	unsigned int ret;
 
 	idle_sts = ((DPMA_READ_PD_UL(
-		DPMAIF_PD_UL_DBG_STA2)<<DPMAIF_UL_STS_CUR_SHIFT) &
+		DPMAIF_PD_UL_DBG_STA2)>>DPMAIF_UL_STS_CUR_SHIFT) &
 			DPMAIF_UL_IDLE_STS_MSK);
 
 	if (idle_sts == DPMAIF_UL_IDLE_STS)
