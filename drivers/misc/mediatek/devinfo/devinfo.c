@@ -390,7 +390,7 @@ static void init_devinfo_exclusive(void)
 	devinfo_parse_dt();
 }
 
-static int devinfo_of_init(void)
+static int __init devinfo_of_init(void)
 {
 	init_devinfo_exclusive();
 	return 0;

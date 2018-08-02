@@ -587,7 +587,7 @@ static struct platform_driver _mt_dvfsp_pdrv = {
 	},
 };
 
-int cpuhvfs_set_init_ptbl(void)
+int __init cpuhvfs_set_init_ptbl(void)
 {
 	struct cdvfs_data cdvfs_d;
 
@@ -891,7 +891,7 @@ int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl,
 }
 
 /* Module driver */
-void cpuhvfs_pvt_tbl_create(void)
+void __init cpuhvfs_pvt_tbl_create(void)
 {
 	int i;
 	unsigned int lv = _mt_cpufreq_get_cpu_level();
@@ -1089,7 +1089,7 @@ int cpuhvfs_module_init(void)
 	return 0;
 }
 
-static int dvfsp_module_init(void)
+static int __init dvfsp_module_init(void)
 {
 	int r;
 
@@ -1108,7 +1108,7 @@ static int dvfsp_module_init(void)
 	return 0;
 }
 
-static void init_cpuhvfs_debug_repo(void)
+static void __init init_cpuhvfs_debug_repo(void)
 {
 	u32 __iomem *dbg_repo = csram_base;
 	int c, repo_i;
@@ -1141,7 +1141,7 @@ static void init_cpuhvfs_debug_repo(void)
 	g_dbg_repo = dbg_repo;
 }
 
-static int cpuhvfs_pre_module_init(void)
+static int __init cpuhvfs_pre_module_init(void)
 {
 	int r;
 
