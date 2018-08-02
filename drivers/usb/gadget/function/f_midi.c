@@ -251,9 +251,15 @@ static void
 f_midi_complete(struct usb_ep *ep, struct usb_request *req)
 {
 	struct f_midi *midi = ep->driver_data;
-	struct usb_composite_dev *cdev = midi->func.config->cdev;
+	struct usb_composite_dev *cdev;
 	int status = req->status;
 
+	if (!midi) {
+		ERROR(cdev, "f_midi_complete: midi is NULL!\n");
+		return;
+	}
+
+	cdev  = midi->func.config->cdev;
 	switch (status) {
 	case 0:			 /* normal completion */
 		if (ep == midi->out_ep) {
