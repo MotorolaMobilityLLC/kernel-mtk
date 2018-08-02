@@ -1701,9 +1701,17 @@ skip_cmd_resp_polling:
 			if ((cmd->opcode == 13) || (cmd->opcode == 25)) {
 				/* Only print msg on this error */
 				if (*rsp & R1_WP_VIOLATION) {
-					pr_notice("[%s]: msdc%d XXX CMD<%d> resp<0x%.8x>, write protection violation\n",
-						__func__, host->id, cmd->opcode,
-						*rsp);
+					if (cmd->opcode == 25)
+						pr_notice(
+"[%s]: msdc%d XXX CMD<%d> resp<0x%.8x>, write protection violation addr:0x%x\n",
+							__func__, host->id,
+							cmd->opcode, *rsp,
+							cmd->arg);
+					else
+						pr_notice(
+"[%s]: msdc%d XXX CMD<%d> resp<0x%.8x>, write protection violation\n",
+							__func__, host->id,
+							cmd->opcode, *rsp);
 				}
 
 				if ((*rsp & R1_OUT_OF_RANGE)

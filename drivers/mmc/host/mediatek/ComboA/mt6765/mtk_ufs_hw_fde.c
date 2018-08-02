@@ -116,7 +116,7 @@ static void msdc_crypto_switch_config(struct msdc_host *host,
 			& EMMC52_AES_SWITCH_START_ENC) {
 			if (time_after(jiffies, polling_tmo)) {
 				pr_notice(
-				"msdc%d, error: triger AES ENC timeout!\n",
+				"msdc%d, error: trigger AES ENC timeout!\n",
 					host->id);
 				WARN_ON(1);
 			}
@@ -128,7 +128,7 @@ static void msdc_crypto_switch_config(struct msdc_host *host,
 			& EMMC52_AES_SWITCH_START_DEC) {
 			if (time_after(jiffies, polling_tmo)) {
 				pr_notice(
-				"msdc%d, error: triger DEC AES DEC timeout!\n",
+				"msdc%d, error: trigger DEC AES DEC timeout!\n",
 					host->id);
 				WARN_ON(1);
 			}
