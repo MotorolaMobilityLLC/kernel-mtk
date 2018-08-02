@@ -258,6 +258,7 @@ static void dpmaif_dump_txq_remain(struct hif_dpmaif_ctrl *hif_ctrl,
 		       txq->drb_wr_idx, txq->drb_rd_idx, txq->drb_rel_rd_idx);
 		ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP, txq->drb_base,
 			(txq->drb_size_cnt * sizeof(struct dpmaif_drb_pd)));
+#if 0
 		CCCI_MEM_LOG(md_id, TAG,
 			"dpmaif: drb(%d) skb base: 0x%p(%d*%d)\n",
 			txq->index, txq->drb_skb_base,
@@ -266,7 +267,7 @@ static void dpmaif_dump_txq_remain(struct hif_dpmaif_ctrl *hif_ctrl,
 		ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP,
 			txq->drb_skb_base,
 			(txq->drb_size_cnt * sizeof(struct dpmaif_drb_skb)));
-
+#endif
 	}
 }
 
