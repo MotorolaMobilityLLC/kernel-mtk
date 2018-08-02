@@ -75,10 +75,7 @@ struct helio_dvfsrc {
 #define QOS_MM_BW		(QOS_TOTAL_BW_BUF_SIZE * 4 + 0xC)
 #define QOS_OTHER_BW		(QOS_TOTAL_BW_BUF_SIZE * 4 + 0x10)
 
-#define QOS_CM_GPU_ONOFF	(0x70)
-#define QOS_CM_GPU_OPP		(0x74)
-#define QOS_CM_RESERVE_2	(0x78)
-#define QOS_CM_RESERVE_3	(0x7C)
+#define QOS_CM_STALL_RATIO(idx) (QOS_SRAM_BASE_MAPPED + idx * 4 + 0x60)
 
 /* PMIC */
 #define vcore_pmic_to_uv(pmic)	\
