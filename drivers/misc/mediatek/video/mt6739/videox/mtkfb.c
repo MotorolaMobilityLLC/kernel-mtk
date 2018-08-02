@@ -1308,6 +1308,9 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_SLT_AUTO_CAPTURE:
 		{
+/*
+* please open this when needs SLT
+
 			struct fb_slt_catpure capConfig;
 			unsigned long *src_pbuf = 0;
 			unsigned int pixel_bpp = primary_display_get_bpp() / 8;
@@ -1361,6 +1364,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 					set_slt_test(0);
 					}
 				}
+*/
 			return r;
 		}
 	case MTKFB_GET_OVERLAY_LAYER_INFO:
