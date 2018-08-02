@@ -2184,7 +2184,7 @@ static int dpmaif_rxq_init(struct dpmaif_rx_queue *queue)
 	/* rx push */
 	init_waitqueue_head(&queue->rx_wq);
 	ccci_skb_queue_init(&queue->skb_list, queue->bat_req.skb_pkt_cnt,
-				queue->pit_size_cnt, 0);
+				SKB_RX_LIST_MAX_LEN, 0);
 
 	queue->rx_thread = kthread_run(dpmaif_net_rx_push_thread,
 				queue, "dpmaif_rx_push");
