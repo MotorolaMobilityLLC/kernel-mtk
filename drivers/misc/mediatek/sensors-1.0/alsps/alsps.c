@@ -131,6 +131,22 @@ int ps_data_report(int value, int status)
 		pr_err_ratelimited("event buffer full, so drop this data\n");
 	return err;
 }
+int ps_cali_report(int *value)
+{
+	int err = 0;
+	struct sensor_event event;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	event.flush_action = CALI_ACTION;
+	event.word[0] = value[0];
+	event.word[1] = value[1];
+	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);
+	if (err < 0)
+		pr_err_ratelimited("event buffer full, so drop this data\n");
+	return err;
+}
+
 int ps_flush_report(void)
 {
 	struct sensor_event event;
@@ -764,8 +780,6 @@ static ssize_t ps_store_flush(struct device *dev, struct device_attribute *attr,
 	cxt = alsps_context_obj;
 	if (cxt->ps_ctl.flush != NULL)
 		err = cxt->ps_ctl.flush();
-	else
-		ALSPS_PR_ERR("PS DRIVER OLD ARCHITECTURE DON'T SUPPORT PS COMMON VERSION FLUSH\n");
 	if (err < 0)
 		ALSPS_PR_ERR("ps enable flush err %d\n", err);
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
@@ -786,6 +800,30 @@ static ssize_t ps_show_devnum(struct device *dev,
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
+
+static ssize_t ps_store_cali(struct device *dev, struct device_attribute *attr,
+			     const char *buf, size_t count)
+{
+	struct alsps_context *cxt = NULL;
+	int err = 0;
+	uint8_t *cali_buf = NULL;
+
+	cali_buf = vzalloc(count);
+	if (!cali_buf)
+		return -ENOMEM;
+	memcpy(cali_buf, buf, count);
+
+	mutex_lock(&alsps_context_obj->alsps_op_mutex);
+	cxt = alsps_context_obj;
+	if (cxt->ps_ctl.set_cali != NULL)
+		err = cxt->ps_ctl.set_cali(cali_buf, count);
+	if (err < 0)
+		pr_err_ratelimited("ps set cali err %d\n", err);
+	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
+	vfree(cali_buf);
+	return count;
+}
+
 static int als_ps_remove(struct platform_device *pdev)
 {
 	ALSPS_LOG("als_ps_remove\n");
@@ -913,6 +951,7 @@ DEVICE_ATTR(psactive,		S_IWUSR | S_IRUGO, ps_show_active, ps_store_active);
 DEVICE_ATTR(psbatch,		S_IWUSR | S_IRUGO, ps_show_batch,  ps_store_batch);
 DEVICE_ATTR(psflush,		S_IWUSR | S_IRUGO, ps_show_flush,  ps_store_flush);
 DEVICE_ATTR(psdevnum,		S_IWUSR | S_IRUGO, ps_show_devnum,  NULL);
+DEVICE_ATTR(pscali,		S_IWUSR | S_IRUGO, NULL, ps_store_cali);
 
 static struct attribute *als_attributes[] = {
 	&dev_attr_alsactive.attr,
@@ -927,6 +966,7 @@ static struct attribute *ps_attributes[] = {
 	&dev_attr_psbatch.attr,
 	&dev_attr_psflush.attr,
 	&dev_attr_psdevnum.attr,
+	&dev_attr_pscali.attr,
 	NULL
 };
 
@@ -1106,7 +1146,7 @@ int ps_register_control_path(struct ps_control_path *ctl)
 	cxt->ps_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->ps_ctl.is_report_input_direct = ctl->is_report_input_direct;
 	cxt->ps_ctl.ps_calibration = ctl->ps_calibration;
-	cxt->ps_ctl.ps_threshold_setting = ctl->ps_threshold_setting;
+	cxt->ps_ctl.set_cali = ctl->set_cali;
 	cxt->ps_ctl.is_use_common_factory = ctl->is_use_common_factory;
 	cxt->ps_ctl.is_polling_mode = ctl->is_polling_mode;
 
