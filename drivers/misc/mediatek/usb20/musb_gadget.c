@@ -225,7 +225,7 @@ void musb_g_giveback(struct musb_ep *ep,
 	if (!dma_mapping_error(musb->controller, request->dma))
 		unmap_dma_buffer(req, musb);
 	else if (req->epnum != 0)
-		DBG(0, "%s dma_mapping_error\n", ep->end_point.name);
+		DBG_LIMIT(5, "%s dma_mapping_error", ep->end_point.name);
 
 	if (request->status == 0)
 		DBG(1, "%s done request %p,  %d/%d\n",
@@ -1787,6 +1787,7 @@ static int musb_gadget_dequeue(struct usb_ep *ep, struct usb_request *request)
 
 done:
 	spin_unlock_irqrestore(&musb->lock, flags);
+
 	return status;
 }
 

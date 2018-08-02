@@ -99,6 +99,8 @@
 #include "mtk_musb.h"
 #endif
 
+#define DISABLE_DEBOUNCE
+
 static void (*usb_hal_dpidle_request_fptr)(int);
 void usb_hal_dpidle_request(int mode)
 {
@@ -142,7 +144,7 @@ module_param(musb_host_db_workaround_cnt, long, 0644);
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 int mtk_host_qmu_concurrent = 1;
 int mtk_host_qmu_pipe_msk = (PIPE_ISOCHRONOUS + 1) /* | (PIPE_BULK + 1) | (PIPE_INTERRUPT+ 1) */;
-int mtk_host_qmu_force_isoc_restart = 1;
+int mtk_host_qmu_force_isoc_restart;
 int mtk_host_active_dev_cnt;
 module_param(mtk_host_qmu_concurrent, int, 0400);
 module_param(mtk_host_qmu_pipe_msk, int, 0400);
@@ -1151,9 +1153,17 @@ b_host:
 	 * only host sees babble; only peripheral sees bus reset.
 	 */
 	if (int_usb & MUSB_INTR_RESET) {
+		int otg_state;
 		handled = IRQ_HANDLED;
 
-		DBG(0, "%s:%d MUSB_INTR_RESET (%s)\n", __func__, __LINE__, otg_state_string(musb->xceiv->otg->state));
+		otg_state = musb->xceiv->otg->state;
+		if (otg_state == OTG_STATE_A_HOST)
+			DBG_LIMIT(5, "%s:%d MUSB_INTR_RESET (%s)", __func__, __LINE__,
+				otg_state_string(musb->xceiv->otg->state));
+		else
+			DBG(0, "%s:%d MUSB_INTR_RESET (%s)\n", __func__, __LINE__,
+				otg_state_string(musb->xceiv->otg->state));
+
 		if ((devctl & MUSB_DEVCTL_HM) != 0) {
 			/*
 			 * Looks like non-HS BABBLE can be ignored, but
@@ -1162,7 +1172,8 @@ b_host:
 			 * caused BABBLE. When HS BABBLE happens we can only
 			 * stop the session.
 			 */
-			DBG(0, "Babble\n");
+			DBG_LIMIT(5, "Babble");
+
 			if (devctl & (MUSB_DEVCTL_FSDEV | MUSB_DEVCTL_LSDEV))
 				DBG(2, "BABBLE devctl: %02x\n", devctl);
 			else {
@@ -1273,7 +1284,7 @@ void musb_start(struct musb *musb)
 {
 	void __iomem *regs = musb->mregs;
 	int vbusdet_retry = 5;
-
+	u8 value;
 	u8 intrusbe;
 
 	DBG(0, "start, is_host=%d is_active=%d\n", musb->is_host, musb->is_active);
@@ -1283,6 +1294,16 @@ void musb_start(struct musb *musb)
 
 	intrusbe = musb_readb(regs, MUSB_INTRUSBE);
 	if (musb->is_host) {
+	#ifdef DISABLE_DEBOUNCE
+		value = musb_readb(regs, MUSB_ULPI_BUSCONTROL1);
+		musb_writeb(regs, MUSB_ULPI_BUSCONTROL1, value | 0x40);
+
+		value = musb_readb(regs, OTG20_CSRH);
+		musb_writeb(regs, OTG20_CSRH, value | 0x1);
+		DBG(0, "Disable Debounce, 0x71: 0x%x, 0x731: 0x%x\n",
+			musb_readb(regs, MUSB_ULPI_BUSCONTROL1), musb_readb(regs, OTG20_CSRH));
+	#endif
+
 		musb->intrtxe = 0xffff;
 		musb_writew(regs, MUSB_INTRTXE, musb->intrtxe);
 		musb->intrrxe = 0xfffe;

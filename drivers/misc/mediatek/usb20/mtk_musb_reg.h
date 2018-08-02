@@ -244,6 +244,7 @@
 /* REVISIT: vctrl/vstatus: optional vendor utmi+phy register at 0x68 */
 #define MUSB_HWVERS		0x6C	/* 8 bit */
 #define MUSB_ULPI_BUSCONTROL	0x70	/* 8 bit */
+#define MUSB_ULPI_BUSCONTROL1	0x71	/* 8 bit */
 #define MUSB_ULPI_INT_MASK	0x72	/* 8 bit */
 #define MUSB_ULPI_INT_SRC	0x73	/* 8 bit */
 #define MUSB_ULPI_REG_DATA	0x74	/* 8 bit */
