@@ -711,6 +711,10 @@ static int mtk_pcm_scp_voice_open(struct snd_pcm_substream *substream)
 
 	pr_debug("+%s\n", __func__);
 	mscp_voice_PlaybackDramState = false;
+
+	scp_reset_check();
+
+	p_scp_voice_resv_dram = get_reserved_dram();
 	runtime->hw = mtk_scp_voice_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_scp_voice_hardware,
 	       sizeof(struct snd_pcm_hardware));

@@ -66,6 +66,7 @@
 #include "scp_helper.h"
 #include <audio_ipi_client_spkprotect.h>
 #include <audio_task_manager.h>
+#include <linux/notifier.h>
 #endif
 
 #define use_wake_lock
@@ -115,6 +116,9 @@ static struct snd_dma_buffer SpkDL1Buffer;
 static int SpkIrq_mode = Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE;
 static uint32_t ipi_payload_buf[MAX_PARLOAD_SIZE];
 #endif
+
+atomic_t stop_send_ipi_flag = ATOMIC_INIT(0);
+atomic_t scp_reset_done = ATOMIC_INIT(1);
 
 /*
  *    function implementation
@@ -176,6 +180,23 @@ static int audio_dl1spk_hdoutput_set(struct snd_kcontrol *kcontrol,
 		return 0;
 	}
 	return 0;
+}
+
+void scp_reset_check(void)
+{
+	unsigned long flags;
+
+	if (pdl1spkMemControl == NULL) {
+		pdl1spkMemControl =
+			Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL1);
+	}
+
+	spin_lock_irqsave(&pdl1spkMemControl->substream_lock, flags);
+
+	if (atomic_read(&scp_reset_done))
+		atomic_set(&stop_send_ipi_flag, 0);
+
+	spin_unlock_irqrestore(&pdl1spkMemControl->substream_lock, flags);
 }
 
 #ifdef use_wake_lock
@@ -639,6 +660,11 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 
 	mspkPlaybackDramState = false;
 
+	pdl1spkMemControl = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL1);
+	scp_reset_check();
+
+	p_resv_dram = get_reserved_dram();
+
 	pr_debug("%s(), mtk_dl1spk_hardware.buffer_bytes_max = %zu mspkPlaybackDramState = %d\n",
 		 __func__, mtk_dl1spk_hardware.buffer_bytes_max,
 		 mspkPlaybackDramState);
@@ -647,7 +673,6 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_dl1spk_hardware,
 	       sizeof(struct snd_pcm_hardware));
-	pdl1spkMemControl = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL1);
 
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &constraints_sample_rates);
@@ -1085,6 +1110,38 @@ static struct spk_dump_ops dump_ops = {
 	.spk_dump_callback = spkprotect_dump_message,
 };
 
+#if defined(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT)
+static int smartpa_scp_event(struct notifier_block *this, unsigned long event,
+			     void *ptr)
+{
+	unsigned long flags;
+
+	if (pdl1spkMemControl == NULL) {
+		pdl1spkMemControl =
+			Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL1);
+	}
+
+	spin_lock_irqsave(&pdl1spkMemControl->substream_lock, flags);
+	switch (event) {
+	case SCP_EVENT_READY:
+		pr_info("%s(), SCP_EVENT_READY\n", __func__);
+		atomic_set(&scp_reset_done, 1);
+		break;
+	case SCP_EVENT_STOP:
+		pr_info("%s(), SCP_EVENT_STOP\n", __func__);
+		atomic_set(&stop_send_ipi_flag, 1);
+		atomic_set(&scp_reset_done, 0);
+		break;
+	}
+	spin_unlock_irqrestore(&pdl1spkMemControl->substream_lock, flags);
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block smartpa_scp_ready_notifier = {
+	.notifier_call = smartpa_scp_event,
+};
+#endif
+
 static int mtk_afe_dl1spk_probe(struct snd_soc_platform *platform)
 {
 	pr_info("mtk_afe_dl1spk_probe\n");
@@ -1106,6 +1163,10 @@ static int mtk_afe_dl1spk_probe(struct snd_soc_platform *platform)
 	Dl1Spk_Playback_dma_buf.bytes = SCPDL1_MAX_BUFFER_SIZE;
 	Dl1Spk_feedback_dma_buf.bytes = SCPDL1_MAX_BUFFER_SIZE;
 	pr_debug("area = %p\n", Dl1Spk_Playback_dma_buf.area);
+
+#if defined(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT)
+	scp_A_register_notify(&smartpa_scp_ready_notifier);
+#endif
 
 #ifdef use_wake_lock
 	aud_wake_lock_init(&scp_spk_suspend_lock, "scpspk lock");

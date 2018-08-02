@@ -127,6 +127,12 @@ void spkproc_service_ipicmd_send(uint8_t data_type, uint8_t ack_type,
 	int send_result = 0;
 	int retry_count;
 
+
+	if (atomic_read(&stop_send_ipi_flag)) {
+		pr_err("%s(), scp reset...\n", __func__);
+		return;
+	}
+
 	memset((void *)&ipi_msg, 0, sizeof(struct ipi_msg_t));
 	send_result = audio_send_ipi_msg(&ipi_msg,
 					  TASK_SCENE_SPEAKER_PROTECTION,
