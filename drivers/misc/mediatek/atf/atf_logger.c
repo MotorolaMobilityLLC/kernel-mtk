@@ -360,7 +360,7 @@ start:
 
 static unsigned int atf_log_poll(struct file *file, poll_table *wait)
 {
-	unsigned int ret = POLLOUT | POLLWRNORM;
+	unsigned int ret = 0;
 
 	if (!(file->f_mode & FMODE_READ))
 		return ret;
