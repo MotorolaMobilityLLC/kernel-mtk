@@ -366,6 +366,8 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.versionID1 = FG_DAEMON_CMD_FROM_USER_NUMBER;
 	fg_cust_data.versionID2 = sizeof(fg_cust_data);
 	fg_cust_data.versionID3 = FG_KERNEL_CMD_FROM_USER_NUMBER;
+	fg_cust_data.fg_get_max = FG_GET_MAX;
+	fg_cust_data.fg_set_max = FG_SET_DATA_MAX;
 
 	if (gm.gdev != NULL) {
 		fg_cust_data.hardwareVersion = gauge_get_hw_version();
@@ -791,6 +793,15 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 	} else {
 		bm_err("read DISABLE_MTKBATTERY fail\n");
 	}
+
+	if (!of_property_read_u32(np, "RECORD_LOG", &val)) {
+		fg_cust_data.record_log = (int)val;
+		bm_err("read RECORD_LOG=%d, fg_cust_data.record_log=%d\n",
+			val, fg_cust_data.record_log);
+	} else {
+		bm_err("read RECORD_LOG fail\n");
+	}
+
 
 	if (ACTIVE_TABLE == 0 && MULTI_BATTERY == 0) {
 		if (!of_property_read_u32(np, "g_FG_PSEUDO100_T0", &val)) {
@@ -2348,6 +2359,175 @@ void fg_cmd_check(struct fgd_nl_msg_t *msg)
 	}
 }
 
+void fg_daemon_comm_INT_data(char *rcv, char *ret)
+{
+	struct fgd_cmd_param_t_7 *prcv;
+	struct fgd_cmd_param_t_7 *pret;
+
+	prcv = (struct fgd_cmd_param_t_7 *)rcv;
+	pret = (struct fgd_cmd_param_t_7 *)ret;
+
+
+	bm_debug("fg_daemon_comm_INT_data type:%d, in:%d out:%d statu:%d\n",
+		prcv->type, prcv->input, prcv->output, prcv->status);
+
+	pret->type = prcv->type;
+
+	switch (prcv->type) {
+	case FG_GET_SHUTDOWN_CAR:
+		{
+			int shutdown_car_diff = 0;
+
+			gauge_dev_get_info(gm.gdev, GAUGE_SHUTDOWN_CAR,
+				&shutdown_car_diff);
+
+			memcpy(&pret->output, &shutdown_car_diff,
+				sizeof(shutdown_car_diff));
+
+			bm_debug("comm_INT:FG_GET_SHUTDOWN_CAR t:%d in:[%d %d] dif:%d out:%d s:%d\n",
+				prcv->type, prcv->input, prcv->output,
+				shutdown_car_diff,
+				pret->output, pret->status);
+		}
+		break;
+
+	case FG_GET_NCAR:
+		{
+			if (gauge_get_hw_version() >= GAUGE_HW_V1000 &&
+				gauge_get_hw_version() < GAUGE_HW_V2000) {
+
+				memcpy(&pret->output, &gm.bat_cycle_ncar,
+					sizeof(gm.bat_cycle_ncar));
+
+			} else {
+				gauge_dev_get_hw_status(gm.gdev,
+					&gm.hw_status, 0);
+
+				memcpy(&pret->output,
+					&gm.gdev->fg_hw_info.ncar,
+					sizeof(gm.gdev->fg_hw_info.ncar));
+			}
+			bm_debug("comm_INT:FG_GET_NCAR t:%d in:[%d %d] ncar:%d out:%d s:%d\n",
+				prcv->type, prcv->input, prcv->output,
+				gm.bat_cycle_ncar, pret->output, pret->status);
+		}
+		break;
+	case FG_GET_CURR_1:
+		{
+			gauge_dev_get_hw_status(gm.gdev,
+				&gm.hw_status, 0);
+
+			memcpy(&pret->output,
+				&gm.gdev->fg_hw_info.current_1,
+				sizeof(gm.gdev->fg_hw_info.current_1));
+
+			bm_debug("comm_INT:FG_GET_CURR_1 t:%d in:[%d %d] cur1:%d out:%d s:%d\n",
+				prcv->type, prcv->input, prcv->output,
+				gm.gdev->fg_hw_info.current_1,
+				pret->output, pret->status);
+		}
+		break;
+	case FG_GET_CURR_2:
+		{
+			gauge_dev_get_hw_status(gm.gdev,
+				&gm.hw_status, 0);
+
+			memcpy(&pret->output,
+				&gm.gdev->fg_hw_info.current_2,
+				sizeof(gm.gdev->fg_hw_info.current_2));
+			bm_debug("comm_INT:FG_GET_CURR_2 t:%d in:[%d %d] cur2:%d out:%d s:%d\n",
+				prcv->type, prcv->input, prcv->output,
+				gm.gdev->fg_hw_info.current_2,
+				pret->output, pret->status);
+		}
+		break;
+	case FG_GET_REFRESH:
+		{
+			gauge_dev_get_hw_status(gm.gdev, &gm.hw_status, 0);
+		}
+		break;
+	case FG_SET_SOC:
+		{
+			gm.soc = (prcv->input + 50) / 100;
+		}
+		break;
+	case FG_SET_C_D0_SOC:
+		{
+			fg_cust_data.c_old_d0 = prcv->input;
+		}
+		break;
+	case FG_SET_V_D0_SOC:
+		{
+			fg_cust_data.v_old_d0 = prcv->input;
+		}
+		break;
+	case FG_SET_C_SOC:
+		{
+			fg_cust_data.c_soc = prcv->input;
+		}
+		break;
+	case FG_SET_V_SOC:
+		{
+			fg_cust_data.v_soc = prcv->input;
+		}
+		break;
+	case FG_SET_QMAX_T_AGING:
+		break;
+	case FG_SET_SAVED_CAR:
+		{
+			gm.d_saved_car = prcv->input;
+		}
+		break;
+	case FG_SET_AGING_FACTOR:
+		{
+			gm.aging_factor = prcv->input;
+		}
+		break;
+	case FG_SET_QMAX:
+		{
+			gm.algo_qmax = prcv->input;
+		}
+		break;
+	case FG_SET_BAT_CYCLES:
+		{
+			gm.bat_cycle = prcv->input;
+		}
+		break;
+	case FG_SET_NCAR:
+		{
+			gm.bat_cycle_ncar = prcv->input;
+		}
+		break;
+	case FG_SET_OCV_mah:
+		{
+			gm.algo_ocv_to_mah = prcv->input;
+		}
+		break;
+	case FG_SET_OCV_Vtemp:
+		{
+			gm.algo_vtemp = prcv->input;
+		}
+		break;
+	case FG_SET_OCV_SOC:
+		{
+			gm.algo_ocv_to_soc = prcv->input;
+		}
+		break;
+	default:
+		pret->status = -1;
+		bm_err("fg_daemon_comm_INT_data type:%d in:%d out:%d,Retun t:%d,in:%d,o:%d,s:%d\n",
+			prcv->type, prcv->input, prcv->output,
+			pret->type, pret->input, pret->output, pret->status);
+		break;
+	}
+
+	bm_debug("fg_daemon_comm_INT_data type:%d in:%d out:%d,Retun t:%d,in:%d,o:%d,s:%d\n",
+		prcv->type, prcv->input, prcv->output,
+		pret->type, pret->input, pret->output, pret->status);
+
+
+}
+
 void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 {
 	struct fgd_nl_msg_t *msg;
@@ -2607,6 +2787,14 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 				&ret_msg->fgd_data[0]);
 			ret_msg->fgd_data_len =
 				sizeof(struct fgd_cmd_param_t_6);
+		}
+		break;
+	case FG_DAEMON_CMD_COMMUNICATION_INT:
+		{
+			fg_daemon_comm_INT_data(&msg->fgd_data[0],
+				&ret_msg->fgd_data[0]);
+			ret_msg->fgd_data_len =
+				sizeof(struct fgd_cmd_param_t_7);
 		}
 		break;
 
@@ -3351,50 +3539,10 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		memcpy(&daemon_soc, &msg->fgd_data[0], sizeof(daemon_soc));
 		if (soc_type == 0)
 			gm.soc = (daemon_soc + 50) / 100;
-		else if (soc_type == 1)
-			fg_cust_data.c_old_d0 = daemon_soc;
-		else if (soc_type == 2)
-			fg_cust_data.v_old_d0 = daemon_soc;
-		else if (soc_type == 3)
-			fg_cust_data.c_soc = daemon_soc;
-		else if (soc_type == 4)
-			fg_cust_data.v_soc = daemon_soc;
-		else if (soc_type == 6)
-			gm.d_saved_car = daemon_soc;
-		else if (soc_type == ALGO_AGING_FACTOR)
-			gm.aging_factor = daemon_soc;
-		else if (soc_type == ALGO_QMAX)
-			gm.algo_qmax = daemon_soc;
-		else if (soc_type == ALGO_BAT_CYCLES)
-			gm.bat_cycle = daemon_soc;
-		else if (soc_type == ALGO_NCAR)
-			gm.bat_cycle_ncar = daemon_soc;
-		else if (soc_type == ALGO_OCV_mah)
-			gm.algo_ocv_to_mah = daemon_soc;
-		else if (soc_type == ALGO_OCV_Vtemp)
-			gm.algo_vtemp = daemon_soc;
-		else if (soc_type == ALGO_OCV_SOC)
-			gm.algo_ocv_to_soc = daemon_soc;
 
-		if (soc_type == 4)
-			bm_err(
-			"[fg_res]FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d %d %d %d %d %d qmax:%d, type:%d\n",
-			daemon_soc, gm.soc, fg_cust_data.c_old_d0,
-			fg_cust_data.v_old_d0, fg_cust_data.c_soc,
-			fg_cust_data.v_soc, gm.d_saved_car,
-			gm.algo_qmax, soc_type);
-
-		if (soc_type == ALGO_BAT_CYCLES ||
-			soc_type == ALGO_AGING_FACTOR ||
-			soc_type == ALGO_NCAR)
-			bm_err("[fg_res]FG_DAEMON_CMD_SET_KERNEL_SOC: type:%d ,aging:%d cycle %d ncar %d\n",
-				soc_type, gm.aging_factor, gm.bat_cycle,
-				gm.bat_cycle_ncar);
-
-		if (soc_type == ALGO_OCV_mah)
-			bm_err("[fg_res]FG_DAEMON_CMD_SET_KERNEL_SOC: v_temp %d ocv:%d mah %d soc%d\n",
-				gm.algo_vtemp, gm.algo_req_ocv,
-				gm.algo_ocv_to_mah, gm.algo_ocv_to_soc);
+		bm_err(
+		"[fg_res]FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d, type:%d\n",
+		daemon_soc, gm.soc, soc_type);
 
 	}
 	break;
