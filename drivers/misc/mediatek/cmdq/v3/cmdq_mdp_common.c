@@ -622,6 +622,13 @@ void cmdq_mdp_unlock_thread(struct cmdqRecStruct *handle)
 	/* get not use engine using engine flag for disable clock. */
 	handle->engine_clk = cmdq_mdp_get_not_used_engine(engine_flag);
 
+	if (!mdp_ctx.thread[thread].task_count)
+		CMDQ_ERR(
+			"count fatal error thread:%u count:%u allow:%s acquire:%s\n",
+			thread, mdp_ctx.thread[thread].task_count,
+			mdp_ctx.thread[thread].allow_dispatch ?
+			"true" : "false",
+			mdp_ctx.thread[thread].acquired ? "true" : "false");
 	mdp_ctx.thread[thread].task_count--;
 
 	/* if no task on thread, release to cmdq core */
@@ -799,10 +806,9 @@ static s32 cmdq_mdp_find_free_thread(struct cmdqRecStruct *handle)
 			/* for engine flag empty, assign acquired thread */
 			for (index = CMDQ_DYNAMIC_THREAD_ID_START;
 				index < max_thd; index++) {
-				if (!threads[index].acquired) {
-					thread = index;
-					break;
-				}
+				if (!threads[index].acquired)
+					continue;
+				thread = index;
 			}
 		}
 		CMDQ_MSG("acquire thread:%d\n", thread);
