@@ -68,15 +68,9 @@
 #define VPU_FIX_MVA_SIZE                 (VPU_FIX_MVA_END - VPU_FIX_MVA_START + 1)
 #define VPU_FIX_BLOCK_NR                 MVA_GRAPH_BLOCK_NR_ALIGNED(VPU_FIX_MVA_SIZE)
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 /*reserved ccu mva region*/
-#define CCU_FIX_MVA_START                0x40000000
-#define CCU_FIX_MVA_END                  0x48000000
-#else
-/*reserved ccu mva region*/
-#define CCU_FIX_MVA_START                0x2F800000
-#define CCU_FIX_MVA_END                  0x35800000
-#endif
+#define CCU_FIX_MVA_START			0x40000000
+#define CCU_FIX_MVA_END				0x48000000
 
 #define MVA_COMMON_CONTIG_RETGION_START          0x80000000
 
