@@ -901,7 +901,7 @@ static void decrease_mutt_limit(void)
 	if (curr_adp_mutt_level >= 0)
 		curr_adp_mutt_level--;
 
-	if (curr_adp_mutt_level == -1) {
+	if (curr_adp_mutt_level < 0) {
 		cl_dev_adp_mutt_limit = 0;
 #if defined(FEATURE_MUTT_INTERFACE_VER)
 		cl_dev_adp_mutt_pa_limit = TMC_PA_CTRL_PA_ALL_ON;
