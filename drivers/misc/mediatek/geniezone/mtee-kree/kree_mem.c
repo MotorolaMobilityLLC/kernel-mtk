@@ -92,7 +92,7 @@ static inline TZ_RESULT _handleOpFunc(uint32_t cmd, KREE_SESSION_HANDLE session,
 	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 
-	if ((mem_handle == 0))
+	if (mem_handle == 0)
 		return TZ_RESULT_ERROR_BAD_PARAMETERS;
 
 	p[0].value.a = (uint32_t) mem_handle;
@@ -851,7 +851,7 @@ TZ_RESULT KREE_ReferenceSecureMultichunkmem(KREE_SESSION_HANDLE session,
 	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 
-	if ((mem_handle == 0)) {
+	if (mem_handle == 0) {
 		KREE_ERR("%s: invalid parameters\n", __func__);
 		return TZ_RESULT_ERROR_BAD_PARAMETERS;
 	}
