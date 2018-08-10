@@ -22,6 +22,12 @@ obj-$(CONFIG_SND_SOC_MT2701) += mt2701/
 obj-$(CONFIG_SND_SOC_MT3967) += mt3967/
 obj-$(CONFIG_SND_SOC_MT8173) += mt8173/
 
+ifeq ($(CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT),y)
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework/
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/adsp/mt3967/
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/tasks/call/
+endif
+
 ifeq ($(CONFIG_SND_SOC_MTK_SMART_PHONE),y)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 endif
