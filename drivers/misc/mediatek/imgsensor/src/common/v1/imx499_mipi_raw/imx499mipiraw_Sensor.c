@@ -722,7 +722,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 #endif
 };
 
-static kal_uint16 PDAF_RAW_mode;/*if not 0, Sensor will only send raw data*/
+static kal_uint16 PDAF_RAW_mode = 1;/*if not 0, Sensor will only send raw data*/
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
