@@ -26,3 +26,5 @@ endif
 
 obj-y += perf_ioctl/
 obj-$(CONFIG_MTK_FPSGO) += fpsgo/
+
+obj-$(CONFIG_MTK_LOAD_TRACKER) += load_track/
