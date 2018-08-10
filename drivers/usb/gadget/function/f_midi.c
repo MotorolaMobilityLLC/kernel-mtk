@@ -456,6 +456,7 @@ static void f_midi_old_unbind(struct usb_configuration *c,
 	if (card)
 		snd_card_free(card);
 
+	kfifo_free(&midi->in_req_fifo);
 	kfree(midi->id);
 	midi->id = NULL;
 
@@ -1153,6 +1154,12 @@ int /* __init */ f_midi_bind_config(struct usb_configuration *c,
 	midi->qlen = qlen;
 	midi->in_ports = in_ports;
 	midi->out_ports = out_ports;
+	midi->in_last_port = 0;
+
+	status = kfifo_alloc(&midi->in_req_fifo, midi->qlen, GFP_KERNEL);
+	if (status)
+		goto setup_fail;
+
 	status = f_midi_register_card(midi);
 	if (status < 0)
 		goto setup_fail;
