@@ -3153,12 +3153,14 @@ int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id)
 	if (node == NULL) {
 		CCCI_BOOTUP_LOG(md_id, TAG,
 			"warning: no mediatek,mdcldma in dts\n");
+		kfree(md_ctrl);
 		return -1;
 	}
 	md_ctrl->cldma_irq_flags = IRQF_TRIGGER_NONE;
 	md_ctrl->cldma_irq_id = irq_of_parse_and_map(node, 0);
 	if (md_ctrl->cldma_irq_id == 0) {
 		CCCI_ERROR_LOG(md_id, TAG, "no cldma irq id set in dts\n");
+		kfree(md_ctrl);
 		return -1;
 	}
 #if MD_GENERATION <= (6292)
@@ -3175,6 +3177,7 @@ int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id)
 		md_ctrl->cldma_md_pdn_base == NULL ||
 		md_ctrl->cldma_md_ao_base == NULL) {
 		CCCI_ERROR_LOG(md_id, TAG, "no cldma register set in dts\n");
+		kfree(md_ctrl);
 		return -1;
 	}
 #else
