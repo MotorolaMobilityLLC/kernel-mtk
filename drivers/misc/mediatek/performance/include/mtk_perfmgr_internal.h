@@ -48,6 +48,7 @@ static const struct file_operations perfmgr_ ## name ## _proc_fops = { \
 
 #define PROC_ENTRY(name) {__stringify(name), &perfmgr_ ## name ## _proc_fops}
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define for_each_perfmgr_clusters(i)	\
 	for (i = 0; i < clstr_num; i++)
 
@@ -56,6 +57,7 @@ static const struct file_operations perfmgr_ ## name ## _proc_fops = { \
 #define LOG_BUF_SIZE (128)
 
 extern int clstr_num;
+extern int powerhal_tid;
 extern char *perfmgr_copy_from_user_for_proc(const char __user *buffer,
 					size_t count);
 
@@ -64,6 +66,7 @@ extern int check_proc_write(int *data, const char *ubuf, size_t cnt);
 extern int check_boot_boost_proc_write(int *cgroup, int *data,
 				 const char *ubuf, size_t cnt);
 
+extern void perfmgr_trace_count(int val, const char *fmt, ...);
 extern void perfmgr_trace_end(void);
 extern void perfmgr_trace_begin(char *name, int id, int a, int b);
 extern void perfmgr_trace_printk(char *module, char *string);

@@ -26,6 +26,10 @@
 #include "boost_ctrl.h"
 #include "mtk_perfmgr_internal.h"
 
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+#include "cpu_ctrl_cfp.h"
+#endif
+
 #ifdef CONFIG_TRACING
 #include <linux/kallsyms.h>
 #include <linux/trace_events.h>
@@ -36,6 +40,12 @@ static struct ppm_limit_data *current_freq;
 static struct ppm_limit_data *freq_set[CPU_MAX_KIR];
 static int log_enable;
 static unsigned long *policy_mask;
+
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+static int cfp_init_ret;
+#endif
+
+int powerhal_tid;
 
 /*******************************************/
 int update_userlimit_cpu_freq(int kicker, int num_cluster
@@ -112,8 +122,16 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster
 		for_each_perfmgr_clusters(j) {
 			final_freq[j].min
 				= MAX(freq_set[i][j].min, final_freq[j].min);
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+			final_freq[j].max
+				= final_freq[j].max != -1 &&
+				freq_set[i][j].max != -1 ?
+				MIN(freq_set[i][j].max, final_freq[j].max) :
+				MAX(freq_set[i][j].max, final_freq[j].max);
+#else
 			final_freq[j].max
 				= MAX(freq_set[i][j].max, final_freq[j].max);
+#endif
 			if (final_freq[j].min > final_freq[j].max &&
 					final_freq[j].max != -1)
 				final_freq[j].max = final_freq[j].min;
@@ -139,7 +157,16 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster
 #ifdef CONFIG_TRACING
 	perfmgr_trace_printk("cpu_ctrl", msg);
 #endif
+
+
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+	if (!cfp_init_ret)
+		cpu_ctrl_cfp(final_freq);
+	else
+		mt_ppm_userlimit_cpu_freq(perfmgr_clusters, final_freq);
+#else
 	mt_ppm_userlimit_cpu_freq(perfmgr_clusters, final_freq);
+#endif
 
 ret_update:
 	kfree(final_freq);
@@ -199,6 +226,7 @@ static ssize_t perfmgr_perfserv_freq_proc_write(struct file *filp
 				"@%s: number of arguments < %d!\n",
 				__func__, arg_num);
 	} else {
+		powerhal_tid = current->pid;
 		update_userlimit_cpu_freq(CPU_KIR_PERF
 				, perfmgr_clusters, freq_limit);
 	}
@@ -349,8 +377,6 @@ int cpu_ctrl_init(struct proc_dir_entry *parent)
 	if (!boost_dir)
 		pr_debug("boost_dir null\n ");
 
-
-
 	/* create procfs */
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
 		if (!proc_create(entries[i].name, 0644,
@@ -361,6 +387,10 @@ int cpu_ctrl_init(struct proc_dir_entry *parent)
 			goto out;
 		}
 	}
+
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+	cfp_init_ret = cpu_ctrl_cfp_init(boost_dir);
+#endif
 
 	current_freq = kcalloc(perfmgr_clusters, sizeof(struct ppm_limit_data),
 			GFP_KERNEL);
@@ -399,4 +429,9 @@ void cpu_ctrl_exit(void)
 	kfree(policy_mask);
 	for (i = 0; i < CPU_MAX_KIR; i++)
 		kfree(freq_set[i]);
+
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+	if (!cfp_init_ret)
+		cpu_ctrl_cfp_exit();
+#endif
 }
