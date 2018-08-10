@@ -320,6 +320,7 @@ static struct ccci_dump_buffer boot_up_ctlb[2];
 static struct ccci_dump_buffer repeat_ctlb[2];
 static struct ccci_dump_buffer reg_dump_ctlb[2];
 static struct ccci_dump_buffer history_ctlb[2];
+static struct ccci_dump_buffer ke_dump_ctlb[2];
 static int buff_bind_md_id[5];
 static int md_id_bind_buf_id[5];
 static int buff_en_bit_map;
@@ -365,6 +366,8 @@ static struct buffer_node node_array[2][CCCI_DUMP_MAX+1] = {
 		CCCI_DUMP_ATTR_RING, CCCI_DUMP_MEM_DUMP},
 		{&history_ctlb[0], CCCI_HISTORY_BUF,
 		CCCI_DUMP_ATTR_RING, CCCI_DUMP_HISTORY},
+		{&ke_dump_ctlb[0], 32*1024,
+		CCCI_DUMP_ATTR_RING, CCCI_DUMP_REGISTER},
 	},
 	{
 		{&init_setting_ctlb[1], MD3_CCCI_INIT_SETTING_BUF,
@@ -379,6 +382,8 @@ static struct buffer_node node_array[2][CCCI_DUMP_MAX+1] = {
 		CCCI_DUMP_ATTR_RING, CCCI_DUMP_MEM_DUMP},
 		{&history_ctlb[1], MD3_CCCI_HISTORY_BUF,
 		CCCI_DUMP_ATTR_RING, CCCI_DUMP_HISTORY},
+		{&ke_dump_ctlb[1], 1*1024,
+		CCCI_DUMP_ATTR_RING, CCCI_DUMP_REGISTER},
 	}
 };
 
@@ -532,6 +537,9 @@ static void format_separate_str(char str[], int type)
 		break;
 	case CCCI_DUMP_HISTORY:
 		sep_str = "[0]HISTORY LOG REGION";
+		break;
+	case CCCI_DUMP_REGISTER:
+		sep_str = "[0]REGISTER LOG REGION";
 		break;
 	default:
 		sep_str = "[0]Unsupport REGION";
@@ -832,9 +840,10 @@ static void ccci_dump_buffer_init(void)
 		while (node_ptr->ctlb_ptr != NULL) {
 			ptr = node_ptr->ctlb_ptr;
 			spin_lock_init(&ptr->lock);
-			if (buff_en_bit_map & (1<<i)) {
+			if (buff_en_bit_map & (1<<i) && node_ptr->init_size) {
 				/* allocate buffer */
-				ptr->buffer = vmalloc(node_ptr->init_size);
+				ptr->buffer = kmalloc(node_ptr->init_size,
+						GFP_KERNEL);
 				if (ptr->buffer != NULL) {
 					ptr->buf_size = node_ptr->init_size;
 					ptr->attr = node_ptr->init_attr;
@@ -869,6 +878,8 @@ int get_dump_buf_usage(char buf[], int size)
 					reg_dump_ctlb[i].max_num);
 		ret += snprintf(&buf[ret], size - ret, "  history:%d\n",
 					history_ctlb[i].max_num);
+		ret += snprintf(&buf[ret], size - ret, "  register:%d\n",
+					ke_dump_ctlb[i].max_num);
 	}
 
 	return ret;
@@ -1147,3 +1158,16 @@ void ccci_log_init(void)
 	ccci_dump_buffer_init();
 	ccci_event_buffer_init();
 }
+
+void get_ccci_aee_buffer(unsigned long *vaddr, unsigned long *size)
+{
+	unsigned long data_size = ke_dump_ctlb[0].data_size;
+
+	if (data_size > ke_dump_ctlb[0].buf_size)
+		data_size = ke_dump_ctlb[0].buf_size;
+
+	*vaddr = (unsigned long)ke_dump_ctlb[0].buffer;
+	*size = data_size;
+
+}
+EXPORT_SYMBOL(get_ccci_aee_buffer);
