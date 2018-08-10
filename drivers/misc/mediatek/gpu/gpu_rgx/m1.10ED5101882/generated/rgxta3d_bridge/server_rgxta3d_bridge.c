@@ -1907,6 +1907,9 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											IMG_TRUE);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
+						PVR_DPF((PVR_DBG_ERROR,
+						"%s: %d",
+						__func__, __LINE__));
 						UnlockHandle();
 						goto RGXKickTA3D_exit;
 					}
@@ -1985,6 +1988,9 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 											IMG_TRUE);
 					if(psRGXKickTA3DOUT->eError != PVRSRV_OK)
 					{
+						PVR_DPF((PVR_DBG_ERROR,
+						"%s: %d",
+						__func__, __LINE__));
 						UnlockHandle();
 						goto RGXKickTA3D_exit;
 					}
