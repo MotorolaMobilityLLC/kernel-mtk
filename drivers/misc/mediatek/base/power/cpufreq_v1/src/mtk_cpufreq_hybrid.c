@@ -888,15 +888,20 @@ unsigned char *record_CCI_Tbl;
 
 unsigned int cpuhvfs_get_cci_result(unsigned int idx_1, unsigned int idx_2)
 {
-	return record_CCI_Ref[(idx_1 * 16) + idx_2];
+	if (idx_1 < NR_FREQ && idx_2 < NR_FREQ)
+		return record_CCI_Ref[(idx_1 * NR_FREQ) + idx_2];
+	else
+		return 0;
 }
 
 void cpuhvfs_update_cci_map_tbl(unsigned int idx_1, unsigned int idx_2,
 	unsigned char result, unsigned int use_id)
 {
-	csram_write(OFFS_CCI_TBL_USER, use_id);
-	record_CCI_Ref[(idx_1 * 16) + idx_2] = result;
-	csram_write(OFFS_EEM_S, 1);
+	if (idx_1 < NR_FREQ && idx_2 < NR_FREQ) {
+		csram_write(OFFS_CCI_TBL_USER, use_id);
+		record_CCI_Ref[(idx_1 * NR_FREQ) + idx_2] = result;
+		csram_write(OFFS_EEM_S, 1);
+	}
 }
 #endif
 
@@ -1037,8 +1042,8 @@ void __init cpuhvfs_pvt_tbl_create(void)
 
 	for (i = 0; i < NR_FREQ; i++) {
 		for (j = 0; j < NR_FREQ; j++) {
-			record_CCI_Ref[(i * 16) + j] =
-				*(record_CCI_Tbl + (i * 16) + j);
+			record_CCI_Ref[(i * NR_FREQ) + j] =
+				*(record_CCI_Tbl + (i * NR_FREQ) + j);
 			/* pr_info("%d ", *(record_CCI_Tbl + (i * 16) + j)); */
 		}
 		/* pr_info("\n"); */
