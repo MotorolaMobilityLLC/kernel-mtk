@@ -15,10 +15,23 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <trace/events/power.h>
+#include <trace/events/sched.h>
 
 #include "sched.h"
 #include "tune.h"
+#include "cpufreq_schedutil.h"
 
+#include <mt-plat/met_drv.h>
+
+static char met_dvfs_info[5][16] = {
+	"sched_dvfs_cid0",
+	"sched_dvfs_cid1",
+	"sched_dvfs_cid2",
+	"NULL",
+	"NULL"
+};
+
+static struct cpufreq_governor schedutil_gov;
 unsigned long boosted_cpu_util(int cpu);
 
 /* Stub out fast switch routines present on mainline to reduce the backport
@@ -86,6 +99,11 @@ static DEFINE_PER_CPU(struct sugov_cpu, sugov_cpu);
 static bool sugov_should_update_freq(struct sugov_policy *sg_policy, u64 time)
 {
 	s64 delta_ns;
+	struct cpufreq_policy *policy = sg_policy->policy;
+
+	if (policy->governor != &schedutil_gov ||
+		!policy->governor_data)
+		return false;
 
 	if (sg_policy->work_in_progress)
 		return false;
@@ -128,6 +146,7 @@ static void sugov_update_commit(struct sugov_policy *sg_policy, u64 time,
 				unsigned int next_freq)
 {
 	struct cpufreq_policy *policy = sg_policy->policy;
+	int cid = arch_get_cluster_id(policy->cpu);
 
 	if (sugov_up_down_rate_limit(sg_policy, time, next_freq)) {
 		/* Reset cached freq as next_freq isn't changed */
@@ -141,6 +160,11 @@ static void sugov_update_commit(struct sugov_policy *sg_policy, u64 time,
 	sg_policy->next_freq = next_freq;
 	sg_policy->last_freq_update_time = time;
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	mt_cpufreq_set_by_wfi_load_cluster(cid, next_freq);
+	met_tag_oneshot(0, met_dvfs_info[cid], next_freq);
+	trace_sched_util(cid, next_freq, time);
+#else
 	if (policy->fast_switch_enabled) {
 		next_freq = cpufreq_driver_fast_switch(policy, next_freq);
 		if (next_freq == CPUFREQ_ENTRY_INVALID)
@@ -152,6 +176,7 @@ static void sugov_update_commit(struct sugov_policy *sg_policy, u64 time,
 		sg_policy->work_in_progress = true;
 		irq_work_queue(&sg_policy->irq_work);
 	}
+#endif
 }
 
 /**
@@ -351,6 +376,7 @@ static void sugov_update_shared(struct update_util_data *hook, u64 time,
 	struct sugov_policy *sg_policy = sg_cpu->sg_policy;
 	unsigned long util, max;
 	unsigned int next_f;
+	int cid;
 
 	sugov_get_util(&util, &max, time);
 
@@ -368,6 +394,10 @@ static void sugov_update_shared(struct update_util_data *hook, u64 time,
 			next_f = sg_policy->policy->cpuinfo.max_freq;
 		else
 			next_f = sugov_next_freq_shared(sg_cpu, time);
+
+		/* MTK support */
+		cid = arch_get_cluster_id(sg_policy->policy->cpu);
+		next_f = mt_cpufreq_find_close_freq(cid, next_f);
 
 		sugov_update_commit(sg_policy, time, next_f);
 	}
@@ -499,7 +529,6 @@ static struct kobj_type sugov_tunables_ktype = {
 
 /********************** cpufreq governor interface *********************/
 
-static struct cpufreq_governor schedutil_gov;
 
 static struct sugov_policy *sugov_policy_alloc(struct cpufreq_policy *policy)
 {

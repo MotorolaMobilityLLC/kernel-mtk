@@ -1923,6 +1923,28 @@ TRACE_EVENT(sched_dvfs,
 			)
 );
 
+/*
+ * Tracepoint for schedutil governor
+ */
+TRACE_EVENT(sched_util,
+		TP_PROTO(int cid, unsigned int next_freq, u64 time),
+		TP_ARGS(cid, next_freq, time),
+		TP_STRUCT__entry(
+			__field(int, cid)
+			__field(unsigned int, next_freq)
+			__field(u64, time)
+			),
+		TP_fast_assign(
+			__entry->cid		= cid;
+			__entry->next_freq	= next_freq;
+			__entry->time		= time;
+			),
+		TP_printk("cid=%d next=%u last_freq_update_time=%lld",
+			__entry->cid,
+			__entry->next_freq,
+			__entry->time
+			)
+);
 
 /*
  * Tracepoint for walt debug info.
