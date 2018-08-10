@@ -141,6 +141,13 @@ static const struct mtk_spi_compatible mt6765_compat = {
 	.must_tx = true,
 };
 
+static const struct mtk_spi_compatible mt3967_compat = {
+	.need_pad_sel = true,
+	.enhance_timing = true,
+	.dma8g_spi_ext = true,
+	.must_tx = true,
+};
+
 static const struct mtk_spi_compatible mt7622_compat = {
 	.must_tx = true,
 	.enhance_timing = true,
@@ -177,6 +184,9 @@ static const struct of_device_id mtk_spi_of_match[] = {
 	},
 	{ .compatible = "mediatek,mt6765-spi",
 		.data = (void *)&mt6765_compat,
+	},
+	{ .compatible = "mediatek,mt3967-spi",
+		.data = (void *)&mt3967_compat,
 	},
 	{ .compatible = "mediatek,mt7622-spi",
 		.data = (void *)&mt7622_compat,
