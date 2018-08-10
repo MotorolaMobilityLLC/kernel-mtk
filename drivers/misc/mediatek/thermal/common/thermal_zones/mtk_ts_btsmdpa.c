@@ -597,6 +597,7 @@ static int get_hw_btsmdpa_temp(void)
 
 	int ret = 0, data[4], i, ret_value = 0, ret_temp = 0, output;
 	int times = 1, Channel = g_RAP_ADC_channel; /* 6752=0(AUX_IN1_NTC) */
+	static int valid_temp;
 #if defined(APPLY_AUXADC_CALI_DATA)
 	int auxadc_cali_temp;
 #endif
@@ -610,20 +611,37 @@ static int get_hw_btsmdpa_temp(void)
 	i = times;
 	while (i--) {
 		ret_value = IMM_GetOneChannelValue(Channel, data, &ret_temp);
+		if (ret_value) {/* AUXADC is busy */
 #if defined(APPLY_AUXADC_CALI_DATA)
-		/*
-		 * by reference mtk_auxadc.c
-		 *
-		 * convert to volt:
-		 *      data[0] = (rawdata * 1500 / (4096 + cali_ge)) / 1000;
-		 *
-		 * convert to mv, need multiply 10:
-		 *      data[1] = (rawdata * 150 / (4096 + cali_ge)) % 100;
-		 *
-		 * provide high precision mv:
-		 *      data[2] = (rawdata * 1500 / (4096 + cali_ge)) % 1000;
-		 */
-		auxadc_cali_temp = data[0]*1000+data[2];
+			auxadc_cali_temp = valid_temp;
+#else
+			ret_temp = valid_temp;
+#endif
+		} else {
+#if defined(APPLY_AUXADC_CALI_DATA)
+			/*
+			 * by reference mtk_auxadc.c
+			 *
+			 * convert to volt:
+			 *      data[0] = (rawdata * 1500 / (4096 + cali_ge)) /
+			 *                 1000;
+			 *
+			 * convert to mv, need multiply 10:
+			 *      data[1] = (rawdata * 150 / (4096 + cali_ge)) %
+			 *                 100;
+			 *
+			 * provide high precision mv:
+			 *      data[2] = (rawdata * 1500 / (4096 + cali_ge)) %
+			 *                 1000;
+			 */
+			auxadc_cali_temp = data[0]*1000+data[2];
+			valid_temp = auxadc_cali_temp;
+#else
+			valid_temp = ret_temp;
+#endif
+		}
+
+#if defined(APPLY_AUXADC_CALI_DATA)
 		ret += auxadc_cali_temp;
 		mtkts_btsmdpa_dprintk(
 			"[thermal_auxadc_get_data(AUX_IN1_NTC)]: ret_temp=%d\n",
