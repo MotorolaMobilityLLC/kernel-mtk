@@ -34,11 +34,16 @@ s32 cmdq_sec_init_context(struct cmdq_sec_tee_context *tee)
 
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 	while (!is_teei_ready()) {
-		CMDQ_MSG("[SEC]TEE is not ready, wait...\n");
+		CMDQ_MSG("[SEC] Microtrust TEE is not ready, wait...\n");
 		msleep(1000);
 	}
-	CMDQ_LOG("[SEC]TEE is ready\n");
+#elif defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+	while (!is_mobicore_ready()) {
+		CMDQ_MSG("[SEC] Trustonic TEE is not ready, wait...\n");
+		msleep(1000);
+	}
 #endif
+	CMDQ_LOG("[SEC]TEE is ready\n");
 
 	status = TEEC_InitializeContext(NULL, &tee->gp_context);
 	if (status != TEEC_SUCCESS)
