@@ -11578,10 +11578,9 @@ if (bSlowMotion == MFALSE) {
 		}
 	}
 #endif
-	/*      */
 	/* make sure isr sequence r     all     done after this status switch */
-
-	for (j = 0; j < ISP_IRQ_TYPE_AMOUNT; j++) {
+    /* don't update CAMSV/CAMSV2 status */
+	for (j = 0; j < ISP_IRQ_TYPE_ISP_AMOUNT; j++) {
 		for (i = 0; i < IRQ_USER_NUM_MAX; i++) {
 			/* 1. update interrupt status to all users */
 			IspInfo.IrqInfo.Status[i][j] |=
