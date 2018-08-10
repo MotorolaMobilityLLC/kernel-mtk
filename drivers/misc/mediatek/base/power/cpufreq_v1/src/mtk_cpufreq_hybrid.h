@@ -91,6 +91,9 @@ int cpuhvfs_set_cpu_load_freq(unsigned int cpu,
 #else
 int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq);
 int cpuhvfs_set_set_cci_volt(unsigned int volt);
+unsigned int cpuhvfs_get_cci_result(unsigned int idx_1, unsigned int idx_2);
+void cpuhvfs_update_cci_map_tbl(unsigned int idx_1, unsigned int idx_2,
+	unsigned char result, unsigned int use_id);
 #endif
 int cpuhvfs_set_iccs_freq(enum mt_cpu_dvfs_id id, unsigned int freq);
 int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl,
