@@ -747,6 +747,13 @@ prefer_idle_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	struct schedtune *st = css_st(css);
 	st->prefer_idle = prefer_idle;
 
+#if MET_STUNE_DEBUG
+	/* top-app */
+	if (st->idx == 3)
+		met_tag_oneshot(0, "sched_user_top_prefer_idle",
+				st->prefer_idle);
+#endif
+
 	return 0;
 }
 
@@ -768,6 +775,10 @@ capacity_min_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		printk_deferred("warning: capacity_min should be 0~1024\n");
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+	set_cap_min_freq(capacity_min);
+#endif
 
 	rcu_read_lock();
 	st->capacity_min = capacity_min;
