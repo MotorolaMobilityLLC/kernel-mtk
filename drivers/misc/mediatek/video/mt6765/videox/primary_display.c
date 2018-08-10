@@ -6351,9 +6351,14 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		}
 	}
 
+	/* Disable sbch when user isn't HWC */
+	if (cfg->setter != SESSION_USER_HWC)
+		data_config->sbch_enable = 0;
+	else
+		data_config->sbch_enable = 1;
+
 	if (pgc->session_mode != DISP_SESSION_RDMA_MODE) {
 		data_config->ovl_dirty = 1;
-		data_config->sbch_enable = 1;
 	} else {
 		ret = ddp_convert_ovl_input_to_rdma(&data_config->rdma_config,
 			&data_config->ovl_config[bypass_layer_id],
