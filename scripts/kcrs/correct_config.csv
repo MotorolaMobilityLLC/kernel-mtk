@@ -798,6 +798,7 @@ CONFIG_MTK_STATHUB,PROJECT,qiangming.xia,new config in this commit e5afb39d5bc74
 CONFIG_MTK_STEPSIGNHUB,PROJECT,hongxu.zhao,new config in this commit 5d3fd154d89af1a6fdf1dcf1963d1595834933de,,,,,,,,,
 CONFIG_MTK_SVP_DISABLE_SODI,PROJECT,tryout.chen,,,,,,,,,,
 CONFIG_MTK_SWCHR_SUPPORT,PROJECT,elvin.lin,,y,y,y,y,y,y,y,y,
+CONFIG_MTK_SWPM,PLATFORM,brian-sy.yang,,X,X,X,X,X,X,y,y,
 CONFIG_MTK_SYNC,COMMON,,,y,y,y,y,y,y,y,y,
 CONFIG_MTK_SYSENV,PROJECT,ying.jiang,,,,,,,,,,
 CONFIG_MTK_TC1_FEATURE,PROJECT,teddy.seo,,,,,,,,,,
