@@ -31,23 +31,23 @@ extern "C" {
 /*
  * LOG
  */
-#define hps_err(fmt, args...)		pr_debug("[HPS] " fmt, ##args)
-#define hps_warn(fmt, args...)		pr_debug("[HPS] " fmt, ##args)
+#define hps_err(fmt, args...)		pr_notice("[HPS] " fmt, ##args)
+#define hps_warn(fmt, args...)		pr_notice("[HPS] " fmt, ##args)
 
 #if EN_LOG_NOTICE
-#define hps_notice(fmt, args...)	pr_debug("[HPS] " fmt, ##args)
+#define hps_notice(fmt, args...)	pr_notice("[HPS] " fmt, ##args)
 #else
 #define hps_notice(fmt, args...)	pr_debug("[HPS] " fmt, ##args)
 #endif
 
 #if EN_LOG_INFO
-#define hps_info(fmt, args...)		pr_debug("[HPS] " fmt, ##args)
+#define hps_info(fmt, args...)		pr_info("[HPS] " fmt, ##args)
 #else
 #define hps_info(fmt, args...)		pr_debug("[HPS] " fmt, ##args)
 #endif
 
 #if EN_LOG_DEBUG
-#define hps_debug(fmt, args...)		pr_debug("[HPS] " fmt, ##args)
+#define hps_debug(fmt, args...)		pr_info("[HPS] " fmt, ##args)
 #else
 #define hps_debug(fmt, args...)		pr_debug("[HPS] " fmt, ##args)
 #endif

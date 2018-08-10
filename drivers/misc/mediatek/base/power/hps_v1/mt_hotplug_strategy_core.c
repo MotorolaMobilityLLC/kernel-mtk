@@ -16,7 +16,7 @@
  * @brief   hotplug strategy(hps) - core
  */
 
-#include <linux/kernel.h>	/* printk */
+#include <linux/kernel.h>
 #include <linux/module.h>	/* MODULE_DESCRIPTION, MODULE_LICENSE */
 #include <linux/init.h>		/* module_init, module_exit */
 #include <linux/cpu.h>		/* cpu_up */
@@ -120,6 +120,7 @@ static int _hps_task_main(void *data)
 	}
 
 	log_info("leave %s\n", __func__);
+
 	return 0;
 }
 

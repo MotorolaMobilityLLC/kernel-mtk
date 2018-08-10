@@ -16,7 +16,7 @@
  * @brief   hotplug strategy(hps) - cpu
  */
 
-#include <linux/kernel.h>	/* printk */
+#include <linux/kernel.h>
 #include <linux/module.h>	/* MODULE_DESCRIPTION, MODULE_LICENSE */
 #include <linux/init.h>		/* module_init, module_exit */
 #include <linux/sched.h>	/* sched_get_* */
