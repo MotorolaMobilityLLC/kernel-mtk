@@ -1474,7 +1474,7 @@ static int smp_test_on_hosts(struct seq_file *m, int thread_num,
 		ret = -1;
 		goto out;
 	}
-	if (host_id >= HOST_MAX_NUM || host_id < 0) {
+	if (host_id > HOST_MAX_NUM || host_id < 0) {
 		seq_printf(m, " Invalid host id %d\n", host_id);
 		ret = -1;
 		goto out;
