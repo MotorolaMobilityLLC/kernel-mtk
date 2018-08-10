@@ -150,6 +150,7 @@ enum {
 	SINK_TYPE_PD_TRY,
 	SINK_TYPE_PD_CONNECTED,
 	SINK_TYPE_REQUEST,
+	SINK_TYPE_PD_PR_SWAP,
 };
 
 bool mtk_is_pep30_en_unlock(void)
@@ -188,7 +189,9 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		pd_sink_voltage_new = noti->vbus_state.mv;
 		pd_sink_current_new = noti->vbus_state.ma;
 
-		if (noti->vbus_state.type & TCP_VBUS_CTRL_PD_DETECT)
+		if (noti->vbus_state.type == TCP_VBUS_CTRL_PD_PR_SWAP)
+			pd_sink_type = SINK_TYPE_PD_PR_SWAP;
+		else if (noti->vbus_state.type & TCP_VBUS_CTRL_PD_DETECT)
 			pd_sink_type = SINK_TYPE_PD_CONNECTED;
 		else if (noti->vbus_state.type == TCP_VBUS_CTRL_REMOVE)
 			pd_sink_type = SINK_TYPE_REMOVE;
@@ -209,16 +212,21 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #if CONFIG_MTK_GAUGE_VERSION == 30
 				charger_manager_enable_power_path(chg_consumer,
 					MAIN_CHARGER, true);
+				charger_manager_enable_charging(chg_consumer,
+					MAIN_CHARGER, true);
 #else
 				mtk_chr_pd_enable_power_path(1);
 #endif
 				pd_sink_voltage_old = pd_sink_voltage_new;
 				pd_sink_current_old = pd_sink_current_new;
-			} else if (pd_sink_type == SINK_TYPE_REMOVE) {
+			} else if (pd_sink_type == SINK_TYPE_REMOVE ||
+					pd_sink_type == SINK_TYPE_PD_PR_SWAP) {
 				if (tcpc_kpoc)
 					break;
 #if CONFIG_MTK_GAUGE_VERSION == 30
 				charger_manager_enable_power_path(chg_consumer,
+					MAIN_CHARGER, false);
+				charger_manager_enable_charging(chg_consumer,
 					MAIN_CHARGER, false);
 #else
 				mtk_chr_pd_enable_power_path(0);
@@ -235,6 +243,8 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				/* disable charge */
 #if CONFIG_MTK_GAUGE_VERSION == 30
 				charger_manager_enable_power_path(chg_consumer,
+					MAIN_CHARGER, false);
+				charger_manager_enable_charging(chg_consumer,
 					MAIN_CHARGER, false);
 #else
 				mtk_chr_pd_enable_power_path(0);
