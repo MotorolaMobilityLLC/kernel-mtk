@@ -116,9 +116,7 @@ struct imgsensor_info_struct {
 
 /* I2C related */
 static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr);
-static kal_uint16 read_cmos_sensor(kal_uint32 addr);
 static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para);
-static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para);
 static kal_uint16 table_write_cmos_sensor_byte(kal_uint16 *para, kal_uint32 len);
 
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);

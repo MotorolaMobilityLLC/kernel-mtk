@@ -322,27 +322,11 @@ static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
 	return get_byte;
 }
 
-static kal_uint16 read_cmos_sensor(kal_uint32 addr)
-{
-	kal_uint16 get_byte = 0;
-	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
-
-	iReadRegI2C(pu_send_cmd, 2, (u8 *) &get_byte, 1, imgsensor.i2c_write_id);
-	return get_byte;
-}
-
 static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = { (char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF) };
 
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
-}
-
-static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
-{
-	char pusendcmd[4] = { (char)(addr >> 8), (char)(addr & 0xFF), (char)(para >> 8), (char)(para & 0xFF) };
-
-	iWriteRegI2C(pusendcmd, 4, imgsensor.i2c_write_id);
 }
 
 static kal_uint16 table_write_cmos_sensor_byte(kal_uint16 *para, kal_uint32 len)
@@ -392,8 +376,10 @@ static void set_dummy(void)
 	 * you can set dummy by imgsensor.dummy_line and imgsensor.dummy_pixel,
 	 * or you can set dummy by imgsensor.frame_length and imgsensor.line_length
 	 */
-	write_cmos_sensor(0x380e, imgsensor.frame_length & 0xFFFF);
-	write_cmos_sensor(0x380c, imgsensor.line_length & 0xFFFF);
+	write_cmos_sensor_byte(0x380e, imgsensor.frame_length >> 8);
+	write_cmos_sensor_byte(0x380f, imgsensor.frame_length & 0xFF);
+	write_cmos_sensor_byte(0x380c, imgsensor.line_length >> 8);
+	write_cmos_sensor_byte(0x380d, imgsensor.line_length & 0xFF);
 }	/* set_dummy */
 
 
@@ -456,11 +442,13 @@ static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length
 			set_max_framerate(146, 0);
 		else {
 			/* Extend frame length */
-			write_cmos_sensor(0x380e, imgsensor.frame_length & 0xFFFF);
+			write_cmos_sensor_byte(0x380e, imgsensor.frame_length >> 8);
+			write_cmos_sensor_byte(0x380f, imgsensor.frame_length & 0xFF);
 		}
 	} else {
 		/* Extend frame length */
-		write_cmos_sensor(0x380e, imgsensor.frame_length & 0xFFFF);
+		write_cmos_sensor_byte(0x380e, imgsensor.frame_length >> 8);
+		write_cmos_sensor_byte(0x380f, imgsensor.frame_length & 0xFF);
 	}
 
 	/* Update Shutter */
@@ -485,6 +473,9 @@ static void set_shutter(kal_uint32 shutter)
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
+	/* group hold start */
+	write_cmos_sensor_byte(0x3208, 0x00);
+
 	if (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) {
 		/* long expsoure */
 		LOG_INF("Long exposure, shutter = %d\n", shutter);
@@ -508,7 +499,8 @@ static void set_shutter(kal_uint32 shutter)
 		shutter = imgsensor_info.max_frame_length - imgsensor_info.margin;
 
 		/* Extend frame length */
-		write_cmos_sensor(0x380e, imgsensor.frame_length & 0xFFFF);
+		write_cmos_sensor_byte(0x380e, imgsensor.frame_length >> 8);
+		write_cmos_sensor_byte(0x380f, imgsensor.frame_length & 0xFF);
 
 		LOG_INF("new shutter = %u, new line length = %u\n", shutter, line_length);
 	} else {
@@ -538,17 +530,26 @@ static void set_shutter(kal_uint32 shutter)
 				set_max_framerate(146, 0);
 			else {
 				/* Extend frame length */
-				write_cmos_sensor(0x380e, imgsensor.frame_length & 0xFFFF);
+				write_cmos_sensor_byte(0x380e, imgsensor.frame_length >> 8);
+				write_cmos_sensor_byte(0x380f, imgsensor.frame_length & 0xFF);
 			}
 		} else {
 			/* Extend frame length */
-			write_cmos_sensor(0x380e, imgsensor.frame_length & 0xFFFF);
+			write_cmos_sensor_byte(0x380e, imgsensor.frame_length >> 8);
+			write_cmos_sensor_byte(0x380f, imgsensor.frame_length & 0xFF);
 		}
 	}
 
 	/* Update Shutter */
 	write_cmos_sensor_byte(0x3501, shutter >> 8);
 	write_cmos_sensor_byte(0x3502, shutter & 0xFF);
+
+	/* group hold end */
+	write_cmos_sensor_byte(0x3208, 0x10);
+
+	/* delay launch group */
+	write_cmos_sensor_byte(0x320d, 0x00);
+	write_cmos_sensor_byte(0x3208, 0xa0);
 
 	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
@@ -635,20 +636,20 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 	 ********************************************************/
 	switch (image_mirror) {
 	case IMAGE_NORMAL:
-		write_cmos_sensor_byte(0x3820, ((read_cmos_sensor(0x3820) & 0xFB) | 0x00));
-		write_cmos_sensor_byte(0x3821, ((read_cmos_sensor(0x3821) & 0xFB) | 0x04));
+		write_cmos_sensor_byte(0x3820, ((read_cmos_sensor_byte(0x3820) & 0xFB) | 0x00));
+		write_cmos_sensor_byte(0x3821, ((read_cmos_sensor_byte(0x3821) & 0xFB) | 0x04));
 		break;
 	case IMAGE_H_MIRROR:
-		write_cmos_sensor_byte(0x3820, ((read_cmos_sensor(0x3820) & 0xFB) | 0x00));
-		write_cmos_sensor_byte(0x3821, ((read_cmos_sensor(0x3821) & 0xFB) | 0x00));
+		write_cmos_sensor_byte(0x3820, ((read_cmos_sensor_byte(0x3820) & 0xFB) | 0x00));
+		write_cmos_sensor_byte(0x3821, ((read_cmos_sensor_byte(0x3821) & 0xFB) | 0x00));
 		break;
 	case IMAGE_V_MIRROR:
-		write_cmos_sensor_byte(0x3820, ((read_cmos_sensor(0x3820) & 0xFB) | 0x04));
-		write_cmos_sensor_byte(0x3821, ((read_cmos_sensor(0x3821) & 0xFB) | 0x04));
+		write_cmos_sensor_byte(0x3820, ((read_cmos_sensor_byte(0x3820) & 0xFB) | 0x04));
+		write_cmos_sensor_byte(0x3821, ((read_cmos_sensor_byte(0x3821) & 0xFB) | 0x04));
 		break;
 	case IMAGE_HV_MIRROR:
-		write_cmos_sensor_byte(0x3820, ((read_cmos_sensor(0x3820) & 0xFB) | 0x04));
-		write_cmos_sensor_byte(0x3821, ((read_cmos_sensor(0x3821) & 0xFB) | 0x00));
+		write_cmos_sensor_byte(0x3820, ((read_cmos_sensor_byte(0x3820) & 0xFB) | 0x04));
+		write_cmos_sensor_byte(0x3821, ((read_cmos_sensor_byte(0x3821) & 0xFB) | 0x00));
 		break;
 	default:
 		LOG_INF("Error image_mirror setting\n");
@@ -1582,7 +1583,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	} else {
 		/* 0x5081[0]: 1 enable,  0 disable */
 		/* 0x5081[5:4]: Color bar type */
-		write_cmos_sensor(0x5081, 0x0000);
+		write_cmos_sensor_byte(0x5081, 0x00);
 
 		/* Recover pd restore setting */
 		if ((imgsensor.sensor_mode == IMGSENSOR_MODE_CAPTURE)
@@ -1669,10 +1670,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id, UINT8 *fe
 	case SENSOR_FEATURE_SET_ISP_MASTER_CLOCK_FREQ:
 		break;
 	case SENSOR_FEATURE_SET_REGISTER:
-		write_cmos_sensor(sensor_reg_data->RegAddr, sensor_reg_data->RegData);
+		write_cmos_sensor_byte(sensor_reg_data->RegAddr, sensor_reg_data->RegData);
 		break;
 	case SENSOR_FEATURE_GET_REGISTER:
-		sensor_reg_data->RegData = read_cmos_sensor(sensor_reg_data->RegAddr);
+		sensor_reg_data->RegData = read_cmos_sensor_byte(sensor_reg_data->RegAddr);
 		break;
 	case SENSOR_FEATURE_GET_LENS_DRIVER_ID:
 		/* get the lens driver ID from EEPROM or just return LENS_DRIVER_ID_DO_NOT_CARE */
