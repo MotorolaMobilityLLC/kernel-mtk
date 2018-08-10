@@ -453,7 +453,12 @@ int mtk_pe40_get_init_watt(struct charger_manager *pinfo)
 		chr_err("[pe40_i1] err:1 %d\n", ret);
 		return -1;
 	}
-	msleep(300);
+
+	for (i = 0; i < 3 ; i++) {
+		charger_dev_dump_registers(pinfo->chg1_dev);
+		msleep(100);
+	}
+
 	charger_dev_get_ibus(pinfo->chg1_dev, &ibus1);
 	vbus1 = battery_get_vbus();
 	ibus1 = ibus1 / 1000;
