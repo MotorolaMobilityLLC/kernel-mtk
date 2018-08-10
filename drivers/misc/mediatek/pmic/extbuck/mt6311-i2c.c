@@ -335,7 +335,7 @@ static int mt6311_user_space_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
 
-	MT6311LOG("******** mt6311_user_space_probe!! ********\n");
+	MT6311LOG("******** %s!! ********\n", __func__);
 
 	ret_device_file = device_create_file(&(dev->dev)
 					     , &dev_attr_mt6311_access);
