@@ -89,8 +89,14 @@ static void mtk_enable_otg_mode(void)
 #ifdef CONFIG_USB_VBUS_GPIO
 	struct pinctrl *pinctrl_drvvbus;
 	struct pinctrl_state *pinctrl_drvvbus_high;
+#endif
 
-	boost_on = true;
+	if (boost_on) {
+		mtk_xhci_mtk_printk(K_ALET, "vbus alredy on\n");
+		return;
+	}
+
+#ifdef CONFIG_USB_VBUS_GPIO
 	if (g_pdev == NULL) {
 		pr_notice("g_pdev is not ready\n");
 		return;
@@ -105,6 +111,7 @@ static void mtk_enable_otg_mode(void)
 		pr_notice("Cannot find usb pinctrl drvvbus_high\n");
 		return;
 	}
+	boost_on = true;
 	pinctrl_select_state(pinctrl_drvvbus, pinctrl_drvvbus_high);
 #else
 	boost_on = true;
@@ -125,7 +132,14 @@ static void mtk_disable_otg_mode(void)
 #ifdef CONFIG_USB_VBUS_GPIO
 	struct pinctrl *pinctrl_drvvbus;
 	struct pinctrl_state *pinctrl_drvvbus_low;
+#endif
 
+	if (!boost_on) {
+		mtk_xhci_mtk_printk(K_ALET, "vbus alredy off\n");
+		return;
+	}
+
+#ifdef CONFIG_USB_VBUS_GPIO
 	if (g_pdev == NULL) {
 		pr_notice("g_pdev is not ready\n");
 		return;
@@ -140,8 +154,10 @@ static void mtk_disable_otg_mode(void)
 		pr_notice("Cannot find usb pinctrl drvvbus_low\n");
 		return;
 	}
+	boost_on = false;
 	pinctrl_select_state(pinctrl_drvvbus, pinctrl_drvvbus_low);
 #else
+	boost_on = false;
 #if CONFIG_MTK_GAUGE_VERSION == 30
 	charger_dev_enable_otg(primary_charger, false);
 	enable_boost_polling(false);
@@ -149,7 +165,6 @@ static void mtk_disable_otg_mode(void)
 	set_chr_enable_otg(0x0);
 #endif
 #endif
-	boost_on = false;
 }
 
 static int mtk_xhci_hcd_init(void)
@@ -421,6 +436,12 @@ static int _mtk_xhci_driver_load(bool vbus_on)
 {
 	int ret = 0;
 
+	if (mtk_dualrole_stat == DUALROLE_HOST) {
+		mtk_xhci_mtk_printk(K_ALET,
+				"current is DUALROLE_HOST\n");
+		return 0;
+	}
+
 	/* recover clock/power setting and deassert reset bit of mac */
 #ifdef CONFIG_PROJECT_PHY
 	usb_phy_recover(0);
@@ -460,6 +481,13 @@ _err:
 
 static void _mtk_xhci_driver_unload(bool vbus_off)
 {
+
+	if (mtk_dualrole_stat == DUALROLE_DEVICE) {
+		mtk_xhci_mtk_printk(K_ALET,
+				"current is DUALROLE_DEVICE\n");
+		return;
+	}
+
 	mtk_xhci_hcd_cleanup();
 
 	if (vbus_off)
@@ -500,6 +528,7 @@ int mtk_xhci_driver_load(bool vbus_on)
 
 	return _mtk_xhci_driver_load(vbus_on);
 }
+
 void mtk_xhci_driver_unload(bool vbus_off)
 {
 	host_req = 0;
