@@ -3542,6 +3542,13 @@ TZ_RESULT get_US_PAMapAry(struct user_shm_param *shm_data, KREE_SHAREDMEM_PARAM 
 		return TZ_RESULT_ERROR_BAD_PARAMETERS;
 	}
 
+	/*init value*/
+	pin = NULL;
+	map_p = NULL;
+	(*shm_param).buffer = NULL;
+	(*shm_param).size = 0;
+	(*shm_param).mapAry = NULL;
+
 	cret = TZ_RESULT_SUCCESS;
 	/*
 	 * map pages
@@ -3558,9 +3565,11 @@ TZ_RESULT get_US_PAMapAry(struct user_shm_param *shm_data, KREE_SHAREDMEM_PARAM 
 		cret = TZ_RESULT_ERROR_OUT_OF_MEMORY;
 		goto us_map_fail;
 	}
+	pin->pageArray = NULL;
 	cret = _map_user_pages(pin, (unsigned long)(*shm_data).param.buffer, (*shm_data).param.size, 0);
 
 	if (cret != 0) {
+		pin->pageArray = NULL;
 		KREE_DEBUG("[%s]====> _map_user_pages fail. map user pages = 0x%x\n", __func__, (uint32_t) cret);
 		cret = TZ_RESULT_ERROR_INVALID_HANDLE;
 		goto us_map_fail;
