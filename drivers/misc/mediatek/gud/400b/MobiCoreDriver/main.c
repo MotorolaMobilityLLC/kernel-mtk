@@ -811,7 +811,7 @@ static void __exit mobicore_exit(void)
 	debugfs_remove_recursive(g_ctx.debug_dir);
 }
 
-module_init(mobicore_init);
+late_initcall(mobicore_init);
 module_exit(mobicore_exit);
 
 MODULE_AUTHOR("Trustonic Limited");
