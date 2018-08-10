@@ -19,7 +19,6 @@
 
 #if IS_ENABLED(CONFIG_MTK_SMI_EXT)
 #include <linux/platform_device.h>
-#include <../drivers/misc/mediatek/smi/smi_public.h>
 
 struct mtk_smi_pair {
 	unsigned int	offset;
@@ -53,8 +52,7 @@ extern struct mtk_smi_dev **larbs;
 int mtk_smi_clk_ref_cnts_read(struct mtk_smi_dev *smi);
 int mtk_smi_dev_enable(struct mtk_smi_dev *smi);
 int mtk_smi_dev_disable(struct mtk_smi_dev *smi);
-int mtk_smi_config_set(struct mtk_smi_dev *smi,
-	const unsigned int scen_indx, const bool mtcmos);
+int mtk_smi_config_set(struct mtk_smi_dev *smi, const unsigned int scen_indx);
 
 int smi_register(struct platform_driver *drv);
 int smi_unregister(struct platform_driver *drv);
