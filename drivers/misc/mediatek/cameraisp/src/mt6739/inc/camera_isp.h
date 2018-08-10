@@ -707,7 +707,7 @@ enum ISP_ED_BUFQUE_CTRL_ENUM {
 struct ISP_ED_BUFQUE_STRUCT {
 	enum ISP_ED_BUFQUE_CTRL_ENUM ctrl;
 	unsigned int processID;
-	unsigned int callerID;
+	unsigned long callerID;
 	int p2burstQIdx;
 	int p2dupCQIdx;
 	int frameNum;

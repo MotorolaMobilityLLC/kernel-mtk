@@ -753,7 +753,7 @@ static signed int P2_Support_BurstQNum = 2;
 #define P2_EDBUF_RLIST_TAG 2
 struct ISP_EDBUF_STRUCT {
 	unsigned int processID;     /* caller process ID */
-	unsigned int callerID;      /* caller thread     ID */
+	unsigned long callerID;      /* caller thread     ID */
 	/* p2 duplicate CQ index(for recognize belong to which package) */
 	signed int p2dupCQIdx;
 	enum ISP_ED_BUF_STATE_ENUM bufSts;  /* buffer status */
@@ -765,7 +765,7 @@ static struct ISP_EDBUF_STRUCT P2_EDBUF_RingList[_MAX_SUPPORT_P2_FRAME_NUM_];
 
 struct ISP_EDBUF_MGR_STRUCT {
 	unsigned int processID;     /* caller process ID */
-	unsigned int callerID;      /* caller thread  ID */
+	unsigned long callerID;      /* caller thread  ID */
 	/* p2 duplicate CQ index(for recognize belong to     which package) */
 	signed int p2dupCQIdx;
 	signed int frameNum;
@@ -7422,7 +7422,7 @@ static signed int ISP_ED_BufQue_Get_FirstMatBuf(struct ISP_ED_BUFQUE_STRUCT para
 		break;
 	}
 	if (idx == -1)
-		LOG_PR_ERR("Could not find	match buffer tag(%d) pid/cid/p2dupCQidx(%d/0x%x/%d)",
+		LOG_PR_ERR("Could not find	match buffer tag(%d) pid/cid/p2dupCQidx(%d/%lu/%d)",
 			ListTag, param.processID, param.callerID, param.p2dupCQIdx);
 
 	return idx;
@@ -7573,7 +7573,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 		}
 		spin_unlock(&(SpinLockEDBufQueList));
 		if (idx == -1) {
-			LOG_PR_ERR("Do	not	find match buffer (pid/cid %d/0x%x)	to deque!",
+			LOG_PR_ERR("Do	not	find match buffer (pid/cid %d/%lu)	to deque!",
 				param.processID, param.callerID);
 			ret = -EFAULT;
 			return ret;
@@ -7581,7 +7581,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 			restTime = wait_event_interruptible_timeout(WaitQueueHead_EDBuf_WaitDeque,
 					ISP_GetEDBufQueWaitDequeState(idx), ISP_UsToJiffies(5000000));
 			if (restTime == 0) {
-				LOG_PR_ERR("Wait Deque	fail, idx(%d) pID(%d),cID(0x%x)", idx,
+				LOG_PR_ERR("Wait Deque	fail, idx(%d) pID(%d),cID(%lu)", idx,
 					param.processID, param.callerID);
 				ret = -EFAULT;
 			} else {
@@ -7593,7 +7593,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 	case ISP_ED_BUFQUE_CTRL_DEQUE_FAIL:
 		/* signal that a        buffer is dequeued(fail) */
 		if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
-			LOG_DBG("dq cm(%d),pID(%d),cID(0x%x)\n", param.ctrl, param.processID,
+			LOG_DBG("dq cm(%d),pID(%d),cID(%lu)\n", param.ctrl, param.processID,
 				param.callerID);
 
 		spin_lock(&(SpinLockEDBufQueList));
@@ -7649,7 +7649,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 		idx = ISP_ED_BufQue_Get_FirstMatBuf(param, P2_EDBUF_MLIST_TAG, 0);
 		if (idx == -1) {
 			spin_unlock(&(SpinLockEDBufQueList));
-			LOG_PR_ERR("could not find	match buffer pID/cID (%d/0x%x)", param.processID,
+			LOG_PR_ERR("could not find	match buffer pID/cID (%d/%lu)", param.processID,
 				param.callerID);
 			ret = -EFAULT;
 			return ret;
@@ -7659,14 +7659,14 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 			ISP_ED_BufQue_Erase(idx, P2_EDBUF_MLIST_TAG);
 			spin_unlock(&(SpinLockEDBufQueList));
 			ret = 0;
-			LOG_DBG("Frame is alreay dequeued, return user,	pd(%d/0x%x),idx(%d)",
+			LOG_DBG("Frame is alreay dequeued, return user,	pd(%d/%lu),idx(%d)",
 				param.processID, param.callerID, idx);
 			return ret;
 		}
 			spin_unlock(&(SpinLockEDBufQueList));
 
 			if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
-				LOG_DBG("=pd(%d/0x%x_%d)wait(%d	us)=\n", param.processID,
+				LOG_DBG("=pd(%d/%lu_%d)wait(%d	us)=\n", param.processID,
 					param.callerID, idx, param.timeoutUs);
 
 			/* [3]if not, goto wait event and wait for a signal     to check */
@@ -7677,7 +7677,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 										    timeoutUs));
 			if (restTime == 0) {
 				LOG_PR_ERR
-				("Dequeue Buffer	fail, rT(%d),idx(%d) pID(%d),cID(0x%x),p2SupportBNum(%d)\n",
+				("Dequeue Buffer	fail, rT(%d),idx(%d) pID(%d),cID(%lu),p2SupportBNum(%d)\n",
 				 restTime, idx, param.processID, param.callerID,
 				 P2_Support_BurstQNum);
 				ret = -EFAULT;
