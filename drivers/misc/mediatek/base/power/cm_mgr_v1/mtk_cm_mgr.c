@@ -46,7 +46,9 @@
 
 #include <mtk_cm_mgr.h>
 #include <mtk_cm_mgr_platform_data.h>
+#ifdef CONFIG_MTK_CPU_FREQ
 #include <mtk_cpufreq_api.h>
+#endif /* CONFIG_MTK_CPU_FREQ */
 
 #include <linux/pm_qos.h>
 #include <helio-dvfsrc.h>
