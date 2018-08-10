@@ -1114,6 +1114,11 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT36672_FHDP_DSI_VDO_AUO_LANESWAP)
 	&nt36672_fhdp_dsi_vdo_auo_laneswap_lcm_drv,
 #endif
+
+#if defined(ILI9881H_HDP_DSI_VDO_ILITEK_RT5081_19_9)
+	&ili9881h_hdp_dsi_vdo_ilitek_rt5081_19_9_lcm_drv,
+#endif
+
 };
 
 unsigned char lcm_name_list[][128] = {
