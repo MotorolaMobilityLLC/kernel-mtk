@@ -243,16 +243,7 @@ enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 		adsp_ipi_desc[id].busy_count++;
 		return ADSP_IPI_BUSY;
 	}
-#ifdef Liang_Check
-	/* keep adsp awake for sram copy*/
-	if (adsp_awake_lock(adsp_id) == -1) {
-		mutex_unlock(&adsp_ipi_mutex[adsp_id]);
-		pr_debug("adsp_ipi_send: %s ipi error, awake adsp fail\n",
-		       adsp_core_ids[adsp_id]);
-		adsp_ipi_desc[id].error_count++;
-		return ADSP_IPI_ERROR;
-	}
-#endif
+
 	/*get adsp ipi mutex owner*/
 	adsp_ipi_mutex_owner[adsp_id] = id;
 
@@ -264,10 +255,7 @@ enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 			       adsp_core_ids[adsp_id], id,
 			       adsp_ipi_owner[adsp_id]);
 		}
-#ifdef Liang_Check
-		if (adsp_awake_unlock(adsp_id) == -1)
-			pr_debug("adsp_ipi_send: host to adsp busy awake unlock fail\n");
-#endif
+
 		adsp_ipi_desc[id].busy_count++;
 		mutex_unlock(&adsp_ipi_mutex[adsp_id]);
 		return ADSP_IPI_BUSY;

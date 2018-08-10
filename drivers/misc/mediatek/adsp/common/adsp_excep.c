@@ -266,15 +266,8 @@ static unsigned int adsp_crash_dump(struct MemoryDump *pMemoryDump,
 				    enum adsp_core_id id)
 {
 	unsigned int adsp_dump_size;
-	unsigned int adsp_awake_fail_flag;
 
 	/*flag use to indicate adsp awake success or not*/
-	adsp_awake_fail_flag = 0;
-	/*check SRAM lock ,awake adsp*/
-	if (adsp_awake_lock(id) == -1) {
-		pr_info("crash_dump: awake adsp fail, id=%u\n", id);
-		adsp_awake_fail_flag = 1;
-	}
 	adsp_exception_header_init(pMemoryDump, id);
 	memcpy_from_adsp((void *)&(pMemoryDump->memory),
 			 (void *)(ADSP_A_ITCM), (ADSP_A_ITCM_SIZE));
@@ -286,12 +279,6 @@ static unsigned int adsp_crash_dump(struct MemoryDump *pMemoryDump,
 
 	adsp_dump_size = CRASH_MEMORY_HEADER_SIZE + ADSP_A_TCM_SIZE +
 			 CRASH_REG_SIZE;
-
-	/*check SRAM unlock*/
-	if (adsp_awake_fail_flag != 1) {
-		if (adsp_awake_unlock(id) == -1)
-			pr_debug("crash_dump: awake unlock fail, id=%u\n", id);
-	}
 
 	return adsp_dump_size;
 }

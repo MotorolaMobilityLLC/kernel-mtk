@@ -138,10 +138,6 @@ static size_t adsp_A_get_last_log(size_t b_len)
 		return 0;
 	}
 
-	/* ADSP keep awake */
-	if (adsp_awake_lock(ADSP_A_ID) == -1)
-		pr_debug("adsp_A_get_last_log: awake adsp fail\n");
-
 	log_start_idx = readl((void __iomem *)(ADSP_A_SYS_DRAM +
 					       adsp_A_log_start_addr_last));
 	log_end_idx = readl((void __iomem *)(ADSP_A_SYS_DRAM +
@@ -180,12 +176,6 @@ static size_t adsp_A_get_last_log(size_t b_len)
 		/* no buffer, just skip logs*/
 		update_start_idx = log_end_idx;
 	}
-
-
-	/* ADSP release awake */
-	if (adsp_awake_unlock(ADSP_A_ID) == -1)
-		pr_debug("adsp_A_get_last_log: awake unlock fail\n");
-
 
 	vfree(pre_adsp_last_log_buf);
 	return ret;
@@ -887,126 +877,6 @@ const struct file_operations adsp_A_log_file_ops = {
 
 
 /*
- * move adsp last log from sram to dram
- * NOTE: this function may be blocked
- * @param adsp_core_id:  fill adsp id to get last log
- */
-void adsp_crash_log_move_to_buf(enum adsp_core_id adsp_id)
-{
-	int pos;
-	unsigned int ret;
-	unsigned int length;
-	unsigned int log_start_idx;  /*ADSP log start pointer */
-	unsigned int log_end_idx;    /*ADSP log end pointer */
-	unsigned int w_pos;          /*buf write pointer*/
-	char *pre_adsp_logger_buf;
-	char *dram_logger_buf;       /*dram buffer*/
-
-	char *crash_message = "****ADSP EE LOG DUMP****\n";
-	unsigned char *adsp_logger_buf = (unsigned char *)(ADSP_A_SYS_DRAM +
-					  adsp_log_buf_addr_last[adsp_id]);
-
-	if (!adsp_A_logger_inited && adsp_id == ADSP_A_ID) {
-		pr_warn("[ADSP] %s(): logger has not been init\n", __func__);
-		return;
-	}
-
-	/*ADSP keep awake */
-	mutex_lock(&adsp_logger_mutex);
-	if (adsp_awake_lock(adsp_id) == -1) {
-		pr_debug("adsp_crash_log_move_to_buf: awake adsp fail\n");
-		mutex_unlock(&adsp_logger_mutex);
-		return;
-	}
-
-	log_start_idx = readl((void __iomem *)(ADSP_A_SYS_DRAM +
-					    adsp_log_start_addr_last[adsp_id]));
-	log_end_idx = readl((void __iomem *)(ADSP_A_SYS_DRAM +
-					     adsp_log_end_addr_last[adsp_id]));
-
-	if (log_end_idx >= log_start_idx)
-		length = log_end_idx - log_start_idx;
-	else
-		length = adsp_log_buf_maxlen_last[adsp_id] -
-			 (log_start_idx - log_end_idx);
-
-	if (length >= adsp_log_buf_maxlen_last[adsp_id]) {
-		pr_debug("adsp_crash_log_move_to_buf: length >= max\n");
-		length = adsp_log_buf_maxlen_last[adsp_id];
-	}
-
-	pre_adsp_logger_buf = adsp_last_logger;
-	adsp_last_logger = vmalloc(length + strlen(crash_message) + 1);
-	/* read log from adsp buffer */
-	ret = 0;
-	if (adsp_last_logger) {
-		ret += snprintf(adsp_last_logger, strlen(crash_message),
-				crash_message);
-		ret--;
-		while ((log_start_idx != log_end_idx) &&
-		       ret <= (length + strlen(crash_message))) {
-			adsp_last_logger[ret] = adsp_logger_buf[log_start_idx];
-			log_start_idx++;
-			ret++;
-			if (log_start_idx >= adsp_log_buf_maxlen_last[adsp_id])
-				log_start_idx = log_start_idx -
-					     adsp_log_buf_maxlen_last[adsp_id];
-
-			adsp_last_logger[ret] = '\0';
-		}
-	} else {
-		/* no buffer, just skip logs */
-		log_start_idx = log_end_idx;
-	}
-
-
-	if (ret != 0) {
-		/* get buffer w pos */
-		w_pos = ADSP_A_buf_info->w_pos;
-
-		if (w_pos >= dram_buf_len) {
-			pr_warn("[ADSP] %s(): w_pos >= dram_buf_len, w_pos=%u",
-			       __func__, w_pos);
-			return;
-		}
-
-		/* copy to dram buffer */
-		dram_logger_buf = ((char *) ADSP_A_log_ctl) +
-				  ADSP_A_log_ctl->buff_ofs + w_pos;
-
-		/* memory copy from log buf */
-		pos = 0;
-		while ((pos != ret) && pos <= ret) {
-			*dram_logger_buf = adsp_last_logger[pos];
-			pos++;
-			w_pos++;
-			dram_logger_buf++;
-			if (w_pos >= dram_buf_len) {
-				/*warp*/
-				pr_debug("crash_log_move_to_buf:dram warp\n");
-				w_pos = 0;
-
-				dram_logger_buf = ((char *) ADSP_A_log_ctl) +
-						  ADSP_A_log_ctl->buff_ofs;
-
-			}
-		}
-		/* update write pointer */
-		ADSP_A_buf_info->w_pos = w_pos;
-
-	}
-
-	/* ADSP release awake */
-	if (adsp_awake_unlock(adsp_id) == -1)
-		pr_debug("adsp_crash_log_move_to_buf: awake unlock fail\n");
-
-	mutex_unlock(&adsp_logger_mutex);
-	vfree(pre_adsp_logger_buf);
-}
-
-
-
-/*
  * get log from adsp and optionally save it
  * NOTE: this function may be blocked
  * @param adsp_core_id:  fill adsp id to get last log
@@ -1016,8 +886,6 @@ void adsp_get_log(enum adsp_core_id adsp_id)
 	pr_debug("[ADSP] %s\n", __func__);
 #if 0 /* no need for hifi3 using dram */
 	adsp_A_get_last_log(ADSP_AED_STR_LEN - 200);
-	/* move last log to dram */
-	adsp_crash_log_move_to_buf(adsp_id);
 #endif
 }
 
