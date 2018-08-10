@@ -168,6 +168,7 @@ static int wk_bat_temp_dbg(int bat_temp_prev, int bat_temp)
 {
 	int vbif28, bat_temp_new = bat_temp;
 	int arr_bat_temp[5];
+	int bat = 0, bat_cur = 0, is_charging = 0;
 	unsigned short i;
 
 	vbif28 = auxadc_priv_read_channel(AUXADC_VBIF);
@@ -183,6 +184,24 @@ static int wk_bat_temp_dbg(int bat_temp_prev, int bat_temp)
 		pr_notice("%d,%d,%d,%d,%d, BAT_TEMP_NEW:%d\n",
 			arr_bat_temp[0], arr_bat_temp[1], arr_bat_temp[2],
 			arr_bat_temp[3], arr_bat_temp[4], bat_temp_new);
+
+		/* Reset AuxADC to observe VBAT/IBAT/BAT_TEMP */
+		pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
+		pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+		for (i = 0; i < 5; i++) {
+			bat = auxadc_priv_read_channel(AUXADC_BATADC);
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+			is_charging = gauge_get_current(&bat_cur);
+			if (is_charging == 0)
+				bat_cur = 0 - bat_cur;
+#endif
+			arr_bat_temp[i] =
+				auxadc_priv_read_channel(AUXADC_BAT_TEMP);
+			pr_notice("[CH3_DBG] %d,%d,%d\n",
+				  bat, bat_cur, arr_bat_temp[i]);
+		}
+		bat_temp_new = bat_temp_filter(arr_bat_temp, 5);
+		pr_notice("Final BAT_TEMP_NEW:%d\n", bat_temp_new);
 	}
 	return bat_temp_new;
 }
