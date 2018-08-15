@@ -1,0 +1,9 @@
+config MTK_TRNG_DRIVER
+	bool "Enable MTK TRNG driver"
+	depends on MTK_ENG_BUILD
+	default y
+	help
+	  TRNG is a kernel driver which creates
+	  procfs to dump random number through
+	  SMC call. The driver only exists in
+	  eng load.
