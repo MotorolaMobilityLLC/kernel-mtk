@@ -984,7 +984,7 @@ bool mt_dump_irq_off_traces(int mode)
 	int i, j;
 	char buf[128], func[64];
 	struct stack_trace *trace;
-	bool in_list = 0;
+	bool in_list = 0, skip_trace = 1;
 	int list_num = ARRAY_SIZE(list_irq_disable);
 
 	trace = &__raw_get_cpu_var(MT_stack_trace);
@@ -994,14 +994,23 @@ bool mt_dump_irq_off_traces(int mode)
 		"irq off backtraces:");
 	sched_mon_msg(buf, mode);
 	for (i = 0; i < trace->nr_entries; i++) {
+
+		/* skip dummy backtrace */
+		snprintf(func, sizeof(func),
+			"%ps", (void *)trace->entries[i]);
+		if (!strcmp(func, "trace_hardirqs_off"))
+			skip_trace = 0;
+		if (skip_trace)
+			continue;
+
+		/* print backtrace */
 		snprintf(buf, sizeof(buf),
 			"[<%p>] %pS",
 			(void *)trace->entries[i],
 			(void *)trace->entries[i]);
 		sched_mon_msg(buf, mode);
+
 		/* check white list */
-		snprintf(func, sizeof(func),
-			"%ps", (void *)trace->entries[i]);
 		for (j = 0; j < list_num; j++) {
 			if (!strcmp(func, list_irq_disable[j])) {
 				in_list = 1;
@@ -1046,25 +1055,18 @@ void MT_trace_hardirqs_on(void)
 				struct lock_block_event *b;
 
 				snprintf(buf, sizeof(buf),
-					"-----[IRQ disable monitor]----");
-				sched_mon_msg(buf, output);
-				snprintf(buf, sizeof(buf),
-					"IRQ disable too long [%llu ms]",
-					msec_high(t_dur));
-				sched_mon_msg(buf, output);
-				snprintf(buf, sizeof(buf),
-					"off: [%lld.%06lu], on: [%lld.%06lu]",
+					"IRQ disable monitor: dur[%llu ms] off[%lld.%06lu] on[%lld.%06lu]",
+					msec_high(t_dur),
 					sec_high(t_off), sec_low(t_off),
 					sec_high(t_on), sec_low(t_on));
 				sched_mon_msg(buf, output);
 #ifdef CONFIG_TRACE_IRQFLAGS
 				snprintf(buf2, sizeof(buf2),
-					"[<%p>] %pS",
+					"[<%p>] %ps",
 					(void *)current->hardirq_disable_ip,
 					(void *)current->hardirq_disable_ip);
 				snprintf(buf, sizeof(buf),
-					"hardirqs last disabled at (%u): %s",
-					current->hardirq_disable_event, buf2);
+					"hardirqs last disabled at %s", buf2);
 				sched_mon_msg(buf, output);
 #else
 				snprintf(buf2, sizeof(buf2), "<no info>");
@@ -1079,9 +1081,10 @@ void MT_trace_hardirqs_on(void)
 						sec_low(b->last_spinning_e));
 					sched_mon_msg(buf, output);
 				}
-				skip_aee = mt_dump_irq_off_traces(output);
+				skip_aee = mt_dump_irq_off_traces(TO_FTRACE);
 
 				if (t_dur > AEE_IRQ_DISABLE_DUR && !skip_aee) {
+					mt_dump_irq_off_traces(TO_DEFERRED);
 					snprintf(buf, sizeof(buf),
 					"IRQ disable [%llu ms, %lld.%06lu ~ %lld.%06lu] at %s",
 					msec_high(t_dur),
