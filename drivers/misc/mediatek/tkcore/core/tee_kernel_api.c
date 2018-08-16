@@ -96,8 +96,8 @@ void TEEC_FinalizeContext(struct TEEC_Context *context)
 
 	if (!context || !context->fd) {
 		pr_err("can't release context %p:[%s]\n",
-			context, (context && context->devname) ?
-			context->devname : "");
+			context, strnlen(context->devname, 256) < 256 ?
+			context->devname : "[invalid]");
 		return;
 	}
 
