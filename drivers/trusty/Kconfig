@@ -50,18 +50,8 @@ config TRUSTY_INTERRUPT_FIQ_ONLY
 
 config MTK_ENABLE_GENIEZONE
 	tristate "MTK GenieZone enable"
-	depends on TRUSTY
+	select TRUSTY
 	default n
-	help
-	  This is used for Trusty to support MTK Geniezone
-	  Irq will be masked in trusty irq handler
-	  for irq routing to GenieZone.
-	  Irq work will be put to global queue when cpu dead.
-
-config GZ_V2_SUPPORT
-	tristate "GZ v2 support"
-	depends on MTK_ENABLE_GENIEZONE
-	default y
 	help
 	  This is used for Trusty to support MTK Geniezone
 	  Irq will be masked in trusty irq handler

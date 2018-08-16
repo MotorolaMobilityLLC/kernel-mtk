@@ -9,7 +9,7 @@ obj-$(CONFIG_TRUSTY)		+= trusty-irq.o
 obj-$(CONFIG_TRUSTY_FIQ)	+= trusty-fiq.o
 obj-$(CONFIG_TRUSTY_FIQ_ARM)	+= trusty-fiq-arm.o
 obj-$(CONFIG_TRUSTY_FIQ_ARM64)	+= trusty-fiq-arm64.o trusty-fiq-arm64-glue.o
-ifeq ($(CONFIG_GZ_V2_SUPPORT),y)
+ifeq ($(CONFIG_MTK_ENABLE_GENIEZONE),y)
 obj-$(CONFIG_TRUSTY_LOG)	+= gz-log.o
 else
 obj-$(CONFIG_TRUSTY_LOG)	+= trusty-log.o

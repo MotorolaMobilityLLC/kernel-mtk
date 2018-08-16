@@ -83,7 +83,7 @@ static void trusty_irq_enable_pending_irqs(struct trusty_irq_state *is,
 		else
 			enable_irq(trusty_irq->irq);
 #else
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 		if (percpu)
 			enable_percpu_irq(trusty_irq->irq, 0);
 		else
@@ -224,7 +224,7 @@ irqreturn_t trusty_irq_handler(int irq, void *data)
 #ifndef CONFIG_TRUSTY_INTERRUPT_FIQ_ONLY
 		disable_percpu_irq(irq);
 #else
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 		disable_percpu_irq(irq);
 #endif
 #endif
@@ -233,7 +233,7 @@ irqreturn_t trusty_irq_handler(int irq, void *data)
 #ifndef CONFIG_TRUSTY_INTERRUPT_FIQ_ONLY
 		disable_irq_nosync(irq);
 #else
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 		disable_irq_nosync(irq);
 #endif
 #endif
@@ -298,7 +298,7 @@ static void trusty_irq_cpu_dead(void *info)
 	dev_dbg(is->dev, "%s: cpu %d\n", __func__, smp_processor_id());
 
 	local_irq_save(irq_flags);
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 	schedule_work(&(this_cpu_ptr(is->irq_work)->work));
 #else
 	schedule_work_on(smp_processor_id(), &(this_cpu_ptr(is->irq_work)->work));
