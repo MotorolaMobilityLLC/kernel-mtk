@@ -428,8 +428,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			return SHRINK_STOP;
 		} else if (task_lmk_waiting(tsk)) {
 #ifdef CONFIG_MTK_ENG_BUILD
-			lowmem_print(1, "%d (%s) is dying, find next candidate\n",
-				     tsk->pid, tsk->comm);
+			pr_info_ratelimited("%d (%s) is dying, find next candidate\n",
+					    tsk->pid, tsk->comm);
 #endif
 			if (tsk->state == TASK_RUNNING)
 				p_state_is_found |= LOWMEM_P_STATE_R;
