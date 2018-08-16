@@ -74,6 +74,7 @@ obj-$(CONFIG_AXP288_FUEL_GAUGE) += axp288_fuel_gauge.o
 obj-$(CONFIG_AXP288_CHARGER)	+= axp288_charger.o
 
 ifeq ($(CONFIG_MACH_MT8173),y)
+	obj-y += mt81xx/
 else
 	obj-y += mediatek/
 endif

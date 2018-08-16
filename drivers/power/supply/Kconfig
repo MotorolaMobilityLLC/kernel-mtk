@@ -511,7 +511,13 @@ config AXP20X_POWER
 	  This driver provides support for the power supply features of
 	  AXP20x PMIC.
 
+if !MACH_MT8173
 source "drivers/power/supply/mediatek/battery/Kconfig"
 source "drivers/power/supply/mediatek/charger/Kconfig"
+endif
+
+if MACH_MT8173
+source "drivers/power/supply/mt81xx/Kconfig"
+endif
 
 endif # POWER_SUPPLY
