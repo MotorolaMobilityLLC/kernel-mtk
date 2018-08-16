@@ -678,6 +678,14 @@ void mt_usb_connect(void)
 
 void mt_usb_disconnect(void)
 {
+#ifndef CONFIG_TCPC_CLASS
+	DBG(0, "[MUSB] USB disconnect\n");
+	issue_connection_work(CONNECTION_OPS_DISC);
+#endif
+}
+
+void mt_usb_dev_disconnect(void)
+{
 	DBG(0, "[MUSB] USB disconnect\n");
 	issue_connection_work(CONNECTION_OPS_DISC);
 }
@@ -715,7 +723,7 @@ static void do_usb20_test_connect_work(struct work_struct *work)
 	if (test_connected)
 		mt_usb_connect();
 	else
-		mt_usb_disconnect();
+		mt_usb_dev_disconnect();
 
 	ktime = ktime_get();
 	ktime_us = ktime_to_us(ktime);

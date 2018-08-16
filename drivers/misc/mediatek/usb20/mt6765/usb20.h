@@ -114,4 +114,5 @@ extern bool usb20_check_vbus_on(void);
 #endif
 extern bool usb_prepare_clock(bool enable);
 extern void usb_prepare_enable_clock(bool enable);
+extern void mt_usb_dev_disconnect(void);
 #endif
