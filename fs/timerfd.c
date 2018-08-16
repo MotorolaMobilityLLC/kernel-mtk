@@ -161,6 +161,9 @@ static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
 {
 	ktime_t remaining;
 
+	if (ctx->clockid == CLOCK_POWER_OFF_ALARM)
+		return ktime_set(0, 0);
+
 	if (isalarm(ctx))
 		remaining = alarm_expires_remaining(&ctx->t.alarm);
 	else
@@ -219,10 +222,12 @@ static int timerfd_release(struct inode *inode, struct file *file)
 
 	timerfd_remove_cancel(ctx);
 
-	if (isalarm(ctx))
-		alarm_cancel(&ctx->t.alarm);
-	else
-		hrtimer_cancel(&ctx->t.tmr);
+	if (ctx->clockid != CLOCK_POWER_OFF_ALARM) {
+		if (isalarm(ctx))
+			alarm_cancel(&ctx->t.alarm);
+		else
+			hrtimer_cancel(&ctx->t.tmr);
+	}
 	kfree_rcu(ctx, rcu);
 	return 0;
 }
