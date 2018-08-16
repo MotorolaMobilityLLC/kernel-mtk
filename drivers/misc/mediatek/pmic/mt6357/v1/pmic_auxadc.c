@@ -188,6 +188,8 @@ static int wk_bat_temp_dbg(int bat_temp_prev, int bat_temp)
 		/* Reset AuxADC to observe VBAT/IBAT/BAT_TEMP */
 		pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
 		pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 1);
+		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 0);
 		for (i = 0; i < 5; i++) {
 			bat = auxadc_priv_read_channel(AUXADC_BATADC);
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
