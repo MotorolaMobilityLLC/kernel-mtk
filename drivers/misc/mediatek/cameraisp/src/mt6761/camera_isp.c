@@ -10891,8 +10891,10 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 		(~(ISP_IRQ_STATUSX_IMGO_DROP_FRAME_ST |
 		   ISP_IRQ_STATUSX_RRZO_DROP_FRAME_ST));
 	/* p1   && p1_d share the same interrupt status */
-	if (IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] &
-	    IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INT_STATUSX]) {
+	if ((IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] &
+	    IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INT_STATUSX]) ||
+	    (IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X] &
+	    IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INT_STATUSX])) {
 		if ((IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] &
 		     ISP_IRQ_STATUSX_DMA_ERR_ST) ||
 		    (IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X] &
@@ -10972,6 +10974,7 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 			}
 			g_ISPIntErr[_IRQ_D] |=
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X];
+			ISP_chkModuleSetting();
 			log_err("tick=%u\n", (u32) arch_counter_get_cntvct());
 		}
 	}
