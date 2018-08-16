@@ -168,7 +168,7 @@ pvrsrvkm-y += \
 	kernel/drivers/staging/imgtec/pvr_drm.o \
 	kernel/drivers/staging/imgtec/pvr_platform_drv.o \
 
-ifeq ($(SUPPORT_DMA_FENCE),1)
+ifeq ($(CONFIG_SYNC_FILE),y)
 	pvrsrvkm-y += \
 		kernel/drivers/staging/imgtec/pvr_sync_file.o \
 		kernel/drivers/staging/imgtec/pvr_counting_timeline.o \
@@ -236,7 +236,6 @@ ccflags-y += \
 	-I$(RGX_TOP)/services/system/include \
 	-I$(RGX_TOP)/services/system/rgx_mtk \
 	-I$(RGX_TOP)/services/system/rgx_mtk/$(MTK_PLATFORM)
-
 
 ccflags-y += \
 	-I$(srctree)/drivers/staging/android/ion \
