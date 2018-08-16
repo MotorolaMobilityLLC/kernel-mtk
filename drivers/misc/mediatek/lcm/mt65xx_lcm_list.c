@@ -988,6 +988,9 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&st7789h2_dbi_lcm_drv,
 #endif
 
+#if defined(NT71397_WUXGA_DSI_VDO_NT65902)
+	&nt71397_wuxga_dsi_vdo_nt65902_lcm_drv,
+#endif
 #if defined(CM_N070ICE_DSI_VDO_MT8173)
 	&cm_n070ice_dsi_vdo_mt8173_lcm_drv,
 #endif
