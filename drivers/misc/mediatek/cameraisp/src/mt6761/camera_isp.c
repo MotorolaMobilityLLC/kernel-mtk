@@ -427,17 +427,23 @@ static unsigned int g_log_def_constraint;
 #define ISP_TPIPE_ADDR (0x15004000)
 
 /* CAM_CTL_SW_CTL */
-#define ISP_REG_SW_CTL_SW_RST_P1_MASK (0x00000007)
-#define ISP_REG_SW_CTL_SW_RST_TRIG (0x00000001)
-#define ISP_REG_SW_CTL_SW_RST_STATUS (0x00000002)
-#define ISP_REG_SW_CTL_HW_RST (0x00000004)
-#define ISP_REG_SW_CTL_SW_RST_P2_MASK (0x00000070)
-#define ISP_REG_SW_CTL_SW_RST_P2_TRIG (0x00000010)
-#define ISP_REG_SW_CTL_SW_RST_P2_STATUS (0x00000020)
-#define ISP_REG_SW_CTL_HW_RST_P2 (0x00000040)
+#define ISP_REG_SW_CTL_SW_RST_P1_MASK        (0x00000007)
+#define ISP_REG_SW_CTL_SW_RST_TRIG           (0x00000001)
+#define ISP_REG_SW_CTL_SW_RST_STATUS         (0x00000002)
+#define ISP_REG_SW_CTL_HW_RST                (0x00000004)
+#define ISP_REG_SW_CTL_SW_RST_P2_MASK        (0x00000070)
+#define ISP_REG_SW_CTL_SW_RST_P2_TRIG        (0x00000010)
+#define ISP_REG_SW_CTL_SW_RST_P2_STATUS      (0x00000020)
+#define ISP_REG_SW_CTL_HW_RST_P2             (0x00000040)
+
+/* CAMSV_SW_CTL */
+#define ISP_REG_CAMSV_SW_CTL_IMGO_RST_TRIG   (0x00000001)
+#define ISP_REG_CAMSV_SW_CTL_IMGO_RST_ST     (0x00000002)
+#define ISP_REG_CAMSV_SW_CTL_SW_RST          (0x00000004)
+
 #define ISP_REG_SW_CTL_RST_CAM_P1 (1)
 #define ISP_REG_SW_CTL_RST_CAM_P2 (2)
-#define ISP_REG_SW_CTL_RST_CAMSV (3)
+#define ISP_REG_SW_CTL_RST_CAMSV  (3)
 #define ISP_REG_SW_CTL_RST_CAMSV2 (4)
 
 /* CAM_CTL_INT_P1_STATUS */
@@ -3339,32 +3345,31 @@ static inline void ISP_Reset(signed int rst_path)
 		ISP_WR32(ISP_REG_ADDR_CAM_SW_CTL, 0);
 #endif
 	} else if (rst_path == ISP_REG_SW_CTL_RST_CAMSV) {
-		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, ISP_REG_SW_CTL_SW_RST_TRIG);
-		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, 0);
+		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL,
+				ISP_REG_CAMSV_SW_CTL_IMGO_RST_TRIG);
 		i = LoopCnt;
 		do {
 			Reg = ISP_RD32(ISP_REG_ADDR_CAMSV_SW_CTL);
-			if (Reg & ISP_REG_SW_CTL_SW_RST_STATUS)
+			if (Reg & ISP_REG_CAMSV_SW_CTL_IMGO_RST_ST)
 				break;
-
 			udelay(100);
 		} while (--i);
 
-		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, ISP_REG_SW_CTL_HW_RST);
+		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL,
+				ISP_REG_CAMSV_SW_CTL_SW_RST);
 		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, 0);
 	} else if (rst_path == ISP_REG_SW_CTL_RST_CAMSV2) {
 		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL,
-			 ISP_REG_SW_CTL_SW_RST_TRIG);
-		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, 0);
+				ISP_REG_CAMSV_SW_CTL_IMGO_RST_TRIG);
 		i = LoopCnt;
 		do {
 			Reg = ISP_RD32(ISP_REG_ADDR_CAMSV2_SW_CTL);
-			if (Reg & ISP_REG_SW_CTL_SW_RST_STATUS)
+			if (Reg & ISP_REG_CAMSV_SW_CTL_IMGO_RST_ST)
 				break;
-
 			udelay(100);
 		} while (--i);
-		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, ISP_REG_SW_CTL_HW_RST);
+		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL,
+				ISP_REG_CAMSV_SW_CTL_SW_RST);
 		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, 0);
 	}
 #if 0
@@ -10778,7 +10783,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(signed int Irq, void *DeviceId)
 	/* log_dbg("- E.");*/
 	unsigned int i;
 
-	unsigned int IrqStatus[ISP_IRQ_TYPE_AMOUNT];
+	unsigned int IrqStatus[ISP_IRQ_TYPE_AMOUNT] = {0};
 	/* unsigned int IrqStatus_fbc_int; */
 	union CQ_RTBC_FBC p1_fbc[4];
 
@@ -11580,8 +11585,8 @@ if (bSlowMotion == MFALSE) {
 		}
 	}
 #endif
-	/* make sure isr sequence r     all     done after this status switch */
-    /* don't update CAMSV/CAMSV2 status */
+	/* make sure isr sequence are all done after this status switch */
+	/* don't update CAMSV/CAMSV2 status */
 	for (j = 0; j < ISP_IRQ_TYPE_ISP_AMOUNT; j++) {
 		for (i = 0; i < IRQ_USER_NUM_MAX; i++) {
 			/* 1. update interrupt status to all users */
