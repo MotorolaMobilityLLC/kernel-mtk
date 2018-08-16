@@ -17,6 +17,7 @@
 #include <SCP_sensorHub.h>
 #include <linux/notifier.h>
 #include "scp_helper.h"
+#include <linux/pm_wakeup.h>
 
 
 #define TILTDETHUB_TAG                  "[tiltdetecthub] "
@@ -25,6 +26,7 @@
 #define TILTDETHUB_LOG(fmt, args...)    pr_debug(TILTDETHUB_TAG fmt, ##args)
 
 static struct situation_init_info tiltdetecthub_init_info;
+static struct wakeup_source tilt_wake_lock;
 
 static int tilt_detect_get_data(int *probability, int *status)
 {
@@ -71,8 +73,10 @@ static int tilt_detect_recv_data(struct data_unit_t *event, void *reserved)
 {
 	if (event->flush_action == FLUSH_ACTION)
 		situation_flush_report(ID_TILT_DETECTOR);
-	else if (event->flush_action == DATA_ACTION)
+	else if (event->flush_action == DATA_ACTION) {
+		__pm_wakeup_event(&tilt_wake_lock, msecs_to_jiffies(100));
 		situation_data_report(ID_TILT_DETECTOR, event->tilt_event.state);
+	}
 	return 0;
 }
 
@@ -104,6 +108,7 @@ static int tiltdetecthub_local_init(void)
 		TILTDETHUB_PR_ERR("SCP_sensorHub_data_registration fail!!\n");
 		goto exit;
 	}
+	wakeup_source_init(&tilt_wake_lock, "tilt_wake_lock");
 	return 0;
 exit:
 	return -1;
