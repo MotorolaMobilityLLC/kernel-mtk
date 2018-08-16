@@ -317,4 +317,5 @@ extern unsigned char HPDStatus;
 extern unsigned int sink_support_resolution;
 extern struct HDMI_UTIL_FUNCS hdmi_util;
 extern void ite66121_AppGetEdidInfo(struct _HDMI_EDID_T *pv_get_info);
+extern void hdmi_invoke_cable_callbacks(enum HDMI_STATE state);
 #endif				/* _HDMITX_SYS_H_ */
