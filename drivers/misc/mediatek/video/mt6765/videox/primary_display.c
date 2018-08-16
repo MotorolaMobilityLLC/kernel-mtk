@@ -6653,7 +6653,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	}
 
 	/* SBCH invalid status judge and handle */
-	if (disp_helper_get_option(DISP_OPT_OVL_SBCH))
+	if (disp_helper_get_option(DISP_OPT_OVL_SBCH) &&
+			(data_config->sbch_enable == 1))
 		_ovl_sbch_invalid_config(cmdq_handle);
 
 	/* GCE read ovl register about full transparent layer */
