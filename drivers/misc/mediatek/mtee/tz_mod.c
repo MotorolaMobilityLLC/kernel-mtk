@@ -1676,6 +1676,7 @@ static int mtee_probe(struct platform_device *pdev)
 
 static const struct of_device_id mtee_of_match[] = {
 	{ .compatible = "mediatek,mtee", },
+	{}
 };
 MODULE_DEVICE_TABLE(of, mtee_of_match);
 
