@@ -678,7 +678,7 @@ static void print_lock(struct held_lock *hlock)
 void held_lock_save_trace(struct stack_trace *trace, unsigned long *entries)
 {
 	trace->nr_entries = 0;
-	trace->max_entries = MAX_STACK_TRACE_DEPTH;
+	trace->max_entries = HELD_LOCK_STACK_TRACE_DEPTH;
 	trace->entries = entries;
 	trace->skip = 3;
 	save_stack_trace(trace);
