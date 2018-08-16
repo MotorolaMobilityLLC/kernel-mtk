@@ -268,7 +268,7 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 
 	if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
 		md_ctrl->wakeup_count++;
-		CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CCIF_MD wakeup source:(SRX_IDX/%d)(%u)\n",
+		CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CCIF_MD wakeup source:(SRX_IDX/%d)(%u)(ccci_ctrl)\n",
 			ccci_h->channel, md_ctrl->wakeup_count);
 	}
 
@@ -486,11 +486,6 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 				CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "Q%d Rx lb_dl\n", queue->index);
 				c2k_mem_dump(data_ptr, pkg_size);
 			}
-		}
-		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
-			md_ctrl->wakeup_count++;
-			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CCIF_MD wakeup source:(%d/%d/%x)(%u)\n",
-				queue->index, ccci_h->channel, ccci_h->reserved, md_ctrl->wakeup_count);
 		}
 
 		if (ccci_h->channel == CCCI_C2K_LB_DL)
@@ -771,7 +766,8 @@ static void md_ccif_launch_work(struct md_ccif_ctrl *md_ctrl)
 		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "CCB wakeup\n");
 		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
 			md_ctrl->wakeup_count++;
-			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CCIF_MD wakeup source:(CCB)(%u)\n",
+			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG,
+				"CCIF_MD wakeup source:(CCB)(%u)(mdlogger/meta/mdmonitor)\n",
 				md_ctrl->wakeup_count);
 		}
 		ccci_port_queue_status_notify(md_ctrl->md_id, CCIF_HIF_ID, AP_MD_CCB_WAKEUP, -1, RX_IRQ);

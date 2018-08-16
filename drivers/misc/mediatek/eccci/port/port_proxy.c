@@ -891,6 +891,8 @@ static inline int proxy_dispatch_recv_skb(struct port_proxy *proxy_p, int hif_id
 	int md_id = proxy_p->md_id;
 	int md_state = ccci_fsm_get_md_state(md_id);
 	int channel = CCCI_INVALID_CH_ID;
+	int wakeup_src;
+	unsigned int wakeup_count;
 
 	if (unlikely(!skb)) {
 		ret = -CCCI_ERR_INVALID_PARAM;
@@ -928,6 +930,29 @@ static inline int proxy_dispatch_recv_skb(struct port_proxy *proxy_p, int hif_id
 			((port->ops->recv_match == NULL) ?
 			(channel == port->rx_ch) : port->ops->recv_match(port, skb));
 		if (matched) {
+			wakeup_src = ccci_hif_get_wakeup_src(hif_id, &wakeup_count);
+			if (wakeup_src) {
+				if (channel == CCCI_IPC_RX) {
+					ccci_h->reserved &= 0xF;
+					switch (ccci_h->reserved) {
+					case CCCI_IPC_AGPS:
+						port->user = "agps";
+						break;
+					case CCCI_IPC_GPS:
+						port->user = "gps";
+						break;
+					case CCCI_IPC_WMT:
+						port->user = "wmt";
+						break;
+					default:
+						port->user = "null";
+						break;
+					}
+				}
+				CCCI_NOTICE_LOG(md_id, TAG, "%s wakeup source:(%d/%d/%x)(%u)(%s)\n",
+					(hif_id == CCIF_HIF_ID) ? "CCIF_MD" : "CLDMA_MD",
+					port->rxq_index, channel, ccci_h->reserved, wakeup_count, port->user);
+			}
 			if (likely(skb && port->ops->recv_skb)) {
 				ret = port->ops->recv_skb(port, skb);
 			} else {

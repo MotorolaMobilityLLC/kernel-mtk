@@ -30,6 +30,18 @@ typedef enum{
 	CLDMA_NET_DATA = (1<<1),
 } CCCI_HIF_FLAG;
 
+enum{
+	CCCI_IPC_AGPS,
+	CCCI_IPC_DHCP,
+	CCCI_IPC_GPS,
+	CCCI_IPC_WMT,
+	CCCI_IPC_RESERVED,
+	CCCI_IPC_TIME_SYNC,
+	CCCI_IPC_HTC,
+	CCCI_IPC_MD_DIRECT_TETHERING_0,
+	CCCI_IPC_MD_DIRECT_TETHERING_1,
+};
+
 int ccci_hif_init(unsigned char md_id, unsigned int hif_flag);
 int ccci_hif_send_skb(unsigned char hif_id, int tx_qno, struct sk_buff *skb, int from_pool, int blocking);
 int ccci_hif_write_room(unsigned char hif_id, unsigned char qno);
@@ -37,5 +49,6 @@ int ccci_hif_ask_more_request(unsigned char hif_id, int rx_qno);
 void ccci_hif_start_queue(unsigned char hif_id, unsigned int reserved, DIRECTION dir);
 int ccci_hif_dump_status(unsigned int hif_flag, MODEM_DUMP_FLAG dump_flag, int length);
 int ccci_hif_set_wakeup_src(unsigned char hif_id, int value);
+int ccci_hif_get_wakeup_src(unsigned char hif_id, unsigned int *wakeup_count);
 
 #endif

@@ -59,6 +59,26 @@ int ccci_hif_set_wakeup_src(unsigned char hif_id, int value)
 	return ret;
 }
 
+int ccci_hif_get_wakeup_src(unsigned char hif_id, unsigned int *wakeup_count)
+{
+	int ret = 0;
+	struct md_cd_ctrl *md_cd_ctrl = (struct md_cd_ctrl *)ccci_hif_get_by_id(CLDMA_HIF_ID);
+	struct md_ccif_ctrl *md_ccif_ctrl = (struct md_ccif_ctrl *)ccci_hif_get_by_id(CCIF_HIF_ID);
+
+	if (hif_id == CLDMA_HIF_ID) {
+		ret = atomic_cmpxchg(&md_cd_ctrl->wakeup_src, 1, 0);
+		if (ret == 1)
+			*wakeup_count = ++md_cd_ctrl->wakeup_count;
+	}
+	if (hif_id == CCIF_HIF_ID) {
+		ret = atomic_cmpxchg(&md_ccif_ctrl->wakeup_src, 1, 0);
+		if (ret == 1)
+			*wakeup_count = ++md_ccif_ctrl->wakeup_count;
+	}
+
+	return ret;
+}
+
 int ccci_hif_send_skb(unsigned char hif_id, int tx_qno, struct sk_buff *skb, int from_pool, int blocking)
 {
 	int ret = 0;

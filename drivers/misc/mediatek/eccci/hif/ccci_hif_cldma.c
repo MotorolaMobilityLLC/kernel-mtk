@@ -564,12 +564,7 @@ again:
 		ccci_h = *((struct ccci_header *)skb->data);
 #endif
 #endif
-		/* check wakeup source */
-		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
-			md_ctrl->wakeup_count++;
-			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CLDMA_MD wakeup source:(%d/%d/%x)(%u)\n",
-				queue->index, ccci_h.channel, ccci_h.reserved, md_ctrl->wakeup_count);
-		}
+
 		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "recv Rx msg (%x %x %x %x) rxq=%d len=%d\n",
 						ccci_h.data[0], ccci_h.data[1], *(((u32 *)&ccci_h) + 2),
 						ccci_h.reserved, queue->index,
