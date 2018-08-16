@@ -7457,7 +7457,7 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync
 		goto unlock;
 	}
 
-	if ((is_intra_domain(task_cpu(p), backup_cpu) ||
+	if (backup_cpu != -1 && (is_intra_domain(task_cpu(p), backup_cpu) ||
 		is_intra_domain(target_cpu, backup_cpu)) &&
 		backup_cpu != l_plus_cpu) {
 		backup_cpu = -1;
