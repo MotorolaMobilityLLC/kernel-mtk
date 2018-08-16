@@ -150,7 +150,6 @@ enum {
 	SINK_TYPE_PD_TRY,
 	SINK_TYPE_PD_CONNECTED,
 	SINK_TYPE_REQUEST,
-	SINK_TYPE_PD_PR_SWAP,
 };
 
 bool mtk_is_pep30_en_unlock(void)
@@ -189,9 +188,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		pd_sink_voltage_new = noti->vbus_state.mv;
 		pd_sink_current_new = noti->vbus_state.ma;
 
-		if (noti->vbus_state.type == TCP_VBUS_CTRL_PD_PR_SWAP)
-			pd_sink_type = SINK_TYPE_PD_PR_SWAP;
-		else if (noti->vbus_state.type & TCP_VBUS_CTRL_PD_DETECT)
+		if (noti->vbus_state.type & TCP_VBUS_CTRL_PD_DETECT)
 			pd_sink_type = SINK_TYPE_PD_CONNECTED;
 		else if (noti->vbus_state.type == TCP_VBUS_CTRL_REMOVE)
 			pd_sink_type = SINK_TYPE_REMOVE;
@@ -217,8 +214,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #endif
 				pd_sink_voltage_old = pd_sink_voltage_new;
 				pd_sink_current_old = pd_sink_current_new;
-			} else if (pd_sink_type == SINK_TYPE_REMOVE ||
-					pd_sink_type == SINK_TYPE_PD_PR_SWAP) {
+			} else if (pd_sink_type == SINK_TYPE_REMOVE) {
 				if (tcpc_kpoc)
 					break;
 #if CONFIG_MTK_GAUGE_VERSION == 30
@@ -276,7 +272,8 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 		    noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC)
-			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
+			&& (noti->typec_state.new_state == TYPEC_UNATTACHED ||
+			noti->typec_state.new_state == TYPEC_ATTACHED_SRC)) {
 			if (tcpc_kpoc) {
 				vbus = battery_get_vbus();
 				pr_info("%s KPOC Plug out, vbus = %d\n",
