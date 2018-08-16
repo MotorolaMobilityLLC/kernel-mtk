@@ -1772,9 +1772,8 @@ int gpio_get_tristate_input(unsigned int pin)
 
 	val = mtk_pullen_get(chip, pin);
 	if (val != 1) {
-		pr_notice("GPIO%d pullen not set\n",
-			pin);
-		return -EINVAL;
+		pr_notice("GPIO%d pullen not set, skip floating test\n", pin);
+		return mtk_gpio_get_in(chip, pin);
 	}
 
 	/* backup original pullsel */
