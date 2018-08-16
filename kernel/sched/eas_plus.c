@@ -226,7 +226,7 @@ static int __init parse_dt_eas(void)
 }
 core_initcall(parse_dt_eas)
 
-#if defined(CONFIG_SCHED_HMP) && defined(CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT)
+#if defined(CONFIG_SCHED_HMP) || defined(CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT)
 static int hmp_can_migrate_task(struct task_struct *p, struct lb_env *env)
 {
 	int tsk_cache_hot = 0;
