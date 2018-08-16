@@ -337,7 +337,8 @@ static void mmprofile_init_buffer(void)
 			mmprofile_globals.new_meta_buffer_size)) {
 		mutex_unlock(&mmprofile_buffer_init_mutex);
 		return;
-	}
+	} else
+		bmmprofile_init_buffer = 0;
 
 	/* Initialize */
 	/* Allocate memory. */
@@ -441,7 +442,9 @@ static void mmprofile_reset_buffer(void)
 {
 #ifdef CONFIG_MTK_ENG_BUILD
 
-	if (!mmprofile_globals.enable)
+	if (!mmprofile_globals.enable ||
+		(mmprofile_globals.buffer_size_record !=
+			mmprofile_globals.new_buffer_size_record))
 		return;
 	if (bmmprofile_init_buffer) {
 		struct mmprofile_meta_datablock_t *p_block;
@@ -765,6 +768,9 @@ static bool is_mmp_valid(mmp_event event)
 		return false;
 
 	if (!(mmprofile_globals.event_state[event] & MMP_EVENT_STATE_ENABLED))
+		return false;
+	if ((mmprofile_globals.buffer_size_record !=
+			mmprofile_globals.new_buffer_size_record))
 		return false;
 
 	return true;
