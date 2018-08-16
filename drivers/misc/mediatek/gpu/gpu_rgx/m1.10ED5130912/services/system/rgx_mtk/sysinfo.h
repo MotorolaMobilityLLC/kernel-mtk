@@ -71,6 +71,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SYS_RGX_OF_COMPATIBLE	"mediatek,AUCKLAND"
 #elif defined(CONFIG_MACH_MT6765)
 #define SYS_RGX_OF_COMPATIBLE	"mediatek,doma"
+#elif defined(CONFIG_MACH_MT6761)
+#define SYS_RGX_OF_COMPATIBLE   "mediatek,clark"
 #else
 #endif
 
