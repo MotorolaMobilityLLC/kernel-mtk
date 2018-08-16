@@ -81,6 +81,7 @@ struct imgsensor_info_struct {
 	kal_uint16 sensor_ver;
 	kal_uint32 checksum_value;		/*checksum value for Camera Auto Test*/
 	struct imgsensor_mode_struct pre;		/*preview scenario relative information*/
+	struct imgsensor_mode_struct pre_3HDR;
 	struct imgsensor_mode_struct cap;		/*capture scenario relative information*/
 	struct imgsensor_mode_struct cap1;		/*capture for PIP 24fps relative information*/
 	struct imgsensor_mode_struct cap2;		/*capture for PIP 24fps relative information*/
