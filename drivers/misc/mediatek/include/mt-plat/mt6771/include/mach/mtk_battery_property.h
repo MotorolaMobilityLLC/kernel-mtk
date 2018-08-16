@@ -17,8 +17,8 @@
 /* customize */
 #define DIFFERENCE_FULLOCV_ITH	200	/* mA */
 #define MTK_CHR_EXIST 1
-#define KEEP_100_PERCENT 2
-#define R_FG_VALUE	10				/* mOhm */
+#define KEEP_100_PERCENT 1
+#define R_FG_VALUE	5				/* mOhm */
 #define EMBEDDED_SEL 0
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
 #define FG_METER_RESISTANCE	75
@@ -33,9 +33,9 @@
 /* enable that uisoc = 1 and wait xmins then shutdown */
 #define SHUTDOWN_GAUGE1_XMINS 1
 /* define Xmins to shutdown*/
-#define SHUTDOWN_1_TIME	5
+#define SHUTDOWN_1_TIME	30
 
-#define SHUTDOWN_GAUGE1_VBAT_EN 1
+#define SHUTDOWN_GAUGE1_VBAT_EN 0
 #define SHUTDOWN_GAUGE1_VBAT 34000
 
 #define SHUTDOWN_GAUGE0_VOLTAGE 34000
@@ -69,7 +69,7 @@
 #define QMAX_SEL 1
 #define IBOOT_SEL 0
 #define SHUTDOWN_SYSTEM_IBOOT 15000	/* 0.1mA */
-#define PMIC_MIN_VOL 33500
+#define PMIC_MIN_VOL 34000
 
 /*ui_soc related */
 #define DIFFERENCE_FULL_CV 1000 /*0.01%*/
@@ -193,11 +193,11 @@
 #define SHUTDOWN_CAR_RATIO	1
 
 
-#define MULTI_TEMP_GAUGE0 0	/* different temp using different gauge 0% */
+#define MULTI_TEMP_GAUGE0 1	/* different temp using different gauge 0% */
 
 #define OVER_DISCHARGE_LEVEL -1500
 
-#define UISOC_UPDATE_TYPE 2
+#define UISOC_UPDATE_TYPE 0
 /*
  *	uisoc_update_type:
  *	0: only ui_soc interrupt update ui_soc
@@ -228,22 +228,22 @@
 
 /* using voltage to limit uisoc in 1% case */
 /* UI_LOW_LIMIT_VTH0=36000 means 3.6v */
-#define UI_LOW_LIMIT_EN 0
+#define UI_LOW_LIMIT_EN 1
 
-#define UI_LOW_LIMIT_SOC0 500
-#define UI_LOW_LIMIT_VTH0 35000
+#define UI_LOW_LIMIT_SOC0 200
+#define UI_LOW_LIMIT_VTH0 34500
 
-#define UI_LOW_LIMIT_SOC1 400
-#define UI_LOW_LIMIT_VTH1 34600
+#define UI_LOW_LIMIT_SOC1 200
+#define UI_LOW_LIMIT_VTH1 34500
 
-#define UI_LOW_LIMIT_SOC2 300
+#define UI_LOW_LIMIT_SOC2 200
 #define UI_LOW_LIMIT_VTH2 34500
 
 #define UI_LOW_LIMIT_SOC3 200
-#define UI_LOW_LIMIT_VTH3 34200
+#define UI_LOW_LIMIT_VTH3 34500
 
-#define UI_LOW_LIMIT_SOC4 100
-#define UI_LOW_LIMIT_VTH4 34000
+#define UI_LOW_LIMIT_SOC4 200
+#define UI_LOW_LIMIT_VTH4 34500
 
 #define UI_LOW_LIMIT_TIME 99999
 
