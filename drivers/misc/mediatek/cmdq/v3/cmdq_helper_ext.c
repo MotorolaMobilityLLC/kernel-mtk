@@ -3443,7 +3443,8 @@ static void cmdq_core_attach_error_handle_detail(
 
 	if (!handle) {
 		CMDQ_ERR("attach error failed since handle is NULL");
-		*aee_out = false;
+		if (aee_out)
+			*aee_out = false;
 		return;
 	}
 
@@ -3476,7 +3477,8 @@ static void cmdq_core_attach_error_handle_detail(
 		mutex_unlock(&cmdq_err_mutex);
 		cmdq_core_release_nghandleinfo(&nginfo);
 		/* don't aee for esd case */
-		*aee_out = false;
+		if (aee_out)
+			*aee_out = false;
 		return;
 	}
 
@@ -3493,7 +3495,8 @@ static void cmdq_core_attach_error_handle_detail(
 	mutex_unlock(&cmdq_err_mutex);
 
 	cmdq_core_release_nghandleinfo(&nginfo);
-	*aee_out = true;
+	if (aee_out)
+		*aee_out = true;
 }
 
 void cmdq_core_attach_error_handle(const struct cmdqRecStruct *handle,
@@ -4635,7 +4638,9 @@ void cmdq_pkt_release_handle(struct cmdqRecStruct *handle)
 
 	cmdq_core_track_handle_record(handle, handle->thread);
 
-	if (handle->thread != CMDQ_INVALID_THREAD) {
+	/* TODO: remove is_secure flag */
+	if (handle->thread != CMDQ_INVALID_THREAD &&
+		!handle->secData.is_secure) {
 		/* PMQoS Implement */
 		mutex_lock(&cmdq_thread_mutex);
 		ctx = cmdq_core_get_context();
@@ -4697,8 +4702,6 @@ static void cmdq_pkt_err_dump_handler(struct cmdq_cb_data data)
 
 	if (data.err == -ETIMEDOUT) {
 		atomic_inc(&handle->exec);
-		if (handle->secData.is_secure)
-			CMDQ_LOG("secure handle=%p timeout\n", handle);
 		cmdq_core_attach_error_handle_by_state(handle,
 			TASK_STATE_TIMEOUT);
 		atomic_dec(&handle->exec);
@@ -4752,9 +4755,8 @@ static void cmdq_pkt_flush_handler(struct cmdq_cb_data data)
 
 		if (handle->loop_cb) {
 			/* for loop task only callback and no need to do more */
-			CMDQ_LOG("loop callback handle:0x%p\n", handle);
+			CMDQ_VERBOSE("loop callback handle:0x%p\n", handle);
 			loop_ret = handle->loop_cb(handle->loop_user_data);
-			CMDQ_LOG("loop callback done\n");
 		}
 
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->loopBeat,
@@ -5035,29 +5037,33 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 		}
 	}
 
-	/* PMQoS */
-	CMDQ_SYSTRACE_BEGIN("%s_pmqos\n", __func__);
-	mutex_lock(&cmdq_thread_mutex);
-	ctx = cmdq_core_get_context();
-	handle_count = ctx->thread[handle->thread].handle_count;
+	/* TODO: remove pmqos in seure path */
+	if (!handle->secData.is_secure) {
+		/* PMQoS */
+		CMDQ_SYSTRACE_BEGIN("%s_pmqos\n", __func__);
+		mutex_lock(&cmdq_thread_mutex);
+		ctx = cmdq_core_get_context();
+		handle_count = ctx->thread[handle->thread].handle_count;
 
-	pmqos_handle_list = kcalloc(handle_count + 1,
-		sizeof(*pmqos_handle_list), GFP_KERNEL);
+		pmqos_handle_list = kcalloc(handle_count + 1,
+			sizeof(*pmqos_handle_list), GFP_KERNEL);
 
-	if (pmqos_handle_list) {
-		if (handle_count)
-			cmdq_core_get_pmqos_handle_list(handle,
-				pmqos_handle_list, handle_count);
+		if (pmqos_handle_list) {
+			if (handle_count)
+				cmdq_core_get_pmqos_handle_list(handle,
+					pmqos_handle_list, handle_count);
 
-		pmqos_handle_list[handle_count] = handle;
+			pmqos_handle_list[handle_count] = handle;
+		}
+
+		cmdq_core_group_begin_task(handle, pmqos_handle_list,
+			handle_count + 1);
+
+		kfree(pmqos_handle_list);
+		ctx->thread[handle->thread].handle_count++;
+		mutex_unlock(&cmdq_thread_mutex);
+		CMDQ_SYSTRACE_END();
 	}
-
-	cmdq_core_group_begin_task(handle, pmqos_handle_list, handle_count + 1);
-
-	kfree(pmqos_handle_list);
-	ctx->thread[handle->thread].handle_count++;
-	mutex_unlock(&cmdq_thread_mutex);
-	CMDQ_SYSTRACE_END();
 
 	CMDQ_SYSTRACE_BEGIN("%s\n", __func__);
 	cmdq_core_replace_v3_instr(handle, handle->thread);

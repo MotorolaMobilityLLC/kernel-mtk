@@ -954,6 +954,45 @@ static void cmdq_mdp_store_debug(struct cmdqCommandStruct *desc,
 	CMDQ_MSG("user debug string:%s\n", handle->user_debug_str);
 }
 
+static s32 cmdq_mdp_setup_sec(struct cmdqCommandStruct *desc,
+	struct cmdqRecStruct *handle)
+{
+	if (!desc->secData.is_secure)
+		return 0;
+
+	cmdq_task_set_secure(handle, desc->secData.is_secure);
+	handle->secData.enginesNeedDAPC = desc->secData.enginesNeedDAPC;
+	handle->secData.enginesNeedPortSecurity =
+		desc->secData.enginesNeedPortSecurity;
+	handle->secData.addrMetadataCount = desc->secData.addrMetadataCount;
+
+	if (handle->secData.addrMetadataCount > 0) {
+		u32 metadata_length;
+		void *p_metadatas;
+
+		metadata_length = (handle->secData.addrMetadataCount) *
+			sizeof(struct cmdqSecAddrMetadataStruct);
+		/* create sec data task buffer for working */
+		p_metadatas = kzalloc(metadata_length, GFP_KERNEL);
+		if (p_metadatas) {
+			memcpy(p_metadatas, CMDQ_U32_PTR(
+				desc->secData.addrMetadatas), metadata_length);
+			handle->secData.addrMetadatas =
+				(cmdqU32Ptr_t)(unsigned long)p_metadatas;
+		} else {
+			CMDQ_AEE("CMDQ",
+				"Can't alloc secData buffer count:%d alloacted_size:%d\n",
+				 handle->secData.addrMetadataCount,
+				 metadata_length);
+			return -ENOMEM;
+		}
+	} else {
+		handle->secData.addrMetadatas = 0;
+	}
+
+	return 0;
+}
+
 s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	struct cmdqRecStruct **handle_out)
 {
@@ -966,7 +1005,9 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 
 	cmdq_task_create(desc->scenario, &handle);
 
-	/* TODO: set secure data */
+	/* set secure data */
+	handle->secStatus = NULL;
+	cmdq_mdp_setup_sec(desc, handle);
 
 	handle->engineFlag = desc->engineFlag;
 	handle->pkt->priority = desc->priority;
