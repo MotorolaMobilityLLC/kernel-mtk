@@ -1190,7 +1190,7 @@ err_vds_lookup:
 	return ret;
 }
 
-int tipc_k_connect(tipc_k_handle *h, const char *port)
+int tipc_k_connect(struct tipc_k_handle *h, const char *port)
 {
 	int err;
 	struct tipc_dn_chan *dn = NULL;
@@ -1199,7 +1199,7 @@ int tipc_k_connect(tipc_k_handle *h, const char *port)
 	if (err)
 		return err;
 
-	*h = (tipc_k_handle)dn;
+	h->dn = dn;
 
 	/* send connect request */
 	err = tipc_chan_connect(dn->chan, port);
@@ -1211,9 +1211,9 @@ int tipc_k_connect(tipc_k_handle *h, const char *port)
 }
 EXPORT_SYMBOL(tipc_k_connect);
 
-int tipc_k_disconnect(tipc_k_handle h)
+int tipc_k_disconnect(struct tipc_k_handle *h)
 {
-	struct tipc_dn_chan *dn = (struct tipc_dn_chan *)h;
+	struct tipc_dn_chan *dn = h->dn;
 
 	dn_shutdown(dn);
 
@@ -1235,13 +1235,13 @@ int tipc_k_disconnect(tipc_k_handle h)
 }
 EXPORT_SYMBOL(tipc_k_disconnect);
 
-ssize_t tipc_k_read(tipc_k_handle h, void *buf, size_t buf_len,
+ssize_t tipc_k_read(struct tipc_k_handle *h, void *buf, size_t buf_len,
 	unsigned int flags)
 {
 	ssize_t ret;
 	size_t  data_len;
 	struct tipc_msg_buf *mb;
-	struct tipc_dn_chan *dn = (struct tipc_dn_chan *)h;
+	struct tipc_dn_chan *dn = (struct tipc_dn_chan *)h->dn;
 
 	mutex_lock(&dn->lock);
 
@@ -1289,13 +1289,13 @@ out:
 }
 EXPORT_SYMBOL(tipc_k_read);
 
-ssize_t tipc_k_write(tipc_k_handle h, void *buf, size_t len,
+ssize_t tipc_k_write(struct tipc_k_handle *h, void *buf, size_t len,
 	unsigned int flags)
 {
 	ssize_t ret;
 	long timeout = TXBUF_TIMEOUT;
 	struct tipc_msg_buf *txbuf = NULL;
-	struct tipc_dn_chan *dn = (struct tipc_dn_chan *)h;
+	struct tipc_dn_chan *dn = (struct tipc_dn_chan *)h->dn;
 
 	if (flags & O_NONBLOCK)
 		timeout = 0;

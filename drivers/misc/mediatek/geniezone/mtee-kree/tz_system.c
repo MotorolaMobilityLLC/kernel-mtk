@@ -84,9 +84,10 @@ static struct mutex perf_boost_lock;
 static int perf_boost_cnt;
 
 static int32_t _sys_service_Fd = -1; /* only need to open sys service once */
-static tipc_k_handle _sys_service_h;
+static struct tipc_k_handle _sys_service_h;
 
-static tipc_k_handle _kree_session_handle_pool[KREE_SESSION_HANDLE_MAX_SIZE];
+static struct tipc_k_handle
+	_kree_session_handle_pool[KREE_SESSION_HANDLE_MAX_SIZE];
 static int32_t _kree_session_handle_idx;
 
 #define TIPC_RETRY_MAX_COUNT (100)
@@ -110,8 +111,8 @@ static bool _tipc_retry_check_and_wait(int err, int retry_cnt, int tag)
 	return false;
 }
 
-static ssize_t _tipc_k_read_retry(tipc_k_handle h, void *buf, size_t buf_len,
-				  unsigned int flags)
+static ssize_t _tipc_k_read_retry(struct tipc_k_handle *h, void *buf,
+	size_t buf_len, unsigned int flags)
 {
 	ssize_t rc;
 	int retry = 0;
@@ -124,8 +125,8 @@ static ssize_t _tipc_k_read_retry(tipc_k_handle h, void *buf, size_t buf_len,
 	return rc;
 }
 
-static ssize_t _tipc_k_write_retry(tipc_k_handle h, void *buf, size_t buf_len,
-				   unsigned int flags)
+static ssize_t _tipc_k_write_retry(struct tipc_k_handle *h, void *buf,
+	size_t buf_len, unsigned int flags)
 {
 	ssize_t rc;
 	int retry = 0;
@@ -157,14 +158,14 @@ static bool _is_tipc_channel_connected(struct tipc_dn_chan *dn)
 	return is_chan_connected;
 }
 
-static int _tipc_k_connect_retry(tipc_k_handle *h, const char *port)
+static int _tipc_k_connect_retry(struct tipc_k_handle *h, const char *port)
 {
 	int rc = 0;
 	int retry = 0;
 
 	do {
 		if (unlikely(IS_RESTARTSYS_ERROR(rc))) {
-			struct tipc_dn_chan *dn = (struct tipc_dn_chan *)*h;
+			struct tipc_dn_chan *dn = h->dn;
 
 			if (_is_tipc_channel_connected(dn)) {
 				KREE_DEBUG(
@@ -173,7 +174,7 @@ static int _tipc_k_connect_retry(tipc_k_handle *h, const char *port)
 				return 0;
 			}
 			KREE_DEBUG("%s: disconnect and retry!\n", __func__);
-			tipc_k_disconnect(dn);
+			tipc_k_disconnect(h);
 		}
 		rc = tipc_k_connect(h, port);
 		retry++;
@@ -182,14 +183,14 @@ static int _tipc_k_connect_retry(tipc_k_handle *h, const char *port)
 	return rc;
 }
 
-int32_t _setSessionHandle(tipc_k_handle h)
+int32_t _setSessionHandle(struct tipc_k_handle h)
 {
 	int32_t session;
 	int32_t i;
 
 	mutex_lock(&fd_mutex);
 	for (i = 0; i < KREE_SESSION_HANDLE_MAX_SIZE; i++) {
-		if (_kree_session_handle_pool[_kree_session_handle_idx] == 0)
+		if (_kree_session_handle_pool[_kree_session_handle_idx].dn == 0)
 			break;
 		_kree_session_handle_idx = (_kree_session_handle_idx + 1)
 					   % KREE_SESSION_HANDLE_MAX_SIZE;
@@ -199,7 +200,7 @@ int32_t _setSessionHandle(tipc_k_handle h)
 			 __func__);
 		return -1;
 	}
-	_kree_session_handle_pool[_kree_session_handle_idx] = h;
+	_kree_session_handle_pool[_kree_session_handle_idx].dn = h.dn;
 	session = _kree_session_handle_idx;
 	_kree_session_handle_idx =
 		(_kree_session_handle_idx + 1) % KREE_SESSION_HANDLE_MAX_SIZE;
@@ -211,26 +212,26 @@ int32_t _setSessionHandle(tipc_k_handle h)
 void _clearSessionHandle(int32_t session)
 {
 	mutex_lock(&fd_mutex);
-	_kree_session_handle_pool[session] = 0;
+	_kree_session_handle_pool[session].dn = 0;
 	mutex_unlock(&fd_mutex);
 }
 
 
-int _getSessionHandle(int32_t session, tipc_k_handle *h)
+int _getSessionHandle(int32_t session, struct tipc_k_handle **h)
 {
 	if (session < 0 || session > KREE_SESSION_HANDLE_MAX_SIZE)
 		return -1;
 	if (session == KREE_SESSION_HANDLE_MAX_SIZE)
-		*h = _sys_service_h;
+		*h = &_sys_service_h;
 	else
-		*h = _kree_session_handle_pool[session];
+		*h = &_kree_session_handle_pool[session];
 	return 0;
 }
 
 
-tipc_k_handle _FdToHandle(int32_t session)
+struct tipc_k_handle *_FdToHandle(int32_t session)
 {
-	tipc_k_handle h = 0;
+	struct tipc_k_handle *h = 0;
 	int ret;
 
 	ret = _getSessionHandle(session, &h);
@@ -240,12 +241,12 @@ tipc_k_handle _FdToHandle(int32_t session)
 	return h;
 }
 
-int32_t _HandleToFd(tipc_k_handle h)
+int32_t _HandleToFd(struct tipc_k_handle h)
 {
 	return _setSessionHandle(h);
 }
 
-#define _HandleToChanInfo(x) ((struct tipc_dn_chan *)(x))
+#define _HandleToChanInfo(x) ((struct tipc_dn_chan *)(x->dn))
 
 void KREE_SESSION_LOCK(int32_t handle)
 {
@@ -276,7 +277,7 @@ static TZ_RESULT KREE_OpenSysFd(void)
 	_sys_service_Fd = KREE_SESSION_HANDLE_MAX_SIZE;
 
 	KREE_DEBUG("===> %s: chan_p = 0x%llx\n", __func__,
-		   (uint64_t)_sys_service_h);
+		   (uint64_t)_sys_service_h->dn);
 
 	return ret;
 }
@@ -284,7 +285,7 @@ static TZ_RESULT KREE_OpenSysFd(void)
 static TZ_RESULT KREE_OpenFd(const char *port, int32_t *Fd)
 {
 
-	tipc_k_handle h = 0;
+	struct tipc_k_handle h;
 	TZ_RESULT ret = TZ_RESULT_SUCCESS;
 	int32_t tmp;
 
@@ -317,7 +318,7 @@ static TZ_RESULT KREE_CloseFd(int32_t Fd)
 {
 
 	int rc;
-	tipc_k_handle h;
+	struct tipc_k_handle *h;
 	int ret = TZ_RESULT_SUCCESS;
 
 	KREE_DEBUG(" ===> %s: Close FD %u\n", __func__, Fd);
@@ -342,7 +343,7 @@ int _gz_client_cmd(int32_t Fd, int session, unsigned int cmd, void *param,
 		   int param_size)
 {
 	ssize_t rc;
-	tipc_k_handle handle;
+	struct tipc_k_handle *handle;
 
 	handle = _FdToHandle(Fd);
 	if (!handle) {
@@ -362,7 +363,7 @@ int _gz_client_cmd(int32_t Fd, int session, unsigned int cmd, void *param,
 int _gz_client_wait_ret(int32_t Fd, struct gz_syscall_cmd_param *data)
 {
 	ssize_t rc;
-	tipc_k_handle handle;
+	struct tipc_k_handle *handle;
 	int size;
 
 	handle = _FdToHandle(Fd);
