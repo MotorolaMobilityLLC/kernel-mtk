@@ -204,11 +204,19 @@ void ufs_mtk_runtime_pm_init(struct scsi_device *sdev);
 
 #ifdef CONFIG_HIE
 struct hie_dev *ufs_mtk_hie_get_dev(void);
+int ufs_mtk_hie_req_done(struct ufs_hba *hba,
+	struct ufshcd_lrb *lrbp);
 #else
 static inline
 struct hie_dev *ufs_mtk_hie_get_dev(void)
 {
 	return NULL;
+}
+
+static inline int ufs_mtk_hie_req_done(
+	struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
+{
+	return 0;
 }
 #endif
 
