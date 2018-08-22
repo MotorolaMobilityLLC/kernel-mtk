@@ -354,12 +354,12 @@ static struct mt_cpu_freq_method opp_tbl_method_CCI_FY[] = {	/* FY */
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	2),
-	FP(4,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
 };
 
 static struct mt_cpu_freq_method opp_tbl_method_LL_SBa[] = {	/* SBa */
@@ -414,12 +414,12 @@ static struct mt_cpu_freq_method opp_tbl_method_CCI_SBa[] = {	/* SBa */
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	2),
-	FP(4,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
 };
 
 

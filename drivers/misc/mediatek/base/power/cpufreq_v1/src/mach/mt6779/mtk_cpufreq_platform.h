@@ -28,6 +28,9 @@
 #define CPU_DVFS_NOT_READY	1 /* for bring up, remove for MP */
 #endif
 
+#define NR_FREQ		16
+#define NR_CCI_TBL		2
+
 /* ARMv8.2 */
 #define SINGLE_CLUSTER 1
 
