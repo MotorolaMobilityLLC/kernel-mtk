@@ -62,6 +62,7 @@ struct mt6370_chip {
 	struct kthread_work irq_work;
 	struct task_struct *irq_worker_task;
 	struct wakeup_source irq_wake_lock;
+	struct wakeup_source i2c_wake_lock;
 
 	atomic_t poll_count;
 	struct delayed_work	poll_work;
@@ -174,26 +175,32 @@ static const rt_register_map_t mt6370_chip_regmap[] = {
 static int mt6370_read_device(void *client, u32 reg, int len, void *dst)
 {
 	struct i2c_client *i2c = (struct i2c_client *)client;
+	struct mt6370_chip *chip = i2c_get_clientdata(i2c);
 	int ret = 0, count = 5;
 
+	__pm_stay_awake(&chip->i2c_wake_lock);
+	down(&chip->suspend_lock);
 	while (count) {
 		if (len > 1) {
 			ret = i2c_smbus_read_i2c_block_data(i2c, reg, len, dst);
 			if (ret < 0)
 				count--;
 			else
-				return ret;
+				goto out;
 		} else {
 			ret = i2c_smbus_read_byte_data(i2c, reg);
 			if (ret < 0)
 				count--;
 			else {
 				*(u8 *)dst = (u8)ret;
-				return ret;
+				goto out;
 			}
 		}
 		udelay(100);
 	}
+out:
+	up(&chip->suspend_lock);
+	__pm_relax(&chip->i2c_wake_lock);
 	return ret;
 }
 
@@ -201,8 +208,11 @@ static int mt6370_write_device(void *client, u32 reg, int len, const void *src)
 {
 	const u8 *data;
 	struct i2c_client *i2c = (struct i2c_client *)client;
+	struct mt6370_chip *chip = i2c_get_clientdata(i2c);
 	int ret = 0, count = 5;
 
+	__pm_stay_awake(&chip->i2c_wake_lock);
+	down(&chip->suspend_lock);
 	while (count) {
 		if (len > 1) {
 			ret = i2c_smbus_write_i2c_block_data(i2c,
@@ -210,17 +220,20 @@ static int mt6370_write_device(void *client, u32 reg, int len, const void *src)
 			if (ret < 0)
 				count--;
 			else
-				return ret;
+				goto out;
 		} else {
 			data = src;
 			ret = i2c_smbus_write_byte_data(i2c, reg, *data);
 			if (ret < 0)
 				count--;
 			else
-				return ret;
+				goto out;
 		}
 		udelay(100);
 	}
+out:
+	up(&chip->suspend_lock);
+	__pm_relax(&chip->i2c_wake_lock);
 	return ret;
 }
 
@@ -497,7 +510,6 @@ static void mt6370_irq_work_handler(struct kthread_work *work)
 
 	mt6370_poll_ctrl(chip);
 	/* make sure I2C bus had resumed */
-	down(&chip->suspend_lock);
 	tcpci_lock_typec(chip->tcpc);
 
 #ifdef DEBUG_GPIO
@@ -512,7 +524,6 @@ static void mt6370_irq_work_handler(struct kthread_work *work)
 	} while (gpio_val == 0);
 
 	tcpci_unlock_typec(chip->tcpc);
-	up(&chip->suspend_lock);
 
 #ifdef DEBUG_GPIO
 	gpio_set_value(DEBUG_GPIO, 1);
@@ -1494,7 +1505,8 @@ static inline int mt6370_check_revision(struct i2c_client *client)
 	int ret;
 	u8 data = 1;
 
-	ret = mt6370_read_device(client, TCPC_V10_REG_VID, 2, &vid);
+	ret = i2c_smbus_read_i2c_block_data(client,
+			TCPC_V10_REG_VID, 2, (u8 *)&vid);
 	if (ret < 0) {
 		dev_err(&client->dev, "read chip ID fail\n");
 		return -EIO;
@@ -1505,7 +1517,8 @@ static inline int mt6370_check_revision(struct i2c_client *client)
 		return -ENODEV;
 	}
 
-	ret = mt6370_read_device(client, TCPC_V10_REG_PID, 2, &pid);
+	ret = i2c_smbus_read_i2c_block_data(client,
+			TCPC_V10_REG_PID, 2, (u8 *)&pid);
 	if (ret < 0) {
 		dev_err(&client->dev, "read product ID fail\n");
 		return -EIO;
@@ -1517,13 +1530,15 @@ static inline int mt6370_check_revision(struct i2c_client *client)
 		return -ENODEV;
 	}
 
-	ret = mt6370_write_device(client, MT6370_REG_SWRESET, 1, &data);
+	ret = i2c_smbus_read_i2c_block_data(client,
+			MT6370_REG_SWRESET, 1, (u8 *)&data);
 	if (ret < 0)
 		return ret;
 
 	usleep_range(1000, 2000);
 
-	ret = mt6370_read_device(client, TCPC_V10_REG_DID, 2, &did);
+	ret = i2c_smbus_read_i2c_block_data(client,
+			TCPC_V10_REG_DID, 2, (u8 *)&did);
 	if (ret < 0) {
 		dev_err(&client->dev, "read device ID fail\n");
 		return -EIO;
@@ -1572,6 +1587,8 @@ static int mt6370_i2c_probe(struct i2c_client *client,
 	INIT_DELAYED_WORK(&chip->poll_work, mt6370_poll_work);
 	wakeup_source_init(&chip->irq_wake_lock,
 		"mt6370_irq_wakelock");
+	wakeup_source_init(&chip->i2c_wake_lock,
+		"mt6370_i2c_wakelock");
 
 	chip->chip_id = chip_id;
 	pr_info("mt6370_chipID = 0x%0x\n", chip_id);
