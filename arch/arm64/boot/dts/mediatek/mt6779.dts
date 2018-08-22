@@ -2155,3 +2155,7 @@
 
 };
 #include "cust_mt6779_msdc.dtsi"
+
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
+#include "trusty.dtsi"
+#endif
