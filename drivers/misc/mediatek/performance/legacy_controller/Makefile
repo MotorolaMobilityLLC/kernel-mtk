@@ -12,3 +12,5 @@
 #
 
 obj-y += legacy_controller.o
+obj-$(CONFIG_MTK_CPU_CTRL_CFP) += cpu_ctrl_cfp.o
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/performance/include/
