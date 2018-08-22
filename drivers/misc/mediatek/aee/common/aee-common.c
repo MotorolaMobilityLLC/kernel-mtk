@@ -51,7 +51,7 @@ void aee_trigger_kdb(void)
 	 * kdb return
 	 */
 	if (res)
-		pr_notice("aee_trigger_kdb, get wd api error\n");
+		pr_notice("%s, get wd api error\n", __func__);
 	else
 		wd_api->wd_disable_all();
 #endif
@@ -69,7 +69,7 @@ void aee_trigger_kdb(void)
 #ifdef CONFIG_LOCAL_WDT
 	/* enable local WDT */
 	if (res)
-		pr_notice("aee_trigger_kdb, get wd api error\n");
+		pr_notice("%s, get wd api error\n", __func__);
 	else
 		wd_api->wd_restart(WD_TYPE_NOLOCK);
 
@@ -148,7 +148,7 @@ void aee_oops_free(struct aee_oops *oops)
 	vfree(oops->userthread_stack.Userthread_Stack);
 	vfree(oops->userthread_maps.Userthread_maps);
 	kfree(oops);
-	pr_notice("aee_oops_free\n");
+	pr_notice("%s\n", __func__);
 }
 EXPORT_SYMBOL(aee_oops_free);
 

@@ -386,7 +386,7 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	struct wd_api *wd_api = NULL;
 #endif
 
-	aee_wdt_percpu_printf(cpu, "===> aee_wdt_atf_info : cpu %d\n", cpu);
+	aee_wdt_percpu_printf(cpu, "===> %s : cpu %d\n", __func__, cpu);
 	if (!cpu_possible(cpu)) {
 		aee_wdt_printf("FIQ: Watchdog time out at incorrect CPU %d ?\n",
 				cpu);
