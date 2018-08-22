@@ -1640,6 +1640,8 @@ static int pwrap_init(struct pmic_wrapper *wrp)
 			pwrap_writel(wrp, 1, PWRAP_OP_TYPE);
 			pwrap_writel(wrp, 0, PWRAP_MSB_FIRST);
 			break;
+		default:
+			break;
 		}
 	}
 
