@@ -33,6 +33,15 @@ ifeq ($(CONFIG_MACH_MT6761),y)
   ccflags-y += -DQOS_MT6761_SUPPORT
 endif
 
+ifeq ($(CONFIG_MACH_MT8163),y)
+  ccflags-y += -DJPEG_PM_DOMAIN_ENABLE
+endif
+
+ifeq ($(CONFIG_MACH_MT8173),y)
+  ccflags-y += -DJPEG_DEC_DRIVER
+  ccflags-y += -DJPEG_PM_DOMAIN_ENABLE
+endif
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
 #obj-$(CONFIG_MTK_JPEG) += jpeg_driver.o

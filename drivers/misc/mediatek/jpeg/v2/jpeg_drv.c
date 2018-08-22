@@ -718,12 +718,13 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg,
 
 			jpeg_drv_dec_dump_key_reg();
 
+#ifndef JPEG_PM_DOMAIN_ENABLE
 #ifdef CONFIG_MTK_SMI_EXT
 		/* need to dump smi for the case that no irq coming from HW */
 		if (decResult == 5)
 			smi_debug_bus_hang_detect(SMI_PARAM_BUS_OPTIMIZATION, 1, 0, 1);
 #endif
-
+#endif
 			jpeg_drv_dec_warm_reset();
 		}
 		irq_st = _jpeg_dec_int_status;
@@ -1045,12 +1046,13 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		if (ret != 0) {
 			jpeg_drv_enc_dump_reg();
 
+#ifndef JPEG_PM_DOMAIN_ENABLE
 #ifdef CONFIG_MTK_SMI_EXT
 		/* need to dump smi for the case that no irq coming from HW */
 		if (ret == 3)
 			smi_debug_bus_hang_detect(SMI_PARAM_BUS_OPTIMIZATION, 1, 0, 1);
 #endif
-
+#endif
 			jpeg_drv_enc_warm_reset();
 
 			return -EFAULT;
