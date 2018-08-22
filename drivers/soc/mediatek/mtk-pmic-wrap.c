@@ -262,6 +262,8 @@ enum pwrap_regs {
 	PWRAP_DCM_DBC_PRD,
 
 	/* MT2701 only regs */
+	PWRAP_OP_TYPE,
+	PWRAP_MSB_FIRST,
 	PWRAP_ADC_CMD_ADDR,
 	PWRAP_PWRAP_ADC_CMD,
 	PWRAP_ADC_RDY_ADDR,
@@ -379,6 +381,8 @@ enum pwrap_regs {
 	PWRAP_WDATA_SEQUENCE_5,
 	PWRAP_WDATA_SEQUENCE_6,
 	PWRAP_WDATA_SEQUENCE_7,
+	/* MT8163 only regs */
+	PWRAP_SW_RST,
 };
 
 static int mt2701_regs[] = {
@@ -386,6 +390,8 @@ static int mt2701_regs[] = {
 	[PWRAP_WRAP_EN] =		0x4,
 	[PWRAP_DIO_EN] =		0x8,
 	[PWRAP_SIDLY] =			0xc,
+	[PWRAP_OP_TYPE] =		0x10,
+	[PWRAP_MSB_FIRST] =		0x14,
 	[PWRAP_RDDMY] =			0x18,
 	[PWRAP_SI_CK_CON] =		0x1c,
 	[PWRAP_CSHEXT_WRITE] =		0x20,
@@ -707,6 +713,91 @@ static int mt8135_regs[] = {
 	[PWRAP_DCM_DBC_PRD] =		0x160,
 };
 
+static int mt8163_regs[] = {
+	[PWRAP_MUX_SEL] =		0x0,
+	[PWRAP_WRAP_EN] =		0x4,
+	[PWRAP_DIO_EN] =		0x8,
+	[PWRAP_SIDLY] =			0xc,
+	[PWRAP_RDDMY] =			0x10,
+	[PWRAP_SI_CK_CON] =		0x14,
+	[PWRAP_CSHEXT_WRITE] =		0x18,
+	[PWRAP_CSHEXT_READ] =		0x1c,
+	[PWRAP_CSLEXT_START] =		0x20,
+	[PWRAP_CSLEXT_END] =		0x24,
+	[PWRAP_STAUPD_PRD] =		0x28,
+	[PWRAP_STAUPD_GRPEN] =		0x2c,
+	[PWRAP_STAUPD_MAN_TRIG] =	0x40,
+	[PWRAP_STAUPD_STA] =		0x44,
+	[PWRAP_WRAP_STA] =		0x48,
+	[PWRAP_HARB_INIT] =		0x4c,
+	[PWRAP_HARB_HPRIO] =		0x50,
+	[PWRAP_HIPRIO_ARB_EN] =		0x54,
+	[PWRAP_HARB_STA0] =		0x58,
+	[PWRAP_HARB_STA1] =		0x5c,
+	[PWRAP_MAN_EN] =		0x60,
+	[PWRAP_MAN_CMD] =		0x64,
+	[PWRAP_MAN_RDATA] =		0x68,
+	[PWRAP_MAN_VLDCLR] =		0x6c,
+	[PWRAP_WACS0_EN] =		0x70,
+	[PWRAP_INIT_DONE0] =		0x74,
+	[PWRAP_WACS0_CMD] =		0x78,
+	[PWRAP_WACS0_RDATA] =		0x7c,
+	[PWRAP_WACS0_VLDCLR] =		0x80,
+	[PWRAP_WACS1_EN] =		0x84,
+	[PWRAP_INIT_DONE1] =		0x88,
+	[PWRAP_WACS1_CMD] =		0x8c,
+	[PWRAP_WACS1_RDATA] =		0x90,
+	[PWRAP_WACS1_VLDCLR] =		0x94,
+	[PWRAP_WACS2_EN] =		0x98,
+	[PWRAP_INIT_DONE2] =		0x9c,
+	[PWRAP_WACS2_CMD] =		0xa0,
+	[PWRAP_WACS2_RDATA] =		0xa4,
+	[PWRAP_WACS2_VLDCLR] =		0xa8,
+	[PWRAP_INT_EN] =		0xac,
+	[PWRAP_INT_FLG_RAW] =		0xb0,
+	[PWRAP_INT_FLG] =		0xb4,
+	[PWRAP_INT_CLR] =		0xb8,
+	[PWRAP_SIG_ADR] =		0xbc,
+	[PWRAP_SIG_MODE] =		0xc0,
+	[PWRAP_SIG_VALUE] =		0xc4,
+	[PWRAP_SIG_ERRVAL] =		0xc8,
+	[PWRAP_CRC_EN] =		0xcc,
+	[PWRAP_TIMER_EN] =		0xd0,
+	[PWRAP_TIMER_STA] =		0xd4,
+	[PWRAP_WDT_UNIT] =		0xd8,
+	[PWRAP_WDT_SRC_EN] =		0xdc,
+	[PWRAP_WDT_FLG] =		0xe0,
+	[PWRAP_DEBUG_INT_SEL] =		0xe4,
+	[PWRAP_DVFS_ADR0] =		0xe8,
+	[PWRAP_DVFS_WDATA0] =		0xec,
+	[PWRAP_DVFS_ADR1] =		0xf0,
+	[PWRAP_DVFS_WDATA1] =		0xf4,
+	[PWRAP_DVFS_ADR2] =		0xf8,
+	[PWRAP_DVFS_WDATA2] =		0xfc,
+	[PWRAP_DVFS_ADR3] =		0x100,
+	[PWRAP_DVFS_WDATA3] =		0x104,
+	[PWRAP_DVFS_ADR4] =		0x108,
+	[PWRAP_DVFS_WDATA4] =		0x10c,
+	[PWRAP_DVFS_ADR5] =		0x110,
+	[PWRAP_DVFS_WDATA5] =		0x114,
+	[PWRAP_DVFS_ADR6] =		0x118,
+	[PWRAP_DVFS_WDATA6] =		0x11c,
+	[PWRAP_DVFS_ADR7] =		0x120,
+	[PWRAP_DVFS_WDATA7] =		0x124,
+	[PWRAP_SPMINF_STA] =		0x128,
+	[PWRAP_CIPHER_KEY_SEL] =	0x12c,
+	[PWRAP_CIPHER_IV_SEL] =		0x130,
+	[PWRAP_CIPHER_EN] =		0x134,
+	[PWRAP_CIPHER_RDY] =		0x138,
+	[PWRAP_CIPHER_MODE] =		0x13c,
+	[PWRAP_CIPHER_SWRST] =		0x140,
+	[PWRAP_DCM_EN] =		0x144,
+	[PWRAP_DCM_DBC_PRD] =		0x148,
+	[PWRAP_SW_RST] =		0x168,
+	[PWRAP_OP_TYPE] =		0x16c,
+	[PWRAP_MSB_FIRST] =		0x170,
+};
+
 enum pmic_type {
 	PMIC_MT6323,
 	PMIC_MT6358,
@@ -718,6 +809,7 @@ enum pwrap_type {
 	PWRAP_MT3967,
 	PWRAP_MT8135,
 	PWRAP_MT8173,
+	PWRAP_MT8163,
 };
 
 struct pmic_wrapper;
@@ -761,6 +853,7 @@ struct pmic_wrapper_type {
 	unsigned int has_bridge:1;
 	/* Flags indicating the capability for the target pwrap */
 	u32 caps;
+	int slv_switch:1;
 	int (*init_reg_clock)(struct pmic_wrapper *wrp);
 	int (*init_soc_specific)(struct pmic_wrapper *wrp);
 };
@@ -1344,6 +1437,7 @@ static int pwrap_init_cipher(struct pmic_wrapper *wrp)
 		pwrap_writel(wrp, 1, PWRAP_CIPHER_LOAD);
 		pwrap_writel(wrp, 1, PWRAP_CIPHER_START);
 		break;
+	case PWRAP_MT8163:
 	case PWRAP_MT2701:
 	case PWRAP_MT3967:
 	case PWRAP_MT8173:
@@ -1518,14 +1612,35 @@ static int pwrap_init(struct pmic_wrapper *wrp)
 {
 	int ret;
 
-	reset_control_reset(wrp->rstc);
+	if (wrp->rstc)
+		reset_control_reset(wrp->rstc);
+	else {
+		pwrap_writel(wrp, 1, PWRAP_SW_RST);
+		pwrap_writel(wrp, 0, PWRAP_SW_RST);
+	}
+
 	if (wrp->rstc_bridge)
 		reset_control_reset(wrp->rstc_bridge);
 
-	if (wrp->master->type == PWRAP_MT8173) {
+	if ((wrp->master->type == PWRAP_MT8173) ||
+		(wrp->master->type == PWRAP_MT8163)) {
 		/* Enable DCM */
 		pwrap_writel(wrp, 3, PWRAP_DCM_EN);
 		pwrap_writel(wrp, 0, PWRAP_DCM_DBC_PRD);
+	}
+
+	if (wrp->master->slv_switch) {
+		/* Enable Slave option if more than one slave support */
+		switch (wrp->slave->type) {
+		case PMIC_MT6323:
+			pwrap_writel(wrp, 0, PWRAP_OP_TYPE);
+			pwrap_writel(wrp, 1, PWRAP_MSB_FIRST);
+			break;
+		case PMIC_MT6397:
+			pwrap_writel(wrp, 1, PWRAP_OP_TYPE);
+			pwrap_writel(wrp, 0, PWRAP_MSB_FIRST);
+			break;
+		}
 	}
 
 	if (HAS_CAP(wrp->slave->caps, PWRAP_SLV_CAP_SPI)) {
@@ -1733,6 +1848,7 @@ static const struct pmic_wrapper_type pwrap_mt2701 = {
 	.wdt_src = PWRAP_WDT_SRC_MASK_ALL,
 	.has_bridge = 0,
 	.caps = PWRAP_CAP_RESET | PWRAP_CAP_DCM,
+	.slv_switch = 1,
 	.init_reg_clock = pwrap_mt2701_init_reg_clock,
 	.init_soc_specific = pwrap_mt2701_init_soc_specific,
 };
@@ -1748,6 +1864,7 @@ static struct pmic_wrapper_type pwrap_mt8135 = {
 	.has_bridge = 1,
 	.caps = PWRAP_CAP_BRIDGE | PWRAP_CAP_RESET | PWRAP_CAP_DCM,
 	.init_reg_clock = pwrap_common_init_reg_clock,
+	.slv_switch = 0,
 	.init_soc_specific = pwrap_mt8135_init_soc_specific,
 };
 
@@ -1760,6 +1877,7 @@ static struct pmic_wrapper_type pwrap_mt8173 = {
 	.spi_w = PWRAP_MAN_CMD_SPI_WRITE,
 	.wdt_src = PWRAP_WDT_SRC_MASK_NO_STAUPD,
 	.has_bridge = 0,
+	.slv_switch = 0,
 	.caps = PWRAP_CAP_RESET | PWRAP_CAP_DCM,
 	.init_reg_clock = pwrap_common_init_reg_clock,
 	.init_soc_specific = pwrap_mt8173_init_soc_specific,
@@ -1775,8 +1893,22 @@ static struct pmic_wrapper_type pwrap_mt3967 = {
 	.wdt_src = PWRAP_WDT_SRC_MASK_ALL,
 	.has_bridge = 0,
 	.caps = PWRAP_CAP_INT1_EN,
+	.slv_switch = 0,
 	.init_reg_clock = pwrap_common_init_reg_clock,
 	.init_soc_specific = NULL,
+};
+
+static const struct pmic_wrapper_type pwrap_mt8163 = {
+	.regs = mt8163_regs,
+	.type = PWRAP_MT8163,
+	.arb_en_all = 0xff,
+	.int_en_all = ~(u32)(BIT(31) | BIT(2)),
+	.spi_w = PWRAP_MAN_CMD_SPI_WRITE,
+	.wdt_src = PWRAP_WDT_SRC_MASK_ALL,
+	.caps = PWRAP_CAP_RESET | PWRAP_CAP_DCM,
+	.has_bridge = 0,
+	.slv_switch = 1,
+	.init_reg_clock = pwrap_mt2701_init_reg_clock,
 };
 
 static const struct of_device_id of_pwrap_match_tbl[] = {
@@ -1792,6 +1924,9 @@ static const struct of_device_id of_pwrap_match_tbl[] = {
 	}, {
 		.compatible = "mediatek,pwrap",
 		.data = &pwrap_mt3967,
+	}, {
+		.compatible = "mediatek,mt8163-pwrap",
+		.data = &pwrap_mt8163,
 	}, {
 		/* sentinel */
 	}
