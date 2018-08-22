@@ -881,7 +881,7 @@ static void cmdq_core_copy_v3_struct(struct TaskStruct *pTask, struct cmdqComman
 	if (pCommandDesc->replace_instr.number == 0 ||
 		pCommandDesc->replace_instr.number >= CMDQ_MAX_COMMAND_SIZE) {
 		pTask->replace_instr.position = (cmdqU32Ptr_t) (unsigned long)NULL;
-		pTask->replace_instr.position = 0;
+		pTask->replace_instr.number = 0;
 		return;
 	}
 
@@ -890,6 +890,11 @@ static void cmdq_core_copy_v3_struct(struct TaskStruct *pTask, struct cmdqComman
 	array_num = pTask->replace_instr.number * sizeof(uint32_t);
 
 	p_instr_position = kzalloc(array_num, GFP_KERNEL);
+	if (!p_instr_position) {
+		pTask->replace_instr.position = (cmdqU32Ptr_t) (unsigned long)NULL;
+		pTask->replace_instr.number = 0;
+		return;
+	}
 	memcpy(p_instr_position, CMDQ_U32_PTR(pCommandDesc->replace_instr.position), array_num);
 	pTask->replace_instr.position = (cmdqU32Ptr_t) (unsigned long)p_instr_position;
 }
