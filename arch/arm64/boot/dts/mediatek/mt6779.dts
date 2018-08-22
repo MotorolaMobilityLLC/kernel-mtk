@@ -93,6 +93,13 @@
 		interrupts = <GIC_SPI 79 IRQ_TYPE_EDGE_RISING>;
 	};
 
+	mcdi@0011b000 {
+		compatible = "mediatek,mt6779-mcdi";
+		/* mediatek,enabled; */
+		reg = <0 0x0011b000 0 0x800>,
+		      <0 0x0c53a000 0 0x1000>;
+	};
+
 	msdc0:msdc@11230000 {
 		compatible = "mediatek,msdc";
 		reg = <0x0 0x11230000 0x0 0x10000>;
