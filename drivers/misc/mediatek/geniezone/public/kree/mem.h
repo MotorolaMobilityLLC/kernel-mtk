@@ -21,8 +21,8 @@
 
 #if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) || defined(CONFIG_TRUSTY)
 
-#include <gz/tz_cross/trustzone.h>
-#include <gz/tz_cross/gz_version.h>
+#include <tz_cross/trustzone.h>
+#include <tz_cross/gz_version.h>
 #include "system.h"
 
 #define KREE_SESSION_HANDLE_NULL ((KREE_SESSION_HANDLE)0)
@@ -54,6 +54,8 @@ typedef uint32_t KREE_RELEASECM_HANDLE;
 
 /* ION memory handle define */
 typedef uint32_t KREE_ION_HANDLE;
+typedef uint32_t *KREE_ION_HANDLE_PTR;
+
 /**
  * Shared memory parameter
  *
@@ -326,12 +328,13 @@ TZ_RESULT KREE_UnreferenceSecureMultichunkmem(KREE_SESSION_HANDLE session,
 
 TZ_RESULT KREE_ION_AllocChunkmem(KREE_SESSION_HANDLE session,
 				 KREE_SHAREDMEM_HANDLE chm_handle,
-				 KREE_ION_HANDLE *IONHandle, uint32_t alignment,
+				 KREE_ION_HANDLE_PTR IONHandle,
+				 uint32_t alignment,
 				 uint32_t size);
 
 TZ_RESULT KREE_ION_ZallocChunkmem(KREE_SESSION_HANDLE session,
 				  KREE_SHAREDMEM_HANDLE chm_handle,
-				  KREE_ION_HANDLE *IONHandle,
+				  KREE_ION_HANDLE_PTR IONHandle,
 				  uint32_t alignment, uint32_t size);
 
 TZ_RESULT KREE_ION_ReferenceChunkmem(KREE_SESSION_HANDLE session,
