@@ -56,5 +56,6 @@ struct mtk_smi_priv {
 };
 
 extern const struct mtk_smi_priv smi_mt8173_priv;
+extern const struct mtk_smi_priv smi_mt8163_priv;
 
 #endif
