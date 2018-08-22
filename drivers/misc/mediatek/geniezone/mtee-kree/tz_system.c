@@ -22,15 +22,15 @@
 #include <linux/fcntl.h>
 #include <linux/mutex.h>
 #include <linux/trusty/trusty_ipc.h>
-#include <gz/kree/system.h>
-#include <gz/kree/mem.h>
+#include <kree/system.h>
+#include <kree/mem.h>
 #include <linux/atomic.h>
 #include <linux/vmalloc.h>
 #include <linux/wakelock.h>
 #include <linux/delay.h>
 
-#include <gz/tz_cross/trustzone.h>
-#include <gz/tz_cross/ta_system.h>
+#include <tz_cross/trustzone.h>
+#include <tz_cross/ta_system.h>
 
 #include "trusty-nop.h"
 
@@ -1082,6 +1082,7 @@ TZ_RESULT KREE_TeeServiceCall(KREE_SESSION_HANDLE handle, uint32_t command,
 }
 EXPORT_SYMBOL(KREE_TeeServiceCall);
 
+#if 0
 #include "tz_cross/tz_error_strings.h"
 
 const char *TZ_GetErrorString(TZ_RESULT res)
@@ -1089,6 +1090,7 @@ const char *TZ_GetErrorString(TZ_RESULT res)
 	return _TZ_GetErrorString(res);
 }
 EXPORT_SYMBOL(TZ_GetErrorString);
+#endif
 
 /***** System Hareware Counter *****/
 

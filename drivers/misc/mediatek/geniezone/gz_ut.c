@@ -12,9 +12,9 @@
  */
 
 #include <linux/kernel.h>
-#include <gz/tz_cross/trustzone.h>
-#include <gz/tz_cross/ta_test.h>
-#include <gz/kree/system.h>
+#include <tz_cross/trustzone.h>
+#include <tz_cross/ta_test.h>
+#include <kree/system.h>
 
 #include "gz_ut.h"
 
