@@ -69,21 +69,12 @@ struct twam_byte {
 };
 
 struct twam_cfg {
-	struct twam_byte byte0;   /* Channel 0 config */
-	struct twam_byte byte1;   /* Channel 1 config */
-	struct twam_byte byte2;   /* Channel 2 config */
-	struct twam_byte byte3;   /* Channel 3 config */
+	struct twam_byte byte[4];   /* Channel 0~3 config */
 };
 
 struct twam_select {
-	u32 signal0;
-	u32 signal1;
-	u32 signal2;
-	u32 signal3;
-	u32 id0;
-	u32 id1;
-	u32 id2;
-	u32 id3;
+	u32 signal[4];
+	u32 id[4];
 };
 
 /* for TWAM in MET */
