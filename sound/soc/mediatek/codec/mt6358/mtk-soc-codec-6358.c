@@ -1284,7 +1284,7 @@ static void OpenTrimBufferHardware_withLO(bool enable, bool buffer_on)
 			udelay(1000);
 
 			/* HP ESD resistor @AU_REFN short enable */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc033, 0xffff);
+			/* Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc033, 0xffff); */
 
 		}
 		/* Enable AUD_CLK */
@@ -1299,6 +1299,9 @@ static void OpenTrimBufferHardware_withLO(bool enable, bool buffer_on)
 
 		/* Disable Pull-down HPL/R to AVSS28_AUD */
 		hp_pull_down(false);
+
+		/* Enable Trim buffer VA28 reference */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x1 << 1, 0x1 << 1);
 
 	} else {
 		/* Pull-down HPL/R to AVSS28_AUD */
@@ -1949,9 +1952,6 @@ static int calculate_trim_result(int *on_value, int *off_value, int trimTime, in
 	}
 	return DIV_ROUND_CLOSEST(offset, useful_num);
 }
-static void get_hp_trim_offset(void)
-{
-#ifndef CONFIG_FPGA_EARLY_PORTING
 
 #ifdef ANALOG_HPTRIM
 #define TRIM_TIMES 7
@@ -1960,6 +1960,10 @@ static void get_hp_trim_offset(void)
 #endif
 #define TRIM_DISCARD_NUM 1
 #define TRIM_USEFUL_NUM (TRIM_TIMES - (TRIM_DISCARD_NUM * 2))
+
+static void get_hp_trim_offset(void)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
 
 	int on_valueL[TRIM_TIMES], on_valueR[TRIM_TIMES];
 	int off_valueL[TRIM_TIMES], off_valueR[TRIM_TIMES];
@@ -2661,8 +2665,9 @@ static void get_hp_lr_trim_offset(void)
 	set_lr_trim_code();
 	hpl_dc_offset = mHplTrimOffset;
 	hpr_dc_offset = mHprTrimOffset;
-	/* spkl_dc_offset = get_spk_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL); */
 
+	set_lr_trim_code_spk(AUDIO_OFFSET_TRIM_MUX_HPL);
+	spkl_dc_offset = get_spk_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
 #else
 	hpl_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
 	hpr_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
@@ -3976,7 +3981,7 @@ static int Receiver_Speaker_Switch_Set(struct snd_kcontrol *kcontrol,
 static void Headset_Speaker_Amp_Change(bool enable)
 {
 #ifdef ANALOG_HPTRIM
-	if (apply_n12db_gain) {
+	/*if (apply_n12db_gain)*/ {
 		pr_debug("%s(), current AUDDEC_ELR_0 = 0x%x, mic_vinp_mv %d\n",
 			 __func__, Ana_Get_Reg(AUDDEC_ELR_0), mic_vinp_mv);
 
@@ -4083,8 +4088,8 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Switch HPL MUX to Line-out */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x01 << 8, 0x3 << 8);
 
-		/* Switch HPR MUX to Line-out */
-		/* Ana_Set_Reg(AUDDEC_ANA_CON0, 0x01 << 10, 0x3 << 10); */
+		/* Switch HPR MUX to DAC-R */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x2 << 10, 0x3 << 10);
 
 		/* Enable HP aux output stage */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0c, 0xff);
@@ -4146,9 +4151,6 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Unshort HP main output to HP aux output stage */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0003, 0x00ff);
 		udelay(1000);
-
-		/* HP ESD resistor @AU_REFN short enable */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc033, 0xffff);
 
 		/* Enable AUD_CLK */
 		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1, 0x1);
