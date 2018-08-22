@@ -933,7 +933,7 @@ s32 pwm_set_easy_config(struct pwm_easy_config *conf)
 		return -EINVALID;
 	}
 
-	pr_debug(T "pwm_set_easy_config\n");
+	pr_debug(T "%s\n", __func__);
 
 	if (conf->duty == 0) {
 		mt_set_pwm_disable(conf->pwm_no);
@@ -1279,7 +1279,7 @@ static ssize_t pwm_debug_store(struct device *dev,
 
 	ret = sscanf(buf, "%d,%d,%d",  &pwm_no, &cmd, &sub_cmd);
 	if (!ret) {
-		pr_debug("pwm_debug_store param get failed\n");
+		pr_debug("%s param get failed\n", __func__);
 		return count;
 	}
 
@@ -1884,13 +1884,13 @@ static int  mt_pwm_remove(struct platform_device *pdev)
 	}
 	device_remove_file(&pdev->dev, &dev_attr_pwm_debug);
 
-	pr_debug(T "mt_pwm_remove\n");
+	pr_debug(T "%s\n", __func__);
 	return RSUCCESS;
 }
 
 static void mt_pwm_shutdown(struct platform_device *pdev)
 {
-	pr_debug(T "mt_pwm_shutdown\n");
+	pr_debug(T "%s\n", __func__);
 }
 
 static const struct of_device_id pwm_of_match[] = {
