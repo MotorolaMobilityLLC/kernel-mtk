@@ -33,7 +33,7 @@
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = OV13870_SENSOR_ID,	/* record sensor id defined in kd_imgsensor.h */
 
-	.checksum_value = 0x962c56c1,
+	.checksum_value = 0x88cabb15,
 
 	.pre = {
 		.pclk = 180036000,	/* record different mode's pclk */
@@ -50,9 +50,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.pclk = 180036000,	/* record different mode's pclk */
 		.linelength = 1800,	/* record different mode's linelength */
 		.framelength = 3334,	/* record different mode's framelength */
-		.startx = 0,	/* record different mode's startx of grabwindow */
+		.startx = 16,	/* record different mode's startx of grabwindow */
 		.starty = 0,	/* record different mode's starty of grabwindow */
-		.grabwindow_width = 4224,	/* record different mode's width of grabwindow */
+		.grabwindow_width = 4192,	/* record different mode's width of grabwindow */
 		.grabwindow_height = 3136,	/* record different mode's height of grabwindow */
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
@@ -209,7 +209,7 @@ static struct imgsensor_struct imgsensor = {
 /* Sensor output window information*/
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	{4224, 3136, 0, 0, 4224, 3136, 2112, 1568, 0, 0, 2112, 1568, 0, 0, 2112, 1568},	/* Preview */
-	{4224, 3136, 0, 0, 4224, 3136, 4224, 3136, 0, 0, 4224, 3136, 0, 0, 4224, 3136},	/* capture */
+	{4224, 3136, 0, 0, 4224, 3136, 4224, 3136, 0, 0, 4224, 3136, 16, 0, 4192, 3136},/* capture */
 	{4224, 3136, 0, 0, 4224, 3136, 4224, 3136, 0, 0, 4224, 2376, 0, 0, 4224, 2376},	/* video */
 	{4224, 3136, 0, 0, 4224, 3136, 1056, 784, 0, 0, 1056, 784, 0, 0, 1056, 784},	/* hight speed video */
 	{4224, 3136, 0, 0, 4224, 3136, 1056, 784, 0, 0, 1056, 784, 0, 0, 1056, 784},	/* slim video */
