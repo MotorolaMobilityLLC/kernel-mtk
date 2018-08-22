@@ -288,6 +288,10 @@ PVRSRV_ERROR SysDevInit(void *pvOSDevice, PVRSRV_DEVICE_CONFIG **ppsDevConfig)
 	gsDevices[0].sAltRegsCpuPBase.uiAddr = 0x7F000000;
 #endif
 
+#if defined(SUPPORT_DEVICE_PA0_AS_VALID)
+	gsDevices[0].bDevicePA0IsValid = IMG_TRUE;
+#endif
+
 	/* Power management on HW system */
 	gsDevices[0].pfnPrePowerState = MTKDevPrePowerState;
 	gsDevices[0].pfnPostPowerState = MTKDevPostPowerState;
