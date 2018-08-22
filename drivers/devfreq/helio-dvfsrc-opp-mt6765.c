@@ -21,6 +21,7 @@
 static int get_vb_volt(int vcore_opp)
 {
 	int ret = 0;
+	int ptpod0 = get_devinfo_with_index(50);
 	int ptpod10 = get_devinfo_with_index(60);
 
 	pr_info("%s: PTPOD10: 0x%x\n", __func__, ptpod10);
@@ -53,7 +54,9 @@ static int get_vb_volt(int vcore_opp)
 		break;
 	case VCORE_OPP_3:
 		ret = (ptpod10 >> 4) & 0x3F;
-		if (ret == 0)
+		if (ptpod0 == 0x0000FF00 || ptpod0 == 0x0)
+			ret = 0;
+		else if (ret == 0)
 			ret = 1;
 		else
 			ret = 0;
