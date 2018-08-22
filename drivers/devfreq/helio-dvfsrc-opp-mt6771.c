@@ -197,6 +197,31 @@ static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
 	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++)
 		vcore_opp_table[i] = *(vcore_opp[i] + vcore_opp_efuse_idx[i]);
 
+	/* vcore setting for QEA project */
+#if defined(CONFIG_ARM64) && \
+	defined(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES)
+
+	pr_info("[VcoreFS]flavor name: %s\n",
+		CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
+
+	i = sizeof(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
+	if ((i > 19) &&
+	    strncmp(&CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES[i - 19],
+		"k71v1_64_bsp_vcore", 18) == 0) {
+		pr_info("[VcoreFS]: QEA flavor !!!\n");
+		if (ddr_type == SPMFW_LP4X_2CH_3200) {
+			vcore_opp_table[0] = 756250;
+			vcore_opp_table[1] = 687500;
+			vcore_opp_table[2] = 687500;
+			vcore_opp_table[3] = 687500;
+		} else {
+			vcore_opp_table[0] = 756250;
+			vcore_opp_table[1] = 756250;
+			vcore_opp_table[2] = 687500;
+			vcore_opp_table[3] = 687500;
+		}
+	}
+#endif
 	for (i = VCORE_DVFS_OPP_NUM - 2; i >= 0; i--)
 		vcore_opp_table[i] = max(vcore_opp_table[i], vcore_opp_table[i + 1]);
 
