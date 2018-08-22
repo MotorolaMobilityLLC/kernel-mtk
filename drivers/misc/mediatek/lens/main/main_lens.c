@@ -307,6 +307,12 @@ void AF_PowerDown(void)
 			LOG_INF("%d/%d , %d/%d, %d/%d\n", Ret1, DrvPwrDn1,
 				Ret2, DrvPwrDn2, Ret3, DrvPwrDn3);
 #endif
+
+#ifdef CONFIG_MACH_MT6761
+		DW9718SAF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock,
+				      &g_s4AF_Opened);
+		DW9718SAF_PowerDown();
+#endif
 	}
 	MAIN2AF_PowerDown();
 }
