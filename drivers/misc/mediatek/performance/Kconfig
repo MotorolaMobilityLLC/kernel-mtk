@@ -17,3 +17,11 @@ config MTK_LOAD_TRACKER
 	  Service designed by MTK, which is a service to get CPU Loading
 	  information.
 
+config MTK_CPU_CTRL_CFP
+	tristate "CPU CTRL Ceiling-Fool-Proof"
+	depends on MTK_LOAD_TRACKER
+	default n
+	help
+	  MTK_CPU_CTRL_CFP is the kernel config of CPU controller
+	  Ceiling-Fool-Proof Mechanism designed by MTK. CPU controller
+	  will free CPU frequency ceiling during heavy CPU loading.
