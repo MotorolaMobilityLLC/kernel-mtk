@@ -226,7 +226,7 @@ static void mcdi_cpc_save_cluster_off(int cpu, int core_off, int cpu_type)
 	}
 }
 
-void mcdi_cpc_save_latency(int cpu, int last_core_taken)
+static void mcdi_cpc_save_latency(int cpu, int last_core_taken)
 {
 	struct mcdi_cpc_prof *prof;
 	unsigned int cpu_type;
@@ -252,9 +252,9 @@ void mcdi_cpc_save_latency(int cpu, int last_core_taken)
 	mcdi_cpc_record_lat(prof, core_on, core_off);
 	mcdi_cpc_lat_dist(&cpc.dist_cnt[cpu_type], core_on, core_off);
 
-	/* Record cluster on latency */
 	mcusys_resume = (cpu == last_core_taken);
 
+	/* Record cluster on latency */
 	if (mcdi_cpc_cluster_resume(cluster_idx_get(cpu))
 			|| mcusys_resume) {
 
@@ -287,6 +287,12 @@ void mcdi_cpc_save_latency(int cpu, int last_core_taken)
 	}
 
 	cpc.sta.prof_saving = false;
+}
+
+void mcdi_cpc_reflect(int cpu, int last_core_taken)
+{
+	mcdi_cpc_save_latency(cpu, last_core_taken);
+	mcdi_write(CPC_CPU_ON_SW_HINT_CLR, 1 << cpu);
 }
 
 /* procfs */
@@ -429,7 +435,7 @@ void mcdi_cpc_init(void)
 #else
 
 void mcdi_cpc_prof_en(bool enable) {}
-void mcdi_cpc_save_latency(int cpu, int last_core_taken) {}
+void mcdi_cpc_reflect(int cpu, int last_core_taken) {}
 void mcdi_procfs_cpc_init(struct proc_dir_entry *mcdi_dir) {}
 void mcdi_cpc_init(void) {}
 
