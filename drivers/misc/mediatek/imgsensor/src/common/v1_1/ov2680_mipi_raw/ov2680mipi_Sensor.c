@@ -494,57 +494,6 @@ static void night_mode(kal_bool enable)
 /*No Need to implement this function*/
 }				/*      night_mode      */
 
-static void preview_setting(void)
-{
-	LOG_INF("E\n");
-
-	/*
-	 * @@Initial - MIPI 1-Lane 1600x1200 10-bit 30fps
-	 * 100 99 1600 1200
-	 */
-	write_cmos_sensor(0x0100, 0x00);
-	write_cmos_sensor(0x3086, 0x00);
-	write_cmos_sensor(0x3501, 0x4e);
-	write_cmos_sensor(0x3502, 0xe0);
-	write_cmos_sensor(0x3620, 0x24);
-	write_cmos_sensor(0x3621, 0x37);
-	write_cmos_sensor(0x3622, 0x03);
-	write_cmos_sensor(0x370a, 0x21);
-	write_cmos_sensor(0x370d, 0xc0);
-	write_cmos_sensor(0x3718, 0x80);
-	write_cmos_sensor(0x3721, 0x09);
-	write_cmos_sensor(0x3722, 0x06);
-	write_cmos_sensor(0x3723, 0x59);
-	write_cmos_sensor(0x3738, 0x99);
-	write_cmos_sensor(0x3801, 0x00);
-	write_cmos_sensor(0x3803, 0x00);
-	write_cmos_sensor(0x3804, 0x06);
-	write_cmos_sensor(0x3805, 0x4f);
-	write_cmos_sensor(0x3806, 0x04);
-	write_cmos_sensor(0x3807, 0xbf);
-	write_cmos_sensor(0x3808, 0x06);
-	write_cmos_sensor(0x3809, 0x40);
-	write_cmos_sensor(0x380a, 0x04);
-	write_cmos_sensor(0x380b, 0xb0);
-	write_cmos_sensor(0x380c, 0x06);
-	write_cmos_sensor(0x380d, 0xa4);
-	write_cmos_sensor(0x380e, 0x05);
-	write_cmos_sensor(0x380f, 0x0e);
-	write_cmos_sensor(0x3811, 0x08);
-	write_cmos_sensor(0x3813, 0x08);
-	write_cmos_sensor(0x3814, 0x11);
-	write_cmos_sensor(0x3815, 0x11);
-	write_cmos_sensor(0x3820, 0xc4);
-	write_cmos_sensor(0x3821, 0x04);
-	write_cmos_sensor(0x4008, 0x02);
-	write_cmos_sensor(0x4009, 0x09);
-	write_cmos_sensor(0x4837, 0x18);
-	write_cmos_sensor(0x0100, 0x01);
-	mdelay(5);
-}
-
-	/*      preview_setting  */
-
 static void sensor_init(void)
 {
 	LOG_INF("E\n");
@@ -629,17 +578,57 @@ static void sensor_init(void)
 	write_cmos_sensor(0x5002, 0x30);
 	write_cmos_sensor(0x5080, 0x00);
 	write_cmos_sensor(0x5081, 0x41);
-
 	write_cmos_sensor(0x4800, 0x24);	/* disable LS/LE */
-
-	write_cmos_sensor(0x0100, 0x01);
-
 	mdelay(5);
-	/* preview_setting(); */
-
 }				/*      sensor_init  */
 
+static void preview_setting(void)
+{
+	LOG_INF("E\n");
 
+	/*
+	 * @@Initial - MIPI 1-Lane 1600x1200 10-bit 30fps
+	 * 100 99 1600 1200
+	 */
+	write_cmos_sensor(0x0100, 0x00);
+	write_cmos_sensor(0x3086, 0x00);
+	write_cmos_sensor(0x3501, 0x4e);
+	write_cmos_sensor(0x3502, 0xe0);
+	write_cmos_sensor(0x3620, 0x24);
+	write_cmos_sensor(0x3621, 0x37);
+	write_cmos_sensor(0x3622, 0x03);
+	write_cmos_sensor(0x370a, 0x21);
+	write_cmos_sensor(0x370d, 0xc0);
+	write_cmos_sensor(0x3718, 0x80);
+	write_cmos_sensor(0x3721, 0x09);
+	write_cmos_sensor(0x3722, 0x06);
+	write_cmos_sensor(0x3723, 0x59);
+	write_cmos_sensor(0x3738, 0x99);
+	write_cmos_sensor(0x3801, 0x00);
+	write_cmos_sensor(0x3803, 0x00);
+	write_cmos_sensor(0x3804, 0x06);
+	write_cmos_sensor(0x3805, 0x4f);
+	write_cmos_sensor(0x3806, 0x04);
+	write_cmos_sensor(0x3807, 0xbf);
+	write_cmos_sensor(0x3808, 0x06);
+	write_cmos_sensor(0x3809, 0x40);
+	write_cmos_sensor(0x380a, 0x04);
+	write_cmos_sensor(0x380b, 0xb0);
+	write_cmos_sensor(0x380c, 0x06);
+	write_cmos_sensor(0x380d, 0xa4);
+	write_cmos_sensor(0x380e, 0x05);
+	write_cmos_sensor(0x380f, 0x0e);
+	write_cmos_sensor(0x3811, 0x08);
+	write_cmos_sensor(0x3813, 0x08);
+	write_cmos_sensor(0x3814, 0x11);
+	write_cmos_sensor(0x3815, 0x11);
+	write_cmos_sensor(0x3820, 0xc0);
+	write_cmos_sensor(0x3821, 0x00);
+	write_cmos_sensor(0x4008, 0x02);
+	write_cmos_sensor(0x4009, 0x09);
+	write_cmos_sensor(0x4837, 0x18);
+	mdelay(5);
+}	/*      preview_setting  */
 
 
 static void capture_setting(kal_uint16 curretfps)
@@ -1450,15 +1439,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_SET_FRAMERATE:
-		LOG_INF("current fps :%d\n", (UINT32) *feature_data);
+		LOG_INF("current fps :%d\n", *feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.current_fps = *feature_data;
+		imgsensor.current_fps = (UINT16) * feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_SET_HDR:
-		LOG_INF("ihdr enable :%d\n", (BOOL) * feature_data);
+		LOG_INF("ihdr enable :%d\n", *feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.ihdr_en = (bool) *feature_data;
+		imgsensor.ihdr_en = (BOOL) * feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_GET_CROP_INFO:
