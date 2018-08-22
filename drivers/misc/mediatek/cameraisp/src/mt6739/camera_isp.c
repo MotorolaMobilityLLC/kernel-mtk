@@ -101,7 +101,7 @@
 #define LOG_DBG(format, args...)
 #endif
 
-#define LOG_INF(format, args...)         pr_debug(MyTag format,  ##args)
+#define LOG_INF(format, args...)         pr_info(MyTag format,  ##args)
 #define LOG_NOTICE(format, args...)      pr_notice(MyTag format,  ##args)
 #define LOG_PR_WARN(format, args...)     pr_warn(MyTag format,  ##args)
 #define LOG_PR_ERR(format, args...)      pr_err(MyTag format,  ##args)
@@ -791,7 +791,8 @@ static spinlock_t SpinLockMagNum;
 static unsigned int g_magQue[_camsv_max][ISP_RT_BUF_SIZE];
 /* g_magQIdx[][0]: write index, g_magQIdx[][1]: read index*/
 static unsigned int g_magQIdx[_camsv_max][2];
-
+/*MFALSE:HAL1 enque, configFrame, MTRUE:HAL3 immed enque, DmaCfg */
+static bool enqueImd[_camsv_max] = {MFALSE, MFALSE};
 /* maximum number for supporting user to do     interrupt operation  */
 /* index 0 is for all the user that     do not do register irq first */
 #define IRQ_USER_NUM_MAX 32
@@ -2686,11 +2687,47 @@ AF_EXIT:
 static signed int ISP_DumpReg(void)
 {
 	signed int Ret = 0;
+	union CQ_RTBC_FBC p1_fbc[4];
 	/*      */
 	LOG_PR_ERR("- E.");
 	/*      */
 	/* spin_lock_irqsave(&(IspInfo.SpinLock), flags); */
+	p1_fbc[0].Reg_val = ISP_RD32(ISP_REG_ADDR_IMGO_FBC);
+	p1_fbc[1].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_FBC);
+	p1_fbc[2].Reg_val = ISP_RD32(ISP_REG_ADDR_IMGO_D_FBC);
+	p1_fbc[3].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_D_FBC);
 
+	if (((pstRTBuf->ring_buf[_imgo_].active) && ((p1_fbc[0].Bits.FB_NUM - p1_fbc[0].Bits.FBC_CNT) == 0)) ||
+	((pstRTBuf->ring_buf[_rrzo_].active) && ((p1_fbc[1].Bits.FB_NUM - p1_fbc[1].Bits.FBC_CNT) == 0)) ||
+	((pstRTBuf->ring_buf[_imgo_d_].active) && ((p1_fbc[2].Bits.FB_NUM - p1_fbc[2].Bits.FBC_CNT) == 0)) ||
+	((pstRTBuf->ring_buf[_rrzo_d_].active) && ((p1_fbc[3].Bits.FB_NUM - p1_fbc[3].Bits.FBC_CNT) == 0))) {
+
+	LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X][0x%08X %08X],[0x%08X %08X],[0x%08X %08X]\n",
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4), (unsigned int)ISP_RD32(ISP_ADDR + 0x4),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x8), (unsigned int)ISP_RD32(ISP_ADDR + 0x8),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x10), (unsigned int)ISP_RD32(ISP_ADDR + 0x10),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x14), (unsigned int)ISP_RD32(ISP_ADDR + 0x14),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x70), (unsigned int)ISP_RD32(ISP_ADDR + 0x70),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x74), (unsigned int)ISP_RD32(ISP_ADDR + 0x74),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x78), (unsigned int)ISP_RD32(ISP_ADDR + 0x78));
+	LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X][0x%08X %08X],[0x%08X %08X],[0x%08X %08X]\n",
+		(unsigned int)(ISP_TPIPE_ADDR + 0x418), (unsigned int)ISP_RD32(ISP_ADDR + 0x418),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x41C), (unsigned int)ISP_RD32(ISP_ADDR + 0x41C),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x448), (unsigned int)ISP_RD32(ISP_ADDR + 0x448),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x44C), (unsigned int)ISP_RD32(ISP_ADDR + 0x44C),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x2418), (unsigned int)ISP_RD32(ISP_ADDR + 0x2418),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x241C), (unsigned int)ISP_RD32(ISP_ADDR + 0x241c),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x2448), (unsigned int)ISP_RD32(ISP_ADDR + 0x2448));
+	LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X][0x%08X %08X],[0x%08X %08X],[0x%08X %08X]\n",
+		(unsigned int)(ISP_TPIPE_ADDR + 0x244C), (unsigned int)ISP_RD32(ISP_ADDR + 0x244C),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4128), (unsigned int)ISP_RD32(ISP_ADDR + 0x4128),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4134), (unsigned int)ISP_RD32(ISP_ADDR + 0x4134),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x43B4), (unsigned int)ISP_RD32(ISP_ADDR + 0x43B4),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4528), (unsigned int)ISP_RD32(ISP_ADDR + 0x4528),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4534), (unsigned int)ISP_RD32(ISP_ADDR + 0x4534),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x47B4), (unsigned int)ISP_RD32(ISP_ADDR + 0x47B4));
+		goto EXIT_DumpReg;
+	}
 	/* tile tool parse range */
 	/* Joseph Hung (xa)#define ISP_ADDR_START  0x15004000 */
 	/* #define ISP_ADDR_END    0x15006000 */
@@ -3185,7 +3222,7 @@ static signed int ISP_DumpReg(void)
 		}
 	}
 #endif
-
+EXIT_DumpReg:
 	/* spin_unlock_irqrestore(&(IspInfo.SpinLock), flags); */
 	/*      */
 	LOG_PR_ERR("- X.");
@@ -5299,6 +5336,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 	/**/
 	} else {        /*     camsv case */
 		if (pstRTBuf->ring_buf[rt_dma].active == MTRUE) {
+			if (rt_dma == _camsv_imgo_)
+				enqueImd[_camsv_1] = MFALSE;
+			else if (rt_dma == _camsv2_imgo_)
+				enqueImd[_camsv_2] = MFALSE;
 			if (rt_buf_ctrl.ex_data_ptr != 0) {
 				if (((p1_fbc[rt_dma].Bits.FB_NUM - p1_fbc[rt_dma].Bits.FBC_CNT) == 0)
 					|| ((p1_fbc[rt_dma].Bits.FB_NUM - 1) ==
@@ -5363,10 +5404,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 					}
 				if (_bypass == MFALSE) {
-					if ((p1_fbc[rt_dma].Bits.FB_NUM ==
-							    p1_fbc[rt_dma].Bits.FBC_CNT) ||
-								((p1_fbc[rt_dma].Bits.FB_NUM - 1) ==
-								p1_fbc[rt_dma].Bits.FBC_CNT)) {
+					if (((p1_fbc[rt_dma].Bits.FB_NUM - p1_fbc[rt_dma].Bits.FBC_CNT) == 0) ||
+						((p1_fbc[rt_dma].Bits.FB_NUM - 1) == p1_fbc[rt_dma].Bits.FBC_CNT) ||
+						(rt_dma == _camsv_imgo_) || (rt_dma == _camsv2_imgo_)) {
 								/* write to     phy     register */
 								/* LOG_INF("[rtbc_%d][ENQUE] write2Phy*/
 								/*directly(%d,%d)",rt_dma,p1_fbc[rt_dma].Bits.*/
@@ -5392,41 +5432,37 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 								pstRTBuf->ring_buf[ch_rrzo].data[i].
 								base_pAddr);
 						}
-					if ((_camsv_imgo_ == rt_dma)
-							|| (_camsv2_imgo_ == rt_dma)) {
-						p1_fbc[rt_dma].Bits.RCNT_INC = 1;
-						ISP_WR32(p1_fbc_reg[rt_dma], p1_fbc[rt_dma].
-								 Reg_val);
-						p1_fbc[rt_dma].Bits.RCNT_INC = 0;
-						ISP_WR32(p1_fbc_reg[rt_dma], p1_fbc[rt_dma].
-								 Reg_val);
-								/**/
+			if ((_camsv_imgo_ == rt_dma) || (_camsv2_imgo_ == rt_dma)) {
+				if (rt_dma == _camsv_imgo_)
+					enqueImd[_camsv_1] = MTRUE;
+				else if (rt_dma == _camsv2_imgo_)
+					enqueImd[_camsv_2] = MTRUE;
+				p1_fbc[rt_dma].Bits.RCNT_INC = 1;
+				ISP_WR32(p1_fbc_reg[rt_dma], p1_fbc[rt_dma].Reg_val);
+				p1_fbc[rt_dma].Bits.RCNT_INC = 0;
+				ISP_WR32(p1_fbc_reg[rt_dma], p1_fbc[rt_dma].Reg_val);
+				IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG, " RCNT_INC(dma:0x%x)\n", rt_dma);
+				/**/
+			} else {
+				if (_openedDma == 1) {
+					p1_fbc[rt_dma].Bits.RCNT_INC = 1;
+					ISP_WR32(p1_fbc_reg[rt_dma], p1_fbc[rt_dma].Reg_val);
+					IRQ_LOG_KEEPER(irqT, 0,	_LOG_DBG, " RCNT_INC(dma:0x%x)\n", rt_dma);
+					/**/
 				} else {
-					if (_openedDma == 1) {
-						p1_fbc[rt_dma].Bits.RCNT_INC = 1;
-							ISP_WR32(p1_fbc_reg[rt_dma],
-							 p1_fbc[rt_dma].Reg_val);
-							IRQ_LOG_KEEPER(irqT, 0,
-								_LOG_DBG, " RCNT_INC(dma:0x%x)\n",
-								rt_dma);
-								/**/
-					} else {
-						p1_fbc[ch_imgo].Bits.RCNT_INC =	1;
-								ISP_WR32(p1_fbc_reg[ch_imgo],
-									p1_fbc[ch_imgo].Reg_val);
-								p1_fbc[ch_rrzo].Bits.RCNT_INC =	1;
-								ISP_WR32(p1_fbc_reg[ch_rrzo],
-								    p1_fbc[ch_rrzo].Reg_val);
-								IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG,
-									"	 RCNT_INC(dma:0x%x)",
-									ch_imgo);
-								IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG,
-									"	 RCNT_INC(dma:0x%x)\n",
-									ch_rrzo);
-						}
-						}
-					}
+					p1_fbc[ch_imgo].Bits.RCNT_INC =	1;
+					ISP_WR32(p1_fbc_reg[ch_imgo], p1_fbc[ch_imgo].Reg_val);
+					p1_fbc[ch_rrzo].Bits.RCNT_INC =	1;
+					ISP_WR32(p1_fbc_reg[ch_rrzo], p1_fbc[ch_rrzo].Reg_val);
+					IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG, "	 RCNT_INC(dma:0x%x)",
+						ch_imgo);
+					IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG, "	 RCNT_INC(dma:0x%x)\n",
+						ch_rrzo);
 				}
+			}
+				/**/
+			}
+		}
 
 #else                           /* for rtbc 1.0 case */
 						/* if ( FB_NUM==FBC_CNT || (FB_NUM-1)==FBC_CNT  ) */
@@ -5905,6 +5941,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				memset((char *)&g_magQIdx[_camsv_1], 0x0,
 					sizeof(unsigned int)*2);
 				g_firstCnt[_camsv_1] = 0;
+				enqueImd[_camsv_1] = MFALSE;
 				break;
 			case _camsv2_imgo_:
 				memset((char *)&g_magQue[_camsv_2], 0x0,
@@ -5912,6 +5949,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				memset((char *)&g_magQIdx[_camsv_2], 0x0,
 					sizeof(unsigned int)*2);
 				g_firstCnt[_camsv_2] = 0;
+				enqueImd[_camsv_2] = MFALSE;
 				break;
 			default:
 				LOG_PR_ERR("[rtbc][CLEAR]N.S.(%d)\n", rt_dma);
@@ -6620,9 +6658,14 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.h =
 				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_YSIZE) & 0x1FFF) + 1;
 			/* Use m_num_0 instead of phy magic num. */
-			/* For sync buffer with configFrame magic num, first 3 buffer: mag# 0. */
 			if (g_firstCnt[_camsv_1] < camsv_fbc.Bits.FB_NUM) {
-				pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 0;
+				if (enqueImd[_camsv_1] == MFALSE) {
+				/* For sync buffer with configFrame magic num in HAL1, first 3 buffer: mag# 0. */
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 0;
+				} else {
+				/* For sync buffer with DmaCfg magic num in HAL3, first 3 buffer: mag# 1. */
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 1;
+				}
 			} else {
 				unsigned int lastIdx = 0;
 
@@ -6632,16 +6675,26 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 					lastIdx = ISP_RT_BUF_SIZE - 1;
 				else
 					lastIdx = g_magQIdx[_camsv_1][1] - 1;
-				/* Choose current or last g_magQue because */
-				/* configFrame do not comes per-frame. */
-				if (g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]] >=
-					g_magQue[_camsv_1][lastIdx]) {
+
+				if (enqueImd[_camsv_1] == MFALSE) {
+					/* Choose current or last g_magQue because */
+					/* configFrame do not comes per-frame. */
+					if (g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]] >=
+						g_magQue[_camsv_1][lastIdx]) {
+						pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+							g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]];
+						g_magQIdx[_camsv_1][1]++;
+					} else {
+						pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+							g_magQue[_camsv_1][lastIdx];
+					}
+				} else {
+					/* HAL3 immed enque, magic number will be updated per-frame. */
 					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
 						g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]];
+					LOG_DBG("camsv SOF:Ridx(%d), mag(0x%x)", g_magQIdx[_camsv_1][1],
+						g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]]);
 					g_magQIdx[_camsv_1][1]++;
-				} else {
-					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
-						g_magQue[_camsv_1][lastIdx];
 				}
 			}
 		} else {
@@ -6671,9 +6724,14 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.h =
 				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_YSIZE) & 0x1FFF) + 1;
 			/* Use m_num_0 instead of phy magic num. */
-			/* For sync buffer with configFrame magic num, first 3 buffer: mag# 0. */
 			if (g_firstCnt[_camsv_2] < camsv_fbc.Bits.FB_NUM) {
-				pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 0;
+				if (enqueImd[_camsv_2] == MFALSE) {
+				/* For sync buffer with configFrame magic num in HAL1, first 3 buffer: mag# 0. */
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 0;
+				} else {
+				/* For sync buffer with DmaCfg magic num in HAL3, first 3 buffer: mag# 1. */
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 1;
+				}
 			} else {
 				unsigned int lastIdx = 0;
 
@@ -6683,16 +6741,25 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 					lastIdx = ISP_RT_BUF_SIZE - 1;
 				else
 					lastIdx = g_magQIdx[_camsv_2][1] - 1;
-				/* Choose current or last g_magQue because */
-				/* configFrame do not comes per-frame. */
-				if (g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]] >=
-					g_magQue[_camsv_2][lastIdx]) {
+				if (enqueImd[_camsv_2] == MFALSE) {
+					/* Choose current or last g_magQue because */
+					/* configFrame do not comes per-frame. */
+					if (g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]] >=
+						g_magQue[_camsv_2][lastIdx]) {
+						pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+							g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]];
+						g_magQIdx[_camsv_2][1]++;
+					} else {
+						pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+							g_magQue[_camsv_2][lastIdx];
+					}
+				} else {
+					/* HAL3 immed enque, magic number will be updated per-frame. */
 					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
 						g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]];
+					LOG_DBG("camsv SOF:Ridx(%d), mag(0x%x)", g_magQIdx[_camsv_2][1],
+						g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]]);
 					g_magQIdx[_camsv_2][1]++;
-				} else {
-					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
-						g_magQue[_camsv_2][lastIdx];
 				}
 			}
 		}
@@ -8911,6 +8978,9 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 		}
 #ifdef _rtbc_buf_que_2_0_
 
+		if ((enqueImd[_camsv_1] == MFALSE) ||
+		((enqueImd[_camsv_1] == MTRUE) && (g_firstCnt[_camsv_1] < fbc.Bits.FB_NUM))) {
+			/**/
 		if (pstRTBuf->ring_buf[_camsv_imgo_].active) {
 			if (pstRTBuf->ring_buf[_camsv_imgo_].empty_count > 0) {
 				IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
@@ -8945,6 +9015,9 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 				break;
 			}
 		}
+			/**/
+		}
+
 #endif
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			union CQ_RTBC_FBC _fbc_chk;
@@ -9144,6 +9217,9 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		}
 #ifdef _rtbc_buf_que_2_0_
 
+		if ((enqueImd[_camsv_2] == MFALSE) ||
+		((enqueImd[_camsv_2] == MTRUE) && (g_firstCnt[_camsv_2] < fbc.Bits.FB_NUM))) {
+			/**/
 		if (pstRTBuf->ring_buf[_camsv2_imgo_].active) {
 			if (pstRTBuf->ring_buf[_camsv2_imgo_].empty_count > 0) {
 				IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
@@ -9177,6 +9253,8 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 				mFwRcnt.curIdx[_CAMSV_D_IRQ] = 0;
 				break;
 			}
+		}
+			/**/
 		}
 #endif
 
@@ -10587,6 +10665,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 #endif
 	case ISP_UPDATE_MAGNUM:
 		if (copy_from_user(magInfo, (void *)Param, sizeof(magInfo)) == 0) {
+			union CQ_RTBC_FBC fbc;
+			unsigned int camsv_reg_cal = 0;
+
 			if ((magInfo[1] != _camsv_tg_) && (magInfo[1] != _camsv2_tg_)) {
 				LOG_PR_ERR("invalid channel(0x%x)\n", magInfo[1]);
 				Ret = -EFAULT;
@@ -10594,22 +10675,39 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 			spin_lock((spinlock_t *)(&SpinLockMagNum));
 			if (magInfo[1] == _camsv_tg_) {
-				if (g_magQIdx[_camsv_1][0] >= ISP_RT_BUF_SIZE)
-					g_magQIdx[_camsv_1][0] = 0;
-				g_magQue[_camsv_1][g_magQIdx[_camsv_1][0]] = magInfo[0];
-				/*LOG_INF("ISP_UPDATE_MAGNUM: idx1=%d mag=0x%x",
-				 *   g_magQIdx[_camsv_1][0], magInfo[0]);
-				 */
-				g_magQIdx[_camsv_1][0]++;
-
+				fbc.Reg_val = ISP_RD32(ISP_REG_ADDR_CAMSV_IMGO_FBC);
+				camsv_reg_cal = ISP_RD32(ISP_REG_ADDR_CAMSV_TG_VF_CON);
+				if ((g_firstCnt[_camsv_1] >= fbc.Bits.FB_NUM) && (camsv_reg_cal & 0x1)) {
+					if (g_magQIdx[_camsv_1][0] >= ISP_RT_BUF_SIZE)
+						g_magQIdx[_camsv_1][0] = 0;
+					g_magQue[_camsv_1][g_magQIdx[_camsv_1][0]] = magInfo[0];
+					/*LOG_INF("ISP_UPDATE_MAGNUM: idx1=%d mag=0x%x",
+					 *   g_magQIdx[_camsv_1][0], magInfo[0]);
+					*/
+					g_magQIdx[_camsv_1][0]++;
+				} else if (!(camsv_reg_cal & 0x1)) {
+					/* Need to know is HAL3 before ISP start,
+					 * only hal3 will enter this case.
+					*/
+					enqueImd[_camsv_1] = MTRUE;
+				}
 			} else if (magInfo[1] == _camsv2_tg_) {
-				if (g_magQIdx[_camsv_2][0] >= ISP_RT_BUF_SIZE)
-					g_magQIdx[_camsv_2][0] = 0;
-				g_magQue[_camsv_2][g_magQIdx[_camsv_2][0]] = magInfo[0];
-				/*LOG_INF("ISP_UPDATE_MAGNUM: idx2=%d mag=0x%x",
-				 *   g_magQIdx[_camsv_2][0], magInfo[0]);
-				 */
-				g_magQIdx[_camsv_2][0]++;
+				fbc.Reg_val = ISP_RD32(ISP_REG_ADDR_CAMSV2_IMGO_FBC);
+				camsv_reg_cal = ISP_RD32(ISP_REG_ADDR_CAMSV_TG2_VF_CON);
+				if ((g_firstCnt[_camsv_2] >= fbc.Bits.FB_NUM) && (camsv_reg_cal & 0x1)) {
+					if (g_magQIdx[_camsv_2][0] >= ISP_RT_BUF_SIZE)
+						g_magQIdx[_camsv_2][0] = 0;
+					g_magQue[_camsv_2][g_magQIdx[_camsv_2][0]] = magInfo[0];
+					/*LOG_INF("ISP_UPDATE_MAGNUM: idx2=%d mag=0x%x",
+					 *g_magQIdx[_camsv_2][0], magInfo[0]);
+					 */
+					g_magQIdx[_camsv_2][0]++;
+				} else if (!(camsv_reg_cal & 0x1)) {
+					/* Need to know is HAL3 before ISP start,
+					 *only hal3 will enter this case.
+					 */
+					enqueImd[_camsv_2] = MTRUE;
+				}
 			}
 			spin_unlock((spinlock_t *)(&SpinLockMagNum));
 		} else {
