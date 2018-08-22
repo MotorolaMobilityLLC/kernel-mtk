@@ -36,7 +36,6 @@
 	chosen: chosen {
 	bootargs = "console=tty0 console=ttyS0,921600n1 vmalloc=496M \
 slub_max_order=0 slub_debug=OFZPU page_owner=on \
-earlycon=uart8250,mmio32,0x11002000 \
 androidboot.hardware=mt6765 maxcpus=8 \
 firmware_class.path=/vendor/firmware loop.max_part=7";
 		kaslr-seed = <0 0>;
