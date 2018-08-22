@@ -689,10 +689,11 @@ int disp_input_free_dirty_roi(struct disp_frame_cfg_t *cfg)
 			break;
 		if (!cfg->input_cfg[i].layer_enable ||
 			!cfg->input_cfg[i].dirty_roi_num)
-			break;
-
-		kfree(cfg->input_cfg[i].dirty_roi_addr);
-		cfg->input_cfg[i].dirty_roi_addr = NULL;
+			continue;
+		if (cfg->input_cfg[i].dirty_roi_addr != NULL) {
+			kfree(cfg->input_cfg[i].dirty_roi_addr);
+			cfg->input_cfg[i].dirty_roi_addr = NULL;
+		}
 	}
 
 	return 0;
