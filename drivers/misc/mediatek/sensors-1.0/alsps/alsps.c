@@ -59,7 +59,7 @@ int als_cali_report(int *value)
 	struct sensor_event event;
 
 	memset(&event, 0, sizeof(struct sensor_event));
-
+	event.handle = ID_LIGHT;
 	event.flush_action = CALI_ACTION;
 	event.word[0] = value[0];
 	err = sensor_input_event(alsps_context_obj->als_mdev.minor, &event);
