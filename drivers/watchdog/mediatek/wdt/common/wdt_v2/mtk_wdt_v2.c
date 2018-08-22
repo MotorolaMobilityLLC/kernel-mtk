@@ -405,10 +405,6 @@ void wdt_arch_reset(char mode)
 			toprgu_base, wdt_irq_id);
 	}
 
-	if (mode == WD_SW_RESET_BYPASS_PWR_KEY)
-		pmic_config_interface_nolock(PMIC_RG_CRST_ADDR, 1,
-				PMIC_RG_CRST_MASK, PMIC_RG_CRST_SHIFT);
-
 	/* Watchdog Rest */
 	mt_reg_sync_writel(MTK_WDT_RESTART_KEY, MTK_WDT_RESTART);
 
