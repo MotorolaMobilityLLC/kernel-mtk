@@ -48,7 +48,7 @@
 #define TUNE_LEGACY_CMD_TMO      (0x1 << 6) /* legacy transfer cmd tmo */
 #define TUNE_AUTOK_PASS          (0x1 << 7) /* autok pass flag */
 
-#ifndef CONFIG_MTK_MMC_DEBUG_DISABLE
+#ifdef CONFIG_MTK_MMC_DEBUG
 #define MSDC_DMA_ADDR_DEBUG
 #endif
 /* #define MTK_MMC_SDIO_DEBUG */
