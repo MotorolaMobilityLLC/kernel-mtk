@@ -1097,21 +1097,21 @@ static void wm_adsp2v2_show_fw_status(struct wm_adsp *dsp)
 
 static void wm_halo_show_fw_status(struct wm_adsp *dsp)
 {
-	u32 scratch[4];
-	int ret;
+	unsigned int scratch[4];
+	unsigned int addr = dsp->base + HALO_SCRATCH1;
+	int ret, i;
 
-	ret = regmap_raw_read(dsp->regmap, dsp->base + HALO_SCRATCH1,
-			      scratch, sizeof(scratch));
-	if (ret) {
-		adsp_err(dsp, "Failed to read SCRATCH regs: %d\n", ret);
-		return;
+	for (i = 0; i < ARRAY_SIZE(scratch); i++) {
+		ret = regmap_read(dsp->regmap, addr, &scratch[i]);
+		addr += 8;
+		if (ret) {
+			adsp_err(dsp, "Failed to read SCRATCH regs: %d\n", ret);
+			return;
+		}
 	}
 
 	adsp_dbg(dsp, "FW SCRATCH 1:0x%x 2:0x%x 3:0x%x 4:0x%x\n",
-		 be32_to_cpu(scratch[0]),
-		 be32_to_cpu(scratch[1]),
-		 be32_to_cpu(scratch[2]),
-		 be32_to_cpu(scratch[3]));
+		 scratch[0], scratch[1], scratch[2], scratch[3]);
 }
 
 static inline struct wm_coeff_ctl *bytes_ext_to_ctl(struct soc_bytes_ext *ext)
