@@ -152,7 +152,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			pdata->input_current_limit = 1500000;
 			pdata->charging_current_limit = 2000000;
 		} else {
-			/* for TYPEC_CC_VOLT_SNK_DFT */
+			chr_err("type-C: inquire rp error\n");
 			pdata->input_current_limit = 500000;
 			pdata->charging_current_limit = 500000;
 		}
