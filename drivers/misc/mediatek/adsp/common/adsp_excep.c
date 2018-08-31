@@ -569,9 +569,7 @@ struct bin_attribute bin_attr_adsp_trax = {
 };
 #endif
 
-static ssize_t adsp_A_dump_show(struct file *filep, struct kobject *kobj,
-				struct bin_attribute *attr,
-				char *buf, loff_t offset, size_t size)
+static ssize_t adsp_A_ramdump(char *buf, loff_t offset, size_t size)
 {
 	unsigned int length = 0, sys_memsize = 0, core_memsize = 0;
 	unsigned int threshold1 = 0, threshold2 = 0, threshold3 = 0;
@@ -679,6 +677,28 @@ static ssize_t adsp_A_dump_show(struct file *filep, struct kobject *kobj,
 	return length;
 }
 
+static ssize_t adsp_A_dump_show(struct file *filep, struct kobject *kobj,
+				struct bin_attribute *attr,
+				char *buf, loff_t offset, size_t size)
+{
+	return adsp_A_ramdump(buf, offset, size);
+}
+
+static ssize_t adsp_A_dump_ke_show(struct file *filep, struct kobject *kobj,
+				struct bin_attribute *attr,
+				char *buf, loff_t offset, size_t size)
+{
+	struct MemoryDump *pMemoryDump;
+
+	pMemoryDump = (struct MemoryDump *)adsp_A_dump_buffer;
+	adsp_enable_dsp_clk(true);
+	memset(pMemoryDump, 0x0, sizeof(*pMemoryDump));
+	adsp_A_dump_length = adsp_crash_dump(pMemoryDump, ADSP_A_ID);
+	adsp_enable_dsp_clk(false);
+
+	return adsp_A_ramdump(buf, offset, size);
+}
+
 struct bin_attribute bin_attr_adsp_dump = {
 	.attr = {
 		.name = "adsp_dump",
@@ -686,6 +706,15 @@ struct bin_attribute bin_attr_adsp_dump = {
 	},
 	.size = 0,
 	.read = adsp_A_dump_show,
+};
+
+struct bin_attribute bin_attr_adsp_dump_ke = {
+	.attr = {
+		.name = "adsp_dump_ke",
+		.mode = 0444,
+	},
+	.size = 0,
+	.read = adsp_A_dump_ke_show,
 };
 
 /*
