@@ -1760,6 +1760,12 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 	int flags;
 	struct mm_struct *mm;
 	int ret = 0;
+	char tpath[512];
+	char *path_p = NULL;
+	struct path base_path;
+	unsigned long long pgoff = 0;
+	dev_t dev = 0;
+	unsigned long ino = 0;
 
 	current_task = get_current();
 	user_ret = task_pt_regs(current_task);
@@ -1769,7 +1775,7 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 	oops->userthread_maps.tid = current_task->tgid;
 
 	memcpy(&oops->userthread_reg.regs, user_ret, sizeof(struct pt_regs));
-	LOGD(" pid:%d /// tgid:%d, stack:0x%08lx\n",
+	pr_info(" pid:%d /// tgid:%d, stack:0x%08lx\n",
 			current_task->pid, current_task->tgid,
 			(long)oops->userthread_stack.Userthread_Stack);
 	if (!user_mode(user_ret))
@@ -1787,13 +1793,25 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 		file = vma->vm_file;
 		flags = vma->vm_flags;
 		if (file) {
-			Log2Buffer(oops, "%08lx-%08lx %c%c%c%c    %s\n",
-			  vma->vm_start, vma->vm_end,
-			  flags & VM_READ ? 'r' : '-',
-			  flags & VM_WRITE ? 'w' : '-',
-			  flags & VM_EXEC ? 'x' : '-',
-			  flags & VM_MAYSHARE ? 's' : 'p',
-			  (unsigned char *)(file->f_path.dentry->d_iname));
+			struct inode *inode = file_inode(vma->vm_file);
+
+			dev = inode->i_sb->s_dev;
+			ino = inode->i_ino;
+			base_path = file->f_path;
+			path_p = d_path(&base_path, tpath, 512);
+			pgoff = ((loff_t)vma->vm_pgoff) << PAGE_SHIFT;
+			if (flags & VM_EXEC) {
+				Log2Buffer(oops,
+					"%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %s\n",
+					vma->vm_start,
+					vma->vm_end,
+					flags & VM_READ ? 'r' : '-',
+					flags & VM_WRITE ? 'w' : '-',
+					flags & VM_EXEC ? 'x' : '-',
+					flags & VM_MAYSHARE ? 's' : 'p',
+					pgoff,
+					MAJOR(dev), MINOR(dev), ino, path_p);
+			}
 		} else {
 			const char *name = arch_vma_name(vma);
 
@@ -1814,14 +1832,17 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 				}
 			}
 			/* if (name) */
-			{
-				Log2Buffer(oops, "%08lx-%08lx %c%c%c%c    %s\n",
-						vma->vm_start, vma->vm_end,
-						flags & VM_READ ? 'r' : '-',
-						flags & VM_WRITE ? 'w' : '-',
-						flags & VM_EXEC ? 'x' : '-',
-						flags & VM_MAYSHARE ? 's' : 'p',
-						name);
+			if (flags & VM_EXEC) {
+				Log2Buffer(oops,
+					"%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %s\n",
+					vma->vm_start,
+					vma->vm_end,
+					flags & VM_READ ? 'r' : '-',
+					flags & VM_WRITE ? 'w' : '-',
+					flags & VM_EXEC ? 'x' : '-',
+					flags & VM_MAYSHARE ? 's' : 'p',
+					pgoff,
+					MAJOR(dev), MINOR(dev), ino, name);
 			}
 		}
 		vma = vma->vm_next;
@@ -1831,13 +1852,14 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 	up_read(&current_task->mm->mmap_sem);
 	#endif
 
-	LOGD("maps addr(0x%08lx), maps len:%d\n",
+	pr_info("maps addr(0x%08lx), maps len:%d\n",
 			(long)oops->userthread_maps.Userthread_maps,
 			oops->userthread_maps.Userthread_mapsLength);
 
 #ifndef __aarch64__ /* 32bit */
-	LOGD(" pc/lr/sp 0x%08lx/0x%08lx/0x%08lx\n", user_ret->ARM_pc,
-			user_ret->ARM_lr, user_ret->ARM_sp);
+	pr_info(" pc/lr/sp 0x%08lx/0x%08lx/0x%08lx\n",
+			user_ret->ARM_pc, user_ret->ARM_lr,
+			 user_ret->ARM_sp);
 		userstack_start = (unsigned long)user_ret->ARM_sp;
 
 	vma = current_task->mm->mmap;
@@ -1852,11 +1874,12 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 			break;
 	}
 	if (userstack_end == 0) {
-		LOGD("Dump native stack failed:\n");
+		pr_info("Dump native stack failed:\n");
 		return 0;
 	}
-	LOGD("Dump stack range (0x%08lx:0x%08lx)\n", userstack_start,
-							userstack_end);
+	pr_info("Dump stack range (0x%08lx:0x%08lx)\n",
+		userstack_start, userstack_end);
+
 	length = ((userstack_end - userstack_start) <
 		     (MaxStackSize-1)) ? (userstack_end - userstack_start) :
 							(MaxStackSize-1);
@@ -1865,12 +1888,12 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 
 	ret = copy_from_user((void *)(oops->userthread_stack.Userthread_Stack),
 			(const void __user *)(userstack_start), length);
-	LOGD("u+k 32 copy_from_user ret(0x%08x),len:%lx\n", ret, length);
-	LOGD("end dump native stack:\n");
+	pr_info("u+k 32 copy_from_user ret(0x%08x),len:%lx\n", ret, length);
+	pr_info("end dump native stack:\n");
 #else /* 64bit, First deal with K64+U64, the last time to deal with K64+U32 */
 
 	if (is_compat_task()) {	/* K64_U32 */
-		LOGD(" K64+ U32 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
+		pr_info(" K64+ U32 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
 				(long)(user_ret->user_regs.pc),
 				(long)(user_ret->user_regs.regs[14]),
 				(long)(user_ret->user_regs.regs[13]));
@@ -1890,8 +1913,8 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 		LOGD("Dump native stack failed:\n");
 		return 0;
 	}
-	LOGD("Dump stack range (0x%08lx:0x%08lx)\n", userstack_start,
-							userstack_end);
+	pr_info("Dump stack range (0x%08lx:0x%08lx)\n",
+			userstack_start, userstack_end);
 		length = ((userstack_end - userstack_start) <
 		     (MaxStackSize-1)) ? (userstack_end - userstack_start) :
 							(MaxStackSize-1);
@@ -1922,8 +1945,8 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 			return 0;
 		}
 
-		LOGD("Dump stack range (0x%16lx:0x%16lx)\n", userstack_start,
-				userstack_end);
+		pr_info("Dump stack range (0x%16lx:0x%16lx)\n",
+				userstack_start, userstack_end);
 		length = ((userstack_end - userstack_start) <
 		     (MaxStackSize-1)) ? (userstack_end - userstack_start) :
 			(MaxStackSize-1);
