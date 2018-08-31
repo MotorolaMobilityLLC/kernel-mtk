@@ -279,7 +279,7 @@ static struct lbat_thd_t *lbat_thd_init(unsigned int thd_volt,
 int lbat_user_register(struct lbat_user *user, const char *name,
 	unsigned int hv_thd_volt,
 	unsigned int lv1_thd_volt, unsigned int lv2_thd_volt,
-	void (*callback)(unsigned int))
+	void (*callback)(unsigned int thd_volt))
 {
 	int ret = 0;
 
