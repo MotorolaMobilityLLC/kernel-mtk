@@ -191,6 +191,7 @@ EXPORT_SYMBOL(connectivity_export_mt6306_set_gpio_dir);
 /*******************************************************************************
  * PMIC
  ******************************************************************************/
+#ifdef CONNADP_HAS_PMIC_API
 void connectivity_export_pmic_config_interface(unsigned int RegNum,
 		unsigned int val, unsigned int MASK, unsigned int SHIFT)
 {
@@ -223,6 +224,32 @@ void connectivity_export_upmu_set_reg_value(unsigned int reg,
 	upmu_set_reg_value(reg, reg_val);
 }
 EXPORT_SYMBOL(connectivity_export_upmu_set_reg_value);
+#endif
+#ifdef CONNADP_HAS_UPMU_VCN_CTRL
+void connectivity_export_upmu_set_vcn_1v8_lp_mode_set(unsigned int val)
+{
+	upmu_set_vcn_1v8_lp_mode_set(val);
+}
+EXPORT_SYMBOL(connectivity_export_upmu_set_vcn_1v8_lp_mode_set);
+
+void connectivity_export_upmu_set_vcn28_on_ctrl(unsigned int val)
+{
+	upmu_set_vcn28_on_ctrl(val);
+}
+EXPORT_SYMBOL(connectivity_export_upmu_set_vcn28_on_ctrl);
+
+void connectivity_export_upmu_set_vcn33_on_ctrl_bt(unsigned int val)
+{
+	upmu_set_vcn33_on_ctrl_bt(val);
+}
+EXPORT_SYMBOL(connectivity_export_upmu_set_vcn33_on_ctrl_bt);
+
+void connectivity_export_upmu_set_vcn33_on_ctrl_wifi(unsigned int val)
+{
+	upmu_set_vcn33_on_ctrl_wifi(val);
+}
+EXPORT_SYMBOL(connectivity_export_upmu_set_vcn33_on_ctrl_wifi);
+#endif
 /*******************************************************************************
  * MMC
  ******************************************************************************/
