@@ -28,7 +28,9 @@
 
 #include "internal.h"
 
+#ifdef CONFIG_MTK_FD_LEAK_SPECIFIC_DEBUG
 #include <mt-plat/aee.h>
+#endif
 
 /*
  * The max size that a non-root user is allowed to grow the pipe. Can
@@ -793,8 +795,11 @@ err_inode:
 	return err;
 }
 
+#ifdef CONFIG_MTK_FD_LEAK_SPECIFIC_DEBUG
 #define MSG_SIZE_TO_AEE 70
 char msg_to_aee[MSG_SIZE_TO_AEE];
+#endif
+
 static int __do_pipe_flags(int *fd, struct file **files, int flags)
 {
 	int error;
@@ -825,9 +830,9 @@ static int __do_pipe_flags(int *fd, struct file **files, int flags)
  err_fdr:
 	put_unused_fd(fdr);
  err_read_pipe:
-
 	fput(files[0]);
 	fput(files[1]);
+#ifdef CONFIG_MTK_FD_LEAK_SPECIFIC_DEBUG
 	if (fdr >= 1023 || fdw >= 1023) {
 		snprintf(msg_to_aee, MSG_SIZE_TO_AEE, "[FDLEAK] [pid:%d] %s\n",
 			current->pid, current->comm);
@@ -842,7 +847,7 @@ static int __do_pipe_flags(int *fd, struct file **files, int flags)
 			DB_OPT_DUMPSYS_PROCSTATS,
 			"show kernel & natvie backtace\n", msg_to_aee);
 	}
-
+#endif
 	return error;
 }
 
