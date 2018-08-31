@@ -70,7 +70,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K2T7SP_SENSOR_ID,
-	.checksum_value = 0x67b95889,
+	.checksum_value = 0x93473277,
 
 	.pre = {
 		.pclk = 688000000, /*//30fps case*/
@@ -89,9 +89,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.pclk = 678400000, /*//30fps case*/
 		.linelength = 5640, /*//0x1608*/
 		.framelength = 4008, /*//0x0FA8*/
-		.startx = 0,
+		.startx = 4,
 		.starty = 0,
-		.grabwindow_width = 5184, /*//0x1440*/
+		.grabwindow_width = 5176, /*//0x1440*/
 		.grabwindow_height = 3880, /*//0x0F28*/
 		/*//grabwindow_height should be 16's N times*/
 		.mipi_data_lp2hs_settle_dc = 85,
@@ -279,7 +279,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 	     0,    0, 2592, 1940,    0,    0, 2592, 1940},
 
 	{ 5200, 3880,    0,    0, 5184, 3880, 5184, 3880,
-	     0,    0, 5184, 3880,    0,    0, 5184, 3880},
+	     0,    0, 5184, 3880,    4,    0, 5176, 3880},
 
 	{ 5200, 3880,    8,    0, 5184, 3880, 2592, 1940,
 	     0,    0, 2592, 1940,    0,    0, 2592, 1940},
