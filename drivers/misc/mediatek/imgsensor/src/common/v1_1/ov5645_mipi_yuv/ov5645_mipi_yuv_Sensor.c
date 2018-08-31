@@ -7929,9 +7929,9 @@ static void get_curaeawb_Info(uintptr_t pSensorAEAWBCurStruct)
 	Info->SensorAECur.AeCurShutter = get_shutter();
 	Info->SensorAECur.AeCurGain = get_gain();
 	Info->SensorAwbGainCur.AwbCurRgain
-		= ((read_cmos_sensor(0x3401) && 0xff)+((read_cmos_sensor(0x3400) && 0xff)*256));
+		= ((read_cmos_sensor(0x3401) & 0xff)+((read_cmos_sensor(0x3400) & 0xff)*256));
 	Info->SensorAwbGainCur.AwbCurBgain
-		= ((read_cmos_sensor(0x3405) && 0xff)+((read_cmos_sensor(0x3404) && 0xff)*256));
+		= ((read_cmos_sensor(0x3405) & 0xff)+((read_cmos_sensor(0x3404) & 0xff)*256));
 
 	LOG_INF("L\n");
 }
