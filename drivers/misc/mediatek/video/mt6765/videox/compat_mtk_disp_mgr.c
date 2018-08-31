@@ -779,6 +779,7 @@ static int compat_get_disp_session_config(
 	struct disp_session_config __user *data)
 {
 	compat_uint_t u;
+	compat_uint_t uu;
 	compat_int_t i;
 	int err;
 
@@ -806,8 +807,8 @@ static int compat_get_disp_session_config(
 	err |= get_user(i, &(data32->need_merge));
 	err |= put_user(i, &(data->need_merge));
 
-	err |= get_user(i, &(data32->tigger_mode));
-	err |= put_user(i, &(data->tigger_mode));
+	err |= get_user(uu, &(data32->tigger_mode));
+	err |= put_user(uu, &(data->tigger_mode));
 
 	return err;
 
@@ -819,6 +820,7 @@ static int compat_put_disp_session_config(
 {
 
 	compat_uint_t u;
+	compat_uint_t uu;
 	compat_int_t i;
 	int err;
 
@@ -846,8 +848,8 @@ static int compat_put_disp_session_config(
 	err |= get_user(i, &(data->need_merge));
 	err |= put_user(i, &(data32->need_merge));
 
-	err |= get_user(u, &(data->tigger_mode));
-	err |= put_user(u, &(data32->tigger_mode));
+	err |= get_user(uu, &(data->tigger_mode));
+	err |= put_user(uu, &(data32->tigger_mode));
 
 	return err;
 }
