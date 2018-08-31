@@ -19,6 +19,17 @@
 
 #if defined(CONFIG_MTK_BLOCK_TAG)
 
+/*
+ * MTK_BTAG_FEATURE_MICTX_IOSTAT
+ *
+ * Shall be defined if we can provide iostat
+ * produced by mini context.
+ *
+ * This feature is used to extend kernel
+ * trace events to have more I/O information.
+ */
+#define MTK_BTAG_FEATURE_MICTX_IOSTAT
+
 #define BLOCKTAG_PIDLOG_ENTRIES 50
 #define BLOCKTAG_NAME_LEN      16
 #define BLOCKTAG_PRINT_LEN     4096
@@ -88,6 +99,9 @@ struct mtk_btag_req {
 /*
  * public structure to provide IO statistics
  * in a period of time.
+ *
+ * Make sure MTK_BTAG_FEATURE_MICTX_IOSTAT is
+ * defined alone with mictx series.
  */
 struct mtk_btag_mictx_iostat_struct {
 	__u64 duration;  /* duration time for below performance data (ns) */
