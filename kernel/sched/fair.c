@@ -7061,7 +7061,6 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 {
 	unsigned long best_idle_min_cap_orig = ULONG_MAX;
 	unsigned long min_util = boosted_task_util(p);
-	unsigned long max_util = SCHED_CAPACITY_SCALE;
 	unsigned long target_capacity = ULONG_MAX;
 	unsigned long min_wake_util = ULONG_MAX;
 	unsigned long target_max_spare_cap = 0;
@@ -7134,6 +7133,9 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 			 * accounting. However, the blocked utilization may be zero.
 			 */
 			wake_util = cpu_util_wake(i, p);
+			if (idle_cpu(i))
+				wake_util = 0;
+
 			new_util = wake_util + task_util(p);
 
 			/*
@@ -7142,7 +7144,6 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 			 * than the one required to boost the task.
 			 */
 			new_util = max(min_util, new_util);
-			new_util = min(new_util, max_util);
 
 			/*
 			 * Include minimum capacity constraint:
@@ -11041,6 +11042,9 @@ void check_for_migration(struct rq *rq, struct task_struct *p)
 				stop_one_cpu_nowait(cpu,
 						active_load_balance_cpu_stop,
 						rq, &rq->active_balance_work);
+			mt_sched_printf(sched_log,
+				"%s: cpu, new_cpu",
+				__func__, cpu, new_cpu);
 		}
 	}
 }
