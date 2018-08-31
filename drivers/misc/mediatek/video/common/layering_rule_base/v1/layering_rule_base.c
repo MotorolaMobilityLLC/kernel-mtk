@@ -33,6 +33,7 @@
 #include "debug.h"
 
 static struct disp_layer_info layering_info;
+struct mutex layering_info_lock;
 static int debug_resolution_level;
 static struct layering_rule_info_t *l_rule_info;
 static struct layering_rule_ops *l_rule_ops;
@@ -1483,6 +1484,12 @@ int check_disp_info(struct disp_layer_info *disp_info)
 			return -1;
 		}
 
+		if (!access_ok(VERIFY_WRITE, disp_info->input_config[disp_idx],
+			sizeof(struct layer_config) * disp_info->layer_num[disp_idx])) {
+			DISPERR("[FB]: memory not accessible! line:%d\n", __LINE__);
+			return -1;
+		}
+
 		if ((disp_info->gles_head[disp_idx] < 0 && disp_info->gles_tail[disp_idx] >= 0) ||
 			(disp_info->gles_tail[disp_idx] < 0 && disp_info->gles_head[disp_idx] >= 0)) {
 			dump_disp_info(disp_info, DISP_DEBUG_LEVEL_ERR);
@@ -1516,7 +1523,7 @@ int set_disp_info(struct disp_layer_info *disp_info_user, int debug_mode)
 		} else {
 			if (copy_from_user(layering_info.input_config[0], disp_info_user->input_config[0],
 				sizeof(struct layer_config) * layering_info.layer_num[0])) {
-				DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+				DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 				return -EFAULT;
 			}
 		}
@@ -1537,7 +1544,7 @@ int set_disp_info(struct disp_layer_info *disp_info_user, int debug_mode)
 		} else {
 			if (copy_from_user(layering_info.input_config[1], disp_info_user->input_config[1],
 				sizeof(struct layer_config) * layering_info.layer_num[1])) {
-				DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+				DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 				return -EFAULT;
 			}
 		}
@@ -1621,6 +1628,7 @@ void register_layering_rule_ops(struct layering_rule_ops *ops, struct layering_r
 {
 	l_rule_ops = ops;
 	l_rule_info = info;
+	mutex_init(&layering_info_lock);
 }
 
 int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
@@ -1636,8 +1644,12 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
 		DISPERR("check_disp_info fail\n");
 		return -EFAULT;
 	}
-	if (set_disp_info(disp_info_user, debug_mode))
+
+	mutex_lock(&layering_info_lock);
+	if (set_disp_info(disp_info_user, debug_mode)) {
+		mutex_unlock(&layering_info_lock);
 		return -EFAULT;
+	}
 
 	print_disp_info_to_log_buffer(&layering_info);
 #ifdef HRT_DEBUG_LEVEL1
@@ -1715,6 +1727,7 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
 		(layering_info.layer_num[1] << 16) | (layering_info.layer_num[0] << 16));
 
 	ret = copy_layer_info_to_user(disp_info_user, debug_mode);
+	mutex_unlock(&layering_info_lock);
 	return ret;
 }
 

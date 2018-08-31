@@ -91,6 +91,7 @@ static dev_t mtk_disp_mgr_devno;
 static struct cdev *mtk_disp_mgr_cdev;
 static struct class *mtk_disp_mgr_class;
 
+
 static int mtk_disp_mgr_open(struct inode *inode, struct file *file)
 {
 	return 0;
@@ -1174,7 +1175,7 @@ int _ioctl_query_valid_layer(unsigned long arg)
 	void __user *argp = (void __user *)arg;
 
 	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {
-		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
 	/* check data from userspace is legal */
@@ -1737,8 +1738,6 @@ static int __init mtk_disp_mgr_init(void)
 		platform_device_unregister(&mtk_disp_mgr_device);
 		return -ENODEV;
 	}
-
-
 	return 0;
 }
 
