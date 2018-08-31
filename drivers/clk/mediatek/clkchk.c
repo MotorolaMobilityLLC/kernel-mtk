@@ -98,7 +98,7 @@ static void print_enabled_clks(void)
 			clk_hw_is_prepared(c_hw),
 			__clk_get_enable_count(c),
 			clk_hw_get_rate(c_hw),
-			p_hw != NULL ? clk_hw_get_name(p_hw) : "- ");
+			clk_hw_get_name(p_hw));
 	}
 }
 
