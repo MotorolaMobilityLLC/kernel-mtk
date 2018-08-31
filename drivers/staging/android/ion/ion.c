@@ -197,7 +197,8 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 	 * cached mapping that mapping has been invalidated
 	 */
 	for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents, i) {
-		if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) && (align < PAGE_OFFSET)) {
+		if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) &&
+		    (align < PAGE_OFFSET) && (sg_dma_len(sg) != 0)) {
 			if (align < VMALLOC_START || align > VMALLOC_END) {
 				/*userspace va without vmalloc, has no page struct*/
 				sg->length = sg_dma_len(sg);
