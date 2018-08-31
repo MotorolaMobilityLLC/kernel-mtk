@@ -706,6 +706,7 @@ extern const char musb_driver_name[];
 
 extern void musb_start(struct musb *musb);
 extern void musb_stop(struct musb *musb);
+extern void musb_power_down(struct musb *musb);
 
 extern void musb_write_fifo(struct musb_hw_ep *ep, u16 len, const u8 *src);
 extern void musb_read_fifo(struct musb_hw_ep *ep, u16 len, u8 *dst);
@@ -846,6 +847,7 @@ extern int mu3d_force_on;
 extern void mt_usb_connect(void);
 extern void mt_usb_disconnect(void);
 extern void mt_usb_reconnect(void);
+extern void mt_usb_dev_off(void);
 extern void mt_usb_connect_test(int start);
 extern void trigger_disconnect_check_work(void);
 extern struct workqueue_struct *mt_usb_get_workqueue(void);

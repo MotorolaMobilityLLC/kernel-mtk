@@ -96,72 +96,12 @@ void connection_work(struct work_struct *data)
 	struct mt_usb_work *work =
 		container_of(data, struct mt_usb_work, dwork.work);
 
-	/* delay 100ms if user space is not ready to set usb function */
-	if (!is_usb_rdy()) {
-		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
-		int delay = 50;
-
-		if (__ratelimit(&ratelimit))
-			os_printk(K_INFO, "%s, !is_usb_rdy, delay %d ms\n", __func__, delay);
-
-		/* to DISCONNECT stage to avoid stage transition while usb is ready */
-#ifdef CONFIG_MTK_UART_USB_SWITCH
-		if (in_uart_mode) {
-			os_printk(K_INFO, "%s, Uart mode. directly return\n", __func__);
-			goto exit;
-		}
-#endif
-#ifndef CONFIG_FPGA_EARLY_PORTING
-		if (!mt_usb_is_device()) {
-			os_printk(K_INFO, "%s, Host mode. directly return\n", __func__);
-			goto exit;
-		}
-#endif
-
-		if (connection_work_dev_status != OFF) {
-			connection_work_dev_status = OFF;
-#ifndef CONFIG_USBIF_COMPLIANCE
-			clr_connect_timestamp();
-#endif
-
-			/*FIXME: we should use usb_gadget_disconnect() & usb_udc_stop().  like usb_udc_softconn_store().
-			 * But have no time to think how to handle. However i think it is the correct way.
-			 */
-			musb_stop(musb);
-
-			if (wake_lock_active(&musb->usb_wakelock))
-				wake_unlock(&musb->usb_wakelock);
-
-#ifdef VCORE_OPS_DEV
-			vcore_op(0);
-#endif
-			os_printk(K_INFO, "%s ----Disconnect----\n", __func__);
-		}
-
-		queue_delayed_work(musb->st_wq, &work->dwork,
-				msecs_to_jiffies(delay));
-		return;
-	}
+	if (!is_usb_rdy())
+		os_printk(K_INFO, "%s, !is_usb_rdy\n", __func__);
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!usb_phy_check_in_uart_mode()) {
 #endif
-
-#ifndef CONFIG_FPGA_EARLY_PORTING
-		if (!mt_usb_is_device()) {
-			connection_work_dev_status = OFF;
-#ifdef CONFIG_PHY_MTK_SSUSB
-			if (musb->is_clk_on)
-				phy_power_off(musb->mtk_phy);
-#else
-			usb_fake_powerdown(musb->is_clk_on);
-#endif
-			musb->is_clk_on = 0;
-			os_printk(K_INFO, "%s, Host mode. directly return\n", __func__);
-			goto exit;
-		}
-#endif
-
 		is_usb_cable = __usb_cable_connected(work->ops);
 
 		os_printk(K_INFO, "%s musb %s, cable %s\n", __func__,
@@ -232,7 +172,6 @@ void connection_work(struct work_struct *data)
 	}
 #endif
 
-exit:
 	/* free mt_usb_work */
 	kfree(work);
 }
@@ -283,6 +222,35 @@ void mt_usb_reconnect(void)
 {
 	os_printk(K_INFO, "%s\n", __func__);
 	issue_connection_work(CONNECTION_OPS_CHECK);
+}
+
+static void power_down_work(struct work_struct *data)
+{
+	struct mt_usb_work *work =
+		container_of(data, struct mt_usb_work, dwork.work);
+
+	os_printk(K_INFO, "force_usb_off\n");
+	musb_power_down(_mu3d_musb);
+	/* free mt_usb_work */
+	kfree(work);
+}
+
+void mt_usb_dev_off(void)
+{
+	struct mt_usb_work *work;
+
+	if (!_mu3d_musb) {
+		os_printk(K_INFO, "_mu3d_musb = NULL\n");
+		return;
+	}
+
+	work = kzalloc(sizeof(struct mt_usb_work), GFP_ATOMIC);
+	if (!work)
+		return;
+
+	INIT_DELAYED_WORK(&work->dwork, power_down_work);
+	/* force usb off*/
+	queue_delayed_work(_mu3d_musb->st_wq, &work->dwork, 0);
 }
 
 struct workqueue_struct *mt_usb_get_workqueue(void)
