@@ -94,7 +94,7 @@ void ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(struct ufs_hba *hba)
 #ifdef UPMU_READY
 	int vcc_enabled, vcc_value, vccq2_enabled, va09_enabled;
 
-	vcc_enabled = pmic_get_register_value(PMIC_RG_LDO_VEMC_EN);
+	vcc_enabled = pmic_get_register_value(PMIC_DA_VEMC_EN);
 	vcc_value = pmic_get_register_value(PMIC_RG_VEMC_VOSEL);
 	vccq2_enabled = pmic_get_register_value(PMIC_DA_EXT_PMIC_EN1);
 	va09_enabled = pmic_get_register_value(PMIC_DA_EXT_PMIC_EN1);
@@ -272,10 +272,13 @@ void ufs_mtk_pltfrm_deepidle_resource_req(struct ufs_hba *hba,
  */
 void ufs_mtk_pltfrm_deepidle_lock(struct ufs_hba *hba, bool lock)
 {
+/* peter mask for build error */
+#if 0
 	if (lock)
 		idle_lock_by_ufs(1);
 	else
 		idle_lock_by_ufs(0);
+#endif
 }
 
 int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)

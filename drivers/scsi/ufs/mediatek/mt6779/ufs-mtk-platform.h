@@ -17,10 +17,10 @@
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 /* If CLKBUF function not ready, comment this define */
-#define CLKBUF_READY
+/* #define CLKBUF_READY */ /* Peter enable after clkbuf ready */
 
 /* If UPMU function not ready, comment this define */
-#define UPMU_READY
+/* #define UPMU_READY */ /* Peter enable after upmu ready */
 #endif
 
 /* Peter enable and test after P ready */
