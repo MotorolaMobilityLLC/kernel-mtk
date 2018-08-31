@@ -319,12 +319,15 @@ static int mtk_dsp_pcm_hw_params(struct snd_pcm_substream *substream,
 					&substream->dma_buffer);
 	if (ret < 0)
 		goto error;
-	ret = set_audiobuffer_attribute(&dsp->dsp_mem[id].adsp_buf, substream,
+	ret = set_audiobuffer_attribute(&dsp->dsp_mem[id].adsp_buf,
+					substream,
 					params,
-					afe_get_pcmdir(substream->stream));
+					afe_get_pcmdir(substream->stream,
+					dsp->dsp_mem[id].adsp_buf));
 	if (ret < 0)
 		goto error;
-	ret = set_audiobuffer_hw(&dsp->dsp_mem[id].adsp_buf, false);
+	ret = set_audiobuffer_hw(&dsp->dsp_mem[id].adsp_buf,
+				 BUFFER_TYPE_SHARE_MEM);
 	if (ret < 0)
 		goto error;
 	ret = set_audiobuffer_memorytype(&dsp->dsp_mem[id].adsp_buf,

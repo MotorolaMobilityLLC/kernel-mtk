@@ -23,9 +23,7 @@ obj-y += mtk-auddrv-underflow-mach.o
 obj-$(CONFIG_SND_SOC_MTK_BTCVSD) += mtk-soc-pcm-btcvsd.o mtk-soc-pcm-btcvsd-rx.o mtk-soc-pcm-btcvsd-tx.o
 obj-$(CONFIG_MTK_HDMI_TDM) += mtk-soc-pcm-hdmi.o
 
-# New kernel architecture
-ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH),y)
-
+#offload
 # Feature support
 ifeq ($(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework
@@ -40,6 +38,10 @@ ifeq ($(CONFIG_MTK_AUDIODSP_SUPPORT),y)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/adsp/$(MTK_PLATFORM)
 endif
 endif
+
+# New kernel architecture
+ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH),y)
+
 
 # MENU Governor Predict(low power)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
