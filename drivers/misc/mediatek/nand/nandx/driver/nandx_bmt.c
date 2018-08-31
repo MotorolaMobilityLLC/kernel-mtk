@@ -359,9 +359,14 @@ static int find_available_block(struct bmt_handler *bmt, bool start_from_end)
 		pr_debug("Find block 0x%x available\n", block);
 
 		if (retry) {
-			pr_info("Reserved 0x%x for DL_INFO, find next\n",
-				block);
-			retry -= 1;
+			/* fix block is good, but erase fail */
+			if (bmt_erase_block(bmt, block)) {
+				pr_info
+				    ("Reserved 0x%x for DL_INFO, find next\n",
+				     block);
+				retry -= 1;
+			}
+			pr_info("Erase block %u fail, retry\n", block);
 			continue;
 		}
 

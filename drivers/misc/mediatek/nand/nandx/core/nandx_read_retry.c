@@ -1013,23 +1013,16 @@ int nandx_chip_read_retry(struct nandx_chip *chip,
 
 	rr_ops->entry(chip);
 
-	for (*count = 0; *count <= rr_loop_count; (*count)++) {
+	for (*count = 0; *count < rr_loop_count; (*count)++) {
 		rr_ops->get_parameters(chip, param);
 		rr_ops->set_parameters(chip, param);
 		rr_ops->enable(chip);
-		if (*count == 0) {
-			if (chip->slc_mode)
-				slc_mode_entry(chip, false);
-			nandx_chip_read_page(chip, ops->row);
-			continue;
-		}
-		if (*count == rr_loop_count)
-			nandx_chip_cache_read_last_page(chip);
-		else {
-			if (chip->slc_mode)
-				slc_mode_entry(chip, false);
-			nandx_chip_cache_read_page(chip, ops->row);
-		}
+
+		if (chip->slc_mode)
+			slc_mode_entry(chip, false);
+
+		nandx_chip_read_page(chip, ops->row);
+
 		if (chip->randomize)
 			nandx_chip_enable_randomizer(chip, ops->row, false);
 
@@ -1038,10 +1031,9 @@ int nandx_chip_read_retry(struct nandx_chip *chip,
 
 		if (chip->randomize)
 			nandx_chip_disable_randomizer(chip);
-		if (ret != -ENANDREAD) {
-			nandx_chip_cache_read_last_page(chip);
+
+		if (ret != -ENANDREAD)
 			break;
-		}
 	}
 
 	rr_ops->exit(chip);

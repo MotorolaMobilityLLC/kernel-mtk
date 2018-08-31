@@ -9,7 +9,7 @@
 #include "nandx_chip.h"
 #include "nandx_chip_common.h"
 
-#define NANDX_CHIP_VERSION	"nandx.18.07.09"
+#define NANDX_CHIP_VERSION	"nandx.18.08.22"
 #ifdef CONFIG_NANDX_EXPRESS
 struct nandx_chip *nandx_express_chip;
 #endif
@@ -817,8 +817,7 @@ static int nandx_interface_change(struct nandx_chip *chip, bool enable,
 	}
 
 	feature[0] = get_nandx_interface_value(chip->vendor_type,
-					       timing_mode,
-					       type);
+					       timing_mode, type);
 
 	nandx_chip_set_feature(chip, addr, feature, 4);
 
