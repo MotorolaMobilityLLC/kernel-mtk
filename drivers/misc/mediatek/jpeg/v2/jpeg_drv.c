@@ -188,6 +188,7 @@ static wait_queue_head_t enc_wait_queue;
 static spinlock_t jpeg_enc_lock;
 static int enc_status;
 static int enc_ready;
+static DEFINE_MUTEX(jpeg_enc_power_lock);
 
 /* Support QoS */
 struct pm_qos_request jpgenc_qos_request;
@@ -454,10 +455,12 @@ static int jpeg_drv_enc_init(void)
 	}
 	spin_unlock(&jpeg_enc_lock);
 
+	mutex_lock(&jpeg_enc_power_lock);
 	if (retValue == 0) {
 		jpeg_drv_enc_power_on();
 		jpeg_drv_enc_verify_state_and_reset();
 	}
+	mutex_unlock(&jpeg_enc_power_lock);
 
 	return retValue;
 }
@@ -470,8 +473,10 @@ static void jpeg_drv_enc_deinit(void)
 		enc_ready = 0;
 		spin_unlock(&jpeg_enc_lock);
 
+		mutex_lock(&jpeg_enc_power_lock);
 		jpeg_drv_enc_reset();
 		jpeg_drv_enc_power_off();
+		mutex_unlock(&jpeg_enc_power_lock);
 	}
 }
 
@@ -1334,6 +1339,7 @@ static ssize_t jpeg_read(struct file *file, char __user *data, size_t len, loff_
 
 static int jpeg_release(struct inode *inode, struct file *file)
 {
+/*
 	if (enc_status != 0) {
 		JPEG_WRN("Error! Enable error handling for jpeg encoder");
 		jpeg_drv_enc_deinit();
@@ -1345,6 +1351,7 @@ static int jpeg_release(struct inode *inode, struct file *file)
 		jpeg_drv_dec_deinit();
 	}
 #endif
+*/
 
 	if (file->private_data != NULL) {
 		kfree(file->private_data);
