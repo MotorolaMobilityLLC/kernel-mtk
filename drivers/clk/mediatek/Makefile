@@ -23,10 +23,7 @@ obj-$(CONFIG_COMMON_CLK_MT3967) += clk-mt3967.o clk-mt3967-pg.o clk-mtk-v1.o clk
 obj-$(CONFIG_COMMON_CLK_MT6758) += clk-mt6758.o clk-mt6758-pg.o clk-mtk-v1.o
 obj-$(CONFIG_COMMON_CLK_MT6765) += clk-mt6765.o clk-mt6765-pg.o clk-mtk-v1.o mt6765_clkmgr.o
 obj-$(CONFIG_COMMON_CLK_MT6761) += clk-mt6761.o clk-mt6761-pg.o clk-mtk-v1.o mt6761_clkmgr.o
-ifeq ($(CONFIG_FPGA_EARLY_PORTING), y)
-else
-obj-$(CONFIG_COMMON_CLK_MT6779) += clk-mt6779.o clk-mt6779-pg.o clk-mtk-v1.o
-endif
+obj-$(CONFIG_COMMON_CLK_MT6779) += clk-mt6779.o clk-mt6779-pg.o clk-mtk-v1.o mt6779_clkmgr.o
 obj-$(CONFIG_COMMON_CLK_MT8135) += clk-mt8135.o
 obj-$(CONFIG_COMMON_CLK_MT8163) += clk-mt8163.o
 obj-$(CONFIG_COMMON_CLK_MT8173) += clk-mt8173.o
@@ -38,5 +35,6 @@ obj-$(CONFIG_COMMON_CLK_MT2712) += clkdbg-mt2712.o
 obj-$(CONFIG_COMMON_CLK_MT3967) += clkdbg-mt3967.o
 obj-$(CONFIG_COMMON_CLK_MT6765) += clkdbg_mt6765.o clkchk-mt6765.o
 obj-$(CONFIG_COMMON_CLK_MT6761) += clkdbg_mt6761.o clkchk-mt6761.o
+obj-$(CONFIG_COMMON_CLK_MT6779) += clkdbg-mt6779.o clkchk-mt6779.o
 obj-$(CONFIG_COMMON_CLK_MT8163) += clkdbg_mt8163.o clkchk_mt8163.o
 endif

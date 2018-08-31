@@ -47,7 +47,7 @@ static const char * const *get_all_clk_names(void)
 	static const char * const clks[] = {
 		/* plls */
 		"mainpll",
-		"univpll",
+		"univ2pll",
 		"mfgpll",
 		"msdcpll",
 		"tvdpll",
@@ -55,6 +55,7 @@ static const char * const *get_all_clk_names(void)
 		"mmpll",
 		"apll1",
 		"apll2",
+
 		/* apmixedsys */
 		"apmixed_ssusb26m",
 		"apmixed_appll26m",
@@ -67,56 +68,77 @@ static const char * const *get_all_clk_names(void)
 		"apmixed_lvpll26m",
 		"apmixed_mipid026m",
 		"apmixed_mipid126m",
-		/* topckgen */
+		/* TOP */
 		"axi_sel",
 		"mm_sel",
+		"scp_sel",
+
 		"img_sel",
+		"ipe_sel",
+		"dpe_sel",
 		"cam_sel",
+
+		"ccu_sel",
 		"dsp_sel",
-		"dsp_sel",
+		"dsp1_sel",
 		"dsp2_sel",
+
+		"dsp3_sel",
 		"ipu_if_sel",
 		"mfg_sel",
 		"f52m_mfg_sel",
+
 		"camtg_sel",
 		"camtg2_sel",
 		"camtg3_sel",
 		"camtg4_sel",
+
 		"uart_sel",
 		"spi_sel",
 		"msdc50_hclk_sel",
 		"msdc50_0_sel",
+
 		"msdc30_1_sel",
-		"msdc30_2_sel",
 		"audio_sel",
 		"aud_intbus_sel",
-		"pmicspi_sel",
 		"fpwrap_ulposc_sel",
+
 		"atb_sel",
 		"sspm_sel",
 		"dpi0_sel",
 		"scam_sel",
+
 		"disppwm_sel",
 		"usb_top_sel",
 		"ssusb_top_xhci_sel",
 		"spm_sel",
+
 		"i2c_sel",
-		"scp_sel",
 		"seninf_sel",
+		"seninf1_sel",
+		"seninf2_sel",
+
 		"dxcc_sel",
 		"aud_eng1_sel",
 		"aud_eng2_sel",
 		"faes_ufsfde_sel",
+
 		"fufs_sel",
 		"aud_1_sel",
 		"aud_2_sel",
 		"adsp_sel",
-		"dpmaif_sel",
+
+		"dpmaif_parents",
 		"venc_sel",
 		"vdec_sel",
 		"camtm_sel",
+
 		"pwm_sel",
-		/* infracfg */
+		"audio_h_sel",
+		"camtg5_sel",
+
+
+		/* INFRACFG */
 		"infra_pmic_tmr",
 		"infra_pmic_ap",
 		"infra_pmic_md",
@@ -169,13 +191,11 @@ static const char * const *get_all_clk_names(void)
 		"infra_ccif_md",
 		"infra_dxcc_sec_core",
 		"infra_dxcc_ao",
-		"infra_devmpu_bclk",
 		"infra_dramc_f26m",
 
 		"infra_irtx",
-		"infra_usb",
 		"infra_disppwm",
-		"infra_dpmaif",
+		"infra_cldma_bclk",
 		"infracfg_ao_audio_26m_bclk_ck",
 		"infra_spi1",
 		"infra_i2c4",
@@ -200,8 +220,9 @@ static const char * const *get_all_clk_names(void)
 		"infra_spi5",
 		"infra_cqdma",
 		"infra_ufs",
-		"infra_aes_ufsfde",
+		"infra_aes",
 		"infra_ufs_tick",
+		"infra_ssusb_xhci",
 
 		"infra_msdc0_self",
 		"infra_msdc1_self",
@@ -221,20 +242,77 @@ static const char * const *get_all_clk_names(void)
 		"infra_i2c7",
 		"infra_i2c8",
 		"infra_fbist2fpc",
-		/* imgsys */
+		"infra_dpmaif",
+		"infra_fadsp",
+		"infra_ccif4_ap",
+		"infra_ccif4_md",
+		"infra_spi6",
+		"infra_spi7",
+
+		/* AUDIO */
+		"aud_afe",
+		"aud_22m",
+		"aud_24m",
+		"aud_apll2_tuner",
+		"aud_apll_tuner",
+		"aud_tdm",
+		"aud_adc",
+		"aud_dac",
+		"aud_dac_predis",
+		"aud_tml",
+		"aud_nle",
+		"aud_i2s1_bclk",
+		"aud_i2s2_bclk",
+		"aud_i2s3_bclk",
+		"aud_i2s4_bclk",
+		"aud_i2s5_bclk",
+		"aud_conn_i2s",
+		"aud_general1",
+		"aud_general2",
+		"aud_dac_hires",
+		"aud_adc_hires",
+		"aud_adc_hires_tml",
+		"aud_pdn_adda6_adc",
+		"aud_adda6_adc_hires",
+		"aud_3rd_dac",
+		"aud_3rd_dac_predis",
+		"aud_3rd_dac_tml",
+		"aud_3rd_dac_hires",
+
+		/* CAM */
+		"camsys_larb10",
+		"camsys_dfp_vad",
+		"camsys_larb11",
+		"camsys_larb9",
+		"camsys_cam",
+		"camsys_camtg",
+		"camsys_seninf",
+		"camsys_camsv0",
+		"camsys_camsv1",
+		"camsys_camsv2",
+		"camsys_camsv3",
+		"camsys_ccu",
+		"camsys_fake_eng",
+
+		/* IMG */
 		"imgsys_larb5",
-		"imgsys_larb2",
+		"imgsys_larb6",
 		"imgsys_dip",
-		"imgsys_fdvt",
-		"imgsys_dpe",
-		"imgsys_rsc",
 		"imgsys_mfb",
 		"imgsys_wpe_a",
-		"imgsys_wpe_b",
-		"imgsys_owe",
-		/* mfgcfg */
+		/* IPE */
+		"ipe_larb7",
+		"ipe_larb8",
+		"ipe_smi_subcom",
+		"ipe_fd",
+		"ipe_fe",
+		"ipe_rsc",
+		"ipe_dpe",
+
+		/* MFG */
 		"mfg_cfg_bg3d",
-		/* mmsys */
+
+		/* MM */
 		"mm_smi_common",
 		"mm_smi_larb0",
 		"mm_smi_larb1",
@@ -253,7 +331,7 @@ static const char * const *get_all_clk_names(void)
 		"mm_mdp_rsz1",
 		"mm_mdp_tdshp",
 		"mm_mdp_wrot0",
-		"mm_mdp_wdma0",
+		"mm_mdp_wrot1",
 		"mm_fake_eng",
 		"mm_disp_ovl0",
 		"mm_disp_ovl0_2l",
@@ -267,6 +345,7 @@ static const char * const *get_all_clk_names(void)
 		"mm_disp_gamma0",
 		"mm_disp_dither0",
 		"mm_disp_split",
+		/* MM1 */
 		"mm_dsi0_mmck",
 		"mm_dsi0_ifck",
 		"mm_dpi_mmck",
@@ -281,58 +360,88 @@ static const char * const *get_all_clk_names(void)
 		"mm_mdp_hdr",
 		"mm_dbi_mmck",
 		"mm_dbi_ifck",
-		/* vdecsys */
+		"mm_disp_pm0",
+		"mm_disp_hrt_bw",
+		"mm_disp_ovl_fbdc",
+
+		/* VDEC */
 		"vdec_cken",
+		/* VDEC1 */
 		"vdec_larb1_cken",
-		/* vencsys */
+
+		/* VENC */
 		"venc_larb",
 		"venc_venc",
 		"venc_jpgenc",
-		/* camsys */
-		"camsys_larb6",
-		"camsys_dfp_vad",
-		"camsys_larb3",
-		"camsys_cam",
-		"camsys_camtg",
-		"camsys_seninf",
-		"camsys_camsv0",
-		"camsys_camsv1",
-		"camsys_camsv2",
-		"camsys_ccu",
-		/* audsys */
-		"aud_afe",
-		"aud_22m",
-		"aud_24m",
-		"aud_apll2_tuner",
-		"aud_apll_tuner",
-		"aud_tdm",
-		"aud_adc",
-		"aud_dac",
-		"aud_dac_predis",
-		"aud_tml",
-		"aud_nle",
-		"aud_i2s1_bclk",
-		"aud_i2s2_bclk",
-		"aud_i2s3_bclk",
-		"aud_i2s4_bclk",
-		"aud_i2s5_bclk",
-		"aud_pdn_adda6_adc",
-		/* ipusys */
-		"ipu_vcore_ahb",
-		"ipu_vcore_axi",
-		"ipu_vcore_adl",
-		"ipu_conn_ipu",
-		"ipu_conn_ahb",
-		"ipu_conn_axi",
-		"ipu_conn_isp",
-		"ipu_conn_cam_adl",
-		"ipu_conn_img_adl",
-		"ipu_core0_jtag",
-		"ipu_core0_axi",
-		"ipu_core0_ipu",
-		"ipu_core1_jtag",
-		"ipu_core1_axi",
-		"ipu_core1_ipu",
+		"venc_gals",
+
+		/* APUSYS CONN */
+		"apu_conn_apu",
+		"apu_conn_ahb",
+		"apu_conn_axi",
+		"apu_conn_isp",
+		"apu_conn_cam_adl",
+		"apu_conn_img_adl",
+		"apu_conn_emi_26m",
+		"apu_conn_vpu_udi",
+
+		/* APUSYS APU0 */
+		"apu0_apu",
+		"apu0_axi",
+		"apu0_jtag",
+
+		/* APUSYS APU1 */
+		"apu1_apu",
+		"apu1_axi",
+		"apu1_jtag",
+
+		/* APUSYS VCORE */
+		"apu_vcore_ahb",
+		"apu_vcore_axi",
+		"apu_vcore_adl",
+		"apu_vcore_qos",
+
+		/* APUSYS MDLA */
+		"mdla_b0",
+		"mdla_b1",
+		"mdla_b2",
+		"mdla_b3",
+		"mdla_b4",
+		"mdla_b5",
+		"mdla_b6",
+		"mdla_b7",
+		"mdla_b8",
+		"mdla_b9",
+		"mdla_b10",
+		"mdla_b11",
+		"mdla_b12",
+		"mdla_apb",
+
+		/* SCPSYS */
+		"pg_md1",
+		"pg_conn",
+		"pg_dis",
+		"pg_cam",
+		"pg_isp",
+		"pg_ipe",
+		"pg_ven",
+		"pg_vde",
+		"pg_audio",
+		"pg_mfg0",
+		"pg_mfg1",
+		"pg_mfg2",
+		"pg_mfg3",
+		"pg_mfg4",
+		"pg_vpu_vcore_d",
+		"pg_vpu_vcore_s",
+		"pg_vpu_conn_d",
+		"pg_vpu_conn_s",
+		"pg_vpu_core0_d",
+		"pg_vpu_core0_s",
+		"pg_vpu_core1_d",
+		"pg_vpu_core1_s",
+		"pg_vpu_core2_d",
+		"pg_vpu_core2_s",
 		/* end */
 		NULL
 	};
@@ -387,7 +496,7 @@ static void print_enabled_clks(void)
 static void check_pll_off(void)
 {
 	static const char * const off_pll_names[] = {
-		"univpll",
+		"univ2pll",
 		"mfgpll",
 		"msdcpll",
 		"tvdpll",
@@ -466,7 +575,7 @@ static struct syscore_ops clkchk_syscore_ops = {
 
 static int __init clkchk_init(void)
 {
-	if (!of_machine_is_compatible("mediatek,mt3967"))
+	if (!of_machine_is_compatible("mediatek,mt6779"))
 		return -ENODEV;
 
 	register_syscore_ops(&clkchk_syscore_ops);
