@@ -93,10 +93,10 @@ struct SCP_sensorHub_data {
 	struct curr_wp_queue wp_queue;
 	phys_addr_t shub_dram_phys;
 	phys_addr_t shub_dram_virt;
-	SCP_sensorHub_handler dispatch_data_cb[ID_SENSOR_MAX_HANDLE + 1];
-	atomic_t traces[ID_SENSOR_MAX_HANDLE];
+	SCP_sensorHub_handler dispatch_data_cb[ID_SENSOR_MAX_HANDLE_PLUS_ONE];
+	atomic_t traces[ID_SENSOR_MAX_HANDLE_PLUS_ONE];
 };
-static struct SensorState mSensorState[ID_SENSOR_MAX_HANDLE + 1];
+static struct SensorState mSensorState[SENSOR_TYPE_MAX_NUM_PLUS_ONE];
 static DEFINE_MUTEX(mSensorState_mtx);
 static atomic_t power_status = ATOMIC_INIT(SENSOR_POWER_DOWN);
 static DECLARE_WAIT_QUEUE_HEAD(chre_kthread_wait);
@@ -703,174 +703,224 @@ static void SCP_sensorHub_IPI_handler(int id, void *data, unsigned int len)
 
 static void SCP_sensorHub_init_sensor_state(void)
 {
-	mSensorState[ID_ACCELEROMETER].sensorType = ID_ACCELEROMETER;
-	mSensorState[ID_ACCELEROMETER].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_ACCELEROMETER].sensorType =
+		SENSOR_TYPE_ACCELEROMETER;
+	mSensorState[SENSOR_TYPE_ACCELEROMETER].timestamp_filter = true;
+#ifdef CONFIG_MTK_UNCALI_ACCHUB
+	mSensorState[SENSOR_TYPE_ACCELEROMETER].alt =
+		SENSOR_TYPE_ACCELEROMETER_UNCALIBRATED;
+	mSensorState[SENSOR_TYPE_ACCELEROMETER_UNCALIBRATED].sensorType =
+		SENSOR_TYPE_ACCELEROMETER;
+	mSensorState[SENSOR_TYPE_ACCELEROMETER_UNCALIBRATED].alt =
+		SENSOR_TYPE_ACCELEROMETER;
+	mSensorState[SENSOR_TYPE_ACCELEROMETER_UNCALIBRATED].timestamp_filter =
+		true;
+#endif
 
-	mSensorState[ID_GYROSCOPE].sensorType = ID_GYROSCOPE;
-	mSensorState[ID_GYROSCOPE].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_GYROSCOPE].sensorType = SENSOR_TYPE_GYROSCOPE;
+	mSensorState[SENSOR_TYPE_GYROSCOPE].timestamp_filter = true;
 #ifdef CONFIG_MTK_UNCALI_GYROHUB
-	mSensorState[ID_GYROSCOPE].alt = ID_GYROSCOPE_UNCALIBRATED;
-	mSensorState[ID_GYROSCOPE_UNCALIBRATED].sensorType = ID_GYROSCOPE;
-	mSensorState[ID_GYROSCOPE_UNCALIBRATED].alt = ID_GYROSCOPE;
-	mSensorState[ID_GYROSCOPE_UNCALIBRATED].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_GYROSCOPE].alt =
+		SENSOR_TYPE_GYROSCOPE_UNCALIBRATED;
+	mSensorState[SENSOR_TYPE_GYROSCOPE_UNCALIBRATED].sensorType =
+		SENSOR_TYPE_GYROSCOPE;
+	mSensorState[SENSOR_TYPE_GYROSCOPE_UNCALIBRATED].alt =
+		SENSOR_TYPE_GYROSCOPE;
+	mSensorState[SENSOR_TYPE_GYROSCOPE_UNCALIBRATED].timestamp_filter =
+		true;
 #endif
 
-	mSensorState[ID_MAGNETIC].sensorType = ID_MAGNETIC;
-	mSensorState[ID_MAGNETIC].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_MAGNETIC_FIELD].sensorType =
+		SENSOR_TYPE_MAGNETIC_FIELD;
+	mSensorState[SENSOR_TYPE_MAGNETIC_FIELD].timestamp_filter = true;
 #ifdef CONFIG_MTK_UNCALI_MAGHUB
-	mSensorState[ID_MAGNETIC].alt = ID_MAGNETIC_UNCALIBRATED;
-	mSensorState[ID_MAGNETIC_UNCALIBRATED].sensorType = ID_MAGNETIC;
-	mSensorState[ID_MAGNETIC_UNCALIBRATED].alt = ID_MAGNETIC;
-	mSensorState[ID_MAGNETIC_UNCALIBRATED].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_MAGNETIC_FIELD].alt =
+		SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED;
+	mSensorState[SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED].sensorType =
+		SENSOR_TYPE_MAGNETIC_FIELD;
+	mSensorState[SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED].alt =
+		SENSOR_TYPE_MAGNETIC_FIELD;
+	mSensorState[SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED].timestamp_filter =
+		true;
 #endif
 
-	mSensorState[ID_LIGHT].sensorType = ID_LIGHT;
-	mSensorState[ID_LIGHT].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_LIGHT].sensorType = SENSOR_TYPE_LIGHT;
+	mSensorState[SENSOR_TYPE_LIGHT].timestamp_filter = false;
 
-	mSensorState[ID_PROXIMITY].sensorType = ID_PROXIMITY;
-	mSensorState[ID_PROXIMITY].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_PROXIMITY].sensorType = SENSOR_TYPE_PROXIMITY;
+	mSensorState[SENSOR_TYPE_PROXIMITY].timestamp_filter = false;
 
-	mSensorState[ID_PRESSURE].sensorType = ID_PRESSURE;
-	mSensorState[ID_PRESSURE].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_PRESSURE].sensorType = SENSOR_TYPE_PRESSURE;
+	mSensorState[SENSOR_TYPE_PRESSURE].timestamp_filter = false;
 
-	mSensorState[ID_ORIENTATION].sensorType = ID_ORIENTATION;
-	mSensorState[ID_ORIENTATION].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_ORIENTATION].sensorType =
+		SENSOR_TYPE_ORIENTATION;
+	mSensorState[SENSOR_TYPE_ORIENTATION].timestamp_filter = true;
 
-	mSensorState[ID_ROTATION_VECTOR].sensorType = ID_ROTATION_VECTOR;
-	mSensorState[ID_ROTATION_VECTOR].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_ROTATION_VECTOR].sensorType =
+		SENSOR_TYPE_ROTATION_VECTOR;
+	mSensorState[SENSOR_TYPE_ROTATION_VECTOR].timestamp_filter = true;
 
-	mSensorState[ID_GAME_ROTATION_VECTOR].sensorType = ID_GAME_ROTATION_VECTOR;
-	mSensorState[ID_GAME_ROTATION_VECTOR].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_GAME_ROTATION_VECTOR].sensorType =
+		SENSOR_TYPE_GAME_ROTATION_VECTOR;
+	mSensorState[SENSOR_TYPE_GAME_ROTATION_VECTOR].timestamp_filter = true;
 
-	mSensorState[ID_GEOMAGNETIC_ROTATION_VECTOR].sensorType = ID_GEOMAGNETIC_ROTATION_VECTOR;
-	mSensorState[ID_GEOMAGNETIC_ROTATION_VECTOR].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_GEOMAGNETIC_ROTATION_VECTOR].sensorType =
+		SENSOR_TYPE_GEOMAGNETIC_ROTATION_VECTOR;
+	mSensorState[SENSOR_TYPE_GEOMAGNETIC_ROTATION_VECTOR].timestamp_filter =
+		true;
 
-	mSensorState[ID_LINEAR_ACCELERATION].sensorType = ID_LINEAR_ACCELERATION;
-	mSensorState[ID_LINEAR_ACCELERATION].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_LINEAR_ACCELERATION].sensorType =
+		SENSOR_TYPE_LINEAR_ACCELERATION;
+	mSensorState[SENSOR_TYPE_LINEAR_ACCELERATION].timestamp_filter = true;
 
-	mSensorState[ID_GRAVITY].sensorType = ID_GRAVITY;
-	mSensorState[ID_GRAVITY].timestamp_filter = true;
+	mSensorState[SENSOR_TYPE_GRAVITY].sensorType = SENSOR_TYPE_GRAVITY;
+	mSensorState[SENSOR_TYPE_GRAVITY].timestamp_filter = true;
 
-	mSensorState[ID_SIGNIFICANT_MOTION].sensorType = ID_SIGNIFICANT_MOTION;
-	mSensorState[ID_SIGNIFICANT_MOTION].rate = SENSOR_RATE_ONESHOT;
-	mSensorState[ID_SIGNIFICANT_MOTION].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_SIGNIFICANT_MOTION].sensorType =
+		SENSOR_TYPE_SIGNIFICANT_MOTION;
+	mSensorState[SENSOR_TYPE_SIGNIFICANT_MOTION].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_SIGNIFICANT_MOTION].timestamp_filter = false;
 
-	mSensorState[ID_STEP_COUNTER].sensorType = ID_STEP_COUNTER;
-	mSensorState[ID_STEP_COUNTER].rate = SENSOR_RATE_ONCHANGE;
-	mSensorState[ID_STEP_COUNTER].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_STEP_COUNTER].sensorType =
+		SENSOR_TYPE_STEP_COUNTER;
+	mSensorState[SENSOR_TYPE_STEP_COUNTER].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_STEP_COUNTER].timestamp_filter = false;
 
-	mSensorState[ID_STEP_DETECTOR].sensorType = ID_STEP_DETECTOR;
-	mSensorState[ID_STEP_DETECTOR].rate = SENSOR_RATE_ONCHANGE;
-	mSensorState[ID_STEP_DETECTOR].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_STEP_DETECTOR].sensorType =
+		SENSOR_TYPE_STEP_DETECTOR;
+	mSensorState[SENSOR_TYPE_STEP_DETECTOR].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_STEP_DETECTOR].timestamp_filter = false;
 
-	mSensorState[ID_TILT_DETECTOR].sensorType = ID_TILT_DETECTOR;
-	mSensorState[ID_TILT_DETECTOR].rate = SENSOR_RATE_ONCHANGE;
-	mSensorState[ID_TILT_DETECTOR].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_TILT_DETECTOR].sensorType =
+		SENSOR_TYPE_TILT_DETECTOR;
+	mSensorState[SENSOR_TYPE_TILT_DETECTOR].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_TILT_DETECTOR].timestamp_filter = false;
 
-	mSensorState[ID_IN_POCKET].sensorType = ID_IN_POCKET;
-	mSensorState[ID_IN_POCKET].rate = SENSOR_RATE_ONESHOT;
-	mSensorState[ID_IN_POCKET].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_IN_POCKET].sensorType = SENSOR_TYPE_IN_POCKET;
+	mSensorState[SENSOR_TYPE_IN_POCKET].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_IN_POCKET].timestamp_filter = false;
 
-	mSensorState[ID_ACTIVITY].sensorType = ID_ACTIVITY;
-	mSensorState[ID_ACTIVITY].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_ACTIVITY].sensorType = SENSOR_TYPE_ACTIVITY;
+	mSensorState[SENSOR_TYPE_ACTIVITY].timestamp_filter = false;
 
-	mSensorState[ID_GLANCE_GESTURE].sensorType = ID_GLANCE_GESTURE;
-	mSensorState[ID_GLANCE_GESTURE].rate = SENSOR_RATE_ONESHOT;
-	mSensorState[ID_GLANCE_GESTURE].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_GLANCE_GESTURE].sensorType =
+		SENSOR_TYPE_GLANCE_GESTURE;
+	mSensorState[SENSOR_TYPE_GLANCE_GESTURE].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_GLANCE_GESTURE].timestamp_filter = false;
 
-	mSensorState[ID_PICK_UP_GESTURE].sensorType = ID_PICK_UP_GESTURE;
-	mSensorState[ID_PICK_UP_GESTURE].rate = SENSOR_RATE_ONESHOT;
-	mSensorState[ID_PICK_UP_GESTURE].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_PICK_UP_GESTURE].sensorType =
+		SENSOR_TYPE_PICK_UP_GESTURE;
+	mSensorState[SENSOR_TYPE_PICK_UP_GESTURE].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_PICK_UP_GESTURE].timestamp_filter = false;
 
-	mSensorState[ID_WAKE_GESTURE].sensorType = ID_WAKE_GESTURE;
-	mSensorState[ID_WAKE_GESTURE].rate = SENSOR_RATE_ONESHOT;
-	mSensorState[ID_WAKE_GESTURE].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_WAKE_GESTURE].sensorType =
+		SENSOR_TYPE_WAKE_GESTURE;
+	mSensorState[SENSOR_TYPE_WAKE_GESTURE].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_WAKE_GESTURE].timestamp_filter = false;
 
-	mSensorState[ID_ANSWER_CALL].sensorType = ID_ANSWER_CALL;
-	mSensorState[ID_ANSWER_CALL].rate = SENSOR_RATE_ONESHOT;
-	mSensorState[ID_ANSWER_CALL].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_ANSWER_CALL].sensorType =
+		SENSOR_TYPE_ANSWER_CALL;
+	mSensorState[SENSOR_TYPE_ANSWER_CALL].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_ANSWER_CALL].timestamp_filter = false;
 
-	mSensorState[ID_STATIONARY_DETECT].sensorType = ID_STATIONARY_DETECT;
-	mSensorState[ID_STATIONARY_DETECT].rate = SENSOR_RATE_ONESHOT;
-	mSensorState[ID_STATIONARY_DETECT].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_STATIONARY_DETECT].sensorType =
+		SENSOR_TYPE_STATIONARY_DETECT;
+	mSensorState[SENSOR_TYPE_STATIONARY_DETECT].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_STATIONARY_DETECT].timestamp_filter = false;
 
-	mSensorState[ID_MOTION_DETECT].sensorType = ID_MOTION_DETECT;
-	mSensorState[ID_MOTION_DETECT].rate = SENSOR_RATE_ONESHOT;
-	mSensorState[ID_MOTION_DETECT].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_MOTION_DETECT].sensorType =
+		SENSOR_TYPE_MOTION_DETECT;
+	mSensorState[SENSOR_TYPE_MOTION_DETECT].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_MOTION_DETECT].timestamp_filter = false;
 
-	mSensorState[ID_DEVICE_ORIENTATION].sensorType = ID_DEVICE_ORIENTATION;
-	mSensorState[ID_DEVICE_ORIENTATION].rate = SENSOR_RATE_ONCHANGE;
-	mSensorState[ID_DEVICE_ORIENTATION].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_DEVICE_ORIENTATION].sensorType =
+		SENSOR_TYPE_DEVICE_ORIENTATION;
+	mSensorState[SENSOR_TYPE_DEVICE_ORIENTATION].rate =
+		SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_DEVICE_ORIENTATION].timestamp_filter = false;
 
-	mSensorState[ID_GEOFENCE].sensorType = ID_GEOFENCE;
-	mSensorState[ID_GEOFENCE].rate = SENSOR_RATE_ONCHANGE;
-	mSensorState[ID_GEOFENCE].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_GEOFENCE].sensorType = SENSOR_TYPE_GEOFENCE;
+	mSensorState[SENSOR_TYPE_GEOFENCE].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_GEOFENCE].timestamp_filter = false;
 
-	mSensorState[ID_FLOOR_COUNTER].sensorType = ID_FLOOR_COUNTER;
-	mSensorState[ID_FLOOR_COUNTER].rate = SENSOR_RATE_ONCHANGE;
-	mSensorState[ID_FLOOR_COUNTER].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_FLOOR_COUNTER].sensorType =
+		SENSOR_TYPE_FLOOR_COUNTER;
+	mSensorState[SENSOR_TYPE_FLOOR_COUNTER].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_FLOOR_COUNTER].timestamp_filter = false;
 
-	mSensorState[ID_FLAT].sensorType = ID_FLAT;
-	mSensorState[ID_FLAT].rate = SENSOR_RATE_ONESHOT;
-	mSensorState[ID_FLAT].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_FLAT].sensorType = SENSOR_TYPE_FLAT;
+	mSensorState[SENSOR_TYPE_FLAT].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[SENSOR_TYPE_FLAT].timestamp_filter = false;
 
-	mSensorState[ID_RGBW].sensorType = ID_RGBW;
-	mSensorState[ID_RGBW].timestamp_filter = false;
+	mSensorState[SENSOR_TYPE_RGBW].sensorType = SENSOR_TYPE_RGBW;
+	mSensorState[SENSOR_TYPE_RGBW].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_SAR].sensorType = SENSOR_TYPE_SAR;
+	mSensorState[SENSOR_TYPE_SAR].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_SAR].timestamp_filter = false;
 }
 
-static void init_sensor_config_cmd(struct ConfigCmd *cmd, int handle)
+static void init_sensor_config_cmd(struct ConfigCmd *cmd, int sensor_type)
 {
-	uint8_t alt = mSensorState[handle].alt;
+	uint8_t alt = mSensorState[sensor_type].alt;
+	bool enable = 0;
 
 	memset(cmd, 0x00, sizeof(*cmd));
 
 	cmd->evtType = EVT_NO_SENSOR_CONFIG_EVENT;
-	cmd->sensorType = mSensorState[handle].sensorType + ID_OFFSET;
+	cmd->sensorType = mSensorState[sensor_type].sensorType;
 
-	if (alt && mSensorState[alt].enable && mSensorState[handle].enable) {
+	if (alt && mSensorState[alt].enable &&
+			mSensorState[sensor_type].enable) {
 		cmd->cmd = CONFIG_CMD_ENABLE;
-		if (mSensorState[alt].rate > mSensorState[handle].rate)
+		if (mSensorState[alt].rate > mSensorState[sensor_type].rate)
 			cmd->rate = mSensorState[alt].rate;
 		else
-			cmd->rate = mSensorState[handle].rate;
-		if (mSensorState[alt].latency < mSensorState[handle].latency)
+			cmd->rate = mSensorState[sensor_type].rate;
+		if (mSensorState[alt].latency <
+				mSensorState[sensor_type].latency)
 			cmd->latency = mSensorState[alt].latency;
 		else
-			cmd->latency = mSensorState[handle].latency;
+			cmd->latency = mSensorState[sensor_type].latency;
 	} else if (alt && mSensorState[alt].enable) {
-		cmd->cmd = mSensorState[alt].enable ? CONFIG_CMD_ENABLE : CONFIG_CMD_DISABLE;
+		enable = mSensorState[alt].enable;
+		cmd->cmd =  enable ? CONFIG_CMD_ENABLE : CONFIG_CMD_DISABLE;
 		cmd->rate = mSensorState[alt].rate;
 		cmd->latency = mSensorState[alt].latency;
 	} else { /* !alt || !mSensorState[alt].enable */
-		cmd->cmd = mSensorState[handle].enable ? CONFIG_CMD_ENABLE : CONFIG_CMD_DISABLE;
-		cmd->rate = mSensorState[handle].rate;
-		cmd->latency = mSensorState[handle].latency;
+		enable = mSensorState[sensor_type].enable;
+		cmd->cmd = enable ? CONFIG_CMD_ENABLE : CONFIG_CMD_DISABLE;
+		cmd->rate = mSensorState[sensor_type].rate;
+		cmd->latency = mSensorState[sensor_type].latency;
 	}
 }
 
-static int SCP_sensorHub_batch(int handle, int flag, long long samplingPeriodNs,
-				  long long maxBatchReportLatencyNs)
+static int SCP_sensorHub_batch(int handle, int flag,
+	long long samplingPeriodNs, long long maxBatchReportLatencyNs)
 {
+	uint8_t sensor_type = handle + ID_OFFSET;
 	struct ConfigCmd cmd;
 	int ret = 0;
 	uint64_t rate = 1024000000000ULL;
 
-	if (mSensorState[handle].sensorType || (handle == ID_ACCELEROMETER &&
-				mSensorState[handle].sensorType == ID_ACCELEROMETER)) {
-		if (samplingPeriodNs > 0 && mSensorState[handle].rate != SENSOR_RATE_ONCHANGE &&
-			mSensorState[handle].rate != SENSOR_RATE_ONESHOT) {
+	if (mSensorState[sensor_type].sensorType) {
+		if (samplingPeriodNs > 0 && mSensorState[sensor_type].rate !=
+			SENSOR_RATE_ONCHANGE &&
+			mSensorState[sensor_type].rate != SENSOR_RATE_ONESHOT) {
 			rate = div64_u64(rate, samplingPeriodNs);
-			mSensorState[handle].rate = rate;
+			mSensorState[sensor_type].rate = rate;
 		}
-		mSensorState[handle].latency = maxBatchReportLatencyNs;
-		init_sensor_config_cmd(&cmd, handle);
-		if (atomic_read(&power_status) == SENSOR_POWER_UP) {
-			ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
-			if (ret < 0) {
-				SCP_PR_ERR("failed enablebatch handle:%d, rate: %d, latency: %lld, cmd:%d\n",
-					handle, cmd.rate, cmd.latency, cmd.cmd);
-				return -1;
-			}
+		mSensorState[sensor_type].latency = maxBatchReportLatencyNs;
+		init_sensor_config_cmd(&cmd, sensor_type);
+		if (atomic_read(&power_status) != SENSOR_POWER_UP)
+			return 0;
+		ret = nanohub_external_write((const uint8_t *)&cmd,
+			sizeof(struct ConfigCmd));
+		if (ret < 0) {
+			SCP_PR_ERR("failed enablebatch handle:%d, rate: %d, latency: %lld, cmd:%d\n",
+				handle, cmd.rate, cmd.latency, cmd.cmd);
+			return -1;
 		}
 	} else {
 		SCP_PR_ERR("unhandle handle=%d, is inited?\n", handle);
@@ -881,17 +931,17 @@ static int SCP_sensorHub_batch(int handle, int flag, long long samplingPeriodNs,
 
 static int SCP_sensorHub_flush(int handle)
 {
+	uint8_t sensor_type = handle + ID_OFFSET;
 	struct ConfigCmd cmd;
 	int ret = 0;
 
-	if (mSensorState[handle].sensorType || (handle == ID_ACCELEROMETER &&
-						mSensorState[handle].sensorType ==
-						ID_ACCELEROMETER)) {
-		atomic_inc(&mSensorState[handle].flushCnt);
-		init_sensor_config_cmd(&cmd, handle);
+	if (mSensorState[sensor_type].sensorType) {
+		atomic_inc(&mSensorState[sensor_type].flushCnt);
+		init_sensor_config_cmd(&cmd, sensor_type);
 		cmd.cmd = CONFIG_CMD_FLUSH;
 		if (atomic_read(&power_status) == SENSOR_POWER_UP) {
-			ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
+			ret = nanohub_external_write((const uint8_t *)&cmd,
+				sizeof(struct ConfigCmd));
 			if (ret < 0) {
 				SCP_PR_ERR("failed flush handle:%d\n", handle);
 				return -1;
@@ -907,77 +957,89 @@ static int SCP_sensorHub_flush(int handle)
 static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 {
 	struct SCP_sensorHub_data *obj = obj_data;
-	int err = 0, sensor_type = 0;
+	int err = 0, sensor_type = 0, sensor_id = 0, alt_id;
 	int64_t timestamp_ms = 0;
-	static int64_t last_timestamp_ms[ID_SENSOR_MAX_HANDLE + 1];
+	static int64_t last_timestamp_ms[ID_SENSOR_MAX_HANDLE_PLUS_ONE];
 	uint8_t alt = 0;
+	atomic_t *p_flush_count = NULL;
 	bool raw_enable = 0, alt_enable = 0;
 	bool need_send = false;
 	/* int64_t now_enter_timestamp = 0;
 	 * now_enter_timestamp = ktime_get_boot_ns();
-	 * SCP_PR_ERR("type:%d,now time:%lld, scp time: %lld\n",
-	 *	data_t->sensor_type, now_enter_timestamp, data_t->time_stamp);
-	*/
-	sensor_type = data_t->sensor_type;
+	 * pr_err("type:%d,now time:%lld, scp time: %lld\n",
+	 * data_t->sensor_type, now_enter_timestamp,
+	 * data_t->time_stamp);
+	 */
+	sensor_id = data_t->sensor_type;
+	sensor_type = sensor_id + ID_OFFSET;
 	data_t->time_stamp += get_filter_output(&moving_average_algo);
-	/* pr_debug("compensation_offset=%lld\n", get_filter_output(&moving_average_algo)); */
-	alt = ACCESS_ONCE(mSensorState[sensor_type].alt);
+	/*
+	 * pr_debug("compensation_offset=%lld\n",
+	 * get_filter_output(&moving_average_algo));
+	 */
+	alt = READ_ONCE(mSensorState[sensor_type].alt);
+	alt_id = alt - ID_OFFSET;
 	if (!alt) {
-		raw_enable = ACCESS_ONCE(mSensorState[sensor_type].enable);
+		raw_enable = READ_ONCE(mSensorState[sensor_type].enable);
 	} else if (alt) {
-		raw_enable = ACCESS_ONCE(mSensorState[sensor_type].enable);
-		alt_enable = ACCESS_ONCE(mSensorState[alt].enable);
+		raw_enable = READ_ONCE(mSensorState[sensor_type].enable);
+		alt_enable = READ_ONCE(mSensorState[alt].enable);
 	}
-	if (sensor_type > ID_SENSOR_MAX_HANDLE)
-		SCP_PR_ERR("invalid sensor %d\n", sensor_type);
-	else {
-		if (obj->dispatch_data_cb[sensor_type] == NULL) {
-			SCP_PR_ERR("type:%d don't support this flow?\n", sensor_type);
+	if (sensor_id > ID_SENSOR_MAX_HANDLE) {
+		SCP_PR_ERR("invalid sensor %d\n", sensor_id);
+		return err;
+	}
+
+	if (obj->dispatch_data_cb[sensor_id] == NULL) {
+		SCP_PR_ERR("type:%d don't support this flow?\n", sensor_id);
+		return 0;
+	}
+	if (alt) {
+		if (obj->dispatch_data_cb[alt_id] == NULL) {
+			SCP_PR_ERR("alt:%d don't support this flow?\n", alt_id);
 			return 0;
 		}
-		if (alt) {
-			if (obj->dispatch_data_cb[alt] == NULL) {
-				SCP_PR_ERR("alt:%d don't support this flow?\n", alt);
-				return 0;
-			}
-		}
-		if (data_t->flush_action != DATA_ACTION)
-			need_send = true;
-		else {
-			/* timestamp filter, drop events which timestamp equal to each other at 1 ms */
-			timestamp_ms = (int64_t)data_t->time_stamp;
-			timestamp_ms = div_s64(timestamp_ms, 1000000);
-			if (last_timestamp_ms[sensor_type] != timestamp_ms) {
-				last_timestamp_ms[sensor_type] = timestamp_ms;
-				need_send = true;
-			} else
-				need_send = false;
-			if (!mSensorState[sensor_type].timestamp_filter)
-				need_send = true;
-		}
-		if (need_send == true) {
-			if (!alt) {
-				err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
-				if (data_t->flush_action == FLUSH_ACTION)
-					atomic_dec(&mSensorState[sensor_type].flushCnt);
-			} else if (alt) {
-				if (alt_enable && data_t->flush_action == DATA_ACTION)
-					err = obj->dispatch_data_cb[alt](data_t, NULL);
-				else if (alt_enable && data_t->flush_action == FLUSH_ACTION) {
-					if (atomic_dec_if_positive(&mSensorState[alt].flushCnt) >= 0)
-						err = obj->dispatch_data_cb[alt](data_t, NULL);
-				}
-				if (raw_enable && data_t->flush_action == DATA_ACTION)
-					err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
-				else if (raw_enable && data_t->flush_action == FLUSH_ACTION) {
-					if (atomic_dec_if_positive(&mSensorState[sensor_type].flushCnt) >= 0)
-						err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
-				} else if (data_t->flush_action == BIAS_ACTION || data_t->flush_action == CALI_ACTION
-					|| data_t->flush_action == TEMP_ACTION)
-					err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
-			}
-		}
 	}
+	if (data_t->flush_action != DATA_ACTION)
+		need_send = true;
+	else {
+		/* timestamp filter, drop which equal to each other at 1 ms */
+		timestamp_ms = (int64_t)data_t->time_stamp;
+		timestamp_ms = div_s64(timestamp_ms, 1000000);
+		if (last_timestamp_ms[sensor_id] != timestamp_ms) {
+			last_timestamp_ms[sensor_id] = timestamp_ms;
+			need_send = true;
+		} else
+			need_send = false;
+		if (!mSensorState[sensor_type].timestamp_filter)
+			need_send = true;
+	}
+	if (need_send == true && !alt) {
+		err = obj->dispatch_data_cb[sensor_id](data_t, NULL);
+		if (data_t->flush_action == FLUSH_ACTION)
+			atomic_dec(&mSensorState[sensor_type].flushCnt);
+	} else if (need_send == true && alt) {
+		if (alt_enable && data_t->flush_action == DATA_ACTION)
+			err = obj->dispatch_data_cb[alt_id](data_t, NULL);
+		else if (alt_enable && data_t->flush_action == FLUSH_ACTION) {
+			p_flush_count = &mSensorState[alt].flushCnt;
+			if (atomic_dec_if_positive(p_flush_count) >= 0)
+				err = obj->dispatch_data_cb[alt_id](data_t,
+					NULL);
+		}
+		if (raw_enable && data_t->flush_action == DATA_ACTION)
+			err = obj->dispatch_data_cb[sensor_id](data_t, NULL);
+		else if (raw_enable && data_t->flush_action == FLUSH_ACTION) {
+			p_flush_count = &mSensorState[sensor_type].flushCnt;
+			if (atomic_dec_if_positive(p_flush_count) >= 0)
+				err = obj->dispatch_data_cb[sensor_id](data_t,
+					NULL);
+		} else if (data_t->flush_action == BIAS_ACTION ||
+			data_t->flush_action == CALI_ACTION ||
+			data_t->flush_action == TEMP_ACTION)
+			err = obj->dispatch_data_cb[sensor_id](data_t, NULL);
+	}
+
 	return err;
 }
 static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp)
@@ -1128,106 +1190,111 @@ static int sensor_send_timestamp_to_hub(void)
 	return err;
 }
 
-int sensor_enable_to_hub(uint8_t sensorType, int enabledisable)
+int sensor_enable_to_hub(uint8_t handle, int enabledisable)
 {
+	uint8_t sensor_type = handle + ID_OFFSET;
 	struct ConfigCmd cmd;
 	int ret = 0;
 
 	if (enabledisable == 1)
 		scp_register_feature(SENS_FEATURE_ID);
 	mutex_lock(&mSensorState_mtx);
-	if (sensorType > ID_SENSOR_MAX_HANDLE) {
-		SCP_PR_ERR("invalid sensor %d\n", sensorType);
+	if (handle > ID_SENSOR_MAX_HANDLE) {
+		SCP_PR_ERR("invalid handle %d\n", handle);
 		ret = -1;
-	} else {
-		if (mSensorState[sensorType].sensorType || (sensorType == ID_ACCELEROMETER &&
-				mSensorState[sensorType].sensorType == ID_ACCELEROMETER)) {
-			mSensorState[sensorType].enable = enabledisable;
-			init_sensor_config_cmd(&cmd, sensorType);
-			if (atomic_read(&power_status) == SENSOR_POWER_UP) {
-				ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
-				if (ret < 0)
-					SCP_PR_ERR
-					    ("failed registerlistener sensorType:%d, cmd:%d\n",
-					     sensorType, cmd.cmd);
-			}
-			if (!enabledisable) {
-				if (atomic_read(&mSensorState[sensorType].flushCnt) != 0)
-					SCP_PR_ERR("handle=%d flush count not equal to 0 when disable\n", sensorType);
-			}
-		} else {
-			SCP_PR_ERR("unhandle handle=%d, is inited?\n", sensorType);
-			mutex_unlock(&mSensorState_mtx);
-			return -1;
+		mutex_unlock(&mSensorState_mtx);
+		return ret;
+	}
+	if (mSensorState[sensor_type].sensorType) {
+		mSensorState[sensor_type].enable = enabledisable;
+		init_sensor_config_cmd(&cmd, sensor_type);
+		if (atomic_read(&power_status) == SENSOR_POWER_UP) {
+			ret = nanohub_external_write((const uint8_t *)&cmd,
+				sizeof(struct ConfigCmd));
+			if (ret < 0)
+				SCP_PR_ERR("fail registerlistener handle:%d,cmd:%d\n",
+				     handle, cmd.cmd);
 		}
+		if ((!enabledisable) &&
+			(atomic_read(&mSensorState[sensor_type].flushCnt))) {
+			SCP_PR_ERR("handle=%d flush count not 0 when disable\n",
+				handle);
+		}
+	} else {
+		SCP_PR_ERR("unhandle handle=%d, is inited?\n", handle);
+		mutex_unlock(&mSensorState_mtx);
+		return -1;
 	}
 	mutex_unlock(&mSensorState_mtx);
 	return ret < 0 ? ret : 0;
 }
 
-int sensor_set_delay_to_hub(uint8_t sensorType, unsigned int delayms)
+int sensor_set_delay_to_hub(uint8_t handle, unsigned int delayms)
 {
 	int ret = 0;
 	long long samplingPeriodNs = delayms * 1000000ULL;
 
 	mutex_lock(&mSensorState_mtx);
-	if (sensorType > ID_SENSOR_MAX_HANDLE) {
-		SCP_PR_ERR("invalid sensor %d\n", sensorType);
+	if (handle > ID_SENSOR_MAX_HANDLE) {
+		SCP_PR_ERR("invalid sensor %d\n", handle);
 		ret = -1;
 	} else {
-		ret = SCP_sensorHub_batch(sensorType, 0, samplingPeriodNs, 0);
+		ret = SCP_sensorHub_batch(handle, 0, samplingPeriodNs, 0);
 	}
 	mutex_unlock(&mSensorState_mtx);
 	return ret < 0 ? ret : 0;
 }
 
-int sensor_batch_to_hub(uint8_t sensorType, int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+int sensor_batch_to_hub(uint8_t handle,
+	int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
 	int ret = 0;
 
 	mutex_lock(&mSensorState_mtx);
-	if (sensorType > ID_SENSOR_MAX_HANDLE) {
-		SCP_PR_ERR("invalid sensor %d\n", sensorType);
+	if (handle > ID_SENSOR_MAX_HANDLE) {
+		SCP_PR_ERR("invalid handle %d\n", handle);
 		ret = -1;
 	} else
-		ret = SCP_sensorHub_batch(sensorType, flag, samplingPeriodNs, maxBatchReportLatencyNs);
+		ret = SCP_sensorHub_batch(handle,
+		flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_unlock(&mSensorState_mtx);
 	return ret;
 }
 
-int sensor_flush_to_hub(uint8_t sensorType)
+int sensor_flush_to_hub(uint8_t handle)
 {
 	int ret = 0;
 
 	mutex_lock(&mSensorState_mtx);
-	if (sensorType > ID_SENSOR_MAX_HANDLE) {
-		SCP_PR_ERR("invalid sensor %d\n", sensorType);
+	if (handle > ID_SENSOR_MAX_HANDLE) {
+		SCP_PR_ERR("invalid handle %d\n", handle);
 		ret = -1;
 	} else
-		ret = SCP_sensorHub_flush(sensorType);
+		ret = SCP_sensorHub_flush(handle);
 	mutex_unlock(&mSensorState_mtx);
 	return ret;
 }
 
-int sensor_cfg_to_hub(uint8_t sensorType, uint8_t *data, uint8_t count)
+int sensor_cfg_to_hub(uint8_t handle, uint8_t *data, uint8_t count)
 {
 	struct ConfigCmd *cmd = NULL;
 	int ret = 0;
 
-	if (sensorType > ID_SENSOR_MAX_HANDLE) {
-		SCP_PR_ERR("invalid sensor %d\n", sensorType);
+	if (handle > ID_SENSOR_MAX_HANDLE) {
+		SCP_PR_ERR("invalid handle %d\n", handle);
 		ret = -1;
 	} else {
 		cmd = vzalloc(sizeof(struct ConfigCmd) + count);
 		if (cmd == NULL)
 			return -1;
 		cmd->evtType = EVT_NO_SENSOR_CONFIG_EVENT;
-		cmd->sensorType = sensorType + ID_OFFSET;
+		cmd->sensorType = handle + ID_OFFSET;
 		cmd->cmd = CONFIG_CMD_CFG_DATA;
 		memcpy(cmd->data, data, count);
 		ret = nanohub_external_write((const uint8_t *)cmd, sizeof(struct ConfigCmd) + count);
 		if (ret < 0) {
-			SCP_PR_ERR("failed cfg data handle:%d, cmd:%d\n", sensorType, cmd->cmd);
+			SCP_PR_ERR("failed cfg data handle:%d, cmd:%d\n",
+				handle, cmd->cmd);
 			ret =  -1;
 		}
 		vfree(cmd);
@@ -1235,22 +1302,23 @@ int sensor_cfg_to_hub(uint8_t sensorType, uint8_t *data, uint8_t count)
 	return ret;
 }
 
-int sensor_calibration_to_hub(uint8_t sensorType)
+int sensor_calibration_to_hub(uint8_t handle)
 {
+	uint8_t sensor_type = handle + ID_OFFSET;
 	struct ConfigCmd cmd;
 	int ret = 0;
 
-	if (mSensorState[sensorType].sensorType || (sensorType == ID_ACCELEROMETER &&
-				mSensorState[sensorType].sensorType == ID_ACCELEROMETER)) {
-		init_sensor_config_cmd(&cmd, sensorType);
+	if (mSensorState[sensor_type].sensorType) {
+		init_sensor_config_cmd(&cmd, sensor_type);
 		cmd.cmd = CONFIG_CMD_CALIBRATE;
 		ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
 		if (ret < 0) {
-			SCP_PR_ERR("failed calibration handle:%d\n", sensorType);
+			SCP_PR_ERR("failed calibration handle:%d\n",
+				handle);
 			return -1;
 		}
 	} else {
-		SCP_PR_ERR("unhandle handle=%d, is inited?\n", sensorType);
+		SCP_PR_ERR("unhandle handle=%d, is inited?\n", handle);
 		return -1;
 	}
 	return 0;
@@ -1788,11 +1856,42 @@ int sensor_set_cmd_to_hub(uint8_t sensorType, CUST_ACTION action, void *data)
 	return err;
 }
 
+static void restoring_enable_sensorHub_sensor(int handle)
+{
+	uint8_t sensor_type = handle + ID_OFFSET;
+	int ret = 0;
+	int flush_cnt = 0;
+	struct ConfigCmd cmd;
+
+	if (mSensorState[sensor_type].sensorType &&
+		mSensorState[sensor_type].enable) {
+		init_sensor_config_cmd(&cmd, sensor_type);
+		pr_debug("restoring: handle=%d,enable=%d,rate=%d,latency=%lld\n",
+			handle, mSensorState[sensor_type].enable,
+			mSensorState[sensor_type].rate,
+			mSensorState[sensor_type].latency);
+		ret = nanohub_external_write((const uint8_t *)&cmd,
+			sizeof(struct ConfigCmd));
+		if (ret < 0)
+			pr_notice("failed registerlistener handle:%d, cmd:%d\n",
+				handle, cmd.cmd);
+
+		cmd.cmd = CONFIG_CMD_FLUSH;
+		for (flush_cnt = 0; flush_cnt <
+			atomic_read(&mSensorState[sensor_type].flushCnt);
+			flush_cnt++) {
+			ret = nanohub_external_write((const uint8_t *)&cmd,
+				sizeof(struct ConfigCmd));
+			if (ret < 0)
+				pr_notice("failed flush handle:%d\n", handle);
+		}
+	}
+
+}
+
 static int sensorHub_power_up_work(void *data)
 {
-	int ret = 0;
-	int handle = 0, flush_cnt = 0;
-	struct ConfigCmd cmd;
+	int handle = 0;
 	struct SCP_sensorHub_data *obj = obj_data;
 	unsigned long flags;
 
@@ -1821,33 +1920,14 @@ static int sensorHub_power_up_work(void *data)
 		/* 3. wait for chre init done when don't support power reset feature */
 		msleep(2000);
 #endif
-		/* 4. send dram information to scp */
-		sensor_send_dram_info_to_hub();
-		/* secondly we enable sensor which sensor is enable by framework */
-		mutex_lock(&mSensorState_mtx);
-		for (handle = 0; handle < ID_SENSOR_MAX_HANDLE + 1; handle++) {
-			if ((mSensorState[handle].sensorType || (handle == ID_ACCELEROMETER &&
-					mSensorState[handle].sensorType == ID_ACCELEROMETER)) &&
-					mSensorState[handle].enable) {
-				init_sensor_config_cmd(&cmd, handle);
-				SCP_LOG("restoring: handle=%d, enable=%d, rate=%d, latency=%lld\n", handle,
-					mSensorState[handle].enable, mSensorState[handle].rate,
-					mSensorState[handle].latency);
-				ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
-				if (ret < 0)
-					pr_notice("failed registerlistener handle:%d, cmd:%d\n", handle, cmd.cmd);
-
-				cmd.cmd = CONFIG_CMD_FLUSH;
-				for (flush_cnt = 0; flush_cnt < atomic_read(&mSensorState[handle].flushCnt);
-					flush_cnt++) {
-					ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
-					if (ret < 0)
-						pr_notice("failed flush handle:%d\n", handle);
-				}
-			}
-		}
-		mutex_unlock(&mSensorState_mtx);
-	}
+	/* 4. send dram information to scp */
+	sensor_send_dram_info_to_hub();
+	/* secondly we enable sensor which sensor is enable by framework */
+	mutex_lock(&mSensorState_mtx);
+	for (handle = 0; handle < ID_SENSOR_MAX_HANDLE_PLUS_ONE; handle++)
+		restoring_enable_sensorHub_sensor(handle);
+	mutex_unlock(&mSensorState_mtx);
+}
 	return 0;
 }
 static int sensorHub_ready_event(struct notifier_block *this, unsigned long event, void *ptr)
@@ -1933,7 +2013,7 @@ static int sensorHub_probe(struct platform_device *pdev)
 	}
 	sched_setscheduler(task, SCHED_FIFO, &param);
 	/* init the debug trace flag */
-	for (index = 0; index < ID_SENSOR_MAX_HANDLE; index++)
+	for (index = 0; index < ID_SENSOR_MAX_HANDLE_PLUS_ONE; index++)
 		atomic_set(&obj->traces[index], 0);
 	/* init timestamp sync worker */
 	INIT_WORK(&obj->sync_time_worker, SCP_sensorHub_sync_time_work);
@@ -1987,7 +2067,7 @@ static ssize_t nanohub_show_trace(struct device_driver *ddri, char *buf)
 	int i;
 	ssize_t res = 0;
 
-	for (i = 0; i < ID_SENSOR_MAX_HANDLE; i++)
+	for (i = 0; i < ID_SENSOR_MAX_HANDLE_PLUS_ONE; i++)
 		res += snprintf(&buf[res], PAGE_SIZE, "%2d:[%d]\n", i, atomic_read(&obj->traces[i]));
 	return res;
 }
@@ -2004,8 +2084,8 @@ static ssize_t nanohub_store_trace(struct device_driver *ddri, const char *buf, 
 		goto err_out;
 	}
 
-	if (handle < 0 || handle >= ID_SENSOR_MAX_HANDLE) {
-		SCP_PR_ERR("invalid handle value:%d, that should be '0<=handle<%d'\n", trace, ID_SENSOR_MAX_HANDLE);
+	if (handle < 0 || handle > ID_SENSOR_MAX_HANDLE) {
+		SCP_PR_ERR("invalid handle value:%d, that should be '0<=handle<=%d'\n", trace, ID_SENSOR_MAX_HANDLE);
 		goto err_out;
 	}
 
