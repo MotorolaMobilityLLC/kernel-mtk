@@ -1623,7 +1623,7 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					LOGD("%s: get process:%d dumpable:%d\n",
 						__func__, pid, dumpable);
 				task_unlock(task);
-				read_unlock(&tasklist_lock);
+				rcu_read_unlock();
 			} else {
 				LOGD(
 				  "%s: check suid dumpable ioctl pid invalid\n",
