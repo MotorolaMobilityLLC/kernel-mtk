@@ -376,7 +376,7 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	unsigned int efusevalue = 0;
 #ifdef CONFIG_FOUR_KEY_HEADSET
 	unsigned int tmp_val = 0;
-	unsigned int tmp_8bit = 0
+	unsigned int tmp_8bit = 0;
 #endif
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
 	unsigned int moisture_eint0;
