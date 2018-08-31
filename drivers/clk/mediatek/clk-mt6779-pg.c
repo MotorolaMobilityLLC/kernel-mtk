@@ -881,8 +881,8 @@ static int DBG_STEP;
  */
 static void ram_console_update(void)
 {
-	struct pg_callbacks *pgcb;
 #ifdef CONFIG_MTK_RAM_CONSOLE
+	struct pg_callbacks *pgcb;
 	u32 data[8] = {0x0};
 	u32 i = 0, j = 0;
 	static u32 pre_data;
