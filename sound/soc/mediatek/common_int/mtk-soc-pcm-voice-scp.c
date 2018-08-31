@@ -374,10 +374,9 @@ static int mtk_pcm_scp_voice_stop(struct snd_pcm_substream *substream)
 	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL1);
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
-	if (!in_interrupt())
-		spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY,
-					   AUDIO_IPI_MSG_BYPASS_ACK,
-					   SPK_PROTECT_SPEECH_STOP, 1, 0, NULL);
+	spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY,
+				    AUDIO_IPI_MSG_BYPASS_ACK,
+				    SPK_PROTECT_SPEECH_STOP, 1, 0, NULL);
 #endif
 
 	return 0;
@@ -1015,8 +1014,7 @@ static int mtk_pcm_scp_voice_start(struct snd_pcm_substream *substream)
 			  Soc_Aud_AFE_IO_Block_I2S3);
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
-	if (!in_interrupt())
-		spkproc_service_ipicmd_send(
+	spkproc_service_ipicmd_send(
 			AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 			SPK_PROTECT_SPEECH_START, 1, 0, NULL);
 #endif
