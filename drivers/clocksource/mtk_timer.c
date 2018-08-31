@@ -67,6 +67,7 @@ static char gpt_clkevt_aee_dump_buf[128];
 
 #define GPT_CLK_EVT	1
 #define GPT_CLK_SRC	2
+#define GPT_SYSCNT_ID	6
 
 struct mtk_clock_event_device {
 	void __iomem *gpt_base;
@@ -385,6 +386,10 @@ static int __init mtk_timer_init(struct device_node *node)
 					0xffffffff);
 
 	mtk_timer_enable_irq(evt, GPT_CLK_EVT);
+
+	/* use GPT6 timer as syscnt */
+	mtk_timer_setup(evt, GPT_SYSCNT_ID, TIMER_CTRL_OP_FREERUN,
+			TIMER_CLK_SRC_SYS13M, true);
 
 	return 0;
 
