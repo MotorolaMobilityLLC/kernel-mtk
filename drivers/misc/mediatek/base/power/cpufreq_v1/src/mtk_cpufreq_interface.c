@@ -542,7 +542,8 @@ static ssize_t cpufreq_cci_mode_proc_write(struct file *file,
 		"Usage: echo <mode>(0:Nom 1:Perf)\n");
 	else {
 #ifdef CONFIG_HYBRID_CPU_DVFS
-		cpuhvfs_update_cci_mode(mode);
+		/* BY_PROC_FS */
+		cpuhvfs_update_cci_mode(mode, 0);
 #endif
 	}
 

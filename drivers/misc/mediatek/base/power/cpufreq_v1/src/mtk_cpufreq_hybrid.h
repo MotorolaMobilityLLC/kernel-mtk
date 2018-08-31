@@ -96,7 +96,7 @@ unsigned int cpuhvfs_get_cci_result(unsigned int idx_1, unsigned int idx_2,
 void cpuhvfs_update_cci_map_tbl(unsigned int idx_1, unsigned int idx_2,
 	unsigned char result, unsigned int mode, unsigned int use_id);
 unsigned int cpuhvfs_get_cci_mode(void);
-void cpuhvfs_update_cci_mode(unsigned int mode);
+void cpuhvfs_update_cci_mode(unsigned int mode, unsigned int use_id);
 #endif
 int cpuhvfs_set_iccs_freq(enum mt_cpu_dvfs_id id, unsigned int freq);
 int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl,

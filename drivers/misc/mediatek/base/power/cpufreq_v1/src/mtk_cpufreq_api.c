@@ -166,6 +166,14 @@ void mt_cpufreq_update_cci_map_tbl(unsigned int idx_1, unsigned int idx_2,
 }
 EXPORT_SYMBOL(mt_cpufreq_update_cci_map_tbl);
 
+void mt_cpufreq_update_cci_mode(unsigned int mode, unsigned int use_id)
+{
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CCI_MAP_TBL_SUPPORT)
+	cpuhvfs_update_cci_mode(mode, use_id);
+#endif
+}
+EXPORT_SYMBOL(mt_cpufreq_update_cci_mode);
+
 cpuVoltsampler_func g_pCpuVoltSampler_met;
 cpuVoltsampler_func g_pCpuVoltSampler_ocp;
 void notify_cpu_volt_sampler(enum mt_cpu_dvfs_id id, unsigned int volt,

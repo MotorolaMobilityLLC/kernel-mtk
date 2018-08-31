@@ -915,16 +915,19 @@ void cpuhvfs_update_cci_map_tbl(unsigned int idx_1, unsigned int idx_2,
 	}
 }
 
+void cpuhvfs_update_cci_mode(unsigned int mode, unsigned int use_id)
+{
+	if (mode < NR_CCI_TBL) {
+		csram_write(OFFS_CCI_TBL_USER, use_id);
+		/* mode = 0(Normal as 50%) mode = 1(Perf as 70%) */
+		csram_write(OFFS_CCI_TBL_MODE, mode);
+		csram_write(OFFS_CCI_TOGGLE_BIT, 1);
+	}
+}
+
 unsigned int cpuhvfs_get_cci_mode(void)
 {
 	return csram_read(OFFS_CCI_TBL_MODE);
-}
-
-void cpuhvfs_update_cci_mode(unsigned int mode)
-{
-	/* mode = 0(Normal as 50%) mode = 1(Perf as 70%) */
-	csram_write(OFFS_CCI_TBL_MODE, mode);
-	csram_write(OFFS_CCI_TOGGLE_BIT, 1);
 }
 #endif
 
