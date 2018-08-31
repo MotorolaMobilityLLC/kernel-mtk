@@ -1491,10 +1491,13 @@ int check_disp_info(struct disp_layer_info *disp_info)
 		}
 
 		if ((disp_info->gles_head[disp_idx] < 0 && disp_info->gles_tail[disp_idx] >= 0) ||
-			(disp_info->gles_tail[disp_idx] < 0 && disp_info->gles_head[disp_idx] >= 0)) {
+			(!((disp_info->gles_head[disp_idx] >= -1) &&
+			(disp_info->gles_tail[disp_idx] >= disp_info->gles_head[disp_idx]) &&
+			(disp_info->gles_tail[disp_idx] < disp_info->layer_num[disp_idx])))) {
 			dump_disp_info(disp_info, DISP_DEBUG_LEVEL_ERR);
-			DISPERR("[HRT]gles layer invalid, disp_idx:%d, head:%d, tail:%d\n",
-				disp_idx, disp_info->gles_head[disp_idx], disp_info->gles_tail[disp_idx]);
+			DISPERR("[HRT]gles layer invalid, disp_idx:%d, head:%d, tail:%d, layer_num:%d\n",
+				disp_idx, disp_info->gles_head[disp_idx], disp_info->gles_tail[disp_idx],
+				disp_info->layer_num[disp_idx]);
 			return -1;
 		}
 	}
