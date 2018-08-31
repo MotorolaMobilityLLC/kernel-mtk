@@ -2640,7 +2640,7 @@ static const struct file_operations msdc_help_fops = {
 
 static int msdc_sdcard_intr_gpio_value_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%d\n", __gpio_get_value(cd_gpio) ? 0 : 1);
+	seq_printf(m, "%d\n", gpio_get_value(cd_gpio) ? 0 : 1);
 	return 0;
 }
 
