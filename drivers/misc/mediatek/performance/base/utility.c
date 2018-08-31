@@ -85,6 +85,7 @@ static inline void __mt_update_tracing_mark_write_addr(void)
 			kallsyms_lookup_name("tracing_mark_write");
 }
 
+#ifdef CONFIG_MTK_BASE_POWER
 void perfmgr_trace_count(int val, const char *fmt, ...)
 {
 	char log[32];
@@ -113,6 +114,7 @@ void perfmgr_trace_count(int val, const char *fmt, ...)
 
 	preempt_enable();
 }
+#endif
 
 void perfmgr_trace_printk(char *module, char *string)
 {
