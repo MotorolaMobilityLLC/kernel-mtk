@@ -21,6 +21,7 @@
 #include <linux/sched.h>
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
+#include <linux/of.h>
 
 #include "governor.h"
 
@@ -425,6 +426,7 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct resource *res;
+	struct device_node *np = pdev->dev.of_node;
 
 	dvfsrc = devm_kzalloc(&pdev->dev, sizeof(*dvfsrc), GFP_KERNEL);
 	if (!dvfsrc)
@@ -457,6 +459,10 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 	pm_qos_notifier_register();
 
 	helio_dvfsrc_common_init();
+
+	if (of_property_read_u32(np, "dvfsrc_flag",
+		(u32 *) &dvfsrc->dvfsrc_flag))
+		dvfsrc->dvfsrc_flag = 0;
 
 	helio_dvfsrc_platform_init(dvfsrc);
 
