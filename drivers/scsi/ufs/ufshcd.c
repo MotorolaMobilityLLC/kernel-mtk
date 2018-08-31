@@ -1545,13 +1545,12 @@ static void ufshcd_prepare_req_desc_hdr(struct ufs_hba *hba,
 		dword_0 = data_direction | (lrbp->command_type
 				<< UPIU_COMMAND_TYPE_OFFSET);
 
-#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
 	if (lrbp->crypto_en) {
 		/* crypto enable */
 		dword_0 |= (1 << UPIU_COMMAND_CRYPTO_EN_OFFSET);
 		dword_0 |= lrbp->crypto_cfgid;
 	}
-#endif
+
 	if (lrbp->intr_cmd)
 		dword_0 |= UTP_REQ_DESC_INT_CMD;
 
@@ -1559,11 +1558,9 @@ static void ufshcd_prepare_req_desc_hdr(struct ufs_hba *hba,
 	req_desc->header.dword_0 = cpu_to_le32(dword_0);
 
 	/* MTK PATCH: dword_1 is not reserved if crypto_en  */
-#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
 	if (lrbp->crypto_en)
 		req_desc->header.dword_1 = cpu_to_le32(lrbp->crypto_dunl);
 	else
-#endif
 		req_desc->header.dword_1 = 0;
 	/*
 	 * assigning invalid value for command status. Controller
@@ -1574,11 +1571,9 @@ static void ufshcd_prepare_req_desc_hdr(struct ufs_hba *hba,
 		cpu_to_le32(OCS_INVALID_COMMAND_STATUS);
 
 	/* MTK PATCH: dword_3 is not reserved if crypto_en */
-#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
 	if (lrbp->crypto_en)
 		req_desc->header.dword_3 = cpu_to_le32(lrbp->crypto_dunu);
 	else
-#endif
 		req_desc->header.dword_3 = 0;
 
 	req_desc->prd_table_length = 0;
@@ -1733,9 +1728,9 @@ static int ufshcd_comp_scsi_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 						lrbp->cmd->sc_data_direction);
 		ufshcd_prepare_utp_scsi_cmd_upiu(lrbp, upiu_flags);
 #if defined(CONFIG_UFSHPB)
-			if (hba->ufshpb_state == HPB_PRESENT
-			    && hba->issue_ioctl == false)
-				ufshpb_prep_fn(hba, lrbp);
+		if (hba->ufshpb_state == HPB_PRESENT
+			&& hba->issue_ioctl == false)
+			ufshpb_prep_fn(hba, lrbp);
 #endif
 	} else {
 		ret = -EINVAL;

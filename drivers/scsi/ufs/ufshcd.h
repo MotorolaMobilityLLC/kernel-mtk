@@ -184,12 +184,11 @@ struct ufshcd_lrb {
 	ktime_t issue_time_stamp;
 	ktime_t complete_time_stamp;
 	bool req_abort_skip;
-#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
+
 	u32 crypto_en;
 	u32 crypto_cfgid;
 	u32 crypto_dunl;
 	u32 crypto_dunu;
-#endif
 };
 
 /**
