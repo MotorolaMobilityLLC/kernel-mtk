@@ -4967,8 +4967,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 			rq->rd->overutilized = true;
 
 			/* Little.cpu */
-			if (capacity_orig_of(cpu_of(rq)) <
-					(rq->rd->max_cpu_capacity.val)) {
+			if (sched_feat(SCHED_MTK_EAS) &&
+				(capacity_orig_of(cpu_of(rq)) <
+					rq->rd->max_cpu_capacity.val)) {
 				system_overutil = true;
 				trace_sched_system_overutilized(true);
 			}
@@ -7678,24 +7679,8 @@ SELECT_TASK_RQ_FAIR(struct task_struct *p, int prev_cpu,
 	}
 
 	if (!sd) {
-		if (sd_flag & SD_BALANCE_WAKE) { /* XXX always ? */
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-			bool prefer_idle = schedtune_prefer_idle(p) > 0;
-#else
-			bool prefer_idle = true;
-#endif
-			int idle_cpu;
-
-			idle_cpu = find_best_idle_cpu(p, prefer_idle);
-			if (idle_cpu >= 0)
-				new_cpu = idle_cpu;
-			else
-				new_cpu = select_max_spare_capacity(p, new_cpu);
-
-			if (false)
-			new_cpu = select_idle_sibling(p, prev_cpu, new_cpu);
-		}
-
+		if (sd_flag & SD_BALANCE_WAKE) /* XXX always ? */
+			new_cpu = __select_idle_sibling(p, prev_cpu, new_cpu);
 	} else {
 		new_cpu = find_idlest_cpu(sd, p, cpu, prev_cpu, sd_flag);
 	}
@@ -9142,14 +9127,10 @@ static inline void update_cpu_stats_if_tickless(struct rq *rq) { }
 static inline void update_sg_lb_stats(struct lb_env *env,
 			struct sched_group *group, int load_idx,
 			int local_group, struct sg_lb_stats *sgs,
-			bool *overload, bool *overutilized,
-			bool *intra_overutil)
+			bool *overload, bool *overutilized)
 {
 	unsigned long load;
 	int i, nr_running;
-	unsigned long max_capacity;
-
-	max_capacity = cpu_rq(smp_processor_id())->rd->max_cpu_capacity.val;
 
 	memset(sgs, 0, sizeof(*sgs));
 
@@ -9191,29 +9172,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 			sgs->idle_cpus++;
 
 		if (cpu_overutilized(i)) {
-			if (capacity_orig_of(i) < max_capacity)
-				*intra_overutil = true;
-
 			*overutilized = true;
 			if (!sgs->group_misfit_task && rq->misfit_task)
 				sgs->group_misfit_task = capacity_of(i);
 		}
-	}
-
-	/*
-	 * A capacity base hint for over-utilization.
-	 * Not to trigger system overutiled if heavy tasks in Big.cluster, so
-	 * add the free room(20%) of Big.cluster is impacted which means
-	 * system-wide over-utilization,
-	 * that considers whole cluster not single cpu
-	 */
-	if (group->group_weight > 1) {
-		bool overutiled;
-
-		overutiled = (group->sgc->capacity * 1024) < (sgs->group_util * 1280);
-
-		if (overutiled)
-			*intra_overutil = true;
 	}
 
 	/* Isolated CPU has no weight */
@@ -9360,8 +9322,6 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 	struct sg_lb_stats tmp_sgs;
 	int load_idx, prefer_sibling = 0;
 	bool overload = false, overutilized = false;
-	bool intra_overutil = false;
-	bool tmp_sys_overutil = false;
 	unsigned long sys_util = 0;
 	unsigned long sys_cap = 0;
 
@@ -9385,18 +9345,12 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 		}
 
 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
-				&overload, &overutilized, &intra_overutil);
+				&overload, &overutilized);
 
 		if (sg->group_weight > 1) {
 			sys_util += sgs->group_util;
 			sys_cap += sg->sgc->capacity;
 		}
-
-		/* if a overutil occurs in cluster, that means a
-		 * system-wide hint needed.
-		 */
-		if (intra_overutil)
-			tmp_sys_overutil = true;
 
 		if (local_group)
 			goto next_group;
@@ -9454,12 +9408,6 @@ next_group:
 		if (env->dst_rq->rd->overutilized != overutilized) {
 			env->dst_rq->rd->overutilized = overutilized;
 			trace_sched_overutilized(overutilized);
-		}
-
-		/* Update system-wide over-utilization indicator */
-		if (system_overutil != tmp_sys_overutil) {
-			system_overutil = tmp_sys_overutil;
-			trace_sched_system_overutilized(system_overutil);
 		}
 
 		update_sched_hint(sys_util, sys_cap);
@@ -9686,6 +9634,9 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
 		return fix_small_imbalance(env, sds);
 }
 
+static void
+update_system_overutilized(struct lb_env *env, struct sd_lb_stats *sds);
+
 /******* find_busiest_group() helpers end here *********************/
 
 /**
@@ -9713,6 +9664,8 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	 * this level.
 	 */
 	update_sd_lb_stats(env, &sds);
+
+	update_system_overutilized(env, &sds);
 
 	if (sds.busiest) {
 		busiest_cpumask = sched_group_cpus(sds.busiest);
@@ -11072,10 +11025,8 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
 		rq->rd->overutilized = true;
 
 		/* Little.cpu */
-		if (capacity_orig_of(cpu_of(rq)) <
-				(rq->rd->max_cpu_capacity.val)) {
-
-
+		if (sched_feat(SCHED_MTK_EAS) &&
+		(capacity_orig_of(cpu_of(rq)) < rq->rd->max_cpu_capacity.val)) {
 			system_overutil = true;
 			trace_sched_system_overutilized(true);
 		}

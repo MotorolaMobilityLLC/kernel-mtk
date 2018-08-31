@@ -93,6 +93,8 @@ SCHED_FEAT(SCHED_HMP, true)
 #else
 SCHED_FEAT(SCHED_HMP, false)
 #endif
+
+SCHED_FEAT(SCHED_MTK_EAS, true)
 /*
  * Minimum capacity capping. Keep track of minimum capacity factor when
  * minimum frequency available to a policy is modified.
