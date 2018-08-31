@@ -778,7 +778,6 @@ int cm_mgr_platform_init(void)
 	return r;
 }
 
-#if 1
 /* no 1600 */
 int phy_to_virt_dram_opp[] = {
 	0x0, 0x1, 0x2, 0x3, 0x3, 0x4
@@ -786,15 +785,6 @@ int phy_to_virt_dram_opp[] = {
 int virt_to_phy_dram_level[] = {
 	0x0, 0x1, 0x3, 0x4, 0x5
 };
-#else
-/* no 1200 */
-int phy_to_virt_dram_opp[] = {
-	0x0, 0x1, 0x2, 0x3, 0x4, 0x4
-};
-int virt_to_phy_dram_level[] = {
-	0x0, 0x12, 0x3, 0x4, 0x5
-};
-#endif
 
 void cm_mgr_set_dram_level(int level)
 {
@@ -809,7 +799,7 @@ int cm_mgr_get_dram_opp(void)
 	int dram_opp_cur;
 
 	dram_opp_cur = get_cur_ddr_opp();
-	if (dram_opp_cur < 0 || dram_opp_cur > CM_MGR_EMI_OPP)
+	if (dram_opp_cur < 0 || dram_opp_cur > (CM_MGR_EMI_OPP + 1))
 		dram_opp_cur = 0;
 
 	return phy_to_virt_dram_opp[dram_opp_cur];
