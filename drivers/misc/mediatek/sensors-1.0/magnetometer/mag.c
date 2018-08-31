@@ -709,6 +709,27 @@ int mag_bias_report(struct mag_data *data)
 	return err;
 }
 
+int mag_cali_report(int32_t *param)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	event.flush_action = CALI_ACTION;
+	event.word[0] = param[0];
+	event.word[1] = param[1];
+	event.word[2] = param[2];
+	event.word[3] = param[3];
+	event.word[4] = param[4];
+	event.word[5] = param[5];
+
+	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
+	if (err < 0)
+		pr_err_ratelimited("failed due to event buffer full\n");
+	return err;
+}
+
 int mag_flush_report(void)
 {
 	struct sensor_event event;
@@ -721,6 +742,20 @@ int mag_flush_report(void)
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
 		pr_err_ratelimited("failed due to event buffer full\n");
+	return err;
+}
+int mag_info_record(struct mag_libinfo_t *p_mag_info)
+{
+	struct mag_context *cxt = NULL;
+	int err = 0;
+
+	cxt = mag_context_obj;
+
+	memcpy(cxt->mag_ctl.libinfo.libname,
+		p_mag_info->libname, sizeof(cxt->mag_ctl.libinfo.libname));
+	cxt->mag_ctl.libinfo.layout = p_mag_info->layout;
+	cxt->mag_ctl.libinfo.deviceid = p_mag_info->deviceid;
+
 	return err;
 }
 static int mag_probe(void)
