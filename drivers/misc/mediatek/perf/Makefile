@@ -23,5 +23,5 @@ ccflags-y += -I$(srctree)/drivers/devfreq/
 #	-I$(srctree)/drivers/misc/mediatek/base/power/cpufreq_v1/inc \
 
 # a tracker for performance index
-obj-y += perf_tracker.o
+obj-$(CONFIG_MTK_PERF_TRACKER) += perf_tracker.o
 

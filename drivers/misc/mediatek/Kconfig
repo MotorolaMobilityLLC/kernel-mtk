@@ -384,6 +384,14 @@ config MTK_FPSGO
 	  endurance and gaming experience.
 	  If you are not sure about this, set n.
 
+config MTK_PERF_TRACKER
+	bool "MTK system performance index support"
+	help
+	  CONFIG_PERF_TRACKER define if system performance index should
+	  be built-in or not. It supports system related performance index
+	  via trace. If you are not sure about whether to enable it or not,
+	  please set n.
+
 endmenu  # PPT
 
 menu "Memory configs"
