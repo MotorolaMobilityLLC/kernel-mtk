@@ -757,6 +757,8 @@ int cm_mgr_get_dram_opp(void)
 	int dram_opp_cur;
 
 	dram_opp_cur = get_cur_ddr_opp();
+	if (dram_opp_cur < 0 || dram_opp_cur > CM_MGR_EMI_OPP)
+		dram_opp_cur = 0;
 
 	return dram_opp_cur;
 }
