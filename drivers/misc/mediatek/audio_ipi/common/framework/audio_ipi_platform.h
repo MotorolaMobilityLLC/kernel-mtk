@@ -23,6 +23,8 @@ enum opendsp_id {
 	NUM_OPENDSP_TYPE,
 	AUDIO_OPENDSP_ID_INVALID
 };
+unsigned int audio_ipi_check_scp_status(void);
+unsigned int get_audio_ipi_scp_location(void);
 
 
 bool audio_opendsp_ready(const uint8_t task);

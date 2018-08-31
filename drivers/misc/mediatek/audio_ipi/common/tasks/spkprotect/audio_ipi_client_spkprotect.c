@@ -35,8 +35,6 @@
 #include <linux/of_fdt.h>
 #include <linux/ioport.h>
 #include <linux/kthread.h>
-#include <linux/wakelock.h>
-
 
 #include <linux/io.h>
 
@@ -52,13 +50,6 @@
 
 
 #define DUMP_SMARTPA_PCM_DATA_PATH "/sdcard/mtklog/audio_dump"
-static struct wake_lock smartpa_pcm_dump_wake_lock;
-
-enum { /* dump_data_t */
-	DUMP_PCM_PRE = 0,
-	DUMP_IV_DATA = 1,
-	NUM_DUMP_DATA = 2,
-};
 
 
 struct dump_work_t {
@@ -122,7 +113,7 @@ void spkprotect_open_dump_file(void)
 	char path_decode_ivpcm[64];
 
 	/* only enable when debug pcm dump on */
-	wake_lock(&smartpa_pcm_dump_wake_lock);
+	/*wake_lock(&smartpa_pcm_dump_wake_lock);*/
 	getnstimeofday(&curr_tm);
 
 	memset(string_time, '\0', 16);
@@ -198,7 +189,7 @@ void spkprotect_close_dump_file(void)
 		filp_close(file_spk_pcm, NULL);
 		file_spk_pcm = NULL;
 	}
-	wake_unlock(&smartpa_pcm_dump_wake_lock);
+	/*wake_unlock(&smartpa_pcm_dump_wake_lock);*/
 }
 
 static void spk_dump_data_routine(struct work_struct *ws)
@@ -228,13 +219,13 @@ static void spk_dump_data_routine(struct work_struct *ws)
 
 static void spk_dump_ivdata_routine(struct work_struct *ws)
 {
-	dump_work_t *dump_work = NULL;
+	struct dump_work_t *dump_work = NULL;
 	uint32_t rw_idx = 0;
 	uint32_t data_size = 0;
 
 	unsigned long flags = 0;
 
-	dump_work = container_of(ws, dump_work_t, work);
+	dump_work = container_of(ws, struct dump_work_t, work);
 
 	rw_idx = dump_work->rw_idx;
 	data_size = dump_work->data_size;
@@ -392,8 +383,9 @@ static int spkprotect_dump_kthread(void *data)
 
 void audio_ipi_client_spkprotect_init(void)
 {
-	wake_lock_init(&smartpa_pcm_dump_wake_lock, WAKE_LOCK_SUSPEND,
-		       "smartpa_pcm_dump_wake_lock");
+	/*wake_lock_init(&smartpa_pcm_dump_wake_lock, WAKE_LOCK_SUSPEND,*/
+		       /*"smartpa_pcm_dump_wake_lock");*/
+
 	dump_workqueue[DUMP_PCM_PRE] = create_workqueue("dump_spkprotect_pcm");
 	if (dump_workqueue[DUMP_PCM_PRE] == NULL)
 		pr_notice("dump_workqueue[dump_spkprotect_pcm] = %p\n",

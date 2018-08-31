@@ -95,6 +95,10 @@ static struct snd_dma_buffer scp_voice_mddl_dma_buf;
 static struct snd_dma_buffer scp_voice_runtime_feedback_dma_buf;
 /* real time for IV feedback buffer */
 static struct snd_dma_buffer scp_voice_DL1Buffer;
+struct SPK_PROTECT_SERVICE {
+	bool ipiwait;
+	bool ipiresult;
+};
 
 static struct SPK_PROTECT_SERVICE scp_voice_protect_service;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
@@ -105,10 +109,7 @@ static int scp_voice_Irq_mode = Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE;
 static uint32_t scp_voice_ipi_payload_buf[VOICE_MAX_PARLOAD_SIZE];
 #endif
 
-struct SPK_PROTECT_SERVICE {
-	bool ipiwait;
-	bool ipiresult;
-};
+
 /*  function implementation */
 static int mtk_scp_voice_probe(struct platform_device *pdev);
 static int mtk_pcm_voice_scp_close(struct snd_pcm_substream *substream);
@@ -292,24 +293,28 @@ static int voice_scp_pcm_dump_set(struct snd_kcontrol *kcontrol,
 		scpvoice_pcmdump = true;
 		AudDrv_Emi_Clk_On();
 		spkprotect_open_dump_file();
-		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
+
+		/*spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
 					    AUDIO_IPI_MSG_BYPASS_ACK,
 					    SPK_PROTTCT_PCMDUMP_ON,
 					    p_scp_voice_resv_dram->size,
 					    scpvoice_pcmdump,
 					    p_scp_voice_resv_dram->phy_addr);
+		*/
 		scp_voice_protect_service.ipiwait = true;
 	} else if (scpvoice_pcmdump == true &&
 	    ucontrol->value.integer.value[0] == false) {
 		scpvoice_pcmdump = false;
 		scp_voice_service_ipicmd_wait(SPK_PROTECT_PCMDUMP_OK);
 		spkprotect_close_dump_file();
-		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
+
+		/*spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
 					    AUDIO_IPI_MSG_BYPASS_ACK,
 					    SPK_PROTTCT_PCMDUMP_OFF,
 					    p_scp_voice_resv_dram->size,
 					    scpvoice_pcmdump,
 					    p_scp_voice_resv_dram->phy_addr);
+		 */
 		AudDrv_Emi_Clk_Off();
 	}
 	return 0;
@@ -713,7 +718,6 @@ static int mtk_pcm_scp_voice_open(struct snd_pcm_substream *substream)
 
 	scp_reset_check();
 
-	p_scp_voice_resv_dram = get_reserved_dram();
 	runtime->hw = mtk_scp_voice_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_scp_voice_hardware,
 	       sizeof(struct snd_pcm_hardware));

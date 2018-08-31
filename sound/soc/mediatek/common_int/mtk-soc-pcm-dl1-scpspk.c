@@ -662,7 +662,6 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 	pdl1spkMemControl = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL1);
 	scp_reset_check();
 
-	p_resv_dram = get_reserved_dram();
 
 	pr_debug("%s(), mtk_dl1spk_hardware.buffer_bytes_max = %zu mspkPlaybackDramState = %d\n",
 		 __func__, mtk_dl1spk_hardware.buffer_bytes_max,
