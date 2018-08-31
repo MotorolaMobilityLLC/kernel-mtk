@@ -1659,10 +1659,11 @@ static void reg_pdev_drv(const char *pdname, struct seq_file *s)
 		if (!allpd && strcmp(pdname, pd->name) != 0)
 			continue;
 
-		pderv[i].genpd = pd;
-
 		pderv[i].pdev = platform_device_alloc(name, 0);
-		platform_device_add(pderv[i].pdev);
+		if (platform_device_add(pderv[i].pdev) != 0)
+			continue;
+
+		pderv[i].genpd = pd;
 
 		pm_genpd_add_device(pd, &pderv[i].pdev->dev);
 		platform_driver_register(&pderv[i].pdrv);
