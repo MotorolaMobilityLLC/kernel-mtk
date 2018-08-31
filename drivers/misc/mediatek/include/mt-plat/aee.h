@@ -114,6 +114,10 @@ struct aee_user_thread_maps {
 extern int printk_disable_uart;
 #endif
 
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+extern char *mtk8250_uart_dump(void);
+#endif
+
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_hang_detect_timeout_count(unsigned int timeout);
 #endif
