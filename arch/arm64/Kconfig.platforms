@@ -225,6 +225,7 @@ config MACH_MT6779
 	select PINCTRL
 	select PINCTRL_MT6779
 	select MFD_SYSCON
+	select MTK_BASE_POWER
 	select CPU_IDLE
 	select MTK_GIC_V3_EXT
 	select MTK_SYSIRQ
