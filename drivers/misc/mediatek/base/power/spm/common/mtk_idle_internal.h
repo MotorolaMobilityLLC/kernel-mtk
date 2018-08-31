@@ -73,8 +73,6 @@ enum _MTK_IDLE_PLAT_STATUS_ {
 	MTK_IDLE_PLAT_READY
 };
 
-#define MTK_OF_PROPERTY_STATUS_FOUND	(1<<0U)
-#define MTK_OF_PROPERTY_VALUE_FOUND		(1<<1U)
 
 /*mtk idle initial data*/
 struct mtk_idle_init_data {
@@ -108,7 +106,7 @@ struct mtk_idle_init_data {
 #define MTK_IDLE_FEATURE_DTS_STATE_CHECK(_f, _s, _d) {\
 	if (_s & MTK_OF_PROPERTY_STATUS_FOUND) {\
 		_d.dts_state |= (1<<_f);\
-		if (_s & MTK_OF_PROPERTY_VALUE_FOUND)\
+		if (_s & MTK_OF_PROPERTY_VALUE_ENABLE)\
 			_d.dts_value |= (1<<_f);\
 		else\
 			_d.dts_value &= ~(1<<_f);\

@@ -29,6 +29,7 @@
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
 #include <mtk_mcdi_api.h>
 
+#include <mtk_lp_dts.h>
 static DEFINE_SPINLOCK(slp_lock);
 
 unsigned long slp_dp_cnt[NR_CPUS] = {0};
@@ -368,8 +369,26 @@ void slp_module_init(void)
 {
 	struct mtk_idle_sysfs_handle pParent2ND;
 	struct mtk_idle_sysfs_handle *pParent = NULL;
+	struct device_node *idle_node = NULL;
 
-	slp_suspend_ops_valid_on = spm_is_enable_sleep();
+	/* Get dts of cpu's idle-state*/
+	idle_node = GET_MTK_IDLE_STATES_DTS_NODE();
+
+	if (idle_node) {
+		int state = 0;
+
+		/* Get dts of SUSPEDN*/
+		state = GET_MTK_OF_PROPERTY_STATUS_SUSPEND(idle_node);
+		if (state & MTK_OF_PROPERTY_STATUS_FOUND) {
+			if (state & MTK_OF_PROPERTY_VALUE_ENABLE)
+				slp_suspend_ops_valid_on = true;
+			else
+				slp_suspend_ops_valid_on = false;
+		} else
+			slp_suspend_ops_valid_on = spm_is_enable_sleep();
+
+		of_node_put(idle_node);
+	}
 
 	mtk_idle_sysfs_entry_create();
 	if (mtk_idle_sysfs_entry_root_get(&pParent) == 0) {
