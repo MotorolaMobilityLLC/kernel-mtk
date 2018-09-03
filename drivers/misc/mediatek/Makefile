@@ -20,13 +20,13 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
+
 obj-$(CONFIG_MTK_EMI) += emi/
+obj-$(CONFIG_MTK_EMI_MPU) += emi_mpu/
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
 obj-$(CONFIG_MTK_BASE_POWER) += base/
 
-
 obj-$(CONFIG_MTK_ACCDET) += accdet/
-obj-$(CONFIG_MTK_BASE_POWER) += base/
 obj-$(CONFIG_MEDIATEK_SOLUTION) += sched/
 obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MMC_MTK_SDIO) += mtk_sdio/
@@ -49,6 +49,7 @@ obj-$(CONFIG_MTK_MT6306_GPIO_SUPPORT) += gpio/
 obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
 obj-$(CONFIG_MTPROF)	+= mtprof/
 obj-$(CONFIG_MTK_PMIC_WRAP_HAL) += pmic_wrap/
+obj-$(CONFIG_MTK_USBFSH) += usb11/
 obj-$(CONFIG_USB_MTK_HDRC) += usb20/
 obj-$(CONFIG_MTK_ECCCI_C2K) += c2k_usb/
 obj-$(CONFIG_MTK_LEDS)	+= leds/
@@ -56,9 +57,7 @@ obj-$(CONFIG_MTK_BOOT) += boot/
 obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 obj-$(CONFIG_MTK_CHIP) += chip/
 obj-$(CONFIG_MTK_SELINUX_AEE_WARNING)	+= selinux_warning/
-ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 obj-y += power/
-endif
 obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
 obj-$(CONFIG_MTK_AUDIODSP_SUPPORT) += adsp/
 obj-$(CONFIG_MTK_AUDIODSP_SUPPORT) += audio_ipi/
@@ -90,6 +89,7 @@ obj-$(CONFIG_TRUSTY) += gcpu/
 endif
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
 obj-$(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM) += trusted_mem/
+obj-$(CONFIG_MTK_GZ_KREE) += geniezone/
 obj-y += sspm/
 obj-$(CONFIG_MMPROFILE) += mmp/
 obj-$(CONFIG_MTK_M4U)	+= m4u/
@@ -103,7 +103,6 @@ obj-$(CONFIG_MTK_RTC)	+= rtc/
 obj-y += mtprintk/
 obj-$(CONFIG_MTK_XO)	+= xo/
 obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/
-obj-$(CONFIG_WATCHDATA_TEE_SUPPORT) += watchtrust/
 obj-$(CONFIG_MTK_RAM_CONSOLE) += ram_console/
 obj-$(CONFIG_MTK_DRAM_LOG_STORE)    += log_store/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
@@ -149,7 +148,7 @@ obj-$(CONFIG_MTK_USB2JTAG_SUPPORT) += usb2jtag/
 obj-$(CONFIG_MTK_WATCHPOINT) += watchpoint/
 
 obj-$(CONFIG_TRUSTKERNEL_TEE_SUPPORT) += tkcore/
+obj-$(CONFIG_MTK_PERF_TRACKER) += perf/
 
 #io boost
 obj-y += io_boost/
-

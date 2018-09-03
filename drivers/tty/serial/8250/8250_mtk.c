@@ -78,6 +78,10 @@
 #define MTK_UART_TX_TRIGGER	1
 #define MTK_UART_RX_TRIGGER	MTK_UART_RX_SIZE
 
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+char uart_write_statbuf[256];
+#endif
+
 #ifdef CONFIG_SERIAL_8250_DMA
 enum dma_rx_status {
 	DMA_RX_START = 0,
@@ -489,6 +493,36 @@ mtk8250_do_pm(struct uart_port *port, unsigned int state, unsigned int old)
 static bool mtk8250_dma_filter(struct dma_chan *chan, void *param)
 {
 	return false;
+}
+#endif
+
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+char *mtk8250_uart_dump(void)
+{
+	u32 high_speed = 0, dll = 0, dlh = 0, line = 0;
+	u32 lcr = 0, count = 0, point = 0, guide = 0;
+	struct uart_8250_port *up = NULL;
+
+	for (line = 0; line < CONFIG_SERIAL_8250_NR_UARTS; line++) {
+		up = serial8250_get_port(line);
+		if (!uart_console(&up->port))
+			continue;
+		lcr = serial_in(up, UART_LCR);
+		serial_out(up, 0x27, 0x01);
+		high_speed = serial_in(up, MTK_UART_HIGHS);
+		count = serial_in(up, MTK_UART_SAMPLE_COUNT);
+		point = serial_in(up, MTK_UART_SAMPLE_POINT);
+		dll = serial_in(up, 0x24);
+		dlh = serial_in(up, 0x25);
+		guide = serial_in(up, MTK_UART_GUARD);
+		serial_out(up, 0x27, 0x00);
+	}
+	snprintf(uart_write_statbuf,
+		sizeof(uart_write_statbuf) - 1,
+	"high_speed = 0x%x, dll = 0x%x, dlh = 0x%x, lcr = 0x%x, count = 0x%x, point = 0x%x, guide = 0x%x",
+					high_speed, dll, dlh, lcr,
+					count, point, guide);
+	return uart_write_statbuf;
 }
 #endif
 

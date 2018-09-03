@@ -378,13 +378,13 @@ static int mtk_wdt_probe(struct platform_device *pdev)
 
 	pr_err("MTK_WDT_NONRST_REG(%x)\n", __raw_readl(mtk_wdt->wdt_base + WDT_NONRST_REG));
 
+#if 0
 	mtk_wdt->wdt_irq_id = irq_of_parse_and_map(pdev->dev.of_node, 0);
 	if (mtk_wdt->wdt_irq_id == 0) {
 		pr_err("RGU get IRQ ID failed\n");
 		return -ENODEV;
 	}
 
-#if 0
 	err = request_irq(mtk_wdt->wdt_irq_id, (irq_handler_t)mtk_wdt_isr, IRQF_TRIGGER_NONE, DRV_NAME, mtk_wdt);
 #endif
 

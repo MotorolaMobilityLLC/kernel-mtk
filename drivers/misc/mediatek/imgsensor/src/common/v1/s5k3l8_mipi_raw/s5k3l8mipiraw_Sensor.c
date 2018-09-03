@@ -99,7 +99,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width  = 4208,
-		.grabwindow_height = 3272,
+		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 21,
 		.mipi_pixel_rate = 435200000,
 		/*	 following for GetDefaultFramerateByScenario()	*/

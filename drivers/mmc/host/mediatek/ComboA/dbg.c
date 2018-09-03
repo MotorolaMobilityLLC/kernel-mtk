@@ -206,7 +206,7 @@ static void msdc_init_dma_latest_address(void)
 }
 #endif
 
-#ifndef CONFIG_MTK_MMC_DEBUG_DISABLE
+#ifdef CONFIG_MTK_MMC_DEBUG
 #define dbg_max_cnt (500)
 #define dbg_max_cnt_low_io (5000)
 #define criterion_low_io (10 * 1024) /* unit: KB/s */
@@ -529,25 +529,25 @@ EXPORT_SYMBOL(get_msdc_aee_buffer);
 #else
 inline void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 {
-	//pr_info("config MTK_MMC_DEBUGDISABLE =y: %s!\n",__func__);
+	//pr_info("config MTK_MMC_DEBUG is not set: %s!\n",__func__);
 }
 void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 	struct mmc_host *mmc, u32 latest_cnt)
 {
-	//pr_info("config MTK_MMC_DEBUGDISABLE =y: %s!\n",__func__);
+	//pr_info("config MTK_MMC_DEBUG is not set: %s!\n",__func__);
 }
 void msdc_dump_host_state(char **buff, unsigned long *size,
 		struct seq_file *m, struct msdc_host *host)
 {
-	//pr_info("config MTK_MMC_DEBUGDISABLE : %s!\n",__func__);
+	//pr_info("config MTK_MMC_DEBUG is not set: %s!\n",__func__);
 }
 static void msdc_proc_dump(struct seq_file *m, u32 id)
 {
-	//pr_info("config MTK_MMC_DEBUGDISABLE : %s!\n",__func__);
+	//pr_info("config MTK_MMC_DEBUG is not set : %s!\n",__func__);
 }
 void get_msdc_aee_buffer(unsigned long *vaddr, unsigned long *size)
 {
-	//pr_info("config MTK_MMC_DEBUGDISABLE : %s!\n",__func__);
+	//pr_info("config MTK_MMC_DEBUG is not set : %s!\n",__func__);
 }
 #endif
 
@@ -2583,7 +2583,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 	} else {
 		/* default dump info for aee */
 		seq_puts(m, "==== msdc debug info for aee ====\n");
-#ifdef CONFIG_MTK_MMC_DEBUG_DISABLE
+#ifndef CONFIG_MTK_MMC_DEBUG
 		seq_puts(m, "no debug info\n==== CONFIG_MTK_MMC_DEBUG_DISABLE=y ====\n");
 
 #endif
@@ -2640,7 +2640,7 @@ static const struct file_operations msdc_help_fops = {
 
 static int msdc_sdcard_intr_gpio_value_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%d\n", __gpio_get_value(cd_gpio) ? 0 : 1);
+	seq_printf(m, "%d\n", gpio_get_value(cd_gpio) ? 0 : 1);
 	return 0;
 }
 
@@ -2710,6 +2710,43 @@ static const struct file_operations fw_version_fops = {
 	.release = single_release,
 };
 
+static int msdc_ext_csd_show(struct seq_file *m, void *v)
+{
+#define EXT_CSD_STR_LEN 1025
+	struct msdc_host *host;
+	struct mmc_card *card;
+	u8 *ext_csd;
+	int err, i;
+
+	host = mtk_msdc_host[0];
+	card = host->mmc->card;
+	mmc_get_card(card);
+	err = mmc_get_ext_csd(card, &ext_csd);
+	mmc_put_card(card);
+	if (err) {
+		seq_puts(m, "mmc_get_ext_csd failed!\n");
+		return 0;
+	}
+	for (i = 0; i < 512; i++)
+		seq_printf(m, "%02x", ext_csd[i]);
+
+	seq_puts(m, "\n");
+	kfree(ext_csd);
+	return 0;
+
+}
+
+static int mmc_ext_csd_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, msdc_ext_csd_show, inode->i_private);
+}
+
+static const struct file_operations ext_csd_fops = {
+	.open = mmc_ext_csd_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
 static const char * const msdc_proc_list[] = {
 	"cid",
 	"life_time_est_typ_a",
@@ -2717,10 +2754,11 @@ static const char * const msdc_proc_list[] = {
 	"pre_eol_info",
 	"type",
 	"name",
-	"productname",
+	"product_name",
 	"size",
 	"manfid",
-	"fw_version"
+	"fw_version",
+	"ext_csd"
 };
 /*These two TYPES are requested by HUIWEI normalized project*/
 #define  EMMC_TYPE      0
@@ -2732,7 +2770,7 @@ static const char * const msdc_proc_list[] = {
 #define BOOTTYPE EMMC_TYPE
 #endif
 //static int boot_type = get_boot_type(); // 0 nand, 1 mmc, 2 ufs
-MSDC_PROC_SHOW(cid, "0x%08x%08x%08x%08x\n", card->raw_cid[0], card->raw_cid[1],
+MSDC_PROC_SHOW(cid, "%08x%08x%08x%08x\n", card->raw_cid[0], card->raw_cid[1],
 	card->raw_cid[2], card->raw_cid[3]);
 MSDC_PROC_SHOW(life_time_est_typ_a, "0x%02x\n",
 	card->ext_csd.device_life_time_est_typ_a);
@@ -2740,7 +2778,7 @@ MSDC_PROC_SHOW(life_time_est_typ_b, "0x%02x\n",
 	card->ext_csd.device_life_time_est_typ_b);
 MSDC_PROC_SHOW(pre_eol_info, "0x%02x\n", card->ext_csd.pre_eol_info);
 MSDC_PROC_SHOW(type, "%d\n", BOOTTYPE);
-MSDC_PROC_SHOW(productname, "%s\n", card->cid.prod_name);
+MSDC_PROC_SHOW(product_name, "%s\n", card->cid.prod_name);
 MSDC_PROC_SHOW(manfid, "0x%06x\n", card->cid.manfid);
 MSDC_PROC_SHOW(name, "%s\n", host->mmc->parent->driver->name);
 MSDC_PROC_SHOW(size, "%d\n", ((u32)card->ext_csd.raw_sectors[3]<<24)
@@ -2754,10 +2792,11 @@ static const struct file_operations *proc_fops_list[] = {
 	&pre_eol_info_fops,
 	&type_fops,
 	&name_fops,
-	&productname_fops,
+	&product_name_fops,
 	&size_fops,
 	&manfid_fops,
 	&fw_version_fops,
+	&ext_csd_fops,
 };
 
 #ifndef USER_BUILD_KERNEL

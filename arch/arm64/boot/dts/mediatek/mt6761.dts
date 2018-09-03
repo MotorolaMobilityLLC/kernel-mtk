@@ -248,10 +248,6 @@ maxcpus=8 firmware_class.path=/vendor/firmware loop.max_part=7";
 		};
 #endif
 
-#ifdef CONFIG_WATCHDATA_TEE_SUPPORT
-		#include "watchtrust.dtsi"
-#endif
-
 	};
 
 	/* Microtrust SW IRQ number 188(220) ~ 193(225) */
@@ -496,6 +492,11 @@ maxcpus=8 firmware_class.path=/vendor/firmware loop.max_part=7";
 	mobicore {
 		compatible = "trustonic,mobicore";
 		interrupts = <GIC_SPI 194 IRQ_TYPE_EDGE_RISING>;
+	};
+
+	tkcore {
+	    compatible = "trustkernel,tkcore";
+	    interrupts = <GIC_SPI 196 IRQ_TYPE_EDGE_RISING>;
 	};
 
 	timer {
@@ -2964,9 +2965,9 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		pe40_stop_battery_soc = <80>;
 
 		/* PE 4.0 cable impedance (mohm) */
-		pe40_r_cable_1a_lower = <530>;
-		pe40_r_cable_2a_lower = <390>;
-		pe40_r_cable_3a_lower = <252>;
+		pe40_r_cable_1a_lower = <553>;
+		pe40_r_cable_2a_lower = <415>;
+		pe40_r_cable_3a_lower = <275>;
 
 		/* dual charger */
 		chg1_ta_ac_charger_current = <1500000>;

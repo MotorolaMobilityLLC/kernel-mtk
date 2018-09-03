@@ -646,7 +646,7 @@ static void mmdvfs_hw_config_dump(struct mmdvfs_adaptor *self)
 
 	if (mapping == NULL) {
 		MMDVFSMSG(
-		"mmdvfs_hw_config_dump: mmdvfs_clk_hw_maps can't	be NULL");
+		"%s: mmdvfs_clk_hw_maps can't be NULL", __func__);
 		return;
 	}
 

@@ -245,14 +245,14 @@ uint32_t adsp_dump_pc(void)
  */
 void adsp_aee_last_reg(void)
 {
-	pr_debug("adsp_aee_last_reg\n");
+	pr_debug("%s\n", __func__);
 
 	adsp_A_aee_status.pc = readl(ADSP_A_WDT_DEBUG_PC_REG);
 	adsp_A_aee_status.sp = readl(ADSP_A_WDT_DEBUG_SP_REG);
 	adsp_A_aee_status.m2h = readl(ADSP_A_TO_HOST_REG);
 	adsp_A_aee_status.h2m = readl(ADSP_SWINT_REG);
 
-	pr_debug("adsp_aee_last_reg end\n");
+	pr_debug("%s end\n", __func__);
 }
 
 /*
@@ -293,7 +293,7 @@ static void adsp_prepare_aed(char *aed_str, struct adsp_aed_cfg *aed)
 	u8 *phy;
 	u32 log_size, phy_size;
 
-	pr_debug("adsp_prepare_aed\n");
+	pr_debug("%s\n", __func__);
 
 	detail = vmalloc(ADSP_AED_STR_LEN);
 	if (!detail)
@@ -315,7 +315,7 @@ static void adsp_prepare_aed(char *aed_str, struct adsp_aed_cfg *aed)
 	aed->phy_size = phy_size;
 	aed->detail = detail;
 
-	pr_debug("adsp_prepare_aed end\n");
+	pr_debug("%s end\n", __func__);
 }
 
 /*
@@ -339,7 +339,7 @@ static void adsp_prepare_aed_dump(char *aed_str, struct adsp_aed_cfg *aed,
 	u64 core_memaddr;
 	struct MemoryDump *pMemoryDump = NULL;
 
-	pr_debug("adsp_prepare_aed_dump:%s\n", aed_str);
+	pr_debug("%s:%s\n", __func__, aed_str);
 	adsp_aee_last_reg();
 
 	/* prepare adsp aee detail information */
@@ -402,7 +402,7 @@ static void adsp_prepare_aed_dump(char *aed_str, struct adsp_aed_cfg *aed,
 	aed->pMemoryDump = NULL;
 	aed->memory_dump_size = 0;
 
-	pr_debug("adsp_prepare_aed_dump end\n");
+	pr_debug("%s end\n", __func__);
 }
 
 /*
@@ -457,17 +457,9 @@ void adsp_aed(enum adsp_excep_id type, enum adsp_core_id id)
 	pr_debug("adsp_aed_title=%s", adsp_aed_title);
 
 	if (type != EXCEP_LOAD_FIRMWARE) {
-		if (is_adsp_ready(ADSP_A_ID) == 0) {
-			adsp_enable_clock();
-			adsp_set_top_mux(1, CLK_TOP_ADSPPLL_CK);
-		}
-
+		adsp_enable_dsp_clk(true);
 		adsp_prepare_aed_dump(adsp_aed_title, &aed, id);
-
-		if (is_adsp_ready(ADSP_A_ID) == 0) {
-			adsp_set_top_mux(0, CLK_TOP_ADSPPLL_CK);
-			adsp_disable_clock();
-		}
+		adsp_enable_dsp_clk(false);
 	}
 	/*print detail info. in kernel*/
 	pr_debug("%s", aed.detail);
@@ -488,7 +480,7 @@ void adsp_aed(enum adsp_excep_id type, enum adsp_core_id id)
  */
 void adsp_aed_reset_inplace(enum adsp_excep_id type, enum adsp_core_id id)
 {
-	pr_debug("[ADSP]adsp_aed_reset_inplace\n");
+	pr_debug("[ADSP]%s\n", __func__);
 	adsp_aed(type, id);
 #ifndef CFG_RECOVERY_SUPPORT
 	/* workaround for QA, not reset ADSP in WDT */
@@ -515,8 +507,8 @@ static void adsp_aed_reset_ws(struct work_struct *ws)
 	enum adsp_excep_id type = (enum adsp_excep_id) sws->flags;
 	enum adsp_core_id id = (enum adsp_core_id) sws->id;
 
-	pr_debug("[ADSP]adsp_aed_reset_ws: adsp_excep_id=%u adsp_core_id=%u\n",
-		type, id);
+	pr_debug("[ADSP]%s: adsp_excep_id=%u adsp_core_id=%u\n",
+		__func__, type, id);
 	adsp_aed_reset_inplace(type, id);
 }
 
@@ -577,9 +569,7 @@ struct bin_attribute bin_attr_adsp_trax = {
 };
 #endif
 
-static ssize_t adsp_A_dump_show(struct file *filep, struct kobject *kobj,
-				struct bin_attribute *attr,
-				char *buf, loff_t offset, size_t size)
+static ssize_t adsp_A_ramdump(char *buf, loff_t offset, size_t size)
 {
 	unsigned int length = 0, sys_memsize = 0, core_memsize = 0;
 	unsigned int threshold1 = 0, threshold2 = 0, threshold3 = 0;
@@ -599,10 +589,7 @@ static ssize_t adsp_A_dump_show(struct file *filep, struct kobject *kobj,
 	mutex_lock(&adsp_A_excep_dump_mutex);
 
 	/* IF ADSP in suspend enable clk to dump*/
-	if (is_adsp_ready(ADSP_A_ID) == 0) {
-		adsp_enable_clock();
-		adsp_set_top_mux(1, CLK_TOP_ADSPPLL_CK);
-	}
+	adsp_enable_dsp_clk(true);
 	/* CRASH_MEMORY_HEADER_SIZE + ADSP_A_TCM_SIZE + CRASH_REG_SIZE */
 	if (offset >= 0 && offset < threshold1) {
 		if ((offset + size) > threshold1)
@@ -684,14 +671,32 @@ static ssize_t adsp_A_dump_show(struct file *filep, struct kobject *kobj,
 		memcpy(buf, ADSP_A_SYS_DRAM + 0x700000  + offset, size);
 		length = size;
 	}
-
-	if (is_adsp_ready(ADSP_A_ID) == 0) {
-		adsp_set_top_mux(0, CLK_TOP_ADSPPLL_CK);
-		adsp_disable_clock();
-	}
+	adsp_enable_dsp_clk(false);
 	mutex_unlock(&adsp_A_excep_dump_mutex);
 
 	return length;
+}
+
+static ssize_t adsp_A_dump_show(struct file *filep, struct kobject *kobj,
+				struct bin_attribute *attr,
+				char *buf, loff_t offset, size_t size)
+{
+	return adsp_A_ramdump(buf, offset, size);
+}
+
+static ssize_t adsp_A_dump_ke_show(struct file *filep, struct kobject *kobj,
+				struct bin_attribute *attr,
+				char *buf, loff_t offset, size_t size)
+{
+	struct MemoryDump *pMemoryDump;
+
+	pMemoryDump = (struct MemoryDump *)adsp_A_dump_buffer;
+	adsp_enable_dsp_clk(true);
+	memset(pMemoryDump, 0x0, sizeof(*pMemoryDump));
+	adsp_A_dump_length = adsp_crash_dump(pMemoryDump, ADSP_A_ID);
+	adsp_enable_dsp_clk(false);
+
+	return adsp_A_ramdump(buf, offset, size);
 }
 
 struct bin_attribute bin_attr_adsp_dump = {
@@ -701,6 +706,15 @@ struct bin_attribute bin_attr_adsp_dump = {
 	},
 	.size = 0,
 	.read = adsp_A_dump_show,
+};
+
+struct bin_attribute bin_attr_adsp_dump_ke = {
+	.attr = {
+		.name = "adsp_dump_ke",
+		.mode = 0444,
+	},
+	.size = 0,
+	.read = adsp_A_dump_ke_show,
 };
 
 /*
@@ -746,7 +760,7 @@ void adsp_ram_dump_init(void)
 			      adsp_A_ram_dump_ipi_handler,
 			      "A_ramdp");
 
-	pr_debug("[ADSP] ram_dump_init() done\n");
+	pr_debug("[ADSP] %s done\n", __func__);
 }
 
 /*
@@ -760,5 +774,5 @@ void adsp_excep_cleanup(void)
 
 	adsp_A_task_context_addr = 0;
 
-	pr_debug("[ADSP] adsp_excep_cleanup() done\n");
+	pr_debug("[ADSP] %s done\n", __func__);
 }

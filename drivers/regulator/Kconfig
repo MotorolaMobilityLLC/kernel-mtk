@@ -720,6 +720,15 @@ config REGULATOR_SKY81452
 	  This driver can also be built as a module. If so, the module
 	  will be called sky81452-regulator.
 
+config REGULATOR_SYM827
+	tristate "Silergy SYM827 regulator"
+	depends on I2C
+	help
+	  Say y here to support for the Silergy SYM827.
+	  The SYM827 is a high efficiency synchronous step down
+	  converter 6A DC-DC Buck controlled through an I2C
+	  interface.
+
 config REGULATOR_TI_ABB
 	tristate "TI Adaptive Body Bias on-chip LDO"
 	depends on ARCH_OMAP

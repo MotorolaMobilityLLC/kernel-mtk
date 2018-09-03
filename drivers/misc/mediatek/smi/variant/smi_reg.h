@@ -190,11 +190,11 @@ extern struct mtk_smi_data *smi_data;
 #define F_INT_L2_MISS_FIFO_ERR              F_BIT_SET(6)
 
 #define REG_MMU_INT_MAIN_CONTROL    0x124
-#define F_INT_TRANSLATION_FAULT(MMU) \
+#define F_INT_TRANS_F(MMU) \
 	F_BIT_SET(0+(((MMU)<<1)|((MMU)<<2)))
 #define F_INT_MAIN_MULTI_HIT_FAULT(MMU) \
 	F_BIT_SET(1+(((MMU)<<1)|((MMU)<<2)))
-#define F_INT_INVALID_PHYSICAL_ADDRESS_FAULT(MMU) \
+#define F_INT_INVALID_PA_F(MMU) \
 	F_BIT_SET(2+(((MMU)<<1)|((MMU)<<2)))
 #define F_INT_ENTRY_REPLACEMENT_FAULT(MMU) \
 	F_BIT_SET(3+(((MMU)<<1)|((MMU)<<2)))

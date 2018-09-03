@@ -12,4 +12,7 @@
 #
 
 $(info build trng...)
-obj-$(CONFIG_MTK_ENG_BUILD) += trng.o
+ifeq ($(CONFIG_MTK_ENG_BUILD),y)
+ccflags-y += -DTRNG_DUMP
+endif
+obj-y += trng.o

@@ -1483,8 +1483,10 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx,
 		 * MD data link may be not ready.
 		 * carrirer on it in ccmni_open
 		 */
-		if (IS_CCMNI_LAN(ccmni->dev))
+		if (IS_CCMNI_LAN(ccmni->dev)) {
+			netif_tx_start_all_queues(ccmni->dev);
 			netif_carrier_on(ccmni->dev);
+		}
 
 		for (i = 0; i < 2; i++) {
 			ccmni->tx_seq_num[i] = 0;
@@ -1500,6 +1502,7 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx,
 	case EXCEPTION:
 	case RESET:
 	case WAITING_TO_STOP:
+		netif_tx_disable(ccmni->dev);
 		netif_carrier_off(ccmni->dev);
 		break;
 	default:

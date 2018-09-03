@@ -142,6 +142,17 @@ config COMMON_CLK_MT6761
 	  instead of old clkmgr architecture.
 	  MT6761 default will use CCF.
 
+config COMMON_CLK_MT6779
+	bool "Clock driver for Mediatek MT6779"
+	depends on COMMON_CLK
+	select COMMON_CLK_MEDIATEK
+	default y if MACH_MT6779
+	---help---
+	  This driver supports Mediatek MT6779 clocks.
+	  Use the config to support CCF on MT6779,
+	  instead of old clkmgr architecture.
+	  MT6779 default will use CCF.
+
 config COMMON_CLK_MT8135
 	bool "Clock driver for Mediatek MT8135"
 	depends on ARCH_MEDIATEK || COMPILE_TEST

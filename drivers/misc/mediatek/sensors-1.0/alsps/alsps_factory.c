@@ -42,6 +42,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 	int data = 0;
 	uint32_t enable = 0;
 	int threshold_data[2] = {0, 0};
+	int als_cali = 0;
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg,
@@ -136,6 +137,21 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd,
 			}
 		} else {
 			pr_err("ALSPS_ALS_ENABLE_CALI NULL\n");
+			return -EINVAL;
+		}
+		return 0;
+	case ALSPS_ALS_SET_CALI:
+		if (copy_from_user(&als_cali, ptr, sizeof(als_cali)))
+			return -EFAULT;
+		if (alsps_factory.fops != NULL &&
+		    alsps_factory.fops->als_set_cali != NULL) {
+			err = alsps_factory.fops->als_set_cali(als_cali);
+			if (err < 0) {
+				pr_err("ALSPS_ALS_SET_CALI FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			pr_err("ALSPS_ALS_SET_CALI NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -312,6 +328,7 @@ static long alsps_factory_compat_ioctl(struct file *file,
 	case COMPAT_ALSPS_IOCTL_CLR_CALI:
 	case COMPAT_ALSPS_ALS_ENABLE_CALI:
 	case COMPAT_ALSPS_PS_ENABLE_CALI:
+	case COMPAT_ALSPS_IOCTL_ALS_SET_CALI:
 		err = file->f_op->unlocked_ioctl(file, cmd,
 						 (unsigned long)arg32);
 		break;

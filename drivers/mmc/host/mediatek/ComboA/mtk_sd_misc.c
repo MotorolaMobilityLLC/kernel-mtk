@@ -861,11 +861,14 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 	unsigned long arg)
 {
 	struct msdc_ioctl *msdc_ctl;
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
 	struct msdc_host *host;
+#endif
 	int ret = 0;
 
 	if ((struct msdc_ioctl *)arg == NULL) {
 		switch (cmd) {
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
 		case MSDC_REINIT_SDCARD:
 			pr_info("sd ioctl re-init!!\n");
 			ret = sd_ioctl_reinit((struct msdc_ioctl *)arg);
@@ -896,7 +899,7 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 			/* ret = mmc_resume_host(host->mmc); */
 			/* ret = mmc_power_restore_host(host->mmc); */
 			break;
-
+#endif
 		default:
 			pr_notice("mt_sd_ioctl:this opcode value is illegal!!\n");
 			return -EINVAL;
@@ -924,12 +927,17 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 	}
 
 	switch (msdc_ctl->opcode) {
+	case MSDC_GET_CID:
+		msdc_ctl->result = simple_sd_ioctl_get_cid(msdc_ctl);
+		break;
+	case MSDC_SET_BOOTPART:
+		msdc_ctl->result =
+			simple_sd_ioctl_set_bootpart(msdc_ctl);
+		break;
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
 	case MSDC_SINGLE_READ_WRITE:
 	case MSDC_MULTIPLE_READ_WRITE:
 		msdc_ctl->result = simple_sd_ioctl_rw(msdc_ctl);
-		break;
-	case MSDC_GET_CID:
-		msdc_ctl->result = simple_sd_ioctl_get_cid(msdc_ctl);
 		break;
 	case MSDC_GET_CSD:
 		msdc_ctl->result = simple_sd_ioctl_get_csd(msdc_ctl);
@@ -960,14 +968,11 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 		msdc_ctl->result =
 			simple_sd_ioctl_get_bootpart(msdc_ctl);
 		break;
-	case MSDC_SET_BOOTPART:
-		msdc_ctl->result =
-			simple_sd_ioctl_set_bootpart(msdc_ctl);
-		break;
 	case MSDC_GET_PARTSIZE:
 		msdc_ctl->result =
 			simple_sd_ioctl_get_partition_size(msdc_ctl);
 		break;
+#endif
 	default:
 		pr_notice("simple_sd_ioctl:invlalid opcode!!\n");
 		kfree(msdc_ctl);

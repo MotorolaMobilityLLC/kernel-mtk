@@ -128,6 +128,11 @@ static void kick_vqs(struct work_struct *work)
 	struct trusty_vdev *tvdev;
 	struct trusty_ctx *tctx = container_of(work, struct trusty_ctx,
 					       kick_vqs);
+
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
+	set_user_nice(current, -20);
+#endif
+
 	mutex_lock(&tctx->mlock);
 	list_for_each_entry(tvdev, &tctx->vdev_list, node) {
 		for (i = 0; i < tvdev->vring_num; i++) {
@@ -137,6 +142,10 @@ static void kick_vqs(struct work_struct *work)
 		}
 	}
 	mutex_unlock(&tctx->mlock);
+
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
+	set_user_nice(current, 0);
+#endif
 }
 
 static bool trusty_virtio_notify(struct virtqueue *vq)

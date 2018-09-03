@@ -455,44 +455,97 @@ static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file,
 /* cpufreq_cci_map_table */
 static int cpufreq_cci_map_table_proc_show(struct seq_file *m, void *v)
 {
-	int i, j;
+	int i, j, k;
 	unsigned int result;
+	unsigned int pt_1 = 0, pt_2 = 0;
 
-	for (i = 0; i < 16; i++) {
-		for (j = 0; j < 16; j++) {
 #ifdef CONFIG_HYBRID_CPU_DVFS
-			result = cpuhvfs_get_cci_result(i, j);
-#endif
-			if (j == 0)
-				seq_printf(m, "{%d", result);
-			else if (j == 15)
-				seq_printf(m, ", %d},", result);
-			else
-				seq_printf(m, ", %d", result);
+	for (k = 0; k < NR_CCI_TBL; k++) {
+		if (k == 0 && !pt_1) {
+			seq_puts(m, "CCI MAP Normal Mode:\n");
+			pt_1 = 1;
+		} else if (k == 1 && !pt_2) {
+			seq_puts(m, "CCI MAP Perf Mode:\n");
+			pt_2 = 1;
 		}
-		seq_puts(m, "\n");
+		for (i = 0; i < NR_FREQ; i++) {
+			for (j = 0; j < NR_FREQ; j++) {
+				result = cpuhvfs_get_cci_result(i, j, k);
+				if (j == 0)
+					seq_printf(m, "{%d", result);
+				else if (j == (NR_FREQ - 1))
+					seq_printf(m, ", %d},", result);
+				else
+					seq_printf(m, ", %d", result);
+			}
+			seq_puts(m, "\n");
+		}
 	}
-
+#endif
 	return 0;
 }
 
 static ssize_t cpufreq_cci_map_table_proc_write(struct file *file,
 	const char __user *buffer, size_t count, loff_t *pos)
 {
-	unsigned int idx_1, idx_2, result;
+	unsigned int idx_1, idx_2, result, mode;
 
 	char *buf = _copy_from_user_for_proc(buffer, count);
 
 	if (!buf)
 		return -EINVAL;
 
-	if (sscanf(buf, "%d %d %d", &idx_1, &idx_2, &result) == 3) {
+	if (sscanf(buf, "%d %d %d %d",
+		&idx_1, &idx_2, &result, &mode) == 4) {
 #ifdef CONFIG_HYBRID_CPU_DVFS
 		/* BY_PROC_FS */
-		cpuhvfs_update_cci_map_tbl(idx_1, idx_2, result, 0);
+		cpuhvfs_update_cci_map_tbl(idx_1,
+			idx_2, result, mode, 0);
 #endif
 	} else
-		tag_pr_info("Usage: echo <idx_1> <idx_2> <result>\n");
+		tag_pr_info(
+		"Usage: echo <L_idx> <B_idx> <result> <mode>\n");
+
+	return count;
+}
+/* cpufreq_cci_mode */
+static int cpufreq_cci_mode_proc_show(struct seq_file *m, void *v)
+{
+	unsigned int mode;
+
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	mode = cpuhvfs_get_cci_mode();
+	if (mode == 0)
+		seq_puts(m, "cci_mode as Normal mode\n");
+	else if (mode == 1)
+		seq_puts(m, "cci_mode as Perf mode\n");
+	else
+		seq_puts(m, "cci_mode as Unknown mode\n");
+#endif
+	return 0;
+}
+
+static ssize_t cpufreq_cci_mode_proc_write(struct file *file,
+	const char __user *buffer, size_t count, loff_t *pos)
+{
+	unsigned int mode;
+	int rc;
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	rc = kstrtoint(buf, 10, &mode);
+
+	if (rc < 0)
+		tag_pr_info(
+		"Usage: echo <mode>(0:Nom 1:Perf)\n");
+	else {
+#ifdef CONFIG_HYBRID_CPU_DVFS
+		/* BY_PROC_FS */
+		cpuhvfs_update_cci_mode(mode, 0);
+#endif
+	}
 
 	return count;
 }
@@ -505,6 +558,7 @@ PROC_FOPS_RW(cpufreq_sched_disable);
 PROC_FOPS_RW(cpufreq_dvfs_time_profile);
 #ifdef CCI_MAP_TBL_SUPPORT
 PROC_FOPS_RW(cpufreq_cci_map_table);
+PROC_FOPS_RW(cpufreq_cci_mode);
 #endif
 
 PROC_FOPS_RW(cpufreq_oppidx);
@@ -532,6 +586,7 @@ int cpufreq_procfs_init(void)
 		PROC_ENTRY(cpufreq_dvfs_time_profile),
 #ifdef CCI_MAP_TBL_SUPPORT
 		PROC_ENTRY(cpufreq_cci_map_table),
+		PROC_ENTRY(cpufreq_cci_mode),
 #endif
 	};
 

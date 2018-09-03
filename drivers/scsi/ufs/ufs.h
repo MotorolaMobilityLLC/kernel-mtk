@@ -72,6 +72,18 @@ enum {
 	UFS_UPIU_RPMB_WLUN		= 0xC4,
 };
 
+#if defined(CONFIG_UFSHPB)
+/**
+ * ufs_is_valid_unit_desc_lun - checks if the given LUN has a unit descriptor
+ * @lun: LU number to check
+ * @return: true if the lun has a matching unit descriptor, false otherwise
+ */
+static inline bool ufs_is_valid_unit_desc_lun(u8 lun)
+{
+	return (lun == UFS_UPIU_RPMB_WLUN || (lun < UFS_UPIU_MAX_GENERAL_LUN));
+}
+#endif
+
 /*
  * UFS Protocol Information Unit related definitions
  */
@@ -195,6 +207,12 @@ enum geometry_desc_param_offset {
 	GEOMETRY_DESC_LEN		= 0x0,
 	GEOMETRY_DESC_TYPE		= 0x1,
 	GEOMETRY_DESC_RPMB_RW_SIZE	= 0x17,
+#if defined(CONFIG_UFSHPB)
+	GEOMETRY_DESC_HPB_REGION_SIZE			= 0x48,
+	GEOMETRY_DESC_HPB_NUMBER_LU			= 0x49,
+	GEOMETRY_DESC_HPB_SUBREGION_SIZE		= 0x4A,
+	GEOMETRY_DESC_HPB_DEVICE_MAX_ACTIVE_REGIONS	= 0x4B,
+#endif
 };
 
 /* Unit descriptor parameters offsets in bytes*/
@@ -215,6 +233,11 @@ enum unit_desc_param {
 	UNIT_DESC_PARAM_PHY_MEM_RSRC_CNT	= 0x18,
 	UNIT_DESC_PARAM_CTX_CAPABILITIES	= 0x20,
 	UNIT_DESC_PARAM_LARGE_UNIT_SIZE_M1	= 0x22,
+#if defined(CONFIG_UFSHPB)
+	UNIT_DESC_HPB_LU_MAX_ACTIVE_REGIONS		= 0x23,
+	UNIT_DESC_HPB_LU_PIN_REGION_START_OFFSET	= 0x25,
+	UNIT_DESC_HPB_LU_NUM_PIN_REGIONS		= 0x27,
+#endif
 };
 
 /* Device descriptor parameters offsets in bytes*/
@@ -246,8 +269,14 @@ enum device_desc_param {
 	DEVICE_DESC_PARAM_UD_LEN		= 0x1B,
 	DEVICE_DESC_PARAM_RTT_CAP		= 0x1C,
 	DEVICE_DESC_PARAM_FRQ_RTC		= 0x1D,
+#if defined(CONFIG_UFSHPB)
+	DEVICE_DESC_PARAM_FEAT_SUP		= 0x1F,
+#endif
 	/* MTK PATCH: Product Revision Level index in String Descriptor */
 	DEVICE_DESC_PARAM_PRL			= 0x2A,
+#if defined(CONFIG_UFSHPB)
+	DEVICE_DESC_PARAM_HPB_VER		= 0x40,
+#endif
 };
 
 /*

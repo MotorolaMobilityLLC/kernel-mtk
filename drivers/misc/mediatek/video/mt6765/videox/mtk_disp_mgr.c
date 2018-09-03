@@ -689,10 +689,11 @@ int disp_input_free_dirty_roi(struct disp_frame_cfg_t *cfg)
 			break;
 		if (!cfg->input_cfg[i].layer_enable ||
 			!cfg->input_cfg[i].dirty_roi_num)
-			break;
-
-		kfree(cfg->input_cfg[i].dirty_roi_addr);
-		cfg->input_cfg[i].dirty_roi_addr = NULL;
+			continue;
+		if (cfg->input_cfg[i].dirty_roi_addr != NULL) {
+			kfree(cfg->input_cfg[i].dirty_roi_addr);
+			cfg->input_cfg[i].dirty_roi_addr = NULL;
+		}
 	}
 
 	return 0;
@@ -1541,7 +1542,9 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return _ioctl_frame_config(arg);
 		}
 	case DISP_IOCTL_WAIT_ALL_JOBS_DONE:
+		{
 		return _ioctl_wait_all_jobs_done(arg);
+		}
 	case DISP_IOCTL_GET_LCMINDEX:
 		{
 			return primary_display_get_lcm_index();
@@ -1650,6 +1653,18 @@ const char *_session_compat_ioctl_spy(unsigned int cmd)
 		{
 			return "DISP_IOCTL_SET_SESSION_MODE";
 		}
+	case COMPAT_DISP_IOCTL_INSERT_SESSION_BUFFERS:
+		{
+			return "DISP_IOCTL_INSERT_SESSION_BUFFERS";
+		}
+	case COMPAT_DISP_IOCTL_QUERY_VALID_LAYER:
+		{
+			return "DISP_IOCTL_QUERY_VALID_LAYER";
+		}
+	case COMPAT_DISP_IOCTL_SET_SCENARIO:
+		{
+			return "DISP_IOCTL_SET_SCENARIO";
+		}
 	default:
 		{
 			return "unknown";
@@ -1661,7 +1676,6 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,
 	unsigned long arg)
 {
 	long ret = -ENOIOCTLCMD;
-	void __user *data32 = compat_ptr(arg);
 
 	switch (cmd) {
 	case COMPAT_DISP_IOCTL_CREATE_SESSION:
@@ -1726,13 +1740,21 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,
 	{
 		return _compat_ioctl_set_output_buffer(file, arg);
 	}
-	case DISP_IOCTL_SET_SCENARIO:
+	case COMPAT_DISP_IOCTL_INSERT_SESSION_BUFFERS:
 	{
-		/* arg of this ioctl is all unsigned int,
-		 * don't need special compat ioctl
-		 */
-		return file->f_op->unlocked_ioctl(file, cmd,
-			(unsigned long)data32);
+		return _compat_ioctl_inset_session_buffer(file, arg);
+	}
+	case COMPAT_DISP_IOCTL_QUERY_VALID_LAYER:
+	{
+		return _compat_ioctl_query_valid_layer(file, arg);
+	}
+	case COMPAT_DISP_IOCTL_SET_SCENARIO:
+	{
+		return _compat_ioctl_set_scenario(file, arg);
+	}
+	case COMPAT_DISP_IOCTL_WAIT_ALL_JOBS_DONE:
+	{
+		return _compat_ioctl_wait_all_jobs_done(file, arg);
 	}
 
 	case DISP_IOCTL_AAL_GET_HIST:
@@ -1789,9 +1811,16 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,
 
 	default:
 		{
-			DISPWARN("[%s]ioctl not supported, 0x%08x\n",
-				__func__, cmd);
-			return -ENOIOCTLCMD;
+			void __user *data32;
+
+			data32 = compat_ptr(arg);
+			ret = file->f_op->unlocked_ioctl(file,
+						cmd, (unsigned long)data32);
+			if (ret)
+				DISPERR("[%s]not supported 0x%08x\n",
+					__func__, cmd);
+
+			return ret;
 		}
 	}
 

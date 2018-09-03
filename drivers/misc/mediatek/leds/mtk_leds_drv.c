@@ -858,8 +858,12 @@ static void __exit mt65xx_leds_exit(void)
 }
 
 module_param(debug_enable_led, int, 0644);
-
-module_init(mt65xx_leds_init);
+/* delay leds init, for (1)display has delayed to use clock upstream.
+ * (2)to fix repeat switch battary and power supply caused BL KE issue,
+ * battary calling bl .shutdown whitch need to call disp_pwm and display
+ * function and they not yet probe.
+ */
+late_initcall(mt65xx_leds_init);
 module_exit(mt65xx_leds_exit);
 
 MODULE_AUTHOR("MediaTek Inc.");

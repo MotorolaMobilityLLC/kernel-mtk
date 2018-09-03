@@ -37,7 +37,7 @@
 			if ((strncmp(pro_string, "okay", 4) == 0) ||\
 				(strncmp(pro_string, "ok", 2) == 0)\
 				) {\
-				pValue |= MTK_OF_PROPERTY_VALUE_FOUND;\
+				pValue |= MTK_OF_PROPERTY_VALUE_ENABLE;\
 			} of_node_put(state_node);\
 		} while (0); pValue; })
 
@@ -67,4 +67,8 @@
 		, MTK_LP_FEATURE_DTS_PROPERTY_IDLE_NODE);\
 	_node; })
 
+#define GET_MTK_SPM_DTS_NODE() ({\
+	struct device_node *_node = of_find_compatible_node(NULL\
+		, NULL, MTK_LP_SPM_DTS_COMPATIABLE_NODE);\
+	_node; })
 #endif

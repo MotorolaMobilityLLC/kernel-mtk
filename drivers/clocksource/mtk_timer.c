@@ -67,6 +67,7 @@ static char gpt_clkevt_aee_dump_buf[128];
 
 #define GPT_CLK_EVT	1
 #define GPT_CLK_SRC	2
+#define GPT_SYSCNT_ID	6
 
 struct mtk_clock_event_device {
 	void __iomem *gpt_base;
@@ -326,9 +327,12 @@ static int __init mtk_timer_init(struct device_node *node)
 	}
 
 	clk_bus = of_clk_get_by_name(node, "bus");
-	if (!IS_ERR(clk_bus))
-		clk_prepare_enable(clk_bus);
-
+	if (!IS_ERR(clk_bus)) {
+		if (clk_prepare_enable(clk_bus)) {
+			pr_err("Can't prepare clk bus\n");
+			goto err_clk_bus;
+		}
+	}
 	clk_src = of_clk_get(node, 0);
 	if (IS_ERR(clk_src)) {
 		pr_err("Can't get timer clock\n");
@@ -344,7 +348,10 @@ static int __init mtk_timer_init(struct device_node *node)
 	clk_evt = of_clk_get_by_name(node, "clk32k");
 	if (!IS_ERR(clk_evt)) {
 		clk32k_exist = true;
-		clk_prepare_enable(clk_evt);
+		if (clk_prepare_enable(clk_evt)) {
+			pr_err("Can't prepare clk32k\n");
+			goto err_clk_evt;
+		}
 		rate_evt = clk_get_rate(clk_evt);
 	} else {
 		rate_evt = rate_src;
@@ -380,6 +387,10 @@ static int __init mtk_timer_init(struct device_node *node)
 
 	mtk_timer_enable_irq(evt, GPT_CLK_EVT);
 
+	/* use GPT6 timer as syscnt */
+	mtk_timer_setup(evt, GPT_SYSCNT_ID, TIMER_CTRL_OP_FREERUN,
+			TIMER_CLK_SRC_SYS13M, true);
+
 	return 0;
 
 err_clk_disable_evt:
@@ -387,11 +398,14 @@ err_clk_disable_evt:
 	clk_put(clk_evt);
 err_clk_disable_src:
 	clk_disable_unprepare(clk_src);
-
+err_clk_evt:
+	clk_put(clk_evt);
 err_clk_put_src:
 	clk_put(clk_src);
 err_irq:
 	irq_dispose_mapping(evt->dev.irq);
+err_clk_bus:
+	clk_put(clk_bus);
 err_mem:
 	iounmap(evt->gpt_base);
 	if (of_address_to_resource(node, 0, &res)) {

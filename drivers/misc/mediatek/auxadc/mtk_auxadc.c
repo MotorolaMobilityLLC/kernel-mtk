@@ -393,13 +393,15 @@ static int IMM_auxadc_GetOneChannelValue_Cali(int Channel, int *voltage)
 {
 	int ret = 0, data[4], rawvalue;
 	u_int64_t temp_vol;
+	int tmp;
 
 	ret = IMM_auxadc_GetOneChannelValue(Channel, data, &rawvalue);
 	if (ret) {
 		pr_err(TAG "get raw value error %d\n", ret);
 		return -1;
 	}
-	temp_vol = (u_int64_t) rawvalue * 1500000 / AUXADC_PRECISE;
+	tmp = data[0] * 1000 + data[2];
+	temp_vol = (u_int64_t) tmp * 1000;
 	*voltage = temp_vol;
 	return 0;
 }
@@ -1378,7 +1380,7 @@ static ssize_t show_AUXADC_register(struct device *dev,
 static ssize_t store_AUXADC_register(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
-	pr_debug(TAG "[EM] Not Support store_AUXADC_register\n");
+	pr_debug(TAG "[EM] Not Support %s\n", __func__);
 	return size;
 }
 

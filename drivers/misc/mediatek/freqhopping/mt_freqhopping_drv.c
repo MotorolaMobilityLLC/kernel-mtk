@@ -424,9 +424,34 @@ int mt_dfs_armpll(unsigned int pll, unsigned int dds)
 		return 1;
 	}
 
-	return g_p_fh_hal_drv->mt_dfs_armpll(pll, dds);
+	return g_p_fh_hal_drv->mt_dfs_general_pll(pll, dds);
 }
 EXPORT_SYMBOL(mt_dfs_armpll);
+
+void mt_fh_popod_save(void)
+{
+	if (!g_p_fh_hal_drv) {
+		FH_MSG("[%s]: g_p_fh_hal_drv is uninitialized.", __func__);
+		return;
+	}
+	FH_MSG("EN: %s", __func__);
+
+	g_p_fh_hal_drv->mt_fh_popod_save();
+}
+EXPORT_SYMBOL(mt_fh_popod_save);
+
+void mt_fh_popod_restore(void)
+{
+	if (!g_p_fh_hal_drv) {
+		FH_MSG("[%s]: g_p_fh_hal_drv is uninitialized.", __func__);
+		return;
+	}
+
+	FH_MSG("EN: %s", __func__);
+
+	g_p_fh_hal_drv->mt_fh_popod_restore();
+}
+EXPORT_SYMBOL(mt_fh_popod_restore);
 
 #define PROC_FH_(FOLDER) \
 	"/proc/freqhopping/"#FOLDER

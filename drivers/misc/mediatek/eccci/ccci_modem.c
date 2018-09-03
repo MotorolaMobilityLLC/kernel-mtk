@@ -404,7 +404,6 @@ void ccci_md_config(struct ccci_modem *md)
 		md_resv_smem_size = 0, md1_md3_smem_size = 0;
 	phys_addr_t base_ap_view_phy;
 	pgprot_t prot;
-	int ret;
 
 	/* setup config */
 	md->per_md_data.config.load_type = get_md_img_type(md->index);
@@ -513,34 +512,6 @@ void ccci_md_config(struct ccci_modem *md)
 		(unsigned long)md->mem_layout.md_bank4_cacheable_total.base_md_view_phy,
 		md->mem_layout.md_bank4_cacheable_total.base_ap_view_vir,
 		md->mem_layout.md_bank4_cacheable_total.size);
-	/* add alignment check */
-#if (MD_GENERATION >= 6293)
-	ret = log2_remain(md->mem_layout.md_bank4_noncacheable_total.size);
-	if (md->mem_layout.md_bank4_noncacheable_total.size
-		&& (ret < 0 || ret > 16))
-		WARN_ON(1);
-	ret = log2_remain(md->mem_layout.md_bank4_cacheable_total.size);
-	if (md->mem_layout.md_bank4_cacheable_total.size
-		&& (ret < 0 || ret > 16))
-		WARN_ON(1);
-#elif (MD_GENERATION == 6292)
-	if (md->mem_layout.md_bank4_noncacheable_total.size
-		> (4 * 1024 * 1024))
-		WARN_ON(1);
-	if (md->mem_layout.md_bank4_cacheable_total.size
-		> (128 * 1024 * 1024))
-		WARN_ON(1);
-	ret = 0;
-#elif (MD_GENERATION == 6291)
-	ret = log2_remain(md->mem_layout.md_bank4_noncacheable_total.size);
-	if (md->mem_layout.md_bank4_noncacheable_total.size
-		&& (ret < 0 || ret > 8))
-		WARN_ON(1);
-	ret = log2_remain(md->mem_layout.md_bank4_cacheable_total.size);
-	if (md->mem_layout.md_bank4_cacheable_total.size
-		&& (ret < 0 || ret > 8))
-		WARN_ON(1);
-#endif
 
 #if (MD_GENERATION == 6293)
 	if (md->index == MD_SYS1) {

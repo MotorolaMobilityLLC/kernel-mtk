@@ -51,7 +51,7 @@ void aee_trigger_kdb(void)
 	 * kdb return
 	 */
 	if (res)
-		pr_notice("aee_trigger_kdb, get wd api error\n");
+		pr_notice("%s, get wd api error\n", __func__);
 	else
 		wd_api->wd_disable_all();
 #endif
@@ -69,7 +69,7 @@ void aee_trigger_kdb(void)
 #ifdef CONFIG_LOCAL_WDT
 	/* enable local WDT */
 	if (res)
-		pr_notice("aee_trigger_kdb, get wd api error\n");
+		pr_notice("%s, get wd api error\n", __func__);
 	else
 		wd_api->wd_restart(WD_TYPE_NOLOCK);
 
@@ -148,7 +148,7 @@ void aee_oops_free(struct aee_oops *oops)
 	vfree(oops->userthread_stack.Userthread_Stack);
 	vfree(oops->userthread_maps.Userthread_maps);
 	kfree(oops);
-	pr_notice("aee_oops_free\n");
+	pr_notice("%s\n", __func__);
 }
 EXPORT_SYMBOL(aee_oops_free);
 
@@ -321,6 +321,28 @@ void aed_combo_exception_api(const int *log, int log_size, const int *phy,
 #endif
 }
 EXPORT_SYMBOL(aed_combo_exception_api);
+
+void aed_common_exception_api(const char *assert_type, const int *log,
+			int log_size, const int *phy, int phy_size,
+			const char *detail, const int db_opt)
+{
+#ifdef CONFIG_MTK_AEE_AED
+	pr_debug("%s\n", __func__);
+	if (g_aee_api) {
+		if (g_aee_api->md_exception) {
+			g_aee_api->common_exception(assert_type, log, log_size,
+					phy, phy_size, detail, db_opt);
+		} else {
+			pr_debug("g_aee_api->common_exception = 0x%p\n",
+					g_aee_api->common_exception);
+		}
+	} else {
+		pr_debug("g_aee_api is null\n");
+	}
+	pr_debug("%s out\n", __func__);
+#endif
+}
+EXPORT_SYMBOL(aed_common_exception_api);
 
 char sram_printk_buf[256];
 

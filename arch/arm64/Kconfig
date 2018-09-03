@@ -775,6 +775,15 @@ config HARDEN_BRANCH_PREDICTOR
 
 	  If unsure, say Y.
 
+config ARM64_SSBD
+	bool "Speculative Store Bypass Disable" if EXPERT
+	default y
+	help
+	  This enables mitigation of the bypassing of previous stores
+	  by speculative loads.
+
+	  If unsure, say Y.
+
 menuconfig ARMV8_DEPRECATED
 	bool "Emulate deprecated/obsolete ARMv8 instructions"
 	depends on COMPAT
@@ -897,7 +906,7 @@ config ARM64_LSE_ATOMICS
 
 config ARM64_VHE
 	bool "Enable support for Virtualization Host Extensions (VHE)"
-	default y
+	default n
 	help
 	  Virtualization Host Extensions (VHE) allow the kernel to run
 	  directly at EL2 (instead of EL1) on processors that support

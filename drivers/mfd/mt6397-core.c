@@ -25,6 +25,8 @@
 
 #define MT6397_RTC_BASE		0xe000
 #define MT6397_RTC_SIZE		0x3e
+#define MT6323_RTC_BASE		0x8000
+#define MT6323_RTC_SIZE		0x3e
 
 #define MT6323_CID_CODE		0x23
 #define MT6391_CID_CODE		0x91
@@ -43,6 +45,19 @@ static const struct resource mt6397_rtc_resources[] = {
 	},
 };
 
+static const struct resource mt6323_rtc_resources[] = {
+	{
+		.start = MT6323_RTC_BASE,
+		.end   = MT6323_RTC_BASE + MT6323_RTC_SIZE,
+		.flags = IORESOURCE_MEM,
+	},
+	{
+		.start = MT6323_IRQ_STATUS_RTC,
+		.end   = MT6323_IRQ_STATUS_RTC,
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
 static const struct resource mt6397_pmic_resources[] = {
 	{
 		.start = MT6397_IRQ_THR_L,
@@ -53,6 +68,19 @@ static const struct resource mt6397_pmic_resources[] = {
 
 static const struct mfd_cell mt6323_devs[] = {
 	{
+		.name = "mt6323-pmic",
+		.of_compatible = "mediatek,mt6323-pmic"
+	}, {
+		.name = "mt6323-rtc",
+		.num_resources = ARRAY_SIZE(mt6323_rtc_resources),
+		.resources = mt6323_rtc_resources,
+		.of_compatible = "mediatek,mt6323-rtc",
+	}, {
+		.name = "mt6323-misc",
+		.num_resources = ARRAY_SIZE(mt6323_rtc_resources),
+		.resources = mt6323_rtc_resources,
+		.of_compatible = "mediatek,mt6323-misc",
+	}, {
 		.name = "mt6323-regulator",
 		.of_compatible = "mediatek,mt6323-regulator"
 	},
@@ -206,9 +234,14 @@ static const struct irq_domain_ops mt6397_irq_domain_ops = {
 	.map = mt6397_irq_domain_map,
 };
 
-static int mt6397_irq_init(struct mt6397_chip *mt6397)
+static int mt6397_irq_init(struct platform_device *pdev,
+			   struct mt6397_chip *mt6397)
 {
 	int ret;
+
+	mt6397->irq = platform_get_irq(pdev, 0);
+	if (mt6397->irq <= 0)
+		return mt6397->irq;
 
 	mutex_init(&mt6397->irqlock);
 
@@ -239,6 +272,9 @@ static int mt6397_irq_suspend(struct device *dev)
 {
 	struct mt6397_chip *chip = dev_get_drvdata(dev);
 
+	if (!chip->int_con[0])
+		return 0;
+
 	regmap_write(chip->regmap, chip->int_con[0], chip->wake_mask[0]);
 	regmap_write(chip->regmap, chip->int_con[1], chip->wake_mask[1]);
 
@@ -250,6 +286,9 @@ static int mt6397_irq_suspend(struct device *dev)
 static int mt6397_irq_resume(struct device *dev)
 {
 	struct mt6397_chip *chip = dev_get_drvdata(dev);
+
+	if (!chip->int_con[0])
+		return 0;
 
 	regmap_write(chip->regmap, chip->int_con[0], chip->irq_masks_cur[0]);
 	regmap_write(chip->regmap, chip->int_con[1], chip->irq_masks_cur[1]);
@@ -291,20 +330,8 @@ static int mt6397_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	pmic->irq = platform_get_irq(pdev, 0);
-	if (pmic->irq <= 0)
-		return pmic->irq;
-
 	switch (id & 0xff) {
 	case MT6323_CID_CODE:
-		pmic->int_con[0] = MT6323_INT_CON0;
-		pmic->int_con[1] = MT6323_INT_CON1;
-		pmic->int_status[0] = MT6323_INT_STATUS0;
-		pmic->int_status[1] = MT6323_INT_STATUS1;
-		ret = mt6397_irq_init(pmic);
-		if (ret)
-			return ret;
-
 		ret = devm_mfd_add_devices(&pdev->dev, -1, mt6323_devs,
 					   ARRAY_SIZE(mt6323_devs), NULL,
 					   0, NULL);
@@ -316,7 +343,7 @@ static int mt6397_probe(struct platform_device *pdev)
 		pmic->int_con[1] = MT6397_INT_CON1;
 		pmic->int_status[0] = MT6397_INT_STATUS0;
 		pmic->int_status[1] = MT6397_INT_STATUS1;
-		ret = mt6397_irq_init(pmic);
+		ret = mt6397_irq_init(pdev, pmic);
 		if (ret)
 			return ret;
 

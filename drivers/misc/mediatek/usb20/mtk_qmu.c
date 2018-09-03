@@ -39,6 +39,8 @@ static u32 Rx_gpd_free_count[MAX_QMU_EP + 1];
 static u32 Tx_gpd_free_count[MAX_QMU_EP + 1];
 static u32 Rx_gpd_max_count[MAX_QMU_EP + 1];
 static u32 Tx_gpd_max_count[MAX_QMU_EP + 1];
+static bool Tx_enable[MAX_QMU_EP + 1];
+static bool Rx_enable[MAX_QMU_EP + 1];
 
 
 u32 qmu_used_gpd_count(u8 isRx, u32 num)
@@ -625,6 +627,8 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 	if (isRx) {
 		QMU_WARN("enable RQ(%d)\n", ep_num);
 
+		Rx_enable[ep_num] = true;
+
 		/* enable dma */
 		csr |= MUSB_RXCSR_DMAENAB;
 
@@ -700,6 +704,8 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 
 	} else {
 		QMU_WARN("enable TQ(%d)\n", ep_num);
+
+		Tx_enable[ep_num] = true;
 
 		/* enable dma */
 		csr |= MUSB_TXCSR_DMAENAB;
@@ -808,8 +814,18 @@ static void mtk_qmu_disable(u8 ep_num, u8 isRx)
 {
 	u32 QCR;
 	void __iomem *base = qmu_base;
+	bool state_change = false;
 
-	QMU_WARN("disable %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
+	if (isRx && Rx_enable[ep_num]) {
+		Rx_enable[ep_num] = false;
+		state_change = true;
+	} else if (!isRx && Tx_enable[ep_num]) {
+		Tx_enable[ep_num] = false;
+		state_change = true;
+	}
+
+	if (state_change)
+		QMU_WARN("disable %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
 
 	mtk_qmu_stop(ep_num, isRx);
 	if (isRx) {

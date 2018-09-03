@@ -99,17 +99,17 @@ static int s4AF_WriteReg(u8 length, u8 addr, u16 data)
 	u8 puSendCmd[2] = {addr, (u8)(data & 0xFF)};
 	u8 puSendCmd2[3] = {addr, (u8)((data >> 8) & 0xFF), (u8)(data & 0xFF)};
 
-	LOG_INF("s4AF_WriteReg 0x%x, 0x%x, 0x%x\n", length, addr, data);
+	LOG_INF("WriteReg 0x%x, 0x%x, 0x%x\n", length, addr, data);
 
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR) >> 1;
 	if (length == 0) {
 		if (i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2) < 0) {
-			LOG_INF("s4AF_WriteReg failed!!\n");
+			LOG_INF("WriteReg failed!!\n");
 			return -1;
 		}
 	} else if (length == 1) {
 		if (i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 3) < 0) {
-			LOG_INF("s4AF_WriteReg 2 failed!!\n");
+			LOG_INF("WriteReg 2 failed!!\n");
 			return -1;
 		}
 	}

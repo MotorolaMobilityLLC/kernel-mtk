@@ -623,7 +623,7 @@ void cm_mgr_enable_fn(int enable)
 {
 	cm_mgr_enable = enable;
 	if (!cm_mgr_enable)
-		dvfsrc_set_power_model_ddr_request(0);
+		cm_mgr_set_dram_level(0);
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
 	cm_mgr_to_sspm_command(IPI_CM_MGR_ENABLE,
 			cm_mgr_enable);
@@ -774,6 +774,7 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 			debounce_times_perf_force_down);
 	seq_printf(m, "update_v2f_table %d\n", update_v2f_table);
 	seq_printf(m, "update %d\n", update);
+	seq_printf(m, "emi_latency %d\n", emi_latency);
 
 	for (count = 0; count < CM_MGR_MAX; count++) {
 		seq_printf(m, "vcore_power_gain_%d\n", count);
@@ -1135,6 +1136,8 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 		update_v2f_table = !!val_1;
 	} else if (!strcmp(cmd, "update")) {
 		cm_mgr_update_fw();
+	} else if (!strcmp(cmd, "emi_latency")) {
+		cm_mgr_emi_latency(val_1);
 	} else if (!strcmp(cmd, "1")) {
 		/* cm_mgr_perf_force_enable */
 		cm_mgr_perf_force_enable = 1;

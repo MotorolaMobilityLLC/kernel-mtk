@@ -902,7 +902,10 @@ void abortion(struct work_struct *data)
 	info.si_signo = SIGPOLL;
 	info.si_code = POLL_ERR;
 
+	rcu_read_lock();
 	t = find_task_by_vpid(tid);
+	rcu_read_unlock();
+
 	if (t != NULL) {
 		pr_info("%s, tid<%d>, comm<%s>\n", __func__, tid, t->comm);
 		send_sig_info(SIGKILL, &info, t);
@@ -3461,7 +3464,7 @@ static int ffs_func_setup(struct usb_function *f,
 	__ffs_event_add(ffs, FUNCTIONFS_SETUP);
 	spin_unlock_irqrestore(&ffs->ev.waitq.lock, flags);
 
-	return USB_GADGET_DELAYED_STATUS;
+	return creq->wLength == 0 ? USB_GADGET_DELAYED_STATUS : 0;
 }
 
 static bool ffs_func_req_match(struct usb_function *f,

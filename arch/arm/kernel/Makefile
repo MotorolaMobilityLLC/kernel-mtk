@@ -15,6 +15,7 @@ CFLAGS_REMOVE_return_address.o = -pg
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mtprof/
 ccflags-y += -Ikernel/sched/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 # Object file lists.
 
 obj-y		:= elf.o entry-common.o irq.o opcodes.o \

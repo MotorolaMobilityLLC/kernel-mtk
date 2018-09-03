@@ -48,11 +48,6 @@
 extern enum charger_type mt_get_charger_type(void);
 #endif
 
-extern struct clk *usbpll_clk;
-extern struct clk *usbmcu_clk;
-extern struct clk *usb_clk;
-extern struct clk *icusb_clk;
-
 /* to prevent 32 bit project misuse */
 #if defined(CONFIG_MTK_MUSB_DRV_36BIT) && !defined(CONFIG_64BIT)
 #error
@@ -435,6 +430,7 @@ struct musb {
 	u8 min_power;		/* vbus for periph, in mA/2 */
 
 	bool is_host;
+	bool in_ipo_off;
 
 	int a_wait_bcon;	/* VBUS timeout in msecs */
 	unsigned long idle_timeout;	/* Next timeout in jiffies */

@@ -25,6 +25,69 @@ int tiny_thresh;
 int l_plus_cpu = -1;
 #endif
 
+static void
+update_system_overutilized(struct lb_env *env, struct sd_lb_stats *sds)
+{
+	struct sched_group *sg = env->sd->groups;
+	bool intra_overutil = false;
+	struct sg_lb_stats tmp_sgs;
+	unsigned long max_capacity;
+	struct sched_group *group = env->sd->groups;
+	int i;
+
+	if (!sched_feat(SCHED_MTK_EAS))
+		return;
+
+	do {
+		struct sg_lb_stats *sgs = &tmp_sgs;
+		int local_group;
+		int this_cpu;
+
+		local_group = cpumask_test_cpu(env->dst_cpu,
+					sched_group_cpus(sg));
+		if (local_group)
+			sgs = &sds->local_stat;
+
+		this_cpu = smp_processor_id();
+		max_capacity = cpu_rq(this_cpu)->rd->max_cpu_capacity.val;
+		for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
+
+			sgs->group_util += cpu_util(i);
+			if (cpu_overutilized(i)) {
+				if (capacity_orig_of(i) < max_capacity)
+					intra_overutil = true;
+			}
+		}
+
+		/*
+		 * A capacity base hint for over-utilization.
+		 * Not to trigger system overutiled if heavy tasks
+		 * in Big.cluster, so
+		 * add the free room(20%) of Big.cluster is impacted which means
+		 * system-wide over-utilization,
+		 * that considers whole cluster not single cpu
+		 */
+		if (group->group_weight > 1) {
+			bool overutiled;
+
+			overutiled = (group->sgc->capacity * 1024)
+					< (sgs->group_util * 1280);
+
+			if (overutiled)
+				intra_overutil = true;
+		}
+
+	} while (sg != env->sd->groups);
+
+	if (!lb_sd_parent(env->sd)) {
+		/* Update system-wide over-utilization indicator */
+		if (system_overutil != intra_overutil) {
+			system_overutil = intra_overutil;
+			trace_sched_system_overutilized(system_overutil);
+		}
+	}
+}
+
 static bool is_intra_domain(int prev, int target)
 {
 #ifdef CONFIG_ARM64
@@ -42,6 +105,28 @@ static int is_tiny_task(struct task_struct *p)
 		return 1;
 
 	return 0;
+}
+
+static int
+__select_idle_sibling(struct task_struct *p, int prev_cpu, int new_cpu)
+{
+	if (sched_feat(SCHED_MTK_EAS)) {
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+		bool prefer_idle = schedtune_prefer_idle(p) > 0;
+#else
+		bool prefer_idle = true;
+#endif
+		int idle_cpu;
+
+		idle_cpu = find_best_idle_cpu(p, prefer_idle);
+		if (idle_cpu >= 0)
+			new_cpu = idle_cpu;
+		else
+			new_cpu = select_max_spare_capacity(p, new_cpu);
+	} else
+		new_cpu = select_idle_sibling(p, prev_cpu, new_cpu);
+
+	return new_cpu;
 }
 
 /* To find a CPU with max spare capacity in the same cluster with target */
@@ -163,7 +248,10 @@ static bool system_overutil;
 
 static inline bool __system_overutilized(int cpu)
 {
-	return system_overutil;
+	if (sched_feat(SCHED_MTK_EAS))
+		return system_overutil;
+	else
+		return cpu_rq(cpu)->rd->overutilized;
 }
 
 bool system_overutilized(int cpu)
@@ -226,7 +314,7 @@ static int __init parse_dt_eas(void)
 }
 core_initcall(parse_dt_eas)
 
-#if defined(CONFIG_SCHED_HMP) && defined(CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT)
+#if defined(CONFIG_SCHED_HMP) || defined(CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT)
 static int hmp_can_migrate_task(struct task_struct *p, struct lb_env *env)
 {
 	int tsk_cache_hot = 0;

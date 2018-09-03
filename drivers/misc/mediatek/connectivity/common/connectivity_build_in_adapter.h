@@ -67,6 +67,22 @@ void connectivity_export_clk_buf_ctrl(enum clk_buf_id id, bool onoff);
  * Caller please be sure to #include:
  *	drivers/misc/mediatek/include/mt-plat/upmu_common.h
  ******************************************************************************/
+#if defined(CONFIG_MACH_MT8163)
+#define CONNADP_HAS_UPMU_VCN_CTRL
+#define KERNEL_upmu_set_vcn_1v8_lp_mode_set \
+	connectivity_export_upmu_set_vcn_1v8_lp_mode_set
+#define KERNEL_upmu_set_vcn28_on_ctrl \
+	connectivity_export_upmu_set_vcn28_on_ctrl
+#define KERNEL_upmu_set_vcn33_on_ctrl_bt \
+	connectivity_export_upmu_set_vcn33_on_ctrl_bt
+#define KERNEL_upmu_set_vcn33_on_ctrl_wifi \
+	connectivity_export_upmu_set_vcn33_on_ctrl_wifi
+void connectivity_export_upmu_set_vcn_1v8_lp_mode_set(unsigned int val);
+void connectivity_export_upmu_set_vcn28_on_ctrl(unsigned int val);
+void connectivity_export_upmu_set_vcn33_on_ctrl_bt(unsigned int val);
+void connectivity_export_upmu_set_vcn33_on_ctrl_wifi(unsigned int val);
+#else
+#define CONNADP_HAS_PMIC_API
 #define KERNEL_pmic_config_interface \
 	connectivity_export_pmic_config_interface
 #define KERNEL_pmic_read_interface \
@@ -90,6 +106,8 @@ void connectivity_export_pmic_set_register_value(int flagname,
 unsigned short connectivity_export_pmic_get_register_value(int flagname);
 void connectivity_export_upmu_set_reg_value(unsigned int reg,
 						unsigned int reg_val);
+#endif
+
 /*******************************************************************************
  * MMC
  * Caller please be sure to #include:

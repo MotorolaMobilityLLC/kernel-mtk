@@ -635,7 +635,7 @@ void mcdi_governor_reflect(int cpu, int state)
 	int cluster_idx = cluster_idx_get(cpu);
 	struct mcdi_status *mcdi_sta = NULL;
 
-	mcdi_cpc_save_latency(cpu, last_core_token);
+	mcdi_cpc_reflect(cpu, last_core_token);
 
 	/* decrease MCDI num (MCUSYS/cluster) */
 	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);

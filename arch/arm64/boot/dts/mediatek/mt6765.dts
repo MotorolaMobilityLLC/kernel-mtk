@@ -306,10 +306,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		};
 #endif
 
-#ifdef CONFIG_WATCHDATA_TEE_SUPPORT
-#include "watchtrust.dtsi"
-#endif
-
 	};
 
 	cpu_dbgapb: cpu_dbgapb@0d410000 {
@@ -343,7 +339,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 	tkcore {
 	    compatible = "trustkernel,tkcore";
-	    interrupts = <GIC_SPI 250 IRQ_TYPE_EDGE_RISING>;
+	    interrupts = <GIC_SPI 248 IRQ_TYPE_EDGE_RISING>;
 	};
 
 	plat_sram_flag@0011db00 {
@@ -2798,9 +2794,9 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		pe40_stop_battery_soc = <80>;
 
 		/* PE 4.0 cable impedance (mohm) */
-		pe40_r_cable_1a_lower = <530>;
-		pe40_r_cable_2a_lower = <390>;
-		pe40_r_cable_3a_lower = <252>;
+		pe40_r_cable_1a_lower = <553>;
+		pe40_r_cable_2a_lower = <415>;
+		pe40_r_cable_3a_lower = <275>;
 
 		/* dual charger */
 		chg1_ta_ac_charger_current = <1500000>;

@@ -80,6 +80,13 @@ static void trusty_irq_enable_pending_irqs(struct trusty_irq_state *is,
 			enable_percpu_irq(trusty_irq->irq, 0);
 		else
 			enable_irq(trusty_irq->irq);
+#else
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
+		if (percpu)
+			enable_percpu_irq(trusty_irq->irq, 0);
+		else
+			enable_irq(trusty_irq->irq);
+#endif
 #endif
 		hlist_del(&trusty_irq->node);
 		hlist_add_head(&trusty_irq->node, &irqset->inactive);
@@ -178,11 +185,19 @@ irqreturn_t trusty_irq_handler(int irq, void *data)
 	if (trusty_irq->percpu) {
 #ifndef CONFIG_TRUSTY_INTERRUPT_FIQ_ONLY
 		disable_percpu_irq(irq);
+#else
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
+		disable_percpu_irq(irq);
+#endif
 #endif
 		irqset = this_cpu_ptr(is->percpu_irqs);
 	} else {
 #ifndef CONFIG_TRUSTY_INTERRUPT_FIQ_ONLY
 		disable_irq_nosync(irq);
+#else
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
+		disable_irq_nosync(irq);
+#endif
 #endif
 		irqset = &is->normal_irqs;
 	}

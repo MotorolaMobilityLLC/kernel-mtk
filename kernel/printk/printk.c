@@ -125,6 +125,7 @@ int console_printk[4] = {
 int oops_in_progress;
 EXPORT_SYMBOL(oops_in_progress);
 
+
 /*
  * console_sem protects the console_drivers list, and also
  * provides serialisation for access to the entire console
@@ -460,7 +461,7 @@ struct __conwrite_stat_struct {
 	struct console *con; /* current console */
 	u64 time_before_conwrite; /* the last record before write */
 	u64 time_after_conwrite; /* the last record after write */
-	char con_write_statbuf[256]; /* con write status buf*/
+	char con_write_statbuf[512]; /* con write status buf*/
 };
 u64 time_con_write_ttyS, time_con_write_pstore;
 u64 len_con_write_ttyS, len_con_write_pstore;
@@ -2891,7 +2892,7 @@ skip:
 			snprintf(conwrite_stat_struct.con_write_statbuf,
 				sizeof(conwrite_stat_struct.con_write_statbuf)
 				- 1,
-"cpu%d [%lu.%06lu]--[%lu.%06lu] 'ttyS' %lubytes %lu.%06lus, 'pstore' %lubytes %lu.%06lus\n",
+"cpu%d [%lu.%06lu]--[%lu.%06lu] 'ttyS' %lubytes %lu.%06lus, 'pstore' %lubytes %lu.%06lus, uart dump %s\n",
 				smp_processor_id(),
 				(unsigned long)con_dura_time,
 				tmp_rem_nsec_start/1000,
@@ -2902,7 +2903,8 @@ skip:
 				rem_nsec_con_write_ttyS/1000,
 				(unsigned long)len_con_write_pstore,
 				(unsigned long)time_con_write_pstore,
-				rem_nsec_con_write_pstore/1000);
+				rem_nsec_con_write_pstore/1000,
+				mtk8250_uart_dump());
 			break;
 		}
 		/* print the uart status next time enter the console_unlock */

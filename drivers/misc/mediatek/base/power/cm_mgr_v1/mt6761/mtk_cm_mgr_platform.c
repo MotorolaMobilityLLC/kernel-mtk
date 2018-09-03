@@ -164,17 +164,16 @@ void cm_mgr_update_met(void)
 
 #include <linux/cpu_pm.h>
 static int cm_mgr_idle_mask;
-void __iomem *spm_sleep_base;
 
 void __iomem *mcucfg_mp0_counter_base;
 
 spinlock_t cm_mgr_cpu_mask_lock;
 
-#define diff_value_overflow(diff, a, b) do {\
+#define diff_value_overflow(diff, a, b) do { \
 	if ((a) >= (b)) \
-	diff = (a) - (b);\
+		diff = (a) - (b); \
 	else \
-	diff = 0xffffffff - (b) + (a); \
+		diff = 0xffffffff - (b) + (a); \
 } while (0) \
 
 #define CM_MGR_MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -283,10 +282,20 @@ int cm_mgr_get_cpu_count(int cluster)
 	return pstall_all->cpu_count[cluster];
 }
 
+static ktime_t cm_mgr_init_time;
+static int cm_mgr_init_flag;
+
 static unsigned int cm_mgr_read_stall(int cpu)
 {
 	unsigned int val = 0;
 	unsigned long spinlock_save_flags;
+
+	if (cm_mgr_init_flag) {
+		if (ktime_ms_delta(ktime_get(), cm_mgr_init_time) <
+				CM_MGR_INIT_DELAY_MS)
+			return val;
+		cm_mgr_init_flag = 0;
+	}
 
 	if (!spin_trylock_irqsave(&cm_mgr_cpu_mask_lock, spinlock_save_flags))
 		return val;
@@ -389,10 +398,14 @@ static void init_cpu_stall_counter(int cluster)
 {
 	unsigned int val;
 
+	cm_mgr_init_time = ktime_get();
+	cm_mgr_init_flag = 1;
+
 	if (cluster == 0) {
 		val = 0x11000;
 		cm_mgr_write(MP0_CPU_STALL_INFO, val);
 
+		/* please check CM_MGR_INIT_DELAY_MS value */
 		val = RG_FMETER_EN;
 		val |= RG_MP0_AVG_STALL_PERIOD_1MS;
 		val |= RG_CPU0_AVG_STALL_RATIO_EN |
@@ -630,7 +643,6 @@ void cm_mgr_perf_platform_set_status(int enable)
 	}
 }
 
-static int pm_qos_update_request_status;
 void cm_mgr_perf_platform_set_force_status(int enable)
 {
 	if (enable) {
@@ -664,6 +676,8 @@ void cm_mgr_perf_platform_set_force_status(int enable)
 int cm_mgr_register_init(void)
 {
 	struct device_node *node;
+	int ret;
+	const char *buf;
 
 	node = of_find_compatible_node(NULL, NULL,
 			"mediatek,mcucfg_mp0_counter");
@@ -675,13 +689,16 @@ int cm_mgr_register_init(void)
 		return -1;
 	}
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
-	if (!node)
-		pr_info("find sleep node failed\n");
-	spm_sleep_base = of_iomap(node, 0);
-	if (!spm_sleep_base) {
-		pr_info("base spm_sleep_base failed\n");
-		return -1;
+	if (node) {
+		ret = of_property_read_string(node,
+				"status", (const char **)&buf);
+
+		if (ret == 0) {
+			if (!strcmp(buf, "enable"))
+				cm_mgr_enable = 1;
+			else
+				cm_mgr_enable = 0;
+		}
 	}
 
 	return 0;
@@ -740,6 +757,12 @@ int cm_mgr_get_dram_opp(void)
 	int dram_opp_cur;
 
 	dram_opp_cur = get_cur_ddr_opp();
+	if (dram_opp_cur < 0 || dram_opp_cur > CM_MGR_EMI_OPP)
+		dram_opp_cur = 0;
 
 	return dram_opp_cur;
+}
+
+void cm_mgr_emi_latency(int enable)
+{
 }

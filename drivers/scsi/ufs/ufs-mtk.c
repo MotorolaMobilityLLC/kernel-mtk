@@ -18,6 +18,7 @@
 #include <linux/rpmb.h>
 #include <linux/blkdev.h>
 #include <linux/blk_types.h>
+#include <linux/reboot.h>
 
 #include "ufshcd.h"
 #include "ufshcd-pltfrm.h"
@@ -137,6 +138,9 @@ static int ufs_mtk_hie_cfg_request(unsigned int mode,
 	/* get key index from key hint, or install new key to key hint */
 	key_idx = kh_get_hint(ufs_mtk_get_kh(), key, &need_update);
 
+	if (key_idx < 0)
+		return key_idx;
+
 	spin_unlock_irqrestore(info->hba->host->host_lock, flags);
 
 	if (need_update || (key_idx < 0)) {
@@ -249,6 +253,19 @@ struct hie_dev ufs_hie_dev = {
 struct hie_dev *ufs_mtk_hie_get_dev(void)
 {
 	return &ufs_hie_dev;
+}
+
+int ufs_mtk_hie_req_done(struct ufs_hba *hba,
+	struct ufshcd_lrb *lrbp)
+{
+	int ret = 0;
+
+	if (lrbp->crypto_en) {
+		ret = kh_release_hint(
+			ufs_mtk_get_kh(), lrbp->crypto_cfgid);
+	}
+
+	return ret;
 }
 #endif
 
@@ -1198,13 +1215,17 @@ int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user)
 	 * For reference only since UFS spec. said the status is valid after
 	 * device power cycle.
 	 */
-
 	err = ufshcd_query_attr(hba, UPIU_QUERY_OPCODE_READ_ATTR,
 		QUERY_ATTR_IDN_DEVICE_FFU_STATUS, 0, 0, &attr);
 
 	if (err) {
 		dev_err(hba->dev, "%s: query bDeviceFFUStatus failed, err %d\n",
 			__func__, err);
+		/*
+		 * UFS might not be used normally after FFU.
+		 * System will be rebooted automatically.
+		 */
+		kernel_restart(NULL);
 		goto out_release_mem;
 	}
 
@@ -1231,6 +1252,10 @@ out:
  * It will read the opcode, idn and buf_length parameters, and, put the
  * response in the buffer field while updating the used size in buf_length.
  */
+#if defined(CONFIG_UFSHPB)
+int ufshcd_query_desc_for_ufshpb(struct ufs_hba *hba, int lun,
+		struct ufs_ioctl_query_data *ioctl_data, void __user *buffer);
+#endif
 int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user)
 {
 	struct ufs_ioctl_query_data *idata;
@@ -1258,6 +1283,20 @@ int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user)
 			__func__, err);
 		goto out_release_mem;
 	}
+
+#if defined(CONFIG_UFSHPB)
+	dev_info(hba->dev, "UFS-IOCTL: op %u idn %u size %u\n",
+		idata->opcode,	idata->idn, idata->buf_byte);
+	dev_info(hba->dev, "%s:%d ufshpb code 0x%x opcode 0x%x\n",
+		__func__, __LINE__, ((idata->opcode & 0xffff0000) >> 16),
+		idata->opcode & 0xffff);
+
+	if ((idata->opcode & 0xffff0000) >> 16 == HPB_QUERY_OPCODE) {
+		err = ufshcd_query_desc_for_ufshpb(hba, lun, idata, buf_user);
+		kfree(idata);
+		goto out;
+	}
+#endif
 
 	user_buf_ptr = idata->buf_ptr;
 

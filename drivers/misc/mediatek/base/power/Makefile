@@ -13,12 +13,15 @@
 
 
 obj-$(CONFIG_MACH_MT3967) += drcc_v1/
+obj-$(CONFIG_MACH_MT6779) += drcc_v1/
 
+obj-$(CONFIG_MACH_MT8163) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT8173) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6758) += spm/
 obj-$(CONFIG_MACH_MT6765) += spm/
 obj-$(CONFIG_MACH_MT6761) += spm/
 obj-$(CONFIG_MACH_MT3967) += spm/
+obj-$(CONFIG_MACH_MT6779) += spm/
 obj-$(CONFIG_MACH_MT6758) += leakage_table_v2/
 obj-$(CONFIG_MTK_STATIC_POWER) += leakage_table_v2/
 obj-$(CONFIG_MTK_CPU_FREQ) += cpufreq_v1/
@@ -68,6 +71,7 @@ obj-$(CONFIG_MACH_MT6758) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6765) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6761) += power_gs_v1/
 obj-$(CONFIG_MACH_MT3967) += power_gs_v1/
+obj-$(CONFIG_MACH_MT6779) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6758) += udi_v1/
 obj-$(CONFIG_MACH_MT6765) += udi_v1/
 obj-$(CONFIG_MACH_MT6761) += udi_v1/
@@ -75,6 +79,7 @@ obj-$(CONFIG_MACH_MT3967) += udi_v1/
 obj-$(CONFIG_MACH_MT6758) += mcdi/
 obj-$(CONFIG_MACH_MT6765) += mcdi/
 obj-$(CONFIG_MACH_MT6761) += mcdi/
+obj-$(CONFIG_MACH_MT6779) += mcdi/
 obj-$(CONFIG_MACH_MT3967) += mcdi/
 ifeq ($(CONFIG_MTK_CM_MGR), y)
 obj-$(CONFIG_MACH_MT6765) += cm_mgr_v1/

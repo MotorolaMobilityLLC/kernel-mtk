@@ -386,7 +386,7 @@ int larb_reg_restore(int larb)
 
 	pReg = pLarbRegBackUp[larb];
 
-	pr_debug("+larb_reg_restore(), larb_idx=%d\n", larb);
+	pr_debug("+%s, larb_idx=%d\n", __func__, larb);
 	pr_debug("m4u part restore, larb_idx=%d\n", larb);
 	/*warning: larb_con is controlled by set/clr */
 	regval = *(pReg++);
@@ -838,17 +838,17 @@ static long smi_ioctl(struct file *pFile, unsigned int cmd, unsigned long param)
 #ifdef MMDVFS_ENABLE
 	case MTK_IOC_MMDVFS_CMD:
 		{
-			MTK_MMDVFS_CMD mmdvfs_cmd;
+			struct MTK_MMDVFS_CMD mmdvfs_cmd;
 
-			if (copy_from_user(&mmdvfs_cmd,
-					(void *)param, sizeof(MTK_MMDVFS_CMD)))
+			if (copy_from_user(&mmdvfs_cmd,	(void *)param,
+					sizeof(struct MTK_MMDVFS_CMD)))
 				return -EFAULT;
 
 			mmdvfs_handle_cmd(&mmdvfs_cmd);
 
 			if (copy_to_user((void *)param,
 					(void *)&mmdvfs_cmd,
-					sizeof(MTK_MMDVFS_CMD)))
+					sizeof(struct MTK_MMDVFS_CMD)))
 				return -EFAULT;
 
 			break;
@@ -1159,6 +1159,8 @@ static int mtk_smi_remove(struct platform_device *pdev);
 static const struct of_device_id mtk_smi_of_ids[] = {
 	{ .compatible = "mediatek,mt8173-smi-common",
 	  .data = &smi_mt8173_priv, },
+	{ .compatible = "mediatek,mt8163-smi",
+	  .data = &smi_mt8163_priv, },
 	{}
 };
 
@@ -1210,7 +1212,9 @@ static int mtk_smi_probe(struct platform_device *pdev)
 	smi_data->smi_priv = priv;
 
 	pm_runtime_enable(dev);
+	pm_runtime_get_sync(dev);
 	dev_set_drvdata(dev, smipriv);
+
 	return 0;
 }
 
@@ -1335,7 +1339,7 @@ static int __init smi_init(void)
 	mmdvfs_init(&g_smi_bwc_mm_info);
 #endif
 	fb_register_client(&mtk_smi_variant_event_notifier);
-	pr_debug("smi_init done\n");
+	pr_debug("%s done\n", __func__);
 
 	return 0;
 }
@@ -1349,9 +1353,10 @@ static void __exit smi_exit(void)
 static int __init smi_init_late(void)
 {
 	/*init clk/mtcmos should be late while ccf */
-	pr_debug("smi_init_late-\n");
+	pr_debug("%s\n", __func__);
 
 	smi_common_init();
+	pm_runtime_put_sync(smi_data->smicommon);
 
 	return 0;
 }

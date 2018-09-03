@@ -84,13 +84,14 @@ void save_sys_bt(unsigned long long time_stamp,
 	aee_print_ip_sym(tracker_bt.fp4, time_stamp, cpu, t);
 	aee_print_ip_sym(tracker_bt.fp5, time_stamp, cpu, t);
 	aee_print_ip_sym(tracker_bt.fp6, time_stamp, cpu, t);
+#ifdef CONFIG_MTK_SYSTRACKER_V2
 	snprintf(dbg_st, sizeof(dbg_st),
 			"CPU%d 0x10000220=0x%x - (%d)<%d>[%lld]\n",
 				tracker_bt.cpu,
 				readl(IOMEM(BUS_PROTECT_BASE+0x220)),
 				cpu, t, time_stamp);
 	aee_sram_fiq_log(dbg_st);
-
+#endif
 	consys_print(time_stamp, cpu, t);
 
 	snprintf(dbg_st, sizeof(dbg_st),

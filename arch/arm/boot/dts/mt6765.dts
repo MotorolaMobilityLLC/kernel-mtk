@@ -304,10 +304,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		};
 #endif
 
-#ifdef CONFIG_WATCHDATA_TEE_SUPPORT
-#include "watchtrust.dtsi"
-#endif
-
 	};
 
 	cpu_dbgapb: cpu_dbgapb@0d410000 {
@@ -534,7 +530,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 	tkcore {
 	    compatible = "trustkernel,tkcore";
-	    interrupts = <GIC_SPI 250 IRQ_TYPE_EDGE_RISING>;
+	    interrupts = <GIC_SPI 248 IRQ_TYPE_EDGE_RISING>;
 	};
 
 	timer {

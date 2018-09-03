@@ -23,13 +23,13 @@
 int spm_dvfs_flag_init(int dvfsrc_en)
 {
 	int flag = SPM_FLAG_RUN_COMMON_SCENARIO;
-	int en_flag = dvfsrc_en >> 1;
+	int dvfsrc_flag = dvfsrc_en >> 1;
 
 	if (dvfsrc_en & 1) {
-		if (en_flag & 0x1)
+		if (dvfsrc_flag & 0x1)
 			flag |= SPM_FLAG_DIS_VCORE_DVS;
 
-		if (en_flag & 0x2)
+		if (dvfsrc_flag & 0x2)
 			flag |= SPM_FLAG_DIS_VCORE_DFS;
 
 		return flag;

@@ -240,6 +240,7 @@ source "drivers/misc/mediatek/cam_cal/Kconfig"
 source "drivers/misc/mediatek/jpeg/Kconfig"
 source "drivers/misc/mediatek/lcm/Kconfig"
 source "drivers/misc/mediatek/trusted_mem/Kconfig"
+source "drivers/misc/mediatek/geniezone/Kconfig"
 source "drivers/misc/mediatek/sync/Kconfig"
 source "drivers/misc/mediatek/video/Kconfig"
 source "drivers/misc/mediatek/dfrc/Kconfig"
@@ -285,8 +286,7 @@ menu "Security"
 config MTK_TEE_GP_SUPPORT
 	bool "Enable MTK GlobalPlatform support in TEE related modules"
 	default n
-	depends on (TRUSTONIC_TEE_SUPPORT) || (MICROTRUST_TEE_SUPPORT) || \
-	           (WATCHDATA_TEE_SUPPORT)
+	depends on (TRUSTONIC_TEE_SUPPORT) || (MICROTRUST_TEE_SUPPORT)
 	help
 	  GlobalPlatform defines common/consistent APIs and this option
 	  enables TEE related modules to use GPAPIs. (depending on
@@ -320,6 +320,7 @@ source "drivers/misc/mediatek/ice_debug/Kconfig"
 source "drivers/misc/mediatek/log_store/Kconfig"
 source "drivers/misc/mediatek/udi/Kconfig"
 source "drivers/misc/mediatek/emi/Kconfig"
+source "drivers/misc/mediatek/emi_mpu/Kconfig"
 source "drivers/misc/mediatek/auxadc/Kconfig"
 source "drivers/misc/mediatek/devapc/Kconfig"
 source "drivers/misc/mediatek/trng/Kconfig"
@@ -351,7 +352,6 @@ source "drivers/misc/mediatek/ccu/src/Kconfig"
 source "drivers/misc/mediatek/rtc/Kconfig"
 source "drivers/misc/mediatek/xo/Kconfig"
 source "drivers/misc/mediatek/teei/Kconfig"
-source "drivers/misc/mediatek/watchtrust/Kconfig"
 source "drivers/misc/mediatek/ram_console/Kconfig"
 source "drivers/misc/mediatek/aee/Kconfig"
 source "drivers/misc/mediatek/lens/Kconfig"
@@ -359,6 +359,7 @@ source "drivers/misc/mediatek/flashlight/Kconfig"
 source "drivers/misc/mediatek/flashlight/richtek/Kconfig"
 source "drivers/misc/mediatek/rt-regmap/Kconfig"
 source "drivers/misc/mediatek/smartpa/Kconfig"
+source "drivers/misc/mediatek/usb11/Kconfig"
 source "drivers/misc/mediatek/usb20/Kconfig"
 source "drivers/misc/mediatek/mu3phy/Kconfig"
 source "drivers/misc/mediatek/mu3d/Kconfig"
@@ -383,6 +384,14 @@ config MTK_FPSGO
 	  FPSGO persuades lowest power consumption for better DoU
 	  endurance and gaming experience.
 	  If you are not sure about this, set n.
+
+config MTK_PERF_TRACKER
+	bool "MTK system performance index support"
+	help
+	  CONFIG_PERF_TRACKER define if system performance index should
+	  be built-in or not. It supports system related performance index
+	  via trace. If you are not sure about whether to enable it or not,
+	  please set n.
 
 endmenu  # PPT
 
@@ -490,6 +499,24 @@ source "drivers/misc/mediatek/debug_latch/Kconfig"
 source "drivers/misc/mediatek/watchpoint/Kconfig"
 source "drivers/misc/mediatek/Kconfig.default"
 source "drivers/misc/mediatek/tkcore/Kconfig"
+
+config MTK_FD_LEAK_DETECT
+	bool "Enable MTK fd leak detection"
+	help
+	  This feature is for detecting fd leak.
+	  When kernel can not alloc fd, will print error information.
+	  This feature should be enbled only on Engineer load; User/Userdebug
+	  load should be enabled by demand.
+
+config MTK_FD_LEAK_SPECIFIC_DEBUG
+	bool "Specific demand in fd leak debug"
+	default n
+	depends on MTK_FD_LEAK_DETECT
+	help
+	  Specific demand in fd leak debug.
+	  Eg,
+	  For some specific processes, may need backtrace, coredump
+	  and other debug information.
 
 config MTK_DM_VERITY_OFF
 	bool "Disable dm-verity"

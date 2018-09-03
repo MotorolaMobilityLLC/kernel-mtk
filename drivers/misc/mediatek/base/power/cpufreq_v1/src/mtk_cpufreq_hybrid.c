@@ -71,9 +71,11 @@ static void __iomem *csram_base;
 #define OFFS_TBL_E	0x0250
 #define PVT_TBL_SIZE    (OFFS_TBL_E - OFFS_TBL_S)
 
-#define OFFS_CCI_TBL_USER	0x0F9C
-#define OFFS_CCI_TBL_S	0x0FA0
-#define OFFS_CCI_TBL_E	0x10A0
+#define OFFS_CCI_TBL_USER	0x0F94   /* 997 */
+#define OFFS_CCI_TOGGLE_BIT	0x0F98   /* 998 */
+#define OFFS_CCI_TBL_MODE	0x0F9C   /* 999 */
+#define OFFS_CCI_TBL_S		0x0FA0	/* 1000 */
+#define OFFS_CCI_TBL_E		0x119C	/* 1127 */
 #define PVT_CCI_TBL_SIZE    (OFFS_CCI_TBL_E - OFFS_CCI_TBL_S)
 
 #define OFFS_DATA_S	0x02a0
@@ -526,7 +528,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 #define DBG_REPO_CCI_TBL_E		(DBG_REPO_S + OFFS_CCI_TBL_E)
 
 /* CCI Volt Clamp */
-#define OFFS_CCI_VOLT_CLAMP (0x0250)   /* 148 */
+#define OFFS_CCI_VOLT_CLAMP (0x024c)   /* 147 */
 
 #define OFFS_TURBO_FREQ		0x02a4	/* 169 */
 #define OFFS_TURBO_VOLT		0x02a8	/* 170 */
@@ -886,22 +888,46 @@ static unsigned int *recordTbl;
 u8 *record_CCI_Ref;
 unsigned char *record_CCI_Tbl;
 
-unsigned int cpuhvfs_get_cci_result(unsigned int idx_1, unsigned int idx_2)
+unsigned int cpuhvfs_get_cci_result(unsigned int idx_1,
+	unsigned int idx_2, unsigned int mode)
 {
-	if (idx_1 < NR_FREQ && idx_2 < NR_FREQ)
-		return record_CCI_Ref[(idx_1 * NR_FREQ) + idx_2];
-	else
+	if (idx_1 < NR_FREQ && idx_2 < NR_FREQ) {
+		if (mode == 0)
+			return record_CCI_Ref[(idx_1 * NR_FREQ) + idx_2];
+		else
+			return record_CCI_Ref[((idx_1 + NR_FREQ) * NR_FREQ)
+				+ idx_2];
+	} else
 		return 0;
 }
 
 void cpuhvfs_update_cci_map_tbl(unsigned int idx_1, unsigned int idx_2,
-	unsigned char result, unsigned int use_id)
+	unsigned char result, unsigned int mode, unsigned int use_id)
 {
-	if (idx_1 < NR_FREQ && idx_2 < NR_FREQ) {
+	if (idx_1 < NR_FREQ && idx_2 < NR_FREQ && mode < NR_CCI_TBL) {
 		csram_write(OFFS_CCI_TBL_USER, use_id);
-		record_CCI_Ref[(idx_1 * NR_FREQ) + idx_2] = result;
-		csram_write(OFFS_EEM_S, 1);
+		if (mode == 0)
+			record_CCI_Ref[(idx_1 * NR_FREQ) + idx_2] = result;
+		else
+			record_CCI_Ref[((idx_1 + NR_FREQ) * NR_FREQ)
+				+ idx_2] = result;
+		csram_write(OFFS_CCI_TOGGLE_BIT, 1);
 	}
+}
+
+void cpuhvfs_update_cci_mode(unsigned int mode, unsigned int use_id)
+{
+	if (mode < NR_CCI_TBL) {
+		csram_write(OFFS_CCI_TBL_USER, use_id);
+		/* mode = 0(Normal as 50%) mode = 1(Perf as 70%) */
+		csram_write(OFFS_CCI_TBL_MODE, mode);
+		csram_write(OFFS_CCI_TOGGLE_BIT, 1);
+	}
+}
+
+unsigned int cpuhvfs_get_cci_mode(void)
+{
+	return csram_read(OFFS_CCI_TBL_MODE);
 }
 #endif
 
@@ -1040,13 +1066,13 @@ void __init cpuhvfs_pvt_tbl_create(void)
 
 	record_CCI_Tbl = xrecord_CCI_Tbl[lv];
 
-	for (i = 0; i < NR_FREQ; i++) {
+	for (i = 0; i < NR_FREQ * NR_CCI_TBL; i++) {
 		for (j = 0; j < NR_FREQ; j++) {
 			record_CCI_Ref[(i * NR_FREQ) + j] =
 				*(record_CCI_Tbl + (i * NR_FREQ) + j);
-			/* pr_info("%d ", *(record_CCI_Tbl + (i * 16) + j)); */
+			cpufreq_ver("%d ", record_CCI_Ref[(i * NR_FREQ) + j]);
 		}
-		/* pr_info("\n"); */
+		cpufreq_ver("\n");
 	}
 	mb(); /* SRAM writing */
 #endif

@@ -169,7 +169,7 @@ int get_adsp_semaphore(int flag)
 		return -1;
 
 	if (adsp_awake_lock(ADSP_A_ID) == -1) {
-		pr_debug("get_adsp_semaphore: awake adsp fail\n");
+		pr_debug("%s: awake adsp fail\n", __func__);
 		return ret;
 	}
 
@@ -203,7 +203,7 @@ int get_adsp_semaphore(int flag)
 	spin_unlock_irqrestore(&adsp_awake_spinlock, spin_flags);
 
 	if (adsp_awake_unlock(ADSP_A_ID) == -1)
-		pr_debug("get_adsp_semaphore: adsp_awake_unlock fail\n");
+		pr_debug("%s: adsp_awake_unlock fail\n", __func__);
 
 
 	return ret;
@@ -227,7 +227,7 @@ int release_adsp_semaphore(int flag)
 		return -1;
 
 	if (adsp_awake_lock(ADSP_A_ID) == -1) {
-		pr_debug("release_adsp_semaphore: awake adsp fail\n");
+		pr_debug("%s: awake adsp fail\n", __func__);
 		return ret;
 	}
 	/* spinlock context safe*/
@@ -243,14 +243,14 @@ int release_adsp_semaphore(int flag)
 		if (read_back == 0)
 			ret = 1;
 		else
-			pr_debug("[ADSP] release adsp sema. %d failed\n", flag);
+			pr_debug("[ADSP] %s %d failed\n", __func__, flag);
 	} else
-		pr_debug("[ADSP] release sema. %d not own by me\n", flag);
+		pr_debug("[ADSP] %s %d not own by me\n", __func__, flag);
 
 	spin_unlock_irqrestore(&adsp_awake_spinlock, spin_flags);
 
 	if (adsp_awake_unlock(ADSP_A_ID) == -1)
-		pr_debug("release_adsp_semaphore: adsp_awake_unlock fail\n");
+		pr_debug("%s: adsp_awake_unlock fail\n", __func__);
 
 
 	return ret;
@@ -530,11 +530,11 @@ static int adsp_pm_event(struct notifier_block *notifier,
 
 	switch (pm_event) {
 	case PM_POST_HIBERNATION:
-		pr_debug("[ADSP] adsp_pm_event ADSP reboot\n");
+		pr_debug("[ADSP] %s ADSP reboot\n", __func__);
 		retval = reset_adsp();
 		if (retval < 0) {
 			retval = -EINVAL;
-			pr_debug("[ADSP] adsp_pm_event ADSP reboot Fail\n");
+			pr_debug("[ADSP] %s ADSP reboot Fail\n", __func__);
 		}
 		return NOTIFY_DONE;
 	}
@@ -798,7 +798,6 @@ static inline ssize_t adsp_awake_unlock_show(struct device *kobj,
 
 DEVICE_ATTR(adsp_awake_unlock, 0444, adsp_awake_unlock_show, NULL);
 
-#ifdef CONFIG_MTK_ENG_BUILD
 static inline ssize_t adsp_ipi_test_store(struct device *kobj,
 					struct device_attribute *attr,
 					const char *buf, size_t count)
@@ -852,7 +851,7 @@ static inline ssize_t adsp_uart_switch_store(struct device *kobj,
 	return count;
 }
 
-DEVICE_ATTR(adsp_uart_switch, 0644, NULL, adsp_uart_switch_store);
+DEVICE_ATTR(adsp_uart_switch, 0220, NULL, adsp_uart_switch_store);
 static inline ssize_t adsp_suspend_cmd_show(struct device *kobj,
 					     struct device_attribute *attr,
 					     char *buf)
@@ -889,7 +888,6 @@ static inline ssize_t adsp_suspend_cmd_store(struct device *kobj,
 DEVICE_ATTR(adsp_suspend_cmd, 0644, adsp_suspend_cmd_show,
 	    adsp_suspend_cmd_store);
 
-#endif
 
 
 /*
@@ -927,12 +925,12 @@ static ssize_t adsp_wdt_trigger(struct device *dev,
 
 	if (kstrtoint(buf, 10, &interval))
 		return -EINVAL;
-	pr_debug("adsp_wdt_trigger: %d\n", interval);
+	pr_debug("%s: %d\n", __func__, interval);
 	adsp_wdt_reset(ADSP_A_ID, interval);
 	return count;
 }
 
-DEVICE_ATTR(wdt_reset, 0200, NULL, adsp_wdt_trigger);
+DEVICE_ATTR(adsp_wdt_reset, 0200, NULL, adsp_wdt_trigger);
 
 
 #ifdef CFG_RECOVERY_SUPPORT
@@ -1017,6 +1015,12 @@ static int create_files(void)
 	if (unlikely(ret != 0))
 		return ret;
 
+	ret = device_create_bin_file(adsp_device.this_device,
+					&bin_attr_adsp_dump_ke);
+
+	if (unlikely(ret != 0))
+		return ret;
+
 	ret = device_create_file(adsp_device.this_device,
 				 &dev_attr_adsp_A_reg_status);
 
@@ -1066,7 +1070,6 @@ static int create_files(void)
 	if (unlikely(ret != 0))
 		return ret;
 
-#ifdef CONFIG_MTK_ENG_BUILD
 	/* ADSP IPI Debug sysfs*/
 	ret = device_create_file(adsp_device.this_device,
 				 &dev_attr_adsp_ipi_test);
@@ -1083,10 +1086,10 @@ static int create_files(void)
 				 &dev_attr_adsp_suspend_cmd);
 	if (unlikely(ret != 0))
 		return ret;
-#endif
 
 #ifdef CFG_RECOVERY_SUPPORT
-	ret = device_create_file(adsp_device.this_device, &dev_attr_wdt_reset);
+	ret = device_create_file(adsp_device.this_device,
+				 &dev_attr_adsp_wdt_reset);
 	if (unlikely(ret != 0))
 		return ret;
 
@@ -1115,6 +1118,22 @@ static int create_files(void)
 	ret = device_create_bin_file(adsp_device.this_device,
 				     &bin_attr_adsp_trax);
 
+	if (unlikely(ret != 0))
+		return ret;
+#endif
+#if ADSP_SLEEP_ENABLE
+
+	/* ADSP sleep measure */
+	ret = device_create_file(adsp_device.this_device,
+				 &dev_attr_adsp_force_adsppll);
+	if (unlikely(ret != 0))
+		return ret;
+	ret = device_create_file(adsp_device.this_device,
+				 &dev_attr_adsp_spm_req);
+	if (unlikely(ret != 0))
+		return ret;
+	ret = device_create_file(adsp_device.this_device,
+				 &dev_attr_adsp_keep_adspll_on);
 	if (unlikely(ret != 0))
 		return ret;
 #endif
@@ -1407,15 +1426,36 @@ static int __init adsp_init(void)
 	int ret = 0;
 	int i = 0;
 
-#if ADSP_DVFS_INIT_ENABLE
-	adsp_dvfs_init();
-#endif
-
 	/* adsp ready static flag initialise */
 	for (i = 0; i < ADSP_CORE_TOTAL ; i++) {
 		adsp_enable[i] = 0;
 		adsp_ready[i] = 0;
 	}
+
+	if (platform_driver_register(&mtk_adsp_device))
+		pr_err("[ADSP] adsp probe fail\n");
+
+	adsp_power_on(true);
+	/* need adsp power on to access DTCM  */
+	ret = adsp_reserve_memory_ioremap();
+	if (ret) {
+		pr_err("[ADSP]adsp_reserve_memory_ioremap failed\n");
+		return -1;
+	}
+	adsp_update_memory_protect_info();
+
+	pr_debug("%s(-)\n", __func__);
+	return ret;
+
+}
+
+static int __init adsp_module_init(void)
+{
+	int ret = 0;
+
+#if ADSP_DVFS_INIT_ENABLE
+	adsp_dvfs_init();
+#endif
 
 	/* adsp platform initialise */
 	pr_debug("[ADSP] platform init\n");
@@ -1426,10 +1466,7 @@ static int __init adsp_init(void)
 		pr_debug("[ADSP] Excep Init Fail\n");
 		return -1;
 	}
-	if (platform_driver_register(&mtk_adsp_device))
-		pr_err("[ADSP] adsp probe fail\n");
 
-	adsp_power_on(true);
 	/* skip initial if dts status = "disable" */
 	if (!adsp_enable[ADSP_A_ID]) {
 		pr_err("[ADSP] adsp disabled!!\n");
@@ -1487,15 +1524,6 @@ static int __init adsp_init(void)
 		return -1;
 	}
 
-	/*adsp resvered memory*/
-	pr_debug("[ADSP] adsp_reserve_memory_ioremap\n");
-	ret = adsp_reserve_memory_ioremap();
-	if (ret) {
-		pr_debug("[ADSP]adsp_reserve_memory_ioremap failed\n");
-		return -1;
-	}
-	adsp_update_memory_protect_info();
-
 #if ADSP_LOGGER_ENABLE
 	/* adsp logger initialize */
 	pr_debug("[ADSP] logger init\n");
@@ -1543,8 +1571,8 @@ static int __init adsp_init(void)
 
 	return ret;
 }
-module_init(adsp_init);
-
+subsys_initcall(adsp_init);
+module_init(adsp_module_init);
 /*
  * driver exit point
  */

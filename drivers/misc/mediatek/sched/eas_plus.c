@@ -26,9 +26,6 @@ int sodi_limit = DEFAULT_SODI_LIMIT;
  * V1.06 add "turning" and "watershed" points to help HPS
  */
 
-/* default scheduling */
-static int sched_type = SCHED_HYBRID_LB;
-
 /* watersched is updated by unified power table. */
 static struct power_tuning_t power_tuning = {DEFAULT_TURNINGPOINT,
 						DEFAULT_WATERSHED};
@@ -49,19 +46,41 @@ static char module_name[128];
 /* A lock for scheduling switcher */
 DEFINE_SPINLOCK(sched_switch_lock);
 
+#ifdef CONFIG_SCHED_DEBUG
 int sched_scheduler_switch(enum SCHED_LB_TYPE new_sched)
 {
 	unsigned long flags;
 
-	if (sched_type >= SCHED_UNKNOWN_LB)
+	if (new_sched >= SCHED_UNKNOWN_LB)
 		return -1;
 
 	spin_lock_irqsave(&sched_switch_lock, flags);
-	sched_type = new_sched;
+	switch (new_sched) {
+	case SCHED_EAS_LB:
+		sysctl_sched_features &= ~(1 << __SCHED_FEAT_SCHED_HMP);
+		sysctl_sched_features |= 1 << __SCHED_FEAT_ENERGY_AWARE;
+		break;
+	case SCHED_HMP_LB:
+		sysctl_sched_features &= ~(1 << __SCHED_FEAT_ENERGY_AWARE);
+		sysctl_sched_features |= 1 << __SCHED_FEAT_SCHED_HMP;
+		break;
+	case SCHED_HYBRID_LB:
+		sysctl_sched_features |= 1 << __SCHED_FEAT_ENERGY_AWARE;
+		sysctl_sched_features |= 1 << __SCHED_FEAT_SCHED_HMP;
+		break;
+	default:
+		break;
+	}
 	spin_unlock_irqrestore(&sched_switch_lock, flags);
 
 	return 0;
 }
+#else
+int sched_scheduler_switch(enum SCHED_LB_TYPE new_sched)
+{
+	return -EINVAL;
+}
+#endif
 EXPORT_SYMBOL(sched_scheduler_switch);
 
 bool is_game_mode;
@@ -157,6 +176,7 @@ static struct kobj_attribute eas_turning_point_attr =
 __ATTR(turning_point, 0600, NULL,
 		store_eas_turning_point);
 
+#ifdef CONFIG_SCHED_DEBUG
 /* A knob for turn on/off energe-aware scheduling */
 static ssize_t show_eas_knob(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
@@ -164,20 +184,14 @@ static ssize_t show_eas_knob(struct kobject *kobj,
 	unsigned int len = 0;
 	unsigned int max_len = 4096;
 
-	switch (sched_type) {
-	case SCHED_HMP_LB:
-		len += snprintf(buf, max_len, "scheduler= HMP\n\n");
-		break;
-	case SCHED_EAS_LB:
-		len += snprintf(buf, max_len, "scheduler= EAS\n\n");
-		break;
-	case SCHED_HYBRID_LB:
+	if (sched_feat(SCHED_HMP) && sched_feat(ENERGY_AWARE))
 		len += snprintf(buf, max_len, "scheduler= hybrid\n\n");
-		break;
-	default:
+	else if (sched_feat(SCHED_HMP))
+		len += snprintf(buf, max_len, "scheduler= HMP\n\n");
+	else if (sched_feat(ENERGY_AWARE))
+		len += snprintf(buf, max_len, "scheduler= EAS\n\n");
+	else
 		len += snprintf(buf, max_len, "scheduler= unknown\n\n");
-		break;
-	}
 
 	return len;
 }
@@ -192,15 +206,8 @@ static ssize_t store_eas_knob(struct kobject *kobj,
 	 * 1: EAS
 	 * 2: Hybrid
 	 */
-	if (sscanf(buf, "%iu", &val) != 0) {
-		if (val < SCHED_UNKNOWN_LB) {
-			unsigned long flags;
-
-			spin_lock_irqsave(&sched_switch_lock, flags);
-			sched_type = val;
-			spin_unlock_irqrestore(&sched_switch_lock, flags);
-		}
-	}
+	if (sscanf(buf, "%iu", &val) != 0)
+		sched_scheduler_switch(val);
 
 	return count;
 }
@@ -208,6 +215,7 @@ static ssize_t store_eas_knob(struct kobject *kobj,
 static struct kobj_attribute eas_knob_attr =
 __ATTR(enable, 0600, show_eas_knob,
 		store_eas_knob);
+#endif
 
 
 /* For read info for EAS */
@@ -356,7 +364,9 @@ __ATTR(sodi_limit, 0600, show_sodi_limit_knob,
 
 static struct attribute *eas_attrs[] = {
 	&eas_info_attr.attr,
+#ifdef CONFIG_SCHED_DEBUG
 	&eas_knob_attr.attr,
+#endif
 	&eas_watershed_attr.attr,
 	&eas_turning_point_attr.attr,
 	&eas_stune_task_thresh_attr.attr,

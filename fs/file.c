@@ -23,6 +23,12 @@
 #include <linux/rcupdate.h>
 #include <linux/workqueue.h>
 
+#ifdef CONFIG_MTK_FD_LEAK_SPECIFIC_DEBUG
+#include <mt-plat/aee.h>
+#define MSG_SIZE_TO_AEE_f 70
+char msg_to_aee_f[MSG_SIZE_TO_AEE_f];
+#endif
+
 unsigned int sysctl_nr_open __read_mostly = 1024*1024;
 unsigned int sysctl_nr_open_min = BITS_PER_LONG;
 /* our min() is unusable in constant expressions ;-/ */
@@ -491,7 +497,7 @@ static unsigned int find_next_fd(struct fdtable *fdt, unsigned int start)
 	return find_next_zero_bit(fdt->open_fds, maxfd, start);
 }
 
-#ifdef FD_OVER_CHECK
+#ifdef CONFIG_MTK_FD_LEAK_DETECT
 #define FD_CHECK_NAME_SIZE 256
 /* Declare a radix tree to construct fd set tree */
 static RADIX_TREE(over_fd_tree, GFP_KERNEL);
@@ -613,7 +619,7 @@ void fd_show_open_files(pid_t pid,
 		if (lentry != NULL) {
 			num_of_entry = lentry->num_of_fd;
 			if (lentry->name != NULL)
-				pr_info("[FDLEAK]OverAllocFDError(PID:%d fileName:%s Num:%d)\n",
+				pr_info("[FDLEAK]OverAllocFDError(PID:%d  fileName:%s Num:%d)\n",
 						pid, lentry->name,
 						num_of_entry);
 			else
@@ -691,7 +697,7 @@ repeat:
 
 out:
 	spin_unlock(&files->file_lock);
-#ifdef FD_OVER_CHECK
+#ifdef CONFIG_MTK_FD_LEAK_DETECT
 	if (error == -EMFILE && !dump_current_open_files) {
 		/*add Backbone into FD white list for skype*/
 		/*if (strcmp(current->comm, "Backbone") != 0) {*/
@@ -702,6 +708,25 @@ out:
 		/*}*/
 	}
 #endif
+#ifdef CONFIG_MTK_FD_LEAK_SPECIFIC_DEBUG
+	if (error >= 1023) {
+		dump_stack();
+		snprintf(msg_to_aee_f, MSG_SIZE_TO_AEE_f,
+			"[FDLEAK] [pid:%d] %s alloc_fd %d\n", current->pid,
+			current->comm, error);
+		aee_kernel_warning_api("FDLEAK_DEBUG", 0, DB_OPT_DEFAULT |
+			DB_OPT_LOW_MEMORY_KILLER |
+			DB_OPT_PID_MEMORY_INFO | /* smaps and hprof*/
+			DB_OPT_NATIVE_BACKTRACE |
+			DB_OPT_DUMPSYS_ACTIVITY |
+			DB_OPT_PROCESS_COREDUMP |
+			DB_OPT_DUMPSYS_SURFACEFLINGER |
+			DB_OPT_DUMPSYS_GFXINFO |
+			DB_OPT_DUMPSYS_PROCSTATS,
+			"show kernel & natvie backtace\n", msg_to_aee_f);
+	}
+#endif
+
 	return error;
 }
 

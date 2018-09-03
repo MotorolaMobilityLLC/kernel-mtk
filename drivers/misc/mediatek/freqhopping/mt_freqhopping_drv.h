@@ -34,6 +34,9 @@ struct mt_fh_hal_driver {
 	int (*mt_fh_hal_dumpregs_read)(struct seq_file *m, void *v);
 	int (*mt_fh_hal_slt_start)(void);
 	int (*mt_dfs_general_pll)(unsigned int, unsigned int);
+	void (*mt_fh_popod_restore)(void);
+	void (*mt_fh_popod_save)(void);
+
 	void (*ioctl)(unsigned int ctlid, void *);
 };
 

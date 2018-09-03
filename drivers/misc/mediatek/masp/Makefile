@@ -11,7 +11,6 @@
 # GNU General Public License for more details.
 #
 
-ifeq ($(CONFIG_MTK_SECURITY_SW_SUPPORT), y)
 #######################################
 # Specify source files
 #######################################
@@ -23,6 +22,7 @@ MASP_CORE_DRIVER_DIR := $(srctree)/drivers/misc/mediatek/masp
 #Kernel 3.18 always use asfv2
 asf_link := asfv2
 
+ifeq ($(CONFIG_MTK_SECURITY_SW_SUPPORT), y)
 ############################################
 #[core_obj] include all the files under asf/core
 ################################################
@@ -33,5 +33,9 @@ include $(MASP_CORE_DRIVER_DIR)/$(asf_link)/Makefile.mach
 sec-y += $(core_obj) $(mach_obj)
 
 # BUILD-IN
+obj-y += sec.o
+else
+sec-y += ./$(asf_link)/module/$(MTK_PLATFORM)/sec_clk.o
+sec-y += ./$(asf_link)/module/$(MTK_PLATFORM)/sec_mod.o
 obj-y += sec.o
 endif

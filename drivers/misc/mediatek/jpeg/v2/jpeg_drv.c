@@ -188,6 +188,7 @@ static wait_queue_head_t enc_wait_queue;
 static spinlock_t jpeg_enc_lock;
 static int enc_status;
 static int enc_ready;
+static DEFINE_MUTEX(jpeg_enc_power_lock);
 
 /* Support QoS */
 struct pm_qos_request jpgenc_qos_request;
@@ -339,7 +340,8 @@ void jpeg_drv_enc_power_on(void)
 			JPEG_ERR("enable clk_venc_jpgEnc fail!");
 	#else
 		#ifdef CONFIG_MTK_SMI_EXT
-			smi_bus_prepare_enable(SMI_LARB7_REG_INDX, "JPEG", true);
+			smi_bus_prepare_enable(SMI_LARB1_REG_INDX,
+				"JPEG", true);
 			if (clk_prepare_enable(gJpegClk.clk_venc_jpgEnc))
 				JPEG_ERR("enable clk_venc_jpgDec fail!");
 		#else
@@ -381,7 +383,8 @@ void jpeg_drv_enc_power_off(void)
 	#else
 		#ifdef CONFIG_MTK_SMI_EXT
 			clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
-			smi_bus_disable_unprepare(SMI_LARB7_REG_INDX, "JPEG", true);
+			smi_bus_disable_unprepare(SMI_LARB1_REG_INDX,
+				"JPEG", true);
 		#else
 			#ifndef CONFIG_ARCH_MT6735M
 				clk_disable_unprepare(gJpegClk.clk_venc_larb);
@@ -452,10 +455,12 @@ static int jpeg_drv_enc_init(void)
 	}
 	spin_unlock(&jpeg_enc_lock);
 
+	mutex_lock(&jpeg_enc_power_lock);
 	if (retValue == 0) {
 		jpeg_drv_enc_power_on();
 		jpeg_drv_enc_verify_state_and_reset();
 	}
+	mutex_unlock(&jpeg_enc_power_lock);
 
 	return retValue;
 }
@@ -468,8 +473,10 @@ static void jpeg_drv_enc_deinit(void)
 		enc_ready = 0;
 		spin_unlock(&jpeg_enc_lock);
 
+		mutex_lock(&jpeg_enc_power_lock);
 		jpeg_drv_enc_reset();
 		jpeg_drv_enc_power_off();
+		mutex_unlock(&jpeg_enc_power_lock);
 	}
 }
 
@@ -718,12 +725,13 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg,
 
 			jpeg_drv_dec_dump_key_reg();
 
+#ifndef JPEG_PM_DOMAIN_ENABLE
 #ifdef CONFIG_MTK_SMI_EXT
 		/* need to dump smi for the case that no irq coming from HW */
 		if (decResult == 5)
 			smi_debug_bus_hang_detect(SMI_PARAM_BUS_OPTIMIZATION, 1, 0, 1);
 #endif
-
+#endif
 			jpeg_drv_dec_warm_reset();
 		}
 		irq_st = _jpeg_dec_int_status;
@@ -1045,12 +1053,13 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		if (ret != 0) {
 			jpeg_drv_enc_dump_reg();
 
+#ifndef JPEG_PM_DOMAIN_ENABLE
 #ifdef CONFIG_MTK_SMI_EXT
 		/* need to dump smi for the case that no irq coming from HW */
 		if (ret == 3)
 			smi_debug_bus_hang_detect(SMI_PARAM_BUS_OPTIMIZATION, 1, 0, 1);
 #endif
-
+#endif
 			jpeg_drv_enc_warm_reset();
 
 			return -EFAULT;
@@ -1330,6 +1339,7 @@ static ssize_t jpeg_read(struct file *file, char __user *data, size_t len, loff_
 
 static int jpeg_release(struct inode *inode, struct file *file)
 {
+/*
 	if (enc_status != 0) {
 		JPEG_WRN("Error! Enable error handling for jpeg encoder");
 		jpeg_drv_enc_deinit();
@@ -1341,6 +1351,7 @@ static int jpeg_release(struct inode *inode, struct file *file)
 		jpeg_drv_dec_deinit();
 	}
 #endif
+*/
 
 	if (file->private_data != NULL) {
 		kfree(file->private_data);

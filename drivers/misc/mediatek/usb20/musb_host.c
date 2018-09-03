@@ -112,8 +112,13 @@ void dump_tx_ops(u8 ep_num)
 
 	musb_writeb(mbase, MUSB_INDEX, ep_num);
 	c_size = musb_read_txfifosz(mbase);
-	DBG(0, "last_tx_ops<%d>, last_tx_len<%d> c_size<%x, %x>\n",
-			last_tx_ops, last_tx_len, last_c_size, c_size);
+	dump_stack();
+	DBG(0, "ep<%d>, ops<%d>, len<%d> c_size<%x, %x>\n",
+			ep_num,
+			last_tx_ops,
+			last_tx_len,
+			last_c_size,
+			c_size);
 }
 void musb_host_tx_db_enable(struct musb *musb,
 		u8 epnum, bool enable, int ops, int len)
@@ -133,6 +138,8 @@ void musb_host_tx_db_enable(struct musb *musb,
 	} else if (!enable && cur_dpb) {
 		c_size &= ~(MUSB_FIFOSZ_DPB);
 		need_update = true;
+		DBG_LIMIT(1, "to disable, c_size<%x>",
+				c_size);
 	}
 
 	if (need_update) {
@@ -1157,9 +1164,11 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 	if (epnum && is_out) {
 		csr = musb_readw(epio, MUSB_TXCSR);
 		if (csr & (MUSB_TXCSR_FIFONOTEMPTY |
-					MUSB_TXCSR_TXPKTRDY))
+					MUSB_TXCSR_TXPKTRDY)) {
 			DBG(0, "ERROR!packet still in FIFO, CSR %04x\n",
 					csr);
+			dump_tx_ops(epnum);
+		}
 	}
 
 	if (is_out && !len) {
@@ -2013,15 +2022,17 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 
 				diff_ns = timeval_to_ns(&tv_after) -
 					timeval_to_ns(&tv_before);
-				/* 1 ms for timeout */
-				if (diff_ns >= 1000000) {
+				/* 5 ms for timeout */
+				if (diff_ns >= 5000000) {
 					timeout = 1;
 					break;
 				}
 			}
-			if (timeout)
+			if (timeout) {
 				DBG(0, "ERROR!packet still in FIFO, CSR %04x\n",
 					tx_csr);
+				dump_tx_ops(epnum);
+			}
 		}
 	}
 
@@ -3094,7 +3105,8 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 	struct musb_qh *qh;
 	unsigned long flags;
 	int is_in = usb_pipein(urb->pipe);
-	int ret;
+	int ret, pos;
+	char info[256];
 
 
 	spin_lock_irqsave(&musb->lock, flags);
@@ -3110,15 +3122,23 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 		goto done;
 	}
 
-	DBG(0, "urb<%p>,dev<%d>,ep<%d%s>,qh<%p>,rdy<%d>,prev<%d>,cur<%d>\n",
-			urb,
-			usb_pipedevice(urb->pipe),
-			usb_pipeendpoint(urb->pipe),
-			is_in ? "in" : "out",
-			qh,
-			qh->is_ready,
-			urb->urb_list.prev != &qh->hep->urb_list,
-			musb_ep_get_qh(qh->hw_ep, is_in) == qh);
+	pos = snprintf(info, 256, "urb<%p>,dev<%d>,ep<%d%s>,qh<%p>",
+				urb,
+				usb_pipedevice(urb->pipe),
+				usb_pipeendpoint(urb->pipe),
+				is_in ? "in" : "out",
+				qh);
+
+	snprintf(info + pos, 256, ",rdy<%d>,prev<%d>,cur<%d>",
+				qh->is_ready,
+				urb->urb_list.prev != &qh->hep->urb_list,
+				musb_ep_get_qh(qh->hw_ep, is_in) == qh);
+
+	if (strstr(current->comm, "usb_call"))
+		DBG_LIMIT(5, "%s", info);
+	else
+		DBG(0, "%s\n", info);
+
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 	/* abort HW transaction on this ep */
 	if (qh->is_use_qmu)

@@ -248,10 +248,6 @@ maxcpus=8 firmware_class.path=/vendor/firmware loop.max_part=7";
 		};
 #endif
 
-#ifdef CONFIG_WATCHDATA_TEE_SUPPORT
-#include "watchtrust.dtsi"
-#endif
-
 	};
 
 	/* Microtrust SW IRQ number 188(220) ~ 193(225) */
@@ -496,6 +492,11 @@ maxcpus=8 firmware_class.path=/vendor/firmware loop.max_part=7";
 	mobicore {
 		compatible = "trustonic,mobicore";
 		interrupts = <GIC_SPI 194 IRQ_TYPE_EDGE_RISING>;
+	};
+
+	tkcore {
+	    compatible = "trustkernel,tkcore";
+	    interrupts = <GIC_SPI 196 IRQ_TYPE_EDGE_RISING>;
 	};
 
 	timer {

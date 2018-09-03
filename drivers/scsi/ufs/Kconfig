@@ -102,6 +102,18 @@ config SCSI_UFS_QCOM
 	  Select this if you have UFS controller on QCOM chipset.
 	  If unsure, say N.
 
+config UFSHPB
+	bool "UFSHPB (EXPERIMENTAL)"
+	depends on SCSI_UFSHCD
+	---help---
+	  This selects the UFSHPB v1.0 test driver.
+	  HPB can improve UFS storage random read performance over 1G.
+	  This is the new feature for UFS.
+
+	  Say Y if you want to use UFSHPB as default support.
+
+	  If unsure, say N.
+
 config MTK_UFS_SUPPORT
 	bool "MTK specific hooks to UFS controller platform driver"
 	depends on SCSI_UFSHCD_PLATFORM

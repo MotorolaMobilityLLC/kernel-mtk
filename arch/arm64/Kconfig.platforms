@@ -208,6 +208,43 @@ config MACH_MT6761
 	  thin-design smartphones. MT6761 also offers significant multitasking and
 	  multimedia improvements.
 
+config MACH_MT6779
+	bool "MediaTek MT6779"
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select ARM_DSU_PMU
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select PINCTRL
+	select PINCTRL_MT6779
+	select MFD_SYSCON
+	select MTK_BASE_POWER
+	select CPU_IDLE
+	select MTK_GIC_V3_EXT
+	select MTK_SYSIRQ
+	select MTK_TIMER_SYSTIMER
+	select MTK_WATCHDOG_COMMON
+	select MTK_WATCHDOG_COMMON_V2
+	select MTK_WD_KICKER
+	select MTK_DEBUG_LATCH
+	select MTK_PLAT_SRAM_FLAG
+	select MTK_BOUNCING_CHECK if MTK_AEE_FEATURE
+	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
+	select DEBUG_TIMEKEEPING
+	help
+	  This enables support for MediaTek - MT6779
+	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
+	  thin-design smartphones.
+	  Support for aarch64 Architecture
+
+
 config MACH_MT3967
 	bool "MediaTek MT3967"
 	select GENERIC_CLOCKEVENTS
@@ -250,6 +287,7 @@ config MACH_MT3967
 	select MTK_DEBUG_LATCH
 	select MTK_PLAT_SRAM_FLAG
 	select MTK_FIQ_CACHE
+	select MTK_GIC_TARGET_ALL
 	select MTK_BOUNCING_CHECK if MTK_AEE_FEATURE
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_SYSTRACKER_V2

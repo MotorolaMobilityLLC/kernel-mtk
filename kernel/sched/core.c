@@ -95,6 +95,8 @@
 #include "mtk_sched_mon.h"
 #endif
 
+#include "mtk_perf.h"
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
 #include "walt.h"
@@ -2354,10 +2356,6 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
 #endif
 
-#ifdef CONFIG_CPU_FREQ_TIMES
-	cpufreq_task_times_init(p);
-#endif
-
 	RB_CLEAR_NODE(&p->dl.rb_node);
 	init_dl_task_timer(&p->dl);
 	__dl_clear_params(p);
@@ -3450,6 +3448,10 @@ void scheduler_tick(void)
 	perf_event_task_tick();
 #ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_save_irq_counts(SCHED_TICK);
+#endif
+
+#ifdef CONFIG_MTK_PERF_TRACKER
+	perf_tracker(sched_ktime_clock());
 #endif
 
 #ifdef CONFIG_SMP
