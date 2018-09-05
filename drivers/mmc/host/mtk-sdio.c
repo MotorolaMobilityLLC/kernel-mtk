@@ -1187,7 +1187,7 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 #define ATK_TRACE                           4
 #define ATK_LOUD                            5
 
-unsigned int autok_debug_level = ATK_RES;
+static unsigned int autok_debug_level = ATK_RES;
 
 #define ATK_DBG(_level, _fmt ...)	   \
 ({                                         \
@@ -1466,7 +1466,7 @@ struct AUTOK_REF_INFO {
 unsigned int do_autok_offline_tune_tx;
 u8 sdio_autok_res[TUNING_PARAM_COUNT];
 
-const struct AUTOK_PARAM_INFO autok_param_info[] = {
+static const struct AUTOK_PARAM_INFO autok_param_info[] = {
 	{{0, 1}, "CMD_EDGE"},
 	/* async fifo mode Pad dat edge must fix to 0 */
 	{{0, 1}, "RDATA_EDGE"},
@@ -2910,7 +2910,7 @@ static int autok_param_apply(struct msdc_host *host, u8 *autok_tune_res)
 	return 0;
 }
 
-void autok_tuning_parameter_init(struct msdc_host *host, u8 *res)
+static void autok_tuning_parameter_init(struct msdc_host *host, u8 *res)
 {
 	unsigned int ret = 0;
 	/* void __iomem *base = host->base; */
@@ -2996,7 +2996,7 @@ int autok_execute_tuning_latch_ck(struct msdc_host *host, unsigned int opcode,
 		}
 	}
 	host->tune_latch_ck_cnt = 0;
-	return j;
+	return (j >= 8) ? 0 : j;
 }
 
 /*
@@ -3169,7 +3169,7 @@ static int autok_init_sdr104(struct msdc_host *host)
 }
 
 /* online tuning for SDIO/SD */
-int execute_online_tuning(struct msdc_host *host, u8 *res)
+static int execute_online_tuning(struct msdc_host *host, u8 *res)
 {
 	unsigned int ret = 0;
 	unsigned int uCmdEdge = 0;
