@@ -874,6 +874,16 @@
 		reg = <0 0x10227000 0 0x1000>;
 	};
 
+	dvfsp@0011bc00 {
+		compatible = "mediatek,mt6779-dvfsp";
+		reg = <0 0x0011bc00 0 0x1400>,
+		      <0 0x0011bc00 0 0x1400>;
+	};
+
+	mt_cpufreq: mt_cpufreq {
+		compatible = "mediatek,mt-cpufreq";
+	};
+
 	gce_mbox: gce_mbox@10228000 {
 		compatible = "mediatek,mailbox-gce";
 		reg = <0 0x10228000 0 0x4000>;

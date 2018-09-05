@@ -16,6 +16,8 @@
 
 #include "mtk_cpufreq_internal.h"
 
+#define CPU_DVFS_DT_REG	1
+
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #define CONFIG_HYBRID_CPU_DVFS	1
 //#define PPM_AP_SIDE	1
@@ -53,7 +55,7 @@
 #define PLL_SETTLE_TIME		20
 #define POS_SETTLE_TIME		1
 
-#define DVFSP_DT_NODE		"mediatek,mt3967-dvfsp"
+#define DVFSP_DT_NODE		"mediatek,mt6779-dvfsp"
 
 #define CSRAM_BASE		0x0011bc00
 #define CSRAM_SIZE		0x1400		/* 5K bytes */
