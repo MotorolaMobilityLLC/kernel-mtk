@@ -300,6 +300,7 @@ static const char * const *get_all_clk_names(void)
 		"imgsys_dip",
 		"imgsys_mfb",
 		"imgsys_wpe_a",
+
 		/* IPE */
 		"ipe_larb7",
 		"ipe_larb8",

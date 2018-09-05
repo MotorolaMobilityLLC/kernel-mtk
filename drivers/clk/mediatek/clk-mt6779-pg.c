@@ -29,7 +29,7 @@
 
 
 #define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP  0
+#define MT_CCF_BRINGUP  1
 #define CONTROL_LIMIT 1
 
 #define	CHECK_PWR_ST	1
@@ -5157,24 +5157,24 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_mfg1(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg2(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg3(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg4(STA_POWER_ON);
-#if 0
+#if 1
 	spm_mtcmos_ctrl_dis(STA_POWER_ON);
 	spm_mtcmos_ctrl_cam(STA_POWER_ON);
 	spm_mtcmos_ctrl_ven(STA_POWER_ON);
 	spm_mtcmos_ctrl_vde(STA_POWER_ON);
 	spm_mtcmos_ctrl_isp(STA_POWER_ON);
+	spm_mtcmos_ctrl_ipe(STA_POWER_ON);
 #endif
-#if 0 /*avoid hang in bring up*/
+#if 1 /*avoid hang in bring up*/
 	spm_mtcmos_ctrl_vpu_vcore_shut_down(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_conn_shut_down(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_core0_shut_down(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_core1_shut_down(STA_POWER_ON);
-	/*spm_mtcmos_ctrl_vpu_core2_shut_down(STA_POWER_ON);*/
+	spm_mtcmos_ctrl_vpu_core2_shut_down(STA_POWER_ON);
 #endif
 	/*spm_mtcmos_ctrl_md1(STA_POWER_ON);*/
 	/*spm_mtcmos_ctrl_md1(STA_POWER_DOWN);*/
-	/*spm_mtcmos_ctrl_audio(STA_POWER_ON);*/
+	spm_mtcmos_ctrl_audio(STA_POWER_ON);
 #endif
 #endif				/* !MT_CCF_BRINGUP */
 }
@@ -5294,15 +5294,27 @@ static const char * const *get_img_clk_names(size_t *num)
 
 		/* IMG */
 		"imgsys_larb5",
-		"imgsys_larb2",
+		"imgsys_larb6",
 		"imgsys_dip",
-		"imgsys_fdvt",
-		"imgsys_dpe",
-		"imgsys_rsc",
 		"imgsys_mfb",
 		"imgsys_wpe_a",
-		"imgsys_wpe_b",
-		"imgsys_owe",
+	};
+	*num = ARRAY_SIZE(clks);
+	return clks;
+}
+
+static const char * const *get_ipe_clk_names(size_t *num)
+{
+	static const char * const clks[] = {
+
+		/* IPE */
+		"ipe_larb7",
+		"ipe_larb8",
+		"ipe_smi_subcom",
+		"ipe_fd",
+		"ipe_fe",
+		"ipe_rsc",
+		"ipe_dpe",
 	};
 	*num = ARRAY_SIZE(clks);
 	return clks;
@@ -5312,7 +5324,6 @@ static const char * const *get_mm_clk_names(size_t *num)
 {
 	static const char * const clks[] = {
 
-		/* MM */
 		"mm_smi_common",
 		"mm_smi_larb0",
 		"mm_smi_larb1",
@@ -5331,7 +5342,7 @@ static const char * const *get_mm_clk_names(size_t *num)
 		"mm_mdp_rsz1",
 		"mm_mdp_tdshp",
 		"mm_mdp_wrot0",
-		"mm_mdp_wdma0",
+		"mm_mdp_wrot1",
 		"mm_fake_eng",
 		"mm_disp_ovl0",
 		"mm_disp_ovl0_2l",
@@ -5345,6 +5356,7 @@ static const char * const *get_mm_clk_names(size_t *num)
 		"mm_disp_gamma0",
 		"mm_disp_dither0",
 		"mm_disp_split",
+		/* MM1 */
 		"mm_dsi0_mmck",
 		"mm_dsi0_ifck",
 		"mm_dpi_mmck",
@@ -5356,9 +5368,12 @@ static const char * const *get_mm_clk_names(size_t *num)
 		"mm_mmsys_r2y",
 		"mm_disp_rsz",
 		"mm_mdp_aal",
-		"mm_mdp_ccorr",
+		"mm_mdp_hdr",
 		"mm_dbi_mmck",
 		"mm_dbi_ifck",
+		"mm_disp_pm0",
+		"mm_disp_hrt_bw",
+		"mm_disp_ovl_fbdc",
 	};
 	*num = ARRAY_SIZE(clks);
 	return clks;
@@ -5372,6 +5387,7 @@ static const char * const *get_venc_clk_names(size_t *num)
 		"venc_larb",
 		"venc_venc",
 		"venc_jpgenc",
+		"venc_gals",
 	};
 	*num = ARRAY_SIZE(clks);
 	return clks;
@@ -5381,8 +5397,9 @@ static const char * const *get_vdec_clk_names(size_t *num)
 {
 	static const char * const clks[] = {
 
-		/* VDE */
+		/* VDEC */
 		"vdec_cken",
+		/* VDEC1 */
 		"vdec_larb1_cken",
 	};
 	*num = ARRAY_SIZE(clks);
@@ -5410,12 +5427,13 @@ void subsys_if_on(void)
 	unsigned int sta_md1 = spm_read(MD1_PWR_CON);
 	int ret = 0;
 	int i = 0;
-	size_t cam_num, img_num, mm_num, venc_num, vdec_num = 0;
+	size_t cam_num, img_num, ipe_num, mm_num, venc_num, vdec_num = 0;
 	/*size_t num, cam_num, img_num, mm_num, venc_num, vdec_num = 0;*/
 
 	/*const char * const *clks = get_all_clk_names(&num);*/
 	const char * const *cam_clks = get_cam_clk_names(&cam_num);
 	const char * const *img_clks = get_img_clk_names(&img_num);
+	const char * const *ipe_clks = get_ipe_clk_names(&ipe_num);
 	const char * const *mm_clks = get_mm_clk_names(&mm_num);
 	const char * const *venc_clks = get_venc_clk_names(&venc_num);
 	const char * const *vdec_clks = get_vdec_clk_names(&vdec_num);
@@ -5442,6 +5460,13 @@ void subsys_if_on(void)
 			dump_cg_state(img_clks[i]);
 		ret++;
 	}
+	if ((sta & IPE_PWR_STA_MASK) && (sta_s & IPE_PWR_STA_MASK)) {
+		pr_notice("suspend warning: SYS_IPE is on!!!\n");
+		check_ipe_clk_sts();
+		for (i = 0; i < ipe_num; i++)
+			dump_cg_state(ipe_clks[i]);
+		ret++;
+	}
 	if ((sta & MFG1_PWR_STA_MASK) && (sta_s & MFG1_PWR_STA_MASK)) {
 		pr_notice("suspend warning: SYS_MFG1 is on!!!\n");
 		ret++;
@@ -5461,10 +5486,7 @@ void subsys_if_on(void)
 		pr_notice("suspend warning: SYS_MFG3 is on!!!\n");
 		ret++;
 	}
-	if ((sta & MFG4_PWR_STA_MASK) && (sta_s & MFG4_PWR_STA_MASK)) {
-		pr_notice("suspend warning: SYS_MFG4 is on!!!\n");
-		ret++;
-	}
+
 	if ((sta & AUDIO_PWR_STA_MASK) && (sta_s & AUDIO_PWR_STA_MASK))
 		pr_notice("suspend warning: SYS_AUDIO is on!!!\n");
 	if ((sta & CAM_PWR_STA_MASK) && (sta_s & CAM_PWR_STA_MASK)) {
@@ -5494,6 +5516,11 @@ void subsys_if_on(void)
 		pr_notice("suspend warning: SYS_VPU_CORE1 is on!!!\n");
 		ret++;
 	}
+	if ((sta & VPU_CORE2_PWR_STA_MASK) &&
+		(sta_s & VPU_CORE2_PWR_STA_MASK)) {
+		pr_notice("suspend warning: SYS_VPU_CORE2 is on!!!\n");
+		ret++;
+	}
 	if ((sta & VDE_PWR_STA_MASK) && (sta_s & VDE_PWR_STA_MASK)) {
 		pr_notice("suspend warning: SYS_VDE is on!!!\n");
 		for (i = 0; i < vdec_num; i++)
@@ -5508,22 +5535,24 @@ void subsys_if_on(void)
 #endif
 }
 
-#if 0 /*only use for suspend test*/
+#if 1 /*only use for suspend test*/
 void mtcmos_force_off(void)
 {
-	spm_mtcmos_ctrl_mfg_2d(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg_core1(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg_core0(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg3(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg2(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg1(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg0(STA_POWER_DOWN);
 
+	spm_mtcmos_ctrl_vpu_core2_shut_down(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_vpu_core1_shut_down(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_vpu_core0_shut_down(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_vpu_top(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_vpu_conn_shut_down(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_vpu_vcore_shut_down(STA_POWER_DOWN);
 
 	spm_mtcmos_ctrl_cam(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_ven(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_vde(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_ipe(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_dis(STA_POWER_DOWN);
 

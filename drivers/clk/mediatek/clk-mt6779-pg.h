@@ -57,6 +57,7 @@ extern int cam_mtcmos_patch(int on);
 extern void mfg_way_en(int way_en);
 extern void check_mm0_clk_sts(void);
 extern void check_img_clk_sts(void);
+extern void check_ipe_clk_sts(void);
 extern void check_ven_clk_sts(void);
 extern void check_cam_clk_sts(void);
 extern unsigned int mt_get_abist_freq(unsigned int ID);

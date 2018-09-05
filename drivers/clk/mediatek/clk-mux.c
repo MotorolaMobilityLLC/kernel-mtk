@@ -104,11 +104,13 @@ static int mtk_mux_clr_set_upd_enable(struct clk_hw *hw)
 	val &= ~BIT(mux->gate_shift);
 
 	if (val != orig) {
-		clk_writel(val, mux->base + mux->mux_ofs);
-
+		/*clk_writel(val, mux->base + mux->mux_ofs);*/
+		clk_writel(BIT(mux->gate_shift), mux->base + mux->mux_clr_ofs);
+		#if 0
 		if (mux->upd_shift >= 0)
 			clk_writel(BIT(mux->upd_shift),
 			mux->base + mux->upd_ofs);
+		#endif
 	}
 
 	if (mux->lock)
@@ -156,11 +158,13 @@ static void mtk_mux_clr_set_upd_disable(struct clk_hw *hw)
 	val |= BIT(mux->gate_shift);
 
 	if (val != orig) {
-		clk_writel(val, mux->base + mux->mux_ofs);
-
+		/*clk_writel(val, mux->base + mux->mux_ofs);*/
+		clk_writel(BIT(mux->gate_shift), mux->base + mux->mux_set_ofs);
+		#if 0
 		if (mux->upd_shift >= 0)
 			clk_writel(BIT(mux->upd_shift),
 			mux->base + mux->upd_ofs);
+		#endif
 	}
 
 	if (mux->lock)
