@@ -249,6 +249,7 @@ static void *g_SPM_base;
 static void *g_INFRA_base;
 static void *g_DBGAPB_base;
 static void *g_TOPCKGEN_base;
+static void *g_EMI_APB_BASE;
 phys_addr_t gpu_fdvfs_virt_addr; /* for GED, legacy ?! */
 GED_LOG_BUF_HANDLE _mtk_gpu_log_hnd;
 static int g_clock_on;
@@ -1608,6 +1609,14 @@ static void __mt_gpufreq_clock_switch(unsigned int freq_new)
 	gpufreq_pr_debug("@%s: begin, freq = %d, GPUPLL_CON1 = 0x%x\n", __func__, freq_new, DRV_Reg32(GPUPLL_CON1));
 
 	if (g_parking) {
+		/* Limit EMI GPU outstanding (origin -> 5) and wait 2us. Find DE/Fumin Huang */
+		/* *((UINT32P)(0x10219000+0x000000d8))= 0xa5a5a8a8; EMI_IOCM  */
+		/* *((UINT32P)(0x10219000+0x000000dc))= 0x20202525; EMI_IOCM_2ND  */
+		/* Wait (2us);  */
+		writel(0xa5a5a8a8, g_EMI_APB_BASE + 0xd8);
+		writel(0x20202525, g_EMI_APB_BASE + 0xdc);
+		udelay(2);
+
 		/* mfgpll_ck to clk26m */
 		__mt_gpufreq_switch_to_clksrc(CLOCK_SUB);
 		/* dds = GPUPLL_CON1[21:0], POST_DIVIDER = GPUPLL_CON1[24:26] */
@@ -1616,6 +1625,12 @@ static void __mt_gpufreq_clock_switch(unsigned int freq_new)
 		/* clk26m to mfgpll_ck */
 		__mt_gpufreq_switch_to_clksrc(CLOCK_MAIN);
 		g_parking = false;
+
+		/* Restore GPU outstanding (5 -> origin) */
+		/* *((UINT32P)(0x10219000+0x000000d8))= 0xa8a8a8a8; EMI_IOCM */
+		/* *((UINT32P)(0x10219000+0x000000dc))= 0x25252525; EMI_IOCM_2ND */
+		writel(0xa8a8a8a8, g_EMI_APB_BASE + 0xd8);
+		writel(0x25252525, g_EMI_APB_BASE + 0xdc);
 	} else {
 		mt_dfs_general_pll(4, dds);
 	}
@@ -2702,6 +2717,12 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	g_TOPCKGEN_base = __mt_gpufreq_of_ioremap("mediatek,topckgen", 0);
 	if (g_TOPCKGEN_base == NULL) {
 		gpufreq_pr_info("@%s: fail to remap TOPCKGEN register\n", __func__);
+		return -1;
+	}
+
+	g_EMI_APB_BASE = __mt_gpufreq_of_ioremap("mediatek,emi", 0);
+	if (g_EMI_APB_BASE == NULL) {
+		gpufreq_pr_info("@%s: fail to remap EMI_APB register\n", __func__);
 		return -1;
 	}
 
