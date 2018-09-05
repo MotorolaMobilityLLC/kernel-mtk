@@ -296,8 +296,6 @@ void mtk_idle_pre_process_by_chip(
 #endif
 	}
 
-	op_cond |= mtk_idle_cond_vcore_low_volt(idle_type);
-
 	if (idle_type == IDLE_TYPE_DP || idle_type == IDLE_TYPE_SO3)
 		__sync_vcore_ctrl_pcm_flag(op_cond, &pcm_flags1);
 
@@ -444,7 +442,7 @@ static unsigned int mtk_dpidle_output_log(
 	} else {
 		if (wakesta->is_abort != 0 || wakesta->r12 == 0)
 			print_log = true;
-		else if (wakesta->is_abort <= IDLE_TIMER_OUT_CRITERIA)
+		else if (wakesta->timer_out <= IDLE_TIMER_OUT_CRITERIA)
 			print_log = true;
 		else if (check_print_log_duration())
 			print_log = true;

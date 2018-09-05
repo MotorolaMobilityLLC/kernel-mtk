@@ -438,7 +438,7 @@ bool mtk_idle_check_vcore_cond(void);
 
 /* check clkmux for vcore lp mode */
 extern bool mtk_idle_cond_vcore_lp_mode(int idle_type);
-extern unsigned int mtk_idle_cond_vcore_low_volt(int idle_type);
+extern unsigned int mtk_idle_cond_vcore_ulposc_state(void);
 
 /* mask/unmask block mask */
 void mtk_idle_cond_update_mask(

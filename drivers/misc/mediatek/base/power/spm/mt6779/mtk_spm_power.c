@@ -36,6 +36,10 @@ void mtk_idle_power_pre_process(int idle_type, unsigned int op_cond)
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
 
+	if (idle_type == IDLE_TYPE_SO3 &&
+		!(op_cond & MTK_IDLE_OPT_VCORE_ULPOSC_OFF))
+		op_cond |= mtk_idle_cond_vcore_ulposc_state();
+
 	spm_opt |= (op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE) ?
 		PWR_OPT_SLEEP_DPIDLE : 0;
 	spm_opt |= (op_cond & MTK_IDLE_OPT_XO_UFS_ON_OFF) ?
@@ -44,6 +48,8 @@ void mtk_idle_power_pre_process(int idle_type, unsigned int op_cond)
 		PWR_OPT_CLKBUF_ENTER_BBLPM : 0;
 	spm_opt |= (op_cond & MTK_IDLE_OPT_VCORE_LP_MODE) ?
 		PWR_OPT_VCORE_LP_MODE : 0;
+	spm_opt |= (op_cond & MTK_IDLE_OPT_VCORE_ULPOSC_OFF) ?
+		PWR_OPT_VCORE_ULPOSC_OFF : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
 
@@ -87,6 +93,8 @@ void mtk_idle_power_post_process(int idle_type, unsigned int op_cond)
 		PWR_OPT_CLKBUF_ENTER_BBLPM : 0;
 	spm_opt |= (op_cond & MTK_IDLE_OPT_VCORE_LP_MODE) ?
 		PWR_OPT_VCORE_LP_MODE : 0;
+	spm_opt |= (op_cond & MTK_IDLE_OPT_VCORE_ULPOSC_OFF) ?
+		PWR_OPT_VCORE_ULPOSC_OFF : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
 
