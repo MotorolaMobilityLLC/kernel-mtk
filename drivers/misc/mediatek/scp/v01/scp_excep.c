@@ -610,7 +610,7 @@ void scp_aed(enum scp_excep_id type, enum scp_core_id id)
 	pr_debug("%s", aed.detail);
 
 	/* scp aed api, only detail information available*/
-	aed_scp_exception_api(NULL, 0, NULL, 0,
+	aed_common_exception_api("scp", NULL, 0, NULL, 0,
 			aed.detail, DB_OPT_DEFAULT);
 
 	pr_debug("[SCP] scp exception dump is done\n");
