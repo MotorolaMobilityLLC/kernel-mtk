@@ -33,6 +33,7 @@
 #include <linux/of_address.h>
 #include <linux/uaccess.h>
 #include <linux/pm_qos.h>
+#include <linux/clk-provider.h>
 
 #include "mtk_devinfo.h"
 /* #define BRING_UP */
@@ -650,6 +651,30 @@ unsigned int mt_gpufreq_get_cur_freq(void)
 	return g_cur_opp_freq;
 }
 EXPORT_SYMBOL(mt_gpufreq_get_cur_freq);
+
+
+int MTKPowerStatus(void)
+{
+	bool p_mfg_core0_state;
+	bool p_mfg_async;
+	bool p_mfg_mfg;
+	int p_state;
+
+	p_mfg_core0_state = __clk_is_enabled(g_clk->mtcmos_mfg_core0);
+	p_mfg_async = __clk_is_enabled(g_clk->mtcmos_mfg_async);
+	p_mfg_mfg = __clk_is_enabled(g_clk->mtcmos_mfg);
+
+	p_state = 0;
+	if (p_mfg_core0_state)
+		p_state |= 0x1;
+	if (p_mfg_async)
+		p_state |= 0x2;
+	if (p_mfg_mfg)
+		p_state |= 0x4;
+
+	return p_state;
+}
+EXPORT_SYMBOL(MTKPowerStatus);
 
 /*
  * API : get current voltage
