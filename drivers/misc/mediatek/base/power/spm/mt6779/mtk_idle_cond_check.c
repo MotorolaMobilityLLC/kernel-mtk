@@ -85,7 +85,6 @@ static void __iomem *apmixedsys_base;  /* APMIXEDSYS */
 
 static int idle_force_vcore_lp_mode = IDLE_VCORE_CHECK_FOR_LP_MODE;
 static bool clkmux_cond[NR_TYPES];
-static bool vcore_cond[NR_TYPES];
 static unsigned int clkmux_block_mask[NR_TYPES][NF_CLK_CFG];
 /* FIX ME*/
 
@@ -144,9 +143,9 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 		0x00040802,	/* INFRA0  */
 		0x03AFB900,	/* INFRA1  */
 		0x000000C5,	/* INFRA2  */
-		0x00000180,	/* INFRA3  */
+		0x00000000,	/* INFRA3  */
 		0xFFFFFFFF,	/* MMSYS0  */
-		0x00003FFF,	/* MMSYS1  */
+		0x0001FFFF,	/* MMSYS1  */
 	},
 	[IDLE_TYPE_SO3] = {
 		0xBEF000B0,	/* MTCMOS1 */
@@ -154,9 +153,9 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 		0x02040802,	/* INFRA0  */
 		0x03AFB900,	/* INFRA1  */
 		0x000000D1,	/* INFRA2  */
-		0x08000180,	/* INFRA3  */
+		0x08000000,	/* INFRA3  */
 		0xFFFFFFFF,	/* MMSYS0  */
-		0x00003FFF,	/* MMSYS1  */
+		0x0001FFFF,	/* MMSYS1  */
 	},
 	[IDLE_TYPE_SO] = {
 		0xBEF000B0,	/* MTCMOS1 */
@@ -164,8 +163,8 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 		0x00040802,	/* INFRA0  */
 		0x03AFB900,	/* INFRA1  */
 		0x000000C1,	/* INFRA2  */
-		0x00000180,	/* INFRA3  */
-		0x000DFF00,	/* MMSYS0  */
+		0x00000000,	/* INFRA3  */
+		0x000DFC00,	/* MMSYS0  */
 		0x00003F7C,	/* MMSYS1  */
 	},
 	[IDLE_TYPE_RG] = {
@@ -708,13 +707,9 @@ unsigned int mtk_idle_cond_vcore_low_volt(int idle_type)
 	if (idle_force_vcore_lp_mode == IDLE_VCORE_BYPASS_CHECK_FOR_LP_MODE)
 		goto END;
 
-	vcore_cond[idle_type]  = mtk_idle_check_vcore_cond();
-
 	switch (idle_force_vcore_lp_mode) {
 	case IDLE_VCORE_CHECK_FOR_LP_MODE:
 		/* by vcore low volt check */
-		op_cond |= (vcore_cond[idle_type] ?
-			DEEPIDLE_OPT_VCORE_LOW_VOLT : 0);
 		break;
 	case IDLE_VCORE_FORCE_LP_MODE:
 		/* enter LP mode */
@@ -817,26 +812,28 @@ bool mtk_idle_check_clkmux(
 		result     = false;
 		idx        = i / 4;
 		offset     = i % 4;
-		clkmux_val =
-			((clkcfgs[idx] & masks[offset]) >> shifts[offset]);
+		clkmux_val = ((clkcfgs[idx] & masks[offset]) >>
+			      shifts[offset]);
 
 		check_num = clkmux_condition_mask[i][0];
 
 		if (check_num == 0)
 			result = true;
 
-	for (k = 0; k < check_num; k++) {
-		check_val  = clkmux_condition_mask[i][1 + k];
+		for (k = 0; k < check_num; k++) {
 
-		mux_check_mask = (k == 0) ? MUX_OFF_MASK : MUX_ON_MASK;
+			check_val  = clkmux_condition_mask[i][1 + k];
 
-		if ((clkmux_val & mux_check_mask) == check_val) {
-			result = true;
-			break;
+			mux_check_mask = (k == 0) ? MUX_OFF_MASK : MUX_ON_MASK;
+
+			if ((clkmux_val & mux_check_mask) == check_val) {
+				result = true;
+				break;
+			}
 		}
-	}
 
 		if (result == false) {
+
 			final_result = false;
 
 			block_mask[idle_type][idx] |=
@@ -847,26 +844,5 @@ bool mtk_idle_check_clkmux(
 	return final_result;
 }
 
-bool mtk_idle_check_vcore_cond(void)
-{
-	uint32_t val = 0;
-	bool ret = false;
-
-	/* All PLLs in check list have to power down */
-	val = idle_readl(APLL1_CON0);
-
-	if ((val & 0x00000001))
-		goto RET;
-
-	val = idle_readl(APLL2_CON0);
-
-	if ((val & 0x00000001))
-		goto RET;
-
-	ret = true;
-
-RET:
-	return ret;
-}
 
 late_initcall(mtk_idle_cond_check_init);

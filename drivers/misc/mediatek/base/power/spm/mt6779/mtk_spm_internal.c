@@ -437,7 +437,7 @@ u32 __spm_get_wake_period(int pwake_time, unsigned int last_wr)
 
 /* FIXME:
  * 1. Need to move to
- * "drivers/misc/mediatek/base/power/spm/mt3967/sleep_def.h" later
+ * "drivers/misc/mediatek/base/power/spm/mt6779/sleep_def.h" later
  * 2. Need to check w/ DE for the correct value.
  */
 
