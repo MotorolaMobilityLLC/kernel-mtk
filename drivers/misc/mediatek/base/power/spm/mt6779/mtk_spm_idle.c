@@ -52,7 +52,7 @@ static unsigned int idle_pcm_flags[NR_IDLE_TYPES] = {
 		/* SPM_FLAG_DISABLE_DDRPHY_PDN | */
 		SPM_FLAG_DISABLE_VCORE_DVS |
 		SPM_FLAG_DISABLE_VCORE_DFS |
-		SPM_FLAG_KEEP_CSYSPWRACK_HIGH |
+		SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 		#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 		SPM_FLAG_DISABLE_SSPM_SRAM_SLEEP |
 		#endif
@@ -62,7 +62,7 @@ static unsigned int idle_pcm_flags[NR_IDLE_TYPES] = {
 		SPM_FLAG_DISABLE_INFRA_PDN |
 		SPM_FLAG_DISABLE_VCORE_DVS |
 		SPM_FLAG_DISABLE_VCORE_DFS |
-		SPM_FLAG_KEEP_CSYSPWRACK_HIGH |
+		SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 		#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 		SPM_FLAG_DISABLE_SSPM_SRAM_SLEEP |
 		#endif
@@ -73,7 +73,7 @@ static unsigned int idle_pcm_flags[NR_IDLE_TYPES] = {
 		SPM_FLAG_DISABLE_INFRA_PDN |
 		SPM_FLAG_DISABLE_VCORE_DVS |
 		SPM_FLAG_DISABLE_VCORE_DFS |
-		SPM_FLAG_KEEP_CSYSPWRACK_HIGH |
+		SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 		#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 		SPM_FLAG_DISABLE_SSPM_SRAM_SLEEP |
 		#endif
@@ -485,7 +485,7 @@ static unsigned int mtk_sodi_output_log(
 			timeout_cnt = 0;
 		} else if (wakesta->timer_out <= IDLE_TIMER_OUT_CRITERIA) {
 			print_log = true;
-			if (wakesta->r12 & STA1_AP2AP_PEER_WAKEUP)
+			if (wakesta->r12 & R12_AP2AP_PEER_WAKEUP_EVENT)
 				if (timeout_cnt++ > 220)
 					timeout_log = true;
 		} else if (check_print_log_duration()) {
@@ -505,7 +505,7 @@ static unsigned int mtk_sodi_output_log(
 	}
 
 	if (timeout_log) {
-		pr_info("STA1_AP2AP_PEER_WAKEUP too much,r12 = 0x%x\n",
+		pr_info("R12_AP2AP_PEER_WAKEUP_EVENT too much,r12 = 0x%x\n",
 			 wakesta->r12);
 		dpmaif_dump_reg();
 		timeout_cnt = 0;

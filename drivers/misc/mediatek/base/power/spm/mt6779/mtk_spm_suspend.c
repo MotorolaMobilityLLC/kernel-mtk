@@ -202,7 +202,7 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 	}
 
 #if defined(CONFIG_PINCTRL_MTK)
-	if (wakesta->r12 & STA1_EINT_EVENT)
+	if (wakesta->r12 & R12_EINT_EVENT_B)
 		mt_eint_print_status();
 #endif
 
@@ -213,25 +213,25 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_ECCCI_DRIVER
-	if (wakesta->r12 & STA1_MD2AP_PEER_WAKEUP) {
+	if (wakesta->r12 & R12_MD2AP_PEER_WAKEUP_EVENT) {
 		hif_id = WAKE_SRC_MD_WDT;
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC,
 		(char *)&hif_id, sizeof(hif_id));
 	}
 
-	if (wakesta->r12 & STA1_AP2AP_PEER_WAKEUP) {
+	if (wakesta->r12 & R12_AP2AP_PEER_WAKEUP_EVENT) {
 		hif_id = WAKE_SRC_HIF_DPMAIF;
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC,
 		(char *)&hif_id, sizeof(hif_id));
 	}
 
-	if (wakesta->r12 & STA1_CCIF0_EVENT) {
+	if (wakesta->r12 & R12_CCIF0_EVENT_B) {
 		hif_id = WAKE_SRC_HIF_CCIF0;
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC,
 		(char *)&hif_id, sizeof(hif_id));
 	}
 
-	if (wakesta->r12 & STA1_CCIF1_EVENT) {
+	if (wakesta->r12 & R12_CCIF1_EVENT_B) {
 		hif_id = WAKE_SRC_HIF_CCIF1;
 		exec_ccci_kern_func_by_md_id(2, ID_GET_MD_WAKEUP_SRC,
 		(char *)&hif_id, sizeof(hif_id));
