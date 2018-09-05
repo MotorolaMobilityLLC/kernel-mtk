@@ -465,7 +465,8 @@ void adsp_aed(enum adsp_excep_id type, enum adsp_core_id id)
 	pr_debug("%s", aed.detail);
 
 	/* adsp aed api, only detail information available*/
-	aed_scp_exception_api(NULL, 0, NULL, 0, aed.detail, DB_OPT_DEFAULT);
+	aed_common_exception_api("adsp", NULL, 0, NULL, 0, aed.detail,
+				 DB_OPT_DEFAULT);
 
 	pr_debug("[ADSP] adsp exception dump is done\n");
 
