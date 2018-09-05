@@ -5757,25 +5757,28 @@ static void VOW_MIC_ACC_Enable(int MicType, bool enable)
 			/* Audio L PGA precharge off, Audio L PGA mode: 0_ACC, */
 			Ana_Set_Reg(AUDENC_ANA_CON0, 0x5000, 0x7000);
 			/* Audio L preamplifier input sel : AIN0, Audio L PGA 18 dB gain, Enable audio L PGA */
+			/* reference mic */
+			/* Ana_Set_Reg(AUDENC_ANA_CON0, 0x50C1, 0x00C1); */
+			/* main mic */
 			Ana_Set_Reg(AUDENC_ANA_CON0, 0x5041, 0x00C1);
 			/* Short body to ground in PGA */
 			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0009, 0x1000);
-			/* Audio L PGA 18 dB gain */
-			Ana_Set_Reg(AUDENC_ANA_CON0, 0x5341, 0x0700);
+			/* Audio L PGA 24 dB gain */
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x5441, 0x0700);
 			break;
 		case AUDIO_VOW_MIC_TYPE_Headset_MIC:
 			/* ADC CLK from: 01_3.25MHz from CLKSQ_XO_3P25M, Enable Audio ADC FBDAC 0.25FS LPW */
 			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0009, 0x000D);
 			/* MIC Bias 0 LowPower: 0_Normal, 1_LPW (Default 0), Enable MICBIAS0 ,MISBIAS0 = 1P9V */
-			Ana_Set_Reg(AUDENC_ANA_CON9, 0x0025, 0x0075);
+			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0061, 0x0075);
 			/* Audio L PGA precharge off, Audio L PGA mode: 0_ACC, */
 			Ana_Set_Reg(AUDENC_ANA_CON0, 0x5000, 0x7000);
 			/* Audio L preamplifier input sel : AIN1, Audio L PGA 18 dB gain, Enable audio L PGA */
 			Ana_Set_Reg(AUDENC_ANA_CON0, 0x5081, 0x00C1);
 			/* Short body to ground in PGA */
 			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0009, 0x1000);
-			/* Audio L PGA 18 dB gain */
-			Ana_Set_Reg(AUDENC_ANA_CON0, 0x5381, 0x0700);
+			/* Audio L PGA 24 dB gain */
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x5481, 0x0700);
 		default:
 			break;
 		}
@@ -5793,7 +5796,7 @@ static void VOW_MIC_ACC_Enable(int MicType, bool enable)
 			break;
 		case AUDIO_VOW_MIC_TYPE_Headset_MIC:
 			/* Disable MICBIAS0 */
-			Ana_Set_Reg(AUDENC_ANA_CON9,  0x0000, 0x0075);
+			Ana_Set_Reg(AUDENC_ANA_CON10,  0x0000, 0x0075);
 		default:
 			break;
 		}

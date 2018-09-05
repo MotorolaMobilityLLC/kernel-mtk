@@ -19,7 +19,7 @@ static struct scp_reserve_mblock scp_reserve_mblock[] = {
 		.num = VOW_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
-		.size = 0x1A000,/*104KB*/
+		.size = 0x1DC00,/*119KB*/
 	},
 	{
 		.num = SENS_MEM_ID,
@@ -71,6 +71,14 @@ static struct scp_reserve_mblock scp_reserve_mblock[] = {
 		.start_phys = 0x0,
 		.start_virt = 0x0,
 		.size = 0x30000,/*192KB*/
+	},
+#endif
+#ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT
+	{
+		.num = VOW_BARGEIN_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x2000,/*8KB*/
 	},
 #endif
 };

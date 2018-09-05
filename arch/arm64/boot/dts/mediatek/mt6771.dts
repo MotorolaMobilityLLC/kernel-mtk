@@ -3922,6 +3922,10 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		compatible = "mediatek,mt_soc_pcm_voice_usb_echoref";
 	};
 
+	mt_soc_vow_barge_in_pcm {
+		compatible = "mediatek,mt_soc_pcm_vow_barge_in";
+	};
+
 	firmware {
 		android {
 			compatible = "android,firmware";

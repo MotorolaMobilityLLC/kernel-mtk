@@ -42,6 +42,7 @@ ifeq ($(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/tasks/spkprotect
 endif
+
 # Common object
 obj-y += mtk-soc-speaker-amp.o
 obj-y += mtk-auddrv-afe.o mtk-auddrv-gpio.o
@@ -61,6 +62,7 @@ obj-y += mtk-soc-pcm-mrgrx.o mtk-soc-pcm-mrgrx-awb.o mtk-soc-pcm-fm-i2s.o mtk-so
 obj-y += mtk-soc-pcm-dl1-awb.o mtk-soc-pcm-dl1-bt.o mtk-soc-pcm-bt-dai.o
 obj-y += mtk-soc-dai-stub.o mtk-soc-dai-routing.o mtk-soc-codec-dummy.o mtk-soc-pcm-fmtx.o mtk-soc-tdm-capture.o
 obj-y += mtk-soc-pcm-hp-impedance.o
+obj-$(CONFIG_MTK_VOW_BARGE_IN_SUPPORT) += mtk-soc-pcm-vow-barge-in.o
 obj-y += mtk-soc-machine.o
 
 endif

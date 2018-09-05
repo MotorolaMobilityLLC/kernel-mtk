@@ -91,6 +91,12 @@ struct scp_feature_tb feature_table[NUM_FEATURE_ID] = {
 		.sub_feature = 0,
 	},
 #endif
+	{
+		.feature     = VOW_BARGEIN_FEATURE_ID,
+		.freq        = 100,
+		.enable      = 0,
+		.sub_feature = 0,
+	},
 };
 
 
