@@ -391,8 +391,8 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 	spin_lock_irqsave(&auddrv_BTDaiInCtl_lock, flags);
 	if (Dai_Block->u4DataRemained > Dai_Block->u4BufferSize) {
 		pr_debug
-		("mtk_bt_dai_pcm_copy Rem=%x > BufSz=%x\n",
-		Dai_Block->u4DataRemained, Dai_Block->u4BufferSize);
+			("mtk_bt_dai_pcm_copy Rem=%x > BufSz=%x\n",
+			Dai_Block->u4DataRemained, Dai_Block->u4BufferSize);
 		Dai_Block->u4DataRemained = 0;
 		Dai_Block->u4DMAReadIdx = Dai_Block->u4WriteIdx;
 	}
@@ -404,12 +404,6 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 
 	DMA_Read_Ptr = Dai_Block->u4DMAReadIdx;
 	spin_unlock_irqrestore(&auddrv_BTDaiInCtl_lock, flags);
-
-	pr_debug
-		("%s end0,cnt:%x, rdsz:%x,Rem:%x,DMARdId:%x,WrId:%x\n",
-		__func__, read_count, read_size, Dai_Block->
-			u4DataRemained, Dai_Block->u4DMAReadIdx,
-		Dai_Block->u4WriteIdx);
 
 	if (DMA_Read_Ptr + read_size < Dai_Block->u4BufferSize) {
 		if (DMA_Read_Ptr != Dai_Block->u4DMAReadIdx) {
@@ -423,10 +417,8 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 			 (Dai_Block->pucVirtBufAddr + DMA_Read_Ptr),
 		     read_size)) {
 			pr_err("%s Fail1 cp to user Rdp:%p,Addr:%p,",
-			__func__, Read_Data_Ptr,
-			 Dai_Block->pucVirtBufAddr);
-			pr_err("DMARdId:0x%x, DMA_Rdp:%zu,rd_sz:%zu\n",
-			Dai_Block->u4DMAReadIdx, DMA_Read_Ptr, read_size);
+				__func__, Read_Data_Ptr,
+				 Dai_Block->pucVirtBufAddr);
 			return 0;
 		}
 
@@ -440,11 +432,6 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 
 		Read_Data_Ptr += read_size;
 		count -= read_size;
-
-		pr_debug
-		("%s end1, cpy sz:%x,DMARdId:%x,WrId:%x,Rem:%x\n",
-		__func__, read_size, Dai_Block->u4DMAReadIdx,
-		Dai_Block->u4WriteIdx, Dai_Block->u4DataRemained);
 	} else {
 		uint32 size_1 = Dai_Block->u4BufferSize - DMA_Read_Ptr;
 		uint32 size_2 = read_size - size_1;
@@ -459,11 +446,8 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 			(Dai_Block->pucVirtBufAddr +
 			 DMA_Read_Ptr), size_1)) {
 			pr_err("%s Fail2 cp to user Rdp:%p,pucAddr:%p,",
-			__func__,
-			Read_Data_Ptr, Dai_Block->pucVirtBufAddr);
-			pr_err("DMARdId:0x%x,Rdp:%zu,rd_sz:%zu\n",
-			Dai_Block->u4DMAReadIdx, DMA_Read_Ptr,
-			read_size);
+				__func__, Read_Data_Ptr,
+				Dai_Block->pucVirtBufAddr);
 			return 0;
 		}
 
@@ -475,12 +459,6 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 		DMA_Read_Ptr = Dai_Block->u4DMAReadIdx;
 		spin_unlock(&auddrv_BTDaiInCtl_lock);
 
-		pr_debug
-		("%s end2,cp sz_1:%x,DMARdId:%x,WrId:%x,Rem:%x\n",
-		__func__, size_1, Dai_Block->u4DMAReadIdx,
-		 Dai_Block->u4WriteIdx,
-		Dai_Block->u4DataRemained);
-
 		if (DMA_Read_Ptr != Dai_Block->u4DMAReadIdx) {
 			pr_debug
 			("%s 3,rd_sz2:%x,Rem:%x,DMA_Rdp:%zu,RdId:%x\n",
@@ -491,11 +469,8 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 		if (copy_to_user((void __user *)(Read_Data_Ptr + size_1),
 		     (Dai_Block->pucVirtBufAddr + DMA_Read_Ptr), size_2)) {
 			pr_err("%s Fail3 cp to user Rdp:%p, pucAddr:%p,",
-			 __func__,
-				Read_Data_Ptr, Dai_Block->pucVirtBufAddr);
-			pr_err("DMARdId:0x%x, DMARdp:%zu,rd_sz:%zu\n",
-				Dai_Block->u4DMAReadIdx,
-				DMA_Read_Ptr, read_size);
+				__func__, Read_Data_Ptr,
+				Dai_Block->pucVirtBufAddr);
 			return read_count << 2;
 		}
 
@@ -509,11 +484,6 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 		count -= read_size;
 		Read_Data_Ptr += read_size;
 
-		pr_debug
-		("%s end3, copy size_2:%x,DMARdId:%x,WrId:%x Rem:%x\n",
-		__func__, size_2, Dai_Block->u4DMAReadIdx,
-		 Dai_Block->u4WriteIdx,
-		Dai_Block->u4DataRemained);
 	}
 
 	return audio_bytes_to_frame(substream, count);
