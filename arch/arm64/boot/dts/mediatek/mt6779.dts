@@ -176,6 +176,15 @@
 			alignment = <0 0x10000>;
 			alloc-ranges = <0 0x40000000 0 0x60000000>;
 		};
+
+		reserve-memory-scp_share {
+			compatible = "mediatek,reserve-memory-scp_share";
+			no-map;
+			size = <0 0x00d00000>;
+			alignment = <0 0x1000000>;
+			alloc-ranges = <0 0x40000000 0 0x50000000>;
+		};
+
 	};
 	/* ATF logger SW IRQ number 111 = 32 + 79 */
 	atf_logger {
@@ -341,6 +350,18 @@
 				<0 0x10000000 0 0x1000>,
 				<0 0x14019000 0 0x1000>;
 		#clock-cells = <1>;
+	};
+
+	scp@10500000 {
+		compatible = "mediatek,scp";
+		status = "okay";
+		reg = <0 0x10500000 0 0x80000>,
+				<0 0x105c0000 0 0x3000>,
+				<0 0x105c4000 0 0x1000>,
+				<0 0x105d4000 0 0x6000>;
+		interrupts = <GIC_SPI 201 IRQ_TYPE_LEVEL_HIGH>;
+		core_1 = "enable";
+		scp_sramSize = <0x00080000>;
 	};
 
 	uart0: serial@11002000 {
