@@ -468,8 +468,14 @@ static int check_update_ftr_reg(u32 sys_id, int cpu, u64 val, u64 boot)
 	update_cpu_ftr_reg(regp, val);
 	if ((boot & regp->strict_mask) == (val & regp->strict_mask))
 		return 0;
+#ifndef CONFIG_MEDIATEK_SOLUTION
+	/*
+	 * if CONFIG_MEDIATEK_SOLUTION defined,
+	 * do not log the following msg
+	 */
 	pr_warn("SANITY CHECK: Unexpected variation in %s. Boot CPU: %#016llx, CPU%d: %#016llx\n",
 			regp->name, boot, cpu, val);
+#endif
 	return 1;
 }
 
