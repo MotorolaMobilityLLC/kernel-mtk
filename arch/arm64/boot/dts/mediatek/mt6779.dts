@@ -1408,6 +1408,16 @@
 		compatible = "usb-nop-xceiv";
 	};
 
+	usb3_phy {
+		compatible = "mediatek,usb3_phy";
+		reg = <0 0x11E40000 0 0x10000>;
+		reg-names = "sif_base";
+		clocks = <&infracfg_ao INFRACFG_AO_USB_CG>,
+			   <&infracfg_ao INFRACFG_AO_SSUSB_XHCI_CG>;
+		clock-names = "ssusb_clk", "sys_ck";
+		#phy-cells = <1>;
+	};
+
 	afe: mt6779-afe-pcm@11210000  {
 		compatible = "mediatek,mt6779-sound";
 		reg = <0 0x11210000 0 0x1000>;
