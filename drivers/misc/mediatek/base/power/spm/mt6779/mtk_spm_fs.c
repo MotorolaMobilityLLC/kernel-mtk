@@ -18,6 +18,7 @@
 #include <linux/string.h>
 
 #include <mtk_spm_internal.h>
+#include <mtk_spm_resource_req_internal.h>
 
 /**************************************
  * Macro and Inline
@@ -1235,29 +1236,54 @@ static ssize_t store_pwr_ctrl(int id,
 			id, PW_REG_CONN_APSRC_SEL, val);
 	} else if (!strcmp(cmd,
 		pwr_ctrl_str[PW_REG_SPM_APSRC_REQ])) {
-		pwrctrl->reg_spm_apsrc_req = val;
-		SMC_CALL(PWR_CTRL_ARGS,
+		unsigned int req = (val == 0) ?
+			SPM_RESOURCE_CONSOLE_RELEASE : SPM_RESOURCE_CONSOLE_REQ;
+		if (spm_resource_req_console_by_id(id, req
+			, _RES_MASK(MTK_SPM_RES_EX_DRAM_S1)) != 0) {
+			pwrctrl->reg_spm_apsrc_req = val;
+			SMC_CALL(PWR_CTRL_ARGS,
 			id, PW_REG_SPM_APSRC_REQ, val);
+		}
 	} else if (!strcmp(cmd,
 		pwr_ctrl_str[PW_REG_SPM_F26M_REQ])) {
-		pwrctrl->reg_spm_f26m_req = val;
-		SMC_CALL(PWR_CTRL_ARGS,
+		unsigned int req = (val == 0) ?
+			SPM_RESOURCE_CONSOLE_RELEASE : SPM_RESOURCE_CONSOLE_REQ;
+		if (spm_resource_req_console_by_id(id, req
+			, _RES_MASK(MTK_SPM_RES_EX_26M)) != 0) {
+			pwrctrl->reg_spm_f26m_req = val;
+			SMC_CALL(PWR_CTRL_ARGS,
 			id, PW_REG_SPM_F26M_REQ, val);
+		}
 	} else if (!strcmp(cmd,
 		pwr_ctrl_str[PW_REG_SPM_INFRA_REQ])) {
-		pwrctrl->reg_spm_infra_req = val;
-		SMC_CALL(PWR_CTRL_ARGS,
+		unsigned int req = (val == 0) ?
+			SPM_RESOURCE_CONSOLE_RELEASE : SPM_RESOURCE_CONSOLE_REQ;
+		if (spm_resource_req_console_by_id(id, req
+			, _RES_MASK(MTK_SPM_RES_EX_AXI_BUS)) != 0) {
+			pwrctrl->reg_spm_infra_req = val;
+			SMC_CALL(PWR_CTRL_ARGS,
 			id, PW_REG_SPM_INFRA_REQ, val);
+		}
 	} else if (!strcmp(cmd,
 		pwr_ctrl_str[PW_REG_SPM_VRF18_REQ])) {
-		pwrctrl->reg_spm_vrf18_req = val;
-		SMC_CALL(PWR_CTRL_ARGS,
+		unsigned int req = (val == 0) ?
+			SPM_RESOURCE_CONSOLE_RELEASE : SPM_RESOURCE_CONSOLE_REQ;
+		if (spm_resource_req_console_by_id(id, req
+			, _RES_MASK(MTK_SPM_RES_EX_MAINPLL)) != 0) {
+			pwrctrl->reg_spm_vrf18_req = val;
+			SMC_CALL(PWR_CTRL_ARGS,
 			id, PW_REG_SPM_VRF18_REQ, val);
+		}
 	} else if (!strcmp(cmd,
 		pwr_ctrl_str[PW_REG_SPM_DDR_EN_REQ])) {
-		pwrctrl->reg_spm_ddr_en_req = val;
-		SMC_CALL(PWR_CTRL_ARGS,
+		unsigned int req = (val == 0) ?
+			SPM_RESOURCE_CONSOLE_RELEASE : SPM_RESOURCE_CONSOLE_REQ;
+		if (spm_resource_req_console_by_id(id, req
+			, _RES_MASK(MTK_SPM_RES_EX_DRAM_S0)) != 0) {
+			pwrctrl->reg_spm_ddr_en_req = val;
+			SMC_CALL(PWR_CTRL_ARGS,
 			id, PW_REG_SPM_DDR_EN_REQ, val);
+		}
 	} else if (!strcmp(cmd,
 		pwr_ctrl_str[PW_REG_SPM_DDR_EN2_REQ])) {
 		pwrctrl->reg_spm_ddr_en2_req = val;
