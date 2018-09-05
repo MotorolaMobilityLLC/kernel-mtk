@@ -33,6 +33,7 @@
 #define SIZEOF_SNAPSHOT(g) \
 	(sizeof(struct snapshot) + sizeof(unsigned int) * (g->nr_gs - 1))
 #define DEBUG_BUF_SIZE 2000
+
 static char buf[DEBUG_BUF_SIZE] = { 0 };
 static struct base_remap br;
 static struct pmic_manual_dump pmd;
@@ -44,9 +45,9 @@ static bool _is_pmic_addr(unsigned int addr)
 
 static u16 gs_pmic_read(u16 reg)
 {
+	u32 reg_val = 0;
 #if defined(CONFIG_MTK_PMIC_NEW_ARCH)
 	u32 ret = 0;
-	u32 reg_val = 0;
 
 	ret = pmic_read_interface_nolock(reg, &reg_val, 0xFFFF, 0x0);
 #endif
