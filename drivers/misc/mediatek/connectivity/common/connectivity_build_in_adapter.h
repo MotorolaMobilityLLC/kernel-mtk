@@ -81,6 +81,8 @@ void connectivity_export_upmu_set_vcn_1v8_lp_mode_set(unsigned int val);
 void connectivity_export_upmu_set_vcn28_on_ctrl(unsigned int val);
 void connectivity_export_upmu_set_vcn33_on_ctrl_bt(unsigned int val);
 void connectivity_export_upmu_set_vcn33_on_ctrl_wifi(unsigned int val);
+#elif defined(CONFIG_MACH_MT8173)
+/* MT8173 will not use PMIC interface */
 #else
 #define CONNADP_HAS_PMIC_API
 #define KERNEL_pmic_config_interface \
