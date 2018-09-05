@@ -2592,6 +2592,59 @@ static DEVICE_ATTR(
 	disable_nafg, 0664,
 	show_FG_nafg_disable, store_FG_nafg_disable);
 
+static ssize_t show_FG_ntc_disable_nafg(
+	struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_trace("[FG]%s: %d\n", __func__, gm.ntc_disable_nafg);
+	return sprintf(buf, "%d\n", gm.ntc_disable_nafg);
+}
+
+static ssize_t store_FG_ntc_disable_nafg(
+	struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	unsigned long val = 0;
+	int ret;
+
+	bm_err("[%s]\n",  __func__);
+
+	if (buf != NULL && size != 0) {
+		bm_err("[%s] buf is %s\n", __func__, buf);
+		ret = kstrtoul(buf, 10, &val);
+		if (val < 0) {
+			bm_err(
+				"[%s] val is %d ??\n",  __func__,
+				(int)val);
+			val = 0;
+		}
+
+		if (val == 0) {
+			gm.ntc_disable_nafg = false;
+			get_ec()->fixed_temp_en = 0;
+			get_ec()->fixed_temp_value = 25;
+		} else if (val == 1) {
+			get_ec()->fixed_temp_en = 1;
+			get_ec()->fixed_temp_value =
+				BATTERY_TMP_TO_DISABLE_NAFG;
+			gm.ntc_disable_nafg = true;
+		}
+
+		bm_err(
+			"[%s]val=%d, temp:%d %d, %d\n",
+			 __func__,
+			(int)val,
+			get_ec()->fixed_temp_en,
+			get_ec()->fixed_temp_value,
+			gm.ntc_disable_nafg);
+	}
+
+	return size;
+}
+static DEVICE_ATTR(
+	ntc_disable_nafg, 0664,
+	show_FG_ntc_disable_nafg, store_FG_ntc_disable_nafg);
+
+
 static ssize_t show_uisoc_update_type(
 	struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -3368,6 +3421,8 @@ static int __init battery_probe(struct platform_device *dev)
 		&dev_attr_uisoc_update_type);
 	ret_device_file = device_create_file(&(dev->dev),
 		&dev_attr_disable_nafg);
+	ret_device_file = device_create_file(&(dev->dev),
+		&dev_attr_ntc_disable_nafg);
 	ret_device_file = device_create_file(&(dev->dev),
 		&dev_attr_FG_meter_resistance);
 	ret_device_file = device_create_file(&(dev->dev),
