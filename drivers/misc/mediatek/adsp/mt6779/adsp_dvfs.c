@@ -879,6 +879,8 @@ static int adsp_is_suspend;
 #define CREG_BOOTUP_MARK   (ADSP_CFGREG_RSV_RW_REG0)
 /* if equal, bypass clear bss and some init */
 #define MAGIC_PATTERN      (0xfafafafa)
+#define ADSP_STATUS_ACTIVE     (0x00)
+#define ADSP_STATUS_SUSPEND    (0x01)
 
 static inline ssize_t adsp_force_adsppll_store(struct device *kobj,
 		struct device_attribute *attr,
@@ -956,9 +958,12 @@ DEVICE_ATTR(adsp_force_adsppll, 0220, NULL, adsp_force_adsppll_store);
 DEVICE_ATTR(adsp_spm_req, 0220, NULL, adsp_spm_req_store);
 DEVICE_ATTR(adsp_keep_adspll_on, 0220, NULL, adsp_keep_adsppll_on_store);
 
-#define IS_ADSP_SUSPEND    ((readl(ADSP_SLEEP_STATUS_REG) \
-				& (ADSP_A_IS_WFI | ADSP_A_AXI_BUS_IS_IDLE)) \
-				== (ADSP_A_IS_WFI | ADSP_A_AXI_BUS_IS_IDLE))
+static bool is_adsp_suspend(void)
+{
+	return (readl(ADSP_A_SYS_STATUS) == ADSP_STATUS_SUSPEND)
+		&& (readl(ADSP_SLEEP_STATUS_REG) & ADSP_A_IS_WFI)
+		&& (readl(ADSP_SLEEP_STATUS_REG) & ADSP_A_AXI_BUS_IS_IDLE);
+}
 
 uint32_t mt_adsp_freq_meter(void)
 {
@@ -1131,8 +1136,7 @@ void adsp_suspend(enum adsp_core_id core_id)
 {
 	enum adsp_ipi_status ret;
 	int value = 0;
-	int timeout = 5000;
-	int itcm_ret = 0;
+	int timeout = 1000;
 #if ADSP_DVFS_PROFILE
 	ktime_t begin, end;
 #endif
@@ -1144,24 +1148,23 @@ void adsp_suspend(enum adsp_core_id core_id)
 		ret = adsp_ipi_send(ADSP_IPI_DVFS_SUSPEND, &value,
 				    sizeof(value), 1, core_id);
 
-		while (--timeout && !IS_ADSP_SUSPEND)
-			udelay(10);
+		while (--timeout && !is_adsp_suspend())
+			usleep_range(50, 100);
 
-		if (!IS_ADSP_SUSPEND) {
+		if (!is_adsp_suspend()) {
 			pr_warn("[%s]wait adsp suspend timeout\n", __func__);
 			adsp_aed(EXCEP_RUNTIME, core_id);
+		} else {
+			adsp_release_runstall(false);
+			adsp_power_on(false);
+			adsp_disable_clock();
+			adsp_is_suspend = 1;
 		}
-		adsp_release_runstall(false);
-		itcm_ret = adsp_itcm_gtable_check();
-		adsp_power_on(false);
-		adsp_disable_clock();
 		adsp_reset_ready(core_id);
-		adsp_is_suspend = 1;
 #if ADSP_DVFS_PROFILE
 		end = ktime_get();
-		pr_debug("[%s]latency = %lld us, itcm_check(%d)\n",
-			 __func__, ktime_us_delta(end, begin),
-			 itcm_ret);
+		pr_debug("[%s]latency = %lld us, ret(%d)\n",
+			 __func__, ktime_us_delta(end, begin), ret);
 #endif
 	}
 	mutex_unlock(&adsp_suspend_mutex);
@@ -1171,9 +1174,9 @@ void adsp_suspend(enum adsp_core_id core_id)
 
 int adsp_resume(void)
 {
-	int retry = 5000;
+	int retry = 1000;
 	int ret = 0;
-	int itcm_ret = 0;
+	int tcm_ret = 0;
 #if ADSP_DVFS_PROFILE
 	ktime_t begin, end;
 #endif
@@ -1186,12 +1189,12 @@ int adsp_resume(void)
 		/* To indicate only main_lite() is needed. */
 		writel(MAGIC_PATTERN, CREG_BOOTUP_MARK);
 		DRV_ClrReg32(ADSP_A_WDT_REG, WDT_EN_BIT);
-		itcm_ret = adsp_itcm_gtable_check();
+		tcm_ret = adsp_itcm_gtable_check();
 		adsp_release_runstall(true);
 
 		/* busy waiting until adsp is ready */
 		while (--retry && !is_adsp_ready(ADSP_A_ID))
-			udelay(10);
+			usleep_range(50, 100);
 
 		if (!is_adsp_ready(ADSP_A_ID)) {
 			pr_warn("[%s]wait for adsp ready timeout\n", __func__);
@@ -1200,9 +1203,8 @@ int adsp_resume(void)
 		adsp_is_suspend = 0;
 #if ADSP_DVFS_PROFILE
 		end = ktime_get();
-		pr_debug("[%s]latency = %lld us, itcm_check(%d)\n",
-			 __func__, ktime_us_delta(end, begin),
-			 itcm_ret);
+		pr_debug("[%s]latency = %lld us, tcm_check(%d), ret(%d)\n",
+			 __func__, ktime_us_delta(end, begin), tcm_ret, ret);
 #endif
 	}
 	mutex_unlock(&adsp_suspend_mutex);
