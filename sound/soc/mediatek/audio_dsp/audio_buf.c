@@ -600,6 +600,58 @@ void RingBuf_copyFromUserLinear(struct RingBuf *RingBuf1, void __user *buf,
 	RingBuf1->datacount += count;
 }
 
+
+void ringbuf_copyto_user_linear(void __user *buf, struct RingBuf *RingBuf1,
+			  unsigned int count)
+{
+	int ret = 0;
+
+	if (count == 0)
+		return;
+
+	if (RingBuf_getDataCount(RingBuf1) < count) {
+		AUD_LOG_D("RingBuf_getDataCount(RingBuf1) %d < count %d\n",
+			  RingBuf_getDataCount(RingBuf1), count);
+		return;
+	}
+
+	if (RingBuf1->pRead <= RingBuf1->pWrite) {
+		ret = copy_to_user(buf, RingBuf1->pRead, count);
+		if (ret)
+			AUD_LOG_D("%s copy_to_user fail line %d\n",
+				  __func__, __LINE__);
+		RingBuf1->pRead += count;
+		if (RingBuf1->pRead >= RingBuf1->pBufEnd)
+			RingBuf1->pRead -= RingBuf1->bufLen;
+	} else {
+		unsigned int r2e = RingBuf1->pBufEnd - RingBuf1->pRead;
+
+		if (count <= r2e) {
+			ret = copy_to_user(buf, RingBuf1->pRead, count);
+			if (ret)
+				AUD_LOG_D("%s copy_to_user fail line %d\n",
+					  __func__, __LINE__);
+			RingBuf1->pRead += count;
+			if (RingBuf1->pRead >= RingBuf1->pBufEnd)
+				RingBuf1->pRead -= RingBuf1->bufLen;
+		} else {
+			ret = copy_to_user(buf, RingBuf1->pRead, r2e);
+			if (ret)
+				AUD_LOG_D("%s copy_to_user fail line %d\n",
+					  __func__, __LINE__);
+			ret = copy_to_user(buf + r2e,
+					   RingBuf1->pBufBase,
+					   count - r2e);
+			if (ret)
+				AUD_LOG_D("%s copy_to_user fail line %d\n",
+					  __func__, __LINE__);
+			RingBuf1->pRead = RingBuf1->pBufBase + count - r2e;
+		}
+	}
+	RingBuf1->datacount -= count;
+	Ringbuf_Check(RingBuf1);
+}
+
 #endif
 
 int init_ring_buf(struct RingBuf *buf, char *vaaddr, int size)
@@ -1172,7 +1224,8 @@ void dump_audio_hwbuffer(struct audio_hw_buffer *audio_hwbuf)
 void dump_ring_bufinfo(struct RingBuf *buf)
 {
 #if defined(__linux__)
-	pr_info("pBufBase = %p pBufEnd = %p  pread = %p p write = %p DataCount = %u freespace = %u\n",
+	pr_info(
+		"pBufBase = %p pBufEnd = %p  pread = %p p write = %p DataCount = %u freespace = %u\n",
 		buf->pBufBase, buf->pBufEnd, buf->pRead, buf->pWrite,
 		RingBuf_getDataCount(buf), RingBuf_getFreeSpace(buf));
 #else
@@ -1203,6 +1256,9 @@ int Get_dma_channel_memid(unsigned int mem_id)
 		break;
 	case PRIMARY_MEM_ID:
 		dma_id = PRIMARY_DMA_ID;
+		break;
+	case CAPTURE_UL1_MEM_ID:
+		dma_id = CAPTURE_UL1_DMA_ID;
 		break;
 	case DEEPBUFFER_MEM_ID:
 		dma_id = DEEPBUFFER_DMA_ID;
