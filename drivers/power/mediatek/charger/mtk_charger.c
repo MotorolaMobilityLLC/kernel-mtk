@@ -1117,8 +1117,6 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 
 void mtk_charger_int_handler(void)
 {
-	chr_err("mtk_charger_int_handler\n");
-
 	if (pinfo == NULL) {
 		chr_err("charger is not rdy ,skip1\n");
 		return;
@@ -1128,7 +1126,6 @@ void mtk_charger_int_handler(void)
 		chr_err("charger is not rdy ,skip2\n");
 		return;
 	}
-	chr_err("wake_up_charger\n");
 	_wake_up_charger(pinfo);
 }
 
