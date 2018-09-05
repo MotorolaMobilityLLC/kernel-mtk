@@ -215,8 +215,24 @@
 #define CAM_REG_FBC_RSSO_CTL2(module)  (isp_devs[module].regs + 0x0164)
 #define CAM_REG_FBC_UFGO_CTL1(module)  (isp_devs[module].regs + 0x0168)
 #define CAM_REG_FBC_UFGO_CTL2(module)  (isp_devs[module].regs + 0x016C)
+#define CAM_REG_FBC_AAO_CTL2(module)   (isp_devs[module].regs + 0x013c)
+#define CAM_REG_FBC_AFO_CTL2(module)   (isp_devs[module].regs + 0x0134)
+#define CAM_REG_FBC_FLKO_CTL2(module)  (isp_devs[module].regs + 0x0154)
+#define CAM_REG_FBC_PDO_CTL2(module)   (isp_devs[module].regs + 0x0144)
+#define CAM_REG_FBC_PSO_CTL2(module)   (isp_devs[module].regs + 0x014c)
 
+
+
+#define CAM_REG_CQ_EN(module)          (isp_devs[module].regs + 0x0190)
 #define CAM_REG_CQ_THR0_BASEADDR(module)  (isp_devs[module].regs + 0x0198)
+#define CAM_REG_CQ_TRIG(module)             (isp_devs[module].regs + 0x0000)
+#define CAM_REG_CTL_DBG_SET(module)         (isp_devs[module].regs + 0x0070)
+#define CAM_REG_CTL_DBG_PORT(module)        (isp_devs[module].regs + 0x0074)
+#define CAM_REG_CQ_THR2_CTL(module)         (isp_devs[module].regs + 0x01AC)
+#define CAM_REG_CQ_THR2_BASEADDR(module)    (isp_devs[module].regs + 0x01B0)
+#define CAM_REG_CQ_THR2_DESC_SIZE(module)   (isp_devs[module].regs + 0x01B4)
+#define CAM_REG_CQ_THR12_DESC_SIZE(module)  (isp_devs[module].regs + 0x022C)
+#define CAM_REG_DCM_STATUS(module)          (isp_devs[module].regs + 0x0094)
 
 #define CAM_REG_TG_SEN_MODE(module)  (isp_devs[module].regs + 0x0230)
 #define CAM_REG_TG_VF_CON(module)  (isp_devs[module].regs + 0x0234)
