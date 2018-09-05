@@ -938,6 +938,27 @@ static inline unsigned int DPE_UsToJiffies(unsigned int Us)
 /*******************************************************************************
 *
 ********************************************************************************/
+static inline int DVE_switchCmdqToSecure(void *handle)
+{
+	enum CMDQ_ENG_ENUM cmdq_engine;
+	/*enum CMDQ_EVENT_ENUM cmdq_event;*/
+
+	/*cmdq_engine = module_to_cmdq_engine(module);*/
+	cmdq_engine = CMDQ_ENG_DPE;
+	/*cmdq_event	= CMDQ_EVENT_DVE_EOF;*/
+
+	cmdqRecSetSecure(handle, 1);
+	/* set engine as sec */
+	cmdqRecSecureEnablePortSecurity(handle, (1LL << cmdq_engine));
+	cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine));
+
+	return 0;
+}
+
+/*******************************************************************************
+*
+********************************************************************************/
+
 static inline unsigned int DPE_GetIRQState(unsigned int type, unsigned int userNumber, unsigned int stus,
 				      enum DPE_PROCESS_ID_ENUM whichReq, int ProcessID)
 {
@@ -1319,13 +1340,15 @@ static signed int ConfigDVEHW(struct DPE_DVEConfig *pDveConfig)
 	mt_kernel_trace_begin("ConfigDVEHW");
 #endif
 
-
 	cmdqRecCreate(CMDQ_SCENARIO_KERNEL_CONFIG_GENERAL, &handle);
 	/* CMDQ driver dispatches CMDQ HW thread and HW thread's priority according to scenario */
 
-	cmdqRecSetEngine(handle, engineFlag);
-
 	cmdqRecReset(handle);
+
+	if (pDveConfig->DPE_DVE_IS_SECURE)
+		DVE_switchCmdqToSecure(handle);
+
+	cmdqRecSetEngine(handle, engineFlag);
 
 	/* Use command queue to write register */
 	cmdqRecWrite(handle, DPE_INT_CTL_HW, 0x1, CMDQ_REG_MASK);	/* DPE Interrupt read-clear mode */
@@ -1412,56 +1435,101 @@ static signed int ConfigDVEHW(struct DPE_DVEConfig *pDveConfig)
 	cmdqRecWrite(handle, DPE_DVE_ORD_REF_MASK_D_5_HW, pDveConfig->DPE_DVE_ORD_REF_MASK_D_5, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_ORD_REF_MASK_D_6_HW, pDveConfig->DPE_DVE_ORD_REF_MASK_D_6, CMDQ_REG_MASK);
 
-	cmdqRecWrite(handle, DPE_DVE_IMGI_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_IMGI_L_BASE_ADDR,
-		     CMDQ_REG_MASK);
+	if (pDveConfig->DPE_DVE_IS_SECURE != 0) {
+		cmdqRecWriteSecure(handle, DPE_DVE_IMGI_L_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_IMGI_L_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_IMGI_L_BUFSIZE, M4U_PORT_CAM_DPE_RDMA);
+		cmdqRecWriteSecure(handle, DPE_DVE_IMGI_R_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_IMGI_R_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_IMGI_R_BUFSIZE, M4U_PORT_CAM_DPE_RDMA);
+
+		cmdqRecWriteSecure(handle, DPE_DVE_DVI_L_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_DVI_L_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_DVI_L_BUFSIZE, M4U_PORT_CAM_DPE_RDMA);
+		cmdqRecWriteSecure(handle, DPE_DVE_DVI_R_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_DVI_R_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_DVI_R_BUFSIZE, M4U_PORT_CAM_DPE_RDMA);
+
+		cmdqRecWriteSecure(handle, DPE_DVE_MASKI_L_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_MASKI_L_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_MASKI_L_BUFSIZE, M4U_PORT_CAM_DPE_RDMA);
+		cmdqRecWriteSecure(handle, DPE_DVE_MASKI_R_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_MASKI_R_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_MASKI_R_BUFSIZE, M4U_PORT_CAM_DPE_RDMA);
+
+		cmdqRecWriteSecure(handle, DPE_DVE_DVO_L_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_DVO_L_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_DVO_L_BUFSIZE, M4U_PORT_CAM_DPE_WDMA);
+		cmdqRecWriteSecure(handle, DPE_DVE_DVO_R_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_DVO_R_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_DVO_R_BUFSIZE, M4U_PORT_CAM_DPE_WDMA);
+
+		cmdqRecWriteSecure(handle, DPE_DVE_CONFO_L_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_CONFO_L_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_CONFO_L_BUFSIZE, M4U_PORT_CAM_DPE_WDMA);
+		cmdqRecWriteSecure(handle, DPE_DVE_CONFO_R_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_CONFO_R_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_CONFO_R_BUFSIZE, M4U_PORT_CAM_DPE_WDMA);
+
+		cmdqRecWriteSecure(handle, DPE_DVE_RESPO_L_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_RESPO_L_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_RESPO_L_BUFSIZE, M4U_PORT_CAM_DPE_WDMA);
+		cmdqRecWriteSecure(handle, DPE_DVE_RESPO_R_BASE_ADDR_HW,
+			CMDQ_SAM_H_2_MVA, pDveConfig->DPE_DVE_RESPO_R_BASE_ADDR, 0,
+			pDveConfig->DPE_DVE_RESPO_R_BUFSIZE, M4U_PORT_CAM_DPE_WDMA);
+	} else {
+		cmdqRecWrite(handle, DPE_DVE_IMGI_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_IMGI_L_BASE_ADDR,
+			CMDQ_REG_MASK);
+		cmdqRecWrite(handle, DPE_DVE_IMGI_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_IMGI_R_BASE_ADDR,
+			CMDQ_REG_MASK);
+
+		cmdqRecWrite(handle, DPE_DVE_DVI_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_DVI_L_BASE_ADDR,
+			CMDQ_REG_MASK);
+		cmdqRecWrite(handle, DPE_DVE_DVI_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_DVI_R_BASE_ADDR,
+			CMDQ_REG_MASK);
+
+		cmdqRecWrite(handle, DPE_DVE_MASKI_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_MASKI_L_BASE_ADDR,
+			CMDQ_REG_MASK);
+		cmdqRecWrite(handle, DPE_DVE_MASKI_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_MASKI_R_BASE_ADDR,
+			CMDQ_REG_MASK);
+
+		cmdqRecWrite(handle, DPE_DVE_DVO_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_DVO_L_BASE_ADDR,
+			CMDQ_REG_MASK);
+		cmdqRecWrite(handle, DPE_DVE_DVO_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_DVO_R_BASE_ADDR,
+			CMDQ_REG_MASK);
+
+		cmdqRecWrite(handle, DPE_DVE_CONFO_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_CONFO_L_BASE_ADDR,
+			CMDQ_REG_MASK);
+		cmdqRecWrite(handle, DPE_DVE_CONFO_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_CONFO_R_BASE_ADDR,
+			CMDQ_REG_MASK);
+
+		cmdqRecWrite(handle, DPE_DVE_RESPO_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_RESPO_L_BASE_ADDR,
+			CMDQ_REG_MASK);
+		cmdqRecWrite(handle, DPE_DVE_RESPO_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_RESPO_R_BASE_ADDR,
+			CMDQ_REG_MASK);
+	}
+
 	cmdqRecWrite(handle, DPE_DVE_IMGI_L_STRIDE_HW, pDveConfig->DPE_DVE_IMGI_L_STRIDE,
-		     CMDQ_REG_MASK);
-	cmdqRecWrite(handle, DPE_DVE_IMGI_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_IMGI_R_BASE_ADDR,
 		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_IMGI_R_STRIDE_HW, pDveConfig->DPE_DVE_IMGI_R_STRIDE,
 		     CMDQ_REG_MASK);
-
-	cmdqRecWrite(handle, DPE_DVE_DVI_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_DVI_L_BASE_ADDR,
-		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_DVI_L_STRIDE_HW, pDveConfig->DPE_DVE_DVI_L_STRIDE,
-		     CMDQ_REG_MASK);
-	cmdqRecWrite(handle, DPE_DVE_DVI_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_DVI_R_BASE_ADDR,
 		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_DVI_R_STRIDE_HW, pDveConfig->DPE_DVE_DVI_R_STRIDE,
 		     CMDQ_REG_MASK);
-
-	cmdqRecWrite(handle, DPE_DVE_MASKI_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_MASKI_L_BASE_ADDR,
-		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_MASKI_L_STRIDE_HW, pDveConfig->DPE_DVE_MASKI_L_STRIDE,
-		     CMDQ_REG_MASK);
-	cmdqRecWrite(handle, DPE_DVE_MASKI_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_MASKI_R_BASE_ADDR,
 		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_MASKI_R_STRIDE_HW, pDveConfig->DPE_DVE_MASKI_R_STRIDE,
 		     CMDQ_REG_MASK);
-
-	cmdqRecWrite(handle, DPE_DVE_DVO_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_DVO_L_BASE_ADDR,
-		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_DVO_L_STRIDE_HW, pDveConfig->DPE_DVE_DVO_L_STRIDE,
-		     CMDQ_REG_MASK);
-	cmdqRecWrite(handle, DPE_DVE_DVO_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_DVO_R_BASE_ADDR,
 		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_DVO_R_STRIDE_HW, pDveConfig->DPE_DVE_DVO_R_STRIDE,
 		     CMDQ_REG_MASK);
-
-	cmdqRecWrite(handle, DPE_DVE_CONFO_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_CONFO_L_BASE_ADDR,
-		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_CONFO_L_STRIDE_HW, pDveConfig->DPE_DVE_CONFO_L_STRIDE,
-		     CMDQ_REG_MASK);
-	cmdqRecWrite(handle, DPE_DVE_CONFO_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_CONFO_R_BASE_ADDR,
 		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_CONFO_R_STRIDE_HW, pDveConfig->DPE_DVE_CONFO_R_STRIDE,
 		     CMDQ_REG_MASK);
-
-	cmdqRecWrite(handle, DPE_DVE_RESPO_L_BASE_ADDR_HW, pDveConfig->DPE_DVE_RESPO_L_BASE_ADDR,
-		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_RESPO_L_STRIDE_HW, pDveConfig->DPE_DVE_RESPO_L_STRIDE,
-		     CMDQ_REG_MASK);
-	cmdqRecWrite(handle, DPE_DVE_RESPO_R_BASE_ADDR_HW, pDveConfig->DPE_DVE_RESPO_R_BASE_ADDR,
 		     CMDQ_REG_MASK);
 	cmdqRecWrite(handle, DPE_DVE_RESPO_R_STRIDE_HW, pDveConfig->DPE_DVE_RESPO_R_STRIDE,
 		     CMDQ_REG_MASK);
