@@ -350,8 +350,8 @@ void fg_cur_h_int_handler(void)
 		upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
 		PMIC_FG_CUR_LTH_ADDR,
 		upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
-		PMIC_RG_INT_EN_FG_BAT0_H_ADDR,
-		upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT0_H_ADDR));
+		PMIC_RG_INT_EN_FG_CUR_H_ADDR,
+		upmu_get_reg_value(PMIC_RG_INT_EN_FG_CUR_H_ADDR));
 #endif
 }
 
@@ -382,8 +382,8 @@ void fg_cur_l_int_handler(void)
 		upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
 		PMIC_FG_CUR_LTH_ADDR,
 		upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
-		PMIC_RG_INT_EN_FG_BAT0_H_ADDR,
-		upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT0_H_ADDR));
+		PMIC_RG_INT_EN_FG_CUR_H_ADDR,
+		upmu_get_reg_value(PMIC_RG_INT_EN_FG_CUR_H_ADDR));
 #endif
 }
 
@@ -619,9 +619,6 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat,
 
 	/* selection setting, move to LK pmic_dlpt_init */
 
-	/* enable setting */
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_CK_SW_MODE, 1);
-
 	/* start setting */
 	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_EN, 1);
 
@@ -637,9 +634,6 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat,
 
 	/* stop setting */
 	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_EN, 0);
-
-	/* disable setting */
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_CK_SW_MODE, 0);
 
 	*bat = (vbat_reg * 3 * 18000) / 32768;
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
@@ -990,8 +984,6 @@ int get_dlpt_imix(void)
 	curr_avg = curr[1] + curr[2] + curr[3];
 	volt_avg = volt_avg / 3;
 	curr_avg = curr_avg / 3;
-
-	//volt_avg = wk_vbat_cali(volt_avg, 1);
 
 	imix = (curr_avg + (volt_avg - g_lbatInt1) * 1000 / ptim_rac_val_avg)
 				/ 10;
@@ -1666,10 +1658,12 @@ void pmic_throttling_dlpt_suspend(void)
 	bat_oc_l_en_setting(0);
 
 	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
-		PMIC_FG_CUR_HTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
-		PMIC_FG_CUR_LTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
-		PMIC_RG_INT_EN_FG_BAT0_H_ADDR,
-		upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT0_H_ADDR));
+		PMIC_FG_CUR_HTH_ADDR,
+		upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
+		PMIC_FG_CUR_LTH_ADDR,
+		upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
+		PMIC_RG_INT_EN_FG_CUR_H_ADDR,
+		upmu_get_reg_value(PMIC_RG_INT_EN_FG_CUR_H_ADDR));
 #endif
 }
 
@@ -1686,13 +1680,13 @@ void pmic_throttling_dlpt_resume(void)
 	else
 		bat_oc_l_en_setting(1);
 
-	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n"
-		, PMIC_FG_CUR_HTH_ADDR
-		, upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR)
-		, PMIC_FG_CUR_LTH_ADDR
-		, upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR)
-		, PMIC_RG_INT_EN_FG_BAT0_H_ADDR
-		, upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT0_H_ADDR));
+	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+		PMIC_FG_CUR_HTH_ADDR,
+		upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
+		PMIC_FG_CUR_LTH_ADDR,
+		upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
+		PMIC_RG_INT_EN_FG_CUR_H_ADDR,
+		upmu_get_reg_value(PMIC_RG_INT_EN_FG_CUR_H_ADDR));
 #endif
 }
 
@@ -1827,10 +1821,7 @@ int pmic_throttling_dlpt_init(void)
 
 	wakeup_source_init(&ptim_wake_lock, "PTIM_wakelock");
 	mutex_init(&ptim_mutex);
-	/* IMPEDANCE initial setting */
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_CNT_SEL, 1);
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_PRD_SEL, 6);
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_CK_SW_EN, 1);
+	/* IMPEDANCE initial setting move to LK */
 
 	/* no need to depend on LOW_BATTERY_PROTECT */
 	lbat_service_init();

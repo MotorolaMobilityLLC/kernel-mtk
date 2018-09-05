@@ -63,28 +63,16 @@ bool is_isense_supported(void)
 	return false;
 }
 
-/* BAT_TEMP background control */
-void wk_auxadc_bgd_ctrl(unsigned char en)
-{
-	pmic_set_hk_reg_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MAX, en);
-	pmic_set_hk_reg_value(PMIC_AUXADC_BAT_TEMP_DET_MAX, en);
-	pmic_set_hk_reg_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MIN, en);
-	pmic_set_hk_reg_value(PMIC_AUXADC_BAT_TEMP_DET_MIN, en);
-
-	pmic_set_hk_reg_value(PMIC_RG_INT_EN_BAT_TEMP_H, en);
-	pmic_set_hk_reg_value(PMIC_RG_INT_EN_BAT_TEMP_L, en);
-}
-
 void pmic_auxadc_suspend(void)
 {
-	wk_auxadc_bgd_ctrl(0);
+	/* no need to disable BAT_TEMP detect, remove wk_auxadc_bgd_ctrl */
 	/* special call to restore bat_temp_prev when enter suspend */
 	auxadc_bat_temp_cali(-1, -1);
 }
 
 void pmic_auxadc_resume(void)
 {
-	wk_auxadc_bgd_ctrl(1);
+	/* no need to disable BAT_TEMP detect, remove wk_auxadc_bgd_ctrl */
 }
 
 void lockadcch3(void)
@@ -100,6 +88,7 @@ void unlockadcch3(void)
 /*********************************
  * PMIC AUXADC debug register dump
  *********************************/
+#define DBG_REG_ENABLE		1
 #define DBG_REG_SIZE		384
 #define BAT_TEMP_AEE_DBG	0
 
@@ -116,6 +105,10 @@ static void wk_auxadc_dbg_dump(void)
 	static unsigned char dbg_stamp;
 	static struct pmic_adc_dbg_st pmic_adc_dbg[4];
 
+	if (adc_dbg_addr[0] == 0) {
+		/* DBG_REG_ENABLE is 0 */
+		return;
+	}
 	for (i = 0; adc_dbg_addr[i] != 0; i++)
 		pmic_adc_dbg[dbg_stamp].reg[i] =
 			upmu_get_reg_value(adc_dbg_addr[i]);
@@ -177,7 +170,7 @@ static int bat_temp_filter(int *arr, unsigned short size)
 static int wk_bat_temp_dbg(int bat_temp_prev, int bat_temp)
 {
 	int vbif28, bat_temp_new = bat_temp;
-	int arr_bat_temp[5];
+	int arr_bat_temp[5], vbat;
 	unsigned short i;
 
 	vbif28 = auxadc_priv_read_channel(AUXADC_VBIF);
@@ -193,17 +186,32 @@ static int wk_bat_temp_dbg(int bat_temp_prev, int bat_temp)
 		pr_notice("%d,%d,%d,%d,%d, BAT_TEMP_NEW:%d\n",
 			arr_bat_temp[0], arr_bat_temp[1], arr_bat_temp[2],
 			arr_bat_temp[3], arr_bat_temp[4], bat_temp_new);
+		/* Reset AuxADC to observe VBAT/IBAT/BAT_TEMP */
+		pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
+		pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 1);
+		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 0);
+		for (i = 0; i < 5; i++) {
+			vbat = auxadc_priv_read_channel(AUXADC_BATADC);
+			arr_bat_temp[i] =
+				auxadc_priv_read_channel(AUXADC_BAT_TEMP);
+			pr_notice("[CH3_DBG] %d,%d\n",
+				  vbat, arr_bat_temp[i]);
+		}
+		bat_temp_new = bat_temp_filter(arr_bat_temp, 5);
+		pr_notice("Final BAT_TEMP_NEW:%d\n", bat_temp_new);
 	}
 	return bat_temp_new;
 }
 
 static void wk_auxadc_dbg_init(void)
 {
+#if DBG_REG_ENABLE
 	unsigned short i;
-	unsigned int addr = 0x1000;
+	unsigned int addr = 0xFA2;
 
 	/* All of AUXADC */
-	for (i = 0; addr <= 0x1266; i++) {
+	for (i = 0; addr <= 0x127A; i++) {
 		adc_dbg_addr[i] = addr;
 		addr += 0x2;
 	}
@@ -215,6 +223,7 @@ static void wk_auxadc_dbg_init(void)
 	/* Others */
 	adc_dbg_addr[i++] = MT6359_BATON_ANA_CON0;
 	adc_dbg_addr[i++] = MT6359_PCHR_VREF_ELR_0;
+#endif
 }
 
 /*********************************
@@ -294,14 +303,8 @@ void mdrt_monitor(void)
 		return;
 	}
 	mdrt_cnt++;
-	if (mdrt_cnt >= 7 && mdrt_cnt < 9) {
-		/* trigger CH7 in AP/MD/GPS and just delay 1ms to get data */
-		pmic_set_hk_reg_value(PMIC_AUXADC_RQST_CH7, 1);
-		pmic_set_hk_reg_value(PMIC_AUXADC_RQST_CH7_BY_MD, 1);
-		pmic_set_hk_reg_value(PMIC_AUXADC_RQST_CH7_BY_GPS, 1);
-		mdelay(1);
+	if (mdrt_cnt >= 7 && mdrt_cnt < 9)
 		mdrt_reg_dump();
-	}
 	if (mdrt_cnt > 15) {
 		mdrt_reg_dump();
 		mdrt_cnt = 0;
@@ -432,8 +435,9 @@ static void legacy_auxadc_init(struct device *dev)
 			devm_iio_channel_get(dev,
 					     legacy_auxadc[i].channel_name);
 		if (IS_ERR(legacy_auxadc[i].chan))
-			pr_notice("%s get fail with list %d\n",
-				legacy_auxadc[i].channel_name, i);
+			pr_notice("%s get fail with list %d, dev_name:%s\n",
+				legacy_auxadc[i].channel_name, i,
+				dev_name(dev));
 	}
 }
 
@@ -452,6 +456,9 @@ int pmic_get_auxadc_value(int list)
 		return PTR_ERR(legacy_auxadc[list].chan);
 	}
 	if (list == AUXADC_LIST_BATTEMP) {
+		ret = iio_read_channel_processed(
+			legacy_auxadc[AUXADC_LIST_VBIF].chan,
+			&g_pmic_pad_vbif28_vol);
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 		is_charging = gauge_get_current(&bat_cur);
 #endif
@@ -487,15 +494,6 @@ static void auxadc_bat_temp_convert(unsigned char convert)
 		mutex_lock(&auxadc_ch3_mutex);
 	else if (convert == 0)
 		mutex_unlock(&auxadc_ch3_mutex);
-}
-
-static void auxadc_vdcxo_convert(unsigned char convert)
-{
-	/* Turn on CH6 measured switch, set AUXADC_ANA_CON0[7] = 1’b1 */
-	if (convert == 1)
-		pmic_config_interface(MT6359_AUXADC_ANA_CON0, 0x1, 0x1, 7);
-	else if (convert == 0)
-		pmic_config_interface(MT6359_AUXADC_ANA_CON0, 0x0, 0x1, 7);
 }
 
 static void auxadc_vbif_convert(unsigned char convert)
@@ -706,14 +704,10 @@ int pmic_auxadc_chip_init(struct device *dev)
 	}
 	auxadc_set_convert_fn(AUXADC_BATADC, auxadc_batadc_convert);
 	auxadc_set_convert_fn(AUXADC_BAT_TEMP, auxadc_bat_temp_convert);
-	auxadc_set_convert_fn(AUXADC_VDCXO, auxadc_vdcxo_convert);
 	auxadc_set_convert_fn(AUXADC_VBIF, auxadc_vbif_convert);
-	//auxadc_set_cali_fn(AUXADC_BATADC, wk_vbat_cali);
 	auxadc_set_cali_fn(AUXADC_BAT_TEMP, auxadc_bat_temp_cali);
 
-#if 1 /*TBD*/
 	legacy_auxadc_init(dev);
-#endif
 
 	wk_auxadc_dbg_init();
 	mdrt_monitor_init();

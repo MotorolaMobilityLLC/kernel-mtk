@@ -118,6 +118,22 @@ static unsigned int pmic_scp_set_regulator(struct mtk_regulator mt_reg,
 		mt_reg.desc.name, is_sleep_vol?"sleep ":"", voltage);
 	return 0;
 }
+
+/*
+ * SCP enable VCORE/VSRAM control, return 0 if success
+ */
+int pmic_scp_ctrl_enable(bool vcore_en, bool vsram_en, bool is_pmrc_mode)
+{
+	int ret = 0;
+
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN, vcore_en);
+	pmic_set_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN, vsram_en);
+	pmic_set_register_value(PMIC_RG_VR_SSHUB_MODE, is_pmrc_mode);
+	pr_info("[%s]_vcore_en:%d vsram_en:%d is_pmic_mode:%d\n",
+		__func__, vcore_en, vsram_en, is_pmrc_mode);
+	return ret;
+}
+
 /*
  * SCP set VCORE voltage, return 0 if success,
  * otherwise return set voltage(uV)
