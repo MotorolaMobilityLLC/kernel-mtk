@@ -57,9 +57,9 @@
 
 
 #ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
-#include <mtk_spm_sleep.h>       /* for spm_ap_mdsrc_req */
-#include "audio_ipi_client_phone_call.h"
+#include <audio_ipi_client_phone_call.h>
 #endif
+
 
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 #include "audio_ipi_client_playback.h"
@@ -83,24 +83,8 @@
 
 #define AUDIO_IPI_IOCTL_INIT_DSP     _IOW(AUDIO_IPI_IOC_MAGIC, 20, unsigned int)
 #define AUDIO_IPI_IOCTL_REG_DMA      _IOW(AUDIO_IPI_IOC_MAGIC, 21, unsigned int)
-#define AUDIO_IPI_IOCTL_ADSP_REG_FEATURE \
-				     _IOW(AUDIO_IPI_IOC_MAGIC, 22, unsigned int)
+#define AUDIO_IPI_IOCTL_ADSP_REG_FEA _IOW(AUDIO_IPI_IOC_MAGIC, 22, unsigned int)
 
-#define AUDIO_IPI_IOCTL_DUMP_PCM     _IOW(AUDIO_IPI_IOC_MAGIC, 97, unsigned int)
-#define AUDIO_IPI_IOCTL_REG_FEATURE  _IOW(AUDIO_IPI_IOC_MAGIC, 98, unsigned int)
-#define AUDIO_IPI_IOCTL_SPM_MDSRC_ON _IOW(AUDIO_IPI_IOC_MAGIC, 99, unsigned int)
-
-/*
- * =============================================================================
- *                     private global members
- * =============================================================================
- */
-
-#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT /* TOOD: move to call */
-static bool b_speech_on;
-static bool b_spm_ap_mdsrc_req_on;
-static bool b_dump_pcm_enable;
-#endif
 
 
 /*
@@ -109,6 +93,7 @@ static bool b_dump_pcm_enable;
  * =============================================================================
  */
 
+#ifdef CONFIG_MTK_AUDIODSP_SUPPORT
 struct audio_ipi_reg_dma_t {
 	uint8_t task;
 	uint8_t reg_flag; /* 1: register, 0: unregister */
@@ -122,6 +107,8 @@ struct audio_ipi_reg_feature_t {
 	uint16_t reg_flag;
 	uint16_t feature_id;
 };
+#endif
+
 
 /*
  * =============================================================================
@@ -176,10 +163,14 @@ static int parsing_ipi_msg_from_user_space(
 
 	/* init var */
 	memset(&dram_buf, 0, sizeof(struct aud_ptr_t));
+
+
 	/* get message size to read */
 	msg_len = msg_len_of_type(data_type);
 	if (msg_len > sizeof(struct ipi_msg_t))  {
-		AUD_ASSERT(msg_len <= sizeof(struct ipi_msg_t));
+		pr_notice("%s(), msg_len %u > %zu!!\n",
+			  __func__, msg_len, sizeof(struct ipi_msg_t));
+		retval = -1;
 		goto parsing_exit;
 	}
 
@@ -190,8 +181,16 @@ static int parsing_ipi_msg_from_user_space(
 			  __func__, retval);
 		goto parsing_exit;
 	}
-	AUD_ASSERT(ipi_msg.data_type == data_type); /* double check */
-
+	if (ipi_msg.data_type != data_type) { /* double check */
+		pr_notice("%s(), data_type %d != %d\n",
+			  __func__, ipi_msg.data_type, data_type);
+		retval = -1;
+		goto parsing_exit;
+	}
+	msg_len = get_message_buf_size(&ipi_msg);
+	retval = check_msg_format(&ipi_msg, msg_len);
+	if (retval != 0)
+		goto parsing_exit;
 
 
 	/* get dma buf if need */
@@ -202,6 +201,10 @@ static int parsing_ipi_msg_from_user_space(
 		/* get hal data & write hal data to DRAM */
 		hal_data_size = dma_info->hal_buf.data_size;
 		copy_hal_data = kmalloc(hal_data_size, GFP_KERNEL);
+		if (copy_hal_data == NULL) {
+			retval = -ENOMEM;
+			goto parsing_exit;
+		}
 		retval = copy_from_user(
 				 copy_hal_data,
 				 (void __user *)dma_info->hal_buf.addr,
@@ -263,12 +266,14 @@ static int parsing_ipi_msg_from_user_space(
 	    hal_wb_buf_addr != NULL &&
 	    wb_dram != NULL &&
 	    wb_dram->addr_val != 0 &&
-	    wb_dram->data_size > 0 &&
 	    ipi_msg.scp_ret == 1) {
 		if (wb_dram->data_size > hal_wb_buf_size) {
 			pr_notice("wb_dram->data_size %u > hal_wb_buf_size %u!!\n",
 				  wb_dram->data_size,
 				  hal_wb_buf_size);
+			ipi_msg.scp_ret = 0;
+		} else if (wb_dram->data_size == 0) {
+			pr_notice("ipi wb data sz = 0!! check adsp write\n");
 			ipi_msg.scp_ret = 0;
 		} else {
 			retval = copy_to_user(
@@ -319,8 +324,8 @@ parsing_exit:
 static long audio_ipi_driver_ioctl(
 	struct file *file, unsigned int cmd, unsigned long arg)
 {
-	struct audio_ipi_reg_dma_t dma_reg;
 #if defined(CONFIG_MTK_AUDIODSP_SUPPORT)
+	struct audio_ipi_reg_dma_t dma_reg;
 	struct audio_ipi_reg_feature_t feat_reg;
 #endif
 	int retval = 0;
@@ -349,6 +354,7 @@ static long audio_ipi_driver_ioctl(
 		audio_load_task((uint8_t)arg);
 		break;
 	}
+#if defined(CONFIG_MTK_AUDIODSP_SUPPORT)
 	case AUDIO_IPI_IOCTL_INIT_DSP: {
 		pr_debug("%s(), AUDIO_IPI_IOCTL_INIT_DSP(%d)\n",
 			 __func__, (uint8_t)arg);
@@ -385,8 +391,7 @@ static long audio_ipi_driver_ioctl(
 
 		break;
 	}
-#if defined(CONFIG_MTK_AUDIODSP_SUPPORT)
-	case AUDIO_IPI_IOCTL_ADSP_REG_FEATURE: {
+	case AUDIO_IPI_IOCTL_ADSP_REG_FEA: {
 		if (((void __user *)arg) == NULL) {
 			retval = -1;
 			break;
@@ -400,7 +405,7 @@ static long audio_ipi_driver_ioctl(
 				  __func__, retval);
 			break;
 		}
-		pr_debug("%s(), AUDIO_IPI_IOCTL_ADSP_REG_FEATURE(%s,%d)\n",
+		pr_debug("%s(), AUDIO_IPI_IOCTL_ADSP_REG_FEA(%s,%d)\n",
 			 __func__,
 			 feat_reg.reg_flag ? "enable" : "disable",
 			 feat_reg.feature_id);
@@ -413,53 +418,8 @@ static long audio_ipi_driver_ioctl(
 		break;
 	}
 #endif
-#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT /* TOOD: use message */
-	case AUDIO_IPI_IOCTL_DUMP_PCM: {
-		pr_debug("%s(), AUDIO_IPI_IOCTL_DUMP_PCM(%lu)\n",
-			 __func__, arg);
-		b_dump_pcm_enable = arg;
-		break;
-	}
-	case AUDIO_IPI_IOCTL_REG_FEATURE: {
-		AUD_LOG_V("%s(), AUDIO_IPI_IOCTL_REG_FEATURE(%lu)\n",
-			  __func__, arg);
-		if (arg) { /* enable scp speech */
-			if (b_speech_on == false) {
-				b_speech_on = true;
-				scp_register_feature(OPEN_DSP_FEATURE_ID);
-				if (b_dump_pcm_enable)
-					open_dump_file();
-			}
-		} else { /* disable scp speech */
-			if (b_speech_on == true) {
-				b_speech_on = false;
-				close_dump_file();
-				scp_deregister_feature(OPEN_DSP_FEATURE_ID);
-				/*scp_get_log(1);*/ /* dump scp log */
-			}
-		}
-		break;
-	}
-	case AUDIO_IPI_IOCTL_SPM_MDSRC_ON: {
-		if (arg) { /* enable scp speech */
-			if (b_spm_ap_mdsrc_req_on == false) {
-				b_spm_ap_mdsrc_req_on = true;
-				pr_debug("%s(), spm_ap_mdsrc_req(%lu)\n",
-					 __func__, arg);
-				spm_ap_mdsrc_req(arg);
-			}
-		} else { /* disable scp speech */
-			if (b_spm_ap_mdsrc_req_on == true) {
-				b_spm_ap_mdsrc_req_on = false;
-				pr_debug("%s(), spm_ap_mdsrc_req(%lu)\n",
-					 __func__, arg);
-				spm_ap_mdsrc_req(arg);
-			} /* else false: error handling when reboot */
-		}
-		break;
-	}
-#endif
 	default:
+		retval = -ENOIOCTLCMD;
 		break;
 	}
 	return retval;
@@ -525,14 +485,12 @@ static int __init audio_ipi_driver_init(void)
 	audio_task_manager_init();
 	audio_messenger_ipi_init();
 
+#ifdef CONFIG_MTK_AUDIODSP_SUPPORT
 	init_audio_ipi_dma();
+#endif
 
 #ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
 	audio_ipi_client_phone_call_init();
-
-	b_speech_on = false;
-	b_spm_ap_mdsrc_req_on = false;
-	b_dump_pcm_enable = false;
 #endif
 
 	ret = misc_register(&audio_ipi_device);
