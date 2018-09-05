@@ -155,9 +155,9 @@ endif
 mali_kbase-$(CONFIG_MALI_DMA_FENCE) += \
 	mali_kbase_dma_fence.o \
 	mali_kbase_fence.o
-mali_kbase-$(CONFIG_SYNC) += \
-	mali_kbase_sync_android.o \
-	mali_kbase_sync_common.o
+# mali_kbase-$(CONFIG_SYNC) += \
+# 	mali_kbase_sync_android.o \
+# 	mali_kbase_sync_common.o
 mali_kbase-$(CONFIG_SYNC_FILE) += \
 	mali_kbase_sync_file.o \
 	mali_kbase_sync_common.o \
