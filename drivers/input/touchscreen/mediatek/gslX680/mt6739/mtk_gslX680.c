@@ -1693,7 +1693,7 @@ static void tpd_resume(struct device *h)
 
 	reset_chip(i2c_client);
 	startup_chip(i2c_client);
-
+	check_mem_data(i2c_client);
 /*
 * check_mem_data(i2c_client);
 * #ifdef GREEN_MODE
