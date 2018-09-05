@@ -373,6 +373,22 @@ static int pm_qos_vcore_dvfs_force_opp_notify(struct notifier_block *b,
 	return NOTIFY_OK;
 }
 
+static int pmqos_isp_hrt_memory_bw_notify(struct notifier_block *b,
+		unsigned long l, void *v)
+{
+	commit_data(PM_QOS_ISP_HRT_BANDWIDTH, l, 1);
+
+	return NOTIFY_OK;
+}
+
+static int pm_qos_apu_memory_bw_notify(struct notifier_block *b,
+		unsigned long l, void *v)
+{
+	commit_data(PM_QOS_APU_MEMORY_BANDWIDTH, l, 1);
+
+	return NOTIFY_OK;
+}
+
 static void pm_qos_notifier_register(void)
 {
 	dvfsrc->pm_qos_memory_bw_nb.notifier_call =
@@ -397,6 +413,10 @@ static void pm_qos_notifier_register(void)
 		pm_qos_power_model_vcore_request_notify;
 	dvfsrc->pm_qos_vcore_dvfs_force_opp_nb.notifier_call =
 		pm_qos_vcore_dvfs_force_opp_notify;
+	dvfsrc->pm_qos_isp_hrt_bw_nb.notifier_call =
+		pmqos_isp_hrt_memory_bw_notify;
+	dvfsrc->pm_qos_apu_memory_bw_nb.notifier_call =
+		pm_qos_apu_memory_bw_notify;
 
 	pm_qos_add_notifier(PM_QOS_MEMORY_BANDWIDTH,
 			&dvfsrc->pm_qos_memory_bw_nb);
@@ -420,6 +440,10 @@ static void pm_qos_notifier_register(void)
 			&dvfsrc->pm_qos_power_model_vcore_request_nb);
 	pm_qos_add_notifier(PM_QOS_VCORE_DVFS_FORCE_OPP,
 			&dvfsrc->pm_qos_vcore_dvfs_force_opp_nb);
+	pm_qos_add_notifier(PM_QOS_ISP_HRT_BANDWIDTH,
+			&dvfsrc->pm_qos_isp_hrt_bw_nb);
+	pm_qos_add_notifier(PM_QOS_APU_MEMORY_BANDWIDTH,
+			&dvfsrc->pm_qos_apu_memory_bw_nb);
 }
 
 static int helio_dvfsrc_probe(struct platform_device *pdev)
@@ -489,6 +513,12 @@ static __maybe_unused int helio_dvfsrc_suspend(struct device *dev)
 {
 	int ret = 0;
 
+	if (dvfsrc->suspend) {
+		ret = dvfsrc->suspend(dvfsrc);
+		if (ret)
+			return ret;
+	}
+
 	ret = devfreq_suspend_device(dvfsrc->devfreq);
 	if (ret < 0) {
 		dev_err(dev, "failed to suspend the devfreq devices\n");
@@ -501,6 +531,12 @@ static __maybe_unused int helio_dvfsrc_suspend(struct device *dev)
 static __maybe_unused int helio_dvfsrc_resume(struct device *dev)
 {
 	int ret = 0;
+
+	if (dvfsrc->resume) {
+		ret = dvfsrc->resume(dvfsrc);
+		if (ret)
+			return ret;
+	}
 
 	ret = devfreq_resume_device(dvfsrc->devfreq);
 	if (ret < 0) {

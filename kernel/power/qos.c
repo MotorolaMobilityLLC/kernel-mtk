@@ -369,6 +369,68 @@ static struct pm_qos_object vcore_dvfs_force_opp_pm_qos = {
 	.constraints = &vcore_dvfs_force_opp_constraints,
 	.name = "vcore_dvfs_force_opp",
 };
+static BLOCKING_NOTIFIER_HEAD(vvpu_opp_notifier);
+static struct pm_qos_constraints vvpu_opp_constraints = {
+	.req_list = LIST_HEAD_INIT(vvpu_opp_constraints.req_list),
+	.list = PLIST_HEAD_INIT(vvpu_opp_constraints.list),
+	.target_value = PM_QOS_VVPU_OPP_DEFAULT_VALUE,
+	.default_value = PM_QOS_VVPU_OPP_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_VVPU_OPP_DEFAULT_VALUE,
+	.type = PM_QOS_MIN,
+	.notifiers = &vvpu_opp_notifier,
+};
+static struct pm_qos_object vvpu_opp_pm_qos = {
+	.constraints = &vvpu_opp_constraints,
+	.name = "vvpu_opp",
+};
+
+static BLOCKING_NOTIFIER_HEAD(vmdla_opp_notifier);
+static struct pm_qos_constraints vmdla_opp_constraints = {
+	.req_list = LIST_HEAD_INIT(vmdla_opp_constraints.req_list),
+	.list = PLIST_HEAD_INIT(vmdla_opp_constraints.list),
+	.target_value = PM_QOS_VMDLA_OPP_DEFAULT_VALUE,
+	.default_value = PM_QOS_VMDLA_OPP_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_VMDLA_OPP_DEFAULT_VALUE,
+	.type = PM_QOS_MIN,
+	.notifiers = &vmdla_opp_notifier,
+};
+static struct pm_qos_object vmdla_opp_pm_qos = {
+	.constraints = &vmdla_opp_constraints,
+	.name = "vmdla_opp",
+};
+
+
+static BLOCKING_NOTIFIER_HEAD(isp_hrt_bandwidth_notifier);
+static struct pm_qos_constraints isp_hrt_bw_constraints = {
+	.req_list = LIST_HEAD_INIT(isp_hrt_bw_constraints.req_list),
+	.list = PLIST_HEAD_INIT(isp_hrt_bw_constraints.list),
+	.target_value = PM_QOS_ISP_HRT_BANDWIDTH_DEFAULT_VALUE,
+	.default_value = PM_QOS_ISP_HRT_BANDWIDTH_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_ISP_HRT_BANDWIDTH_DEFAULT_VALUE,
+	.type = PM_QOS_SUM,
+	.notifiers = &isp_hrt_bandwidth_notifier,
+};
+static struct pm_qos_object isp_hrt_bandwidth_pm_qos = {
+	.constraints = &isp_hrt_bw_constraints,
+	.name = "isp_hrt_bandwidth",
+};
+
+static BLOCKING_NOTIFIER_HEAD(apu_memory_bandwidth_notifier);
+static struct pm_qos_constraints apu_memory_bw_constraints = {
+	.req_list = LIST_HEAD_INIT(apu_memory_bw_constraints.req_list),
+	.list = PLIST_HEAD_INIT(apu_memory_bw_constraints.list),
+	.target_value = PM_QOS_APU_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.default_value = PM_QOS_APU_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_APU_MEMORY_BANDWIDTH_DEFAULT_VALUE,
+	.type = PM_QOS_SUM,
+	.notifiers = &apu_memory_bandwidth_notifier,
+};
+static struct pm_qos_object apu_memory_bandwidth_pm_qos = {
+	.constraints = &apu_memory_bw_constraints,
+	.name = "apu_memory_bandwidth",
+};
+
+
 
 static struct pm_qos_object *pm_qos_array[] = {
 	&null_pm_qos,
@@ -395,6 +457,10 @@ static struct pm_qos_object *pm_qos_array[] = {
 	&venc_freq_pm_qos,
 	&img_freq_pm_qos,
 	&cam_freq_pm_qos,
+	&vvpu_opp_pm_qos,
+	&vmdla_opp_pm_qos,
+	&isp_hrt_bandwidth_pm_qos,
+	&apu_memory_bandwidth_pm_qos,
 };
 
 static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
