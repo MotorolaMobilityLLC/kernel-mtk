@@ -81,7 +81,10 @@
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
 char uart_write_statbuf[256];
 #endif
-
+#ifdef CONFIG_FPGA_EARLY_PORTING
+#define MTK_UART_FPGA_CLK  10000000
+#define MTK_UART_FPGA_BAUD 921600
+#endif
 #ifdef CONFIG_SERIAL_8250_DMA
 enum dma_rx_status {
 	DMA_RX_START = 0,
@@ -489,13 +492,6 @@ mtk8250_do_pm(struct uart_port *port, unsigned int state, unsigned int old)
 			mtk8250_runtime_suspend(port->dev);
 }
 
-#ifdef CONFIG_SERIAL_8250_DMA
-static bool mtk8250_dma_filter(struct dma_chan *chan, void *param)
-{
-	return false;
-}
-#endif
-
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
 char *mtk8250_uart_dump(void)
 {
@@ -523,6 +519,14 @@ char *mtk8250_uart_dump(void)
 					high_speed, dll, dlh, lcr,
 					count, point, guide);
 	return uart_write_statbuf;
+}
+#endif
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef CONFIG_SERIAL_8250_DMA
+static bool mtk8250_dma_filter(struct dma_chan *chan, void *param)
+{
+	return false;
 }
 #endif
 
@@ -566,6 +570,7 @@ static int mtk8250_probe_of(struct platform_device *pdev, struct uart_port *p,
 
 	return 0;
 }
+#endif
 
 static int mtk8250_probe(struct platform_device *pdev)
 {
@@ -591,12 +596,14 @@ static int mtk8250_probe(struct platform_device *pdev)
 
 	data->clk_count = 0;
 
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (pdev->dev.of_node) {
 		err = mtk8250_probe_of(pdev, &uart.port, data);
 		if (err)
 			return err;
 	} else
 		return -ENODEV;
+#endif
 
 	spin_lock_init(&uart.port.lock);
 	uart.port.mapbase = regs->start;
@@ -612,6 +619,9 @@ static int mtk8250_probe(struct platform_device *pdev)
 	uart.port.startup = mtk8250_startup;
 	uart.port.set_termios = mtk8250_set_termios;
 	uart.port.uartclk = clk_get_rate(data->uart_clk);
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	uart.port.uartclk = MTK_UART_FPGA_CLK;
+#endif
 #ifdef CONFIG_SERIAL_8250_DMA
 	if (data->dma)
 		uart.dma = data->dma;
@@ -903,10 +913,15 @@ static int __init early_mtk8250_setup(struct earlycon_device *device,
 		return -ENODEV;
 
 	device->port.iotype = UPIO_MEM32;
-
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	device->port.uartclk = MTK_UART_FPGA_CLK;
+	device->baud = MTK_UART_FPGA_BAUD;
+#endif
 	return early_serial8250_setup(device, NULL);
 }
-
+#ifdef CONFIG_FPGA_EARLY_PORTING
+EARLYCON_DECLARE(mtk8250, early_mtk8250_setup);
+#endif
 OF_EARLYCON_DECLARE(mtk8250, "mediatek,mt6577-uart", early_mtk8250_setup);
 #endif
 
