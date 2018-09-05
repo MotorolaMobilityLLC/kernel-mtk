@@ -1344,6 +1344,10 @@ static void _do_ptim(void)
 
 	do_ptim_gauge(false, &gm.ptim_vol, &gm.ptim_curr, &is_charging);
 
+	gm.log.ptim_bat = gm.ptim_vol;
+	gm.log.ptim_cur = gm.ptim_curr;
+	gm.log.ptim_is_charging = is_charging;
+
 	if ((is_charging == false) && (gm.ptim_curr >= 0))
 		gm.ptim_curr = 0 - gm.ptim_curr;
 }
@@ -2110,6 +2114,7 @@ void fg_drv_update_hw_status(void)
 	int fg_current_iavg;
 	bool valid = false;
 	static unsigned int cnt;
+	ktime_t ktime = ktime_set(60, 0);
 
 	bm_debug("[fg_drv_update_hw_status]=>\n");
 
@@ -2163,44 +2168,31 @@ void fg_drv_update_hw_status(void)
 		gauge_dev_dump(gm.gdev, NULL);
 	cnt++;
 
-	dump_gm3_log();
+	gm3_log_dump();
 
 	wakeup_fg_algo_cmd(
 		FG_INTR_KERNEL_CMD,
 		FG_KERNEL_CMD_DUMP_REGULAR_LOG, 0);
+
+	if (bat_get_debug_level() >= BMLOG_DEBUG_LEVEL)
+		ktime = ktime_set(10, 0);
+	else
+		ktime = ktime_set(60, 0);
+
+	hrtimer_start(&gm.fg_hrtimer, ktime, HRTIMER_MODE_REL);
 
 }
 
 
 int battery_update_routine(void *x)
 {
-	ktime_t ktime = ktime_set(10, 0);
-	int temp_intr_toggle = 0;
-
 	battery_update_psd(&battery_main);
 
 	while (1) {
 		wait_event(gm.wait_que, (gm.fg_update_flag > 0));
-
-		fg_drv_update_hw_status();
-
-		/*********************/
-
-		if (temp_intr_toggle > 10) {
-			temp_intr_toggle = 0;
-		} else {
-			/*fg_drv_send_intr(FG_INTR_FG_TIME);*/
-			temp_intr_toggle++;
-		}
-		/*********************/
 		gm.fg_update_flag = 0;
 
-		if (bat_get_debug_level() >= BMLOG_DEBUG_LEVEL)
-			ktime = ktime_set(10, 0);
-		else
-			ktime = ktime_set(60, 0);
-
-		hrtimer_start(&gm.fg_hrtimer, ktime, HRTIMER_MODE_REL);
+		fg_drv_update_hw_status();
 	}
 }
 
@@ -3833,6 +3825,7 @@ void mtk_battery_init(struct platform_device *dev)
 {
 	gm.ui_soc = -1;
 	gm.log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
+	gm.d_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 
 	gm.fixed_uisoc = 0xffff;
 
@@ -3958,11 +3951,18 @@ void mtk_battery_init(struct platform_device *dev)
 			fg_vbat2_l_int_handler);
 	}
 
+
+	gm3_log_init();
+
 	gauge_dev_get_info(gm.gdev, GAUGE_2SEC_REBOOT, &gm.pl_two_sec_reboot);
 	gauge_dev_set_info(gm.gdev, GAUGE_2SEC_REBOOT, 0);
 
 	sw_iavg_init();
 
+#ifdef _DEA_MODIFY_
+	gm.wait_que.function = fg_drv_update_hw_status;
+	gm.wait_que.name = "fg_drv_update_hw_status thread";
+#endif
 
 }
 
@@ -3984,6 +3984,26 @@ void mtk_battery_last_init(struct platform_device *dev)
 /* ============================================================ */
 /* battery simulator log */
 /* ============================================================ */
+
+void gm3_log_init(void)
+{
+	gauge_dev_is_gauge_initialized(gm.gdev, &gm.log.is_gauge_initialized);
+	gauge_dev_get_rtc_ui_soc(gm.gdev, &gm.log.rtc_ui_soc);
+	gauge_dev_is_rtc_invalid(gm.gdev, &gm.log.is_rtc_invalid);
+	gauge_dev_get_boot_battery_plug_out_status(
+		gm.gdev, &gm.log.is_bat_plugout, &gm.log.bat_plugout_time);
+
+	gauge_dev_get_info(gm.gdev, GAUGE_2SEC_REBOOT, &gm.log.twosec_reboot);
+	gauge_dev_get_info(gm.gdev, GAUGE_PL_CHARGING_STATUS,
+		&gm.log.pl_charging_status);
+	gauge_dev_get_info(gm.gdev, GAUGE_MONITER_PLCHG_STATUS,
+		&gm.log.moniter_plchg_status);
+	gauge_dev_get_info(gm.gdev, GAUGE_BAT_PLUG_STATUS,
+		&gm.log.bat_plug_status);
+	gauge_dev_get_info(gm.gdev, GAUGE_IS_NVRAM_FAIL_MODE,
+		&gm.log.is_nvram_fail_mode);
+	gauge_dev_get_info(gm.gdev, GAUGE_CON0_SOC, &gm.log.con0_soc);
+}
 
 void gm3_log_notify(unsigned int interrupt)
 {
@@ -4018,22 +4038,19 @@ void gm3_log_notify(unsigned int interrupt)
 	}
 
 	if (interrupt != FG_INTR_KERNEL_CMD)
-		dump_gm3_log();
+		gm3_log_dump();
 }
 
-void dump_gm3_log(void)
+void gm3_log_dump(void)
 {
-	int is_bat_plugout = 0;
-	int bat_plugout_time = 0;
 	int system_time;
+	int car;
 
 	if (bat_get_debug_level() < 7)
 		return;
 
 
 	system_time = fg_get_system_sec();
-	gauge_dev_get_boot_battery_plug_out_status(
-		gm.gdev, &is_bat_plugout, &bat_plugout_time);
 
 	/* charger status need charger API */
 	/* CHR_ERR = -1 */
@@ -4043,6 +4060,8 @@ void dump_gm3_log(void)
 		gm.log.chr_status = -1;
 	else
 		gm.log.chr_status = 0;
+
+	car = gauge_get_coulomb();
 
 	bm_err("GM3log int %d %d %d %d %d\n",
 		system_time,
@@ -4057,7 +4076,7 @@ void dump_gm3_log(void)
 		battery_get_bat_current(),
 		battery_get_bat_avg_current(),
 		UNIT_TRANS_10 * get_imix(),
-		gauge_get_coulomb(),
+		car + gm.log.car_diff,
 		force_get_tbat(true),
 		upmu_get_rgs_chrdet(),
 		pmic_is_battery_exist(),
@@ -4065,15 +4084,18 @@ void dump_gm3_log(void)
 		gm.gdev->fg_hw_info.iavg_valid,
 		gm.log.chr_status);
 
-	bm_err("GM3log2 %d %d %d %d\n",
+	bm_err("GM3log2 %d %d %d %d %d %d %d %d\n",
 		system_time,
 		gm.log.zcv,
 		gm.log.zcv_current,
-		is_kernel_power_off_charging());
+		is_kernel_power_off_charging(),
+		gm.log.ptim_bat,
+		gm.log.ptim_cur,
+		gm.log.ptim_is_charging,
+		pmic_get_vbus());
 
-	bm_err("GM3log3 %d %d %d %d %d %d %d %d %d %d %d %d\n",
+	bm_err("GM3log3 %d %d %d %d %d %d %d %d %d %d %d\n",
 		system_time,
-		gm.log.fg_reset,
 		gm.pl_shutdown_time,
 		gm.ptim_lk_v,
 		gm.ptim_lk_i,
@@ -4082,9 +4104,29 @@ void dump_gm3_log(void)
 		gm.gdev->fg_hw_info.charger_zcv,
 		gm.gdev->fg_hw_info.hw_zcv,
 		gm.pl_two_sec_reboot,
-		is_bat_plugout,
-		bat_plugout_time
+		gm.log.is_bat_plugout,
+		gm.log.bat_plugout_time
 		);
+
+	bm_err("GM3log4 %d %d %d %d %d %d %d %d %d %d %d\n",
+		gm.log.is_gauge_initialized,
+		gm.log.rtc_ui_soc,
+		gm.log.is_rtc_invalid,
+		gm.log.is_bat_plugout,
+		gm.log.bat_plugout_time,
+		gm.log.twosec_reboot,
+		gm.log.pl_charging_status,
+		gm.log.moniter_plchg_status,
+		gm.log.bat_plug_status,
+		gm.log.is_nvram_fail_mode,
+		gm.log.con0_soc
+		);
+
+
+	bm_err("GM3 car:%d car_diff:%d\n",
+		car,
+		gm.log.car_diff);
+
 
 	/*reset*/
 	gm.log.bat_full_int = 0;
