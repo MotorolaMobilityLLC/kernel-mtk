@@ -755,13 +755,8 @@ PROC_FOPS_MCDI(usage);
 
 void mcdi_procfs_profile_init(struct proc_dir_entry *mcdi_dir)
 {
-	if (!proc_create("profile", 0644, mcdi_dir, &mcdi_profile_fops))
-		pr_notice("%s(), create /proc/mcdi/%s failed\n",
-			__func__, "profile");
-	if (!proc_create("usage", 0644, mcdi_dir, &mcdi_usage_fops))
-		pr_notice("%s(), create /proc/mcdi/%s failed\n",
-			__func__, "usage");
-
+	PROC_CREATE_MCDI(mcdi_dir, profile);
+	PROC_CREATE_MCDI(mcdi_dir, usage);
 }
 
 void mcdi_prof_init(void)
