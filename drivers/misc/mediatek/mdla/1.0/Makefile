@@ -15,6 +15,12 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/mdla/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mdla/1.0
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 ccflags-y += -I$(srctree)/drivers/staging/android/ion
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ccflags-y += -I$(srctree)/drivers/devfreq
+ccflags-y += -I$(srctree)/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/vpu/$(MTK_PLATFORM)
 
 obj-$(CONFIG_MTK_MDLA_SUPPORT) := mdla_main.o gsm.o
 obj-$(CONFIG_MTK_MDLA_DEBUG) += mdla_debug.o
