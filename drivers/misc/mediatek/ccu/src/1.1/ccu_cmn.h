@@ -144,6 +144,8 @@ int ccu_mmap_hw(struct file *filp, struct vm_area_struct *vma);
  * @cmd:        the pointer to command
  */
 int ccu_send_command(struct ccu_cmd_s *pCmd);
+int ccu_kenrel_fast_cmd_enque(struct ccu_cmd_s *cmd);
+struct ccu_cmd_s *ccu_kenrel_fast_cmd_deque(void);
 
 /**
  * ccu_power - config ccu power.

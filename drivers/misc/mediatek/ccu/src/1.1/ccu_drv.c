@@ -574,6 +574,21 @@ void ccu_clock_disable(void)
 	clk_disable_unprepare(ccu_clock_ctrl);
 }
 
+static MBOOL _is_fast_cmd(enum ccu_msg_id msg_id)
+{
+	if ((msg_id == MSG_TO_CCU_SET_SKIP_ALGO) ||
+		(msg_id == MSG_TO_CCU_SET_AP_AE_FRAME_SYNC_DATA) ||
+		(msg_id == MSG_TO_CCU_GET_CCU_OUTPUT) ||
+		(msg_id == MSG_TO_CCU_SET_AP_AE_OUTPUT) ||
+		(msg_id == MSG_TO_CCU_SET_AE_ROI) ||
+		(msg_id == MSG_TO_CCU_SET_AE_EV)) {
+		return MTRUE;
+	} else {
+		return MFALSE;
+	}
+
+}
+
 static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
@@ -600,7 +615,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 				sizeof(struct ccu_power_s));
 			if (ret != 0) {
 				LOG_ERR(
-					"[%s] copy_from_user failed,	ret=%d\n",
+					"[%s] copy_from_user failed, ret=%d\n",
 					"SET_POWER", ret);
 				return -EFAULT;
 			}
@@ -627,14 +642,27 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 					"ENQUE_COMMAND", ret);
 				return -EFAULT;
 			}
-			ret = ccu_push_command_to_queue(user, cmd);
+			if (_is_fast_cmd(cmd->task.msg_id) == MTRUE) {
+				LOG_DBG("CCU_FAST_CMD_E.%d\n",
+					cmd->task.msg_id);
+				ret = ccu_kenrel_fast_cmd_enque(cmd);
+			} else {
+				ret = ccu_push_command_to_queue(user, cmd);
+			}
 			break;
 		}
 	case CCU_IOCTL_DEQUE_COMMAND:
 		{
 			struct ccu_cmd_s *cmd = 0;
 
-			ret = ccu_pop_command_from_queue(user, &cmd);
+			cmd = ccu_kenrel_fast_cmd_deque();
+			if (cmd != NULL) {
+				LOG_DBG("CCU_FAST_CMD_D.%d\n",
+					cmd->task.msg_id);
+				ret = 0;
+			} else {
+				ret = ccu_pop_command_from_queue(user, &cmd);
+			}
 			if (ret != 0) {
 				LOG_ERR(
 					"[%s] pop command failed, ret=%d\n",
