@@ -86,7 +86,9 @@ void spm_twam_enable_monitor(bool en_monitor,
 	unsigned long flags;
 
 	struct spm_data spm_d;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	int ret;
+#endif
 
 	if (en_monitor == true) {
 		if (twam_running == true)
@@ -96,7 +98,9 @@ void spm_twam_enable_monitor(bool en_monitor,
 			return;
 		spm_twam_handler = NULL;
 		spm_d.u.args.args1 = 0;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		spm_to_sspm_command(SPM_TWAM_ENABLE, &spm_d);
+#endif
 		twam_running = false;
 			return;
 	}
@@ -121,7 +125,9 @@ void spm_twam_enable_monitor(bool en_monitor,
 			   (((twamcfg.byte[3].id & 0x1f) |
 			   (twamcfg.byte[3].signal & 0x3) << 5) << 24);
 	spm_d.u.args.args5 = twam_window_len;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	ret = spm_to_sspm_command(SPM_TWAM_ENABLE, &spm_d);
+#endif
 	twam_running = true;
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
