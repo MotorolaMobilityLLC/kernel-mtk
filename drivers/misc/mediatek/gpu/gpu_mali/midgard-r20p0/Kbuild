@@ -71,6 +71,9 @@ endif
 #DEFINES += -DCONFIG_GPU_TRACEPOINTS=y
 DEFINES += -I$(srctree)/drivers/staging/android
 
+# wa: c/1556663
+DEFINES += -include mali_undef.h
+
 # Use our defines when compiling
 ccflags-y += $(DEFINES) -I$(KBASE_PATH)   -I$(KBASE_PLATFORM_PATH) -I$(UMP_PATH) -I$(srctree)/include/linux
 subdir-ccflags-y += $(DEFINES) -I$(KBASE_PATH)   -I$(KBASE_PLATFORM_PATH) -I$(OSK_PATH) -I$(UMP_PATH) -I$(srctree)/include/linux
