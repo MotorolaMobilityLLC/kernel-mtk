@@ -771,21 +771,6 @@ static long ltr303_unlocked_ioctl(struct file *file, unsigned int cmd,       uns
 			goto err_out;
 		}
 		break;
-	case ALSPS_GET_PS_MODE:
-		enable = (0);
-		if (copy_to_user(ptr, &enable, sizeof(enable))) {
-			err = -EFAULT;
-			goto err_out;
-		}
-		break;
-	case ALSPS_GET_PS_DATA:
-		APS_DBG("ALSPS_GET_PS_DATA\n");
-		dat = 0;
-		if (copy_to_user(ptr, &dat, sizeof(dat))) {
-			err = -EFAULT;
-			goto err_out;
-		}
-		break;
 	case ALSPS_GET_PS_RAW_DATA:
 		dat = 0;
 		if (copy_to_user(ptr, &dat, sizeof(dat))) {
@@ -807,24 +792,6 @@ static long ltr303_unlocked_ioctl(struct file *file, unsigned int cmd,       uns
 			set_bit(CMC_BIT_ALS, &obj->enable);
 		else
 			clear_bit(CMC_BIT_ALS, &obj->enable);
-		break;
-	case ALSPS_GET_ALS_MODE:
-		enable = test_bit(CMC_BIT_ALS, &obj->enable) ? (1) : (0);
-		if (copy_to_user(ptr, &enable, sizeof(enable))) {
-			err = -EFAULT;
-			goto err_out;
-		}
-		break;
-	case ALSPS_GET_ALS_DATA:
-		obj->als = ltr303_als_read(obj->client, &obj->als);
-		if (obj->als < 0)
-			goto err_out;
-
-		dat = ltr303_get_als_value(obj, obj->als);
-		if (copy_to_user(ptr, &dat, sizeof(dat))) {
-			err = -EFAULT;
-			goto err_out;
-		}
 		break;
 	case ALSPS_GET_ALS_RAW_DATA:
 		obj->als = ltr303_als_read(obj->client, &obj->als);
