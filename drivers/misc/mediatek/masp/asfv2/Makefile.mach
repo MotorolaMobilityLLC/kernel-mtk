@@ -10,6 +10,8 @@ mach_obj += $(asf_link)/mach/sec_lib.o
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6761)))
 MTK_PLATFORM := mt6765
+else ifeq (y, $(filter y, $(CONFIG_MACH_MT3967)))
+MTK_PLATFORM := mt6779
 else
 MTK_PLATFORM := CONFIG_MTK_PLATFORM
 endif
