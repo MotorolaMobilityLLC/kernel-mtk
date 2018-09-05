@@ -621,6 +621,8 @@ struct simulator_log {
 	int ptim_cur;
 	int ptim_is_charging;
 
+	int phone_state;
+
 	/* initial */
 	int fg_reset;
 
@@ -901,14 +903,14 @@ extern void fg_custom_init_from_header(void);
 extern void notify_fg_chr_full(void);
 extern void fg_update_sw_iavg(void);
 extern void fg_bat_temp_int_sw_check(void);
-extern void gm3_log_notify(unsigned int interrupt);
-extern void gm3_log_dump(void);
 extern void fg_update_sw_low_battery_check(unsigned int thd);
 extern void fg_sw_bat_cycle_accu(void);
 extern void fg_ocv_query_soc(int ocv);
 
 /* GM3 simulator */
 extern void gm3_log_init(void);
+extern void gm3_log_notify(unsigned int interrupt);
+extern void gm3_log_dump(void);
 
 
 /* query function , review */
