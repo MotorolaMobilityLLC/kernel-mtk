@@ -68,10 +68,12 @@ struct ioctl_malloc {
 };
 
 struct ioctl_run_cmd {
-	__u64 kva;   /* [in] kernel virtual address */
-	__u32 mva;   /* [in] device phyiscal address */
-	__u32 count; /* [in] # of commands */
-	__u32 id;    /* [out] command id */
+	__u64 kva;      /* [in] kernel virtual address */
+	__u32 mva;      /* [in] device phyiscal address */
+	__u32 count;    /* [in] # of commands */
+	__u32 id;       /* [out] command id */
+	__u64 khandle;  /* [in] ion kernel handle */
+	__u8 type;      /* [in] allocate memory type */
 };
 
 struct ioctl_perf {
