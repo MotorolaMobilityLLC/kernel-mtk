@@ -442,51 +442,52 @@ int __dump_pfn_backtrace(unsigned long pfn)
 	/* Check for holes within a MAX_ORDER area */
 	if (!pfn_valid_within(pfn))
 		return -2;
-
-	if (test_bit(PAGE_EXT_OWNER, &page_ext->flags)) {
+	if (page_ext) {
+		if (test_bit(PAGE_EXT_OWNER, &page_ext->flags)) {
 #ifdef CONFIG_PAGE_OWNER_SLIM
-		struct BtEntry *entry = page_ext->entry;
-		struct stack_trace trace = {
-			.nr_entries = entry->nr_entries,
-			.entries = &entry->backtrace[0],
-		};
+			struct BtEntry *entry = page_ext->entry;
+			struct stack_trace trace = {
+				.nr_entries = entry->nr_entries,
+				.entries = &entry->backtrace[0],
+			};
 #else
-		struct stack_trace trace = {
-			.nr_entries = page_ext->nr_entries,
-			.entries = &page_ext->trace_entries[0],
-		};
+			struct stack_trace trace = {
+				.nr_entries = page_ext->nr_entries,
+				.entries = &page_ext->trace_entries[0],
+			};
 #endif
 
-		pr_info("Page allocated via order %u, mask 0x%x, (%d:%d)\n",
-				page_ext->order, page_ext->gfp_mask,
-				atomic_read(&page->_refcount),
+			pr_info("Page allocated via order %u, mask 0x%x, (%d:%d)\n",
+					page_ext->order, page_ext->gfp_mask,
+					atomic_read(&page->_refcount),
 					atomic_read(&page->_mapcount));
 
-		pageblock_mt = get_pfnblock_migratetype(page, pfn);
-		page_mt  = gfpflags_to_migratetype(page_ext->gfp_mask);
-		pr_info("PFN %lu Block %lu type %d %s Flags",
-				pfn,
-				pfn >> pageblock_order,
-				pageblock_mt,
-				pageblock_mt != page_mt ? "Fallback" :
+			pageblock_mt = get_pfnblock_migratetype(page, pfn);
+			page_mt  = gfpflags_to_migratetype(page_ext->gfp_mask);
+			pr_info("PFN %lu Block %lu type %d %s Flags",
+					pfn,
+					pfn >> pageblock_order,
+					pageblock_mt,
+					pageblock_mt != page_mt ? "Fallback" :
 								"        ");
-		 pr_info("%s%s%s%s%s%s%s%s%s%s%s%s\n",
-				PageLocked(page)	? "K" : " ",
-				PageError(page)		? "E" : " ",
-				PageReferenced(page)	? "R" : " ",
-				PageUptodate(page)	? "U" : " ",
-				PageDirty(page)		? "D" : " ",
-				PageLRU(page)		? "L" : " ",
-				PageActive(page)	? "A" : " ",
-				PageSlab(page)		? "S" : " ",
-				PageWriteback(page)	? "W" : " ",
-				PageCompound(page)	? "C" : " ",
-				PageSwapCache(page)	? "B" : " ",
-				PageMappedToDisk(page)	? "M" : " ");
+			pr_info("%s%s%s%s%s%s%s%s%s%s%s%s\n",
+					PageLocked(page)	? "K" : " ",
+					PageError(page)		? "E" : " ",
+					PageReferenced(page)	? "R" : " ",
+					PageUptodate(page)	? "U" : " ",
+					PageDirty(page)		? "D" : " ",
+					PageLRU(page)		? "L" : " ",
+					PageActive(page)	? "A" : " ",
+					PageSlab(page)		? "S" : " ",
+					PageWriteback(page)	? "W" : " ",
+					PageCompound(page)	? "C" : " ",
+					PageSwapCache(page)	? "B" : " ",
+					PageMappedToDisk(page)	? "M" : " ");
 
-		print_stack_trace(&trace, 0);
+			print_stack_trace(&trace, 0);
 
-		return 0;
+			return 0;
+		}
 	}
 	return -1;
 }
