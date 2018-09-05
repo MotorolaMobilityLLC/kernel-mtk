@@ -85,4 +85,7 @@ void __attribute__((weak)) rtc_clock_enable(int enable)
 void __attribute__((weak)) rtc_lpsd_restore_al_mask(void)
 {
 }
+void __attribute__((weak)) rtc_reset_bbpu_alarm_status(void)
+{
+}
 #endif

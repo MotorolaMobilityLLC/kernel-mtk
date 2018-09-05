@@ -83,15 +83,6 @@ void rtc_writeif_unlock(void)
 	rtc_write_trigger();
 }
 
-void hal_rtc_reload_power(void)
-{
-	/* set AUTO bit because AUTO = 0 when PWREN = 1 and alarm occurs */
-	u16 bbpu = rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_AUTO;
-
-	rtc_write(RTC_BBPU, bbpu);
-	rtc_write_trigger();
-}
-
 void rtc_xosc_write(u16 val, bool reload)
 {
 	rtc_write(RTC_OSC32CON, RTC_OSC32CON_UNLOCK1);
@@ -126,14 +117,17 @@ void hal_rtc_set_spare_register(enum rtc_spare_enum cmd, u16 val)
 	u16 tmp_val;
 
 	if (cmd >= 0 && cmd < RTC_SPAR_NUM) {
+		hal_rtc_xinfo("%s: cmd[%d], set rg[0x%x, 0x%x , %d] = 0x%x\n",
+				__func__, cmd,
+				rtc_spare_reg[cmd][RTC_REG],
+				rtc_spare_reg[cmd][RTC_MASK],
+				rtc_spare_reg[cmd][RTC_SHIFT], val);
+
 		tmp_val =
 		    rtc_read(rtc_spare_reg[cmd][RTC_REG]) &
 		    ~(rtc_spare_reg[cmd][RTC_MASK] <<
 		      rtc_spare_reg[cmd][RTC_SHIFT]);
-		hal_rtc_xinfo("rtc_spare_reg[%d] = {%x, %d, %d}\n", cmd,
-			      rtc_spare_reg[cmd][RTC_REG],
-			      rtc_spare_reg[cmd][RTC_MASK],
-			      rtc_spare_reg[cmd][RTC_SHIFT]);
+
 		rtc_write(rtc_spare_reg[cmd][RTC_REG],
 			  tmp_val | ((val & rtc_spare_reg[cmd][RTC_MASK]) <<
 				     rtc_spare_reg[cmd][RTC_SHIFT]));
@@ -146,14 +140,18 @@ u16 hal_rtc_get_spare_register(enum rtc_spare_enum cmd)
 	u16 tmp_val;
 
 	if (cmd >= 0 && cmd < RTC_SPAR_NUM) {
-		hal_rtc_xinfo("rtc_spare_reg[%d] = {%x, %d, %d}\n", cmd,
-			      rtc_spare_reg[cmd][RTC_REG],
-			      rtc_spare_reg[cmd][RTC_MASK],
-			      rtc_spare_reg[cmd][RTC_SHIFT]);
+
 		tmp_val = rtc_read(rtc_spare_reg[cmd][RTC_REG]);
 		tmp_val =
 		    (tmp_val >> rtc_spare_reg[cmd][RTC_SHIFT]) &
 		    rtc_spare_reg[cmd][RTC_MASK];
+
+		hal_rtc_xinfo("%s: cmd[%d], get rg[0x%x, 0x%x , %d] = 0x%x\n",
+				__func__, cmd,
+				rtc_spare_reg[cmd][RTC_REG],
+				rtc_spare_reg[cmd][RTC_MASK],
+				rtc_spare_reg[cmd][RTC_SHIFT], tmp_val);
+
 		return tmp_val;
 	}
 	return 0;
