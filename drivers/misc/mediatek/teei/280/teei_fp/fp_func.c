@@ -27,6 +27,7 @@
 #include <asm/cacheflush.h>
 #include <linux/semaphore.h>
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 #include "fp_func.h"
 #include "../tz_driver/include/teei_fp.h"
 #include "../tz_driver/include/teei_id.h"
@@ -34,13 +35,15 @@
 #include "../tz_driver/include/nt_smc_call.h"
 #include "../tz_driver/include/utdriver_macro.h"
 #include "../tz_driver/include/teei_client_main.h"
+#if MTK_PLATFORM == 6797
+#include <../../base/power/mt6797/mt_vcorefs_manager.h>
+#endif/*MTK_PLATFORM == 6797*/
 
 #define IMSG_TAG "[teei_fp]"
 #include <imsg_log.h>
 
 struct fp_dev {
 	struct cdev cdev;
-	unsigned char mem[MICROTRUST_FP_SIZE];
 	struct semaphore sem;
 };
 
@@ -145,13 +148,19 @@ static long fp_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
-
+#if MTK_PLATFORM == 6797
+		IMSG_ERROR("start send_fp_command.\n");
+		vcorefs_request_dvfs_opp(KIR_TEESPI, OPPI_PERF);
+#endif/*MTK_PLATFORM == 6797*/
 		ret  = send_fp_command((void *)fp_buff_addr, args_len + 16);
 		if (ret) {
 			IMSG_ERROR("transfer data to ta failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
+#if MTK_PLATFORM == 6797
+		vcorefs_request_dvfs_opp(KIR_TEESPI, OPPI_UNREQ);
+#endif/*MTK_PLATFORM == 6797*/
 		if (copy_to_user((void *)arg, (void *)fp_buff_addr,
 						args_len + 16)) {
 			IMSG_ERROR("copy from user failed.\n");
@@ -240,7 +249,7 @@ int fp_init(void)
 		goto class_destroy;
 	}
 	fp_devp = NULL;
-	fp_devp = kmalloc(sizeof(struct fp_dev), GFP_KERNEL);
+	fp_devp = vmalloc(sizeof(struct fp_dev));
 	if (fp_devp == NULL) {
 		result = -ENOMEM;
 		goto class_device_destroy;
@@ -270,7 +279,7 @@ void fp_exit(void)
 	device_destroy(driver_class, devno);
 	class_destroy(driver_class);
 	cdev_del(&fp_devp->cdev);
-	kfree(fp_devp);
+	vfree(fp_devp);
 	unregister_chrdev_region(MKDEV(fp_major, 0), 1);
 }
 

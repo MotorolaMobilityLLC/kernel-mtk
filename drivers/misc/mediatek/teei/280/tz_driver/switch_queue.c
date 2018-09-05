@@ -12,6 +12,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/cpu.h>
@@ -101,9 +102,19 @@ static int ut_smc_call(void *buff)
 		.data = buff,
 	};
 
+#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
 	if (!kthread_queue_work(&ut_fastcall_worker, &usc_work.work))
+#else
+	if (!queue_kthread_work(&ut_fastcall_worker, &usc_work.work))
+#endif
 		return -1;
+
+#if KERNEL_VERSION(4, 9, 0) <= LINUX_VERSION_CODE
 	kthread_flush_work(&usc_work.work);
+#else
+	flush_kthread_work(&usc_work.work);
+#endif
+
 	return 0;
 }
 

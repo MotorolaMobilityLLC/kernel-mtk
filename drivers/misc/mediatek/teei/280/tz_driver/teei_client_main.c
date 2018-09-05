@@ -905,7 +905,9 @@ static int init_teei_framework(void)
 
 	teei_config_flag = 1;
 	complete(&global_down_lock);
+#ifdef CONFIG_MICROTRUST_FP_DRIVER
 	wake_up(&__fp_open_wq);
+#endif
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT All Completed");
 
 	return TEEI_BOOT_OK;
@@ -1791,7 +1793,7 @@ void show_utdriver_lock_status(void)
 		up(&api_lock);
 	}
 
-
+#ifdef CONFIG_MICROTRUST_FP_DRIVER
 	retVal = down_trylock(&fp_api_lock);
 	if (retVal == 1)
 		IMSG_PRINTK("[%s][%d] fp_api_lock is down\n",
@@ -1801,6 +1803,7 @@ void show_utdriver_lock_status(void)
 							__func__, __LINE__);
 		up(&fp_api_lock);
 	}
+#endif
 
 	retVal = down_trylock(&keymaster_api_lock);
 	if (retVal == 1)
@@ -2191,4 +2194,3 @@ MODULE_VERSION("1.00");
 module_init(teei_client_init);
 
 module_exit(teei_client_exit);
-

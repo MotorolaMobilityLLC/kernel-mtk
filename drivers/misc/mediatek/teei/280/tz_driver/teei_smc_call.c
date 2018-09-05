@@ -116,6 +116,8 @@ int teei_forward_call(u32 cmd, unsigned long cmd_addr, int size)
 	ret = add_work_entry(NEW_CAPI_CALL, (unsigned long)&params);
 	if (ret) {
 		up(&smc_lock);
+		mutex_unlock(&capi_mutex);
+		ut_pm_mutex_unlock(&pm_mutex);
 		return ret;
 	}
 

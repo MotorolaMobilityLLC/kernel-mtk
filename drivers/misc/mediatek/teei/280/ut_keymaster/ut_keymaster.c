@@ -27,7 +27,7 @@
 #include <asm/cacheflush.h>
 #include <linux/semaphore.h>
 #include <linux/slab.h>
-
+#include <linux/vmalloc.h>
 #include <teei_ioc.h>
 #include "../tz_driver/include/teei_id.h"
 #include "../tz_driver/include/tz_service.h"
@@ -50,7 +50,6 @@ struct semaphore keymaster_api_lock;
 
 struct keymaster_dev {
 	struct cdev cdev;
-	unsigned char mem[KEYMASTER_SIZE];
 	struct semaphore sem;
 };
 struct keymaster_dev *keymaster_devp;
@@ -221,7 +220,7 @@ int keymaster_init(void)
 		goto class_destroy;
 	}
 	keymaster_devp = NULL;
-	keymaster_devp = kmalloc(sizeof(struct keymaster_dev), GFP_KERNEL);
+	keymaster_devp = vmalloc(sizeof(struct keymaster_dev));
 	if (keymaster_devp == NULL) {
 		result = -ENOMEM;
 		goto class_device_destroy;
@@ -249,7 +248,7 @@ void keymaster_exit(void)
 	device_destroy(driver_class, devno);
 	class_destroy(driver_class);
 	cdev_del(&keymaster_devp->cdev);
-	kfree(keymaster_devp);
+	vfree(keymaster_devp);
 	unregister_chrdev_region(MKDEV(keymaster_major, 0), 1);
 }
 

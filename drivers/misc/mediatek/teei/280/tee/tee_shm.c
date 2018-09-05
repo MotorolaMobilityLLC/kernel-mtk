@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015-2016, Linaro Limited
+ * Copyright (c) 2017-2018, MICROTRUST
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -179,6 +180,7 @@ struct tee_shm *tee_shm_alloc(struct tee_context *ctx, size_t size, u32 flags)
 	}
 
 	if (flags & TEE_SHM_DMA_BUF) {
+#if KERNEL_VERSION(4, 4, 1) <= LINUX_VERSION_CODE
 		DEFINE_DMA_BUF_EXPORT_INFO(exp_info);
 
 		exp_info.ops = &tee_shm_dma_buf_ops;
@@ -187,6 +189,10 @@ struct tee_shm *tee_shm_alloc(struct tee_context *ctx, size_t size, u32 flags)
 		exp_info.priv = shm;
 
 		shm->dmabuf = dma_buf_export(&exp_info);
+#else
+		shm->dmabuf = dma_buf_export(shm, &tee_shm_dma_buf_ops,
+						shm->size, O_RDWR, NULL);
+#endif
 		if (IS_ERR(shm->dmabuf)) {
 			ret = ERR_CAST(shm->dmabuf);
 			goto err_rem;
