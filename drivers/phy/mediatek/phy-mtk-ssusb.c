@@ -854,7 +854,7 @@ static const struct mtk_phy_interface ssusb_phys[] = {
 	.name		= "port0",
 	.tuning_node_name = "mediatek,phy_tuning",
 	.port_num	= 0,
-	.reg_offset = 0x800,
+	.reg_offset = 0x0,
 	.port_type = PHY_TYPE_USB3,
 	.usb_phy_inst_init = phy_inst_init,
 	.usb_phy_init = phy_init_soc,
@@ -880,7 +880,7 @@ static const struct mtk_phy_interface ssusb_phys[] = {
 static const struct mtk_usbphy_config ssusb_phy_config = {
 	.phys			= ssusb_phys,
 	.num_phys		= 1,
-	.version		= MT_PHY_V1,
+	.version		= MT_PHY_V2,
 	.usb_drv_init = mtk_phy_drv_init,
 	.usb_drv_exit = mtk_phy_drv_exit,
 };
@@ -888,6 +888,7 @@ static const struct mtk_usbphy_config ssusb_phy_config = {
 const struct of_device_id mtk_phy_of_match[] = {
 	{
 		.compatible = "mediatek,mt6758-phy",
+		.compatible = "mediatek,mt3967-phy",
 		.data = &ssusb_phy_config,
 	},
 	{ },

@@ -920,8 +920,9 @@ int ssusb_gadget_init(struct ssusb_mtk *ssusb)
 	}
 
 	/* init as host mode, power down device IP for power saving */
-	if (mtu->ssusb->dr_mode == USB_DR_MODE_OTG)
-		mtu3_stop(mtu);
+	//TODO
+	//if (mtu->ssusb->dr_mode == USB_DR_MODE_OTG)
+	//	mtu3_stop(mtu);
 
 	dev_dbg(dev, " %s() done...\n", __func__);
 

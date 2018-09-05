@@ -94,8 +94,7 @@ static void usb_extcon_detect_cable(struct work_struct *work)
 	}
 }
 
-/*Fix build error "multiplie definition"*/
-#ifdef NEVER
+#if !defined(CONFIG_USB_MU3D_DRV)
 void mt_usb_connect(void)
 {
 	curr_dr = DUAL_PROP_DR_DEVICE;
