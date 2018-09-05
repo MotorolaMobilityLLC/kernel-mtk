@@ -38,6 +38,14 @@ config PINCTRL_MT3967
 	select PINCTRL_MTK_NO_UPSTREAM
 	select MTK_EINT_MULTI_TRIGGER_DESIGN
 
+config PINCTRL_MT6779
+	bool "Mediatek MT6779 pin control"
+	default n
+	depends on (!ARCH_MEDIATEK) && MACH_MT6779
+	select PINCTRL_MTK
+	select PINCTRL_MTK_NO_UPSTREAM
+	select MTK_EINT_MULTI_TRIGGER_DESIGN
+
 config MTK_EINT_MULTI_TRIGGER_DESIGN
 	bool "Mediatek EINT multi-trigger design"
 	depends on PINCTRL_MTK

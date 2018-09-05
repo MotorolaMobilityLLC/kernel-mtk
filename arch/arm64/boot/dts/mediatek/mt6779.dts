@@ -18,6 +18,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6779-msdc.h>
+#include <dt-bindings/pinctrl/mt6779-pinfunc.h>
 #include <dt-bindings/gce/mt6779-gce.h>
 #include <generated/autoconf.h>
 
@@ -409,49 +410,72 @@
 		reg = <0 0x10002000 0 0x1000>;
 	};
 
-	iocfg_0@10002000 {
-		compatible = "mediatek,iocfg_0";
-		reg = <0 0x10002000 0 0x200>;
-	};
-
-	iocfg_1@10002200 {
-		compatible = "mediatek,iocfg_1";
-		reg = <0 0x10002200 0 0x200>;
-	};
-
-	iocfg_2@10002400 {
-		compatible = "mediatek,iocfg_2";
-		reg = <0 0x10002400 0 0x200>;
-	};
-
-	iocfg_3@10002600 {
-		compatible = "mediatek,iocfg_3";
-		reg = <0 0x10002600 0 0x200>;
-	};
-
-	iocfg_4@10002800 {
-		compatible = "mediatek,iocfg_4";
-		reg = <0 0x10002800 0 0x200>;
-	};
-
-	iocfg_5@10002a00 {
-		compatible = "mediatek,iocfg_5";
-		reg = <0 0x10002a00 0 0x200>;
-	};
-
-	iocfg_6@10002c00 {
-		compatible = "mediatek,iocfg_6";
-		reg = <0 0x10002c00 0 0x200>;
-	};
-
 	pericfg@10003000 {
 		compatible = "mediatek,pericfg";
 		reg = <0 0x10003000 0 0x1000>;
 	};
 
-	gpio@10005000 {
-		compatible = "mediatek,gpio";
+	gpio_usage_mapping:gpio {
+		compatible = "mediatek,gpio_usage_mapping";
+	};
+
+	gpio: gpio@10005000 {
+		compatible = "mediatek,gpio", "syscon";
 		reg = <0 0x10005000 0 0x1000>;
+	};
+
+	iocfg_rm: iocfg_rm@11c20000 {
+		compatible = "mediatek,iocfg_rm", "syscon";
+		reg = <0 0x11c20000 0 0x1000>;
+	};
+
+	iocfg_br: iocfg_br@11d10000 {
+		compatible = "mediatek,iocfg_br", "syscon";
+		reg = <0 0x11d10000 0 0x1000>;
+	};
+
+	iocfg_lm: iocfg_lm@11e20000 {
+		compatible = "mediatek,iocfg_lm", "syscon";
+		reg = <0 0x11e20000 0 0x1000>;
+	};
+
+	iocfg_lb: iocfg_lb@11e70000 {
+		compatible = "mediatek,iocfg_lb", "syscon";
+		reg = <0 0x11e70000 0 0x1000>;
+	};
+
+	iocfg_rt: iocfg_rt@11ea0000 {
+		compatible = "mediatek,iocfg_rt", "syscon";
+		reg = <0 0x11ea0000 0 0x1000>;
+	};
+
+	iocfg_lt: iocfg_lt@11f20000 {
+		compatible = "mediatek,iocfg_lt", "syscon";
+		reg = <0 0x11f20000 0 0x1000>;
+	};
+
+	iocfg_tl: iocfg_tl@11f30000 {
+		compatible = "mediatek,iocfg_tl", "syscon";
+		reg = <0 0x11f30000 0 0x1000>;
+	};
+
+	pio: pinctrl@1000b000 {
+		compatible = "mediatek,pinctrl";
+		reg = <0 0x1000b000 0 0x1000>;
+		mediatek,pctl-regmap = <&gpio>,
+				       <&iocfg_rm>,
+				       <&iocfg_br>,
+				       <&iocfg_lm>,
+				       <&iocfg_lb>,
+				       <&iocfg_rt>,
+				       <&iocfg_lt>,
+				       <&iocfg_tl>;
+		pins-are-numbered;
+		gpio-controller;
+		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <4>;
+		interrupts = <GIC_SPI 201 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	sleep@10006000 {
