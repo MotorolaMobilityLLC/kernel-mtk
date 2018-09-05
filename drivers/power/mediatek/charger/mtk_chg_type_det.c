@@ -55,6 +55,7 @@ void __attribute__((weak)) fg_charger_in_handler(void)
 }
 
 static enum charger_type g_chr_type;
+static bool ignore_usb;
 
 #ifdef CONFIG_MTK_FPGA
 /*****************************************************************************
@@ -191,12 +192,15 @@ static int mt_charger_set_property(struct power_supply *psy,
 
 	dump_charger_name(mtk_chg->chg_type);
 
-	/* usb */
-	if ((mtk_chg->chg_type == STANDARD_HOST) ||
-		(mtk_chg->chg_type == CHARGING_HOST))
-		mt_usb_connect();
-	else
-		mt_usb_disconnect();
+	if (!ignore_usb) {
+		/* usb */
+		if ((mtk_chg->chg_type == STANDARD_HOST) ||
+			(mtk_chg->chg_type == CHARGING_HOST) ||
+			(mtk_chg->chg_type == NONSTANDARD_CHARGER))
+			mt_usb_connect();
+		else
+			mt_usb_disconnect();
+	}
 
 	mtk_charger_int_handler();
 	fg_charger_in_handler();
@@ -416,6 +420,11 @@ bool pmic_chrdet_status(void)
 enum charger_type mt_get_charger_type(void)
 {
 	return g_chr_type;
+}
+
+void charger_ignore_usb(bool ignore)
+{
+	ignore_usb = ignore;
 }
 
 static s32 __init mt_charger_det_init(void)

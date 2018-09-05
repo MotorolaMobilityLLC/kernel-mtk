@@ -33,6 +33,7 @@ extern void mt_usb_disconnect(void);
 #define mt_usb_connect() do { } while (0)
 #define mt_usb_disconnect() do { } while (0)
 #endif
+extern void charger_ignore_usb(bool ignore);
 
 extern enum charger_type mt_get_charger_type(void);
 extern void mtk_charger_int_handler(void);
