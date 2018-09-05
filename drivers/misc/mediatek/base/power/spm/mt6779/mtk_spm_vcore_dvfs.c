@@ -61,8 +61,8 @@ void get_spm_reg(char *p)
 			"POWERON_CONFIG_EN",
 			spm_read(POWERON_CONFIG_EN));
 	p += sprintf(p, "%-24s: 0x%08x\n",
-			"SPM_SW_FLAG",
-			spm_read(SPM_SW_FLAG));
+			"SPM_SW_FLAG_0",
+			spm_read(SPM_SW_FLAG_0));
 	p += sprintf(p, "%-24s: 0x%08x\n",
 			"SPM_SW_RSV_9",
 			spm_read(SPM_SW_RSV_9));
@@ -110,16 +110,16 @@ void get_spm_reg(char *p)
 
 	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n ",
 			"SPM_VCORE_DVFS_SHORTCUT_CON0",
-			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON0),
-			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON1),
-			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON2),
-			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON3));
+			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON00),
+			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON01),
+			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON02),
+			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON03));
 
 	p += sprintf(p, "0x%08x, 0x%08x, 0x%08x, 0x%08x\n 0x%08x\n",
-			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON4),
-			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON5),
-			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON6),
-			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON7),
-			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON8));
+			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON04),
+			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON05),
+			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON06),
+			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON07),
+			spm_read(SPM_VCORE_DVFS_SHORTCUT_CON08));
 }
 
