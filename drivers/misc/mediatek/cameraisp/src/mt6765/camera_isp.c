@@ -6549,6 +6549,13 @@ static signed int ISP_WaitIrq(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 		return -EINVAL;
 	}
 
+	if ((WaitIrq->EventInfo.UserKey >= IRQ_USER_NUM_MAX) ||
+	    (WaitIrq->EventInfo.UserKey < 0)) {
+		pr_info("invalid userKey(%d), max(%d)\n",
+			WaitIrq->EventInfo.UserKey, IRQ_USER_NUM_MAX);
+		return -EINVAL;
+	}
+
 #ifdef ENABLE_WAITIRQ_LOG
 	/* Debug interrupt */
 	if (IspInfo.DebugMask & ISP_DBG_INT) {
