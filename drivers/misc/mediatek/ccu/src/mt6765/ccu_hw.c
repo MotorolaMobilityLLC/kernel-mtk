@@ -27,6 +27,7 @@
 #include <linux/sched.h>
 
 #include "mtk_ion.h"
+#include "ion_priv.h"
 #include "ion_drv.h"
 #include <linux/iommu.h>
 
@@ -177,6 +178,12 @@ static void _ccu_ion_free_handle(struct ion_client *client,
 	}
 	if (!handle)
 		return;
+
+	if (client != handle->client) {
+		LOG_DBG_MUST("client mismatch, skip free: %p, %p!\n",
+			client, handle->client);
+		return;
+	}
 
 	ion_free(client, handle);
 
