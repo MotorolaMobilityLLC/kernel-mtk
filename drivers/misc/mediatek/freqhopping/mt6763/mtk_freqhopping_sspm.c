@@ -611,6 +611,8 @@ static int fh_dvfs_proc_read(struct seq_file *m, void *v)
 static int fh_dvfs_proc_write(struct file *file, const char *buffer, unsigned long count,
 			      void *data)
 {
+/* Remove all "proc write" interface. Otherwise, HW_REBOOT or HANG_DETECT may happen. */
+#if 0
 	unsigned int p1, p2, p3, p4, p5;
 
 	p1 = p2 = p3 = p4 = p5 = 0;
@@ -639,7 +641,7 @@ static int fh_dvfs_proc_write(struct file *file, const char *buffer, unsigned lo
 		FH_MSG("VENCPLL DVFS completed\n");
 		break;
 	}
-
+#endif
 	return count;
 }
 
