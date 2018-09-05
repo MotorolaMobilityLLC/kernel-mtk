@@ -1188,6 +1188,9 @@ static long ffs_epfile_ioctl(struct file *file, unsigned code,
 
 	ENTER();
 
+	if (!file || !epfile)
+		return -EINVAL;
+
 	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE))
 		return -ENODEV;
 
@@ -3692,7 +3695,7 @@ static void ffs_closed(struct ffs_data *ffs)
 	if (opts->no_configfs || !opts->func_inst.group.cg_item.ci_parent
 	    || !atomic_read(&opts->func_inst.group.cg_item.ci_kref.refcount))
 		goto done;
-	
+
 	ci = opts->func_inst.group.cg_item.ci_parent->ci_parent;
 	ffs_dev_unlock();
 
