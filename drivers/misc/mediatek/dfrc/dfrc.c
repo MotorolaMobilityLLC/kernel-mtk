@@ -531,7 +531,8 @@ long dfrc_get_request_set(struct DFRC_DRC_REQUEST_SET *request_set)
 	int size;
 
 	mutex_lock(&g_mutex_request);
-	if (g_request_policy != NULL && request_set->policy != NULL) {
+	if (g_request_policy != NULL && request_set->policy != NULL &&
+			request_set->num > 0) {
 		num = request_set->num > g_request_notified.num_policy ?
 				g_request_notified.num_policy :
 				request_set->num;
