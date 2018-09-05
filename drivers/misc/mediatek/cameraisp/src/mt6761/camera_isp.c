@@ -5169,8 +5169,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
  * spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqT_Lock]),
  * flags);
  */
-	if (rt_buf_ctrl.ex_data_ptr !=
-	    0) {
+	if (rt_buf_ctrl.ex_data_ptr != 0) {
 		/* borrow deque_buf->data
 		 *  memory , in order to
 		 *  shirnk memory
@@ -5178,64 +5177,33 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 		 *  compile err
 		 */
 		if (copy_from_user(
-			    &deque_buf->data
-				     [0],
-			    (void __user
-				     *)rt_buf_ctrl
-				    .ex_data_ptr,
-			    sizeof(
-			struct ISP_RT_BUF_INFO_STRUCT)) ==
-		    0) {
+			    &deque_buf->data[0],
+			    (void __user *)rt_buf_ctrl.ex_data_ptr,
+			    sizeof(struct ISP_RT_BUF_INFO_STRUCT)) == 0) {
 			spin_lock_irqsave(
-				&(IspInfo.SpinLockIrq
-					  [irqT_Lock]),
-				flags);
-			/*      */
+				&(IspInfo.SpinLockIrq[irqT_Lock]), flags);
 			i = 0;
-			if (deque_buf
-				    ->data[0]
-				    .bufIdx !=
-			    0xFFFF) {
-				/* replace
-				 * the
-				 * specific
-				 * buffer
-				 * with
-				 * the
-				 * same
-				 * bufIdx
+			if (deque_buf->data[0].bufIdx != 0xFFFF) {
+				/* replace the specific buffer with the
+				 * same bufIdx
 				 * log_err("[rtbc][replace2]Search By Idx");
 				 */
-				for (i = 0;
-				     i <
-				     ISP_RT_BUF_SIZE;
-				     i++) {
-					if (pstRTBuf
-						    ->ring_buf
-							    [rt_dma]
+				for (i = 0; i < ISP_RT_BUF_SIZE; i++) {
+					if (pstRTBuf->ring_buf[rt_dma]
 						    .data[i]
 						    .bufIdx ==
-					    deque_buf
-						    ->data[0]
-						    .bufIdx) {
+					    deque_buf->data[0].bufIdx) {
 						break;
 					}
 				}
 
 			} else {
-				/*      */
 /* log_err("[rtbc][replace2]Search By Addr+"); */
-				for (i = 0;
-				     i <
-				     ISP_RT_BUF_SIZE;
-				     i++) {
-					if (pstRTBuf
-						    ->ring_buf
-							    [rt_dma]
+				for (i = 0; i < ISP_RT_BUF_SIZE; i++) {
+					if (pstRTBuf->ring_buf[rt_dma]
 						    .data[i]
 						    .base_pAddr ==
-					    rt_buf_info
-						    ->base_pAddr) {
+					    rt_buf_info->base_pAddr) {
 						/* log_err("[rtbc][replace2]
 						 * Search By   Addr i[%d]", i);
 						 */
@@ -5244,59 +5212,33 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				}
 			}
 
-			if (i ==
-			    ISP_RT_BUF_SIZE) {
-				/* error:
-				 * can't
-				 * search
-				 * the
-				 * buffer...
-				 */
+			if (i == ISP_RT_BUF_SIZE) {
+				/* error: can't search the buffer ... */
 				log_err("[rtbc][replace2]error Can't get the idx -(0x%x)/Addr(0x%x) buf\n",
-					deque_buf
-						->data[0]
-						.bufIdx,
-					rt_buf_info
-					->base_pAddr);
+					deque_buf->data[0].bufIdx,
+					rt_buf_info->base_pAddr);
 				spin_unlock_irqrestore(
-					&(IspInfo.
-						SpinLockIrq
-						[irqT_Lock]),
+					&(IspInfo.SpinLockIrq[irqT_Lock]),
 					flags);
-				IRQ_LOG_PRINTER(
-					irqT,
-					0,
-					_LOG_DBG);
+				IRQ_LOG_PRINTER(irqT, 0, _LOG_DBG);
 
-				for (i = 0;
-				     i <
-				     ISP_RT_BUF_SIZE;
-				     i +=
-				     4) {
+				for (i = 0; i < ISP_RT_BUF_SIZE; i += 4) {
 					log_err("[rtbc][replace2]error idx-(0x%x/0x%x/0x%x/0x%x)\n",
-						pstRTBuf
-							->ring_buf
-								[rt_dma]
-							.data[i +
-							      0]
+						pstRTBuf->
+							ring_buf[rt_dma]
+							.data[i + 0]
 							.bufIdx,
-						pstRTBuf
-							->ring_buf
-								[rt_dma]
-							.data[i +
-							      1]
+						pstRTBuf->
+							ring_buf[rt_dma]
+							.data[i + 1]
 							.bufIdx,
-						pstRTBuf
-							->ring_buf
-								[rt_dma]
-							.data[i +
-							      2]
+						pstRTBuf->
+							ring_buf[rt_dma]
+							.data[i + 2]
 							.bufIdx,
-						pstRTBuf
-							->ring_buf
-								[rt_dma]
-							.data[i +
-							      3]
+						pstRTBuf->
+							ring_buf[rt_dma]
+							.data[i + 3]
 							.bufIdx);
 				}
 				kfree((unsigned int *)p1_fbc);
@@ -5309,14 +5251,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			log_dbg("[rtbc]replace2]dma(%d),old(%d) PA(0x%x) VA(0x%x)",
 				rt_dma,
 				i,
-				pstRTBuf
-					->ring_buf
-						[rt_dma]
+				pstRTBuf->ring_buf[rt_dma]
 					.data[i]
 					.base_pAddr,
-				pstRTBuf
-					->ring_buf
-						[rt_dma]
+				pstRTBuf->ring_buf[rt_dma]
 					.data[i]
 					.base_vAddr);
 /* IRQ_LOG_KEEPER(irqT,
@@ -5330,75 +5268,31 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
  * spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqT]),
  * flags);
  */
-			pstRTBuf
-				->ring_buf
-					[rt_dma]
-				.data[i]
-				.memID =
-				deque_buf
-					->data[0]
-					.memID;
-			pstRTBuf
-				->ring_buf
-					[rt_dma]
-				.data[i]
-				.size =
-				deque_buf
-					->data[0]
-					.size;
-			pstRTBuf
-				->ring_buf
-					[rt_dma]
-				.data[i]
-				.base_pAddr =
-				deque_buf
-					->data[0]
-					.base_pAddr;
-			pstRTBuf
-				->ring_buf
-					[rt_dma]
-				.data[i]
-				.base_vAddr =
-				deque_buf
-					->data[0]
-					.base_vAddr;
-			pstRTBuf
-				->ring_buf
-					[rt_dma]
-				.data[i]
-				.bFilled =
+			pstRTBuf->ring_buf[rt_dma].data[i].memID =
+				deque_buf->data[0].memID;
+			pstRTBuf->ring_buf[rt_dma].data[i].size =
+				deque_buf->data[0].size;
+			pstRTBuf->ring_buf[rt_dma].data[i].base_pAddr =
+				deque_buf->data[0].base_pAddr;
+			pstRTBuf->ring_buf[rt_dma].data[i].base_vAddr =
+				deque_buf->data[0].base_vAddr;
+			pstRTBuf->ring_buf[rt_dma].data[i].bFilled =
 				ISP_RTBC_BUF_EMPTY;
-			pstRTBuf
-				->ring_buf
-					[rt_dma]
-				.data[i]
-				.image
-				.frm_cnt =
+			pstRTBuf->ring_buf[rt_dma].data[i].image.frm_cnt =
 				_INVALID_FRM_CNT_;
 
 #ifdef _rtbc_buf_que_2_0_
-			if (pstRTBuf->ring_buf
-				    [rt_dma].empty_count <
-			    pstRTBuf->ring_buf
-				    [rt_dma].total_count)
-				pstRTBuf
-					->ring_buf
-						[rt_dma]
-					.empty_count++;
+			if (pstRTBuf->ring_buf[rt_dma].empty_count <
+			    pstRTBuf->ring_buf[rt_dma].total_count)
+				pstRTBuf->ring_buf[rt_dma].empty_count++;
 			else {
 				spin_unlock_irqrestore(
-					&(IspInfo.SpinLockIrq
-						  [irqT_Lock]),
+					&(IspInfo.SpinLockIrq[irqT_Lock]),
 					flags);
-				IRQ_LOG_PRINTER(
-					irqT,
-					0,
-					_LOG_DBG);
+				IRQ_LOG_PRINTER(irqT, 0, _LOG_DBG);
 				log_err("[rtbc]dma(%d),PA(0x%x),over enque_1",
 					rt_dma,
-					pstRTBuf
-						->ring_buf
-							[rt_dma]
+					pstRTBuf->ring_buf[rt_dma]
 						.data[i]
 						.base_pAddr);
 				kfree((unsigned int *)p1_fbc);
@@ -5414,10 +5308,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
  *  pstRTBuf->ring_buf[rt_dma].data[2].bFilled);
  */
 #else
-			pstRTBuf
-				->ring_buf
-					[rt_dma]
-				.empty_count++;
+			pstRTBuf->ring_buf[rt_dma].empty_count++;
 #endif
 						/* spin_unlock_irqrestore(
 						 * &(IspInfo.SpinLockIrq[irqT]),
@@ -5451,20 +5342,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 		 *  rtbc
 		 */
 		spin_lock_irqsave(
-			&(IspInfo.SpinLockIrq
-				  [irqT_Lock]),
-			flags);
-		for (i = 0;
-		     i <
-		     ISP_RT_BUF_SIZE;
-		     i++) {
-			if (pstRTBuf
-				    ->ring_buf
-					    [rt_dma]
-				    .data[i]
-				    .base_pAddr ==
-			    rt_buf_info
-				    ->base_pAddr) {
+			&(IspInfo.SpinLockIrq[irqT_Lock]), flags);
+		for (i = 0; i < ISP_RT_BUF_SIZE; i++) {
+			if (pstRTBuf->ring_buf[rt_dma].data[i]
+				.base_pAddr == rt_buf_info->base_pAddr) {
 		/* log_dbg("[rtbc]dma(%d),old(%d)
 		 *  PA(0x%x)
 		 *  VA(0x%x)",
@@ -5482,16 +5363,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 		    pstRTBuf->ring_buf[rt_dma].data[i].base_vAddr =
 				rt_buf_info->base_vAddr;
 #endif
-				pstRTBuf
-					->ring_buf
-						[rt_dma]
-					.data[i]
+				pstRTBuf->ring_buf[rt_dma].data[i]
 					.bFilled =
 					ISP_RTBC_BUF_EMPTY;
-				pstRTBuf
-					->ring_buf
-						[rt_dma]
-					.data[i]
+				pstRTBuf->ring_buf[rt_dma].data[i]
 					.image
 					.frm_cnt =
 					_INVALID_FRM_CNT_;
@@ -5500,9 +5375,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					    [rt_dma].empty_count <
 				    pstRTBuf->ring_buf
 					    [rt_dma].total_count)
-					pstRTBuf
-						->ring_buf
-							[rt_dma]
+					pstRTBuf->ring_buf[rt_dma]
 						.empty_count++;
 				else {
 					spin_unlock_irqrestore(
@@ -5515,9 +5388,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 						_LOG_DBG);
 					log_err("[rtbc]error:dma(%d),PA(0x%x), over enque_2",
 						rt_dma,
-						pstRTBuf
-							->ring_buf
-								[rt_dma]
+						pstRTBuf->ring_buf[rt_dma]
 							.data[i]
 							.base_pAddr);
 					kfree((unsigned int *)p1_fbc);
@@ -5532,11 +5403,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				 * check
 				 */
 				if (1) {
-					if (rt_buf_info
-						    ->bufIdx !=
-					    pstRTBuf
-						    ->ring_buf
-							    [rt_dma]
+					if (rt_buf_info->bufIdx !=
+					    pstRTBuf->ring_buf[rt_dma]
 						    .data[i]
 						    .bufIdx)
 						log_err("[rtbc][replace2]error: BufIdx MisMatch. 0x%x/0x%x",
@@ -5549,10 +5417,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 								.bufIdx);
 				}
 #else
-				pstRTBuf
-					->ring_buf
-						[rt_dma]
-					.empty_count++;
+				pstRTBuf->ring_buf[rt_dma].empty_count++;
 #endif
 	/* spin_unlock_irqrestore(&(IspInfo.
 	 *	SpinLockIrq[irqT]), flags);
@@ -5565,29 +5430,20 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				break;
 			}
 		}
-		if (i ==
-		    ISP_RT_BUF_SIZE) {
-			for (x = 0;
-			     x <
-			     ISP_RT_BUF_SIZE;
-			     x++)
+		if (i == ISP_RT_BUF_SIZE) {
+			for (x = 0; x < ISP_RT_BUF_SIZE; x++)
 				log_dbg("[rtbc]dma(%d),idx(%d) PA(0x%x) VA(0x%llx)",
 					rt_dma,
 					x,
-					pstRTBuf
-						->ring_buf
-							[rt_dma]
+					pstRTBuf->ring_buf[rt_dma]
 						.data[x]
 						.base_pAddr,
-					pstRTBuf
-						->ring_buf
-							[rt_dma]
+					pstRTBuf->ring_buf[rt_dma]
 						.data[x]
 						.base_vAddr);
 
 			log_err("[rtbc][replace3]can't find thespecified Addr(0x%x)\n",
-				rt_buf_info
-					->base_pAddr);
+				rt_buf_info->base_pAddr);
 			kfree((unsigned int *)p1_fbc);
 			kfree(p1_fbc_reg);
 			kfree(p1_dma_addr_reg);
@@ -5603,53 +5459,34 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 /* RCNT_INC++ */
 #ifdef _rtbc_buf_que_2_0_
 
-	if (rt_buf_ctrl.ctrl ==
-	    ISP_RT_BUF_CTRL_ENQUE) {
+	if (rt_buf_ctrl.ctrl == ISP_RT_BUF_CTRL_ENQUE) {
 		/* make sure rct_inc
-		 * will be pulled     at
-		 * the same     vd.
+		 * will be pulled at
+		 * the same vd.
 		 */
-		if ((irqT == _IRQ) ||
-		    (irqT == _IRQ_D)) {
-			if ((pstRTBuf->ring_buf
-				     [ch_imgo]
-					     .active ==
-		     MTRUE) &&
-			    (MTRUE ==
-			     pstRTBuf
-				     ->ring_buf
-					     [ch_rrzo]
-				     .active)) {
-				if (rt_buf_ctrl
-					    .ex_data_ptr !=
-				    0) {
-					if ((p1_fbc[rt_dma]
-						     .Bits
-						     .FB_NUM ==
+		if ((irqT == _IRQ) || (irqT == _IRQ_D)) {
+			if ((pstRTBuf->ring_buf[ch_imgo].active ==
+		     MTRUE) && (pstRTBuf->ring_buf[ch_rrzo].active ==
+				MTRUE)) {
+				if (rt_buf_ctrl.ex_data_ptr != 0) {
+					if ((p1_fbc[rt_dma].Bits.FB_NUM ==
 					     p1_fbc[rt_dma]
 						     .Bits
 						     .FBC_CNT) ||
 					    ((p1_fbc[rt_dma]
 						      .Bits
-						      .FB_NUM -
-					      1) ==
+						      .FB_NUM - 1) ==
 					     p1_fbc[rt_dma]
 						     .Bits
 						     .FBC_CNT)) {
 						mFwRcnt.bLoadBaseAddr
-							[irqT] =
-							MTRUE;
+							[irqT] = MTRUE;
 					}
 				}
-				dma_en_recorder
-					[rt_dma]
-					[mFwRcnt.DMA_IDX
-						 [rt_dma]] =
-						MTRUE;
-				mFwRcnt.DMA_IDX
-					[rt_dma] =
-					(++mFwRcnt.DMA_IDX
-						   [rt_dma] >=
+				dma_en_recorder[rt_dma][mFwRcnt.DMA_IDX
+						 [rt_dma]] = MTRUE;
+				mFwRcnt.DMA_IDX[rt_dma] =
+					(++mFwRcnt.DMA_IDX[rt_dma] >=
 					 ISP_RT_BUF_SIZE)
 						? (mFwRcnt.DMA_IDX
 							   [rt_dma] -
@@ -5663,35 +5500,19 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 		 * [mFwRcnt.DMA_IDX[rt_dma]],
 		 * mFwRcnt.DMA_IDX[rt_dma]);
 		 */
-		for (z = 0;
-		     z <
-		     ISP_RT_BUF_SIZE;
-		     z++) {
-			if (dma_en_recorder
-				    [ch_imgo]
-				    [mFwRcnt.rdIdx
-					     [irqT]] &&
-			    dma_en_recorder
-				    [ch_rrzo]
-				    [mFwRcnt.rdIdx
-					     [irqT]]) {
-				mFwRcnt.INC
-					[irqT]
-					[mFwRcnt.curIdx
-						 [irqT]++] =
-					1;
-				dma_en_recorder
-					[ch_imgo]
-					[mFwRcnt.rdIdx
-						 [irqT]] = dma_en_recorder
+		for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
+			if (dma_en_recorder[ch_imgo][mFwRcnt
+				.rdIdx[irqT]] && dma_en_recorder[ch_rrzo]
+				    [mFwRcnt.rdIdx[irqT]]) {
+				mFwRcnt.INC[irqT][mFwRcnt.curIdx
+						 [irqT]++] = 1;
+				dma_en_recorder[ch_imgo][mFwRcnt.rdIdx
+						[irqT]] = dma_en_recorder
 						[ch_rrzo]
-						[mFwRcnt.rdIdx
-							 [irqT]] =
+						[mFwRcnt.rdIdx[irqT]] =
 							MFALSE;
-				mFwRcnt.rdIdx
-					[irqT] =
-					(++mFwRcnt.rdIdx
-						   [irqT] >=
+				mFwRcnt.rdIdx[irqT] =
+					(++mFwRcnt.rdIdx[irqT] >=
 					 ISP_RT_BUF_SIZE)
 						? (mFwRcnt.rdIdx
 							   [irqT] -
@@ -5708,38 +5529,14 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 		}
 
 		} else {
-				/* rcnt_sync
-				 * only
-				 * work
-				 * when
-				 * multi-dma
-				 * ch
-				 * enabled.
-				 * but
-				 * in
-				 * order
-				 * to
-				 * support
-				 * multi-enque,
-				 * these
-				 * mech.
-				 * also
-				 * to be
-				 */
-				/* worked
-				 * under
-				 * 1 dma
-				 * ch
-				 * enabled
+				/* rcnt_sync only work when multi-dma
+				 * ch enabled. but in order to support
+				 * multi-enque, these mech. also to be
+				 * worked under 1 dma ch enabled
 				 */
 			if (MTRUE ==
-			    pstRTBuf
-				    ->ring_buf
-					    [rt_dma]
-				    .active) {
-				if (rt_buf_ctrl
-					    .ex_data_ptr !=
-				    0) {
+			    pstRTBuf->ring_buf[rt_dma].active) {
+				if (rt_buf_ctrl.ex_data_ptr != 0) {
 					if ((p1_fbc[rt_dma]
 						     .Bits
 						     .FB_NUM ==
@@ -5748,60 +5545,40 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 						     .FBC_CNT) ||
 					    ((p1_fbc[rt_dma]
 						      .Bits
-						      .FB_NUM -
-					      1) ==
+						      .FB_NUM - 1) ==
 					     p1_fbc[rt_dma]
 						     .Bits
 						     .FBC_CNT)) {
 					mFwRcnt.bLoadBaseAddr
-							[irqT] =
-							MTRUE;
+							[irqT] = MTRUE;
 					}
 				}
-				dma_en_recorder
-					[rt_dma]
-					[mFwRcnt.DMA_IDX
-						 [rt_dma]] =
-						MTRUE;
-				mFwRcnt.DMA_IDX
-					[rt_dma] =
-					(++mFwRcnt.DMA_IDX
-						   [rt_dma] >=
-					 ISP_RT_BUF_SIZE)
-						? (mFwRcnt.DMA_IDX
-							   [rt_dma] -
+				dma_en_recorder[rt_dma][mFwRcnt.DMA_IDX
+						 [rt_dma]] = MTRUE;
+				mFwRcnt.DMA_IDX[rt_dma] =
+					(++mFwRcnt.DMA_IDX[rt_dma] >=
+					 ISP_RT_BUF_SIZE) ?
+						(mFwRcnt.DMA_IDX[rt_dma] -
 						   ISP_RT_BUF_SIZE)
 						: (mFwRcnt.DMA_IDX
 							   [rt_dma]);
 
-		for (z = 0;
-		     z <
-		     ISP_RT_BUF_SIZE;
-		     z++) {
-			if (dma_en_recorder
-				    [rt_dma]
-				    [mFwRcnt.rdIdx
-					     [irqT]]) {
+		for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
+			if (dma_en_recorder[rt_dma]
+				[mFwRcnt.rdIdx[irqT]]) {
 				mFwRcnt.INC
 					[irqT]
-					[mFwRcnt.curIdx
-						 [irqT]++] =
-					1;
+					[mFwRcnt.curIdx[irqT]++] = 1;
 				dma_en_recorder
 					[rt_dma]
-					[mFwRcnt.rdIdx
-						 [irqT]] =
-						MFALSE;
+					[mFwRcnt.rdIdx[irqT]] = MFALSE;
 				mFwRcnt.rdIdx
 					[irqT] =
-					(++mFwRcnt.rdIdx
-						   [irqT] >=
-					 ISP_RT_BUF_SIZE)
-						? (mFwRcnt.rdIdx
-							   [irqT] -
+					(++mFwRcnt.rdIdx[irqT] >=
+					 ISP_RT_BUF_SIZE) ?
+						(mFwRcnt.rdIdx[irqT] -
 						   ISP_RT_BUF_SIZE)
-						: (mFwRcnt.rdIdx
-							   [irqT]);
+						: (mFwRcnt.rdIdx[irqT]);
 
 			} else {
 				break;
@@ -5811,14 +5588,11 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			} else {
 				spin_unlock_irqrestore(
 					&(IspInfo.SpinLockIrq
-						  [irqT_Lock]),
-					flags);
+						  [irqT_Lock]), flags);
 				log_err("[rtbc]error:dma(%d) are not being activated(%d)",
 					rt_dma,
-					pstRTBuf
-						->ring_buf
-							[rt_dma]
-						.active);
+					pstRTBuf->ring_buf[rt_dma]
+					.active);
 				kfree((unsigned int *)p1_fbc);
 				kfree(p1_fbc_reg);
 				kfree(p1_dma_addr_reg);
@@ -5830,12 +5604,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 
 		} else { /* camsv */
-			if (pstRTBuf->ring_buf
-				    [rt_dma].active ==
-			    MTRUE) {
-				if (rt_buf_ctrl
-					    .ex_data_ptr !=
-				    0) {
+			if (pstRTBuf->ring_buf[rt_dma].active == MTRUE) {
+				if (rt_buf_ctrl.ex_data_ptr != 0) {
 					if ((p1_fbc[rt_dma]
 						     .Bits
 						     .FB_NUM ==
@@ -5844,54 +5614,35 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 						     .FBC_CNT) ||
 					    ((p1_fbc[rt_dma]
 						      .Bits
-						      .FB_NUM -
-					      1) ==
+						      .FB_NUM - 1) ==
 					     p1_fbc[rt_dma]
 						     .Bits
 						     .FBC_CNT)) {
 						mFwRcnt.bLoadBaseAddr
-							[irqT] =
-							MTRUE;
+							[irqT] = MTRUE;
 					}
 				}
-	dma_en_recorder
-		[rt_dma]
-		[mFwRcnt.DMA_IDX
-			 [rt_dma]] =
-		MTRUE;
-	mFwRcnt.DMA_IDX
-		[rt_dma] =
-		(++mFwRcnt.DMA_IDX
-			   [rt_dma] >=
-		 ISP_RT_BUF_SIZE)
-			? (mFwRcnt.DMA_IDX
-				   [rt_dma] -
-			   ISP_RT_BUF_SIZE)
-			: (mFwRcnt.DMA_IDX
-				   [rt_dma]);
+	dma_en_recorder[rt_dma][mFwRcnt.DMA_IDX[rt_dma]] = MTRUE;
+	mFwRcnt.DMA_IDX[rt_dma] = (++mFwRcnt.DMA_IDX[rt_dma] >=
+		 ISP_RT_BUF_SIZE) ?
+			(mFwRcnt.DMA_IDX[rt_dma] - ISP_RT_BUF_SIZE)
+			: (mFwRcnt.DMA_IDX[rt_dma]);
 
-			for (z = 0;
-			     z <
-			     ISP_RT_BUF_SIZE;
-			     z++) {
+			for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
 				if (dma_en_recorder
 					    [rt_dma]
-					    [mFwRcnt.rdIdx
-						     [irqT]]) {
+					    [mFwRcnt.rdIdx[irqT]]) {
 					mFwRcnt.INC
 						[irqT]
 						[mFwRcnt.curIdx
-							 [irqT]++] =
-						1;
+							 [irqT]++] = 1;
 					dma_en_recorder
 						[rt_dma]
 						[mFwRcnt.rdIdx
 							 [irqT]] =
 							MFALSE;
-					mFwRcnt.rdIdx
-						[irqT] =
-					(++mFwRcnt.rdIdx
-							   [irqT] >=
+					mFwRcnt.rdIdx[irqT] =
+					(++mFwRcnt.rdIdx[irqT] >=
 						 ISP_RT_BUF_SIZE)
 							? (mFwRcnt.rdIdx
 								   [irqT] -
@@ -5900,7 +5651,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 								   [irqT]);
 
 				} else {
-						break;
+					break;
 				}
 			}
 
@@ -5911,10 +5662,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					flags);
 				log_err("[rtbc]error:dma(%d) are not being activated(%d)",
 					rt_dma,
-					pstRTBuf
-						->ring_buf
-							[rt_dma]
-						.active);
+					pstRTBuf->ring_buf[rt_dma]
+					.active);
 				kfree((unsigned int *)p1_fbc);
 				kfree(p1_fbc_reg);
 				kfree(p1_dma_addr_reg);
@@ -5929,206 +5678,99 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 		bool _bypass = MFALSE;
 
 
-		if ((MTRUE ==
-		     pstRTBuf
-			     ->ring_buf
-				     [ch_imgo]
-			     .active) &&
-		    (MTRUE ==
-		     pstRTBuf
-			     ->ring_buf
-				     [ch_rrzo]
-			     .active)) {
-			/* record
-			 * wheather all
-			 * enabled dma r
-			 * alredy
-			 * enqued,
-			 * rcnt_inc
-			 * will only be
-			 * pulled
-			 * to high once
-			 * all enabled
-			 * dma r enqued.
+		if ((pstRTBuf->ring_buf[ch_imgo].active == MTRUE) &&
+			(pstRTBuf->ring_buf[ch_rrzo].active == MTRUE)) {
+			/* record wheathre all enabled dma r already
+			 * enqued, rcnt_inc will only be pulled
+			 * rcnt_inc will only be pulled to high once
+			 * all enabled dma r enqued.
 			 */
-			/* inorder to
-			 * reduce the
-			 * probability of
-			 * crossing
-			 * vsync.
-			 * this global
-			 * par. r no use
-			 * under
-			 * immediate
-			 * mode,
-			 * borrow this
-			 * to shirk
-			 * memory
+			/* inorder to reduce the probability of crossing
+			 * vsync. this global par. r no use under
+			 * immediate mode, borrow this to shirk memory
 			 */
-			dma_en_recorder
-				[rt_dma]
-				[0] = MTRUE;
+			dma_en_recorder[rt_dma][0] = MTRUE;
 			_openedDma = 2;
-			if ((dma_en_recorder
-				     [ch_imgo]
-				     [0] ==
-			     MTRUE) &&
-			    (dma_en_recorder
-				     [ch_rrzo]
-				     [0] ==
-			     MTRUE))
-				dma_en_recorder
-					[ch_imgo]
-					[0] = dma_en_recorder
-						[ch_rrzo]
-						[0] = MFALSE;
+			if ((dma_en_recorder[ch_imgo][0] == MTRUE) &&
+			    (dma_en_recorder[ch_rrzo][0] == MTRUE))
+				dma_en_recorder[ch_imgo][0] =
+					dma_en_recorder[ch_rrzo][0] =
+						MFALSE;
 			else {
-				_bypass =
-					MTRUE;
+				_bypass = MTRUE;
 			}
 		}
 		if (_bypass == MFALSE) {
-			if ((p1_fbc[rt_dma]
-				     .Bits
-				     .FB_NUM ==
-			     p1_fbc[rt_dma]
-				     .Bits
-				     .FBC_CNT) ||
-			    ((p1_fbc[rt_dma]
-				      .Bits
-				      .FB_NUM -
-			      1) ==
-			     p1_fbc[rt_dma]
-				     .Bits
-				     .FBC_CNT)) {
-	/* write
-	 * to
-	 * phy
-	 * register
-	 */
+			if ((p1_fbc[rt_dma].Bits.FB_NUM ==
+			     p1_fbc[rt_dma].Bits.FBC_CNT) ||
+			    ((p1_fbc[rt_dma].Bits.FB_NUM - 1) ==
+			     p1_fbc[rt_dma].Bits.FBC_CNT)) {
+	/* write to phy register */
 	/* log_inf("[rtbc_%d][ENQUE]
 	 * write2Phy
 	 * directly(%d,%d)",rt_dma,p1_fbc[rt_dma].Bits.
 	 * FB_NUM,p1_fbc[rt_dma].Bits.FBC_CNT);
 	 */
-				IRQ_LOG_KEEPER(
-					irqT,
-					0,
-					_LOG_DBG,
+				IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG,
 					"[rtbc_%d][ENQUE] write2Phy directly(%d,%d) ",
 					rt_dma,
-					p1_fbc[rt_dma]
-						.Bits
-						.FB_NUM,
-					p1_fbc[rt_dma]
-						.Bits
-						.FBC_CNT);
-				ISP_WR32(
-					p1_dma_addr_reg
-						[rt_dma],
-					pstRTBuf
-						->ring_buf
-							[rt_dma]
+					p1_fbc[rt_dma].Bits.FB_NUM,
+					p1_fbc[rt_dma].Bits.FBC_CNT);
+				ISP_WR32(p1_dma_addr_reg[rt_dma],
+					pstRTBuf->ring_buf[rt_dma]
 						.data[i]
 						.base_pAddr);
-				/* for
-				 * openedDma=2,
-				 * it must
-				 * update 2
-				 * dma's
-				 * based
-				 * address,
-				 * or it
-				 * will
-				 * occur
+				/* for openedDma=2, it must update 2
+				 * dma's based address, or it will occur
 				 * tearing
 				 */
-				if (pstRTBuf->ring_buf
-					    [ch_imgo]
-						    .active ==
+				if (pstRTBuf->ring_buf[ch_imgo].active ==
 				    MTRUE)
 					ISP_WR32(
-						p1_dma_addr_reg
-							[ch_imgo],
-						pstRTBuf
-							->ring_buf
+						p1_dma_addr_reg[ch_imgo],
+						pstRTBuf->ring_buf
 								[ch_imgo]
 							.data[i]
 							.base_pAddr);
-				if (pstRTBuf->ring_buf
-					    [ch_rrzo]
-						    .active ==
-				    MTRUE)
+				if (pstRTBuf->ring_buf[ch_rrzo]
+						    .active == MTRUE)
 					ISP_WR32(
-						p1_dma_addr_reg
-							[ch_rrzo],
-						pstRTBuf
-							->ring_buf
+						p1_dma_addr_reg[ch_rrzo],
+						pstRTBuf->ring_buf
 								[ch_rrzo]
 							.data[i]
 							.base_pAddr);
 			}
-			if ((_camsv_imgo_ ==
-			     rt_dma) ||
-			    (_camsv2_imgo_ ==
-			     rt_dma)) {
-				p1_fbc[rt_dma]
-					.Bits
-					.RCNT_INC =
-					1;
+			if ((_camsv_imgo_ == rt_dma) ||
+			    (_camsv2_imgo_ == rt_dma)) {
+				p1_fbc[rt_dma].Bits.RCNT_INC = 1;
 				ISP_WR32(
-					p1_fbc_reg
-						[rt_dma],
-					p1_fbc[rt_dma]
-						.Reg_val);
-				p1_fbc[rt_dma]
-					.Bits
-					.RCNT_INC =
-					0;
+					p1_fbc_reg[rt_dma],
+					p1_fbc[rt_dma].Reg_val);
+				p1_fbc[rt_dma].Bits.RCNT_INC = 0;
 				ISP_WR32(
-					p1_fbc_reg
-						[rt_dma],
-					p1_fbc[rt_dma]
-						.Reg_val);
+					p1_fbc_reg[rt_dma],
+					p1_fbc[rt_dma].Reg_val);
 
 			} else {
-				if (_openedDma ==
-				    1) {
-					p1_fbc[rt_dma]
-						.Bits
-						.RCNT_INC =
-						1;
+				if (_openedDma == 1) {
+					p1_fbc[rt_dma].Bits.RCNT_INC = 1;
 					ISP_WR32(
-						p1_fbc_reg
-							[rt_dma],
-						p1_fbc[rt_dma]
-							.Reg_val);
-					IRQ_LOG_KEEPER(
-						irqT,
-						0,
-						_LOG_DBG,
+						p1_fbc_reg[rt_dma],
+						p1_fbc[rt_dma].Reg_val);
+					IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG,
 						" RCNT_INC(dma:0x%x)\n",
 						rt_dma);
 
 				} else {
-					p1_fbc[ch_imgo]
-						.Bits
-						.RCNT_INC =
-						1;
+					p1_fbc[ch_imgo].Bits.RCNT_INC = 1;
 					ISP_WR32(
-						p1_fbc_reg
-							[ch_imgo],
-						p1_fbc[ch_imgo]
-							.Reg_val);
-					p1_fbc[ch_rrzo]
-						.Bits
-						.RCNT_INC =
-						1;
+						p1_fbc_reg[ch_imgo],
+						p1_fbc[ch_imgo].Reg_val);
+					p1_fbc[ch_rrzo].Bits.RCNT_INC = 1;
 					ISP_WR32(
-						p1_fbc_reg
-							[ch_rrzo],
-						p1_fbc[ch_rrzo]
-							.Reg_val);
+						p1_fbc_reg[ch_rrzo],
+						p1_fbc[ch_rrzo].Reg_val);
 					IRQ_LOG_KEEPER(
 						irqT,
 						0,
@@ -6148,17 +5790,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 #else /* for rtbc 1.0 case */
 				/* if (FB_NUM==FBC_CNT||(FB_NUM-1)==FBC_CNT) */
-				if ((p1_fbc[rt_dma]
-						.Bits
-						.FB_NUM ==
-					p1_fbc[rt_dma]
-						.Bits
-						.FBC_CNT) ||
-					((p1_fbc[rt_dma]
-						.Bits
-						.FB_NUM -
-						1) ==
-					  p1_fbc[rt_dma]
+				if ((p1_fbc[rt_dma].Bits.FB_NUM ==
+					p1_fbc[rt_dma].Bits.FBC_CNT) ||
+					((p1_fbc[rt_dma].Bits.FB_NUM -
+						1) ==  p1_fbc[rt_dma]
 						  .Bits
 						  .FBC_CNT)) {
 					/* write to     phy
@@ -6174,61 +5809,41 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 						_LOG_DBG,
 						"[rtbc_%d][ENQUE] write2Phy directly(%d,%d)\n",
 						rt_dma,
-						p1_fbc[rt_dma]
-							.Bits
+						p1_fbc[rt_dma].Bits
 							.FB_NUM,
-						p1_fbc[rt_dma]
-							.Bits
+						p1_fbc[rt_dma].Bits
 							.FBC_CNT);
 					ISP_WR32(
-						p1_dma_addr_reg
-							[rt_dma],
-						pstRTBuf
-							->ring_buf
+						p1_dma_addr_reg[rt_dma],
+						pstRTBuf->ring_buf
 								[rt_dma]
 							.data[i]
 							.base_pAddr);
 				}
 
 				/* patch camsv hw bug */
-				if ((_camsv_imgo_ ==
-					rt_dma) ||
-					(_camsv2_imgo_ ==
-					rt_dma)) {
-					p1_fbc[rt_dma]
-						.Bits.RCNT_INC =
-						1;
+				if ((_camsv_imgo_ == rt_dma) ||
+					(_camsv2_imgo_ == rt_dma)) {
+					p1_fbc[rt_dma].Bits.RCNT_INC = 1;
 					ISP_WR32(
-						p1_fbc_reg
-							[rt_dma],
-						p1_fbc[rt_dma]
-							.Reg_val);
-					p1_fbc[rt_dma]
-						.Bits.RCNT_INC =
-						0;
+						p1_fbc_reg[rt_dma],
+						p1_fbc[rt_dma].Reg_val);
+					p1_fbc[rt_dma].Bits.RCNT_INC = 0;
 					ISP_WR32(
-						p1_fbc_reg
-							[rt_dma],
-						p1_fbc[rt_dma]
-							.Reg_val);
+						p1_fbc_reg[rt_dma],
+						p1_fbc[rt_dma].Reg_val);
 
 				} else {
-					p1_fbc[rt_dma]
-						.Bits.RCNT_INC =
-						1;
+					p1_fbc[rt_dma].Bits.RCNT_INC = 1;
 					ISP_WR32(
-						p1_fbc_reg
-							[rt_dma],
-						p1_fbc[rt_dma]
-							.Reg_val);
+						p1_fbc_reg[rt_dma],
+						p1_fbc[rt_dma].Reg_val);
 				}
 #endif
 				spin_unlock_irqrestore(
 					&(IspInfo.SpinLockIrq
-						  [irqT_Lock]),
-					flags);
-				IRQ_LOG_PRINTER(irqT, 0,
-						_LOG_DBG);
+						  [irqT_Lock]), flags);
+				IRQ_LOG_PRINTER(irqT, 0, _LOG_DBG);
 				/*      */
 				if (!(IspInfo.DebugMask &
 					 ISP_DBG_BUF_CTRL))
@@ -6267,27 +5882,17 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 #else
 	log_dbg("[rtbc][ENQUE]:dma(%d),PA(0x%x),O(0x%x),ZO(0x%x)",
 		rt_dma,
-		rt_buf_info
-			->base_pAddr,
-		ISP_RD32(
-			ISP_REG_ADDR_IMGO_BASE_ADDR),
-		ISP_RD32(
-			ISP_REG_ADDR_RRZO_BASE_ADDR));
+		rt_buf_info->base_pAddr,
+		ISP_RD32(ISP_REG_ADDR_IMGO_BASE_ADDR),
+		ISP_RD32(ISP_REG_ADDR_RRZO_BASE_ADDR));
 	log_dbg(",camsv(0x%x/0x%x)fps(%d/%d/%d/%d)us,rtctrl_%d\n",
-		ISP_RD32(
-			ISP_REG_ADDR_IMGO_SV_BASE_ADDR),
-		ISP_RD32(
-			ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR),
-		avg_frame_time
-			[_PASS1],
-		avg_frame_time
-			[_PASS1_D],
-		avg_frame_time
-			[_CAMSV],
-		avg_frame_time
-			[_CAMSV_D],
-		rt_buf_ctrl
-			.ctrl);
+		ISP_RD32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR),
+		ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR),
+		avg_frame_time[_PASS1],
+		avg_frame_time[_PASS1_D],
+		avg_frame_time[_CAMSV],
+		avg_frame_time[_CAMSV_D],
+		rt_buf_ctrl.ctrl);
 #endif
 			}
 		} else {
@@ -6332,8 +5937,7 @@ LOG_BYPASS:
 				deque_buf->count = P1_DEQUE_CNT;
 				spin_lock_irqsave(
 					&(IspInfo.SpinLockIrq
-						  [irqT_Lock]),
-					flags);
+						  [irqT_Lock]), flags);
 #ifdef _rtbc_buf_que_2_0_
 				/* p1_fbc[rt_dma].Bits.WCNT - 1;
 				 * //WCNT = [1,2,..]
@@ -6342,8 +5946,7 @@ LOG_BYPASS:
 					       .read_idx;
 				pstRTBuf->ring_buf[rt_dma].read_idx =
 					(pstRTBuf->ring_buf[rt_dma]
-						 .read_idx +
-					 1) %
+						 .read_idx + 1) %
 					pstRTBuf->ring_buf[rt_dma]
 						.total_count;
 				if (deque_buf->count != P1_DEQUE_CNT) {
@@ -6351,8 +5954,8 @@ LOG_BYPASS:
 					deque_buf->count = P1_DEQUE_CNT;
 				}
 #else
-				iBuf = p1_fbc[rt_dma].Bits.RCNT -
-				       1; /* RCNT = [1,2,3,...] */
+				iBuf = p1_fbc[rt_dma].Bits.RCNT - 1;
+				/* RCNT = [1,2,3,...] */
 #endif
 				i = 0;
 
@@ -6504,42 +6107,30 @@ LOG_BYPASS:
  *  m_LastMNum[rt_dma]);
  */
 
-	_magic =
-		deque_buf->data[i].image.m_num_0;
+	_magic = deque_buf->data[i].image.m_num_0;
 
-	if (_DUMMY_MAGIC_ &
-	    deque_buf->data[i].image.m_num_0)
+	if (_DUMMY_MAGIC_ & deque_buf->data[i].image.m_num_0)
 		_magic = (deque_buf->data[i]
 				  .image
 				  .m_num_0 &
 			  (~_DUMMY_MAGIC_));
 
-	if ((deque_buf->data[i].image.frm_cnt ==
-	     _INVALID_FRM_CNT_) ||
+	if ((deque_buf->data[i].image.frm_cnt == _INVALID_FRM_CNT_) ||
 	    (m_LastMNum[rt_dma] > _magic)) {
-		if ((_DUMMY_MAGIC_ &
-			deque_buf->data[i]
-				  .image
-				  .m_num_0) ==
-			 0) {
-				deque_buf->data[i]
-					.image
-					.m_num_0 |=
+		if ((_DUMMY_MAGIC_ & deque_buf->data[i]
+			.image.m_num_0) == 0) {
+			deque_buf->data[i].image.m_num_0 |=
 					_UNCERTAIN_MAGIC_NUM_FLAG_;
-					/*      */
-				IRQ_LOG_KEEPER(
-					irqT, 0, _LOG_DBG,
-					"m# uncertain:dma(%d),m0(0x%x),fcnt(0x%x),Lm#(0x%x)",
-					rt_dma,
-					deque_buf->data[i]
-					.image.m_num_0,
-					deque_buf->data[i]
-					.image.frm_cnt,
-					m_LastMNum[rt_dma]);
-				}
+			IRQ_LOG_KEEPER(
+				irqT, 0, _LOG_DBG,
+				"m# uncertain:dma(%d),m0(0x%x),fcnt(0x%x),Lm#(0x%x)",
+				rt_dma,
+				deque_buf->data[i].image.m_num_0,
+				deque_buf->data[i].image.frm_cnt,
+				m_LastMNum[rt_dma]);
+		}
 #ifdef T_STAMP_2_0
-	if (m_T_STAMP.fps >
-		 SlowMotion) {
+	if (m_T_STAMP.fps > SlowMotion) {
 		/*      patch here is
 		 * because of that
 		 * uncertain should
@@ -6551,21 +6142,14 @@ LOG_BYPASS:
 		 * still need to be
 		 * increased here.
 		 */
-		m_T_STAMP.T_ns +=
-			((unsigned long long)
-				m_T_STAMP
-				 .interval_us *
-			 1000);
+		m_T_STAMP.T_ns += ((unsigned long long)m_T_STAMP
+				 .interval_us * 1000);
 
-		if (++m_T_STAMP.fcnt ==
-		    m_T_STAMP.fps) {
-			m_T_STAMP.fcnt =
-				0;
+		if (++m_T_STAMP.fcnt == m_T_STAMP.fps) {
+			m_T_STAMP.fcnt = 0;
 			m_T_STAMP.T_ns +=
-				((unsigned long long)
-					m_T_STAMP
-					 .compensation_us *
-				 1000);
+				((unsigned long long)m_T_STAMP
+					 .compensation_us * 1000);
 		}
 	}
 #endif
@@ -7139,12 +6723,10 @@ static signed int ISP_SOF_Buf_Get(enum eISPIrq irqT, union CQ_RTBC_FBC *pFbc,
 
 	union CQ_RTBC_FBC imgo_fbc;
 	union CQ_RTBC_FBC rrzo_fbc;
-	unsigned int imgo_idx =
-		0;
+	unsigned int imgo_idx = 0;
 /* (imgo_fbc.Bits.WCNT+imgo_fbc.Bits.FB_NUM-1)%imgo_fbc.Bits.FB_NUM;//[0,1,2,..]
  */
-	unsigned int rrzo_idx =
-		0;
+	unsigned int rrzo_idx =	0;
 /* (img2o_fbc.Bits.WCNT+img2o_fbc.Bits.FB_NUM-1)%img2o_fbc.Bits.FB_NUM;
  * //[0,1,2,...]
  */
