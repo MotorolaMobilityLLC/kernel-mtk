@@ -118,7 +118,7 @@ struct upower_tbl *upower_get_core_tbl(unsigned int cpu)
 	enum upower_bank bank = UPOWER_BANK_LL;
 #endif
 
-#if defined(CONFIG_MACH_MT3967)
+#if defined(CONFIG_MACH_MT3967) || defined(CONFIG_MACH_MT6779)
 	if (cpu < 6) /* cpu 0-5 */
 		bank = UPOWER_BANK_LL;
 	else if (cpu < 8) /* cpu 6-7 */
