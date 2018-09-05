@@ -1073,10 +1073,34 @@ signed int occ_deque_cb(struct frame *frames, void *req)
 	return 0;
 }
 
+static int cmdq_engine_secured(struct cmdqRecStruct *handle, enum CMDQ_ENG_ENUM engine)
+{
+	cmdqRecSetSecure(handle, 1);
+	cmdqRecSecureEnablePortSecurity(handle, (1LL << engine));
+	cmdqRecSecureEnableDAPC(handle, (1LL << engine));
+
+	return 0;
+}
+
+/*TODO : M4U_PORT */
+#if 0
+static int cmdq_sec_base(struct cmdqRecStruct *handle, unsigned int dma_sec,
+					unsigned int reg, unsigned int val, unsigned int size)
+{
+	if (dma_sec != 0)
+		cmdqRecWriteSecure(handle, reg, CMDQ_SAM_H_2_MVA, val, 0, size,
+								M4U_PORT_CAM_OWE_RDMA);
+	else
+		cmdqRecWrite(handle, reg, val, CMDQ_REG_MASK);
+
+	return 0;
+}
+#endif
 signed int CmdqOCCHW(struct frame *frame)
 {
 	struct OWE_OCCConfig *pOccConfig;
 	struct cmdqRecStruct *handle;
+	unsigned int size_sec = 0;
 	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_OWE);
 
 	if (frame == NULL || frame->data == NULL)
@@ -1117,6 +1141,10 @@ signed int CmdqOCCHW(struct frame *frame)
 	cmdqRecSetEngine(handle, engineFlag);
 
 	cmdqRecReset(handle);
+
+	if (pOccConfig->eng_secured == 1)
+		cmdq_engine_secured(handle, CMDQ_ENG_OWE);
+
 #ifndef BYPASS_REG
 #define CMDQWR(REG) cmdqRecWrite(handle, REG ##_HW, pOccConfig->REG, CMDQ_REG_MASK)
 	/* Use command queue to write register */
@@ -1127,15 +1155,47 @@ signed int CmdqOCCHW(struct frame *frame)
 	CMDQWR(DPE_OCC_CTRL_1);
 	CMDQWR(DPE_OCC_CTRL_2);
 	CMDQWR(DPE_OCC_CTRL_3);
-	CMDQWR(DPE_OCC_REF_VEC_BASE);
+
+	size_sec = pOccConfig->dma_sec_size[OCC_DMA_REF_VEC];
+	if (size_sec != 0)
+		cmdqRecWriteSecure(handle, DPE_OCC_REF_VEC_BASE_HW, CMDQ_SAM_H_2_MVA,
+						pOccConfig->DPE_OCC_REF_VEC_BASE, 0, size_sec, M4U_PORT_CAM_OWE_RDMA);
+	else
+		CMDQWR(DPE_OCC_REF_VEC_BASE);
+
+	size_sec = pOccConfig->dma_sec_size[OCC_DMA_REF_PXL];
+	if (size_sec != 0)
+		cmdqRecWriteSecure(handle, DPE_OCC_REF_PXL_BASE_HW, CMDQ_SAM_H_2_MVA,
+						pOccConfig->DPE_OCC_REF_PXL_BASE, 0, size_sec, M4U_PORT_CAM_OWE_RDMA);
+	else
+		CMDQWR(DPE_OCC_REF_PXL_BASE);
+
+	size_sec = pOccConfig->dma_sec_size[OCC_DMA_MAJ_VEC];
+	if (size_sec != 0)
+		cmdqRecWriteSecure(handle, DPE_OCC_MAJ_VEC_BASE_HW, CMDQ_SAM_H_2_MVA,
+						pOccConfig->DPE_OCC_MAJ_VEC_BASE, 0, size_sec, M4U_PORT_CAM_OWE_RDMA);
+	else
+		CMDQWR(DPE_OCC_MAJ_VEC_BASE);
+
+	size_sec = pOccConfig->dma_sec_size[OCC_DMA_MAJ_PXL];
+	if (size_sec != 0)
+		cmdqRecWriteSecure(handle, DPE_OCC_MAJ_PXL_BASE_HW, CMDQ_SAM_H_2_MVA,
+						pOccConfig->DPE_OCC_MAJ_PXL_BASE, 0, size_sec, M4U_PORT_CAM_OWE_RDMA);
+	else
+		CMDQWR(DPE_OCC_MAJ_PXL_BASE);
+
+
+	size_sec = pOccConfig->dma_sec_size[OCC_DMA_WDMA];
+	if (size_sec != 0)
+		cmdqRecWriteSecure(handle, DPE_OCC_WDMA_BASE_HW, CMDQ_SAM_H_2_MVA,
+						pOccConfig->DPE_OCC_WDMA_BASE, 0, size_sec, M4U_PORT_CAM_OWE_WDMA);
+	else
+		CMDQWR(DPE_OCC_WDMA_BASE);
+
 	CMDQWR(DPE_OCC_REF_VEC_STRIDE);
-	CMDQWR(DPE_OCC_REF_PXL_BASE);
 	CMDQWR(DPE_OCC_REF_PXL_STRIDE);
-	CMDQWR(DPE_OCC_MAJ_VEC_BASE);
 	CMDQWR(DPE_OCC_MAJ_VEC_STRIDE);
-	CMDQWR(DPE_OCC_MAJ_PXL_BASE);
 	CMDQWR(DPE_OCC_MAJ_PXL_STRIDE);
-	CMDQWR(DPE_OCC_WDMA_BASE);
 	CMDQWR(DPE_OCC_WDMA_STRIDE);
 	CMDQWR(DPE_OCC_PQ_0);
 	CMDQWR(DPE_OCC_PQ_1);
@@ -1360,6 +1420,7 @@ signed int CmdqWMFEHW(struct frame *frame)
 	struct cmdqRecStruct *handle;
 	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_OWE);
 	unsigned int i = 0;
+	unsigned int size_sec = 0;
 
 	if (frame == NULL || frame->data == NULL)
 		return -1;
@@ -1397,6 +1458,10 @@ signed int CmdqWMFEHW(struct frame *frame)
 	cmdqRecSetEngine(handle, engineFlag);
 
 	cmdqRecReset(handle);
+
+	if (pWmfeCfg->WmfeCtrl[0].eng_secured == 1)
+		cmdq_engine_secured(handle, CMDQ_ENG_OWE);
+
 #ifndef BYPASS_REG
 	/* Use command queue to write register */
 	cmdqRecWrite(handle, OWE_INT_CTL_HW, 0x1, CMDQ_REG_MASK);	/* OWE Interrupt read-clear mode */
@@ -1410,26 +1475,57 @@ signed int CmdqWMFEHW(struct frame *frame)
 				pWmfeCfg->WmfeCtrl[i].WMFE_CTRL, CMDQ_REG_MASK);
 			cmdqRecWrite(handle, OWE_WMFE_SIZE_0_HW + (i*0x40),
 				pWmfeCfg->WmfeCtrl[i].WMFE_SIZE, CMDQ_REG_MASK);
-			cmdqRecWrite(handle, OWE_WMFE_IMGI_BASE_ADDR_0_HW + (i*0x40),
-				pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_BASE_ADDR, CMDQ_REG_MASK);
 			cmdqRecWrite(handle, OWE_WMFE_IMGI_STRIDE_0_HW + (i*0x40),
 				pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_STRIDE, CMDQ_REG_MASK);
-			cmdqRecWrite(handle, OWE_WMFE_DPI_BASE_ADDR_0_HW + (i*0x40),
-				pWmfeCfg->WmfeCtrl[i].WMFE_DPI_BASE_ADDR, CMDQ_REG_MASK);
 			cmdqRecWrite(handle, OWE_WMFE_DPI_STRIDE_0_HW + (i*0x40),
 				pWmfeCfg->WmfeCtrl[i].WMFE_DPI_STRIDE, CMDQ_REG_MASK);
-			cmdqRecWrite(handle, OWE_WMFE_TBLI_BASE_ADDR_0_HW + (i*0x40),
-				pWmfeCfg->WmfeCtrl[i].WMFE_TBLI_BASE_ADDR, CMDQ_REG_MASK);
 			cmdqRecWrite(handle, OWE_WMFE_TBLI_STRIDE_0_HW + (i*0x40),
 				pWmfeCfg->WmfeCtrl[i].WMFE_TBLI_STRIDE, CMDQ_REG_MASK);
-			cmdqRecWrite(handle, OWE_WMFE_MASKI_BASE_ADDR_0_HW + (i*0x40),
-				pWmfeCfg->WmfeCtrl[i].WMFE_MASKI_BASE_ADDR, CMDQ_REG_MASK);
 			cmdqRecWrite(handle, OWE_WMFE_MASKI_STRIDE_0_HW + (i*0x40),
 				pWmfeCfg->WmfeCtrl[i].WMFE_MASKI_STRIDE, CMDQ_REG_MASK);
-			cmdqRecWrite(handle, OWE_WMFE_DPO_BASE_ADDR_0_HW + (i*0x40),
-				pWmfeCfg->WmfeCtrl[i].WMFE_DPO_BASE_ADDR, CMDQ_REG_MASK);
 			cmdqRecWrite(handle, OWE_WMFE_DPO_STRIDE_0_HW + (i*0x40),
 				pWmfeCfg->WmfeCtrl[i].WMFE_DPO_STRIDE, CMDQ_REG_MASK);
+
+			size_sec = pWmfeCfg->WmfeCtrl[i].dma_sec_size[WMFE_DMA_IMGI];
+			if (size_sec != 0)
+				cmdqRecWriteSecure(handle, OWE_WMFE_IMGI_BASE_ADDR_0_HW + (i*0x40), CMDQ_SAM_H_2_MVA,
+					pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_BASE_ADDR, 0, size_sec, M4U_PORT_CAM_OWE_RDMA);
+			else
+				cmdqRecWrite(handle, OWE_WMFE_IMGI_BASE_ADDR_0_HW + (i*0x40),
+					pWmfeCfg->WmfeCtrl[i].WMFE_IMGI_BASE_ADDR, CMDQ_REG_MASK);
+
+			size_sec = pWmfeCfg->WmfeCtrl[i].dma_sec_size[WMFE_DMA_DPI];
+			if (size_sec != 0)
+				cmdqRecWriteSecure(handle, OWE_WMFE_DPI_BASE_ADDR_0_HW + (i*0x40), CMDQ_SAM_H_2_MVA,
+					pWmfeCfg->WmfeCtrl[i].WMFE_DPI_BASE_ADDR, 0, size_sec, M4U_PORT_CAM_OWE_RDMA);
+			else
+				cmdqRecWrite(handle, OWE_WMFE_DPI_BASE_ADDR_0_HW + (i*0x40),
+					pWmfeCfg->WmfeCtrl[i].WMFE_DPI_BASE_ADDR, CMDQ_REG_MASK);
+
+			size_sec = pWmfeCfg->WmfeCtrl[i].dma_sec_size[WMFE_DMA_TBLI];
+			if (size_sec != 0)
+				cmdqRecWriteSecure(handle, OWE_WMFE_TBLI_BASE_ADDR_0_HW + (i*0x40), CMDQ_SAM_H_2_MVA,
+					pWmfeCfg->WmfeCtrl[i].WMFE_TBLI_BASE_ADDR, 0, size_sec, M4U_PORT_CAM_OWE_RDMA);
+			else
+				cmdqRecWrite(handle, OWE_WMFE_TBLI_BASE_ADDR_0_HW + (i*0x40),
+					pWmfeCfg->WmfeCtrl[i].WMFE_TBLI_BASE_ADDR, CMDQ_REG_MASK);
+
+			size_sec = pWmfeCfg->WmfeCtrl[i].dma_sec_size[WMFE_DMA_MASKI];
+			if (size_sec != 0)
+				cmdqRecWriteSecure(handle, OWE_WMFE_MASKI_BASE_ADDR_0_HW + (i*0x40), CMDQ_SAM_H_2_MVA,
+					pWmfeCfg->WmfeCtrl[i].WMFE_MASKI_BASE_ADDR, 0, size_sec, M4U_PORT_CAM_OWE_RDMA);
+			else
+				cmdqRecWrite(handle, OWE_WMFE_MASKI_BASE_ADDR_0_HW + (i*0x40),
+					pWmfeCfg->WmfeCtrl[i].WMFE_MASKI_BASE_ADDR, CMDQ_REG_MASK);
+
+			size_sec = pWmfeCfg->WmfeCtrl[i].dma_sec_size[WMFE_DMA_DPO];
+			if (size_sec != 0)
+				cmdqRecWriteSecure(handle, OWE_WMFE_DPO_BASE_ADDR_0_HW + (i*0x40), CMDQ_SAM_H_2_MVA,
+					pWmfeCfg->WmfeCtrl[i].WMFE_DPO_BASE_ADDR, 0, size_sec, M4U_PORT_CAM_OWE_WDMA);
+			else
+				cmdqRecWrite(handle, OWE_WMFE_DPO_BASE_ADDR_0_HW + (i*0x40),
+					pWmfeCfg->WmfeCtrl[i].WMFE_DPO_BASE_ADDR, CMDQ_REG_MASK);
+
 		}
 	}
 #endif
