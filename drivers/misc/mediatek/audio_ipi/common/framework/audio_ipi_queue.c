@@ -21,7 +21,9 @@
 
 #include <linux/delay.h>
 
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #include <scp_ipi.h>
+#endif
 
 #include "audio_log.h"
 #include "audio_assert.h"
@@ -65,7 +67,6 @@ struct msg_queue_t {
 	uint8_t idx_w;
 
 	spinlock_t rw_lock;
-	spinlock_t res_lock;
 
 	struct ipi_msg_t ipi_msg_ack;
 
@@ -184,7 +185,6 @@ static struct msg_queue_t *create_msg_queue(const uint8_t task_scene)
 	msg_queue->idx_w = 0;
 
 	spin_lock_init(&msg_queue->rw_lock);
-	spin_lock_init(&msg_queue->res_lock);
 
 	memset(&msg_queue->ipi_msg_ack, 0, sizeof(struct ipi_msg_t));
 
@@ -447,12 +447,11 @@ int send_message_ack(
 
 	/* get msg ack & wake up queue */
 	AUD_ASSERT(msg_queue->ipi_msg_ack.magic == 0);
-	spin_lock(&msg_queue->res_lock);
 	memcpy(&msg_queue->ipi_msg_ack,
 	       p_ipi_msg_ack,
 	       sizeof(struct ipi_msg_t));
+	dsb(SY);
 	wake_up_interruptible(&msg_queue->element[msg_queue->idx_r].wq);
-	spin_unlock(&msg_queue->res_lock);
 
 	AUD_LOG_V("%s(-)\n", __func__);
 	return 0;
@@ -465,15 +464,15 @@ static bool check_print_msg_info(const struct ipi_msg_t *p_ipi_msg)
 
 #ifdef CONFIG_SND_SOC_MTK_AUDIO_DSP
 	if (p_ipi_msg->task_scene == TASK_SCENE_PRIMARY &&
-		p_ipi_msg->msg_id == AUDIO_DSP_TASK_DLCOPY)
+	    p_ipi_msg->msg_id == AUDIO_DSP_TASK_DLCOPY)
 		return false;
 
 	if (p_ipi_msg->task_scene == TASK_SCENE_DEEPBUFFER &&
-		p_ipi_msg->msg_id == AUDIO_DSP_TASK_DLCOPY)
+	    p_ipi_msg->msg_id == AUDIO_DSP_TASK_DLCOPY)
 		return false;
 
 	if (p_ipi_msg->task_scene == TASK_SCENE_VOIP &&
-		p_ipi_msg->msg_id == AUDIO_DSP_TASK_DLCOPY)
+	    p_ipi_msg->msg_id == AUDIO_DSP_TASK_DLCOPY)
 		return false;
 #endif
 
@@ -568,7 +567,6 @@ static int process_message_in_queue(
 				retval = -1;
 			} else if (retval > 0) { /* get ack */
 				/* should be in pair */
-				spin_lock(&msg_queue->res_lock);
 				if (!check_ack_msg_valid(
 					    p_ipi_msg, p_ack)) {
 					print_msg_info(__func__, "p_ipi_msg",
@@ -596,7 +594,6 @@ static int process_message_in_queue(
 					       sizeof(struct ipi_msg_t));
 					retval = 0;
 				}
-				spin_unlock(&msg_queue->res_lock);
 			}
 		}
 
