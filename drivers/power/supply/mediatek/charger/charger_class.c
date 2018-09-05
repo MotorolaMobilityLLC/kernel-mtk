@@ -18,7 +18,7 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 
-#include "charger_class.h"
+#include <mt-plat/charger_class.h>
 
 static struct class *charger_class;
 
@@ -534,6 +534,36 @@ int charger_dev_notify(struct charger_device *chg_dev, int event)
 	return srcu_notifier_call_chain(
 		&chg_dev->evt_nh, event, &chg_dev->noti);
 }
+
+int charger_dev_get_fod_status(struct charger_device *charger_dev, u8 *status)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL &&
+					       charger_dev->ops->get_fod_status)
+		return charger_dev->ops->get_fod_status(charger_dev, status);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_fod_status);
+
+int charger_dev_enable_fod_oneshot(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL &&
+					   charger_dev->ops->enable_fod_oneshot)
+		return charger_dev->ops->enable_fod_oneshot(charger_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_enable_fod_oneshot);
+
+int charger_dev_is_typec_ot(struct charger_device *charger_dev, bool *ot)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL &&
+						  charger_dev->ops->is_typec_ot)
+		return charger_dev->ops->is_typec_ot(charger_dev, ot);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_is_typec_ot);
 
 static DEVICE_ATTR(name, 0444, charger_show_name, NULL);
 

@@ -108,6 +108,18 @@ config MTK_FLASHLIGHT_MT6370
 
 		Say M here if you want to compile this driver as a module.
 
+config MTK_FLASHLIGHT_MT6360
+	tristate "Mediatek flashlight with driver IC (Mediatek MT6360)"
+	depends on MTK_FLASHLIGHT && RT_FLASHLIGHT
+	default n
+	help
+		This is for the flashlight driver IC (Mediatek MT6360).
+
+		Say Y here if you want a flashlight driver IC MT6360.
+		Select this only if your board has this IC.
+
+		Say M here if you want to compile this driver as a module.
+
 config MTK_FLASHLIGHT_DUMMY
 	tristate "Mediatek flashlight dummy driver"
 	depends on MTK_FLASHLIGHT

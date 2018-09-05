@@ -354,6 +354,7 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 		pe20->aicr_cable_imp = 1000000; /* uA */
 		chr_info("Bad cable\n");
 	}
+	charger_dev_set_input_current(pinfo->chg1_dev, pe20->aicr_cable_imp);
 
 	pr_info("%s: set aicr:%dmA, vbat:%dmV, mivr_state:%d\n",
 		__func__, pe20->aicr_cable_imp / 1000,

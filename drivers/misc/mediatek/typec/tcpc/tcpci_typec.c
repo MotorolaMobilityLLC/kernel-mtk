@@ -20,6 +20,10 @@
 #include "inc/tcpci_typec.h"
 #include "inc/tcpci_timer.h"
 
+/* MTK only */
+#include <mt-plat/mtk_boot.h>
+
+
 #ifdef CONFIG_TYPEC_CAP_TRY_SOURCE
 #define CONFIG_TYPEC_CAP_TRY_STATE
 #endif
@@ -213,6 +217,15 @@ enum TYPEC_CONNECTION_STATE {
 	typec_role_swap,
 #endif	/* CONFIG_TYPEC_CAP_ROLE_SWAP */
 
+#ifdef CONFIG_WATER_DETECTION
+	typec_water_detection_rty,
+	typec_water_protection,
+#endif /* CONFIG_WATER_DETECTION */
+
+#ifdef CONFIG_FOREIGN_OBJECT_DETECTION
+	typec_foreign_object_protection,
+#endif /* CONFIG_FOREIGN_OBJECT_DETECTION */
+
 	typec_unattachwait_pe,	/* Wait Policy Engine go to Idle */
 };
 
@@ -259,6 +272,15 @@ static const char *const typec_state_name[] = {
 #ifdef CONFIG_TYPEC_CAP_ROLE_SWAP
 	"RoleSwap",
 #endif	/* CONFIG_TYPEC_CAP_ROLE_SWAP */
+
+#ifdef CONFIG_WATER_DETECTION
+	"WaterDetection.Rty",
+	"WaterProtection",
+#endif /* CONFIG_WATER_DETECTION */
+
+#ifdef CONFIG_FOREIGN_OBJECT_DETECTION
+	"ForeignObjectProtection",
+#endif /* CONFIG_FOREIGN_OBJECT_DETECTION */
 
 	"UnattachWait.PE",
 };
@@ -491,6 +513,18 @@ static inline void typec_unattached_cc_entry(struct tcpc_device *tcpc_dev)
 		return;
 	}
 #endif	/* CONFIG_TYPEC_CAP_ROLE_SWAP */
+#ifdef CONFIG_FOREIGN_OBJECT_DETECTION
+	mutex_lock(&tcpc_dev->access_lock);
+	tcpc_dev->fod = TCPC_FOD_NONE;
+	mutex_unlock(&tcpc_dev->access_lock);
+	tcpci_notify_fod_status(tcpc_dev);
+#endif /* CONFIG_FOREIGN_OBJECT_DETECTION */
+#ifdef CONFIG_CABLE_TYPE_DETECTION
+	mutex_lock(&tcpc_dev->access_lock);
+	tcpc_dev->cable_type = TCPC_CABLE_TYPE_NONE;
+	mutex_unlock(&tcpc_dev->access_lock);
+	tcpci_notify_cable_type(tcpc_dev);
+#endif /* CONFIG_CABLE_TYPE_DETECTION */
 
 	switch (tcpc_dev->typec_role) {
 	case TYPEC_ROLE_SNK:
@@ -1858,6 +1892,16 @@ static bool typec_is_cc_open_state(struct tcpc_device *tcpc_dev)
 	if (tcpc_dev->typec_state == typec_disabled)
 		return true;
 
+#ifdef CONFIG_WATER_DETECTION
+	if (tcpc_dev->typec_state == typec_water_protection)
+		return true;
+#endif /* CONFIG_WATER_DETECTION */
+
+#ifdef CONFIG_FOREIGN_OBJECT_DETECTION
+	if (tcpc_dev->typec_state == typec_foreign_object_protection)
+		return true;
+#endif /* CONFIG_FOREIGN_OBJECT_DETECTION */
+
 	return false;
 }
 
@@ -2638,3 +2682,99 @@ int tcpc_typec_init(struct tcpc_device *tcpc_dev, uint8_t typec_role)
 void  tcpc_typec_deinit(struct tcpc_device *tcpc_dev)
 {
 }
+
+#ifdef CONFIG_WATER_DETECTION
+int tcpc_typec_wd_event(struct tcpc_device *tcpc_dev)
+{
+	int ret;
+
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	ret = get_boot_mode();
+	if (ret == KERNEL_POWER_OFF_CHARGING_BOOT ||
+	    ret == LOW_POWER_OFF_CHARGING_BOOT) {
+		TYPEC_INFO("KPOC does not enter water protection %d\r\n", ret);
+		return 0;
+	}
+#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
+
+	ret = tcpci_is_water_detected(tcpc_dev);
+	if (ret < 0)
+		return ret;
+
+	TYPEC_INFO("typec wd %d\r\n", ret);
+	if (ret) { /* Water detected by H/W */
+		tcpc_dev->wd_retry_cnt = 1;
+#if CONFIG_WATER_DETECTION_RETRY > 0
+		TYPEC_NEW_STATE(typec_water_detection_rty);
+		tcpci_enable_wd_oneshot(tcpc_dev);
+#else
+		TYPEC_NEW_STATE(typec_water_protection);
+		tcpci_set_water_protection(tcpc_dev, true);
+#endif
+	} else { /* Water not detected */
+		tcpci_set_water_protection(tcpc_dev, false);
+		tcpc_typec_error_recovery(tcpc_dev);
+	}
+
+	return 0;
+}
+
+int tcpc_typec_wd_oneshot(struct tcpc_device *tcpc_dev)
+{
+	int ret;
+
+	/* TODO check how to judge water */
+	ret = tcpci_is_water_detected(tcpc_dev);
+	if (ret < 0) {
+		/* H/W already detect water */
+		TYPEC_NEW_STATE(typec_water_protection);
+		tcpci_set_water_protection(tcpc_dev, true);
+		return ret;
+	}
+
+	/* When one shot, only check DP/DM */
+	if (ret) {
+		/* Manually trigger detection for cnt.WDRetry times */
+		if (tcpc_dev->wd_retry_cnt < CONFIG_WATER_DETECTION_RETRY) {
+			++tcpc_dev->wd_retry_cnt;
+			tcpci_enable_wd_oneshot(tcpc_dev);
+		} else {
+			TYPEC_NEW_STATE(typec_water_protection);
+			tcpci_set_water_protection(tcpc_dev, true);
+		}
+	} else
+		tcpc_typec_error_recovery(tcpc_dev);
+
+	return 0;
+}
+#endif	/* CONFIG_WATER_DETECTION */
+
+#ifdef CONFIG_FOREIGN_OBJECT_DETECTION
+int tcpc_typec_fod_event(struct tcpc_device *tcpc_dev)
+{
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	int ret;
+
+	pr_err("%s kpoc", __func__);
+	ret = get_boot_mode();
+	if (ret == KERNEL_POWER_OFF_CHARGING_BOOT ||
+	    ret == LOW_POWER_OFF_CHARGING_BOOT) {
+		TYPEC_INFO("Not to do foreign object protection in KPOC%d\r\n",
+			   ret);
+		pr_err("%s kpoc not process LR", __func__);
+		return 0;
+	}
+#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
+
+	pr_err("%s not kpoc", __func__);
+	TYPEC_NEW_STATE(typec_foreign_object_protection);
+	tcpci_set_cc(tcpc_dev, TYPEC_CC_OPEN);
+	tcpci_set_cc_hidet(tcpc_dev, true);
+	return 0;
+}
+
+int tcpc_typec_is_attachwait_snk(struct tcpc_device *tcpc_dev)
+{
+	return tcpc_dev->typec_state == typec_attachwait_snk ? 1 : 0;
+}
+#endif /* CONFIG_FOREIGN_OBJECT_DETECTION */
