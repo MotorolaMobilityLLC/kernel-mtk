@@ -2616,6 +2616,15 @@ static int mtk_uart_init_ports(void)
 					vfifo->base = (apdma_uart0_base + 0x0080 * idx);
 					vfifo->irq_id = get_uart_vfifo_irq_id(idx);
 				}
+#ifdef CONFIG_MACH_MT8167
+				if (i == 2) {
+					for (idx = i * 2; idx < i * 2 + 2; idx++) {
+						vfifo = &mtk_uart_vfifo_port[idx];
+						vfifo->base = (apdma_uart0_base + 0x0080 * idx + 0x300);
+						vfifo->irq_id = get_uart_vfifo_irq_id(idx);
+					}
+				}
+#endif
 			}
 		}
 #endif
