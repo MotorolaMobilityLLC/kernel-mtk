@@ -39,7 +39,7 @@
 	#endif
 #elif (PMIC_WRAP_KERNEL)
 	#if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
-		//#define PMIC_WRAP_NO_PMIC
+		#define PMIC_WRAP_NO_PMIC
 	#else
 		#if defined CONFIG_MTK_PMIC_WRAP
 			#define PMIC_WRAP_NO_PMIC
