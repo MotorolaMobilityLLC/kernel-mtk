@@ -337,12 +337,12 @@ static void dump_register(void)
 			idx+4, pmic_read(idx+4),
 			idx+6, pmic_read(idx+6));
 	}
+
 	pr_info("(0x%x)=0x%x (0x%x)=0x%x (0x%x)=0x%x (0x%x)=0x%x\n",
 		PMIC_RG_RTC32K_CK_PDN_ADDR,
 		pmic_read(PMIC_RG_RTC32K_CK_PDN_ADDR),
 		PMIC_RG_ACCDET_CK_PDN_ADDR,
-		pmic_read(PMIC_RG_ACCDET_CK_PDN_ADDR));
-	pr_info("(0x%x)=0x%x (0x%x)=0x%x (0x%x)=0x%x (0x%x)=0x%x\n",
+		pmic_read(PMIC_RG_ACCDET_CK_PDN_ADDR),
 		PMIC_RG_ACCDET_RST_ADDR,
 		pmic_read(PMIC_RG_ACCDET_RST_ADDR),
 		PMIC_RG_INT_EN_ACCDET_ADDR,
@@ -351,13 +351,12 @@ static void dump_register(void)
 		PMIC_RG_INT_MASK_ACCDET_ADDR,
 		pmic_read(PMIC_RG_INT_MASK_ACCDET_ADDR),
 		PMIC_RG_INT_STATUS_ACCDET_ADDR,
-		pmic_read(PMIC_RG_INT_STATUS_ACCDET_ADDR));
-	pr_info("(0x%x)=0x%x (0x%x)=0x%x (0x%x)=0x%x (0x%x)=0x%x\n",
+		pmic_read(PMIC_RG_INT_STATUS_ACCDET_ADDR),
 		PMIC_RG_AUDPWDBMICBIAS1_ADDR,
 		pmic_read(PMIC_RG_AUDPWDBMICBIAS1_ADDR),
 		PMIC_RG_AUDACCDETMICBIAS0PULLLOW_ADDR,
 		pmic_read(PMIC_RG_AUDACCDETMICBIAS0PULLLOW_ADDR));
-	pr_info("(0x%x)=0x%x (0x%x)=0x%x (0x%x)=0x%x (0x%x)=0x%x\n",
+	pr_info("(0x%x)=0x%x (0x%x)=0x%x\n",
 		PMIC_AUXADC_RQST_CH0_ADDR,
 		pmic_read(PMIC_AUXADC_RQST_CH0_ADDR),
 		PMIC_AUXADC_ACCDET_AUTO_SPL_ADDR,
