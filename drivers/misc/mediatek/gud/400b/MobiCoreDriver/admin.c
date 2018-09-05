@@ -160,7 +160,7 @@ static struct tee_object *tee_object_alloc(bool is_sp_trustlet, size_t length)
 	}
 
 	/* Check size for overflow */
-	if (size < length) {
+	if (size < length || size > OBJECT_LENGTH_MAX) {
 		mc_dev_notice("cannot allocate object of size %zu", length);
 		return NULL;
 	}
@@ -612,6 +612,13 @@ struct tee_object *tee_object_read(u32 spid, uintptr_t address, size_t length)
 	if (copy_from_user(&thdr, addr, sizeof(thdr))) {
 		mc_dev_notice("header: copy_from_user failed");
 		return ERR_PTR(-EFAULT);
+	}
+
+	/* Check header */
+	if ((thdr.intro.magic != MC_SERVICE_HEADER_MAGIC_BE) &&
+	    (thdr.intro.magic != MC_SERVICE_HEADER_MAGIC_LE)) {
+		mc_dev_notice("header: invalid magic");
+		return ERR_PTR(-EINVAL);
 	}
 
 	/* Allocate memory */
