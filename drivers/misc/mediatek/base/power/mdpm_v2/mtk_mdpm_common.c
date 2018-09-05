@@ -17,7 +17,8 @@
 #include <linux/sysfs.h>
 #include <linux/proc_fs.h>
 #include <mach/mtk_pbm.h>
-#include "mtk_mdpm.h"
+#include <mtk_mdpm_common.h>
+#include <mtk_mdpm_platform.h>
 
 #if MD_POWER_METER_ENABLE
 #include "mtk_vcore_dvfs.h"
