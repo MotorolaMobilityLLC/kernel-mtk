@@ -21,7 +21,9 @@
 
 #include <linux/delay.h>
 
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #include <scp_ipi.h>
+#endif
 
 #include "audio_log.h"
 #include "audio_assert.h"

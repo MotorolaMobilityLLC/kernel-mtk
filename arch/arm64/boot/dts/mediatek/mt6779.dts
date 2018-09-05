@@ -422,6 +422,25 @@
 		interrupts = <GIC_SPI 151 IRQ_TYPE_LEVEL_LOW>;
 	};
 
+	adsp: adsp@10600000 {
+		compatible = "mediatek,audio_dsp";
+		reg = <0 0x10600000 0 0x10000>, /*ctrl reg*/
+			<0 0x10630000 0 0x9000>,	/* ITCM */
+			<0 0x10610000 0 0x8000>;	/* DTCM */
+		interrupts = <GIC_SPI 182 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 183 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infracfg_ao INFRACFG_AO_FADSP_CG>,
+				<&topckgen TOP_MUX_ADSP>,
+				<&topckgen TOP_ADSPPLL_CK>,
+				<&clk26m>,
+				<&apmixed APMIXED_ADSPPLL>;
+		clock-names = "adsp_infra_clk",
+				"top_mux_adsp",
+				"top_adsppll_ck",
+				"adsp_clk26",
+				"apmixed_adsppll";
+	};
+
 	sspm@10440000 {
 		compatible = "mediatek,sspm";
 		reg = <0 0x10440000 0 0x10000>,
