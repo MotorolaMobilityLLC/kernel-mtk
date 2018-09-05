@@ -1417,6 +1417,65 @@ static void gadget_stop(struct musb *musb)
 	}
 }
 
+void musb_flush_dma_transcation(struct musb *musb)
+{
+	int i = 0;
+
+	/* 1. Stop Queue: Set TXQ_STOP or RXQ_STOP.
+	 * TQCSR0(0xA00) ~ TQCSR7(0xA70)
+	 * RQCSR0(0x810) ~ RQCSR7(0x880)
+	*/
+	for (i = 1; i < musb->nr_endpoints; i++) {
+		mtk_qmu_stop(i, 0);
+		mtk_qmu_stop(i, 1);
+	}
+
+	/* 2. Set DMA_CNTL = 0, DMA_CNT = 0, DMA_ADDRESS = 0
+	 * DMA_CNTL_0(0x204) ~ DMA_CNTL_7(0x274)
+	 * DMA_ADDR_0(0x208) ~ DMA_ADDR_7(0x278)
+	 * DMA_COUNT_0(0x20C) ~ DMA_COUNT_7(0x27C)
+	*/
+	for (i = 0; i < 8; i++) {
+		u32 val = musb_readl(musb->mregs, MUSB_HSDMA_CHANNEL_OFFSET((i), MUSB_HSDMA_CONTROL));
+
+		if (val)
+			pr_notice("CH%d(0x%x)=0x%x\n", i, MUSB_HSDMA_CHANNEL_OFFSET((i), MUSB_HSDMA_CONTROL), val);
+
+		musb_writel(musb->mregs, MUSB_HSDMA_CHANNEL_OFFSET((i), MUSB_HSDMA_CONTROL), 0);
+		musb_writel(musb->mregs, MUSB_HSDMA_CHANNEL_OFFSET((i), MUSB_HSDMA_ADDRESS), 0);
+		musb_writel(musb->mregs, MUSB_HSDMA_CHANNEL_OFFSET((i), MUSB_HSDMA_COUNT), 0);
+
+		val = musb_readl(musb->mregs, MUSB_HSDMA_CHANNEL_OFFSET((i), MUSB_HSDMA_CONTROL));
+		if (val)
+			pr_notice("CH%d(0x%x)=0x%x\n", i, MUSB_HSDMA_CHANNEL_OFFSET((i), MUSB_HSDMA_CONTROL), val);
+	}
+
+	/* 3. For Tx, flush Tx FIFO: set (TXCSR_FLUSH_FIFO | TXCSR_TXPKTRDY)
+	 *    For Rx, flush Rx FIFO: set (RXCSR_FLUSH_FIFO | RXCSR_RXPKTRDY)
+	*/
+	for (i = 1; i < musb->nr_endpoints; i++) {
+		/* void __iomem *mbase = musb->mregs;
+		 *  hw_ep->regs = MUSB_EP_OFFSET(i, 0) + mbase;
+		 *  #define MUSB_INDEXED_OFFSET(_epnum, _offset) (0x10 + (_offset))
+		*/
+		void __iomem *epio = musb->endpoints[i].regs;
+		u16 csr;
+
+		/* INDEX 0x0E*/
+		musb_ep_select(musb->mregs, i);
+
+		/* TXCSR 0x12*/
+		csr = musb_readw(epio, MUSB_TXCSR);
+		csr |= MUSB_TXCSR_FLUSHFIFO | MUSB_TXCSR_TXPKTRDY;
+		musb_writew(epio, MUSB_TXCSR, csr);
+
+		/* RXCSR 0x16*/
+		csr = musb_readw(epio, MUSB_RXCSR);
+		csr |= MUSB_RXCSR_FLUSHFIFO | MUSB_RXCSR_RXPKTRDY;
+		musb_writew(epio, MUSB_RXCSR, csr);
+	}
+}
+
 /*
  * Make the HDRC stop (disable interrupts, etc.);
  * reversible by musb_start
@@ -1428,7 +1487,11 @@ void musb_stop(struct musb *musb)
 {
 	/* stop IRQs, timers, ... */
 	musb_generic_disable(musb);
+
 	gadget_stop(musb);
+
+	musb_flush_dma_transcation(musb);
+
 	musb_platform_disable(musb);
 	musb->is_active = 0;
 	DBG(0, "HDRC disabled\n");
@@ -1470,6 +1533,9 @@ static void musb_shutdown(struct platform_device *pdev)
 	spin_lock_irqsave(&musb->lock, flags);
 	#endif
 	musb_generic_disable(musb);
+
+	musb_flush_dma_transcation(musb);
+
 	musb_platform_disable(musb);
 	pr_err("%s, musb has already disable\n", __func__);
 	#ifndef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE

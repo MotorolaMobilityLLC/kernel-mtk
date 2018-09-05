@@ -747,7 +747,6 @@ void usb_phy_context_restore(void)
 	if (in_uart_mode)
 		usb_phy_switch_to_uart();
 #endif
-	usb_phy_savecurrent_internal();
 }
 
 #endif
