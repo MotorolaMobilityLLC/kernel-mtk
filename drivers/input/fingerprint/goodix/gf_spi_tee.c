@@ -754,6 +754,10 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		gf_debug(ERR_LOG, "%s: gf_dev IS NULL ======\n", __func__);
 		return -EINVAL;
 	}
+	if (!gf_dev->probe_finish) {
+		gf_debug(ERR_LOG, "%s: probe incomplete ======\n", __func__);
+		return -EINVAL;
+	}
 
 	switch (cmd) {
 	case GF_IOC_INIT:
@@ -849,12 +853,14 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case GF_IOC_ENABLE_SPI_CLK:
 		gf_debug(INFO_LOG, "%s: GF_IOC_ENABLE_SPI_CLK ======\n", __func__);
-		gf_spi_clk_enable(gf_dev, 1);
+		if (gf_dev->spi)
+			gf_spi_clk_enable(gf_dev, 1);
 		break;
 
 	case GF_IOC_DISABLE_SPI_CLK:
 		gf_debug(INFO_LOG, "%s: GF_IOC_DISABLE_SPI_CLK ======\n", __func__);
-		gf_spi_clk_enable(gf_dev, 0);
+		if (gf_dev->spi)
+			gf_spi_clk_enable(gf_dev, 0);
 		break;
 
 	case GF_IOC_ENABLE_POWER:
@@ -1274,6 +1280,7 @@ static int gf_release(struct inode *inode, struct file *filp)
 	if (gf_dev->irq)
 		gf_disable_irq(gf_dev);
 	gf_dev->need_update = 0;
+	filp->private_data = NULL;
 	FUNC_EXIT();
 	return status;
 }
