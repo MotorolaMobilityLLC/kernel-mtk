@@ -137,7 +137,7 @@ bool exception_isr_check[MTK_VPU_CORE];
 static struct clk *clk_top_dsp_sel;
 static struct clk *clk_top_dsp1_sel;
 static struct clk *clk_top_dsp2_sel;
-static struct clk *clk_top_dsp3_sel;
+//static struct clk *clk_top_dsp3_sel;
 static struct clk *clk_top_ipu_if_sel;
 static struct clk *clk_apu_core0_jtag_cg;
 static struct clk *clk_apu_core0_axi_m_cg;
@@ -145,6 +145,7 @@ static struct clk *clk_apu_core0_apu_cg;
 static struct clk *clk_apu_core1_jtag_cg;
 static struct clk *clk_apu_core1_axi_m_cg;
 static struct clk *clk_apu_core1_apu_cg;
+#if 0
 static struct clk *clk_apu_mdla_apb_cg;
 static struct clk *clk_apu_mdla_cg_b0;
 static struct clk *clk_apu_mdla_cg_b1;
@@ -159,6 +160,7 @@ static struct clk *clk_apu_mdla_cg_b9;
 static struct clk *clk_apu_mdla_cg_b10;
 static struct clk *clk_apu_mdla_cg_b11;
 static struct clk *clk_apu_mdla_cg_b12;
+#endif
 static struct clk *clk_apu_conn_apu_cg;
 static struct clk *clk_apu_conn_ahb_cg;
 static struct clk *clk_apu_conn_axi_cg;
@@ -196,17 +198,17 @@ static struct clk *clk_top_mmpll_d4;
 /* mtcmos */
 static struct clk *mtcmos_dis;
 
-static struct clk *mtcmos_vpu_vcore_dormant;
+//static struct clk *mtcmos_vpu_vcore_dormant;
 static struct clk *mtcmos_vpu_vcore_shutdown;
-static struct clk *mtcmos_vpu_conn_dormant;
+//static struct clk *mtcmos_vpu_conn_dormant;
 static struct clk *mtcmos_vpu_conn_shutdown;
 
-static struct clk *mtcmos_vpu_core0_dormant;
+//static struct clk *mtcmos_vpu_core0_dormant;
 static struct clk *mtcmos_vpu_core0_shutdown;
-static struct clk *mtcmos_vpu_core1_dormant;
+//static struct clk *mtcmos_vpu_core1_dormant;
 static struct clk *mtcmos_vpu_core1_shutdown;
-static struct clk *mtcmos_vpu_core2_dormant;
-static struct clk *mtcmos_vpu_core2_shutdown;
+//static struct clk *mtcmos_vpu_core2_dormant;
+//static struct clk *mtcmos_vpu_core2_shutdown;
 
 /* smi */
 static struct clk *clk_mmsys_gals_ipu2mm;
@@ -216,8 +218,8 @@ static struct clk *clk_mmsys_gals_comm1;
 static struct clk *clk_mmsys_smi_common;
 
 /*direct link*/
-static struct clk *clk_mmsys_ipu_dl_txck;
-static struct clk *clk_mmsys_ipu_dl_rx_ck;
+//static struct clk *clk_mmsys_ipu_dl_txck;
+//static struct clk *clk_mmsys_ipu_dl_rx_ck;
 
 #endif
 
@@ -757,7 +759,7 @@ static int vpu_if_set_clock_source(struct clk *clk, uint8_t step)
 }
 
 #endif
-
+#if 0
 static int vpu_get_hw_vcore_opp(int core)
 {
 #ifdef MTK_VPU_FPGA_PORTING
@@ -779,6 +781,13 @@ static int vpu_get_hw_vcore_opp(int core)
 	return opp_value;
 #endif
 }
+#endif
+int get_vpu_opp(void)
+{
+	LOG_DBG("[mdla_%d] vvpu(%d->%d)\n", core, get_vvpu_value, opp_value);
+	return opps.dsp.index;
+}
+EXPORT_SYMBOL(get_vpu_opp);
 
 static int vpu_get_hw_vvpu_opp(int core)
 {
@@ -830,7 +839,7 @@ static void vpu_opp_check(int core, uint8_t vvpu_index, uint8_t freq_index)
 	int i = 0;
 	bool freq_check = false;
 	int log_freq = 0, log_max_freq = 0;
-	int get_vcore_opp = 0;
+	//int get_vcore_opp = 0;
 	int get_vvpu_opp = 0;
 
 	if (is_power_debug_lock) {
@@ -849,7 +858,7 @@ static void vpu_opp_check(int core, uint8_t vvpu_index, uint8_t freq_index)
 	change_freq_first[core] = false;
 	log_max_freq = Map_DSP_Freq_Table(max_dsp_freq);
 	/* vcore opp */
-	get_vcore_opp = vpu_get_hw_vcore_opp(core);
+	//get_vcore_opp = vpu_get_hw_vcore_opp(core);
 	/* vvpu opp*/
 	get_vvpu_opp = vpu_get_hw_vvpu_opp(core);
 #if 0
@@ -1042,12 +1051,12 @@ static bool vpu_change_opp(int core, int type)
 	return true;
 #else
 	int ret;
-
+#if 0
 	if (get_vvpu_DVFS_is_paused_by_ptpod()) {
 		LOG_INF("[vpu_%d] dvfs skip by ptpod", core);
 		return true;
 	}
-
+#endif
 	switch (type) {
 	/* vcore opp */
 	case OPPTYPE_VCORE:
@@ -1097,10 +1106,9 @@ static bool vpu_change_opp(int core, int type)
 			goto out;
 		}
 
-		LOG_INF("[vpu_%d] cgopp vcore=%d, ddr=%d\n",
+		LOG_INF("[vpu_%d] cgopp vvpu=%d\n",
 				core,
-				vcorefs_get_curr_vcore(),
-				vcorefs_get_curr_ddr());
+				regulator_get_voltage(vvpu_reg_id));
 
 		force_change_vcore_opp[core] = false;
 		mutex_unlock(&opp_mutex);
@@ -1109,7 +1117,7 @@ static bool vpu_change_opp(int core, int type)
 	/* dsp freq opp */
 	case OPPTYPE_DSPFREQ:
 		mutex_lock(&opp_mutex);
-		LOG_INF("[vpu_%d] %s setclksrc(%d/%d/%d/%d)\n", __func__,
+		LOG_INF("[vpu_%d] vpu_change_opp setclksrc(%d/%d/%d/%d)\n",
 				core,
 				opps.dsp.index,
 				opps.dspcore[0].index,
@@ -1226,12 +1234,10 @@ static bool vpu_change_opp(int core, int type)
 			goto out;
 		}
 
-		LOG_INF("[vpu_%d] cgopp vvpu=%d, vmdla=%d, vcore=%d ddr=%d\n",
+		LOG_INF("[vpu_%d] cgopp vvpu=%d, vmdla=%d\n",
 				core,
 				regulator_get_voltage(vvpu_reg_id),
-				regulator_get_voltage(vmdla_reg_id),
-				vcorefs_get_curr_vcore(),
-				vcorefs_get_curr_ddr());
+				regulator_get_voltage(vmdla_reg_id));
 
 		force_change_vcore_opp[core] = false;
 		force_change_vvpu_opp[core] = false;
@@ -1517,7 +1523,7 @@ static int vpu_enable_regulator_and_clock(int core)
 	int ret = 0;
 	int get_vcore_opp = 0;
 	int get_vvpu_opp = 0;
-	bool adjust_vcore = false;
+	//bool adjust_vcore = false;
 	bool adjust_vvpu = false;
 
 	LOG_INF("[vpu_%d] en_rc + (%d)\n", core, is_power_debug_lock);
@@ -1566,7 +1572,6 @@ static int vpu_enable_regulator_and_clock(int core)
 
 		LOG_DBG("[vpu_%d] en_rc to do vvpu opp change", core);
 #ifdef ENABLE_PMQOS
-		if (!get_vvpu_DVFS_is_paused_by_ptpod()) {
 		switch (opps.vvpu.index) {
 		case 0:
 			pm_qos_update_request(&vpu_qos_vvpu_request[core],
@@ -1594,14 +1599,6 @@ static int vpu_enable_regulator_and_clock(int core)
 								VCORE_OPP_2);
 			break;
 		}
-			}
-		else {
-			/*disable DVFS by ptpod, fix opp to V0.8, dsp.index=5*/
-			opps.dsp.index = 5;
-			opps.dspcore[0].index = 5;
-			opps.dspcore[1].index = 5;
-			opps.ipu_if.index = 5;
-		}
 #else
 		ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL,
 							opps.vcore.index);
@@ -1613,15 +1610,12 @@ static int vpu_enable_regulator_and_clock(int core)
 				core, opps.vcore.index);
 		goto out;
 	}
-	LOG_INF("[vpu_%d] adjust(%d,%d) result vvpu=%d, vmdla=%d,
-			vcore=%d, ddr=%d\n",
+	LOG_INF("[vpu_%d] adjust(%d,%d) result vvpu=%d, vmdla=%d\n",
 			core,
 			adjust_vvpu,
 			opps.vvpu.index,
 			regulator_get_voltage(vvpu_reg_id),
-			regulator_get_voltage(vmdla_reg_id),
-			vcorefs_get_curr_vcore(),
-			vcorefs_get_curr_ddr());
+			regulator_get_voltage(vmdla_reg_id));
 
 	LOG_DBG("[vpu_%d] en_rc setmmdvfs(%d) done\n", core, opps.vcore.index);
 
@@ -1759,13 +1753,13 @@ out:
 #endif
 }
 
-#ifndef MTK_VPU_FPGA_PORTING
+#ifdef MTK_VPU_SMI_DEBUG_ON
 static unsigned int vpu_read_smi_bus_debug(int core)
 {
 	unsigned int smi_bus_value = 0x0;
 	unsigned int smi_bus_vpu_value = 0x0;
 
-#ifdef MTK_VPU_SMI_DEBUG_ON
+
 	if ((int)(vpu_dev->smi_cmn_base) != 0) {
 		switch (core) {
 		case 0:
@@ -1784,7 +1778,6 @@ static unsigned int vpu_read_smi_bus_debug(int core)
 	} else {
 		LOG_INF("[vpu_%d] null smi_cmn_base\n", core);
 	}
-#endif
 	LOG_INF("[vpu_%d] read_smi_bus (0x%x/0x%x)\n", core,
 			smi_bus_value, smi_bus_vpu_value);
 
@@ -1909,11 +1902,9 @@ static int vpu_disable_regulator_and_clock(int core)
 #undef DISABLE_VPU_MTCMOS
 #undef DISABLE_VPU_CLK
 #ifdef ENABLE_PMQOS
-	if (!get_vvpu_DVFS_is_paused_by_ptpod()) {
 	pm_qos_update_request(&vpu_qos_vvpu_request[core], VVPU_OPP_UNREQ);
 	pm_qos_update_request(&vpu_qos_vmdla_request[core], VMDLA_OPP_UNREQ);
 	pm_qos_update_request(&vpu_qos_vcore_request[core], VCORE_OPP_UNREQ);
-	}
 #else
 	ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL,
 						MMDVFS_FINE_STEP_UNREQUEST);
@@ -1922,8 +1913,8 @@ static int vpu_disable_regulator_and_clock(int core)
 		LOG_ERR("[vpu_%d]fail to unrequest vcore!\n", core);
 		goto out;
 	}
-	LOG_DBG("[vpu_%d] disable result vcore=%d, ddr=%d\n",
-		core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
+	LOG_DBG("[vpu_%d] disable result vvpu=%d\n",
+		core, regulator_get_voltage(vvpu_reg_id));
 out:
 	/*--disable regulator--*/
 	ret = regulator_disable(vvpu_reg_id);
@@ -5260,24 +5251,17 @@ int vpu_dump_opp_table(struct seq_file *s)
 
 int vpu_dump_power(struct seq_file *s)
 {
-	int vcore_opp = 0;
+	//int vcore_opp = 0;
 	int vvpu_opp = 0;
 	int vmdla_opp = 0;
 
-#ifndef MTK_VPU_FPGA_PORTING
-	if (vcorefs_get_curr_vcore() >= 800000)
-		vcore_opp = 0;
-	else
-		vcore_opp = 1;
-#endif
 
 	vvpu_opp = vpu_get_hw_vvpu_opp(0);
 	vmdla_opp = vpu_get_hw_vmdla_opp(0);
 
 
-vpu_print_seq(s, "%s(rw): %s[%d/%d], %s[%d/%d], %s[%d/%d]\n",
+vpu_print_seq(s, "%s(rw): %s[%d/%d], %s[%d/%d]\n",
 			"dvfs_debug",
-			"vore", opps.vcore.index, vcore_opp,
 			"vvpu", opps.vvpu.index, vvpu_opp,
 			"vmdla", opps.vmdla.index, vmdla_opp);
 vpu_print_seq(s, "%s[%d], %s[%d], %s[%d], %s[%d]\n",
