@@ -183,10 +183,9 @@ enum AAL_UPDATE_HIST {
 
 #ifdef CONFIG_MTK_DRE30_SUPPORT
 #define AAL_DRE_HIST_START			(1024)
+#define AAL_DRE_HIST_END			(4092)
 #define AAL_DRE_GAIN_START			(4096)
-#define AAL_DRE_GAIN_POINT16_START	(6144)
 #define AAL_DRE_GAIN_END			(6268)
-#define AAL_DRE3_CURVE_MIN_CONFIG	(2)
 
 static DEFINE_SPINLOCK(g_aal_dre3_gain_lock);
 static atomic_t g_aal_force_hist_apb = ATOMIC_INIT(0);
@@ -550,6 +549,11 @@ static void disp_aal_clear_irq_only(enum DISP_MODULE_ENUM module, bool cleared, 
 }
 
 #ifdef CONFIG_MTK_DRE30_SUPPORT
+#define AAL_DRE_BLK_NUM			(16)
+#define AAL_BLK_MAX_ALLOWED_NUM	(128)
+#define AAL_DRE3_POINT_NUM		(17)
+#define AAL_DRE_GAIN_POINT16_START	(512)
+
 #define DRE_POLL_SLEEP_TIME_US	(10)
 #define DRE_MAX_POLL_TIME_US	(1000)
 
@@ -635,196 +639,46 @@ static inline bool disp_aal_sram_read(unsigned int addr, unsigned int *value)
 	return return_value;
 }
 
-static bool disp_aal_read_one_block(const int block_x, const int block_y,
-			      const int dre_blk_x_num, const int dre_blk_y_num)
-{
-	bool return_value = false;
-	unsigned int read_value;
-	unsigned int block_offset = 6 * 4 * (block_y * dre_blk_x_num + block_x);
-
-	do {
-		if (disp_aal_sram_read(AAL_DRE_HIST_START + block_offset, &read_value) != true)
-			break;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][0] = read_value & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][1] = (read_value>>8) & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][2] = (read_value>>16) & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][3] = (read_value>>24) & 0xff;
-
-		block_offset += 4;
-		if (disp_aal_sram_read(AAL_DRE_HIST_START + block_offset, &read_value) != true)
-			break;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][4] = read_value & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][5] = (read_value>>8) & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][6] = (read_value>>16) & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][7] = (read_value>>24) & 0xff;
-
-		block_offset += 4;
-		if (disp_aal_sram_read(AAL_DRE_HIST_START + block_offset, &read_value) != true)
-			break;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][8] = read_value & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][9] = (read_value>>8) & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][10] = (read_value>>16) & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][11] = (read_value>>24) & 0xff;
-
-		block_offset += 4;
-		if (disp_aal_sram_read(AAL_DRE_HIST_START + block_offset, &read_value) != true)
-			break;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][12] = read_value & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][13] = (read_value>>8) & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][14] = (read_value>>16) & 0xff;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][15] = (read_value>>24) & 0xff;
-
-		block_offset += 4;
-		if (disp_aal_sram_read(AAL_DRE_HIST_START + block_offset, &read_value) != true)
-			break;
-		g_aal_dre30_hist.dre_max_hist[block_y][block_x][16] = read_value & 0xff;
-		g_aal_dre30_hist.dre_rgb_max_sum[block_y][block_x] = (read_value>>8) & 0xff;
-		g_aal_dre30_hist.dre_large_diff_count_set[block_y][block_x] = (read_value>>16) & 0xff;
-		g_aal_dre30_hist.dre_max_diff_set[block_y][block_x] = (read_value>>24) & 0xff;
-
-		block_offset += 4;
-		if (disp_aal_sram_read(AAL_DRE_HIST_START + block_offset, &read_value) != true)
-			break;
-		g_aal_dre30_hist.dre_chroma_hist[block_y][block_x] = read_value & 0xff;
-		g_aal_dre30_hist.dre_flat_line_count_set[block_y][block_x] = (read_value>>8) & 0xff;
-
-		return_value = true;
-	} while (0);
-
-	return return_value;
-}
-
 static bool disp_aal_read_dre3(const int dre_blk_x_num, const int dre_blk_y_num)
 {
-	int blk_x, blk_y;
-	bool read_success = false;
+	int hist_offset;
+	int arry_offset = 0;
+	unsigned int read_value;
 
 	/* Read Global histogram for ESS */
-	read_success = disp_aal_read_single_hist(AAL0_MODULE_NAMING);
-	if (read_success != true)
-		return read_success;
+	if (disp_aal_read_single_hist(AAL0_MODULE_NAMING) != true)
+		return false;
 
 	/* Read Local histogram for DRE 3 */
-	for (blk_y = 0; blk_y < dre_blk_y_num; blk_y++) {
-		for (blk_x = 0; blk_x < dre_blk_x_num; blk_x++) {
-			/* read each block histogram and info. */
-			read_success = disp_aal_read_one_block(blk_x, blk_y, dre_blk_x_num, dre_blk_y_num);
-			if (read_success != true)
-				break;
-		}
+	for (hist_offset = AAL_DRE_HIST_START; hist_offset <= AAL_DRE_HIST_END; hist_offset += 4) {
+		if (disp_aal_sram_read(hist_offset, &read_value) != true)
+			return false;
 
-		if (read_success != true)
-			break;
+		if (arry_offset >= AAL_DRE30_HIST_REGISTER_NUM)
+			return false;
+		g_aal_dre30_hist.dre_hist[arry_offset++] = read_value;
 	}
 
-	return read_success;
+	return true;
 }
 
-static bool disp_aal_write_one_block(void *cmq_handle, const int block_x, const int block_y,
-			      const int dre_blk_x_num, const int dre_blk_y_num)
+static bool disp_aal_write_dre3(void *cmq_handle)
 {
-	bool return_value = false;
+	int gain_offset;
+	int arry_offset = 0;
 	unsigned int write_value;
-	unsigned int block_offset = 4 * 4 * (block_y * dre_blk_x_num + block_x);
 
-	do {
-		write_value = ((g_aal_gain.dre3_gain[block_y][block_x][0] & 0xff) |
-			((g_aal_gain.dre3_gain[block_y][block_x][1] & 0xff) << 8) |
-			((g_aal_gain.dre3_gain[block_y][block_x][2] & 0xff) << 16) |
-			((g_aal_gain.dre3_gain[block_y][block_x][3] & 0xff) << 24));
-		if (disp_aal_sram_write(cmq_handle, AAL_DRE_GAIN_START + block_offset, write_value) != true)
-			break;
+	/* Write Local Gain Curve for DRE 3 */
+	for (gain_offset = AAL_DRE_GAIN_START; gain_offset <= AAL_DRE_GAIN_END; gain_offset += 4) {
+		if (arry_offset >= AAL_DRE30_GAIN_REGISTER_NUM)
+			return false;
+		write_value = g_aal_gain.dre30_gain[arry_offset++];
 
-		block_offset += 4;
-		write_value = ((g_aal_gain.dre3_gain[block_y][block_x][4] & 0xff) |
-			((g_aal_gain.dre3_gain[block_y][block_x][5] & 0xff) << 8) |
-			((g_aal_gain.dre3_gain[block_y][block_x][6] & 0xff) << 16) |
-			((g_aal_gain.dre3_gain[block_y][block_x][7] & 0xff) << 24));
-		if (disp_aal_sram_write(cmq_handle, AAL_DRE_GAIN_START + block_offset, write_value) != true)
-			break;
-
-		block_offset += 4;
-		write_value = ((g_aal_gain.dre3_gain[block_y][block_x][8] & 0xff) |
-			((g_aal_gain.dre3_gain[block_y][block_x][9] & 0xff) << 8) |
-			((g_aal_gain.dre3_gain[block_y][block_x][10] & 0xff) << 16) |
-			((g_aal_gain.dre3_gain[block_y][block_x][11] & 0xff) << 24));
-		if (disp_aal_sram_write(cmq_handle, AAL_DRE_GAIN_START + block_offset, write_value) != true)
-			break;
-
-		block_offset += 4;
-		write_value = ((g_aal_gain.dre3_gain[block_y][block_x][12] & 0xff) |
-			((g_aal_gain.dre3_gain[block_y][block_x][13] & 0xff) << 8) |
-			((g_aal_gain.dre3_gain[block_y][block_x][14] & 0xff) << 16) |
-			((g_aal_gain.dre3_gain[block_y][block_x][15] & 0xff) << 24));
-		if (disp_aal_sram_write(cmq_handle, AAL_DRE_GAIN_START + block_offset, write_value) != true)
-			break;
-
-		return_value = true;
-	} while (0);
-
-	return return_value;
-}
-
-static bool disp_aal_write_curve_16(void *cmq_handle, const int dre_blk_x_num, const int dre_blk_y_num)
-{
-	bool ret = false;
-	int blk_x, blk_y;
-	const int blk_num_max = dre_blk_x_num * dre_blk_y_num;
-	unsigned int write_value = 0x0;
-	unsigned int bit_shift = 0;
-	unsigned int block_offset = 0;
-
-	for (blk_y = 0; blk_y < dre_blk_y_num; blk_y++) {
-		for (blk_x = 0; blk_x < dre_blk_x_num; blk_x++) {
-			write_value |=
-			     ((g_aal_gain.dre3_gain[blk_y][blk_x][AAL_DRE3_LAST_POINT] & 0xff) << (8*bit_shift));
-			bit_shift++;
-
-			if (bit_shift >= 4) {
-				ret = disp_aal_sram_write(cmq_handle, AAL_DRE_GAIN_POINT16_START + block_offset,
-					write_value);
-				if (ret != true)
-					break;
-				block_offset += 4;
-				write_value = 0x0;
-				bit_shift = 0;
-			}
-		}
-
-		if (ret != true)
-			break;
+		if (disp_aal_sram_write(cmq_handle, gain_offset, write_value) != true)
+			return false;
 	}
 
-	if (ret == true && (blk_num_max>>2)<<2 != blk_num_max) {
-		/* configure last curve */
-		ret = disp_aal_sram_write(cmq_handle, AAL_DRE_GAIN_POINT16_START + block_offset, write_value);
-	}
-
-	return ret;
-}
-
-static bool disp_aal_write_dre3(void *cmq_handle, const int dre_blk_x_num, const int dre_blk_y_num)
-{
-	int blk_x, blk_y;
-	bool config_success = false;
-
-	for (blk_y = 0; blk_y < dre_blk_y_num; blk_y++) {
-		for (blk_x = 0; blk_x < dre_blk_x_num; blk_x++) {
-			/* write each block dre curve */
-			config_success = disp_aal_write_one_block(cmq_handle, blk_x, blk_y,
-				dre_blk_x_num, dre_blk_y_num);
-			if (config_success != true)
-				break;
-		}
-
-		if (config_success != true)
-			break;
-	}
-	/* write each block dre curve last point */
-	if (config_success == true)
-		config_success = disp_aal_write_curve_16(cmq_handle, dre_blk_x_num, dre_blk_y_num);
-
-	return config_success;
+	return true;
 }
 
 static void disp_aal_dre3_irq_handle(enum DISP_MODULE_ENUM module, int update_method)
@@ -894,7 +748,7 @@ static void disp_aal_dre3_irq_handle(enum DISP_MODULE_ENUM module, int update_me
 
 				if (spin_trylock_irqsave(&g_aal_dre3_gain_lock, flags)) {
 					/* Write DRE 3.0 gain */
-					config_success = disp_aal_write_dre3(NULL, dre_blk_x_num, dre_blk_y_num);
+					config_success = disp_aal_write_dre3(NULL);
 					spin_unlock_irqrestore(&g_aal_dre3_gain_lock, flags);
 				}
 			}
@@ -932,33 +786,114 @@ static int disp_aal_copy_size_to_user(struct DISP_AAL_DISPLAY_SIZE __user *aal_s
 
 static void ddp_aal_dre3_write_curve_full(void *cmq_handle)
 {
-	const int dre_blk_x_num = 8;
-	const int dre_blk_y_num = 16;
-	unsigned long flags;
-
-	spin_lock_irqsave(&g_aal_dre3_gain_lock, flags);
 	DISP_REG_MASK(cmq_handle, DISP_AAL_SRAM_CFG, (1 << 6)|(0 << 5)|(1 << 4), (0x7 << 4));
-	disp_aal_write_dre3(cmq_handle, dre_blk_x_num, dre_blk_y_num);
+	disp_aal_write_dre3(cmq_handle);
 	DISP_REG_MASK(cmq_handle, DISP_AAL_SRAM_CFG, (0 << 6)|(1 << 5)|(1 << 4), (0x7 << 4));
-	disp_aal_write_dre3(cmq_handle, dre_blk_x_num, dre_blk_y_num);
+	disp_aal_write_dre3(cmq_handle);
 	atomic_set(&g_aal_force_hist_apb, 0);
-	spin_unlock_irqrestore(&g_aal_dre3_gain_lock, flags);
 }
 
-static void disp_aal_dre3_init(void *cmq_handle)
+static bool write_block(const unsigned int *dre3_gain,
+	const int block_x, const int block_y, const int dre_blk_x_num)
 {
-	int blk_x, blk_y, curve_point;
+	bool return_value = false;
+	uint32_t block_offset = 4 * (block_y * dre_blk_x_num + block_x);
 
-	for (blk_y = 0; blk_y < AAL_DRE_BLK_NUM; blk_y++) {
-		for (blk_x = 0; blk_x < AAL_DRE_BLK_NUM; blk_x++) {
-			for (curve_point = 0; curve_point < AAL_DRE3_POINT_NUM; curve_point++) {
-				/* assign initial gain curve */
-				g_aal_gain.dre3_gain[blk_y][blk_x][curve_point] = aal_min(255, 16 * curve_point);
+	do {
+		if (block_offset >= AAL_DRE30_GAIN_REGISTER_NUM)
+			break;
+		g_aal_gain.dre30_gain[block_offset++] = ((dre3_gain[0] & 0xff) |
+			((dre3_gain[1] & 0xff) << 8) |
+			((dre3_gain[2] & 0xff) << 16) |
+			((dre3_gain[3] & 0xff) << 24));
+
+		if (block_offset >= AAL_DRE30_GAIN_REGISTER_NUM)
+			break;
+		g_aal_gain.dre30_gain[block_offset++] = ((dre3_gain[4] & 0xff) |
+			((dre3_gain[5] & 0xff) << 8) |
+			((dre3_gain[6] & 0xff) << 16) |
+			((dre3_gain[7] & 0xff) << 24));
+
+		if (block_offset >= AAL_DRE30_GAIN_REGISTER_NUM)
+			break;
+		g_aal_gain.dre30_gain[block_offset++] = ((dre3_gain[8] & 0xff) |
+			((dre3_gain[9] & 0xff) << 8) |
+			((dre3_gain[10] & 0xff) << 16) |
+			((dre3_gain[11] & 0xff) << 24));
+
+		if (block_offset >= AAL_DRE30_GAIN_REGISTER_NUM)
+			break;
+		g_aal_gain.dre30_gain[block_offset++] = ((dre3_gain[12] & 0xff) |
+			((dre3_gain[13] & 0xff) << 8) |
+			((dre3_gain[14] & 0xff) << 16) |
+			((dre3_gain[15] & 0xff) << 24));
+
+		return_value = true;
+	} while (0);
+
+	return return_value;
+}
+
+static bool write_curve16(const unsigned int *dre3_gain,
+	const int dre_blk_x_num, const int dre_blk_y_num)
+{
+	int32_t blk_x, blk_y;
+	const int32_t blk_num_max = dre_blk_x_num * dre_blk_y_num;
+	unsigned int write_value = 0x0;
+	uint32_t bit_shift = 0;
+	uint32_t block_offset = AAL_DRE_GAIN_POINT16_START;
+
+	for (blk_y = 0; blk_y < dre_blk_y_num; blk_y++) {
+		for (blk_x = 0; blk_x < dre_blk_x_num; blk_x++) {
+			write_value |= ((dre3_gain[16] & 0xff) << (8*bit_shift));
+			bit_shift++;
+
+			if (bit_shift >= 4) {
+				if (block_offset >= AAL_DRE30_GAIN_REGISTER_NUM)
+					return false;
+				g_aal_gain.dre30_gain[block_offset++] = write_value;
+
+				write_value = 0x0;
+				bit_shift = 0;
 			}
 		}
 	}
 
+	if ((blk_num_max>>2)<<2 != blk_num_max) {
+		/* configure last curve */
+		if (block_offset >= AAL_DRE30_GAIN_REGISTER_NUM)
+			return false;
+		g_aal_gain.dre30_gain[block_offset] = write_value;
+	}
+
+	return true;
+}
+
+static void disp_aal_dre3_init(void *cmq_handle)
+{
+	const int dre_blk_x_num = 8;
+	const int dre_blk_y_num = 16;
+	unsigned long flags;
+	int blk_x, blk_y, curve_point;
+	unsigned int dre3_gain[AAL_DRE3_POINT_NUM];
+
+	for (curve_point = 0; curve_point < AAL_DRE3_POINT_NUM; curve_point++) {
+		/* assign initial gain curve */
+		dre3_gain[curve_point] = aal_min(255, 16 * curve_point);
+	}
+
+	spin_lock_irqsave(&g_aal_dre3_gain_lock, flags);
+	for (blk_y = 0; blk_y < dre_blk_y_num; blk_y++) {
+		for (blk_x = 0; blk_x < dre_blk_x_num; blk_x++) {
+			/* write each block dre curve */
+			write_block(dre3_gain, blk_x, blk_y, dre_blk_x_num);
+		}
+	}
+    /* write each block dre curve last point */
+	write_curve16(dre3_gain, dre_blk_x_num, dre_blk_y_num);
+
 	ddp_aal_dre3_write_curve_full(cmq_handle);
+	spin_unlock_irqrestore(&g_aal_dre3_gain_lock, flags);
 }
 
 static int disp_aal_set_init_dre3(struct DISP_DRE30_INIT __user *user_regs)
@@ -1672,12 +1607,12 @@ static int disp_aal_write_param_to_reg(enum DISP_MODULE_ENUM module, struct cmdq
 {
 #ifdef CONFIG_MTK_DRE30_SUPPORT
 	disp_aal_write_dre3_to_reg(module, cmdq, param);
+	disp_aal_write_cabc_to_reg(module, cmdq, param);
 #else
 	disp_aal_write_dre_to_reg(module, cmdq, param);
-#endif
-
 #ifndef NOT_SUPPORT_CABC_HW
 	disp_aal_write_cabc_to_reg(module, cmdq, param);
+#endif
 #endif
 
 	return 0;
@@ -1873,6 +1808,8 @@ static void ddp_aal_backup(void)
 static void ddp_aal_dre3_restore(void *cmq_handle)
 {
 #ifdef CONFIG_MTK_DRE30_SUPPORT
+	unsigned long flags;
+
 	DISP_REG_MASK(cmq_handle, DISP_AAL_DRE_BLOCK_INFO_00,
 		g_aal_backup.DRE_BLOCK_INFO_00 & (0x1FFF << 13), 0x1FFF << 13);
 	DISP_REG_SET(cmq_handle, DISP_AAL_DRE_BLOCK_INFO_01, g_aal_backup.DRE_BLOCK_INFO_01);
@@ -1888,7 +1825,9 @@ static void ddp_aal_dre3_restore(void *cmq_handle)
 	DISP_REG_MASK(cmq_handle, DISP_AAL_SRAM_CFG,
 		g_aal_backup.SRAM_CFG, 0x1);
 
+	spin_lock_irqsave(&g_aal_dre3_gain_lock, flags);
 	ddp_aal_dre3_write_curve_full(cmq_handle);
+	spin_unlock_irqrestore(&g_aal_dre3_gain_lock, flags);
 #endif				/* CONFIG_MTK_DRE30_SUPPORT */
 }
 
@@ -2396,7 +2335,9 @@ static void aal_dump_block_histogram(void)
 {
 #ifdef CONFIG_MTK_DRE30_SUPPORT
 	unsigned long flags;
-	int blk_x, blk_y, dre_blk_x_num, dre_blk_y_num;
+	int i;
+	int dre_blk_x_num;
+	int dre_blk_y_num;
 	struct DISP_DRE30_HIST *dre30_hist;
 
 	dre30_hist = kmalloc(sizeof(struct DISP_DRE30_HIST), GFP_KERNEL);
@@ -2411,29 +2352,17 @@ static void aal_dump_block_histogram(void)
 
 	AAL_TLOG("Hist block number [y, x] [%d, %d]", dre_blk_y_num, dre_blk_x_num);
 
-	for (blk_y = 0; blk_y < dre_blk_y_num; blk_y++) {
-		for (blk_x = 0; blk_x < dre_blk_x_num; blk_x++) {
-			AAL_TLOG("Hist block[%d, %d][0.. 8] = %6d %6d %6d %6d %6d %6d %6d %6d %6d",
-				blk_y, blk_x, dre30_hist->dre_max_hist[blk_y][blk_x][0],
-				dre30_hist->dre_max_hist[blk_y][blk_x][1], dre30_hist->dre_max_hist[blk_y][blk_x][2],
-				dre30_hist->dre_max_hist[blk_y][blk_x][3], dre30_hist->dre_max_hist[blk_y][blk_x][4],
-				dre30_hist->dre_max_hist[blk_y][blk_x][5], dre30_hist->dre_max_hist[blk_y][blk_x][6],
-				dre30_hist->dre_max_hist[blk_y][blk_x][7], dre30_hist->dre_max_hist[blk_y][blk_x][8]);
-			AAL_TLOG("Hist block[%d, %d][9.. 16] = %6d %6d %6d %6d %6d %6d %6d %6d",
-				blk_y, blk_x, dre30_hist->dre_max_hist[blk_y][blk_x][9],
-				dre30_hist->dre_max_hist[blk_y][blk_x][10], dre30_hist->dre_max_hist[blk_y][blk_x][11],
-				dre30_hist->dre_max_hist[blk_y][blk_x][12], dre30_hist->dre_max_hist[blk_y][blk_x][13],
-				dre30_hist->dre_max_hist[blk_y][blk_x][14], dre30_hist->dre_max_hist[blk_y][blk_x][15],
-				dre30_hist->dre_max_hist[blk_y][blk_x][16]);
-			AAL_TLOG("Hist block[%d, %d] dre_rgb_max_sum = %6d, dre_large_diff_count_set = %6d",
-				blk_y, blk_x, dre30_hist->dre_rgb_max_sum[blk_y][blk_x],
-				dre30_hist->dre_large_diff_count_set[blk_y][blk_x]);
-			AAL_TLOG("Hist block[%d, %d] dre_max_diff_set = %6d, dre_chroma_hist = %6d",
-				blk_y, blk_x, dre30_hist->dre_max_diff_set[blk_y][blk_x],
-				dre30_hist->dre_chroma_hist[blk_y][blk_x]);
-			AAL_TLOG("Hist block[%d, %d] dre_flat_line_count_set = %6d",
-				blk_y, blk_x, dre30_hist->dre_flat_line_count_set[blk_y][blk_x]);
-		}
+	for (i = 0; i + 8 <= AAL_DRE30_HIST_REGISTER_NUM; i += 8) {
+
+		AAL_TLOG("hist[%d..%d] = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x",
+			i, i+7, dre30_hist->dre_hist[i], dre30_hist->dre_hist[i+1],
+			dre30_hist->dre_hist[i+2], dre30_hist->dre_hist[i+3],
+			dre30_hist->dre_hist[i+4], dre30_hist->dre_hist[i+5],
+			dre30_hist->dre_hist[i+6], dre30_hist->dre_hist[i+7]);
+	}
+	for (; i <= AAL_DRE30_HIST_REGISTER_NUM; i++) {
+		/* print last histogram information */
+		AAL_TLOG("hist[%d] = 0x%08x", i, dre30_hist->dre_hist[i]);
 	}
 
 	kfree(dre30_hist);
@@ -2475,21 +2404,37 @@ static void aal_dump_dre(void)
 	int i, j;
 
 	spin_lock_irqsave(&g_aal_dre3_gain_lock, flags);
+	AAL_TLOG("========== dump dre gain in SW buffer ==========");
+	for (i = 0; i + 8 <= AAL_DRE30_GAIN_REGISTER_NUM; i += 8) {
+		for (j = 0; j < 8; j++)
+			read_value[j] = g_aal_gain.dre30_gain[i+j];
+
+		AAL_TLOG("dre gain[%d..%d] = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x",
+			i, i+7, read_value[0], read_value[1], read_value[2], read_value[3],
+			read_value[4], read_value[5], read_value[6], read_value[7]);
+	}
+	for (; i < AAL_DRE30_GAIN_REGISTER_NUM; i++) {
+		read_value[0] = g_aal_gain.dre30_gain[i];
+
+		AAL_TLOG("dre gain[%d] = 0x%08x", i, read_value[0]);
+	}
+	AAL_TLOG("========== Load dre gain from HW start (frame dirty is needed) ==========");
 	for (i = AAL_DRE_GAIN_START; i + (4*8) <= AAL_DRE_GAIN_END; i += (4*8)) {
 		for (j = 0; j < 8; j++) {
 			if (disp_aal_sram_read(i + (4*j), &read_value[j]) != true)
 				break;
 		}
 
-		AAL_TLOG("dre block[%d..%d] = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x",
-			i, i+(4*8), read_value[0], read_value[1], read_value[2], read_value[3],
+		AAL_TLOG("dre gain sram[%d..%d] = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x",
+			i, i+7, read_value[0], read_value[1], read_value[2], read_value[3],
 			read_value[4], read_value[5], read_value[6], read_value[7]);
 	}
 	for (; i <= AAL_DRE_GAIN_END; i += 4) {
 		if (disp_aal_sram_read(i, &read_value[0]) != true)
 			break;
-		AAL_TLOG("dre block[%d] = 0x%08x", i, read_value[0]);
+		AAL_TLOG("dre gain sram[%d] = 0x%08x", i, read_value[0]);
 	}
+	AAL_TLOG("========== dump dre gain End ==========");
 	spin_unlock_irqrestore(&g_aal_dre3_gain_lock, flags);
 #endif
 }

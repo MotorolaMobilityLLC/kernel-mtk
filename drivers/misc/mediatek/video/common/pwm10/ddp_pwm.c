@@ -162,7 +162,7 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 	return ret;
 }
 
-static void disp_pwm_backlight_status(enum disp_pwm_id_t id, unsigned int is_power_on)
+static void disp_pwm_backlight_status(enum disp_pwm_id_t id, bool is_power_on)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	int index = index_of_pwm(id);
@@ -574,7 +574,7 @@ int disp_pwm_set_backlight_cmdq(enum disp_pwm_id_t id, int level_1024, void *cmd
 	if (g_pwm_led_mode == MT65XX_LED_MODE_CUST_BLS_PWM &&
 		atomic_read(&g_pwm_is_power_on[index]) == 0 && level_1024 > 0) {
 		/* print backlight once after device resumed */
-		disp_pwm_backlight_status(id, 1);
+		disp_pwm_backlight_status(id, true);
 	}
 #endif
 	return 0;
@@ -627,7 +627,7 @@ static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 		disp_pwm_clksource_enable(pwm_src);
 
 	if (g_pwm_led_mode != MT65XX_LED_MODE_CUST_BLS_PWM)
-		disp_pwm_backlight_status(id, 1);
+		disp_pwm_backlight_status(id, true);
 
 	return 0;
 }
@@ -639,7 +639,7 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 	enum disp_pwm_id_t id = pwm_get_id_from_module(module);
 	int ret = -1;
 
-	disp_pwm_backlight_status(id, 1);
+	disp_pwm_backlight_status(id, false);
 
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6739)
