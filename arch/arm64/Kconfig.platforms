@@ -222,6 +222,16 @@ config MACH_MT6779
 	select GENERIC_SCHED_CLOCK
 	select ARMV7_COMPAT
 	select ARMV7_COMPAT_CPUINFO
+	select EXT4_FS
+	select EXT4_FS_ENCRYPTION
+	select EXT4_FS_SECURITY
+	select EXT4_ENCRYPTION
+	select F2FS_FS
+	select F2FS_FS_ENCRYPTION
+	select F2FS_FS_SECURITY
+	select F2FS_FS_XATTR
+	select HIE
+	select HIE_DEBUG
 	select PINCTRL
 	select PINCTRL_MT6779
 	select MFD_SYSCON
@@ -238,6 +248,7 @@ config MACH_MT6779
 	select MTK_BOUNCING_CHECK if MTK_AEE_FEATURE
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select DEBUG_TIMEKEEPING
+	select SDCARD_FS
 	help
 	  This enables support for MediaTek - MT6779
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
