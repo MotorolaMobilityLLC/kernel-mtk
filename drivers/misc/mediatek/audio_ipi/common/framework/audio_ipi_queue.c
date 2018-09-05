@@ -446,6 +446,7 @@ int send_message_ack(
 		return -1;
 	}
 
+
 	/* get msg ack & wake up queue */
 	AUD_ASSERT(msg_queue->ipi_msg_ack.magic == 0);
 	spin_lock(&msg_queue->res_lock);

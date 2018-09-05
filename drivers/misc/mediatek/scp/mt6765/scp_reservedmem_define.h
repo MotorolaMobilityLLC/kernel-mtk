@@ -49,17 +49,12 @@ static struct scp_reserve_mblock scp_reserve_mblock[] = {
 		.start_virt = 0x0,
 		.size = 0x180000,  /* 1.5 MB */
 	},
-#if defined(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT) || \
-	defined(CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT) || \
-	defined(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT) || \
-	defined(CONFIG_MTK_VOW_SUPPORT)
 	{
 		.num = AUDIO_IPI_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
-		.size = 0x200000,  /* 2 MB */
+		.size = 0x40000, /* 256K */
 	},
-#endif
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	{
 		.num = SPK_PROTECT_MEM_ID,
