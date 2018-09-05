@@ -696,7 +696,7 @@ static irqreturn_t tpd_eint_interrupt_handler(unsigned int irq,
 	disable_irq_nosync(touch_irq);
 	GTP_DEBUG("eint disable irq_flat=%d", irq_flag);
 	/*GTP_INFO("disable irq_flag=%d",irq_flag);*/
-	wake_up_interruptible(&waiter);
+	wake_up(&waiter);
 	return IRQ_HANDLED;
 }
 static int tpd_history_x, tpd_history_y;
@@ -813,10 +813,8 @@ static int tpd_event_handler(void *unused)
 
 	sched_setscheduler(current, SCHED_RR, &param);
 	do {
-		set_current_state(TASK_INTERRUPTIBLE);
-
 		if (tpd_eint_mode) {
-			wait_event_interruptible(waiter, tpd_flag != 0);
+			wait_event(waiter, tpd_flag != 0);
 			tpd_flag = 0;
 		} else {
 			GTP_DEBUG("Polling coordinate mode!");
@@ -923,7 +921,7 @@ int gt1x_debug_proc(u8 *buf, int count)
 			tpd_eint_mode = 0;
 			tpd_polling_time = mode;
 			tpd_flag = 1;
-			wake_up_interruptible(&waiter);
+			wake_up(&waiter);
 		} else {
 			/* please set between 10~200ms */
 			GTP_INFO("Wrong polling time\n");

@@ -632,6 +632,10 @@
 		status = "okay";
 	};
 
+	touch: touch {
+		compatible = "mediatek,touch";
+	};
+
 	topmisc@10011000 {
 		compatible = "mediatek,topmisc";
 		reg = <0 0x10011000 0 0x1000>;
