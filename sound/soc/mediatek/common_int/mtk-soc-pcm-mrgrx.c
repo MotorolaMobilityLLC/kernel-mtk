@@ -90,7 +90,7 @@ static int Audio_mrgrx_Volume_Set(struct snd_kcontrol *kcontrol,
 	mmrgrx_Volume = ucontrol->value.integer.value[0];
 	pr_warn("%s mmrgrx_Volume = 0x%x\n", __func__, mmrgrx_Volume);
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MRG_I2S_OUT) == true)
-		SetHwDigitalGain(mmrgrx_Volume, Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1);
+		SetHwDigitalGain(Soc_Aud_Digital_Block_HW_GAIN1, mmrgrx_Volume);
 	return 0;
 }
 
@@ -286,10 +286,10 @@ static int mtk_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 				Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S3);
 
 		/* Set HW_GAIN */
-		SetHwDigitalGainMode(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1, runtime->rate,
+		SetHwDigitalGainMode(Soc_Aud_Digital_Block_HW_GAIN1, runtime->rate,
 				     0x40);
-		SetHwDigitalGainEnable(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1, true);
-		SetHwDigitalGain(mmrgrx_Volume, Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1);
+		SetHwDigitalGainEnable(Soc_Aud_Digital_Block_HW_GAIN1, true);
+		SetHwDigitalGain(mmrgrx_Volume, Soc_Aud_Digital_Block_HW_GAIN1);
 
 		/* start I2S DAC out */
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == false) {
