@@ -1156,6 +1156,7 @@ static long simple_sd_compat_ioctl(struct file *file, unsigned int cmd,
 {
 	struct compat_simple_sd_ioctl *arg32;
 	struct msdc_ioctl *arg64;
+	compat_int_t k_opcode;
 	int err, ret;
 
 	if (!file->f_op || !file->f_op->unlocked_ioctl) {
@@ -1181,8 +1182,11 @@ static long simple_sd_compat_ioctl(struct file *file, unsigned int cmd,
 	err = compat_get_simple_ion_allocation(arg32, arg64);
 	if (err)
 		return err;
+	err = get_user(k_opcode, &(arg64->opcode));
+	if (err)
+		return err;
 
-	ret = file->f_op->unlocked_ioctl(file, arg64->opcode,
+	ret = file->f_op->unlocked_ioctl(file, (unsigned int)k_opcode,
 		(unsigned long)arg64);
 
 	err = compat_put_simple_ion_allocation(arg32, arg64);
