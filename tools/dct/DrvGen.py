@@ -37,6 +37,7 @@ from obj.ChipObj import MT6739
 from obj.ChipObj import MT8695
 from obj.ChipObj import MT6771
 from obj.ChipObj import MT6775
+from obj.ChipObj import MT6779
 
 from utility.util import LogLevel
 from utility.util import log
@@ -169,6 +170,8 @@ if __name__ == '__main__':
          cmp(chipId, 'MT3967') == 0 or \
          cmp(chipId, 'MT6761') == 0:
         chipObj = MT6771(dws_path, gen_path)
+    elif cmp(chipId, 'MT6779') == 0:
+        chipObj = MT6779(dws_path, gen_path)
     else:
         chipObj = ChipObj(dws_path, gen_path)
 

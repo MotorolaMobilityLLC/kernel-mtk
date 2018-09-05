@@ -392,6 +392,9 @@ class GpioObj(ModuleObj):
 
         for key in sorted_key(ModuleObj.get_data(self).keys()):
             value = ModuleObj.get_data(self)[key]
+            if 'GPIO_INIT_NO_COVER' in value.get_varNames():
+                continue
+
             for varName in value.get_varNames():
                 gen_str += '''#define %s\t\t\t(%s | 0x80000000)\n''' %(varName.upper(), key.upper())
                 if value.get_eintMode():
@@ -719,6 +722,10 @@ class GpioObj_MT6771(GpioObj_MT6739):
 
         for key in sorted_key(ModuleObj.get_data(self).keys()):
             value = ModuleObj.get_data(self)[key]
+
+            # if var name contains GPIO_INIT_NO_COVER, the device tree info of the pin in cust.dtsi file would not gen
+            if "GPIO_INIT_NO_COVER" in value.get_varNames():
+                continue
 
             num = string.atoi(key[4:])
             defMode = value.get_defMode()
