@@ -100,12 +100,10 @@ int soidle_enter(int cpu)
 	unsigned int op_cond = 0;
 
 	lockdep_off();
-	mtk_idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
 	mtk_idle_enter(IDLE_TYPE_SO, cpu, op_cond, sodi_flag);
-	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO, cpu);
 	lockdep_on();
 
-	so_cnt[cpu]++;
+	do_gettimeofday(&pre_dpidle_time);
 
 	return CPUIDLE_STATE_SO;
 }
@@ -223,12 +221,10 @@ int soidle3_enter(int cpu)
 	op_cond |= sodi3_force_vcore_lp_mode;
 
 	lockdep_off();
-	mtk_idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
 	mtk_idle_enter(IDLE_TYPE_SO3, cpu, op_cond, sodi3_flag);
-	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO3, cpu);
 	lockdep_on();
 
-	so3_cnt[cpu]++;
+	do_gettimeofday(&pre_dpidle_time);
 
 	return CPUIDLE_STATE_SO3;
 }

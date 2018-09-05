@@ -19,6 +19,7 @@
 #include <linux/console.h>
 
 #include <mtk_sleep_internal.h>
+#include <mtk_spm_internal.h> /* mtk_idle_cond_check */
 #include <mtk_spm_suspend_internal.h>
 #include <mtk_idle_sysfs.h>
 #include <mtk_power_gs_api.h>
@@ -126,6 +127,11 @@ bool __attribute__((weak)) spm_is_enable_sleep(void)
 	return false;
 }
 
+void __attribute__((weak))
+mtk_suspend_cond_info(void)
+{
+}
+
 unsigned int __attribute__((weak))
 spm_go_to_sleep(void)
 {
@@ -200,6 +206,8 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 
 	mcdi_task_pause(true);
 
+	mtk_idle_cond_update_state();
+
 #if SLP_SLEEP_DPIDLE_EN
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 	if (slp_ck26m_on | fm_radio_is_playing) {
@@ -210,11 +218,12 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 					MTK_IDLE_OPT_SLEEP_DPIDLE, 0);
 		slp_wake_reason = get_slp_dp_last_wr();
 		slp_dp_cnt[smp_processor_id()]++;
-
-	} else
+	} else {
 #endif
+		mtk_suspend_cond_info();
 
 		slp_wake_reason = spm_go_to_sleep();
+	}
 
 	mcdi_task_pause(false);
 

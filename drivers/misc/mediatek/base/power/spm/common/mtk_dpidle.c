@@ -46,33 +46,6 @@ void mtk_dpidle_disable(void)
 	dpidle_feature_enable = 0;
 }
 
-/* mtk_dpidle_is_active() for pmic_throttling_dlpt
- *   return 0 : entering dpidle recently ( > 1s)
- *                      => normal mode(dlpt 10s)
- *   return 1 : entering dpidle recently (<= 1s)
- *                      => light-loading mode(dlpt 20s)
- */
-#define DPIDLE_ACTIVE_TIME		(1)
-static struct timeval pre_dpidle_time;
-bool mtk_dpidle_is_active(void)
-{
-	struct timeval current_time;
-	long int diff;
-
-	do_gettimeofday(&current_time);
-	diff = current_time.tv_sec - pre_dpidle_time.tv_sec;
-
-	if (diff > DPIDLE_ACTIVE_TIME)
-		return false;
-	else if ((diff == DPIDLE_ACTIVE_TIME) &&
-		(current_time.tv_usec > pre_dpidle_time.tv_usec))
-		return false;
-	else
-		return true;
-}
-EXPORT_SYMBOL(mtk_dpidle_is_active);
-
-
 bool dpidle_can_enter(int reason)
 {
 	/* dpidle is disabled */
@@ -101,12 +74,8 @@ int dpidle_enter(int cpu)
 		op_cond |= MTK_IDLE_OPT_VCORE_LP_MODE;
 
 	lockdep_off();
-	mtk_idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
 	mtk_idle_enter(IDLE_TYPE_DP, cpu, op_cond, dpidle_flag);
-	mtk_idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
 	lockdep_on();
-
-	dp_cnt[cpu]++;
 
 	do_gettimeofday(&pre_dpidle_time);
 

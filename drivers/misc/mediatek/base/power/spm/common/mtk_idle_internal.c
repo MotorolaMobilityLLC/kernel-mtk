@@ -95,6 +95,11 @@ int __attribute__((weak)) mtk_idle_trigger_wfi(
 	return 0;
 }
 
+bool __attribute__((weak)) mtk_idle_resource_pre_process(void)
+{
+	return false;
+}
+
 void __attribute__((weak)) mtk_idle_pre_process_by_chip(
 	int idle_type, int cpu, unsigned int op_cond, unsigned int idle_flag) {}
 
@@ -177,6 +182,12 @@ static void ufs_cb_after_idle(void)
 #endif
 }
 
+static unsigned long *idle_cnt[NR_IDLE_TYPES] = {
+	[IDLE_TYPE_DP] = dp_cnt,
+	[IDLE_TYPE_SO3] = so3_cnt,
+	[IDLE_TYPE_SO] = so_cnt,
+};
+
 static int idle_notify_enter[NR_IDLE_TYPES] = {
 	[IDLE_TYPE_DP] = NOTIFY_DPIDLE_ENTER,
 	[IDLE_TYPE_SO3] = NOTIFY_SOIDLE3_ENTER,
@@ -235,6 +246,13 @@ int mtk_idle_enter(
 		idle_type != IDLE_TYPE_SO3 &&
 		idle_type != IDLE_TYPE_SO)
 		return -1;
+
+	if (mtk_idle_resource_pre_process())
+		idle_type = IDLE_TYPE_DP;
+
+	mtk_idle_ratio_calc_start(idle_type, cpu);
+
+	idle_cnt[idle_type][cpu]++;
 
 	/* Disable log when we profiling idle latency */
 	if (mtk_idle_latency_profile_is_on())
@@ -339,6 +357,8 @@ RESTORE_UART:
 	mtk_idle_latency_profile_result(idle_type);
 
 	__mtk_idle_footprint_reset(idle_type);
+
+	mtk_idle_ratio_calc_stop(idle_type, cpu);
 
 	return 0;
 }
