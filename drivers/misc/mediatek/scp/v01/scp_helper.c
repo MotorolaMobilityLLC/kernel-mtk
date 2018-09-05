@@ -744,7 +744,9 @@ static ssize_t scp_wdt_trigger(struct device *dev
 {
 	unsigned int value = 0;
 
-	pr_debug("scp_wdt_trigger: %s\n", buf);
+	if (!buf || count == 0)
+		return count;
+	pr_debug("scp_wdt_trigger: %8s\n", buf);
 	if (kstrtouint(buf, 10, &value) == 0) {
 		if (value == 666)
 			scp_wdt_reset(SCP_A_ID);
@@ -763,7 +765,9 @@ static ssize_t scp_reset_trigger(struct device *dev
 {
 	unsigned int value = 0;
 
-	pr_debug("scp_reset_trigger: %s\n", buf);
+	if (!buf || count == 0)
+		return count;
+	pr_debug("scp_reset_trigger: %8s\n", buf);
 	/* scp reset by cmdm set flag =1 */
 	if (kstrtouint(buf, 10, &value) == 0) {
 		if (value == 666) {
@@ -771,6 +775,7 @@ static ssize_t scp_reset_trigger(struct device *dev
 			scp_wdt_reset(SCP_A_ID);
 		}
 	}
+
 	return count;
 }
 
@@ -1311,7 +1316,6 @@ void scp_sys_reset_ws(struct work_struct *ws)
 			, jiffies_to_msecs(1000)) == 0)
 			pr_debug("scp_sys_reset_ws: scp ee time out\n");
 	}
-
 	/*disable scp logger
 	 * 0: scp logger disable
 	 * 1: scp logger enable
@@ -1363,8 +1367,7 @@ void scp_sys_reset_ws(struct work_struct *ws)
 	*(unsigned int *)scp_reset_reg = 0x1;
 	dsb(SY);
 #if SCP_BOOT_TIME_OUT_MONITOR
-	scp_ready_timer[SCP_A_ID].expires = jiffies + SCP_READY_TIMEOUT;
-	add_timer(&scp_ready_timer[SCP_A_ID]);
+	mod_timer(&scp_ready_timer[SCP_A_ID], jiffies + SCP_READY_TIMEOUT);
 #endif
 	/* clear scp reset by cmd flag*/
 	scp_reset_by_cmd = 0;
