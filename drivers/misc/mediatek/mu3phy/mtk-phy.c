@@ -45,10 +45,6 @@ PHY_INT32 u3phy_init(void)
 	return 0;
 #else
 
-#ifndef CONFIG_PROJECT_PHY
-		PHY_INT32 u3phy_version;
-#endif
-
 	if (u3phy != NULL)
 		return PHY_TRUE;
 
