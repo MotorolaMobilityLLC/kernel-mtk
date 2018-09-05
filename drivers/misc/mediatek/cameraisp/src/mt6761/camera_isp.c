@@ -1732,7 +1732,7 @@ bool ISP_chkModuleSetting(void)
 		cam_ctrl_en_p1_dma_d = ISP_RD32(ISP_ADDR + 0x14);
 		cam_af_con = ISP_RD32(ISP_ADDR + 0x6B0);
 		tmp = 0;
-		rst = 0;
+		rst = MTRUE;
 		cam_tg_sen_mode = ISP_RD32(ISP_ADDR + 0x410);
 		cam_bmx_crop = ISP_RD32(ISP_ADDR + 0xE14);
 		cam_rmx_crop = ISP_RD32(ISP_ADDR + 0xE24);
@@ -1796,17 +1796,11 @@ bool ISP_chkModuleSetting(void)
 			v_size = tg_h_lin_e - tg_h_lin_s;
 			break;
 		case 1:
-			if (bmx_enable == MTRUE)
-				h_size = bmx_end_x - bmx_str_x + 1;
-			else
-				h_size = tg_w_pxl_e - tg_w_pxl_s + 1;
+			h_size = tg_w_pxl_e - tg_w_pxl_s + 1;
 			v_size = tg_h_lin_e - tg_h_lin_s;
 			break;
 		case 2:
-			if (rmx_enable == MTRUE)
-				h_size = rmx_end_x - rmx_str_x + 1;
-			else
-				h_size = tg_w_pxl_e - tg_w_pxl_s + 1;
+			h_size = tg_w_pxl_e - tg_w_pxl_s + 1;
 			v_size = tg_h_lin_e - tg_h_lin_s;
 			break;
 		default:
@@ -2358,7 +2352,7 @@ AF_EXIT:
 		cam_ctrl_en_p1_dma_d = ISP_RD32(ISP_ADDR + 0x14);
 		cam_af_con = ISP_RD32(ISP_ADDR + 0x26B0);
 		tmp = 0;
-		rst = 0;
+		rst = MTRUE;
 		cam_tg_sen_mode = ISP_RD32(ISP_ADDR + 0x2410);
 		cam_bmx_crop = ISP_RD32(ISP_ADDR + 0xE14);
 		cam_rmx_crop = ISP_RD32(ISP_ADDR + 0xE24);
