@@ -611,6 +611,13 @@
 		interrupts = <GIC_SPI 75 IRQ_TYPE_EDGE_FALLING>;
 	};
 
+	mrdump_ext_rst: mrdump_ext_rst {
+		compatible = "mediatek, mrdump_ext_rst-eint";
+		source = "EINT";
+		mode = "IRQ";
+		status = "okay";
+	};
+
 	topmisc@10011000 {
 		compatible = "mediatek,topmisc";
 		reg = <0 0x10011000 0 0x1000>;
