@@ -3116,6 +3116,7 @@
 	};
 };
 
+#include "mt6359.dtsi"
 #include "cust_mt6779_msdc.dtsi"
 
 #ifdef CONFIG_MTK_ENABLE_GENIEZONE
