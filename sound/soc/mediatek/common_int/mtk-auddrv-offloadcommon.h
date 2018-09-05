@@ -113,6 +113,11 @@ struct afe_offload_service_t {
 	uint8_t scene;
 };
 
+struct afe_offload_codec_t {
+	unsigned int codec_samplerate;
+	unsigned int codec_bitrate;
+};
+
 enum ipi_received_mp3 {
 	MP3_NEEDDATA = 21,
 	MP3_PCMCONSUMED = 22,
@@ -130,5 +135,6 @@ enum ipi_send_mp3 {
 	MP3_TSTAMP,
 	MP3_PCMDUMP_ON,
 	MP3_SCENE,
+	MP3_CODEC_INFO,
 };
 #endif

@@ -104,6 +104,11 @@ static struct afe_offload_param_t afe_offload_block = {
 	.drain_state       = AUDIO_DRAIN_NONE,
 };
 
+static struct afe_offload_codec_t afe_offload_codec_info = {
+	.codec_samplerate = 0,
+	.codec_bitrate = 0,
+};
+
 static struct snd_compr_stream *offload_stream;
 
 static struct device *offload_dev;
@@ -435,9 +440,12 @@ static int mtk_compr_offload_set_params(struct snd_compr_stream *stream,
 	}
 	dump_audio_dsp_dram(&dsp->dsp_mem[ID].dsp_ring_share_buf);
 	// set_audiobuffer_attribute
+	//set codec info
+	afe_offload_codec_info.codec_samplerate = codec.sample_rate;
+	afe_offload_codec_info.codec_bitrate = codec.bit_rate;
 	audio_hwbuf->aud_buffer.buffer_attr.channel = codec.ch_out;
 	audio_hwbuf->aud_buffer.buffer_attr.format = codec.format;
-	audio_hwbuf->aud_buffer.buffer_attr.rate = codec.sample_rate;
+	audio_hwbuf->aud_buffer.buffer_attr.rate = codec.reserved[2];
 	//
 	ret = set_audiobuffer_hw(&dsp->dsp_mem[ID].adsp_buf,
 				 BUFFER_TYPE_SHARE_MEM);
@@ -447,6 +455,14 @@ static int mtk_compr_offload_set_params(struct snd_compr_stream *stream,
 					 MEMORY_AUDIO_DRAM);
 	if (ret < 0)
 		goto ERROR;
+
+	/* send codec info to SCP side */
+	mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
+			 AUDIO_IPI_MSG_ONLY,
+			 AUDIO_IPI_MSG_BYPASS_ACK,
+			 MP3_CODEC_INFO, afe_offload_codec_info.codec_bitrate,
+			 afe_offload_codec_info.codec_samplerate
+			 , NULL);
 
 	/* send audio_hw_buffer to SCP side */
 	ipi_audio_buf =
