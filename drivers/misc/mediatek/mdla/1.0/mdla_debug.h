@@ -19,8 +19,7 @@
 void mdla_dump_reg(void);
 #else
 #define mdla_debug(...)
-static inline
-void mdla_dump_reg(void)
+static inline void mdla_dump_reg(void)
 {
 }
 #endif
