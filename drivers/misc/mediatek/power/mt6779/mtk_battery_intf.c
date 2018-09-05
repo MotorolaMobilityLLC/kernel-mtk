@@ -140,13 +140,11 @@ signed int battery_get_bat_avg_current(void)
 /* GM25 only */
 int en_intr_VBATON_UNDET(int en)
 {
-	pmic_enable_interrupt(INT_VBATON_UNDET, en, "VBATON_UNDET");
 	return 0;
 }
 
 int reg_VBATON_UNDET(void (*callback)(void))
 {
-	pmic_register_interrupt_callback(INT_VBATON_UNDET, callback);
 	return 0;
 }
 
