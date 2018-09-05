@@ -183,9 +183,13 @@ static bool has_rsz_layer(struct disp_layer_info *disp_info, int disp_idx)
 
 static bool same_ratio(struct  layer_config *input,  struct layer_config *tgt)
 {
-	int diff_w = tgt->dst_width * input->src_width / input->dst_width
+	int diff_w = (tgt->dst_width * input->src_width
+					+ (input->src_width - 1))
+						/ input->dst_width
 							- tgt->src_width;
-	int diff_h = tgt->dst_height * input->src_height / input->dst_height
+	int diff_h = (tgt->dst_height * input->src_height
+					+ (input->src_height - 1))
+						/ input->dst_height
 							- tgt->src_height;
 	if (diff_w > 1 || diff_w < -1 || diff_h > 1 || diff_h < -1)
 		return false;
