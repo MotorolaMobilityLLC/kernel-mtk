@@ -114,7 +114,7 @@ extern struct pwr_ctrl pwrctrl_so;
 
 /* SMC: defined parameters for MTK_SIP_KERNEL_SPM_ARGS */
 enum {
-	SPM_ARGS_SPMFW_IDX = 0,
+	SPM_ARGS_SPMFW_IDX_KICK = 0,
 	SPM_ARGS_SPMFW_INIT,
 	SPM_ARGS_SUSPEND,
 	SPM_ARGS_SUSPEND_FINISH,
