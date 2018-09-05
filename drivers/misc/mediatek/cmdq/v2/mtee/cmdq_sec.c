@@ -142,7 +142,7 @@ KREE_SESSION_HANDLE cmdq_session_handle(void)
 {
 	CMDQ_MSG("cmdq_session_handle() acquire TEE session\n");
 	if (cmdq_session == 0) {
-		TZ_RESULT ret;
+		int ret;
 
 		CMDQ_MSG("cmdq_session_handle() create session\n");
 		CMDQ_LOG("TZ_TA_CMDQ_UUID:%s\n", TZ_TA_CMDQ_UUID);
@@ -166,7 +166,7 @@ KREE_SESSION_HANDLE cmdq_mem_session_handle(void)
 {
 	CMDQ_MSG("cmdq_mem_session_handle() acquires TEE memory session\n");
 	if (cmdq_mem_session == 0) {
-		TZ_RESULT ret;
+		int ret;
 
 		CMDQ_MSG("cmdq_mem_session_handle() create memory session\n");
 
@@ -452,7 +452,7 @@ void dump_message(const struct iwcCmdqMessage_t *message)
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 static int32_t cmdq_sec_execute_session_unlocked(cmdqSecContextHandle handle)
 {
-	TZ_RESULT tzRes;
+	int tzRes;
 
 	CMDQ_PROF_START("CMDQ_SEC_EXE");
 
@@ -691,7 +691,7 @@ int32_t cmdq_sec_test_proc(int testValue)
 	/* fill param */
 	MTEEC_PARAM param[4];
 	unsigned int paramTypes;
-	TZ_RESULT ret;
+	int ret;
 
 	CMDQ_MSG("DISP_IOCTL_CMDQ_SEC_TEST cmdq_test_proc\n");
 
@@ -1148,7 +1148,7 @@ void cmdqSecDeInitialize(void)
 
 	struct cmdqSecContextStruct *secContextEntry = NULL;
 	struct list_head *pos = NULL;
-	TZ_RESULT ret;
+	int ret;
 
 	ret = KREE_UnregisterSharedmem(gCmdqSecContextHandle->memSessionHandle,
 				       gCmdq_share_cookie_handle);
@@ -1207,7 +1207,7 @@ int32_t cmdqSecRegisterSecureBuffer(struct transmitBufferStruct *pSecureData)
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status = 0;
 	struct KREE_SHAREDMEM_PARAM cmdq_shared_param;
-	TZ_RESULT tzRes = TZ_RESULT_SUCCESS;
+	int tzRes = TZ_RESULT_SUCCESS;
 
 	do {
 		if (pSecureData == NULL) {
@@ -1254,7 +1254,7 @@ int32_t cmdqSecServiceCall(struct transmitBufferStruct *pSecureData,
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	union MTEEC_PARAM cmdq_param[4];
 	unsigned int paramTypes = TZ_ParamTypes1(TZPT_MEMREF_INPUT);
-	TZ_RESULT tzRes = TZ_RESULT_SUCCESS;
+	int tzRes = TZ_RESULT_SUCCESS;
 
 	if (pSecureData->cmdqHandle == 0) {
 		pSecureData->cmdqHandle = cmdq_session_handle();
@@ -1286,7 +1286,7 @@ int32_t cmdqSecServiceCall(struct transmitBufferStruct *pSecureData,
 int32_t cmdqSecUnRegisterSecureBuffer(struct transmitBufferStruct *pSecureData)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
-	TZ_RESULT ret = TZ_RESULT_SUCCESS;
+	int ret = TZ_RESULT_SUCCESS;
 
 	ret = KREE_UnregisterSharedmem(pSecureData->memSessionHandle,
 				       pSecureData->shareMemHandle);
