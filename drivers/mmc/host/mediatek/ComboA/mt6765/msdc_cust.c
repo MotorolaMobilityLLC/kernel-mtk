@@ -1168,6 +1168,7 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 	int ret = 0;
 	int len = 0;
 	u8 id;
+	const char *dup_name;
 
 	np = mmc->parent->of_node; /* mmcx node in project dts */
 
@@ -1262,6 +1263,10 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 		host->hw->register_pm = mt_sdio_ops[3].sdio_register_pm;
 	}
 #endif
+	/* fix uaf(use afer free) issue:backup pdev->name,
+	 * device_rename will free pdev->name
+	 */
+	pdev->name = kstrdup(pdev->name, GFP_KERNEL);
 	/* device rename */
 	if ((host->id == 0) && !device_rename(mmc->parent, "bootdevice"))
 		pr_notice("[msdc%d] device renamed to bootdevice.\n", host->id);
@@ -1270,6 +1275,10 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 			host->id);
 	else if ((host->id == 0) || (host->id == 1))
 		pr_notice("[msdc%d] error: device renamed failed.\n", host->id);
+
+	dup_name = pdev->name;
+	pdev->name = pdev->dev.kobj.name;
+	kfree_const(dup_name);
 
 	if (host->id == 1)
 		pmic_register_interrupt_callback(INT_VMCH_OC,
