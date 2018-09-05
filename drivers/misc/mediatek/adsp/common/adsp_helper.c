@@ -58,6 +58,8 @@
 #include "adsp_reservedmem_define.h"
 #endif
 
+#include <mtk_spm_sleep.h>
+
 /* adsp awake timout count definition*/
 #define ADSP_AWAKE_TIMEOUT 5000
 /* adsp semaphore timout count definition*/
@@ -1291,6 +1293,20 @@ int adsp_check_resource(void)
 	return adsp_resource_status;
 }
 
+static int adsp_system_sleep_suspend(struct device *dev)
+{
+	if (!is_adsp_ready(ADSP_A_ID) && !adsp_feature_is_active())
+		spm_adsp_mem_protect();
+	return 0;
+}
+
+static int adsp_system_sleep_resume(struct device *dev)
+{
+	if (!is_adsp_ready(ADSP_A_ID) && !adsp_feature_is_active())
+		spm_adsp_mem_unprotect();
+	return 0;
+}
+
 static int adsp_device_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -1401,10 +1417,14 @@ static int adsp_device_remove(struct platform_device *pdev)
 	return 0;
 }
 
-
 static const struct of_device_id adsp_of_ids[] = {
 	{ .compatible = "mediatek,audio_dsp", },
 	{}
+};
+
+static const struct dev_pm_ops adsp_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(adsp_system_sleep_suspend,
+				adsp_system_sleep_resume)
 };
 
 static struct platform_driver mtk_adsp_device = {
@@ -1415,6 +1435,9 @@ static struct platform_driver mtk_adsp_device = {
 		.owner = THIS_MODULE,
 #ifdef CONFIG_OF
 		.of_match_table = adsp_of_ids,
+#endif
+#ifdef CONFIG_PM
+		.pm = &adsp_pm_ops,
 #endif
 	},
 };

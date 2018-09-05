@@ -9,6 +9,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/adsp/$(CONFIG_MTK_PLATFORM)
 # include emi_mpu.h
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include/mach
 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm
+
 ifeq ($(CONFIG_MTK_ENG_BUILD),y)
 CFLAGS_adsp_logger.o += -DDEBUG
 CFLAGS_adsp_helper.o += -DDEBUG
