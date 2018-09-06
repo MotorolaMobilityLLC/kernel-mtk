@@ -297,6 +297,7 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_set_country_code
 	},
+#if 0 /* Disable GScan */
 	/* GSCAN */
 #if CFG_SUPPORT_GSCN
 	{
@@ -364,6 +365,7 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_set_hotlist
 	},
+#endif
 	/* RTT */
 	{
 		{
@@ -1637,6 +1639,7 @@ static INT_32 wlanNetRegister(struct wireless_dev *prWdev)
 {
 	P_GLUE_INFO_T prGlueInfo;
 	INT_32 i4DevIdx = -1;
+	int ret = 0;
 
 	ASSERT(prWdev);
 
@@ -1652,10 +1655,10 @@ static INT_32 wlanNetRegister(struct wireless_dev *prWdev)
 		}
 
 #if !CFG_SUPPORT_PERSIST_NETDEV
-		if (register_netdev(prWdev->netdev) < 0) {
-			DBGLOG(INIT, ERROR, "Register net_device failed\n");
+		ret = register_netdev(prWdev->netdev);
+		if (ret < 0) {
+			DBGLOG(INIT, ERROR, "Register net_device failed, ret = %d\n", ret);
 
-			wiphy_unregister(prWdev->wiphy);
 			wlanClearDevIdx(prWdev->netdev);
 			i4DevIdx = -1;
 		}
