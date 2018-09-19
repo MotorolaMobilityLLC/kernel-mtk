@@ -22,8 +22,6 @@ unsigned int mdla_cfg_read(u32 offset);
 unsigned int mdla_reg_read(u32 offset);
 u32 mdla_max_cmd_id(void);
 
-// TODO: clearify the usage of gsm_bitmap
-extern unsigned long gsm_bitmap[];
 extern void *apu_mdla_gsm_top;
 extern void *apu_mdla_biu_top;
 extern u32 mdla_timeout;

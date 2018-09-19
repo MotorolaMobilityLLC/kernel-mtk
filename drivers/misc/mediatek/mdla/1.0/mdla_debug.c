@@ -11,6 +11,8 @@
  * GNU General Public License for more details.
  */
 
+#include "mdla_debug.h"
+
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 #include <linux/mm.h>
@@ -25,7 +27,6 @@
 #include <m4u.h>
 
 #include "mdla.h"
-#include "mdla_debug.h"
 #include "mdla_hw_reg.h"
 
 #define ALGO_OF_MAX_POWER  (3)
@@ -790,6 +791,7 @@ static const struct file_operations mdla_debug_algo_fops = {
 
 	DEFINE_MDLA_DEBUGFS(root);
 	DEFINE_MDLA_DEBUGFS(timeout);
+	DEFINE_MDLA_DEBUGFS(klog);
 //	DEFINE_MDLA_DEBUGFS(algo);
 //	DEFINE_MDLA_DEBUGFS(func_mask);
 //	DEFINE_MDLA_DEBUGFS(log_level);
@@ -801,6 +803,8 @@ static const struct file_operations mdla_debug_algo_fops = {
 	DEFINE_MDLA_DEBUGFS(opp_table);
 	DEFINE_MDLA_DEBUGFS(power);
 //	DEFINE_MDLA_DEBUGFS(device_dbg);
+
+u32 mdla_klog;
 
 void mdla_debugfs_init(void)
 {
@@ -816,6 +820,8 @@ void mdla_debugfs_init(void)
 
 	mdla_dtimeout = debugfs_create_u32("timeout", 0660, mdla_droot,
 		&mdla_timeout);
+	mdla_dklog = debugfs_create_u32("klog", 0660, mdla_droot,
+		&mdla_klog);
 
 #define CREATE_MDLA_DEBUGFS(name)                         \
 	{                                                           \
@@ -851,6 +857,7 @@ void mdla_debugfs_exit(void)
 	debugfs_remove(mdla_d##name)
 
 	REMOVE_MDLA_DEBUGFS(timeout);
+	REMOVE_MDLA_DEBUGFS(klog);
 //	REMOVE_MDLA_DEBUGFS(algo);
 //	REMOVE_MDLA_DEBUGFS(func_mask);
 //	REMOVE_MDLA_DEBUGFS(log_level);
@@ -901,6 +908,8 @@ void mdla_dump_reg(void)
 	dump_reg_cfg(MDLA_RP_RST);
 	dump_reg_cfg(MDLA_RP_CON);
 	dump_reg_cfg(MDLA_RP_PRE_FUSE);
+	dump_reg_cfg(MDLA_AXI_CTRL);
+	dump_reg_cfg(MDLA_AXI1_CTRL);
 
 	dump_reg_top(MREG_TOP_G_REV);
 	dump_reg_top(MREG_TOP_G_INTP0);
@@ -954,6 +963,8 @@ int mdla_dump_register(struct seq_file *s)
 	seq_reg_cfg(MDLA_RP_RST);
 	seq_reg_cfg(MDLA_RP_CON);
 	seq_reg_cfg(MDLA_RP_PRE_FUSE);
+	seq_reg_cfg(MDLA_AXI_CTRL);
+	seq_reg_cfg(MDLA_AXI1_CTRL);
 
 	seq_reg_top(MREG_TOP_G_REV);
 	seq_reg_top(MREG_TOP_G_INTP0);

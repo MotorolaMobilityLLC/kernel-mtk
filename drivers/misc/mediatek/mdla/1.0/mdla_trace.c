@@ -11,12 +11,13 @@
  * GNU General Public License for more details.
  */
 
+#include "mdla_debug.h"
+
 #include <linux/sched.h>
 #include <mt-plat/met_drv.h>
 
 #include "mdla.h"
 #include "mdla_pmu.h"
-#include "mdla_debug.h"
 #include "mdla_trace.h"
 #include "met_mdlasys_events.h"
 #include "mdla_proc.h"

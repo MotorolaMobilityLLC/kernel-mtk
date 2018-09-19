@@ -11,6 +11,8 @@
  * GNU General Public License for more details.
  */
 
+#define DEBUG 1
+
 #include <linux/types.h>
 #include <linux/printk.h>
 #include <linux/seq_file.h>
@@ -94,7 +96,10 @@ int mdla_dump_device_dbg(struct seq_file *s);
 
 
 #ifdef CONFIG_MTK_MDLA_DEBUG
-#define mdla_debug pr_debug
+extern u32 mdla_klog;
+#define mdla_debug(...) do { if (mdla_klog) \
+		pr_debug(__VA_ARGS__); \
+	} while (0)
 void mdla_dump_reg(void);
 void mdla_debugfs_init(void);
 void mdla_debugfs_exit(void);

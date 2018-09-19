@@ -14,6 +14,7 @@
 #ifndef _MDLAIOCTL_
 #define _MDLAIOCTL_
 
+#include <stdbool.h>
 #include <linux/ioctl.h>
 #include <linux/types.h>
 
@@ -129,11 +130,11 @@ struct mdla_power {
 	unsigned int core;
 };
 enum MDLA_OPP_PRIORIYY {
-	DEBUG = 0,
-	THERMAL = 1,
-	POWER_HAL = 2,
-	EARA_QOS = 3,
-	NORMAL = 4,
+	MDLA_OPP_DEBUG = 0,
+	MDLA_OPP_THERMAL = 1,
+	MDLA_OPP_POWER_HAL = 2,
+	MDLA_OPP_EARA_QOS = 3,
+	MDLA_OPP_NORMAL = 4,
 	MDLA_OPP_PRIORIYY_NUM
 };
 
