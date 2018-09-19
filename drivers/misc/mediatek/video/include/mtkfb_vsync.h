@@ -13,7 +13,6 @@
 
 #ifndef __MTKFB_VSYNC_H__
 #define __MTKFB_VSYNC_H__
-#include <linux/uaccess.h>
 #include <linux/compat.h>
 
 
