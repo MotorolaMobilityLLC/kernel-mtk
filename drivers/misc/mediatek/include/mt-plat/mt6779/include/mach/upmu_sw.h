@@ -46,7 +46,7 @@
 #define FG_N_CHARGE_L_NO INT_FG_N_CHARGE_L
 #define FG_IAVG_H_NO INT_FG_IAVG_H
 #define FG_IAVG_L_NO INT_FG_IAVG_L
-#define FG_TIME_NO INT_FG_TIME_H
+#define FG_TIME_NO INT_ENUM_MAX
 #define FG_BAT_PLUGOUT_NO INT_BATON_BAT_OUT
 
 /* =============================================================================
