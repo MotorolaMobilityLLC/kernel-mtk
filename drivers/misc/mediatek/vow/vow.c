@@ -848,10 +848,11 @@ static void vow_service_BargeInOpenDumpFile(void)
 	getnstimeofday(&curr_tm);
 
 	memset(string_time, '\0', 16);
-	sprintf(string_time, "%.2lu_%.2lu_%.2lu",
+	sprintf(string_time, "%.2lu_%.2lu_%.2lu_%.3lu",
 		(8 + (curr_tm.tv_sec / 3600)) % (24),
 		(curr_tm.tv_sec / 60) % (60),
-		curr_tm.tv_sec % 60);
+		(curr_tm.tv_sec % 60),
+		(curr_tm.tv_nsec % 1000));
 
 	sprintf(path_input_pcm, "%s/%s_%s",
 		DUMP_BARGEIN_PCM_DATA_PATH, string_time, string_input_pcm);
