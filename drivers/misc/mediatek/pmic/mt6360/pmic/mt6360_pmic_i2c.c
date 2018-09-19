@@ -37,13 +37,11 @@ struct mt6360_regulator_desc {
 };
 
 static const struct mt6360_pmic_platform_data def_platform_data = {
-	.buck1_lp_vout = 1000000,
-	.buck2_lp_vout = 1000000,
 	.sys_ctrls = { 0x25, 0x00, 0x00 },
 	.buck1_ctrls =  { 0xa9, 0x82, 0x85, 0x6c, 0x00, 0x80, 0x02, 0x70 },
 	.buck2_ctrls =  { 0xab, 0x82, 0x85, 0x6c, 0x00, 0x80, 0x02, 0x70 },
-	.ldo6_ctrls = { 0x00, 0x80, 0x02, 0xc4, 0x44, 0x00 },
-	.ldo7_ctrls = { 0x00, 0x80, 0x82, 0xc4, 0x44, 0x00 },
+	.ldo6_ctrls = { 0x00, 0x80, 0x02, 0xc4, 0x44 },
+	.ldo7_ctrls = { 0x00, 0x80, 0x82, 0xc4, 0x44 },
 };
 
 static const u8 sys_ctrl_mask[MT6360_SYS_CTRLS_NUM] = {
@@ -55,7 +53,7 @@ static const u8 buck_ctrl_mask[MT6360_BUCK_CTRLS_NUM] = {
 };
 
 static const u8 ldo_ctrl_mask[MT6360_LDO_CTRLS_NUM] = {
-	0xff, 0x8f, 0x3f, 0xfe, 0xff, 0x0f
+	0xff, 0x8f, 0x3f, 0xfe, 0xff
 };
 
 static int mt6360_pmic_read_device(void *client, u32 addr, int len, void *dst)
@@ -415,6 +413,9 @@ static int mt6360_pmic_set_voltage_sel(struct regulator_dev *rdev,
 	int shift = ffs(desc->vsel_mask) - 1;
 
 	dev_dbg(&rdev->dev, "%s, id = %d, sel %d\n", __func__, id, sel);
+	/* for LDO6/7 vocal add */
+	if (id > MT6360_PMIC_BUCK2)
+		sel = (sel >= 160) ? 0xfa : (((sel / 10) << 4) + sel % 10);
 	return mt6360_pmic_reg_update_bits(mpi, desc->vsel_reg,
 					  desc->vsel_mask, sel << shift);
 }
@@ -433,6 +434,13 @@ static int mt6360_pmic_get_voltage_sel(struct regulator_dev *rdev)
 		return ret;
 	ret &= (desc->vsel_mask);
 	ret >>= shift;
+	/* for LDO6/7 vocal add */
+	if (id > MT6360_PMIC_BUCK2) {
+		/* just use to prevent vocal over range */
+		if ((ret & 0x0f) > 0x0a)
+			ret = (ret & 0xf0) | 0x0a;
+		ret = ((ret & 0xf0) >> 4) * 10 + (ret & 0x0f);
+	}
 	return ret;
 }
 
@@ -509,8 +517,8 @@ static const struct regulator_ops mt6360_pmic_regulator_ops = {
 
 #define BUCK1_VOUT_CNT	(0xc9)
 #define BUCK2_VOUT_CNT	(0xc9)
-#define LDO6_VOUT_CNT	(16)
-#define LDO7_VOUT_CNT	(16)
+#define LDO6_VOUT_CNT	(161)
+#define LDO7_VOUT_CNT	(161)
 
 #define MT6360_PMIC_DESC(_name, _min, _stp, vreg, vmask, enreg, enmask,\
 			 enstreg, enstmask, modereg, modemask,\
@@ -544,9 +552,9 @@ static const struct mt6360_regulator_desc mt6360_pmic_descs[] =  {
 			 0x17, 0x40, 0x17, 0x04, 0x17, 0x30, 0x17, 0x03),
 	MT6360_PMIC_DESC(BUCK2, 300000, 5000, 0x20, 0xff,
 			 0x27, 0x40, 0x27, 0x04, 0x27, 0x30, 0x27, 0x03),
-	MT6360_PMIC_DESC(LDO6, 500000, 100000, 0x3b, 0xf0,
+	MT6360_PMIC_DESC(LDO6, 500000, 10000, 0x3b, 0xff,
 			 0x37, 0x40, 0x37, 0x04, 0x37, 0x30, 0x37, 0x03),
-	MT6360_PMIC_DESC(LDO7, 500000, 100000, 0x35, 0xf0,
+	MT6360_PMIC_DESC(LDO7, 500000, 10000, 0x35, 0xff,
 			 0x31, 0x40, 0x31, 0x04, 0x31, 0x30, 0x31, 0x03),
 };
 

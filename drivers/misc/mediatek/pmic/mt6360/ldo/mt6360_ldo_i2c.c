@@ -37,14 +37,14 @@ struct mt6360_regulator_desc {
 };
 
 static const struct mt6360_ldo_platform_data def_platform_data = {
-	.ldo1_ctrls = { 0x00, 0x80, 0x01, 0x2c, 0x44, 0x00 },
-	.ldo2_ctrls = { 0x00, 0x80, 0x01, 0x2c, 0x44, 0x00 },
-	.ldo3_ctrls = { 0x00, 0x80, 0x01, 0x6c, 0x84, 0x00 },
-	.ldo5_ctrls = { 0x00, 0x80, 0x81, 0x2c, 0x84, 0x00 },
+	.ldo1_ctrls = { 0x00, 0x80, 0x01, 0x2c, 0x44 },
+	.ldo2_ctrls = { 0x00, 0x80, 0x01, 0x2c, 0x44 },
+	.ldo3_ctrls = { 0x00, 0x80, 0x01, 0x6c, 0x84 },
+	.ldo5_ctrls = { 0x00, 0x80, 0x81, 0x2c, 0x84 },
 };
 
 static const u8 ldo_ctrl_mask[MT6360_LDO_CTRLS_NUM] = {
-	0xff, 0x8f, 0xff, 0xff, 0xff, 0x0f
+	0xff, 0x8f, 0xff, 0xff, 0xff
 };
 
 static int mt6360_ldo_read_device(void *client, u32 addr, int len, void *dst)
@@ -442,7 +442,7 @@ static unsigned int mt6360_ldo_get_mode(struct regulator_dev *rdev)
 }
 
 static const struct regulator_ops mt6360_ldo_regulator_ops = {
-	.list_voltage = regulator_list_voltage_table,
+	.list_voltage = regulator_list_voltage_linear_range,
 	.enable = mt6360_ldo_enable,
 	.disable = mt6360_ldo_disable,
 	.is_enabled = mt6360_ldo_is_enabled,
@@ -452,23 +452,72 @@ static const struct regulator_ops mt6360_ldo_regulator_ops = {
 	.get_mode = mt6360_ldo_get_mode,
 };
 
-static const unsigned int ldo_volt_table1[] = {
-	1200000, 1300000, 1500000, 1700000, 1800000, 2000000, 2100000, 2200000,
-	2700000, 2800000, 2900000, 3000000, 3100000, 3300000, 3400000, 3500000,
+static const struct regulator_linear_range ldo_volt_ranges1[] = {
+	REGULATOR_LINEAR_RANGE(1200000, 0x00, 0x09, 10000),
+	REGULATOR_LINEAR_RANGE(1300000, 0x0a, 0x10, 0),
+	REGULATOR_LINEAR_RANGE(1310000, 0x11, 0x19, 10000),
+	REGULATOR_LINEAR_RANGE(1400000, 0x1a, 0x1f, 0),
+	REGULATOR_LINEAR_RANGE(1500000, 0x20, 0x29, 10000),
+	REGULATOR_LINEAR_RANGE(1600000, 0x2a, 0x2f, 0),
+	REGULATOR_LINEAR_RANGE(1700000, 0x30, 0x39, 10000),
+	REGULATOR_LINEAR_RANGE(1800000, 0x3a, 0x40, 0),
+	REGULATOR_LINEAR_RANGE(1810000, 0x41, 0x49, 10000),
+	REGULATOR_LINEAR_RANGE(1900000, 0x4a, 0x4f, 0),
+	REGULATOR_LINEAR_RANGE(2000000, 0x50, 0x59, 10000),
+	REGULATOR_LINEAR_RANGE(2100000, 0x5a, 0x60, 0),
+	REGULATOR_LINEAR_RANGE(2110000, 0x61, 0x69, 10000),
+	REGULATOR_LINEAR_RANGE(2200000, 0x6a, 0x70, 0),
+	REGULATOR_LINEAR_RANGE(2210000, 0x71, 0x79, 10000),
+	REGULATOR_LINEAR_RANGE(2300000, 0x7a, 0x7f, 0),
+	REGULATOR_LINEAR_RANGE(2700000, 0x80, 0x89, 10000),
+	REGULATOR_LINEAR_RANGE(2800000, 0x8a, 0x90, 0),
+	REGULATOR_LINEAR_RANGE(2810000, 0x91, 0x99, 10000),
+	REGULATOR_LINEAR_RANGE(2900000, 0x9a, 0xa0, 0),
+	REGULATOR_LINEAR_RANGE(2910000, 0xa1, 0xa9, 10000),
+	REGULATOR_LINEAR_RANGE(3000000, 0xaa, 0xb0, 0),
+	REGULATOR_LINEAR_RANGE(3010000, 0xb1, 0xb9, 10000),
+	REGULATOR_LINEAR_RANGE(3100000, 0xba, 0xc0, 0),
+	REGULATOR_LINEAR_RANGE(3110000, 0xc1, 0xc9, 10000),
+	REGULATOR_LINEAR_RANGE(3200000, 0xca, 0xcf, 0),
+	REGULATOR_LINEAR_RANGE(3300000, 0xd0, 0xd9, 10000),
+	REGULATOR_LINEAR_RANGE(3400000, 0xda, 0xe0, 0),
+	REGULATOR_LINEAR_RANGE(3410000, 0xe1, 0xe9, 10000),
+	REGULATOR_LINEAR_RANGE(3500000, 0xea, 0xf0, 0),
+	REGULATOR_LINEAR_RANGE(3510000, 0xf1, 0xf9, 10000),
+	REGULATOR_LINEAR_RANGE(3600000, 0xfa, 0xff, 0),
 };
 
-static const unsigned int ldo_volt_table2[] = {
-	2700000, 2800000, 2900000, 3000000, 3100000, 3300000, 3400000, 3500000,
+static const struct regulator_linear_range ldo_volt_ranges2[] = {
+	REGULATOR_LINEAR_RANGE(2700000, 0x00, 0x09, 10000),
+	REGULATOR_LINEAR_RANGE(2800000, 0x0a, 0x10, 0),
+	REGULATOR_LINEAR_RANGE(2810000, 0x11, 0x19, 10000),
+	REGULATOR_LINEAR_RANGE(2900000, 0x1a, 0x20, 0),
+	REGULATOR_LINEAR_RANGE(2910000, 0x21, 0x29, 10000),
+	REGULATOR_LINEAR_RANGE(3000000, 0x2a, 0x30, 0),
+	REGULATOR_LINEAR_RANGE(3010000, 0x31, 0x39, 10000),
+	REGULATOR_LINEAR_RANGE(3100000, 0x3a, 0x40, 0),
+	REGULATOR_LINEAR_RANGE(3110000, 0x41, 0x49, 10000),
+	REGULATOR_LINEAR_RANGE(3200000, 0x4a, 0x4f, 0),
+	REGULATOR_LINEAR_RANGE(3300000, 0x50, 0x59, 10000),
+	REGULATOR_LINEAR_RANGE(3400000, 0x5a, 0x60, 0),
+	REGULATOR_LINEAR_RANGE(3410000, 0x61, 0x69, 10000),
+	REGULATOR_LINEAR_RANGE(3500000, 0x6a, 0x70, 0),
+	REGULATOR_LINEAR_RANGE(3510000, 0x71, 0x79, 10000),
+	REGULATOR_LINEAR_RANGE(3600000, 0x7a, 0x7f, 0),
 };
 
-#define LDO1_VOLT_TABLE	(ldo_volt_table1)
-#define LDO1_VOUT_CNT	ARRAY_SIZE(ldo_volt_table1)
-#define LDO2_VOLT_TABLE	(ldo_volt_table1)
-#define LDO2_VOUT_CNT	ARRAY_SIZE(ldo_volt_table1)
-#define LDO3_VOLT_TABLE	(ldo_volt_table1)
-#define LDO3_VOUT_CNT	ARRAY_SIZE(ldo_volt_table1)
-#define LDO5_VOLT_TABLE	(ldo_volt_table2)
-#define LDO5_VOUT_CNT	ARRAY_SIZE(ldo_volt_table2)
+#define LDO1_VOLT_RANGES	(ldo_volt_ranges1)
+#define LDO1_N_VOLT_RANGES	(ARRAY_SIZE(ldo_volt_ranges1))
+#define LDO1_VOUT_CNT		(256)
+#define LDO2_VOLT_RANGES	(ldo_volt_ranges1)
+#define LDO2_N_VOLT_RANGES	(ARRAY_SIZE(ldo_volt_ranges1))
+#define LDO2_VOUT_CNT		(256)
+#define LDO3_VOLT_RANGES	(ldo_volt_ranges1)
+#define LDO3_N_VOLT_RANGES	(ARRAY_SIZE(ldo_volt_ranges1))
+#define LDO3_VOUT_CNT		(256)
+#define LDO5_VOLT_RANGES	(ldo_volt_ranges2)
+#define LDO5_N_VOLT_RANGES	(ARRAY_SIZE(ldo_volt_ranges2))
+#define LDO5_VOUT_CNT		(128)
 
 #define MT6360_LDO_DESC(_name, vreg, vmask, enreg, enmask, enstreg,\
 			enstmask, modereg, modemask, moderreg, modermask) \
@@ -479,7 +528,8 @@ static const unsigned int ldo_volt_table2[] = {
 		.owner = THIS_MODULE,				\
 		.ops = &mt6360_ldo_regulator_ops,		\
 		.of_match = of_match_ptr(#_name),		\
-		.volt_table = _name##_VOLT_TABLE,		\
+		.linear_ranges = _name##_VOLT_RANGES,		\
+		.n_linear_ranges = _name##_N_VOLT_RANGES,	\
 		.n_voltages = _name##_VOUT_CNT,			\
 		.type = REGULATOR_VOLTAGE,			\
 		.vsel_reg = vreg,				\
@@ -496,13 +546,13 @@ static const unsigned int ldo_volt_table2[] = {
 }
 
 static const struct mt6360_regulator_desc mt6360_ldo_descs[] =  {
-	MT6360_LDO_DESC(LDO1, 0x1b, 0xf0, 0x17, 0x40,
+	MT6360_LDO_DESC(LDO1, 0x1b, 0xff, 0x17, 0x40,
 			0x17, 0x04, 0x17, 0x30, 0x17, 0x03),
-	MT6360_LDO_DESC(LDO2, 0x15, 0xf0, 0x11, 0x40,
+	MT6360_LDO_DESC(LDO2, 0x15, 0xff, 0x11, 0x40,
 			0x11, 0x04, 0x11, 0x30, 0x11, 0x03),
-	MT6360_LDO_DESC(LDO3, 0x09, 0xf0, 0x05, 0x40,
+	MT6360_LDO_DESC(LDO3, 0x09, 0xff, 0x05, 0x40,
 			0x05, 0x04, 0x05, 0x30, 0x05, 0x03),
-	MT6360_LDO_DESC(LDO5, 0x0f, 0xf0, 0x0b, 0x40,
+	MT6360_LDO_DESC(LDO5, 0x0f, 0x70, 0x0b, 0x40,
 			0x0b, 0x04, 0x0b, 0x30, 0x0b, 0x03),
 };
 
