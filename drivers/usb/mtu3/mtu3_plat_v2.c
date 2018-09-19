@@ -67,8 +67,7 @@ int ssusb_check_clocks(struct ssusb_mtk *ssusb, u32 ex_clks)
 	u32 value, check_val;
 	int ret;
 
-	check_val = ex_clks | SSUSB_SYS125_RST_B_STS | SSUSB_SYSPLL_STABLE |
-			SSUSB_REF_RST_B_STS;
+	check_val = ex_clks | SSUSB_SYS125_RST_B_STS;
 
 	ret = readl_poll_timeout(ibase + U3D_SSUSB_IP_PW_STS1, value,
 			(check_val == (value & check_val)), 100, 20000);
@@ -156,6 +155,10 @@ static int ssusb_rscs_init(struct ssusb_mtk *ssusb)
 		goto vusb33_err;
 	}
 
+	ret = ssusb_ext_pwr_on(ssusb, ssusb->is_host);
+	if (ret)
+		dev_info(ssusb->dev, "failed to enable vusb10\n");
+
 	ret = ssusb_clk_on(ssusb, ssusb->is_host);
 	if (ret) {
 		dev_err(ssusb->dev, "failed to enable sys_clk\n");
@@ -190,6 +193,7 @@ vusb33_err:
 static void ssusb_rscs_exit(struct ssusb_mtk *ssusb)
 {
 	regulator_disable(ssusb->vusb33);
+	ssusb_ext_pwr_off(ssusb, ssusb->is_host);
 	ssusb_phy_power_off(ssusb);
 	ssusb_phy_exit(ssusb);
 }
@@ -212,19 +216,13 @@ static int get_ssusb_rscs(struct platform_device *pdev, struct ssusb_mtk *ssusb)
 	struct resource *res;
 	int i;
 
-	ssusb->vusb33 = devm_regulator_get(&pdev->dev, "vusb33");
+	ssusb->vusb33 = devm_regulator_get(&pdev->dev, "vusb");
 	if (IS_ERR(ssusb->vusb33)) {
 		dev_err(dev, "failed to get vusb33\n");
 		return PTR_ERR(ssusb->vusb33);
 	}
 
-	ssusb->ssusb_clk = devm_clk_get(dev, "ssusb_clk");
-	if (IS_ERR(ssusb->ssusb_clk)) {
-		dev_info(dev, "failed to get ssusb clock\n");
-		return PTR_ERR(ssusb->ssusb_clk);
-	}
-
-	ssusb->sys_clk = devm_clk_get(dev, "sys_ck");
+	ssusb->sys_clk = devm_clk_get(dev, "ssusb_clk");
 	if (IS_ERR(ssusb->sys_clk)) {
 		dev_err(dev, "failed to get sys clock\n");
 		return PTR_ERR(ssusb->sys_clk);
