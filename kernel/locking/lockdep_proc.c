@@ -23,6 +23,10 @@
 
 #include "lockdep_internals.h"
 
+#ifdef CONFIG_MTK_BOOT
+#include <mt-plat/mtk_boot_common.h>
+#endif
+
 static void *l_next(struct seq_file *m, void *v, loff_t *pos)
 {
 	return seq_list_next(v, &all_lock_classes, pos);
@@ -675,6 +679,10 @@ static const struct file_operations proc_lock_stat_operations = {
 
 static int __init lockdep_proc_init(void)
 {
+#ifdef CONFIG_MTK_BOOT
+	if (get_boot_mode() == META_BOOT)
+		debug_locks_off();
+#endif
 	proc_create("lockdep", S_IRUSR, NULL, &proc_lockdep_operations);
 #ifdef CONFIG_PROVE_LOCKING
 	proc_create("lockdep_chains", S_IRUSR, NULL,
