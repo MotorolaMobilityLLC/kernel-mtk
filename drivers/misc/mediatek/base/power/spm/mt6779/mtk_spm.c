@@ -326,7 +326,9 @@ static int spm_module_init(void)
 	}
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
+#if MTK_FEATURE_EANABLE_KICK_SPMFW
 	SMC_CALL(ARGS, SPM_ARGS_SPMFW_IDX_KICK, spm_get_spmfw_idx(), 0);
+#endif
 
 	spm_vcorefs_init();
 
