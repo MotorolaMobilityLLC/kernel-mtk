@@ -2111,6 +2111,31 @@ static int sensorHub_resume(struct platform_device *pdev)
 	return 0;
 }
 
+static void sensorHub_shutdown(struct platform_device *pdev)
+{
+	int handle = 0;
+	uint8_t sensor_type;
+	struct ConfigCmd cmd;
+	int ret = 0;
+
+	mutex_lock(&mSensorState_mtx);
+	for (handle = 0; handle < ID_SENSOR_MAX_HANDLE_PLUS_ONE; handle++) {
+		sensor_type = handle + ID_OFFSET;
+		if (mSensorState[sensor_type].sensorType &&
+				mSensorState[sensor_type].enable) {
+			mSensorState[sensor_type].enable = false;
+			init_sensor_config_cmd(&cmd, sensor_type);
+
+			ret = nanohub_external_write((const uint8_t *)&cmd,
+				sizeof(struct ConfigCmd));
+			if (ret < 0)
+				pr_notice("failed registerlistener handle:%d, cmd:%d\n",
+					handle, cmd.cmd);
+		}
+	}
+	mutex_unlock(&mSensorState_mtx);
+}
+
 static ssize_t nanohub_show_trace(struct device_driver *ddri, char *buf)
 {
 	struct SCP_sensorHub_data *obj = obj_data;
@@ -2206,6 +2231,7 @@ static struct platform_driver sensorHub_driver = {
 	.remove = sensorHub_remove,
 	.suspend = sensorHub_suspend,
 	.resume = sensorHub_resume,
+	.shutdown = sensorHub_shutdown,
 };
 
 #ifdef CONFIG_PM
