@@ -131,6 +131,8 @@
 					  "sysuv_evt";
 			mren = <1>;
 			apwdtrst_en = <1>;
+			cc_open_sel = <3>;
+			i2c_cc_open_tsel = <1>;
 		};
 	};
 
