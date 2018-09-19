@@ -108,6 +108,7 @@ extern void __exit adsp_dvfs_exit(void);
 extern unsigned int adsp_expected_freq;
 extern unsigned int adsp_current_freq;
 extern spinlock_t adsp_awake_spinlock;
+extern struct mutex adsp_feature_mutex;
 
 /* adsp new implement */
 

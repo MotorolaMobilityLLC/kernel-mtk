@@ -21,7 +21,7 @@
 #define ADSP_SYSTEM_UNIT(fname) {.name = fname, .freq = 0, .counter = 1}
 #define ADSP_FEATURE_UNIT(fname) {.name = fname, .freq = 0, .counter = 0}
 
-static DEFINE_MUTEX(adsp_feature_mutex);
+DEFINE_MUTEX(adsp_feature_mutex);
 
 /*adsp feature list*/
 struct adsp_feature_tb adsp_feature_table[ADSP_NUM_FEATURE_ID] = {
@@ -114,22 +114,21 @@ int adsp_register_feature(enum adsp_feature_id id)
 		 adsp_feature_table[id].name, adsp_feature_is_active(),
 		 is_adsp_ready(ADSP_A_ID));
 
-	ret = adsp_resume();
-	if (ret < 0)
-		return ret;
-
 	mutex_lock(&adsp_feature_mutex);
-	if (!adsp_feature_is_active())
+	if (!adsp_feature_is_active()) {
 		adsp_stop_suspend_timer();
+		ret = adsp_resume();
+	}
+	if (ret == 0)
+		adsp_feature_table[id].counter += 1;
 
-	adsp_feature_table[id].counter += 1;
 	mutex_unlock(&adsp_feature_mutex);
 #ifdef ADSP_DVFS_PROFILE
 	end = ktime_get();
 	pr_debug("[%s]latency = %lld us\n",
 		 __func__, ktime_us_delta(end, begin));
 #endif
-	return 0;
+	return ret;
 }
 
 int adsp_deregister_feature(enum adsp_feature_id id)
