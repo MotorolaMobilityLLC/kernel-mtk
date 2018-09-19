@@ -1063,13 +1063,26 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 
 #if defined(DDR_STRESS_WORKAROUND)
 	if (tscpu_g_curr_temp > 70000) {
+#if defined(CATM_TPCB_EXTEND)
+		if ((mt_ppm_thermal_get_cur_power() >= mt_ppm_thermal_get_max_power()) ||
+			(g_turbo_bin && (mt_ppm_thermal_get_cur_power() >= mt_ppm_thermal_get_power_big_max_opp(1))))
+#else
 		if (mt_ppm_thermal_get_cur_power() >= mt_ppm_thermal_get_max_power())
+#endif
 			opp0_cool = 1;
 	} else if (tscpu_g_curr_temp < 65000)
 		opp0_cool = 0;
 
+#if defined(CATM_TPCB_EXTEND)
+	if (g_turbo_bin && (opp0_cool)) {
+		if (cpu_power > mt_ppm_thermal_get_power_big_max_opp(1))
+			cpu_power = mt_ppm_thermal_get_power_big_max_opp(1) - 5;
+	} else if (opp0_cool)
+		cpu_power -= 5;
+#else
 	if (opp0_cool)
 		cpu_power -= 5;
+#endif
 #endif
 
 #if defined(THERMAL_VPU_SUPPORT)
