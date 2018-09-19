@@ -325,6 +325,11 @@ static int spm_module_init(void)
 	}
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
+#if MTK_SPM_HARDWARE_CG_CHECK
+	/* Enable SPM hardware CG check and resource-oriented */
+	SMC_CALL(ARGS, SPM_ARGS_HARDWARE_CG_CHECK,
+		MTK_SPM_HARDWARE_CG_CHECK, MTK_SPM_ARCH_TYPE);
+#endif
 #if MTK_FEATURE_EANABLE_KICK_SPMFW
 	SMC_CALL(ARGS, SPM_ARGS_SPMFW_IDX_KICK, spm_get_spmfw_idx(), 0);
 #endif
