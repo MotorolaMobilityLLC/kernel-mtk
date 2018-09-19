@@ -720,6 +720,8 @@ config ZONE_DEVICE
 
 	  If FS_DAX is enabled, then say Y.
 
+config ARCH_HAS_PTE_SPECIAL
+	bool
 config FRAME_VECTOR
 	bool
 
