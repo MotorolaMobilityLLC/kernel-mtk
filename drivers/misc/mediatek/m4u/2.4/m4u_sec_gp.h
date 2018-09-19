@@ -23,7 +23,7 @@
 #define CTX_TYPE_TDRV	1
 
 struct m4u_sec_gp_context {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) || defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 	struct TEEC_UUID uuid;	/* Universally Unique Identifier of secure tl/dr */
 #else
 	TEEC_UUID uuid; /* Universally Unique Identifier of secure tl/dr */
