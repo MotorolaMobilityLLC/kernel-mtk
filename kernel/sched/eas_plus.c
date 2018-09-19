@@ -119,7 +119,7 @@ int select_prefer_idle_cpu(struct task_struct *p)
 	bool boosted = 0;
 #endif
 	int fallback = -1;
-	unsigned long new_util;
+	unsigned long new_util, max_util = SCHED_CAPACITY_SCALE;
 	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	/* force boosted if idle prefer mode is on */
@@ -136,6 +136,7 @@ int select_prefer_idle_cpu(struct task_struct *p)
 			continue;
 
 		new_util = cpu_util(i) + min_util;
+		new_util = min(new_util, max_util);
 
 		if (new_util > capacity_orig_of(i))
 			continue;
@@ -155,7 +156,6 @@ int select_prefer_idle_cpu(struct task_struct *p)
 				fallback = i;
 		}
 	}
-
 
 	return (best_idle_cpu > 0) ? best_idle_cpu : fallback;
 }
