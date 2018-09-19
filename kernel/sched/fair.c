@@ -5605,11 +5605,12 @@ static int find_new_capacity(struct energy_env *eenv,
 {
 	int idx, max_idx = sge->nr_cap_states - 1;
 	unsigned long util = group_max_util(eenv);
-	unsigned long new_capacity = util;
+	unsigned long new_capacity = util, max_util = SCHED_CAPACITY_SCALE;
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	/* OPP idx to refer capacity margin */
 	new_capacity = util * capacity_margin_dvfs >> SCHED_CAPACITY_SHIFT;
+	new_capacity = min(new_capacity, max_util);
 #endif
 
 	/* default is max_cap if we don't find a match */
