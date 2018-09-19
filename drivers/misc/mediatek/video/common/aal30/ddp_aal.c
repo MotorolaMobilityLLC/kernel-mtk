@@ -314,6 +314,31 @@ bool disp_aal_is_support(void)
 #endif
 }
 #endif
+
+static inline bool disp_aal_reg_set(enum DISP_MODULE_ENUM module, void *cmdq,
+			      unsigned long addr, unsigned int value)
+{
+	if (atomic_read(&g_aal_is_clock_on[index_of_aal(module)]) != 1) {
+		AAL_DBG("disp_aal_reg_set: clock is off");
+		return false;
+	}
+
+	DISP_REG_SET(cmdq, addr, value);
+	return true;
+}
+
+static inline bool disp_aal_reg_get(enum DISP_MODULE_ENUM module,
+			      unsigned long addr, unsigned int *value)
+{
+	if (atomic_read(&g_aal_is_clock_on[index_of_aal(module)]) != 1) {
+		AAL_DBG("disp_aal_reg_get: clock is off");
+		return false;
+	}
+
+	*value = DISP_REG_GET(addr);
+	return true;
+}
+
 static void backlight_brightness_set_with_lock(int bl_1024)
 {
 	_primary_path_switch_dst_lock();
@@ -379,26 +404,24 @@ static void disp_aal_trigger_refresh(int latency)
 static void disp_aal_set_interrupt_by_module(enum DISP_MODULE_ENUM module, int enabled)
 {
 	const int offset = aal_get_offset(module);
-
-	if (atomic_read(&g_aal_is_clock_on[index_of_aal(module)]) != 1) {
-		AAL_DBG("disp_aal_set_interrupt_by_module: clock is off");
-		return;
-	}
+	const int index = index_of_aal(module);
+	bool ret = true;
 
 	if (enabled) {
 		if (disp_aal_is_support() == true) {
-			if (DISP_REG_GET(DISP_AAL_EN + offset) == 0)
-				AAL_DBG("[WARNING] module(%d) DISP_AAL_EN not enabled!", module);
 
 			/* Enable output frame end interrupt */
-			DISP_CPU_REG_SET(DISP_AAL_INTEN + offset, 0x2);
-			AAL_DBG("Module(%d) interrupt enabled", module);
+			ret = disp_aal_reg_set(module, NULL,
+				DISP_AAL_INTEN + offset, 0x2);
+			AAL_DBG("Module(%d) interrupt enabled, ret(%d)", module, ret);
 		}
 	} else {
-		if (atomic_read(&g_aal_dirty_frame_retrieved[index_of_aal(module)]) == 1) {
-			DISP_CPU_REG_SET(DISP_AAL_INTEN + offset, 0x0);
-			AAL_DBG("Module(%d) interrupt disabled", module);
-		} else {	/* Dirty histogram was not retrieved */
+		if (atomic_read(&g_aal_dirty_frame_retrieved[index]) == 1) {
+			ret = disp_aal_reg_set(module, NULL,
+				DISP_AAL_INTEN + offset, 0x0);
+			AAL_DBG("Module(%d) interrupt disabled, ret(%d)", module, ret);
+		} else {
+			/* Dirty histogram was not retrieved */
 			/* Only if the dirty hist was retrieved, interrupt can be disabled. */
 			/* Continue interrupt until AALService can get the latest histogram. */
 		}
@@ -457,30 +480,6 @@ static int disp_aal_wait_hist(unsigned long timeout)
 	}
 
 	return ret;
-}
-
-static inline bool disp_aal_reg_set(enum DISP_MODULE_ENUM module, void *cmdq,
-			      unsigned long addr, unsigned int value)
-{
-	if (atomic_read(&g_aal_is_clock_on[index_of_aal(module)]) != 1) {
-		AAL_DBG("disp_aal_reg_set: clock is off");
-		return false;
-	}
-
-	DISP_REG_SET(cmdq, addr, value);
-	return true;
-}
-
-static inline bool disp_aal_reg_get(enum DISP_MODULE_ENUM module,
-			      unsigned long addr, unsigned int *value)
-{
-	if (atomic_read(&g_aal_is_clock_on[index_of_aal(module)]) != 1) {
-		AAL_DBG("disp_aal_reg_get: clock is off");
-		return false;
-	}
-
-	*value = DISP_REG_GET(addr);
-	return true;
 }
 
 static bool disp_aal_read_single_hist(enum DISP_MODULE_ENUM module)
