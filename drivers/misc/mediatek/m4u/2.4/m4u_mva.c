@@ -664,7 +664,7 @@ stage3:
 		return 0;
 	}
 
-	if (s > MVA_MAX_BLOCK_NR) {
+	if ((s > MVA_MAX_BLOCK_NR) || (s + nr) > MVA_MAX_BLOCK_NR) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2f8], 0xf2);
 		M4UMSG("mva_alloc error: no available MVA region for %d blocks!\n", nr);
@@ -675,9 +675,9 @@ stage3:
 	}
 	/* ----------------------------------------------- */
 	/* alloc a mva region */
-	end = s + mvaGraph[s] - 1;
+	end = s + MVA_GET_NR(s) - 1;
 
-	if (unlikely(nr == mvaGraph[s])) {
+	if (unlikely(nr == MVA_GET_NR(s))) {
 		MVA_SET_BUSY(s);
 		MVA_SET_BUSY(end);
 		mvaInfoGraph[s] = priv;
