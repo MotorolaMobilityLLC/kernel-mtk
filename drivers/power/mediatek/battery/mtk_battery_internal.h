@@ -350,7 +350,9 @@ struct fuel_gauge_custom_data {
 	/* hw related */
 	int car_tune_value;
 	int fg_meter_resistance;
+	int com_fg_meter_resistance;
 	int r_fg_value;
+	int com_r_fg_value;
 	int mtk_chr_exist;
 
 	/* Aging Compensation 1*/
@@ -617,9 +619,33 @@ struct simulator_log {
 	int zcv_current;
 	int zcv;
 	int chr_status;
+	int ptim_bat;
+	int ptim_cur;
+	int ptim_is_charging;
+
+	int phone_state;
 
 	/* initial */
 	int fg_reset;
+
+	int car_diff;
+
+
+	/* rtc */
+	int is_gauge_initialized;
+	int rtc_ui_soc;
+	int is_rtc_invalid;
+	int is_bat_plugout;
+	int bat_plugout_time;
+
+	/* system info */
+	int twosec_reboot;
+	int pl_charging_status;
+	int moniter_plchg_status;
+	int bat_plug_status;
+	int is_nvram_fail_mode;
+	int con0_soc;
+
 };
 
 struct mtk_battery {
@@ -651,6 +677,7 @@ struct mtk_battery {
 
 /* log */
 	int log_level;
+	int d_log_level;
 
 /* for test */
 	struct BAT_EC_Struct Bat_EC_ctrl;
@@ -879,15 +906,22 @@ extern void fg_custom_init_from_header(void);
 extern void notify_fg_chr_full(void);
 extern void fg_update_sw_iavg(void);
 extern void fg_bat_temp_int_sw_check(void);
-extern void gm3_log_notify(unsigned int interrupt);
-extern void dump_gm3_log(void);
 extern void fg_update_sw_low_battery_check(unsigned int thd);
 extern void fg_sw_bat_cycle_accu(void);
 extern void fg_ocv_query_soc(int ocv);
 
+/* GM3 simulator */
+extern void gm3_log_init(void);
+extern void gm3_log_notify(unsigned int interrupt);
+extern void gm3_log_dump(void);
+
+
 /* query function , review */
 extern struct BAT_EC_Struct *get_ec(void);
 
+/* GM25 Plug out API */
+int en_intr_VBATON_UNDET(int en);
+int reg_VBATON_UNDET(void (*callback)(void));
 
 
 #endif /* __MTK_BATTERY_INTF_H__ */
