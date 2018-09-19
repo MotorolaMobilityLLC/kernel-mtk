@@ -35,8 +35,10 @@ int g_vpu_log_level = 1;
 int g_vpu_internal_log_level;
 unsigned int g_func_mask;
 
+/* #define SUPPORT_VPU_KERNEL_UT */
 #ifdef MTK_VPU_DVT
 
+#ifdef SUPPORT_VPU_KERNEL_UT
 #include "test/vpu_data_wpp.h"
 
 #if 0
@@ -376,21 +378,21 @@ static int vpu_test_lock(void)
 
 static int vpu_test_set_power(void)
 {
-	struct vpu_user *user;
 #if 0
+	struct vpu_user *user;
 	struct vpu_power power;
-#endif
 
 	vpu_create_user(&user);
-#if 0
+
 	/* keep power on for 10s */
 	power.mode = VPU_POWER_MODE_ON;
 	power.opp = 0;
 	vpu_set_power(user, &power);
 	msleep(10 * 1000);
-#endif
-	vpu_delete_user(user);
 
+	vpu_delete_user(user);
+#endif
+	LOG_ERR("DO NOT SUPPORT vpu_test_set_power");
 	return 0;
 }
 
@@ -411,6 +413,7 @@ static int vpu_test_set_power(void)
  */
 static int vpu_test_set(void *data, u64 val)
 {
+#if 0
 	struct vpu_algo *algo;
 	struct vpu_request *req;
 	/* CHRISTODO */
@@ -531,18 +534,23 @@ static int vpu_test_set(void *data, u64 val)
 	}
 
 	test_value = val;
+#endif
+	LOG_ERR("DO NOT SUPPORT vpu_test_set");
 	return 0;
 }
 
 static int vpu_test_get(void *data, u64 *val)
 {
+#if 0
 	*val = test_value;
+#endif
+	LOG_ERR("DO NOT SUPPORT vpu_test_get");
 	return 0;
 }
 
 DEFINE_SIMPLE_ATTRIBUTE(vpu_debug_test_fops, vpu_test_get, vpu_test_set, "%llu\n");
 #endif
-
+#endif
 static int vpu_log_level_set(void *data, u64 val)
 {
 	g_vpu_log_level = val & 0xf;
@@ -792,7 +800,9 @@ int vpu_init_debug(struct vpu_device *vpu_dev)
 	CREATE_VPU_DEBUGFS(device_dbg);
 
 #ifdef MTK_VPU_DVT
+#ifdef SUPPORT_VPU_KERNEL_UT
 	CREATE_VPU_DEBUGFS(test);
+#endif
 #endif
 
 #undef CREATE_VPU_DEBUGFS
