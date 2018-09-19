@@ -37,6 +37,7 @@
 #include "vpu_cmn.h"
 
 #include <linux/regulator/consumer.h>
+#include <mtk_devinfo.h>
 
 /*regulator id*/
 static struct regulator *vvpu_reg_id;
@@ -461,6 +462,96 @@ bool get_vmdla_DVFS_is_paused_by_ptpod(void)
 }
 EXPORT_SYMBOL(get_vmdla_DVFS_is_paused_by_ptpod);
 
+static void get_vvpu_from_efuse(void)
+{
+	int vvpu_opp_0;
+	int vvpu_opp_1;
+	int vvpu_opp_2;
+	int vvpu_opp_0_vol;
+	int vvpu_opp_1_vol;
+	int vvpu_opp_2_vol;
+//index63:PTPOD 0x11C105B4
+	vvpu_opp_0 = (get_devinfo_with_index(63) & (0x7<<15))>>15;
+	vvpu_opp_1 = (get_devinfo_with_index(63) & (0x7<<12))>>12;
+	vvpu_opp_2 = (get_devinfo_with_index(63) & (0x7<<9))>>9;
+		if ((vvpu_opp_0 <= 7) && (vvpu_opp_0 >= 2))
+			vvpu_opp_0_vol = 80000;
+		else
+			vvpu_opp_0_vol = 82500;
+
+		if ((vvpu_opp_1 <= 7) && (vvpu_opp_1 >= 2))
+			vvpu_opp_1_vol = 70000;
+		else
+			vvpu_opp_1_vol = 72500;
+
+		if ((vvpu_opp_2 <= 7) && (vvpu_opp_2 >= 2))
+			vvpu_opp_2_vol = 62500;
+		else
+			vvpu_opp_2_vol = 65000;
+	vpu_opp_table[0].vpufreq_volt = vvpu_opp_0_vol;
+	vpu_opp_table[1].vpufreq_volt = vvpu_opp_0_vol;
+	vpu_opp_table[2].vpufreq_volt = vvpu_opp_0_vol;
+	vpu_opp_table[3].vpufreq_volt = vvpu_opp_0_vol;
+	vpu_opp_table[4].vpufreq_volt = vvpu_opp_0_vol;
+	vpu_opp_table[5].vpufreq_volt = vvpu_opp_1_vol;
+	vpu_opp_table[6].vpufreq_volt = vvpu_opp_1_vol;
+	vpu_opp_table[7].vpufreq_volt = vvpu_opp_1_vol;
+	vpu_opp_table[8].vpufreq_volt = vvpu_opp_1_vol;
+	vpu_opp_table[9].vpufreq_volt = vvpu_opp_2;
+	vpu_opp_table[10].vpufreq_volt = vvpu_opp_2;
+	vpu_opp_table[11].vpufreq_volt = vvpu_opp_2;
+	vpu_opp_table[12].vpufreq_volt = vvpu_opp_2;
+	vpu_opp_table[13].vpufreq_volt = vvpu_opp_2;
+	vpu_opp_table[14].vpufreq_volt = vvpu_opp_2;
+	vpu_opp_table[15].vpufreq_volt = vvpu_opp_2;
+
+}
+static void get_vmdla_from_efuse(void)
+{
+	int vmdla_opp_0;
+	int vmdla_opp_1;
+	int vmdla_opp_2;
+	int vmdla_opp_0_vol;
+	int vmdla_opp_1_vol;
+	int vmdla_opp_2_vol;
+
+	//index63:PTPOD 0x11C105B4
+	vmdla_opp_0 =  (get_devinfo_with_index(63) & (0x7<<24))>>24;
+	vmdla_opp_1 =  (get_devinfo_with_index(63) & (0x7<<21))>>21;
+	vmdla_opp_2 =  (get_devinfo_with_index(63) & (0x7<<18))>>18;
+	if ((vmdla_opp_0 <= 7) && (vmdla_opp_0 >= 2))
+		vmdla_opp_0_vol = 80000;
+	else
+		vmdla_opp_0_vol = 82500;
+
+	if ((vmdla_opp_1 <= 7) && (vmdla_opp_1 >= 2))
+		vmdla_opp_1_vol = 70000;
+	else
+		vmdla_opp_1_vol = 72500;
+
+	if ((vmdla_opp_2 <= 7) && (vmdla_opp_2 >= 2))
+		vmdla_opp_2_vol = 62500;
+	else
+		vmdla_opp_2_vol = 65000;
+	mdla_opp_table[0].mdlafreq_volt = vmdla_opp_0_vol;
+	mdla_opp_table[1].mdlafreq_volt = vmdla_opp_0_vol;
+	mdla_opp_table[2].mdlafreq_volt = vmdla_opp_0_vol;
+	mdla_opp_table[3].mdlafreq_volt = vmdla_opp_1_vol;
+	mdla_opp_table[4].mdlafreq_volt = vmdla_opp_1_vol;
+	mdla_opp_table[5].mdlafreq_volt = vmdla_opp_1_vol;
+	mdla_opp_table[6].mdlafreq_volt = vmdla_opp_1_vol;
+	mdla_opp_table[7].mdlafreq_volt = vmdla_opp_1_vol;
+	mdla_opp_table[8].mdlafreq_volt = vmdla_opp_1_vol;
+	mdla_opp_table[9].mdlafreq_volt = vmdla_opp_2_vol;
+	mdla_opp_table[10].mdlafreq_volt = vmdla_opp_2_vol;
+	mdla_opp_table[11].mdlafreq_volt = vmdla_opp_2_vol;
+	mdla_opp_table[12].mdlafreq_volt = vmdla_opp_2_vol;
+	mdla_opp_table[13].mdlafreq_volt = vmdla_opp_2_vol;
+	mdla_opp_table[14].mdlafreq_volt = vmdla_opp_2_vol;
+	mdla_opp_table[15].mdlafreq_volt = vmdla_opp_2_vol;
+
+}
+
 static int commit_data(int type, int data)
 {
 	int ret = 0;
@@ -475,9 +566,19 @@ static int commit_data(int type, int data)
 		else {
 		    LOG_DBG("%s PM_QOS_VVPU_OPP %d\n", __func__, data);
 		/*--Set voltage--*/
-		ret = regulator_set_voltage(vvpu_reg_id,
-			10*(vpu_opp_table[data].vpufreq_volt),
-			10*(vpu_opp_table[0].vpufreq_volt));
+		if (data == 0) {
+			ret = regulator_set_voltage(vvpu_reg_id,
+				10*(vpu_opp_table[0].vpufreq_volt),
+				10*(vpu_opp_table[0].vpufreq_volt));
+		} else if (data == 1) {
+			ret = regulator_set_voltage(vvpu_reg_id,
+				10*(vpu_opp_table[5].vpufreq_volt),
+				10*(vpu_opp_table[0].vpufreq_volt));
+		} else {
+			ret = regulator_set_voltage(vvpu_reg_id,
+				10*(vpu_opp_table[9].vpufreq_volt),
+				10*(vpu_opp_table[0].vpufreq_volt));
+		}
 		if (ret)
 		LOG_ERR("regulator_set_voltage  vvpu_reg_id  failed\n");
 		}
@@ -489,10 +590,20 @@ static int commit_data(int type, int data)
 			LOG_INF("PM_QOS_VMDLA_OPP paused by ptpod %d\n", data);
 		else {
 		LOG_DBG("%s PM_QOS_VMDLA_OPP %d\n", __func__, data);
-		/*--Set voltage--*/
+/*--Set voltage--*/
+		if (data == 0) {
 		ret = regulator_set_voltage(vmdla_reg_id,
-			10*(mdla_opp_table[data].mdlafreq_volt),
+			10*(mdla_opp_table[0].mdlafreq_volt),
 			10*(mdla_opp_table[0].mdlafreq_volt));
+		} else if (data == 1) {
+		ret = regulator_set_voltage(vmdla_reg_id,
+			10*(mdla_opp_table[3].mdlafreq_volt),
+			10*(mdla_opp_table[0].mdlafreq_volt));
+		} else {
+		ret = regulator_set_voltage(vmdla_reg_id,
+			10*(mdla_opp_table[9].mdlafreq_volt),
+			10*(mdla_opp_table[0].mdlafreq_volt));
+		}
 		if (ret)
 		LOG_ERR("regulator_set_voltage  vmdla_reg_id  failed\n");
 		}
@@ -617,6 +728,8 @@ static int apu_dvfs_probe(struct platform_device *pdev)
 		return ret;
 
 	pm_qos_notifier_register();
+	get_vvpu_from_efuse();
+	get_vmdla_from_efuse();
 	pr_info("%s: init done\n", __func__);
 
 	return 0;

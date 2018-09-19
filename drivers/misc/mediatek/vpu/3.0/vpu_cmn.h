@@ -52,6 +52,8 @@ struct vpu_device {
 	int commonpool_list_size;
 	/* notify enque thread */
 	wait_queue_head_t req_wait;
+	/*priority number list*/
+	unsigned int priority_list[MTK_VPU_CORE][VPU_REQ_MAX_NUM_PRIORITY];
 };
 
 struct vpu_user {
@@ -495,6 +497,11 @@ int vpu_profile_state_get(void);
 void vpu_met_event_enter(int core, int algo_id, int vcore_opp,
 	int dsp_freq, int ipu_if_freq, int dsp1_freq, int dsp2_freq);
 void vpu_met_event_leave(int core, int algo_id);
+uint8_t vpu_boost_value_to_opp(uint8_t boost_value);
+bool vpu_update_lock_power_parameter(struct vpu_lock_power *vpu_lock_power);
+bool vpu_update_unlock_power_parameter(struct vpu_lock_power *vpu_lock_power);
+int vpu_lock_set_power(struct vpu_lock_power *vpu_lock_power);
+int vpu_unlock_set_power(struct vpu_lock_power *vpu_lock_power);
 
 
 /* LOG & AEE */

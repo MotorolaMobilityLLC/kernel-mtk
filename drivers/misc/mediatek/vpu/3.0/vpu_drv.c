@@ -346,7 +346,8 @@ int vpu_put_request_to_pool(struct vpu_user *user, struct vpu_request *req)
 			&vpu_device->pool_list[request_core_index]);
 
 		vpu_device->servicepool_list_size[request_core_index] += 1;
-
+/*add priority list number*/
+vpu_device->priority_list[request_core_index][req->priority] += 1;
 		mutex_unlock(
 			&vpu_device->servicepool_mutex[request_core_index]);
 	} else {
@@ -759,6 +760,10 @@ static long vpu_compat_ioctl(struct file *flip, unsigned int cmd,
 {
 	switch (cmd) {
 	case VPU_IOCTL_SET_POWER:
+	case VPU_IOCTL_EARA_LOCK_POWER:
+	case VPU_IOCTL_EARA_UNLOCK_POWER:
+	case VPU_IOCTL_POWER_HAL_LOCK_POWER:
+	case VPU_IOCTL_POWER_HAL_UNLOCK_POWER:
 	case VPU_IOCTL_ENQUE_REQUEST:
 	case VPU_IOCTL_DEQUE_REQUEST:
 	case VPU_IOCTL_GET_ALGO_INFO:
@@ -808,7 +813,98 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 			LOG_ERR("[SET_POWER] set power failed, ret=%d\n", ret);
 			goto out;
 		}
+	}
+	case VPU_IOCTL_EARA_LOCK_POWER:
+	{
+		struct vpu_lock_power vpu_lock_power;
 
+		ret = copy_from_user(&vpu_lock_power,
+			(void *) arg, sizeof(struct vpu_lock_power));
+		if (ret) {
+			LOG_ERR("[EARA_LOCK] %s, ret=%d\n",
+					"copy 'struct power' failed", ret);
+			goto out;
+		}
+		vpu_lock_power.lock = true;
+		vpu_lock_power.priority = EARA_QOS;
+		LOG_INF("[vpu] EARA_LOCK + core:%d, maxb:%d, minb:%d\n",
+			vpu_lock_power.core, vpu_lock_power.max_boost_value,
+				vpu_lock_power.min_boost_value);
+		ret = vpu_lock_set_power(&vpu_lock_power);
+		if (ret) {
+			LOG_ERR("[EARA_LOCK] lock power failed, ret=%d\n", ret);
+			goto out;
+		}
+		break;
+	}
+	case VPU_IOCTL_EARA_UNLOCK_POWER:
+	{
+		struct vpu_lock_power vpu_lock_power;
+
+		ret = copy_from_user(&vpu_lock_power,
+			(void *) arg, sizeof(struct vpu_lock_power));
+		if (ret) {
+			LOG_ERR("[EARA_UNLOCK] %s, ret=%d\n",
+					"copy 'struct power' failed", ret);
+			goto out;
+		}
+		vpu_lock_power.lock = false;
+		vpu_lock_power.priority = EARA_QOS;
+		LOG_INF("[vpu] EARA_UNLOCK + core:%d\n",
+			vpu_lock_power.core);
+		vpu_unlock_set_power(&vpu_lock_power);
+		if (ret) {
+			LOG_ERR("[EARA_UNLOCK]unlock failed, ret=%d\n", ret);
+			goto out;
+		}
+
+		break;
+	}
+	case VPU_IOCTL_POWER_HAL_LOCK_POWER:
+	{
+		struct vpu_lock_power vpu_lock_power;
+
+		ret = copy_from_user(&vpu_lock_power, (void *) arg,
+			sizeof(struct vpu_lock_power));
+		if (ret) {
+			LOG_ERR("[POWER_HAL_LOCK] %s, ret=%d\n",
+					"copy 'struct power' failed", ret);
+			goto out;
+		}
+		vpu_lock_power.lock = true;
+		vpu_lock_power.priority = POWER_HAL;
+		LOG_INF("[vpu]POWER_HAL_LOCK+core:%d, maxb:%d, minb:%d\n",
+			vpu_lock_power.core, vpu_lock_power.max_boost_value,
+				vpu_lock_power.min_boost_value);
+		ret = vpu_lock_set_power(&vpu_lock_power);
+		if (ret) {
+			LOG_ERR("[POWER_HAL_LOCK]failed, ret=%d\n", ret);
+			goto out;
+		}
+
+
+		break;
+	}
+	case VPU_IOCTL_POWER_HAL_UNLOCK_POWER:
+	{
+		struct vpu_lock_power vpu_lock_power;
+
+		ret = copy_from_user(&vpu_lock_power, (void *) arg,
+			sizeof(struct vpu_lock_power));
+		if (ret) {
+			LOG_ERR("[POWER_HAL_UNLOCK] %s, ret=%d\n",
+					"copy 'struct power' failed", ret);
+			goto out;
+		}
+		vpu_lock_power.lock = false;
+		vpu_lock_power.priority = POWER_HAL;
+		LOG_INF("[vpu]POWER_HAL_UNLOCK+ core:%d\n",
+			vpu_lock_power.core);
+		ret = vpu_unlock_set_power(&vpu_lock_power);
+		if (ret) {
+			LOG_ERR("[POWER_HAL_UNLOCK]failed, ret=%d\n", ret);
+			goto out;
+		}
 		break;
 	}
 	case VPU_IOCTL_ENQUE_REQUEST:
@@ -848,6 +944,17 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		ret |= get_user(req->power_param.core,
 					&u_req->power_param.core);
+		/*opp_step counted by vpu driver*/
+		if (req->power_param.boost_value >= 0 &&
+			req->power_param.boost_value <= 100) {
+		req->power_param.opp_step =
+			vpu_boost_value_to_opp(req->power_param.boost_value);
+		req->power_param.freq_step =
+			vpu_boost_value_to_opp(req->power_param.boost_value);
+		} else {
+		req->power_param.opp_step = 0xFF;
+		req->power_param.freq_step = 0xFF;
+		}
 		req->user_id = (unsigned long *)user;
 
 		if (req->request_id == 0x0) {
@@ -922,6 +1029,8 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		ret = put_user(req->status, &u_req->status);
 		ret |= put_user(req->occupied_core, &u_req->occupied_core);
 		ret |= put_user(req->frame_magic, &u_req->frame_magic);
+		ret |= put_user(req->busy_time, &u_req->busy_time);
+		ret |= put_user(req->bandwidth, &u_req->bandwidth);
 		if (ret)
 			LOG_ERR("[DEQUE] update status failed, ret=%d\n", ret);
 
@@ -1509,7 +1618,7 @@ static int vpu_resume(struct platform_device *pdev)
 
 static int __init VPU_INIT(void)
 {
-	int ret = 0, i = 0;
+	int ret = 0, i = 0, j = 0;
 
 	vpu_device = kzalloc(sizeof(struct vpu_device), GFP_KERNEL);
 
@@ -1521,6 +1630,11 @@ static int __init VPU_INIT(void)
 		mutex_init(&vpu_device->servicepool_mutex[i]);
 		vpu_device->servicepool_list_size[i] = 0;
 		vpu_device->service_core_available[i] = true;
+	}
+/*init priority list*/
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		for (j = 0 ; j < VPU_REQ_MAX_NUM_PRIORITY ; j++)
+			vpu_device->priority_list[i][j] = 0;
 	}
 	INIT_LIST_HEAD(&vpu_device->cmnpool_list);
 	mutex_init(&vpu_device->commonpool_mutex);
