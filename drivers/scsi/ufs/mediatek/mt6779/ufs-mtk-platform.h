@@ -23,8 +23,7 @@
 #define UPMU_READY
 #endif
 
-/* Peter enable and test after P ready */
-/* #define HIE_CHANGE_KEY_IN_NORMAL_WORLD */
+#define HIE_CHANGE_KEY_IN_NORMAL_WORLD
 
 /*
  * Platform dependent quirks
