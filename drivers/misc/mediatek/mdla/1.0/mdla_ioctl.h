@@ -62,7 +62,8 @@ enum MDLA_PMU_MODE {
 
 struct ioctl_malloc {
 	__u32 size;  /* [in] allocate size */
-	__u32 mva;   /* [out] device phyiscal address */
+	__u32 mva;   /* [out] modified virtual address */
+	void *pa;    /* [out] physical address */
 	void *kva;   /* [out] kernel virtual address */
 	__u8 type;   /* [in] allocate memory type */
 	void *data;  /* [out] userspace virtual address */
@@ -72,6 +73,7 @@ struct ioctl_run_cmd {
 	struct {
 		uint32_t size;
 		uint32_t mva;
+		void *pa;
 		void *kva;
 		uint32_t id;
 		uint8_t type;
