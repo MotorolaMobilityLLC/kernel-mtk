@@ -141,7 +141,7 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 	[IDLE_TYPE_DP] = {
 		0xBEF000B8,	/* MTCMOS1 */
 		0xBEF000B8,	/* MTCMOS2 */
-		0x00040802,	/* INFRA0  */
+		0x08040802,	/* INFRA0  */
 		0x03AFB900,	/* INFRA1  */
 		0x000000C5,	/* INFRA2  */
 		0x00000000,	/* INFRA3  */
@@ -151,7 +151,7 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 	[IDLE_TYPE_SO3] = {
 		0xBEF000B0,	/* MTCMOS1 */
 		0xBEF000B0,	/* MTCMOS2 */
-		0x02040802,	/* INFRA0  */
+		0x0A040802,	/* INFRA0  */
 		0x03AFB900,	/* INFRA1  */
 		0x000000D1,	/* INFRA2  */
 		0x08000000,	/* INFRA3  */
@@ -161,7 +161,7 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 	[IDLE_TYPE_SO] = {
 		0xBEF000B0,	/* MTCMOS1 */
 		0xBEF000B0,	/* MTCMOS2 */
-		0x00040802,	/* INFRA0  */
+		0x08040802,	/* INFRA0  */
 		0x03AFB900,	/* INFRA1  */
 		0x000000C1,	/* INFRA2  */
 		0x00000000,	/* INFRA3  */
@@ -589,7 +589,6 @@ static void mtk_idle_cgmon_trace_log(void)
 /* update secure cg state by secure call */
 static void update_secure_cg_state(unsigned int clk[NR_CG_GRPS])
 {
-#if 0
 	/* Update INFRA0 bit 27 */
 	#define INFRA0_BIT27	(1 << 27)
 
@@ -597,7 +596,6 @@ static void update_secure_cg_state(unsigned int clk[NR_CG_GRPS])
 
 	if (mt_secure_call(MTK_SIP_KERNEL_CHECK_SECURE_CG, 0, 0, 0, 0))
 		clk[2] |= INFRA0_BIT27;
-#endif
 }
 
 /* update all idle condition state: mtcmos/pll/cg/secure_cg */

@@ -194,9 +194,8 @@ struct wake_status {
 	u32 raw_ext_sta;	/* SPM_WAKEUP_EXT_STA */
 	u32 md32pcm_wakeup_sta;/* MD32CPM_WAKEUP_STA */
 	u32 md32pcm_event_sta;/* MD32PCM_EVENT_STA */
-	u32 wake_misc;		/* SPM_SW_RSV_8 */
-	u32 sys_timer;		/* SPM_SW_RSV_7 */
-	u32 timer_out;		/* SPM_SW_RSV_9 */
+	u32 wake_misc;		/* SPM_SW_RSV_5 */
+	u32 timer_out;		/* SPM_SW_RSV_6 */
 	u32 r13;			/* PCM_REG13_DATA */
 	u32 idle_sta;		/* SUBSYS_IDLE_STA */
 	u32 req_sta0;		/* SRC_REQ_STA_0 */
@@ -205,13 +204,11 @@ struct wake_status {
 	u32 req_sta3;		/* SRC_REQ_STA_3 */
 	u32 debug_flag;		/* PCM_WDT_LATCH_SPARE_0 */
 	u32 debug_flag1;	/* PCM_WDT_LATCH_SPARE_1 */
-	u32 b_sw_flag0;		/* SPM_BSI_D0_SR */
-	u32 b_sw_flag1;		/* SPM_BSI_D1_SR */
+	u32 b_sw_flag0;		/* SPM_SW_RSV_7 */
+	u32 b_sw_flag1;		/* SPM_SW_RSV_8 */
 	u32 isr;			/* SPM_IRQ_STA */
 	u32 sw_flag0;		/* SPM_SW_FLAG_0 */
 	u32 sw_flag1;		/* SPM_SW_FLAG_1 */
-	u32 num_ddren;		/* SPM_SW_RSV_5 */
-	u32 num_mcdsr;		/* SPM_SW_RSV_6 */
 	u32 clk_settle;		/* SPM_CLK_SETTLE */
 	u32 log_index;
 	u32 is_abort;

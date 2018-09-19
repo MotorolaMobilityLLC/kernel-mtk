@@ -46,7 +46,7 @@ char *wakesrc_str[32] = {
 	[20] = " R12_AFE_IRQ_MCU_B",
 	[21] = " R12_THERMAL_CTRL_EVENT_B",
 	[22] = " R12_SYS_CIRQ_IRQ_B",
-	[23] = " R12_!MD2AP_PEER_WAKEUP_EVENT",
+	[23] = " R12_MD2AP_PEER_WAKEUP_EVENT",
 	[24] = " R12_CSYSPWREQ_B",
 	[25] = " R12_MD1_WDT_B",
 	[26] = " R12_AP2AP_PEER_WAKEUP_EVENT",
@@ -139,12 +139,6 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	/* backup of SPM_WAKEUP_MISC */
 	wakesta->wake_misc = spm_read(SPM_SW_RSV_5);
 
-	/* TODO: sys_timer info provides by spmfw */
-#if 0
-	/* backup of SYS_TIMER */
-	wakesta->sys_timer = spm_read(SPM_SW_RSV_7);
-#endif
-
 	/* get sleep time */
 	/* backup of PCM_TIMER_OUT */
 	wakesta->timer_out = spm_read(SPM_SW_RSV_6);
@@ -170,15 +164,6 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	/* get SW flag status */
 	wakesta->sw_flag0 = spm_read(SPM_SW_FLAG_0);
 	wakesta->sw_flag1 = spm_read(SPM_SW_FLAG_1);
-
-	/* TODO: mcdsr defeature, need to porting num of event vectors */
-#if 0
-	/* get the numbers of enter DDREN */
-	wakesta->num_ddren = spm_read(SPM_SW_RSV_8);
-
-	/* get the numbers of enter MCDSR */
-	wakesta->num_mcdsr = spm_read(SPM_SW_RSV_9);
-#endif
 
 	/* get CLK SETTLE */
 	wakesta->clk_settle = spm_read(SPM_CLK_SETTLE); /* SPM_CLK_SETTLE */
@@ -225,11 +210,6 @@ unsigned int __spm_output_wake_reason(
 			wakesta->b_sw_flag0, wakesta->b_sw_flag1);
 		pr_info(" b_sw_flag = 0x%x 0x%x\n",
 			wakesta->b_sw_flag0, wakesta->b_sw_flag1);
-
-		aee_sram_printk(" num = 0x%x 0x%x\n",
-			wakesta->num_ddren, wakesta->num_mcdsr);
-		pr_info(" num = 0x%x 0x%x\n",
-			wakesta->num_ddren, wakesta->num_mcdsr);
 
 		wr =  WR_ABORT;
 	}
@@ -343,10 +323,9 @@ unsigned int __spm_output_wake_reason(
 		  wakesta->md32pcm_event_sta);
 
 	log_size += sprintf(log_buf + log_size,
-		  " req_sta =  0x%x 0x%x 0x%x 0x%x, isr = 0x%x, num = 0x%x 0x%x, ",
+		  " req_sta =  0x%x 0x%x 0x%x 0x%x, isr = 0x%x, ",
 		  wakesta->req_sta0, wakesta->req_sta1, wakesta->req_sta2,
-		  wakesta->req_sta3, wakesta->isr,
-		  wakesta->num_ddren, wakesta->num_mcdsr);
+		  wakesta->req_sta3, wakesta->isr);
 
 	log_size += sprintf(log_buf + log_size,
 		"raw_ext_sta = 0x%x, wake_misc = 0x%x, sw_flag = 0x%x 0x%x 0x%x 0x%x, req = 0x%x,",
