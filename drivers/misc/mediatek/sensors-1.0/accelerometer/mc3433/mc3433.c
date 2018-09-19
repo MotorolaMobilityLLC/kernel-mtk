@@ -1697,7 +1697,6 @@ static int MC3XXX_ReadSensorData(struct i2c_client *pt_i2c_client, char *pbBuf, 
 	}
 
 	/* output format: mg */
-	if (atomic_read(&_pt_i2c_obj->trace) & MCUBE_TRC_INFO)
 	_naAccelData[(_pt_i2c_obj->cvt.map[MC3XXX_AXIS_X])] = (_pt_i2c_obj->cvt.sign[MC3XXX_AXIS_X]
 		* _pt_i2c_obj->data[MC3XXX_AXIS_X]);
 	_naAccelData[(_pt_i2c_obj->cvt.map[MC3XXX_AXIS_Y])] = (_pt_i2c_obj->cvt.sign[MC3XXX_AXIS_Y]
