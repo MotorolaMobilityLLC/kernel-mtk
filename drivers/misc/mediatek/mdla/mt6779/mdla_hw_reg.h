@@ -15,12 +15,13 @@
 #define _MDLA_HW_REG_H_
 
 
-#define APU2_IRQ_ID			(321+32)
-#define MDLA_IRQ_SWCMD_TILECNT_INT	(1 << 1)
-#define MDLA_IRQ_TILECNT_DONE		(1 << 1)
-#define MDLA_IRQ_SWCMD_DONE		(1 << 2)
-#define MDLA_IRQ_PMU_INTE		(1 << 9)
-#define MDLA_IRQ_MASK			(0x1FFFFF)
+#define APU2_IRQ_ID        (321+32)
+#define MDLA_IRQ_SWCMD_TILECNT_INT (1 << 1)
+#define MDLA_IRQ_TILECNT_DONE      (1 << 1)
+#define MDLA_IRQ_SWCMD_DONE        (1 << 2)
+#define MDLA_IRQ_PMU_INTE  (1 << 9)
+#define MDLA_IRQ_MASK      (0x1FFFFF)
+#define MDLA_AXI_CTRL_MASK ((1 << 7) | (1 << 16))
 
 /* MDLA config */
 #define MDLA_CG_CON        (0x000)
@@ -60,6 +61,9 @@
 #define MDLA_SPARE_5       (0x088)
 #define MDLA_SPARE_6       (0x08C)
 #define MDLA_SPARE_7       (0x090)
+
+#define MDLA_AXI_CTRL      (0x120)
+#define MDLA_AXI1_CTRL     (0x124)
 
 /* MDLA command */
 #define MREG_TOP_G_REV     (0x0500)

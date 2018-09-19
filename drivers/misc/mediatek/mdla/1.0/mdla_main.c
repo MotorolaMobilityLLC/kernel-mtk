@@ -506,6 +506,9 @@ static void mdla_cfg_write(u32 value, u32 offset)
 	iowrite32(value, apu_mdla_config_top + offset);
 }
 
+#define mdla_cfg_set(mask, offset) \
+	mdla_cfg_write(mdla_cfg_read(offset) | (mask), (offset))
+
 unsigned int mdla_reg_read(u32 offset)
 {
 	return ioread32(apu_mdla_cmde_mreg_top + offset);
@@ -524,6 +527,11 @@ static void mdla_reset(void)
 	mdla_cfg_write(0xffffffff, MDLA_CG_CLR);
 	mdla_reg_write(MDLA_IRQ_MASK & ~(MDLA_IRQ_SWCMD_DONE),
 		MREG_TOP_G_INTP2);
+
+#ifdef CONFIG_MTK_MDLA_ION
+	mdla_cfg_set(MDLA_AXI_CTRL_MASK, MDLA_AXI_CTRL);
+	mdla_cfg_set(MDLA_AXI_CTRL_MASK, MDLA_AXI1_CTRL);
+#endif
 }
 
 static void mdla_timeup(unsigned long data)
@@ -3718,15 +3726,15 @@ static int mdla_run_command_async(struct ioctl_run_cmd *cd)
 			cd->priority,
 			cd->boost_value);
 
-	if (is_gsm_addr(ce->mva))
-		ce->kva = gsm_mva_to_virt(ce->mva);
-	else if (cd->buf.ion_khandle) {
+	if (cd->buf.ion_khandle) {
 		ce->kva = (void *)cd->buf.kva;
 		mdla_debug("%s: <ion> kva=%p, mva=%08x\n",
 				__func__,
 				ce->kva,
 				ce->mva);
 		// TODO: get real kva/mva from run_cmd_data->buf.offset
+	} else if (is_gsm_addr(ce->mva)) {
+		ce->kva = gsm_mva_to_virt(ce->mva);
 	} else {
 		ce->kva = phys_to_virt(ce->mva);
 		mdla_debug("%s: <dram> kva: phys_to_virt(mva:%08x) = %p\n",
