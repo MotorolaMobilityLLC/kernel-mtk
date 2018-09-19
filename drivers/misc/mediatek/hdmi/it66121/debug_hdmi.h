@@ -34,15 +34,44 @@
 #define HDCP_DEBUG_PRINTF2(fmt, arg...)	/* printk(fmt, ##arg) */
 #define HDCP_DEBUG_PRINTF3(fmt, arg...)	/* printk(fmt, ##arg) */
 
+#if 0
 #define EDID_DEBUG_PRINTF(fmt, arg...)  printk(fmt, ##arg)
 #define EDID_DEBUG_PRINTF1(fmt, arg...) printk(fmt, ##arg)
 #define EDID_DEBUG_PRINTF2(fmt, arg...) printk(fmt, ##arg)
 #define EDID_DEBUG_PRINTF3(fmt, arg...) printk(fmt, ##arg)
 
+#else
+#define EDID_DEBUG_LOG_ON 0
+#define EDID_DEBUG_PRINTF(fmt, arg...) \
+do { \
+	if (EDID_DEBUG_LOG_ON) { \
+		pr_debug("[EDID]%s,%d ", __func__, __LINE__); pr_debug(fmt, ##arg); } \
+} while (0)
+
+#define EDID_DEBUG_PRINTF1(fmt, arg...) \
+do { \
+	if (EDID_DEBUG_LOG_ON) { \
+		pr_debug("[EDID]%s,%d ", __func__, __LINE__); pr_debug(fmt, ##arg); } \
+} while (0)
+
+#define EDID_DEBUG_PRINTF2(fmt, arg...) \
+do { \
+	if (EDID_DEBUG_LOG_ON) { \
+		pr_debug("[EDID]%s,%d ", __func__, __LINE__); pr_debug(fmt, ##arg); } \
+} while (0)
+
+#define EDID_DEBUG_PRINTF3(fmt, arg...) \
+do { \
+	if (EDID_DEBUG_LOG_ON) { \
+		pr_debug("[EDID]%s,%d ", __func__, __LINE__); pr_debug(fmt, ##arg); } \
+} while (0)
+
+#endif
+
 #define HDMITX_DEBUG_INFO
 
 
-#define IT66121_LOG_on		1
+#define IT66121_LOG_on		0
 #define IT66121_LOG(fmt, arg...) \
 do { \
 	if (IT66121_LOG_on) { \

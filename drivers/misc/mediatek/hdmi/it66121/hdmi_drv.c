@@ -211,23 +211,27 @@ int it66121_i2c_read_byte(u8 addr, u8 *data)
 	int ret = 0;
 	struct i2c_client *client = it66121_i2c_client;
 
-	buf = addr;
-	ret = i2c_master_send(client, (const char *)&buf, 1);
-	if (ret < 0) {
-		IT66121_LOG("send command error!!\n");
-		return -EFAULT;
-	}
-	ret = i2c_master_recv(client, (char *)&buf, 1);
-	if (ret < 0) {
-		IT66121_LOG("reads data error!!\n");
-		return -EFAULT;
-	}
+	if (hdmi_powerenable == 1) {
+		buf = addr;
+		ret = i2c_master_send(client, (const char *)&buf, 1);
+		if (ret < 0) {
+			IT66121_LOG("send command error!!\n");
+			return -EFAULT;
+		}
+		ret = i2c_master_recv(client, (char *)&buf, 1);
+		if (ret < 0) {
+			IT66121_LOG("reads data error!!\n");
+			return -EFAULT;
+		}
 #if defined(HDMI_I2C_DEBUG)
-	else
-		IT66121_LOG("%s(0x%02X) = %02X\n", __func__, addr, buf);
+		else
+			IT66121_LOG("%s(0x%02X) = %02X\n", __func__, addr, buf);
 #endif
-	*data = buf;
-	return 0;
+		*data = buf;
+		return 0;
+	} else {
+		return 0;
+	}
 }
 
 /*----------------------------------------------------------------------------*/
@@ -240,16 +244,20 @@ int it66121_i2c_write_byte(u8 addr, u8 data)
 	u8 buf[] = { addr, data };
 	int ret = 0;
 
-	ret = i2c_master_send(client, (const char *)buf, sizeof(buf));
-	if (ret < 0) {
-		IT66121_LOG("send command error!!\n");
-		return -EFAULT;
-	}
+	if (hdmi_powerenable == 1) {
+		ret = i2c_master_send(client, (const char *)buf, sizeof(buf));
+		if (ret < 0) {
+			IT66121_LOG("send command error!!\n");
+			return -EFAULT;
+		}
 #if defined(HDMI_I2C_DEBUG)
-	else
-		IT66121_LOG("%s(0x%02X)= %02X\n", __func__, addr, data);
+		else
+			IT66121_LOG("%s(0x%02X)= %02X\n", __func__, addr, data);
 #endif
-	return 0;
+		return 0;
+	} else {
+		return 0;
+	}
 }
 
 /*----------------------------------------------------------------------------*/
@@ -445,8 +453,8 @@ static int hdmi_timer_kthread(void *data)
 		wait_event_interruptible(hdmi_timer_wq, atomic_read(&hdmi_timer_event));
 		atomic_set(&hdmi_timer_event, 0);
 		/* HDMITX_DevLoopProc_Test(); */
-
-		HDMITX_DevLoopProc();
+		if (hdmi_powerenable == 1)
+			HDMITX_DevLoopProc();
 
 #if defined(CUST_EINT_EINT_HDMI_HPD_NUM)
 		mt_eint_unmask(CUST_EINT_EINT_HDMI_HPD_NUM);
