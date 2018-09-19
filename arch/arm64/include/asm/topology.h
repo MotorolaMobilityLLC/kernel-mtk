@@ -39,7 +39,7 @@ int pcibus_to_node(struct pci_bus *bus);
 struct sched_domain;
 
 #ifdef CONFIG_CPU_FREQ
-#define arch_scale_freq_capacity arch_scale_freq_capacity
+#define arch_scale_freq_capacity cpufreq_scale_freq_capacity
 
 extern unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu);
 extern unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu);
