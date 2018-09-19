@@ -5074,6 +5074,9 @@ int primary_suspend_release_fence(void)
 		DISPDBG("mtkfb_release_layer_fence session=0x%x,layerid=%d\n", session, i);
 		mtkfb_release_layer_fence(session, i);
 	}
+	/* release present fence */
+	mtkfb_release_present_fence(primary_session_id, gCurrentPresentFenceIndex);
+
 	return 0;
 }
 
