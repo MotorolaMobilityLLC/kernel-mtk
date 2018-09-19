@@ -47,6 +47,8 @@
 #include "mdla_ioctl.h"
 #include "mdla_ion.h"
 #include "mdla_debug.h"
+#include "mdla_proc.h"
+#include "mdla_trace.h"
 #ifndef MTK_MDLA_FPGA_PORTING
 /*dvfs porting++*/
 #define ENABLE_PMQOS
@@ -286,6 +288,11 @@ static DECLARE_WAIT_QUEUE_HEAD(mdla_cmd_queue);
 static LIST_HEAD(cmd_list);
 static LIST_HEAD(cmd_fin_list);
 
+u32 mdla_max_cmd_id(void)
+{
+	return max_cmd_id;
+}
+
 struct mtk_mdla_local {
 	int irq;
 	unsigned long mem_start;
@@ -468,9 +475,11 @@ static inline void mdla_fifo_mark_time(void)
 static int mdla_open(struct inode *, struct file *);
 static int mdla_release(struct inode *, struct file *);
 static long mdla_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
+static long mdla_compat_ioctl(struct file *file,
+	unsigned int cmd, unsigned long arg);
 static int mdla_wait_command(struct ioctl_wait_cmd *wt);
 static int mdla_mmap(struct file *filp, struct vm_area_struct *vma);
-static int mdla_process_command(struct command_entry *run_cmd_data);
+static int mdla_process_command(struct command_entry *ce);
 static void mdla_timeup(unsigned long data);
 
 #define MDLA_TIMEOUT_DEFAULT 1000 /* ms */
@@ -480,6 +489,9 @@ static DEFINE_TIMER(mdla_timer, mdla_timeup, 0, 0);
 static const struct file_operations fops = {
 	.open = mdla_open,
 	.unlocked_ioctl = mdla_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = mdla_compat_ioctl,
+#endif
 	.mmap = mdla_mmap,
 	.release = mdla_release,
 };
@@ -558,6 +570,7 @@ static void mdla_start_queue(struct work_struct *work)
 	mutex_lock(&cmd_list_lock);
 
 	while (max_cmd_id >= mdla_fifo_head_id()) {
+		mdla_trace_end(max_cmd_id);
 #ifndef MTK_MDLA_FPGA_PORTING
 /*end of cmd, power off mdla*/
 		//struct command_entry *fh = mdla_fifo_head()
@@ -3519,6 +3532,7 @@ static int mdlactl_init(void)
 
 	pmu_init();
 	INIT_WORK(&mdla_queue, mdla_start_queue);
+	mdla_procfs_init();
 	mdla_debugfs_init();
 
 	return 0;
@@ -3675,6 +3689,7 @@ static int mdla_process_command(struct command_entry *ce)
 			jiffies + msecs_to_jiffies(mdla_timeout));
 	}
 
+	mdla_trace_begin(count);
 	ce->req_start_t = sched_clock();
 
 	/* Issue command */
@@ -3716,7 +3731,7 @@ static int mdla_run_command_async(struct ioctl_run_cmd *cd)
 		ce->kva = phys_to_virt(ce->mva);
 		mdla_debug("%s: <dram> kva: phys_to_virt(mva:%08x) = %p\n",
 			__func__, ce->mva, ce->kva);
-		// TODO: get real kva/mva from run_cmd_data->buf.offset
+		// TODO: get real kva/mva from ce->buf.offset
 	}
 
 	ce->count = cd->count;
@@ -4071,9 +4086,18 @@ LOG_INF("[mdla] IOCTL_POWER_HAL_LOCK_POWER +, maxboost:%d, minboost:%d\n",
 	return 0;
 }
 
+#ifdef CONFIG_COMPAT
+static long mdla_compat_ioctl(struct file *file,
+	unsigned int cmd, unsigned long arg)
+{
+	return mdla_ioctl(file, cmd, (unsigned long) compat_ptr(arg));
+}
+#endif
+
 static void mdlactl_exit(void)
 {
 	mdla_debugfs_exit();
+	mdla_procfs_exit();
 	platform_driver_unregister(&mdla_driver);
 	device_destroy(mdlactlClass, MKDEV(majorNumber, 0));
 	class_destroy(mdlactlClass);
