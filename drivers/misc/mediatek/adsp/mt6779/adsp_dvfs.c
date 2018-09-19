@@ -983,7 +983,6 @@ void adsp_sw_reset(void)
 	pr_debug("ADSP_A_REBOOT=%x", readl(ADSP_A_REBOOT));
 }
 
-
 void adsp_release_runstall(uint32_t release)
 {
 	uint32_t reg_value;
@@ -995,6 +994,20 @@ void adsp_release_runstall(uint32_t release)
 	} else {
 		writel(reg_value | (ADSP_RELEASE_RUNSTALL),
 		       ADSP_HIFI3_IO_CONFIG);
+	}
+}
+
+void adsp_set_clock_freq(enum adsp_clk clk)
+{
+	switch (clk) {
+	case CLK_ADSP_CLK26M:
+	case CLK_TOP_MMPLL_D4:
+	case CLK_TOP_ADSPPLL_D4:
+	case CLK_TOP_ADSPPLL_D6:
+		adsp_set_top_mux(clk);
+		break;
+	default:
+		break;
 	}
 }
 

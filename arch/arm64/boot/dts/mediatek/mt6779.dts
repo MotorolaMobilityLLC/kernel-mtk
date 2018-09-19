@@ -417,14 +417,16 @@
 			     <GIC_SPI 183 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&infracfg_ao INFRACFG_AO_FADSP_CG>,
 				<&topckgen TOP_MUX_ADSP>,
-				<&topckgen TOP_ADSPPLL_CK>,
 				<&clk26m>,
-				<&apmixed APMIXED_ADSPPLL>;
-		clock-names = "adsp_infra_clk",
-				"top_mux_adsp",
-				"top_adsppll_ck",
-				"adsp_clk26",
-				"apmixed_adsppll";
+				<&topckgen TOP_MMPLL_D4>,
+				<&topckgen TOP_ADSPPLL_D4>,
+				<&topckgen TOP_ADSPPLL_D6>;
+		clock-names = "clk_adsp_infra",
+				"clk_top_adsp_sel",
+				"clk_adsp_clk26m",
+				"clk_top_mmpll_d4",
+				"clk_top_adsppll_d4",
+				"clk_top_adsppll_d6";
 	};
 
 	sspm@10440000 {
