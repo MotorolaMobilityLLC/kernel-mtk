@@ -1816,7 +1816,7 @@
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
 		reg = <0 0x1100a000 0 0x1000>;
-		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 143 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&topckgen TOP_MAINPLL_D5_D2>,
 			 <&topckgen TOP_MUX_SPI>,
 			 <&infracfg_ao INFRACFG_AO_SPI0_CG>;
@@ -1826,7 +1826,7 @@
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11010000 0 0x1000>;
-		interrupts = <GIC_SPI 148 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 147 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&topckgen TOP_MAINPLL_D5_D2>,
 			 <&topckgen TOP_MUX_SPI>,
 			 <&infracfg_ao INFRACFG_AO_SPI1_CG>;
@@ -1836,7 +1836,7 @@
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11012000 0 0x1000>;
-		interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 152 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&topckgen TOP_MAINPLL_D5_D2>,
 			 <&topckgen TOP_MUX_SPI>,
 			 <&infracfg_ao INFRACFG_AO_SPI2_CG>;
@@ -1846,7 +1846,7 @@
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11013000 0 0x1000>;
-		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&topckgen TOP_MAINPLL_D5_D2>,
 			 <&topckgen TOP_MUX_SPI>,
 			 <&infracfg_ao INFRACFG_AO_SPI3_CG>;
@@ -1856,7 +1856,7 @@
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11018000 0 0x1000>;
-		interrupts = <GIC_SPI 158 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 156 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&topckgen TOP_MAINPLL_D5_D2>,
 			 <&topckgen TOP_MUX_SPI>,
 			 <&infracfg_ao INFRACFG_AO_SPI4_CG>;
@@ -1866,7 +1866,7 @@
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11019000 0 0x1000>;
-		interrupts = <GIC_SPI 159 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 157 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&topckgen TOP_MAINPLL_D5_D2>,
 			 <&topckgen TOP_MUX_SPI>,
 			 <&infracfg_ao INFRACFG_AO_SPI5_CG>;
@@ -1876,7 +1876,7 @@
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
 		reg = <0 0x1101d000 0 0x1000>;
-		interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&topckgen TOP_MAINPLL_D5_D2>,
 			 <&topckgen TOP_MUX_SPI>,
 			 <&infracfg_ao INFRACFG_AO_SPI6_CG>;
@@ -1886,7 +1886,7 @@
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
 		reg = <0 0x1101e000 0 0x1000>;
-		interrupts = <GIC_SPI 146 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&topckgen TOP_MAINPLL_D5_D2>,
 			 <&topckgen TOP_MUX_SPI>,
 			 <&infracfg_ao INFRACFG_AO_SPI7_CG>;
