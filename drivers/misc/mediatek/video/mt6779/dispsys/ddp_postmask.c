@@ -28,15 +28,12 @@
 #define POSTMASK_MASK_MAX_NUM	96
 #define POSTMASK_GRAD_MAX_NUM	192
 
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 static bool postmask_enable;
 static unsigned int postmask_bg_color = 0xff000000;
 static unsigned int postmask_mask_color = 0xff000000;
-#endif
 
 unsigned long postmask_base_addr(enum DISP_MODULE_ENUM module)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	switch (module) {
 	case DISP_MODULE_POSTMASK:
 		return DISPSYS_POSTMASK_BASE;
@@ -44,14 +41,12 @@ unsigned long postmask_base_addr(enum DISP_MODULE_ENUM module)
 		DDP_PR_ERR("invalid postmask module=%d\n", module);
 		return -1;
 	}
-#endif
 
 	return 0;
 }
 
 int postmask_dump_reg(enum DISP_MODULE_ENUM module)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	unsigned int i = 0;
 	unsigned int num = 0;
 	unsigned long base = postmask_base_addr(module);
@@ -104,14 +99,12 @@ int postmask_dump_reg(enum DISP_MODULE_ENUM module)
 			DISP_REG_GET(l_addr + 0x8),
 			DISP_REG_GET(l_addr + 0xC));
 	}
-#endif
 
 	return 0;
 }
 
 int postmask_dump_analysis(enum DISP_MODULE_ENUM module)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	unsigned long baddr = postmask_base_addr(module);
 
 	DDPDUMP("== DISP %s ANALYSIS ==\n", ddp_get_module_name(module));
@@ -135,7 +128,6 @@ int postmask_dump_analysis(enum DISP_MODULE_ENUM module)
 	DDPDUMP("status=0x%x,cur_pos=0x%x\n",
 		DISP_REG_GET(DISP_REG_POSTMASK_STATUS + baddr),
 		DISP_REG_GET(DISP_REG_POSTMASK_INPUT_COUNT + baddr));
-#endif
 
 	return 0;
 }
@@ -150,51 +142,38 @@ static int postmask_dump(enum DISP_MODULE_ENUM module, int level)
 
 static int postmask_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	ddp_clk_enable_by_module(module);
 
 	DDPMSG("%s CG:%d(0x%x)\n", __func__,
 		(DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1) >> 14) & 0x1,
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
-#endif
 
 	return 0;
 }
 
 static int postmask_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	ddp_clk_disable_by_module(module);
 
 	DDPMSG("%s CG:%d(0x%x)\n", __func__,
 		(DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1) >> 14) & 0x1,
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
-#endif
 
 	return 0;
 }
 
 static int postmask_init(enum DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	return postmask_clock_on(module, handle);
-#else
-	return 0;
-#endif
 }
 
 static int postmask_deinit(enum DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	return postmask_clock_off(module, handle);
-#else
-	return 0;
-#endif
 }
 
 int postmask_start(enum DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	unsigned long base_addr = postmask_base_addr(module);
 
 	if (postmask_enable) {
@@ -213,14 +192,12 @@ int postmask_start(enum DISP_MODULE_ENUM module, void *handle)
 	DDPMSG("%s en:%d(0x%x)\n", __func__,
 		DISP_REG_GET(base_addr + DISP_REG_POSTMASK_EN) & 0x1,
 		DISP_REG_GET(base_addr + DISP_REG_POSTMASK_EN));
-#endif
 
 	return 0;
 }
 
 int postmask_stop(enum DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	unsigned long base_addr = postmask_base_addr(module);
 
 	DISP_REG_SET(handle, base_addr + DISP_REG_POSTMASK_INTEN, 0);
@@ -231,7 +208,6 @@ int postmask_stop(enum DISP_MODULE_ENUM module, void *handle)
 	DDPMSG("%s en:%d(0x%x)\n", __func__,
 		DISP_REG_GET(base_addr + DISP_REG_POSTMASK_EN) & 0x1,
 		DISP_REG_GET(base_addr + DISP_REG_POSTMASK_EN));
-#endif
 
 	return 0;
 }
@@ -240,7 +216,6 @@ static int postmask_config(enum DISP_MODULE_ENUM module,
 				struct disp_ddp_path_config *pConfig,
 				void *handle)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	unsigned long base_addr = postmask_base_addr(module);
 	unsigned int value = 0;
 	unsigned int rc_mode =
@@ -260,8 +235,10 @@ static int postmask_config(enum DISP_MODULE_ENUM module,
 		   lcm_param->round_corner_params.tp_size);
 
 	if (lcm_param->round_corner_en == 1) {
-		if (rc_mode != DISP_HELPER_HW_RC)
-			return 0;
+		if (rc_mode != DISP_HELPER_HW_RC) {
+			DDP_PR_ERR("unsupport round corner mode:%d\n", rc_mode);
+			return -1;
+		}
 
 		value = (REG_FLD_VAL((PM_CFG_FLD_RELAY_MODE), 0) |
 			 REG_FLD_VAL((PM_CFG_FLD_DRAM_MODE), 1) |
@@ -301,6 +278,15 @@ static int postmask_config(enum DISP_MODULE_ENUM module,
 			 DISP_REG_GET(DISP_REG_POSTMASK_CFG + base_addr));
 		postmask_enable = true;
 	} else {
+		DISP_REG_SET(handle, DISP_REG_POSTMASK_ROI_BGCLR +
+			 base_addr, postmask_bg_color);
+		DISP_REG_SET(handle, DISP_REG_POSTMASK_MASK_CLR +
+			 base_addr, postmask_mask_color);
+
+		value = (REG_FLD_VAL((PM_SIZE_FLD_HSIZE), pConfig->dst_w) |
+			 REG_FLD_VAL((PM_SIZE_FLD_VSIZE), pConfig->dst_h));
+		DISP_REG_SET(handle, DISP_REG_POSTMASK_SIZE + base_addr, value);
+
 		/*enable BYPASS postmask*/
 		DISP_REG_SET_FIELD(handle, PM_CFG_FLD_RELAY_MODE,
 			 DISP_REG_POSTMASK_CFG + base_addr, 1);
@@ -308,14 +294,12 @@ static int postmask_config(enum DISP_MODULE_ENUM module,
 			 DISP_REG_GET(DISP_REG_POSTMASK_CFG + base_addr));
 		postmask_enable = false;
 	}
-#endif
 
 	return 0;
 }
 
 int postmask_reset(enum DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	unsigned long base_addr = postmask_base_addr(module);
 
 	DISP_REG_SET_FIELD(handle, RESET_FLD_POSTMASK_RESET,
@@ -323,20 +307,17 @@ int postmask_reset(enum DISP_MODULE_ENUM module, void *handle)
 	DISP_REG_SET_FIELD(handle, RESET_FLD_POSTMASK_RESET,
 		base_addr + DISP_REG_POSTMASK_RESET, 0);
 	DDPMSG("%s done\n", __func__);
-#endif
 
 	return 0;
 }
 
 int postmask_bypass(enum DISP_MODULE_ENUM module, int bypass)
 {
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	unsigned long base_addr = postmask_base_addr(module);
 
 	DISP_REG_SET_FIELD(NULL, PM_CFG_FLD_RELAY_MODE,
 		base_addr + DISP_REG_POSTMASK_CFG, 1);
 	DDPMSG("%s done\n", __func__);
-#endif
 
 	return 0;
 }
