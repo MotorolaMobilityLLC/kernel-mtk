@@ -2582,7 +2582,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		/* 700MHz Version */
 		g_segment_id = MT6771_SEGMENT_3;
 	} else if (g_efuse_speed_bound_id == 0x02000000 && g_efuse_turbo_id == 0x00000008) {
-		/* 950MHz Version */
+		/* 900MHz Version */
 		g_segment_id = MT6771_SEGMENT_4;
 	} else {
 		/* Other Version, set default segment */
