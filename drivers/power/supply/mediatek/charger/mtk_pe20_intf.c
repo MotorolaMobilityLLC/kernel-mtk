@@ -25,7 +25,7 @@ static int pe20_set_mivr(struct charger_manager *pinfo, int uV);
 /* Unit of the following functions are uV, uA */
 static inline u32 pe20_get_vbus(void)
 {
-	return pmic_get_vbus() * 1000;
+	return battery_get_vbus() * 1000;
 }
 
 static inline u32 pe20_get_vbat(void)

@@ -2199,7 +2199,7 @@ void fg_drv_update_hw_status(void)
 	fg_current_state = gauge_get_current(&fg_current);
 	fg_coulomb = gauge_get_coulomb();
 	bat_vol = pmic_get_battery_voltage();
-	chr_vol = pmic_get_vbus();
+	chr_vol = battery_get_vbus();
 	tmp = force_get_tbat(true);
 
 	bm_err("lbat %d %d %d %d\n",
@@ -4178,7 +4178,7 @@ void gm3_log_dump(void)
 		gm.log.ptim_bat,
 		gm.log.ptim_cur,
 		gm.log.ptim_is_charging,
-		pmic_get_vbus());
+		battery_get_vbus());
 
 	bm_err("GM3log3 %llu %d %d %d\n",
 		logtime,
