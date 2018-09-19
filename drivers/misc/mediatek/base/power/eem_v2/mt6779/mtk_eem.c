@@ -1480,8 +1480,10 @@ static int eem_volt_thread_handler(void *data)
 		}
 
 		if ((ctrl->volt_update & EEM_VOLT_RESTORE) &&
-				det->ops->restore_default_volt)
+				det->ops->restore_default_volt){
 			det->ops->restore_default_volt(det);
+			ctrl->volt_update = EEM_VOLT_NONE;
+		}
 
 		if (det->vop_check)
 			ctrl->volt_update = EEM_VOLT_NONE;
