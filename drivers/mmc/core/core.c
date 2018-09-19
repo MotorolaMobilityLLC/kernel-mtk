@@ -425,6 +425,9 @@ static int mmc_check_write(struct mmc_host *host, struct mmc_request *mrq)
 	return ret;
 }
 
+/* Sleep when polling cmd13' for over 1ms */
+#define CMD13_TMO_NS (1000 * 1000)
+
 int mmc_run_queue_thread(void *data)
 {
 	struct mmc_host *host = data;
@@ -436,6 +439,12 @@ int mmc_run_queue_thread(void *data)
 	bool is_done = false;
 
 	int err;
+	u64 chk_time = 0;
+	struct sched_param scheduler_params = {0};
+
+	/* Set as RT priority */
+	scheduler_params.sched_priority = 1;
+	sched_setscheduler(current, SCHED_FIFO, &scheduler_params);
 
 	pr_err("[CQ] start cmdq thread\n");
 	mt_bio_queue_alloc(current, NULL);
@@ -592,12 +601,27 @@ int mmc_run_queue_thread(void *data)
 					atomic_read(&host->cq_wait_rdy),
 					atomic_read(&host->cq_rdy_cnt));
 			}
+			/* DMA time should not count in polling time */
+			chk_time = 0;
 		}
 
 		/* Send Command 13' */
 		if (atomic_read(&host->cq_wait_rdy) > 0
-			&& atomic_read(&host->cq_rdy_cnt) == 0)
+			&& atomic_read(&host->cq_rdy_cnt) == 0) {
+			if (!chk_time)
+				/* set check time */
+				chk_time = sched_clock();
+
+			/* send cmd13' */
 			mmc_do_check(host);
+
+			if (atomic_read(&host->cq_rdy_cnt))
+				/* clear when got ready task */
+				chk_time = 0;
+			else if (sched_clock() - chk_time > CMD13_TMO_NS)
+				/* sleep when TMO */
+				usleep_range(2000, 5000);
+		}
 
 		/* Sleep when nothing to do */
 		mt_biolog_cmdq_check();
