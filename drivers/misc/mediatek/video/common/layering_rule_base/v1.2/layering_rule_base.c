@@ -50,6 +50,9 @@ static struct {
 	{LYE_OPT_DUAL_PIPE, 0, "LYE_OPT_DUAL_PIPE"},
 	{LYE_OPT_EXT_LAYER, 0, "LYE_OPT_EXTENDED_LAYER"},
 	{LYE_OPT_RPO, 0, "LYE_OPT_RPO"},
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	{LYE_OPT_ROUND_CORNER, 0, "LYE_OPT_ROUND_CORNER"},
+#endif
 };
 
 void set_layering_opt(enum LYE_HELPER_OPT opt, int value)
@@ -71,6 +74,36 @@ int get_layering_opt(enum LYE_HELPER_OPT opt)
 
 	return help_info[opt].val;
 }
+
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+void set_round_corner_opt(enum LYE_HELPER_OPT opt, int value)
+{
+	if (opt >= LYE_OPT_NUM) {
+		DISPMSG("%s invalid round corner opt:%d\n", __func__, opt);
+		return;
+	}
+
+	help_info[opt].val = value;
+}
+
+int get_round_corner_opt(enum LYE_HELPER_OPT opt)
+{
+	if (opt >= LYE_OPT_NUM) {
+		DISPMSG("%s invalid round corner opt:%d\n", __func__, opt);
+		return -1;
+	}
+
+	return help_info[opt].val;
+}
+
+int get_round_corner_mode(int val)
+{
+	if ((val > 0) && (val & 0x1) && ((val >> 16) & 0x1))
+		return (val >> 8) & 0xFF;
+	else
+		return -1;
+}
+#endif
 
 bool is_ext_path(struct disp_layer_info *disp_info)
 {
@@ -755,7 +788,9 @@ static int ext_id_tunning(struct disp_layer_info *info, int disp)
 	int ext_cnt = 0, cur_phy_cnt = 0;
 	struct layer_config *layer_info;
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-	int ovl_num;
+	int ovl_num = get_ovl_num(HRT_PRIMARY);
+	int rc_opt = get_round_corner_opt(LYE_OPT_ROUND_CORNER);
+	int rc_mode = get_round_corner_mode(rc_opt);
 #endif
 
 	if (info->layer_num[disp] <= 0)
@@ -778,9 +813,10 @@ static int ext_id_tunning(struct disp_layer_info *info, int disp)
 	}
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-	ovl_num = get_ovl_num(HRT_PRIMARY);
-	if (ovl_num == 1)
-		ext_cnt = 1;
+	if (rc_mode == DISP_HELPER_SW_RC) {
+		if (ovl_num == 1)
+			ext_cnt = 1;
+	}
 #endif
 	for (i = 0; i < info->layer_num[disp]; i++) {
 		layer_info = &info->input_config[disp][i];
@@ -809,7 +845,8 @@ static int ext_id_tunning(struct disp_layer_info *info, int disp)
 				if (cur_ovl != pre_ovl) {
 					ext_cnt = 0;
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-					if (cur_ovl == ovl_num - 1)
+					if ((rc_mode == DISP_HELPER_SW_RC) &&
+					    (cur_ovl == ovl_num - 1))
 						ext_cnt = 1;
 #endif
 				}
@@ -1177,6 +1214,10 @@ static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp,
 	int overlap_w, layer_idx, phy_layer_idx, ovl_cnt;
 	bool has_gles = false;
 	struct layer_config *layer_info;
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	int rc_opt = get_round_corner_opt(LYE_OPT_ROUND_CORNER);
+	int rc_mode = get_round_corner_mode(rc_opt);
+#endif
 
 	if (!has_hrt_limit(disp_info, disp))
 		return 0;
@@ -1249,7 +1290,8 @@ static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp,
 		sum_overlap_w += HRT_AEE_WEIGHT;
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-	sum_overlap_w += HRT_ROUND_CORNER_WEIGHT;
+	if (rc_mode == DISP_HELPER_SW_RC)
+		sum_overlap_w += HRT_ROUND_CORNER_WEIGHT;
 #endif
 
 	/*
@@ -1266,7 +1308,8 @@ static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp,
 		if (has_dal_layer)
 			sum_overlap_w += HRT_AEE_WEIGHT;
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-		sum_overlap_w += HRT_ROUND_CORNER_WEIGHT;
+		if (rc_mode == DISP_HELPER_SW_RC)
+			sum_overlap_w += HRT_ROUND_CORNER_WEIGHT;
 #endif
 	}
 
@@ -1498,6 +1541,10 @@ static int dispatch_ovl_id(struct disp_layer_info *disp_info)
 {
 	int disp_idx;
 	bool has_second_disp;
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	int rc_opt = get_round_corner_opt(LYE_OPT_ROUND_CORNER);
+	int rc_mode = get_round_corner_mode(rc_opt);
+#endif
 
 	if (disp_info->layer_num[0] <= 0 && disp_info->layer_num[1] <= 0)
 		return 0;
@@ -1516,7 +1563,9 @@ static int dispatch_ovl_id(struct disp_layer_info *disp_info)
 			valid_ovl_cnt -= (HRT_AEE_WEIGHT / HRT_UINT_BOUND_BPP);
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-		valid_ovl_cnt -= (HRT_ROUND_CORNER_WEIGHT / HRT_UINT_BOUND_BPP);
+		if (rc_mode == DISP_HELPER_SW_RC)
+			valid_ovl_cnt = valid_ovl_cnt -
+				(HRT_ROUND_CORNER_WEIGHT / HRT_UINT_BOUND_BPP);
 #endif
 
 		valid_ovl_cnt /= HRT_UINT_WEIGHT;

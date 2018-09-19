@@ -24,6 +24,7 @@
 #include "ddp_dsi.h"
 #include "disp_helper.h"
 #include "ddp_rsz.h"
+#include "ddp_postmask.h"
 
 static char *ddp_signal_0(int bit)
 {
@@ -1522,6 +1523,9 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_RSZ0:
 		rsz_dump_reg(module);
 		break;
+	case DISP_MODULE_POSTMASK:
+		postmask_dump_reg(module);
+		break;
 	default:
 		DDPDUMP("no dump_reg for module %s(%d)\n",
 			ddp_get_module_name(module), module);
@@ -1576,6 +1580,9 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 		break;
 	case DISP_MODULE_RSZ0:
 		rsz_dump_analysis(module);
+		break;
+	case DISP_MODULE_POSTMASK:
+		postmask_dump_analysis(module);
 		break;
 	default:
 		DDPDUMP("no dump_analysis for module %s(%d)\n",
