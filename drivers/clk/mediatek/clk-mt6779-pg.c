@@ -62,6 +62,7 @@ while (0)
 void __attribute__((weak)) mtk_wcn_cmb_stub_clock_fail_dump(void) {}
 
 /*MM Bus*/
+#if 0
 #ifdef CONFIG_OF
 void __iomem *clk_mmsys_config_base;
 void __iomem *clk_imgsys_base;
@@ -70,19 +71,19 @@ void __iomem *clk_venc_gcon_base;
 void __iomem *clk_camsys_base;
 #endif
 
-#if 0
+
 #define MM_CG_CLR0 (clk_mmsys_config_base + 0x108)
 #define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
 #define VDEC_CKEN_SET	(clk_vdec_gcon_base + 0x0000)
 #define VDEC_GALS_CFG (clk_vdec_gcon_base + 0x0168)
 #define VENC_CG_SET	(clk_venc_gcon_base + 0x0004)
-#endif
+
 #define MM_CG_CLR0 (clk_mmsys_config_base + 0x108)
 #define MM_CG_SET0 (clk_mmsys_config_base + 0x104)
 #define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
 #define CAM_CG_CLR	(clk_camsys_base + 0x0008)
 #define CAM_CG_CON	(clk_camsys_base + 0x0000)
-
+#endif
 
 /*
  * MTCMOS
@@ -4870,23 +4871,18 @@ struct clk *mt_clk_register_power_gate(const char *name,
 
 #define pg_md1	"pg_md1"
 #define pg_conn	"pg_conn"
-
 #define pg_dis	"pg_dis"
 #define pg_cam	"pg_cam"
 #define pg_isp	"pg_isp"
 #define pg_ipe	"pg_ipe"
 #define pg_ven	"pg_ven"
 #define pg_vde	"pg_vde"
-
 #define pg_audio	"pg_audio"
-
-
 #define pg_mfg0	"pg_mfg0"
 #define pg_mfg1	"pg_mfg1"
 #define pg_mfg2	"pg_mfg2"
 #define pg_mfg3	"pg_mfg3"
 #define pg_mfg4	"pg_mfg4"
-
 #define pg_vpu_vcore_d	"pg_vpu_vcore_d"
 #define pg_vpu_vcore_s	"pg_vpu_vcore_s"
 #define pg_vpu_conn_d	"pg_vpu_conn_d"
@@ -4933,46 +4929,39 @@ struct mtk_power_gate {
 struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MD1, pg_md1, NULL, NULL, SYS_MD1),
 	PGATE(SCP_SYS_CONN, pg_conn, NULL, NULL, SYS_CONN),
-
 	PGATE(SCP_SYS_DIS, pg_dis, NULL, mm_sel, SYS_DIS),
 	PGATE(SCP_SYS_CAM, pg_cam, pg_dis, cam_sel, SYS_CAM),
 	PGATE(SCP_SYS_ISP, pg_isp, pg_dis, img_sel, SYS_ISP),
 	PGATE(SCP_SYS_IPE, pg_ipe, pg_dis, ipe_sel, SYS_IPE),
 	PGATE(SCP_SYS_VEN, pg_ven, pg_dis, venc_sel, SYS_VEN),
 	PGATE(SCP_SYS_VDE, pg_vde, pg_dis, vdec_sel, SYS_VDE),
-
 	PGATE(SCP_SYS_AUDIO, pg_audio, NULL,
 		infracfg_ao_audio_26m_bclk_ck, SYS_AUDIO),
-
 	PGATE(SCP_SYS_MFG0, pg_mfg0, NULL, mfg_sel, SYS_MFG0),
 	PGATE(SCP_SYS_MFG1, pg_mfg1, pg_mfg0, NULL, SYS_MFG1),
 	PGATE(SCP_SYS_MFG2, pg_mfg2, pg_mfg1, NULL, SYS_MFG2),
 	PGATE(SCP_SYS_MFG3, pg_mfg3, pg_mfg2, NULL, SYS_MFG3),
 	PGATE(SCP_SYS_MFG4, pg_mfg4, pg_mfg3, NULL, SYS_MFG4),
-
 	PGATE(SCP_SYS_VPU_VCORE_DORMANT, pg_vpu_vcore_d, pg_dis,
-		dsp_sel, SYS_VPU_VCORE_DORMANT),
+		ipu_if_sel, SYS_VPU_VCORE_DORMANT),
 	PGATE(SCP_SYS_VPU_VCORE_SHUTDOWN, pg_vpu_vcore_s, pg_dis,
-		dsp_sel, SYS_VPU_VCORE_SHUTDOWN),
-
+		ipu_if_sel, SYS_VPU_VCORE_SHUTDOWN),
 	PGATE(SCP_SYS_VPU_CONN_DORMANT, pg_vpu_conn_d, pg_vpu_vcore_d,
-		ipu_if_sel, SYS_VPU_CONN_DORMANT),
+		dsp_sel, SYS_VPU_CONN_DORMANT),
 	PGATE(SCP_SYS_VPU_CONN_SHUTDOWN, pg_vpu_conn_s, pg_vpu_vcore_s,
-		ipu_if_sel, SYS_VPU_CONN_SHUTDOWN),
-
+		dsp_sel, SYS_VPU_CONN_SHUTDOWN),
 	PGATE(SCP_SYS_VPU_CORE0_DORMANT, pg_vpu_core0_d, pg_vpu_conn_d,
-		NULL, SYS_VPU_CORE0_DORMANT),
+		dsp1_sel, SYS_VPU_CORE0_DORMANT),
 	PGATE(SCP_SYS_VPU_CORE0_SHUTDOWN, pg_vpu_core0_s, pg_vpu_conn_s,
-		NULL, SYS_VPU_CORE0_SHUTDOWN),
+		dsp1_sel, SYS_VPU_CORE0_SHUTDOWN),
 	PGATE(SCP_SYS_VPU_CORE1_DORMANT, pg_vpu_core1_d, pg_vpu_conn_d,
-		NULL, SYS_VPU_CORE1_DORMANT),
+		dsp2_sel, SYS_VPU_CORE1_DORMANT),
 	PGATE(SCP_SYS_VPU_CORE1_SHUTDOWN, pg_vpu_core1_s, pg_vpu_conn_s,
-		NULL, SYS_VPU_CORE1_SHUTDOWN),
-
+		dsp2_sel, SYS_VPU_CORE1_SHUTDOWN),
 	PGATE(SCP_SYS_VPU_CORE2_DORMANT, pg_vpu_core2_d, pg_vpu_conn_d,
-		NULL, SYS_VPU_CORE2_DORMANT),
+		dsp3_sel, SYS_VPU_CORE2_DORMANT),
 	PGATE(SCP_SYS_VPU_CORE2_SHUTDOWN, pg_vpu_core2_s, pg_vpu_conn_s,
-		NULL, SYS_VPU_CORE2_SHUTDOWN),
+		dsp3_sel, SYS_VPU_CORE2_SHUTDOWN),
 };
 
 static void __init init_clk_scpsys(void __iomem *infracfg_reg,
@@ -5062,6 +5051,7 @@ static void __iomem *get_reg(struct device_node *np, int index)
 	return of_iomap(np, index);
 }
 
+#if 0
 #ifdef CONFIG_OF
 void iomap_mm(void)
 {
@@ -5105,6 +5095,7 @@ void iomap_mm(void)
 		pr_debug("[CLK_CAM] base failed\n");
 }
 #endif
+#endif
 
 static void __init mt_scpsys_init(struct device_node *node)
 {
@@ -5147,7 +5138,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 	ckgen_base = ckgen_reg;
 	/*MM Bus*/
-	iomap_mm();
+	/*iomap_mm();*/
 #if 0/*!MT_CCF_BRINGUP*/
 	/* subsys init: per modem owner request, disable modem power first */
 	disable_subsys(SYS_MD1);
