@@ -3131,6 +3131,10 @@
 		bif_cv_under_threshold2 = <4450000>;
 	};
 
+	rt-pd-manager {
+		compatible = "mediatek,rt-pd-manager";
+	};
+
 	subpmic_pmu_eint: mt6360_pmu_eint {
 	};
 	mt6360_pd_eint: mt6360_pd_eint {
