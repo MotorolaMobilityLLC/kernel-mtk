@@ -46,6 +46,8 @@
 #define CONNADP_HAS_CLOCK_BUF_CTRL
 #define KERNEL_clk_buf_ctrl connectivity_export_clk_buf_ctrl
 void connectivity_export_clk_buf_ctrl(/*enum clk_buf_id*/ int id, bool onoff);
+#define KERNEL_is_clk_buf_from_pmic connectivity_export_is_clk_buf_from_pmic
+bool connectivity_export_is_clk_buf_from_pmic(void);
 #endif
 
 /*******************************************************************************

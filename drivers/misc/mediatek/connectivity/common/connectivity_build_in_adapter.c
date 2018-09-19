@@ -147,6 +147,12 @@ void connectivity_export_clk_buf_ctrl(/*enum clk_buf_id*/ int id, bool onoff)
 	clk_buf_ctrl(id, onoff);
 }
 EXPORT_SYMBOL(connectivity_export_clk_buf_ctrl);
+
+bool connectivity_export_is_clk_buf_from_pmic(void)
+{
+	return is_clk_buf_from_pmic();
+}
+EXPORT_SYMBOL(connectivity_export_is_clk_buf_from_pmic);
 #endif
 
 /*******************************************************************************
