@@ -1029,6 +1029,9 @@ static int teei_config_release(struct inode *inode, struct file *file)
 static const struct file_operations teei_config_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = teei_config_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl   = teei_config_ioctl,
+#endif
 	.open = teei_config_open,
 	.mmap = teei_config_mmap,
 	.release = teei_config_release
